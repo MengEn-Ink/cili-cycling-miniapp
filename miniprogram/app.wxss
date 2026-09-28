@@ -1,0 +1,129 @@
+page {
+  background: #f4f7f3;
+  color: #17362c;
+  font-size: 28rpx;
+}
+.page {
+  padding: 28rpx 28rpx 170rpx;
+}
+.mock {
+  background: #fff0c7;
+  color: #754d00;
+  text-align: center;
+  padding: 14rpx;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+.hero {
+  background: linear-gradient(145deg, #073f34, #16815c);
+  color: white;
+  border-radius: 30rpx;
+  padding: 40rpx;
+}
+.hero-title {
+  font-size: 46rpx;
+  font-weight: 800;
+  margin: 15rpx 0;
+}
+.card {
+  background: white;
+  border-radius: 24rpx;
+  padding: 28rpx;
+  margin-top: 22rpx;
+  box-shadow: 0 8rpx 30rpx #17362c10;
+}
+.title {
+  font-size: 32rpx;
+  font-weight: 800;
+  margin-bottom: 18rpx;
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20rpx;
+}
+.muted {
+  color: #718079;
+}
+.tag {
+  display: inline-block;
+  padding: 8rpx 16rpx;
+  border-radius: 30rpx;
+  background: #e6f4ec;
+  color: #08704e;
+  font-size: 22rpx;
+}
+.warn {
+  background: #fff0d3;
+  color: #8b5700;
+}
+.danger {
+  background: #fde8e5;
+  color: #a63b2d;
+}
+.btn {
+  background: #087052 !important;
+  color: white !important;
+  border-radius: 50rpx !important;
+  font-weight: 700;
+}
+.secondary {
+  background: #e8f1ec !important;
+  color: #087052 !important;
+}
+.field {
+  margin: 22rpx 0;
+}
+.label {
+  color: #65766e;
+  font-size: 24rpx;
+  margin-bottom: 9rpx;
+}
+.input,
+.textarea {
+  box-sizing: border-box;
+  width: 100%;
+  background: #f3f6f3;
+  border: 2rpx solid #e3eae5;
+  border-radius: 16rpx;
+  padding: 20rpx;
+}
+.fixed {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: white;
+  padding: 20rpx 28rpx calc(20rpx + env(safe-area-inset-bottom));
+  box-shadow: 0 -8rpx 30rpx #17362c18;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+}
+.metric {
+  background: #edf5f0;
+  border-radius: 16rpx;
+  padding: 18rpx;
+}
+.big {
+  font-size: 34rpx;
+  font-weight: 800;
+  color: #087052;
+}
+.empty {
+  text-align: center;
+  padding: 90rpx;
+  color: #718079;
+}
+.photo {
+  width: 140rpx;
+  height: 140rpx;
+  border-radius: 20rpx;
+  background: #dbe9e2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

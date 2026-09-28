@@ -1,0 +1,32 @@
+{
+  "pages": [
+    "pages/activities/index",
+    "pages/activity-detail/index",
+    "pages/registration-form/index",
+    "pages/registrations/index",
+    "pages/credential/index",
+    "pages/profile/index",
+    "pages/profile-edit/index",
+    "pages/strava/index",
+    "pages/admin/activity-list/index",
+    "pages/admin/activity-edit/index",
+    "pages/admin/reviews/index",
+    "pages/admin/review-detail/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "此里",
+    "navigationBarBackgroundColor": "#f5f7f2",
+    "navigationBarTextStyle": "black"
+  },
+  "tabBar": {
+    "color": "#718078",
+    "selectedColor": "#0b6b4f",
+    "list": [
+      { "pagePath": "pages/activities/index", "text": "活动" },
+      { "pagePath": "pages/registrations/index", "text": "报名" },
+      { "pagePath": "pages/profile/index", "text": "我的" },
+      { "pagePath": "pages/admin/activity-list/index", "text": "管理" }
+    ]
+  },
+  "sitemapLocation": "sitemap.json"
+}

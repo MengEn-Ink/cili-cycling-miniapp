@@ -1,0 +1,65 @@
+<mock-banner />
+<view class="page" wx:if="{{profile}}">
+  <view class="hero">
+    <view>RIDER PROFILE</view>
+    <view class="hero-title">{{profile.nickname}}</view>
+    <view>{{profile.title}} · 当前角色 {{role}}{{isSuper ? '（超级管理员）' : ''}}</view>
+  </view>
+
+  <view class="card identity-card">
+    <view class="row">
+      <view>
+        <view class="title">微信可信身份</view>
+        <view class="identity-status identity-success" wx:if="{{authStatus === 'authenticated'}}">已验证</view>
+        <view class="identity-status" wx:elif="{{authStatus === 'loading'}}">验证中…</view>
+        <view class="identity-status identity-error" wx:else>未登录</view>
+      </view>
+      <button
+        wx:if="{{authStatus !== 'loading'}}"
+        size="mini"
+        class="secondary"
+        bindtap="retryAuth"
+      >{{authStatus === 'authenticated' ? '刷新身份' : '重试'}}</button>
+    </view>
+    <block wx:if="{{openid}}">
+      <view class="muted identity-help">此身份由 auth 云函数从微信上下文取得。</view>
+      <view class="openid">{{openid}}</view>
+      <button size="mini" class="secondary" bindtap="copyOpenid">复制 openid</button>
+      <view class="auth-warning" wx:if="{{authStatus === 'error'}}">{{authError}} 已保留本次运行中已验证的身份。</view>
+    </block>
+    <view wx:else class="auth-warning">
+      {{authStatus === 'loading' ? '正在连接身份服务，请稍候。' : (authError || '尚未开始微信身份验证。')}}
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="row">
+      <view>
+        <view class="title">常用资料</view>
+        <view>{{profile.realName}} · {{profile.phone}}</view>
+      </view>
+      <button size="mini" bindtap="edit">编辑</button>
+    </view>
+  </view>
+  <view class="card">
+    <view class="row">
+      <view class="title">个人相册</view>
+      <text>{{profile.photos.length}} 张</text>
+    </view>
+    <view class="row">
+      <view class="photo" wx:for="{{profile.photos}}" wx:key="id">{{item.category}}</view>
+    </view>
+  </view>
+  <view class="card" bindtap="strava">
+    <view class="row">
+      <view>
+        <view class="title">Strava</view>
+        <view class="muted">查看绑定与豁免状态</view>
+      </view>
+      <text>›</text>
+    </view>
+  </view>
+  <button wx:if="{{canSwitchRole}}" class="secondary" bindtap="switchRole">
+    开发态切换为 {{role === 'member' ? '管理员' : '队员'}}
+  </button>
+</view>

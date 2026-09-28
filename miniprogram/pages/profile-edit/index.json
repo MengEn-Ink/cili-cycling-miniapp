@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "编辑资料",
+  "usingComponents": {
+    "mock-banner": "/components/mock-banner/index",
+    "state-view": "/components/state-view/index",
+    "activity-card": "/components/activity-card/index",
+    "status-pill": "/components/status-pill/index"
+  }
+}

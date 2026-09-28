@@ -1,0 +1,38 @@
+{
+  "envId": "cloudbase-d0gizacy77a1ab017",
+  "functionRoot": "./cloudfunctions",
+  "functions": [
+    {
+      "name": "auth",
+      "handler": "index.main",
+      "runtime": "Nodejs20.19",
+      "timeout": 5,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "activity-read",
+      "handler": "index.main",
+      "runtime": "Nodejs20.19",
+      "timeout": 10,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "registration",
+      "handler": "index.main",
+      "runtime": "Nodejs20.19",
+      "timeout": 10,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "admin-review",
+      "handler": "index.main",
+      "runtime": "Nodejs20.19",
+      "timeout": 10,
+      "memorySize": 256,
+      "installDependency": true
+    }
+  ]
+}

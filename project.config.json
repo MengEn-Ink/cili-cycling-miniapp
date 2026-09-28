@@ -1,0 +1,8 @@
+{
+  "compileType": "miniprogram",
+  "appid": "wx62022d5b32a4e546",
+  "projectname": "cili-cycling-miniapp",
+  "miniprogramRoot": "miniprogram/",
+  "cloudfunctionRoot": "cloudfunctions/",
+  "setting": { "es6": true, "postcss": true, "useCompilerPlugins": ["typescript"] }
+}

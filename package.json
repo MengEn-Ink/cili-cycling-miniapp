@@ -1,0 +1,28 @@
+{
+  "name": "cili-cycling-miniapp",
+  "private": true,
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint . --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "cloud:prepare": "node scripts/prepare-cloudfunctions.mjs",
+    "cloud:install": "npm run cloud:prepare && npm ci --prefix cloudfunctions/shared && npm ci --prefix cloudfunctions/auth && npm ci --prefix cloudfunctions/activity-read && npm ci --prefix cloudfunctions/registration && npm ci --prefix cloudfunctions/admin-review",
+    "test:cloud": "npm --prefix cloudfunctions/shared test && npm --prefix cloudfunctions/auth test && npm --prefix cloudfunctions/activity-read test && npm --prefix cloudfunctions/registration test && npm --prefix cloudfunctions/admin-review test",
+    "verify:cloud-packages": "node scripts/verify-cloud-packages.mjs",
+    "coverage": "vitest run --coverage && node scripts/check-cloud-coverage.mjs",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && node scripts/validate.mjs",
+    "validate": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:cloud && npm run verify:cloud-packages && npm run build",
+    "audit:all": "npm audit --audit-level=high && npm --prefix cloudfunctions/shared audit --audit-level=high && npm --prefix cloudfunctions/auth audit --audit-level=high && npm --prefix cloudfunctions/activity-read audit --audit-level=high && npm --prefix cloudfunctions/registration audit --audit-level=high && npm --prefix cloudfunctions/admin-review audit --audit-level=high"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.44.1",
+    "@typescript-eslint/parser": "^8.44.1",
+    "@vitest/coverage-v8": "^5.0.2",
+    "eslint": "^8.57.1",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.2",
+    "vitest": "^5.0.2"
+  }
+}

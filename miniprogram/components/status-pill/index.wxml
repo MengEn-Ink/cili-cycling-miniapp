@@ -1,0 +1,1 @@
+<text class="tag {{status==='已驳回'?'danger':''}}">{{status}}</text>

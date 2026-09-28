@@ -1,0 +1,43 @@
+.identity-card {
+  border: 2rpx solid #d9e8df;
+}
+
+.identity-status {
+  display: inline-block;
+  color: #7a6500;
+  background: #fff3c4;
+  border-radius: 24rpx;
+  padding: 6rpx 14rpx;
+  font-size: 22rpx;
+}
+
+.identity-success {
+  color: #087052;
+  background: #e6f4ec;
+}
+
+.identity-error {
+  color: #9a3d32;
+  background: #fde8e5;
+}
+
+.identity-help,
+.auth-warning {
+  margin-top: 20rpx;
+  line-height: 1.6;
+}
+
+.auth-warning {
+  color: #8b5700;
+}
+
+.openid {
+  margin: 14rpx 0;
+  padding: 18rpx;
+  border-radius: 14rpx;
+  background: #f3f6f3;
+  font-family: monospace;
+  font-size: 24rpx;
+  word-break: break-all;
+  user-select: all;
+}

@@ -1,0 +1,1 @@
+<view class="card" bindtap="open"><view class="row"><view class="title">{{item.title}}</view><text class="tag">{{item.displayStatus}}</text></view><view class="muted">{{item.date}} · {{item.route.distanceKm}}km · 爬升 {{item.route.elevationM}}m</view><view class="row"><text>{{item.route.level}}</text><text>{{item.occupied}} / {{item.capacity}} 人占位</text></view></view>

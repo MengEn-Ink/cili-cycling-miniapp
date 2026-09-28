@@ -1,0 +1,1 @@
+<view wx:if="{{loading}}" class="empty">正在加载…</view><view wx:elif="{{error}}" class="card danger">{{error}} <button size="mini" bindtap="retry">重试</button></view><view wx:elif="{{empty}}" class="empty">暂时没有内容</view><slot wx:else/>

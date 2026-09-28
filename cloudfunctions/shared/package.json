@@ -1,0 +1,14 @@
+{
+  "name": "@cili/cloud-domain",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "domain.js",
+    "use-cases.js"
+  ],
+  "scripts": {
+    "test": "node --test domain.node-test.js"
+  }
+}
