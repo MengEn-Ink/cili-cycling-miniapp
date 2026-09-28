@@ -26,6 +26,9 @@ jobs:
             cloudfunctions/activity-read/package-lock.json
             cloudfunctions/registration/package-lock.json
             cloudfunctions/admin-review/package-lock.json
+            cloudfunctions/profile/package-lock.json
+            cloudfunctions/strava-auth/package-lock.json
+            cloudfunctions/strava-callback/package-lock.json
       - name: Install root dependencies
         run: npm ci
       - name: Rebuild shared package and install every cloud function
@@ -34,5 +37,7 @@ jobs:
         run: npm run validate
       - name: Run tests with coverage
         run: npm run coverage
+      - name: Verify CloudBase bootstrap is read-only by default
+        run: npm run test:bootstrap
       - name: Audit high-severity vulnerabilities
         run: npm run audit:all

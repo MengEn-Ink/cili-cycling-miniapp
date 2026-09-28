@@ -1,4 +1,11 @@
-import type { Activity, Profile, Registration, RegistrationStatus, StravaStatus } from '../models';
+import type {
+  Activity,
+  Profile,
+  ProfileUpdate,
+  Registration,
+  RegistrationStatus,
+  StravaConnection,
+} from '../models';
 
 export type AdminRegistrationStatusFilter = RegistrationStatus;
 export interface RegistrationSubmission {
@@ -16,7 +23,7 @@ export interface AdminReviewRepository {
   ): Promise<Registration[]>;
   getReviewRegistration(id: string): Promise<Registration | undefined>;
 }
-export interface RideRepository {
+export interface RideRepository extends AdminReviewRepository {
   listActivities(): Promise<Activity[]>;
   getActivity(id: string): Promise<Activity | undefined>;
   listRegistrations(): Promise<Registration[]>;
@@ -28,7 +35,10 @@ export interface RideRepository {
     comment?: string,
   ): Promise<Registration>;
   getProfile(): Promise<Profile>;
-  saveProfile(profile: Profile): Promise<Profile>;
-  setStrava(status: StravaStatus): Promise<void>;
-  saveActivity(activity: Activity): Promise<Activity>;
+  updateProfile(profile: ProfileUpdate): Promise<Profile>;
+  getPhoneNumber(code: string): Promise<Profile>;
+  getStravaStatus(): Promise<StravaConnection>;
+  startStrava(): Promise<{ authorizationUrl: string; expiresAt: string }>;
+  syncStrava(): Promise<StravaConnection>;
+  disconnectStrava(): Promise<void>;
 }

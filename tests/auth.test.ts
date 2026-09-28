@@ -92,16 +92,16 @@ describe('身份 store', () => {
     expect(store.role).toBe('admin');
   });
 
-  it('cloud 不可用时保留开发态角色但没有伪造身份', async () => {
+  it('cloud 不可用时不启用开发态角色且没有伪造身份', async () => {
     const store = new AppStore(memoryStorage('admin'), authenticateWithCloud);
     store.bootstrap();
     await store.refreshIdentity(undefined);
     expect(store).toMatchObject({
       openid: null,
-      role: 'admin',
+      role: 'member',
       isSuper: false,
       authStatus: 'unavailable',
     });
-    expect(store.canSwitchRole()).toBe(true);
+    expect(store.canSwitchRole()).toBe(false);
   });
 });

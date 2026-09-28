@@ -10,11 +10,11 @@ import { runtimeConfig } from '../miniprogram/config/runtime';
 import { initializeCloud } from '../miniprogram/config/cloud-init';
 
 describe('运行时配置', () => {
-  it('使用此里公开配置并保持 Mock 数据模式', () => {
+  it('使用此里公开配置并固定云数据模式', () => {
     expect(runtimeConfig).toEqual({
       brandName: '此里',
       cloudEnvId: 'cloudbase-d0gizacy77a1ab017',
-      dataMode: 'mock',
+      dataMode: 'cloud',
     });
   });
 

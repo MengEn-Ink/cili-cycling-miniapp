@@ -1,75 +1,64 @@
 # 此里 · 骑行活动原生微信小程序
 
-“此里”用于骑行活动发布、实名报名、Strava 能力资料与管理员审批。需求原文保留在 [`docs/requirements-design.md`](docs/requirements-design.md)。
+“此里”用于活动展示、实名资料、Strava 绑定、报名与管理员审批。需求见 [`docs/requirements-design.md`](docs/requirements-design.md)，数据契约见 [`docs/cloudbase-schema.md`](docs/cloudbase-schema.md)。
 
-当前分支完成了 CloudBase 核心报名闭环的**可部署代码与离线验证**，但 `miniprogram/config/runtime.ts` 的 `dataMode` 仍固定为 `mock`，现有页面不会切到未完成的真实资料/Strava 链路。已部署的 `auth` 保持不变。
+## 当前实现
 
-## 已完成
+- 微信运行固定使用 `CloudRepository`，不会回退 Mock；`DEVELOPMENT_MOCK` 与 `createRepository({ developmentMock: true })` 仅供显式开发/测试注入，UI 无切换入口。
+- `auth` 只信任 `cloud.getWXContext().OPENID`，真实 role 优先；管理入口仅向已验证管理员显示，所有管理页再次校验。
+- `activity-read`、`registration`、`admin-review` 完成活动读取、我的报名、提交/取消与管理员审批。真实活动编辑明确显示“暂未开放”。
+- `profile` 提供 `get/update/getPhoneNumber`。姓名、证件号、手机号、紧急电话分别以 AES-256-GCM 加密；对外仅返回脱敏值、填写状态和完整度。手机号只接受微信动态 code。
+- `strava-auth` 提供 `status/start/sync/disconnect`；`strava-callback` 处理 OAuth 回调。state 使用 32 字节随机值、SHA-256 落库、10 分钟应用层强制过期和事务内 `consumed_at` 一次性消费；`start/status` 每次限量清理已过期 state。token 使用 AES-256-GCM 加密。同步仅拉最近 90 天、每页 200 条、最多 5 页，并统计里程、次数、最长距离、爬升、距离加权平均速度和最近活动时间。
+- 页面在未登录、资料未完成、函数/路由未部署时显示引导或错误，不伪造成功。相册保留 `chooseMedia -> cloud.uploadFile -> profile.update` 契约，须真机验证权限和存储规则。
 
-- `auth`：从 `cloud.getWXContext().OPENID` 取得可信身份，并以 `admins._id` 判定角色。
-- `activity-read`：仅返回已发布、未软删除活动的列表/详情和 `pending + approved` 真实占位；响应字段白名单不含内部审计字段。
-- `registration`：我的报名、详情、提交、取消；确定性报名 ID、重报保留审批历史、活动/截止/资料/Strava 校验、事务名额闸门。
-- `admin-review`：管理员报名列表/详情、通过/驳回、理由规则、状态机和同事务审计。
-- `cloudfunctions/shared`：纯 JS 领域规则与事务 orchestration，可脱离微信运行；部署前由脚本把同一份领域源码复制到各函数的 `domain/`，函数只使用相对 require；每个部署目录都可独立 `npm ci`。
-- `CloudRepository`：已接活动读、我的报名、报名提交/取消及审批调用，保持现有 `RideRepository` 形状；生产模式绝不回退 Mock。
-- 数据契约、安全规则、索引和事务取舍见 [`docs/cloudbase-schema.md`](docs/cloudbase-schema.md)。安全初始化见 [`scripts/seed-cloudbase/README.md`](scripts/seed-cloudbase/README.md)。
+## 环境变量（只在 CloudBase 控制台配置）
 
-## 明确未完成
+示例见 `cloudfunctions/.env.example`，仓库中不得填写真实值：
 
-- 未实现资料写入/手机号解码。没有 KMS/环境密钥前，不允许落明文手机号、证件号、紧急联系电话。
-- 未实现 Strava OAuth、token 加密和同步；token 不进入本批函数响应。
-- 未实现活动管理命令、支付、签到、导出、消息通知和管理员配置 UI。
-- 未在真实 CloudBase 上验证事务冲突重试、热点吞吐、复合索引及 SDK 缺失文档错误码。离线事务替身只验证编排不变量，不能等同数据库并发证明。
-- 因上述资料和 Strava 前置能力尚未实现，`dataMode` 必须保持 `mock`，不可直接切换生产。
+```text
+PII_ENCRYPTION_KEY=                 # base64 编码的 32 字节随机密钥，仅 profile
+STRAVA_CLIENT_ID=36717              # strava-auth / strava-callback
+STRAVA_CLIENT_SECRET=               # strava-auth / strava-callback
+STRAVA_TOKEN_ENCRYPTION_KEY=        # base64 编码的 32 字节随机密钥，两函数必须一致
+STRAVA_CALLBACK_URL=                # strava-callback 的公网 HTTPS 完整地址
+```
 
-## 本地安装与验证
+缺失或非法密钥会 fail closed。不要把 secret、token、openid 或真实用户资料写入代码、fixture、日志或 CI。
+
+## CloudBase bootstrap
+
+`scripts/bootstrap-cloudbase.mjs` 管理 8 个集合、10 个业务索引、全拒绝客户端规则和 `_id=demo_activity_001` 演示活动。`oauth_states._id` 与 `state_hash` 保证唯一，`expires_at ASC` 是辅助应用层清理的普通索引；CloudBase `UpdateTable` 不接受 TTL 参数，因此这里是**非物理 TTL，应用层过期 + 清理**。默认只生成 plan，不写远端：
+
+```bash
+npm run cloudbase:plan
+# 经人工审核后才可运行：npm run cloudbase:apply
+npm run cloudbase:verify
+```
+
+当前测试环境已执行 apply 与 verify：8 个集合、全拒绝客户端规则、10 个业务索引及 `demo_activity_001` 均已校验通过。脚本仍保持默认只读，其他环境必须先审阅 plan 再显式 apply。
+
+## 安装与验证
 
 ```bash
 npm ci
 npm run cloud:install
 npm run format:check
-npm run lint
-npm run typecheck
-npm test
-npm run test:cloud
+npm run validate
 npm run coverage
-npm run build
 npm run audit:all
 ```
 
-`npm run cloud:prepare` 从唯一源码 `cloudfunctions/shared` 复制 `index.js / domain.js / use-cases.js` 到三个函数各自的 `domain/`。`npm run verify:cloud-packages` 会执行 `npm pack --dry-run`，确认入口和领域源码均在部署清单中、三份源码哈希一致，并拒绝任何 `file:` 依赖或 `vendor/` 残留。生成的 `domain/` 与函数 `package-lock.json` 应提交，`node_modules / dist / coverage` 不提交。
+`cloud:prepare` 把共享领域代码复制到三个报名域函数，并把 `strava-shared/core.js`、`api.js` 复制到两个 Strava 部署目录；每个部署目录均使用 registry 依赖和独立 lockfile。
 
-原生小程序没有常规 Web bundle；`build` 是源码编译和页面完整性证明。
+## 部署与联调顺序
 
-## 目录
+1. 审阅 `cloudbase:plan`，创建/升级 8 个集合、规则和索引，再执行 verify。
+2. 为 `profile` 配置 `PII_ENCRYPTION_KEY`，部署并用测试账号验证 get/update/getPhoneNumber。
+3. 为 `strava-auth` 和 `strava-callback` 配置相同的 Strava 环境变量。
+4. 依次部署 `auth`、`profile`、`strava-callback`、`strava-auth`、`activity-read`、`registration`、`admin-review`。
+5. 使用 `cloudbaserc.json` 的 `gateway.routes` 声明式维护 `/strava/callback`；测试环境已创建并验证该 HTTPS 路由。将完整地址配置到 Strava 应用回调设置，并把域名加入小程序 `web-view` 业务域名。
+6. 用真实微信账号验证 openid、手机号授权、OAuth 回跳、同步、报名和管理员审批；随后做容量并发压测。
 
-```text
-miniprogram/
-  config/              品牌、云环境、数据模式与云初始化
-  models/              领域模型
-  repositories/        Mock 与真实 Cloud adapter
-  services/            业务入口与可信身份调用
-  pages/                现有队员端/管理员端页面（本次不重构 UI）
-cloudfunctions/
-  auth/                 已有可信身份函数
-  shared/               单一来源纯 JS 领域规则与事务编排
-  activity-read/        活动只读
-  registration/         队员报名命令与我的报名
-  admin-review/         管理员审批
-docs/cloudbase-schema.md
-scripts/seed-cloudbase/README.md
-```
+## 尚未实现
 
-## 建议部署顺序（本次未执行）
-
-1. 审阅并创建集合、安全规则、复合索引；初始化所有活动的 `occupied_count=0`。
-2. 按安全初始化文档取得真实 openid，创建首个管理员和 draft 活动；不要将 openid 写入 Git。
-3. 先部署 `activity-read`，以 draft/published/soft-delete 数据核对字段白名单。
-4. 完成 KMS/加密资料服务和 Strava OAuth 后，准备合规 `profiles` 测试数据。
-5. 部署 `registration`，在隔离活动上做容量边界、重复提交、取消、驳回重报及真实并发压测。
-6. 最后部署 `admin-review`，验证普通用户越权失败、审批状态迁移、计数释放和审计字段。
-7. 真实链路全部通过后再单独评审将 `runtimeConfig.dataMode` 从 `mock` 切换；不要与 UI 重构同时进行。
-
-## 安全边界
-
-所有运行期 openid 均取自微信上下文；客户端传入的 openid、角色、状态、名额、金额和审核字段会被拒绝。业务集合禁止客户端直写。日志只记录错误码，不打印 openid、手机号、证件号或 token。对外报名资料只有脱敏值，审计日志使用严格字段白名单。
+活动创建/编辑、Strava 豁免审批、管理员配置、敏感资料明文查看、支付、签到、导出与消息通知尚无后端能力。前端不会对这些能力伪成功。

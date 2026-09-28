@@ -1,8 +1,13 @@
 import type { RideRepository } from './types';
 import { MockRepository } from './mock';
 import { CloudRepository } from './cloud';
-import { runtimeConfig } from '../config/runtime';
+import { DEVELOPMENT_MOCK } from '../config/runtime';
 
-export const repository: RideRepository =
-  runtimeConfig.dataMode === 'production' ? new CloudRepository() : new MockRepository();
-export const isMock = runtimeConfig.dataMode === 'mock';
+export function createRepository(options: { developmentMock?: boolean } = {}): RideRepository {
+  return (options.developmentMock ?? DEVELOPMENT_MOCK)
+    ? new MockRepository()
+    : new CloudRepository();
+}
+
+export const repository: RideRepository = createRepository();
+export const isMock = false;

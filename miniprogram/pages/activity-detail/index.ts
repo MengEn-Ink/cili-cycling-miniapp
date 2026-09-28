@@ -2,18 +2,22 @@ import { rideService } from '../../services/ride-service';
 Page({
   data: { loading: true, error: '', item: null as any, registration: null as any },
   onLoad(q: any) {
-    this.load(q.id || 'forest');
+    void this.load(q.id || '');
   },
   async load(id: string) {
     try {
-      const [a, rs] = await Promise.all([
-        rideService.getActivity(id),
-        rideService.listRegistrations(),
-      ]);
-      if (!a) throw Error();
-      this.setData({ item: a, registration: rs.find((x) => x.activityId === id) });
-    } catch {
-      this.setData({ error: '详情加载失败' });
+      const item = await rideService.getActivity(id);
+      let registration;
+      try {
+        registration = (await rideService.listRegistrations()).find(
+          (value) => value.activityId === id,
+        );
+      } catch {
+        registration = undefined;
+      }
+      this.setData({ item, registration });
+    } catch (error) {
+      this.setData({ error: error instanceof Error ? error.message : '详情加载失败' });
     } finally {
       this.setData({ loading: false });
     }

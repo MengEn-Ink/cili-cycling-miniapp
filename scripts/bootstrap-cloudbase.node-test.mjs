@@ -1,0 +1,304 @@
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import test from 'node:test';
+
+import {
+  CloudBaseCliRunner,
+  COLLECTIONS,
+  DENY_RULE,
+  INDEXES,
+  applyPlan,
+  buildPlan,
+  createDemoActivity,
+  resolveTarget,
+  runBootstrap,
+  validateDemo,
+} from './bootstrap-cloudbase.mjs';
+
+function completeState() {
+  const now = new Date('2026-09-29T00:00:00.000Z');
+  return {
+    tables: new Set(COLLECTIONS),
+    indexes: new Map(
+      COLLECTIONS.map((collection) => [
+        collection,
+        INDEXES.filter((index) => index.collection === collection).map((index) => ({ ...index })),
+      ]),
+    ),
+    rules: new Map(
+      COLLECTIONS.map((collection) => [
+        collection,
+        { AclTag: 'CUSTOM', Rule: JSON.stringify(DENY_RULE) },
+      ]),
+    ),
+    demo: createDemoActivity(now),
+  };
+}
+
+class RecordingRunner {
+  constructor(handler) {
+    this.calls = [];
+    this.handler = handler;
+  }
+
+  async api(action, body) {
+    this.calls.push({ action, body });
+    return this.handler?.(action, body, this.calls) ?? {};
+  }
+}
+
+test('默认 plan 只读取，不执行写动作', async () => {
+  const runner = new RecordingRunner((action) => {
+    if (action === 'ListTables') return { Tables: [] };
+    throw new Error(`unexpected action ${action}`);
+  });
+  const lines = [];
+  await runBootstrap({
+    runner,
+    target: { envId: 'env-test', region: 'ap-shanghai' },
+    mode: 'plan',
+    output: (line) => lines.push(line),
+  });
+  assert.deepEqual(
+    runner.calls.map((call) => call.action),
+    ['ListTables'],
+  );
+  assert.match(lines[0], /"只读": true/);
+});
+
+test('缺失集合计划创建并以 ADMINONLY 创建', async () => {
+  const state = completeState();
+  state.tables.delete('profiles');
+  state.indexes.delete('profiles');
+  state.rules.delete('profiles');
+  const plan = buildPlan(state);
+  assert.ok(
+    plan.actions.some(
+      (action) => action.type === 'create_collection' && action.collection === 'profiles',
+    ),
+  );
+  assert.ok(
+    plan.actions.some((action) => action.type === 'set_rule' && action.collection === 'profiles'),
+  );
+
+  const runner = new RecordingRunner((action) => {
+    if (action === 'CreateTable' || action === 'ModifySafeRule') {
+      return { RequestId: `request-${action}` };
+    }
+    if (action === 'ListTables') return { Tables: [{ TableName: 'profiles' }] };
+    if (action === 'DescribeSafeRule') {
+      return { AclTag: 'CUSTOM', Rule: JSON.stringify(DENY_RULE), RequestId: 'request-rule-read' };
+    }
+    throw new Error(`unexpected action ${action}`);
+  });
+  const applied = await applyPlan(
+    runner,
+    { envId: 'env-test', region: 'ap-shanghai', wxAppId: 'wx-test' },
+    plan,
+    new Date(),
+    { timeoutMs: 10, intervalMs: 0, wait: async () => {} },
+  );
+  const create = runner.calls.find((call) => call.action === 'CreateTable');
+  assert.deepEqual(create.body.PermissionInfo, { EnvId: 'env-test', AclTag: 'ADMINONLY' });
+  assert.equal(applied[0].requestId, 'request-CreateTable');
+});
+
+test('写响应成功但资源不可见时超时且不记为已执行', async () => {
+  const runner = new RecordingRunner((action) => {
+    if (action === 'CreateTable') return { RequestId: 'request-create' };
+    if (action === 'ListTables') return { Tables: [] };
+    throw new Error(`unexpected action ${action}`);
+  });
+  await assert.rejects(
+    () =>
+      applyPlan(
+        runner,
+        { envId: 'env-test', region: 'ap-shanghai' },
+        {
+          conflicts: [],
+          actions: [{ type: 'create_collection', collection: 'activities' }],
+        },
+        new Date(),
+        { timeoutMs: 0, intervalMs: 0, wait: async () => {} },
+      ),
+    /仍不可见/,
+  );
+});
+
+test('全部已存在且一致时跳过', () => {
+  assert.deepEqual(buildPlan(completeState()), { actions: [], conflicts: [] });
+});
+
+test('同名索引定义冲突会阻断', async () => {
+  const state = completeState();
+  state.indexes.get('activities')[0].keys = [['status', -1]];
+  const plan = buildPlan(state);
+  assert.equal(plan.conflicts[0].reason, '同名索引定义不一致');
+  await assert.rejects(
+    () => applyPlan(new RecordingRunner(), { envId: 'env-test' }, plan),
+    /阻止 apply/,
+  );
+});
+
+test('权限不一致时仅生成修复权限计划', () => {
+  const state = completeState();
+  state.rules.set('admins', { AclTag: 'ADMINONLY' });
+  const plan = buildPlan(state);
+  assert.deepEqual(plan.actions, [{ type: 'set_rule', collection: 'admins' }]);
+});
+
+test('demo 存在时只验证不覆盖，不存在时只插入固定 ID', () => {
+  const state = completeState();
+  assert.equal(
+    buildPlan(state).actions.some((action) => action.type === 'insert_demo'),
+    false,
+  );
+  state.demo = undefined;
+  assert.deepEqual(buildPlan(state).actions, [
+    { type: 'insert_demo', collection: 'activities', id: 'demo_activity_001' },
+  ]);
+});
+
+test('demo 使用 BSON Extended JSON Date，且时间关系正确', () => {
+  const demo = createDemoActivity(new Date('2026-09-29T00:00:00.000Z'));
+  assert.deepEqual(validateDemo(demo), []);
+  assert.equal(typeof demo.event_start.$date.$numberLong, 'string');
+});
+
+test('runner 错误令 bootstrap 拒绝并由入口设置非零退出码', async () => {
+  const runner = new RecordingRunner(() => {
+    throw new Error('read failed');
+  });
+  await assert.rejects(
+    () =>
+      runBootstrap({
+        runner,
+        target: { envId: 'env-test', region: 'ap-shanghai' },
+        mode: 'plan',
+        output: () => {},
+      }),
+    /read failed/,
+  );
+});
+
+test('入口参数错误时以非零状态退出', () => {
+  const result = spawnSync(process.execPath, ['scripts/bootstrap-cloudbase.mjs', '--unknown'], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /不支持的参数/);
+});
+
+test('CLI runner 解析 data envelope、使用无 shell 参数数组，并拒绝业务失败', () => {
+  let invocation;
+  const runner = new CloudBaseCliRunner({
+    spawn(command, args, options) {
+      invocation = { command, args, options };
+      return {
+        status: 0,
+        stdout: 'ℹ → TCB.ListTables\n{"data":{"RequestId":"request-list","Tables":[]}}',
+        stderr: '',
+      };
+    },
+  });
+  const response = runner.api(
+    'ListTables',
+    { EnvId: 'env-test', MgoLimit: 1000 },
+    { envId: 'env-test', region: 'ap-shanghai' },
+  );
+  assert.deepEqual(response, { RequestId: 'request-list', Tables: [] });
+  assert.equal(invocation.command, 'npx');
+  assert.equal(invocation.options.shell, false);
+  assert.deepEqual(invocation.args.slice(0, 10), [
+    '--yes',
+    '--package',
+    '@cloudbase/cli@3.8.4',
+    'tcb',
+    '--json',
+    '--env-id',
+    'env-test',
+    '--region',
+    'ap-shanghai',
+    'api',
+  ]);
+
+  const processFailed = new CloudBaseCliRunner({
+    spawn: () => ({ status: 2, stdout: '', stderr: 'token=fixture-value request failed' }),
+  });
+  assert.throws(
+    () => processFailed.api('ListTables', {}, { envId: 'env-test', region: 'ap-shanghai' }),
+    /ListTables 失败: token=<已隐藏> request failed/,
+  );
+
+  const stdoutFailed = new CloudBaseCliRunner({
+    spawn: () => ({
+      status: 1,
+      stdout:
+        'ℹ → TCB.UpdateTable\n{"error":{"code":"UnknownParameter","message":"ExpireAfterSeconds is not recognized","requestId":"request-ttl"}}',
+      stderr: '',
+    }),
+  });
+  assert.throws(
+    () => stdoutFailed.api('UpdateTable', {}, { envId: 'env-test', region: 'ap-shanghai' }),
+    /UnknownParameter: ExpireAfterSeconds is not recognized \(RequestId: request-ttl\)/,
+  );
+
+  const businessFailed = new CloudBaseCliRunner({
+    spawn: () => ({
+      status: 0,
+      stdout:
+        '{"data":{"RequestId":"request-failed","Error":{"Code":"InvalidParameter","Message":"bad body"}}}',
+      stderr: '',
+    }),
+  });
+  assert.throws(
+    () => businessFailed.api('CreateTable', {}, { envId: 'env-test', region: 'ap-shanghai' }),
+    /CreateTable 失败: InvalidParameter: bad body/,
+  );
+
+  const ambiguous = new CloudBaseCliRunner({
+    spawn: () => ({ status: 0, stdout: '{"data":{}}', stderr: '' }),
+  });
+  assert.throws(
+    () => ambiguous.api('CreateTable', {}, { envId: 'env-test', region: 'ap-shanghai' }),
+    /缺少 RequestId/,
+  );
+});
+
+test('环境覆盖必须与显式确认完全一致', () => {
+  const config = { envId: 'allowed' };
+  assert.deepEqual(resolveTarget(config, { region: 'ap-shanghai' }), {
+    envId: 'allowed',
+    region: 'ap-shanghai',
+  });
+  assert.throws(() => resolveTarget(config, { envId: 'other', region: 'ap-shanghai' }), /追加/);
+  assert.equal(
+    resolveTarget(config, {
+      envId: 'other',
+      confirmedEnvId: 'other',
+      region: 'ap-shanghai',
+    }).envId,
+    'other',
+  );
+});
+
+test('OAuth 与 Strava 集合包含唯一、普通过期时间和同步索引', () => {
+  assert.equal(COLLECTIONS.includes('oauth_states'), true);
+  assert.equal(COLLECTIONS.includes('strava_credentials'), true);
+  assert.equal(COLLECTIONS.includes('strava_snapshots'), true);
+  assert.deepEqual(
+    INDEXES.find((item) => item.name === 'oauth_states_expires_at'),
+    {
+      collection: 'oauth_states',
+      name: 'oauth_states_expires_at',
+      keys: [['expires_at', 1]],
+      unique: false,
+    },
+  );
+  assert.equal(INDEXES.find((item) => item.name === 'oauth_states_state_hash')?.unique, true);
+  assert.equal(
+    INDEXES.some((item) => item.name === 'strava_snapshots_synced_at'),
+    true,
+  );
+});

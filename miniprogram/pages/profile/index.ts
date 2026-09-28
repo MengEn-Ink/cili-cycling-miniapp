@@ -1,33 +1,37 @@
 import { rideService } from '../../services/ride-service';
 import { appStore } from '../../store/app-store';
-
+import { runPageTask } from '../../services/page-service';
 function identityViewData() {
   return {
-    openid: appStore.openid,
     role: appStore.role,
     isSuper: appStore.isSuper,
     authStatus: appStore.authStatus,
     authError: appStore.authError,
-    canSwitchRole: appStore.canSwitchRole(),
+    isAdmin: appStore.authStatus === 'authenticated' && appStore.role === 'admin',
   };
 }
-
 Page({
   data: {
     profile: null as any,
-    openid: null as string | null,
+    loading: true,
+    error: '',
     role: 'member',
     isSuper: false,
     authStatus: 'idle',
     authError: '',
-    canSwitchRole: true,
+    isAdmin: false,
   },
   async onShow() {
-    const profilePromise = rideService.getProfile();
-    const authPromise = appStore.refreshIdentity(wx.cloud);
+    const auth = appStore.refreshIdentity(wx.cloud);
     this.setData(identityViewData());
-    const [profile] = await Promise.all([profilePromise, authPromise]);
-    this.setData({ profile, ...identityViewData() });
+    await auth;
+    const state = await runPageTask(() => rideService.getProfile(), '资料服务暂不可用');
+    this.setData({
+      profile: state.data || null,
+      loading: false,
+      error: state.error,
+      ...identityViewData(),
+    });
   },
   edit() {
     wx.navigateTo({ url: '/pages/profile-edit/index' });
@@ -35,25 +39,11 @@ Page({
   strava() {
     wx.navigateTo({ url: '/pages/strava/index' });
   },
+  admin() {
+    if (this.data.isAdmin) wx.navigateTo({ url: '/pages/admin/activity-list/index' });
+  },
   async retryAuth() {
-    const authPromise = appStore.refreshIdentity(wx.cloud);
+    await appStore.refreshIdentity(wx.cloud);
     this.setData(identityViewData());
-    await authPromise;
-    this.setData(identityViewData());
-  },
-  copyOpenid() {
-    if (!appStore.openid) return;
-    wx.setClipboardData({ data: appStore.openid });
-  },
-  switchRole() {
-    const role = this.data.role === 'member' ? 'admin' : 'member';
-    try {
-      appStore.switchRole(role);
-      this.setData(identityViewData());
-      wx.showToast({ title: '已切换 ' + role, icon: 'none' });
-    } catch {
-      this.setData(identityViewData());
-      wx.showToast({ title: '真实身份已生效，无法本地切换', icon: 'none' });
-    }
   },
 });

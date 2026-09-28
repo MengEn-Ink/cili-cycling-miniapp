@@ -33,6 +33,40 @@
       "timeout": 10,
       "memorySize": 256,
       "installDependency": true
+    },
+    {
+      "name": "profile",
+      "handler": "index.main",
+      "runtime": "Nodejs20.19",
+      "timeout": 10,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "strava-auth",
+      "handler": "index.main",
+      "runtime": "Nodejs20.19",
+      "timeout": 30,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
+      "name": "strava-callback",
+      "handler": "index.main",
+      "runtime": "Nodejs20.19",
+      "timeout": 15,
+      "memorySize": 256,
+      "installDependency": true
     }
-  ]
+  ],
+  "gateway": {
+    "routes": [
+      {
+        "path": "/strava/callback",
+        "target": "function:strava-callback",
+        "enableAuth": false,
+        "domain": "*"
+      }
+    ]
+  }
 }

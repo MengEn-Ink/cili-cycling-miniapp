@@ -1,143 +1,98 @@
 # CloudBase 数据契约与安全边界
 
-> 适用范围：一期活动只读、队员报名/我的报名、管理员审批。所有业务读写均经云函数；小程序端不直连以下集合。
+所有业务集合客户端读写均拒绝，仅云函数访问。运行期身份只来自 `cloud.getWXContext().OPENID`；响应统一为 `{ ok: true, data }` 或 `{ ok: false, error }`。任何日志和审计不得包含 PII、OAuth code、state 明文、Secret 或 token。
 
-## 1. 统一约定
-
-- 时间字段使用 CloudBase `Date`（种子数据可用 ISO 8601，写入时转换为 Date）。
-- 所有运行期身份只来自 `cloud.getWXContext().OPENID`。客户端的 `openid / role / status / capacity / occupied_count / amount / price / review_* / serial_no` 会被拒绝。
-- 响应统一为 `{ ok: true, data }` 或 `{ ok: false, error: { code, message, details? } }`。
-- 软删除统一为 `is_deleted: true`；活动公开查询只接受 `status=published && is_deleted!==true`。
-- 建议将五个集合的客户端安全规则设为**所有客户端读写均拒绝**（控制台中选择“仅云函数可读写”或等价自定义规则）。即使活动是公开信息，也由 `activity-read` 做字段白名单，避免内部字段泄漏。
-
-## 2. 集合字段
+## 集合
 
 ### `activities`
 
-```text
-_id: string
-title, cover_image, description: string
-schedule: [{ time, title, location, remark? }]
-route: { start, end, distance_km, elevation_m, level, gpx_file_id? }
-notices, equipment: string[]
-fee: { included: string[], excluded: string[], remark: string } // 仅说明，不是支付金额
-capacity: integer > 0
-occupied_count: integer >= 0       // pending + approved
-signup_deadline, event_start, event_end: Date
-status: draft | published | finished
-is_deleted: boolean
-created_by, created_at, updated_at  // 内部字段，不对队员响应
-```
-
-公开白名单不含 `created_by / created_at / updated_at / is_deleted`。`occupied_count` 是真实占位，口径严格为 `pending + approved`。
+活动公开字段、`capacity`、`occupied_count`、`signup_deadline/event_start/event_end`、`status` 与内部审计字段。公开读取只允许 `published && is_deleted !== true`。
 
 ### `registrations`
 
-```text
-_id: "reg_" + sha256(activity_id + NUL + openid) // 确定性唯一键
-activity_id, openid: string
-status: pending | approved | rejected | cancelled
-options: { bike_mode: own | rent, experience: beginner | intermediate | regular,
-           rental_need: string, remark: string }
-profile_snapshot: {
-  nickname: string,
-  real_name_masked, phone_masked, id_number_masked: string
-}                                      // 只落脱敏展示值，不落明文
-strava_status: connected | exempted
-strava_snapshot?: {                    // 只允许统计白名单，绝不含 token
-  years_on_strava, rides_per_month, activities_90d, activities_4w,
-  longest_km, longest_name, max_elevation_m, max_elevation_name,
-  weighted_avg_speed_kmh, race_count, races, clubs, primary_club_name,
-  bikes, coverage, connected_at
-}
-exemption?: { reason, at }
-review_history: [{ reviewer_openid, reviewed_at, action: approve | reject, comment }]
-serial_no?: string
-created_at, updated_at: Date
-```
-
-驳回/取消后重报复用确定性 `_id`，`review_history` 原样保留并回到 `pending`。同一活动同一用户物理上只有一条记录。
+`_id` 是 activity_id 与 openid 的确定性摘要；包含活动选项、脱敏 `profile_snapshot`、无 token 的 `strava_snapshot`、状态与审批历史。`pending + approved` 占位，提交/取消/驳回和名额更新在事务中完成。
 
 ### `profiles`
 
-一期报名函数只**读取**预先由未来安全资料服务生成的资料，不提供资料写入接口：
-
 ```text
 _id: openid
-nickname, title, avatar_file_id: string
-photos: [{ file_id, category, uploaded_at }]
-real_name_masked, phone_masked, id_number_masked: string
-sensitive_status: {
-  phone_verified: boolean,
-  identity_encrypted: boolean,
-  emergency_contact_encrypted: boolean
+nickname, title, avatar_file_id
+photos: [{ file_id, category: ride|bike|other }]
+id_type, gender, emergency_name
+real_name_cipher, id_number_cipher, phone_cipher, emergency_phone_cipher: {
+  v: 1, alg: A256GCM, iv, tag, ciphertext
 }
-sensitive_refs?: {
-  phone_cipher_ref, identity_cipher_ref, emergency_contact_cipher_ref: string
-}                                      // 仅 KMS/密钥方案完成后使用
-strava: {
-  status: connected | disconnected,
-  snapshot?: <上述统计白名单>,
-  exempt?: { enabled, reason, at, granted_by }
-}
-created_at, updated_at: Date
+real_name_masked, id_number_masked, phone_masked, emergency_phone_masked
+strava: { status: connected|disconnected, snapshot? }
+created_at, updated_at
 ```
 
-**禁止**在没有 KMS/环境密钥和独立资料云函数时写入明文手机号、证件号、紧急联系电话或 Strava token。当前代码仅依据 `sensitive_status` 判断资料是否已由可信流程完整保存，对外只返回报名快照中的脱敏值。Strava token 应放在后续专用集合并加密，永不进入本批云函数响应或日志。
+四个敏感字段均用环境变量 `PII_ENCRYPTION_KEY`（base64 32 bytes）独立 AES-256-GCM 加密和随机 12-byte IV。密钥缺失/非法、密文认证失败均 fail closed。`update` 不接受 `phone`；`getPhoneNumber` 只接受微信动态 code 并调用 `cloud.openapi.phonenumber`。响应不返回敏感明文或密文，只返回掩码、`sensitive_status` 与 `completeness`。
 
 ### `admins`
 
-```text
-_id: openid                         // 权限判断唯一键
-display_name: string
-is_super: boolean
-enabled: boolean                    // 缺省视为启用；false 明确禁用
-created_at, updated_at: Date
-```
-
-管理员判断必须同时满足 `_id === cloud.getWXContext().OPENID && enabled !== false`。客户端传入角色无效。
+`_id: openid`，并包含 `display_name/is_super/enabled`。管理员必须由服务端按 WXContext 查询，`enabled !== false`。
 
 ### `audit_logs`
 
+`actor_openid/action/target_id/created_at/detail`。detail 只允许非敏感状态字段。
+
+### `oauth_states`
+
 ```text
-_id: auto
-actor_openid: string
-action: string                      // 例如 registration.approve/reject
-target_id: string
-created_at: Date
-detail: { from_status?, to_status?, reason? }
+_id: sha256(state)              # 文档主键天然唯一
+state_hash: sha256(state)       # 唯一索引
+openid
+expires_at                      # 应用层强制校验 10 分钟；普通 ASC 索引辅助清理
+consumed_at?                    # callback 事务内一次性写入，存在即拒绝重放
+created_at
 ```
 
-不得记录手机号、证件号、紧急联系电话、Strava access/refresh token。审批日志与报名状态更新在同一事务中提交。
+state 原文至少 32 随机字节，只返回给发起授权的客户端，不落库。callback 在事务中原子检查并写入 `consumed_at`，再严格校验 `expires_at`；因此成功、失败或过期 state 均不可重放。当前 CloudBase `UpdateTable` 不接受 TTL 参数，本集合采用**非物理 TTL，应用层过期 + 限量清理**：`start/status` 每次最多删除 20 条已过期 state，不能以物理删除代替过期或重放校验。
 
-## 3. 索引
+### `strava_credentials`
 
-在 CloudBase 控制台按顺序建立：
+```text
+_id/openid, athlete_id, athlete_name
+access_token_cipher, refresh_token_cipher: { v, alg, iv, tag, ciphertext }
+token_expires_at, scopes, connected_at, updated_at
+```
 
-| 集合 | 索引字段（顺序） | 属性 | 对应查询 |
-| --- | --- | --- | --- |
-| activities | `status ASC, event_start ASC` | 普通 | 已发布活动列表 |
-| registrations | `activity_id ASC, openid ASC` | **唯一** | 双保险业务唯一性；确定性 `_id` 已先保证 |
-| registrations | `activity_id ASC, status ASC, created_at DESC` | 普通 | 管理员按活动/状态审批列表 |
-| registrations | `openid ASC, created_at DESC` | 普通 | 我的报名 |
-| audit_logs | `actor_openid ASC, created_at DESC` | 普通 | 审计追溯 |
+两个 token 使用 `STRAVA_TOKEN_ENCRYPTION_KEY`（base64 32 bytes）分别 AES-256-GCM 加密，永不进入客户端响应。
 
-若 CloudBase 控制台不允许包含 `_id` 逻辑已等价保证的唯一索引，仍应建立 `activity_id + openid` 唯一索引作为数据导入/人工误操作的最后防线。
+### `strava_snapshots`
 
-## 4. 名额与事务取舍
+```text
+_id/openid
+total_km, activities_90d, longest_km, total_elevation_m
+weighted_avg_speed_kmh, latest_activity_at, synced_at
+```
 
-本实现引入 `activities.occupied_count`，而不是在事务中对 `registrations` 做聚合 `count`。原因是 CloudBase Node SDK 的事务能力适合文档点读写，事务内聚合查询的支持和冲突语义不适合作为容量闸门。提交事务会读取活动文档、核对 `occupied_count < capacity`、写确定性报名文档并更新活动计数；同一活动文档成为冲突检测点。取消和驳回在同一事务释放计数，通过不改变计数。
+只统计最近 90 天 Ride 类活动，排除 trainer/commute；每页 200，最多 5 页。加权均速为总距离/总移动时间。
 
-这不是“先 count 后 insert”的窗口。离线测试用串行事务替身锁定满员与状态不变量；真实 CloudBase 的冲突重试、事务超时、热点吞吐仍必须部署后压测，不能以单元测试冒充数据库并发验证。
+## 索引
 
-## 5. 主要错误码
+| 集合 | 字段 | 属性 |
+| --- | --- | --- |
+| activities | status ASC, event_start ASC | 普通 |
+| registrations | activity_id ASC, openid ASC | 唯一 |
+| registrations | activity_id ASC, status ASC, created_at DESC | 普通 |
+| registrations | openid ASC, created_at DESC | 普通 |
+| audit_logs | actor_openid ASC, created_at DESC | 普通 |
+| oauth_states | state_hash ASC | 唯一 |
+| oauth_states | expires_at ASC | 普通；应用层过期与限量清理 |
+| strava_credentials | openid ASC | 唯一 |
+| strava_snapshots | openid ASC | 唯一 |
+| strava_snapshots | synced_at DESC | 普通 |
 
-`UNAUTHENTICATED`、`ADMIN_REQUIRED`、`FORBIDDEN`、`FORBIDDEN_FIELD`、`VALIDATION_FAILED`、`ACTIVITY_NOT_AVAILABLE`、`ACTIVITY_NOT_FOUND`、`SIGNUP_CLOSED`、`PROFILE_INCOMPLETE`、`STRAVA_REQUIRED`、`REGISTRATION_EXISTS`、`REGISTRATION_NOT_FOUND`、`INVALID_TRANSITION`、`REASON_REQUIRED`、`CAPACITY_FULL`、`SCHEMA_INVALID`、`UNKNOWN_ACTION`、`INTERNAL_ERROR`。
+## 主要错误码
 
-## 6. 部署后联调检查
+`UNAUTHENTICATED`、`ADMIN_REQUIRED`、`FORBIDDEN_FIELD`、`VALIDATION_FAILED`、`PROFILE_INCOMPLETE`、`PHONE_CODE_REQUIRED`、`PII_KEY_INVALID`、`STRAVA_CONFIG_INVALID`、`STRAVA_KEY_INVALID`、`OAUTH_STATE_INVALID`、`OAUTH_STATE_EXPIRED`、`STRAVA_NOT_CONNECTED`、`STRAVA_API_FAILED`、`UNKNOWN_ACTION`、`INTERNAL_ERROR`。
 
-1. 建集合、安全规则与索引，并校验活动 `occupied_count` 初值为 0。
-2. 使用测试账号在同一活动并发提交，确认只有容量数请求成功，冲突请求可重试且最终不超额。
-3. 验证缺失文档在当前 SDK 的错误码与 `maybeGet` 兼容。
-4. 验证 `Date` 序列化、复合索引命中、事务冲突/重试行为和单次事务限制。
-5. 在控制台核对审计日志不含敏感数据，并验证普通用户无法调用管理员审批。
+## 部署后验证
+
+1. 校验 8 集合、全拒绝规则与 10 索引，确认 `oauth_states.expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
+2. 真机验证 WXContext openid、微信手机号动态 code，以及资料响应中无明文/密文。
+3. 配置 callback HTTPS 路由、Strava 回调域和小程序业务域名，验证 CSRF、过期与重放。
+4. 验证 token 临期刷新、90 天分页、解绑审计及日志无敏感信息。
+5. 在隔离活动中压测报名容量与审批事务。

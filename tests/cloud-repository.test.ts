@@ -435,16 +435,77 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     await expectCode(new CloudRepository().listActivities(), 'CLOUD_UNAVAILABLE');
   });
 
-  it.each(['getProfile', 'saveProfile', 'setStrava', 'saveActivity'] as const)(
-    '%s 对未实现能力明确失败',
-    async (method) => {
-      const repository = new CloudRepository();
-      await expectCode(
-        Promise.resolve().then(() => (repository[method] as () => Promise<unknown>)()),
-        'NOT_IMPLEMENTED',
-      );
-    },
-  );
+  it('Profile 只发送白名单、手机号只发送动态 code', async () => {
+    const dto = {
+      nickname: '骑手',
+      completeness: 50,
+      real_name_masked: '曹*',
+      phone_masked: '138****5678',
+      sensitive_status: { real_name: true, phone: true },
+    };
+    const { cloud, callFunction } = cloudWith(success(dto), success(dto), success(dto));
+    const repository = new CloudRepository(cloud);
+    expect((await repository.getProfile()).realName).toBe('曹*');
+    await repository.updateProfile({
+      nickname: '新昵称',
+      realName: '曹蒙恩',
+      phone: 'forged',
+    } as any);
+    expectCall(callFunction, 'profile', {
+      action: 'update',
+      nickname: '新昵称',
+      real_name: '曹蒙恩',
+    });
+    await repository.getPhoneNumber('dynamic-code');
+    expectCall(callFunction, 'profile', { action: 'getPhoneNumber', code: 'dynamic-code' });
+  });
+
+  it('Strava 状态、授权、同步与解绑均调用真实云函数', async () => {
+    const status = {
+      connected: true,
+      athlete_name: 'Test Rider',
+      snapshot: {
+        total_km: 42,
+        activities_90d: 2,
+        longest_km: 30,
+        total_elevation_m: 500,
+        weighted_avg_speed_kmh: 24,
+        latest_activity_at: '2026-09-01',
+        synced_at: '2026-09-02',
+      },
+    };
+    const { cloud, callFunction } = cloudWith(
+      success(status),
+      success({
+        authorization_url: 'https://www.strava.com/oauth/authorize?state=x',
+        expires_at: '2026-09-01',
+      }),
+      success(status),
+      success({ connected: false }),
+    );
+    const repository = new CloudRepository(cloud);
+    expect((await repository.getStravaStatus()).snapshot?.totalKm).toBe(42);
+    expect((await repository.startStrava()).authorizationUrl).toContain('https://');
+    expect((await repository.syncStrava()).connected).toBe(true);
+    await repository.disconnectStrava();
+    expect(callFunction.mock.calls.map((x) => x[0])).toEqual([
+      { name: 'strava-auth', data: { action: 'status' } },
+      { name: 'strava-auth', data: { action: 'start' } },
+      { name: 'strava-auth', data: { action: 'sync' } },
+      { name: 'strava-auth', data: { action: 'disconnect' } },
+    ]);
+  });
+
+  it('拒绝无效 Profile/Strava DTO 与动态 code', async () => {
+    const first = cloudWith(success({ nickname: 'x' }));
+    await expectCode(new CloudRepository(first.cloud).getProfile(), 'INVALID_RESPONSE');
+    const second = cloudWith(success({ connected: 'yes' }));
+    await expectCode(new CloudRepository(second.cloud).getStravaStatus(), 'INVALID_RESPONSE');
+    const third = cloudWith();
+    await expectCode(new CloudRepository(third.cloud).getPhoneNumber(''), 'VALIDATION_FAILED');
+    const fourth = cloudWith(success({ authorization_url: 'javascript:bad', expires_at: 'x' }));
+    await expectCode(new CloudRepository(fourth.cloud).startStrava(), 'INVALID_RESPONSE');
+  });
 
   it('CloudRepositoryError 保持稳定名称', () => {
     expect(new CloudRepositoryError('X', 'x')).toMatchObject({

@@ -1,4 +1,11 @@
-import type { Activity, Profile, Registration, RegistrationStatus, StravaStatus } from '../models';
+import type {
+  Activity,
+  Profile,
+  ProfileUpdate,
+  Registration,
+  RegistrationStatus,
+  StravaStatus,
+} from '../models';
 import { activities, profile, registrations } from '../mock/fixtures';
 import { transition } from '../utils/registration';
 import type { RideRepository } from './types';
@@ -28,6 +35,14 @@ export class MockRepository implements RideRepository {
   }
   async getRegistration(id: string) {
     return this.read().registrations.find((x) => x.id === id);
+  }
+  async listReviewRegistrations(activityId: string, status?: RegistrationStatus) {
+    return this.read().registrations.filter(
+      (x) => x.activityId === activityId && (!status || x.status === status),
+    );
+  }
+  async getReviewRegistration(id: string) {
+    return this.getRegistration(id);
   }
   async saveRegistration(v: any) {
     const s = this.read(),
@@ -70,15 +85,29 @@ export class MockRepository implements RideRepository {
   async getProfile() {
     return this.read().profile;
   }
-  async saveProfile(p: Profile) {
+  async updateProfile(patch: ProfileUpdate) {
+    const current = this.read().profile;
+    const p = { ...current, ...patch, photos: patch.photos || current.photos } as Profile;
     const s = this.read();
     s.profile = p;
     this.write(s);
     return p;
   }
-  async setStrava(v: StravaStatus) {
+  async getPhoneNumber() {
+    return this.read().profile;
+  }
+  async getStravaStatus() {
+    return { connected: this.read().stravaStatus === 'connected' };
+  }
+  async startStrava() {
+    return { authorizationUrl: 'https://example.test/mock', expiresAt: new Date().toISOString() };
+  }
+  async syncStrava() {
+    return this.getStravaStatus();
+  }
+  async disconnectStrava() {
     const s = this.read();
-    s.stravaStatus = v;
+    s.stravaStatus = 'pending';
     this.write(s);
   }
   async saveActivity(a: Activity) {

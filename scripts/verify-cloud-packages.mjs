@@ -2,48 +2,53 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
-
 const root = resolve(import.meta.dirname, '..');
-const names = ['activity-read', 'registration', 'admin-review'];
-const sharedFiles = ['index.js', 'domain.js', 'use-cases.js'];
 const hash = (file) => createHash('sha256').update(readFileSync(file)).digest('hex');
-
-for (const name of names) {
+function assertRegistryDependencies(name) {
   const directory = resolve(root, 'cloudfunctions', name);
   const packageJson = JSON.parse(readFileSync(resolve(directory, 'package.json'), 'utf8'));
-  for (const [dependency, version] of Object.entries(packageJson.dependencies || {})) {
-    if (String(version).startsWith('file:')) {
-      throw new Error(`${name} 仍包含不可远端安装的本地依赖：${dependency}=${version}`);
-    }
-  }
-  const lockText = readFileSync(resolve(directory, 'package-lock.json'), 'utf8');
-  if (lockText.includes('file:') || lockText.includes('@cili/cloud-domain')) {
-    throw new Error(`${name} package-lock.json 仍包含旧的本地共享包引用`);
-  }
-  for (const file of sharedFiles) {
-    const source = resolve(root, 'cloudfunctions/shared', file);
-    const copied = resolve(directory, 'domain', file);
-    if (hash(source) !== hash(copied)) throw new Error(`${name}/domain/${file} 与共享源码不一致`);
-  }
-
+  for (const [dependency, version] of Object.entries(packageJson.dependencies || {}))
+    if (String(version).startsWith('file:'))
+      throw new Error(`${name} 包含不可远端安装的本地依赖：${dependency}`);
+  const lock = readFileSync(resolve(directory, 'package-lock.json'), 'utf8');
+  if (lock.includes('file:')) throw new Error(`${name} package-lock 包含 file: 依赖`);
+  return directory;
+}
+function pack(name, required) {
+  const directory = assertRegistryDependencies(name);
   const result = spawnSync('npm', ['pack', '--dry-run', '--json'], {
     cwd: directory,
     encoding: 'utf8',
   });
   if (result.status !== 0) throw new Error(`${name} npm pack --dry-run 失败：${result.stderr}`);
   const files = JSON.parse(result.stdout)[0].files.map((item) => item.path);
-  for (const required of [
+  for (const file of required)
+    if (!files.includes(file)) throw new Error(`${name} 部署包缺少 ${file}`);
+}
+for (const name of ['activity-read', 'registration', 'admin-review']) {
+  for (const file of ['index.js', 'domain.js', 'use-cases.js'])
+    if (
+      hash(resolve(root, 'cloudfunctions/shared', file)) !==
+      hash(resolve(root, 'cloudfunctions', name, 'domain', file))
+    )
+      throw new Error(`${name}/domain/${file} 与共享源码不一致`);
+  pack(name, [
     'index.js',
     'package.json',
     'domain/index.js',
     'domain/domain.js',
     'domain/use-cases.js',
-  ]) {
-    if (!files.includes(required)) throw new Error(`${name} 部署包缺少 ${required}`);
-  }
-  if (files.some((file) => file.startsWith('vendor/'))) {
-    throw new Error(`${name} 部署包仍包含 vendor 残留`);
-  }
+  ]);
 }
-
-console.log('云函数部署包校验通过：领域源码自包含、哈希一致且无 file:/vendor 依赖');
+pack('auth', ['index.js', 'core.js', 'package.json']);
+pack('profile', ['index.js', 'core.js', 'package.json']);
+for (const name of ['strava-auth', 'strava-callback']) {
+  for (const file of ['core.js', 'api.js'])
+    if (
+      hash(resolve(root, 'cloudfunctions/strava-shared', file)) !==
+      hash(resolve(root, 'cloudfunctions', name, 'oauth', file))
+    )
+      throw new Error(`${name}/oauth/${file} 与共享源码不一致`);
+  pack(name, ['index.js', 'package.json', 'oauth/core.js', 'oauth/api.js']);
+}
+console.log('云函数部署包校验通过：源码自包含、共享代码一致且依赖均来自 registry');

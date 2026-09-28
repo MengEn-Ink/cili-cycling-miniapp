@@ -29,6 +29,38 @@ export interface Profile {
   emergencyName: string;
   emergencyPhone: string;
   photos: { id: string; category: string }[];
+  completeness?: number;
+  sensitiveStatus?: {
+    realName: boolean;
+    idNumber: boolean;
+    phone: boolean;
+    emergencyPhone: boolean;
+  };
+}
+export interface ProfileUpdate {
+  nickname?: string;
+  idType?: string;
+  gender?: string;
+  emergencyName?: string;
+  avatarFileId?: string;
+  photos?: { id: string; category: string }[];
+  realName?: string;
+  idNumber?: string;
+  emergencyPhone?: string;
+}
+export interface StravaSnapshot {
+  totalKm: number;
+  rides90d: number;
+  longestKm: number;
+  elevationM: number;
+  speedKmh: number;
+  latestActivityAt: string;
+  syncedAt: string;
+}
+export interface StravaConnection {
+  connected: boolean;
+  athleteName?: string;
+  snapshot?: StravaSnapshot;
 }
 export interface Registration {
   id: string;

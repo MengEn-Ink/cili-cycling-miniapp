@@ -1,27 +1,32 @@
 import { rideService } from '../../services/ride-service';
-import { activities } from '../../mock/fixtures';
 Page({
   data: { loading: true, error: '', items: [] as any[] },
   onShow() {
-    this.load();
+    void this.load();
   },
   async load() {
+    this.setData({ loading: true, error: '' });
     try {
-      const r = await rideService.listRegistrations();
+      const [registrations, activities] = await Promise.all([
+        rideService.listRegistrations(),
+        rideService.listActivities(),
+      ]);
       this.setData({
-        items: r.map((x) => ({
-          ...x,
-          activity: activities.find((a) => a.id === x.activityId),
+        items: registrations.map((item) => ({
+          ...item,
+          activity: activities.find((activity) => activity.id === item.activityId) || {
+            title: '活动信息不可用',
+          },
           statusText: {
             pending: '待审核',
             approved: '已通过',
             rejected: '已驳回',
             cancelled: '已取消',
-          }[x.status],
+          }[item.status],
         })),
       });
-    } catch {
-      this.setData({ error: '报名加载失败' });
+    } catch (error) {
+      this.setData({ error: error instanceof Error ? error.message : '报名加载失败' });
     } finally {
       this.setData({ loading: false });
     }

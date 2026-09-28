@@ -1,19 +1,11 @@
-import { rideService } from '../../../services/ride-service';
-import { activities } from '../../../mock/fixtures';
+import { appStore } from '../../../store/app-store';
 Page({
-  data: { a: null as any },
-  async onLoad(q: any) {
-    const a = q.id
-      ? await rideService.getActivity(q.id)
-      : { ...activities[0], id: 'act-' + Date.now(), title: '未命名骑行活动', status: 'draft' };
-    this.setData({ a });
-  },
-  set(e: any) {
-    this.setData({ ['a.' + e.currentTarget.dataset.k]: e.detail.value });
-  },
-  async save() {
-    await rideService.saveActivity(this.data.a);
-    wx.showToast({ title: '已保存 Mock' });
-    setTimeout(() => wx.navigateBack(), 500);
+  data: { allowed: false, message: '正在验证管理员身份' },
+  async onLoad() {
+    await appStore.refreshIdentity(wx.cloud);
+    this.setData({
+      allowed: appStore.role === 'admin' && appStore.authStatus === 'authenticated',
+      message: '真实云端活动编辑尚未提供后端命令，本页面不会保存或伪造成功。',
+    });
   },
 });

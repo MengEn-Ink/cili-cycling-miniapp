@@ -1,4 +1,11 @@
-import type { Activity, Profile, Registration, RegistrationStatus } from '../models';
+import type {
+  Activity,
+  Profile,
+  ProfileUpdate,
+  Registration,
+  RegistrationStatus,
+  StravaConnection,
+} from '../models';
 import type {
   AdminRegistrationStatusFilter,
   AdminReviewRepository,
@@ -27,7 +34,7 @@ function invalidResponse(): never {
 }
 function unwrap<T>(value: unknown): T {
   if (!isRecord(value) || typeof value.ok !== 'boolean') return invalidResponse();
-  if (value.ok === true) {
+  if (value.ok) {
     if (!Object.prototype.hasOwnProperty.call(value, 'data')) return invalidResponse();
     return value.data as T;
   }
@@ -36,9 +43,8 @@ function unwrap<T>(value: unknown): T {
     typeof value.error.code !== 'string' ||
     !value.error.code ||
     typeof value.error.message !== 'string'
-  ) {
+  )
     return invalidResponse();
-  }
   throw new CloudRepositoryError(value.error.code, value.error.message);
 }
 function expectRecord(value: unknown): Record<string, any> {
@@ -54,6 +60,11 @@ function dateText(value: unknown): string {
   if (value instanceof Date && Number.isFinite(value.getTime())) return value.toISOString();
   return '';
 }
+function requiredId(value: unknown, label: string): string {
+  if (typeof value !== 'string' || !value)
+    throw new CloudRepositoryError('VALIDATION_FAILED', `缺少${label}`);
+  return value;
+}
 function mapActivity(raw: unknown): Activity {
   const value = expectRecord(raw);
   if (
@@ -61,9 +72,8 @@ function mapActivity(raw: unknown): Activity {
     typeof value.title !== 'string' ||
     !['draft', 'published', 'finished'].includes(value.status) ||
     !Number.isInteger(value.capacity)
-  ) {
+  )
     return invalidResponse();
-  }
   const fee = value.fee;
   return {
     id: value._id,
@@ -89,15 +99,45 @@ function mapActivity(raw: unknown): Activity {
     fee: typeof fee === 'string' ? fee : typeof fee?.remark === 'string' ? fee.remark : '',
   };
 }
+function mapProfile(raw: unknown): Profile {
+  const value = expectRecord(raw);
+  if (typeof value.nickname !== 'string' || typeof value.completeness !== 'number')
+    return invalidResponse();
+  const status = isRecord(value.sensitive_status) ? value.sensitive_status : {};
+  return {
+    nickname: value.nickname,
+    title: typeof value.title === 'string' ? value.title : '',
+    realName: typeof value.real_name_masked === 'string' ? value.real_name_masked : '',
+    phone: typeof value.phone_masked === 'string' ? value.phone_masked : '',
+    idType: typeof value.id_type === 'string' ? value.id_type : '身份证',
+    idNumber: typeof value.id_number_masked === 'string' ? value.id_number_masked : '',
+    gender: typeof value.gender === 'string' ? value.gender : '',
+    emergencyName: typeof value.emergency_name === 'string' ? value.emergency_name : '',
+    emergencyPhone:
+      typeof value.emergency_phone_masked === 'string' ? value.emergency_phone_masked : '',
+    photos: Array.isArray(value.photos)
+      ? value.photos.filter(isRecord).map((photo) => ({
+          id: String(photo.file_id || ''),
+          category: String(photo.category || ''),
+        }))
+      : [],
+    completeness: value.completeness,
+    sensitiveStatus: {
+      realName: status.real_name === true,
+      idNumber: status.id_number === true,
+      phone: status.phone === true,
+      emergencyPhone: status.emergency_phone === true,
+    },
+  };
+}
 function mapRegistration(raw: unknown): Registration {
   const value = expectRecord(raw);
   if (
     typeof value._id !== 'string' ||
     typeof value.activity_id !== 'string' ||
     !['pending', 'approved', 'rejected', 'cancelled'].includes(value.status)
-  ) {
+  )
     return invalidResponse();
-  }
   const snapshot = isRecord(value.profile_snapshot) ? value.profile_snapshot : {};
   const strava = isRecord(value.strava_snapshot) ? value.strava_snapshot : {};
   const options = isRecord(value.options) ? value.options : {};
@@ -142,11 +182,29 @@ function mapRegistration(raw: unknown): Registration {
     updatedAt: dateText(value.updated_at),
   };
 }
-function requiredId(value: unknown, label: string): string {
-  if (typeof value !== 'string' || !value) {
-    throw new CloudRepositoryError('VALIDATION_FAILED', `缺少${label}`);
-  }
-  return value;
+function mapStrava(raw: unknown): StravaConnection {
+  const value = expectRecord(raw);
+  if (typeof value.connected !== 'boolean') return invalidResponse();
+  const snapshot = isRecord(value.snapshot) ? value.snapshot : undefined;
+  return {
+    connected: value.connected,
+    athleteName: typeof value.athlete_name === 'string' ? value.athlete_name : undefined,
+    snapshot: snapshot
+      ? {
+          totalKm: typeof snapshot.total_km === 'number' ? snapshot.total_km : 0,
+          rides90d: typeof snapshot.activities_90d === 'number' ? snapshot.activities_90d : 0,
+          longestKm: typeof snapshot.longest_km === 'number' ? snapshot.longest_km : 0,
+          elevationM:
+            typeof snapshot.total_elevation_m === 'number' ? snapshot.total_elevation_m : 0,
+          speedKmh:
+            typeof snapshot.weighted_avg_speed_kmh === 'number'
+              ? snapshot.weighted_avg_speed_kmh
+              : 0,
+          latestActivityAt: dateText(snapshot.latest_activity_at),
+          syncedAt: dateText(snapshot.synced_at),
+        }
+      : undefined,
+  };
 }
 function submissionOptions(value: RegistrationSubmission) {
   return {
@@ -158,10 +216,8 @@ function submissionOptions(value: RegistrationSubmission) {
     remark: typeof value.remark === 'string' ? value.remark : '',
   };
 }
-
 export class CloudRepository implements RideRepository, AdminReviewRepository {
   constructor(private readonly injectedCloud?: CloudApi) {}
-
   private async call<T>(name: string, data: unknown): Promise<T> {
     const api = this.injectedCloud || (typeof wx !== 'undefined' ? wx.cloud : undefined);
     if (!api) throw new CloudRepositoryError('CLOUD_UNAVAILABLE', '当前环境不支持微信云开发');
@@ -172,28 +228,22 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
       throw new CloudRepositoryError('CALL_FAILED', '云函数调用失败');
     }
   }
-
   async listActivities() {
-    return expectRecordArray(await this.call<unknown>('activity-read', { action: 'list' })).map(
-      mapActivity,
-    );
+    return expectRecordArray(await this.call('activity-read', { action: 'list' })).map(mapActivity);
   }
   async getActivity(id: string) {
     return mapActivity(
-      await this.call<unknown>('activity-read', {
-        action: 'detail',
-        activityId: requiredId(id, '活动 ID'),
-      }),
+      await this.call('activity-read', { action: 'detail', activityId: requiredId(id, '活动 ID') }),
     );
   }
   async listRegistrations() {
-    return expectRecordArray(await this.call<unknown>('registration', { action: 'mine' })).map(
+    return expectRecordArray(await this.call('registration', { action: 'mine' })).map(
       mapRegistration,
     );
   }
   async getRegistration(id: string) {
     return mapRegistration(
-      await this.call<unknown>('registration', {
+      await this.call('registration', {
         action: 'detail',
         registrationId: requiredId(id, '报名 ID'),
       }),
@@ -201,7 +251,7 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
   }
   async saveRegistration(value: RegistrationSubmission) {
     return mapRegistration(
-      await this.call<unknown>('registration', {
+      await this.call('registration', {
         action: 'submit',
         activityId: requiredId(value.activityId, '活动 ID'),
         options: submissionOptions(value),
@@ -210,16 +260,12 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
   }
   async updateRegistration(id: string, status: RegistrationStatus, comment?: string) {
     const registrationId = requiredId(id, '报名 ID');
-    if (status === 'cancelled') {
-      return mapRegistration(
-        await this.call<unknown>('registration', { action: 'cancel', registrationId }),
-      );
-    }
-    if (status !== 'approved' && status !== 'rejected') {
+    if (status === 'cancelled')
+      return mapRegistration(await this.call('registration', { action: 'cancel', registrationId }));
+    if (status !== 'approved' && status !== 'rejected')
       throw new CloudRepositoryError('INVALID_TRANSITION', '不支持的状态迁移');
-    }
     return mapRegistration(
-      await this.call<unknown>('admin-review', {
+      await this.call('admin-review', {
         action: 'review',
         registrationId,
         decision: status === 'approved' ? 'approve' : 'reject',
@@ -233,31 +279,67 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
       activityId: requiredId(activityId, '活动 ID'),
     };
     if (status !== undefined) {
-      if (!['pending', 'approved', 'rejected', 'cancelled'].includes(status)) {
+      if (!['pending', 'approved', 'rejected', 'cancelled'].includes(status))
         throw new CloudRepositoryError('VALIDATION_FAILED', '报名状态无效');
-      }
       data.filterStatus = status;
     }
-    return expectRecordArray(await this.call<unknown>('admin-review', data)).map(mapRegistration);
+    return expectRecordArray(await this.call('admin-review', data)).map(mapRegistration);
   }
   async getReviewRegistration(id: string) {
     return mapRegistration(
-      await this.call<unknown>('admin-review', {
+      await this.call('admin-review', {
         action: 'detail',
         registrationId: requiredId(id, '报名 ID'),
       }),
     );
   }
-  getProfile(): Promise<Profile> {
-    throw new CloudRepositoryError('NOT_IMPLEMENTED', '敏感资料云端写入需 KMS 后另行实现');
+  async getProfile() {
+    return mapProfile(await this.call('profile', { action: 'get' }));
   }
-  saveProfile(): Promise<Profile> {
-    throw new CloudRepositoryError('NOT_IMPLEMENTED', '敏感资料云端写入需 KMS 后另行实现');
+  async updateProfile(profile: ProfileUpdate) {
+    const data: Record<string, unknown> = { action: 'update' };
+    const simple: [keyof ProfileUpdate, string][] = [
+      ['nickname', 'nickname'],
+      ['idType', 'id_type'],
+      ['gender', 'gender'],
+      ['emergencyName', 'emergency_name'],
+      ['avatarFileId', 'avatar_file_id'],
+    ];
+    for (const [from, to] of simple)
+      if (typeof profile[from] === 'string') data[to] = profile[from];
+    if (Array.isArray(profile.photos))
+      data.photos = profile.photos.map((item) => ({ file_id: item.id, category: item.category }));
+    if (typeof profile.realName === 'string' && profile.realName) data.real_name = profile.realName;
+    if (typeof profile.idNumber === 'string' && profile.idNumber) data.id_number = profile.idNumber;
+    if (typeof profile.emergencyPhone === 'string' && profile.emergencyPhone)
+      data.emergency_phone = profile.emergencyPhone;
+    return mapProfile(await this.call('profile', data));
   }
-  setStrava(): Promise<void> {
-    throw new CloudRepositoryError('NOT_IMPLEMENTED', 'Strava OAuth 尚未实现');
+  async getPhoneNumber(code: string) {
+    return mapProfile(
+      await this.call('profile', {
+        action: 'getPhoneNumber',
+        code: requiredId(code, '手机号动态 code'),
+      }),
+    );
   }
-  saveActivity(): Promise<Activity> {
-    throw new CloudRepositoryError('NOT_IMPLEMENTED', '活动管理命令不在本期后端范围');
+  async getStravaStatus() {
+    return mapStrava(await this.call('strava-auth', { action: 'status' }));
+  }
+  async startStrava() {
+    const value = expectRecord(await this.call('strava-auth', { action: 'start' }));
+    if (
+      typeof value.authorization_url !== 'string' ||
+      !value.authorization_url.startsWith('https://') ||
+      typeof value.expires_at !== 'string'
+    )
+      return invalidResponse();
+    return { authorizationUrl: value.authorization_url, expiresAt: value.expires_at };
+  }
+  async syncStrava() {
+    return mapStrava(await this.call('strava-auth', { action: 'sync' }));
+  }
+  async disconnectStrava() {
+    await this.call('strava-auth', { action: 'disconnect' });
   }
 }

@@ -8,6 +8,7 @@
     "pages/profile/index",
     "pages/profile-edit/index",
     "pages/strava/index",
+    "pages/strava-webview/index",
     "pages/admin/activity-list/index",
     "pages/admin/activity-edit/index",
     "pages/admin/reviews/index",
@@ -24,8 +25,7 @@
     "list": [
       { "pagePath": "pages/activities/index", "text": "活动" },
       { "pagePath": "pages/registrations/index", "text": "报名" },
-      { "pagePath": "pages/profile/index", "text": "我的" },
-      { "pagePath": "pages/admin/activity-list/index", "text": "管理" }
+      { "pagePath": "pages/profile/index", "text": "我的" }
     ]
   },
   "sitemapLocation": "sitemap.json"
