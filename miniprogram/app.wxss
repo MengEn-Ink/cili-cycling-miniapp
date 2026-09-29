@@ -71,10 +71,11 @@ textarea {
 .card {
   margin-top: 20rpx;
   padding: 28rpx;
-  border: 1rpx solid #37373b;
-  border-radius: 8rpx;
-  background: linear-gradient(145deg, #242427, #19191b);
-  box-shadow: 0 12rpx 30rpx rgba(0, 0, 0, 0.24);
+  border: 1rpx solid rgba(11, 107, 79, 0.08);
+  border-radius: 24rpx;
+  background: #fff;
+  color: #17231e;
+  box-shadow: 0 8rpx 24rpx rgba(23, 35, 30, 0.06);
 }
 
 .title {
@@ -92,7 +93,7 @@ textarea {
 }
 
 .muted {
-  color: #8b8b91;
+  color: #56655e;
 }
 
 .tag {

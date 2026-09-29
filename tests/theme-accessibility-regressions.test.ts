@@ -71,6 +71,48 @@ describe('theme accessibility regressions', () => {
     }
   });
 
+  it('keeps shared card and muted primitives readable on legacy light pages', () => {
+    const app = read('miniprogram/app.wxss');
+    const globalCard = cssBlock(app, '.card');
+    const globalMuted = cssBlock(app, '.muted');
+    expect(declaration(globalCard, 'background').toLowerCase()).toBe('#fff');
+    expect(declaration(globalCard, 'color').toLowerCase()).toBe('#17231e');
+
+    const mutedColor = hexColors(declaration(globalMuted, 'color'))[0];
+    expect(contrast(mutedColor, '#ffffff')).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(mutedColor, '#f5f7f2')).toBeGreaterThanOrEqual(4.5);
+
+    for (const file of [
+      'miniprogram/pages/admin/activity-edit/index.wxml',
+      'miniprogram/pages/credential/index.wxml',
+      'miniprogram/pages/strava/index.wxml',
+      'miniprogram/pages/profile-edit/index.wxml',
+    ]) {
+      expect(read(file)).toMatch(/class="[^"]*\b(?:card|muted)\b/);
+    }
+
+    const activitiesMuted = cssBlock(
+      read('miniprogram/pages/activities/index.wxss'),
+      '.activities-page .muted',
+    );
+    expect(
+      contrast(hexColors(declaration(activitiesMuted, 'color'))[0], '#0b0b0c'),
+    ).toBeGreaterThanOrEqual(4.5);
+
+    const detailStyles = read('miniprogram/pages/activity-detail/index.wxss');
+    const detailCard = cssBlock(detailStyles, '.detail-page .card');
+    expect(declaration(detailCard, 'background')).toContain('#242427');
+    expect(declaration(detailCard, 'color').toLowerCase()).toBe('#f7f7f5');
+    const detailMuted = cssBlock(detailStyles, '.detail-page .muted');
+    expect(
+      contrast(hexColors(declaration(detailMuted, 'color'))[0], '#19191b'),
+    ).toBeGreaterThanOrEqual(4.5);
+
+    const formCard = cssBlock(read('miniprogram/pages/registration-form/index.wxss'), '.form-card');
+    expect(declaration(formCard, 'background')).toContain('#171b1d');
+    expect(declaration(formCard, 'color').toLowerCase()).toBe('#f4f7f2');
+  });
+
   it('lets each page provide empty-state copy and hides decorative state glyphs', () => {
     const source = read('miniprogram/components/state-view/index.ts');
     const template = read('miniprogram/components/state-view/index.wxml');

@@ -6,6 +6,10 @@
   color: #f7f7f5;
 }
 
+.activities-page .muted {
+  color: #a8a8ad;
+}
+
 .brand-lockup {
   display: flex;
   align-items: center;

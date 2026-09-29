@@ -36,7 +36,9 @@
 .form-card {
   margin-top: 12rpx;
   border: 1rpx solid #2b3130;
+  border-radius: 8rpx;
   background: linear-gradient(145deg, #171b1d, #101315);
+  color: #f4f7f2;
   box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.28);
 }
 
