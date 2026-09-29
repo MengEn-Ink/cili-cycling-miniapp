@@ -624,6 +624,56 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     ]);
   });
 
+  it('映射失败的 Strava readiness，保留可重试错误且不伪造快照', async () => {
+    const { cloud } = cloudWith(
+      success({
+        state: 'failed',
+        can_register: false,
+        athlete_name: null,
+        snapshot: null,
+        error: {
+          code: 'STRAVA_API_FAILED',
+          message: 'Strava 暂时不可用',
+          retryable: true,
+        },
+      }),
+    );
+
+    await expect(new CloudRepository(cloud).getStravaReadiness()).resolves.toEqual({
+      state: 'failed',
+      canRegister: false,
+      athleteName: null,
+      snapshot: null,
+      error: {
+        code: 'STRAVA_API_FAILED',
+        message: 'Strava 暂时不可用',
+        retryable: true,
+      },
+    });
+  });
+
+  it('readiness 快照存在最近活动时保留严格校验后的时间', async () => {
+    const { cloud } = cloudWith(
+      success({
+        ...readinessDto,
+        snapshot: {
+          ...readinessDto.snapshot,
+          latest_activity_at: '2026-09-28T04:00:00.000Z',
+        },
+      }),
+    );
+
+    await expect(new CloudRepository(cloud).getStravaReadiness()).resolves.toMatchObject({
+      snapshot: { latestActivityAt: '2026-09-28T04:00:00.000Z' },
+    });
+  });
+
+  it('拒绝非字符串的 readiness 运动员名称', async () => {
+    const { cloud } = cloudWith(success({ ...readinessDto, athlete_name: 42 }));
+
+    await expectCode(new CloudRepository(cloud).getStravaReadiness(), 'INVALID_RESPONSE');
+  });
+
   it('readiness 的旧快照缺少覆盖范围时映射为 null', async () => {
     const snapshot = { ...readinessDto.snapshot } as Record<string, unknown>;
     delete snapshot.coverage_from;
