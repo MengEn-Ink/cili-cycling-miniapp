@@ -2,6 +2,7 @@ import type { StravaReadiness } from '../../models';
 import { runPageTask } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
 import {
+  pollStravaAuthorization,
   pollStravaReadiness,
   stravaReadinessMessage,
 } from '../../services/strava-readiness-service';
@@ -22,6 +23,25 @@ function confirmDisconnect(): Promise<boolean> {
       title: '确认解绑 Strava',
       content: '解绑后将无法提交新的活动报名，已提交记录不受影响。',
       confirmText: '确认解绑',
+      success: (result: { confirm: boolean }) => resolve(result.confirm),
+      fail: () => resolve(false),
+    });
+  });
+}
+
+function copyAuthorizationUrl(url: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    wx.setClipboardData({ data: url, success: resolve, fail: reject });
+  });
+}
+
+function showBrowserGuide(): Promise<boolean> {
+  return new Promise((resolve) => {
+    wx.showModal({
+      title: '授权链接已复制',
+      content: '请打开系统浏览器，粘贴并访问链接完成 Strava 授权；完成后返回微信，本页会自动同步。',
+      confirmText: '我知道了',
+      cancelText: '取消授权',
       success: (result: { confirm: boolean }) => resolve(result.confirm),
       fail: () => resolve(false),
     });
@@ -61,6 +81,21 @@ Page({
     }
 
     let readiness = status.data;
+    if (readiness.state === 'authorizing') {
+      const authorized = await runPageTask(
+        () =>
+          pollStravaAuthorization(() => rideService.getStravaReadiness(), {
+            isCancelled: () => requestId !== this.loadRequestId,
+          }),
+        'Strava 授权状态检查失败',
+      );
+      if (requestId !== this.loadRequestId) return;
+      if (!authorized.data) {
+        this.setData({ loading: false, error: authorized.error });
+        return;
+      }
+      readiness = authorized.data;
+    }
     if (readiness.state === 'syncing' || readiness.state === 'failed') {
       const prepared = await runPageTask(
         () =>
@@ -81,14 +116,32 @@ Page({
   },
   async connect() {
     if (this.data.busyAction) return;
+    const requestId = this.loadRequestId;
     this.setData({ busyAction: 'connect', error: '' });
     try {
       const state = await runPageTask(() => rideService.startStrava(), '无法发起 Strava 授权');
-      this.setData({ error: state.error });
-      if (state.data) {
-        wx.navigateTo({
-          url: '/pages/strava-webview/index?url=' + encodeURIComponent(state.data.authorizationUrl),
-        });
+      if (!state.data) {
+        this.setData({ error: state.error });
+        return;
+      }
+      // 真机 web-view 不能承载未配置为业务域名的 strava.com，授权链接必须交给系统浏览器。
+      try {
+        await copyAuthorizationUrl(state.data.authorizationUrl);
+      } catch {
+        this.setData({ error: '授权链接复制失败，未开始浏览器授权，请重试。' });
+        return;
+      }
+      if (!(await showBrowserGuide())) {
+        this.setData({ error: '已取消浏览器授权；如需连接，请重新点击授权。' });
+        return;
+      }
+      const currentState = this.data.readiness?.state;
+      // modal 回调可能晚于返回微信后的 onShow，只允许同一轮 connect 更新未连接/授权中的旧状态。
+      if (
+        requestId === this.loadRequestId &&
+        (currentState === 'disconnected' || currentState === 'authorizing')
+      ) {
+        this.setReadiness({ ...disconnectedReadiness(), state: 'authorizing' });
       }
     } finally {
       this.setData({ busyAction: null });

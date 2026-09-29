@@ -182,6 +182,7 @@ function mapRegistration(raw: unknown): Registration {
   const snapshot = isRecord(value.profile_snapshot) ? value.profile_snapshot : {};
   const strava = isRecord(value.strava_snapshot) ? value.strava_snapshot : {};
   const options = isRecord(value.options) ? value.options : {};
+  const capability = isRecord(value.capability_profile) ? value.capability_profile : {};
   const exemption = isRecord(value.exemption) ? value.exemption : {};
   const history = Array.isArray(value.review_history) ? value.review_history : [];
   const lastReview =
@@ -200,7 +201,16 @@ function mapRegistration(raw: unknown): Registration {
       gender: '',
       emergencyName: '',
       emergencyPhone: '',
-      photos: [],
+      photos: Array.isArray(capability.photos)
+        ? capability.photos
+            .filter(isRecord)
+            .map((photo) => ({
+              id: typeof photo.file_id === 'string' ? photo.file_id : '',
+              category: typeof photo.category === 'string' ? photo.category : '',
+            }))
+            .filter((photo) => photo.id)
+        : [],
+      avatarId: typeof capability.avatar_file_id === 'string' ? capability.avatar_file_id : '',
     },
     bikeMode: options.bike_mode === 'rent' ? '租车' : '自带车',
     experience:
@@ -209,7 +219,16 @@ function mapRegistration(raw: unknown): Registration {
       ] || '',
     remark: typeof options.remark === 'string' ? options.remark : '',
     strava: {
-      status: value.strava_status === 'exempted' ? 'exempted' : 'connected',
+      status:
+        value.strava_status === 'exempted'
+          ? 'exempted'
+          : value.strava_status === 'syncing'
+            ? 'syncing'
+            : value.strava_status === 'failed'
+              ? 'failed'
+              : value.strava_status === 'connected'
+                ? 'connected'
+                : 'pending',
       reason: typeof exemption.reason === 'string' ? exemption.reason : undefined,
       years: finiteNumberOrNull(strava.years_on_strava),
       totalKm: finiteNumberOrNull(strava.total_km),

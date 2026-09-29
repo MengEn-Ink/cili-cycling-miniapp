@@ -398,10 +398,25 @@ describe('CloudRepository 管理员审批适配', () => {
     expect(callFunction).not.toHaveBeenCalled();
   });
 
-  it('管理员详情使用 admin-review/detail', async () => {
-    const { cloud, callFunction } = cloudWith(success(registration));
-    await new CloudRepository(cloud).getReviewRegistration('r1');
+  it('管理员详情映射能力卡照片白名单且忽略服务端敏感脏字段', async () => {
+    const dto = {
+      ...registration,
+      capability_profile: {
+        avatar_file_id: 'cloud://avatar',
+        photos: [{ file_id: 'cloud://training', category: 'training', token: 'secret' }],
+        access_token: 'secret',
+        openid: 'private',
+      },
+    };
+    const { cloud, callFunction } = cloudWith(success(dto));
+    const result = await new CloudRepository(cloud).getReviewRegistration('r1');
     expectCall(callFunction, 'admin-review', { action: 'detail', registrationId: 'r1' });
+    expect(result?.profile).toMatchObject({
+      avatarId: 'cloud://avatar',
+      photos: [{ id: 'cloud://training', category: 'training' }],
+    });
+    expect(JSON.stringify(result)).not.toContain('secret');
+    expect(JSON.stringify(result)).not.toContain('private');
   });
 
   it('通过只发送服务端审批命令', async () => {

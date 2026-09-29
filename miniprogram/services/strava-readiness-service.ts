@@ -69,6 +69,30 @@ export async function pollStravaReadiness(
   }
 }
 
+export async function pollStravaAuthorization(
+  readStatus: () => Promise<StravaReadiness>,
+  options: PollStravaReadinessOptions = {},
+): Promise<StravaReadiness> {
+  const intervalMs = options.intervalMs ?? 1500;
+  const timeoutMs = options.timeoutMs ?? 30000;
+  const sleep =
+    options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  const now = options.now ?? Date.now;
+  const isCancelled = options.isCancelled ?? (() => false);
+  const startedAt = now();
+  let readiness = await readStatus();
+
+  // 用户从系统浏览器返回微信时没有可靠回调事件，只能在页面可见期间轮询服务端状态。
+  while (readiness.state === 'authorizing' && !isCancelled()) {
+    const elapsed = now() - startedAt;
+    if (elapsed >= timeoutMs) return readiness;
+    await sleep(Math.min(intervalMs, timeoutMs - elapsed));
+    if (isCancelled()) return readiness;
+    readiness = await readStatus();
+  }
+  return readiness;
+}
+
 export function stravaReadinessMessage(readiness: StravaReadiness): string {
   switch (readiness.state) {
     case 'disconnected':

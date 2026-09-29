@@ -1,1 +1,50 @@
-<view class="page"><view class="card danger" wx:if="{{error}}">{{error}}</view><block wx:if="{{x}}"><view class="hero"><view>RIDER IDENTITY</view><view class="hero-title">{{x.profile.nickname}}</view><view>{{x.experience}}</view></view><view class="card"><view class="title">实名资料（仅脱敏）</view><view>{{x.profile.realName}} · {{phone}}</view><view>{{id}}</view></view><view class="card"><view class="row"><view class="title">Strava</view><text class="tag">{{x.strava.status}}</text></view><view class="grid"><view class="metric"><view class="big">{{x.strava.rides90d}}</view><view>近 90 天次数</view></view><view class="metric"><view class="big">{{x.strava.speedKmh}}</view><view>加权均速</view></view><view class="metric"><view class="big">{{x.strava.longestKm}}</view><view>最长 km</view></view></view></view><view class="card"><view class="label">驳回理由（驳回必填）</view><textarea class="textarea" value="{{reason}}" bindinput="reason"/></view><view class="row"><button class="secondary" data-s="rejected" bindtap="act">驳回</button><button class="btn" data-s="approved" bindtap="act">通过</button></view></block></view>
+<view class="page">
+  <view class="card danger" wx:if="{{error}}">{{error}}</view>
+  <block wx:if="{{x && card}}">
+    <view class="capability-card">
+      <view class="capability-visual">
+        <image wx:if="{{card.imageUrl}}" class="rider-photo" src="{{card.imageUrl}}" mode="aspectFill" />
+        <view wx:else class="photo-empty">暂无照片</view>
+        <text class="photo-source">{{card.imageSource}}</text>
+      </view>
+      <view class="identity">
+        <view class="eyebrow">RIDER CAPABILITY</view>
+        <view class="rider-name">{{card.displayName}}</view>
+        <view class="masked-name">{{card.maskedName}}</view>
+        <view class="status {{card.statusTone}}">Strava · {{card.stravaStatus}}</view>
+      </view>
+
+      <view class="facts">
+        <view class="fact"><text>车辆方式</text><strong>{{card.bikeMode}}</strong></view>
+        <view class="fact"><text>骑行经验</text><strong>{{card.experience}}</strong></view>
+      </view>
+
+      <view class="metrics">
+        <view class="metric"><strong>{{card.totalKm}}</strong><text>近 90 天里程</text></view>
+        <view class="metric"><strong>{{card.rides90d}}</strong><text>近 90 天次数</text></view>
+        <view class="metric"><strong>{{card.longestKm}}</strong><text>最长骑行</text></view>
+        <view class="metric"><strong>{{card.elevationM}}</strong><text>累计爬升</text></view>
+        <view class="metric"><strong>{{card.speedKmh}}</strong><text>加权均速</text></view>
+      </view>
+      <view class="sync-time">数据同步时间：{{card.syncedAt}}</view>
+    </view>
+
+    <view class="card detail-card">
+      <view class="title">报名快照</view>
+      <view class="detail-line">实名资料：{{x.profile.realName}} · {{phone}}</view>
+      <view class="detail-line">证件：{{id}}</view>
+      <view class="detail-line">报名用车：{{card.bikeMode}}</view>
+      <view class="detail-line">经验：{{card.experience}}</view>
+      <view class="detail-line">备注：{{card.remark}}</view>
+    </view>
+
+    <view class="card">
+      <view class="label">驳回理由（驳回必填）</view>
+      <textarea class="textarea" value="{{reason}}" bindinput="reason" />
+    </view>
+    <view class="row actions">
+      <button class="secondary" data-s="rejected" bindtap="act">驳回</button>
+      <button class="btn" data-s="approved" bindtap="act">通过</button>
+    </view>
+  </block>
+</view>

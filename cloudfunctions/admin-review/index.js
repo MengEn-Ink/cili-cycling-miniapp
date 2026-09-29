@@ -11,6 +11,7 @@ const {
   publicRegistration,
   reviewRegistration,
 } = require('./domain');
+const { adminCapabilityProfile } = require('./capability-card');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 
@@ -103,7 +104,13 @@ exports.main = async (event = {}) => {
         fail('VALIDATION_FAILED', '缺少报名 ID');
       const registration = await maybeGet(db.collection('registrations'), event.registrationId);
       if (!registration) fail('REGISTRATION_NOT_FOUND', '报名不存在');
-      return ok(publicRegistration(registration));
+      const profile = registration.openid
+        ? await maybeGet(db.collection('profiles'), registration.openid)
+        : undefined;
+      return ok({
+        ...publicRegistration(registration),
+        capability_profile: adminCapabilityProfile(profile),
+      });
     }
     fail('UNKNOWN_ACTION', '未知操作');
   } catch (error) {

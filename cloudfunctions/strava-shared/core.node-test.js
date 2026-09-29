@@ -6,6 +6,7 @@ const {
   SNAPSHOT_MAX_AGE_MS,
   SYNC_LEASE_MS,
   config,
+  keyFrom,
   encrypt,
   decrypt,
   createState,
@@ -68,6 +69,15 @@ test('配置缺失 fail closed 且授权 URL 不含 secret', () => {
   assert.equal(url.includes(fakeSecret), false);
   assert.equal(state.expiresAt.toISOString(), '1970-01-01T00:10:00.000Z');
   assert.equal(hashState(state.raw), state.hash);
+});
+test('Strava token key 只 trim 首尾空白并拒绝内部空白', () => {
+  assert.deepEqual(keyFrom(`  \n${key}\t `), Buffer.from(key, 'base64'));
+  assert.equal(config({ ...env, STRAVA_TOKEN_ENCRYPTION_KEY: `\n${key}  ` }).key, key);
+  const middle = `${key.slice(0, 10)} ${key.slice(10)}`;
+  assert.throws(() => keyFrom(middle), { code: 'STRAVA_KEY_INVALID' });
+  assert.throws(() => config({ ...env, STRAVA_TOKEN_ENCRYPTION_KEY: middle }), {
+    code: 'STRAVA_KEY_INVALID',
+  });
 });
 test('token 使用 AES-GCM 且不保留明文', () => {
   const doc = tokenDocument('openid', token(), key, new Date());

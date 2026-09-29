@@ -1,0 +1,141 @@
+.capability-card {
+  overflow: hidden;
+  margin-bottom: 24rpx;
+  padding: 28rpx;
+  border-radius: 30rpx;
+  color: #eef8f1;
+  background: linear-gradient(145deg, #092f27, #0d624b);
+  box-shadow: 0 18rpx 46rpx rgba(8, 65, 49, 0.22);
+}
+
+.capability-visual {
+  position: relative;
+  height: 360rpx;
+  overflow: hidden;
+  border-radius: 22rpx;
+  background: #dce8df;
+}
+
+.rider-photo,
+.photo-empty {
+  width: 100%;
+  height: 100%;
+}
+
+.photo-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #60736a;
+  font-size: 28rpx;
+}
+
+.photo-source {
+  position: absolute;
+  right: 18rpx;
+  bottom: 18rpx;
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  color: #fff;
+  font-size: 22rpx;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.identity {
+  padding: 26rpx 4rpx 18rpx;
+}
+
+.eyebrow,
+.sync-time {
+  color: #a9d6c3;
+  font-size: 22rpx;
+  letter-spacing: 2rpx;
+}
+
+.rider-name {
+  margin-top: 8rpx;
+  font-size: 48rpx;
+  font-weight: 800;
+}
+
+.masked-name {
+  margin-top: 4rpx;
+  color: #c7ddd4;
+}
+
+.status {
+  display: inline-block;
+  margin-top: 16rpx;
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.status.success {
+  color: #a8f0c7;
+}
+.status.warning {
+  color: #ffe09a;
+}
+.status.danger {
+  color: #ffb9b4;
+}
+.status.muted {
+  color: #d4ded9;
+}
+
+.facts,
+.metrics {
+  display: flex;
+  flex-wrap: wrap;
+  border-top: 1rpx solid rgba(255, 255, 255, 0.16);
+}
+
+.fact {
+  display: flex;
+  box-sizing: border-box;
+  width: 50%;
+  padding: 20rpx 4rpx;
+  flex-direction: column;
+}
+
+.fact text,
+.metric text {
+  color: #a9c9bc;
+  font-size: 22rpx;
+}
+
+.fact strong,
+.metric strong {
+  margin-bottom: 6rpx;
+  font-size: 28rpx;
+}
+
+.metric {
+  display: flex;
+  box-sizing: border-box;
+  width: 50%;
+  padding: 22rpx 4rpx;
+  flex-direction: column;
+}
+
+.sync-time {
+  padding-top: 18rpx;
+  border-top: 1rpx solid rgba(255, 255, 255, 0.16);
+  letter-spacing: 0;
+}
+
+.detail-card .title {
+  margin-bottom: 14rpx;
+}
+.detail-line {
+  margin-top: 10rpx;
+  color: #526159;
+}
+.actions {
+  gap: 20rpx;
+}
+.actions button {
+  flex: 1;
+}

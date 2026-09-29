@@ -1,8 +1,16 @@
 import { rideService } from '../../../services/ride-service';
 import { appStore } from '../../../store/app-store';
 import { maskId, maskPhone } from '../../../utils/mask';
+import { capabilityCard } from '../../../utils/capability-card';
 Page({
-  data: { x: null as any, phone: '', id: '', reason: '能力与路线要求暂不匹配', error: '' },
+  data: {
+    x: null as any,
+    card: null as any,
+    phone: '',
+    id: '',
+    reason: '能力与路线要求暂不匹配',
+    error: '',
+  },
   async onLoad(q: any) {
     await appStore.refreshIdentity(wx.cloud);
     if (appStore.role !== 'admin' || appStore.authStatus !== 'authenticated') {
@@ -11,7 +19,13 @@ Page({
     }
     try {
       const x = await rideService.getReviewRegistration(q.id || '');
-      if (x) this.setData({ x, phone: maskPhone(x.profile.phone), id: maskId(x.profile.idNumber) });
+      if (x)
+        this.setData({
+          x,
+          card: capabilityCard(x),
+          phone: maskPhone(x.profile.phone),
+          id: maskId(x.profile.idNumber),
+        });
     } catch (error) {
       this.setData({ error: error instanceof Error ? error.message : '报名详情加载失败' });
     }

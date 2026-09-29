@@ -8,7 +8,6 @@
     "pages/profile/index",
     "pages/profile-edit/index",
     "pages/strava/index",
-    "pages/strava-webview/index",
     "pages/admin/activity-list/index",
     "pages/admin/activity-edit/index",
     "pages/admin/reviews/index",
