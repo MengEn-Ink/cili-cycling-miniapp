@@ -20,6 +20,7 @@ page {
 .rider-card {
   position: relative;
   overflow: hidden;
+  aspect-ratio: 3 / 4;
   min-height: 936rpx;
   border: 1rpx solid rgba(255, 255, 255, 0.12);
   border-radius: 34rpx;
@@ -161,13 +162,18 @@ page {
 }
 
 .rider-name {
+  display: -webkit-box;
   overflow: hidden;
+  max-height: 2.08em;
   margin-top: 12rpx;
   color: #fff;
   font-size: 68rpx;
   font-weight: 900;
   line-height: 1.04;
-  overflow-wrap: anywhere;
+  text-overflow: ellipsis;
+  word-break: break-all;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   text-shadow: 0 6rpx 28rpx rgba(0, 0, 0, 0.36);
 }
 
@@ -375,10 +381,6 @@ page {
 }
 
 @media (max-width: 350px) {
-  .rider-card {
-    min-height: 900rpx;
-  }
-
   .card-topline,
   .identity-block,
   .core-summary,

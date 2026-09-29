@@ -3,25 +3,62 @@ import { runPageTask } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
 import { personalCardViewModel } from '../../utils/personal-card';
 
+type PersonalCardView = ReturnType<typeof personalCardViewModel>;
+
 Page({
+  loadRequestId: 0,
   data: {
     loading: true,
     error: '',
-    card: null as ReturnType<typeof personalCardViewModel> | null,
+    card: null as PersonalCardView | null,
   },
-  async onLoad() {
+  async onShow() {
     await this.load();
   },
+  onHide() {
+    this.loadRequestId += 1;
+  },
+  onUnload() {
+    this.loadRequestId += 1;
+  },
   async load() {
+    const requestId = ++this.loadRequestId;
     this.setData({ loading: true, error: '' });
     const result = await runPageTask(
       () => rideService.getPersonalCapabilityCard(),
       '骑行名片暂时无法加载',
     );
+    if (requestId !== this.loadRequestId) return;
     this.setData({
       loading: false,
       error: result.error,
       card: result.data ? personalCardViewModel(result.data as PersonalCapabilityCard) : null,
+    });
+  },
+  backgroundError(event: {
+    currentTarget: { dataset: { index?: number | string; url?: string } };
+  }) {
+    const card = this.data.card as PersonalCardView | null;
+    if (!card) return;
+    const failedUrl = event.currentTarget.dataset.url;
+    const reportedIndex = Number(event.currentTarget.dataset.index);
+    const matchingIndex =
+      Number.isInteger(reportedIndex) && card.backgrounds[reportedIndex]?.url === failedUrl
+        ? reportedIndex
+        : card.backgrounds.findIndex(
+            (background: PersonalCardView['backgrounds'][number]) => background.url === failedUrl,
+          );
+    if (matchingIndex < 0) return;
+    const backgrounds = card.backgrounds.filter(
+      (_: PersonalCardView['backgrounds'][number], index: number) => index !== matchingIndex,
+    );
+    this.setData({
+      card: {
+        ...card,
+        backgrounds,
+        hasBackgrounds: backgrounds.length > 0,
+        hasMultipleBackgrounds: backgrounds.length > 1,
+      },
     });
   },
   repairStrava() {

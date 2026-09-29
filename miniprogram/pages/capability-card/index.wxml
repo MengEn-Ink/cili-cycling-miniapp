@@ -21,7 +21,14 @@
         indicator-active-color="#ffffff"
       >
         <swiper-item wx:for="{{card.backgrounds}}" wx:key="url">
-          <image class="card-photo" src="{{item.url}}" mode="aspectFill" />
+          <image
+            class="card-photo"
+            src="{{item.url}}"
+            mode="aspectFill"
+            data-url="{{item.url}}"
+            data-index="{{index}}"
+            binderror="backgroundError"
+          />
         </swiper-item>
       </swiper>
       <view wx:else class="card-visual alpine-fallback">
