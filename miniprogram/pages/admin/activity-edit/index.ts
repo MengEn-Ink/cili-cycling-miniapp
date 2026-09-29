@@ -159,6 +159,9 @@ Page({
     const driverReady =
       support === 0 ||
       Boolean(f.driverNickname.trim() && f.licensePlate.trim() && f.contactPhone.trim());
+    const feeReady = Boolean(
+      f.fee.trim() || this.data.feeIncluded.length || this.data.feeExcluded.length,
+    );
     const canPublish = Boolean(
       Number.isInteger(capacity) &&
       capacity > 0 &&
@@ -172,9 +175,7 @@ Page({
       deadline < start &&
       start < end &&
       driverReady &&
-      f.fee.trim() &&
-      String(this.data.coverImage || '').trim() &&
-      String(this.data.routeGpxFileId || '').trim(),
+      feeReady,
     );
     this.setData({ canPublish });
   },
@@ -183,7 +184,7 @@ Page({
     const nextStatus = String(
       event.currentTarget.dataset.status || this.data.status,
     ) as ActivityInput['status'];
-    if (nextStatus !== 'draft' && !this.data.canPublish) {
+    if (this.data.status === 'draft' && nextStatus === 'published' && !this.data.canPublish) {
       this.setData({ error: '发布前请完成重新确认清单' });
       return;
     }

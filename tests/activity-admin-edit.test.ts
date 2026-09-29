@@ -154,4 +154,56 @@ describe('管理员普通编辑保留未展示的活动字段', () => {
     expect(template).toContain('路线文件 ID（选填）');
     expect(template).toMatch(/data-status="published"[^>]*disabled="{{saving \|\| !canPublish}}"/);
   });
+
+  it('无封面和 GPX 但有费用清单的完整草稿可以发布', async () => {
+    const draft: EditableActivity = {
+      ...activity,
+      status: 'draft',
+      coverImage: '',
+      route: { ...activity.route, gpxFileId: '' },
+      fee: '',
+      feeIncluded: ['往返车费'],
+      feeExcluded: [],
+    };
+    rideService.getAdminActivity.mockResolvedValueOnce(draft);
+    rideService.saveActivity.mockResolvedValueOnce({ ...draft, status: 'published', version: 8 });
+
+    await page.onLoad({ id: draft.id });
+    expect(page.data.canPublish).toBe(true);
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(rideService.saveActivity).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'published', coverImage: '' }),
+      draft.id,
+      draft.version,
+    );
+  });
+
+  it.each(['published', 'finished'] as const)(
+    '报名截止后允许 published 活动保存为 %s',
+    async (nextStatus) => {
+      const historical = {
+        ...activity,
+        status: 'published' as const,
+        deadline: '2025-10-15T12:00:00.000Z',
+        startAt: '2025-10-18T00:00:00.000Z',
+        endAt: '2025-10-18T08:00:00.000Z',
+      };
+      rideService.getAdminActivity.mockResolvedValueOnce(historical);
+      rideService.saveActivity.mockResolvedValueOnce({
+        ...historical,
+        status: nextStatus,
+        version: 8,
+      });
+
+      await page.onLoad({ id: historical.id });
+      await page.save({ currentTarget: { dataset: { status: nextStatus } } });
+
+      expect(rideService.saveActivity).toHaveBeenCalledWith(
+        expect.objectContaining({ status: nextStatus }),
+        historical.id,
+        historical.version,
+      );
+    },
+  );
 });
