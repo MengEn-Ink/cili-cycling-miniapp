@@ -25,9 +25,24 @@
     "color": "#A8A8AD",
     "selectedColor": "#D55B1F",
     "list": [
-      { "pagePath": "pages/activities/index", "text": "活动" },
-      { "pagePath": "pages/registrations/index", "text": "报名" },
-      { "pagePath": "pages/profile/index", "text": "我的" }
+      {
+        "pagePath": "pages/activities/index",
+        "text": "活动",
+        "iconPath": "assets/tabbar/activities.png",
+        "selectedIconPath": "assets/tabbar/activities-active.png"
+      },
+      {
+        "pagePath": "pages/registrations/index",
+        "text": "报名",
+        "iconPath": "assets/tabbar/registrations.png",
+        "selectedIconPath": "assets/tabbar/registrations-active.png"
+      },
+      {
+        "pagePath": "pages/profile/index",
+        "text": "我的",
+        "iconPath": "assets/tabbar/profile.png",
+        "selectedIconPath": "assets/tabbar/profile-active.png"
+      }
     ]
   },
   "sitemapLocation": "sitemap.json"

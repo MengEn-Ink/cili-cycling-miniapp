@@ -338,3 +338,43 @@ page {
   background: transparent !important;
   color: #f7f7f5 !important;
 }
+.avatar-source-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-top: 14rpx;
+  padding: 14rpx 16rpx;
+  border: 1rpx solid #3c3c40;
+  border-radius: 8rpx;
+  background: #18181a;
+}
+.avatar-source-label {
+  flex: 0 0 auto;
+  color: #96969a;
+  font-size: 22rpx;
+  font-weight: 700;
+  letter-spacing: 2rpx;
+}
+.avatar-source-options {
+  display: flex;
+  gap: 10rpx;
+}
+.avatar-source-option {
+  min-width: 150rpx;
+  padding: 12rpx 20rpx;
+  border: 1rpx solid #555559;
+  border-radius: 4rpx;
+  color: #c7c7c9;
+  font-size: 22rpx;
+  font-weight: 800;
+  text-align: center;
+}
+.avatar-source-option.active {
+  border-color: #d55b1f;
+  background: rgba(213, 91, 31, 0.16);
+  color: #f38a50;
+}
+.avatar-source-option.is-disabled {
+  opacity: 0.35;
+}

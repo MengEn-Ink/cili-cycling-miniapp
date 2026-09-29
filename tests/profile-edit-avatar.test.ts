@@ -143,7 +143,7 @@ describe('资料编辑头像回写', () => {
     expect(uploadFile).not.toHaveBeenCalled();
     expect(page.data.p.photos).toEqual([]);
     expect(wx.showToast).toHaveBeenCalledWith({
-      title: '照片上传未完成，请检查真机权限与云存储配置',
+      title: '照片上传未完成，请稍后重试',
       icon: 'none',
     });
   });

@@ -163,8 +163,12 @@ Page({
         // 订阅授权只是提醒能力，拒绝、封禁或平台失败都不能阻断报名。
       }
       const item = await rideService.saveRegistration(this.data);
-      if (requestId === this.submitRequestId && this.pageVisible)
-        wx.redirectTo({ url: '/pages/credential/index?id=' + item.id });
+      if (requestId === this.submitRequestId && this.pageVisible) {
+        // 兜底异常响应：缺少记录 ID 时不跳到无效凭证页，提示去“我的报名”核对。
+        if (!item || !item.id)
+          this.setData({ errors: ['报名已提交，但未取得记录，请在“我的报名”中查看'] });
+        else wx.redirectTo({ url: '/pages/credential/index?id=' + item.id });
+      }
     } catch (error) {
       if (requestId === this.submitRequestId && this.pageVisible)
         this.setData({ errors: [error instanceof Error ? error.message : '提交失败'] });

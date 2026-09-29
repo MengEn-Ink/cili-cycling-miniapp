@@ -116,7 +116,7 @@ Page({
           }
         }
       }
-      wx.showToast({ title: '照片上传未完成，请检查真机权限与云存储配置', icon: 'none' });
+      wx.showToast({ title: '照片上传未完成，请稍后重试', icon: 'none' });
       return '';
     }
   },
@@ -144,7 +144,7 @@ Page({
         p: { ...p, photos: [...p.photos, { id: uploadedFileId, category: 'other' }] },
       });
     } catch {
-      wx.showToast({ title: '照片上传未完成，请检查真机权限与云存储配置', icon: 'none' });
+      wx.showToast({ title: '照片上传未完成，请稍后重试', icon: 'none' });
     }
   },
   async save() {

@@ -242,6 +242,10 @@ function deriveReadiness({ credential, snapshot, hasActiveOAuthState }, now = ne
     error: null,
   };
 }
+// Strava 活动可能多达数千条，用展开语法 Math.max(...arr) 会触发引擎传参上限而抛错，统一归约求最大值。
+function maxOf(values, selector, lowest = -Infinity) {
+  return values.reduce((max, item) => Math.max(max, selector(item)), lowest);
+}
 function statistics(activities, { now = new Date(), coverageFrom, coverageTo, coverageComplete }) {
   const rides = activities.filter(ride);
   const distances = rides.map((item) => Number(item.distance));
@@ -259,7 +263,7 @@ function statistics(activities, { now = new Date(), coverageFrom, coverageTo, co
     total_km: known && distance !== null ? Number((distance / 1000).toFixed(2)) : null,
     activities_90d: known ? rides.length : null,
     longest_km:
-      known && distanceKnown ? Number((Math.max(0, ...distances) / 1000).toFixed(2)) : null,
+      known && distanceKnown ? Number((maxOf(distances, (v) => v, 0) / 1000).toFixed(2)) : null,
     total_elevation_m:
       known && elevationKnown
         ? Number(elevations.reduce((sum, value) => sum + value, 0).toFixed(1))
@@ -274,7 +278,7 @@ function statistics(activities, { now = new Date(), coverageFrom, coverageTo, co
             : null,
     latest_activity_at:
       known && datesKnown && dates.length
-        ? new Date(Math.max(...dates.map((date) => date.getTime()))).toISOString()
+        ? new Date(maxOf(dates, (date) => date.getTime())).toISOString()
         : null,
     synced_at: now,
     coverage_from: coverageFrom,

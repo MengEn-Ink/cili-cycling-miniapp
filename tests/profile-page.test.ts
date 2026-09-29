@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const rideService = vi.hoisted(() => ({
   getProfile: vi.fn(),
   getPersonalCapabilityCard: vi.fn(),
+  updateProfile: vi.fn(),
 }));
 
 const appStore = vi.hoisted(() => ({
@@ -87,7 +88,11 @@ describe('个人中心加载状态', () => {
         };
       });
     });
-    vi.stubGlobal('wx', { cloud: {}, navigateTo: vi.fn() });
+    vi.stubGlobal('wx', {
+      cloud: {},
+      navigateTo: vi.fn(),
+      showToast: vi.fn(),
+    });
     vi.stubGlobal('Page', (definition: any) => {
       page = definition;
       page.data = { ...definition.data };
@@ -314,5 +319,56 @@ describe('个人中心加载状态', () => {
     expect(page.data.error).toBe('');
     expect(page.data.authError).toBe('身份服务离线');
     expect(page.data.isAdmin).toBe(false);
+  });
+
+  it('快捷切换到 Strava 头像后持久化偏好并立即换图', async () => {
+    await page.onShow();
+    rideService.updateProfile.mockClear();
+    rideService.updateProfile.mockResolvedValueOnce(profile('山野骑手', 'strava'));
+
+    await page.selectAvatarSource({ currentTarget: { dataset: { source: 'strava' } } });
+
+    expect(rideService.updateProfile).toHaveBeenCalledWith({ avatarSource: 'strava' });
+    expect(page.data).toMatchObject({
+      profileAvatarUrl: 'https://temporary.example/strava-avatar.jpg',
+      avatarSourcePreference: 'strava',
+    });
+    expect(page.data.profile.avatarSource).toBe('strava');
+  });
+
+  it('点击当前已选来源或切换中重复点击不重复请求', async () => {
+    await page.onShow();
+    rideService.updateProfile.mockClear();
+
+    await page.selectAvatarSource({ currentTarget: { dataset: { source: 'wechat' } } });
+
+    expect(rideService.updateProfile).not.toHaveBeenCalled();
+  });
+
+  it('目标来源缺图时提示且不发起保存', async () => {
+    await page.onShow();
+    rideService.updateProfile.mockClear();
+    page.data.profileCapabilityCard = { ...personalCard, stravaAvatarUrl: '' };
+
+    await page.selectAvatarSource({ currentTarget: { dataset: { source: 'strava' } } });
+
+    expect(rideService.updateProfile).not.toHaveBeenCalled();
+    expect(wx.showToast).toHaveBeenCalled();
+    expect(page.data.avatarSourcePreference).toBe('wechat');
+  });
+
+  it('持久化失败时回滚头像与偏好', async () => {
+    await page.onShow();
+    rideService.updateProfile.mockRejectedValueOnce(new Error('update failed'));
+
+    await page.selectAvatarSource({ currentTarget: { dataset: { source: 'strava' } } });
+
+    expect(page.data).toMatchObject({
+      profileAvatarUrl: 'https://temporary.example/avatar.jpg',
+      avatarSourcePreference: 'wechat',
+      avatarSourceSwitching: false,
+    });
+    expect(page.data.profile.avatarSource).toBe('wechat');
+    expect(wx.showToast).toHaveBeenCalled();
   });
 });
