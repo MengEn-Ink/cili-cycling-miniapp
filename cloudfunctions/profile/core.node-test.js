@@ -14,6 +14,7 @@ const {
   mediaOwnerPrefix,
   mediaDocumentId,
   mediaRegistration,
+  inspectMediaObject,
   verifyMediaObject,
   validateMediaUpdate,
   ownerMedia,
@@ -262,22 +263,32 @@ test('registerMedia 落库前必须由服务端确认对象存在且返回 https
       fileList: [{ fileID: fileId, tempFileURL: 'https://temporary.example/photo', status: 0 }],
     })),
   );
-  for (const getTempFileURL of [
-    async () => {
+  assert.equal(
+    await inspectMediaObject(fileId, async () => ({
+      fileList: [{ fileID: fileId, status: -1, errMsg: 'file not found' }],
+    })),
+    'missing',
+  );
+  await assert.rejects(
+    verifyMediaObject(fileId, async () => {
       throw new Error('storage unavailable');
-    },
-    async () => ({ fileList: [{ fileID: fileId, tempFileURL: '', status: -1 }] }),
-    async () => ({
+    }),
+    { code: 'MEDIA_OBJECT_VERIFY_FAILED' },
+  );
+  await assert.rejects(
+    verifyMediaObject(fileId, async () => ({
       fileList: [
         { fileID: 'cloud://env/other', tempFileURL: 'https://temporary.example/x', status: 0 },
       ],
-    }),
-    async () => ({ fileList: [{ fileID: fileId, tempFileURL: 'http://insecure', status: 0 }] }),
-  ]) {
-    await assert.rejects(verifyMediaObject(fileId, getTempFileURL), {
-      code: 'MEDIA_OBJECT_NOT_FOUND',
-    });
-  }
+    })),
+    { code: 'MEDIA_OBJECT_VERIFY_FAILED' },
+  );
+  await assert.rejects(
+    verifyMediaObject(fileId, async () => ({
+      fileList: [{ fileID: fileId, tempFileURL: 'http://insecure', status: 0 }],
+    })),
+    { code: 'MEDIA_OBJECT_VERIFY_FAILED' },
+  );
 });
 
 test('能力卡媒体只选择当前 owner 签发文件，legacy 与他人文件均不可见', () => {

@@ -148,20 +148,35 @@ function mediaRegistration(
     cleanup_after: new Date(createdAt.getTime() + 24 * 60 * 60 * 1000),
   };
 }
-async function verifyMediaObject(fileId, getTempFileURL) {
+function missingMediaSignal(value) {
+  return /not[ _-]?found|not exist|does not exist|file not exist|404/i.test(String(value || ''));
+}
+async function inspectMediaObject(fileId, getTempFileURL) {
+  let response;
   try {
-    const response = await getTempFileURL({ fileList: [fileId] });
-    const found = (Array.isArray(response && response.fileList) ? response.fileList : []).find(
-      (item) => item && item.fileID === fileId,
-    );
-    if (found && Number(found.status) === 0) {
-      const url = new URL(found.tempFileURL);
-      if (url.protocol === 'https:') return true;
-    }
-  } catch {
-    // Normalize storage and URL parsing failures to one stable, non-sensitive error.
+    response = await getTempFileURL({ fileList: [fileId] });
+  } catch (error) {
+    if (missingMediaSignal(error?.code) || missingMediaSignal(error?.errMsg)) return 'missing';
+    throw new ProfileError('MEDIA_OBJECT_VERIFY_FAILED', '暂时无法确认媒体文件');
   }
-  throw new ProfileError('MEDIA_OBJECT_NOT_FOUND', '媒体文件不存在或不可访问');
+  const found = (Array.isArray(response && response.fileList) ? response.fileList : []).find(
+    (item) => item && item.fileID === fileId,
+  );
+  if (!found) throw new ProfileError('MEDIA_OBJECT_VERIFY_FAILED', '暂时无法确认媒体文件');
+  if (Number(found.status) !== 0) {
+    if (missingMediaSignal(found.errMsg) || missingMediaSignal(found.code)) return 'missing';
+    throw new ProfileError('MEDIA_OBJECT_VERIFY_FAILED', '暂时无法确认媒体文件');
+  }
+  try {
+    if (new URL(found.tempFileURL).protocol === 'https:') return 'exists';
+  } catch {
+    // Normalize malformed platform responses below.
+  }
+  throw new ProfileError('MEDIA_OBJECT_VERIFY_FAILED', '暂时无法确认媒体文件');
+}
+async function verifyMediaObject(fileId, getTempFileURL) {
+  if ((await inspectMediaObject(fileId, getTempFileURL)) === 'exists') return true;
+  throw new ProfileError('MEDIA_OBJECT_NOT_FOUND', '媒体文件不存在');
 }
 function registeredMedia(record, item, openid, statuses = ['active']) {
   return Boolean(
@@ -409,6 +424,7 @@ module.exports = {
   mediaOwnerPrefix,
   mediaDocumentId,
   mediaRegistration,
+  inspectMediaObject,
   verifyMediaObject,
   isOwnerMedia,
   validateMediaUpdate,

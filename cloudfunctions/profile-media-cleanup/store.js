@@ -1,6 +1,6 @@
 'use strict';
 
-const { claimDecision } = require('./core');
+const { claimDecision, failureDecision } = require('./core');
 
 function missing(error) {
   return (
@@ -31,13 +31,26 @@ function createCleanupStore(db) {
   }
   return {
     listEligible: async (now, limit) => {
-      const result = await db
-        .collection('profile_media')
-        .where({ status: 'unreferenced', cleanup_after: command.lte(now) })
-        .orderBy('cleanup_after', 'asc')
-        .limit(Math.min(20, limit))
-        .get();
-      return result.data.map((item) => item._id);
+      const bounded = Math.min(20, limit);
+      const specs = [
+        ['unreferenced', 'cleanup_after'],
+        ['deleting', 'delete_lease_expires_at'],
+        ['delete_failed', 'retry_at'],
+      ];
+      const results = await Promise.all(
+        specs.map(([status, field]) =>
+          db
+            .collection('profile_media')
+            .where({ status, [field]: command.lte(now) })
+            .orderBy(field, 'asc')
+            .limit(bounded)
+            .get(),
+        ),
+      );
+      return [...new Set(results.flatMap((result) => result.data.map((item) => item._id)))].slice(
+        0,
+        bounded,
+      );
     },
     claim: (id, fence) =>
       db.runTransaction(async (tx) => {
@@ -60,17 +73,22 @@ function createCleanupStore(db) {
         status: 'deleted',
         deleted_at: fence.now,
         delete_lease_id: '',
+        delete_lease_expires_at: null,
+        retry_at: null,
         cleanup_after: null,
         last_error_code: '',
         updated_at: fence.now,
       }),
     markFailed: (id, fence) =>
-      fencedUpdate(id, fence.leaseId, {
-        status: 'delete_failed',
-        delete_failed_at: fence.now,
-        delete_lease_id: '',
-        last_error_code: fence.errorCode,
-        updated_at: fence.now,
+      db.runTransaction(async (tx) => {
+        const collection = tx.collection('profile_media');
+        const current = await get(collection, id);
+        if (!current || current.status !== 'deleting' || current.delete_lease_id !== fence.leaseId)
+          return false;
+        await collection.doc(id).update({
+          data: failureDecision(current, fence.now, fence.errorCode),
+        });
+        return true;
       }),
   };
 }

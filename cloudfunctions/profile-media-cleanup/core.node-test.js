@@ -10,6 +10,7 @@ try {
 }
 const authorizeCleanup = subject.authorizeCleanup || (() => 'missing');
 const claimDecision = subject.claimDecision || (() => ({ kind: 'missing' }));
+const failureDecision = subject.failureDecision || (() => ({ status: 'missing' }));
 const drainMediaCleanup = subject.drainMediaCleanup || (async () => ({ deleted: -1 }));
 
 const now = new Date('2026-09-29T12:00:00.000Z');
@@ -58,6 +59,7 @@ test('claim 前重查 owner profile；仍引用则恢复 active，不引用才�
     status: 'deleting',
     delete_lease_id: 'lease-1',
     delete_claimed_at: now,
+    delete_lease_expires_at: new Date('2026-09-29T12:05:00.000Z'),
     delete_attempts: 1,
     updated_at: now,
   });
@@ -71,6 +73,84 @@ test('claim 前重查 owner profile；仍引用则恢复 active，不引用才�
     null,
   );
   assert.equal(claimDecision(record, { _id: 'another', photos: [] }, now, 'lease-1'), null);
+});
+
+test('过期 deleting 可 fenced 重领，未过期 lease 不重复删除', () => {
+  const expired = claimDecision(
+    {
+      ...record,
+      status: 'deleting',
+      delete_attempts: 1,
+      delete_lease_expires_at: new Date('2026-09-29T11:59:59.000Z'),
+    },
+    { _id: 'owner', photos: [] },
+    now,
+    'lease-2',
+  );
+  assert.equal(expired.kind, 'claimed');
+  assert.equal(expired.update.delete_lease_id, 'lease-2');
+  assert.equal(expired.update.delete_attempts, 2);
+  assert.equal(
+    claimDecision(
+      {
+        ...record,
+        status: 'deleting',
+        delete_lease_expires_at: new Date('2026-09-29T12:00:01.000Z'),
+      },
+      { _id: 'owner', photos: [] },
+      now,
+      'lease-2',
+    ),
+    null,
+  );
+});
+
+test('delete_failed 按退避重试并在最大次数后进入 terminal', () => {
+  const retry = claimDecision(
+    {
+      ...record,
+      status: 'delete_failed',
+      delete_attempts: 2,
+      retry_at: new Date('2026-09-29T11:59:59.000Z'),
+    },
+    { _id: 'owner', photos: [] },
+    now,
+    'lease-3',
+  );
+  assert.equal(retry.kind, 'claimed');
+  assert.equal(retry.update.delete_attempts, 3);
+  assert.equal(
+    claimDecision(
+      {
+        ...record,
+        status: 'delete_failed',
+        delete_attempts: 2,
+        retry_at: new Date('2026-09-29T12:00:01.000Z'),
+      },
+      { _id: 'owner', photos: [] },
+      now,
+      'lease-3',
+    ),
+    null,
+  );
+  assert.deepEqual(failureDecision({ delete_attempts: 2 }, now, 'DELETE_FAILED'), {
+    status: 'delete_failed',
+    delete_lease_id: '',
+    delete_lease_expires_at: null,
+    retry_at: new Date('2026-09-29T12:20:00.000Z'),
+    last_error_code: 'DELETE_FAILED',
+    delete_failed_at: now,
+    updated_at: now,
+  });
+  assert.deepEqual(failureDecision({ delete_attempts: 3 }, now, 'DELETE_FAILED'), {
+    status: 'delete_failed_terminal',
+    delete_lease_id: '',
+    delete_lease_expires_at: null,
+    retry_at: null,
+    last_error_code: 'DELETE_FAILED',
+    delete_failed_at: now,
+    updated_at: now,
+  });
 });
 
 test('executor 有界发现并记录 deleted/delete_failed，不泄漏底层错误', async () => {

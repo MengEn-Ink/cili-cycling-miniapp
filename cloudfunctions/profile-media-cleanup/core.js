@@ -3,6 +3,9 @@
 const crypto = require('node:crypto');
 const TIMER_TRIGGER = 'profile-media-cleanup-worker';
 const MAX_BATCH = 20;
+const DELETE_LEASE_MS = 5 * 60 * 1000;
+const MAX_DELETE_ATTEMPTS = 3;
+const RETRY_BASE_MS = 5 * 60 * 1000;
 
 function coded(code, message) {
   const error = new Error(message);
@@ -27,15 +30,23 @@ function profileReferences(profile, fileId) {
 function claimDecision(record, profile, now, leaseId) {
   if (
     !record ||
-    record.status !== 'unreferenced' ||
     typeof record.owner_openid !== 'string' ||
     !record.owner_openid ||
     typeof record.file_id !== 'string' ||
     !record.file_id.startsWith('cloud://')
   )
     return null;
-  const cleanupAt = new Date(record.cleanup_after);
-  if (!Number.isFinite(cleanupAt.getTime()) || cleanupAt > now) return null;
+  const due = (value) => {
+    const date = new Date(value);
+    return Number.isFinite(date.getTime()) && date <= now;
+  };
+  const eligible =
+    (record.status === 'unreferenced' && due(record.cleanup_after)) ||
+    (record.status === 'deleting' && due(record.delete_lease_expires_at)) ||
+    (record.status === 'delete_failed' &&
+      Number(record.delete_attempts || 0) < MAX_DELETE_ATTEMPTS &&
+      due(record.retry_at));
+  if (!eligible) return null;
   if (profile && profile._id !== record.owner_openid) return null;
   if (profileReferences(profile, record.file_id)) {
     return {
@@ -55,9 +66,24 @@ function claimDecision(record, profile, now, leaseId) {
       status: 'deleting',
       delete_lease_id: leaseId,
       delete_claimed_at: now,
+      delete_lease_expires_at: new Date(now.getTime() + DELETE_LEASE_MS),
       delete_attempts: Number(record.delete_attempts || 0) + 1,
       updated_at: now,
     },
+  };
+}
+
+function failureDecision(record, now, errorCode) {
+  const attempts = Number(record && record.delete_attempts) || 0;
+  const terminal = attempts >= MAX_DELETE_ATTEMPTS;
+  return {
+    status: terminal ? 'delete_failed_terminal' : 'delete_failed',
+    delete_lease_id: '',
+    delete_lease_expires_at: null,
+    retry_at: terminal ? null : new Date(now.getTime() + RETRY_BASE_MS * 2 ** attempts),
+    last_error_code: errorCode,
+    delete_failed_at: now,
+    updated_at: now,
   };
 }
 
@@ -113,9 +139,12 @@ function responseError(error) {
 module.exports = {
   TIMER_TRIGGER,
   MAX_BATCH,
+  DELETE_LEASE_MS,
+  MAX_DELETE_ATTEMPTS,
   authorizeCleanup,
   profileReferences,
   claimDecision,
+  failureDecision,
   drainMediaCleanup,
   responseError,
 };

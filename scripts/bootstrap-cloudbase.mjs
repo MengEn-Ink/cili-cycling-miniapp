@@ -90,6 +90,24 @@ export const INDEXES = Object.freeze([
     unique: false,
   },
   {
+    collection: 'profile_media',
+    name: 'profile_media_status_delete_lease_expires_at',
+    keys: [
+      ['status', 1],
+      ['delete_lease_expires_at', 1],
+    ],
+    unique: false,
+  },
+  {
+    collection: 'profile_media',
+    name: 'profile_media_status_retry_at',
+    keys: [
+      ['status', 1],
+      ['retry_at', 1],
+    ],
+    unique: false,
+  },
+  {
     collection: 'notification_outbox',
     name: 'notification_outbox_target_created_at',
     keys: [

@@ -78,8 +78,14 @@ Page({
       if (uploadedFileId && wx.cloud) {
         let deleted = false;
         try {
-          await wx.cloud.deleteFile({ fileList: [uploadedFileId] });
-          deleted = true;
+          const result = (await wx.cloud.deleteFile({ fileList: [uploadedFileId] })) as {
+            fileList?: { fileID?: string; status?: number }[];
+          };
+          deleted = Boolean(
+            result?.fileList?.some(
+              (item) => item.fileID === uploadedFileId && Number(item.status) === 0,
+            ),
+          );
         } catch {
           // Fall through to the durable orphan report below.
         }

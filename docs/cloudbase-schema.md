@@ -44,17 +44,17 @@ _id: sha256(file_id)
 file_id
 owner_openid
 category: ride|bike|other
-status: unreferenced|active|deleting|deleted|delete_failed
+status: unreferenced|active|deleting|deleted|delete_failed|delete_failed_terminal
 created_at
 cleanup_after                 # unreferenced 上传 24 小时后的回收候选时间
 referenced_at?                # profile update 成功引用时间
-delete_lease_id?, delete_claimed_at?, delete_attempts?
-deleted_at?, delete_failed_at?, last_error_code?
+delete_lease_id?, delete_claimed_at?, delete_lease_expires_at?, delete_attempts?
+deleted_at?, delete_failed_at?, retry_at?, last_error_code?
 ```
 
 客户端先调用 `profile/mediaUploadPath` 取得由 `PROFILE_MEDIA_PATH_SECRET` 和可信 WXContext OPENID 派生的 opaque owner 路径，上传成功后立即调用 `profile/registerMedia`；服务端通过临时 URL API 确认对象真实存在后才登记。登记初始状态为 `unreferenced` 且幂等；只有同一事务内成功写入当前 profile 的媒体才切换为 `active`，被移除的 active 媒体在同一事务内降级为带新 `cleanup_after` 的 `unreferenced`。资料更新、个人名片和管理员名片都要求记录的 `owner_openid`、`file_id`、`category`、`status` 与当前 profile 引用匹配。存量未登记媒体不迁移、不删除，但不进入任何能力卡。临时 URL 整体或逐项失败只减少背景图，不使详情失败。
 
-`profile-media-cleanup` 每 10 分钟最多发现 20 条到期 `unreferenced` 记录。每条记录均在事务内重读 owner 当前 profile：仍被引用则恢复 `active`；未引用才写入唯一删除 lease 并调用云存储删除。结果以 `deleted` 或 `delete_failed + last_error_code` 留存，不记录底层错误文本。上传后 `registerMedia` 与对象删除同时失败时，客户端调用 `reportOrphan`；若上报仍失败则写本地持久重试账本，下次进入资料页继续上报。残余限制是客户端进程在上传成功后、第一次删除/上报/账本写入前被强制终止，此时服务端没有可发现的 file ID。
+`profile-media-cleanup` 每 10 分钟最多处理 20 条到期 `unreferenced`、过期 `deleting` 或到期 `delete_failed` 记录。每条记录均在事务内重读 owner 当前 profile：仍被引用则恢复 `active`；未引用才写入唯一且有过期时间的删除 lease 并调用云存储删除。worker 中断后可 fenced 重领；失败按退避最多尝试 3 次，随后进入 `delete_failed_terminal`，避免永久重试和索引饥饿。结果只保存稳定 `last_error_code`，不记录底层错误文本。上传后 `registerMedia` 与对象删除同时失败时，客户端调用 `reportOrphan`；上报会重新确认对象存在，不存在即视为已清理且不落队列，未知错误则留在本地持久重试账本，下次进入资料页继续上报。残余限制是客户端进程在上传成功后、第一次删除/上报/账本写入前被强制终止，此时服务端没有可发现的 file ID。
 
 ### `notification_outbox`
 
@@ -121,6 +121,8 @@ synced_at
 | audit_logs | actor_openid ASC, created_at DESC | 普通 |
 | profile_media | owner_openid ASC, status ASC, created_at DESC | 普通；owner 媒体查询 |
 | profile_media | status ASC, cleanup_after ASC | 普通；未引用媒体回收扫描 |
+| profile_media | status ASC, delete_lease_expires_at ASC | 普通；中断删除重领扫描 |
+| profile_media | status ASC, retry_at ASC | 普通；失败退避重试扫描 |
 | oauth_states | state_hash ASC | 唯一 |
 | oauth_states | expires_at ASC | 普通；应用层过期与限量清理 |
 | oauth_states | openid ASC, expires_at DESC | 普通；查询用户的活跃授权状态 |
@@ -134,7 +136,7 @@ synced_at
 
 ## 部署后验证
 
-1. 校验 10 集合、全拒绝规则与 15 索引，确认 `profile_media` 的 owner/status 与 cleanup 索引、`oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
+1. 校验 10 集合、全拒绝规则与 17 索引，确认 `profile_media` 的 owner/status、cleanup、delete lease 与 retry 索引、`oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
 2. 真机验证 WXContext openid、微信手机号动态 code、手填手机号来源，以及资料响应中无明文/密文。
 3. 配置 callback HTTPS 路由、Strava 回调域和小程序业务域名，验证 CSRF、过期与重放。
 4. 验证 token 临期刷新、90 天分页、解绑审计及日志无敏感信息；验证跨用户媒体拒绝、未登记 legacy 不进卡、register 失败回收上传对象，以及临时 URL 故障降级。

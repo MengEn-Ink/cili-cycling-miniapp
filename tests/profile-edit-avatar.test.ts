@@ -113,7 +113,15 @@ describe('资料编辑头像回写', () => {
   });
 
   it('registerMedia 失败时不写 photos 并尽力删除刚上传文件', async () => {
-    const deleteFile = vi.fn().mockRejectedValue(new Error('cleanup unavailable'));
+    const deleteFile = vi.fn().mockResolvedValue({
+      fileList: [
+        {
+          fileID: 'cloud://env/profiles/owner/photo.jpg',
+          status: -1,
+          errMsg: 'delete failed',
+        },
+      ],
+    });
     const uploadFile = vi
       .fn()
       .mockResolvedValue({ fileID: 'cloud://env/profiles/owner/photo.jpg' });
