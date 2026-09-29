@@ -9,15 +9,18 @@ class StravaError extends Error {
   }
 }
 function keyFrom(value) {
+  // 配置平台可能在 Secret 首尾附带换行；只容忍首尾空白，内部空白仍按非法配置拒绝。
+  const normalized = String(value || '').trim();
   let key;
   try {
-    key = Buffer.from(value || '', 'base64');
+    key = Buffer.from(normalized, 'base64');
   } catch {
     key = Buffer.alloc(0);
   }
   if (
+    /\s/.test(normalized) ||
     key.length !== 32 ||
-    key.toString('base64').replace(/=+$/, '') !== String(value || '').replace(/=+$/, '')
+    key.toString('base64').replace(/=+$/, '') !== normalized.replace(/=+$/, '')
   )
     throw new StravaError('STRAVA_KEY_INVALID', 'Strava 加密服务未配置');
   return key;
@@ -34,7 +37,7 @@ function config(env) {
     clientId: env.STRAVA_CLIENT_ID,
     clientSecret: env.STRAVA_CLIENT_SECRET,
     callbackUrl: env.STRAVA_CALLBACK_URL,
-    key: env.STRAVA_TOKEN_ENCRYPTION_KEY,
+    key: String(env.STRAVA_TOKEN_ENCRYPTION_KEY || '').trim(),
   };
 }
 function encrypt(value, keyValue) {

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { StravaReadiness, StravaReadinessState } from '../miniprogram/models';
 import {
+  pollStravaAuthorization,
   pollStravaReadiness,
   stravaReadinessMessage,
 } from '../miniprogram/services/strava-readiness-service';
@@ -133,6 +134,20 @@ describe('Strava readiness 轮询', () => {
   );
 });
 
+describe('Strava 浏览器授权恢复轮询', () => {
+  it('返回微信后从 authorizing 轮询到 syncing', async () => {
+    const states = [readiness('authorizing'), readiness('syncing')];
+    const readStatus = vi.fn(async () => states.shift()!);
+    const sleep = vi.fn(async () => undefined);
+
+    await expect(pollStravaAuthorization(readStatus, { sleep })).resolves.toEqual(
+      readiness('syncing'),
+    );
+    expect(readStatus).toHaveBeenCalledTimes(2);
+    expect(sleep).toHaveBeenCalledWith(1500);
+  });
+});
+
 describe('Strava readiness 文案', () => {
   it.each([
     ['disconnected', '尚未绑定 Strava'],
@@ -155,7 +170,7 @@ describe('Strava 页面编排', () => {
     showModal = vi.fn();
     vi.stubGlobal('wx', {
       showModal,
-      navigateTo: vi.fn(),
+      setClipboardData: vi.fn(({ success }: any) => success()),
     });
     vi.stubGlobal('Page', (definition: any) => {
       page = definition;
@@ -302,6 +317,87 @@ describe('Strava 页面编排', () => {
 
     expect(setData).not.toHaveBeenCalled();
     expect(rideService.ensureStravaReady).toHaveBeenCalledOnce();
+  });
+
+  it('复制成功并确认后明确进入等待授权状态', async () => {
+    const authorizationUrl = 'https://www.strava.com/oauth/authorize?state=once';
+    page.data.readiness = readiness('disconnected');
+    rideService.startStrava.mockResolvedValue({ authorizationUrl, expiresAt: 'soon' });
+    showModal.mockImplementation(({ success }: any) => success({ confirm: true }));
+
+    await page.connect();
+
+    expect(wx.setClipboardData).toHaveBeenCalledWith(
+      expect.objectContaining({ data: authorizationUrl }),
+    );
+    expect(page.data.readiness.state).toBe('authorizing');
+    expect(page.data.error).toBe('');
+  });
+
+  it('复制失败时保留明确错误且不伪装授权成功', async () => {
+    rideService.startStrava.mockResolvedValue({
+      authorizationUrl: 'https://www.strava.com/oauth/authorize?state=once',
+      expiresAt: 'soon',
+    });
+    vi.mocked(wx.setClipboardData).mockImplementation(({ fail }: any) => fail(new Error('no')));
+
+    await page.connect();
+
+    expect(page.data.readiness).toBeNull();
+    expect(page.data.error).toContain('复制失败');
+    expect(showModal).not.toHaveBeenCalled();
+  });
+
+  it('用户取消浏览器引导时保留明确取消状态', async () => {
+    rideService.startStrava.mockResolvedValue({
+      authorizationUrl: 'https://www.strava.com/oauth/authorize?state=once',
+      expiresAt: 'soon',
+    });
+    showModal.mockImplementation(({ success }: any) => success({ confirm: false }));
+
+    await page.connect();
+
+    expect(page.data.readiness).toBeNull();
+    expect(page.data.error).toContain('已取消浏览器授权');
+  });
+
+  it('modal 晚回调绝不覆盖 onShow 已恢复的较新 ready 状态', async () => {
+    let resolveGuide!: (result: { confirm: boolean }) => void;
+    page.data.readiness = readiness('disconnected');
+    rideService.startStrava.mockResolvedValue({
+      authorizationUrl: 'https://www.strava.com/oauth/authorize?state=once',
+      expiresAt: 'soon',
+    });
+    showModal.mockImplementation(({ success }: any) => {
+      resolveGuide = success;
+    });
+
+    const connect = page.connect();
+    await flushMicrotasks();
+    expect(showModal).toHaveBeenCalledOnce();
+
+    rideService.getStravaReadiness.mockResolvedValue(readiness('ready'));
+    await page.load();
+    expect(page.data.readiness).toEqual(readiness('ready'));
+
+    resolveGuide({ confirm: true });
+    await connect;
+
+    expect(page.data.readiness).toEqual(readiness('ready'));
+    expect(page.data.readinessMessage).toBe('Strava 数据已准备完成');
+  });
+
+  it('onShow 从 authorizing 恢复并自动准备到 ready', async () => {
+    rideService.getStravaReadiness
+      .mockResolvedValueOnce(readiness('authorizing'))
+      .mockResolvedValueOnce(readiness('syncing'));
+    rideService.ensureStravaReady.mockResolvedValue(readiness('ready'));
+
+    await page.load();
+
+    expect(rideService.getStravaReadiness).toHaveBeenCalledTimes(2);
+    expect(rideService.ensureStravaReady).toHaveBeenCalledOnce();
+    expect(page.data.readiness).toEqual(readiness('ready'));
   });
 
   it('busy 时忽略重复授权', async () => {

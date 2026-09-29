@@ -1,6 +1,6 @@
 export type Role = 'member' | 'admin';
 export type RegistrationStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
-export type StravaStatus = 'pending' | 'connected' | 'exempted';
+export type StravaStatus = 'pending' | 'connected' | 'exempted' | 'syncing' | 'failed';
 export interface Activity {
   id: string;
   title: string;
@@ -30,6 +30,7 @@ export interface Profile {
   emergencyName: string;
   emergencyPhone: string;
   photos: { id: string; category: string }[];
+  avatarId?: string;
   completeness?: number;
   sensitiveStatus?: {
     realName: boolean;
