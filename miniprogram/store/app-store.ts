@@ -4,7 +4,7 @@ import {
   type AuthAttempt,
   type AuthCloudApi,
 } from '../services/auth-service';
-import { isMock } from '../repositories';
+import { isMock } from '../repositories/index';
 
 export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unavailable' | 'error';
 

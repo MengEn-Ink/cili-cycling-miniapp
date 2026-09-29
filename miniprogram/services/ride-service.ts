@@ -1,1 +1,1 @@
-export { repository as rideService } from '../repositories';
+export { repository as rideService } from '../repositories/index';
