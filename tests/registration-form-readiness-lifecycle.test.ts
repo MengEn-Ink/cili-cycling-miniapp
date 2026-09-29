@@ -166,8 +166,11 @@ describe('报名页 Strava readiness 请求代际', () => {
       );
       page.onLoad({ id: 'a1' });
       await page.onShow();
+      expect(page.data.activityCanSubmit).toBe(true);
 
       const submission = page.submit();
+      await flushMicrotasks();
+      expect(rideService.saveRegistration).toHaveBeenCalledOnce();
       page[lifecycle]();
       resolveSubmission({ id: 'r1' });
       await submission;

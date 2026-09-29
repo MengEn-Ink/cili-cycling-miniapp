@@ -3,6 +3,8 @@ import type { Profile, Registration, StravaReadiness } from '../miniprogram/mode
 
 const rideService = vi.hoisted(() => ({
   getProfile: vi.fn(),
+  getActivity: vi.fn(),
+  listRegistrations: vi.fn(),
   getStravaReadiness: vi.fn(),
   ensureStravaReady: vi.fn(),
   getReviewNotificationTemplateIds: vi.fn(),
@@ -48,11 +50,23 @@ describe('报名提交订阅消息授权', () => {
         profile,
         readiness,
         notificationTemplateIds: ['approved-template', 'rejected-template'],
+        activityAction: { kind: 'register', label: '立即报名', enabled: true },
+        activityCanSubmit: true,
         loading: false,
       };
+      page.pageVisible = true;
       page.setData = vi.fn((patch: Record<string, unknown>) => Object.assign(page.data, patch));
     });
     rideService.getProfile.mockResolvedValue(profile);
+    rideService.getActivity.mockResolvedValue({
+      id: 'a1',
+      status: 'published',
+      capacity: 20,
+      occupiedCount: 1,
+      deadline: '2099-10-15T12:00:00.000Z',
+      endAt: '2099-10-18T08:00:00.000Z',
+    });
+    rideService.listRegistrations.mockResolvedValue([]);
     rideService.getStravaReadiness.mockResolvedValue(readiness);
     rideService.getReviewNotificationTemplateIds.mockResolvedValue([
       'approved-template',
