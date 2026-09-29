@@ -41,7 +41,7 @@ created_at, updated_at
 
 审批事务内原子写入的订阅消息发件箱。`_id` 为审批轮次确定性 ID，包含 `type/aggregate_id/target_openid/template_key/payload/status/attempts/attempt_no/last_error/lease_id/lease_expires_at/claimed_by/dispatch_started_at/created_at/updated_at/sent_at`。自动发送采用 `pending|retryable -> claimed -> dispatching -> sent|retryable|failed_terminal|delivery_unknown` 状态机：每次 claim 生成唯一 `lease_id` 并递增 `attempt_no`，所有后续写入都必须在事务内同时匹配 `status + lease_id + attempt_no`。过期 `claimed` 可安全重领；`dispatching` 表示外部调用可能已发生，过期后只能隔离为 `delivery_unknown`，禁止自动重发。最多尝试 5 次，并由 `status + attempts + lease_expires_at` 扫描索引在批次 `limit` 前排除耗尽和不可自动发送的任务。客户端 ACL 全拒绝，仅云函数可读写。
 
-`notification-send` 配置每分钟 CloudBase timer `notification-outbox-worker`，以无 OPENID 的平台服务身份批量扫描并消费，不能依赖管理员账号在线；小程序手工发送仍必须通过管理员白名单。模板缺失等发送前错误进入 `retryable`；微信明确拒绝按错误码进入 `retryable` 或 `failed_terminal`；网络结果不明、worker 在 dispatch 后丢失以及发送成功后的数据库 ACK 失败均进入 `delivery_unknown`。ACK 重试只重试 fenced 数据库写，绝不再次调用微信。模板 ID 只从环境变量 `REVIEW_APPROVED_TEMPLATE_ID`、`REVIEW_REJECTED_TEMPLATE_ID` 读取，不写入 outbox 或其他客户端可写数据。
+`notification-send` 配置每分钟 CloudBase timer `notification-outbox-worker`，以无 OPENID 的平台服务身份批量扫描并消费，不能依赖管理员账号在线；小程序手工发送仍必须通过管理员白名单。模板缺失等发送前错误进入 `retryable`；微信明确拒绝按错误码进入 `retryable` 或 `failed_terminal`；网络结果不明、worker 在 dispatch 后丢失以及发送成功后的数据库 ACK 失败均进入 `delivery_unknown`。ACK 重试只重试 fenced 数据库写，绝不再次调用微信。登录用户可通过只读 `subscription-config` action 获取这两个审核模板 ID 以在报名点击时请求订阅，无需管理员权限；接口只从环境变量 `REVIEW_APPROVED_TEMPLATE_ID`、`REVIEW_REJECTED_TEMPLATE_ID` 构造 allowlist，不返回其他配置，也不把模板 ID 写入 outbox 或客户端可写数据。
 
 ### `admins`
 

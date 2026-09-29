@@ -1,7 +1,23 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { TIMER_TRIGGER, authorizeInvocation } = require('./access');
+const { TIMER_TRIGGER, authorizeInvocation, requireTrustedOpenid } = require('./access');
+test('订阅配置提供可信身份校验边界', () => {
+  assert.equal(typeof requireTrustedOpenid, 'function');
+});
+test('订阅配置要求登录但不要求管理员', async () => {
+  let checked = false;
+  const result = await authorizeInvocation({
+    event: { action: 'subscription-config' },
+    openid: 'member-openid',
+    requireAdmin: async () => {
+      checked = true;
+    },
+  });
+  assert.equal(result.mode, 'subscription-config');
+  assert.equal(checked, false);
+  assert.throws(() => requireTrustedOpenid(''), { code: 'UNAUTHENTICATED' });
+});
 test('CloudBase timer 以服务身份进入 worker 且不查询管理员', async () => {
   let checked = false;
   const result = await authorizeInvocation({

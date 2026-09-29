@@ -7,7 +7,7 @@
 - 微信运行固定使用 `CloudRepository`，不会回退 Mock；`DEVELOPMENT_MOCK` 与 `createRepository({ developmentMock: true })` 仅供显式开发/测试注入，UI 无切换入口。
 - `auth` 只信任 `cloud.getWXContext().OPENID`，真实 role 优先；管理入口仅向已验证管理员显示，所有管理页再次校验。
 - `activity-read` 保持只读；独立 `activity-admin` 提供管理员活动列表、详情、创建和编辑，执行 `draft → published → finished` 单向状态机、容量与关键时间校验。`registration`、`admin-review` 完成我的报名、提交/取消与管理员审批。
-- `notification-send` 消费 Outbox 并执行审批通知发送，保留可重试、幂等处理与失败状态记录。
+- `notification-send` 消费 Outbox 并执行审批通知发送。每次发送使用唯一 lease fencing；外部结果不明或发送后 ACK 失败时隔离为 `delivery_unknown`，不会自动重复调用微信。登录用户只能读取审核模板 allowlist，并在报名点击时请求订阅授权；拒绝、封禁或 API 失败都不阻断报名。
 - `profile` 提供 `get/update/getPhoneNumber`。姓名、手机号、紧急电话分别以 AES-256-GCM 加密；不再采集或返回证件类型、证件号及其状态，存量证件密文只读保留且不解密。对外仅返回必要脱敏值、填写状态和完整度。手机号保留来源和验证状态。
 - `strava-auth` 提供 `status/start/sync/disconnect`；`strava-callback` 处理 OAuth 回调。state 使用 32 字节随机值、SHA-256 落库、10 分钟应用层强制过期和事务内 `consumed_at` 一次性消费；`start/status` 每次限量清理已过期 state。token 使用 AES-256-GCM 加密。同步仅拉最近 90 天、每页 200 条、最多 5 页，并统计里程、次数、最长距离、爬升、距离加权平均速度和最近活动时间。
 - 页面在未登录、资料未完成、函数/路由未部署时显示引导或错误，不伪造成功。相册保留 `chooseMedia -> cloud.uploadFile -> profile.update` 契约，须真机验证权限和存储规则。
@@ -40,6 +40,8 @@ STRAVA_CLIENT_ID=36717              # strava-auth / strava-callback
 STRAVA_CLIENT_SECRET=               # strava-auth / strava-callback
 STRAVA_TOKEN_ENCRYPTION_KEY=        # base64 编码的 32 字节随机密钥，两函数必须一致
 STRAVA_CALLBACK_URL=                # strava-callback 的公网 HTTPS 完整地址
+REVIEW_APPROVED_TEMPLATE_ID=        # notification-send 审核通过订阅消息模板
+REVIEW_REJECTED_TEMPLATE_ID=        # notification-send 审核驳回订阅消息模板
 ```
 
 缺失或非法密钥会 fail closed。不要把 secret、token、openid 或真实用户资料写入代码、fixture、日志或 CI。

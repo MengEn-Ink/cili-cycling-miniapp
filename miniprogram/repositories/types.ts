@@ -36,6 +36,8 @@ export interface RideRepository extends AdminReviewRepository, ActivityAdminRepo
   listRegistrations(): Promise<Registration[]>;
   getRegistration(id: string): Promise<Registration | undefined>;
   saveRegistration(value: RegistrationSubmission): Promise<Registration>;
+  getReviewNotificationTemplateIds(): Promise<string[]>;
+  requestReviewNotificationSubscription(templateIds: string[]): Promise<void>;
   updateRegistration(
     id: string,
     status: RegistrationStatus,

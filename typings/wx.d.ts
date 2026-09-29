@@ -6,6 +6,12 @@ interface WxCloudApi {
 
 interface WxApi {
   cloud?: WxCloudApi;
+  requestSubscribeMessage(options: {
+    tmplIds: string[];
+    success?(result: Record<string, string>): void;
+    fail?(error: unknown): void;
+    complete?(): void;
+  }): void;
   [key: string]: any;
 }
 

@@ -7,6 +7,8 @@ const rideService = vi.hoisted(() => ({
   listRegistrations: vi.fn(),
   getStravaReadiness: vi.fn(),
   ensureStravaReady: vi.fn(),
+  getReviewNotificationTemplateIds: vi.fn(),
+  requestReviewNotificationSubscription: vi.fn(),
   saveRegistration: vi.fn(),
 }));
 
@@ -43,6 +45,8 @@ describe('报名页 Strava readiness 请求代际', () => {
   beforeEach(async () => {
     vi.resetModules();
     for (const value of Object.values(rideService)) value.mockReset();
+    rideService.getReviewNotificationTemplateIds.mockResolvedValue([]);
+    rideService.requestReviewNotificationSubscription.mockResolvedValue(undefined);
     vi.stubGlobal('wx', { navigateTo: vi.fn(), redirectTo: vi.fn() });
     vi.stubGlobal('Page', (definition: any) => {
       page = definition;

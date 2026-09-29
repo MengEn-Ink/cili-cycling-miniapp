@@ -78,6 +78,12 @@ export class MockRepository implements RideRepository {
     this.write(s);
     return x;
   }
+  async getReviewNotificationTemplateIds(): Promise<string[]> {
+    return [];
+  }
+  async requestReviewNotificationSubscription(templateIds: string[]): Promise<void> {
+    void templateIds;
+  }
   async updateRegistration(id: string, status: RegistrationStatus, c?: string) {
     if (status === 'cancelled') return this.cancelRegistration(id);
     if (status === 'approved' || status === 'rejected')

@@ -7,6 +7,7 @@ const {
   buildReadyCondition,
   consumeNotification,
   drainNotifications,
+  subscriptionTemplateIds,
 } = require('./core');
 const env = {
   REVIEW_APPROVED_TEMPLATE_ID: 'approved-template',
@@ -113,6 +114,26 @@ const consume = (f, extra = {}) =>
     randomUUID: () => 'lease-current',
     ...extra,
   });
+test('订阅配置提供 allowlisted template IDs 边界', () => {
+  assert.equal(typeof subscriptionTemplateIds, 'function');
+});
+test('订阅配置只返回去重后的审核模板 ID，不泄漏其他环境变量', () => {
+  assert.deepEqual(
+    subscriptionTemplateIds({
+      REVIEW_APPROVED_TEMPLATE_ID: ' approved-template ',
+      REVIEW_REJECTED_TEMPLATE_ID: 'rejected-template',
+      STRAVA_CLIENT_SECRET: 'must-not-leak',
+    }),
+    ['approved-template', 'rejected-template'],
+  );
+  assert.deepEqual(
+    subscriptionTemplateIds({
+      REVIEW_APPROVED_TEMPLATE_ID: 'same-template',
+      REVIEW_REJECTED_TEMPLATE_ID: 'same-template',
+    }),
+    ['same-template'],
+  );
+});
 test('模板缺失明确落 retryable 且释放租约', async () => {
   const f = fixture();
   await assert.rejects(consume(f, { env: {} }), { code: 'TEMPLATE_MISSING' });

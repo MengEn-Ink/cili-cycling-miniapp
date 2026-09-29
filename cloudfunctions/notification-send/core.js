@@ -34,6 +34,12 @@ function templateFor(key, env) {
   if (typeof value !== 'string' || !value.trim()) fail('TEMPLATE_MISSING', `缺少环境变量 ${name}`);
   return value.trim();
 }
+function subscriptionTemplateIds(env) {
+  return [env.REVIEW_APPROVED_TEMPLATE_ID, env.REVIEW_REJECTED_TEMPLATE_ID]
+    .filter((value) => typeof value === 'string' && value.trim())
+    .map((value) => value.trim())
+    .filter((value, index, values) => values.indexOf(value) === index);
+}
 function messageData(outbox) {
   const payload = outbox.payload || {};
   return {
@@ -173,6 +179,7 @@ module.exports = {
   NotificationError,
   responseError,
   templateFor,
+  subscriptionTemplateIds,
   consumeNotification,
   buildReadyCondition,
   drainNotifications,

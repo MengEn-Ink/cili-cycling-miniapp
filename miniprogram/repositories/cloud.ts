@@ -490,6 +490,34 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
       }),
     );
   }
+  async getReviewNotificationTemplateIds(): Promise<string[]> {
+    const value = expectRecord(
+      await this.call('notification-send', { action: 'subscription-config' }),
+    );
+    if (
+      !Array.isArray(value.template_ids) ||
+      !value.template_ids.every((item) => typeof item === 'string' && item.length > 0)
+    )
+      return invalidResponse();
+    return value.template_ids;
+  }
+  async requestReviewNotificationSubscription(templateIds: string[]): Promise<void> {
+    const tmplIds = templateIds
+      .filter((item) => typeof item === 'string' && item.length > 0)
+      .filter((item, index, values) => values.indexOf(item) === index);
+    if (!tmplIds.length) return;
+    const request = typeof wx !== 'undefined' ? wx.requestSubscribeMessage : undefined;
+    if (typeof request !== 'function')
+      throw new CloudRepositoryError('SUBSCRIPTION_UNAVAILABLE', '当前环境不支持订阅消息');
+    await new Promise<void>((resolve, reject) => {
+      request({
+        tmplIds,
+        success: () => resolve(),
+        fail: () =>
+          reject(new CloudRepositoryError('SUBSCRIPTION_REQUEST_FAILED', '订阅消息授权请求失败')),
+      });
+    });
+  }
   async updateRegistration(id: string, status: RegistrationStatus, comment?: string) {
     if (status === 'cancelled') return this.cancelRegistration(id);
     if (status !== 'approved' && status !== 'rejected')

@@ -68,6 +68,7 @@ Page({
     remark: '',
     readiness: loadingReadiness(),
     readinessMessage: '正在检查 Strava 数据',
+    notificationTemplateIds: [] as string[],
     errors: [] as string[],
     submitting: false,
     loading: true,
@@ -79,10 +80,11 @@ Page({
     const requestId = ++this.loadRequestId;
     const isCancelled = () => requestId !== this.loadRequestId;
     this.setData({ loading: true, errors: [], submitting: false });
-    const [profileState, readinessState, activityState] = await Promise.all([
+    const [profileState, readinessState, activityState, notificationTemplateIds] = await Promise.all([
       runPageTask(() => rideService.getProfile(), '个人资料加载失败'),
       runPageTask(() => loadBoundedReadiness(isCancelled), 'Strava 数据准备状态加载失败'),
       runPageTask(() => loadActivityAction(this.data.activityId), '活动报名状态加载失败'),
+      rideService.getReviewNotificationTemplateIds().catch(() => []),
     ]);
     if (requestId !== this.loadRequestId) return;
     const errors = [profileState.error, readinessState.error, activityState.error].filter(Boolean);
@@ -96,6 +98,7 @@ Page({
       readinessMessage: stravaReadinessMessage(readiness),
       activityAction,
       activityCanSubmit: activityAction.kind === 'register' || activityAction.kind === 'resubmit',
+      notificationTemplateIds,
       loading: false,
       errors,
     });
@@ -124,6 +127,11 @@ Page({
     const requestId = ++this.submitRequestId;
     this.setData({ submitting: true, errors: [] });
     try {
+      try {
+        await rideService.requestReviewNotificationSubscription(this.data.notificationTemplateIds);
+      } catch {
+        // 订阅授权只是提醒能力，拒绝、封禁或平台失败都不能阻断报名。
+      }
       const item = await rideService.saveRegistration(this.data);
       if (requestId === this.submitRequestId && this.pageVisible)
         wx.redirectTo({ url: '/pages/credential/index?id=' + item.id });

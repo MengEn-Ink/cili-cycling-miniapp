@@ -1,6 +1,11 @@
 'use strict';
 const cloud = require('wx-server-sdk');
-const { consumeNotification, drainNotifications, responseError } = require('./core');
+const {
+  consumeNotification,
+  drainNotifications,
+  responseError,
+  subscriptionTemplateIds,
+} = require('./core');
 const { authorizeInvocation } = require('./access');
 const { createNotificationStore } = require('./store');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
@@ -12,6 +17,8 @@ exports.main = async (event = {}) => {
     const openid = cloud.getWXContext().OPENID;
     // 手工入口保留管理员门禁；定时入口使用 CloudBase 平台服务身份。
     const access = await authorizeInvocation({ event, openid, requireAdmin: store.requireAdmin });
+    if (access.mode === 'subscription-config')
+      return { ok: true, data: { template_ids: subscriptionTemplateIds(process.env) } };
     if (access.mode === 'worker')
       return { ok: true, data: await drainNotifications({ store, sender, env: process.env }) };
     const result = await consumeNotification({

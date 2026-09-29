@@ -175,6 +175,60 @@ describe('CloudRepository 活动读取适配', () => {
 });
 
 describe('CloudRepository 队员报名适配', () => {
+  it('提供审核通知订阅配置与请求边界', () => {
+    const repository = new CloudRepository(cloudWith().cloud) as any;
+    expect(typeof repository.getReviewNotificationTemplateIds).toBe('function');
+    expect(typeof repository.requestReviewNotificationSubscription).toBe('function');
+  });
+
+  it('读取审核通知模板只调用 authenticated subscription-config', async () => {
+    const { cloud, callFunction } = cloudWith(
+      success({ template_ids: ['approved-template', 'rejected-template'] }),
+    );
+    const result = await new CloudRepository(cloud).getReviewNotificationTemplateIds();
+
+    expect(result).toEqual(['approved-template', 'rejected-template']);
+    expectCall(callFunction, 'notification-send', { action: 'subscription-config' });
+  });
+
+  it('拒绝异常订阅配置响应', async () => {
+    const { cloud } = cloudWith(success({ template_ids: ['valid', 42] }));
+    await expectCode(
+      new CloudRepository(cloud).getReviewNotificationTemplateIds(),
+      'INVALID_RESPONSE',
+    );
+  });
+
+  it.each(['accept', 'reject', 'ban'])('订阅结果 %s 都完成请求而不改变报名流程', async (value) => {
+    const requestSubscribeMessage = vi.fn(({ success }) => success({ 'approved-template': value }));
+    vi.stubGlobal('wx', { requestSubscribeMessage });
+    const repository = new CloudRepository(cloudWith().cloud);
+
+    await repository.requestReviewNotificationSubscription([
+      'approved-template',
+      '',
+      'approved-template',
+    ]);
+
+    expect(requestSubscribeMessage).toHaveBeenCalledWith({
+      tmplIds: ['approved-template'],
+      success: expect.any(Function),
+      fail: expect.any(Function),
+    });
+    vi.unstubAllGlobals();
+  });
+
+  it('订阅 API 失败映射稳定错误且不泄漏底层信息', async () => {
+    vi.stubGlobal('wx', {
+      requestSubscribeMessage: vi.fn(({ fail }) => fail({ errMsg: 'private platform detail' })),
+    });
+    await expectCode(
+      new CloudRepository(cloudWith().cloud).requestReviewNotificationSubscription(['template']),
+      'SUBSCRIPTION_REQUEST_FAILED',
+    );
+    vi.unstubAllGlobals();
+  });
+
   it('我的报名和本人详情使用 registration 的 mine/detail', async () => {
     const { cloud, callFunction } = cloudWith(success([registration]), success(registration));
     const repository = new CloudRepository(cloud);
