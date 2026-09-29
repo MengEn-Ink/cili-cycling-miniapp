@@ -32,24 +32,24 @@ function createCredentialStore(database) {
       }),
     saveCredential: async (data) => {
       await database.runTransaction(async (tx) => {
+        const profile = await maybeProfile(tx, data.openid);
         await tx
           .collection('strava_credentials')
           .doc(data._id)
           .set({ data: writableDocument(data) });
         await tx.collection('strava_snapshots').doc(data._id).remove();
+        await tx
+          .collection('profiles')
+          .doc(data.openid)
+          .set({
+            data: writableDocument({
+              ...profile,
+              _id: data.openid,
+              strava: { status: 'connected' },
+              updated_at: database.serverDate(),
+            }),
+          });
       });
-      const profile = await maybeProfile(database, data.openid);
-      await database
-        .collection('profiles')
-        .doc(data.openid)
-        .set({
-          data: writableDocument({
-            ...profile,
-            _id: data.openid,
-            strava: { status: 'connected' },
-            updated_at: database.serverDate(),
-          }),
-        });
     },
   };
 }

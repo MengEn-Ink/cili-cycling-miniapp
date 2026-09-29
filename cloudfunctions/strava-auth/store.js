@@ -1,5 +1,10 @@
 'use strict';
-const { isSnapshotFresh, writableDocument } = require('./oauth/core');
+const {
+  isSnapshotFresh,
+  isCredentialUsable,
+  isSnapshotForCredential,
+  writableDocument,
+} = require('./oauth/core');
 
 async function maybeGet(collection, id) {
   try {
@@ -39,7 +44,11 @@ function createReadinessStore(db) {
       return db.runTransaction(async (tx) => {
         const credential = await maybeGet(tx.collection('strava_credentials'), openid);
         const snapshot = await maybeGet(tx.collection('strava_snapshots'), openid);
-        if (!credential || isSnapshotFresh(snapshot, now)) {
+        const snapshotReady =
+          isCredentialUsable(credential) &&
+          isSnapshotForCredential(credential, snapshot) &&
+          isSnapshotFresh(snapshot, now);
+        if (!credential || snapshotReady) {
           return { acquired: false, credential, snapshot };
         }
         const startedAt = new Date(credential.sync_started_at);

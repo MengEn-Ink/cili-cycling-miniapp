@@ -93,6 +93,24 @@ const audit = (action) => ({
   created_at: new Date('2026-09-29T04:00:00.000Z'),
   detail: {},
 });
+const usableCredential = (overrides = {}) => ({
+  _id: 'user-1',
+  athlete_id: 'athlete-current',
+  sync_status: 'failed',
+  access_token_cipher: {
+    alg: 'A256GCM',
+    iv: 'access-iv',
+    tag: 'access-tag',
+    ciphertext: 'access-ciphertext',
+  },
+  refresh_token_cipher: {
+    alg: 'A256GCM',
+    iv: 'refresh-iv',
+    tag: 'refresh-tag',
+    ciphertext: 'refresh-ciphertext',
+  },
+  ...overrides,
+});
 
 test('readReadiness 只把当前用户未过期未消费 state 视为 active', async () => {
   const now = new Date('2026-09-29T04:00:00.000Z');
@@ -113,8 +131,14 @@ test('readReadiness 只把当前用户未过期未消费 state 视为 active', a
 test('acquireSyncLease 在事务内重读且 fresh snapshot 不产生写入', async () => {
   const now = new Date('2026-09-29T04:00:00.000Z');
   const { db, calls } = fakeDb({
-    strava_credentials: { 'user-1': { _id: 'user-1', sync_status: 'failed' } },
-    strava_snapshots: { 'user-1': { _id: 'user-1', synced_at: new Date(now.getTime() - 1) } },
+    strava_credentials: { 'user-1': usableCredential() },
+    strava_snapshots: {
+      'user-1': {
+        _id: 'user-1',
+        athlete_id: 'athlete-current',
+        synced_at: new Date(now.getTime() - 1),
+      },
+    },
   });
   const result = await createReadinessStore(db).acquireSyncLease('user-1', {
     leaseId: 'lease-new',
@@ -131,6 +155,37 @@ test('acquireSyncLease 在事务内重读且 fresh snapshot 不产生写入', as
     calls.some((call) => ['set', 'update', 'add'].includes(call.operation)),
     false,
   );
+});
+
+test('fresh 但凭证不可用或 athlete 不匹配的 snapshot 会获取 lease 自愈', async () => {
+  const now = new Date('2026-09-29T04:00:00.000Z');
+  const cases = [
+    {
+      credential: usableCredential({ refresh_token_cipher: undefined }),
+      snapshot: { athlete_id: 'athlete-current' },
+    },
+    { credential: usableCredential(), snapshot: {} },
+    { credential: usableCredential(), snapshot: { athlete_id: 'athlete-previous' } },
+  ];
+
+  for (const [index, value] of cases.entries()) {
+    const fixture = fakeDb({
+      strava_credentials: { 'user-1': value.credential },
+      strava_snapshots: {
+        'user-1': { _id: 'user-1', ...value.snapshot, synced_at: new Date(now.getTime() - 1) },
+      },
+    });
+    const result = await createReadinessStore(fixture.db).acquireSyncLease('user-1', {
+      leaseId: `lease-${index}`,
+      now,
+      staleBefore: new Date(now.getTime() - 120_000),
+      audit: audit('strava.sync.started'),
+    });
+
+    assert.equal(result.acquired, true);
+    assert.equal(fixture.state.strava_credentials.get('user-1').sync_lease_id, `lease-${index}`);
+    assert.equal(fixture.state.audit_logs.size, 1);
+  }
 });
 
 test('未过期 running lease 不能覆盖，恰好两分钟和更旧 lease 可接管', async () => {
