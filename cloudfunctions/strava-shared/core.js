@@ -1,5 +1,7 @@
 'use strict';
 const crypto = require('node:crypto');
+const SNAPSHOT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const SYNC_LEASE_MS = 2 * 60 * 1000;
 class StravaError extends Error {
   constructor(code, message) {
     super(message);
@@ -132,26 +134,103 @@ function ride(activity) {
     activity.commute !== true
   );
 }
-function statistics(activities, now = new Date()) {
-  const rides = activities.filter(ride);
-  const distance = rides.reduce((sum, item) => sum + (Number(item.distance) || 0), 0);
-  const moving = rides.reduce((sum, item) => sum + (Number(item.moving_time) || 0), 0);
-  const elevation = rides.reduce((sum, item) => sum + (Number(item.total_elevation_gain) || 0), 0);
-  const latest = rides
-    .map((item) => new Date(item.start_date))
-    .filter((date) => Number.isFinite(date.getTime()))
-    .sort((a, b) => b.getTime() - a.getTime())[0];
+function validDate(value) {
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date : undefined;
+}
+function isSnapshotFresh(snapshot, now = new Date()) {
+  const synced = validDate(snapshot && snapshot.synced_at);
+  return Boolean(synced && now.getTime() - synced.getTime() < SNAPSHOT_MAX_AGE_MS);
+}
+function deriveReadiness({ credential, snapshot, hasActiveOAuthState }, now = new Date()) {
+  if (!credential) {
+    return {
+      state: hasActiveOAuthState ? 'authorizing' : 'disconnected',
+      can_register: false,
+      athlete_name: null,
+      snapshot: null,
+      error: null,
+    };
+  }
+  if (isSnapshotFresh(snapshot, now)) {
+    return {
+      state: 'ready',
+      can_register: true,
+      athlete_name: credential.athlete_name || null,
+      snapshot,
+      error: null,
+    };
+  }
+  if (credential.sync_status === 'failed') {
+    return {
+      state: 'failed',
+      can_register: false,
+      athlete_name: credential.athlete_name || null,
+      snapshot: null,
+      error: {
+        code: credential.sync_error_code || 'STRAVA_API_FAILED',
+        message: 'Strava 数据准备失败，请重试',
+        retryable: true,
+      },
+    };
+  }
   return {
-    total_km: Number((distance / 1000).toFixed(2)),
-    activities_90d: rides.length,
-    longest_km: Number(
-      (Math.max(0, ...rides.map((item) => Number(item.distance) || 0)) / 1000).toFixed(2),
-    ),
-    total_elevation_m: Number(elevation.toFixed(1)),
-    weighted_avg_speed_kmh: moving ? Number(((distance / moving) * 3.6).toFixed(2)) : 0,
-    latest_activity_at: latest ? latest.toISOString() : '',
-    synced_at: now,
+    state: 'syncing',
+    can_register: false,
+    athlete_name: credential.athlete_name || null,
+    snapshot: null,
+    error: null,
   };
+}
+function statistics(activities, { now = new Date(), coverageFrom, coverageTo, coverageComplete }) {
+  const rides = activities.filter(ride);
+  const distances = rides.map((item) => Number(item.distance));
+  const movingTimes = rides.map((item) => Number(item.moving_time));
+  const elevations = rides.map((item) => Number(item.total_elevation_gain));
+  const dates = rides.map((item) => validDate(item.start_date));
+  const distanceKnown = distances.every(Number.isFinite);
+  const movingKnown = movingTimes.every((value) => Number.isFinite(value) && value >= 0);
+  const elevationKnown = elevations.every(Number.isFinite);
+  const datesKnown = dates.every(Boolean);
+  const distance = distanceKnown ? distances.reduce((sum, value) => sum + value, 0) : null;
+  const moving = movingKnown ? movingTimes.reduce((sum, value) => sum + value, 0) : null;
+  const known = coverageComplete === true;
+  return {
+    total_km: known && distance !== null ? Number((distance / 1000).toFixed(2)) : null,
+    activities_90d: known ? rides.length : null,
+    longest_km:
+      known && distanceKnown ? Number((Math.max(0, ...distances) / 1000).toFixed(2)) : null,
+    total_elevation_m:
+      known && elevationKnown
+        ? Number(elevations.reduce((sum, value) => sum + value, 0).toFixed(1))
+        : null,
+    weighted_avg_speed_kmh:
+      !known || distance === null || moving === null
+        ? null
+        : rides.length === 0
+          ? 0
+          : moving > 0
+            ? Number(((distance / moving) * 3.6).toFixed(2))
+            : null,
+    latest_activity_at:
+      known && datesKnown && dates.length
+        ? new Date(Math.max(...dates.map((date) => date.getTime()))).toISOString()
+        : null,
+    synced_at: now,
+    coverage_from: coverageFrom,
+    coverage_to: coverageTo,
+    coverage_complete: known,
+  };
+}
+async function fetchActivityWindow(api, accessToken, { after, before, maxPages = 5 }) {
+  const activities = [];
+  for (let page = 1; page <= maxPages; page += 1) {
+    const batch = await api.activities(accessToken, { after, before, page, per_page: 200 });
+    if (!Array.isArray(batch)) throw new StravaError('STRAVA_API_INVALID', 'Strava 活动响应无效');
+    activities.push(...batch);
+    if (batch.length < 200) return { activities, coverageComplete: true };
+  }
+  return { activities, coverageComplete: false };
 }
 async function fetchActivities(api, accessToken, after, maxPages = 5) {
   const all = [];
@@ -206,13 +285,23 @@ async function syncFlow({ openid, env, credential, api, store, now = new Date(),
     access = refreshed.access_token;
     await store.saveCredential(current);
   }
-  const activities = await fetchActivities(
-    api,
-    access,
-    Math.floor((now.getTime() - 90 * 24 * 60 * 60 * 1000) / 1000),
+  const coverageTo = now;
+  const coverageFrom = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+  const window = await fetchActivityWindow(api, access, {
+    after: Math.floor(coverageFrom.getTime() / 1000),
+    before: Math.ceil(coverageTo.getTime() / 1000),
     maxPages,
-  );
-  const snapshot = { _id: openid, openid, ...statistics(activities, now) };
+  });
+  const snapshot = {
+    _id: openid,
+    openid,
+    ...statistics(window.activities, {
+      now,
+      coverageFrom,
+      coverageTo,
+      coverageComplete: window.coverageComplete,
+    }),
+  };
   await store.saveSnapshot(snapshot);
   return { connected: true, athlete_name: current.athlete_name, snapshot };
 }
@@ -245,6 +334,8 @@ function toError(error) {
   };
 }
 module.exports = {
+  SNAPSHOT_MAX_AGE_MS,
+  SYNC_LEASE_MS,
   StravaError,
   keyFrom,
   config,
@@ -255,7 +346,11 @@ module.exports = {
   authorizationUrl,
   consumeState,
   tokenDocument,
+  validDate,
+  isSnapshotFresh,
+  deriveReadiness,
   statistics,
+  fetchActivityWindow,
   fetchActivities,
   callbackFlow,
   syncFlow,
