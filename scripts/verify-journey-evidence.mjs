@@ -4,7 +4,20 @@ import { readFile } from 'node:fs/promises';
 
 const SUCCESS_MESSAGE = 'P0 真实旅程证据校验通过';
 const FAILURE_PREFIX = 'P0 真实旅程证据校验失败';
-const FORBIDDEN = /(phone|id_number|access_token|refresh_token|ciphertext|oauth_code|oauth_state)/i;
+const ROOT_KEYS = new Set(['marker', 'registrationId', 'statuses', 'occupiedCounts', 'audits']);
+const AUDIT_KEYS = new Set(['action', 'target_id', 'created_at']);
+const FORBIDDEN_NORMALIZED_KEYS = new Set([
+  'phone',
+  'openid',
+  'accesstoken',
+  'refreshtoken',
+  'idnumber',
+  'oauthcode',
+  'oauthstate',
+  'ciphertext',
+]);
+const FORBIDDEN_STRING =
+  /(phone|open[_\s-]?id|id[_\s-]?number|access[_\s-]?token|refresh[_\s-]?token|cipher[_\s-]?text|oauth[_\s-]?code|oauth[_\s-]?state)/i;
 const EXPECTED_STATUSES = ['pending', 'approved', 'cancelled', 'pending'];
 const REQUIRED_AUDIT_ACTIONS = [
   'strava.sync.succeeded',
@@ -23,9 +36,13 @@ function fail(reason) {
   throw new EvidenceError(reason);
 }
 
+function normalizeKeyName(key) {
+  return key.replace(/[^a-z0-9]/gi, '').toLowerCase();
+}
+
 function containsForbiddenData(value) {
   if (typeof value === 'string') {
-    return FORBIDDEN.test(value);
+    return FORBIDDEN_STRING.test(value);
   }
 
   if (Array.isArray(value)) {
@@ -34,7 +51,8 @@ function containsForbiddenData(value) {
 
   if (value !== null && typeof value === 'object') {
     return Object.entries(value).some(
-      ([key, nestedValue]) => FORBIDDEN.test(key) || containsForbiddenData(nestedValue),
+      ([key, nestedValue]) =>
+        FORBIDDEN_NORMALIZED_KEYS.has(normalizeKeyName(key)) || containsForbiddenData(nestedValue),
     );
   }
 
@@ -58,25 +76,35 @@ function isValidTimestamp(value) {
   return Number.isFinite(time) && new Date(time).toISOString() === value;
 }
 
-function validateEvidence(evidence) {
+function hasExactKeys(value, expectedKeys) {
+  const actualKeys = Object.keys(value);
+  return (
+    actualKeys.length === expectedKeys.size && actualKeys.every((key) => expectedKeys.has(key))
+  );
+}
+
+function validateEvidenceSchema(evidence) {
   if (evidence === null || Array.isArray(evidence) || typeof evidence !== 'object') {
     fail('根节点必须是对象');
   }
 
-  if (containsForbiddenData(evidence)) {
-    fail('发现敏感字段或敏感字符串');
+  if (!hasExactKeys(evidence, ROOT_KEYS)) {
+    fail('根节点字段不符合证据结构');
   }
 
-  if (typeof evidence.marker !== 'string' || !evidence.marker.startsWith('E2E_RESULT:')) {
-    fail('marker 必须以 E2E_RESULT: 开头');
+  if (typeof evidence.marker !== 'string') {
+    fail('marker 必须是字符串');
   }
 
   if (typeof evidence.registrationId !== 'string' || evidence.registrationId.length === 0) {
     fail('registrationId 必须是非空字符串');
   }
 
-  if (!arraysEqual(evidence.statuses, EXPECTED_STATUSES)) {
-    fail('状态顺序不符合 P0 旅程');
+  if (
+    !Array.isArray(evidence.statuses) ||
+    evidence.statuses.some((status) => typeof status !== 'string')
+  ) {
+    fail('statuses 必须是字符串数组');
   }
 
   const counts = evidence.occupiedCounts;
@@ -88,11 +116,6 @@ function validateEvidence(evidence) {
     fail('occupiedCounts 必须包含五个非负整数');
   }
 
-  const expectedCounts = [counts[0], counts[0] + 1, counts[0] + 1, counts[0], counts[0] + 1];
-  if (!arraysEqual(counts, expectedCounts)) {
-    fail('名额变化不符合提交、幂等、取消、重报流程');
-  }
-
   if (!Array.isArray(evidence.audits)) {
     fail('audits 必须是数组');
   }
@@ -101,7 +124,9 @@ function validateEvidence(evidence) {
     evidence.audits.some(
       (audit) =>
         audit === null ||
+        Array.isArray(audit) ||
         typeof audit !== 'object' ||
+        !hasExactKeys(audit, AUDIT_KEYS) ||
         typeof audit.action !== 'string' ||
         audit.action.length === 0 ||
         typeof audit.target_id !== 'string' ||
@@ -110,6 +135,28 @@ function validateEvidence(evidence) {
     )
   ) {
     fail('审计记录的 action、target_id 或时间戳无效');
+  }
+}
+
+function validateEvidence(evidence) {
+  validateEvidenceSchema(evidence);
+
+  if (containsForbiddenData(evidence)) {
+    fail('发现敏感字段或敏感字符串');
+  }
+
+  if (!evidence.marker.startsWith('E2E_RESULT:')) {
+    fail('marker 必须以 E2E_RESULT: 开头');
+  }
+
+  if (!arraysEqual(evidence.statuses, EXPECTED_STATUSES)) {
+    fail('状态顺序不符合 P0 旅程');
+  }
+
+  const counts = evidence.occupiedCounts;
+  const expectedCounts = [counts[0], counts[0] + 1, counts[0] + 1, counts[0], counts[0] + 1];
+  if (!arraysEqual(counts, expectedCounts)) {
+    fail('名额变化不符合提交、幂等、取消、重报流程');
   }
 
   const requiredAudits = REQUIRED_AUDIT_ACTIONS.map((action) =>
