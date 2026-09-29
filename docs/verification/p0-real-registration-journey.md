@@ -37,6 +37,7 @@
 ```bash
 umask 077
 openssl rand 32 > /absolute/secure/path/journey-run.key
+chmod 600 /absolute/secure/path/journey-run.key
 ```
 
 每次执行前由签发器自行生成 128-bit 随机 nonce 和上海时区日期；不接受外部传入的 `RUN_ID`：

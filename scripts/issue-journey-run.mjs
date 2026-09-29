@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { createHmac, randomBytes } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+
+import { JourneyEvidenceKeyError, readJourneyEvidenceKey } from './journey-evidence-key.mjs';
 
 const FAILURE_PREFIX = 'P0 真实旅程签发失败';
 const SIGNATURE_DOMAIN = 'ride-event:p0-journey-run:v1';
@@ -45,12 +46,9 @@ async function main() {
 
   let key;
   try {
-    key = await readFile(args[1]);
-  } catch {
-    fail('无法读取签发密钥');
-  }
-  if (key.length < 32) {
-    fail('签发密钥至少需要 32 字节');
+    key = await readJourneyEvidenceKey(args[1]);
+  } catch (error) {
+    fail(error instanceof JourneyEvidenceKeyError ? error.message : '无法读取签发密钥');
   }
 
   const issuedAt = new Date().toISOString();

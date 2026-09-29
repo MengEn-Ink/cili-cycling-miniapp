@@ -3,6 +3,8 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
+import { JourneyEvidenceKeyError, readJourneyEvidenceKey } from './journey-evidence-key.mjs';
+
 const SUCCESS_MESSAGE = 'P0 真实旅程证据校验通过';
 const FAILURE_PREFIX = 'P0 真实旅程证据校验失败';
 const ROOT_KEYS = new Set([
@@ -445,12 +447,9 @@ async function main() {
 
   let key;
   try {
-    key = await readFile(args[1]);
-  } catch {
-    fail('无法读取签发密钥');
-  }
-  if (key.length < 32) {
-    fail('签发密钥至少需要 32 字节');
+    key = await readJourneyEvidenceKey(args[1]);
+  } catch (error) {
+    fail(error instanceof JourneyEvidenceKeyError ? error.message : '无法读取签发密钥');
   }
 
   let source;

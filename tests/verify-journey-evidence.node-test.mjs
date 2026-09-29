@@ -1,20 +1,24 @@
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
-import { readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import test from 'node:test';
+import test, { after } from 'node:test';
 
 const verifierPath = resolve('scripts/verify-journey-evidence.mjs');
 const issuerPath = resolve('scripts/issue-journey-run.mjs');
 const validFixturePath = resolve('tests/fixtures/p0-journey-evidence.valid.json');
-const keyFilePath = resolve('tests/fixtures/p0-journey-evidence.test-key');
 const validEvidence = JSON.parse(readFileSync(validFixturePath, 'utf8'));
-const testKey = readFileSync(keyFilePath);
+const testKey = Buffer.from('0123456789ABCDEF0123456789ABCDEF\n');
 const testKeySentinel = testKey.toString('utf8').trim();
 const signatureDomain = 'ride-event:p0-journey-run:v1';
+const keyFixtureDirectory = await mkdtemp(join(tmpdir(), 'ride-event-key-fixtures-'));
+const keyFilePath = join(keyFixtureDirectory, 'secure.key');
+writeFileSync(keyFilePath, testKey, { mode: 0o600 });
+chmodSync(keyFilePath, 0o600);
+after(() => rmSync(keyFixtureDirectory, { recursive: true, force: true }));
 
 const forbiddenKeyVariants = [
   'openid',
@@ -109,6 +113,27 @@ function runIssuer(args = ['--key-file', keyFilePath]) {
   });
 }
 
+function createKeyFile(name, mode) {
+  const path = join(keyFixtureDirectory, name);
+  writeFileSync(path, testKey, { mode });
+  chmodSync(path, mode);
+  return path;
+}
+
+async function assertKeyRejectedByBothConsumers(keyPath, expectedReason) {
+  const results = [
+    runIssuer(['--key-file', keyPath]),
+    await runVerifierSource(JSON.stringify(validEvidence), keyPath),
+  ];
+
+  for (const result of results) {
+    const output = `${result.stdout}${result.stderr}`;
+    assert.equal(output.includes(testKeySentinel), false);
+    assert.equal(result.status, 1, `expected key rejection, got output: ${output}`);
+    assert.match(result.stderr, expectedReason);
+  }
+}
+
 function shanghaiDateSegment(issuedAt) {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Shanghai',
@@ -197,7 +222,8 @@ test('issuer rejects a key shorter than 32 bytes without printing it', async () 
   const shortKey = 'SHORT_TEST_KEY_SENTINEL';
 
   try {
-    writeFileSync(shortKeyPath, shortKey);
+    writeFileSync(shortKeyPath, shortKey, { mode: 0o600 });
+    chmodSync(shortKeyPath, 0o600);
     const result = runIssuer(['--key-file', shortKeyPath]);
     const output = `${result.stdout}${result.stderr}`;
 
@@ -208,6 +234,54 @@ test('issuer rejects a key shorter than 32 bytes without printing it', async () 
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test('shared key reader accepts a 0600 regular file for both consumers', async () => {
+  const issuerResult = runIssuer();
+  const verifierResult = await runVerifier(validEvidence);
+
+  for (const result of [issuerResult, verifierResult]) {
+    assert.equal(`${result.stdout}${result.stderr}`.includes(testKeySentinel), false);
+    assert.equal(result.status, 0, result.stderr);
+  }
+});
+
+for (const mode of [0o644, 0o660]) {
+  test(
+    `shared key reader rejects mode ${mode.toString(8)} without printing the key`,
+    { skip: process.platform === 'win32' },
+    async () => {
+      const insecureKeyPath = createKeyFile(`insecure-${mode.toString(8)}.key`, mode);
+
+      await assertKeyRejectedByBothConsumers(insecureKeyPath, /密钥文件权限必须为 0600/);
+    },
+  );
+}
+
+test('shared key reader rejects a directory', async () => {
+  const directoryPath = join(keyFixtureDirectory, 'directory.key');
+  mkdirSync(directoryPath, { mode: 0o700 });
+
+  await assertKeyRejectedByBothConsumers(directoryPath, /密钥必须是普通文件/);
+});
+
+test(
+  'shared key reader rejects a symbolic link',
+  { skip: process.platform === 'win32' },
+  async () => {
+    const symlinkPath = join(keyFixtureDirectory, 'symlink.key');
+    symlinkSync(keyFilePath, symlinkPath);
+
+    await assertKeyRejectedByBothConsumers(symlinkPath, /密钥必须是普通文件/);
+  },
+);
+
+test(
+  'shared key reader rejects a non-regular device',
+  { skip: process.platform === 'win32' },
+  async () => {
+    await assertKeyRejectedByBothConsumers('/dev/null', /密钥必须是普通文件/);
+  },
+);
 
 test('issuer rejects caller-supplied run identifiers', () => {
   const callerValue = 'P0_20260929_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
