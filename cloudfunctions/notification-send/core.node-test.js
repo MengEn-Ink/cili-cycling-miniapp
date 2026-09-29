@@ -249,7 +249,7 @@ test('网络结果不明进入 delivery_unknown 且不可自动重发', async ()
 
 test('provider 明确拒绝按错误码分为 retryable 与 terminal', async () => {
   const retryable = fixture();
-  retryable.sender.send = async () => ({ errCode: -1, errMsg: 'system busy' });
+  retryable.sender.send = async () => ({ errCode: 45009, errMsg: 'rate limited' });
   await assert.rejects(consume(retryable), { code: 'WECHAT_SEND_FAILED' });
   assert.equal(retryable.item.status, 'retryable');
 
@@ -259,14 +259,29 @@ test('provider 明确拒绝按错误码分为 retryable 与 terminal', async () 
   assert.equal(terminal.item.status, 'failed_terminal');
 });
 
-test('wx-server-sdk reject 的明确 provider errCode 仍按 retryable/terminal 分类', async () => {
+test('wx-server-sdk 的 -1 包装错误无论 resolve 或 reject 都视为结果未知', async () => {
+  for (const sender of [
+    async () => ({ errCode: -1, errMsg: 'system busy' }),
+    async () => {
+      throw Object.assign(new Error('system busy'), { errCode: -1 });
+    },
+  ]) {
+    const ambiguous = fixture();
+    ambiguous.sender.send = sender;
+    await assert.rejects(consume(ambiguous), { code: 'DELIVERY_STATE_UNCERTAIN' });
+    assert.equal(ambiguous.item.status, 'delivery_unknown');
+    assert.equal(ambiguous.item.last_error, 'SEND_RESULT_UNKNOWN');
+  }
+});
+
+test('wx-server-sdk reject 的可靠 provider 业务码仍按 retryable/terminal 分类', async () => {
   const retryable = fixture();
   retryable.sender.send = async () => {
-    throw Object.assign(new Error('system busy'), { errCode: -1 });
+    throw Object.assign(new Error('rate limited'), { errCode: 45009 });
   };
   await assert.rejects(consume(retryable), { code: 'WECHAT_SEND_FAILED' });
   assert.equal(retryable.item.status, 'retryable');
-  assert.equal(retryable.item.last_error, 'WECHAT_-1');
+  assert.equal(retryable.item.last_error, 'WECHAT_45009');
 
   const terminal = fixture();
   terminal.sender.send = async () => {

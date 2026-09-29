@@ -58,7 +58,10 @@ function explicitProviderCode(value) {
   return Number.isFinite(code) ? code : null;
 }
 function providerRetryable(code) {
-  return [-1, 45009].includes(code);
+  return code === 45009;
+}
+function providerResultIsReliable(code) {
+  return code !== null && code !== 0 && code !== -1;
 }
 async function transitionOrLose(method, outboxId, value) {
   if (!(await method(outboxId, value))) fail('LEASE_LOST', '通知任务租约已失效');
@@ -125,13 +128,18 @@ async function consumeNotification({
     });
   } catch (error) {
     const code = explicitProviderCode(error);
-    if (code !== null && code !== 0) await handleProviderRejection(store, outboxId, fence, code);
+    if (providerResultIsReliable(code))
+      await handleProviderRejection(store, outboxId, fence, code);
     await markUnknownBestEffort(store, outboxId, fence, 'SEND_RESULT_UNKNOWN');
     fail('DELIVERY_STATE_UNCERTAIN', '通知发送结果未知，请在小程序内查看审批状态');
   }
 
   const code = explicitProviderCode(result);
-  if (code !== null && code !== 0) await handleProviderRejection(store, outboxId, fence, code);
+  if (code === -1) {
+    await markUnknownBestEffort(store, outboxId, fence, 'SEND_RESULT_UNKNOWN');
+    fail('DELIVERY_STATE_UNCERTAIN', '通知发送结果未知，请在小程序内查看审批状态');
+  }
+  if (providerResultIsReliable(code)) await handleProviderRejection(store, outboxId, fence, code);
 
   for (let attempt = 0; attempt < ACK_ATTEMPTS; attempt += 1) {
     try {
