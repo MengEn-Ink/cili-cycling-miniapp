@@ -103,18 +103,21 @@
         "path": "/strava/callback",
         "target": "function:strava-callback",
         "enableAuth": false,
+        "enablePathTransmission": true,
         "domain": "*"
       },
       {
         "path": "/strava/success",
         "target": "function:strava-callback",
         "enableAuth": false,
+        "enablePathTransmission": true,
         "domain": "*"
       },
       {
         "path": "/strava/failure",
         "target": "function:strava-callback",
         "enableAuth": false,
+        "enablePathTransmission": true,
         "domain": "*"
       }
     ]
