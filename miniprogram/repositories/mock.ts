@@ -4,6 +4,7 @@ import type {
   ProfileUpdate,
   Registration,
   RegistrationStatus,
+  StravaReadiness,
   StravaStatus,
 } from '../models';
 import { activities, profile, registrations } from '../mock/fixtures';
@@ -72,6 +73,18 @@ export class MockRepository implements RideRepository {
     return x;
   }
   async updateRegistration(id: string, status: RegistrationStatus, c?: string) {
+    if (status === 'cancelled') return this.cancelRegistration(id);
+    if (status === 'approved' || status === 'rejected')
+      return this.reviewRegistration(id, status, c);
+    return this.changeRegistration(id, status, c);
+  }
+  async cancelRegistration(id: string) {
+    return this.changeRegistration(id, 'cancelled');
+  }
+  async reviewRegistration(id: string, decision: 'approved' | 'rejected', reason?: string) {
+    return this.changeRegistration(id, decision, reason);
+  }
+  private async changeRegistration(id: string, status: RegistrationStatus, c?: string) {
     const s = this.read(),
       x = s.registrations.find((v) => v.id === id);
     if (!x) throw Error('报名不存在');
@@ -98,6 +111,43 @@ export class MockRepository implements RideRepository {
   }
   async getStravaStatus() {
     return { connected: this.read().stravaStatus === 'connected' };
+  }
+  async getStravaReadiness(): Promise<StravaReadiness> {
+    if (this.read().stravaStatus !== 'connected') {
+      return {
+        state: 'disconnected',
+        canRegister: false,
+        athleteName: null,
+        snapshot: null,
+        error: null,
+      };
+    }
+    return {
+      state: 'ready',
+      canRegister: true,
+      athleteName: 'Mock Rider',
+      snapshot: {
+        totalKm: 1200,
+        rides90d: 32,
+        longestKm: 168,
+        elevationM: 9000,
+        speedKmh: 27.4,
+        latestActivityAt: '2026-09-28T04:00:00.000Z',
+        syncedAt: '2026-09-29T04:00:00.000Z',
+        coverage: {
+          from: '2026-07-01T04:00:00.000Z',
+          to: '2026-09-29T04:00:00.000Z',
+          complete: true,
+        },
+      },
+      error: null,
+    };
+  }
+  async ensureStravaReady() {
+    const s = this.read();
+    s.stravaStatus = 'connected';
+    this.write(s);
+    return this.getStravaReadiness();
   }
   async startStrava() {
     return { authorizationUrl: 'https://example.test/mock', expiresAt: new Date().toISOString() };

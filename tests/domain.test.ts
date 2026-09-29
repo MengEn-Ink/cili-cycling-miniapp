@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { activityDisplayStatus } from '../miniprogram/utils/activity';
 import { occupiedCount } from '../miniprogram/utils/capacity';
 import { canTransition, transition } from '../miniprogram/utils/registration';
@@ -8,6 +8,21 @@ import { weightedAverageSpeed } from '../miniprogram/utils/strava';
 import { activities, profile } from '../miniprogram/mock/fixtures';
 import { runtimeConfig } from '../miniprogram/config/runtime';
 import { initializeCloud } from '../miniprogram/config/cloud-init';
+
+const ready = { state: 'ready' as const, canRegister: true };
+const syncing = { state: 'syncing' as const, canRegister: false };
+const failed = { state: 'failed' as const, canRegister: false };
+const pageRideService = vi.hoisted(() => ({
+  getProfile: vi.fn(),
+  getStravaReadiness: vi.fn(),
+  ensureStravaReady: vi.fn(),
+  saveRegistration: vi.fn(),
+  getRegistration: vi.fn(),
+  getActivity: vi.fn(),
+  cancelRegistration: vi.fn(),
+}));
+
+vi.mock('../miniprogram/services/ride-service', () => ({ rideService: pageRideService }));
 
 describe('运行时配置', () => {
   it('使用此里公开配置并固定云数据模式', () => {
@@ -69,7 +84,7 @@ describe('表单校验', () => {
         profile,
         bikeMode: '自带车',
         experience: '常骑',
-        stravaStatus: 'connected',
+        readiness: ready,
       }),
     ).toEqual([]));
   it('云端脱敏资料按 sensitiveStatus 校验', () => {
@@ -86,7 +101,7 @@ describe('表单校验', () => {
         profile: masked,
         bikeMode: '自带车',
         experience: '常骑',
-        stravaStatus: 'connected',
+        readiness: ready,
       }),
     ).toEqual([]);
     expect(
@@ -94,16 +109,141 @@ describe('表单校验', () => {
         profile: { ...masked, sensitiveStatus: { ...masked.sensitiveStatus, phone: false } },
         bikeMode: '自带车',
         experience: '常骑',
-        stravaStatus: 'connected',
+        readiness: ready,
       }),
     ).toContain('手机号格式错误');
   });
-  it('阻断无 Strava 与错误手机号', () => {
+  it('ready 但服务端不允许报名时阻断', () => {
+    expect(
+      validateRegistration({
+        profile,
+        bikeMode: '自带车',
+        experience: '常骑',
+        readiness: { state: 'ready', canRegister: false },
+      }),
+    ).toContain('Strava 数据尚未准备完成');
+  });
+  it('同步中提示正在准备', () => {
+    expect(
+      validateRegistration({ profile, bikeMode: '自带车', experience: '常骑', readiness: syncing }),
+    ).toContain('Strava 数据正在准备');
+  });
+  it('失败时提示重试准备', () => {
+    expect(
+      validateRegistration({ profile, bikeMode: '自带车', experience: '常骑', readiness: failed }),
+    ).toContain('请重试 Strava 数据准备');
+  });
+  it('阻断未绑定 Strava 与错误手机号', () => {
     const p = { ...profile, phone: '123' };
     expect(
-      validateRegistration({ profile: p, bikeMode: '', experience: '', stravaStatus: 'pending' })
-        .length,
+      validateRegistration({
+        profile: p,
+        bikeMode: '',
+        experience: '',
+        readiness: { state: 'disconnected', canRegister: false },
+      }).length,
     ).toBeGreaterThan(2);
+  });
+});
+
+describe('报名页面门禁', () => {
+  let page: any;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    for (const value of Object.values(pageRideService)) value.mockReset();
+    vi.stubGlobal('wx', { navigateTo: vi.fn(), redirectTo: vi.fn() });
+    vi.stubGlobal('Page', (definition: any) => {
+      page = definition;
+      page.data = { ...definition.data };
+      page.setData = (patch: Record<string, unknown>) => Object.assign(page.data, patch);
+    });
+    await import('../miniprogram/pages/registration-form/index');
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('onShow 自动准备 Strava 并保存完整 readiness', async () => {
+    pageRideService.getProfile.mockResolvedValue(profile);
+    pageRideService.getStravaReadiness.mockResolvedValue({
+      ...syncing,
+      athleteName: null,
+      snapshot: null,
+      error: null,
+    });
+    pageRideService.ensureStravaReady.mockResolvedValue({
+      ...ready,
+      athleteName: 'Rider',
+      snapshot: null,
+      error: null,
+    });
+
+    await page.onShow();
+
+    expect(pageRideService.ensureStravaReady).toHaveBeenCalledOnce();
+    expect(page.data.readiness).toMatchObject({ state: 'ready', canRegister: true });
+  });
+
+  it('readiness 请求失败时保持失败门禁而非伪装未绑定', async () => {
+    pageRideService.getProfile.mockResolvedValue(profile);
+    pageRideService.getStravaReadiness.mockRejectedValue(new Error('网络暂不可用'));
+
+    await page.onShow();
+
+    expect(page.data.readiness).toMatchObject({ state: 'failed', canRegister: false });
+    expect(page.data.errors).toContain('网络暂不可用');
+  });
+
+  it('提交中忽略重复提交', async () => {
+    page.data = { ...page.data, profile, readiness: ready, submitting: true };
+
+    await page.submit();
+
+    expect(pageRideService.saveRegistration).not.toHaveBeenCalled();
+  });
+});
+
+describe('报名取消操作', () => {
+  let page: any;
+  let showModal: ReturnType<typeof vi.fn>;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    for (const value of Object.values(pageRideService)) value.mockReset();
+    showModal = vi.fn();
+    vi.stubGlobal('wx', { showModal, redirectTo: vi.fn() });
+    vi.stubGlobal('Page', (definition: any) => {
+      page = definition;
+      page.data = { ...definition.data, item: { id: 'r1', activityId: 'a1' } };
+      page.setData = (patch: Record<string, unknown>) => Object.assign(page.data, patch);
+    });
+    await import('../miniprogram/pages/credential/index');
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('取消报名需确认，用户拒绝时不发请求', async () => {
+    showModal.mockImplementation(({ success }: any) => success({ confirm: false }));
+
+    await page.cancel();
+
+    expect(showModal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: '确认取消报名',
+        content: '取消后将释放活动名额，可在报名开放期间重新提交。',
+      }),
+    );
+    expect(pageRideService.cancelRegistration).not.toHaveBeenCalled();
+    expect(page.data.cancelling).toBe(false);
+  });
+
+  it('取消处理中忽略重复点击', async () => {
+    page.data.cancelling = true;
+
+    await page.cancel();
+
+    expect(showModal).not.toHaveBeenCalled();
+    expect(pageRideService.cancelRegistration).not.toHaveBeenCalled();
   });
 });
 describe('脱敏', () => {

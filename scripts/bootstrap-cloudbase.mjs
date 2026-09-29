@@ -71,6 +71,15 @@ export const INDEXES = Object.freeze([
     unique: false,
   },
   {
+    collection: 'oauth_states',
+    name: 'oauth_states_openid_expires_at',
+    keys: [
+      ['openid', 1],
+      ['expires_at', -1],
+    ],
+    unique: false,
+  },
+  {
     collection: 'strava_credentials',
     name: 'strava_credentials_openid',
     keys: [['openid', 1]],

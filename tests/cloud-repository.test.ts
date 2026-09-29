@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CloudRepository, CloudRepositoryError } from '../miniprogram/repositories/cloud';
+import { MockRepository } from '../miniprogram/repositories/mock';
 
 type CloudCall = { name: string; data?: unknown };
 type Queued = unknown | Error;
@@ -45,14 +46,38 @@ const registration = {
   strava_status: 'connected',
   strava_snapshot: {
     years_on_strava: 4,
+    total_km: 1200,
     activities_90d: 32,
     longest_km: 168,
-    max_elevation_m: 1850,
+    total_elevation_m: 1850,
     weighted_avg_speed_kmh: 27.4,
+    latest_activity_at: null,
+    synced_at: '2026-09-29T04:00:00.000Z',
+    coverage_from: '2026-07-01T04:00:00.000Z',
+    coverage_to: '2026-09-29T04:00:00.000Z',
+    coverage_complete: true,
   },
   review_history: [{ action: 'reject', comment: '补充资料' }],
   serial_no: 'RE-001',
   updated_at: new Date('2026-09-28T12:00:00.000Z'),
+};
+const readinessDto = {
+  state: 'ready',
+  can_register: true,
+  athlete_name: 'Rider',
+  snapshot: {
+    total_km: 1200,
+    activities_90d: 32,
+    longest_km: null,
+    total_elevation_m: 9000,
+    weighted_avg_speed_kmh: 27.4,
+    latest_activity_at: null,
+    synced_at: '2026-09-29T04:00:00.000Z',
+    coverage_from: '2026-07-01T04:00:00.000Z',
+    coverage_to: '2026-09-29T04:00:00.000Z',
+    coverage_complete: false,
+  },
+  error: null,
 };
 
 function expectCall(callFunction: ReturnType<typeof vi.fn>, name: string, data: unknown) {
@@ -159,10 +184,18 @@ describe('CloudRepository 队员报名适配', () => {
       strava: {
         status: 'connected',
         years: 4,
+        totalKm: 1200,
         rides90d: 32,
         longestKm: 168,
         elevationM: 1850,
         speedKmh: 27.4,
+        latestActivityAt: null,
+        syncedAt: '2026-09-29T04:00:00.000Z',
+        coverage: {
+          from: '2026-07-01T04:00:00.000Z',
+          to: '2026-09-29T04:00:00.000Z',
+          complete: true,
+        },
       },
       updatedAt: '2026-09-28T12:00:00.000Z',
     });
@@ -273,6 +306,13 @@ describe('CloudRepository 队员报名适配', () => {
     expect(result.status).toBe('cancelled');
   });
 
+  it('显式取消命令只发送 registration/cancel', async () => {
+    const { cloud, callFunction } = cloudWith(success({ ...registration, status: 'cancelled' }));
+    const result = await new CloudRepository(cloud).cancelRegistration('r1');
+    expectCall(callFunction, 'registration', { action: 'cancel', registrationId: 'r1' });
+    expect(result.status).toBe('cancelled');
+  });
+
   it('报名 DTO 缺少可选对象时使用空值，并映射 exempted', async () => {
     const edge = {
       _id: 'r2',
@@ -296,13 +336,33 @@ describe('CloudRepository 队员报名适配', () => {
       strava: {
         status: 'exempted',
         reason: '人工核验',
-        years: 0,
-        rides90d: 0,
-        longestKm: 0,
-        elevationM: 0,
-        speedKmh: 0,
+        years: null,
+        totalKm: null,
+        rides90d: null,
+        longestKm: null,
+        elevationM: null,
+        speedKmh: null,
+        latestActivityAt: null,
+        syncedAt: '',
+        coverage: null,
       },
       updatedAt: '刚刚',
+    });
+  });
+
+  it.each([
+    ['缺失', {}],
+    ['非有限值', { years_on_strava: Number.POSITIVE_INFINITY }],
+  ])('报名 DTO 的 Strava 年限%s时保留为 null', async (_label, stravaSnapshot) => {
+    const { cloud } = cloudWith(
+      success({
+        ...registration,
+        strava_snapshot: stravaSnapshot,
+      }),
+    );
+
+    await expect(new CloudRepository(cloud).getRegistration('r1')).resolves.toMatchObject({
+      strava: { years: null },
     });
   });
 });
@@ -350,6 +410,22 @@ describe('CloudRepository 管理员审批适配', () => {
       registrationId: 'r1',
       decision: 'approve',
       reason: undefined,
+    });
+    expect(result.status).toBe('approved');
+  });
+
+  it('显式审批命令映射 approved 为服务端 approve', async () => {
+    const { cloud, callFunction } = cloudWith(success({ ...registration, status: 'approved' }));
+    const result = await new CloudRepository(cloud).reviewRegistration(
+      'r1',
+      'approved',
+      '资料完整',
+    );
+    expectCall(callFunction, 'admin-review', {
+      action: 'review',
+      registrationId: 'r1',
+      decision: 'approve',
+      reason: '资料完整',
     });
     expect(result.status).toBe('approved');
   });
@@ -517,6 +593,134 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     ]);
   });
 
+  it('映射 Strava readiness，保留 null 指标与覆盖范围', async () => {
+    const { cloud, callFunction } = cloudWith(success(readinessDto), success(readinessDto));
+    const repository = new CloudRepository(cloud);
+
+    await expect(repository.getStravaReadiness()).resolves.toEqual({
+      state: 'ready',
+      canRegister: true,
+      athleteName: 'Rider',
+      snapshot: {
+        totalKm: 1200,
+        rides90d: 32,
+        longestKm: null,
+        elevationM: 9000,
+        speedKmh: 27.4,
+        latestActivityAt: null,
+        syncedAt: '2026-09-29T04:00:00.000Z',
+        coverage: {
+          from: '2026-07-01T04:00:00.000Z',
+          to: '2026-09-29T04:00:00.000Z',
+          complete: false,
+        },
+      },
+      error: null,
+    });
+    await expect(repository.ensureStravaReady()).resolves.toMatchObject({ state: 'ready' });
+    expect(callFunction.mock.calls.map((call) => call[0])).toEqual([
+      { name: 'strava-auth', data: { action: 'status' } },
+      { name: 'strava-auth', data: { action: 'ensureReady' } },
+    ]);
+  });
+
+  it('映射失败的 Strava readiness，保留可重试错误且不伪造快照', async () => {
+    const { cloud } = cloudWith(
+      success({
+        state: 'failed',
+        can_register: false,
+        athlete_name: null,
+        snapshot: null,
+        error: {
+          code: 'STRAVA_API_FAILED',
+          message: 'Strava 暂时不可用',
+          retryable: true,
+        },
+      }),
+    );
+
+    await expect(new CloudRepository(cloud).getStravaReadiness()).resolves.toEqual({
+      state: 'failed',
+      canRegister: false,
+      athleteName: null,
+      snapshot: null,
+      error: {
+        code: 'STRAVA_API_FAILED',
+        message: 'Strava 暂时不可用',
+        retryable: true,
+      },
+    });
+  });
+
+  it('readiness 快照存在最近活动时保留严格校验后的时间', async () => {
+    const { cloud } = cloudWith(
+      success({
+        ...readinessDto,
+        snapshot: {
+          ...readinessDto.snapshot,
+          latest_activity_at: '2026-09-28T04:00:00.000Z',
+        },
+      }),
+    );
+
+    await expect(new CloudRepository(cloud).getStravaReadiness()).resolves.toMatchObject({
+      snapshot: { latestActivityAt: '2026-09-28T04:00:00.000Z' },
+    });
+  });
+
+  it('拒绝非字符串的 readiness 运动员名称', async () => {
+    const { cloud } = cloudWith(success({ ...readinessDto, athlete_name: 42 }));
+
+    await expectCode(new CloudRepository(cloud).getStravaReadiness(), 'INVALID_RESPONSE');
+  });
+
+  it('readiness 的旧快照缺少覆盖范围时映射为 null', async () => {
+    const snapshot = { ...readinessDto.snapshot } as Record<string, unknown>;
+    delete snapshot.coverage_from;
+    delete snapshot.coverage_to;
+    delete snapshot.coverage_complete;
+    const { cloud } = cloudWith(success({ ...readinessDto, snapshot }));
+
+    await expect(new CloudRepository(cloud).getStravaReadiness()).resolves.toMatchObject({
+      snapshot: { coverage: null },
+    });
+  });
+
+  it.each([
+    { ...readinessDto, state: 'complete' },
+    {
+      ...readinessDto,
+      snapshot: { ...readinessDto.snapshot, total_km: Number.POSITIVE_INFINITY },
+    },
+    {
+      ...readinessDto,
+      error: { code: 'STRAVA_API_FAILED', message: '失败', retryable: 'yes' },
+    },
+  ])('拒绝异常 readiness 状态、指标或错误对象 %#', async (dto) => {
+    const { cloud } = cloudWith(success(dto));
+    await expectCode(new CloudRepository(cloud).getStravaReadiness(), 'INVALID_RESPONSE');
+  });
+
+  it('拒绝字段不完整的 readiness 覆盖范围', async () => {
+    const { cloud } = cloudWith(
+      success({
+        ...readinessDto,
+        snapshot: { ...readinessDto.snapshot, coverage_to: undefined },
+      }),
+    );
+    await expectCode(new CloudRepository(cloud).getStravaReadiness(), 'INVALID_RESPONSE');
+  });
+
+  it('拒绝不可解析的 readiness 时间字段', async () => {
+    const { cloud } = cloudWith(
+      success({
+        ...readinessDto,
+        snapshot: { ...readinessDto.snapshot, coverage_from: 'not-a-date' },
+      }),
+    );
+    await expectCode(new CloudRepository(cloud).getStravaReadiness(), 'INVALID_RESPONSE');
+  });
+
   it('拒绝无效 Profile/Strava DTO 与动态 code', async () => {
     const first = cloudWith(success({ nickname: 'x' }));
     await expectCode(new CloudRepository(first.cloud).getProfile(), 'INVALID_RESPONSE');
@@ -532,6 +736,61 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     expect(new CloudRepositoryError('X', 'x')).toMatchObject({
       name: 'CloudRepositoryError',
       code: 'X',
+    });
+  });
+});
+
+describe('MockRepository readiness 与显式报名命令', () => {
+  let stored: unknown;
+
+  function installStorage() {
+    vi.stubGlobal('wx', {
+      getStorageSync: vi.fn(() => stored),
+      setStorageSync: vi.fn((_key: string, value: unknown) => {
+        stored = value;
+      }),
+    });
+  }
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('ensureStravaReady 从 disconnected 收敛到确定的 ready 快照', async () => {
+    installStorage();
+    const repository = new MockRepository();
+    await repository.disconnectStrava();
+
+    await expect(repository.getStravaReadiness()).resolves.toMatchObject({
+      state: 'disconnected',
+      canRegister: false,
+      snapshot: null,
+    });
+    await expect(repository.ensureStravaReady()).resolves.toMatchObject({
+      state: 'ready',
+      canRegister: true,
+      athleteName: 'Mock Rider',
+      snapshot: {
+        longestKm: 168,
+        coverage: { complete: true },
+      },
+    });
+  });
+
+  it('显式取消与审批命令复用确定的状态迁移', async () => {
+    installStorage();
+    const repository = new MockRepository();
+    const initial = JSON.parse(JSON.stringify(repository.read()));
+    const reviewState = JSON.parse(JSON.stringify(initial));
+    stored = initial;
+
+    await expect(repository.cancelRegistration('r1')).resolves.toMatchObject({
+      status: 'cancelled',
+    });
+    stored = reviewState;
+    await expect(
+      repository.reviewRegistration('r1', 'approved', '资料完整'),
+    ).resolves.toMatchObject({
+      status: 'approved',
+      reviewComment: '资料完整',
     });
   });
 });

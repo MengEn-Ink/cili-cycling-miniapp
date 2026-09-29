@@ -48,6 +48,42 @@ const profile = {
   },
   strava: { status: 'connected', snapshot: { activities_90d: 10, weighted_avg_speed_kmh: 25 } },
 };
+const credential = {
+  _id: openid,
+  athlete_id: 'athlete-current',
+  access_token_cipher: {
+    v: 1,
+    alg: 'A256GCM',
+    iv: 'legacy-access-iv',
+    tag: 'legacy-access-tag',
+    ciphertext: 'access-secret',
+  },
+  refresh_token_cipher: {
+    v: 1,
+    alg: 'A256GCM',
+    iv: 'legacy-refresh-iv',
+    tag: 'legacy-refresh-tag',
+    ciphertext: 'refresh-secret',
+  },
+  lease_id: 'lease-secret',
+};
+const snapshot = {
+  _id: openid,
+  openid,
+  athlete_id: 'athlete-current',
+  total_km: 1200.5,
+  activities_90d: 42,
+  longest_km: 180.25,
+  total_elevation_m: 9000,
+  weighted_avg_speed_kmh: 25.4,
+  latest_activity_at: '2026-09-28T08:00:00.000Z',
+  synced_at: '2026-09-28T11:00:00.000Z',
+  coverage_from: '2026-06-30T00:00:00.000Z',
+  coverage_to: '2026-09-28T12:00:00.000Z',
+  coverage_complete: true,
+  lease_id: 'lease-secret',
+  access_token_cipher: { ciphertext: 'must-not-leak' },
+};
 
 function expectCode(fn, code) {
   assert.throws(fn, (error) => error instanceof DomainError && error.code === code);
@@ -60,25 +96,47 @@ function memoryStore(seed = {}) {
       seed.registration ? [[seed.registration._id, { ...seed.registration }]] : [],
     ),
     admins: new Map([[openid, { _id: openid, enabled: true }]]),
+    credentials: new Map(
+      seed.credential === null ? [] : [[openid, { ...credential, ...(seed.credential || {}) }]],
+    ),
+    snapshots: new Map(
+      seed.snapshot === null ? [] : [[openid, { ...snapshot, ...(seed.snapshot || {}) }]],
+    ),
     audits: [],
   };
   let queue = Promise.resolve();
   return {
     state,
     transaction(work) {
-      const run = queue.then(() =>
-        work({
-          getActivity: async (id) => state.activities.get(id),
-          getProfile: async (id) => state.profiles.get(id),
-          getRegistration: async (id) => state.registrations.get(id),
-          getAdmin: async (id) => state.admins.get(id),
-          putRegistration: async (id, value) => state.registrations.set(id, { ...value }),
+      const run = queue.then(async () => {
+        const draft = {
+          activities: new Map([...state.activities].map(([id, value]) => [id, { ...value }])),
+          profiles: new Map([...state.profiles].map(([id, value]) => [id, { ...value }])),
+          registrations: new Map([...state.registrations].map(([id, value]) => [id, { ...value }])),
+          admins: new Map([...state.admins].map(([id, value]) => [id, { ...value }])),
+          credentials: new Map([...state.credentials].map(([id, value]) => [id, { ...value }])),
+          snapshots: new Map([...state.snapshots].map(([id, value]) => [id, { ...value }])),
+          audits: state.audits.slice(),
+        };
+        const result = await work({
+          getActivity: async (id) => draft.activities.get(id),
+          getProfile: async (id) => draft.profiles.get(id),
+          getRegistration: async (id) => draft.registrations.get(id),
+          getAdmin: async (id) => draft.admins.get(id),
+          getStravaCredential: async (id) => draft.credentials.get(id),
+          getStravaSnapshot: async (id) => draft.snapshots.get(id),
+          putRegistration: async (id, value) => draft.registrations.set(id, { ...value }),
           setOccupied: async (id, value) => {
-            state.activities.get(id).occupied_count = value;
+            draft.activities.get(id).occupied_count = value;
           },
-          addAudit: async (value) => state.audits.push(value),
-        }),
-      );
+          addAudit: async (value) => {
+            if (seed.auditFailure) throw new Error('audit write failed');
+            draft.audits.push(value);
+          },
+        });
+        Object.assign(state, draft);
+        return result;
+      });
       queue = run.then(
         () => undefined,
         () => undefined,
@@ -167,6 +225,129 @@ test('重复占位提交拒绝，驳回或取消后沿原记录重报并保留�
   assert.equal(result.status, 'pending');
   assert.equal(store.state.registrations.get(id).review_history.length, 1);
   assert.equal(store.state.activities.get('a1').occupied_count, 1);
+  assert.deepEqual(store.state.audits.at(-1), {
+    actor_openid: openid,
+    action: 'registration.resubmitted',
+    target_id: id,
+    created_at: new Date('2026-09-29T00:00:00Z'),
+    detail: {
+      activity_id: 'a1',
+      from_status: 'rejected',
+      to_status: 'pending',
+    },
+  });
+});
+
+test('报名只接受完整凭证和 24 小时内的 canonical Strava 快照', async () => {
+  const legacyCredential = memoryStore();
+  const accepted = await submitRegistration(legacyCredential, input, now);
+  assert.equal(accepted.status, 'pending');
+
+  const profileOnly = memoryStore({ credential: null, snapshot: null });
+  await assert.rejects(
+    submitRegistration(profileOnly, input, now),
+    (error) => error.code === 'STRAVA_NOT_READY',
+  );
+
+  const missingRefreshToken = memoryStore({ credential: { refresh_token_cipher: null } });
+  await assert.rejects(
+    submitRegistration(missingRefreshToken, input, now),
+    (error) => error.code === 'STRAVA_NOT_READY',
+  );
+
+  for (const malformed of [
+    {},
+    { alg: 'AES-GCM', iv: 'iv', tag: 'tag', ciphertext: 'ciphertext' },
+    { alg: 'A256GCM', iv: '', tag: 'tag', ciphertext: 'ciphertext' },
+    { alg: 'A256GCM', iv: 'iv', tag: ' ', ciphertext: 'ciphertext' },
+    { alg: 'A256GCM', iv: 'iv', tag: 'tag', ciphertext: null },
+  ]) {
+    await assert.rejects(
+      submitRegistration(
+        memoryStore({ credential: { access_token_cipher: malformed } }),
+        input,
+        now,
+      ),
+      (error) => error.code === 'STRAVA_NOT_READY',
+    );
+    await assert.rejects(
+      submitRegistration(
+        memoryStore({ credential: { refresh_token_cipher: malformed } }),
+        input,
+        now,
+      ),
+      (error) => error.code === 'STRAVA_NOT_READY',
+    );
+  }
+
+  const missingSnapshot = memoryStore({ snapshot: null });
+  await assert.rejects(
+    submitRegistration(missingSnapshot, input, now),
+    (error) => error.code === 'STRAVA_NOT_READY',
+  );
+
+  const staleSnapshot = memoryStore({ snapshot: { synced_at: '2026-09-27T12:00:00.000Z' } });
+  await assert.rejects(
+    submitRegistration(staleSnapshot, input, now),
+    (error) => error.code === 'STRAVA_NOT_READY',
+  );
+
+  for (const crossAccountStore of [
+    memoryStore({ snapshot: { athlete_id: 'athlete-previous' } }),
+    memoryStore({ snapshot: { athlete_id: undefined } }),
+    memoryStore({ credential: { athlete_id: undefined } }),
+  ]) {
+    await assert.rejects(
+      submitRegistration(crossAccountStore, input, now),
+      (error) => error.code === 'STRAVA_NOT_READY',
+    );
+  }
+});
+
+test('提交在同一事务写 submitted 审计并只保存 nullable Strava 白名单', async () => {
+  const store = memoryStore({
+    snapshot: {
+      total_km: undefined,
+      activities_90d: Number.NaN,
+      longest_km: null,
+      total_elevation_m: Infinity,
+      weighted_avg_speed_kmh: undefined,
+      latest_activity_at: '',
+      coverage_from: 'invalid',
+      coverage_to: null,
+      coverage_complete: false,
+    },
+  });
+  const result = await submitRegistration(store, input, now);
+  const id = registrationId('a1', openid);
+
+  assert.equal(result.status, 'pending');
+  assert.deepEqual(result.strava_snapshot, {
+    total_km: null,
+    activities_90d: null,
+    longest_km: null,
+    total_elevation_m: null,
+    weighted_avg_speed_kmh: null,
+    latest_activity_at: null,
+    synced_at: new Date('2026-09-28T11:00:00.000Z'),
+    coverage_from: null,
+    coverage_to: null,
+    coverage_complete: false,
+  });
+  assert.equal(JSON.stringify(result).includes('openid'), false);
+  assert.equal(JSON.stringify(result).includes('cipher'), false);
+  assert.equal(JSON.stringify(result).includes('lease'), false);
+  assert.deepEqual(store.state.audits.at(-1), {
+    actor_openid: openid,
+    action: 'registration.submitted',
+    target_id: id,
+    created_at: now,
+    detail: {
+      activity_id: 'a1',
+      from_status: null,
+      to_status: 'pending',
+    },
+  });
 });
 
 test('事务边界在满员时不写入；并发提交不会超过 capacity', async () => {
@@ -180,6 +361,8 @@ test('事务边界在满员时不写入；并发提交不会超过 capacity', as
   const store = memoryStore({ activity: { capacity: 1 } });
   const secondProfile = { ...profile, _id: 'other' };
   store.state.profiles.set('other', secondProfile);
+  store.state.credentials.set('other', { ...credential, _id: 'other' });
+  store.state.snapshots.set('other', { ...snapshot, _id: 'other', openid: 'other' });
   const settled = await Promise.allSettled([
     submitRegistration(store, input, now),
     submitRegistration(store, { ...input, openid: 'other' }, now),
@@ -206,6 +389,44 @@ test('取消仅本人 pending/approved 并在事务内释放名额', async () =>
   const result = await cancelRegistration(store, { openid, registrationId: id }, now);
   assert.equal(result.status, 'cancelled');
   assert.equal(store.state.activities.get('a1').occupied_count, 0);
+  assert.deepEqual(store.state.audits.at(-1), {
+    actor_openid: openid,
+    action: 'registration.cancelled',
+    target_id: id,
+    created_at: now,
+    detail: {
+      activity_id: 'a1',
+      from_status: 'approved',
+      to_status: 'cancelled',
+    },
+  });
+});
+
+test('审计写失败时提交和取消都回滚报名记录与名额', async () => {
+  const submitStore = memoryStore({ auditFailure: true });
+  await assert.rejects(submitRegistration(submitStore, input, now), /audit write failed/);
+  assert.equal(submitStore.state.registrations.size, 0);
+  assert.equal(submitStore.state.activities.get('a1').occupied_count, 0);
+
+  const id = registrationId('a1', openid);
+  const registration = {
+    _id: id,
+    activity_id: 'a1',
+    openid,
+    status: 'pending',
+    review_history: [],
+  };
+  const cancelStore = memoryStore({
+    activity: { occupied_count: 1 },
+    registration,
+    auditFailure: true,
+  });
+  await assert.rejects(
+    cancelRegistration(cancelStore, { openid, registrationId: id }, now),
+    /audit write failed/,
+  );
+  assert.equal(cancelStore.state.registrations.get(id).status, 'pending');
+  assert.equal(cancelStore.state.activities.get('a1').occupied_count, 1);
 });
 
 test('审批状态机、理由与管理员判断', async () => {
@@ -230,6 +451,16 @@ test('审批状态机、理由与管理员判断', async () => {
   assert.equal(result.status, 'rejected');
   assert.equal(store.state.activities.get('a1').occupied_count, 0);
   assert.equal(store.state.audits.length, 1);
+  assert.equal(store.state.audits[0].action, 'registration.rejected');
+
+  const approveStore = memoryStore({ registration });
+  const approved = await reviewRegistration(
+    approveStore,
+    { openid, registrationId: id, action: 'approve' },
+    now,
+  );
+  assert.equal(approved.status, 'approved');
+  assert.equal(approveStore.state.audits[0].action, 'registration.approved');
 });
 
 test('活动和报名响应只含白名单字段并脱敏', () => {
@@ -243,7 +474,7 @@ test('活动和报名响应只含白名单字段并脱敏', () => {
     status: 'pending',
     token: 'secret',
     review_history: [{ reviewer_openid: 'admin-secret', action: 'reject', comment: 'x' }],
-    strava_snapshot: { activities_90d: 10, access_token: 'secret' },
+    strava_snapshot: { years_on_strava: 5, activities_90d: 10, access_token: 'secret' },
     profile_snapshot: {
       nickname: 'n',
       phone_masked: '13812345678',
@@ -252,6 +483,7 @@ test('活动和报名响应只含白名单字段并脱敏', () => {
   });
   assert.equal(r.openid, undefined);
   assert.equal(r.token, undefined);
+  assert.equal(r.strava_snapshot.years_on_strava, 5);
   assert.equal(r.strava_snapshot.activities_90d, 10);
   assert.equal(r.strava_snapshot.access_token, undefined);
   assert.equal(r.review_history[0].reviewer_openid, undefined);
@@ -260,7 +492,7 @@ test('活动和报名响应只含白名单字段并脱敏', () => {
 });
 
 test('审计日志只保留安全字段，不含手机号证件号和 token', () => {
-  const log = buildAudit(openid, 'registration.reject', 'r1', now, {
+  const log = buildAudit(openid, 'registration.rejected', 'r1', now, {
     reason: '不符合要求',
     phone: 'secret',
     id_number: 'secret',

@@ -7,9 +7,27 @@
 - 微信运行固定使用 `CloudRepository`，不会回退 Mock；`DEVELOPMENT_MOCK` 与 `createRepository({ developmentMock: true })` 仅供显式开发/测试注入，UI 无切换入口。
 - `auth` 只信任 `cloud.getWXContext().OPENID`，真实 role 优先；管理入口仅向已验证管理员显示，所有管理页再次校验。
 - `activity-read`、`registration`、`admin-review` 完成活动读取、我的报名、提交/取消与管理员审批。真实活动编辑明确显示“暂未开放”。
-- `profile` 提供 `get/update/getPhoneNumber`。姓名、证件号、手机号、紧急电话分别以 AES-256-GCM 加密；对外仅返回脱敏值、填写状态和完整度。手机号只接受微信动态 code。
+- `profile` 提供 `get/update/getPhoneNumber`。姓名、证件号、手机号、紧急电话分别以 AES-256-GCM 加密；对外仅返回脱敏值、填写状态和完整度。手机号保留来源和验证状态。
 - `strava-auth` 提供 `status/start/sync/disconnect`；`strava-callback` 处理 OAuth 回调。state 使用 32 字节随机值、SHA-256 落库、10 分钟应用层强制过期和事务内 `consumed_at` 一次性消费；`start/status` 每次限量清理已过期 state。token 使用 AES-256-GCM 加密。同步仅拉最近 90 天、每页 200 条、最多 5 页，并统计里程、次数、最长距离、爬升、距离加权平均速度和最近活动时间。
 - 页面在未登录、资料未完成、函数/路由未部署时显示引导或错误，不伪造成功。相册保留 `chooseMedia -> cloud.uploadFile -> profile.update` 契约，须真机验证权限和存储规则。
+
+## P0 报名契约
+
+第一批手机号规则：微信授权号码标记为 wechat/verified；个人主体可手填号码，标记为 manual/unverified。两者都满足第一批报名门禁，管理员审批详情必须展示来源。
+
+Strava 报名资格唯一事实源：`strava_credentials + strava_snapshots`。`profiles.strava` 仅为兼容展示缓存，不参与报名判定。
+
+快照新鲜度为 24 小时；同步租约为 2 分钟。覆盖度只描述最近 90 天；第 5 页仍满 200 条时 `coverage_complete=false`。完整空窗口的统计值可为 0，未知或不完整值为 `null`。
+
+`strava_credentials` 使用以下同步状态字段：
+
+```text
+sync_status: pending|running|ready|failed
+sync_error_code?: String
+sync_started_at?: Date
+sync_finished_at?: Date
+sync_lease_id?: String
+```
 
 ## 环境变量（只在 CloudBase 控制台配置）
 
@@ -27,7 +45,7 @@ STRAVA_CALLBACK_URL=                # strava-callback 的公网 HTTPS 完整地�
 
 ## CloudBase bootstrap
 
-`scripts/bootstrap-cloudbase.mjs` 管理 8 个集合、10 个业务索引、全拒绝客户端规则和 `_id=demo_activity_001` 演示活动。`oauth_states._id` 与 `state_hash` 保证唯一，`expires_at ASC` 是辅助应用层清理的普通索引；CloudBase `UpdateTable` 不接受 TTL 参数，因此这里是**非物理 TTL，应用层过期 + 清理**。默认只生成 plan，不写远端：
+`scripts/bootstrap-cloudbase.mjs` 管理 8 个集合、11 个业务索引、全拒绝客户端规则和 `_id=demo_activity_001` 演示活动。`oauth_states._id` 与 `state_hash` 保证唯一，`expires_at ASC` 是辅助应用层清理的普通索引，`openid ASC + expires_at DESC` 用于查询用户的活跃授权状态；CloudBase `UpdateTable` 不接受 TTL 参数，因此这里是**非物理 TTL，应用层过期 + 清理**。默认只生成 plan，不写远端：
 
 ```bash
 npm run cloudbase:plan
@@ -35,7 +53,7 @@ npm run cloudbase:plan
 npm run cloudbase:verify
 ```
 
-当前测试环境已执行 apply 与 verify：8 个集合、全拒绝客户端规则、10 个业务索引及 `demo_activity_001` 均已校验通过。脚本仍保持默认只读，其他环境必须先审阅 plan 再显式 apply。
+目标基线为 8 个集合、全拒绝客户端规则、11 个业务索引及 `demo_activity_001`。脚本仍保持默认只读；每个环境都必须先审阅 plan，再显式 apply 和 verify，不能把仓库契约视为远端已完成变更。
 
 ## 安装与验证
 

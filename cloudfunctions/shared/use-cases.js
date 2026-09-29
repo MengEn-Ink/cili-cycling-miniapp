@@ -5,7 +5,7 @@ const {
   assertNoForbiddenFields,
   assertActivityOpen,
   assertProfileReady,
-  selectStrava,
+  selectCanonicalStrava,
   validateOptions,
   assertCanSubmit,
   assertCanCancel,
@@ -21,15 +21,17 @@ async function submitRegistration(store, { openid, activityId, options }, now = 
   if (typeof activityId !== 'string' || !activityId) fail('VALIDATION_FAILED', '缺少活动 ID');
   const id = registrationId(activityId, openid);
   return store.transaction(async (tx) => {
-    const [activity, profile, existing] = await Promise.all([
+    const [activity, profile, existing, credential, snapshot] = await Promise.all([
       tx.getActivity(activityId),
       tx.getProfile(openid),
       tx.getRegistration(id),
+      tx.getStravaCredential(openid),
+      tx.getStravaSnapshot(openid),
     ]);
     assertActivityOpen(activity, now);
     assertProfileReady(profile);
     assertCanSubmit(existing);
-    const strava = selectStrava(profile);
+    const strava = selectCanonicalStrava(credential, snapshot, now);
     const safeOptions = validateOptions(options);
     if (activity.occupied_count >= activity.capacity) fail('CAPACITY_FULL', '活动名额已满');
 
@@ -57,6 +59,19 @@ async function submitRegistration(store, { openid, activityId, options }, now = 
     await tx.putRegistration(id, value);
     // 活动文档是事务冲突点；并发提交必须串行核对并递增，不能先 count 后 insert。
     await tx.setOccupied(activityId, activity.occupied_count + 1);
+    await tx.addAudit(
+      buildAudit(
+        openid,
+        existing ? 'registration.resubmitted' : 'registration.submitted',
+        id,
+        now,
+        {
+          activity_id: activityId,
+          from_status: existing ? existing.status : null,
+          to_status: 'pending',
+        },
+      ),
+    );
     return publicRegistration(value);
   });
 }
@@ -71,6 +86,13 @@ async function cancelRegistration(store, { openid, registrationId: id }, now = n
     const value = { ...registration, status: 'cancelled', updated_at: now };
     await tx.putRegistration(id, value);
     await tx.setOccupied(registration.activity_id, activity.occupied_count - 1);
+    await tx.addAudit(
+      buildAudit(openid, 'registration.cancelled', id, now, {
+        activity_id: registration.activity_id,
+        from_status: registration.status,
+        to_status: 'cancelled',
+      }),
+    );
     return publicRegistration(value);
   });
 }
@@ -113,7 +135,7 @@ async function reviewRegistration(
       await tx.setOccupied(registration.activity_id, activity.occupied_count - 1);
     }
     await tx.addAudit(
-      buildAudit(openid, `registration.${action}`, id, now, {
+      buildAudit(openid, `registration.${nextStatus}`, id, now, {
         from_status: registration.status,
         to_status: nextStatus,
         reason: typeof reason === 'string' ? reason.trim() : '',

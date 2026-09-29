@@ -1,1 +1,62 @@
-<view class="page"><view class="hero"><view>STRAVA</view><view class="hero-title">{{connection.connected ? '已绑定' : '尚未绑定'}}</view><view>授权和 token 均由云函数安全处理</view></view><state-view wx:if="{{loading}}" type="loading" text="正在读取绑定状态"/><view class="card danger" wx:if="{{error}}">{{error}}</view><view class="card" wx:if="{{connection.connected}}"><view class="title">{{connection.athleteName}}</view><view class="grid" wx:if="{{connection.snapshot}}"><view class="metric"><view class="big">{{connection.snapshot.totalKm}} km</view><view>近 90 天里程</view></view><view class="metric"><view class="big">{{connection.snapshot.rides90d}}</view><view>骑行次数</view></view><view class="metric"><view class="big">{{connection.snapshot.speedKmh}}</view><view>加权均速 km/h</view></view><view class="metric"><view class="big">{{connection.snapshot.longestKm}} km</view><view>最长骑行</view></view></view><button class="btn" loading="{{busy}}" bindtap="sync">同步最近 90 天</button><button class="secondary" bindtap="disconnect">解绑</button></view><view class="card" wx:else><view class="title">绑定前请确认配置</view><view>需部署 strava-callback HTTP 路由，并把该 HTTPS 域名配置为小程序业务域名及 Strava 回调域名；未配置时授权页无法打开，不会伪造成功。</view><button class="btn" loading="{{busy}}" bindtap="connect">前往 Strava 授权</button></view></view>
+<view class="page">
+  <view class="hero">
+    <view>STRAVA</view>
+    <view class="hero-title">{{readinessMessage || '骑行数据准备'}}</view>
+    <view>授权和 token 均由云函数安全处理</view>
+  </view>
+  <state-view wx:if="{{loading}}" type="loading" text="正在读取绑定状态"/>
+  <view class="card danger" wx:if="{{error}}">{{error}}</view>
+
+  <view class="card" wx:if="{{!loading && readiness}}">
+    <view class="title">{{readinessMessage}}</view>
+    <view wx:if="{{readiness.state === 'authorizing'}}">请在 Strava 授权页完成操作后返回小程序。</view>
+    <view wx:elif="{{readiness.state === 'syncing'}}">首次授权后会自动准备数据，无需手动同步。</view>
+    <view wx:elif="{{readiness.state === 'failed'}}" class="danger">
+      {{readiness.error ? readiness.error.message : 'Strava 数据准备失败'}}
+    </view>
+
+    <view wx:if="{{readiness.state === 'ready'}}">
+      <view class="title">{{readiness.athleteName || 'Strava 骑手'}}</view>
+      <view class="grid" wx:if="{{readiness.snapshot}}">
+        <view class="metric">
+          <view class="big">{{readiness.snapshot.totalKm === null ? '未获取' : readiness.snapshot.totalKm + ' km'}}</view>
+          <view>近 90 天里程</view>
+        </view>
+        <view class="metric">
+          <view class="big">{{readiness.snapshot.rides90d === null ? '未获取' : readiness.snapshot.rides90d}}</view>
+          <view>骑行次数</view>
+        </view>
+        <view class="metric">
+          <view class="big">{{readiness.snapshot.speedKmh === null ? '未获取' : readiness.snapshot.speedKmh + ' km/h'}}</view>
+          <view>加权均速</view>
+        </view>
+        <view class="metric">
+          <view class="big">{{readiness.snapshot.longestKm === null ? '未获取' : readiness.snapshot.longestKm + ' km'}}</view>
+          <view>最长骑行</view>
+        </view>
+      </view>
+    </view>
+
+    <button
+      wx:if="{{readiness.state === 'disconnected'}}"
+      class="btn"
+      loading="{{busyAction === 'connect'}}"
+      disabled="{{busyAction}}"
+      bindtap="connect"
+    >前往 Strava 授权</button>
+    <button
+      wx:if="{{readiness.state === 'failed' && readiness.error && readiness.error.retryable}}"
+      class="btn"
+      loading="{{busyAction === 'retry'}}"
+      disabled="{{busyAction}}"
+      bindtap="retry"
+    >重试数据准备</button>
+    <button
+      wx:if="{{readiness.state === 'ready' || readiness.state === 'syncing' || readiness.state === 'failed'}}"
+      class="secondary"
+      loading="{{busyAction === 'disconnect'}}"
+      disabled="{{busyAction}}"
+      bindtap="disconnect"
+    >解绑 Strava</button>
+  </view>
+</view>

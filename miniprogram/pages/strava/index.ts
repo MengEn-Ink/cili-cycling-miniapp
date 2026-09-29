@@ -1,39 +1,127 @@
-import { rideService } from '../../services/ride-service';
+import type { StravaReadiness } from '../../models';
 import { runPageTask } from '../../services/page-service';
+import { rideService } from '../../services/ride-service';
+import {
+  pollStravaReadiness,
+  stravaReadinessMessage,
+} from '../../services/strava-readiness-service';
+
+function disconnectedReadiness(): StravaReadiness {
+  return {
+    state: 'disconnected',
+    canRegister: false,
+    athleteName: null,
+    snapshot: null,
+    error: null,
+  };
+}
+
+function confirmDisconnect(): Promise<boolean> {
+  return new Promise((resolve) => {
+    wx.showModal({
+      title: '确认解绑 Strava',
+      content: '解绑后将无法提交新的活动报名，已提交记录不受影响。',
+      confirmText: '确认解绑',
+      success: (result: { confirm: boolean }) => resolve(result.confirm),
+      fail: () => resolve(false),
+    });
+  });
+}
+
 Page({
-  data: { loading: true, error: '', connection: null as any, busy: false, routeReady: false },
+  loadRequestId: 0,
+  data: {
+    loading: true,
+    error: '',
+    readiness: null as StravaReadiness | null,
+    readinessMessage: '',
+    busyAction: null as null | 'connect' | 'retry' | 'disconnect',
+  },
   onShow() {
     void this.load();
   },
+  onHide() {
+    this.loadRequestId += 1;
+  },
+  onUnload() {
+    this.loadRequestId += 1;
+  },
+  setReadiness(readiness: StravaReadiness) {
+    this.setData({ readiness, readinessMessage: stravaReadinessMessage(readiness) });
+  },
   async load() {
-    const state = await runPageTask(() => rideService.getStravaStatus(), 'Strava 状态加载失败');
-    this.setData({
-      loading: false,
-      error: state.error,
-      connection: state.data || { connected: false },
-    });
+    const requestId = ++this.loadRequestId;
+    if (this.data.busyAction === 'retry') this.setData({ busyAction: null });
+    this.setData({ loading: true, error: '' });
+    const status = await runPageTask(() => rideService.getStravaReadiness(), 'Strava 状态加载失败');
+    if (requestId !== this.loadRequestId) return;
+    if (!status.data) {
+      this.setData({ loading: false, error: status.error });
+      return;
+    }
+
+    let readiness = status.data;
+    if (readiness.state === 'syncing' || readiness.state === 'failed') {
+      const prepared = await runPageTask(
+        () =>
+          pollStravaReadiness(() => rideService.ensureStravaReady(), {
+            isCancelled: () => requestId !== this.loadRequestId,
+          }),
+        'Strava 数据准备失败',
+      );
+      if (requestId !== this.loadRequestId) return;
+      if (!prepared.data) {
+        this.setData({ loading: false, error: prepared.error });
+        return;
+      }
+      readiness = prepared.data;
+    }
+    this.setReadiness(readiness);
+    this.setData({ loading: false });
   },
   async connect() {
-    this.setData({ busy: true, error: '' });
-    const state = await runPageTask(() => rideService.startStrava(), '无法发起 Strava 授权');
-    this.setData({ busy: false, error: state.error });
-    if (state.data)
-      wx.navigateTo({
-        url: '/pages/strava-webview/index?url=' + encodeURIComponent(state.data.authorizationUrl),
-      });
+    if (this.data.busyAction) return;
+    this.setData({ busyAction: 'connect', error: '' });
+    try {
+      const state = await runPageTask(() => rideService.startStrava(), '无法发起 Strava 授权');
+      this.setData({ error: state.error });
+      if (state.data) {
+        wx.navigateTo({
+          url: '/pages/strava-webview/index?url=' + encodeURIComponent(state.data.authorizationUrl),
+        });
+      }
+    } finally {
+      this.setData({ busyAction: null });
+    }
   },
-  async sync() {
-    this.setData({ busy: true, error: '' });
-    const state = await runPageTask(() => rideService.syncStrava(), '同步失败');
-    this.setData({
-      busy: false,
-      error: state.error,
-      connection: state.data || this.data.connection,
-    });
+  async retry() {
+    if (this.data.busyAction) return;
+    const requestId = ++this.loadRequestId;
+    this.setData({ busyAction: 'retry', error: '' });
+    try {
+      const state = await runPageTask(
+        () =>
+          pollStravaReadiness(() => rideService.ensureStravaReady(), {
+            isCancelled: () => requestId !== this.loadRequestId,
+          }),
+        'Strava 数据准备失败',
+      );
+      if (state.data && requestId === this.loadRequestId) this.setReadiness(state.data);
+      if (requestId === this.loadRequestId) this.setData({ error: state.error });
+    } finally {
+      if (requestId === this.loadRequestId) this.setData({ busyAction: null });
+    }
   },
   async disconnect() {
-    const state = await runPageTask(() => rideService.disconnectStrava(), '解绑失败');
-    if (!state.error) this.setData({ connection: { connected: false } });
-    else this.setData({ error: state.error });
+    if (this.data.busyAction) return;
+    this.setData({ busyAction: 'disconnect', error: '' });
+    try {
+      if (!(await confirmDisconnect())) return;
+      const state = await runPageTask(() => rideService.disconnectStrava(), '解绑失败');
+      this.setData({ error: state.error });
+      if (!state.error) this.setReadiness(disconnectedReadiness());
+    } finally {
+      this.setData({ busyAction: null });
+    }
   },
 });

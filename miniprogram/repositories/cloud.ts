@@ -5,6 +5,9 @@ import type {
   Registration,
   RegistrationStatus,
   StravaConnection,
+  StravaCoverage,
+  StravaReadiness,
+  StravaReadinessState,
 } from '../models';
 import type {
   AdminRegistrationStatusFilter,
@@ -64,6 +67,38 @@ function requiredId(value: unknown, label: string): string {
   if (typeof value !== 'string' || !value)
     throw new CloudRepositoryError('VALIDATION_FAILED', `缺少${label}`);
   return value;
+}
+function finiteNumberOrNull(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+function nullableFiniteNumber(value: unknown): number | null {
+  if (value === null) return null;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  return invalidResponse();
+}
+function nullableDateText(value: unknown): string | null {
+  if (value === null) return null;
+  const text = dateText(value);
+  return text || null;
+}
+function strictDateText(value: unknown): string {
+  const text = dateText(value);
+  if (!text || !Number.isFinite(new Date(text).getTime())) return invalidResponse();
+  return text;
+}
+function hasOwn(value: Record<string, any>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(value, key);
+}
+function mapCoverage(raw: Record<string, any>, strict: boolean): StravaCoverage | null {
+  const keys = ['coverage_from', 'coverage_to', 'coverage_complete'];
+  if (!keys.some((key) => hasOwn(raw, key))) return null;
+  const from = strict ? strictDateText(raw.coverage_from) : dateText(raw.coverage_from);
+  const to = strict ? strictDateText(raw.coverage_to) : dateText(raw.coverage_to);
+  if (!from || !to || typeof raw.coverage_complete !== 'boolean') {
+    if (strict) return invalidResponse();
+    return null;
+  }
+  return { from, to, complete: raw.coverage_complete };
 }
 function mapActivity(raw: unknown): Activity {
   const value = expectRecord(raw);
@@ -174,12 +209,15 @@ function mapRegistration(raw: unknown): Registration {
     strava: {
       status: value.strava_status === 'exempted' ? 'exempted' : 'connected',
       reason: typeof exemption.reason === 'string' ? exemption.reason : undefined,
-      years: typeof strava.years_on_strava === 'number' ? strava.years_on_strava : 0,
-      rides90d: typeof strava.activities_90d === 'number' ? strava.activities_90d : 0,
-      longestKm: typeof strava.longest_km === 'number' ? strava.longest_km : 0,
-      elevationM: typeof strava.max_elevation_m === 'number' ? strava.max_elevation_m : 0,
-      speedKmh:
-        typeof strava.weighted_avg_speed_kmh === 'number' ? strava.weighted_avg_speed_kmh : 0,
+      years: finiteNumberOrNull(strava.years_on_strava),
+      totalKm: finiteNumberOrNull(strava.total_km),
+      rides90d: finiteNumberOrNull(strava.activities_90d),
+      longestKm: finiteNumberOrNull(strava.longest_km),
+      elevationM: finiteNumberOrNull(strava.total_elevation_m),
+      speedKmh: finiteNumberOrNull(strava.weighted_avg_speed_kmh),
+      latestActivityAt: nullableDateText(strava.latest_activity_at ?? null),
+      syncedAt: dateText(strava.synced_at),
+      coverage: mapCoverage(strava, false),
     },
     reviewComment: typeof lastReview.comment === 'string' ? lastReview.comment : undefined,
     serialNo: typeof value.serial_no === 'string' ? value.serial_no : undefined,
@@ -206,8 +244,68 @@ function mapStrava(raw: unknown): StravaConnection {
               : 0,
           latestActivityAt: dateText(snapshot.latest_activity_at),
           syncedAt: dateText(snapshot.synced_at),
+          coverage: mapCoverage(snapshot, false),
         }
       : undefined,
+  };
+}
+function mapStravaReadiness(raw: unknown): StravaReadiness {
+  const value = expectRecord(raw);
+  const states: StravaReadinessState[] = [
+    'disconnected',
+    'authorizing',
+    'syncing',
+    'ready',
+    'failed',
+  ];
+  if (!states.includes(value.state) || typeof value.can_register !== 'boolean')
+    return invalidResponse();
+  if (value.athlete_name !== null && typeof value.athlete_name !== 'string')
+    return invalidResponse();
+
+  let snapshot = null;
+  if (value.snapshot !== null) {
+    const rawSnapshot = expectRecord(value.snapshot);
+    const syncedAt = strictDateText(rawSnapshot.synced_at);
+    const latestActivityAt =
+      rawSnapshot.latest_activity_at === null
+        ? null
+        : strictDateText(rawSnapshot.latest_activity_at);
+    snapshot = {
+      totalKm: nullableFiniteNumber(rawSnapshot.total_km),
+      rides90d: nullableFiniteNumber(rawSnapshot.activities_90d),
+      longestKm: nullableFiniteNumber(rawSnapshot.longest_km),
+      elevationM: nullableFiniteNumber(rawSnapshot.total_elevation_m),
+      speedKmh: nullableFiniteNumber(rawSnapshot.weighted_avg_speed_kmh),
+      latestActivityAt,
+      syncedAt,
+      coverage: mapCoverage(rawSnapshot, true),
+    };
+  }
+
+  let error = null;
+  if (value.error !== null) {
+    const rawError = expectRecord(value.error);
+    if (
+      typeof rawError.code !== 'string' ||
+      !rawError.code ||
+      typeof rawError.message !== 'string' ||
+      typeof rawError.retryable !== 'boolean'
+    )
+      return invalidResponse();
+    error = {
+      code: rawError.code,
+      message: rawError.message,
+      retryable: rawError.retryable,
+    };
+  }
+
+  return {
+    state: value.state,
+    canRegister: value.can_register,
+    athleteName: value.athlete_name,
+    snapshot,
+    error,
   };
 }
 function submissionOptions(value: RegistrationSubmission) {
@@ -263,17 +361,23 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     );
   }
   async updateRegistration(id: string, status: RegistrationStatus, comment?: string) {
-    const registrationId = requiredId(id, '报名 ID');
-    if (status === 'cancelled')
-      return mapRegistration(await this.call('registration', { action: 'cancel', registrationId }));
+    if (status === 'cancelled') return this.cancelRegistration(id);
     if (status !== 'approved' && status !== 'rejected')
       throw new CloudRepositoryError('INVALID_TRANSITION', '不支持的状态迁移');
+    return this.reviewRegistration(id, status, comment);
+  }
+  async cancelRegistration(id: string) {
+    const registrationId = requiredId(id, '报名 ID');
+    return mapRegistration(await this.call('registration', { action: 'cancel', registrationId }));
+  }
+  async reviewRegistration(id: string, decision: 'approved' | 'rejected', reason?: string) {
+    const registrationId = requiredId(id, '报名 ID');
     return mapRegistration(
       await this.call('admin-review', {
         action: 'review',
         registrationId,
-        decision: status === 'approved' ? 'approve' : 'reject',
-        reason: typeof comment === 'string' ? comment : undefined,
+        decision: decision === 'approved' ? 'approve' : 'reject',
+        reason: typeof reason === 'string' ? reason : undefined,
       }),
     );
   }
@@ -330,6 +434,12 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
   }
   async getStravaStatus() {
     return mapStrava(await this.call('strava-auth', { action: 'status' }));
+  }
+  async getStravaReadiness() {
+    return mapStravaReadiness(await this.call('strava-auth', { action: 'status' }));
+  }
+  async ensureStravaReady() {
+    return mapStravaReadiness(await this.call('strava-auth', { action: 'ensureReady' }));
   }
   async startStrava() {
     const value = expectRecord(await this.call('strava-auth', { action: 'start' }));

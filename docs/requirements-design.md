@@ -77,7 +77,7 @@
    - 费用说明（包含/不包含，纯文字）。
    - 底部固定操作条：报名状态 + 「立即报名/查看报名」。
 3. **报名填报页**：
-   - 微信手机号（`getPhoneNumber`，必填）。
+   - 手机号（必填）：微信授权号码标记为 `wechat/verified`；个人主体可手填号码并标记为 `manual/unverified`。两者都满足第一批报名门禁。
    - 真实姓名、证件类型/证件号码（保险用，必填）、性别。
    - 紧急联系人姓名、电话（必填）。
    - 本活动选项：用车方式（自带车/租车）、骑行经验等级（新手/有一定经验/常骑）、是否需要租车（数量/车型备注）、饮食或其他备注。
@@ -104,6 +104,12 @@
 - 报名填报页校验绑定状态：无有效绑定记录或 token 已失效 → 必须先绑定，绑定成功后才能提交。
 - **豁免例外**：被管理员授予 Strava 豁免（带原因）的队员可不绑定直接报名，记录带「豁免」标识；豁免针对账号长期有效，可被管理员撤销。未获豁免又无法完成绑定时，队员可在绑定页「申请豁免」，管理员审批通过后即可报名。
 - 绑定时云函数立即调用 Strava API 拉取统计并落库，作为该次报名快照（审批看的是报名时的数据，避免事后变化）。
+
+P0 报名契约：
+
+- 第一批手机号规则：微信授权号码标记为 wechat/verified；个人主体可手填号码，标记为 manual/unverified。两者都满足第一批报名门禁，管理员审批详情必须展示来源。
+- Strava 报名资格唯一事实源：`strava_credentials + strava_snapshots`。`profiles.strava` 仅为兼容展示缓存，不参与报名判定。
+- 快照新鲜度为 24 小时；同步租约为 2 分钟。覆盖度只描述最近 90 天；第 5 页仍满 200 条时 `coverage_complete=false`。完整空窗口的统计值可为 0，未知或不完整值为 `null`。
 
 ### 5.2 OAuth 流程（微信小程序内）
 
@@ -145,7 +151,7 @@
 
 实现注意：
 
-- **API 配额**：单应用每 15 分钟 200 次、每天 2000 次。全历史分页对重度用户可能几十页，云函数有执行时长上限，因此首次同步采用「先拉全量分页（设上限，如 20 页≈4000 条，覆盖绝大多数用户）→ 落原始活动摘要 → 计算指标」，超出上限的历史用 `after/before` 参数分批续拉（异步任务或下次进入时续传）。指标在报名时快照固化。
+- **API 配额**：单应用每 15 分钟 200 次、每天 2000 次。同步只查询最近 90 天，每页 200 条，最多 5 页；第 5 页仍满 200 条时将 `coverage_complete` 记为 `false`，不把部分窗口统计冒充完整结果。指标在报名时快照固化。
 - `refresh_token` 长期有效；进入报名/审批相关流程时云函数按需用其刷新短期 access_token（Strava token 有效期约 6 小时），失败则提示重新授权。
 - 所有计算在云函数完成，前端只拿结果，不接触 token。
 
@@ -223,22 +229,36 @@ created_at, updated_at
 
 索引：`activity_id + status`、`openid + created_at`；同一活动同一 openid 仅允许一条非终态记录（云函数内做事务/唯一校验）。
 
-### 6.3 `strava_accounts` 绑定关系
+### 6.3 `strava_credentials` 与 `strava_snapshots`
 
 ```text
-_id, openid, athlete_id, athlete_name, avatar,
+strava_credentials:
+_id, openid, athlete_id, athlete_name,
 access_token_cipher, refresh_token_cipher, token_expires_at,
 scopes,                      // 实际授予的 scope 列表
-sync_cursor,                 // 历史分页断点（续拉用）
-stats: {                     // 最近一次计算结果（字段同 registrations.strava_snapshot） },
-exempt: { is_exempt, granted_by, reason, at }, // 豁免状态
-last_synced_at, created_at, updated_at
+sync_status: pending|running|ready|failed,
+sync_error_code?: String,
+sync_started_at?: Date,
+sync_finished_at?: Date,
+sync_lease_id?: String,
+connected_at, updated_at
+
+strava_snapshots:
+_id, openid,
+total_km, activities_90d, longest_km, total_elevation_m,
+weighted_avg_speed_kmh, latest_activity_at,
+coverage_from, coverage_to, coverage_complete,
+synced_at
 ```
+
+`strava_credentials + strava_snapshots` 是 Strava 报名资格唯一事实源；`profiles.strava` 仅为兼容展示缓存，不参与报名判定。快照不足 24 小时才算新鲜；同步任务持有 2 分钟租约。完整空窗口的统计值可为 0，未知或不完整值为 `null`。
 
 ### 6.4 `users` 用户与常用资料
 
 ```text
 _id, openid, phone,
+phone_source: wechat|manual,
+phone_verified: Boolean,     // wechat=true, manual=false
 nickname,                    // 自定义昵称（本人编辑）
 title,                       // 称号（管理员颁发，如"爬坡王"）
 avatar_file_id,              // 头像
@@ -282,7 +302,7 @@ created_at, updated_at
 ### 7.3 安全红线
 
 - 证件号、Strava token 为敏感字段：写入前用云函数内密钥做对称加密（密钥存云函数环境变量/KMS，不入库不入代码库）；列表与默认详情一律脱敏（如仅显示后四位）。
-- 手机号通过 `getPhoneNumber` 在云函数解码，不让前端手填作为可信来源。
+- 微信授权手机号通过 `getPhoneNumber` 在云函数解码并标记为 `wechat/verified`；个人主体可提交手填号码，但必须标记为 `manual/unverified`，管理员审批详情展示来源。两者都满足第一批报名门禁，不能把手填号码当成已验证号码。
 - 所有写操作在云函数侧校验：身份、活动状态、报名截止、名额、重复报名、管理员权限；不信任前端传参。
 - 名额变更走云数据库事务/原子操作，防止并发超报。
 - 日志不打印 token、证件号明文；敏感查看动作写 `audit_logs`。

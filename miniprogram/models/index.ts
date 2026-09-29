@@ -51,14 +51,28 @@ export interface ProfileUpdate {
   phone?: string;
   emergencyPhone?: string;
 }
+export type StravaReadinessState = 'disconnected' | 'authorizing' | 'syncing' | 'ready' | 'failed';
+export interface StravaCoverage {
+  from: string;
+  to: string;
+  complete: boolean;
+}
 export interface StravaSnapshot {
-  totalKm: number;
-  rides90d: number;
-  longestKm: number;
-  elevationM: number;
-  speedKmh: number;
-  latestActivityAt: string;
+  totalKm: number | null;
+  rides90d: number | null;
+  longestKm: number | null;
+  elevationM: number | null;
+  speedKmh: number | null;
+  latestActivityAt: string | null;
   syncedAt: string;
+  coverage: StravaCoverage | null;
+}
+export interface StravaReadiness {
+  state: StravaReadinessState;
+  canRegister: boolean;
+  athleteName: string | null;
+  snapshot: StravaSnapshot | null;
+  error: null | { code: string; message: string; retryable: boolean };
 }
 export interface StravaConnection {
   connected: boolean;
@@ -76,11 +90,15 @@ export interface Registration {
   strava: {
     status: StravaStatus;
     reason?: string;
-    years: number;
-    rides90d: number;
-    longestKm: number;
-    elevationM: number;
-    speedKmh: number;
+    years: number | null;
+    totalKm?: number | null;
+    rides90d: number | null;
+    longestKm: number | null;
+    elevationM: number | null;
+    speedKmh: number | null;
+    latestActivityAt?: string | null;
+    syncedAt?: string;
+    coverage?: StravaCoverage | null;
   };
   reviewComment?: string;
   serialNo?: string;
