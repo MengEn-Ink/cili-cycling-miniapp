@@ -3,8 +3,7 @@ import { open } from 'node:fs/promises';
 
 const IS_POSIX = process.platform !== 'win32';
 const OPEN_FLAGS =
-  constants.O_RDONLY |
-  (IS_POSIX && typeof constants.O_NOFOLLOW === 'number' ? constants.O_NOFOLLOW : 0);
+  constants.O_RDONLY | (IS_POSIX ? (constants.O_NOFOLLOW ?? 0) | (constants.O_NONBLOCK ?? 0) : 0);
 
 export class JourneyEvidenceKeyError extends Error {}
 

@@ -85,7 +85,7 @@ async function runVerifier(evidence) {
   return runVerifierSource(JSON.stringify(evidence));
 }
 
-async function runVerifierSource(source, keyPath = keyFilePath) {
+async function runVerifierSource(source, keyPath = keyFilePath, timeout) {
   const directory = await mkdtemp(join(tmpdir(), 'ride-event-evidence-'));
   const fixturePath = join(directory, 'evidence.json');
 
@@ -97,6 +97,7 @@ async function runVerifierSource(source, keyPath = keyFilePath) {
         : [verifierPath, '--key-file', keyPath, fixturePath];
     return spawnSync(process.execPath, args, {
       encoding: 'utf8',
+      timeout,
     });
   } finally {
     rmSync(directory, { recursive: true, force: true });
@@ -107,9 +108,10 @@ async function runVerifierWithoutKey(evidence) {
   return runVerifierSource(JSON.stringify(evidence), null);
 }
 
-function runIssuer(args = ['--key-file', keyFilePath]) {
+function runIssuer(args = ['--key-file', keyFilePath], timeout) {
   return spawnSync(process.execPath, [issuerPath, ...args], {
     encoding: 'utf8',
+    timeout,
   });
 }
 
@@ -280,6 +282,34 @@ test(
   { skip: process.platform === 'win32' },
   async () => {
     await assertKeyRejectedByBothConsumers('/dev/null', /密钥必须是普通文件/);
+  },
+);
+
+test(
+  'shared key reader rejects a 0600 FIFO without blocking either consumer',
+  { skip: process.platform === 'win32' },
+  async (context) => {
+    const fifoPath = join(keyFixtureDirectory, 'fifo.key');
+    const creation = spawnSync('mkfifo', [fifoPath], { encoding: 'utf8' });
+    if (creation.error?.code === 'ENOENT') {
+      context.skip('mkfifo is unavailable');
+      return;
+    }
+    assert.equal(creation.status, 0, creation.stderr);
+    chmodSync(fifoPath, 0o600);
+
+    const results = [
+      runIssuer(['--key-file', fifoPath], 750),
+      await runVerifierSource(JSON.stringify(validEvidence), fifoPath, 750),
+    ];
+
+    for (const result of results) {
+      const output = `${result.stdout}${result.stderr}`;
+      assert.notEqual(result.error?.code, 'ETIMEDOUT', 'key reader blocked on a FIFO');
+      assert.equal(output.includes(testKeySentinel), false);
+      assert.equal(result.status, 1, `expected FIFO rejection, got output: ${output}`);
+      assert.match(result.stderr, /密钥必须是普通文件/);
+    }
   },
 );
 
