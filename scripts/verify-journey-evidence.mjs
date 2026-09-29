@@ -24,8 +24,7 @@ const FORBIDDEN_NORMALIZED_KEYS = new Set([
   'ciphertext',
 ]);
 const MARKER_PREFIX = 'E2E_RESULT:';
-const PROVIDER_IDENTIFIER = /^ou_[A-Za-z0-9_-]+$/i;
-const RAW_HASH = /^[a-f0-9]{32,}$/i;
+const RUN_ID_PATTERN = /^P0_\d{8}_[A-F0-9]{12}$/;
 const EXPECTED_STATUSES = ['pending', 'approved', 'cancelled', 'pending'];
 const REQUIRED_AUDIT_ACTIONS = [
   'strava.sync.succeeded',
@@ -286,7 +285,7 @@ function validateEvidenceSchema(evidence) {
 
 function validateSyntheticAliases(evidence) {
   const runId = evidence.marker.slice(MARKER_PREFIX.length);
-  if (PROVIDER_IDENTIFIER.test(runId) || RAW_HASH.test(runId)) {
+  if (!RUN_ID_PATTERN.test(runId)) {
     fail('导出标识符必须使用合成别名');
   }
 

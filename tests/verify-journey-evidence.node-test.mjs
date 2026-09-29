@@ -42,6 +42,20 @@ const invalidExportedIdentifiers = [
     value: 'production-rider-42',
   },
 ];
+const invalidSynchronizedRunIds = [
+  {
+    label: 'sensitive-key text',
+    value: 'access_token_SECRET_123',
+  },
+  {
+    label: 'phone-shaped value',
+    value: '13800138000',
+  },
+  {
+    label: 'provider identifier',
+    value: 'oUpF8uMuAJO_M2pxb1Q9zNjWeS6o',
+  },
+];
 
 async function runVerifier(evidence) {
   return runVerifierSource(JSON.stringify(evidence));
@@ -108,15 +122,30 @@ test('requires a root subjectAlias', async () => {
   assert.match(result.stderr, /P0 真实旅程证据校验失败/);
 });
 
-test('accepts a legal marker containing the word HEADPHONE', async () => {
+test('does not reject HEADPHONE text in an allowed audit action', async () => {
   const evidence = structuredClone(validEvidence);
-  setAliasesForRunId(evidence, 'HEADPHONE_RIDE_001');
+  evidence.audits.push({
+    action: 'journey.HEADPHONE.observed',
+    target_id: evidence.subjectAlias,
+    created_at: '2026-09-29T04:05:00.000Z',
+  });
 
   const result = await runVerifier(evidence);
 
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /P0 真实旅程证据校验通过/);
 });
+
+for (const { label, value } of invalidSynchronizedRunIds) {
+  test(`rejects a synchronized chain using ${label} as RUN_ID`, async () => {
+    const evidence = structuredClone(validEvidence);
+    setAliasesForRunId(evidence, value);
+
+    const result = await runVerifier(evidence);
+
+    assertRejectedWithoutSentinel(result, value);
+  });
+}
 
 test('rejects a provider identifier wrapped in a user_test alias', async () => {
   const wrappedIdentifier = 'user_test_ou_wrapped_identifier_7e85e5';

@@ -32,37 +32,46 @@
 
 证据只保留旅程判断所需字段：
 
+执行前生成本次唯一的 `RUN_ID`（当天日期 + 6 个随机字节的大写十六进制表示）：
+
+```bash
+RUN_ID="P0_$(date +%Y%m%d)_$(openssl rand -hex 6 | tr '[:lower:]' '[:upper:]')"
+printf '%s\n' "$RUN_ID"
+```
+
+`RUN_ID` 必须严格匹配 `^P0_\d{8}_[A-F0-9]{12}$`。下方示例使用固定的测试值；现场执行时需将同一个新生成的 `RUN_ID` 同步写入 marker、两个别名和对应审计目标。
+
 ```json
 {
-  "marker": "E2E_RESULT:P0_READY_JOURNEY_001",
-  "subjectAlias": "user_test_P0_READY_JOURNEY_001",
-  "registrationId": "reg_test_P0_READY_JOURNEY_001",
+  "marker": "E2E_RESULT:P0_20260929_A1B2C3D4E5F6",
+  "subjectAlias": "user_test_P0_20260929_A1B2C3D4E5F6",
+  "registrationId": "reg_test_P0_20260929_A1B2C3D4E5F6",
   "statuses": ["pending", "approved", "cancelled", "pending"],
   "occupiedCounts": [3, 4, 4, 3, 4],
   "audits": [
     {
       "action": "strava.sync.succeeded",
-      "target_id": "user_test_P0_READY_JOURNEY_001",
+      "target_id": "user_test_P0_20260929_A1B2C3D4E5F6",
       "created_at": "2026-09-29T04:00:00.000Z"
     },
     {
       "action": "registration.submitted",
-      "target_id": "reg_test_P0_READY_JOURNEY_001",
+      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6",
       "created_at": "2026-09-29T04:01:00.000Z"
     },
     {
       "action": "registration.approved",
-      "target_id": "reg_test_P0_READY_JOURNEY_001",
+      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6",
       "created_at": "2026-09-29T04:02:00.000Z"
     },
     {
       "action": "registration.cancelled",
-      "target_id": "reg_test_P0_READY_JOURNEY_001",
+      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6",
       "created_at": "2026-09-29T04:03:00.000Z"
     },
     {
       "action": "registration.resubmitted",
-      "target_id": "reg_test_P0_READY_JOURNEY_001",
+      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6",
       "created_at": "2026-09-29T04:04:00.000Z"
     }
   ]

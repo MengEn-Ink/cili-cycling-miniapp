@@ -1,7 +1,7 @@
 {
-  "marker": "E2E_RESULT:P0_READY_JOURNEY_REJECT",
-  "subjectAlias": "user_test_P0_READY_JOURNEY_REJECT",
-  "registrationId": "reg_test_P0_READY_JOURNEY_REJECT",
+  "marker": "E2E_RESULT:P0_20260929_0A1B2C3D4E5F",
+  "subjectAlias": "user_test_P0_20260929_0A1B2C3D4E5F",
+  "registrationId": "reg_test_P0_20260929_0A1B2C3D4E5F",
   "statuses": ["pending", "approved", "cancelled", "pending"],
   "occupiedCounts": [3, 4, 4, 3, 4],
   "access_token": "MUST_NOT_APPEAR_IN_OUTPUT",
