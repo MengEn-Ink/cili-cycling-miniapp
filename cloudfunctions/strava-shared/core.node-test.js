@@ -480,6 +480,28 @@ test('90 天骑行统计排除通勤/训练并按距离加权', () => {
     coverage_complete: true,
   });
 });
+test('大量 Strava 活动统计使用归约避免展开参数上限', () => {
+  const now = new Date('2026-09-03T00:00:00Z');
+  const coverageFrom = new Date('2026-06-05T00:00:00Z');
+  const activities = Array.from({ length: 130_000 }, (_, index) => ({
+    sport_type: 'Ride',
+    distance: index === 129_999 ? 200_000 : 1_000,
+    moving_time: 100,
+    total_elevation_gain: 1,
+    start_date: index === 129_999 ? '2026-09-02T00:00:00Z' : '2026-09-01T00:00:00Z',
+  }));
+
+  const stats = statistics(activities, {
+    now,
+    coverageFrom,
+    coverageTo: now,
+    coverageComplete: true,
+  });
+
+  assert.equal(stats.activities_90d, 130_000);
+  assert.equal(stats.longest_km, 200);
+  assert.equal(stats.latest_activity_at, '2026-09-02T00:00:00.000Z');
+});
 test('ensureReady 对 fresh snapshot 不获取 lease 且不访问 Strava', async () => {
   const now = new Date('2026-09-29T04:00:00.000Z');
   let claims = 0;

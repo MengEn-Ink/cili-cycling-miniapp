@@ -25,11 +25,11 @@
       <view class="field-hint">名额由服务端事务最终确认，显示为 0 的选项不可选择</view>
       <radio-group class="choice-group transport-choices" data-key="gatheringMode" bindchange="set">
         <label class="choice choice-detail {{gatheringMode === 'self_drive' ? 'selected' : ''}} {{activity && activity.selfDriveRemaining === 0 ? 'is-disabled' : ''}}">
-          <radio color="#d8ff36" value="self_drive" checked="{{gatheringMode === 'self_drive'}}" disabled="{{submitting || (activity && activity.selfDriveRemaining === 0)}}"/>
+          <radio color="#d55b1f" value="self_drive" checked="{{gatheringMode === 'self_drive'}}" disabled="{{submitting || (activity && activity.selfDriveRemaining === 0)}}"/>
           <view class="choice-copy"><view class="choice-title">自驾前往</view><view class="choice-meta">容量 {{activity && activity.selfDriveCapacity !== undefined ? activity.selfDriveCapacity : '待公布'}} · 剩余 {{activity && activity.selfDriveRemaining !== undefined ? activity.selfDriveRemaining : '待确认'}}</view></view>
         </label>
         <label class="choice choice-detail {{gatheringMode === 'support_vehicle' ? 'selected' : ''}} {{activity && activity.supportVehicleRemaining === 0 ? 'is-disabled' : ''}}">
-          <radio color="#d8ff36" value="support_vehicle" checked="{{gatheringMode === 'support_vehicle'}}" disabled="{{submitting || (activity && activity.supportVehicleRemaining === 0)}}"/>
+          <radio color="#d55b1f" value="support_vehicle" checked="{{gatheringMode === 'support_vehicle'}}" disabled="{{submitting || (activity && activity.supportVehicleRemaining === 0)}}"/>
           <view class="choice-copy"><view class="choice-title">需要后援车</view><view class="choice-meta">容量 {{activity && activity.supportVehicleCapacity !== undefined ? activity.supportVehicleCapacity : '待公布'}} · 剩余 {{activity && activity.supportVehicleRemaining !== undefined ? activity.supportVehicleRemaining : '待确认'}}</view></view>
         </label>
       </radio-group>
@@ -40,9 +40,9 @@
       <view class="field-title">骑行经验</view>
       <view class="field-hint">选择最接近近期稳定骑行状态的一项</view>
       <radio-group class="choice-group three" data-key="experience" bindchange="set">
-        <label class="choice {{experience === '新手' ? 'selected' : ''}}"><radio color="#d8ff36" value="新手" checked="{{experience === '新手'}}" disabled="{{submitting}}"/>新手</label>
-        <label class="choice {{experience === '有一定经验' ? 'selected' : ''}}"><radio color="#d8ff36" value="有一定经验" checked="{{experience === '有一定经验'}}" disabled="{{submitting}}"/>有经验</label>
-        <label class="choice {{experience === '常骑' ? 'selected' : ''}}"><radio color="#d8ff36" value="常骑" checked="{{experience === '常骑'}}" disabled="{{submitting}}"/>常骑</label>
+        <label class="choice {{experience === '新手' ? 'selected' : ''}}"><radio color="#d55b1f" value="新手" checked="{{experience === '新手'}}" disabled="{{submitting}}"/>新手</label>
+        <label class="choice {{experience === '有一定经验' ? 'selected' : ''}}"><radio color="#d55b1f" value="有一定经验" checked="{{experience === '有一定经验'}}" disabled="{{submitting}}"/>有经验</label>
+        <label class="choice {{experience === '常骑' ? 'selected' : ''}}"><radio color="#d55b1f" value="常骑" checked="{{experience === '常骑'}}" disabled="{{submitting}}"/>常骑</label>
       </radio-group>
       <view class="strava-row"><view class="strava-copy"><view class="field-title">Strava 骑行数据</view><view class="field-hint readiness">{{readinessMessage}}</view><view wx:if="{{readiness.state === 'syncing'}}" class="field-hint readiness">首次授权后会自动准备，无需手动同步。</view></view><button class="text-button" bindtap="strava" disabled="{{submitting}}">管理</button></view>
     </view>

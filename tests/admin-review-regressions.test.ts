@@ -113,6 +113,39 @@ describe('管理员审核详情回归', () => {
     expect(template).toContain('{{statusText}}');
     expect(template).not.toContain('{{x.status}}');
   });
+
+  it('离开详情页后丢弃迟到的详情响应', async () => {
+    const pending = deferred<ReturnType<typeof registration>>();
+    rideService.getReviewRegistration.mockReturnValueOnce(pending.promise);
+
+    const loading = page.onLoad({ id: 'r1' });
+    page.onUnload();
+    pending.resolve(registration('late', 'a1'));
+    await loading;
+
+    expect(page.data.x).toBeNull();
+    expect(page.data.loading).toBe(true);
+  });
+
+  it('审批中拦截重复点击并在模板上禁用按钮', async () => {
+    const pending = deferred<void>();
+    rideService.updateRegistration.mockReturnValueOnce(pending.promise);
+    await page.onLoad({ id: 'r1' });
+
+    const first = page.act({ currentTarget: { dataset: { s: 'approved' } } });
+    await vi.waitFor(() => expect(page.data.submitting).toBe(true));
+    await page.act({ currentTarget: { dataset: { s: 'approved' } } });
+
+    expect(rideService.updateRegistration).toHaveBeenCalledOnce();
+    const template = readFileSync('miniprogram/pages/admin/review-detail/index.wxml', 'utf8');
+    expect(template).toContain('disabled="{{submitting}}"');
+    expect(template).toContain('loading="{{submitting}}"');
+
+    pending.resolve();
+    await first;
+    expect(page.data.submitting).toBe(false);
+    expect(page.data.statusText).toBe('已通过');
+  });
 });
 
 describe('管理员审核列表回归', () => {
