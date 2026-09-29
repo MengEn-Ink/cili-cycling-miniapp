@@ -80,12 +80,13 @@ Page({
     const requestId = ++this.loadRequestId;
     const isCancelled = () => requestId !== this.loadRequestId;
     this.setData({ loading: true, errors: [], submitting: false });
-    const [profileState, readinessState, activityState, notificationTemplateIds] = await Promise.all([
-      runPageTask(() => rideService.getProfile(), '个人资料加载失败'),
-      runPageTask(() => loadBoundedReadiness(isCancelled), 'Strava 数据准备状态加载失败'),
-      runPageTask(() => loadActivityAction(this.data.activityId), '活动报名状态加载失败'),
-      rideService.getReviewNotificationTemplateIds().catch(() => []),
-    ]);
+    const [profileState, readinessState, activityState, notificationTemplateIds] =
+      await Promise.all([
+        runPageTask(() => rideService.getProfile(), '个人资料加载失败'),
+        runPageTask(() => loadBoundedReadiness(isCancelled), 'Strava 数据准备状态加载失败'),
+        runPageTask(() => loadActivityAction(this.data.activityId), '活动报名状态加载失败'),
+        rideService.getReviewNotificationTemplateIds().catch(() => []),
+      ]);
     if (requestId !== this.loadRequestId) return;
     const errors = [profileState.error, readinessState.error, activityState.error].filter(Boolean);
     const readiness =
