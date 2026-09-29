@@ -16,6 +16,9 @@
 - Modify: `cloudfunctions/profile/core.js`
 - Modify: `cloudfunctions/profile/core.node-test.js`
 - Modify: `cloudfunctions/profile/index.js`
+- Modify: `scripts/bootstrap-cloudbase.mjs`
+- Modify: `scripts/bootstrap-cloudbase.node-test.mjs`
+- Modify: `docs/cloudbase-schema.md`
 - Modify: `miniprogram/repositories/types.ts`
 - Modify: `miniprogram/repositories/cloud.ts`
 - Modify: `miniprogram/pages/profile-edit/index.ts`
@@ -25,7 +28,9 @@
 - [ ] Add RED tests proving another user’s `cloud://` ID is rejected and legacy unowned media is not card-visible.
 - [ ] Add RED tests for an authenticated `mediaUploadPath` action and client call before `cloud.uploadFile`.
 - [ ] Derive an opaque owner alias from the trusted OPENID and server secret; return `profiles/<alias>/<uuid>.jpg` only.
-- [ ] Validate new photo/avatar IDs against the current owner prefix. Keep stored legacy IDs untouched but exclude them from card media.
+- [ ] Add `profile_media` with deny-by-default client rules and an owner/status index. After upload, call `registerMedia` to persist `{file_id, owner_openid, category, status, created_at}` under a deterministic file hash ID.
+- [ ] Validate every photo/avatar against an active media record whose `owner_openid` matches WXContext. Keep stored legacy IDs untouched but exclude them from card media.
+- [ ] On `registerMedia` failure, do not append the image to profile data and best-effort delete the just-uploaded file.
 - [ ] Run profile and client focused tests, then commit `fix(profile): bind uploaded media to owners`.
 
 ### Task 2: Build the single personal-card response
