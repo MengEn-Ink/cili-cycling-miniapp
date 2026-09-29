@@ -78,7 +78,7 @@
    - 底部固定操作条：报名状态 + 「立即报名/查看报名」。
 3. **报名填报页**：
    - 手机号（必填）：微信授权号码标记为 `wechat/verified`；个人主体可手填号码并标记为 `manual/unverified`。两者都满足第一批报名门禁。
-   - 真实姓名、证件类型/证件号码（保险用，必填）、性别。
+   - 真实姓名、手机号、性别、紧急联系人与紧急电话；不采集证件类型和证件号码。
    - 紧急联系人姓名、电话（必填）。
    - 本活动选项：用车方式（自带车/租车）、骑行经验等级（新手/有一定经验/常骑）、是否需要租车（数量/车型备注）、饮食或其他备注。
    - Strava 绑定卡片：未绑定时阻断提交，显示「绑定 Strava」；已绑定展示头像、近一年里程/活动数、最近活动时间。
@@ -91,7 +91,7 @@
 2. **报名审批列表**：按活动筛选，Tab：待审核/已通过/已驳回/全部，显示名额计数。
 3. **报名详情与审批**：
    - 顶部识人卡片：用户昵称、称号、骑行照与车辆照缩略图（点开看大图）。
-   - 实名信息（证件号默认脱敏，点击「查看明文」为敏感操作并留审计日志）。
+   - 实名与联系信息（仅展示必要脱敏值，不含证件信息）。
    - Strava 数据面板（指标见 5.3）及授权时间；豁免报名展示「豁免」标识与原因。
    - 通过 / 驳回（驳回必填理由）。
 4. **豁免与称号管理**：对确实无法绑定 Strava 的队员授予/撤销豁免（必填原因，留审计）；为队员颁发或修改「称号」（如"爬坡王""领队"，展示在报名详情和个人主页）。
@@ -198,10 +198,8 @@ created_by, created_at, updated_at
 
 ```text
 _id, activity_id, openid,
-profile_snapshot: {          // 报名时的实名信息快照
-  real_name, id_type, id_number_cipher,   // 证件号加密
-  gender, phone,
-  emergency_name, emergency_phone
+profile_snapshot: {          // 报名时的最小必要资料快照
+  nickname, real_name_masked, phone_masked
 },
 options: { bike_mode, experience, rental_need, remark },
 strava_snapshot: {           // 报名时的 Strava 数据快照（豁免时为空）
@@ -265,7 +263,7 @@ avatar_file_id,              // 头像
 photos: [                    // 个人相册（多张，云存储 file_id）
   { file_id, category, uploaded_at }   // category: ride | bike | other
 ],
-profile: { real_name, id_type, id_number_cipher, gender, emergency_name, emergency_phone },
+profile: { real_name_cipher, phone_cipher, gender, emergency_name, emergency_phone_cipher },
 created_at, updated_at
 ```
 
@@ -274,7 +272,7 @@ created_at, updated_at
 ### 6.5 `admins` 与 `audit_logs`
 
 - `admins`: `{ openid, name, is_super, created_at }`。
-- `audit_logs`: 敏感操作留痕，`{ openid, action, target, at, detail }`，覆盖查看证件明文、审批通过/驳回、活动发布、豁免授予/撤销、称号颁发。
+- `audit_logs`: 敏感操作留痕，`{ openid, action, target, at, detail }`，覆盖审批通过/驳回、活动发布、豁免授予/撤销、称号颁发。
 
 驳回后重报口径：沿用原 `registrations` 记录，status 从 `rejected` 回到 `pending`，并保留每次审批意见历史（追加到 review 历史数组），保证一条活动一条记录可追溯。
 
@@ -301,11 +299,11 @@ created_at, updated_at
 
 ### 7.3 安全红线
 
-- 证件号、Strava token 为敏感字段：写入前用云函数内密钥做对称加密（密钥存云函数环境变量/KMS，不入库不入代码库）；列表与默认详情一律脱敏（如仅显示后四位）。
+- 不采集、展示或导出证件类型和证件号；存量证件密文只读保留，不解密、不回传、不做批量迁移。Strava token 写入前用云函数内密钥做对称加密（密钥存云函数环境变量/KMS，不入库不入代码库）。
 - 微信授权手机号通过 `getPhoneNumber` 在云函数解码并标记为 `wechat/verified`；个人主体可提交手填号码，但必须标记为 `manual/unverified`，管理员审批详情展示来源。两者都满足第一批报名门禁，不能把手填号码当成已验证号码。
 - 所有写操作在云函数侧校验：身份、活动状态、报名截止、名额、重复报名、管理员权限；不信任前端传参。
 - 名额变更走云数据库事务/原子操作，防止并发超报。
-- 日志不打印 token、证件号明文；敏感查看动作写 `audit_logs`。
+- 日志不打印手机号、Strava token 或任何密文；敏感操作写 `audit_logs`。
 - 小程序 `web-view` 业务域名、Strava 回调地址使用白名单；state 签名防伪造、短时效。
 
 ## 8. 页面清单汇总
@@ -336,6 +334,6 @@ created_at, updated_at
 剩余采用默认（如无异议不再追问）：
 
 - 审批门槛逐活动可配置、可留空；系统不自动拒绝，管理员最终判定。
-- 证件类型预留身份证/护照等多种，默认采集身份证号。
+- Profile 完整度与报名必填项不包含任何证件字段。
 - 报名截止后管理员仍可手动加人/撤人并同步名额。
 - 前端用原生小程序实现。

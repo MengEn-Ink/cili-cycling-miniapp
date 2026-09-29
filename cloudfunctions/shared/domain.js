@@ -78,20 +78,19 @@ function assertActivityOpen(activity, now) {
 }
 function assertProfileReady(profile) {
   const sensitive = profile && profile.sensitive_status;
-  // 新版资料服务以加密字段作为可信事实；旧数据保留 materialized 状态时继续兼容。
+  // 存量证件密文保持只读兼容：报名判定不读取、不解密，也不要求资料更新时删除。
+  const realNameReady = sensitive?.real_name === true || !!profile?.real_name_cipher;
   const phoneReady = sensitive?.phone_verified === true || !!profile?.phone_cipher;
-  const identityReady =
-    sensitive?.identity_encrypted === true ||
-    (!!profile?.real_name_cipher && !!profile?.id_number_cipher);
   const emergencyReady =
-    sensitive?.emergency_contact_encrypted === true ||
-    (!!profile?.emergency_name && !!profile?.emergency_phone_cipher);
+    typeof profile?.emergency_name === 'string' &&
+    !!profile.emergency_name.trim() &&
+    (sensitive?.emergency_phone === true || !!profile?.emergency_phone_cipher);
   if (
     !profile ||
     typeof profile.nickname !== 'string' ||
     !profile.nickname.trim() ||
     !phoneReady ||
-    !identityReady ||
+    !realNameReady ||
     !emergencyReady
   ) {
     fail('PROFILE_INCOMPLETE', '请先完成并安全保存实名资料');
@@ -255,13 +254,6 @@ function publicActivity(activity) {
 function maskPhone(value) {
   return typeof value === 'string' ? value.replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2') : '';
 }
-function maskId(value) {
-  return typeof value !== 'string'
-    ? ''
-    : value.length <= 8
-      ? '****'
-      : `${value.slice(0, 2)}******${value.slice(-4)}`;
-}
 function publicRegistration(registration) {
   const output = pick(registration, [
     '_id',
@@ -284,7 +276,6 @@ function publicRegistration(registration) {
     nickname: snapshot.nickname,
     real_name_masked: snapshot.real_name_masked,
     phone_masked: maskPhone(snapshot.phone_masked),
-    id_number_masked: maskId(snapshot.id_number_masked),
   };
   return output;
 }

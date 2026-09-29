@@ -47,8 +47,6 @@ export const profile: Profile = {
   title: '周末巡游者',
   realName: '林晓川',
   phone: '13800001234',
-  idType: '身份证',
-  idNumber: '110101199001011234',
   gender: '男',
   emergencyName: '林女士',
   emergencyPhone: '13900005678',

@@ -1,13 +1,12 @@
 import { rideService } from '../../../services/ride-service';
 import { appStore } from '../../../store/app-store';
-import { maskId, maskPhone } from '../../../utils/mask';
+import { maskPhone } from '../../../utils/mask';
 import { capabilityCard } from '../../../utils/capability-card';
 Page({
   data: {
     x: null as any,
     card: null as any,
     phone: '',
-    id: '',
     reason: '能力与路线要求暂不匹配',
     error: '',
   },
@@ -24,7 +23,6 @@ Page({
           x,
           card: capabilityCard(x),
           phone: maskPhone(x.profile.phone),
-          id: maskId(x.profile.idNumber),
         });
     } catch (error) {
       this.setData({ error: error instanceof Error ? error.message : '报名详情加载失败' });

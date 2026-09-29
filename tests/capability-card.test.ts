@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Registration } from '../miniprogram/models';
-import { capabilityCard, selectCapabilityImage } from '../miniprogram/utils/capability-card';
+import { capabilityCard, selectCapabilityImages } from '../miniprogram/utils/capability-card';
 
 function registration(overrides: Partial<Registration> = {}): Registration {
   return {
@@ -9,11 +9,9 @@ function registration(overrides: Partial<Registration> = {}): Registration {
     status: 'pending',
     profile: {
       nickname: '山野骑手',
-      realName: '曹*',
+      realName: '曹蒙恩',
       phone: '138****5678',
-      idNumber: '11******1234',
       title: '',
-      idType: '',
       gender: '',
       emergencyName: '',
       emergencyPhone: '',
@@ -38,33 +36,79 @@ function registration(overrides: Partial<Registration> = {}): Registration {
   };
 }
 
-describe('骑行能力卡', () => {
-  it('显式优先第一张骑行或训练照片，并标记为个人上传', () => {
-    const profile = {
-      ...registration().profile,
-      photos: [
-        { id: 'cloud://bike', category: 'bike' },
+const profileWith = (photos: { id: string; category: string }[], avatarId = 'cloud://avatar') => ({
+  ...registration().profile,
+  photos,
+  avatarId,
+});
+
+describe('骑行能力卡图片', () => {
+  it('5 张照片最多截取 3 张', () => {
+    const photos = ['1', '2', '3', '4', '5'].map((id) => ({
+      id: `cloud://${id}`,
+      category: '生活',
+    }));
+    expect(selectCapabilityImages(profileWith(photos))).toEqual([
+      { url: 'cloud://1', source: '个人上传' },
+      { url: 'cloud://2', source: '个人上传' },
+      { url: 'cloud://3', source: '个人上传' },
+    ]);
+  });
+
+  it('骑行和训练相关照片优先且保持原有顺序', () => {
+    const images = selectCapabilityImages(
+      profileWith([
+        { id: 'cloud://life', category: '生活' },
         { id: 'cloud://training', category: 'training' },
-        { id: 'cloud://ride', category: 'ride' },
-      ],
-    };
-    expect(selectCapabilityImage(profile)).toEqual({
-      url: 'cloud://training',
-      source: '个人上传',
-    });
+        { id: 'cloud://bike', category: 'bike' },
+        { id: 'cloud://pet', category: '宠物' },
+      ]),
+    );
+    expect(images.map((image) => image.url)).toEqual([
+      'cloud://training',
+      'cloud://bike',
+      'cloud://life',
+    ]);
   });
 
-  it('无骑行照片时回退头像，无头像时给出明确缺失态', () => {
-    expect(selectCapabilityImage(registration().profile)).toEqual({
-      url: 'cloud://avatar',
-      source: '头像',
-    });
-    expect(selectCapabilityImage({ ...registration().profile, avatarId: '' })).toEqual({
-      url: '',
-      source: '暂无照片',
-    });
+  it('其他个人上传照片补足骑行照片后的空位', () => {
+    expect(
+      selectCapabilityImages(
+        profileWith([
+          { id: 'cloud://portrait', category: '人像' },
+          { id: 'cloud://ride', category: '骑行照' },
+        ]),
+      ),
+    ).toEqual([
+      { url: 'cloud://ride', source: '个人上传' },
+      { url: 'cloud://portrait', source: '个人上传' },
+      { url: 'cloud://avatar', source: '头像' },
+    ]);
   });
 
+  it('头像与上传照片重复时去重，并保留个人上传来源', () => {
+    expect(
+      selectCapabilityImages(
+        profileWith([{ id: 'cloud://avatar', category: 'cycling' }], 'cloud://avatar'),
+      ),
+    ).toEqual([{ url: 'cloud://avatar', source: '个人上传' }]);
+  });
+
+  it('仅头像时返回单图静态卡所需数据', () => {
+    const card = capabilityCard(registration());
+    expect(card.images).toEqual([{ url: 'cloud://avatar', source: '头像' }]);
+    expect(card.hasMultipleImages).toBe(false);
+    expect(card.maskedName).toBe('曹**');
+  });
+
+  it('无上传照片且无头像时保留无图占位所需数据', () => {
+    const card = capabilityCard(registration({ profile: profileWith([], '') }));
+    expect(card.images).toEqual([]);
+    expect(card.hasMultipleImages).toBe(false);
+  });
+});
+
+describe('骑行能力卡状态', () => {
   it.each([
     ['pending', '未授权'],
     ['syncing', '同步中'],

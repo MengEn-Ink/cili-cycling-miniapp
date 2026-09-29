@@ -144,10 +144,9 @@ function mapProfile(raw: unknown): Profile {
   return {
     nickname: value.nickname,
     title: typeof value.title === 'string' ? value.title : '',
+    avatarId: typeof value.avatar_file_id === 'string' ? value.avatar_file_id : '',
     realName: typeof value.real_name_masked === 'string' ? value.real_name_masked : '',
     phone: typeof value.phone_masked === 'string' ? value.phone_masked : '',
-    idType: typeof value.id_type === 'string' ? value.id_type : '身份证',
-    idNumber: typeof value.id_number_masked === 'string' ? value.id_number_masked : '',
     gender: typeof value.gender === 'string' ? value.gender : '',
     emergencyName: typeof value.emergency_name === 'string' ? value.emergency_name : '',
     emergencyPhone:
@@ -161,7 +160,6 @@ function mapProfile(raw: unknown): Profile {
     completeness: value.completeness,
     sensitiveStatus: {
       realName: status.real_name === true,
-      idNumber: status.id_number === true,
       phone: status.phone === true,
       phoneVerified: status.phone_verified === true,
       phoneSource: ['wechat', 'manual', 'legacy'].includes(String(status.phone_source))
@@ -196,8 +194,6 @@ function mapRegistration(raw: unknown): Registration {
       title: '',
       realName: typeof snapshot.real_name_masked === 'string' ? snapshot.real_name_masked : '',
       phone: typeof snapshot.phone_masked === 'string' ? snapshot.phone_masked : '',
-      idType: '',
-      idNumber: typeof snapshot.id_number_masked === 'string' ? snapshot.id_number_masked : '',
       gender: '',
       emergencyName: '',
       emergencyPhone: '',
@@ -480,7 +476,6 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     const data: Record<string, unknown> = { action: 'update' };
     const simple: [keyof ProfileUpdate, string][] = [
       ['nickname', 'nickname'],
-      ['idType', 'id_type'],
       ['gender', 'gender'],
       ['emergencyName', 'emergency_name'],
       ['avatarFileId', 'avatar_file_id'],
@@ -490,7 +485,6 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     if (Array.isArray(profile.photos))
       data.photos = profile.photos.map((item) => ({ file_id: item.id, category: item.category }));
     if (typeof profile.realName === 'string' && profile.realName) data.real_name = profile.realName;
-    if (typeof profile.idNumber === 'string' && profile.idNumber) data.id_number = profile.idNumber;
     if (typeof profile.phone === 'string' && profile.phone) data.phone = profile.phone;
     if (typeof profile.emergencyPhone === 'string' && profile.emergencyPhone)
       data.emergency_phone = profile.emergencyPhone;

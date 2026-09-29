@@ -40,11 +40,11 @@ const profile = {
   nickname: '骑手',
   real_name_masked: '曹*',
   phone_masked: '138****5678',
-  id_number_masked: '11******1234',
+  real_name_cipher: { ciphertext: 'x' },
+  emergency_name: '联系人',
   sensitive_status: {
     phone_verified: true,
-    identity_encrypted: true,
-    emergency_contact_encrypted: true,
+    emergency_phone: true,
   },
   strava: { status: 'connected', snapshot: { activities_90d: 10, weighted_avg_speed_kmh: 25 } },
 };
@@ -167,9 +167,17 @@ test('提交校验活动、资料、Strava 和客户端越权字段', () => {
       nickname: '骑手',
       phone_cipher: { ciphertext: 'x' },
       real_name_cipher: { ciphertext: 'x' },
-      id_number_cipher: { ciphertext: 'x' },
       emergency_name: '联系人',
       emergency_phone_cipher: { ciphertext: 'x' },
+    }),
+  );
+  assert.doesNotThrow(() =>
+    assertProfileReady({
+      nickname: '骑手',
+      phone_cipher: { ciphertext: 'x' },
+      real_name_cipher: { ciphertext: 'x' },
+      emergency_name: '联系人',
+      sensitive_status: { emergency_phone: true },
     }),
   );
   expectCode(
@@ -178,7 +186,17 @@ test('提交校验活动、资料、Strava 和客户端越权字段', () => {
         nickname: '骑手',
         phone_cipher: { ciphertext: 'x' },
         real_name_cipher: { ciphertext: 'x' },
-        id_number_cipher: { ciphertext: 'x' },
+        emergency_name: '联系人',
+        sensitive_status: { emergency_contact_encrypted: true },
+      }),
+    'PROFILE_INCOMPLETE',
+  );
+  expectCode(
+    () =>
+      assertProfileReady({
+        nickname: '骑手',
+        phone_cipher: { ciphertext: 'x' },
+        real_name_cipher: { ciphertext: 'x' },
         emergency_name: '联系人',
       }),
     'PROFILE_INCOMPLETE',
@@ -488,7 +506,7 @@ test('活动和报名响应只含白名单字段并脱敏', () => {
   assert.equal(r.strava_snapshot.access_token, undefined);
   assert.equal(r.review_history[0].reviewer_openid, undefined);
   assert.equal(r.profile_snapshot.phone_masked, '138****5678');
-  assert.equal(r.profile_snapshot.id_number_masked, '11******1234');
+  assert.equal(Object.hasOwn(r.profile_snapshot, 'id_number_masked'), false);
 });
 
 test('审计日志只保留安全字段，不含手机号证件号和 token', () => {

@@ -2,23 +2,61 @@
   <view class="card danger" wx:if="{{error}}">{{error}}</view>
   <block wx:if="{{x && card}}">
     <view class="capability-card">
-      <view class="capability-visual">
-        <image wx:if="{{card.imageUrl}}" class="rider-photo" src="{{card.imageUrl}}" mode="aspectFill" />
-        <view wx:else class="photo-empty">暂无照片</view>
-        <text class="photo-source">{{card.imageSource}}</text>
+      <swiper
+        wx:if="{{card.hasMultipleImages}}"
+        class="capability-hero"
+        circular
+        autoplay
+        interval="5000"
+        duration="450"
+        indicator-dots
+        indicator-color="rgba(255,255,255,0.45)"
+        indicator-active-color="#ffffff"
+      >
+        <swiper-item wx:for="{{card.images}}" wx:key="url">
+          <view class="hero-slide">
+            <image class="rider-photo" src="{{item.url}}" mode="aspectFill" lazy-load />
+            <view class="hero-shade"></view>
+            <view class="hero-content">
+              <view class="eyebrow">RIDER CAPABILITY</view>
+              <view class="rider-name">{{card.displayName}}</view>
+              <view class="identity-line">
+                <text class="masked-name">{{card.maskedName}}</text>
+                <text class="photo-source">{{item.source}}</text>
+              </view>
+            </view>
+          </view>
+        </swiper-item>
+      </swiper>
+      <view wx:elif="{{card.images.length === 1}}" class="capability-hero hero-slide">
+        <image class="rider-photo" src="{{card.images[0].url}}" mode="aspectFill" lazy-load />
+        <view class="hero-shade"></view>
+        <view class="hero-content">
+          <view class="eyebrow">RIDER CAPABILITY</view>
+          <view class="rider-name">{{card.displayName}}</view>
+          <view class="identity-line">
+            <text class="masked-name">{{card.maskedName}}</text>
+            <text class="photo-source">{{card.images[0].source}}</text>
+          </view>
+        </view>
       </view>
-      <view class="identity">
-        <view class="eyebrow">RIDER CAPABILITY</view>
-        <view class="rider-name">{{card.displayName}}</view>
-        <view class="masked-name">{{card.maskedName}}</view>
-        <view class="status {{card.statusTone}}">Strava · {{card.stravaStatus}}</view>
+      <view wx:else class="capability-hero hero-slide photo-empty">
+        <view class="empty-mark">暂无照片</view>
+        <view class="hero-shade"></view>
+        <view class="hero-content">
+          <view class="eyebrow">RIDER CAPABILITY</view>
+          <view class="rider-name">{{card.displayName}}</view>
+          <view class="identity-line"><text class="masked-name">{{card.maskedName}}</text></view>
+        </view>
       </view>
 
+      <view class="summary-row">
+        <view class="status {{card.statusTone}}">Strava · {{card.stravaStatus}}</view>
+      </view>
       <view class="facts">
         <view class="fact"><text>车辆方式</text><strong>{{card.bikeMode}}</strong></view>
         <view class="fact"><text>骑行经验</text><strong>{{card.experience}}</strong></view>
       </view>
-
       <view class="metrics">
         <view class="metric"><strong>{{card.totalKm}}</strong><text>近 90 天里程</text></view>
         <view class="metric"><strong>{{card.rides90d}}</strong><text>近 90 天次数</text></view>
@@ -32,7 +70,6 @@
     <view class="card detail-card">
       <view class="title">报名快照</view>
       <view class="detail-line">实名资料：{{x.profile.realName}} · {{phone}}</view>
-      <view class="detail-line">证件：{{id}}</view>
       <view class="detail-line">报名用车：{{card.bikeMode}}</view>
       <view class="detail-line">经验：{{card.experience}}</view>
       <view class="detail-line">备注：{{card.remark}}</view>

@@ -181,7 +181,6 @@ describe('CloudRepository 队员报名适配', () => {
         nickname: '骑手',
         realName: '曹*',
         phone: '138****5678',
-        idNumber: '11******1234',
       },
       strava: {
         status: 'connected',
@@ -334,7 +333,7 @@ describe('CloudRepository 队员报名适配', () => {
       experience: '',
       remark: '',
       reviewComment: undefined,
-      profile: { nickname: '', realName: '', phone: '', idNumber: '' },
+      profile: { nickname: '', realName: '', phone: '' },
       strava: {
         status: 'exempted',
         reason: '人工核验',
@@ -561,12 +560,14 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     ).toBe('');
     await repository.updateProfile({
       nickname: '新昵称',
+      avatarFileId: 'cloud://avatar',
       realName: '曹蒙恩',
       phone: '13812345678',
     });
     expectCall(callFunction, 'profile', {
       action: 'update',
       nickname: '新昵称',
+      avatar_file_id: 'cloud://avatar',
       real_name: '曹蒙恩',
       phone: '13812345678',
     });
@@ -580,6 +581,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
         nickname: '完整骑手',
         completeness: 100,
         title: '领队',
+        avatar_file_id: 'cloud://avatar',
         real_name_masked: '曹*',
         phone_masked: '138****5678',
         id_type: '护照',
@@ -599,22 +601,25 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
       }),
     );
 
-    await expect(new CloudRepository(cloud).getProfile()).resolves.toMatchObject({
+    const mapped = await new CloudRepository(cloud).getProfile();
+    expect(mapped).toMatchObject({
       title: '领队',
-      idType: '护照',
+      avatarId: 'cloud://avatar',
       gender: '男',
       emergencyName: '紧急联系人',
       emergencyPhone: '139****0000',
       photos: [{ id: 'cloud://photo-1', category: 'ride' }],
       sensitiveStatus: {
         realName: true,
-        idNumber: true,
         phone: true,
         phoneVerified: true,
         phoneSource: 'wechat',
         emergencyPhone: true,
       },
     });
+    expect(mapped).not.toHaveProperty('idType');
+    expect(mapped).not.toHaveProperty('idNumber');
+    expect(mapped.sensitiveStatus).not.toHaveProperty('idNumber');
   });
 
   it('Strava 状态、授权、同步与解绑均调用真实云函数', async () => {

@@ -7,7 +7,6 @@ const {
   decrypt,
   maskName,
   maskPhone,
-  maskId,
   response,
   buildUpdate,
   phoneUpdate,
@@ -32,31 +31,46 @@ test('密钥缺失、非法和密文篡改均 fail closed', () => {
 test('脱敏与响应不返回敏感明文/密文', () => {
   assert.equal(maskName('曹蒙恩'), '曹**');
   assert.equal(maskPhone('13812345678'), '138****5678');
-  assert.equal(maskId('110101199001011234'), '110***********1234');
-  const dto = response({
+  const source = {
     nickname: '骑手',
     real_name_cipher: {},
     real_name_masked: '曹**',
     phone_cipher: {},
     phone_masked: '138****5678',
-  });
-  assert.equal(dto.completeness, 38);
+    id_type: '身份证',
+    id_number_cipher: { ciphertext: 'legacy-secret' },
+    id_number_masked: '110***********1234',
+  };
+  const dto = response(source);
+  assert.equal(dto.completeness, 75);
   assert.deepEqual(dto.sensitive_status, {
     real_name: true,
-    id_number: false,
     phone: true,
     phone_verified: false,
     phone_source: 'legacy',
     emergency_phone: false,
   });
   assert.equal(JSON.stringify(dto).includes('cipher'), false);
+  assert.equal(JSON.stringify(dto).includes('id_number'), false);
+  assert.equal(Object.hasOwn(dto, 'id_type'), false);
+  assert.equal(response({ ...source, gender: '男' }).completeness, 75);
+  assert.equal(response({ ...source, emergency_name: '联系人' }).completeness, 75);
+  assert.equal(
+    response({
+      nickname: '骑手',
+      real_name_cipher: {},
+      phone_cipher: {},
+      emergency_name: '联系人',
+      emergency_phone_cipher: {},
+    }).completeness,
+    100,
+  );
 });
 test('update 加密敏感字段并把手填手机号标记为未验证', () => {
   const data = buildUpdate(
     {
       nickname: '骑手',
       real_name: '曹蒙恩',
-      id_number: '110101199001011234',
       phone: '13812345678',
       emergency_phone: '13912345678',
       photos: [{ file_id: 'cloud://a', category: 'ride' }],
@@ -64,11 +78,13 @@ test('update 加密敏感字段并把手填手机号标记为未验证', () => {
     key,
   );
   assert.equal(decrypt(data.real_name_cipher, key), '曹蒙恩');
-  assert.equal(data.id_number_masked.endsWith('1234'), true);
+  assert.equal(Object.hasOwn(data, 'id_number_cipher'), false);
   assert.equal(decrypt(data.phone_cipher, key), '13812345678');
   assert.equal(data.phone_source, 'manual');
   assert.equal(data.phone_verified, false);
   assert.throws(() => buildUpdate({ phone: 'not-phone' }, key), { code: 'PHONE_INVALID' });
+  assert.throws(() => buildUpdate({ id_type: '身份证' }, key), { code: 'FORBIDDEN_FIELD' });
+  assert.throws(() => buildUpdate({ id_number: 'anything' }, key), { code: 'FORBIDDEN_FIELD' });
   assert.throws(() => buildUpdate({ phone_source: 'wechat' }, key), { code: 'FORBIDDEN_FIELD' });
   assert.throws(() => buildUpdate({ openid: 'forged' }, key), { code: 'FORBIDDEN_FIELD' });
 });

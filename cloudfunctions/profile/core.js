@@ -62,12 +62,6 @@ function maskPhone(value) {
   const text = String(value || '').replace(/\s/g, '');
   return text.length >= 7 ? `${text.slice(0, 3)}****${text.slice(-4)}` : '';
 }
-function maskId(value) {
-  const text = String(value || '').trim();
-  return text.length >= 8
-    ? `${text.slice(0, 3)}${'*'.repeat(Math.max(1, text.length - 7))}${text.slice(-4)}`
-    : '';
-}
 function cleanText(value, max, required = false) {
   if (value === undefined) return undefined;
   if (typeof value !== 'string') throw new ProfileError('VALIDATION_FAILED', '资料字段类型错误');
@@ -78,7 +72,6 @@ function cleanText(value, max, required = false) {
 }
 const sensitiveStatus = (doc) => ({
   real_name: !!doc.real_name_cipher,
-  id_number: !!doc.id_number_cipher,
   phone: !!doc.phone_cipher,
   phone_verified: doc.phone_verified === true,
   phone_source: ['wechat', 'manual'].includes(doc.phone_source)
@@ -90,27 +83,19 @@ const sensitiveStatus = (doc) => ({
 });
 function response(doc = {}) {
   const status = sensitiveStatus(doc);
-  const checks = [
-    doc.nickname,
-    doc.id_type,
-    doc.gender,
-    doc.emergency_name,
-    status.real_name,
-    status.id_number,
-    status.phone,
-    status.emergency_phone,
-  ];
+  const emergencyReady =
+    typeof doc.emergency_name === 'string' && !!doc.emergency_name.trim() && status.emergency_phone;
+  const nicknameReady = typeof doc.nickname === 'string' && !!doc.nickname.trim();
+  const checks = [nicknameReady, status.real_name, status.phone, emergencyReady];
   return {
     nickname: typeof doc.nickname === 'string' ? doc.nickname : '',
     title: typeof doc.title === 'string' ? doc.title : '',
     avatar_file_id: typeof doc.avatar_file_id === 'string' ? doc.avatar_file_id : '',
     photos: Array.isArray(doc.photos) ? doc.photos : [],
-    id_type: typeof doc.id_type === 'string' ? doc.id_type : '身份证',
     gender: typeof doc.gender === 'string' ? doc.gender : '',
     emergency_name: typeof doc.emergency_name === 'string' ? doc.emergency_name : '',
     real_name_masked: typeof doc.real_name_masked === 'string' ? doc.real_name_masked : '',
     phone_masked: typeof doc.phone_masked === 'string' ? doc.phone_masked : '',
-    id_number_masked: typeof doc.id_number_masked === 'string' ? doc.id_number_masked : '',
     emergency_phone_masked:
       typeof doc.emergency_phone_masked === 'string' ? doc.emergency_phone_masked : '',
     sensitive_status: status,
@@ -126,15 +111,18 @@ function buildUpdate(event, keyValue) {
     'phone_source',
     'phone_verified',
     'real_name_cipher',
-    'id_number_cipher',
     'emergency_phone_cipher',
+    // 存量证件密文保持只读兼容：不解密、不回传，也不要求资料更新时主动删除。
+    'id_type',
+    'id_number',
+    'id_number_cipher',
+    'id_number_masked',
   ])
     if (Object.prototype.hasOwnProperty.call(event, forbidden))
       throw new ProfileError('FORBIDDEN_FIELD', '包含禁止字段');
   const data = {};
   for (const [input, output, max] of [
     ['nickname', 'nickname', 40],
-    ['id_type', 'id_type', 20],
     ['gender', 'gender', 20],
     ['emergency_name', 'emergency_name', 40],
     ['avatar_file_id', 'avatar_file_id', 512],
@@ -158,7 +146,6 @@ function buildUpdate(event, keyValue) {
   }
   for (const [input, cipherField, maskedField, masker, max] of [
     ['real_name', 'real_name_cipher', 'real_name_masked', maskName, 80],
-    ['id_number', 'id_number_cipher', 'id_number_masked', maskId, 40],
     ['emergency_phone', 'emergency_phone_cipher', 'emergency_phone_masked', maskPhone, 30],
   ]) {
     const value = cleanText(event[input], max, true);
@@ -206,7 +193,6 @@ module.exports = {
   decrypt,
   maskName,
   maskPhone,
-  maskId,
   response,
   buildUpdate,
   phoneUpdate,

@@ -7,7 +7,6 @@
     <view class="card form-card">
       <view class="row"><view class="title">实名与联系</view><button class="text-button" bindtap="profile">完善资料</button></view>
       <view class="info-row"><text class="info-label">姓名与手机</text><text class="info-value">{{profile.realName || '未填写实名'}} · {{profile.phone || '未授权手机号'}}</text></view>
-      <view class="info-row"><text class="info-label">证件信息</text><text class="info-value">{{profile.idType}} {{profile.idNumber || '未填写证件'}}</text></view>
     </view>
 
     <view class="section-label">02 · 骑行能力</view>
