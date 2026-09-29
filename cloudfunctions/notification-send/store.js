@@ -29,6 +29,18 @@ function expired(value, now) {
   return !Number.isFinite(timestamp) || timestamp <= now.getTime();
 }
 
+function trustedDate(value) {
+  if (value instanceof Date && Number.isFinite(value.getTime())) return new Date(value.getTime());
+  if (
+    typeof value === 'string' &&
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(value)
+  ) {
+    const parsed = new Date(value);
+    if (Number.isFinite(parsed.getTime())) return parsed;
+  }
+  coded('INVALID_RETRY_TIME', '通知重试时间无效');
+}
+
 function fairReadyIds(groups, limit) {
   const result = [];
   const seen = new Set();
@@ -259,14 +271,13 @@ function createNotificationStore(db) {
             updated_at: now,
           };
           if (status === 'retryable') {
-            const persistedRetryAt = new Date(outcome.retry_at);
-            if (Number.isFinite(persistedRetryAt.getTime())) {
-              data.next_retry_at = persistedRetryAt;
+            if (Object.prototype.hasOwnProperty.call(outcome, 'retry_at')) {
+              data.next_retry_at = trustedDate(outcome.retry_at);
             } else {
               data.next_retry_at = nextRetryAt(
                 outcome.error_code,
                 Number(current.attempt_no),
-                new Date(outcome.recorded_at),
+                trustedDate(outcome.recorded_at),
               );
             }
           }
@@ -282,4 +293,4 @@ function createNotificationStore(db) {
   };
 }
 
-module.exports = { coded, missing, get, fairReadyIds, createNotificationStore };
+module.exports = { coded, missing, get, trustedDate, fairReadyIds, createNotificationStore };

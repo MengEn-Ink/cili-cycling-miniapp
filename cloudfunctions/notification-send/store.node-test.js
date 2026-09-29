@@ -375,6 +375,47 @@ test('45009 跨午夜恢复复用首次持久化的目标重试时间', async ()
   );
 });
 
+test('恢复任务拒绝 null、数字或布尔型 retry_at/recorded_at', async () => {
+  for (const [field, invalid] of [
+    ['retry_at', null],
+    ['retry_at', 0],
+    ['retry_at', false],
+    ['recorded_at', null],
+    ['recorded_at', 0],
+    ['recorded_at', false],
+  ]) {
+    const outcome = {
+      disposition: 'retryable',
+      error_code: 'WECHAT_45009',
+      recorded_at: new Date('2026-09-29T15:59:00.000Z'),
+    };
+    if (field === 'retry_at') outcome.retry_at = invalid;
+    else outcome.recorded_at = invalid;
+    const fixture = memoryDb({
+      notification_outbox: {
+        o1: item({
+          status: 'dispatching',
+          attempts: 1,
+          attempt_no: 1,
+          lease_id: 'lease-quota',
+          lease_expires_at: new Date('2026-09-29T16:00:00.000Z'),
+          dispatch_outcome: outcome,
+        }),
+      },
+    });
+
+    await assert.rejects(
+      createNotificationStore(fixture.db).recoverExpiredDispatching(
+        new Date('2026-09-29T16:01:00.000Z'),
+        20,
+      ),
+      { code: 'INVALID_RETRY_TIME' },
+      `${field}=${String(invalid)}`,
+    );
+    assert.equal(fixture.state.notification_outbox.get('o1').status, 'dispatching');
+  }
+});
+
 test('retry deadline 遇到非法时间时 fail closed 且不改状态', async () => {
   const fixture = memoryDb({
     notification_outbox: {
