@@ -126,6 +126,10 @@ function mapProfile(raw: unknown): Profile {
       realName: status.real_name === true,
       idNumber: status.id_number === true,
       phone: status.phone === true,
+      phoneVerified: status.phone_verified === true,
+      phoneSource: ['wechat', 'manual', 'legacy'].includes(String(status.phone_source))
+        ? (status.phone_source as 'wechat' | 'manual' | 'legacy')
+        : '',
       emergencyPhone: status.emergency_phone === true,
     },
   };
@@ -311,6 +315,7 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
       data.photos = profile.photos.map((item) => ({ file_id: item.id, category: item.category }));
     if (typeof profile.realName === 'string' && profile.realName) data.real_name = profile.realName;
     if (typeof profile.idNumber === 'string' && profile.idNumber) data.id_number = profile.idNumber;
+    if (typeof profile.phone === 'string' && profile.phone) data.phone = profile.phone;
     if (typeof profile.emergencyPhone === 'string' && profile.emergencyPhone)
       data.emergency_phone = profile.emergencyPhone;
     return mapProfile(await this.call('profile', data));

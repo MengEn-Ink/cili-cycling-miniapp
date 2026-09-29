@@ -80,6 +80,12 @@ const sensitiveStatus = (doc) => ({
   real_name: !!doc.real_name_cipher,
   id_number: !!doc.id_number_cipher,
   phone: !!doc.phone_cipher,
+  phone_verified: doc.phone_verified === true,
+  phone_source: ['wechat', 'manual'].includes(doc.phone_source)
+    ? doc.phone_source
+    : doc.phone_cipher
+      ? 'legacy'
+      : '',
   emergency_phone: !!doc.emergency_phone_cipher,
 });
 function response(doc = {}) {
@@ -113,12 +119,12 @@ function response(doc = {}) {
 }
 function buildUpdate(event, keyValue) {
   keyFrom(keyValue);
-  if (Object.prototype.hasOwnProperty.call(event, 'phone'))
-    throw new ProfileError('PHONE_CODE_REQUIRED', '手机号只接受微信动态 code');
   for (const forbidden of [
     'openid',
     'title',
     'phone_cipher',
+    'phone_source',
+    'phone_verified',
     'real_name_cipher',
     'id_number_cipher',
     'emergency_phone_cipher',
@@ -161,13 +167,21 @@ function buildUpdate(event, keyValue) {
       data[maskedField] = masker(value);
     }
   }
+  const phone = cleanText(event.phone, 30, true);
+  if (phone !== undefined) Object.assign(data, phoneUpdate(phone, keyValue, 'manual'));
   return data;
 }
-function phoneUpdate(phone, keyValue) {
+function phoneUpdate(phone, keyValue, source = 'wechat') {
   const value = cleanText(phone, 30, true);
-  if (!/^\+?[0-9]{7,20}$/.test(value))
-    throw new ProfileError('PHONE_INVALID', '微信手机号格式错误');
-  return { phone_cipher: encrypt(value, keyValue), phone_masked: maskPhone(value) };
+  if (!/^\+?[0-9]{7,20}$/.test(value)) throw new ProfileError('PHONE_INVALID', '手机号格式错误');
+  if (!['wechat', 'manual'].includes(source))
+    throw new ProfileError('PHONE_SOURCE_INVALID', '手机号来源无效');
+  return {
+    phone_cipher: encrypt(value, keyValue),
+    phone_masked: maskPhone(value),
+    phone_source: source,
+    phone_verified: source === 'wechat',
+  };
 }
 function writableDocument(value) {
   const { _id, ...document } = value;

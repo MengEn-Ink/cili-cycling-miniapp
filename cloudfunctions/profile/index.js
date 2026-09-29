@@ -52,7 +52,9 @@ exports.main = async (event = {}) => {
         result?.phone_info?.phone_number;
       if (typeof phone !== 'string')
         throw Object.assign(new Error('微信手机号授权失败'), { code: 'PHONE_LOOKUP_FAILED' });
-      return ok(response(await merge(OPENID, phoneUpdate(phone, process.env.PII_ENCRYPTION_KEY))));
+      return ok(
+        response(await merge(OPENID, phoneUpdate(phone, process.env.PII_ENCRYPTION_KEY, 'wechat'))),
+      );
     }
     throw Object.assign(new Error('未知操作'), { code: 'UNKNOWN_ACTION' });
   } catch (error) {

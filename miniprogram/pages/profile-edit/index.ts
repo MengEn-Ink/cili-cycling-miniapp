@@ -1,5 +1,5 @@
 import { rideService } from '../../services/ride-service';
-import { phoneAuthorizationError, runPageTask } from '../../services/page-service';
+import { runPageTask } from '../../services/page-service';
 import type { Profile } from '../../models';
 Page({
   data: {
@@ -15,17 +15,6 @@ Page({
   },
   set(e: any) {
     this.setData({ ['p.' + e.currentTarget.dataset.k]: e.detail.value });
-  },
-  async phone(e: any) {
-    const code = e.detail?.code;
-    if (!code) {
-      const error = phoneAuthorizationError(e.detail);
-      this.setData({ error });
-      return wx.showToast({ title: error, icon: 'none', duration: 3500 });
-    }
-    const state = await runPageTask(() => rideService.getPhoneNumber(code), '手机号授权失败');
-    if (state.data) this.setData({ p: state.data, error: '' });
-    else this.setData({ error: state.error });
   },
   async addPhoto() {
     try {
@@ -59,6 +48,7 @@ Page({
           photos: p.photos,
           realName: p.realName.includes('*') ? undefined : p.realName,
           idNumber: p.idNumber.includes('*') ? undefined : p.idNumber,
+          phone: p.phone.includes('*') ? undefined : p.phone,
           emergencyPhone: p.emergencyPhone.includes('*') ? undefined : p.emergencyPhone,
         }),
       '保存失败',

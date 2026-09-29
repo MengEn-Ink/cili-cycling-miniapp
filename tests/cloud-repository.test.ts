@@ -435,26 +435,47 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     await expectCode(new CloudRepository().listActivities(), 'CLOUD_UNAVAILABLE');
   });
 
-  it('Profile 只发送白名单、手机号只发送动态 code', async () => {
+  it('Profile 只发送白名单，手填手机号按普通资料提交', async () => {
     const dto = {
       nickname: '骑手',
       completeness: 50,
       real_name_masked: '曹*',
       phone_masked: '138****5678',
-      sensitive_status: { real_name: true, phone: true },
+      sensitive_status: {
+        real_name: true,
+        phone: true,
+        phone_verified: false,
+        phone_source: 'manual',
+      },
     };
     const { cloud, callFunction } = cloudWith(success(dto), success(dto), success(dto));
     const repository = new CloudRepository(cloud);
-    expect((await repository.getProfile()).realName).toBe('曹*');
+    const profile = await repository.getProfile();
+    expect(profile.realName).toBe('曹*');
+    expect(profile.sensitiveStatus).toMatchObject({
+      phone: true,
+      phoneVerified: false,
+      phoneSource: 'manual',
+    });
+    const unknown = cloudWith(
+      success({
+        ...dto,
+        sensitive_status: { ...dto.sensitive_status, phone_source: 'forged' },
+      }),
+    );
+    expect(
+      (await new CloudRepository(unknown.cloud).getProfile()).sensitiveStatus?.phoneSource,
+    ).toBe('');
     await repository.updateProfile({
       nickname: '新昵称',
       realName: '曹蒙恩',
-      phone: 'forged',
-    } as any);
+      phone: '13812345678',
+    });
     expectCall(callFunction, 'profile', {
       action: 'update',
       nickname: '新昵称',
       real_name: '曹蒙恩',
+      phone: '13812345678',
     });
     await repository.getPhoneNumber('dynamic-code');
     expectCall(callFunction, 'profile', { action: 'getPhoneNumber', code: 'dynamic-code' });

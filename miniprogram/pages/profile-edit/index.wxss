@@ -35,7 +35,11 @@
   padding: 0 24rpx;
 }
 
-.phone-action,
+.field-tip {
+  margin-top: 12rpx;
+  line-height: 1.5;
+}
+
 .photo-action {
   margin-top: 32rpx;
 }

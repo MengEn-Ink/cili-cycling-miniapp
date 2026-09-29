@@ -34,6 +34,8 @@ export interface Profile {
     realName: boolean;
     idNumber: boolean;
     phone: boolean;
+    phoneVerified?: boolean;
+    phoneSource?: 'wechat' | 'manual' | 'legacy' | '';
     emergencyPhone: boolean;
   };
 }
@@ -46,6 +48,7 @@ export interface ProfileUpdate {
   photos?: { id: string; category: string }[];
   realName?: string;
   idNumber?: string;
+  phone?: string;
   emergencyPhone?: string;
 }
 export interface StravaSnapshot {
