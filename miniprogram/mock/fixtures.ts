@@ -9,6 +9,7 @@ export const activities: Activity[] = [
     deadline: '2026-10-15T20:00:00+08:00',
     status: 'published',
     capacity: 18,
+    registrationState: 'open',
     description: '沿湖岸与林道完成一场节奏友好的秋日耐力骑行。',
     route: {
       start: '青岚公园北门',
@@ -34,6 +35,7 @@ export const activities: Activity[] = [
     deadline: '2026-11-05T20:00:00+08:00',
     status: 'published',
     capacity: 24,
+    registrationState: 'open',
     description: '平缓海岸线社交骑，设多处休息点。',
     route: { start: '白帆广场', end: '灯塔咖啡', distanceKm: 38, elevationM: 120, level: '友好' },
     schedule: [{ time: '08:00', title: '集合', location: '白帆广场' }],

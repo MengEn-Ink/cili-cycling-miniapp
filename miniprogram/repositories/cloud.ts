@@ -126,6 +126,12 @@ function mapActivity(raw: unknown): Activity {
     status: value.status,
     capacity: value.capacity,
     occupiedCount: Number.isInteger(value.occupied_count) ? value.occupied_count : undefined,
+    registrationState: ['open', 'closed'].includes(value.registration_state)
+      ? value.registration_state
+      : undefined,
+    closedReason: ['finished', 'deadline', 'full', 'unavailable'].includes(value.closed_reason)
+      ? value.closed_reason
+      : undefined,
     description: typeof value.description === 'string' ? value.description : '',
     coverImage: typeof value.cover_image === 'string' ? value.cover_image : '',
     route: {

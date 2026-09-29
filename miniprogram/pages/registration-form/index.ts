@@ -61,6 +61,7 @@ async function loadActivityAction(activityId: string): Promise<ActivityAction> {
 Page({
   loadRequestId: 0,
   submitRequestId: 0,
+  submissionPending: false,
   pageVisible: false,
   data: {
     activityId: '',
@@ -84,7 +85,7 @@ Page({
     this.setData({
       loading: true,
       errors: [],
-      submitting: false,
+      submitting: this.submissionPending,
       notificationTemplateIds: [],
     });
     void this.loadNotificationTemplates(requestId);
@@ -140,11 +141,12 @@ Page({
     this.setData({ [e.currentTarget.dataset.key]: e.detail.value });
   },
   async submit() {
-    if (this.data.submitting) return;
+    if (this.submissionPending || this.data.submitting) return;
     const errors = validateRegistration(this.data);
     if (!this.data.activityCanSubmit) errors.push(this.data.activityAction.label);
     if (errors.length) return this.setData({ errors });
     const requestId = ++this.submitRequestId;
+    this.submissionPending = true;
     this.setData({ submitting: true, errors: [] });
     try {
       try {
@@ -159,8 +161,8 @@ Page({
       if (requestId === this.submitRequestId && this.pageVisible)
         this.setData({ errors: [error instanceof Error ? error.message : '提交失败'] });
     } finally {
-      if (requestId === this.submitRequestId && this.pageVisible)
-        this.setData({ submitting: false });
+      this.submissionPending = false;
+      if (this.pageVisible) this.setData({ submitting: false });
     }
   },
   strava() {

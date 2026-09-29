@@ -15,7 +15,7 @@
       <radio-group class="choice-group" data-key="bikeMode" bindchange="set"><label class="choice"><radio color="#0B6B4F" value="自带车" checked="{{bikeMode === '自带车'}}" disabled="{{submitting}}"/>自带车</label><label class="choice"><radio color="#0B6B4F" value="租车" checked="{{bikeMode === '租车'}}" disabled="{{submitting}}"/>租车</label></radio-group>
       <view class="field-title field-gap">骑行经验</view>
       <radio-group class="choice-group three" data-key="experience" bindchange="set"><label class="choice"><radio color="#0B6B4F" value="新手" checked="{{experience === '新手'}}" disabled="{{submitting}}"/>新手</label><label class="choice"><radio color="#0B6B4F" value="有一定经验" checked="{{experience === '有一定经验'}}" disabled="{{submitting}}"/>有经验</label><label class="choice"><radio color="#0B6B4F" value="常骑" checked="{{experience === '常骑'}}" disabled="{{submitting}}"/>常骑</label></radio-group>
-      <textarea class="textarea remark" placeholder="租车、饮食或其他备注" data-key="remark" bindinput="set" disabled="{{submitting}}"/>
+      <textarea class="textarea remark" placeholder="租车、饮食或其他备注" value="{{remark}}" data-key="remark" bindinput="set" disabled="{{submitting}}"/>
       <view class="strava-row"><view><view class="field-title">Strava 骑行数据</view><view class="muted readiness">{{readinessMessage}}</view><view wx:if="{{readiness.state === 'syncing'}}" class="muted readiness">首次授权后会自动准备，无需手动同步。</view></view><button class="text-button" bindtap="strava" disabled="{{submitting}}">管理</button></view>
     </view>
 

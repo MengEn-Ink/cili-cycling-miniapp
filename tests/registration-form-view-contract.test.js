@@ -20,4 +20,8 @@ describe('报名表单受控控件契约', () => {
     expect(template.match(/<radio [^>]*disabled="{{submitting}}"/g)).toHaveLength(5);
     expect(template).toMatch(/<textarea [^>]*disabled="{{submitting}}"/);
   });
+
+  it('备注输入框由 remark data 驱动', () => {
+    expect(template).toMatch(/<textarea [^>]*value="{{remark}}"/);
+  });
 });

@@ -102,7 +102,9 @@ Page({
       }
       readiness = authorized.data;
     }
-    if (readiness.state === 'syncing' || readiness.state === 'failed') {
+    const authorizationTimedOut =
+      readiness.state === 'failed' && readiness.error?.code === 'STRAVA_AUTH_STATUS_TIMEOUT';
+    if (readiness.state === 'syncing' || (readiness.state === 'failed' && !authorizationTimedOut)) {
       const prepared = await runPageTask(
         () =>
           pollStravaReadiness(() => rideService.ensureStravaReady(), {

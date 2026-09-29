@@ -67,6 +67,7 @@ describe('报名提交订阅消息授权', () => {
       status: 'published',
       capacity: 20,
       occupiedCount: 1,
+      registrationState: 'open',
       deadline: '2099-10-15T12:00:00.000Z',
       endAt: '2099-10-18T08:00:00.000Z',
     });

@@ -1,6 +1,8 @@
 export type Role = 'member' | 'admin';
 export type RegistrationStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 export type StravaStatus = 'pending' | 'connected' | 'exempted' | 'syncing' | 'failed';
+export type ActivityRegistrationState = 'open' | 'closed';
+export type ActivityClosedReason = 'finished' | 'deadline' | 'full' | 'unavailable';
 export interface Activity {
   id: string;
   title: string;
@@ -11,6 +13,8 @@ export interface Activity {
   status: 'draft' | 'published' | 'finished';
   capacity: number;
   occupiedCount?: number;
+  registrationState?: ActivityRegistrationState;
+  closedReason?: ActivityClosedReason;
   description: string;
   coverImage?: string;
   route: {

@@ -2,8 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Activity, Registration, RegistrationStatus } from '../miniprogram/models';
 import { resolveActivityAction } from '../miniprogram/utils/activity';
 
-const now = new Date('2026-09-29T04:00:00.000Z');
-const open: Activity = {
+type ServerActivity = Activity & {
+  registrationState?: 'open' | 'closed';
+  closedReason?: 'finished' | 'deadline' | 'full' | 'unavailable';
+};
+
+const open: ServerActivity = {
   id: 'a1',
   title: '环湖骑行',
   date: '2026-10-18',
@@ -13,6 +17,7 @@ const open: Activity = {
   status: 'published',
   capacity: 20,
   occupiedCount: 3,
+  registrationState: 'open',
   description: '说明',
   route: { start: '起点', end: '终点', distanceKm: 80, elevationM: 600, level: '进阶' },
   schedule: [],
@@ -21,7 +26,7 @@ const open: Activity = {
   fee: '免费',
 };
 
-function activity(patch: Partial<Activity>): Activity {
+function activity(patch: Partial<ServerActivity>): ServerActivity {
   return { ...open, ...patch };
 }
 
@@ -32,7 +37,7 @@ function registration(status: RegistrationStatus) {
 describe('活动 CTA 九分支', () => {
   it('pending 或 approved 优先查看当前报名', () => {
     for (const status of ['pending', 'approved'] as const) {
-      expect(resolveActivityAction(open, registration(status), now)).toEqual({
+      expect(resolveActivityAction(open, registration(status))).toEqual({
         kind: 'view-registration',
         label: '查看我的报名',
         enabled: true,
@@ -43,7 +48,7 @@ describe('活动 CTA 九分支', () => {
 
   it('rejected 或 cancelled 且活动开放时允许重报', () => {
     for (const status of ['rejected', 'cancelled'] as const) {
-      expect(resolveActivityAction(open, registration(status), now)).toEqual({
+      expect(resolveActivityAction(open, registration(status))).toEqual({
         kind: 'resubmit',
         label: '修改后重新报名',
         enabled: true,
@@ -54,28 +59,38 @@ describe('活动 CTA 九分支', () => {
 
   it('有历史报名但活动已结束时只查看历史', () => {
     expect(
-      resolveActivityAction(activity({ status: 'finished' }), registration('rejected'), now),
+      resolveActivityAction(
+        activity({ registrationState: 'closed', closedReason: 'finished' }),
+        registration('rejected'),
+      ),
     ).toMatchObject({ kind: 'view-history', label: '查看报名历史', enabled: true });
   });
 
   it('有历史报名但已到截止时间时只查看历史', () => {
     expect(
       resolveActivityAction(
-        activity({ deadline: now.toISOString() }),
+        activity({ registrationState: 'closed', closedReason: 'deadline' }),
         registration('cancelled'),
-        now,
       ),
     ).toMatchObject({ kind: 'view-history', label: '查看报名历史', enabled: true });
   });
 
   it('有历史报名但名额已满时只查看历史', () => {
     expect(
-      resolveActivityAction(activity({ occupiedCount: 20 }), registration('rejected'), now),
+      resolveActivityAction(
+        activity({ registrationState: 'closed', closedReason: 'full' }),
+        registration('rejected'),
+      ),
     ).toMatchObject({ kind: 'view-history', label: '查看报名历史', enabled: true });
   });
 
   it('无报名且活动已结束时禁用', () => {
-    expect(resolveActivityAction(activity({ status: 'finished' }), undefined, now)).toEqual({
+    expect(
+      resolveActivityAction(
+        activity({ registrationState: 'closed', closedReason: 'finished' }),
+        undefined,
+      ),
+    ).toEqual({
       kind: 'closed',
       label: '活动已结束',
       enabled: false,
@@ -84,7 +99,10 @@ describe('活动 CTA 九分支', () => {
 
   it('无报名且已到截止时间时禁用', () => {
     expect(
-      resolveActivityAction(activity({ deadline: now.toISOString() }), undefined, now),
+      resolveActivityAction(
+        activity({ registrationState: 'closed', closedReason: 'deadline' }),
+        undefined,
+      ),
     ).toEqual({
       kind: 'closed',
       label: '报名已截止',
@@ -93,7 +111,12 @@ describe('活动 CTA 九分支', () => {
   });
 
   it('无报名且名额已满时禁用', () => {
-    expect(resolveActivityAction(activity({ occupiedCount: 20 }), undefined, now)).toEqual({
+    expect(
+      resolveActivityAction(
+        activity({ registrationState: 'closed', closedReason: 'full' }),
+        undefined,
+      ),
+    ).toEqual({
       kind: 'closed',
       label: '名额已满',
       enabled: false,
@@ -101,11 +124,24 @@ describe('活动 CTA 九分支', () => {
   });
 
   it('无报名且活动开放时立即报名', () => {
-    expect(resolveActivityAction(open, undefined, now)).toEqual({
+    expect(
+      resolveActivityAction(
+        activity({
+          endAt: '2000-01-01T00:00:00.000Z',
+          deadline: '2000-01-01T00:00:00.000Z',
+        }),
+      ),
+    ).toEqual({
       kind: 'register',
       label: '立即报名',
       enabled: true,
     });
+  });
+
+  it('后端报名状态缺失时 fail closed', () => {
+    expect(
+      resolveActivityAction(activity({ registrationState: undefined, closedReason: undefined })),
+    ).toEqual({ kind: 'closed', label: '活动状态不可用', enabled: false });
   });
 });
 
@@ -136,7 +172,9 @@ describe('活动详情 CTA 接线', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('满员活动的 go handler 不允许导航到报名页', async () => {
-    rideService.getActivity.mockResolvedValue(activity({ occupiedCount: 20 }));
+    rideService.getActivity.mockResolvedValue(
+      activity({ registrationState: 'closed', closedReason: 'full' }),
+    );
     rideService.listRegistrations.mockResolvedValue([]);
 
     await page.load('a1');
@@ -182,7 +220,9 @@ describe('凭证页重报接线', () => {
       activityId: 'a1',
       status,
     });
-    rideService.getActivity.mockResolvedValue(activity({ status: 'finished' }));
+    rideService.getActivity.mockResolvedValue(
+      activity({ registrationState: 'closed', closedReason: 'finished' }),
+    );
 
     await page.onLoad({ id: 'r1' });
     page.retry();

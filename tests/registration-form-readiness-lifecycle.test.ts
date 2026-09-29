@@ -58,6 +58,7 @@ describe('报名页 Strava readiness 请求代际', () => {
       status: 'published',
       capacity: 20,
       occupiedCount: 1,
+      registrationState: 'open',
       deadline: '2099-10-15T12:00:00.000Z',
       endAt: '2099-10-18T08:00:00.000Z',
     });
@@ -178,4 +179,32 @@ describe('报名页 Strava readiness 请求代际', () => {
       expect(wx.redirectTo).not.toHaveBeenCalled();
     },
   );
+
+  it('在途提交返回前再次 onShow 仍保持锁定且不能重复提交', async () => {
+    let resolveSubmission!: (value: { id: string }) => void;
+    rideService.getProfile.mockResolvedValue(profile);
+    rideService.getStravaReadiness.mockResolvedValue(readiness('ready'));
+    rideService.saveRegistration.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSubmission = resolve;
+        }),
+    );
+    page.onLoad({ id: 'a1' });
+    await page.onShow();
+
+    const firstSubmission = page.submit();
+    await flushMicrotasks();
+    page.onHide();
+    await page.onShow();
+
+    expect(page.data.submitting).toBe(true);
+    const secondSubmission = page.submit();
+    expect(rideService.saveRegistration).toHaveBeenCalledOnce();
+
+    resolveSubmission({ id: 'r1' });
+    await Promise.all([firstSubmission, secondSubmission]);
+    expect(page.data.submitting).toBe(false);
+    expect(wx.redirectTo).not.toHaveBeenCalled();
+  });
 });

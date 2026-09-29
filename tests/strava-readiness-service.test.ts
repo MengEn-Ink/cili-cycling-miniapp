@@ -538,6 +538,24 @@ describe('Strava 页面编排', () => {
     expect(page.data.readiness).toEqual(readiness('ready'));
   });
 
+  it('授权轮询超时结果保持 failed，不再调用 ensureReady 覆盖', async () => {
+    vi.useFakeTimers();
+    rideService.getStravaReadiness
+      .mockResolvedValueOnce(readiness('authorizing'))
+      .mockImplementationOnce(() => new Promise<StravaReadiness>(() => undefined));
+    rideService.ensureStravaReady.mockResolvedValue(readiness('authorizing'));
+
+    const load = page.load();
+    await vi.advanceTimersByTimeAsync(30000);
+    await load;
+
+    expect(rideService.ensureStravaReady).not.toHaveBeenCalled();
+    expect(page.data.readiness).toMatchObject({
+      state: 'failed',
+      error: { code: 'STRAVA_AUTH_STATUS_TIMEOUT' },
+    });
+  });
+
   it('busy 时忽略重复授权', async () => {
     page.data.busyAction = 'disconnect';
 
