@@ -50,6 +50,24 @@ test('活动输入清洗且公开响应只含白名单', () => {
   assert.ok(value.event_start instanceof Date);
   assert.equal(publicActivity({ _id: 'a1', ...value, created_by: 'secret' }).created_by, undefined);
 });
+test('活动输入完整保留行程备注、GPX 与费用明细', () => {
+  const value = validateActivityInput({
+    ...input,
+    schedule: [{ time: ' 08:00 ', title: ' 集合 ', location: ' 起点 ', remark: ' 停车场集合 ' }],
+    route: { ...input.route, gpx_file_id: ' cloud://routes/a1.gpx ' },
+    fee: { included: [' 保险 '], excluded: [' 午餐 '], remark: ' 现场结算 ' },
+  });
+
+  assert.deepEqual(value.schedule, [
+    { time: '08:00', title: '集合', location: '起点', remark: '停车场集合' },
+  ]);
+  assert.equal(value.route.gpx_file_id, 'cloud://routes/a1.gpx');
+  assert.deepEqual(value.fee, {
+    included: ['保险'],
+    excluded: ['午餐'],
+    remark: '现场结算',
+  });
+});
 test('校验容量、状态、关键时间、路线和嵌套字段', () => {
   expectCode(() => validateActivityInput({ ...input, capacity: 2 }, 3), 'CAPACITY_BELOW_OCCUPIED');
   expectCode(() => validateActivityInput({ ...input, capacity: 0 }), 'VALIDATION_FAILED');

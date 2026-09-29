@@ -51,6 +51,9 @@ Page({
     // 当前页面暂不编辑封面与行程，必须保留加载到的原值，避免普通编辑静默清空。
     coverImage: '',
     schedule: [] as ActivityInput['schedule'],
+    routeGpxFileId: '',
+    feeIncluded: [] as string[],
+    feeExcluded: [] as string[],
     form: emptyForm(),
   },
   async onLoad(options: Record<string, string>) {
@@ -74,6 +77,9 @@ Page({
         occupiedCount: activity.occupiedCount || 0,
         coverImage: activity.coverImage || '',
         schedule: activity.schedule,
+        routeGpxFileId: activity.route.gpxFileId || '',
+        feeIncluded: activity.feeIncluded || [],
+        feeExcluded: activity.feeExcluded || [],
         form: {
           title: activity.title,
           description: activity.description,
@@ -123,11 +129,14 @@ Page({
         distanceKm: Number(f.distanceKm),
         elevationM: Number(f.elevationM),
         level: f.level,
+        gpxFileId: this.data.routeGpxFileId,
       },
       schedule: this.data.schedule,
       notices: lines(f.notices),
       equipment: lines(f.equipment),
       fee: f.fee,
+      feeIncluded: this.data.feeIncluded,
+      feeExcluded: this.data.feeExcluded,
     };
     this.setData({ saving: true, error: '' });
     try {
@@ -138,6 +147,9 @@ Page({
         occupiedCount: saved.occupiedCount || 0,
         coverImage: saved.coverImage || '',
         schedule: saved.schedule,
+        routeGpxFileId: saved.route.gpxFileId || '',
+        feeIncluded: saved.feeIncluded || [],
+        feeExcluded: saved.feeExcluded || [],
       });
       wx.showToast({ title: '保存成功', icon: 'success' });
     } catch (error) {

@@ -13,11 +13,20 @@ export interface Activity {
   occupiedCount?: number;
   description: string;
   coverImage?: string;
-  route: { start: string; end: string; distanceKm: number; elevationM: number; level: string };
-  schedule: { time: string; title: string; location: string }[];
+  route: {
+    start: string;
+    end: string;
+    distanceKm: number;
+    elevationM: number;
+    level: string;
+    gpxFileId?: string;
+  };
+  schedule: { time: string; title: string; location: string; remark?: string }[];
   notices: string[];
   equipment: string[];
   fee: string;
+  feeIncluded?: string[];
+  feeExcluded?: string[];
 }
 export interface Profile {
   nickname: string;

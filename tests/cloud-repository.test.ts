@@ -27,11 +27,18 @@ const activity = {
   capacity: 20,
   occupied_count: 3,
   description: '说明',
-  route: { start: '起点', end: '终点', distance_km: 80, elevation_m: 600, level: '进阶' },
-  schedule: [{ time: '08:00', title: '集合', location: '起点' }],
+  route: {
+    start: '起点',
+    end: '终点',
+    distance_km: 80,
+    elevation_m: 600,
+    level: '进阶',
+    gpx_file_id: 'cloud://routes/a1.gpx',
+  },
+  schedule: [{ time: '08:00', title: '集合', location: '起点', remark: '停车场集合' }],
   notices: ['守规'],
   equipment: ['头盔'],
-  fee: { remark: '无报名费' },
+  fee: { included: ['保险'], excluded: ['午餐'], remark: '无报名费' },
 };
 const registration = {
   _id: 'r1',
@@ -108,11 +115,20 @@ describe('CloudRepository 活动读取适配', () => {
         occupiedCount: 3,
         description: '说明',
         coverImage: 'cloud://covers/a1.jpg',
-        route: { start: '起点', end: '终点', distanceKm: 80, elevationM: 600, level: '进阶' },
+        route: {
+          start: '起点',
+          end: '终点',
+          distanceKm: 80,
+          elevationM: 600,
+          level: '进阶',
+          gpxFileId: 'cloud://routes/a1.gpx',
+        },
         schedule: activity.schedule,
         notices: ['守规'],
         equipment: ['头盔'],
         fee: '无报名费',
+        feeIncluded: ['保险'],
+        feeExcluded: ['午餐'],
       },
     ]);
   });
@@ -955,7 +971,7 @@ describe('CloudRepository 管理员活动写入契约', () => {
     expect(JSON.stringify(callFunction.mock.calls[0][0])).not.toContain('created_by');
   });
 
-  it('已有活动只改标题和容量时原样保留封面与行程', async () => {
+  it('已有活动只改标题和容量时完整保留嵌套活动 DTO', async () => {
     const updated = { ...activity, title: '新标题', capacity: 25 };
     const { cloud, callFunction } = cloudWith(success(activity), success(updated));
     const repository = new CloudRepository(cloud);
@@ -966,6 +982,8 @@ describe('CloudRepository 管理员活动写入契约', () => {
     const payload = (callFunction.mock.calls[1][0].data as any).activity;
     expect(payload.cover_image).toBe(activity.cover_image);
     expect(payload.schedule).toEqual(activity.schedule);
+    expect(payload.route.gpx_file_id).toBe(activity.route.gpx_file_id);
+    expect(payload.fee).toEqual(activity.fee);
     expect(payload.title).toBe('新标题');
     expect(payload.capacity).toBe(25);
   });

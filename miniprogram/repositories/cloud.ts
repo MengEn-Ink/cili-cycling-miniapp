@@ -129,11 +129,22 @@ function mapActivity(raw: unknown): Activity {
       distanceKm: typeof value.route?.distance_km === 'number' ? value.route.distance_km : 0,
       elevationM: typeof value.route?.elevation_m === 'number' ? value.route.elevation_m : 0,
       level: typeof value.route?.level === 'string' ? value.route.level : '',
+      gpxFileId: typeof value.route?.gpx_file_id === 'string' ? value.route.gpx_file_id : '',
     },
     schedule: Array.isArray(value.schedule) ? value.schedule : [],
     notices: Array.isArray(value.notices) ? value.notices : [],
     equipment: Array.isArray(value.equipment) ? value.equipment : [],
     fee: typeof fee === 'string' ? fee : typeof fee?.remark === 'string' ? fee.remark : '',
+    ...(isRecord(fee)
+      ? {
+          feeIncluded: Array.isArray(fee.included)
+            ? fee.included.filter((item: unknown) => typeof item === 'string')
+            : [],
+          feeExcluded: Array.isArray(fee.excluded)
+            ? fee.excluded.filter((item: unknown) => typeof item === 'string')
+            : [],
+        }
+      : {}),
   };
 }
 function mapProfile(raw: unknown): Profile {
@@ -364,6 +375,7 @@ function activityPayload(value: ActivityInput) {
           time: item.time,
           title: item.title,
           location: item.location,
+          ...(typeof item.remark === 'string' ? { remark: item.remark } : {}),
         }))
       : [],
     route: {
@@ -372,6 +384,7 @@ function activityPayload(value: ActivityInput) {
       distance_km: value.route?.distanceKm,
       elevation_m: value.route?.elevationM,
       level: typeof value.route?.level === 'string' ? value.route.level : '',
+      ...(typeof value.route?.gpxFileId === 'string' ? { gpx_file_id: value.route.gpxFileId } : {}),
     },
     notices: Array.isArray(value.notices)
       ? value.notices.filter((item) => typeof item === 'string')
@@ -379,7 +392,20 @@ function activityPayload(value: ActivityInput) {
     equipment: Array.isArray(value.equipment)
       ? value.equipment.filter((item) => typeof item === 'string')
       : [],
-    fee: typeof value.fee === 'string' ? value.fee : '',
+    fee:
+      Array.isArray(value.feeIncluded) || Array.isArray(value.feeExcluded)
+        ? {
+            included: Array.isArray(value.feeIncluded)
+              ? value.feeIncluded.filter((item) => typeof item === 'string')
+              : [],
+            excluded: Array.isArray(value.feeExcluded)
+              ? value.feeExcluded.filter((item) => typeof item === 'string')
+              : [],
+            remark: typeof value.fee === 'string' ? value.fee : '',
+          }
+        : typeof value.fee === 'string'
+          ? value.fee
+          : '',
     capacity: value.capacity,
     signup_deadline: value.deadline,
     event_start: value.startAt,
