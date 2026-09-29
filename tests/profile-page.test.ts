@@ -18,7 +18,7 @@ const appStore = vi.hoisted(() => ({
 vi.mock('../miniprogram/services/ride-service', () => ({ rideService }));
 vi.mock('../miniprogram/store/app-store', () => ({ appStore }));
 
-const profile = (nickname: string) => ({
+const profile = (nickname: string, avatarSource: 'wechat' | 'strava' = 'wechat') => ({
   nickname,
   title: '',
   realName: '',
@@ -27,6 +27,7 @@ const profile = (nickname: string) => ({
   emergencyName: '',
   emergencyPhone: '',
   photos: [],
+  avatarSource,
   completeness: 60,
 });
 
@@ -34,6 +35,7 @@ const personalCard = {
   state: 'ready',
   generatedAt: '2026-09-29T04:10:00.000Z',
   profile: { displayName: '山野骑手', title: '周末爬坡手' },
+  stravaAvatarUrl: 'https://temporary.example/strava-avatar.jpg',
   backgrounds: [
     { url: 'https://temporary.example/rider-bg.jpg', source: 'user_photo', category: 'ride' },
     { url: 'https://temporary.example/avatar.jpg', source: 'avatar', category: 'other' },
@@ -142,7 +144,39 @@ describe('个人中心加载状态', () => {
     });
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     expect(template).toContain('class="hero-bg"');
-    expect(template).toContain('名片背景 · STRAVA {{profileCardStatus}}');
+    expect(template).toContain(
+      '名片背景 · STRAVA {{profileCardStatus}} · {{profileAvatarSourceLabel}}',
+    );
+    expect(template).toContain('binderror="heroBackgroundError"');
+    expect(template).toContain('binderror="avatarError"');
+  });
+
+  it('用户选择 Strava 头像时优先展示 Strava，失效后回退默认头像', async () => {
+    rideService.getProfile.mockResolvedValueOnce(profile('山野骑手', 'strava'));
+
+    await page.onShow();
+
+    expect(page.data.profileAvatarUrl).toBe('https://temporary.example/strava-avatar.jpg');
+    expect(page.data.profileAvatarSourceLabel).toBe('Strava 头像');
+
+    page.avatarError();
+
+    expect(page.data).toMatchObject({
+      profileAvatarUrl: '',
+      hasProfileAvatar: false,
+      profileAvatarSourceLabel: '默认头像',
+    });
+  });
+
+  it('骑行名片背景加载失败时收起背景避免破图', async () => {
+    await page.onShow();
+
+    page.heroBackgroundError();
+
+    expect(page.data).toMatchObject({
+      profileHeroBackground: '',
+      hasProfileHeroBackground: false,
+    });
   });
 
   it('名片响应先于资料返回时不会被资料回写清空背景', async () => {

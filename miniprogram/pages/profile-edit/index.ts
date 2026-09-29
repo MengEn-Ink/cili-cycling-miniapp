@@ -47,14 +47,32 @@ Page({
     p: null as Profile | null,
     saving: false,
     uploadHint: '照片将上传到云存储；请在真机确认文件权限和存储规则。',
+    avatarSourceOptions: [
+      { value: 'wechat', label: '微信头像' },
+      { value: 'strava', label: 'Strava 头像' },
+    ],
+    avatarSourceIndex: 0,
   },
   async onLoad() {
     await retryOrphanLedger();
     const state = await runPageTask(() => rideService.getProfile(), '资料加载失败');
-    this.setData({ loading: false, error: state.error, p: state.data || null });
+    const p = state.data || null;
+    this.setData({
+      loading: false,
+      error: state.error,
+      p,
+      avatarSourceIndex: p?.avatarSource === 'strava' ? 1 : 0,
+    });
   },
   set(e: any) {
     this.setData({ ['p.' + e.currentTarget.dataset.k]: e.detail.value });
+  },
+  setAvatarSource(e: { detail: { value: string | number } }) {
+    const p = this.data.p;
+    if (!p) return;
+    const index = Number(e.detail.value) === 1 ? 1 : 0;
+    const source = this.data.avatarSourceOptions[index].value;
+    this.setData({ avatarSourceIndex: index, p: { ...p, avatarSource: source } });
   },
   async uploadProfileMedia(filePath: string) {
     let uploadedFileId = '';
@@ -108,7 +126,7 @@ Page({
     if (!p || !path) return;
     const avatarId = await this.uploadProfileMedia(path);
     if (!avatarId) return;
-    this.setData({ p: { ...p, avatarId } });
+    this.setData({ p: { ...p, avatarId, avatarSource: 'wechat' } });
     wx.showToast({ title: '头像已选择，保存后生效' });
   },
   async addPhoto() {
@@ -140,6 +158,7 @@ Page({
           gender: p.gender,
           emergencyName: p.emergencyName,
           avatarFileId: p.avatarId,
+          avatarSource: p.avatarSource === 'strava' ? 'strava' : 'wechat',
           photos: p.photos,
           realName: p.realName.includes('*') ? undefined : p.realName,
           phone: p.phone.includes('*') ? undefined : p.phone,
@@ -147,7 +166,11 @@ Page({
         }),
       '保存失败',
     );
-    this.setData({ saving: false, error: state.error, p: state.data || p });
+    // 保存成功后以服务端 DTO 为准；但头像来源是用户刚确认的选择，旧部署回包可能缺该字段，不能被旧值覆盖。
+    const savedProfile = state.data
+      ? { ...state.data, avatarSource: p.avatarSource ?? state.data.avatarSource }
+      : p;
+    this.setData({ saving: false, error: state.error, p: savedProfile });
     if (state.data) wx.showToast({ title: '已安全保存' });
   },
 });

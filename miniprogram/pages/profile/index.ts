@@ -22,14 +22,24 @@ function initialOf(profile: Profile | null) {
 
 function cardHeroData(card: PersonalCapabilityCard | null, profile: Profile | null) {
   const view = card ? personalCardViewModel(card) : null;
-  const avatarBackground = view?.backgrounds.find((item) => item.source === 'avatar')?.url || '';
-  const heroBackground = view?.backgrounds[0]?.url || '';
+  const wechatAvatar = view?.backgrounds.find((item) => item.source === 'avatar')?.url || '';
+  const stravaAvatar = card?.stravaAvatarUrl || '';
+  const preferredAvatar = profile?.avatarSource === 'strava' ? stravaAvatar : wechatAvatar;
+  const fallbackAvatar = profile?.avatarSource === 'strava' ? wechatAvatar : stravaAvatar;
+  const profileAvatarUrl = preferredAvatar || fallbackAvatar || profile?.avatarId || '';
+  const heroBackground = view?.backgrounds.find((item) => item.source === 'user_photo')?.url || '';
 
   return {
     profileHeroBackground: heroBackground,
     hasProfileHeroBackground: Boolean(heroBackground),
-    profileAvatarUrl: avatarBackground || profile?.avatarId || '',
-    hasProfileAvatar: Boolean(avatarBackground || profile?.avatarId),
+    profileAvatarUrl,
+    hasProfileAvatar: Boolean(profileAvatarUrl),
+    profileAvatarSourceLabel:
+      profileAvatarUrl === stravaAvatar
+        ? 'Strava 头像'
+        : profileAvatarUrl
+          ? '微信头像'
+          : '默认头像',
     profileInitial: initialOf(profile),
     profileCardStatus: view?.statusLabel || '',
   };
@@ -52,6 +62,7 @@ Page({
     profileAvatarUrl: '',
     hasProfileAvatar: false,
     profileInitial: 'C',
+    profileAvatarSourceLabel: '默认头像',
     profileCardStatus: '',
     profileCapabilityCard: null as PersonalCapabilityCard | null,
   },
@@ -135,5 +146,17 @@ Page({
   },
   async retryProfile() {
     await this.load();
+  },
+  avatarError() {
+    if (!this.data.hasProfileAvatar) return;
+    this.setData({
+      profileAvatarUrl: '',
+      hasProfileAvatar: false,
+      profileAvatarSourceLabel: '默认头像',
+    });
+  },
+  heroBackgroundError() {
+    if (!this.data.hasProfileHeroBackground) return;
+    this.setData({ profileHeroBackground: '', hasProfileHeroBackground: false });
   },
 });

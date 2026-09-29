@@ -15,6 +15,7 @@ const profile: Profile = {
   nickname: '骑手',
   title: '',
   avatarId: 'cloud://avatar',
+  avatarSource: 'wechat',
   realName: '曹**',
   phone: '138****5678',
   gender: '',
@@ -49,11 +50,21 @@ describe('资料编辑头像回写', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('保存资料时继续提交 avatarFileId', async () => {
+  it('保存资料时继续提交 avatarFileId 和头像来源', async () => {
     await page.save();
 
     expect(rideService.updateProfile).toHaveBeenCalledWith(
-      expect.objectContaining({ avatarFileId: 'cloud://avatar' }),
+      expect.objectContaining({ avatarFileId: 'cloud://avatar', avatarSource: 'wechat' }),
+    );
+  });
+
+  it('可切换为 Strava 头像来源并持久化选择', async () => {
+    page.setAvatarSource({ detail: { value: 1 } });
+    await page.save();
+
+    expect(page.data.p.avatarSource).toBe('strava');
+    expect(rideService.updateProfile).toHaveBeenCalledWith(
+      expect.objectContaining({ avatarSource: 'strava' }),
     );
   });
 
@@ -78,6 +89,7 @@ describe('资料编辑头像回写', () => {
       'other',
     );
     expect(page.data.p.avatarId).toBe('cloud://env/profiles/owner/wechat-avatar.jpg');
+    expect(page.data.p.avatarSource).toBe('wechat');
     expect(wx.showToast).toHaveBeenCalledWith({ title: '头像已选择，保存后生效' });
   });
 

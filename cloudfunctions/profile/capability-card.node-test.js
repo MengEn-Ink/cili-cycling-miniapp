@@ -91,7 +91,10 @@ test('单一响应只返回 90 天 allowlist、null 语义和 owner 媒体临时
           { file_id: 'cloud://env/profiles/legacy/ride.jpg', category: 'ride' },
         ],
       },
-      credential,
+      credential: {
+        ...credential,
+        athlete_avatar_url: 'https://temporary.example/strava-avatar.jpg',
+      },
       snapshot: { ...snapshot, longest_km: null },
       mediaRecords: [mediaRecord(ownedRide, 'ride'), mediaRecord(ownedOther, 'other')],
     },
@@ -112,6 +115,7 @@ test('单一响应只返回 90 天 allowlist、null 语义和 owner 媒体临时
     state: 'partial',
     generated_at: '2026-09-29T12:00:00.000Z',
     profile: { display_name: '山野骑手', title: '爬坡王' },
+    strava_avatar_url: 'https://temporary.example/strava-avatar.jpg',
     backgrounds: [
       { url: 'https://temporary.example/ride', source: 'user_photo', category: 'ride' },
       { url: 'https://temporary.example/other', source: 'user_photo', category: 'other' },

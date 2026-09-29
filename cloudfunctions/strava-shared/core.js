@@ -104,6 +104,18 @@ async function consumeState(store, raw, now = new Date()) {
     throw new StravaError('OAUTH_STATE_INVALID', 'OAuth state 无效');
   return value;
 }
+function stravaAvatarUrl(athlete) {
+  for (const candidate of [athlete && athlete.profile, athlete && athlete.profile_medium]) {
+    if (typeof candidate !== 'string' || candidate.length > 2048) continue;
+    try {
+      const url = new URL(candidate);
+      if (url.protocol === 'https:') return url.toString();
+    } catch {
+      // Strava 头像不参与授权成败，非法 URL 直接忽略并交给前端回退。
+    }
+  }
+  return '';
+}
 function tokenDocument(openid, token, keyValue, now) {
   if (
     !token ||
@@ -119,6 +131,7 @@ function tokenDocument(openid, token, keyValue, now) {
     openid,
     athlete_id: String(token.athlete.id),
     athlete_name: [token.athlete.firstname, token.athlete.lastname].filter(Boolean).join(' '),
+    athlete_avatar_url: stravaAvatarUrl(token.athlete),
     access_token_cipher: encrypt(token.access_token, keyValue),
     refresh_token_cipher: encrypt(token.refresh_token, keyValue),
     token_expires_at: new Date(token.expires_at * 1000),

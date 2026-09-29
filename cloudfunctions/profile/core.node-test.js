@@ -82,6 +82,7 @@ test('update 加密敏感字段并把手填手机号标记为未验证', () => {
       real_name: '曹蒙恩',
       phone: '13812345678',
       emergency_phone: '13912345678',
+      avatar_source: 'strava',
       photos: [{ file_id: 'cloud://a', category: 'ride' }],
     },
     key,
@@ -91,6 +92,10 @@ test('update 加密敏感字段并把手填手机号标记为未验证', () => {
   assert.equal(decrypt(data.phone_cipher, key), '13812345678');
   assert.equal(data.phone_source, 'manual');
   assert.equal(data.phone_verified, false);
+  assert.equal(data.avatar_source, 'strava');
+  assert.throws(() => buildUpdate({ avatar_source: 'third-party' }, key), {
+    code: 'VALIDATION_FAILED',
+  });
   assert.throws(() => buildUpdate({ phone: 'not-phone' }, key), { code: 'PHONE_INVALID' });
   assert.throws(() => buildUpdate({ id_type: '身份证' }, key), { code: 'FORBIDDEN_FIELD' });
   assert.throws(() => buildUpdate({ id_number: 'anything' }, key), { code: 'FORBIDDEN_FIELD' });

@@ -131,6 +131,7 @@ async function buildCapabilityCard(
       display_name: typeof profile?.nickname === 'string' ? profile.nickname : '',
       title: typeof profile?.title === 'string' ? profile.title : '',
     },
+    strava_avatar_url: safeHttpsUrl(credential && credential.athlete_avatar_url),
     backgrounds,
     summary: snapshotSummary,
     coverage: snapshotCoverage,

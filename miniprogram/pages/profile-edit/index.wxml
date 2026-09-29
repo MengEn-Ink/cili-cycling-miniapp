@@ -10,7 +10,10 @@
         </view>
         <view class="avatar-copy">
           <view class="label">头像来源</view>
-          <view class="muted field-tip">可选择微信头像；后续 Strava 头像同步到资料后也会按你的保存选择展示。</view>
+          <view class="muted field-tip">可在微信头像与 Strava 头像之间切换；Strava 头像不可用时会自动回退。</view>
+          <picker mode="selector" range="{{avatarSourceOptions}}" range-key="label" value="{{avatarSourceIndex}}" bindchange="setAvatarSource">
+            <view class="avatar-source-picker">当前展示：{{avatarSourceOptions[avatarSourceIndex].label}}</view>
+          </picker>
           <button class="avatar-action" size="mini" open-type="chooseAvatar" bindchooseavatar="chooseAvatar">选择微信头像</button>
         </view>
       </view>

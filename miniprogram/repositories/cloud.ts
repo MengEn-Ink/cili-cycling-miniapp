@@ -209,6 +209,7 @@ function mapProfile(raw: unknown): Profile {
     nickname: value.nickname,
     title: typeof value.title === 'string' ? value.title : '',
     avatarId: typeof value.avatar_file_id === 'string' ? value.avatar_file_id : '',
+    avatarSource: value.avatar_source === 'strava' ? 'strava' : 'wechat',
     realName: typeof value.real_name_masked === 'string' ? value.real_name_masked : '',
     phone: typeof value.phone_masked === 'string' ? value.phone_masked : '',
     gender: typeof value.gender === 'string' ? value.gender : '',
@@ -287,6 +288,7 @@ function mapPersonalCapabilityCard(raw: unknown): PersonalCapabilityCard {
       displayName: profile.display_name,
       title: profile.title,
     },
+    stravaAvatarUrl: httpsUrl(value.strava_avatar_url) || undefined,
     backgrounds,
     summary: {
       totalKm90d: nullableFiniteNumber(summary.total_km_90d),
@@ -753,6 +755,7 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
       ['gender', 'gender'],
       ['emergencyName', 'emergency_name'],
       ['avatarFileId', 'avatar_file_id'],
+      ['avatarSource', 'avatar_source'],
     ];
     for (const [from, to] of simple)
       if (typeof profile[from] === 'string') data[to] = profile[from];

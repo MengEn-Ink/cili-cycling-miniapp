@@ -1,5 +1,32 @@
+page {
+  background: #0b0b0c;
+}
+
 .profile-form-page {
   padding-bottom: 190rpx;
+  background: radial-gradient(circle at 95% 4%, rgba(213, 91, 31, 0.14), transparent 30%), #0b0b0c;
+  color: #f7f7f5;
+}
+
+.profile-form-page .card {
+  border-color: #343438;
+  border-radius: 8rpx;
+  background: #18181a;
+  color: #f7f7f5;
+  box-shadow: 0 18rpx 48rpx rgba(0, 0, 0, 0.32);
+}
+
+.profile-form-page .muted,
+.profile-form-page .label,
+.photo-count {
+  color: #a8a8ad;
+}
+
+.profile-form-page .input {
+  border-color: #46464a;
+  border-radius: 6rpx;
+  background: #101012;
+  color: #f7f7f5;
 }
 
 .form-card {
@@ -86,7 +113,6 @@
 
 .photo-count {
   margin-top: 20rpx;
-  color: #718079;
 }
 
 .form-error {

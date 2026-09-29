@@ -316,6 +316,7 @@ function response(doc = {}) {
     title: typeof doc.title === 'string' ? doc.title : '',
     avatar_file_id: typeof doc.avatar_file_id === 'string' ? doc.avatar_file_id : '',
     photos: Array.isArray(doc.photos) ? doc.photos : [],
+    avatar_source: doc.avatar_source === 'strava' ? 'strava' : 'wechat',
     gender: typeof doc.gender === 'string' ? doc.gender : '',
     emergency_name: typeof doc.emergency_name === 'string' ? doc.emergency_name : '',
     real_name_masked: typeof doc.real_name_masked === 'string' ? doc.real_name_masked : '',
@@ -353,6 +354,12 @@ function buildUpdate(event, keyValue) {
   ]) {
     const value = cleanText(event[input], max);
     if (value !== undefined) data[output] = value;
+  }
+  if (event.avatar_source !== undefined) {
+    const source = cleanText(event.avatar_source, 20);
+    if (!['wechat', 'strava'].includes(source))
+      throw new ProfileError('VALIDATION_FAILED', '头像来源无效');
+    data.avatar_source = source;
   }
   if (event.photos !== undefined) {
     if (

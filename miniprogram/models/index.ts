@@ -43,6 +43,7 @@ export interface Activity {
   closedReason?: ActivityClosedReason | null;
   serverNow?: string;
 }
+export type AvatarSource = 'wechat' | 'strava';
 export interface Profile {
   nickname: string;
   title: string;
@@ -53,6 +54,7 @@ export interface Profile {
   emergencyPhone: string;
   photos: { id: string; category: string }[];
   avatarId?: string;
+  avatarSource?: AvatarSource;
   completeness?: number;
   sensitiveStatus?: {
     realName: boolean;
@@ -67,6 +69,7 @@ export interface ProfileUpdate {
   gender?: string;
   emergencyName?: string;
   avatarFileId?: string;
+  avatarSource?: AvatarSource;
   photos?: { id: string; category: string }[];
   realName?: string;
   phone?: string;
@@ -113,6 +116,7 @@ export interface PersonalCapabilityCard {
   state: PersonalCapabilityCardState;
   generatedAt: string;
   profile: { displayName: string; title: string };
+  stravaAvatarUrl?: string;
   backgrounds: PersonalCapabilityCardBackground[];
   summary: PersonalCapabilityCardSummary;
   coverage: StravaCoverage | null;

@@ -98,6 +98,7 @@ const personalCapabilityCardDto = {
     display_name: '山野骑手',
     title: '周末爬坡手',
   },
+  strava_avatar_url: 'https://temporary.example/strava-avatar.jpg',
   backgrounds: [
     {
       url: 'https://temporary.example/ride-1.jpg',
@@ -247,6 +248,7 @@ describe('CloudRepository 个人骑行名片适配', () => {
         displayName: '山野骑手',
         title: '周末爬坡手',
       },
+      stravaAvatarUrl: 'https://temporary.example/strava-avatar.jpg',
       backgrounds: [
         {
           url: 'https://temporary.example/ride-1.jpg',
@@ -886,6 +888,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
         completeness: 100,
         title: '领队',
         avatar_file_id: 'cloud://avatar',
+        avatar_source: 'strava',
         real_name_masked: '曹*',
         phone_masked: '138****5678',
         id_type: '护照',
@@ -909,6 +912,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     expect(mapped).toMatchObject({
       title: '领队',
       avatarId: 'cloud://avatar',
+      avatarSource: 'strava',
       gender: '男',
       emergencyName: '紧急联系人',
       emergencyPhone: '139****0000',
