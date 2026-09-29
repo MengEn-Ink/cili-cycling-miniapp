@@ -71,13 +71,18 @@ Page({
     const status = e.currentTarget.dataset.s;
     if (status === 'rejected' && !this.data.reason.trim())
       return wx.showToast({ title: '驳回理由必填', icon: 'none' });
+    // 记录提交瞬间的加载代次，onUnload 会递增 loadRequestId 使在途请求的代次失效。
+    const requestId = loadRequestId;
     this.setData({ submitting: true, error: '' });
     try {
       await rideService.updateRegistration(this.data.x.id, status, this.data.reason);
+      // 请求在途期间用户若已手动返回（onUnload 递增代次），不能再回写已卸载页面，也不能再次 navigateBack 报错。
+      if (requestId !== loadRequestId) return;
       this.setData({ statusText: statusText[status] || status, submitting: false });
       wx.showToast({ title: status === 'approved' ? '已通过' : '已驳回' });
       setTimeout(() => wx.navigateBack(), 500);
     } catch (error) {
+      if (requestId !== loadRequestId) return;
       this.setData({
         error: error instanceof Error ? error.message : '审批失败',
         submitting: false,

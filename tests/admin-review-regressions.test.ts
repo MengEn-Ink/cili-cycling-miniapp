@@ -93,7 +93,10 @@ describe('管理员审核详情回归', () => {
     page = getPage();
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
 
   it('展示服务端已脱敏手机号并与验证来源同时保留', async () => {
     await page.onLoad({ id: 'r1' });
@@ -142,9 +145,41 @@ describe('管理员审核详情回归', () => {
     expect(template).toContain('loading="{{submitting}}"');
 
     pending.resolve();
+    vi.useFakeTimers();
     await first;
     expect(page.data.submitting).toBe(false);
     expect(page.data.statusText).toBe('已通过');
+
+    // 延迟返回定时器必须在测试内触发并收口，避免泄漏到后续用例形成未捕获异常。
+    vi.advanceTimersByTime(500);
+    const wxApi = (globalThis as any).wx as {
+      navigateBack: ReturnType<typeof vi.fn>;
+    };
+    expect(wxApi.navigateBack).toHaveBeenCalledOnce();
+  });
+
+  it('审批请求在途时页面已卸载，回包后不回写状态、不提示、不安排返回', async () => {
+    const pending = deferred<void>();
+    rideService.updateRegistration.mockReturnValueOnce(pending.promise);
+    await page.onLoad({ id: 'r1' });
+
+    const first = page.act({ currentTarget: { dataset: { s: 'approved' } } });
+    await vi.waitFor(() => expect(page.data.submitting).toBe(true));
+    const setDataCallsBeforeUnload = page.setData.mock.calls.length;
+    const wxApi = (globalThis as any).wx as {
+      showToast: ReturnType<typeof vi.fn>;
+      navigateBack: ReturnType<typeof vi.fn>;
+    };
+
+    page.onUnload();
+    vi.useFakeTimers();
+    pending.resolve();
+    await first;
+    vi.advanceTimersByTime(500);
+
+    expect(page.setData.mock.calls).toHaveLength(setDataCallsBeforeUnload);
+    expect(wxApi.showToast).not.toHaveBeenCalled();
+    expect(wxApi.navigateBack).not.toHaveBeenCalled();
   });
 });
 
