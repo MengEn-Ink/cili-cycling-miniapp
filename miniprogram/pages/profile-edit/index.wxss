@@ -231,3 +231,23 @@ page {
 .profile-form-page .avatar-status-error {
   color: #ff8f86;
 }
+.profile-form-page .form-card .label {
+  color: #a8a8ad;
+}
+.profile-form-page .avatar-preview-shell {
+  border: 4rpx solid #343438;
+  background: #151517;
+  box-shadow: 0 14rpx 30rpx rgba(0, 0, 0, 0.4);
+}
+.profile-form-page .form-error {
+  background: rgba(200, 32, 24, 0.12);
+  color: #ff7068;
+}
+.profile-form-page .photo-action {
+  min-height: 88rpx;
+  margin-top: 32rpx;
+  border: 2rpx solid #3a3a3e;
+  border-radius: 12rpx;
+  background: #151517;
+  color: #f7f7f5;
+}
