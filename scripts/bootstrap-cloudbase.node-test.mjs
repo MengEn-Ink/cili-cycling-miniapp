@@ -296,6 +296,18 @@ test('OAuth 与 Strava 集合包含唯一、普通过期时间和同步索引', 
       unique: false,
     },
   );
+  const activeStateIndex = INDEXES.find((item) => item.name === 'oauth_states_openid_expires_at');
+  assert.deepEqual(activeStateIndex, {
+    collection: 'oauth_states',
+    name: 'oauth_states_openid_expires_at',
+    keys: [
+      ['openid', 1],
+      ['expires_at', -1],
+    ],
+    unique: false,
+  });
+  assert.equal(COLLECTIONS.length, 8);
+  assert.equal(INDEXES.length, 11);
   assert.equal(INDEXES.find((item) => item.name === 'oauth_states_state_hash')?.unique, true);
   assert.equal(
     INDEXES.some((item) => item.name === 'strava_snapshots_synced_at'),

@@ -2,6 +2,12 @@
 
 所有业务集合客户端读写均拒绝，仅云函数访问。运行期身份只来自 `cloud.getWXContext().OPENID`；响应统一为 `{ ok: true, data }` 或 `{ ok: false, error }`。任何日志和审计不得包含 PII、OAuth code、state 明文、Secret 或 token。
 
+第一批手机号规则：微信授权号码标记为 wechat/verified；个人主体可手填号码，标记为 manual/unverified。两者都满足第一批报名门禁，管理员审批详情必须展示来源。
+
+Strava 报名资格唯一事实源：`strava_credentials + strava_snapshots`。`profiles.strava` 仅为兼容展示缓存，不参与报名判定。
+
+快照新鲜度为 24 小时；同步租约为 2 分钟。覆盖度只描述最近 90 天；第 5 页仍满 200 条时 `coverage_complete=false`。完整空窗口的统计值可为 0，未知或不完整值为 `null`。
+
 ## 集合
 
 ### `activities`
@@ -23,11 +29,13 @@ real_name_cipher, id_number_cipher, phone_cipher, emergency_phone_cipher: {
   v: 1, alg: A256GCM, iv, tag, ciphertext
 }
 real_name_masked, id_number_masked, phone_masked, emergency_phone_masked
+phone_source: wechat|manual
+phone_verified: Boolean             # wechat=true, manual=false
 strava: { status: connected|disconnected, snapshot? }
 created_at, updated_at
 ```
 
-四个敏感字段均用环境变量 `PII_ENCRYPTION_KEY`（base64 32 bytes）独立 AES-256-GCM 加密和随机 12-byte IV。密钥缺失/非法、密文认证失败均 fail closed。`update` 不接受 `phone`；`getPhoneNumber` 只接受微信动态 code 并调用 `cloud.openapi.phonenumber`。响应不返回敏感明文或密文，只返回掩码、`sensitive_status` 与 `completeness`。
+四个敏感字段均用环境变量 `PII_ENCRYPTION_KEY`（base64 32 bytes）独立 AES-256-GCM 加密和随机 12-byte IV。密钥缺失/非法、密文认证失败均 fail closed。`getPhoneNumber` 接受微信动态 code 并调用 `cloud.openapi.phonenumber`，写入 `wechat/verified`；个人主体的 `update` 可写入手填号码，但必须写入 `manual/unverified`。响应不返回敏感明文或密文，只返回掩码、来源、验证状态、`sensitive_status` 与 `completeness`；管理员审批详情必须展示手机号来源。
 
 ### `admins`
 
@@ -56,6 +64,11 @@ state 原文至少 32 随机字节，只返回给发起授权的客户端，不�
 _id/openid, athlete_id, athlete_name
 access_token_cipher, refresh_token_cipher: { v, alg, iv, tag, ciphertext }
 token_expires_at, scopes, connected_at, updated_at
+sync_status: pending|running|ready|failed
+sync_error_code?: String
+sync_started_at?: Date
+sync_finished_at?: Date
+sync_lease_id?: String
 ```
 
 两个 token 使用 `STRAVA_TOKEN_ENCRYPTION_KEY`（base64 32 bytes）分别 AES-256-GCM 加密，永不进入客户端响应。
@@ -65,10 +78,12 @@ token_expires_at, scopes, connected_at, updated_at
 ```text
 _id/openid
 total_km, activities_90d, longest_km, total_elevation_m
-weighted_avg_speed_kmh, latest_activity_at, synced_at
+weighted_avg_speed_kmh, latest_activity_at
+coverage_from, coverage_to, coverage_complete
+synced_at
 ```
 
-只统计最近 90 天 Ride 类活动，排除 trainer/commute；每页 200，最多 5 页。加权均速为总距离/总移动时间。
+只统计最近 90 天 Ride 类活动，排除 trainer/commute；每页 200，最多 5 页。第 5 页仍满 200 条时 `coverage_complete=false`。加权均速为总距离/总移动时间；完整空窗口的统计值可为 0，未知或不完整值为 `null`。
 
 ## 索引
 
@@ -81,6 +96,7 @@ weighted_avg_speed_kmh, latest_activity_at, synced_at
 | audit_logs | actor_openid ASC, created_at DESC | 普通 |
 | oauth_states | state_hash ASC | 唯一 |
 | oauth_states | expires_at ASC | 普通；应用层过期与限量清理 |
+| oauth_states | openid ASC, expires_at DESC | 普通；查询用户的活跃授权状态 |
 | strava_credentials | openid ASC | 唯一 |
 | strava_snapshots | openid ASC | 唯一 |
 | strava_snapshots | synced_at DESC | 普通 |
@@ -91,8 +107,8 @@ weighted_avg_speed_kmh, latest_activity_at, synced_at
 
 ## 部署后验证
 
-1. 校验 8 集合、全拒绝规则与 10 索引，确认 `oauth_states.expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
-2. 真机验证 WXContext openid、微信手机号动态 code，以及资料响应中无明文/密文。
+1. 校验 8 集合、全拒绝规则与 11 索引，确认 `oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
+2. 真机验证 WXContext openid、微信手机号动态 code、手填手机号来源，以及资料响应中无明文/密文。
 3. 配置 callback HTTPS 路由、Strava 回调域和小程序业务域名，验证 CSRF、过期与重放。
 4. 验证 token 临期刷新、90 天分页、解绑审计及日志无敏感信息。
 5. 在隔离活动中压测报名容量与审批事务。
