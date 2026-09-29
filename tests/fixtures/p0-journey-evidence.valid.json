@@ -1,33 +1,35 @@
 {
-  "marker": "E2E_RESULT:P0_20260929_A1B2C3D4E5F6",
-  "subjectAlias": "user_test_P0_20260929_A1B2C3D4E5F6",
-  "registrationId": "reg_test_P0_20260929_A1B2C3D4E5F6",
+  "marker": "E2E_RESULT:P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
+  "issuedAt": "2026-09-29T04:00:00.000Z",
+  "subjectAlias": "user_test_P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
+  "registrationId": "reg_test_P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
+  "runSignature": "F2303BB578C5ADA9B3A564A187078B66DAF220125955A334E2C2A078F3B9EABD",
   "statuses": ["pending", "approved", "cancelled", "pending"],
   "occupiedCounts": [3, 4, 4, 3, 4],
   "audits": [
     {
       "action": "strava.sync.succeeded",
-      "target_id": "user_test_P0_20260929_A1B2C3D4E5F6",
+      "target_id": "user_test_P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
       "created_at": "2026-09-29T04:00:00.000Z"
     },
     {
       "action": "registration.submitted",
-      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6",
+      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
       "created_at": "2026-09-29T04:01:00.000Z"
     },
     {
       "action": "registration.approved",
-      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6",
+      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
       "created_at": "2026-09-29T04:02:00.000Z"
     },
     {
       "action": "registration.cancelled",
-      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6",
+      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
       "created_at": "2026-09-29T04:03:00.000Z"
     },
     {
       "action": "registration.resubmitted",
-      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6",
+      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
       "created_at": "2026-09-29T04:04:00.000Z"
     }
   ]

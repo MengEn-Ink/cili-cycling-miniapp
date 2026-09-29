@@ -32,53 +32,62 @@
 
 证据只保留旅程判断所需字段：
 
-执行前生成本次唯一的 `RUN_ID`（当天日期 + 6 个随机字节的大写十六进制表示）：
+首次使用时在受控目录生成至少 32 字节的签发密钥，权限限制为仅当前用户可读：
 
 ```bash
-RUN_ID="P0_$(date +%Y%m%d)_$(openssl rand -hex 6 | tr '[:lower:]' '[:upper:]')"
-printf '%s\n' "$RUN_ID"
+umask 077
+openssl rand 32 > /absolute/secure/path/journey-run.key
 ```
 
-`RUN_ID` 必须严格匹配 `^P0_\d{8}_[A-F0-9]{12}$`。下方示例使用固定的测试值；现场执行时需将同一个新生成的 `RUN_ID` 同步写入 marker、两个别名和对应审计目标。
+每次执行前由签发器自行生成 128-bit 随机 nonce 和上海时区日期；不接受外部传入的 `RUN_ID`：
+
+```bash
+npm run issue:journey-run -- --key-file /absolute/secure/path/journey-run.key \
+  > /absolute/secure/path/journey-run-template.json
+```
+
+`RUN_ID` 必须严格匹配 `^P0_\d{8}_[A-F0-9]{32}$`。签发器输出 `marker`、`issuedAt`、`subjectAlias`、`registrationId` 和 `runSignature`；将这五个字段原样合并到现场证据，不得手工改写。下方示例使用固定的测试值。
 
 ```json
 {
-  "marker": "E2E_RESULT:P0_20260929_A1B2C3D4E5F6",
-  "subjectAlias": "user_test_P0_20260929_A1B2C3D4E5F6",
-  "registrationId": "reg_test_P0_20260929_A1B2C3D4E5F6",
+  "marker": "E2E_RESULT:P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
+  "issuedAt": "2026-09-29T04:00:00.000Z",
+  "subjectAlias": "user_test_P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
+  "registrationId": "reg_test_P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
+  "runSignature": "F2303BB578C5ADA9B3A564A187078B66DAF220125955A334E2C2A078F3B9EABD",
   "statuses": ["pending", "approved", "cancelled", "pending"],
   "occupiedCounts": [3, 4, 4, 3, 4],
   "audits": [
     {
       "action": "strava.sync.succeeded",
-      "target_id": "user_test_P0_20260929_A1B2C3D4E5F6",
+      "target_id": "user_test_P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
       "created_at": "2026-09-29T04:00:00.000Z"
     },
     {
       "action": "registration.submitted",
-      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6",
+      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
       "created_at": "2026-09-29T04:01:00.000Z"
     },
     {
       "action": "registration.approved",
-      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6",
+      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
       "created_at": "2026-09-29T04:02:00.000Z"
     },
     {
       "action": "registration.cancelled",
-      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6",
+      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
       "created_at": "2026-09-29T04:03:00.000Z"
     },
     {
       "action": "registration.resubmitted",
-      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6",
+      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
       "created_at": "2026-09-29T04:04:00.000Z"
     }
   ]
 }
 ```
 
-`marker` 冒号后的完整内容是本次执行的 `RUN_ID`。`subjectAlias` 必须等于 `user_test_<RUN_ID>`，`registrationId` 必须等于 `reg_test_<RUN_ID>`。`strava.sync.succeeded` 的 `target_id` 必须等于 `subjectAlias`，四条报名审计的 `target_id` 必须等于 `registrationId`。
+`marker` 冒号后的完整内容是本次执行的 `RUN_ID`。其日期段必须是真实日期且与 `issuedAt` 在 `Asia/Shanghai` 时区下的日期一致。`subjectAlias` 必须等于 `user_test_<RUN_ID>`，`registrationId` 必须等于 `reg_test_<RUN_ID>`。`strava.sync.succeeded` 的 `target_id` 必须等于 `subjectAlias`，四条报名审计的 `target_id` 必须等于 `registrationId`。`runSignature` 是大写十六进制 HMAC-SHA256，签名输入按顺序为固定域 `ride-event:p0-journey-run:v1`、NUL 分隔符、`RUN_ID`、NUL 分隔符和 `issuedAt`。
 
 `occupiedCounts` 依次表示提交前、首次提交后、双击提交后、取消后、重新提交后。五条必要审计必须按旅程顺序出现，时间戳使用规范的 ISO 8601 UTC 格式。
 
@@ -89,7 +98,9 @@ printf '%s\n' "$RUN_ID"
 在仓库根目录运行：
 
 ```bash
-npm run verify:journey-evidence -- /absolute/path/to/sanitized-evidence.json
+npm run verify:journey-evidence -- \
+  --key-file /absolute/secure/path/journey-run.key \
+  /absolute/path/to/sanitized-evidence.json
 ```
 
 成功标准：命令退出码为 `0`，校验器输出且只输出：

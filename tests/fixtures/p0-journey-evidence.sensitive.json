@@ -1,7 +1,9 @@
 {
-  "marker": "E2E_RESULT:P0_20260929_0A1B2C3D4E5F",
-  "subjectAlias": "user_test_P0_20260929_0A1B2C3D4E5F",
-  "registrationId": "reg_test_P0_20260929_0A1B2C3D4E5F",
+  "marker": "E2E_RESULT:P0_20260929_0A1B2C3D4E5F60718293A4B5C6D7E8F9",
+  "issuedAt": "2026-09-29T04:00:00.000Z",
+  "subjectAlias": "user_test_P0_20260929_0A1B2C3D4E5F60718293A4B5C6D7E8F9",
+  "registrationId": "reg_test_P0_20260929_0A1B2C3D4E5F60718293A4B5C6D7E8F9",
+  "runSignature": "E6EB07EB905FF6884954379BB01FE0EAFAACA4CB4B5D500301BCFDDED1731F88",
   "statuses": ["pending", "approved", "cancelled", "pending"],
   "occupiedCounts": [3, 4, 4, 3, 4],
   "access_token": "MUST_NOT_APPEAR_IN_OUTPUT",

@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
 const SUCCESS_MESSAGE = 'P0 真实旅程证据校验通过';
 const FAILURE_PREFIX = 'P0 真实旅程证据校验失败';
 const ROOT_KEYS = new Set([
   'marker',
+  'issuedAt',
   'subjectAlias',
   'registrationId',
+  'runSignature',
   'statuses',
   'occupiedCounts',
   'audits',
@@ -24,7 +27,9 @@ const FORBIDDEN_NORMALIZED_KEYS = new Set([
   'ciphertext',
 ]);
 const MARKER_PREFIX = 'E2E_RESULT:';
-const RUN_ID_PATTERN = /^P0_\d{8}_[A-F0-9]{12}$/;
+const RUN_ID_PATTERN = /^P0_\d{8}_[A-F0-9]{32}$/;
+const SIGNATURE_PATTERN = /^[A-F0-9]{64}$/;
+const SIGNATURE_DOMAIN = 'ride-event:p0-journey-run:v1';
 const EXPECTED_STATUSES = ['pending', 'approved', 'cancelled', 'pending'];
 const REQUIRED_AUDIT_ACTIONS = [
   'strava.sync.succeeded',
@@ -217,6 +222,38 @@ function isValidTimestamp(value) {
   return Number.isFinite(time) && new Date(time).toISOString() === value;
 }
 
+function isValidCalendarDate(dateSegment) {
+  const year = dateSegment.slice(0, 4);
+  const month = dateSegment.slice(4, 6);
+  const day = dateSegment.slice(6, 8);
+  const time = Date.parse(`${year}-${month}-${day}T00:00:00.000Z`);
+  return (
+    Number.isFinite(time) &&
+    new Date(time).toISOString().slice(0, 10).replaceAll('-', '') === dateSegment
+  );
+}
+
+function shanghaiDateSegment(issuedAt) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date(issuedAt));
+  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+  return `${values.year}${values.month}${values.day}`;
+}
+
+function expectedRunSignature(key, runId, issuedAt) {
+  return createHmac('sha256', key)
+    .update(SIGNATURE_DOMAIN)
+    .update('\0')
+    .update(runId)
+    .update('\0')
+    .update(issuedAt)
+    .digest();
+}
+
 function hasExactKeys(value, expectedKeys) {
   const actualKeys = Object.keys(value);
   return (
@@ -237,12 +274,20 @@ function validateEvidenceSchema(evidence) {
     fail('marker 必须是字符串');
   }
 
+  if (!isValidTimestamp(evidence.issuedAt)) {
+    fail('issuedAt 必须是规范的 ISO 8601 UTC 时间戳');
+  }
+
   if (typeof evidence.subjectAlias !== 'string' || evidence.subjectAlias.length === 0) {
     fail('subjectAlias 必须是非空字符串');
   }
 
   if (typeof evidence.registrationId !== 'string' || evidence.registrationId.length === 0) {
     fail('registrationId 必须是非空字符串');
+  }
+
+  if (typeof evidence.runSignature !== 'string' || !SIGNATURE_PATTERN.test(evidence.runSignature)) {
+    fail('运行签名无效');
   }
 
   if (
@@ -283,12 +328,18 @@ function validateEvidenceSchema(evidence) {
   }
 }
 
-function validateSyntheticAliases(evidence) {
+function validateRunId(evidence) {
   const runId = evidence.marker.slice(MARKER_PREFIX.length);
-  if (!RUN_ID_PATTERN.test(runId)) {
+  if (!RUN_ID_PATTERN.test(runId) || !isValidCalendarDate(runId.slice(3, 11))) {
     fail('导出标识符必须使用合成别名');
   }
+  if (runId.slice(3, 11) !== shanghaiDateSegment(evidence.issuedAt)) {
+    fail('RUN_ID 日期与 issuedAt 不一致');
+  }
+  return runId;
+}
 
+function validateSyntheticAliases(evidence, runId) {
   const expectedSubjectAlias = `user_test_${runId}`;
   const expectedRegistrationId = `reg_test_${runId}`;
   if (
@@ -320,7 +371,15 @@ function validateSyntheticAliases(evidence) {
   }
 }
 
-function validateEvidence(evidence) {
+function verifyRunSignature(evidence, key, runId) {
+  const suppliedSignature = Buffer.from(evidence.runSignature, 'hex');
+  const expectedSignature = expectedRunSignature(key, runId, evidence.issuedAt);
+  if (!timingSafeEqual(suppliedSignature, expectedSignature)) {
+    fail('运行签名无效');
+  }
+}
+
+function validateEvidence(evidence, key) {
   validateEvidenceSchema(evidence);
 
   if (containsForbiddenKey(evidence)) {
@@ -334,7 +393,9 @@ function validateEvidence(evidence) {
     fail('marker 必须以 E2E_RESULT: 开头');
   }
 
-  validateSyntheticAliases(evidence);
+  const runId = validateRunId(evidence);
+  verifyRunSignature(evidence, key, runId);
+  validateSyntheticAliases(evidence, runId);
 
   if (!arraysEqual(evidence.statuses, EXPECTED_STATUSES)) {
     fail('状态顺序不符合 P0 旅程');
@@ -370,13 +431,31 @@ function validateEvidence(evidence) {
 
 async function main() {
   const args = process.argv.slice(2);
-  if (args.length !== 1) {
-    fail('请提供且仅提供一个 JSON 文件路径');
+  if (!args.includes('--key-file')) {
+    fail('请通过 --key-file 提供签发密钥');
+  }
+  if (
+    args.length !== 3 ||
+    args[0] !== '--key-file' ||
+    args[1].length === 0 ||
+    args[2].length === 0
+  ) {
+    fail('请使用 --key-file <密钥路径> <JSON 文件路径>');
+  }
+
+  let key;
+  try {
+    key = await readFile(args[1]);
+  } catch {
+    fail('无法读取签发密钥');
+  }
+  if (key.length < 32) {
+    fail('签发密钥至少需要 32 字节');
   }
 
   let source;
   try {
-    source = await readFile(args[0], 'utf8');
+    source = await readFile(args[2], 'utf8');
   } catch {
     fail('无法读取证据文件');
   }
@@ -392,7 +471,7 @@ async function main() {
     fail('无法解析证据 JSON');
   }
 
-  validateEvidence(evidence);
+  validateEvidence(evidence, key);
   console.log(SUCCESS_MESSAGE);
 }
 

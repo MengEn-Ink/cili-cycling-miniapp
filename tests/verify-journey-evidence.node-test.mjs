@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHmac } from 'node:crypto';
 import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -7,8 +8,13 @@ import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 
 const verifierPath = resolve('scripts/verify-journey-evidence.mjs');
+const issuerPath = resolve('scripts/issue-journey-run.mjs');
 const validFixturePath = resolve('tests/fixtures/p0-journey-evidence.valid.json');
+const keyFilePath = resolve('tests/fixtures/p0-journey-evidence.test-key');
 const validEvidence = JSON.parse(readFileSync(validFixturePath, 'utf8'));
+const testKey = readFileSync(keyFilePath);
+const testKeySentinel = testKey.toString('utf8').trim();
+const signatureDomain = 'ride-event:p0-journey-run:v1';
 
 const forbiddenKeyVariants = [
   'openid',
@@ -56,23 +62,62 @@ const invalidSynchronizedRunIds = [
     value: 'oUpF8uMuAJO_M2pxb1Q9zNjWeS6o',
   },
 ];
+const invalidStrictRunIds = [
+  {
+    label: 'phone-shaped 12-hex nonce',
+    value: 'P0_20260929_13800138000A',
+  },
+  {
+    label: 'predictable 12-hex nonce',
+    value: 'P0_20260929_DEADBEEFCAFE',
+  },
+  {
+    label: 'invalid calendar date',
+    value: 'P0_20261399_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6',
+  },
+];
 
 async function runVerifier(evidence) {
   return runVerifierSource(JSON.stringify(evidence));
 }
 
-async function runVerifierSource(source) {
+async function runVerifierSource(source, keyPath = keyFilePath) {
   const directory = await mkdtemp(join(tmpdir(), 'ride-event-evidence-'));
   const fixturePath = join(directory, 'evidence.json');
 
   try {
     writeFileSync(fixturePath, source);
-    return spawnSync(process.execPath, [verifierPath, fixturePath], {
+    const args =
+      keyPath === null
+        ? [verifierPath, fixturePath]
+        : [verifierPath, '--key-file', keyPath, fixturePath];
+    return spawnSync(process.execPath, args, {
       encoding: 'utf8',
     });
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
+}
+
+async function runVerifierWithoutKey(evidence) {
+  return runVerifierSource(JSON.stringify(evidence), null);
+}
+
+function runIssuer(args = ['--key-file', keyFilePath]) {
+  return spawnSync(process.execPath, [issuerPath, ...args], {
+    encoding: 'utf8',
+  });
+}
+
+function shanghaiDateSegment(issuedAt) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date(issuedAt));
+  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+  return `${values.year}${values.month}${values.day}`;
 }
 
 function setAliasesForRunId(evidence, runId) {
@@ -85,6 +130,24 @@ function setAliasesForRunId(evidence, runId) {
       ? evidence.registrationId
       : evidence.subjectAlias;
   }
+}
+
+function signRun(runId, issuedAt) {
+  return createHmac('sha256', testKey)
+    .update(signatureDomain)
+    .update('\0')
+    .update(runId)
+    .update('\0')
+    .update(issuedAt)
+    .digest('hex')
+    .toUpperCase();
+}
+
+function addSignedIssuance(evidence, issuedAt = '2026-09-29T04:00:00.000Z') {
+  const runId = evidence.marker.slice('E2E_RESULT:'.length);
+  evidence.issuedAt = issuedAt;
+  evidence.runSignature = signRun(runId, issuedAt);
+  return evidence;
 }
 
 function assertRejectedWithoutSentinel(result, sentinel) {
@@ -104,6 +167,110 @@ function assertDuplicateRejectedWithoutSentinels(result, sentinels) {
   assert.equal(result.status, 1, `expected duplicate-key rejection, got output: ${output}`);
   assert.match(result.stderr, /JSON 包含重复字段/);
 }
+
+test('issuer creates a signed 128-bit run template without printing the key', () => {
+  const result = runIssuer();
+  const output = `${result.stdout}${result.stderr}`;
+
+  assert.equal(output.includes(testKeySentinel), false);
+  assert.equal(result.status, 0, result.stderr);
+
+  const template = JSON.parse(result.stdout);
+  const runId = template.marker.slice('E2E_RESULT:'.length);
+  assert.match(runId, /^P0_\d{8}_[A-F0-9]{32}$/);
+  assert.equal(runId.slice(3, 11), shanghaiDateSegment(template.issuedAt));
+  assert.equal(template.subjectAlias, `user_test_${runId}`);
+  assert.equal(template.registrationId, `reg_test_${runId}`);
+  assert.match(template.runSignature, /^[A-F0-9]{64}$/);
+});
+
+test('issuer requires --key-file', () => {
+  const result = runIssuer([]);
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /请通过 --key-file 提供签发密钥/);
+});
+
+test('issuer rejects a key shorter than 32 bytes without printing it', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'ride-event-short-key-'));
+  const shortKeyPath = join(directory, 'key');
+  const shortKey = 'SHORT_TEST_KEY_SENTINEL';
+
+  try {
+    writeFileSync(shortKeyPath, shortKey);
+    const result = runIssuer(['--key-file', shortKeyPath]);
+    const output = `${result.stdout}${result.stderr}`;
+
+    assert.equal(output.includes(shortKey), false);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /签发密钥至少需要 32 字节/);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('issuer rejects caller-supplied run identifiers', () => {
+  const callerValue = 'P0_20260929_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+  const result = runIssuer(['--key-file', keyFilePath, '--run-id', callerValue]);
+  const output = `${result.stdout}${result.stderr}`;
+
+  assert.equal(output.includes(callerValue), false);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /只允许 --key-file 参数/);
+});
+
+test('verifier accepts evidence signed by the trusted key', async () => {
+  const evidence = addSignedIssuance(structuredClone(validEvidence));
+
+  const result = await runVerifier(evidence);
+
+  assert.equal(`${result.stdout}${result.stderr}`.includes(testKeySentinel), false);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /P0 真实旅程证据校验通过/);
+});
+
+test('verifier requires --key-file for signed evidence', async () => {
+  const evidence = addSignedIssuance(structuredClone(validEvidence));
+
+  const result = await runVerifierWithoutKey(evidence);
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /请通过 --key-file 提供签发密钥/);
+});
+
+test('verifier rejects a bad signature without printing it', async () => {
+  const badSignature = 'A'.repeat(64);
+  const evidence = addSignedIssuance(structuredClone(validEvidence));
+  evidence.runSignature = badSignature;
+
+  const result = await runVerifier(evidence);
+
+  assertRejectedWithoutSentinel(result, badSignature);
+  assert.match(result.stderr, /运行签名无效/);
+});
+
+test('verifier rejects an edited RUN_ID with its stale signature', async () => {
+  const evidence = addSignedIssuance(structuredClone(validEvidence));
+  const editedRunId = 'P0_20260929_FEDCBA9876543210FEDCBA9876543210';
+  setAliasesForRunId(evidence, editedRunId);
+
+  const result = await runVerifier(evidence);
+
+  assertRejectedWithoutSentinel(result, editedRunId);
+  assert.match(result.stderr, /运行签名无效/);
+});
+
+test('verifier rejects a marker date that differs from issuedAt in Shanghai', async () => {
+  const evidence = structuredClone(validEvidence);
+  const mismatchedRunId = 'P0_20260930_0123456789ABCDEF0123456789ABCDEF';
+  setAliasesForRunId(evidence, mismatchedRunId);
+  addSignedIssuance(evidence, '2026-09-29T04:00:00.000Z');
+
+  const result = await runVerifier(evidence);
+
+  assertRejectedWithoutSentinel(result, mismatchedRunId);
+  assert.match(result.stderr, /RUN_ID 日期与 issuedAt 不一致/);
+});
 
 test('accepts the documented subjectAlias, registrationId, and target_id schema', async () => {
   const result = await runVerifier(validEvidence);
@@ -138,6 +305,17 @@ test('does not reject HEADPHONE text in an allowed audit action', async () => {
 
 for (const { label, value } of invalidSynchronizedRunIds) {
   test(`rejects a synchronized chain using ${label} as RUN_ID`, async () => {
+    const evidence = structuredClone(validEvidence);
+    setAliasesForRunId(evidence, value);
+
+    const result = await runVerifier(evidence);
+
+    assertRejectedWithoutSentinel(result, value);
+  });
+}
+
+for (const { label, value } of invalidStrictRunIds) {
+  test(`rejects a synchronized chain using ${label}`, async () => {
     const evidence = structuredClone(validEvidence);
     setAliasesForRunId(evidence, value);
 
