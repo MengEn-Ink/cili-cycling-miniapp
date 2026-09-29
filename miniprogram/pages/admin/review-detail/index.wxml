@@ -64,12 +64,17 @@
         <view class="metric"><strong>{{card.elevationM}}</strong><text>累计爬升</text></view>
         <view class="metric"><strong>{{card.speedKmh}}</strong><text>加权均速</text></view>
       </view>
-      <view class="sync-time">数据同步时间：{{card.syncedAt}}</view>
+      <view class="sync-meta">
+        <view>覆盖范围：{{card.coverageRange}}</view>
+        <view>覆盖状态：{{card.coverageState}}</view>
+        <view>数据同步时间：{{card.syncedAt}}</view>
+      </view>
     </view>
 
     <view class="card detail-card">
       <view class="title">报名快照</view>
       <view class="detail-line">实名资料：{{x.profile.realName}} · {{phone}}</view>
+      <view class="detail-line">手机号来源：{{phoneSource}}</view>
       <view class="detail-line">报名用车：{{card.bikeMode}}</view>
       <view class="detail-line">经验：{{card.experience}}</view>
       <view class="detail-line">备注：{{card.remark}}</view>

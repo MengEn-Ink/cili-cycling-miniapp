@@ -64,6 +64,9 @@ function dateText(value: unknown): string {
   if (value instanceof Date && Number.isFinite(value.getTime())) return value.toISOString();
   return '';
 }
+function httpsUrl(value: unknown): string {
+  return typeof value === 'string' && /^https:\/\/[^\s/]+(?:\/[^\s]*)?$/i.test(value) ? value : '';
+}
 function requiredId(value: unknown, label: string): string {
   if (typeof value !== 'string' || !value)
     throw new CloudRepositoryError('VALIDATION_FAILED', `缺少${label}`);
@@ -201,8 +204,13 @@ function mapRegistration(raw: unknown): Registration {
     activityId: value.activity_id,
     status: value.status,
     profile: {
-      nickname: typeof snapshot.nickname === 'string' ? snapshot.nickname : '',
-      title: '',
+      nickname:
+        typeof capability.nickname === 'string'
+          ? capability.nickname
+          : typeof snapshot.nickname === 'string'
+            ? snapshot.nickname
+            : '',
+      title: typeof capability.title === 'string' ? capability.title : '',
       realName: typeof snapshot.real_name_masked === 'string' ? snapshot.real_name_masked : '',
       phone: typeof snapshot.phone_masked === 'string' ? snapshot.phone_masked : '',
       gender: '',
@@ -212,12 +220,21 @@ function mapRegistration(raw: unknown): Registration {
         ? capability.photos
             .filter(isRecord)
             .map((photo) => ({
-              id: typeof photo.file_id === 'string' ? photo.file_id : '',
+              id: httpsUrl(photo.url),
               category: typeof photo.category === 'string' ? photo.category : '',
             }))
             .filter((photo) => photo.id)
         : [],
-      avatarId: typeof capability.avatar_file_id === 'string' ? capability.avatar_file_id : '',
+      avatarId: httpsUrl(capability.avatar_url),
+      sensitiveStatus: {
+        realName: typeof snapshot.real_name_masked === 'string' && !!snapshot.real_name_masked,
+        phone: typeof snapshot.phone_masked === 'string' && !!snapshot.phone_masked,
+        phoneVerified: capability.phone_verified === true,
+        phoneSource: ['wechat', 'manual', 'legacy'].includes(String(capability.phone_source))
+          ? (capability.phone_source as 'wechat' | 'manual' | 'legacy')
+          : '',
+        emergencyPhone: false,
+      },
     },
     bikeMode: options.bike_mode === 'rent' ? '租车' : '自带车',
     experience:

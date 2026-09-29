@@ -7,6 +7,7 @@ Page({
     x: null as any,
     card: null as any,
     phone: '',
+    phoneSource: '',
     reason: '能力与路线要求暂不匹配',
     error: '',
   },
@@ -23,6 +24,14 @@ Page({
           x,
           card: capabilityCard(x),
           phone: maskPhone(x.profile.phone),
+          phoneSource:
+            x.profile.sensitiveStatus?.phoneSource === 'wechat'
+              ? '微信授权 · 已验证'
+              : x.profile.sensitiveStatus?.phoneSource === 'manual'
+                ? '个人手填 · 未验证'
+                : x.profile.sensitiveStatus?.phoneSource === 'legacy'
+                  ? '历史资料 · 验证状态未知'
+                  : '来源未知',
         });
     } catch (error) {
       this.setData({ error: error instanceof Error ? error.message : '报名详情加载失败' });

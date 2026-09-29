@@ -413,12 +413,26 @@ describe('CloudRepository 管理员审批适配', () => {
     expect(callFunction).not.toHaveBeenCalled();
   });
 
-  it('管理员详情映射能力卡照片白名单且忽略服务端敏感脏字段', async () => {
+  it('管理员详情只映射 https 临时媒体 URL 且忽略 raw file ID 和敏感脏字段', async () => {
     const dto = {
       ...registration,
       capability_profile: {
-        avatar_file_id: 'cloud://avatar',
-        photos: [{ file_id: 'cloud://training', category: 'training', token: 'secret' }],
+        nickname: '山野骑手',
+        title: '爬坡王',
+        phone_source: 'manual',
+        phone_verified: false,
+        avatar_url: 'https://temporary.example/avatar',
+        avatar_file_id: 'cloud://raw-avatar',
+        photos: [
+          {
+            url: 'https://temporary.example/training',
+            file_id: 'cloud://raw-training',
+            category: 'bike',
+            source: 'user',
+            token: 'secret',
+          },
+          { url: 'http://temporary.example/insecure', category: 'ride', source: 'user' },
+        ],
         access_token: 'secret',
         openid: 'private',
       },
@@ -427,11 +441,17 @@ describe('CloudRepository 管理员审批适配', () => {
     const result = await new CloudRepository(cloud).getReviewRegistration('r1');
     expectCall(callFunction, 'admin-review', { action: 'detail', registrationId: 'r1' });
     expect(result?.profile).toMatchObject({
-      avatarId: 'cloud://avatar',
-      photos: [{ id: 'cloud://training', category: 'training' }],
+      nickname: '山野骑手',
+      title: '爬坡王',
+      avatarId: 'https://temporary.example/avatar',
+      photos: [{ id: 'https://temporary.example/training', category: 'bike' }],
+      sensitiveStatus: { phoneSource: 'manual', phoneVerified: false },
     });
     expect(JSON.stringify(result)).not.toContain('secret');
     expect(JSON.stringify(result)).not.toContain('private');
+    expect(JSON.stringify(result)).not.toContain('cloud://');
+    expect(JSON.stringify(result)).not.toContain('http://');
+    expect(JSON.stringify(result)).not.toContain('id_number');
   });
 
   it('通过只发送服务端审批命令', async () => {

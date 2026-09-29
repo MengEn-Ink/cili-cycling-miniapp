@@ -15,7 +15,7 @@ function registration(overrides: Partial<Registration> = {}): Registration {
       gender: '',
       emergencyName: '',
       emergencyPhone: '',
-      avatarId: 'cloud://avatar',
+      avatarId: 'https://temporary.example/avatar',
       photos: [],
     },
     bikeMode: '自带车',
@@ -36,7 +36,10 @@ function registration(overrides: Partial<Registration> = {}): Registration {
   };
 }
 
-const profileWith = (photos: { id: string; category: string }[], avatarId = 'cloud://avatar') => ({
+const profileWith = (
+  photos: { id: string; category: string }[],
+  avatarId = 'https://temporary.example/avatar',
+) => ({
   ...registration().profile,
   photos,
   avatarId,
@@ -45,29 +48,29 @@ const profileWith = (photos: { id: string; category: string }[], avatarId = 'clo
 describe('骑行能力卡图片', () => {
   it('5 张照片最多截取 3 张', () => {
     const photos = ['1', '2', '3', '4', '5'].map((id) => ({
-      id: `cloud://${id}`,
+      id: `https://temporary.example/${id}`,
       category: '生活',
     }));
     expect(selectCapabilityImages(profileWith(photos))).toEqual([
-      { url: 'cloud://1', source: '个人上传' },
-      { url: 'cloud://2', source: '个人上传' },
-      { url: 'cloud://3', source: '个人上传' },
+      { url: 'https://temporary.example/1', source: '个人上传' },
+      { url: 'https://temporary.example/2', source: '个人上传' },
+      { url: 'https://temporary.example/3', source: '个人上传' },
     ]);
   });
 
   it('骑行和训练相关照片优先且保持原有顺序', () => {
     const images = selectCapabilityImages(
       profileWith([
-        { id: 'cloud://life', category: '生活' },
-        { id: 'cloud://training', category: 'training' },
-        { id: 'cloud://bike', category: 'bike' },
-        { id: 'cloud://pet', category: '宠物' },
+        { id: 'https://temporary.example/life', category: '生活' },
+        { id: 'https://temporary.example/training', category: 'training' },
+        { id: 'https://temporary.example/bike', category: 'bike' },
+        { id: 'https://temporary.example/pet', category: '宠物' },
       ]),
     );
     expect(images.map((image) => image.url)).toEqual([
-      'cloud://training',
-      'cloud://bike',
-      'cloud://life',
+      'https://temporary.example/training',
+      'https://temporary.example/bike',
+      'https://temporary.example/life',
     ]);
   });
 
@@ -75,28 +78,31 @@ describe('骑行能力卡图片', () => {
     expect(
       selectCapabilityImages(
         profileWith([
-          { id: 'cloud://portrait', category: '人像' },
-          { id: 'cloud://ride', category: '骑行照' },
+          { id: 'https://temporary.example/portrait', category: '人像' },
+          { id: 'https://temporary.example/ride', category: '骑行照' },
         ]),
       ),
     ).toEqual([
-      { url: 'cloud://ride', source: '个人上传' },
-      { url: 'cloud://portrait', source: '个人上传' },
-      { url: 'cloud://avatar', source: '头像' },
+      { url: 'https://temporary.example/ride', source: '个人上传' },
+      { url: 'https://temporary.example/portrait', source: '个人上传' },
+      { url: 'https://temporary.example/avatar', source: '头像' },
     ]);
   });
 
   it('头像与上传照片重复时去重，并保留个人上传来源', () => {
     expect(
       selectCapabilityImages(
-        profileWith([{ id: 'cloud://avatar', category: 'cycling' }], 'cloud://avatar'),
+        profileWith(
+          [{ id: 'https://temporary.example/avatar', category: 'cycling' }],
+          'https://temporary.example/avatar',
+        ),
       ),
-    ).toEqual([{ url: 'cloud://avatar', source: '个人上传' }]);
+    ).toEqual([{ url: 'https://temporary.example/avatar', source: '个人上传' }]);
   });
 
   it('仅头像时返回单图静态卡所需数据', () => {
     const card = capabilityCard(registration());
-    expect(card.images).toEqual([{ url: 'cloud://avatar', source: '头像' }]);
+    expect(card.images).toEqual([{ url: 'https://temporary.example/avatar', source: '头像' }]);
     expect(card.hasMultipleImages).toBe(false);
     expect(card.maskedName).toBe('曹**');
   });
@@ -105,6 +111,21 @@ describe('骑行能力卡图片', () => {
     const card = capabilityCard(registration({ profile: profileWith([], '') }));
     expect(card.images).toEqual([]);
     expect(card.hasMultipleImages).toBe(false);
+  });
+
+  it('客户端能力卡拒绝 raw cloud file ID 和非 https URL', () => {
+    expect(
+      selectCapabilityImages(
+        profileWith(
+          [
+            { id: 'cloud://raw-photo', category: 'ride' },
+            { id: 'http://temporary.example/insecure', category: 'ride' },
+            { id: 'https://temporary.example/safe', category: 'ride' },
+          ],
+          'cloud://raw-avatar',
+        ),
+      ),
+    ).toEqual([{ url: 'https://temporary.example/safe', source: '个人上传' }]);
   });
 });
 

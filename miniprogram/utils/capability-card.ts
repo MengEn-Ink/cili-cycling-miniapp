@@ -28,7 +28,13 @@ export function selectCapabilityImages(profile: Registration['profile']): Capabi
   const images: CapabilityImage[] = [];
   const add = (url: string | undefined, source: CapabilityImage['source']) => {
     const normalizedUrl = url?.trim();
-    if (!normalizedUrl || seen.has(normalizedUrl) || images.length >= MAX_CAPABILITY_IMAGES) return;
+    if (
+      !normalizedUrl ||
+      !/^https:\/\/[^\s/]+(?:\/[^\s]*)?$/i.test(normalizedUrl) ||
+      seen.has(normalizedUrl) ||
+      images.length >= MAX_CAPABILITY_IMAGES
+    )
+      return;
     seen.add(normalizedUrl);
     images.push({ url: normalizedUrl, source });
   };
@@ -67,6 +73,20 @@ export function capabilityCard(registration: Registration) {
             : { label: '已同步', tone: 'success' };
   const metric = (value: number | null | undefined, suffix = '') =>
     value === null || value === undefined ? '暂无' : `${value}${suffix}`;
+  const coverage = registration.strava.coverage;
+  const datePart = (value: string) => {
+    const date = new Date(value);
+    return Number.isFinite(date.getTime()) ? date.toISOString().slice(0, 10) : '';
+  };
+  const coverageFrom = coverage ? datePart(coverage.from) : '';
+  const coverageTo = coverage ? datePart(coverage.to) : '';
+  const syncedDate = registration.strava.syncedAt
+    ? new Date(registration.strava.syncedAt)
+    : undefined;
+  const syncedAt =
+    syncedDate && Number.isFinite(syncedDate.getTime())
+      ? `${syncedDate.toISOString().slice(0, 16).replace('T', ' ')} UTC`
+      : '尚未同步';
   return {
     images,
     hasMultipleImages: images.length > 1,
@@ -82,6 +102,12 @@ export function capabilityCard(registration: Registration) {
     longestKm: metric(registration.strava.longestKm, ' km'),
     elevationM: metric(registration.strava.elevationM, ' m'),
     speedKmh: metric(registration.strava.speedKmh, ' km/h'),
-    syncedAt: registration.strava.syncedAt || '尚未同步',
+    coverageRange: coverageFrom && coverageTo ? `${coverageFrom} 至 ${coverageTo}` : '覆盖范围未知',
+    coverageState: coverage
+      ? coverage.complete
+        ? '数据覆盖完整'
+        : '数据覆盖不完整'
+      : '完整性未知',
+    syncedAt,
   };
 }
