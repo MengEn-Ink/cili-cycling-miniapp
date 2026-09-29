@@ -23,8 +23,9 @@ Page({
       const choice = await wx.chooseMedia({ count: 1, mediaType: ['image'] });
       const path = choice.tempFiles?.[0]?.tempFilePath;
       if (!path) return;
+      const cloudPath = await rideService.getProfileMediaUploadPath();
       const uploaded = await cloud.uploadFile({
-        cloudPath: `profiles/${Date.now()}-${Math.random().toString(16).slice(2)}.jpg`,
+        cloudPath,
         filePath: path,
       });
       const p = this.data.p;
