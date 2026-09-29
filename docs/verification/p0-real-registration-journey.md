@@ -19,7 +19,7 @@
 1. 创建并发布一个隔离活动。活动标记必须唯一，以 `E2E_RESULT:` 开头，并至少保留两个空余名额。记录提交前的 `occupied` 基线值。
 2. 使用一个新的测试用户进入活动。通过“手工填写、未核验手机号”的路径完成安全资料；不要截取、导出或粘贴手机号和证件内容。
 3. 完成 OAuth。仅现场确认初始回调请求带有查询参数；随后确认用户可见结果页为 `/strava/success` 且地址不带查询参数。证据中不得记录初始回调 URL 或查询参数。
-4. 返回小程序，等待自动同步达到 ready。不得点击或调用手工同步动作；记录 `strava.sync.succeeded` 审计动作及其脱敏目标标识和时间戳。
+4. 返回小程序，等待自动同步达到 ready。不得点击或调用手工同步动作；记录 `strava.sync.succeeded` 审计动作及其时间戳。导出证据时把该测试用户稳定映射为 `user_test_*` 合成别名，不保留真实 openid。
 5. 单击提交一次。确认报名状态为 `pending`、`occupied` 相对基线增加 1，并出现 `registration.submitted` 审计动作。
 6. 在相同初始条件下快速双击提交。确认系统仍只有一条报名记录、报名 ID 不变，且 `occupied` 仍只比基线增加 1。
 7. 由管理员批准报名。确认报名状态为 `approved`、凭证页可正常展示，并出现 `registration.approved` 审计动作。不要把凭证中的个人信息复制到证据。
@@ -35,6 +35,7 @@
 ```json
 {
   "marker": "E2E_RESULT:P0_READY_JOURNEY_001",
+  "subjectAlias": "user_test_001",
   "registrationId": "reg_test_001",
   "statuses": ["pending", "approved", "cancelled", "pending"],
   "occupiedCounts": [3, 4, 4, 3, 4],
@@ -68,7 +69,7 @@
 }
 ```
 
-`occupiedCounts` 依次表示提交前、首次提交后、双击提交后、取消后、重新提交后。四条报名审计的 `target_id` 必须与顶层 `registrationId` 相同；五条必要审计必须按旅程顺序出现，时间戳使用规范的 ISO 8601 UTC 格式。
+`occupiedCounts` 依次表示提交前、首次提交后、双击提交后、取消后、重新提交后。`subjectAlias` 必须使用 `user_test_*` 合成别名，Strava 同步审计的 `target_id` 必须与其相同；`registrationId` 必须使用 `reg_test_*` 合成别名，四条报名审计的 `target_id` 必须与其相同。五条必要审计必须按旅程顺序出现，时间戳使用规范的 ISO 8601 UTC 格式。
 
 校验器会递归检查所有键和字符串值。任何手机号、证件号、访问或刷新 token、密文、OAuth code/state 相关字段或字符串都会令校验失败。失败输出只包含固定的有限原因，不会回显证据对象或敏感值。
 

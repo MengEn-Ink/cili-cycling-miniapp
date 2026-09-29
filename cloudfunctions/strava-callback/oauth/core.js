@@ -449,6 +449,7 @@ module.exports = {
   validDate,
   isSnapshotFresh,
   isCredentialUsable,
+  isSnapshotForCredential,
   deriveReadiness,
   statistics,
   fetchActivityWindow,
