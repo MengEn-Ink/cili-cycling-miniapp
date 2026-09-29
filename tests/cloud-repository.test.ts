@@ -26,8 +26,6 @@ const activity = {
   status: 'published',
   capacity: 20,
   occupied_count: 3,
-  registration_state: 'open',
-  closed_reason: null,
   description: '说明',
   route: {
     start: '起点',
@@ -151,8 +149,6 @@ describe('CloudRepository 活动读取适配', () => {
         status: 'published',
         capacity: 20,
         occupiedCount: 3,
-        registrationState: 'open',
-        closedReason: undefined,
         description: '说明',
         coverImage: 'cloud://covers/a1.jpg',
         route: {
@@ -203,8 +199,6 @@ describe('CloudRepository 活动读取适配', () => {
       status: 'finished',
       fee: '免费',
       occupiedCount: undefined,
-      registrationState: undefined,
-      closedReason: undefined,
       date: '',
       endAt: '',
       deadline: '',

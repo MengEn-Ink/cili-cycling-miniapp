@@ -13,8 +13,6 @@ export interface Activity {
   status: 'draft' | 'published' | 'finished';
   capacity: number;
   occupiedCount?: number;
-  registrationState?: ActivityRegistrationState;
-  closedReason?: ActivityClosedReason;
   description: string;
   coverImage?: string;
   route: {
