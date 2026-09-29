@@ -16,6 +16,7 @@ export const COLLECTIONS = Object.freeze([
   'admins',
   'audit_logs',
   'notification_outbox',
+  'profile_media',
   'oauth_states',
   'strava_credentials',
   'strava_snapshots',
@@ -66,6 +67,25 @@ export const INDEXES = Object.freeze([
       ['status', 1],
       ['attempts', 1],
       ['lease_expires_at', 1],
+    ],
+    unique: false,
+  },
+  {
+    collection: 'profile_media',
+    name: 'profile_media_owner_status_created_at',
+    keys: [
+      ['owner_openid', 1],
+      ['status', 1],
+      ['created_at', -1],
+    ],
+    unique: false,
+  },
+  {
+    collection: 'profile_media',
+    name: 'profile_media_status_cleanup_after',
+    keys: [
+      ['status', 1],
+      ['cleanup_after', 1],
     ],
     unique: false,
   },

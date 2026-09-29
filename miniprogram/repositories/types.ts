@@ -1,6 +1,6 @@
 import type {
   Activity,
-  CapabilityCard,
+  PersonalCapabilityCard,
   Profile,
   ProfileUpdate,
   Registration,
@@ -37,6 +37,8 @@ export interface RideRepository extends AdminReviewRepository, ActivityAdminRepo
   listRegistrations(): Promise<Registration[]>;
   getRegistration(id: string): Promise<Registration | undefined>;
   saveRegistration(value: RegistrationSubmission): Promise<Registration>;
+  getReviewNotificationTemplateIds(): Promise<string[]>;
+  requestReviewNotificationSubscription(templateIds: string[]): Promise<void>;
   updateRegistration(
     id: string,
     status: RegistrationStatus,
@@ -49,13 +51,17 @@ export interface RideRepository extends AdminReviewRepository, ActivityAdminRepo
     reason?: string,
   ): Promise<Registration>;
   getProfile(): Promise<Profile>;
-  getCapabilityCard(): Promise<CapabilityCard>;
+  getProfileMediaUploadPath(): Promise<string>;
+  getPersonalCapabilityCard(): Promise<PersonalCapabilityCard>;
+  registerProfileMedia(fileId: string, category: 'ride' | 'bike' | 'other'): Promise<void>;
+  reportProfileMediaOrphan(fileId: string, category: 'ride' | 'bike' | 'other'): Promise<void>;
   updateProfile(profile: ProfileUpdate): Promise<Profile>;
   getPhoneNumber(code: string): Promise<Profile>;
   getStravaStatus(): Promise<StravaConnection>;
   getStravaReadiness(): Promise<StravaReadiness>;
   ensureStravaReady(): Promise<StravaReadiness>;
   startStrava(): Promise<{ authorizationUrl: string; expiresAt: string }>;
+  cancelStravaAuthorization(): Promise<void>;
   syncStrava(): Promise<StravaConnection>;
   disconnectStrava(): Promise<void>;
 }

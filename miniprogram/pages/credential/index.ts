@@ -1,4 +1,10 @@
 import { rideService } from '../../services/ride-service';
+import type { ActivityAction } from '../../utils/activity';
+import { resolveActivityAction } from '../../utils/activity';
+
+function unavailableAction(): ActivityAction {
+  return { kind: 'closed', label: '活动状态不可用', enabled: false };
+}
 
 function confirmCancellation(): Promise<boolean> {
   return new Promise((resolve) => {
@@ -20,6 +26,7 @@ Page({
     error: '',
     cancelling: false,
     statusText: '',
+    activityAction: unavailableAction(),
   },
   async onLoad(q: any) {
     try {
@@ -32,7 +39,13 @@ Page({
         rejected: '已驳回',
         cancelled: '已取消',
       }[item.status];
-      this.setData({ item, activity, statusText });
+      if (!activity) throw new Error('活动不存在');
+      this.setData({
+        item,
+        activity,
+        statusText,
+        activityAction: resolveActivityAction(activity, item),
+      });
     } catch (error) {
       this.setData({ error: error instanceof Error ? error.message : '报名凭证加载失败' });
     } finally {
@@ -53,7 +66,7 @@ Page({
     }
   },
   retry() {
-    if (this.data.cancelling) return;
+    if (this.data.cancelling || this.data.activityAction.kind !== 'resubmit') return;
     wx.redirectTo({ url: '/pages/registration-form/index?id=' + this.data.item.activityId });
   },
 });

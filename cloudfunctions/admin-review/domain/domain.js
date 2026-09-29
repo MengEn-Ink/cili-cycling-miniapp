@@ -276,6 +276,10 @@ function publicRegistration(registration) {
     nickname: snapshot.nickname,
     real_name_masked: snapshot.real_name_masked,
     phone_masked: maskPhone(snapshot.phone_masked),
+    phone_source: ['wechat', 'manual', 'legacy'].includes(snapshot.phone_source)
+      ? snapshot.phone_source
+      : '',
+    phone_verified: snapshot.phone_verified === true,
   };
   return output;
 }

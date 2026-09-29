@@ -21,4 +21,4 @@
     </view>
   </state-view>
 </view>
-<view class="fixed"><button class="btn" disabled="{{loading || !item}}" bindtap="go">{{registration?'查看我的报名':'立即报名'}}</button></view>
+<view class="fixed"><button class="btn" disabled="{{loading || !item || !activityAction.enabled}}" bindtap="go">{{activityAction.label}}</button></view>

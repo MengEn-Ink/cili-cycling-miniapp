@@ -1,5 +1,6 @@
 import type {
   Activity,
+  PersonalCapabilityCard,
   Profile,
   ProfileUpdate,
   Registration,
@@ -78,6 +79,12 @@ export class MockRepository implements RideRepository {
     this.write(s);
     return x;
   }
+  async getReviewNotificationTemplateIds(): Promise<string[]> {
+    return [];
+  }
+  async requestReviewNotificationSubscription(templateIds: string[]): Promise<void> {
+    void templateIds;
+  }
   async updateRegistration(id: string, status: RegistrationStatus, c?: string) {
     if (status === 'cancelled') return this.cancelRegistration(id);
     if (status === 'approved' || status === 'rejected')
@@ -104,34 +111,41 @@ export class MockRepository implements RideRepository {
   async getProfile() {
     return this.read().profile;
   }
-  async getCapabilityCard() {
-    const value = this.read().profile;
-    const readiness = await this.getStravaReadiness();
-    // 仅供显式开发模式，页面会展示 MOCK 标识，绝不冒充真实 Strava 数据。
+  async getProfileMediaUploadPath() {
+    return 'profiles/00000000000000000000000000000000/00000000-0000-4000-8000-000000000000.jpg';
+  }
+  async getPersonalCapabilityCard(): Promise<PersonalCapabilityCard> {
     return {
-      nickname: value.nickname,
-      avatarId: value.avatarId || '',
-      photos: [
-        ...value.photos.map((photo) => ({ ...photo, source: 'upload' as const })),
-        ...(value.avatarId
-          ? [{ id: value.avatarId, category: 'avatar', source: 'avatar' as const }]
-          : []),
-      ].slice(0, 3),
-      period: { days: 90 as const, label: '90天汇总' },
-      metrics: readiness.snapshot
-        ? {
-            totalKm: readiness.snapshot.totalKm,
-            rides: readiness.snapshot.rides90d,
-            longestKm: readiness.snapshot.longestKm,
-            elevationM: readiness.snapshot.elevationM,
-            speedKmh: readiness.snapshot.speedKmh,
-            latestActivityAt: readiness.snapshot.latestActivityAt,
-            syncedAt: readiness.snapshot.syncedAt,
-          }
-        : null,
-      readiness: { state: readiness.state, error: readiness.error },
+      state: 'ready',
+      generatedAt: '2026-09-29T04:10:00.000Z',
+      profile: {
+        displayName: this.read().profile.nickname || '此里骑手',
+        title: this.read().profile.title || '',
+      },
+      backgrounds: [
+        {
+          url: 'https://temporary.example/mock-rider.jpg',
+          source: 'user_photo',
+          category: 'ride',
+        },
+      ],
+      summary: {
+        totalKm90d: 1200,
+        rides90d: 32,
+        longestKm: 168,
+        elevationM90d: 9000,
+        weightedAvgSpeedKmh: 27.4,
+      },
+      coverage: {
+        from: '2026-07-01T04:00:00.000Z',
+        to: '2026-09-29T04:00:00.000Z',
+        complete: true,
+      },
+      syncedAt: '2026-09-29T04:05:00.000Z',
     };
   }
+  async registerProfileMedia() {}
+  async reportProfileMediaOrphan() {}
   async updateProfile(patch: ProfileUpdate) {
     const current = this.read().profile;
     const p = { ...current, ...patch, photos: patch.photos || current.photos } as Profile;
@@ -185,6 +199,11 @@ export class MockRepository implements RideRepository {
   }
   async startStrava() {
     return { authorizationUrl: 'https://example.test/mock', expiresAt: new Date().toISOString() };
+  }
+  async cancelStravaAuthorization() {
+    const s = this.read();
+    s.stravaStatus = 'pending';
+    this.write(s);
   }
   async syncStrava() {
     return this.getStravaStatus();

@@ -3,8 +3,12 @@ import type { Profile, StravaReadiness } from '../miniprogram/models';
 
 const rideService = vi.hoisted(() => ({
   getProfile: vi.fn(),
+  getActivity: vi.fn(),
+  listRegistrations: vi.fn(),
   getStravaReadiness: vi.fn(),
   ensureStravaReady: vi.fn(),
+  getReviewNotificationTemplateIds: vi.fn(),
+  requestReviewNotificationSubscription: vi.fn(),
   saveRegistration: vi.fn(),
 }));
 
@@ -41,12 +45,23 @@ describe('报名页 Strava readiness 请求代际', () => {
   beforeEach(async () => {
     vi.resetModules();
     for (const value of Object.values(rideService)) value.mockReset();
+    rideService.getReviewNotificationTemplateIds.mockResolvedValue([]);
+    rideService.requestReviewNotificationSubscription.mockResolvedValue(undefined);
     vi.stubGlobal('wx', { navigateTo: vi.fn(), redirectTo: vi.fn() });
     vi.stubGlobal('Page', (definition: any) => {
       page = definition;
       page.data = { ...definition.data };
       page.setData = vi.fn((patch: Record<string, unknown>) => Object.assign(page.data, patch));
     });
+    rideService.getActivity.mockResolvedValue({
+      id: 'a1',
+      status: 'published',
+      capacity: 20,
+      occupiedCount: 1,
+      deadline: '2099-10-15T12:00:00.000Z',
+      endAt: '2099-10-18T08:00:00.000Z',
+    });
+    rideService.listRegistrations.mockResolvedValue([]);
     await import('../miniprogram/pages/registration-form/index');
   });
 
@@ -125,6 +140,42 @@ describe('报名页 Strava readiness 请求代际', () => {
       await show;
 
       expect(rideService.ensureStravaReady).toHaveBeenCalledOnce();
+    },
+  );
+
+  it('提交期间禁止跳转资料页和 Strava 页', () => {
+    page.data.submitting = true;
+
+    page.profile();
+    page.strava();
+
+    expect(wx.navigateTo).not.toHaveBeenCalled();
+  });
+
+  it.each(['onHide', 'onUnload'] as const)(
+    '%s 后迟到的提交成功不得 redirect',
+    async (lifecycle) => {
+      let resolveSubmission!: (value: { id: string }) => void;
+      rideService.getProfile.mockResolvedValue(profile);
+      rideService.getStravaReadiness.mockResolvedValue(readiness('ready'));
+      rideService.saveRegistration.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveSubmission = resolve;
+          }),
+      );
+      page.onLoad({ id: 'a1' });
+      await page.onShow();
+      expect(page.data.activityCanSubmit).toBe(true);
+
+      const submission = page.submit();
+      await flushMicrotasks();
+      expect(rideService.saveRegistration).toHaveBeenCalledOnce();
+      page[lifecycle]();
+      resolveSubmission({ id: 'r1' });
+      await submission;
+
+      expect(wx.redirectTo).not.toHaveBeenCalled();
     },
   );
 });

@@ -37,13 +37,30 @@ created_at, updated_at
 
 三个敏感字段均用环境变量 `PII_ENCRYPTION_KEY`（base64 32 bytes）独立 AES-256-GCM 加密和随机 12-byte IV。证件信息不再采集、写入或返回；存量证件字段只读保留，不解密、不迁移，普通资料更新也不主动删除。密钥缺失/非法、密文认证失败均 fail closed。`getPhoneNumber` 接受微信动态 code 并调用 `cloud.openapi.phonenumber`，写入 `wechat/verified`；个人主体的 `update` 可写入手填号码，但必须写入 `manual/unverified`。响应不返回敏感明文或密文，只返回必要掩码、来源、验证状态、`sensitive_status` 与 `completeness`；管理员审批详情必须展示手机号来源。
 
-按方案结论，Phase 1 的 `profile/getCard` 是 self-only 聚合读取：查询键只取 `WXContext.OPENID`，客户端传入的 openid 被忽略；服务端读取 `profiles + strava_credentials + strava_snapshots`（并仅用有效 OAuth state 判定 authorizing），输出最多 3 张按骑行/训练优先、其他上传补位、头像兜底且去重的照片，以及带 `90天汇总` 口径和时间的 Strava 指标。DTO 允许字段缺失，且禁止实名、手机号、紧急联系人、openid、token、密文和活动明细。三年历史、功率曲线、状态分、俱乐部与赛段不在 Phase 1 范围。
+### `profile_media`
+
+```text
+_id: sha256(file_id)
+file_id
+owner_openid
+category: ride|bike|other
+status: unreferenced|active|deleting|deleted|delete_failed
+created_at
+cleanup_after                 # unreferenced 上传 24 小时后的回收候选时间
+referenced_at?                # profile update 成功引用时间
+delete_lease_id?, delete_claimed_at?, delete_attempts?
+deleted_at?, delete_failed_at?, last_error_code?
+```
+
+客户端先调用 `profile/mediaUploadPath` 取得由 `PROFILE_MEDIA_PATH_SECRET` 和可信 WXContext OPENID 派生的 opaque owner 路径，上传成功后立即调用 `profile/registerMedia`；服务端通过临时 URL API 确认对象真实存在后才登记。登记初始状态为 `unreferenced` 且幂等；只有同一事务内成功写入当前 profile 的媒体才切换为 `active`，被移除的 active 媒体在同一事务内降级为带新 `cleanup_after` 的 `unreferenced`。资料更新、个人名片和管理员名片都要求记录的 `owner_openid`、`file_id`、`category`、`status` 与当前 profile 引用匹配。存量未登记媒体不迁移、不删除，但不进入任何能力卡。临时 URL 整体或逐项失败只减少背景图，不使详情失败。
+
+`profile-media-cleanup` 每 10 分钟最多发现 20 条到期 `unreferenced` 记录。每条记录均在事务内重读 owner 当前 profile：仍被引用则恢复 `active`；未引用才写入唯一删除 lease 并调用云存储删除。结果以 `deleted` 或 `delete_failed + last_error_code` 留存，不记录底层错误文本。上传后 `registerMedia` 与对象删除同时失败时，客户端调用 `reportOrphan`；若上报仍失败则写本地持久重试账本，下次进入资料页继续上报。残余限制是客户端进程在上传成功后、第一次删除/上报/账本写入前被强制终止，此时服务端没有可发现的 file ID。
 
 ### `notification_outbox`
 
-审批事务内原子写入的订阅消息发件箱。`_id` 为审批轮次确定性 ID，包含 `type/aggregate_id/target_openid/template_key/payload/status/attempts/last_error/lease_expires_at/claimed_by/created_at/updated_at/sent_at`。状态机为 `pending|failed|租约过期的 sending -> sending -> sent|failed`：`sending` 使用 2 分钟租约，进程中断后可由定时 worker 重领；最多尝试 5 次，达到上限返回 `MAX_RETRIES_EXCEEDED`，并由 `status + attempts + lease_expires_at` 扫描索引在批次 `limit` 前排除耗尽任务，避免新任务饥饿。客户端 ACL 全拒绝，仅云函数可读写。
+审批事务内原子写入的订阅消息发件箱。`_id` 为审批轮次确定性 ID，包含 `type/aggregate_id/target_openid/template_key/payload/status/attempts/attempt_no/last_error/lease_id/lease_expires_at/claimed_by/dispatch_started_at/created_at/updated_at/sent_at`。自动发送采用 `pending|retryable -> claimed -> dispatching -> sent|retryable|failed_terminal|delivery_unknown` 状态机：每次 claim 生成唯一 `lease_id` 并递增 `attempt_no`，所有后续写入都必须在事务内同时匹配 `status + lease_id + attempt_no`。过期 `claimed` 可安全重领；`dispatching` 表示外部调用可能已发生，过期后只能隔离为 `delivery_unknown`，禁止自动重发。最多尝试 5 次，并由 `status + attempts + lease_expires_at` 扫描索引在批次 `limit` 前排除耗尽和不可自动发送的任务。客户端 ACL 全拒绝，仅云函数可读写。
 
-`notification-send` 配置每分钟 CloudBase timer `notification-outbox-worker`，以无 OPENID 的平台服务身份批量扫描并消费，不能依赖管理员账号在线；小程序手工调用仍必须通过管理员白名单。模板缺失与微信发送失败都会将任务明确写为 `failed` 并记录 `last_error`。模板 ID 只从环境变量 `REVIEW_APPROVED_TEMPLATE_ID`、`REVIEW_REJECTED_TEMPLATE_ID` 读取，不写入数据库或客户端。
+`notification-send` 配置每分钟 CloudBase timer `notification-outbox-worker`，以无 OPENID 的平台服务身份批量扫描并消费，不能依赖管理员账号在线；小程序手工发送仍必须通过管理员白名单。模板缺失等发送前错误进入 `retryable`；微信明确拒绝按错误码进入 `retryable` 或 `failed_terminal`；网络结果不明、worker 在 dispatch 后丢失以及发送成功后的数据库 ACK 失败均进入 `delivery_unknown`。ACK 重试只重试 fenced 数据库写，绝不再次调用微信。登录用户可通过只读 `subscription-config` action 获取这两个审核模板 ID 以在报名点击时请求订阅，无需管理员权限；接口只从环境变量 `REVIEW_APPROVED_TEMPLATE_ID`、`REVIEW_REJECTED_TEMPLATE_ID` 构造 allowlist，不返回其他配置，也不把模板 ID 写入 outbox 或客户端可写数据。
 
 ### `admins`
 
@@ -102,6 +119,8 @@ synced_at
 | registrations | activity_id ASC, status ASC, created_at DESC | 普通 |
 | registrations | openid ASC, created_at DESC | 普通 |
 | audit_logs | actor_openid ASC, created_at DESC | 普通 |
+| profile_media | owner_openid ASC, status ASC, created_at DESC | 普通；owner 媒体查询 |
+| profile_media | status ASC, cleanup_after ASC | 普通；未引用媒体回收扫描 |
 | oauth_states | state_hash ASC | 唯一 |
 | oauth_states | expires_at ASC | 普通；应用层过期与限量清理 |
 | oauth_states | openid ASC, expires_at DESC | 普通；查询用户的活跃授权状态 |
@@ -115,8 +134,8 @@ synced_at
 
 ## 部署后验证
 
-1. 校验 8 集合、全拒绝规则与 11 索引，确认 `oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
+1. 校验 10 集合、全拒绝规则与 15 索引，确认 `profile_media` 的 owner/status 与 cleanup 索引、`oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
 2. 真机验证 WXContext openid、微信手机号动态 code、手填手机号来源，以及资料响应中无明文/密文。
 3. 配置 callback HTTPS 路由、Strava 回调域和小程序业务域名，验证 CSRF、过期与重放。
-4. 验证 token 临期刷新、90 天分页、解绑审计及日志无敏感信息。
+4. 验证 token 临期刷新、90 天分页、解绑审计及日志无敏感信息；验证跨用户媒体拒绝、未登记 legacy 不进卡、register 失败回收上传对象，以及临时 URL 故障降级。
 5. 在隔离活动中压测报名容量与审批事务。

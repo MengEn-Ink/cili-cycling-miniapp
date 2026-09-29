@@ -47,7 +47,7 @@ pack('admin-review', [
   'domain/domain.js',
   'domain/use-cases.js',
 ]);
-pack('notification-send', ['index.js', 'core.js', 'access.js', 'package.json']);
+pack('notification-send', ['index.js', 'core.js', 'store.js', 'access.js', 'package.json']);
 const cloudbaseConfig = JSON.parse(readFileSync(resolve(root, 'cloudbaserc.json'), 'utf8'));
 const notificationFunction = cloudbaseConfig.functions.find(
   (item) => item.name === 'notification-send',
@@ -65,7 +65,20 @@ pack('activity-admin', [
   'package.json',
 ]);
 pack('auth', ['index.js', 'core.js', 'package.json']);
-pack('profile', ['index.js', 'core.js', 'package.json']);
+pack('profile', ['index.js', 'core.js', 'capability-card.js', 'package.json']);
+const mediaCleanupFunction = cloudbaseConfig.functions.find(
+  (item) => item.name === 'profile-media-cleanup',
+);
+const mediaCleanupTimer = mediaCleanupFunction?.triggers?.find(
+  (item) => item.name === 'profile-media-cleanup-worker' && item.type === 'timer',
+);
+if (
+  !mediaCleanupTimer ||
+  typeof mediaCleanupTimer.config !== 'string' ||
+  !mediaCleanupTimer.config.trim()
+)
+  throw new Error('profile-media-cleanup 缺少可部署的定时触发器');
+pack('profile-media-cleanup', ['index.js', 'core.js', 'store.js', 'package.json']);
 for (const name of ['strava-auth', 'strava-callback']) {
   for (const file of ['core.js', 'api.js'])
     if (

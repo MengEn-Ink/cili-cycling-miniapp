@@ -70,6 +70,215 @@ function cleanText(value, max, required = false) {
     throw new ProfileError('VALIDATION_FAILED', '资料字段格式错误');
   return text;
 }
+function mediaSecret(value) {
+  const secret = String(value || '').trim();
+  if (secret.length < 32) throw new ProfileError('MEDIA_SECRET_INVALID', '媒体路径服务未配置');
+  return secret;
+}
+function mediaOwnerPrefix(openid, secretValue) {
+  if (typeof openid !== 'string' || !openid)
+    throw new ProfileError('UNAUTHENTICATED', '无法取得微信身份');
+  const alias = crypto
+    .createHmac('sha256', mediaSecret(secretValue))
+    .update(openid)
+    .digest('hex')
+    .slice(0, 32);
+  return `profiles/${alias}/`;
+}
+function mediaDocumentId(fileId) {
+  if (typeof fileId !== 'string' || !fileId)
+    throw new ProfileError('VALIDATION_FAILED', '媒体文件 ID 无效');
+  return crypto.createHash('sha256').update(fileId).digest('hex');
+}
+function issueMediaUploadPath(openid, secretValue, randomUUID = crypto.randomUUID) {
+  const filename = randomUUID();
+  if (!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(filename))
+    throw new ProfileError('MEDIA_PATH_INVALID', '媒体路径生成失败');
+  return { cloud_path: `${mediaOwnerPrefix(openid, secretValue)}${filename}.jpg` };
+}
+function mediaPath(fileId) {
+  if (typeof fileId !== 'string' || !fileId.startsWith('cloud://') || fileId.length > 512)
+    return '';
+  const slash = fileId.indexOf('/', 'cloud://'.length);
+  return slash >= 0 ? fileId.slice(slash + 1) : '';
+}
+function isOwnerMedia(fileId, openid, secretValue) {
+  const path = mediaPath(fileId);
+  const prefix = mediaOwnerPrefix(openid, secretValue);
+  const filename = path.slice(prefix.length);
+  return (
+    path.startsWith(prefix) &&
+    /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\.jpg$/i.test(filename)
+  );
+}
+function mediaRegistration(
+  fileId,
+  category,
+  openid,
+  secretValue,
+  now = new Date(),
+  existing = undefined,
+) {
+  if (!['ride', 'bike', 'other'].includes(category))
+    throw new ProfileError('VALIDATION_FAILED', '媒体类别无效');
+  if (!isOwnerMedia(fileId, openid, secretValue))
+    throw new ProfileError('MEDIA_NOT_OWNED', '媒体文件不属于当前用户');
+  const expected = {
+    _id: mediaDocumentId(fileId),
+    file_id: fileId,
+    owner_openid: openid,
+    category,
+  };
+  if (existing) {
+    if (
+      existing._id !== expected._id ||
+      existing.file_id !== fileId ||
+      existing.owner_openid !== openid ||
+      existing.category !== category ||
+      !['unreferenced', 'active'].includes(existing.status)
+    )
+      throw new ProfileError('MEDIA_REGISTRATION_CONFLICT', '媒体登记冲突');
+    return existing;
+  }
+  const createdAt = new Date(now);
+  return {
+    ...expected,
+    status: 'unreferenced',
+    created_at: createdAt,
+    cleanup_after: new Date(createdAt.getTime() + 24 * 60 * 60 * 1000),
+  };
+}
+async function verifyMediaObject(fileId, getTempFileURL) {
+  try {
+    const response = await getTempFileURL({ fileList: [fileId] });
+    const found = (Array.isArray(response && response.fileList) ? response.fileList : []).find(
+      (item) => item && item.fileID === fileId,
+    );
+    if (found && Number(found.status) === 0) {
+      const url = new URL(found.tempFileURL);
+      if (url.protocol === 'https:') return true;
+    }
+  } catch {
+    // Normalize storage and URL parsing failures to one stable, non-sensitive error.
+  }
+  throw new ProfileError('MEDIA_OBJECT_NOT_FOUND', '媒体文件不存在或不可访问');
+}
+function registeredMedia(record, item, openid, statuses = ['active']) {
+  return Boolean(
+    record &&
+    item &&
+    record._id === mediaDocumentId(item.file_id) &&
+    record.file_id === item.file_id &&
+    record.owner_openid === openid &&
+    record.category === item.category &&
+    statuses.includes(record.status),
+  );
+}
+function validateMediaUpdate(current, update, openid, secretValue, mediaRecords = []) {
+  const existing = current && typeof current === 'object' ? current : {};
+  const data = update && typeof update === 'object' ? update : {};
+  const records = new Map(mediaRecords.map((record) => [record && record.file_id, record]));
+  const activate = new Set();
+  const currentIds = new Set([
+    existing.avatar_file_id,
+    ...(Array.isArray(existing.photos) ? existing.photos.map((item) => item && item.file_id) : []),
+  ]);
+  const accept = (item, legacy) => {
+    const record = records.get(item.file_id);
+    if (
+      isOwnerMedia(item.file_id, openid, secretValue) &&
+      registeredMedia(record, item, openid, ['unreferenced', 'active'])
+    ) {
+      if (record.status === 'unreferenced') activate.add(record._id);
+      return;
+    }
+    if (legacy) return;
+    throw new ProfileError('MEDIA_NOT_OWNED', '媒体文件不属于当前用户');
+  };
+  if (Object.prototype.hasOwnProperty.call(data, 'avatar_file_id')) {
+    const avatar = data.avatar_file_id;
+    if (avatar)
+      accept(
+        { file_id: avatar, category: records.get(avatar)?.category || 'other' },
+        avatar === existing.avatar_file_id && !records.has(avatar),
+      );
+  }
+  if (Object.prototype.hasOwnProperty.call(data, 'photos')) {
+    const legacy = new Set(
+      (Array.isArray(existing.photos) ? existing.photos : []).map(
+        (item) => `${item && item.file_id}\u0000${item && item.category}`,
+      ),
+    );
+    for (const item of data.photos) {
+      accept(
+        item,
+        legacy.has(`${item.file_id}\u0000${item.category}`) && !records.has(item.file_id),
+      );
+    }
+  }
+  const nextIds = new Set([
+    Object.prototype.hasOwnProperty.call(data, 'avatar_file_id')
+      ? data.avatar_file_id
+      : existing.avatar_file_id,
+    ...(Object.prototype.hasOwnProperty.call(data, 'photos')
+      ? data.photos.map((item) => item.file_id)
+      : Array.isArray(existing.photos)
+        ? existing.photos.map((item) => item && item.file_id)
+        : []),
+  ]);
+  const demote = mediaRecords
+    .filter(
+      (record) =>
+        record &&
+        record.status === 'active' &&
+        record.owner_openid === openid &&
+        record._id === mediaDocumentId(record.file_id) &&
+        currentIds.has(record.file_id) &&
+        !nextIds.has(record.file_id),
+    )
+    .map((record) => record._id);
+  return { data, activate_ids: [...activate], demote_ids: demote };
+}
+function ownerMedia(profile, openid, secretValue, mediaRecords = []) {
+  const value = profile && typeof profile === 'object' ? profile : {};
+  const records = new Map(mediaRecords.map((record) => [record && record.file_id, record]));
+  const photos = Array.isArray(value.photos)
+    ? value.photos
+        .filter(
+          (item) =>
+            item &&
+            ['ride', 'bike', 'other'].includes(item.category) &&
+            isOwnerMedia(item.file_id, openid, secretValue) &&
+            registeredMedia(records.get(item.file_id), item, openid),
+        )
+        .map((item) => ({
+          file_id: item.file_id,
+          category: item.category,
+          source: 'user_photo',
+        }))
+    : [];
+  const ordered = [
+    ...photos.filter((item) => item.category === 'ride' || item.category === 'bike'),
+    ...photos.filter((item) => item.category === 'other'),
+  ];
+  const avatarRecord = records.get(value.avatar_file_id);
+  if (
+    isOwnerMedia(value.avatar_file_id, openid, secretValue) &&
+    registeredMedia(
+      avatarRecord,
+      { file_id: value.avatar_file_id, category: avatarRecord && avatarRecord.category },
+      openid,
+    )
+  ) {
+    ordered.push({ file_id: value.avatar_file_id, category: 'other', source: 'avatar' });
+  }
+  const seen = new Set();
+  return ordered.filter((item) => {
+    if (seen.has(item.file_id) || seen.size >= 3) return false;
+    seen.add(item.file_id);
+    return true;
+  });
+}
 const sensitiveStatus = (doc) => ({
   real_name: !!doc.real_name_cipher,
   phone: !!doc.phone_cipher,
@@ -170,90 +379,6 @@ function phoneUpdate(phone, keyValue, source = 'wechat') {
     phone_verified: source === 'wechat',
   };
 }
-const PRIORITY_PHOTO_CATEGORIES = new Set([
-  'ride',
-  'bike',
-  'riding',
-  'cycling',
-  'training',
-  'workout',
-  '骑行',
-  '骑行照',
-  '训练',
-  '训练照',
-]);
-function safeFileId(value) {
-  const text = typeof value === 'string' ? value.trim() : '';
-  return text.length <= 512 ? text : '';
-}
-function selectCapabilityPhotos(profile = {}) {
-  const seen = new Set();
-  const uploaded = Array.isArray(profile.photos)
-    ? profile.photos
-        .filter((item) => item && typeof item === 'object')
-        .map((item, index) => ({
-          file_id: safeFileId(item.file_id),
-          category: typeof item.category === 'string' ? item.category : '',
-          source: 'upload',
-          priority: PRIORITY_PHOTO_CATEGORIES.has(String(item.category || '').toLowerCase())
-            ? 0
-            : 1,
-          index,
-        }))
-        .filter((item) => item.file_id)
-        .sort((a, b) => a.priority - b.priority || a.index - b.index)
-    : [];
-  const candidates = [
-    ...uploaded,
-    {
-      file_id: safeFileId(profile.avatar_file_id),
-      category: 'avatar',
-      source: 'avatar',
-      priority: 2,
-    },
-  ];
-  return candidates
-    .filter((item) => item.file_id && !seen.has(item.file_id) && seen.add(item.file_id))
-    .slice(0, 3)
-    .map(({ file_id, category, source }) => ({ file_id, category, source }));
-}
-function safeDate(value) {
-  if (value === null || value === undefined || value === '') return null;
-  const date = new Date(value);
-  return Number.isFinite(date.getTime()) ? date.toISOString() : null;
-}
-function safeMetric(value) {
-  return typeof value === 'number' && Number.isFinite(value) ? value : null;
-}
-function capabilityCard(profile = {}, credential, snapshot, hasActiveOAuthState = false) {
-  let state = 'disconnected';
-  let error = null;
-  if (!credential) state = hasActiveOAuthState ? 'authorizing' : 'disconnected';
-  else if (credential.sync_status === 'failed') {
-    state = 'failed';
-    error = { message: 'Strava 数据准备失败，请重试', retryable: true };
-  } else if (credential.sync_status === 'ready' && snapshot) state = 'ready';
-  else state = 'syncing';
-  const metrics = snapshot
-    ? {
-        total_km: safeMetric(snapshot.total_km),
-        rides: safeMetric(snapshot.activities_90d),
-        longest_km: safeMetric(snapshot.longest_km),
-        elevation_m: safeMetric(snapshot.total_elevation_m),
-        speed_kmh: safeMetric(snapshot.weighted_avg_speed_kmh),
-        latest_activity_at: safeDate(snapshot.latest_activity_at),
-        synced_at: safeDate(snapshot.synced_at),
-      }
-    : null;
-  return {
-    nickname: typeof profile.nickname === 'string' ? profile.nickname : '',
-    avatar_file_id: safeFileId(profile.avatar_file_id),
-    photos: selectCapabilityPhotos(profile),
-    period: { days: 90, label: '90天汇总' },
-    metrics,
-    readiness: { state, error },
-  };
-}
 function writableDocument(value) {
   const { _id, ...document } = value;
   return document;
@@ -280,8 +405,14 @@ module.exports = {
   response,
   buildUpdate,
   phoneUpdate,
-  selectCapabilityPhotos,
-  capabilityCard,
+  issueMediaUploadPath,
+  mediaOwnerPrefix,
+  mediaDocumentId,
+  mediaRegistration,
+  verifyMediaObject,
+  isOwnerMedia,
+  validateMediaUpdate,
+  ownerMedia,
   writableDocument,
   toError,
 };

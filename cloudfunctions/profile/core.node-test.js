@@ -10,12 +10,18 @@ const {
   response,
   buildUpdate,
   phoneUpdate,
-  selectCapabilityPhotos,
-  capabilityCard,
+  issueMediaUploadPath,
+  mediaOwnerPrefix,
+  mediaDocumentId,
+  mediaRegistration,
+  verifyMediaObject,
+  validateMediaUpdate,
+  ownerMedia,
   writableDocument,
   toError,
 } = require('./core');
 const key = require('node:crypto').randomBytes(32).toString('base64');
+const mediaSecret = 'profile-media-secret-for-tests-32-bytes';
 test('AES-256-GCM 可往返且随机 IV', () => {
   const a = encrypt('敏感值', key);
   const b = encrypt('敏感值', key);
@@ -102,6 +108,214 @@ test('微信手机号仅由服务端结果构造并标记为已验证', () => {
   });
 });
 
+test('媒体上传路径使用服务端 secret 派生 opaque owner alias', () => {
+  const uuid = '123e4567-e89b-42d3-a456-426614174000';
+  const first = issueMediaUploadPath('openid-owner-a', mediaSecret, () => uuid);
+  const second = issueMediaUploadPath('openid-owner-b', mediaSecret, () => uuid);
+  assert.match(
+    first.cloud_path,
+    /^profiles\/[a-f0-9]{32}\/123e4567-e89b-42d3-a456-426614174000\.jpg$/,
+  );
+  assert.notEqual(first.cloud_path, second.cloud_path);
+  assert.equal(first.cloud_path.includes('openid-owner-a'), false);
+  assert.equal(mediaOwnerPrefix('openid-owner-a', mediaSecret), first.cloud_path.slice(0, -40));
+  assert.throws(() => issueMediaUploadPath('', mediaSecret, () => uuid), {
+    code: 'UNAUTHENTICATED',
+  });
+  assert.throws(() => issueMediaUploadPath('openid-owner-a', 'short', () => uuid), {
+    code: 'MEDIA_SECRET_INVALID',
+  });
+});
+
+test('资料更新只接受本用户签发媒体，同时允许原样保留 legacy 媒体', () => {
+  const ownerPrefix = mediaOwnerPrefix('openid-owner-a', mediaSecret);
+  const otherPrefix = mediaOwnerPrefix('openid-owner-b', mediaSecret);
+  const ownedFile = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const current = {
+    avatar_file_id: 'cloud://env/profiles/legacy/avatar.jpg',
+    photos: [{ file_id: 'cloud://env/profiles/legacy/ride.jpg', category: 'ride' }],
+  };
+  const plan = validateMediaUpdate(
+    current,
+    {
+      avatar_file_id: current.avatar_file_id,
+      photos: [
+        current.photos[0],
+        {
+          file_id: ownedFile,
+          category: 'bike',
+        },
+      ],
+    },
+    'openid-owner-a',
+    mediaSecret,
+    [
+      {
+        _id: mediaDocumentId(ownedFile),
+        file_id: ownedFile,
+        owner_openid: 'openid-owner-a',
+        category: 'bike',
+        status: 'unreferenced',
+      },
+    ],
+  );
+  assert.deepEqual(plan.activate_ids, [mediaDocumentId(ownedFile)]);
+  assert.deepEqual(
+    validateMediaUpdate(current, plan.data, 'openid-owner-a', mediaSecret, [
+      {
+        _id: mediaDocumentId(ownedFile),
+        file_id: ownedFile,
+        owner_openid: 'openid-owner-a',
+        category: 'bike',
+        status: 'unreferenced',
+      },
+    ]).activate_ids,
+    [mediaDocumentId(ownedFile)],
+  );
+  assert.throws(
+    () =>
+      validateMediaUpdate(
+        current,
+        {
+          avatar_file_id: `cloud://env/${otherPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`,
+        },
+        'openid-owner-a',
+        mediaSecret,
+        [
+          {
+            file_id: `cloud://env/${otherPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`,
+            owner_openid: 'openid-owner-b',
+            category: 'other',
+            status: 'active',
+          },
+        ],
+      ),
+    { code: 'MEDIA_NOT_OWNED' },
+  );
+});
+
+test('仅有合法 HMAC 前缀但无 owner registry 记录仍拒绝', () => {
+  const ownerPrefix = mediaOwnerPrefix('openid-owner-a', mediaSecret);
+  const fileId = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  assert.throws(
+    () =>
+      validateMediaUpdate(
+        {},
+        { photos: [{ file_id: fileId, category: 'ride' }] },
+        'openid-owner-a',
+        mediaSecret,
+        [],
+      ),
+    { code: 'MEDIA_NOT_OWNED' },
+  );
+});
+
+test('资料更新计划把被移除的 active 媒体降级为可清理状态', () => {
+  const ownerPrefix = mediaOwnerPrefix('openid-owner-a', mediaSecret);
+  const fileId = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const record = {
+    _id: mediaDocumentId(fileId),
+    file_id: fileId,
+    owner_openid: 'openid-owner-a',
+    category: 'ride',
+    status: 'active',
+  };
+  const plan = validateMediaUpdate(
+    { photos: [{ file_id: fileId, category: 'ride' }] },
+    { photos: [] },
+    'openid-owner-a',
+    mediaSecret,
+    [record],
+  );
+  assert.deepEqual(plan.activate_ids, []);
+  assert.deepEqual(plan.demote_ids, [record._id]);
+});
+
+test('registerMedia 记录幂等且在 profile 引用前可清理', () => {
+  const ownerPrefix = mediaOwnerPrefix('openid-owner-a', mediaSecret);
+  const fileId = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const createdAt = new Date('2026-09-29T12:00:00.000Z');
+  const record = mediaRegistration(fileId, 'ride', 'openid-owner-a', mediaSecret, createdAt);
+  assert.deepEqual(record, {
+    _id: mediaDocumentId(fileId),
+    file_id: fileId,
+    owner_openid: 'openid-owner-a',
+    category: 'ride',
+    status: 'unreferenced',
+    created_at: createdAt,
+    cleanup_after: new Date('2026-09-30T12:00:00.000Z'),
+  });
+  assert.deepEqual(
+    mediaRegistration(fileId, 'ride', 'openid-owner-a', mediaSecret, createdAt, record),
+    record,
+  );
+  assert.throws(() => mediaRegistration(fileId, 'ride', 'openid-owner-b', mediaSecret, createdAt), {
+    code: 'MEDIA_NOT_OWNED',
+  });
+});
+
+test('registerMedia 落库前必须由服务端确认对象存在且返回 https URL', async () => {
+  const ownerPrefix = mediaOwnerPrefix('openid-owner-a', mediaSecret);
+  const fileId = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  await assert.doesNotReject(
+    verifyMediaObject(fileId, async () => ({
+      fileList: [{ fileID: fileId, tempFileURL: 'https://temporary.example/photo', status: 0 }],
+    })),
+  );
+  for (const getTempFileURL of [
+    async () => {
+      throw new Error('storage unavailable');
+    },
+    async () => ({ fileList: [{ fileID: fileId, tempFileURL: '', status: -1 }] }),
+    async () => ({
+      fileList: [
+        { fileID: 'cloud://env/other', tempFileURL: 'https://temporary.example/x', status: 0 },
+      ],
+    }),
+    async () => ({ fileList: [{ fileID: fileId, tempFileURL: 'http://insecure', status: 0 }] }),
+  ]) {
+    await assert.rejects(verifyMediaObject(fileId, getTempFileURL), {
+      code: 'MEDIA_OBJECT_NOT_FOUND',
+    });
+  }
+});
+
+test('能力卡媒体只选择当前 owner 签发文件，legacy 与他人文件均不可见', () => {
+  const ownerPrefix = mediaOwnerPrefix('openid-owner-a', mediaSecret);
+  const otherPrefix = mediaOwnerPrefix('openid-owner-b', mediaSecret);
+  const ownedFile = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174001.jpg`;
+  const profile = {
+    avatar_file_id: 'cloud://env/profiles/legacy/avatar.jpg',
+    photos: [
+      { file_id: 'cloud://env/profiles/legacy/ride.jpg', category: 'ride' },
+      {
+        file_id: `cloud://env/${otherPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`,
+        category: 'bike',
+      },
+      { file_id: ownedFile, category: 'other' },
+    ],
+  };
+  assert.deepEqual(ownerMedia(profile, 'openid-owner-a', mediaSecret, []), []);
+  assert.deepEqual(
+    ownerMedia(profile, 'openid-owner-a', mediaSecret, [
+      {
+        _id: mediaDocumentId(ownedFile),
+        file_id: ownedFile,
+        owner_openid: 'openid-owner-a',
+        category: 'other',
+        status: 'active',
+      },
+    ]),
+    [
+      {
+        file_id: ownedFile,
+        category: 'other',
+        source: 'user_photo',
+      },
+    ],
+  );
+});
+
 test('CloudBase 写入会移除保留字段 _id', () => {
   const source = { _id: 'openid', nickname: '骑手' };
   assert.deepEqual(writableDocument(source), { nickname: '骑手' });
@@ -113,81 +327,4 @@ test('未知错误仅暴露平台错误码而不泄露内部消息', () => {
     ok: false,
     error: { code: 'INTERNAL_ERROR', message: '服务暂时不可用', cause_code: '-1' },
   });
-});
-
-test('个人名片照片按骑行训练优先、其他补位、头像兜底并去重，最多三张', () => {
-  assert.deepEqual(
-    selectCapabilityPhotos({
-      avatar_file_id: 'cloud://avatar',
-      photos: [
-        { file_id: 'cloud://other', category: 'other' },
-        { file_id: 'cloud://ride', category: 'ride' },
-        { file_id: 'cloud://training', category: 'training' },
-        { file_id: 'cloud://avatar', category: 'other' },
-      ],
-    }),
-    [
-      { file_id: 'cloud://ride', category: 'ride', source: 'upload' },
-      { file_id: 'cloud://training', category: 'training', source: 'upload' },
-      { file_id: 'cloud://other', category: 'other', source: 'upload' },
-    ],
-  );
-  assert.deepEqual(selectCapabilityPhotos({ avatar_file_id: 'cloud://avatar' }), [
-    { file_id: 'cloud://avatar', category: 'avatar', source: 'avatar' },
-  ]);
-});
-
-test('个人名片 DTO 仅暴露安全聚合字段且允许缺失快照', () => {
-  const sensitive = {
-    nickname: '骑手',
-    avatar_file_id: 'cloud://avatar',
-    real_name_masked: '曹**',
-    phone_cipher: { ciphertext: 'secret' },
-    emergency_name: '私密联系人',
-    openid: 'private',
-  };
-  const disconnected = capabilityCard(sensitive, undefined, undefined, false);
-  assert.equal(disconnected.readiness.state, 'disconnected');
-  assert.equal(disconnected.metrics, null);
-  const serialized = JSON.stringify(disconnected);
-  for (const forbidden of [
-    'real_name',
-    'phone',
-    'emergency',
-    'cipher',
-    'token',
-    'openid',
-    'private',
-  ]) {
-    assert.equal(serialized.includes(forbidden), false);
-  }
-});
-
-test('个人名片覆盖 authorizing/syncing/failed/ready 与安全错误', () => {
-  assert.equal(capabilityCard({}, undefined, undefined, true).readiness.state, 'authorizing');
-  assert.equal(capabilityCard({}, { sync_status: 'running' }).readiness.state, 'syncing');
-  const failed = capabilityCard({}, { sync_status: 'failed', sync_error_code: 'INTERNAL_SECRET' });
-  assert.deepEqual(failed.readiness, {
-    state: 'failed',
-    error: { message: 'Strava 数据准备失败，请重试', retryable: true },
-  });
-  assert.equal(JSON.stringify(failed).includes('INTERNAL_SECRET'), false);
-  const ready = capabilityCard(
-    {},
-    { sync_status: 'ready' },
-    {
-      total_km: 123,
-      activities_90d: 8,
-      longest_km: 50,
-      total_elevation_m: 999,
-      weighted_avg_speed_kmh: 25,
-      latest_activity_at: null,
-      synced_at: new Date('2026-09-29T00:00:00Z'),
-      activities: [{ id: 'must-not-leak' }],
-    },
-  );
-  assert.equal(ready.readiness.state, 'ready');
-  assert.equal(ready.metrics.rides, 8);
-  assert.equal(ready.metrics.latest_activity_at, null);
-  assert.equal(JSON.stringify(ready).includes('must-not-leak'), false);
 });

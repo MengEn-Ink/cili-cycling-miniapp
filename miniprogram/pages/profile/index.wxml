@@ -5,7 +5,7 @@
   <view class="card profile-card" wx:if="{{profile}}"><view class="row"><view><view class="title">常用资料</view><view class="muted">{{profile.realName || '未填写实名'}} · {{profile.phone || '未授权手机号'}}</view></view><button class="edit-button" bindtap="edit">编辑</button></view><view class="progress-head"><text>资料完整度</text><text>{{profile.completeness}}%</text></view><view class="progress"><view class="progress-value" style="width: {{profile.completeness}}%"></view></view></view>
   <view class="card" wx:elif="{{!loading}}"><view class="title">资料尚未配置</view><view class="muted">{{error || '请创建资料后再报名。'}}</view><button class="btn" bindtap="edit">去完善</button></view>
   <view class="section-label">骑行服务</view>
-  <view class="menu-card" bindtap="capabilityCard"><view class="menu-icon admin-icon">名</view><view class="menu-copy"><view class="menu-title">我的骑行名片</view><view class="muted">照片与近 90 天能力快照</view></view><text class="chevron">›</text></view>
+  <view class="menu-card capability-entry" bindtap="capabilityCard"><view class="menu-icon capability-icon">卡</view><view class="menu-copy"><view class="menu-title">我的骑行名片</view><view class="muted">查看仅自己可见的近 90 天骑行能力</view></view><text class="chevron">›</text></view>
   <view class="menu-card" bindtap="strava"><view class="menu-icon">S</view><view class="menu-copy"><view class="menu-title">Strava</view><view class="muted">查看真实绑定与近 90 天快照</view></view><text class="chevron">›</text></view>
   <view class="menu-card" wx:if="{{isAdmin}}" bindtap="admin"><view class="menu-icon admin-icon">管</view><view class="menu-copy"><view class="menu-title">管理员控制台</view><view class="muted">活动与报名审核管理</view></view><text class="chevron">›</text></view>
 </view>

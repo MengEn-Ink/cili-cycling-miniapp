@@ -5,77 +5,176 @@ const {
   response,
   buildUpdate,
   phoneUpdate,
-  capabilityCard,
+  issueMediaUploadPath,
+  mediaDocumentId,
+  mediaRegistration,
+  verifyMediaObject,
+  validateMediaUpdate,
   writableDocument,
   toError,
 } = require('./core');
+const { buildCapabilityCard } = require('./capability-card');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const ok = (data) => ({ ok: true, data });
+function isNotFound(error) {
+  return (
+    Number(error?.errCode) === -502001 ||
+    String(error?.errCode || '').includes('NOT_FOUND') ||
+    String(error?.message || '')
+      .toLowerCase()
+      .includes('not exist')
+  );
+}
+async function maybeGet(collection, id) {
+  try {
+    return (await collection.doc(id).get()).data;
+  } catch (error) {
+    if (isNotFound(error)) return undefined;
+    throw error;
+  }
+}
 async function getDoc(openid) {
-  try {
-    return (await db.collection('profiles').doc(openid).get()).data || {};
-  } catch (error) {
-    if (
-      String(error?.errCode || '').includes('NOT_FOUND') ||
-      String(error?.message || '')
-        .toLowerCase()
-        .includes('not exist')
-    )
-      return {};
-    throw error;
-  }
+  return (await maybeGet(db.collection('profiles'), openid)) || {};
 }
-async function getCollectionDoc(name, openid) {
-  try {
-    return (await db.collection(name).doc(openid).get()).data;
-  } catch (error) {
-    if (
-      Number(error?.errCode) === -502001 ||
-      /not exist|not found/i.test(String(error?.errMsg || error?.message || ''))
-    )
-      return undefined;
-    throw error;
-  }
+async function getById(collection, id) {
+  return maybeGet(db.collection(collection), id);
 }
-async function getCard(openid) {
-  // 隐私边界：只使用可信 WXContext OPENID 聚合快照，客户端传入的 openid 永不参与查询。
-  const now = new Date();
-  const [profile, credential, snapshot, oauth] = await Promise.all([
-    getCollectionDoc('profiles', openid),
-    getCollectionDoc('strava_credentials', openid),
-    getCollectionDoc('strava_snapshots', openid),
-    db
-      .collection('oauth_states')
-      .where({
-        openid,
-        expires_at: db.command.gt(now),
-        consumed_at: db.command.exists(false),
-      })
-      .limit(1)
-      .get(),
-  ]);
-  // 小程序只读聚合 DTO：不返回活动明细、身份字段、openid、token 或任何密文。
-  return capabilityCard(profile, credential, snapshot, Boolean(oauth.data?.length));
-}
-async function merge(openid, data) {
+async function merge(openid, data, current = undefined) {
   const now = db.serverDate();
-  const current = await getDoc(openid);
+  const existing = current || (await getDoc(openid));
   await db
     .collection('profiles')
     .doc(openid)
-    .set({ data: writableDocument({ ...current, _id: openid, ...data, updated_at: now }) });
+    .set({ data: writableDocument({ ...existing, _id: openid, ...data, updated_at: now }) });
   return getDoc(openid);
+}
+function profileMediaIds(...profiles) {
+  const ids = [];
+  for (const profile of profiles) {
+    ids.push(profile && profile.avatar_file_id);
+    for (const item of Array.isArray(profile && profile.photos) ? profile.photos : []) {
+      ids.push(item && item.file_id);
+    }
+  }
+  return [...new Set(ids.filter((id) => typeof id === 'string' && id))];
+}
+async function getMediaRecords(collection, ...profiles) {
+  return (
+    await Promise.all(
+      profileMediaIds(...profiles).map((fileId) => maybeGet(collection, mediaDocumentId(fileId))),
+    )
+  ).filter(Boolean);
+}
+async function updateProfile(openid, event) {
+  const update = buildUpdate(event, process.env.PII_ENCRYPTION_KEY);
+  const result = await db.runTransaction(async (transaction) => {
+    const profiles = transaction.collection('profiles');
+    const media = transaction.collection('profile_media');
+    const current = (await maybeGet(profiles, openid)) || {};
+    const records = await getMediaRecords(media, current, update);
+    const validated = validateMediaUpdate(
+      current,
+      update,
+      openid,
+      process.env.PROFILE_MEDIA_PATH_SECRET,
+      records,
+    );
+    const updatedAt = db.serverDate();
+    const cleanupAfter = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const next = writableDocument({
+      ...current,
+      _id: openid,
+      ...validated.data,
+      updated_at: updatedAt,
+    });
+    await profiles.doc(openid).set({ data: next });
+    for (const id of validated.activate_ids) {
+      await media.doc(id).update({
+        data: { status: 'active', referenced_at: updatedAt, cleanup_after: null },
+      });
+    }
+    for (const id of validated.demote_ids) {
+      await media.doc(id).update({
+        data: {
+          status: 'unreferenced',
+          referenced_at: null,
+          cleanup_after: cleanupAfter,
+          delete_lease_id: '',
+          updated_at: updatedAt,
+        },
+      });
+    }
+    return next;
+  });
+  return response(result);
+}
+async function registerMedia(openid, event, verifyObject) {
+  const id = mediaDocumentId(event.fileId);
+  const collection = db.collection('profile_media');
+  const existing = await maybeGet(collection, id);
+  const record = mediaRegistration(
+    event.fileId,
+    event.category,
+    openid,
+    process.env.PROFILE_MEDIA_PATH_SECRET,
+    new Date(),
+    existing,
+  );
+  if (verifyObject) {
+    await verifyMediaObject(event.fileId, (input) => cloud.getTempFileURL(input));
+  }
+  if (!existing) {
+    const { _id, ...data } = record;
+    await collection.doc(_id).set({ data });
+  }
 }
 exports.main = async (event = {}) => {
   try {
+    keyFrom(process.env.PII_ENCRYPTION_KEY);
     const { OPENID } = cloud.getWXContext();
     if (!OPENID) throw Object.assign(new Error('无法取得微信身份'), { code: 'UNAUTHENTICATED' });
-    if (event.action === 'getCard') return ok(await getCard(OPENID));
     if (event.action === 'get') return ok(response(await getDoc(OPENID)));
-    keyFrom(process.env.PII_ENCRYPTION_KEY);
-    if (event.action === 'update')
-      return ok(response(await merge(OPENID, buildUpdate(event, process.env.PII_ENCRYPTION_KEY))));
+    if (event.action === 'capabilityCard') {
+      if (Object.prototype.hasOwnProperty.call(event, 'openid'))
+        throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });
+      const [profile, credential, snapshot] = await Promise.all([
+        getDoc(OPENID),
+        getById('strava_credentials', OPENID),
+        getById('strava_snapshots', OPENID),
+      ]);
+      const mediaRecords = await getMediaRecords(db.collection('profile_media'), profile);
+      return ok(
+        await buildCapabilityCard(
+          { profile, credential, snapshot, mediaRecords },
+          {
+            openid: OPENID,
+            mediaSecret: process.env.PROFILE_MEDIA_PATH_SECRET,
+            getTempFileURL: (input) => cloud.getTempFileURL(input),
+          },
+        ),
+      );
+    }
+    if (event.action === 'mediaUploadPath') {
+      if (Object.prototype.hasOwnProperty.call(event, 'openid'))
+        throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });
+      return ok(issueMediaUploadPath(OPENID, process.env.PROFILE_MEDIA_PATH_SECRET));
+    }
+    if (event.action === 'registerMedia') {
+      if (Object.prototype.hasOwnProperty.call(event, 'openid'))
+        throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });
+      await registerMedia(OPENID, event, true);
+      return ok({ registered: true });
+    }
+    if (event.action === 'reportOrphan') {
+      if (Object.prototype.hasOwnProperty.call(event, 'openid'))
+        throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });
+      await registerMedia(OPENID, event, false);
+      return ok({ reported: true });
+    }
+    if (event.action === 'update') {
+      return ok(await updateProfile(OPENID, event));
+    }
     if (event.action === 'getPhoneNumber') {
       if (typeof event.code !== 'string' || !event.code)
         throw Object.assign(new Error('缺少微信手机号动态 code'), { code: 'PHONE_CODE_REQUIRED' });

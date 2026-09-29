@@ -27,11 +27,18 @@ const activity = {
   capacity: 20,
   occupied_count: 3,
   description: '说明',
-  route: { start: '起点', end: '终点', distance_km: 80, elevation_m: 600, level: '进阶' },
-  schedule: [{ time: '08:00', title: '集合', location: '起点' }],
+  route: {
+    start: '起点',
+    end: '终点',
+    distance_km: 80,
+    elevation_m: 600,
+    level: '进阶',
+    gpx_file_id: 'cloud://routes/a1.gpx',
+  },
+  schedule: [{ time: '08:00', title: '集合', location: '起点', remark: '停车场集合' }],
   notices: ['守规'],
   equipment: ['头盔'],
-  fee: { remark: '无报名费' },
+  fee: { included: ['保险'], excluded: ['午餐'], remark: '无报名费' },
 };
 const registration = {
   _id: 'r1',
@@ -80,6 +87,39 @@ const readinessDto = {
   },
   error: null,
 };
+const personalCapabilityCardDto = {
+  state: 'partial',
+  generated_at: '2026-09-29T04:10:00.000Z',
+  profile: {
+    display_name: '山野骑手',
+    title: '周末爬坡手',
+  },
+  backgrounds: [
+    {
+      url: 'https://temporary.example/ride-1.jpg',
+      source: 'user_photo',
+      category: 'ride',
+    },
+    {
+      url: 'https://temporary.example/bike-1.jpg',
+      source: 'user_photo',
+      category: 'bike',
+    },
+  ],
+  summary: {
+    total_km_90d: 812.5,
+    rides_90d: 28,
+    longest_km: null,
+    elevation_m_90d: 9300,
+    weighted_avg_speed_kmh: 25.6,
+  },
+  coverage: {
+    from: '2026-07-01T04:00:00.000Z',
+    to: '2026-09-29T04:00:00.000Z',
+    complete: false,
+  },
+  synced_at: '2026-09-29T04:05:00.000Z',
+};
 
 function expectCall(callFunction: ReturnType<typeof vi.fn>, name: string, data: unknown) {
   expect(callFunction).toHaveBeenLastCalledWith({ name, data });
@@ -108,11 +148,20 @@ describe('CloudRepository 活动读取适配', () => {
         occupiedCount: 3,
         description: '说明',
         coverImage: 'cloud://covers/a1.jpg',
-        route: { start: '起点', end: '终点', distanceKm: 80, elevationM: 600, level: '进阶' },
+        route: {
+          start: '起点',
+          end: '终点',
+          distanceKm: 80,
+          elevationM: 600,
+          level: '进阶',
+          gpxFileId: 'cloud://routes/a1.gpx',
+        },
         schedule: activity.schedule,
         notices: ['守规'],
         equipment: ['头盔'],
         fee: '无报名费',
+        feeIncluded: ['保险'],
+        feeExcluded: ['午餐'],
       },
     ]);
   });
@@ -158,7 +207,128 @@ describe('CloudRepository 活动读取适配', () => {
   });
 });
 
+describe('CloudRepository 个人骑行名片适配', () => {
+  it('只调用 profile/capabilityCard 并映射固定 DTO', async () => {
+    const { cloud, callFunction } = cloudWith(success(personalCapabilityCardDto));
+
+    await expect(new CloudRepository(cloud).getPersonalCapabilityCard()).resolves.toEqual({
+      state: 'partial',
+      generatedAt: '2026-09-29T04:10:00.000Z',
+      profile: {
+        displayName: '山野骑手',
+        title: '周末爬坡手',
+      },
+      backgrounds: [
+        {
+          url: 'https://temporary.example/ride-1.jpg',
+          source: 'user_photo',
+          category: 'ride',
+        },
+        {
+          url: 'https://temporary.example/bike-1.jpg',
+          source: 'user_photo',
+          category: 'bike',
+        },
+      ],
+      summary: {
+        totalKm90d: 812.5,
+        rides90d: 28,
+        longestKm: null,
+        elevationM90d: 9300,
+        weightedAvgSpeedKmh: 25.6,
+      },
+      coverage: {
+        from: '2026-07-01T04:00:00.000Z',
+        to: '2026-09-29T04:00:00.000Z',
+        complete: false,
+      },
+      syncedAt: '2026-09-29T04:05:00.000Z',
+    });
+    expectCall(callFunction, 'profile', { action: 'capabilityCard' });
+  });
+
+  it.each(['cloud://raw-photo', 'http://temporary.example/insecure.jpg'])(
+    '拒绝非 HTTPS 名片背景 %s',
+    async (url) => {
+      const { cloud } = cloudWith(
+        success({
+          ...personalCapabilityCardDto,
+          backgrounds: [{ ...personalCapabilityCardDto.backgrounds[0], url }],
+        }),
+      );
+      await expectCode(new CloudRepository(cloud).getPersonalCapabilityCard(), 'INVALID_RESPONSE');
+    },
+  );
+
+  it.each(['812.5', Number.POSITIVE_INFINITY])(
+    '拒绝非 nullable finite number 指标 %#',
+    async (totalKm90d) => {
+      const { cloud } = cloudWith(
+        success({
+          ...personalCapabilityCardDto,
+          summary: { ...personalCapabilityCardDto.summary, total_km_90d: totalKm90d },
+        }),
+      );
+      await expectCode(new CloudRepository(cloud).getPersonalCapabilityCard(), 'INVALID_RESPONSE');
+    },
+  );
+});
+
 describe('CloudRepository 队员报名适配', () => {
+  it('提供审核通知订阅配置与请求边界', () => {
+    const repository = new CloudRepository(cloudWith().cloud) as any;
+    expect(typeof repository.getReviewNotificationTemplateIds).toBe('function');
+    expect(typeof repository.requestReviewNotificationSubscription).toBe('function');
+  });
+
+  it('读取审核通知模板只调用 authenticated subscription-config', async () => {
+    const { cloud, callFunction } = cloudWith(
+      success({ template_ids: ['approved-template', 'rejected-template'] }),
+    );
+    const result = await new CloudRepository(cloud).getReviewNotificationTemplateIds();
+
+    expect(result).toEqual(['approved-template', 'rejected-template']);
+    expectCall(callFunction, 'notification-send', { action: 'subscription-config' });
+  });
+
+  it('拒绝异常订阅配置响应', async () => {
+    const { cloud } = cloudWith(success({ template_ids: ['valid', 42] }));
+    await expectCode(
+      new CloudRepository(cloud).getReviewNotificationTemplateIds(),
+      'INVALID_RESPONSE',
+    );
+  });
+
+  it.each(['accept', 'reject', 'ban'])('订阅结果 %s 都完成请求而不改变报名流程', async (value) => {
+    const requestSubscribeMessage = vi.fn(({ success }) => success({ 'approved-template': value }));
+    vi.stubGlobal('wx', { requestSubscribeMessage });
+    const repository = new CloudRepository(cloudWith().cloud);
+
+    await repository.requestReviewNotificationSubscription([
+      'approved-template',
+      '',
+      'approved-template',
+    ]);
+
+    expect(requestSubscribeMessage).toHaveBeenCalledWith({
+      tmplIds: ['approved-template'],
+      success: expect.any(Function),
+      fail: expect.any(Function),
+    });
+    vi.unstubAllGlobals();
+  });
+
+  it('订阅 API 失败映射稳定错误且不泄漏底层信息', async () => {
+    vi.stubGlobal('wx', {
+      requestSubscribeMessage: vi.fn(({ fail }) => fail({ errMsg: 'private platform detail' })),
+    });
+    await expectCode(
+      new CloudRepository(cloudWith().cloud).requestReviewNotificationSubscription(['template']),
+      'SUBSCRIPTION_REQUEST_FAILED',
+    );
+    vi.unstubAllGlobals();
+  });
+
   it('我的报名和本人详情使用 registration 的 mine/detail', async () => {
     const { cloud, callFunction } = cloudWith(success([registration]), success(registration));
     const repository = new CloudRepository(cloud);
@@ -397,12 +567,26 @@ describe('CloudRepository 管理员审批适配', () => {
     expect(callFunction).not.toHaveBeenCalled();
   });
 
-  it('管理员详情映射能力卡照片白名单且忽略服务端敏感脏字段', async () => {
+  it('管理员详情只映射 https 临时媒体 URL 且忽略 raw file ID 和敏感脏字段', async () => {
     const dto = {
       ...registration,
       capability_profile: {
-        avatar_file_id: 'cloud://avatar',
-        photos: [{ file_id: 'cloud://training', category: 'training', token: 'secret' }],
+        nickname: '山野骑手',
+        title: '爬坡王',
+        phone_source: 'manual',
+        phone_verified: false,
+        avatar_url: 'https://temporary.example/avatar',
+        avatar_file_id: 'cloud://raw-avatar',
+        photos: [
+          {
+            url: 'https://temporary.example/training',
+            file_id: 'cloud://raw-training',
+            category: 'bike',
+            source: 'user',
+            token: 'secret',
+          },
+          { url: 'http://temporary.example/insecure', category: 'ride', source: 'user' },
+        ],
         access_token: 'secret',
         openid: 'private',
       },
@@ -411,11 +595,17 @@ describe('CloudRepository 管理员审批适配', () => {
     const result = await new CloudRepository(cloud).getReviewRegistration('r1');
     expectCall(callFunction, 'admin-review', { action: 'detail', registrationId: 'r1' });
     expect(result?.profile).toMatchObject({
-      avatarId: 'cloud://avatar',
-      photos: [{ id: 'cloud://training', category: 'training' }],
+      nickname: '山野骑手',
+      title: '爬坡王',
+      avatarId: 'https://temporary.example/avatar',
+      photos: [{ id: 'https://temporary.example/training', category: 'bike' }],
+      sensitiveStatus: { phoneSource: 'manual', phoneVerified: false },
     });
     expect(JSON.stringify(result)).not.toContain('secret');
     expect(JSON.stringify(result)).not.toContain('private');
+    expect(JSON.stringify(result)).not.toContain('cloud://');
+    expect(JSON.stringify(result)).not.toContain('http://');
+    expect(JSON.stringify(result)).not.toContain('id_number');
   });
 
   it('通过只发送服务端审批命令', async () => {
@@ -575,6 +765,49 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     expectCall(callFunction, 'profile', { action: 'getPhoneNumber', code: 'dynamic-code' });
   });
 
+  it('请求 owner-bound 媒体上传路径且不发送客户端身份', async () => {
+    const { cloud, callFunction } = cloudWith(
+      success({
+        cloud_path:
+          'profiles/0123456789abcdef0123456789abcdef/123e4567-e89b-42d3-a456-426614174000.jpg',
+      }),
+    );
+    await expect(new CloudRepository(cloud).getProfileMediaUploadPath()).resolves.toBe(
+      'profiles/0123456789abcdef0123456789abcdef/123e4567-e89b-42d3-a456-426614174000.jpg',
+    );
+    expectCall(callFunction, 'profile', { action: 'mediaUploadPath' });
+  });
+
+  it('上传完成后注册媒体记录且不发送客户端身份', async () => {
+    const { cloud, callFunction } = cloudWith(success({ registered: true }));
+    await expect(
+      new CloudRepository(cloud).registerProfileMedia(
+        'cloud://env/profiles/owner/photo.jpg',
+        'other',
+      ),
+    ).resolves.toBeUndefined();
+    expectCall(callFunction, 'profile', {
+      action: 'registerMedia',
+      fileId: 'cloud://env/profiles/owner/photo.jpg',
+      category: 'other',
+    });
+  });
+
+  it('删除失败后可上报 orphan 且不发送客户端身份', async () => {
+    const { cloud, callFunction } = cloudWith(success({ reported: true }));
+    await expect(
+      new CloudRepository(cloud).reportProfileMediaOrphan(
+        'cloud://env/profiles/owner/photo.jpg',
+        'other',
+      ),
+    ).resolves.toBeUndefined();
+    expectCall(callFunction, 'profile', {
+      action: 'reportOrphan',
+      fileId: 'cloud://env/profiles/owner/photo.jpg',
+      category: 'other',
+    });
+  });
+
   it('Profile 完整可选字段与照片分支均按真实值映射', async () => {
     const { cloud } = cloudWith(
       success({
@@ -729,6 +962,14 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
       { name: 'strava-auth', data: { action: 'status' } },
       { name: 'strava-auth', data: { action: 'ensureReady' } },
     ]);
+  });
+
+  it('取消浏览器授权只发送 cancelAuthorization action', async () => {
+    const { cloud, callFunction } = cloudWith(success({ cancelled: 1 }));
+
+    await new CloudRepository(cloud).cancelStravaAuthorization();
+
+    expectCall(callFunction, 'strava-auth', { action: 'cancelAuthorization' });
   });
 
   it('映射失败的 Strava readiness，保留可重试错误且不伪造快照', async () => {
@@ -900,6 +1141,19 @@ describe('MockRepository readiness 与显式报名命令', () => {
       reviewComment: '资料完整',
     });
   });
+
+  it('提供确定的自用骑行名片响应', async () => {
+    installStorage();
+    await expect(new MockRepository().getPersonalCapabilityCard()).resolves.toMatchObject({
+      state: 'ready',
+      profile: { displayName: expect.any(String) },
+      backgrounds: expect.any(Array),
+      summary: {
+        totalKm90d: expect.any(Number),
+        rides90d: expect.any(Number),
+      },
+    });
+  });
 });
 
 describe('CloudRepository 管理员活动写入契约', () => {
@@ -955,7 +1209,7 @@ describe('CloudRepository 管理员活动写入契约', () => {
     expect(JSON.stringify(callFunction.mock.calls[0][0])).not.toContain('created_by');
   });
 
-  it('已有活动只改标题和容量时原样保留封面与行程', async () => {
+  it('已有活动只改标题和容量时完整保留嵌套活动 DTO', async () => {
     const updated = { ...activity, title: '新标题', capacity: 25 };
     const { cloud, callFunction } = cloudWith(success(activity), success(updated));
     const repository = new CloudRepository(cloud);
@@ -966,6 +1220,8 @@ describe('CloudRepository 管理员活动写入契约', () => {
     const payload = (callFunction.mock.calls[1][0].data as any).activity;
     expect(payload.cover_image).toBe(activity.cover_image);
     expect(payload.schedule).toEqual(activity.schedule);
+    expect(payload.route.gpx_file_id).toBe(activity.route.gpx_file_id);
+    expect(payload.fee).toEqual(activity.fee);
     expect(payload.title).toBe('新标题');
     expect(payload.capacity).toBe(25);
   });
@@ -995,61 +1251,4 @@ describe('CloudRepository 管理员活动写入契约', () => {
     );
     expect(invalid.callFunction).not.toHaveBeenCalled();
   });
-});
-
-describe('CloudRepository 个人骑行名片适配', () => {
-  it('只发送 getCard 且白名单映射，不保留服务端敏感脏字段', async () => {
-    const dto = {
-      nickname: '骑手',
-      avatar_file_id: 'cloud://avatar',
-      photos: [
-        { file_id: 'cloud://ride', category: 'ride', source: 'upload', token: 'secret' },
-        { file_id: 'cloud://avatar', category: 'avatar', source: 'avatar' },
-      ],
-      period: { days: 90, label: '90天汇总' },
-      metrics: {
-        total_km: 321,
-        rides: 12,
-        longest_km: null,
-        elevation_m: 1800,
-        speed_kmh: 26.5,
-        latest_activity_at: null,
-        synced_at: '2026-09-29T04:00:00.000Z',
-        activities: [{ openid: 'private' }],
-      },
-      readiness: { state: 'ready', error: null },
-      phone: '13812345678',
-      access_token: 'secret',
-      openid: 'private',
-    };
-    const { cloud, callFunction } = cloudWith(success(dto));
-    const card = await new CloudRepository(cloud).getCapabilityCard();
-    expectCall(callFunction, 'profile', { action: 'getCard' });
-    expect(card).toMatchObject({
-      nickname: '骑手',
-      photos: [
-        { id: 'cloud://ride', category: 'ride', source: 'upload' },
-        { id: 'cloud://avatar', category: 'avatar', source: 'avatar' },
-      ],
-      metrics: { totalKm: 321, rides: 12, longestKm: null },
-      readiness: { state: 'ready', error: null },
-    });
-    const serialized = JSON.stringify(card);
-    expect(serialized).not.toContain('secret');
-    expect(serialized).not.toContain('private');
-    expect(serialized).not.toContain('13812345678');
-  });
-
-  it.each(['disconnected', 'authorizing', 'syncing', 'failed', 'ready'] as const)(
-    '映射名片 readiness %s 并允许无快照',
-    async (state) => {
-      const { cloud } = cloudWith(
-        success({ nickname: '', photos: [], metrics: null, readiness: { state, error: null } }),
-      );
-      await expect(new CloudRepository(cloud).getCapabilityCard()).resolves.toMatchObject({
-        metrics: null,
-        readiness: { state },
-      });
-    },
-  );
 });

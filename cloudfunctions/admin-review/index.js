@@ -1,5 +1,6 @@
 'use strict';
 
+const crypto = require('node:crypto');
 const cloud = require('wx-server-sdk');
 const {
   ok,
@@ -11,7 +12,7 @@ const {
   publicRegistration,
   reviewRegistration,
 } = require('./domain');
-const { adminCapabilityProfile } = require('./capability-card');
+const { adminCapabilityDetail } = require('./capability-card');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 
@@ -28,6 +29,24 @@ async function maybeGet(collection, id) {
     if (isNotFound(error)) return undefined;
     throw error;
   }
+}
+function profileMediaIds(profile) {
+  const ids = [profile && profile.avatar_file_id];
+  for (const item of Array.isArray(profile && profile.photos) ? profile.photos : [])
+    ids.push(item && item.file_id);
+  return [...new Set(ids.filter((id) => typeof id === 'string' && id))];
+}
+async function loadMediaRecords(ownerOpenid, profile) {
+  return (
+    await Promise.all(
+      profileMediaIds(profile).map((fileId) =>
+        maybeGet(
+          db.collection('profile_media'),
+          crypto.createHash('sha256').update(fileId).digest('hex'),
+        ),
+      ),
+    )
+  ).filter((record) => record && record.owner_openid === ownerOpenid);
 }
 async function requireAdmin(openid) {
   const admin = await maybeGet(db.collection('admins'), openid);
@@ -81,8 +100,8 @@ exports.main = async (event = {}) => {
         ),
       );
     }
-    await requireAdmin(openid);
     if (event.action === 'list') {
+      await requireAdmin(openid);
       if (typeof event.activityId !== 'string' || !event.activityId)
         fail('VALIDATION_FAILED', '缺少活动 ID');
       const condition = { activity_id: event.activityId };
@@ -102,15 +121,16 @@ exports.main = async (event = {}) => {
     if (event.action === 'detail') {
       if (typeof event.registrationId !== 'string' || !event.registrationId)
         fail('VALIDATION_FAILED', '缺少报名 ID');
-      const registration = await maybeGet(db.collection('registrations'), event.registrationId);
-      if (!registration) fail('REGISTRATION_NOT_FOUND', '报名不存在');
-      const profile = registration.openid
-        ? await maybeGet(db.collection('profiles'), registration.openid)
-        : undefined;
-      return ok({
-        ...publicRegistration(registration),
-        capability_profile: adminCapabilityProfile(profile),
+      const detail = await adminCapabilityDetail({
+        authorize: () => requireAdmin(openid),
+        loadRegistration: () => maybeGet(db.collection('registrations'), event.registrationId),
+        loadProfile: (profileOpenid) => maybeGet(db.collection('profiles'), profileOpenid),
+        loadMediaRecords,
+        getTempFileURL: (input) => cloud.getTempFileURL(input),
+        projectRegistration: publicRegistration,
       });
+      if (!detail) fail('REGISTRATION_NOT_FOUND', '报名不存在');
+      return ok(detail);
     }
     fail('UNKNOWN_ACTION', '未知操作');
   } catch (error) {

@@ -27,7 +27,11 @@ exports.main = async (event = {}) => {
       } catch (_error) {
         activity = undefined;
       }
-      if (!activity || activity.status !== 'published' || activity.is_deleted === true)
+      if (
+        !activity ||
+        !['published', 'finished'].includes(activity.status) ||
+        activity.is_deleted === true
+      )
         fail('ACTIVITY_NOT_FOUND', '活动不存在');
       return ok(publicActivity(activity));
     }

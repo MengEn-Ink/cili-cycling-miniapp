@@ -79,6 +79,7 @@ function cleanSchedule(value) {
       time: cleanText(item.time, '行程时间', 20, true),
       title: cleanText(item.title, '行程标题', 100, true),
       location: cleanText(item.location || '', '行程地点', 200),
+      remark: cleanText(item.remark || '', '行程备注', 500),
     };
   });
 }
@@ -128,12 +129,18 @@ function validateActivityInput(input, occupiedCount = 0) {
   if (!Number.isFinite(distance) || distance < 0 || !Number.isFinite(elevation) || elevation < 0)
     fail('VALIDATION_FAILED', '路线里程或爬升格式错误');
   const fee = input.fee;
-  const feeRemark =
-    typeof fee === 'string'
-      ? cleanText(fee, '费用说明', 500)
-      : fee && typeof fee === 'object' && !Array.isArray(fee)
-        ? cleanText(fee.remark || '', '费用说明', 500)
-        : fail('VALIDATION_FAILED', '费用说明格式错误');
+  let feeRemark;
+  let feeIncluded = [];
+  let feeExcluded = [];
+  if (typeof fee === 'string') {
+    feeRemark = cleanText(fee, '费用说明', 500);
+  } else if (fee && typeof fee === 'object' && !Array.isArray(fee)) {
+    feeRemark = cleanText(fee.remark || '', '费用说明', 500);
+    feeIncluded = cleanStringArray(fee.included || [], '费用包含');
+    feeExcluded = cleanStringArray(fee.excluded || [], '费用不含');
+  } else {
+    fail('VALIDATION_FAILED', '费用说明格式错误');
+  }
   return {
     title: cleanText(input.title, '活动标题', 100, true),
     cover_image: cleanText(input.cover_image || '', '封面', 500),
@@ -145,10 +152,11 @@ function validateActivityInput(input, occupiedCount = 0) {
       distance_km: distance,
       elevation_m: elevation,
       level: cleanText(route.level || '', '路线难度', 50),
+      gpx_file_id: cleanText(route.gpx_file_id || '', 'GPX 文件', 500),
     },
     notices: cleanStringArray(input.notices || [], '注意事项'),
     equipment: cleanStringArray(input.equipment || [], '装备要求'),
-    fee: { remark: feeRemark },
+    fee: { included: feeIncluded, excluded: feeExcluded, remark: feeRemark },
     capacity: input.capacity,
     signup_deadline: deadline,
     event_start: start,

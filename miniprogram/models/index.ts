@@ -13,11 +13,20 @@ export interface Activity {
   occupiedCount?: number;
   description: string;
   coverImage?: string;
-  route: { start: string; end: string; distanceKm: number; elevationM: number; level: string };
-  schedule: { time: string; title: string; location: string }[];
+  route: {
+    start: string;
+    end: string;
+    distanceKm: number;
+    elevationM: number;
+    level: string;
+    gpxFileId?: string;
+  };
+  schedule: { time: string; title: string; location: string; remark?: string }[];
   notices: string[];
   equipment: string[];
   fee: string;
+  feeIncluded?: string[];
+  feeExcluded?: string[];
 }
 export interface Profile {
   nickname: string;
@@ -71,34 +80,33 @@ export interface StravaReadiness {
   snapshot: StravaSnapshot | null;
   error: null | { code: string; message: string; retryable: boolean };
 }
+export type PersonalCapabilityCardState =
+  'ready' | 'partial' | 'syncing' | 'failed' | 'disconnected';
+export interface PersonalCapabilityCardBackground {
+  url: string;
+  source: 'user_photo' | 'avatar';
+  category: string;
+}
+export interface PersonalCapabilityCardSummary {
+  totalKm90d: number | null;
+  rides90d: number | null;
+  longestKm: number | null;
+  elevationM90d: number | null;
+  weightedAvgSpeedKmh: number | null;
+}
+export interface PersonalCapabilityCard {
+  state: PersonalCapabilityCardState;
+  generatedAt: string;
+  profile: { displayName: string; title: string };
+  backgrounds: PersonalCapabilityCardBackground[];
+  summary: PersonalCapabilityCardSummary;
+  coverage: StravaCoverage | null;
+  syncedAt: string | null;
+}
 export interface StravaConnection {
   connected: boolean;
   athleteName?: string;
   snapshot?: StravaSnapshot;
-}
-export interface CapabilityCardPhoto {
-  id: string;
-  category: string;
-  source: 'upload' | 'avatar';
-}
-export interface CapabilityCard {
-  nickname: string;
-  avatarId: string;
-  photos: CapabilityCardPhoto[];
-  period: { days: 90; label: string };
-  metrics: null | {
-    totalKm: number | null;
-    rides: number | null;
-    longestKm: number | null;
-    elevationM: number | null;
-    speedKmh: number | null;
-    latestActivityAt: string | null;
-    syncedAt: string | null;
-  };
-  readiness: {
-    state: StravaReadinessState;
-    error: null | { message: string; retryable: boolean };
-  };
 }
 export interface Registration {
   id: string;

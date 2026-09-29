@@ -5,6 +5,7 @@ import {
   pollStravaAuthorization,
   pollStravaReadiness,
   stravaReadinessMessage,
+  stravaSnapshotMeta,
 } from '../../services/strava-readiness-service';
 
 function disconnectedReadiness(): StravaReadiness {
@@ -55,6 +56,7 @@ Page({
     error: '',
     readiness: null as StravaReadiness | null,
     readinessMessage: '',
+    snapshotMeta: stravaSnapshotMeta(null),
     busyAction: null as null | 'connect' | 'retry' | 'disconnect',
   },
   onShow() {
@@ -67,11 +69,15 @@ Page({
     this.loadRequestId += 1;
   },
   setReadiness(readiness: StravaReadiness) {
-    this.setData({ readiness, readinessMessage: stravaReadinessMessage(readiness) });
+    this.setData({
+      readiness,
+      readinessMessage: stravaReadinessMessage(readiness),
+      snapshotMeta: stravaSnapshotMeta(readiness.snapshot),
+    });
   },
   async load() {
     const requestId = ++this.loadRequestId;
-    if (this.data.busyAction === 'retry') this.setData({ busyAction: null });
+    if (this.data.busyAction) this.setData({ busyAction: null });
     this.setData({ loading: true, error: '' });
     const status = await runPageTask(() => rideService.getStravaReadiness(), 'Strava 状态加载失败');
     if (requestId !== this.loadRequestId) return;
@@ -120,6 +126,7 @@ Page({
     this.setData({ busyAction: 'connect', error: '' });
     try {
       const state = await runPageTask(() => rideService.startStrava(), '无法发起 Strava 授权');
+      if (requestId !== this.loadRequestId) return;
       if (!state.data) {
         this.setData({ error: state.error });
         return;
@@ -128,10 +135,24 @@ Page({
       try {
         await copyAuthorizationUrl(state.data.authorizationUrl);
       } catch {
-        this.setData({ error: '授权链接复制失败，未开始浏览器授权，请重试。' });
+        if (requestId === this.loadRequestId)
+          this.setData({ error: '授权链接复制失败，未开始浏览器授权，请重试。' });
         return;
       }
-      if (!(await showBrowserGuide())) {
+      if (requestId !== this.loadRequestId) return;
+      const confirmed = await showBrowserGuide();
+      if (requestId !== this.loadRequestId) return;
+      if (!confirmed) {
+        const cancelled = await runPageTask(
+          () => rideService.cancelStravaAuthorization(),
+          '取消授权状态失败',
+        );
+        if (requestId !== this.loadRequestId) return;
+        if (cancelled.error) {
+          this.setData({ error: cancelled.error });
+          return;
+        }
+        this.setReadiness(disconnectedReadiness());
         this.setData({ error: '已取消浏览器授权；如需连接，请重新点击授权。' });
         return;
       }
@@ -144,7 +165,7 @@ Page({
         this.setReadiness({ ...disconnectedReadiness(), state: 'authorizing' });
       }
     } finally {
-      this.setData({ busyAction: null });
+      if (requestId === this.loadRequestId) this.setData({ busyAction: null });
     }
   },
   async retry() {

@@ -40,6 +40,18 @@ function createReadinessStore(db) {
         hasActiveOAuthState: Boolean(active.data && active.data.length),
       };
     },
+    async cancelAuthorization(openid, now) {
+      const cancelledAt = db.serverDate();
+      const result = await db
+        .collection('oauth_states')
+        .where({
+          openid,
+          expires_at: command.gt(now),
+          consumed_at: command.exists(false),
+        })
+        .update({ data: { consumed_at: cancelledAt, cancelled_at: cancelledAt } });
+      return { cancelled: result.stats?.updated || 0 };
+    },
     acquireSyncLease(openid, { leaseId, now, staleBefore, audit }) {
       return db.runTransaction(async (tx) => {
         const credential = await maybeGet(tx.collection('strava_credentials'), openid);

@@ -1,24 +1,92 @@
-<view class="page capability-page">
-  <view wx:if="{{isMock}}" class="mock-label">开发 MOCK 数据</view>
-  <state-view wx:if="{{loading}}" type="loading" text="正在聚合你的骑行名片"/>
-  <view wx:elif="{{error}}" class="card error-card"><view class="card-title">名片暂时不可用</view><view class="muted">{{error}}</view><button class="secondary" bindtap="load">重新加载</button></view>
-  <block wx:elif="{{card}}">
-    <view class="hero">
-      <swiper wx:if="{{card.photos.length > 1}}" class="hero-swiper" indicator-dots circular autoplay><swiper-item wx:for="{{card.photos}}" wx:key="id"><image class="hero-image" src="{{item.id}}" mode="aspectFill"/></swiper-item></swiper>
-      <image wx:elif="{{card.photos.length === 1}}" class="hero-image" src="{{card.photos[0].id}}" mode="aspectFill"/>
-      <view wx:else class="hero-empty"><text class="wheel">◉</text><text>添加骑行照片，点亮个人名片</text></view>
-      <view class="hero-shade"><view class="eyebrow">RIDER CAPABILITY</view><view class="nickname">{{card.nickname || '骑行者'}}</view><view class="scope">{{card.period.label}} · 仅本人可见</view></view>
+<view class="capability-page">
+  <state-view wx:if="{{loading}}" type="loading" text="正在生成骑行名片" />
+  <view wx:elif="{{error}}" class="load-state">
+    <view class="load-kicker">CARD OFFLINE</view>
+    <view class="load-title">名片暂时未能抵达</view>
+    <view class="load-copy">{{error}}</view>
+    <button class="retry-button" bindtap="load">重新加载</button>
+  </view>
+
+  <view wx:elif="{{card}}" class="card-stage">
+    <view class="rider-card">
+      <swiper
+        wx:if="{{card.hasBackgrounds}}"
+        class="card-visual"
+        autoplay="{{card.hasMultipleBackgrounds}}"
+        circular="{{card.hasMultipleBackgrounds}}"
+        interval="5200"
+        duration="520"
+        indicator-dots="{{card.hasMultipleBackgrounds}}"
+        indicator-color="rgba(255,255,255,.35)"
+        indicator-active-color="#ffffff"
+      >
+        <swiper-item wx:for="{{card.backgrounds}}" wx:key="url">
+          <image
+            class="card-photo"
+            src="{{item.url}}"
+            mode="aspectFill"
+            aria-hidden="true"
+            data-url="{{item.url}}"
+            data-index="{{index}}"
+            binderror="backgroundError"
+          />
+        </swiper-item>
+      </swiper>
+      <view wx:else class="card-visual alpine-fallback">
+        <view class="alpine-sun"></view>
+        <view class="ridge ridge-far"></view>
+        <view class="ridge ridge-near"></view>
+        <view class="fallback-mark">此里</view>
+      </view>
+
+      <view class="image-shade"></view>
+      <view class="card-topline">
+        <view class="brand-signature">此里</view>
+        <view class="strava-pill status-{{card.statusTone}}">
+          <text class="status-dot"></text>STRAVA {{card.statusLabel}}
+        </view>
+      </view>
+      <view class="identity-block">
+        <view class="rider-name">{{card.displayName}}</view>
+        <view class="rider-title" wx:if="{{card.title}}">{{card.title}}</view>
+        <view class="privacy-note">仅自己可见</view>
+      </view>
+
+      <view class="core-summary" wx:if="{{card.primaryMetrics.length}}">
+        <view class="core-metric" wx:for="{{card.primaryMetrics}}" wx:key="key">
+          <view class="core-value">{{item.value}}<text class="core-unit">{{item.unit}}</text></view>
+          <view class="core-label">{{item.label}}</view>
+        </view>
+      </view>
+      <view class="metric-sheet">
+        <view class="secondary-metrics" wx:if="{{card.secondaryMetrics.length}}">
+          <view class="metric-item" wx:for="{{card.secondaryMetrics}}" wx:key="key">
+            <view class="metric-value">{{item.value}}<text class="metric-unit">{{item.unit}}</text></view>
+            <view class="metric-label">{{item.label}}</view>
+          </view>
+        </view>
+        <view wx:elif="{{!card.primaryMetrics.length}}" class="metric-empty">骑行数据正在准备</view>
+        <view class="data-meta" wx:if="{{card.coverageText || card.syncedAtText}}">
+          <view wx:if="{{card.coverageText}}">{{card.coverageText}}</view>
+          <view wx:if="{{card.syncedAtText}}">{{card.syncedAtText}}</view>
+        </view>
+      </view>
     </view>
-    <view class="status-card status-{{card.readiness.state}}"><view class="status-dot"></view><view class="status-copy"><view class="status-title">{{card.status.title}}</view><view class="status-detail">{{card.status.detail}}</view></view><button class="status-action" bindtap="openStrava">{{card.status.action}}</button></view>
-    <view class="section-head"><view><view class="eyebrow green">LAST 90 DAYS</view><view class="section-title">骑行表现</view></view><view class="period-pill">90天汇总</view></view>
-    <view class="metric-grid">
-      <view class="metric featured"><text class="value">{{card.metrics && card.metrics.totalKm !== null ? card.metrics.totalKm : '--'}}</text><text class="unit">km</text><view class="label">总里程</view></view>
-      <view class="metric"><text class="value">{{card.metrics && card.metrics.rides !== null ? card.metrics.rides : '--'}}</text><text class="unit">次</text><view class="label">骑行次数</view></view>
-      <view class="metric"><text class="value">{{card.metrics && card.metrics.longestKm !== null ? card.metrics.longestKm : '--'}}</text><text class="unit">km</text><view class="label">最长骑行</view></view>
-      <view class="metric"><text class="value">{{card.metrics && card.metrics.elevationM !== null ? card.metrics.elevationM : '--'}}</text><text class="unit">m</text><view class="label">累计爬升</view></view>
-      <view class="metric"><text class="value">{{card.metrics && card.metrics.speedKmh !== null ? card.metrics.speedKmh : '--'}}</text><text class="unit">km/h</text><view class="label">距离加权均速</view></view>
+
+    <view class="card-caption">
+      <text>{{card.generatedAtText}}</text>
+      <text>数据只用于本人的骑行能力查看</text>
     </view>
-    <view class="card time-card"><view><view class="time-label">最近骑行</view><view class="time-value">{{card.latestActivityLabel}}</view></view><view><view class="time-label">快照同步</view><view class="time-value">{{card.syncedAtLabel}}</view></view></view>
-    <view class="footnote">数据来自用户授权后的 Strava 官方 API；仅展示后台聚合快照，字段缺失时显示 “--”。</view>
-  </block>
+
+    <button
+      wx:if="{{card.needsStravaRepair}}"
+      class="repair-button"
+      bindtap="repairStrava"
+    >前往 Strava 修复连接</button>
+    <button
+      wx:if="{{card.needsProfilePhoto}}"
+      class="photo-button"
+      bindtap="completeProfile"
+    >添加个人骑行照片</button>
+  </view>
 </view>

@@ -16,6 +16,8 @@ const pageRideService = vi.hoisted(() => ({
   getProfile: vi.fn(),
   getStravaReadiness: vi.fn(),
   ensureStravaReady: vi.fn(),
+  getReviewNotificationTemplateIds: vi.fn(),
+  requestReviewNotificationSubscription: vi.fn(),
   saveRegistration: vi.fn(),
   getRegistration: vi.fn(),
   getActivity: vi.fn(),
@@ -161,6 +163,8 @@ describe('报名页面门禁', () => {
   beforeEach(async () => {
     vi.resetModules();
     for (const value of Object.values(pageRideService)) value.mockReset();
+    pageRideService.getReviewNotificationTemplateIds.mockResolvedValue([]);
+    pageRideService.requestReviewNotificationSubscription.mockResolvedValue(undefined);
     vi.stubGlobal('wx', { navigateTo: vi.fn(), redirectTo: vi.fn() });
     vi.stubGlobal('Page', (definition: any) => {
       page = definition;

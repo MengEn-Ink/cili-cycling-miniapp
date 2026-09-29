@@ -66,6 +66,21 @@
       "installDependency": true
     },
     {
+      "name": "profile-media-cleanup",
+      "handler": "index.main",
+      "runtime": "Nodejs20.19",
+      "timeout": 30,
+      "memorySize": 256,
+      "installDependency": true,
+      "triggers": [
+        {
+          "name": "profile-media-cleanup-worker",
+          "type": "timer",
+          "config": "0 */10 * * * * *"
+        }
+      ]
+    },
+    {
       "name": "strava-auth",
       "handler": "index.main",
       "runtime": "Nodejs20.19",

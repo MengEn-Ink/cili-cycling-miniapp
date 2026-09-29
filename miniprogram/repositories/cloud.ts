@@ -1,6 +1,7 @@
 import type {
   Activity,
-  CapabilityCard,
+  PersonalCapabilityCard,
+  PersonalCapabilityCardState,
   Profile,
   ProfileUpdate,
   Registration,
@@ -64,6 +65,9 @@ function dateText(value: unknown): string {
   if (typeof value === 'string') return value;
   if (value instanceof Date && Number.isFinite(value.getTime())) return value.toISOString();
   return '';
+}
+function httpsUrl(value: unknown): string {
+  return typeof value === 'string' && /^https:\/\/[^\s/]+(?:\/[^\s]*)?$/i.test(value) ? value : '';
 }
 function requiredId(value: unknown, label: string): string {
   if (typeof value !== 'string' || !value)
@@ -130,11 +134,22 @@ function mapActivity(raw: unknown): Activity {
       distanceKm: typeof value.route?.distance_km === 'number' ? value.route.distance_km : 0,
       elevationM: typeof value.route?.elevation_m === 'number' ? value.route.elevation_m : 0,
       level: typeof value.route?.level === 'string' ? value.route.level : '',
+      gpxFileId: typeof value.route?.gpx_file_id === 'string' ? value.route.gpx_file_id : '',
     },
     schedule: Array.isArray(value.schedule) ? value.schedule : [],
     notices: Array.isArray(value.notices) ? value.notices : [],
     equipment: Array.isArray(value.equipment) ? value.equipment : [],
     fee: typeof fee === 'string' ? fee : typeof fee?.remark === 'string' ? fee.remark : '',
+    ...(isRecord(fee)
+      ? {
+          feeIncluded: Array.isArray(fee.included)
+            ? fee.included.filter((item: unknown) => typeof item === 'string')
+            : [],
+          feeExcluded: Array.isArray(fee.excluded)
+            ? fee.excluded.filter((item: unknown) => typeof item === 'string')
+            : [],
+        }
+      : {}),
   };
 }
 function mapProfile(raw: unknown): Profile {
@@ -170,57 +185,70 @@ function mapProfile(raw: unknown): Profile {
     },
   };
 }
-function mapCapabilityCard(raw: unknown): CapabilityCard {
+function mapPersonalCapabilityCard(raw: unknown): PersonalCapabilityCard {
   const value = expectRecord(raw);
-  const readiness = expectRecord(value.readiness);
-  const states: StravaReadinessState[] = [
-    'disconnected',
-    'authorizing',
-    'syncing',
+  const states: PersonalCapabilityCardState[] = [
     'ready',
+    'partial',
+    'syncing',
     'failed',
+    'disconnected',
   ];
-  if (typeof value.nickname !== 'string' || !states.includes(readiness.state))
+  if (!states.includes(value.state)) return invalidResponse();
+
+  const generatedAt = strictDateText(value.generated_at);
+  const profile = expectRecord(value.profile);
+  if (typeof profile.display_name !== 'string' || typeof profile.title !== 'string')
     return invalidResponse();
-  const rawPhotos = Array.isArray(value.photos) ? value.photos : [];
-  const photos = rawPhotos
-    .filter(isRecord)
-    .map((photo) => ({
-      id: typeof photo.file_id === 'string' ? photo.file_id : '',
-      category: typeof photo.category === 'string' ? photo.category : '',
-      source: photo.source === 'avatar' ? ('avatar' as const) : ('upload' as const),
-    }))
-    .filter((photo) => photo.id)
-    .slice(0, 3);
-  const rawMetrics = isRecord(value.metrics) ? value.metrics : null;
-  const metric = (key: string) => (rawMetrics ? finiteNumberOrNull(rawMetrics[key]) : null);
-  const rawError = isRecord(readiness.error) ? readiness.error : null;
+
+  if (!Array.isArray(value.backgrounds)) return invalidResponse();
+  const backgrounds = value.backgrounds.map((item: unknown) => {
+    const background = expectRecord(item);
+    const url = httpsUrl(background.url);
+    if (
+      !url ||
+      !['user_photo', 'avatar'].includes(background.source) ||
+      typeof background.category !== 'string'
+    )
+      return invalidResponse();
+    return {
+      url,
+      source: background.source as 'user_photo' | 'avatar',
+      category: background.category,
+    };
+  });
+
+  const summary = expectRecord(value.summary);
+  const coverageRaw = value.coverage;
+  let coverage = null;
+  if (coverageRaw !== null) {
+    const record = expectRecord(coverageRaw);
+    if (typeof record.complete !== 'boolean') return invalidResponse();
+    coverage = {
+      from: strictDateText(record.from),
+      to: strictDateText(record.to),
+      complete: record.complete,
+    };
+  }
+  const syncedAt = value.synced_at === null ? null : strictDateText(value.synced_at);
+
   return {
-    nickname: value.nickname,
-    avatarId: typeof value.avatar_file_id === 'string' ? value.avatar_file_id : '',
-    photos,
-    period: { days: 90, label: '90天汇总' },
-    metrics: rawMetrics
-      ? {
-          totalKm: metric('total_km'),
-          rides: metric('rides'),
-          longestKm: metric('longest_km'),
-          elevationM: metric('elevation_m'),
-          speedKmh: metric('speed_kmh'),
-          latestActivityAt: nullableDateText(rawMetrics.latest_activity_at ?? null),
-          syncedAt: nullableDateText(rawMetrics.synced_at ?? null),
-        }
-      : null,
-    readiness: {
-      state: readiness.state,
-      error: rawError
-        ? {
-            message:
-              typeof rawError.message === 'string' ? rawError.message : 'Strava 数据准备失败',
-            retryable: rawError.retryable === true,
-          }
-        : null,
+    state: value.state,
+    generatedAt,
+    profile: {
+      displayName: profile.display_name,
+      title: profile.title,
     },
+    backgrounds,
+    summary: {
+      totalKm90d: nullableFiniteNumber(summary.total_km_90d),
+      rides90d: nullableFiniteNumber(summary.rides_90d),
+      longestKm: nullableFiniteNumber(summary.longest_km),
+      elevationM90d: nullableFiniteNumber(summary.elevation_m_90d),
+      weightedAvgSpeedKmh: nullableFiniteNumber(summary.weighted_avg_speed_kmh),
+    },
+    coverage,
+    syncedAt,
   };
 }
 function mapRegistration(raw: unknown): Registration {
@@ -244,8 +272,13 @@ function mapRegistration(raw: unknown): Registration {
     activityId: value.activity_id,
     status: value.status,
     profile: {
-      nickname: typeof snapshot.nickname === 'string' ? snapshot.nickname : '',
-      title: '',
+      nickname:
+        typeof capability.nickname === 'string'
+          ? capability.nickname
+          : typeof snapshot.nickname === 'string'
+            ? snapshot.nickname
+            : '',
+      title: typeof capability.title === 'string' ? capability.title : '',
       realName: typeof snapshot.real_name_masked === 'string' ? snapshot.real_name_masked : '',
       phone: typeof snapshot.phone_masked === 'string' ? snapshot.phone_masked : '',
       gender: '',
@@ -255,12 +288,21 @@ function mapRegistration(raw: unknown): Registration {
         ? capability.photos
             .filter(isRecord)
             .map((photo) => ({
-              id: typeof photo.file_id === 'string' ? photo.file_id : '',
+              id: httpsUrl(photo.url),
               category: typeof photo.category === 'string' ? photo.category : '',
             }))
             .filter((photo) => photo.id)
         : [],
-      avatarId: typeof capability.avatar_file_id === 'string' ? capability.avatar_file_id : '',
+      avatarId: httpsUrl(capability.avatar_url),
+      sensitiveStatus: {
+        realName: typeof snapshot.real_name_masked === 'string' && !!snapshot.real_name_masked,
+        phone: typeof snapshot.phone_masked === 'string' && !!snapshot.phone_masked,
+        phoneVerified: capability.phone_verified === true,
+        phoneSource: ['wechat', 'manual', 'legacy'].includes(String(capability.phone_source))
+          ? (capability.phone_source as 'wechat' | 'manual' | 'legacy')
+          : '',
+        emergencyPhone: false,
+      },
     },
     bikeMode: options.bike_mode === 'rent' ? '租车' : '自带车',
     experience:
@@ -418,6 +460,7 @@ function activityPayload(value: ActivityInput) {
           time: item.time,
           title: item.title,
           location: item.location,
+          ...(typeof item.remark === 'string' ? { remark: item.remark } : {}),
         }))
       : [],
     route: {
@@ -426,6 +469,7 @@ function activityPayload(value: ActivityInput) {
       distance_km: value.route?.distanceKm,
       elevation_m: value.route?.elevationM,
       level: typeof value.route?.level === 'string' ? value.route.level : '',
+      ...(typeof value.route?.gpxFileId === 'string' ? { gpx_file_id: value.route.gpxFileId } : {}),
     },
     notices: Array.isArray(value.notices)
       ? value.notices.filter((item) => typeof item === 'string')
@@ -433,7 +477,20 @@ function activityPayload(value: ActivityInput) {
     equipment: Array.isArray(value.equipment)
       ? value.equipment.filter((item) => typeof item === 'string')
       : [],
-    fee: typeof value.fee === 'string' ? value.fee : '',
+    fee:
+      Array.isArray(value.feeIncluded) || Array.isArray(value.feeExcluded)
+        ? {
+            included: Array.isArray(value.feeIncluded)
+              ? value.feeIncluded.filter((item) => typeof item === 'string')
+              : [],
+            excluded: Array.isArray(value.feeExcluded)
+              ? value.feeExcluded.filter((item) => typeof item === 'string')
+              : [],
+            remark: typeof value.fee === 'string' ? value.fee : '',
+          }
+        : typeof value.fee === 'string'
+          ? value.fee
+          : '',
     capacity: value.capacity,
     signup_deadline: value.deadline,
     event_start: value.startAt,
@@ -501,6 +558,34 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
       }),
     );
   }
+  async getReviewNotificationTemplateIds(): Promise<string[]> {
+    const value = expectRecord(
+      await this.call('notification-send', { action: 'subscription-config' }),
+    );
+    if (
+      !Array.isArray(value.template_ids) ||
+      !value.template_ids.every((item) => typeof item === 'string' && item.length > 0)
+    )
+      return invalidResponse();
+    return value.template_ids;
+  }
+  async requestReviewNotificationSubscription(templateIds: string[]): Promise<void> {
+    const tmplIds = templateIds
+      .filter((item) => typeof item === 'string' && item.length > 0)
+      .filter((item, index, values) => values.indexOf(item) === index);
+    if (!tmplIds.length) return;
+    const request = typeof wx !== 'undefined' ? wx.requestSubscribeMessage : undefined;
+    if (typeof request !== 'function')
+      throw new CloudRepositoryError('SUBSCRIPTION_UNAVAILABLE', '当前环境不支持订阅消息');
+    await new Promise<void>((resolve, reject) => {
+      request({
+        tmplIds,
+        success: () => resolve(),
+        fail: () =>
+          reject(new CloudRepositoryError('SUBSCRIPTION_REQUEST_FAILED', '订阅消息授权请求失败')),
+      });
+    });
+  }
   async updateRegistration(id: string, status: RegistrationStatus, comment?: string) {
     if (status === 'cancelled') return this.cancelRegistration(id);
     if (status !== 'approved' && status !== 'rejected')
@@ -545,9 +630,37 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
   async getProfile() {
     return mapProfile(await this.call('profile', { action: 'get' }));
   }
-  async getCapabilityCard() {
-    // 自助名片请求不携带 openid，身份完全由云函数 WXContext 决定。
-    return mapCapabilityCard(await this.call('profile', { action: 'getCard' }));
+  async getProfileMediaUploadPath() {
+    const value = expectRecord(await this.call('profile', { action: 'mediaUploadPath' }));
+    if (
+      typeof value.cloud_path !== 'string' ||
+      !/^profiles\/[a-f0-9]{32}\/[a-f0-9-]{36}\.jpg$/i.test(value.cloud_path)
+    )
+      return invalidResponse();
+    return value.cloud_path;
+  }
+  async getPersonalCapabilityCard() {
+    return mapPersonalCapabilityCard(await this.call('profile', { action: 'capabilityCard' }));
+  }
+  async registerProfileMedia(fileId: string, category: 'ride' | 'bike' | 'other') {
+    const value = expectRecord(
+      await this.call('profile', {
+        action: 'registerMedia',
+        fileId: requiredId(fileId, '媒体文件 ID'),
+        category,
+      }),
+    );
+    if (value.registered !== true) return invalidResponse();
+  }
+  async reportProfileMediaOrphan(fileId: string, category: 'ride' | 'bike' | 'other') {
+    const value = expectRecord(
+      await this.call('profile', {
+        action: 'reportOrphan',
+        fileId: requiredId(fileId, '媒体文件 ID'),
+        category,
+      }),
+    );
+    if (value.reported !== true) return invalidResponse();
   }
   async updateProfile(profile: ProfileUpdate) {
     const data: Record<string, unknown> = { action: 'update' };
@@ -593,6 +706,9 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     )
       return invalidResponse();
     return { authorizationUrl: value.authorization_url, expiresAt: value.expires_at };
+  }
+  async cancelStravaAuthorization() {
+    await this.call('strava-auth', { action: 'cancelAuthorization' });
   }
   async syncStrava() {
     return mapStrava(await this.call('strava-auth', { action: 'sync' }));
