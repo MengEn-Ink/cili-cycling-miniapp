@@ -7,8 +7,8 @@ page {
   --cili-orange: #d55b1f;
   --cili-red: #c82018;
   min-height: 100%;
-  background: #0b0b0c;
-  color: #f7f7f5;
+  background: #f5f7f2;
+  color: #17231e;
   font-size: 28rpx;
   line-height: 1.55;
 }
@@ -145,7 +145,7 @@ textarea {
 }
 
 .btn {
-  background: linear-gradient(115deg, #c82018, #d55b1f) !important;
+  background: linear-gradient(115deg, #c82018, #a94416) !important;
   color: #f7f7f5 !important;
 }
 

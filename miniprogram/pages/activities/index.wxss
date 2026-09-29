@@ -2,7 +2,8 @@
   overflow: hidden;
   padding-top: 28rpx;
   padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
-  background: radial-gradient(circle at 100% 8%, rgba(213, 91, 31, 0.12), transparent 30%);
+  background: radial-gradient(circle at 100% 8%, rgba(213, 91, 31, 0.12), transparent 30%), #0b0b0c;
+  color: #f7f7f5;
 }
 
 .brand-lockup {

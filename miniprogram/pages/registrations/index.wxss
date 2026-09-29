@@ -118,7 +118,7 @@ page {
   align-items: flex-start;
 }
 .date {
-  color: #d55b1f;
+  color: #f38a50;
   font-size: 24rpx;
   font-weight: 900;
   letter-spacing: 1rpx;

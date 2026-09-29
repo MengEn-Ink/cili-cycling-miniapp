@@ -145,7 +145,7 @@ page {
 }
 .edit-button {
   min-width: 96rpx;
-  min-height: 62rpx;
+  min-height: 88rpx;
   margin: 0;
   padding: 0 18rpx;
   border: 1rpx solid #737377;
@@ -154,7 +154,7 @@ page {
   color: #f7f7f5;
   font-size: 23rpx;
   font-weight: 800;
-  line-height: 62rpx;
+  line-height: 88rpx;
 }
 .progress-head {
   display: flex;
@@ -248,7 +248,7 @@ page {
   border-radius: 4rpx !important;
 }
 .btn {
-  background: #d55b1f !important;
+  background: #a94416 !important;
 }
 .secondary {
   border-color: #6b6b6f;

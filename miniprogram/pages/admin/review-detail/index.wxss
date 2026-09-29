@@ -247,7 +247,7 @@ page {
   margin: 0 28rpx;
   padding: 18rpx 0 26rpx;
   border-top: 1rpx solid #444448;
-  color: #77777b;
+  color: #a8a8ad;
   letter-spacing: 0;
   overflow-wrap: anywhere;
 }

@@ -2,6 +2,7 @@
   min-height: 100vh;
   padding-bottom: calc(168rpx + env(safe-area-inset-bottom));
   background: #0b0b0c;
+  color: #f7f7f5;
 }
 
 .detail-hero {
@@ -96,8 +97,8 @@
   min-width: 0;
   padding: 24rpx 8rpx;
   background: #18181a;
-  color: #7e7e84;
-  font-size: 19rpx;
+  color: #a8a8ad;
+  font-size: 24rpx;
   text-align: center;
 }
 

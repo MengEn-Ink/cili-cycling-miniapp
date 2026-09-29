@@ -119,8 +119,8 @@
 
 .metric-unit {
   margin-top: 2rpx;
-  color: #74747a;
-  font-size: 18rpx;
+  color: #a8a8ad;
+  font-size: 24rpx;
   font-weight: 700;
   letter-spacing: 1rpx;
 }
