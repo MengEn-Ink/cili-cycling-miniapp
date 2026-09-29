@@ -1,0 +1,8 @@
+{
+  "marker": "E2E_RESULT:P0_READY_JOURNEY_REJECT",
+  "registrationId": "reg_test_reject",
+  "statuses": ["pending", "approved", "cancelled", "pending"],
+  "occupiedCounts": [3, 4, 4, 3, 4],
+  "access_token": "MUST_NOT_APPEAR_IN_OUTPUT",
+  "audits": []
+}

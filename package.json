@@ -11,6 +11,7 @@
     "cloud:install": "npm run cloud:prepare && npm ci --prefix cloudfunctions/shared && npm ci --prefix cloudfunctions/auth && npm ci --prefix cloudfunctions/activity-read && npm ci --prefix cloudfunctions/registration && npm ci --prefix cloudfunctions/admin-review && npm ci --prefix cloudfunctions/profile && npm ci --prefix cloudfunctions/strava-auth && npm ci --prefix cloudfunctions/strava-callback",
     "test:cloud": "npm --prefix cloudfunctions/shared test && npm --prefix cloudfunctions/auth test && npm --prefix cloudfunctions/activity-read test && npm --prefix cloudfunctions/registration test && npm --prefix cloudfunctions/admin-review test && npm --prefix cloudfunctions/profile test && node --test cloudfunctions/strava-shared/core.node-test.js cloudfunctions/strava-shared/api.node-test.js && npm --prefix cloudfunctions/strava-auth test && npm --prefix cloudfunctions/strava-callback test",
     "test:bootstrap": "node --test scripts/bootstrap-cloudbase.node-test.mjs",
+    "verify:journey-evidence": "node scripts/verify-journey-evidence.mjs",
     "cloudbase:plan": "node scripts/bootstrap-cloudbase.mjs",
     "cloudbase:apply": "node scripts/bootstrap-cloudbase.mjs --apply",
     "cloudbase:verify": "node scripts/bootstrap-cloudbase.mjs --verify",
