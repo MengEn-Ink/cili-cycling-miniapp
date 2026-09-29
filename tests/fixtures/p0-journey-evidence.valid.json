@@ -1,33 +1,33 @@
 {
   "marker": "E2E_RESULT:P0_READY_JOURNEY_001",
-  "subjectAlias": "user_test_001",
-  "registrationId": "reg_test_001",
+  "subjectAlias": "user_test_P0_READY_JOURNEY_001",
+  "registrationId": "reg_test_P0_READY_JOURNEY_001",
   "statuses": ["pending", "approved", "cancelled", "pending"],
   "occupiedCounts": [3, 4, 4, 3, 4],
   "audits": [
     {
       "action": "strava.sync.succeeded",
-      "target_id": "user_test_001",
+      "target_id": "user_test_P0_READY_JOURNEY_001",
       "created_at": "2026-09-29T04:00:00.000Z"
     },
     {
       "action": "registration.submitted",
-      "target_id": "reg_test_001",
+      "target_id": "reg_test_P0_READY_JOURNEY_001",
       "created_at": "2026-09-29T04:01:00.000Z"
     },
     {
       "action": "registration.approved",
-      "target_id": "reg_test_001",
+      "target_id": "reg_test_P0_READY_JOURNEY_001",
       "created_at": "2026-09-29T04:02:00.000Z"
     },
     {
       "action": "registration.cancelled",
-      "target_id": "reg_test_001",
+      "target_id": "reg_test_P0_READY_JOURNEY_001",
       "created_at": "2026-09-29T04:03:00.000Z"
     },
     {
       "action": "registration.resubmitted",
-      "target_id": "reg_test_001",
+      "target_id": "reg_test_P0_READY_JOURNEY_001",
       "created_at": "2026-09-29T04:04:00.000Z"
     }
   ]

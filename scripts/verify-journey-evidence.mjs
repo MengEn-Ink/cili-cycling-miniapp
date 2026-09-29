@@ -23,10 +23,9 @@ const FORBIDDEN_NORMALIZED_KEYS = new Set([
   'oauthstate',
   'ciphertext',
 ]);
-const FORBIDDEN_STRING =
-  /(phone|open[_\s-]?id|id[_\s-]?number|access[_\s-]?token|refresh[_\s-]?token|cipher[_\s-]?text|oauth[_\s-]?code|oauth[_\s-]?state)/i;
-const REGISTRATION_ALIAS = /^reg_test_[A-Za-z0-9][A-Za-z0-9_-]*$/;
-const USER_ALIAS = /^user_test_[A-Za-z0-9][A-Za-z0-9_-]*$/;
+const MARKER_PREFIX = 'E2E_RESULT:';
+const PROVIDER_IDENTIFIER = /^ou_[A-Za-z0-9_-]+$/i;
+const RAW_HASH = /^[a-f0-9]{32,}$/i;
 const EXPECTED_STATUSES = ['pending', 'approved', 'cancelled', 'pending'];
 const REQUIRED_AUDIT_ACTIONS = [
   'strava.sync.succeeded',
@@ -37,6 +36,8 @@ const REQUIRED_AUDIT_ACTIONS = [
 ];
 
 class EvidenceError extends Error {}
+class DuplicateKeyError extends Error {}
+class JsonScanError extends Error {}
 
 function fail(reason) {
   throw new EvidenceError(reason);
@@ -46,23 +47,158 @@ function normalizeKeyName(key) {
   return key.replace(/[^a-z0-9]/gi, '').toLowerCase();
 }
 
-function containsForbiddenData(value) {
-  if (typeof value === 'string') {
-    return FORBIDDEN_STRING.test(value);
-  }
-
+function containsForbiddenKey(value) {
   if (Array.isArray(value)) {
-    return value.some(containsForbiddenData);
+    return value.some(containsForbiddenKey);
   }
 
   if (value !== null && typeof value === 'object') {
     return Object.entries(value).some(
       ([key, nestedValue]) =>
-        FORBIDDEN_NORMALIZED_KEYS.has(normalizeKeyName(key)) || containsForbiddenData(nestedValue),
+        FORBIDDEN_NORMALIZED_KEYS.has(normalizeKeyName(key)) || containsForbiddenKey(nestedValue),
     );
   }
 
   return false;
+}
+
+function skipWhitespace(source, index) {
+  while (index < source.length && /\s/.test(source[index])) {
+    index += 1;
+  }
+  return index;
+}
+
+function scanJsonString(source, start) {
+  if (source[start] !== '"') {
+    throw new JsonScanError();
+  }
+
+  let decoded = '';
+  for (let index = start + 1; index < source.length; index += 1) {
+    const character = source[index];
+    if (character === '"') {
+      return { value: decoded, next: index + 1 };
+    }
+
+    if (character === '\\') {
+      index += 1;
+      const escape = source[index];
+      const simpleEscapes = {
+        '"': '"',
+        '\\': '\\',
+        '/': '/',
+        b: '\b',
+        f: '\f',
+        n: '\n',
+        r: '\r',
+        t: '\t',
+      };
+
+      if (escape === 'u') {
+        const codePoint = source.slice(index + 1, index + 5);
+        if (!/^[a-f0-9]{4}$/i.test(codePoint)) {
+          throw new JsonScanError();
+        }
+        decoded += String.fromCharCode(Number.parseInt(codePoint, 16));
+        index += 4;
+      } else if (Object.hasOwn(simpleEscapes, escape)) {
+        decoded += simpleEscapes[escape];
+      } else {
+        throw new JsonScanError();
+      }
+      continue;
+    }
+
+    if (character.charCodeAt(0) < 0x20) {
+      throw new JsonScanError();
+    }
+    decoded += character;
+  }
+
+  throw new JsonScanError();
+}
+
+function scanJsonObject(source, start) {
+  const keys = new Set();
+  let index = skipWhitespace(source, start + 1);
+  if (source[index] === '}') {
+    return index + 1;
+  }
+
+  while (index < source.length) {
+    const keyToken = scanJsonString(source, index);
+    if (keys.has(keyToken.value)) {
+      throw new DuplicateKeyError();
+    }
+    keys.add(keyToken.value);
+
+    index = skipWhitespace(source, keyToken.next);
+    if (source[index] !== ':') {
+      throw new JsonScanError();
+    }
+
+    index = scanJsonValue(source, skipWhitespace(source, index + 1));
+    index = skipWhitespace(source, index);
+    if (source[index] === '}') {
+      return index + 1;
+    }
+    if (source[index] !== ',') {
+      throw new JsonScanError();
+    }
+    index = skipWhitespace(source, index + 1);
+  }
+
+  throw new JsonScanError();
+}
+
+function scanJsonArray(source, start) {
+  let index = skipWhitespace(source, start + 1);
+  if (source[index] === ']') {
+    return index + 1;
+  }
+
+  while (index < source.length) {
+    index = scanJsonValue(source, index);
+    index = skipWhitespace(source, index);
+    if (source[index] === ']') {
+      return index + 1;
+    }
+    if (source[index] !== ',') {
+      throw new JsonScanError();
+    }
+    index = skipWhitespace(source, index + 1);
+  }
+
+  throw new JsonScanError();
+}
+
+function scanJsonValue(source, start) {
+  const index = skipWhitespace(source, start);
+  if (source[index] === '{') {
+    return scanJsonObject(source, index);
+  }
+  if (source[index] === '[') {
+    return scanJsonArray(source, index);
+  }
+  if (source[index] === '"') {
+    return scanJsonString(source, index).next;
+  }
+
+  const primitive = source
+    .slice(index)
+    .match(/^(?:true|false|null|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)/)?.[0];
+  if (primitive === undefined) {
+    throw new JsonScanError();
+  }
+  return index + primitive.length;
+}
+
+function assertNoDuplicateKeys(source) {
+  const end = skipWhitespace(source, scanJsonValue(source, 0));
+  if (end !== source.length) {
+    throw new JsonScanError();
+  }
 }
 
 function arraysEqual(actual, expected) {
@@ -149,17 +285,24 @@ function validateEvidenceSchema(evidence) {
 }
 
 function validateSyntheticAliases(evidence) {
-  if (!USER_ALIAS.test(evidence.subjectAlias)) {
+  const runId = evidence.marker.slice(MARKER_PREFIX.length);
+  if (PROVIDER_IDENTIFIER.test(runId) || RAW_HASH.test(runId)) {
     fail('导出标识符必须使用合成别名');
   }
 
-  if (!REGISTRATION_ALIAS.test(evidence.registrationId)) {
+  const expectedSubjectAlias = `user_test_${runId}`;
+  const expectedRegistrationId = `reg_test_${runId}`;
+  if (
+    evidence.subjectAlias !== expectedSubjectAlias ||
+    evidence.registrationId !== expectedRegistrationId
+  ) {
     fail('导出标识符必须使用合成别名');
   }
 
   if (
     evidence.audits.some(
-      (audit) => !REGISTRATION_ALIAS.test(audit.target_id) && !USER_ALIAS.test(audit.target_id),
+      (audit) =>
+        audit.target_id !== expectedRegistrationId && audit.target_id !== expectedSubjectAlias,
     )
   ) {
     fail('导出标识符必须使用合成别名');
@@ -168,21 +311,12 @@ function validateSyntheticAliases(evidence) {
   const registrationAudits = evidence.audits.filter((audit) =>
     audit.action.startsWith('registration.'),
   );
-  if (
-    registrationAudits.some(
-      (audit) =>
-        !REGISTRATION_ALIAS.test(audit.target_id) || audit.target_id !== evidence.registrationId,
-    )
-  ) {
+  if (registrationAudits.some((audit) => audit.target_id !== expectedRegistrationId)) {
     fail('导出标识符必须使用合成别名');
   }
 
   const syncAudits = evidence.audits.filter((audit) => audit.action === 'strava.sync.succeeded');
-  if (
-    syncAudits.some(
-      (audit) => !USER_ALIAS.test(audit.target_id) || audit.target_id !== evidence.subjectAlias,
-    )
-  ) {
+  if (syncAudits.some((audit) => audit.target_id !== expectedSubjectAlias)) {
     fail('导出标识符必须使用合成别名');
   }
 }
@@ -190,15 +324,18 @@ function validateSyntheticAliases(evidence) {
 function validateEvidence(evidence) {
   validateEvidenceSchema(evidence);
 
-  if (containsForbiddenData(evidence)) {
-    fail('发现敏感字段或敏感字符串');
+  if (containsForbiddenKey(evidence)) {
+    fail('发现敏感字段');
+  }
+
+  if (
+    !evidence.marker.startsWith(MARKER_PREFIX) ||
+    evidence.marker.length === MARKER_PREFIX.length
+  ) {
+    fail('marker 必须以 E2E_RESULT: 开头');
   }
 
   validateSyntheticAliases(evidence);
-
-  if (!evidence.marker.startsWith('E2E_RESULT:')) {
-    fail('marker 必须以 E2E_RESULT: 开头');
-  }
 
   if (!arraysEqual(evidence.statuses, EXPECTED_STATUSES)) {
     fail('状态顺序不符合 P0 旅程');
@@ -247,8 +384,12 @@ async function main() {
 
   let evidence;
   try {
+    assertNoDuplicateKeys(source);
     evidence = JSON.parse(source);
-  } catch {
+  } catch (error) {
+    if (error instanceof DuplicateKeyError) {
+      fail('JSON 包含重复字段');
+    }
     fail('无法解析证据 JSON');
   }
 

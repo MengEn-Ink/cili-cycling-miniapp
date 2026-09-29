@@ -44,16 +44,32 @@ const invalidExportedIdentifiers = [
 ];
 
 async function runVerifier(evidence) {
+  return runVerifierSource(JSON.stringify(evidence));
+}
+
+async function runVerifierSource(source) {
   const directory = await mkdtemp(join(tmpdir(), 'ride-event-evidence-'));
   const fixturePath = join(directory, 'evidence.json');
 
   try {
-    writeFileSync(fixturePath, JSON.stringify(evidence));
+    writeFileSync(fixturePath, source);
     return spawnSync(process.execPath, [verifierPath, fixturePath], {
       encoding: 'utf8',
     });
   } finally {
     rmSync(directory, { recursive: true, force: true });
+  }
+}
+
+function setAliasesForRunId(evidence, runId) {
+  evidence.marker = `E2E_RESULT:${runId}`;
+  evidence.subjectAlias = `user_test_${runId}`;
+  evidence.registrationId = `reg_test_${runId}`;
+
+  for (const audit of evidence.audits) {
+    audit.target_id = audit.action.startsWith('registration.')
+      ? evidence.registrationId
+      : evidence.subjectAlias;
   }
 }
 
@@ -63,6 +79,16 @@ function assertRejectedWithoutSentinel(result, sentinel) {
   assert.doesNotMatch(output, new RegExp(sentinel));
   assert.equal(result.status, 1, `expected rejection, got output: ${output}`);
   assert.match(result.stderr, /P0 真实旅程证据校验失败/);
+}
+
+function assertDuplicateRejectedWithoutSentinels(result, sentinels) {
+  const output = `${result.stdout}${result.stderr}`;
+
+  for (const sentinel of sentinels) {
+    assert.equal(output.includes(sentinel), false);
+  }
+  assert.equal(result.status, 1, `expected duplicate-key rejection, got output: ${output}`);
+  assert.match(result.stderr, /JSON 包含重复字段/);
 }
 
 test('accepts the documented subjectAlias, registrationId, and target_id schema', async () => {
@@ -80,6 +106,118 @@ test('requires a root subjectAlias', async () => {
 
   assert.equal(result.status, 1, result.stdout);
   assert.match(result.stderr, /P0 真实旅程证据校验失败/);
+});
+
+test('accepts a legal marker containing the word HEADPHONE', async () => {
+  const evidence = structuredClone(validEvidence);
+  setAliasesForRunId(evidence, 'HEADPHONE_RIDE_001');
+
+  const result = await runVerifier(evidence);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /P0 真实旅程证据校验通过/);
+});
+
+test('rejects a provider identifier wrapped in a user_test alias', async () => {
+  const wrappedIdentifier = 'user_test_ou_wrapped_identifier_7e85e5';
+  const evidence = structuredClone(validEvidence);
+  evidence.subjectAlias = wrappedIdentifier;
+  const syncAudit = evidence.audits.find((audit) => audit.action === 'strava.sync.succeeded');
+  syncAudit.target_id = wrappedIdentifier;
+
+  const result = await runVerifier(evidence);
+
+  assertRejectedWithoutSentinel(result, wrappedIdentifier);
+});
+
+test('rejects a raw hash wrapped in a reg_test alias', async () => {
+  const wrappedIdentifier =
+    'reg_test_7e85e54f2c2d4c24a650db90ef6b123b7e85e54f2c2d4c24a650db90ef6b123b';
+  const evidence = structuredClone(validEvidence);
+  evidence.registrationId = wrappedIdentifier;
+  for (const audit of evidence.audits) {
+    if (audit.action.startsWith('registration.')) {
+      audit.target_id = wrappedIdentifier;
+    }
+  }
+
+  const result = await runVerifier(evidence);
+
+  assertRejectedWithoutSentinel(result, wrappedIdentifier);
+});
+
+test('rejects a provider identifier used as the marker run ID', async () => {
+  const runId = 'ou_marker_wrapped_identifier_4620bb';
+  const evidence = structuredClone(validEvidence);
+  setAliasesForRunId(evidence, runId);
+
+  const result = await runVerifier(evidence);
+
+  assertRejectedWithoutSentinel(result, `user_test_${runId}`);
+});
+
+test('rejects a raw hash used as the marker run ID', async () => {
+  const runId = '7e85e54f2c2d4c24a650db90ef6b123b7e85e54f2c2d4c24a650db90ef6b123b';
+  const evidence = structuredClone(validEvidence);
+  setAliasesForRunId(evidence, runId);
+
+  const result = await runVerifier(evidence);
+
+  assertRejectedWithoutSentinel(result, `reg_test_${runId}`);
+});
+
+test('rejects a different run alias reused as the subject alias', async () => {
+  const mismatchedAlias = 'user_test_DIFFERENT_RUN_002';
+  const evidence = structuredClone(validEvidence);
+  evidence.subjectAlias = mismatchedAlias;
+  const syncAudit = evidence.audits.find((audit) => audit.action === 'strava.sync.succeeded');
+  syncAudit.target_id = mismatchedAlias;
+
+  const result = await runVerifier(evidence);
+
+  assertRejectedWithoutSentinel(result, mismatchedAlias);
+});
+
+test('rejects a different run alias reused as the registration identifier', async () => {
+  const mismatchedAlias = 'reg_test_DIFFERENT_RUN_002';
+  const evidence = structuredClone(validEvidence);
+  evidence.registrationId = mismatchedAlias;
+  for (const audit of evidence.audits) {
+    if (audit.action.startsWith('registration.')) {
+      audit.target_id = mismatchedAlias;
+    }
+  }
+
+  const result = await runVerifier(evidence);
+
+  assertRejectedWithoutSentinel(result, mismatchedAlias);
+});
+
+test('rejects duplicate marker keys in raw JSON before parsing', async () => {
+  const duplicateValue = 'E2E_RESULT:DUPLICATE_MARKER_SENTINEL_4620bb';
+  const markerEntry = `"marker":"${validEvidence.marker}"`;
+  const source = JSON.stringify(validEvidence).replace(
+    markerEntry,
+    `${markerEntry},"mark\\u0065r":"${duplicateValue}"`,
+  );
+
+  const result = await runVerifierSource(source);
+
+  assertDuplicateRejectedWithoutSentinels(result, [duplicateValue]);
+});
+
+test('rejects duplicate accessToken keys in a nested audit before parsing', async () => {
+  const firstSecret = 'DUPLICATE_ACCESS_SENTINEL_63d6a1';
+  const secondSecret = 'DUPLICATE_ACCESS_SENTINEL_9c2f41';
+  const auditsStart = '"audits":[{';
+  const source = JSON.stringify(validEvidence).replace(
+    auditsStart,
+    `${auditsStart}"accessToken":"${firstSecret}","access\\u0054oken":"${secondSecret}",`,
+  );
+
+  const result = await runVerifierSource(source);
+
+  assertDuplicateRejectedWithoutSentinels(result, [firstSecret, secondSecret]);
 });
 
 test('rejects an unknown root key before its sentinel can reach output', async () => {

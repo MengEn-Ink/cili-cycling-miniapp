@@ -35,43 +35,45 @@
 ```json
 {
   "marker": "E2E_RESULT:P0_READY_JOURNEY_001",
-  "subjectAlias": "user_test_001",
-  "registrationId": "reg_test_001",
+  "subjectAlias": "user_test_P0_READY_JOURNEY_001",
+  "registrationId": "reg_test_P0_READY_JOURNEY_001",
   "statuses": ["pending", "approved", "cancelled", "pending"],
   "occupiedCounts": [3, 4, 4, 3, 4],
   "audits": [
     {
       "action": "strava.sync.succeeded",
-      "target_id": "user_test_001",
+      "target_id": "user_test_P0_READY_JOURNEY_001",
       "created_at": "2026-09-29T04:00:00.000Z"
     },
     {
       "action": "registration.submitted",
-      "target_id": "reg_test_001",
+      "target_id": "reg_test_P0_READY_JOURNEY_001",
       "created_at": "2026-09-29T04:01:00.000Z"
     },
     {
       "action": "registration.approved",
-      "target_id": "reg_test_001",
+      "target_id": "reg_test_P0_READY_JOURNEY_001",
       "created_at": "2026-09-29T04:02:00.000Z"
     },
     {
       "action": "registration.cancelled",
-      "target_id": "reg_test_001",
+      "target_id": "reg_test_P0_READY_JOURNEY_001",
       "created_at": "2026-09-29T04:03:00.000Z"
     },
     {
       "action": "registration.resubmitted",
-      "target_id": "reg_test_001",
+      "target_id": "reg_test_P0_READY_JOURNEY_001",
       "created_at": "2026-09-29T04:04:00.000Z"
     }
   ]
 }
 ```
 
-`occupiedCounts` 依次表示提交前、首次提交后、双击提交后、取消后、重新提交后。`subjectAlias` 必须使用 `user_test_*` 合成别名，Strava 同步审计的 `target_id` 必须与其相同；`registrationId` 必须使用 `reg_test_*` 合成别名，四条报名审计的 `target_id` 必须与其相同。五条必要审计必须按旅程顺序出现，时间戳使用规范的 ISO 8601 UTC 格式。
+`marker` 冒号后的完整内容是本次执行的 `RUN_ID`。`subjectAlias` 必须等于 `user_test_<RUN_ID>`，`registrationId` 必须等于 `reg_test_<RUN_ID>`。`strava.sync.succeeded` 的 `target_id` 必须等于 `subjectAlias`，四条报名审计的 `target_id` 必须等于 `registrationId`。
 
-校验器会递归检查所有键和字符串值。任何手机号、证件号、访问或刷新 token、密文、OAuth code/state 相关字段或字符串都会令校验失败。失败输出只包含固定的有限原因，不会回显证据对象或敏感值。
+`occupiedCounts` 依次表示提交前、首次提交后、双击提交后、取消后、重新提交后。五条必要审计必须按旅程顺序出现，时间戳使用规范的 ISO 8601 UTC 格式。
+
+校验器会在解析前拒绝根节点或嵌套对象中的重复 JSON 键，并递归检查规范化后的键名。手机号、OpenID、证件号、访问或刷新 token、密文、OAuth code/state 相关字段都会令校验失败。值不使用子串猜测；真实平台标识、原始哈希、包装或串用的其他执行别名会被上述精确派生关系拒绝。失败输出只包含固定的有限原因，不会回显证据对象或敏感值。
 
 ## 离线校验
 
