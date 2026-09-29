@@ -1,15 +1,20 @@
 import { rideService } from '../../../services/ride-service';
 import { appStore } from '../../../store/app-store';
 Page({
-  data: { items: [] as any[], error: '', allowed: false },
+  data: { items: [] as any[], error: '', allowed: false, isAdmin: false },
   async onShow() {
     await appStore.refreshIdentity(wx.cloud);
-    if (appStore.role !== 'admin' || appStore.authStatus !== 'authenticated') {
-      this.setData({ error: '仅已验证管理员可访问', allowed: false });
+    if (appStore.authStatus !== 'authenticated') {
+      this.setData({ error: '请先完成微信身份验证', allowed: false });
       return;
     }
     try {
-      this.setData({ items: await rideService.listAdminActivities(), allowed: true, error: '' });
+      this.setData({
+        items: await rideService.listAdminActivities(),
+        allowed: true,
+        isAdmin: appStore.role === 'admin',
+        error: '',
+      });
     } catch (error) {
       this.setData({ error: error instanceof Error ? error.message : '加载失败' });
     }
@@ -21,6 +26,6 @@ Page({
     wx.navigateTo({ url: '/pages/admin/activity-edit/index' });
   },
   reviews() {
-    wx.navigateTo({ url: '/pages/admin/reviews/index' });
+    if (this.data.isAdmin) wx.navigateTo({ url: '/pages/admin/reviews/index' });
   },
 });

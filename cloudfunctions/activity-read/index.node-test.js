@@ -101,3 +101,27 @@ test('列表仍只查询 published 并由同一服务端时间裁决报名状态
   );
   assert.equal(result.data[0].server_now, result.data[1].server_now);
 });
+
+test('公开活动详情脱敏后援车师傅手机号并保留容量拆分', () => {
+  const { publicActivity } = require('./domain/domain');
+  const result = publicActivity(
+    {
+      _id: 'a1',
+      status: 'published',
+      capacity: 20,
+      occupied_count: 0,
+      support_vehicle_capacity: 8,
+      self_drive_capacity: 12,
+      support_vehicle_driver: {
+        nickname: '王师傅',
+        license_plate: '粤B12345',
+        contact_phone: '13812345678',
+      },
+      signup_deadline: '2026-10-10T00:00:00.000Z',
+      event_end: '2026-10-11T08:00:00.000Z',
+    },
+    new Date('2026-09-29T04:00:00.000Z'),
+  );
+  assert.equal(result.support_vehicle_capacity + result.self_drive_capacity, result.capacity);
+  assert.match(result.support_vehicle_driver.contact_phone, /\*{4}/);
+});

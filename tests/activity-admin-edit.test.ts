@@ -23,6 +23,13 @@ const activity: Activity = {
   deadline: '2026-10-15T12:00:00.000Z',
   status: 'published',
   capacity: 20,
+  supportVehicleCapacity: 8,
+  selfDriveCapacity: 12,
+  supportVehicleDriver: {
+    nickname: '王师傅',
+    licensePlate: '粤B12345',
+    contactPhone: '13812345678',
+  },
   occupiedCount: 3,
   description: '说明',
   coverImage: 'cloud://covers/a1.jpg',
@@ -80,6 +87,9 @@ describe('管理员普通编辑保留未展示的活动字段', () => {
         fee: activity.fee,
         feeIncluded: activity.feeIncluded,
         feeExcluded: activity.feeExcluded,
+        supportVehicleCapacity: 8,
+        selfDriveCapacity: 12,
+        supportVehicleDriver: activity.supportVehicleDriver,
       }),
       activity.id,
     );

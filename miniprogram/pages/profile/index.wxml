@@ -11,5 +11,6 @@
   <view class="section-label"><text>02</text> 骑行服务</view>
   <view class="menu-card capability-entry" bindtap="capabilityCard"><view class="menu-icon capability-icon">C</view><view class="menu-copy"><view class="menu-title">我的骑行名片</view><view class="muted">查看仅自己可见的近 90 天骑行能力</view></view><text class="chevron">›</text></view>
   <view class="menu-card" bindtap="strava"><view class="menu-icon">S</view><view class="menu-copy"><view class="menu-title">Strava 数据</view><view class="muted">查看真实绑定与近 90 天快照</view></view><text class="chevron">›</text></view>
-  <view class="menu-card" wx:if="{{isAdmin}}" bindtap="admin"><view class="menu-icon admin-icon">A</view><view class="menu-copy"><view class="menu-title">管理员控制台</view><view class="muted">活动与报名审核管理</view></view><text class="chevron">›</text></view>
+  <view class="menu-card" wx:if="{{authStatus === 'authenticated'}}" bindtap="activities"><view class="menu-icon">M</view><view class="menu-copy"><view class="menu-title">我的活动</view><view class="muted">创建草稿、编辑并发布自己的骑行活动</view></view><text class="chevron">›</text></view>
+  <view class="menu-card" wx:if="{{isAdmin}}" bindtap="admin"><view class="menu-icon admin-icon">A</view><view class="menu-copy"><view class="menu-title">报名审批</view><view class="muted">审核活动报名与骑手资料</view></view><text class="chevron">›</text></view>
 </view>

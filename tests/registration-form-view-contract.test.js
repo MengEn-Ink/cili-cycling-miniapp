@@ -2,8 +2,9 @@ import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const template = fs.readFileSync('miniprogram/pages/registration-form/index.wxml', 'utf8');
+const styles = fs.readFileSync('miniprogram/pages/registration-form/index.wxss', 'utf8');
 
-describe('报名表单受控控件契约', () => {
+describe('报名表单受控控件与视觉契约', () => {
   it.each([
     `checked="{{gatheringMode === 'self_drive'}}"`,
     `checked="{{gatheringMode === 'support_vehicle'}}"`,
@@ -14,21 +15,47 @@ describe('报名表单受控控件契约', () => {
     expect(template).toContain(binding);
   });
 
-  it('集合方式必须由用户主动二选一，且旧字段和旧文案不再出现', () => {
+  it('集合方式使用新字段并展示分类容量与剩余名额', () => {
     expect(template).toContain('data-key="gatheringMode"');
     expect(template).toContain('value="self_drive"');
     expect(template).toContain('value="support_vehicle"');
+    expect(template).toContain('activity.selfDriveCapacity');
+    expect(template).toContain('activity.selfDriveRemaining');
+    expect(template).toContain('activity.supportVehicleCapacity');
+    expect(template).toContain('activity.supportVehicleRemaining');
     expect(template).not.toMatch(/bikeMode|bike_mode|用车方式|自带车|租车/);
   });
 
-  it('提交期间禁用资料、Strava、radio 和备注控件', () => {
-    expect(template).toMatch(/bindtap="profile"[^>]*disabled="{{submitting}}"/);
-    expect(template).toMatch(/bindtap="strava"[^>]*disabled="{{submitting}}"/);
-    expect(template.match(/<radio [^>]*disabled="{{submitting}}"/g)).toHaveLength(5);
-    expect(template).toMatch(/<textarea [^>]*disabled="{{submitting}}"/);
+  it('顶部展示步骤、活动上下文和审核说明', () => {
+    expect(template).toContain('STEP 1 填写');
+    expect(template).toContain('CURRENT ACTIVITY');
+    expect(template).toContain('{{activity.title');
+    expect(template).toContain('提交后进入管理员审核');
   });
 
-  it('备注输入框由 remark data 驱动', () => {
+  it('提交期间禁用资料、Strava、全部 radio、备注与次按钮', () => {
+    expect(template).toMatch(/bindtap="profile"[^>]*disabled="{{submitting}}"/);
+    expect(template).toMatch(/bindtap="strava"[^>]*disabled="{{submitting}}"/);
+    expect(template.match(/<radio [^>]*disabled="{{[^}]*submitting[^}]*}}"/g)).toHaveLength(5);
+    expect(template).toMatch(/<textarea [^>]*disabled="{{submitting}}"/);
+    expect(template).toMatch(/class="secondary back-button"[^>]*disabled="{{submitting}}"/);
+    expect(template).toContain("{{submitting ? '正在提交' : '提交审核'}}");
+  });
+
+  it('备注、错误和 disabled 状态有明确层级', () => {
     expect(template).toMatch(/<textarea [^>]*value="{{remark}}"/);
+    expect(template).toContain('role="alert"');
+    expect(template).toContain('disabled-hint');
+    expect(styles).toContain('.error-card');
+    expect(styles).toContain('.form-page button[disabled]');
+  });
+
+  it('保持纯色 CILI 深色主题且小屏布局不溢出', () => {
+    expect(styles).toContain('background: #090b0f');
+    expect(styles).toContain('@media (max-width: 340px)');
+    expect(styles).toContain('grid-template-columns: 1fr');
+    expect(styles).toContain('overflow-x: hidden');
+    expect(styles).not.toContain('linear-gradient');
+    expect(template).not.toMatch(/<image|background-image/);
   });
 });

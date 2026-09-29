@@ -12,6 +12,15 @@ export interface Activity {
   deadline: string;
   status: 'draft' | 'published' | 'finished';
   capacity: number;
+  supportVehicleCapacity?: number;
+  selfDriveCapacity?: number;
+  supportVehicleRemaining?: number;
+  selfDriveRemaining?: number;
+  supportVehicleDriver?: {
+    nickname: string;
+    licensePlate: string;
+    contactPhone: string;
+  };
   occupiedCount?: number;
   description: string;
   coverImage?: string;

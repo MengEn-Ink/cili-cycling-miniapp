@@ -1378,3 +1378,101 @@ describe('CloudRepository 管理员活动写入契约', () => {
     expect(invalid.callFunction).not.toHaveBeenCalled();
   });
 });
+
+describe('CloudRepository 活动后援车字段映射', () => {
+  it('映射存在的容量拆分和司机字段，并兼容非法可选值', async () => {
+    const complete = {
+      ...activity,
+      support_vehicle_capacity: 8,
+      self_drive_capacity: 12,
+      support_vehicle_driver: {
+        nickname: '王师傅',
+        license_plate: '粤B12345',
+        contact_phone: '138****5678',
+      },
+    };
+    const malformed = {
+      ...activity,
+      support_vehicle_capacity: '8',
+      self_drive_capacity: null,
+      support_vehicle_driver: {
+        nickname: 1,
+        license_plate: null,
+        contact_phone: false,
+      },
+    };
+    const { cloud } = cloudWith(success(complete), success(malformed));
+    const repository = new CloudRepository(cloud);
+
+    await expect(repository.getActivity('a1')).resolves.toMatchObject({
+      supportVehicleCapacity: 8,
+      selfDriveCapacity: 12,
+      supportVehicleDriver: {
+        nickname: '王师傅',
+        licensePlate: '粤B12345',
+        contactPhone: '138****5678',
+      },
+    });
+    const mapped = await repository.getActivity('a1');
+    expect(mapped).not.toHaveProperty('supportVehicleCapacity');
+    expect(mapped).not.toHaveProperty('selfDriveCapacity');
+    expect(mapped.supportVehicleDriver).toEqual({
+      nickname: '',
+      licensePlate: '',
+      contactPhone: '',
+    });
+  });
+
+  it('写入时映射完整字段，非法可选司机值收敛为空字符串', async () => {
+    const { cloud, callFunction } = cloudWith(success(activity), success(activity));
+    const repository = new CloudRepository(cloud);
+    const base = {
+      title: '活动',
+      description: '',
+      capacity: 20,
+      deadline: activity.signup_deadline,
+      startAt: activity.event_start,
+      endAt: '2026-10-18T08:00:00.000Z',
+      status: 'draft' as const,
+      route: { start: '', end: '', distanceKm: 0, elevationM: 0, level: '' },
+      schedule: [],
+      notices: [],
+      equipment: [],
+      fee: '',
+    };
+    await repository.saveActivity({
+      ...base,
+      supportVehicleCapacity: 8,
+      selfDriveCapacity: 12,
+      supportVehicleDriver: {
+        nickname: '王师傅',
+        licensePlate: '粤B12345',
+        contactPhone: '13812345678',
+      },
+    });
+    expect((callFunction.mock.calls[0][0].data as any).activity).toMatchObject({
+      support_vehicle_capacity: 8,
+      self_drive_capacity: 12,
+      support_vehicle_driver: {
+        nickname: '王师傅',
+        license_plate: '粤B12345',
+        contact_phone: '13812345678',
+      },
+    });
+
+    await repository.saveActivity({
+      ...base,
+      supportVehicleCapacity: 8.5,
+      selfDriveCapacity: '12' as any,
+      supportVehicleDriver: { nickname: 1, licensePlate: null, contactPhone: false } as any,
+    });
+    const payload = (callFunction.mock.calls[1][0].data as any).activity;
+    expect(payload).not.toHaveProperty('support_vehicle_capacity');
+    expect(payload).not.toHaveProperty('self_drive_capacity');
+    expect(payload.support_vehicle_driver).toEqual({
+      nickname: '',
+      license_plate: '',
+      contact_phone: '',
+    });
+  });
+});

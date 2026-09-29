@@ -135,6 +135,36 @@ function mapActivity(raw: unknown, requireRegistrationDecision = false): Activit
     deadline: dateText(value.signup_deadline),
     status: value.status,
     capacity: value.capacity,
+    ...(Number.isInteger(value.support_vehicle_capacity)
+      ? { supportVehicleCapacity: value.support_vehicle_capacity }
+      : {}),
+    ...(Number.isInteger(value.self_drive_capacity)
+      ? { selfDriveCapacity: value.self_drive_capacity }
+      : {}),
+    ...(Number.isInteger(value.support_vehicle_remaining)
+      ? { supportVehicleRemaining: value.support_vehicle_remaining }
+      : {}),
+    ...(Number.isInteger(value.self_drive_remaining)
+      ? { selfDriveRemaining: value.self_drive_remaining }
+      : {}),
+    ...(isRecord(value.support_vehicle_driver)
+      ? {
+          supportVehicleDriver: {
+            nickname:
+              typeof value.support_vehicle_driver.nickname === 'string'
+                ? value.support_vehicle_driver.nickname
+                : '',
+            licensePlate:
+              typeof value.support_vehicle_driver.license_plate === 'string'
+                ? value.support_vehicle_driver.license_plate
+                : '',
+            contactPhone:
+              typeof value.support_vehicle_driver.contact_phone === 'string'
+                ? value.support_vehicle_driver.contact_phone
+                : '',
+          },
+        }
+      : {}),
     occupiedCount: Number.isInteger(value.occupied_count) ? value.occupied_count : undefined,
     registrationState: ['open', 'closed'].includes(value.registration_state)
       ? value.registration_state
@@ -513,6 +543,30 @@ function activityPayload(value: ActivityInput) {
           ? value.fee
           : '',
     capacity: value.capacity,
+    ...(Number.isInteger(value.supportVehicleCapacity)
+      ? { support_vehicle_capacity: value.supportVehicleCapacity }
+      : {}),
+    ...(Number.isInteger(value.selfDriveCapacity)
+      ? { self_drive_capacity: value.selfDriveCapacity }
+      : {}),
+    ...(isRecord(value.supportVehicleDriver)
+      ? {
+          support_vehicle_driver: {
+            nickname:
+              typeof value.supportVehicleDriver.nickname === 'string'
+                ? value.supportVehicleDriver.nickname
+                : '',
+            license_plate:
+              typeof value.supportVehicleDriver.licensePlate === 'string'
+                ? value.supportVehicleDriver.licensePlate
+                : '',
+            contact_phone:
+              typeof value.supportVehicleDriver.contactPhone === 'string'
+                ? value.supportVehicleDriver.contactPhone
+                : '',
+          },
+        }
+      : {}),
     signup_deadline: value.deadline,
     event_start: value.startAt,
     event_end: value.endAt,

@@ -10,9 +10,14 @@ function store(seed = {}) {
       openid: 'member',
       status: 'pending',
       review_history: [],
+      options: { gathering_mode: 'support_vehicle' },
       profile_snapshot: {},
     },
-    activity: { occupied_count: 1 },
+    activity: {
+      occupied_count: 1,
+      support_vehicle_occupied_count: 1,
+      self_drive_occupied_count: 0,
+    },
     outbox: new Map(),
   };
   return {
@@ -25,8 +30,10 @@ function store(seed = {}) {
         putRegistration: async (_id, value) => {
           state.registration = value;
         },
-        setOccupied: async (_id, value) => {
+        setOccupied: async (_id, value, supportVehicleOccupied, selfDriveOccupied) => {
           state.activity.occupied_count = value;
+          state.activity.support_vehicle_occupied_count = supportVehicleOccupied;
+          state.activity.self_drive_occupied_count = selfDriveOccupied;
         },
         addAudit: async () => {},
         putNotification: async (id, value) => state.outbox.set(id, value),

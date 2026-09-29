@@ -42,8 +42,12 @@ Page({
   strava() {
     wx.navigateTo({ url: '/pages/strava/index' });
   },
+  activities() {
+    if (this.data.authStatus === 'authenticated')
+      wx.navigateTo({ url: '/pages/admin/activity-list/index' });
+  },
   admin() {
-    if (this.data.isAdmin) wx.navigateTo({ url: '/pages/admin/activity-list/index' });
+    if (this.data.isAdmin) wx.navigateTo({ url: '/pages/admin/reviews/index' });
   },
   async retryAuth() {
     await appStore.refreshIdentity(wx.cloud);

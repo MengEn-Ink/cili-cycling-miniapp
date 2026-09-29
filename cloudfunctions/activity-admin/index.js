@@ -13,7 +13,6 @@ const {
 } = require('./domain-index');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
-
 function isNotFound(error) {
   return (
     error &&
@@ -28,9 +27,9 @@ async function maybeGet(collection, id) {
     throw error;
   }
 }
-async function requireAdmin(openid) {
+async function actor(openid) {
   const admin = await maybeGet(db.collection('admins'), openid);
-  if (!isEnabledAdmin(admin, openid)) fail('ADMIN_REQUIRED', '需要管理员权限');
+  return { isAdmin: isEnabledAdmin(admin, openid) };
 }
 function transactionStore() {
   return {
@@ -49,7 +48,6 @@ function transactionStore() {
       ),
   };
 }
-
 exports.main = async (event = {}) => {
   try {
     const openid = cloud.getWXContext().OPENID;
@@ -68,21 +66,26 @@ exports.main = async (event = {}) => {
         ),
       );
     }
-    await requireAdmin(openid);
+    const identity = await actor(openid);
     if (event.action === 'list') {
-      const result = await db
-        .collection('activities')
-        .orderBy('event_start', 'desc')
-        .limit(100)
-        .get();
-      return ok(result.data.filter((item) => item.is_deleted !== true).map(publicActivity));
+      let query = db.collection('activities');
+      // 管理员看全部；成员查询条件由可信 OPENID 构造，客户端无权指定 owner。
+      if (!identity.isAdmin) query = query.where({ created_by: openid });
+      const result = await query.orderBy('event_start', 'desc').limit(100).get();
+      return ok(
+        result.data
+          .filter((item) => item.is_deleted !== true)
+          .map((item) => publicActivity(item, { revealContact: true })),
+      );
     }
     if (event.action === 'detail') {
       if (typeof event.activityId !== 'string' || !event.activityId)
         fail('VALIDATION_FAILED', '缺少活动 ID');
       const activity = await maybeGet(db.collection('activities'), event.activityId);
       if (!activity || activity.is_deleted === true) fail('ACTIVITY_NOT_FOUND', '活动不存在');
-      return ok(publicActivity(activity));
+      if (!identity.isAdmin && activity.created_by !== openid)
+        fail('FORBIDDEN', '只能查看自己的活动');
+      return ok(publicActivity(activity, { revealContact: true }));
     }
     fail('UNKNOWN_ACTION', '未知操作');
   } catch (error) {

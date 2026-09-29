@@ -19,6 +19,13 @@ const input = {
   equipment: ['公路车'],
   fee: '免费',
   capacity: 20,
+  support_vehicle_capacity: 8,
+  self_drive_capacity: 12,
+  support_vehicle_driver: {
+    nickname: ' 王师傅 ',
+    license_plate: ' 粤b12345 ',
+    contact_phone: '13812345678',
+  },
   signup_deadline: '2026-10-10T00:00:00.000Z',
   event_start: '2026-10-11T00:00:00.000Z',
   event_end: '2026-10-11T08:00:00.000Z',
@@ -127,7 +134,17 @@ test('更新保留创建信息和占位数，拒绝越权、不存在与异常�
   const memory = store(current);
   const result = await saveActivity(
     memory,
-    { openid: 'admin', activityId: 'a1', activity: { ...input, status: 'published', capacity: 4 } },
+    {
+      openid: 'admin',
+      activityId: 'a1',
+      activity: {
+        ...input,
+        status: 'published',
+        capacity: 4,
+        support_vehicle_capacity: 1,
+        self_drive_capacity: 3,
+      },
+    },
     now,
   );
   assert.equal(result.status, 'published');
@@ -144,7 +161,7 @@ test('更新保留创建信息和占位数，拒绝越权、不存在与异常�
       activityId: 'a1',
       activity: input,
     }),
-    (error) => error.code === 'ADMIN_REQUIRED',
+    (error) => error.code === 'FORBIDDEN',
   );
   await assert.rejects(
     saveActivity(store({ ...current, occupied_count: -1 }), {
@@ -153,5 +170,99 @@ test('更新保留创建信息和占位数，拒绝越权、不存在与异常�
       activity: input,
     }),
     (error) => error.code === 'SCHEMA_INVALID',
+  );
+});
+
+test('普通成员可创建并发布自己的草稿，但不能编辑他人或结束活动', async () => {
+  const createdStore = store(undefined, null);
+  const created = await saveActivity(createdStore, { openid: 'member-1', activity: input }, now);
+  assert.equal(created.status, 'draft');
+  assert.equal(createdStore.state.saved.created_by, 'member-1');
+
+  const ownDraft = createdStore.state.saved;
+  const published = await saveActivity(
+    store(ownDraft, null),
+    { openid: 'member-1', activityId: ownDraft._id, activity: { ...input, status: 'published' } },
+    now,
+  );
+  assert.equal(published.status, 'published');
+  await assert.rejects(
+    saveActivity(store({ ...ownDraft, created_by: 'other' }, null), {
+      openid: 'member-1',
+      activityId: ownDraft._id,
+      activity: input,
+    }),
+    (error) => error.code === 'FORBIDDEN',
+  );
+  await assert.rejects(
+    saveActivity(store({ ...ownDraft, status: 'published' }, null), {
+      openid: 'member-1',
+      activityId: ownDraft._id,
+      activity: { ...input, status: 'finished' },
+    }),
+    (error) => error.code === 'FORBIDDEN',
+  );
+});
+
+test('司机字段清洗、容量拆分校验与公开手机号脱敏', () => {
+  const value = validateActivityInput(input);
+  assert.deepEqual(value.support_vehicle_driver, {
+    nickname: '王师傅',
+    license_plate: '粤B12345',
+    contact_phone: '13812345678',
+  });
+  expectCode(
+    () => validateActivityInput({ ...input, self_drive_capacity: 11 }),
+    'VALIDATION_FAILED',
+  );
+  const publicValue = publicActivity({ _id: 'a1', ...value });
+  assert.match(publicValue.support_vehicle_driver.contact_phone, /\*{4}/);
+  const privateValue = publicActivity({ _id: 'a1', ...value }, { revealContact: true });
+  assert.equal(
+    privateValue.support_vehicle_driver.contact_phone,
+    value.support_vehicle_driver.contact_phone,
+  );
+});
+
+test('无后援车容量允许旧活动缺少司机，首次保存补齐分类计数', async () => {
+  const legacyInput = {
+    ...input,
+    support_vehicle_capacity: 0,
+    self_drive_capacity: input.capacity,
+  };
+  delete legacyInput.support_vehicle_driver;
+  const current = {
+    _id: 'legacy',
+    ...validateActivityInput(legacyInput),
+    occupied_count: 0,
+    created_by: 'admin',
+  };
+  delete current.support_vehicle_occupied_count;
+  delete current.self_drive_occupied_count;
+  const memory = store(current);
+  await saveActivity(
+    memory,
+    { openid: 'admin', activityId: 'legacy', activity: { ...legacyInput, title: '只改标题' } },
+    now,
+  );
+  assert.equal(memory.state.saved.support_vehicle_occupied_count, 0);
+  assert.equal(memory.state.saved.self_drive_occupied_count, 0);
+  assert.deepEqual(memory.state.saved.support_vehicle_driver, {
+    nickname: '',
+    license_plate: '',
+    contact_phone: '',
+  });
+});
+
+test('公开电话对非标准文本、区号分机和非法类型均 fail closed', () => {
+  for (const phone of ['12345', '010-12345678-分机9', 'not-a-phone']) {
+    const output = publicActivity({ support_vehicle_driver: { contact_phone: phone } });
+    assert.notEqual(output.support_vehicle_driver.contact_phone, phone);
+    assert.match(output.support_vehicle_driver.contact_phone, /^\*|^$/);
+  }
+  assert.equal(
+    publicActivity({ support_vehicle_driver: { contact_phone: { unsafe: true } } })
+      .support_vehicle_driver.contact_phone,
+    '',
   );
 });
