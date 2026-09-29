@@ -45,6 +45,8 @@ Registration form controls are fully controlled by page data. Navigation to prof
 
 The Strava ready view displays the exact 90-day coverage interval, completeness, and synchronization time. Missing coverage is shown as unknown; incomplete coverage is explicit text and never represented only by color.
 
+Browser-authorization recovery is bounded by the same 30-second total deadline as readiness synchronization, including each in-flight status request. If the user leaves the page, every unresolved start/copy/modal/poll continuation is invalidated before it can create a side effect. Cancelling the browser guide consumes the current user's active OAuth state through a server action and returns the page to `disconnected`; reconnecting always creates a fresh state.
+
 ### Notification delivery semantics
 
 WeChat subscription-message sending exposes no provider idempotency key or delivery-status query. Therefore database state and the external send cannot be made strictly exactly-once.
@@ -94,7 +96,7 @@ Existing encrypted identity-document fields remain untouched in storage for this
 
 ### Capability-card media
 
-The card uses up to three deduplicated user photos, ordered as riding/training photos first, then other user photos, then avatar fallback. Multiple images use a native swiper as full-bleed backgrounds; one image renders statically; no image renders a brand fallback. Every image has a dark gradient overlay and a fixed text-safe region.
+The card uses up to three deduplicated user photos, ordered as riding/training photos first, then bike/other user photos, then avatar fallback. All three profile categories (`ride`, `bike`, `other`) are valid for the administrator view. Multiple images use a native swiper as full-bleed backgrounds; one image renders statically; no image renders a brand fallback. Every image has a dark gradient overlay and a fixed text-safe region.
 
 Stored `cloud://` file IDs are not client image URLs. After administrator authorization, the server resolves the allowlisted profile file IDs through CloudBase temporary-file URL generation and returns short-lived URLs only. Invalid, failed, or non-allowlisted resolutions are omitted. The client never receives another user's raw file IDs.
 

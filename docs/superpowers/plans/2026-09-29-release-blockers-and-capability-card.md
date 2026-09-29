@@ -265,8 +265,14 @@ git commit -m "feat(notification): request review subscriptions"
 - Modify: `miniprogram/pages/credential/index.wxml`
 - Modify: `miniprogram/pages/registration-form/index.ts`
 - Modify: `miniprogram/pages/registration-form/index.wxml`
+- Modify: `miniprogram/pages/strava/index.ts`
+- Modify: `miniprogram/pages/strava/index.wxml`
+- Modify: `miniprogram/services/strava-readiness-service.ts`
+- Modify: `cloudfunctions/strava-auth/index.js`
+- Modify: `cloudfunctions/strava-auth/store.js`
 - Modify: `tests/registration-form-readiness-lifecycle.test.ts`
 - Create: `tests/registration-form-view-contract.test.ts`
+- Modify: `tests/strava-readiness-service.test.ts`
 
 - [ ] **Step 1: Add the failing nine-branch decision table**
 
@@ -298,6 +304,24 @@ Activity detail, credential retry, and registration submit use this single resol
 Bind every radio `checked` expression to page data. Add `submitRequestId` and `pageVisible`; invalidate both on hide/unload. Disable profile, Strava, radio, textarea, and submit controls while submitting. Only the current visible generation may redirect.
 
 - [ ] **Step 5: Verify and commit**
+
+Before committing, add RED/GREEN cases for the browser-authorization recovery introduced after `8a70de1`:
+
+```ts
+// A hung status call must stop at the remaining total deadline.
+await expect(pollStravaAuthorization(neverSettles, { timeoutMs: 30_000 }))
+  .rejects.toThrow('授权状态检查超时');
+
+// Leaving the page before startStrava resolves must prevent clipboard/modal/state effects.
+const pending = page.connect();
+page.onHide();
+resolveStart({ authorizationUrl: 'https://www.strava.com/oauth/authorize?...' });
+await pending;
+expect(wx.setClipboardData).not.toHaveBeenCalled();
+expect(wx.showModal).not.toHaveBeenCalled();
+```
+
+Add a server `cancelAuthorization` action that consumes only the current user's active state without touching an existing credential. The cancel button calls it; cancellation or expiry returns readiness to `disconnected`, and a new connect creates a fresh state.
 
 Run: `npx vitest run tests/activity-cta.test.ts tests/registration-form-readiness-lifecycle.test.ts tests/registration-form-view-contract.test.ts && npm run typecheck`
 
@@ -332,7 +356,7 @@ assert.equal(JSON.stringify(response).includes('cloud://'), false);
 assert.equal(JSON.stringify(response).includes('id_number'), false);
 ```
 
-Client tests require up to three `https://` temporary URLs, deduplication, riding-photo priority, avatar fallback, and no raw file ID rendering.
+Client tests require up to three `https://` temporary URLs, deduplication, riding-photo priority, avatar fallback, and no raw file ID rendering. The server accepts every category in the profile contract (`ride`, `bike`, `other`) for the admin review card; category affects ordering, not authorization.
 
 - [ ] **Step 2: Run focused tests and observe RED**
 
