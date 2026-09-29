@@ -10,4 +10,4 @@ export function createRepository(options: { developmentMock?: boolean } = {}): R
 }
 
 export const repository: RideRepository = createRepository();
-export const isMock = false;
+export const isMock = DEVELOPMENT_MOCK;

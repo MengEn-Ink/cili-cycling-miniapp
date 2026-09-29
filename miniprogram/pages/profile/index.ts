@@ -36,6 +36,9 @@ Page({
   edit() {
     wx.navigateTo({ url: '/pages/profile-edit/index' });
   },
+  capabilityCard() {
+    wx.navigateTo({ url: '/pages/capability-card/index' });
+  },
   strava() {
     wx.navigateTo({ url: '/pages/strava/index' });
   },

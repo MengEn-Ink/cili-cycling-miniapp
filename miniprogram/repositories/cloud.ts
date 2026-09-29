@@ -1,5 +1,6 @@
 import type {
   Activity,
+  CapabilityCard,
   Profile,
   ProfileUpdate,
   Registration,
@@ -166,6 +167,59 @@ function mapProfile(raw: unknown): Profile {
         ? (status.phone_source as 'wechat' | 'manual' | 'legacy')
         : '',
       emergencyPhone: status.emergency_phone === true,
+    },
+  };
+}
+function mapCapabilityCard(raw: unknown): CapabilityCard {
+  const value = expectRecord(raw);
+  const readiness = expectRecord(value.readiness);
+  const states: StravaReadinessState[] = [
+    'disconnected',
+    'authorizing',
+    'syncing',
+    'ready',
+    'failed',
+  ];
+  if (typeof value.nickname !== 'string' || !states.includes(readiness.state))
+    return invalidResponse();
+  const rawPhotos = Array.isArray(value.photos) ? value.photos : [];
+  const photos = rawPhotos
+    .filter(isRecord)
+    .map((photo) => ({
+      id: typeof photo.file_id === 'string' ? photo.file_id : '',
+      category: typeof photo.category === 'string' ? photo.category : '',
+      source: photo.source === 'avatar' ? ('avatar' as const) : ('upload' as const),
+    }))
+    .filter((photo) => photo.id)
+    .slice(0, 3);
+  const rawMetrics = isRecord(value.metrics) ? value.metrics : null;
+  const metric = (key: string) => (rawMetrics ? finiteNumberOrNull(rawMetrics[key]) : null);
+  const rawError = isRecord(readiness.error) ? readiness.error : null;
+  return {
+    nickname: value.nickname,
+    avatarId: typeof value.avatar_file_id === 'string' ? value.avatar_file_id : '',
+    photos,
+    period: { days: 90, label: '90天汇总' },
+    metrics: rawMetrics
+      ? {
+          totalKm: metric('total_km'),
+          rides: metric('rides'),
+          longestKm: metric('longest_km'),
+          elevationM: metric('elevation_m'),
+          speedKmh: metric('speed_kmh'),
+          latestActivityAt: nullableDateText(rawMetrics.latest_activity_at ?? null),
+          syncedAt: nullableDateText(rawMetrics.synced_at ?? null),
+        }
+      : null,
+    readiness: {
+      state: readiness.state,
+      error: rawError
+        ? {
+            message:
+              typeof rawError.message === 'string' ? rawError.message : 'Strava 数据准备失败',
+            retryable: rawError.retryable === true,
+          }
+        : null,
     },
   };
 }
@@ -490,6 +544,10 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
   }
   async getProfile() {
     return mapProfile(await this.call('profile', { action: 'get' }));
+  }
+  async getCapabilityCard() {
+    // 自助名片请求不携带 openid，身份完全由云函数 WXContext 决定。
+    return mapCapabilityCard(await this.call('profile', { action: 'getCard' }));
   }
   async updateProfile(profile: ProfileUpdate) {
     const data: Record<string, unknown> = { action: 'update' };

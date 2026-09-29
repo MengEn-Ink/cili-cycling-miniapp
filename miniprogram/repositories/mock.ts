@@ -104,6 +104,34 @@ export class MockRepository implements RideRepository {
   async getProfile() {
     return this.read().profile;
   }
+  async getCapabilityCard() {
+    const value = this.read().profile;
+    const readiness = await this.getStravaReadiness();
+    // 仅供显式开发模式，页面会展示 MOCK 标识，绝不冒充真实 Strava 数据。
+    return {
+      nickname: value.nickname,
+      avatarId: value.avatarId || '',
+      photos: [
+        ...value.photos.map((photo) => ({ ...photo, source: 'upload' as const })),
+        ...(value.avatarId
+          ? [{ id: value.avatarId, category: 'avatar', source: 'avatar' as const }]
+          : []),
+      ].slice(0, 3),
+      period: { days: 90 as const, label: '90天汇总' },
+      metrics: readiness.snapshot
+        ? {
+            totalKm: readiness.snapshot.totalKm,
+            rides: readiness.snapshot.rides90d,
+            longestKm: readiness.snapshot.longestKm,
+            elevationM: readiness.snapshot.elevationM,
+            speedKmh: readiness.snapshot.speedKmh,
+            latestActivityAt: readiness.snapshot.latestActivityAt,
+            syncedAt: readiness.snapshot.syncedAt,
+          }
+        : null,
+      readiness: { state: readiness.state, error: readiness.error },
+    };
+  }
   async updateProfile(patch: ProfileUpdate) {
     const current = this.read().profile;
     const p = { ...current, ...patch, photos: patch.photos || current.photos } as Profile;
