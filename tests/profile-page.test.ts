@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const rideService = vi.hoisted(() => ({
   getProfile: vi.fn(),
+  getPersonalCapabilityCard: vi.fn(),
 }));
 
 const appStore = vi.hoisted(() => ({
@@ -29,6 +30,29 @@ const profile = (nickname: string) => ({
   completeness: 60,
 });
 
+const personalCard = {
+  state: 'ready',
+  generatedAt: '2026-09-29T04:10:00.000Z',
+  profile: { displayName: '山野骑手', title: '周末爬坡手' },
+  backgrounds: [
+    { url: 'https://temporary.example/rider-bg.jpg', source: 'user_photo', category: 'ride' },
+    { url: 'https://temporary.example/avatar.jpg', source: 'avatar', category: 'other' },
+  ],
+  summary: {
+    totalKm90d: 812.5,
+    rides90d: 28,
+    longestKm: 126.3,
+    elevationM90d: 9300,
+    weightedAvgSpeedKmh: 25.6,
+  },
+  coverage: {
+    from: '2026-07-01T04:00:00.000Z',
+    to: '2026-09-29T04:00:00.000Z',
+    complete: true,
+  },
+  syncedAt: '2026-09-29T04:05:00.000Z',
+};
+
 function deferred<T>() {
   let resolve!: (value: T) => void;
   let reject!: (reason?: unknown) => void;
@@ -45,6 +69,7 @@ describe('个人中心加载状态', () => {
   beforeEach(async () => {
     vi.resetModules();
     rideService.getProfile.mockReset().mockResolvedValue(profile('山野骑手'));
+    rideService.getPersonalCapabilityCard.mockReset().mockResolvedValue(personalCard);
     appStore.role = 'member';
     appStore.isSuper = false;
     appStore.authStatus = 'idle';
@@ -101,6 +126,51 @@ describe('个人中心加载状态', () => {
 
     expect(page.data.isAdmin).toBe(true);
     expect(page.data.profile.nickname).toBe('管理员骑手');
+  });
+
+  it('个人中心复用骑行名片背景与已选择头像', async () => {
+    await page.onShow();
+
+    expect(rideService.getPersonalCapabilityCard).toHaveBeenCalledOnce();
+    expect(page.data).toMatchObject({
+      profileHeroBackground: 'https://temporary.example/rider-bg.jpg',
+      hasProfileHeroBackground: true,
+      profileAvatarUrl: 'https://temporary.example/avatar.jpg',
+      hasProfileAvatar: true,
+      profileInitial: '山',
+      profileCardStatus: '已连接',
+    });
+    const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
+    expect(template).toContain('class="hero-bg"');
+    expect(template).toContain('名片背景 · STRAVA {{profileCardStatus}}');
+  });
+
+  it('名片响应先于资料返回时不会被资料回写清空背景', async () => {
+    const profileLoad = deferred<ReturnType<typeof profile>>();
+    rideService.getProfile.mockReturnValueOnce(profileLoad.promise);
+
+    const loading = page.onShow();
+    await vi.waitFor(() => expect(rideService.getPersonalCapabilityCard).toHaveBeenCalledOnce());
+    await Promise.resolve();
+    expect(page.data.profileHeroBackground).toBe('https://temporary.example/rider-bg.jpg');
+
+    profileLoad.resolve(profile('后来资料'));
+    await loading;
+
+    expect(page.data.profile.nickname).toBe('后来资料');
+    expect(page.data.profileHeroBackground).toBe('https://temporary.example/rider-bg.jpg');
+    expect(page.data.profileInitial).toBe('后');
+  });
+
+  it('骑行名片暂时失败时不阻断个人资料展示', async () => {
+    rideService.getPersonalCapabilityCard.mockRejectedValueOnce(new Error('card unavailable'));
+
+    await page.onShow();
+
+    expect(page.data.profile.nickname).toBe('山野骑手');
+    expect(page.data.error).toBe('');
+    expect(page.data.hasProfileHeroBackground).toBe(false);
+    expect(page.data.profileInitial).toBe('山');
   });
 
   it('较慢的旧资料响应不能覆盖较新的 onShow 响应', async () => {

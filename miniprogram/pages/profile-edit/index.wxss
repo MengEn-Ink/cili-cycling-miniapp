@@ -11,6 +11,46 @@
   margin-bottom: 28rpx;
 }
 
+.avatar-field {
+  display: flex;
+  gap: 24rpx;
+  align-items: center;
+  margin: 18rpx 0 30rpx;
+}
+
+.avatar-preview {
+  overflow: hidden;
+  display: flex;
+  flex: 0 0 112rpx;
+  align-items: center;
+  justify-content: center;
+  width: 112rpx;
+  height: 112rpx;
+  border: 2rpx solid #d55b1f;
+  border-radius: 12rpx;
+  background: #171719;
+  color: #f7f7f5;
+  font-size: 44rpx;
+  font-style: italic;
+  font-weight: 900;
+}
+
+.avatar-preview image {
+  width: 100%;
+  height: 100%;
+}
+
+.avatar-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.avatar-action {
+  margin-top: 16rpx;
+  background: #d55b1f !important;
+  color: #0b0b0c !important;
+}
+
 .form-card .field {
   margin: 0;
 }

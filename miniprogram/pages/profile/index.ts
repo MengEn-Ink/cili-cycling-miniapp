@@ -1,6 +1,9 @@
+import type { PersonalCapabilityCard, Profile } from '../../models/index';
 import { rideService } from '../../services/ride-service';
 import { appStore } from '../../store/app-store';
 import { runPageTask } from '../../services/page-service';
+import { personalCardViewModel } from '../../utils/personal-card';
+
 function identityViewData(fallbackError = '') {
   const authStatus = fallbackError ? 'error' : appStore.authStatus;
   return {
@@ -11,10 +14,31 @@ function identityViewData(fallbackError = '') {
     isAdmin: authStatus === 'authenticated' && appStore.role === 'admin',
   };
 }
+
+function initialOf(profile: Profile | null) {
+  const name = profile?.nickname?.trim() || 'C';
+  return Array.from(name)[0] || 'C';
+}
+
+function cardHeroData(card: PersonalCapabilityCard | null, profile: Profile | null) {
+  const view = card ? personalCardViewModel(card) : null;
+  const avatarBackground = view?.backgrounds.find((item) => item.source === 'avatar')?.url || '';
+  const heroBackground = view?.backgrounds[0]?.url || '';
+
+  return {
+    profileHeroBackground: heroBackground,
+    hasProfileHeroBackground: Boolean(heroBackground),
+    profileAvatarUrl: avatarBackground || profile?.avatarId || '',
+    hasProfileAvatar: Boolean(avatarBackground || profile?.avatarId),
+    profileInitial: initialOf(profile),
+    profileCardStatus: view?.statusLabel || '',
+  };
+}
+
 Page({
   loadRequestId: 0,
   data: {
-    profile: null as any,
+    profile: null as Profile | null,
     loading: true,
     refreshing: false,
     error: '',
@@ -23,6 +47,13 @@ Page({
     authStatus: 'idle',
     authError: '',
     isAdmin: false,
+    profileHeroBackground: '',
+    hasProfileHeroBackground: false,
+    profileAvatarUrl: '',
+    hasProfileAvatar: false,
+    profileInitial: 'C',
+    profileCardStatus: '',
+    profileCapabilityCard: null as PersonalCapabilityCard | null,
   },
   async onShow() {
     await this.load();
@@ -48,6 +79,10 @@ Page({
     );
     this.setData(identityViewData());
     const profile = runPageTask(() => rideService.getProfile(), '资料服务暂不可用');
+    const capabilityCard = runPageTask(
+      () => rideService.getPersonalCapabilityCard(),
+      '骑行名片暂时无法加载',
+    );
 
     await Promise.all([
       identity.then((state) => {
@@ -60,11 +95,21 @@ Page({
           this.setData({ loading: false, refreshing: false, error: state.error });
           return;
         }
+        const nextProfile = state.data || null;
         this.setData({
-          profile: state.data || null,
+          profile: nextProfile,
+          ...cardHeroData(this.data.profileCapabilityCard, nextProfile),
           loading: false,
           refreshing: false,
           error: '',
+        });
+      }),
+      capabilityCard.then((state) => {
+        if (requestId !== this.loadRequestId || state.error || !state.data) return;
+        const nextCard = state.data as PersonalCapabilityCard;
+        this.setData({
+          profileCapabilityCard: nextCard,
+          ...cardHeroData(nextCard, this.data.profile),
         });
       }),
     ]);

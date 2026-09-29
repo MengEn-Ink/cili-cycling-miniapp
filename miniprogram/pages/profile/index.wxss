@@ -51,19 +51,54 @@ page {
   letter-spacing: 2rpx;
 }
 .profile-hero {
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 28rpx;
-  padding: 40rpx 10rpx 28rpx;
+  min-height: 190rpx;
+  margin-top: 24rpx;
+  padding: 34rpx 28rpx;
+  border: 1rpx solid #3c3c40;
+  border-radius: 10rpx;
+  background: linear-gradient(135deg, #202023, #111113);
+}
+.profile-hero.with-card-bg {
+  border-color: rgba(213, 91, 31, 0.42);
+  box-shadow: 0 20rpx 54rpx rgba(0, 0, 0, 0.34);
+}
+.hero-bg,
+.hero-shade {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.hero-bg {
+  opacity: 0.68;
+}
+.hero-shade {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(11, 11, 12, 0.9),
+      rgba(11, 11, 12, 0.55) 56%,
+      rgba(11, 11, 12, 0.9)
+    ),
+    linear-gradient(180deg, rgba(213, 91, 31, 0.15), rgba(11, 11, 12, 0.72));
+  pointer-events: none;
 }
 .avatar {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
   display: flex;
   flex: 0 0 112rpx;
   align-items: center;
   justify-content: center;
   width: 112rpx;
   height: 112rpx;
-  border: 2rpx solid #77777b;
+  border: 2rpx solid rgba(247, 247, 245, 0.72);
   border-radius: 12rpx;
   background: #1b1b1d;
   color: #f7f7f5;
@@ -72,10 +107,17 @@ page {
   font-weight: 900;
   transform: skewX(-7deg);
 }
+.avatar image {
+  width: 130%;
+  height: 112%;
+  transform: skewX(7deg) scale(1.08);
+}
 .avatar text {
   transform: skewX(7deg);
 }
 .profile-copy {
+  position: relative;
+  z-index: 1;
   min-width: 0;
 }
 .profile-copy .hero-kicker {
@@ -91,9 +133,15 @@ page {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.auth-line {
-  color: #89898d;
+.auth-line,
+.card-sync-line {
+  color: #d5d5d7;
   font-size: 22rpx;
+}
+.card-sync-line {
+  margin-top: 6rpx;
+  color: #d55b1f;
+  font-weight: 800;
 }
 .auth-dot {
   display: inline-block;

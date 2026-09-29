@@ -57,6 +57,30 @@ describe('资料编辑头像回写', () => {
     );
   });
 
+  it('选择微信头像后复用 owner-bound 上传链路并等待保存生效', async () => {
+    const uploadFile = vi
+      .fn()
+      .mockResolvedValue({ fileID: 'cloud://env/profiles/owner/wechat-avatar.jpg' });
+    rideService.getProfileMediaUploadPath.mockResolvedValue(
+      'profiles/0123456789abcdef0123456789abcdef/123e4567-e89b-42d3-a456-426614174000.jpg',
+    );
+    Object.assign(wx, { cloud: { uploadFile } });
+
+    await page.chooseAvatar({ detail: { avatarUrl: '/private/tmp/avatar.jpg' } });
+
+    expect(uploadFile).toHaveBeenCalledWith({
+      cloudPath:
+        'profiles/0123456789abcdef0123456789abcdef/123e4567-e89b-42d3-a456-426614174000.jpg',
+      filePath: '/private/tmp/avatar.jpg',
+    });
+    expect(rideService.registerProfileMedia).toHaveBeenCalledWith(
+      'cloud://env/profiles/owner/wechat-avatar.jpg',
+      'other',
+    );
+    expect(page.data.p.avatarId).toBe('cloud://env/profiles/owner/wechat-avatar.jpg');
+    expect(wx.showToast).toHaveBeenCalledWith({ title: '头像已选择，保存后生效' });
+  });
+
   it('选择照片后先请求 owner-bound path 再上传并写入 photos', async () => {
     const uploadFile = vi
       .fn()

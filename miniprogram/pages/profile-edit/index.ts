@@ -56,24 +56,22 @@ Page({
   set(e: any) {
     this.setData({ ['p.' + e.currentTarget.dataset.k]: e.detail.value });
   },
-  async addPhoto() {
+  async uploadProfileMedia(filePath: string) {
     let uploadedFileId = '';
     try {
       const cloud = wx.cloud;
-      if (!cloud) return wx.showToast({ title: '当前环境不支持云存储', icon: 'none' });
-      const choice = await wx.chooseMedia({ count: 1, mediaType: ['image'] });
-      const path = choice.tempFiles?.[0]?.tempFilePath;
-      if (!path) return;
+      if (!cloud) {
+        wx.showToast({ title: '当前环境不支持云存储', icon: 'none' });
+        return '';
+      }
       const cloudPath = await rideService.getProfileMediaUploadPath();
       const uploaded = await cloud.uploadFile({
         cloudPath,
-        filePath: path,
+        filePath,
       });
       uploadedFileId = uploaded.fileID;
       await rideService.registerProfileMedia(uploadedFileId, 'other');
-      const p = this.data.p;
-      p.photos = [...p.photos, { id: uploadedFileId, category: 'other' }];
-      this.setData({ p });
+      return uploadedFileId;
     } catch {
       if (uploadedFileId && wx.cloud) {
         let deleted = false;
@@ -87,7 +85,7 @@ Page({
             ),
           );
         } catch {
-          // Fall through to the durable orphan report below.
+          // 删除失败会进入持久化孤儿账本，后续打开资料页继续上报清理。
         }
         if (!deleted) {
           const orphan: MediaOrphan = { fileId: uploadedFileId, category: 'other' };
@@ -100,6 +98,34 @@ Page({
           }
         }
       }
+      wx.showToast({ title: '照片上传未完成，请检查真机权限与云存储配置', icon: 'none' });
+      return '';
+    }
+  },
+  async chooseAvatar(event: { detail?: { avatarUrl?: string } }) {
+    const p = this.data.p;
+    const path = event.detail?.avatarUrl;
+    if (!p || !path) return;
+    const avatarId = await this.uploadProfileMedia(path);
+    if (!avatarId) return;
+    this.setData({ p: { ...p, avatarId } });
+    wx.showToast({ title: '头像已选择，保存后生效' });
+  },
+  async addPhoto() {
+    const p = this.data.p;
+    if (!p) return;
+    try {
+      const cloud = wx.cloud;
+      if (!cloud) return wx.showToast({ title: '当前环境不支持云存储', icon: 'none' });
+      const choice = await wx.chooseMedia({ count: 1, mediaType: ['image'] });
+      const path = choice.tempFiles?.[0]?.tempFilePath;
+      if (!path) return;
+      const uploadedFileId = await this.uploadProfileMedia(path);
+      if (!uploadedFileId) return;
+      this.setData({
+        p: { ...p, photos: [...p.photos, { id: uploadedFileId, category: 'other' }] },
+      });
+    } catch {
       wx.showToast({ title: '照片上传未完成，请检查真机权限与云存储配置', icon: 'none' });
     }
   },

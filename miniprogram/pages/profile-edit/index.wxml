@@ -3,6 +3,17 @@
   <block wx:if="{{p}}">
     <view class="card form-card">
       <view class="title">展示身份</view>
+      <view class="avatar-field">
+        <view class="avatar-preview">
+          <image wx:if="{{p.avatarId}}" src="{{p.avatarId}}" mode="aspectFill" aria-hidden="true" />
+          <text wx:else>{{p.nickname ? p.nickname[0] : 'C'}}</text>
+        </view>
+        <view class="avatar-copy">
+          <view class="label">头像来源</view>
+          <view class="muted field-tip">可选择微信头像；后续 Strava 头像同步到资料后也会按你的保存选择展示。</view>
+          <button class="avatar-action" size="mini" open-type="chooseAvatar" bindchooseavatar="chooseAvatar">选择微信头像</button>
+        </view>
+      </view>
       <view class="field">
         <view class="label">昵称</view>
         <input class="input" value="{{p.nickname}}" data-k="nickname" bindinput="set" />

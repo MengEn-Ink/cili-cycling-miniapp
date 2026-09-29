@@ -2,9 +2,14 @@
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{loading ? '正在读取资料。正在同步最新资料' : (refreshing ? '正在更新资料' : (!error ? '资料已就绪' : ''))}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{error}}</view>
   <view class="brand-bar"><view class="cili-mark"><text class="mark-cut"></text></view><view class="brand-word">CILI <text>此里</text></view><view class="profile-code">RIDER / 01</view></view>
-  <view class="profile-hero">
-    <view class="avatar"><text>C</text></view>
-    <view class="profile-copy"><view class="hero-kicker">RIDER PROFILE</view><view class="profile-name">{{profile ? profile.nickname : '欢迎来到此里'}}</view><view class="auth-line"><text class="auth-dot {{authStatus === 'authenticated' ? 'verified' : ''}}"></text>{{authStatus === 'authenticated' ? '微信身份已验证' : '请先完成微信云身份验证'}}</view></view>
+  <view class="profile-hero {{hasProfileHeroBackground ? 'with-card-bg' : ''}}">
+    <image wx:if="{{hasProfileHeroBackground}}" class="hero-bg" src="{{profileHeroBackground}}" mode="aspectFill" aria-hidden="true" />
+    <view class="hero-shade"></view>
+    <view class="avatar">
+      <image wx:if="{{hasProfileAvatar}}" src="{{profileAvatarUrl}}" mode="aspectFill" aria-hidden="true" />
+      <text wx:else>{{profileInitial}}</text>
+    </view>
+    <view class="profile-copy"><view class="hero-kicker">RIDER PROFILE</view><view class="profile-name">{{profile ? profile.nickname : '欢迎来到此里'}}</view><view class="auth-line"><text class="auth-dot {{authStatus === 'authenticated' ? 'verified' : ''}}"></text>{{authStatus === 'authenticated' ? '微信身份已验证' : '请先完成微信云身份验证'}}</view><view class="card-sync-line" wx:if="{{profileCardStatus}}">名片背景 · STRAVA {{profileCardStatus}}</view></view>
   </view>
   <view class="card auth-card" wx:if="{{authStatus !== 'authenticated'}}"><view class="panel-index">IDENTITY CHECK</view><view class="title">身份引导</view><view class="muted">{{authError || '正在连接身份服务'}}</view><button class="secondary" bindtap="retryAuth">重试身份验证</button></view>
   <view class="section-label"><text>01</text> 我的资料</view>
