@@ -1,0 +1,59 @@
+.registrations-page {
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+}
+
+.page-heading {
+  padding: 28rpx 8rpx 20rpx;
+}
+
+.page-heading .hero-kicker {
+  color: #0b6b4f;
+}
+
+.heading-title {
+  margin: 8rpx 0 4rpx;
+  font-size: 44rpx;
+  font-weight: 800;
+}
+
+.registration-card {
+  margin-top: 20rpx;
+  padding: 28rpx;
+  border-left: 8rpx solid #0b6b4f;
+  border-radius: 22rpx;
+  background: #fff;
+  box-shadow: 0 8rpx 24rpx rgba(23, 35, 30, 0.06);
+}
+
+.registration-card--pressed {
+  background: #f8faf7;
+}
+
+.date {
+  color: #0b6b4f;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.registration-title {
+  margin: 24rpx 0;
+  font-size: 34rpx;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding-top: 18rpx;
+  border-top: 1rpx solid #edf1ee;
+  font-size: 23rpx;
+}
+
+.open-link {
+  flex: 0 0 auto;
+  color: #0b6b4f;
+  font-weight: 700;
+}

@@ -13,6 +13,7 @@ Page({
         items: activities.map((item) => ({
           ...item,
           occupied: item.occupiedCount || 0,
+          remaining: Math.max(item.capacity - (item.occupiedCount || 0), 0),
           displayStatus: activityDisplayStatus(item, item.occupiedCount || 0),
         })),
       });

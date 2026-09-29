@@ -1,0 +1,27 @@
+.activities-page {
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+}
+
+.activities-hero {
+  padding-top: 48rpx;
+  padding-bottom: 48rpx;
+}
+
+.section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin: 36rpx 4rpx 8rpx;
+}
+
+.section-title {
+  font-size: 36rpx;
+  font-weight: 800;
+}
+
+.count {
+  padding-bottom: 4rpx;
+  color: #0b6b4f;
+  font-weight: 700;
+}

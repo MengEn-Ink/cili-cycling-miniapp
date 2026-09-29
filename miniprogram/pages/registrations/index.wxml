@@ -1,1 +1,10 @@
-<view class="page"><view class="hero"><view>MY RIDES</view><view class="hero-title">我的报名</view><view>所有状态与凭证集中查看</view></view><state-view loading="{{loading}}" error="{{error}}" empty="{{!items.length}}"><view class="card" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="open"><view class="row"><view class="title">{{item.activity.title}}</view><text class="tag">{{item.statusText}}</text></view><view class="muted">{{item.activity.date}} · 更新于 {{item.updatedAt}}</view></view></state-view></view>
+<view class="page registrations-page">
+  <view class="page-heading"><view class="hero-kicker">MY RIDES</view><view class="heading-title">我的报名</view><view class="muted">所有状态与凭证集中查看</view></view>
+  <state-view loading="{{loading}}" error="{{error}}" empty="{{!items.length}}">
+    <view class="registration-card" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="open" hover-class="registration-card--pressed">
+      <view class="row"><text class="date">{{item.activity.date}}</text><status-pill status="{{item.statusText}}"/></view>
+      <view class="registration-title">{{item.activity.title}}</view>
+      <view class="card-footer"><text class="muted">更新于 {{item.updatedAt}}</text><text class="open-link">查看详情 ›</text></view>
+    </view>
+  </state-view>
+</view>

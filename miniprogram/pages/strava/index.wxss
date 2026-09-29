@@ -1,0 +1,117 @@
+.strava-page {
+  padding-bottom: calc(52rpx + env(safe-area-inset-bottom));
+}
+
+.strava-head {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  padding: 28rpx 8rpx;
+}
+
+.strava-head .hero-kicker {
+  color: #ff6b35;
+}
+
+.strava-mark {
+  display: flex;
+  flex: 0 0 100rpx;
+  align-items: center;
+  justify-content: center;
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 24rpx;
+  background: #ff6b35;
+  color: #fff;
+  font-size: 42rpx;
+  font-weight: 900;
+}
+
+.strava-title {
+  font-size: 40rpx;
+  font-weight: 800;
+}
+
+.status-card {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 12rpx;
+  padding: 28rpx;
+  border: 2rpx solid #dfe7e2;
+  border-radius: 22rpx;
+  background: #fff;
+}
+
+.status-ready {
+  border-color: #bce3ce;
+  background: #f3fbf6;
+}
+
+.status-failed {
+  border-color: #efcaca;
+  background: #fff8f8;
+}
+
+.status-syncing,
+.status-authorizing {
+  border-color: #efd9aa;
+  background: #fffbf3;
+}
+
+.status-icon {
+  display: flex;
+  flex: 0 0 48rpx;
+  align-items: center;
+  justify-content: center;
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  background: #0b6b4f;
+  color: #fff;
+  font-weight: 800;
+}
+
+.status-failed .status-icon {
+  background: #d94b4b;
+}
+
+.status-syncing .status-icon,
+.status-authorizing .status-icon {
+  background: #e6a23c;
+}
+
+.status-copy {
+  min-width: 0;
+}
+
+.status-title {
+  font-size: 30rpx;
+  font-weight: 800;
+}
+
+.status-help {
+  margin-top: 8rpx;
+  color: #718078;
+  font-size: 24rpx;
+}
+
+.inner-label {
+  margin: 0 0 8rpx;
+}
+
+.athlete-name {
+  font-size: 36rpx;
+  font-weight: 800;
+}
+
+.snapshot {
+  margin-top: 24rpx;
+}
+
+.error-card {
+  margin-top: 16rpx;
+  padding: 24rpx;
+  border-radius: 18rpx;
+  background: #fceded;
+  color: #d94b4b;
+}
