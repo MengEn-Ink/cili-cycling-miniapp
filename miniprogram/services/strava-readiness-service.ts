@@ -5,6 +5,7 @@ export interface PollStravaReadinessOptions {
   timeoutMs?: number;
   sleep?: (ms: number) => Promise<void>;
   now?: () => number;
+  isCancelled?: () => boolean;
 }
 
 const timeout = Symbol('strava-readiness-timeout');
@@ -48,17 +49,19 @@ export async function pollStravaReadiness(
   const sleep =
     options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   const now = options.now ?? Date.now;
+  const isCancelled = options.isCancelled ?? (() => false);
   const startedAt = now();
   let previous: StravaReadiness | undefined;
 
   for (;;) {
+    if (previous && isCancelled()) return previous;
     const remainingMs = timeoutMs - (now() - startedAt);
     if (remainingMs <= 0) return timeoutReadiness(previous);
 
     const readiness = await waitUntilDeadline(ensureReady(), remainingMs);
     if (readiness === timeout) return timeoutReadiness(previous);
     previous = readiness;
-    if (readiness.state !== 'syncing') return readiness;
+    if (isCancelled() || readiness.state !== 'syncing') return readiness;
 
     const elapsed = now() - startedAt;
     if (elapsed >= timeoutMs) return timeoutReadiness(readiness);

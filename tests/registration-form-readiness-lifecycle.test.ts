@@ -33,6 +33,10 @@ function readiness(state: StravaReadiness['state']): StravaReadiness {
   };
 }
 
+async function flushMicrotasks(): Promise<void> {
+  for (let index = 0; index < 5; index += 1) await Promise.resolve();
+}
+
 describe('报名页 Strava readiness 请求代际', () => {
   let page: any;
 
@@ -48,7 +52,10 @@ describe('报名页 Strava readiness 请求代际', () => {
     await import('../miniprogram/pages/registration-form/index');
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
 
   it('重复 onShow 时忽略较早请求的迟到结果', async () => {
     let resolveFirstProfile!: (value: Profile) => void;
@@ -92,4 +99,34 @@ describe('报名页 Strava readiness 请求代际', () => {
 
     expect(page.setData).not.toHaveBeenCalled();
   });
+
+  it.each(['onHide', 'onUnload'] as const)(
+    '%s 后当前 ensure 返回 syncing 时不再发起下一轮',
+    async (lifecycle) => {
+      vi.useFakeTimers();
+      let resolveEnsure!: (value: StravaReadiness) => void;
+      rideService.getProfile.mockResolvedValue(profile);
+      rideService.getStravaReadiness.mockResolvedValue(readiness('syncing'));
+      rideService.ensureStravaReady
+        .mockImplementationOnce(
+          () =>
+            new Promise<StravaReadiness>((resolve) => {
+              resolveEnsure = resolve;
+            }),
+        )
+        .mockResolvedValueOnce(readiness('ready'));
+
+      const show = page.onShow();
+      await flushMicrotasks();
+      expect(rideService.ensureStravaReady).toHaveBeenCalledOnce();
+
+      page[lifecycle]();
+      resolveEnsure(readiness('syncing'));
+      await flushMicrotasks();
+      await vi.advanceTimersByTimeAsync(1500);
+      await show;
+
+      expect(rideService.ensureStravaReady).toHaveBeenCalledOnce();
+    },
+  );
 });

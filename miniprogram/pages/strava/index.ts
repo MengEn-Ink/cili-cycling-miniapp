@@ -51,6 +51,7 @@ Page({
   },
   async load() {
     const requestId = ++this.loadRequestId;
+    if (this.data.busyAction === 'retry') this.setData({ busyAction: null });
     this.setData({ loading: true, error: '' });
     const status = await runPageTask(() => rideService.getStravaReadiness(), 'Strava 状态加载失败');
     if (requestId !== this.loadRequestId) return;
@@ -62,7 +63,10 @@ Page({
     let readiness = status.data;
     if (readiness.state === 'syncing' || readiness.state === 'failed') {
       const prepared = await runPageTask(
-        () => pollStravaReadiness(() => rideService.ensureStravaReady()),
+        () =>
+          pollStravaReadiness(() => rideService.ensureStravaReady(), {
+            isCancelled: () => requestId !== this.loadRequestId,
+          }),
         'Strava 数据准备失败',
       );
       if (requestId !== this.loadRequestId) return;
@@ -92,16 +96,20 @@ Page({
   },
   async retry() {
     if (this.data.busyAction) return;
+    const requestId = ++this.loadRequestId;
     this.setData({ busyAction: 'retry', error: '' });
     try {
       const state = await runPageTask(
-        () => pollStravaReadiness(() => rideService.ensureStravaReady()),
+        () =>
+          pollStravaReadiness(() => rideService.ensureStravaReady(), {
+            isCancelled: () => requestId !== this.loadRequestId,
+          }),
         'Strava 数据准备失败',
       );
-      if (state.data) this.setReadiness(state.data);
-      this.setData({ error: state.error });
+      if (state.data && requestId === this.loadRequestId) this.setReadiness(state.data);
+      if (requestId === this.loadRequestId) this.setData({ error: state.error });
     } finally {
-      this.setData({ busyAction: null });
+      if (requestId === this.loadRequestId) this.setData({ busyAction: null });
     }
   },
   async disconnect() {

@@ -31,10 +31,10 @@ function requestFailedReadiness(message: string): StravaReadiness {
   };
 }
 
-async function loadBoundedReadiness(): Promise<StravaReadiness> {
+async function loadBoundedReadiness(isCancelled: () => boolean): Promise<StravaReadiness> {
   const status = await rideService.getStravaReadiness();
-  if (status.state !== 'syncing' && status.state !== 'failed') return status;
-  return pollStravaReadiness(() => rideService.ensureStravaReady());
+  if (isCancelled() || (status.state !== 'syncing' && status.state !== 'failed')) return status;
+  return pollStravaReadiness(() => rideService.ensureStravaReady(), { isCancelled });
 }
 
 Page({
@@ -53,10 +53,11 @@ Page({
   },
   async onShow() {
     const requestId = ++this.loadRequestId;
+    const isCancelled = () => requestId !== this.loadRequestId;
     this.setData({ loading: true, errors: [] });
     const [profileState, readinessState] = await Promise.all([
       runPageTask(() => rideService.getProfile(), '个人资料加载失败'),
-      runPageTask(loadBoundedReadiness, 'Strava 数据准备状态加载失败'),
+      runPageTask(() => loadBoundedReadiness(isCancelled), 'Strava 数据准备状态加载失败'),
     ]);
     if (requestId !== this.loadRequestId) return;
     const errors = [profileState.error, readinessState.error].filter(Boolean);

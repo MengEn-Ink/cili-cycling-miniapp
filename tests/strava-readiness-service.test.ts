@@ -27,6 +27,10 @@ function readiness(state: StravaReadinessState): StravaReadiness {
   };
 }
 
+async function flushMicrotasks(): Promise<void> {
+  for (let index = 0; index < 5; index += 1) await Promise.resolve();
+}
+
 describe('Strava readiness 轮询', () => {
   afterEach(() => vi.useRealTimers());
 
@@ -92,6 +96,29 @@ describe('Strava readiness 轮询', () => {
     expect(ensure).toHaveBeenCalledOnce();
   });
 
+  it('取消后当前 ensure 返回即停止轮询', async () => {
+    let cancelled = false;
+    let resolveEnsure!: (value: StravaReadiness) => void;
+    const ensure = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<StravaReadiness>((resolve) => {
+            resolveEnsure = resolve;
+          }),
+      )
+      .mockResolvedValueOnce(readiness('ready'));
+    const sleep = vi.fn(async () => undefined);
+
+    const pending = pollStravaReadiness(ensure, { sleep, isCancelled: () => cancelled });
+    cancelled = true;
+    resolveEnsure(readiness('syncing'));
+
+    await expect(pending).resolves.toEqual(readiness('syncing'));
+    expect(ensure).toHaveBeenCalledOnce();
+    expect(sleep).not.toHaveBeenCalled();
+  });
+
   it.each(['ready', 'failed', 'disconnected', 'authorizing'] as const)(
     '立即返回终态 %s',
     async (state) => {
@@ -138,7 +165,10 @@ describe('Strava 页面编排', () => {
     await import('../miniprogram/pages/strava/index');
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
 
   it('同步中自动 ensure 直到 ready', async () => {
     rideService.getStravaReadiness.mockResolvedValue(readiness('syncing'));
@@ -165,11 +195,11 @@ describe('Strava 页面编排', () => {
 
     page.onShow();
     page.onShow();
-    for (let index = 0; index < 5; index += 1) await Promise.resolve();
+    await flushMicrotasks();
     expect(page.data.readiness).toEqual(readiness('ready'));
 
     resolveFirst(readiness('disconnected'));
-    for (let index = 0; index < 5; index += 1) await Promise.resolve();
+    await flushMicrotasks();
     expect(page.data.readiness).toEqual(readiness('ready'));
   });
 
@@ -187,9 +217,91 @@ describe('Strava 页面编排', () => {
     page[lifecycle]?.();
     setData.mockClear();
     resolveReadiness(readiness('ready'));
-    for (let index = 0; index < 5; index += 1) await Promise.resolve();
+    await flushMicrotasks();
 
     expect(setData).not.toHaveBeenCalled();
+  });
+
+  it.each(['onHide', 'onUnload'] as const)(
+    '%s 后当前 ensure 返回 syncing 时不再发起下一轮',
+    async (lifecycle) => {
+      vi.useFakeTimers();
+      let resolveEnsure!: (value: StravaReadiness) => void;
+      rideService.getStravaReadiness.mockResolvedValue(readiness('syncing'));
+      rideService.ensureStravaReady
+        .mockImplementationOnce(
+          () =>
+            new Promise<StravaReadiness>((resolve) => {
+              resolveEnsure = resolve;
+            }),
+        )
+        .mockResolvedValueOnce(readiness('ready'));
+
+      page.onShow();
+      await flushMicrotasks();
+      expect(rideService.ensureStravaReady).toHaveBeenCalledOnce();
+
+      page[lifecycle]();
+      resolveEnsure(readiness('syncing'));
+      await flushMicrotasks();
+      await vi.advanceTimersByTimeAsync(1500);
+
+      expect(rideService.ensureStravaReady).toHaveBeenCalledOnce();
+    },
+  );
+
+  it('新的 onShow 使手动 retry 失效且不接受其迟到结果', async () => {
+    vi.useFakeTimers();
+    let resolveRetry!: (value: StravaReadiness) => void;
+    rideService.ensureStravaReady
+      .mockImplementationOnce(
+        () =>
+          new Promise<StravaReadiness>((resolve) => {
+            resolveRetry = resolve;
+          }),
+      )
+      .mockResolvedValueOnce(readiness('disconnected'));
+    rideService.getStravaReadiness.mockResolvedValue(readiness('ready'));
+
+    const retry = page.retry();
+    await flushMicrotasks();
+    page.onShow();
+    await flushMicrotasks();
+    expect(page.data.readiness).toEqual(readiness('ready'));
+    expect(page.data.busyAction).toBeNull();
+
+    resolveRetry(readiness('syncing'));
+    await flushMicrotasks();
+    await vi.advanceTimersByTimeAsync(1500);
+    await retry;
+    expect(page.data.readiness).toEqual(readiness('ready'));
+    expect(rideService.ensureStravaReady).toHaveBeenCalledOnce();
+  });
+
+  it.each(['onHide', 'onUnload'] as const)('%s 后手动 retry 不再 setData', async (lifecycle) => {
+    vi.useFakeTimers();
+    let resolveRetry!: (value: StravaReadiness) => void;
+    rideService.ensureStravaReady
+      .mockImplementationOnce(
+        () =>
+          new Promise<StravaReadiness>((resolve) => {
+            resolveRetry = resolve;
+          }),
+      )
+      .mockResolvedValueOnce(readiness('ready'));
+    const setData = vi.spyOn(page, 'setData');
+
+    const retry = page.retry();
+    await flushMicrotasks();
+    page[lifecycle]();
+    setData.mockClear();
+    resolveRetry(readiness('syncing'));
+    await flushMicrotasks();
+    await vi.advanceTimersByTimeAsync(1500);
+    await retry;
+
+    expect(setData).not.toHaveBeenCalled();
+    expect(rideService.ensureStravaReady).toHaveBeenCalledOnce();
   });
 
   it('busy 时忽略重复授权', async () => {
