@@ -767,6 +767,14 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     ]);
   });
 
+  it('取消浏览器授权只发送 cancelAuthorization action', async () => {
+    const { cloud, callFunction } = cloudWith(success({ cancelled: 1 }));
+
+    await new CloudRepository(cloud).cancelStravaAuthorization();
+
+    expectCall(callFunction, 'strava-auth', { action: 'cancelAuthorization' });
+  });
+
   it('映射失败的 Strava readiness，保留可重试错误且不伪造快照', async () => {
     const { cloud } = cloudWith(
       success({

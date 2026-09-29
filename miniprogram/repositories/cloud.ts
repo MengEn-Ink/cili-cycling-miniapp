@@ -579,6 +579,9 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
       return invalidResponse();
     return { authorizationUrl: value.authorization_url, expiresAt: value.expires_at };
   }
+  async cancelStravaAuthorization() {
+    await this.call('strava-auth', { action: 'cancelAuthorization' });
+  }
   async syncStrava() {
     return mapStrava(await this.call('strava-auth', { action: 'sync' }));
   }

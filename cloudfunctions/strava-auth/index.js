@@ -32,7 +32,12 @@ exports.main = async (event = {}) => {
     const cfg = config(process.env);
     const { OPENID } = cloud.getWXContext();
     if (!OPENID) throw Object.assign(new Error('无法取得微信身份'), { code: 'UNAUTHENTICATED' });
-    if (event.action === 'status' || event.action === 'start') await cleanupExpiredStates();
+    if (
+      event.action === 'status' ||
+      event.action === 'start' ||
+      event.action === 'cancelAuthorization'
+    )
+      await cleanupExpiredStates();
     if (event.action === 'status') {
       const now = new Date();
       return ok(deriveReadiness(await store.readReadiness(OPENID, now), now));
@@ -55,6 +60,8 @@ exports.main = async (event = {}) => {
         expires_at: state.expiresAt.toISOString(),
       });
     }
+    if (event.action === 'cancelAuthorization')
+      return ok(await store.cancelAuthorization(OPENID, new Date()));
     if (event.action === 'ensureReady' || event.action === 'sync')
       return ok(
         await ensureReadyFlow({

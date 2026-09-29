@@ -158,6 +158,11 @@ export class MockRepository implements RideRepository {
   async startStrava() {
     return { authorizationUrl: 'https://example.test/mock', expiresAt: new Date().toISOString() };
   }
+  async cancelStravaAuthorization() {
+    const s = this.read();
+    s.stravaStatus = 'pending';
+    this.write(s);
+  }
   async syncStrava() {
     return this.getStravaStatus();
   }

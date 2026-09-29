@@ -51,18 +51,26 @@ function fakeDb(seed = {}) {
     },
     where(query) {
       calls.push({ scope, operation: 'where', collection: name, query });
+      const matches = () =>
+        [...ensure(name).entries()].filter(([, value]) => {
+          if (value.openid !== query.openid) return false;
+          if (query.expires_at?.kind === 'gt' && !(value.expires_at > query.expires_at.value))
+            return false;
+          if (query.consumed_at?.kind === 'exists' && query.consumed_at.value === false)
+            return !Object.hasOwn(value, 'consumed_at');
+          return true;
+        });
       return {
+        async update({ data }) {
+          calls.push({ scope, operation: 'updateWhere', collection: name, query });
+          const matched = matches();
+          for (const [id, value] of matched) ensure(name).set(id, applyData(value, data));
+          return { stats: { updated: matched.length } };
+        },
         limit(limit) {
           return {
             async get() {
-              const values = [...ensure(name).values()].filter((value) => {
-                if (value.openid !== query.openid) return false;
-                if (query.expires_at?.kind === 'gt' && !(value.expires_at > query.expires_at.value))
-                  return false;
-                if (query.consumed_at?.kind === 'exists' && query.consumed_at.value === false)
-                  return !Object.hasOwn(value, 'consumed_at');
-                return true;
-              });
+              const values = matches().map(([, value]) => value);
               return { data: values.slice(0, limit) };
             },
           };
@@ -126,6 +134,25 @@ test('readReadiness 只把当前用户未过期未消费 state 视为 active', a
   assert.equal(result.credential, undefined);
   assert.equal(result.snapshot, undefined);
   assert.equal(result.hasActiveOAuthState, true);
+});
+
+test('cancelAuthorization 只使当前用户未过期 state 失效', async () => {
+  const now = new Date('2026-09-29T04:00:00.000Z');
+  const fixture = fakeDb({
+    oauth_states: {
+      active: { openid: 'user-1', expires_at: new Date(now.getTime() + 1) },
+      expired: { openid: 'user-1', expires_at: new Date(now.getTime() - 1) },
+      other: { openid: 'user-2', expires_at: new Date(now.getTime() + 1) },
+    },
+  });
+
+  const result = await createReadinessStore(fixture.db).cancelAuthorization('user-1', now);
+
+  assert.equal(result.cancelled, 1);
+  assert.equal(fixture.state.oauth_states.get('active').cancelled_at, fixture.SERVER_DATE);
+  assert.equal(fixture.state.oauth_states.get('active').consumed_at, fixture.SERVER_DATE);
+  assert.equal(fixture.state.oauth_states.get('expired').consumed_at, undefined);
+  assert.equal(fixture.state.oauth_states.get('other').consumed_at, undefined);
 });
 
 test('acquireSyncLease 在事务内重读且 fresh snapshot 不产生写入', async () => {
@@ -340,7 +367,7 @@ test('disconnect 通过 transaction 读取 profile 并原子删除 canonical 数
   assert.equal(fixture.state.audit_logs.size, 1);
 });
 
-test('status 与 ensureReady 路由都返回 canonical readiness DTO', async () => {
+test('status、ensureReady 与 cancelAuthorization 路由可用', async () => {
   const now = new Date();
   const fixture = fakeDb({
     strava_credentials: {
@@ -411,6 +438,9 @@ test('status 与 ensureReady 路由都返回 canonical readiness DTO', async () 
       assert.equal(response.data.can_register, true);
       assert.equal(response.data.athlete_name, 'Rider');
     }
+    const cancelled = await main({ action: 'cancelAuthorization' });
+    assert.equal(cancelled.ok, true);
+    assert.equal(cancelled.data.cancelled, 0);
   } finally {
     for (const [name, value] of Object.entries({
       STRAVA_CLIENT_ID: previous.clientId,

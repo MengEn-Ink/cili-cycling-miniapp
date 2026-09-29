@@ -1,4 +1,4 @@
-import type { StravaReadiness } from '../models';
+import type { StravaReadiness, StravaSnapshot } from '../models';
 
 export interface PollStravaReadinessOptions {
   intervalMs?: number;
@@ -6,6 +6,38 @@ export interface PollStravaReadinessOptions {
   sleep?: (ms: number) => Promise<void>;
   now?: () => number;
   isCancelled?: () => boolean;
+}
+
+export interface StravaSnapshotMeta {
+  coverageText: string;
+  syncedAtText: string;
+  coverageComplete: boolean | null;
+}
+
+function shortDate(value: string): string {
+  return value.slice(0, 10);
+}
+
+function shortDateTime(value: string): string {
+  return value.replace('T', ' ').slice(0, 16);
+}
+
+export function stravaSnapshotMeta(snapshot: StravaSnapshot | null): StravaSnapshotMeta {
+  if (!snapshot) {
+    return {
+      coverageText: '近 90 天覆盖范围未知',
+      syncedAtText: '尚无同步时间',
+      coverageComplete: null,
+    };
+  }
+  const coverage = snapshot.coverage;
+  return {
+    coverageText: coverage
+      ? `${shortDate(coverage.from)} 至 ${shortDate(coverage.to)} · ${coverage.complete ? '已完整覆盖' : '数据可能不完整'}`
+      : '近 90 天覆盖范围未知',
+    syncedAtText: `同步于 ${shortDateTime(snapshot.syncedAt)}`,
+    coverageComplete: coverage?.complete ?? null,
+  };
 }
 
 const timeout = Symbol('strava-readiness-timeout');
@@ -20,6 +52,21 @@ function timeoutReadiness(previous?: StravaReadiness): StravaReadiness {
     error: {
       code: 'STRAVA_SYNC_TIMEOUT',
       message: '数据准备超时，请重试',
+      retryable: true,
+    },
+  };
+}
+
+function authorizationTimeoutReadiness(previous?: StravaReadiness): StravaReadiness {
+  return {
+    ...previous,
+    state: 'failed',
+    canRegister: false,
+    athleteName: previous?.athleteName ?? null,
+    snapshot: previous?.snapshot ?? null,
+    error: {
+      code: 'STRAVA_AUTH_STATUS_TIMEOUT',
+      message: '授权状态检查超时，请返回后重试',
       retryable: true,
     },
   };
@@ -80,17 +127,26 @@ export async function pollStravaAuthorization(
   const now = options.now ?? Date.now;
   const isCancelled = options.isCancelled ?? (() => false);
   const startedAt = now();
-  let readiness = await readStatus();
+  let readiness: StravaReadiness | undefined;
 
   // 用户从系统浏览器返回微信时没有可靠回调事件，只能在页面可见期间轮询服务端状态。
-  while (readiness.state === 'authorizing' && !isCancelled()) {
+  for (;;) {
+    if (readiness && isCancelled()) return readiness;
+    const remainingMs = timeoutMs - (now() - startedAt);
+    if (remainingMs <= 0) return authorizationTimeoutReadiness(readiness);
+    const next = await waitUntilDeadline(readStatus(), remainingMs);
+    if (next === timeout) return authorizationTimeoutReadiness(readiness);
+    readiness = next;
+    if (isCancelled() || readiness.state !== 'authorizing') return readiness;
+
     const elapsed = now() - startedAt;
-    if (elapsed >= timeoutMs) return readiness;
-    await sleep(Math.min(intervalMs, timeoutMs - elapsed));
-    if (isCancelled()) return readiness;
-    readiness = await readStatus();
+    if (elapsed >= timeoutMs) return authorizationTimeoutReadiness(readiness);
+    const waited = await waitUntilDeadline(
+      sleep(Math.min(intervalMs, timeoutMs - elapsed)),
+      timeoutMs - elapsed,
+    );
+    if (waited === timeout) return authorizationTimeoutReadiness(readiness);
   }
-  return readiness;
 }
 
 export function stravaReadinessMessage(readiness: StravaReadiness): string {
