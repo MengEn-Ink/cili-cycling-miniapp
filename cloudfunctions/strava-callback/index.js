@@ -1,7 +1,9 @@
 'use strict';
+const crypto = require('node:crypto');
 const cloud = require('wx-server-sdk');
 const { callbackFlow, writableDocument, toError } = require('./oauth/core');
 const { stravaApi } = require('./oauth/api');
+const { redirect303, resultLocation, renderResultPage } = require('./http');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 async function maybeProfile(openid) {
@@ -46,28 +48,47 @@ const store = {
       });
   },
 };
-const page = (success, message) => ({
-  statusCode: success ? 200 : 400,
-  headers: {
-    'content-type': 'text/html; charset=utf-8',
-    'cache-control': 'no-store',
-    'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'",
-  },
-  body: `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Strava 授权</title><style>body{font-family:sans-serif;padding:32px;color:#173c2d}</style><h2>${success ? '绑定成功' : '绑定失败'}</h2><p>${message}</p><p>请返回小程序刷新绑定状态。</p>`,
-});
-exports.main = async (event = {}) => {
-  const query = event.queryStringParameters || event.query || event;
-  try {
-    await callbackFlow({
+function eventPath(event) {
+  return event.path || event.rawPath || (event.requestContext && event.requestContext.path) || '';
+}
+
+function createHandler({ callbackUrl, handleCallback, randomNonce, logger }) {
+  const nonce = randomNonce || (() => crypto.randomBytes(18).toString('base64url'));
+  const output = logger || console;
+  const configuredUrl = () => (typeof callbackUrl === 'function' ? callbackUrl() : callbackUrl);
+
+  return async (event = {}) => {
+    const path = eventPath(event);
+    if (path === '/strava/success') {
+      return renderResultPage({ success: true, nonce: nonce() });
+    }
+    if (path === '/strava/failure') {
+      return renderResultPage({ success: false, nonce: nonce() });
+    }
+
+    const query = event.queryStringParameters || event.query || event;
+    try {
+      await handleCallback(query);
+      return redirect303(resultLocation(configuredUrl(), true));
+    } catch (error) {
+      const safe = toError(error);
+      output.error('strava_callback_failed', { code: safe.error.code });
+      return redirect303(resultLocation(configuredUrl(), false));
+    }
+  };
+}
+
+const main = createHandler({
+  callbackUrl: () => process.env.STRAVA_CALLBACK_URL,
+  handleCallback: (query) =>
+    callbackFlow({
       code: query.code,
       state: query.state,
       env: process.env,
       store,
       api: stravaApi,
-    });
-    return page(true, 'Strava 已安全绑定，页面未包含任何 token。');
-  } catch (error) {
-    const safe = toError(error);
-    return page(false, safe.error.message);
-  }
-};
+    }),
+});
+
+exports.main = main;
+exports.createHandler = createHandler;
