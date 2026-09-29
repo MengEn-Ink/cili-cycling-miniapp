@@ -28,7 +28,12 @@ test('discovery 使用 status/cleanup_after 索引条件、排序和硬上限', 
       return this;
     },
     async get() {
-      return { data: [{ _id: `media-${status}` }] };
+      return {
+        data:
+          status === 'unreferenced'
+            ? Array.from({ length: 20 }, (_, index) => ({ _id: `media-unreferenced-${index}` }))
+            : [{ _id: `media-${status}` }],
+      };
     },
   };
   const db = {
@@ -42,7 +47,10 @@ test('discovery 使用 status/cleanup_after 索引条件、排序和硬上限', 
     new Date('2026-09-29T12:00:00.000Z'),
     20,
   );
-  assert.deepEqual(result, ['media-unreferenced', 'media-deleting', 'media-delete_failed']);
+  assert.equal(result.length, 20);
+  assert.equal(result.includes('media-deleting'), true);
+  assert.equal(result.includes('media-delete_failed'), true);
+  assert.equal(result.filter((id) => id.startsWith('media-unreferenced-')).length, 18);
   assert.deepEqual(calls, [
     [
       'where',

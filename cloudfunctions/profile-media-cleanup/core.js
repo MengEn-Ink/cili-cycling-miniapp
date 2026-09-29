@@ -88,10 +88,15 @@ function failureDecision(record, now, errorCode) {
 }
 
 function deleteAccepted(response, fileId) {
-  return Boolean(
+  const item =
     response &&
     Array.isArray(response.fileList) &&
-    response.fileList.some((item) => item && item.fileID === fileId && Number(item.status) === 0),
+    response.fileList.find((entry) => entry && entry.fileID === fileId);
+  return Boolean(
+    item &&
+    (Number(item.status) === 0 ||
+      Number(item.status) === -503003 ||
+      /STORAGE_FILE_NONEXIST|not[ _-]?found|not exist/i.test(String(item.errMsg || ''))),
   );
 }
 

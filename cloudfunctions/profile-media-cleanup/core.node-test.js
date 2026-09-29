@@ -195,3 +195,43 @@ test('executor 有界发现并记录 deleted/delete_failed，不泄漏底层错�
   assert.equal(deleted.length, 19);
   assert.deepEqual(failed, [{ id: 'media-1', errorCode: 'DELETE_FAILED' }]);
 });
+
+test('重领 deleting 后 CloudBase 返回文件不存在时按幂等成功标记 deleted', async () => {
+  const deleted = [];
+  const failed = [];
+  const result = await drainMediaCleanup({
+    now,
+    randomUUID: () => 'lease-reclaimed',
+    store: {
+      listEligible: async () => ['media-1'],
+      claim: async () => ({
+        ...record,
+        status: 'deleting',
+        claimed: true,
+        delete_attempts: 2,
+        delete_lease_id: 'lease-reclaimed',
+      }),
+      markDeleted: async (id) => {
+        deleted.push(id);
+        return true;
+      },
+      markFailed: async (id) => {
+        failed.push(id);
+        return true;
+      },
+    },
+    deleteFile: async () => ({
+      fileList: [
+        {
+          fileID: record.file_id,
+          status: -503003,
+          errMsg: 'STORAGE_FILE_NONEXIST',
+        },
+      ],
+    }),
+  });
+  assert.deepEqual(deleted, ['media-1']);
+  assert.deepEqual(failed, []);
+  assert.equal(result.deleted, 1);
+  assert.equal(result.failed, 0);
+});

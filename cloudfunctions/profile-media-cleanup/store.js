@@ -47,10 +47,20 @@ function createCleanupStore(db) {
             .get(),
         ),
       );
-      return [...new Set(results.flatMap((result) => result.data.map((item) => item._id)))].slice(
-        0,
-        bounded,
-      );
+      const queues = results.map((result) => result.data.map((item) => item._id));
+      const selected = [];
+      const seen = new Set();
+      while (selected.length < bounded && queues.some((queue) => queue.length)) {
+        for (const queue of queues) {
+          const id = queue.shift();
+          if (id && !seen.has(id)) {
+            seen.add(id);
+            selected.push(id);
+            if (selected.length >= bounded) break;
+          }
+        }
+      }
+      return selected;
     },
     claim: (id, fence) =>
       db.runTransaction(async (tx) => {
