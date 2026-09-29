@@ -65,11 +65,21 @@ function assertRejectedWithoutSentinel(result, sentinel) {
   assert.match(result.stderr, /P0 真实旅程证据校验失败/);
 }
 
-test('accepts the documented registrationId and target_id schema', async () => {
+test('accepts the documented subjectAlias, registrationId, and target_id schema', async () => {
   const result = await runVerifier(validEvidence);
 
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /P0 真实旅程证据校验通过/);
+});
+
+test('requires a root subjectAlias', async () => {
+  const evidence = structuredClone(validEvidence);
+  delete evidence.subjectAlias;
+
+  const result = await runVerifier(evidence);
+
+  assert.equal(result.status, 1, result.stdout);
+  assert.match(result.stderr, /P0 真实旅程证据校验失败/);
 });
 
 test('rejects an unknown root key before its sentinel can reach output', async () => {
@@ -105,6 +115,15 @@ for (const [index, key] of forbiddenKeyVariants.entries()) {
 }
 
 for (const { label, value } of invalidExportedIdentifiers) {
+  test(`rejects ${label} used as the subject alias`, async () => {
+    const evidence = structuredClone(validEvidence);
+    evidence.subjectAlias = value;
+
+    const result = await runVerifier(evidence);
+
+    assertRejectedWithoutSentinel(result, value);
+  });
+
   test(`rejects ${label} used as the registration identifier`, async () => {
     const evidence = structuredClone(validEvidence);
     evidence.registrationId = value;
@@ -129,6 +148,40 @@ for (const { label, value } of invalidExportedIdentifiers) {
     assertRejectedWithoutSentinel(result, value);
   });
 }
+
+test('rejects a reg_test alias used as the subject alias', async () => {
+  const invalidAlias = 'reg_test_wrong_subject_role';
+  const evidence = structuredClone(validEvidence);
+  evidence.subjectAlias = invalidAlias;
+
+  const result = await runVerifier(evidence);
+
+  assertRejectedWithoutSentinel(result, invalidAlias);
+});
+
+test('rejects a Strava target from a different synthetic subject', async () => {
+  const mismatchedAlias = 'user_test_different_subject';
+  const evidence = structuredClone(validEvidence);
+  const syncAudit = evidence.audits.find((audit) => audit.action === 'strava.sync.succeeded');
+  syncAudit.target_id = mismatchedAlias;
+
+  const result = await runVerifier(evidence);
+
+  assertRejectedWithoutSentinel(result, mismatchedAlias);
+});
+
+test('rejects a registration audit target that differs from registrationId', async () => {
+  const mismatchedAlias = 'reg_test_different_registration';
+  const evidence = structuredClone(validEvidence);
+  const registrationAudit = evidence.audits.find((audit) =>
+    audit.action.startsWith('registration.'),
+  );
+  registrationAudit.target_id = mismatchedAlias;
+
+  const result = await runVerifier(evidence);
+
+  assertRejectedWithoutSentinel(result, mismatchedAlias);
+});
 
 test('rejects a user_test alias used as the registration identifier', async () => {
   const invalidAlias = 'user_test_wrong_registration_role';

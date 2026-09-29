@@ -1,5 +1,6 @@
 {
   "marker": "E2E_RESULT:P0_READY_JOURNEY_REJECT",
+  "subjectAlias": "user_test_reject",
   "registrationId": "reg_test_reject",
   "statuses": ["pending", "approved", "cancelled", "pending"],
   "occupiedCounts": [3, 4, 4, 3, 4],

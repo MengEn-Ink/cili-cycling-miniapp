@@ -4,7 +4,14 @@ import { readFile } from 'node:fs/promises';
 
 const SUCCESS_MESSAGE = 'P0 真实旅程证据校验通过';
 const FAILURE_PREFIX = 'P0 真实旅程证据校验失败';
-const ROOT_KEYS = new Set(['marker', 'registrationId', 'statuses', 'occupiedCounts', 'audits']);
+const ROOT_KEYS = new Set([
+  'marker',
+  'subjectAlias',
+  'registrationId',
+  'statuses',
+  'occupiedCounts',
+  'audits',
+]);
 const AUDIT_KEYS = new Set(['action', 'target_id', 'created_at']);
 const FORBIDDEN_NORMALIZED_KEYS = new Set([
   'phone',
@@ -95,6 +102,10 @@ function validateEvidenceSchema(evidence) {
     fail('marker 必须是字符串');
   }
 
+  if (typeof evidence.subjectAlias !== 'string' || evidence.subjectAlias.length === 0) {
+    fail('subjectAlias 必须是非空字符串');
+  }
+
   if (typeof evidence.registrationId !== 'string' || evidence.registrationId.length === 0) {
     fail('registrationId 必须是非空字符串');
   }
@@ -138,6 +149,10 @@ function validateEvidenceSchema(evidence) {
 }
 
 function validateSyntheticAliases(evidence) {
+  if (!USER_ALIAS.test(evidence.subjectAlias)) {
+    fail('导出标识符必须使用合成别名');
+  }
+
   if (!REGISTRATION_ALIAS.test(evidence.registrationId)) {
     fail('导出标识符必须使用合成别名');
   }
@@ -163,7 +178,11 @@ function validateSyntheticAliases(evidence) {
   }
 
   const syncAudits = evidence.audits.filter((audit) => audit.action === 'strava.sync.succeeded');
-  if (syncAudits.some((audit) => !USER_ALIAS.test(audit.target_id))) {
+  if (
+    syncAudits.some(
+      (audit) => !USER_ALIAS.test(audit.target_id) || audit.target_id !== evidence.subjectAlias,
+    )
+  ) {
     fail('导出标识符必须使用合成别名');
   }
 }
