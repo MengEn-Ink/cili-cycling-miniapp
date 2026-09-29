@@ -642,6 +642,16 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
   async getPersonalCapabilityCard() {
     return mapPersonalCapabilityCard(await this.call('profile', { action: 'capabilityCard' }));
   }
+  async registerProfileMedia(fileId: string, category: 'ride' | 'bike' | 'other') {
+    const value = expectRecord(
+      await this.call('profile', {
+        action: 'registerMedia',
+        fileId: requiredId(fileId, '媒体文件 ID'),
+        category,
+      }),
+    );
+    if (value.registered !== true) return invalidResponse();
+  }
   async updateProfile(profile: ProfileUpdate) {
     const data: Record<string, unknown> = { action: 'update' };
     const simple: [keyof ProfileUpdate, string][] = [

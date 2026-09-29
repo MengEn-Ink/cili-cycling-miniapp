@@ -37,6 +37,21 @@ created_at, updated_at
 
 三个敏感字段均用环境变量 `PII_ENCRYPTION_KEY`（base64 32 bytes）独立 AES-256-GCM 加密和随机 12-byte IV。证件信息不再采集、写入或返回；存量证件字段只读保留，不解密、不迁移，普通资料更新也不主动删除。密钥缺失/非法、密文认证失败均 fail closed。`getPhoneNumber` 接受微信动态 code 并调用 `cloud.openapi.phonenumber`，写入 `wechat/verified`；个人主体的 `update` 可写入手填号码，但必须写入 `manual/unverified`。响应不返回敏感明文或密文，只返回必要掩码、来源、验证状态、`sensitive_status` 与 `completeness`；管理员审批详情必须展示手机号来源。
 
+### `profile_media`
+
+```text
+_id: sha256(file_id)
+file_id
+owner_openid
+category: ride|bike|other
+status: unreferenced|active
+created_at
+cleanup_after                 # unreferenced 上传 24 小时后的回收候选时间
+referenced_at?                # profile update 成功引用时间
+```
+
+客户端先调用 `profile/mediaUploadPath` 取得由 `PROFILE_MEDIA_PATH_SECRET` 和可信 WXContext OPENID 派生的 opaque owner 路径，上传成功后立即调用 `profile/registerMedia`。登记初始状态为 `unreferenced` 且幂等；只有同一事务内成功写入当前 profile 的媒体才切换为 `active`。资料更新、个人名片和管理员名片都要求记录的 `owner_openid`、`file_id`、`category`、`status` 与当前 profile 引用匹配。存量未登记媒体不迁移、不删除，但不进入任何能力卡。临时 URL 整体或逐项失败只减少背景图，不使详情失败。清理任务删除 `unreferenced` 对象前必须再次确认当前 profile 未引用该文件。
+
 ### `notification_outbox`
 
 审批事务内原子写入的订阅消息发件箱。`_id` 为审批轮次确定性 ID，包含 `type/aggregate_id/target_openid/template_key/payload/status/attempts/attempt_no/last_error/lease_id/lease_expires_at/claimed_by/dispatch_started_at/created_at/updated_at/sent_at`。自动发送采用 `pending|retryable -> claimed -> dispatching -> sent|retryable|failed_terminal|delivery_unknown` 状态机：每次 claim 生成唯一 `lease_id` 并递增 `attempt_no`，所有后续写入都必须在事务内同时匹配 `status + lease_id + attempt_no`。过期 `claimed` 可安全重领；`dispatching` 表示外部调用可能已发生，过期后只能隔离为 `delivery_unknown`，禁止自动重发。最多尝试 5 次，并由 `status + attempts + lease_expires_at` 扫描索引在批次 `limit` 前排除耗尽和不可自动发送的任务。客户端 ACL 全拒绝，仅云函数可读写。
@@ -100,6 +115,8 @@ synced_at
 | registrations | activity_id ASC, status ASC, created_at DESC | 普通 |
 | registrations | openid ASC, created_at DESC | 普通 |
 | audit_logs | actor_openid ASC, created_at DESC | 普通 |
+| profile_media | owner_openid ASC, status ASC, created_at DESC | 普通；owner 媒体查询 |
+| profile_media | status ASC, cleanup_after ASC | 普通；未引用媒体回收扫描 |
 | oauth_states | state_hash ASC | 唯一 |
 | oauth_states | expires_at ASC | 普通；应用层过期与限量清理 |
 | oauth_states | openid ASC, expires_at DESC | 普通；查询用户的活跃授权状态 |
@@ -113,8 +130,8 @@ synced_at
 
 ## 部署后验证
 
-1. 校验 8 集合、全拒绝规则与 11 索引，确认 `oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
+1. 校验 10 集合、全拒绝规则与 15 索引，确认 `profile_media` 的 owner/status 与 cleanup 索引、`oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
 2. 真机验证 WXContext openid、微信手机号动态 code、手填手机号来源，以及资料响应中无明文/密文。
 3. 配置 callback HTTPS 路由、Strava 回调域和小程序业务域名，验证 CSRF、过期与重放。
-4. 验证 token 临期刷新、90 天分页、解绑审计及日志无敏感信息。
+4. 验证 token 临期刷新、90 天分页、解绑审计及日志无敏感信息；验证跨用户媒体拒绝、未登记 legacy 不进卡、register 失败回收上传对象，以及临时 URL 故障降级。
 5. 在隔离活动中压测报名容量与审批事务。

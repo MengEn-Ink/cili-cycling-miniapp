@@ -12,6 +12,8 @@ const {
   phoneUpdate,
   issueMediaUploadPath,
   mediaOwnerPrefix,
+  mediaDocumentId,
+  mediaRegistration,
   validateMediaUpdate,
   ownerMedia,
   writableDocument,
@@ -127,26 +129,47 @@ test('媒体上传路径使用服务端 secret 派生 opaque owner alias', () =>
 test('资料更新只接受本用户签发媒体，同时允许原样保留 legacy 媒体', () => {
   const ownerPrefix = mediaOwnerPrefix('openid-owner-a', mediaSecret);
   const otherPrefix = mediaOwnerPrefix('openid-owner-b', mediaSecret);
+  const ownedFile = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`;
   const current = {
     avatar_file_id: 'cloud://env/profiles/legacy/avatar.jpg',
     photos: [{ file_id: 'cloud://env/profiles/legacy/ride.jpg', category: 'ride' }],
   };
-  assert.doesNotThrow(() =>
-    validateMediaUpdate(
-      current,
+  const plan = validateMediaUpdate(
+    current,
+    {
+      avatar_file_id: current.avatar_file_id,
+      photos: [
+        current.photos[0],
+        {
+          file_id: ownedFile,
+          category: 'bike',
+        },
+      ],
+    },
+    'openid-owner-a',
+    mediaSecret,
+    [
       {
-        avatar_file_id: current.avatar_file_id,
-        photos: [
-          current.photos[0],
-          {
-            file_id: `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`,
-            category: 'bike',
-          },
-        ],
+        _id: mediaDocumentId(ownedFile),
+        file_id: ownedFile,
+        owner_openid: 'openid-owner-a',
+        category: 'bike',
+        status: 'unreferenced',
       },
-      'openid-owner-a',
-      mediaSecret,
-    ),
+    ],
+  );
+  assert.deepEqual(plan.activate_ids, [mediaDocumentId(ownedFile)]);
+  assert.deepEqual(
+    validateMediaUpdate(current, plan.data, 'openid-owner-a', mediaSecret, [
+      {
+        _id: mediaDocumentId(ownedFile),
+        file_id: ownedFile,
+        owner_openid: 'openid-owner-a',
+        category: 'bike',
+        status: 'unreferenced',
+      },
+    ]).activate_ids,
+    [mediaDocumentId(ownedFile)],
   );
   assert.throws(
     () =>
@@ -157,36 +180,87 @@ test('资料更新只接受本用户签发媒体，同时允许原样保留 lega
         },
         'openid-owner-a',
         mediaSecret,
+        [
+          {
+            file_id: `cloud://env/${otherPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`,
+            owner_openid: 'openid-owner-b',
+            category: 'other',
+            status: 'active',
+          },
+        ],
       ),
     { code: 'MEDIA_NOT_OWNED' },
   );
 });
 
+test('仅有合法 HMAC 前缀但无 owner registry 记录仍拒绝', () => {
+  const ownerPrefix = mediaOwnerPrefix('openid-owner-a', mediaSecret);
+  const fileId = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  assert.throws(
+    () =>
+      validateMediaUpdate(
+        {},
+        { photos: [{ file_id: fileId, category: 'ride' }] },
+        'openid-owner-a',
+        mediaSecret,
+        [],
+      ),
+    { code: 'MEDIA_NOT_OWNED' },
+  );
+});
+
+test('registerMedia 记录幂等且在 profile 引用前可清理', () => {
+  const ownerPrefix = mediaOwnerPrefix('openid-owner-a', mediaSecret);
+  const fileId = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const createdAt = new Date('2026-09-29T12:00:00.000Z');
+  const record = mediaRegistration(fileId, 'ride', 'openid-owner-a', mediaSecret, createdAt);
+  assert.deepEqual(record, {
+    _id: mediaDocumentId(fileId),
+    file_id: fileId,
+    owner_openid: 'openid-owner-a',
+    category: 'ride',
+    status: 'unreferenced',
+    created_at: createdAt,
+    cleanup_after: new Date('2026-09-30T12:00:00.000Z'),
+  });
+  assert.deepEqual(
+    mediaRegistration(fileId, 'ride', 'openid-owner-a', mediaSecret, createdAt, record),
+    record,
+  );
+  assert.throws(() => mediaRegistration(fileId, 'ride', 'openid-owner-b', mediaSecret, createdAt), {
+    code: 'MEDIA_NOT_OWNED',
+  });
+});
+
 test('能力卡媒体只选择当前 owner 签发文件，legacy 与他人文件均不可见', () => {
   const ownerPrefix = mediaOwnerPrefix('openid-owner-a', mediaSecret);
   const otherPrefix = mediaOwnerPrefix('openid-owner-b', mediaSecret);
-  assert.deepEqual(
-    ownerMedia(
+  const ownedFile = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174001.jpg`;
+  const profile = {
+    avatar_file_id: 'cloud://env/profiles/legacy/avatar.jpg',
+    photos: [
+      { file_id: 'cloud://env/profiles/legacy/ride.jpg', category: 'ride' },
       {
-        avatar_file_id: 'cloud://env/profiles/legacy/avatar.jpg',
-        photos: [
-          { file_id: 'cloud://env/profiles/legacy/ride.jpg', category: 'ride' },
-          {
-            file_id: `cloud://env/${otherPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`,
-            category: 'bike',
-          },
-          {
-            file_id: `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174001.jpg`,
-            category: 'other',
-          },
-        ],
+        file_id: `cloud://env/${otherPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`,
+        category: 'bike',
       },
-      'openid-owner-a',
-      mediaSecret,
-    ),
+      { file_id: ownedFile, category: 'other' },
+    ],
+  };
+  assert.deepEqual(ownerMedia(profile, 'openid-owner-a', mediaSecret, []), []);
+  assert.deepEqual(
+    ownerMedia(profile, 'openid-owner-a', mediaSecret, [
+      {
+        _id: mediaDocumentId(ownedFile),
+        file_id: ownedFile,
+        owner_openid: 'openid-owner-a',
+        category: 'other',
+        status: 'active',
+      },
+    ]),
     [
       {
-        file_id: `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174001.jpg`,
+        file_id: ownedFile,
         category: 'other',
         source: 'user_photo',
       },

@@ -144,6 +144,7 @@ export class MockRepository implements RideRepository {
       syncedAt: '2026-09-29T04:05:00.000Z',
     };
   }
+  async registerProfileMedia() {}
   async updateProfile(patch: ProfileUpdate) {
     const current = this.read().profile;
     const p = { ...current, ...patch, photos: patch.photos || current.photos } as Profile;

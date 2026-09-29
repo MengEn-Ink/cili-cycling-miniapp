@@ -1,5 +1,6 @@
 'use strict';
 
+const crypto = require('node:crypto');
 const cloud = require('wx-server-sdk');
 const {
   ok,
@@ -28,6 +29,24 @@ async function maybeGet(collection, id) {
     if (isNotFound(error)) return undefined;
     throw error;
   }
+}
+function profileMediaIds(profile) {
+  const ids = [profile && profile.avatar_file_id];
+  for (const item of Array.isArray(profile && profile.photos) ? profile.photos : [])
+    ids.push(item && item.file_id);
+  return [...new Set(ids.filter((id) => typeof id === 'string' && id))];
+}
+async function loadMediaRecords(ownerOpenid, profile) {
+  return (
+    await Promise.all(
+      profileMediaIds(profile).map((fileId) =>
+        maybeGet(
+          db.collection('profile_media'),
+          crypto.createHash('sha256').update(fileId).digest('hex'),
+        ),
+      ),
+    )
+  ).filter((record) => record && record.owner_openid === ownerOpenid);
 }
 async function requireAdmin(openid) {
   const admin = await maybeGet(db.collection('admins'), openid);
@@ -106,6 +125,7 @@ exports.main = async (event = {}) => {
         authorize: () => requireAdmin(openid),
         loadRegistration: () => maybeGet(db.collection('registrations'), event.registrationId),
         loadProfile: (profileOpenid) => maybeGet(db.collection('profiles'), profileOpenid),
+        loadMediaRecords,
         getTempFileURL: (input) => cloud.getTempFileURL(input),
         projectRegistration: publicRegistration,
       });

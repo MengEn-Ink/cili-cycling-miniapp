@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { mediaOwnerPrefix } = require('./core');
+const { mediaDocumentId, mediaOwnerPrefix } = require('./core');
 
 let subject = {};
 try {
@@ -36,6 +36,13 @@ const snapshot = {
   coverage_complete: true,
   synced_at: '2026-09-29T11:00:00.000Z',
 };
+const mediaRecord = (fileId, category, status = 'active', owner = openid) => ({
+  _id: mediaDocumentId(fileId),
+  file_id: fileId,
+  owner_openid: owner,
+  category,
+  status,
+});
 
 test('个人名片状态严格区分 ready/partial/syncing/failed/disconnected', () => {
   assert.equal(deriveCapabilityState({ credential, snapshot }, now), 'ready');
@@ -86,6 +93,7 @@ test('单一响应只返回 90 天 allowlist、null 语义和 owner 媒体临时
       },
       credential,
       snapshot: { ...snapshot, longest_km: null },
+      mediaRecords: [mediaRecord(ownedRide, 'ride'), mediaRecord(ownedOther, 'other')],
     },
     {
       openid,
@@ -147,6 +155,7 @@ test('临时 URL 整体失败降级为空背景而不让名片失败', async () 
       profile: { nickname: '骑手', photos: [{ file_id: owned, category: 'ride' }] },
       credential,
       snapshot,
+      mediaRecords: [mediaRecord(owned, 'ride')],
     },
     {
       openid,
@@ -177,6 +186,11 @@ test('临时 URL 逐项失败、非 https 与未知文件均被剔除', async ()
       },
       credential,
       snapshot,
+      mediaRecords: [
+        mediaRecord(ride, 'ride'),
+        mediaRecord(bike, 'bike'),
+        mediaRecord(other, 'other'),
+      ],
     },
     {
       openid,
@@ -199,6 +213,36 @@ test('临时 URL 逐项失败、非 https 与未知文件均被剔除', async ()
   assert.deepEqual(response.backgrounds, [
     { url: 'https://temporary.example/ride', source: 'user_photo', category: 'ride' },
   ]);
+});
+
+test('HMAC 路径存在但 registry 缺失、非 active 或 owner 不匹配时不解析临时 URL', async () => {
+  const owned = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  let calls = 0;
+  for (const mediaRecords of [
+    [],
+    [mediaRecord(owned, 'ride', 'unreferenced')],
+    [mediaRecord(owned, 'ride', 'active', 'openid-owner-b')],
+  ]) {
+    const response = await buildCapabilityCard(
+      {
+        profile: { nickname: '骑手', photos: [{ file_id: owned, category: 'ride' }] },
+        credential,
+        snapshot,
+        mediaRecords,
+      },
+      {
+        openid,
+        mediaSecret,
+        now,
+        getTempFileURL: async () => {
+          calls += 1;
+          return { fileList: [] };
+        },
+      },
+    );
+    assert.deepEqual(response.backgrounds, []);
+  }
+  assert.equal(calls, 0);
 });
 
 test('个人名片拒绝缺失的可信 WXContext 身份', async () => {

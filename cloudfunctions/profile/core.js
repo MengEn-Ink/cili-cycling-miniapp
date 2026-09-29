@@ -85,6 +85,11 @@ function mediaOwnerPrefix(openid, secretValue) {
     .slice(0, 32);
   return `profiles/${alias}/`;
 }
+function mediaDocumentId(fileId) {
+  if (typeof fileId !== 'string' || !fileId)
+    throw new ProfileError('VALIDATION_FAILED', '媒体文件 ID 无效');
+  return crypto.createHash('sha256').update(fileId).digest('hex');
+}
 function issueMediaUploadPath(openid, secretValue, randomUUID = crypto.randomUUID) {
   const filename = randomUUID();
   if (!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(filename))
@@ -106,13 +111,78 @@ function isOwnerMedia(fileId, openid, secretValue) {
     /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\.jpg$/i.test(filename)
   );
 }
-function validateMediaUpdate(current, update, openid, secretValue) {
+function mediaRegistration(
+  fileId,
+  category,
+  openid,
+  secretValue,
+  now = new Date(),
+  existing = undefined,
+) {
+  if (!['ride', 'bike', 'other'].includes(category))
+    throw new ProfileError('VALIDATION_FAILED', '媒体类别无效');
+  if (!isOwnerMedia(fileId, openid, secretValue))
+    throw new ProfileError('MEDIA_NOT_OWNED', '媒体文件不属于当前用户');
+  const expected = {
+    _id: mediaDocumentId(fileId),
+    file_id: fileId,
+    owner_openid: openid,
+    category,
+  };
+  if (existing) {
+    if (
+      existing._id !== expected._id ||
+      existing.file_id !== fileId ||
+      existing.owner_openid !== openid ||
+      existing.category !== category ||
+      !['unreferenced', 'active'].includes(existing.status)
+    )
+      throw new ProfileError('MEDIA_REGISTRATION_CONFLICT', '媒体登记冲突');
+    return existing;
+  }
+  const createdAt = new Date(now);
+  return {
+    ...expected,
+    status: 'unreferenced',
+    created_at: createdAt,
+    cleanup_after: new Date(createdAt.getTime() + 24 * 60 * 60 * 1000),
+  };
+}
+function registeredMedia(record, item, openid, statuses = ['active']) {
+  return Boolean(
+    record &&
+    item &&
+    record._id === mediaDocumentId(item.file_id) &&
+    record.file_id === item.file_id &&
+    record.owner_openid === openid &&
+    record.category === item.category &&
+    statuses.includes(record.status),
+  );
+}
+function validateMediaUpdate(current, update, openid, secretValue, mediaRecords = []) {
   const existing = current && typeof current === 'object' ? current : {};
   const data = update && typeof update === 'object' ? update : {};
+  const records = new Map(mediaRecords.map((record) => [record && record.file_id, record]));
+  const activate = new Set();
+  const accept = (item, legacy) => {
+    const record = records.get(item.file_id);
+    if (
+      isOwnerMedia(item.file_id, openid, secretValue) &&
+      registeredMedia(record, item, openid, ['unreferenced', 'active'])
+    ) {
+      if (record.status === 'unreferenced') activate.add(record._id);
+      return;
+    }
+    if (legacy) return;
+    throw new ProfileError('MEDIA_NOT_OWNED', '媒体文件不属于当前用户');
+  };
   if (Object.prototype.hasOwnProperty.call(data, 'avatar_file_id')) {
     const avatar = data.avatar_file_id;
-    if (avatar && avatar !== existing.avatar_file_id && !isOwnerMedia(avatar, openid, secretValue))
-      throw new ProfileError('MEDIA_NOT_OWNED', '媒体文件不属于当前用户');
+    if (avatar)
+      accept(
+        { file_id: avatar, category: records.get(avatar)?.category || 'other' },
+        avatar === existing.avatar_file_id && !records.has(avatar),
+      );
   }
   if (Object.prototype.hasOwnProperty.call(data, 'photos')) {
     const legacy = new Set(
@@ -121,24 +191,25 @@ function validateMediaUpdate(current, update, openid, secretValue) {
       ),
     );
     for (const item of data.photos) {
-      if (
-        !legacy.has(`${item.file_id}\u0000${item.category}`) &&
-        !isOwnerMedia(item.file_id, openid, secretValue)
-      )
-        throw new ProfileError('MEDIA_NOT_OWNED', '媒体文件不属于当前用户');
+      accept(
+        item,
+        legacy.has(`${item.file_id}\u0000${item.category}`) && !records.has(item.file_id),
+      );
     }
   }
-  return data;
+  return { data, activate_ids: [...activate] };
 }
-function ownerMedia(profile, openid, secretValue) {
+function ownerMedia(profile, openid, secretValue, mediaRecords = []) {
   const value = profile && typeof profile === 'object' ? profile : {};
+  const records = new Map(mediaRecords.map((record) => [record && record.file_id, record]));
   const photos = Array.isArray(value.photos)
     ? value.photos
         .filter(
           (item) =>
             item &&
             ['ride', 'bike', 'other'].includes(item.category) &&
-            isOwnerMedia(item.file_id, openid, secretValue),
+            isOwnerMedia(item.file_id, openid, secretValue) &&
+            registeredMedia(records.get(item.file_id), item, openid),
         )
         .map((item) => ({
           file_id: item.file_id,
@@ -150,7 +221,15 @@ function ownerMedia(profile, openid, secretValue) {
     ...photos.filter((item) => item.category === 'ride' || item.category === 'bike'),
     ...photos.filter((item) => item.category === 'other'),
   ];
-  if (isOwnerMedia(value.avatar_file_id, openid, secretValue)) {
+  const avatarRecord = records.get(value.avatar_file_id);
+  if (
+    isOwnerMedia(value.avatar_file_id, openid, secretValue) &&
+    registeredMedia(
+      avatarRecord,
+      { file_id: value.avatar_file_id, category: avatarRecord && avatarRecord.category },
+      openid,
+    )
+  ) {
     ordered.push({ file_id: value.avatar_file_id, category: 'other', source: 'avatar' });
   }
   const seen = new Set();
@@ -288,6 +367,8 @@ module.exports = {
   phoneUpdate,
   issueMediaUploadPath,
   mediaOwnerPrefix,
+  mediaDocumentId,
+  mediaRegistration,
   isOwnerMedia,
   validateMediaUpdate,
   ownerMedia,

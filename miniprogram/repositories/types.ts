@@ -53,6 +53,7 @@ export interface RideRepository extends AdminReviewRepository, ActivityAdminRepo
   getProfile(): Promise<Profile>;
   getProfileMediaUploadPath(): Promise<string>;
   getPersonalCapabilityCard(): Promise<PersonalCapabilityCard>;
+  registerProfileMedia(fileId: string, category: 'ride' | 'bike' | 'other'): Promise<void>;
   updateProfile(profile: ProfileUpdate): Promise<Profile>;
   getPhoneNumber(code: string): Promise<Profile>;
   getStravaStatus(): Promise<StravaConnection>;

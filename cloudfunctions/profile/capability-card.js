@@ -111,7 +111,7 @@ async function resolveBackgrounds(media, getTempFileURL) {
 }
 
 async function buildCapabilityCard(
-  { profile, credential, snapshot },
+  { profile, credential, snapshot, mediaRecords = [] },
   { openid, mediaSecret, now = new Date(), getTempFileURL },
 ) {
   if (typeof openid !== 'string' || !openid)
@@ -121,7 +121,7 @@ async function buildCapabilityCard(
   const snapshotCoverage = hasSnapshot ? coverage(snapshot) : null;
   const syncedAt = hasSnapshot ? validDate(snapshot.synced_at).toISOString() : null;
   const backgrounds = await resolveBackgrounds(
-    ownerMedia(profile, openid, mediaSecret),
+    ownerMedia(profile, openid, mediaSecret, mediaRecords),
     getTempFileURL,
   );
   return {

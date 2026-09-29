@@ -1,6 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
 const {
   adminCapabilityMedia,
   resolveAdminCapabilityMedia,
@@ -26,68 +27,95 @@ const profile = {
   id_number_cipher: { ciphertext: 'legacy-secret' },
   openid: 'private-openid',
 };
+const owner = 'member-openid';
+const mediaRecord = (fileId, category, status = 'active', ownerOpenid = owner) => ({
+  _id: crypto.createHash('sha256').update(fileId).digest('hex'),
+  file_id: fileId,
+  owner_openid: ownerOpenid,
+  category,
+  status,
+});
+const records = [
+  mediaRecord('cloud://other', 'other'),
+  mediaRecord('cloud://ride-1', 'ride'),
+  mediaRecord('cloud://ride-2', 'bike'),
+  mediaRecord('cloud://avatar', 'other'),
+];
 
 test('管理员媒体白名单按骑行照片、其他照片、头像排序去重并最多保留三张', () => {
-  assert.deepEqual(adminCapabilityMedia(profile), {
+  assert.deepEqual(adminCapabilityMedia(profile, records, owner), {
     file_ids: ['cloud://ride-1', 'cloud://ride-2', 'cloud://other'],
   });
   assert.deepEqual(
-    adminCapabilityMedia({
-      avatar_file_id: 'cloud://avatar',
-      photos: [
-        { file_id: 'cloud://ride-1', category: 'ride' },
-        { file_id: 'cloud://ride-2', category: 'bike' },
-      ],
-    }),
+    adminCapabilityMedia(
+      {
+        avatar_file_id: 'cloud://avatar',
+        photos: [
+          { file_id: 'cloud://ride-1', category: 'ride' },
+          { file_id: 'cloud://ride-2', category: 'bike' },
+        ],
+      },
+      records,
+      owner,
+    ),
     { file_ids: ['cloud://ride-1', 'cloud://ride-2', 'cloud://avatar'] },
   );
 });
 
 test('管理员媒体只接受 profile 白名单内的 cloud file ID', () => {
   assert.deepEqual(
-    adminCapabilityMedia({
-      avatar_file_id: 'https://attacker.example/avatar',
-      photos: [
-        { file_id: 'cloud://ok', category: 'ride' },
-        { file_id: 'cloud://unknown', category: 'portrait' },
-        { file_id: 'file://local', category: 'ride' },
-        { file_id: 'x'.repeat(513), category: 'ride' },
-        { file_id: 'cloud://ok', category: 'bike' },
-      ],
-    }),
+    adminCapabilityMedia(
+      {
+        avatar_file_id: 'https://attacker.example/avatar',
+        photos: [
+          { file_id: 'cloud://ok', category: 'ride' },
+          { file_id: 'cloud://unknown', category: 'portrait' },
+          { file_id: 'file://local', category: 'ride' },
+          { file_id: 'x'.repeat(513), category: 'ride' },
+          { file_id: 'cloud://ok', category: 'bike' },
+        ],
+      },
+      [mediaRecord('cloud://ok', 'ride')],
+      owner,
+    ),
     { file_ids: ['cloud://ok'] },
   );
 });
 
 test('CloudBase 临时 URL 解析剔除失败项、非 https 和未知项', async () => {
   const calls = [];
-  const result = await resolveAdminCapabilityMedia(profile, async ({ fileList }) => {
-    calls.push(fileList);
-    return {
-      fileList: [
-        {
-          fileID: 'cloud://ride-1',
-          tempFileURL: 'https://temporary.example/ride-1',
-          status: 0,
-        },
-        {
-          fileID: 'cloud://ride-2',
-          tempFileURL: 'https://temporary.example/ride-2',
-          status: -1,
-        },
-        {
-          fileID: 'cloud://other',
-          tempFileURL: 'http://temporary.example/other',
-          status: 0,
-        },
-        {
-          fileID: 'cloud://unknown',
-          tempFileURL: 'https://temporary.example/unknown',
-          status: 0,
-        },
-      ],
-    };
-  });
+  const result = await resolveAdminCapabilityMedia(
+    profile,
+    records,
+    owner,
+    async ({ fileList }) => {
+      calls.push(fileList);
+      return {
+        fileList: [
+          {
+            fileID: 'cloud://ride-1',
+            tempFileURL: 'https://temporary.example/ride-1',
+            status: 0,
+          },
+          {
+            fileID: 'cloud://ride-2',
+            tempFileURL: 'https://temporary.example/ride-2',
+            status: -1,
+          },
+          {
+            fileID: 'cloud://other',
+            tempFileURL: 'http://temporary.example/other',
+            status: 0,
+          },
+          {
+            fileID: 'cloud://unknown',
+            tempFileURL: 'https://temporary.example/unknown',
+            status: 0,
+          },
+        ],
+      };
+    },
+  );
   assert.deepEqual(calls, [['cloud://ride-1', 'cloud://ride-2', 'cloud://other']]);
   assert.deepEqual(result, {
     photos: [
@@ -119,6 +147,10 @@ test('管理员详情先鉴权再解析媒体，鉴权失败不读取资料也�
         events.push('profile');
         return profile;
       },
+      loadMediaRecords: async () => {
+        events.push('media-records');
+        return records;
+      },
       getTempFileURL: async () => {
         events.push('temp-url');
         return { fileList: [] };
@@ -128,6 +160,37 @@ test('管理员详情先鉴权再解析媒体，鉴权失败不读取资料也�
     /ADMIN_REQUIRED/,
   );
   assert.deepEqual(events, ['authorize']);
+});
+
+test('管理员卡只解析当前 profile 仍引用且 owner/status/category 匹配的媒体记录', async () => {
+  const calls = [];
+  const result = await resolveAdminCapabilityMedia(
+    {
+      photos: [
+        { file_id: 'cloud://ride-1', category: 'ride' },
+        { file_id: 'cloud://ride-2', category: 'bike' },
+      ],
+    },
+    [
+      mediaRecord('cloud://ride-1', 'ride', 'unreferenced'),
+      mediaRecord('cloud://ride-2', 'bike', 'active', 'another-owner'),
+      mediaRecord('cloud://not-referenced', 'ride'),
+    ],
+    owner,
+    async ({ fileList }) => {
+      calls.push(fileList);
+      return { fileList: [] };
+    },
+  );
+  assert.deepEqual(result, { photos: [], avatar_url: '' });
+  assert.deepEqual(calls, []);
+});
+
+test('管理员卡临时 URL 整体失败时降级为空媒体', async () => {
+  const result = await resolveAdminCapabilityMedia(profile, records, owner, async () => {
+    throw new Error('storage unavailable');
+  });
+  assert.deepEqual(result, { photos: [], avatar_url: '' });
 });
 
 test('管理员投影保留审批所需字段但不返回 raw file ID、token、openid 或身份证字段', () => {

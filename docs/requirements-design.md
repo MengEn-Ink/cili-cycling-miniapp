@@ -302,6 +302,7 @@ created_at, updated_at
 - 不采集、展示或导出证件类型和证件号；存量证件密文只读保留，不解密、不回传、不做批量迁移。Strava token 写入前用云函数内密钥做对称加密（密钥存云函数环境变量/KMS，不入库不入代码库）。
 - 微信授权手机号通过 `getPhoneNumber` 在云函数解码并标记为 `wechat/verified`；个人主体可提交手填号码，但必须标记为 `manual/unverified`，管理员审批详情展示来源。两者都满足第一批报名门禁，不能把手填号码当成已验证号码。
 - 所有写操作在云函数侧校验：身份、活动状态、报名截止、名额、重复报名、管理员权限；不信任前端传参。
+- 新 profile 媒体必须使用服务端按 WXContext OPENID 签发的 opaque 上传路径，上传后登记到 `profile_media`。新引用只有在 owner/category/status 与当前用户匹配时才能写入 profile；未登记 legacy 媒体只读保留但不进入个人或管理员能力卡。临时 URL 解析失败按空图或少图降级。
 - 名额变更走云数据库事务/原子操作，防止并发超报。
 - 日志不打印手机号、Strava token 或任何密文；敏感操作写 `audit_logs`。
 - 小程序 `web-view` 业务域名、Strava 回调地址使用白名单；state 签名防伪造、短时效。

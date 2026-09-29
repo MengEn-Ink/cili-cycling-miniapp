@@ -4,6 +4,7 @@ import type { Profile } from '../miniprogram/models';
 const rideService = vi.hoisted(() => ({
   getProfile: vi.fn(),
   getProfileMediaUploadPath: vi.fn(),
+  registerProfileMedia: vi.fn(),
   updateProfile: vi.fn(),
 }));
 
@@ -28,6 +29,7 @@ describe('资料编辑头像回写', () => {
     vi.resetModules();
     rideService.getProfile.mockReset();
     rideService.getProfileMediaUploadPath.mockReset();
+    rideService.registerProfileMedia.mockReset().mockResolvedValue(undefined);
     rideService.updateProfile.mockReset().mockResolvedValue(profile);
     vi.stubGlobal('wx', { showToast: vi.fn() });
     vi.stubGlobal('Page', (definition: any) => {
@@ -71,6 +73,13 @@ describe('资料编辑头像回写', () => {
     expect(rideService.getProfileMediaUploadPath.mock.invocationCallOrder[0]).toBeLessThan(
       uploadFile.mock.invocationCallOrder[0],
     );
+    expect(rideService.registerProfileMedia).toHaveBeenCalledWith(
+      'cloud://env/profiles/owner/photo.jpg',
+      'other',
+    );
+    expect(uploadFile.mock.invocationCallOrder[0]).toBeLessThan(
+      rideService.registerProfileMedia.mock.invocationCallOrder[0],
+    );
     expect(page.data.p.photos).toEqual([
       { id: 'cloud://env/profiles/owner/photo.jpg', category: 'other' },
     ]);
@@ -94,5 +103,29 @@ describe('资料编辑头像回写', () => {
       title: '照片上传未完成，请检查真机权限与云存储配置',
       icon: 'none',
     });
+  });
+
+  it('registerMedia 失败时不写 photos 并尽力删除刚上传文件', async () => {
+    const deleteFile = vi.fn().mockRejectedValue(new Error('cleanup unavailable'));
+    const uploadFile = vi
+      .fn()
+      .mockResolvedValue({ fileID: 'cloud://env/profiles/owner/photo.jpg' });
+    rideService.getProfileMediaUploadPath.mockResolvedValue(
+      'profiles/0123456789abcdef0123456789abcdef/123e4567-e89b-42d3-a456-426614174000.jpg',
+    );
+    rideService.registerProfileMedia.mockRejectedValue(new Error('register failed'));
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [{ tempFilePath: '/private/tmp/photo.jpg' }],
+      }),
+      cloud: { uploadFile, deleteFile },
+    });
+
+    await page.addPhoto();
+
+    expect(deleteFile).toHaveBeenCalledWith({
+      fileList: ['cloud://env/profiles/owner/photo.jpg'],
+    });
+    expect(page.data.p.photos).toEqual([]);
   });
 });

@@ -17,6 +17,7 @@ Page({
     this.setData({ ['p.' + e.currentTarget.dataset.k]: e.detail.value });
   },
   async addPhoto() {
+    let uploadedFileId = '';
     try {
       const cloud = wx.cloud;
       if (!cloud) return wx.showToast({ title: '当前环境不支持云存储', icon: 'none' });
@@ -28,10 +29,19 @@ Page({
         cloudPath,
         filePath: path,
       });
+      uploadedFileId = uploaded.fileID;
+      await rideService.registerProfileMedia(uploadedFileId, 'other');
       const p = this.data.p;
-      p.photos = [...p.photos, { id: uploaded.fileID, category: 'other' }];
+      p.photos = [...p.photos, { id: uploadedFileId, category: 'other' }];
       this.setData({ p });
     } catch {
+      if (uploadedFileId && wx.cloud) {
+        try {
+          await wx.cloud.deleteFile({ fileList: [uploadedFileId] });
+        } catch {
+          // Unreferenced media records carry cleanup_after for server-side reclamation.
+        }
+      }
       wx.showToast({ title: '照片上传未完成，请检查真机权限与云存储配置', icon: 'none' });
     }
   },

@@ -778,6 +778,21 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     expectCall(callFunction, 'profile', { action: 'mediaUploadPath' });
   });
 
+  it('上传完成后注册媒体记录且不发送客户端身份', async () => {
+    const { cloud, callFunction } = cloudWith(success({ registered: true }));
+    await expect(
+      new CloudRepository(cloud).registerProfileMedia(
+        'cloud://env/profiles/owner/photo.jpg',
+        'other',
+      ),
+    ).resolves.toBeUndefined();
+    expectCall(callFunction, 'profile', {
+      action: 'registerMedia',
+      fileId: 'cloud://env/profiles/owner/photo.jpg',
+      category: 'other',
+    });
+  });
+
   it('Profile 完整可选字段与照片分支均按真实值映射', async () => {
     const { cloud } = cloudWith(
       success({

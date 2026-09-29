@@ -1,5 +1,7 @@
 'use strict';
 
+const crypto = require('node:crypto');
+
 const MAX_CAPABILITY_IMAGES = 3;
 const PROFILE_PHOTO_CATEGORIES = new Set(['ride', 'bike', 'other']);
 const RIDING_CATEGORIES = new Set(['ride', 'bike']);
@@ -61,8 +63,29 @@ function isRidingCategory(value) {
   return typeof value === 'string' && RIDING_CATEGORIES.has(value.trim().toLowerCase());
 }
 
-function capabilityCandidates(profile) {
+function mediaDocumentId(fileId) {
+  return crypto.createHash('sha256').update(fileId).digest('hex');
+}
+
+function capabilityCandidates(profile, mediaRecords, ownerOpenid) {
   const value = profile && typeof profile === 'object' ? profile : {};
+  const records = new Map(
+    (Array.isArray(mediaRecords) ? mediaRecords : []).map((record) => [
+      record && record.file_id,
+      record,
+    ]),
+  );
+  const registered = (fileId, category) => {
+    const record = records.get(fileId);
+    return Boolean(
+      record &&
+      record._id === mediaDocumentId(fileId) &&
+      record.file_id === fileId &&
+      record.owner_openid === ownerOpenid &&
+      record.category === category &&
+      record.status === 'active',
+    );
+  };
   const photos = Array.isArray(value.photos)
     ? value.photos
         .filter((photo) => photo && typeof photo === 'object')
@@ -72,15 +95,21 @@ function capabilityCandidates(profile) {
           source: 'user',
           visibility: photo.visibility === 'public' ? 'public' : 'private',
         }))
-        .filter((photo) => photo.file_id && PROFILE_PHOTO_CATEGORIES.has(photo.category))
+        .filter(
+          (photo) =>
+            photo.file_id &&
+            PROFILE_PHOTO_CATEGORIES.has(photo.category) &&
+            registered(photo.file_id, photo.category),
+        )
     : [];
   const ordered = [
     ...photos.filter((photo) => isRidingCategory(photo.category)),
     ...photos.filter((photo) => !isRidingCategory(photo.category)),
   ];
   const avatar = safeCloudFileId(value.avatar_file_id);
-  if (avatar)
-    ordered.push({ file_id: avatar, category: '', source: 'avatar', visibility: 'private' });
+  const avatarRecord = records.get(avatar);
+  if (avatar && registered(avatar, avatarRecord && avatarRecord.category))
+    ordered.push({ file_id: avatar, category: 'other', source: 'avatar', visibility: 'private' });
 
   const seen = new Set();
   return ordered.filter((item) => {
@@ -90,14 +119,21 @@ function capabilityCandidates(profile) {
   });
 }
 
-function adminCapabilityMedia(profile) {
-  return { file_ids: capabilityCandidates(profile).map((item) => item.file_id) };
+function adminCapabilityMedia(profile, mediaRecords, ownerOpenid) {
+  return {
+    file_ids: capabilityCandidates(profile, mediaRecords, ownerOpenid).map((item) => item.file_id),
+  };
 }
 
-async function resolveAdminCapabilityMedia(profile, getTempFileURL) {
-  const candidates = capabilityCandidates(profile);
+async function resolveAdminCapabilityMedia(profile, mediaRecords, ownerOpenid, getTempFileURL) {
+  const candidates = capabilityCandidates(profile, mediaRecords, ownerOpenid);
   if (candidates.length === 0) return { photos: [], avatar_url: '' };
-  const response = await getTempFileURL({ fileList: candidates.map((item) => item.file_id) });
+  let response;
+  try {
+    response = await getTempFileURL({ fileList: candidates.map((item) => item.file_id) });
+  } catch {
+    return { photos: [], avatar_url: '' };
+  }
   const allowed = new Map(candidates.map((item) => [item.file_id, item]));
   const resolved = new Map();
   for (const item of Array.isArray(response && response.fileList) ? response.fileList : []) {
@@ -199,6 +235,7 @@ async function adminCapabilityDetail({
   authorize,
   loadRegistration,
   loadProfile,
+  loadMediaRecords,
   getTempFileURL,
   projectRegistration,
 }) {
@@ -206,7 +243,15 @@ async function adminCapabilityDetail({
   const registration = await loadRegistration();
   if (!registration) return undefined;
   const profile = registration.openid ? await loadProfile(registration.openid) : undefined;
-  const resolvedMedia = await resolveAdminCapabilityMedia(profile, getTempFileURL);
+  const mediaRecords = registration.openid
+    ? await loadMediaRecords(registration.openid, profile)
+    : [];
+  const resolvedMedia = await resolveAdminCapabilityMedia(
+    profile,
+    mediaRecords,
+    registration.openid,
+    getTempFileURL,
+  );
   return adminCapabilityView(projectRegistration(registration), profile, resolvedMedia);
 }
 
