@@ -31,6 +31,8 @@
 - [ ] Add `profile_media` with deny-by-default client rules and an owner/status index. After upload, call `registerMedia` to persist `{file_id, owner_openid, category, status, created_at}` under a deterministic file hash ID.
 - [ ] Validate every photo/avatar against an active media record whose `owner_openid` matches WXContext. Keep stored legacy IDs untouched but exclude them from card media.
 - [ ] On `registerMedia` failure, do not append the image to profile data and best-effort delete the just-uploaded file.
+- [ ] Make `registerMedia` idempotent and store new records as `unreferenced`; a successful profile update marks referenced records active and leaves removed/unreferenced records eligible for bounded cleanup.
+- [ ] Resolve temporary URLs only for active owner records that are also present in the current profile's avatar/photos fields.
 - [ ] Run profile and client focused tests, then commit `fix(profile): bind uploaded media to owners`.
 
 ### Task 2: Build the single personal-card response

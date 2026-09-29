@@ -105,6 +105,9 @@ Every summary field is `number | null` at the server boundary. The client adapte
 - After upload succeeds, the client immediately calls `registerMedia`; the server writes a `profile_media` record containing the exact file ID, trusted `owner_openid`, category, status, and creation time. Raw ownership records are never returned to clients.
 - Profile updates accept avatar/photo IDs only when an active `profile_media` record exists and its `owner_openid` equals the trusted WXContext user. Admin-card resolution repeats the same check against `registration.openid`; path shape alone is never ownership proof.
 - Existing unverified legacy file IDs remain stored for compatibility but are not rendered on the card.
+- Upload success followed by `registerMedia` failure triggers best-effort deletion of the just-uploaded object and never appends it to profile data.
+- `registerMedia` is idempotent. A registered object remains `unreferenced` until a successful profile update marks it active; unreferenced records carry cleanup metadata so an orphan job can reclaim them safely.
+- Temporary URL resolution consumes only active owner-bound records that are still referenced by the current profile. Ownership alone does not make an old or removed image card-visible.
 - Temporary URL generation happens after identity validation. A whole-call or per-file failure degrades to fewer/no backgrounds instead of failing the card.
 - The default card is self-only. There is no share entry or public route in this release.
 
@@ -128,7 +131,7 @@ When Strava is unavailable, the server may return the last valid snapshot with `
 
 ## Verification
 
-- Server tests cover current-user isolation, another user's file ID rejection, owner-record lookup, no raw IDs/PII, whole-call media failure, partial per-file failure, and state derivation.
+- Server tests cover current-user isolation, another user's file ID rejection, owner-record lookup, unreferenced/orphan behavior, current-profile reference checks, no raw IDs/PII, whole-call media failure, partial per-file failure, and state derivation.
 - Repository tests reject raw `cloud://`, non-HTTPS URLs, malformed state, and non-nullable numeric strings.
 - View-model tests cover real zero, null omission, incomplete coverage, no photos, one photo, and three-photo ordering.
 - Page tests cover navigation fallbacks and ensure no share handler/public API is registered.
