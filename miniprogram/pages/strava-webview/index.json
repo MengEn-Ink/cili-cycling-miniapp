@@ -1,8 +1,0 @@
-{
-  "navigationBarTitleText": "Strava 状态",
-  "usingComponents": {
-    "state-view": "/components/state-view/index",
-    "activity-card": "/components/activity-card/index",
-    "status-pill": "/components/status-pill/index"
-  }
-}
