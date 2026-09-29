@@ -50,8 +50,12 @@ function messageData(outbox) {
     },
   };
 }
-function providerCode(result) {
-  return Number(result && (result.errCode ?? result.errcode ?? 0));
+function explicitProviderCode(value) {
+  const raw =
+    value && (value.errCode ?? value.errcode ?? value.error?.errCode ?? value.error?.errcode);
+  if (raw === undefined || raw === null || raw === '') return null;
+  const code = Number(raw);
+  return Number.isFinite(code) ? code : null;
 }
 function providerRetryable(code) {
   return [-1, 45009].includes(code);
@@ -65,6 +69,15 @@ async function markUnknownBestEffort(store, outboxId, fence, errorCode) {
   } catch {
     // 持久化不可用时保留 dispatching，由恢复任务在租约过期后隔离，绝不再次发送。
   }
+}
+async function handleProviderRejection(store, outboxId, fence, code) {
+  const errorCode = `WECHAT_${code}`;
+  if (providerRetryable(code)) {
+    await transitionOrLose(store.markRetryable, outboxId, { ...fence, errorCode });
+    fail('WECHAT_SEND_FAILED', '微信订阅消息发送失败');
+  }
+  await transitionOrLose(store.markTerminal, outboxId, { ...fence, errorCode });
+  fail('WECHAT_SEND_REJECTED', '微信拒绝发送订阅消息');
 }
 async function consumeNotification({
   store,
@@ -111,20 +124,14 @@ async function consumeNotification({
       data: messageData(claim),
     });
   } catch (error) {
+    const code = explicitProviderCode(error);
+    if (code !== null && code !== 0) await handleProviderRejection(store, outboxId, fence, code);
     await markUnknownBestEffort(store, outboxId, fence, 'SEND_RESULT_UNKNOWN');
     fail('DELIVERY_STATE_UNCERTAIN', '通知发送结果未知，请在小程序内查看审批状态');
   }
 
-  const code = providerCode(result);
-  if (code !== 0) {
-    const errorCode = `WECHAT_${code}`;
-    if (providerRetryable(code)) {
-      await transitionOrLose(store.markRetryable, outboxId, { ...fence, errorCode });
-      fail('WECHAT_SEND_FAILED', '微信订阅消息发送失败');
-    }
-    await transitionOrLose(store.markTerminal, outboxId, { ...fence, errorCode });
-    fail('WECHAT_SEND_REJECTED', '微信拒绝发送订阅消息');
-  }
+  const code = explicitProviderCode(result);
+  if (code !== null && code !== 0) await handleProviderRejection(store, outboxId, fence, code);
 
   for (let attempt = 0; attempt < ACK_ATTEMPTS; attempt += 1) {
     try {

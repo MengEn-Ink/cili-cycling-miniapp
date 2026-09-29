@@ -259,6 +259,24 @@ test('provider 明确拒绝按错误码分为 retryable 与 terminal', async () 
   assert.equal(terminal.item.status, 'failed_terminal');
 });
 
+test('wx-server-sdk reject 的明确 provider errCode 仍按 retryable/terminal 分类', async () => {
+  const retryable = fixture();
+  retryable.sender.send = async () => {
+    throw Object.assign(new Error('system busy'), { errCode: -1 });
+  };
+  await assert.rejects(consume(retryable), { code: 'WECHAT_SEND_FAILED' });
+  assert.equal(retryable.item.status, 'retryable');
+  assert.equal(retryable.item.last_error, 'WECHAT_-1');
+
+  const terminal = fixture();
+  terminal.sender.send = async () => {
+    throw { errcode: 43101, errmsg: 'user refuse' };
+  };
+  await assert.rejects(consume(terminal), { code: 'WECHAT_SEND_REJECTED' });
+  assert.equal(terminal.item.status, 'failed_terminal');
+  assert.equal(terminal.item.last_error, 'WECHAT_43101');
+});
+
 test('过期 dispatching 只隔离为 delivery_unknown，不调用 sender', async () => {
   const f = fixture({
     status: 'dispatching',
