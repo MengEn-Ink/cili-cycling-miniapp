@@ -51,6 +51,7 @@ describe('报名提交订阅消息授权', () => {
       page.data = {
         ...definition.data,
         activityId: 'a1',
+        gatheringMode: 'self_drive',
         profile,
         readiness,
         notificationTemplateIds: ['approved-template', 'rejected-template'],
@@ -163,12 +164,12 @@ describe('报名提交订阅消息授权', () => {
   });
 
   it('无效表单和重复提交都不会弹订阅授权', async () => {
-    page.data.bikeMode = '';
+    page.data.gatheringMode = '';
     await page.submit();
     expect(rideService.requestReviewNotificationSubscription).not.toHaveBeenCalled();
     expect(rideService.saveRegistration).not.toHaveBeenCalled();
 
-    page.data.bikeMode = '自带车';
+    page.data.gatheringMode = 'self_drive';
     page.data.submitting = true;
     await page.submit();
     expect(rideService.requestReviewNotificationSubscription).not.toHaveBeenCalled();

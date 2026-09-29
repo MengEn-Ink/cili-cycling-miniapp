@@ -1,12 +1,11 @@
 import { rideService } from '../../../services/ride-service';
 import { appStore } from '../../../store/app-store';
-import { maskPhone } from '../../../utils/mask';
 import { capabilityCard } from '../../../utils/capability-card';
+
 Page({
   data: {
     x: null as any,
     card: null as any,
-    phone: '',
     phoneSource: '',
     reason: '能力与路线要求暂不匹配',
     error: '',
@@ -23,7 +22,6 @@ Page({
         this.setData({
           x,
           card: capabilityCard(x),
-          phone: maskPhone(x.profile.phone),
           phoneSource:
             x.profile.sensitiveStatus?.phoneSource === 'wechat'
               ? '微信授权 · 已验证'

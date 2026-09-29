@@ -1,5 +1,13 @@
 import { rideService } from '../../../services/ride-service';
 import { appStore } from '../../../store/app-store';
+
+const statusText: Record<string, string> = {
+  pending: '待审核',
+  approved: '已通过',
+  rejected: '已驳回',
+  cancelled: '已取消',
+};
+
 Page({
   data: {
     tab: 'pending',
@@ -7,6 +15,7 @@ Page({
     all: [] as any[],
     activities: [] as any[],
     activityId: '',
+    selectedActivityTitle: '',
     error: '',
   },
   onShow() {
@@ -26,7 +35,14 @@ Page({
         return;
       }
       const all = await rideService.listReviewRegistrations(activityId);
-      this.setData({ activities, activityId, all, error: '' });
+      const selectedActivity = activities.find((activity) => activity.id === activityId);
+      this.setData({
+        activities,
+        activityId,
+        selectedActivityTitle: selectedActivity?.title || '活动信息不可用',
+        all,
+        error: '',
+      });
       this.filter();
     } catch (error) {
       this.setData({ error: error instanceof Error ? error.message : '审批列表加载失败' });
@@ -34,7 +50,7 @@ Page({
   },
   choose(e: any) {
     const selected = this.data.activities[Number(e.detail.value)];
-    if (selected) this.setData({ activityId: selected.id });
+    if (selected) this.setData({ activityId: selected.id, selectedActivityTitle: selected.title });
     void this.load();
   },
   tab(e: any) {
@@ -42,11 +58,15 @@ Page({
     this.filter();
   },
   filter() {
-    const activity = this.data.activities.find((a: any) => a.id === this.data.activityId);
+    const activity = this.data.activities.find((item: any) => item.id === this.data.activityId);
     this.setData({
       items: this.data.all
-        .filter((x: any) => this.data.tab === 'all' || x.status === this.data.tab)
-        .map((x: any) => ({ ...x, activity })),
+        .filter((item: any) => this.data.tab === 'all' || item.status === this.data.tab)
+        .map((item: any) => ({
+          ...item,
+          activity,
+          statusText: statusText[item.status] || item.status,
+        })),
     });
   },
   open(e: any) {

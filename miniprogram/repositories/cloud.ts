@@ -321,7 +321,10 @@ function mapRegistration(raw: unknown): Registration {
         emergencyPhone: false,
       },
     },
-    bikeMode: options.bike_mode === 'rent' ? '租车' : '自带车',
+    gatheringMode:
+      ({ self_drive: '自驾', support_vehicle: '需要后援车' } as const)[
+        options.gathering_mode as 'self_drive' | 'support_vehicle'
+      ] || '',
     experience:
       ({ beginner: '新手', intermediate: '有一定经验', regular: '常骑' } as Record<string, string>)[
         options.experience
@@ -459,11 +462,12 @@ function mapStravaReadiness(raw: unknown): StravaReadiness {
 }
 function submissionOptions(value: RegistrationSubmission) {
   return {
-    bike_mode: value.bikeMode === '租车' ? 'rent' : 'own',
+    gathering_mode: ['self_drive', 'support_vehicle'].includes(value.gatheringMode)
+      ? value.gatheringMode
+      : undefined,
     experience: (
       { 新手: 'beginner', 有一定经验: 'intermediate', 常骑: 'regular' } as Record<string, string>
     )[value.experience],
-    rental_need: typeof value.rentalNeed === 'string' ? value.rentalNeed : '',
     remark: typeof value.remark === 'string' ? value.remark : '',
   };
 }

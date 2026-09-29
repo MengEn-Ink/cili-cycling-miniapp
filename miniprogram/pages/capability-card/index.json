@@ -1,6 +1,6 @@
 {
   "navigationBarTitleText": "我的骑行名片",
-  "navigationBarBackgroundColor": "#071727",
+  "navigationBarBackgroundColor": "#0B0B0C",
   "navigationBarTextStyle": "white",
   "usingComponents": {
     "state-view": "/components/state-view/index"

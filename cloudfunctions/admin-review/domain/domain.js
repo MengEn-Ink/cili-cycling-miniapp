@@ -192,15 +192,14 @@ function selectCanonicalStrava(credential, snapshot, now = new Date()) {
 function validateOptions(options) {
   if (
     !options ||
-    !['own', 'rent'].includes(options.bike_mode) ||
+    !['self_drive', 'support_vehicle'].includes(options.gathering_mode) ||
     !['beginner', 'intermediate', 'regular'].includes(options.experience)
   ) {
-    fail('VALIDATION_FAILED', '请补全用车和骑行经验信息');
+    fail('VALIDATION_FAILED', '请选择集合方式并补全骑行经验');
   }
   return {
-    bike_mode: options.bike_mode,
+    gathering_mode: options.gathering_mode,
     experience: options.experience,
-    rental_need: typeof options.rental_need === 'string' ? options.rental_need.slice(0, 200) : '',
     remark: typeof options.remark === 'string' ? options.remark.slice(0, 500) : '',
   };
 }

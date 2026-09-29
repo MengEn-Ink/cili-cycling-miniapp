@@ -16,11 +16,11 @@ export interface ActivityAdminRepository {
   getAdminActivity(id: string): Promise<Activity | undefined>;
   saveActivity(value: ActivityInput, id?: string): Promise<Activity>;
 }
+export type GatheringMode = 'self_drive' | 'support_vehicle';
 export interface RegistrationSubmission {
   activityId: string;
-  bikeMode: string;
+  gatheringMode: GatheringMode;
   experience: string;
-  rentalNeed?: string;
   remark?: string;
   [key: string]: unknown;
 }

@@ -65,7 +65,7 @@ export const registrations: Registration[] = [
     activityId: 'forest',
     status: 'pending',
     profile,
-    bikeMode: '自带车',
+    gatheringMode: '自驾',
     experience: '常骑',
     remark: '无忌口',
     strava: {
@@ -83,7 +83,7 @@ export const registrations: Registration[] = [
     activityId: 'coast',
     status: 'approved',
     profile: { ...profile, nickname: '小满骑行' },
-    bikeMode: '租车',
+    gatheringMode: '需要后援车',
     experience: '有一定经验',
     remark: '需要 M 码',
     strava: {

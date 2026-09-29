@@ -1,10 +1,81 @@
 .activities-page {
+  overflow: hidden;
+  padding-top: 28rpx;
   padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+  background: radial-gradient(circle at 100% 8%, rgba(213, 91, 31, 0.12), transparent 30%);
+}
+
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin: 4rpx 4rpx 24rpx;
+}
+
+.cili-symbol {
+  position: relative;
+  width: 52rpx;
+  height: 52rpx;
+  border: 10rpx solid #f7f7f5;
+  border-right-color: transparent;
+  border-radius: 50%;
+  transform: rotate(-38deg);
+}
+
+.cili-cut {
+  position: absolute;
+  top: -10rpx;
+  right: -4rpx;
+  width: 26rpx;
+  height: 12rpx;
+  background: #d55b1f;
+  transform: skewX(-38deg);
+}
+
+.brand-word {
+  color: #f7f7f5;
+  font-size: 34rpx;
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: 2rpx;
+}
+
+.brand-cn {
+  padding-left: 10rpx;
+  border-left: 1rpx solid #4a4a4f;
+  color: #c7c7ca;
+  font-size: 24rpx;
+  font-weight: 800;
 }
 
 .activities-hero {
-  padding-top: 48rpx;
-  padding-bottom: 48rpx;
+  min-height: 344rpx;
+  padding-top: 46rpx;
+  padding-bottom: 42rpx;
+}
+
+.hero-index {
+  position: absolute;
+  top: 24rpx;
+  right: 28rpx;
+  color: #55555b;
+  font-size: 18rpx;
+  font-weight: 800;
+  letter-spacing: 2rpx;
+}
+
+.hero-rule {
+  width: 250rpx;
+  height: 6rpx;
+  margin-top: 32rpx;
+  background: #3a3a3e;
+  transform: skewX(-30deg);
+}
+
+.hero-rule view {
+  width: 58%;
+  height: 100%;
+  background: linear-gradient(90deg, #c82018, #d55b1f);
 }
 
 .section-head {
@@ -12,16 +83,29 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 20rpx;
-  margin: 36rpx 4rpx 8rpx;
+  margin: 42rpx 4rpx 8rpx;
+}
+
+.section-eyebrow {
+  margin-bottom: 2rpx;
+  color: #d55b1f;
+  font-size: 18rpx;
+  font-weight: 800;
+  letter-spacing: 3rpx;
 }
 
 .section-title {
-  font-size: 36rpx;
-  font-weight: 800;
+  font-size: 38rpx;
+  font-weight: 900;
 }
 
 .count {
-  padding-bottom: 4rpx;
-  color: #0b6b4f;
-  font-weight: 700;
+  min-width: 70rpx;
+  padding: 5rpx 12rpx;
+  border-left: 5rpx solid #d55b1f;
+  background: #242427;
+  color: #f7f7f5;
+  font-weight: 800;
+  text-align: center;
+  transform: skewX(-10deg);
 }

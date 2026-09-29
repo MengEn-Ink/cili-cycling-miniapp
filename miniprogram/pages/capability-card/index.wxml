@@ -41,7 +41,7 @@
 
       <view class="image-shade"></view>
       <view class="card-topline">
-        <view class="brand-signature">此里</view>
+        <view class="brand-signature"><text class="mini-mark"></text>CILI <text class="brand-cn">此里</text></view>
         <view class="strava-pill status-{{card.statusTone}}">
           <text class="status-dot"></text>STRAVA {{card.statusLabel}}
         </view>

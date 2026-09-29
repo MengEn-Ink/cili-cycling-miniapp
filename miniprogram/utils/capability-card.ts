@@ -92,7 +92,6 @@ export function capabilityCard(registration: Registration) {
     hasMultipleImages: images.length > 1,
     displayName: registration.profile.nickname || registration.profile.realName || '未填写昵称',
     maskedName: maskRealName(registration.profile.realName),
-    bikeMode: registration.bikeMode || '未填写',
     experience: registration.experience || '未填写',
     remark: registration.remark || '无',
     stravaStatus: status.label,

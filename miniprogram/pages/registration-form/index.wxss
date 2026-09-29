@@ -1,19 +1,43 @@
+.form-page {
+  min-height: 100vh;
+  background: #090b0f;
+  color: #f4f7f2;
+}
+
 .form-head {
-  padding: 20rpx 8rpx 8rpx;
+  padding: 32rpx 8rpx 18rpx;
 }
 
 .form-head .hero-kicker {
-  color: #0b6b4f;
+  color: #d8ff36;
+  font-size: 22rpx;
+  font-weight: 800;
+  letter-spacing: 4rpx;
 }
 
 .form-title {
-  margin: 8rpx 0;
-  font-size: 44rpx;
+  margin: 10rpx 0;
+  font-size: 46rpx;
+  font-weight: 900;
+  letter-spacing: -1rpx;
+}
+
+.form-page .muted {
+  color: #89918b;
+}
+
+.form-page .section-label {
+  margin-top: 30rpx;
+  color: #d8ff36;
   font-weight: 800;
+  letter-spacing: 2rpx;
 }
 
 .form-card {
   margin-top: 12rpx;
+  border: 1rpx solid #2b3130;
+  background: linear-gradient(145deg, #171b1d, #101315);
+  box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.28);
 }
 
 .text-button {
@@ -22,9 +46,9 @@
   margin: 0;
   padding: 0 16rpx;
   background: transparent;
-  color: #0b6b4f;
+  color: #d8ff36;
   font-size: 24rpx;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 64rpx;
 }
 
@@ -33,13 +57,13 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 24rpx;
-  padding: 17rpx 0;
-  border-top: 1rpx solid #edf1ee;
+  padding: 18rpx 0;
+  border-top: 1rpx solid #2b3130;
 }
 
 .info-label {
   flex: 0 0 150rpx;
-  color: #718078;
+  color: #89918b;
   font-size: 24rpx;
 }
 
@@ -50,18 +74,30 @@
 }
 
 .field-title {
-  font-weight: 700;
+  font-weight: 800;
+}
+
+.required {
+  margin-left: 10rpx;
+  color: #d8ff36;
+  font-size: 20rpx;
+}
+
+.field-hint {
+  margin-top: 8rpx;
+  color: #89918b;
+  font-size: 23rpx;
 }
 
 .field-gap {
-  margin-top: 28rpx;
+  margin-top: 32rpx;
 }
 
 .choice-group {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12rpx;
-  margin-top: 14rpx;
+  margin-top: 16rpx;
 }
 
 .choice-group.three {
@@ -71,16 +107,29 @@
 .choice {
   display: flex;
   align-items: center;
-  min-height: 88rpx;
+  min-height: 92rpx;
   padding: 0 16rpx;
-  border: 2rpx solid #e0e8e3;
-  border-radius: 16rpx;
+  border: 2rpx solid #343b39;
+  border-radius: 12rpx;
+  background: #0d1012;
+  color: #cbd1cc;
   font-size: 25rpx;
   white-space: nowrap;
 }
 
+.choice.selected {
+  border-color: #d8ff36;
+  background: rgba(216, 255, 54, 0.08);
+  color: #f7ffd4;
+}
+
 .remark {
-  margin-top: 24rpx;
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 26rpx;
+  border: 1rpx solid #343b39;
+  background: #0d1012;
+  color: #f4f7f2;
 }
 
 .strava-row {
@@ -90,7 +139,7 @@
   gap: 20rpx;
   margin-top: 24rpx;
   padding-top: 24rpx;
-  border-top: 1rpx solid #edf1ee;
+  border-top: 1rpx solid #2b3130;
 }
 
 .readiness {
@@ -101,23 +150,32 @@
 .privacy-note {
   margin-top: 18rpx;
   padding: 20rpx;
-  border-radius: 14rpx;
-  background: #f5f7f2;
-  color: #718078;
+  border: 1rpx solid #303735;
+  border-radius: 12rpx;
+  background: #0d1012;
+  color: #89918b;
   font-size: 23rpx;
 }
 
 .error-card {
   margin-top: 20rpx;
   padding: 24rpx;
-  border-radius: 18rpx;
-  background: #fceded;
-  color: #d94b4b;
+  border: 1rpx solid #ff5c61;
+  border-radius: 12rpx;
+  background: rgba(255, 92, 97, 0.12);
+  color: #ff8589;
 }
 
 .error-title {
   margin-bottom: 8rpx;
   font-weight: 800;
+}
+
+.form-page .btn {
+  background: #d8ff36;
+  color: #090b0f;
+  font-weight: 900;
+  letter-spacing: 2rpx;
 }
 
 @media (max-width: 340px) {

@@ -1,11 +1,21 @@
 <view class="page activities-page">
-  <view class="hero activities-hero">
-    <view class="hero-kicker">RIDE TOGETHER</view>
-    <view class="hero-title">去见风，也见同路人</view>
-    <view class="hero-subtitle">精选路线 · 实名报名 · 透明审批</view>
+  <view class="brand-lockup">
+    <view class="cili-symbol"><view class="cili-cut"></view></view>
+    <view class="brand-word">CILI</view>
+    <view class="brand-cn">此里</view>
   </view>
-  <view class="section-head"><view><view class="section-title">近期活动</view><view class="muted">选择适合你的下一程</view></view><text class="count" wx:if="{{items.length}}">{{items.length}} 场</text></view>
+  <view class="hero activities-hero">
+    <view class="hero-index">01 / EVENTS</view>
+    <view class="hero-kicker">RIDE TOGETHER</view>
+    <view class="hero-title">去见风<br />也见同路人</view>
+    <view class="hero-subtitle">精选路线 · 实名报名 · 透明审批</view>
+    <view class="hero-rule"><view></view></view>
+  </view>
+  <view class="section-head">
+    <view><view class="section-eyebrow">UPCOMING RIDES</view><view class="section-title">近期活动</view><view class="muted">选择适合你的下一程</view></view>
+    <text class="count" wx:if="{{items.length}}">{{items.length}} 场</text>
+  </view>
   <state-view loading="{{loading}}" error="{{error}}" empty="{{!items.length}}" bind:retry="load">
-    <activity-card wx:for="{{items}}" wx:key="id" item="{{item}}" data-id="{{item.id}}" bind:open="open"/>
+    <activity-card wx:for="{{items}}" wx:key="id" item="{{item}}" data-id="{{item.id}}" bind:open="open" />
   </state-view>
 </view>

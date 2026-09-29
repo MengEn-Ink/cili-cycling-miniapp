@@ -199,7 +199,13 @@ test('管理员投影保留审批所需字段但不返回 raw file ID、token、
       _id: 'r1',
       activity_id: 'a1',
       status: 'pending',
-      options: { bike_mode: 'own', experience: 'regular', remark: '不吃辣' },
+      options: {
+        gathering_mode: 'support_vehicle',
+        bike_mode: 'own',
+        rental_need: 'legacy',
+        experience: 'regular',
+        remark: '不吃辣',
+      },
       strava_status: 'connected',
       strava_snapshot: { activities_90d: 12, access_token: 'secret' },
       profile_snapshot: {
@@ -228,6 +234,11 @@ test('管理员投影保留审批所需字段但不返回 raw file ID、token、
     photos: [{ url: 'https://temporary.example/ride-1', category: 'ride', source: 'user' }],
     avatar_url: 'https://temporary.example/avatar',
   });
+  assert.deepEqual(response.options, {
+    gathering_mode: 'support_vehicle',
+    experience: 'regular',
+    remark: '不吃辣',
+  });
   assert.equal(response.profile_snapshot.real_name_masked, '曹**');
   assert.equal(response.profile_snapshot.phone_masked, '138****5678');
   const serialized = JSON.stringify(response);
@@ -242,6 +253,22 @@ test('管理员投影保留审批所需字段但不返回 raw file ID、token、
     'emergency',
   ]) {
     assert.equal(serialized.includes(forbidden), false, forbidden);
+  }
+});
+
+test('管理员投影忽略历史旧集合字段和未知 gathering_mode', () => {
+  for (const options of [
+    { bike_mode: 'rent', rental_need: 'legacy', experience: 'regular' },
+    { gathering_mode: 'unknown', experience: 'regular' },
+  ]) {
+    const response = adminCapabilityView(
+      { _id: 'r1', activity_id: 'a1', status: 'pending', options },
+      profile,
+      { photos: [], avatar_url: '' },
+    );
+    assert.deepEqual(response.options, { experience: 'regular' });
+    assert.equal(JSON.stringify(response).includes('bike_mode'), false);
+    assert.equal(JSON.stringify(response).includes('rental_need'), false);
   }
 });
 

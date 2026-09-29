@@ -1,10 +1,26 @@
 <view class="page registrations-page">
-  <view class="page-heading"><view class="hero-kicker">MY RIDES</view><view class="heading-title">我的报名</view><view class="muted">所有状态与凭证集中查看</view></view>
+  <view class="brand-bar">
+    <view class="cili-mark"><text class="mark-cut"></text></view>
+    <view class="brand-word">CILI <text>此里</text></view>
+    <view class="brand-rule"></view>
+  </view>
+  <view class="page-heading">
+    <view class="hero-kicker">MY RIDES</view>
+    <view class="heading-title">我的报名</view>
+    <view class="heading-meta">REGISTRATION ARCHIVE · {{items.length}}</view>
+  </view>
+  <view class="journey-line" aria-hidden="true">
+    <view class="journey-node is-active"></view><view class="journey-track"></view>
+    <view class="journey-node is-active"></view><view class="journey-track"></view>
+    <view class="journey-node"></view>
+  </view>
   <state-view loading="{{loading}}" error="{{error}}" empty="{{!items.length}}">
     <view class="registration-card" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="open" hover-class="registration-card--pressed">
-      <view class="row"><text class="date">{{item.activity.date}}</text><status-pill status="{{item.statusText}}"/></view>
+      <view class="card-index">RIDE / {{index + 1}}</view>
+      <view class="row card-head"><text class="date">{{item.activity.date}}</text><status-pill status="{{item.statusText}}"/></view>
       <view class="registration-title">{{item.activity.title}}</view>
-      <view class="card-footer"><text class="muted">更新于 {{item.updatedAt}}</text><text class="open-link">查看详情 ›</text></view>
+      <view class="card-footer"><text class="updated-at">更新于 {{item.updatedAt}}</text><text class="open-link">查看详情 <text class="arrow">›</text></text></view>
+      <view class="corner-cut"></view>
     </view>
   </state-view>
 </view>

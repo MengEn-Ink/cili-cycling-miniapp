@@ -2,23 +2,26 @@
   <state-view loading="{{loading}}" error="{{error}}">
     <view wx:if="{{item}}">
       <view class="detail-hero">
+        <view class="detail-brand"><view class="mini-symbol"></view><text>CILI 此里</text></view>
+        <view class="hero-sequence">RIDE / 01</view>
         <view class="hero-kicker">{{item.date}}</view>
         <view class="hero-title">{{item.title}}</view>
-        <view class="hero-subtitle">{{item.route.start}} → {{item.route.end}}</view>
+        <view class="hero-subtitle">{{item.route.start}} <text class="route-arrow">→</text> {{item.route.end}}</view>
         <view class="hero-level">{{item.route.level}}</view>
+        <view class="hero-corner"></view>
       </view>
       <view class="content">
         <view class="metric-panel">
-          <view class="detail-metric"><view class="metric-number">{{item.route.distanceKm}}</view><view>公里里程</view></view>
-          <view class="detail-metric"><view class="metric-number">{{item.route.elevationM}}</view><view>米累计爬升</view></view>
-          <view class="detail-metric"><view class="metric-number">{{item.capacity}}</view><view>活动名额</view></view>
+          <view class="detail-metric"><view class="metric-number">{{item.route.distanceKm}}</view><view class="metric-label">KM / 里程</view></view>
+          <view class="detail-metric"><view class="metric-number">{{item.route.elevationM}}</view><view class="metric-label">M / 爬升</view></view>
+          <view class="detail-metric"><view class="metric-number">{{item.capacity}}</view><view class="metric-label">名额</view></view>
         </view>
-        <view class="card"><view class="title">路线概况</view><view class="body-text">{{item.description}}</view></view>
-        <view class="card"><view class="title">时间安排</view><view wx:for="{{item.schedule}}" wx:key="time" class="schedule-row"><view class="schedule-time">{{item.time}}</view><view class="schedule-dot"></view><view class="schedule-copy"><view>{{item.title}}</view><view class="muted">{{item.location}}</view></view></view></view>
-        <view class="card"><view class="title">装备与注意</view><view class="list-item" wx:for="{{item.equipment}}" wx:key="*this"><text class="check">✓</text><text>{{item}}</text></view><view class="notice-item" wx:for="{{item.notices}}" wx:key="*this"><text>•</text><text>{{item}}</text></view></view>
-        <view class="card"><view class="title">费用说明</view><view class="body-text">{{item.fee}}</view></view>
+        <view class="card"><view class="card-index">01</view><view class="title">路线概况</view><view class="body-text">{{item.description}}</view></view>
+        <view class="card"><view class="card-index">02</view><view class="title">时间安排</view><view wx:for="{{item.schedule}}" wx:key="time" class="schedule-row"><view class="schedule-time">{{item.time}}</view><view class="schedule-dot"></view><view class="schedule-copy"><view>{{item.title}}</view><view class="muted">{{item.location}}</view></view></view></view>
+        <view class="card"><view class="card-index">03</view><view class="title">装备与注意</view><view class="list-item" wx:for="{{item.equipment}}" wx:key="*this"><text class="check">✓</text><text>{{item}}</text></view><view class="notice-item" wx:for="{{item.notices}}" wx:key="*this"><text class="notice-mark">/</text><text>{{item}}</text></view></view>
+        <view class="card"><view class="card-index">04</view><view class="title">费用说明</view><view class="body-text">{{item.fee}}</view></view>
       </view>
     </view>
   </state-view>
 </view>
-<view class="fixed"><button class="btn" disabled="{{loading || !item || !activityAction.enabled}}" bindtap="go">{{activityAction.label}}</button></view>
+<view class="fixed"><button class="btn" disabled="{{loading || !item || !activityAction.enabled}}" bindtap="go">{{activityAction.label}} <text class="button-arrow">→</text></button></view>

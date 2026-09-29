@@ -118,7 +118,7 @@ export interface Registration {
   activityId: string;
   status: RegistrationStatus;
   profile: Profile;
-  bikeMode: string;
+  gatheringMode: '自驾' | '需要后援车' | '';
   experience: string;
   remark: string;
   strava: {

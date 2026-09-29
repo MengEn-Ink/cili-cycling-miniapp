@@ -13,7 +13,7 @@ const ADMIN_REGISTRATION_FIELDS = [
   'created_at',
   'updated_at',
 ];
-const ADMIN_OPTION_FIELDS = ['bike_mode', 'experience', 'rental_need', 'remark'];
+const ADMIN_OPTION_FIELDS = ['experience', 'remark'];
 const ADMIN_PROFILE_FIELDS = [
   'nickname',
   'real_name_masked',
@@ -174,6 +174,10 @@ function safeResolvedMedia(resolvedMedia) {
 function adminCapabilityView(registration, profile, resolvedMedia) {
   const safe = pick(registration, ADMIN_REGISTRATION_FIELDS);
   safe.options = pick(registration && registration.options, ADMIN_OPTION_FIELDS);
+  const gatheringMode = registration && registration.options && registration.options.gathering_mode;
+  if (['self_drive', 'support_vehicle'].includes(gatheringMode)) {
+    safe.options.gathering_mode = gatheringMode;
+  }
   safe.profile_snapshot = pick(registration && registration.profile_snapshot, ADMIN_PROFILE_FIELDS);
   safe.strava_status = registration && registration.strava_status;
   if (registration && registration.strava_snapshot) {
