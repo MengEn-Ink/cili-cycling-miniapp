@@ -33,6 +33,12 @@
   letter-spacing: 2rpx;
 }
 
+.form-page .fixed {
+  border-top-color: #303735;
+  background: rgba(9, 11, 15, 0.96);
+  box-shadow: 0 -8rpx 28rpx rgba(0, 0, 0, 0.4);
+}
+
 .form-card {
   margin-top: 12rpx;
   border: 1rpx solid #2b3130;

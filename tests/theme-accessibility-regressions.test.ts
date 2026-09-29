@@ -31,8 +31,9 @@ function rpx(block: string, property: string): number {
 }
 
 function relativeLuminance(hex: string): number {
-  const channels = hex
-    .replace('#', '')
+  const raw = hex.replace('#', '');
+  const normalized = raw.length === 3 ? [...raw].map((value) => value + value).join('') : raw;
+  const channels = normalized
     .match(/.{2}/g)!
     .map((channel) => Number.parseInt(channel, 16) / 255)
     .map((channel) => (channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4));
@@ -46,7 +47,7 @@ function contrast(foreground: string, background: string): number {
 }
 
 function hexColors(value: string): string[] {
-  return value.match(/#[0-9a-f]{6}/gi) || [];
+  return value.match(/#[0-9a-f]{6}\b|#[0-9a-f]{3}\b/gi) || [];
 }
 
 describe('theme accessibility regressions', () => {
@@ -111,6 +112,82 @@ describe('theme accessibility regressions', () => {
     const formCard = cssBlock(read('miniprogram/pages/registration-form/index.wxss'), '.form-card');
     expect(declaration(formCard, 'background')).toContain('#171b1d');
     expect(declaration(formCard, 'color').toLowerCase()).toBe('#f4f7f2');
+  });
+
+  it('keeps every shared form and status primitive on the light palette', () => {
+    const app = read('miniprogram/app.wxss');
+    const lightSurface = '#ffffff';
+
+    for (const selector of ['.label', '.section-label']) {
+      const color = hexColors(declaration(cssBlock(app, selector), 'color'))[0];
+      expect(contrast(color, lightSurface), selector).toBeGreaterThanOrEqual(4.5);
+    }
+
+    for (const selector of ['.tag', '.warn', '.danger']) {
+      const block = cssBlock(app, selector);
+      const foreground = hexColors(declaration(block, 'color'))[0];
+      const background = hexColors(declaration(block, 'background'))[0];
+      expect(contrast(foreground, background), selector).toBeGreaterThanOrEqual(4.5);
+    }
+
+    const controls = app.match(/\.input,\s*\.textarea\s*\{([^}]*)\}/s)?.[1] || '';
+    expect(declaration(controls, 'background').toLowerCase()).toBe('#f8faf7');
+    expect(declaration(controls, 'color').toLowerCase()).toBe('#17231e');
+
+    const secondary = cssBlock(app, '.secondary');
+    expect(declaration(secondary, 'background').toLowerCase()).toContain('#fff');
+    expect(
+      contrast(
+        hexColors(declaration(secondary, 'color'))[0],
+        hexColors(declaration(secondary, 'background'))[0],
+      ),
+    ).toBeGreaterThanOrEqual(4.5);
+
+    const fixed = cssBlock(app, '.fixed');
+    expect(declaration(fixed, 'background')).toContain('255, 255, 255');
+
+    const metric = cssBlock(app, '.metric');
+    expect(declaration(metric, 'background').toLowerCase()).toBe('#eef5f1');
+    expect(
+      contrast(
+        hexColors(declaration(metric, 'color'))[0],
+        hexColors(declaration(metric, 'background'))[0],
+      ),
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrast(hexColors(declaration(cssBlock(app, '.big'), 'color'))[0], '#eef5f1'),
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrast(hexColors(declaration(cssBlock(app, '.empty'), 'color'))[0], '#f5f7f2'),
+    ).toBeGreaterThanOrEqual(4.5);
+
+    expect(read('miniprogram/pages/profile-edit/index.wxml')).toMatch(
+      /class="(?:label|danger form-error)"/,
+    );
+    expect(read('miniprogram/pages/strava/index.wxml')).toContain(
+      'class="section-label inner-label"',
+    );
+    expect(read('miniprogram/pages/admin/activity-list/index.wxml')).toContain('class="tag"');
+    expect(read('miniprogram/pages/admin/activity-edit/index.wxml')).toContain(
+      'class="card danger"',
+    );
+  });
+
+  it('keeps dark consumers independent from the light global primitives', () => {
+    const detailStyles = read('miniprogram/pages/activity-detail/index.wxss');
+    expect(declaration(cssBlock(detailStyles, '.fixed'), 'background')).toContain('11, 11, 12');
+
+    const formStyles = read('miniprogram/pages/registration-form/index.wxss');
+    expect(declaration(cssBlock(formStyles, '.form-page .fixed'), 'background')).toContain(
+      '9, 11, 15',
+    );
+
+    const reviewStyles = read('miniprogram/pages/admin/review-detail/index.wxss');
+    const reviewMetric = cssBlock(reviewStyles, '.review-detail-page .metric');
+    expect(declaration(reviewMetric, 'background').toLowerCase()).toBe('#1b1b1d');
+    expect(
+      contrast(hexColors(declaration(reviewMetric, 'color'))[0], '#1b1b1d'),
+    ).toBeGreaterThanOrEqual(4.5);
   });
 
   it('lets each page provide empty-state copy and hides decorative state glyphs', () => {

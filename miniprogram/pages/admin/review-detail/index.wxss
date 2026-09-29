@@ -243,6 +243,12 @@ page {
   color: #d55b1f;
   font-size: 34rpx;
 }
+.review-detail-page .metric {
+  border: 1rpx solid #343438;
+  border-radius: 6rpx;
+  background: #1b1b1d;
+  color: #a8a8ad;
+}
 .sync-meta {
   margin: 0 28rpx;
   padding: 18rpx 0 26rpx;

@@ -101,25 +101,22 @@ textarea {
   align-items: center;
   min-height: 44rpx;
   padding: 4rpx 16rpx;
-  border: 1rpx solid #d55b1f;
-  border-radius: 4rpx;
-  background: rgba(213, 91, 31, 0.12);
-  color: #f38a50;
+  border-radius: 999rpx;
+  background: #e8f3ee;
+  color: #0b6b4f;
   font-size: 22rpx;
   font-weight: 700;
   white-space: nowrap;
 }
 
 .warn {
-  border-color: #d55b1f;
-  background: rgba(213, 91, 31, 0.12);
-  color: #f38a50;
+  background: #fff5df;
+  color: #9a6513;
 }
 
 .danger {
-  border-color: #c82018;
-  background: rgba(200, 32, 24, 0.12);
-  color: #ff7068;
+  background: #fceded;
+  color: #b42318;
 }
 
 .btn,
@@ -160,9 +157,9 @@ textarea {
 }
 
 .secondary {
-  border: 2rpx solid #5a5a60;
-  background: #242427 !important;
-  color: #f7f7f5 !important;
+  border: 2rpx solid #cfe0d8;
+  background: #fff !important;
+  color: #0b6b4f !important;
 }
 
 button::after {
@@ -175,7 +172,7 @@ button::after {
 
 .label {
   margin-bottom: 10rpx;
-  color: #a8a8ad;
+  color: #4f6058;
   font-size: 24rpx;
   font-weight: 600;
 }
@@ -185,10 +182,10 @@ button::after {
   width: 100%;
   min-height: 88rpx;
   padding: 20rpx 22rpx;
-  border: 2rpx solid #3b3b3f;
-  border-radius: 6rpx;
-  background: #18181a;
-  color: #f7f7f5;
+  border: 2rpx solid #dfe7e2;
+  border-radius: 16rpx;
+  background: #f8faf7;
+  color: #17231e;
 }
 
 .textarea {
@@ -202,9 +199,9 @@ button::after {
   bottom: 0;
   left: 0;
   padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));
-  border-top: 1rpx solid #303034;
-  background: rgba(11, 11, 12, 0.96);
-  box-shadow: 0 -8rpx 28rpx rgba(0, 0, 0, 0.4);
+  border-top: 1rpx solid #e8ede9;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 -8rpx 24rpx rgba(23, 35, 30, 0.08);
 }
 
 .fixed .btn,
@@ -221,16 +218,15 @@ button::after {
 .metric {
   min-width: 0;
   padding: 22rpx;
-  border: 1rpx solid #343438;
-  border-radius: 6rpx;
-  background: #1b1b1d;
-  color: #8b8b91;
+  border-radius: 18rpx;
+  background: #eef5f1;
+  color: #56655e;
   font-size: 23rpx;
 }
 
 .big {
   margin-bottom: 4rpx;
-  color: #f7f7f5;
+  color: #0b6b4f;
   font-size: 34rpx;
   font-weight: 900;
   line-height: 1.25;
@@ -239,13 +235,13 @@ button::after {
 
 .empty {
   padding: 88rpx 32rpx;
-  color: #8b8b91;
+  color: #56655e;
   text-align: center;
 }
 
 .section-label {
   margin: 34rpx 4rpx 10rpx;
-  color: #8b8b91;
+  color: #56655e;
   font-size: 23rpx;
   font-weight: 700;
   letter-spacing: 2rpx;
