@@ -120,6 +120,7 @@ function tokenDocument(openid, token, keyValue, now) {
     refresh_token_cipher: encrypt(token.refresh_token, keyValue),
     token_expires_at: new Date(token.expires_at * 1000),
     scopes: typeof token.scope === 'string' ? token.scope.split(',') : [],
+    sync_status: 'pending',
     connected_at: now,
     updated_at: now,
   };
@@ -257,8 +258,7 @@ async function callbackFlow({ code, state, env, store, api, now = new Date() }) 
   await store.saveCredential(credential);
   return { connected: true, athlete_name: credential.athlete_name };
 }
-async function syncFlow({ openid, env, credential, api, store, now = new Date(), maxPages = 5 }) {
-  const cfg = config(env);
+async function usableCredential({ openid, credential, cfg, api, now = new Date() }) {
   if (!credential) throw new StravaError('STRAVA_NOT_CONNECTED', '尚未绑定 Strava');
   let access = decrypt(credential.access_token_cipher, cfg.key);
   let current = credential;
@@ -283,11 +283,16 @@ async function syncFlow({ openid, env, credential, api, store, now = new Date(),
       connected_at: credential.connected_at,
     };
     access = refreshed.access_token;
-    await store.saveCredential(current);
   }
+  return { accessToken: access, document: current };
+}
+async function buildSyncResult({ openid, env, credential, api, now = new Date(), maxPages = 5 }) {
+  const cfg = config(env);
+  if (!credential) throw new StravaError('STRAVA_NOT_CONNECTED', '尚未绑定 Strava');
+  const refreshed = await usableCredential({ openid, credential, cfg, api, now });
   const coverageTo = now;
   const coverageFrom = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-  const window = await fetchActivityWindow(api, access, {
+  const window = await fetchActivityWindow(api, refreshed.accessToken, {
     after: Math.floor(coverageFrom.getTime() / 1000),
     before: Math.ceil(coverageTo.getTime() / 1000),
     maxPages,
@@ -302,9 +307,72 @@ async function syncFlow({ openid, env, credential, api, store, now = new Date(),
       coverageComplete: window.coverageComplete,
     }),
   };
-  await store.saveSnapshot(snapshot);
-  return { connected: true, athlete_name: current.athlete_name, snapshot };
+  return { credential: refreshed.document, snapshot };
 }
+function syncAudit(openid, action, now, detail = {}) {
+  return {
+    actor_openid: openid,
+    action,
+    target_id: openid,
+    created_at: now,
+    detail,
+  };
+}
+async function ensureReadyFlow({
+  openid,
+  env,
+  store,
+  api,
+  now = new Date(),
+  randomUUID = crypto.randomUUID,
+}) {
+  let bundle = await store.readReadiness(openid, now);
+  let readiness = deriveReadiness(bundle, now);
+  if (
+    readiness.state === 'ready' ||
+    readiness.state === 'disconnected' ||
+    readiness.state === 'authorizing'
+  )
+    return readiness;
+
+  const leaseId = randomUUID();
+  const claim = await store.acquireSyncLease(openid, {
+    leaseId,
+    now,
+    staleBefore: new Date(now.getTime() - SYNC_LEASE_MS),
+    audit: syncAudit(openid, 'strava.sync.started', now),
+  });
+  if (!claim.acquired) return deriveReadiness({ ...claim, hasActiveOAuthState: false }, now);
+
+  try {
+    const built = await buildSyncResult({
+      openid,
+      env,
+      credential: claim.credential,
+      api,
+      now,
+    });
+    await store.completeSync(openid, {
+      leaseId,
+      ...built,
+      finishedAt: now,
+      audit: syncAudit(openid, 'strava.sync.succeeded', now, {
+        coverage_complete: built.snapshot.coverage_complete,
+      }),
+    });
+  } catch (error) {
+    const code = error instanceof StravaError ? error.code : 'STRAVA_API_FAILED';
+    await store.failSync(openid, {
+      leaseId,
+      errorCode: code,
+      finishedAt: now,
+      audit: syncAudit(openid, 'strava.sync.failed', now, { error_code: code }),
+    });
+  }
+  bundle = await store.readReadiness(openid, now);
+  return deriveReadiness(bundle, now);
+}
+const syncFlow = ensureReadyFlow;
 async function disconnectFlow({ openid, store, now = new Date() }) {
   await store.disconnect(openid, {
     actor_openid: openid,
@@ -353,6 +421,10 @@ module.exports = {
   fetchActivityWindow,
   fetchActivities,
   callbackFlow,
+  usableCredential,
+  buildSyncResult,
+  syncAudit,
+  ensureReadyFlow,
   syncFlow,
   disconnectFlow,
   publicStatus,

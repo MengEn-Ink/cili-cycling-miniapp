@@ -18,7 +18,8 @@ const {
   fetchActivityWindow,
   fetchActivities,
   callbackFlow,
-  syncFlow,
+  buildSyncResult,
+  ensureReadyFlow,
   disconnectFlow,
   writableDocument,
 } = require('./core');
@@ -114,6 +115,7 @@ test('callback 校验错误并安全保存加密 token', async () => {
   });
   assert.equal(result.connected, true);
   assert.equal(decrypt(saved.refresh_token_cipher, key), fakeRefresh);
+  assert.equal(saved.sync_status, 'pending');
 });
 test('分页最多拉取限制页数并在短页停止', async () => {
   let calls = 0;
@@ -342,34 +344,197 @@ test('90 天骑行统计排除通勤/训练并按距离加权', () => {
     coverage_complete: true,
   });
 });
-test('sync 临期刷新 token、保存快照且不调用外网', async () => {
-  const old = tokenDocument('o', token(1), key, new Date(0));
-  let credentials = 0,
-    snapshots = 0;
-  const api = {
-    refresh: async () => token(Math.floor(Date.now() / 1000) + 3600),
-    activities: async () => [
-      {
-        sport_type: 'Ride',
-        distance: 1000,
-        moving_time: 100,
-        total_elevation_gain: 10,
-        start_date: '2026-09-01T00:00:00Z',
+test('ensureReady 对 fresh snapshot 不获取 lease 且不访问 Strava', async () => {
+  const now = new Date('2026-09-29T04:00:00.000Z');
+  let claims = 0;
+  let activityCalls = 0;
+  const credential = { athlete_name: 'Rider', sync_status: 'failed' };
+  const snapshot = { synced_at: new Date(now.getTime() - 1) };
+  const result = await ensureReadyFlow({
+    openid: 'user-1',
+    env,
+    store: {
+      readReadiness: async () => ({ credential, snapshot, hasActiveOAuthState: false }),
+      acquireSyncLease: async () => {
+        claims += 1;
+        throw new Error('fresh snapshot must not acquire');
       },
-    ],
+    },
+    api: {
+      activities: async () => {
+        activityCalls += 1;
+        throw new Error('fresh snapshot must not fetch');
+      },
+    },
+    now,
+    randomUUID: () => 'lease-new',
+  });
+  assert.equal(result.state, 'ready');
+  assert.equal(claims, 0);
+  assert.equal(activityCalls, 0);
+});
+test('ensureReady 对有效 running lease 返回 syncing 且不访问 Strava', async () => {
+  const now = new Date('2026-09-29T04:00:00.000Z');
+  const credential = {
+    athlete_name: 'Rider',
+    sync_status: 'running',
+    sync_started_at: new Date(now.getTime() - SYNC_LEASE_MS + 1),
+    sync_lease_id: 'lease-current',
   };
+  let startedAudit;
+  let activityCalls = 0;
+  const result = await ensureReadyFlow({
+    openid: 'user-1',
+    env,
+    store: {
+      readReadiness: async () => ({ credential, snapshot: undefined, hasActiveOAuthState: false }),
+      acquireSyncLease: async (_openid, claim) => {
+        startedAudit = claim.audit;
+        return { acquired: false, credential, snapshot: undefined };
+      },
+    },
+    api: {
+      activities: async () => {
+        activityCalls += 1;
+      },
+    },
+    now,
+    randomUUID: () => 'lease-new',
+  });
+  assert.equal(result.state, 'syncing');
+  assert.equal(activityCalls, 0);
+  assert.equal(startedAudit.action, 'strava.sync.started');
+  assert.deepEqual(startedAudit.detail, {});
+});
+test('并发 ensureReady 只有 lease winner 访问一次 Strava', async () => {
+  const now = new Date('2026-09-29T04:00:00.000Z');
+  let credential = tokenDocument('user-1', token(), key, now);
+  credential.sync_status = 'pending';
+  let snapshot;
+  let claimed = false;
+  let activityCalls = 0;
   const store = {
-    saveCredential: async () => {
-      credentials += 1;
+    readReadiness: async () => ({ credential, snapshot, hasActiveOAuthState: false }),
+    acquireSyncLease: async (_openid, { leaseId }) => {
+      if (claimed) return { acquired: false, credential, snapshot };
+      claimed = true;
+      credential = { ...credential, sync_status: 'running', sync_lease_id: leaseId };
+      return { acquired: true, credential, snapshot };
     },
-    saveSnapshot: async () => {
-      snapshots += 1;
+    completeSync: async (_openid, value) => {
+      assert.equal(value.audit.action, 'strava.sync.succeeded');
+      credential = { ...value.credential, sync_status: 'ready' };
+      snapshot = value.snapshot;
+      return true;
+    },
+    failSync: async () => {
+      throw new Error('successful sync must not fail');
     },
   };
-  const result = await syncFlow({ openid: 'o', env, credential: old, api, store, now: new Date() });
-  assert.equal(result.snapshot.total_km, 1);
-  assert.equal(credentials, 1);
-  assert.equal(snapshots, 1);
+  const api = {
+    activities: async () => {
+      activityCalls += 1;
+      return [];
+    },
+  };
+  await Promise.all([
+    ensureReadyFlow({
+      openid: 'user-1',
+      env,
+      store,
+      api,
+      now,
+      randomUUID: () => 'lease-one',
+    }),
+    ensureReadyFlow({
+      openid: 'user-1',
+      env,
+      store,
+      api,
+      now,
+      randomUUID: () => 'lease-two',
+    }),
+  ]);
+  assert.equal(activityCalls, 1);
+  assert.equal(
+    deriveReadiness({ credential, snapshot, hasActiveOAuthState: false }, now).state,
+    'ready',
+  );
+});
+test('ensureReady 失败只持久化稳定错误码和安全审计', async () => {
+  const now = new Date('2026-09-29T04:00:00.000Z');
+  let credential = tokenDocument('user-1', token(), key, now);
+  credential.sync_status = 'pending';
+  let failure;
+  const store = {
+    readReadiness: async () => ({ credential, snapshot: undefined, hasActiveOAuthState: false }),
+    acquireSyncLease: async (_openid, { leaseId }) => ({
+      acquired: true,
+      credential: { ...credential, sync_status: 'running', sync_lease_id: leaseId },
+      snapshot: undefined,
+    }),
+    completeSync: async () => {
+      throw new Error('failed sync must not complete');
+    },
+    failSync: async (_openid, value) => {
+      failure = value;
+      credential = {
+        ...credential,
+        sync_status: 'failed',
+        sync_error_code: value.errorCode,
+      };
+      return true;
+    },
+  };
+  const result = await ensureReadyFlow({
+    openid: 'user-1',
+    env,
+    store,
+    api: {
+      activities: async () => {
+        throw new Error(`upstream leaked ${fakeAccess}`);
+      },
+    },
+    now,
+    randomUUID: () => 'lease-new',
+  });
+  assert.equal(result.state, 'failed');
+  assert.equal(failure.errorCode, 'STRAVA_API_FAILED');
+  assert.equal(failure.audit.action, 'strava.sync.failed');
+  assert.deepEqual(failure.audit.detail, { error_code: 'STRAVA_API_FAILED' });
+  assert.equal(JSON.stringify(failure).includes(fakeAccess), false);
+});
+test('token refresh 只作为 fenced completion 的输入而不提前持久化', async () => {
+  const now = new Date('2026-09-29T04:00:00.000Z');
+  const old = tokenDocument('user-1', token(1), key, new Date(0));
+  const nextAccess = crypto.randomBytes(24).toString('hex');
+  const nextRefresh = crypto.randomBytes(24).toString('hex');
+  let refreshCalls = 0;
+  const built = await buildSyncResult({
+    openid: 'user-1',
+    env,
+    credential: old,
+    api: {
+      refresh: async () => {
+        refreshCalls += 1;
+        return {
+          access_token: nextAccess,
+          refresh_token: nextRefresh,
+          expires_at: Math.floor(now.getTime() / 1000) + 3600,
+          scope: 'read,activity:read_all',
+        };
+      },
+      activities: async (accessToken) => {
+        assert.equal(accessToken, nextAccess);
+        return [];
+      },
+    },
+    now,
+  });
+  assert.equal(refreshCalls, 1);
+  assert.equal(decrypt(built.credential.access_token_cipher, key), nextAccess);
+  assert.equal(decrypt(built.credential.refresh_token_cipher, key), nextRefresh);
+  assert.equal(built.snapshot.coverage_complete, true);
 });
 test('disconnect 原子委托删除凭证/快照并写审计', async () => {
   let captured;
