@@ -32,24 +32,45 @@ test('审批提交后定时 worker 可消费同一 outbox', async () => {
   );
   const item = outbox.get(reviewed.notification.outbox_id);
   const workerStore = {
+    recoverExpiredDispatching: async () => 0,
     listReady: async () => [item._id],
-    claim: async (_id, claimant, now, { leaseMs }) => {
+    claim: async (_id, { claimant, leaseId, now, leaseMs }) => {
       Object.assign(item, {
-        status: 'sending',
+        status: 'claimed',
         attempts: item.attempts + 1,
+        attempt_no: item.attempts + 1,
         claimed_by: claimant,
+        lease_id: leaseId,
         lease_expires_at: new Date(now.getTime() + leaseMs),
       });
       return { ...item, claimed: true };
     },
+    beginDispatch: async () => {
+      item.status = 'dispatching';
+      return true;
+    },
     markSent: async () => {
       item.status = 'sent';
       item.lease_expires_at = null;
+      return true;
     },
-    markFailed: async (_id, error) => {
-      item.status = 'failed';
-      item.last_error = error;
+    markRetryable: async (_id, value) => {
+      item.status = 'retryable';
+      item.last_error = value.errorCode;
       item.lease_expires_at = null;
+      return true;
+    },
+    markTerminal: async (_id, value) => {
+      item.status = 'failed_terminal';
+      item.last_error = value.errorCode;
+      item.lease_expires_at = null;
+      return true;
+    },
+    markDeliveryUnknown: async (_id, value) => {
+      item.status = 'delivery_unknown';
+      item.last_error = value.errorCode;
+      item.lease_expires_at = null;
+      return true;
     },
   };
   const sent = [];
@@ -63,6 +84,7 @@ test('审批提交后定时 worker 可消费同一 outbox', async () => {
     },
     env: { REVIEW_APPROVED_TEMPLATE_ID: 'approved-template' },
     now: new Date('2026-09-29T00:01:00Z'),
+    randomUUID: () => 'lease-worker',
   });
   assert.equal(result.sent, 1);
   assert.equal(item.status, 'sent');

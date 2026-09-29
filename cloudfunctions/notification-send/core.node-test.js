@@ -23,31 +23,76 @@ function fixture(overrides = {}) {
     ...overrides,
   };
   const calls = [];
+  const fenced = (lease) => item.lease_id === lease.leaseId && item.attempt_no === lease.attemptNo;
   const store = {
     listReady: async () => [item._id],
-    claim: async (_id, claimant, now, { maxAttempts, leaseMs }) => {
-      if (item.status === 'sent') return { ...item, claimed: false };
-      if (item.status === 'sending' && Date.parse(item.lease_expires_at) > now.getTime())
+    recoverExpiredDispatching: async (now) => {
+      if (
+        ['dispatching', 'sending'].includes(item.status) &&
+        Date.parse(item.lease_expires_at) <= now.getTime()
+      ) {
+        item.status = 'delivery_unknown';
+        item.lease_expires_at = null;
+        return 1;
+      }
+      return 0;
+    },
+    claim: async (_id, { claimant, leaseId, now, maxAttempts, leaseMs }) => {
+      if (['sent', 'delivery_unknown', 'failed_terminal'].includes(item.status))
+        return { ...item, claimed: false };
+      if (item.status === 'dispatching') {
+        if (Date.parse(item.lease_expires_at) <= now.getTime()) {
+          item.status = 'delivery_unknown';
+          item.lease_expires_at = null;
+        }
+        return { ...item, claimed: false };
+      }
+      if (item.status === 'claimed' && Date.parse(item.lease_expires_at) > now.getTime())
         return { ...item, claimed: false };
       if (item.attempts >= maxAttempts) {
         const error = new Error('通知任务已达到最大重试次数');
         error.code = 'MAX_RETRIES_EXCEEDED';
         throw error;
       }
-      item.status = 'sending';
+      item.status = 'claimed';
       item.attempts += 1;
+      item.attempt_no = item.attempts;
       item.claimed_by = claimant;
+      item.lease_id = leaseId;
       item.lease_expires_at = new Date(now.getTime() + leaseMs);
       return { ...item, claimed: true };
     },
-    markSent: async () => {
+    beginDispatch: async (_id, lease) => {
+      if (item.status !== 'claimed' || !fenced(lease)) return false;
+      item.status = 'dispatching';
+      return true;
+    },
+    markSent: async (_id, lease) => {
+      if (item.status !== 'dispatching' || !fenced(lease)) return false;
       item.status = 'sent';
       item.lease_expires_at = null;
+      return true;
     },
-    markFailed: async (_id, error) => {
-      item.status = 'failed';
-      item.last_error = error;
+    markRetryable: async (_id, lease) => {
+      if (!['claimed', 'dispatching'].includes(item.status) || !fenced(lease)) return false;
+      item.status = 'retryable';
+      item.last_error = lease.errorCode;
       item.lease_expires_at = null;
+      return true;
+    },
+    markTerminal: async (_id, lease) => {
+      if (item.status !== 'dispatching' || !fenced(lease)) return false;
+      item.status = 'failed_terminal';
+      item.last_error = lease.errorCode;
+      item.lease_expires_at = null;
+      return true;
+    },
+    markDeliveryUnknown: async (_id, lease) => {
+      if (item.status !== 'dispatching' || !fenced(lease)) return false;
+      item.status = 'delivery_unknown';
+      item.last_error = lease.errorCode;
+      item.lease_expires_at = null;
+      return true;
     },
   };
   const sender = {
@@ -65,12 +110,13 @@ const consume = (f, extra = {}) =>
     outboxId: 'o1',
     env,
     now: new Date('2026-09-29T00:00:00Z'),
+    randomUUID: () => 'lease-current',
     ...extra,
   });
-test('模板缺失明确落 failed 且释放租约', async () => {
+test('模板缺失明确落 retryable 且释放租约', async () => {
   const f = fixture();
   await assert.rejects(consume(f, { env: {} }), { code: 'TEMPLATE_MISSING' });
-  assert.equal(f.item.status, 'failed');
+  assert.equal(f.item.status, 'retryable');
   assert.equal(f.item.lease_expires_at, null);
   assert.match(f.item.last_error, /TEMPLATE_MISSING/);
 });
@@ -81,23 +127,23 @@ test('发送成功落 sent', async () => {
   assert.equal(f.item.status, 'sent');
   assert.equal(f.calls[0].touser, 'member-openid');
 });
-test('发送失败明确落 failed/last_error', async () => {
+test('网络发送结果不明落 delivery_unknown/last_error', async () => {
   const f = fixture();
   f.sender.send = async () => {
     throw new Error('network down');
   };
-  await assert.rejects(consume(f), { code: 'WECHAT_SEND_FAILED' });
-  assert.equal(f.item.status, 'failed');
-  assert.match(f.item.last_error, /network down/);
+  await assert.rejects(consume(f), { code: 'DELIVERY_STATE_UNCERTAIN' });
+  assert.equal(f.item.status, 'delivery_unknown');
+  assert.equal(f.item.last_error, 'SEND_RESULT_UNKNOWN');
 });
-test('未过期 sending 不重复发送', async () => {
-  const f = fixture({ status: 'sending', attempts: 1, lease_expires_at: '2026-09-29T00:01:00Z' });
+test('未过期 claimed 不重复发送', async () => {
+  const f = fixture({ status: 'claimed', attempts: 1, lease_expires_at: '2026-09-29T00:01:00Z' });
   const result = await consume(f);
   assert.equal(result.duplicate, true);
   assert.equal(f.calls.length, 0);
 });
-test('过期 sending 可重领并增加 attempts', async () => {
-  const f = fixture({ status: 'sending', attempts: 1, lease_expires_at: '2026-09-28T23:59:00Z' });
+test('过期 claimed 可重领并增加 attempts', async () => {
+  const f = fixture({ status: 'claimed', attempts: 1, lease_expires_at: '2026-09-28T23:59:00Z' });
   await consume(f);
   assert.equal(f.item.status, 'sent');
   assert.equal(f.item.attempts, 2);
@@ -119,12 +165,12 @@ test('worker 批量消费审批生成的 pending 任务', async () => {
   assert.equal(result.sent, 1);
   assert.equal(f.item.status, 'sent');
 });
-test('worker 批量返回模板错误且任务为 failed', async () => {
+test('worker 批量返回模板错误且任务为 retryable', async () => {
   const f = fixture();
   const result = await drainNotifications({ ...f, env: {}, now: new Date('2026-09-29T00:00:00Z') });
   assert.equal(result.failed, 1);
   assert.equal(result.results[0].error.code, 'TEMPLATE_MISSING');
-  assert.equal(f.item.status, 'failed');
+  assert.equal(f.item.status, 'retryable');
 });
 
 test('大量耗尽任务在数据库 limit 前被过滤，不阻塞后续 pending', () => {
@@ -148,4 +194,61 @@ test('大量耗尽任务在数据库 limit 前被过滤，不阻塞后续 pendin
     batch.map((item) => item._id),
     ['fresh-pending'],
   );
+});
+
+test('微信发送成功但 ACK 写失败后不得再次调用 sender', async () => {
+  const f = fixture();
+  let markSentCalls = 0;
+  f.store.markSent = async () => {
+    markSentCalls += 1;
+    throw new Error('ACK_WRITE_FAILED');
+  };
+
+  await assert.rejects(consume(f), { code: 'DELIVERY_STATE_UNCERTAIN' });
+  await consume(f).catch(() => undefined);
+
+  assert.equal(f.calls.length, 1);
+  assert.equal(markSentCalls, 3);
+  assert.equal(f.item.status, 'delivery_unknown');
+});
+
+test('网络结果不明进入 delivery_unknown 且不可自动重发', async () => {
+  const f = fixture();
+  f.sender.send = async (message) => {
+    f.calls.push(message);
+    throw new Error('socket timeout');
+  };
+
+  await assert.rejects(consume(f), { code: 'DELIVERY_STATE_UNCERTAIN' });
+  await consume(f).catch(() => undefined);
+
+  assert.equal(f.calls.length, 1);
+  assert.equal(f.item.status, 'delivery_unknown');
+});
+
+test('provider 明确拒绝按错误码分为 retryable 与 terminal', async () => {
+  const retryable = fixture();
+  retryable.sender.send = async () => ({ errCode: -1, errMsg: 'system busy' });
+  await assert.rejects(consume(retryable), { code: 'WECHAT_SEND_FAILED' });
+  assert.equal(retryable.item.status, 'retryable');
+
+  const terminal = fixture();
+  terminal.sender.send = async () => ({ errCode: 43101, errMsg: 'user refuse' });
+  await assert.rejects(consume(terminal), { code: 'WECHAT_SEND_REJECTED' });
+  assert.equal(terminal.item.status, 'failed_terminal');
+});
+
+test('过期 dispatching 只隔离为 delivery_unknown，不调用 sender', async () => {
+  const f = fixture({
+    status: 'dispatching',
+    attempts: 1,
+    attempt_no: 1,
+    lease_id: 'lease-old',
+    lease_expires_at: '2026-09-28T23:59:00Z',
+  });
+
+  await consume(f).catch(() => undefined);
+
+  assert.equal(f.calls.length, 0);
+  assert.equal(f.item.status, 'delivery_unknown');
 });

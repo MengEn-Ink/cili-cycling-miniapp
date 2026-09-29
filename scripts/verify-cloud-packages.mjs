@@ -47,7 +47,7 @@ pack('admin-review', [
   'domain/domain.js',
   'domain/use-cases.js',
 ]);
-pack('notification-send', ['index.js', 'core.js', 'access.js', 'package.json']);
+pack('notification-send', ['index.js', 'core.js', 'store.js', 'access.js', 'package.json']);
 const cloudbaseConfig = JSON.parse(readFileSync(resolve(root, 'cloudbaserc.json'), 'utf8'));
 const notificationFunction = cloudbaseConfig.functions.find(
   (item) => item.name === 'notification-send',
