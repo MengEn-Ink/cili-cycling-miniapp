@@ -1,1 +1,17 @@
-<view class="card" bindtap="open"><view class="row"><view class="title">{{item.title}}</view><text class="tag">{{item.displayStatus}}</text></view><view class="muted">{{item.date}} · {{item.route.distanceKm}}km · 爬升 {{item.route.elevationM}}m</view><view class="row"><text>{{item.route.level}}</text><text>{{item.occupied}} / {{item.capacity}} 人占位</text></view></view>
+<view class="activity-card" bindtap="open" hover-class="activity-card--pressed">
+  <view class="card-top">
+    <view class="date-block">
+      <text class="date-label">骑行日期</text>
+      <text class="date-value">{{item.date}}</text>
+    </view>
+    <status-pill status="{{item.displayStatus}}"/>
+  </view>
+  <view class="activity-title">{{item.title}}</view>
+  <view class="route-line">{{item.route.start}} → {{item.route.end}}</view>
+  <view class="metrics">
+    <view class="metric-item"><text class="metric-value">{{item.route.distanceKm}}</text><text class="metric-unit">km 里程</text></view>
+    <view class="metric-item"><text class="metric-value">{{item.route.elevationM}}</text><text class="metric-unit">m 爬升</text></view>
+    <view class="metric-item"><text class="metric-value">{{item.remaining}}</text><text class="metric-unit">个余位</text></view>
+  </view>
+  <view class="card-foot"><text>{{item.route.level}}</text><text>{{item.occupied}} / {{item.capacity}} 人占位 ›</text></view>
+</view>

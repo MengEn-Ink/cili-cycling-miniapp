@@ -1,1 +1,1 @@
-<text class="tag {{status==='已驳回'?'danger':''}}">{{status}}</text>
+<text class="pill {{status==='已驳回'||status==='已取消'?'pill--danger':''}} {{status==='待审核'||status==='即将满员'?'pill--warning':''}} {{status==='已通过'||status==='报名中'?'pill--success':''}}">{{status}}</text>

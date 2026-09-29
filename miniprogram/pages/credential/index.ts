@@ -19,13 +19,20 @@ Page({
     loading: true,
     error: '',
     cancelling: false,
+    statusText: '',
   },
   async onLoad(q: any) {
     try {
       const item = await rideService.getRegistration(q.id || '');
       if (!item) throw new Error('报名不存在');
       const activity = await rideService.getActivity(item.activityId);
-      this.setData({ item, activity });
+      const statusText = {
+        pending: '待审核',
+        approved: '已通过',
+        rejected: '已驳回',
+        cancelled: '已取消',
+      }[item.status];
+      this.setData({ item, activity, statusText });
     } catch (error) {
       this.setData({ error: error instanceof Error ? error.message : '报名凭证加载失败' });
     } finally {

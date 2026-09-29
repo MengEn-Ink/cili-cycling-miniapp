@@ -1,0 +1,28 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44rpx;
+  padding: 4rpx 16rpx;
+  border-radius: 999rpx;
+  background: #edf1ee;
+  color: #718078;
+  font-size: 22rpx;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.pill--success {
+  background: #e8f6ef;
+  color: #148250;
+}
+
+.pill--warning {
+  background: #fff5df;
+  color: #9a6513;
+}
+
+.pill--danger {
+  background: #fceded;
+  color: #d94b4b;
+}

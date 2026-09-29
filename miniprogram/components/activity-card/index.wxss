@@ -1,0 +1,98 @@
+.activity-card {
+  margin-top: 20rpx;
+  padding: 28rpx;
+  border: 1rpx solid rgba(11, 107, 79, 0.08);
+  border-radius: 24rpx;
+  background: #fff;
+  box-shadow: 0 8rpx 24rpx rgba(23, 35, 30, 0.06);
+  transition:
+    transform 120ms ease,
+    background 120ms ease;
+}
+
+.activity-card--pressed {
+  background: #f8faf7;
+  transform: scale(0.985);
+}
+
+.card-top,
+.card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.date-block {
+  display: flex;
+  align-items: baseline;
+  gap: 12rpx;
+  min-width: 0;
+}
+
+.date-label {
+  color: #718078;
+  font-size: 21rpx;
+}
+
+.date-value {
+  color: #0b6b4f;
+  font-size: 25rpx;
+  font-weight: 700;
+}
+
+.activity-title {
+  margin-top: 18rpx;
+  font-size: 34rpx;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.route-line {
+  overflow: hidden;
+  margin-top: 8rpx;
+  color: #718078;
+  font-size: 24rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10rpx;
+  margin-top: 24rpx;
+}
+
+.metric-item {
+  min-width: 0;
+  padding: 16rpx 10rpx;
+  border-radius: 14rpx;
+  background: #f1f6f3;
+  text-align: center;
+}
+
+.metric-value,
+.metric-unit {
+  display: block;
+}
+
+.metric-value {
+  color: #17231e;
+  font-size: 30rpx;
+  font-weight: 800;
+}
+
+.metric-unit {
+  margin-top: 2rpx;
+  color: #718078;
+  font-size: 20rpx;
+}
+
+.card-foot {
+  margin-top: 20rpx;
+  padding-top: 18rpx;
+  border-top: 1rpx solid #edf1ee;
+  color: #718078;
+  font-size: 23rpx;
+}
