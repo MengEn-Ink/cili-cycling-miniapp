@@ -15,6 +15,7 @@ export const COLLECTIONS = Object.freeze([
   'profiles',
   'admins',
   'audit_logs',
+  'notification_outbox',
   'oauth_states',
   'strava_credentials',
   'strava_snapshots',
@@ -54,6 +55,25 @@ export const INDEXES = Object.freeze([
     name: 'registrations_openid_created_at',
     keys: [
       ['openid', 1],
+      ['created_at', -1],
+    ],
+    unique: false,
+  },
+  {
+    collection: 'notification_outbox',
+    name: 'notification_outbox_status_attempts_lease',
+    keys: [
+      ['status', 1],
+      ['attempts', 1],
+      ['lease_expires_at', 1],
+    ],
+    unique: false,
+  },
+  {
+    collection: 'notification_outbox',
+    name: 'notification_outbox_target_created_at',
+    keys: [
+      ['target_openid', 1],
       ['created_at', -1],
     ],
     unique: false,

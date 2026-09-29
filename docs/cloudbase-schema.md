@@ -12,7 +12,7 @@ Strava 报名资格唯一事实源：`strava_credentials + strava_snapshots`。`
 
 ### `activities`
 
-活动公开字段、`capacity`、`occupied_count`、`signup_deadline/event_start/event_end`、`status` 与内部审计字段。公开读取只允许 `published && is_deleted !== true`。
+活动公开字段、`capacity`、`occupied_count`、`signup_deadline/event_start/event_end`、`status` 与内部审计字段。公开读取只允许 `published && is_deleted !== true`。管理员写入由独立 `activity-admin` 云函数负责：新建必须为 `draft`，状态仅允许 `draft → published → finished`，`finished` 为终态；容量不得低于事务内读取的 `occupied_count`，且必须满足 `signup_deadline < event_start < event_end`。
 
 ### `registrations`
 
@@ -36,6 +36,12 @@ created_at, updated_at
 ```
 
 四个敏感字段均用环境变量 `PII_ENCRYPTION_KEY`（base64 32 bytes）独立 AES-256-GCM 加密和随机 12-byte IV。密钥缺失/非法、密文认证失败均 fail closed。`getPhoneNumber` 接受微信动态 code 并调用 `cloud.openapi.phonenumber`，写入 `wechat/verified`；个人主体的 `update` 可写入手填号码，但必须写入 `manual/unverified`。响应不返回敏感明文或密文，只返回掩码、来源、验证状态、`sensitive_status` 与 `completeness`；管理员审批详情必须展示手机号来源。
+
+### `notification_outbox`
+
+审批事务内原子写入的订阅消息发件箱。`_id` 为审批轮次确定性 ID，包含 `type/aggregate_id/target_openid/template_key/payload/status/attempts/last_error/lease_expires_at/claimed_by/created_at/updated_at/sent_at`。状态机为 `pending|failed|租约过期的 sending -> sending -> sent|failed`：`sending` 使用 2 分钟租约，进程中断后可由定时 worker 重领；最多尝试 5 次，达到上限返回 `MAX_RETRIES_EXCEEDED`，并由 `status + attempts + lease_expires_at` 扫描索引在批次 `limit` 前排除耗尽任务，避免新任务饥饿。客户端 ACL 全拒绝，仅云函数可读写。
+
+`notification-send` 配置每分钟 CloudBase timer `notification-outbox-worker`，以无 OPENID 的平台服务身份批量扫描并消费，不能依赖管理员账号在线；小程序手工调用仍必须通过管理员白名单。模板缺失与微信发送失败都会将任务明确写为 `failed` 并记录 `last_error`。模板 ID 只从环境变量 `REVIEW_APPROVED_TEMPLATE_ID`、`REVIEW_REJECTED_TEMPLATE_ID` 读取，不写入数据库或客户端。
 
 ### `admins`
 

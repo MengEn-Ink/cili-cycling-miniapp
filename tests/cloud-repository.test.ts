@@ -19,6 +19,7 @@ const success = (data: unknown) => ({ ok: true, data });
 const activity = {
   _id: 'a1',
   title: '环湖骑行',
+  cover_image: 'cloud://covers/a1.jpg',
   event_start: '2026-10-18T00:00:00.000Z',
   event_end: new Date('2026-10-18T08:00:00.000Z'),
   signup_deadline: '2026-10-15T12:00:00.000Z',
@@ -106,6 +107,7 @@ describe('CloudRepository 活动读取适配', () => {
         capacity: 20,
         occupiedCount: 3,
         description: '说明',
+        coverImage: 'cloud://covers/a1.jpg',
         route: { start: '起点', end: '终点', distanceKm: 80, elevationM: 600, level: '进阶' },
         schedule: activity.schedule,
         notices: ['守规'],
@@ -557,6 +559,49 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     expectCall(callFunction, 'profile', { action: 'getPhoneNumber', code: 'dynamic-code' });
   });
 
+  it('Profile 完整可选字段与照片分支均按真实值映射', async () => {
+    const { cloud } = cloudWith(
+      success({
+        nickname: '完整骑手',
+        completeness: 100,
+        title: '领队',
+        real_name_masked: '曹*',
+        phone_masked: '138****5678',
+        id_type: '护照',
+        id_number_masked: 'E1****89',
+        gender: '男',
+        emergency_name: '紧急联系人',
+        emergency_phone_masked: '139****0000',
+        photos: [{ file_id: 'cloud://photo-1', category: 'ride' }, null],
+        sensitive_status: {
+          real_name: true,
+          id_number: true,
+          phone: true,
+          phone_verified: true,
+          phone_source: 'wechat',
+          emergency_phone: true,
+        },
+      }),
+    );
+
+    await expect(new CloudRepository(cloud).getProfile()).resolves.toMatchObject({
+      title: '领队',
+      idType: '护照',
+      gender: '男',
+      emergencyName: '紧急联系人',
+      emergencyPhone: '139****0000',
+      photos: [{ id: 'cloud://photo-1', category: 'ride' }],
+      sensitiveStatus: {
+        realName: true,
+        idNumber: true,
+        phone: true,
+        phoneVerified: true,
+        phoneSource: 'wechat',
+        emergencyPhone: true,
+      },
+    });
+  });
+
   it('Strava 状态、授权、同步与解绑均调用真实云函数', async () => {
     const status = {
       connected: true,
@@ -792,5 +837,100 @@ describe('MockRepository readiness 与显式报名命令', () => {
       status: 'approved',
       reviewComment: '资料完整',
     });
+  });
+});
+
+describe('CloudRepository 管理员活动写入契约', () => {
+  it('管理员列表和详情只调用独立 activity-admin', async () => {
+    const { cloud, callFunction } = cloudWith(success([activity]), success(activity));
+    const repository = new CloudRepository(cloud);
+    expect((await repository.listAdminActivities())[0].id).toBe('a1');
+    expectCall(callFunction, 'activity-admin', { action: 'list' });
+    await repository.getAdminActivity('a1');
+    expectCall(callFunction, 'activity-admin', { action: 'detail', activityId: 'a1' });
+  });
+
+  it('创建仅发送活动白名单并调用 save', async () => {
+    const { cloud, callFunction } = cloudWith(success({ ...activity, status: 'draft' }));
+    const input = {
+      title: '环湖骑行',
+      description: '说明',
+      startAt: activity.event_start,
+      endAt: '2026-10-18T08:00:00.000Z',
+      deadline: activity.signup_deadline,
+      status: 'draft' as const,
+      capacity: 20,
+      route: { start: '起点', end: '终点', distanceKm: 80, elevationM: 600, level: '进阶' },
+      schedule: activity.schedule,
+      notices: ['守规'],
+      equipment: ['头盔'],
+      fee: '免费',
+    };
+    await new CloudRepository(cloud).saveActivity({
+      ...input,
+      occupiedCount: 999,
+      created_by: 'forged',
+    } as any);
+    expectCall(callFunction, 'activity-admin', {
+      action: 'save',
+      activity: {
+        title: '环湖骑行',
+        cover_image: '',
+        description: '说明',
+        schedule: activity.schedule,
+        route: { start: '起点', end: '终点', distance_km: 80, elevation_m: 600, level: '进阶' },
+        notices: ['守规'],
+        equipment: ['头盔'],
+        fee: '免费',
+        capacity: 20,
+        signup_deadline: activity.signup_deadline,
+        event_start: activity.event_start,
+        event_end: '2026-10-18T08:00:00.000Z',
+        status: 'draft',
+      },
+    });
+    expect(JSON.stringify(callFunction.mock.calls[0][0])).not.toContain('occupiedCount');
+    expect(JSON.stringify(callFunction.mock.calls[0][0])).not.toContain('created_by');
+  });
+
+  it('已有活动只改标题和容量时原样保留封面与行程', async () => {
+    const updated = { ...activity, title: '新标题', capacity: 25 };
+    const { cloud, callFunction } = cloudWith(success(activity), success(updated));
+    const repository = new CloudRepository(cloud);
+    const current = await repository.getAdminActivity('a1');
+
+    await repository.saveActivity({ ...current!, title: '新标题', capacity: 25 }, 'a1');
+
+    const payload = (callFunction.mock.calls[1][0].data as any).activity;
+    expect(payload.cover_image).toBe(activity.cover_image);
+    expect(payload.schedule).toEqual(activity.schedule);
+    expect(payload.title).toBe('新标题');
+    expect(payload.capacity).toBe(25);
+  });
+
+  it('更新携带可信格式活动 ID，空 ID 在客户端拒绝', async () => {
+    const { cloud, callFunction } = cloudWith(success(activity));
+    const value = {
+      title: activity.title,
+      description: '',
+      startAt: activity.event_start,
+      endAt: '2026-10-18T08:00:00.000Z',
+      deadline: activity.signup_deadline,
+      status: 'published' as const,
+      capacity: 20,
+      route: { start: '', end: '', distanceKm: 0, elevationM: 0, level: '' },
+      schedule: [],
+      notices: [],
+      equipment: [],
+      fee: '',
+    };
+    await new CloudRepository(cloud).saveActivity(value, 'a1');
+    expect((callFunction.mock.calls[0][0].data as any).activityId).toBe('a1');
+    const invalid = cloudWith();
+    await expectCode(
+      new CloudRepository(invalid.cloud).saveActivity(value, ''),
+      'VALIDATION_FAILED',
+    );
+    expect(invalid.callFunction).not.toHaveBeenCalled();
   });
 });

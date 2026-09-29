@@ -50,6 +50,10 @@ function transactionStore() {
               .doc(id)
               .update({ data: { occupied_count: occupied, updated_at: db.serverDate() } }),
           addAudit: (audit) => transaction.collection('audit_logs').add({ data: audit }),
+          putNotification: async (id, value) => {
+            const { _id, ...data } = value;
+            await transaction.collection('notification_outbox').doc(id).set({ data });
+          },
         }),
       ),
   };

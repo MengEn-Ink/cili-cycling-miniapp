@@ -19,6 +19,14 @@
       "installDependency": true
     },
     {
+      "name": "activity-admin",
+      "handler": "index.main",
+      "runtime": "Nodejs20.19",
+      "timeout": 10,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
       "name": "registration",
       "handler": "index.main",
       "runtime": "Nodejs20.19",
@@ -33,6 +41,21 @@
       "timeout": 10,
       "memorySize": 256,
       "installDependency": true
+    },
+    {
+      "name": "notification-send",
+      "handler": "index.main",
+      "runtime": "Nodejs20.19",
+      "timeout": 10,
+      "memorySize": 256,
+      "installDependency": true,
+      "triggers": [
+        {
+          "name": "notification-outbox-worker",
+          "type": "timer",
+          "config": "0 */1 * * * * *"
+        }
+      ]
     },
     {
       "name": "profile",
