@@ -66,7 +66,7 @@ Page({
   data: {
     activityId: '',
     profile: null as any,
-    bikeMode: '自带车',
+    gatheringMode: '',
     experience: '常骑',
     remark: '',
     readiness: loadingReadiness(),

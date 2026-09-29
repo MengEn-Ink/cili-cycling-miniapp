@@ -151,7 +151,7 @@ function memoryStore(seed = {}) {
 const input = {
   openid,
   activityId: 'a1',
-  options: { bike_mode: 'own', experience: 'regular', remark: 'ok' },
+  options: { gathering_mode: 'self_drive', experience: 'regular', remark: 'ok' },
 };
 
 test('提交校验活动、资料、Strava 和客户端越权字段', () => {
@@ -209,8 +209,25 @@ test('提交校验活动、资料、Strava 和客户端越权字段', () => {
     selectStrava({ strava: { exempt: { enabled: true, reason: '人工核验' } } }).status,
     'exempted',
   );
+  for (const gatheringMode of ['self_drive', 'support_vehicle']) {
+    assert.deepEqual(
+      validateOptions({
+        gathering_mode: gatheringMode,
+        experience: 'regular',
+        bike_mode: 'rent',
+        rental_need: 'legacy',
+        remark: 'ok',
+      }),
+      { gathering_mode: gatheringMode, experience: 'regular', remark: 'ok' },
+    );
+  }
+  expectCode(() => validateOptions({ experience: 'regular' }), 'VALIDATION_FAILED');
   expectCode(
-    () => validateOptions({ bike_mode: 'other', experience: 'regular' }),
+    () => validateOptions({ gathering_mode: 'other', experience: 'regular' }),
+    'VALIDATION_FAILED',
+  );
+  expectCode(
+    () => validateOptions({ bike_mode: 'own', experience: 'regular' }),
     'VALIDATION_FAILED',
   );
   expectCode(() => assertNoForbiddenFields({ options: { status: 'approved' } }), 'FORBIDDEN_FIELD');

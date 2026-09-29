@@ -5,13 +5,20 @@ const template = fs.readFileSync('miniprogram/pages/registration-form/index.wxml
 
 describe('报名表单受控控件契约', () => {
   it.each([
-    `checked="{{bikeMode === '自带车'}}"`,
-    `checked="{{bikeMode === '租车'}}"`,
+    `checked="{{gatheringMode === 'self_drive'}}"`,
+    `checked="{{gatheringMode === 'support_vehicle'}}"`,
     `checked="{{experience === '新手'}}"`,
     `checked="{{experience === '有一定经验'}}"`,
     `checked="{{experience === '常骑'}}"`,
   ])('radio checked 由页面 data 驱动：%s', (binding) => {
     expect(template).toContain(binding);
+  });
+
+  it('集合方式必须由用户主动二选一，且旧字段和旧文案不再出现', () => {
+    expect(template).toContain('data-key="gatheringMode"');
+    expect(template).toContain('value="self_drive"');
+    expect(template).toContain('value="support_vehicle"');
+    expect(template).not.toMatch(/bikeMode|bike_mode|用车方式|自带车|租车/);
   });
 
   it('提交期间禁用资料、Strava、radio 和备注控件', () => {

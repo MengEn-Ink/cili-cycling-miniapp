@@ -1,1 +1,19 @@
-<view class="page"><view class="hero"><view>REVIEW DESK</view><view class="hero-title">报名审批</view></view><view class="card danger" wx:if="{{error}}">{{error}}</view><picker wx:if="{{activities.length}}" mode="selector" range="{{activities}}" range-key="title" value="0" bindchange="choose"><view class="card">活动：{{items[0].activity.title || activities[0].title}}</view></picker><view class="card row"><text data-v="pending" bindtap="tab">待审核</text><text data-v="approved" bindtap="tab">已通过</text><text data-v="rejected" bindtap="tab">已驳回</text><text data-v="all" bindtap="tab">全部</text></view><view wx:if="{{!items.length && !error}}" class="empty">当前筛选暂无报名</view><view class="card" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="open"><view class="row"><view><view class="title">{{item.profile.nickname}}</view><view>{{item.activity.title}}</view></view><text class="tag">{{item.status}}</text></view><view class="muted">{{item.experience}} · {{item.bikeMode}} · {{item.strava.status}}</view></view></view>
+<view class="page review-page">
+  <view class="brand-bar"><view class="cili-mark"><text class="mark-cut"></text></view><view class="brand-word">CILI <text>此里</text></view><view class="desk-code">ADMIN / REVIEW</view></view>
+  <view class="review-heading"><view class="hero-kicker">REVIEW DESK</view><view class="hero-title">报名审批</view><view class="hero-subtitle">审核资格、能力数据与报名状态</view></view>
+  <view class="card danger" wx:if="{{error}}">{{error}}</view>
+  <picker wx:if="{{activities.length}}" mode="selector" range="{{activities}}" range-key="title" value="0" bindchange="choose"><view class="activity-picker"><view class="picker-label">CURRENT EVENT</view><view class="picker-value">{{selectedActivityTitle}}</view><text>切换 ›</text></view></picker>
+  <view class="filter-tabs">
+    <view class="filter-tab {{tab === 'pending' ? 'is-active' : ''}}" data-v="pending" bindtap="tab">待审核</view>
+    <view class="filter-tab {{tab === 'approved' ? 'is-active' : ''}}" data-v="approved" bindtap="tab">已通过</view>
+    <view class="filter-tab {{tab === 'rejected' ? 'is-active' : ''}}" data-v="rejected" bindtap="tab">已驳回</view>
+    <view class="filter-tab {{tab === 'all' ? 'is-active' : ''}}" data-v="all" bindtap="tab">全部</view>
+  </view>
+  <view class="result-count">RESULT / {{items.length}}</view>
+  <view wx:if="{{!items.length && !error}}" class="empty">当前筛选暂无报名</view>
+  <view class="review-card" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="open" hover-class="review-card--pressed">
+    <view class="card-number">{{index + 1}}</view>
+    <view class="review-main"><view class="applicant-name">{{item.profile.nickname}}</view><view class="activity-name">{{item.activity.title}}</view><view class="data-line"><text>{{item.experience}}</text><text wx:if="{{item.gatheringMode}}">{{item.gatheringMode}}</text><text wx:if="{{item.strava && item.strava.status}}">STRAVA {{item.strava.status}}</text></view></view>
+    <view class="status-tag status-{{item.status}}">{{item.statusText}}</view><text class="open-arrow">›</text><view class="corner-cut"></view>
+  </view>
+</view>

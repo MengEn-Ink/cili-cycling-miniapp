@@ -1,0 +1,234 @@
+page {
+  background: #0b0b0c;
+}
+.review-page {
+  min-height: 100vh;
+  padding-bottom: calc(52rpx + env(safe-area-inset-bottom));
+  background: radial-gradient(circle at 94% 4%, rgba(200, 32, 24, 0.12), transparent 30%), #0b0b0c;
+  color: #f7f7f5;
+}
+.brand-bar {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  padding: 16rpx 8rpx 26rpx;
+  border-bottom: 1rpx solid #333336;
+}
+.cili-mark {
+  position: relative;
+  width: 48rpx;
+  height: 38rpx;
+  border: 9rpx solid #f7f7f5;
+  border-right-width: 7rpx;
+  border-radius: 13rpx 4rpx 13rpx 13rpx;
+  transform: skewX(-9deg);
+}
+.mark-cut {
+  position: absolute;
+  top: -11rpx;
+  right: -9rpx;
+  width: 26rpx;
+  height: 17rpx;
+  background: #d55b1f;
+  clip-path: polygon(100% 0, 70% 100%, 0 100%);
+}
+.brand-word {
+  font-size: 28rpx;
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: 2rpx;
+}
+.brand-word text {
+  margin-left: 7rpx;
+  font-size: 21rpx;
+  font-style: normal;
+}
+.desk-code {
+  margin-left: auto;
+  color: #77777b;
+  font-size: 18rpx;
+  font-weight: 800;
+  letter-spacing: 2rpx;
+}
+.review-heading {
+  padding: 38rpx 8rpx 26rpx;
+}
+.hero-kicker {
+  color: #d55b1f;
+  font-size: 21rpx;
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: 3rpx;
+}
+.hero-title {
+  margin: 4rpx 0 8rpx;
+  color: #f7f7f5;
+  font-size: 58rpx;
+  font-style: italic;
+  font-weight: 900;
+  line-height: 1.1;
+}
+.hero-subtitle {
+  color: #808084;
+  font-size: 23rpx;
+}
+.card.danger {
+  border: 1rpx solid #85312d;
+  border-radius: 6rpx;
+  background: #291413;
+  color: #ff8f86;
+}
+.activity-picker {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  padding: 24rpx;
+  border: 1rpx solid #555559;
+  border-radius: 6rpx;
+  background: #1a1a1c;
+}
+.picker-label {
+  color: #d55b1f;
+  font-size: 17rpx;
+  font-weight: 900;
+  letter-spacing: 2rpx;
+}
+.picker-value {
+  overflow: hidden;
+  flex: 1;
+  font-size: 27rpx;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.activity-picker > text {
+  color: #949498;
+  font-size: 21rpx;
+}
+.filter-tabs {
+  display: flex;
+  margin-top: 20rpx;
+  border: 1rpx solid #47474b;
+  background: #151517;
+}
+.filter-tab {
+  flex: 1;
+  padding: 20rpx 4rpx;
+  border-right: 1rpx solid #47474b;
+  color: #858589;
+  font-size: 22rpx;
+  font-weight: 800;
+  text-align: center;
+}
+.filter-tab:last-child {
+  border-right: 0;
+}
+.filter-tab.is-active {
+  background: #d55b1f;
+  color: #0b0b0c;
+}
+.result-count {
+  margin: 30rpx 4rpx 8rpx;
+  color: #717175;
+  font-size: 19rpx;
+  font-weight: 900;
+  letter-spacing: 3rpx;
+}
+.empty {
+  margin-top: 16rpx;
+  border: 1rpx dashed #48484c;
+  color: #77777b;
+}
+.review-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 20rpx;
+  overflow: hidden;
+  margin-top: 14rpx;
+  padding: 26rpx 24rpx;
+  border: 1rpx solid #4a4a4e;
+  border-radius: 6rpx;
+  background: linear-gradient(120deg, #202023, #151517);
+}
+.review-card--pressed {
+  transform: scale(0.99);
+  border-color: #d55b1f;
+}
+.card-number {
+  display: flex;
+  flex: 0 0 46rpx;
+  align-items: center;
+  justify-content: center;
+  width: 46rpx;
+  height: 46rpx;
+  border: 1rpx solid #68686c;
+  color: #d55b1f;
+  font-size: 20rpx;
+  font-weight: 900;
+}
+.review-main {
+  min-width: 0;
+  flex: 1;
+}
+.applicant-name {
+  overflow: hidden;
+  font-size: 32rpx;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.activity-name {
+  overflow: hidden;
+  margin-top: 4rpx;
+  color: #9b9b9f;
+  font-size: 22rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.data-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-top: 16rpx;
+}
+.data-line text {
+  padding: 4rpx 9rpx;
+  border: 1rpx solid #444448;
+  color: #aaaab0;
+  font-size: 18rpx;
+}
+.status-tag {
+  flex: 0 0 auto;
+  padding: 7rpx 12rpx;
+  border: 1rpx solid #66666a;
+  color: #c6c6c8;
+  font-size: 19rpx;
+  font-weight: 800;
+}
+.status-pending {
+  border-color: #d55b1f;
+  color: #e9753b;
+}
+.status-approved {
+  border-color: #858589;
+  color: #f0f0ef;
+}
+.status-rejected {
+  border-color: #7a302c;
+  color: #e45e56;
+}
+.open-arrow {
+  align-self: center;
+  color: #d55b1f;
+  font-size: 36rpx;
+}
+.corner-cut {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 28rpx;
+  height: 28rpx;
+  background: #d55b1f;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}

@@ -1,0 +1,57 @@
+.state-shell {
+  margin-top: 24rpx;
+  padding: 80rpx 32rpx;
+  border: 1rpx dashed #414146;
+  border-radius: 8rpx;
+  background: #151517;
+  color: #85858a;
+  text-align: center;
+}
+
+.state-mark {
+  width: 36rpx;
+  height: 36rpx;
+  margin: 0 auto 20rpx;
+  border: 5rpx solid #3f3f44;
+  border-top-color: #d55b1f;
+  border-radius: 50%;
+}
+
+.state-code {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 54rpx;
+  height: 54rpx;
+  margin: 0 auto 18rpx;
+  border: 4rpx solid #d55b1f;
+  border-radius: 50%;
+  color: #f7f7f5;
+  font-size: 28rpx;
+  font-weight: 900;
+}
+
+.state-shell--error .state-code {
+  border-color: #c82018;
+  color: #ff7068;
+}
+
+.state-title {
+  color: #f7f7f5;
+  font-size: 28rpx;
+  font-weight: 800;
+}
+
+.state-copy {
+  margin-top: 8rpx;
+  font-size: 23rpx;
+}
+
+.state-retry {
+  margin-top: 24rpx;
+  border: 1rpx solid #d55b1f;
+  border-radius: 4rpx;
+  background: transparent;
+  color: #f38a50;
+  font-weight: 700;
+}

@@ -102,11 +102,16 @@ describe('表单校验', () => {
     expect(
       validateRegistration({
         profile,
-        bikeMode: '自带车',
+        gatheringMode: 'self_drive',
         experience: '常骑',
         readiness: ready,
       }),
     ).toEqual([]));
+  it.each(['', 'unknown'])('缺失或未知集合方式 %s 时阻断', (gatheringMode) => {
+    expect(
+      validateRegistration({ profile, gatheringMode, experience: '常骑', readiness: ready }),
+    ).toContain('请选择集合方式');
+  });
   it('云端脱敏资料按 sensitiveStatus 校验', () => {
     const masked = {
       ...profile,
@@ -118,7 +123,7 @@ describe('表单校验', () => {
     expect(
       validateRegistration({
         profile: masked,
-        bikeMode: '自带车',
+        gatheringMode: 'self_drive',
         experience: '常骑',
         readiness: ready,
       }),
@@ -126,7 +131,7 @@ describe('表单校验', () => {
     expect(
       validateRegistration({
         profile: { ...masked, sensitiveStatus: { ...masked.sensitiveStatus, phone: false } },
-        bikeMode: '自带车',
+        gatheringMode: 'self_drive',
         experience: '常骑',
         readiness: ready,
       }),
@@ -136,7 +141,7 @@ describe('表单校验', () => {
     expect(
       validateRegistration({
         profile: { ...profile, nickname: '' },
-        bikeMode: '自带车',
+        gatheringMode: 'self_drive',
         experience: '常骑',
         readiness: ready,
       }),
@@ -146,7 +151,7 @@ describe('表单校验', () => {
     expect(
       validateRegistration({
         profile,
-        bikeMode: '自带车',
+        gatheringMode: 'self_drive',
         experience: '常骑',
         readiness: { state: 'ready', canRegister: false },
       }),
@@ -154,12 +159,22 @@ describe('表单校验', () => {
   });
   it('同步中提示正在准备', () => {
     expect(
-      validateRegistration({ profile, bikeMode: '自带车', experience: '常骑', readiness: syncing }),
+      validateRegistration({
+        profile,
+        gatheringMode: 'self_drive',
+        experience: '常骑',
+        readiness: syncing,
+      }),
     ).toContain('Strava 数据正在准备');
   });
   it('失败时提示重试准备', () => {
     expect(
-      validateRegistration({ profile, bikeMode: '自带车', experience: '常骑', readiness: failed }),
+      validateRegistration({
+        profile,
+        gatheringMode: 'self_drive',
+        experience: '常骑',
+        readiness: failed,
+      }),
     ).toContain('请重试 Strava 数据准备');
   });
   it('阻断未绑定 Strava 与错误手机号', () => {
@@ -167,7 +182,7 @@ describe('表单校验', () => {
     expect(
       validateRegistration({
         profile: p,
-        bikeMode: '',
+        gatheringMode: '',
         experience: '',
         readiness: { state: 'disconnected', canRegister: false },
       }).length,

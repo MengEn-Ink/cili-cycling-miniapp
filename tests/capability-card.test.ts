@@ -18,7 +18,7 @@ function registration(overrides: Partial<Registration> = {}): Registration {
       avatarId: 'https://temporary.example/avatar',
       photos: [],
     },
-    bikeMode: '自带车',
+    gatheringMode: '自驾',
     experience: '常骑',
     remark: '',
     strava: {
@@ -105,6 +105,7 @@ describe('骑行能力卡图片', () => {
     expect(card.images).toEqual([{ url: 'https://temporary.example/avatar', source: '头像' }]);
     expect(card.hasMultipleImages).toBe(false);
     expect(card.maskedName).toBe('曹**');
+    expect(card).not.toHaveProperty('bikeMode');
   });
 
   it('无上传照片且无头像时保留无图占位所需数据', () => {

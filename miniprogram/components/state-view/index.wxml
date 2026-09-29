@@ -1,1 +1,4 @@
-<view wx:if="{{loading}}" class="empty">正在加载…</view><view wx:elif="{{error}}" class="card danger">{{error}} <button size="mini" bindtap="retry">重试</button></view><view wx:elif="{{empty}}" class="empty">暂时没有内容</view><slot wx:else/>
+<view wx:if="{{loading}}" class="state-shell"><view class="state-mark"></view><view class="state-title">正在加载</view><view class="state-copy">正在同步骑行数据…</view></view>
+<view wx:elif="{{error}}" class="state-shell state-shell--error"><view class="state-code">!</view><view class="state-title">加载失败</view><view class="state-copy">{{error}}</view><button class="state-retry" size="mini" bindtap="retry">重新加载</button></view>
+<view wx:elif="{{empty}}" class="state-shell"><view class="state-code">C</view><view class="state-title">暂无活动</view><view class="state-copy">下一场骑行正在路上</view></view>
+<slot wx:else />

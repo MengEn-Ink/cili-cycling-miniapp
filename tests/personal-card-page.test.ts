@@ -175,7 +175,8 @@ describe('个人骑行名片静态页面契约', () => {
     expect(template).toContain('<swiper');
     expect(template).toContain('autoplay="{{card.hasMultipleBackgrounds}}"');
     expect(template).toContain('仅自己可见');
-    expect(template).toContain('brand-signature">此里');
+    expect(template).toContain('class="brand-signature"');
+    expect(template).toContain('CILI <text class="brand-cn">此里</text>');
     expect(template).toContain('STRAVA {{card.statusLabel}}');
     expect(template).toContain('wx:for="{{card.primaryMetrics}}"');
     expect(template).toContain('wx:for="{{card.secondaryMetrics}}"');

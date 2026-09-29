@@ -168,6 +168,7 @@ describe('报名页 Strava readiness 请求代际', () => {
       page.onLoad({ id: 'a1' });
       await page.onShow();
       expect(page.data.activityCanSubmit).toBe(true);
+      page.data.gatheringMode = 'self_drive';
 
       const submission = page.submit();
       await flushMicrotasks();
@@ -192,6 +193,7 @@ describe('报名页 Strava readiness 请求代际', () => {
     );
     page.onLoad({ id: 'a1' });
     await page.onShow();
+    page.data.gatheringMode = 'self_drive';
 
     const firstSubmission = page.submit();
     await flushMicrotasks();

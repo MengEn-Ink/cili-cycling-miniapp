@@ -53,7 +53,7 @@ const registration = {
     phone_masked: '138****5678',
     id_number_masked: '11******1234',
   },
-  options: { bike_mode: 'rent', experience: 'regular', remark: '无忌口' },
+  options: { gathering_mode: 'support_vehicle', experience: 'regular', remark: '无忌口' },
   strava_status: 'connected',
   strava_snapshot: {
     years_on_strava: 4,
@@ -369,7 +369,7 @@ describe('CloudRepository 队员报名适配', () => {
       id: 'r1',
       activityId: 'a1',
       status: 'pending',
-      bikeMode: '租车',
+      gatheringMode: '需要后援车',
       experience: '常骑',
       remark: '无忌口',
       reviewComment: '补充资料',
@@ -403,9 +403,8 @@ describe('CloudRepository 队员报名适配', () => {
     const { cloud, callFunction } = cloudWith(success(registration));
     const dirty = {
       activityId: 'a1',
-      bikeMode: '自带车',
+      gatheringMode: 'self_drive',
       experience: '有一定经验',
-      rentalNeed: 'M 码',
       remark: '正常',
       openid: 'forged',
       role: 'admin',
@@ -423,13 +422,13 @@ describe('CloudRepository 队员报名适配', () => {
       action: 'submit',
       activityId: 'a1',
       options: {
-        bike_mode: 'own',
+        gathering_mode: 'self_drive',
         experience: 'intermediate',
-        rental_need: 'M 码',
         remark: '正常',
       },
     });
     const sent = JSON.stringify(callFunction.mock.calls[0][0]);
+    expect(sent).not.toContain('bike_mode');
     for (const forbidden of [
       'openid',
       'role',
@@ -449,7 +448,7 @@ describe('CloudRepository 队员报名适配', () => {
     await expectCode(
       new CloudRepository(cloud).saveRegistration({
         activityId: { openid: 'forged', status: 'approved', capacity: 99, amount: 1 },
-        bikeMode: '自带车',
+        gatheringMode: 'self_drive',
         experience: '常骑',
       } as any),
       'VALIDATION_FAILED',
@@ -469,7 +468,11 @@ describe('CloudRepository 队员报名适配', () => {
     const pending = { ...registration, status: 'pending' };
     const { cloud, callFunction } = cloudWith(success(rejected), success(pending));
     const repository = new CloudRepository(cloud);
-    const submission = { activityId: 'a1', bikeMode: '租车', experience: '新手' };
+    const submission = {
+      activityId: 'a1',
+      gatheringMode: 'support_vehicle' as const,
+      experience: '新手',
+    };
 
     expect((await repository.saveRegistration(submission)).status).toBe('rejected');
     expect((await repository.saveRegistration(submission)).status).toBe('pending');
@@ -481,15 +484,14 @@ describe('CloudRepository 队员报名适配', () => {
     const { cloud, callFunction } = cloudWith(success(registration));
     await new CloudRepository(cloud).saveRegistration({
       activityId: 'a1',
-      bikeMode: '未知',
+      gatheringMode: '未知',
       experience: '未知',
-      rentalNeed: { status: 'approved' },
       remark: 10,
     } as any);
     expectCall(callFunction, 'registration', {
       action: 'submit',
       activityId: 'a1',
-      options: { bike_mode: 'own', experience: undefined, rental_need: '', remark: '' },
+      options: { gathering_mode: undefined, experience: undefined, remark: '' },
     });
   });
 
@@ -511,6 +513,46 @@ describe('CloudRepository 队员报名适配', () => {
     expect(result.status).toBe('cancelled');
   });
 
+  it('将 self_drive 集合方式映射为自驾', async () => {
+    const selfDrive = {
+      ...registration,
+      options: { gathering_mode: 'self_drive', experience: 'regular' },
+    };
+    const { cloud } = cloudWith(success(selfDrive));
+
+    await expect(new CloudRepository(cloud).getReviewRegistration('r1')).resolves.toMatchObject({
+      gatheringMode: '自驾',
+    });
+  });
+
+  it('历史报名缺少 gathering_mode 时兼容读取，且不把 bike_mode 映射成集合方式', async () => {
+    const legacy = {
+      ...registration,
+      options: { bike_mode: 'rent', experience: 'regular', remark: '历史数据' },
+    };
+    const { cloud } = cloudWith(success(legacy));
+
+    await expect(new CloudRepository(cloud).getRegistration('r1')).resolves.toMatchObject({
+      gatheringMode: '',
+      experience: '常骑',
+      remark: '历史数据',
+    });
+  });
+
+  it('未知 gathering_mode 读取为空且不阻断管理员详情', async () => {
+    const unknown = {
+      ...registration,
+      options: { gathering_mode: 'unknown', experience: 'regular', remark: '未知值' },
+    };
+    const { cloud } = cloudWith(success(unknown));
+
+    await expect(new CloudRepository(cloud).getReviewRegistration('r1')).resolves.toMatchObject({
+      gatheringMode: '',
+      experience: '常骑',
+      remark: '未知值',
+    });
+  });
+
   it('报名 DTO 缺少可选对象时使用空值，并映射 exempted', async () => {
     const edge = {
       _id: 'r2',
@@ -526,7 +568,7 @@ describe('CloudRepository 队员报名适配', () => {
     const { cloud } = cloudWith(success(edge));
     const result = await new CloudRepository(cloud).getRegistration('r2');
     expect(result).toMatchObject({
-      bikeMode: '自带车',
+      gatheringMode: '',
       experience: '',
       remark: '',
       reviewComment: undefined,

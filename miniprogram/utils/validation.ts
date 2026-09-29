@@ -10,7 +10,7 @@ function hasSensitiveField(
 
 export function validateRegistration(v: {
   profile: Profile;
-  bikeMode: string;
+  gatheringMode: string;
   experience: string;
   readiness: Pick<StravaReadiness, 'state' | 'canRegister'>;
 }) {
@@ -28,7 +28,7 @@ export function validateRegistration(v: {
     )
   )
     e.push('紧急联系电话错误');
-  if (!v.bikeMode) e.push('请选择用车方式');
+  if (!['self_drive', 'support_vehicle'].includes(v.gatheringMode)) e.push('请选择集合方式');
   if (!v.experience) e.push('请选择骑行经验');
   if (!v.readiness.canRegister) {
     switch (v.readiness.state) {

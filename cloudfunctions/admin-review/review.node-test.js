@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { reviewRegistration } = require('./domain');
+const { DomainError, reviewRegistration, validateOptions } = require('./domain');
 function store(seed = {}) {
   const state = {
     registration: {
@@ -33,6 +33,30 @@ function store(seed = {}) {
       }),
   };
 }
+test('集合方式只接受两个新值并丢弃旧字段', () => {
+  for (const gatheringMode of ['self_drive', 'support_vehicle']) {
+    assert.deepEqual(
+      validateOptions({
+        gathering_mode: gatheringMode,
+        experience: 'regular',
+        bike_mode: 'rent',
+        rental_need: 'legacy',
+      }),
+      { gathering_mode: gatheringMode, experience: 'regular', remark: '' },
+    );
+  }
+  for (const options of [
+    { experience: 'regular' },
+    { gathering_mode: 'unknown', experience: 'regular' },
+    { bike_mode: 'own', experience: 'regular' },
+  ]) {
+    assert.throws(
+      () => validateOptions(options),
+      (error) => error instanceof DomainError && error.code === 'VALIDATION_FAILED',
+    );
+  }
+});
+
 test('批准与 outbox 原子编排并返回 notification', async () => {
   const s = store();
   const result = await reviewRegistration(
