@@ -140,7 +140,7 @@ describe('管理员普通编辑保留未展示的活动字段', () => {
   it('发布按钮受完整重填清单保护，缺字段时不会调用保存', async () => {
     await page.onLoad({ id: activity.id });
     page.data.status = 'draft';
-    page.data.form.deadline = '';
+    page.data.form.startAt = '';
     page.recomputePublishReadiness();
 
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
@@ -149,7 +149,7 @@ describe('管理员普通编辑保留未展示的活动字段', () => {
     expect(page.data.error).toContain('发布');
     const template = readFileSync('miniprogram/pages/admin/activity-edit/index.wxml', 'utf8');
     expect(template).toContain('重新确认清单');
-    expect(template).toContain('封面与路线文件为选填');
+    expect(template).toContain('名额、报名截止、费用和封面可后续补充');
     expect(template).toContain('封面文件 ID（选填）');
     expect(template).toContain('路线文件 ID（选填）');
     expect(template).toMatch(/data-status="published"[^>]*disabled="{{saving \|\| !canPublish}}"/);

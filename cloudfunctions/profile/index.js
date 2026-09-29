@@ -108,11 +108,28 @@ async function updateProfile(openid, event) {
   });
   return response(result);
 }
+const MEDIA_VERIFY_ATTEMPTS = 3;
+const MEDIA_VERIFY_DELAY_MS = 100;
+const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+async function verifyUploadedMedia(fileId, getTempFileURL, wait = sleep) {
+  let lastError;
+  for (let attempt = 0; attempt < MEDIA_VERIFY_ATTEMPTS; attempt += 1) {
+    try {
+      return await verifyMediaObject(fileId, getTempFileURL);
+    } catch (error) {
+      lastError = error;
+      if (!['MEDIA_OBJECT_NOT_FOUND', 'MEDIA_OBJECT_VERIFY_FAILED'].includes(error?.code))
+        throw error;
+      if (attempt + 1 < MEDIA_VERIFY_ATTEMPTS) await wait(MEDIA_VERIFY_DELAY_MS * (attempt + 1));
+    }
+  }
+  throw lastError;
+}
 async function registerMedia(openid, event, verifyObject) {
   const origin = clientMediaOrigin(event.origin);
   const id = mediaDocumentId(event.fileId);
   if (verifyObject) {
-    await verifyMediaObject(event.fileId, (input) => cloud.getTempFileURL(input));
+    await verifyUploadedMedia(event.fileId, (input) => cloud.getTempFileURL(input));
   }
   return profileStore.registerMedia(id, (existing) =>
     mediaRegistration(

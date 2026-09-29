@@ -2,7 +2,7 @@ export type Role = 'member' | 'admin';
 export type RegistrationStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 export type StravaStatus = 'pending' | 'connected' | 'exempted' | 'syncing' | 'failed';
 export type ActivityRegistrationState = 'open' | 'closed';
-export type ActivityClosedReason = 'finished' | 'deadline' | 'full' | 'unavailable';
+export type ActivityClosedReason = 'finished' | 'deadline' | 'full' | 'incomplete' | 'unavailable';
 export interface Activity {
   id: string;
   version: number;

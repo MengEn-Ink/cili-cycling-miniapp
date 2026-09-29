@@ -131,7 +131,8 @@ function registrationDecision(raw: Record<string, any>) {
   const serverNow = strictDateText(raw.server_now);
   const validOpen = state === 'open' && reason === null;
   const validClosed =
-    state === 'closed' && ['finished', 'deadline', 'full', 'unavailable'].includes(reason);
+    state === 'closed' &&
+    ['finished', 'deadline', 'full', 'incomplete', 'unavailable'].includes(reason);
   if (!validOpen && !validClosed) return invalidResponse();
   return { registrationState: state, closedReason: reason, serverNow };
 }
@@ -140,8 +141,7 @@ function mapActivity(raw: unknown, requireRegistrationDecision = false): Activit
   if (
     typeof value._id !== 'string' ||
     typeof value.title !== 'string' ||
-    !['draft', 'published', 'finished'].includes(value.status) ||
-    !Number.isInteger(value.capacity)
+    !['draft', 'published', 'finished'].includes(value.status)
   )
     return invalidResponse();
   const fee = value.fee;
@@ -154,7 +154,7 @@ function mapActivity(raw: unknown, requireRegistrationDecision = false): Activit
     endAt: dateText(value.event_end),
     deadline: dateText(value.signup_deadline),
     status: value.status,
-    capacity: value.capacity,
+    capacity: Number.isInteger(value.capacity) ? value.capacity : 0,
     ...(Number.isInteger(value.support_vehicle_capacity)
       ? { supportVehicleCapacity: value.support_vehicle_capacity }
       : {}),
@@ -189,7 +189,9 @@ function mapActivity(raw: unknown, requireRegistrationDecision = false): Activit
     registrationState: ['open', 'closed'].includes(value.registration_state)
       ? value.registration_state
       : undefined,
-    closedReason: ['finished', 'deadline', 'full', 'unavailable'].includes(value.closed_reason)
+    closedReason: ['finished', 'deadline', 'full', 'incomplete', 'unavailable'].includes(
+      value.closed_reason,
+    )
       ? value.closed_reason
       : undefined,
     description: typeof value.description === 'string' ? value.description : '',

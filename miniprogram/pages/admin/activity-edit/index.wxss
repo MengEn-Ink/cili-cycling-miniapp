@@ -1,6 +1,7 @@
 .activity-form-page {
   min-height: 100vh;
-  background: #090b0f;
+  padding-bottom: calc(52rpx + env(safe-area-inset-bottom));
+  background: #0b0b0c;
   color: #f4f7f2;
 }
 .form-head {
@@ -8,7 +9,7 @@
 }
 .hero-kicker,
 .section-label {
-  color: #d8ff36;
+  color: #d55b1f;
   font-size: 22rpx;
   font-weight: 800;
   letter-spacing: 3rpx;
@@ -49,7 +50,7 @@
 }
 .accent {
   margin: -8rpx 0 24rpx;
-  color: #d8ff36;
+  color: #d55b1f;
 }
 .split {
   display: grid;
@@ -60,14 +61,15 @@
 .field textarea {
   box-sizing: border-box;
   width: 100%;
-  padding: 20rpx;
+  min-height: 88rpx;
+  padding: 20rpx 24rpx;
   border: 1rpx solid #343b39;
   border-radius: 10rpx;
   background: #0d1012;
   color: #f4f7f2;
 }
 .field textarea {
-  min-height: 150rpx;
+  min-height: 240rpx;
 }
 .actions {
   display: flex;
@@ -79,8 +81,8 @@
   margin: 0;
 }
 .activity-form-page .btn {
-  background: #d8ff36;
-  color: #090b0f;
+  background: #d55b1f;
+  color: #0b0b0c;
   font-weight: 900;
 }
 .danger-button {
@@ -97,8 +99,8 @@
 .publish-checklist {
   margin-bottom: 24rpx;
   padding: 24rpx;
-  border: 2rpx solid rgba(215, 255, 59, 0.45);
-  background: rgba(215, 255, 59, 0.08);
+  border: 2rpx solid rgba(213, 91, 31, 0.45);
+  background: rgba(213, 91, 31, 0.08);
 }
 
 .template-banner {

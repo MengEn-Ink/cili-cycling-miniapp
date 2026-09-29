@@ -107,13 +107,29 @@ test('DNS 结果中任一私网或保留地址都会 fail closed', async () => {
   assert.equal(isPublicAddress('2606:4700:4700::1111'), true);
 });
 
-test('下载只允许同 host 有界重定向', async () => {
+test('下载允许白名单 CDN 间有界重定向并拒绝非白名单目标', async () => {
+  let crossHostCalls = 0;
+  const result = await downloadAvatar(allowedUrl, {
+    lookup: publicLookup,
+    request: async () => {
+      crossHostCalls += 1;
+      return crossHostCalls === 1
+        ? {
+            statusCode: 302,
+            headers: { location: 'https://dgtzuqphqg23d.cloudfront.net/avatar.jpg' },
+            body: Buffer.alloc(0),
+          }
+        : { statusCode: 200, headers: { 'content-type': 'image/jpeg' }, body: jpeg };
+    },
+  });
+  assert.equal(result.extension, 'jpg');
+  assert.equal(crossHostCalls, 2);
   await assert.rejects(
     downloadAvatar(allowedUrl, {
       lookup: publicLookup,
       request: async () => ({
         statusCode: 302,
-        headers: { location: 'https://dgtzuqphqg23d.cloudfront.net/avatar.jpg' },
+        headers: { location: 'https://evil.example/avatar.jpg' },
         body: Buffer.alloc(0),
       }),
     }),

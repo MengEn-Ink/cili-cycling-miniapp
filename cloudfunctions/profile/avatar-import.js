@@ -1,11 +1,11 @@
 'use strict';
 
 const dns = require('node:dns').promises;
-const crypto = require('node:crypto');
 const https = require('node:https');
 const net = require('node:net');
 const {
   ProfileError,
+  compatibleRandomUUID,
   avatarUrlFingerprint,
   isOwnerMedia,
   issueMediaUploadPath,
@@ -261,7 +261,6 @@ async function downloadAvatar(value, dependencies = {}) {
   const request =
     dependencies.request || ((input) => boundedRequest(input.url, input.addresses, input));
   let current = validateAvatarUrl(value);
-  const originalHost = current.hostname;
   const startedAt = now();
   for (let redirects = 0; ; redirects += 1) {
     if (now() - startedAt >= totalTimeoutMs)
@@ -298,8 +297,7 @@ async function downloadAvatar(value, dependencies = {}) {
       } catch {
         throw avatarError('STRAVA_AVATAR_REDIRECT_BLOCKED', 'Strava 头像重定向无效');
       }
-      if (redirected.hostname !== originalHost)
-        throw avatarError('STRAVA_AVATAR_REDIRECT_BLOCKED', 'Strava 头像禁止跨域重定向');
+      // Every redirect target is independently validated against the explicit CDN allowlist.
       current = redirected;
       continue;
     }
@@ -391,7 +389,7 @@ async function importStravaAvatar({
     throw avatarError('STRAVA_NOT_CONNECTED', '尚未绑定 Strava');
   if (typeof credential.athlete_avatar_url !== 'string' || !credential.athlete_avatar_url)
     throw avatarError('STRAVA_AVATAR_UNAVAILABLE', 'Strava 未提供可用头像');
-  const makeUuid = randomUUID || crypto.randomUUID;
+  const makeUuid = randomUUID || compatibleRandomUUID;
   const intentId = `avatar-import-${makeUuid()}`;
   const avatarFingerprint = avatarUrlFingerprint(credential.athlete_avatar_url);
   const intent = {
