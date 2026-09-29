@@ -50,8 +50,20 @@ const profile = {
 };
 const credential = {
   _id: openid,
-  access_token_cipher: { ciphertext: 'access-secret' },
-  refresh_token_cipher: { ciphertext: 'refresh-secret' },
+  access_token_cipher: {
+    v: 1,
+    alg: 'A256GCM',
+    iv: 'legacy-access-iv',
+    tag: 'legacy-access-tag',
+    ciphertext: 'access-secret',
+  },
+  refresh_token_cipher: {
+    v: 1,
+    alg: 'A256GCM',
+    iv: 'legacy-refresh-iv',
+    tag: 'legacy-refresh-tag',
+    ciphertext: 'refresh-secret',
+  },
   lease_id: 'lease-secret',
 };
 const snapshot = {
@@ -225,6 +237,10 @@ test('重复占位提交拒绝，驳回或取消后沿原记录重报并保留�
 });
 
 test('报名只接受完整凭证和 24 小时内的 canonical Strava 快照', async () => {
+  const legacyCredential = memoryStore();
+  const accepted = await submitRegistration(legacyCredential, input, now);
+  assert.equal(accepted.status, 'pending');
+
   const profileOnly = memoryStore({ credential: null, snapshot: null });
   await assert.rejects(
     submitRegistration(profileOnly, input, now),
@@ -236,6 +252,31 @@ test('报名只接受完整凭证和 24 小时内的 canonical Strava 快照', a
     submitRegistration(missingRefreshToken, input, now),
     (error) => error.code === 'STRAVA_NOT_READY',
   );
+
+  for (const malformed of [
+    {},
+    { alg: 'AES-GCM', iv: 'iv', tag: 'tag', ciphertext: 'ciphertext' },
+    { alg: 'A256GCM', iv: '', tag: 'tag', ciphertext: 'ciphertext' },
+    { alg: 'A256GCM', iv: 'iv', tag: ' ', ciphertext: 'ciphertext' },
+    { alg: 'A256GCM', iv: 'iv', tag: 'tag', ciphertext: null },
+  ]) {
+    await assert.rejects(
+      submitRegistration(
+        memoryStore({ credential: { access_token_cipher: malformed } }),
+        input,
+        now,
+      ),
+      (error) => error.code === 'STRAVA_NOT_READY',
+    );
+    await assert.rejects(
+      submitRegistration(
+        memoryStore({ credential: { refresh_token_cipher: malformed } }),
+        input,
+        now,
+      ),
+      (error) => error.code === 'STRAVA_NOT_READY',
+    );
+  }
 
   const missingSnapshot = memoryStore({ snapshot: null });
   await assert.rejects(

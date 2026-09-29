@@ -151,8 +151,21 @@ function dateOrNull(value) {
   const date = new Date(value);
   return Number.isFinite(date.getTime()) ? date : null;
 }
+function isTokenEnvelope(value) {
+  return Boolean(
+    value &&
+    value.alg === 'A256GCM' &&
+    ['iv', 'tag', 'ciphertext'].every(
+      (field) => typeof value[field] === 'string' && value[field].trim().length > 0,
+    ),
+  );
+}
 function selectCanonicalStrava(credential, snapshot, now = new Date()) {
-  if (!credential || !credential.access_token_cipher || !credential.refresh_token_cipher)
+  if (
+    !credential ||
+    !isTokenEnvelope(credential.access_token_cipher) ||
+    !isTokenEnvelope(credential.refresh_token_cipher)
+  )
     fail('STRAVA_NOT_READY', 'Strava 数据尚未准备完成');
   const syncedAt = dateOrNull(snapshot && snapshot.synced_at);
   if (!snapshot || !syncedAt || now.getTime() - syncedAt.getTime() >= 24 * 60 * 60 * 1000)
