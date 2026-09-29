@@ -37,6 +37,8 @@ created_at, updated_at
 
 三个敏感字段均用环境变量 `PII_ENCRYPTION_KEY`（base64 32 bytes）独立 AES-256-GCM 加密和随机 12-byte IV。证件信息不再采集、写入或返回；存量证件字段只读保留，不解密、不迁移，普通资料更新也不主动删除。密钥缺失/非法、密文认证失败均 fail closed。`getPhoneNumber` 接受微信动态 code 并调用 `cloud.openapi.phonenumber`，写入 `wechat/verified`；个人主体的 `update` 可写入手填号码，但必须写入 `manual/unverified`。响应不返回敏感明文或密文，只返回必要掩码、来源、验证状态、`sensitive_status` 与 `completeness`；管理员审批详情必须展示手机号来源。
 
+按方案结论，Phase 1 的 `profile/getCard` 是 self-only 聚合读取：查询键只取 `WXContext.OPENID`，客户端传入的 openid 被忽略；服务端读取 `profiles + strava_credentials + strava_snapshots`（并仅用有效 OAuth state 判定 authorizing），输出最多 3 张按骑行/训练优先、其他上传补位、头像兜底且去重的照片，以及带 `90天汇总` 口径和时间的 Strava 指标。DTO 允许字段缺失，且禁止实名、手机号、紧急联系人、openid、token、密文和活动明细。三年历史、功率曲线、状态分、俱乐部与赛段不在 Phase 1 范围。
+
 ### `notification_outbox`
 
 审批事务内原子写入的订阅消息发件箱。`_id` 为审批轮次确定性 ID，包含 `type/aggregate_id/target_openid/template_key/payload/status/attempts/last_error/lease_expires_at/claimed_by/created_at/updated_at/sent_at`。状态机为 `pending|failed|租约过期的 sending -> sending -> sent|failed`：`sending` 使用 2 分钟租约，进程中断后可由定时 worker 重领；最多尝试 5 次，达到上限返回 `MAX_RETRIES_EXCEEDED`，并由 `status + attempts + lease_expires_at` 扫描索引在批次 `limit` 前排除耗尽任务，避免新任务饥饿。客户端 ACL 全拒绝，仅云函数可读写。

@@ -76,6 +76,30 @@ export interface StravaConnection {
   athleteName?: string;
   snapshot?: StravaSnapshot;
 }
+export interface CapabilityCardPhoto {
+  id: string;
+  category: string;
+  source: 'upload' | 'avatar';
+}
+export interface CapabilityCard {
+  nickname: string;
+  avatarId: string;
+  photos: CapabilityCardPhoto[];
+  period: { days: 90; label: string };
+  metrics: null | {
+    totalKm: number | null;
+    rides: number | null;
+    longestKm: number | null;
+    elevationM: number | null;
+    speedKmh: number | null;
+    latestActivityAt: string | null;
+    syncedAt: string | null;
+  };
+  readiness: {
+    state: StravaReadinessState;
+    error: null | { message: string; retryable: boolean };
+  };
+}
 export interface Registration {
   id: string;
   activityId: string;

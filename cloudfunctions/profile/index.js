@@ -5,6 +5,7 @@ const {
   response,
   buildUpdate,
   phoneUpdate,
+  capabilityCard,
   writableDocument,
   toError,
 } = require('./core');
@@ -25,6 +26,38 @@ async function getDoc(openid) {
     throw error;
   }
 }
+async function getCollectionDoc(name, openid) {
+  try {
+    return (await db.collection(name).doc(openid).get()).data;
+  } catch (error) {
+    if (
+      Number(error?.errCode) === -502001 ||
+      /not exist|not found/i.test(String(error?.errMsg || error?.message || ''))
+    )
+      return undefined;
+    throw error;
+  }
+}
+async function getCard(openid) {
+  // 隐私边界：只使用可信 WXContext OPENID 聚合快照，客户端传入的 openid 永不参与查询。
+  const now = new Date();
+  const [profile, credential, snapshot, oauth] = await Promise.all([
+    getCollectionDoc('profiles', openid),
+    getCollectionDoc('strava_credentials', openid),
+    getCollectionDoc('strava_snapshots', openid),
+    db
+      .collection('oauth_states')
+      .where({
+        openid,
+        expires_at: db.command.gt(now),
+        consumed_at: db.command.exists(false),
+      })
+      .limit(1)
+      .get(),
+  ]);
+  // 小程序只读聚合 DTO：不返回活动明细、身份字段、openid、token 或任何密文。
+  return capabilityCard(profile, credential, snapshot, Boolean(oauth.data?.length));
+}
 async function merge(openid, data) {
   const now = db.serverDate();
   const current = await getDoc(openid);
@@ -36,10 +69,11 @@ async function merge(openid, data) {
 }
 exports.main = async (event = {}) => {
   try {
-    keyFrom(process.env.PII_ENCRYPTION_KEY);
     const { OPENID } = cloud.getWXContext();
     if (!OPENID) throw Object.assign(new Error('无法取得微信身份'), { code: 'UNAUTHENTICATED' });
+    if (event.action === 'getCard') return ok(await getCard(OPENID));
     if (event.action === 'get') return ok(response(await getDoc(OPENID)));
+    keyFrom(process.env.PII_ENCRYPTION_KEY);
     if (event.action === 'update')
       return ok(response(await merge(OPENID, buildUpdate(event, process.env.PII_ENCRYPTION_KEY))));
     if (event.action === 'getPhoneNumber') {

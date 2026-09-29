@@ -10,6 +10,8 @@ const {
   response,
   buildUpdate,
   phoneUpdate,
+  selectCapabilityPhotos,
+  capabilityCard,
   writableDocument,
   toError,
 } = require('./core');
@@ -111,4 +113,81 @@ test('未知错误仅暴露平台错误码而不泄露内部消息', () => {
     ok: false,
     error: { code: 'INTERNAL_ERROR', message: '服务暂时不可用', cause_code: '-1' },
   });
+});
+
+test('个人名片照片按骑行训练优先、其他补位、头像兜底并去重，最多三张', () => {
+  assert.deepEqual(
+    selectCapabilityPhotos({
+      avatar_file_id: 'cloud://avatar',
+      photos: [
+        { file_id: 'cloud://other', category: 'other' },
+        { file_id: 'cloud://ride', category: 'ride' },
+        { file_id: 'cloud://training', category: 'training' },
+        { file_id: 'cloud://avatar', category: 'other' },
+      ],
+    }),
+    [
+      { file_id: 'cloud://ride', category: 'ride', source: 'upload' },
+      { file_id: 'cloud://training', category: 'training', source: 'upload' },
+      { file_id: 'cloud://other', category: 'other', source: 'upload' },
+    ],
+  );
+  assert.deepEqual(selectCapabilityPhotos({ avatar_file_id: 'cloud://avatar' }), [
+    { file_id: 'cloud://avatar', category: 'avatar', source: 'avatar' },
+  ]);
+});
+
+test('个人名片 DTO 仅暴露安全聚合字段且允许缺失快照', () => {
+  const sensitive = {
+    nickname: '骑手',
+    avatar_file_id: 'cloud://avatar',
+    real_name_masked: '曹**',
+    phone_cipher: { ciphertext: 'secret' },
+    emergency_name: '私密联系人',
+    openid: 'private',
+  };
+  const disconnected = capabilityCard(sensitive, undefined, undefined, false);
+  assert.equal(disconnected.readiness.state, 'disconnected');
+  assert.equal(disconnected.metrics, null);
+  const serialized = JSON.stringify(disconnected);
+  for (const forbidden of [
+    'real_name',
+    'phone',
+    'emergency',
+    'cipher',
+    'token',
+    'openid',
+    'private',
+  ]) {
+    assert.equal(serialized.includes(forbidden), false);
+  }
+});
+
+test('个人名片覆盖 authorizing/syncing/failed/ready 与安全错误', () => {
+  assert.equal(capabilityCard({}, undefined, undefined, true).readiness.state, 'authorizing');
+  assert.equal(capabilityCard({}, { sync_status: 'running' }).readiness.state, 'syncing');
+  const failed = capabilityCard({}, { sync_status: 'failed', sync_error_code: 'INTERNAL_SECRET' });
+  assert.deepEqual(failed.readiness, {
+    state: 'failed',
+    error: { message: 'Strava 数据准备失败，请重试', retryable: true },
+  });
+  assert.equal(JSON.stringify(failed).includes('INTERNAL_SECRET'), false);
+  const ready = capabilityCard(
+    {},
+    { sync_status: 'ready' },
+    {
+      total_km: 123,
+      activities_90d: 8,
+      longest_km: 50,
+      total_elevation_m: 999,
+      weighted_avg_speed_kmh: 25,
+      latest_activity_at: null,
+      synced_at: new Date('2026-09-29T00:00:00Z'),
+      activities: [{ id: 'must-not-leak' }],
+    },
+  );
+  assert.equal(ready.readiness.state, 'ready');
+  assert.equal(ready.metrics.rides, 8);
+  assert.equal(ready.metrics.latest_activity_at, null);
+  assert.equal(JSON.stringify(ready).includes('must-not-leak'), false);
 });

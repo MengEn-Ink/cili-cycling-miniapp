@@ -170,6 +170,90 @@ function phoneUpdate(phone, keyValue, source = 'wechat') {
     phone_verified: source === 'wechat',
   };
 }
+const PRIORITY_PHOTO_CATEGORIES = new Set([
+  'ride',
+  'bike',
+  'riding',
+  'cycling',
+  'training',
+  'workout',
+  '骑行',
+  '骑行照',
+  '训练',
+  '训练照',
+]);
+function safeFileId(value) {
+  const text = typeof value === 'string' ? value.trim() : '';
+  return text.length <= 512 ? text : '';
+}
+function selectCapabilityPhotos(profile = {}) {
+  const seen = new Set();
+  const uploaded = Array.isArray(profile.photos)
+    ? profile.photos
+        .filter((item) => item && typeof item === 'object')
+        .map((item, index) => ({
+          file_id: safeFileId(item.file_id),
+          category: typeof item.category === 'string' ? item.category : '',
+          source: 'upload',
+          priority: PRIORITY_PHOTO_CATEGORIES.has(String(item.category || '').toLowerCase())
+            ? 0
+            : 1,
+          index,
+        }))
+        .filter((item) => item.file_id)
+        .sort((a, b) => a.priority - b.priority || a.index - b.index)
+    : [];
+  const candidates = [
+    ...uploaded,
+    {
+      file_id: safeFileId(profile.avatar_file_id),
+      category: 'avatar',
+      source: 'avatar',
+      priority: 2,
+    },
+  ];
+  return candidates
+    .filter((item) => item.file_id && !seen.has(item.file_id) && seen.add(item.file_id))
+    .slice(0, 3)
+    .map(({ file_id, category, source }) => ({ file_id, category, source }));
+}
+function safeDate(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+}
+function safeMetric(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+function capabilityCard(profile = {}, credential, snapshot, hasActiveOAuthState = false) {
+  let state = 'disconnected';
+  let error = null;
+  if (!credential) state = hasActiveOAuthState ? 'authorizing' : 'disconnected';
+  else if (credential.sync_status === 'failed') {
+    state = 'failed';
+    error = { message: 'Strava 数据准备失败，请重试', retryable: true };
+  } else if (credential.sync_status === 'ready' && snapshot) state = 'ready';
+  else state = 'syncing';
+  const metrics = snapshot
+    ? {
+        total_km: safeMetric(snapshot.total_km),
+        rides: safeMetric(snapshot.activities_90d),
+        longest_km: safeMetric(snapshot.longest_km),
+        elevation_m: safeMetric(snapshot.total_elevation_m),
+        speed_kmh: safeMetric(snapshot.weighted_avg_speed_kmh),
+        latest_activity_at: safeDate(snapshot.latest_activity_at),
+        synced_at: safeDate(snapshot.synced_at),
+      }
+    : null;
+  return {
+    nickname: typeof profile.nickname === 'string' ? profile.nickname : '',
+    avatar_file_id: safeFileId(profile.avatar_file_id),
+    photos: selectCapabilityPhotos(profile),
+    period: { days: 90, label: '90天汇总' },
+    metrics,
+    readiness: { state, error },
+  };
+}
 function writableDocument(value) {
   const { _id, ...document } = value;
   return document;
@@ -196,6 +280,8 @@ module.exports = {
   response,
   buildUpdate,
   phoneUpdate,
+  selectCapabilityPhotos,
+  capabilityCard,
   writableDocument,
   toError,
 };

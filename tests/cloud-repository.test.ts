@@ -996,3 +996,60 @@ describe('CloudRepository 管理员活动写入契约', () => {
     expect(invalid.callFunction).not.toHaveBeenCalled();
   });
 });
+
+describe('CloudRepository 个人骑行名片适配', () => {
+  it('只发送 getCard 且白名单映射，不保留服务端敏感脏字段', async () => {
+    const dto = {
+      nickname: '骑手',
+      avatar_file_id: 'cloud://avatar',
+      photos: [
+        { file_id: 'cloud://ride', category: 'ride', source: 'upload', token: 'secret' },
+        { file_id: 'cloud://avatar', category: 'avatar', source: 'avatar' },
+      ],
+      period: { days: 90, label: '90天汇总' },
+      metrics: {
+        total_km: 321,
+        rides: 12,
+        longest_km: null,
+        elevation_m: 1800,
+        speed_kmh: 26.5,
+        latest_activity_at: null,
+        synced_at: '2026-09-29T04:00:00.000Z',
+        activities: [{ openid: 'private' }],
+      },
+      readiness: { state: 'ready', error: null },
+      phone: '13812345678',
+      access_token: 'secret',
+      openid: 'private',
+    };
+    const { cloud, callFunction } = cloudWith(success(dto));
+    const card = await new CloudRepository(cloud).getCapabilityCard();
+    expectCall(callFunction, 'profile', { action: 'getCard' });
+    expect(card).toMatchObject({
+      nickname: '骑手',
+      photos: [
+        { id: 'cloud://ride', category: 'ride', source: 'upload' },
+        { id: 'cloud://avatar', category: 'avatar', source: 'avatar' },
+      ],
+      metrics: { totalKm: 321, rides: 12, longestKm: null },
+      readiness: { state: 'ready', error: null },
+    });
+    const serialized = JSON.stringify(card);
+    expect(serialized).not.toContain('secret');
+    expect(serialized).not.toContain('private');
+    expect(serialized).not.toContain('13812345678');
+  });
+
+  it.each(['disconnected', 'authorizing', 'syncing', 'failed', 'ready'] as const)(
+    '映射名片 readiness %s 并允许无快照',
+    async (state) => {
+      const { cloud } = cloudWith(
+        success({ nickname: '', photos: [], metrics: null, readiness: { state, error: null } }),
+      );
+      await expect(new CloudRepository(cloud).getCapabilityCard()).resolves.toMatchObject({
+        metrics: null,
+        readiness: { state },
+      });
+    },
+  );
+});
