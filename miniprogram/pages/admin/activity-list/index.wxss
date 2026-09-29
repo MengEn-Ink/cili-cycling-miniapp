@@ -17,3 +17,48 @@
   grid-template-columns: 1fr 1fr;
   gap: 20rpx;
 }
+
+/* ===== CILI 暗色竞技主题：页面级接入，沿用既有“深色页面本地 opt-in”约定 ===== */
+.activity-list-page {
+  min-height: 100vh;
+  background: #0b0b0c;
+  color: #f7f7f5;
+}
+.activity-list-page .card {
+  border: 1rpx solid #343438;
+  background: #242427;
+  color: #f7f7f5;
+}
+.activity-list-page .card.danger {
+  background: rgba(200, 32, 24, 0.12);
+  color: #ff7068;
+}
+.activity-list-page .title {
+  color: #f7f7f5;
+}
+.activity-list-page .tag {
+  background: #343438;
+  color: #d55b1f;
+}
+.activity-list-page .section-title {
+  color: #f7f7f5;
+}
+.activity-list-page .hint {
+  color: #a8a8ad;
+}
+/* 克隆表单使用裸 input，这里统一为暗色控件，避免出现系统默认白底输入框 */
+.activity-list-page .field input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 88rpx;
+  padding: 20rpx 24rpx;
+  border: 1rpx solid #343438;
+  border-radius: 10rpx;
+  background: #151517;
+  color: #f7f7f5;
+}
+.activity-list-page .secondary {
+  border: 2rpx solid #3a3a3e;
+  background: #151517;
+  color: #f7f7f5;
+}

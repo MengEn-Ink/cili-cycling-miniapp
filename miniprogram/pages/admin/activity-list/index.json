@@ -1,5 +1,7 @@
 {
   "navigationBarTitleText": "活动管理",
+  "navigationBarBackgroundColor": "#0B0B0C",
+  "navigationBarTextStyle": "white",
   "usingComponents": {
     "state-view": "/components/state-view/index",
     "activity-card": "/components/activity-card/index",

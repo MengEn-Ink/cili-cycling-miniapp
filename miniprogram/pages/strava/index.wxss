@@ -115,3 +115,65 @@
   background: #fceded;
   color: #d94b4b;
 }
+
+/* ===== CILI 暗色竞技主题：页面级接入，保持全局浅色基线不变 ===== */
+.strava-page {
+  min-height: 100vh;
+  background: #0b0b0c;
+  color: #f7f7f5;
+}
+.strava-head .hero-kicker {
+  color: #d55b1f;
+}
+.strava-mark {
+  background: #d55b1f;
+  color: #0b0b0c;
+}
+.status-card {
+  border-color: #343438;
+  background: #1b1b1d;
+  color: #f7f7f5;
+}
+.status-ready {
+  border-color: rgba(24, 160, 88, 0.55);
+  background: rgba(24, 160, 88, 0.1);
+}
+.status-failed {
+  border-color: rgba(200, 32, 24, 0.55);
+  background: rgba(200, 32, 24, 0.1);
+}
+.status-syncing,
+.status-authorizing {
+  border-color: rgba(200, 132, 24, 0.55);
+  background: rgba(200, 132, 24, 0.1);
+}
+.status-help {
+  color: #a8a8ad;
+}
+.strava-page .card {
+  border: 1rpx solid #343438;
+  background: #242427;
+  color: #f7f7f5;
+}
+.strava-page .section-label {
+  color: #a8a8ad;
+}
+.strava-page .muted {
+  color: #a8a8ad;
+}
+.strava-page .metric {
+  background: #1b1b1d;
+  color: #a8a8ad;
+}
+.strava-page .big {
+  color: #f38a50;
+}
+.strava-page .secondary {
+  border: 2rpx solid #3a3a3e;
+  background: #151517;
+  color: #f7f7f5;
+}
+.error-card {
+  background: rgba(200, 32, 24, 0.12);
+  color: #ff7068;
+}
