@@ -16,6 +16,15 @@ const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 const CONNECT_TIMEOUT_MS = 3000;
 const TOTAL_TIMEOUT_MS = 5000;
 const MAX_REDIRECTS = 2;
+const MAX_NETWORK_ATTEMPTS = 2;
+// 可安全重试的底层瞬时网络错误码；业务/安全错误与其它未知码不在此列，直接终止。
+const RETRYABLE_NETWORK_CODES = new Set([
+  'ECONNRESET',
+  'ECONNREFUSED',
+  'ETIMEDOUT',
+  'EPIPE',
+  'EAI_AGAIN',
+]);
 const IMPORT_LEASE_MS = 10 * 60 * 1000;
 const ALLOWED_AVATAR_HOSTS = new Set([
   'dgalywyr863hv.cloudfront.net',
@@ -273,17 +282,32 @@ async function downloadAvatar(value, dependencies = {}) {
     remainingMs = totalTimeoutMs - (now() - startedAt);
     if (remainingMs <= 0) throw avatarError('STRAVA_AVATAR_TOTAL_TIMEOUT', 'Strava 头像下载超时');
     let response;
-    try {
-      response = await request({
-        url: current,
-        addresses,
-        maxBytes: MAX_AVATAR_BYTES,
-        connectTimeoutMs: Math.min(CONNECT_TIMEOUT_MS, remainingMs),
-        totalTimeoutMs: remainingMs,
-      });
-    } catch (error) {
-      if (error instanceof ProfileError || error?.code) throw error;
-      throw avatarError('STRAVA_AVATAR_DOWNLOAD_FAILED', 'Strava 头像下载失败');
+    // 底层瞬时网络错误（如连接重置，无显式错误码）可在总超时内复用“已验证的同一地址”重试一次，
+    // 不重新做 DNS，避免重试间隙被 DNS 重绑定；安全/业务错误带显式 code，直接终止不重试。
+    for (let networkAttempt = 0; networkAttempt < MAX_NETWORK_ATTEMPTS; networkAttempt += 1) {
+      try {
+        response = await request({
+          url: current,
+          addresses,
+          maxBytes: MAX_AVATAR_BYTES,
+          connectTimeoutMs: Math.min(CONNECT_TIMEOUT_MS, remainingMs),
+          totalTimeoutMs: remainingMs,
+        });
+        break;
+      } catch (error) {
+        // 业务/安全错误（ProfileError）始终直接终止，不做网络重试。
+        if (error instanceof ProfileError) throw error;
+        const isTransient = !error?.code || RETRYABLE_NETWORK_CODES.has(error.code);
+        const canRetry =
+          isTransient &&
+          networkAttempt + 1 < MAX_NETWORK_ATTEMPTS &&
+          now() - startedAt < totalTimeoutMs;
+        if (!canRetry) {
+          // 保留显式错误码便于上层归因；无码的普通网络错误归一为下载失败。
+          if (error?.code) throw error;
+          throw avatarError('STRAVA_AVATAR_DOWNLOAD_FAILED', 'Strava 头像下载失败');
+        }
+      }
     }
     if ([301, 302, 303, 307, 308].includes(response.statusCode)) {
       if (redirects >= MAX_REDIRECTS)
@@ -457,6 +481,8 @@ module.exports = {
   CONNECT_TIMEOUT_MS,
   TOTAL_TIMEOUT_MS,
   MAX_REDIRECTS,
+  MAX_NETWORK_ATTEMPTS,
+  RETRYABLE_NETWORK_CODES,
   IMPORT_LEASE_MS,
   ALLOWED_AVATAR_HOSTS,
   validateAvatarUrl,

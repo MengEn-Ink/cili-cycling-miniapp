@@ -1,189 +1,4 @@
-.profile-form-page {
-  padding-bottom: 190rpx;
-}
-
-.form-card {
-  overflow: hidden;
-}
-
-.form-tip {
-  line-height: 1.7;
-  margin-bottom: 28rpx;
-}
-
-.form-card .field {
-  margin: 0;
-}
-
-.form-card .field + .field {
-  margin-top: 30rpx;
-}
-
-.form-card .label {
-  display: block;
-  line-height: 34rpx;
-  margin-bottom: 12rpx;
-}
-
-.form-card .input {
-  box-sizing: border-box;
-  display: block;
-  width: 100%;
-  height: 88rpx;
-  min-height: 88rpx;
-  line-height: 44rpx;
-  padding: 0 24rpx;
-}
-.avatar-editor {
-  display: flex;
-  align-items: flex-start;
-  gap: 28rpx;
-  margin-top: 30rpx;
-  padding-top: 30rpx;
-  border-top: 1rpx solid #e4ebe6;
-}
-
-.avatar-preview-shell {
-  display: flex;
-  flex: 0 0 144rpx;
-  align-items: center;
-  justify-content: center;
-  width: 144rpx;
-  height: 144rpx;
-  overflow: hidden;
-  border: 4rpx solid #fff;
-  border-radius: 50%;
-  background: #16251f;
-  box-shadow:
-    0 0 0 2rpx #cfdcd5,
-    0 14rpx 30rpx rgba(23, 35, 30, 0.15);
-}
-
-.avatar-preview {
-  width: 100%;
-  height: 100%;
-}
-
-.avatar-preview-placeholder {
-  color: #f6c443;
-  font-size: 52rpx;
-  font-weight: 900;
-}
-
-.avatar-panel {
-  min-width: 0;
-  flex: 1;
-}
-
-.avatar-note {
-  margin-bottom: 18rpx;
-  font-size: 23rpx;
-  line-height: 1.55;
-}
-
-.avatar-actions {
-  display: grid;
-  gap: 12rpx;
-}
-
-.avatar-action {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  width: 100%;
-  min-height: 88rpx;
-  margin: 0;
-  padding: 18rpx 22rpx;
-  border: 2rpx solid #cfddd5;
-  border-radius: 14rpx;
-  background: #f7faf8;
-  color: #173f32;
-  font-size: 25rpx;
-  font-weight: 800;
-  line-height: 1.35;
-  text-align: left;
-}
-
-.avatar-action::before {
-  width: 12rpx;
-  height: 12rpx;
-  margin-right: 16rpx;
-  border-radius: 50%;
-  background: #0b6b4f;
-  content: '';
-}
-
-.avatar-action-strava::before {
-  background: #fc4c02;
-}
-
-.avatar-action[disabled] {
-  background: #eef1ef;
-  color: #859189;
-}
-
-.avatar-action[disabled]::before {
-  background: #aab3ae;
-}
-
-.avatar-status {
-  min-height: 38rpx;
-  margin-top: 16rpx;
-  color: #64736c;
-  font-size: 22rpx;
-  line-height: 1.55;
-}
-
-.avatar-status-error {
-  color: #b42318;
-  font-weight: 700;
-}
-
-.avatar-help-link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 88rpx;
-  margin: 0;
-  padding: 0;
-  background: transparent;
-  color: #b54818;
-  font-size: 24rpx;
-  font-weight: 800;
-  line-height: 1.4;
-  text-decoration: underline;
-}
-
-.avatar-help-link[disabled] {
-  color: #929b96;
-}
-
-.field-tip {
-  margin-top: 12rpx;
-  line-height: 1.5;
-}
-
-.photo-action {
-  margin-top: 32rpx;
-}
-
-.photo-count {
-  margin-top: 20rpx;
-  color: #718079;
-}
-
-.form-error {
-  box-sizing: border-box;
-  margin-top: 24rpx;
-  padding: 22rpx 24rpx;
-  border-radius: 18rpx;
-  line-height: 1.6;
-}
-
-.save-action {
-  margin-top: 28rpx;
-}
-
-/* Page-scoped CILI dark theme: do not override shared global card/input contracts. */
+/* ===== CILI 暗色竞技主题：资料编辑页页面级接入 ===== */
 page {
   background: #0b0b0c;
 }
@@ -193,55 +8,154 @@ page {
   background: #0b0b0c;
   color: #f7f7f5;
 }
+
 .profile-form-page .form-card {
+  overflow: hidden;
   border: 1rpx solid #4a4a4e;
   background: #1a1a1c;
+  color: #f7f7f5;
 }
-.profile-form-page .muted,
-.profile-form-page .field-tip,
-.profile-form-page .photo-count,
-.profile-form-page .avatar-status {
-  color: #aaaab0;
+.profile-form-page .title {
+  color: #f7f7f5;
 }
-.profile-form-page .form-card .input {
-  height: auto;
+
+.form-tip {
+  line-height: 1.7;
+  margin-bottom: 28rpx;
+}
+.form-card .field {
+  margin: 0;
+}
+.form-card .field + .field {
+  margin-top: 30rpx;
+}
+.profile-form-page .form-card .label {
+  display: block;
+  line-height: 34rpx;
+  margin-bottom: 12rpx;
+  color: #a8a8ad;
+}
+.form-card .input {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
   min-height: 88rpx;
   padding: 20rpx 24rpx;
   border: 1rpx solid #555559;
+  border-radius: 8rpx;
   background: #101012;
   color: #f7f7f5;
 }
-.profile-form-page textarea.input {
-  min-height: 240rpx;
-}
-.profile-form-page .avatar-editor {
-  border-top-color: #3f3f43;
-}
-.profile-form-page .avatar-action {
-  border-color: #555559;
-  background: #151517;
-  color: #f7f7f5;
-}
-.profile-form-page .avatar-action::before {
-  background: #d55b1f;
-}
-.profile-form-page .avatar-help-link {
-  color: #e9753b;
-}
-.profile-form-page .avatar-status-error {
-  color: #ff8f86;
-}
-.profile-form-page .form-card .label {
-  color: #a8a8ad;
+
+.avatar-editor {
+  display: flex;
+  align-items: flex-start;
+  gap: 28rpx;
+  margin-top: 30rpx;
+  padding-top: 30rpx;
+  border-top: 1rpx solid #3f3f43;
 }
 .profile-form-page .avatar-preview-shell {
+  display: flex;
+  flex: 0 0 144rpx;
+  align-items: center;
+  justify-content: center;
+  width: 144rpx;
+  height: 144rpx;
+  overflow: hidden;
   border: 4rpx solid #343438;
+  border-radius: 50%;
   background: #151517;
   box-shadow: 0 14rpx 30rpx rgba(0, 0, 0, 0.4);
 }
-.profile-form-page .form-error {
-  background: rgba(200, 32, 24, 0.12);
-  color: #ff7068;
+.avatar-preview {
+  width: 100%;
+  height: 100%;
+}
+.avatar-preview-placeholder {
+  color: #f38a50;
+  font-size: 52rpx;
+  font-weight: 900;
+}
+.avatar-panel {
+  min-width: 0;
+  flex: 1;
+}
+.avatar-note {
+  margin-bottom: 18rpx;
+  font-size: 23rpx;
+  line-height: 1.55;
+}
+.avatar-actions {
+  display: grid;
+  gap: 12rpx;
+}
+.avatar-action {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 88rpx;
+  margin: 0;
+  padding: 18rpx 22rpx;
+  border: 2rpx solid #555559;
+  border-radius: 14rpx;
+  background: #151517;
+  color: #f7f7f5;
+  font-size: 25rpx;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: left;
+}
+.avatar-action::before {
+  width: 12rpx;
+  height: 12rpx;
+  margin-right: 16rpx;
+  border-radius: 50%;
+  background: #d55b1f;
+  content: '';
+}
+.avatar-action-strava::before {
+  background: #fc4c02;
+}
+.avatar-action[disabled] {
+  background: #1d1d20;
+  color: #858589;
+}
+.avatar-action[disabled]::before {
+  background: #5a5a5e;
+}
+.avatar-status {
+  min-height: 38rpx;
+  margin-top: 16rpx;
+  color: #aaaab0;
+  font-size: 22rpx;
+  line-height: 1.55;
+}
+.avatar-status-error {
+  color: #ff8f86;
+  font-weight: 700;
+}
+.avatar-help-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 88rpx;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: #e9753b;
+  font-size: 24rpx;
+  font-weight: 800;
+  line-height: 1.4;
+  text-decoration: underline;
+}
+.avatar-help-link[disabled] {
+  color: #6a6a70;
+}
+
+.field-tip {
+  margin-top: 12rpx;
+  line-height: 1.5;
 }
 .profile-form-page .photo-action {
   min-height: 88rpx;
@@ -250,4 +164,29 @@ page {
   border-radius: 12rpx;
   background: #151517;
   color: #f7f7f5;
+}
+.photo-count {
+  margin-top: 20rpx;
+}
+.profile-form-page .muted,
+.profile-form-page .field-tip,
+.profile-form-page .photo-count {
+  color: #aaaab0;
+}
+
+.profile-form-page .form-error {
+  box-sizing: border-box;
+  margin-top: 24rpx;
+  padding: 22rpx 24rpx;
+  border-radius: 18rpx;
+  background: rgba(200, 32, 24, 0.12);
+  color: #ff7068;
+  line-height: 1.6;
+}
+.save-action {
+  margin-top: 28rpx;
+  border: 0;
+  background: #d55b1f;
+  color: #0b0b0c;
+  font-weight: 900;
 }

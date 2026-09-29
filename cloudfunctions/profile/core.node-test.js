@@ -20,6 +20,8 @@ const {
   validateAvatarSelection,
   inspectMediaObject,
   verifyMediaObject,
+  verifyUploadedMedia,
+  MEDIA_VERIFY_ATTEMPTS,
   validateMediaUpdate,
   ownerMedia,
   normalizeAvatarProfile,
@@ -650,4 +652,42 @@ test('未知错误仅暴露平台错误码而不泄露内部消息', () => {
     ok: false,
     error: { code: 'INTERNAL_ERROR', message: '服务暂时不可用', cause_code: '-1' },
   });
+});
+
+test('上传后媒体短暂不可见时有界重试，就绪后返回成功', async () => {
+  const fileId = 'cloud://owner-other-file';
+  let calls = 0;
+  const waits = [];
+  const getTempFileURL = async () => {
+    calls += 1;
+    if (calls === 1) throw Object.assign(new Error('file not found'), { errMsg: 'file not found' });
+    return { fileList: [{ fileID: fileId, status: 0, tempFileURL: 'https://example.com/a.png' }] };
+  };
+  const result = await verifyUploadedMedia(fileId, getTempFileURL, async (ms) => {
+    waits.push(ms);
+  });
+  assert.equal(result, true);
+  assert.equal(calls, 2);
+  assert.deepEqual(waits, [100]);
+});
+
+test('媒体在所有重试后仍不可见则抛最后错误并按递增延迟等待', async () => {
+  const fileId = 'cloud://owner-other-file';
+  let calls = 0;
+  const waits = [];
+  await assert.rejects(
+    verifyUploadedMedia(
+      fileId,
+      async () => {
+        calls += 1;
+        throw Object.assign(new Error('not exist'), { errMsg: 'document not exist' });
+      },
+      async (ms) => {
+        waits.push(ms);
+      },
+    ),
+    { code: 'MEDIA_OBJECT_NOT_FOUND' },
+  );
+  assert.equal(calls, MEDIA_VERIFY_ATTEMPTS);
+  assert.deepEqual(waits, [100, 200, 300]);
 });

@@ -162,6 +162,7 @@ Page({
     p: null as Profile | null,
     saving: false,
     avatarBusy: false,
+    photoBusy: false,
     avatarPreviewUrl: '',
     stravaAvatarReady: false,
     stravaAvatarHint: '先绑定/同步 Strava',
@@ -325,6 +326,9 @@ Page({
     }
   },
   async addPhoto() {
+    // 添加照片加在途锁，避免快速连点触发多次并发上传产生孤立文件或状态错乱。
+    if (this.data.photoBusy) return;
+    this.setData({ photoBusy: true });
     let uploadedFileId = '';
     try {
       const cloud = wx.cloud;
@@ -346,6 +350,8 @@ Page({
         await compensateUploadedMedia({ fileId: uploadedFileId, category: 'other' });
       }
       wx.showToast({ title: '照片上传未完成，请稍后重试', icon: 'none' });
+    } finally {
+      this.setData({ photoBusy: false });
     }
   },
   async save() {

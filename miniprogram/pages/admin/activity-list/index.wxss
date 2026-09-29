@@ -1,17 +1,90 @@
+page {
+  background: #0b0b0c;
+}
+.page {
+  background: #0b0b0c;
+  color: #f7f7f5;
+}
+
+.card {
+  border: 1rpx solid #2b2b2e;
+  background: #1b1b1d;
+}
+.card.danger {
+  border-color: rgba(200, 32, 24, 0.5);
+  background: rgba(200, 32, 24, 0.1);
+  color: #ff8589;
+}
+
+.hero {
+  color: #a8a8ad;
+}
+.hero view {
+  color: #a8a8ad;
+}
+.hero view:first-child {
+  color: #d55b1f;
+  font-size: 22rpx;
+}
+.hero .hero-title {
+  color: #f7f7f5;
+  font-size: 46rpx;
+  font-weight: 900;
+}
+.hero view:last-child {
+  font-size: 26rpx;
+}
+
 .activity-row {
   display: grid;
   gap: 20rpx;
 }
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.title {
+  color: #f7f7f5;
+}
+.tag {
+  border: 1rpx solid #4a4a4e;
+  background: transparent;
+  color: #a8a8ad;
+}
 
 .template-button {
   margin: 0;
+}
+.section-title {
+  color: #f7f7f5;
+}
+.hint {
+  color: #8a8a8e;
 }
 
 .clone-panel {
   display: grid;
   gap: 24rpx;
 }
-
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+.field text {
+  color: #f7f7f5;
+  font-weight: 700;
+}
+.field input {
+  min-height: 88rpx;
+  padding: 0 20rpx;
+  border: 1rpx solid #3b3b3f;
+  border-radius: 8rpx;
+  background: #0d1012;
+  color: #f7f7f5;
+}
 .clone-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -56,6 +129,12 @@
   border-radius: 10rpx;
   background: #151517;
   color: #f7f7f5;
+}
+.activity-list-page .btn {
+  border: 0;
+  background: #d55b1f;
+  color: #0b0b0c;
+  font-weight: 900;
 }
 .activity-list-page .secondary {
   border: 2rpx solid #3a3a3e;

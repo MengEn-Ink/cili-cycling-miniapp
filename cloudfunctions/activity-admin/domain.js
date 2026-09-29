@@ -250,12 +250,11 @@ function validatePublishInput(input, occupiedCount = 0, now = new Date(), option
     safe.signup_deadline.getTime() <= now.getTime()
   )
     fail('INVALID_ACTIVITY_TIME', '报名截止时间必须晚于当前时间');
+  // 无后援车（容量 0）时一律清空司机信息，避免管理员先填写、后把容量改回 0 时残留隐私字段。
   safe.support_vehicle_driver =
     (safe.support_vehicle_capacity || 0) > 0
       ? cleanDriver(input.support_vehicle_driver, true)
-      : input.support_vehicle_driver === undefined
-        ? { nickname: '', license_plate: '', contact_phone: '' }
-        : safe.support_vehicle_driver;
+      : { nickname: '', license_plate: '', contact_phone: '' };
   return safe;
 }
 function validateActivityInput(input, occupiedCount = 0, now = new Date()) {

@@ -239,6 +239,26 @@ async function verifyMediaObject(fileId, getTempFileURL) {
   if ((await inspectMediaObject(fileId, getTempFileURL)) === 'exists') return true;
   throw new ProfileError('MEDIA_OBJECT_NOT_FOUND', '媒体文件不存在');
 }
+
+const MEDIA_VERIFY_ATTEMPTS = 4;
+const MEDIA_VERIFY_DELAY_MS = 100;
+const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+// 云存储对象在上传完成后可能短暂不可见：仅对“对象不存在 / 暂不可确认”做有界重试，
+// 总等待约 600ms；其余错误（如鉴权失败）不属传播延迟，必须立即抛出（fail closed）。
+async function verifyUploadedMedia(fileId, getTempFileURL, wait = sleep) {
+  let lastError;
+  for (let attempt = 0; attempt < MEDIA_VERIFY_ATTEMPTS; attempt += 1) {
+    try {
+      return await verifyMediaObject(fileId, getTempFileURL);
+    } catch (error) {
+      lastError = error;
+      if (!['MEDIA_OBJECT_NOT_FOUND', 'MEDIA_OBJECT_VERIFY_FAILED'].includes(error?.code))
+        throw error;
+      if (attempt + 1 < MEDIA_VERIFY_ATTEMPTS) await wait(MEDIA_VERIFY_DELAY_MS * (attempt + 1));
+    }
+  }
+  throw lastError;
+}
 function registeredMedia(record, item, openid, statuses = ['active']) {
   return Boolean(
     record &&
@@ -556,6 +576,9 @@ module.exports = {
   validateAvatarSelection,
   inspectMediaObject,
   verifyMediaObject,
+  verifyUploadedMedia,
+  MEDIA_VERIFY_ATTEMPTS,
+  MEDIA_VERIFY_DELAY_MS,
   isOwnerMedia,
   mediaPath,
   registeredMedia,
