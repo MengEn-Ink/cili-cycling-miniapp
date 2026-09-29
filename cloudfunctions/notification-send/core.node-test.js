@@ -274,6 +274,21 @@ test('wx-server-sdk 的 -1 包装错误无论 resolve 或 reject 都视为结果
   }
 });
 
+test('未列入业务码白名单的正数错误无论 resolve 或 reject 都隔离', async () => {
+  for (const sender of [
+    async () => ({ errCode: 99999, errMsg: 'unknown provider error' }),
+    async () => {
+      throw Object.assign(new Error('unknown provider error'), { errCode: 99999 });
+    },
+  ]) {
+    const ambiguous = fixture();
+    ambiguous.sender.send = sender;
+    await assert.rejects(consume(ambiguous), { code: 'DELIVERY_STATE_UNCERTAIN' });
+    assert.equal(ambiguous.item.status, 'delivery_unknown');
+    assert.equal(ambiguous.item.last_error, 'SEND_RESULT_UNKNOWN');
+  }
+});
+
 test('wx-server-sdk reject 的可靠 provider 业务码仍按 retryable/terminal 分类', async () => {
   const retryable = fixture();
   retryable.sender.send = async () => {

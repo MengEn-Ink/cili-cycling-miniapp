@@ -57,11 +57,10 @@ function explicitProviderCode(value) {
   const code = Number(raw);
   return Number.isFinite(code) ? code : null;
 }
-function providerRetryable(code) {
-  return code === 45009;
-}
-function providerResultIsReliable(code) {
-  return code !== null && code !== 0 && code !== -1;
+function providerDisposition(code) {
+  if ([43108, 45009].includes(code)) return 'retryable';
+  if ([40003, 40037, 43101, 43107, 45168, 47003].includes(code)) return 'terminal';
+  return null;
 }
 async function transitionOrLose(method, outboxId, value) {
   if (!(await method(outboxId, value))) fail('LEASE_LOST', '通知任务租约已失效');
@@ -75,7 +74,7 @@ async function markUnknownBestEffort(store, outboxId, fence, errorCode) {
 }
 async function handleProviderRejection(store, outboxId, fence, code) {
   const errorCode = `WECHAT_${code}`;
-  if (providerRetryable(code)) {
+  if (providerDisposition(code) === 'retryable') {
     await transitionOrLose(store.markRetryable, outboxId, { ...fence, errorCode });
     fail('WECHAT_SEND_FAILED', '微信订阅消息发送失败');
   }
@@ -128,17 +127,17 @@ async function consumeNotification({
     });
   } catch (error) {
     const code = explicitProviderCode(error);
-    if (providerResultIsReliable(code)) await handleProviderRejection(store, outboxId, fence, code);
+    if (providerDisposition(code)) await handleProviderRejection(store, outboxId, fence, code);
     await markUnknownBestEffort(store, outboxId, fence, 'SEND_RESULT_UNKNOWN');
     fail('DELIVERY_STATE_UNCERTAIN', '通知发送结果未知，请在小程序内查看审批状态');
   }
 
   const code = explicitProviderCode(result);
-  if (code === -1) {
+  if (providerDisposition(code)) await handleProviderRejection(store, outboxId, fence, code);
+  if (code !== null && code !== 0) {
     await markUnknownBestEffort(store, outboxId, fence, 'SEND_RESULT_UNKNOWN');
     fail('DELIVERY_STATE_UNCERTAIN', '通知发送结果未知，请在小程序内查看审批状态');
   }
-  if (providerResultIsReliable(code)) await handleProviderRejection(store, outboxId, fence, code);
 
   for (let attempt = 0; attempt < ACK_ATTEMPTS; attempt += 1) {
     try {
