@@ -383,6 +383,8 @@ test('恢复任务拒绝 null、数字或布尔型 retry_at/recorded_at', async 
     ['recorded_at', null],
     ['recorded_at', 0],
     ['recorded_at', false],
+    ['recorded_at', '2026-02-30T00:00:00Z'],
+    ['recorded_at', '2026-01-01T24:00:00Z'],
   ]) {
     const outcome = {
       disposition: 'retryable',
@@ -481,7 +483,7 @@ test('expired dispatching 按持久化 outcome 恢复且不重新发送', async 
         dispatch_outcome: {
           disposition: 'retryable',
           error_code: 'WECHAT_45009',
-          recorded_at: new Date(now.getTime() - 60_000),
+          recorded_at: '2026-09-29T07:59:00+08:00',
         },
       }),
       terminal: item({

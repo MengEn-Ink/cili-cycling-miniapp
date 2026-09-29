@@ -31,12 +31,43 @@ function expired(value, now) {
 
 function trustedDate(value) {
   if (value instanceof Date && Number.isFinite(value.getTime())) return new Date(value.getTime());
-  if (
-    typeof value === 'string' &&
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(value)
-  ) {
+  if (typeof value === 'string') {
+    const match = value.match(
+      /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?(Z|([+-])(\d{2}):(\d{2}))$/,
+    );
+    if (!match) coded('INVALID_RETRY_TIME', '通知重试时间无效');
+    const offsetHour = Number(match[10] || 0);
+    const offsetMinute = Number(match[11] || 0);
+    if (offsetHour > 14 || offsetMinute > 59 || (offsetHour === 14 && offsetMinute !== 0))
+      coded('INVALID_RETRY_TIME', '通知重试时间无效');
     const parsed = new Date(value);
-    if (Number.isFinite(parsed.getTime())) return parsed;
+    const offsetSign = match[9] === '-' ? -1 : 1;
+    const local = new Date(
+      parsed.getTime() + offsetSign * (offsetHour * 60 + offsetMinute) * 60 * 1000,
+    );
+    const expected = [
+      Number(match[1]),
+      Number(match[2]),
+      Number(match[3]),
+      Number(match[4]),
+      Number(match[5]),
+      Number(match[6]),
+      Number((match[7] || '').padEnd(3, '0') || 0),
+    ];
+    const actual = [
+      local.getUTCFullYear(),
+      local.getUTCMonth() + 1,
+      local.getUTCDate(),
+      local.getUTCHours(),
+      local.getUTCMinutes(),
+      local.getUTCSeconds(),
+      local.getUTCMilliseconds(),
+    ];
+    if (
+      Number.isFinite(parsed.getTime()) &&
+      expected.every((item, index) => item === actual[index])
+    )
+      return parsed;
   }
   coded('INVALID_RETRY_TIME', '通知重试时间无效');
 }
