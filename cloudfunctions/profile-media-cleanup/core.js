@@ -87,17 +87,22 @@ function failureDecision(record, now, errorCode) {
   };
 }
 
+function isTrustedObjectMissing(value) {
+  if (!value || typeof value !== 'object') return false;
+  const codes = [value.status, value.errCode, value.code];
+  return (
+    codes.some((code) => Number(code) === -503003) ||
+    codes.some((code) => String(code || '').trim() === 'STORAGE_FILE_NONEXIST') ||
+    String(value.errMsg || '').trim() === 'STORAGE_FILE_NONEXIST'
+  );
+}
+
 function deleteAccepted(response, fileId) {
   const item =
     response &&
     Array.isArray(response.fileList) &&
     response.fileList.find((entry) => entry && entry.fileID === fileId);
-  return Boolean(
-    item &&
-    (Number(item.status) === 0 ||
-      Number(item.status) === -503003 ||
-      /STORAGE_FILE_NONEXIST|not[ _-]?found|not exist/i.test(String(item.errMsg || ''))),
-  );
+  return Boolean(item && (Number(item.status) === 0 || isTrustedObjectMissing(item)));
 }
 
 async function drainMediaCleanup({
@@ -123,9 +128,13 @@ async function drainMediaCleanup({
       const response = await deleteFile({ fileList: [claimed.file_id] });
       if (!deleteAccepted(response, claimed.file_id)) coded('DELETE_REJECTED', '媒体删除未被接受');
       if (await store.markDeleted(id, { leaseId, now })) result.deleted += 1;
-    } catch {
-      await store.markFailed(id, { leaseId, now, errorCode: 'DELETE_FAILED' });
-      result.failed += 1;
+    } catch (error) {
+      if (isTrustedObjectMissing(error)) {
+        if (await store.markDeleted(id, { leaseId, now })) result.deleted += 1;
+      } else {
+        await store.markFailed(id, { leaseId, now, errorCode: 'DELETE_FAILED' });
+        result.failed += 1;
+      }
     }
   }
   return result;
@@ -150,6 +159,7 @@ module.exports = {
   profileReferences,
   claimDecision,
   failureDecision,
+  isTrustedObjectMissing,
   drainMediaCleanup,
   responseError,
 };

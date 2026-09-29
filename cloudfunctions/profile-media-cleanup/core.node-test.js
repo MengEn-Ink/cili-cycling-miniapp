@@ -235,3 +235,65 @@ test('重领 deleting 后 CloudBase 返回文件不存在时按幂等成功标�
   assert.equal(result.deleted, 1);
   assert.equal(result.failed, 0);
 });
+
+test('重领 deleting 后 CloudBase reject 明确对象不存在时按幂等成功标记 deleted', async () => {
+  const deleted = [];
+  const failed = [];
+  const result = await drainMediaCleanup({
+    now,
+    randomUUID: () => 'lease-reclaimed',
+    store: {
+      listEligible: async () => ['media-1'],
+      claim: async () => ({ ...record, claimed: true, delete_lease_id: 'lease-reclaimed' }),
+      markDeleted: async (id) => {
+        deleted.push(id);
+        return true;
+      },
+      markFailed: async (id) => {
+        failed.push(id);
+        return true;
+      },
+    },
+    deleteFile: async () => {
+      throw { errCode: -503003, errMsg: 'STORAGE_FILE_NONEXIST' };
+    },
+  });
+  assert.deepEqual(deleted, ['media-1']);
+  assert.deepEqual(failed, []);
+  assert.equal(result.deleted, 1);
+  assert.equal(result.failed, 0);
+});
+
+test('包含模糊 not found 文案但非可信对象不存在码时记录删除失败', async () => {
+  const deleted = [];
+  const failed = [];
+  const result = await drainMediaCleanup({
+    now,
+    randomUUID: () => 'lease-reclaimed',
+    store: {
+      listEligible: async () => ['media-1'],
+      claim: async () => ({ ...record, claimed: true, delete_lease_id: 'lease-reclaimed' }),
+      markDeleted: async (id) => {
+        deleted.push(id);
+        return true;
+      },
+      markFailed: async (id) => {
+        failed.push(id);
+        return true;
+      },
+    },
+    deleteFile: async () => ({
+      fileList: [
+        {
+          fileID: record.file_id,
+          status: -1,
+          errMsg: 'storage bucket not found',
+        },
+      ],
+    }),
+  });
+  assert.deepEqual(deleted, []);
+  assert.deepEqual(failed, ['media-1']);
+  assert.equal(result.deleted, 0);
+  assert.equal(result.failed, 1);
+});
