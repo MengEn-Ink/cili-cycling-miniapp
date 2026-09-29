@@ -38,6 +38,7 @@ async function loadBoundedReadiness(): Promise<StravaReadiness> {
 }
 
 Page({
+  loadRequestId: 0,
   data: {
     activityId: '',
     profile: null as any,
@@ -51,11 +52,13 @@ Page({
     loading: true,
   },
   async onShow() {
+    const requestId = ++this.loadRequestId;
     this.setData({ loading: true, errors: [] });
     const [profileState, readinessState] = await Promise.all([
       runPageTask(() => rideService.getProfile(), '个人资料加载失败'),
       runPageTask(loadBoundedReadiness, 'Strava 数据准备状态加载失败'),
     ]);
+    if (requestId !== this.loadRequestId) return;
     const errors = [profileState.error, readinessState.error].filter(Boolean);
     const readiness =
       readinessState.data ||
@@ -67,6 +70,12 @@ Page({
       loading: false,
       errors,
     });
+  },
+  onHide() {
+    this.loadRequestId += 1;
+  },
+  onUnload() {
+    this.loadRequestId += 1;
   },
   onLoad(q: any) {
     this.setData({ activityId: q.id || '' });

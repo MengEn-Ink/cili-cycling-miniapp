@@ -29,6 +29,7 @@ function confirmDisconnect(): Promise<boolean> {
 }
 
 Page({
+  loadRequestId: 0,
   data: {
     loading: true,
     error: '',
@@ -39,12 +40,20 @@ Page({
   onShow() {
     void this.load();
   },
+  onHide() {
+    this.loadRequestId += 1;
+  },
+  onUnload() {
+    this.loadRequestId += 1;
+  },
   setReadiness(readiness: StravaReadiness) {
     this.setData({ readiness, readinessMessage: stravaReadinessMessage(readiness) });
   },
   async load() {
+    const requestId = ++this.loadRequestId;
     this.setData({ loading: true, error: '' });
     const status = await runPageTask(() => rideService.getStravaReadiness(), 'Strava 状态加载失败');
+    if (requestId !== this.loadRequestId) return;
     if (!status.data) {
       this.setData({ loading: false, error: status.error });
       return;
@@ -56,6 +65,7 @@ Page({
         () => pollStravaReadiness(() => rideService.ensureStravaReady()),
         'Strava 数据准备失败',
       );
+      if (requestId !== this.loadRequestId) return;
       if (!prepared.data) {
         this.setData({ loading: false, error: prepared.error });
         return;

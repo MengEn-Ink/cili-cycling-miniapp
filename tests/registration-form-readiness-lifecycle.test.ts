@@ -1,0 +1,95 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Profile, StravaReadiness } from '../miniprogram/models';
+
+const rideService = vi.hoisted(() => ({
+  getProfile: vi.fn(),
+  getStravaReadiness: vi.fn(),
+  ensureStravaReady: vi.fn(),
+  saveRegistration: vi.fn(),
+}));
+
+vi.mock('../miniprogram/services/ride-service', () => ({ rideService }));
+
+const profile: Profile = {
+  nickname: 'Rider',
+  title: 'Rider',
+  realName: '骑手',
+  phone: '13800138000',
+  idType: '身份证',
+  idNumber: '110101199001011234',
+  gender: '男',
+  emergencyName: '联系人',
+  emergencyPhone: '13900139000',
+  photos: [],
+};
+
+function readiness(state: StravaReadiness['state']): StravaReadiness {
+  return {
+    state,
+    canRegister: state === 'ready',
+    athleteName: state === 'ready' ? 'Rider' : null,
+    snapshot: null,
+    error: null,
+  };
+}
+
+describe('报名页 Strava readiness 请求代际', () => {
+  let page: any;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    for (const value of Object.values(rideService)) value.mockReset();
+    vi.stubGlobal('wx', { navigateTo: vi.fn(), redirectTo: vi.fn() });
+    vi.stubGlobal('Page', (definition: any) => {
+      page = definition;
+      page.data = { ...definition.data };
+      page.setData = vi.fn((patch: Record<string, unknown>) => Object.assign(page.data, patch));
+    });
+    await import('../miniprogram/pages/registration-form/index');
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('重复 onShow 时忽略较早请求的迟到结果', async () => {
+    let resolveFirstProfile!: (value: Profile) => void;
+    rideService.getProfile
+      .mockImplementationOnce(
+        () =>
+          new Promise<Profile>((resolve) => {
+            resolveFirstProfile = resolve;
+          }),
+      )
+      .mockResolvedValueOnce(profile);
+    rideService.getStravaReadiness
+      .mockResolvedValueOnce(readiness('disconnected'))
+      .mockResolvedValueOnce(readiness('ready'));
+
+    const firstShow = page.onShow();
+    const secondShow = page.onShow();
+    await secondShow;
+    expect(page.data.readiness).toEqual(readiness('ready'));
+
+    resolveFirstProfile(profile);
+    await firstShow;
+    expect(page.data.readiness).toEqual(readiness('ready'));
+  });
+
+  it.each(['onHide', 'onUnload'] as const)('%s 后忽略在途请求结果', async (lifecycle) => {
+    let resolveProfile!: (value: Profile) => void;
+    rideService.getProfile.mockImplementationOnce(
+      () =>
+        new Promise<Profile>((resolve) => {
+          resolveProfile = resolve;
+        }),
+    );
+    rideService.getStravaReadiness.mockResolvedValue(readiness('ready'));
+
+    const show = page.onShow();
+    page[lifecycle]?.();
+    page.setData.mockClear();
+    resolveProfile(profile);
+    await show;
+
+    expect(page.setData).not.toHaveBeenCalled();
+  });
+});

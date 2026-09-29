@@ -7,6 +7,38 @@ export interface PollStravaReadinessOptions {
   now?: () => number;
 }
 
+const timeout = Symbol('strava-readiness-timeout');
+
+function timeoutReadiness(previous?: StravaReadiness): StravaReadiness {
+  return {
+    ...previous,
+    state: 'failed',
+    canRegister: false,
+    athleteName: previous?.athleteName ?? null,
+    snapshot: previous?.snapshot ?? null,
+    error: {
+      code: 'STRAVA_SYNC_TIMEOUT',
+      message: '数据准备超时，请重试',
+      retryable: true,
+    },
+  };
+}
+
+async function waitUntilDeadline<T>(
+  task: Promise<T>,
+  remainingMs: number,
+): Promise<T | typeof timeout> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<typeof timeout>((resolve) => {
+    timeoutId = setTimeout(() => resolve(timeout), remainingMs);
+  });
+  try {
+    return await Promise.race([task, deadline]);
+  } finally {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+  }
+}
+
 export async function pollStravaReadiness(
   ensureReady: () => Promise<StravaReadiness>,
   options: PollStravaReadinessOptions = {},
@@ -17,24 +49,19 @@ export async function pollStravaReadiness(
     options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   const now = options.now ?? Date.now;
   const startedAt = now();
+  let previous: StravaReadiness | undefined;
 
   for (;;) {
-    const readiness = await ensureReady();
+    const remainingMs = timeoutMs - (now() - startedAt);
+    if (remainingMs <= 0) return timeoutReadiness(previous);
+
+    const readiness = await waitUntilDeadline(ensureReady(), remainingMs);
+    if (readiness === timeout) return timeoutReadiness(previous);
+    previous = readiness;
     if (readiness.state !== 'syncing') return readiness;
 
     const elapsed = now() - startedAt;
-    if (elapsed >= timeoutMs) {
-      return {
-        ...readiness,
-        state: 'failed',
-        canRegister: false,
-        error: {
-          code: 'STRAVA_SYNC_TIMEOUT',
-          message: '数据准备超时，请重试',
-          retryable: true,
-        },
-      };
-    }
+    if (elapsed >= timeoutMs) return timeoutReadiness(readiness);
     await sleep(Math.min(intervalMs, timeoutMs - elapsed));
   }
 }

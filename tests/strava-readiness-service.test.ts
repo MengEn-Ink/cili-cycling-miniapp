@@ -28,6 +28,8 @@ function readiness(state: StravaReadinessState): StravaReadiness {
 }
 
 describe('Strava readiness 轮询', () => {
+  afterEach(() => vi.useRealTimers());
+
   it('每 1.5 秒轮询直到 ready', async () => {
     const states = [readiness('syncing'), readiness('syncing'), readiness('ready')];
     const ensure = vi.fn(async () => states.shift()!);
@@ -58,7 +60,36 @@ describe('Strava readiness 轮询', () => {
       },
     });
     expect(elapsed).toBe(30000);
-    expect(ensure).toHaveBeenCalledTimes(21);
+    expect(ensure).toHaveBeenCalledTimes(20);
+  });
+
+  it('单次 ensure 一直不返回时仍受 30 秒总截止时间约束', async () => {
+    vi.useFakeTimers();
+    let resolveEnsure!: (value: StravaReadiness) => void;
+    const ensure = vi.fn(
+      () =>
+        new Promise<StravaReadiness>((resolve) => {
+          resolveEnsure = resolve;
+        }),
+    );
+
+    let result: StravaReadiness | undefined;
+    const pending = pollStravaReadiness(ensure).then((value) => {
+      result = value;
+    });
+    await vi.advanceTimersByTimeAsync(30000);
+    await Promise.resolve();
+
+    expect(result).toMatchObject({
+      state: 'failed',
+      canRegister: false,
+      error: { code: 'STRAVA_SYNC_TIMEOUT', retryable: true },
+    });
+
+    resolveEnsure(readiness('ready'));
+    await pending;
+    expect(result).toMatchObject({ state: 'failed', error: { code: 'STRAVA_SYNC_TIMEOUT' } });
+    expect(ensure).toHaveBeenCalledOnce();
   });
 
   it.each(['ready', 'failed', 'disconnected', 'authorizing'] as const)(
@@ -119,6 +150,46 @@ describe('Strava 页面编排', () => {
     expect(rideService.ensureStravaReady).toHaveBeenCalledOnce();
     expect(page.data.readiness).toEqual(readiness('ready'));
     expect(page.data.readinessMessage).toBe('Strava 数据已准备完成');
+  });
+
+  it('重复 onShow 时忽略较早请求的迟到结果', async () => {
+    let resolveFirst!: (value: StravaReadiness) => void;
+    rideService.getStravaReadiness
+      .mockImplementationOnce(
+        () =>
+          new Promise<StravaReadiness>((resolve) => {
+            resolveFirst = resolve;
+          }),
+      )
+      .mockResolvedValueOnce(readiness('ready'));
+
+    page.onShow();
+    page.onShow();
+    for (let index = 0; index < 5; index += 1) await Promise.resolve();
+    expect(page.data.readiness).toEqual(readiness('ready'));
+
+    resolveFirst(readiness('disconnected'));
+    for (let index = 0; index < 5; index += 1) await Promise.resolve();
+    expect(page.data.readiness).toEqual(readiness('ready'));
+  });
+
+  it.each(['onHide', 'onUnload'] as const)('%s 后忽略在途请求结果', async (lifecycle) => {
+    let resolveReadiness!: (value: StravaReadiness) => void;
+    rideService.getStravaReadiness.mockImplementationOnce(
+      () =>
+        new Promise<StravaReadiness>((resolve) => {
+          resolveReadiness = resolve;
+        }),
+    );
+    const setData = vi.spyOn(page, 'setData');
+
+    page.onShow();
+    page[lifecycle]?.();
+    setData.mockClear();
+    resolveReadiness(readiness('ready'));
+    for (let index = 0; index < 5; index += 1) await Promise.resolve();
+
+    expect(setData).not.toHaveBeenCalled();
   });
 
   it('busy 时忽略重复授权', async () => {
