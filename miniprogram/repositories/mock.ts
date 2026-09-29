@@ -10,7 +10,7 @@ import type {
 } from '../models';
 import { activities, profile, registrations } from '../mock/fixtures';
 import { transition } from '../utils/registration';
-import type { ActivityInput, RideRepository } from './types';
+import type { ActivityInput, RegistrationSubmission, RideRepository } from './types';
 type S = {
   activities: Activity[];
   registrations: Registration[];
@@ -19,6 +19,11 @@ type S = {
 };
 const KEY = 'ride-mock-v1';
 const init = (): S => ({ activities, registrations, profile, stravaStatus: 'connected' });
+function displayGatheringMode(
+  value: RegistrationSubmission['gatheringMode'],
+): Registration['gatheringMode'] {
+  return ({ self_drive: '自驾', support_vehicle: '需要后援车' } as const)[value] || '';
+}
 export class MockRepository implements RideRepository {
   read(): S {
     return wx.getStorageSync(KEY) || init();
@@ -52,21 +57,29 @@ export class MockRepository implements RideRepository {
   async getReviewRegistration(id: string) {
     return this.getRegistration(id);
   }
-  async saveRegistration(v: any) {
+  async saveRegistration(v: RegistrationSubmission) {
     const s = this.read(),
       old = s.registrations.find((x) => x.activityId === v.activityId);
+    const submitted = {
+      gatheringMode: displayGatheringMode(v.gatheringMode),
+      experience: v.experience,
+      remark: typeof v.remark === 'string' ? v.remark : '',
+    };
     if (old) {
       old.status = transition(old.status, 'pending');
+      Object.assign(old, submitted);
       old.updatedAt = '刚刚';
       this.write(s);
       return old;
     }
     const x: Registration = {
       id: 'r' + Date.now(),
-      ...v,
+      activityId: v.activityId,
       status: 'pending',
+      profile: s.profile,
+      ...submitted,
       strava: {
-        status: v.stravaStatus,
+        status: s.stravaStatus,
         years: 4,
         rides90d: 32,
         longestKm: 168,

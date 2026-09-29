@@ -1171,6 +1171,63 @@ describe('MockRepository readiness 与显式报名命令', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
+  it.each([
+    ['self_drive', '自驾'],
+    ['support_vehicle', '需要后援车'],
+  ] as const)('新建报名将集合方式 %s 映射为展示值 %s', async (gatheringMode, expected) => {
+    stored = undefined;
+    installStorage();
+    const repository = new MockRepository();
+    stored = JSON.parse(JSON.stringify(repository.read()));
+
+    const result = await repository.saveRegistration({
+      activityId: `new-${gatheringMode}`,
+      gatheringMode,
+      experience: '有一定经验',
+      remark: '补给点见',
+      internalOnly: '不应持久化',
+    });
+
+    expect(result).toMatchObject({
+      activityId: `new-${gatheringMode}`,
+      gatheringMode: expected,
+      experience: '有一定经验',
+      remark: '补给点见',
+    });
+    expect(result).not.toHaveProperty('internalOnly');
+  });
+
+  it('重报时用本次提交字段替换旧报名内容', async () => {
+    stored = undefined;
+    installStorage();
+    const repository = new MockRepository();
+    const state = JSON.parse(JSON.stringify(repository.read()));
+    state.registrations[0] = {
+      ...state.registrations[0],
+      status: 'rejected',
+      gatheringMode: '自驾',
+      experience: '常骑',
+      remark: '旧备注',
+    };
+    stored = state;
+
+    const result = await repository.saveRegistration({
+      activityId: state.registrations[0].activityId,
+      gatheringMode: 'support_vehicle',
+      experience: '新手',
+      remark: '新备注',
+      internalOnly: '不应持久化',
+    });
+
+    expect(result).toMatchObject({
+      status: 'pending',
+      gatheringMode: '需要后援车',
+      experience: '新手',
+      remark: '新备注',
+    });
+    expect(result).not.toHaveProperty('internalOnly');
+  });
+
   it('ensureStravaReady 从 disconnected 收敛到确定的 ready 快照', async () => {
     installStorage();
     const repository = new MockRepository();
