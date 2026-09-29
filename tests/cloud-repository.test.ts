@@ -1237,3 +1237,4 @@ describe('CloudRepository 管理员活动写入契约', () => {
     expect(invalid.callFunction).not.toHaveBeenCalled();
   });
 });
+
