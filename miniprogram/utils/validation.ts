@@ -1,4 +1,4 @@
-import type { Profile } from '../models';
+import type { Profile, StravaReadiness } from '../models';
 
 function hasSensitiveField(
   profile: Profile,
@@ -12,7 +12,7 @@ export function validateRegistration(v: {
   profile: Profile;
   bikeMode: string;
   experience: string;
-  stravaStatus: string;
+  readiness: Pick<StravaReadiness, 'state' | 'canRegister'>;
 }) {
   const e: string[] = [];
   // 云端仅返回脱敏展示值，真实填写状态必须以服务端 sensitiveStatus 为准。
@@ -31,6 +31,24 @@ export function validateRegistration(v: {
     e.push('紧急联系电话错误');
   if (!v.bikeMode) e.push('请选择用车方式');
   if (!v.experience) e.push('请选择骑行经验');
-  if (!['connected', 'exempted'].includes(v.stravaStatus)) e.push('请绑定 Strava 或获得豁免');
+  if (!v.readiness.canRegister) {
+    switch (v.readiness.state) {
+      case 'authorizing':
+        e.push('请先完成 Strava 授权');
+        break;
+      case 'syncing':
+        e.push('Strava 数据正在准备');
+        break;
+      case 'failed':
+        e.push('请重试 Strava 数据准备');
+        break;
+      case 'ready':
+        e.push('Strava 数据尚未准备完成');
+        break;
+      case 'disconnected':
+        e.push('请绑定 Strava');
+        break;
+    }
+  }
   return e;
 }
