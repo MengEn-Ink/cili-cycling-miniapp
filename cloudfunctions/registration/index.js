@@ -36,6 +36,10 @@ function transactionStore() {
           getActivity: (id) => maybeGet(transaction.collection('activities'), id),
           getProfile: (openid) => maybeGet(transaction.collection('profiles'), openid),
           getRegistration: (id) => maybeGet(transaction.collection('registrations'), id),
+          getStravaCredential: (openid) =>
+            maybeGet(transaction.collection('strava_credentials'), openid),
+          getStravaSnapshot: (openid) =>
+            maybeGet(transaction.collection('strava_snapshots'), openid),
           putRegistration: async (id, value) => {
             const { _id, ...data } = value;
             await transaction.collection('registrations').doc(id).set({ data });
@@ -45,6 +49,7 @@ function transactionStore() {
               .collection('activities')
               .doc(id)
               .update({ data: { occupied_count: occupied, updated_at: db.serverDate() } }),
+          addAudit: (audit) => transaction.collection('audit_logs').add({ data: audit }),
         }),
       ),
   };
