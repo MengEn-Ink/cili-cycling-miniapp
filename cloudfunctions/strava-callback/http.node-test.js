@@ -138,6 +138,7 @@ test('CloudBase exposes fixed success and failure result routes', () => {
         path,
         target: 'function:strava-callback',
         enableAuth: false,
+        enablePathTransmission: true,
         domain: '*',
       },
     );
