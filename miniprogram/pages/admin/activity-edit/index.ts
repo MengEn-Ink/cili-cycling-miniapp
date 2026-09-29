@@ -68,7 +68,7 @@ Page({
     form: emptyForm(),
   },
   async onLoad(options: Record<string, string>) {
-    await appStore.refreshIdentity(wx.cloud);
+    await appStore.refreshIdentity(wx.cloud, true);
     if (appStore.authStatus !== 'authenticated') {
       this.setData({ loading: false, error: '请先完成微信身份验证' });
       return;
