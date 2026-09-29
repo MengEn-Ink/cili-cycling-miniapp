@@ -128,8 +128,7 @@ async function consumeNotification({
     });
   } catch (error) {
     const code = explicitProviderCode(error);
-    if (providerResultIsReliable(code))
-      await handleProviderRejection(store, outboxId, fence, code);
+    if (providerResultIsReliable(code)) await handleProviderRejection(store, outboxId, fence, code);
     await markUnknownBestEffort(store, outboxId, fence, 'SEND_RESULT_UNKNOWN');
     fail('DELIVERY_STATE_UNCERTAIN', '通知发送结果未知，请在小程序内查看审批状态');
   }
