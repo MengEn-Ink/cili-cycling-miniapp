@@ -2,11 +2,20 @@ import { rideService } from '../../../services/ride-service';
 import { appStore } from '../../../store/app-store';
 import { capabilityCard } from '../../../utils/capability-card';
 
+const statusText: Record<string, string> = {
+  pending: '待审核',
+  approved: '已通过',
+  rejected: '已驳回',
+  cancelled: '已取消',
+};
+
 Page({
   data: {
     x: null as any,
     card: null as any,
+    phone: '',
     phoneSource: '',
+    statusText: '',
     reason: '能力与路线要求暂不匹配',
     error: '',
   },
@@ -22,6 +31,7 @@ Page({
         this.setData({
           x,
           card: capabilityCard(x),
+          phone: x.profile.phone,
           phoneSource:
             x.profile.sensitiveStatus?.phoneSource === 'wechat'
               ? '微信授权 · 已验证'
@@ -30,6 +40,7 @@ Page({
                 : x.profile.sensitiveStatus?.phoneSource === 'legacy'
                   ? '历史资料 · 验证状态未知'
                   : '来源未知',
+          statusText: statusText[x.status] || x.status,
         });
     } catch (error) {
       this.setData({ error: error instanceof Error ? error.message : '报名详情加载失败' });
