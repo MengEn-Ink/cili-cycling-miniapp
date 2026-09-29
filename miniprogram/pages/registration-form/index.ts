@@ -13,6 +13,8 @@ function unavailableAction(): ActivityAction {
   return { kind: 'closed', label: '活动状态不可用', enabled: false };
 }
 
+const NOTIFICATION_TEMPLATE_TIMEOUT_MS = 1500;
+
 function loadingReadiness(): StravaReadiness {
   return {
     state: 'syncing',
@@ -80,13 +82,12 @@ Page({
     const requestId = ++this.loadRequestId;
     const isCancelled = () => requestId !== this.loadRequestId;
     this.setData({ loading: true, errors: [], submitting: false });
-    const [profileState, readinessState, activityState, notificationTemplateIds] =
-      await Promise.all([
-        runPageTask(() => rideService.getProfile(), '个人资料加载失败'),
-        runPageTask(() => loadBoundedReadiness(isCancelled), 'Strava 数据准备状态加载失败'),
-        runPageTask(() => loadActivityAction(this.data.activityId), '活动报名状态加载失败'),
-        rideService.getReviewNotificationTemplateIds().catch(() => []),
-      ]);
+    void this.loadNotificationTemplates(requestId);
+    const [profileState, readinessState, activityState] = await Promise.all([
+      runPageTask(() => rideService.getProfile(), '个人资料加载失败'),
+      runPageTask(() => loadBoundedReadiness(isCancelled), 'Strava 数据准备状态加载失败'),
+      runPageTask(() => loadActivityAction(this.data.activityId), '活动报名状态加载失败'),
+    ]);
     if (requestId !== this.loadRequestId) return;
     const errors = [profileState.error, readinessState.error, activityState.error].filter(Boolean);
     const readiness =
@@ -99,10 +100,23 @@ Page({
       readinessMessage: stravaReadinessMessage(readiness),
       activityAction,
       activityCanSubmit: activityAction.kind === 'register' || activityAction.kind === 'resubmit',
-      notificationTemplateIds,
       loading: false,
       errors,
     });
+  },
+  async loadNotificationTemplates(requestId: number) {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const templateIds = await Promise.race([
+        rideService.getReviewNotificationTemplateIds(),
+        new Promise<string[]>((resolve) => {
+          timeoutId = setTimeout(() => resolve([]), NOTIFICATION_TEMPLATE_TIMEOUT_MS);
+        }),
+      ]).catch(() => []);
+      if (requestId === this.loadRequestId) this.setData({ notificationTemplateIds: templateIds });
+    } finally {
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
+    }
   },
   onHide() {
     this.pageVisible = false;

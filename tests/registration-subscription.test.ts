@@ -33,6 +33,10 @@ const readiness: StravaReadiness = {
 };
 const registration = { id: 'r1' } as Registration;
 
+async function flushMicrotasks(): Promise<void> {
+  for (let index = 0; index < 5; index += 1) await Promise.resolve();
+}
+
 describe('报名提交订阅消息授权', () => {
   let page: any;
   let redirectTo: ReturnType<typeof vi.fn>;
@@ -77,13 +81,52 @@ describe('报名提交订阅消息授权', () => {
     await import('../miniprogram/pages/registration-form/index');
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
 
   it('onShow 预加载审核模板 ID', async () => {
     page.data.notificationTemplateIds = [];
     await page.onShow();
+    await flushMicrotasks();
     expect(rideService.getReviewNotificationTemplateIds).toHaveBeenCalledOnce();
     expect(page.data.notificationTemplateIds).toEqual(['approved-template', 'rejected-template']);
+  });
+
+  it('模板配置永不返回时主加载仍结束且报名资格不受影响', async () => {
+    vi.useFakeTimers();
+    rideService.getReviewNotificationTemplateIds.mockReturnValue(new Promise(() => undefined));
+    page.data.notificationTemplateIds = [];
+
+    await page.onShow();
+
+    expect(page.data.loading).toBe(false);
+    expect(page.data.activityCanSubmit).toBe(true);
+    await page.submit();
+    expect(rideService.saveRegistration).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(2000);
+  });
+
+  it('较早页面代际的模板迟到响应不覆盖新列表', async () => {
+    let resolveFirst!: (ids: string[]) => void;
+    rideService.getReviewNotificationTemplateIds
+      .mockImplementationOnce(
+        () =>
+          new Promise<string[]>((resolve) => {
+            resolveFirst = resolve;
+          }),
+      )
+      .mockResolvedValueOnce(['new-template']);
+
+    await page.onShow();
+    await page.onShow();
+    await flushMicrotasks();
+    expect(page.data.notificationTemplateIds).toEqual(['new-template']);
+
+    resolveFirst(['stale-template']);
+    await flushMicrotasks();
+    expect(page.data.notificationTemplateIds).toEqual(['new-template']);
   });
 
   it('有效点击先请求订阅再提交报名', async () => {
