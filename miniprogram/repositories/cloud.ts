@@ -247,7 +247,14 @@ function mapRegistration(raw: unknown): Registration {
 }
 function mapStrava(raw: unknown): StravaConnection {
   const value = expectRecord(raw);
-  if (typeof value.connected !== 'boolean') return invalidResponse();
+  if (typeof value.connected !== 'boolean') {
+    const readiness = mapStravaReadiness(value);
+    return {
+      connected: ['syncing', 'ready', 'failed'].includes(readiness.state),
+      athleteName: readiness.athleteName ?? undefined,
+      snapshot: readiness.snapshot ?? undefined,
+    };
+  }
   const snapshot = isRecord(value.snapshot) ? value.snapshot : undefined;
   return {
     connected: value.connected,
@@ -272,6 +279,18 @@ function mapStrava(raw: unknown): StravaConnection {
 }
 function mapStravaReadiness(raw: unknown): StravaReadiness {
   const value = expectRecord(raw);
+  // 兼容云函数滚动部署期间的旧版 connected 契约，避免前端先发布时整页不可用。
+  if (typeof value.connected === 'boolean') {
+    const legacy = mapStrava(value);
+    const connectedWithSnapshot = legacy.connected && Boolean(legacy.snapshot);
+    return {
+      state: legacy.connected ? (connectedWithSnapshot ? 'ready' : 'syncing') : 'disconnected',
+      canRegister: connectedWithSnapshot,
+      athleteName: legacy.athleteName ?? null,
+      snapshot: legacy.snapshot ?? null,
+      error: null,
+    };
+  }
   const states: StravaReadinessState[] = [
     'disconnected',
     'authorizing',

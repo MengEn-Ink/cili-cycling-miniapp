@@ -183,9 +183,35 @@ test('readiness 常量和 fresh canonical snapshot 快路径', () => {
     state: 'ready',
     can_register: true,
     athlete_name: 'Rider',
-    snapshot,
+    snapshot: { ...snapshot, synced_at: snapshot.synced_at.toISOString() },
     error: null,
   });
+});
+test('readiness 对外响应统一序列化快照时间字段', () => {
+  const now = new Date('2026-09-29T04:00:00.000Z');
+  const credential = usableCredential();
+  const snapshot = {
+    athlete_id: credential.athlete_id,
+    synced_at: now,
+    latest_activity_at: new Date('2026-09-28T04:00:00.000Z'),
+    coverage_from: new Date('2026-07-01T04:00:00.000Z'),
+    coverage_to: new Date('2026-09-29T04:00:00.000Z'),
+  };
+  const readiness = deriveReadiness({ credential, snapshot, hasActiveOAuthState: false }, now);
+  assert.deepEqual(
+    {
+      synced_at: readiness.snapshot.synced_at,
+      latest_activity_at: readiness.snapshot.latest_activity_at,
+      coverage_from: readiness.snapshot.coverage_from,
+      coverage_to: readiness.snapshot.coverage_to,
+    },
+    {
+      synced_at: '2026-09-29T04:00:00.000Z',
+      latest_activity_at: '2026-09-28T04:00:00.000Z',
+      coverage_from: '2026-07-01T04:00:00.000Z',
+      coverage_to: '2026-09-29T04:00:00.000Z',
+    },
+  );
 });
 test('readiness 从服务端 active state 派生 authorizing', () => {
   const now = new Date('2026-09-29T04:00:00.000Z');

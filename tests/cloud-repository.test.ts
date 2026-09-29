@@ -653,6 +653,48 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     ]);
   });
 
+  it('兼容滚动部署期间的旧版 Strava connected 响应', async () => {
+    const legacyConnected = {
+      connected: true,
+      athlete_name: 'Legacy Rider',
+      snapshot: {
+        total_km: 42,
+        activities_90d: 2,
+        longest_km: 30,
+        total_elevation_m: 500,
+        weighted_avg_speed_kmh: 24,
+        latest_activity_at: '2026-09-28T04:00:00.000Z',
+        synced_at: '2026-09-29T04:00:00.000Z',
+      },
+    };
+    const { cloud } = cloudWith(success(legacyConnected), success({ connected: false }));
+    const repository = new CloudRepository(cloud);
+
+    await expect(repository.getStravaReadiness()).resolves.toMatchObject({
+      state: 'ready',
+      canRegister: true,
+      athleteName: 'Legacy Rider',
+    });
+    await expect(repository.getStravaReadiness()).resolves.toEqual({
+      state: 'disconnected',
+      canRegister: false,
+      athleteName: null,
+      snapshot: null,
+      error: null,
+    });
+  });
+
+  it('旧连接接口兼容新版 readiness 响应', async () => {
+    const { cloud } = cloudWith(success(readinessDto), success(readinessDto));
+    const repository = new CloudRepository(cloud);
+
+    await expect(repository.getStravaStatus()).resolves.toMatchObject({
+      connected: true,
+      athleteName: 'Rider',
+    });
+    await expect(repository.syncStrava()).resolves.toMatchObject({ connected: true });
+  });
+
   it('映射 Strava readiness，保留 null 指标与覆盖范围', async () => {
     const { cloud, callFunction } = cloudWith(success(readinessDto), success(readinessDto));
     const repository = new CloudRepository(cloud);

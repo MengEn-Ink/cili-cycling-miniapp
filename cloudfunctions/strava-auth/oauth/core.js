@@ -173,6 +173,18 @@ function isSnapshotForCredential(credential, snapshot) {
     snapshot.athlete_id === credential.athlete_id,
   );
 }
+function publicSnapshot(snapshot) {
+  const dateValue = (value) => {
+    const date = validDate(value);
+    return date ? date.toISOString() : value;
+  };
+  const result = { ...snapshot, synced_at: dateValue(snapshot.synced_at) };
+  for (const field of ['latest_activity_at', 'coverage_from', 'coverage_to']) {
+    if (!Object.prototype.hasOwnProperty.call(snapshot, field)) continue;
+    result[field] = snapshot[field] == null ? null : dateValue(snapshot[field]);
+  }
+  return result;
+}
 function deriveReadiness({ credential, snapshot, hasActiveOAuthState }, now = new Date()) {
   if (!credential) {
     return {
@@ -192,7 +204,7 @@ function deriveReadiness({ credential, snapshot, hasActiveOAuthState }, now = ne
       state: 'ready',
       can_register: true,
       athlete_name: credential.athlete_name || null,
-      snapshot,
+      snapshot: publicSnapshot(snapshot),
       error: null,
     };
   }
