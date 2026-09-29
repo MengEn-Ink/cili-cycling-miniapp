@@ -336,7 +336,7 @@ describe('CloudRepository 队员报名适配', () => {
       strava: {
         status: 'exempted',
         reason: '人工核验',
-        years: 0,
+        years: null,
         totalKm: null,
         rides90d: null,
         longestKm: null,
@@ -347,6 +347,22 @@ describe('CloudRepository 队员报名适配', () => {
         coverage: null,
       },
       updatedAt: '刚刚',
+    });
+  });
+
+  it.each([
+    ['缺失', {}],
+    ['非有限值', { years_on_strava: Number.POSITIVE_INFINITY }],
+  ])('报名 DTO 的 Strava 年限%s时保留为 null', async (_label, stravaSnapshot) => {
+    const { cloud } = cloudWith(
+      success({
+        ...registration,
+        strava_snapshot: stravaSnapshot,
+      }),
+    );
+
+    await expect(new CloudRepository(cloud).getRegistration('r1')).resolves.toMatchObject({
+      strava: { years: null },
     });
   });
 });

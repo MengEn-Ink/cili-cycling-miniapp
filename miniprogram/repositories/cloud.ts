@@ -209,7 +209,7 @@ function mapRegistration(raw: unknown): Registration {
     strava: {
       status: value.strava_status === 'exempted' ? 'exempted' : 'connected',
       reason: typeof exemption.reason === 'string' ? exemption.reason : undefined,
-      years: typeof strava.years_on_strava === 'number' ? strava.years_on_strava : 0,
+      years: finiteNumberOrNull(strava.years_on_strava),
       totalKm: finiteNumberOrNull(strava.total_km),
       rides90d: finiteNumberOrNull(strava.activities_90d),
       longestKm: finiteNumberOrNull(strava.longest_km),

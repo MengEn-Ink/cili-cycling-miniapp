@@ -90,7 +90,7 @@ export interface Registration {
   strava: {
     status: StravaStatus;
     reason?: string;
-    years: number;
+    years: number | null;
     totalKm?: number | null;
     rides90d: number | null;
     longestKm: number | null;
