@@ -1,6 +1,6 @@
 <view class="page strava-page">
   <view class="strava-head"><view class="strava-mark">S</view><view><view class="hero-kicker">STRAVA</view><view class="strava-title">骑行数据</view><view class="muted">授权在系统浏览器完成，返回微信后自动同步</view></view></view>
-  <state-view wx:if="{{loading}}" type="loading" text="正在读取绑定状态"/>
+  <state-view loading="{{loading}}" error="{{!readiness ? error : ''}}" loading-title="正在读取绑定状态" loading-copy="正在检查 Strava 授权与数据准备状态" retryable="{{!readiness}}" bind:retry="load">
   <view class="error-card" wx:if="{{error}}">{{error}}</view>
   <view wx:if="{{!loading && readiness}}">
     <view class="status-card status-{{readiness.state}}"><view class="status-icon">{{readiness.state === 'ready' ? '✓' : readiness.state === 'failed' ? '!' : '·'}}</view><view class="status-copy"><view class="status-title">{{readinessMessage}}</view><view wx:if="{{readiness.state === 'authorizing'}}" class="status-help">请在系统浏览器完成 Strava 授权，返回微信后会自动检查并同步。</view><view wx:elif="{{readiness.state === 'syncing'}}" class="status-help">首次授权后会自动准备数据，无需手动同步。</view><view wx:elif="{{readiness.state === 'disconnected'}}" class="status-help">点击后将复制一次性授权链接，请在系统浏览器打开。</view><view wx:elif="{{readiness.state === 'failed'}}" class="status-help">{{readiness.error ? readiness.error.message : 'Strava 数据准备失败'}}</view></view></view>
@@ -9,4 +9,5 @@
     <button wx:if="{{readiness.state === 'failed' && readiness.error && readiness.error.retryable}}" class="btn" loading="{{busyAction === 'retry'}}" disabled="{{busyAction}}" bindtap="retry">重试数据准备</button>
     <button wx:if="{{readiness.state === 'ready' || readiness.state === 'syncing' || readiness.state === 'failed'}}" class="secondary" loading="{{busyAction === 'disconnect'}}" disabled="{{busyAction}}" bindtap="disconnect">解绑 Strava</button>
   </view>
+  </state-view>
 </view>

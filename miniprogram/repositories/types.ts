@@ -10,11 +10,11 @@ import type {
 } from '../models';
 
 export type AdminRegistrationStatusFilter = RegistrationStatus;
-export type ActivityInput = Omit<Activity, 'id' | 'date' | 'occupiedCount'>;
+export type ActivityInput = Omit<Activity, 'id' | 'date' | 'occupiedCount' | 'version'>;
 export interface ActivityAdminRepository {
   listAdminActivities(): Promise<Activity[]>;
   getAdminActivity(id: string): Promise<Activity | undefined>;
-  saveActivity(value: ActivityInput, id?: string): Promise<Activity>;
+  saveActivity(value: ActivityInput, id?: string, expectedVersion?: number): Promise<Activity>;
 }
 export type GatheringMode = 'self_drive' | 'support_vehicle';
 export interface RegistrationSubmission {

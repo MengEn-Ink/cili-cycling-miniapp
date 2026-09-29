@@ -9,6 +9,7 @@ type ServerActivity = Activity & {
 
 const open: ServerActivity = {
   id: 'a1',
+  version: 1,
   title: '环湖骑行',
   date: '2026-10-18',
   startAt: '2026-10-18T00:00:00.000Z',

@@ -17,15 +17,16 @@ const {
 } = require('./domain');
 
 function categoryOccupancyAfter(activity, gatheringMode) {
+  if (activity.occupancy_partition_ready !== true) return {};
   const field =
     gatheringMode === 'support_vehicle'
       ? 'support_vehicle_occupied_count'
       : gatheringMode === 'self_drive'
         ? 'self_drive_occupied_count'
         : '';
-  const current = field && Number.isInteger(activity[field]) ? activity[field] : 0;
-  // 旧活动缺少分类计数时无法反推历史报名，释放时保持 0。
-  const next = field && Number.isInteger(activity[field]) ? current - 1 : 0;
+  if (!field || !Number.isInteger(activity[field])) fail('SCHEMA_INVALID', '分类名额计数异常');
+  const current = activity[field];
+  const next = current - 1;
   if (next < 0) fail('SCHEMA_INVALID', '分类名额计数异常');
   return {
     supportVehicleOccupied:

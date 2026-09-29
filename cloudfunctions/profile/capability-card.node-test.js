@@ -102,7 +102,7 @@ test('单一响应只返回 90 天 allowlist、null 语义和 owner 媒体临时
       getTempFileURL: async ({ fileList }) => ({
         fileList: fileList.map((fileID) => ({
           fileID,
-          tempFileURL: `https://temporary.example/${fileID === ownedRide ? 'ride' : fileID === ownedOther ? 'other' : 'avatar'}`,
+          tempFileURL: `https://temporary.example/${fileID === ownedRide ? 'ride' : 'other'}`,
           status: 0,
         })),
       }),
@@ -111,11 +111,7 @@ test('单一响应只返回 90 天 allowlist、null 语义和 owner 媒体临时
   assert.deepEqual(response, {
     state: 'partial',
     generated_at: '2026-09-29T12:00:00.000Z',
-    profile: {
-      display_name: '山野骑手',
-      title: '爬坡王',
-      avatar_url: 'https://temporary.example/avatar',
-    },
+    profile: { display_name: '山野骑手', title: '爬坡王' },
     backgrounds: [
       { url: 'https://temporary.example/ride', source: 'user_photo', category: 'ride' },
       { url: 'https://temporary.example/other', source: 'user_photo', category: 'other' },
@@ -133,7 +129,6 @@ test('单一响应只返回 90 天 allowlist、null 语义和 owner 媒体临时
       complete: true,
     },
     synced_at: '2026-09-29T11:00:00.000Z',
-    needs_strava_reauth: false,
   });
   const serialized = JSON.stringify(response);
   for (const forbidden of [
@@ -258,48 +253,4 @@ test('个人名片拒绝缺失的可信 WXContext 身份', async () => {
     ),
     (error) => error && error.code === 'UNAUTHENTICATED',
   );
-});
-
-test('头像来源解析：Strava 优先、WeChat 回退、HTTPS 校验', async () => {
-  const wechatId = 'cloud://wechat-avatar';
-  const stravaUrl = 'https://strava.com/profile.jpg';
-  const getTempFileURL = async ({ fileList }) => ({
-    fileList: fileList.map((fileID) => ({
-      fileID,
-      tempFileURL: 'https://temp.url/avatar.jpg',
-      status: 0,
-    })),
-  });
-
-  const cardStrava = await buildCapabilityCard(
-    {
-      profile: { avatar_source: 'strava', avatar_file_id: wechatId },
-      credential: { athlete_profile_url: stravaUrl, ...credential },
-      snapshot,
-    },
-    { openid, mediaSecret, now, getTempFileURL },
-  );
-  assert.equal(cardStrava.profile.avatar_url, stravaUrl);
-  assert.equal(cardStrava.needs_strava_reauth, false);
-
-  const cardStravaMissing = await buildCapabilityCard(
-    {
-      profile: { avatar_source: 'strava', avatar_file_id: wechatId },
-      credential: { athlete_profile_url: '', ...credential },
-      snapshot,
-    },
-    { openid, mediaSecret, now, getTempFileURL },
-  );
-  assert.equal(cardStravaMissing.profile.avatar_url, 'https://temp.url/avatar.jpg');
-  assert.equal(cardStravaMissing.needs_strava_reauth, true);
-
-  const cardWechat = await buildCapabilityCard(
-    {
-      profile: { avatar_source: 'wechat', avatar_file_id: wechatId },
-      credential: { athlete_profile_url: stravaUrl, ...credential },
-      snapshot,
-    },
-    { openid, mediaSecret, now, getTempFileURL },
-  );
-  assert.equal(cardWechat.profile.avatar_url, 'https://temp.url/avatar.jpg');
 });

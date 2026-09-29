@@ -110,24 +110,6 @@ async function resolveBackgrounds(media, getTempFileURL) {
     }));
 }
 
-async function resolveAvatar(profile, credential, getTempFileURL) {
-  const wechatId = profile?.avatar_file_id;
-  const stravaUrl = credential?.athlete_profile_url;
-  const source = profile?.avatar_source === 'strava' ? 'strava' : 'wechat';
-  const resolveWechat = async () => {
-    if (!wechatId) return '';
-    try {
-      const res = await getTempFileURL({ fileList: [wechatId] });
-      const item = res.fileList?.[0];
-      return item && item.status === 0 ? safeHttpsUrl(item.tempFileURL) : '';
-    } catch {
-      return '';
-    }
-  };
-  if (source === 'strava') return stravaUrl || (await resolveWechat());
-  return (await resolveWechat()) || stravaUrl || '';
-}
-
 async function buildCapabilityCard(
   { profile, credential, snapshot, mediaRecords = [] },
   { openid, mediaSecret, now = new Date(), getTempFileURL },
@@ -142,23 +124,17 @@ async function buildCapabilityCard(
     ownerMedia(profile, openid, mediaSecret, mediaRecords),
     getTempFileURL,
   );
-  const avatarUrl = await resolveAvatar(profile, credential, getTempFileURL);
   return {
     state: deriveCapabilityState({ credential, snapshot }, now),
     generated_at: now.toISOString(),
     profile: {
       display_name: typeof profile?.nickname === 'string' ? profile.nickname : '',
       title: typeof profile?.title === 'string' ? profile.title : '',
-      avatar_url: avatarUrl,
     },
     backgrounds,
     summary: snapshotSummary,
     coverage: snapshotCoverage,
     synced_at: syncedAt,
-    needs_strava_reauth:
-      usableCredential(credential) &&
-      !credential.athlete_profile_url &&
-      profile?.avatar_source === 'strava',
   };
 }
 

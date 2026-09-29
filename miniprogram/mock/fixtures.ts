@@ -2,6 +2,7 @@ import type { Activity, Profile, Registration } from '../models';
 export const activities: Activity[] = [
   {
     id: 'forest',
+    version: 1,
     title: '秋日环湖耐力骑',
     date: '10月18日 周日',
     startAt: '2026-10-18T07:30:00+08:00',
@@ -29,6 +30,7 @@ export const activities: Activity[] = [
   },
   {
     id: 'coast',
+    version: 1,
     title: '海风新手友好骑',
     date: '11月08日 周日',
     startAt: '2026-11-08T08:00:00+08:00',

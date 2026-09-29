@@ -16,6 +16,7 @@ vi.mock('../miniprogram/store/app-store', () => ({ appStore }));
 
 const activity: Activity = {
   id: 'a1',
+  version: 7,
   title: '环湖骑行',
   date: '2026-10-18T00:00:00.000Z',
   startAt: '2026-10-18T00:00:00.000Z',
@@ -55,7 +56,7 @@ describe('管理员普通编辑保留未展示的活动字段', () => {
   beforeEach(async () => {
     vi.resetModules();
     rideService.getAdminActivity.mockReset().mockResolvedValue(activity);
-    rideService.saveActivity.mockReset().mockResolvedValue(activity);
+    rideService.saveActivity.mockReset().mockResolvedValue({ ...activity, version: 8 });
     appStore.refreshIdentity.mockReset().mockResolvedValue(undefined);
     vi.stubGlobal('wx', { cloud: {}, showToast: vi.fn() });
     vi.stubGlobal('Page', (definition: any) => {
@@ -92,6 +93,8 @@ describe('管理员普通编辑保留未展示的活动字段', () => {
         supportVehicleDriver: activity.supportVehicleDriver,
       }),
       activity.id,
+      7,
     );
+    expect(page.data.version).toBe(8);
   });
 });

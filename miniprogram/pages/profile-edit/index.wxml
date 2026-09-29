@@ -1,7 +1,6 @@
 <view class="page profile-form-page">
-  <state-view wx:if="{{loading}}" type="loading" text="正在读取安全资料" />
-  <state-view wx:elif="{{error && !p}}" type="error" text="{{error}}" />
-  <block wx:elif="{{p}}">
+  <state-view loading="{{loading}}" error="{{!p ? error : ''}}" loading-title="正在读取安全资料" loading-copy="正在加载已保存的个人资料">
+  <block wx:if="{{p}}">
     <view class="card form-card">
       <view class="title">展示身份</view>
       <view class="field">
@@ -11,15 +10,6 @@
       <view class="field">
         <view class="label">称号（管理员颁发）</view>
         <input class="input" value="{{p.title}}" disabled />
-      </view>
-      <view class="field">
-        <view class="label">头像来源</view>
-        <radio-group class="radio-group" data-k="avatarSource" bindchange="set">
-          <label class="radio-label" wx:for="{{avatarSources}}" wx:key="value">
-            <radio color="#d55b1f" value="{{item.value}}" checked="{{p.avatarSource === item.value}}" />
-            {{item.label}}
-          </label>
-        </radio-group>
       </view>
     </view>
 
@@ -67,4 +57,5 @@
     <view class="danger form-error" wx:if="{{error}}">{{error}}</view>
     <button class="btn save-action" loading="{{saving}}" bindtap="save">保存资料</button>
   </block>
+  </state-view>
 </view>

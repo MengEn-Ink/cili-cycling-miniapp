@@ -40,17 +40,11 @@ const token = (expires = Math.floor(Date.now() / 1000) + 3600) => ({
   refresh_token: fakeRefresh,
   expires_at: expires,
   scope: 'read,activity:read_all',
-  athlete: {
-    id: 42,
-    firstname: 'Test',
-    lastname: 'Rider',
-    profile: 'https://strava.com/a.jpg',
-  },
+  athlete: { id: 42, firstname: 'Test', lastname: 'Rider' },
 });
 const usableCredential = (overrides = {}) => ({
   athlete_id: '42',
   athlete_name: 'Rider',
-  athlete_profile_url: 'https://strava.com/a.jpg',
   access_token_cipher: {
     alg: 'A256GCM',
     iv: 'access-iv',
@@ -88,7 +82,6 @@ test('Strava token key 只 trim 首尾空白并拒绝内部空白', () => {
 test('token 使用 AES-GCM 且不保留明文', () => {
   const doc = tokenDocument('openid', token(), key, new Date());
   assert.equal(decrypt(doc.access_token_cipher, key), fakeAccess);
-  assert.equal(doc.athlete_profile_url, 'https://strava.com/a.jpg');
   assert.equal(JSON.stringify(doc).includes(fakeAccess), false);
   assert.throws(() => decrypt({ ...doc.access_token_cipher, tag: 'AAAA' }, key), {
     code: 'STRAVA_TOKEN_INVALID',

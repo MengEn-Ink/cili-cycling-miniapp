@@ -18,6 +18,7 @@ const success = (data: unknown) => ({ ok: true, data });
 
 const activity = {
   _id: 'a1',
+  version: 7,
   title: '环湖骑行',
   cover_image: 'cloud://covers/a1.jpg',
   event_start: '2026-10-18T00:00:00.000Z',
@@ -141,6 +142,7 @@ describe('CloudRepository 活动读取适配', () => {
     expect(result).toEqual([
       {
         id: 'a1',
+        version: 7,
         title: '环湖骑行',
         date: '2026-10-18T00:00:00.000Z',
         startAt: '2026-10-18T00:00:00.000Z',
@@ -244,7 +246,6 @@ describe('CloudRepository 个人骑行名片适配', () => {
       profile: {
         displayName: '山野骑手',
         title: '周末爬坡手',
-        avatarUrl: '',
       },
       backgrounds: [
         {
@@ -271,22 +272,8 @@ describe('CloudRepository 个人骑行名片适配', () => {
         complete: false,
       },
       syncedAt: '2026-09-29T04:05:00.000Z',
-      needsStravaReauth: false,
     });
     expectCall(callFunction, 'profile', { action: 'capabilityCard' });
-  });
-
-  it('映射头像 URL 与重授权标记', async () => {
-    const { cloud } = cloudWith(
-      success({
-        ...personalCapabilityCardDto,
-        profile: { ...personalCapabilityCardDto.profile, avatar_url: 'https://strava.com/a.jpg' },
-        needs_strava_reauth: true,
-      }),
-    );
-    const card = await new CloudRepository(cloud).getPersonalCapabilityCard();
-    expect(card.profile.avatarUrl).toBe('https://strava.com/a.jpg');
-    expect(card.needsStravaReauth).toBe(true);
   });
 
   it.each(['cloud://raw-photo', 'http://temporary.example/insecure.jpg'])(
@@ -1356,9 +1343,15 @@ describe('CloudRepository 管理员活动写入契约', () => {
     const repository = new CloudRepository(cloud);
     const current = await repository.getAdminActivity('a1');
 
-    await repository.saveActivity({ ...current!, title: '新标题', capacity: 25 }, 'a1');
+    await repository.saveActivity(
+      { ...current!, title: '新标题', capacity: 25 },
+      'a1',
+      current!.version,
+    );
 
-    const payload = (callFunction.mock.calls[1][0].data as any).activity;
+    const request = callFunction.mock.calls[1][0].data as any;
+    const payload = request.activity;
+    expect(request.expectedVersion).toBe(7);
     expect(payload.cover_image).toBe(activity.cover_image);
     expect(payload.schedule).toEqual(activity.schedule);
     expect(payload.route.gpx_file_id).toBe(activity.route.gpx_file_id);
@@ -1383,8 +1376,9 @@ describe('CloudRepository 管理员活动写入契约', () => {
       equipment: [],
       fee: '',
     };
-    await new CloudRepository(cloud).saveActivity(value, 'a1');
+    await new CloudRepository(cloud).saveActivity(value, 'a1', 7);
     expect((callFunction.mock.calls[0][0].data as any).activityId).toBe('a1');
+    expect((callFunction.mock.calls[0][0].data as any).expectedVersion).toBe(7);
     const invalid = cloudWith();
     await expectCode(
       new CloudRepository(invalid.cloud).saveActivity(value, ''),

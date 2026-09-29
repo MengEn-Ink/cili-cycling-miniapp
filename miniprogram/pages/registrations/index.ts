@@ -1,16 +1,37 @@
 import { rideService } from '../../services/ride-service';
 Page({
-  data: { loading: true, error: '', items: [] as any[] },
+  loadRequestId: 0,
+  data: {
+    loading: true,
+    refreshing: false,
+    error: '',
+    refreshError: '',
+    items: [] as any[],
+  },
   onShow() {
     void this.load();
   },
+  onHide() {
+    this.loadRequestId += 1;
+  },
+  onUnload() {
+    this.loadRequestId += 1;
+  },
   async load() {
-    this.setData({ loading: true, error: '' });
+    const requestId = ++this.loadRequestId;
+    const hasItems = this.data.items.length > 0;
+    this.setData({
+      loading: !hasItems,
+      refreshing: hasItems,
+      error: '',
+      refreshError: '',
+    });
     try {
       const [registrations, activities] = await Promise.all([
         rideService.listRegistrations(),
         rideService.listActivities(),
       ]);
+      if (requestId !== this.loadRequestId) return;
       this.setData({
         items: registrations.map((item) => ({
           ...item,
@@ -26,9 +47,13 @@ Page({
         })),
       });
     } catch (error) {
-      this.setData({ error: error instanceof Error ? error.message : '报名加载失败' });
+      if (requestId !== this.loadRequestId) return;
+      const message = error instanceof Error ? error.message : '报名加载失败';
+      this.setData(hasItems ? { refreshError: message } : { error: message });
     } finally {
-      this.setData({ loading: false });
+      if (requestId === this.loadRequestId) {
+        this.setData({ loading: false, refreshing: false });
+      }
     }
   },
   open(e: any) {

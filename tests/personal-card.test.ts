@@ -117,18 +117,4 @@ describe('个人骑行名片 view model', () => {
       'weightedAvgSpeedKmh',
     ]);
   });
-
-  it('识别旧 Strava 用户并建议重授权以获取头像', async () => {
-    const view = await build({ ...baseCard, needsStravaReauth: true });
-    expect(view.needsStravaRepair).toBe(true);
-    expect(view.isOldStravaUser).toBe(true);
-  });
-
-  it('头像 URL 优先于默认字母展示', async () => {
-    const view = await build({
-      ...baseCard,
-      profile: { ...baseCard.profile, avatarUrl: 'https://avatar.jpg' },
-    });
-    expect(view.avatarUrl).toBe('https://avatar.jpg');
-  });
 });

@@ -1,13 +1,13 @@
 <view class="capability-page">
-  <state-view wx:if="{{loading}}" type="loading" text="正在生成骑行名片" />
-  <view wx:elif="{{error}}" class="load-state">
-    <view class="load-kicker">CARD OFFLINE</view>
-    <view class="load-title">名片暂时未能抵达</view>
-    <view class="load-copy">{{error}}</view>
-    <button class="retry-button" bindtap="load">重新加载</button>
-  </view>
-
-  <view wx:elif="{{card}}" class="card-stage">
+  <state-view
+    loading="{{loading}}"
+    error="{{error}}"
+    loading-title="正在生成骑行名片"
+    loading-copy="正在整理骑行数据与照片"
+    retryable="{{true}}"
+    bind:retry="load"
+  >
+  <view wx:if="{{card}}" class="card-stage">
     <view class="rider-card">
       <swiper
         wx:if="{{card.hasBackgrounds}}"
@@ -89,4 +89,5 @@
       bindtap="completeProfile"
     >添加个人骑行照片</button>
   </view>
+  </state-view>
 </view>

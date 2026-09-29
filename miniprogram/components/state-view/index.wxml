@@ -1,4 +1,6 @@
-<view wx:if="{{loading}}" class="state-shell"><view class="state-mark" aria-hidden="true"></view><view class="state-title">正在加载</view><view class="state-copy">正在同步骑行数据…</view></view>
-<view wx:elif="{{error}}" class="state-shell state-shell--error"><view class="state-code" aria-hidden="true">!</view><view class="state-title">加载失败</view><view class="state-copy">{{error}}</view><button class="state-retry" size="mini" bindtap="retry">重新加载</button></view>
-<view wx:elif="{{empty}}" class="state-shell"><view class="state-code" aria-hidden="true">C</view><view class="state-title">{{emptyTitle}}</view><view class="state-copy">{{emptyCopy}}</view></view>
+<view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{politeAnnouncement}}</view>
+<view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{assertiveAnnouncement}}</view>
+<view wx:if="{{loading}}" class="state-shell"><view class="state-mark" aria-hidden="true"></view><view class="state-title" aria-hidden="true">{{loadingTitle}}</view><view class="state-copy" aria-hidden="true">{{loadingCopy}}</view></view>
+<view wx:elif="{{error}}" class="state-shell state-shell--error"><view class="state-code" aria-hidden="true">!</view><view class="state-title" aria-hidden="true">加载失败</view><view class="state-copy" aria-hidden="true">{{error}}</view><button wx:if="{{retryable}}" class="state-retry" size="mini" bindtap="retry">重新加载</button></view>
+<view wx:elif="{{empty}}" class="state-shell"><view class="state-code" aria-hidden="true">C</view><view class="state-title" aria-hidden="true">{{emptyTitle}}</view><view class="state-copy" aria-hidden="true">{{emptyCopy}}</view></view>
 <slot wx:else />

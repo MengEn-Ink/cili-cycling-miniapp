@@ -9,6 +9,7 @@ const FORBIDDEN = new Set([
   'status',
   'capacity',
   'occupied_count',
+  'version',
   'amount',
   'price',
   'reviewer_openid',
@@ -245,6 +246,7 @@ const ACTIVITY_FIELDS = [
   'self_drive_capacity',
   'support_vehicle_driver',
   'occupied_count',
+  'version',
   'signup_deadline',
   'event_start',
   'event_end',
@@ -278,7 +280,10 @@ function publicActivity(activity, now = new Date()) {
       contact_phone: maskPhone(output.support_vehicle_driver.contact_phone),
     };
   }
-  if (Number.isInteger(activity.support_vehicle_capacity))
+  if (
+    activity.occupancy_partition_ready === true &&
+    Number.isInteger(activity.support_vehicle_capacity)
+  )
     output.support_vehicle_remaining = Math.max(
       0,
       activity.support_vehicle_capacity -
@@ -286,7 +291,7 @@ function publicActivity(activity, now = new Date()) {
           ? activity.support_vehicle_occupied_count
           : 0),
     );
-  if (Number.isInteger(activity.self_drive_capacity))
+  if (activity.occupancy_partition_ready === true && Number.isInteger(activity.self_drive_capacity))
     output.self_drive_remaining = Math.max(
       0,
       activity.self_drive_capacity -

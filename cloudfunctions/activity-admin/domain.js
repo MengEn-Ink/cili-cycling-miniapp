@@ -1,5 +1,8 @@
 'use strict';
 
+const MAX_ACTIVITY_CAPACITY = 1000;
+const MAX_PARTITION_BACKFILL_RECORDS = MAX_ACTIVITY_CAPACITY;
+
 class DomainError extends Error {
   constructor(code, message, details) {
     super(message);
@@ -47,6 +50,7 @@ const ACTIVITY_FIELDS = [
   'self_drive_capacity',
   'support_vehicle_driver',
   'occupied_count',
+  'version',
   'signup_deadline',
   'event_start',
   'event_end',
@@ -128,8 +132,12 @@ function validateActivityInput(input, occupiedCount = 0) {
   ]);
   for (const key of Object.keys(input))
     if (!allowed.has(key)) fail('FORBIDDEN_FIELD', '客户端不得传入服务端控制字段', { field: key });
-  if (!Number.isInteger(input.capacity) || input.capacity < 1)
-    fail('VALIDATION_FAILED', '活动容量必须为正整数');
+  if (
+    !Number.isInteger(input.capacity) ||
+    input.capacity < 1 ||
+    input.capacity > MAX_ACTIVITY_CAPACITY
+  )
+    fail('VALIDATION_FAILED', `活动容量必须为 1-${MAX_ACTIVITY_CAPACITY} 的整数`);
   if (input.capacity < occupiedCount) fail('CAPACITY_BELOW_OCCUPIED', '活动容量不能低于已占用名额');
   if (
     !Number.isInteger(input.support_vehicle_capacity) ||
@@ -223,16 +231,36 @@ function assertStatusTransition(from, to) {
     return;
   fail('INVALID_TRANSITION', `活动状态不能从 ${from} 变更为 ${to}`);
 }
-function buildActivityAudit(actorOpenid, action, targetId, now, fromStatus, toStatus) {
+function buildActivityAudit(
+  actorOpenid,
+  action,
+  targetId,
+  now,
+  fromStatus,
+  toStatus,
+  occupancyPartition,
+) {
   return {
     actor_openid: actorOpenid,
     action,
     target_id: targetId,
     created_at: now,
-    detail: { ...(fromStatus ? { from_status: fromStatus } : {}), to_status: toStatus },
+    detail: {
+      ...(fromStatus ? { from_status: fromStatus } : {}),
+      to_status: toStatus,
+      ...(occupancyPartition ? { occupancy_partition: occupancyPartition } : {}),
+    },
   };
 }
+function activityAuditAction(currentStatus, nextStatus) {
+  if (!currentStatus) return 'activity.create';
+  if (currentStatus === 'draft' && nextStatus === 'published') return 'activity.publish';
+  if (currentStatus === 'published' && nextStatus === 'finished') return 'activity.finish';
+  return 'activity.update';
+}
 module.exports = {
+  MAX_ACTIVITY_CAPACITY,
+  MAX_PARTITION_BACKFILL_RECORDS,
   DomainError,
   fail,
   ok,
@@ -243,5 +271,6 @@ module.exports = {
   validateActivityInput,
   assertStatusTransition,
   buildActivityAudit,
+  activityAuditAction,
   maskPhone,
 };

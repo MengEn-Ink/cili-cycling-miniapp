@@ -1,1 +1,1 @@
-<web-view wx:if="{{url}}" src="{{url}}"/><view wx:else class="page"><state-view type="error" text="Strava 授权地址尚未配置"/></view>
+<web-view wx:if="{{url}}" src="{{url}}"/><view wx:else class="page"><state-view error="Strava 授权地址尚未配置"/></view>

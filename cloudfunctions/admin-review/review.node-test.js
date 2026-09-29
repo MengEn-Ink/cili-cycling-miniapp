@@ -15,8 +15,10 @@ function store(seed = {}) {
     },
     activity: {
       occupied_count: 1,
+      occupancy_partition_ready: true,
       support_vehicle_occupied_count: 1,
       self_drive_occupied_count: 0,
+      ...(seed.activity || {}),
     },
     outbox: new Map(),
   };
@@ -32,8 +34,10 @@ function store(seed = {}) {
         },
         setOccupied: async (_id, value, supportVehicleOccupied, selfDriveOccupied) => {
           state.activity.occupied_count = value;
-          state.activity.support_vehicle_occupied_count = supportVehicleOccupied;
-          state.activity.self_drive_occupied_count = selfDriveOccupied;
+          if (supportVehicleOccupied !== undefined)
+            state.activity.support_vehicle_occupied_count = supportVehicleOccupied;
+          if (selfDriveOccupied !== undefined)
+            state.activity.self_drive_occupied_count = selfDriveOccupied;
         },
         addAudit: async () => {},
         putNotification: async (id, value) => state.outbox.set(id, value),
@@ -86,6 +90,27 @@ test('驳回创建通知并释放名额', async () => {
   assert.equal(result.status, 'rejected');
   assert.equal(s.state.activity.occupied_count, 0);
   assert.equal(s.state.outbox.get(result.notification.outbox_id).template_key, 'review_rejected');
+});
+test('未就绪旧活动驳回只释放总占位并保留现有分类计数', async () => {
+  const s = store({
+    activity: {
+      occupied_count: 2,
+      occupancy_partition_ready: false,
+      support_vehicle_occupied_count: 1,
+      self_drive_occupied_count: 0,
+    },
+  });
+
+  await reviewRegistration(s, {
+    openid: 'admin',
+    registrationId: 'r1',
+    action: 'reject',
+    reason: '资料不完整',
+  });
+
+  assert.equal(s.state.activity.occupied_count, 1);
+  assert.equal(s.state.activity.support_vehicle_occupied_count, 1);
+  assert.equal(s.state.activity.self_drive_occupied_count, 0);
 });
 test('非管理员不能审批或创建 outbox', async () => {
   const s = store({ admin: false });

@@ -12,7 +12,7 @@ Strava 报名资格唯一事实源：`strava_credentials + strava_snapshots`。`
 
 ### `activities`
 
-活动公开字段、`capacity`、`occupied_count`、`signup_deadline/event_start/event_end`、`status` 与内部审计字段。公开读取只允许 `published && is_deleted !== true`。管理员写入由独立 `activity-admin` 云函数负责：新建必须为 `draft`，状态仅允许 `draft → published → finished`，`finished` 为终态；容量不得低于事务内读取的 `occupied_count`，且必须满足 `signup_deadline < event_start < event_end`。
+活动公开字段、`capacity`、`occupied_count`、`occupancy_partition_ready`、两类分仓计数、单调递增 `version`、`signup_deadline/event_start/event_end`、`status` 与内部审计字段。公开读取只允许 `published && is_deleted !== true`。管理员写入由独立 `activity-admin` 云函数负责：新建必须为 `draft`，状态仅允许 `draft → published → finished`，`finished` 为终态；更新必须携带详情响应中的 `expectedVersion`，事务内不一致时返回 `ACTIVITY_CONFLICT`；活动容量上限为 1000，且不得低于事务内读取的 `occupied_count`，并必须满足 `signup_deadline < event_start < event_end`。旧活动首次保存分仓时在事务内完整读取全部 `pending + approved` 报名并按集合方式回填，自动回填最多处理 1000 个占位；容量或占位数超限、未知集合方式、分页失败或总数不一致都以 `PARTITION_BACKFILL_REQUIRED` 阻断且不写入。
 
 ### `registrations`
 
@@ -115,6 +115,7 @@ synced_at
 | 集合 | 字段 | 属性 |
 | --- | --- | --- |
 | activities | status ASC, event_start ASC | 普通 |
+| activities | created_by ASC, event_start DESC | 普通；成员管理列表 |
 | registrations | activity_id ASC, openid ASC | 唯一 |
 | registrations | activity_id ASC, status ASC, created_at DESC | 普通 |
 | registrations | openid ASC, created_at DESC | 普通 |
@@ -135,11 +136,11 @@ synced_at
 
 ## 主要错误码
 
-`UNAUTHENTICATED`、`ADMIN_REQUIRED`、`FORBIDDEN_FIELD`、`VALIDATION_FAILED`、`PROFILE_INCOMPLETE`、`PHONE_CODE_REQUIRED`、`PII_KEY_INVALID`、`STRAVA_CONFIG_INVALID`、`STRAVA_KEY_INVALID`、`OAUTH_STATE_INVALID`、`OAUTH_STATE_EXPIRED`、`STRAVA_NOT_CONNECTED`、`STRAVA_API_FAILED`、`UNKNOWN_ACTION`、`INTERNAL_ERROR`。
+`UNAUTHENTICATED`、`ADMIN_REQUIRED`、`FORBIDDEN_FIELD`、`VALIDATION_FAILED`、`ACTIVITY_CONFLICT`、`PARTITION_BACKFILL_REQUIRED`、`PROFILE_INCOMPLETE`、`PHONE_CODE_REQUIRED`、`PII_KEY_INVALID`、`STRAVA_CONFIG_INVALID`、`STRAVA_KEY_INVALID`、`OAUTH_STATE_INVALID`、`OAUTH_STATE_EXPIRED`、`STRAVA_NOT_CONNECTED`、`STRAVA_API_FAILED`、`UNKNOWN_ACTION`、`INTERNAL_ERROR`。
 
 ## 部署后验证
 
-1. 校验 10 集合、全拒绝规则与 18 索引，确认 `notification_outbox` 的 lease、目标与 retry 索引，`profile_media` 的 owner/status、cleanup、delete lease 与 retry 索引，以及 `oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
+1. 校验 10 集合、全拒绝规则与 19 索引，确认 `activities.created_by + event_start`、`notification_outbox` 的 lease、目标与 retry 索引，`profile_media` 的 owner/status、cleanup、delete lease 与 retry 索引，以及 `oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
 2. 真机验证 WXContext openid、微信手机号动态 code、手填手机号来源，以及资料响应中无明文/密文。
 3. 配置 callback HTTPS 路由、Strava 回调域和小程序业务域名，验证 CSRF、过期与重放。
 4. 验证 token 临期刷新、90 天分页、解绑审计及日志无敏感信息；验证跨用户媒体拒绝、未登记 legacy 不进卡、register 失败回收上传对象，以及临时 URL 故障降级。

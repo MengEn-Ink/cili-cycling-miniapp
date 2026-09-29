@@ -17,23 +17,24 @@ const {
 } = require('./domain');
 
 function categoryQuota(activity, gatheringMode) {
+  if (activity.occupancy_partition_ready !== true) return undefined;
   const capacityField =
     gatheringMode === 'support_vehicle' ? 'support_vehicle_capacity' : 'self_drive_capacity';
   const occupiedField =
     gatheringMode === 'support_vehicle'
       ? 'support_vehicle_occupied_count'
       : 'self_drive_occupied_count';
-  // 旧活动没有分类字段时沿用总容量，分类计数从 0 开始；总容量门禁仍然生效。
-  const capacity = Number.isInteger(activity[capacityField])
-    ? activity[capacityField]
-    : activity.capacity;
-  const occupied = Number.isInteger(activity[occupiedField]) ? activity[occupiedField] : 0;
-  const hasOccupied = Number.isInteger(activity[occupiedField]);
+  const capacity = activity[capacityField];
+  const occupied = activity[occupiedField];
+  if (!Number.isInteger(capacity) || !Number.isInteger(occupied))
+    fail('SCHEMA_INVALID', '分类名额计数异常');
   if (capacity < 0 || occupied < 0) fail('SCHEMA_INVALID', '分类名额计数异常');
-  return { capacity, occupied, occupiedField, hasOccupied };
+  return { capacity, occupied, occupiedField };
 }
 
 function occupancyAfter(activity, gatheringMode, delta) {
+  if (activity.occupancy_partition_ready !== true)
+    return { occupied: activity.occupied_count + delta };
   const recognized = ['support_vehicle', 'self_drive'].includes(gatheringMode);
   if (!recognized)
     return {
@@ -46,8 +47,7 @@ function occupancyAfter(activity, gatheringMode, delta) {
         : 0,
     };
   const quota = categoryQuota(activity, gatheringMode);
-  // 旧活动已有报名但没有分类计数时无法反推分类，释放时保持分类计数为 0。
-  const next = delta < 0 && !quota.hasOccupied ? 0 : quota.occupied + delta;
+  const next = quota.occupied + delta;
   if (next < 0) fail('SCHEMA_INVALID', '分类名额计数异常');
   return {
     occupied: activity.occupied_count + delta,
@@ -85,7 +85,8 @@ async function submitRegistration(store, { openid, activityId, options }, now = 
     const safeOptions = validateOptions(options);
     if (activity.occupied_count >= activity.capacity) fail('CAPACITY_FULL', '活动名额已满');
     const quota = categoryQuota(activity, safeOptions.gathering_mode);
-    if (quota.occupied >= quota.capacity) fail('CATEGORY_CAPACITY_FULL', '所选集合方式名额已满');
+    if (quota && quota.occupied >= quota.capacity)
+      fail('CATEGORY_CAPACITY_FULL', '所选集合方式名额已满');
     const nextOccupancy = occupancyAfter(activity, safeOptions.gathering_mode, 1);
 
     const history =

@@ -10,9 +10,11 @@ const {
   isEnabledAdmin,
   publicActivity,
   saveActivity,
+  MAX_PARTITION_BACKFILL_RECORDS,
 } = require('./domain-index');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
+const OCCUPANCY_BACKFILL_PAGE_SIZE = 100;
 function isNotFound(error) {
   return (
     error &&
@@ -38,6 +40,36 @@ function transactionStore() {
         work({
           getAdmin: (id) => maybeGet(transaction.collection('admins'), id),
           getActivity: (id) => maybeGet(transaction.collection('activities'), id),
+          getOccupyingRegistrations: async (activityId, expectedOccupiedCount) => {
+            if (expectedOccupiedCount > MAX_PARTITION_BACKFILL_RECORDS)
+              fail('PARTITION_BACKFILL_REQUIRED', '历史活动占位数超过自动回填上限');
+            const registrations = [];
+            // 复用 activity_id + status + created_at 索引，分别完整扫描两种占位状态。
+            for (const status of ['pending', 'approved']) {
+              let offset = 0;
+              while (registrations.length <= expectedOccupiedCount) {
+                // 最多读取 expected + 1 条：多出的 1 条用于证明总数超出 occupied_count。
+                const limit = Math.min(
+                  OCCUPANCY_BACKFILL_PAGE_SIZE,
+                  expectedOccupiedCount + 1 - registrations.length,
+                );
+                const result = await transaction
+                  .collection('registrations')
+                  .where({ activity_id: activityId, status })
+                  .orderBy('created_at', 'desc')
+                  .skip(offset)
+                  .limit(limit)
+                  .get();
+                if (!result || !Array.isArray(result.data))
+                  throw new Error('invalid registration page');
+                registrations.push(...result.data);
+                if (registrations.length > expectedOccupiedCount) return registrations;
+                if (result.data.length < limit) break;
+                offset += result.data.length;
+              }
+            }
+            return registrations;
+          },
           createActivityId: async () => `activity_${crypto.randomUUID()}`,
           putActivity: async (id, value) => {
             const { _id, ...data } = value;
@@ -58,10 +90,20 @@ exports.main = async (event = {}) => {
         (typeof event.activityId !== 'string' || !event.activityId)
       )
         fail('VALIDATION_FAILED', '活动 ID 格式错误');
+      if (
+        event.activityId !== undefined &&
+        (!Number.isInteger(event.expectedVersion) || event.expectedVersion < 0)
+      )
+        fail('VALIDATION_FAILED', '活动版本格式错误');
       return ok(
         await saveActivity(
           transactionStore(),
-          { openid, activityId: event.activityId, activity: event.activity },
+          {
+            openid,
+            activityId: event.activityId,
+            expectedVersion: event.expectedVersion,
+            activity: event.activity,
+          },
           new Date(),
         ),
       );

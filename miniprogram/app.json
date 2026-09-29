@@ -16,33 +16,18 @@
   ],
   "window": {
     "navigationBarTitleText": "此里",
-    "navigationBarBackgroundColor": "#0b0b0c",
-    "navigationBarTextStyle": "white"
+    "navigationBarBackgroundColor": "#f5f7f2",
+    "navigationBarTextStyle": "black"
   },
   "tabBar": {
-    "color": "#718078",
-    "selectedColor": "#d55b1f",
-    "backgroundColor": "#0b0b0c",
+    "backgroundColor": "#0B0B0C",
     "borderStyle": "black",
+    "color": "#A8A8AD",
+    "selectedColor": "#D55B1F",
     "list": [
-      {
-        "pagePath": "pages/activities/index",
-        "text": "活动",
-        "iconPath": "assets/tabbar/activities.png",
-        "selectedIconPath": "assets/tabbar/activities-active.png"
-      },
-      {
-        "pagePath": "pages/registrations/index",
-        "text": "报名",
-        "iconPath": "assets/tabbar/registrations.png",
-        "selectedIconPath": "assets/tabbar/registrations-active.png"
-      },
-      {
-        "pagePath": "pages/profile/index",
-        "text": "我的",
-        "iconPath": "assets/tabbar/profile.png",
-        "selectedIconPath": "assets/tabbar/profile-active.png"
-      }
+      { "pagePath": "pages/activities/index", "text": "活动" },
+      { "pagePath": "pages/registrations/index", "text": "报名" },
+      { "pagePath": "pages/profile/index", "text": "我的" }
     ]
   },
   "sitemapLocation": "sitemap.json"

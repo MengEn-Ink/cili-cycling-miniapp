@@ -1,71 +1,70 @@
 import { rideService } from '../../services/ride-service';
 import { appStore } from '../../store/app-store';
 import { runPageTask } from '../../services/page-service';
-import { personalCardViewModel } from '../../utils/personal-card';
-import type { PersonalCapabilityCard } from '../../models';
-
-function identityViewData() {
+function identityViewData(fallbackError = '') {
+  const authStatus = fallbackError ? 'error' : appStore.authStatus;
   return {
     role: appStore.role,
     isSuper: appStore.isSuper,
-    authStatus: appStore.authStatus,
-    authError: appStore.authError,
-    isAdmin: appStore.authStatus === 'authenticated' && appStore.role === 'admin',
+    authStatus,
+    authError: appStore.authError || fallbackError,
+    isAdmin: authStatus === 'authenticated' && appStore.role === 'admin',
   };
 }
 Page({
+  loadRequestId: 0,
   data: {
     profile: null as any,
     loading: true,
+    refreshing: false,
     error: '',
     role: 'member',
     isSuper: false,
     authStatus: 'idle',
     authError: '',
     isAdmin: false,
-    heroBackgrounds: [] as any[],
-    heroAvatarUrl: '',
-    hasGuidance: false,
   },
   async onShow() {
     await this.load();
   },
-  async load() {
-    this.setData({ loading: true, error: '' });
-    const auth = appStore.refreshIdentity(wx.cloud);
-    this.setData(identityViewData());
-    await auth;
-
-    const [profileState, cardState] = await Promise.all([
-      runPageTask(() => rideService.getProfile(), '资料服务暂不可用'),
-      runPageTask(() => rideService.getPersonalCapabilityCard(), '').catch(() => ({
-        data: null,
-        error: '',
-      })),
-    ]);
-
-    const profile = profileState.data;
-    const card = cardState.data as PersonalCapabilityCard | null;
-    const vm = card ? personalCardViewModel(card) : null;
-
-    this.setData({
-      profile: profile || null,
-      loading: false,
-      error: profileState.error,
-      heroBackgrounds: vm?.backgrounds || [],
-      heroAvatarUrl: vm?.avatarUrl || '',
-      hasGuidance: profile ? !profile.hasCompletedGuidance : false,
-      ...identityViewData(),
-    });
+  onHide() {
+    this.loadRequestId += 1;
   },
-  async dismissGuidance() {
-    if (!this.data.profile) return;
-    try {
-      await rideService.updateProfile({ hasCompletedGuidance: true });
-      this.setData({ hasGuidance: false });
-    } catch {
-      wx.showToast({ title: '操作失败', icon: 'none' });
-    }
+  onUnload() {
+    this.loadRequestId += 1;
+  },
+  async load() {
+    const requestId = ++this.loadRequestId;
+    const hasProfile = Boolean(this.data.profile);
+    this.setData({
+      loading: !hasProfile,
+      refreshing: hasProfile,
+      error: '',
+    });
+
+    const identity = runPageTask(() => appStore.refreshIdentity(wx.cloud), '身份服务暂不可用');
+    this.setData(identityViewData());
+    const profile = runPageTask(() => rideService.getProfile(), '资料服务暂不可用');
+
+    await Promise.all([
+      identity.then((state) => {
+        if (requestId !== this.loadRequestId) return;
+        this.setData(identityViewData(state.error));
+      }),
+      profile.then((state) => {
+        if (requestId !== this.loadRequestId) return;
+        if (state.error) {
+          this.setData({ loading: false, refreshing: false, error: state.error });
+          return;
+        }
+        this.setData({
+          profile: state.data || null,
+          loading: false,
+          refreshing: false,
+          error: '',
+        });
+      }),
+    ]);
   },
   edit() {
     wx.navigateTo({ url: '/pages/profile-edit/index' });
@@ -84,6 +83,9 @@ Page({
     if (this.data.isAdmin) wx.navigateTo({ url: '/pages/admin/reviews/index' });
   },
   async retryAuth() {
+    await this.load();
+  },
+  async retryProfile() {
     await this.load();
   },
 });

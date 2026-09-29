@@ -114,14 +114,11 @@ function tokenDocument(openid, token, keyValue, now) {
     (!Number.isFinite(token.athlete.id) && typeof token.athlete.id !== 'string')
   )
     throw new StravaError('OAUTH_TOKEN_INVALID', 'Strava 换取凭证失败');
-  const profileUrl = token.athlete.profile || token.athlete.profile_medium || '';
   return {
     _id: openid,
     openid,
     athlete_id: String(token.athlete.id),
     athlete_name: [token.athlete.firstname, token.athlete.lastname].filter(Boolean).join(' '),
-    athlete_profile_url:
-      typeof profileUrl === 'string' && profileUrl.startsWith('https://') ? profileUrl : '',
     access_token_cipher: encrypt(token.access_token, keyValue),
     refresh_token_cipher: encrypt(token.refresh_token, keyValue),
     token_expires_at: new Date(token.expires_at * 1000),

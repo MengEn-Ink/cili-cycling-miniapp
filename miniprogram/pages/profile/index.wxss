@@ -51,40 +51,12 @@ page {
   letter-spacing: 2rpx;
 }
 .profile-hero {
-  position: relative;
   display: flex;
   align-items: center;
   gap: 28rpx;
   padding: 40rpx 10rpx 28rpx;
 }
-.profile-hero.has-bg {
-  min-height: 320rpx;
-  padding-top: 120rpx;
-}
-.hero-swiper {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 0;
-  width: 100%;
-  height: 100%;
-}
-.hero-bg-image {
-  width: 100%;
-  height: 100%;
-}
-.hero-shade {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 1;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(to bottom, transparent 0%, rgba(11, 11, 12, 0.4) 40%, #0b0b0c 100%);
-}
 .avatar {
-  position: relative;
-  z-index: 2;
   display: flex;
   flex: 0 0 112rpx;
   align-items: center;
@@ -99,33 +71,12 @@ page {
   font-style: italic;
   font-weight: 900;
   transform: skewX(-7deg);
-  overflow: hidden;
-}
-.avatar-image {
-  width: 100%;
-  height: 100%;
-  transform: skewX(7deg) scale(1.1);
 }
 .avatar text {
   transform: skewX(7deg);
 }
 .profile-copy {
-  position: relative;
-  z-index: 2;
   min-width: 0;
-}
-.guidance-card {
-  margin-top: 24rpx;
-  border-color: #d55b1f;
-}
-.guidance-actions {
-  display: flex;
-  gap: 16rpx;
-  margin-top: 24rpx;
-}
-.guidance-actions button {
-  flex: 1;
-  margin: 0;
 }
 .profile-copy .hero-kicker {
   color: #d55b1f;
@@ -191,6 +142,41 @@ page {
 }
 .profile-card {
   margin-top: 10rpx;
+}
+.profile-loading,
+.profile-error,
+.empty-profile {
+  margin-top: 10rpx;
+}
+.profile-refreshing,
+.profile-refresh-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 68rpx;
+  margin: 10rpx 0 12rpx;
+  padding: 14rpx 20rpx;
+  border: 1rpx solid #5a5a5e;
+  border-radius: 6rpx;
+  background: #18181a;
+  color: #bdbdc0;
+  font-size: 22rpx;
+}
+.profile-refresh-error {
+  border-color: #8d4930;
+  color: #f0b59e;
+}
+.profile-refresh-error button {
+  min-width: 96rpx;
+  min-height: 88rpx;
+  margin: 0 0 0 20rpx;
+  padding: 0 18rpx;
+  border: 1rpx solid #a85a39;
+  border-radius: 4rpx;
+  background: transparent;
+  color: #f7f7f5;
+  font-size: 22rpx;
+  line-height: 88rpx;
 }
 .edit-button {
   min-width: 96rpx;

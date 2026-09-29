@@ -6,6 +6,9 @@ page {
   --cili-white: #f7f7f5;
   --cili-orange: #d55b1f;
   --cili-red: #c82018;
+  --tab-page-bottom-space: 52rpx;
+  --fixed-action-reserve: 210rpx;
+  --fixed-action-reserve-narrow: 320rpx;
   min-height: 100%;
   background: #f5f7f2;
   color: #17231e;
@@ -21,9 +24,32 @@ textarea {
   box-sizing: border-box;
 }
 
+.a11y-live-region {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .page {
   min-height: 100vh;
-  padding: 24rpx 24rpx calc(168rpx + env(safe-area-inset-bottom));
+  padding: 24rpx;
+  padding-bottom: 168rpx;
+  padding-bottom: calc(168rpx + constant(safe-area-inset-bottom));
+  padding-bottom: calc(168rpx + env(safe-area-inset-bottom));
+}
+
+.page.activities-page,
+.page.registrations-page,
+.page.profile-page {
+  padding-bottom: var(--tab-page-bottom-space);
+  padding-bottom: calc(var(--tab-page-bottom-space) + constant(safe-area-inset-bottom));
+  padding-bottom: calc(var(--tab-page-bottom-space) + env(safe-area-inset-bottom));
 }
 
 .hero {
@@ -198,6 +224,8 @@ button::after {
   right: 0;
   bottom: 0;
   left: 0;
+  padding: 16rpx 24rpx;
+  padding: 16rpx 24rpx calc(16rpx + constant(safe-area-inset-bottom));
   padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));
   border-top: 1rpx solid #e8ede9;
   background: rgba(255, 255, 255, 0.97);

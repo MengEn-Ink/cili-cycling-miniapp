@@ -56,6 +56,7 @@ Page({
     saving: false,
     error: '',
     id: '',
+    version: 0,
     status: 'draft',
     occupiedCount: 0,
     // 当前页面暂不编辑封面与行程，必须保留加载到的原值，避免普通编辑静默清空。
@@ -84,6 +85,7 @@ Page({
       this.setData({
         loading: false,
         status: activity.status,
+        version: activity.version,
         occupiedCount: activity.occupiedCount || 0,
         coverImage: activity.coverImage || '',
         schedule: activity.schedule,
@@ -162,9 +164,15 @@ Page({
     };
     this.setData({ saving: true, error: '' });
     try {
-      const saved = await rideService.saveActivity(activity, this.data.id || undefined);
+      const id = this.data.id || undefined;
+      const saved = await rideService.saveActivity(
+        activity,
+        id,
+        id ? this.data.version : undefined,
+      );
       this.setData({
         id: saved.id,
+        version: saved.version,
         status: saved.status,
         occupiedCount: saved.occupiedCount || 0,
         coverImage: saved.coverImage || '',

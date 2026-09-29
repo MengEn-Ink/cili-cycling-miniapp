@@ -1,17 +1,35 @@
 import { rideService } from '../../services/ride-service';
 import { activityDisplayStatus } from '../../utils/activity';
 Page({
-  data: { loading: true, error: '', items: [] as any[] },
-  _lastReqId: 0,
+  loadRequestId: 0,
+  data: {
+    loading: true,
+    refreshing: false,
+    error: '',
+    refreshError: '',
+    items: [] as any[],
+  },
   onShow() {
     void this.load();
   },
+  onHide() {
+    this.loadRequestId += 1;
+  },
+  onUnload() {
+    this.loadRequestId += 1;
+  },
   async load() {
-    const reqId = ++this._lastReqId;
-    this.setData({ loading: true, error: '' });
+    const requestId = ++this.loadRequestId;
+    const hasItems = this.data.items.length > 0;
+    this.setData({
+      loading: !hasItems,
+      refreshing: hasItems,
+      error: '',
+      refreshError: '',
+    });
     try {
       const activities = await rideService.listActivities();
-      if (reqId !== this._lastReqId) return;
+      if (requestId !== this.loadRequestId) return;
       this.setData({
         items: activities.map((item) => ({
           ...item,
@@ -21,11 +39,12 @@ Page({
         })),
       });
     } catch (error) {
-      if (reqId !== this._lastReqId) return;
-      this.setData({ error: error instanceof Error ? error.message : '活动加载失败，请稍后重试' });
+      if (requestId !== this.loadRequestId) return;
+      const message = error instanceof Error ? error.message : '活动加载失败，请稍后重试';
+      this.setData(hasItems ? { refreshError: message } : { error: message });
     } finally {
-      if (reqId === this._lastReqId) {
-        this.setData({ loading: false });
+      if (requestId === this.loadRequestId) {
+        this.setData({ loading: false, refreshing: false });
       }
     }
   },

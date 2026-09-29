@@ -226,14 +226,15 @@ export class MockRepository implements RideRepository {
     s.stravaStatus = 'pending';
     this.write(s);
   }
-  async saveActivity(value: ActivityInput, id?: string) {
+  async saveActivity(value: ActivityInput, id?: string, expectedVersion?: number) {
+    const current = id ? this.read().activities.find((item) => item.id === id) : undefined;
+    if (current && current.version !== expectedVersion) throw new Error('活动已被其他人更新');
     const a: Activity = {
       ...value,
       id: id || `a${Date.now()}`,
+      version: current ? current.version + 1 : 1,
       date: value.startAt,
-      occupiedCount: id
-        ? this.read().activities.find((item) => item.id === id)?.occupiedCount || 0
-        : 0,
+      occupiedCount: id ? current?.occupiedCount || 0 : 0,
     };
     const s = this.read(),
       i = s.activities.findIndex((x) => x.id === a.id);

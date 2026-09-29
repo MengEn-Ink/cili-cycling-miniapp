@@ -34,17 +34,6 @@
   line-height: 44rpx;
   padding: 0 24rpx;
 }
-.radio-group {
-  display: flex;
-  gap: 32rpx;
-  margin-top: 12rpx;
-}
-.radio-label {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-  font-size: 28rpx;
-}
 
 .field-tip {
   margin-top: 12rpx;

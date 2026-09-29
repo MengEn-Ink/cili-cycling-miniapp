@@ -3,7 +3,6 @@ page {
 }
 .registrations-page {
   min-height: 100vh;
-  padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
   background: radial-gradient(circle at 94% 3%, rgba(213, 91, 31, 0.13), transparent 32%), #0b0b0c;
   color: #f7f7f5;
 }

@@ -71,8 +71,12 @@ function transactionStore() {
               .update({
                 data: {
                   occupied_count: occupied,
-                  support_vehicle_occupied_count: supportVehicleOccupied,
-                  self_drive_occupied_count: selfDriveOccupied,
+                  ...(supportVehicleOccupied !== undefined
+                    ? { support_vehicle_occupied_count: supportVehicleOccupied }
+                    : {}),
+                  ...(selfDriveOccupied !== undefined
+                    ? { self_drive_occupied_count: selfDriveOccupied }
+                    : {}),
                   updated_at: db.serverDate(),
                 },
               }),

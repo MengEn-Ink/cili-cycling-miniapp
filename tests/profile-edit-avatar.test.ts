@@ -49,12 +49,11 @@ describe('资料编辑头像回写', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('保存资料时继续提交 avatarFileId 与 avatarSource', async () => {
-    page.data.p.avatarSource = 'strava';
+  it('保存资料时继续提交 avatarFileId', async () => {
     await page.save();
 
     expect(rideService.updateProfile).toHaveBeenCalledWith(
-      expect.objectContaining({ avatarFileId: 'cloud://avatar', avatarSource: 'strava' }),
+      expect.objectContaining({ avatarFileId: 'cloud://avatar' }),
     );
   });
 

@@ -33,6 +33,11 @@ const activity = {
   signup_deadline: '2026-10-01T00:00:00.000Z',
   capacity: 2,
   occupied_count: 0,
+  occupancy_partition_ready: true,
+  support_vehicle_capacity: 1,
+  self_drive_capacity: 1,
+  support_vehicle_occupied_count: 0,
+  self_drive_occupied_count: 0,
   created_by: 'secret',
 };
 const profile = {
@@ -131,8 +136,10 @@ function memoryStore(seed = {}) {
           setOccupied: async (id, value, supportVehicleOccupied, selfDriveOccupied) => {
             const target = draft.activities.get(id);
             target.occupied_count = value;
-            target.support_vehicle_occupied_count = supportVehicleOccupied;
-            target.self_drive_occupied_count = selfDriveOccupied;
+            if (supportVehicleOccupied !== undefined)
+              target.support_vehicle_occupied_count = supportVehicleOccupied;
+            if (selfDriveOccupied !== undefined)
+              target.self_drive_occupied_count = selfDriveOccupied;
           },
           addAudit: async (value) => {
             if (seed.auditFailure) throw new Error('audit write failed');
@@ -464,6 +471,33 @@ test('取消仅本人 pending/approved 并在事务内释放名额', async () =>
   });
 });
 
+test('旧报名取消只释放总占位，不扣减未就绪活动的新报名分类计数', async () => {
+  const id = registrationId('a1', openid);
+  const registration = {
+    _id: id,
+    activity_id: 'a1',
+    openid,
+    status: 'approved',
+    options: { gathering_mode: 'self_drive' },
+    review_history: [],
+  };
+  const store = memoryStore({
+    activity: {
+      occupied_count: 2,
+      occupancy_partition_ready: false,
+      support_vehicle_occupied_count: 0,
+      self_drive_occupied_count: 1,
+    },
+    registration,
+  });
+
+  await cancelRegistration(store, { openid, registrationId: id }, now);
+
+  assert.equal(store.state.activities.get('a1').occupied_count, 1);
+  assert.equal(store.state.activities.get('a1').support_vehicle_occupied_count, 0);
+  assert.equal(store.state.activities.get('a1').self_drive_occupied_count, 1);
+});
+
 test('审计写失败时提交和取消都回滚报名记录与名额', async () => {
   const submitStore = memoryStore({ auditFailure: true });
   await assert.rejects(submitRegistration(submitStore, input, now), /audit write failed/);
@@ -625,6 +659,22 @@ test('公开活动保留容量拆分和司机信息，但手机号必须脱敏',
   assert.equal(output.created_by, undefined);
 });
 
+test('未就绪旧活动不暴露无法对账的分类剩余名额', () => {
+  const output = publicActivity(
+    {
+      ...activity,
+      occupancy_partition_ready: false,
+      support_vehicle_capacity: 1,
+      self_drive_capacity: 1,
+      support_vehicle_occupied_count: 1,
+      self_drive_occupied_count: 0,
+    },
+    now,
+  );
+  assert.equal(output.support_vehicle_remaining, undefined);
+  assert.equal(output.self_drive_remaining, undefined);
+});
+
 test('公开活动兼容无司机信息，异常手机号不透传非字符串值', () => {
   assert.equal(publicActivity(activity, now).support_vehicle_driver, undefined);
   const output = publicActivity(
@@ -634,7 +684,7 @@ test('公开活动兼容无司机信息，异常手机号不透传非字符串�
   assert.equal(output.support_vehicle_driver.contact_phone, '');
 });
 
-test('分类满员时即使总容量未满也拒绝，旧活动缺少分类字段仍可报名', async () => {
+test('分类满员时即使总容量未满也拒绝，旧活动报名只更新总占位', async () => {
   const categoryFull = memoryStore({
     activity: {
       capacity: 4,
@@ -655,13 +705,16 @@ test('分类满员时即使总容量未满也拒绝，旧活动缺少分类字�
   );
   assert.equal(categoryFull.state.activities.get('a1').occupied_count, 1);
 
-  const legacy = memoryStore({ activity: { capacity: 2, occupied_count: 0 } });
+  const legacy = memoryStore({
+    activity: { capacity: 2, occupied_count: 0, occupancy_partition_ready: false },
+  });
   await submitRegistration(
     legacy,
     { ...input, options: { ...input.options, gathering_mode: 'support_vehicle' } },
     now,
   );
-  assert.equal(legacy.state.activities.get('a1').support_vehicle_occupied_count, 1);
+  assert.equal(legacy.state.activities.get('a1').occupied_count, 1);
+  assert.equal(legacy.state.activities.get('a1').support_vehicle_occupied_count, 0);
   assert.equal(legacy.state.activities.get('a1').self_drive_occupied_count, 0);
 });
 
