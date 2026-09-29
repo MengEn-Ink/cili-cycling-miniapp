@@ -3,7 +3,7 @@ import { appStore } from '../../../store/app-store';
 Page({
   data: { items: [] as any[], error: '', allowed: false, isAdmin: false },
   async onShow() {
-    await appStore.refreshIdentity(wx.cloud);
+    await appStore.refreshIdentity(wx.cloud, true);
     if (appStore.authStatus !== 'authenticated') {
       this.setData({ error: '请先完成微信身份验证', allowed: false });
       return;

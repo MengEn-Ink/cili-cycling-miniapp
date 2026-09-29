@@ -33,7 +33,7 @@ Page({
   onUnload() {
     this.loadRequestId += 1;
   },
-  async load() {
+  async load(forceIdentity = false) {
     const requestId = ++this.loadRequestId;
     const hasProfile = Boolean(this.data.profile);
     this.setData({
@@ -42,7 +42,10 @@ Page({
       error: '',
     });
 
-    const identity = runPageTask(() => appStore.refreshIdentity(wx.cloud), '身份服务暂不可用');
+    const identity = runPageTask(
+      () => appStore.refreshIdentity(wx.cloud, forceIdentity),
+      '身份服务暂不可用',
+    );
     this.setData(identityViewData());
     const profile = runPageTask(() => rideService.getProfile(), '资料服务暂不可用');
 
@@ -83,7 +86,7 @@ Page({
     if (this.data.isAdmin) wx.navigateTo({ url: '/pages/admin/reviews/index' });
   },
   async retryAuth() {
-    await this.load();
+    await this.load(true);
   },
   async retryProfile() {
     await this.load();

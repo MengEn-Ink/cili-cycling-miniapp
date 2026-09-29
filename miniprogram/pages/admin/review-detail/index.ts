@@ -20,7 +20,7 @@ Page({
     error: '',
   },
   async onLoad(q: any) {
-    await appStore.refreshIdentity(wx.cloud);
+    await appStore.refreshIdentity(wx.cloud, true);
     if (appStore.role !== 'admin' || appStore.authStatus !== 'authenticated') {
       this.setData({ error: '仅已验证管理员可审批' });
       return;

@@ -26,7 +26,7 @@ Page({
   async load() {
     const generation = ++loadGeneration;
     this.setData({ loading: true, error: '' });
-    await appStore.refreshIdentity(wx.cloud);
+    await appStore.refreshIdentity(wx.cloud, true);
     if (generation !== loadGeneration) return;
     if (appStore.role !== 'admin' || appStore.authStatus !== 'authenticated') {
       this.setData({ loading: false, all: [], items: [], error: '仅已验证管理员可审批' });
