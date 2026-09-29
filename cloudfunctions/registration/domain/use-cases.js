@@ -135,7 +135,7 @@ async function reviewRegistration(
       await tx.setOccupied(registration.activity_id, activity.occupied_count - 1);
     }
     await tx.addAudit(
-      buildAudit(openid, `registration.${action}`, id, now, {
+      buildAudit(openid, `registration.${nextStatus}`, id, now, {
         from_status: registration.status,
         to_status: nextStatus,
         reason: typeof reason === 'string' ? reason.trim() : '',
