@@ -13,6 +13,7 @@ const {
   authorizationUrl,
   consumeState,
   tokenDocument,
+  isCredentialUsable,
   deriveReadiness,
   statistics,
   fetchActivityWindow,
@@ -39,6 +40,22 @@ const token = (expires = Math.floor(Date.now() / 1000) + 3600) => ({
   expires_at: expires,
   scope: 'read,activity:read_all',
   athlete: { id: 42, firstname: 'Test', lastname: 'Rider' },
+});
+const usableCredential = (overrides = {}) => ({
+  athlete_name: 'Rider',
+  access_token_cipher: {
+    alg: 'A256GCM',
+    iv: 'access-iv',
+    tag: 'access-tag',
+    ciphertext: 'access-ciphertext',
+  },
+  refresh_token_cipher: {
+    alg: 'A256GCM',
+    iv: 'refresh-iv',
+    tag: 'refresh-tag',
+    ciphertext: 'refresh-ciphertext',
+  },
+  ...overrides,
 });
 test('配置缺失 fail closed 且授权 URL 不含 secret', () => {
   assert.throws(() => config({ ...env, STRAVA_CLIENT_SECRET: '' }), {
@@ -146,7 +163,7 @@ test('readiness 常量和 fresh canonical snapshot 快路径', () => {
   assert.equal(SNAPSHOT_MAX_AGE_MS, 86_400_000);
   assert.equal(SYNC_LEASE_MS, 120_000);
   const now = new Date('2026-09-29T04:00:00.000Z');
-  const credential = { athlete_name: 'Rider', sync_status: 'failed' };
+  const credential = usableCredential({ sync_status: 'failed' });
   const snapshot = { synced_at: new Date(now.getTime() - SNAPSHOT_MAX_AGE_MS + 1) };
   assert.deepEqual(deriveReadiness({ credential, snapshot, hasActiveOAuthState: false }, now), {
     state: 'ready',
@@ -168,6 +185,63 @@ test('readiness 从服务端 active state 派生 authorizing', () => {
       .state,
     'disconnected',
   );
+});
+test('credential 必须同时包含结构有效的 access 和 refresh 加密信封', () => {
+  assert.equal(isCredentialUsable(usableCredential()), true);
+  assert.equal(isCredentialUsable(undefined), false);
+  assert.equal(isCredentialUsable({}), false);
+  assert.equal(isCredentialUsable(usableCredential({ refresh_token_cipher: undefined })), false);
+  for (const field of ['iv', 'tag', 'ciphertext']) {
+    assert.equal(
+      isCredentialUsable(
+        usableCredential({
+          access_token_cipher: {
+            alg: 'A256GCM',
+            iv: 'access-iv',
+            tag: 'access-tag',
+            ciphertext: 'access-ciphertext',
+            [field]: '',
+          },
+        }),
+      ),
+      false,
+    );
+  }
+  assert.equal(
+    isCredentialUsable(
+      usableCredential({
+        refresh_token_cipher: {
+          alg: 'AES-CBC',
+          iv: 'refresh-iv',
+          tag: 'refresh-tag',
+          ciphertext: 'refresh-ciphertext',
+        },
+      }),
+    ),
+    false,
+  );
+});
+test('fresh snapshot 不能让缺失或畸形 token envelope 的 credential 变为 ready', () => {
+  const now = new Date('2026-09-29T04:00:00.000Z');
+  const snapshot = { synced_at: new Date(now.getTime() - 1) };
+  for (const credential of [
+    { athlete_name: 'Missing' },
+    usableCredential({ access_token_cipher: undefined }),
+    usableCredential({ refresh_token_cipher: undefined }),
+    usableCredential({
+      access_token_cipher: {
+        alg: 'AES-CBC',
+        iv: 'iv',
+        tag: 'tag',
+        ciphertext: 'ciphertext',
+      },
+    }),
+  ]) {
+    const result = deriveReadiness({ credential, snapshot, hasActiveOAuthState: false }, now);
+    assert.equal(result.state, 'syncing');
+    assert.equal(result.can_register, false);
+    assert.equal(result.snapshot, null);
+  }
 });
 test('pending、running 和 stale ready 都派生 syncing', () => {
   const now = new Date('2026-09-29T04:00:00.000Z');
@@ -222,7 +296,7 @@ test('非法时间不可报名且 legacy credential 可由 fresh snapshot 推导
   assert.equal(
     deriveReadiness(
       {
-        credential: { athlete_name: 'Legacy Rider' },
+        credential: usableCredential({ athlete_name: 'Legacy Rider' }),
         snapshot: { synced_at: new Date(now.getTime() - 1) },
         hasActiveOAuthState: false,
       },
@@ -348,7 +422,7 @@ test('ensureReady 对 fresh snapshot 不获取 lease 且不访问 Strava', async
   const now = new Date('2026-09-29T04:00:00.000Z');
   let claims = 0;
   let activityCalls = 0;
-  const credential = { athlete_name: 'Rider', sync_status: 'failed' };
+  const credential = usableCredential({ sync_status: 'failed' });
   const snapshot = { synced_at: new Date(now.getTime() - 1) };
   const result = await ensureReadyFlow({
     openid: 'user-1',

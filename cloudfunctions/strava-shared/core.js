@@ -143,6 +143,24 @@ function isSnapshotFresh(snapshot, now = new Date()) {
   const synced = validDate(snapshot && snapshot.synced_at);
   return Boolean(synced && now.getTime() - synced.getTime() < SNAPSHOT_MAX_AGE_MS);
 }
+function isCredentialUsable(credential) {
+  const validEnvelope = (value) =>
+    Boolean(
+      value &&
+      value.alg === 'A256GCM' &&
+      typeof value.iv === 'string' &&
+      value.iv.length > 0 &&
+      typeof value.tag === 'string' &&
+      value.tag.length > 0 &&
+      typeof value.ciphertext === 'string' &&
+      value.ciphertext.length > 0,
+    );
+  return Boolean(
+    credential &&
+    validEnvelope(credential.access_token_cipher) &&
+    validEnvelope(credential.refresh_token_cipher),
+  );
+}
 function deriveReadiness({ credential, snapshot, hasActiveOAuthState }, now = new Date()) {
   if (!credential) {
     return {
@@ -153,7 +171,7 @@ function deriveReadiness({ credential, snapshot, hasActiveOAuthState }, now = ne
       error: null,
     };
   }
-  if (isSnapshotFresh(snapshot, now)) {
+  if (isCredentialUsable(credential) && isSnapshotFresh(snapshot, now)) {
     return {
       state: 'ready',
       can_register: true,
@@ -416,6 +434,7 @@ module.exports = {
   tokenDocument,
   validDate,
   isSnapshotFresh,
+  isCredentialUsable,
   deriveReadiness,
   statistics,
   fetchActivityWindow,

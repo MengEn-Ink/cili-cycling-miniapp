@@ -289,7 +289,23 @@ test('status 与 ensureReady 路由都返回 canonical readiness DTO', async () 
   const now = new Date();
   const fixture = fakeDb({
     strava_credentials: {
-      'user-1': { _id: 'user-1', athlete_name: 'Rider', sync_status: 'ready' },
+      'user-1': {
+        _id: 'user-1',
+        athlete_name: 'Rider',
+        sync_status: 'ready',
+        access_token_cipher: {
+          alg: 'A256GCM',
+          iv: 'access-iv',
+          tag: 'access-tag',
+          ciphertext: 'access-ciphertext',
+        },
+        refresh_token_cipher: {
+          alg: 'A256GCM',
+          iv: 'refresh-iv',
+          tag: 'refresh-tag',
+          ciphertext: 'refresh-ciphertext',
+        },
+      },
     },
     strava_snapshots: {
       'user-1': { _id: 'user-1', synced_at: new Date(now.getTime() - 1), total_km: 10 },
