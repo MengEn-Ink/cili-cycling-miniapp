@@ -48,6 +48,9 @@ const lines = (value: string) =>
     .split('\n')
     .map((item) => item.trim())
     .filter(Boolean);
+const optionalNumber = (value: string) => (value.trim() ? Number(value) : undefined);
+const isNonNegativeIntegerText = (value: string) =>
+  value.trim() !== '' && Number.isInteger(Number(value)) && Number(value) >= 0;
 Page({
   data: {
     allowed: false,
@@ -55,11 +58,13 @@ Page({
     loading: true,
     saving: false,
     error: '',
+    fromTemplate: false,
+    canPublish: false,
     id: '',
     version: 0,
     status: 'draft',
     occupiedCount: 0,
-    // 当前页面暂不编辑封面与行程，必须保留加载到的原值，避免普通编辑静默清空。
+    // 独立保存未映射到普通文本表单的媒体和行程值，避免编辑时静默清空。
     coverImage: '',
     schedule: [] as ActivityInput['schedule'],
     routeGpxFileId: '',
@@ -68,13 +73,18 @@ Page({
     form: emptyForm(),
   },
   async onLoad(options: Record<string, string>) {
-    await appStore.refreshIdentity(wx.cloud, true);
+    await appStore.ensureIdentity(wx.cloud);
     if (appStore.authStatus !== 'authenticated') {
       this.setData({ loading: false, error: '请先完成微信身份验证' });
       return;
     }
     const id = typeof options.id === 'string' ? options.id : '';
-    this.setData({ allowed: true, isAdmin: appStore.role === 'admin', id });
+    this.setData({
+      allowed: true,
+      isAdmin: appStore.role === 'admin',
+      id,
+      fromTemplate: options.fromTemplate === '1',
+    });
     if (!id) {
       this.setData({ loading: false });
       return;
@@ -82,6 +92,31 @@ Page({
     try {
       const activity = await rideService.getAdminActivity(id);
       if (!activity) throw new Error('活动不存在');
+      const form: Form = {
+        title: activity.title,
+        description: activity.description,
+        capacity: activity.capacity === undefined ? '' : String(activity.capacity),
+        supportVehicleCapacity:
+          activity.supportVehicleCapacity === undefined
+            ? ''
+            : String(activity.supportVehicleCapacity),
+        selfDriveCapacity:
+          activity.selfDriveCapacity === undefined ? '' : String(activity.selfDriveCapacity),
+        driverNickname: activity.supportVehicleDriver?.nickname || '',
+        licensePlate: activity.supportVehicleDriver?.licensePlate || '',
+        contactPhone: activity.supportVehicleDriver?.contactPhone || '',
+        deadline: activity.deadline || '',
+        startAt: activity.startAt || '',
+        endAt: activity.endAt || '',
+        routeStart: activity.route.start,
+        routeEnd: activity.route.end,
+        distanceKm: String(activity.route.distanceKm),
+        elevationM: String(activity.route.elevationM),
+        level: activity.route.level,
+        fee: activity.fee || '',
+        notices: activity.notices.join('\n'),
+        equipment: activity.equipment.join('\n'),
+      };
       this.setData({
         loading: false,
         status: activity.status,
@@ -92,28 +127,9 @@ Page({
         routeGpxFileId: activity.route.gpxFileId || '',
         feeIncluded: activity.feeIncluded || [],
         feeExcluded: activity.feeExcluded || [],
-        form: {
-          title: activity.title,
-          description: activity.description,
-          capacity: String(activity.capacity),
-          supportVehicleCapacity: String(activity.supportVehicleCapacity ?? 0),
-          selfDriveCapacity: String(activity.selfDriveCapacity ?? activity.capacity),
-          driverNickname: activity.supportVehicleDriver?.nickname || '',
-          licensePlate: activity.supportVehicleDriver?.licensePlate || '',
-          contactPhone: activity.supportVehicleDriver?.contactPhone || '',
-          deadline: activity.deadline,
-          startAt: activity.startAt,
-          endAt: activity.endAt,
-          routeStart: activity.route.start,
-          routeEnd: activity.route.end,
-          distanceKm: String(activity.route.distanceKm),
-          elevationM: String(activity.route.elevationM),
-          level: activity.route.level,
-          fee: activity.fee,
-          notices: activity.notices.join('\n'),
-          equipment: activity.equipment.join('\n'),
-        },
+        form,
       });
+      this.recomputePublishReadiness();
     } catch (error) {
       this.setData({
         loading: false,
@@ -124,28 +140,82 @@ Page({
   field(event: any) {
     const name = event.currentTarget.dataset.name as keyof Form;
     this.setData({ [`form.${name}`]: event.detail.value });
+    this.recomputePublishReadiness();
+  },
+  assetField(event: any) {
+    const name = String(event.currentTarget.dataset.name || '');
+    if (!['coverImage', 'routeGpxFileId'].includes(name)) return;
+    this.setData({ [name]: event.detail.value });
+    this.recomputePublishReadiness();
+  },
+  recomputePublishReadiness() {
+    const f = this.data.form as Form;
+    const capacity = Number(f.capacity);
+    const support = Number(f.supportVehicleCapacity);
+    const selfDrive = Number(f.selfDriveCapacity);
+    const deadline = new Date(f.deadline).getTime();
+    const start = new Date(f.startAt).getTime();
+    const end = new Date(f.endAt).getTime();
+    const driverReady =
+      support === 0 ||
+      Boolean(f.driverNickname.trim() && f.licensePlate.trim() && f.contactPhone.trim());
+    const canPublish = Boolean(
+      Number.isInteger(capacity) &&
+      capacity > 0 &&
+      isNonNegativeIntegerText(f.supportVehicleCapacity) &&
+      isNonNegativeIntegerText(f.selfDriveCapacity) &&
+      support + selfDrive === capacity &&
+      Number.isFinite(deadline) &&
+      Number.isFinite(start) &&
+      Number.isFinite(end) &&
+      Date.now() < deadline &&
+      deadline < start &&
+      start < end &&
+      driverReady &&
+      f.fee.trim() &&
+      String(this.data.coverImage || '').trim() &&
+      String(this.data.routeGpxFileId || '').trim(),
+    );
+    this.setData({ canPublish });
   },
   async save(event: any) {
     if (this.data.saving) return;
     const nextStatus = String(
       event.currentTarget.dataset.status || this.data.status,
     ) as ActivityInput['status'];
+    if (nextStatus !== 'draft' && !this.data.canPublish) {
+      this.setData({ error: '发布前请完成重新确认清单' });
+      return;
+    }
     const f = this.data.form as Form;
+    const capacity = optionalNumber(f.capacity);
+    const supportVehicleCapacity = optionalNumber(f.supportVehicleCapacity);
+    const selfDriveCapacity = optionalNumber(f.selfDriveCapacity);
+    const hasDriver = Boolean(
+      f.driverNickname.trim() || f.licensePlate.trim() || f.contactPhone.trim(),
+    );
+    const hasFee = Boolean(
+      f.fee.trim() || this.data.feeIncluded.length || this.data.feeExcluded.length,
+    );
     const activity: ActivityInput = {
       title: f.title,
       description: f.description,
       coverImage: this.data.coverImage,
-      capacity: Number(f.capacity),
-      supportVehicleCapacity: Number(f.supportVehicleCapacity),
-      selfDriveCapacity: Number(f.selfDriveCapacity),
-      supportVehicleDriver: {
-        nickname: f.driverNickname,
-        licensePlate: f.licensePlate,
-        contactPhone: f.contactPhone,
-      },
-      deadline: f.deadline,
-      startAt: f.startAt,
-      endAt: f.endAt,
+      ...(capacity === undefined ? {} : { capacity }),
+      ...(supportVehicleCapacity === undefined ? {} : { supportVehicleCapacity }),
+      ...(selfDriveCapacity === undefined ? {} : { selfDriveCapacity }),
+      ...(hasDriver
+        ? {
+            supportVehicleDriver: {
+              nickname: f.driverNickname,
+              licensePlate: f.licensePlate,
+              contactPhone: f.contactPhone,
+            },
+          }
+        : {}),
+      ...(f.deadline.trim() ? { deadline: f.deadline } : {}),
+      ...(f.startAt.trim() ? { startAt: f.startAt } : {}),
+      ...(f.endAt.trim() ? { endAt: f.endAt } : {}),
       status: nextStatus,
       route: {
         start: f.routeStart,
@@ -158,9 +228,13 @@ Page({
       schedule: this.data.schedule,
       notices: lines(f.notices),
       equipment: lines(f.equipment),
-      fee: f.fee,
-      feeIncluded: this.data.feeIncluded,
-      feeExcluded: this.data.feeExcluded,
+      ...(hasFee
+        ? {
+            fee: f.fee,
+            feeIncluded: this.data.feeIncluded,
+            feeExcluded: this.data.feeExcluded,
+          }
+        : {}),
     };
     this.setData({ saving: true, error: '' });
     try {
@@ -181,6 +255,7 @@ Page({
         feeIncluded: saved.feeIncluded || [],
         feeExcluded: saved.feeExcluded || [],
       });
+      this.recomputePublishReadiness();
       wx.showToast({ title: '保存成功', icon: 'success' });
     } catch (error) {
       this.setData({ error: error instanceof Error ? error.message : '保存失败' });

@@ -8,6 +8,7 @@ function registration(overrides: Partial<Registration> = {}): Registration {
     activityId: 'a1',
     status: 'pending',
     profile: {
+      avatarRevision: 0,
       nickname: '山野骑手',
       realName: '曹蒙恩',
       phone: '138****5678',

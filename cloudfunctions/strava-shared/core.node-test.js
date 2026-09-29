@@ -44,13 +44,13 @@ const token = (expires = Math.floor(Date.now() / 1000) + 3600) => ({
     id: 42,
     firstname: 'Test',
     lastname: 'Rider',
-    profile: 'https://dgalywyr863hv.cloudfront.net/pictures/athletes/avatar-large.jpg',
-    profile_medium: 'https://dgalywyr863hv.cloudfront.net/pictures/athletes/avatar-medium.jpg',
+    profile: 'https://strava.com/a.jpg',
   },
 });
 const usableCredential = (overrides = {}) => ({
   athlete_id: '42',
   athlete_name: 'Rider',
+  athlete_profile_url: 'https://strava.com/a.jpg',
   access_token_cipher: {
     alg: 'A256GCM',
     iv: 'access-iv',
@@ -86,16 +86,60 @@ test('Strava token key 只 trim 首尾空白并拒绝内部空白', () => {
   });
 });
 test('token 使用 AES-GCM 且不保留明文', () => {
-  const doc = tokenDocument('openid', token(), key, new Date());
+  const doc = tokenDocument(
+    'openid',
+    {
+      ...token(),
+      athlete: {
+        ...token().athlete,
+        profile: 'https://dgalywyr863hv.cloudfront.net/pictures/athletes/42/large.jpg#fragment',
+        profile_medium: 'https://dgalywyr863hv.cloudfront.net/pictures/athletes/42/medium.jpg',
+      },
+    },
+    key,
+    new Date(),
+  );
   assert.equal(decrypt(doc.access_token_cipher, key), fakeAccess);
+  assert.equal(Object.hasOwn(doc, 'athlete_profile_url'), false);
+  assert.equal(JSON.stringify(doc).includes(fakeAccess), false);
   assert.equal(
     doc.athlete_avatar_url,
-    'https://dgalywyr863hv.cloudfront.net/pictures/athletes/avatar-large.jpg',
+    'https://dgalywyr863hv.cloudfront.net/pictures/athletes/42/large.jpg',
   );
-  assert.equal(JSON.stringify(doc).includes(fakeAccess), false);
   assert.throws(() => decrypt({ ...doc.access_token_cipher, tag: 'AAAA' }, key), {
     code: 'STRAVA_TOKEN_INVALID',
   });
+});
+test('token 头像仅从 athlete profile/profile_medium 捕获安全 HTTPS URL', () => {
+  const now = new Date();
+  assert.equal(
+    tokenDocument(
+      'openid',
+      {
+        ...token(),
+        athlete: { ...token().athlete, profile: 'http://insecure.example/avatar.jpg' },
+      },
+      key,
+      now,
+    ).athlete_avatar_url,
+    undefined,
+  );
+  assert.equal(
+    tokenDocument(
+      'openid',
+      {
+        ...token(),
+        athlete: {
+          ...token().athlete,
+          profile: '',
+          profile_medium: 'https://dgtzuqphqg23d.cloudfront.net/avatar.jpg',
+        },
+      },
+      key,
+      now,
+    ).athlete_avatar_url,
+    'https://dgtzuqphqg23d.cloudfront.net/avatar.jpg',
+  );
 });
 test('state 防 CSRF、过期和重放', async () => {
   const state = createState();

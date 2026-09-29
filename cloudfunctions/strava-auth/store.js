@@ -1,4 +1,5 @@
 'use strict';
+const crypto = require('node:crypto');
 const {
   isSnapshotFresh,
   isCredentialUsable,
@@ -10,11 +11,28 @@ async function maybeGet(collection, id) {
   try {
     return (await collection.doc(id).get()).data;
   } catch (error) {
-    const code = Number(error && error.errCode);
+    const code = String((error && (error.errCode || error.code)) || '');
     const message = String((error && (error.errMsg || error.message)) || '');
-    if (code === -502001 || /not exist|not found/i.test(message)) return undefined;
+    if (
+      ['DATABASE_DOCUMENT_NOT_EXIST', 'DOCUMENT_NOT_FOUND'].includes(code) ||
+      (Number(error && error.errCode) === -502001 &&
+        /document.+(?:not exist|not found)/i.test(message))
+    )
+      return undefined;
     throw error;
   }
+}
+
+function nextAvatarRevision(profile) {
+  const current =
+    Number.isSafeInteger(profile?.avatar_revision) && profile.avatar_revision >= 0
+      ? profile.avatar_revision
+      : 0;
+  if (current >= Number.MAX_SAFE_INTEGER)
+    throw Object.assign(new Error('头像版本无法继续递增'), {
+      code: 'AVATAR_REVISION_EXHAUSTED',
+    });
+  return current + 1;
 }
 
 function createReadinessStore(db) {
@@ -99,13 +117,22 @@ function createReadinessStore(db) {
         const current = await maybeGet(tx.collection('strava_credentials'), openid);
         if (!current || current.sync_lease_id !== leaseId) return false;
         const profile = (await maybeGet(tx.collection('profiles'), openid)) || {};
+        const {
+          avatar_import_lease_id: staleAvatarLease,
+          avatar_import_started_at: staleAvatarStartedAt,
+          avatar_import_lease_expires_at: staleAvatarExpiresAt,
+          ...syncCredential
+        } = credential;
+        void staleAvatarLease;
+        void staleAvatarStartedAt;
+        void staleAvatarExpiresAt;
         await tx
           .collection('strava_credentials')
           .doc(openid)
           .set({
             data: writableDocument({
               ...current,
-              ...credential,
+              ...syncCredential,
               sync_status: 'ready',
               sync_finished_at: finishedAt,
               updated_at: finishedAt,
@@ -164,12 +191,54 @@ function createReadinessStore(db) {
         await tx.collection('strava_snapshots').doc(openid).remove();
         const profile = await maybeGet(tx.collection('profiles'), openid);
         if (profile) {
+          let nextProfile = profile;
+          if (profile.avatar_source === 'strava' && typeof profile.avatar_file_id === 'string') {
+            const avatarFileId = profile.avatar_file_id;
+            const mediaId = crypto.createHash('sha256').update(avatarFileId).digest('hex');
+            const retainedByPhotos = (Array.isArray(profile.photos) ? profile.photos : []).some(
+              (item) => item && item.file_id === avatarFileId,
+            );
+            if (!retainedByPhotos) {
+              const media = await maybeGet(tx.collection('profile_media'), mediaId);
+              if (
+                media &&
+                media._id === mediaId &&
+                media.file_id === avatarFileId &&
+                media.owner_openid === openid &&
+                media.origin === 'strava' &&
+                media.status === 'active'
+              ) {
+                const disconnectedAt = db.serverDate();
+                await tx
+                  .collection('profile_media')
+                  .doc(mediaId)
+                  .update({
+                    data: {
+                      status: 'unreferenced',
+                      referenced_at: null,
+                      cleanup_after: new Date(
+                        new Date(audit.created_at).getTime() + 24 * 60 * 60 * 1000,
+                      ),
+                      delete_lease_id: '',
+                      updated_at: disconnectedAt,
+                    },
+                  });
+              }
+            }
+            const { avatar_source, avatar_file_id, ...withoutAvatar } = profile;
+            void avatar_source;
+            void avatar_file_id;
+            nextProfile = {
+              ...withoutAvatar,
+              avatar_revision: nextAvatarRevision(profile),
+            };
+          }
           await tx
             .collection('profiles')
             .doc(openid)
             .set({
               data: writableDocument({
-                ...profile,
+                ...nextProfile,
                 strava: { status: 'disconnected' },
                 updated_at: db.serverDate(),
               }),

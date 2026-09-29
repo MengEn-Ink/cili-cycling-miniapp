@@ -1,5 +1,8 @@
 import type {
   Activity,
+  AvatarSource,
+  ClientAvatarSource,
+  EditableActivity,
   PersonalCapabilityCard,
   PersonalCapabilityCardState,
   Profile,
@@ -15,6 +18,7 @@ import type {
   ActivityInput,
   AdminRegistrationStatusFilter,
   AdminReviewRepository,
+  CloneActivityInput,
   RegistrationSubmission,
   RideRepository,
 } from './types';
@@ -72,6 +76,21 @@ function httpsUrl(value: unknown): string {
 function requiredId(value: unknown, label: string): string {
   if (typeof value !== 'string' || !value)
     throw new CloudRepositoryError('VALIDATION_FAILED', `缺少${label}`);
+  return value;
+}
+function clientAvatarSource(value: unknown): ClientAvatarSource {
+  if (value !== 'wechat' && value !== 'custom')
+    throw new CloudRepositoryError('VALIDATION_FAILED', '头像来源无效');
+  return value;
+}
+function boundedId(value: unknown, label: string, min: number, max: number): string {
+  if (
+    typeof value !== 'string' ||
+    value.length < min ||
+    value.length > max ||
+    !/^[A-Za-z0-9_-]+$/.test(value)
+  )
+    throw new CloudRepositoryError('VALIDATION_FAILED', `${label}格式错误`);
   return value;
 }
 function finiteNumberOrNull(value: unknown): number | null {
@@ -200,16 +219,62 @@ function mapActivity(raw: unknown, requireRegistrationDecision = false): Activit
   };
   return requireRegistrationDecision ? { ...mapped, ...registrationDecision(value) } : mapped;
 }
+function mapEditableActivity(raw: unknown, requireCloneDraft = false): EditableActivity {
+  const value = expectRecord(raw);
+  if (
+    typeof value._id !== 'string' ||
+    !value._id ||
+    (value.version !== undefined && (!Number.isInteger(value.version) || value.version < 1)) ||
+    typeof value.title !== 'string' ||
+    !['draft', 'published', 'finished'].includes(value.status) ||
+    (value.capacity !== undefined && !Number.isInteger(value.capacity)) ||
+    (value.capacity === undefined && value.status !== 'draft') ||
+    (requireCloneDraft && value.status !== 'draft')
+  )
+    return invalidResponse();
+  const mapped = mapActivity(
+    {
+      ...value,
+      capacity: value.capacity === undefined ? 0 : value.capacity,
+    },
+    false,
+  ) as EditableActivity;
+  if (value.capacity === undefined) delete mapped.capacity;
+  if (value.signup_deadline === undefined) delete mapped.deadline;
+  if (value.event_start === undefined) {
+    delete mapped.date;
+    delete mapped.startAt;
+  }
+  if (value.event_end === undefined) delete mapped.endAt;
+  if (value.fee === undefined) delete mapped.fee;
+  return mapped;
+}
 function mapProfile(raw: unknown): Profile {
   const value = expectRecord(raw);
   if (typeof value.nickname !== 'string' || typeof value.completeness !== 'number')
     return invalidResponse();
   const status = isRecord(value.sensitive_status) ? value.sensitive_status : {};
+  if (value.avatar_file_id !== undefined && typeof value.avatar_file_id !== 'string')
+    return invalidResponse();
+  if (
+    value.avatar_revision !== undefined &&
+    (!Number.isInteger(value.avatar_revision) || value.avatar_revision < 0)
+  )
+    return invalidResponse();
+  const avatarId = typeof value.avatar_file_id === 'string' ? value.avatar_file_id : '';
+  const avatarSource = value.avatar_source;
+  if (
+    (avatarId && !['wechat', 'strava', 'custom'].includes(avatarSource)) ||
+    (!avatarId && avatarSource !== undefined)
+  )
+    return invalidResponse();
   return {
+    avatarRevision: Number.isInteger(value.avatar_revision) ? value.avatar_revision : 0,
     nickname: value.nickname,
     title: typeof value.title === 'string' ? value.title : '',
-    avatarId: typeof value.avatar_file_id === 'string' ? value.avatar_file_id : '',
-    avatarSource: value.avatar_source === 'strava' ? 'strava' : 'wechat',
+    avatarId,
+    ...(avatarId ? { avatarSource: avatarSource as AvatarSource } : {}),
+    hasCompletedGuidance: value.has_completed_guidance === true,
     realName: typeof value.real_name_masked === 'string' ? value.real_name_masked : '',
     phone: typeof value.phone_masked === 'string' ? value.phone_masked : '',
     gender: typeof value.gender === 'string' ? value.gender : '',
@@ -287,8 +352,8 @@ function mapPersonalCapabilityCard(raw: unknown): PersonalCapabilityCard {
     profile: {
       displayName: profile.display_name,
       title: profile.title,
+      avatarUrl: httpsUrl(profile.avatar_url),
     },
-    stravaAvatarUrl: httpsUrl(value.strava_avatar_url) || undefined,
     backgrounds,
     summary: {
       totalKm90d: nullableFiniteNumber(summary.total_km_90d),
@@ -299,6 +364,7 @@ function mapPersonalCapabilityCard(raw: unknown): PersonalCapabilityCard {
     },
     coverage,
     syncedAt,
+    needsStravaReauth: value.needs_strava_reauth === true,
   };
 }
 function mapRegistration(raw: unknown): Registration {
@@ -322,6 +388,7 @@ function mapRegistration(raw: unknown): Registration {
     activityId: value.activity_id,
     status: value.status,
     profile: {
+      avatarRevision: 0,
       nickname:
         typeof capability.nickname === 'string'
           ? capability.nickname
@@ -531,9 +598,9 @@ function activityPayload(value: ActivityInput) {
     equipment: Array.isArray(value.equipment)
       ? value.equipment.filter((item) => typeof item === 'string')
       : [],
-    fee:
-      Array.isArray(value.feeIncluded) || Array.isArray(value.feeExcluded)
-        ? {
+    ...(Array.isArray(value.feeIncluded) || Array.isArray(value.feeExcluded)
+      ? {
+          fee: {
             included: Array.isArray(value.feeIncluded)
               ? value.feeIncluded.filter((item) => typeof item === 'string')
               : [],
@@ -541,11 +608,12 @@ function activityPayload(value: ActivityInput) {
               ? value.feeExcluded.filter((item) => typeof item === 'string')
               : [],
             remark: typeof value.fee === 'string' ? value.fee : '',
-          }
-        : typeof value.fee === 'string'
-          ? value.fee
-          : '',
-    capacity: value.capacity,
+          },
+        }
+      : typeof value.fee === 'string'
+        ? { fee: value.fee }
+        : {}),
+    ...(Number.isInteger(value.capacity) ? { capacity: value.capacity } : {}),
     ...(Number.isInteger(value.supportVehicleCapacity)
       ? { support_vehicle_capacity: value.supportVehicleCapacity }
       : {}),
@@ -570,9 +638,9 @@ function activityPayload(value: ActivityInput) {
           },
         }
       : {}),
-    signup_deadline: value.deadline,
-    event_start: value.startAt,
-    event_end: value.endAt,
+    ...(typeof value.deadline === 'string' ? { signup_deadline: value.deadline } : {}),
+    ...(typeof value.startAt === 'string' ? { event_start: value.startAt } : {}),
+    ...(typeof value.endAt === 'string' ? { event_end: value.endAt } : {}),
     status: value.status,
   };
 }
@@ -590,11 +658,11 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
   }
   async listAdminActivities() {
     return expectRecordArray(await this.call('activity-admin', { action: 'list' })).map((item) =>
-      mapActivity(item),
+      mapEditableActivity(item),
     );
   }
   async getAdminActivity(id: string) {
-    return mapActivity(
+    return mapEditableActivity(
       await this.call('activity-admin', {
         action: 'detail',
         activityId: requiredId(id, '活动 ID'),
@@ -609,7 +677,29 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
         throw new CloudRepositoryError('VALIDATION_FAILED', '活动版本格式错误');
       data.expectedVersion = expectedVersion;
     }
-    return mapActivity(await this.call('activity-admin', data));
+    return mapEditableActivity(await this.call('activity-admin', data));
+  }
+  async cloneActivity(input: CloneActivityInput) {
+    const sourceActivityId = boundedId(input?.sourceActivityId, '源活动 ID', 1, 128);
+    const requestId = boundedId(input?.requestId, '请求 ID', 8, 128);
+    const data: Record<string, unknown> = {
+      action: 'clone',
+      sourceActivityId,
+      requestId,
+    };
+    for (const [from, to] of [
+      ['signupDeadline', 'signupDeadline'],
+      ['eventStart', 'eventStart'],
+      ['eventEnd', 'eventEnd'],
+    ] as const) {
+      const value = input[from];
+      if (value !== undefined) {
+        if (typeof value !== 'string')
+          throw new CloudRepositoryError('VALIDATION_FAILED', '活动时间格式错误');
+        data[to] = value;
+      }
+    }
+    return mapEditableActivity(await this.call('activity-admin', data), true);
   }
   async listActivities() {
     return expectRecordArray(await this.call('activity-read', { action: 'list' })).map((item) =>
@@ -728,25 +818,47 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
   async getPersonalCapabilityCard() {
     return mapPersonalCapabilityCard(await this.call('profile', { action: 'capabilityCard' }));
   }
-  async registerProfileMedia(fileId: string, category: 'ride' | 'bike' | 'other') {
+  async registerProfileMedia(
+    fileId: string,
+    category: 'ride' | 'bike' | 'other',
+    origin: ClientAvatarSource = 'custom',
+  ) {
     const value = expectRecord(
       await this.call('profile', {
         action: 'registerMedia',
         fileId: requiredId(fileId, '媒体文件 ID'),
         category,
+        origin: clientAvatarSource(origin),
       }),
     );
     if (value.registered !== true) return invalidResponse();
   }
-  async reportProfileMediaOrphan(fileId: string, category: 'ride' | 'bike' | 'other') {
+  async reportProfileMediaOrphan(
+    fileId: string,
+    category: 'ride' | 'bike' | 'other',
+    origin: ClientAvatarSource = 'custom',
+  ) {
     const value = expectRecord(
       await this.call('profile', {
         action: 'reportOrphan',
         fileId: requiredId(fileId, '媒体文件 ID'),
         category,
+        origin: clientAvatarSource(origin),
       }),
     );
     if (value.reported !== true) return invalidResponse();
+  }
+  async setAvatar(source: ClientAvatarSource, fileId: string) {
+    return mapProfile(
+      await this.call('profile', {
+        action: 'setAvatar',
+        source: clientAvatarSource(source),
+        fileId: requiredId(fileId, '头像文件 ID'),
+      }),
+    );
+  }
+  async importStravaAvatar() {
+    return mapProfile(await this.call('profile', { action: 'importStravaAvatar' }));
   }
   async updateProfile(profile: ProfileUpdate) {
     const data: Record<string, unknown> = { action: 'update' };
@@ -754,11 +866,11 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
       ['nickname', 'nickname'],
       ['gender', 'gender'],
       ['emergencyName', 'emergency_name'],
-      ['avatarFileId', 'avatar_file_id'],
-      ['avatarSource', 'avatar_source'],
     ];
     for (const [from, to] of simple)
       if (typeof profile[from] === 'string') data[to] = profile[from];
+    if (typeof profile.hasCompletedGuidance === 'boolean')
+      data.has_completed_guidance = profile.hasCompletedGuidance;
     if (Array.isArray(profile.photos))
       data.photos = profile.photos.map((item) => ({ file_id: item.id, category: item.category }));
     if (typeof profile.realName === 'string' && profile.realName) data.real_name = profile.realName;

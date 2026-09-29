@@ -5,13 +5,14 @@ const { authorizeCleanup, drainMediaCleanup, responseError } = require('./core')
 const { createCleanupStore } = require('./store');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
-const store = createCleanupStore(cloud.database());
+const store = createCleanupStore(cloud.database(), process.env.PROFILE_MEDIA_PATH_SECRET);
 
 exports.main = async (event = {}) => {
   try {
     authorizeCleanup(event, cloud.getWXContext().OPENID);
     const data = await drainMediaCleanup({
       store,
+      uploadFile: (input) => cloud.uploadFile(input),
       deleteFile: (input) => cloud.deleteFile(input),
     });
     return { ok: true, data };

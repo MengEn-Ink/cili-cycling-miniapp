@@ -65,7 +65,14 @@ pack('activity-admin', [
   'package.json',
 ]);
 pack('auth', ['index.js', 'core.js', 'package.json']);
-pack('profile', ['index.js', 'core.js', 'capability-card.js', 'store.js', 'package.json']);
+pack('profile', [
+  'index.js',
+  'core.js',
+  'capability-card.js',
+  'avatar-import.js',
+  'store.js',
+  'package.json',
+]);
 const mediaCleanupFunction = cloudbaseConfig.functions.find(
   (item) => item.name === 'profile-media-cleanup',
 );

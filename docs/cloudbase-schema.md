@@ -22,7 +22,9 @@ Strava 报名资格唯一事实源：`strava_credentials + strava_snapshots`。`
 
 ```text
 _id: openid
-nickname, title, avatar_file_id
+nickname, title
+avatar_source: wechat|strava|custom
+avatar_file_id, avatar_revision       # 每次头像槽位变化时单调递增
 photos: [{ file_id, category: ride|bike|other }]
 gender, emergency_name
 real_name_cipher, phone_cipher, emergency_phone_cipher: {
@@ -44,6 +46,7 @@ _id: sha256(file_id)
 file_id
 owner_openid
 category: ride|bike|other
+origin: wechat|strava|custom
 status: unreferenced|active|deleting|deleted|delete_failed|delete_failed_terminal
 created_at
 cleanup_after                 # unreferenced 上传 24 小时后的回收候选时间
@@ -54,7 +57,26 @@ deleted_at?, delete_failed_at?, retry_at?, last_error_code?
 
 客户端先调用 `profile/mediaUploadPath` 取得由 `PROFILE_MEDIA_PATH_SECRET` 和可信 WXContext OPENID 派生的 opaque owner 路径，上传成功后立即调用 `profile/registerMedia`；服务端通过临时 URL API 确认对象真实存在后才登记。登记初始状态为 `unreferenced` 且幂等；只有同一事务内成功写入当前 profile 的媒体才切换为 `active`，被移除的 active 媒体在同一事务内降级为带新 `cleanup_after` 的 `unreferenced`。资料更新、个人名片和管理员名片都要求记录的 `owner_openid`、`file_id`、`category`、`status` 与当前 profile 引用匹配。存量未登记媒体不迁移、不删除，但不进入任何能力卡。临时 URL 整体或逐项失败只减少背景图，不使详情失败。
 
-`profile-media-cleanup` 每 10 分钟最多处理 20 条到期 `unreferenced`、过期 `deleting` 或到期 `delete_failed` 记录。每条记录均在事务内重读 owner 当前 profile：仍被引用则恢复 `active`；未引用才写入唯一且有过期时间的删除 lease 并调用云存储删除。worker 中断后可 fenced 重领；失败按退避最多尝试 3 次，随后进入 `delete_failed_terminal`，避免永久重试和索引饥饿。结果只保存稳定 `last_error_code`，不记录底层错误文本。上传后 `registerMedia` 与对象删除同时失败时，客户端调用 `reportOrphan`；上报会重新确认对象存在，不存在即视为已清理且不落队列，未知错误则留在本地持久重试账本，下次进入资料页继续上报。残余限制是客户端进程在上传成功后、第一次删除/上报/账本写入前被强制终止，此时服务端没有可发现的 file ID。
+`profile-media-cleanup` 每 10 分钟最多处理 20 条到期 `unreferenced`、过期 `deleting` 或到期 `delete_failed` 记录。该函数必须配置与 `profile` 相同的 `PROFILE_MEDIA_PATH_SECRET`。每条记录均在事务内重读 owner 当前 profile：仍被引用则恢复 `active`；未引用才写入唯一且有过期时间的删除 lease 并调用云存储删除。worker 中断后可 fenced 重领；失败或过期 recovery 合计最多尝试 3 次，随后进入 `delete_failed_terminal`，避免永久重试和索引饥饿。结果只保存稳定 `last_error_code`，不记录底层错误文本。微信/自定义上传在 `registerMedia` 与对象删除同时失败时仍由客户端 `reportOrphan` 账本补偿；Strava 服务端导入不依赖客户端账本，使用下述持久 intent。
+
+### `profile_media_imports`
+
+服务端 Strava 头像导入意图与 orphan 补偿状态机。客户端无读写权限，也不能提交 URL、credential、generation 或 lease：
+
+```text
+_id: avatar-import-<uuid>
+owner_openid, athlete_id, credential_generation, avatar_url_fingerprint
+cloud_path                         # 上传前持久化的 owner HMAC 路径
+file_id?, media_id?                # 上传响应验证通过后写入
+status: leased|prepared|uploaded|orphaned|recovering|deleting|delete_confirming|completed|aborted|invalid|deleted|delete_failed|delete_failed_terminal
+created_at, lease_expires_at, prepared_at?, uploaded_at?, completed_at?, failed_at?
+cleanup_after, delete_lease_id?, delete_claimed_at?, delete_lease_expires_at?
+delete_attempts?, retry_at?, recovery_delete_pending?, delete_confirmation_pending?, last_error_code?
+```
+
+下载前先在事务中创建 `leased` intent，并以当前 credential 的 generation、athlete ID 与头像 URL SHA-256 指纹绑定 owner 级 lease；不持久化原头像 URL。未过期的其他 intent 会被拒绝，同一 intent 可幂等复用，只有 lease 过期后才能 fenced takeover。下载完成后再次核对同一 fence，写入 owner HMAC `cloud_path` 并进入 `prepared`，随后 upload、完成和失败路径都继续核对该 fence。最终事务重读 credential、intent、profile 和 media，只有 athlete、generation、URL 指纹、lease 及 owner 路径全部匹配时，才原子登记 `origin=strava` 并切换头像。失败后有上传目标的 intent 进入 `orphaned`，尚未生成目标的 `leased` intent 进入 `aborted`。
+
+若上传响应丢失，cleanup 会先用共享 secret 验证 `owner_openid` 与 HMAC 路径绑定，再对该 intent 的唯一 owner 路径写入最小占位以取得规范 file ID，并执行 fenced 删除。恢复 lease 固定为 5 分钟，显式大于 `profile-media-cleanup` 的 30 秒函数超时与 30 秒存储 settle margin；恢复任务在外部上传前后都重读 lease，旧 worker 丢失 lease 时重新持久化删除 fence 后才补偿。恢复型删除先进入 `delete_confirming`，延迟一个 5 分钟 lease 窗口后再做第二次删除并终结，从而收敛先前调用晚到的存储写。任何待删除 file ID 必须与 intent 的 `cloud_path` 完全一致。
 
 ### `notification_outbox`
 
@@ -86,7 +108,9 @@ state 原文至少 32 随机字节，只返回给发起授权的客户端，不�
 ### `strava_credentials`
 
 ```text
-_id/openid, athlete_id, athlete_name
+_id/openid, athlete_id, athlete_name, athlete_avatar_url?
+credential_generation                 # 每次 OAuth credential 保存单调递增
+avatar_import_lease_id?, avatar_import_started_at?, avatar_import_lease_expires_at?
 access_token_cipher, refresh_token_cipher: { v, alg, iv, tag, ciphertext }
 token_expires_at, scopes, connected_at, updated_at
 sync_status: pending|running|ready|failed
@@ -127,6 +151,9 @@ synced_at
 | profile_media | status ASC, cleanup_after ASC | 普通；未引用媒体回收扫描 |
 | profile_media | status ASC, delete_lease_expires_at ASC | 普通；中断删除重领扫描 |
 | profile_media | status ASC, retry_at ASC | 普通；失败退避重试扫描 |
+| profile_media_imports | status ASC, cleanup_after ASC | 普通；待回收导入扫描 |
+| profile_media_imports | status ASC, delete_lease_expires_at ASC | 普通；中断导入清理重领扫描 |
+| profile_media_imports | status ASC, retry_at ASC | 普通；导入清理失败退避扫描 |
 | oauth_states | state_hash ASC | 唯一 |
 | oauth_states | expires_at ASC | 普通；应用层过期与限量清理 |
 | oauth_states | openid ASC, expires_at DESC | 普通；查询用户的活跃授权状态 |
@@ -136,11 +163,11 @@ synced_at
 
 ## 主要错误码
 
-`UNAUTHENTICATED`、`ADMIN_REQUIRED`、`FORBIDDEN_FIELD`、`VALIDATION_FAILED`、`ACTIVITY_CONFLICT`、`PARTITION_BACKFILL_REQUIRED`、`PROFILE_INCOMPLETE`、`PHONE_CODE_REQUIRED`、`PII_KEY_INVALID`、`STRAVA_CONFIG_INVALID`、`STRAVA_KEY_INVALID`、`OAUTH_STATE_INVALID`、`OAUTH_STATE_EXPIRED`、`STRAVA_NOT_CONNECTED`、`STRAVA_API_FAILED`、`UNKNOWN_ACTION`、`INTERNAL_ERROR`。
+`UNAUTHENTICATED`、`ADMIN_REQUIRED`、`FORBIDDEN_FIELD`、`VALIDATION_FAILED`、`ACTIVITY_CONFLICT`、`PARTITION_BACKFILL_REQUIRED`、`PROFILE_INCOMPLETE`、`PHONE_CODE_REQUIRED`、`PII_KEY_INVALID`、`STRAVA_CONFIG_INVALID`、`STRAVA_KEY_INVALID`、`OAUTH_STATE_INVALID`、`OAUTH_STATE_EXPIRED`、`STRAVA_NOT_CONNECTED`、`STRAVA_AVATAR_BUSY`、`STRAVA_AVATAR_STALE`、`STRAVA_AVATAR_STATE_UNKNOWN`、`STRAVA_AVATAR_CLEANUP_PENDING`、`STRAVA_API_FAILED`、`UNKNOWN_ACTION`、`INTERNAL_ERROR`。
 
 ## 部署后验证
 
-1. 校验 10 集合、全拒绝规则与 19 索引，确认 `activities.created_by + event_start`、`notification_outbox` 的 lease、目标与 retry 索引，`profile_media` 的 owner/status、cleanup、delete lease 与 retry 索引，以及 `oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
+1. 校验 11 集合、全拒绝规则与 22 索引，确认 `activities.created_by + event_start`、`notification_outbox` 的 lease、目标与 retry 索引，`profile_media` 与 `profile_media_imports` 的 cleanup、delete lease 与 retry 索引，以及 `oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
 2. 真机验证 WXContext openid、微信手机号动态 code、手填手机号来源，以及资料响应中无明文/密文。
 3. 配置 callback HTTPS 路由、Strava 回调域和小程序业务域名，验证 CSRF、过期与重放。
 4. 验证 token 临期刷新、90 天分页、解绑审计及日志无敏感信息；验证跨用户媒体拒绝、未登记 legacy 不进卡、register 失败回收上传对象，以及临时 URL 故障降级。

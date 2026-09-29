@@ -1,5 +1,7 @@
 import type {
   Activity,
+  ClientAvatarSource,
+  EditableActivity,
   PersonalCapabilityCard,
   Profile,
   ProfileUpdate,
@@ -10,11 +12,23 @@ import type {
 } from '../models';
 
 export type AdminRegistrationStatusFilter = RegistrationStatus;
-export type ActivityInput = Omit<Activity, 'id' | 'date' | 'occupiedCount' | 'version'>;
+export type ActivityInput = Omit<EditableActivity, 'id' | 'date' | 'occupiedCount' | 'version'>;
+export interface CloneActivityInput {
+  sourceActivityId: string;
+  requestId: string;
+  signupDeadline?: string;
+  eventStart?: string;
+  eventEnd?: string;
+}
 export interface ActivityAdminRepository {
-  listAdminActivities(): Promise<Activity[]>;
-  getAdminActivity(id: string): Promise<Activity | undefined>;
-  saveActivity(value: ActivityInput, id?: string, expectedVersion?: number): Promise<Activity>;
+  listAdminActivities(): Promise<EditableActivity[]>;
+  getAdminActivity(id: string): Promise<EditableActivity | undefined>;
+  saveActivity(
+    value: ActivityInput,
+    id?: string,
+    expectedVersion?: number,
+  ): Promise<EditableActivity>;
+  cloneActivity(input: CloneActivityInput): Promise<EditableActivity>;
 }
 export type GatheringMode = 'self_drive' | 'support_vehicle';
 export interface RegistrationSubmission {
@@ -53,8 +67,18 @@ export interface RideRepository extends AdminReviewRepository, ActivityAdminRepo
   getProfile(): Promise<Profile>;
   getProfileMediaUploadPath(): Promise<string>;
   getPersonalCapabilityCard(): Promise<PersonalCapabilityCard>;
-  registerProfileMedia(fileId: string, category: 'ride' | 'bike' | 'other'): Promise<void>;
-  reportProfileMediaOrphan(fileId: string, category: 'ride' | 'bike' | 'other'): Promise<void>;
+  registerProfileMedia(
+    fileId: string,
+    category: 'ride' | 'bike' | 'other',
+    origin?: ClientAvatarSource,
+  ): Promise<void>;
+  reportProfileMediaOrphan(
+    fileId: string,
+    category: 'ride' | 'bike' | 'other',
+    origin?: ClientAvatarSource,
+  ): Promise<void>;
+  setAvatar(source: ClientAvatarSource, fileId: string): Promise<Profile>;
+  importStravaAvatar(): Promise<Profile>;
   updateProfile(profile: ProfileUpdate): Promise<Profile>;
   getPhoneNumber(code: string): Promise<Profile>;
   getStravaStatus(): Promise<StravaConnection>;

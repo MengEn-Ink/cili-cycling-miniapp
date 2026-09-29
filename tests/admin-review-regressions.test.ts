@@ -11,7 +11,7 @@ const rideService = vi.hoisted(() => ({
 const appStore = vi.hoisted(() => ({
   role: 'admin',
   authStatus: 'authenticated',
-  refreshIdentity: vi.fn(),
+  ensureIdentity: vi.fn(),
 }));
 
 vi.mock('../miniprogram/services/ride-service', () => ({ rideService }));
@@ -85,7 +85,7 @@ describe('管理员审核详情回归', () => {
     for (const value of Object.values(rideService)) value.mockReset();
     appStore.role = 'admin';
     appStore.authStatus = 'authenticated';
-    appStore.refreshIdentity.mockReset().mockResolvedValue(undefined);
+    appStore.ensureIdentity.mockReset().mockResolvedValue(undefined);
     rideService.getReviewRegistration.mockResolvedValue(registration('r1', 'a1'));
     vi.stubGlobal('wx', { cloud: {}, showToast: vi.fn(), navigateBack: vi.fn() });
     const getPage = installPageCapture();
@@ -156,7 +156,7 @@ describe('管理员审核列表回归', () => {
     for (const value of Object.values(rideService)) value.mockReset();
     appStore.role = 'admin';
     appStore.authStatus = 'authenticated';
-    appStore.refreshIdentity.mockReset().mockResolvedValue(undefined);
+    appStore.ensureIdentity.mockReset().mockResolvedValue(undefined);
     rideService.listActivities.mockResolvedValue(activities);
     vi.stubGlobal('wx', { cloud: {}, navigateTo: vi.fn() });
     const getPage = installPageCapture();

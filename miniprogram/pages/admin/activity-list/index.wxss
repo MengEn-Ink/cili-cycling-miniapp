@@ -1,0 +1,19 @@
+.activity-row {
+  display: grid;
+  gap: 20rpx;
+}
+
+.template-button {
+  margin: 0;
+}
+
+.clone-panel {
+  display: grid;
+  gap: 24rpx;
+}
+
+.clone-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20rpx;
+}

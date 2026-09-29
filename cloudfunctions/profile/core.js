@@ -1,5 +1,7 @@
 'use strict';
 const crypto = require('node:crypto');
+const AVATAR_SOURCES = ['wechat', 'strava', 'custom'];
+const CLIENT_AVATAR_SOURCES = ['wechat', 'custom'];
 class ProfileError extends Error {
   constructor(code, message) {
     super(message);
@@ -90,11 +92,23 @@ function mediaDocumentId(fileId) {
     throw new ProfileError('VALIDATION_FAILED', '媒体文件 ID 无效');
   return crypto.createHash('sha256').update(fileId).digest('hex');
 }
-function issueMediaUploadPath(openid, secretValue, randomUUID = crypto.randomUUID) {
+function avatarUrlFingerprint(value) {
+  if (typeof value !== 'string' || !value)
+    throw new ProfileError('STRAVA_AVATAR_URL_INVALID', 'Strava 头像地址无效');
+  return crypto.createHash('sha256').update(value).digest('hex');
+}
+function issueMediaUploadPath(
+  openid,
+  secretValue,
+  randomUUID = crypto.randomUUID,
+  extension = 'jpg',
+) {
   const filename = randomUUID();
   if (!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(filename))
     throw new ProfileError('MEDIA_PATH_INVALID', '媒体路径生成失败');
-  return { cloud_path: `${mediaOwnerPrefix(openid, secretValue)}${filename}.jpg` };
+  if (!['jpg', 'png', 'webp'].includes(extension))
+    throw new ProfileError('MEDIA_TYPE_INVALID', '媒体类型无效');
+  return { cloud_path: `${mediaOwnerPrefix(openid, secretValue)}${filename}.${extension}` };
 }
 function mediaPath(fileId) {
   if (typeof fileId !== 'string' || !fileId.startsWith('cloud://') || fileId.length > 512)
@@ -108,12 +122,15 @@ function isOwnerMedia(fileId, openid, secretValue) {
   const filename = path.slice(prefix.length);
   return (
     path.startsWith(prefix) &&
-    /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\.jpg$/i.test(filename)
+    /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\.(?:jpg|png|webp)$/i.test(
+      filename,
+    )
   );
 }
 function mediaRegistration(
   fileId,
   category,
+  origin,
   openid,
   secretValue,
   now = new Date(),
@@ -121,6 +138,8 @@ function mediaRegistration(
 ) {
   if (!['ride', 'bike', 'other'].includes(category))
     throw new ProfileError('VALIDATION_FAILED', '媒体类别无效');
+  if (!AVATAR_SOURCES.includes(origin))
+    throw new ProfileError('MEDIA_ORIGIN_INVALID', '媒体来源无效');
   if (!isOwnerMedia(fileId, openid, secretValue))
     throw new ProfileError('MEDIA_NOT_OWNED', '媒体文件不属于当前用户');
   const expected = {
@@ -128,17 +147,21 @@ function mediaRegistration(
     file_id: fileId,
     owner_openid: openid,
     category,
+    origin,
   };
   if (existing) {
+    const legacyCustomOrigin =
+      !Object.prototype.hasOwnProperty.call(existing, 'origin') && origin === 'custom';
     if (
       existing._id !== expected._id ||
       existing.file_id !== fileId ||
       existing.owner_openid !== openid ||
       existing.category !== category ||
+      (existing.origin !== origin && !legacyCustomOrigin) ||
       !['unreferenced', 'active'].includes(existing.status)
     )
       throw new ProfileError('MEDIA_REGISTRATION_CONFLICT', '媒体登记冲突');
-    return existing;
+    return legacyCustomOrigin ? { ...existing, origin: 'custom' } : existing;
   }
   const createdAt = new Date(now);
   return {
@@ -147,6 +170,36 @@ function mediaRegistration(
     created_at: createdAt,
     cleanup_after: new Date(createdAt.getTime() + 24 * 60 * 60 * 1000),
   };
+}
+function clientAvatarSource(value) {
+  if (!CLIENT_AVATAR_SOURCES.includes(value))
+    throw new ProfileError('AVATAR_SOURCE_INVALID', '头像来源无效');
+  return value;
+}
+function clientMediaOrigin(value) {
+  const origin = value === undefined ? 'custom' : value;
+  if (!CLIENT_AVATAR_SOURCES.includes(origin))
+    throw new ProfileError('MEDIA_ORIGIN_INVALID', '媒体来源无效');
+  return origin;
+}
+function validateAvatarSelection(source, fileId, openid, secretValue, record) {
+  if (!AVATAR_SOURCES.includes(source))
+    throw new ProfileError('AVATAR_SOURCE_INVALID', '头像来源无效');
+  if (!record) throw new ProfileError('MEDIA_NOT_FOUND', '媒体登记不存在');
+  if (
+    !isOwnerMedia(fileId, openid, secretValue) ||
+    record._id !== mediaDocumentId(fileId) ||
+    record.file_id !== fileId ||
+    record.owner_openid !== openid
+  )
+    throw new ProfileError('MEDIA_NOT_OWNED', '媒体文件不属于当前用户');
+  if (!['unreferenced', 'active'].includes(record.status))
+    throw new ProfileError('MEDIA_STATUS_INVALID', '媒体状态不可用');
+  const legacyCustomOrigin =
+    !Object.prototype.hasOwnProperty.call(record, 'origin') && source === 'custom';
+  if (record.origin !== source && !legacyCustomOrigin)
+    throw new ProfileError('MEDIA_ORIGIN_MISMATCH', '头像来源与媒体登记不一致');
+  return legacyCustomOrigin ? { ...record, origin: 'custom' } : record;
 }
 function missingMediaSignal(value) {
   return /not[ _-]?found|not exist|does not exist|file not exist|404/i.test(String(value || ''));
@@ -191,7 +244,13 @@ function registeredMedia(record, item, openid, statuses = ['active']) {
 }
 function validateMediaUpdate(current, update, openid, secretValue, mediaRecords = []) {
   const existing = current && typeof current === 'object' ? current : {};
+  const normalizedExisting = normalizeAvatarProfile(existing);
   const data = update && typeof update === 'object' ? update : {};
+  if (
+    Object.prototype.hasOwnProperty.call(data, 'avatar_file_id') ||
+    Object.prototype.hasOwnProperty.call(data, 'avatar_source')
+  )
+    throw new ProfileError('FORBIDDEN_FIELD', '头像必须通过专用操作更新');
   const records = new Map(mediaRecords.map((record) => [record && record.file_id, record]));
   const activate = new Set();
   const currentIds = new Set([
@@ -210,14 +269,6 @@ function validateMediaUpdate(current, update, openid, secretValue, mediaRecords 
     if (legacy) return;
     throw new ProfileError('MEDIA_NOT_OWNED', '媒体文件不属于当前用户');
   };
-  if (Object.prototype.hasOwnProperty.call(data, 'avatar_file_id')) {
-    const avatar = data.avatar_file_id;
-    if (avatar)
-      accept(
-        { file_id: avatar, category: records.get(avatar)?.category || 'other' },
-        avatar === existing.avatar_file_id && !records.has(avatar),
-      );
-  }
   if (Object.prototype.hasOwnProperty.call(data, 'photos')) {
     const legacy = new Set(
       (Array.isArray(existing.photos) ? existing.photos : []).map(
@@ -232,9 +283,7 @@ function validateMediaUpdate(current, update, openid, secretValue, mediaRecords 
     }
   }
   const nextIds = new Set([
-    Object.prototype.hasOwnProperty.call(data, 'avatar_file_id')
-      ? data.avatar_file_id
-      : existing.avatar_file_id,
+    normalizedExisting.avatar_file_id,
     ...(Object.prototype.hasOwnProperty.call(data, 'photos')
       ? data.photos.map((item) => item.file_id)
       : Array.isArray(existing.photos)
@@ -248,6 +297,7 @@ function validateMediaUpdate(current, update, openid, secretValue, mediaRecords 
         record.status === 'active' &&
         record.owner_openid === openid &&
         record._id === mediaDocumentId(record.file_id) &&
+        isOwnerMedia(record.file_id, openid, secretValue) &&
         currentIds.has(record.file_id) &&
         !nextIds.has(record.file_id),
     )
@@ -255,7 +305,7 @@ function validateMediaUpdate(current, update, openid, secretValue, mediaRecords 
   return { data, activate_ids: [...activate], demote_ids: demote };
 }
 function ownerMedia(profile, openid, secretValue, mediaRecords = []) {
-  const value = profile && typeof profile === 'object' ? profile : {};
+  const value = normalizeAvatarProfile(profile && typeof profile === 'object' ? profile : {});
   const records = new Map(mediaRecords.map((record) => [record && record.file_id, record]));
   const photos = Array.isArray(value.photos)
     ? value.photos
@@ -277,7 +327,12 @@ function ownerMedia(profile, openid, secretValue, mediaRecords = []) {
     ...photos.filter((item) => item.category === 'other'),
   ];
   const avatarRecord = records.get(value.avatar_file_id);
+  const avatarOrigin =
+    avatarRecord && Object.prototype.hasOwnProperty.call(avatarRecord, 'origin')
+      ? avatarRecord.origin
+      : 'custom';
   if (
+    avatarOrigin === value.avatar_source &&
     isOwnerMedia(value.avatar_file_id, openid, secretValue) &&
     registeredMedia(
       avatarRecord,
@@ -294,6 +349,24 @@ function ownerMedia(profile, openid, secretValue, mediaRecords = []) {
     return true;
   });
 }
+function ownerAvatarMedia(profile, openid, secretValue, mediaRecords = []) {
+  const value = normalizeAvatarProfile(profile && typeof profile === 'object' ? profile : {});
+  if (!value.avatar_file_id || !value.avatar_source) return undefined;
+  const record = mediaRecords.find((item) => item && item.file_id === value.avatar_file_id);
+  const origin =
+    record && Object.prototype.hasOwnProperty.call(record, 'origin') ? record.origin : 'custom';
+  if (
+    origin !== value.avatar_source ||
+    !isOwnerMedia(value.avatar_file_id, openid, secretValue) ||
+    !registeredMedia(
+      record,
+      { file_id: value.avatar_file_id, category: record && record.category },
+      openid,
+    )
+  )
+    return undefined;
+  return { file_id: value.avatar_file_id, category: 'other', source: 'avatar' };
+}
 const sensitiveStatus = (doc) => ({
   real_name: !!doc.real_name_cipher,
   phone: !!doc.phone_cipher,
@@ -305,18 +378,41 @@ const sensitiveStatus = (doc) => ({
       : '',
   emergency_phone: !!doc.emergency_phone_cipher,
 });
+function normalizeAvatarProfile(doc = {}) {
+  const normalized = { ...doc };
+  const rawAvatarFileId =
+    typeof doc.avatar_file_id === 'string' && doc.avatar_file_id.trim() ? doc.avatar_file_id : '';
+  const hasAvatarSource = Object.prototype.hasOwnProperty.call(doc, 'avatar_source');
+  const validAvatarSource = !hasAvatarSource || AVATAR_SOURCES.includes(doc.avatar_source);
+  if (!rawAvatarFileId || !mediaPath(rawAvatarFileId) || !validAvatarSource) {
+    delete normalized.avatar_file_id;
+    delete normalized.avatar_source;
+    return normalized;
+  }
+  normalized.avatar_file_id = rawAvatarFileId;
+  normalized.avatar_source = hasAvatarSource ? doc.avatar_source : 'custom';
+  return normalized;
+}
 function response(doc = {}) {
   const status = sensitiveStatus(doc);
   const emergencyReady =
     typeof doc.emergency_name === 'string' && !!doc.emergency_name.trim() && status.emergency_phone;
   const nicknameReady = typeof doc.nickname === 'string' && !!doc.nickname.trim();
   const checks = [nicknameReady, status.real_name, status.phone, emergencyReady];
+  const avatar = normalizeAvatarProfile(doc);
+  const avatarFileId = avatar.avatar_file_id || '';
+  const avatarSource = avatar.avatar_source;
   return {
     nickname: typeof doc.nickname === 'string' ? doc.nickname : '',
     title: typeof doc.title === 'string' ? doc.title : '',
-    avatar_file_id: typeof doc.avatar_file_id === 'string' ? doc.avatar_file_id : '',
+    avatar_file_id: avatarFileId,
+    ...(avatarSource ? { avatar_source: avatarSource } : {}),
+    has_completed_guidance: doc.has_completed_guidance === true,
+    avatar_revision:
+      Number.isSafeInteger(doc.avatar_revision) && doc.avatar_revision >= 0
+        ? doc.avatar_revision
+        : 0,
     photos: Array.isArray(doc.photos) ? doc.photos : [],
-    avatar_source: doc.avatar_source === 'strava' ? 'strava' : 'wechat',
     gender: typeof doc.gender === 'string' ? doc.gender : '',
     emergency_name: typeof doc.emergency_name === 'string' ? doc.emergency_name : '',
     real_name_masked: typeof doc.real_name_masked === 'string' ? doc.real_name_masked : '',
@@ -327,7 +423,7 @@ function response(doc = {}) {
     completeness: Math.round((checks.filter(Boolean).length / checks.length) * 100),
   };
 }
-function buildUpdate(event, keyValue) {
+function buildUpdate(event, keyValue, current = {}) {
   keyFrom(keyValue);
   for (const forbidden of [
     'openid',
@@ -345,21 +441,35 @@ function buildUpdate(event, keyValue) {
   ])
     if (Object.prototype.hasOwnProperty.call(event, forbidden))
       throw new ProfileError('FORBIDDEN_FIELD', '包含禁止字段');
+  const hasAvatarFileId = Object.prototype.hasOwnProperty.call(event, 'avatar_file_id');
+  const hasAvatarSource = Object.prototype.hasOwnProperty.call(event, 'avatar_source');
+  const currentAvatar = normalizeAvatarProfile(current);
+  const legacyEmptyAvatar =
+    hasAvatarFileId &&
+    hasAvatarSource &&
+    event.avatar_file_id === '' &&
+    event.avatar_source === 'wechat' &&
+    !currentAvatar.avatar_file_id &&
+    !currentAvatar.avatar_source;
+  if (!legacyEmptyAvatar && hasAvatarSource) {
+    if (!currentAvatar.avatar_source || event.avatar_source !== currentAvatar.avatar_source)
+      throw new ProfileError('FORBIDDEN_FIELD', '头像必须通过专用操作更新');
+  }
+  if (!legacyEmptyAvatar && hasAvatarFileId) {
+    if (!currentAvatar.avatar_file_id || event.avatar_file_id !== currentAvatar.avatar_file_id)
+      throw new ProfileError('FORBIDDEN_FIELD', '头像必须通过专用操作更新');
+  }
   const data = {};
   for (const [input, output, max] of [
     ['nickname', 'nickname', 40],
     ['gender', 'gender', 20],
     ['emergency_name', 'emergency_name', 40],
-    ['avatar_file_id', 'avatar_file_id', 512],
   ]) {
     const value = cleanText(event[input], max);
     if (value !== undefined) data[output] = value;
   }
-  if (event.avatar_source !== undefined) {
-    const source = cleanText(event.avatar_source, 20);
-    if (!['wechat', 'strava'].includes(source))
-      throw new ProfileError('VALIDATION_FAILED', '头像来源无效');
-    data.avatar_source = source;
+  if (typeof event.has_completed_guidance === 'boolean') {
+    data.has_completed_guidance = event.has_completed_guidance;
   }
   if (event.photos !== undefined) {
     if (
@@ -430,12 +540,20 @@ module.exports = {
   issueMediaUploadPath,
   mediaOwnerPrefix,
   mediaDocumentId,
+  avatarUrlFingerprint,
   mediaRegistration,
+  clientAvatarSource,
+  clientMediaOrigin,
+  validateAvatarSelection,
   inspectMediaObject,
   verifyMediaObject,
   isOwnerMedia,
+  mediaPath,
+  registeredMedia,
   validateMediaUpdate,
   ownerMedia,
+  ownerAvatarMedia,
+  normalizeAvatarProfile,
   writableDocument,
   toError,
 };

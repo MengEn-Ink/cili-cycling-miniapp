@@ -104,18 +104,6 @@ async function consumeState(store, raw, now = new Date()) {
     throw new StravaError('OAUTH_STATE_INVALID', 'OAuth state 无效');
   return value;
 }
-function stravaAvatarUrl(athlete) {
-  for (const candidate of [athlete && athlete.profile, athlete && athlete.profile_medium]) {
-    if (typeof candidate !== 'string' || candidate.length > 2048) continue;
-    try {
-      const url = new URL(candidate);
-      if (url.protocol === 'https:') return url.toString();
-    } catch {
-      // Strava 头像不参与授权成败，非法 URL 直接忽略并交给前端回退。
-    }
-  }
-  return '';
-}
 function tokenDocument(openid, token, keyValue, now) {
   if (
     !token ||
@@ -126,12 +114,25 @@ function tokenDocument(openid, token, keyValue, now) {
     (!Number.isFinite(token.athlete.id) && typeof token.athlete.id !== 'string')
   )
     throw new StravaError('OAUTH_TOKEN_INVALID', 'Strava 换取凭证失败');
+  const athleteAvatarUrl = [token.athlete.profile, token.athlete.profile_medium]
+    .filter((value) => typeof value === 'string' && value.length <= 2048)
+    .map((value) => {
+      try {
+        const url = new URL(value);
+        if (url.protocol !== 'https:' || url.username || url.password) return '';
+        url.hash = '';
+        return url.toString();
+      } catch {
+        return '';
+      }
+    })
+    .find(Boolean);
   return {
     _id: openid,
     openid,
     athlete_id: String(token.athlete.id),
     athlete_name: [token.athlete.firstname, token.athlete.lastname].filter(Boolean).join(' '),
-    athlete_avatar_url: stravaAvatarUrl(token.athlete),
+    ...(athleteAvatarUrl ? { athlete_avatar_url: athleteAvatarUrl } : {}),
     access_token_cipher: encrypt(token.access_token, keyValue),
     refresh_token_cipher: encrypt(token.refresh_token, keyValue),
     token_expires_at: new Date(token.expires_at * 1000),
@@ -242,7 +243,6 @@ function deriveReadiness({ credential, snapshot, hasActiveOAuthState }, now = ne
     error: null,
   };
 }
-// Strava 活动可能多达数千条，用展开语法 Math.max(...arr) 会触发引擎传参上限而抛错，统一归约求最大值。
 function maxOf(values, selector, lowest = -Infinity) {
   return values.reduce((max, item) => Math.max(max, selector(item)), lowest);
 }
@@ -263,7 +263,9 @@ function statistics(activities, { now = new Date(), coverageFrom, coverageTo, co
     total_km: known && distance !== null ? Number((distance / 1000).toFixed(2)) : null,
     activities_90d: known ? rides.length : null,
     longest_km:
-      known && distanceKnown ? Number((maxOf(distances, (v) => v, 0) / 1000).toFixed(2)) : null,
+      known && distanceKnown
+        ? Number((maxOf(distances, (value) => value, 0) / 1000).toFixed(2))
+        : null,
     total_elevation_m:
       known && elevationKnown
         ? Number(elevations.reduce((sum, value) => sum + value, 0).toFixed(1))
@@ -318,7 +320,7 @@ async function callbackFlow({ code, state, env, store, api, now = new Date() }) 
     grant_type: 'authorization_code',
   });
   const credential = tokenDocument(stateDoc.openid, token, cfg.key, now);
-  await store.saveCredential(credential);
+  await store.saveCredential(credential, now);
   return { connected: true, athlete_name: credential.athlete_name };
 }
 async function usableCredential({ openid, credential, cfg, api, now = new Date() }) {

@@ -6,6 +6,6 @@ App({
   onLaunch() {
     appStore.bootstrap();
     const cloud = initializeCloud(wx.cloud) === 'initialized' ? wx.cloud : undefined;
-    void appStore.refreshIdentity(cloud);
+    void appStore.ensureIdentity(cloud);
   },
 });

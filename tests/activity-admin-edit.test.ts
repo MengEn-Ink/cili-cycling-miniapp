@@ -1,5 +1,7 @@
+// @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
+import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Activity } from '../miniprogram/models';
+import type { Activity, EditableActivity } from '../miniprogram/models';
 
 const rideService = vi.hoisted(() => ({
   getAdminActivity: vi.fn(),
@@ -8,7 +10,7 @@ const rideService = vi.hoisted(() => ({
 const appStore = vi.hoisted(() => ({
   role: 'admin',
   authStatus: 'authenticated',
-  refreshIdentity: vi.fn(),
+  ensureIdentity: vi.fn(),
 }));
 
 vi.mock('../miniprogram/services/ride-service', () => ({ rideService }));
@@ -57,7 +59,7 @@ describe('管理员普通编辑保留未展示的活动字段', () => {
     vi.resetModules();
     rideService.getAdminActivity.mockReset().mockResolvedValue(activity);
     rideService.saveActivity.mockReset().mockResolvedValue({ ...activity, version: 8 });
-    appStore.refreshIdentity.mockReset().mockResolvedValue(undefined);
+    appStore.ensureIdentity.mockReset().mockResolvedValue(undefined);
     vi.stubGlobal('wx', { cloud: {}, showToast: vi.fn() });
     vi.stubGlobal('Page', (definition: any) => {
       page = definition;
@@ -76,6 +78,7 @@ describe('管理员普通编辑保留未展示的活动字段', () => {
 
   it('只改标题时仍提交 schedule remark、GPX 与费用明细', async () => {
     await page.onLoad({ id: activity.id });
+    expect(appStore.ensureIdentity).toHaveBeenCalledWith(wx.cloud);
     page.data.form.title = '新标题';
 
     await page.save({ currentTarget: { dataset: {} } });
@@ -96,5 +99,59 @@ describe('管理员普通编辑保留未展示的活动字段', () => {
       7,
     );
     expect(page.data.version).toBe(8);
+  });
+
+  it('模板草稿显示清空字段提示并允许缺少运营字段时保存', async () => {
+    const cloneDraft: EditableActivity = {
+      id: 'activity_clone_new',
+      version: 1,
+      title: '环湖骑行副本',
+      status: 'draft',
+      capacity: 20,
+      occupiedCount: 0,
+      description: '说明',
+      route: { start: '起点', end: '终点', distanceKm: 80, elevationM: 600, level: '进阶' },
+      schedule: activity.schedule,
+      notices: activity.notices,
+      equipment: activity.equipment,
+      fee: activity.fee,
+    };
+    rideService.getAdminActivity.mockResolvedValueOnce(cloneDraft);
+    rideService.saveActivity.mockResolvedValueOnce({ ...cloneDraft, version: 2 });
+
+    await page.onLoad({ id: cloneDraft.id, fromTemplate: '1' });
+
+    expect(page.data.fromTemplate).toBe(true);
+    expect(page.data.canPublish).toBe(false);
+    expect(readFileSync('miniprogram/pages/admin/activity-edit/index.wxml', 'utf8')).toContain(
+      '已复制内容，日期、交通名额和司机信息需重新确认',
+    );
+    await page.save({ currentTarget: { dataset: { status: 'draft' } } });
+    const submitted = rideService.saveActivity.mock.calls[0][0];
+    expect(submitted).not.toHaveProperty('deadline');
+    expect(submitted).not.toHaveProperty('startAt');
+    expect(submitted).not.toHaveProperty('endAt');
+    expect(submitted).not.toHaveProperty('supportVehicleCapacity');
+    expect(submitted).not.toHaveProperty('selfDriveCapacity');
+    expect(submitted).not.toHaveProperty('supportVehicleDriver');
+    expect(page.data.version).toBe(2);
+  });
+
+  it('发布按钮受完整重填清单保护，缺字段时不会调用保存', async () => {
+    await page.onLoad({ id: activity.id });
+    page.data.status = 'draft';
+    page.data.form.deadline = '';
+    page.recomputePublishReadiness();
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(rideService.saveActivity).not.toHaveBeenCalled();
+    expect(page.data.error).toContain('发布');
+    const template = readFileSync('miniprogram/pages/admin/activity-edit/index.wxml', 'utf8');
+    expect(template).toContain('重新确认清单');
+    expect(template).toContain('封面与路线文件为选填');
+    expect(template).toContain('封面文件 ID（选填）');
+    expect(template).toContain('路线文件 ID（选填）');
+    expect(template).toMatch(/data-status="published"[^>]*disabled="{{saving \|\| !canPublish}}"/);
   });
 });

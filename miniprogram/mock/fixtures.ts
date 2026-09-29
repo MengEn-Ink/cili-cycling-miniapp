@@ -49,6 +49,7 @@ export const activities: Activity[] = [
   },
 ];
 export const profile: Profile = {
+  avatarRevision: 0,
   nickname: '风向骑手',
   title: '周末巡游者',
   realName: '林晓川',

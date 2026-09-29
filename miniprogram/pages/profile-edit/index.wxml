@@ -3,20 +3,6 @@
   <block wx:if="{{p}}">
     <view class="card form-card">
       <view class="title">展示身份</view>
-      <view class="avatar-field">
-        <view class="avatar-preview">
-          <image wx:if="{{p.avatarId}}" src="{{p.avatarId}}" mode="aspectFill" aria-hidden="true" />
-          <text wx:else>{{p.nickname ? p.nickname[0] : 'C'}}</text>
-        </view>
-        <view class="avatar-copy">
-          <view class="label">头像来源</view>
-          <view class="muted field-tip">可在微信头像与 Strava 头像之间切换；Strava 头像不可用时会自动回退。</view>
-          <picker mode="selector" range="{{avatarSourceOptions}}" range-key="label" value="{{avatarSourceIndex}}" bindchange="setAvatarSource">
-            <view class="avatar-source-picker">当前展示：{{avatarSourceOptions[avatarSourceIndex].label}}</view>
-          </picker>
-          <button class="avatar-action" size="mini" open-type="chooseAvatar" bindchooseavatar="chooseAvatar">选择微信头像</button>
-        </view>
-      </view>
       <view class="field">
         <view class="label">昵称</view>
         <input class="input" value="{{p.nickname}}" data-k="nickname" bindinput="set" />
@@ -24,6 +10,31 @@
       <view class="field">
         <view class="label">称号（管理员颁发）</view>
         <input class="input" value="{{p.title}}" disabled />
+      </view>
+      <view class="avatar-editor">
+        <view class="avatar-preview-shell">
+          <image
+            wx:if="{{avatarPreviewUrl}}"
+            class="avatar-preview"
+            src="{{avatarPreviewUrl}}"
+            data-url="{{avatarPreviewUrl}}"
+            mode="aspectFill"
+            aria-label="当前头像预览"
+            binderror="avatarPreviewError"
+          />
+          <view wx:else class="avatar-preview-placeholder" aria-hidden="true">骑</view>
+        </view>
+        <view class="avatar-panel">
+          <view class="label">更新头像</view>
+          <view class="muted avatar-note">头像操作会即时保存；微信入口仅表示从微信选择图片。</view>
+          <view class="avatar-actions">
+            <button class="avatar-action avatar-action-wechat" open-type="chooseAvatar" bindchooseavatar="chooseWechatAvatar" disabled="{{avatarBusy}}" aria-label="从微信选择头像">从微信选择头像</button>
+            <button class="avatar-action avatar-action-custom" bindtap="chooseCustomAvatar" disabled="{{avatarBusy}}" aria-label="选择自定义头像">选择自定义头像</button>
+            <button class="avatar-action avatar-action-strava" bindtap="importStravaAvatar" disabled="{{avatarBusy || !stravaAvatarReady}}" aria-label="导入 Strava 头像">导入 Strava 头像</button>
+          </view>
+          <view class="avatar-status {{stravaAvatarError ? 'avatar-status-error' : ''}}" role="{{stravaAvatarError ? 'alert' : 'status'}}" aria-live="{{stravaAvatarError ? 'assertive' : 'polite'}}" aria-atomic="true">{{avatarBusy ? '正在安全更新头像' : (stravaAvatarError || stravaAvatarHint)}}</view>
+          <button wx:if="{{!stravaAvatarReady}}" class="avatar-help-link" bindtap="goToStrava" disabled="{{avatarBusy}}" aria-label="先绑定或同步 Strava">先绑定/同步 Strava</button>
+        </view>
       </view>
     </view>
 

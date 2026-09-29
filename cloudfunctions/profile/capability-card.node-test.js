@@ -36,12 +36,13 @@ const snapshot = {
   coverage_complete: true,
   synced_at: '2026-09-29T11:00:00.000Z',
 };
-const mediaRecord = (fileId, category, status = 'active', owner = openid) => ({
+const mediaRecord = (fileId, category, status = 'active', owner = openid, origin) => ({
   _id: mediaDocumentId(fileId),
   file_id: fileId,
   owner_openid: owner,
   category,
   status,
+  ...(origin ? { origin } : {}),
 });
 
 test('个人名片状态严格区分 ready/partial/syncing/failed/disconnected', () => {
@@ -91,10 +92,7 @@ test('单一响应只返回 90 天 allowlist、null 语义和 owner 媒体临时
           { file_id: 'cloud://env/profiles/legacy/ride.jpg', category: 'ride' },
         ],
       },
-      credential: {
-        ...credential,
-        athlete_avatar_url: 'https://temporary.example/strava-avatar.jpg',
-      },
+      credential,
       snapshot: { ...snapshot, longest_km: null },
       mediaRecords: [mediaRecord(ownedRide, 'ride'), mediaRecord(ownedOther, 'other')],
     },
@@ -105,7 +103,7 @@ test('单一响应只返回 90 天 allowlist、null 语义和 owner 媒体临时
       getTempFileURL: async ({ fileList }) => ({
         fileList: fileList.map((fileID) => ({
           fileID,
-          tempFileURL: `https://temporary.example/${fileID === ownedRide ? 'ride' : 'other'}`,
+          tempFileURL: `https://temporary.example/${fileID === ownedRide ? 'ride' : fileID === ownedOther ? 'other' : 'avatar'}`,
           status: 0,
         })),
       }),
@@ -114,8 +112,11 @@ test('单一响应只返回 90 天 allowlist、null 语义和 owner 媒体临时
   assert.deepEqual(response, {
     state: 'partial',
     generated_at: '2026-09-29T12:00:00.000Z',
-    profile: { display_name: '山野骑手', title: '爬坡王' },
-    strava_avatar_url: 'https://temporary.example/strava-avatar.jpg',
+    profile: {
+      display_name: '山野骑手',
+      title: '爬坡王',
+      avatar_url: '',
+    },
     backgrounds: [
       { url: 'https://temporary.example/ride', source: 'user_photo', category: 'ride' },
       { url: 'https://temporary.example/other', source: 'user_photo', category: 'other' },
@@ -133,6 +134,7 @@ test('单一响应只返回 90 天 allowlist、null 语义和 owner 媒体临时
       complete: true,
     },
     synced_at: '2026-09-29T11:00:00.000Z',
+    needs_strava_reauth: false,
   });
   const serialized = JSON.stringify(response);
   for (const forbidden of [
@@ -249,6 +251,33 @@ test('HMAC 路径存在但 registry 缺失、非 active 或 owner 不匹配时�
   assert.equal(calls, 0);
 });
 
+test('未登记 legacy 或来源不匹配的头像绝不传给临时 URL API', async () => {
+  const avatar = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  let requested = [];
+  for (const input of [
+    { profile: { avatar_file_id: 'cloud://env/profiles/legacy/avatar.jpg' }, mediaRecords: [] },
+    {
+      profile: { avatar_file_id: avatar, avatar_source: 'strava' },
+      mediaRecords: [mediaRecord(avatar, 'other')],
+    },
+  ]) {
+    const result = await buildCapabilityCard(
+      { ...input, credential, snapshot },
+      {
+        openid,
+        mediaSecret,
+        now,
+        getTempFileURL: async ({ fileList }) => {
+          requested.push(...fileList);
+          return { fileList: [] };
+        },
+      },
+    );
+    assert.deepEqual(result.backgrounds, []);
+  }
+  assert.deepEqual(requested, []);
+});
+
 test('个人名片拒绝缺失的可信 WXContext 身份', async () => {
   await assert.rejects(
     buildCapabilityCard(
@@ -257,4 +286,93 @@ test('个人名片拒绝缺失的可信 WXContext 身份', async () => {
     ),
     (error) => error && error.code === 'UNAUTHENTICATED',
   );
+});
+
+test('头像仅从当前 profile 引用且 owner/active/origin 匹配的背景结果解析', async () => {
+  const avatar = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174010.jpg`;
+  const getTempFileURL = async ({ fileList }) => ({
+    fileList: fileList.map((fileID) => ({
+      fileID,
+      tempFileURL: 'https://temp.url/avatar.jpg',
+      status: 0,
+    })),
+  });
+
+  const cardStrava = await buildCapabilityCard(
+    {
+      profile: { avatar_source: 'strava', avatar_file_id: avatar },
+      credential,
+      snapshot,
+      mediaRecords: [mediaRecord(avatar, 'other', 'active', openid, 'strava')],
+    },
+    { openid, mediaSecret, now, getTempFileURL },
+  );
+  assert.equal(cardStrava.profile.avatar_url, 'https://temp.url/avatar.jpg');
+  assert.equal(cardStrava.needs_strava_reauth, false);
+
+  const cardStravaMissing = await buildCapabilityCard(
+    {
+      profile: { avatar_source: 'strava', avatar_file_id: avatar },
+      credential,
+      snapshot,
+      mediaRecords: [],
+    },
+    { openid, mediaSecret, now, getTempFileURL },
+  );
+  assert.equal(cardStravaMissing.profile.avatar_url, '');
+  assert.equal(cardStravaMissing.needs_strava_reauth, true);
+
+  const cardWechat = await buildCapabilityCard(
+    {
+      profile: { avatar_source: 'wechat', avatar_file_id: avatar },
+      credential,
+      snapshot,
+      mediaRecords: [mediaRecord(avatar, 'other', 'active', openid, 'wechat')],
+    },
+    { openid, mediaSecret, now, getTempFileURL },
+  );
+  assert.equal(cardWechat.profile.avatar_url, 'https://temp.url/avatar.jpg');
+});
+
+test('头像独立于三张背景上限解析且与 photos 重复时仍保留头像 URL', async () => {
+  const rideA = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174020.jpg`;
+  const rideB = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174021.jpg`;
+  const rideC = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174022.jpg`;
+  const avatar = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174023.jpg`;
+  const profile = {
+    avatar_source: 'strava',
+    avatar_file_id: avatar,
+    photos: [
+      { file_id: rideA, category: 'ride' },
+      { file_id: rideB, category: 'bike' },
+      { file_id: rideC, category: 'other' },
+      { file_id: avatar, category: 'other' },
+    ],
+  };
+  const mediaRecords = [
+    mediaRecord(rideA, 'ride'),
+    mediaRecord(rideB, 'bike'),
+    mediaRecord(rideC, 'other'),
+    mediaRecord(avatar, 'other', 'active', openid, 'strava'),
+  ];
+
+  const card = await buildCapabilityCard(
+    { profile, credential, snapshot, mediaRecords },
+    {
+      openid,
+      mediaSecret,
+      now,
+      getTempFileURL: async ({ fileList }) => ({
+        fileList: fileList.map((fileID) => ({
+          fileID,
+          tempFileURL: `https://temporary.example/${fileID === avatar ? 'avatar' : 'photo'}`,
+          status: 0,
+        })),
+      }),
+    },
+  );
+
+  assert.equal(card.backgrounds.length, 3);
+  assert.equal(card.profile.avatar_url, 'https://temporary.example/avatar');
+  assert.equal(card.needs_strava_reauth, false);
 });

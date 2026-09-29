@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   AuthServiceError,
   authenticateWithCloud,
@@ -12,15 +12,34 @@ const fakeIdentity = {
   isSuper: true,
 };
 
-function memoryStorage(initialRole: 'member' | 'admin' = 'member') {
-  let role = initialRole;
+function memoryStorage(initial: Record<string, unknown> = {}) {
+  const values = new Map(Object.entries(initial));
   return {
-    getStorageSync: () => role,
-    setStorageSync: (_key: string, value: unknown) => {
-      role = value as 'member' | 'admin';
+    getStorageSync: vi.fn((key: string) => values.get(key)),
+    setStorageSync: vi.fn((key: string, value: unknown) => {
+      values.set(key, value);
+    }),
+    removeStorageSync: vi.fn((key: string) => {
+      values.delete(key);
+    }),
+    value(key: string) {
+      return values.get(key);
     },
   };
 }
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((onResolve) => {
+    resolve = onResolve;
+  });
+  return { promise, resolve };
+}
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 
 describe('云身份响应解析', () => {
   it('接受最小且一致的可信身份', () => {
@@ -76,15 +95,50 @@ describe('云身份调用边界', () => {
   });
 });
 
+describe('小程序身份启动', () => {
+  it('持久提示读取异常时仍完成 cloud init 并发起远端认证', async () => {
+    vi.resetModules();
+    const callFunction = vi.fn().mockResolvedValue({ result: fakeIdentity });
+    const cloud = { init: vi.fn(), callFunction };
+    const getStorageSync = vi.fn(() => {
+      throw new Error('storage read failed');
+    });
+    const setStorageSync = vi.fn();
+    let application: { onLaunch(): void } | undefined;
+    vi.stubGlobal('wx', {
+      cloud,
+      getStorageSync,
+      setStorageSync,
+      removeStorageSync: vi.fn(),
+    });
+    vi.stubGlobal('App', (definition: { onLaunch(): void }) => {
+      application = definition;
+    });
+    await import('../miniprogram/app');
+
+    expect(() => application?.onLaunch()).not.toThrow();
+    await vi.waitFor(() => expect(callFunction).toHaveBeenCalledWith({ name: 'auth' }));
+    await vi.waitFor(() =>
+      expect(setStorageSync).toHaveBeenCalledWith(
+        'ride-identity-hint',
+        expect.objectContaining({ source: 'wechat_cloud' }),
+      ),
+    );
+
+    expect(cloud.init).toHaveBeenCalledOnce();
+    expect(getStorageSync).toHaveBeenCalledWith('ride-identity-hint');
+  });
+});
+
 describe('身份 store', () => {
   it('真实角色成功后不再允许开发态 storage 覆盖或切换', async () => {
-    const storage = memoryStorage('member');
+    const storage = memoryStorage({ 'ride-role': 'member' });
     const store = new AppStore(storage, async () => ({
       status: 'authenticated',
       identity: fakeIdentity,
     }));
     store.bootstrap();
-    await store.refreshIdentity();
+    await store.ensureIdentity();
     expect(store.role).toBe('admin');
     expect(store.canSwitchRole()).toBe(false);
     expect(() => store.switchRole('member')).toThrow('真实身份生效后不可切换角色');
@@ -93,9 +147,9 @@ describe('身份 store', () => {
   });
 
   it('cloud 不可用时不启用开发态角色且没有伪造身份', async () => {
-    const store = new AppStore(memoryStorage('admin'), authenticateWithCloud);
+    const store = new AppStore(memoryStorage({ 'ride-role': 'admin' }), authenticateWithCloud);
     store.bootstrap();
-    await store.refreshIdentity(undefined);
+    await store.ensureIdentity(undefined);
     expect(store).toMatchObject({
       openid: null,
       role: 'member',
@@ -103,5 +157,178 @@ describe('身份 store', () => {
       authStatus: 'unavailable',
     });
     expect(store.canSwitchRole()).toBe(false);
+  });
+
+  it('认证成功只持久化非特权微信身份提示，且新进程不会据此恢复权限', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-30T01:02:03.000Z'));
+    const storage = memoryStorage();
+    const store = new AppStore(storage, async () => ({
+      status: 'authenticated',
+      identity: fakeIdentity,
+    }));
+
+    await store.ensureIdentity();
+
+    expect(storage.value('ride-identity-hint')).toEqual({
+      source: 'wechat_cloud',
+      verifiedAt: Date.parse('2026-09-30T01:02:03.000Z'),
+    });
+    expect(JSON.stringify(storage.value('ride-identity-hint'))).not.toMatch(
+      /openid|role|isSuper|token/i,
+    );
+
+    const nextProcess = new AppStore(storage, vi.fn());
+    nextProcess.bootstrap();
+    expect(nextProcess).toMatchObject({
+      openid: null,
+      role: 'member',
+      isSuper: false,
+      authStatus: 'idle',
+    });
+  });
+
+  it('五分钟 TTL 内复用当前进程的认证结果，过期后重新认证', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-30T00:00:00.000Z'));
+    const authenticate = vi.fn().mockResolvedValue({
+      status: 'authenticated',
+      identity: fakeIdentity,
+    });
+    const store = new AppStore(memoryStorage(), authenticate);
+
+    await store.ensureIdentity();
+    vi.advanceTimersByTime(5 * 60_000 - 1);
+    await store.ensureIdentity();
+    expect(authenticate).toHaveBeenCalledOnce();
+
+    vi.advanceTimersByTime(1);
+    await store.ensureIdentity();
+    expect(authenticate).toHaveBeenCalledTimes(2);
+  });
+
+  it('并发认证调用复用同一个 in-flight promise', async () => {
+    const pending = deferred<{
+      status: 'authenticated';
+      identity: typeof fakeIdentity;
+    }>();
+    const authenticate = vi.fn().mockReturnValue(pending.promise);
+    const store = new AppStore(memoryStorage(), authenticate);
+
+    const first = store.ensureIdentity();
+    const second = store.ensureIdentity();
+
+    expect(second).toBe(first);
+    expect(authenticate).toHaveBeenCalledOnce();
+    pending.resolve({ status: 'authenticated', identity: fakeIdentity });
+    await first;
+  });
+
+  it('force=true 绕过新鲜 TTL 并重新认证', async () => {
+    const authenticate = vi.fn().mockResolvedValue({
+      status: 'authenticated',
+      identity: fakeIdentity,
+    });
+    const store = new AppStore(memoryStorage(), authenticate);
+
+    await store.ensureIdentity();
+    await store.ensureIdentity(undefined, true);
+
+    expect(authenticate).toHaveBeenCalledTimes(2);
+  });
+
+  it('强制认证失败时清除当前进程的全部特权状态', async () => {
+    const authenticate = vi
+      .fn()
+      .mockResolvedValueOnce({ status: 'authenticated', identity: fakeIdentity })
+      .mockResolvedValueOnce({
+        status: 'error',
+        code: 'CALL_FAILED',
+        message: '身份服务暂时不可用，请稍后重试。',
+      });
+    const store = new AppStore(memoryStorage(), authenticate);
+    await store.ensureIdentity();
+
+    await store.ensureIdentity(undefined, true);
+
+    expect(store).toMatchObject({
+      openid: null,
+      role: 'member',
+      isSuper: false,
+      authStatus: 'error',
+    });
+  });
+
+  it('身份提示写入失败不改变远端认证成功结果或 TTL', async () => {
+    const storage = memoryStorage();
+    storage.setStorageSync.mockImplementation(() => {
+      throw new Error('storage quota exceeded');
+    });
+    const authenticate = vi.fn().mockResolvedValue({
+      status: 'authenticated',
+      identity: fakeIdentity,
+    });
+    const store = new AppStore(storage, authenticate);
+
+    await expect(store.ensureIdentity()).resolves.toEqual({
+      status: 'authenticated',
+      identity: fakeIdentity,
+    });
+    await store.ensureIdentity();
+
+    expect(authenticate).toHaveBeenCalledOnce();
+    expect(store).toMatchObject({
+      openid: fakeIdentity.openid,
+      role: 'admin',
+      isSuper: true,
+      authStatus: 'authenticated',
+      authError: '',
+    });
+  });
+
+  it('bootstrap 删除旧 ride-role 且绝不据此恢复角色', () => {
+    const storage = memoryStorage({ 'ride-role': 'admin' });
+    const store = new AppStore(storage, vi.fn());
+
+    store.bootstrap();
+
+    expect(storage.removeStorageSync).toHaveBeenCalledWith('ride-role');
+    expect(storage.value('ride-role')).toBeUndefined();
+    expect(store).toMatchObject({ role: 'member', isSuper: false, openid: null });
+  });
+
+  it('bootstrap 忽略旧角色清理失败并继续保持 fail closed', () => {
+    const storage = memoryStorage({
+      'ride-role': 'admin',
+      'ride-identity-hint': { source: 'wechat_cloud', verifiedAt: 123 },
+    });
+    storage.removeStorageSync.mockImplementation(() => {
+      throw new Error('storage unavailable');
+    });
+    const store = new AppStore(storage, vi.fn());
+
+    expect(() => store.bootstrap()).not.toThrow();
+    expect(storage.removeStorageSync).toHaveBeenCalledWith('ride-role');
+    expect(store).toMatchObject({
+      role: 'member',
+      isSuper: false,
+      openid: null,
+      identityHint: { source: 'wechat_cloud', verifiedAt: 123 },
+    });
+  });
+
+  it('bootstrap 读取身份提示失败时清空进程内旧提示', async () => {
+    const storage = memoryStorage();
+    const store = new AppStore(storage, async () => ({
+      status: 'authenticated',
+      identity: fakeIdentity,
+    }));
+    await store.ensureIdentity();
+    storage.getStorageSync.mockImplementation(() => {
+      throw new Error('storage read failed');
+    });
+
+    expect(() => store.bootstrap()).not.toThrow();
+    expect(store.identityHint).toBeNull();
   });
 });

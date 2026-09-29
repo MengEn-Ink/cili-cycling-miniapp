@@ -93,3 +93,15 @@
     grid-template-columns: 1fr;
   }
 }
+.template-banner,
+.publish-checklist {
+  margin-bottom: 24rpx;
+  padding: 24rpx;
+  border: 2rpx solid rgba(215, 255, 59, 0.45);
+  background: rgba(215, 255, 59, 0.08);
+}
+
+.template-banner {
+  color: var(--accent);
+  font-weight: 700;
+}

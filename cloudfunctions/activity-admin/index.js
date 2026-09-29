@@ -9,6 +9,7 @@ const {
   assertTrustedOpenid,
   isEnabledAdmin,
   publicActivity,
+  cloneActivity,
   saveActivity,
   MAX_PARTITION_BACKFILL_RECORDS,
 } = require('./domain-index');
@@ -103,6 +104,18 @@ exports.main = async (event = {}) => {
             activityId: event.activityId,
             expectedVersion: event.expectedVersion,
             activity: event.activity,
+          },
+          new Date(),
+        ),
+      );
+    }
+    if (event.action === 'clone') {
+      return ok(
+        await cloneActivity(
+          transactionStore(),
+          {
+            ...event,
+            openid,
           },
           new Date(),
         ),

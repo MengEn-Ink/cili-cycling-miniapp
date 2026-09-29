@@ -1,6 +1,6 @@
 'use strict';
 
-const { ProfileError, ownerMedia } = require('./core');
+const { ProfileError, ownerAvatarMedia, ownerMedia } = require('./core');
 const SNAPSHOT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const SUMMARY_FIELDS = [
   ['total_km_90d', 'total_km'],
@@ -120,22 +120,27 @@ async function buildCapabilityCard(
   const snapshotSummary = summary(hasSnapshot ? snapshot : undefined);
   const snapshotCoverage = hasSnapshot ? coverage(snapshot) : null;
   const syncedAt = hasSnapshot ? validDate(snapshot.synced_at).toISOString() : null;
-  const backgrounds = await resolveBackgrounds(
-    ownerMedia(profile, openid, mediaSecret, mediaRecords),
-    getTempFileURL,
-  );
+  const [backgrounds, avatar] = await Promise.all([
+    resolveBackgrounds(ownerMedia(profile, openid, mediaSecret, mediaRecords), getTempFileURL),
+    resolveBackgrounds(
+      [ownerAvatarMedia(profile, openid, mediaSecret, mediaRecords)].filter(Boolean),
+      getTempFileURL,
+    ),
+  ]);
+  const avatarUrl = avatar[0]?.url || '';
   return {
     state: deriveCapabilityState({ credential, snapshot }, now),
     generated_at: now.toISOString(),
     profile: {
       display_name: typeof profile?.nickname === 'string' ? profile.nickname : '',
       title: typeof profile?.title === 'string' ? profile.title : '',
+      avatar_url: avatarUrl,
     },
-    strava_avatar_url: safeHttpsUrl(credential && credential.athlete_avatar_url),
     backgrounds,
     summary: snapshotSummary,
     coverage: snapshotCoverage,
     synced_at: syncedAt,
+    needs_strava_reauth: profile?.avatar_source === 'strava' && !avatarUrl,
   };
 }
 

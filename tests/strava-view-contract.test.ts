@@ -9,6 +9,7 @@ const registration = (coverage: Registration['strava']['coverage']): Registratio
   activityId: 'a1',
   status: 'pending',
   profile: {
+    avatarRevision: 0,
     nickname: '骑手',
     title: '',
     realName: '曹**',

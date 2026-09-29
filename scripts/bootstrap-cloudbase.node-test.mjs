@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import test from 'node:test';
 
 import {
@@ -15,6 +16,14 @@ import {
   runBootstrap,
   validateDemo,
 } from './bootstrap-cloudbase.mjs';
+
+const require = createRequire(import.meta.url);
+const {
+  RECOVERY_LEASE_MS,
+  RECOVERY_CONFIRMATION_MS,
+  STORAGE_SETTLE_MARGIN_MS,
+} = require('../cloudfunctions/profile-media-cleanup/core');
+const { IMPORT_LEASE_MS } = require('../cloudfunctions/profile/avatar-import');
 
 function completeState() {
   const now = new Date('2026-09-29T00:00:00.000Z');
@@ -326,8 +335,8 @@ test('OAuth 与 Strava 集合包含唯一、普通过期时间和同步索引', 
     ],
     unique: false,
   });
-  assert.equal(COLLECTIONS.length, 10);
-  assert.equal(INDEXES.length, 19);
+  assert.equal(COLLECTIONS.length, 11);
+  assert.equal(INDEXES.length, 22);
   assert.equal(INDEXES.find((item) => item.name === 'oauth_states_state_hash')?.unique, true);
   assert.equal(
     INDEXES.some((item) => item.name === 'strava_snapshots_synced_at'),
@@ -356,12 +365,12 @@ test('notification_outbox 使用租约扫描索引并保持客户端全拒绝', 
   );
 });
 
-test('CloudBase schema 文档列出 notification_outbox 全部索引并与 19 条总数一致', () => {
+test('CloudBase schema 文档列出 notification_outbox 全部索引并与 22 条总数一致', () => {
   const schema = readFileSync(new URL('../docs/cloudbase-schema.md', import.meta.url), 'utf8');
   assert.match(schema, /notification_outbox \| status ASC, attempts ASC, lease_expires_at ASC/);
   assert.match(schema, /notification_outbox \| target_openid ASC, created_at DESC/);
   assert.match(schema, /notification_outbox \| status ASC, attempts ASC, next_retry_at ASC/);
-  assert.match(schema, /全拒绝规则与 19 索引/);
+  assert.match(schema, /全拒绝规则与 22 索引/);
 });
 
 test('profile_media 使用 owner/status 与过期清理索引并保持客户端全拒绝', () => {
@@ -392,14 +401,54 @@ test('profile_media 使用 owner/status 与过期清理索引并保持客户端�
     ['status', 1],
     ['retry_at', 1],
   ]);
-  assert.equal(COLLECTIONS.length, 10);
-  assert.equal(INDEXES.length, 19);
+  assert.equal(COLLECTIONS.length, 11);
+  assert.equal(INDEXES.length, 22);
   assert.deepEqual(DENY_RULE, { read: false, write: false });
+});
+
+test('profile_media_imports 使用全拒绝 ACL 与完整 cleanup 扫描索引', () => {
+  assert.ok(COLLECTIONS.includes('profile_media_imports'));
+  assert.deepEqual(
+    INDEXES.find((index) => index.name === 'profile_media_imports_status_cleanup_after')?.keys,
+    [
+      ['status', 1],
+      ['cleanup_after', 1],
+    ],
+  );
+  assert.deepEqual(
+    INDEXES.find((index) => index.name === 'profile_media_imports_status_delete_lease_expires_at')
+      ?.keys,
+    [
+      ['status', 1],
+      ['delete_lease_expires_at', 1],
+    ],
+  );
+  assert.deepEqual(
+    INDEXES.find((index) => index.name === 'profile_media_imports_status_retry_at')?.keys,
+    [
+      ['status', 1],
+      ['retry_at', 1],
+    ],
+  );
+  assert.deepEqual(DENY_RULE, { read: false, write: false });
+  const schema = readFileSync(new URL('../docs/cloudbase-schema.md', import.meta.url), 'utf8');
+  assert.match(schema, /### `profile_media_imports`/);
+  assert.match(schema, /profile_media_imports \| status ASC, cleanup_after ASC/);
+  assert.match(schema, /profile_media_imports \| status ASC, delete_lease_expires_at ASC/);
+  assert.match(schema, /profile_media_imports \| status ASC, retry_at ASC/);
+  assert.match(schema, /11 集合、全拒绝规则与 22 索引/);
+  assert.match(schema, /avatar_revision/);
+  assert.match(schema, /origin: wechat\|strava\|custom/);
+  assert.match(schema, /status: leased\|prepared\|uploaded/);
+  assert.match(schema, /avatar_url_fingerprint/);
+  assert.match(schema, /avatar_import_lease_expires_at/);
 });
 
 test('profile_media cleanup 配置真实且有界的定时执行器', () => {
   const config = JSON.parse(readFileSync(new URL('../cloudbaserc.json', import.meta.url), 'utf8'));
+  const profile = config.functions.find((item) => item.name === 'profile');
   const cleanup = config.functions.find((item) => item.name === 'profile-media-cleanup');
+  assert.ok(IMPORT_LEASE_MS > profile.timeout * 1000 + STORAGE_SETTLE_MARGIN_MS);
   assert.equal(cleanup?.handler, 'index.main');
   assert.equal(cleanup?.runtime, 'Nodejs20.19');
   assert.deepEqual(cleanup?.triggers, [
@@ -409,4 +458,14 @@ test('profile_media cleanup 配置真实且有界的定时执行器', () => {
       config: '0 */10 * * * * *',
     },
   ]);
+  const runtimeUpperBoundMs = cleanup.timeout * 1000 + STORAGE_SETTLE_MARGIN_MS;
+  assert.ok(RECOVERY_LEASE_MS > runtimeUpperBoundMs);
+  assert.ok(RECOVERY_CONFIRMATION_MS > runtimeUpperBoundMs);
+});
+
+test('README 与部署包断言包含 profile_media_imports 和头像导入入口', () => {
+  const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
+  const verifier = readFileSync(new URL('./verify-cloud-packages.mjs', import.meta.url), 'utf8');
+  assert.match(readme, /11 个集合、22 个业务索引/);
+  assert.match(verifier, /pack\('profile',[\s\S]*?'avatar-import\.js'/);
 });

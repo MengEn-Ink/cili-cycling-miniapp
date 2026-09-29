@@ -15,6 +15,7 @@ const rideService = vi.hoisted(() => ({
 vi.mock('../miniprogram/services/ride-service', () => ({ rideService }));
 
 const profile: Profile = {
+  avatarRevision: 0,
   nickname: 'Rider',
   title: 'Rider',
   realName: '骑手',

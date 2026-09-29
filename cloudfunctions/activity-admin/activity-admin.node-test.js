@@ -3,9 +3,12 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   DomainError,
+  validateDraftInput,
+  validatePublishInput,
   validateActivityInput,
   assertStatusTransition,
   publicActivity,
+  cloneActivity,
   saveActivity,
 } = require('./domain-index');
 const now = new Date('2026-09-29T04:00:00.000Z');
@@ -54,12 +57,117 @@ function store(current, admin = { _id: 'admin', enabled: true }, registrations =
       }),
   };
 }
+function cloneStore(source, admin = null, existingTarget) {
+  const activities = new Map([[source._id, source]]);
+  if (existingTarget) activities.set(existingTarget._id, existingTarget);
+  const state = { activities, saved: [], audits: [] };
+  return {
+    state,
+    transaction: (work) =>
+      work({
+        getAdmin: async () => admin,
+        getActivity: async (id) => state.activities.get(id),
+        putActivity: async (id, value) => {
+          state.activities.set(id, value);
+          state.saved.push(value);
+        },
+        addAudit: async (value) => state.audits.push(value),
+      }),
+  };
+}
 test('活动输入清洗且公开响应只含白名单', () => {
   const value = validateActivityInput(input, 3);
   assert.equal(value.title, '环湖骑行');
   assert.equal(value.fee.remark, '免费');
   assert.ok(value.event_start instanceof Date);
   assert.equal(publicActivity({ _id: 'a1', ...value, created_by: 'secret' }).created_by, undefined);
+});
+
+test('草稿允许运营字段缺失且不补造默认值', () => {
+  const draft = { ...input };
+  for (const field of [
+    'capacity',
+    'support_vehicle_capacity',
+    'self_drive_capacity',
+    'support_vehicle_driver',
+    'fee',
+    'signup_deadline',
+    'event_start',
+    'event_end',
+  ])
+    delete draft[field];
+
+  const value = validateDraftInput(draft, 0);
+
+  for (const field of [
+    'capacity',
+    'support_vehicle_capacity',
+    'self_drive_capacity',
+    'support_vehicle_driver',
+    'fee',
+    'signup_deadline',
+    'event_start',
+    'event_end',
+  ])
+    assert.equal(Object.prototype.hasOwnProperty.call(value, field), false, field);
+});
+
+test('草稿对已填写运营字段严格校验且拒绝服务端字段', () => {
+  expectCode(() => validateDraftInput({ ...input, capacity: 1.5 }), 'VALIDATION_FAILED');
+  expectCode(
+    () => validateDraftInput({ ...input, support_vehicle_capacity: -1 }),
+    'VALIDATION_FAILED',
+  );
+  expectCode(() => validateDraftInput({ ...input, signup_deadline: 'bad' }), 'VALIDATION_FAILED');
+  expectCode(
+    () => validateDraftInput({ ...input, support_vehicle_driver: { nickname: 42 } }),
+    'VALIDATION_FAILED',
+  );
+  expectCode(() => validateDraftInput({ ...input, occupied_count: 0 }), 'FORBIDDEN_FIELD');
+});
+
+test('发布与结束强制完整运营字段和未来时间顺序', () => {
+  const required = [
+    'capacity',
+    'support_vehicle_capacity',
+    'self_drive_capacity',
+    'fee',
+    'signup_deadline',
+    'event_start',
+    'event_end',
+  ];
+  for (const field of required) {
+    const incomplete = { ...input, status: 'published' };
+    delete incomplete[field];
+    expectCode(() => validatePublishInput(incomplete, 0, now), 'VALIDATION_FAILED');
+  }
+  expectCode(
+    () => validatePublishInput({ ...input, status: 'published', fee: '' }, 0, now),
+    'VALIDATION_FAILED',
+  );
+  expectCode(
+    () =>
+      validatePublishInput(
+        { ...input, status: 'published', signup_deadline: now.toISOString() },
+        0,
+        now,
+      ),
+    'INVALID_ACTIVITY_TIME',
+  );
+  expectCode(
+    () =>
+      validatePublishInput(
+        { ...input, status: 'published', support_vehicle_driver: undefined },
+        0,
+        now,
+      ),
+    'VALIDATION_FAILED',
+  );
+  assert.equal(validatePublishInput({ ...input, status: 'finished' }, 0, now).status, 'finished');
+  expectCode(
+    () => validatePublishInput({ ...input, status: 'published', audit: [] }, 0, now),
+    'FORBIDDEN_FIELD',
+  );
 });
 test('活动输入完整保留行程备注、GPX 与费用明细', () => {
   const value = validateActivityInput({
@@ -213,6 +321,109 @@ test('更新校验 expectedVersion、单调递增版本并区分发布审计', a
       activity: input,
     }),
     (error) => error.code === 'SCHEMA_INVALID',
+  );
+});
+
+test('截止已过的 published 活动仍可结束', async () => {
+  const historicalInput = {
+    ...input,
+    status: 'published',
+    signup_deadline: '2026-09-01T00:00:00.000Z',
+    event_start: '2026-09-02T00:00:00.000Z',
+    event_end: '2026-09-02T08:00:00.000Z',
+  };
+  const current = {
+    _id: 'past-published-finish',
+    ...validatePublishInput(historicalInput, 0, new Date('2026-08-01T00:00:00.000Z')),
+    occupied_count: 0,
+    version: 4,
+    occupancy_partition_ready: true,
+    support_vehicle_occupied_count: 0,
+    self_drive_occupied_count: 0,
+    created_by: 'admin',
+  };
+
+  const result = await saveActivity(
+    store(current),
+    {
+      openid: 'admin',
+      activityId: current._id,
+      expectedVersion: 4,
+      activity: { ...historicalInput, status: 'finished' },
+    },
+    now,
+  );
+
+  assert.equal(result.status, 'finished');
+  assert.equal(result.version, 5);
+});
+
+test('截止已过的 published 活动仍可保持 published 编辑', async () => {
+  const historicalInput = {
+    ...input,
+    status: 'published',
+    signup_deadline: '2026-09-01T00:00:00.000Z',
+    event_start: '2026-09-02T00:00:00.000Z',
+    event_end: '2026-09-02T08:00:00.000Z',
+  };
+  const current = {
+    _id: 'past-published-edit',
+    ...validatePublishInput(historicalInput, 0, new Date('2026-08-01T00:00:00.000Z')),
+    occupied_count: 0,
+    version: 2,
+    occupancy_partition_ready: true,
+    support_vehicle_occupied_count: 0,
+    self_drive_occupied_count: 0,
+    created_by: 'admin',
+  };
+
+  const result = await saveActivity(
+    store(current),
+    {
+      openid: 'admin',
+      activityId: current._id,
+      expectedVersion: 2,
+      activity: { ...historicalInput, title: '历史活动补充说明' },
+    },
+    now,
+  );
+
+  assert.equal(result.status, 'published');
+  assert.equal(result.title, '历史活动补充说明');
+  assert.equal(result.version, 3);
+});
+
+test('draft 首次发布仍拒绝已过报名截止时间', async () => {
+  const historicalInput = {
+    ...input,
+    status: 'draft',
+    signup_deadline: '2026-09-01T00:00:00.000Z',
+    event_start: '2026-09-02T00:00:00.000Z',
+    event_end: '2026-09-02T08:00:00.000Z',
+  };
+  const current = {
+    _id: 'past-draft-publish',
+    ...validateDraftInput(historicalInput),
+    occupied_count: 0,
+    version: 1,
+    occupancy_partition_ready: true,
+    support_vehicle_occupied_count: 0,
+    self_drive_occupied_count: 0,
+    created_by: 'admin',
+  };
+
+  await assert.rejects(
+    saveActivity(
+      store(current),
+      {
+        openid: 'admin',
+        activityId: current._id,
+        expectedVersion: 1,
+        activity: { ...historicalInput, status: 'published' },
+      },
+      now,
+    ),
+    { code: 'INVALID_ACTIVITY_TIME' },
   );
 });
 
@@ -479,5 +690,222 @@ test('公开电话对非标准文本、区号分机和非法类型均 fail close
     publicActivity({ support_vehicle_driver: { contact_phone: { unsafe: true } } })
       .support_vehicle_driver.contact_phone,
     '',
+  );
+});
+
+test('普通成员只能复制自己的未删除历史活动，管理员可复制他人历史活动', async () => {
+  const source = {
+    _id: 'history-1',
+    ...validateActivityInput({ ...input, status: 'finished' }, 0, now),
+    created_by: 'member-1',
+    is_deleted: false,
+  };
+  await assert.doesNotReject(
+    cloneActivity(
+      cloneStore(source),
+      { openid: 'member-1', sourceActivityId: source._id, requestId: 'request-own-0001' },
+      now,
+    ),
+  );
+  await assert.rejects(
+    cloneActivity(
+      cloneStore(source),
+      { openid: 'member-2', sourceActivityId: source._id, requestId: 'request-other-01' },
+      now,
+    ),
+    { code: 'FORBIDDEN' },
+  );
+  await assert.doesNotReject(
+    cloneActivity(
+      cloneStore(source, { _id: 'admin', enabled: true }),
+      { openid: 'admin', sourceActivityId: source._id, requestId: 'request-admin-001' },
+      now,
+    ),
+  );
+  await assert.rejects(
+    cloneActivity(
+      cloneStore({ ...source, is_deleted: true }),
+      { openid: 'member-1', sourceActivityId: source._id, requestId: 'request-delete-01' },
+      now,
+    ),
+    { code: 'ACTIVITY_NOT_FOUND' },
+  );
+  await assert.rejects(
+    cloneActivity(
+      cloneStore({ ...source, status: 'published' }),
+      { openid: 'member-1', sourceActivityId: source._id, requestId: 'request-active-01' },
+      now,
+    ),
+    { code: 'ACTIVITY_NOT_HISTORY' },
+  );
+});
+
+test('clone 仅复制正向白名单并清空运营、媒体、计数和审计状态', async () => {
+  const source = {
+    _id: 'history-safe',
+    ...validateActivityInput({ ...input, status: 'finished' }, 0, now),
+    created_by: 'member-1',
+    is_deleted: false,
+    occupied_count: 19,
+    support_vehicle_occupied_count: 7,
+    self_drive_occupied_count: 12,
+    occupancy_partition_ready: true,
+    version: 9,
+    registrations: [{ real_name: 'secret' }],
+    review_history: [{ actor_openid: 'secret' }],
+    audit: [{ contact_phone: '13812345678' }],
+  };
+  source.cover_image = 'cloud://covers/source.jpg';
+  source.route.gpx_file_id = 'cloud://routes/source.gpx';
+  const memory = cloneStore(source);
+
+  const result = await cloneActivity(
+    memory,
+    {
+      openid: 'member-1',
+      sourceActivityId: source._id,
+      requestId: 'request-safe-copy-01',
+      signupDeadline: '2026-10-20T00:00:00.000Z',
+      eventStart: '2026-10-21T00:00:00.000Z',
+      eventEnd: '2026-10-21T08:00:00.000Z',
+    },
+    now,
+  );
+  const saved = memory.state.saved[0];
+
+  assert.deepEqual(
+    {
+      title: saved.title,
+      description: saved.description,
+      schedule: saved.schedule,
+      notices: saved.notices,
+      equipment: saved.equipment,
+      fee: saved.fee,
+      capacity: saved.capacity,
+    },
+    {
+      title: source.title,
+      description: source.description,
+      schedule: source.schedule,
+      notices: source.notices,
+      equipment: source.equipment,
+      fee: source.fee,
+      capacity: source.capacity,
+    },
+  );
+  assert.equal(saved.route.gpx_file_id, '');
+  assert.equal(saved.cover_image, '');
+  assert.equal(saved.status, 'draft');
+  assert.equal(saved.version, 1);
+  assert.equal(saved.created_by, 'member-1');
+  assert.equal(saved.occupied_count, 0);
+  assert.equal(saved.support_vehicle_occupied_count, 0);
+  assert.equal(saved.self_drive_occupied_count, 0);
+  assert.equal(saved.occupancy_partition_ready, false);
+  for (const field of [
+    'support_vehicle_capacity',
+    'self_drive_capacity',
+    'support_vehicle_driver',
+    'registrations',
+    'review_history',
+    'audit',
+  ])
+    assert.equal(Object.prototype.hasOwnProperty.call(saved, field), false, field);
+  assert.equal(result._id, saved._id);
+  assert.equal(memory.state.audits.length, 1);
+  assert.deepEqual(memory.state.audits[0].detail, {
+    source_activity_id: source._id,
+    from_status: 'finished',
+    to_status: 'draft',
+  });
+  assert.equal(memory.state.audits[0].action, 'activity.cloned');
+  assert.doesNotMatch(JSON.stringify(memory.state.audits[0]), /13812345678|cloud:\/\//);
+});
+
+test('clone 用 caller 与 requestId 确定幂等目标，异源重试冲突', async () => {
+  const source = {
+    _id: 'history-idempotent',
+    ...validateActivityInput({ ...input, status: 'finished' }, 0, now),
+    created_by: 'member-1',
+    is_deleted: false,
+  };
+  const memory = cloneStore(source);
+  const request = {
+    openid: 'member-1',
+    sourceActivityId: source._id,
+    requestId: 'request-idempotent-01',
+  };
+  const first = await cloneActivity(memory, request, now);
+  const second = await cloneActivity(memory, request, now);
+  assert.equal(second._id, first._id);
+  assert.equal(memory.state.saved.length, 1);
+  assert.equal(memory.state.audits.length, 1);
+
+  memory.state.activities.set('history-other', { ...source, _id: 'history-other' });
+  await assert.rejects(
+    cloneActivity(memory, { ...request, sourceActivityId: 'history-other' }, now),
+    { code: 'CLONE_CONFLICT' },
+  );
+  assert.equal(memory.state.saved.length, 1);
+});
+
+test('clone 同一 requestId 必须绑定相同日期参数', async () => {
+  const source = {
+    _id: 'history-dates',
+    ...validateActivityInput({ ...input, status: 'finished' }, 0, now),
+    created_by: 'member-1',
+    is_deleted: false,
+  };
+  const memory = cloneStore(source);
+  const request = {
+    openid: 'member-1',
+    sourceActivityId: source._id,
+    requestId: 'request-dates-0001',
+    signupDeadline: '2026-11-01T08:00:00.000Z',
+    eventStart: '2026-11-02T08:00:00.000Z',
+    eventEnd: '2026-11-02T16:00:00.000Z',
+  };
+
+  await cloneActivity(memory, request, now);
+  await assert.rejects(
+    cloneActivity(
+      memory,
+      { ...request, eventStart: '2026-11-03T08:00:00.000Z', eventEnd: '2026-11-03T16:00:00.000Z' },
+      now,
+    ),
+    { code: 'CLONE_CONFLICT' },
+  );
+  assert.equal(memory.state.saved.length, 1);
+});
+
+test('clone 严格校验 requestId 并拒绝客户端扩展字段', async () => {
+  const source = {
+    _id: 'history-request',
+    ...validateActivityInput({ ...input, status: 'finished' }, 0, now),
+    created_by: 'member-1',
+    is_deleted: false,
+  };
+  for (const requestId of ['', 'short', 'bad request', 'x'.repeat(129)]) {
+    await assert.rejects(
+      cloneActivity(
+        cloneStore(source),
+        { openid: 'member-1', sourceActivityId: source._id, requestId },
+        now,
+      ),
+      { code: 'VALIDATION_FAILED' },
+    );
+  }
+  await assert.rejects(
+    cloneActivity(
+      cloneStore(source),
+      {
+        openid: 'member-1',
+        sourceActivityId: source._id,
+        requestId: 'request-extra-0001',
+        owner: 'attacker',
+      },
+      now,
+    ),
+    { code: 'FORBIDDEN_FIELD' },
   );
 });

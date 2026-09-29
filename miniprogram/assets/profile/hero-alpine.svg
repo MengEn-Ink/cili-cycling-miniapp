@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" role="img" aria-label="此里品牌山景">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#303034" />
+      <stop offset="0.48" stop-color="#1d1d20" />
+      <stop offset="1" stop-color="#0b0b0c" />
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d55b1f" stop-opacity="0.34" />
+      <stop offset="1" stop-color="#d55b1f" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="640" fill="url(#sky)" />
+  <circle cx="975" cy="120" r="76" fill="none" stroke="#f7f7f5" stroke-opacity="0.42" stroke-width="3" />
+  <circle cx="975" cy="120" r="140" fill="url(#glow)" opacity="0.45" />
+  <path d="M-80 520 250 230l155 150 120-118 205 196 128-142 422 338H-80Z" fill="#3a3a3e" />
+  <path d="m208 267 42-37 37 36-39-13Z" fill="#d55b1f" opacity="0.82" />
+  <path d="M-120 610 214 384l142 106 180-154 126 122 126-73 492 318H-120Z" fill="#151517" />
+  <path d="M0 610h1200v30H0Z" fill="#0b0b0c" />
+  <text x="70" y="126" fill="#505054" font-family="sans-serif" font-size="92" font-style="italic" font-weight="900" letter-spacing="14">CILI 此里</text>
+</svg>

@@ -1,5 +1,6 @@
 import type {
   Activity,
+  EditableActivity,
   PersonalCapabilityCard,
   Profile,
   ProfileUpdate,
@@ -10,15 +11,22 @@ import type {
 } from '../models';
 import { activities, profile, registrations } from '../mock/fixtures';
 import { transition } from '../utils/registration';
-import type { ActivityInput, RegistrationSubmission, RideRepository } from './types';
+import type {
+  ActivityInput,
+  CloneActivityInput,
+  RegistrationSubmission,
+  RideRepository,
+} from './types';
 type S = {
-  activities: Activity[];
+  activities: (Activity | EditableActivity)[];
   registrations: Registration[];
   profile: Profile;
   stravaStatus: StravaStatus;
 };
 const KEY = 'ride-mock-v1';
 const init = (): S => ({ activities, registrations, profile, stravaStatus: 'connected' });
+const nextAvatarRevision = (value: unknown) =>
+  (Number.isInteger(value) && Number(value) >= 0 ? Number(value) : 0) + 1;
 function displayGatheringMode(
   value: RegistrationSubmission['gatheringMode'],
 ): Registration['gatheringMode'] {
@@ -35,13 +43,21 @@ export class MockRepository implements RideRepository {
     return this.read().activities;
   }
   async getAdminActivity(id: string) {
-    return this.getActivity(id);
+    return this.read().activities.find((x) => x.id === id);
   }
   async listActivities() {
-    return this.read().activities;
+    return this.read().activities.filter(
+      (item): item is Activity =>
+        item.status !== 'draft' &&
+        typeof item.capacity === 'number' &&
+        typeof item.startAt === 'string' &&
+        typeof item.endAt === 'string' &&
+        typeof item.deadline === 'string' &&
+        typeof item.fee === 'string',
+    );
   }
   async getActivity(id: string) {
-    return this.read().activities.find((x) => x.id === id);
+    return (await this.listActivities()).find((x) => x.id === id);
   }
   async listRegistrations() {
     return this.read().registrations;
@@ -128,12 +144,16 @@ export class MockRepository implements RideRepository {
     return 'profiles/00000000000000000000000000000000/00000000-0000-4000-8000-000000000000.jpg';
   }
   async getPersonalCapabilityCard(): Promise<PersonalCapabilityCard> {
+    const currentProfile = this.read().profile;
     return {
       state: 'ready',
       generatedAt: '2026-09-29T04:10:00.000Z',
       profile: {
-        displayName: this.read().profile.nickname || '此里骑手',
-        title: this.read().profile.title || '',
+        displayName: currentProfile.nickname || '此里骑手',
+        title: currentProfile.title || '',
+        ...(currentProfile.avatarId
+          ? { avatarUrl: 'https://temporary.example/mock-avatar.jpg' }
+          : {}),
       },
       backgrounds: [
         {
@@ -159,6 +179,28 @@ export class MockRepository implements RideRepository {
   }
   async registerProfileMedia() {}
   async reportProfileMediaOrphan() {}
+  async setAvatar(source: 'wechat' | 'custom', fileId: string) {
+    const state = this.read();
+    state.profile = {
+      ...state.profile,
+      avatarId: fileId,
+      avatarSource: source,
+      avatarRevision: nextAvatarRevision(state.profile.avatarRevision),
+    };
+    this.write(state);
+    return state.profile;
+  }
+  async importStravaAvatar() {
+    const state = this.read();
+    state.profile = {
+      ...state.profile,
+      avatarId: 'cloud://mock/profiles/current-user/strava-avatar.jpg',
+      avatarSource: 'strava',
+      avatarRevision: nextAvatarRevision(state.profile.avatarRevision),
+    };
+    this.write(state);
+    return state.profile;
+  }
   async updateProfile(patch: ProfileUpdate) {
     const current = this.read().profile;
     const p = { ...current, ...patch, photos: patch.photos || current.photos } as Profile;
@@ -229,11 +271,11 @@ export class MockRepository implements RideRepository {
   async saveActivity(value: ActivityInput, id?: string, expectedVersion?: number) {
     const current = id ? this.read().activities.find((item) => item.id === id) : undefined;
     if (current && current.version !== expectedVersion) throw new Error('活动已被其他人更新');
-    const a: Activity = {
+    const a: EditableActivity = {
       ...value,
       id: id || `a${Date.now()}`,
       version: current ? current.version + 1 : 1,
-      date: value.startAt,
+      ...(value.startAt === undefined ? {} : { date: value.startAt }),
       occupiedCount: id ? current?.occupiedCount || 0 : 0,
     };
     const s = this.read(),
@@ -242,5 +284,49 @@ export class MockRepository implements RideRepository {
     else s.activities.splice(i, 1, a);
     this.write(s);
     return a;
+  }
+  async cloneActivity(input: CloneActivityInput) {
+    if (
+      !/^[A-Za-z0-9_-]{1,128}$/.test(input?.sourceActivityId || '') ||
+      !/^[A-Za-z0-9_-]{8,128}$/.test(input?.requestId || '')
+    )
+      throw new Error('复制参数格式错误');
+    const s = this.read();
+    const id = `activity_clone_${input.requestId}`;
+    const existing = s.activities.find((item) => item.id === id);
+    if (existing) return existing;
+    const source = s.activities.find((item) => item.id === input.sourceActivityId);
+    if (!source) throw new Error('源活动不存在');
+    if (source.status !== 'finished') throw new Error('只能从历史活动创建草稿');
+    const draft: EditableActivity = {
+      id,
+      version: 1,
+      title: source.title,
+      status: 'draft',
+      ...(source.capacity === undefined ? {} : { capacity: source.capacity }),
+      occupiedCount: 0,
+      description: source.description,
+      route: {
+        start: source.route.start,
+        end: source.route.end,
+        distanceKm: source.route.distanceKm,
+        elevationM: source.route.elevationM,
+        level: source.route.level,
+      },
+      schedule: source.schedule.map((item) => ({ ...item })),
+      notices: [...source.notices],
+      equipment: [...source.equipment],
+      ...(source.fee === undefined ? {} : { fee: source.fee }),
+      ...(source.feeIncluded === undefined ? {} : { feeIncluded: [...source.feeIncluded] }),
+      ...(source.feeExcluded === undefined ? {} : { feeExcluded: [...source.feeExcluded] }),
+      ...(input.signupDeadline === undefined ? {} : { deadline: input.signupDeadline }),
+      ...(input.eventStart === undefined
+        ? {}
+        : { date: input.eventStart, startAt: input.eventStart }),
+      ...(input.eventEnd === undefined ? {} : { endAt: input.eventEnd }),
+    };
+    s.activities.unshift(draft);
+    this.write(s);
+    return draft;
   }
 }

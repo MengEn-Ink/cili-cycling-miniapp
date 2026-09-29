@@ -2,6 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');
+const crypto = require('node:crypto');
 
 Object.assign(require('./oauth/core'), require('../strava-shared/core'));
 const { createReadinessStore } = require('./store');
@@ -314,6 +315,44 @@ test('completeSync 用 lease fencing 原子写 credential、snapshot、profile �
   assert.equal(fixture.state.audit_logs.size, 1);
 });
 
+test('completeSync 不得用旧 credential 快照覆盖并发更新的 avatar import lease', async () => {
+  const now = new Date('2026-09-29T04:00:00.000Z');
+  const fixture = fakeDb({
+    strava_credentials: {
+      'user-1': {
+        _id: 'user-1',
+        sync_status: 'running',
+        sync_lease_id: 'sync-current',
+        avatar_import_lease_id: 'avatar-new',
+        avatar_import_started_at: now,
+        avatar_import_lease_expires_at: new Date('2026-09-29T04:10:00.000Z'),
+      },
+    },
+    profiles: { 'user-1': { _id: 'user-1' } },
+  });
+  const value = {
+    leaseId: 'sync-current',
+    credential: {
+      _id: 'user-1',
+      openid: 'user-1',
+      avatar_import_lease_id: 'avatar-old',
+      avatar_import_started_at: new Date('2026-09-29T03:00:00.000Z'),
+      avatar_import_lease_expires_at: new Date('2026-09-29T03:10:00.000Z'),
+    },
+    snapshot: { _id: 'user-1', openid: 'user-1', synced_at: now },
+    finishedAt: now,
+    audit: audit('strava.sync.succeeded'),
+  };
+
+  assert.equal(await createReadinessStore(fixture.db).completeSync('user-1', value), true);
+  assert.equal(fixture.state.strava_credentials.get('user-1').avatar_import_lease_id, 'avatar-new');
+  assert.equal(fixture.state.strava_credentials.get('user-1').avatar_import_started_at, now);
+  assert.deepEqual(
+    fixture.state.strava_credentials.get('user-1').avatar_import_lease_expires_at,
+    new Date('2026-09-29T04:10:00.000Z'),
+  );
+});
+
 test('failSync 用 lease fencing 且只保存稳定错误码', async () => {
   const now = new Date('2026-09-29T04:00:00.000Z');
   const fixture = fakeDb({
@@ -344,15 +383,48 @@ test('failSync 用 lease fencing 且只保存稳定错误码', async () => {
 });
 
 test('disconnect 通过 transaction 读取 profile 并原子删除 canonical 数据', async () => {
+  const avatarFileId = 'cloud://env/profiles/owner/strava-avatar.jpg';
+  const avatarMediaId = crypto.createHash('sha256').update(avatarFileId).digest('hex');
   const fixture = fakeDb({
     strava_credentials: { 'user-1': { _id: 'user-1' } },
     strava_snapshots: { 'user-1': { _id: 'user-1' } },
-    profiles: { 'user-1': { _id: 'user-1', nickname: 'Rider' } },
+    profiles: {
+      'user-1': {
+        _id: 'user-1',
+        nickname: 'Rider',
+        avatar_source: 'strava',
+        avatar_file_id: avatarFileId,
+        avatar_revision: 4,
+      },
+    },
+    profile_media: {
+      [avatarMediaId]: {
+        _id: avatarMediaId,
+        file_id: avatarFileId,
+        owner_openid: 'user-1',
+        origin: 'strava',
+        status: 'active',
+      },
+    },
   });
   await createReadinessStore(fixture.db).disconnect('user-1', audit('strava.disconnect'));
   assert.equal(fixture.state.strava_credentials.has('user-1'), false);
   assert.equal(fixture.state.strava_snapshots.has('user-1'), false);
   assert.deepEqual(fixture.state.profiles.get('user-1').strava, { status: 'disconnected' });
+  assert.equal(fixture.state.profiles.get('user-1').avatar_source, undefined);
+  assert.equal(fixture.state.profiles.get('user-1').avatar_file_id, undefined);
+  assert.equal(fixture.state.profiles.get('user-1').avatar_revision, 5);
+  assert.deepEqual(fixture.state.profile_media.get(avatarMediaId), {
+    _id: avatarMediaId,
+    file_id: avatarFileId,
+    owner_openid: 'user-1',
+    origin: 'strava',
+    status: 'unreferenced',
+    referenced_at: null,
+    cleanup_after: new Date('2026-09-30T04:00:00.000Z'),
+    delete_lease_id: '',
+    updated_at: fixture.SERVER_DATE,
+  });
   assert.equal(fixture.state.profiles.get('user-1').updated_at, fixture.SERVER_DATE);
   assert.equal(
     fixture.calls.some(
@@ -365,6 +437,75 @@ test('disconnect 通过 transaction 读取 profile 并原子删除 canonical 数
     true,
   );
   assert.equal(fixture.state.audit_logs.size, 1);
+});
+
+test('disconnect 保留非 Strava 头像', async () => {
+  const fixture = fakeDb({
+    strava_credentials: { 'user-1': { _id: 'user-1' } },
+    strava_snapshots: { 'user-1': { _id: 'user-1' } },
+    profiles: {
+      'user-1': {
+        _id: 'user-1',
+        nickname: 'Rider',
+        avatar_source: 'custom',
+        avatar_file_id: 'cloud://custom-avatar',
+      },
+    },
+  });
+  await createReadinessStore(fixture.db).disconnect('user-1', audit('strava.disconnect'));
+  assert.equal(fixture.state.profiles.get('user-1').avatar_source, 'custom');
+  assert.equal(fixture.state.profiles.get('user-1').avatar_file_id, 'cloud://custom-avatar');
+});
+
+test('disconnect 清除 Strava 头像槽位但不降级仍在 photos 中的媒体', async () => {
+  const avatarFileId = 'cloud://env/profiles/owner/shared-strava-avatar.jpg';
+  const avatarMediaId = crypto.createHash('sha256').update(avatarFileId).digest('hex');
+  const fixture = fakeDb({
+    strava_credentials: { 'user-1': { _id: 'user-1' } },
+    strava_snapshots: { 'user-1': { _id: 'user-1' } },
+    profiles: {
+      'user-1': {
+        _id: 'user-1',
+        avatar_source: 'strava',
+        avatar_file_id: avatarFileId,
+        photos: [{ file_id: avatarFileId, category: 'other' }],
+      },
+    },
+    profile_media: {
+      [avatarMediaId]: {
+        _id: avatarMediaId,
+        file_id: avatarFileId,
+        owner_openid: 'user-1',
+        origin: 'strava',
+        status: 'active',
+      },
+    },
+  });
+
+  await createReadinessStore(fixture.db).disconnect('user-1', audit('strava.disconnect'));
+
+  assert.equal(fixture.state.profiles.get('user-1').avatar_file_id, undefined);
+  assert.equal(fixture.state.profile_media.get(avatarMediaId).status, 'active');
+});
+
+test('disconnect 不得让 avatar revision 越过安全整数上限', async () => {
+  const fixture = fakeDb({
+    strava_credentials: { 'user-1': usableCredential() },
+    strava_snapshots: { 'user-1': { _id: 'user-1', athlete_id: 'athlete-current' } },
+    profiles: {
+      'user-1': {
+        _id: 'user-1',
+        avatar_source: 'strava',
+        avatar_file_id: 'cloud://env/profiles/owner/avatar.jpg',
+        avatar_revision: Number.MAX_SAFE_INTEGER,
+      },
+    },
+  });
+
+  await assert.rejects(
+    createReadinessStore(fixture.db).disconnect('user-1', audit('strava.disconnected')),
+    { code: 'AVATAR_REVISION_EXHAUSTED' },
+  );
 });
 
 test('status、ensureReady 与 cancelAuthorization 路由可用', async () => {

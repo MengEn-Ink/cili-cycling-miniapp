@@ -4,6 +4,9 @@ const crypto = require('node:crypto');
 const TIMER_TRIGGER = 'profile-media-cleanup-worker';
 const MAX_BATCH = 20;
 const DELETE_LEASE_MS = 5 * 60 * 1000;
+const STORAGE_SETTLE_MARGIN_MS = 30 * 1000;
+const RECOVERY_LEASE_MS = 5 * 60 * 1000;
+const RECOVERY_CONFIRMATION_MS = RECOVERY_LEASE_MS;
 const MAX_DELETE_ATTEMPTS = 3;
 const RETRY_BASE_MS = 5 * 60 * 1000;
 
@@ -27,6 +30,26 @@ function profileReferences(profile, fileId) {
   );
 }
 
+function mediaOwnerPrefix(openid, secretValue) {
+  const secret = String(secretValue || '').trim();
+  if (typeof openid !== 'string' || !openid) coded('MEDIA_OWNER_INVALID', '媒体所有者无效');
+  if (secret.length < 32) coded('MEDIA_SECRET_INVALID', '媒体路径服务未配置');
+  const alias = crypto.createHmac('sha256', secret).update(openid).digest('hex').slice(0, 32);
+  return `profiles/${alias}/`;
+}
+
+function validImportCloudPath(record, secretValue) {
+  if (!record || typeof record.cloud_path !== 'string') return false;
+  const prefix = mediaOwnerPrefix(record.owner_openid, secretValue);
+  const filename = record.cloud_path.slice(prefix.length);
+  return (
+    record.cloud_path.startsWith(prefix) &&
+    /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\.(?:jpg|png|webp)$/i.test(
+      filename,
+    )
+  );
+}
+
 function claimDecision(record, profile, now, leaseId) {
   if (
     !record ||
@@ -40,9 +63,16 @@ function claimDecision(record, profile, now, leaseId) {
     const date = new Date(value);
     return Number.isFinite(date.getTime()) && date <= now;
   };
+  const expiredDeleteLease = record.status === 'deleting' && due(record.delete_lease_expires_at);
+  if (expiredDeleteLease && Number(record.delete_attempts || 0) >= MAX_DELETE_ATTEMPTS) {
+    return {
+      kind: 'terminal',
+      update: failureDecision(record, now, 'DELETE_LEASE_EXHAUSTED'),
+    };
+  }
   const eligible =
     (record.status === 'unreferenced' && due(record.cleanup_after)) ||
-    (record.status === 'deleting' && due(record.delete_lease_expires_at)) ||
+    expiredDeleteLease ||
     (record.status === 'delete_failed' &&
       Number(record.delete_attempts || 0) < MAX_DELETE_ATTEMPTS &&
       due(record.retry_at));
@@ -64,6 +94,95 @@ function claimDecision(record, profile, now, leaseId) {
     kind: 'claimed',
     update: {
       status: 'deleting',
+      delete_lease_id: leaseId,
+      delete_claimed_at: now,
+      delete_lease_expires_at: new Date(now.getTime() + DELETE_LEASE_MS),
+      delete_attempts: Number(record.delete_attempts || 0) + 1,
+      updated_at: now,
+    },
+  };
+}
+
+function importClaimDecision(record, profile, now, leaseId, mediaSecret) {
+  if (!record || typeof record.owner_openid !== 'string' || !record.owner_openid) return null;
+  const due = (value) => {
+    const date = new Date(value);
+    return Number.isFinite(date.getTime()) && date <= now;
+  };
+  if (record.status === 'leased' && due(record.cleanup_after)) {
+    return {
+      kind: 'aborted',
+      update: {
+        status: 'aborted',
+        cleanup_after: null,
+        last_error_code: 'STRAVA_AVATAR_LEASE_EXPIRED',
+        failed_at: now,
+        updated_at: now,
+      },
+    };
+  }
+  const cloudPathValid = validImportCloudPath(record, mediaSecret);
+  const slash =
+    typeof record.file_id === 'string' && record.file_id.startsWith('cloud://')
+      ? record.file_id.indexOf('/', 'cloud://'.length)
+      : -1;
+  const filePath = slash >= 0 ? record.file_id.slice(slash + 1) : '';
+  if (record.file_id && (!cloudPathValid || filePath !== record.cloud_path)) {
+    return {
+      kind: 'invalid',
+      update: { status: 'invalid', cleanup_after: null, updated_at: now },
+    };
+  }
+  const expiredRecoveryLease =
+    ['recovering', 'deleting'].includes(record.status) && due(record.delete_lease_expires_at);
+  if (expiredRecoveryLease && Number(record.delete_attempts || 0) >= MAX_DELETE_ATTEMPTS) {
+    return {
+      kind: 'terminal',
+      update: failureDecision(record, now, 'DELETE_LEASE_EXHAUSTED'),
+    };
+  }
+  const eligible =
+    (['prepared', 'uploaded', 'orphaned'].includes(record.status) && due(record.cleanup_after)) ||
+    (record.status === 'delete_confirming' && due(record.cleanup_after)) ||
+    expiredRecoveryLease ||
+    (record.status === 'delete_failed' &&
+      Number(record.delete_attempts || 0) < MAX_DELETE_ATTEMPTS &&
+      due(record.retry_at));
+  if (!eligible) return null;
+  if (profile && profile._id !== record.owner_openid) return null;
+  if (!record.file_id) {
+    if (!cloudPathValid)
+      return {
+        kind: 'invalid',
+        update: { status: 'invalid', cleanup_after: null, updated_at: now },
+      };
+    return {
+      kind: 'resolve',
+      update: {
+        status: 'recovering',
+        delete_lease_id: leaseId,
+        delete_claimed_at: now,
+        delete_lease_expires_at: new Date(now.getTime() + RECOVERY_LEASE_MS),
+        delete_attempts: Number(record.delete_attempts || 0) + 1,
+        updated_at: now,
+      },
+    };
+  }
+  if (profileReferences(profile, record.file_id)) {
+    return {
+      kind: 'completed',
+      update: { status: 'completed', completed_at: now, cleanup_after: null, updated_at: now },
+    };
+  }
+  return {
+    kind: 'claimed',
+    defer_completion:
+      record.recovery_delete_pending === true && record.delete_confirmation_pending !== true,
+    finalize_delete:
+      record.status === 'delete_confirming' || record.delete_confirmation_pending === true,
+    update: {
+      status: 'deleting',
+      ...(record.status === 'delete_confirming' ? { delete_confirmation_pending: true } : {}),
       delete_lease_id: leaseId,
       delete_claimed_at: now,
       delete_lease_expires_at: new Date(now.getTime() + DELETE_LEASE_MS),
@@ -108,31 +227,100 @@ function deleteAccepted(response, fileId) {
 async function drainMediaCleanup({
   store,
   deleteFile,
+  uploadFile,
   now = new Date(),
   randomUUID = crypto.randomUUID,
   limit = MAX_BATCH,
 }) {
   const boundedLimit = Math.max(1, Math.min(MAX_BATCH, Number(limit) || MAX_BATCH));
-  const ids = (await store.listEligible(now, boundedLimit)).slice(0, boundedLimit);
-  const result = { discovered: ids.length, claimed: 0, deleted: 0, failed: 0, reactivated: 0 };
-  for (const id of ids) {
+  const [mediaIds, importIds] = await Promise.all([
+    store.listEligible(now, boundedLimit),
+    typeof store.listImportIntents === 'function'
+      ? store.listImportIntents(now, boundedLimit)
+      : Promise.resolve([]),
+  ]);
+  const work = [];
+  const media = mediaIds.slice(0, boundedLimit);
+  const imports = importIds.slice(0, boundedLimit);
+  while (work.length < boundedLimit && (media.length || imports.length)) {
+    const mediaId = media.shift();
+    if (mediaId) work.push({ kind: 'media', id: mediaId });
+    const importId = imports.shift();
+    if (importId && work.length < boundedLimit) work.push({ kind: 'import', id: importId });
+  }
+  const result = { discovered: work.length, claimed: 0, deleted: 0, failed: 0, reactivated: 0 };
+  for (const item of work) {
+    const { id } = item;
     const leaseId = randomUUID();
-    const claimed = await store.claim(id, { leaseId, now });
+    const claimed =
+      item.kind === 'import'
+        ? await store.claimImportIntent(id, { leaseId, now })
+        : await store.claim(id, { leaseId, now });
     if (claimed && claimed.reactivated) {
       result.reactivated += 1;
       continue;
     }
-    if (!claimed || claimed.claimed !== true) continue;
+    if (!claimed || claimed.invalid || claimed.completed || claimed.aborted) continue;
+    if (claimed.claimed !== true && claimed.resolve_target !== true) continue;
     result.claimed += 1;
+    const deferCompletion = claimed.resolve_target === true || claimed.defer_completion === true;
+    const confirmAfter = new Date(now.getTime() + RECOVERY_CONFIRMATION_MS);
     try {
-      const response = await deleteFile({ fileList: [claimed.file_id] });
-      if (!deleteAccepted(response, claimed.file_id)) coded('DELETE_REJECTED', '媒体删除未被接受');
-      if (await store.markDeleted(id, { leaseId, now })) result.deleted += 1;
+      let fileId = claimed.file_id;
+      if (claimed.resolve_target) {
+        if (typeof uploadFile !== 'function') coded('UPLOAD_UNAVAILABLE', '媒体恢复服务不可用');
+        if (!(await store.isImportRecoveryLeaseCurrent(id, { leaseId, now }))) continue;
+        const uploaded = await uploadFile({
+          cloudPath: claimed.cloud_path,
+          fileContent: Buffer.from([0]),
+        });
+        fileId = uploaded?.fileID;
+        const slash =
+          typeof fileId === 'string' && fileId.startsWith('cloud://')
+            ? fileId.indexOf('/', 'cloud://'.length)
+            : -1;
+        if (slash < 0 || fileId.slice(slash + 1) !== claimed.cloud_path)
+          coded('DELETE_TARGET_INVALID', '媒体删除目标无效');
+        if (!(await store.attachImportDeleteTarget(id, { leaseId, now, fileId }))) {
+          const reclaimed = await store.reclaimImportDeleteTarget(id, {
+            leaseId,
+            now,
+            fileId,
+            ownerOpenid: claimed.owner_openid,
+            cloudPath: claimed.cloud_path,
+            leaseExpiresAt: new Date(now.getTime() + RECOVERY_LEASE_MS),
+          });
+          if (!reclaimed) continue;
+        }
+      }
+      const response = await deleteFile({ fileList: [fileId] });
+      if (!deleteAccepted(response, fileId)) coded('DELETE_REJECTED', '媒体删除未被接受');
+      const marked =
+        item.kind === 'import'
+          ? await store.markImportDeleted(id, {
+              leaseId,
+              now,
+              deferCompletion,
+              confirmAfter,
+            })
+          : await store.markDeleted(id, { leaseId, now });
+      if (marked) result.deleted += 1;
     } catch (error) {
       if (isTrustedObjectMissing(error)) {
-        if (await store.markDeleted(id, { leaseId, now })) result.deleted += 1;
+        const marked =
+          item.kind === 'import'
+            ? await store.markImportDeleted(id, {
+                leaseId,
+                now,
+                deferCompletion,
+                confirmAfter,
+              })
+            : await store.markDeleted(id, { leaseId, now });
+        if (marked) result.deleted += 1;
       } else {
-        await store.markFailed(id, { leaseId, now, errorCode: 'DELETE_FAILED' });
+        if (item.kind === 'import')
+          await store.markImportFailed(id, { leaseId, now, errorCode: 'DELETE_FAILED' });
+        else await store.markFailed(id, { leaseId, now, errorCode: 'DELETE_FAILED' });
         result.failed += 1;
       }
     }
@@ -154,10 +342,15 @@ module.exports = {
   TIMER_TRIGGER,
   MAX_BATCH,
   DELETE_LEASE_MS,
+  STORAGE_SETTLE_MARGIN_MS,
+  RECOVERY_LEASE_MS,
+  RECOVERY_CONFIRMATION_MS,
   MAX_DELETE_ATTEMPTS,
   authorizeCleanup,
   profileReferences,
+  validImportCloudPath,
   claimDecision,
+  importClaimDecision,
   failureDecision,
   isTrustedObjectMissing,
   drainMediaCleanup,

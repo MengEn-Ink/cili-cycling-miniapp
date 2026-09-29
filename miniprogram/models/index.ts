@@ -43,8 +43,21 @@ export interface Activity {
   closedReason?: ActivityClosedReason | null;
   serverNow?: string;
 }
-export type AvatarSource = 'wechat' | 'strava';
+export type AvatarSource = 'wechat' | 'strava' | 'custom';
+export type ClientAvatarSource = Exclude<AvatarSource, 'strava'>;
+export type EditableActivity = Omit<
+  Activity,
+  'date' | 'startAt' | 'endAt' | 'deadline' | 'capacity' | 'fee'
+> & {
+  date?: string;
+  startAt?: string;
+  endAt?: string;
+  deadline?: string;
+  capacity?: number;
+  fee?: string;
+};
 export interface Profile {
+  avatarRevision: number;
   nickname: string;
   title: string;
   realName: string;
@@ -55,6 +68,7 @@ export interface Profile {
   photos: { id: string; category: string }[];
   avatarId?: string;
   avatarSource?: AvatarSource;
+  hasCompletedGuidance?: boolean;
   completeness?: number;
   sensitiveStatus?: {
     realName: boolean;
@@ -68,8 +82,7 @@ export interface ProfileUpdate {
   nickname?: string;
   gender?: string;
   emergencyName?: string;
-  avatarFileId?: string;
-  avatarSource?: AvatarSource;
+  hasCompletedGuidance?: boolean;
   photos?: { id: string; category: string }[];
   realName?: string;
   phone?: string;
@@ -115,12 +128,12 @@ export interface PersonalCapabilityCardSummary {
 export interface PersonalCapabilityCard {
   state: PersonalCapabilityCardState;
   generatedAt: string;
-  profile: { displayName: string; title: string };
-  stravaAvatarUrl?: string;
+  profile: { displayName: string; title: string; avatarUrl?: string };
   backgrounds: PersonalCapabilityCardBackground[];
   summary: PersonalCapabilityCardSummary;
   coverage: StravaCoverage | null;
   syncedAt: string | null;
+  needsStravaReauth?: boolean;
 }
 export interface StravaConnection {
   connected: boolean;

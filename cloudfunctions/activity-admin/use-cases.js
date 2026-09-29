@@ -1,15 +1,159 @@
 'use strict';
 
+const crypto = require('node:crypto');
+
 const {
   MAX_PARTITION_BACKFILL_RECORDS,
+  assertTrustedOpenid,
   fail,
   isEnabledAdmin,
   publicActivity,
-  validateActivityInput,
+  validateDraftInput,
+  validatePublishInput,
   assertStatusTransition,
   buildActivityAudit,
   activityAuditAction,
 } = require('./domain');
+
+const CLONE_REQUEST_FIELDS = new Set([
+  'action',
+  'openid',
+  'sourceActivityId',
+  'requestId',
+  'signupDeadline',
+  'eventStart',
+  'eventEnd',
+]);
+
+function cloneActivityId(openid, requestId) {
+  const digest = crypto
+    .createHash('sha256')
+    .update(openid)
+    .update('\0')
+    .update(requestId)
+    .digest('hex');
+  return `activity_clone_${digest.slice(0, 32)}`;
+}
+
+function cloneRequestFingerprint(openid, request) {
+  return crypto
+    .createHash('sha256')
+    .update(
+      JSON.stringify([
+        openid,
+        request.sourceActivityId,
+        request.signupDeadline ?? null,
+        request.eventStart ?? null,
+        request.eventEnd ?? null,
+      ]),
+    )
+    .digest('hex');
+}
+
+function validateCloneRequest(request) {
+  if (!request || typeof request !== 'object' || Array.isArray(request))
+    fail('VALIDATION_FAILED', '复制参数格式错误');
+  for (const key of Object.keys(request))
+    if (!CLONE_REQUEST_FIELDS.has(key))
+      fail('FORBIDDEN_FIELD', '复制请求包含未允许字段', { field: key });
+  assertTrustedOpenid(request.openid);
+  if (
+    typeof request.sourceActivityId !== 'string' ||
+    !/^[A-Za-z0-9_-]{1,128}$/.test(request.sourceActivityId)
+  )
+    fail('VALIDATION_FAILED', '源活动 ID 格式错误');
+  if (typeof request.requestId !== 'string' || !/^[A-Za-z0-9_-]{8,128}$/.test(request.requestId))
+    fail('VALIDATION_FAILED', '请求 ID 格式错误');
+  for (const field of ['signupDeadline', 'eventStart', 'eventEnd'])
+    if (request[field] !== undefined && typeof request[field] !== 'string')
+      fail('VALIDATION_FAILED', '活动时间格式错误');
+  return request;
+}
+
+async function cloneActivity(store, request, now = new Date()) {
+  const safeRequest = validateCloneRequest(request);
+  const { openid, sourceActivityId, requestId } = safeRequest;
+  const targetId = cloneActivityId(openid, requestId);
+  const requestFingerprint = cloneRequestFingerprint(openid, safeRequest);
+  return store.transaction(async (tx) => {
+    const admin = await tx.getAdmin(openid);
+    const isAdmin = isEnabledAdmin(admin, openid);
+    const source = await tx.getActivity(sourceActivityId);
+    if (!source || source.is_deleted === true) fail('ACTIVITY_NOT_FOUND', '源活动不存在');
+    if (!isAdmin && source.created_by !== openid) fail('FORBIDDEN', '只能复制自己的历史活动');
+    if (source.status !== 'finished') fail('ACTIVITY_NOT_HISTORY', '只能从历史活动创建草稿');
+
+    const existing = await tx.getActivity(targetId);
+    if (existing) {
+      if (
+        existing.clone_source_activity_id !== sourceActivityId ||
+        existing.clone_request_id !== requestId ||
+        existing.clone_request_fingerprint !== requestFingerprint ||
+        existing.created_by !== openid ||
+        existing.status !== 'draft' ||
+        existing.is_deleted === true
+      )
+        fail('CLONE_CONFLICT', '复制请求与已有草稿冲突');
+      return publicActivity(existing, { revealContact: true });
+    }
+
+    const route = source.route && typeof source.route === 'object' ? source.route : {};
+    const draftInput = {
+      title: source.title,
+      cover_image: '',
+      description: source.description,
+      schedule: source.schedule,
+      route: {
+        start: route.start,
+        end: route.end,
+        distance_km: route.distance_km,
+        elevation_m: route.elevation_m,
+        level: route.level,
+        gpx_file_id: '',
+      },
+      notices: source.notices,
+      equipment: source.equipment,
+      fee: source.fee,
+      capacity: source.capacity,
+      ...(safeRequest.signupDeadline === undefined
+        ? {}
+        : { signup_deadline: safeRequest.signupDeadline }),
+      ...(safeRequest.eventStart === undefined ? {} : { event_start: safeRequest.eventStart }),
+      ...(safeRequest.eventEnd === undefined ? {} : { event_end: safeRequest.eventEnd }),
+      status: 'draft',
+    };
+    const safe = validateDraftInput(draftInput, 0);
+    const value = {
+      ...safe,
+      _id: targetId,
+      occupied_count: 0,
+      support_vehicle_occupied_count: 0,
+      self_drive_occupied_count: 0,
+      occupancy_partition_ready: false,
+      version: 1,
+      is_deleted: false,
+      created_by: openid,
+      created_at: now,
+      updated_at: now,
+      clone_source_activity_id: sourceActivityId,
+      clone_request_id: requestId,
+      clone_request_fingerprint: requestFingerprint,
+    };
+    await tx.putActivity(targetId, value);
+    await tx.addAudit({
+      actor_openid: openid,
+      action: 'activity.cloned',
+      target_id: targetId,
+      created_at: now,
+      detail: {
+        source_activity_id: sourceActivityId,
+        from_status: source.status,
+        to_status: 'draft',
+      },
+    });
+    return publicActivity(value, { revealContact: true });
+  });
+}
 
 function partitionBackfill(registrations, occupiedCount) {
   if (!Array.isArray(registrations) || registrations.length !== occupiedCount)
@@ -69,7 +213,12 @@ async function saveActivity(
       fail('PARTITION_BACKFILL_REQUIRED', '历史活动容量或占位数超过自动回填上限');
     if (current) assertStatusTransition(current.status, activity.status);
     else if (activity.status !== 'draft') fail('INVALID_TRANSITION', '新活动必须先保存为草稿');
-    const safe = validateActivityInput(activity, occupiedCount);
+    const safe =
+      activity.status === 'draft'
+        ? validateDraftInput(activity, occupiedCount)
+        : validatePublishInput(activity, occupiedCount, now, {
+            requireFutureDeadline: current?.status === 'draft' && activity.status === 'published',
+          });
     const occupancyPartitionReady = true;
     let supportVehicleOccupiedCount = 0;
     let selfDriveOccupiedCount = 0;
@@ -133,4 +282,10 @@ async function saveActivity(
     return publicActivity(value, { revealContact: true });
   });
 }
-module.exports = { partitionBackfill, saveActivity };
+module.exports = {
+  partitionBackfill,
+  cloneActivityId,
+  cloneRequestFingerprint,
+  cloneActivity,
+  saveActivity,
+};

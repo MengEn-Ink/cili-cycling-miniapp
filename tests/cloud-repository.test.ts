@@ -98,7 +98,6 @@ const personalCapabilityCardDto = {
     display_name: '山野骑手',
     title: '周末爬坡手',
   },
-  strava_avatar_url: 'https://temporary.example/strava-avatar.jpg',
   backgrounds: [
     {
       url: 'https://temporary.example/ride-1.jpg',
@@ -247,8 +246,8 @@ describe('CloudRepository 个人骑行名片适配', () => {
       profile: {
         displayName: '山野骑手',
         title: '周末爬坡手',
+        avatarUrl: '',
       },
-      stravaAvatarUrl: 'https://temporary.example/strava-avatar.jpg',
       backgrounds: [
         {
           url: 'https://temporary.example/ride-1.jpg',
@@ -274,8 +273,22 @@ describe('CloudRepository 个人骑行名片适配', () => {
         complete: false,
       },
       syncedAt: '2026-09-29T04:05:00.000Z',
+      needsStravaReauth: false,
     });
     expectCall(callFunction, 'profile', { action: 'capabilityCard' });
+  });
+
+  it('映射头像 URL 与重授权标记', async () => {
+    const { cloud } = cloudWith(
+      success({
+        ...personalCapabilityCardDto,
+        profile: { ...personalCapabilityCardDto.profile, avatar_url: 'https://strava.com/a.jpg' },
+        needs_strava_reauth: true,
+      }),
+    );
+    const card = await new CloudRepository(cloud).getPersonalCapabilityCard();
+    expect(card.profile.avatarUrl).toBe('https://strava.com/a.jpg');
+    expect(card.needsStravaReauth).toBe(true);
   });
 
   it.each(['cloud://raw-photo', 'http://temporary.example/insecure.jpg'])(
@@ -821,16 +834,16 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     expect(
       (await new CloudRepository(unknown.cloud).getProfile()).sensitiveStatus?.phoneSource,
     ).toBe('');
-    await repository.updateProfile({
+    const dirtyRuntimeProfile = {
       nickname: '新昵称',
       avatarFileId: 'cloud://avatar',
       realName: '曹蒙恩',
       phone: '13812345678',
-    });
+    };
+    await repository.updateProfile(dirtyRuntimeProfile);
     expectCall(callFunction, 'profile', {
       action: 'update',
       nickname: '新昵称',
-      avatar_file_id: 'cloud://avatar',
       real_name: '曹蒙恩',
       phone: '13812345678',
     });
@@ -851,19 +864,77 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     expectCall(callFunction, 'profile', { action: 'mediaUploadPath' });
   });
 
-  it('上传完成后注册媒体记录且不发送客户端身份', async () => {
+  it('上传完成后仅以 wechat/custom 来源注册媒体且不发送客户端身份', async () => {
     const { cloud, callFunction } = cloudWith(success({ registered: true }));
     await expect(
       new CloudRepository(cloud).registerProfileMedia(
         'cloud://env/profiles/owner/photo.jpg',
         'other',
+        'wechat',
       ),
     ).resolves.toBeUndefined();
     expectCall(callFunction, 'profile', {
       action: 'registerMedia',
       fileId: 'cloud://env/profiles/owner/photo.jpg',
       category: 'other',
+      origin: 'wechat',
     });
+  });
+
+  it('客户端仓储拒绝伪造 strava 媒体来源', async () => {
+    const { cloud, callFunction } = cloudWith();
+    await expectCode(
+      (new CloudRepository(cloud) as any).registerProfileMedia(
+        'cloud://env/profiles/owner/photo.jpg',
+        'other',
+        'strava',
+      ),
+      'VALIDATION_FAILED',
+    );
+    expect(callFunction).not.toHaveBeenCalled();
+  });
+
+  it('专用 setAvatar 发送来源与 fileId 并严格映射响应', async () => {
+    const dto = {
+      nickname: '骑手',
+      completeness: 25,
+      avatar_file_id: 'cloud://env/profiles/owner/avatar.jpg',
+      avatar_source: 'custom',
+      avatar_revision: 3,
+    };
+    const { cloud, callFunction } = cloudWith(success(dto));
+    await expect(
+      new CloudRepository(cloud).setAvatar('custom', dto.avatar_file_id),
+    ).resolves.toMatchObject({
+      nickname: '骑手',
+      avatarId: dto.avatar_file_id,
+      avatarSource: 'custom',
+      avatarRevision: 3,
+    });
+    expectCall(callFunction, 'profile', {
+      action: 'setAvatar',
+      source: 'custom',
+      fileId: dto.avatar_file_id,
+    });
+  });
+
+  it('Strava 头像导入只发送专用命令且不接受 URL 参数', async () => {
+    const dto = {
+      nickname: '骑手',
+      completeness: 25,
+      avatar_file_id: 'cloud://env/profiles/owner/strava.jpg',
+      avatar_source: 'strava',
+      avatar_revision: 4,
+    };
+    const { cloud, callFunction } = cloudWith(success(dto));
+
+    await expect(new CloudRepository(cloud).importStravaAvatar()).resolves.toMatchObject({
+      nickname: '骑手',
+      avatarId: dto.avatar_file_id,
+      avatarSource: 'strava',
+      avatarRevision: 4,
+    });
+    expectCall(callFunction, 'profile', { action: 'importStravaAvatar' });
   });
 
   it('删除失败后可上报 orphan 且不发送客户端身份', async () => {
@@ -878,6 +949,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
       action: 'reportOrphan',
       fileId: 'cloud://env/profiles/owner/photo.jpg',
       category: 'other',
+      origin: 'custom',
     });
   });
 
@@ -889,6 +961,10 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
         title: '领队',
         avatar_file_id: 'cloud://avatar',
         avatar_source: 'strava',
+        avatar_revision: 7,
+        owner_openid: 'must-not-leak',
+        origin: 'must-not-leak',
+        status: 'active',
         real_name_masked: '曹*',
         phone_masked: '138****5678',
         id_type: '护照',
@@ -913,6 +989,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
       title: '领队',
       avatarId: 'cloud://avatar',
       avatarSource: 'strava',
+      avatarRevision: 7,
       gender: '男',
       emergencyName: '紧急联系人',
       emergencyPhone: '139****0000',
@@ -927,7 +1004,36 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     });
     expect(mapped).not.toHaveProperty('idType');
     expect(mapped).not.toHaveProperty('idNumber');
+    expect(mapped).not.toHaveProperty('ownerOpenid');
+    expect(mapped).not.toHaveProperty('origin');
+    expect(mapped).not.toHaveProperty('status');
     expect(mapped.sensitiveStatus).not.toHaveProperty('idNumber');
+  });
+
+  it.each([
+    { avatar_file_id: 'cloud://avatar' },
+    { avatar_file_id: '', avatar_source: 'wechat' },
+    { avatar_file_id: 'cloud://avatar', avatar_source: 'forged' },
+  ])('拒绝不一致或非法头像 DTO %#', async (avatar) => {
+    const { cloud } = cloudWith(success({ nickname: '骑手', completeness: 25, ...avatar }));
+    await expectCode(new CloudRepository(cloud).getProfile(), 'INVALID_RESPONSE');
+  });
+
+  it.each([-1, 1.5, '1'])('拒绝非法 avatar_revision %#', async (avatarRevision) => {
+    const { cloud } = cloudWith(
+      success({ nickname: '骑手', completeness: 25, avatar_revision: avatarRevision }),
+    );
+    await expectCode(new CloudRepository(cloud).getProfile(), 'INVALID_RESPONSE');
+  });
+
+  it('无头像时不伪造 avatarSource', async () => {
+    const { cloud } = cloudWith(
+      success({ nickname: '骑手', completeness: 25, avatar_file_id: '' }),
+    );
+    const profile = await new CloudRepository(cloud).getProfile();
+    expect(profile.avatarId).toBe('');
+    expect(profile).not.toHaveProperty('avatarSource');
+    expect(profile.avatarRevision).toBe(0);
   });
 
   it('Strava 状态、授权、同步与解绑均调用真实云函数', async () => {
@@ -1286,6 +1392,61 @@ describe('MockRepository readiness 与显式报名命令', () => {
       },
     });
   });
+
+  it('MockRepository 复制历史活动时保持同样的安全草稿契约', async () => {
+    installStorage();
+    const repository = new MockRepository();
+    const source = {
+      ...repository.read().activities[0],
+      id: 'history-mock',
+      status: 'finished' as const,
+      coverImage: 'cloud://covers/source.jpg',
+      route: { ...repository.read().activities[0].route, gpxFileId: 'cloud://routes/source.gpx' },
+      supportVehicleCapacity: 8,
+      selfDriveCapacity: 10,
+      supportVehicleDriver: {
+        nickname: '王师傅',
+        licensePlate: '粤B12345',
+        contactPhone: '13812345678',
+      },
+      occupiedCount: 18,
+    };
+    stored = { ...repository.read(), activities: [source] };
+
+    const first = await repository.cloneActivity({
+      sourceActivityId: source.id,
+      requestId: 'request-mock-0001',
+    });
+    const retried = await repository.cloneActivity({
+      sourceActivityId: source.id,
+      requestId: 'request-mock-0001',
+    });
+
+    expect(retried.id).toBe(first.id);
+    expect(first).toMatchObject({ status: 'draft', version: 1, occupiedCount: 0 });
+    expect(first).not.toHaveProperty('coverImage');
+    expect(first.route).not.toHaveProperty('gpxFileId');
+    expect(first).not.toHaveProperty('supportVehicleCapacity');
+    expect(first).not.toHaveProperty('selfDriveCapacity');
+    expect(first).not.toHaveProperty('supportVehicleDriver');
+    expect(repository.read().activities).toHaveLength(2);
+  });
+
+  it('与云仓储保持 importStravaAvatar parity', async () => {
+    installStorage();
+    const repository = new MockRepository();
+    stored = JSON.parse(JSON.stringify(repository.read()));
+    delete (stored as any).profile.avatarRevision;
+
+    const imported = await repository.importStravaAvatar();
+    const card = await repository.getPersonalCapabilityCard();
+
+    expect(imported).toMatchObject({ avatarSource: 'strava' });
+    expect(imported.avatarId).toMatch(/^cloud:\/\/mock\//);
+    expect(imported.avatarRevision).toBe(1);
+    await expect(repository.importStravaAvatar()).resolves.toMatchObject({ avatarRevision: 2 });
+    expect(card.profile.avatarUrl).toMatch(/^https:\/\//);
+  });
 });
 
 describe('CloudRepository 管理员活动写入契约', () => {
@@ -1296,6 +1457,20 @@ describe('CloudRepository 管理员活动写入契约', () => {
     expectCall(callFunction, 'activity-admin', { action: 'list' });
     await repository.getAdminActivity('a1');
     expectCall(callFunction, 'activity-admin', { action: 'detail', activityId: 'a1' });
+  });
+
+  it('存量无 version 活动映射为 0 并可通过 expectedVersion=0 升级保存', async () => {
+    const legacy = { ...activity } as Record<string, unknown>;
+    delete legacy.version;
+    const upgraded = { ...activity, version: 1 };
+    const { cloud, callFunction } = cloudWith(success(legacy), success(upgraded));
+    const repository = new CloudRepository(cloud);
+
+    const current = await repository.getAdminActivity('a1');
+    expect(current?.version).toBe(0);
+    await repository.saveActivity({ ...current!, title: '存量活动升级' }, 'a1', current!.version);
+
+    expect((callFunction.mock.calls[1][0].data as any).expectedVersion).toBe(0);
   });
 
   it('创建仅发送活动白名单并调用 save', async () => {
@@ -1389,6 +1564,75 @@ describe('CloudRepository 管理员活动写入契约', () => {
       'VALIDATION_FAILED',
     );
     expect(invalid.callFunction).not.toHaveBeenCalled();
+  });
+
+  it('clone 只发送源 ID、请求 ID 与可选新时间', async () => {
+    const cloned = {
+      ...activity,
+      _id: 'activity_clone_0123456789abcdef0123456789abcdef',
+      version: 1,
+      status: 'draft',
+      occupied_count: 0,
+      cover_image: '',
+      route: { ...activity.route, gpx_file_id: '' },
+    };
+    const { cloud, callFunction } = cloudWith(success(cloned));
+
+    await new CloudRepository(cloud).cloneActivity({
+      sourceActivityId: 'history-1',
+      requestId: 'request-clone-0001',
+      signupDeadline: '2026-10-20T00:00:00.000Z',
+      eventStart: '2026-10-21T00:00:00.000Z',
+      eventEnd: '2026-10-21T08:00:00.000Z',
+      owner: 'attacker',
+      status: 'published',
+      occupiedCount: 99,
+      supportVehicleDriver: { contactPhone: '13812345678' },
+      coverImage: 'cloud://forged-cover',
+      route: { gpxFileId: 'cloud://forged-route' },
+      registrations: [{ realName: 'secret' }],
+      audit: [{ actor: 'secret' }],
+    } as any);
+
+    expectCall(callFunction, 'activity-admin', {
+      action: 'clone',
+      sourceActivityId: 'history-1',
+      requestId: 'request-clone-0001',
+      signupDeadline: '2026-10-20T00:00:00.000Z',
+      eventStart: '2026-10-21T00:00:00.000Z',
+      eventEnd: '2026-10-21T08:00:00.000Z',
+    });
+    expect(JSON.stringify(callFunction.mock.calls[0][0])).not.toMatch(
+      /attacker|published|13812345678|forged|registrations|audit/,
+    );
+  });
+
+  it('clone 对请求 ID、源 ID 与响应草稿严格 fail closed', async () => {
+    for (const input of [
+      { sourceActivityId: '', requestId: 'request-valid-01' },
+      { sourceActivityId: 'history-1', requestId: 'short' },
+      { sourceActivityId: 'history-1', requestId: 'bad request id' },
+    ]) {
+      const invalid = cloudWith();
+      await expectCode(
+        new CloudRepository(invalid.cloud).cloneActivity(input),
+        'VALIDATION_FAILED',
+      );
+      expect(invalid.callFunction).not.toHaveBeenCalled();
+    }
+    for (const response of [
+      { ...activity, _id: '', version: 1, status: 'draft' },
+      { ...activity, _id: 'activity_clone_valid', version: 0, status: 'draft' },
+      { ...activity, _id: 'activity_clone_valid', version: 1, status: 'published' },
+    ]) {
+      await expectCode(
+        new CloudRepository(cloudWith(success(response)).cloud).cloneActivity({
+          sourceActivityId: 'history-1',
+          requestId: 'request-valid-01',
+        }),
+        'INVALID_RESPONSE',
+      );
+    }
   });
 });
 
