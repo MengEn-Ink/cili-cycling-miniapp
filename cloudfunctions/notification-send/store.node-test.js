@@ -19,6 +19,7 @@ test('notification store 暴露完整状态机边界', () => {
     'listReady',
     'claim',
     'beginDispatch',
+    'recordDispatchOutcome',
     'markSent',
     'markRetryable',
     'markTerminal',
@@ -208,7 +209,13 @@ test('所有 completion 写按 status、lease_id、attempt_no fencing', async ()
     }),
     true,
   );
-  for (const method of ['markSent', 'markRetryable', 'markTerminal', 'markDeliveryUnknown']) {
+  for (const method of [
+    'recordDispatchOutcome',
+    'markSent',
+    'markRetryable',
+    'markTerminal',
+    'markDeliveryUnknown',
+  ]) {
     assert.equal(
       await store[method]('o1', {
         leaseId: first?.lease_id || 'lease-a',
@@ -257,4 +264,88 @@ test('显式拒绝可 fenced 转为 retryable 或 failed_terminal', async () => 
       terminal ? 'failed_terminal' : 'retryable',
     );
   }
+});
+
+test('retryable 写入指数且有上限的 next_retry_at，时间到前 listReady 不返回', async () => {
+  const now = lease().now;
+  for (const [attemptNo, delayMs] of [
+    [1, 60_000],
+    [2, 120_000],
+    [5, 900_000],
+  ]) {
+    const id = `o${attemptNo}`;
+    const fixture = memoryDb({
+      notification_outbox: {
+        [id]: item({
+          _id: id,
+          status: 'dispatching',
+          attempts: attemptNo,
+          attempt_no: attemptNo,
+          lease_id: `lease-${attemptNo}`,
+          lease_expires_at: new Date(now.getTime() + 120_000),
+        }),
+      },
+    });
+    const store = createNotificationStore(fixture.db);
+    const fence = {
+      leaseId: `lease-${attemptNo}`,
+      attemptNo,
+      errorCode: 'WECHAT_45009',
+      now,
+    };
+
+    assert.equal(await store.markRetryable(id, fence), true);
+    const nextRetryAt = fixture.state.notification_outbox.get(id).next_retry_at;
+    assert.equal(nextRetryAt instanceof Date, true);
+    assert.equal(nextRetryAt.getTime(), now.getTime() + delayMs);
+    assert.deepEqual(await store.listReady(20, new Date(now.getTime() + delayMs - 1)), []);
+    assert.deepEqual(
+      await store.listReady(20, new Date(now.getTime() + delayMs)),
+      attemptNo < 5 ? [id] : [],
+    );
+  }
+});
+
+test('expired dispatching 按持久化 outcome 恢复且不重新发送', async () => {
+  const now = lease().now;
+  const fixture = memoryDb({
+    notification_outbox: {
+      retry: item({
+        _id: 'retry',
+        status: 'dispatching',
+        attempts: 2,
+        attempt_no: 2,
+        lease_id: 'lease-retry',
+        lease_expires_at: new Date(now.getTime() - 1),
+        dispatch_outcome: {
+          disposition: 'retryable',
+          error_code: 'WECHAT_45009',
+          recorded_at: new Date(now.getTime() - 60_000),
+        },
+      }),
+      terminal: item({
+        _id: 'terminal',
+        status: 'dispatching',
+        attempts: 1,
+        attempt_no: 1,
+        lease_id: 'lease-terminal',
+        lease_expires_at: new Date(now.getTime() - 1),
+        dispatch_outcome: {
+          disposition: 'terminal',
+          error_code: 'WECHAT_43101',
+          recorded_at: new Date(now.getTime() - 60_000),
+        },
+      }),
+    },
+  });
+  const store = createNotificationStore(fixture.db);
+
+  assert.equal(await store.recoverExpiredDispatching(now, 20), 2);
+  assert.equal(fixture.state.notification_outbox.get('retry').status, 'retryable');
+  assert.equal(
+    fixture.state.notification_outbox.get('retry').next_retry_at.getTime(),
+    now.getTime() + 120_000,
+  );
+  assert.equal(fixture.state.notification_outbox.get('terminal').status, 'failed_terminal');
+  assert.deepEqual(await store.listReady(20, now), []);
 });

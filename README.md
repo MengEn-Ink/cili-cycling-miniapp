@@ -50,7 +50,7 @@ REVIEW_REJECTED_TEMPLATE_ID=        # notification-send 审核驳回订阅消息
 
 ## CloudBase bootstrap
 
-`scripts/bootstrap-cloudbase.mjs` 管理 10 个集合、17 个业务索引、全拒绝客户端规则和 `_id=demo_activity_001` 演示活动。`profile_media` 使用确定性的文件摘要主键，并通过 owner/status、status/cleanup、status/delete-lease 和 status/retry 索引支持授权读取、崩溃恢复与未引用媒体回收。`oauth_states._id` 与 `state_hash` 保证唯一，`expires_at ASC` 是辅助应用层清理的普通索引，`openid ASC + expires_at DESC` 用于查询用户的活跃授权状态；CloudBase `UpdateTable` 不接受 TTL 参数，因此这里是**非物理 TTL，应用层过期 + 清理**。默认只生成 plan，不写远端：
+`scripts/bootstrap-cloudbase.mjs` 管理 10 个集合、18 个业务索引、全拒绝客户端规则和 `_id=demo_activity_001` 演示活动。`profile_media` 使用确定性的文件摘要主键，并通过 owner/status、status/cleanup、status/delete-lease 和 status/retry 索引支持授权读取、崩溃恢复与未引用媒体回收；`notification_outbox` 使用状态、尝试次数与下次重试时间索引支持退避调度。`oauth_states._id` 与 `state_hash` 保证唯一，`expires_at ASC` 是辅助应用层清理的普通索引，`openid ASC + expires_at DESC` 用于查询用户的活跃授权状态；CloudBase `UpdateTable` 不接受 TTL 参数，因此这里是**非物理 TTL，应用层过期 + 清理**。默认只生成 plan，不写远端：
 
 ```bash
 npm run cloudbase:plan
@@ -58,7 +58,7 @@ npm run cloudbase:plan
 npm run cloudbase:verify
 ```
 
-目标基线为 10 个集合、全拒绝客户端规则、17 个业务索引及 `demo_activity_001`。脚本仍保持默认只读；每个环境都必须先审阅 plan，再显式 apply 和 verify，不能把仓库契约视为远端已完成变更。
+目标基线为 10 个集合、全拒绝客户端规则、18 个业务索引及 `demo_activity_001`。脚本仍保持默认只读；每个环境都必须先审阅 plan，再显式 apply 和 verify，不能把仓库契约视为远端已完成变更。
 
 ## 安装与验证
 

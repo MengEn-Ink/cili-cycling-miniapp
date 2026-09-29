@@ -1,6 +1,6 @@
 'use strict';
 
-const { buildReadyCondition } = require('./core');
+const { MAX_ATTEMPTS, retryDelayMs } = require('./core');
 
 function coded(code, message) {
   const error = new Error(message);
@@ -56,14 +56,36 @@ function createNotificationStore(db) {
       if (!admin || admin._id !== openid || admin.enabled === false)
         coded('ADMIN_REQUIRED', '需要管理员权限');
     },
-    listReady: async (limit) => {
-      const result = await db
-        .collection('notification_outbox')
-        .where(buildReadyCondition(command))
-        .orderBy('lease_expires_at', 'asc')
-        .limit(limit)
-        .get();
-      return result.data.map((entry) => entry._id);
+    listReady: async (limit, now = new Date()) => {
+      const collection = db.collection('notification_outbox');
+      const [immediate, retryable, claimed] = await Promise.all([
+        collection
+          .where({ status: command.in(['pending', 'failed']), attempts: command.lt(MAX_ATTEMPTS) })
+          .orderBy('lease_expires_at', 'asc')
+          .limit(limit)
+          .get(),
+        collection
+          .where({
+            status: 'retryable',
+            attempts: command.lt(MAX_ATTEMPTS),
+            next_retry_at: command.lte(now),
+          })
+          .orderBy('next_retry_at', 'asc')
+          .limit(limit)
+          .get(),
+        collection
+          .where({
+            status: 'claimed',
+            attempts: command.lt(MAX_ATTEMPTS),
+            lease_expires_at: command.lte(now),
+          })
+          .orderBy('lease_expires_at', 'asc')
+          .limit(limit)
+          .get(),
+      ]);
+      return [
+        ...new Set([...immediate.data, ...retryable.data, ...claimed.data].map((x) => x._id)),
+      ].slice(0, limit);
     },
     claim: (id, { claimant, leaseId, now, maxAttempts, leaseMs }) =>
       db.runTransaction(async (tx) => {
@@ -95,6 +117,8 @@ function createNotificationStore(db) {
         }
         if (current.status === 'claimed' && !expired(current.lease_expires_at, now))
           return { ...current, claimed: false };
+        if (current.status === 'retryable' && !expired(current.next_retry_at, now))
+          return { ...current, claimed: false };
         if (!['pending', 'retryable', 'failed', 'claimed'].includes(current.status))
           coded('INVALID_OUTBOX_STATE', '通知状态不可消费');
         const attempts = Number(current.attempt_no ?? current.attempts ?? 0);
@@ -121,6 +145,8 @@ function createNotificationStore(db) {
             lease_expires_at: next.lease_expires_at,
             updated_at: now,
             last_error: '',
+            next_retry_at: command.remove(),
+            dispatch_outcome: command.remove(),
           },
         });
         return { ...next, claimed: true };
@@ -129,6 +155,16 @@ function createNotificationStore(db) {
       fencedTransition(id, fence, 'claimed', {
         status: 'dispatching',
         dispatch_started_at: fence.now,
+        dispatch_outcome: command.remove(),
+        updated_at: fence.now,
+      }),
+    recordDispatchOutcome: (id, fence) =>
+      fencedTransition(id, fence, 'dispatching', {
+        dispatch_outcome: {
+          disposition: fence.disposition,
+          error_code: fence.errorCode,
+          recorded_at: fence.now,
+        },
         updated_at: fence.now,
       }),
     markSent: (id, fence) =>
@@ -144,6 +180,7 @@ function createNotificationStore(db) {
         status: 'retryable',
         updated_at: fence.now,
         lease_expires_at: null,
+        next_retry_at: new Date(fence.now.getTime() + retryDelayMs(fence.attemptNo)),
         last_error: fence.errorCode,
       }),
     markTerminal: (id, fence) =>
@@ -181,13 +218,26 @@ function createNotificationStore(db) {
             !expired(current.lease_expires_at, now)
           )
             return false;
+          const outcome = current.dispatch_outcome;
+          const status =
+            outcome && outcome.disposition === 'retryable'
+              ? 'retryable'
+              : outcome && outcome.disposition === 'terminal'
+                ? 'failed_terminal'
+                : 'delivery_unknown';
+          const data = {
+            status,
+            lease_expires_at: null,
+            last_error:
+              outcome && typeof outcome.error_code === 'string'
+                ? outcome.error_code
+                : 'DELIVERY_LEASE_EXPIRED',
+            updated_at: now,
+          };
+          if (status === 'retryable')
+            data.next_retry_at = new Date(now.getTime() + retryDelayMs(Number(current.attempt_no)));
           await collection.doc(entry._id).update({
-            data: {
-              status: 'delivery_unknown',
-              lease_expires_at: null,
-              last_error: 'DELIVERY_LEASE_EXPIRED',
-              updated_at: now,
-            },
+            data,
           });
           return true;
         });

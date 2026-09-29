@@ -32,7 +32,12 @@ function fixture(overrides = {}) {
         ['dispatching', 'sending'].includes(item.status) &&
         Date.parse(item.lease_expires_at) <= now.getTime()
       ) {
-        item.status = 'delivery_unknown';
+        item.status =
+          item.dispatch_outcome?.disposition === 'retryable'
+            ? 'retryable'
+            : item.dispatch_outcome?.disposition === 'terminal'
+              ? 'failed_terminal'
+              : 'delivery_unknown';
         item.lease_expires_at = null;
         return 1;
       }
@@ -66,6 +71,15 @@ function fixture(overrides = {}) {
     beginDispatch: async (_id, lease) => {
       if (item.status !== 'claimed' || !fenced(lease)) return false;
       item.status = 'dispatching';
+      return true;
+    },
+    recordDispatchOutcome: async (_id, lease) => {
+      if (item.status !== 'dispatching' || !fenced(lease)) return false;
+      item.dispatch_outcome = {
+        disposition: lease.disposition,
+        error_code: lease.errorCode,
+        recorded_at: lease.now,
+      };
       return true;
     },
     markSent: async (_id, lease) => {
@@ -286,6 +300,39 @@ test('未列入业务码白名单的正数错误无论 resolve 或 reject 都隔
     await assert.rejects(consume(ambiguous), { code: 'DELIVERY_STATE_UNCERTAIN' });
     assert.equal(ambiguous.item.status, 'delivery_unknown');
     assert.equal(ambiguous.item.last_error, 'SEND_RESULT_UNKNOWN');
+  }
+});
+
+test('provider 明确未投递但状态 ACK 失败时只重试 fenced 写且由 outcome 恢复', async () => {
+  for (const [errCode, disposition, finalStatus, method] of [
+    [45009, 'retryable', 'retryable', 'markRetryable'],
+    [43101, 'terminal', 'failed_terminal', 'markTerminal'],
+  ]) {
+    const f = fixture();
+    let ackCalls = 0;
+    f.sender.send = async (message) => {
+      f.calls.push(message);
+      return { errCode };
+    };
+    f.store[method] = async () => {
+      ackCalls += 1;
+      throw new Error('ACK_WRITE_FAILED');
+    };
+
+    await assert.rejects(consume(f), { code: 'DELIVERY_STATE_PERSIST_FAILED' });
+    assert.equal(f.calls.length, 1);
+    assert.equal(ackCalls, 3);
+    assert.equal(f.item.status, 'dispatching');
+    assert.deepEqual(f.item.dispatch_outcome, {
+      disposition,
+      error_code: `WECHAT_${errCode}`,
+      recorded_at: new Date('2026-09-29T00:00:00Z'),
+    });
+
+    f.item.lease_expires_at = '2026-09-28T23:59:00Z';
+    await f.store.recoverExpiredDispatching(new Date('2026-09-29T00:00:00Z'));
+    assert.equal(f.item.status, finalStatus);
+    assert.equal(f.calls.length, 1);
   }
 });
 

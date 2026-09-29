@@ -308,7 +308,7 @@ test('OAuth 与 Strava 集合包含唯一、普通过期时间和同步索引', 
     unique: false,
   });
   assert.equal(COLLECTIONS.length, 10);
-  assert.equal(INDEXES.length, 17);
+  assert.equal(INDEXES.length, 18);
   assert.equal(INDEXES.find((item) => item.name === 'oauth_states_state_hash')?.unique, true);
   assert.equal(
     INDEXES.some((item) => item.name === 'strava_snapshots_synced_at'),
@@ -327,6 +327,14 @@ test('notification_outbox 使用租约扫描索引并保持客户端全拒绝', 
     ],
   );
   assert.deepEqual(DENY_RULE, { read: false, write: false });
+  assert.deepEqual(
+    INDEXES.find((index) => index.name === 'notification_outbox_status_attempts_retry')?.keys,
+    [
+      ['status', 1],
+      ['attempts', 1],
+      ['next_retry_at', 1],
+    ],
+  );
 });
 
 test('profile_media 使用 owner/status 与过期清理索引并保持客户端全拒绝', () => {
@@ -358,7 +366,7 @@ test('profile_media 使用 owner/status 与过期清理索引并保持客户端�
     ['retry_at', 1],
   ]);
   assert.equal(COLLECTIONS.length, 10);
-  assert.equal(INDEXES.length, 17);
+  assert.equal(INDEXES.length, 18);
   assert.deepEqual(DENY_RULE, { read: false, write: false });
 });
 

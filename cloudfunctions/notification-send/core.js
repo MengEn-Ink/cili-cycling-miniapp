@@ -4,6 +4,8 @@ const crypto = require('node:crypto');
 const MAX_ATTEMPTS = 5;
 const LEASE_MS = 2 * 60 * 1000;
 const ACK_ATTEMPTS = 3;
+const RETRY_BASE_MS = 60 * 1000;
+const RETRY_MAX_MS = 15 * 60 * 1000;
 class NotificationError extends Error {
   constructor(code, message) {
     super(message);
@@ -62,8 +64,23 @@ function providerDisposition(code) {
   if ([40003, 40037, 43101, 43107, 45168, 47003].includes(code)) return 'terminal';
   return null;
 }
+function retryDelayMs(attemptNo) {
+  const exponent = Math.max(0, Number(attemptNo || 1) - 1);
+  return Math.min(RETRY_MAX_MS, RETRY_BASE_MS * 2 ** exponent);
+}
 async function transitionOrLose(method, outboxId, value) {
   if (!(await method(outboxId, value))) fail('LEASE_LOST', '通知任务租约已失效');
+}
+async function retryFencedWrite(method, outboxId, value) {
+  for (let attempt = 0; attempt < ACK_ATTEMPTS; attempt += 1) {
+    try {
+      await transitionOrLose(method, outboxId, value);
+      return true;
+    } catch (error) {
+      if (error instanceof NotificationError) throw error;
+    }
+  }
+  return false;
 }
 async function markUnknownBestEffort(store, outboxId, fence, errorCode) {
   try {
@@ -74,11 +91,21 @@ async function markUnknownBestEffort(store, outboxId, fence, errorCode) {
 }
 async function handleProviderRejection(store, outboxId, fence, code) {
   const errorCode = `WECHAT_${code}`;
-  if (providerDisposition(code) === 'retryable') {
-    await transitionOrLose(store.markRetryable, outboxId, { ...fence, errorCode });
+  const disposition = providerDisposition(code);
+  if (
+    !(await retryFencedWrite(store.recordDispatchOutcome, outboxId, {
+      ...fence,
+      disposition,
+      errorCode,
+    }))
+  )
+    fail('DELIVERY_STATE_PERSIST_FAILED', '通知发送结果保存失败，请勿自动重试');
+  const method = disposition === 'retryable' ? store.markRetryable : store.markTerminal;
+  if (!(await retryFencedWrite(method, outboxId, { ...fence, errorCode })))
+    fail('DELIVERY_STATE_PERSIST_FAILED', '通知发送结果保存失败，请勿自动重试');
+  if (disposition === 'retryable') {
     fail('WECHAT_SEND_FAILED', '微信订阅消息发送失败');
   }
-  await transitionOrLose(store.markTerminal, outboxId, { ...fence, errorCode });
   fail('WECHAT_SEND_REJECTED', '微信拒绝发送订阅消息');
 }
 async function consumeNotification({
@@ -139,14 +166,8 @@ async function consumeNotification({
     fail('DELIVERY_STATE_UNCERTAIN', '通知发送结果未知，请在小程序内查看审批状态');
   }
 
-  for (let attempt = 0; attempt < ACK_ATTEMPTS; attempt += 1) {
-    try {
-      if (!(await store.markSent(outboxId, fence))) fail('LEASE_LOST', '通知任务租约已失效');
-      return { outbox_id: outboxId, status: 'sent', duplicate: false };
-    } catch (error) {
-      if (error instanceof NotificationError) throw error;
-    }
-  }
+  if (await retryFencedWrite(store.markSent, outboxId, fence))
+    return { outbox_id: outboxId, status: 'sent', duplicate: false };
   await markUnknownBestEffort(store, outboxId, fence, 'ACK_WRITE_FAILED');
   fail('DELIVERY_STATE_UNCERTAIN', '通知已发送但状态确认失败，请勿自动重试');
 }
@@ -158,7 +179,7 @@ function buildReadyCondition(command) {
 }
 async function drainNotifications({ store, sender, env, now = new Date(), limit = 20 }) {
   const quarantined = await store.recoverExpiredDispatching(now, limit);
-  const ids = await store.listReady(limit);
+  const ids = await store.listReady(limit, now);
   const results = [];
   for (const outboxId of ids) {
     try {
@@ -189,10 +210,13 @@ module.exports = {
   MAX_ATTEMPTS,
   LEASE_MS,
   ACK_ATTEMPTS,
+  RETRY_BASE_MS,
+  RETRY_MAX_MS,
   NotificationError,
   responseError,
   templateFor,
   subscriptionTemplateIds,
+  retryDelayMs,
   consumeNotification,
   buildReadyCondition,
   drainNotifications,

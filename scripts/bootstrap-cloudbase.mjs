@@ -117,6 +117,16 @@ export const INDEXES = Object.freeze([
     unique: false,
   },
   {
+    collection: 'notification_outbox',
+    name: 'notification_outbox_status_attempts_retry',
+    keys: [
+      ['status', 1],
+      ['attempts', 1],
+      ['next_retry_at', 1],
+    ],
+    unique: false,
+  },
+  {
     collection: 'oauth_states',
     name: 'oauth_states_state_hash',
     keys: [['state_hash', 1]],
