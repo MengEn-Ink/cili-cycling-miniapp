@@ -10,6 +10,7 @@ import type {
   StravaReadinessState,
 } from '../models';
 import type {
+  ActivityInput,
   AdminRegistrationStatusFilter,
   AdminReviewRepository,
   RegistrationSubmission,
@@ -121,6 +122,7 @@ function mapActivity(raw: unknown): Activity {
     capacity: value.capacity,
     occupiedCount: Number.isInteger(value.occupied_count) ? value.occupied_count : undefined,
     description: typeof value.description === 'string' ? value.description : '',
+    coverImage: typeof value.cover_image === 'string' ? value.cover_image : '',
     route: {
       start: typeof value.route?.start === 'string' ? value.route.start : '',
       end: typeof value.route?.end === 'string' ? value.route.end : '',
@@ -318,6 +320,39 @@ function submissionOptions(value: RegistrationSubmission) {
     remark: typeof value.remark === 'string' ? value.remark : '',
   };
 }
+function activityPayload(value: ActivityInput) {
+  return {
+    title: typeof value.title === 'string' ? value.title : '',
+    cover_image: typeof value.coverImage === 'string' ? value.coverImage : '',
+    description: typeof value.description === 'string' ? value.description : '',
+    schedule: Array.isArray(value.schedule)
+      ? value.schedule.map((item) => ({
+          time: item.time,
+          title: item.title,
+          location: item.location,
+        }))
+      : [],
+    route: {
+      start: typeof value.route?.start === 'string' ? value.route.start : '',
+      end: typeof value.route?.end === 'string' ? value.route.end : '',
+      distance_km: value.route?.distanceKm,
+      elevation_m: value.route?.elevationM,
+      level: typeof value.route?.level === 'string' ? value.route.level : '',
+    },
+    notices: Array.isArray(value.notices)
+      ? value.notices.filter((item) => typeof item === 'string')
+      : [],
+    equipment: Array.isArray(value.equipment)
+      ? value.equipment.filter((item) => typeof item === 'string')
+      : [],
+    fee: typeof value.fee === 'string' ? value.fee : '',
+    capacity: value.capacity,
+    signup_deadline: value.deadline,
+    event_start: value.startAt,
+    event_end: value.endAt,
+    status: value.status,
+  };
+}
 export class CloudRepository implements RideRepository, AdminReviewRepository {
   constructor(private readonly injectedCloud?: CloudApi) {}
   private async call<T>(name: string, data: unknown): Promise<T> {
@@ -329,6 +364,24 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
       if (error instanceof CloudRepositoryError) throw error;
       throw new CloudRepositoryError('CALL_FAILED', '云函数调用失败');
     }
+  }
+  async listAdminActivities() {
+    return expectRecordArray(await this.call('activity-admin', { action: 'list' })).map(
+      mapActivity,
+    );
+  }
+  async getAdminActivity(id: string) {
+    return mapActivity(
+      await this.call('activity-admin', {
+        action: 'detail',
+        activityId: requiredId(id, '活动 ID'),
+      }),
+    );
+  }
+  async saveActivity(value: ActivityInput, id?: string) {
+    const data: Record<string, unknown> = { action: 'save', activity: activityPayload(value) };
+    if (id !== undefined) data.activityId = requiredId(id, '活动 ID');
+    return mapActivity(await this.call('activity-admin', data));
   }
   async listActivities() {
     return expectRecordArray(await this.call('activity-read', { action: 'list' })).map(mapActivity);

@@ -1,0 +1,24 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.form input,
+.form textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 18rpx;
+  border: 1px solid #d8d8d8;
+  border-radius: 12rpx;
+  background: #fff;
+}
+.form textarea {
+  min-height: 140rpx;
+}
+.form text {
+  margin-top: 8rpx;
+  font-weight: 600;
+}
+button {
+  margin-top: 24rpx;
+}

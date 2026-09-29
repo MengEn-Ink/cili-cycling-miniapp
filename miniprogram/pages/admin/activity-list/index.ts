@@ -9,16 +9,16 @@ Page({
       return;
     }
     try {
-      this.setData({ items: await rideService.listActivities(), allowed: true, error: '' });
+      this.setData({ items: await rideService.listAdminActivities(), allowed: true, error: '' });
     } catch (error) {
       this.setData({ error: error instanceof Error ? error.message : '加载失败' });
     }
   },
-  edit() {
-    wx.showToast({ title: '真实云端活动编辑暂未开放', icon: 'none' });
+  edit(event: any) {
+    wx.navigateTo({ url: `/pages/admin/activity-edit/index?id=${event.currentTarget.dataset.id}` });
   },
   create() {
-    wx.showToast({ title: '真实云端活动新建暂未开放', icon: 'none' });
+    wx.navigateTo({ url: '/pages/admin/activity-edit/index' });
   },
   reviews() {
     wx.navigateTo({ url: '/pages/admin/reviews/index' });

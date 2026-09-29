@@ -12,6 +12,7 @@ export interface Activity {
   capacity: number;
   occupiedCount?: number;
   description: string;
+  coverImage?: string;
   route: { start: string; end: string; distanceKm: number; elevationM: number; level: string };
   schedule: { time: string; title: string; location: string }[];
   notices: string[];

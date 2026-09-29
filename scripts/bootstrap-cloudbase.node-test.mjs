@@ -306,11 +306,24 @@ test('OAuth 与 Strava 集合包含唯一、普通过期时间和同步索引', 
     ],
     unique: false,
   });
-  assert.equal(COLLECTIONS.length, 8);
-  assert.equal(INDEXES.length, 11);
+  assert.equal(COLLECTIONS.length, 9);
+  assert.equal(INDEXES.length, 13);
   assert.equal(INDEXES.find((item) => item.name === 'oauth_states_state_hash')?.unique, true);
   assert.equal(
     INDEXES.some((item) => item.name === 'strava_snapshots_synced_at'),
     true,
   );
+});
+
+test('notification_outbox 使用租约扫描索引并保持客户端全拒绝', () => {
+  assert.ok(COLLECTIONS.includes('notification_outbox'));
+  assert.deepEqual(
+    INDEXES.find((index) => index.name === 'notification_outbox_status_attempts_lease')?.keys,
+    [
+      ['status', 1],
+      ['attempts', 1],
+      ['lease_expires_at', 1],
+    ],
+  );
+  assert.deepEqual(DENY_RULE, { read: false, write: false });
 });

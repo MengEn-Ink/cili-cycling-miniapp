@@ -2,7 +2,7 @@ import { copyFileSync, mkdirSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 const root = resolve(import.meta.dirname, '..');
 const shared = resolve(root, 'cloudfunctions/shared');
-const domainFunctions = ['activity-read', 'registration', 'admin-review'];
+const domainFunctions = ['activity-read', 'registration'];
 const sharedFiles = ['index.js', 'domain.js', 'use-cases.js'];
 for (const name of domainFunctions) {
   const functionRoot = resolve(root, 'cloudfunctions', name);

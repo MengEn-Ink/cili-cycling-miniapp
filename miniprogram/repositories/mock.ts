@@ -9,7 +9,7 @@ import type {
 } from '../models';
 import { activities, profile, registrations } from '../mock/fixtures';
 import { transition } from '../utils/registration';
-import type { RideRepository } from './types';
+import type { ActivityInput, RideRepository } from './types';
 type S = {
   activities: Activity[];
   registrations: Registration[];
@@ -24,6 +24,12 @@ export class MockRepository implements RideRepository {
   }
   write(s: S) {
     wx.setStorageSync(KEY, s);
+  }
+  async listAdminActivities() {
+    return this.read().activities;
+  }
+  async getAdminActivity(id: string) {
+    return this.getActivity(id);
   }
   async listActivities() {
     return this.read().activities;
@@ -160,7 +166,15 @@ export class MockRepository implements RideRepository {
     s.stravaStatus = 'pending';
     this.write(s);
   }
-  async saveActivity(a: Activity) {
+  async saveActivity(value: ActivityInput, id?: string) {
+    const a: Activity = {
+      ...value,
+      id: id || `a${Date.now()}`,
+      date: value.startAt,
+      occupiedCount: id
+        ? this.read().activities.find((item) => item.id === id)?.occupiedCount || 0
+        : 0,
+    };
     const s = this.read(),
       i = s.activities.findIndex((x) => x.id === a.id);
     if (i < 0) s.activities.unshift(a);

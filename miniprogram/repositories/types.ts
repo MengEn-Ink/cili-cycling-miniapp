@@ -9,6 +9,12 @@ import type {
 } from '../models';
 
 export type AdminRegistrationStatusFilter = RegistrationStatus;
+export type ActivityInput = Omit<Activity, 'id' | 'date' | 'occupiedCount'>;
+export interface ActivityAdminRepository {
+  listAdminActivities(): Promise<Activity[]>;
+  getAdminActivity(id: string): Promise<Activity | undefined>;
+  saveActivity(value: ActivityInput, id?: string): Promise<Activity>;
+}
 export interface RegistrationSubmission {
   activityId: string;
   bikeMode: string;
@@ -24,7 +30,7 @@ export interface AdminReviewRepository {
   ): Promise<Registration[]>;
   getReviewRegistration(id: string): Promise<Registration | undefined>;
 }
-export interface RideRepository extends AdminReviewRepository {
+export interface RideRepository extends AdminReviewRepository, ActivityAdminRepository {
   listActivities(): Promise<Activity[]>;
   getActivity(id: string): Promise<Activity | undefined>;
   listRegistrations(): Promise<Registration[]>;

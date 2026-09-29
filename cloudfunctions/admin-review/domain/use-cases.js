@@ -34,7 +34,6 @@ async function submitRegistration(store, { openid, activityId, options }, now = 
     const strava = selectCanonicalStrava(credential, snapshot, now);
     const safeOptions = validateOptions(options);
     if (activity.occupied_count >= activity.capacity) fail('CAPACITY_FULL', '活动名额已满');
-
     const history =
       existing && Array.isArray(existing.review_history) ? existing.review_history : [];
     const value = {
@@ -57,7 +56,6 @@ async function submitRegistration(store, { openid, activityId, options }, now = 
       updated_at: now,
     };
     await tx.putRegistration(id, value);
-    // 活动文档是事务冲突点；并发提交必须串行核对并递增，不能先 count 后 insert。
     await tx.setOccupied(activityId, activity.occupied_count + 1);
     await tx.addAudit(
       buildAudit(
@@ -128,6 +126,26 @@ async function reviewRegistration(
           }
         : {}),
     };
+    const outboxId = `review_${id}_${history.length}`;
+    const outbox = {
+      _id: outboxId,
+      type: 'registration_review_result',
+      aggregate_id: id,
+      target_openid: registration.openid,
+      template_key: nextStatus === 'approved' ? 'review_approved' : 'review_rejected',
+      status: 'pending',
+      attempts: 0,
+      lease_expires_at: null,
+      created_at: now,
+      updated_at: now,
+      payload: {
+        registration_id: id,
+        activity_id: registration.activity_id,
+        decision: nextStatus,
+        reason: typeof reason === 'string' ? reason.trim() : '',
+        serial_no: value.serial_no || '',
+      },
+    };
     await tx.putRegistration(id, value);
     if (nextStatus === 'rejected') {
       const activity = await tx.getActivity(registration.activity_id);
@@ -141,7 +159,12 @@ async function reviewRegistration(
         reason: typeof reason === 'string' ? reason.trim() : '',
       }),
     );
-    return publicRegistration(value);
+    // 审批状态与待发送事件必须同事务落库；微信网络调用只能由事务外消费者执行。
+    await tx.putNotification(outboxId, outbox);
+    return {
+      ...publicRegistration(value),
+      notification: { outbox_id: outboxId, status: 'pending' },
+    };
   });
 }
 
