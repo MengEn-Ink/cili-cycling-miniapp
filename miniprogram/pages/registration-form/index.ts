@@ -13,7 +13,7 @@ function unavailableAction(): ActivityAction {
   return { kind: 'closed', label: '活动状态不可用', enabled: false };
 }
 
-const NOTIFICATION_TEMPLATE_TIMEOUT_MS = 1500;
+const NOTIFICATION_TEMPLATE_TIMEOUT_MS = 1000;
 
 function loadingReadiness(): StravaReadiness {
   return {
@@ -81,7 +81,12 @@ Page({
     this.pageVisible = true;
     const requestId = ++this.loadRequestId;
     const isCancelled = () => requestId !== this.loadRequestId;
-    this.setData({ loading: true, errors: [], submitting: false });
+    this.setData({
+      loading: true,
+      errors: [],
+      submitting: false,
+      notificationTemplateIds: [],
+    });
     void this.loadNotificationTemplates(requestId);
     const [profileState, readinessState, activityState] = await Promise.all([
       runPageTask(() => rideService.getProfile(), '个人资料加载失败'),

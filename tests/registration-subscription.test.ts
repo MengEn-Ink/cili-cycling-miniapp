@@ -108,6 +108,26 @@ describe('报名提交订阅消息授权', () => {
     await vi.advanceTimersByTimeAsync(2000);
   });
 
+  it('模板配置失败或 1 秒超时都清空旧模板且不阻塞主加载', async () => {
+    rideService.getReviewNotificationTemplateIds.mockRejectedValueOnce(new Error('config failed'));
+    page.data.notificationTemplateIds = ['stale-template'];
+    await page.onShow();
+    await flushMicrotasks();
+    expect(page.data.loading).toBe(false);
+    expect(page.data.notificationTemplateIds).toEqual([]);
+
+    vi.useFakeTimers();
+    rideService.getReviewNotificationTemplateIds.mockReturnValueOnce(new Promise(() => undefined));
+    page.data.notificationTemplateIds = ['stale-template'];
+    const loading = page.onShow();
+    await flushMicrotasks();
+    await loading;
+    expect(page.data.loading).toBe(false);
+    expect(page.data.notificationTemplateIds).toEqual([]);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(page.data.notificationTemplateIds).toEqual([]);
+  });
+
   it('较早页面代际的模板迟到响应不覆盖新列表', async () => {
     let resolveFirst!: (ids: string[]) => void;
     rideService.getReviewNotificationTemplateIds
