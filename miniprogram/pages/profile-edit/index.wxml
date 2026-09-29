@@ -12,6 +12,15 @@
         <view class="label">称号（管理员颁发）</view>
         <input class="input" value="{{p.title}}" disabled />
       </view>
+      <view class="field">
+        <view class="label">头像来源</view>
+        <radio-group class="radio-group" data-k="avatarSource" bindchange="set">
+          <label class="radio-label" wx:for="{{avatarSources}}" wx:key="value">
+            <radio color="#d55b1f" value="{{item.value}}" checked="{{p.avatarSource === item.value}}" />
+            {{item.label}}
+          </label>
+        </radio-group>
+      </view>
     </view>
 
     <view class="card form-card">

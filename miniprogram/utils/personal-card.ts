@@ -57,6 +57,7 @@ export function personalCardViewModel(card: PersonalCapabilityCard) {
     statusTone: state.tone,
     displayName: card.profile.displayName || '此里骑手',
     title: card.profile.title,
+    avatarUrl: card.profile.avatarUrl || '',
     backgrounds,
     hasBackgrounds: backgrounds.length > 0,
     hasMultipleBackgrounds: backgrounds.length > 1,
@@ -70,7 +71,9 @@ export function personalCardViewModel(card: PersonalCapabilityCard) {
       : '',
     syncedAtText: card.syncedAt ? `同步于 ${timePart(card.syncedAt)}` : '',
     generatedAtText: `生成于 ${timePart(card.generatedAt)}`,
-    needsStravaRepair: card.state === 'disconnected' || card.state === 'failed',
+    needsStravaRepair:
+      card.state === 'disconnected' || card.state === 'failed' || card.needsStravaReauth,
     needsProfilePhoto: backgrounds.length === 0,
+    isOldStravaUser: card.needsStravaReauth,
   };
 }

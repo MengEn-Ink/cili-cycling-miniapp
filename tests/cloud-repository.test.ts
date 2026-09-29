@@ -244,6 +244,7 @@ describe('CloudRepository 个人骑行名片适配', () => {
       profile: {
         displayName: '山野骑手',
         title: '周末爬坡手',
+        avatarUrl: '',
       },
       backgrounds: [
         {
@@ -270,8 +271,22 @@ describe('CloudRepository 个人骑行名片适配', () => {
         complete: false,
       },
       syncedAt: '2026-09-29T04:05:00.000Z',
+      needsStravaReauth: false,
     });
     expectCall(callFunction, 'profile', { action: 'capabilityCard' });
+  });
+
+  it('映射头像 URL 与重授权标记', async () => {
+    const { cloud } = cloudWith(
+      success({
+        ...personalCapabilityCardDto,
+        profile: { ...personalCapabilityCardDto.profile, avatar_url: 'https://strava.com/a.jpg' },
+        needs_strava_reauth: true,
+      }),
+    );
+    const card = await new CloudRepository(cloud).getPersonalCapabilityCard();
+    expect(card.profile.avatarUrl).toBe('https://strava.com/a.jpg');
+    expect(card.needsStravaReauth).toBe(true);
   });
 
   it.each(['cloud://raw-photo', 'http://temporary.example/insecure.jpg'])(

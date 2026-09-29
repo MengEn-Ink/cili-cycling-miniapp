@@ -3,6 +3,7 @@ export type RegistrationStatus = 'pending' | 'approved' | 'rejected' | 'cancelle
 export type StravaStatus = 'pending' | 'connected' | 'exempted' | 'syncing' | 'failed';
 export type ActivityRegistrationState = 'open' | 'closed';
 export type ActivityClosedReason = 'finished' | 'deadline' | 'full' | 'unavailable';
+export type AvatarSource = 'wechat' | 'strava';
 export interface Activity {
   id: string;
   title: string;
@@ -52,6 +53,8 @@ export interface Profile {
   emergencyPhone: string;
   photos: { id: string; category: string }[];
   avatarId?: string;
+  avatarSource?: AvatarSource;
+  hasCompletedGuidance?: boolean;
   completeness?: number;
   sensitiveStatus?: {
     realName: boolean;
@@ -66,6 +69,8 @@ export interface ProfileUpdate {
   gender?: string;
   emergencyName?: string;
   avatarFileId?: string;
+  avatarSource?: AvatarSource;
+  hasCompletedGuidance?: boolean;
   photos?: { id: string; category: string }[];
   realName?: string;
   phone?: string;
@@ -111,11 +116,12 @@ export interface PersonalCapabilityCardSummary {
 export interface PersonalCapabilityCard {
   state: PersonalCapabilityCardState;
   generatedAt: string;
-  profile: { displayName: string; title: string };
+  profile: { displayName: string; title: string; avatarUrl?: string };
   backgrounds: PersonalCapabilityCardBackground[];
   summary: PersonalCapabilityCardSummary;
   coverage: StravaCoverage | null;
   syncedAt: string | null;
+  needsStravaReauth?: boolean;
 }
 export interface StravaConnection {
   connected: boolean;

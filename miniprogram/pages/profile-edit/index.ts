@@ -46,6 +46,10 @@ Page({
     error: '',
     p: null as Profile | null,
     saving: false,
+    avatarSources: [
+      { label: '微信头像', value: 'wechat' },
+      { label: 'Strava 头像', value: 'strava' },
+    ],
     uploadHint: '照片将上传到云存储；请在真机确认文件权限和存储规则。',
   },
   async onLoad() {
@@ -114,6 +118,7 @@ Page({
           gender: p.gender,
           emergencyName: p.emergencyName,
           avatarFileId: p.avatarId,
+          avatarSource: p.avatarSource,
           photos: p.photos,
           realName: p.realName.includes('*') ? undefined : p.realName,
           phone: p.phone.includes('*') ? undefined : p.phone,
