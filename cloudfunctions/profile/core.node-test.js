@@ -11,6 +11,8 @@ const {
   response,
   buildUpdate,
   phoneUpdate,
+  writableDocument,
+  toError,
 } = require('./core');
 const key = require('node:crypto').randomBytes(32).toString('base64');
 test('AES-256-GCM 可往返且随机 IV', () => {
@@ -62,4 +64,17 @@ test('微信手机号仅由服务端结果构造并加密', () => {
   assert.equal(decrypt(data.phone_cipher, key), '13812345678');
   assert.equal(data.phone_masked, '138****5678');
   assert.throws(() => phoneUpdate('not-phone', key), { code: 'PHONE_INVALID' });
+});
+
+test('CloudBase 写入会移除保留字段 _id', () => {
+  const source = { _id: 'openid', nickname: '骑手' };
+  assert.deepEqual(writableDocument(source), { nickname: '骑手' });
+  assert.equal(source._id, 'openid');
+});
+
+test('未知错误仅暴露平台错误码而不泄露内部消息', () => {
+  assert.deepEqual(toError({ errCode: -1, message: 'sensitive detail' }), {
+    ok: false,
+    error: { code: 'INTERNAL_ERROR', message: '服务暂时不可用', cause_code: '-1' },
+  });
 });

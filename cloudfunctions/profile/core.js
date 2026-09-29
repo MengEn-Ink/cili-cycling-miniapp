@@ -169,12 +169,19 @@ function phoneUpdate(phone, keyValue) {
     throw new ProfileError('PHONE_INVALID', '微信手机号格式错误');
   return { phone_cipher: encrypt(value, keyValue), phone_masked: maskPhone(value) };
 }
+function writableDocument(value) {
+  const { _id, ...document } = value;
+  return document;
+}
 function toError(error) {
   return {
     ok: false,
     error: {
       code: error instanceof ProfileError ? error.code : 'INTERNAL_ERROR',
       message: error instanceof ProfileError ? error.message : '服务暂时不可用',
+      ...(error instanceof ProfileError
+        ? {}
+        : { cause_code: String(error?.errCode || error?.code || error?.name || 'unknown') }),
     },
   };
 }
@@ -189,5 +196,6 @@ module.exports = {
   response,
   buildUpdate,
   phoneUpdate,
+  writableDocument,
   toError,
 };

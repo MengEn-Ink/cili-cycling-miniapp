@@ -16,6 +16,7 @@ const {
   callbackFlow,
   syncFlow,
   disconnectFlow,
+  writableDocument,
 } = require('./core');
 const key = crypto.randomBytes(32).toString('base64');
 const fakeSecret = crypto.randomBytes(24).toString('hex');
@@ -210,4 +211,10 @@ test('disconnect 原子委托删除凭证/快照并写审计', async () => {
   assert.deepEqual(result, { connected: false });
   assert.equal(captured[1].action, 'strava.disconnect');
   assert.equal(captured[1].detail.constructor, Object);
+});
+
+test('CloudBase 写入会移除保留字段 _id', () => {
+  const source = { _id: 'openid', openid: 'openid' };
+  assert.deepEqual(writableDocument(source), { openid: 'openid' });
+  assert.equal(source._id, 'openid');
 });

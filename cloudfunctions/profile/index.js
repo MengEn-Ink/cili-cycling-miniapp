@@ -1,6 +1,13 @@
 'use strict';
 const cloud = require('wx-server-sdk');
-const { keyFrom, response, buildUpdate, phoneUpdate, toError } = require('./core');
+const {
+  keyFrom,
+  response,
+  buildUpdate,
+  phoneUpdate,
+  writableDocument,
+  toError,
+} = require('./core');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const ok = (data) => ({ ok: true, data });
@@ -24,7 +31,7 @@ async function merge(openid, data) {
   await db
     .collection('profiles')
     .doc(openid)
-    .set({ data: { ...current, _id: openid, ...data, updated_at: now } });
+    .set({ data: writableDocument({ ...current, _id: openid, ...data, updated_at: now }) });
   return getDoc(openid);
 }
 exports.main = async (event = {}) => {

@@ -231,6 +231,10 @@ function publicStatus(credential, snapshot) {
     ? { connected: true, athlete_name: credential.athlete_name, ...(snapshot ? { snapshot } : {}) }
     : { connected: false };
 }
+function writableDocument(value) {
+  const { _id, ...document } = value;
+  return document;
+}
 function toError(error) {
   return {
     ok: false,
@@ -257,5 +261,6 @@ module.exports = {
   syncFlow,
   disconnectFlow,
   publicStatus,
+  writableDocument,
   toError,
 };

@@ -1,6 +1,6 @@
 'use strict';
 const cloud = require('wx-server-sdk');
-const { callbackFlow, toError } = require('./oauth/core');
+const { callbackFlow, writableDocument, toError } = require('./oauth/core');
 const { stravaApi } = require('./oauth/api');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
@@ -28,18 +28,21 @@ const store = {
       return doc;
     }),
   saveCredential: async (data) => {
-    await db.collection('strava_credentials').doc(data._id).set({ data });
+    await db
+      .collection('strava_credentials')
+      .doc(data._id)
+      .set({ data: writableDocument(data) });
     const profile = await maybeProfile(data.openid);
     await db
       .collection('profiles')
       .doc(data.openid)
       .set({
-        data: {
+        data: writableDocument({
           ...profile,
           _id: data.openid,
           strava: { status: 'connected' },
           updated_at: db.serverDate(),
-        },
+        }),
       });
   },
 };

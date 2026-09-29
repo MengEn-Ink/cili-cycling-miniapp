@@ -7,6 +7,7 @@ const {
   syncFlow,
   disconnectFlow,
   publicStatus,
+  writableDocument,
   toError,
 } = require('./oauth/core');
 const { stravaApi } = require('./oauth/api');
@@ -32,7 +33,14 @@ async function updateProfile(openid, strava) {
   await db
     .collection('profiles')
     .doc(openid)
-    .set({ data: { ...current, _id: openid, strava, updated_at: db.serverDate() } });
+    .set({
+      data: writableDocument({
+        ...current,
+        _id: openid,
+        strava,
+        updated_at: db.serverDate(),
+      }),
+    });
 }
 async function cleanupExpiredStates(now = new Date(), limit = 20) {
   const expired = await db
@@ -47,9 +55,16 @@ async function cleanupExpiredStates(now = new Date(), limit = 20) {
   );
 }
 const store = {
-  saveCredential: (data) => db.collection('strava_credentials').doc(data._id).set({ data }),
+  saveCredential: (data) =>
+    db
+      .collection('strava_credentials')
+      .doc(data._id)
+      .set({ data: writableDocument(data) }),
   saveSnapshot: async (data) => {
-    await db.collection('strava_snapshots').doc(data._id).set({ data });
+    await db
+      .collection('strava_snapshots')
+      .doc(data._id)
+      .set({ data: writableDocument(data) });
     await updateProfile(data.openid, { status: 'connected', snapshot: data });
   },
   disconnect: (openid, audit) =>
@@ -62,7 +77,11 @@ const store = {
           .collection('profiles')
           .doc(openid)
           .set({
-            data: { ...profile, strava: { status: 'disconnected' }, updated_at: db.serverDate() },
+            data: writableDocument({
+              ...profile,
+              strava: { status: 'disconnected' },
+              updated_at: db.serverDate(),
+            }),
           });
       await tx.collection('audit_logs').add({ data: audit });
     }),
@@ -87,7 +106,6 @@ exports.main = async (event = {}) => {
         .doc(state.hash)
         .set({
           data: {
-            _id: state.hash,
             state_hash: state.hash,
             openid: OPENID,
             expires_at: state.expiresAt,
