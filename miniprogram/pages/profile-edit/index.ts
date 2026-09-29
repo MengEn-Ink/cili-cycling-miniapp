@@ -1,5 +1,5 @@
 import { rideService } from '../../services/ride-service';
-import { runPageTask } from '../../services/page-service';
+import { phoneAuthorizationError, runPageTask } from '../../services/page-service';
 import type { Profile } from '../../models';
 Page({
   data: {
@@ -18,7 +18,11 @@ Page({
   },
   async phone(e: any) {
     const code = e.detail?.code;
-    if (!code) return wx.showToast({ title: '需要授权手机号', icon: 'none' });
+    if (!code) {
+      const error = phoneAuthorizationError(e.detail);
+      this.setData({ error });
+      return wx.showToast({ title: error, icon: 'none', duration: 3500 });
+    }
     const state = await runPageTask(() => rideService.getPhoneNumber(code), '手机号授权失败');
     if (state.data) this.setData({ p: state.data, error: '' });
     else this.setData({ error: state.error });

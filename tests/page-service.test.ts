@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { runPageTask } from '../miniprogram/services/page-service';
+import { phoneAuthorizationError, runPageTask } from '../miniprogram/services/page-service';
 describe('页面异步状态', () => {
   it('成功返回数据', async () => {
     await expect(runPageTask(async () => 42, '失败')).resolves.toEqual({
@@ -21,6 +21,15 @@ describe('页面异步状态', () => {
         throw 'bad';
       }, '网络失败'),
     ).resolves.toEqual({ loading: false, error: '网络失败' });
+  });
+  it('手机号授权失败时区分取消、权限和模拟器场景', () => {
+    expect(phoneAuthorizationError({ errMsg: 'getPhoneNumber:fail user deny' })).toContain(
+      '取消手机号授权',
+    );
+    expect(phoneAuthorizationError({ errMsg: 'getPhoneNumber:fail no permission' })).toContain(
+      '微信公众平台开通',
+    );
+    expect(phoneAuthorizationError()).toContain('真机微信');
   });
   it('不会吞掉成功调用', async () => {
     const call = vi.fn().mockResolvedValue({ connected: false });

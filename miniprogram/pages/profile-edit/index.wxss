@@ -1,0 +1,58 @@
+.profile-form-page {
+  padding-bottom: 190rpx;
+}
+
+.form-card {
+  overflow: hidden;
+}
+
+.form-tip {
+  line-height: 1.7;
+  margin-bottom: 28rpx;
+}
+
+.form-card .field {
+  margin: 0;
+}
+
+.form-card .field + .field {
+  margin-top: 30rpx;
+}
+
+.form-card .label {
+  display: block;
+  line-height: 34rpx;
+  margin-bottom: 12rpx;
+}
+
+.form-card .input {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  height: 88rpx;
+  min-height: 88rpx;
+  line-height: 44rpx;
+  padding: 0 24rpx;
+}
+
+.phone-action,
+.photo-action {
+  margin-top: 32rpx;
+}
+
+.photo-count {
+  margin-top: 20rpx;
+  color: #718079;
+}
+
+.form-error {
+  box-sizing: border-box;
+  margin-top: 24rpx;
+  padding: 22rpx 24rpx;
+  border-radius: 18rpx;
+  line-height: 1.6;
+}
+
+.save-action {
+  margin-top: 28rpx;
+}
