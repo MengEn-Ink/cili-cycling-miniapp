@@ -106,7 +106,17 @@ function mapCoverage(raw: Record<string, any>, strict: boolean): StravaCoverage 
   }
   return { from, to, complete: raw.coverage_complete };
 }
-function mapActivity(raw: unknown): Activity {
+function registrationDecision(raw: Record<string, any>) {
+  const state = raw.registration_state;
+  const reason = raw.closed_reason;
+  const serverNow = strictDateText(raw.server_now);
+  const validOpen = state === 'open' && reason === null;
+  const validClosed =
+    state === 'closed' && ['finished', 'deadline', 'full', 'unavailable'].includes(reason);
+  if (!validOpen && !validClosed) return invalidResponse();
+  return { registrationState: state, closedReason: reason, serverNow };
+}
+function mapActivity(raw: unknown, requireRegistrationDecision = false): Activity {
   const value = expectRecord(raw);
   if (
     typeof value._id !== 'string' ||
@@ -116,7 +126,7 @@ function mapActivity(raw: unknown): Activity {
   )
     return invalidResponse();
   const fee = value.fee;
-  return {
+  const mapped = {
     id: value._id,
     title: value.title,
     date: dateText(value.event_start),
@@ -157,6 +167,7 @@ function mapActivity(raw: unknown): Activity {
         }
       : {}),
   };
+  return requireRegistrationDecision ? { ...mapped, ...registrationDecision(value) } : mapped;
 }
 function mapProfile(raw: unknown): Profile {
   const value = expectRecord(raw);
@@ -517,8 +528,8 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     }
   }
   async listAdminActivities() {
-    return expectRecordArray(await this.call('activity-admin', { action: 'list' })).map(
-      mapActivity,
+    return expectRecordArray(await this.call('activity-admin', { action: 'list' })).map((item) =>
+      mapActivity(item),
     );
   }
   async getAdminActivity(id: string) {
@@ -535,11 +546,14 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     return mapActivity(await this.call('activity-admin', data));
   }
   async listActivities() {
-    return expectRecordArray(await this.call('activity-read', { action: 'list' })).map(mapActivity);
+    return expectRecordArray(await this.call('activity-read', { action: 'list' })).map((item) =>
+      mapActivity(item, true),
+    );
   }
   async getActivity(id: string) {
     return mapActivity(
       await this.call('activity-read', { action: 'detail', activityId: requiredId(id, '活动 ID') }),
+      true,
     );
   }
   async listRegistrations() {

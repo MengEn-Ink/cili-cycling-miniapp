@@ -518,6 +518,34 @@ test('活动和报名响应只含白名单字段并脱敏', () => {
   assert.equal(Object.hasOwn(r.profile_snapshot, 'id_number_masked'), false);
 });
 
+test('活动报名状态完全由服务端时间和活动事实裁决', () => {
+  const serverNow = new Date('2026-09-28T12:00:00.000Z');
+  const base = {
+    ...activity,
+    event_end: '2026-10-02T00:00:00.000Z',
+    registration_state: 'open',
+    closed_reason: null,
+    server_now: new Date(0),
+  };
+  const cases = [
+    [{}, 'open', null],
+    [{ occupied_count: 2 }, 'closed', 'full'],
+    [{ signup_deadline: serverNow.toISOString(), occupied_count: 2 }, 'closed', 'deadline'],
+    [{ event_end: serverNow.toISOString(), occupied_count: 2 }, 'closed', 'finished'],
+    [{ status: 'finished', signup_deadline: 'invalid' }, 'closed', 'finished'],
+    [{ occupied_count: undefined }, 'closed', 'unavailable'],
+    [{ signup_deadline: 'invalid' }, 'closed', 'unavailable'],
+    [{ status: 'draft' }, 'closed', 'unavailable'],
+  ];
+
+  for (const [patch, registrationState, closedReason] of cases) {
+    const result = publicActivity({ ...base, ...patch }, serverNow);
+    assert.equal(result.registration_state, registrationState);
+    assert.equal(result.closed_reason, closedReason);
+    assert.equal(result.server_now, serverNow.toISOString());
+  }
+});
+
 test('审计日志只保留安全字段，不含手机号证件号和 token', () => {
   const log = buildAudit(openid, 'registration.rejected', 'r1', now, {
     reason: '不符合要求',

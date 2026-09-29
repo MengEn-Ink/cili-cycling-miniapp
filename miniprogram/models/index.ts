@@ -31,6 +31,9 @@ export interface Activity {
   fee: string;
   feeIncluded?: string[];
   feeExcluded?: string[];
+  registrationState?: ActivityRegistrationState;
+  closedReason?: ActivityClosedReason | null;
+  serverNow?: string;
 }
 export interface Profile {
   nickname: string;

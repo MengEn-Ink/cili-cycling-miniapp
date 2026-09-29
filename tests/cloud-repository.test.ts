@@ -41,6 +41,9 @@ const activity = {
   notices: ['守规'],
   equipment: ['头盔'],
   fee: { included: ['保险'], excluded: ['午餐'], remark: '无报名费' },
+  registration_state: 'open',
+  closed_reason: null,
+  server_now: '2026-09-29T04:00:00.000Z',
 };
 const registration = {
   _id: 'r1',
@@ -166,6 +169,9 @@ describe('CloudRepository 活动读取适配', () => {
         fee: '无报名费',
         feeIncluded: ['保险'],
         feeExcluded: ['午餐'],
+        registrationState: 'open',
+        closedReason: null,
+        serverNow: '2026-09-29T04:00:00.000Z',
       },
     ]);
   });
@@ -184,6 +190,9 @@ describe('CloudRepository 活动读取适配', () => {
       schedule: {},
       notices: null,
       equipment: '头盔',
+      registration_state: 'closed',
+      closed_reason: 'finished',
+      server_now: '2026-09-29T04:00:00.000Z',
     };
     const { cloud, callFunction } = cloudWith(success(edge));
     const result = await new CloudRepository(cloud).getActivity('a2');
@@ -204,12 +213,30 @@ describe('CloudRepository 活动读取适配', () => {
       schedule: [],
       notices: [],
       equipment: [],
+      registrationState: 'closed',
+      closedReason: 'finished',
+      serverNow: '2026-09-29T04:00:00.000Z',
     });
   });
 
   it('费用对象无 remark 时返回空字符串', async () => {
     const { cloud } = cloudWith(success({ ...activity, fee: {} }));
     await expect(new CloudRepository(cloud).getActivity('a1')).resolves.toMatchObject({ fee: '' });
+  });
+
+  it.each([
+    { name: 'missing state', patch: { registration_state: undefined } },
+    { name: 'missing reason', patch: { closed_reason: undefined } },
+    { name: 'missing server time', patch: { server_now: undefined } },
+    { name: 'invalid state', patch: { registration_state: 'full' } },
+    { name: 'open with reason', patch: { closed_reason: 'full' } },
+    { name: 'closed without reason', patch: { registration_state: 'closed', closed_reason: null } },
+    { name: 'invalid server time', patch: { server_now: 'not-a-date' } },
+  ])('公开活动缺失或伪造服务端裁决字段时 fail closed: $name', async ({ patch }) => {
+    const dto = { ...activity, ...patch };
+    const { cloud } = cloudWith(success([dto]));
+
+    await expectCode(new CloudRepository(cloud).listActivities(), 'INVALID_RESPONSE');
   });
 });
 

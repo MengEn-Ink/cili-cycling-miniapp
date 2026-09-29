@@ -248,8 +248,32 @@ const ACTIVITY_FIELDS = [
   'event_end',
   'status',
 ];
-function publicActivity(activity) {
-  return pick(activity, ACTIVITY_FIELDS);
+function registrationDecision(activity, now) {
+  const end = dateOrNull(activity && activity.event_end);
+  const deadline = dateOrNull(activity && activity.signup_deadline);
+  const capacityValid = Number.isInteger(activity && activity.capacity) && activity.capacity > 0;
+  const occupiedValid =
+    Number.isInteger(activity && activity.occupied_count) && activity.occupied_count >= 0;
+  if (activity && activity.status === 'finished')
+    return { registration_state: 'closed', closed_reason: 'finished' };
+  if (!activity || activity.status !== 'published')
+    return { registration_state: 'closed', closed_reason: 'unavailable' };
+  if (end && end.getTime() <= now.getTime())
+    return { registration_state: 'closed', closed_reason: 'finished' };
+  if (deadline && deadline.getTime() <= now.getTime())
+    return { registration_state: 'closed', closed_reason: 'deadline' };
+  if (capacityValid && occupiedValid && activity.occupied_count >= activity.capacity)
+    return { registration_state: 'closed', closed_reason: 'full' };
+  if (!end || !deadline || !capacityValid || !occupiedValid)
+    return { registration_state: 'closed', closed_reason: 'unavailable' };
+  return { registration_state: 'open', closed_reason: null };
+}
+function publicActivity(activity, now = new Date()) {
+  return {
+    ...pick(activity, ACTIVITY_FIELDS),
+    ...registrationDecision(activity, now),
+    server_now: now.toISOString(),
+  };
 }
 function maskPhone(value) {
   return typeof value === 'string' ? value.replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2') : '';
@@ -314,6 +338,7 @@ module.exports = {
   assertCanCancel,
   assertReviewTransition,
   isEnabledAdmin,
+  registrationDecision,
   publicActivity,
   publicRegistration,
   buildAudit,

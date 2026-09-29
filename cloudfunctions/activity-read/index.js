@@ -8,6 +8,7 @@ const db = cloud.database();
 exports.main = async (event = {}) => {
   try {
     assertTrustedOpenid(cloud.getWXContext().OPENID);
+    const now = new Date();
     if (event.action === 'list') {
       const limit = Number.isInteger(event.limit) ? Math.min(Math.max(event.limit, 1), 20) : 20;
       const result = await db
@@ -16,7 +17,11 @@ exports.main = async (event = {}) => {
         .orderBy('event_start', 'asc')
         .limit(limit)
         .get();
-      return ok(result.data.filter((item) => item.is_deleted !== true).map(publicActivity));
+      return ok(
+        result.data
+          .filter((item) => item.is_deleted !== true)
+          .map((item) => publicActivity(item, now)),
+      );
     }
     if (event.action === 'detail') {
       if (typeof event.activityId !== 'string' || !event.activityId)
@@ -33,7 +38,7 @@ exports.main = async (event = {}) => {
         activity.is_deleted === true
       )
         fail('ACTIVITY_NOT_FOUND', '活动不存在');
-      return ok(publicActivity(activity));
+      return ok(publicActivity(activity, now));
     }
     fail('UNKNOWN_ACTION', '未知操作');
   } catch (error) {

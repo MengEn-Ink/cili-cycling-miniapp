@@ -59,13 +59,45 @@ test('详情允许读取已结束活动', async () => {
 
   assert.equal(result.ok, true);
   assert.equal(result.data.status, 'finished');
+  assert.equal(result.data.registration_state, 'closed');
+  assert.equal(result.data.closed_reason, 'finished');
+  assert.equal(typeof result.data.server_now, 'string');
+  assert.equal(Number.isFinite(Date.parse(result.data.server_now)), true);
 });
 
-test('列表仍只查询 published 活动', async () => {
-  const { main, calls } = loadMain(undefined, []);
+test('列表仍只查询 published 并由同一服务端时间裁决报名状态', async () => {
+  const list = [
+    {
+      _id: 'open',
+      title: '开放',
+      status: 'published',
+      capacity: 2,
+      occupied_count: 0,
+      signup_deadline: '2999-01-01T00:00:00.000Z',
+      event_end: '2999-01-02T00:00:00.000Z',
+    },
+    {
+      _id: 'full',
+      title: '满员',
+      status: 'published',
+      capacity: 2,
+      occupied_count: 2,
+      signup_deadline: '2999-01-01T00:00:00.000Z',
+      event_end: '2999-01-02T00:00:00.000Z',
+    },
+  ];
+  const { main, calls } = loadMain(undefined, list);
 
   const result = await main({ action: 'list' });
 
   assert.equal(result.ok, true);
   assert.deepEqual(calls, [{ type: 'where', condition: { status: 'published' } }]);
+  assert.deepEqual(
+    result.data.map((item) => [item.registration_state, item.closed_reason]),
+    [
+      ['open', null],
+      ['closed', 'full'],
+    ],
+  );
+  assert.equal(result.data[0].server_now, result.data[1].server_now);
 });
