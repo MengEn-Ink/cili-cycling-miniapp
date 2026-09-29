@@ -148,6 +148,21 @@ function mediaRegistration(
     cleanup_after: new Date(createdAt.getTime() + 24 * 60 * 60 * 1000),
   };
 }
+async function verifyMediaObject(fileId, getTempFileURL) {
+  try {
+    const response = await getTempFileURL({ fileList: [fileId] });
+    const found = (Array.isArray(response && response.fileList) ? response.fileList : []).find(
+      (item) => item && item.fileID === fileId,
+    );
+    if (found && Number(found.status) === 0) {
+      const url = new URL(found.tempFileURL);
+      if (url.protocol === 'https:') return true;
+    }
+  } catch {
+    // Normalize storage and URL parsing failures to one stable, non-sensitive error.
+  }
+  throw new ProfileError('MEDIA_OBJECT_NOT_FOUND', '媒体文件不存在或不可访问');
+}
 function registeredMedia(record, item, openid, statuses = ['active']) {
   return Boolean(
     record &&
@@ -164,6 +179,10 @@ function validateMediaUpdate(current, update, openid, secretValue, mediaRecords 
   const data = update && typeof update === 'object' ? update : {};
   const records = new Map(mediaRecords.map((record) => [record && record.file_id, record]));
   const activate = new Set();
+  const currentIds = new Set([
+    existing.avatar_file_id,
+    ...(Array.isArray(existing.photos) ? existing.photos.map((item) => item && item.file_id) : []),
+  ]);
   const accept = (item, legacy) => {
     const record = records.get(item.file_id);
     if (
@@ -197,7 +216,28 @@ function validateMediaUpdate(current, update, openid, secretValue, mediaRecords 
       );
     }
   }
-  return { data, activate_ids: [...activate] };
+  const nextIds = new Set([
+    Object.prototype.hasOwnProperty.call(data, 'avatar_file_id')
+      ? data.avatar_file_id
+      : existing.avatar_file_id,
+    ...(Object.prototype.hasOwnProperty.call(data, 'photos')
+      ? data.photos.map((item) => item.file_id)
+      : Array.isArray(existing.photos)
+        ? existing.photos.map((item) => item && item.file_id)
+        : []),
+  ]);
+  const demote = mediaRecords
+    .filter(
+      (record) =>
+        record &&
+        record.status === 'active' &&
+        record.owner_openid === openid &&
+        record._id === mediaDocumentId(record.file_id) &&
+        currentIds.has(record.file_id) &&
+        !nextIds.has(record.file_id),
+    )
+    .map((record) => record._id);
+  return { data, activate_ids: [...activate], demote_ids: demote };
 }
 function ownerMedia(profile, openid, secretValue, mediaRecords = []) {
   const value = profile && typeof profile === 'object' ? profile : {};
@@ -369,6 +409,7 @@ module.exports = {
   mediaOwnerPrefix,
   mediaDocumentId,
   mediaRegistration,
+  verifyMediaObject,
   isOwnerMedia,
   validateMediaUpdate,
   ownerMedia,

@@ -652,6 +652,16 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     );
     if (value.registered !== true) return invalidResponse();
   }
+  async reportProfileMediaOrphan(fileId: string, category: 'ride' | 'bike' | 'other') {
+    const value = expectRecord(
+      await this.call('profile', {
+        action: 'reportOrphan',
+        fileId: requiredId(fileId, '媒体文件 ID'),
+        category,
+      }),
+    );
+    if (value.reported !== true) return invalidResponse();
+  }
   async updateProfile(profile: ProfileUpdate) {
     const data: Record<string, unknown> = { action: 'update' };
     const simple: [keyof ProfileUpdate, string][] = [

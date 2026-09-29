@@ -793,6 +793,21 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     });
   });
 
+  it('删除失败后可上报 orphan 且不发送客户端身份', async () => {
+    const { cloud, callFunction } = cloudWith(success({ reported: true }));
+    await expect(
+      new CloudRepository(cloud).reportProfileMediaOrphan(
+        'cloud://env/profiles/owner/photo.jpg',
+        'other',
+      ),
+    ).resolves.toBeUndefined();
+    expectCall(callFunction, 'profile', {
+      action: 'reportOrphan',
+      fileId: 'cloud://env/profiles/owner/photo.jpg',
+      category: 'other',
+    });
+  });
+
   it('Profile 完整可选字段与照片分支均按真实值映射', async () => {
     const { cloud } = cloudWith(
       success({

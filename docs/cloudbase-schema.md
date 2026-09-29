@@ -44,13 +44,17 @@ _id: sha256(file_id)
 file_id
 owner_openid
 category: ride|bike|other
-status: unreferenced|active
+status: unreferenced|active|deleting|deleted|delete_failed
 created_at
 cleanup_after                 # unreferenced 上传 24 小时后的回收候选时间
 referenced_at?                # profile update 成功引用时间
+delete_lease_id?, delete_claimed_at?, delete_attempts?
+deleted_at?, delete_failed_at?, last_error_code?
 ```
 
-客户端先调用 `profile/mediaUploadPath` 取得由 `PROFILE_MEDIA_PATH_SECRET` 和可信 WXContext OPENID 派生的 opaque owner 路径，上传成功后立即调用 `profile/registerMedia`。登记初始状态为 `unreferenced` 且幂等；只有同一事务内成功写入当前 profile 的媒体才切换为 `active`。资料更新、个人名片和管理员名片都要求记录的 `owner_openid`、`file_id`、`category`、`status` 与当前 profile 引用匹配。存量未登记媒体不迁移、不删除，但不进入任何能力卡。临时 URL 整体或逐项失败只减少背景图，不使详情失败。清理任务删除 `unreferenced` 对象前必须再次确认当前 profile 未引用该文件。
+客户端先调用 `profile/mediaUploadPath` 取得由 `PROFILE_MEDIA_PATH_SECRET` 和可信 WXContext OPENID 派生的 opaque owner 路径，上传成功后立即调用 `profile/registerMedia`；服务端通过临时 URL API 确认对象真实存在后才登记。登记初始状态为 `unreferenced` 且幂等；只有同一事务内成功写入当前 profile 的媒体才切换为 `active`，被移除的 active 媒体在同一事务内降级为带新 `cleanup_after` 的 `unreferenced`。资料更新、个人名片和管理员名片都要求记录的 `owner_openid`、`file_id`、`category`、`status` 与当前 profile 引用匹配。存量未登记媒体不迁移、不删除，但不进入任何能力卡。临时 URL 整体或逐项失败只减少背景图，不使详情失败。
+
+`profile-media-cleanup` 每 10 分钟最多发现 20 条到期 `unreferenced` 记录。每条记录均在事务内重读 owner 当前 profile：仍被引用则恢复 `active`；未引用才写入唯一删除 lease 并调用云存储删除。结果以 `deleted` 或 `delete_failed + last_error_code` 留存，不记录底层错误文本。上传后 `registerMedia` 与对象删除同时失败时，客户端调用 `reportOrphan`；若上报仍失败则写本地持久重试账本，下次进入资料页继续上报。残余限制是客户端进程在上传成功后、第一次删除/上报/账本写入前被强制终止，此时服务端没有可发现的 file ID。
 
 ### `notification_outbox`
 

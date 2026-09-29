@@ -8,7 +8,8 @@
 - `auth` 只信任 `cloud.getWXContext().OPENID`，真实 role 优先；管理入口仅向已验证管理员显示，所有管理页再次校验。
 - `activity-read` 保持只读；独立 `activity-admin` 提供管理员活动列表、详情、创建和编辑，执行 `draft → published → finished` 单向状态机、容量与关键时间校验。`registration`、`admin-review` 完成我的报名、提交/取消与管理员审批。
 - `notification-send` 消费 Outbox 并执行审批通知发送。每次发送使用唯一 lease fencing；外部结果不明或发送后 ACK 失败时隔离为 `delivery_unknown`，不会自动重复调用微信。登录用户只能读取审核模板 allowlist，并在报名点击时请求订阅授权；拒绝、封禁或 API 失败都不阻断报名。
-- `profile` 提供 `get/update/getPhoneNumber/mediaUploadPath/registerMedia/capabilityCard`。姓名、手机号、紧急电话分别以 AES-256-GCM 加密；不再采集或返回证件类型、证件号及其状态，存量证件密文只读保留且不解密。新媒体先取得 owner-bound opaque 上传路径，上传后登记到 `profile_media`，资料更新与名片读取均校验 owner、状态及当前 profile 引用；未登记 legacy 媒体保留但不进入名片。个人名片只返回现有 90 天 Strava 指标与最多三张 HTTPS 临时背景，临时 URL 失败降级为空或少图。
+- `profile` 提供 `get/update/getPhoneNumber/mediaUploadPath/registerMedia/reportOrphan/capabilityCard`。姓名、手机号、紧急电话分别以 AES-256-GCM 加密；不再采集或返回证件类型、证件号及其状态，存量证件密文只读保留且不解密。新媒体先取得 owner-bound opaque 上传路径，上传后由服务端确认对象存在并登记到 `profile_media`；资料更新与名片读取均校验 owner、状态及当前 profile 引用。未登记 legacy 媒体保留但不进入名片。个人名片只返回现有 90 天 Strava 指标与最多三张 HTTPS 临时背景，临时 URL 失败降级为空或少图。
+- `profile-media-cleanup` 每 10 分钟有界扫描到期的 `unreferenced` 记录，事务内重查 owner 当前 profile 引用并加删除 fence；仍被引用则恢复 `active`，未引用才删除对象并记录 `deleted/delete_failed`。上传后的登记与删除同时失败时，客户端通过 `reportOrphan` 和本地持久重试账本补登记。进程若在上传成功后、首次写入账本前被强制终止，仍存在无法自动发现对象的极短残余窗口。
 - `strava-auth` 提供 `status/start/sync/disconnect`；`strava-callback` 处理 OAuth 回调。state 使用 32 字节随机值、SHA-256 落库、10 分钟应用层强制过期和事务内 `consumed_at` 一次性消费；`start/status` 每次限量清理已过期 state。token 使用 AES-256-GCM 加密。同步仅拉最近 90 天、每页 200 条、最多 5 页，并统计里程、次数、最长距离、爬升、距离加权平均速度和最近活动时间。
 - 页面在未登录、资料未完成、函数/路由未部署时显示引导或错误，不伪造成功。相册保留 `chooseMedia -> cloud.uploadFile -> profile.update` 契约，须真机验证权限和存储规则。
 
@@ -75,9 +76,9 @@ npm run audit:all
 ## 部署与联调顺序
 
 1. 审阅 `cloudbase:plan`，创建/升级 10 个集合、规则和索引，再执行 verify。
-2. 为 `profile` 配置 `PII_ENCRYPTION_KEY` 与独立的 `PROFILE_MEDIA_PATH_SECRET`，部署并用测试账号验证 get/update/getPhoneNumber/mediaUploadPath/registerMedia/capabilityCard。确认 register 失败会清理已上传对象，未引用记录按 `cleanup_after` 回收前须再次核对 profile 引用。
+2. 为 `profile` 配置 `PII_ENCRYPTION_KEY` 与独立的 `PROFILE_MEDIA_PATH_SECRET`，部署 `profile` 与 `profile-media-cleanup`，并用测试账号验证 get/update/getPhoneNumber/mediaUploadPath/registerMedia/reportOrphan/capabilityCard。确认 register 失败会清理或补登记已上传对象，定时清理发现 `cleanup_after` 到期记录并在删除前再次核对 profile 引用。
 3. 为 `strava-auth` 和 `strava-callback` 配置相同的 Strava 环境变量。
-4. 依次部署 `auth`、`profile`、`strava-callback`、`strava-auth`、`activity-read`、`activity-admin`、`registration`、`admin-review`、`notification-send`。
+4. 依次部署 `auth`、`profile`、`profile-media-cleanup`、`strava-callback`、`strava-auth`、`activity-read`、`activity-admin`、`registration`、`admin-review`、`notification-send`。
 5. 使用 `cloudbaserc.json` 的 `gateway.routes` 声明式维护 `/strava/callback`；测试环境已创建并验证该 HTTPS 路由。将完整地址配置到 Strava 应用回调设置，并把域名加入小程序 `web-view` 业务域名。
 6. 用真实微信账号验证 openid、手机号授权、OAuth 回跳、同步、报名和管理员审批；随后做容量并发压测。
 

@@ -14,6 +14,7 @@ const {
   mediaOwnerPrefix,
   mediaDocumentId,
   mediaRegistration,
+  verifyMediaObject,
   validateMediaUpdate,
   ownerMedia,
   writableDocument,
@@ -209,6 +210,27 @@ test('仅有合法 HMAC 前缀但无 owner registry 记录仍拒绝', () => {
   );
 });
 
+test('资料更新计划把被移除的 active 媒体降级为可清理状态', () => {
+  const ownerPrefix = mediaOwnerPrefix('openid-owner-a', mediaSecret);
+  const fileId = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const record = {
+    _id: mediaDocumentId(fileId),
+    file_id: fileId,
+    owner_openid: 'openid-owner-a',
+    category: 'ride',
+    status: 'active',
+  };
+  const plan = validateMediaUpdate(
+    { photos: [{ file_id: fileId, category: 'ride' }] },
+    { photos: [] },
+    'openid-owner-a',
+    mediaSecret,
+    [record],
+  );
+  assert.deepEqual(plan.activate_ids, []);
+  assert.deepEqual(plan.demote_ids, [record._id]);
+});
+
 test('registerMedia 记录幂等且在 profile 引用前可清理', () => {
   const ownerPrefix = mediaOwnerPrefix('openid-owner-a', mediaSecret);
   const fileId = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`;
@@ -230,6 +252,32 @@ test('registerMedia 记录幂等且在 profile 引用前可清理', () => {
   assert.throws(() => mediaRegistration(fileId, 'ride', 'openid-owner-b', mediaSecret, createdAt), {
     code: 'MEDIA_NOT_OWNED',
   });
+});
+
+test('registerMedia 落库前必须由服务端确认对象存在且返回 https URL', async () => {
+  const ownerPrefix = mediaOwnerPrefix('openid-owner-a', mediaSecret);
+  const fileId = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  await assert.doesNotReject(
+    verifyMediaObject(fileId, async () => ({
+      fileList: [{ fileID: fileId, tempFileURL: 'https://temporary.example/photo', status: 0 }],
+    })),
+  );
+  for (const getTempFileURL of [
+    async () => {
+      throw new Error('storage unavailable');
+    },
+    async () => ({ fileList: [{ fileID: fileId, tempFileURL: '', status: -1 }] }),
+    async () => ({
+      fileList: [
+        { fileID: 'cloud://env/other', tempFileURL: 'https://temporary.example/x', status: 0 },
+      ],
+    }),
+    async () => ({ fileList: [{ fileID: fileId, tempFileURL: 'http://insecure', status: 0 }] }),
+  ]) {
+    await assert.rejects(verifyMediaObject(fileId, getTempFileURL), {
+      code: 'MEDIA_OBJECT_NOT_FOUND',
+    });
+  }
 });
 
 test('能力卡媒体只选择当前 owner 签发文件，legacy 与他人文件均不可见', () => {

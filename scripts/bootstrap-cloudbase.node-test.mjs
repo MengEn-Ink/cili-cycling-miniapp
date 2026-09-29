@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import {
@@ -348,4 +349,18 @@ test('profile_media 使用 owner/status 与过期清理索引并保持客户端�
   assert.equal(COLLECTIONS.length, 10);
   assert.equal(INDEXES.length, 15);
   assert.deepEqual(DENY_RULE, { read: false, write: false });
+});
+
+test('profile_media cleanup 配置真实且有界的定时执行器', () => {
+  const config = JSON.parse(readFileSync(new URL('../cloudbaserc.json', import.meta.url), 'utf8'));
+  const cleanup = config.functions.find((item) => item.name === 'profile-media-cleanup');
+  assert.equal(cleanup?.handler, 'index.main');
+  assert.equal(cleanup?.runtime, 'Nodejs20.19');
+  assert.deepEqual(cleanup?.triggers, [
+    {
+      name: 'profile-media-cleanup-worker',
+      type: 'timer',
+      config: '0 */10 * * * * *',
+    },
+  ]);
 });

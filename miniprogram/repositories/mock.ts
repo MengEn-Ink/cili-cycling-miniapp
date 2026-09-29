@@ -145,6 +145,7 @@ export class MockRepository implements RideRepository {
     };
   }
   async registerProfileMedia() {}
+  async reportProfileMediaOrphan() {}
   async updateProfile(patch: ProfileUpdate) {
     const current = this.read().profile;
     const p = { ...current, ...patch, photos: patch.photos || current.photos } as Profile;

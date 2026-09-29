@@ -8,6 +8,7 @@ const {
   issueMediaUploadPath,
   mediaDocumentId,
   mediaRegistration,
+  verifyMediaObject,
   validateMediaUpdate,
   writableDocument,
   toError,
@@ -48,17 +49,20 @@ async function merge(openid, data, current = undefined) {
     .set({ data: writableDocument({ ...existing, _id: openid, ...data, updated_at: now }) });
   return getDoc(openid);
 }
-function profileMediaIds(profile) {
-  const ids = [profile && profile.avatar_file_id];
-  for (const item of Array.isArray(profile && profile.photos) ? profile.photos : []) {
-    ids.push(item && item.file_id);
+function profileMediaIds(...profiles) {
+  const ids = [];
+  for (const profile of profiles) {
+    ids.push(profile && profile.avatar_file_id);
+    for (const item of Array.isArray(profile && profile.photos) ? profile.photos : []) {
+      ids.push(item && item.file_id);
+    }
   }
   return [...new Set(ids.filter((id) => typeof id === 'string' && id))];
 }
-async function getMediaRecords(collection, profile) {
+async function getMediaRecords(collection, ...profiles) {
   return (
     await Promise.all(
-      profileMediaIds(profile).map((fileId) => maybeGet(collection, mediaDocumentId(fileId))),
+      profileMediaIds(...profiles).map((fileId) => maybeGet(collection, mediaDocumentId(fileId))),
     )
   ).filter(Boolean);
 }
@@ -68,7 +72,7 @@ async function updateProfile(openid, event) {
     const profiles = transaction.collection('profiles');
     const media = transaction.collection('profile_media');
     const current = (await maybeGet(profiles, openid)) || {};
-    const records = await getMediaRecords(media, update);
+    const records = await getMediaRecords(media, current, update);
     const validated = validateMediaUpdate(
       current,
       update,
@@ -77,6 +81,7 @@ async function updateProfile(openid, event) {
       records,
     );
     const updatedAt = db.serverDate();
+    const cleanupAfter = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const next = writableDocument({
       ...current,
       _id: openid,
@@ -89,9 +94,40 @@ async function updateProfile(openid, event) {
         data: { status: 'active', referenced_at: updatedAt, cleanup_after: null },
       });
     }
+    for (const id of validated.demote_ids) {
+      await media.doc(id).update({
+        data: {
+          status: 'unreferenced',
+          referenced_at: null,
+          cleanup_after: cleanupAfter,
+          delete_lease_id: '',
+          updated_at: updatedAt,
+        },
+      });
+    }
     return next;
   });
   return response(result);
+}
+async function registerMedia(openid, event, verifyObject) {
+  const id = mediaDocumentId(event.fileId);
+  const collection = db.collection('profile_media');
+  const existing = await maybeGet(collection, id);
+  const record = mediaRegistration(
+    event.fileId,
+    event.category,
+    openid,
+    process.env.PROFILE_MEDIA_PATH_SECRET,
+    new Date(),
+    existing,
+  );
+  if (verifyObject) {
+    await verifyMediaObject(event.fileId, (input) => cloud.getTempFileURL(input));
+  }
+  if (!existing) {
+    const { _id, ...data } = record;
+    await collection.doc(_id).set({ data });
+  }
 }
 exports.main = async (event = {}) => {
   try {
@@ -127,22 +163,14 @@ exports.main = async (event = {}) => {
     if (event.action === 'registerMedia') {
       if (Object.prototype.hasOwnProperty.call(event, 'openid'))
         throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });
-      const id = mediaDocumentId(event.fileId);
-      const collection = db.collection('profile_media');
-      const existing = await maybeGet(collection, id);
-      const record = mediaRegistration(
-        event.fileId,
-        event.category,
-        OPENID,
-        process.env.PROFILE_MEDIA_PATH_SECRET,
-        new Date(),
-        existing,
-      );
-      if (!existing) {
-        const { _id, ...data } = record;
-        await collection.doc(_id).set({ data });
-      }
+      await registerMedia(OPENID, event, true);
       return ok({ registered: true });
+    }
+    if (event.action === 'reportOrphan') {
+      if (Object.prototype.hasOwnProperty.call(event, 'openid'))
+        throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });
+      await registerMedia(OPENID, event, false);
+      return ok({ reported: true });
     }
     if (event.action === 'update') {
       return ok(await updateProfile(OPENID, event));

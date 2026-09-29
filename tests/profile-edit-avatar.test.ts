@@ -5,6 +5,7 @@ const rideService = vi.hoisted(() => ({
   getProfile: vi.fn(),
   getProfileMediaUploadPath: vi.fn(),
   registerProfileMedia: vi.fn(),
+  reportProfileMediaOrphan: vi.fn(),
   updateProfile: vi.fn(),
 }));
 
@@ -30,8 +31,14 @@ describe('资料编辑头像回写', () => {
     rideService.getProfile.mockReset();
     rideService.getProfileMediaUploadPath.mockReset();
     rideService.registerProfileMedia.mockReset().mockResolvedValue(undefined);
+    rideService.reportProfileMediaOrphan.mockReset().mockResolvedValue(undefined);
     rideService.updateProfile.mockReset().mockResolvedValue(profile);
-    vi.stubGlobal('wx', { showToast: vi.fn() });
+    vi.stubGlobal('wx', {
+      showToast: vi.fn(),
+      getStorageSync: vi.fn(() => []),
+      setStorageSync: vi.fn(),
+      removeStorageSync: vi.fn(),
+    });
     vi.stubGlobal('Page', (definition: any) => {
       page = definition;
       page.data = { ...definition.data, p: { ...profile, photos: [] } };
@@ -114,6 +121,7 @@ describe('资料编辑头像回写', () => {
       'profiles/0123456789abcdef0123456789abcdef/123e4567-e89b-42d3-a456-426614174000.jpg',
     );
     rideService.registerProfileMedia.mockRejectedValue(new Error('register failed'));
+    rideService.reportProfileMediaOrphan.mockRejectedValue(new Error('report unavailable'));
     Object.assign(wx, {
       chooseMedia: vi.fn().mockResolvedValue({
         tempFiles: [{ tempFilePath: '/private/tmp/photo.jpg' }],
@@ -126,6 +134,28 @@ describe('资料编辑头像回写', () => {
     expect(deleteFile).toHaveBeenCalledWith({
       fileList: ['cloud://env/profiles/owner/photo.jpg'],
     });
+    expect(rideService.reportProfileMediaOrphan).toHaveBeenCalledWith(
+      'cloud://env/profiles/owner/photo.jpg',
+      'other',
+    );
+    expect(wx.setStorageSync).toHaveBeenCalledWith('profile-media-orphans-v1', [
+      { fileId: 'cloud://env/profiles/owner/photo.jpg', category: 'other' },
+    ]);
     expect(page.data.p.photos).toEqual([]);
+  });
+
+  it('再次进入资料页会重试 durable orphan ledger 并在成功后清除', async () => {
+    rideService.getProfile.mockResolvedValue(profile);
+    vi.mocked(wx.getStorageSync).mockReturnValue([
+      { fileId: 'cloud://env/profiles/owner/orphan.jpg', category: 'other' },
+    ]);
+
+    await page.onLoad();
+
+    expect(rideService.reportProfileMediaOrphan).toHaveBeenCalledWith(
+      'cloud://env/profiles/owner/orphan.jpg',
+      'other',
+    );
+    expect(wx.removeStorageSync).toHaveBeenCalledWith('profile-media-orphans-v1');
   });
 });
