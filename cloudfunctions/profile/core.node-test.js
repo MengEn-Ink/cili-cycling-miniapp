@@ -10,10 +10,15 @@ const {
   response,
   buildUpdate,
   phoneUpdate,
+  issueMediaUploadPath,
+  mediaOwnerPrefix,
+  validateMediaUpdate,
+  ownerMedia,
   writableDocument,
   toError,
 } = require('./core');
 const key = require('node:crypto').randomBytes(32).toString('base64');
+const mediaSecret = 'profile-media-secret-for-tests-32-bytes';
 test('AES-256-GCM 可往返且随机 IV', () => {
   const a = encrypt('敏感值', key);
   const b = encrypt('敏感值', key);
@@ -98,6 +103,95 @@ test('微信手机号仅由服务端结果构造并标记为已验证', () => {
   assert.throws(() => phoneUpdate('13812345678', key, 'imported'), {
     code: 'PHONE_SOURCE_INVALID',
   });
+});
+
+test('媒体上传路径使用服务端 secret 派生 opaque owner alias', () => {
+  const uuid = '123e4567-e89b-42d3-a456-426614174000';
+  const first = issueMediaUploadPath('openid-owner-a', mediaSecret, () => uuid);
+  const second = issueMediaUploadPath('openid-owner-b', mediaSecret, () => uuid);
+  assert.match(
+    first.cloud_path,
+    /^profiles\/[a-f0-9]{32}\/123e4567-e89b-42d3-a456-426614174000\.jpg$/,
+  );
+  assert.notEqual(first.cloud_path, second.cloud_path);
+  assert.equal(first.cloud_path.includes('openid-owner-a'), false);
+  assert.equal(mediaOwnerPrefix('openid-owner-a', mediaSecret), first.cloud_path.slice(0, -40));
+  assert.throws(() => issueMediaUploadPath('', mediaSecret, () => uuid), {
+    code: 'UNAUTHENTICATED',
+  });
+  assert.throws(() => issueMediaUploadPath('openid-owner-a', 'short', () => uuid), {
+    code: 'MEDIA_SECRET_INVALID',
+  });
+});
+
+test('资料更新只接受本用户签发媒体，同时允许原样保留 legacy 媒体', () => {
+  const ownerPrefix = mediaOwnerPrefix('openid-owner-a', mediaSecret);
+  const otherPrefix = mediaOwnerPrefix('openid-owner-b', mediaSecret);
+  const current = {
+    avatar_file_id: 'cloud://env/profiles/legacy/avatar.jpg',
+    photos: [{ file_id: 'cloud://env/profiles/legacy/ride.jpg', category: 'ride' }],
+  };
+  assert.doesNotThrow(() =>
+    validateMediaUpdate(
+      current,
+      {
+        avatar_file_id: current.avatar_file_id,
+        photos: [
+          current.photos[0],
+          {
+            file_id: `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`,
+            category: 'bike',
+          },
+        ],
+      },
+      'openid-owner-a',
+      mediaSecret,
+    ),
+  );
+  assert.throws(
+    () =>
+      validateMediaUpdate(
+        current,
+        {
+          avatar_file_id: `cloud://env/${otherPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`,
+        },
+        'openid-owner-a',
+        mediaSecret,
+      ),
+    { code: 'MEDIA_NOT_OWNED' },
+  );
+});
+
+test('能力卡媒体只选择当前 owner 签发文件，legacy 与他人文件均不可见', () => {
+  const ownerPrefix = mediaOwnerPrefix('openid-owner-a', mediaSecret);
+  const otherPrefix = mediaOwnerPrefix('openid-owner-b', mediaSecret);
+  assert.deepEqual(
+    ownerMedia(
+      {
+        avatar_file_id: 'cloud://env/profiles/legacy/avatar.jpg',
+        photos: [
+          { file_id: 'cloud://env/profiles/legacy/ride.jpg', category: 'ride' },
+          {
+            file_id: `cloud://env/${otherPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`,
+            category: 'bike',
+          },
+          {
+            file_id: `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174001.jpg`,
+            category: 'other',
+          },
+        ],
+      },
+      'openid-owner-a',
+      mediaSecret,
+    ),
+    [
+      {
+        file_id: `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174001.jpg`,
+        category: 'other',
+        source: 'user_photo',
+      },
+    ],
+  );
 });
 
 test('CloudBase 写入会移除保留字段 _id', () => {

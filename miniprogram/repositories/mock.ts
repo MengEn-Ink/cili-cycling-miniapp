@@ -110,6 +110,9 @@ export class MockRepository implements RideRepository {
   async getProfile() {
     return this.read().profile;
   }
+  async getProfileMediaUploadPath() {
+    return 'profiles/00000000000000000000000000000000/00000000-0000-4000-8000-000000000000.jpg';
+  }
   async updateProfile(patch: ProfileUpdate) {
     const current = this.read().profile;
     const p = { ...current, ...patch, photos: patch.photos || current.photos } as Profile;

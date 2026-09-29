@@ -5,6 +5,8 @@ const {
   response,
   buildUpdate,
   phoneUpdate,
+  issueMediaUploadPath,
+  validateMediaUpdate,
   writableDocument,
   toError,
 } = require('./core');
@@ -25,13 +27,13 @@ async function getDoc(openid) {
     throw error;
   }
 }
-async function merge(openid, data) {
+async function merge(openid, data, current = undefined) {
   const now = db.serverDate();
-  const current = await getDoc(openid);
+  const existing = current || (await getDoc(openid));
   await db
     .collection('profiles')
     .doc(openid)
-    .set({ data: writableDocument({ ...current, _id: openid, ...data, updated_at: now }) });
+    .set({ data: writableDocument({ ...existing, _id: openid, ...data, updated_at: now }) });
   return getDoc(openid);
 }
 exports.main = async (event = {}) => {
@@ -40,8 +42,17 @@ exports.main = async (event = {}) => {
     const { OPENID } = cloud.getWXContext();
     if (!OPENID) throw Object.assign(new Error('无法取得微信身份'), { code: 'UNAUTHENTICATED' });
     if (event.action === 'get') return ok(response(await getDoc(OPENID)));
-    if (event.action === 'update')
-      return ok(response(await merge(OPENID, buildUpdate(event, process.env.PII_ENCRYPTION_KEY))));
+    if (event.action === 'mediaUploadPath') {
+      if (Object.prototype.hasOwnProperty.call(event, 'openid'))
+        throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });
+      return ok(issueMediaUploadPath(OPENID, process.env.PROFILE_MEDIA_PATH_SECRET));
+    }
+    if (event.action === 'update') {
+      const current = await getDoc(OPENID);
+      const update = buildUpdate(event, process.env.PII_ENCRYPTION_KEY);
+      validateMediaUpdate(current, update, OPENID, process.env.PROFILE_MEDIA_PATH_SECRET);
+      return ok(response(await merge(OPENID, update, current)));
+    }
     if (event.action === 'getPhoneNumber') {
       if (typeof event.code !== 'string' || !event.code)
         throw Object.assign(new Error('缺少微信手机号动态 code'), { code: 'PHONE_CODE_REQUIRED' });

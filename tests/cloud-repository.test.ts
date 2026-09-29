@@ -665,6 +665,19 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     expectCall(callFunction, 'profile', { action: 'getPhoneNumber', code: 'dynamic-code' });
   });
 
+  it('请求 owner-bound 媒体上传路径且不发送客户端身份', async () => {
+    const { cloud, callFunction } = cloudWith(
+      success({
+        cloud_path:
+          'profiles/0123456789abcdef0123456789abcdef/123e4567-e89b-42d3-a456-426614174000.jpg',
+      }),
+    );
+    await expect(new CloudRepository(cloud).getProfileMediaUploadPath()).resolves.toBe(
+      'profiles/0123456789abcdef0123456789abcdef/123e4567-e89b-42d3-a456-426614174000.jpg',
+    );
+    expectCall(callFunction, 'profile', { action: 'mediaUploadPath' });
+  });
+
   it('Profile 完整可选字段与照片分支均按真实值映射', async () => {
     const { cloud } = cloudWith(
       success({

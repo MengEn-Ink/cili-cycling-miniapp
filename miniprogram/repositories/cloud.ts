@@ -562,6 +562,15 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
   async getProfile() {
     return mapProfile(await this.call('profile', { action: 'get' }));
   }
+  async getProfileMediaUploadPath() {
+    const value = expectRecord(await this.call('profile', { action: 'mediaUploadPath' }));
+    if (
+      typeof value.cloud_path !== 'string' ||
+      !/^profiles\/[a-f0-9]{32}\/[a-f0-9-]{36}\.jpg$/i.test(value.cloud_path)
+    )
+      return invalidResponse();
+    return value.cloud_path;
+  }
   async updateProfile(profile: ProfileUpdate) {
     const data: Record<string, unknown> = { action: 'update' };
     const simple: [keyof ProfileUpdate, string][] = [

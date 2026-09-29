@@ -70,6 +70,96 @@ function cleanText(value, max, required = false) {
     throw new ProfileError('VALIDATION_FAILED', '资料字段格式错误');
   return text;
 }
+function mediaSecret(value) {
+  const secret = String(value || '').trim();
+  if (secret.length < 32) throw new ProfileError('MEDIA_SECRET_INVALID', '媒体路径服务未配置');
+  return secret;
+}
+function mediaOwnerPrefix(openid, secretValue) {
+  if (typeof openid !== 'string' || !openid)
+    throw new ProfileError('UNAUTHENTICATED', '无法取得微信身份');
+  const alias = crypto
+    .createHmac('sha256', mediaSecret(secretValue))
+    .update(openid)
+    .digest('hex')
+    .slice(0, 32);
+  return `profiles/${alias}/`;
+}
+function issueMediaUploadPath(openid, secretValue, randomUUID = crypto.randomUUID) {
+  const filename = randomUUID();
+  if (!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(filename))
+    throw new ProfileError('MEDIA_PATH_INVALID', '媒体路径生成失败');
+  return { cloud_path: `${mediaOwnerPrefix(openid, secretValue)}${filename}.jpg` };
+}
+function mediaPath(fileId) {
+  if (typeof fileId !== 'string' || !fileId.startsWith('cloud://') || fileId.length > 512)
+    return '';
+  const slash = fileId.indexOf('/', 'cloud://'.length);
+  return slash >= 0 ? fileId.slice(slash + 1) : '';
+}
+function isOwnerMedia(fileId, openid, secretValue) {
+  const path = mediaPath(fileId);
+  const prefix = mediaOwnerPrefix(openid, secretValue);
+  const filename = path.slice(prefix.length);
+  return (
+    path.startsWith(prefix) &&
+    /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\.jpg$/i.test(filename)
+  );
+}
+function validateMediaUpdate(current, update, openid, secretValue) {
+  const existing = current && typeof current === 'object' ? current : {};
+  const data = update && typeof update === 'object' ? update : {};
+  if (Object.prototype.hasOwnProperty.call(data, 'avatar_file_id')) {
+    const avatar = data.avatar_file_id;
+    if (avatar && avatar !== existing.avatar_file_id && !isOwnerMedia(avatar, openid, secretValue))
+      throw new ProfileError('MEDIA_NOT_OWNED', '媒体文件不属于当前用户');
+  }
+  if (Object.prototype.hasOwnProperty.call(data, 'photos')) {
+    const legacy = new Set(
+      (Array.isArray(existing.photos) ? existing.photos : []).map(
+        (item) => `${item && item.file_id}\u0000${item && item.category}`,
+      ),
+    );
+    for (const item of data.photos) {
+      if (
+        !legacy.has(`${item.file_id}\u0000${item.category}`) &&
+        !isOwnerMedia(item.file_id, openid, secretValue)
+      )
+        throw new ProfileError('MEDIA_NOT_OWNED', '媒体文件不属于当前用户');
+    }
+  }
+  return data;
+}
+function ownerMedia(profile, openid, secretValue) {
+  const value = profile && typeof profile === 'object' ? profile : {};
+  const photos = Array.isArray(value.photos)
+    ? value.photos
+        .filter(
+          (item) =>
+            item &&
+            ['ride', 'bike', 'other'].includes(item.category) &&
+            isOwnerMedia(item.file_id, openid, secretValue),
+        )
+        .map((item) => ({
+          file_id: item.file_id,
+          category: item.category,
+          source: 'user_photo',
+        }))
+    : [];
+  const ordered = [
+    ...photos.filter((item) => item.category === 'ride' || item.category === 'bike'),
+    ...photos.filter((item) => item.category === 'other'),
+  ];
+  if (isOwnerMedia(value.avatar_file_id, openid, secretValue)) {
+    ordered.push({ file_id: value.avatar_file_id, category: 'other', source: 'avatar' });
+  }
+  const seen = new Set();
+  return ordered.filter((item) => {
+    if (seen.has(item.file_id) || seen.size >= 3) return false;
+    seen.add(item.file_id);
+    return true;
+  });
+}
 const sensitiveStatus = (doc) => ({
   real_name: !!doc.real_name_cipher,
   phone: !!doc.phone_cipher,
@@ -196,6 +286,11 @@ module.exports = {
   response,
   buildUpdate,
   phoneUpdate,
+  issueMediaUploadPath,
+  mediaOwnerPrefix,
+  isOwnerMedia,
+  validateMediaUpdate,
+  ownerMedia,
   writableDocument,
   toError,
 };
