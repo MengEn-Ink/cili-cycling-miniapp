@@ -78,14 +78,21 @@ function assertActivityOpen(activity, now) {
 }
 function assertProfileReady(profile) {
   const sensitive = profile && profile.sensitive_status;
+  // 新版资料服务以加密字段作为可信事实；旧数据保留 materialized 状态时继续兼容。
+  const phoneReady = sensitive?.phone_verified === true || !!profile?.phone_cipher;
+  const identityReady =
+    sensitive?.identity_encrypted === true ||
+    (!!profile?.real_name_cipher && !!profile?.id_number_cipher);
+  const emergencyReady =
+    sensitive?.emergency_contact_encrypted === true ||
+    (!!profile?.emergency_name && !!profile?.emergency_phone_cipher);
   if (
     !profile ||
     typeof profile.nickname !== 'string' ||
     !profile.nickname.trim() ||
-    !sensitive ||
-    sensitive.phone_verified !== true ||
-    sensitive.identity_encrypted !== true ||
-    sensitive.emergency_contact_encrypted !== true
+    !phoneReady ||
+    !identityReady ||
+    !emergencyReady
   ) {
     fail('PROFILE_INCOMPLETE', '请先完成并安全保存实名资料');
   }

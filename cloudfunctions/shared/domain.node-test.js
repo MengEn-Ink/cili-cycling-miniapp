@@ -104,6 +104,28 @@ test('提交校验活动、资料、Strava 和客户端越权字段', () => {
     'SIGNUP_CLOSED',
   );
   expectCode(() => assertProfileReady({ nickname: 'x' }), 'PROFILE_INCOMPLETE');
+  assert.doesNotThrow(() =>
+    assertProfileReady({
+      nickname: '骑手',
+      phone_cipher: { ciphertext: 'x' },
+      real_name_cipher: { ciphertext: 'x' },
+      id_number_cipher: { ciphertext: 'x' },
+      emergency_name: '联系人',
+      emergency_phone_cipher: { ciphertext: 'x' },
+    }),
+  );
+  expectCode(
+    () =>
+      assertProfileReady({
+        nickname: '骑手',
+        phone_cipher: { ciphertext: 'x' },
+        real_name_cipher: { ciphertext: 'x' },
+        id_number_cipher: { ciphertext: 'x' },
+        emergency_name: '联系人',
+      }),
+    'PROFILE_INCOMPLETE',
+  );
+
   expectCode(() => selectStrava({ strava: {} }), 'STRAVA_REQUIRED');
   assert.equal(
     selectStrava({ strava: { exempt: { enabled: true, reason: '人工核验' } } }).status,
