@@ -1,5 +1,6 @@
 import type {
   Activity,
+  PersonalCapabilityCard,
   Profile,
   ProfileUpdate,
   Registration,
@@ -112,6 +113,36 @@ export class MockRepository implements RideRepository {
   }
   async getProfileMediaUploadPath() {
     return 'profiles/00000000000000000000000000000000/00000000-0000-4000-8000-000000000000.jpg';
+  }
+  async getPersonalCapabilityCard(): Promise<PersonalCapabilityCard> {
+    return {
+      state: 'ready',
+      generatedAt: '2026-09-29T04:10:00.000Z',
+      profile: {
+        displayName: this.read().profile.nickname || '此里骑手',
+        title: this.read().profile.title || '',
+      },
+      backgrounds: [
+        {
+          url: 'https://temporary.example/mock-rider.jpg',
+          source: 'user_photo',
+          category: 'ride',
+        },
+      ],
+      summary: {
+        totalKm90d: 1200,
+        rides90d: 32,
+        longestKm: 168,
+        elevationM90d: 9000,
+        weightedAvgSpeedKmh: 27.4,
+      },
+      coverage: {
+        from: '2026-07-01T04:00:00.000Z',
+        to: '2026-09-29T04:00:00.000Z',
+        complete: true,
+      },
+      syncedAt: '2026-09-29T04:05:00.000Z',
+    };
   }
   async updateProfile(patch: ProfileUpdate) {
     const current = this.read().profile;

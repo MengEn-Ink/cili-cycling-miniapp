@@ -1,5 +1,7 @@
 import type {
   Activity,
+  PersonalCapabilityCard,
+  PersonalCapabilityCardState,
   Profile,
   ProfileUpdate,
   Registration,
@@ -181,6 +183,72 @@ function mapProfile(raw: unknown): Profile {
         : '',
       emergencyPhone: status.emergency_phone === true,
     },
+  };
+}
+function mapPersonalCapabilityCard(raw: unknown): PersonalCapabilityCard {
+  const value = expectRecord(raw);
+  const states: PersonalCapabilityCardState[] = [
+    'ready',
+    'partial',
+    'syncing',
+    'failed',
+    'disconnected',
+  ];
+  if (!states.includes(value.state)) return invalidResponse();
+
+  const generatedAt = strictDateText(value.generated_at);
+  const profile = expectRecord(value.profile);
+  if (typeof profile.display_name !== 'string' || typeof profile.title !== 'string')
+    return invalidResponse();
+
+  if (!Array.isArray(value.backgrounds)) return invalidResponse();
+  const backgrounds = value.backgrounds.map((item: unknown) => {
+    const background = expectRecord(item);
+    const url = httpsUrl(background.url);
+    if (
+      !url ||
+      !['user_photo', 'avatar'].includes(background.source) ||
+      typeof background.category !== 'string'
+    )
+      return invalidResponse();
+    return {
+      url,
+      source: background.source as 'user_photo' | 'avatar',
+      category: background.category,
+    };
+  });
+
+  const summary = expectRecord(value.summary);
+  const coverageRaw = value.coverage;
+  let coverage = null;
+  if (coverageRaw !== null) {
+    const record = expectRecord(coverageRaw);
+    if (typeof record.complete !== 'boolean') return invalidResponse();
+    coverage = {
+      from: strictDateText(record.from),
+      to: strictDateText(record.to),
+      complete: record.complete,
+    };
+  }
+  const syncedAt = value.synced_at === null ? null : strictDateText(value.synced_at);
+
+  return {
+    state: value.state,
+    generatedAt,
+    profile: {
+      displayName: profile.display_name,
+      title: profile.title,
+    },
+    backgrounds,
+    summary: {
+      totalKm90d: nullableFiniteNumber(summary.total_km_90d),
+      rides90d: nullableFiniteNumber(summary.rides_90d),
+      longestKm: nullableFiniteNumber(summary.longest_km),
+      elevationM90d: nullableFiniteNumber(summary.elevation_m_90d),
+      weightedAvgSpeedKmh: nullableFiniteNumber(summary.weighted_avg_speed_kmh),
+    },
+    coverage,
+    syncedAt,
   };
 }
 function mapRegistration(raw: unknown): Registration {
@@ -570,6 +638,9 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     )
       return invalidResponse();
     return value.cloud_path;
+  }
+  async getPersonalCapabilityCard() {
+    return mapPersonalCapabilityCard(await this.call('profile', { action: 'capabilityCard' }));
   }
   async updateProfile(profile: ProfileUpdate) {
     const data: Record<string, unknown> = { action: 'update' };

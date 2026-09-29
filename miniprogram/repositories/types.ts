@@ -1,5 +1,6 @@
 import type {
   Activity,
+  PersonalCapabilityCard,
   Profile,
   ProfileUpdate,
   Registration,
@@ -51,6 +52,7 @@ export interface RideRepository extends AdminReviewRepository, ActivityAdminRepo
   ): Promise<Registration>;
   getProfile(): Promise<Profile>;
   getProfileMediaUploadPath(): Promise<string>;
+  getPersonalCapabilityCard(): Promise<PersonalCapabilityCard>;
   updateProfile(profile: ProfileUpdate): Promise<Profile>;
   getPhoneNumber(code: string): Promise<Profile>;
   getStravaStatus(): Promise<StravaConnection>;

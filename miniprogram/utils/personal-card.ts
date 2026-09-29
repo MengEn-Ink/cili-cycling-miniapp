@@ -1,0 +1,76 @@
+import type { PersonalCapabilityCard, PersonalCapabilityCardState } from '../models/index';
+
+export interface PersonalCardMetric {
+  key: keyof PersonalCapabilityCard['summary'];
+  label: string;
+  value: string;
+  unit: string;
+}
+
+const STATUS: Record<
+  PersonalCapabilityCardState,
+  { label: string; tone: 'verified' | 'partial' | 'syncing' | 'repair' }
+> = {
+  ready: { label: '已连接', tone: 'verified' },
+  partial: { label: '数据不完整', tone: 'partial' },
+  syncing: { label: '同步中', tone: 'syncing' },
+  failed: { label: '需要重新授权', tone: 'repair' },
+  disconnected: { label: '需要重新授权', tone: 'repair' },
+};
+
+const METRICS: {
+  key: keyof PersonalCapabilityCard['summary'];
+  label: string;
+  unit: string;
+}[] = [
+  { key: 'totalKm90d', label: '近 90 天', unit: 'km' },
+  { key: 'rides90d', label: '骑行次数', unit: '次' },
+  { key: 'longestKm', label: '最长骑行', unit: 'km' },
+  { key: 'elevationM90d', label: '累计爬升', unit: 'm' },
+  { key: 'weightedAvgSpeedKmh', label: '加权均速', unit: 'km/h' },
+];
+
+function datePart(value: string): string {
+  return value.slice(0, 10);
+}
+
+function timePart(value: string): string {
+  return `${value.slice(0, 10)} ${value.slice(11, 16)} UTC`;
+}
+
+export function personalCardViewModel(card: PersonalCapabilityCard) {
+  const backgrounds = card.backgrounds.slice(0, 3);
+  const metrics = METRICS.flatMap((definition): PersonalCardMetric[] => {
+    const value = card.summary[definition.key];
+    return value === null ? [] : [{ ...definition, value: String(value) }];
+  });
+  const primaryMetrics = metrics.filter((metric) =>
+    ['totalKm90d', 'rides90d', 'longestKm'].includes(metric.key),
+  );
+  const secondaryMetrics = metrics.filter((metric) =>
+    ['elevationM90d', 'weightedAvgSpeedKmh'].includes(metric.key),
+  );
+  const state = STATUS[card.state];
+  return {
+    state: card.state,
+    statusLabel: state.label,
+    statusTone: state.tone,
+    displayName: card.profile.displayName || '此里骑手',
+    title: card.profile.title,
+    backgrounds,
+    hasBackgrounds: backgrounds.length > 0,
+    hasMultipleBackgrounds: backgrounds.length > 1,
+    metrics,
+    primaryMetrics,
+    secondaryMetrics,
+    coverageText: card.coverage
+      ? `${datePart(card.coverage.from)} 至 ${datePart(card.coverage.to)} · ${
+          card.coverage.complete ? '覆盖完整' : '覆盖不完整'
+        }`
+      : '',
+    syncedAtText: card.syncedAt ? `同步于 ${timePart(card.syncedAt)}` : '',
+    generatedAtText: `生成于 ${timePart(card.generatedAt)}`,
+    needsStravaRepair: card.state === 'disconnected' || card.state === 'failed',
+    needsProfilePhoto: backgrounds.length === 0,
+  };
+}

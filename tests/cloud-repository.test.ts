@@ -87,6 +87,39 @@ const readinessDto = {
   },
   error: null,
 };
+const personalCapabilityCardDto = {
+  state: 'partial',
+  generated_at: '2026-09-29T04:10:00.000Z',
+  profile: {
+    display_name: '山野骑手',
+    title: '周末爬坡手',
+  },
+  backgrounds: [
+    {
+      url: 'https://temporary.example/ride-1.jpg',
+      source: 'user_photo',
+      category: 'ride',
+    },
+    {
+      url: 'https://temporary.example/bike-1.jpg',
+      source: 'user_photo',
+      category: 'bike',
+    },
+  ],
+  summary: {
+    total_km_90d: 812.5,
+    rides_90d: 28,
+    longest_km: null,
+    elevation_m_90d: 9300,
+    weighted_avg_speed_kmh: 25.6,
+  },
+  coverage: {
+    from: '2026-07-01T04:00:00.000Z',
+    to: '2026-09-29T04:00:00.000Z',
+    complete: false,
+  },
+  synced_at: '2026-09-29T04:05:00.000Z',
+};
 
 function expectCall(callFunction: ReturnType<typeof vi.fn>, name: string, data: unknown) {
   expect(callFunction).toHaveBeenLastCalledWith({ name, data });
@@ -172,6 +205,73 @@ describe('CloudRepository 活动读取适配', () => {
     const { cloud } = cloudWith(success({ ...activity, fee: {} }));
     await expect(new CloudRepository(cloud).getActivity('a1')).resolves.toMatchObject({ fee: '' });
   });
+});
+
+describe('CloudRepository 个人骑行名片适配', () => {
+  it('只调用 profile/capabilityCard 并映射固定 DTO', async () => {
+    const { cloud, callFunction } = cloudWith(success(personalCapabilityCardDto));
+
+    await expect(new CloudRepository(cloud).getPersonalCapabilityCard()).resolves.toEqual({
+      state: 'partial',
+      generatedAt: '2026-09-29T04:10:00.000Z',
+      profile: {
+        displayName: '山野骑手',
+        title: '周末爬坡手',
+      },
+      backgrounds: [
+        {
+          url: 'https://temporary.example/ride-1.jpg',
+          source: 'user_photo',
+          category: 'ride',
+        },
+        {
+          url: 'https://temporary.example/bike-1.jpg',
+          source: 'user_photo',
+          category: 'bike',
+        },
+      ],
+      summary: {
+        totalKm90d: 812.5,
+        rides90d: 28,
+        longestKm: null,
+        elevationM90d: 9300,
+        weightedAvgSpeedKmh: 25.6,
+      },
+      coverage: {
+        from: '2026-07-01T04:00:00.000Z',
+        to: '2026-09-29T04:00:00.000Z',
+        complete: false,
+      },
+      syncedAt: '2026-09-29T04:05:00.000Z',
+    });
+    expectCall(callFunction, 'profile', { action: 'capabilityCard' });
+  });
+
+  it.each(['cloud://raw-photo', 'http://temporary.example/insecure.jpg'])(
+    '拒绝非 HTTPS 名片背景 %s',
+    async (url) => {
+      const { cloud } = cloudWith(
+        success({
+          ...personalCapabilityCardDto,
+          backgrounds: [{ ...personalCapabilityCardDto.backgrounds[0], url }],
+        }),
+      );
+      await expectCode(new CloudRepository(cloud).getPersonalCapabilityCard(), 'INVALID_RESPONSE');
+    },
+  );
+
+  it.each(['812.5', Number.POSITIVE_INFINITY])(
+    '拒绝非 nullable finite number 指标 %#',
+    async (totalKm90d) => {
+      const { cloud } = cloudWith(
+        success({
+          ...personalCapabilityCardDto,
+          summary: { ...personalCapabilityCardDto.summary, total_km_90d: totalKm90d },
+        }),
+      );
+      await expectCode(new CloudRepository(cloud).getPersonalCapabilityCard(), 'INVALID_RESPONSE');
+    },
+  );
 });
 
 describe('CloudRepository 队员报名适配', () => {
@@ -1009,6 +1109,19 @@ describe('MockRepository readiness 与显式报名命令', () => {
     ).resolves.toMatchObject({
       status: 'approved',
       reviewComment: '资料完整',
+    });
+  });
+
+  it('提供确定的自用骑行名片响应', async () => {
+    installStorage();
+    await expect(new MockRepository().getPersonalCapabilityCard()).resolves.toMatchObject({
+      state: 'ready',
+      profile: { displayName: expect.any(String) },
+      backgrounds: expect.any(Array),
+      summary: {
+        totalKm90d: expect.any(Number),
+        rides90d: expect.any(Number),
+      },
     });
   });
 });
