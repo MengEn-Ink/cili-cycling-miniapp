@@ -24,8 +24,6 @@ export interface Profile {
   title: string;
   realName: string;
   phone: string;
-  idType: string;
-  idNumber: string;
   gender: string;
   emergencyName: string;
   emergencyPhone: string;
@@ -34,7 +32,6 @@ export interface Profile {
   completeness?: number;
   sensitiveStatus?: {
     realName: boolean;
-    idNumber: boolean;
     phone: boolean;
     phoneVerified?: boolean;
     phoneSource?: 'wechat' | 'manual' | 'legacy' | '';
@@ -43,13 +40,11 @@ export interface Profile {
 }
 export interface ProfileUpdate {
   nickname?: string;
-  idType?: string;
   gender?: string;
   emergencyName?: string;
   avatarFileId?: string;
   photos?: { id: string; category: string }[];
   realName?: string;
-  idNumber?: string;
   phone?: string;
   emergencyPhone?: string;
 }

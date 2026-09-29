@@ -22,14 +22,6 @@
         <input class="input" value="{{p.realName}}" data-k="realName" bindinput="set" />
       </view>
       <view class="field">
-        <view class="label">证件类型</view>
-        <input class="input" value="{{p.idType}}" data-k="idType" bindinput="set" />
-      </view>
-      <view class="field">
-        <view class="label">证件号码</view>
-        <input class="input" value="{{p.idNumber}}" data-k="idNumber" bindinput="set" />
-      </view>
-      <view class="field">
         <view class="label">性别</view>
         <input class="input" value="{{p.gender}}" data-k="gender" bindinput="set" />
       </view>

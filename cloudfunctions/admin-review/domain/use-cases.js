@@ -46,7 +46,6 @@ async function submitRegistration(store, { openid, activityId, options }, now = 
         nickname: profile.nickname,
         real_name_masked: profile.real_name_masked,
         phone_masked: profile.phone_masked,
-        id_number_masked: profile.id_number_masked,
       },
       strava_status: strava.status,
       ...(strava.snapshot ? { strava_snapshot: strava.snapshot } : {}),

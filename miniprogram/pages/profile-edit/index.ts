@@ -42,12 +42,11 @@ Page({
       () =>
         rideService.updateProfile({
           nickname: p.nickname,
-          idType: p.idType,
           gender: p.gender,
           emergencyName: p.emergencyName,
+          avatarFileId: p.avatarId,
           photos: p.photos,
           realName: p.realName.includes('*') ? undefined : p.realName,
-          idNumber: p.idNumber.includes('*') ? undefined : p.idNumber,
           phone: p.phone.includes('*') ? undefined : p.phone,
           emergencyPhone: p.emergencyPhone.includes('*') ? undefined : p.emergencyPhone,
         }),

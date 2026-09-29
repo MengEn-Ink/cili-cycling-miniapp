@@ -92,9 +92,8 @@ describe('表单校验', () => {
       ...profile,
       realName: '曹**',
       phone: '138****5678',
-      idNumber: '110***********1234',
       emergencyPhone: '139****5678',
-      sensitiveStatus: { realName: true, phone: true, idNumber: true, emergencyPhone: true },
+      sensitiveStatus: { realName: true, phone: true, emergencyPhone: true },
     };
     expect(
       validateRegistration({
@@ -112,6 +111,16 @@ describe('表单校验', () => {
         readiness: ready,
       }),
     ).toContain('手机号格式错误');
+  });
+  it('资料完整度门禁包含昵称', () => {
+    expect(
+      validateRegistration({
+        profile: { ...profile, nickname: '' },
+        bikeMode: '自带车',
+        experience: '常骑',
+        readiness: ready,
+      }),
+    ).toContain('请填写昵称');
   });
   it('ready 但服务端不允许报名时阻断', () => {
     expect(

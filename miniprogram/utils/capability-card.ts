@@ -1,6 +1,8 @@
 import type { Registration } from '../models';
 
+const MAX_CAPABILITY_IMAGES = 3;
 const RIDING_CATEGORIES = new Set([
+  'bike',
   'ride',
   'riding',
   'cycling',
@@ -12,15 +14,45 @@ const RIDING_CATEGORIES = new Set([
   '训练照',
 ]);
 
-export function selectCapabilityImage(profile: Registration['profile']) {
-  const photo = profile.photos.find((item) => RIDING_CATEGORIES.has(item.category.toLowerCase()));
-  if (photo) return { url: photo.id, source: '个人上传' };
-  if (profile.avatarId) return { url: profile.avatarId, source: '头像' };
-  return { url: '', source: '暂无照片' };
+export interface CapabilityImage {
+  url: string;
+  source: '个人上传' | '头像';
+}
+
+function isRidingPhoto(category: string) {
+  return RIDING_CATEGORIES.has(category.trim().toLowerCase());
+}
+
+export function selectCapabilityImages(profile: Registration['profile']): CapabilityImage[] {
+  const seen = new Set<string>();
+  const images: CapabilityImage[] = [];
+  const add = (url: string | undefined, source: CapabilityImage['source']) => {
+    const normalizedUrl = url?.trim();
+    if (!normalizedUrl || seen.has(normalizedUrl) || images.length >= MAX_CAPABILITY_IMAGES) return;
+    seen.add(normalizedUrl);
+    images.push({ url: normalizedUrl, source });
+  };
+
+  profile.photos
+    .filter((photo) => isRidingPhoto(photo.category))
+    .forEach((photo) => add(photo.id, '个人上传'));
+  profile.photos
+    .filter((photo) => !isRidingPhoto(photo.category))
+    .forEach((photo) => add(photo.id, '个人上传'));
+  add(profile.avatarId, '头像');
+
+  return images;
+}
+
+function maskRealName(realName: string) {
+  const name = realName.trim();
+  if (!name) return '实名信息未完善';
+  if (name.includes('*')) return name;
+  return `${name.slice(0, 1)}${'*'.repeat(Math.max(1, name.length - 1))}`;
 }
 
 export function capabilityCard(registration: Registration) {
-  const image = selectCapabilityImage(registration.profile);
+  const images = selectCapabilityImages(registration.profile);
   const hasSnapshot = Boolean(registration.strava.syncedAt);
   const status =
     registration.strava.status === 'pending'
@@ -36,10 +68,10 @@ export function capabilityCard(registration: Registration) {
   const metric = (value: number | null | undefined, suffix = '') =>
     value === null || value === undefined ? '暂无' : `${value}${suffix}`;
   return {
-    imageUrl: image.url,
-    imageSource: image.source,
+    images,
+    hasMultipleImages: images.length > 1,
     displayName: registration.profile.nickname || registration.profile.realName || '未填写昵称',
-    maskedName: registration.profile.realName || '实名信息未完善',
+    maskedName: maskRealName(registration.profile.realName),
     bikeMode: registration.bikeMode || '未填写',
     experience: registration.experience || '未填写',
     remark: registration.remark || '无',

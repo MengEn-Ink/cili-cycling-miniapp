@@ -15,8 +15,6 @@ const profile: Profile = {
   title: 'Rider',
   realName: '骑手',
   phone: '13800138000',
-  idType: '身份证',
-  idNumber: '110101199001011234',
   gender: '男',
   emergencyName: '联系人',
   emergencyPhone: '13900139000',

@@ -16,12 +16,11 @@ export function validateRegistration(v: {
 }) {
   const e: string[] = [];
   // 云端仅返回脱敏展示值，真实填写状态必须以服务端 sensitiveStatus 为准。
+  if (!v.profile.nickname.trim()) e.push('请填写昵称');
   if (!hasSensitiveField(v.profile, 'realName', () => !!v.profile.realName.trim()))
     e.push('请填写真实姓名');
   if (!hasSensitiveField(v.profile, 'phone', () => /^1\d{10}$/.test(v.profile.phone)))
     e.push('手机号格式错误');
-  if (!hasSensitiveField(v.profile, 'idNumber', () => v.profile.idNumber.length >= 6))
-    e.push('证件号码无效');
   if (!v.profile.emergencyName.trim()) e.push('请填写紧急联系人');
   if (
     !hasSensitiveField(v.profile, 'emergencyPhone', () =>

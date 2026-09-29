@@ -24,18 +24,18 @@ Strava 报名资格唯一事实源：`strava_credentials + strava_snapshots`。`
 _id: openid
 nickname, title, avatar_file_id
 photos: [{ file_id, category: ride|bike|other }]
-id_type, gender, emergency_name
-real_name_cipher, id_number_cipher, phone_cipher, emergency_phone_cipher: {
+gender, emergency_name
+real_name_cipher, phone_cipher, emergency_phone_cipher: {
   v: 1, alg: A256GCM, iv, tag, ciphertext
 }
-real_name_masked, id_number_masked, phone_masked, emergency_phone_masked
+real_name_masked, phone_masked, emergency_phone_masked
 phone_source: wechat|manual
 phone_verified: Boolean             # wechat=true, manual=false
 strava: { status: connected|disconnected, snapshot? }
 created_at, updated_at
 ```
 
-四个敏感字段均用环境变量 `PII_ENCRYPTION_KEY`（base64 32 bytes）独立 AES-256-GCM 加密和随机 12-byte IV。密钥缺失/非法、密文认证失败均 fail closed。`getPhoneNumber` 接受微信动态 code 并调用 `cloud.openapi.phonenumber`，写入 `wechat/verified`；个人主体的 `update` 可写入手填号码，但必须写入 `manual/unverified`。响应不返回敏感明文或密文，只返回掩码、来源、验证状态、`sensitive_status` 与 `completeness`；管理员审批详情必须展示手机号来源。
+三个敏感字段均用环境变量 `PII_ENCRYPTION_KEY`（base64 32 bytes）独立 AES-256-GCM 加密和随机 12-byte IV。证件信息不再采集、写入或返回；存量证件字段只读保留，不解密、不迁移，普通资料更新也不主动删除。密钥缺失/非法、密文认证失败均 fail closed。`getPhoneNumber` 接受微信动态 code 并调用 `cloud.openapi.phonenumber`，写入 `wechat/verified`；个人主体的 `update` 可写入手填号码，但必须写入 `manual/unverified`。响应不返回敏感明文或密文，只返回必要掩码、来源、验证状态、`sensitive_status` 与 `completeness`；管理员审批详情必须展示手机号来源。
 
 ### `notification_outbox`
 
