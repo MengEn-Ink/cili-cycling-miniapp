@@ -1,6 +1,6 @@
 'use strict';
 
-const { MAX_ATTEMPTS, retryDelayMs } = require('./core');
+const { MAX_ATTEMPTS, nextRetryAt } = require('./core');
 
 function coded(code, message) {
   const error = new Error(message);
@@ -27,6 +27,26 @@ async function get(collection, id) {
 function expired(value, now) {
   const timestamp = Date.parse(value);
   return !Number.isFinite(timestamp) || timestamp <= now.getTime();
+}
+
+function fairReadyIds(groups, limit) {
+  const result = [];
+  const seen = new Set();
+  for (let index = 0; result.length < limit; index += 1) {
+    let found = false;
+    for (const group of groups) {
+      const entry = group[index];
+      if (!entry) continue;
+      found = true;
+      if (!seen.has(entry._id)) {
+        seen.add(entry._id);
+        result.push(entry._id);
+        if (result.length === limit) break;
+      }
+    }
+    if (!found) break;
+  }
+  return result;
 }
 
 function createNotificationStore(db) {
@@ -83,9 +103,7 @@ function createNotificationStore(db) {
           .limit(limit)
           .get(),
       ]);
-      return [
-        ...new Set([...immediate.data, ...retryable.data, ...claimed.data].map((x) => x._id)),
-      ].slice(0, limit);
+      return fairReadyIds([immediate.data, retryable.data, claimed.data], limit);
     },
     claim: (id, { claimant, leaseId, now, maxAttempts, leaseMs }) =>
       db.runTransaction(async (tx) => {
@@ -175,12 +193,12 @@ function createNotificationStore(db) {
         lease_expires_at: null,
         last_error: '',
       }),
-    markRetryable: (id, fence) =>
+    markRetryable: async (id, fence) =>
       fencedTransition(id, fence, ['claimed', 'dispatching'], {
         status: 'retryable',
         updated_at: fence.now,
         lease_expires_at: null,
-        next_retry_at: new Date(fence.now.getTime() + retryDelayMs(fence.attemptNo)),
+        next_retry_at: nextRetryAt(fence.errorCode, fence.attemptNo, fence.now),
         last_error: fence.errorCode,
       }),
     markTerminal: (id, fence) =>
@@ -235,7 +253,7 @@ function createNotificationStore(db) {
             updated_at: now,
           };
           if (status === 'retryable')
-            data.next_retry_at = new Date(now.getTime() + retryDelayMs(Number(current.attempt_no)));
+            data.next_retry_at = nextRetryAt(outcome.error_code, Number(current.attempt_no), now);
           await collection.doc(entry._id).update({
             data,
           });
@@ -248,4 +266,4 @@ function createNotificationStore(db) {
   };
 }
 
-module.exports = { coded, missing, get, createNotificationStore };
+module.exports = { coded, missing, get, fairReadyIds, createNotificationStore };

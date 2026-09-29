@@ -6,6 +6,9 @@ const LEASE_MS = 2 * 60 * 1000;
 const ACK_ATTEMPTS = 3;
 const RETRY_BASE_MS = 60 * 1000;
 const RETRY_MAX_MS = 15 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const SHANGHAI_OFFSET_MS = 8 * 60 * 60 * 1000;
+const QUOTA_RESET_GRACE_MS = 5 * 60 * 1000;
 class NotificationError extends Error {
   constructor(code, message) {
     super(message);
@@ -67,6 +70,16 @@ function providerDisposition(code) {
 function retryDelayMs(attemptNo) {
   const exponent = Math.max(0, Number(attemptNo || 1) - 1);
   return Math.min(RETRY_MAX_MS, RETRY_BASE_MS * 2 ** exponent);
+}
+function nextRetryAt(errorCode, attemptNo, now) {
+  if (!(now instanceof Date) || !Number.isFinite(now.getTime()))
+    fail('INVALID_RETRY_TIME', '通知重试时间无效');
+  if (errorCode === 'WECHAT_45009') {
+    const shanghaiTime = now.getTime() + SHANGHAI_OFFSET_MS;
+    const nextLocalDay = (Math.floor(shanghaiTime / DAY_MS) + 1) * DAY_MS;
+    return new Date(nextLocalDay - SHANGHAI_OFFSET_MS + QUOTA_RESET_GRACE_MS);
+  }
+  return new Date(now.getTime() + retryDelayMs(attemptNo));
 }
 async function transitionOrLose(method, outboxId, value) {
   if (!(await method(outboxId, value))) fail('LEASE_LOST', '通知任务租约已失效');
@@ -217,6 +230,7 @@ module.exports = {
   templateFor,
   subscriptionTemplateIds,
   retryDelayMs,
+  nextRetryAt,
   consumeNotification,
   buildReadyCondition,
   drainNotifications,
