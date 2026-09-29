@@ -10,6 +10,7 @@ const {
   writableDocument,
   toError,
 } = require('./core');
+const { buildCapabilityCard } = require('./capability-card');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const ok = (data) => ({ ok: true, data });
@@ -24,6 +25,20 @@ async function getDoc(openid) {
         .includes('not exist')
     )
       return {};
+    throw error;
+  }
+}
+async function getById(collection, id) {
+  try {
+    return (await db.collection(collection).doc(id).get()).data;
+  } catch (error) {
+    if (
+      String(error?.errCode || '').includes('NOT_FOUND') ||
+      String(error?.message || '')
+        .toLowerCase()
+        .includes('not exist')
+    )
+      return undefined;
     throw error;
   }
 }
@@ -42,6 +57,25 @@ exports.main = async (event = {}) => {
     const { OPENID } = cloud.getWXContext();
     if (!OPENID) throw Object.assign(new Error('无法取得微信身份'), { code: 'UNAUTHENTICATED' });
     if (event.action === 'get') return ok(response(await getDoc(OPENID)));
+    if (event.action === 'capabilityCard') {
+      if (Object.prototype.hasOwnProperty.call(event, 'openid'))
+        throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });
+      const [profile, credential, snapshot] = await Promise.all([
+        getDoc(OPENID),
+        getById('strava_credentials', OPENID),
+        getById('strava_snapshots', OPENID),
+      ]);
+      return ok(
+        await buildCapabilityCard(
+          { profile, credential, snapshot },
+          {
+            openid: OPENID,
+            mediaSecret: process.env.PROFILE_MEDIA_PATH_SECRET,
+            getTempFileURL: (input) => cloud.getTempFileURL(input),
+          },
+        ),
+      );
+    }
     if (event.action === 'mediaUploadPath') {
       if (Object.prototype.hasOwnProperty.call(event, 'openid'))
         throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });
