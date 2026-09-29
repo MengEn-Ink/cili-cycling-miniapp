@@ -15,7 +15,7 @@ function ok(data) {
   return { ok: true, data };
 }
 function toErrorResponse(error) {
-  if (error instanceof DomainError) {
+  if (error instanceof DomainError)
     return {
       ok: false,
       error: {
@@ -24,7 +24,6 @@ function toErrorResponse(error) {
         ...(error.details ? { details: error.details } : {}),
       },
     };
-  }
   return { ok: false, error: { code: 'INTERNAL_ERROR', message: '服务暂时不可用' } };
 }
 function assertTrustedOpenid(openid) {
@@ -44,6 +43,9 @@ const ACTIVITY_FIELDS = [
   'equipment',
   'fee',
   'capacity',
+  'support_vehicle_capacity',
+  'self_drive_capacity',
+  'support_vehicle_driver',
   'occupied_count',
   'signup_deadline',
   'event_start',
@@ -56,8 +58,22 @@ function pick(object, keys) {
     return out;
   }, {});
 }
-function publicActivity(activity) {
-  return pick(activity, ACTIVITY_FIELDS);
+function maskPhone(value) {
+  if (typeof value !== 'string' || !value.trim()) return '';
+  const digits = value.replace(/\D/g, '');
+  if (/^\d{11}$/.test(digits)) return `${digits.slice(0, 3)}****${digits.slice(-4)}`;
+  // 无法可靠识别的电话文本也必须 fail closed，绝不回显原文。
+  return digits.length >= 4 ? `****${digits.slice(-4)}` : '****';
+}
+function publicActivity(activity, options = {}) {
+  const output = pick(activity, ACTIVITY_FIELDS);
+  if (output.support_vehicle_driver && !options.revealContact) {
+    output.support_vehicle_driver = {
+      ...output.support_vehicle_driver,
+      contact_phone: maskPhone(output.support_vehicle_driver.contact_phone),
+    };
+  }
+  return output;
 }
 function cleanText(value, field, max, required = false) {
   if (typeof value !== 'string') fail('VALIDATION_FAILED', `${field}格式错误`);
@@ -102,6 +118,9 @@ function validateActivityInput(input, occupiedCount = 0) {
     'equipment',
     'fee',
     'capacity',
+    'support_vehicle_capacity',
+    'self_drive_capacity',
+    'support_vehicle_driver',
     'signup_deadline',
     'event_start',
     'event_end',
@@ -112,6 +131,14 @@ function validateActivityInput(input, occupiedCount = 0) {
   if (!Number.isInteger(input.capacity) || input.capacity < 1)
     fail('VALIDATION_FAILED', '活动容量必须为正整数');
   if (input.capacity < occupiedCount) fail('CAPACITY_BELOW_OCCUPIED', '活动容量不能低于已占用名额');
+  if (
+    !Number.isInteger(input.support_vehicle_capacity) ||
+    input.support_vehicle_capacity < 0 ||
+    !Number.isInteger(input.self_drive_capacity) ||
+    input.self_drive_capacity < 0 ||
+    input.support_vehicle_capacity + input.self_drive_capacity !== input.capacity
+  )
+    fail('VALIDATION_FAILED', '后援车名额与自驾名额之和必须等于活动容量');
   if (!['draft', 'published', 'finished'].includes(input.status))
     fail('VALIDATION_FAILED', '活动状态无效');
   const deadline = validDate(input.signup_deadline, '报名截止时间');
@@ -128,19 +155,19 @@ function validateActivityInput(input, occupiedCount = 0) {
   const elevation = Number(route.elevation_m);
   if (!Number.isFinite(distance) || distance < 0 || !Number.isFinite(elevation) || elevation < 0)
     fail('VALIDATION_FAILED', '路线里程或爬升格式错误');
+  const driver = input.support_vehicle_driver;
+  if (driver !== undefined && (!driver || typeof driver !== 'object' || Array.isArray(driver)))
+    fail('VALIDATION_FAILED', '后援车师傅信息格式错误');
   const fee = input.fee;
   let feeRemark;
   let feeIncluded = [];
   let feeExcluded = [];
-  if (typeof fee === 'string') {
-    feeRemark = cleanText(fee, '费用说明', 500);
-  } else if (fee && typeof fee === 'object' && !Array.isArray(fee)) {
+  if (typeof fee === 'string') feeRemark = cleanText(fee, '费用说明', 500);
+  else if (fee && typeof fee === 'object' && !Array.isArray(fee)) {
     feeRemark = cleanText(fee.remark || '', '费用说明', 500);
     feeIncluded = cleanStringArray(fee.included || [], '费用包含');
     feeExcluded = cleanStringArray(fee.excluded || [], '费用不含');
-  } else {
-    fail('VALIDATION_FAILED', '费用说明格式错误');
-  }
+  } else fail('VALIDATION_FAILED', '费用说明格式错误');
   return {
     title: cleanText(input.title, '活动标题', 100, true),
     cover_image: cleanText(input.cover_image || '', '封面', 500),
@@ -158,6 +185,29 @@ function validateActivityInput(input, occupiedCount = 0) {
     equipment: cleanStringArray(input.equipment || [], '装备要求'),
     fee: { included: feeIncluded, excluded: feeExcluded, remark: feeRemark },
     capacity: input.capacity,
+    support_vehicle_capacity: input.support_vehicle_capacity,
+    self_drive_capacity: input.self_drive_capacity,
+    support_vehicle_driver:
+      input.support_vehicle_capacity > 0
+        ? {
+            nickname: cleanText(driver && driver.nickname, '后援车师傅昵称', 50, true),
+            license_plate: cleanText(
+              driver && driver.license_plate,
+              '车牌号',
+              20,
+              true,
+            ).toUpperCase(),
+            contact_phone: cleanText(driver && driver.contact_phone, '联系电话', 30, true),
+          }
+        : {
+            nickname: cleanText((driver && driver.nickname) || '', '后援车师傅昵称', 50),
+            license_plate: cleanText(
+              (driver && driver.license_plate) || '',
+              '车牌号',
+              20,
+            ).toUpperCase(),
+            contact_phone: cleanText((driver && driver.contact_phone) || '', '联系电话', 30),
+          },
     signup_deadline: deadline,
     event_start: start,
     event_end: end,
@@ -165,9 +215,12 @@ function validateActivityInput(input, occupiedCount = 0) {
   };
 }
 function assertStatusTransition(from, to) {
-  if (from === to) return;
-  if (from === 'draft' && to === 'published') return;
-  if (from === 'published' && to === 'finished') return;
+  if (
+    from === to ||
+    (from === 'draft' && to === 'published') ||
+    (from === 'published' && to === 'finished')
+  )
+    return;
   fail('INVALID_TRANSITION', `活动状态不能从 ${from} 变更为 ${to}`);
 }
 function buildActivityAudit(actorOpenid, action, targetId, now, fromStatus, toStatus) {
@@ -179,7 +232,6 @@ function buildActivityAudit(actorOpenid, action, targetId, now, fromStatus, toSt
     detail: { ...(fromStatus ? { from_status: fromStatus } : {}), to_status: toStatus },
   };
 }
-
 module.exports = {
   DomainError,
   fail,
@@ -191,4 +243,5 @@ module.exports = {
   validateActivityInput,
   assertStatusTransition,
   buildActivityAudit,
+  maskPhone,
 };

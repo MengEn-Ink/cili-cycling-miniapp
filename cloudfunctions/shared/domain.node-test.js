@@ -128,8 +128,11 @@ function memoryStore(seed = {}) {
           getStravaCredential: async (id) => draft.credentials.get(id),
           getStravaSnapshot: async (id) => draft.snapshots.get(id),
           putRegistration: async (id, value) => draft.registrations.set(id, { ...value }),
-          setOccupied: async (id, value) => {
-            draft.activities.get(id).occupied_count = value;
+          setOccupied: async (id, value, supportVehicleOccupied, selfDriveOccupied) => {
+            const target = draft.activities.get(id);
+            target.occupied_count = value;
+            target.support_vehicle_occupied_count = supportVehicleOccupied;
+            target.self_drive_occupied_count = selfDriveOccupied;
           },
           addAudit: async (value) => {
             if (seed.auditFailure) throw new Error('audit write failed');
@@ -402,7 +405,15 @@ test('事务边界在满员时不写入；并发提交不会超过 capacity', as
   );
   assert.equal(full.state.registrations.size, 0);
 
-  const store = memoryStore({ activity: { capacity: 1 } });
+  const store = memoryStore({
+    activity: {
+      capacity: 2,
+      support_vehicle_capacity: 1,
+      self_drive_capacity: 1,
+      support_vehicle_occupied_count: 0,
+      self_drive_occupied_count: 0,
+    },
+  });
   const secondProfile = { ...profile, _id: 'other' };
   store.state.profiles.set('other', secondProfile);
   store.state.credentials.set('other', { ...credential, _id: 'other' });
@@ -413,6 +424,8 @@ test('事务边界在满员时不写入；并发提交不会超过 capacity', as
   ]);
   assert.deepEqual(settled.map((x) => x.status).sort(), ['fulfilled', 'rejected']);
   assert.equal(store.state.activities.get('a1').occupied_count, 1);
+  assert.equal(store.state.activities.get('a1').self_drive_occupied_count, 1);
+  assert.equal(store.state.activities.get('a1').support_vehicle_occupied_count, 0);
 });
 
 test('取消仅本人 pending/approved 并在事务内释放名额', async () => {
@@ -422,6 +435,7 @@ test('取消仅本人 pending/approved 并在事务内释放名额', async () =>
     activity_id: 'a1',
     openid,
     status: 'approved',
+    options: { gathering_mode: 'support_vehicle' },
     review_history: [],
   };
   expectCode(() => assertCanCancel(registration, 'other'), 'FORBIDDEN');
@@ -429,10 +443,14 @@ test('取消仅本人 pending/approved 并在事务内释放名额', async () =>
     () => assertCanCancel({ ...registration, status: 'rejected' }, openid),
     'INVALID_TRANSITION',
   );
-  const store = memoryStore({ activity: { occupied_count: 1 }, registration });
+  const store = memoryStore({
+    activity: { occupied_count: 1, support_vehicle_occupied_count: 1 },
+    registration,
+  });
   const result = await cancelRegistration(store, { openid, registrationId: id }, now);
   assert.equal(result.status, 'cancelled');
   assert.equal(store.state.activities.get('a1').occupied_count, 0);
+  assert.equal(store.state.activities.get('a1').support_vehicle_occupied_count, 0);
   assert.deepEqual(store.state.audits.at(-1), {
     actor_openid: openid,
     action: 'registration.cancelled',
@@ -484,9 +502,13 @@ test('审批状态机、理由与管理员判断', async () => {
     activity_id: 'a1',
     openid,
     status: 'pending',
+    options: { gathering_mode: 'self_drive' },
     review_history: [],
   };
-  const store = memoryStore({ activity: { occupied_count: 1 }, registration });
+  const store = memoryStore({
+    activity: { occupied_count: 1, self_drive_occupied_count: 1 },
+    registration,
+  });
   const result = await reviewRegistration(
     store,
     { openid, registrationId: id, action: 'reject', reason: '资料需补充' },
@@ -494,6 +516,7 @@ test('审批状态机、理由与管理员判断', async () => {
   );
   assert.equal(result.status, 'rejected');
   assert.equal(store.state.activities.get('a1').occupied_count, 0);
+  assert.equal(store.state.activities.get('a1').self_drive_occupied_count, 0);
   assert.equal(store.state.audits.length, 1);
   assert.equal(store.state.audits[0].action, 'registration.rejected');
 
@@ -576,4 +599,84 @@ test('审计日志只保留安全字段，不含手机号证件号和 token', ()
   assert.equal(text.includes('phone'), false);
   assert.equal(text.includes('id_number'), false);
   assert.equal(text.includes('token'), false);
+});
+
+test('公开活动保留容量拆分和司机信息，但手机号必须脱敏', () => {
+  const output = publicActivity(
+    {
+      ...activity,
+      support_vehicle_capacity: 1,
+      self_drive_capacity: 1,
+      support_vehicle_driver: {
+        nickname: '王师傅',
+        license_plate: '粤B12345',
+        contact_phone: '13812345678',
+      },
+    },
+    now,
+  );
+  assert.equal(output.support_vehicle_capacity, 1);
+  assert.equal(output.self_drive_capacity, 1);
+  assert.deepEqual(output.support_vehicle_driver, {
+    nickname: '王师傅',
+    license_plate: '粤B12345',
+    contact_phone: '138****5678',
+  });
+  assert.equal(output.created_by, undefined);
+});
+
+test('公开活动兼容无司机信息，异常手机号不透传非字符串值', () => {
+  assert.equal(publicActivity(activity, now).support_vehicle_driver, undefined);
+  const output = publicActivity(
+    { ...activity, support_vehicle_driver: { nickname: '师傅', contact_phone: { raw: true } } },
+    now,
+  );
+  assert.equal(output.support_vehicle_driver.contact_phone, '');
+});
+
+test('分类满员时即使总容量未满也拒绝，旧活动缺少分类字段仍可报名', async () => {
+  const categoryFull = memoryStore({
+    activity: {
+      capacity: 4,
+      occupied_count: 1,
+      support_vehicle_capacity: 1,
+      self_drive_capacity: 3,
+      support_vehicle_occupied_count: 1,
+      self_drive_occupied_count: 0,
+    },
+  });
+  await assert.rejects(
+    submitRegistration(
+      categoryFull,
+      { ...input, options: { ...input.options, gathering_mode: 'support_vehicle' } },
+      now,
+    ),
+    (error) => error.code === 'CATEGORY_CAPACITY_FULL',
+  );
+  assert.equal(categoryFull.state.activities.get('a1').occupied_count, 1);
+
+  const legacy = memoryStore({ activity: { capacity: 2, occupied_count: 0 } });
+  await submitRegistration(
+    legacy,
+    { ...input, options: { ...input.options, gathering_mode: 'support_vehicle' } },
+    now,
+  );
+  assert.equal(legacy.state.activities.get('a1').support_vehicle_occupied_count, 1);
+  assert.equal(legacy.state.activities.get('a1').self_drive_occupied_count, 0);
+});
+
+test('公开司机电话无法可靠识别时 fail closed 且不回显原文', () => {
+  for (const contactPhone of ['12345', '010-12345678 ext 9', 'invalid']) {
+    const output = publicActivity(
+      { ...activity, support_vehicle_driver: { contact_phone: contactPhone } },
+      now,
+    );
+    assert.notEqual(output.support_vehicle_driver.contact_phone, contactPhone);
+    assert.match(output.support_vehicle_driver.contact_phone, /^\*|^$/);
+  }
+  assert.equal(
+    publicActivity({ ...activity, support_vehicle_driver: { contact_phone: { raw: true } } }, now)
+      .support_vehicle_driver.contact_phone,
+    '',
+  );
 });

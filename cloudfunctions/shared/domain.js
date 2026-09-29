@@ -241,6 +241,9 @@ const ACTIVITY_FIELDS = [
   'equipment',
   'fee',
   'capacity',
+  'support_vehicle_capacity',
+  'self_drive_capacity',
+  'support_vehicle_driver',
   'occupied_count',
   'signup_deadline',
   'event_start',
@@ -268,14 +271,41 @@ function registrationDecision(activity, now) {
   return { registration_state: 'open', closed_reason: null };
 }
 function publicActivity(activity, now = new Date()) {
+  const output = pick(activity, ACTIVITY_FIELDS);
+  if (output.support_vehicle_driver) {
+    output.support_vehicle_driver = {
+      ...output.support_vehicle_driver,
+      contact_phone: maskPhone(output.support_vehicle_driver.contact_phone),
+    };
+  }
+  if (Number.isInteger(activity.support_vehicle_capacity))
+    output.support_vehicle_remaining = Math.max(
+      0,
+      activity.support_vehicle_capacity -
+        (Number.isInteger(activity.support_vehicle_occupied_count)
+          ? activity.support_vehicle_occupied_count
+          : 0),
+    );
+  if (Number.isInteger(activity.self_drive_capacity))
+    output.self_drive_remaining = Math.max(
+      0,
+      activity.self_drive_capacity -
+        (Number.isInteger(activity.self_drive_occupied_count)
+          ? activity.self_drive_occupied_count
+          : 0),
+    );
   return {
-    ...pick(activity, ACTIVITY_FIELDS),
+    ...output,
     ...registrationDecision(activity, now),
     server_now: now.toISOString(),
   };
 }
 function maskPhone(value) {
-  return typeof value === 'string' ? value.replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2') : '';
+  if (typeof value !== 'string' || !value.trim()) return '';
+  const digits = value.replace(/\D/g, '');
+  if (/^\d{11}$/.test(digits)) return `${digits.slice(0, 3)}****${digits.slice(-4)}`;
+  // 无法可靠识别的电话文本也必须 fail closed，绝不回显原文。
+  return digits.length >= 4 ? `****${digits.slice(-4)}` : '****';
 }
 function publicRegistration(registration) {
   const output = pick(registration, [

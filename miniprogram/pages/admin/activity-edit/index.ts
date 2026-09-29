@@ -1,11 +1,15 @@
 import type { ActivityInput } from '../../../repositories/types';
 import { rideService } from '../../../services/ride-service';
 import { appStore } from '../../../store/app-store';
-
 type Form = {
   title: string;
   description: string;
   capacity: string;
+  supportVehicleCapacity: string;
+  selfDriveCapacity: string;
+  driverNickname: string;
+  licensePlate: string;
+  contactPhone: string;
   deadline: string;
   startAt: string;
   endAt: string;
@@ -22,6 +26,11 @@ const emptyForm = (): Form => ({
   title: '',
   description: '',
   capacity: '20',
+  supportVehicleCapacity: '10',
+  selfDriveCapacity: '10',
+  driverNickname: '',
+  licensePlate: '',
+  contactPhone: '',
   deadline: '',
   startAt: '',
   endAt: '',
@@ -42,6 +51,7 @@ const lines = (value: string) =>
 Page({
   data: {
     allowed: false,
+    isAdmin: false,
     loading: true,
     saving: false,
     error: '',
@@ -58,12 +68,12 @@ Page({
   },
   async onLoad(options: Record<string, string>) {
     await appStore.refreshIdentity(wx.cloud);
-    if (appStore.role !== 'admin' || appStore.authStatus !== 'authenticated') {
-      this.setData({ loading: false, error: '仅已验证管理员可访问' });
+    if (appStore.authStatus !== 'authenticated') {
+      this.setData({ loading: false, error: '请先完成微信身份验证' });
       return;
     }
     const id = typeof options.id === 'string' ? options.id : '';
-    this.setData({ allowed: true, id });
+    this.setData({ allowed: true, isAdmin: appStore.role === 'admin', id });
     if (!id) {
       this.setData({ loading: false });
       return;
@@ -84,6 +94,11 @@ Page({
           title: activity.title,
           description: activity.description,
           capacity: String(activity.capacity),
+          supportVehicleCapacity: String(activity.supportVehicleCapacity ?? 0),
+          selfDriveCapacity: String(activity.selfDriveCapacity ?? activity.capacity),
+          driverNickname: activity.supportVehicleDriver?.nickname || '',
+          licensePlate: activity.supportVehicleDriver?.licensePlate || '',
+          contactPhone: activity.supportVehicleDriver?.contactPhone || '',
           deadline: activity.deadline,
           startAt: activity.startAt,
           endAt: activity.endAt,
@@ -119,6 +134,13 @@ Page({
       description: f.description,
       coverImage: this.data.coverImage,
       capacity: Number(f.capacity),
+      supportVehicleCapacity: Number(f.supportVehicleCapacity),
+      selfDriveCapacity: Number(f.selfDriveCapacity),
+      supportVehicleDriver: {
+        nickname: f.driverNickname,
+        licensePlate: f.licensePlate,
+        contactPhone: f.contactPhone,
+      },
       deadline: f.deadline,
       startAt: f.startAt,
       endAt: f.endAt,

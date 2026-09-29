@@ -1,35 +1,66 @@
 <view class="page form-page">
-  <state-view wx:if="{{loading}}" type="loading" text="正在检查报名条件"/>
+  <state-view wx:if="{{loading}}" type="loading" text="正在检查活动、资料与报名条件"/>
   <block wx:elif="{{profile}}">
     <view class="form-head">
+      <view class="step-line"><text class="step-active">STEP 1 填写</text><text>STEP 2 审核</text><text>STEP 3 凭证</text></view>
       <view class="hero-kicker">CILI · RACE ENTRY</view>
       <view class="form-title">确认报名信息</view>
-      <view class="muted">按步骤确认集合与安全信息后提交审核</view>
+      <view class="activity-context" wx:if="{{activity}}">
+        <view class="context-kicker">CURRENT ACTIVITY</view>
+        <view class="context-title">{{activity.title || '当前骑行活动'}}</view>
+        <view class="context-meta">总名额 {{activity.capacity}} · {{activityAction.label}}</view>
+      </view>
+      <view class="submit-note">提交后进入管理员审核；审核结果以报名凭证页状态为准，请确保实名、集合方式与紧急联系人准确。</view>
     </view>
 
-    <view class="section-label">01 · 参赛资料</view>
-    <view class="card form-card">
-      <view class="row"><view class="title">实名与联系</view><button class="text-button" bindtap="profile" disabled="{{submitting}}">完善资料</button></view>
-      <view class="info-row"><text class="info-label">姓名与手机</text><text class="info-value">{{profile.realName || '未填写实名'}} · {{profile.phone || '未授权手机号'}}</text></view>
+    <view class="section-label"><text>01</text><view><view>实名信息</view><view class="section-hint">用于审核与活动安全联络</view></view></view>
+    <view class="form-card identity-card">
+      <view class="field-head"><view><view class="field-title">实名与联系</view><view class="field-hint">以下内容来自“我的资料”，提交页不可直接修改</view></view><button class="text-button" bindtap="profile" disabled="{{submitting}}">完善资料</button></view>
+      <view class="info-box"><view class="info-label">姓名与手机</view><view class="info-value">{{profile.realName || '未填写实名'}} · {{profile.phone || '未授权手机号'}}</view></view>
     </view>
 
-    <view class="section-label">02 · 集合与能力</view>
-    <view class="card form-card">
-      <view class="field-title">集合方式 <text class="required">必选</text></view>
-      <view class="field-hint">请选择抵达活动集合点的方式</view>
-      <radio-group class="choice-group" data-key="gatheringMode" bindchange="set">
-        <label class="choice {{gatheringMode === 'self_drive' ? 'selected' : ''}}"><radio color="#d8ff36" value="self_drive" checked="{{gatheringMode === 'self_drive'}}" disabled="{{submitting}}"/>自驾</label>
-        <label class="choice {{gatheringMode === 'support_vehicle' ? 'selected' : ''}}"><radio color="#d8ff36" value="support_vehicle" checked="{{gatheringMode === 'support_vehicle'}}" disabled="{{submitting}}"/>需要后援车</label>
+    <view class="section-label"><text>02</text><view><view>集合方式</view><view class="section-hint">分类名额独立计算，请按实际出行方式选择</view></view></view>
+    <view class="form-card">
+      <view class="field-title">选择集合方式 <text class="required">必选</text></view>
+      <view class="field-hint">名额由服务端事务最终确认，显示为 0 的选项不可选择</view>
+      <radio-group class="choice-group transport-choices" data-key="gatheringMode" bindchange="set">
+        <label class="choice choice-detail {{gatheringMode === 'self_drive' ? 'selected' : ''}} {{activity && activity.selfDriveRemaining === 0 ? 'is-disabled' : ''}}">
+          <radio color="#d8ff36" value="self_drive" checked="{{gatheringMode === 'self_drive'}}" disabled="{{submitting || (activity && activity.selfDriveRemaining === 0)}}"/>
+          <view class="choice-copy"><view class="choice-title">自驾前往</view><view class="choice-meta">容量 {{activity && activity.selfDriveCapacity !== undefined ? activity.selfDriveCapacity : '待公布'}} · 剩余 {{activity && activity.selfDriveRemaining !== undefined ? activity.selfDriveRemaining : '待确认'}}</view></view>
+        </label>
+        <label class="choice choice-detail {{gatheringMode === 'support_vehicle' ? 'selected' : ''}} {{activity && activity.supportVehicleRemaining === 0 ? 'is-disabled' : ''}}">
+          <radio color="#d8ff36" value="support_vehicle" checked="{{gatheringMode === 'support_vehicle'}}" disabled="{{submitting || (activity && activity.supportVehicleRemaining === 0)}}"/>
+          <view class="choice-copy"><view class="choice-title">需要后援车</view><view class="choice-meta">容量 {{activity && activity.supportVehicleCapacity !== undefined ? activity.supportVehicleCapacity : '待公布'}} · 剩余 {{activity && activity.supportVehicleRemaining !== undefined ? activity.supportVehicleRemaining : '待确认'}}</view></view>
+        </label>
       </radio-group>
-      <view class="field-title field-gap">骑行经验</view>
-      <radio-group class="choice-group three" data-key="experience" bindchange="set"><label class="choice {{experience === '新手' ? 'selected' : ''}}"><radio color="#d8ff36" value="新手" checked="{{experience === '新手'}}" disabled="{{submitting}}"/>新手</label><label class="choice {{experience === '有一定经验' ? 'selected' : ''}}"><radio color="#d8ff36" value="有一定经验" checked="{{experience === '有一定经验'}}" disabled="{{submitting}}"/>有经验</label><label class="choice {{experience === '常骑' ? 'selected' : ''}}"><radio color="#d8ff36" value="常骑" checked="{{experience === '常骑'}}" disabled="{{submitting}}"/>常骑</label></radio-group>
-      <textarea class="textarea remark" placeholder="饮食、集合或其他备注" value="{{remark}}" data-key="remark" bindinput="set" disabled="{{submitting}}"/>
-      <view class="strava-row"><view><view class="field-title">Strava 骑行数据</view><view class="muted readiness">{{readinessMessage}}</view><view wx:if="{{readiness.state === 'syncing'}}" class="muted readiness">首次授权后会自动准备，无需手动同步。</view></view><button class="text-button" bindtap="strava" disabled="{{submitting}}">管理</button></view>
     </view>
 
-    <view class="section-label">03 · 安全确认</view>
-    <view class="card form-card"><view class="info-row"><text class="info-label">紧急联系人</text><text class="info-value">{{profile.emergencyName}} {{profile.emergencyPhone}}</text></view><view class="privacy-note">信息仅用于活动组织与紧急安全联络，敏感字段仅展示云端脱敏值。</view></view>
+    <view class="section-label"><text>03</text><view><view>能力确认</view><view class="section-hint">骑行经验与 Strava 数据共同用于审核</view></view></view>
+    <view class="form-card">
+      <view class="field-title">骑行经验</view>
+      <view class="field-hint">选择最接近近期稳定骑行状态的一项</view>
+      <radio-group class="choice-group three" data-key="experience" bindchange="set">
+        <label class="choice {{experience === '新手' ? 'selected' : ''}}"><radio color="#d8ff36" value="新手" checked="{{experience === '新手'}}" disabled="{{submitting}}"/>新手</label>
+        <label class="choice {{experience === '有一定经验' ? 'selected' : ''}}"><radio color="#d8ff36" value="有一定经验" checked="{{experience === '有一定经验'}}" disabled="{{submitting}}"/>有经验</label>
+        <label class="choice {{experience === '常骑' ? 'selected' : ''}}"><radio color="#d8ff36" value="常骑" checked="{{experience === '常骑'}}" disabled="{{submitting}}"/>常骑</label>
+      </radio-group>
+      <view class="strava-row"><view class="strava-copy"><view class="field-title">Strava 骑行数据</view><view class="field-hint readiness">{{readinessMessage}}</view><view wx:if="{{readiness.state === 'syncing'}}" class="field-hint readiness">首次授权后会自动准备，无需手动同步。</view></view><button class="text-button" bindtap="strava" disabled="{{submitting}}">管理</button></view>
+    </view>
+
+    <view class="section-label"><text>04</text><view><view>备注与安全</view><view class="section-hint">仅填写组织方需要提前了解的信息</view></view></view>
+    <view class="form-card">
+      <view class="field-title">报名备注 <text class="optional">选填</text></view>
+      <view class="field-hint">可填写饮食限制、集合说明或需要协助的事项，请勿填写无关敏感信息</view>
+      <textarea class="textarea remark" placeholder="饮食、集合或其他备注" value="{{remark}}" data-key="remark" bindinput="set" disabled="{{submitting}}" maxlength="500"/>
+      <view class="safety-box"><view class="info-label">紧急联系人</view><view class="info-value">{{profile.emergencyName || '未填写'}} {{profile.emergencyPhone}}</view></view>
+      <view class="privacy-note">信息仅用于活动组织与紧急安全联络，敏感字段仅展示云端脱敏值。</view>
+    </view>
   </block>
-  <view wx:if="{{errors.length}}" class="error-card"><view class="error-title">请处理以下问题</view><view wx:for="{{errors}}" wx:key="*this">{{item}}</view></view>
-  <view class="fixed"><button class="btn" loading="{{submitting}}" disabled="{{loading || submitting || !profile || !gatheringMode || !readiness.canRegister || !activityCanSubmit}}" bindtap="submit">提交审核</button></view>
+
+  <view wx:if="{{errors.length}}" class="error-card" role="alert"><view class="error-title">暂时无法提交，请处理以下问题</view><view class="error-item" wx:for="{{errors}}" wx:key="*this">· {{item}}</view></view>
+  <view class="fixed action-bar">
+    <button class="secondary back-button" bindtap="back" disabled="{{submitting}}">返回活动</button>
+    <button class="btn submit-button" loading="{{submitting}}" disabled="{{loading || submitting || !profile || !gatheringMode || !readiness.canRegister || !activityCanSubmit}}" bindtap="submit">{{submitting ? '正在提交' : '提交审核'}}</button>
+    <view class="disabled-hint" wx:if="{{!loading && !submitting && (!profile || !gatheringMode || !readiness.canRegister || !activityCanSubmit)}}">请完成页面中的必填项与数据准备后提交</view>
+  </view>
 </view>

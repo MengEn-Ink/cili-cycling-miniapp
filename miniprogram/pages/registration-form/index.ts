@@ -1,4 +1,4 @@
-import type { StravaReadiness } from '../../models';
+import type { Activity, StravaReadiness } from '../../models';
 import { runPageTask } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
 import {
@@ -45,17 +45,22 @@ async function loadBoundedReadiness(isCancelled: () => boolean): Promise<StravaR
   return pollStravaReadiness(() => rideService.ensureStravaReady(), { isCancelled });
 }
 
-async function loadActivityAction(activityId: string): Promise<ActivityAction> {
-  if (!activityId) return unavailableAction();
+async function loadActivityContext(
+  activityId: string,
+): Promise<{ activity: Activity; action: ActivityAction }> {
+  if (!activityId) throw new Error('缺少活动 ID');
   const [activity, registrations] = await Promise.all([
     rideService.getActivity(activityId),
     rideService.listRegistrations(),
   ]);
   if (!activity) throw new Error('活动不存在');
-  return resolveActivityAction(
+  return {
     activity,
-    registrations.find((registration) => registration.activityId === activityId),
-  );
+    action: resolveActivityAction(
+      activity,
+      registrations.find((registration) => registration.activityId === activityId),
+    ),
+  };
 }
 
 Page({
@@ -65,6 +70,7 @@ Page({
   pageVisible: false,
   data: {
     activityId: '',
+    activity: null as Activity | null,
     profile: null as any,
     gatheringMode: '',
     experience: '常骑',
@@ -92,15 +98,17 @@ Page({
     const [profileState, readinessState, activityState] = await Promise.all([
       runPageTask(() => rideService.getProfile(), '个人资料加载失败'),
       runPageTask(() => loadBoundedReadiness(isCancelled), 'Strava 数据准备状态加载失败'),
-      runPageTask(() => loadActivityAction(this.data.activityId), '活动报名状态加载失败'),
+      runPageTask(() => loadActivityContext(this.data.activityId), '活动报名状态加载失败'),
     ]);
     if (requestId !== this.loadRequestId) return;
     const errors = [profileState.error, readinessState.error, activityState.error].filter(Boolean);
     const readiness =
       readinessState.data ||
       requestFailedReadiness(readinessState.error || 'Strava 数据准备状态加载失败');
-    const activityAction = activityState.data || unavailableAction();
+    const activityContext = activityState.data;
+    const activityAction = activityContext?.action || unavailableAction();
     this.setData({
+      activity: activityContext?.activity || null,
       profile: profileState.data || null,
       readiness,
       readinessMessage: stravaReadinessMessage(readiness),
@@ -164,6 +172,9 @@ Page({
       this.submissionPending = false;
       if (this.pageVisible) this.setData({ submitting: false });
     }
+  },
+  back() {
+    if (!this.data.submitting) wx.navigateBack();
   },
   strava() {
     if (this.data.submitting) return;

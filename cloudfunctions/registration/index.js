@@ -44,11 +44,18 @@ function transactionStore() {
             const { _id, ...data } = value;
             await transaction.collection('registrations').doc(id).set({ data });
           },
-          setOccupied: (id, occupied) =>
+          setOccupied: (id, occupied, supportVehicleOccupied, selfDriveOccupied) =>
             transaction
               .collection('activities')
               .doc(id)
-              .update({ data: { occupied_count: occupied, updated_at: db.serverDate() } }),
+              .update({
+                data: {
+                  occupied_count: occupied,
+                  support_vehicle_occupied_count: supportVehicleOccupied,
+                  self_drive_occupied_count: selfDriveOccupied,
+                  updated_at: db.serverDate(),
+                },
+              }),
           addAudit: (audit) => transaction.collection('audit_logs').add({ data: audit }),
         }),
       ),

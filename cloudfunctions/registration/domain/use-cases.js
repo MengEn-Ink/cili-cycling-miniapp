@@ -16,6 +16,56 @@ const {
   buildAudit,
 } = require('./domain');
 
+function categoryQuota(activity, gatheringMode) {
+  const capacityField =
+    gatheringMode === 'support_vehicle' ? 'support_vehicle_capacity' : 'self_drive_capacity';
+  const occupiedField =
+    gatheringMode === 'support_vehicle'
+      ? 'support_vehicle_occupied_count'
+      : 'self_drive_occupied_count';
+  // 旧活动没有分类字段时沿用总容量，分类计数从 0 开始；总容量门禁仍然生效。
+  const capacity = Number.isInteger(activity[capacityField])
+    ? activity[capacityField]
+    : activity.capacity;
+  const occupied = Number.isInteger(activity[occupiedField]) ? activity[occupiedField] : 0;
+  const hasOccupied = Number.isInteger(activity[occupiedField]);
+  if (capacity < 0 || occupied < 0) fail('SCHEMA_INVALID', '分类名额计数异常');
+  return { capacity, occupied, occupiedField, hasOccupied };
+}
+
+function occupancyAfter(activity, gatheringMode, delta) {
+  const recognized = ['support_vehicle', 'self_drive'].includes(gatheringMode);
+  if (!recognized)
+    return {
+      occupied: activity.occupied_count + delta,
+      supportVehicleOccupied: Number.isInteger(activity.support_vehicle_occupied_count)
+        ? activity.support_vehicle_occupied_count
+        : 0,
+      selfDriveOccupied: Number.isInteger(activity.self_drive_occupied_count)
+        ? activity.self_drive_occupied_count
+        : 0,
+    };
+  const quota = categoryQuota(activity, gatheringMode);
+  // 旧活动已有报名但没有分类计数时无法反推分类，释放时保持分类计数为 0。
+  const next = delta < 0 && !quota.hasOccupied ? 0 : quota.occupied + delta;
+  if (next < 0) fail('SCHEMA_INVALID', '分类名额计数异常');
+  return {
+    occupied: activity.occupied_count + delta,
+    supportVehicleOccupied:
+      quota.occupiedField === 'support_vehicle_occupied_count'
+        ? next
+        : Number.isInteger(activity.support_vehicle_occupied_count)
+          ? activity.support_vehicle_occupied_count
+          : 0,
+    selfDriveOccupied:
+      quota.occupiedField === 'self_drive_occupied_count'
+        ? next
+        : Number.isInteger(activity.self_drive_occupied_count)
+          ? activity.self_drive_occupied_count
+          : 0,
+  };
+}
+
 async function submitRegistration(store, { openid, activityId, options }, now = new Date()) {
   assertNoForbiddenFields(options);
   if (typeof activityId !== 'string' || !activityId) fail('VALIDATION_FAILED', '缺少活动 ID');
@@ -34,6 +84,9 @@ async function submitRegistration(store, { openid, activityId, options }, now = 
     const strava = selectCanonicalStrava(credential, snapshot, now);
     const safeOptions = validateOptions(options);
     if (activity.occupied_count >= activity.capacity) fail('CAPACITY_FULL', '活动名额已满');
+    const quota = categoryQuota(activity, safeOptions.gathering_mode);
+    if (quota.occupied >= quota.capacity) fail('CATEGORY_CAPACITY_FULL', '所选集合方式名额已满');
+    const nextOccupancy = occupancyAfter(activity, safeOptions.gathering_mode, 1);
 
     const history =
       existing && Array.isArray(existing.review_history) ? existing.review_history : [];
@@ -63,7 +116,12 @@ async function submitRegistration(store, { openid, activityId, options }, now = 
     };
     await tx.putRegistration(id, value);
     // 活动文档是事务冲突点；并发提交必须串行核对并递增，不能先 count 后 insert。
-    await tx.setOccupied(activityId, activity.occupied_count + 1);
+    await tx.setOccupied(
+      activityId,
+      nextOccupancy.occupied,
+      nextOccupancy.supportVehicleOccupied,
+      nextOccupancy.selfDriveOccupied,
+    );
     await tx.addAudit(
       buildAudit(
         openid,
@@ -88,9 +146,15 @@ async function cancelRegistration(store, { openid, registrationId: id }, now = n
     const activity = await tx.getActivity(registration.activity_id);
     if (!activity || !Number.isInteger(activity.occupied_count) || activity.occupied_count < 1)
       fail('SCHEMA_INVALID', '活动名额计数异常');
+    const nextOccupancy = occupancyAfter(activity, registration.options?.gathering_mode, -1);
     const value = { ...registration, status: 'cancelled', updated_at: now };
     await tx.putRegistration(id, value);
-    await tx.setOccupied(registration.activity_id, activity.occupied_count - 1);
+    await tx.setOccupied(
+      registration.activity_id,
+      nextOccupancy.occupied,
+      nextOccupancy.supportVehicleOccupied,
+      nextOccupancy.selfDriveOccupied,
+    );
     await tx.addAudit(
       buildAudit(openid, 'registration.cancelled', id, now, {
         activity_id: registration.activity_id,
@@ -137,7 +201,13 @@ async function reviewRegistration(
     if (nextStatus === 'rejected') {
       const activity = await tx.getActivity(registration.activity_id);
       if (!activity || activity.occupied_count < 1) fail('SCHEMA_INVALID', '活动名额计数异常');
-      await tx.setOccupied(registration.activity_id, activity.occupied_count - 1);
+      const nextOccupancy = occupancyAfter(activity, registration.options?.gathering_mode, -1);
+      await tx.setOccupied(
+        registration.activity_id,
+        nextOccupancy.occupied,
+        nextOccupancy.supportVehicleOccupied,
+        nextOccupancy.selfDriveOccupied,
+      );
     }
     await tx.addAudit(
       buildAudit(openid, `registration.${nextStatus}`, id, now, {
