@@ -1,16 +1,60 @@
 <view class="page profile-page">
   <view class="brand-bar"><view class="cili-mark"><text class="mark-cut"></text></view><view class="brand-word">CILI <text>此里</text></view><view class="profile-code">RIDER / 01</view></view>
-  <view class="profile-hero">
-    <view class="avatar"><text>C</text></view>
+  <view class="profile-hero {{heroBackgrounds.length ? 'has-bg' : ''}}">
+    <swiper
+      wx:if="{{heroBackgrounds.length}}"
+      class="hero-swiper"
+      autoplay="{{heroBackgrounds.length > 1}}"
+      circular
+      interval="5000"
+    >
+      <swiper-item wx:for="{{heroBackgrounds}}" wx:key="url">
+        <image class="hero-bg-image" src="{{item.url}}" mode="aspectFill" />
+      </swiper-item>
+    </swiper>
+    <view class="hero-shade" wx:if="{{heroBackgrounds.length}}"></view>
+    <view class="avatar">
+      <image wx:if="{{heroAvatarUrl}}" class="avatar-image" src="{{heroAvatarUrl}}" mode="aspectFill" />
+      <text wx:else>C</text>
+    </view>
     <view class="profile-copy"><view class="hero-kicker">RIDER PROFILE</view><view class="profile-name">{{profile ? profile.nickname : '欢迎来到此里'}}</view><view class="auth-line"><text class="auth-dot {{authStatus === 'authenticated' ? 'verified' : ''}}"></text>{{authStatus === 'authenticated' ? '微信身份已验证' : '请先完成微信云身份验证'}}</view></view>
   </view>
-  <view class="card auth-card" wx:if="{{authStatus !== 'authenticated'}}"><view class="panel-index">IDENTITY CHECK</view><view class="title">身份引导</view><view class="muted">{{authError || '正在连接身份服务'}}</view><button class="secondary" bindtap="retryAuth">重试身份验证</button></view>
-  <view class="section-label"><text>01</text> 我的资料</view>
-  <view class="card profile-card" wx:if="{{profile}}"><view class="panel-index">PROFILE COMPLETION</view><view class="row"><view><view class="title">常用资料</view><view class="muted">报名资料仅自己与授权审核员可见</view></view><button class="edit-button" bindtap="edit">编辑</button></view><view class="progress-head"><text>资料完整度</text><text class="progress-number">{{profile.completeness}}%</text></view><view class="progress"><view class="progress-value" style="width: {{profile.completeness}}%"></view></view><view class="corner-cut"></view></view>
-  <view class="card empty-profile" wx:elif="{{!loading}}"><view class="title">资料尚未配置</view><view class="muted">{{error || '请创建资料后再报名。'}}</view><button class="btn" bindtap="edit">去完善</button></view>
-  <view class="section-label"><text>02</text> 骑行服务</view>
-  <view class="menu-card capability-entry" bindtap="capabilityCard"><view class="menu-icon capability-icon">C</view><view class="menu-copy"><view class="menu-title">我的骑行名片</view><view class="muted">查看仅自己可见的近 90 天骑行能力</view></view><text class="chevron">›</text></view>
-  <view class="menu-card" bindtap="strava"><view class="menu-icon">S</view><view class="menu-copy"><view class="menu-title">Strava 数据</view><view class="muted">查看真实绑定与近 90 天快照</view></view><text class="chevron">›</text></view>
-  <view class="menu-card" wx:if="{{authStatus === 'authenticated'}}" bindtap="activities"><view class="menu-icon">M</view><view class="menu-copy"><view class="menu-title">我的活动</view><view class="muted">创建草稿、编辑并发布自己的骑行活动</view></view><text class="chevron">›</text></view>
-  <view class="menu-card" wx:if="{{isAdmin}}" bindtap="admin"><view class="menu-icon admin-icon">A</view><view class="menu-copy"><view class="menu-title">报名审批</view><view class="muted">审核活动报名与骑手资料</view></view><text class="chevron">›</text></view>
+
+  <state-view wx:if="{{loading}}" type="loading" text="正在获取资料" />
+
+  <view wx:elif="{{authStatus !== 'authenticated'}}" class="card auth-card">
+    <view class="panel-index">IDENTITY CHECK</view>
+    <view class="title">身份验证</view>
+    <view class="muted">{{authError || '为了您的数据安全，请先完成验证'}}</view>
+    <button class="secondary" bindtap="retryAuth">开始验证</button>
+  </view>
+
+  <view wx:elif="{{error}}" class="card auth-card">
+    <view class="panel-index">SERVICE OFFLINE</view>
+    <view class="title">加载失败</view>
+    <view class="muted">{{error}}</view>
+    <button class="secondary" bindtap="load">重试</button>
+  </view>
+
+  <view class="card guidance-card" wx:if="{{hasGuidance}}">
+    <view class="panel-index">GUIDANCE</view>
+    <view class="title">欢迎来到此里</view>
+    <view class="muted">为了给您提供更好的服务，建议先完善资料并绑定 Strava。</view>
+    <view class="guidance-actions">
+      <button class="btn" bindtap="edit">完善资料</button>
+      <button class="secondary" bindtap="dismissGuidance">我知道了</button>
+    </view>
+  </view>
+
+  <block wx:if="{{profile}}">
+    <view class="section-label"><text>01</text> 我的资料</view>
+    <view class="card profile-card"><view class="panel-index">PROFILE COMPLETION</view><view class="row"><view><view class="title">常用资料</view><view class="muted">报名资料仅自己与授权审核员可见</view></view><button class="edit-button" bindtap="edit">编辑</button></view><view class="progress-head"><text>资料完整度</text><text class="progress-number">{{profile.completeness}}%</text></view><view class="progress"><view class="progress-value" style="width: {{profile.completeness}}%"></view></view><view class="corner-cut"></view></view>
+    <view class="section-label"><text>02</text> 骑行服务</view>
+    <view class="menu-card capability-entry" bindtap="capabilityCard"><view class="menu-icon capability-icon">C</view><view class="menu-copy"><view class="menu-title">我的骑行名片</view><view class="muted">查看仅自己可见的近 90 天骑行能力</view></view><text class="chevron">›</text></view>
+    <view class="menu-card" bindtap="strava"><view class="menu-icon">S</view><view class="menu-copy"><view class="menu-title">Strava 数据</view><view class="muted">查看真实绑定与近 90 天快照</view></view><text class="chevron">›</text></view>
+    <view class="menu-card" wx:if="{{authStatus === 'authenticated'}}" bindtap="activities"><view class="menu-icon">M</view><view class="menu-copy"><view class="menu-title">我的活动</view><view class="muted">创建草稿、编辑并发布自己的骑行活动</view></view><text class="chevron">›</text></view>
+    <view class="menu-card" wx:if="{{isAdmin}}" bindtap="admin"><view class="menu-icon admin-icon">A</view><view class="menu-copy"><view class="menu-title">报名审批</view><view class="muted">审核活动报名与骑手资料</view></view><text class="chevron">›</text></view>
+  </block>
+
+  <view class="card empty-profile" wx:elif="{{!loading && !error}}"><view class="title">资料尚未配置</view><view class="muted">请创建资料后再报名。</view><button class="btn" bindtap="edit">去完善</button></view>
 </view>

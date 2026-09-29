@@ -208,6 +208,10 @@ function mapProfile(raw: unknown): Profile {
     nickname: value.nickname,
     title: typeof value.title === 'string' ? value.title : '',
     avatarId: typeof value.avatar_file_id === 'string' ? value.avatar_file_id : '',
+    avatarSource: ['wechat', 'strava'].includes(String(value.avatar_source))
+      ? (value.avatar_source as 'wechat' | 'strava')
+      : 'wechat',
+    hasCompletedGuidance: value.has_completed_guidance === true,
     realName: typeof value.real_name_masked === 'string' ? value.real_name_masked : '',
     phone: typeof value.phone_masked === 'string' ? value.phone_masked : '',
     gender: typeof value.gender === 'string' ? value.gender : '',
@@ -285,6 +289,7 @@ function mapPersonalCapabilityCard(raw: unknown): PersonalCapabilityCard {
     profile: {
       displayName: profile.display_name,
       title: profile.title,
+      avatarUrl: httpsUrl(profile.avatar_url),
     },
     backgrounds,
     summary: {
@@ -296,6 +301,7 @@ function mapPersonalCapabilityCard(raw: unknown): PersonalCapabilityCard {
     },
     coverage,
     syncedAt,
+    needsStravaReauth: value.needs_strava_reauth === true,
   };
 }
 function mapRegistration(raw: unknown): Registration {
@@ -747,9 +753,12 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
       ['gender', 'gender'],
       ['emergencyName', 'emergency_name'],
       ['avatarFileId', 'avatar_file_id'],
+      ['avatarSource', 'avatar_source'],
     ];
     for (const [from, to] of simple)
       if (typeof profile[from] === 'string') data[to] = profile[from];
+    if (typeof profile.hasCompletedGuidance === 'boolean')
+      data.has_completed_guidance = profile.hasCompletedGuidance;
     if (Array.isArray(profile.photos))
       data.photos = profile.photos.map((item) => ({ file_id: item.id, category: item.category }));
     if (typeof profile.realName === 'string' && profile.realName) data.real_name = profile.realName;

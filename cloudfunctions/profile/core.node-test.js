@@ -52,6 +52,8 @@ test('脱敏与响应不返回敏感明文/密文', () => {
   };
   const dto = response(source);
   assert.equal(dto.completeness, 75);
+  assert.equal(dto.avatar_source, 'wechat');
+  assert.equal(dto.has_completed_guidance, false);
   assert.deepEqual(dto.sensitive_status, {
     real_name: true,
     phone: true,
@@ -83,9 +85,13 @@ test('update 加密敏感字段并把手填手机号标记为未验证', () => {
       phone: '13812345678',
       emergency_phone: '13912345678',
       photos: [{ file_id: 'cloud://a', category: 'ride' }],
+      avatar_source: 'strava',
+      has_completed_guidance: true,
     },
     key,
   );
+  assert.equal(data.avatar_source, 'strava');
+  assert.equal(data.has_completed_guidance, true);
   assert.equal(decrypt(data.real_name_cipher, key), '曹蒙恩');
   assert.equal(Object.hasOwn(data, 'id_number_cipher'), false);
   assert.equal(decrypt(data.phone_cipher, key), '13812345678');

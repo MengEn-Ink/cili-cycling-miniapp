@@ -315,6 +315,8 @@ function response(doc = {}) {
     nickname: typeof doc.nickname === 'string' ? doc.nickname : '',
     title: typeof doc.title === 'string' ? doc.title : '',
     avatar_file_id: typeof doc.avatar_file_id === 'string' ? doc.avatar_file_id : '',
+    avatar_source: ['wechat', 'strava'].includes(doc.avatar_source) ? doc.avatar_source : 'wechat',
+    has_completed_guidance: doc.has_completed_guidance === true,
     photos: Array.isArray(doc.photos) ? doc.photos : [],
     gender: typeof doc.gender === 'string' ? doc.gender : '',
     emergency_name: typeof doc.emergency_name === 'string' ? doc.emergency_name : '',
@@ -350,9 +352,13 @@ function buildUpdate(event, keyValue) {
     ['gender', 'gender', 20],
     ['emergency_name', 'emergency_name', 40],
     ['avatar_file_id', 'avatar_file_id', 512],
+    ['avatar_source', 'avatar_source', 20],
   ]) {
     const value = cleanText(event[input], max);
     if (value !== undefined) data[output] = value;
+  }
+  if (typeof event.has_completed_guidance === 'boolean') {
+    data.has_completed_guidance = event.has_completed_guidance;
   }
   if (event.photos !== undefined) {
     if (
