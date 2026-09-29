@@ -14,12 +14,12 @@
         <view class="metric-panel">
           <view class="detail-metric"><view class="metric-number">{{item.route.distanceKm}}</view><view class="metric-label">KM / 里程</view></view>
           <view class="detail-metric"><view class="metric-number">{{item.route.elevationM}}</view><view class="metric-label">M / 爬升</view></view>
-          <view class="detail-metric"><view class="metric-number">{{item.capacity}}</view><view class="metric-label">名额</view></view>
+          <view class="detail-metric"><view class="metric-number" wx:if="{{item.capacity > 0}}">{{item.capacity}}</view><view class="metric-number" wx:else>待补充</view><view class="metric-label">名额</view></view>
         </view>
         <view class="card"><view class="card-index">01</view><view class="title">路线概况</view><view class="body-text">{{item.description}}</view></view>
         <view class="card"><view class="card-index">02</view><view class="title">时间安排</view><view wx:for="{{item.schedule}}" wx:key="time" class="schedule-row"><view class="schedule-time">{{item.time}}</view><view class="schedule-dot"></view><view class="schedule-copy"><view>{{item.title}}</view><view class="muted">{{item.location}}</view></view></view></view>
         <view class="card"><view class="card-index">03</view><view class="title">装备与注意</view><view class="list-item" wx:for="{{item.equipment}}" wx:key="*this"><text class="check">✓</text><text>{{item}}</text></view><view class="notice-item" wx:for="{{item.notices}}" wx:key="*this"><text class="notice-mark">/</text><text>{{item}}</text></view></view>
-        <view class="card"><view class="card-index">04</view><view class="title">费用说明</view><view class="body-text">{{item.fee}}</view></view>
+        <view class="card"><view class="card-index">04</view><view class="title">费用说明</view><view class="body-text">{{item.fee || '费用待补充'}}</view></view>
       </view>
     </view>
   </state-view>

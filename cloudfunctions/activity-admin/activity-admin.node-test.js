@@ -126,25 +126,22 @@ test('草稿对已填写运营字段严格校验且拒绝服务端字段', () =>
   expectCode(() => validateDraftInput({ ...input, occupied_count: 0 }), 'FORBIDDEN_FIELD');
 });
 
-test('发布与结束强制完整运营字段和未来时间顺序', () => {
-  const required = [
+test('发布只强制基础事实，运营字段可后补且后援司机仍严格校验', () => {
+  for (const field of ['event_start', 'event_end']) {
+    const incomplete = { ...input, status: 'published' };
+    delete incomplete[field];
+    expectCode(() => validatePublishInput(incomplete, 0, now), 'VALIDATION_FAILED');
+  }
+  const fastPublish = { ...input, status: 'published' };
+  for (const field of [
     'capacity',
     'support_vehicle_capacity',
     'self_drive_capacity',
     'fee',
     'signup_deadline',
-    'event_start',
-    'event_end',
-  ];
-  for (const field of required) {
-    const incomplete = { ...input, status: 'published' };
-    delete incomplete[field];
-    expectCode(() => validatePublishInput(incomplete, 0, now), 'VALIDATION_FAILED');
-  }
-  expectCode(
-    () => validatePublishInput({ ...input, status: 'published', fee: '' }, 0, now),
-    'VALIDATION_FAILED',
-  );
+  ])
+    delete fastPublish[field];
+  assert.equal(validatePublishInput(fastPublish, 0, now).status, 'published');
   expectCode(
     () =>
       validatePublishInput(

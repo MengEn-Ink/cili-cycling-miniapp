@@ -17,6 +17,8 @@ function closedLabel(activity: Activity): string {
       return '报名已截止';
     case 'full':
       return '名额已满';
+    case 'incomplete':
+      return '报名信息待完善';
     default:
       return '活动状态不可用';
   }

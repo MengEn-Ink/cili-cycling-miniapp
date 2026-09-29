@@ -607,8 +607,8 @@ test('活动报名状态完全由服务端时间和活动事实裁决', () => {
     [{ signup_deadline: serverNow.toISOString(), occupied_count: 2 }, 'closed', 'deadline'],
     [{ event_end: serverNow.toISOString(), occupied_count: 2 }, 'closed', 'finished'],
     [{ status: 'finished', signup_deadline: 'invalid' }, 'closed', 'finished'],
-    [{ occupied_count: undefined }, 'closed', 'unavailable'],
-    [{ signup_deadline: 'invalid' }, 'closed', 'unavailable'],
+    [{ occupied_count: undefined }, 'closed', 'incomplete'],
+    [{ signup_deadline: 'invalid' }, 'closed', 'incomplete'],
     [{ status: 'draft' }, 'closed', 'unavailable'],
   ];
 

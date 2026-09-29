@@ -241,22 +241,17 @@ function validateDraftInput(input, occupiedCount = 0) {
 }
 function validatePublishInput(input, occupiedCount = 0, now = new Date(), options = {}) {
   const safe = validateBaseActivityInput(input, occupiedCount, ['published', 'finished']);
-  for (const field of [
-    'capacity',
-    'support_vehicle_capacity',
-    'self_drive_capacity',
-    'fee',
-    'signup_deadline',
-    'event_start',
-    'event_end',
-  ])
-    if (safe[field] === undefined) fail('VALIDATION_FAILED', '发布前请补全活动运营信息');
-  if (!safe.fee.remark && safe.fee.included.length === 0 && safe.fee.excluded.length === 0)
-    fail('VALIDATION_FAILED', '发布前请填写费用说明');
-  if (options.requireFutureDeadline !== false && safe.signup_deadline.getTime() <= now.getTime())
+  for (const field of ['event_start', 'event_end'])
+    if (safe[field] === undefined) fail('VALIDATION_FAILED', '发布前请补全活动时间');
+  if (!safe.route.start || !safe.route.end) fail('VALIDATION_FAILED', '发布前请补全路线起点和终点');
+  if (
+    options.requireFutureDeadline !== false &&
+    safe.signup_deadline &&
+    safe.signup_deadline.getTime() <= now.getTime()
+  )
     fail('INVALID_ACTIVITY_TIME', '报名截止时间必须晚于当前时间');
   safe.support_vehicle_driver =
-    safe.support_vehicle_capacity > 0
+    (safe.support_vehicle_capacity || 0) > 0
       ? cleanDriver(input.support_vehicle_driver, true)
       : input.support_vehicle_driver === undefined
         ? { nickname: '', license_plate: '', contact_phone: '' }

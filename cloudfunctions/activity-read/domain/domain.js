@@ -67,14 +67,15 @@ function assertActivityOpen(activity, now) {
   if (!activity || activity.is_deleted === true || activity.status !== 'published')
     fail('ACTIVITY_NOT_AVAILABLE', '活动未发布或已下线');
   const deadline = Date.parse(activity.signup_deadline);
-  if (!Number.isFinite(deadline) || deadline <= now.getTime()) fail('SIGNUP_CLOSED', '报名已截止');
+  if (!Number.isFinite(deadline)) fail('SIGNUP_INFO_INCOMPLETE', '报名信息待完善');
+  if (deadline <= now.getTime()) fail('SIGNUP_CLOSED', '报名已截止');
   if (
     !Number.isInteger(activity.capacity) ||
     activity.capacity < 1 ||
     !Number.isInteger(activity.occupied_count) ||
     activity.occupied_count < 0
   ) {
-    fail('SCHEMA_INVALID', '活动名额计数异常');
+    fail('SIGNUP_INFO_INCOMPLETE', '报名信息待完善');
   }
 }
 function assertProfileReady(profile) {
@@ -269,7 +270,7 @@ function registrationDecision(activity, now) {
   if (capacityValid && occupiedValid && activity.occupied_count >= activity.capacity)
     return { registration_state: 'closed', closed_reason: 'full' };
   if (!end || !deadline || !capacityValid || !occupiedValid)
-    return { registration_state: 'closed', closed_reason: 'unavailable' };
+    return { registration_state: 'closed', closed_reason: 'incomplete' };
   return { registration_state: 'open', closed_reason: null };
 }
 function publicActivity(activity, now = new Date()) {

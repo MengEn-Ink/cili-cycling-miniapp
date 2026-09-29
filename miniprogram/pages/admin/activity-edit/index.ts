@@ -49,8 +49,6 @@ const lines = (value: string) =>
     .map((item) => item.trim())
     .filter(Boolean);
 const optionalNumber = (value: string) => (value.trim() ? Number(value) : undefined);
-const isNonNegativeIntegerText = (value: string) =>
-  value.trim() !== '' && Number.isInteger(Number(value)) && Number(value) >= 0;
 Page({
   data: {
     allowed: false,
@@ -150,32 +148,20 @@ Page({
   },
   recomputePublishReadiness() {
     const f = this.data.form as Form;
-    const capacity = Number(f.capacity);
-    const support = Number(f.supportVehicleCapacity);
-    const selfDrive = Number(f.selfDriveCapacity);
-    const deadline = new Date(f.deadline).getTime();
+    const support = optionalNumber(f.supportVehicleCapacity) || 0;
     const start = new Date(f.startAt).getTime();
     const end = new Date(f.endAt).getTime();
     const driverReady =
       support === 0 ||
       Boolean(f.driverNickname.trim() && f.licensePlate.trim() && f.contactPhone.trim());
-    const feeReady = Boolean(
-      f.fee.trim() || this.data.feeIncluded.length || this.data.feeExcluded.length,
-    );
     const canPublish = Boolean(
-      Number.isInteger(capacity) &&
-      capacity > 0 &&
-      isNonNegativeIntegerText(f.supportVehicleCapacity) &&
-      isNonNegativeIntegerText(f.selfDriveCapacity) &&
-      support + selfDrive === capacity &&
-      Number.isFinite(deadline) &&
+      f.title.trim() &&
+      f.routeStart.trim() &&
+      f.routeEnd.trim() &&
       Number.isFinite(start) &&
       Number.isFinite(end) &&
-      Date.now() < deadline &&
-      deadline < start &&
       start < end &&
-      driverReady &&
-      feeReady,
+      driverReady,
     );
     this.setData({ canPublish });
   },

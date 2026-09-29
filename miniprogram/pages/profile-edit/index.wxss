@@ -182,3 +182,52 @@
 .save-action {
   margin-top: 28rpx;
 }
+
+/* Page-scoped CILI dark theme: do not override shared global card/input contracts. */
+page {
+  background: #0b0b0c;
+}
+.profile-form-page {
+  min-height: 100vh;
+  padding-bottom: calc(190rpx + env(safe-area-inset-bottom));
+  background: #0b0b0c;
+  color: #f7f7f5;
+}
+.profile-form-page .form-card {
+  border: 1rpx solid #4a4a4e;
+  background: #1a1a1c;
+}
+.profile-form-page .muted,
+.profile-form-page .field-tip,
+.profile-form-page .photo-count,
+.profile-form-page .avatar-status {
+  color: #aaaab0;
+}
+.profile-form-page .form-card .input {
+  height: auto;
+  min-height: 88rpx;
+  padding: 20rpx 24rpx;
+  border: 1rpx solid #555559;
+  background: #101012;
+  color: #f7f7f5;
+}
+.profile-form-page textarea.input {
+  min-height: 240rpx;
+}
+.profile-form-page .avatar-editor {
+  border-top-color: #3f3f43;
+}
+.profile-form-page .avatar-action {
+  border-color: #555559;
+  background: #151517;
+  color: #f7f7f5;
+}
+.profile-form-page .avatar-action::before {
+  background: #d55b1f;
+}
+.profile-form-page .avatar-help-link {
+  color: #e9753b;
+}
+.profile-form-page .avatar-status-error {
+  color: #ff8f86;
+}

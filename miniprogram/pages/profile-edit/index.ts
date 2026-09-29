@@ -26,6 +26,20 @@ function isUserCancellation(error: unknown): boolean {
   return /(?:^|[\s:])cancel(?:led)?(?:$|[\s:])/i.test(message);
 }
 
+function avatarFailureMessage(error: unknown): string {
+  const code =
+    error && typeof error === 'object' && typeof (error as { code?: unknown }).code === 'string'
+      ? (error as { code: string }).code
+      : '';
+  if (['STRAVA_NOT_CONNECTED', 'STRAVA_AVATAR_UNAVAILABLE'].includes(code))
+    return 'Strava 尚未连接或没有可用头像，请先同步 Strava';
+  if (code.startsWith('STRAVA_AVATAR_')) return 'Strava 头像获取失败，请检查网络后重试';
+  if (['MEDIA_OBJECT_NOT_FOUND', 'MEDIA_OBJECT_VERIFY_FAILED'].includes(code))
+    return '头像文件暂未同步到云端，请稍后重试';
+  if (code === 'CALL_FAILED') return '头像更新结果未确认，请稍后重试';
+  return '头像更新失败，请稍后重试';
+}
+
 function settleBeforeDeadline<T>(promise: Promise<T>, timeoutMs: number): Promise<T | null> {
   return new Promise((resolve) => {
     let settled = false;
@@ -227,7 +241,7 @@ Page({
       await action();
     } catch (error) {
       if (!isUserCancellation(error)) {
-        wx.showToast({ title: '头像更新失败，请稍后重试', icon: 'none' });
+        wx.showToast({ title: avatarFailureMessage(error), icon: 'none' });
       }
     } finally {
       this.setData({ avatarBusy: false });

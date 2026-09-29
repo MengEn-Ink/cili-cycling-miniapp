@@ -304,7 +304,7 @@ describe('资料编辑头像交互', () => {
     });
     expect(wx.showToast).toHaveBeenCalledWith({ title: '头像已更新' });
     expect(wx.showToast).not.toHaveBeenCalledWith({
-      title: '头像更新失败，请稍后重试',
+      title: '头像更新结果未确认，请稍后重试',
       icon: 'none',
     });
   });
@@ -328,6 +328,32 @@ describe('资料编辑头像交互', () => {
     await page.chooseCustomAvatar();
 
     expect(wx.showToast).toHaveBeenCalledWith({
+      title: '头像更新结果未确认，请稍后重试',
+      icon: 'none',
+    });
+  });
+
+  it('稳定错误码提供准确提示，未知错误回退为通用提示', async () => {
+    await page.runAvatarAction(() =>
+      Promise.reject(
+        Object.assign(new Error('对象尚不可见'), { code: 'MEDIA_OBJECT_VERIFY_FAILED' }),
+      ),
+    );
+    expect(wx.showToast).toHaveBeenLastCalledWith({
+      title: '头像文件暂未同步到云端，请稍后重试',
+      icon: 'none',
+    });
+
+    await page.runAvatarAction(() =>
+      Promise.reject(Object.assign(new Error('未连接'), { code: 'STRAVA_NOT_CONNECTED' })),
+    );
+    expect(wx.showToast).toHaveBeenLastCalledWith({
+      title: 'Strava 尚未连接或没有可用头像，请先同步 Strava',
+      icon: 'none',
+    });
+
+    await page.runAvatarAction(() => Promise.reject(new Error('unexpected')));
+    expect(wx.showToast).toHaveBeenLastCalledWith({
       title: '头像更新失败，请稍后重试',
       icon: 'none',
     });
@@ -398,7 +424,7 @@ describe('资料编辑头像交互', () => {
     });
     expect(wx.showToast).toHaveBeenCalledWith({ title: 'Strava 头像已导入' });
     expect(wx.showToast).not.toHaveBeenCalledWith({
-      title: '头像更新失败，请稍后重试',
+      title: '头像更新结果未确认，请稍后重试',
       icon: 'none',
     });
   });
@@ -413,7 +439,7 @@ describe('资料编辑头像交互', () => {
     await page.importStravaAvatar();
 
     expect(wx.showToast).toHaveBeenCalledWith({
-      title: '头像更新失败，请稍后重试',
+      title: '头像更新结果未确认，请稍后重试',
       icon: 'none',
     });
   });
@@ -434,7 +460,7 @@ describe('资料编辑头像交互', () => {
     await page.importStravaAvatar();
 
     expect(wx.showToast).toHaveBeenCalledWith({
-      title: '头像更新失败，请稍后重试',
+      title: '头像更新结果未确认，请稍后重试',
       icon: 'none',
     });
     expect(wx.showToast).not.toHaveBeenCalledWith({ title: 'Strava 头像已导入' });
@@ -465,7 +491,7 @@ describe('资料编辑头像交互', () => {
 
     expect(rideService.getProfile).toHaveBeenCalledTimes(2);
     expect(wx.showToast).toHaveBeenCalledWith({
-      title: '头像更新失败，请稍后重试',
+      title: '头像更新结果未确认，请稍后重试',
       icon: 'none',
     });
     expect(wx.showToast).not.toHaveBeenCalledWith({ title: 'Strava 头像已导入' });
