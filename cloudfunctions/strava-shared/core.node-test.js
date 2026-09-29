@@ -42,6 +42,7 @@ const token = (expires = Math.floor(Date.now() / 1000) + 3600) => ({
   athlete: { id: 42, firstname: 'Test', lastname: 'Rider' },
 });
 const usableCredential = (overrides = {}) => ({
+  athlete_id: '42',
   athlete_name: 'Rider',
   access_token_cipher: {
     alg: 'A256GCM',
@@ -164,7 +165,10 @@ test('readiness 常量和 fresh canonical snapshot 快路径', () => {
   assert.equal(SYNC_LEASE_MS, 120_000);
   const now = new Date('2026-09-29T04:00:00.000Z');
   const credential = usableCredential({ sync_status: 'failed' });
-  const snapshot = { synced_at: new Date(now.getTime() - SNAPSHOT_MAX_AGE_MS + 1) };
+  const snapshot = {
+    athlete_id: credential.athlete_id,
+    synced_at: new Date(now.getTime() - SNAPSHOT_MAX_AGE_MS + 1),
+  };
   assert.deepEqual(deriveReadiness({ credential, snapshot, hasActiveOAuthState: false }, now), {
     state: 'ready',
     can_register: true,
@@ -223,7 +227,7 @@ test('credential 必须同时包含结构有效的 access 和 refresh 加密信�
 });
 test('fresh snapshot 不能让缺失或畸形 token envelope 的 credential 变为 ready', () => {
   const now = new Date('2026-09-29T04:00:00.000Z');
-  const snapshot = { synced_at: new Date(now.getTime() - 1) };
+  const snapshot = { athlete_id: '42', synced_at: new Date(now.getTime() - 1) };
   for (const credential of [
     { athlete_name: 'Missing' },
     usableCredential({ access_token_cipher: undefined }),
@@ -280,7 +284,7 @@ test('failed credential 没有 fresh snapshot 时返回稳定安全错误', () =
   assert.equal(result.state, 'failed');
   assert.equal(result.can_register, false);
 });
-test('非法时间不可报名且 legacy credential 可由 fresh snapshot 推导 ready', () => {
+test('非法时间或缺少 athlete_id 的 legacy snapshot 不可报名', () => {
   const now = new Date('2026-09-29T04:00:00.000Z');
   assert.equal(
     deriveReadiness(
@@ -302,8 +306,20 @@ test('非法时间不可报名且 legacy credential 可由 fresh snapshot 推导
       },
       now,
     ).state,
-    'ready',
+    'syncing',
   );
+});
+test('不同 Strava 账号的 fresh snapshot 不得复用为 ready', () => {
+  const now = new Date('2026-09-29T04:00:00.000Z');
+  const credential = usableCredential({ athlete_id: 'new-athlete' });
+  const snapshot = {
+    athlete_id: 'old-athlete',
+    synced_at: new Date(now.getTime() - 1),
+  };
+  const result = deriveReadiness({ credential, snapshot, hasActiveOAuthState: false }, now);
+  assert.equal(result.state, 'syncing');
+  assert.equal(result.can_register, false);
+  assert.equal(result.snapshot, null);
 });
 test('第五个满页把 90 天窗口标记为不完整', async () => {
   const calls = [];
@@ -423,7 +439,7 @@ test('ensureReady 对 fresh snapshot 不获取 lease 且不访问 Strava', async
   let claims = 0;
   let activityCalls = 0;
   const credential = usableCredential({ sync_status: 'failed' });
-  const snapshot = { synced_at: new Date(now.getTime() - 1) };
+  const snapshot = { athlete_id: credential.athlete_id, synced_at: new Date(now.getTime() - 1) };
   const result = await ensureReadyFlow({
     openid: 'user-1',
     env,
@@ -608,6 +624,7 @@ test('token refresh 只作为 fenced completion 的输入而不提前持久化',
   assert.equal(refreshCalls, 1);
   assert.equal(decrypt(built.credential.access_token_cipher, key), nextAccess);
   assert.equal(decrypt(built.credential.refresh_token_cipher, key), nextRefresh);
+  assert.equal(built.snapshot.athlete_id, '42');
   assert.equal(built.snapshot.coverage_complete, true);
 });
 test('disconnect 原子委托删除凭证/快照并写审计', async () => {

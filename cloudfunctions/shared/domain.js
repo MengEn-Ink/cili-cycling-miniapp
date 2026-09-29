@@ -163,12 +163,16 @@ function isTokenEnvelope(value) {
 function selectCanonicalStrava(credential, snapshot, now = new Date()) {
   if (
     !credential ||
+    typeof credential.athlete_id !== 'string' ||
+    !credential.athlete_id ||
     !isTokenEnvelope(credential.access_token_cipher) ||
-    !isTokenEnvelope(credential.refresh_token_cipher)
+    !isTokenEnvelope(credential.refresh_token_cipher) ||
+    !snapshot ||
+    snapshot.athlete_id !== credential.athlete_id
   )
     fail('STRAVA_NOT_READY', 'Strava 数据尚未准备完成');
   const syncedAt = dateOrNull(snapshot && snapshot.synced_at);
-  if (!snapshot || !syncedAt || now.getTime() - syncedAt.getTime() >= 24 * 60 * 60 * 1000)
+  if (!syncedAt || now.getTime() - syncedAt.getTime() >= 24 * 60 * 60 * 1000)
     fail('STRAVA_NOT_READY', 'Strava 数据已过期，请重新准备');
   return {
     status: 'connected',

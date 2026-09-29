@@ -161,6 +161,15 @@ function isCredentialUsable(credential) {
     validEnvelope(credential.refresh_token_cipher),
   );
 }
+function isSnapshotForCredential(credential, snapshot) {
+  return Boolean(
+    credential &&
+    typeof credential.athlete_id === 'string' &&
+    credential.athlete_id &&
+    snapshot &&
+    snapshot.athlete_id === credential.athlete_id,
+  );
+}
 function deriveReadiness({ credential, snapshot, hasActiveOAuthState }, now = new Date()) {
   if (!credential) {
     return {
@@ -171,7 +180,11 @@ function deriveReadiness({ credential, snapshot, hasActiveOAuthState }, now = ne
       error: null,
     };
   }
-  if (isCredentialUsable(credential) && isSnapshotFresh(snapshot, now)) {
+  if (
+    isCredentialUsable(credential) &&
+    isSnapshotForCredential(credential, snapshot) &&
+    isSnapshotFresh(snapshot, now)
+  ) {
     return {
       state: 'ready',
       can_register: true,
@@ -318,6 +331,7 @@ async function buildSyncResult({ openid, env, credential, api, now = new Date(),
   const snapshot = {
     _id: openid,
     openid,
+    athlete_id: refreshed.document.athlete_id,
     ...statistics(window.activities, {
       now,
       coverageFrom,

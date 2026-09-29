@@ -6,48 +6,54 @@ const { stravaApi } = require('./oauth/api');
 const { redirect303, resultLocation, renderResultPage } = require('./http');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
-async function maybeProfile(openid) {
+async function maybeProfile(database, openid) {
   try {
-    return (await db.collection('profiles').doc(openid).get()).data;
+    return (await database.collection('profiles').doc(openid).get()).data;
   } catch {
     return { _id: openid };
   }
 }
-const store = {
-  consumeState: (hash) =>
-    db.runTransaction(async (tx) => {
-      let doc;
-      try {
-        doc = (await tx.collection('oauth_states').doc(hash).get()).data;
-      } catch {
-        return undefined;
-      }
-      if (!doc || doc.consumed_at) return undefined;
-      await tx
-        .collection('oauth_states')
-        .doc(hash)
-        .update({ data: { consumed_at: db.serverDate() } });
-      return doc;
-    }),
-  saveCredential: async (data) => {
-    await db
-      .collection('strava_credentials')
-      .doc(data._id)
-      .set({ data: writableDocument(data) });
-    const profile = await maybeProfile(data.openid);
-    await db
-      .collection('profiles')
-      .doc(data.openid)
-      .set({
-        data: writableDocument({
-          ...profile,
-          _id: data.openid,
-          strava: { status: 'connected' },
-          updated_at: db.serverDate(),
-        }),
+function createCredentialStore(database) {
+  return {
+    consumeState: (hash) =>
+      database.runTransaction(async (tx) => {
+        let doc;
+        try {
+          doc = (await tx.collection('oauth_states').doc(hash).get()).data;
+        } catch {
+          return undefined;
+        }
+        if (!doc || doc.consumed_at) return undefined;
+        await tx
+          .collection('oauth_states')
+          .doc(hash)
+          .update({ data: { consumed_at: database.serverDate() } });
+        return doc;
+      }),
+    saveCredential: async (data) => {
+      await database.runTransaction(async (tx) => {
+        await tx
+          .collection('strava_credentials')
+          .doc(data._id)
+          .set({ data: writableDocument(data) });
+        await tx.collection('strava_snapshots').doc(data._id).remove();
       });
-  },
-};
+      const profile = await maybeProfile(database, data.openid);
+      await database
+        .collection('profiles')
+        .doc(data.openid)
+        .set({
+          data: writableDocument({
+            ...profile,
+            _id: data.openid,
+            strava: { status: 'connected' },
+            updated_at: database.serverDate(),
+          }),
+        });
+    },
+  };
+}
+const store = createCredentialStore(db);
 function eventPath(event) {
   return event.path || event.rawPath || (event.requestContext && event.requestContext.path) || '';
 }
@@ -92,3 +98,4 @@ const main = createHandler({
 
 exports.main = main;
 exports.createHandler = createHandler;
+exports.createCredentialStore = createCredentialStore;

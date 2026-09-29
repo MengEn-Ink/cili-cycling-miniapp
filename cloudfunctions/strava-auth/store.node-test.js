@@ -291,6 +291,7 @@ test('status 与 ensureReady 路由都返回 canonical readiness DTO', async () 
     strava_credentials: {
       'user-1': {
         _id: 'user-1',
+        athlete_id: 'athlete-current',
         athlete_name: 'Rider',
         sync_status: 'ready',
         access_token_cipher: {
@@ -308,7 +309,12 @@ test('status 与 ensureReady 路由都返回 canonical readiness DTO', async () 
       },
     },
     strava_snapshots: {
-      'user-1': { _id: 'user-1', synced_at: new Date(now.getTime() - 1), total_km: 10 },
+      'user-1': {
+        _id: 'user-1',
+        athlete_id: 'athlete-current',
+        synced_at: new Date(now.getTime() - 1),
+        total_km: 10,
+      },
     },
   });
   fixture.db.command.lte = (value) => ({ kind: 'lte', value });

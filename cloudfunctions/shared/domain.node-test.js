@@ -50,6 +50,7 @@ const profile = {
 };
 const credential = {
   _id: openid,
+  athlete_id: 'athlete-current',
   access_token_cipher: {
     v: 1,
     alg: 'A256GCM',
@@ -69,6 +70,7 @@ const credential = {
 const snapshot = {
   _id: openid,
   openid,
+  athlete_id: 'athlete-current',
   total_km: 1200.5,
   activities_90d: 42,
   longest_km: 180.25,
@@ -289,6 +291,17 @@ test('报名只接受完整凭证和 24 小时内的 canonical Strava 快照', a
     submitRegistration(staleSnapshot, input, now),
     (error) => error.code === 'STRAVA_NOT_READY',
   );
+
+  for (const crossAccountStore of [
+    memoryStore({ snapshot: { athlete_id: 'athlete-previous' } }),
+    memoryStore({ snapshot: { athlete_id: undefined } }),
+    memoryStore({ credential: { athlete_id: undefined } }),
+  ]) {
+    await assert.rejects(
+      submitRegistration(crossAccountStore, input, now),
+      (error) => error.code === 'STRAVA_NOT_READY',
+    );
+  }
 });
 
 test('提交在同一事务写 submitted 审计并只保存 nullable Strava 白名单', async () => {
@@ -438,6 +451,16 @@ test('审批状态机、理由与管理员判断', async () => {
   assert.equal(result.status, 'rejected');
   assert.equal(store.state.activities.get('a1').occupied_count, 0);
   assert.equal(store.state.audits.length, 1);
+  assert.equal(store.state.audits[0].action, 'registration.rejected');
+
+  const approveStore = memoryStore({ registration });
+  const approved = await reviewRegistration(
+    approveStore,
+    { openid, registrationId: id, action: 'approve' },
+    now,
+  );
+  assert.equal(approved.status, 'approved');
+  assert.equal(approveStore.state.audits[0].action, 'registration.approved');
 });
 
 test('活动和报名响应只含白名单字段并脱敏', () => {
@@ -469,7 +492,7 @@ test('活动和报名响应只含白名单字段并脱敏', () => {
 });
 
 test('审计日志只保留安全字段，不含手机号证件号和 token', () => {
-  const log = buildAudit(openid, 'registration.reject', 'r1', now, {
+  const log = buildAudit(openid, 'registration.rejected', 'r1', now, {
     reason: '不符合要求',
     phone: 'secret',
     id_number: 'secret',
