@@ -49,6 +49,7 @@ for (const name of ['strava-auth', 'strava-callback']) {
       hash(resolve(root, 'cloudfunctions', name, 'oauth', file))
     )
       throw new Error(`${name}/oauth/${file} 与共享源码不一致`);
-  pack(name, ['index.js', 'package.json', 'oauth/core.js', 'oauth/api.js']);
+  const packageRootFiles = name === 'strava-auth' ? ['store.js'] : ['http.js'];
+  pack(name, ['index.js', 'package.json', 'oauth/core.js', 'oauth/api.js', ...packageRootFiles]);
 }
 console.log('云函数部署包校验通过：源码自包含、共享代码一致且依赖均来自 registry');

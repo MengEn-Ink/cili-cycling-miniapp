@@ -100,12 +100,14 @@ function assertProfileReady(profile) {
 const STRAVA_FIELDS = [
   'years_on_strava',
   'rides_per_month',
+  'total_km',
   'activities_90d',
   'activities_4w',
   'longest_km',
   'longest_name',
   'max_elevation_m',
   'max_elevation_name',
+  'total_elevation_m',
   'weighted_avg_speed_kmh',
   'race_count',
   'races',
@@ -114,6 +116,11 @@ const STRAVA_FIELDS = [
   'bikes',
   'coverage',
   'connected_at',
+  'latest_activity_at',
+  'synced_at',
+  'coverage_from',
+  'coverage_to',
+  'coverage_complete',
 ];
 function safeStravaSnapshot(snapshot) {
   return pick(snapshot, STRAVA_FIELDS);
@@ -135,6 +142,49 @@ function selectStrava(profile) {
     };
   }
   fail('STRAVA_REQUIRED', '请先绑定 Strava 或取得豁免');
+}
+function finiteNumberOrNull(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+function dateOrNull(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date : null;
+}
+function isTokenEnvelope(value) {
+  return Boolean(
+    value &&
+    value.alg === 'A256GCM' &&
+    ['iv', 'tag', 'ciphertext'].every(
+      (field) => typeof value[field] === 'string' && value[field].trim().length > 0,
+    ),
+  );
+}
+function selectCanonicalStrava(credential, snapshot, now = new Date()) {
+  if (
+    !credential ||
+    !isTokenEnvelope(credential.access_token_cipher) ||
+    !isTokenEnvelope(credential.refresh_token_cipher)
+  )
+    fail('STRAVA_NOT_READY', 'Strava 数据尚未准备完成');
+  const syncedAt = dateOrNull(snapshot && snapshot.synced_at);
+  if (!snapshot || !syncedAt || now.getTime() - syncedAt.getTime() >= 24 * 60 * 60 * 1000)
+    fail('STRAVA_NOT_READY', 'Strava 数据已过期，请重新准备');
+  return {
+    status: 'connected',
+    snapshot: {
+      total_km: finiteNumberOrNull(snapshot.total_km),
+      activities_90d: finiteNumberOrNull(snapshot.activities_90d),
+      longest_km: finiteNumberOrNull(snapshot.longest_km),
+      total_elevation_m: finiteNumberOrNull(snapshot.total_elevation_m),
+      weighted_avg_speed_kmh: finiteNumberOrNull(snapshot.weighted_avg_speed_kmh),
+      latest_activity_at: dateOrNull(snapshot.latest_activity_at),
+      synced_at: syncedAt,
+      coverage_from: dateOrNull(snapshot.coverage_from),
+      coverage_to: dateOrNull(snapshot.coverage_to),
+      coverage_complete: snapshot.coverage_complete === true,
+    },
+  };
 }
 function validateOptions(options) {
   if (
@@ -236,7 +286,7 @@ function publicRegistration(registration) {
 }
 function buildAudit(actorOpenid, action, targetId, now, detail = {}) {
   const safeDetail = {};
-  for (const key of ['from_status', 'to_status', 'reason'])
+  for (const key of ['activity_id', 'from_status', 'to_status', 'reason'])
     if (detail[key] !== undefined) safeDetail[key] = detail[key];
   return {
     actor_openid: actorOpenid,
@@ -259,6 +309,7 @@ module.exports = {
   assertActivityOpen,
   assertProfileReady,
   selectStrava,
+  selectCanonicalStrava,
   validateOptions,
   assertCanSubmit,
   assertCanCancel,
