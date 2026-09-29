@@ -52,12 +52,30 @@ describe('运行时配置', () => {
 });
 
 describe('活动状态', () => {
-  it('区分报名中、满员、截止、结束', () => {
+  it('列表只使用服务端报名裁决，不受设备时间或本地名额重算影响', () => {
     const a = activities[0];
-    expect(activityDisplayStatus(a, 1, new Date('2026-09-28'))).toBe('报名中');
-    expect(activityDisplayStatus(a, 18, new Date('2026-09-28'))).toBe('已满');
-    expect(activityDisplayStatus(a, 1, new Date('2026-10-16'))).toBe('已截止');
-    expect(activityDisplayStatus(a, 1, new Date('2026-10-19'))).toBe('已结束');
+    expect(
+      activityDisplayStatus({
+        ...a,
+        endAt: '2000-01-01T00:00:00.000Z',
+        deadline: '2000-01-01T00:00:00.000Z',
+        occupiedCount: a.capacity,
+        registrationState: 'open',
+        closedReason: null,
+      }),
+    ).toBe('报名中');
+    expect(activityDisplayStatus({ ...a, registrationState: 'closed', closedReason: 'full' })).toBe(
+      '名额已满',
+    );
+    expect(
+      activityDisplayStatus({ ...a, registrationState: 'closed', closedReason: 'deadline' }),
+    ).toBe('报名已截止');
+    expect(
+      activityDisplayStatus({ ...a, registrationState: 'closed', closedReason: 'finished' }),
+    ).toBe('活动已结束');
+    expect(
+      activityDisplayStatus({ ...a, registrationState: undefined, closedReason: undefined }),
+    ).toBe('活动状态不可用');
   });
 });
 describe('名额占用', () => {

@@ -176,15 +176,21 @@ function createNotificationStore(db) {
         dispatch_outcome: command.remove(),
         updated_at: fence.now,
       }),
-    recordDispatchOutcome: (id, fence) =>
-      fencedTransition(id, fence, 'dispatching', {
+    recordDispatchOutcome: (id, fence) => {
+      const retryAt =
+        fence.disposition === 'retryable'
+          ? nextRetryAt(fence.errorCode, fence.attemptNo, fence.now)
+          : null;
+      return fencedTransition(id, fence, 'dispatching', {
         dispatch_outcome: {
           disposition: fence.disposition,
           error_code: fence.errorCode,
           recorded_at: fence.now,
+          ...(retryAt ? { retry_at: retryAt } : {}),
         },
         updated_at: fence.now,
-      }),
+      });
+    },
     markSent: (id, fence) =>
       fencedTransition(id, fence, 'dispatching', {
         status: 'sent',
@@ -252,8 +258,18 @@ function createNotificationStore(db) {
                 : 'DELIVERY_LEASE_EXPIRED',
             updated_at: now,
           };
-          if (status === 'retryable')
-            data.next_retry_at = nextRetryAt(outcome.error_code, Number(current.attempt_no), now);
+          if (status === 'retryable') {
+            const persistedRetryAt = new Date(outcome.retry_at);
+            if (Number.isFinite(persistedRetryAt.getTime())) {
+              data.next_retry_at = persistedRetryAt;
+            } else {
+              data.next_retry_at = nextRetryAt(
+                outcome.error_code,
+                Number(current.attempt_no),
+                new Date(outcome.recorded_at),
+              );
+            }
+          }
           await collection.doc(entry._id).update({
             data,
           });

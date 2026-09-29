@@ -119,6 +119,9 @@ synced_at
 | registrations | activity_id ASC, status ASC, created_at DESC | 普通 |
 | registrations | openid ASC, created_at DESC | 普通 |
 | audit_logs | actor_openid ASC, created_at DESC | 普通 |
+| notification_outbox | status ASC, attempts ASC, lease_expires_at ASC | 普通；待发送与过期 claim 扫描 |
+| notification_outbox | target_openid ASC, created_at DESC | 普通；用户通知历史查询 |
+| notification_outbox | status ASC, attempts ASC, next_retry_at ASC | 普通；到期重试扫描 |
 | profile_media | owner_openid ASC, status ASC, created_at DESC | 普通；owner 媒体查询 |
 | profile_media | status ASC, cleanup_after ASC | 普通；未引用媒体回收扫描 |
 | profile_media | status ASC, delete_lease_expires_at ASC | 普通；中断删除重领扫描 |
@@ -136,7 +139,7 @@ synced_at
 
 ## 部署后验证
 
-1. 校验 10 集合、全拒绝规则与 17 索引，确认 `profile_media` 的 owner/status、cleanup、delete lease 与 retry 索引、`oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
+1. 校验 10 集合、全拒绝规则与 18 索引，确认 `notification_outbox` 的 lease、目标与 retry 索引，`profile_media` 的 owner/status、cleanup、delete lease 与 retry 索引，以及 `oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
 2. 真机验证 WXContext openid、微信手机号动态 code、手填手机号来源，以及资料响应中无明文/密文。
 3. 配置 callback HTTPS 路由、Strava 回调域和小程序业务域名，验证 CSRF、过期与重放。
 4. 验证 token 临期刷新、90 天分页、解绑审计及日志无敏感信息；验证跨用户媒体拒绝、未登记 legacy 不进卡、register 失败回收上传对象，以及临时 URL 故障降级。

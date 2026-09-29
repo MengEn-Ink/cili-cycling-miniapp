@@ -339,6 +339,42 @@ test('45009 日配额推迟到上海时区次日窗口且边界前不可重试',
   }
 });
 
+test('45009 跨午夜恢复复用首次持久化的目标重试时间', async () => {
+  const recordedAt = new Date('2026-09-29T15:59:00.000Z');
+  const retryAt = new Date('2026-09-29T16:05:00.000Z');
+  const recoveryAt = new Date('2026-09-29T16:01:00.000Z');
+  const fixture = memoryDb({
+    notification_outbox: {
+      o1: item({
+        status: 'dispatching',
+        attempts: 1,
+        attempt_no: 1,
+        lease_id: 'lease-quota',
+        lease_expires_at: new Date('2026-09-29T16:00:00.000Z'),
+      }),
+    },
+  });
+  const store = createNotificationStore(fixture.db);
+  const fence = {
+    leaseId: 'lease-quota',
+    attemptNo: 1,
+    disposition: 'retryable',
+    errorCode: 'WECHAT_45009',
+    now: recordedAt,
+  };
+
+  assert.equal(await store.recordDispatchOutcome('o1', fence), true);
+  assert.equal(
+    fixture.state.notification_outbox.get('o1').dispatch_outcome.retry_at.getTime(),
+    retryAt.getTime(),
+  );
+  assert.equal(await store.recoverExpiredDispatching(recoveryAt, 20), 1);
+  assert.equal(
+    fixture.state.notification_outbox.get('o1').next_retry_at.getTime(),
+    retryAt.getTime(),
+  );
+});
+
 test('retry deadline 遇到非法时间时 fail closed 且不改状态', async () => {
   const fixture = memoryDb({
     notification_outbox: {

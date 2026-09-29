@@ -56,9 +56,9 @@ export function resolveActivityAction(
   return { kind: 'register', label: '立即报名', enabled: true };
 }
 
-export function activityDisplayStatus(a: Activity, n: number, now = new Date()) {
+export function activityDisplayStatus(a: Activity) {
   if (a.status === 'draft') return '草稿';
-  if (a.status === 'finished' || now > new Date(a.endAt)) return '已结束';
-  if (now > new Date(a.deadline)) return '已截止';
-  return n >= a.capacity ? '已满' : '报名中';
+  if (a.registrationState === 'open' && a.closedReason == null) return '报名中';
+  if (a.registrationState === 'closed') return closedLabel(a);
+  return '活动状态不可用';
 }

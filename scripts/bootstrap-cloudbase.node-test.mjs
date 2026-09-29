@@ -337,6 +337,14 @@ test('notification_outbox 使用租约扫描索引并保持客户端全拒绝', 
   );
 });
 
+test('CloudBase schema 文档列出 notification_outbox 全部索引并与 18 条总数一致', () => {
+  const schema = readFileSync(new URL('../docs/cloudbase-schema.md', import.meta.url), 'utf8');
+  assert.match(schema, /notification_outbox \| status ASC, attempts ASC, lease_expires_at ASC/);
+  assert.match(schema, /notification_outbox \| target_openid ASC, created_at DESC/);
+  assert.match(schema, /notification_outbox \| status ASC, attempts ASC, next_retry_at ASC/);
+  assert.match(schema, /全拒绝规则与 18 索引/);
+});
+
 test('profile_media 使用 owner/status 与过期清理索引并保持客户端全拒绝', () => {
   assert.ok(COLLECTIONS.includes('profile_media'));
   assert.deepEqual(
