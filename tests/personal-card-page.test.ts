@@ -151,6 +151,7 @@ describe('个人骑行名片页面行为', () => {
       backgrounds: [],
       hasBackgrounds: false,
       hasMultipleBackgrounds: false,
+      needsProfilePhoto: true,
     });
   });
 });
@@ -182,6 +183,9 @@ describe('个人骑行名片静态页面契约', () => {
     expect(template).toContain('binderror="backgroundError"');
     expect(template).toContain('data-url="{{item.url}}"');
     expect(template).toContain('data-index="{{index}}"');
+    const backgroundImage = template.match(/<image[\s\S]*?\/>/)?.[0] || '';
+    expect(backgroundImage).toContain('aria-hidden="true"');
+    expect(template).toContain('wx:if="{{card.needsProfilePhoto}}"');
   });
 
   it('长姓名限制为可读的两行且保持 3:4 安全区', () => {

@@ -25,6 +25,7 @@
             class="card-photo"
             src="{{item.url}}"
             mode="aspectFill"
+            aria-hidden="true"
             data-url="{{item.url}}"
             data-index="{{index}}"
             binderror="backgroundError"

@@ -58,6 +58,7 @@ Page({
         backgrounds,
         hasBackgrounds: backgrounds.length > 0,
         hasMultipleBackgrounds: backgrounds.length > 1,
+        needsProfilePhoto: backgrounds.length === 0,
       },
     });
   },
