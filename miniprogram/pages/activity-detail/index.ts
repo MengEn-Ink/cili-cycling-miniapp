@@ -7,6 +7,7 @@ function unavailableAction(): ActivityAction {
 }
 
 Page({
+  loadRequestId: 0,
   data: {
     loading: true,
     error: '',
@@ -17,26 +18,33 @@ Page({
   onLoad(q: any) {
     void this.load(q.id || '');
   },
+  onUnload() {
+    this.loadRequestId += 1;
+  },
   async load(id: string) {
+    const requestId = ++this.loadRequestId;
     this.setData({ loading: true, error: '', activityAction: unavailableAction() });
     try {
       const item = await rideService.getActivity(id);
+      if (requestId !== this.loadRequestId) return;
       if (!item) throw new Error('活动不存在');
       const registration = (await rideService.listRegistrations()).find(
         (value) => value.activityId === id,
       );
+      if (requestId !== this.loadRequestId) return;
       this.setData({
         item,
         registration,
         activityAction: resolveActivityAction(item, registration),
       });
     } catch (error) {
+      if (requestId !== this.loadRequestId) return;
       this.setData({
         error: error instanceof Error ? error.message : '详情加载失败',
         activityAction: unavailableAction(),
       });
     } finally {
-      this.setData({ loading: false });
+      if (requestId === this.loadRequestId) this.setData({ loading: false });
     }
   },
   go() {

@@ -35,6 +35,16 @@ function registration(status: RegistrationStatus) {
   return { id: `r-${status}`, status } as Pick<Registration, 'id' | 'status'>;
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((onResolve, onReject) => {
+    resolve = onResolve;
+    reject = onReject;
+  });
+  return { promise, resolve, reject };
+}
+
 describe('活动 CTA 九分支', () => {
   it('pending 或 approved 优先查看当前报名', () => {
     for (const status of ['pending', 'approved'] as const) {
@@ -195,6 +205,31 @@ describe('活动详情 CTA 接线', () => {
     expect(page.data.error).toBe('报名状态加载失败');
     expect(page.data.activityAction).toMatchObject({ kind: 'closed', enabled: false });
     expect(wx.navigateTo).not.toHaveBeenCalled();
+  });
+
+  it('较慢的旧详情响应不能覆盖较新的活动详情', async () => {
+    const oldActivity = deferred<ServerActivity>();
+    const newActivity = deferred<ServerActivity>();
+    rideService.getActivity
+      .mockReturnValueOnce(oldActivity.promise)
+      .mockReturnValueOnce(newActivity.promise);
+    rideService.listRegistrations.mockResolvedValue([]);
+
+    const staleLoad = page.load('old');
+    const latestLoad = page.load('new');
+
+    newActivity.resolve(activity({ id: 'new', title: '新活动' }));
+    await latestLoad;
+    expect(page.data.item.title).toBe('新活动');
+
+    oldActivity.resolve(
+      activity({ id: 'old', title: '旧活动', registrationState: 'closed', closedReason: 'full' }),
+    );
+    await staleLoad;
+
+    expect(page.data.item.title).toBe('新活动');
+    expect(page.data.activityAction).toMatchObject({ kind: 'register', enabled: true });
+    expect(rideService.listRegistrations).toHaveBeenCalledTimes(1);
   });
 });
 

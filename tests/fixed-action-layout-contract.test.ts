@@ -8,6 +8,7 @@ describe('fixed action layout contract', () => {
   it('uses one reserve variable for the form content and fixed action bar', () => {
     const appStyles = read('miniprogram/app.wxss');
     const styles = read('miniprogram/pages/registration-form/index.wxss');
+    const detailStyles = read('miniprogram/pages/activity-detail/index.wxss');
 
     expect(appStyles).toMatch(/--fixed-action-reserve:\s*\d+rpx;/);
     expect(appStyles).toMatch(/--fixed-action-reserve-narrow:\s*\d+rpx;/);
@@ -16,6 +17,13 @@ describe('fixed action layout contract', () => {
       'padding-bottom: calc(var(--fixed-action-reserve) + constant(safe-area-inset-bottom));',
     );
     expect(styles).toContain(
+      'padding-bottom: calc(var(--fixed-action-reserve) + env(safe-area-inset-bottom));',
+    );
+    expect(detailStyles).toContain('padding-bottom: var(--fixed-action-reserve);');
+    expect(detailStyles).toContain(
+      'padding-bottom: calc(var(--fixed-action-reserve) + constant(safe-area-inset-bottom));',
+    );
+    expect(detailStyles).toContain(
       'padding-bottom: calc(var(--fixed-action-reserve) + env(safe-area-inset-bottom));',
     );
     expect(styles).toContain(

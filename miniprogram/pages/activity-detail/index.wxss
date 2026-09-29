@@ -1,6 +1,8 @@
 .detail-page {
   min-height: 100vh;
-  padding-bottom: calc(168rpx + env(safe-area-inset-bottom));
+  padding-bottom: var(--fixed-action-reserve);
+  padding-bottom: calc(var(--fixed-action-reserve) + constant(safe-area-inset-bottom));
+  padding-bottom: calc(var(--fixed-action-reserve) + env(safe-area-inset-bottom));
   background: #0b0b0c;
   color: #f7f7f5;
 }
