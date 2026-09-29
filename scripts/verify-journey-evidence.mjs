@@ -18,6 +18,8 @@ const FORBIDDEN_NORMALIZED_KEYS = new Set([
 ]);
 const FORBIDDEN_STRING =
   /(phone|open[_\s-]?id|id[_\s-]?number|access[_\s-]?token|refresh[_\s-]?token|cipher[_\s-]?text|oauth[_\s-]?code|oauth[_\s-]?state)/i;
+const REGISTRATION_ALIAS = /^reg_test_[A-Za-z0-9][A-Za-z0-9_-]*$/;
+const USER_ALIAS = /^user_test_[A-Za-z0-9][A-Za-z0-9_-]*$/;
 const EXPECTED_STATUSES = ['pending', 'approved', 'cancelled', 'pending'];
 const REQUIRED_AUDIT_ACTIONS = [
   'strava.sync.succeeded',
@@ -26,9 +28,6 @@ const REQUIRED_AUDIT_ACTIONS = [
   'registration.cancelled',
   'registration.resubmitted',
 ];
-const REGISTRATION_AUDIT_ACTIONS = REQUIRED_AUDIT_ACTIONS.filter((action) =>
-  action.startsWith('registration.'),
-);
 
 class EvidenceError extends Error {}
 
@@ -138,12 +137,45 @@ function validateEvidenceSchema(evidence) {
   }
 }
 
+function validateSyntheticAliases(evidence) {
+  if (!REGISTRATION_ALIAS.test(evidence.registrationId)) {
+    fail('导出标识符必须使用合成别名');
+  }
+
+  if (
+    evidence.audits.some(
+      (audit) => !REGISTRATION_ALIAS.test(audit.target_id) && !USER_ALIAS.test(audit.target_id),
+    )
+  ) {
+    fail('导出标识符必须使用合成别名');
+  }
+
+  const registrationAudits = evidence.audits.filter((audit) =>
+    audit.action.startsWith('registration.'),
+  );
+  if (
+    registrationAudits.some(
+      (audit) =>
+        !REGISTRATION_ALIAS.test(audit.target_id) || audit.target_id !== evidence.registrationId,
+    )
+  ) {
+    fail('导出标识符必须使用合成别名');
+  }
+
+  const syncAudits = evidence.audits.filter((audit) => audit.action === 'strava.sync.succeeded');
+  if (syncAudits.some((audit) => !USER_ALIAS.test(audit.target_id))) {
+    fail('导出标识符必须使用合成别名');
+  }
+}
+
 function validateEvidence(evidence) {
   validateEvidenceSchema(evidence);
 
   if (containsForbiddenData(evidence)) {
     fail('发现敏感字段或敏感字符串');
   }
+
+  validateSyntheticAliases(evidence);
 
   if (!evidence.marker.startsWith('E2E_RESULT:')) {
     fail('marker 必须以 E2E_RESULT: 开头');
@@ -173,13 +205,6 @@ function validateEvidence(evidence) {
     actionPositions.some((position, index) => index > 0 && position <= actionPositions[index - 1])
   ) {
     fail('审计动作顺序不符合 P0 旅程');
-  }
-
-  const registrationAudits = evidence.audits.filter((audit) =>
-    REGISTRATION_AUDIT_ACTIONS.includes(audit?.action),
-  );
-  if (registrationAudits.some((audit) => audit.target_id !== evidence.registrationId)) {
-    fail('报名审计 target_id 与 registrationId 不一致');
   }
 
   const auditTimes = requiredAudits.map((audit) => Date.parse(audit.created_at));

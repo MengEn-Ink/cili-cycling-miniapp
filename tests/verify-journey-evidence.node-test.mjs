@@ -28,6 +28,20 @@ const forbiddenKeyVariants = [
   'cipher_text',
   'cipherText',
 ];
+const invalidExportedIdentifiers = [
+  {
+    label: 'provider-style openid',
+    value: 'ou_7e85e54f2c2d4c24a650db90',
+  },
+  {
+    label: 'raw hash',
+    value: '7e85e54f2c2d4c24a650db90ef6b123b7e85e54f2c2d4c24a650db90ef6b123b',
+  },
+  {
+    label: 'arbitrary identifier',
+    value: 'production-rider-42',
+  },
+];
 
 async function runVerifier(evidence) {
   const directory = await mkdtemp(join(tmpdir(), 'ride-event-evidence-'));
@@ -89,3 +103,55 @@ for (const [index, key] of forbiddenKeyVariants.entries()) {
     assertRejectedWithoutSentinel(result, sentinel);
   });
 }
+
+for (const { label, value } of invalidExportedIdentifiers) {
+  test(`rejects ${label} used as the registration identifier`, async () => {
+    const evidence = structuredClone(validEvidence);
+    evidence.registrationId = value;
+    for (const audit of evidence.audits) {
+      if (audit.action.startsWith('registration.')) {
+        audit.target_id = value;
+      }
+    }
+
+    const result = await runVerifier(evidence);
+
+    assertRejectedWithoutSentinel(result, value);
+  });
+
+  test(`rejects ${label} used as the Strava sync target`, async () => {
+    const evidence = structuredClone(validEvidence);
+    const syncAudit = evidence.audits.find((audit) => audit.action === 'strava.sync.succeeded');
+    syncAudit.target_id = value;
+
+    const result = await runVerifier(evidence);
+
+    assertRejectedWithoutSentinel(result, value);
+  });
+}
+
+test('rejects a user_test alias used as the registration identifier', async () => {
+  const invalidAlias = 'user_test_wrong_registration_role';
+  const evidence = structuredClone(validEvidence);
+  evidence.registrationId = invalidAlias;
+  for (const audit of evidence.audits) {
+    if (audit.action.startsWith('registration.')) {
+      audit.target_id = invalidAlias;
+    }
+  }
+
+  const result = await runVerifier(evidence);
+
+  assertRejectedWithoutSentinel(result, invalidAlias);
+});
+
+test('rejects a reg_test alias used as the Strava sync target', async () => {
+  const invalidAlias = 'reg_test_wrong_strava_role';
+  const evidence = structuredClone(validEvidence);
+  const syncAudit = evidence.audits.find((audit) => audit.action === 'strava.sync.succeeded');
+  syncAudit.target_id = invalidAlias;
+
+  const result = await runVerifier(evidence);
+
+  assertRejectedWithoutSentinel(result, invalidAlias);
+});
