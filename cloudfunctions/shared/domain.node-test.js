@@ -40,6 +40,8 @@ const profile = {
   nickname: '骑手',
   real_name_masked: '曹*',
   phone_masked: '138****5678',
+  phone_source: 'wechat',
+  phone_verified: true,
   real_name_cipher: { ciphertext: 'x' },
   emergency_name: '联系人',
   sensitive_status: {
@@ -241,6 +243,13 @@ test('重复占位提交拒绝，驳回或取消后沿原记录重报并保留�
   });
   const result = await submitRegistration(store, input, new Date('2026-09-29T00:00:00Z'));
   assert.equal(result.status, 'pending');
+  assert.deepEqual(store.state.registrations.get(id).profile_snapshot, {
+    nickname: '骑手',
+    real_name_masked: '曹*',
+    phone_masked: '138****5678',
+    phone_source: 'wechat',
+    phone_verified: true,
+  });
   assert.equal(store.state.registrations.get(id).review_history.length, 1);
   assert.equal(store.state.activities.get('a1').occupied_count, 1);
   assert.deepEqual(store.state.audits.at(-1), {

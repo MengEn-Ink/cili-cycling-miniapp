@@ -12,7 +12,13 @@ const ADMIN_REGISTRATION_FIELDS = [
   'updated_at',
 ];
 const ADMIN_OPTION_FIELDS = ['bike_mode', 'experience', 'rental_need', 'remark'];
-const ADMIN_PROFILE_FIELDS = ['nickname', 'real_name_masked', 'phone_masked'];
+const ADMIN_PROFILE_FIELDS = [
+  'nickname',
+  'real_name_masked',
+  'phone_masked',
+  'phone_source',
+  'phone_verified',
+];
 const ADMIN_STRAVA_FIELDS = [
   'years_on_strava',
   'total_km',
@@ -154,10 +160,10 @@ function adminCapabilityView(registration, profile, resolvedMedia) {
           ? safe.profile_snapshot.nickname
           : '',
     title: typeof value.title === 'string' ? value.title : '',
-    phone_source: ['wechat', 'manual', 'legacy'].includes(value.phone_source)
-      ? value.phone_source
+    phone_source: ['wechat', 'manual', 'legacy'].includes(safe.profile_snapshot.phone_source)
+      ? safe.profile_snapshot.phone_source
       : '',
-    phone_verified: value.phone_verified === true,
+    phone_verified: safe.profile_snapshot.phone_verified === true,
     photos: media.photos,
     avatar_url: media.avatar_url,
   };

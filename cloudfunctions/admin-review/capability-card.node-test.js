@@ -143,6 +143,8 @@ test('管理员投影保留审批所需字段但不返回 raw file ID、token、
         nickname: '报名昵称',
         real_name_masked: '曹**',
         phone_masked: '138****5678',
+        phone_source: 'wechat',
+        phone_verified: true,
         id_number_masked: '110***********1234',
       },
       openid: 'private-openid',
@@ -158,8 +160,8 @@ test('管理员投影保留审批所需字段但不返回 raw file ID、token、
   assert.deepEqual(response.capability_profile, {
     nickname: '山野骑手',
     title: '爬坡王',
-    phone_source: 'manual',
-    phone_verified: false,
+    phone_source: 'wechat',
+    phone_verified: true,
     photos: [{ url: 'https://temporary.example/ride-1', category: 'ride', source: 'user' }],
     avatar_url: 'https://temporary.example/avatar',
   });

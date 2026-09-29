@@ -47,6 +47,12 @@ async function submitRegistration(store, { openid, activityId, options }, now = 
         nickname: profile.nickname,
         real_name_masked: profile.real_name_masked,
         phone_masked: profile.phone_masked,
+        phone_source: ['wechat', 'manual'].includes(profile.phone_source)
+          ? profile.phone_source
+          : profile.phone_cipher
+            ? 'legacy'
+            : '',
+        phone_verified: profile.phone_verified === true,
       },
       strava_status: strava.status,
       ...(strava.snapshot ? { strava_snapshot: strava.snapshot } : {}),
