@@ -72,6 +72,32 @@ describe('表单校验', () => {
         stravaStatus: 'connected',
       }),
     ).toEqual([]));
+  it('云端脱敏资料按 sensitiveStatus 校验', () => {
+    const masked = {
+      ...profile,
+      realName: '曹**',
+      phone: '138****5678',
+      idNumber: '110***********1234',
+      emergencyPhone: '139****5678',
+      sensitiveStatus: { realName: true, phone: true, idNumber: true, emergencyPhone: true },
+    };
+    expect(
+      validateRegistration({
+        profile: masked,
+        bikeMode: '自带车',
+        experience: '常骑',
+        stravaStatus: 'connected',
+      }),
+    ).toEqual([]);
+    expect(
+      validateRegistration({
+        profile: { ...masked, sensitiveStatus: { ...masked.sensitiveStatus, phone: false } },
+        bikeMode: '自带车',
+        experience: '常骑',
+        stravaStatus: 'connected',
+      }),
+    ).toContain('手机号格式错误');
+  });
   it('阻断无 Strava 与错误手机号', () => {
     const p = { ...profile, phone: '123' };
     expect(
