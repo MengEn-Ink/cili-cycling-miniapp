@@ -51,11 +51,11 @@ function hexColors(value: string): string[] {
 }
 
 describe('theme accessibility regressions', () => {
-  it('keeps the global canvas safe for legacy light surfaces and opts dark pages in locally', () => {
+  it('uses a dark first-paint canvas while preserving page-local dark surfaces', () => {
     const app = read('miniprogram/app.wxss');
     const globalPage = cssBlock(app, 'page');
-    expect(declaration(globalPage, 'background').toLowerCase()).toBe('#f5f7f2');
-    expect(declaration(globalPage, 'color').toLowerCase()).toBe('#17231e');
+    expect(declaration(globalPage, 'background').toLowerCase()).toBe('#0b0b0c');
+    expect(declaration(globalPage, 'color').toLowerCase()).toBe('#f7f7f5');
 
     const darkPages = [
       ['miniprogram/pages/activities/index.wxss', '.activities-page'],

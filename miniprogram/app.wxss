@@ -10,8 +10,8 @@ page {
   --fixed-action-reserve: 210rpx;
   --fixed-action-reserve-narrow: 320rpx;
   min-height: 100%;
-  background: #f5f7f2;
-  color: #17231e;
+  background: #0b0b0c;
+  color: #f7f7f5;
   font-size: 28rpx;
   line-height: 1.55;
 }

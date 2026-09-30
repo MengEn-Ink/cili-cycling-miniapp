@@ -11,6 +11,8 @@ describe('native tabbar safe-area contract', () => {
     expect(String(app.window.navigationBarBackgroundColor || '').toLowerCase()).toBe('#0b0b0c');
     expect(app.window.navigationBarTextStyle).toBe('white');
     expect(String(app.window.backgroundColor || '').toLowerCase()).toBe('#0b0b0c');
+    expect(String(app.window.backgroundColorTop || '').toLowerCase()).toBe('#0b0b0c');
+    expect(String(app.window.backgroundColorBottom || '').toLowerCase()).toBe('#0b0b0c');
     expect(app.window.backgroundTextStyle).toBe('light');
     expect(app.tabBar).toBeDefined();
     expect(app.tabBar.custom).not.toBe(true);
@@ -28,11 +30,22 @@ describe('native tabbar safe-area contract', () => {
 
   it('keeps every tab page root dark and full-height', () => {
     for (const root of ['activities', 'registrations', 'profile']) {
+      const config = JSON.parse(read(`miniprogram/pages/${root}/index.json`));
       const styles = read(`miniprogram/pages/${root}/index.wxss`).toLowerCase();
 
+      expect(String(config.backgroundColor || '').toLowerCase()).toBe('#0b0b0c');
+      expect(config.backgroundTextStyle).toBe('light');
       expect(styles).toMatch(/page\s*\{[^}]*background:\s*#0b0b0c;/s);
       expect(styles).toMatch(new RegExp(`\\.${root}-page\\s*\\{[^}]*min-height:\\s*100vh;`, 's'));
     }
+  });
+
+  it('keeps the global page canvas dark before page-specific styles load', () => {
+    const appStyles = read('miniprogram/app.wxss');
+    const pageRule = appStyles.match(/(?:^|\n)page\s*\{([^}]+)\}/s)?.[1] || '';
+
+    expect(pageRule.toLowerCase()).toMatch(/background(?:-color)?:\s*#0b0b0c;/);
+    expect(pageRule.toLowerCase()).toMatch(/color:\s*#f7f7f5;/);
   });
 
   it('gives all tab roots one shared safe-area bottom spacing contract', () => {

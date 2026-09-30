@@ -2,6 +2,8 @@
   "navigationBarTitleText": "我的报名",
   "navigationBarBackgroundColor": "#0B0B0C",
   "navigationBarTextStyle": "white",
+  "backgroundColor": "#0B0B0C",
+  "backgroundTextStyle": "light",
   "usingComponents": {
     "state-view": "/components/state-view/index",
     "activity-card": "/components/activity-card/index",
