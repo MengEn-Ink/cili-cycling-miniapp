@@ -5,6 +5,7 @@ miniprogram_npm/
 .env*
 !.env.example
 project.private.config.json
+private.*.key
 *.local.json
 coverage/
 .aime-devkit/
