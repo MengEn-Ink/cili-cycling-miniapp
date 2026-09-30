@@ -218,7 +218,9 @@ function boundedRequest(url, addresses, options = {}) {
             finish(
               error instanceof ProfileError
                 ? error
-                : avatarError('STRAVA_AVATAR_DOWNLOAD_FAILED', 'Strava 头像下载失败'),
+                : error instanceof Error
+                  ? error
+                  : avatarError('STRAVA_AVATAR_DOWNLOAD_FAILED', 'Strava 头像下载失败'),
             ),
           );
         },
@@ -232,12 +234,18 @@ function boundedRequest(url, addresses, options = {}) {
         finish(
           error instanceof ProfileError
             ? error
-            : avatarError('STRAVA_AVATAR_DOWNLOAD_FAILED', 'Strava 头像下载失败'),
+            : error instanceof Error
+              ? error
+              : avatarError('STRAVA_AVATAR_DOWNLOAD_FAILED', 'Strava 头像下载失败'),
         ),
       );
       request.end();
-    } catch {
-      finish(avatarError('STRAVA_AVATAR_DOWNLOAD_FAILED', 'Strava 头像下载失败'));
+    } catch (error) {
+      finish(
+        error instanceof Error
+          ? error
+          : avatarError('STRAVA_AVATAR_DOWNLOAD_FAILED', 'Strava 头像下载失败'),
+      );
     }
   });
 }
@@ -268,7 +276,12 @@ async function downloadAvatar(value, dependencies = {}) {
   const now = dependencies.now || Date.now;
   const totalTimeoutMs = dependencies.totalTimeoutMs ?? TOTAL_TIMEOUT_MS;
   const request =
-    dependencies.request || ((input) => boundedRequest(input.url, input.addresses, input));
+    dependencies.request ||
+    ((input) =>
+      boundedRequest(input.url, input.addresses, {
+        ...input,
+        requestFactory: dependencies.requestFactory,
+      }));
   let current = validateAvatarUrl(value);
   const startedAt = now();
   for (let redirects = 0; ; redirects += 1) {
@@ -286,6 +299,9 @@ async function downloadAvatar(value, dependencies = {}) {
     // 不重新做 DNS，避免重试间隙被 DNS 重绑定；安全/业务错误带显式 code，直接终止不重试。
     for (let networkAttempt = 0; networkAttempt < MAX_NETWORK_ATTEMPTS; networkAttempt += 1) {
       try {
+        remainingMs = totalTimeoutMs - (now() - startedAt);
+        if (remainingMs <= 0)
+          throw avatarError('STRAVA_AVATAR_TOTAL_TIMEOUT', 'Strava 头像下载超时');
         response = await request({
           url: current,
           addresses,
@@ -303,8 +319,8 @@ async function downloadAvatar(value, dependencies = {}) {
           networkAttempt + 1 < MAX_NETWORK_ATTEMPTS &&
           now() - startedAt < totalTimeoutMs;
         if (!canRetry) {
-          // 保留显式错误码便于上层归因；无码的普通网络错误归一为下载失败。
-          if (error?.code) throw error;
+          if (typeof error?.code === 'string' && error.code.startsWith('STRAVA_AVATAR_'))
+            throw avatarError(error.code, 'Strava 头像下载失败');
           throw avatarError('STRAVA_AVATAR_DOWNLOAD_FAILED', 'Strava 头像下载失败');
         }
       }

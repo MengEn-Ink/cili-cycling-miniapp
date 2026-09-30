@@ -2,6 +2,7 @@
 const crypto = require('node:crypto');
 const AVATAR_SOURCES = ['wechat', 'strava', 'custom'];
 const CLIENT_AVATAR_SOURCES = ['wechat', 'custom'];
+const MAX_PROFILE_IMAGE_BYTES = 5 * 1024 * 1024;
 class ProfileError extends Error {
   constructor(code, message) {
     super(message);
@@ -258,6 +259,34 @@ async function verifyUploadedMedia(fileId, getTempFileURL, wait = sleep) {
     }
   }
   throw lastError;
+}
+function hasImageMagic(content) {
+  return (
+    (content.length >= 3 && content[0] === 0xff && content[1] === 0xd8 && content[2] === 0xff) ||
+    (content.length >= 8 &&
+      content.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'))) ||
+    (content.length >= 12 &&
+      content.subarray(0, 4).toString('ascii') === 'RIFF' &&
+      content.subarray(8, 12).toString('ascii') === 'WEBP')
+  );
+}
+async function verifyUploadedImageObject(fileId, downloadFile) {
+  let response;
+  try {
+    response = await downloadFile({ fileID: fileId });
+  } catch {
+    throw new ProfileError('MEDIA_OBJECT_VERIFY_FAILED', '暂时无法确认媒体文件');
+  }
+  const content = Buffer.isBuffer(response?.fileContent)
+    ? response.fileContent
+    : response?.fileContent instanceof Uint8Array
+      ? Buffer.from(response.fileContent)
+      : undefined;
+  if (!content) throw new ProfileError('MEDIA_OBJECT_VERIFY_FAILED', '暂时无法确认媒体文件');
+  if (content.length > MAX_PROFILE_IMAGE_BYTES)
+    throw new ProfileError('MEDIA_OBJECT_TOO_LARGE', '图片不能超过 5MB');
+  if (!hasImageMagic(content)) throw new ProfileError('MEDIA_OBJECT_TYPE_INVALID', '图片格式无效');
+  return true;
 }
 function registeredMedia(record, item, openid, statuses = ['active']) {
   return Boolean(
@@ -577,6 +606,8 @@ module.exports = {
   inspectMediaObject,
   verifyMediaObject,
   verifyUploadedMedia,
+  verifyUploadedImageObject,
+  MAX_PROFILE_IMAGE_BYTES,
   MEDIA_VERIFY_ATTEMPTS,
   MEDIA_VERIFY_DELAY_MS,
   isOwnerMedia,

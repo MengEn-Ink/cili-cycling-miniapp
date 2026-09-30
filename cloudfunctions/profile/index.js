@@ -13,6 +13,7 @@ const {
   inspectMediaObject,
   verifyMediaObject,
   verifyUploadedMedia,
+  verifyUploadedImageObject,
   validateMediaUpdate,
   normalizeAvatarProfile,
   writableDocument,
@@ -114,6 +115,7 @@ async function registerMedia(openid, event, verifyObject) {
   const id = mediaDocumentId(event.fileId);
   if (verifyObject) {
     await verifyUploadedMedia(event.fileId, (input) => cloud.getTempFileURL(input));
+    await verifyUploadedImageObject(event.fileId, (input) => cloud.downloadFile(input));
   }
   return profileStore.registerMedia(id, (existing) =>
     mediaRegistration(

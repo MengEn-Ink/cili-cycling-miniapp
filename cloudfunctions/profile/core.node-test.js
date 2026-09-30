@@ -576,6 +576,32 @@ test('registerMedia 落库前必须由服务端确认对象存在且返回 https
   );
 });
 
+test('registerMedia 服务端校验对象大小与真实图片 magic', async () => {
+  const { verifyUploadedImageObject, MAX_PROFILE_IMAGE_BYTES } = require('./core');
+  const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00]);
+  await assert.doesNotReject(
+    verifyUploadedImageObject('cloud://env/image.jpg', async () => ({ fileContent: jpeg })),
+  );
+  await assert.rejects(
+    verifyUploadedImageObject('cloud://env/large.jpg', async () => ({
+      fileContent: Buffer.alloc(MAX_PROFILE_IMAGE_BYTES + 1),
+    })),
+    { code: 'MEDIA_OBJECT_TOO_LARGE' },
+  );
+  await assert.rejects(
+    verifyUploadedImageObject('cloud://env/not-image.jpg', async () => ({
+      fileContent: Buffer.from('not-an-image'),
+    })),
+    { code: 'MEDIA_OBJECT_TYPE_INVALID' },
+  );
+  await assert.rejects(
+    verifyUploadedImageObject('cloud://env/unavailable.jpg', async () => {
+      throw new Error('storage unavailable');
+    }),
+    { code: 'MEDIA_OBJECT_VERIFY_FAILED' },
+  );
+});
+
 test('能力卡媒体只选择当前 owner 签发文件，legacy 与他人文件均不可见', () => {
   const ownerPrefix = mediaOwnerPrefix('openid-owner-a', mediaSecret);
   const otherPrefix = mediaOwnerPrefix('openid-owner-b', mediaSecret);

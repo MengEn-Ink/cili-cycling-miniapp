@@ -299,6 +299,36 @@ test('底层请求固定 DNS 结果，并限制连接超时、总超时与流式
   );
 });
 
+test('真实 boundedRequest 路径保留瞬时网络码并按剩余总预算重试', async () => {
+  let calls = 0;
+  let clock = 0;
+  const connectBudgets = [];
+  const result = await downloadAvatar(allowedUrl, {
+    totalTimeoutMs: 100,
+    now: () => clock,
+    lookup: publicLookup,
+    requestFactory: fakeRequest(({ request, callback }) => {
+      calls += 1;
+      connectBudgets.push(request.connectTimeout);
+      if (calls === 1) {
+        clock = 40;
+        request.emit('error', Object.assign(new Error('connection reset'), { code: 'ECONNRESET' }));
+        return;
+      }
+      callback(
+        Object.assign(Readable.from([jpeg]), {
+          statusCode: 200,
+          headers: { 'content-type': 'image/jpeg' },
+        }),
+      );
+    }),
+  });
+
+  assert.equal(result.extension, 'jpg');
+  assert.equal(calls, 2);
+  assert.deepEqual(connectBudgets, [100, 60]);
+});
+
 test('导入只使用当前用户 credential URL，并按 strava origin 登记后切换', async () => {
   const openid = 'owner';
   const mediaSecret = 'profile-media-secret-for-tests-32-bytes';
