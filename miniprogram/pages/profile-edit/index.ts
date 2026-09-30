@@ -57,6 +57,45 @@ function settleBeforeDeadline<T>(promise: Promise<T>, timeoutMs: number): Promis
   });
 }
 
+function firstTempImagePath(choice: unknown): string {
+  const files =
+    choice &&
+    typeof choice === 'object' &&
+    Array.isArray((choice as { tempFiles?: unknown }).tempFiles)
+      ? (choice as { tempFiles: unknown[] }).tempFiles
+      : [];
+  const file = files[0];
+  if (file && typeof file === 'object') {
+    const tempFilePath = (file as { tempFilePath?: unknown }).tempFilePath;
+    if (typeof tempFilePath === 'string' && tempFilePath) return tempFilePath;
+    const path = (file as { path?: unknown }).path;
+    if (typeof path === 'string' && path) return path;
+  }
+  const paths =
+    choice &&
+    typeof choice === 'object' &&
+    Array.isArray((choice as { tempFilePaths?: unknown }).tempFilePaths)
+      ? (choice as { tempFilePaths: unknown[] }).tempFilePaths
+      : [];
+  const firstPath = paths[0];
+  return typeof firstPath === 'string' ? firstPath : '';
+}
+
+async function chooseSingleImagePath(): Promise<string> {
+  if (typeof wx.chooseMedia === 'function') {
+    try {
+      return firstTempImagePath(await wx.chooseMedia({ count: 1, mediaType: ['image'] }));
+    } catch (error) {
+      // 部分基础库或开发工具里的 chooseMedia 会不可用，此时降级到 chooseImage；用户取消仍继续抛出给上层静默处理。
+      if (isUserCancellation(error) || typeof wx.chooseImage !== 'function') throw error;
+    }
+  }
+  if (typeof wx.chooseImage !== 'function') return '';
+  return firstTempImagePath(
+    await wx.chooseImage({ count: 1, sizeType: ['compressed'], sourceType: ['album', 'camera'] }),
+  );
+}
+
 function mergeAvatarFields(current: Profile | null, authoritative: Profile): Profile {
   if (!current) return authoritative;
   const merged = { ...current, avatarRevision: authoritative.avatarRevision };
@@ -286,8 +325,7 @@ Page({
   },
   async chooseCustomAvatar() {
     await this.runAvatarAction(async () => {
-      const choice = await wx.chooseMedia({ count: 1, mediaType: ['image'] });
-      const filePath = choice.tempFiles?.[0]?.tempFilePath;
+      const filePath = await chooseSingleImagePath();
       if (filePath) await this.uploadAndSetAvatar(filePath, 'custom');
     });
   },
@@ -333,15 +371,17 @@ Page({
     try {
       const cloud = wx.cloud;
       if (!cloud) return wx.showToast({ title: '当前环境不支持云存储', icon: 'none' });
-      const choice = await wx.chooseMedia({ count: 1, mediaType: ['image'] });
-      const path = choice.tempFiles?.[0]?.tempFilePath;
+      const path = await chooseSingleImagePath();
       if (!path) return;
       const cloudPath = await rideService.getProfileMediaUploadPath();
       const uploaded = await cloud.uploadFile({ cloudPath, filePath: path });
       uploadedFileId = uploaded.fileID;
       await rideService.registerProfileMedia(uploadedFileId, 'other');
       const p = this.data.p;
-      if (!p) return;
+      if (!p) {
+        await compensateUploadedMedia({ fileId: uploadedFileId, category: 'other' });
+        return;
+      }
       p.photos = [...p.photos, { id: uploadedFileId, category: 'other' }];
       this.setData({ p });
     } catch (error) {

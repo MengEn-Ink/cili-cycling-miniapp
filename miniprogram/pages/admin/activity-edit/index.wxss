@@ -32,6 +32,26 @@
   border-radius: 10rpx;
   background: linear-gradient(145deg, #171b1d, #101315);
 }
+.activity-form-page .card {
+  border: 1rpx solid #343438;
+  background: #242427;
+  color: #f7f7f5;
+}
+.activity-form-page .card.danger {
+  border-color: rgba(200, 32, 24, 0.5);
+  background: rgba(200, 32, 24, 0.12);
+  color: #ff7068;
+}
+.activity-form-page .secondary {
+  border: 2rpx solid #3a3a3e;
+  background: #151517 !important;
+  color: #f7f7f5 !important;
+}
+.section-title {
+  color: #f7f7f5;
+  font-size: 28rpx;
+  font-weight: 900;
+}
 .field {
   display: flex;
   flex: 1;
