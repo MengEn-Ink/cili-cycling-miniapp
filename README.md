@@ -94,14 +94,14 @@ npm run deploy:miniprogram
 
 以 `cloudfunctions/.env.example` 为键名清单，只在 CloudBase 控制台配置真实值：
 
-| 变量                                                          | 使用方                                             | 说明                       |
-| ------------------------------------------------------------- | -------------------------------------------------- | -------------------------- |
-| `PII_ENCRYPTION_KEY`                                          | `profile`                                          | base64 编码的 32 字节密钥  |
-| `PROFILE_MEDIA_PATH_SECRET`                                   | `profile`、`profile-media-cleanup`、`admin-review` | 至少 32 字符，三者必须一致 |
-| `STRAVA_CLIENT_ID` / `STRAVA_CLIENT_SECRET`                   | Strava 函数                                        | Strava 应用凭据            |
-| `STRAVA_TOKEN_ENCRYPTION_KEY`                                 | Strava 函数                                        | base64 编码的 32 字节密钥  |
-| `STRAVA_CALLBACK_URL`                                         | Strava 函数                                        | 完整 HTTPS 回调地址        |
-| `REVIEW_APPROVED_TEMPLATE_ID` / `REVIEW_REJECTED_TEMPLATE_ID` | `notification-send`                                | 审批订阅消息模板           |
+| 变量                                                          | 使用方                                                              | 说明                                                               |
+| ------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `PII_ENCRYPTION_KEY`                                          | `profile`                                                           | base64 编码的 32 字节密钥                                          |
+| `PROFILE_MEDIA_PATH_SECRET`                                   | `profile`、`profile-media-cleanup`、`admin-review`、`activity-read` | 至少 32 字符，四者必须一致；`activity-read` 缺失时头像 fail closed |
+| `STRAVA_CLIENT_ID` / `STRAVA_CLIENT_SECRET`                   | Strava 函数                                                         | Strava 应用凭据                                                    |
+| `STRAVA_TOKEN_ENCRYPTION_KEY`                                 | Strava 函数                                                         | base64 编码的 32 字节密钥                                          |
+| `STRAVA_CALLBACK_URL`                                         | Strava 函数                                                         | 完整 HTTPS 回调地址                                                |
+| `REVIEW_APPROVED_TEMPLATE_ID` / `REVIEW_REJECTED_TEMPLATE_ID` | `notification-send`                                                 | 审批订阅消息模板                                                   |
 
 仓库禁止保存 secret、token、真实 `openid`、手机号、OAuth code/state、密文或真实旅程原始证据。
 

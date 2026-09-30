@@ -1,14 +1,44 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
 const Module = require('node:module');
+
+const MEDIA_SECRET = 'activity-read-test-media-secret-32-bytes';
+
+function mediaDocumentId(fileId) {
+  return crypto.createHash('sha256').update(fileId).digest('hex');
+}
+
+function canonicalMedia(fileId, ownerOpenid, overrides = {}) {
+  const sha256 = crypto.createHash('sha256').update(`bytes:${fileId}`).digest('hex');
+  const ownerAlias = crypto
+    .createHmac('sha256', MEDIA_SECRET)
+    .update(ownerOpenid)
+    .digest('hex')
+    .slice(0, 32);
+  return {
+    _id: mediaDocumentId(fileId),
+    file_id: fileId,
+    source_file_id: fileId,
+    canonical_file_id: `cloud://env/profile-canonical/${ownerAlias}/${mediaDocumentId(fileId)}/${sha256}.jpg`,
+    sha256,
+    size: 1024,
+    mime: 'image/jpeg',
+    owner_openid: ownerOpenid,
+    category: 'other',
+    origin: 'custom',
+    status: 'active',
+    ...overrides,
+  };
+}
 
 function loadMain(activity, list = [], options = {}) {
   const calls = [];
   const database = {
     command: { in: (values) => ({ $in: values }) },
     collection(name) {
-      assert.ok(['activities', 'registrations', 'profiles'].includes(name));
+      assert.ok(['activities', 'registrations', 'profiles', 'profile_media'].includes(name));
       return {
         where(condition) {
           calls.push({ type: 'where', name, condition });
@@ -17,10 +47,12 @@ function loadMain(activity, list = [], options = {}) {
               ? list
               : name === 'registrations'
                 ? options.registrations || []
-                : options.profiles || [];
+                : name === 'profiles'
+                  ? options.profiles || []
+                  : options.mediaRecords || [];
           if (name === 'registrations' && typeof condition.status === 'string')
             data = data.filter((item) => item.status === condition.status);
-          if (name === 'profiles' && condition._id?.$in)
+          if ((name === 'profiles' || name === 'profile_media') && condition._id?.$in)
             data = data.filter((item) => condition._id.$in.includes(item._id));
           let offset = 0;
           const query = {
@@ -61,7 +93,23 @@ function loadMain(activity, list = [], options = {}) {
   };
   try {
     delete require.cache[require.resolve('./index')];
-    return { main: require('./index').main, calls };
+    const invoke = require('./index').main;
+    return {
+      calls,
+      async main(event) {
+        const originalSecret = process.env.PROFILE_MEDIA_PATH_SECRET;
+        if (Object.prototype.hasOwnProperty.call(options, 'mediaSecret')) {
+          if (options.mediaSecret) process.env.PROFILE_MEDIA_PATH_SECRET = options.mediaSecret;
+          else delete process.env.PROFILE_MEDIA_PATH_SECRET;
+        }
+        try {
+          return await invoke(event);
+        } finally {
+          if (originalSecret === undefined) delete process.env.PROFILE_MEDIA_PATH_SECRET;
+          else process.env.PROFILE_MEDIA_PATH_SECRET = originalSecret;
+        }
+      },
+    };
   } finally {
     Module._load = originalLoad;
   }
@@ -353,7 +401,202 @@ test('详情成员超过单页时完整读取候选集后再选最早 24 人', a
   );
 });
 
+test('详情默认隐藏未授权、私有、旧版本和外部头像且不签 source URL', async () => {
+  const cases = [
+    {
+      id: 'no-consent',
+      profile: {
+        avatar_file_id: 'cloud://env/profiles/no-consent.jpg',
+        avatar_source: 'custom',
+        avatar_revision: 1,
+      },
+    },
+    {
+      id: 'private',
+      profile: {
+        avatar_file_id: 'cloud://env/profiles/private.jpg',
+        avatar_source: 'custom',
+        avatar_revision: 1,
+        avatar_visibility: 'private',
+        avatar_visibility_revision: 1,
+      },
+    },
+    {
+      id: 'stale-consent',
+      profile: {
+        avatar_file_id: 'cloud://env/profiles/stale.jpg',
+        avatar_source: 'custom',
+        avatar_revision: 2,
+        avatar_visibility: 'public',
+        avatar_visibility_revision: 1,
+      },
+    },
+    {
+      id: 'external-source',
+      profile: {
+        avatar_file_id: 'https://images.example/avatar.jpg',
+        avatar_source: 'custom',
+        avatar_revision: 1,
+        avatar_visibility: 'public',
+        avatar_visibility_revision: 1,
+      },
+    },
+  ];
+  const registrations = cases.map(({ id }, index) => ({
+    _id: id,
+    activity_id: 'a1',
+    openid: id,
+    status: 'approved',
+    approved_at: `2026-09-01T00:0${index}:00.000Z`,
+  }));
+  const profiles = cases.map(({ id, profile }) => ({ _id: id, nickname: id, ...profile }));
+  const { main, calls } = loadMain({ _id: 'a1', title: '活动', status: 'published' }, [], {
+    registrations,
+    profiles,
+    mediaSecret: MEDIA_SECRET,
+    getTempFileURL: async ({ fileList }) => ({
+      fileList: fileList.map((fileID) => ({
+        fileID,
+        status: 0,
+        tempFileURL: 'https://temporary.example/avatar.jpg',
+      })),
+    }),
+  });
+
+  const result = await main({ action: 'detail', activityId: 'a1' });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(
+    result.data.attendees.map((attendee) => attendee.avatar_url),
+    ['', '', '', ''],
+  );
+  assert.equal(
+    calls.some((call) => call.type === 'getTempFileURL'),
+    false,
+  );
+});
+
+test('详情只为公开当前版本且 registry 合法的 canonical 头像签发地址', async () => {
+  const definitions = [
+    ['missing', 'cloud://env/profiles/missing.jpg', 'custom'],
+    ['inactive', 'cloud://env/profiles/inactive.jpg', 'custom'],
+    ['wrong-owner', 'cloud://env/profiles/wrong-owner.jpg', 'custom'],
+    ['forged', 'cloud://env/profiles/forged.jpg', 'custom'],
+    ['missing-source', 'cloud://env/profiles/missing-source.jpg', undefined],
+    ['invalid-source', 'cloud://env/profiles/invalid-source.jpg', 'forged'],
+    ['origin-mismatch', 'cloud://env/profiles/origin-mismatch.jpg', 'wechat'],
+    ['valid', 'cloud://env/profiles/valid.jpg', 'custom'],
+  ];
+  const registrations = definitions.map(([id], index) => ({
+    _id: id,
+    activity_id: 'a1',
+    openid: id,
+    status: 'approved',
+    approved_at: `2026-09-01T00:0${index}:00.000Z`,
+  }));
+  const profiles = definitions.map(([id, avatar, source]) => ({
+    _id: id,
+    nickname: id,
+    avatar_file_id: avatar,
+    ...(source ? { avatar_source: source } : {}),
+    avatar_revision: 3,
+    avatar_visibility: 'public',
+    avatar_visibility_revision: 3,
+  }));
+  const inactive = canonicalMedia(definitions[1][1], 'inactive', { status: 'unreferenced' });
+  const wrongOwner = canonicalMedia(definitions[2][1], 'another-owner');
+  const forged = canonicalMedia(definitions[3][1], 'forged', {
+    canonical_file_id: 'cloud://env/profile-canonical/forged/avatar.jpg',
+  });
+  const missingSource = canonicalMedia(definitions[4][1], 'missing-source');
+  const invalidSource = canonicalMedia(definitions[5][1], 'invalid-source');
+  const originMismatch = canonicalMedia(definitions[6][1], 'origin-mismatch');
+  const valid = canonicalMedia(definitions[7][1], 'valid');
+  const { main, calls } = loadMain({ _id: 'a1', title: '活动', status: 'published' }, [], {
+    registrations,
+    profiles,
+    mediaRecords: [
+      inactive,
+      wrongOwner,
+      forged,
+      missingSource,
+      invalidSource,
+      originMismatch,
+      valid,
+    ],
+    mediaSecret: MEDIA_SECRET,
+    getTempFileURL: async ({ fileList }) => ({
+      fileList: fileList.map((fileID) => ({
+        fileID,
+        status: 0,
+        tempFileURL: 'https://temporary.example/canonical.jpg',
+      })),
+    }),
+  });
+
+  const result = await main({ action: 'detail', activityId: 'a1' });
+
+  assert.equal(result.ok, true);
+  const avatars = Object.fromEntries(
+    result.data.attendees.map((attendee) => [attendee.id, attendee.avatar_url]),
+  );
+  assert.deepEqual(avatars, {
+    missing: '',
+    inactive: '',
+    'wrong-owner': '',
+    forged: '',
+    'missing-source': '',
+    'invalid-source': '',
+    'origin-mismatch': '',
+    valid: 'https://temporary.example/canonical.jpg',
+  });
+  assert.deepEqual(
+    calls.filter((call) => call.type === 'getTempFileURL').map((call) => call.payload.fileList),
+    [[valid.canonical_file_id]],
+  );
+});
+
+test('媒体 secret 缺失时隐藏头像但保留公开活动详情', async () => {
+  const avatar = 'cloud://env/profiles/valid.jpg';
+  const record = canonicalMedia(avatar, 'o1');
+  const { main, calls } = loadMain({ _id: 'a1', title: '活动', status: 'published' }, [], {
+    registrations: [
+      {
+        _id: 'r1',
+        activity_id: 'a1',
+        openid: 'o1',
+        status: 'approved',
+        approved_at: '2026-09-01T00:00:00.000Z',
+      },
+    ],
+    profiles: [
+      {
+        _id: 'o1',
+        nickname: '骑手',
+        avatar_file_id: avatar,
+        avatar_source: 'custom',
+        avatar_revision: 1,
+        avatar_visibility: 'public',
+        avatar_visibility_revision: 1,
+      },
+    ],
+    mediaRecords: [record],
+    mediaSecret: '',
+  });
+
+  const result = await main({ action: 'detail', activityId: 'a1' });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.data.title, '活动');
+  assert.equal(result.data.attendees[0].avatar_url, '');
+  assert.equal(
+    calls.some((call) => call.type === 'getTempFileURL'),
+    false,
+  );
+});
+
 test('头像批量解析失败时详情仍返回空头像，列表不查询成员', async () => {
+  const avatar = 'cloud://env/profiles/avatar.jpg';
   const options = {
     registrations: [
       {
@@ -365,13 +608,27 @@ test('头像批量解析失败时详情仍返回空头像，列表不查询成�
         profile_snapshot: { nickname: '骑手' },
       },
     ],
-    profiles: [{ _id: 'o1', nickname: '骑手', avatar_file_id: 'cloud://avatar.jpg' }],
+    profiles: [
+      {
+        _id: 'o1',
+        nickname: '骑手',
+        avatar_file_id: avatar,
+        avatar_source: 'custom',
+        avatar_revision: 1,
+        avatar_visibility: 'public',
+        avatar_visibility_revision: 1,
+      },
+    ],
+    mediaRecords: [canonicalMedia(avatar, 'o1')],
+    mediaSecret: MEDIA_SECRET,
     getTempFileURL: async () => {
       throw new Error('storage unavailable');
     },
   };
   const detail = loadMain({ _id: 'a1', title: '活动', status: 'published' }, [], options);
   const result = await detail.main({ action: 'detail', activityId: 'a1' });
+  assert.equal(result.ok, true);
+  assert.equal(result.data.title, '活动');
   assert.equal(result.data.attendees[0].avatar_url, '');
   const list = loadMain(undefined, [{ _id: 'a1', title: '活动', status: 'published' }], options);
   await list.main({ action: 'list' });
