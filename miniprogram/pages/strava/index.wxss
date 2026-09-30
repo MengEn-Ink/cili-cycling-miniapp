@@ -54,7 +54,8 @@ page {
   border-color: rgba(24, 160, 88, 0.55);
   background: rgba(24, 160, 88, 0.1);
 }
-.status-failed {
+.status-failed,
+.status-disconnected {
   border-color: rgba(200, 32, 24, 0.55);
   background: rgba(200, 32, 24, 0.1);
 }
@@ -75,7 +76,8 @@ page {
   color: #fff;
   font-weight: 800;
 }
-.status-failed .status-icon {
+.status-failed .status-icon,
+.status-disconnected .status-icon {
   background: #c82018;
 }
 .status-syncing .status-icon,

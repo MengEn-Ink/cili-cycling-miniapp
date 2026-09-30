@@ -6,6 +6,8 @@ const read = (file: string) => readFileSync(file, 'utf8');
 
 const form = read('miniprogram/pages/registration-form/index.wxml');
 const formStyles = read('miniprogram/pages/registration-form/index.wxss');
+const profileStyles = read('miniprogram/pages/profile/index.wxss');
+const stravaStyles = read('miniprogram/pages/strava/index.wxss');
 const registrations = read('miniprogram/pages/registrations/index.wxml');
 const registrationStyles = read('miniprogram/pages/registrations/index.wxss');
 const credential = read('miniprogram/pages/credential/index.wxml');
@@ -22,6 +24,9 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     );
     expect(form).toContain('class="experience-segment"');
     expect(form.match(/class="segment \{\{/g)).toHaveLength(3);
+    expect(form).toContain('value="有一定经验"');
+    expect(form).toContain('checked="{{experience === \'有一定经验\'}}"');
+    expect(form).not.toContain('value="有经验"');
     expect(form).not.toMatch(/用车方式|自带车|租车/);
   });
 
@@ -33,7 +38,12 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     expect(form).toContain("{{submitting ? '正在提交' : '提交审核'}}");
     expect(form.match(/disabled="{{[^}]*submitting[^}]*}}"/g)?.length).toBeGreaterThanOrEqual(8);
     expect(formStyles).toContain('.experience-segment');
-    expect(formStyles).toContain('.status-ready');
+    expect(formStyles).toMatch(/\.segment\s*\{[^}]*min-height:\s*104rpx/s);
+    for (const status of ['ready', 'syncing', 'authorizing', 'failed', 'disconnected']) {
+      expect(formStyles).toContain(`status-${status}`);
+    }
+    expect(profileStyles).toContain('.hero-capability-status.status-verified');
+    expect(stravaStyles).toMatch(/\.status-failed,\s*\.status-disconnected\s*\{/);
   });
 
   it('行程卡由报名字段驱动，四种状态都有可读视觉标记', () => {
@@ -61,6 +71,9 @@ describe('报名、行程与凭证紧凑交互契约', () => {
 
   it('长文案和窄屏具有收缩与换行保护', () => {
     expect(formStyles).toContain('overflow-x: hidden');
+    expect(formStyles).toMatch(
+      /@media \(max-width: 320px\)[\s\S]*?\.experience-segment\s*\{[^}]*box-sizing:\s*border-box[^}]*width:\s*100%/,
+    );
     expect(registrationStyles).toContain('overflow-x: hidden');
     expect(credentialStyles).toContain('overflow-x: hidden');
     expect(`${formStyles}\n${registrationStyles}\n${credentialStyles}`).toContain(

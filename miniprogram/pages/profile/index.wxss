@@ -261,6 +261,10 @@ brand-logo {
   background: currentColor;
 }
 
+.hero-capability-status.status-verified {
+  color: #a9cbb6;
+}
+
 .hero-capability-status.status-partial,
 .hero-capability-status.status-syncing {
   color: #f38a50;
