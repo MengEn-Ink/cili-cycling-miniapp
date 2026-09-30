@@ -128,6 +128,37 @@ describe('小程序身份启动', () => {
     expect(cloud.init).toHaveBeenCalledOnce();
     expect(getStorageSync).toHaveBeenCalledWith('ride-identity-hint');
   });
+
+  it('近期已完成验证时跳过启动预热，进入受限页面前再按需校验', async () => {
+    vi.resetModules();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-30T09:00:00.000Z'));
+    const callFunction = vi.fn().mockResolvedValue({ result: fakeIdentity });
+    const cloud = { init: vi.fn(), callFunction };
+    const getStorageSync = vi.fn((key: string) =>
+      key === 'ride-identity-hint'
+        ? { source: 'wechat_cloud', verifiedAt: Date.parse('2026-09-30T01:30:00.000Z') }
+        : undefined,
+    );
+    let application: { onLaunch(): void } | undefined;
+    vi.stubGlobal('wx', {
+      cloud,
+      getStorageSync,
+      setStorageSync: vi.fn(),
+      removeStorageSync: vi.fn(),
+    });
+    vi.stubGlobal('App', (definition: { onLaunch(): void }) => {
+      application = definition;
+    });
+    await import('../miniprogram/app');
+
+    expect(() => application?.onLaunch()).not.toThrow();
+
+    await Promise.resolve();
+    expect(callFunction).not.toHaveBeenCalled();
+    expect(cloud.init).toHaveBeenCalledOnce();
+    expect(getStorageSync).toHaveBeenCalledWith('ride-identity-hint');
+  });
 });
 
 describe('身份 store', () => {

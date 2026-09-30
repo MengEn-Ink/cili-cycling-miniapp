@@ -149,6 +149,7 @@ describe('个人中心加载状态', () => {
     await vi.advanceTimersByTimeAsync(1_200);
 
     expect(page.data.heroBackgrounds).toEqual([]);
+    expect(page.data.heroCard).toBeNull();
     expect(page.data.heroBackgroundAvatarUrl).toBe('');
     expect(page.data.heroFallbackImageUrl).toBe('/assets/profile/hero-alpine.svg');
 
@@ -167,6 +168,25 @@ describe('个人中心加载状态', () => {
     await Promise.resolve();
 
     expect(page.data.heroBackgrounds).toEqual([]);
+  });
+
+  it('hero 默认展示骑行名片摘要，让个人中心直接看到近 90 天能力卡片', async () => {
+    await page.onShow();
+    await vi.waitFor(() => expect(page.data.heroCard).toBeTruthy());
+
+    expect(page.data.heroCard).toMatchObject({
+      title: '周末爬坡手',
+      statusLabel: '已连接',
+      primaryMetrics: [
+        { key: 'totalKm90d', value: '812.5', unit: 'km' },
+        { key: 'rides90d', value: '28', unit: '次' },
+        { key: 'longestKm', value: '126.3', unit: 'km' },
+      ],
+    });
+    const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
+    expect(template).toContain('class="hero-capability-card"');
+    expect(template).toContain('我的骑行名片');
+    expect(template).toContain('STRAVA {{heroCard.statusLabel}}');
   });
 
   it('hero 图片逐级从用户图、头像、包内山景降级到 CSS alpine', async () => {

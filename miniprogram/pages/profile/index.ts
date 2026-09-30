@@ -8,6 +8,8 @@ const HERO_CARD_DEADLINE_MS = 1_200;
 const HERO_BRAND_IMAGE = '/assets/profile/hero-alpine.svg';
 const CHINA_TIME_OFFSET_MS = 8 * 60 * 60_000;
 
+type PersonalCardView = ReturnType<typeof personalCardViewModel>;
+
 type HeroImageErrorEvent = {
   currentTarget: { dataset: { index?: number | string; url?: string } };
 };
@@ -67,6 +69,7 @@ Page({
     heroAvatarUrl: '',
     heroBackgroundAvatarUrl: '',
     heroFallbackImageUrl: HERO_BRAND_IMAGE,
+    heroCard: null as PersonalCardView | null,
     hasGuidance: false,
   },
   async onShow() {
@@ -94,7 +97,12 @@ Page({
     void settleBeforeDeadline(cardTask, HERO_CARD_DEADLINE_MS).then((state) => {
       if (requestId !== this.loadRequestId) return;
       if (!state?.data) {
-        this.setData({ heroBackgrounds: [], heroAvatarUrl: '', heroBackgroundAvatarUrl: '' });
+        this.setData({
+          heroBackgrounds: [],
+          heroAvatarUrl: '',
+          heroBackgroundAvatarUrl: '',
+          heroCard: null,
+        });
         return;
       }
       const view = personalCardViewModel(state.data as PersonalCapabilityCard);
@@ -108,6 +116,7 @@ Page({
         ),
         heroAvatarUrl: avatarBackground,
         heroBackgroundAvatarUrl: avatarBackground,
+        heroCard: view,
       });
     });
 

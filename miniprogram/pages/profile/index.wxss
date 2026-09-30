@@ -52,13 +52,17 @@ page {
 }
 .profile-hero {
   position: relative;
+  padding: 40rpx 10rpx 28rpx;
+}
+.hero-identity {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 28rpx;
-  padding: 40rpx 10rpx 28rpx;
 }
 .profile-hero.has-bg {
-  min-height: 320rpx;
+  min-height: 520rpx;
   padding-top: 120rpx;
 }
 .hero-swiper {
@@ -166,6 +170,12 @@ page {
   z-index: 2;
   min-width: 0;
 }
+.profile-title {
+  margin-top: 8rpx;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 24rpx;
+  font-weight: 700;
+}
 .guidance-card {
   margin-top: 24rpx;
   border-color: #d55b1f;
@@ -208,6 +218,111 @@ page {
 .auth-dot.verified {
   background: #c7c7c9;
   box-shadow: none;
+}
+.hero-capability-card {
+  position: relative;
+  z-index: 2;
+  margin-top: 28rpx;
+  padding: 24rpx 26rpx 22rpx;
+  border: 1rpx solid rgba(247, 247, 245, 0.2);
+  border-radius: 8rpx;
+  background: rgba(13, 13, 16, 0.72);
+  box-shadow: 0 18rpx 42rpx rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(18rpx);
+}
+.hero-capability-card::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 32rpx;
+  height: 32rpx;
+  background: #d55b1f;
+  content: '';
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+.hero-capability-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.hero-capability-label {
+  color: #d55b1f;
+  font-size: 20rpx;
+  font-weight: 900;
+  letter-spacing: 3rpx;
+}
+.hero-capability-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 8rpx 14rpx;
+  border: 1rpx solid rgba(247, 247, 245, 0.22);
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.04);
+  color: #f7f7f5;
+  font-size: 18rpx;
+  font-weight: 800;
+}
+.hero-capability-status .status-dot {
+  display: inline-block;
+  width: 10rpx;
+  height: 10rpx;
+  margin-right: 10rpx;
+  border-radius: 50%;
+  background: currentColor;
+}
+.hero-capability-status.status-verified {
+  color: #f7f7f5;
+}
+.hero-capability-status.status-partial,
+.hero-capability-status.status-syncing {
+  color: #f38a50;
+}
+.hero-capability-status.status-repair {
+  color: #ff8f86;
+}
+.hero-capability-metrics {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+.hero-capability-metric {
+  min-width: 0;
+  flex: 1;
+}
+.hero-capability-value {
+  overflow: hidden;
+  color: #f7f7f5;
+  font-size: 34rpx;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hero-capability-unit {
+  margin-left: 5rpx;
+  color: #d55b1f;
+  font-size: 18rpx;
+  font-weight: 800;
+}
+.hero-capability-name,
+.hero-capability-empty,
+.hero-capability-meta {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 20rpx;
+}
+.hero-capability-name {
+  margin-top: 8rpx;
+}
+.hero-capability-empty {
+  margin-top: 18rpx;
+  line-height: 1.6;
+}
+.hero-capability-meta {
+  margin-top: 18rpx;
+  padding-top: 18rpx;
+  border-top: 1rpx solid rgba(255, 255, 255, 0.12);
 }
 .card {
   position: relative;

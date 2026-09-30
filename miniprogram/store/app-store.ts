@@ -23,6 +23,7 @@ type IdentityHint = {
 
 const IDENTITY_HINT_KEY = 'ride-identity-hint';
 const IDENTITY_TTL_MS = 5 * 60_000;
+const IDENTITY_HINT_WARMUP_TTL_MS = 12 * 60 * 60_000;
 
 function defaultStorage(): StorageApi {
   return {
@@ -139,6 +140,14 @@ export class AppStore {
     this.role = 'member';
     this.isSuper = false;
     this.identityVerifiedUntil = 0;
+  }
+
+  hasFreshIdentityHint(now = Date.now()): boolean {
+    return (
+      !!this.identityHint &&
+      Number.isFinite(this.identityHint.verifiedAt) &&
+      now < this.identityHint.verifiedAt + IDENTITY_HINT_WARMUP_TTL_MS
+    );
   }
 
   canSwitchRole(): boolean {

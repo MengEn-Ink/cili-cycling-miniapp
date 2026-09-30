@@ -11,7 +11,10 @@ App({
   onLaunch() {
     appStore.bootstrap();
     const cloud = initializeCloud(wx.cloud) === 'initialized' ? wx.cloud : undefined;
-    void appStore.ensureIdentity(cloud);
+    if (!appStore.hasFreshIdentityHint()) {
+      // 近期已经完成过微信身份验证时，启动阶段不重复预热；进入需要身份的页面再按需校验，减少冷启动抖动。
+      void appStore.ensureIdentity(cloud);
+    }
 
     // 旧基础库可能缺少对应 API，仅在能力存在时注册，避免注册阶段自身抛出。
     if (typeof wx.onError === 'function') {

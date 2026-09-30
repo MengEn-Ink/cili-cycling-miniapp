@@ -5,13 +5,18 @@ const mocks = vi.hoisted(() => ({
   initializeCloud: vi.fn(),
   bootstrap: vi.fn(),
   ensureIdentity: vi.fn(),
+  hasFreshIdentityHint: vi.fn(),
 }));
 
 vi.mock('../miniprogram/config/cloud-init', () => ({
   initializeCloud: mocks.initializeCloud,
 }));
 vi.mock('../miniprogram/store/app-store', () => ({
-  appStore: { bootstrap: mocks.bootstrap, ensureIdentity: mocks.ensureIdentity },
+  appStore: {
+    bootstrap: mocks.bootstrap,
+    ensureIdentity: mocks.ensureIdentity,
+    hasFreshIdentityHint: mocks.hasFreshIdentityHint,
+  },
 }));
 
 let appDefinition: any;
@@ -29,6 +34,7 @@ describe('小程序全局运行时兜底', () => {
   beforeEach(() => {
     mocks.initializeCloud.mockReturnValue('initialized');
     mocks.ensureIdentity.mockResolvedValue(undefined);
+    mocks.hasFreshIdentityHint.mockReturnValue(false);
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
   });
 
