@@ -18,6 +18,14 @@ const STATUS: Record<
   disconnected: { label: '需要重新授权', tone: 'repair' },
 };
 
+const EMPTY_METRICS: Record<PersonalCapabilityCardState, string> = {
+  ready: '暂无可展示的骑行指标',
+  partial: '暂无可展示的骑行指标',
+  syncing: 'Strava 数据同步中，请稍后查看',
+  failed: 'Strava 数据同步失败，请前往修复',
+  disconnected: '连接 Strava 后展示骑行指标',
+};
+
 const METRICS: {
   key: keyof PersonalCapabilityCard['summary'];
   label: string;
@@ -64,6 +72,7 @@ export function personalCardViewModel(card: PersonalCapabilityCard) {
     metrics,
     primaryMetrics,
     secondaryMetrics,
+    emptyMetricsText: EMPTY_METRICS[card.state],
     coverageText: card.coverage
       ? `${datePart(card.coverage.from)} 至 ${datePart(card.coverage.to)} · ${
           card.coverage.complete ? '覆盖完整' : '覆盖不完整'

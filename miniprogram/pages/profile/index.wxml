@@ -18,15 +18,14 @@
       <view class="hero-alpine-mark">此里</view>
     </view>
     <view class="hero-shade" aria-hidden="true"></view>
-
     <view class="hero-identity">
       <view class="avatar">
-        <image wx:if="{{heroAvatarUrl}}" class="avatar-image" src="{{heroAvatarUrl}}" mode="aspectFill" data-url="{{heroAvatarUrl}}" binderror="heroAvatarError" aria-label="{{profile ? profile.nickname : '骑手'}}的头像" />
+        <image wx:if="{{heroAvatarUrl}}" class="avatar-image" src="{{heroAvatarUrl}}" mode="aspectFill" data-url="{{heroAvatarUrl}}" binderror="heroAvatarError" aria-label="{{profile ? profile.nickname : (heroCard ? heroCard.displayName : '骑手')}}的头像" />
         <text wx:else aria-label="默认骑手头像">C</text>
       </view>
       <view class="profile-copy">
         <view class="hero-kicker">RIDER PROFILE</view>
-        <view class="profile-name">{{profile ? profile.nickname : '欢迎来到此里'}}</view>
+        <view class="profile-name">{{profile ? profile.nickname : (heroCard ? heroCard.displayName : '欢迎来到此里')}}</view>
         <view class="profile-title" wx:if="{{heroCard && heroCard.title}}">{{heroCard.title}}</view>
         <view class="auth-line"><text class="auth-dot {{authStatus === 'authenticated' ? 'verified' : ''}}"></text>{{authStatus === 'authenticated' ? '微信身份已验证' : '请先完成微信云身份验证'}}</view>
       </view>
@@ -43,7 +42,7 @@
           <view class="hero-capability-name">{{item.label}}</view>
         </view>
       </view>
-      <view class="hero-capability-empty" wx:else>完成 Strava 连接后显示真实骑行摘要</view>
+      <view class="hero-capability-empty" wx:else>{{heroCard.emptyMetricsText}}</view>
       <view class="hero-capability-meta" wx:if="{{heroCard.coverageText || heroCard.generatedAtText}}">{{heroCard.coverageText || heroCard.generatedAtText}}</view>
     </view>
 

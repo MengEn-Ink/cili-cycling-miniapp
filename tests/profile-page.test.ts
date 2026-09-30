@@ -193,6 +193,21 @@ describe('个人中心加载状态', () => {
     expect(styles).toMatch(/\.profile-hero\.has-bg\s*\{[^}]*min-height:\s*438rpx/s);
   });
 
+  it('profile 请求失败时 hero 仍回退骑行名片 displayName', async () => {
+    rideService.getProfile.mockRejectedValueOnce(new Error('资料服务失败'));
+
+    await page.onShow();
+    await vi.waitFor(() => expect(page.data.heroCard).toBeTruthy());
+
+    const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
+    expect(page.data.profile).toBeNull();
+    expect(page.data.heroCard.displayName).toBe('山野骑手');
+    expect(template).toContain(
+      "profile ? profile.nickname : (heroCard ? heroCard.displayName : '欢迎来到此里')",
+    );
+    expect(template).toContain('{{heroCard.emptyMetricsText}}');
+  });
+
   it('hero 图片逐级从用户图、头像、包内山景降级到 CSS alpine', async () => {
     await page.onShow();
     await vi.waitFor(() => expect(page.data.heroBackgrounds).toHaveLength(1));

@@ -362,4 +362,15 @@ describe('身份 store', () => {
     expect(() => store.bootstrap()).not.toThrow();
     expect(store.identityHint).toBeNull();
   });
+
+  it('未来 verifiedAt 不得延长 identity warmup', () => {
+    const now = Date.parse('2026-09-30T04:00:00.000Z');
+    const storage = memoryStorage({
+      'ride-identity-hint': { source: 'wechat_cloud', verifiedAt: now + 60_000 },
+    });
+    const store = new AppStore(storage, vi.fn());
+    store.bootstrap();
+
+    expect(store.hasFreshIdentityHint(now)).toBe(false);
+  });
 });

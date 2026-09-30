@@ -131,4 +131,25 @@ describe('个人骑行名片 view model', () => {
     });
     expect(view.avatarUrl).toBe('https://avatar.jpg');
   });
+
+  it.each([
+    ['syncing', 'Strava 数据同步中，请稍后查看'],
+    ['failed', 'Strava 数据同步失败，请前往修复'],
+    ['partial', '暂无可展示的骑行指标'],
+    ['disconnected', '连接 Strava 后展示骑行指标'],
+  ] as const)('%s 空指标展示对应状态说明', async (state, message) => {
+    const view = await build({
+      ...baseCard,
+      state,
+      summary: {
+        totalKm90d: null,
+        rides90d: null,
+        longestKm: null,
+        elevationM90d: null,
+        weightedAvgSpeedKmh: null,
+      },
+    });
+
+    expect(view.emptyMetricsText).toBe(message);
+  });
 });

@@ -46,7 +46,6 @@
             <text class="status-dot"></text>STRAVA {{card.statusLabel}}
           </view>
         </view>
-
         <view class="card-content">
           <view class="identity-block">
             <view class="rider-name">{{card.displayName}}</view>
@@ -62,7 +61,7 @@
                 <view class="metric-label">{{item.label}}</view>
               </view>
             </view>
-            <view wx:else class="metric-empty">骑行数据正在准备</view>
+            <view wx:else class="metric-empty">{{card.emptyMetricsText}}</view>
             <view class="data-meta" wx:if="{{card.coverageText || card.syncedAtText}}">
               <view class="meta-row" wx:if="{{card.coverageText}}">
                 <text class="meta-label">覆盖范围</text>

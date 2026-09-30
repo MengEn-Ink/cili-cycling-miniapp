@@ -146,6 +146,7 @@ export class AppStore {
     return (
       !!this.identityHint &&
       Number.isFinite(this.identityHint.verifiedAt) &&
+      this.identityHint.verifiedAt <= now &&
       now < this.identityHint.verifiedAt + IDENTITY_HINT_WARMUP_TTL_MS
     );
   }
