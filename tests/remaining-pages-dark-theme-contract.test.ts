@@ -128,6 +128,20 @@ describe('其余页面 CILI 暗色主题接入静态契约', () => {
     );
   });
 
+  it('创建/编辑活动页错误卡、清单标题与次按钮都保持暗色主题', () => {
+    const styles = read('miniprogram/pages/admin/activity-edit/index.wxss');
+    expect(declaration(cssBlock(styles, '.activity-form-page .card'), 'background')).toBe(
+      '#242427',
+    );
+    expect(
+      declaration(cssBlock(styles, '.activity-form-page .card.danger'), 'background'),
+    ).toContain('rgba(200');
+    expect(declaration(cssBlock(styles, '.activity-form-page .secondary'), 'background')).toContain(
+      '#151517',
+    );
+    expect(declaration(cssBlock(styles, '.section-title'), 'color')).toBe('#f7f7f5');
+  });
+
   it('资料编辑页补齐标签、头像外壳、错误条与上传按钮的暗色样式', () => {
     const styles = read('miniprogram/pages/profile-edit/index.wxss');
     expect(declaration(cssBlock(styles, '.profile-form-page .form-card'), 'background')).toBe(

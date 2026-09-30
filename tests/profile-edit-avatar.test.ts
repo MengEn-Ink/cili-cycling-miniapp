@@ -206,6 +206,26 @@ describe('资料编辑头像交互', () => {
     });
   });
 
+  it('chooseMedia 不可用时自定义头像降级 chooseImage 上传', async () => {
+    const uploadedFileId = 'cloud://env/profiles/owner/custom-fallback.jpg';
+    const uploadFile = vi.fn().mockResolvedValue({ fileID: uploadedFileId });
+    const chooseMedia = vi.fn().mockRejectedValue({ errMsg: 'chooseMedia:fail api not supported' });
+    const chooseImage = vi.fn().mockResolvedValue({ tempFilePaths: ['/private/tmp/fallback.jpg'] });
+    Object.assign(wx, { chooseMedia, chooseImage, cloud: { uploadFile, deleteFile: vi.fn() } });
+
+    await page.chooseCustomAvatar();
+
+    expect(chooseImage).toHaveBeenCalledWith({
+      count: 1,
+      sizeType: ['compressed'],
+      sourceType: ['album', 'camera'],
+    });
+    expect(uploadFile).toHaveBeenCalledWith(
+      expect.objectContaining({ filePath: '/private/tmp/fallback.jpg' }),
+    );
+    expect(rideService.setAvatar).toHaveBeenCalledWith('custom', uploadedFileId);
+  });
+
   it('所有头像入口共用单一 busy lock 防止重复动作', async () => {
     const uploadPath = deferred<string>();
     rideService.getProfileMediaUploadPath.mockReturnValueOnce(uploadPath.promise);
@@ -709,6 +729,25 @@ describe('资料编辑头像交互', () => {
     expect(page.data.p.photos).toEqual([
       { id: 'cloud://env/profiles/owner/photo.jpg', category: 'other' },
     ]);
+  });
+
+  it('个人相册 chooseMedia 不可用时降级 chooseImage 上传照片', async () => {
+    const uploadedFileId = 'cloud://env/profiles/owner/photo-fallback.jpg';
+    const uploadFile = vi.fn().mockResolvedValue({ fileID: uploadedFileId });
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockRejectedValue({ errMsg: 'chooseMedia:fail api not supported' }),
+      chooseImage: vi
+        .fn()
+        .mockResolvedValue({ tempFilePaths: ['/private/tmp/photo-fallback.jpg'] }),
+      cloud: { uploadFile, deleteFile: vi.fn() },
+    });
+
+    await page.addPhoto();
+
+    expect(uploadFile).toHaveBeenCalledWith(
+      expect.objectContaining({ filePath: '/private/tmp/photo-fallback.jpg' }),
+    );
+    expect(page.data.p.photos).toEqual([{ id: uploadedFileId, category: 'other' }]);
   });
 
   it('个人相册 owner-bound path 请求失败时不上传也不写 photos', async () => {
