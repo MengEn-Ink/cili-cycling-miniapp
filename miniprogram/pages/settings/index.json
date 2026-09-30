@@ -1,0 +1,13 @@
+{
+  "navigationBarTitleText": "设置",
+  "navigationBarBackgroundColor": "#0b0b0c",
+  "navigationBarTextStyle": "white",
+  "enablePullDownRefresh": false,
+  "backgroundColor": "#0b0b0c",
+  "backgroundColorTop": "#0b0b0c",
+  "backgroundColorBottom": "#0b0b0c",
+  "backgroundTextStyle": "light",
+  "usingComponents": {
+    "brand-logo": "/components/brand-logo/index"
+  }
+}

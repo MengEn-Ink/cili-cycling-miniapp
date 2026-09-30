@@ -6,6 +6,7 @@
     "pages/registrations/index",
     "pages/credential/index",
     "pages/profile/index",
+    "pages/settings/index",
     "pages/capability-card/index",
     "pages/profile-edit/index",
     "pages/strava/index",

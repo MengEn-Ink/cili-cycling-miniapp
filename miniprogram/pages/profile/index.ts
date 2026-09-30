@@ -1,7 +1,7 @@
 import type { PersonalCapabilityCard, Profile } from '../../models';
 import { runPageTask } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
-import { setTheme, syncPageTheme } from '../../services/theme-service';
+import { syncPageTheme } from '../../services/theme-service';
 import { appStore } from '../../store/app-store';
 import { personalCardViewModel } from '../../utils/personal-card';
 import {
@@ -369,9 +369,8 @@ Page({
     if (!this.data.heroPullOffset && this.data.heroImageMode === 'aspectFill') return;
     this.setData({ heroPullOffset: 0, heroImageMode: 'aspectFill' });
   },
-  switchTheme(event: { currentTarget?: { dataset?: { theme?: unknown } } }) {
-    setTheme(event.currentTarget?.dataset?.theme);
-    syncPageTheme(this);
+  openSettings() {
+    wx.navigateTo({ url: '/pages/settings/index' });
   },
   toggleCard() {
     this.setData({ cardExpanded: !this.data.cardExpanded });

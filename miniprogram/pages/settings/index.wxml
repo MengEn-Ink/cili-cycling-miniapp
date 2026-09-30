@@ -1,0 +1,53 @@
+<view class="page settings-page {{themeClass}}">
+  <brand-logo compact="{{true}}" meta="PREFERENCES · RELEASES" />
+
+  <view class="settings-hero">
+    <view class="hero-kicker">CONTROL CENTER</view>
+    <view class="hero-title">设置</view>
+    <view class="hero-copy">管理显示偏好，查看「此里」的每一次功能升级。</view>
+  </view>
+
+  <view class="section-label"><text>01</text> 外观偏好</view>
+  <view class="card appearance-card" role="radiogroup" aria-label="显示主题">
+    <view class="card-heading">
+      <view>
+        <view class="title">显示主题</view>
+        <view class="muted">当前为{{theme === 'light' ? '浅色（户外）' : '深色（默认）'}}</view>
+      </view>
+      <view class="theme-status" role="status" aria-live="polite">{{theme === 'light' ? 'LIGHT' : 'DARK'}}</view>
+    </view>
+    <view class="theme-options">
+      <button class="theme-option {{theme === 'dark' ? 'selected' : ''}}" data-theme="dark" bindtap="switchTheme" role="radio" aria-checked="{{theme === 'dark'}}" aria-label="深色（默认）">
+        <view class="theme-preview theme-preview-dark"><view></view><view></view></view>
+        <view class="theme-option-copy"><text>深色（默认）</text><text>沉浸、聚焦、运动感</text></view>
+        <view class="theme-check" aria-hidden="true">{{theme === 'dark' ? '✓' : ''}}</view>
+      </button>
+      <button class="theme-option {{theme === 'light' ? 'selected' : ''}}" data-theme="light" bindtap="switchTheme" role="radio" aria-checked="{{theme === 'light'}}" aria-label="浅色（户外）">
+        <view class="theme-preview theme-preview-light"><view></view><view></view></view>
+        <view class="theme-option-copy"><text>浅色（户外）</text><text>明亮、清晰、强光友好</text></view>
+        <view class="theme-check" aria-hidden="true">{{theme === 'light' ? '✓' : ''}}</view>
+      </button>
+    </view>
+  </view>
+
+  <view class="section-label"><text>02</text> 功能升级日志</view>
+  <view class="release-list">
+    <view class="release-card {{item.latest ? 'latest' : ''}}" wx:for="{{releaseNotes}}" wx:key="version">
+      <view class="release-rail"><view class="release-dot"></view><view class="release-line"></view></view>
+      <view class="release-content">
+        <view class="release-meta">
+          <text class="release-version">V{{item.version}}</text>
+          <text class="release-latest" wx:if="{{item.latest}}">LATEST</text>
+          <text class="release-date">{{item.date}}</text>
+        </view>
+        <view class="release-title">{{item.title}}</view>
+        <view class="release-summary">{{item.summary}}</view>
+        <view class="release-features">
+          <view class="release-feature" wx:for="{{item.features}}" wx:for-item="feature" wx:key="*this"><text aria-hidden="true">→</text><text>{{feature}}</text></view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="settings-footer">CILI · 持续为每一次出发升级</view>
+</view>

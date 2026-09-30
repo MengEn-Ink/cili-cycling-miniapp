@@ -559,11 +559,12 @@ describe('个人中心加载状态', () => {
     expect(wx.navigateTo).not.toHaveBeenCalled();
   });
 
-  it('切换显示主题后立即更新个人中心根主题状态', () => {
-    page.switchTheme({ currentTarget: { dataset: { theme: 'light' } } });
+  it('从个人中心右上角进入设置页', () => {
+    page.openSettings();
 
-    expect(page.data).toMatchObject({ theme: 'light', themeClass: 'theme-light' });
+    expect(wx.navigateTo).toHaveBeenCalledWith({ url: '/pages/settings/index' });
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
-    expect(template).toContain('aria-checked="{{theme === \'light\'}}"');
+    expect(template).toContain('aria-label="打开设置"');
+    expect(template).not.toContain('bindtap="switchTheme"');
   });
 });
