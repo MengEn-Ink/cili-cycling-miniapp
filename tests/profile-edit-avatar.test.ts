@@ -732,6 +732,26 @@ describe('资料编辑头像交互', () => {
     expect(page.data.mediaError).toBe(laterError);
   });
 
+  it('较早预览失败不得覆盖预览请求开始后产生的上传错误', async () => {
+    const pending = deferred<ReturnType<typeof capabilityCard>>();
+    rideService.getPersonalCapabilityCard.mockReturnValueOnce(pending.promise);
+    const preview = page.loadAvatarPreview();
+
+    await page.runAvatarAction(() =>
+      Promise.reject(
+        Object.assign(new Error('later register failure'), {
+          code: 'MEDIA_REGISTER_FAILED',
+          mediaStage: 'register',
+        }),
+      ),
+    );
+    const laterError = page.data.mediaError;
+    pending.reject(new Error('older preview failure'));
+    await preview;
+
+    expect(page.data.mediaError).toBe(laterError);
+  });
+
   it.each(['onHide', 'onUnload'])('%s 会让未完成的头像预览响应失效', async (hook) => {
     const pending = deferred<ReturnType<typeof capabilityCard>>();
     rideService.getPersonalCapabilityCard.mockReturnValueOnce(pending.promise);

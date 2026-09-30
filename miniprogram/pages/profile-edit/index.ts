@@ -306,6 +306,7 @@ async function compensateUploadedMedia(entry: MediaOrphan) {
 Page({
   avatarReadinessRequestId: 0,
   avatarPreviewRequestId: 0,
+  mediaErrorRevision: 0,
   mediaErrorStage: '',
   data: {
     loading: true,
@@ -339,12 +340,19 @@ Page({
   },
   async loadAvatarPreview() {
     const requestId = ++this.avatarPreviewRequestId;
+    const errorRevision = this.mediaErrorRevision;
     const card = await settleBeforeDeadline(
       rideService.getPersonalCapabilityCard(),
       AVATAR_PREVIEW_DEADLINE_MS,
     );
     if (requestId !== this.avatarPreviewRequestId) return;
     if (!card) {
+      if (
+        this.mediaErrorRevision !== errorRevision ||
+        (this.mediaErrorStage && this.mediaErrorStage !== 'preview')
+      )
+        return;
+      this.mediaErrorRevision += 1;
       this.mediaErrorStage = 'preview';
       this.setData({
         mediaError: mediaFailureDetail(
@@ -359,7 +367,8 @@ Page({
     const patch: Record<string, unknown> = {
       avatarPreviewUrl: safeHttpsUrl(card.profile.avatarUrl),
     };
-    if (this.mediaErrorStage === 'preview') {
+    if (this.mediaErrorStage === 'preview' && this.mediaErrorRevision === errorRevision) {
+      this.mediaErrorRevision += 1;
       this.mediaErrorStage = '';
       patch.mediaError = '';
     }
@@ -413,6 +422,7 @@ Page({
   },
   async runAvatarAction(action: () => Promise<void>) {
     if (this.data.avatarBusy || this.data.photoBusy || this.data.saving) return;
+    this.mediaErrorRevision += 1;
     this.mediaErrorStage = '';
     this.setData({ avatarBusy: true, mediaError: '' });
     try {
@@ -420,6 +430,7 @@ Page({
     } catch (error) {
       if (!isUserCancellation(error)) {
         const detail = mediaFailureDetail(error);
+        this.mediaErrorRevision += 1;
         this.mediaErrorStage =
           error &&
           typeof error === 'object' &&
@@ -523,6 +534,7 @@ Page({
   async addPhoto() {
     // 添加照片加在途锁，避免快速连点触发多次并发上传产生孤立文件或状态错乱。
     if (this.data.photoBusy || this.data.saving || this.data.avatarBusy) return;
+    this.mediaErrorRevision += 1;
     this.mediaErrorStage = '';
     this.setData({ photoBusy: true, mediaError: '' });
     let uploadedFileId = '';
@@ -555,6 +567,7 @@ Page({
         await compensateUploadedMedia({ fileId: uploadedFileId, category: 'other' });
       }
       const detail = mediaFailureDetail(error);
+      this.mediaErrorRevision += 1;
       this.mediaErrorStage =
         error &&
         typeof error === 'object' &&
