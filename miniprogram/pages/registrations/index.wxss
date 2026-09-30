@@ -208,3 +208,44 @@ brand-logo {
     max-width: 72%;
   }
 }
+
+/* Design reference alignment. */
+.page.registrations-page {
+  padding-right: 40rpx;
+  padding-left: 40rpx;
+  background: #000;
+}
+
+.registration-list {
+  gap: 16rpx;
+}
+
+.registration-card {
+  padding: 24rpx;
+  border-color: #3a3a3c;
+  border-radius: 40rpx;
+  background: #1c1c1e;
+  box-shadow: none;
+}
+
+.registration-card--pressed {
+  border-color: #ff5722;
+  background: #2c2c2e;
+}
+
+.page-heading .hero-kicker,
+.date,
+.arrow {
+  color: #ff5722;
+}
+
+.corner-cut {
+  background: #ff5722;
+}
+
+@media (max-width: 320px) {
+  .page.registrations-page {
+    padding-right: 32rpx;
+    padding-left: 32rpx;
+  }
+}

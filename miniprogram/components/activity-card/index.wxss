@@ -208,3 +208,36 @@
     font-size: 28rpx;
   }
 }
+
+/* Unified event-card surface and interaction tokens. */
+.activity-card {
+  border-color: #3a3a3c;
+  border-radius: 48rpx;
+  background: #1c1c1e;
+  box-shadow: none;
+}
+
+.card-accent,
+.activity-card::after {
+  background: #ff5722;
+}
+
+.activity-card--pressed {
+  border-color: #ff5722;
+}
+
+.metrics {
+  border-color: #3a3a3c;
+  border-radius: 16rpx;
+  background: #3a3a3c;
+}
+
+.metric-item {
+  background: #2c2c2e;
+}
+
+.date-value,
+.route-arrow,
+.arrow {
+  color: #ff5722;
+}

@@ -96,22 +96,43 @@ describe('其余页面 CILI 暗色主题接入静态契约', () => {
 
   it('报名凭证页主视觉、凭证卡与时间线在暗色面板上可读', () => {
     const styles = read('miniprogram/pages/credential/index.wxss');
-    expect(declaration(cssBlock(styles, '.status-hero'), 'background')).toContain(
-      'linear-gradient',
-    );
-    expect(declaration(cssBlock(styles, '.credential-card'), 'background')).toContain('#1b1b1d');
-    expect(hexColor(declaration(cssBlock(styles, '.serial'), 'color'))).toBe('#d55b1f');
-    expect(declaration(cssBlock(styles, '.meet-info'), 'background')).toBe('#151517');
+    expect(declaration(cssBlock(styles, '.status-hero'), 'background')).toContain('#1c1c1e');
+    expect(declaration(cssBlock(styles, '.credential-card'), 'background')).toContain('#1c1c1e');
+    expect(hexColor(declaration(cssBlock(styles, '.serial'), 'color'))).toBe('#ff5722');
+    expect(declaration(cssBlock(styles, '.meet-info'), 'background')).toBe('#2c2c2e');
     expect(
-      contrast(hexColor(declaration(cssBlock(styles, '.review-comment'), 'color')), '#151517'),
+      contrast(hexColor(declaration(cssBlock(styles, '.review-comment'), 'color')), '#2c2c2e'),
     ).toBeGreaterThanOrEqual(4.5);
     expect(declaration(cssBlock(styles, '.credential-page .card'), 'background')).toContain(
-      '#242427',
+      '#1c1c1e',
     );
     expect(
       contrast(
         hexColor(declaration(cssBlock(styles, '.credential-page .muted'), 'color')),
         '#0b0b0c',
+      ),
+    ).toBeGreaterThanOrEqual(4.5);
+
+    const genericHeroOffset = styles.lastIndexOf('.status-hero {');
+    const statusColors = new Set<string>();
+    for (const status of ['pending', 'approved', 'rejected', 'cancelled']) {
+      const selector = `.status-${status}`;
+      const block = cssBlock(styles, selector);
+      expect(
+        styles.lastIndexOf(`${selector} {`),
+        `${selector} must follow the generic hero rule`,
+      ).toBeGreaterThan(genericHeroOffset);
+      expect(declaration(block, 'background')).toContain('#1c1c1e');
+      expect(declaration(block, 'background')).toContain('rgba(');
+      const borderColor = hexColor(declaration(block, 'border-color'));
+      expect(declaration(block, 'box-shadow')).toContain(borderColor);
+      statusColors.add(borderColor);
+    }
+    expect(statusColors).toHaveLength(4);
+    expect(
+      contrast(
+        hexColor(declaration(cssBlocks(styles, '.status-hero')[0] || '', 'color')),
+        '#1c1c1e',
       ),
     ).toBeGreaterThanOrEqual(4.5);
   });

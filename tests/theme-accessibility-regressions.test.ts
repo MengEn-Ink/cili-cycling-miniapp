@@ -67,7 +67,7 @@ describe('theme accessibility regressions', () => {
     ] as const;
     for (const [file, selector] of darkPages) {
       const block = cssBlock(read(file), selector);
-      expect(declaration(block, 'background').toLowerCase()).toMatch(/#(?:0b0b0c|090b0f)/);
+      expect(declaration(block, 'background').toLowerCase()).toMatch(/#(?:000|0b0b0c|090b0f)/);
       expect(declaration(block, 'color').toLowerCase()).toMatch(/^#f[0-9a-f]{5}$/);
     }
   });
@@ -102,7 +102,7 @@ describe('theme accessibility regressions', () => {
 
     const detailStyles = read('miniprogram/pages/activity-detail/index.wxss');
     const detailCard = cssBlock(detailStyles, '.detail-page .card');
-    expect(declaration(detailCard, 'background')).toContain('#242427');
+    expect(declaration(detailCard, 'background')).toContain('#1c1c1e');
     expect(declaration(detailCard, 'color').toLowerCase()).toBe('#f7f7f5');
     const detailMuted = cssBlock(detailStyles, '.detail-page .muted');
     expect(
@@ -110,7 +110,7 @@ describe('theme accessibility regressions', () => {
     ).toBeGreaterThanOrEqual(4.5);
 
     const formCard = cssBlock(read('miniprogram/pages/registration-form/index.wxss'), '.form-card');
-    expect(declaration(formCard, 'background')).toContain('#171b1d');
+    expect(declaration(formCard, 'background')).toContain('#1c1c1e');
     expect(declaration(formCard, 'color').toLowerCase()).toBe('#f4f7f2');
   });
 

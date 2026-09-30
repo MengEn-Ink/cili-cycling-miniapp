@@ -298,3 +298,65 @@ brand-logo {
     font-size: 29rpx;
   }
 }
+
+/* Design reference alignment. */
+.detail-page {
+  background: #000;
+  color: #f7f7f5;
+}
+
+.detail-hero {
+  border-bottom-color: #3a3a3c;
+  background: #121212;
+}
+
+.hero-level {
+  border-color: #ff5722;
+  border-radius: 16rpx;
+  background: rgba(255, 87, 34, 0.14);
+  color: #ff8a65;
+}
+
+.hero-corner,
+.schedule-dot {
+  background: #ff5722;
+}
+
+.content {
+  padding-right: 40rpx;
+  padding-left: 40rpx;
+}
+
+.metric-panel,
+.detail-page .card {
+  border-color: #3a3a3c;
+  border-radius: 40rpx;
+  background: #1c1c1e;
+  color: #f7f7f5;
+  box-shadow: none;
+}
+
+.detail-metric {
+  background: #2c2c2e;
+  color: #a8a8ad;
+  font-size: 24rpx;
+}
+
+.schedule-time,
+.check,
+.route-arrow {
+  color: #ff5722;
+}
+
+.detail-action .btn {
+  min-height: 104rpx;
+  border-radius: 24rpx !important;
+  background: #ff5722 !important;
+}
+
+@media (max-width: 320px) {
+  .content {
+    padding-right: 32rpx;
+    padding-left: 32rpx;
+  }
+}

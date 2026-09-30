@@ -67,10 +67,12 @@ describe('CILI 活动页静态契约', () => {
     expect(detail).toContain('disabled="{{loading || !item || !activityAction.enabled}}"');
   });
 
-  it('使用极黑与赛事橙红且不包含粉色主题', () => {
-    expect(themeSources).toContain('#0b0b0c');
-    expect(themeSources).toContain('#d55b1f');
-    expect(themeSources).toContain('#c82018');
+  it('使用设计稿深黑、炭灰和鲜橙主题', () => {
+    expect(activitiesStyles).toContain('background: #000;');
+    expect(activityCardStyles).toContain('background: #1c1c1e;');
+    expect(activityCardStyles).toContain('background: #2c2c2e;');
+    expect(activityCardStyles).toContain('border-radius: 48rpx;');
+    expect(detailStyles).toContain('background: #ff5722 !important;');
     expect(themeSources).not.toMatch(/pink|#ff69b4|#ffc0cb|#e91e63|#ec4899/i);
   });
 });
