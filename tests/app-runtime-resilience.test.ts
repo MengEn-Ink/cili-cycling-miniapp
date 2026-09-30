@@ -84,4 +84,17 @@ describe('小程序全局运行时兜底', () => {
     expect(mocks.bootstrap).toHaveBeenCalledOnce();
     expect(mocks.ensureIdentity).toHaveBeenCalled();
   });
+
+  it('启动身份预热失败时只记录诊断，不形成未处理拒绝', async () => {
+    const cloud = { marker: 'cloud' };
+    const error = new Error('身份预热失败');
+    mocks.ensureIdentity.mockRejectedValueOnce(error);
+    await loadApp({ cloud });
+
+    appDefinition.onLaunch();
+    await Promise.resolve();
+
+    expect(mocks.ensureIdentity).toHaveBeenCalledWith(cloud);
+    expect(console.error).toHaveBeenCalledWith('[此里运行时异常:identity-warmup]', error);
+  });
 });

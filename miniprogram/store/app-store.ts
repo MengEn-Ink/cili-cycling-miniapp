@@ -42,6 +42,7 @@ export class AppStore {
   authError = '';
   readonly isMock = isMock;
   private authPromise: Promise<AuthAttempt> | null = null;
+  private authRequestRevision = 0;
   private identityVerifiedUntil = 0;
 
   constructor(
@@ -74,7 +75,7 @@ export class AppStore {
   }
 
   ensureIdentity(cloud?: AuthCloudApi, force = false): Promise<AuthAttempt> {
-    if (this.authPromise) return this.authPromise;
+    if (this.authPromise && !force) return this.authPromise;
     if (
       !force &&
       this.authStatus === 'authenticated' &&
@@ -88,6 +89,7 @@ export class AppStore {
 
     this.authStatus = 'loading';
     this.authError = '';
+    const requestRevision = ++this.authRequestRevision;
     let authentication: Promise<AuthAttempt>;
     try {
       authentication = this.authenticate(cloud);
@@ -96,6 +98,8 @@ export class AppStore {
     }
     const request = authentication.then(
       (attempt) => {
+        // force=true 会重新发起身份请求；旧请求晚返回时只把结果交还给原调用方，不再覆盖当前身份状态。
+        if (requestRevision !== this.authRequestRevision) return attempt;
         if (attempt.status === 'authenticated') {
           const verifiedAt = Date.now();
           this.openid = attempt.identity.openid;
@@ -117,6 +121,7 @@ export class AppStore {
         return attempt;
       },
       (error: unknown) => {
+        if (requestRevision !== this.authRequestRevision) throw error;
         this.clearIdentity();
         this.authStatus = 'error';
         this.authError = error instanceof Error ? error.message : '身份服务暂时不可用';

@@ -268,6 +268,41 @@ describe('身份 store', () => {
     expect(authenticate).toHaveBeenCalledTimes(2);
   });
 
+  it('force=true 不复用挂起请求且旧请求晚返回不能覆盖新身份', async () => {
+    const oldIdentity = {
+      ...fakeIdentity,
+      openid: 'old-openid',
+      role: 'member' as const,
+      isSuper: false,
+    };
+    const nextIdentity = {
+      ...fakeIdentity,
+      openid: 'next-openid',
+      role: 'admin' as const,
+      isSuper: true,
+    };
+    const oldAuth = deferred<{ status: 'authenticated'; identity: typeof oldIdentity }>();
+    const nextAuth = deferred<{ status: 'authenticated'; identity: typeof nextIdentity }>();
+    const authenticate = vi
+      .fn()
+      .mockReturnValueOnce(oldAuth.promise)
+      .mockReturnValueOnce(nextAuth.promise);
+    const store = new AppStore(memoryStorage(), authenticate);
+
+    const first = store.ensureIdentity();
+    const forced = store.ensureIdentity(undefined, true);
+
+    expect(forced).not.toBe(first);
+    expect(authenticate).toHaveBeenCalledTimes(2);
+    nextAuth.resolve({ status: 'authenticated', identity: nextIdentity });
+    await forced;
+    expect(store.openid).toBe('next-openid');
+
+    oldAuth.resolve({ status: 'authenticated', identity: oldIdentity });
+    await first;
+    expect(store).toMatchObject({ openid: 'next-openid', role: 'admin', isSuper: true });
+  });
+
   it('强制认证失败时清除当前进程的全部特权状态', async () => {
     const authenticate = vi
       .fn()

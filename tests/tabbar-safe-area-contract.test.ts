@@ -36,7 +36,8 @@ describe('native tabbar safe-area contract', () => {
       expect(String(config.backgroundColor || '').toLowerCase()).toBe('#0b0b0c');
       expect(config.backgroundTextStyle).toBe('light');
       expect(styles).toMatch(/page\s*\{[^}]*background:\s*#0b0b0c;/s);
-      expect(styles).toMatch(new RegExp(`\\.${root}-page\\s*\\{[^}]*min-height:\\s*100vh;`, 's'));
+      expect(styles).toMatch(new RegExp(`\\.${root}-page\\s*\\{[^}]*min-height:\\s*100%;`, 's'));
+      expect(styles).not.toContain('background: #000;');
     }
   });
 
@@ -45,6 +46,7 @@ describe('native tabbar safe-area contract', () => {
     const pageRule = appStyles.match(/(?:^|\n)page\s*\{([^}]+)\}/s)?.[1] || '';
 
     expect(pageRule.toLowerCase()).toMatch(/background(?:-color)?:\s*#0b0b0c;/);
+    expect(pageRule.toLowerCase()).toMatch(/height:\s*100%;/);
     expect(pageRule.toLowerCase()).toMatch(/color:\s*#f7f7f5;/);
   });
 
