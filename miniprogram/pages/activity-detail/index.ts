@@ -13,6 +13,7 @@ Page({
     error: '',
     item: null as any,
     registration: null as any,
+    galleryImages: [] as string[],
     coverFailed: false,
     activityAction: unavailableAction(),
   },
@@ -41,6 +42,7 @@ Page({
       this.setData({
         item,
         registration,
+        galleryImages: item.images?.length ? item.images : item.coverImage ? [item.coverImage] : [],
         activityAction: resolveActivityAction(item, registration),
       });
     } catch (error) {
@@ -54,7 +56,27 @@ Page({
     }
   },
   coverImageError() {
-    this.setData({ coverFailed: true });
+    this.setData({ coverFailed: true, galleryImages: [] });
+  },
+  galleryImageError(event: any) {
+    const index = Number(event.currentTarget.dataset.index);
+    if (!Number.isInteger(index) || index < 0 || index >= this.data.galleryImages.length) return;
+    const galleryImages = this.data.galleryImages.filter(
+      (_: string, imageIndex: number) => imageIndex !== index,
+    );
+    this.setData({ galleryImages, coverFailed: galleryImages.length === 0 });
+  },
+  navigate(event: any) {
+    const target = event.currentTarget.dataset.target === 'end' ? 'endLocation' : 'startLocation';
+    const location = this.data.item?.route?.[target];
+    if (!location) return;
+    wx.openLocation({
+      latitude: location.latitude,
+      longitude: location.longitude,
+      name: location.name,
+      address: location.address,
+      scale: 16,
+    });
   },
   go() {
     const action = this.data.activityAction as ActivityAction;

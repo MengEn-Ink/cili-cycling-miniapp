@@ -137,3 +137,35 @@ test('公开活动详情脱敏后援车师傅手机号并保留容量拆分', ()
   assert.equal(result.support_vehicle_capacity + result.self_drive_capacity, result.capacity);
   assert.match(result.support_vehicle_driver.contact_phone, /\*{4}/);
 });
+
+test('公开活动白名单透出图集与路线坐标并继续过滤私有字段', () => {
+  const { publicActivity } = require('./domain/domain');
+  const activity = {
+    _id: 'a-media',
+    title: '图集活动',
+    status: 'published',
+    images: ['cloud://one.jpg', 'cloud://two.jpg'],
+    cover_image: 'cloud://one.jpg',
+    route: {
+      start: '集合点',
+      end: '终点',
+      start_location: { name: '集合点', address: '湖滨路', latitude: 30.2, longitude: 120.1 },
+      end_location: { name: '终点', address: '环山路', latitude: 30.3, longitude: 120.2 },
+    },
+    private_token: 'secret',
+  };
+  const result = publicActivity(activity, new Date('2026-09-29T04:00:00.000Z'));
+  assert.deepEqual(result.images, activity.images);
+  assert.deepEqual(result.route.start_location, activity.route.start_location);
+  assert.equal(result.private_token, undefined);
+});
+
+test('公开活动兼容只有旧封面且路线无坐标的数据', () => {
+  const { publicActivity } = require('./domain/domain');
+  const result = publicActivity(
+    { _id: 'legacy', title: '旧活动', status: 'finished', cover_image: 'cloud://legacy.jpg' },
+    new Date('2026-09-29T04:00:00.000Z'),
+  );
+  assert.equal(result.cover_image, 'cloud://legacy.jpg');
+  assert.equal(result.images, undefined);
+});

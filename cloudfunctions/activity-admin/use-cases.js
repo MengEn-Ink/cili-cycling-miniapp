@@ -101,12 +101,15 @@ async function cloneActivity(store, request, now = new Date()) {
     const route = source.route && typeof source.route === 'object' ? source.route : {};
     const draftInput = {
       title: source.title,
+      images: [],
       cover_image: '',
       description: source.description,
       schedule: source.schedule,
       route: {
         start: route.start,
         end: route.end,
+        ...(route.start_location === undefined ? {} : { start_location: route.start_location }),
+        ...(route.end_location === undefined ? {} : { end_location: route.end_location }),
         distance_km: route.distance_km,
         elevation_m: route.elevation_m,
         level: route.level,

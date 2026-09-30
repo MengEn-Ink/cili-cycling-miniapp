@@ -1047,3 +1047,55 @@ test('clone 严格校验 requestId 并拒绝客户端扩展字段', async () => 
     { code: 'FORBIDDEN_FIELD' },
   );
 });
+
+test('活动图集严格限制数组、数量和单项长度，并同步首图封面', () => {
+  const images = ['cloud://one.jpg', 'cloud://two.jpg'];
+  const value = validateDraftInput({ ...input, images, cover_image: 'cloud://legacy.jpg' });
+  assert.deepEqual(value.images, images);
+  assert.equal(value.cover_image, images[0]);
+  expectCode(() => validateDraftInput({ ...input, images: 'bad' }), 'VALIDATION_FAILED');
+  expectCode(() => validateDraftInput({ ...input, images: null }), 'VALIDATION_FAILED');
+  expectCode(
+    () => validateDraftInput({ ...input, images: Array(10).fill('cloud://x.jpg') }),
+    'VALIDATION_FAILED',
+  );
+  expectCode(() => validateDraftInput({ ...input, images: [42] }), 'VALIDATION_FAILED');
+  expectCode(
+    () => validateDraftInput({ ...input, images: ['x'.repeat(501)] }),
+    'VALIDATION_FAILED',
+  );
+});
+
+test('路线地点严格校验坐标范围并兼容存量无坐标路线', () => {
+  const startLocation = { name: '集合点', address: '湖滨路', latitude: 30.2, longitude: 120.1 };
+  const endLocation = { name: '终点', address: '环山路', latitude: -90, longitude: 180 };
+  const value = validateDraftInput({
+    ...input,
+    route: { ...input.route, start_location: startLocation, end_location: endLocation },
+  });
+  assert.deepEqual(value.route.start_location, startLocation);
+  assert.deepEqual(value.route.end_location, endLocation);
+  assert.equal(validateDraftInput(input).route.start_location, undefined);
+
+  for (const location of [
+    { ...startLocation, latitude: 90.1 },
+    { ...startLocation, longitude: -180.1 },
+    { ...startLocation, latitude: '30.2' },
+    { ...startLocation, token: 'forbidden' },
+  ])
+    expectCode(
+      () => validateDraftInput({ ...input, route: { ...input.route, start_location: location } }),
+      'VALIDATION_FAILED',
+    );
+});
+
+test('活动说明仍由服务端执行 5000 字上限', () => {
+  assert.equal(
+    validateDraftInput({ ...input, description: '骑'.repeat(5000) }).description.length,
+    5000,
+  );
+  expectCode(
+    () => validateDraftInput({ ...input, description: '骑'.repeat(5001) }),
+    'VALIDATION_FAILED',
+  );
+});

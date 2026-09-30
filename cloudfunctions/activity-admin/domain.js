@@ -38,6 +38,7 @@ function isEnabledAdmin(admin, openid) {
 const ACTIVITY_FIELDS = [
   '_id',
   'title',
+  'images',
   'cover_image',
   'description',
   'schedule',
@@ -90,6 +91,36 @@ function cleanStringArray(value, field) {
   if (!Array.isArray(value) || value.length > 50) fail('VALIDATION_FAILED', `${field}格式错误`);
   return value.map((item) => cleanText(item, field, 200)).filter(Boolean);
 }
+function cleanImages(value) {
+  if (!Array.isArray(value) || value.length > 9) fail('VALIDATION_FAILED', '活动图片格式错误');
+  return value.map((item) => cleanText(item, '活动图片', 500, true));
+}
+function cleanLocation(value, field) {
+  if (!value || typeof value !== 'object' || Array.isArray(value))
+    fail('VALIDATION_FAILED', `${field}格式错误`);
+  const allowed = new Set(['name', 'address', 'latitude', 'longitude']);
+  if (Object.keys(value).some((key) => !allowed.has(key)))
+    fail('VALIDATION_FAILED', `${field}格式错误`);
+  const latitude = value.latitude;
+  const longitude = value.longitude;
+  if (
+    typeof latitude !== 'number' ||
+    !Number.isFinite(latitude) ||
+    latitude < -90 ||
+    latitude > 90 ||
+    typeof longitude !== 'number' ||
+    !Number.isFinite(longitude) ||
+    longitude < -180 ||
+    longitude > 180
+  )
+    fail('VALIDATION_FAILED', `${field}经纬度格式错误`);
+  return {
+    name: cleanText(value.name, `${field}名称`, 200),
+    address: cleanText(value.address, `${field}地址`, 300),
+    latitude,
+    longitude,
+  };
+}
 function cleanSchedule(value) {
   if (!Array.isArray(value) || value.length > 50) fail('VALIDATION_FAILED', '行程格式错误');
   return value.map((item) => {
@@ -112,6 +143,7 @@ function validDate(value, label) {
 }
 const ACTIVITY_INPUT_FIELDS = new Set([
   'title',
+  'images',
   'cover_image',
   'description',
   'schedule',
@@ -207,6 +239,18 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses) {
   const route = input.route;
   if (!route || typeof route !== 'object' || Array.isArray(route))
     fail('VALIDATION_FAILED', '路线格式错误');
+  const routeFields = new Set([
+    'start',
+    'end',
+    'start_location',
+    'end_location',
+    'distance_km',
+    'elevation_m',
+    'level',
+    'gpx_file_id',
+  ]);
+  if (Object.keys(route).some((key) => !routeFields.has(key)))
+    fail('VALIDATION_FAILED', '路线格式错误');
   const distance = Number(route.distance_km);
   const elevation = Number(route.elevation_m);
   if (!Number.isFinite(distance) || distance < 0 || !Number.isFinite(elevation) || elevation < 0)
@@ -216,14 +260,23 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses) {
     input.support_vehicle_driver === undefined
       ? undefined
       : cleanDriver(input.support_vehicle_driver, false);
+  const images = input.images === undefined ? [] : cleanImages(input.images);
+  const legacyCover = cleanText(input.cover_image || '', '封面', 500);
   return {
     title: cleanText(input.title, '活动标题', 100, true),
-    cover_image: cleanText(input.cover_image || '', '封面', 500),
+    images,
+    cover_image: images[0] || legacyCover,
     description: cleanText(input.description || '', '活动说明', 5000),
     schedule: cleanSchedule(input.schedule || []),
     route: {
       start: cleanText(route.start || '', '路线起点', 200),
       end: cleanText(route.end || '', '路线终点', 200),
+      ...(route.start_location === undefined
+        ? {}
+        : { start_location: cleanLocation(route.start_location, '路线起点') }),
+      ...(route.end_location === undefined
+        ? {}
+        : { end_location: cleanLocation(route.end_location, '路线终点') }),
       distance_km: distance,
       elevation_m: elevation,
       level: cleanText(route.level || '', '路线难度', 50),

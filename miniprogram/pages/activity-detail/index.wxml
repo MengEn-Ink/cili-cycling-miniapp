@@ -1,9 +1,12 @@
 <view class="detail-page">
   <state-view loading="{{loading}}" error="{{error}}">
     <view wx:if="{{item}}">
-      <view class="detail-hero {{item.coverImage && !coverFailed ? 'detail-hero--media' : 'detail-hero--plain'}}">
-        <image wx:if="{{item.coverImage && !coverFailed}}" class="hero-media" src="{{item.coverImage}}" mode="aspectFill" binderror="coverImageError" aria-label="{{item.title}}活动封面" />
-        <view class="hero-shade" wx:if="{{item.coverImage && !coverFailed}}"></view>
+      <view class="detail-hero {{galleryImages.length && !coverFailed ? 'detail-hero--media' : 'detail-hero--plain'}}">
+        <swiper wx:if="{{galleryImages.length > 1 && !coverFailed}}" class="hero-gallery" indicator-dots="{{true}}" circular="{{true}}">
+          <swiper-item wx:for="{{galleryImages}}" wx:for-item="media" wx:key="*this"><image class="hero-media" src="{{media}}" mode="aspectFill" data-index="{{index}}" binderror="galleryImageError" aria-label="活动图片 {{index + 1}}" /></swiper-item>
+        </swiper>
+        <image wx:elif="{{galleryImages.length === 1 && !coverFailed}}" class="hero-media" src="{{galleryImages[0]}}" mode="aspectFill" binderror="coverImageError" aria-label="{{item.title}}活动封面" />
+        <view class="hero-shade" wx:if="{{galleryImages.length && !coverFailed}}"></view>
         <view class="hero-content">
           <brand-logo compact="{{true}}" meta="RIDE DETAIL" />
           <view class="hero-sequence">RIDE / 01</view>
@@ -21,6 +24,11 @@
           <view class="detail-metric"><view class="metric-number" wx:if="{{item.capacity > 0}}">{{item.capacity}}</view><view class="metric-number metric-number--text" wx:else>待补充</view><view class="metric-label">名额</view></view>
         </view>
         <view class="card overview-card" wx:if="{{item.description}}"><view class="card-index">01</view><view class="title">路线概况</view><view class="body-text">{{item.description}}</view></view>
+        <view class="card route-location-card" wx:if="{{item.route.start || item.route.end}}">
+          <view class="title">路线地点</view>
+          <view class="route-location-row" wx:if="{{item.route.start}}"><view><view class="route-location-label">起点</view><view>{{item.route.startLocation && item.route.startLocation.address ? item.route.startLocation.address : item.route.start}}</view></view><button wx:if="{{item.route.startLocation}}" data-target="start" bindtap="navigate">导航</button></view>
+          <view class="route-location-row" wx:if="{{item.route.end}}"><view><view class="route-location-label">终点</view><view>{{item.route.endLocation && item.route.endLocation.address ? item.route.endLocation.address : item.route.end}}</view></view><button wx:if="{{item.route.endLocation}}" data-target="end" bindtap="navigate">导航</button></view>
+        </view>
         <view class="card schedule-card" wx:if="{{item.schedule && item.schedule.length}}"><view class="card-index">02</view><view class="title">时间安排</view><view wx:for="{{item.schedule}}" wx:key="time" class="schedule-row"><view class="schedule-time">{{item.time}}</view><view class="schedule-track"><view class="schedule-dot"></view></view><view class="schedule-copy"><view>{{item.title}}</view><view class="muted">{{item.location}}</view></view></view></view>
         <view class="card" wx:if="{{(item.equipment && item.equipment.length) || (item.notices && item.notices.length)}}"><view class="card-index">03</view><view class="title">装备与注意</view><view class="list-item" wx:for="{{item.equipment}}" wx:key="*this"><text class="check">✓</text><text>{{item}}</text></view><view class="notice-item" wx:for="{{item.notices}}" wx:key="*this"><text class="notice-mark">/</text><text>{{item}}</text></view></view>
         <view class="card" wx:if="{{item.fee}}"><view class="card-index">04</view><view class="title">费用说明</view><view class="body-text">{{item.fee}}</view></view>
