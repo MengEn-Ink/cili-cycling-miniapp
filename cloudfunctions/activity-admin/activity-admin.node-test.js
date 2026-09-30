@@ -166,6 +166,29 @@ test('发布只强制基础事实，运营字段可后补且后援司机仍严�
     'FORBIDDEN_FIELD',
   );
 });
+test('发布时后援车容量为 0 会清空可能残留的司机信息', () => {
+  const published = validatePublishInput(
+    {
+      ...input,
+      status: 'published',
+      support_vehicle_capacity: 0,
+      self_drive_capacity: 20,
+      // 管理员可能先填好司机、后把容量改为 0：旧司机隐私信息不得残留到已发布活动。
+      support_vehicle_driver: {
+        nickname: '王师傅',
+        license_plate: '粤B12345',
+        contact_phone: '13800001234',
+      },
+    },
+    0,
+    now,
+  );
+  assert.deepEqual(published.support_vehicle_driver, {
+    nickname: '',
+    license_plate: '',
+    contact_phone: '',
+  });
+});
 test('活动输入完整保留行程备注、GPX 与费用明细', () => {
   const value = validateActivityInput({
     ...input,

@@ -662,3 +662,51 @@ test('最终事务已发出且 intent 对账失败时保留对象等待服务端
   );
   assert.equal(deleted, false);
 });
+
+test('ECONNRESET 等瞬时网络错误在总超时内复用已验证地址重试一次后成功', async () => {
+  let calls = 0;
+  const seenAddresses = [];
+  const result = await downloadAvatar(allowedUrl, {
+    lookup: publicLookup,
+    request: async ({ addresses }) => {
+      calls += 1;
+      seenAddresses.push(addresses);
+      if (calls === 1) throw Object.assign(new Error('connection reset'), { code: 'ECONNRESET' });
+      return { statusCode: 200, headers: { 'content-type': 'image/jpeg' }, body: jpeg };
+    },
+  });
+  assert.equal(calls, 2);
+  assert.equal(result.extension, 'jpg');
+  // 重试不重新做 DNS，两次复用同一已验证地址，避免重试间隙被重绑定。
+  assert.deepEqual(seenAddresses[0], seenAddresses[1]);
+});
+
+test('连续两次底层网络错误最终报下载失败', async () => {
+  let calls = 0;
+  await assert.rejects(
+    downloadAvatar(allowedUrl, {
+      lookup: publicLookup,
+      request: async () => {
+        calls += 1;
+        throw new Error('socket hang up');
+      },
+    }),
+    { code: 'STRAVA_AVATAR_DOWNLOAD_FAILED' },
+  );
+  assert.equal(calls, 2);
+});
+
+test('下载总超时等显式错误码不做网络重试', async () => {
+  let calls = 0;
+  await assert.rejects(
+    downloadAvatar(allowedUrl, {
+      lookup: publicLookup,
+      request: async () => {
+        calls += 1;
+        throw Object.assign(new Error('total timeout'), { code: 'STRAVA_AVATAR_TOTAL_TIMEOUT' });
+      },
+    }),
+    { code: 'STRAVA_AVATAR_TOTAL_TIMEOUT' },
+  );
+  assert.equal(calls, 1);
+});

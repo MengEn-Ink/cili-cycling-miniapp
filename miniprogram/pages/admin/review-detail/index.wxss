@@ -307,6 +307,10 @@ page {
   color: #a0a0a4;
 }
 .textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 240rpx;
+  padding: 20rpx 22rpx;
   border: 1rpx solid #555559;
   border-radius: 4rpx;
   background: #101012;
