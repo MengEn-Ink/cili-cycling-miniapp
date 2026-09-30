@@ -412,3 +412,57 @@ page {
     font-size: 16rpx;
   }
 }
+
+/* Design reference alignment. */
+.capability-page {
+  padding-right: 40rpx;
+  padding-left: 40rpx;
+  background: #000;
+}
+
+.rider-card {
+  border-color: #3a3a3c;
+  border-radius: 48rpx;
+  background: #1c1c1e;
+  box-shadow: none;
+}
+
+.strava-pill,
+.privacy-note {
+  border-radius: 16rpx;
+  background: rgba(28, 28, 30, 0.86);
+}
+
+.metric-sheet {
+  border-color: #3a3a3c;
+  border-radius: 40rpx;
+  background: rgba(44, 44, 46, 0.94);
+  box-shadow: none;
+}
+
+.metric-kicker,
+.metric-unit {
+  color: #ff5722;
+}
+
+.metric-sheet::after {
+  background: #ff5722;
+}
+
+.repair-button,
+.photo-button {
+  min-height: 104rpx;
+  border-radius: 24rpx;
+}
+
+.repair-button {
+  background: #ff5722 !important;
+  color: #fff !important;
+}
+
+@media (max-width: 320px) {
+  .capability-page {
+    padding-right: 32rpx;
+    padding-left: 32rpx;
+  }
+}

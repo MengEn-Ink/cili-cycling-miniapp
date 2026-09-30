@@ -584,3 +584,69 @@ brand-logo {
     max-width: 48%;
   }
 }
+
+/* Design reference alignment. */
+.page.profile-page {
+  padding-right: 40rpx;
+  padding-left: 40rpx;
+  background: #000;
+}
+
+.profile-hero {
+  border-color: #3a3a3c;
+  border-radius: 48rpx;
+  background: #121212;
+}
+
+.avatar,
+.hero-capability-card,
+.profile-page .card,
+.menu-list {
+  border-color: #3a3a3c;
+  border-radius: 40rpx;
+  background: #1c1c1e;
+  box-shadow: none;
+}
+
+.avatar {
+  border-radius: 50%;
+}
+
+.hero-capability-status,
+.menu-icon {
+  border-radius: 16rpx;
+}
+
+.menu-card,
+.menu-card:active {
+  min-height: 104rpx;
+  background: #2c2c2e;
+}
+
+.profile-copy .hero-kicker,
+.hero-capability-label,
+.hero-capability-unit,
+.panel-index,
+.section-label text,
+.chevron {
+  color: #ff5722;
+}
+
+.edit-button,
+.profile-refresh-error button,
+.profile-page .btn,
+.profile-page .secondary {
+  min-height: 104rpx;
+  border-radius: 24rpx !important;
+}
+
+.profile-page .btn {
+  background: #ff5722 !important;
+}
+
+@media (max-width: 320px) {
+  .page.profile-page {
+    padding-right: 32rpx;
+    padding-left: 32rpx;
+  }
+}
