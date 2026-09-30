@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   formatActivityDate,
+  formatChinaDateTime,
   formatLocalDateTime,
   parseLocalDateTime,
 } from '../miniprogram/utils/date-time';
@@ -45,6 +46,14 @@ describe('活动日期展示', () => {
     expect(formatActivityDate('')).toBe('日期待公布');
     expect(formatActivityDate('2026-10-18T00:00:00.000Z')).toBe('10月18日 周日');
     expect(formatActivityDate('2026-09-30T23:00:00.000Z')).toBe('10月1日 周四');
+  });
+
+  it('完整时间固定按 UTC+8 展示到秒，日期值补零点，非法值为空', () => {
+    expect(formatChinaDateTime('2026-09-30T04:00:00.000Z')).toBe('2026-09-30 12:00:00');
+    expect(formatChinaDateTime('2026-09-30T23:59:58.000Z')).toBe('2026-10-01 07:59:58');
+    expect(formatChinaDateTime('2026-09-30')).toBe('2026-09-30 00:00:00');
+    expect(formatChinaDateTime('2026-02-30')).toBe('');
+    expect(formatChinaDateTime('非法时间')).toBe('');
   });
 });
 

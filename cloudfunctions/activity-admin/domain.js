@@ -121,6 +121,150 @@ function cleanLocation(value, field) {
     longitude,
   };
 }
+function cleanStravaRoute(route) {
+  const extraFields = [
+    'strava_route_id',
+    'strava_route_url',
+    'elevation_profile',
+    'route_bounds',
+    'popular_climbs',
+  ];
+  if (!extraFields.some((field) => route[field] !== undefined)) return {};
+  const id = cleanText(route.strava_route_id, 'Strava 路线 ID', 20, true);
+  if (!/^\d{1,20}$/.test(id)) fail('VALIDATION_FAILED', 'Strava 路线 ID 格式错误');
+  const url = cleanText(route.strava_route_url, 'Strava 路线 URL', 256, true);
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    fail('VALIDATION_FAILED', 'Strava 路线 URL 格式错误');
+  }
+  const urlMatch = /^\/(?:[a-z]{2}(?:-[a-z]{2})?\/)?routes\/(\d+)\/?$/i.exec(parsed.pathname);
+  if (
+    parsed.protocol !== 'https:' ||
+    parsed.hostname.toLowerCase() !== 'www.strava.com' ||
+    parsed.port ||
+    parsed.username ||
+    parsed.password ||
+    parsed.search ||
+    parsed.hash ||
+    !urlMatch ||
+    urlMatch[1] !== id
+  )
+    fail('VALIDATION_FAILED', 'Strava 路线 URL 格式错误');
+  if (
+    !Array.isArray(route.elevation_profile) ||
+    route.elevation_profile.length < 2 ||
+    route.elevation_profile.length > 80
+  )
+    fail('VALIDATION_FAILED', '海拔曲线格式错误');
+  let previousDistance = -1;
+  const elevationProfile = route.elevation_profile.map((point) => {
+    if (
+      !point ||
+      typeof point !== 'object' ||
+      Array.isArray(point) ||
+      Object.keys(point).some((key) => !['distance_km', 'elevation_m'].includes(key))
+    )
+      fail('VALIDATION_FAILED', '海拔曲线格式错误');
+    const distance = point.distance_km;
+    const elevation = point.elevation_m;
+    if (
+      typeof distance !== 'number' ||
+      !Number.isFinite(distance) ||
+      distance < previousDistance ||
+      distance < 0 ||
+      distance > 20000 ||
+      typeof elevation !== 'number' ||
+      !Number.isFinite(elevation) ||
+      elevation < -1000 ||
+      elevation > 10000
+    )
+      fail('VALIDATION_FAILED', '海拔曲线格式错误');
+    previousDistance = distance;
+    return { distance_km: distance, elevation_m: elevation };
+  });
+  const bounds = route.route_bounds;
+  if (
+    !bounds ||
+    typeof bounds !== 'object' ||
+    Array.isArray(bounds) ||
+    Object.keys(bounds).some((key) => !['south', 'west', 'north', 'east'].includes(key))
+  )
+    fail('VALIDATION_FAILED', '路线边界格式错误');
+  const { south, west, north, east } = bounds;
+  if (
+    ![south, west, north, east].every(
+      (value) => typeof value === 'number' && Number.isFinite(value),
+    ) ||
+    south < -90 ||
+    north > 90 ||
+    west < -180 ||
+    east > 180 ||
+    south > north ||
+    west > east
+  )
+    fail('VALIDATION_FAILED', '路线边界格式错误');
+  if (!Array.isArray(route.popular_climbs) || route.popular_climbs.length > 3)
+    fail('VALIDATION_FAILED', '热门爬坡格式错误');
+  const popularClimbs = route.popular_climbs.map((climb) => {
+    const fields = [
+      'id',
+      'name',
+      'distance_km',
+      'elevation_gain_m',
+      'average_grade',
+      'max_grade',
+      'climb_category',
+      'popularity',
+      'popularity_label',
+    ];
+    if (
+      !climb ||
+      typeof climb !== 'object' ||
+      Array.isArray(climb) ||
+      Object.keys(climb).some((key) => !fields.includes(key))
+    )
+      fail('VALIDATION_FAILED', '热门爬坡格式错误');
+    const numeric = fields.slice(2, 8);
+    if (
+      !/^\d{1,20}$/.test(climb.id) ||
+      numeric.some((key) => typeof climb[key] !== 'number' || !Number.isFinite(climb[key])) ||
+      !Number.isInteger(climb.climb_category) ||
+      climb.climb_category < 0 ||
+      climb.climb_category > 5 ||
+      !Number.isSafeInteger(climb.popularity) ||
+      climb.popularity < 0 ||
+      climb.distance_km < 0 ||
+      climb.distance_km > 1000 ||
+      climb.elevation_gain_m < 0 ||
+      climb.elevation_gain_m > 100000 ||
+      climb.average_grade < -100 ||
+      climb.average_grade > 100 ||
+      climb.max_grade < -100 ||
+      climb.max_grade > 100
+    )
+      fail('VALIDATION_FAILED', '热门爬坡格式错误');
+    return {
+      id: climb.id,
+      name: cleanText(climb.name, '爬坡名称', 120, true),
+      distance_km: climb.distance_km,
+      elevation_gain_m: climb.elevation_gain_m,
+      average_grade: climb.average_grade,
+      max_grade: climb.max_grade,
+      climb_category: climb.climb_category,
+      popularity: climb.popularity,
+      popularity_label: cleanText(climb.popularity_label, '热度说明', 40, true),
+    };
+  });
+  return {
+    strava_route_id: id,
+    strava_route_url: `https://www.strava.com/routes/${id}`,
+    elevation_profile: elevationProfile,
+    route_bounds: { south, west, north, east },
+    popular_climbs: popularClimbs,
+  };
+}
 function cleanSchedule(value) {
   if (!Array.isArray(value) || value.length > 50) fail('VALIDATION_FAILED', '行程格式错误');
   return value.map((item) => {
@@ -248,6 +392,11 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses) {
     'elevation_m',
     'level',
     'gpx_file_id',
+    'strava_route_id',
+    'strava_route_url',
+    'elevation_profile',
+    'route_bounds',
+    'popular_climbs',
   ]);
   if (Object.keys(route).some((key) => !routeFields.has(key)))
     fail('VALIDATION_FAILED', '路线格式错误');
@@ -281,6 +430,7 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses) {
       elevation_m: elevation,
       level: cleanText(route.level || '', '路线难度', 50),
       gpx_file_id: cleanText(route.gpx_file_id || '', 'GPX 文件', 500),
+      ...cleanStravaRoute(route),
     },
     notices: cleanStringArray(input.notices || [], '注意事项'),
     equipment: cleanStringArray(input.equipment || [], '装备要求'),

@@ -1,6 +1,7 @@
 import { rideService } from '../../services/ride-service';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
+import { formatChinaDateTime } from '../../utils/date-time';
 
 function unavailableAction(): ActivityAction {
   return { kind: 'closed', label: '活动状态不可用', enabled: false };
@@ -42,8 +43,15 @@ Page({
       }[item.status];
       if (!activity) throw new Error('活动不存在');
       this.setData({
-        item,
-        activity,
+        item: {
+          ...item,
+          updatedAt: formatChinaDateTime(item.updatedAt),
+          checkedInAt: formatChinaDateTime(item.checkedInAt),
+        },
+        activity: {
+          ...activity,
+          displayDateTime: formatChinaDateTime(activity.startAt || activity.date),
+        },
         statusText,
         activityAction: resolveActivityAction(activity, item),
       });

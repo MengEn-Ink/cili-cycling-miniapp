@@ -1,4 +1,5 @@
 import { rideService } from '../../services/ride-service';
+import { formatChinaDateTime } from '../../utils/date-time';
 Page({
   loadRequestId: 0,
   data: {
@@ -35,6 +36,7 @@ Page({
       this.setData({
         items: registrations.map((item) => ({
           ...item,
+          updatedAt: formatChinaDateTime(item.updatedAt),
           activity: activities.find((activity) => activity.id === item.activityId) || {
             title: '活动信息不可用',
           },

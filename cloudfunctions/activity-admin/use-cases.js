@@ -188,7 +188,46 @@ async function saveActivity(
     const admin = await tx.getAdmin(openid);
     const isAdmin = isEnabledAdmin(admin, openid);
     const current = activityId ? await tx.getActivity(activityId) : undefined;
-    const effectiveActivity = effectiveActivityInput(current, activity);
+    let effectiveActivity = effectiveActivityInput(current, activity);
+    const requestedRouteId = effectiveActivity.route?.strava_route_id;
+    let stravaRouteOwnerOpenid;
+    if (requestedRouteId !== undefined) {
+      if (typeof requestedRouteId !== 'string' || !/^\d{1,20}$/.test(requestedRouteId))
+        fail('VALIDATION_FAILED', 'Strava 路线 ID 格式错误');
+      const preview = await tx.getRoutePreview(openid, requestedRouteId);
+      const previewExpiresAt = new Date(preview?.expires_at).getTime();
+      const previewUsable =
+        preview &&
+        preview.owner_openid === openid &&
+        preview.strava_route_id === requestedRouteId &&
+        Number.isFinite(previewExpiresAt) &&
+        previewExpiresAt > now.getTime();
+      const trusted = previewUsable
+        ? preview
+        : current?.route?.strava_route_id === requestedRouteId
+          ? current.route
+          : undefined;
+      if (!trusted) fail('ROUTE_PREVIEW_REQUIRED', '请先重新同步 Strava 路线');
+      // 路线归属只从服务端预览或已保存活动继承，客户端无法伪造；后续 GPX 导出始终复用路线创建者凭证。
+      stravaRouteOwnerOpenid = previewUsable
+        ? preview.owner_openid
+        : current?.strava_route_owner_openid;
+      if (typeof stravaRouteOwnerOpenid !== 'string' || !stravaRouteOwnerOpenid)
+        fail('ROUTE_PREVIEW_REQUIRED', '请先重新同步 Strava 路线');
+      effectiveActivity = {
+        ...effectiveActivity,
+        route: {
+          ...effectiveActivity.route,
+          distance_km: trusted.distance_km,
+          elevation_m: trusted.elevation_m,
+          strava_route_id: trusted.strava_route_id,
+          strava_route_url: trusted.strava_route_url,
+          elevation_profile: trusted.elevation_profile,
+          route_bounds: trusted.route_bounds,
+          popular_climbs: trusted.popular_climbs,
+        },
+      };
+    }
     if (activityId && !current) fail('ACTIVITY_NOT_FOUND', '活动不存在');
     // 普通成员的权限严格绑定服务端 OPENID：只能管理自己的草稿，并可下架自己已上线的活动。
     if (!isAdmin && current && current.created_by !== openid)
@@ -286,7 +325,9 @@ async function saveActivity(
       created_by: current?.created_by || openid,
       created_at: current?.created_at || now,
       updated_at: now,
+      ...(stravaRouteOwnerOpenid ? { strava_route_owner_openid: stravaRouteOwnerOpenid } : {}),
     };
+    if (!safe.route?.strava_route_id) delete value.strava_route_owner_openid;
     await tx.putActivity(id, value);
     await tx.addAudit(
       buildActivityAudit(

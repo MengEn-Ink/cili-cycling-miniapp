@@ -41,6 +41,10 @@ function transactionStore() {
         work({
           getAdmin: (id) => maybeGet(transaction.collection('admins'), id),
           getActivity: (id) => maybeGet(transaction.collection('activities'), id),
+          getRoutePreview: (openid, routeId) => {
+            const id = crypto.createHash('sha256').update(`${openid}\0${routeId}`).digest('hex');
+            return maybeGet(transaction.collection('strava_route_previews'), id);
+          },
           getOccupyingRegistrations: async (activityId, expectedOccupiedCount) => {
             if (expectedOccupiedCount > MAX_PARTITION_BACKFILL_RECORDS)
               fail('PARTITION_BACKFILL_REQUIRED', '历史活动占位数超过自动回填上限');

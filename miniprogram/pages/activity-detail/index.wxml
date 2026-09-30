@@ -3,9 +3,7 @@
     <view wx:if="{{item}}">
       <view class="detail-hero {{galleryImages.length && !coverFailed ? 'detail-hero--media' : 'detail-hero--plain'}}">
         <swiper wx:if="{{galleryImages.length > 1 && !coverFailed}}" class="hero-gallery" indicator-dots="{{true}}" indicator-color="rgba(255,255,255,.4)" indicator-active-color="#ff5722" circular="{{true}}">
-          <swiper-item wx:for="{{galleryImages}}" wx:for-item="media" wx:key="*this">
-            <image class="hero-media" src="{{media}}" mode="aspectFill" data-index="{{index}}" binderror="galleryImageError" aria-label="活动图片 {{index + 1}}" />
-          </swiper-item>
+          <swiper-item wx:for="{{galleryImages}}" wx:for-item="media" wx:key="*this"><image class="hero-media" src="{{media}}" mode="aspectFill" data-index="{{index}}" binderror="galleryImageError" aria-label="活动图片 {{index + 1}}" /></swiper-item>
         </swiper>
         <image wx:elif="{{galleryImages.length === 1 && !coverFailed}}" class="hero-media" src="{{galleryImages[0]}}" mode="aspectFill" binderror="coverImageError" aria-label="{{item.title}}活动封面" />
         <view class="hero-shade" wx:if="{{galleryImages.length && !coverFailed}}"></view>
@@ -13,26 +11,56 @@
           <view class="hero-brand-row"><brand-logo compact="{{true}}" meta="RIDE DETAIL" /><view class="hero-sequence">RIDE / 01</view></view>
           <view class="hero-kicker" aria-label="{{displayDate}}">{{displayDate}}</view>
           <view class="hero-title">{{item.title}}</view>
-          <view class="hero-route" wx:if="{{item.route.start || item.route.end}}">
-            <text>{{item.route.start}}</text><text class="route-arrow">→</text><text>{{item.route.end}}</text>
-          </view>
+          <view class="hero-route" wx:if="{{item.route.start || item.route.end}}"><text>{{item.route.start}}</text><text class="route-arrow">→</text><text>{{item.route.end}}</text></view>
           <view class="hero-level" wx:if="{{item.route.level}}">{{item.route.level}}</view>
         </view>
       </view>
 
       <view class="content">
         <view class="metric-panel" aria-label="活动关键数据">
-          <view class="detail-metric">
-            <view class="metric-value"><text class="metric-number">{{item.route.distanceKm}}</text><text class="metric-unit">KM</text></view>
-            <view class="metric-label">里程</view>
+          <view class="detail-metric"><view class="metric-value"><text class="metric-number">{{item.route.distanceKm}}</text><text class="metric-unit">KM</text></view><view class="metric-label">里程</view></view>
+          <view class="detail-metric"><view class="metric-value"><text class="metric-number">{{item.route.elevationM}}</text><text class="metric-unit">M</text></view><view class="metric-label">爬升</view></view>
+          <view class="detail-metric"><view class="metric-value"><text class="metric-number" wx:if="{{item.capacity > 0}}">{{item.capacity}}</text><text class="metric-number metric-number--text" wx:else>待补充</text></view><view class="metric-label">名额</view></view>
+        </view>
+
+        <view class="card time-card">
+          <view class="title">活动时间</view>
+          <view class="time-row"><text>开始</text><text>{{startTime || '待公布'}}</text></view>
+          <view class="time-row"><text>结束</text><text>{{endTime || '待公布'}}</text></view>
+          <view class="time-row"><text>报名截止</text><text>{{deadlineTime || '待公布'}}</text></view>
+        </view>
+
+        <view class="card route-profile-card">
+          <view class="title">路线海拔</view>
+          <canvas wx:if="{{hasElevationProfile}}" id="elevation-canvas" type="2d" class="elevation-canvas" aria-label="路线海拔曲线"></canvas>
+          <view wx:else class="route-empty">暂无有效海拔数据</view>
+        </view>
+
+        <view class="card climbs-card" wx:if="{{item.route.popularClimbs && item.route.popularClimbs.length}}">
+          <view class="title">热门爬坡</view>
+          <view class="climb-row" wx:for="{{item.route.popularClimbs}}" wx:key="id">
+            <view class="climb-main"><text class="climb-name">{{item.name}}</text><text class="climb-popularity">{{item.popularityLabel}}</text></view>
+            <view class="muted">{{item.climbCategory}} 类 · {{item.distanceKm}} km · 均坡 {{item.averageGrade}}%</view>
           </view>
-          <view class="detail-metric">
-            <view class="metric-value"><text class="metric-number">{{item.route.elevationM}}</text><text class="metric-unit">M</text></view>
-            <view class="metric-label">爬升</view>
+        </view>
+
+        <view class="card attendees-card">
+          <view class="attendees-heading"><view class="title">已报名骑友</view><view class="muted">{{attendees.length}} 人</view></view>
+          <view class="avatar-stack" wx:if="{{attendees.length}}">
+            <button class="attendee-avatar-button" wx:for="{{attendees}}" wx:key="id" data-index="{{index}}" bindtap="openAttendeeCard" aria-label="查看 {{item.displayName}} 的骑行卡">
+              <image wx:if="{{item.avatarUrl}}" class="attendee-avatar" src="{{item.avatarUrl}}" mode="aspectFill" data-index="{{index}}" binderror="attendeeAvatarError" />
+              <view wx:else class="attendee-avatar attendee-avatar--default">骑</view>
+            </button>
           </view>
-          <view class="detail-metric">
-            <view class="metric-value"><text class="metric-number" wx:if="{{item.capacity > 0}}">{{item.capacity}}</text><text class="metric-number metric-number--text" wx:else>待补充</text></view>
-            <view class="metric-label">名额</view>
+          <view wx:else class="route-empty">还没有已通过的骑友</view>
+        </view>
+
+        <view class="card route-actions-card">
+          <view class="title">路线操作</view>
+          <view class="route-actions">
+            <button wx:if="{{item.route.stravaRouteUrl}}" bindtap="openStravaRoute">复制 Strava 路线</button>
+            <button bindtap="copyActivityLink">复制活动链接</button>
+            <button wx:if="{{item.route.stravaRouteId}}" loading="{{exportingGpx}}" disabled="{{exportingGpx}}" bindtap="exportGpx">{{exportingGpx ? '导出中' : '导出 GPX'}}</button>
           </view>
         </view>
 
@@ -49,4 +77,21 @@
     </view>
   </state-view>
 </view>
+
+<view wx:if="{{selectedAttendee}}" class="rider-modal-mask" bindtap="closeAttendeeCard">
+  <view class="rider-card" catchtap="keepAttendeeCard" role="dialog" aria-label="骑行公开名片">
+    <view class="rider-card-head">
+      <image wx:if="{{selectedAttendee.avatarUrl}}" class="rider-card-avatar" src="{{selectedAttendee.avatarUrl}}" mode="aspectFill" />
+      <view wx:else class="rider-card-avatar attendee-avatar--default">骑</view>
+      <view><view class="rider-name">{{selectedAttendee.displayName || '此里骑手'}}</view><view class="muted">{{selectedAttendee.title || '骑行爱好者'}}</view></view>
+    </view>
+    <view class="rider-stats">
+      <view><text>{{selectedAttendee.card.rides90d === null ? '--' : selectedAttendee.card.rides90d}}</text><text>近 90 天骑行</text></view>
+      <view><text>{{selectedAttendee.card.longestKm === null ? '--' : selectedAttendee.card.longestKm}}</text><text>最长 km</text></view>
+      <view><text>{{selectedAttendee.card.elevationM === null ? '--' : selectedAttendee.card.elevationM}}</text><text>爬升 m</text></view>
+      <view><text>{{selectedAttendee.card.speedKmh === null ? '--' : selectedAttendee.card.speedKmh}}</text><text>均速 km/h</text></view>
+    </view>
+  </view>
+</view>
+
 <view class="fixed detail-action"><button class="btn" disabled="{{loading || !item || !activityAction.enabled}}" bindtap="go">{{activityAction.label}} <text class="button-arrow">→</text></button></view>

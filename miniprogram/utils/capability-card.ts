@@ -1,4 +1,5 @@
 import type { Registration } from '../models';
+import { formatChinaDateOnly, formatChinaDateTime } from './date-time';
 
 const MAX_CAPABILITY_IMAGES = 3;
 const RIDING_CATEGORIES = new Set([
@@ -74,19 +75,10 @@ export function capabilityCard(registration: Registration) {
   const metric = (value: number | null | undefined, suffix = '') =>
     value === null || value === undefined ? '暂无' : `${value}${suffix}`;
   const coverage = registration.strava.coverage;
-  const datePart = (value: string) => {
-    const date = new Date(value);
-    return Number.isFinite(date.getTime()) ? date.toISOString().slice(0, 10) : '';
-  };
+  const datePart = (value: string) => formatChinaDateOnly(value);
   const coverageFrom = coverage ? datePart(coverage.from) : '';
   const coverageTo = coverage ? datePart(coverage.to) : '';
-  const syncedDate = registration.strava.syncedAt
-    ? new Date(registration.strava.syncedAt)
-    : undefined;
-  const syncedAt =
-    syncedDate && Number.isFinite(syncedDate.getTime())
-      ? `${syncedDate.toISOString().slice(0, 16).replace('T', ' ')} UTC`
-      : '尚未同步';
+  const syncedAt = formatChinaDateTime(registration.strava.syncedAt || undefined) || '尚未同步';
   return {
     images,
     hasMultipleImages: images.length > 1,

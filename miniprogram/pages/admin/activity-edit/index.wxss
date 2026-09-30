@@ -197,3 +197,28 @@
 .location-address {
   overflow-wrap: anywhere;
 }
+
+.strava-route {
+  padding: 20rpx;
+  border: 1rpx solid rgba(252, 76, 2, 0.5);
+  border-radius: 16rpx;
+  background: rgba(252, 76, 2, 0.07);
+}
+.strava-sync {
+  margin: 4rpx 0 0;
+  border: 1rpx solid #fc4c02;
+  background: #fc4c02;
+  color: #fff;
+  font-weight: 800;
+}
+.route-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  padding-top: 12rpx;
+  color: #d5ddd7;
+  font-size: 23rpx;
+}
+.climb-row {
+  color: #ff9a70;
+}

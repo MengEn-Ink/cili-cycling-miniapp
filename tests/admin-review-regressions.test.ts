@@ -104,6 +104,26 @@ describe('管理员审核详情回归', () => {
     vi.useRealTimers();
   });
 
+  it('评审意见默认空白，通过允许空意见，驳回仍要求填写理由', async () => {
+    await page.onLoad({ id: 'r1' });
+    expect(page.data.reason).toBe('');
+
+    rideService.updateRegistration.mockResolvedValueOnce(undefined);
+    vi.useFakeTimers();
+    await page.act({ currentTarget: { dataset: { s: 'approved' } } });
+    expect(rideService.updateRegistration).toHaveBeenCalledWith('r1', 'approved', '');
+    vi.advanceTimersByTime(500);
+
+    rideService.updateRegistration.mockClear();
+    page.data.x = registration('r1', 'a1');
+    await page.act({ currentTarget: { dataset: { s: 'rejected' } } });
+    expect(rideService.updateRegistration).not.toHaveBeenCalled();
+    expect((globalThis as any).wx.showToast).toHaveBeenCalledWith({
+      title: '驳回理由必填',
+      icon: 'none',
+    });
+  });
+
   it('展示服务端已脱敏手机号并与验证来源同时保留', async () => {
     await page.onLoad({ id: 'r1' });
     const template = readFileSync('miniprogram/pages/admin/review-detail/index.wxml', 'utf8');
@@ -207,6 +227,7 @@ describe('管理员审核详情回归', () => {
     await first;
 
     expect(page.data.x.status).toBe('checked_in');
+    expect(page.data.x.checkedInAt).toBe('2026-09-30 18:00:00');
     expect(page.data.statusText).toBe('已签到');
     expect(page.data.submitting).toBe(false);
     expect(wxApi.navigateBack).not.toHaveBeenCalled();

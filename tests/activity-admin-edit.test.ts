@@ -6,6 +6,7 @@ import type { Activity, EditableActivity } from '../miniprogram/models';
 const rideService = vi.hoisted(() => ({
   getAdminActivity: vi.fn(),
   saveActivity: vi.fn(),
+  previewStravaRoute: vi.fn(),
 }));
 const appStore = vi.hoisted(() => ({
   role: 'admin',
@@ -59,6 +60,7 @@ describe('管理员普通编辑保留未展示的活动字段', () => {
     vi.resetModules();
     rideService.getAdminActivity.mockReset().mockResolvedValue(activity);
     rideService.saveActivity.mockReset().mockResolvedValue({ ...activity, version: 8 });
+    rideService.previewStravaRoute.mockReset();
     appStore.ensureIdentity.mockReset().mockResolvedValue(undefined);
     vi.stubGlobal('wx', { cloud: {}, showToast: vi.fn() });
     vi.stubGlobal('Page', (definition: any) => {
@@ -206,4 +208,70 @@ describe('管理员普通编辑保留未展示的活动字段', () => {
       );
     },
   );
+
+  it('同步 Strava 路线后自动回填里程爬升并提交服务端预览字段', async () => {
+    const preview = {
+      stravaRouteId: '12345',
+      stravaRouteUrl: 'https://www.strava.com/routes/12345',
+      distanceKm: 42.3,
+      elevationM: 880,
+      elevationProfile: [
+        { distanceKm: 0, elevationM: 10 },
+        { distanceKm: 42.3, elevationM: 20 },
+      ],
+      routeBounds: { south: 22, west: 113, north: 23, east: 114 },
+      popularClimbs: [
+        {
+          id: '8',
+          name: '测试坡',
+          distanceKm: 2,
+          elevationGainM: 200,
+          averageGrade: 10,
+          maxGrade: 15,
+          climbCategory: 2,
+          popularity: 99,
+          popularityLabel: '99 收藏',
+        },
+      ],
+    };
+    rideService.previewStravaRoute.mockResolvedValueOnce(preview);
+    await page.onLoad({ id: activity.id });
+    page.data.form.stravaRouteUrl = preview.stravaRouteUrl;
+
+    await page.syncStravaRoute();
+    await page.save({ currentTarget: { dataset: {} } });
+
+    expect(rideService.previewStravaRoute).toHaveBeenCalledWith(preview.stravaRouteUrl);
+    expect(page.data.form.distanceKm).toBe('42.3');
+    expect(page.data.form.elevationM).toBe('880');
+    expect(rideService.saveActivity).toHaveBeenCalledWith(
+      expect.objectContaining({
+        route: expect.objectContaining({
+          stravaRouteId: '12345',
+          stravaRouteUrl: preview.stravaRouteUrl,
+          elevationProfile: preview.elevationProfile,
+          routeBounds: preview.routeBounds,
+          popularClimbs: preview.popularClimbs,
+          distanceKm: 42.3,
+          elevationM: 880,
+        }),
+      }),
+      activity.id,
+      activity.version,
+    );
+    expect(readFileSync('miniprogram/pages/admin/activity-edit/index.wxml', 'utf8')).toContain(
+      '同步路线',
+    );
+  });
+
+  it('修改 Strava URL 后必须重新同步，不能提交旧曲线', async () => {
+    await page.onLoad({ id: activity.id });
+    page.field({
+      currentTarget: { dataset: { name: 'stravaRouteUrl' } },
+      detail: { value: 'https://www.strava.com/routes/999' },
+    });
+    await page.save({ currentTarget: { dataset: {} } });
+    expect(rideService.saveActivity).not.toHaveBeenCalled();
+    expect(page.data.error).toContain('先同步');
+  });
 });

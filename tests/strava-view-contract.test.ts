@@ -47,7 +47,7 @@ describe('管理员 Strava 视图契约', () => {
     );
     expect(card.coverageRange).toBe('2026-07-01 至 2026-09-29');
     expect(card.coverageState).toBe('数据覆盖不完整');
-    expect(card.syncedAt).toBe('2026-09-29 04:05 UTC');
+    expect(card.syncedAt).toBe('2026-09-29 12:05:06');
   });
 
   it('缺少覆盖范围时显示未知而不是伪造成完整或零', () => {

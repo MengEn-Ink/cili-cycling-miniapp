@@ -30,3 +30,30 @@ test('HTTP 客户端在有限重试后返回安全错误', async () => {
     global.fetch = original;
   }
 });
+
+test('GPX 客户端支持 fetch 注入并限制响应为 4MB', async () => {
+  const { requestGpx, MAX_GPX_BYTES } = require('./api');
+  const headers = { get: () => null };
+  await assert.rejects(
+    requestGpx('https://example.test/route.gpx', 'token', {
+      fetchImpl: async () => ({
+        ok: true,
+        headers,
+        arrayBuffer: async () => Buffer.alloc(MAX_GPX_BYTES + 1),
+      }),
+    }),
+    { code: 'GPX_TOO_LARGE' },
+  );
+});
+
+test('429 不重试并保留 rate-limit 语义', async () => {
+  let calls = 0;
+  await assert.rejects(
+    requestJson('https://example.test', {}, 2, 100, async () => {
+      calls += 1;
+      return { ok: false, status: 429 };
+    }),
+    { code: 'STRAVA_RATE_LIMITED' },
+  );
+  assert.equal(calls, 1);
+});

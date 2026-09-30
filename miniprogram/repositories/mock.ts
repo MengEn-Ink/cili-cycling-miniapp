@@ -276,6 +276,32 @@ export class MockRepository implements RideRepository {
   async syncStrava() {
     return this.getStravaStatus();
   }
+  async previewStravaRoute(routeUrl: string) {
+    const match = /\/routes\/(\d+)/.exec(routeUrl);
+    if (!match) throw new Error('请输入有效的 Strava 路线 URL');
+    return {
+      stravaRouteId: match[1],
+      stravaRouteUrl: `https://www.strava.com/routes/${match[1]}`,
+      distanceKm: 80,
+      elevationM: 600,
+      elevationProfile: [],
+      routeBounds: { south: 22.5, west: 113.8, north: 22.8, east: 114.2 },
+      popularClimbs: [],
+    };
+  }
+  async getStravaRouteGpx(activityId: string, routeId: string) {
+    return {
+      base64: '',
+      filename: `${activityId}-strava-route-${routeId}.gpx`,
+      contentType: 'application/gpx+xml' as const,
+    };
+  }
+  async exportActivityGpx(activityId: string) {
+    return {
+      base64: 'PD94bWwgdmVyc2lvbj0iMS4wIj8+PGdweC8+',
+      fileName: `${activityId}-route.gpx`,
+    };
+  }
   async disconnectStrava() {
     const s = this.read();
     s.stravaStatus = 'pending';

@@ -18,11 +18,37 @@ export function formatChinaDate(value?: string): string {
   return `${date.getUTCFullYear()}年${date.getUTCMonth() + 1}月${date.getUTCDate()}日`;
 }
 
-export function formatChinaDateTime(value?: string): string {
+export function formatChinaDateOnly(value?: string): string {
   if (!value) return '';
   const date = chinaDate(value);
   if (!date) return '';
-  return `${formatChinaDate(value)} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
+}
+
+export function formatChinaDateTime(value?: string): string {
+  if (!value) return '';
+  const text = value.trim();
+  const calendarDate = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+  if (calendarDate) {
+    const [, yearText, monthText, dayText] = calendarDate;
+    const date = new Date(Date.UTC(Number(yearText), Number(monthText) - 1, Number(dayText)));
+    if (
+      date.getUTCFullYear() !== Number(yearText) ||
+      date.getUTCMonth() !== Number(monthText) - 1 ||
+      date.getUTCDate() !== Number(dayText)
+    )
+      return '';
+    return `${yearText}-${monthText}-${dayText} 00:00:00`;
+  }
+  const date = chinaDate(text);
+  if (!date) return '';
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ${pad(
+    date.getUTCHours(),
+  )}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
+}
+
+export function formatChinaDateTimeSeconds(value?: string): string {
+  return formatChinaDateTime(value);
 }
 
 export function formatActivityDate(value?: string): string {

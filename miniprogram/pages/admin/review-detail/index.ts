@@ -1,6 +1,7 @@
 import { rideService } from '../../../services/ride-service';
 import { appStore } from '../../../store/app-store';
 import { capabilityCard } from '../../../utils/capability-card';
+import { formatChinaDateTime } from '../../../utils/date-time';
 
 const statusText: Record<string, string> = {
   pending: '待审核',
@@ -30,7 +31,7 @@ Page({
     phone: '',
     phoneSource: '',
     statusText: '',
-    reason: '能力与路线要求暂不匹配',
+    reason: '',
     error: '',
     loading: false,
     submitting: false,
@@ -49,7 +50,11 @@ Page({
       if (requestId !== loadRequestId) return;
       if (x)
         this.setData({
-          x,
+          x: {
+            ...x,
+            updatedAt: formatChinaDateTime(x.updatedAt),
+            checkedInAt: formatChinaDateTime(x.checkedInAt),
+          },
           card: capabilityCard(x),
           phone: x.profile.phone,
           phoneSource:
@@ -90,7 +95,11 @@ Page({
     try {
       const x = await rideService.checkInRegistration(this.data.x.id);
       if (requestId !== loadRequestId) return;
-      this.setData({ x, statusText: statusText[x.status] || x.status, submitting: false });
+      this.setData({
+        x: { ...x, checkedInAt: formatChinaDateTime(x.checkedInAt) },
+        statusText: statusText[x.status] || x.status,
+        submitting: false,
+      });
       wx.showToast({ title: '签到成功' });
     } catch (error) {
       if (requestId !== loadRequestId) return;

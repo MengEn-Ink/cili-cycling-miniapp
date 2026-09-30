@@ -17,8 +17,8 @@ for (const name of ['strava-auth', 'strava-callback']) {
   const oauthRoot = resolve(root, 'cloudfunctions', name, 'oauth');
   rmSync(oauthRoot, { recursive: true, force: true });
   mkdirSync(oauthRoot, { recursive: true });
-  for (const file of ['core.js', 'api.js'])
-    copyFileSync(resolve(oauthSource, file), resolve(oauthRoot, file));
+  const files = name === 'strava-auth' ? ['core.js', 'api.js', 'routes.js'] : ['core.js', 'api.js'];
+  for (const file of files) copyFileSync(resolve(oauthSource, file), resolve(oauthRoot, file));
 }
 console.log(
   `共享领域源码已复制到 ${domainFunctions.length} 个业务函数，OAuth 核心已复制到 2 个函数`,

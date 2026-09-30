@@ -10,7 +10,7 @@ describe('报名、骑行名片与个人中心设计对齐', () => {
     const template = read('miniprogram/pages/registration-form/index.wxml');
     const styles = read('miniprogram/pages/registration-form/index.wxss');
 
-    expect(page).toContain('displayActivityDate: formatActivityDate(');
+    expect(page).toContain('displayActivityDate: formatChinaDateTime(');
     expect(template).toContain('{{displayActivityDate}}');
     expect(template).not.toContain('{{activity.date}}');
 

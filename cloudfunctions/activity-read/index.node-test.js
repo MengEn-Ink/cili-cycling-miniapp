@@ -6,22 +6,39 @@ const Module = require('node:module');
 function loadMain(activity, list = [], options = {}) {
   const calls = [];
   const database = {
+    command: { in: (values) => ({ $in: values }) },
     collection(name) {
-      assert.equal(name, 'activities');
+      assert.ok(['activities', 'registrations', 'profiles'].includes(name));
       return {
         where(condition) {
-          calls.push({ type: 'where', condition });
-          return {
+          calls.push({ type: 'where', name, condition });
+          let data =
+            name === 'activities'
+              ? list
+              : name === 'registrations'
+                ? options.registrations || []
+                : options.profiles || [];
+          if (name === 'registrations' && typeof condition.status === 'string')
+            data = data.filter((item) => item.status === condition.status);
+          if (name === 'profiles' && condition._id?.$in)
+            data = data.filter((item) => condition._id.$in.includes(item._id));
+          let offset = 0;
+          const query = {
             orderBy() {
-              return {
-                limit() {
-                  return { get: async () => ({ data: list }) };
-                },
-              };
+              return query;
+            },
+            skip(value) {
+              offset = value;
+              return query;
+            },
+            limit(value) {
+              return { get: async () => ({ data: data.slice(offset, offset + value) }) };
             },
           };
+          return query;
         },
         doc() {
+          assert.equal(name, 'activities');
           return { get: async () => ({ data: activity }) };
         },
       };
@@ -107,7 +124,9 @@ test('列表仍只查询 published 并由同一服务端时间裁决报名状态
   const result = await main({ action: 'list' });
 
   assert.equal(result.ok, true);
-  assert.deepEqual(calls, [{ type: 'where', condition: { status: 'published' } }]);
+  assert.deepEqual(calls, [
+    { type: 'where', name: 'activities', condition: { status: 'published' } },
+  ]);
   assert.deepEqual(
     result.data.map((item) => [item.registration_state, item.closed_reason]),
     [
@@ -233,4 +252,131 @@ test('详情临时地址解析失败时保留原始 fileID 供客户端继续降
   assert.equal(result.ok, true);
   assert.equal(result.data.cover_image, fileID);
   assert.deepEqual(result.data.images, [fileID]);
+});
+
+test('详情成员执行状态、上限、稳定排序和隐私白名单', async () => {
+  const registrations = Array.from({ length: 27 }, (_, index) => ({
+    _id: `r-${String(index).padStart(2, '0')}`,
+    activity_id: 'a1',
+    openid: `o-${index}`,
+    status: index === 26 ? 'pending' : index % 2 ? 'checked_in' : 'approved',
+    approved_at: `2026-09-01T00:${String(index).padStart(2, '0')}:00.000Z`,
+    checked_in_at:
+      index % 2 ? `2026-09-02T00:${String(index).padStart(2, '0')}:00.000Z` : undefined,
+    profile_snapshot: { nickname: `旧昵称${index}`, real_name: '实名', phone: '13812345678' },
+    strava_snapshot: {
+      activities_90d: index,
+      longest_km: 100 + index,
+      total_elevation_m: 1000 + index,
+      weighted_avg_speed_kmh: 20 + index,
+      total_km: 99999,
+      token: 'secret',
+    },
+    emergency_contact: 'private',
+  }));
+  const profiles = registrations.map((item, index) => ({
+    _id: item.openid,
+    nickname: `骑手${index}`,
+    title: index === 0 ? '公开称号' : '',
+    avatar_file_id: `cloud://avatar-${index}.jpg`,
+    phone: '13812345678',
+  }));
+  const { main, calls } = loadMain({ _id: 'a1', title: '活动', status: 'published' }, [], {
+    registrations,
+    profiles,
+    getTempFileURL: async ({ fileList }) => ({
+      fileList: fileList.map((fileID) => ({
+        fileID,
+        status: 0,
+        tempFileURL: `https://temp.example/${fileID.slice(8)}`,
+      })),
+    }),
+  });
+  const result = await main({ action: 'detail', activityId: 'a1' });
+  assert.equal(result.ok, true);
+  assert.equal(result.data.attendees.length, 24);
+  assert.deepEqual(Object.keys(result.data.attendees[0]).sort(), [
+    'avatar_url',
+    'card',
+    'display_name',
+    'id',
+    'status',
+    'title',
+  ]);
+  assert.deepEqual(Object.keys(result.data.attendees[0].card).sort(), [
+    'elevationM',
+    'longestKm',
+    'rides90d',
+    'speedKmh',
+  ]);
+  assert.equal(
+    result.data.attendees.some((item) => item.id === 'r-26'),
+    false,
+  );
+  assert.doesNotMatch(JSON.stringify(result.data.attendees), /13812345678|secret|private|openid/);
+  assert.deepEqual(
+    calls.filter((call) => call.name === 'registrations').map((call) => call.condition.status),
+    ['approved', 'checked_in'],
+  );
+});
+
+test('详情成员超过单页时完整读取候选集后再选最早 24 人', async () => {
+  const late = Array.from({ length: 105 }, (_, index) => ({
+    _id: `late-${index}`,
+    activity_id: 'a1',
+    openid: `late-openid-${index}`,
+    status: 'approved',
+    approved_at: `2026-09-20T${String(index % 24).padStart(2, '0')}:00:00.000Z`,
+    created_at: `2026-09-20T${String(index % 24).padStart(2, '0')}:00:00.000Z`,
+    profile_snapshot: { nickname: `晚报名${index}` },
+  }));
+  const early = Array.from({ length: 25 }, (_, index) => ({
+    _id: `early-${String(index).padStart(2, '0')}`,
+    activity_id: 'a1',
+    openid: `early-openid-${index}`,
+    status: 'approved',
+    approved_at: `2026-09-01T00:${String(index).padStart(2, '0')}:00.000Z`,
+    created_at: `2026-09-01T00:${String(index).padStart(2, '0')}:00.000Z`,
+    profile_snapshot: { nickname: `早报名${index}` },
+  }));
+  const { main } = loadMain({ _id: 'a1', title: '活动', status: 'published' }, [], {
+    registrations: [...late, ...early],
+  });
+
+  const result = await main({ action: 'detail', activityId: 'a1' });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.data.attendees.length, 24);
+  assert.deepEqual(
+    result.data.attendees.map((item) => item.id),
+    early.slice(0, 24).map((item) => item._id),
+  );
+});
+
+test('头像批量解析失败时详情仍返回空头像，列表不查询成员', async () => {
+  const options = {
+    registrations: [
+      {
+        _id: 'r1',
+        activity_id: 'a1',
+        openid: 'o1',
+        status: 'approved',
+        approved_at: '2026-09-01T00:00:00.000Z',
+        profile_snapshot: { nickname: '骑手' },
+      },
+    ],
+    profiles: [{ _id: 'o1', nickname: '骑手', avatar_file_id: 'cloud://avatar.jpg' }],
+    getTempFileURL: async () => {
+      throw new Error('storage unavailable');
+    },
+  };
+  const detail = loadMain({ _id: 'a1', title: '活动', status: 'published' }, [], options);
+  const result = await detail.main({ action: 'detail', activityId: 'a1' });
+  assert.equal(result.data.attendees[0].avatar_url, '');
+  const list = loadMain(undefined, [{ _id: 'a1', title: '活动', status: 'published' }], options);
+  await list.main({ action: 'list' });
+  assert.deepEqual(
+    list.calls.map((call) => call.name),
+    ['activities'],
+  );
 });

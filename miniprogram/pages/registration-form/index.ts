@@ -8,7 +8,7 @@ import {
 import { validateRegistration } from '../../utils/validation';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
-import { formatActivityDate } from '../../utils/date-time';
+import { formatChinaDateTime } from '../../utils/date-time';
 
 function unavailableAction(): ActivityAction {
   return { kind: 'closed', label: '活动状态不可用', enabled: false };
@@ -113,7 +113,7 @@ Page({
     const activityAction = activityContext?.action || unavailableAction();
     this.setData({
       activity: activityContext?.activity || null,
-      displayActivityDate: formatActivityDate(
+      displayActivityDate: formatChinaDateTime(
         activityContext?.activity?.startAt || activityContext?.activity?.date,
       ),
       profile: profileState.data || null,

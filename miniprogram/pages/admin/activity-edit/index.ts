@@ -2,7 +2,12 @@ import type { ActivityInput } from '../../../repositories/types';
 import { rideService } from '../../../services/ride-service';
 import { appStore } from '../../../store/app-store';
 import { formatLocalDateTime, parseLocalDateTime } from '../../../utils/date-time';
-import type { ActivityLocation } from '../../../models';
+import type {
+  ActivityLocation,
+  PopularClimb,
+  RouteBounds,
+  RouteElevationPoint,
+} from '../../../models';
 
 type Form = {
   title: string;
@@ -18,6 +23,7 @@ type Form = {
   endAt: string;
   routeStart: string;
   routeEnd: string;
+  stravaRouteUrl: string;
   distanceKm: string;
   elevationM: string;
   level: string;
@@ -39,6 +45,7 @@ const emptyForm = (): Form => ({
   endAt: '',
   routeStart: '',
   routeEnd: '',
+  stravaRouteUrl: '',
   distanceKm: '0',
   elevationM: '0',
   level: '',
@@ -67,6 +74,7 @@ Page({
     loading: true,
     saving: false,
     uploading: false,
+    syncingRoute: false,
     error: '',
     fromTemplate: false,
     canPublish: false,
@@ -78,6 +86,10 @@ Page({
     coverImage: '',
     schedule: [] as ActivityInput['schedule'],
     routeGpxFileId: '',
+    stravaRouteId: '',
+    elevationProfile: [] as RouteElevationPoint[],
+    routeBounds: undefined as RouteBounds | undefined,
+    popularClimbs: [] as PopularClimb[],
     routeStartLocation: undefined as ActivityLocation | undefined,
     routeEndLocation: undefined as ActivityLocation | undefined,
     feeIncluded: [] as string[],
@@ -122,6 +134,7 @@ Page({
         endAt: formatLocalDateTime(activity.endAt),
         routeStart: activity.route.start,
         routeEnd: activity.route.end,
+        stravaRouteUrl: activity.route.stravaRouteUrl || '',
         distanceKm: String(activity.route.distanceKm),
         elevationM: String(activity.route.elevationM),
         level: activity.route.level,
@@ -143,6 +156,10 @@ Page({
         coverImage: images[0] || activity.coverImage || '',
         schedule: activity.schedule,
         routeGpxFileId: activity.route.gpxFileId || '',
+        stravaRouteId: activity.route.stravaRouteId || '',
+        elevationProfile: activity.route.elevationProfile || [],
+        routeBounds: activity.route.routeBounds,
+        popularClimbs: activity.route.popularClimbs || [],
         routeStartLocation: activity.route.startLocation,
         routeEndLocation: activity.route.endLocation,
         feeIncluded: activity.feeIncluded || [],
@@ -162,6 +179,12 @@ Page({
     const patch: Record<string, unknown> = { [`form.${name}`]: event.detail.value };
     if (name === 'routeStart') patch.routeStartLocation = undefined;
     if (name === 'routeEnd') patch.routeEndLocation = undefined;
+    if (name === 'stravaRouteUrl') {
+      patch.stravaRouteId = '';
+      patch.elevationProfile = [];
+      patch.routeBounds = undefined;
+      patch.popularClimbs = [];
+    }
     this.setData(patch);
     this.recomputePublishReadiness();
   },
@@ -196,6 +219,32 @@ Page({
       driverReady,
     );
     this.setData({ canPublish });
+  },
+  async syncStravaRoute() {
+    if (this.data.syncingRoute || this.data.saving) return;
+    if (!this.data.isAdmin) {
+      this.setData({ error: '仅管理员可以同步 Strava 路线' });
+      return;
+    }
+    const routeUrl = String((this.data.form as Form).stravaRouteUrl || '');
+    this.setData({ syncingRoute: true, error: '' });
+    try {
+      const preview = await rideService.previewStravaRoute(routeUrl);
+      this.setData({
+        'form.stravaRouteUrl': preview.stravaRouteUrl,
+        'form.distanceKm': String(preview.distanceKm),
+        'form.elevationM': String(preview.elevationM),
+        stravaRouteId: preview.stravaRouteId,
+        elevationProfile: preview.elevationProfile,
+        routeBounds: preview.routeBounds,
+        popularClimbs: preview.popularClimbs,
+      });
+      wx.showToast({ title: '路线同步成功', icon: 'success' });
+    } catch (error) {
+      this.setData({ error: error instanceof Error ? error.message : 'Strava 路线同步失败' });
+    } finally {
+      this.setData({ syncingRoute: false });
+    }
   },
   async chooseImages() {
     if (this.data.uploading) return;
@@ -300,6 +349,10 @@ Page({
       this.setData({ error: '活动说明不能超过 5000 字' });
       return;
     }
+    if (f.stravaRouteUrl && !this.data.stravaRouteId) {
+      this.setData({ error: '请先同步 Strava 路线后再保存' });
+      return;
+    }
     let deadline: string | undefined;
     let startAt: string | undefined;
     let endAt: string | undefined;
@@ -351,6 +404,15 @@ Page({
         elevationM: Number(f.elevationM),
         level: f.level,
         gpxFileId: this.data.routeGpxFileId,
+        ...(this.data.stravaRouteId
+          ? {
+              stravaRouteId: this.data.stravaRouteId,
+              stravaRouteUrl: f.stravaRouteUrl,
+              elevationProfile: this.data.elevationProfile,
+              routeBounds: this.data.routeBounds,
+              popularClimbs: this.data.popularClimbs,
+            }
+          : {}),
       },
       schedule: this.data.schedule,
       notices: lines(f.notices),
@@ -385,6 +447,10 @@ Page({
         coverImage: savedImages[0] || saved.coverImage || '',
         schedule: saved.schedule,
         routeGpxFileId: saved.route.gpxFileId || '',
+        stravaRouteId: saved.route.stravaRouteId || '',
+        elevationProfile: saved.route.elevationProfile || [],
+        routeBounds: saved.route.routeBounds,
+        popularClimbs: saved.route.popularClimbs || [],
         routeStartLocation: saved.route.startLocation,
         routeEndLocation: saved.route.endLocation,
         feeIncluded: saved.feeIncluded || [],

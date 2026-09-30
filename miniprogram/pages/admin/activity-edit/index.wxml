@@ -55,6 +55,17 @@
       <view class="field"><text>报名截止日期时间</text><input maxlength="19" placeholder="yyyy-MM-dd HH:mm:ss" value="{{form.deadline}}" data-name="deadline" bindinput="field" /></view>
       <view class="field"><text>开始日期时间</text><input maxlength="19" placeholder="yyyy-MM-dd HH:mm:ss" value="{{form.startAt}}" data-name="startAt" bindinput="field" /></view>
       <view class="field"><text>结束日期时间</text><input maxlength="19" placeholder="yyyy-MM-dd HH:mm:ss" value="{{form.endAt}}" data-name="endAt" bindinput="field" /></view>
+      <view class="field strava-route" wx:if="{{isAdmin}}">
+        <text>Strava 路线 URL</text>
+        <view class="hint">仅支持 https://www.strava.com/routes/数字；同步结果将由服务端校验后保存</view>
+        <input maxlength="256" placeholder="https://www.strava.com/routes/123456" value="{{form.stravaRouteUrl}}" data-name="stravaRouteUrl" bindinput="field" />
+        <button class="strava-sync" loading="{{syncingRoute}}" disabled="{{syncingRoute || saving || !form.stravaRouteUrl}}" bindtap="syncStravaRoute">{{syncingRoute ? '正在同步' : '同步路线'}}</button>
+        <view class="route-summary" wx:if="{{stravaRouteId}}">
+          <text>已同步路线 #{{stravaRouteId}} · {{form.distanceKm}} km · 爬升 {{form.elevationM}} m</text>
+          <text wx:if="{{elevationProfile.length}}">海拔采样 {{elevationProfile.length}} 点</text>
+          <view wx:for="{{popularClimbs}}" wx:key="id" class="climb-row">{{item.name}} · {{item.popularityLabel}}</view>
+        </view>
+      </view>
       <view class="split">
         <view class="field location-field"><text>路线起点</text><input value="{{form.routeStart}}" data-name="routeStart" bindinput="field" /><view class="location-address" wx:if="{{routeStartLocation}}">{{routeStartLocation.address}}</view><button class="location-button" data-target="start" bindtap="chooseRouteLocation">选择起点</button></view>
         <view class="field location-field"><text>路线终点</text><input value="{{form.routeEnd}}" data-name="routeEnd" bindinput="field" /><view class="location-address" wx:if="{{routeEndLocation}}">{{routeEndLocation.address}}</view><button class="location-button" data-target="end" bindtap="chooseRouteLocation">选择终点</button></view>

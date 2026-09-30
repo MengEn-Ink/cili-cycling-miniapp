@@ -70,7 +70,7 @@ describe('个人骑行名片 view model', () => {
 
     expect(view.statusLabel).toBe('数据不完整');
     expect(view.coverageText).toBe('2026年7月1日 至 2026年9月29日 · 覆盖不完整');
-    expect(view.syncedAtText).toBe('同步于 2026年9月29日 12:05');
+    expect(view.syncedAtText).toBe('同步于 2026-09-29 12:05:00');
   });
 
   it('无背景图时启用品牌山景并提示完善资料', async () => {

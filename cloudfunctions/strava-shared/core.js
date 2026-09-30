@@ -361,6 +361,12 @@ async function usableCredential({ openid, credential, cfg, api, now = new Date()
         openid,
         {
           ...refreshed,
+          scope:
+            typeof refreshed.scope === 'string'
+              ? refreshed.scope
+              : Array.isArray(credential.scopes)
+                ? credential.scopes.join(',')
+                : '',
           athlete: { id: credential.athlete_id, firstname: credential.athlete_name },
         },
         cfg.key,

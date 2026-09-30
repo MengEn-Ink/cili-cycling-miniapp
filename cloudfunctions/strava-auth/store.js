@@ -38,6 +38,40 @@ function nextAvatarRevision(profile) {
 function createReadinessStore(db) {
   const command = db.command;
   return {
+    getCredential(openid) {
+      return maybeGet(db.collection('strava_credentials'), openid);
+    },
+    getActivity(activityId) {
+      return maybeGet(db.collection('activities'), activityId);
+    },
+    getAdmin(openid) {
+      return maybeGet(db.collection('admins'), openid);
+    },
+    async saveCredential(credential) {
+      await db
+        .collection('strava_credentials')
+        .doc(credential.openid)
+        .set({
+          data: writableDocument(credential),
+        });
+    },
+    async saveRoutePreview(openid, preview, now) {
+      const id = crypto
+        .createHash('sha256')
+        .update(`${openid}\0${preview.strava_route_id}`)
+        .digest('hex');
+      await db
+        .collection('strava_route_previews')
+        .doc(id)
+        .set({
+          data: {
+            owner_openid: openid,
+            ...preview,
+            created_at: now,
+            expires_at: new Date(now.getTime() + 2 * 60 * 60 * 1000),
+          },
+        });
+    },
     async readReadiness(openid, now) {
       const [credential, snapshot, active] = await Promise.all([
         maybeGet(db.collection('strava_credentials'), openid),

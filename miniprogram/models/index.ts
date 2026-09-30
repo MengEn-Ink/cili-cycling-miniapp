@@ -9,6 +9,54 @@ export interface ActivityLocation {
   latitude: number;
   longitude: number;
 }
+export interface RouteElevationPoint {
+  distanceKm: number;
+  elevationM: number;
+}
+export interface RouteBounds {
+  south: number;
+  west: number;
+  north: number;
+  east: number;
+}
+export interface PopularClimb {
+  id: string;
+  name: string;
+  distanceKm: number;
+  elevationGainM: number;
+  averageGrade: number;
+  maxGrade: number;
+  climbCategory: number;
+  popularity: number;
+  popularityLabel: string;
+}
+export interface StravaRoutePreview {
+  stravaRouteId: string;
+  stravaRouteUrl: string;
+  distanceKm: number;
+  elevationM: number;
+  elevationProfile: RouteElevationPoint[];
+  routeBounds: RouteBounds;
+  popularClimbs: PopularClimb[];
+}
+export interface StravaRouteGpx {
+  base64: string;
+  filename: string;
+  contentType: 'application/gpx+xml';
+}
+export interface ActivityAttendee {
+  id: string;
+  displayName: string;
+  title: string;
+  avatarUrl: string;
+  status: 'approved' | 'checked_in';
+  card: {
+    rides90d: number | null;
+    longestKm: number | null;
+    elevationM: number | null;
+    speedKmh: number | null;
+  };
+}
 export interface Activity {
   id: string;
   version: number;
@@ -41,6 +89,11 @@ export interface Activity {
     elevationM: number;
     level: string;
     gpxFileId?: string;
+    stravaRouteId?: string;
+    stravaRouteUrl?: string;
+    elevationProfile?: RouteElevationPoint[];
+    routeBounds?: RouteBounds;
+    popularClimbs?: PopularClimb[];
   };
   schedule: { time: string; title: string; location: string; remark?: string }[];
   notices: string[];
@@ -52,6 +105,7 @@ export interface Activity {
   closedReason?: ActivityClosedReason | null;
   registrationSetupPending?: boolean;
   serverNow?: string;
+  attendees?: ActivityAttendee[];
 }
 export type AvatarSource = 'wechat' | 'strava' | 'custom';
 export type ClientAvatarSource = Exclude<AvatarSource, 'strava'>;

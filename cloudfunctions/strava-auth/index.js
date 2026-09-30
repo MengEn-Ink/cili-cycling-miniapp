@@ -10,6 +10,7 @@ const {
   toError,
 } = require('./oauth/core');
 const { stravaApi } = require('./oauth/api');
+const { routePreviewFlow, routeGpxFlow } = require('./oauth/routes');
 const { createReadinessStore } = require('./store');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
@@ -66,6 +67,31 @@ exports.main = async (event = {}) => {
       return ok(
         await ensureReadyFlow({
           openid: OPENID,
+          env: process.env,
+          api: stravaApi,
+          store,
+        }),
+      );
+    if (event.action === 'routePreview') {
+      const admin = await store.getAdmin(OPENID);
+      if (!admin || admin._id !== OPENID || admin.enabled === false)
+        throw Object.assign(new Error('仅管理员可以同步 Strava 路线'), { code: 'ADMIN_REQUIRED' });
+      return ok(
+        await routePreviewFlow({
+          openid: OPENID,
+          routeUrl: event.routeUrl,
+          env: process.env,
+          api: stravaApi,
+          store,
+        }),
+      );
+    }
+    if (event.action === 'routeGpx')
+      return ok(
+        await routeGpxFlow({
+          openid: OPENID,
+          activityId: event.activityId,
+          routeId: event.routeId,
           env: process.env,
           api: stravaApi,
           store,

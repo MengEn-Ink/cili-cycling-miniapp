@@ -9,6 +9,8 @@ import type {
   RegistrationStatus,
   StravaConnection,
   StravaReadiness,
+  StravaRouteGpx,
+  StravaRoutePreview,
 } from '../models';
 
 export type AdminRegistrationStatusFilter = RegistrationStatus;
@@ -88,5 +90,8 @@ export interface RideRepository extends AdminReviewRepository, ActivityAdminRepo
   startStrava(): Promise<{ authorizationUrl: string; expiresAt: string }>;
   cancelStravaAuthorization(): Promise<void>;
   syncStrava(): Promise<StravaConnection>;
+  previewStravaRoute(routeUrl: string): Promise<StravaRoutePreview>;
+  getStravaRouteGpx(activityId: string, routeId: string): Promise<StravaRouteGpx>;
+  exportActivityGpx(activityId: string): Promise<{ base64: string; fileName: string }>;
   disconnectStrava(): Promise<void>;
 }
