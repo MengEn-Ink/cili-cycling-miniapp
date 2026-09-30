@@ -5,6 +5,7 @@ const {
   isOwnerMedia,
   mediaPath,
   mediaDocumentId,
+  clientUploadIntentId,
   avatarUrlFingerprint,
   mediaRegistration,
   registeredMedia,
@@ -128,6 +129,80 @@ function createProfileStore(db) {
           Object.prototype.hasOwnProperty.call(record, 'origin')
         ) {
           await collection.doc(id).update({ data: { origin: record.origin } });
+        }
+        return record;
+      }),
+    prepareClientUpload: (openid, intent, secretValue) =>
+      db.runTransaction(async (tx) => {
+        const imports = tx.collection('profile_media_imports');
+        if (
+          !intent ||
+          intent.kind !== 'client_upload' ||
+          intent.owner_openid !== openid ||
+          intent.status !== 'prepared' ||
+          !isOwnerMedia(`cloud://intent/${intent.cloud_path}`, openid, secretValue) ||
+          intent._id !== clientUploadIntentId(intent.cloud_path) ||
+          !Number.isFinite(new Date(intent.created_at).getTime()) ||
+          !Number.isFinite(new Date(intent.cleanup_after).getTime()) ||
+          new Date(intent.cleanup_after) <= new Date(intent.created_at)
+        )
+          throw new ProfileError('MEDIA_UPLOAD_INTENT_INVALID', '媒体上传凭据无效');
+        const existing = await get(imports, intent._id);
+        if (existing) {
+          if (
+            existing.kind === 'client_upload' &&
+            existing.owner_openid === openid &&
+            existing.cloud_path === intent.cloud_path &&
+            existing.status === 'prepared'
+          )
+            return existing;
+          throw new ProfileError('MEDIA_UPLOAD_INTENT_CONFLICT', '媒体上传凭据冲突');
+        }
+        await imports.doc(intent._id).set({ data: writableDocument(intent) });
+        return intent;
+      }),
+    registerClientMedia: (openid, fileId, intentId, secretValue, buildRecord, now = new Date()) =>
+      db.runTransaction(async (tx) => {
+        if (!isOwnerMedia(fileId, openid, secretValue))
+          throw new ProfileError('MEDIA_NOT_OWNED', '媒体文件不属于当前用户');
+        const cloudPath = mediaPath(fileId);
+        const expectedIntentId = clientUploadIntentId(cloudPath);
+        if (intentId && intentId !== expectedIntentId)
+          throw new ProfileError('MEDIA_UPLOAD_INTENT_INVALID', '媒体上传凭据无效');
+        const imports = tx.collection('profile_media_imports');
+        const intent = await get(imports, expectedIntentId);
+        if (
+          intent &&
+          (intent.kind !== 'client_upload' ||
+            intent.owner_openid !== openid ||
+            intent.cloud_path !== cloudPath ||
+            !['prepared', 'completed'].includes(intent.status))
+        )
+          throw new ProfileError('MEDIA_UPLOAD_INTENT_INVALID', '媒体上传凭据无效');
+        const media = tx.collection('profile_media');
+        const mediaId = mediaDocumentId(fileId);
+        const existing = await get(media, mediaId);
+        const record = buildRecord(existing);
+        if (!existing) {
+          const { _id, ...data } = record;
+          await media.doc(_id).set({ data });
+        } else if (
+          !Object.prototype.hasOwnProperty.call(existing, 'origin') &&
+          Object.prototype.hasOwnProperty.call(record, 'origin')
+        ) {
+          await media.doc(mediaId).update({ data: { origin: record.origin } });
+        }
+        if (intent && intent.status === 'prepared') {
+          await imports.doc(expectedIntentId).update({
+            data: {
+              status: 'completed',
+              file_id: fileId,
+              media_id: mediaId,
+              completed_at: now,
+              cleanup_after: null,
+              updated_at: db.serverDate(),
+            },
+          });
         }
         return record;
       }),

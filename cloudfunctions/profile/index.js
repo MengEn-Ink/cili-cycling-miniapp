@@ -6,7 +6,10 @@ const {
   buildUpdate,
   phoneUpdate,
   issueMediaUploadPath,
+  clientUploadIntentId,
+  clientUploadIntent,
   mediaDocumentId,
+  mediaPath,
   mediaRegistration,
   clientAvatarSource,
   clientMediaOrigin,
@@ -114,16 +117,21 @@ async function registerMedia(openid, event, verifyObject) {
   const origin = clientMediaOrigin(event.origin);
   const now = new Date();
   const secret = process.env.PROFILE_MEDIA_PATH_SECRET;
-  const candidate = mediaRegistration(event.fileId, event.category, origin, openid, secret, now);
-  const id = candidate._id;
+  mediaRegistration(event.fileId, event.category, origin, openid, secret, now);
   if (verifyObject) {
     const tempFileURL = await verifyUploadedMedia(event.fileId, (input) =>
       cloud.getTempFileURL(input),
     );
     await verifyUploadedImageObject(tempFileURL);
   }
-  return profileStore.registerMedia(id, (existing) =>
-    mediaRegistration(event.fileId, event.category, origin, openid, secret, now, existing),
+  return profileStore.registerClientMedia(
+    openid,
+    event.fileId,
+    clientUploadIntentId(mediaPath(event.fileId)),
+    secret,
+    (existing) =>
+      mediaRegistration(event.fileId, event.category, origin, openid, secret, now, existing),
+    now,
   );
 }
 exports.main = async (event = {}) => {
@@ -155,7 +163,14 @@ exports.main = async (event = {}) => {
     if (event.action === 'mediaUploadPath') {
       if (Object.prototype.hasOwnProperty.call(event, 'openid'))
         throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });
-      return ok(issueMediaUploadPath(OPENID, process.env.PROFILE_MEDIA_PATH_SECRET));
+      const issued = issueMediaUploadPath(OPENID, process.env.PROFILE_MEDIA_PATH_SECRET);
+      const intent = clientUploadIntent(
+        OPENID,
+        issued.cloud_path,
+        process.env.PROFILE_MEDIA_PATH_SECRET,
+      );
+      await profileStore.prepareClientUpload(OPENID, intent, process.env.PROFILE_MEDIA_PATH_SECRET);
+      return ok(issued);
     }
     if (event.action === 'registerMedia') {
       if (Object.prototype.hasOwnProperty.call(event, 'openid'))

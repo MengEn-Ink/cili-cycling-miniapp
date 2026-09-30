@@ -174,6 +174,55 @@ test('prepared intent 通过 owner cloudPath 恢复删除目标后完成 cleanup
   assert.equal(result.deleted, 1);
 });
 
+test('客户端上传已落盘但响应丢失时，过期 intent 从 owner path 恢复并删除对象', async () => {
+  const cloudPath = importCloudPath;
+  const fileId = `cloud://env/${cloudPath}`;
+  const operations = [];
+  const intent = {
+    _id: 'client-upload-intent',
+    kind: 'client_upload',
+    owner_openid: 'owner',
+    cloud_path: cloudPath,
+    status: 'prepared',
+    cleanup_after: new Date('2026-09-29T11:59:59.000Z'),
+  };
+  const result = await drainMediaCleanup({
+    now,
+    randomUUID: () => 'cleanup-lease',
+    store: {
+      listEligible: async () => [],
+      listImportIntents: async () => [intent._id],
+      claimImportIntent: async () => ({ ...intent, status: 'recovering', resolve_target: true }),
+      isImportRecoveryLeaseCurrent: async () => true,
+      attachImportDeleteTarget: async (_id, fence) => {
+        operations.push(['attach', fence.fileId]);
+        return true;
+      },
+      markImportDeleted: async (_id, fence) => {
+        operations.push(['complete', fence.deferCompletion]);
+        return true;
+      },
+      markImportFailed: async () => true,
+    },
+    uploadFile: async ({ cloudPath: target, fileContent }) => {
+      operations.push(['probe', target, fileContent.length]);
+      return { fileID: fileId };
+    },
+    deleteFile: async ({ fileList }) => {
+      operations.push(['delete', fileList[0]]);
+      return { fileList: [{ fileID: fileList[0], status: 0 }] };
+    },
+  });
+
+  assert.deepEqual(operations, [
+    ['probe', cloudPath, 1],
+    ['attach', fileId],
+    ['delete', fileId],
+    ['complete', true],
+  ]);
+  assert.equal(result.deleted, 1);
+});
+
 test('路径不匹配的 intent fileId 不会进入特权删除', async () => {
   for (const fileId of [
     'cloud://env/profiles/other/avatar.jpg',

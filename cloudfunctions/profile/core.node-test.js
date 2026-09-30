@@ -13,6 +13,7 @@ const {
   buildUpdate,
   phoneUpdate,
   issueMediaUploadPath,
+  clientUploadIntent,
   mediaOwnerPrefix,
   mediaDocumentId,
   avatarUrlFingerprint,
@@ -271,6 +272,42 @@ test('媒体上传路径使用服务端 secret 派生 opaque owner alias', () =>
   assert.throws(() => issueMediaUploadPath('openid-owner-a', mediaSecret, () => uuid, 'svg'), {
     code: 'MEDIA_TYPE_INVALID',
   });
+});
+
+test('客户端上传 intent 由 owner-bound cloudPath 确定并在过期后进入 cleanup', () => {
+  const openid = 'openid-owner-a';
+  const now = new Date('2026-09-30T00:00:00.000Z');
+  const cloudPath = issueMediaUploadPath(
+    openid,
+    mediaSecret,
+    () => '123e4567-e89b-42d3-a456-426614174000',
+  ).cloud_path;
+  const intent = clientUploadIntent(openid, cloudPath, mediaSecret, now);
+
+  assert.match(intent._id, /^client-upload-[a-f0-9]{64}$/);
+  assert.deepEqual(intent, {
+    _id: intent._id,
+    kind: 'client_upload',
+    owner_openid: openid,
+    cloud_path: cloudPath,
+    status: 'prepared',
+    created_at: now,
+    cleanup_after: new Date('2026-09-30T00:30:00.000Z'),
+  });
+  assert.throws(
+    () =>
+      clientUploadIntent(
+        openid,
+        issueMediaUploadPath(
+          'openid-owner-b',
+          mediaSecret,
+          () => '123e4567-e89b-42d3-a456-426614174001',
+        ).cloud_path,
+        mediaSecret,
+        now,
+      ),
+    { code: 'MEDIA_NOT_OWNED' },
+  );
 });
 
 test('资料更新只接受本用户签发照片，同时拒绝绕过 setAvatar 修改头像', () => {

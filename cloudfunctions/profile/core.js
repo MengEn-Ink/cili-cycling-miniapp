@@ -4,6 +4,7 @@ const https = require('node:https');
 const AVATAR_SOURCES = ['wechat', 'strava', 'custom'];
 const CLIENT_AVATAR_SOURCES = ['wechat', 'custom'];
 const MAX_PROFILE_IMAGE_BYTES = 5 * 1024 * 1024;
+const CLIENT_UPLOAD_INTENT_MS = 30 * 60 * 1000;
 class ProfileError extends Error {
   constructor(code, message) {
     super(message);
@@ -119,6 +120,27 @@ function issueMediaUploadPath(
   if (!['jpg', 'png', 'webp'].includes(extension))
     throw new ProfileError('MEDIA_TYPE_INVALID', '媒体类型无效');
   return { cloud_path: `${mediaOwnerPrefix(openid, secretValue)}${filename}.${extension}` };
+}
+function clientUploadIntentId(cloudPath) {
+  if (typeof cloudPath !== 'string' || !cloudPath)
+    throw new ProfileError('MEDIA_PATH_INVALID', '媒体路径无效');
+  return `client-upload-${crypto.createHash('sha256').update(cloudPath).digest('hex')}`;
+}
+function clientUploadIntent(openid, cloudPath, secretValue, now = new Date()) {
+  if (!isOwnerMedia(`cloud://intent/${cloudPath}`, openid, secretValue))
+    throw new ProfileError('MEDIA_NOT_OWNED', '媒体文件不属于当前用户');
+  const createdAt = new Date(now);
+  if (!Number.isFinite(createdAt.getTime()))
+    throw new ProfileError('MEDIA_PATH_INVALID', '媒体路径无效');
+  return {
+    _id: clientUploadIntentId(cloudPath),
+    kind: 'client_upload',
+    owner_openid: openid,
+    cloud_path: cloudPath,
+    status: 'prepared',
+    created_at: createdAt,
+    cleanup_after: new Date(createdAt.getTime() + CLIENT_UPLOAD_INTENT_MS),
+  };
 }
 function mediaPath(fileId) {
   if (typeof fileId !== 'string' || !fileId.startsWith('cloud://') || fileId.length > 512)
@@ -713,6 +735,8 @@ module.exports = {
   phoneUpdate,
   compatibleRandomUUID,
   issueMediaUploadPath,
+  clientUploadIntentId,
+  clientUploadIntent,
   mediaOwnerPrefix,
   mediaDocumentId,
   avatarUrlFingerprint,
@@ -725,6 +749,7 @@ module.exports = {
   verifyUploadedMedia,
   verifyUploadedImageObject,
   MAX_PROFILE_IMAGE_BYTES,
+  CLIENT_UPLOAD_INTENT_MS,
   MEDIA_OBJECT_VERIFY_TIMEOUT_MS,
   MEDIA_VERIFY_ATTEMPTS,
   MEDIA_VERIFY_DELAY_MS,

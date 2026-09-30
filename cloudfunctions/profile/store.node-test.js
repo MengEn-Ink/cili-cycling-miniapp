@@ -99,6 +99,47 @@ test('registerMedia 事务内重读且不把 concurrent active 覆盖回 unrefer
   assert.deepEqual(db.sets, []);
 });
 
+test('客户端上传 intent 先持久化，registerMedia 再原子登记并完成 intent', async () => {
+  const {
+    clientUploadIntent,
+    mediaDocumentId,
+    mediaOwnerPrefix,
+    mediaRegistration,
+  } = require('./core');
+  const owner = 'owner';
+  const secret = 'profile-media-secret-for-tests-32-bytes';
+  const now = new Date('2026-09-30T00:00:00.000Z');
+  const cloudPath = `${mediaOwnerPrefix(owner, secret)}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const fileId = `cloud://env/${cloudPath}`;
+  const fixture = statefulDb({ profile_media: {}, profile_media_imports: {} });
+  const store = createProfileStore(fixture.db);
+  const intent = clientUploadIntent(owner, cloudPath, secret, now);
+
+  await store.prepareClientUpload(owner, intent, secret);
+  assert.equal(fixture.state.profile_media_imports.get(intent._id).status, 'prepared');
+
+  const registered = await store.registerClientMedia(
+    owner,
+    fileId,
+    intent._id,
+    secret,
+    (existing) => mediaRegistration(fileId, 'other', 'wechat', owner, secret, now, existing),
+    now,
+  );
+
+  assert.equal(registered.file_id, fileId);
+  assert.equal(fixture.state.profile_media.get(mediaDocumentId(fileId)).status, 'unreferenced');
+  assert.deepEqual(fixture.state.profile_media_imports.get(intent._id), {
+    ...intent,
+    status: 'completed',
+    file_id: fileId,
+    media_id: mediaDocumentId(fileId),
+    completed_at: now,
+    cleanup_after: null,
+    updated_at: fixture.db.serverDate(),
+  });
+});
+
 test('setAvatar 事务重读 owner registry 并原子激活新头像、降级旧头像', async () => {
   const { mediaDocumentId, mediaOwnerPrefix } = require('./core');
   const secret = 'profile-media-secret-for-tests-32-bytes';
