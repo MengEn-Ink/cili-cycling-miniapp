@@ -203,9 +203,23 @@ describe('个人中心加载状态', () => {
     expect(page.data.profile).toBeNull();
     expect(page.data.heroCard.displayName).toBe('山野骑手');
     expect(template).toContain(
-      "profile ? profile.nickname : (heroCard ? heroCard.displayName : '欢迎来到此里')",
+      "profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '欢迎来到此里')",
     );
     expect(template).toContain('{{heroCard.emptyMetricsText}}');
+  });
+
+  it('profile 昵称为空时 hero 仍回退骑行名片 displayName', async () => {
+    rideService.getProfile.mockResolvedValueOnce(profile(''));
+
+    await page.onShow();
+    await vi.waitFor(() => expect(page.data.heroCard).toBeTruthy());
+
+    const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
+    expect(page.data.profile.nickname).toBe('');
+    expect(page.data.heroCard.displayName).toBe('山野骑手');
+    expect(template).toContain(
+      "profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '欢迎来到此里')",
+    );
   });
 
   it('hero 图片逐级从用户图、头像、包内山景降级到 CSS alpine', async () => {

@@ -115,6 +115,100 @@ test('解除全部引用后 source 与 canonical 由同一 fenced cleanup 删除
   assert.equal(result.deleted, 1);
 });
 
+test('source 部分删除后 canonical 失败仍保留重试入口并在下一轮逐目标收敛', async () => {
+  const sourceFileId = `cloud://env/${importCloudPath}`;
+  const sourceDigest = crypto.createHash('sha256').update(sourceFileId).digest('hex');
+  const canonicalFileId = `cloud://env/profile-canonical/${ownerAlias}/${sourceDigest}/${'a'.repeat(64)}.jpg`;
+  let sourceExists = true;
+  let canonicalExists = true;
+  let canonicalAttempts = 0;
+  let markedDeleted = 0;
+  let markedFailed = 0;
+  const store = {
+    listEligible: async () => ['media-partial'],
+    listImportIntents: async () => [],
+    claim: async () => ({
+      _id: 'media-partial',
+      file_id: sourceFileId,
+      canonical_file_id: canonicalFileId,
+      claimed: true,
+      delete_file_ids: [sourceFileId, canonicalFileId],
+    }),
+    markDeleted: async () => {
+      markedDeleted += 1;
+      return true;
+    },
+    markFailed: async () => {
+      markedFailed += 1;
+      return true;
+    },
+  };
+  const deleteFile = async ({ fileList }) => {
+    if (fileList.length > 1) {
+      if (!sourceExists) throw { errCode: -503003, errMsg: 'STORAGE_FILE_NONEXIST' };
+      sourceExists = false;
+      return {
+        fileList: [
+          { fileID: sourceFileId, status: 0 },
+          { fileID: canonicalFileId, status: -1 },
+        ],
+      };
+    }
+    const [fileId] = fileList;
+    if (fileId === sourceFileId) {
+      if (!sourceExists) throw { errCode: -503003, errMsg: 'STORAGE_FILE_NONEXIST' };
+      sourceExists = false;
+      return { fileList: [{ fileID: fileId, status: 0 }] };
+    }
+    canonicalAttempts += 1;
+    if (canonicalAttempts === 1) return { fileList: [{ fileID: canonicalFileId, status: -1 }] };
+    canonicalExists = false;
+    return { fileList: [{ fileID: canonicalFileId, status: 0 }] };
+  };
+
+  const first = await drainMediaCleanup({ now, store, deleteFile });
+  assert.equal(first.failed, 1);
+  assert.equal(markedDeleted, 0);
+  assert.equal(markedFailed, 1);
+  assert.equal(sourceExists, false);
+  assert.equal(canonicalExists, true);
+
+  const second = await drainMediaCleanup({ now, store, deleteFile });
+  assert.equal(second.deleted, 1);
+  assert.equal(markedDeleted, 1);
+  assert.equal(canonicalExists, false);
+});
+
+test('import 删除前 lease 重查发现 source 已被 profile 引用则不触碰存储', async () => {
+  const fileId = `cloud://env/${importCloudPath}`;
+  let deleteCalls = 0;
+  const result = await drainMediaCleanup({
+    now,
+    randomUUID: () => 'lease-active',
+    store: {
+      listEligible: async () => [],
+      listImportIntents: async () => ['intent-active'],
+      claimImportIntent: async () => ({
+        _id: 'intent-active',
+        owner_openid: 'owner',
+        cloud_path: importCloudPath,
+        file_id: fileId,
+        claimed: true,
+        delete_lease_id: 'lease-active',
+      }),
+      isImportDeleteLeaseCurrent: async () => false,
+      markImportFailed: async () => true,
+    },
+    deleteFile: async () => {
+      deleteCalls += 1;
+      return { fileList: [{ fileID: fileId, status: 0 }] };
+    },
+  });
+
+  assert.equal(deleteCalls, 0);
+  assert.equal(result.deleted, 0);
+});
+
 test('profile 仍引用 source 时 canonical 与 source 都不得删除', async () => {
   const sourceFileId = `cloud://env/${importCloudPath}`;
   const sourceDigest = crypto.createHash('sha256').update(sourceFileId).digest('hex');

@@ -615,6 +615,23 @@ describe('资料编辑头像交互', () => {
     });
   });
 
+  it('Strava 未连接时与已连接但无头像使用不同恢复指引', async () => {
+    rideService.getStravaReadiness.mockResolvedValueOnce({
+      ...ready,
+      state: 'disconnected',
+      canRegister: false,
+      avatarAvailable: false,
+    });
+
+    await page.loadStravaAvatarReadiness();
+
+    expect(page.data).toMatchObject({
+      stravaAvatarReady: false,
+      stravaAvatarHint: '尚未连接 Strava，请先完成绑定',
+      stravaAvatarError: '',
+    });
+  });
+
   it('readiness 刷新开始即禁用旧的可导入状态', async () => {
     const pending = deferred<typeof ready>();
     rideService.getStravaReadiness.mockReturnValueOnce(pending.promise);
@@ -953,6 +970,25 @@ describe('资料编辑头像交互', () => {
     expect(rideService.registerProfileMedia).not.toHaveBeenCalled();
     expect(page.data.mediaError).toBe('[MEDIA_UPLOAD_FAILED] 图片上传失败，请重新选择图片后重试');
     expect(page.data.mediaError).not.toContain('private upload detail');
+  });
+
+  it.each([
+    ['微信头像', () => page.chooseWechatAvatar({ detail: { avatarUrl: '/tmp/avatar.jpg' } })],
+    ['个人相册', () => page.addPhoto()],
+  ])('wx.cloud 不可用时%s的 inline 与 toast 使用同一稳定错误', async (_label, action) => {
+    Object.assign(wx, {
+      cloud: undefined,
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [{ tempFilePath: '/private/tmp/photo.jpg', size: 1024 }],
+      }),
+    });
+
+    await action();
+
+    expect(page.data.mediaError).toBe(
+      '[MEDIA_CLOUD_UNAVAILABLE] 当前环境不支持云存储，请更新微信或使用支持云能力的真机后重试',
+    );
+    expect(wx.showToast).toHaveBeenCalledWith({ title: page.data.mediaError, icon: 'none' });
   });
 
   it('个人相册 registerMedia 失败时保留 photos 并执行删除与 orphan 补偿', async () => {

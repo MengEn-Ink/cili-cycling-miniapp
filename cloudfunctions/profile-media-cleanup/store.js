@@ -5,7 +5,7 @@ const {
   importClaimDecision,
   failureDecision,
   profileReferences,
-  validImportCloudPath,
+  validIntentCloudPath,
 } = require('./core');
 
 function missing(error) {
@@ -183,13 +183,17 @@ function createCleanupStore(db, mediaSecret) {
     isImportRecoveryLeaseCurrent: async (id, fence) => {
       const current = await get(db.collection('profile_media_imports'), id);
       const expiresAt = new Date(current?.delete_lease_expires_at);
+      const profile = current
+        ? await get(db.collection('profiles'), current.owner_openid)
+        : undefined;
       return Boolean(
         current &&
         current.status === 'recovering' &&
         current.delete_lease_id === fence.leaseId &&
         Number.isFinite(expiresAt.getTime()) &&
         expiresAt > fence.now &&
-        validImportCloudPath(current, mediaSecret),
+        validIntentCloudPath(current, mediaSecret) &&
+        !(current.file_id && profileReferences(profile, current.file_id)),
       );
     },
     attachImportDeleteTarget: (id, fence) =>
@@ -204,10 +208,13 @@ function createCleanupStore(db, mediaSecret) {
           !current ||
           current.status !== 'recovering' ||
           current.delete_lease_id !== fence.leaseId ||
+          !validIntentCloudPath(current, mediaSecret) ||
           slash < 0 ||
           fence.fileId.slice(slash + 1) !== current.cloud_path
         )
           return false;
+        const profile = await get(tx.collection('profiles'), current.owner_openid);
+        if (profileReferences(profile, fence.fileId)) return false;
         await collection.doc(id).update({
           data: {
             status: 'deleting',
@@ -228,7 +235,7 @@ function createCleanupStore(db, mediaSecret) {
           current.status === 'invalid' ||
           current.owner_openid !== fence.ownerOpenid ||
           current.cloud_path !== fence.cloudPath ||
-          !validImportCloudPath(current, mediaSecret)
+          !validIntentCloudPath(current, mediaSecret)
         )
           return false;
         const slash =
@@ -252,6 +259,22 @@ function createCleanupStore(db, mediaSecret) {
         });
         return true;
       }),
+    isImportDeleteLeaseCurrent: async (id, fence) => {
+      const current = await get(db.collection('profile_media_imports'), id);
+      const expiresAt = new Date(current?.delete_lease_expires_at);
+      if (
+        !current ||
+        current.status !== 'deleting' ||
+        current.delete_lease_id !== fence.leaseId ||
+        !Number.isFinite(expiresAt.getTime()) ||
+        expiresAt <= fence.now ||
+        current.file_id !== fence.fileId ||
+        !validIntentCloudPath(current, mediaSecret)
+      )
+        return false;
+      const profile = await get(db.collection('profiles'), current.owner_openid);
+      return !profileReferences(profile, fence.fileId);
+    },
     markImportDeleted: (id, fence) =>
       db.runTransaction(async (tx) => {
         const collection = tx.collection('profile_media_imports');

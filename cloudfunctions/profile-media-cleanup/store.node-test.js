@@ -152,6 +152,130 @@ test('lost recovery 只有 owner 路径未被 profile 引用时才能重建删�
   );
 });
 
+test('canonical intent 的 lease-current、attach 与 reclaim 全链使用 canonical 路径校验', async () => {
+  const secret = 'profile-media-secret-for-tests-32-bytes';
+  const owner = 'owner';
+  const alias = crypto.createHmac('sha256', secret).update(owner).digest('hex').slice(0, 32);
+  const sourcePath = `profiles/${alias}/123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const sourceFileId = `cloud://env/${sourcePath}`;
+  const sourceDigest = crypto.createHash('sha256').update(sourceFileId).digest('hex');
+  const sha256 = 'a'.repeat(64);
+  const canonicalPath = `profile-canonical/${alias}/${sourceDigest}/${sha256}.jpg`;
+  const canonicalFileId = `cloud://env/${canonicalPath}`;
+  const now = new Date('2026-09-29T12:00:00.000Z');
+  const leaseExpiresAt = new Date('2026-09-29T12:05:00.000Z');
+  const fixture = mutationDatabase({
+    profile_media_imports: {
+      canonical: {
+        _id: 'canonical',
+        kind: 'canonical_upload',
+        owner_openid: owner,
+        source_file_id: sourceFileId,
+        cloud_path: canonicalPath,
+        sha256,
+        size: 5,
+        mime: 'image/jpeg',
+        status: 'recovering',
+        delete_lease_id: 'lease-canonical',
+        delete_lease_expires_at: leaseExpiresAt,
+      },
+    },
+    profiles: { owner: { _id: owner, photos: [] } },
+  });
+  const store = createCleanupStore(fixture.db, secret);
+
+  assert.equal(
+    await store.isImportRecoveryLeaseCurrent('canonical', {
+      leaseId: 'lease-canonical',
+      now,
+    }),
+    true,
+  );
+  assert.equal(
+    await store.attachImportDeleteTarget('canonical', {
+      leaseId: 'lease-canonical',
+      now,
+      fileId: canonicalFileId,
+    }),
+    true,
+  );
+  assert.equal(
+    await store.isImportDeleteLeaseCurrent('canonical', {
+      leaseId: 'lease-canonical',
+      now,
+      fileId: canonicalFileId,
+    }),
+    true,
+  );
+
+  fixture.state.profile_media_imports.set('canonical', {
+    ...fixture.state.profile_media_imports.get('canonical'),
+    status: 'deleted',
+  });
+  assert.equal(
+    await store.reclaimImportDeleteTarget('canonical', {
+      leaseId: 'lease-reclaim',
+      now,
+      fileId: canonicalFileId,
+      ownerOpenid: owner,
+      cloudPath: canonicalPath,
+      leaseExpiresAt,
+    }),
+    true,
+  );
+});
+
+test('恢复 source 在 probe 与 attach 前重查 profile 引用并拒绝继续', async () => {
+  const secret = 'profile-media-secret-for-tests-32-bytes';
+  const owner = 'owner';
+  const alias = crypto.createHmac('sha256', secret).update(owner).digest('hex').slice(0, 32);
+  const cloudPath = `profiles/${alias}/123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const fileId = `cloud://env/${cloudPath}`;
+  const now = new Date('2026-09-29T12:00:00.000Z');
+  const fixture = mutationDatabase({
+    profile_media_imports: {
+      source: {
+        _id: 'source',
+        kind: 'client_upload',
+        owner_openid: owner,
+        cloud_path: cloudPath,
+        file_id: fileId,
+        media_id: crypto.createHash('sha256').update(fileId).digest('hex'),
+        status: 'recovering',
+        delete_lease_id: 'lease-source',
+        delete_lease_expires_at: new Date('2026-09-29T12:05:00.000Z'),
+      },
+    },
+    profiles: { owner: { _id: owner, avatar_file_id: fileId } },
+  });
+  const store = createCleanupStore(fixture.db, secret);
+
+  assert.equal(
+    await store.isImportRecoveryLeaseCurrent('source', { leaseId: 'lease-source', now }),
+    false,
+  );
+  assert.equal(
+    await store.attachImportDeleteTarget('source', {
+      leaseId: 'lease-source',
+      now,
+      fileId,
+    }),
+    false,
+  );
+  fixture.state.profile_media_imports.set('source', {
+    ...fixture.state.profile_media_imports.get('source'),
+    status: 'deleting',
+  });
+  assert.equal(
+    await store.isImportDeleteLeaseCurrent('source', {
+      leaseId: 'lease-source',
+      now,
+      fileId,
+    }),
+    false,
+  );
+});
+
 test('discovery 使用 status/cleanup_after 索引条件、排序和硬上限', async () => {
   const calls = [];
   let status = '';

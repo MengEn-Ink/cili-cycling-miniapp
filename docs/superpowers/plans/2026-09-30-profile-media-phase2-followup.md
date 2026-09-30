@@ -101,3 +101,26 @@
 - [ ] Add failing tests for canonical upload response unknown, canonicalization failure, idempotent repeat registration, and cleanup of both source and canonical objects.
 - [ ] Add and validate a storage rule that permits client writes only below the staging `profiles/` prefix and denies `profile-canonical/` writes.
 - [ ] Document and require a post-deploy client overwrite smoke before uploading the Mini Program build.
+
+### Task 7: Close immutable recovery races and client-state follow-ups
+
+**Files:**
+- Modify: `cloudfunctions/profile-media-cleanup/core.js`
+- Modify: `cloudfunctions/profile-media-cleanup/store.js`
+- Modify: `cloudfunctions/profile/store.js`
+- Modify: `cloudfunctions/profile-media-cleanup/core.node-test.js`
+- Modify: `cloudfunctions/profile-media-cleanup/store.node-test.js`
+- Modify: `cloudfunctions/profile/store.node-test.js`
+- Modify: `miniprogram/pages/profile/index.wxml`
+- Modify: `miniprogram/pages/profile-edit/index.ts`
+- Modify: `tests/profile-page.test.ts`
+- Modify: `tests/profile-edit-avatar.test.ts`
+
+- [ ] Add a failing store test proving every recovery operation accepts the same kind-aware path predicate: `client_upload` and Strava intents use `profiles/`, while `canonical_upload` uses its validated `profile-canonical/` path.
+- [ ] Add a failing executor test where source deletion succeeds and canonical deletion reports not-found through a whole-call exception; require a retryable failure instead of marking the registry deleted.
+- [ ] Add failing transaction and cleanup tests where a legacy active source is canonicalized, the source intent carries its known `file_id/media_id`, and recovery cannot probe, attach, or delete the referenced source.
+- [ ] Introduce one `validIntentCloudPath(record, secret)` helper and use it in claim, lease-current, attach, and reclaim checks. Re-read the profile before probe/attach/delete and reject a lease once its source target becomes referenced.
+- [ ] Delete source and canonical targets one at a time. Accept success or trusted not-found only for the exact requested target; if any target lacks its own terminal result, keep the record retryable and do not call `markDeleted`.
+- [ ] When backfilling a missing source intent for an existing source object, persist `file_id` and `media_id` immediately so claim-time reference protection applies.
+- [ ] Add failing UI tests for blank profile nickname falling back to card displayName, disconnected versus connected-without-avatar guidance, and absent `wx.cloud` using one stable inline/toast error string.
+- [ ] Implement the minimal template and profile-edit state changes, then run the three focused suites, full `npm run validate`, coverage, audit, read-only plan, and `git diff --check`.

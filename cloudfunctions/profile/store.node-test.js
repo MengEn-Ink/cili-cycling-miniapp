@@ -154,6 +154,45 @@ test('客户端上传 intent 先持久化，registerMedia 再原子登记并完�
   assert.equal(fixture.state.profile_media_imports.get(canonicalIntent._id).status, 'completed');
 });
 
+test('存量媒体补 canonical 时 source intent 立即绑定已知对象与 media 记录', async () => {
+  const {
+    canonicalMediaPath,
+    canonicalUploadIntent,
+    clientUploadIntentId,
+    mediaDocumentId,
+    mediaOwnerPrefix,
+  } = require('./core');
+  const owner = 'owner';
+  const secret = 'profile-media-secret-for-tests-32-bytes';
+  const now = new Date('2026-09-30T00:00:00.000Z');
+  const cloudPath = `${mediaOwnerPrefix(owner, secret)}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const fileId = `cloud://env/${cloudPath}`;
+  const sha256 = 'b'.repeat(64);
+  const canonicalPath = canonicalMediaPath(owner, fileId, sha256, 'jpg', secret);
+  const canonicalIntent = canonicalUploadIntent(
+    owner,
+    fileId,
+    { sha256, size: 5, mime: 'image/jpeg', extension: 'jpg' },
+    secret,
+    now,
+  );
+  const fixture = statefulDb({ profile_media_imports: {} });
+  const store = createProfileStore(fixture.db);
+
+  await store.prepareCanonicalUpload(
+    owner,
+    clientUploadIntentId(cloudPath),
+    canonicalIntent,
+    secret,
+    now,
+  );
+
+  const sourceIntent = fixture.state.profile_media_imports.get(clientUploadIntentId(cloudPath));
+  assert.equal(sourceIntent.file_id, fileId);
+  assert.equal(sourceIntent.media_id, mediaDocumentId(fileId));
+  assert.equal(sourceIntent.canonical_path, canonicalPath);
+});
+
 test('setAvatar 事务重读 owner registry 并原子激活新头像、降级旧头像', async () => {
   const { mediaDocumentId, mediaOwnerPrefix } = require('./core');
   const secret = 'profile-media-secret-for-tests-32-bytes';

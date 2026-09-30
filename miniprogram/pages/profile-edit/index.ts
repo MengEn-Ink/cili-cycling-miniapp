@@ -46,6 +46,13 @@ function mediaStageError(error: unknown, stage: MediaStage, fallbackCode: string
   });
 }
 
+function mediaCloudUnavailableError(): Error {
+  return Object.assign(new Error('cloud unavailable'), {
+    code: 'MEDIA_CLOUD_UNAVAILABLE',
+    mediaStage: 'upload' as MediaStage,
+  });
+}
+
 async function atMediaStage<T>(
   stage: MediaStage,
   fallbackCode: string,
@@ -87,6 +94,7 @@ function mediaFailureDetail(error: unknown): string {
     'MEDIA_OBJECT_VERIFY_FAILED',
     'MEDIA_OBJECT_TOO_LARGE',
     'MEDIA_OBJECT_TYPE_INVALID',
+    'MEDIA_CLOUD_UNAVAILABLE',
     'STRAVA_NOT_CONNECTED',
     'STRAVA_AVATAR_UNAVAILABLE',
   ]);
@@ -97,6 +105,7 @@ function mediaFailureDetail(error: unknown): string {
     MEDIA_OBJECT_TYPE_INVALID: '图片格式无效，请选择 JPEG、PNG 或 WebP 图片',
     MEDIA_OBJECT_NOT_FOUND: '图片暂未同步到云端，请稍后重试',
     MEDIA_OBJECT_VERIFY_FAILED: '图片暂未同步到云端，请稍后重试',
+    MEDIA_CLOUD_UNAVAILABLE: '当前环境不支持云存储，请更新微信或使用支持云能力的真机后重试',
     STRAVA_NOT_CONNECTED: 'Strava 尚未连接或没有可用头像，请先同步 Strava',
     STRAVA_AVATAR_UNAVAILABLE: 'Strava 尚未连接或没有可用头像，请先同步 Strava',
   };
@@ -399,7 +408,9 @@ Page({
         ? '已连接，可导入当前 Strava 头像'
         : connected
           ? 'Strava 未提供头像，请重新授权或同步'
-          : '先绑定/同步 Strava',
+          : state.data.state === 'disconnected'
+            ? '尚未连接 Strava，请先完成绑定'
+            : '先绑定/同步 Strava',
       stravaAvatarError: '',
     });
   },
@@ -446,7 +457,7 @@ Page({
   },
   async uploadAndSetAvatar(image: SelectedImage, origin: ClientAvatarSource) {
     const cloud = wx.cloud;
-    if (!cloud) throw new Error('cloud unavailable');
+    if (!cloud) throw mediaCloudUnavailableError();
     const verifiedImage = await ensureLocalImageSize(image);
     let uploadedFileId = '';
     let selectionDispatched = false;
@@ -540,7 +551,7 @@ Page({
     let uploadedFileId = '';
     try {
       const cloud = wx.cloud;
-      if (!cloud) return wx.showToast({ title: '当前环境不支持云存储', icon: 'none' });
+      if (!cloud) throw mediaCloudUnavailableError();
       const image = await chooseSingleImage();
       if (!image) return;
       const verifiedImage = await ensureLocalImageSize(image);

@@ -109,6 +109,12 @@ function validCanonicalMedia(record, secretValue) {
   return actualPath === expectedPath;
 }
 
+function validIntentCloudPath(record, secretValue) {
+  return record?.kind === 'canonical_upload'
+    ? validCanonicalIntentPath(record, secretValue)
+    : validImportCloudPath(record, secretValue);
+}
+
 function claimDecision(record, profile, now, leaseId, mediaSecret) {
   if (
     !record ||
@@ -186,10 +192,7 @@ function importClaimDecision(record, profile, now, leaseId, mediaSecret) {
       },
     };
   }
-  const cloudPathValid =
-    record.kind === 'canonical_upload'
-      ? validCanonicalIntentPath(record, mediaSecret)
-      : validImportCloudPath(record, mediaSecret);
+  const cloudPathValid = validIntentCloudPath(record, mediaSecret);
   const slash =
     typeof record.file_id === 'string' && record.file_id.startsWith('cloud://')
       ? record.file_id.indexOf('/', 'cloud://'.length)
@@ -292,6 +295,16 @@ function deleteAccepted(response, fileId) {
   return Boolean(item && (Number(item.status) === 0 || isTrustedObjectMissing(item)));
 }
 
+async function deleteExactTarget(deleteFile, fileId) {
+  try {
+    const response = await deleteFile({ fileList: [fileId] });
+    if (!deleteAccepted(response, fileId)) coded('DELETE_REJECTED', '媒体删除未被接受');
+  } catch (error) {
+    if (isTrustedObjectMissing(error)) return;
+    throw error;
+  }
+}
+
 async function drainMediaCleanup({
   store,
   deleteFile,
@@ -365,9 +378,13 @@ async function drainMediaCleanup({
         item.kind === 'media' && Array.isArray(claimed.delete_file_ids)
           ? claimed.delete_file_ids
           : [fileId];
-      const response = await deleteFile({ fileList: fileIds });
-      if (!fileIds.every((target) => deleteAccepted(response, target)))
-        coded('DELETE_REJECTED', '媒体删除未被接受');
+      if (
+        item.kind === 'import' &&
+        typeof store.isImportDeleteLeaseCurrent === 'function' &&
+        !(await store.isImportDeleteLeaseCurrent(id, { leaseId, now, fileId }))
+      )
+        continue;
+      for (const target of fileIds) await deleteExactTarget(deleteFile, target);
       const marked =
         item.kind === 'import'
           ? await store.markImportDeleted(id, {
@@ -378,24 +395,11 @@ async function drainMediaCleanup({
             })
           : await store.markDeleted(id, { leaseId, now });
       if (marked) result.deleted += 1;
-    } catch (error) {
-      if (isTrustedObjectMissing(error)) {
-        const marked =
-          item.kind === 'import'
-            ? await store.markImportDeleted(id, {
-                leaseId,
-                now,
-                deferCompletion,
-                confirmAfter,
-              })
-            : await store.markDeleted(id, { leaseId, now });
-        if (marked) result.deleted += 1;
-      } else {
-        if (item.kind === 'import')
-          await store.markImportFailed(id, { leaseId, now, errorCode: 'DELETE_FAILED' });
-        else await store.markFailed(id, { leaseId, now, errorCode: 'DELETE_FAILED' });
-        result.failed += 1;
-      }
+    } catch {
+      if (item.kind === 'import')
+        await store.markImportFailed(id, { leaseId, now, errorCode: 'DELETE_FAILED' });
+      else await store.markFailed(id, { leaseId, now, errorCode: 'DELETE_FAILED' });
+      result.failed += 1;
     }
   }
   return result;
@@ -424,6 +428,7 @@ module.exports = {
   validImportCloudPath,
   validCanonicalIntentPath,
   validCanonicalMedia,
+  validIntentCloudPath,
   claimDecision,
   importClaimDecision,
   failureDecision,

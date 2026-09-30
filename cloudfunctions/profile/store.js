@@ -186,6 +186,8 @@ function createProfileStore(db) {
             secretValue,
             now,
           );
+          sourceIntent.file_id = intent.source_file_id;
+          sourceIntent.media_id = mediaDocumentId(intent.source_file_id);
           await imports.doc(sourceIntentId).set({ data: writableDocument(sourceIntent) });
         }
         const clientSource =
@@ -221,6 +223,8 @@ function createProfileStore(db) {
           data: {
             canonical_intent_id: intent._id,
             canonical_path: intent.cloud_path,
+            file_id: intent.source_file_id,
+            media_id: mediaDocumentId(intent.source_file_id),
             sha256: intent.sha256,
             size: intent.size,
             mime: intent.mime,
