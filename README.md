@@ -15,7 +15,7 @@
 
 当前不包含在线支付、Strava 豁免流程、管理员白名单维护界面、报名名单导出或多俱乐部租户体系。完整产品边界见 [产品需求与当前能力](docs/requirements-design.md)。
 
-当前还有两个上线前必须处理的 P1 缺口：`strava_route_previews` 尚未纳入 bootstrap 的集合/权限校验；活动详情的公开骑手头像尚未具备显式公开授权和 canonical-only 校验。在两项关闭前，不应把新环境的一键部署或公开骑手卡片判定为生产就绪。
+当前还有一个上线前必须处理的 P1 缺口：活动详情的公开骑手头像尚未具备显式公开授权和 canonical-only 校验。在该项关闭前，不应把公开骑手卡片判定为生产就绪。
 
 ## 技术栈
 
@@ -115,7 +115,7 @@ npm run cloudbase:apply
 npm run cloudbase:verify
 ```
 
-bootstrap 当前管理 11 个集合、22 个业务索引和全拒绝客户端数据库规则；这 11 个是当前自动治理的核心集合。Strava 路线功能还会使用第 12 个运行期集合 `strava_route_previews`，但它尚未纳入 bootstrap；启用路线功能前必须由环境负责人创建该集合并设置全拒绝客户端读写，同时记录这是待代码修复的部署缺口。bootstrap 不创建业务活动，也不会自动应用 `cloudstorage.rules.json`。完整顺序：
+bootstrap 当前管理 12 个集合、22 个业务索引和全拒绝客户端数据库规则，包含 Strava 路线短期可信快照集合 `strava_route_previews`。bootstrap 不创建业务活动，也不会自动应用 `cloudstorage.rules.json`。完整顺序：
 
 1. 审阅并执行 CloudBase plan/apply/verify。
 2. 按 [CloudBase 数据契约](docs/cloudbase-schema.md) 配置云函数环境变量和 `cloudstorage.rules.json`，并回读确认 canonical 媒体路径不可由客户端写入。

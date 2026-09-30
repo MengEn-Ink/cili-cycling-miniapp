@@ -1,6 +1,6 @@
 import { rideService } from '../../services/ride-service';
 import { syncPageTheme } from '../../services/theme-service';
-import { formatChinaDateTime } from '../../utils/date-time';
+import { formatActivityDate, formatChinaDateTime } from '../../utils/date-time';
 Page({
   loadRequestId: 0,
   data: {
@@ -38,20 +38,27 @@ Page({
       ]);
       if (requestId !== this.loadRequestId) return;
       this.setData({
-        items: registrations.map((item) => ({
-          ...item,
-          updatedAt: formatChinaDateTime(item.updatedAt),
-          activity: activities.find((activity) => activity.id === item.activityId) || {
+        items: registrations.map((item) => {
+          const activity = activities.find((candidate) => candidate.id === item.activityId) || {
             title: '活动信息不可用',
-          },
-          statusText: {
-            pending: '待审核',
-            approved: '已通过',
-            checked_in: '已签到',
-            rejected: '已驳回',
-            cancelled: '已取消',
-          }[item.status],
-        })),
+            date: '',
+          };
+          return {
+            ...item,
+            updatedAt: formatChinaDateTime(item.updatedAt),
+            activity: {
+              ...activity,
+              displayDate: formatActivityDate(activity.date),
+            },
+            statusText: {
+              pending: '待审核',
+              approved: '已通过',
+              checked_in: '已签到',
+              rejected: '已驳回',
+              cancelled: '已取消',
+            }[item.status],
+          };
+        }),
       });
     } catch (error) {
       if (requestId !== this.loadRequestId) return;

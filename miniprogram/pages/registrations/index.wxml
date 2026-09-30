@@ -14,7 +14,7 @@
         <view class="card-main">
           <view class="card-head"><text class="card-index">RIDE {{index + 1}}</text><status-pill status="{{item.statusText}}"/></view>
           <view class="registration-title">{{item.activity.title}}</view>
-          <view class="registration-meta"><text class="date">{{item.activity.date}}</text><text wx:if="{{item.gatheringMode}}" class="gathering-mode">{{item.gatheringMode}}</text></view>
+          <view class="registration-meta"><text class="date">{{item.activity.displayDate}}</text><text wx:if="{{item.gatheringMode}}" class="gathering-mode">{{item.gatheringMode}}</text></view>
         </view>
         <view class="card-footer"><text class="updated-at">更新于 {{item.updatedAt}}</text><text class="open-link">详情 <text class="arrow">›</text></text></view>
         <view class="corner-cut"></view>

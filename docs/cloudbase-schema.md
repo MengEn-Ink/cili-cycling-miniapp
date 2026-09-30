@@ -150,7 +150,7 @@ synced_at
 
 管理员调用 `strava-auth/routePreview` 后写入的短期服务端可信路线快照。文档 ID 为 `sha256(owner_openid + NUL + strava_route_id)`，包含 `owner_openid`、路线标识、路线 URL、距离、爬升、海拔曲线、边界、热门爬坡、`created_at` 与两小时后的 `expires_at`。`activity-admin` 保存路线时按当前管理员和路线 ID 读取该快照，拒绝使用其他用户或过期的预览。
 
-这是运行期第 12 个集合，但当前 `scripts/bootstrap-cloudbase.mjs` 只管理前述 11 个核心集合和 22 个索引，尚未创建或验证本集合。启用 Strava 路线前必须由环境负责人手工创建并设置客户端读写全拒绝；随后应把它纳入 bootstrap 以消除该部署缺口。
+该集合已纳入 `scripts/bootstrap-cloudbase.mjs` 的自动创建、全拒绝客户端读写规则和部署后校验；与其他服务端可信集合一致，客户端不得直接访问。
 
 ## 索引
 
@@ -185,7 +185,7 @@ synced_at
 
 ## 部署后验证
 
-1. 校验 bootstrap 管理的 11 集合、全拒绝规则与 22 索引；另行确认 `strava_route_previews` 已创建且客户端读写全拒绝。确认 `activities.created_by + event_start`、`notification_outbox` 的 lease、目标与 retry 索引，`profile_media` 与 `profile_media_imports` 的 cleanup、delete lease 与 retry 索引，以及 `oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
+1. 校验 bootstrap 管理的 12 集合、全拒绝规则与 22 索引。确认 `activities.created_by + event_start`、`notification_outbox` 的 lease、目标与 retry 索引，`profile_media` 与 `profile_media_imports` 的 cleanup、delete lease 与 retry 索引，以及 `oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
 2. 真机验证 WXContext openid、微信手机号动态 code、手填手机号来源，以及资料响应中无明文/密文。
 3. 配置 callback HTTPS 路由、Strava 回调域和小程序业务域名，验证 CSRF、过期与重放。
 4. 验证 token 临期刷新、90 天分页、解绑审计及日志无敏感信息；验证跨用户媒体拒绝、未登记 legacy 不进卡、register 失败回收上传对象，以及临时 URL 故障降级。

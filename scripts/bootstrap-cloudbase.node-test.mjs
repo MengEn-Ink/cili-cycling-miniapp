@@ -302,6 +302,7 @@ test('OAuth 与 Strava 集合包含唯一、普通过期时间和同步索引', 
   assert.equal(COLLECTIONS.includes('oauth_states'), true);
   assert.equal(COLLECTIONS.includes('strava_credentials'), true);
   assert.equal(COLLECTIONS.includes('strava_snapshots'), true);
+  assert.equal(COLLECTIONS.includes('strava_route_previews'), true);
   assert.deepEqual(
     INDEXES.find((item) => item.name === 'oauth_states_expires_at'),
     {
@@ -321,7 +322,7 @@ test('OAuth 与 Strava 集合包含唯一、普通过期时间和同步索引', 
     ],
     unique: false,
   });
-  assert.equal(COLLECTIONS.length, 11);
+  assert.equal(COLLECTIONS.length, 12);
   assert.equal(INDEXES.length, 22);
   assert.equal(INDEXES.find((item) => item.name === 'oauth_states_state_hash')?.unique, true);
   assert.equal(
@@ -387,7 +388,7 @@ test('profile_media 使用 owner/status 与过期清理索引并保持客户端�
     ['status', 1],
     ['retry_at', 1],
   ]);
-  assert.equal(COLLECTIONS.length, 11);
+  assert.equal(COLLECTIONS.length, 12);
   assert.equal(INDEXES.length, 22);
   assert.deepEqual(DENY_RULE, { read: false, write: false });
 });
@@ -422,7 +423,7 @@ test('profile_media_imports 使用全拒绝 ACL 与完整 cleanup 扫描索引',
   assert.match(schema, /profile_media_imports \| status ASC, cleanup_after ASC/);
   assert.match(schema, /profile_media_imports \| status ASC, delete_lease_expires_at ASC/);
   assert.match(schema, /profile_media_imports \| status ASC, retry_at ASC/);
-  assert.match(schema, /11 集合、全拒绝规则与 22 索引/);
+  assert.match(schema, /12 集合、全拒绝规则与 22 索引/);
   assert.match(schema, /avatar_revision/);
   assert.match(schema, /origin: wechat\|strava\|custom/);
   assert.match(schema, /status: leased\|prepared\|uploaded/);
@@ -464,7 +465,7 @@ test('云存储规则只允许客户端写 staging，canonical 前缀保持 serv
 test('README 与部署包断言包含 profile_media_imports 和头像导入入口', () => {
   const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
   const verifier = readFileSync(new URL('./verify-cloud-packages.mjs', import.meta.url), 'utf8');
-  assert.match(readme, /11 个集合、22 个业务索引/);
+  assert.match(readme, /12 个集合、22 个业务索引/);
   assert.match(verifier, /pack\('profile',[\s\S]*?'avatar-import\.js'/);
 });
 

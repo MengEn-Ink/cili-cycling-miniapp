@@ -20,6 +20,7 @@ export const COLLECTIONS = Object.freeze([
   'oauth_states',
   'strava_credentials',
   'strava_snapshots',
+  'strava_route_previews',
 ]);
 
 export const INDEXES = Object.freeze([
