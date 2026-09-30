@@ -32,7 +32,7 @@ export function resolveActivityAction(
   if (registration?.status === 'pending' || registration?.status === 'approved') {
     return {
       kind: 'view-registration',
-      label: '查看我的报名',
+      label: '查看我的行程',
       enabled: true,
       registrationId: registration.id,
     };

@@ -53,7 +53,7 @@ describe('活动 CTA 九分支', () => {
     for (const status of ['pending', 'approved'] as const) {
       expect(resolveActivityAction(open, registration(status))).toEqual({
         kind: 'view-registration',
-        label: '查看我的报名',
+        label: '查看我的行程',
         enabled: true,
         registrationId: `r-${status}`,
       });

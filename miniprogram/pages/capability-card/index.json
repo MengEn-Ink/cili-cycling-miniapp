@@ -1,7 +1,12 @@
 {
   "navigationBarTitleText": "我的骑行名片",
-  "navigationBarBackgroundColor": "#0B0B0C",
+  "navigationBarBackgroundColor": "#0b0b0c",
   "navigationBarTextStyle": "white",
+  "enablePullDownRefresh": false,
+  "backgroundColor": "#0b0b0c",
+  "backgroundColorTop": "#0b0b0c",
+  "backgroundColorBottom": "#0b0b0c",
+  "backgroundTextStyle": "light",
   "usingComponents": {
     "state-view": "/components/state-view/index"
   }

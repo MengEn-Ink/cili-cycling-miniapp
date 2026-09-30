@@ -1,7 +1,12 @@
 {
   "navigationBarTitleText": "填写报名",
-  "navigationBarBackgroundColor": "#090B0F",
+  "navigationBarBackgroundColor": "#0b0b0c",
   "navigationBarTextStyle": "white",
+  "enablePullDownRefresh": false,
+  "backgroundColor": "#0b0b0c",
+  "backgroundColorTop": "#0b0b0c",
+  "backgroundColorBottom": "#0b0b0c",
+  "backgroundTextStyle": "light",
   "usingComponents": {
     "state-view": "/components/state-view/index",
     "activity-card": "/components/activity-card/index",

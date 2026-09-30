@@ -1,8 +1,14 @@
 {
   "navigationBarTitleText": "报名审批",
-  "navigationBarBackgroundColor": "#0B0B0C",
+  "navigationBarBackgroundColor": "#0b0b0c",
   "navigationBarTextStyle": "white",
+  "enablePullDownRefresh": false,
+  "backgroundColor": "#0b0b0c",
+  "backgroundColorTop": "#0b0b0c",
+  "backgroundColorBottom": "#0b0b0c",
+  "backgroundTextStyle": "light",
   "usingComponents": {
+    "brand-logo": "/components/brand-logo/index",
     "state-view": "/components/state-view/index",
     "activity-card": "/components/activity-card/index",
     "status-pill": "/components/status-pill/index"

@@ -3,14 +3,14 @@
   <block wx:if="{{profile}}">
     <view class="form-head">
       <view class="step-line"><text class="step-active">STEP 1 填写</text><text>STEP 2 审核</text><text>STEP 3 凭证</text></view>
-      <view class="hero-kicker">CILI · RACE ENTRY</view>
+      <view class="hero-kicker">CILI · REGISTRATION</view>
       <view class="form-title">确认报名信息</view>
       <view class="activity-context" wx:if="{{activity}}">
         <view class="context-kicker">CURRENT ACTIVITY</view>
         <view class="context-title">{{activity.title || '当前骑行活动'}}</view>
         <view class="context-meta">总名额 {{activity.capacity}} · {{activityAction.label}}</view>
       </view>
-      <view class="submit-note">提交后进入管理员审核；审核结果以报名凭证页状态为准，请确保实名、集合方式与紧急联系人准确。</view>
+      <view class="submit-note">提交后将进入审核，请确认联系信息与集合方式准确。</view>
     </view>
 
     <view class="section-label"><text>01</text><view><view>实名信息</view><view class="section-hint">用于审核与活动安全联络</view></view></view>

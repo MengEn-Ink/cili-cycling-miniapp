@@ -2,10 +2,13 @@ page {
   --cili-black: #0b0b0c;
   --cili-charcoal: #1b1b1d;
   --cili-panel: #242427;
+  --cili-border: #3a3a3e;
   --cili-silver: #a8a8ad;
   --cili-white: #f7f7f5;
   --cili-orange: #d55b1f;
+  --cili-orange-dark: #a94416;
   --cili-red: #c82018;
+  --cili-success: #6f9b82;
   --tab-page-bottom-space: 52rpx;
   --fixed-action-reserve: 210rpx;
   --fixed-action-reserve-narrow: 320rpx;
@@ -42,6 +45,8 @@ textarea {
   padding-bottom: 168rpx;
   padding-bottom: calc(168rpx + constant(safe-area-inset-bottom));
   padding-bottom: calc(168rpx + env(safe-area-inset-bottom));
+  background-color: #0b0b0c;
+  color: #f7f7f5;
 }
 
 .page.activities-page,
@@ -69,7 +74,7 @@ textarea {
   bottom: -76rpx;
   width: 220rpx;
   height: 220rpx;
-  border: 30rpx solid rgba(213, 91, 31, 0.14);
+  border: 30rpx solid rgba(213, 91, 31, 0.12);
   border-radius: 50%;
   content: '';
 }
@@ -97,11 +102,11 @@ textarea {
 .card {
   margin-top: 20rpx;
   padding: 28rpx;
-  border: 1rpx solid rgba(11, 107, 79, 0.08);
-  border-radius: 24rpx;
-  background: #fff;
-  color: #17231e;
-  box-shadow: 0 8rpx 24rpx rgba(23, 35, 30, 0.06);
+  border: 1rpx solid #3a3a3e;
+  border-radius: 8rpx;
+  background: #1b1b1d;
+  color: #f7f7f5;
+  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.24);
 }
 
 .title {
@@ -119,7 +124,7 @@ textarea {
 }
 
 .muted {
-  color: #56655e;
+  color: #a8a8ad;
 }
 
 .tag {
@@ -127,22 +132,25 @@ textarea {
   align-items: center;
   min-height: 44rpx;
   padding: 4rpx 16rpx;
+  border: 1rpx solid #557363;
   border-radius: 999rpx;
-  background: #e8f3ee;
-  color: #0b6b4f;
+  background: #1d2922;
+  color: #9bc2aa;
   font-size: 22rpx;
   font-weight: 700;
   white-space: nowrap;
 }
 
 .warn {
-  background: #fff5df;
-  color: #9a6513;
+  border-color: #7a5c2c;
+  background: #2a2115;
+  color: #e7b66a;
 }
 
 .danger {
-  background: #fceded;
-  color: #b42318;
+  border-color: #7a302c;
+  background: #291413;
+  color: #ff8f86;
 }
 
 .btn,
@@ -169,23 +177,23 @@ textarea {
 }
 
 .btn {
-  background: linear-gradient(115deg, #c82018, #a94416) !important;
+  background: linear-gradient(115deg, #b44716, #923812) !important;
   color: #f7f7f5 !important;
 }
 
 .btn:active {
-  background: #ad3518 !important;
+  background: #a94416 !important;
 }
 
 .btn[disabled] {
   background: #3b3b3f !important;
-  color: #85858a !important;
+  color: #a8a8ad !important;
 }
 
 .secondary {
-  border: 2rpx solid #cfe0d8;
-  background: #fff !important;
-  color: #0b6b4f !important;
+  border: 1rpx solid #626267;
+  background: #151517 !important;
+  color: #f7f7f5 !important;
 }
 
 button::after {
@@ -198,7 +206,7 @@ button::after {
 
 .label {
   margin-bottom: 10rpx;
-  color: #4f6058;
+  color: #c7c7ca;
   font-size: 24rpx;
   font-weight: 600;
 }
@@ -208,10 +216,10 @@ button::after {
   width: 100%;
   min-height: 88rpx;
   padding: 20rpx 22rpx;
-  border: 2rpx solid #dfe7e2;
-  border-radius: 16rpx;
-  background: #f8faf7;
-  color: #17231e;
+  border: 1rpx solid #4a4a4f;
+  border-radius: 8rpx;
+  background: #151517;
+  color: #f7f7f5;
 }
 
 .textarea {
@@ -227,9 +235,9 @@ button::after {
   padding: 16rpx 24rpx;
   padding: 16rpx 24rpx calc(16rpx + constant(safe-area-inset-bottom));
   padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));
-  border-top: 1rpx solid #e8ede9;
-  background: rgba(255, 255, 255, 0.97);
-  box-shadow: 0 -8rpx 24rpx rgba(23, 35, 30, 0.08);
+  border-top: 1rpx solid #303034;
+  background: rgba(11, 11, 12, 0.97);
+  box-shadow: 0 -8rpx 24rpx rgba(0, 0, 0, 0.34);
 }
 
 .fixed .btn,
@@ -246,16 +254,18 @@ button::after {
 .metric {
   min-width: 0;
   padding: 22rpx;
-  border-radius: 18rpx;
-  background: #eef5f1;
-  color: #56655e;
+  border: 1rpx solid #343438;
+  border-radius: 8rpx;
+  background: #151517;
+  color: #a8a8ad;
   font-size: 23rpx;
 }
 
 .big {
   margin-bottom: 4rpx;
-  color: #0b6b4f;
+  color: #f38a50;
   font-size: 34rpx;
+  font-variant-numeric: tabular-nums;
   font-weight: 900;
   line-height: 1.25;
   word-break: break-word;
@@ -263,13 +273,13 @@ button::after {
 
 .empty {
   padding: 88rpx 32rpx;
-  color: #56655e;
+  color: #a8a8ad;
   text-align: center;
 }
 
 .section-label {
   margin: 34rpx 4rpx 10rpx;
-  color: #56655e;
+  color: #a8a8ad;
   font-size: 23rpx;
   font-weight: 700;
   letter-spacing: 2rpx;

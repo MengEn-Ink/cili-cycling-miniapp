@@ -76,12 +76,12 @@ describe('theme accessibility regressions', () => {
     const app = read('miniprogram/app.wxss');
     const globalCard = cssBlock(app, '.card');
     const globalMuted = cssBlock(app, '.muted');
-    expect(declaration(globalCard, 'background').toLowerCase()).toBe('#fff');
-    expect(declaration(globalCard, 'color').toLowerCase()).toBe('#17231e');
+    expect(declaration(globalCard, 'background').toLowerCase()).toBe('#1b1b1d');
+    expect(declaration(globalCard, 'color').toLowerCase()).toBe('#f7f7f5');
 
     const mutedColor = hexColors(declaration(globalMuted, 'color'))[0];
-    expect(contrast(mutedColor, '#ffffff')).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(mutedColor, '#f5f7f2')).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(mutedColor, '#0b0b0c')).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(mutedColor, '#1b1b1d')).toBeGreaterThanOrEqual(4.5);
 
     for (const file of [
       'miniprogram/pages/admin/activity-edit/index.wxml',
@@ -114,9 +114,9 @@ describe('theme accessibility regressions', () => {
     expect(declaration(formCard, 'color').toLowerCase()).toBe('#f4f7f2');
   });
 
-  it('keeps every shared form and status primitive on the light palette', () => {
+  it('keeps every shared form and status primitive on the dark palette', () => {
     const app = read('miniprogram/app.wxss');
-    const lightSurface = '#ffffff';
+    const lightSurface = '#1b1b1d';
 
     for (const selector of ['.label', '.section-label']) {
       const color = hexColors(declaration(cssBlock(app, selector), 'color'))[0];
@@ -131,11 +131,11 @@ describe('theme accessibility regressions', () => {
     }
 
     const controls = app.match(/\.input,\s*\.textarea\s*\{([^}]*)\}/s)?.[1] || '';
-    expect(declaration(controls, 'background').toLowerCase()).toBe('#f8faf7');
-    expect(declaration(controls, 'color').toLowerCase()).toBe('#17231e');
+    expect(declaration(controls, 'background').toLowerCase()).toBe('#151517');
+    expect(declaration(controls, 'color').toLowerCase()).toBe('#f7f7f5');
 
     const secondary = cssBlock(app, '.secondary');
-    expect(declaration(secondary, 'background').toLowerCase()).toContain('#fff');
+    expect(declaration(secondary, 'background').toLowerCase()).toContain('#151517');
     expect(
       contrast(
         hexColors(declaration(secondary, 'color'))[0],
@@ -144,10 +144,10 @@ describe('theme accessibility regressions', () => {
     ).toBeGreaterThanOrEqual(4.5);
 
     const fixed = cssBlock(app, '.fixed');
-    expect(declaration(fixed, 'background')).toContain('255, 255, 255');
+    expect(declaration(fixed, 'background')).toContain('11, 11, 12');
 
     const metric = cssBlock(app, '.metric');
-    expect(declaration(metric, 'background').toLowerCase()).toBe('#eef5f1');
+    expect(declaration(metric, 'background').toLowerCase()).toBe('#151517');
     expect(
       contrast(
         hexColors(declaration(metric, 'color'))[0],
@@ -155,10 +155,10 @@ describe('theme accessibility regressions', () => {
       ),
     ).toBeGreaterThanOrEqual(4.5);
     expect(
-      contrast(hexColors(declaration(cssBlock(app, '.big'), 'color'))[0], '#eef5f1'),
+      contrast(hexColors(declaration(cssBlock(app, '.big'), 'color'))[0], '#151517'),
     ).toBeGreaterThanOrEqual(4.5);
     expect(
-      contrast(hexColors(declaration(cssBlock(app, '.empty'), 'color'))[0], '#f5f7f2'),
+      contrast(hexColors(declaration(cssBlock(app, '.empty'), 'color'))[0], '#0b0b0c'),
     ).toBeGreaterThanOrEqual(4.5);
 
     expect(read('miniprogram/pages/profile-edit/index.wxml')).toMatch(
@@ -179,7 +179,7 @@ describe('theme accessibility regressions', () => {
 
     const formStyles = read('miniprogram/pages/registration-form/index.wxss');
     expect(declaration(cssBlock(formStyles, '.form-page .fixed'), 'background')).toContain(
-      '9, 11, 15',
+      '11, 11, 12',
     );
 
     const reviewStyles = read('miniprogram/pages/admin/review-detail/index.wxss');
@@ -203,8 +203,8 @@ describe('theme accessibility regressions', () => {
     expect(template.match(/class="state-code" aria-hidden="true"/g)).toHaveLength(2);
     expect(activities).toContain('empty-title="暂无活动"');
     expect(activities).toContain('empty-copy="下一场骑行正在路上"');
-    expect(registrations).toContain('empty-title="暂无报名"');
-    expect(registrations).toContain('empty-copy="完成报名后，行程会在这里出现"');
+    expect(registrations).toContain('empty-title="暂无行程"');
+    expect(registrations).toContain('empty-copy="去发现一场活动，报名后可在这里查看进度"');
   });
 
   it('uses the approved non-health registration note wording', () => {
@@ -272,7 +272,7 @@ describe('theme accessibility regressions', () => {
   it('uses only supported WXML elements for the activities headline', () => {
     const template = read('miniprogram/pages/activities/index.wxml');
     expect(template).not.toMatch(/<br\s*\/?\s*>/i);
-    expect(template).toContain('<view>去见风</view>');
-    expect(template).toContain('<view>也见同路人</view>');
+    expect(template).toContain('<view>发现活动</view>');
+    expect(template).toContain('<view>报名出发</view>');
   });
 });

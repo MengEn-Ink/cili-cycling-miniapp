@@ -61,7 +61,7 @@ describe('fixed action layout contract', () => {
     ]) {
       const config = JSON.parse(read(file));
 
-      expect(String(config.navigationBarBackgroundColor || '').toLowerCase()).toBe('#090b0f');
+      expect(String(config.navigationBarBackgroundColor || '').toLowerCase()).toBe('#0b0b0c');
       expect(config.navigationBarTextStyle).toBe('white');
     }
   });

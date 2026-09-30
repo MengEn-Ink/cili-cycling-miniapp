@@ -1,20 +1,16 @@
 <view class="page activities-page">
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{refreshing ? '正在刷新活动' : ''}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{refreshError}}</view>
-  <view class="brand-lockup">
-    <view class="cili-symbol"><view class="cili-cut"></view></view>
-    <view class="brand-word">CILI</view>
-    <view class="brand-cn">此里</view>
-  </view>
+  <brand-logo meta="RIDES" />
   <view class="hero activities-hero">
-    <view class="hero-index">01 / EVENTS</view>
-    <view class="hero-kicker">RIDE TOGETHER</view>
-    <view class="hero-title"><view>去见风</view><view>也见同路人</view></view>
-    <view class="hero-subtitle">精选路线 · 实名报名 · 透明审批</view>
+    <view class="hero-index">01 / RIDES</view>
+    <view class="hero-kicker">CILI RIDES</view>
+    <view class="hero-title"><view>发现活动</view><view>报名出发</view></view>
+    <view class="hero-subtitle">选一场适合你的骑行，与同路人出发</view>
     <view class="hero-rule"><view></view></view>
   </view>
   <view class="section-head">
-    <view><view class="section-eyebrow">UPCOMING RIDES</view><view class="section-title">近期活动</view><view class="muted">选择适合你的下一程</view></view>
+    <view><view class="section-eyebrow">UPCOMING</view><view class="section-title">近期活动</view><view class="muted">查看路线与名额，准备下一程</view></view>
     <text class="count" wx:if="{{items.length}}">{{items.length}} 场</text>
   </view>
   <view class="muted" wx:if="{{refreshing}}" aria-hidden="true">正在刷新活动…</view>

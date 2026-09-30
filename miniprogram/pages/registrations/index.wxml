@@ -1,24 +1,15 @@
 <view class="page registrations-page">
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{refreshing ? '正在刷新报名' : ''}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{refreshError}}</view>
-  <view class="brand-bar">
-    <view class="cili-mark"><text class="mark-cut"></text></view>
-    <view class="brand-word">CILI <text>此里</text></view>
-    <view class="brand-rule"></view>
-  </view>
+  <brand-logo compact="{{true}}" meta="MY RIDES" />
   <view class="page-heading">
     <view class="hero-kicker">MY RIDES</view>
-    <view class="heading-title">我的报名</view>
-    <view class="heading-meta">REGISTRATION ARCHIVE · {{items.length}}</view>
-  </view>
-  <view class="journey-line" aria-hidden="true">
-    <view class="journey-node is-active"></view><view class="journey-track"></view>
-    <view class="journey-node is-active"></view><view class="journey-track"></view>
-    <view class="journey-node"></view>
+    <view class="heading-title">我的行程</view>
+    <view class="heading-meta">共 {{items.length}} 条报名记录</view>
   </view>
   <view class="muted" wx:if="{{refreshing}}" aria-hidden="true">正在刷新报名…</view>
   <view class="muted" wx:if="{{refreshError}}" aria-hidden="true">{{refreshError}}</view>
-  <state-view loading="{{loading}}" error="{{error}}" empty="{{!items.length}}" empty-title="暂无报名" empty-copy="完成报名后，行程会在这里出现" retryable="{{true}}" bind:retry="load">
+  <state-view loading="{{loading}}" error="{{error}}" empty="{{!items.length}}" empty-title="暂无行程" empty-copy="去发现一场活动，报名后可在这里查看进度" retryable="{{true}}" bind:retry="load">
     <view class="registration-card" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="open" hover-class="registration-card--pressed">
       <view class="card-index">RIDE / {{index + 1}}</view>
       <view class="row card-head"><text class="date">{{item.activity.date}}</text><status-pill status="{{item.statusText}}"/></view>
