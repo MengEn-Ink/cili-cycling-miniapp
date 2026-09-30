@@ -216,7 +216,7 @@ Page({
       const result = await rideService.exportActivityGpx(activityId);
       const bytes = base64Bytes(result?.base64);
       if (bytes < 0) throw new Error('路线文件格式错误');
-      if (bytes > MAX_GPX_BYTES) throw new Error('路线文件超过 4MB，无法导出');
+      if (bytes > MAX_GPX_BYTES) throw new Error('路线文件超过 4MB，请先在 Strava 简化路线后重试');
       const fileName = safeGpxName(result?.fileName);
       const filePath = `${wx.env.USER_DATA_PATH}/${fileName}`;
       const fileSystem = wx.getFileSystemManager();

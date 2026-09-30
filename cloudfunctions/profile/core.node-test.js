@@ -116,6 +116,17 @@ test('头像响应只返回规范来源，并为合法 legacy 头像推断 custo
   assert.equal(response({ avatar_revision: 7 }).avatar_revision, 7);
   assert.equal(response({ avatar_revision: -1 }).avatar_revision, 0);
   assert.equal(response({ avatar_revision: 1.5 }).avatar_revision, 0);
+  assert.equal(response({}).avatar_visibility, 'private');
+  assert.equal(response({}).avatar_visibility_revision, null);
+  assert.equal(
+    response({ avatar_visibility: 'public', avatar_visibility_revision: 7 }).avatar_visibility,
+    'public',
+  );
+  assert.equal(
+    response({ avatar_visibility: 'public', avatar_visibility_revision: 7 })
+      .avatar_visibility_revision,
+    7,
+  );
   for (const value of [
     { avatar_file_id: 'https://example.test/avatar.jpg' },
     { avatar_file_id: 'cloud://env/avatar.jpg', avatar_source: 'forged' },
@@ -176,6 +187,31 @@ test('update 加密敏感字段并把手填手机号标记为未验证', () => {
     code: 'FORBIDDEN_FIELD',
   });
   assert.throws(() => buildUpdate({ openid: 'forged' }, key), { code: 'FORBIDDEN_FIELD' });
+});
+
+test('头像公开授权绑定当前版本，撤销时清除版本且禁止客户端伪造', () => {
+  const current = {
+    avatar_file_id: 'cloud://env/profiles/owner/avatar.jpg',
+    avatar_source: 'wechat',
+    avatar_revision: 3,
+  };
+  assert.deepEqual(buildUpdate({ avatar_visibility: 'public' }, key, current), {
+    avatar_visibility: 'public',
+    avatar_visibility_revision: 3,
+  });
+  assert.deepEqual(buildUpdate({ avatar_visibility: 'private' }, key, current), {
+    avatar_visibility: 'private',
+    avatar_visibility_revision: null,
+  });
+  assert.throws(() => buildUpdate({ avatar_visibility: 'public' }, key, {}), {
+    code: 'AVATAR_REQUIRED',
+  });
+  assert.throws(() => buildUpdate({ avatar_visibility: 'friends' }, key, current), {
+    code: 'VALIDATION_FAILED',
+  });
+  assert.throws(() => buildUpdate({ avatar_visibility_revision: 3 }, key, current), {
+    code: 'FORBIDDEN_FIELD',
+  });
 });
 
 test('旧客户端只可原样回传当前规范化头像 ID 与来源，且两字段作为 no-op 丢弃', () => {

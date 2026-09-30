@@ -18,8 +18,8 @@
     </view>
     <view class="route-line">{{item.route.start || '起点待公布'}} <text class="route-arrow">→</text> {{item.route.end || '终点待公布'}}</view>
     <view class="metrics">
-      <view class="metric-item"><view><text class="metric-value">{{item.route.distanceKm}}</text><text class="metric-suffix"> KM</text></view><text class="metric-unit">里程</text></view>
-      <view class="metric-item"><view><text class="metric-value">{{item.route.elevationM}}</text><text class="metric-suffix"> M</text></view><text class="metric-unit">爬升</text></view>
+      <view class="metric-item"><view><text class="metric-value">{{item.route.distanceKm}}</text><text class="metric-suffix"> km</text></view><text class="metric-unit">里程</text></view>
+      <view class="metric-item"><view><text class="metric-value">{{item.route.elevationM}}</text><text class="metric-suffix"> m</text></view><text class="metric-unit">爬升</text></view>
       <view class="metric-item"><text class="metric-value">{{item.capacity > 0 ? item.remaining : '待公布'}}</text><text class="metric-unit">剩余名额</text></view>
     </view>
     <view class="card-foot">

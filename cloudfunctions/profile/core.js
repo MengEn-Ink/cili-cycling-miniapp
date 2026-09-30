@@ -795,6 +795,11 @@ function response(doc = {}) {
       Number.isSafeInteger(doc.avatar_revision) && doc.avatar_revision >= 0
         ? doc.avatar_revision
         : 0,
+    avatar_visibility: doc.avatar_visibility === 'public' ? 'public' : 'private',
+    avatar_visibility_revision:
+      Number.isSafeInteger(doc.avatar_visibility_revision) && doc.avatar_visibility_revision >= 0
+        ? doc.avatar_visibility_revision
+        : null,
     photos: Array.isArray(doc.photos) ? doc.photos : [],
     gender: typeof doc.gender === 'string' ? doc.gender : '',
     emergency_name: typeof doc.emergency_name === 'string' ? doc.emergency_name : '',
@@ -816,6 +821,7 @@ function buildUpdate(event, keyValue, current = {}) {
     'phone_verified',
     'real_name_cipher',
     'emergency_phone_cipher',
+    'avatar_visibility_revision',
     // 存量证件密文保持只读兼容：不解密、不回传，也不要求资料更新时主动删除。
     'id_type',
     'id_number',
@@ -853,6 +859,24 @@ function buildUpdate(event, keyValue, current = {}) {
   }
   if (typeof event.has_completed_guidance === 'boolean') {
     data.has_completed_guidance = event.has_completed_guidance;
+  }
+  if (event.avatar_visibility !== undefined) {
+    if (!['public', 'private'].includes(event.avatar_visibility))
+      throw new ProfileError('VALIDATION_FAILED', '头像公开设置无效');
+    if (event.avatar_visibility === 'public') {
+      if (
+        !currentAvatar.avatar_file_id ||
+        !currentAvatar.avatar_source ||
+        !Number.isSafeInteger(current.avatar_revision) ||
+        current.avatar_revision < 1
+      )
+        throw new ProfileError('AVATAR_REQUIRED', '请先设置头像再开启公开展示');
+      data.avatar_visibility = 'public';
+      data.avatar_visibility_revision = current.avatar_revision;
+    } else {
+      data.avatar_visibility = 'private';
+      data.avatar_visibility_revision = null;
+    }
   }
   if (event.photos !== undefined) {
     if (

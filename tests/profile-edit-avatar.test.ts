@@ -144,6 +144,33 @@ describe('资料编辑头像交互', () => {
     });
   });
 
+  it('公开头像开关只提交公开设置并采用服务端绑定版本', async () => {
+    rideService.updateProfile.mockResolvedValueOnce({
+      ...profile,
+      avatarVisibility: 'public',
+      avatarVisibilityRevision: profile.avatarRevision,
+    });
+
+    await page.onAvatarVisibilityChange({ detail: { value: true } });
+
+    expect(rideService.updateProfile).toHaveBeenCalledWith({ avatarVisibility: 'public' });
+    expect(page.data.p).toMatchObject({
+      avatarVisibility: 'public',
+      avatarVisibilityRevision: profile.avatarRevision,
+    });
+    expect(wx.showToast).toHaveBeenCalledWith({ title: '头像已公开展示' });
+  });
+
+  it('无头像或媒体操作中禁止修改公开设置', async () => {
+    page.data.p = { ...blankProfile };
+    await page.onAvatarVisibilityChange({ detail: { value: true } });
+    page.data.p = { ...profile };
+    page.data.avatarBusy = true;
+    await page.onAvatarVisibilityChange({ detail: { value: false } });
+
+    expect(rideService.updateProfile).not.toHaveBeenCalled();
+  });
+
   it('空白新用户未选择头像时资料保存被头像先行门禁拦截', async () => {
     rideService.getProfile.mockResolvedValueOnce(blankProfile);
     await page.onLoad();
@@ -1068,10 +1095,10 @@ describe('资料编辑头像页面契约', () => {
     expect(source).not.toMatch(/getStravaReadiness|importStravaAvatar|STRAVA_AVATAR/);
   });
 
-  it('删除昵称输入与提交，管理员称号保持只读', () => {
+  it('删除昵称输入与提交，展示称号保持只读', () => {
     expect(template).not.toContain('data-k="nickname"');
     expect(source).not.toContain('nickname: p.nickname');
-    expect(template).toMatch(/管理员称号[\s\S]*?<input[^>]*disabled/);
+    expect(template).toMatch(/展示称号[\s\S]*?<input[^>]*disabled/);
   });
 
   it('头像预览仅绑定净化后的 preview URL 并提供无障碍名称', () => {

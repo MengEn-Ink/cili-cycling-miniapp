@@ -108,6 +108,7 @@ export interface Activity {
   attendees?: ActivityAttendee[];
 }
 export type AvatarSource = 'wechat' | 'strava' | 'custom';
+export type AvatarVisibility = 'public' | 'private';
 export type ClientAvatarSource = Exclude<AvatarSource, 'strava'>;
 export type EditableActivity = Omit<
   Activity,
@@ -122,6 +123,8 @@ export type EditableActivity = Omit<
 };
 export interface Profile {
   avatarRevision: number;
+  avatarVisibility?: AvatarVisibility;
+  avatarVisibilityRevision?: number | null;
   nickname: string;
   title: string;
   realName: string;
@@ -147,6 +150,7 @@ export interface ProfileUpdate {
   gender?: string;
   emergencyName?: string;
   hasCompletedGuidance?: boolean;
+  avatarVisibility?: AvatarVisibility;
   photos?: { id: string; category: string }[];
   realName?: string;
   phone?: string;

@@ -25,6 +25,13 @@
           <text>{{item.name}}</text>
         </button>
       </view>
+      <view class="avatar-visibility-row">
+        <view class="avatar-visibility-copy">
+          <view class="avatar-visibility-title">在活动骑手列表中展示头像</view>
+          <view class="muted avatar-visibility-tip">默认隐藏。开启后仅展示当前头像；更换头像会自动关闭，需再次确认。</view>
+        </view>
+        <switch checked="{{p.avatarVisibility === 'public' && p.avatarVisibilityRevision === p.avatarRevision}}" bindchange="onAvatarVisibilityChange" disabled="{{!p.avatarId || avatarBusy || photoBusy || saving}}" color="#d55b1f" aria-label="公开展示当前头像" />
+      </view>
       <view class="avatar-status" role="status" aria-live="polite" aria-atomic="true">{{avatarBusy ? '正在更新头像' : ''}}</view>
     </view>
 
@@ -32,7 +39,7 @@
       <view class="card form-card">
         <view class="title">展示身份</view>
         <view class="field">
-          <view class="label">管理员称号</view>
+          <view class="label">展示称号</view>
           <input class="input" value="{{p.title}}" disabled />
         </view>
       </view>

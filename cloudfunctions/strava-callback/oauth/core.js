@@ -344,6 +344,28 @@ async function callbackFlow({ code, state, env, store, api, now = new Date() }) 
   await store.saveCredential(credential, now);
   return { connected: true, athlete_name: credential.athlete_name };
 }
+function sameCipherEnvelope(left, right) {
+  return Boolean(
+    left &&
+    right &&
+    left.alg === right.alg &&
+    left.iv === right.iv &&
+    left.tag === right.tag &&
+    left.ciphertext === right.ciphertext,
+  );
+}
+function sameCredentialVersion(left, right) {
+  if (!left || !right) return false;
+  const leftExpiresAt = new Date(left.token_expires_at).getTime();
+  const rightExpiresAt = new Date(right.token_expires_at).getTime();
+  return Boolean(
+    sameCipherEnvelope(left.access_token_cipher, right.access_token_cipher) &&
+    sameCipherEnvelope(left.refresh_token_cipher, right.refresh_token_cipher) &&
+    Number.isFinite(leftExpiresAt) &&
+    leftExpiresAt === rightExpiresAt &&
+    left.athlete_id === right.athlete_id,
+  );
+}
 async function usableCredential({ openid, credential, cfg, api, now = new Date() }) {
   if (!credential) throw new StravaError('STRAVA_NOT_CONNECTED', '尚未绑定 Strava');
   let access = decrypt(credential.access_token_cipher, cfg.key);
@@ -378,10 +400,48 @@ async function usableCredential({ openid, credential, cfg, api, now = new Date()
   }
   return { accessToken: access, document: current };
 }
-async function buildSyncResult({ openid, env, credential, api, now = new Date(), maxPages = 5 }) {
+async function resolveUsableCredential({ openid, credential, cfg, api, store, now = new Date() }) {
+  let candidate = credential;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const usable = await usableCredential({ openid, credential: candidate, cfg, api, now });
+      if (usable.document === candidate) return usable;
+      if (!store || typeof store.saveRefreshedCredential !== 'function') {
+        if (store && typeof store.saveCredential === 'function')
+          await store.saveCredential(usable.document);
+        return usable;
+      }
+      const saved = await store.saveRefreshedCredential(openid, candidate, usable.document, now);
+      if (saved?.saved) {
+        return {
+          accessToken: decrypt(saved.credential.access_token_cipher, cfg.key),
+          document: saved.credential,
+        };
+      }
+      if (!saved?.credential) throw new StravaError('STRAVA_NOT_CONNECTED', '尚未绑定 Strava');
+      candidate = saved.credential;
+    } catch (error) {
+      if (!store || typeof store.getCredential !== 'function') throw error;
+      const latest = await store.getCredential(openid);
+      if (!latest) throw new StravaError('STRAVA_NOT_CONNECTED', '尚未绑定 Strava');
+      if (sameCredentialVersion(latest, candidate)) throw error;
+      candidate = latest;
+    }
+  }
+  throw new StravaError('STRAVA_REFRESH_BUSY', 'Strava 凭证正在更新，请稍后重试');
+}
+async function buildSyncResult({
+  openid,
+  env,
+  credential,
+  api,
+  store,
+  now = new Date(),
+  maxPages = 5,
+}) {
   const cfg = config(env);
   if (!credential) throw new StravaError('STRAVA_NOT_CONNECTED', '尚未绑定 Strava');
-  const refreshed = await usableCredential({ openid, credential, cfg, api, now });
+  const refreshed = await resolveUsableCredential({ openid, credential, cfg, api, store, now });
   const coverageTo = now;
   const coverageFrom = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
   const window = await fetchActivityWindow(api, refreshed.accessToken, {
@@ -443,6 +503,7 @@ async function ensureReadyFlow({
       env,
       credential: claim.credential,
       api,
+      store,
       now,
     });
     await store.completeSync(openid, {
@@ -518,6 +579,8 @@ module.exports = {
   fetchActivities,
   callbackFlow,
   usableCredential,
+  resolveUsableCredential,
+  sameCredentialVersion,
   buildSyncResult,
   syncAudit,
   ensureReadyFlow,

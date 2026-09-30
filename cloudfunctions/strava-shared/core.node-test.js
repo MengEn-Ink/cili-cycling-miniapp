@@ -21,6 +21,7 @@ const {
   fetchActivityWindow,
   fetchActivities,
   callbackFlow,
+  resolveUsableCredential,
   buildSyncResult,
   ensureReadyFlow,
   disconnectFlow,
@@ -261,6 +262,127 @@ test('分页最多拉取限制页数并在短页停止', async () => {
   );
   assert.equal(calls, 2);
 });
+test('并发刷新失败时读取已轮换凭证继续请求', async () => {
+  const now = new Date('2026-09-29T04:00:00.000Z');
+  const expired = tokenDocument('user-1', token(Math.floor(now.getTime() / 1000) - 1), key, now);
+  let current = expired;
+  let refreshCalls = 0;
+  let releaseFailedRefresh;
+  const refreshedSaved = new Promise((resolve) => {
+    releaseFailedRefresh = resolve;
+  });
+  const api = {
+    async refresh() {
+      refreshCalls += 1;
+      if (refreshCalls === 1) return token(Math.floor(now.getTime() / 1000) + 3600);
+      await refreshedSaved;
+      throw new Error('refresh token already used');
+    },
+  };
+  const store = {
+    async getCredential() {
+      return current;
+    },
+    async saveRefreshedCredential(openid, expected, refreshed) {
+      if (current !== expected) return { saved: false, credential: current };
+      current = refreshed;
+      releaseFailedRefresh();
+      return { saved: true, credential: current };
+    },
+  };
+
+  const [first, second] = await Promise.all([
+    resolveUsableCredential({
+      openid: 'user-1',
+      credential: expired,
+      cfg: config(env),
+      api,
+      store,
+      now,
+    }),
+    resolveUsableCredential({
+      openid: 'user-1',
+      credential: expired,
+      cfg: config(env),
+      api,
+      store,
+      now,
+    }),
+  ]);
+  assert.equal(refreshCalls, 2);
+  assert.equal(first.accessToken, fakeAccess);
+  assert.equal(second.accessToken, fakeAccess);
+  assert.equal(first.document, current);
+  assert.equal(second.document, current);
+});
+
+test('刷新 CAS 遇到并发断开时不继续使用本地 token', async () => {
+  const now = new Date('2026-09-29T04:00:00.000Z');
+  const expired = tokenDocument('user-1', token(Math.floor(now.getTime() / 1000) - 1), key, now);
+  const store = {
+    async saveRefreshedCredential() {
+      return { saved: false, credential: undefined };
+    },
+    async getCredential() {
+      return undefined;
+    },
+  };
+  const api = {
+    async refresh() {
+      return token(Math.floor(now.getTime() / 1000) + 3600);
+    },
+  };
+
+  await assert.rejects(
+    resolveUsableCredential({
+      openid: 'user-1',
+      credential: expired,
+      cfg: config(env),
+      api,
+      store,
+      now,
+    }),
+    { code: 'STRAVA_NOT_CONNECTED' },
+  );
+});
+
+test('并发恢复得到仍将过期的凭证时重新刷新并持久化', async () => {
+  const now = new Date('2026-09-29T04:00:00.000Z');
+  const initial = tokenDocument('user-1', token(Math.floor(now.getTime() / 1000) - 60), key, now);
+  const latest = tokenDocument('user-1', token(Math.floor(now.getTime() / 1000) + 60), key, now);
+  let refreshCalls = 0;
+  let saved;
+  const api = {
+    async refresh() {
+      refreshCalls += 1;
+      if (refreshCalls === 1) throw new Error('refresh token already used');
+      return token(Math.floor(now.getTime() / 1000) + 3600);
+    },
+  };
+  const store = {
+    async getCredential() {
+      return latest;
+    },
+    async saveRefreshedCredential(openid, expected, refreshed) {
+      assert.equal(expected, latest);
+      saved = refreshed;
+      return { saved: true, credential: refreshed };
+    },
+  };
+
+  const result = await resolveUsableCredential({
+    openid: 'user-1',
+    credential: initial,
+    cfg: config(env),
+    api,
+    store,
+    now,
+  });
+  assert.equal(refreshCalls, 2);
+  assert.equal(result.document, saved);
+  assert.equal(new Date(saved.token_expires_at).getTime(), now.getTime() + 3_600_000);
+});
+
 test('readiness 常量和 fresh canonical snapshot 快路径', () => {
   assert.equal(SNAPSHOT_MAX_AGE_MS, 86_400_000);
   assert.equal(SYNC_LEASE_MS, 120_000);
