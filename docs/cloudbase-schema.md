@@ -12,11 +12,13 @@ Strava 报名资格唯一事实源：`strava_credentials + strava_snapshots`。`
 
 ### `activities`
 
-活动公开字段、`capacity`、`occupied_count`、`occupancy_partition_ready`、两类分仓计数、单调递增 `version`、`signup_deadline/event_start/event_end`、`status` 与内部审计字段。公开读取只允许 `published && is_deleted !== true`。管理员写入由独立 `activity-admin` 云函数负责：新建必须为 `draft`，状态仅允许 `draft → published → finished`，`finished` 为终态；更新必须携带详情响应中的 `expectedVersion`，事务内不一致时返回 `ACTIVITY_CONFLICT`；活动容量上限为 1000，且不得低于事务内读取的 `occupied_count`，并必须满足 `signup_deadline < event_start < event_end`。旧活动首次保存分仓时在事务内完整读取全部 `pending + approved` 报名并按集合方式回填，自动回填最多处理 1000 个占位；容量或占位数超限、未知集合方式、分页失败或总数不一致都以 `PARTITION_BACKFILL_REQUIRED` 阻断且不写入。
+活动公开字段、`capacity`、`occupied_count`、`occupancy_partition_ready`、两类分仓计数、单调递增 `version`、`signup_deadline/event_start/event_end`、`status` 与内部审计字段。公开读取只允许 `published && is_deleted !== true`。活动写入由独立 `activity-admin` 云函数负责：新建必须为 `draft`，状态允许 `draft ↔ published → finished`，`finished` 为终态；非管理员只能读写本人创建的活动，管理员可管理全部活动。更新必须携带详情响应中的 `expectedVersion`，事务内不一致时返回 `ACTIVITY_CONFLICT`。
+
+发布预告只强制标题、`event_start/event_end` 和路线起终点，且活动开始必须早于结束；`signup_deadline`、容量、分仓、费用和司机可暂缺。报名开放另由服务端要求 `signup_deadline < event_start < event_end`、容量为 1–1000、分仓容量合计等于总容量、费用存在，并在后援车容量大于 0 时要求完整司机信息。配置不完整的公开 DTO 使用 `registration_setup_pending=true`、`registration_state=closed`、`closed_reason=unavailable`；提交接口返回 `SIGNUP_INFO_INCOMPLETE`。容量不得低于事务内读取的 `occupied_count`。旧活动首次保存分仓时在事务内完整读取全部 `pending + approved + checked_in` 报名并按集合方式回填，自动回填最多处理 1000 个占位；容量或占位数超限、未知集合方式、分页失败或总数不一致都以 `PARTITION_BACKFILL_REQUIRED` 阻断且不写入。
 
 ### `registrations`
 
-`_id` 是 activity_id 与 openid 的确定性摘要；包含活动选项、脱敏 `profile_snapshot`、无 token 的 `strava_snapshot`、状态与审批历史。`pending + approved` 占位，提交/取消/驳回和名额更新在事务中完成。
+`_id` 是 activity_id 与 openid 的确定性摘要；包含活动选项、脱敏 `profile_snapshot`、无 token 的 `strava_snapshot`、状态与审批历史。状态为 `pending|approved|checked_in|rejected|cancelled`；`checked_in` 记录 `checked_in_at`，操作人仅留在服务端审计字段中。`pending + approved + checked_in` 占位，提交/取消/驳回和名额更新在事务中完成；管理员签到只允许 `approved -> checked_in`，重复请求幂等。
 
 ### `profiles`
 
@@ -144,6 +146,12 @@ synced_at
 
 只统计最近 90 天 Ride 类活动，排除 trainer/commute；每页 200，最多 5 页。第 5 页仍满 200 条时 `coverage_complete=false`。加权均速为总距离/总移动时间；完整空窗口的统计值可为 0，未知或不完整值为 `null`。
 
+### `strava_route_previews`
+
+管理员调用 `strava-auth/routePreview` 后写入的短期服务端可信路线快照。文档 ID 为 `sha256(owner_openid + NUL + strava_route_id)`，包含 `owner_openid`、路线标识、路线 URL、距离、爬升、海拔曲线、边界、热门爬坡、`created_at` 与两小时后的 `expires_at`。`activity-admin` 保存路线时按当前管理员和路线 ID 读取该快照，拒绝使用其他用户或过期的预览。
+
+这是运行期第 12 个集合，但当前 `scripts/bootstrap-cloudbase.mjs` 只管理前述 11 个核心集合和 22 个索引，尚未创建或验证本集合。启用 Strava 路线前必须由环境负责人手工创建并设置客户端读写全拒绝；随后应把它纳入 bootstrap 以消除该部署缺口。
+
 ## 索引
 
 | 集合 | 字段 | 属性 |
@@ -177,7 +185,7 @@ synced_at
 
 ## 部署后验证
 
-1. 校验 11 集合、全拒绝规则与 22 索引，确认 `activities.created_by + event_start`、`notification_outbox` 的 lease、目标与 retry 索引，`profile_media` 与 `profile_media_imports` 的 cleanup、delete lease 与 retry 索引，以及 `oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
+1. 校验 bootstrap 管理的 11 集合、全拒绝规则与 22 索引；另行确认 `strava_route_previews` 已创建且客户端读写全拒绝。确认 `activities.created_by + event_start`、`notification_outbox` 的 lease、目标与 retry 索引，`profile_media` 与 `profile_media_imports` 的 cleanup、delete lease 与 retry 索引，以及 `oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
 2. 真机验证 WXContext openid、微信手机号动态 code、手填手机号来源，以及资料响应中无明文/密文。
 3. 配置 callback HTTPS 路由、Strava 回调域和小程序业务域名，验证 CSRF、过期与重放。
 4. 验证 token 临期刷新、90 天分页、解绑审计及日志无敏感信息；验证跨用户媒体拒绝、未登记 legacy 不进卡、register 失败回收上传对象，以及临时 URL 故障降级。

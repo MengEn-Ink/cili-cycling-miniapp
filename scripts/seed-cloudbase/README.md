@@ -1,69 +1,52 @@
-# 安全初始化 CloudBase（不含真实身份与密钥）
+# 安全初始化 CloudBase
 
-本目录只提供人工初始化步骤，**没有可执行插入脚本**，避免把真实 openid、云环境凭据或敏感资料写入 Git。不要把控制台导出数据提交到仓库。
+本目录只提供操作说明，不保存真实身份、密钥或业务数据。CloudBase 的集合、索引与数据库规则由仓库根目录的 `scripts/bootstrap-cloudbase.mjs` 声明；活动必须通过已部署的小程序业务流程创建。
 
-## 前置
+## 1. 准备
 
 1. 确认微信开发者工具登录的是目标小程序开发成员，CloudBase CLI 登录的是目标腾讯云账号。
-2. 部署并调用现有 `auth` 云函数，从小程序“我的”页面复制由 `cloud.getWXContext().OPENID` 返回的 openid。不要从客户端参数、Mock 或日志猜测。
-3. 按 [`docs/cloudbase-schema.md`](../../docs/cloudbase-schema.md) 创建 `activities / registrations / profiles / admins / audit_logs`，配置仅云函数读写和索引。
+2. 核对 `cloudbaserc.json` 的环境；切换环境时必须显式传入并确认目标环境 ID。
+3. 在 CloudBase 控制台配置云函数环境变量。变量名见 `cloudfunctions/.env.example`，真实值不得写入仓库、命令历史、Issue 或 CI 日志。
 
-## 创建首个管理员
+## 2. 创建集合、索引与数据库规则
 
-在 CloudBase 控制台手工新增 `admins` 文档；将下面占位符替换为刚复制的真实值，但不要保存到仓库：
+默认命令只读取远端并生成计划：
 
-```json
-{
-  "_id": "<从已部署 auth 云函数取得的 openid>",
-  "display_name": "<管理员显示名>",
-  "is_super": true,
-  "enabled": true,
-  "created_at": "<控制台 Date 类型的当前时间>",
-  "updated_at": "<控制台 Date 类型的当前时间>"
-}
+```bash
+npm run cloudbase:plan
 ```
 
-重新调用 `auth`，确认返回 `role=admin`。不要让小程序传入 role 来“升级”权限。
+计划的当前基线是 11 个核心集合、22 个业务索引和全拒绝客户端数据库规则。由环境负责人审核计划后，才可执行：
 
-## 创建首个活动
-
-在 `activities` 新增文档，`_id` 使用不含个人信息的稳定业务 ID。时间字段请在控制台选择 **Date** 类型，不要录成普通字符串：
-
-```json
-{
-  "_id": "ride-YYYYMMDD-example",
-  "title": "示例骑行活动",
-  "cover_image": "",
-  "description": "活动说明",
-  "schedule": [],
-  "route": {
-    "start": "",
-    "end": "",
-    "distance_km": 0,
-    "elevation_m": 0,
-    "level": "",
-    "gpx_file_id": ""
-  },
-  "notices": [],
-  "equipment": [],
-  "fee": { "included": [], "excluded": [], "remark": "无在线支付" },
-  "capacity": 20,
-  "occupied_count": 0,
-  "signup_deadline": "<Date：报名截止时间>",
-  "event_start": "<Date：活动开始时间>",
-  "event_end": "<Date：活动结束时间>",
-  "status": "draft",
-  "is_deleted": false,
-  "created_by": "<管理员 openid，仅控制台录入，不提交 Git>",
-  "created_at": "<Date>",
-  "updated_at": "<Date>"
-}
+```bash
+npm run cloudbase:apply
+npm run cloudbase:verify
 ```
 
-先保持 `draft` 完成核对，再在控制台改为 `published`。发布前确认 `capacity > 0`、`occupied_count = 0`、截止时间晚于当前时间、活动时间和时区正确。
+覆盖 `cloudbaserc.json` 中的环境时，使用脚本支持的 `--env-id` 和完全相同的 `--confirm-env-id`，不要依赖未展开的环境变量或模糊环境名称。
 
-## 不要做
+`cloudbase:verify` 不验证云存储规则。必须单独应用并回读 `cloudstorage.rules.json`，确认客户端只能写本人 `profiles/` staging 路径，不能写 `profile-canonical/`。
 
-- 不要在仓库、Issue、PR、截图或 CI 日志中粘贴真实 openid、手机号、证件号、Strava token、密钥。
-- 不要为绕过资料校验而在 `profiles` 写明文敏感字段；KMS/加密资料服务未完成前，只按契约准备脱敏值和状态，不进行真实报名联调。
-- 不要直接修改报名 `status` 或 `occupied_count`；真实数据必须经云函数事务变化。
+Strava 路线功能还依赖第 12 个运行期集合 `strava_route_previews`，当前 bootstrap 尚未管理它。启用该功能前由环境负责人手工创建，并将客户端读写都设置为拒绝；把该集合纳入 bootstrap 是待修复的 P1 部署缺口。
+
+## 3. 创建首个管理员
+
+部署 `auth` 后，按 [管理员白名单说明](../seed-admin/README.md) 从真实微信身份取得 `openid`，再由环境负责人在 `admins` 集合创建记录。不要从客户端参数、Mock、截图或持久化日志猜测身份。
+
+## 4. 创建首个活动
+
+部署并验证 `activity-admin` 后，在小程序“我的 → 活动管理”中创建草稿。补齐标题、活动起止时间和路线起终点后可先发布预告；只有补齐截止时间、总容量、集合方式分仓、费用和必要司机信息后，服务端才会把报名状态判定为开放。不要在数据库控制台手工拼装活动，也不要直接修改：
+
+- `status`、`version` 或 `created_by`；
+- `occupied_count` 及集合方式分仓计数；
+- 报名状态、审批历史或签到状态。
+
+这些字段必须通过云函数的校验、事务和审计流程变化。
+
+## 5. 验证与安全约束
+
+- 运行 `npm run cloudbase:verify`，确认集合、索引和全拒绝客户端规则。
+- 按根 README 的顺序部署云函数和定时触发器，应用并回读三条 OAuth HTTPS 网关路由；同步配置 Strava callback 和小程序 `web-view` 业务域名。
+- 在隔离测试环境按 `docs/verification/p0-real-registration-journey.md` 执行真实旅程。
+- 不得提交真实 `openid`、手机号、OAuth code/state、Strava token、密钥、密文、控制台导出数据或未脱敏证据。
+- 不得用 Mock、本地构建结果或手工改库代替真实环境验证。
