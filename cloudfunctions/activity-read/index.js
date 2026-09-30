@@ -2,6 +2,7 @@
 
 const cloud = require('wx-server-sdk');
 const { ok, toErrorResponse, assertTrustedOpenid, publicActivity, fail } = require('./domain');
+const { canonicalPublicAvatar, mediaDocumentId, publicAvatarSource } = require('./public-avatar');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const _ = db.command;
@@ -138,20 +139,54 @@ async function loadAttendees(activityId) {
       // 资料读取失败时使用报名快照，头像和称号保持为空。
     }
   }
-  const avatarFileIds = [
+  const avatarMediaIds = [
     ...new Set(
       registrations
-        .map((item) => profiles.get(item.openid)?.avatar_file_id)
-        .filter((value) => typeof value === 'string' && value.startsWith('cloud://')),
+        .map((item) => publicAvatarSource(profiles.get(item.openid)))
+        .filter(Boolean)
+        .map(mediaDocumentId),
+    ),
+  ];
+  const mediaRecords = new Map();
+  for (let offset = 0; offset < avatarMediaIds.length; offset += 20) {
+    const batch = avatarMediaIds.slice(offset, offset + 20);
+    try {
+      const response = await db
+        .collection('profile_media')
+        .where({ _id: _.in(batch) })
+        .limit(20)
+        .get();
+      for (const record of Array.isArray(response.data) ? response.data : []) {
+        if (record && batch.includes(record._id)) mediaRecords.set(record._id, record);
+      }
+    } catch {
+      // 媒体登记读取失败时 fail closed，仅隐藏受影响头像。
+    }
+  }
+  const canonicalFileIds = [
+    ...new Set(
+      registrations
+        .map((registration) => {
+          const profile = profiles.get(registration.openid);
+          const sourceFileId = publicAvatarSource(profile);
+          const record = sourceFileId ? mediaRecords.get(mediaDocumentId(sourceFileId)) : undefined;
+          return canonicalPublicAvatar(
+            profile,
+            record,
+            registration.openid,
+            process.env.PROFILE_MEDIA_PATH_SECRET,
+          );
+        })
+        .filter(Boolean),
     ),
   ];
   const avatarUrls = new Map();
-  if (avatarFileIds.length) {
+  if (canonicalFileIds.length) {
     try {
-      const response = await cloud.getTempFileURL({ fileList: avatarFileIds });
+      const response = await cloud.getTempFileURL({ fileList: canonicalFileIds });
       for (const item of Array.isArray(response && response.fileList) ? response.fileList : []) {
         const url = item && Number(item.status) === 0 ? safeHttpsUrl(item.tempFileURL) : '';
-        if (avatarFileIds.includes(item && item.fileID) && url && !avatarUrls.has(item.fileID))
+        if (canonicalFileIds.includes(item && item.fileID) && url && !avatarUrls.has(item.fileID))
           avatarUrls.set(item.fileID, url);
       }
     } catch {
@@ -160,11 +195,15 @@ async function loadAttendees(activityId) {
   }
   return registrations.map((registration) => {
     const profile = profiles.get(registration.openid);
-    const avatar = profile && profile.avatar_file_id;
-    const url =
-      typeof avatar === 'string' && avatar.startsWith('cloud://')
-        ? avatarUrls.get(avatar) || ''
-        : safeHttpsUrl(avatar);
+    const sourceFileId = publicAvatarSource(profile);
+    const record = sourceFileId ? mediaRecords.get(mediaDocumentId(sourceFileId)) : undefined;
+    const canonicalFileId = canonicalPublicAvatar(
+      profile,
+      record,
+      registration.openid,
+      process.env.PROFILE_MEDIA_PATH_SECRET,
+    );
+    const url = canonicalFileId ? avatarUrls.get(canonicalFileId) || '' : '';
     return publicAttendee(registration, profile, url);
   });
 }
