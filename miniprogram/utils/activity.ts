@@ -10,6 +10,7 @@ export type ActivityAction =
   | { kind: 'closed'; label: string; enabled: false };
 
 function closedLabel(activity: Activity): string {
+  if (activity.registrationSetupPending === true) return '报名待开放';
   switch (activity.closedReason) {
     case 'finished':
       return '活动已结束';

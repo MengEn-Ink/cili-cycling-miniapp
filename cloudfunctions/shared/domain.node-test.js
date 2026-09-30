@@ -38,6 +38,12 @@ const activity = {
   self_drive_capacity: 1,
   support_vehicle_occupied_count: 0,
   self_drive_occupied_count: 0,
+  fee: { remark: 'AA', included: [], excluded: [] },
+  support_vehicle_driver: {
+    nickname: '王师傅',
+    license_plate: '粤B12345',
+    contact_phone: '13812345678',
+  },
   created_by: 'secret',
 };
 const profile = {
@@ -609,6 +615,12 @@ test('活动报名状态完全由服务端时间和活动事实裁决', () => {
     [{ status: 'finished', signup_deadline: 'invalid' }, 'closed', 'finished'],
     [{ occupied_count: undefined }, 'closed', 'incomplete'],
     [{ signup_deadline: 'invalid' }, 'closed', 'incomplete'],
+    [{ occupancy_partition_ready: false }, 'closed', 'incomplete'],
+    [{ support_vehicle_capacity: undefined }, 'closed', 'incomplete'],
+    [{ self_drive_capacity: 2 }, 'closed', 'incomplete'],
+    [{ support_vehicle_occupied_count: undefined }, 'closed', 'incomplete'],
+    [{ fee: undefined }, 'closed', 'incomplete'],
+    [{ support_vehicle_driver: undefined }, 'closed', 'incomplete'],
     [{ status: 'draft' }, 'closed', 'unavailable'],
   ];
 
@@ -617,6 +629,37 @@ test('活动报名状态完全由服务端时间和活动事实裁决', () => {
     assert.equal(result.registration_state, registrationState);
     assert.equal(result.closed_reason, closedReason);
     assert.equal(result.server_now, serverNow.toISOString());
+  }
+});
+
+test('报名配置不完整时公开 DTO 对旧客户端保持可解析并标记待开放', () => {
+  const output = publicActivity(
+    {
+      ...activity,
+      capacity: undefined,
+      support_vehicle_capacity: undefined,
+      self_drive_capacity: undefined,
+      support_vehicle_driver: undefined,
+      occupancy_partition_ready: false,
+      fee: undefined,
+    },
+    now,
+  );
+
+  assert.equal(output.capacity, 0);
+  assert.equal(output.registration_state, 'closed');
+  assert.equal(output.closed_reason, 'unavailable');
+  assert.equal(output.registration_setup_pending, true);
+});
+
+test('截止、结束或满员优先于配置待完善且不误标报名待开放', () => {
+  for (const patch of [
+    { signup_deadline: now.toISOString(), fee: undefined },
+    { event_end: now.toISOString(), fee: undefined },
+    { occupied_count: activity.capacity, fee: undefined },
+  ]) {
+    const output = publicActivity({ ...activity, ...patch }, now);
+    assert.equal(output.registration_setup_pending, undefined);
   }
 });
 
@@ -676,7 +719,9 @@ test('未就绪旧活动不暴露无法对账的分类剩余名额', () => {
 });
 
 test('公开活动兼容无司机信息，异常手机号不透传非字符串值', () => {
-  assert.equal(publicActivity(activity, now).support_vehicle_driver, undefined);
+  const withoutDriver = { ...activity };
+  delete withoutDriver.support_vehicle_driver;
+  assert.equal(publicActivity(withoutDriver, now).support_vehicle_driver, undefined);
   const output = publicActivity(
     { ...activity, support_vehicle_driver: { nickname: '师傅', contact_phone: { raw: true } } },
     now,
@@ -684,7 +729,7 @@ test('公开活动兼容无司机信息，异常手机号不透传非字符串�
   assert.equal(output.support_vehicle_driver.contact_phone, '');
 });
 
-test('分类满员时即使总容量未满也拒绝，旧活动报名只更新总占位', async () => {
+test('分类满员时即使总容量未满也拒绝，分仓未就绪活动拒绝报名', async () => {
   const categoryFull = memoryStore({
     activity: {
       capacity: 4,
@@ -708,12 +753,15 @@ test('分类满员时即使总容量未满也拒绝，旧活动报名只更新�
   const legacy = memoryStore({
     activity: { capacity: 2, occupied_count: 0, occupancy_partition_ready: false },
   });
-  await submitRegistration(
-    legacy,
-    { ...input, options: { ...input.options, gathering_mode: 'support_vehicle' } },
-    now,
+  await assert.rejects(
+    submitRegistration(
+      legacy,
+      { ...input, options: { ...input.options, gathering_mode: 'support_vehicle' } },
+      now,
+    ),
+    { code: 'SIGNUP_INFO_INCOMPLETE' },
   );
-  assert.equal(legacy.state.activities.get('a1').occupied_count, 1);
+  assert.equal(legacy.state.activities.get('a1').occupied_count, 0);
   assert.equal(legacy.state.activities.get('a1').support_vehicle_occupied_count, 0);
   assert.equal(legacy.state.activities.get('a1').self_drive_occupied_count, 0);
 });

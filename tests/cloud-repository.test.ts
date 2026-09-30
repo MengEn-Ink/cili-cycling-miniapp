@@ -174,6 +174,26 @@ describe('CloudRepository 活动读取适配', () => {
     ]);
   });
 
+  it('公开预告兼容容量 0 与 unavailable，并映射报名待开放标记', async () => {
+    const preview = {
+      ...activity,
+      capacity: 0,
+      registration_state: 'closed',
+      closed_reason: 'unavailable',
+      registration_setup_pending: true,
+    };
+    const { cloud } = cloudWith(success([preview]));
+
+    const [result] = await new CloudRepository(cloud).listActivities();
+
+    expect(result).toMatchObject({
+      capacity: 0,
+      registrationState: 'closed',
+      closedReason: 'unavailable',
+      registrationSetupPending: true,
+    });
+  });
+
   it('详情使用 detail action，并处理字符串费用与边界默认值', async () => {
     const edge = {
       _id: 'a2',
@@ -1458,6 +1478,27 @@ describe('CloudRepository 管理员活动写入契约', () => {
     await repository.getAdminActivity('a1');
     expectCall(callFunction, 'activity-admin', { action: 'detail', activityId: 'a1' });
   });
+
+  it.each(['published', 'finished'] as const)(
+    '管理 DTO 允许 %s 活动缺少运营字段并保留 optional',
+    async (status) => {
+      const incomplete = { ...activity, status } as Record<string, unknown>;
+      delete incomplete.capacity;
+      delete incomplete.signup_deadline;
+      delete incomplete.fee;
+      delete incomplete.support_vehicle_capacity;
+      delete incomplete.self_drive_capacity;
+      delete incomplete.support_vehicle_driver;
+      const { cloud } = cloudWith(success(incomplete));
+
+      const result = await new CloudRepository(cloud).getAdminActivity('a1');
+
+      expect(result).toMatchObject({ id: 'a1', status });
+      expect(result).not.toHaveProperty('capacity');
+      expect(result).not.toHaveProperty('deadline');
+      expect(result).not.toHaveProperty('fee');
+    },
+  );
 
   it('存量无 version 活动映射为 0 并可通过 expectedVersion=0 升级保存', async () => {
     const legacy = { ...activity } as Record<string, unknown>;

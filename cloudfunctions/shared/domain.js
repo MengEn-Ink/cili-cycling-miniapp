@@ -63,20 +63,68 @@ function registrationId(activityId, openid) {
 function isOccupying(status) {
   return OCCUPYING.has(status);
 }
-function assertActivityOpen(activity, now) {
-  if (!activity || activity.is_deleted === true || activity.status !== 'published')
-    fail('ACTIVITY_NOT_AVAILABLE', '活动未发布或已下线');
-  const deadline = Date.parse(activity.signup_deadline);
-  if (!Number.isFinite(deadline)) fail('SIGNUP_INFO_INCOMPLETE', '报名信息待完善');
-  if (deadline <= now.getTime()) fail('SIGNUP_CLOSED', '报名已截止');
+function hasFeeDetails(fee) {
+  if (typeof fee === 'string') return fee.trim().length > 0;
+  if (!fee || typeof fee !== 'object' || Array.isArray(fee)) return false;
+  return (
+    (typeof fee.remark === 'string' && fee.remark.trim().length > 0) ||
+    (Array.isArray(fee.included) &&
+      fee.included.some((item) => typeof item === 'string' && item.trim())) ||
+    (Array.isArray(fee.excluded) &&
+      fee.excluded.some((item) => typeof item === 'string' && item.trim()))
+  );
+}
+function hasCompleteDriver(driver) {
+  return Boolean(
+    driver &&
+    typeof driver === 'object' &&
+    !Array.isArray(driver) &&
+    ['nickname', 'license_plate', 'contact_phone'].every(
+      (field) => typeof driver[field] === 'string' && driver[field].trim().length > 0,
+    ),
+  );
+}
+function registrationSetupReady(activity) {
+  if (!activity || typeof activity !== 'object') return false;
+  const capacity = activity.capacity;
+  const occupied = activity.occupied_count;
+  const supportCapacity = activity.support_vehicle_capacity;
+  const selfDriveCapacity = activity.self_drive_capacity;
+  const supportOccupied = activity.support_vehicle_occupied_count;
+  const selfDriveOccupied = activity.self_drive_occupied_count;
   if (
-    !Number.isInteger(activity.capacity) ||
-    activity.capacity < 1 ||
-    !Number.isInteger(activity.occupied_count) ||
-    activity.occupied_count < 0
-  ) {
-    fail('SIGNUP_INFO_INCOMPLETE', '报名信息待完善');
-  }
+    activity.occupancy_partition_ready !== true ||
+    !Number.isInteger(capacity) ||
+    capacity < 1 ||
+    !Number.isInteger(supportCapacity) ||
+    supportCapacity < 0 ||
+    !Number.isInteger(selfDriveCapacity) ||
+    selfDriveCapacity < 0 ||
+    supportCapacity + selfDriveCapacity !== capacity ||
+    !Number.isInteger(occupied) ||
+    occupied < 0 ||
+    occupied > capacity ||
+    !Number.isInteger(supportOccupied) ||
+    supportOccupied < 0 ||
+    supportOccupied > supportCapacity ||
+    !Number.isInteger(selfDriveOccupied) ||
+    selfDriveOccupied < 0 ||
+    selfDriveOccupied > selfDriveCapacity ||
+    supportOccupied + selfDriveOccupied !== occupied ||
+    !Number.isFinite(Date.parse(activity.signup_deadline)) ||
+    !hasFeeDetails(activity.fee) ||
+    (supportCapacity > 0 && !hasCompleteDriver(activity.support_vehicle_driver))
+  )
+    return false;
+  return true;
+}
+function assertActivityOpen(activity, now) {
+  const decision = registrationDecision(activity, now);
+  if (decision.registration_state === 'open') return;
+  if (decision.closed_reason === 'deadline') fail('SIGNUP_CLOSED', '报名已截止');
+  if (decision.closed_reason === 'full') fail('CAPACITY_FULL', '活动名额已满');
+  if (decision.closed_reason === 'incomplete') fail('SIGNUP_INFO_INCOMPLETE', '报名信息待完善');
+  fail('ACTIVITY_NOT_AVAILABLE', '活动未发布、已结束或已下线');
 }
 function assertProfileReady(profile) {
   const sensitive = profile && profile.sensitive_status;
@@ -256,25 +304,28 @@ const ACTIVITY_FIELDS = [
 function registrationDecision(activity, now) {
   const end = dateOrNull(activity && activity.event_end);
   const deadline = dateOrNull(activity && activity.signup_deadline);
-  const capacityValid = Number.isInteger(activity && activity.capacity) && activity.capacity > 0;
-  const occupiedValid =
-    Number.isInteger(activity && activity.occupied_count) && activity.occupied_count >= 0;
   if (activity && activity.status === 'finished')
     return { registration_state: 'closed', closed_reason: 'finished' };
-  if (!activity || activity.status !== 'published')
+  if (!activity || activity.is_deleted === true || activity.status !== 'published')
     return { registration_state: 'closed', closed_reason: 'unavailable' };
   if (end && end.getTime() <= now.getTime())
     return { registration_state: 'closed', closed_reason: 'finished' };
   if (deadline && deadline.getTime() <= now.getTime())
     return { registration_state: 'closed', closed_reason: 'deadline' };
-  if (capacityValid && occupiedValid && activity.occupied_count >= activity.capacity)
+  if (
+    Number.isInteger(activity.capacity) &&
+    activity.capacity > 0 &&
+    Number.isInteger(activity.occupied_count) &&
+    activity.occupied_count >= activity.capacity
+  )
     return { registration_state: 'closed', closed_reason: 'full' };
-  if (!end || !deadline || !capacityValid || !occupiedValid)
+  if (!registrationSetupReady(activity))
     return { registration_state: 'closed', closed_reason: 'incomplete' };
   return { registration_state: 'open', closed_reason: null };
 }
 function publicActivity(activity, now = new Date()) {
   const output = pick(activity, ACTIVITY_FIELDS);
+  if (!Number.isInteger(output.capacity)) output.capacity = 0;
   if (output.support_vehicle_driver) {
     output.support_vehicle_driver = {
       ...output.support_vehicle_driver,
@@ -300,9 +351,15 @@ function publicActivity(activity, now = new Date()) {
           ? activity.self_drive_occupied_count
           : 0),
     );
+  const decision = registrationDecision(activity, now);
+  const setupPending = activity?.status === 'published' && decision.closed_reason === 'incomplete';
   return {
     ...output,
-    ...registrationDecision(activity, now),
+    ...decision,
+    ...(setupPending ? { registration_setup_pending: true } : {}),
+    ...(setupPending && !Number.isInteger(activity.capacity)
+      ? { registration_state: 'closed', closed_reason: 'unavailable' }
+      : {}),
     server_now: now.toISOString(),
   };
 }
@@ -374,6 +431,7 @@ module.exports = {
   assertReviewTransition,
   isEnabledAdmin,
   registrationDecision,
+  registrationSetupReady,
   publicActivity,
   publicRegistration,
   buildAudit,

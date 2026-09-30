@@ -194,6 +194,7 @@ function mapActivity(raw: unknown, requireRegistrationDecision = false): Activit
     )
       ? value.closed_reason
       : undefined,
+    ...(value.registration_setup_pending === true ? { registrationSetupPending: true } : {}),
     description: typeof value.description === 'string' ? value.description : '',
     coverImage: typeof value.cover_image === 'string' ? value.cover_image : '',
     route: {
@@ -230,7 +231,6 @@ function mapEditableActivity(raw: unknown, requireCloneDraft = false): EditableA
     typeof value.title !== 'string' ||
     !['draft', 'published', 'finished'].includes(value.status) ||
     (value.capacity !== undefined && !Number.isInteger(value.capacity)) ||
-    (value.capacity === undefined && value.status !== 'draft') ||
     (requireCloneDraft && value.status !== 'draft')
   )
     return invalidResponse();

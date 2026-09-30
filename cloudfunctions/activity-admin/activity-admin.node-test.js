@@ -189,6 +189,95 @@ test('发布时后援车容量为 0 会清空可能残留的司机信息', () =>
     contact_phone: '',
   });
 });
+
+test('发布预告可缺运营字段且保持分仓未就绪', async () => {
+  const current = {
+    _id: 'preview-draft',
+    ...validateDraftInput({
+      title: input.title,
+      description: input.description,
+      schedule: input.schedule,
+      route: input.route,
+      notices: input.notices,
+      equipment: input.equipment,
+      event_start: input.event_start,
+      event_end: input.event_end,
+      status: 'draft',
+    }),
+    occupied_count: 0,
+    version: 1,
+    created_by: 'admin',
+  };
+  const memory = store(current);
+  const published = await saveActivity(memory, {
+    openid: 'admin',
+    activityId: current._id,
+    expectedVersion: 1,
+    activity: {
+      title: input.title,
+      description: input.description,
+      schedule: input.schedule,
+      route: input.route,
+      notices: input.notices,
+      equipment: input.equipment,
+      event_start: input.event_start,
+      event_end: input.event_end,
+      status: 'published',
+    },
+  });
+
+  assert.equal(published.status, 'published');
+  assert.equal(memory.state.saved.occupancy_partition_ready, false);
+  assert.equal(memory.state.backfillReads, 0);
+});
+
+test('更新省略后援车字段时保留当前司机，显式改为 0 才清空', async () => {
+  const current = {
+    _id: 'published-driver',
+    ...validatePublishInput({ ...input, status: 'published' }, 0, now),
+    occupied_count: 0,
+    occupancy_partition_ready: true,
+    support_vehicle_occupied_count: 0,
+    self_drive_occupied_count: 0,
+    version: 2,
+    created_by: 'admin',
+  };
+  const omitted = { ...input, status: 'published' };
+  delete omitted.support_vehicle_capacity;
+  delete omitted.support_vehicle_driver;
+  const retainedStore = store(current);
+  await saveActivity(retainedStore, {
+    openid: 'admin',
+    activityId: current._id,
+    expectedVersion: 2,
+    activity: omitted,
+  });
+  assert.equal(retainedStore.state.saved.support_vehicle_capacity, input.support_vehicle_capacity);
+  assert.deepEqual(retainedStore.state.saved.support_vehicle_driver, {
+    nickname: '王师傅',
+    license_plate: '粤B12345',
+    contact_phone: '13812345678',
+  });
+
+  const clearedStore = store(current);
+  await saveActivity(clearedStore, {
+    openid: 'admin',
+    activityId: current._id,
+    expectedVersion: 2,
+    activity: {
+      ...input,
+      status: 'published',
+      support_vehicle_capacity: 0,
+      self_drive_capacity: input.capacity,
+      support_vehicle_driver: undefined,
+    },
+  });
+  assert.deepEqual(clearedStore.state.saved.support_vehicle_driver, {
+    nickname: '',
+    license_plate: '',
+    contact_phone: '',
+  });
+});
 test('活动输入完整保留行程备注、GPX 与费用明细', () => {
   const value = validateActivityInput({
     ...input,

@@ -12,7 +12,7 @@
   <view class="metrics">
     <view class="metric-item"><text class="metric-value">{{item.route.distanceKm}}</text><text class="metric-unit">KM 里程</text></view>
     <view class="metric-item"><text class="metric-value">{{item.route.elevationM}}</text><text class="metric-unit">M 爬升</text></view>
-    <view class="metric-item"><text class="metric-value">{{item.remaining}}</text><text class="metric-unit">剩余名额</text></view>
+    <view class="metric-item"><text class="metric-value">{{item.capacity > 0 ? item.remaining : '待公布'}}</text><text class="metric-unit">剩余名额</text></view>
   </view>
-  <view class="card-foot"><text class="level">{{item.route.level}}</text><text>{{item.occupied}} / {{item.capacity}} 人占位 <text class="arrow">›</text></text></view>
+  <view class="card-foot"><text class="level">{{item.route.level}}</text><text>{{item.capacity > 0 ? (item.occupied + ' / ' + item.capacity + ' 人占位') : '名额待公布'}} <text class="arrow">›</text></text></view>
 </view>

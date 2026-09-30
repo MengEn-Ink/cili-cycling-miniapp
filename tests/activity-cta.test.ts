@@ -1,10 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+// @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
+import { readFileSync } from 'node:fs';
 import type { Activity, Registration, RegistrationStatus } from '../miniprogram/models';
-import { resolveActivityAction } from '../miniprogram/utils/activity';
+import { activityDisplayStatus, resolveActivityAction } from '../miniprogram/utils/activity';
 
 type ServerActivity = Activity & {
   registrationState?: 'open' | 'closed';
-  closedReason?: 'finished' | 'deadline' | 'full' | 'unavailable';
+  closedReason?: 'finished' | 'deadline' | 'full' | 'incomplete' | 'unavailable';
+  registrationSetupPending?: boolean;
 };
 
 const open: ServerActivity = {
@@ -106,6 +109,37 @@ describe('活动 CTA 九分支', () => {
       label: '活动已结束',
       enabled: false,
     });
+  });
+
+  it('公开预告在报名配置未齐时显示报名待开放', () => {
+    expect(
+      resolveActivityAction(
+        activity({
+          capacity: 0,
+          registrationState: 'closed',
+          closedReason: 'unavailable',
+          registrationSetupPending: true,
+        }),
+      ),
+    ).toEqual({ kind: 'closed', label: '报名待开放', enabled: false });
+    expect(
+      activityDisplayStatus(
+        activity({
+          capacity: 0,
+          registrationState: 'closed',
+          closedReason: 'unavailable',
+          registrationSetupPending: true,
+        }),
+      ),
+    ).toBe('报名待开放');
+  });
+
+  it('活动卡容量缺失时显示待公布而不是 0 人占位', () => {
+    const template = readFileSync('miniprogram/components/activity-card/index.wxml', 'utf8');
+    expect(template).toContain("item.capacity > 0 ? item.remaining : '待公布'");
+    expect(template).toContain(
+      "item.capacity > 0 ? (item.occupied + ' / ' + item.capacity + ' 人占位') : '名额待公布'",
+    );
   });
 
   it('无报名且已到截止时间时禁用', () => {

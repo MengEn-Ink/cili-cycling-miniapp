@@ -41,6 +41,7 @@ export interface Activity {
   feeExcluded?: string[];
   registrationState?: ActivityRegistrationState;
   closedReason?: ActivityClosedReason | null;
+  registrationSetupPending?: boolean;
   serverNow?: string;
 }
 export type AvatarSource = 'wechat' | 'strava' | 'custom';

@@ -205,28 +205,54 @@ async function saveActivity(
     if (
       current?.occupancy_partition_ready !== true &&
       current &&
-      (!Number.isInteger(current.capacity) ||
-        current.capacity < 1 ||
-        current.capacity > MAX_PARTITION_BACKFILL_RECORDS ||
+      ((Number.isInteger(current.capacity) && current.capacity > MAX_PARTITION_BACKFILL_RECORDS) ||
         occupiedCount > MAX_PARTITION_BACKFILL_RECORDS)
     )
       fail('PARTITION_BACKFILL_REQUIRED', '历史活动容量或占位数超过自动回填上限');
     if (current) assertStatusTransition(current.status, activity.status);
     else if (activity.status !== 'draft') fail('INVALID_TRANSITION', '新活动必须先保存为草稿');
+    const activityForValidation = current
+      ? {
+          ...activity,
+          ...(activity.capacity === undefined && current.capacity !== undefined
+            ? { capacity: current.capacity }
+            : {}),
+          ...(activity.support_vehicle_capacity === undefined &&
+          current.support_vehicle_capacity !== undefined
+            ? { support_vehicle_capacity: current.support_vehicle_capacity }
+            : {}),
+          ...(activity.self_drive_capacity === undefined &&
+          current.self_drive_capacity !== undefined
+            ? { self_drive_capacity: current.self_drive_capacity }
+            : {}),
+          ...(activity.support_vehicle_driver === undefined &&
+          current.support_vehicle_driver !== undefined
+            ? { support_vehicle_driver: current.support_vehicle_driver }
+            : {}),
+        }
+      : activity;
     const safe =
       activity.status === 'draft'
-        ? validateDraftInput(activity, occupiedCount)
-        : validatePublishInput(activity, occupiedCount, now, {
+        ? validateDraftInput(activityForValidation, occupiedCount)
+        : validatePublishInput(activityForValidation, occupiedCount, now, {
             requireFutureDeadline: current?.status === 'draft' && activity.status === 'published',
           });
-    const occupancyPartitionReady = true;
+    const partitionCapacityReady =
+      Number.isInteger(safe.capacity) &&
+      safe.capacity > 0 &&
+      Number.isInteger(safe.support_vehicle_capacity) &&
+      safe.support_vehicle_capacity >= 0 &&
+      Number.isInteger(safe.self_drive_capacity) &&
+      safe.self_drive_capacity >= 0 &&
+      safe.support_vehicle_capacity + safe.self_drive_capacity === safe.capacity;
+    const occupancyPartitionReady = partitionCapacityReady;
     let supportVehicleOccupiedCount = 0;
     let selfDriveOccupiedCount = 0;
     let backfilledPartition;
-    if (current?.occupancy_partition_ready === true) {
+    if (partitionCapacityReady && current?.occupancy_partition_ready === true) {
       supportVehicleOccupiedCount = current.support_vehicle_occupied_count;
       selfDriveOccupiedCount = current.self_drive_occupied_count;
-    } else if (current) {
+    } else if (partitionCapacityReady && current) {
       let registrations;
       try {
         registrations = await tx.getOccupyingRegistrations(activityId, occupiedCount);
@@ -248,8 +274,8 @@ async function saveActivity(
     if (!Number.isInteger(supportVehicleOccupiedCount) || !Number.isInteger(selfDriveOccupiedCount))
       fail('SCHEMA_INVALID', '分类名额计数异常');
     if (
-      safe.support_vehicle_capacity < supportVehicleOccupiedCount ||
-      safe.self_drive_capacity < selfDriveOccupiedCount
+      (occupancyPartitionReady && safe.support_vehicle_capacity < supportVehicleOccupiedCount) ||
+      (occupancyPartitionReady && safe.self_drive_capacity < selfDriveOccupiedCount)
     )
       fail('CAPACITY_BELOW_OCCUPIED', '分类容量不能低于对应已占用名额');
     const id = activityId || (await tx.createActivityId());
