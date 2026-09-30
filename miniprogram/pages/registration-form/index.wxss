@@ -31,13 +31,13 @@
 }
 
 .step-line .step-active {
-  border-color: #d8ff36;
-  color: #d8ff36;
+  border-color: #d55b1f;
+  color: #d55b1f;
 }
 
 .hero-kicker,
 .context-kicker {
-  color: #d8ff36;
+  color: #d55b1f;
   font-size: 21rpx;
   font-weight: 800;
   letter-spacing: 3rpx;
@@ -54,7 +54,7 @@
 .submit-note {
   padding: 22rpx;
   border: 1rpx solid #303735;
-  border-left: 6rpx solid #d8ff36;
+  border-left: 6rpx solid #d55b1f;
   border-radius: 8rpx;
   background: #111517;
 }
@@ -94,7 +94,7 @@
 
 .section-label > text {
   flex: 0 0 auto;
-  color: #d8ff36;
+  color: #d55b1f;
   font-size: 22rpx;
 }
 
@@ -145,7 +145,7 @@
 
 .required {
   margin-left: 8rpx;
-  color: #d8ff36;
+  color: #d55b1f;
   font-size: 20rpx;
 }
 
@@ -164,7 +164,7 @@
   padding: 0 14rpx;
   border: 1rpx solid #4a524e;
   background: transparent;
-  color: #d8ff36;
+  color: #d55b1f;
   font-size: 23rpx;
   font-weight: 800;
   line-height: 62rpx;
@@ -242,9 +242,9 @@
 }
 
 .choice.selected {
-  border-color: #d8ff36;
-  background: #171d14;
-  color: #f7ffd4;
+  border-color: #d55b1f;
+  background: rgba(213, 91, 31, 0.12);
+  color: #ffe6d6;
 }
 
 .choice.is-disabled {
@@ -257,7 +257,7 @@
 .remark {
   box-sizing: border-box;
   width: 100%;
-  min-height: 170rpx;
+  min-height: 240rpx;
   margin-top: 18rpx;
   padding: 20rpx;
   border: 1rpx solid #343b39;
@@ -333,7 +333,7 @@
 }
 
 .form-page .submit-button {
-  background: #d8ff36;
+  background: #d55b1f;
   color: #090b0f;
   font-weight: 900;
   letter-spacing: 2rpx;

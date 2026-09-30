@@ -668,6 +668,27 @@ describe('资料编辑头像交互', () => {
     expect(rideService.getProfileMediaUploadPath).not.toHaveBeenCalled();
   });
 
+  it('添加照片在途时再次触发被 busy lock 拦截，不重复 chooseMedia', async () => {
+    let releaseChoose: (value: unknown) => void = () => {};
+    const chooseGate = new Promise((resolve) => {
+      releaseChoose = resolve;
+    });
+    const chooseMedia = vi.fn().mockReturnValueOnce(chooseGate);
+    Object.assign(wx, { chooseMedia, cloud: { uploadFile: vi.fn() } });
+
+    const first = page.addPhoto();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(page.data.photoBusy).toBe(true);
+
+    await page.addPhoto();
+    expect(chooseMedia).toHaveBeenCalledTimes(1);
+
+    // 返回空选择，命中 !path 提前返回，干净释放锁。
+    releaseChoose({ tempFiles: [] });
+    await first;
+    expect(page.data.photoBusy).toBe(false);
+  });
+
   it('选择个人相册照片后仍先请求 owner-bound path 再上传并写入 photos', async () => {
     const uploadFile = vi
       .fn()

@@ -75,7 +75,7 @@
     <view class="card form-card">
       <view class="title">个人相册</view>
       <view class="muted form-tip">{{uploadHint}}</view>
-      <button class="photo-action" size="mini" bindtap="addPhoto">选择并上传照片</button>
+      <button class="photo-action" size="mini" bindtap="addPhoto" loading="{{photoBusy}}" disabled="{{photoBusy}}">选择并上传照片</button>
       <view class="photo-count">{{p.photos.length}} 张待保存</view>
     </view>
 
