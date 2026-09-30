@@ -5,8 +5,8 @@ page {
 .activities-page {
   min-height: 100vh;
   overflow: hidden;
-  padding-top: 28rpx;
-  background: radial-gradient(circle at 100% 8%, rgba(213, 91, 31, 0.12), transparent 30%), #0b0b0c;
+  padding-top: 18rpx;
+  background: radial-gradient(circle at 100% 5%, rgba(213, 91, 31, 0.1), transparent 26%), #0b0b0c;
   color: #f7f7f5;
 }
 
@@ -15,29 +15,43 @@ page {
 }
 
 brand-logo {
-  margin: 4rpx 4rpx 24rpx;
+  display: block;
+  margin: 0 4rpx 14rpx;
 }
 
 .activities-hero {
-  min-height: 344rpx;
-  padding-top: 46rpx;
-  padding-bottom: 42rpx;
+  min-height: 218rpx;
+  padding: 30rpx 30rpx 24rpx;
+  border-radius: 18rpx;
+}
+
+.activities-hero .hero-title {
+  margin: 8rpx 0 4rpx;
+  font-size: 40rpx;
+  line-height: 1.08;
+}
+
+.activities-hero .hero-subtitle {
+  position: relative;
+  z-index: 1;
+  max-width: 510rpx;
+  font-size: 23rpx;
 }
 
 .hero-index {
   position: absolute;
   top: 24rpx;
-  right: 28rpx;
-  color: #55555b;
+  right: 26rpx;
+  color: #6f6f75;
   font-size: 18rpx;
   font-weight: 800;
   letter-spacing: 2rpx;
 }
 
 .hero-rule {
-  width: 250rpx;
-  height: 6rpx;
-  margin-top: 32rpx;
+  width: 190rpx;
+  height: 5rpx;
+  margin-top: 18rpx;
   background: #3a3a3e;
   transform: skewX(-30deg);
 }
@@ -52,30 +66,66 @@ brand-logo {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 20rpx;
-  margin: 42rpx 4rpx 8rpx;
+  gap: 16rpx;
+  margin: 22rpx 4rpx 4rpx;
+}
+
+.section-copy {
+  min-width: 0;
 }
 
 .section-eyebrow {
-  margin-bottom: 2rpx;
+  margin-bottom: 1rpx;
   color: #d55b1f;
-  font-size: 18rpx;
+  font-size: 17rpx;
   font-weight: 800;
   letter-spacing: 3rpx;
 }
 
 .section-title {
-  font-size: 38rpx;
+  font-size: 34rpx;
   font-weight: 900;
+  line-height: 1.24;
+}
+
+.section-head .muted {
+  overflow: hidden;
+  font-size: 22rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .count {
-  min-width: 70rpx;
+  flex: none;
+  min-width: 68rpx;
   padding: 5rpx 12rpx;
   border-left: 5rpx solid #d55b1f;
   background: #242427;
   color: #f7f7f5;
+  font-size: 22rpx;
   font-weight: 800;
   text-align: center;
   transform: skewX(-10deg);
+}
+
+.refresh-note {
+  margin: 10rpx 4rpx 0;
+  font-size: 22rpx;
+}
+
+@media (max-width: 350px) {
+  .page.activities-page {
+    padding-right: 20rpx;
+    padding-left: 20rpx;
+  }
+
+  .activities-hero {
+    min-height: 204rpx;
+    padding-right: 24rpx;
+    padding-left: 24rpx;
+  }
+
+  .activities-hero .hero-title {
+    font-size: 37rpx;
+  }
 }

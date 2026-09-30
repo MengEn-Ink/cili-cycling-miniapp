@@ -216,6 +216,17 @@ describe('活动详情 CTA 接线', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
+  it('活动封面加载失败后降级为纯色 Hero，重新加载时恢复媒体尝试', async () => {
+    page.coverImageError();
+    expect(page.data.coverFailed).toBe(true);
+
+    rideService.getActivity.mockResolvedValue(open);
+    rideService.listRegistrations.mockResolvedValue([]);
+    await page.load('a1');
+
+    expect(page.data.coverFailed).toBe(false);
+  });
+
   it('满员活动的 go handler 不允许导航到报名页', async () => {
     rideService.getActivity.mockResolvedValue(
       activity({ registrationState: 'closed', closedReason: 'full' }),

@@ -13,6 +13,7 @@ Page({
     error: '',
     item: null as any,
     registration: null as any,
+    coverFailed: false,
     activityAction: unavailableAction(),
   },
   onLoad(q: any) {
@@ -23,7 +24,12 @@ Page({
   },
   async load(id: string) {
     const requestId = ++this.loadRequestId;
-    this.setData({ loading: true, error: '', activityAction: unavailableAction() });
+    this.setData({
+      loading: true,
+      error: '',
+      coverFailed: false,
+      activityAction: unavailableAction(),
+    });
     try {
       const item = await rideService.getActivity(id);
       if (requestId !== this.loadRequestId) return;
@@ -46,6 +52,9 @@ Page({
     } finally {
       if (requestId === this.loadRequestId) this.setData({ loading: false });
     }
+  },
+  coverImageError() {
+    this.setData({ coverFailed: true });
   },
   go() {
     const action = this.data.activityAction as ActivityAction;

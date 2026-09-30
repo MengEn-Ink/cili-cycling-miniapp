@@ -2,31 +2,91 @@
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{loading ? '正在读取资料。正在同步最新资料' : (refreshing ? '正在更新资料' : (!error ? '资料已就绪' : ''))}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{error}}</view>
   <brand-logo compact="{{true}}" meta="RIDER PROFILE" />
+
   <view class="profile-hero has-bg">
     <swiper wx:if="{{heroBackgrounds.length}}" class="hero-swiper" circular="{{heroBackgrounds.length > 1}}" indicator-dots="{{heroBackgrounds.length > 1}}">
-      <swiper-item wx:for="{{heroBackgrounds}}" wx:key="url"><image class="hero-bg-image" src="{{item.url}}" mode="aspectFill" aria-hidden="true" data-url="{{item.url}}" data-index="{{index}}" binderror="heroBackgroundError" /></swiper-item>
+      <swiper-item wx:for="{{heroBackgrounds}}" wx:key="url">
+        <image class="hero-bg-image" src="{{item.url}}" mode="aspectFill" aria-hidden="true" data-url="{{item.url}}" data-index="{{index}}" binderror="heroBackgroundError" />
+      </swiper-item>
     </swiper>
     <image wx:elif="{{heroBackgroundAvatarUrl}}" class="hero-bg-image hero-fallback-image" src="{{heroBackgroundAvatarUrl}}" mode="aspectFill" aria-hidden="true" data-url="{{heroBackgroundAvatarUrl}}" binderror="heroAvatarBackgroundError" />
     <image wx:elif="{{heroFallbackImageUrl}}" class="hero-bg-image hero-fallback-image packaged-alpine-image" src="{{heroFallbackImageUrl}}" mode="aspectFill" aria-hidden="true" data-url="{{heroFallbackImageUrl}}" binderror="heroFallbackBackgroundError" />
-    <view wx:else class="hero-alpine" aria-hidden="true"><view class="hero-alpine-sun"></view><view class="hero-ridge hero-ridge-far"></view><view class="hero-ridge hero-ridge-near"></view><view class="hero-alpine-mark">此里</view></view>
+    <view wx:else class="hero-alpine" aria-hidden="true">
+      <view class="hero-alpine-sun"></view>
+      <view class="hero-ridge hero-ridge-far"></view>
+      <view class="hero-ridge hero-ridge-near"></view>
+      <view class="hero-alpine-mark">此里</view>
+    </view>
     <view class="hero-shade" aria-hidden="true"></view>
-    <view class="hero-identity"><view class="avatar"><image wx:if="{{heroAvatarUrl}}" class="avatar-image" src="{{heroAvatarUrl}}" mode="aspectFill" data-url="{{heroAvatarUrl}}" binderror="heroAvatarError" aria-label="{{profile ? profile.nickname : '骑手'}}的头像" /><text wx:else aria-label="默认骑手头像">C</text></view><view class="profile-copy"><view class="hero-kicker">RIDER PROFILE</view><view class="profile-name">{{profile ? profile.nickname : '欢迎来到此里'}}</view><view class="profile-title" wx:if="{{heroCard && heroCard.title}}">{{heroCard.title}}</view><view class="auth-line"><text class="auth-dot {{authStatus === 'authenticated' ? 'verified' : ''}}"></text>{{authStatus === 'authenticated' ? '微信身份已验证' : '请先完成微信云身份验证'}}</view></view></view>
-    <view class="hero-capability-card" wx:if="{{heroCard}}"><view class="hero-capability-head"><view class="hero-capability-label">我的骑行名片</view><view class="hero-capability-status status-{{heroCard.statusTone}}"><text class="status-dot"></text>STRAVA {{heroCard.statusLabel}}</view></view><view class="hero-capability-metrics" wx:if="{{heroCard.primaryMetrics.length}}"><view class="hero-capability-metric" wx:for="{{heroCard.primaryMetrics}}" wx:key="key"><view class="hero-capability-value">{{item.value}}<text class="hero-capability-unit">{{item.unit}}</text></view><view class="hero-capability-name">{{item.label}}</view></view></view><view class="hero-capability-empty" wx:else>完成 Strava 连接后，这里会展示近 90 天骑行名片。</view><view class="hero-capability-meta" wx:if="{{heroCard.coverageText || heroCard.generatedAtText}}">{{heroCard.coverageText || heroCard.generatedAtText}}</view></view>
-  </view>
-  <view class="card auth-card" wx:if="{{authStatus !== 'authenticated'}}"><view class="panel-index">IDENTITY CHECK</view><view class="title">身份验证</view><view class="muted">{{authError || '为了您的数据安全，请先完成验证'}}</view><view class="muted" wx:if="{{identityHintText}}">{{identityHintText}}</view><button class="secondary" bindtap="retryAuth">开始验证</button></view>
 
-  <view class="card guidance-card" wx:if="{{profile && hasGuidance}}"><view class="panel-index">开始使用</view><view class="title">完成骑行资料</view><view class="muted">完善常用资料并连接 Strava，报名时可直接使用。</view><view class="guidance-actions"><button class="btn" bindtap="edit">完善资料</button><button class="secondary" bindtap="dismissGuidance">我知道了</button></view></view>
+    <view class="hero-identity">
+      <view class="avatar">
+        <image wx:if="{{heroAvatarUrl}}" class="avatar-image" src="{{heroAvatarUrl}}" mode="aspectFill" data-url="{{heroAvatarUrl}}" binderror="heroAvatarError" aria-label="{{profile ? profile.nickname : '骑手'}}的头像" />
+        <text wx:else aria-label="默认骑手头像">C</text>
+      </view>
+      <view class="profile-copy">
+        <view class="hero-kicker">RIDER PROFILE</view>
+        <view class="profile-name">{{profile ? profile.nickname : '欢迎来到此里'}}</view>
+        <view class="profile-title" wx:if="{{heroCard && heroCard.title}}">{{heroCard.title}}</view>
+        <view class="auth-line"><text class="auth-dot {{authStatus === 'authenticated' ? 'verified' : ''}}"></text>{{authStatus === 'authenticated' ? '微信身份已验证' : '请先完成微信云身份验证'}}</view>
+      </view>
+    </view>
+
+    <view class="hero-capability-card" wx:if="{{heroCard}}" bindtap="capabilityCard">
+      <view class="hero-capability-head">
+        <view class="hero-capability-label">近 90 天骑行摘要</view>
+        <view class="hero-capability-status status-{{heroCard.statusTone}}"><text class="status-dot"></text>STRAVA {{heroCard.statusLabel}}</view>
+      </view>
+      <view class="hero-capability-metrics" wx:if="{{heroCard.primaryMetrics.length}}">
+        <view class="hero-capability-metric" wx:for="{{heroCard.primaryMetrics}}" wx:key="key">
+          <view class="hero-capability-value">{{item.value}}<text class="hero-capability-unit">{{item.unit}}</text></view>
+          <view class="hero-capability-name">{{item.label}}</view>
+        </view>
+      </view>
+      <view class="hero-capability-empty" wx:else>完成 Strava 连接后显示真实骑行摘要</view>
+      <view class="hero-capability-meta" wx:if="{{heroCard.coverageText || heroCard.generatedAtText}}">{{heroCard.coverageText || heroCard.generatedAtText}}</view>
+    </view>
+
+    <view class="hero-profile-progress" wx:if="{{profile}}">
+      <view class="hero-progress-head"><text>资料完整度</text><text>{{profile.completeness}}%</text></view>
+      <view class="hero-progress-track"><view class="hero-progress-value" style="width: {{profile.completeness}}%"></view></view>
+    </view>
+  </view>
+
+  <view class="card auth-card" wx:if="{{authStatus !== 'authenticated'}}">
+    <view class="panel-index">IDENTITY CHECK</view>
+    <view class="title">身份验证</view>
+    <view class="muted">{{authError || '为了您的数据安全，请先完成验证'}}</view>
+    <view class="muted" wx:if="{{identityHintText}}">{{identityHintText}}</view>
+    <button class="secondary" bindtap="retryAuth">开始验证</button>
+  </view>
+
+  <view class="card guidance-card" wx:if="{{profile && hasGuidance}}">
+    <view class="panel-index">开始使用</view>
+    <view class="title">完成骑行资料</view>
+    <view class="muted">完善常用资料并连接 Strava，报名时可直接使用。</view>
+    <view class="guidance-actions"><button class="btn" bindtap="edit">完善资料</button><button class="secondary" bindtap="dismissGuidance">我知道了</button></view>
+  </view>
+
   <view class="section-label"><text>01</text> 我的资料</view>
   <view class="profile-refreshing" wx:if="{{profile && refreshing}}" aria-hidden="true">正在更新资料…</view>
   <view class="profile-refresh-error" wx:if="{{profile && error}}"><text aria-hidden="true">{{error}}</text><button bindtap="retryProfile">重试</button></view>
   <view class="card profile-loading" wx:if="{{loading}}" aria-hidden="true"><view class="panel-index">PROFILE LOADING</view><view class="title">正在读取资料</view><view class="muted">正在同步最新资料。</view></view>
-  <view class="card profile-card" wx:elif="{{profile}}"><view class="panel-index">资料完整度</view><view class="row"><view><view class="title">常用报名资料</view><view class="muted">仅你与报名审核员可见</view></view><button class="edit-button" bindtap="edit">编辑</button></view><view class="progress-head"><text>资料完整度</text><text class="progress-number">{{profile.completeness}}%</text></view><view class="progress"><view class="progress-value" style="width: {{profile.completeness}}%"></view></view><view class="corner-cut"></view></view>
+  <view class="card profile-card" wx:elif="{{profile}}">
+    <view class="row">
+      <view class="profile-card-copy"><view class="title">常用报名资料</view><view class="muted">仅你与报名审核员可见</view></view>
+      <button class="edit-button" bindtap="edit">编辑资料</button>
+    </view>
+    <view class="corner-cut"></view>
+  </view>
   <view class="card profile-error" wx:elif="{{error}}"><view aria-hidden="true"><view class="panel-index">PROFILE ERROR</view><view class="title">资料暂时无法加载</view><view class="muted">{{error}}</view></view><button class="secondary" bindtap="retryProfile">重试加载</button></view>
   <view class="card empty-profile" wx:else><view class="title">资料尚未配置</view><view class="muted">请创建资料后再报名。</view><button class="btn" bindtap="edit">去完善</button></view>
 
   <view class="section-label"><text>02</text> 骑行服务</view>
-  <view class="menu-card capability-entry" bindtap="capabilityCard"><view class="menu-icon capability-icon">C</view><view class="menu-copy"><view class="menu-title">我的骑行名片</view><view class="muted">查看近 90 天骑行能力</view></view><text class="chevron">›</text></view>
-  <view class="menu-card" bindtap="strava"><view class="menu-icon">S</view><view class="menu-copy"><view class="menu-title">Strava 数据</view><view class="muted">查看连接状态与骑行数据</view></view><text class="chevron">›</text></view>
-  <view class="menu-card" wx:if="{{authStatus === 'authenticated'}}" bindtap="activities"><view class="menu-icon">M</view><view class="menu-copy"><view class="menu-title">活动管理</view><view class="muted">创建、编辑与发布活动</view></view><text class="chevron">›</text></view>
-  <view class="menu-card" wx:if="{{isAdmin}}" bindtap="admin"><view class="menu-icon admin-icon">A</view><view class="menu-copy"><view class="menu-title">报名审批</view><view class="muted">查看并处理报名</view></view><text class="chevron">›</text></view>
+  <view class="menu-list">
+    <view class="menu-card capability-entry" bindtap="capabilityCard"><view class="menu-icon capability-icon">C</view><view class="menu-copy"><view class="menu-title">我的骑行名片</view><view class="muted">查看近 90 天骑行能力</view></view><text class="chevron">›</text></view>
+    <view class="menu-card" bindtap="strava"><view class="menu-icon">S</view><view class="menu-copy"><view class="menu-title">Strava 数据</view><view class="muted">查看连接状态与骑行数据</view></view><text class="chevron">›</text></view>
+    <view class="menu-card" wx:if="{{authStatus === 'authenticated'}}" bindtap="activities"><view class="menu-icon">M</view><view class="menu-copy"><view class="menu-title">活动管理</view><view class="muted">创建、编辑与发布活动</view></view><text class="chevron">›</text></view>
+    <view class="menu-card" wx:if="{{isAdmin}}" bindtap="admin"><view class="menu-icon admin-icon">A</view><view class="menu-copy"><view class="menu-title">报名审批</view><view class="muted">查看并处理报名</view></view><text class="chevron">›</text></view>
+  </view>
 </view>

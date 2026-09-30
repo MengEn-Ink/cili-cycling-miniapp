@@ -72,6 +72,6 @@ describe('CILI 深色竞技页面静态契约', () => {
 
     expect(template).toContain('wx:if="{{card.needsStravaRepair}}"');
     expect(template).toContain('wx:if="{{card.needsProfilePhoto}}"');
-    expect(template).toContain('仅自己可见');
+    expect(template).toContain('仅自己可见 · 不作为活动审核依据');
   });
 });

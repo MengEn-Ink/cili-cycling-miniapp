@@ -10,8 +10,8 @@
 .detail-hero {
   position: relative;
   overflow: hidden;
-  min-height: 430rpx;
-  padding: 62rpx 36rpx 112rpx;
+  min-height: 330rpx;
+  padding: 30rpx 30rpx 74rpx;
   border-bottom: 1rpx solid #39393d;
   background:
     radial-gradient(circle at 90% 15%, #2c1a14, transparent 36%),
@@ -19,24 +19,58 @@
   color: #f7f7f5;
 }
 
+.hero-media,
+.hero-shade {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.hero-shade {
+  background: linear-gradient(180deg, rgba(11, 11, 12, 0.38), rgba(11, 11, 12, 0.94));
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+}
+
 brand-logo {
   display: block;
-  margin-bottom: 48rpx;
+  margin-bottom: 26rpx;
 }
 
 .hero-sequence {
   position: absolute;
-  top: 66rpx;
-  right: 34rpx;
-  color: #59595e;
+  top: 4rpx;
+  right: 2rpx;
+  color: #a8a8ad;
   font-size: 18rpx;
   font-weight: 800;
   letter-spacing: 3rpx;
 }
 
 .detail-hero .hero-title {
-  max-width: 610rpx;
-  font-size: 48rpx;
+  display: -webkit-box;
+  max-width: 620rpx;
+  overflow: hidden;
+  margin: 8rpx 0 6rpx;
+  font-size: 42rpx;
+  line-height: 1.16;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.detail-hero .hero-subtitle {
+  overflow: hidden;
+  max-width: 620rpx;
+  font-size: 24rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .route-arrow,
@@ -46,11 +80,13 @@ brand-logo {
 
 .hero-level {
   display: inline-flex;
-  margin-top: 26rpx;
-  padding: 7rpx 18rpx;
+  align-items: center;
+  min-height: 44rpx;
+  margin-top: 16rpx;
+  padding: 4rpx 16rpx;
   border: 1rpx solid #d55b1f;
-  border-radius: 3rpx;
-  background: rgba(213, 91, 31, 0.1);
+  border-radius: 999rpx;
+  background: rgba(213, 91, 31, 0.13);
   color: #f38a50;
   font-size: 21rpx;
   font-weight: 800;
@@ -58,10 +94,11 @@ brand-logo {
 
 .hero-corner {
   position: absolute;
+  z-index: 3;
   right: 0;
   bottom: 0;
-  width: 76rpx;
-  height: 76rpx;
+  width: 58rpx;
+  height: 58rpx;
   background: linear-gradient(135deg, transparent 49%, #d55b1f 50%);
 }
 
@@ -71,19 +108,21 @@ brand-logo {
 
 .metric-panel {
   position: relative;
-  z-index: 2;
+  z-index: 4;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2rpx;
-  margin-top: -62rpx;
+  gap: 1rpx;
+  margin-top: -46rpx;
   border: 1rpx solid #414146;
+  border-radius: 16rpx;
+  overflow: hidden;
   background: #414146;
-  box-shadow: 0 14rpx 34rpx rgba(0, 0, 0, 0.38);
+  box-shadow: 0 12rpx 28rpx rgba(0, 0, 0, 0.36);
 }
 
 .detail-metric {
   min-width: 0;
-  padding: 24rpx 8rpx;
+  padding: 18rpx 6rpx 16rpx;
   background: #18181a;
   color: #a8a8ad;
   font-size: 24rpx;
@@ -93,26 +132,38 @@ brand-logo {
 .metric-number {
   overflow: hidden;
   color: #f7f7f5;
-  font-size: 34rpx;
+  font-size: 32rpx;
   font-variant-numeric: tabular-nums;
   font-weight: 900;
+  line-height: 1.2;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metric-number--text {
+  font-size: 26rpx;
 }
 
 .metric-label {
   margin-top: 2rpx;
   font-weight: 700;
-  letter-spacing: 1rpx;
 }
 
 .detail-page .card {
   position: relative;
   overflow: hidden;
+  margin-top: 16rpx;
+  padding: 22rpx 24rpx;
   border: 1rpx solid #37373b;
-  border-radius: 8rpx;
+  border-radius: 16rpx;
   background: linear-gradient(145deg, #242427, #19191b);
   color: #f7f7f5;
-  box-shadow: 0 12rpx 30rpx rgba(0, 0, 0, 0.24);
+  box-shadow: 0 10rpx 24rpx rgba(0, 0, 0, 0.22);
+}
+
+.detail-page .title {
+  margin-bottom: 10rpx;
+  font-size: 30rpx;
 }
 
 .detail-page .muted {
@@ -125,12 +176,16 @@ brand-logo {
   box-shadow: 0 -8rpx 28rpx rgba(0, 0, 0, 0.4);
 }
 
+.detail-action .btn {
+  min-height: 92rpx;
+}
+
 .card-index {
   position: absolute;
-  top: 16rpx;
-  right: 20rpx;
-  color: #414146;
-  font-size: 42rpx;
+  top: 12rpx;
+  right: 18rpx;
+  color: #4d4d52;
+  font-size: 36rpx;
   font-weight: 900;
   font-style: italic;
 }
@@ -139,25 +194,48 @@ brand-logo {
 .list-item,
 .notice-item {
   color: #b8b8bc;
-  line-height: 1.75;
+  line-height: 1.62;
 }
 
 .schedule-row {
   display: grid;
-  grid-template-columns: 92rpx 18rpx minmax(0, 1fr);
-  gap: 14rpx;
-  padding: 16rpx 0;
+  grid-template-columns: 86rpx 18rpx minmax(0, 1fr);
+  gap: 12rpx;
+  min-height: 76rpx;
+  padding: 10rpx 0;
 }
 
 .schedule-time {
   color: #f38a50;
+  font-variant-numeric: tabular-nums;
   font-weight: 900;
 }
 
+.schedule-track {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.schedule-track::after {
+  position: absolute;
+  top: 24rpx;
+  bottom: -20rpx;
+  width: 2rpx;
+  background: #3a3a3e;
+  content: '';
+}
+
+.schedule-row:last-child .schedule-track::after {
+  display: none;
+}
+
 .schedule-dot {
+  position: relative;
+  z-index: 1;
   width: 12rpx;
   height: 12rpx;
-  margin-top: 14rpx;
+  margin-top: 12rpx;
   background: #d55b1f;
   transform: rotate(45deg);
 }
@@ -166,11 +244,19 @@ brand-logo {
   min-width: 0;
 }
 
+.schedule-copy .muted {
+  overflow: hidden;
+  margin-top: 2rpx;
+  font-size: 23rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .list-item,
 .notice-item {
   display: flex;
-  gap: 14rpx;
-  padding: 8rpx 0;
+  gap: 12rpx;
+  padding: 6rpx 0;
 }
 
 .check {
@@ -179,7 +265,7 @@ brand-logo {
 }
 
 .notice-item {
-  color: #8b8b91;
+  color: #a8a8ad;
 }
 
 .notice-mark {
@@ -190,4 +276,25 @@ brand-logo {
 .button-arrow {
   margin-left: 16rpx;
   color: #f7f7f5;
+}
+
+@media (max-width: 350px) {
+  .detail-hero {
+    min-height: 306rpx;
+    padding-right: 24rpx;
+    padding-left: 24rpx;
+  }
+
+  .detail-hero .hero-title {
+    font-size: 38rpx;
+  }
+
+  .content {
+    padding-right: 20rpx;
+    padding-left: 20rpx;
+  }
+
+  .metric-number {
+    font-size: 29rpx;
+  }
 }

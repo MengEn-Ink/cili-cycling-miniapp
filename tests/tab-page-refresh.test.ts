@@ -192,6 +192,47 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
   });
 });
 
+describe('registrations status presentation', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    rideService.listActivities.mockReset();
+    rideService.listRegistrations.mockReset();
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('maps every status label while retaining bound trip fields', async () => {
+    const page = await loadPage('registrations');
+    const statuses = ['pending', 'approved', 'rejected', 'cancelled'] as const;
+    rideService.listRegistrations.mockResolvedValue(
+      statuses.map((status, index) => ({
+        ...registration(`r${index}`, 'activity-shared'),
+        status,
+        gatheringMode: index % 2 ? '需要后援车' : '自驾',
+      })),
+    );
+    rideService.listActivities.mockResolvedValue([
+      { ...activity('activity-shared'), date: '2026-10-18' },
+    ]);
+
+    await page.load();
+
+    expect(page.data.items.map((item: any) => item.statusText)).toEqual([
+      '待审核',
+      '已通过',
+      '已驳回',
+      '已取消',
+    ]);
+    expect(page.data.items.map((item: any) => item.gatheringMode)).toEqual([
+      '自驾',
+      '需要后援车',
+      '自驾',
+      '需要后援车',
+    ]);
+    expect(page.data.items.every((item: any) => item.activity.date === '2026-10-18')).toBe(true);
+  });
+});
+
 describe('tab page refresh view contract', () => {
   it.each(['activities', 'registrations'])(
     '%s keeps refresh announcements mounted outside state-view',

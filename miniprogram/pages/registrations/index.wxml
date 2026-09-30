@@ -3,19 +3,22 @@
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{refreshError}}</view>
   <brand-logo compact="{{true}}" meta="MY RIDES" />
   <view class="page-heading">
-    <view class="hero-kicker">MY RIDES</view>
-    <view class="heading-title">我的行程</view>
-    <view class="heading-meta">共 {{items.length}} 条报名记录</view>
+    <view><view class="hero-kicker">MY RIDES</view><view class="heading-title">我的行程</view></view>
+    <view class="heading-count"><text class="count-value">{{items.length}}</text><text>条报名</text></view>
   </view>
-  <view class="muted" wx:if="{{refreshing}}" aria-hidden="true">正在刷新报名…</view>
-  <view class="muted" wx:if="{{refreshError}}" aria-hidden="true">{{refreshError}}</view>
+  <view class="refresh-note" wx:if="{{refreshing}}" aria-hidden="true">正在刷新报名…</view>
+  <view class="refresh-note refresh-error" wx:if="{{refreshError}}" aria-hidden="true">{{refreshError}}</view>
   <state-view loading="{{loading}}" error="{{error}}" empty="{{!items.length}}" empty-title="暂无行程" empty-copy="去发现一场活动，报名后可在这里查看进度" retryable="{{true}}" bind:retry="load">
-    <view class="registration-card" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="open" hover-class="registration-card--pressed">
-      <view class="card-index">RIDE / {{index + 1}}</view>
-      <view class="row card-head"><text class="date">{{item.activity.date}}</text><status-pill status="{{item.statusText}}"/></view>
-      <view class="registration-title">{{item.activity.title}}</view>
-      <view class="card-footer"><text class="updated-at">更新于 {{item.updatedAt}}</text><text class="open-link">查看详情 <text class="arrow">›</text></text></view>
-      <view class="corner-cut"></view>
+    <view class="registration-list">
+      <view class="registration-card status-{{item.status}}" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="open" hover-class="registration-card--pressed">
+        <view class="card-main">
+          <view class="card-head"><text class="card-index">RIDE {{index + 1}}</text><status-pill status="{{item.statusText}}"/></view>
+          <view class="registration-title">{{item.activity.title}}</view>
+          <view class="registration-meta"><text class="date">{{item.activity.date}}</text><text wx:if="{{item.gatheringMode}}" class="gathering-mode">{{item.gatheringMode}}</text></view>
+        </view>
+        <view class="card-footer"><text class="updated-at">更新于 {{item.updatedAt}}</text><text class="open-link">详情 <text class="arrow">›</text></text></view>
+        <view class="corner-cut"></view>
+      </view>
     </view>
   </state-view>
 </view>

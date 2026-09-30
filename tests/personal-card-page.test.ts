@@ -169,18 +169,21 @@ describe('个人骑行名片静态页面契约', () => {
     expect(profileWxml).toContain('我的骑行名片');
   });
 
-  it('使用原生多图 swiper、隐私标签和动态指标列表', () => {
+  it('使用原生多图 swiper、隐私说明和真实五项指标列表', () => {
     const template = read('miniprogram/pages/capability-card/index.wxml');
 
     expect(template).toContain('<swiper');
     expect(template).toContain('autoplay="{{card.hasMultipleBackgrounds}}"');
-    expect(template).toContain('仅自己可见');
+    expect(template).toContain('仅自己可见 · 不作为活动审核依据');
     expect(template).toContain('class="brand-signature"');
-    expect(template).toContain('CILI <text class="brand-cn">此里</text>');
+    expect(template).toContain('CILI</view>');
     expect(template).toContain('STRAVA {{card.statusLabel}}');
-    expect(template).toContain('wx:for="{{card.primaryMetrics}}"');
-    expect(template).toContain('wx:for="{{card.secondaryMetrics}}"');
-    expect(template.indexOf('core-summary')).toBeLessThan(template.indexOf('metric-sheet'));
+    expect(template).toContain('wx:for="{{card.metrics}}"');
+    expect(template).toContain('近 90 天真实骑行数据');
+    expect(template).toContain('覆盖范围');
+    expect(template).toContain('{{card.coverageText}}');
+    expect(template).toContain('最近同步');
+    expect(template).toContain('{{card.syncedAtText}}');
     expect(template).toContain('binderror="backgroundError"');
     expect(template).toContain('data-url="{{item.url}}"');
     expect(template).toContain('data-index="{{index}}"');
@@ -189,15 +192,21 @@ describe('个人骑行名片静态页面契约', () => {
     expect(template).toContain('wx:if="{{card.needsProfilePhoto}}"');
   });
 
-  it('长姓名限制为可读的两行且保持 3:4 安全区', () => {
+  it('长姓名与长头衔可截断且五项指标保持紧凑网格', () => {
     const styles = read('miniprogram/pages/capability-card/index.wxss');
     const riderName = styles.match(/\.rider-name\s*\{([^}]*)\}/)?.[1] || '';
+    const riderTitle = styles.match(/\.rider-title\s*\{([^}]*)\}/)?.[1] || '';
+    const metricValue = styles.match(/\.metric-value\s*\{([^}]*)\}/)?.[1] || '';
 
     expect(styles).toMatch(/\.rider-card\s*\{[^}]*aspect-ratio:\s*3\s*\/\s*4/s);
+    expect(styles).toContain('.metric-item:nth-child(n + 4)');
+    expect(styles).toMatch(/\.metric-item\s*\{[^}]*box-sizing:\s*border-box/s);
     expect(riderName).toContain('-webkit-line-clamp: 2');
     expect(riderName).toMatch(/line-height:\s*1\.[01]/);
     expect(riderName).toContain('text-overflow: ellipsis');
     expect(riderName).not.toContain('white-space: nowrap');
+    expect(riderTitle).toContain('-webkit-line-clamp: 2');
+    expect(metricValue).toContain('text-overflow: ellipsis');
   });
 
   it('不包含分享入口、公开路由或敏感身份字段', () => {
