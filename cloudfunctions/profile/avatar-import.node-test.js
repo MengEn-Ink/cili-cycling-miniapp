@@ -329,6 +329,37 @@ test('真实 boundedRequest 路径保留瞬时网络码并按剩余总预算重�
   assert.deepEqual(connectBudgets, [100, 60]);
 });
 
+test('真实 boundedRequest 路径在同一总预算内重试瞬时 DNS 失败', async () => {
+  let lookupCalls = 0;
+  let clock = 0;
+  const connectBudgets = [];
+  const result = await downloadAvatar(allowedUrl, {
+    totalTimeoutMs: 100,
+    now: () => clock,
+    lookup: async () => {
+      lookupCalls += 1;
+      if (lookupCalls === 1) {
+        clock = 35;
+        throw Object.assign(new Error('temporary dns failure'), { code: 'EAI_AGAIN' });
+      }
+      return [{ address: '93.184.216.34', family: 4 }];
+    },
+    requestFactory: fakeRequest(({ request, callback }) => {
+      connectBudgets.push(request.connectTimeout);
+      callback(
+        Object.assign(Readable.from([jpeg]), {
+          statusCode: 200,
+          headers: { 'content-type': 'image/jpeg' },
+        }),
+      );
+    }),
+  });
+
+  assert.equal(result.extension, 'jpg');
+  assert.equal(lookupCalls, 2);
+  assert.deepEqual(connectBudgets, [65]);
+});
+
 test('导入只使用当前用户 credential URL，并按 strava origin 登记后切换', async () => {
   const openid = 'owner';
   const mediaSecret = 'profile-media-secret-for-tests-32-bytes';

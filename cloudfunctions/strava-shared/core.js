@@ -1,7 +1,13 @@
 'use strict';
 const crypto = require('node:crypto');
+const net = require('node:net');
 const SNAPSHOT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const SYNC_LEASE_MS = 2 * 60 * 1000;
+const ALLOWED_AVATAR_HOSTS = new Set([
+  'dgalywyr863hv.cloudfront.net',
+  'dgtzuqphqg23d.cloudfront.net',
+  'd3nn82uaxijpm6.cloudfront.net',
+]);
 class StravaError extends Error {
   constructor(code, message) {
     super(message);
@@ -104,6 +110,26 @@ async function consumeState(store, raw, now = new Date()) {
     throw new StravaError('OAUTH_STATE_INVALID', 'OAuth state 无效');
   return value;
 }
+function trustedAvatarUrl(value) {
+  if (typeof value !== 'string' || !value || value.length > 2048) return '';
+  try {
+    const url = new URL(value);
+    const hostname = url.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+    if (
+      url.protocol !== 'https:' ||
+      url.username ||
+      url.password ||
+      url.port ||
+      net.isIP(hostname) ||
+      !ALLOWED_AVATAR_HOSTS.has(hostname)
+    )
+      return '';
+    url.hash = '';
+    return url.toString();
+  } catch {
+    return '';
+  }
+}
 function tokenDocument(openid, token, keyValue, now) {
   if (
     !token ||
@@ -115,17 +141,7 @@ function tokenDocument(openid, token, keyValue, now) {
   )
     throw new StravaError('OAUTH_TOKEN_INVALID', 'Strava 换取凭证失败');
   const athleteAvatarUrl = [token.athlete.profile, token.athlete.profile_medium]
-    .filter((value) => typeof value === 'string' && value.length <= 2048)
-    .map((value) => {
-      try {
-        const url = new URL(value);
-        if (url.protocol !== 'https:' || url.username || url.password) return '';
-        url.hash = '';
-        return url.toString();
-      } catch {
-        return '';
-      }
-    })
+    .map(trustedAvatarUrl)
     .find(Boolean);
   return {
     _id: openid,
@@ -200,11 +216,7 @@ function publicSnapshot(snapshot) {
   return result;
 }
 function deriveReadiness({ credential, snapshot, hasActiveOAuthState }, now = new Date()) {
-  const avatarAvailable = Boolean(
-    credential &&
-    typeof credential.athlete_avatar_url === 'string' &&
-    credential.athlete_avatar_url.trim(),
-  );
+  const avatarAvailable = Boolean(trustedAvatarUrl(credential?.athlete_avatar_url));
   if (!credential) {
     return {
       state: hasActiveOAuthState ? 'authorizing' : 'disconnected',
@@ -488,6 +500,7 @@ module.exports = {
   hashState,
   authorizationUrl,
   consumeState,
+  trustedAvatarUrl,
   tokenDocument,
   validDate,
   isSnapshotFresh,

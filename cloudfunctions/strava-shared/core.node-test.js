@@ -140,6 +140,22 @@ test('token 头像仅从 athlete profile/profile_medium 捕获安全 HTTPS URL',
     ).athlete_avatar_url,
     'https://dgtzuqphqg23d.cloudfront.net/avatar.jpg',
   );
+  for (const profile of [
+    'https://strava.example/avatar.jpg',
+    'https://127.0.0.1/avatar.jpg',
+    'https://user:secret@dgalywyr863hv.cloudfront.net/avatar.jpg',
+    'https://dgalywyr863hv.cloudfront.net:8443/avatar.jpg',
+  ]) {
+    assert.equal(
+      tokenDocument(
+        'openid',
+        { ...token(), athlete: { ...token().athlete, profile, profile_medium: '' } },
+        key,
+        now,
+      ).athlete_avatar_url,
+      undefined,
+    );
+  }
 });
 test('state 防 CSRF、过期和重放', async () => {
   const state = createState();
@@ -243,12 +259,32 @@ test('readiness 常量和 fresh canonical snapshot 快路径', () => {
   });
   assert.equal(
     deriveReadiness({
-      credential: { ...credential, athlete_avatar_url: 'https://strava.example/avatar.jpg' },
+      credential: {
+        ...credential,
+        athlete_avatar_url:
+          'https://dgalywyr863hv.cloudfront.net/pictures/athletes/42/large.jpg',
+      },
       snapshot,
       hasActiveOAuthState: false,
     }).avatar_available,
     true,
   );
+  for (const athleteAvatarUrl of [
+    'http://dgalywyr863hv.cloudfront.net/avatar.jpg',
+    'https://strava.example/avatar.jpg',
+    'https://127.0.0.1/avatar.jpg',
+    'https://user:secret@dgalywyr863hv.cloudfront.net/avatar.jpg',
+    'https://dgalywyr863hv.cloudfront.net:8443/avatar.jpg',
+  ]) {
+    assert.equal(
+      deriveReadiness({
+        credential: { ...credential, athlete_avatar_url: athleteAvatarUrl },
+        snapshot,
+        hasActiveOAuthState: false,
+      }).avatar_available,
+      false,
+    );
+  }
 });
 test('readiness 对外响应统一序列化快照时间字段', () => {
   const now = new Date('2026-09-29T04:00:00.000Z');

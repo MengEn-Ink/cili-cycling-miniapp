@@ -109,12 +109,29 @@ function isPublicAddress(address) {
   );
 }
 
-async function resolvePublicAddresses(hostname, lookup = dns.lookup) {
+async function resolvePublicAddresses(hostname, lookup = dns.lookup, options = {}) {
+  const now = options.now || Date.now;
+  const deadlineAt = options.deadlineAt ?? now() + TOTAL_TIMEOUT_MS;
   let addresses;
-  try {
-    addresses = await lookup(hostname, { all: true, verbatim: true });
-  } catch {
-    throw avatarError('STRAVA_AVATAR_DNS_FAILED', '无法解析 Strava 头像地址');
+  for (let attempt = 0; attempt < MAX_NETWORK_ATTEMPTS; attempt += 1) {
+    const remainingMs = deadlineAt - now();
+    if (remainingMs <= 0)
+      throw avatarError('STRAVA_AVATAR_TOTAL_TIMEOUT', 'Strava 头像下载超时');
+    try {
+      addresses = await withinDeadline(
+        lookup(hostname, { all: true, verbatim: true }),
+        remainingMs,
+      );
+      break;
+    } catch (error) {
+      if (error instanceof ProfileError) throw error;
+      const canRetry =
+        RETRYABLE_NETWORK_CODES.has(error?.code) &&
+        attempt + 1 < MAX_NETWORK_ATTEMPTS &&
+        now() < deadlineAt;
+      if (!canRetry)
+        throw avatarError('STRAVA_AVATAR_DNS_FAILED', '无法解析 Strava 头像地址');
+    }
   }
   if (!Array.isArray(addresses) || !addresses.length)
     throw avatarError('STRAVA_AVATAR_DNS_FAILED', '无法解析 Strava 头像地址');
@@ -284,14 +301,12 @@ async function downloadAvatar(value, dependencies = {}) {
       }));
   let current = validateAvatarUrl(value);
   const startedAt = now();
+  const deadlineAt = startedAt + totalTimeoutMs;
   for (let redirects = 0; ; redirects += 1) {
     if (now() - startedAt >= totalTimeoutMs)
       throw avatarError('STRAVA_AVATAR_TOTAL_TIMEOUT', 'Strava 头像下载超时');
     let remainingMs = totalTimeoutMs - (now() - startedAt);
-    const addresses = await withinDeadline(
-      resolvePublicAddresses(current.hostname, lookup),
-      remainingMs,
-    );
+    const addresses = await resolvePublicAddresses(current.hostname, lookup, { deadlineAt, now });
     remainingMs = totalTimeoutMs - (now() - startedAt);
     if (remainingMs <= 0) throw avatarError('STRAVA_AVATAR_TOTAL_TIMEOUT', 'Strava 头像下载超时');
     let response;
