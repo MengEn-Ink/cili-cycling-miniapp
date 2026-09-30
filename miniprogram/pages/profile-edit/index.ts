@@ -169,6 +169,17 @@ function assertLocalImageSize(image: SelectedImage): SelectedImage {
   return image;
 }
 
+async function ensureLocalImageSize(image: SelectedImage): Promise<SelectedImage> {
+  if (image.size !== undefined) return assertLocalImageSize(image);
+  if (typeof wx.getFileInfo !== 'function') return image;
+  const info = await atMediaStage<{ size?: unknown }>('selection', 'MEDIA_SELECTION_FAILED', () =>
+    wx.getFileInfo({ filePath: image.path }),
+  );
+  const size =
+    info && typeof info.size === 'number' && Number.isFinite(info.size) ? info.size : undefined;
+  return assertLocalImageSize({ ...image, ...(size === undefined ? {} : { size }) });
+}
+
 async function chooseSingleImage(): Promise<SelectedImage | null> {
   if (typeof wx.chooseMedia === 'function') {
     try {
@@ -180,7 +191,7 @@ async function chooseSingleImage(): Promise<SelectedImage | null> {
           sourceType: ['album', 'camera'],
         }),
       );
-      return image ? assertLocalImageSize(image) : null;
+      return image;
     } catch (error) {
       if (
         isUserCancellation(error) ||
@@ -196,7 +207,7 @@ async function chooseSingleImage(): Promise<SelectedImage | null> {
       wx.chooseImage({ count: 1, sizeType: ['compressed'], sourceType: ['album', 'camera'] }),
     ),
   );
-  return image ? assertLocalImageSize(image) : null;
+  return image;
 }
 
 function mergeAvatarFields(current: Profile | null, authoritative: Profile): Profile {
@@ -337,7 +348,6 @@ Page({
     if (requestId !== this.avatarPreviewRequestId) return;
     if (!card) {
       this.setData({
-        avatarPreviewUrl: '',
         mediaError: mediaFailureDetail(
           Object.assign(new Error('preview unavailable'), {
             code: 'AVATAR_PREVIEW_FAILED',
@@ -412,7 +422,7 @@ Page({
   async uploadAndSetAvatar(image: SelectedImage, origin: ClientAvatarSource) {
     const cloud = wx.cloud;
     if (!cloud) throw new Error('cloud unavailable');
-    assertLocalImageSize(image);
+    const verifiedImage = await ensureLocalImageSize(image);
     let uploadedFileId = '';
     let selectionDispatched = false;
     try {
@@ -420,7 +430,7 @@ Page({
         rideService.getProfileMediaUploadPath(),
       );
       const uploaded = await atMediaStage('upload', 'MEDIA_UPLOAD_FAILED', () =>
-        cloud.uploadFile({ cloudPath, filePath: image.path }),
+        cloud.uploadFile({ cloudPath, filePath: verifiedImage.path }),
       );
       uploadedFileId = uploaded.fileID;
       await atMediaStage('register', 'MEDIA_REGISTER_FAILED', () =>
@@ -506,11 +516,12 @@ Page({
       if (!cloud) return wx.showToast({ title: '当前环境不支持云存储', icon: 'none' });
       const image = await chooseSingleImage();
       if (!image) return;
+      const verifiedImage = await ensureLocalImageSize(image);
       const cloudPath = await atMediaStage('uploadPath', 'MEDIA_UPLOAD_PATH_FAILED', () =>
         rideService.getProfileMediaUploadPath(),
       );
       const uploaded = await atMediaStage('upload', 'MEDIA_UPLOAD_FAILED', () =>
-        cloud.uploadFile({ cloudPath, filePath: image.path }),
+        cloud.uploadFile({ cloudPath, filePath: verifiedImage.path }),
       );
       uploadedFileId = uploaded.fileID;
       await atMediaStage('register', 'MEDIA_REGISTER_FAILED', () =>

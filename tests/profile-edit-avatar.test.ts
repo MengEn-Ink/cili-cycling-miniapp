@@ -175,6 +175,20 @@ describe('资料编辑头像交互', () => {
     expect(page.data.avatarPreviewUrl).toBe('https://temporary.example/wechat-avatar.jpg');
   });
 
+  it('微信头像在上传前通过 getFileInfo 拒绝超过 5MiB 的文件', async () => {
+    const uploadFile = vi.fn();
+    Object.assign(wx, {
+      getFileInfo: vi.fn().mockResolvedValue({ size: 5 * 1024 * 1024 + 1 }),
+      cloud: { uploadFile },
+    });
+
+    await page.chooseWechatAvatar({ detail: { avatarUrl: '/private/tmp/too-large.jpg' } });
+
+    expect(rideService.getProfileMediaUploadPath).not.toHaveBeenCalled();
+    expect(uploadFile).not.toHaveBeenCalled();
+    expect(page.data.mediaError).toContain('[MEDIA_TOO_LARGE]');
+  });
+
   it('自定义头像通过 chooseMedia 后以 custom 来源注册并设置', async () => {
     const uploadedFileId = 'cloud://env/profiles/owner/custom.jpg';
     const uploadFile = vi.fn().mockResolvedValue({ fileID: uploadedFileId });
@@ -672,6 +686,7 @@ describe('资料编辑头像交互', () => {
     await page.loadAvatarPreview();
 
     expect(page.data.p).not.toBeNull();
+    expect(page.data.avatarPreviewUrl).toBe('https://temporary.example/old-avatar.jpg');
     expect(page.data.mediaError).toBe('[AVATAR_PREVIEW_FAILED] 头像预览暂不可用，请稍后重试');
     expect(page.data.mediaError).not.toContain('private preview url');
   });
