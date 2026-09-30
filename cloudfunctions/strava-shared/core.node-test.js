@@ -13,6 +13,7 @@ const {
   hashState,
   authorizationUrl,
   consumeState,
+  trustedAvatarUrl,
   tokenDocument,
   isCredentialUsable,
   deriveReadiness,
@@ -25,6 +26,7 @@ const {
   disconnectFlow,
   writableDocument,
 } = require('./core');
+const { validateAvatarUrl, ALLOWED_AVATAR_HOSTS } = require('../profile/avatar-import');
 const key = crypto.randomBytes(32).toString('base64');
 const fakeSecret = crypto.randomBytes(24).toString('hex');
 const fakeAccess = crypto.randomBytes(24).toString('hex');
@@ -155,6 +157,25 @@ test('token 头像仅从 athlete profile/profile_medium 捕获安全 HTTPS URL',
       ).athlete_avatar_url,
       undefined,
     );
+  }
+});
+test('readiness 与头像导入器使用等价的可信 URL 策略', () => {
+  const candidates = [
+    ...[...ALLOWED_AVATAR_HOSTS].map((host) => `https://${host}/avatar.jpg#fragment`),
+    'http://dgalywyr863hv.cloudfront.net/avatar.jpg',
+    'https://strava.example/avatar.jpg',
+    'https://127.0.0.1/avatar.jpg',
+    'https://user:secret@dgalywyr863hv.cloudfront.net/avatar.jpg',
+    'https://dgalywyr863hv.cloudfront.net:8443/avatar.jpg',
+  ];
+  for (const candidate of candidates) {
+    let importerAccepts = true;
+    try {
+      validateAvatarUrl(candidate);
+    } catch {
+      importerAccepts = false;
+    }
+    assert.equal(Boolean(trustedAvatarUrl(candidate)), importerAccepts, candidate);
   }
 });
 test('state 防 CSRF、过期和重放', async () => {

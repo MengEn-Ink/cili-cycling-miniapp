@@ -61,11 +61,12 @@ deleted_at?, delete_failed_at?, retry_at?, last_error_code?
 
 ### `profile_media_imports`
 
-服务端 Strava 头像导入意图与 orphan 补偿状态机。客户端无读写权限，也不能提交 URL、credential、generation 或 lease：
+服务端 Strava 头像导入与客户端直传图片的 durable intent/orphan 补偿状态机。客户端无读写权限，也不能提交 URL、credential、generation 或 lease：
 
 ```text
-_id: avatar-import-<uuid>
-owner_openid, athlete_id, credential_generation, avatar_url_fingerprint
+_id: avatar-import-<uuid> | client-upload-<sha256(cloud_path)>
+kind?: client_upload              # 缺失表示 Strava 服务端导入；客户端直传必须显式标记
+owner_openid, athlete_id?, credential_generation?, avatar_url_fingerprint?
 cloud_path                         # 上传前持久化的 owner HMAC 路径
 file_id?, media_id?                # 上传响应验证通过后写入
 status: leased|prepared|uploaded|orphaned|recovering|deleting|delete_confirming|completed|aborted|invalid|deleted|delete_failed|delete_failed_terminal
@@ -75,6 +76,8 @@ delete_attempts?, retry_at?, recovery_delete_pending?, delete_confirmation_pendi
 ```
 
 下载前先在事务中创建 `leased` intent，并以当前 credential 的 generation、athlete ID 与头像 URL SHA-256 指纹绑定 owner 级 lease；不持久化原头像 URL。未过期的其他 intent 会被拒绝，同一 intent 可幂等复用，只有 lease 过期后才能 fenced takeover。下载完成后再次核对同一 fence，写入 owner HMAC `cloud_path` 并进入 `prepared`，随后 upload、完成和失败路径都继续核对该 fence。最终事务重读 credential、intent、profile 和 media，只有 athlete、generation、URL 指纹、lease 及 owner 路径全部匹配时，才原子登记 `origin=strava` 并切换头像。失败后有上传目标的 intent 进入 `orphaned`，尚未生成目标的 `leased` intent 进入 `aborted`。
+
+微信/自定义头像和个人照片在 `mediaUploadPath` 返回前创建 `kind=client_upload,status=prepared` 的确定性 intent，`cleanup_after` 为 30 分钟。`registerMedia` 在任何特权存储读取前校验 owner HMAC 路径，成功后在同一事务写 `profile_media` 并把 intent 标记为 `completed`。旧客户端仍可忽略新增账本；服务端按 cloudPath 推导 intent ID，因此滚动升级期间不要求客户端回传新字段。
 
 若上传响应丢失，cleanup 会先用共享 secret 验证 `owner_openid` 与 HMAC 路径绑定，再对该 intent 的唯一 owner 路径写入最小占位以取得规范 file ID，并执行 fenced 删除。恢复 lease 固定为 5 分钟，显式大于 `profile-media-cleanup` 的 30 秒函数超时与 30 秒存储 settle margin；恢复任务在外部上传前后都重读 lease，旧 worker 丢失 lease 时重新持久化删除 fence 后才补偿。恢复型删除先进入 `delete_confirming`，延迟一个 5 分钟 lease 窗口后再做第二次删除并终结，从而收敛先前调用晚到的存储写。任何待删除 file ID 必须与 intent 的 `cloud_path` 完全一致。
 
