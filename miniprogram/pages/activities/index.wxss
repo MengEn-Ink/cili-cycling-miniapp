@@ -1,4 +1,9 @@
+page {
+  background: #0b0b0c;
+}
+
 .activities-page {
+  min-height: 100vh;
   overflow: hidden;
   padding-top: 28rpx;
   background: radial-gradient(circle at 100% 8%, rgba(213, 91, 31, 0.12), transparent 30%), #0b0b0c;
