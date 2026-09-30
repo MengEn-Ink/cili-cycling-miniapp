@@ -1,6 +1,7 @@
 import type { StravaReadiness } from '../../models';
 import { runPageTask } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
+import { invalidateProfilePageCache } from '../../utils/profile-page-cache';
 import {
   pollStravaAuthorization,
   pollStravaReadiness,
@@ -118,6 +119,7 @@ Page({
         this.setData({ loading: false, error: prepared.error });
         return;
       }
+      invalidateProfilePageCache();
       readiness = prepared.data;
     }
     this.setReadiness(readiness);
@@ -129,6 +131,7 @@ Page({
     this.setData({ busyAction: 'connect', error: '' });
     try {
       const state = await runPageTask(() => rideService.startStrava(), '无法发起 Strava 授权');
+      if (state.data) invalidateProfilePageCache();
       if (requestId !== this.loadRequestId) return;
       if (!state.data) {
         this.setData({ error: state.error });
@@ -150,6 +153,7 @@ Page({
           () => rideService.cancelStravaAuthorization(),
           '取消授权状态失败',
         );
+        if (!cancelled.error) invalidateProfilePageCache();
         if (requestId !== this.loadRequestId) return;
         if (cancelled.error) {
           this.setData({ error: cancelled.error });
@@ -183,6 +187,7 @@ Page({
           }),
         'Strava 数据准备失败',
       );
+      if (state.data) invalidateProfilePageCache();
       if (state.data && requestId === this.loadRequestId) this.setReadiness(state.data);
       if (requestId === this.loadRequestId) this.setData({ error: state.error });
     } finally {
@@ -196,7 +201,10 @@ Page({
       if (!(await confirmDisconnect())) return;
       const state = await runPageTask(() => rideService.disconnectStrava(), '解绑失败');
       this.setData({ error: state.error });
-      if (!state.error) this.setReadiness(disconnectedReadiness());
+      if (!state.error) {
+        invalidateProfilePageCache();
+        this.setReadiness(disconnectedReadiness());
+      }
     } finally {
       this.setData({ busyAction: null });
     }

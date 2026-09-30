@@ -6,6 +6,7 @@ import { personalCardViewModel } from '../../utils/personal-card';
 import {
   applyCachedImages,
   clearProfilePageCache,
+  discardPersistedProfileCardImages,
   isProfilePageCacheFresh,
   persistProfileCardImages,
   readProfilePageCache,
@@ -276,18 +277,25 @@ Page({
         if (!profile) return;
         const ownerOpenid = appStore.openid || previousCache?.ownerOpenid || '';
         const previousImages = previousCache?.images || {};
-        const images = await persistProfileCardImages(card, previousImages);
-        if (requestId !== this.loadRequestId) return;
-        const imageSources = [
-          card.profile.avatarUrl,
-          ...card.backgrounds.map((background) => background.url),
-        ].filter((value): value is string => Boolean(value));
-        const allImagesReady = imageSources.every((source) => Boolean(images[source]));
-        if (hasStableImages && allImagesReady) this.setData(cardView(card, images));
-        if (!previousCache || allImagesReady) {
-          writeProfilePageCache(ownerOpenid, profile, card, images, cachedAt);
-          this.hydratedCache = readProfilePageCache();
+        const persisted = await persistProfileCardImages(card, previousImages);
+        if (requestId !== this.loadRequestId) {
+          discardPersistedProfileCardImages(persisted.created);
+          return;
         }
+        if (!persisted.complete) return;
+        const committed = writeProfilePageCache(
+          ownerOpenid,
+          profile,
+          card,
+          persisted.images,
+          cachedAt,
+        );
+        if (!committed) {
+          discardPersistedProfileCardImages(persisted.created);
+          return;
+        }
+        this.hydratedCache = readProfilePageCache();
+        this.setData(cardView(card, persisted.images));
       },
     );
     const trackedCardUpdate = cardUpdate.finally(() => {

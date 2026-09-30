@@ -10,7 +10,7 @@ function statusError(status) {
   return new StravaError('STRAVA_API_FAILED', `Strava API 返回 ${status}`);
 }
 async function request(url, options = {}, config = {}) {
-  const { retries = 2, timeoutMs = 8000, fetchImpl = globalThis.fetch } = config;
+  const { retries = 2, timeoutMs = 8000, fetchImpl = globalThis.fetch, consume } = config;
   let last;
   for (let attempt = 0; attempt <= retries; attempt += 1) {
     const controller = new AbortController();
@@ -21,7 +21,7 @@ async function request(url, options = {}, config = {}) {
         signal: controller.signal,
         headers: { accept: 'application/json', ...(options.headers || {}) },
       });
-      if (response.ok) return response;
+      if (response.ok) return consume ? await consume(response) : response;
       const error = statusError(response.status);
       if (response.status < 500 || response.status === 429) throw error;
       last = error;
@@ -37,15 +37,22 @@ async function request(url, options = {}, config = {}) {
   throw new StravaError('STRAVA_API_FAILED', 'Strava API 暂时不可用');
 }
 async function requestJson(url, options = {}, retries = 2, timeoutMs = 8000, fetchImpl) {
-  const response = await request(url, options, { retries, timeoutMs, fetchImpl });
-  try {
-    return await response.json();
-  } catch {
-    throw new StravaError('STRAVA_API_INVALID', 'Strava API 响应无效');
-  }
+  return request(url, options, {
+    retries,
+    timeoutMs,
+    fetchImpl,
+    consume: async (response) => {
+      try {
+        return await response.json();
+      } catch (error) {
+        if (error?.name === 'AbortError') throw error;
+        throw new StravaError('STRAVA_API_INVALID', 'Strava API 响应无效');
+      }
+    },
+  });
 }
 async function requestGpx(url, token, options = {}) {
-  const response = await request(
+  return request(
     url,
     {
       headers: {
@@ -53,15 +60,21 @@ async function requestGpx(url, token, options = {}) {
         authorization: `Bearer ${token}`,
       },
     },
-    { retries: 1, timeoutMs: options.timeoutMs || 8000, fetchImpl: options.fetchImpl },
+    {
+      retries: 1,
+      timeoutMs: options.timeoutMs || 8000,
+      fetchImpl: options.fetchImpl,
+      consume: async (response) => {
+        const declared = Number(response.headers?.get?.('content-length'));
+        if (Number.isFinite(declared) && declared > MAX_GPX_BYTES)
+          throw new StravaError('GPX_TOO_LARGE', 'Strava 路线文件超过 4MB 限制');
+        const bytes = Buffer.from(await response.arrayBuffer());
+        if (bytes.length > MAX_GPX_BYTES)
+          throw new StravaError('GPX_TOO_LARGE', 'Strava 路线文件超过 4MB 限制');
+        return bytes;
+      },
+    },
   );
-  const declared = Number(response.headers?.get?.('content-length'));
-  if (Number.isFinite(declared) && declared > MAX_GPX_BYTES)
-    throw new StravaError('GPX_TOO_LARGE', 'Strava 路线文件超过 4MB 限制');
-  const bytes = Buffer.from(await response.arrayBuffer());
-  if (bytes.length > MAX_GPX_BYTES)
-    throw new StravaError('GPX_TOO_LARGE', 'Strava 路线文件超过 4MB 限制');
-  return bytes;
 }
 function form(data) {
   return new URLSearchParams(Object.entries(data).map(([key, value]) => [key, String(value)]));

@@ -110,8 +110,8 @@ async function loadAttendees(activityId) {
   const registrations = (await loadAttendeeRegistrations(activityId))
     .sort(
       (left, right) =>
-        timestamp(left.approved_at || left.checked_in_at) -
-          timestamp(right.approved_at || right.checked_in_at) ||
+        timestamp(left.approved_at || left.checked_in_at || left.updated_at) -
+          timestamp(right.approved_at || right.checked_in_at || right.updated_at) ||
         String(left._id).localeCompare(String(right._id)),
     )
     .slice(0, ATTENDEE_LIMIT);

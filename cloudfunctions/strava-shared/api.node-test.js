@@ -57,3 +57,40 @@ test('429 不重试并保留 rate-limit 语义', async () => {
   );
   assert.equal(calls, 1);
 });
+
+test('JSON 响应体读取超时会中止请求并返回安全错误', async () => {
+  let aborted = false;
+  await assert.rejects(
+    requestJson('https://example.test', {}, 0, 20, async (_url, options) => ({
+      ok: true,
+      json: () =>
+        new Promise((_resolve, reject) => {
+          options.signal.addEventListener('abort', () => {
+            aborted = true;
+            const error = new Error('aborted');
+            error.name = 'AbortError';
+            reject(error);
+          });
+        }),
+    })),
+    { code: 'STRAVA_API_FAILED', message: 'Strava API 暂时不可用' },
+  );
+  assert.equal(aborted, true);
+});
+
+test('JSON 响应体解析失败保留响应无效语义且不重试', async () => {
+  let calls = 0;
+  await assert.rejects(
+    requestJson('https://example.test', {}, 2, 100, async () => {
+      calls += 1;
+      return {
+        ok: true,
+        json: async () => {
+          throw new SyntaxError('invalid json');
+        },
+      };
+    }),
+    { code: 'STRAVA_API_INVALID' },
+  );
+  assert.equal(calls, 1);
+});

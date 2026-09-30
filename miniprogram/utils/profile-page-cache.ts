@@ -47,7 +47,7 @@ export function readProfilePageCache(): ProfilePageCache | null {
 }
 
 export function isProfilePageCacheFresh(cache: ProfilePageCache, now = Date.now()) {
-  return now - cache.cachedAt <= PROFILE_PAGE_CACHE_TTL_MS;
+  return cache.card.state === 'ready' && now - cache.cachedAt <= PROFILE_PAGE_CACHE_TTL_MS;
 }
 
 export function writeProfilePageCache(
@@ -57,7 +57,8 @@ export function writeProfilePageCache(
   images: ImageCache = {},
   cachedAt = Date.now(),
 ) {
-  if (!ownerOpenid) return;
+  if (!ownerOpenid) return false;
+  const previous = readProfilePageCache();
   const cache: ProfilePageCache = {
     version: CACHE_VERSION,
     ownerOpenid,
@@ -72,8 +73,14 @@ export function writeProfilePageCache(
   };
   try {
     wx.setStorageSync(STORAGE_KEY, cache);
+    // 新缓存提交成功后才能回收旧文件，避免页面隐藏或写缓存失败破坏仍在展示的图片。
+    const retained = new Set(Object.values(images));
+    for (const path of Object.values(previous?.images || {}))
+      if (!retained.has(path)) safeRemoveSavedFile(path);
+    return true;
   } catch {
     // 缓存失败不影响页面主流程。
+    return false;
   }
 }
 
@@ -139,10 +146,20 @@ function saveImage(sourceUrl: string): Promise<string> {
   });
 }
 
+export interface PersistedProfileCardImages {
+  images: ImageCache;
+  created: string[];
+  complete: boolean;
+}
+
+export function discardPersistedProfileCardImages(paths: string[]) {
+  for (const path of paths) safeRemoveSavedFile(path);
+}
+
 export async function persistProfileCardImages(
   card: PersonalCapabilityCard,
   previous: ImageCache = {},
-): Promise<ImageCache> {
+): Promise<PersistedProfileCardImages> {
   const sources = [card.profile.avatarUrl, ...card.backgrounds.map((item) => item.url)].filter(
     (value): value is string => Boolean(value),
   );
@@ -164,10 +181,8 @@ export async function persistProfileCardImages(
   const complete = sources.every((source) => Boolean(next[source]));
   if (!complete) {
     // 图片采用整组原子替换；部分失败时回滚本轮文件，避免产生无引用的持久文件。
-    for (const path of created) safeRemoveSavedFile(path);
-    return previous;
+    discardPersistedProfileCardImages([...created]);
+    return { images: previous, created: [], complete: false };
   }
-  const retained = new Set(Object.values(next));
-  for (const path of Object.values(previous)) if (!retained.has(path)) safeRemoveSavedFile(path);
-  return next;
+  return { images: next, created: [...created], complete: true };
 }

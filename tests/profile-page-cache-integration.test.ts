@@ -61,14 +61,19 @@ const card = {
   syncedAt: '2026-09-30T11:00:00.000Z',
 };
 
-async function mountPage(cachedAt = Date.now(), ownerOpenid = 'member-openid') {
+async function mountPage(
+  cachedAt = Date.now(),
+  ownerOpenid = 'member-openid',
+  cachedCard: typeof card = card,
+  includeCache = true,
+) {
   let page: any;
   const cache = {
     version: 1,
     ownerOpenid,
     cachedAt,
     profile: cachedProfile,
-    card,
+    card: cachedCard,
     images: {
       'https://image.example/avatar.jpg': 'saved://avatar.jpg',
       'https://image.example/background.jpg': 'saved://background.jpg',
@@ -76,10 +81,14 @@ async function mountPage(cachedAt = Date.now(), ownerOpenid = 'member-openid') {
   };
   vi.stubGlobal('wx', {
     cloud: {},
-    getStorageSync: vi.fn(() => cache),
+    getStorageSync: vi.fn(() => (includeCache ? cache : undefined)),
     setStorageSync: vi.fn(),
     removeStorageSync: vi.fn(),
     removeSavedFile: vi.fn(),
+    getImageInfo: vi.fn(({ src, success }) => success({ path: `tmp://${src}` })),
+    saveFile: vi.fn(({ tempFilePath, success }) =>
+      success({ savedFilePath: `saved://${tempFilePath}` }),
+    ),
     stopPullDownRefresh: vi.fn(),
     previewImage: vi.fn(),
   });
@@ -200,6 +209,61 @@ describe('个人中心缓存优先与主动刷新', () => {
 
     expect(rideService.getProfile).not.toHaveBeenCalled();
     expect(rideService.getPersonalCapabilityCard).not.toHaveBeenCalled();
+  });
+
+  it('过渡状态缓存会先展示并立即后台刷新', async () => {
+    const page = await mountPage(Date.now(), 'member-openid', { ...card, state: 'syncing' });
+
+    const loading = page.onShow();
+    expect(page.data.profile.nickname).toBe('缓存骑手');
+    await loading;
+    if (page.cardLoadPromise) await page.cardLoadPromise;
+
+    expect(rideService.getProfile).toHaveBeenCalledOnce();
+    expect(rideService.getPersonalCapabilityCard).toHaveBeenCalledOnce();
+  });
+
+  it('首次图片部分失败时不写入六小时新鲜缓存', async () => {
+    const page = await mountPage(Date.now(), 'member-openid', card, false);
+    vi.mocked(wx.saveFile).mockImplementation(({ tempFilePath, success, fail }: any) => {
+      if (String(tempFilePath).includes('background')) fail?.();
+      else success?.({ savedFilePath: `saved://${tempFilePath}` });
+    });
+
+    await page.onShow();
+    if (page.cardLoadPromise) await page.cardLoadPromise;
+
+    expect(wx.setStorageSync).not.toHaveBeenCalled();
+    expect(wx.removeSavedFile).toHaveBeenCalled();
+  });
+
+  it('页面隐藏后回收本轮新图片且不替换旧缓存', async () => {
+    const page = await mountPage();
+    await page.onShow();
+    rideService.getPersonalCapabilityCard.mockResolvedValueOnce({
+      ...card,
+      profile: { ...card.profile, avatarUrl: 'https://image.example/new-avatar.jpg' },
+      backgrounds: [
+        {
+          ...card.backgrounds[0],
+          url: 'https://image.example/new-background.jpg',
+        },
+      ],
+    });
+    const saves: { tempFilePath: string; success: (value: { savedFilePath: string }) => void }[] =
+      [];
+    vi.mocked(wx.saveFile).mockImplementation(({ tempFilePath, success }: any) => {
+      saves.push({ tempFilePath, success });
+    });
+
+    const refreshing = page.onPullDownRefresh();
+    await vi.waitFor(() => expect(saves).toHaveLength(2));
+    page.onHide();
+    for (const save of saves) save.success({ savedFilePath: `saved://${save.tempFilePath}` });
+    await refreshing;
+
+    expect(wx.setStorageSync).not.toHaveBeenCalled();
+    expect(wx.removeSavedFile).toHaveBeenCalledTimes(2);
   });
 
   it('缓存过期后静默更新，失败仍保留旧内容', async () => {

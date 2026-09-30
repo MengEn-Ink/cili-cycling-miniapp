@@ -80,12 +80,14 @@ test('集合方式只接受两个新值并丢弃旧字段', () => {
 
 test('批准与 outbox 原子编排并返回 notification', async () => {
   const s = store();
+  const approvedAt = new Date('2026-09-29T00:00:00Z');
   const result = await reviewRegistration(
     s,
     { openid: 'admin', registrationId: 'r1', action: 'approve' },
-    new Date('2026-09-29T00:00:00Z'),
+    approvedAt,
   );
   assert.equal(result.status, 'approved');
+  assert.equal(s.state.registration.approved_at, approvedAt);
   assert.equal(result.notification.status, 'pending');
   assert.equal(s.state.outbox.get(result.notification.outbox_id).template_key, 'review_approved');
 });

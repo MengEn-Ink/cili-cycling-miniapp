@@ -86,9 +86,10 @@ describe('个人中心缓存', () => {
       await import('../miniprogram/utils/profile-page-cache');
     const existing = { 'https://image.example/avatar.jpg': 'saved://avatar.jpg' };
 
-    const images = await persistProfileCardImages(card, existing);
-    const cached = applyCachedImages(card, images);
+    const persisted = await persistProfileCardImages(card, existing);
+    const cached = applyCachedImages(card, persisted.images);
 
+    expect(persisted.complete).toBe(true);
     expect(wx.getImageInfo).toHaveBeenCalledTimes(1);
     expect(cached.profile.avatarUrl).toBe('saved://avatar.jpg');
     expect(cached.backgrounds[0].url).toContain('saved://');
@@ -109,9 +110,9 @@ describe('个人中心缓存', () => {
       ],
     } as PersonalCapabilityCard;
 
-    const images = await persistProfileCardImages(cardWithTwoNewImages, existing);
+    const persisted = await persistProfileCardImages(cardWithTwoNewImages, existing);
 
-    expect(images).toEqual(existing);
+    expect(persisted).toEqual({ images: existing, created: [], complete: false });
     expect(wx.removeSavedFile).toHaveBeenCalledWith(
       expect.objectContaining({ filePath: expect.stringContaining('second.jpg') }),
     );
@@ -127,6 +128,46 @@ describe('个人中心缓存', () => {
     invalidateProfilePageCache();
 
     expect(readProfilePageCache()).toMatchObject({ cachedAt: 0 });
+    expect(wx.removeSavedFile).not.toHaveBeenCalled();
+  });
+
+  it('过渡状态即使未超过 TTL 也会触发刷新', async () => {
+    const { isProfilePageCacheFresh, readProfilePageCache, writeProfilePageCache } =
+      await import('../miniprogram/utils/profile-page-cache');
+    const now = Date.UTC(2026, 8, 30, 12);
+
+    for (const state of ['partial', 'syncing', 'failed', 'disconnected'] as const) {
+      writeProfilePageCache('openid-a', profile, { ...card, state }, {}, now);
+      expect(isProfilePageCacheFresh(readProfilePageCache()!, now + 1)).toBe(false);
+    }
+  });
+
+  it('新缓存成功提交后才删除旧图片', async () => {
+    const { persistProfileCardImages, writeProfilePageCache } =
+      await import('../miniprogram/utils/profile-page-cache');
+    const oldImages = { 'https://old.example/avatar.jpg': 'saved://old-avatar.jpg' };
+    writeProfilePageCache('openid-a', profile, card, oldImages);
+    vi.mocked(wx.removeSavedFile).mockClear();
+
+    const persisted = await persistProfileCardImages(card, oldImages);
+    expect(wx.removeSavedFile).not.toHaveBeenCalled();
+
+    expect(writeProfilePageCache('openid-a', profile, card, persisted.images)).toBe(true);
+    expect(wx.removeSavedFile).toHaveBeenCalledWith(
+      expect.objectContaining({ filePath: 'saved://old-avatar.jpg' }),
+    );
+  });
+
+  it('缓存写入失败时保留旧图片供当前页面继续使用', async () => {
+    const { writeProfilePageCache } = await import('../miniprogram/utils/profile-page-cache');
+    const oldImages = { 'https://image.example/avatar.jpg': 'saved://old-avatar.jpg' };
+    writeProfilePageCache('openid-a', profile, card, oldImages);
+    vi.mocked(wx.removeSavedFile).mockClear();
+    vi.mocked(wx.setStorageSync).mockImplementationOnce(() => {
+      throw new Error('storage full');
+    });
+
+    expect(writeProfilePageCache('openid-a', profile, card, {})).toBe(false);
     expect(wx.removeSavedFile).not.toHaveBeenCalled();
   });
 

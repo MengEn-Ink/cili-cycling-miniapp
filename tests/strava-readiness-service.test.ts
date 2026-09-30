@@ -14,7 +14,13 @@ const rideService = vi.hoisted(() => ({
   disconnectStrava: vi.fn(),
 }));
 
+const invalidateProfilePageCache = vi.hoisted(() => vi.fn());
+
 vi.mock('../miniprogram/services/ride-service', () => ({ rideService }));
+vi.mock('../miniprogram/utils/profile-page-cache', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../miniprogram/utils/profile-page-cache')>()),
+  invalidateProfilePageCache,
+}));
 
 function readiness(state: StravaReadinessState): StravaReadiness {
   return {
@@ -206,6 +212,7 @@ describe('Strava 页面编排', () => {
   beforeEach(async () => {
     vi.resetModules();
     for (const value of Object.values(rideService)) value.mockReset();
+    invalidateProfilePageCache.mockReset();
     showModal = vi.fn();
     vi.stubGlobal('wx', {
       showModal,
@@ -234,6 +241,7 @@ describe('Strava 页面编排', () => {
     expect(rideService.ensureStravaReady).toHaveBeenCalledOnce();
     expect(page.data.readiness).toEqual(readiness('ready'));
     expect(page.data.readinessMessage).toBe('Strava 数据已准备完成');
+    expect(invalidateProfilePageCache).toHaveBeenCalledOnce();
   });
 
   it('重复 onShow 时忽略较早请求的迟到结果', async () => {
@@ -371,6 +379,7 @@ describe('Strava 页面编排', () => {
     );
     expect(page.data.readiness.state).toBe('authorizing');
     expect(page.data.error).toBe('');
+    expect(invalidateProfilePageCache).toHaveBeenCalledOnce();
   });
 
   it('复制失败时保留明确错误且不伪装授权成功', async () => {
@@ -398,6 +407,7 @@ describe('Strava 页面编排', () => {
     await page.connect();
 
     expect(rideService.cancelStravaAuthorization).toHaveBeenCalledOnce();
+    expect(invalidateProfilePageCache).toHaveBeenCalledTimes(2);
     expect(page.data.readiness).toMatchObject({ state: 'disconnected', canRegister: false });
     expect(page.data.error).toContain('已取消浏览器授权');
   });
@@ -555,6 +565,25 @@ describe('Strava 页面编排', () => {
       state: 'failed',
       error: { code: 'STRAVA_AUTH_STATUS_TIMEOUT' },
     });
+  });
+
+  it('重试成功后失效个人中心缓存', async () => {
+    rideService.ensureStravaReady.mockResolvedValue(readiness('ready'));
+
+    await page.retry();
+
+    expect(invalidateProfilePageCache).toHaveBeenCalledOnce();
+    expect(page.data.readiness).toEqual(readiness('ready'));
+  });
+
+  it('解绑成功后失效个人中心缓存', async () => {
+    showModal.mockImplementation(({ success }: any) => success({ confirm: true }));
+    rideService.disconnectStrava.mockResolvedValue(undefined);
+
+    await page.disconnect();
+
+    expect(invalidateProfilePageCache).toHaveBeenCalledOnce();
+    expect(page.data.readiness).toMatchObject({ state: 'disconnected' });
   });
 
   it('busy 时忽略重复授权', async () => {

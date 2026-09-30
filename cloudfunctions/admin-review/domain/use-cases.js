@@ -148,6 +148,7 @@ async function reviewRegistration(
       status: nextStatus,
       review_history: history,
       updated_at: now,
+      ...(nextStatus === 'approved' && !registration.approved_at ? { approved_at: now } : {}),
       ...(nextStatus === 'approved' && !registration.serial_no
         ? {
             serial_no: `RE-${now.toISOString().slice(0, 10).replace(/-/g, '')}-${id.slice(-6).toUpperCase()}`,

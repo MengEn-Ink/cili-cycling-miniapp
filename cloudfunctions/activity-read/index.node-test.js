@@ -260,7 +260,7 @@ test('详情成员执行状态、上限、稳定排序和隐私白名单', async
     activity_id: 'a1',
     openid: `o-${index}`,
     status: index === 26 ? 'pending' : index % 2 ? 'checked_in' : 'approved',
-    approved_at: `2026-09-01T00:${String(index).padStart(2, '0')}:00.000Z`,
+    updated_at: `2026-09-01T00:${String(index).padStart(2, '0')}:00.000Z`,
     checked_in_at:
       index % 2 ? `2026-09-02T00:${String(index).padStart(2, '0')}:00.000Z` : undefined,
     profile_snapshot: { nickname: `旧昵称${index}`, real_name: '实名', phone: '13812345678' },
@@ -326,7 +326,7 @@ test('详情成员超过单页时完整读取候选集后再选最早 24 人', a
     activity_id: 'a1',
     openid: `late-openid-${index}`,
     status: 'approved',
-    approved_at: `2026-09-20T${String(index % 24).padStart(2, '0')}:00:00.000Z`,
+    updated_at: `2026-09-20T${String(index % 24).padStart(2, '0')}:00:00.000Z`,
     created_at: `2026-09-20T${String(index % 24).padStart(2, '0')}:00:00.000Z`,
     profile_snapshot: { nickname: `晚报名${index}` },
   }));
@@ -335,7 +335,7 @@ test('详情成员超过单页时完整读取候选集后再选最早 24 人', a
     activity_id: 'a1',
     openid: `early-openid-${index}`,
     status: 'approved',
-    approved_at: `2026-09-01T00:${String(index).padStart(2, '0')}:00.000Z`,
+    updated_at: `2026-09-01T00:${String(index).padStart(2, '0')}:00.000Z`,
     created_at: `2026-09-01T00:${String(index).padStart(2, '0')}:00.000Z`,
     profile_snapshot: { nickname: `早报名${index}` },
   }));

@@ -277,13 +277,13 @@ test(
   },
 );
 
-test(
-  'shared key reader rejects a non-regular device',
-  { skip: process.platform === 'win32' },
-  async () => {
-    await assertKeyRejectedByBothConsumers('/dev/null', /密钥必须是普通文件/);
-  },
-);
+test('shared key reader rejects a non-regular path with file-like permissions', async () => {
+  const nonRegularPath = join(keyFixtureDirectory, 'non-regular.key');
+  mkdirSync(nonRegularPath, { mode: 0o600 });
+  if (process.platform !== 'win32') chmodSync(nonRegularPath, 0o600);
+
+  await assertKeyRejectedByBothConsumers(nonRegularPath, /密钥必须是普通文件/);
+});
 
 test(
   'shared key reader rejects a 0600 FIFO without blocking either consumer',
