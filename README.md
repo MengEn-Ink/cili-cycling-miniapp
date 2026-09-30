@@ -60,7 +60,31 @@ npm run coverage         # 覆盖率门禁
 npm run audit:all        # 根项目和云函数依赖审计
 ```
 
-`npm run validate` 会串行执行格式、Lint、类型、测试、证据工具、bootstrap、云函数包和构建检查。它不连接或修改 CloudBase。
+`npm run validate` 会串行执行格式、Lint、类型、测试、证据工具、bootstrap、部署脚本单测、云函数包和构建检查。它不连接或修改 CloudBase。
+
+## GitHub Actions 自动上传微信开发版
+
+`.github/workflows/deploy-miniprogram.yml` 会在 `main` 的 `CI` 成功后自动上传微信开发版；也支持在 Actions 页面从 `main` 手动触发并填写版本号、说明和 robot 编号。自动版本格式为 `0.0.<run_number>.<attempt>`，上传前会再次确认目标提交仍是远端 `main` 最新 head，旧 CI 重跑或非 `main` 手动运行只记录跳过，不会回退开发版。
+
+首次启用：
+
+1. 在微信公众平台进入“管理 → 开发管理 → 开发设置 → 小程序代码上传”，生成新的代码上传密钥。
+2. 在 GitHub 仓库进入“Settings → Secrets and variables → Actions → New repository secret”，创建 `WECHAT_MINIPROGRAM_PRIVATE_KEY`，值为密钥文件的完整正文。密钥不得放入仓库、Actions variable 或日志。
+3. 处理上传 IP 白名单：GitHub 托管 runner 的出口 IP 会变化。若必须开启白名单，应使用具备固定出口 IP 的受控 runner；否则需要在微信公众平台关闭该白名单，并通过主分支保护、最小 Actions 权限和定期轮换密钥补偿风险。
+4. 合并工作流后，在“Actions → 微信开发版自动上传 → Run workflow”手动执行一次。确认开发版上传成功后，再依赖 `main` CI 成功后的自动触发。
+
+手动本地上传使用同一脚本，仅通过环境变量传入密钥路径，不读取密钥正文：
+
+```bash
+npm ci --ignore-scripts --prefix tools/miniprogram-ci
+MINIPROGRAM_CI_PRIVATE_KEY_PATH=/secure/private.key \
+MINIPROGRAM_VERSION=1.0.29 \
+MINIPROGRAM_DESCRIPTION='手动上传最新主分支' \
+MINIPROGRAM_CI_ROBOT=1 \
+npm run deploy:miniprogram
+```
+
+紧急停用时，在 Actions 页面禁用“微信开发版自动上传”工作流并删除 `WECHAT_MINIPROGRAM_PRIVATE_KEY`；若怀疑密钥泄露，还应立即在微信公众平台重置代码上传密钥。
 
 ## 配置
 

@@ -1,0 +1,10 @@
+{
+  "name": "cili-miniprogram-ci-tool",
+  "private": true,
+  "version": "1.0.0",
+  "description": "锁定微信小程序上传客户端及其传递依赖",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "miniprogram-ci": "2.1.31"
+  }
+}
