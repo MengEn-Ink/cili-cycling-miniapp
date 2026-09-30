@@ -10,6 +10,7 @@ function wxMock(storage: Storage = {}) {
     }),
     setNavigationBarColor: vi.fn(),
     setTabBarStyle: vi.fn(),
+    setTabBarItem: vi.fn(),
     setBackgroundColor: vi.fn(),
   };
 }
@@ -82,6 +83,41 @@ describe('主题服务', () => {
     );
     expect(wxApi.setTabBarStyle).toHaveBeenCalled();
     expect(wxApi.setBackgroundColor).toHaveBeenCalled();
+  });
+
+  it('主题切换同步三项原生 TabBar 图标', async () => {
+    const wxApi = wxMock();
+    const service = await loadThemeService(wxApi);
+
+    service.applyTheme('light');
+    expect(wxApi.setTabBarItem.mock.calls.map(([item]) => item)).toEqual([
+      {
+        index: 0,
+        iconPath: 'assets/tabbar/activities-light.png',
+        selectedIconPath: 'assets/tabbar/activities-active.png',
+        fail: expect.any(Function),
+      },
+      {
+        index: 1,
+        iconPath: 'assets/tabbar/registrations-light.png',
+        selectedIconPath: 'assets/tabbar/registrations-active.png',
+        fail: expect.any(Function),
+      },
+      {
+        index: 2,
+        iconPath: 'assets/tabbar/profile-light.png',
+        selectedIconPath: 'assets/tabbar/profile-active.png',
+        fail: expect.any(Function),
+      },
+    ]);
+
+    wxApi.setTabBarItem.mockClear();
+    service.applyTheme('dark');
+    expect(wxApi.setTabBarItem.mock.calls.map(([item]) => item.iconPath)).toEqual([
+      'assets/tabbar/activities.png',
+      'assets/tabbar/registrations.png',
+      'assets/tabbar/profile.png',
+    ]);
   });
 
   it('系统主题 API 缺失、调用抛错或页面已销毁时不影响运行', async () => {
