@@ -500,6 +500,7 @@ function mapStravaReadiness(raw: unknown): StravaReadiness {
     return {
       state: legacy.connected ? (connectedWithSnapshot ? 'ready' : 'syncing') : 'disconnected',
       canRegister: connectedWithSnapshot,
+      avatarAvailable: false,
       athleteName: legacy.athleteName ?? null,
       snapshot: legacy.snapshot ?? null,
       error: null,
@@ -512,7 +513,11 @@ function mapStravaReadiness(raw: unknown): StravaReadiness {
     'ready',
     'failed',
   ];
-  if (!states.includes(value.state) || typeof value.can_register !== 'boolean')
+  if (
+    !states.includes(value.state) ||
+    typeof value.can_register !== 'boolean' ||
+    (value.avatar_available !== undefined && typeof value.avatar_available !== 'boolean')
+  )
     return invalidResponse();
   if (value.athlete_name !== null && typeof value.athlete_name !== 'string')
     return invalidResponse();
@@ -557,6 +562,7 @@ function mapStravaReadiness(raw: unknown): StravaReadiness {
   return {
     state: value.state,
     canRegister: value.can_register,
+    avatarAvailable: value.avatar_available === true,
     athleteName: value.athlete_name,
     snapshot,
     error,

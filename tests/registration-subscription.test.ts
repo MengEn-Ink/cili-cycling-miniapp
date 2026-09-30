@@ -28,6 +28,7 @@ const profile: Profile = {
 const readiness: StravaReadiness = {
   state: 'ready',
   canRegister: true,
+  avatarAvailable: true,
   athleteName: 'Rider',
   snapshot: null,
   error: null,

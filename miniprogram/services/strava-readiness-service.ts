@@ -47,6 +47,7 @@ function timeoutReadiness(previous?: StravaReadiness): StravaReadiness {
     ...previous,
     state: 'failed',
     canRegister: false,
+    avatarAvailable: previous?.avatarAvailable === true,
     athleteName: previous?.athleteName ?? null,
     snapshot: previous?.snapshot ?? null,
     error: {
@@ -62,6 +63,7 @@ function authorizationTimeoutReadiness(previous?: StravaReadiness): StravaReadin
     ...previous,
     state: 'failed',
     canRegister: false,
+    avatarAvailable: previous?.avatarAvailable === true,
     athleteName: previous?.athleteName ?? null,
     snapshot: previous?.snapshot ?? null,
     error: {

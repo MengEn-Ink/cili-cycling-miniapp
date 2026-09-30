@@ -20,6 +20,7 @@ function readiness(state: StravaReadinessState): StravaReadiness {
   return {
     state,
     canRegister: state === 'ready',
+    avatarAvailable: state === 'ready',
     athleteName: state === 'ready' ? 'Rider' : null,
     snapshot: null,
     error:

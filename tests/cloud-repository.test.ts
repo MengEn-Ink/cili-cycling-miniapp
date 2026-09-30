@@ -76,6 +76,7 @@ const registration = {
 const readinessDto = {
   state: 'ready',
   can_register: true,
+  avatar_available: true,
   athlete_name: 'Rider',
   snapshot: {
     total_km: 1200,
@@ -1117,6 +1118,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     await expect(repository.getStravaReadiness()).resolves.toEqual({
       state: 'disconnected',
       canRegister: false,
+      avatarAvailable: false,
       athleteName: null,
       snapshot: null,
       error: null,
@@ -1141,6 +1143,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     await expect(repository.getStravaReadiness()).resolves.toEqual({
       state: 'ready',
       canRegister: true,
+      avatarAvailable: true,
       athleteName: 'Rider',
       snapshot: {
         totalKm: 1200,
@@ -1178,6 +1181,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
       success({
         state: 'failed',
         can_register: false,
+        avatar_available: false,
         athlete_name: null,
         snapshot: null,
         error: {
@@ -1191,6 +1195,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     await expect(new CloudRepository(cloud).getStravaReadiness()).resolves.toEqual({
       state: 'failed',
       canRegister: false,
+      avatarAvailable: false,
       athleteName: null,
       snapshot: null,
       error: {

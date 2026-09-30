@@ -236,10 +236,19 @@ test('readiness 常量和 fresh canonical snapshot 快路径', () => {
   assert.deepEqual(deriveReadiness({ credential, snapshot, hasActiveOAuthState: false }, now), {
     state: 'ready',
     can_register: true,
+    avatar_available: false,
     athlete_name: 'Rider',
     snapshot: { ...snapshot, synced_at: snapshot.synced_at.toISOString() },
     error: null,
   });
+  assert.equal(
+    deriveReadiness({
+      credential: { ...credential, athlete_avatar_url: 'https://strava.example/avatar.jpg' },
+      snapshot,
+      hasActiveOAuthState: false,
+    }).avatar_available,
+    true,
+  );
 });
 test('readiness 对外响应统一序列化快照时间字段', () => {
   const now = new Date('2026-09-29T04:00:00.000Z');

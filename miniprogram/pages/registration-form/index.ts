@@ -19,6 +19,7 @@ function loadingReadiness(): StravaReadiness {
   return {
     state: 'syncing',
     canRegister: false,
+    avatarAvailable: false,
     athleteName: null,
     snapshot: null,
     error: null,
@@ -29,6 +30,7 @@ function requestFailedReadiness(message: string): StravaReadiness {
   return {
     state: 'failed',
     canRegister: false,
+    avatarAvailable: false,
     athleteName: null,
     snapshot: null,
     error: {

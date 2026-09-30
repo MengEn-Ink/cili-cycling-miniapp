@@ -220,6 +220,7 @@ export class MockRepository implements RideRepository {
       return {
         state: 'disconnected',
         canRegister: false,
+        avatarAvailable: false,
         athleteName: null,
         snapshot: null,
         error: null,
@@ -228,6 +229,7 @@ export class MockRepository implements RideRepository {
     return {
       state: 'ready',
       canRegister: true,
+      avatarAvailable: true,
       athleteName: 'Mock Rider',
       snapshot: {
         totalKm: 1200,

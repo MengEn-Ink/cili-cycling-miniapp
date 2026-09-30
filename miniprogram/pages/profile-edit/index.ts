@@ -250,10 +250,15 @@ Page({
       });
       return;
     }
-    const ready = state.data?.state === 'ready';
+    const connected = state.data?.state === 'ready';
+    const ready = connected && state.data.avatarAvailable === true;
     this.setData({
       stravaAvatarReady: ready,
-      stravaAvatarHint: ready ? '已连接，可导入当前 Strava 头像' : '先绑定/同步 Strava',
+      stravaAvatarHint: ready
+        ? '已连接，可导入当前 Strava 头像'
+        : connected
+          ? 'Strava 未提供头像，请重新授权或同步'
+          : '先绑定/同步 Strava',
       stravaAvatarError: '',
     });
   },

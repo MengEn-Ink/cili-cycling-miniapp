@@ -200,10 +200,16 @@ function publicSnapshot(snapshot) {
   return result;
 }
 function deriveReadiness({ credential, snapshot, hasActiveOAuthState }, now = new Date()) {
+  const avatarAvailable = Boolean(
+    credential &&
+    typeof credential.athlete_avatar_url === 'string' &&
+    credential.athlete_avatar_url.trim(),
+  );
   if (!credential) {
     return {
       state: hasActiveOAuthState ? 'authorizing' : 'disconnected',
       can_register: false,
+      avatar_available: false,
       athlete_name: null,
       snapshot: null,
       error: null,
@@ -217,6 +223,7 @@ function deriveReadiness({ credential, snapshot, hasActiveOAuthState }, now = ne
     return {
       state: 'ready',
       can_register: true,
+      avatar_available: avatarAvailable,
       athlete_name: credential.athlete_name || null,
       snapshot: publicSnapshot(snapshot),
       error: null,
@@ -226,6 +233,7 @@ function deriveReadiness({ credential, snapshot, hasActiveOAuthState }, now = ne
     return {
       state: 'failed',
       can_register: false,
+      avatar_available: avatarAvailable,
       athlete_name: credential.athlete_name || null,
       snapshot: null,
       error: {
@@ -238,6 +246,7 @@ function deriveReadiness({ credential, snapshot, hasActiveOAuthState }, now = ne
   return {
     state: 'syncing',
     can_register: false,
+    avatar_available: avatarAvailable,
     athlete_name: credential.athlete_name || null,
     snapshot: null,
     error: null,

@@ -12,6 +12,7 @@ function disconnectedReadiness(): StravaReadiness {
   return {
     state: 'disconnected',
     canRegister: false,
+    avatarAvailable: false,
     athleteName: null,
     snapshot: null,
     error: null,

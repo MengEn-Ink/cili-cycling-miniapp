@@ -34,6 +34,7 @@ const profile: Profile = {
 const ready = {
   state: 'ready',
   canRegister: true,
+  avatarAvailable: true,
   athleteName: 'Strava Rider',
   snapshot: null,
   error: null,
@@ -540,6 +541,18 @@ describe('资料编辑头像交互', () => {
       stravaAvatarReady: false,
       stravaAvatarHint: 'Strava 状态暂时无法确认',
       stravaAvatarError: 'Strava 响应格式错误',
+    });
+  });
+
+  it('Strava 数据 ready 但没有头像时禁用导入并引导重新授权或同步', async () => {
+    rideService.getStravaReadiness.mockResolvedValueOnce({ ...ready, avatarAvailable: false });
+
+    await page.loadStravaAvatarReadiness();
+
+    expect(page.data).toMatchObject({
+      stravaAvatarReady: false,
+      stravaAvatarHint: 'Strava 未提供头像，请重新授权或同步',
+      stravaAvatarError: '',
     });
   });
 

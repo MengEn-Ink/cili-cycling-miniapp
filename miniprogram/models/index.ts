@@ -108,6 +108,7 @@ export interface StravaSnapshot {
 export interface StravaReadiness {
   state: StravaReadinessState;
   canRegister: boolean;
+  avatarAvailable: boolean;
   athleteName: string | null;
   snapshot: StravaSnapshot | null;
   error: null | { code: string; message: string; retryable: boolean };
