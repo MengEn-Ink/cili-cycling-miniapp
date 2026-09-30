@@ -6,47 +6,10 @@ page {
   background: radial-gradient(circle at 94% 3%, rgba(213, 91, 31, 0.13), transparent 32%), #0b0b0c;
   color: #f7f7f5;
 }
-.brand-bar {
-  display: flex;
-  align-items: center;
-  gap: 14rpx;
+brand-logo {
+  display: block;
   padding: 16rpx 8rpx 26rpx;
-}
-.cili-mark {
-  position: relative;
-  width: 52rpx;
-  height: 42rpx;
-  border: 10rpx solid #f7f7f5;
-  border-right-width: 8rpx;
-  border-radius: 14rpx 5rpx 14rpx 14rpx;
-  transform: skewX(-9deg);
-}
-.mark-cut {
-  position: absolute;
-  top: -12rpx;
-  right: -10rpx;
-  width: 28rpx;
-  height: 18rpx;
-  background: #d55b1f;
-  clip-path: polygon(100% 0, 72% 100%, 0 100%);
-}
-.brand-word {
-  font-size: 29rpx;
-  font-style: italic;
-  font-weight: 900;
-  letter-spacing: 2rpx;
-}
-.brand-word text {
-  margin-left: 8rpx;
-  font-size: 22rpx;
-  font-style: normal;
-  font-weight: 700;
-}
-.brand-rule {
-  flex: 1;
-  height: 1rpx;
-  margin-left: 8rpx;
-  background: linear-gradient(90deg, #737373, transparent);
+  border-bottom: 1rpx solid #343437;
 }
 .page-heading {
   padding: 12rpx 8rpx 20rpx;
@@ -69,27 +32,6 @@ page {
   font-size: 20rpx;
   font-weight: 700;
   letter-spacing: 2rpx;
-}
-.journey-line {
-  display: flex;
-  align-items: center;
-  width: 58%;
-  margin: 18rpx 8rpx 34rpx;
-}
-.journey-node {
-  width: 18rpx;
-  height: 18rpx;
-  border: 3rpx solid #66666a;
-  transform: rotate(45deg);
-}
-.journey-node.is-active {
-  border-color: #d55b1f;
-  background: #d55b1f;
-}
-.journey-track {
-  flex: 1;
-  height: 2rpx;
-  background: #404043;
 }
 .registration-card {
   position: relative;
@@ -119,6 +61,7 @@ page {
 .date {
   color: #f38a50;
   font-size: 24rpx;
+  font-variant-numeric: tabular-nums;
   font-weight: 900;
   letter-spacing: 1rpx;
 }

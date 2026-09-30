@@ -3,16 +3,27 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const read = (file: string) => readFileSync(file, 'utf8');
-const pageRoots = [
+const darkPages = [
   'miniprogram/pages/registrations',
   'miniprogram/pages/profile',
   'miniprogram/pages/capability-card',
   'miniprogram/pages/admin/reviews',
   'miniprogram/pages/admin/review-detail',
 ];
+const logoPages = [
+  'miniprogram/pages/activities',
+  'miniprogram/pages/registrations',
+  'miniprogram/pages/profile',
+  'miniprogram/pages/activity-detail',
+  'miniprogram/pages/admin/reviews',
+  'miniprogram/pages/admin/review-detail',
+];
+
+const legacyLogoClass =
+  /brand-lockup|brand-bar|cili-symbol|cili-mark|mini-symbol|brand-word|brand-cn|mark-cut|brand-rule|detail-brand|desk-code|profile-code/;
 
 describe('CILI 深色竞技页面静态契约', () => {
-  it.each(pageRoots)('%s 使用极黑页面与赛事橙视觉令牌', (root) => {
+  it.each(darkPages)('%s 使用极黑页面与赛事橙视觉令牌', (root) => {
     const styles = read(`${root}/index.wxss`).toLowerCase();
     const config = JSON.parse(read(`${root}/index.json`));
 
@@ -22,12 +33,14 @@ describe('CILI 深色竞技页面静态契约', () => {
     expect(config.navigationBarTextStyle).toBe('white');
   });
 
-  it.each(pageRoots)('%s 展示 CILI 文字标且不依赖外部图片 Logo', (root) => {
+  it.each(logoPages)('%s 使用统一品牌组件且不残留旧 Logo 实现', (root) => {
     const template = read(`${root}/index.wxml`);
+    const styles = read(`${root}/index.wxss`);
+    const config = JSON.parse(read(`${root}/index.json`));
 
-    expect(template).toContain('CILI');
-    expect(template).toContain('此里');
-    expect(template).not.toMatch(/<image[^>]+(?:logo|brand)/i);
+    expect(template).toContain('<brand-logo');
+    expect(config.usingComponents['brand-logo']).toBe('/components/brand-logo/index');
+    expect(`${template}\n${styles}`).not.toMatch(legacyLogoClass);
   });
 
   it('审核列表保留权限校验、筛选和导航事件', () => {
@@ -41,7 +54,7 @@ describe('CILI 深色竞技页面静态契约', () => {
     expect(template).toContain('bindtap="open"');
   });
 
-  it('审核详情展示验证来源，但不展示用车方式、实名或手机号', () => {
+  it('审核详情展示验证来源，但不展示用车方式、实名或手机号字段源值', () => {
     const template = read('miniprogram/pages/admin/review-detail/index.wxml');
     const source = read('miniprogram/pages/admin/review-detail/index.ts');
 

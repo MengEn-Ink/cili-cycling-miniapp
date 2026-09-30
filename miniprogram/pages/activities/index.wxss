@@ -14,47 +14,8 @@ page {
   color: #a8a8ad;
 }
 
-.brand-lockup {
-  display: flex;
-  align-items: center;
-  gap: 10rpx;
+brand-logo {
   margin: 4rpx 4rpx 24rpx;
-}
-
-.cili-symbol {
-  position: relative;
-  width: 52rpx;
-  height: 52rpx;
-  border: 10rpx solid #f7f7f5;
-  border-right-color: transparent;
-  border-radius: 50%;
-  transform: rotate(-38deg);
-}
-
-.cili-cut {
-  position: absolute;
-  top: -10rpx;
-  right: -4rpx;
-  width: 26rpx;
-  height: 12rpx;
-  background: #d55b1f;
-  transform: skewX(-38deg);
-}
-
-.brand-word {
-  color: #f7f7f5;
-  font-size: 34rpx;
-  font-style: italic;
-  font-weight: 900;
-  letter-spacing: 2rpx;
-}
-
-.brand-cn {
-  padding-left: 10rpx;
-  border-left: 1rpx solid #4a4a4f;
-  color: #c7c7ca;
-  font-size: 24rpx;
-  font-weight: 800;
 }
 
 .activities-hero {

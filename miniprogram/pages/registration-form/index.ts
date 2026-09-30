@@ -164,9 +164,9 @@ Page({
       }
       const item = await rideService.saveRegistration(this.data);
       if (requestId === this.submitRequestId && this.pageVisible) {
-        // 兜底异常响应：缺少记录 ID 时不跳到无效凭证页，提示去“我的报名”核对。
+        // 兜底异常响应：缺少记录 ID 时不跳到无效凭证页，提示去“我的行程”核对。
         if (!item || !item.id)
-          this.setData({ errors: ['报名已提交，但未取得记录，请在“我的报名”中查看'] });
+          this.setData({ errors: ['报名已提交，但未取得记录，请在“我的行程”中查看'] });
         else wx.redirectTo({ url: '/pages/credential/index?id=' + item.id });
       }
     } catch (error) {

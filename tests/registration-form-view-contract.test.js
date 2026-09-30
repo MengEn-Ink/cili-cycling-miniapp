@@ -30,7 +30,7 @@ describe('报名表单受控控件与视觉契约', () => {
     expect(template).toContain('STEP 1 填写');
     expect(template).toContain('CURRENT ACTIVITY');
     expect(template).toContain('{{activity.title');
-    expect(template).toContain('提交后进入管理员审核');
+    expect(template).toContain('提交后将进入审核');
   });
 
   it('提交期间禁用资料、Strava、全部 radio、备注与次按钮', () => {
@@ -51,7 +51,7 @@ describe('报名表单受控控件与视觉契约', () => {
   });
 
   it('保持纯色 CILI 深色主题且小屏布局不溢出', () => {
-    expect(styles).toContain('background: #090b0f');
+    expect(styles).toContain('background: #0b0b0c');
     expect(styles).toContain('@media (max-width: 340px)');
     expect(styles).toContain('grid-template-columns: 1fr');
     expect(styles).toContain('overflow-x: hidden');

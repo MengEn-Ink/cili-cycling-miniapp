@@ -7,48 +7,10 @@ page {
   background: radial-gradient(circle at 94% 3%, rgba(213, 91, 31, 0.13), transparent 30%), #0b0b0c;
   color: #f7f7f5;
 }
-.brand-bar {
-  display: flex;
-  align-items: center;
-  gap: 14rpx;
+brand-logo {
+  display: block;
   padding: 16rpx 8rpx 26rpx;
   border-bottom: 1rpx solid #343437;
-}
-.cili-mark {
-  position: relative;
-  width: 48rpx;
-  height: 38rpx;
-  border: 9rpx solid #f7f7f5;
-  border-right-width: 7rpx;
-  border-radius: 13rpx 4rpx 13rpx 13rpx;
-  transform: skewX(-9deg);
-}
-.mark-cut {
-  position: absolute;
-  top: -11rpx;
-  right: -9rpx;
-  width: 26rpx;
-  height: 17rpx;
-  background: #d55b1f;
-  clip-path: polygon(100% 0, 70% 100%, 0 100%);
-}
-.brand-word {
-  font-size: 28rpx;
-  font-style: italic;
-  font-weight: 900;
-  letter-spacing: 2rpx;
-}
-.brand-word text {
-  margin-left: 7rpx;
-  font-size: 21rpx;
-  font-style: normal;
-}
-.desk-code {
-  margin-left: auto;
-  color: #77777b;
-  font-size: 18rpx;
-  font-weight: 800;
-  letter-spacing: 2rpx;
 }
 .review-title {
   position: relative;
@@ -236,6 +198,7 @@ page {
   margin-bottom: 5rpx;
   color: #f7f7f5;
   font-size: 29rpx;
+  font-variant-numeric: tabular-nums;
   font-weight: 900;
   line-height: 1.25;
 }

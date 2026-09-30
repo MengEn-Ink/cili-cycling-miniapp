@@ -1,6 +1,6 @@
 <view class="page review-page">
-  <view class="brand-bar"><view class="cili-mark"><text class="mark-cut"></text></view><view class="brand-word">CILI <text>此里</text></view><view class="desk-code">ADMIN / REVIEW</view></view>
-  <view class="review-heading"><view class="hero-kicker">REVIEW DESK</view><view class="hero-title">报名审批</view><view class="hero-subtitle">审核资格、能力数据与报名状态</view></view>
+  <brand-logo compact="{{true}}" meta="ADMIN · REVIEW" />
+  <view class="review-heading"><view class="hero-kicker">REVIEW</view><view class="hero-title">报名审批</view><view class="hero-subtitle">查看资料并处理报名状态</view></view>
   <view class="card danger" wx:if="{{error}}">{{error}}</view>
   <picker wx:if="{{activities.length}}" mode="selector" range="{{activities}}" range-key="title" value="0" bindchange="choose"><view class="activity-picker"><view class="picker-label">CURRENT EVENT</view><view class="picker-value">{{selectedActivityTitle}}</view><text>切换 ›</text></view></picker>
   <view class="filter-tabs">

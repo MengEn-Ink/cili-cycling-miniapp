@@ -7,48 +7,10 @@ page {
   background: radial-gradient(circle at 95% 4%, rgba(213, 91, 31, 0.14), transparent 30%), #0b0b0c;
   color: #f7f7f5;
 }
-.brand-bar {
-  display: flex;
-  align-items: center;
-  gap: 14rpx;
+brand-logo {
+  display: block;
   padding: 16rpx 10rpx 28rpx;
   border-bottom: 1rpx solid #343437;
-}
-.cili-mark {
-  position: relative;
-  width: 48rpx;
-  height: 38rpx;
-  border: 9rpx solid #f7f7f5;
-  border-right-width: 7rpx;
-  border-radius: 13rpx 4rpx 13rpx 13rpx;
-  transform: skewX(-9deg);
-}
-.mark-cut {
-  position: absolute;
-  top: -11rpx;
-  right: -9rpx;
-  width: 26rpx;
-  height: 17rpx;
-  background: #d55b1f;
-  clip-path: polygon(100% 0, 70% 100%, 0 100%);
-}
-.brand-word {
-  font-size: 28rpx;
-  font-style: italic;
-  font-weight: 900;
-  letter-spacing: 2rpx;
-}
-.brand-word text {
-  margin-left: 7rpx;
-  font-size: 21rpx;
-  font-style: normal;
-}
-.profile-code {
-  margin-left: auto;
-  color: #6f6f73;
-  font-size: 19rpx;
-  font-weight: 800;
-  letter-spacing: 2rpx;
 }
 .profile-hero {
   position: relative;
@@ -216,8 +178,8 @@ page {
   box-shadow: 0 0 14rpx rgba(213, 91, 31, 0.5);
 }
 .auth-dot.verified {
-  background: #c7c7c9;
-  box-shadow: none;
+  background: #6f9b82;
+  box-shadow: 0 0 12rpx rgba(111, 155, 130, 0.28);
 }
 .hero-capability-card {
   position: relative;

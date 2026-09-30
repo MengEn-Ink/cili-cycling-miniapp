@@ -14,9 +14,9 @@
 }
 
 .pill--success {
-  border-color: #d55b1f;
-  background: rgba(213, 91, 31, 0.14);
-  color: #f38a50;
+  border-color: #557363;
+  background: rgba(111, 155, 130, 0.14);
+  color: #9bc2aa;
 }
 
 .pill--warning {

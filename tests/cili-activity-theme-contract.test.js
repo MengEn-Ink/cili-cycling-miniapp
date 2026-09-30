@@ -4,8 +4,10 @@ import { describe, expect, it } from 'vitest';
 const read = (path) => fs.readFileSync(path, 'utf8');
 const activities = read('miniprogram/pages/activities/index.wxml');
 const detail = read('miniprogram/pages/activity-detail/index.wxml');
+const logo = read('miniprogram/components/brand-logo/index.wxml');
 const themeSources = [
   read('miniprogram/app.wxss'),
+  read('miniprogram/components/brand-logo/index.wxss'),
   read('miniprogram/components/activity-card/index.wxss'),
   read('miniprogram/components/status-pill/index.wxss'),
   read('miniprogram/components/state-view/index.wxss'),
@@ -14,11 +16,12 @@ const themeSources = [
 ].join('\n');
 
 describe('CILI 活动页静态契约', () => {
-  it('展示 CILI 文字标与 CSS 图形标', () => {
-    expect(activities).toContain('class="cili-symbol"');
-    expect(activities).toContain('class="brand-word">CILI');
-    expect(activities).toContain('class="brand-cn">此里');
-    expect(themeSources).toContain('.cili-symbol');
+  it('活动列表与详情使用统一 CILI 品牌组件', () => {
+    expect(activities).toContain('<brand-logo');
+    expect(detail).toContain('<brand-logo');
+    expect(logo).toContain('class="brand-logo__symbol"');
+    expect(logo).toContain('class="brand-logo__word">CILI');
+    expect(logo).toContain('class="brand-logo__cn">此里');
   });
 
   it('活动列表和详情继续渲染现有关键字段', () => {

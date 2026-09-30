@@ -1,0 +1,80 @@
+:host {
+  display: block;
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  min-height: 52rpx;
+  color: #f7f7f5;
+}
+
+.brand-logo__symbol {
+  position: relative;
+  box-sizing: border-box;
+  width: 52rpx;
+  height: 52rpx;
+  border: 9rpx solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  transform: rotate(-38deg);
+}
+
+.brand-logo__cut {
+  position: absolute;
+  top: -9rpx;
+  right: -4rpx;
+  width: 25rpx;
+  height: 11rpx;
+  background: #d55b1f;
+  transform: skewX(-38deg);
+}
+
+.brand-logo__word {
+  font-size: 32rpx;
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: 2rpx;
+}
+
+.brand-logo__cn {
+  padding-left: 10rpx;
+  border-left: 1rpx solid #4a4a4f;
+  color: #c7c7ca;
+  font-size: 23rpx;
+  font-weight: 800;
+}
+
+.brand-logo__meta {
+  margin-left: auto;
+  color: #85858a;
+  font-size: 18rpx;
+  font-weight: 800;
+  letter-spacing: 2rpx;
+  text-align: right;
+}
+
+.brand-logo--compact {
+  min-height: 44rpx;
+}
+
+.brand-logo--compact .brand-logo__symbol {
+  width: 44rpx;
+  height: 44rpx;
+  border-width: 8rpx;
+}
+
+.brand-logo--compact .brand-logo__cut {
+  top: -8rpx;
+  width: 22rpx;
+  height: 10rpx;
+}
+
+.brand-logo--compact .brand-logo__word {
+  font-size: 28rpx;
+}
+
+.brand-logo--compact .brand-logo__cn {
+  font-size: 21rpx;
+}

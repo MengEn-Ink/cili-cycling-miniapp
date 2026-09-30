@@ -1,7 +1,7 @@
 <view class="page profile-page">
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{loading ? '正在读取资料。正在同步最新资料' : (refreshing ? '正在更新资料' : (!error ? '资料已就绪' : ''))}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{error}}</view>
-  <view class="brand-bar"><view class="cili-mark"><text class="mark-cut"></text></view><view class="brand-word">CILI <text>此里</text></view><view class="profile-code">RIDER / 01</view></view>
+  <brand-logo compact="{{true}}" meta="RIDER PROFILE" />
   <view class="profile-hero has-bg">
     <swiper wx:if="{{heroBackgrounds.length}}" class="hero-swiper" circular="{{heroBackgrounds.length > 1}}" indicator-dots="{{heroBackgrounds.length > 1}}">
       <swiper-item wx:for="{{heroBackgrounds}}" wx:key="url"><image class="hero-bg-image" src="{{item.url}}" mode="aspectFill" aria-hidden="true" data-url="{{item.url}}" data-index="{{index}}" binderror="heroBackgroundError" /></swiper-item>
@@ -15,18 +15,18 @@
   </view>
   <view class="card auth-card" wx:if="{{authStatus !== 'authenticated'}}"><view class="panel-index">IDENTITY CHECK</view><view class="title">身份验证</view><view class="muted">{{authError || '为了您的数据安全，请先完成验证'}}</view><view class="muted" wx:if="{{identityHintText}}">{{identityHintText}}</view><button class="secondary" bindtap="retryAuth">开始验证</button></view>
 
-  <view class="card guidance-card" wx:if="{{profile && hasGuidance}}"><view class="panel-index">GUIDANCE</view><view class="title">欢迎来到此里</view><view class="muted">为了给您提供更好的服务，建议先完善资料并绑定 Strava。</view><view class="guidance-actions"><button class="btn" bindtap="edit">完善资料</button><button class="secondary" bindtap="dismissGuidance">我知道了</button></view></view>
+  <view class="card guidance-card" wx:if="{{profile && hasGuidance}}"><view class="panel-index">开始使用</view><view class="title">完成骑行资料</view><view class="muted">完善常用资料并连接 Strava，报名时可直接使用。</view><view class="guidance-actions"><button class="btn" bindtap="edit">完善资料</button><button class="secondary" bindtap="dismissGuidance">我知道了</button></view></view>
   <view class="section-label"><text>01</text> 我的资料</view>
   <view class="profile-refreshing" wx:if="{{profile && refreshing}}" aria-hidden="true">正在更新资料…</view>
   <view class="profile-refresh-error" wx:if="{{profile && error}}"><text aria-hidden="true">{{error}}</text><button bindtap="retryProfile">重试</button></view>
   <view class="card profile-loading" wx:if="{{loading}}" aria-hidden="true"><view class="panel-index">PROFILE LOADING</view><view class="title">正在读取资料</view><view class="muted">正在同步最新资料。</view></view>
-  <view class="card profile-card" wx:elif="{{profile}}"><view class="panel-index">PROFILE COMPLETION</view><view class="row"><view><view class="title">常用资料</view><view class="muted">报名资料仅自己与授权审核员可见</view></view><button class="edit-button" bindtap="edit">编辑</button></view><view class="progress-head"><text>资料完整度</text><text class="progress-number">{{profile.completeness}}%</text></view><view class="progress"><view class="progress-value" style="width: {{profile.completeness}}%"></view></view><view class="corner-cut"></view></view>
+  <view class="card profile-card" wx:elif="{{profile}}"><view class="panel-index">资料完整度</view><view class="row"><view><view class="title">常用报名资料</view><view class="muted">仅你与报名审核员可见</view></view><button class="edit-button" bindtap="edit">编辑</button></view><view class="progress-head"><text>资料完整度</text><text class="progress-number">{{profile.completeness}}%</text></view><view class="progress"><view class="progress-value" style="width: {{profile.completeness}}%"></view></view><view class="corner-cut"></view></view>
   <view class="card profile-error" wx:elif="{{error}}"><view aria-hidden="true"><view class="panel-index">PROFILE ERROR</view><view class="title">资料暂时无法加载</view><view class="muted">{{error}}</view></view><button class="secondary" bindtap="retryProfile">重试加载</button></view>
   <view class="card empty-profile" wx:else><view class="title">资料尚未配置</view><view class="muted">请创建资料后再报名。</view><button class="btn" bindtap="edit">去完善</button></view>
 
   <view class="section-label"><text>02</text> 骑行服务</view>
-  <view class="menu-card capability-entry" bindtap="capabilityCard"><view class="menu-icon capability-icon">C</view><view class="menu-copy"><view class="menu-title">我的骑行名片</view><view class="muted">查看仅自己可见的近 90 天骑行能力</view></view><text class="chevron">›</text></view>
-  <view class="menu-card" bindtap="strava"><view class="menu-icon">S</view><view class="menu-copy"><view class="menu-title">Strava 数据</view><view class="muted">查看真实绑定与近 90 天快照</view></view><text class="chevron">›</text></view>
-  <view class="menu-card" wx:if="{{authStatus === 'authenticated'}}" bindtap="activities"><view class="menu-icon">M</view><view class="menu-copy"><view class="menu-title">我的活动</view><view class="muted">创建草稿、编辑并发布自己的骑行活动</view></view><text class="chevron">›</text></view>
-  <view class="menu-card" wx:if="{{isAdmin}}" bindtap="admin"><view class="menu-icon admin-icon">A</view><view class="menu-copy"><view class="menu-title">报名审批</view><view class="muted">审核活动报名与骑手资料</view></view><text class="chevron">›</text></view>
+  <view class="menu-card capability-entry" bindtap="capabilityCard"><view class="menu-icon capability-icon">C</view><view class="menu-copy"><view class="menu-title">我的骑行名片</view><view class="muted">查看近 90 天骑行能力</view></view><text class="chevron">›</text></view>
+  <view class="menu-card" bindtap="strava"><view class="menu-icon">S</view><view class="menu-copy"><view class="menu-title">Strava 数据</view><view class="muted">查看连接状态与骑行数据</view></view><text class="chevron">›</text></view>
+  <view class="menu-card" wx:if="{{authStatus === 'authenticated'}}" bindtap="activities"><view class="menu-icon">M</view><view class="menu-copy"><view class="menu-title">活动管理</view><view class="muted">创建、编辑与发布活动</view></view><text class="chevron">›</text></view>
+  <view class="menu-card" wx:if="{{isAdmin}}" bindtap="admin"><view class="menu-icon admin-icon">A</view><view class="menu-copy"><view class="menu-title">报名审批</view><view class="muted">查看并处理报名</view></view><text class="chevron">›</text></view>
 </view>
