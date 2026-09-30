@@ -3,8 +3,7 @@ page {
 }
 
 .profile-page {
-  min-height: 100vh;
-  padding-bottom: calc(52rpx + env(safe-area-inset-bottom));
+  min-height: 100%;
   background: radial-gradient(circle at 95% 4%, rgba(213, 91, 31, 0.14), transparent 30%), #0b0b0c;
   color: #f7f7f5;
 }
@@ -589,7 +588,7 @@ brand-logo {
 .page.profile-page {
   padding-right: 40rpx;
   padding-left: 40rpx;
-  background: #000;
+  background: #0b0b0c;
 }
 
 .profile-hero {
@@ -655,7 +654,7 @@ brand-logo {
 .page.profile-page {
   padding-right: 40rpx;
   padding-left: 40rpx;
-  background: #000;
+  background: #0b0b0c;
 }
 
 .profile-page brand-logo {

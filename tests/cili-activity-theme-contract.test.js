@@ -74,7 +74,7 @@ describe('CILI 活动页静态契约', () => {
   });
 
   it('使用设计稿深黑、炭灰和鲜橙主题', () => {
-    expect(activitiesStyles).toContain('background: #000;');
+    expect(activitiesStyles).toContain('background: #0b0b0c;');
     expect(activityCardStyles).toContain('background: #1c1c1e;');
     expect(activityCardStyles).toContain('background: #2c2c2e;');
     expect(activityCardStyles).toContain('border-radius: 32rpx;');
