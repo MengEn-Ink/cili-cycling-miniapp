@@ -8,6 +8,7 @@ import {
 import { validateRegistration } from '../../utils/validation';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
+import { formatActivityDate } from '../../utils/date-time';
 
 function unavailableAction(): ActivityAction {
   return { kind: 'closed', label: '活动状态不可用', enabled: false };
@@ -73,6 +74,7 @@ Page({
   data: {
     activityId: '',
     activity: null as Activity | null,
+    displayActivityDate: '日期待公布',
     profile: null as any,
     gatheringMode: '',
     experience: '常骑',
@@ -111,6 +113,9 @@ Page({
     const activityAction = activityContext?.action || unavailableAction();
     this.setData({
       activity: activityContext?.activity || null,
+      displayActivityDate: formatActivityDate(
+        activityContext?.activity?.startAt || activityContext?.activity?.date,
+      ),
       profile: profileState.data || null,
       readiness,
       readinessMessage: stravaReadinessMessage(readiness),

@@ -4,28 +4,25 @@ page {
 
 .capability-page {
   min-height: 100vh;
-  padding: 24rpx 24rpx calc(48rpx + env(safe-area-inset-bottom));
-  background:
-    radial-gradient(circle at 86% 6%, rgba(213, 91, 31, 0.16), transparent 30%),
-    linear-gradient(180deg, #111113, #0b0b0c);
+  padding: 18rpx 40rpx calc(40rpx + env(safe-area-inset-bottom));
+  background: #000;
   color: #f7f7f5;
 }
 
 .card-stage {
   max-width: 750rpx;
   margin: 0 auto;
-  animation: card-enter 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: card-enter 360ms ease-out both;
 }
 
 .rider-card {
   position: relative;
   overflow: hidden;
   aspect-ratio: 3 / 4;
-  min-height: 900rpx;
-  border: 1rpx solid #68686c;
-  border-radius: 16rpx;
-  background: #171719;
-  box-shadow: 0 26rpx 68rpx rgba(0, 0, 0, 0.46);
+  min-height: 820rpx;
+  border: 1rpx solid #3a3a3c;
+  border-radius: 48rpx;
+  background: #1c1c1e;
 }
 
 .card-visual,
@@ -43,59 +40,58 @@ page {
 
 .alpine-fallback {
   overflow: hidden;
-  background: linear-gradient(165deg, #303034 0%, #1d1d20 42%, #111113 100%);
+  background: #1c1c1e;
 }
 
 .alpine-sun {
   position: absolute;
-  top: 104rpx;
-  right: 84rpx;
-  width: 104rpx;
-  height: 104rpx;
-  border: 2rpx solid rgba(247, 247, 245, 0.42);
+  top: 92rpx;
+  right: 76rpx;
+  width: 96rpx;
+  height: 96rpx;
+  border: 2rpx solid rgba(247, 247, 245, 0.36);
   border-radius: 50%;
-  box-shadow: 0 0 64rpx rgba(213, 91, 31, 0.12);
+  box-shadow: 0 0 54rpx rgba(213, 91, 31, 0.12);
 }
 
 .ridge {
   position: absolute;
   right: -18%;
-  bottom: 280rpx;
+  bottom: 220rpx;
   left: -18%;
-  height: 340rpx;
+  height: 320rpx;
   transform: rotate(-7deg) skewX(-19deg);
   background: #252528;
 }
 
 .ridge-far {
-  bottom: 370rpx;
+  bottom: 340rpx;
   background: #3a3a3e;
 }
 
 .ridge-near {
-  bottom: 220rpx;
-  background: #151517;
+  bottom: 190rpx;
+  background: #111113;
 }
 
 .fallback-mark {
   position: absolute;
-  top: 68rpx;
-  left: 48rpx;
-  color: rgba(255, 255, 255, 0.14);
-  font-size: 104rpx;
+  top: 58rpx;
+  left: 42rpx;
+  color: rgba(255, 255, 255, 0.12);
+  font-size: 96rpx;
   font-style: italic;
   font-weight: 900;
-  letter-spacing: 14rpx;
+  letter-spacing: 12rpx;
 }
 
 .image-shade {
   background: linear-gradient(
     180deg,
-    rgba(5, 5, 6, 0.72) 0%,
-    rgba(5, 5, 6, 0.08) 30%,
-    rgba(5, 5, 6, 0.6) 49%,
-    rgba(5, 5, 6, 0.96) 68%,
-    #0b0b0c 100%
+    rgba(0, 0, 0, 0.54) 0%,
+    rgba(0, 0, 0, 0.02) 32%,
+    rgba(0, 0, 0, 0.64) 57%,
+    #000 100%
   );
   pointer-events: none;
 }
@@ -104,22 +100,22 @@ page {
 .card-content {
   position: absolute;
   z-index: 2;
-  right: 32rpx;
-  left: 32rpx;
+  right: 28rpx;
+  left: 28rpx;
 }
 
 .card-topline {
-  top: 32rpx;
+  top: 28rpx;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16rpx;
+  gap: 14rpx;
 }
 
 .brand-signature {
   display: flex;
   align-items: center;
-  gap: 9rpx;
+  gap: 8rpx;
   color: #fff;
   font-size: 28rpx;
   font-style: italic;
@@ -129,10 +125,10 @@ page {
 
 .mini-mark {
   display: inline-block;
-  width: 27rpx;
-  height: 22rpx;
+  width: 26rpx;
+  height: 21rpx;
   border: 6rpx solid #f7f7f5;
-  border-right-color: #d55b1f;
+  border-right-color: #ff5722;
   border-radius: 8rpx 2rpx 8rpx 8rpx;
   transform: skewX(-9deg);
 }
@@ -142,17 +138,20 @@ page {
   flex: 0 1 auto;
   align-items: center;
   overflow: hidden;
-  max-width: 54%;
-  padding: 8rpx 13rpx;
-  border: 1rpx solid #68686c;
-  border-radius: 6rpx;
-  background: rgba(11, 11, 12, 0.68);
-  color: #f7f7f5;
+  max-width: 58%;
+  padding: 8rpx 14rpx;
+  border-radius: 12rpx;
+  background: #1c1c1e;
+  color: #fff;
   font-size: 18rpx;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 1rpx;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.strava-pill.status-verified {
+  background: #ff5722;
 }
 
 .status-dot {
@@ -160,27 +159,27 @@ page {
   flex: 0 0 9rpx;
   width: 9rpx;
   height: 9rpx;
-  margin-right: 9rpx;
+  margin-right: 8rpx;
   border-radius: 50%;
   background: currentColor;
 }
 
 .status-partial,
 .status-syncing {
-  color: #e77a43;
+  color: #ff8a65;
 }
 
 .status-repair {
-  color: #ef6961;
+  color: #ff8f86;
 }
 
 .card-content {
-  bottom: 24rpx;
+  bottom: 22rpx;
 }
 
 .identity-block {
   min-width: 0;
-  margin-bottom: 18rpx;
+  margin-bottom: 14rpx;
 }
 
 .rider-name {
@@ -188,7 +187,7 @@ page {
   overflow: hidden;
   max-height: 2.08em;
   color: #fff;
-  font-size: 58rpx;
+  font-size: 54rpx;
   font-style: italic;
   font-weight: 900;
   line-height: 1.04;
@@ -196,17 +195,17 @@ page {
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  text-shadow: 0 6rpx 28rpx rgba(0, 0, 0, 0.5);
+  text-shadow: 0 6rpx 24rpx rgba(0, 0, 0, 0.56);
 }
 
 .rider-title {
   display: -webkit-box;
   overflow: hidden;
   max-height: 2.8em;
-  margin-top: 8rpx;
-  color: rgba(255, 255, 255, 0.76);
-  font-size: 23rpx;
-  line-height: 1.4;
+  margin-top: 6rpx;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 22rpx;
+  line-height: 1.35;
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -215,23 +214,21 @@ page {
 .privacy-note {
   display: inline-block;
   max-width: 100%;
-  margin-top: 12rpx;
-  padding: 5rpx 9rpx;
-  border: 1rpx solid rgba(255, 255, 255, 0.32);
-  border-radius: 4rpx;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 18rpx;
+  margin-top: 9rpx;
+  padding: 5rpx 10rpx;
+  border-radius: 12rpx;
+  background: rgba(28, 28, 30, 0.88);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 17rpx;
   font-weight: 700;
-  line-height: 1.35;
 }
 
 .metric-sheet {
   position: relative;
-  padding: 20rpx 22rpx 18rpx;
-  border: 1rpx solid #69696d;
-  border-radius: 8rpx;
-  background: rgba(19, 19, 21, 0.92);
-  box-shadow: 0 16rpx 40rpx rgba(0, 0, 0, 0.34);
+  padding: 18rpx 20rpx 16rpx;
+  border: 1rpx solid #3a3a3c;
+  border-radius: 32rpx;
+  background: rgba(28, 28, 30, 0.94);
   backdrop-filter: blur(22rpx);
 }
 
@@ -239,16 +236,16 @@ page {
   position: absolute;
   right: 0;
   bottom: 0;
-  width: 30rpx;
-  height: 30rpx;
-  background: #d55b1f;
+  width: 32rpx;
+  height: 32rpx;
+  background: #ff5722;
   content: '';
   clip-path: polygon(100% 0, 100% 100%, 0 100%);
 }
 
 .metric-kicker {
-  margin-bottom: 15rpx;
-  color: #d55b1f;
+  margin-bottom: 12rpx;
+  color: #ff5722;
   font-size: 18rpx;
   font-weight: 900;
   letter-spacing: 2rpx;
@@ -257,14 +254,14 @@ page {
 .metric-grid {
   display: flex;
   flex-wrap: wrap;
-  row-gap: 18rpx;
+  row-gap: 14rpx;
 }
 
 .metric-item {
   box-sizing: border-box;
   flex: 0 0 33.333%;
   min-width: 0;
-  padding-right: 12rpx;
+  padding-right: 10rpx;
 }
 
 .metric-item:nth-child(n + 4) {
@@ -274,7 +271,7 @@ page {
 .metric-value {
   overflow: hidden;
   color: #f7f7f5;
-  font-size: 32rpx;
+  font-size: 31rpx;
   font-variant-numeric: tabular-nums;
   font-weight: 900;
   line-height: 1.1;
@@ -283,47 +280,48 @@ page {
 }
 
 .metric-unit {
-  margin-left: 4rpx;
-  color: #d55b1f;
-  font-size: 16rpx;
+  margin-left: 3rpx;
+  color: #ff5722;
+  font-size: 15rpx;
   font-weight: 800;
 }
 
 .metric-label,
 .metric-empty,
 .data-meta {
-  color: rgba(255, 255, 255, 0.56);
-  font-size: 19rpx;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 18rpx;
 }
 
 .metric-label {
-  margin-top: 6rpx;
+  margin-top: 4rpx;
 }
 
 .metric-empty {
-  padding: 4rpx 0 12rpx;
+  padding: 4rpx 0 10rpx;
+  line-height: 1.45;
 }
 
 .data-meta {
-  margin-top: 17rpx;
-  padding-top: 13rpx;
+  margin-top: 13rpx;
+  padding-top: 11rpx;
   border-top: 1rpx solid rgba(255, 255, 255, 0.14);
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 .meta-row {
   display: flex;
   align-items: flex-start;
-  gap: 14rpx;
+  gap: 12rpx;
 }
 
 .meta-row + .meta-row {
-  margin-top: 6rpx;
+  margin-top: 4rpx;
 }
 
 .meta-label {
   flex: 0 0 76rpx;
-  color: rgba(255, 255, 255, 0.38);
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .meta-value {
@@ -337,10 +335,9 @@ page {
   display: flex;
   justify-content: space-between;
   gap: 18rpx;
-  padding: 18rpx 6rpx 2rpx;
-  color: rgba(255, 255, 255, 0.42);
-  font-size: 19rpx;
-  line-height: 1.4;
+  padding: 14rpx 6rpx 0;
+  color: rgba(255, 255, 255, 0.44);
+  font-size: 18rpx;
 }
 
 .card-caption text {
@@ -354,21 +351,21 @@ page {
 
 .repair-button,
 .photo-button {
-  min-height: 88rpx;
-  margin-top: 20rpx;
-  border-radius: 6rpx;
-  font-size: 27rpx;
-  font-weight: 850;
+  min-height: 96rpx;
+  margin-top: 16rpx;
+  border-radius: 28rpx;
+  font-size: 26rpx;
+  font-weight: 900;
 }
 
 .repair-button {
-  background: #d55b1f !important;
-  color: #0b0b0c !important;
+  background: #ff5722 !important;
+  color: #fff !important;
 }
 
 .photo-button {
-  border: 1rpx solid #68686c;
-  background: #1b1b1d !important;
+  border: 1rpx solid #3a3a3c;
+  background: #1c1c1e !important;
   color: #fff !important;
 }
 
@@ -381,23 +378,28 @@ page {
 @keyframes card-enter {
   from {
     opacity: 0;
-    transform: translateY(18rpx) scale(0.988);
+    transform: translateY(14rpx);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
 @media (max-width: 350px) {
+  .capability-page {
+    padding-right: 32rpx;
+    padding-left: 32rpx;
+  }
+
   .card-topline,
   .card-content {
-    right: 24rpx;
-    left: 24rpx;
+    right: 22rpx;
+    left: 22rpx;
   }
 
   .rider-name {
-    font-size: 48rpx;
+    font-size: 46rpx;
   }
 
   .metric-value {
@@ -413,56 +415,7 @@ page {
   }
 }
 
-/* Design reference alignment. */
-.capability-page {
-  padding-right: 40rpx;
-  padding-left: 40rpx;
-  background: #000;
-}
-
-.rider-card {
-  border-color: #3a3a3c;
-  border-radius: 48rpx;
-  background: #1c1c1e;
-  box-shadow: none;
-}
-
-.strava-pill,
-.privacy-note {
-  border-radius: 16rpx;
-  background: rgba(28, 28, 30, 0.86);
-}
-
-.metric-sheet {
-  border-color: #3a3a3c;
-  border-radius: 40rpx;
-  background: rgba(44, 44, 46, 0.94);
-  box-shadow: none;
-}
-
-.metric-kicker,
-.metric-unit {
-  color: #ff5722;
-}
-
-.metric-sheet::after {
-  background: #ff5722;
-}
-
-.repair-button,
-.photo-button {
-  min-height: 104rpx;
-  border-radius: 24rpx;
-}
-
-.repair-button {
-  background: #ff5722 !important;
-  color: #fff !important;
-}
-
-@media (max-width: 320px) {
-  .capability-page {
-    padding-right: 32rpx;
-    padding-left: 32rpx;
-  }
+/* Keep the established low-saturation event accent available for legacy snapshots. */
+.legacy-event-accent {
+  color: #d55b1f;
 }

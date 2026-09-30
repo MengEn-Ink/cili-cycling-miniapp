@@ -1,4 +1,5 @@
 import type { StravaReadiness, StravaSnapshot } from '../models';
+import { formatChinaDate, formatChinaDateTime } from '../utils/date-time';
 
 export interface PollStravaReadinessOptions {
   intervalMs?: number;
@@ -14,14 +15,6 @@ export interface StravaSnapshotMeta {
   coverageComplete: boolean | null;
 }
 
-function shortDate(value: string): string {
-  return value.slice(0, 10);
-}
-
-function shortDateTime(value: string): string {
-  return value.replace('T', ' ').slice(0, 16);
-}
-
 export function stravaSnapshotMeta(snapshot: StravaSnapshot | null): StravaSnapshotMeta {
   if (!snapshot) {
     return {
@@ -33,9 +26,9 @@ export function stravaSnapshotMeta(snapshot: StravaSnapshot | null): StravaSnaps
   const coverage = snapshot.coverage;
   return {
     coverageText: coverage
-      ? `${shortDate(coverage.from)} 至 ${shortDate(coverage.to)} · ${coverage.complete ? '已完整覆盖' : '数据可能不完整'}`
+      ? `${formatChinaDate(coverage.from)} 至 ${formatChinaDate(coverage.to)} · ${coverage.complete ? '已完整覆盖' : '数据可能不完整'}`
       : '近 90 天覆盖范围未知',
-    syncedAtText: `同步于 ${shortDateTime(snapshot.syncedAt)}`,
+    syncedAtText: `同步于 ${formatChinaDateTime(snapshot.syncedAt)}`,
     coverageComplete: coverage?.complete ?? null,
   };
 }

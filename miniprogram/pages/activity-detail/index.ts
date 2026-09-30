@@ -1,6 +1,7 @@
 import { rideService } from '../../services/ride-service';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
+import { formatActivityDate } from './format';
 
 function unavailableAction(): ActivityAction {
   return { kind: 'closed', label: '活动状态不可用', enabled: false };
@@ -14,6 +15,7 @@ Page({
     item: null as any,
     registration: null as any,
     galleryImages: [] as string[],
+    displayDate: '',
     coverFailed: false,
     activityAction: unavailableAction(),
   },
@@ -43,6 +45,7 @@ Page({
         item,
         registration,
         galleryImages: item.images?.length ? item.images : item.coverImage ? [item.coverImage] : [],
+        displayDate: formatActivityDate(item.startAt || item.date),
         activityAction: resolveActivityAction(item, registration),
       });
     } catch (error) {

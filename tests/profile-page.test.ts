@@ -190,7 +190,7 @@ describe('个人中心加载状态', () => {
     expect(template).toContain('STRAVA {{heroCard.statusLabel}}');
     expect(template).toContain('{{profile.completeness}}%');
     expect(template).toContain('style="width: {{profile.completeness}}%"');
-    expect(styles).toMatch(/\.profile-hero\.has-bg\s*\{[^}]*min-height:\s*438rpx/s);
+    expect(styles).toMatch(/\.profile-hero\.has-bg\s*\{[^}]*min-height:\s*390rpx/s);
   });
 
   it('profile 请求失败时 hero 仍回退骑行名片 displayName', async () => {

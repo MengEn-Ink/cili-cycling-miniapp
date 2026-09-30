@@ -1,7 +1,11 @@
 // @ts-expect-error Vitest provides the Node runtime used by this repository.
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { formatLocalDateTime, parseLocalDateTime } from '../miniprogram/utils/date-time';
+import {
+  formatActivityDate,
+  formatLocalDateTime,
+  parseLocalDateTime,
+} from '../miniprogram/utils/date-time';
 
 const rideService = vi.hoisted(() => ({
   getAdminActivity: vi.fn(),
@@ -33,6 +37,16 @@ const baseActivity = {
   equipment: [],
   fee: '',
 };
+
+describe('活动日期展示', () => {
+  it('使用紧凑中文日期且非法或空日期明确显示待公布', () => {
+    expect(formatActivityDate('2026-10-18')).toBe('10月18日 周日');
+    expect(formatActivityDate('2026-02-30')).toBe('日期待公布');
+    expect(formatActivityDate('')).toBe('日期待公布');
+    expect(formatActivityDate('2026-10-18T00:00:00.000Z')).toBe('10月18日 周日');
+    expect(formatActivityDate('2026-09-30T23:00:00.000Z')).toBe('10月1日 周四');
+  });
+});
 
 describe('活动编辑媒体、时间、说明与地图', () => {
   let page: any;

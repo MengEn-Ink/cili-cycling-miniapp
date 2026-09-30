@@ -1,5 +1,6 @@
 import { rideService } from '../../services/ride-service';
 import { activityDisplayStatus } from '../../utils/activity';
+import { formatActivityDate } from '../../utils/date-time';
 Page({
   loadRequestId: 0,
   data: {
@@ -35,6 +36,7 @@ Page({
           ...item,
           occupied: item.occupiedCount || 0,
           remaining: Math.max(item.capacity - (item.occupiedCount || 0), 0),
+          displayDate: formatActivityDate(item.startAt || item.date),
           displayStatus: activityDisplayStatus(item),
         })),
       });

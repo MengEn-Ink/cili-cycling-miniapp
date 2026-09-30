@@ -20,8 +20,8 @@ const snapshot: StravaSnapshot = {
 describe('Strava 快照展示元数据', () => {
   it('明确展示覆盖区间、不完整状态和同步时间', () => {
     expect(stravaSnapshotMeta(snapshot)).toEqual({
-      coverageText: '2026-07-01 至 2026-09-29 · 数据可能不完整',
-      syncedAtText: '同步于 2026-09-29 04:00',
+      coverageText: '2026年7月1日 至 2026年9月29日 · 数据可能不完整',
+      syncedAtText: '同步于 2026年9月29日 12:00',
       coverageComplete: false,
     });
   });

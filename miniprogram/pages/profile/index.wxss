@@ -650,3 +650,198 @@ brand-logo {
     padding-left: 32rpx;
   }
 }
+
+/* Compact profile composition aligned with the rider-card visual system. */
+.page.profile-page {
+  padding-right: 40rpx;
+  padding-left: 40rpx;
+  background: #000;
+}
+
+.profile-page brand-logo {
+  padding: 4rpx 0 10rpx;
+  border-bottom: 0;
+}
+
+.profile-hero {
+  min-height: 390rpx;
+  padding: 42rpx 20rpx 18rpx;
+  border: 1rpx solid #3a3a3c;
+  border-radius: 48rpx;
+  background: #1c1c1e;
+}
+
+.profile-hero.has-bg {
+  min-height: 390rpx;
+}
+
+.hero-shade {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.64) 48%, #000 100%);
+}
+
+.hero-identity {
+  gap: 16rpx;
+}
+
+.avatar {
+  flex-basis: 80rpx;
+  width: 80rpx;
+  height: 80rpx;
+  border-color: #fff;
+  border-radius: 50%;
+  background: #1c1c1e;
+}
+
+.profile-copy .hero-kicker,
+.hero-capability-label,
+.hero-capability-unit,
+.panel-index,
+.section-label text,
+.chevron {
+  color: #ff5722;
+}
+
+.profile-name {
+  font-size: 34rpx;
+}
+
+.hero-capability-card {
+  margin-top: 14rpx;
+  padding: 14rpx 16rpx;
+  border-color: #3a3a3c;
+  border-radius: 28rpx;
+  background: rgba(28, 28, 30, 0.92);
+  box-shadow: none;
+}
+
+.hero-capability-card::after,
+.corner-cut {
+  background: #ff5722;
+}
+
+.hero-capability-metrics {
+  gap: 10rpx;
+  margin-top: 10rpx;
+}
+
+.hero-capability-value {
+  font-size: 27rpx;
+}
+
+.hero-capability-meta {
+  margin-top: 9rpx;
+  padding-top: 8rpx;
+}
+
+.hero-profile-progress {
+  margin-top: 10rpx;
+}
+
+.hero-progress-value {
+  background: #ff5722;
+}
+
+.profile-page .card {
+  border-color: #3a3a3c;
+  border-radius: 32rpx;
+  background: #1c1c1e;
+  box-shadow: none;
+}
+
+.auth-card,
+.guidance-card {
+  margin-top: 14rpx;
+  padding: 18rpx 20rpx;
+}
+
+.guidance-actions {
+  gap: 10rpx;
+  margin-top: 14rpx;
+}
+
+.section-label {
+  margin: 18rpx 4rpx 7rpx;
+}
+
+.profile-card,
+.profile-loading,
+.profile-error,
+.empty-profile {
+  margin-top: 6rpx;
+}
+
+.profile-card {
+  padding-top: 17rpx;
+  padding-bottom: 17rpx;
+}
+
+.profile-refreshing,
+.profile-refresh-error {
+  min-height: 56rpx;
+  margin: 6rpx 0 8rpx;
+  padding: 10rpx 16rpx;
+  border-radius: 20rpx;
+  background: #1c1c1e;
+}
+
+.menu-list {
+  overflow: hidden;
+  border-color: #3a3a3c;
+  border-radius: 32rpx;
+  background: #1c1c1e;
+}
+
+.menu-card,
+.menu-card:active {
+  min-height: 88rpx;
+  padding: 11rpx 18rpx;
+  background: #1c1c1e;
+}
+
+.menu-card:active {
+  background: #2c2c2e;
+}
+
+.menu-icon {
+  flex-basis: 52rpx;
+  width: 52rpx;
+  height: 52rpx;
+  border-color: #3a3a3c;
+  border-radius: 16rpx;
+  background: #2c2c2e;
+  color: #ff5722;
+}
+
+.capability-entry {
+  background: #1c1c1e;
+}
+
+.capability-entry .menu-icon {
+  border-color: #ff5722;
+  background: #ff5722;
+  color: #000;
+}
+
+.edit-button,
+.profile-refresh-error button,
+.profile-page .btn,
+.profile-page .secondary {
+  min-height: 88rpx;
+  border-radius: 24rpx !important;
+}
+
+.profile-page .btn {
+  background: #ff5722 !important;
+}
+
+@media (max-width: 350px) {
+  .page.profile-page {
+    padding-right: 32rpx;
+    padding-left: 32rpx;
+  }
+
+  .profile-hero {
+    padding-right: 14rpx;
+    padding-left: 14rpx;
+  }
+}

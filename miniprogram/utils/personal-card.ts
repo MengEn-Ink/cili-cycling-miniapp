@@ -1,4 +1,5 @@
 import type { PersonalCapabilityCard, PersonalCapabilityCardState } from '../models/index';
+import { formatChinaDate, formatChinaDateTime } from './date-time';
 
 export interface PersonalCardMetric {
   key: keyof PersonalCapabilityCard['summary'];
@@ -38,14 +39,6 @@ const METRICS: {
   { key: 'weightedAvgSpeedKmh', label: '加权均速', unit: 'km/h' },
 ];
 
-function datePart(value: string): string {
-  return value.slice(0, 10);
-}
-
-function timePart(value: string): string {
-  return `${value.slice(0, 10)} ${value.slice(11, 16)} UTC`;
-}
-
 export function personalCardViewModel(card: PersonalCapabilityCard) {
   const backgrounds = card.backgrounds.slice(0, 3);
   const metrics = METRICS.flatMap((definition): PersonalCardMetric[] => {
@@ -74,12 +67,12 @@ export function personalCardViewModel(card: PersonalCapabilityCard) {
     secondaryMetrics,
     emptyMetricsText: EMPTY_METRICS[card.state],
     coverageText: card.coverage
-      ? `${datePart(card.coverage.from)} 至 ${datePart(card.coverage.to)} · ${
+      ? `${formatChinaDate(card.coverage.from)} 至 ${formatChinaDate(card.coverage.to)} · ${
           card.coverage.complete ? '覆盖完整' : '覆盖不完整'
         }`
       : '',
-    syncedAtText: card.syncedAt ? `同步于 ${timePart(card.syncedAt)}` : '',
-    generatedAtText: `生成于 ${timePart(card.generatedAt)}`,
+    syncedAtText: card.syncedAt ? `同步于 ${formatChinaDateTime(card.syncedAt)}` : '',
+    generatedAtText: `生成于 ${formatChinaDateTime(card.generatedAt)}`,
     needsStravaRepair:
       card.state === 'disconnected' || card.state === 'failed' || card.needsStravaReauth,
     needsProfilePhoto: backgrounds.length === 0,
