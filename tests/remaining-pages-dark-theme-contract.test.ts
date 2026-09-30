@@ -23,6 +23,13 @@ function declaration(block: string, property: string): string {
   return match?.[1].trim() || '';
 }
 
+function rpx(block: string, property: string): number {
+  const value = declaration(block, property);
+  const match = value.match(/^(\d+(?:\.\d+)?)rpx$/);
+  expect(match, `${property} must use an rpx value`).not.toBeNull();
+  return Number(match?.[1]);
+}
+
 function relativeLuminance(hex: string): number {
   const raw = hex.replace('#', '');
   const normalized = raw.length === 3 ? [...raw].map((value) => value + value).join('') : raw;
@@ -118,7 +125,7 @@ describe('其余页面 CILI 暗色主题接入静态契约', () => {
       declaration(cssBlock(styles, '.activity-list-page .card.danger'), 'background'),
     ).toContain('rgba(200');
     expect(hexColor(declaration(cssBlock(styles, '.activity-list-page .tag'), 'color'))).toBe(
-      '#d55b1f',
+      '#f38a50',
     );
     expect(declaration(cssBlock(styles, '.activity-list-page .field input'), 'background')).toBe(
       '#151517',
@@ -126,6 +133,38 @@ describe('其余页面 CILI 暗色主题接入静态契约', () => {
     expect(declaration(cssBlock(styles, '.activity-list-page .secondary'), 'background')).toBe(
       '#151517',
     );
+  });
+
+  it('编辑输入在常见手机上使用 96rpx 高度与单列布局', () => {
+    const activityStyles = read('miniprogram/pages/admin/activity-edit/index.wxss');
+    const activityControls =
+      activityStyles.match(/\.field input,\s*\.field textarea\s*\{([^}]*)\}/s)?.[1] || '';
+    const narrowLayout =
+      activityStyles.match(/@media \(max-width:\s*(\d+)px\)\s*\{([\s\S]*?)\n\}/)?.slice(1) || [];
+    const profileInput = cssBlock(
+      read('miniprogram/pages/profile-edit/index.wxss'),
+      '.form-card .input',
+    );
+    const cloneInput = cssBlock(
+      read('miniprogram/pages/admin/activity-list/index.wxss'),
+      '.activity-list-page .field input',
+    );
+
+    expect(rpx(activityControls, 'min-height')).toBeGreaterThanOrEqual(96);
+    expect(rpx(profileInput, 'min-height')).toBeGreaterThanOrEqual(96);
+    expect(rpx(cloneInput, 'min-height')).toBeGreaterThanOrEqual(96);
+    expect(Number(narrowLayout[0])).toBeGreaterThanOrEqual(430);
+    expect(narrowLayout[1]).toMatch(/\.split\s*\{[^}]*grid-template-columns:\s*1fr;/s);
+    expect(activityStyles).not.toContain('var(--accent)');
+  });
+
+  it('活动状态标签在炭灰表面保持正文级对比度', () => {
+    const styles = read('miniprogram/pages/admin/activity-list/index.wxss');
+    const tag = cssBlock(styles, '.activity-list-page .tag');
+
+    expect(
+      contrast(hexColor(declaration(tag, 'color')), hexColor(declaration(tag, 'background'))),
+    ).toBeGreaterThanOrEqual(4.5);
   });
 
   it('创建/编辑活动页错误卡、清单标题与次按钮都保持暗色主题', () => {

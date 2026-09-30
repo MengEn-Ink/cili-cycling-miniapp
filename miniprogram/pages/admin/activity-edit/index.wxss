@@ -81,7 +81,7 @@
 .field textarea {
   box-sizing: border-box;
   width: 100%;
-  min-height: 88rpx;
+  min-height: 96rpx;
   padding: 20rpx 24rpx;
   border: 1rpx solid #343b39;
   border-radius: 10rpx;
@@ -110,7 +110,7 @@
   background: transparent;
   color: #ff8589;
 }
-@media (max-width: 340px) {
+@media (max-width: 480px) {
   .split {
     grid-template-columns: 1fr;
   }
@@ -124,6 +124,6 @@
 }
 
 .template-banner {
-  color: var(--accent);
+  color: var(--cili-orange);
   font-weight: 700;
 }

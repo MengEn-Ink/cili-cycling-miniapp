@@ -39,7 +39,7 @@ page {
   box-sizing: border-box;
   display: block;
   width: 100%;
-  min-height: 88rpx;
+  min-height: 96rpx;
   padding: 20rpx 24rpx;
   border: 1rpx solid #555559;
   border-radius: 8rpx;
