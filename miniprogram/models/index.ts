@@ -1,5 +1,5 @@
 export type Role = 'member' | 'admin';
-export type RegistrationStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
+export type RegistrationStatus = 'pending' | 'approved' | 'checked_in' | 'rejected' | 'cancelled';
 export type StravaStatus = 'pending' | 'connected' | 'exempted' | 'syncing' | 'failed';
 export type ActivityRegistrationState = 'open' | 'closed';
 export type ActivityClosedReason = 'finished' | 'deadline' | 'full' | 'incomplete' | 'unavailable';
@@ -174,5 +174,6 @@ export interface Registration {
   };
   reviewComment?: string;
   serialNo?: string;
+  checkedInAt?: string;
   updatedAt: string;
 }

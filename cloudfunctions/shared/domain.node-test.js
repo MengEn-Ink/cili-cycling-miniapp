@@ -251,9 +251,10 @@ test('提交校验活动、资料、Strava 和客户端越权字段', () => {
   expectCode(() => assertNoForbiddenFields({ options: { status: 'approved' } }), 'FORBIDDEN_FIELD');
 });
 
-test('占位口径仅 pending+approved', () => {
+test('占位口径包含 pending、approved 和 checked_in', () => {
   assert.equal(isOccupying('pending'), true);
   assert.equal(isOccupying('approved'), true);
+  assert.equal(isOccupying('checked_in'), true);
   assert.equal(isOccupying('rejected'), false);
   assert.equal(isOccupying('cancelled'), false);
 });
@@ -456,6 +457,10 @@ test('取消仅本人 pending/approved 并在事务内释放名额', async () =>
   expectCode(() => assertCanCancel(registration, 'other'), 'FORBIDDEN');
   expectCode(
     () => assertCanCancel({ ...registration, status: 'rejected' }, openid),
+    'INVALID_TRANSITION',
+  );
+  expectCode(
+    () => assertCanCancel({ ...registration, status: 'checked_in' }, openid),
     'INVALID_TRANSITION',
   );
   const store = memoryStore({

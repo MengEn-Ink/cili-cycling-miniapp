@@ -29,7 +29,11 @@ export function resolveActivityAction(
   activity: Activity,
   registration?: Pick<Registration, 'id' | 'status'>,
 ): ActivityAction {
-  if (registration?.status === 'pending' || registration?.status === 'approved') {
+  if (
+    registration?.status === 'pending' ||
+    registration?.status === 'approved' ||
+    registration?.status === 'checked_in'
+  ) {
     return {
       kind: 'view-registration',
       label: '查看我的行程',

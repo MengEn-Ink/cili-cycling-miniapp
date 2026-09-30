@@ -79,21 +79,27 @@ describe('活动状态', () => {
   });
 });
 describe('名额占用', () => {
-  it('仅 pending 和 approved 占位', () =>
+  it('pending、approved 和 checked_in 占位', () =>
     expect(
       occupiedCount([
         { status: 'pending' },
         { status: 'approved' },
+        { status: 'checked_in' },
         { status: 'rejected' },
         { status: 'cancelled' },
       ]),
-    ).toBe(2));
+    ).toBe(3));
 });
 describe('报名迁移', () => {
-  it('允许审批、取消和重报', () => {
+  it('允许审批、签到、取消和重报', () => {
     expect(canTransition('pending', 'approved')).toBe(true);
+    expect(canTransition('approved', 'checked_in')).toBe(true);
     expect(canTransition('rejected', 'pending')).toBe(true);
     expect(canTransition('cancelled', 'pending')).toBe(true);
+  });
+  it('签到后不可取消且重复状态不走普通迁移', () => {
+    expect(canTransition('checked_in', 'cancelled')).toBe(false);
+    expect(canTransition('checked_in', 'checked_in')).toBe(false);
   });
   it('拒绝非法迁移', () => expect(() => transition('approved', 'rejected')).toThrow());
 });
@@ -260,7 +266,10 @@ describe('报名取消操作', () => {
     vi.stubGlobal('wx', { showModal, redirectTo: vi.fn() });
     vi.stubGlobal('Page', (definition: any) => {
       page = definition;
-      page.data = { ...definition.data, item: { id: 'r1', activityId: 'a1' } };
+      page.data = {
+        ...definition.data,
+        item: { id: 'r1', activityId: 'a1', status: 'pending' },
+      };
       page.setData = (patch: Record<string, unknown>) => Object.assign(page.data, patch);
     });
     await import('../miniprogram/pages/credential/index');
@@ -281,6 +290,15 @@ describe('报名取消操作', () => {
     );
     expect(pageRideService.cancelRegistration).not.toHaveBeenCalled();
     expect(page.data.cancelling).toBe(false);
+  });
+
+  it('已签到时取消入口不可调用', async () => {
+    page.data.item.status = 'checked_in';
+
+    await page.cancel();
+
+    expect(showModal).not.toHaveBeenCalled();
+    expect(pageRideService.cancelRegistration).not.toHaveBeenCalled();
   });
 
   it('取消处理中忽略重复点击', async () => {

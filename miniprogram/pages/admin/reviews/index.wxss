@@ -172,7 +172,8 @@ brand-logo {
   border-color: #d55b1f;
   color: #e9753b;
 }
-.status-approved {
+.status-approved,
+.status-checked_in {
   border-color: #557363;
   color: #9bc2aa;
 }

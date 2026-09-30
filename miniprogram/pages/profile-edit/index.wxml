@@ -1,87 +1,95 @@
 <view class="page profile-form-page">
-  <state-view loading="{{loading}}" error="{{!p ? error : ''}}" loading-title="正在读取安全资料" loading-copy="正在加载已保存的个人资料">
+  <state-view loading="{{loading}}" error="{{!p ? error : ''}}" loading-title="正在读取个人资料" loading-copy="正在加载已保存的个人资料">
   <block wx:if="{{p}}">
-    <view class="card form-card">
-      <view class="title">展示身份</view>
-      <view class="field">
-        <view class="label">昵称</view>
-        <input class="input" value="{{p.nickname}}" data-k="nickname" bindinput="set" />
-      </view>
-      <view class="field">
-        <view class="label">称号（管理员颁发）</view>
-        <input class="input" value="{{p.title}}" disabled />
-      </view>
+    <view class="card form-card avatar-step-card">
+      <view class="step-kicker">{{canEditDetails ? '头像' : '第 1 步'}}</view>
+      <view class="title">{{canEditDetails ? '更新头像' : '先选择头像'}}</view>
+      <view class="muted form-tip" wx:if="{{!canEditDetails}}">选择头像后即可继续完善个人资料。</view>
       <view class="avatar-editor">
         <view class="avatar-preview-shell">
-          <image
-            wx:if="{{avatarPreviewUrl}}"
-            class="avatar-preview"
-            src="{{avatarPreviewUrl}}"
-            data-url="{{avatarPreviewUrl}}"
-            mode="aspectFill"
-            aria-label="当前头像预览"
-            binderror="avatarPreviewError"
-          />
+          <image wx:if="{{avatarPreviewUrl}}" class="avatar-preview" src="{{avatarPreviewUrl}}" data-url="{{avatarPreviewUrl}}" mode="aspectFill" aria-label="当前头像预览" binderror="avatarPreviewError" />
           <view wx:else class="avatar-preview-placeholder" aria-hidden="true">骑</view>
         </view>
         <view class="avatar-panel">
-          <view class="label">更新头像</view>
-          <view class="muted avatar-note">头像操作会即时保存；微信入口仅表示从微信选择图片。</view>
+          <view class="muted avatar-note">可使用微信头像、自定义图片或 CILI 主题头像，选择后立即保存。</view>
           <view class="avatar-actions">
-            <button class="avatar-action avatar-action-wechat" open-type="chooseAvatar" bindchooseavatar="chooseWechatAvatar" disabled="{{avatarBusy || photoBusy || saving}}" aria-label="从微信选择头像">从微信选择头像</button>
-            <button class="avatar-action avatar-action-custom" bindtap="chooseCustomAvatar" disabled="{{avatarBusy || photoBusy || saving}}" aria-label="选择自定义头像">选择自定义头像</button>
-            <button class="avatar-action avatar-action-strava" bindtap="importStravaAvatar" disabled="{{avatarBusy || photoBusy || saving || !stravaAvatarReady}}" aria-label="导入 Strava 头像">导入 Strava 头像</button>
+            <button class="avatar-action avatar-action-wechat" open-type="chooseAvatar" bindchooseavatar="chooseWechatAvatar" disabled="{{avatarBusy || photoBusy || saving}}" aria-label="使用微信头像">使用微信头像</button>
+            <button class="avatar-action avatar-action-custom" bindtap="chooseCustomAvatar" disabled="{{avatarBusy || photoBusy || saving}}" aria-label="选择并裁剪自定义头像">选择并裁剪图片</button>
           </view>
-          <view class="avatar-status {{stravaAvatarError ? 'avatar-status-error' : ''}}" role="{{stravaAvatarError ? 'alert' : 'status'}}" aria-live="{{stravaAvatarError ? 'assertive' : 'polite'}}" aria-atomic="true">{{avatarBusy ? '正在安全更新头像' : (stravaAvatarError || stravaAvatarHint)}}</view>
-          <button wx:if="{{!stravaAvatarReady}}" class="avatar-help-link" bindtap="goToStrava" disabled="{{avatarBusy}}" aria-label="先绑定或同步 Strava">先绑定/同步 Strava</button>
         </view>
       </view>
+      <view class="default-avatar-title">CILI 主题头像</view>
+      <view class="default-avatar-list">
+        <button wx:for="{{defaultAvatars}}" wx:key="path" class="default-avatar-button" data-index="{{index}}" bindtap="chooseDefaultAvatar" disabled="{{avatarBusy || photoBusy || saving}}" aria-label="选择 CILI {{item.name}}主题头像">
+          <image class="default-avatar-image" src="{{item.path}}" mode="aspectFill" />
+          <text>{{item.name}}</text>
+        </button>
+      </view>
+      <view class="avatar-status" role="status" aria-live="polite" aria-atomic="true">{{avatarBusy ? '正在更新头像' : ''}}</view>
     </view>
 
-    <view class="card form-card">
-      <view class="title">实名资料</view>
-      <view class="muted form-tip">已保存字段仅显示脱敏值；再次填写会覆盖加密值。</view>
-      <view class="field">
-        <view class="label">真实姓名</view>
-        <input class="input" value="{{p.realName}}" data-k="realName" bindinput="set" />
+    <block wx:if="{{canEditDetails}}">
+      <view class="card form-card">
+        <view class="title">展示身份</view>
+        <view class="field">
+          <view class="label">管理员称号</view>
+          <input class="input" value="{{p.title}}" disabled />
+        </view>
       </view>
-      <view class="field">
-        <view class="label">性别</view>
-        <input class="input" value="{{p.gender}}" data-k="gender" bindinput="set" />
-      </view>
-      <view class="field">
-        <view class="label">手机号</view>
-        <input
-          class="input"
-          type="text"
-          maxlength="21"
-          value="{{p.phone}}"
-          data-k="phone"
-          bindinput="set"
-          placeholder="请输入本人手机号"
-        />
-        <view class="muted field-tip">当前个人主体版本暂不支持微信手机号快速验证，请手动填写。</view>
-      </view>
-      <view class="field">
-        <view class="label">紧急联系人</view>
-        <input class="input" value="{{p.emergencyName}}" data-k="emergencyName" bindinput="set" />
-      </view>
-      <view class="field">
-        <view class="label">紧急电话</view>
-        <input class="input" value="{{p.emergencyPhone}}" data-k="emergencyPhone" bindinput="set" />
-      </view>
-    </view>
 
-    <view class="card form-card">
-      <view class="title">个人相册</view>
-      <view class="muted form-tip">{{uploadHint}}</view>
-      <button class="photo-action" bindtap="addPhoto" loading="{{photoBusy}}" disabled="{{photoBusy || saving || avatarBusy}}">选择并上传照片</button>
-      <view class="photo-count">{{p.photos.length}} 张待保存</view>
-    </view>
+      <view class="card form-card">
+        <view class="title">实名资料</view>
+        <view class="muted form-tip">已保存字段仅显示脱敏值；再次填写会覆盖原有信息。</view>
+        <view class="field">
+          <view class="label">真实姓名</view>
+          <input class="input" value="{{p.realName}}" data-k="realName" bindinput="set" />
+        </view>
+        <view class="field">
+          <view class="label">性别</view>
+          <radio-group class="gender-options" bindchange="selectGender">
+            <label class="gender-option"><radio value="男" checked="{{p.gender === '男'}}" color="#d55b1f" />男</label>
+            <label class="gender-option"><radio value="女" checked="{{p.gender === '女'}}" color="#d55b1f" />女</label>
+          </radio-group>
+        </view>
+        <view class="field">
+          <view class="label">手机号</view>
+          <input class="input" type="text" maxlength="21" value="{{p.phone}}" data-k="phone" bindinput="set" placeholder="请输入本人手机号" />
+          <view class="muted field-tip">请填写本人常用手机号，便于活动联系与安全通知。</view>
+        </view>
+        <view class="field">
+          <view class="label">紧急联系人</view>
+          <input class="input" value="{{p.emergencyName}}" data-k="emergencyName" bindinput="set" />
+        </view>
+        <view class="field">
+          <view class="label">紧急电话</view>
+          <input class="input" value="{{p.emergencyPhone}}" data-k="emergencyPhone" bindinput="set" />
+        </view>
+      </view>
 
-    <view class="danger form-error" wx:if="{{mediaError}}" role="alert" aria-live="assertive" aria-atomic="true">{{mediaError}}</view>
-    <view class="danger form-error" wx:if="{{error}}">{{error}}</view>
-    <button class="btn save-action" loading="{{saving}}" disabled="{{saving || photoBusy || avatarBusy}}" bindtap="save">保存资料</button>
+      <view class="card form-card">
+        <view class="title">个人相册</view>
+        <view class="muted form-tip">添加骑行照片，点击缩略图可查看大图，并可调整展示顺序。</view>
+        <button class="photo-action" bindtap="addPhoto" loading="{{photoBusy}}" disabled="{{photoBusy || saving || avatarBusy}}">添加照片</button>
+        <view class="photo-list" wx:if="{{photoItems.length}}">
+          <view class="photo-item" wx:for="{{photoItems}}" wx:key="id">
+            <button class="photo-preview-button" data-url="{{item.previewUrl}}" bindtap="previewPhoto" disabled="{{!item.previewUrl}}" aria-label="预览第 {{index + 1}} 张照片">
+              <image wx:if="{{item.previewUrl}}" class="photo-thumbnail" src="{{item.previewUrl}}" mode="aspectFill" />
+              <view wx:else class="photo-placeholder">图片准备中</view>
+            </button>
+            <view class="photo-order-actions">
+              <button class="photo-order-button" data-index="{{index}}" data-direction="{{-1}}" bindtap="movePhoto" disabled="{{index === 0 || photoBusy || saving || avatarBusy}}" aria-label="上移第 {{index + 1}} 张照片">上移</button>
+              <button class="photo-order-button" data-index="{{index}}" data-direction="{{1}}" bindtap="movePhoto" disabled="{{index === photoItems.length - 1 || photoBusy || saving || avatarBusy}}" aria-label="下移第 {{index + 1}} 张照片">下移</button>
+            </view>
+          </view>
+        </view>
+        <view class="photo-count">共 {{p.photos.length}} 张</view>
+      </view>
+
+      <view class="danger form-error" wx:if="{{mediaError}}" role="alert" aria-live="assertive" aria-atomic="true">{{mediaError}}</view>
+      <view class="danger form-error" wx:if="{{error}}">{{error}}</view>
+      <button class="btn save-action" loading="{{saving}}" disabled="{{saving || photoBusy || avatarBusy}}" bindtap="save">保存资料</button>
+    </block>
+    <view class="danger form-error" wx:elif="{{mediaError}}" role="alert" aria-live="assertive" aria-atomic="true">{{mediaError}}</view>
   </block>
   </state-view>
 </view>

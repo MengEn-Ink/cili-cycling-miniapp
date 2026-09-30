@@ -646,7 +646,7 @@ describe('CloudRepository 队员报名适配', () => {
 });
 
 describe('CloudRepository 管理员审批适配', () => {
-  it.each(['pending', 'approved', 'rejected', 'cancelled'] as const)(
+  it.each(['pending', 'approved', 'checked_in', 'rejected', 'cancelled'] as const)(
     '审批列表传递合法过滤状态 %s',
     async (status) => {
       const { cloud, callFunction } = cloudWith(success([registration]));
@@ -713,6 +713,26 @@ describe('CloudRepository 管理员审批适配', () => {
     expect(JSON.stringify(result)).not.toContain('cloud://');
     expect(JSON.stringify(result)).not.toContain('http://');
     expect(JSON.stringify(result)).not.toContain('id_number');
+  });
+
+  it('签到使用独立 checkIn 命令并映射签到时间，不暴露操作人', async () => {
+    const { cloud, callFunction } = cloudWith(
+      success({
+        ...registration,
+        status: 'checked_in',
+        checked_in_at: '2026-09-30T10:00:00.000Z',
+        checkin_operator_openid: 'admin-secret',
+      }),
+    );
+
+    const result = await new CloudRepository(cloud).checkInRegistration('r1');
+
+    expectCall(callFunction, 'admin-review', { action: 'checkIn', registrationId: 'r1' });
+    expect(result).toMatchObject({
+      status: 'checked_in',
+      checkedInAt: '2026-09-30T10:00:00.000Z',
+    });
+    expect(JSON.stringify(result)).not.toContain('admin-secret');
   });
 
   it('通过只发送服务端审批命令', async () => {
@@ -1403,6 +1423,24 @@ describe('MockRepository readiness 与显式报名命令', () => {
       status: 'approved',
       reviewComment: '资料完整',
     });
+  });
+
+  it('MockRepository 签到仅允许 approved 且重复调用幂等', async () => {
+    installStorage();
+    const repository = new MockRepository();
+    const state = JSON.parse(JSON.stringify(repository.read()));
+    state.registrations[0].status = 'approved';
+    stored = state;
+
+    const first = await repository.checkInRegistration(state.registrations[0].id);
+    const second = await repository.checkInRegistration(state.registrations[0].id);
+
+    expect(first).toMatchObject({ status: 'checked_in', checkedInAt: '刚刚' });
+    expect(second).toMatchObject({ status: 'checked_in', checkedInAt: '刚刚' });
+    expect(wx.setStorageSync).toHaveBeenCalledTimes(1);
+    await expect(repository.cancelRegistration(state.registrations[0].id)).rejects.toThrow(
+      '非法状态迁移',
+    );
   });
 
   it('提供确定的自用骑行名片响应', async () => {

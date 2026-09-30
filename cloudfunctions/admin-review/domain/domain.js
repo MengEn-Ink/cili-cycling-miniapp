@@ -1,7 +1,7 @@
 'use strict';
 
 const crypto = require('node:crypto');
-const OCCUPYING = new Set(['pending', 'approved']);
+const OCCUPYING = new Set(['pending', 'approved', 'checked_in']);
 const RESUBMITTABLE = new Set(['rejected', 'cancelled']);
 const FORBIDDEN = new Set([
   'openid',
@@ -16,6 +16,8 @@ const FORBIDDEN = new Set([
   'serial_no',
   'approved_at',
   'rejected_at',
+  'checked_in_at',
+  'checkin_operator_openid',
 ]);
 
 class DomainError extends Error {
@@ -210,7 +212,12 @@ function assertCanSubmit(existing) {
 function assertCanCancel(registration, openid) {
   if (!registration) fail('REGISTRATION_NOT_FOUND', '报名不存在');
   if (registration.openid !== openid) fail('FORBIDDEN', '只能取消本人的报名');
-  if (!OCCUPYING.has(registration.status)) fail('INVALID_TRANSITION', '当前状态不可取消');
+  if (!['pending', 'approved'].includes(registration.status))
+    fail('INVALID_TRANSITION', '当前状态不可取消');
+}
+function assertCheckInTransition(from) {
+  if (from !== 'approved' && from !== 'checked_in')
+    fail('INVALID_TRANSITION', '仅已通过报名可以签到');
 }
 function assertReviewTransition(from, action, reason) {
   if (from !== 'pending') fail('INVALID_TRANSITION', '仅待审核报名可以审批');
@@ -261,6 +268,7 @@ function publicRegistration(registration) {
     'options',
     'strava_status',
     'serial_no',
+    'checked_in_at',
     'created_at',
     'updated_at',
   ]);
@@ -311,6 +319,7 @@ module.exports = {
   validateOptions,
   assertCanSubmit,
   assertCanCancel,
+  assertCheckInTransition,
   assertReviewTransition,
   isEnabledAdmin,
   publicActivity,

@@ -327,6 +327,7 @@ function assertStatusTransition(from, to) {
   if (
     from === to ||
     (from === 'draft' && to === 'published') ||
+    (from === 'published' && to === 'draft') ||
     (from === 'published' && to === 'finished')
   )
     return;
@@ -356,6 +357,7 @@ function buildActivityAudit(
 function activityAuditAction(currentStatus, nextStatus) {
   if (!currentStatus) return 'activity.create';
   if (currentStatus === 'draft' && nextStatus === 'published') return 'activity.publish';
+  if (currentStatus === 'published' && nextStatus === 'draft') return 'activity.unpublish';
   if (currentStatus === 'published' && nextStatus === 'finished') return 'activity.finish';
   return 'activity.update';
 }

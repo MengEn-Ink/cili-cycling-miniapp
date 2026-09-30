@@ -53,14 +53,18 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     expect(registrations).toContain('{{item.activity.date}}');
     expect(registrations).toContain('{{item.updatedAt}}');
     expect(registrations).toContain('{{item.gatheringMode}}');
-    for (const status of ['pending', 'approved', 'rejected', 'cancelled']) {
+    for (const status of ['pending', 'approved', 'checked_in', 'rejected', 'cancelled']) {
       expect(registrationStyles).toContain(`status-${status}`);
     }
   });
 
-  it('凭证只在 approved 展示，并保留取消、重提与历史分支', () => {
-    expect(credential).toMatch(/wx:if="{{item\.status === 'approved'}}" class="credential-card"/);
+  it('凭证在 approved 和 checked_in 展示，签到后不提供取消', () => {
+    expect(credential).toContain(
+      `wx:if="{{item.status === 'approved' || item.status === 'checked_in'}}" class="credential-card"`,
+    );
     expect(credential).toContain("item.status === 'pending' || item.status === 'approved'");
+    expect(credential).toContain("item.status === 'checked_in' ? 'CHECKED IN'");
+    expect(credential).toContain("item.status === 'checked_in' ? '已签到' : '已通过'");
     expect(credential).toContain("activityAction.kind === 'resubmit'");
     expect(credential).toContain("activityAction.kind === 'view-history'");
     expect(credential).toContain('{{item.serialNo}}');

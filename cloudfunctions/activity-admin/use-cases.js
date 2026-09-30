@@ -165,7 +165,7 @@ function partitionBackfill(registrations, occupiedCount) {
   let supportVehicleOccupiedCount = 0;
   let selfDriveOccupiedCount = 0;
   for (const registration of registrations) {
-    if (!['pending', 'approved'].includes(registration?.status))
+    if (!['pending', 'approved', 'checked_in'].includes(registration?.status))
       fail('PARTITION_BACKFILL_REQUIRED', '历史报名状态无法用于分仓回填');
     const gatheringMode = registration?.options?.gathering_mode;
     if (gatheringMode === 'support_vehicle') supportVehicleOccupiedCount += 1;
@@ -190,11 +190,17 @@ async function saveActivity(
     const current = activityId ? await tx.getActivity(activityId) : undefined;
     const effectiveActivity = effectiveActivityInput(current, activity);
     if (activityId && !current) fail('ACTIVITY_NOT_FOUND', '活动不存在');
-    // 普通成员的权限严格绑定服务端 OPENID：只能创建草稿、编辑自己的草稿并发布。
+    // 普通成员的权限严格绑定服务端 OPENID：只能管理自己的草稿，并可下架自己已上线的活动。
     if (!isAdmin && current && current.created_by !== openid)
       fail('FORBIDDEN', '只能编辑自己的活动');
-    if (!isAdmin && current && current.status !== 'draft')
-      fail('FORBIDDEN', '普通成员只能编辑自己的草稿');
+    // 创建者可把自己已上线的活动下架；已上线内容的其他编辑仍只允许管理员执行。
+    if (
+      !isAdmin &&
+      current &&
+      current.status !== 'draft' &&
+      !(current.status === 'published' && effectiveActivity.status === 'draft')
+    )
+      fail('FORBIDDEN', '普通成员只能编辑自己的草稿或下架已上线活动');
     if (!isAdmin && effectiveActivity.status === 'finished')
       fail('ADMIN_REQUIRED', '仅管理员可以结束活动');
     let currentVersion = 0;

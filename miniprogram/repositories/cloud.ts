@@ -406,7 +406,7 @@ function mapRegistration(raw: unknown): Registration {
   if (
     typeof value._id !== 'string' ||
     typeof value.activity_id !== 'string' ||
-    !['pending', 'approved', 'rejected', 'cancelled'].includes(value.status)
+    !['pending', 'approved', 'checked_in', 'rejected', 'cancelled'].includes(value.status)
   )
     return invalidResponse();
   const snapshot = isRecord(value.profile_snapshot) ? value.profile_snapshot : {};
@@ -488,6 +488,7 @@ function mapRegistration(raw: unknown): Registration {
     },
     reviewComment: typeof lastReview.comment === 'string' ? lastReview.comment : undefined,
     serialNo: typeof value.serial_no === 'string' ? value.serial_no : undefined,
+    checkedInAt: dateText(value.checked_in_at) || undefined,
     updatedAt: dateText(value.updated_at),
   };
 }
@@ -848,13 +849,22 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
       }),
     );
   }
+  async checkInRegistration(id: string) {
+    const registrationId = requiredId(id, '报名 ID');
+    return mapRegistration(
+      await this.call('admin-review', {
+        action: 'checkIn',
+        registrationId,
+      }),
+    );
+  }
   async listReviewRegistrations(activityId: string, status?: AdminRegistrationStatusFilter) {
     const data: Record<string, unknown> = {
       action: 'list',
       activityId: requiredId(activityId, '活动 ID'),
     };
     if (status !== undefined) {
-      if (!['pending', 'approved', 'rejected', 'cancelled'].includes(status))
+      if (!['pending', 'approved', 'checked_in', 'rejected', 'cancelled'].includes(status))
         throw new CloudRepositoryError('VALIDATION_FAILED', '报名状态无效');
       data.filterStatus = status;
     }

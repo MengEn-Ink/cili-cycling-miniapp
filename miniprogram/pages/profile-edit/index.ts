@@ -5,14 +5,17 @@ import { rideService } from '../../services/ride-service';
 const ORPHAN_LEDGER_KEY = 'profile-media-orphans-v1';
 const AVATAR_PREVIEW_DEADLINE_MS = 1_200;
 const MAX_LOCAL_IMAGE_BYTES = 5 * 1024 * 1024;
+const DEFAULT_AVATARS = [
+  { name: '曜石黑', path: '/assets/profile/avatars/cili-black.png' },
+  { name: '活力橙', path: '/assets/profile/avatars/cili-orange.png' },
+  { name: '米白', path: '/assets/profile/avatars/cili-ivory.png' },
+] as const;
+
 type MediaStage =
-  'selection' | 'uploadPath' | 'upload' | 'register' | 'setAvatar' | 'preview' | 'import';
+  'selection' | 'crop' | 'uploadPath' | 'upload' | 'register' | 'setAvatar' | 'preview';
 type SelectedImage = { path: string; size?: number };
-type MediaOrphan = {
-  fileId: string;
-  category: 'other';
-  origin?: ClientAvatarSource;
-};
+type PhotoItem = { id: string; category: string; previewUrl: string };
+type MediaOrphan = { fileId: string; category: 'other'; origin?: ClientAvatarSource };
 
 function safeHttpsUrl(value: unknown): string {
   return typeof value === 'string' && /^https:\/\/[^\s/]+(?:\/[^\s]*)?$/i.test(value) ? value : '';
@@ -28,6 +31,14 @@ function isUserCancellation(error: unknown): boolean {
         ? value.message
         : '';
   return /(?:^|[\s:])cancel(?:led)?(?:$|[\s:])/i.test(message);
+}
+
+function isUnsupportedApi(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const value = error as { errMsg?: unknown; message?: unknown };
+  return /(?:api )?not supported|not available|version too low|基础库版本过低/i.test(
+    String(value.errMsg || value.message || ''),
+  );
 }
 
 function safeErrorCode(error: unknown, fallback: string): string {
@@ -47,7 +58,7 @@ function mediaStageError(error: unknown, stage: MediaStage, fallbackCode: string
 }
 
 function mediaCloudUnavailableError(): Error {
-  return Object.assign(new Error('cloud unavailable'), {
+  return Object.assign(new Error('media unavailable'), {
     code: 'MEDIA_CLOUD_UNAVAILABLE',
     mediaStage: 'upload' as MediaStage,
   });
@@ -70,23 +81,22 @@ function mediaFailureDetail(error: unknown): string {
   const stage = typeof value.mediaStage === 'string' ? value.mediaStage : '';
   const fallbackByStage: Record<string, string> = {
     selection: 'MEDIA_SELECTION_FAILED',
+    crop: 'MEDIA_CROP_FAILED',
     uploadPath: 'MEDIA_UPLOAD_PATH_FAILED',
     upload: 'MEDIA_UPLOAD_FAILED',
     register: 'MEDIA_REGISTER_FAILED',
     setAvatar: 'AVATAR_SET_FAILED',
     preview: 'AVATAR_PREVIEW_FAILED',
-    import: 'STRAVA_AVATAR_IMPORT_FAILED',
   };
   const messageByStage: Record<string, string> = {
     selection: '无法选择图片，请检查相册权限或系统设置后重试',
-    uploadPath: '无法准备安全上传，请检查网络后重试',
+    crop: '图片裁剪失败，请重新选择图片后重试',
+    uploadPath: '图片准备失败，请检查网络后重试',
     upload: '图片上传失败，请重新选择图片后重试',
-    register: '云端图片校验失败，请重新选择图片后重试',
+    register: '图片校验失败，请重新选择图片后重试',
     setAvatar: '头像保存未确认，请稍后重试',
     preview: '头像预览暂不可用，请稍后重试',
-    import: 'Strava 头像导入失败，请重新授权或稍后重试',
   };
-  const fallbackCode = fallbackByStage[stage] || 'MEDIA_OPERATION_FAILED';
   const causeCode = safeErrorCode(error, '');
   const specificCodes = new Set([
     'MEDIA_TOO_LARGE',
@@ -95,19 +105,17 @@ function mediaFailureDetail(error: unknown): string {
     'MEDIA_OBJECT_TOO_LARGE',
     'MEDIA_OBJECT_TYPE_INVALID',
     'MEDIA_CLOUD_UNAVAILABLE',
-    'STRAVA_NOT_CONNECTED',
-    'STRAVA_AVATAR_UNAVAILABLE',
   ]);
-  const code = specificCodes.has(causeCode) ? causeCode : fallbackCode;
+  const code = specificCodes.has(causeCode)
+    ? causeCode
+    : fallbackByStage[stage] || 'MEDIA_OPERATION_FAILED';
   const messageByCode: Record<string, string> = {
     MEDIA_TOO_LARGE: '图片超过 5MB，请压缩或更换图片后重试',
     MEDIA_OBJECT_TOO_LARGE: '图片超过 5MB，请压缩或更换图片后重试',
     MEDIA_OBJECT_TYPE_INVALID: '图片格式无效，请选择 JPEG、PNG 或 WebP 图片',
-    MEDIA_OBJECT_NOT_FOUND: '图片暂未同步到云端，请稍后重试',
-    MEDIA_OBJECT_VERIFY_FAILED: '图片暂未同步到云端，请稍后重试',
-    MEDIA_CLOUD_UNAVAILABLE: '当前环境不支持云存储，请更新微信或使用支持云能力的真机后重试',
-    STRAVA_NOT_CONNECTED: 'Strava 尚未连接，请先完成绑定',
-    STRAVA_AVATAR_UNAVAILABLE: 'Strava 已连接但没有可用头像，请重新授权或同步',
+    MEDIA_OBJECT_NOT_FOUND: '图片暂未准备好，请稍后重试',
+    MEDIA_OBJECT_VERIFY_FAILED: '图片暂未准备好，请稍后重试',
+    MEDIA_CLOUD_UNAVAILABLE: '当前环境暂不支持图片上传，请更新微信后重试',
   };
   return `[${code}] ${messageByCode[causeCode] || messageByStage[stage] || '媒体操作失败，请稍后重试'}`;
 }
@@ -138,19 +146,12 @@ function firstTempImage(choice: unknown): SelectedImage | null {
       : [];
   const file = files[0];
   if (file && typeof file === 'object') {
-    const tempFilePath = (file as { tempFilePath?: unknown }).tempFilePath;
+    const path =
+      (file as { tempFilePath?: unknown; path?: unknown }).tempFilePath ||
+      (file as { path?: unknown }).path;
     const size = (file as { size?: unknown }).size;
-    if (typeof tempFilePath === 'string' && tempFilePath)
-      return {
-        path: tempFilePath,
-        ...(typeof size === 'number' && Number.isFinite(size) ? { size } : {}),
-      };
-    const path = (file as { path?: unknown }).path;
     if (typeof path === 'string' && path)
-      return {
-        path,
-        ...(typeof size === 'number' && Number.isFinite(size) ? { size } : {}),
-      };
+      return { path, ...(typeof size === 'number' && Number.isFinite(size) ? { size } : {}) };
   }
   const paths =
     choice &&
@@ -158,15 +159,7 @@ function firstTempImage(choice: unknown): SelectedImage | null {
     Array.isArray((choice as { tempFilePaths?: unknown }).tempFilePaths)
       ? (choice as { tempFilePaths: unknown[] }).tempFilePaths
       : [];
-  const firstPath = paths[0];
-  return typeof firstPath === 'string' && firstPath ? { path: firstPath } : null;
-}
-
-function isUnsupportedChooseMedia(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false;
-  const value = error as { errMsg?: unknown; message?: unknown };
-  const message = String(value.errMsg || value.message || '');
-  return /(?:api )?not supported|not available|version too low|基础库版本过低/i.test(message);
+  return typeof paths[0] === 'string' && paths[0] ? { path: paths[0] } : null;
 }
 
 function assertLocalImageSize(image: SelectedImage): SelectedImage {
@@ -189,7 +182,7 @@ async function ensureLocalImageSize(image: SelectedImage): Promise<SelectedImage
 async function chooseSingleImage(): Promise<SelectedImage | null> {
   if (typeof wx.chooseMedia === 'function') {
     try {
-      const image = firstTempImage(
+      return firstTempImage(
         await wx.chooseMedia({
           count: 1,
           mediaType: ['image'],
@@ -197,23 +190,66 @@ async function chooseSingleImage(): Promise<SelectedImage | null> {
           sourceType: ['album', 'camera'],
         }),
       );
-      return image;
     } catch (error) {
       if (
         isUserCancellation(error) ||
-        !isUnsupportedChooseMedia(error) ||
+        !isUnsupportedApi(error) ||
         typeof wx.chooseImage !== 'function'
       )
         throw mediaStageError(error, 'selection', 'MEDIA_SELECTION_FAILED');
     }
   }
   if (typeof wx.chooseImage !== 'function') return null;
-  const image = firstTempImage(
+  return firstTempImage(
     await atMediaStage('selection', 'MEDIA_SELECTION_FAILED', () =>
       wx.chooseImage({ count: 1, sizeType: ['compressed'], sourceType: ['album', 'camera'] }),
     ),
   );
-  return image;
+}
+
+async function cropSquare(image: SelectedImage): Promise<SelectedImage | null> {
+  if (typeof wx.cropImage !== 'function') return image;
+  try {
+    const result = await new Promise<{ tempFilePath?: unknown }>((resolve, reject) => {
+      wx.cropImage({
+        src: image.path,
+        cropScale: '1:1',
+        success: resolve,
+        fail: reject,
+      });
+    });
+    const path = result?.tempFilePath;
+    return typeof path === 'string' && path ? { path } : image;
+  } catch (error) {
+    if (isUserCancellation(error)) return null;
+    if (isUnsupportedApi(error)) return image;
+    throw mediaStageError(error, 'crop', 'MEDIA_CROP_FAILED');
+  }
+}
+
+function fileSystemCall(
+  method: 'readFile' | 'writeFile',
+  options: Record<string, unknown>,
+): Promise<any> {
+  const manager = wx.getFileSystemManager?.();
+  return new Promise((resolve, reject) => {
+    if (!manager || typeof manager[method] !== 'function')
+      return reject(new Error('file system unavailable'));
+    manager[method]({ ...options, success: resolve, fail: reject });
+  });
+}
+
+async function materializeDefaultAvatar(index: number): Promise<SelectedImage> {
+  const preset = DEFAULT_AVATARS[index];
+  if (!preset) throw new Error('默认头像不存在');
+  const target = `${wx.env?.USER_DATA_PATH || 'wxfile://usr'}/cili-default-${index}.png`;
+  const read = await atMediaStage<any>('selection', 'MEDIA_SELECTION_FAILED', () =>
+    fileSystemCall('readFile', { filePath: preset.path }),
+  );
+  await atMediaStage('selection', 'MEDIA_SELECTION_FAILED', () =>
+    fileSystemCall('writeFile', { filePath: target, data: read.data }),
+  );
+  return { path: target };
 }
 
 function mergeAvatarFields(current: Profile | null, authoritative: Profile): Profile {
@@ -228,6 +264,20 @@ function mergeAvatarFields(current: Profile | null, authoritative: Profile): Pro
     delete merged.avatarSource;
   }
   return merged;
+}
+
+function canEditProfileDetails(profile: Profile | null): boolean {
+  if (!profile) return false;
+  const hasValue = (value: unknown) => typeof value === 'string' && value.trim().length > 0;
+  return Boolean(
+    profile.avatarId ||
+    hasValue(profile.realName) ||
+    hasValue(profile.phone) ||
+    hasValue(profile.gender) ||
+    hasValue(profile.emergencyName) ||
+    hasValue(profile.emergencyPhone) ||
+    profile.photos.length,
+  );
 }
 
 function confirmsAvatar(
@@ -269,19 +319,14 @@ function saveOrphanLedger(entries: MediaOrphan[]) {
   if (entries.length) wx.setStorageSync(ORPHAN_LEDGER_KEY, entries);
   else wx.removeStorageSync(ORPHAN_LEDGER_KEY);
 }
-
 async function reportOrphan(entry: MediaOrphan) {
-  if (entry.origin) {
+  if (entry.origin)
     await rideService.reportProfileMediaOrphan(entry.fileId, entry.category, entry.origin);
-    return;
-  }
-  await rideService.reportProfileMediaOrphan(entry.fileId, entry.category);
+  else await rideService.reportProfileMediaOrphan(entry.fileId, entry.category);
 }
-
 async function retryOrphanLedger() {
-  const pending = readOrphanLedger();
   const remaining: MediaOrphan[] = [];
-  for (const entry of pending) {
+  for (const entry of readOrphanLedger()) {
     try {
       await reportOrphan(entry);
     } catch {
@@ -300,7 +345,7 @@ async function compensateUploadedMedia(entry: MediaOrphan) {
       result?.fileList?.some((item) => item.fileID === entry.fileId && Number(item.status) === 0),
     );
   } catch {
-    // Fall through to the durable orphan report below.
+    /* 删除失败后写入持久补偿账本。 */
   }
   if (deleted) return;
   try {
@@ -313,10 +358,11 @@ async function compensateUploadedMedia(entry: MediaOrphan) {
 }
 
 Page({
-  avatarReadinessRequestId: 0,
   avatarPreviewRequestId: 0,
+  photoPreviewRequestId: 0,
   mediaErrorRevision: 0,
   mediaErrorStage: '',
+  localPhotoPreviews: {} as Record<string, string>,
   data: {
     loading: true,
     error: '',
@@ -326,28 +372,37 @@ Page({
     photoBusy: false,
     mediaError: '',
     avatarPreviewUrl: '',
-    stravaAvatarReady: false,
-    stravaAvatarHint: '先绑定/同步 Strava',
-    stravaAvatarError: '',
-    uploadHint: '照片将上传到云存储；请在真机确认文件权限和存储规则。',
+    canEditDetails: false,
+    photoItems: [] as PhotoItem[],
+    defaultAvatars: DEFAULT_AVATARS,
   },
   async onLoad() {
     await retryOrphanLedger();
     const state = await runPageTask(() => rideService.getProfile(), '资料加载失败');
-    this.setData({ loading: false, error: state.error, p: state.data || null });
+    this.setData({
+      loading: false,
+      error: state.error,
+      p: state.data || null,
+      canEditDetails: canEditProfileDetails(state.data || null),
+    });
+    if (state.data) void this.loadPhotoPreviews();
   },
   async onShow() {
-    await Promise.all([this.loadAvatarPreview(), this.loadStravaAvatarReadiness()]);
+    await this.loadAvatarPreview();
   },
   onHide() {
-    this.avatarReadinessRequestId += 1;
     this.avatarPreviewRequestId += 1;
+    this.photoPreviewRequestId += 1;
   },
   onUnload() {
-    this.avatarReadinessRequestId += 1;
     this.avatarPreviewRequestId += 1;
+    this.photoPreviewRequestId += 1;
   },
   async loadAvatarPreview() {
+    if (!this.data.p?.avatarId) {
+      this.setData({ avatarPreviewUrl: '' });
+      return;
+    }
     const requestId = ++this.avatarPreviewRequestId;
     const errorRevision = this.mediaErrorRevision;
     const card = await settleBeforeDeadline(
@@ -383,39 +438,47 @@ Page({
     }
     this.setData(patch);
   },
-  async loadStravaAvatarReadiness() {
-    const requestId = ++this.avatarReadinessRequestId;
-    this.setData({
-      stravaAvatarReady: false,
-      stravaAvatarHint: '正在检查 Strava 状态',
-      stravaAvatarError: '',
-    });
-    const state = await runPageTask(() => rideService.getStravaReadiness(), 'Strava 状态加载失败');
-    if (requestId !== this.avatarReadinessRequestId) return;
-    if (!state.data) {
-      this.setData({
-        stravaAvatarReady: false,
-        stravaAvatarHint: 'Strava 状态暂时无法确认',
-        stravaAvatarError: state.error || 'Strava 状态加载失败',
-      });
-      return;
+  async loadPhotoPreviews() {
+    const p = this.data.p as Profile | null;
+    if (!p) return;
+    const requestId = ++this.photoPreviewRequestId;
+    const unresolved = p.photos.filter(
+      (photo) => !this.localPhotoPreviews[photo.id] && !safeHttpsUrl(photo.id),
+    );
+    const resolved: Record<string, string> = {};
+    const cloud = wx.cloud as
+      | (WxCloudApi & {
+          getTempFileURL(options: { fileList: string[] }): Promise<{
+            fileList?: { fileID?: string; tempFileURL?: string }[];
+          }>;
+        })
+      | undefined;
+    if (unresolved.length && typeof cloud?.getTempFileURL === 'function') {
+      try {
+        const result = await cloud.getTempFileURL({
+          fileList: unresolved.map((photo) => photo.id),
+        });
+        for (const file of result?.fileList || []) {
+          const id = typeof file.fileID === 'string' ? file.fileID : '';
+          const url = safeHttpsUrl(file.tempFileURL);
+          if (id && url) resolved[id] = url;
+        }
+      } catch {
+        /* 单张预览失败不阻塞资料编辑。 */
+      }
     }
-    const connected = state.data?.state === 'ready';
-    const ready = connected && state.data.avatarAvailable === true;
+    if (requestId !== this.photoPreviewRequestId) return;
     this.setData({
-      stravaAvatarReady: ready,
-      stravaAvatarHint: ready
-        ? '已连接，可导入当前 Strava 头像'
-        : connected
-          ? 'Strava 未提供头像，请重新授权或同步'
-          : state.data.state === 'disconnected'
-            ? '尚未连接 Strava，请先完成绑定'
-            : '先绑定/同步 Strava',
-      stravaAvatarError: '',
+      photoItems: p.photos.map((photo) => ({
+        ...photo,
+        previewUrl:
+          this.localPhotoPreviews[photo.id] || safeHttpsUrl(photo.id) || resolved[photo.id] || '',
+      })),
     });
   },
   applyAvatarProfile(authoritative: Profile) {
-    this.setData({ p: mergeAvatarFields(this.data.p, authoritative) });
+    const p = mergeAvatarFields(this.data.p, authoritative);
+    this.setData({ p, canEditDetails: canEditProfileDetails(p) });
   },
   async reloadAvatarProfile(expected: {
     source: AvatarSource;
@@ -430,6 +493,9 @@ Page({
   },
   set(e: any) {
     this.setData({ ['p.' + e.currentTarget.dataset.k]: e.detail.value });
+  },
+  selectGender(e: any) {
+    this.setData({ 'p.gender': e.detail.value });
   },
   async runAvatarAction(action: () => Promise<void>) {
     if (this.data.avatarBusy || this.data.photoBusy || this.data.saving) return;
@@ -489,9 +555,8 @@ Page({
           wx.showToast({ title: '头像已更新' });
           return;
         }
-      } else if (uploadedFileId) {
+      } else if (uploadedFileId)
         await compensateUploadedMedia({ fileId: uploadedFileId, category: 'other', origin });
-      }
       throw error;
     }
   },
@@ -503,44 +568,21 @@ Page({
   async chooseCustomAvatar() {
     await this.runAvatarAction(async () => {
       const image = await chooseSingleImage();
-      if (image) await this.uploadAndSetAvatar(image, 'custom');
+      if (!image) return;
+      const cropped = await cropSquare(image);
+      if (cropped) await this.uploadAndSetAvatar(cropped, 'custom');
     });
   },
-  async importStravaAvatar() {
-    if (!this.data.stravaAvatarReady || this.data.avatarBusy) return;
-    await this.runAvatarAction(async () => {
-      const baseline = await runPageTask(() => rideService.getProfile(), '头像状态刷新失败');
-      if (!baseline.data) throw new Error(baseline.error || '头像状态刷新失败');
-      this.applyAvatarProfile(baseline.data);
-      const beforeAvatarRevision = baseline.data.avatarRevision;
-      try {
-        const authoritative = await atMediaStage('import', 'STRAVA_AVATAR_IMPORT_FAILED', () =>
-          rideService.importStravaAvatar(),
-        );
-        this.applyAvatarProfile(authoritative);
-        await this.loadAvatarPreview();
-        wx.showToast({ title: 'Strava 头像已导入' });
-      } catch (error) {
-        const confirmed = await this.reloadAvatarProfile({
-          source: 'strava',
-          revisionAfter: beforeAvatarRevision,
-        });
-        if (confirmed) {
-          wx.showToast({ title: 'Strava 头像已导入' });
-          return;
-        }
-        throw error;
-      }
-    });
-  },
-  goToStrava() {
-    wx.navigateTo({ url: '/pages/strava/index' });
+  async chooseDefaultAvatar(e: any) {
+    const index = Number(e?.currentTarget?.dataset?.index);
+    await this.runAvatarAction(async () =>
+      this.uploadAndSetAvatar(await materializeDefaultAvatar(index), 'custom'),
+    );
   },
   avatarPreviewError(event: any) {
     const failedUrl = event?.currentTarget?.dataset?.url;
-    if (typeof failedUrl === 'string' && failedUrl === this.data.avatarPreviewUrl) {
+    if (typeof failedUrl === 'string' && failedUrl === this.data.avatarPreviewUrl)
       this.setData({ avatarPreviewUrl: '' });
-    }
   },
   async addPhoto() {
     // 添加照片加在途锁，避免快速连点触发多次并发上传产生孤立文件或状态错乱。
@@ -571,12 +613,13 @@ Page({
         return;
       }
       p.photos = [...p.photos, { id: uploadedFileId, category: 'other' }];
+      this.localPhotoPreviews[uploadedFileId] = verifiedImage.path;
       this.setData({ p });
+      await this.loadPhotoPreviews();
     } catch (error) {
       if (isUserCancellation(error)) return;
-      if (uploadedFileId) {
+      if (uploadedFileId)
         await compensateUploadedMedia({ fileId: uploadedFileId, category: 'other' });
-      }
       const detail = mediaFailureDetail(error);
       this.mediaErrorRevision += 1;
       this.mediaErrorStage =
@@ -591,14 +634,44 @@ Page({
       this.setData({ photoBusy: false });
     }
   },
+  previewPhoto(e: any) {
+    const current = e?.currentTarget?.dataset?.url;
+    const urls = this.data.photoItems.map((item: PhotoItem) => item.previewUrl).filter(Boolean);
+    if (typeof current === 'string' && current && urls.includes(current))
+      wx.previewImage({ current, urls });
+  },
+  movePhoto(e: any) {
+    if (!this.data.p || this.data.photoBusy || this.data.saving || this.data.avatarBusy) return;
+    const from = Number(e?.currentTarget?.dataset?.index);
+    const direction = Number(e?.currentTarget?.dataset?.direction);
+    const to = from + direction;
+    if (
+      !Number.isInteger(from) ||
+      ![-1, 1].includes(direction) ||
+      to < 0 ||
+      to >= this.data.p.photos.length
+    )
+      return;
+    const photos = [...this.data.p.photos];
+    [photos[from], photos[to]] = [photos[to], photos[from]];
+    this.data.p.photos = photos;
+    this.setData({ p: this.data.p });
+    void this.loadPhotoPreviews();
+  },
   async save() {
-    if (!this.data.p || this.data.saving || this.data.photoBusy || this.data.avatarBusy) return;
+    if (
+      !this.data.p ||
+      !this.data.canEditDetails ||
+      this.data.saving ||
+      this.data.photoBusy ||
+      this.data.avatarBusy
+    )
+      return;
     this.setData({ saving: true, error: '' });
     const p = this.data.p;
     const state = await runPageTask(
       () =>
         rideService.updateProfile({
-          nickname: p.nickname,
           gender: p.gender,
           emergencyName: p.emergencyName,
           photos: p.photos,
@@ -609,6 +682,9 @@ Page({
       '保存失败',
     );
     this.setData({ saving: false, error: state.error, p: state.data || p });
-    if (state.data) wx.showToast({ title: '已安全保存' });
+    if (state.data) {
+      await this.loadPhotoPreviews();
+      wx.showToast({ title: '已安全保存' });
+    }
   },
 });

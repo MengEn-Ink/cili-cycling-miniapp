@@ -182,9 +182,6 @@ Page({
   capabilityCard() {
     wx.navigateTo({ url: '/pages/capability-card/index' });
   },
-  strava() {
-    wx.navigateTo({ url: '/pages/strava/index' });
-  },
   activities() {
     if (this.data.authStatus === 'authenticated')
       wx.navigateTo({ url: '/pages/admin/activity-list/index' });

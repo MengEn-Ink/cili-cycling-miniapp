@@ -90,7 +90,8 @@ brand-logo {
   border-left-color: #d59a3a;
 }
 
-.registration-card.status-approved {
+.registration-card.status-approved,
+.registration-card.status-checked_in {
   border-left-color: #6f9b82;
 }
 

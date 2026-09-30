@@ -49,8 +49,8 @@ function deferred<T>() {
 }
 
 describe('活动 CTA 九分支', () => {
-  it('pending 或 approved 优先查看当前报名', () => {
-    for (const status of ['pending', 'approved'] as const) {
+  it('pending、approved 或 checked_in 优先查看当前报名', () => {
+    for (const status of ['pending', 'approved', 'checked_in'] as const) {
       expect(resolveActivityAction(open, registration(status))).toEqual({
         kind: 'view-registration',
         label: '查看我的行程',

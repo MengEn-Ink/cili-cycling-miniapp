@@ -30,7 +30,7 @@ function loadMain() {
   const registrations = Array.from({ length: 125 }, (_, index) => ({
     _id: `r${String(index).padStart(3, '0')}`,
     activity_id: 'legacy',
-    status: index % 5 === 0 ? 'approved' : 'pending',
+    status: index === 0 ? 'checked_in' : index % 5 === 0 ? 'approved' : 'pending',
     options: { gathering_mode: index < 50 ? 'support_vehicle' : 'self_drive' },
   }));
   const state = {
@@ -125,7 +125,7 @@ test('首次分仓回填分页读取超过 100 条占位报名并证明无额外
   });
 
   assert.equal(result.ok, true);
-  assert.deepEqual(state.registrationOffsets, [0, 100, 0]);
+  assert.deepEqual(state.registrationOffsets, [0, 100, 0, 0]);
   assert.equal(state.activity.occupancy_partition_ready, true);
   assert.equal(state.activity.support_vehicle_occupied_count, 50);
   assert.equal(state.activity.self_drive_occupied_count, 75);
