@@ -170,7 +170,7 @@ describe('个人中心加载状态', () => {
     expect(page.data.heroBackgrounds).toEqual([]);
   });
 
-  it('hero 默认展示骑行名片摘要，让个人中心直接看到近 90 天能力卡片', async () => {
+  it('压缩 hero 首屏展示真实名片摘要与资料完整度', async () => {
     await page.onShow();
     await vi.waitFor(() => expect(page.data.heroCard).toBeTruthy());
 
@@ -184,9 +184,13 @@ describe('个人中心加载状态', () => {
       ],
     });
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
+    const styles = readFileSync('miniprogram/pages/profile/index.wxss', 'utf8');
     expect(template).toContain('class="hero-capability-card"');
-    expect(template).toContain('我的骑行名片');
+    expect(template).toContain('近 90 天骑行摘要');
     expect(template).toContain('STRAVA {{heroCard.statusLabel}}');
+    expect(template).toContain('{{profile.completeness}}%');
+    expect(template).toContain('style="width: {{profile.completeness}}%"');
+    expect(styles).toMatch(/\.profile-hero\.has-bg\s*\{[^}]*min-height:\s*438rpx/s);
   });
 
   it('hero 图片逐级从用户图、头像、包内山景降级到 CSS alpine', async () => {
@@ -226,10 +230,13 @@ describe('个人中心加载状态', () => {
     expect(page.data.heroBackgroundAvatarUrl).toBe('https://temporary.example/avatar.jpg');
   });
 
-  it('hero 多图默认不自动轮播', () => {
+  it('hero 多图默认不自动轮播，摘要卡可进入完整骑行名片', () => {
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
 
     expect(template).not.toMatch(/<swiper\b[^>]*\bautoplay(?:=|\s|>)/);
+    expect(template).toMatch(/class="hero-capability-card"[^>]*bindtap="capabilityCard"/);
+    page.capabilityCard();
+    expect(wx.navigateTo).toHaveBeenCalledWith({ url: '/pages/capability-card/index' });
   });
 
   it('hero 背景隐藏于无障碍树且头像有可读标签', () => {
@@ -254,6 +261,14 @@ describe('个人中心加载状态', () => {
     expect(template).toContain('binderror="heroAvatarError"');
     expect(template).toContain('class="hero-alpine"');
     expect(existsSync('miniprogram/assets/profile/hero-alpine.svg')).toBe(true);
+  });
+
+  it('入口仅沿用现有身份与管理员权限条件', () => {
+    const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
+
+    expect(template).toMatch(/wx:if="{{authStatus === 'authenticated'}}" bindtap="activities"/);
+    expect(template).toMatch(/wx:if="{{isAdmin}}" bindtap="admin"/);
+    expect(template).not.toMatch(/wx:if="{{isSuper}}" bindtap="admin"/);
   });
 
   it('身份与资料请求并行启动，管理员入口等待本次身份确认', async () => {

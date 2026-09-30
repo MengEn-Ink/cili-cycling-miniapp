@@ -7,87 +7,87 @@
     retryable="{{true}}"
     bind:retry="load"
   >
-  <view wx:if="{{card}}" class="card-stage">
-    <view class="rider-card">
-      <swiper
-        wx:if="{{card.hasBackgrounds}}"
-        class="card-visual"
-        autoplay="{{card.hasMultipleBackgrounds}}"
-        circular="{{card.hasMultipleBackgrounds}}"
-        interval="5200"
-        duration="520"
-        indicator-dots="{{card.hasMultipleBackgrounds}}"
-        indicator-color="rgba(255,255,255,.35)"
-        indicator-active-color="#ffffff"
-      >
-        <swiper-item wx:for="{{card.backgrounds}}" wx:key="url">
-          <image
-            class="card-photo"
-            src="{{item.url}}"
-            mode="aspectFill"
-            aria-hidden="true"
-            data-url="{{item.url}}"
-            data-index="{{index}}"
-            binderror="backgroundError"
-          />
-        </swiper-item>
-      </swiper>
-      <view wx:else class="card-visual alpine-fallback">
-        <view class="alpine-sun"></view>
-        <view class="ridge ridge-far"></view>
-        <view class="ridge ridge-near"></view>
-        <view class="fallback-mark">此里</view>
-      </view>
-
-      <view class="image-shade"></view>
-      <view class="card-topline">
-        <view class="brand-signature"><text class="mini-mark"></text>CILI <text class="brand-cn">此里</text></view>
-        <view class="strava-pill status-{{card.statusTone}}">
-          <text class="status-dot"></text>STRAVA {{card.statusLabel}}
+    <view wx:if="{{card}}" class="card-stage">
+      <view class="rider-card">
+        <swiper
+          wx:if="{{card.hasBackgrounds}}"
+          class="card-visual"
+          autoplay="{{card.hasMultipleBackgrounds}}"
+          circular="{{card.hasMultipleBackgrounds}}"
+          interval="5200"
+          duration="520"
+          indicator-dots="{{card.hasMultipleBackgrounds}}"
+          indicator-color="rgba(255,255,255,.35)"
+          indicator-active-color="#ffffff"
+        >
+          <swiper-item wx:for="{{card.backgrounds}}" wx:key="url">
+            <image
+              class="card-photo"
+              src="{{item.url}}"
+              mode="aspectFill"
+              aria-hidden="true"
+              data-url="{{item.url}}"
+              data-index="{{index}}"
+              binderror="backgroundError"
+            />
+          </swiper-item>
+        </swiper>
+        <view wx:else class="card-visual alpine-fallback" aria-hidden="true">
+          <view class="alpine-sun"></view>
+          <view class="ridge ridge-far"></view>
+          <view class="ridge ridge-near"></view>
+          <view class="fallback-mark">此里</view>
         </view>
-      </view>
-      <view class="identity-block">
-        <view class="rider-name">{{card.displayName}}</view>
-        <view class="rider-title" wx:if="{{card.title}}">{{card.title}}</view>
-        <view class="privacy-note">仅自己可见</view>
-      </view>
 
-      <view class="core-summary" wx:if="{{card.primaryMetrics.length}}">
-        <view class="core-metric" wx:for="{{card.primaryMetrics}}" wx:key="key">
-          <view class="core-value">{{item.value}}<text class="core-unit">{{item.unit}}</text></view>
-          <view class="core-label">{{item.label}}</view>
-        </view>
-      </view>
-      <view class="metric-sheet">
-        <view class="secondary-metrics" wx:if="{{card.secondaryMetrics.length}}">
-          <view class="metric-item" wx:for="{{card.secondaryMetrics}}" wx:key="key">
-            <view class="metric-value">{{item.value}}<text class="metric-unit">{{item.unit}}</text></view>
-            <view class="metric-label">{{item.label}}</view>
+        <view class="image-shade" aria-hidden="true"></view>
+        <view class="card-topline">
+          <view class="brand-signature"><text class="mini-mark"></text>CILI</view>
+          <view class="strava-pill status-{{card.statusTone}}">
+            <text class="status-dot"></text>STRAVA {{card.statusLabel}}
           </view>
         </view>
-        <view wx:elif="{{!card.primaryMetrics.length}}" class="metric-empty">骑行数据正在准备</view>
-        <view class="data-meta" wx:if="{{card.coverageText || card.syncedAtText}}">
-          <view wx:if="{{card.coverageText}}">{{card.coverageText}}</view>
-          <view wx:if="{{card.syncedAtText}}">{{card.syncedAtText}}</view>
+
+        <view class="card-content">
+          <view class="identity-block">
+            <view class="rider-name">{{card.displayName}}</view>
+            <view class="rider-title" wx:if="{{card.title}}">{{card.title}}</view>
+            <view class="privacy-note">仅自己可见 · 不作为活动审核依据</view>
+          </view>
+
+          <view class="metric-sheet">
+            <view class="metric-kicker">近 90 天真实骑行数据</view>
+            <view class="metric-grid" wx:if="{{card.metrics.length}}">
+              <view class="metric-item" wx:for="{{card.metrics}}" wx:key="key">
+                <view class="metric-value">{{item.value}}<text class="metric-unit">{{item.unit}}</text></view>
+                <view class="metric-label">{{item.label}}</view>
+              </view>
+            </view>
+            <view wx:else class="metric-empty">骑行数据正在准备</view>
+            <view class="data-meta" wx:if="{{card.coverageText || card.syncedAtText}}">
+              <view class="meta-row" wx:if="{{card.coverageText}}">
+                <text class="meta-label">覆盖范围</text>
+                <text class="meta-value">{{card.coverageText}}</text>
+              </view>
+              <view class="meta-row" wx:if="{{card.syncedAtText}}">
+                <text class="meta-label">最近同步</text>
+                <text class="meta-value">{{card.syncedAtText}}</text>
+              </view>
+            </view>
+          </view>
         </view>
       </view>
-    </view>
 
-    <view class="card-caption">
-      <text>{{card.generatedAtText}}</text>
-      <text>数据只用于本人的骑行能力查看</text>
-    </view>
+      <view class="card-caption">
+        <text>{{card.generatedAtText}}</text>
+        <text>数据仅用于本人查看</text>
+      </view>
 
-    <button
-      wx:if="{{card.needsStravaRepair}}"
-      class="repair-button"
-      bindtap="repairStrava"
-    >前往 Strava 修复连接</button>
-    <button
-      wx:if="{{card.needsProfilePhoto}}"
-      class="photo-button"
-      bindtap="completeProfile"
-    >添加个人骑行照片</button>
-  </view>
+      <button wx:if="{{card.needsStravaRepair}}" class="repair-button" bindtap="repairStrava">
+        前往 Strava 修复连接
+      </button>
+      <button wx:if="{{card.needsProfilePhoto}}" class="photo-button" bindtap="completeProfile">
+        添加个人骑行照片
+      </button>
+    </view>
   </state-view>
 </view>

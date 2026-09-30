@@ -10,222 +10,267 @@
 }
 
 .form-head {
-  padding: 28rpx 8rpx 18rpx;
+  padding: 12rpx 0 8rpx;
 }
 
 .step-line {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10rpx;
-  margin-bottom: 24rpx;
-  color: #69716c;
+  align-items: center;
+  min-width: 0;
+  margin-bottom: 20rpx;
+  color: #747c77;
   font-size: 20rpx;
   font-weight: 800;
   letter-spacing: 1rpx;
 }
 
-.step-line text {
-  padding: 8rpx 12rpx;
-  border: 1rpx solid #2b3130;
-  border-radius: 6rpx;
+.step {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 6rpx;
+  white-space: nowrap;
 }
 
-.step-line .step-active {
-  border-color: #d55b1f;
-  color: #d55b1f;
+.step-number {
+  color: #89918b;
+  font-variant-numeric: tabular-nums;
+}
+
+.step-active,
+.step-active .step-number {
+  color: #e9753b;
+}
+
+.step-rule {
+  min-width: 12rpx;
+  height: 1rpx;
+  flex: 1;
+  margin: 0 10rpx;
+  background: #3a3a3e;
+}
+
+.title-row,
+.context-head,
+.strava-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  min-width: 0;
 }
 
 .hero-kicker,
 .context-kicker {
   color: #d55b1f;
-  font-size: 21rpx;
+  font-size: 20rpx;
   font-weight: 800;
-  letter-spacing: 3rpx;
+  letter-spacing: 2rpx;
 }
 
 .form-title {
-  margin: 10rpx 0 18rpx;
-  font-size: 46rpx;
+  margin: 4rpx 0 14rpx;
+  font-size: 42rpx;
   font-weight: 900;
+  line-height: 1.2;
   letter-spacing: -1rpx;
+}
+
+.step-caption {
+  flex: 0 0 auto;
+  color: #89918b;
+  font-size: 19rpx;
+  font-weight: 800;
 }
 
 .activity-context,
 .submit-note {
-  padding: 22rpx;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 18rpx 20rpx;
+  overflow: hidden;
   border: 1rpx solid #303735;
   border-left: 6rpx solid #d55b1f;
   border-radius: 8rpx;
   background: #111517;
 }
 
-.context-title {
-  margin-top: 8rpx;
+.context-status {
+  min-width: 0;
+  color: #e9a071;
+  font-size: 21rpx;
+  font-weight: 800;
+  text-align: right;
   overflow-wrap: anywhere;
-  font-size: 30rpx;
-  font-weight: 900;
 }
 
-.context-meta,
-.submit-note,
-.form-page .muted {
-  color: #9aa39d;
-  font-size: 23rpx;
-  line-height: 1.6;
+.context-title {
+  display: -webkit-box;
+  margin-top: 5rpx;
+  overflow: hidden;
+  font-size: 29rpx;
+  font-weight: 900;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .context-meta {
-  margin-top: 8rpx;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4rpx 18rpx;
+  margin-top: 6rpx;
+  color: #a8b0ab;
+  font-size: 22rpx;
+  line-height: 1.45;
 }
 
 .submit-note {
-  margin-top: 14rpx;
+  margin-top: 10rpx;
+  padding-top: 12rpx;
+  padding-bottom: 12rpx;
   border-left-color: #69716c;
+  color: #a8b0ab;
+  font-size: 21rpx;
+  line-height: 1.5;
 }
 
 .form-page .section-label {
   display: flex;
   align-items: flex-start;
-  gap: 14rpx;
-  margin-top: 34rpx;
+  gap: 12rpx;
+  margin-top: 22rpx;
   color: #f4f7f2;
+  font-size: 27rpx;
   font-weight: 900;
 }
 
 .section-label > text {
   flex: 0 0 auto;
   color: #d55b1f;
-  font-size: 22rpx;
+  font-size: 20rpx;
+  line-height: 1.8;
 }
 
 .section-hint {
-  margin-top: 4rpx;
-  color: #7f8882;
-  font-size: 21rpx;
+  margin-top: 1rpx;
+  color: #89918b;
+  font-size: 20rpx;
   font-weight: 500;
+  line-height: 1.4;
 }
 
 .form-card {
   box-sizing: border-box;
   width: 100%;
-  margin-top: 12rpx;
-  padding: 26rpx;
+  margin-top: 9rpx;
+  padding: 20rpx;
   overflow: hidden;
   border: 1rpx solid #2b3130;
-  border-radius: 8rpx;
+  border-radius: 10rpx;
   background: #171b1d;
   color: #f4f7f2;
-  box-shadow: 0 12rpx 30rpx rgba(0, 0, 0, 0.24);
+  box-shadow: 0 10rpx 24rpx rgba(0, 0, 0, 0.22);
 }
 
-.field-head,
-.strava-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20rpx;
+.identity-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) auto;
+  align-items: center;
+  gap: 14rpx;
 }
 
-.field-head > view,
-.strava-copy {
+.identity-main {
   min-width: 0;
 }
 
+.identity-label,
+.info-label {
+  color: #89918b;
+  font-size: 20rpx;
+}
+
+.identity-value,
+.info-value {
+  min-width: 0;
+  margin-top: 2rpx;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
 .field-title {
+  min-width: 0;
   font-weight: 800;
   overflow-wrap: anywhere;
 }
 
 .field-hint {
-  margin-top: 8rpx;
-  color: #89918b;
-  font-size: 23rpx;
-  line-height: 1.5;
+  margin-top: 5rpx;
+  color: #929a95;
+  font-size: 21rpx;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.required,
+.optional {
+  margin-left: 6rpx;
+  font-size: 19rpx;
 }
 
 .required {
-  margin-left: 8rpx;
-  color: #d55b1f;
-  font-size: 20rpx;
+  color: #e9753b;
 }
 
 .optional {
-  margin-left: 8rpx;
   color: #89918b;
-  font-size: 20rpx;
   font-weight: 500;
 }
 
 .text-button {
-  flex: 0 0 auto;
-  min-width: 96rpx;
-  min-height: 64rpx;
+  box-sizing: border-box;
+  min-width: 94rpx;
+  min-height: 88rpx;
   margin: 0;
   padding: 0 14rpx;
   border: 1rpx solid #4a524e;
   background: transparent;
-  color: #d55b1f;
-  font-size: 23rpx;
+  color: #e9753b;
+  font-size: 22rpx;
   font-weight: 800;
-  line-height: 62rpx;
-}
-
-.info-box,
-.safety-box {
-  display: grid;
-  grid-template-columns: minmax(120rpx, 0.8fr) minmax(0, 1.7fr);
-  gap: 20rpx;
-  margin-top: 22rpx;
-  padding: 20rpx;
-  border: 1rpx solid #303735;
-  border-radius: 8rpx;
-  background: #0d1012;
-}
-
-.info-label {
-  color: #89918b;
-  font-size: 23rpx;
-}
-
-.info-value {
-  min-width: 0;
-  text-align: right;
-  overflow-wrap: anywhere;
+  line-height: 86rpx;
 }
 
 .choice-group {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14rpx;
-  margin-top: 18rpx;
-}
-
-.choice-group.three {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12rpx;
+  margin-top: 14rpx;
 }
 
 .choice {
   box-sizing: border-box;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   min-width: 0;
-  min-height: 92rpx;
-  padding: 16rpx;
+  min-height: 112rpx;
+  padding: 14rpx 12rpx;
   border: 2rpx solid #343b39;
   border-radius: 10rpx;
   background: #0d1012;
   color: #cbd1cc;
-  font-size: 24rpx;
+  font-size: 23rpx;
 }
 
-.choice-detail {
-  align-items: flex-start;
-  min-height: 126rpx;
+.choice radio {
+  flex: 0 0 auto;
+  transform: scale(0.82);
+  transform-origin: left top;
 }
 
 .choice-copy {
   min-width: 0;
-  margin-left: 4rpx;
 }
 
 .choice-title {
@@ -233,15 +278,21 @@
   overflow-wrap: anywhere;
 }
 
-.choice-meta {
-  margin-top: 8rpx;
-  color: #89918b;
-  font-size: 21rpx;
-  line-height: 1.4;
+.choice-meta,
+.choice-remain {
+  margin-top: 3rpx;
+  color: #929a95;
+  font-size: 20rpx;
+  line-height: 1.35;
   overflow-wrap: anywhere;
 }
 
-.choice.selected {
+.choice-remain {
+  color: #c7cec9;
+}
+
+.choice.selected,
+.segment.selected {
   border-color: #d55b1f;
   background: rgba(213, 91, 31, 0.12);
   color: #ffe6d6;
@@ -254,38 +305,129 @@
   opacity: 0.72;
 }
 
+.experience-segment {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 12rpx;
+  overflow: hidden;
+  border: 1rpx solid #3a403e;
+  border-radius: 8rpx;
+  background: #0d1012;
+}
+
+.segment {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 88rpx;
+  padding: 8rpx 6rpx;
+  border-right: 1rpx solid #3a403e;
+  color: #aeb5b0;
+  font-size: 22rpx;
+  font-weight: 800;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.segment:last-child {
+  border-right: 0;
+}
+
+.segment radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.strava-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  min-width: 0;
+  margin-top: 18rpx;
+  padding: 16rpx;
+  border: 1rpx solid #343b39;
+  border-left: 5rpx solid #69716c;
+  border-radius: 8rpx;
+  background: #0d1012;
+}
+
+.strava-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.readiness-badge {
+  flex: 0 0 auto;
+  padding: 3rpx 9rpx;
+  border-radius: 999rpx;
+  background: #292f2c;
+  color: #bfc7c1;
+  font-size: 19rpx;
+  font-weight: 800;
+}
+
+.status-ready {
+  border-left-color: #6f9b82;
+}
+
+.status-ready .readiness-badge {
+  background: rgba(111, 155, 130, 0.18);
+  color: #a9cbb6;
+}
+
+.status-syncing {
+  border-left-color: #d59a3a;
+}
+
+.status-failed,
+.status-disconnected {
+  border-left-color: #d55b1f;
+}
+
 .remark {
   box-sizing: border-box;
   width: 100%;
-  min-height: 240rpx;
-  margin-top: 18rpx;
-  padding: 20rpx;
+  min-height: 180rpx;
+  margin-top: 14rpx;
+  padding: 16rpx;
   border: 1rpx solid #343b39;
   border-radius: 8rpx;
   background: #0d1012;
   color: #f4f7f2;
 }
 
-.strava-row {
-  margin-top: 26rpx;
-  padding-top: 24rpx;
-  border-top: 1rpx solid #2b3130;
+.safety-box {
+  display: grid;
+  grid-template-columns: minmax(110rpx, 0.7fr) minmax(0, 1.7fr);
+  gap: 16rpx;
+  margin-top: 14rpx;
+  padding: 16rpx;
+  border: 1rpx solid #303735;
+  border-radius: 8rpx;
+  background: #0d1012;
 }
 
-.readiness {
-  overflow-wrap: anywhere;
+.info-value {
+  margin-top: 0;
+  text-align: right;
 }
 
 .privacy-note {
-  margin-top: 16rpx;
-  color: #89918b;
-  font-size: 22rpx;
-  line-height: 1.55;
+  margin-top: 12rpx;
+  color: #929a95;
+  font-size: 20rpx;
+  line-height: 1.5;
 }
 
 .error-card {
-  margin: 24rpx 0;
-  padding: 24rpx;
+  margin: 20rpx 0;
+  padding: 20rpx;
   border: 1rpx solid #ff5c61;
   border-radius: 8rpx;
   background: #281417;
@@ -293,15 +435,15 @@
 }
 
 .error-title {
-  margin-bottom: 10rpx;
+  margin-bottom: 8rpx;
   color: #ffd4d5;
   font-weight: 900;
 }
 
 .error-item {
-  margin-top: 6rpx;
+  margin-top: 5rpx;
+  line-height: 1.45;
   overflow-wrap: anywhere;
-  line-height: 1.5;
 }
 
 .form-page .fixed {
@@ -333,8 +475,8 @@
 }
 
 .form-page .submit-button {
-  background: #d55b1f;
-  color: #0b0b0c;
+  background: #a94416;
+  color: #f7f7f5;
   font-weight: 900;
   letter-spacing: 2rpx;
 }
@@ -345,8 +487,8 @@
 
 .disabled-hint {
   grid-column: 1 / -1;
-  color: #89918b;
-  font-size: 21rpx;
+  color: #9aa39d;
+  font-size: 20rpx;
   text-align: center;
 }
 
@@ -356,28 +498,38 @@
   }
 
   .form-title {
-    font-size: 40rpx;
+    font-size: 38rpx;
   }
 
+  .title-row {
+    align-items: flex-start;
+  }
+
+  .step-caption {
+    display: none;
+  }
+
+  .identity-card,
   .choice-group,
-  .choice-group.three,
   .action-bar,
-  .info-box,
   .safety-box {
     grid-template-columns: 1fr;
+  }
+
+  .identity-action {
+    width: 100%;
   }
 
   .info-value {
     text-align: left;
   }
 
-  .field-head,
   .strava-row {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .text-button {
+  .strava-row .text-button {
     width: 100%;
   }
 

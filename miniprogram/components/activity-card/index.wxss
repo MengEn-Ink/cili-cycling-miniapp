@@ -1,32 +1,34 @@
 .activity-card {
   position: relative;
   overflow: hidden;
-  margin-top: 20rpx;
-  padding: 30rpx 28rpx 26rpx;
+  margin-top: 16rpx;
   border: 1rpx solid #39393d;
-  border-radius: 8rpx;
+  border-radius: 18rpx;
   background: linear-gradient(145deg, #252528 0%, #18181a 75%);
-  box-shadow: 0 14rpx 32rpx rgba(0, 0, 0, 0.3);
+  box-shadow: 0 12rpx 28rpx rgba(0, 0, 0, 0.28);
   transition:
     transform 120ms ease,
-    border-color 120ms ease;
+    border-color 120ms ease,
+    opacity 120ms ease;
 }
 
 .card-accent {
   position: absolute;
+  z-index: 4;
   top: 0;
   left: 0;
-  width: 112rpx;
+  width: 104rpx;
   height: 6rpx;
   background: linear-gradient(90deg, #c82018, #d55b1f);
 }
 
 .activity-card::after {
   position: absolute;
+  z-index: 4;
   right: -1rpx;
   bottom: -1rpx;
-  width: 38rpx;
-  height: 38rpx;
+  width: 32rpx;
+  height: 32rpx;
   background: #d55b1f;
   clip-path: polygon(100% 0, 100% 100%, 0 100%);
   content: '';
@@ -34,7 +36,43 @@
 
 .activity-card--pressed {
   border-color: #d55b1f;
+  opacity: 0.92;
   transform: scale(0.985);
+}
+
+.card-media {
+  position: relative;
+  height: 168rpx;
+  overflow: hidden;
+  background: #1b1b1d;
+}
+
+.card-cover {
+  width: 100%;
+  height: 100%;
+}
+
+.card-media-shade {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(180deg, rgba(11, 11, 12, 0.08), rgba(11, 11, 12, 0.7));
+}
+
+.card-content {
+  position: relative;
+  z-index: 2;
+  padding: 22rpx 24rpx 20rpx;
+}
+
+.activity-card--media .card-content {
+  margin-top: -34rpx;
+}
+
+.activity-card--plain .card-content {
+  padding-top: 26rpx;
 }
 
 .card-top,
@@ -42,40 +80,45 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16rpx;
+  gap: 14rpx;
 }
 
 .date-block {
   display: flex;
   align-items: baseline;
-  gap: 12rpx;
+  gap: 10rpx;
   min-width: 0;
 }
 
 .date-label {
-  color: #74747a;
-  font-size: 19rpx;
+  color: #a8a8ad;
+  font-size: 18rpx;
   font-weight: 700;
   letter-spacing: 2rpx;
 }
 
 .date-value {
-  color: #d55b1f;
-  font-size: 25rpx;
+  color: #f38a50;
+  font-size: 24rpx;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .activity-title {
-  margin-top: 20rpx;
+  display: -webkit-box;
+  overflow: hidden;
+  margin-top: 14rpx;
   color: #f7f7f5;
-  font-size: 36rpx;
+  font-size: 34rpx;
   font-weight: 900;
-  line-height: 1.3;
+  line-height: 1.24;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .route-line {
   overflow: hidden;
-  margin-top: 8rpx;
+  margin-top: 6rpx;
   color: #a8a8ad;
   font-size: 24rpx;
   text-overflow: ellipsis;
@@ -84,22 +127,24 @@
 
 .route-arrow,
 .arrow {
-  color: #d55b1f;
+  color: #f38a50;
   font-weight: 900;
 }
 
 .metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2rpx;
-  margin-top: 26rpx;
+  gap: 1rpx;
+  margin-top: 18rpx;
   border: 1rpx solid #37373b;
+  border-radius: 12rpx;
+  overflow: hidden;
   background: #37373b;
 }
 
 .metric-item {
   min-width: 0;
-  padding: 18rpx 8rpx;
+  padding: 13rpx 6rpx 12rpx;
   background: #141416;
   text-align: center;
 }
@@ -112,9 +157,12 @@
 .metric-value {
   overflow: hidden;
   color: #f7f7f5;
-  font-size: 32rpx;
+  font-size: 30rpx;
+  font-variant-numeric: tabular-nums;
   font-weight: 900;
+  line-height: 1.2;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .metric-unit {
@@ -122,18 +170,41 @@
   color: #a8a8ad;
   font-size: 24rpx;
   font-weight: 700;
-  letter-spacing: 1rpx;
 }
 
 .card-foot {
-  margin-top: 20rpx;
-  padding-top: 18rpx;
+  min-height: 48rpx;
+  margin-top: 14rpx;
+  padding-top: 12rpx;
   border-top: 1rpx solid #37373b;
-  color: #8b8b91;
+  color: #a8a8ad;
   font-size: 22rpx;
 }
 
 .level {
+  overflow: hidden;
   color: #c5c5c8;
   font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.occupancy {
+  flex: none;
+  white-space: nowrap;
+}
+
+@media (max-width: 350px) {
+  .card-content {
+    padding-right: 20rpx;
+    padding-left: 20rpx;
+  }
+
+  .activity-title {
+    font-size: 32rpx;
+  }
+
+  .metric-value {
+    font-size: 28rpx;
+  }
 }
