@@ -28,9 +28,9 @@
           <view class="label">更新头像</view>
           <view class="muted avatar-note">头像操作会即时保存；微信入口仅表示从微信选择图片。</view>
           <view class="avatar-actions">
-            <button class="avatar-action avatar-action-wechat" open-type="chooseAvatar" bindchooseavatar="chooseWechatAvatar" disabled="{{avatarBusy}}" aria-label="从微信选择头像">从微信选择头像</button>
-            <button class="avatar-action avatar-action-custom" bindtap="chooseCustomAvatar" disabled="{{avatarBusy}}" aria-label="选择自定义头像">选择自定义头像</button>
-            <button class="avatar-action avatar-action-strava" bindtap="importStravaAvatar" disabled="{{avatarBusy || !stravaAvatarReady}}" aria-label="导入 Strava 头像">导入 Strava 头像</button>
+            <button class="avatar-action avatar-action-wechat" open-type="chooseAvatar" bindchooseavatar="chooseWechatAvatar" disabled="{{avatarBusy || photoBusy || saving}}" aria-label="从微信选择头像">从微信选择头像</button>
+            <button class="avatar-action avatar-action-custom" bindtap="chooseCustomAvatar" disabled="{{avatarBusy || photoBusy || saving}}" aria-label="选择自定义头像">选择自定义头像</button>
+            <button class="avatar-action avatar-action-strava" bindtap="importStravaAvatar" disabled="{{avatarBusy || photoBusy || saving || !stravaAvatarReady}}" aria-label="导入 Strava 头像">导入 Strava 头像</button>
           </view>
           <view class="avatar-status {{stravaAvatarError ? 'avatar-status-error' : ''}}" role="{{stravaAvatarError ? 'alert' : 'status'}}" aria-live="{{stravaAvatarError ? 'assertive' : 'polite'}}" aria-atomic="true">{{avatarBusy ? '正在安全更新头像' : (stravaAvatarError || stravaAvatarHint)}}</view>
           <button wx:if="{{!stravaAvatarReady}}" class="avatar-help-link" bindtap="goToStrava" disabled="{{avatarBusy}}" aria-label="先绑定或同步 Strava">先绑定/同步 Strava</button>
@@ -75,12 +75,13 @@
     <view class="card form-card">
       <view class="title">个人相册</view>
       <view class="muted form-tip">{{uploadHint}}</view>
-      <button class="photo-action" size="mini" bindtap="addPhoto" loading="{{photoBusy}}" disabled="{{photoBusy}}">选择并上传照片</button>
+      <button class="photo-action" bindtap="addPhoto" loading="{{photoBusy}}" disabled="{{photoBusy || saving || avatarBusy}}">选择并上传照片</button>
       <view class="photo-count">{{p.photos.length}} 张待保存</view>
     </view>
 
+    <view class="danger form-error" wx:if="{{mediaError}}" role="alert" aria-live="assertive" aria-atomic="true">{{mediaError}}</view>
     <view class="danger form-error" wx:if="{{error}}">{{error}}</view>
-    <button class="btn save-action" loading="{{saving}}" bindtap="save">保存资料</button>
+    <button class="btn save-action" loading="{{saving}}" disabled="{{saving || photoBusy || avatarBusy}}" bindtap="save">保存资料</button>
   </block>
   </state-view>
 </view>

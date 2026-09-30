@@ -191,7 +191,12 @@ describe('资料编辑头像交互', () => {
 
     await page.chooseCustomAvatar();
 
-    expect(chooseMedia).toHaveBeenCalledWith({ count: 1, mediaType: ['image'] });
+    expect(chooseMedia).toHaveBeenCalledWith({
+      count: 1,
+      mediaType: ['image'],
+      sizeType: ['compressed'],
+      sourceType: ['album', 'camera'],
+    });
     expect(rideService.registerProfileMedia).toHaveBeenCalledWith(
       uploadedFileId,
       'other',
@@ -225,6 +230,37 @@ describe('资料编辑头像交互', () => {
       expect.objectContaining({ filePath: '/private/tmp/fallback.jpg' }),
     );
     expect(rideService.setAvatar).toHaveBeenCalledWith('custom', uploadedFileId);
+  });
+
+  it('chooseMedia 权限错误不降级 chooseImage 且显示选择阶段错误码', async () => {
+    const chooseImage = vi.fn();
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockRejectedValue({ errMsg: 'chooseMedia:fail permission denied' }),
+      chooseImage,
+    });
+
+    await page.chooseCustomAvatar();
+
+    expect(chooseImage).not.toHaveBeenCalled();
+    expect(page.data.mediaError).toContain('[MEDIA_SELECTION_FAILED]');
+  });
+
+  it('选择结果保留 size 并在上传前拒绝超过 5MiB 的图片', async () => {
+    const uploadFile = vi.fn();
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [
+          { tempFilePath: '/private/tmp/too-large.jpg', size: 5 * 1024 * 1024 + 1 },
+        ],
+      }),
+      cloud: { uploadFile },
+    });
+
+    await page.chooseCustomAvatar();
+
+    expect(rideService.getProfileMediaUploadPath).not.toHaveBeenCalled();
+    expect(uploadFile).not.toHaveBeenCalled();
+    expect(page.data.mediaError).toContain('[MEDIA_TOO_LARGE]');
   });
 
   it('所有头像入口共用单一 busy lock 防止重复动作', async () => {
@@ -352,6 +388,7 @@ describe('资料编辑头像交互', () => {
       title: '头像更新结果未确认，请稍后重试',
       icon: 'none',
     });
+    expect(page.data.mediaError).toBe('[CALL_FAILED] 头像保存未确认，请稍后重试');
   });
 
   it('稳定错误码提供准确提示，未知错误回退为通用提示', async () => {
@@ -463,6 +500,9 @@ describe('资料编辑头像交互', () => {
       title: '头像更新结果未确认，请稍后重试',
       icon: 'none',
     });
+    expect(page.data.mediaError).toBe(
+      '[CALL_FAILED] Strava 头像导入失败，请重新授权或稍后重试',
+    );
   });
 
   it('已有 Strava 头像 re-import 完全失败时相同 revision 不得误报成功', async () => {
@@ -628,6 +668,18 @@ describe('资料编辑头像交互', () => {
     expect(page.data.avatarPreviewUrl).toBe('https://temporary.example/newer.jpg');
   });
 
+  it('头像预览失败显示 preview 阶段码但不阻塞资料', async () => {
+    rideService.getPersonalCapabilityCard.mockRejectedValueOnce(new Error('private preview url'));
+
+    await page.loadAvatarPreview();
+
+    expect(page.data.p).not.toBeNull();
+    expect(page.data.mediaError).toBe(
+      '[AVATAR_PREVIEW_FAILED] 头像预览暂不可用，请稍后重试',
+    );
+    expect(page.data.mediaError).not.toContain('private preview url');
+  });
+
   it.each(['onHide', 'onUnload'])('%s 会让未完成的头像预览响应失效', async (hook) => {
     const pending = deferred<ReturnType<typeof capabilityCard>>();
     rideService.getPersonalCapabilityCard.mockReturnValueOnce(pending.promise);
@@ -687,6 +739,37 @@ describe('资料编辑头像交互', () => {
     expect(wx.showToast).not.toHaveBeenCalled();
     expect(rideService.getProfileMediaUploadPath).not.toHaveBeenCalled();
     expect(page.data.avatarBusy).toBe(false);
+  });
+
+  it('照片上传与资料保存双向互斥', async () => {
+    const chooseMedia = vi.fn();
+    Object.assign(wx, { chooseMedia });
+    page.data.photoBusy = true;
+
+    await page.save();
+
+    expect(rideService.updateProfile).not.toHaveBeenCalled();
+
+    page.data.photoBusy = false;
+    page.data.saving = true;
+    await page.addPhoto();
+
+    expect(chooseMedia).not.toHaveBeenCalled();
+  });
+
+  it('头像与照片失败显示无敏感信息的阶段码和下一步', async () => {
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [{ tempFilePath: '/private/tmp/photo.jpg', size: 1024 }],
+      }),
+      cloud: { uploadFile: vi.fn() },
+    });
+    rideService.getProfileMediaUploadPath.mockRejectedValueOnce(new Error('private path detail'));
+
+    await page.addPhoto();
+
+    expect(page.data.mediaError).toBe('[MEDIA_UPLOAD_PATH_FAILED] 无法准备安全上传，请检查网络后重试');
+    expect(page.data.mediaError).not.toContain('private path detail');
   });
 
   it('用户取消个人相册 chooseMedia 时也静默结束', async () => {
@@ -781,6 +864,26 @@ describe('资料编辑头像交互', () => {
       title: '照片上传未完成，请稍后重试',
       icon: 'none',
     });
+    expect(page.data.mediaError).toBe(
+      '[MEDIA_UPLOAD_PATH_FAILED] 无法准备安全上传，请检查网络后重试',
+    );
+  });
+
+  it('个人相册上传失败显示 upload 阶段码且不登记媒体', async () => {
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [{ tempFilePath: '/private/tmp/photo.jpg', size: 1024 }],
+      }),
+      cloud: { uploadFile: vi.fn().mockRejectedValue(new Error('private upload detail')) },
+    });
+
+    await page.addPhoto();
+
+    expect(rideService.registerProfileMedia).not.toHaveBeenCalled();
+    expect(page.data.mediaError).toBe(
+      '[MEDIA_UPLOAD_FAILED] 图片上传失败，请重新选择图片后重试',
+    );
+    expect(page.data.mediaError).not.toContain('private upload detail');
   });
 
   it('个人相册 registerMedia 失败时保留 photos 并执行删除与 orphan 补偿', async () => {
@@ -808,6 +911,9 @@ describe('资料编辑头像交互', () => {
       { fileId: uploadedFileId, category: 'other' },
     ]);
     expect(page.data.p.photos).toEqual([]);
+    expect(page.data.mediaError).toBe(
+      '[MEDIA_REGISTER_FAILED] 云端图片校验失败，请重新选择图片后重试',
+    );
   });
 
   it('再次进入资料页会重试 durable orphan ledger 并在成功后清除', async () => {
@@ -840,10 +946,15 @@ describe('资料编辑头像页面契约', () => {
     expect(template).toContain('bindchooseavatar="chooseWechatAvatar"');
     expect(template).toContain('bindtap="chooseCustomAvatar"');
     expect(template).toContain('bindtap="importStravaAvatar"');
-    expect(template).toContain('disabled="{{avatarBusy || !stravaAvatarReady}}"');
+    expect(template).toContain(
+      'disabled="{{avatarBusy || photoBusy || saving || !stravaAvatarReady}}"',
+    );
     expect(template).toContain('先绑定/同步 Strava');
     expect(template).toContain('bindtap="goToStrava"');
     expect(template).toContain('stravaAvatarError');
+    expect(template).toContain('mediaError');
+    expect(template).toContain('disabled="{{photoBusy || saving || avatarBusy}}"');
+    expect(template).toContain('disabled="{{saving || photoBusy || avatarBusy}}"');
   });
 
   it('头像预览仅绑定净化后的 preview URL 并提供无障碍名称', () => {

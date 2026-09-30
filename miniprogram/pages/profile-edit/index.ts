@@ -4,6 +4,9 @@ import { rideService } from '../../services/ride-service';
 
 const ORPHAN_LEDGER_KEY = 'profile-media-orphans-v1';
 const AVATAR_PREVIEW_DEADLINE_MS = 1_200;
+const MAX_LOCAL_IMAGE_BYTES = 5 * 1024 * 1024;
+type MediaStage = 'selection' | 'uploadPath' | 'upload' | 'register' | 'setAvatar' | 'preview' | 'import';
+type SelectedImage = { path: string; size?: number };
 type MediaOrphan = {
   fileId: string;
   category: 'other';
@@ -40,6 +43,60 @@ function avatarFailureMessage(error: unknown): string {
   return '头像更新失败，请稍后重试';
 }
 
+function safeErrorCode(error: unknown, fallback: string): string {
+  const value =
+    error && typeof error === 'object' && typeof (error as { code?: unknown }).code === 'string'
+      ? (error as { code: string }).code
+      : '';
+  return /^[A-Z0-9_]{1,64}$/.test(value) ? value : fallback;
+}
+
+function mediaStageError(error: unknown, stage: MediaStage, fallbackCode: string): Error {
+  if (isUserCancellation(error)) return error as Error;
+  return Object.assign(new Error('媒体操作失败'), {
+    code: safeErrorCode(error, fallbackCode),
+    mediaStage: stage,
+  });
+}
+
+async function atMediaStage<T>(
+  stage: MediaStage,
+  fallbackCode: string,
+  task: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await task();
+  } catch (error) {
+    throw mediaStageError(error, stage, fallbackCode);
+  }
+}
+
+function mediaFailureDetail(error: unknown): string {
+  const value = error && typeof error === 'object' ? (error as Record<string, unknown>) : {};
+  const stage = typeof value.mediaStage === 'string' ? value.mediaStage : '';
+  const fallbackByStage: Record<string, string> = {
+    selection: 'MEDIA_SELECTION_FAILED',
+    uploadPath: 'MEDIA_UPLOAD_PATH_FAILED',
+    upload: 'MEDIA_UPLOAD_FAILED',
+    register: 'MEDIA_REGISTER_FAILED',
+    setAvatar: 'AVATAR_SET_FAILED',
+    preview: 'AVATAR_PREVIEW_FAILED',
+    import: 'STRAVA_AVATAR_IMPORT_FAILED',
+  };
+  const messageByStage: Record<string, string> = {
+    selection: '无法选择图片，请检查相册权限或系统设置后重试',
+    uploadPath: '无法准备安全上传，请检查网络后重试',
+    upload: '图片上传失败，请重新选择图片后重试',
+    register: '云端图片校验失败，请重新选择图片后重试',
+    setAvatar: '头像保存未确认，请稍后重试',
+    preview: '头像预览暂不可用，请稍后重试',
+    import: 'Strava 头像导入失败，请重新授权或稍后重试',
+  };
+  const fallbackCode = fallbackByStage[stage] || 'MEDIA_OPERATION_FAILED';
+  const code = safeErrorCode(error, fallbackCode);
+  return `[${code}] ${messageByStage[stage] || '媒体操作失败，请稍后重试'}`;
+}
+
 function settleBeforeDeadline<T>(promise: Promise<T>, timeoutMs: number): Promise<T | null> {
   return new Promise((resolve) => {
     let settled = false;
@@ -57,7 +114,7 @@ function settleBeforeDeadline<T>(promise: Promise<T>, timeoutMs: number): Promis
   });
 }
 
-function firstTempImagePath(choice: unknown): string {
+function firstTempImage(choice: unknown): SelectedImage | null {
   const files =
     choice &&
     typeof choice === 'object' &&
@@ -67,9 +124,18 @@ function firstTempImagePath(choice: unknown): string {
   const file = files[0];
   if (file && typeof file === 'object') {
     const tempFilePath = (file as { tempFilePath?: unknown }).tempFilePath;
-    if (typeof tempFilePath === 'string' && tempFilePath) return tempFilePath;
+    const size = (file as { size?: unknown }).size;
+    if (typeof tempFilePath === 'string' && tempFilePath)
+      return {
+        path: tempFilePath,
+        ...(typeof size === 'number' && Number.isFinite(size) ? { size } : {}),
+      };
     const path = (file as { path?: unknown }).path;
-    if (typeof path === 'string' && path) return path;
+    if (typeof path === 'string' && path)
+      return {
+        path,
+        ...(typeof size === 'number' && Number.isFinite(size) ? { size } : {}),
+      };
   }
   const paths =
     choice &&
@@ -78,22 +144,50 @@ function firstTempImagePath(choice: unknown): string {
       ? (choice as { tempFilePaths: unknown[] }).tempFilePaths
       : [];
   const firstPath = paths[0];
-  return typeof firstPath === 'string' ? firstPath : '';
+  return typeof firstPath === 'string' && firstPath ? { path: firstPath } : null;
 }
 
-async function chooseSingleImagePath(): Promise<string> {
+function isUnsupportedChooseMedia(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const value = error as { errMsg?: unknown; message?: unknown };
+  const message = String(value.errMsg || value.message || '');
+  return /(?:api )?not supported|not available|version too low|基础库版本过低/i.test(message);
+}
+
+function assertLocalImageSize(image: SelectedImage): SelectedImage {
+  if (image.size !== undefined && image.size > MAX_LOCAL_IMAGE_BYTES)
+    throw Object.assign(new Error('图片不能超过 5MB'), { code: 'MEDIA_TOO_LARGE' });
+  return image;
+}
+
+async function chooseSingleImage(): Promise<SelectedImage | null> {
   if (typeof wx.chooseMedia === 'function') {
     try {
-      return firstTempImagePath(await wx.chooseMedia({ count: 1, mediaType: ['image'] }));
+      const image = firstTempImage(
+        await wx.chooseMedia({
+          count: 1,
+          mediaType: ['image'],
+          sizeType: ['compressed'],
+          sourceType: ['album', 'camera'],
+        }),
+      );
+      return image ? assertLocalImageSize(image) : null;
     } catch (error) {
-      // 部分基础库或开发工具里的 chooseMedia 会不可用，此时降级到 chooseImage；用户取消仍继续抛出给上层静默处理。
-      if (isUserCancellation(error) || typeof wx.chooseImage !== 'function') throw error;
+      if (
+        isUserCancellation(error) ||
+        !isUnsupportedChooseMedia(error) ||
+        typeof wx.chooseImage !== 'function'
+      )
+        throw mediaStageError(error, 'selection', 'MEDIA_SELECTION_FAILED');
     }
   }
-  if (typeof wx.chooseImage !== 'function') return '';
-  return firstTempImagePath(
-    await wx.chooseImage({ count: 1, sizeType: ['compressed'], sourceType: ['album', 'camera'] }),
+  if (typeof wx.chooseImage !== 'function') return null;
+  const image = firstTempImage(
+    await atMediaStage('selection', 'MEDIA_SELECTION_FAILED', () =>
+      wx.chooseImage({ count: 1, sizeType: ['compressed'], sourceType: ['album', 'camera'] }),
+    ),
   );
+  return image ? assertLocalImageSize(image) : null;
 }
 
 function mergeAvatarFields(current: Profile | null, authoritative: Profile): Profile {
@@ -202,6 +296,7 @@ Page({
     saving: false,
     avatarBusy: false,
     photoBusy: false,
+    mediaError: '',
     avatarPreviewUrl: '',
     stravaAvatarReady: false,
     stravaAvatarHint: '先绑定/同步 Strava',
@@ -231,7 +326,19 @@ Page({
       AVATAR_PREVIEW_DEADLINE_MS,
     );
     if (requestId !== this.avatarPreviewRequestId) return;
-    this.setData({ avatarPreviewUrl: safeHttpsUrl(card?.profile.avatarUrl) });
+    if (!card) {
+      this.setData({
+        avatarPreviewUrl: '',
+        mediaError: mediaFailureDetail(
+          Object.assign(new Error('preview unavailable'), {
+            code: 'AVATAR_PREVIEW_FAILED',
+            mediaStage: 'preview',
+          }),
+        ),
+      });
+      return;
+    }
+    this.setData({ avatarPreviewUrl: safeHttpsUrl(card.profile.avatarUrl) });
   },
   async loadStravaAvatarReadiness() {
     const requestId = ++this.avatarReadinessRequestId;
@@ -280,30 +387,40 @@ Page({
     this.setData({ ['p.' + e.currentTarget.dataset.k]: e.detail.value });
   },
   async runAvatarAction(action: () => Promise<void>) {
-    if (this.data.avatarBusy) return;
-    this.setData({ avatarBusy: true });
+    if (this.data.avatarBusy || this.data.photoBusy || this.data.saving) return;
+    this.setData({ avatarBusy: true, mediaError: '' });
     try {
       await action();
     } catch (error) {
       if (!isUserCancellation(error)) {
+        this.setData({ mediaError: mediaFailureDetail(error) });
         wx.showToast({ title: avatarFailureMessage(error), icon: 'none' });
       }
     } finally {
       this.setData({ avatarBusy: false });
     }
   },
-  async uploadAndSetAvatar(filePath: string, origin: ClientAvatarSource) {
+  async uploadAndSetAvatar(image: SelectedImage, origin: ClientAvatarSource) {
     const cloud = wx.cloud;
     if (!cloud) throw new Error('cloud unavailable');
+    assertLocalImageSize(image);
     let uploadedFileId = '';
     let selectionDispatched = false;
     try {
-      const cloudPath = await rideService.getProfileMediaUploadPath();
-      const uploaded = await cloud.uploadFile({ cloudPath, filePath });
+      const cloudPath = await atMediaStage('uploadPath', 'MEDIA_UPLOAD_PATH_FAILED', () =>
+        rideService.getProfileMediaUploadPath(),
+      );
+      const uploaded = await atMediaStage('upload', 'MEDIA_UPLOAD_FAILED', () =>
+        cloud.uploadFile({ cloudPath, filePath: image.path }),
+      );
       uploadedFileId = uploaded.fileID;
-      await rideService.registerProfileMedia(uploadedFileId, 'other', origin);
+      await atMediaStage('register', 'MEDIA_REGISTER_FAILED', () =>
+        rideService.registerProfileMedia(uploadedFileId, 'other', origin),
+      );
       selectionDispatched = true;
-      const authoritative = await rideService.setAvatar(origin, uploadedFileId);
+      const authoritative = await atMediaStage('setAvatar', 'AVATAR_SET_FAILED', () =>
+        rideService.setAvatar(origin, uploadedFileId),
+      );
       this.applyAvatarProfile(authoritative);
       await this.loadAvatarPreview();
       wx.showToast({ title: '头像已更新' });
@@ -326,12 +443,12 @@ Page({
   async chooseWechatAvatar(e: any) {
     const filePath = e?.detail?.avatarUrl;
     if (typeof filePath !== 'string' || !filePath) return;
-    await this.runAvatarAction(() => this.uploadAndSetAvatar(filePath, 'wechat'));
+    await this.runAvatarAction(() => this.uploadAndSetAvatar({ path: filePath }, 'wechat'));
   },
   async chooseCustomAvatar() {
     await this.runAvatarAction(async () => {
-      const filePath = await chooseSingleImagePath();
-      if (filePath) await this.uploadAndSetAvatar(filePath, 'custom');
+      const image = await chooseSingleImage();
+      if (image) await this.uploadAndSetAvatar(image, 'custom');
     });
   },
   async importStravaAvatar() {
@@ -342,7 +459,9 @@ Page({
       this.applyAvatarProfile(baseline.data);
       const beforeAvatarRevision = baseline.data.avatarRevision;
       try {
-        const authoritative = await rideService.importStravaAvatar();
+        const authoritative = await atMediaStage('import', 'STRAVA_AVATAR_IMPORT_FAILED', () =>
+          rideService.importStravaAvatar(),
+        );
         this.applyAvatarProfile(authoritative);
         await this.loadAvatarPreview();
         wx.showToast({ title: 'Strava 头像已导入' });
@@ -370,18 +489,24 @@ Page({
   },
   async addPhoto() {
     // 添加照片加在途锁，避免快速连点触发多次并发上传产生孤立文件或状态错乱。
-    if (this.data.photoBusy) return;
-    this.setData({ photoBusy: true });
+    if (this.data.photoBusy || this.data.saving || this.data.avatarBusy) return;
+    this.setData({ photoBusy: true, mediaError: '' });
     let uploadedFileId = '';
     try {
       const cloud = wx.cloud;
       if (!cloud) return wx.showToast({ title: '当前环境不支持云存储', icon: 'none' });
-      const path = await chooseSingleImagePath();
-      if (!path) return;
-      const cloudPath = await rideService.getProfileMediaUploadPath();
-      const uploaded = await cloud.uploadFile({ cloudPath, filePath: path });
+      const image = await chooseSingleImage();
+      if (!image) return;
+      const cloudPath = await atMediaStage('uploadPath', 'MEDIA_UPLOAD_PATH_FAILED', () =>
+        rideService.getProfileMediaUploadPath(),
+      );
+      const uploaded = await atMediaStage('upload', 'MEDIA_UPLOAD_FAILED', () =>
+        cloud.uploadFile({ cloudPath, filePath: image.path }),
+      );
       uploadedFileId = uploaded.fileID;
-      await rideService.registerProfileMedia(uploadedFileId, 'other');
+      await atMediaStage('register', 'MEDIA_REGISTER_FAILED', () =>
+        rideService.registerProfileMedia(uploadedFileId, 'other'),
+      );
       const p = this.data.p;
       if (!p) {
         await compensateUploadedMedia({ fileId: uploadedFileId, category: 'other' });
@@ -394,13 +519,14 @@ Page({
       if (uploadedFileId) {
         await compensateUploadedMedia({ fileId: uploadedFileId, category: 'other' });
       }
+      this.setData({ mediaError: mediaFailureDetail(error) });
       wx.showToast({ title: '照片上传未完成，请稍后重试', icon: 'none' });
     } finally {
       this.setData({ photoBusy: false });
     }
   },
   async save() {
-    if (!this.data.p) return;
+    if (!this.data.p || this.data.saving || this.data.photoBusy || this.data.avatarBusy) return;
     this.setData({ saving: true, error: '' });
     const p = this.data.p;
     const state = await runPageTask(
