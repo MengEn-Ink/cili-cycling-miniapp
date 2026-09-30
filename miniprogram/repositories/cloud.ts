@@ -435,6 +435,17 @@ function mapProfile(raw: unknown): Profile {
     (!Number.isInteger(value.avatar_revision) || value.avatar_revision < 0)
   )
     return invalidResponse();
+  if (
+    value.avatar_visibility !== undefined &&
+    !['public', 'private'].includes(String(value.avatar_visibility))
+  )
+    return invalidResponse();
+  if (
+    value.avatar_visibility_revision !== undefined &&
+    value.avatar_visibility_revision !== null &&
+    (!Number.isInteger(value.avatar_visibility_revision) || value.avatar_visibility_revision < 0)
+  )
+    return invalidResponse();
   const avatarId = typeof value.avatar_file_id === 'string' ? value.avatar_file_id : '';
   const avatarSource = value.avatar_source;
   if (
@@ -444,6 +455,10 @@ function mapProfile(raw: unknown): Profile {
     return invalidResponse();
   return {
     avatarRevision: Number.isInteger(value.avatar_revision) ? value.avatar_revision : 0,
+    avatarVisibility: value.avatar_visibility === 'public' ? 'public' : 'private',
+    avatarVisibilityRevision: Number.isInteger(value.avatar_visibility_revision)
+      ? Number(value.avatar_visibility_revision)
+      : null,
     nickname: value.nickname,
     title: typeof value.title === 'string' ? value.title : '',
     avatarId,
@@ -1125,6 +1140,8 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
       if (typeof profile[from] === 'string') data[to] = profile[from];
     if (typeof profile.hasCompletedGuidance === 'boolean')
       data.has_completed_guidance = profile.hasCompletedGuidance;
+    if (profile.avatarVisibility === 'public' || profile.avatarVisibility === 'private')
+      data.avatar_visibility = profile.avatarVisibility;
     if (Array.isArray(profile.photos))
       data.photos = profile.photos.map((item) => ({ file_id: item.id, category: item.category }));
     if (typeof profile.realName === 'string' && profile.realName) data.real_name = profile.realName;

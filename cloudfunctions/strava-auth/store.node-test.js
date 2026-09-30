@@ -105,6 +105,7 @@ const audit = (action) => ({
 const usableCredential = (overrides = {}) => ({
   _id: 'user-1',
   athlete_id: 'athlete-current',
+  token_expires_at: new Date('2026-09-29T06:00:00.000Z'),
   sync_status: 'failed',
   access_token_cipher: {
     alg: 'A256GCM',
@@ -154,6 +155,46 @@ test('cancelAuthorization 只使当前用户未过期 state 失效', async () =>
   assert.equal(fixture.state.oauth_states.get('active').consumed_at, fixture.SERVER_DATE);
   assert.equal(fixture.state.oauth_states.get('expired').consumed_at, undefined);
   assert.equal(fixture.state.oauth_states.get('other').consumed_at, undefined);
+});
+
+test('saveRefreshedCredential 仅替换匹配版本并保留同步租约', async () => {
+  const now = new Date('2026-09-29T04:00:00.000Z');
+  const current = usableCredential({
+    openid: 'user-1',
+    sync_status: 'running',
+    sync_lease_id: 'lease-current',
+  });
+  const fixture = fakeDb({ strava_credentials: { 'user-1': current } });
+  const refreshed = usableCredential({
+    openid: 'user-1',
+    athlete_name: 'Refreshed Rider',
+    token_expires_at: new Date('2026-09-29T10:00:00.000Z'),
+    access_token_cipher: { ...current.access_token_cipher, ciphertext: 'new-access' },
+    refresh_token_cipher: { ...current.refresh_token_cipher, ciphertext: 'new-refresh' },
+    sync_status: 'pending',
+  });
+
+  const saved = await createReadinessStore(fixture.db).saveRefreshedCredential(
+    'user-1',
+    current,
+    refreshed,
+    now,
+  );
+  assert.equal(saved.saved, true);
+  assert.equal(saved.credential.sync_status, 'running');
+  assert.equal(saved.credential.sync_lease_id, 'lease-current');
+  assert.equal(saved.credential.access_token_cipher.ciphertext, 'new-access');
+
+  const stale = await createReadinessStore(fixture.db).saveRefreshedCredential(
+    'user-1',
+    current,
+    usableCredential({
+      access_token_cipher: { ...current.access_token_cipher, ciphertext: 'stale' },
+    }),
+    now,
+  );
+  assert.equal(stale.saved, false);
+  assert.equal(stale.credential.access_token_cipher.ciphertext, 'new-access');
 });
 
 test('acquireSyncLease 在事务内重读且 fresh snapshot 不产生写入', async () => {

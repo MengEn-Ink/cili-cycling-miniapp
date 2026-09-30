@@ -256,7 +256,12 @@ async function materializeDefaultAvatar(index: number): Promise<SelectedImage> {
 
 function mergeAvatarFields(current: Profile | null, authoritative: Profile): Profile {
   if (!current) return authoritative;
-  const merged = { ...current, avatarRevision: authoritative.avatarRevision };
+  const merged = {
+    ...current,
+    avatarRevision: authoritative.avatarRevision,
+    avatarVisibility: authoritative.avatarVisibility,
+    avatarVisibilityRevision: authoritative.avatarVisibilityRevision,
+  };
   if (authoritative.avatarId) {
     merged.avatarId = authoritative.avatarId;
     if (authoritative.avatarSource) merged.avatarSource = authoritative.avatarSource;
@@ -567,6 +572,22 @@ Page({
       } else if (uploadedFileId)
         await compensateUploadedMedia({ fileId: uploadedFileId, category: 'other', origin });
       throw error;
+    }
+  },
+  async onAvatarVisibilityChange(e: any) {
+    const profile = this.data.p as Profile | null;
+    if (!profile?.avatarId || this.data.avatarBusy || this.data.photoBusy || this.data.saving)
+      return;
+    const visibility = e?.detail?.value === true ? 'public' : 'private';
+    this.setData({ saving: true, error: '' });
+    const state = await runPageTask(
+      () => rideService.updateProfile({ avatarVisibility: visibility }),
+      visibility === 'public' ? '公开头像失败' : '隐藏头像失败',
+    );
+    this.setData({ saving: false, error: state.error, p: state.data || profile });
+    if (state.data) {
+      invalidateProfilePageCache();
+      wx.showToast({ title: visibility === 'public' ? '头像已公开展示' : '头像已隐藏' });
     }
   },
   async chooseWechatAvatar(e: any) {

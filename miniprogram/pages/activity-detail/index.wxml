@@ -18,8 +18,8 @@
 
       <view class="content">
         <view class="metric-panel" aria-label="活动关键数据">
-          <view class="detail-metric"><view class="metric-value"><text class="metric-number">{{item.route.distanceKm}}</text><text class="metric-unit">KM</text></view><view class="metric-label">里程</view></view>
-          <view class="detail-metric"><view class="metric-value"><text class="metric-number">{{item.route.elevationM}}</text><text class="metric-unit">M</text></view><view class="metric-label">爬升</view></view>
+          <view class="detail-metric"><view class="metric-value"><text class="metric-number">{{item.route.distanceKm}}</text><text class="metric-unit">km</text></view><view class="metric-label">里程</view></view>
+          <view class="detail-metric"><view class="metric-value"><text class="metric-number">{{item.route.elevationM}}</text><text class="metric-unit">m</text></view><view class="metric-label">爬升</view></view>
           <view class="detail-metric"><view class="metric-value"><text class="metric-number" wx:if="{{item.capacity > 0}}">{{item.capacity}}</text><text class="metric-number metric-number--text" wx:else>待补充</text></view><view class="metric-label">名额</view></view>
         </view>
 

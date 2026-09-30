@@ -4,6 +4,7 @@ const {
   isSnapshotFresh,
   isCredentialUsable,
   isSnapshotForCredential,
+  sameCredentialVersion,
   writableDocument,
 } = require('./oauth/core');
 
@@ -54,6 +55,26 @@ function createReadinessStore(db) {
         .set({
           data: writableDocument(credential),
         });
+    },
+    saveRefreshedCredential(openid, expected, refreshed, now) {
+      return db.runTransaction(async (tx) => {
+        const collection = tx.collection('strava_credentials');
+        const current = await maybeGet(collection, openid);
+        if (!sameCredentialVersion(current, expected)) return { saved: false, credential: current };
+        const next = {
+          ...current,
+          openid,
+          athlete_id: refreshed.athlete_id,
+          athlete_name: refreshed.athlete_name,
+          access_token_cipher: refreshed.access_token_cipher,
+          refresh_token_cipher: refreshed.refresh_token_cipher,
+          token_expires_at: refreshed.token_expires_at,
+          scopes: refreshed.scopes,
+          updated_at: now,
+        };
+        await collection.doc(openid).set({ data: writableDocument(next) });
+        return { saved: true, credential: { ...next, _id: openid } };
+      });
     },
     async saveRoutePreview(openid, preview, now) {
       const id = crypto

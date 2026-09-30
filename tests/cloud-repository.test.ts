@@ -878,6 +878,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     const dirtyRuntimeProfile = {
       nickname: '新昵称',
       avatarFileId: 'cloud://avatar',
+      avatarVisibility: 'public' as const,
       realName: '曹蒙恩',
       phone: '13812345678',
     };
@@ -885,6 +886,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     expectCall(callFunction, 'profile', {
       action: 'update',
       nickname: '新昵称',
+      avatar_visibility: 'public',
       real_name: '曹蒙恩',
       phone: '13812345678',
     });

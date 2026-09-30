@@ -43,9 +43,9 @@
 
     <view class="section-label">02 · 名额与后援车</view>
     <view class="form-card">
-      <view class="field"><text>总容量</text><view class="hint">不得低于已占用 {{occupiedCount}} 人</view><input type="number" value="{{form.capacity}}" data-name="capacity" bindinput="field" /></view>
+      <view class="field"><text>总名额</text><view class="hint">不得低于已占用 {{occupiedCount}} 人</view><input type="number" value="{{form.capacity}}" data-name="capacity" bindinput="field" /></view>
       <view class="split"><view class="field"><text>后援车名额</text><input type="number" value="{{form.supportVehicleCapacity}}" data-name="supportVehicleCapacity" bindinput="field" /></view><view class="field"><text>自驾名额</text><input type="number" value="{{form.selfDriveCapacity}}" data-name="selfDriveCapacity" bindinput="field" /></view></view>
-      <view class="hint accent">两类名额之和必须等于总容量</view>
+      <view class="hint accent">两类名额之和必须等于总名额</view>
       <view class="field"><text>师傅昵称</text><input value="{{form.driverNickname}}" data-name="driverNickname" bindinput="field" /></view>
       <view class="split"><view class="field"><text>车牌号</text><input value="{{form.licensePlate}}" data-name="licensePlate" bindinput="field" /></view><view class="field"><text>联系电话</text><input type="number" value="{{form.contactPhone}}" data-name="contactPhone" bindinput="field" /></view></view>
     </view>

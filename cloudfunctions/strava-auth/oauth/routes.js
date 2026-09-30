@@ -1,6 +1,6 @@
 'use strict';
 const crypto = require('node:crypto');
-const { StravaError, config, usableCredential } = require('./core');
+const { StravaError, config, resolveUsableCredential } = require('./core');
 const MAX_GPX_BYTES = 4 * 1024 * 1024;
 function extractRouteId(value) {
   if (typeof value !== 'string' || value.length > 256 || value !== value.trim())
@@ -149,8 +149,14 @@ function requireRead(credential) {
 async function access({ openid, env, store, api, now }) {
   const credential = await store.getCredential(openid);
   requireRead(credential);
-  const usable = await usableCredential({ openid, credential, cfg: config(env), api, now });
-  if (usable.document !== credential) await store.saveCredential(usable.document);
+  const usable = await resolveUsableCredential({
+    openid,
+    credential,
+    cfg: config(env),
+    api,
+    store,
+    now,
+  });
   return usable.accessToken;
 }
 async function routePreviewFlow({ openid, routeUrl, env, store, api, now = new Date() }) {
