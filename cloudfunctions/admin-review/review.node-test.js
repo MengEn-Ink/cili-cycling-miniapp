@@ -1,7 +1,13 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { DomainError, reviewRegistration, validateOptions } = require('./domain');
+const {
+  DomainError,
+  reviewRegistration,
+  checkInRegistration,
+  publicRegistration,
+  validateOptions,
+} = require('./domain');
 function store(seed = {}) {
   const state = {
     registration: {
@@ -12,6 +18,7 @@ function store(seed = {}) {
       review_history: [],
       options: { gathering_mode: 'support_vehicle' },
       profile_snapshot: {},
+      ...(seed.registration || {}),
     },
     activity: {
       occupied_count: 1,
@@ -21,6 +28,8 @@ function store(seed = {}) {
       ...(seed.activity || {}),
     },
     outbox: new Map(),
+    audits: [],
+    occupiedWrites: 0,
   };
   return {
     state,
@@ -33,13 +42,14 @@ function store(seed = {}) {
           state.registration = value;
         },
         setOccupied: async (_id, value, supportVehicleOccupied, selfDriveOccupied) => {
+          state.occupiedWrites += 1;
           state.activity.occupied_count = value;
           if (supportVehicleOccupied !== undefined)
             state.activity.support_vehicle_occupied_count = supportVehicleOccupied;
           if (selfDriveOccupied !== undefined)
             state.activity.self_drive_occupied_count = selfDriveOccupied;
         },
-        addAudit: async () => {},
+        addAudit: async (audit) => state.audits.push(audit),
         putNotification: async (id, value) => state.outbox.set(id, value),
       }),
   };
@@ -119,4 +129,65 @@ test('非管理员不能审批或创建 outbox', async () => {
     { code: 'ADMIN_REQUIRED' },
   );
   assert.equal(s.state.outbox.size, 0);
+});
+
+test('管理员可将已通过报名签到，保留占位计数且公开结果不泄露操作人', async () => {
+  const s = store({ registration: { status: 'approved' } });
+  const checkedAt = new Date('2026-09-30T10:00:00.000Z');
+
+  const result = await checkInRegistration(s, { openid: 'admin', registrationId: 'r1' }, checkedAt);
+
+  assert.equal(result.status, 'checked_in');
+  assert.equal(result.checked_in_at, checkedAt);
+  assert.equal(s.state.registration.checkin_operator_openid, 'admin');
+  assert.equal(s.state.activity.occupied_count, 1);
+  assert.equal(s.state.occupiedWrites, 0);
+  assert.equal(s.state.audits.length, 1);
+  assert.equal(s.state.audits[0].action, 'check_in');
+  assert.deepEqual(s.state.audits[0].detail, {
+    activity_id: 'a1',
+    from_status: 'approved',
+    to_status: 'checked_in',
+  });
+  assert.equal('checkin_operator_openid' in result, false);
+  assert.equal('checkin_operator_openid' in publicRegistration(s.state.registration), false);
+});
+
+test('重复签到幂等返回原记录，不重复写入和审计', async () => {
+  const checkedAt = new Date('2026-09-30T09:00:00.000Z');
+  const s = store({
+    registration: {
+      status: 'checked_in',
+      checked_in_at: checkedAt,
+      checkin_operator_openid: 'first-admin',
+    },
+  });
+
+  const result = await checkInRegistration(s, { openid: 'admin', registrationId: 'r1' });
+
+  assert.equal(result.status, 'checked_in');
+  assert.equal(result.checked_in_at, checkedAt);
+  assert.equal(s.state.registration.checkin_operator_openid, 'first-admin');
+  assert.equal(s.state.audits.length, 0);
+  assert.equal(s.state.occupiedWrites, 0);
+});
+
+test('待审核、驳回和取消状态均不能签到', async () => {
+  for (const status of ['pending', 'rejected', 'cancelled']) {
+    const s = store({ registration: { status } });
+    await assert.rejects(checkInRegistration(s, { openid: 'admin', registrationId: 'r1' }), {
+      code: 'INVALID_TRANSITION',
+    });
+    assert.equal(s.state.audits.length, 0);
+    assert.equal(s.state.occupiedWrites, 0);
+  }
+});
+
+test('非管理员不能签到', async () => {
+  const s = store({ admin: false, registration: { status: 'approved' } });
+  await assert.rejects(checkInRegistration(s, { openid: 'admin', registrationId: 'r1' }), {
+    code: 'ADMIN_REQUIRED',
+  });
+  assert.equal(s.state.registration.status, 'approved');
+  assert.equal(s.state.audits.length, 0);
 });

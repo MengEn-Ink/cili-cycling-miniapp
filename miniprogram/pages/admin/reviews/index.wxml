@@ -6,6 +6,7 @@
   <view class="filter-tabs">
     <view class="filter-tab {{tab === 'pending' ? 'is-active' : ''}}" data-v="pending" bindtap="tab">待审核</view>
     <view class="filter-tab {{tab === 'approved' ? 'is-active' : ''}}" data-v="approved" bindtap="tab">已通过</view>
+    <view class="filter-tab {{tab === 'checked_in' ? 'is-active' : ''}}" data-v="checked_in" bindtap="tab">已签到</view>
     <view class="filter-tab {{tab === 'rejected' ? 'is-active' : ''}}" data-v="rejected" bindtap="tab">已驳回</view>
     <view class="filter-tab {{tab === 'all' ? 'is-active' : ''}}" data-v="all" bindtap="tab">全部</view>
   </view>

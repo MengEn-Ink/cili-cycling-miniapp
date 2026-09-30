@@ -1,7 +1,8 @@
 import type { RegistrationStatus as S } from '../models';
 const m: Record<S, S[]> = {
   pending: ['approved', 'rejected', 'cancelled'],
-  approved: ['cancelled'],
+  approved: ['checked_in', 'cancelled'],
+  checked_in: [],
   rejected: ['pending'],
   cancelled: ['pending'],
 };

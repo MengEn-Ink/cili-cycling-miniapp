@@ -11,6 +11,7 @@ const {
   isEnabledAdmin,
   publicRegistration,
   reviewRegistration,
+  checkInRegistration,
 } = require('./domain');
 const { adminCapabilityDetail } = require('./capability-card');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
@@ -111,13 +112,28 @@ exports.main = async (event = {}) => {
         ),
       );
     }
+    if (event.action === 'checkIn') {
+      if (typeof event.registrationId !== 'string' || !event.registrationId)
+        fail('VALIDATION_FAILED', '缺少报名 ID');
+      return ok(
+        await checkInRegistration(
+          transactionStore(),
+          { openid, registrationId: event.registrationId },
+          new Date(),
+        ),
+      );
+    }
     if (event.action === 'list') {
       await requireAdmin(openid);
       if (typeof event.activityId !== 'string' || !event.activityId)
         fail('VALIDATION_FAILED', '缺少活动 ID');
       const condition = { activity_id: event.activityId };
       if (event.filterStatus !== undefined) {
-        if (!['pending', 'approved', 'rejected', 'cancelled'].includes(event.filterStatus))
+        if (
+          !['pending', 'approved', 'checked_in', 'rejected', 'cancelled'].includes(
+            event.filterStatus,
+          )
+        )
           fail('VALIDATION_FAILED', '报名状态无效');
         condition.status = event.filterStatus;
       }

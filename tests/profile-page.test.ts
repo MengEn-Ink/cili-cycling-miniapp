@@ -259,11 +259,19 @@ describe('个人中心加载状态', () => {
     expect(page.data.heroBackgroundAvatarUrl).toBe('https://temporary.example/avatar.jpg');
   });
 
-  it('hero 多图默认不自动轮播，摘要卡可进入完整骑行名片', () => {
+  it('头部唯一展示 Strava 近 90 天指标，且点击后进入完整骑行名片', () => {
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
+    const pageScript = readFileSync('miniprogram/pages/profile/index.ts', 'utf8');
 
     expect(template).not.toMatch(/<swiper\b[^>]*\bautoplay(?:=|\s|>)/);
+    expect(template).toContain('Strava 近 90 天骑行摘要');
+    expect(template).toContain('wx:for="{{heroCard.primaryMetrics}}"');
     expect(template).toMatch(/class="hero-capability-card"[^>]*bindtap="capabilityCard"/);
+    expect(template).not.toContain('class="menu-title">Strava 数据</view>');
+    expect(template).not.toContain('bindtap="strava"');
+    expect(pageScript).not.toMatch(/\bstrava\s*\(\)\s*\{/);
+    expect(pageScript).not.toContain("'/pages/strava/index'");
+
     page.capabilityCard();
     expect(wx.navigateTo).toHaveBeenCalledWith({ url: '/pages/capability-card/index' });
   });

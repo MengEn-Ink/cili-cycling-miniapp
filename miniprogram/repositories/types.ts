@@ -44,6 +44,7 @@ export interface AdminReviewRepository {
     status?: AdminRegistrationStatusFilter,
   ): Promise<Registration[]>;
   getReviewRegistration(id: string): Promise<Registration | undefined>;
+  checkInRegistration(id: string): Promise<Registration>;
 }
 export interface RideRepository extends AdminReviewRepository, ActivityAdminRepository {
   listActivities(): Promise<Activity[]>;

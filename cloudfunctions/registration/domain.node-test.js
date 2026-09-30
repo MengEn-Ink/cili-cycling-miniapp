@@ -2,7 +2,13 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { DomainError, validateOptions } = require('./domain/domain');
+const {
+  DomainError,
+  assertCanCancel,
+  isOccupying,
+  publicRegistration,
+  validateOptions,
+} = require('./domain/domain');
 
 function expectValidationFailure(options) {
   assert.throws(
@@ -34,4 +40,26 @@ test('集合方式缺失或未知时拒绝', () => {
   expectValidationFailure({ experience: 'regular' });
   expectValidationFailure({ gathering_mode: 'unknown', experience: 'regular' });
   expectValidationFailure({ bike_mode: 'own', experience: 'regular' });
+});
+
+test('已签到继续占位但不可取消', () => {
+  assert.equal(isOccupying('checked_in'), true);
+  assert.throws(
+    () => assertCanCancel({ openid: 'member', status: 'checked_in' }, 'member'),
+    (error) => error instanceof DomainError && error.code === 'INVALID_TRANSITION',
+  );
+});
+
+test('报名公开投影包含签到时间但不泄露签到管理员 openid', () => {
+  const result = publicRegistration({
+    _id: 'r1',
+    activity_id: 'a1',
+    status: 'checked_in',
+    checked_in_at: new Date('2026-09-30T10:00:00.000Z'),
+    checkin_operator_openid: 'admin-secret',
+    profile_snapshot: {},
+  });
+  assert.equal(result.status, 'checked_in');
+  assert.equal(result.checked_in_at.toISOString(), '2026-09-30T10:00:00.000Z');
+  assert.equal('checkin_operator_openid' in result, false);
 });

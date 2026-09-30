@@ -203,7 +203,7 @@ describe('registrations status presentation', () => {
 
   it('maps every status label while retaining bound trip fields', async () => {
     const page = await loadPage('registrations');
-    const statuses = ['pending', 'approved', 'rejected', 'cancelled'] as const;
+    const statuses = ['pending', 'approved', 'checked_in', 'rejected', 'cancelled'] as const;
     rideService.listRegistrations.mockResolvedValue(
       statuses.map((status, index) => ({
         ...registration(`r${index}`, 'activity-shared'),
@@ -220,6 +220,7 @@ describe('registrations status presentation', () => {
     expect(page.data.items.map((item: any) => item.statusText)).toEqual([
       '待审核',
       '已通过',
+      '已签到',
       '已驳回',
       '已取消',
     ]);
@@ -228,6 +229,7 @@ describe('registrations status presentation', () => {
       '需要后援车',
       '自驾',
       '需要后援车',
+      '自驾',
     ]);
     expect(page.data.items.every((item: any) => item.activity.date === '2026-10-18')).toBe(true);
   });

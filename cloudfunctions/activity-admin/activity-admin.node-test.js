@@ -360,11 +360,11 @@ test('校验容量、状态、关键时间、路线和嵌套字段', () => {
     'VALIDATION_FAILED',
   );
 });
-test('状态机仅允许 draft→published→finished，同状态可更新', () => {
+test('状态机支持活动手动上线、下架和重新上线，同状态可更新', () => {
   assert.doesNotThrow(() => assertStatusTransition('draft', 'draft'));
   assert.doesNotThrow(() => assertStatusTransition('draft', 'published'));
+  assert.doesNotThrow(() => assertStatusTransition('published', 'draft'));
   assert.doesNotThrow(() => assertStatusTransition('published', 'finished'));
-  expectCode(() => assertStatusTransition('published', 'draft'), 'INVALID_TRANSITION');
   expectCode(() => assertStatusTransition('finished', 'published'), 'INVALID_TRANSITION');
 });
 test('创建必须是草稿并写入服务端控制字段与审计', async () => {
@@ -583,6 +583,19 @@ test('普通成员可创建并发布自己的草稿，但不能编辑他人或�
     now,
   );
   assert.equal(published.status, 'published');
+  const offlineStore = store({ ...ownDraft, status: 'published' }, null);
+  const offline = await saveActivity(
+    offlineStore,
+    {
+      openid: 'member-1',
+      activityId: ownDraft._id,
+      expectedVersion: 1,
+      activity: { ...input, status: 'draft' },
+    },
+    now,
+  );
+  assert.equal(offline.status, 'draft');
+  assert.equal(offlineStore.state.audits[0].action, 'activity.unpublish');
   await assert.rejects(
     saveActivity(store({ ...ownDraft, created_by: 'other' }, null), {
       openid: 'member-1',

@@ -5,9 +5,21 @@ import { capabilityCard } from '../../../utils/capability-card';
 const statusText: Record<string, string> = {
   pending: '待审核',
   approved: '已通过',
+  checked_in: '已签到',
   rejected: '已驳回',
   cancelled: '已取消',
 };
+
+const confirmCheckIn = () =>
+  new Promise<boolean>((resolve) => {
+    wx.showModal({
+      title: '确认签到',
+      content: '确认该骑手已到场并完成签到？核销后不可取消报名。',
+      confirmText: '确认签到',
+      success: (result: { confirm: boolean }) => resolve(result.confirm),
+      fail: () => resolve(false),
+    });
+  });
 
 let loadRequestId = 0;
 
@@ -65,6 +77,28 @@ Page({
   },
   reason(e: any) {
     this.setData({ reason: e.detail.value });
+  },
+  async checkIn() {
+    if (this.data.submitting || this.data.x?.status !== 'approved') return;
+    const requestId = loadRequestId;
+    this.setData({ submitting: true, error: '' });
+    if (!(await confirmCheckIn())) {
+      if (requestId === loadRequestId) this.setData({ submitting: false });
+      return;
+    }
+    if (requestId !== loadRequestId) return;
+    try {
+      const x = await rideService.checkInRegistration(this.data.x.id);
+      if (requestId !== loadRequestId) return;
+      this.setData({ x, statusText: statusText[x.status] || x.status, submitting: false });
+      wx.showToast({ title: '签到成功' });
+    } catch (error) {
+      if (requestId !== loadRequestId) return;
+      this.setData({
+        error: error instanceof Error ? error.message : '签到失败',
+        submitting: false,
+      });
+    }
   },
   async act(e: any) {
     if (this.data.submitting || !this.data.x) return;

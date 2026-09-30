@@ -126,6 +126,17 @@ export class MockRepository implements RideRepository {
   async reviewRegistration(id: string, decision: 'approved' | 'rejected', reason?: string) {
     return this.changeRegistration(id, decision, reason);
   }
+  async checkInRegistration(id: string) {
+    const s = this.read();
+    const registration = s.registrations.find((item) => item.id === id);
+    if (!registration) throw Error('报名不存在');
+    if (registration.status === 'checked_in') return registration;
+    registration.status = transition(registration.status, 'checked_in');
+    registration.checkedInAt = '刚刚';
+    registration.updatedAt = '刚刚';
+    this.write(s);
+    return registration;
+  }
   private async changeRegistration(id: string, status: RegistrationStatus, c?: string) {
     const s = this.read(),
       x = s.registrations.find((v) => v.id === id);

@@ -4,6 +4,7 @@ import { appStore } from '../../../store/app-store';
 const statusText: Record<string, string> = {
   pending: '待审核',
   approved: '已通过',
+  checked_in: '已签到',
   rejected: '已驳回',
   cancelled: '已取消',
 };

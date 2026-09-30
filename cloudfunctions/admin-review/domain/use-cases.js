@@ -9,6 +9,7 @@ const {
   validateOptions,
   assertCanSubmit,
   assertCanCancel,
+  assertCheckInTransition,
   assertReviewTransition,
   isEnabledAdmin,
   registrationId,
@@ -201,4 +202,37 @@ async function reviewRegistration(
   });
 }
 
-module.exports = { submitRegistration, cancelRegistration, reviewRegistration };
+async function checkInRegistration(store, { openid, registrationId: id }, now = new Date()) {
+  return store.transaction(async (tx) => {
+    const admin = await tx.getAdmin(openid);
+    if (!isEnabledAdmin(admin, openid)) fail('ADMIN_REQUIRED', '需要管理员权限');
+    const registration = await tx.getRegistration(id);
+    if (!registration) fail('REGISTRATION_NOT_FOUND', '报名不存在');
+    assertCheckInTransition(registration.status);
+    // 已签到请求直接返回当前记录，不重复写入业务数据和审计日志。
+    if (registration.status === 'checked_in') return publicRegistration(registration);
+    const value = {
+      ...registration,
+      status: 'checked_in',
+      checked_in_at: now,
+      checkin_operator_openid: openid,
+      updated_at: now,
+    };
+    await tx.putRegistration(id, value);
+    await tx.addAudit(
+      buildAudit(openid, 'check_in', id, now, {
+        activity_id: registration.activity_id,
+        from_status: registration.status,
+        to_status: 'checked_in',
+      }),
+    );
+    return publicRegistration(value);
+  });
+}
+
+module.exports = {
+  submitRegistration,
+  cancelRegistration,
+  reviewRegistration,
+  checkInRegistration,
+};

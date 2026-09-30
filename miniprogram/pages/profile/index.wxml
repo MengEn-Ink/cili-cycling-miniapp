@@ -33,7 +33,7 @@
 
     <view class="hero-capability-card" wx:if="{{heroCard}}" bindtap="capabilityCard">
       <view class="hero-capability-head">
-        <view class="hero-capability-label">近 90 天骑行摘要</view>
+        <view class="hero-capability-label">Strava 近 90 天骑行摘要</view>
         <view class="hero-capability-status status-{{heroCard.statusTone}}"><text class="status-dot"></text>STRAVA {{heroCard.statusLabel}}</view>
       </view>
       <view class="hero-capability-metrics" wx:if="{{heroCard.primaryMetrics.length}}">
@@ -84,7 +84,6 @@
   <view class="section-label"><text>02</text> 骑行服务</view>
   <view class="menu-list">
     <view class="menu-card capability-entry" bindtap="capabilityCard"><view class="menu-icon capability-icon">C</view><view class="menu-copy"><view class="menu-title">我的骑行名片</view><view class="muted">查看近 90 天骑行能力</view></view><text class="chevron">›</text></view>
-    <view class="menu-card" bindtap="strava"><view class="menu-icon">S</view><view class="menu-copy"><view class="menu-title">Strava 数据</view><view class="muted">查看连接状态与骑行数据</view></view><text class="chevron">›</text></view>
     <view class="menu-card" wx:if="{{authStatus === 'authenticated'}}" bindtap="activities"><view class="menu-icon">M</view><view class="menu-copy"><view class="menu-title">活动管理</view><view class="muted">创建、编辑与发布活动</view></view><text class="chevron">›</text></view>
     <view class="menu-card" wx:if="{{isAdmin}}" bindtap="admin"><view class="menu-icon admin-icon">A</view><view class="menu-copy"><view class="menu-title">报名审批</view><view class="muted">查看并处理报名</view></view><text class="chevron">›</text></view>
   </view>

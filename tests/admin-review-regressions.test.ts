@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const rideService = vi.hoisted(() => ({
   getReviewRegistration: vi.fn(),
   updateRegistration: vi.fn(),
+  checkInRegistration: vi.fn(),
   listActivities: vi.fn(),
   listReviewRegistrations: vi.fn(),
 }));
@@ -87,7 +88,12 @@ describe('管理员审核详情回归', () => {
     appStore.authStatus = 'authenticated';
     appStore.ensureIdentity.mockReset().mockResolvedValue(undefined);
     rideService.getReviewRegistration.mockResolvedValue(registration('r1', 'a1'));
-    vi.stubGlobal('wx', { cloud: {}, showToast: vi.fn(), navigateBack: vi.fn() });
+    vi.stubGlobal('wx', {
+      cloud: {},
+      showModal: vi.fn(({ success }) => success({ confirm: true })),
+      showToast: vi.fn(),
+      navigateBack: vi.fn(),
+    });
     const getPage = installPageCapture();
     await import('../miniprogram/pages/admin/review-detail/index');
     page = getPage();
@@ -180,6 +186,37 @@ describe('管理员审核详情回归', () => {
     expect(page.setData.mock.calls).toHaveLength(setDataCallsBeforeUnload);
     expect(wxApi.showToast).not.toHaveBeenCalled();
     expect(wxApi.navigateBack).not.toHaveBeenCalled();
+  });
+  it('已通过报名二次确认后签到，双击只提交一次并留在详情', async () => {
+    const approved = { ...registration('r1', 'a1'), status: 'approved' };
+    const pending = deferred<any>();
+    rideService.getReviewRegistration.mockResolvedValue(approved);
+    rideService.checkInRegistration.mockReturnValueOnce(pending.promise);
+    await page.onLoad({ id: 'r1' });
+
+    const first = page.checkIn();
+    await vi.waitFor(() => expect(rideService.checkInRegistration).toHaveBeenCalledOnce());
+    await page.checkIn();
+
+    const wxApi = (globalThis as any).wx;
+    expect(wxApi.showModal).toHaveBeenCalledWith(
+      expect.objectContaining({ title: '确认签到', confirmText: '确认签到' }),
+    );
+    expect(rideService.checkInRegistration).toHaveBeenCalledWith('r1');
+    pending.resolve({ ...approved, status: 'checked_in', checkedInAt: '2026-09-30T10:00:00Z' });
+    await first;
+
+    expect(page.data.x.status).toBe('checked_in');
+    expect(page.data.statusText).toBe('已签到');
+    expect(page.data.submitting).toBe(false);
+    expect(wxApi.navigateBack).not.toHaveBeenCalled();
+  });
+
+  it('仅 pending 展示审核输入，approved 展示签到按钮', () => {
+    const template = readFileSync('miniprogram/pages/admin/review-detail/index.wxml', 'utf8');
+    expect(template).toContain(`wx:if="{{x.status === 'pending'}}" class="decision-panel"`);
+    expect(template).toContain(`wx:elif="{{x.status === 'approved'}}" class="row actions"`);
+    expect(template).toContain('bindtap="checkIn"');
   });
 });
 
