@@ -272,7 +272,28 @@ describe('资料编辑头像交互', () => {
 
     expect(rideService.getProfileMediaUploadPath).not.toHaveBeenCalled();
     expect(uploadFile).not.toHaveBeenCalled();
-    expect(page.data.mediaError).toContain('[MEDIA_TOO_LARGE]');
+    expect(page.data.mediaError).toBe('[MEDIA_TOO_LARGE] 图片超过 5MB，请压缩或更换图片后重试');
+    expect(wx.showToast).toHaveBeenLastCalledWith({
+      title: page.data.mediaError,
+      icon: 'none',
+    });
+  });
+
+  it('阶段化头像错误的 inline alert 与 toast 使用同一安全文案', async () => {
+    await page.runAvatarAction(() =>
+      Promise.reject(
+        Object.assign(new Error('private upload detail'), {
+          code: 'MEDIA_UPLOAD_FAILED',
+          mediaStage: 'upload',
+        }),
+      ),
+    );
+
+    expect(page.data.mediaError).toBe('[MEDIA_UPLOAD_FAILED] 图片上传失败，请重新选择图片后重试');
+    expect(wx.showToast).toHaveBeenLastCalledWith({
+      title: page.data.mediaError,
+      icon: 'none',
+    });
   });
 
   it('所有头像入口共用单一 busy lock 防止重复动作', async () => {
@@ -396,11 +417,8 @@ describe('资料编辑头像交互', () => {
 
     await page.chooseCustomAvatar();
 
-    expect(wx.showToast).toHaveBeenCalledWith({
-      title: '头像更新结果未确认，请稍后重试',
-      icon: 'none',
-    });
     expect(page.data.mediaError).toBe('[AVATAR_SET_FAILED] 头像保存未确认，请稍后重试');
+    expect(wx.showToast).toHaveBeenCalledWith({ title: page.data.mediaError, icon: 'none' });
   });
 
   it('稳定错误码提供准确提示，未知错误回退为通用提示', async () => {
@@ -409,24 +427,22 @@ describe('资料编辑头像交互', () => {
         Object.assign(new Error('对象尚不可见'), { code: 'MEDIA_OBJECT_VERIFY_FAILED' }),
       ),
     );
-    expect(wx.showToast).toHaveBeenLastCalledWith({
-      title: '头像文件暂未同步到云端，请稍后重试',
-      icon: 'none',
-    });
+    expect(page.data.mediaError).toBe(
+      '[MEDIA_OBJECT_VERIFY_FAILED] 图片暂未同步到云端，请稍后重试',
+    );
+    expect(wx.showToast).toHaveBeenLastCalledWith({ title: page.data.mediaError, icon: 'none' });
 
     await page.runAvatarAction(() =>
       Promise.reject(Object.assign(new Error('未连接'), { code: 'STRAVA_NOT_CONNECTED' })),
     );
-    expect(wx.showToast).toHaveBeenLastCalledWith({
-      title: 'Strava 尚未连接或没有可用头像，请先同步 Strava',
-      icon: 'none',
-    });
+    expect(page.data.mediaError).toBe(
+      '[STRAVA_NOT_CONNECTED] Strava 尚未连接或没有可用头像，请先同步 Strava',
+    );
+    expect(wx.showToast).toHaveBeenLastCalledWith({ title: page.data.mediaError, icon: 'none' });
 
     await page.runAvatarAction(() => Promise.reject(new Error('unexpected')));
-    expect(wx.showToast).toHaveBeenLastCalledWith({
-      title: '头像更新失败，请稍后重试',
-      icon: 'none',
-    });
+    expect(page.data.mediaError).toBe('[MEDIA_OPERATION_FAILED] 媒体操作失败，请稍后重试');
+    expect(wx.showToast).toHaveBeenLastCalledWith({ title: page.data.mediaError, icon: 'none' });
   });
 
   it('Strava 未 ready 时不导入并提供绑定/同步跳转', async () => {
@@ -508,13 +524,10 @@ describe('资料编辑头像交互', () => {
 
     await page.importStravaAvatar();
 
-    expect(wx.showToast).toHaveBeenCalledWith({
-      title: '头像更新结果未确认，请稍后重试',
-      icon: 'none',
-    });
     expect(page.data.mediaError).toBe(
       '[STRAVA_AVATAR_IMPORT_FAILED] Strava 头像导入失败，请重新授权或稍后重试',
     );
+    expect(wx.showToast).toHaveBeenCalledWith({ title: page.data.mediaError, icon: 'none' });
   });
 
   it('已有 Strava 头像 re-import 完全失败时相同 revision 不得误报成功', async () => {
@@ -532,10 +545,7 @@ describe('资料编辑头像交互', () => {
 
     await page.importStravaAvatar();
 
-    expect(wx.showToast).toHaveBeenCalledWith({
-      title: '头像更新结果未确认，请稍后重试',
-      icon: 'none',
-    });
+    expect(wx.showToast).toHaveBeenCalledWith({ title: page.data.mediaError, icon: 'none' });
     expect(wx.showToast).not.toHaveBeenCalledWith({ title: 'Strava 头像已导入' });
   });
 
@@ -563,10 +573,7 @@ describe('资料编辑头像交互', () => {
     await page.importStravaAvatar();
 
     expect(rideService.getProfile).toHaveBeenCalledTimes(2);
-    expect(wx.showToast).toHaveBeenCalledWith({
-      title: '头像更新结果未确认，请稍后重试',
-      icon: 'none',
-    });
+    expect(wx.showToast).toHaveBeenCalledWith({ title: page.data.mediaError, icon: 'none' });
     expect(wx.showToast).not.toHaveBeenCalledWith({ title: 'Strava 头像已导入' });
   });
 
@@ -689,6 +696,40 @@ describe('资料编辑头像交互', () => {
     expect(page.data.avatarPreviewUrl).toBe('https://temporary.example/old-avatar.jpg');
     expect(page.data.mediaError).toBe('[AVATAR_PREVIEW_FAILED] 头像预览暂不可用，请稍后重试');
     expect(page.data.mediaError).not.toContain('private preview url');
+  });
+
+  it('新预览成功会清除旧 preview error', async () => {
+    page.data.mediaError = '[AVATAR_PREVIEW_FAILED] 头像预览暂不可用，请稍后重试';
+    page.mediaErrorStage = 'preview';
+    rideService.getPersonalCapabilityCard.mockResolvedValueOnce(
+      capabilityCard('https://temporary.example/recovered.jpg'),
+    );
+
+    await page.loadAvatarPreview();
+
+    expect(page.data.avatarPreviewUrl).toBe('https://temporary.example/recovered.jpg');
+    expect(page.data.mediaError).toBe('');
+  });
+
+  it('预览成功不得覆盖预览请求开始后产生的上传错误', async () => {
+    const pending = deferred<ReturnType<typeof capabilityCard>>();
+    rideService.getPersonalCapabilityCard.mockReturnValueOnce(pending.promise);
+    const preview = page.loadAvatarPreview();
+
+    await page.runAvatarAction(() =>
+      Promise.reject(
+        Object.assign(new Error('later upload failure'), {
+          code: 'MEDIA_UPLOAD_FAILED',
+          mediaStage: 'upload',
+        }),
+      ),
+    );
+    const laterError = page.data.mediaError;
+    pending.resolve(capabilityCard('https://temporary.example/recovered.jpg'));
+    await preview;
+
+    expect(page.data.avatarPreviewUrl).toBe('https://temporary.example/recovered.jpg');
+    expect(page.data.mediaError).toBe(laterError);
   });
 
   it.each(['onHide', 'onUnload'])('%s 会让未完成的头像预览响应失效', async (hook) => {
@@ -873,13 +914,10 @@ describe('资料编辑头像交互', () => {
 
     expect(uploadFile).not.toHaveBeenCalled();
     expect(page.data.p.photos).toEqual([]);
-    expect(wx.showToast).toHaveBeenCalledWith({
-      title: '照片上传未完成，请稍后重试',
-      icon: 'none',
-    });
     expect(page.data.mediaError).toBe(
       '[MEDIA_UPLOAD_PATH_FAILED] 无法准备安全上传，请检查网络后重试',
     );
+    expect(wx.showToast).toHaveBeenCalledWith({ title: page.data.mediaError, icon: 'none' });
   });
 
   it('个人相册上传失败显示 upload 阶段码且不登记媒体', async () => {

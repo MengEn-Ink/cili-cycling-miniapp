@@ -30,20 +30,6 @@ function isUserCancellation(error: unknown): boolean {
   return /(?:^|[\s:])cancel(?:led)?(?:$|[\s:])/i.test(message);
 }
 
-function avatarFailureMessage(error: unknown): string {
-  const code =
-    error && typeof error === 'object' && typeof (error as { code?: unknown }).code === 'string'
-      ? (error as { code: string }).code
-      : '';
-  if (['STRAVA_NOT_CONNECTED', 'STRAVA_AVATAR_UNAVAILABLE'].includes(code))
-    return 'Strava 尚未连接或没有可用头像，请先同步 Strava';
-  if (code.startsWith('STRAVA_AVATAR_')) return 'Strava 头像获取失败，请检查网络后重试';
-  if (['MEDIA_OBJECT_NOT_FOUND', 'MEDIA_OBJECT_VERIFY_FAILED'].includes(code))
-    return '头像文件暂未同步到云端，请稍后重试';
-  if (code === 'CALL_FAILED') return '头像更新结果未确认，请稍后重试';
-  return '头像更新失败，请稍后重试';
-}
-
 function safeErrorCode(error: unknown, fallback: string): string {
   const value =
     error && typeof error === 'object' && typeof (error as { code?: unknown }).code === 'string'
@@ -101,9 +87,20 @@ function mediaFailureDetail(error: unknown): string {
     'MEDIA_OBJECT_VERIFY_FAILED',
     'MEDIA_OBJECT_TOO_LARGE',
     'MEDIA_OBJECT_TYPE_INVALID',
+    'STRAVA_NOT_CONNECTED',
+    'STRAVA_AVATAR_UNAVAILABLE',
   ]);
   const code = specificCodes.has(causeCode) ? causeCode : fallbackCode;
-  return `[${code}] ${messageByStage[stage] || '媒体操作失败，请稍后重试'}`;
+  const messageByCode: Record<string, string> = {
+    MEDIA_TOO_LARGE: '图片超过 5MB，请压缩或更换图片后重试',
+    MEDIA_OBJECT_TOO_LARGE: '图片超过 5MB，请压缩或更换图片后重试',
+    MEDIA_OBJECT_TYPE_INVALID: '图片格式无效，请选择 JPEG、PNG 或 WebP 图片',
+    MEDIA_OBJECT_NOT_FOUND: '图片暂未同步到云端，请稍后重试',
+    MEDIA_OBJECT_VERIFY_FAILED: '图片暂未同步到云端，请稍后重试',
+    STRAVA_NOT_CONNECTED: 'Strava 尚未连接或没有可用头像，请先同步 Strava',
+    STRAVA_AVATAR_UNAVAILABLE: 'Strava 尚未连接或没有可用头像，请先同步 Strava',
+  };
+  return `[${code}] ${messageByCode[causeCode] || messageByStage[stage] || '媒体操作失败，请稍后重试'}`;
 }
 
 function settleBeforeDeadline<T>(promise: Promise<T>, timeoutMs: number): Promise<T | null> {
@@ -309,6 +306,7 @@ async function compensateUploadedMedia(entry: MediaOrphan) {
 Page({
   avatarReadinessRequestId: 0,
   avatarPreviewRequestId: 0,
+  mediaErrorStage: '',
   data: {
     loading: true,
     error: '',
@@ -347,6 +345,7 @@ Page({
     );
     if (requestId !== this.avatarPreviewRequestId) return;
     if (!card) {
+      this.mediaErrorStage = 'preview';
       this.setData({
         mediaError: mediaFailureDetail(
           Object.assign(new Error('preview unavailable'), {
@@ -357,7 +356,14 @@ Page({
       });
       return;
     }
-    this.setData({ avatarPreviewUrl: safeHttpsUrl(card.profile.avatarUrl) });
+    const patch: Record<string, unknown> = {
+      avatarPreviewUrl: safeHttpsUrl(card.profile.avatarUrl),
+    };
+    if (this.mediaErrorStage === 'preview') {
+      this.mediaErrorStage = '';
+      patch.mediaError = '';
+    }
+    this.setData(patch);
   },
   async loadStravaAvatarReadiness() {
     const requestId = ++this.avatarReadinessRequestId;
@@ -407,13 +413,21 @@ Page({
   },
   async runAvatarAction(action: () => Promise<void>) {
     if (this.data.avatarBusy || this.data.photoBusy || this.data.saving) return;
+    this.mediaErrorStage = '';
     this.setData({ avatarBusy: true, mediaError: '' });
     try {
       await action();
     } catch (error) {
       if (!isUserCancellation(error)) {
-        this.setData({ mediaError: mediaFailureDetail(error) });
-        wx.showToast({ title: avatarFailureMessage(error), icon: 'none' });
+        const detail = mediaFailureDetail(error);
+        this.mediaErrorStage =
+          error &&
+          typeof error === 'object' &&
+          typeof (error as { mediaStage?: unknown }).mediaStage === 'string'
+            ? String((error as { mediaStage: string }).mediaStage)
+            : '';
+        this.setData({ mediaError: detail });
+        wx.showToast({ title: detail, icon: 'none' });
       }
     } finally {
       this.setData({ avatarBusy: false });
@@ -509,6 +523,7 @@ Page({
   async addPhoto() {
     // 添加照片加在途锁，避免快速连点触发多次并发上传产生孤立文件或状态错乱。
     if (this.data.photoBusy || this.data.saving || this.data.avatarBusy) return;
+    this.mediaErrorStage = '';
     this.setData({ photoBusy: true, mediaError: '' });
     let uploadedFileId = '';
     try {
@@ -539,8 +554,15 @@ Page({
       if (uploadedFileId) {
         await compensateUploadedMedia({ fileId: uploadedFileId, category: 'other' });
       }
-      this.setData({ mediaError: mediaFailureDetail(error) });
-      wx.showToast({ title: '照片上传未完成，请稍后重试', icon: 'none' });
+      const detail = mediaFailureDetail(error);
+      this.mediaErrorStage =
+        error &&
+        typeof error === 'object' &&
+        typeof (error as { mediaStage?: unknown }).mediaStage === 'string'
+          ? String((error as { mediaStage: string }).mediaStage)
+          : '';
+      this.setData({ mediaError: detail });
+      wx.showToast({ title: detail, icon: 'none' });
     } finally {
       this.setData({ photoBusy: false });
     }
