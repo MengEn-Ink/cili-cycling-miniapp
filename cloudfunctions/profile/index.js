@@ -112,21 +112,18 @@ async function updateProfile(openid, event) {
 }
 async function registerMedia(openid, event, verifyObject) {
   const origin = clientMediaOrigin(event.origin);
-  const id = mediaDocumentId(event.fileId);
+  const now = new Date();
+  const secret = process.env.PROFILE_MEDIA_PATH_SECRET;
+  const candidate = mediaRegistration(event.fileId, event.category, origin, openid, secret, now);
+  const id = candidate._id;
   if (verifyObject) {
-    await verifyUploadedMedia(event.fileId, (input) => cloud.getTempFileURL(input));
-    await verifyUploadedImageObject(event.fileId, (input) => cloud.downloadFile(input));
+    const tempFileURL = await verifyUploadedMedia(event.fileId, (input) =>
+      cloud.getTempFileURL(input),
+    );
+    await verifyUploadedImageObject(tempFileURL);
   }
   return profileStore.registerMedia(id, (existing) =>
-    mediaRegistration(
-      event.fileId,
-      event.category,
-      origin,
-      openid,
-      process.env.PROFILE_MEDIA_PATH_SECRET,
-      new Date(),
-      existing,
-    ),
+    mediaRegistration(event.fileId, event.category, origin, openid, secret, now, existing),
   );
 }
 exports.main = async (event = {}) => {
@@ -202,6 +199,13 @@ exports.main = async (event = {}) => {
     if (event.action === 'reportOrphan') {
       if (Object.prototype.hasOwnProperty.call(event, 'openid'))
         throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });
+      mediaRegistration(
+        event.fileId,
+        event.category,
+        clientMediaOrigin(event.origin),
+        OPENID,
+        process.env.PROFILE_MEDIA_PATH_SECRET,
+      );
       const objectState = await inspectMediaObject(event.fileId, (input) =>
         cloud.getTempFileURL(input),
       );

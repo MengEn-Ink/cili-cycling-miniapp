@@ -1,6 +1,8 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { EventEmitter } = require('node:events');
+const { Readable } = require('node:stream');
 const {
   keyFrom,
   encrypt,
@@ -576,27 +578,91 @@ test('registerMedia 落库前必须由服务端确认对象存在且返回 https
   );
 });
 
-test('registerMedia 服务端校验对象大小与真实图片 magic', async () => {
+function storageRequestFactory(responses, calls = []) {
+  return (_url, options, callback) => {
+    const request = new EventEmitter();
+    request.setTimeout = (_milliseconds, handler) => {
+      request.timeoutHandler = handler;
+    };
+    request.destroy = (error) => queueMicrotask(() => request.emit('error', error));
+    request.end = () => {
+      calls.push(options.method);
+      const next = responses.shift();
+      if (next instanceof Error) {
+        request.emit('error', next);
+        return;
+      }
+      callback(
+        Object.assign(Readable.from(next.chunks || []), {
+          statusCode: next.statusCode ?? 200,
+          headers: next.headers || {},
+        }),
+      );
+    };
+    return request;
+  };
+}
+
+test('registerMedia 以可信临时 URL 先验大小并有界流式校验真实图片 magic', async () => {
   const { verifyUploadedImageObject, MAX_PROFILE_IMAGE_BYTES } = require('./core');
   const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00]);
+  const calls = [];
   await assert.doesNotReject(
-    verifyUploadedImageObject('cloud://env/image.jpg', async () => ({ fileContent: jpeg })),
+    verifyUploadedImageObject('https://storage.example/image.jpg?signature=opaque', {
+      requestFactory: storageRequestFactory(
+        [
+          { headers: { 'content-length': String(jpeg.length) } },
+          { headers: { 'content-length': String(jpeg.length) }, chunks: [jpeg] },
+        ],
+        calls,
+      ),
+    }),
   );
+  assert.deepEqual(calls, ['HEAD', 'GET']);
+
+  const headOnly = [];
   await assert.rejects(
-    verifyUploadedImageObject('cloud://env/large.jpg', async () => ({
-      fileContent: Buffer.alloc(MAX_PROFILE_IMAGE_BYTES + 1),
-    })),
+    verifyUploadedImageObject('https://storage.example/large.jpg', {
+      requestFactory: storageRequestFactory(
+        [{ headers: { 'content-length': String(MAX_PROFILE_IMAGE_BYTES + 1) } }],
+        headOnly,
+      ),
+    }),
     { code: 'MEDIA_OBJECT_TOO_LARGE' },
   );
+  assert.deepEqual(headOnly, ['HEAD']);
+
   await assert.rejects(
-    verifyUploadedImageObject('cloud://env/not-image.jpg', async () => ({
-      fileContent: Buffer.from('not-an-image'),
-    })),
+    verifyUploadedImageObject('https://storage.example/missing-size.jpg', {
+      requestFactory: storageRequestFactory([{ headers: {} }]),
+    }),
+    { code: 'MEDIA_OBJECT_VERIFY_FAILED' },
+  );
+
+  await assert.rejects(
+    verifyUploadedImageObject('https://storage.example/stream-too-large.jpg', {
+      maxBytes: 16,
+      requestFactory: storageRequestFactory([
+        { headers: { 'content-length': '16' } },
+        { headers: {}, chunks: [Buffer.alloc(12), Buffer.alloc(5)] },
+      ]),
+    }),
+    { code: 'MEDIA_OBJECT_TOO_LARGE' },
+  );
+
+  const invalid = Buffer.from('not-an-image');
+  await assert.rejects(
+    verifyUploadedImageObject('https://storage.example/not-image.jpg', {
+      requestFactory: storageRequestFactory([
+        { headers: { 'content-length': String(invalid.length) } },
+        { headers: { 'content-length': String(invalid.length) }, chunks: [invalid] },
+      ]),
+    }),
     { code: 'MEDIA_OBJECT_TYPE_INVALID' },
   );
   await assert.rejects(
-    verifyUploadedImageObject('cloud://env/unavailable.jpg', async () => {
-      throw new Error('storage unavailable');
+    verifyUploadedImageObject('https://storage.example/unavailable.jpg', {
+      requestFactory: storageRequestFactory([new Error('storage unavailable')]),
     }),
     { code: 'MEDIA_OBJECT_VERIFY_FAILED' },
   );
@@ -692,7 +758,7 @@ test('上传后媒体短暂不可见时有界重试，就绪后返回成功', as
   const result = await verifyUploadedMedia(fileId, getTempFileURL, async (ms) => {
     waits.push(ms);
   });
-  assert.equal(result, true);
+  assert.equal(result, 'https://example.com/a.png');
   assert.equal(calls, 2);
   assert.deepEqual(waits, [100]);
 });

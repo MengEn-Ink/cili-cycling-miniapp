@@ -1,5 +1,6 @@
 'use strict';
 const crypto = require('node:crypto');
+const https = require('node:https');
 const AVATAR_SOURCES = ['wechat', 'strava', 'custom'];
 const CLIENT_AVATAR_SOURCES = ['wechat', 'custom'];
 const MAX_PROFILE_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -213,12 +214,13 @@ function validateAvatarSelection(source, fileId, openid, secretValue, record) {
 function missingMediaSignal(value) {
   return /not[ _-]?found|not exist|does not exist|file not exist|404/i.test(String(value || ''));
 }
-async function inspectMediaObject(fileId, getTempFileURL) {
+async function resolveMediaObject(fileId, getTempFileURL) {
   let response;
   try {
     response = await getTempFileURL({ fileList: [fileId] });
   } catch (error) {
-    if (missingMediaSignal(error?.code) || missingMediaSignal(error?.errMsg)) return 'missing';
+    if (missingMediaSignal(error?.code) || missingMediaSignal(error?.errMsg))
+      return { state: 'missing' };
     throw new ProfileError('MEDIA_OBJECT_VERIFY_FAILED', '暂时无法确认媒体文件');
   }
   const found = (Array.isArray(response && response.fileList) ? response.fileList : []).find(
@@ -226,18 +228,25 @@ async function inspectMediaObject(fileId, getTempFileURL) {
   );
   if (!found) throw new ProfileError('MEDIA_OBJECT_VERIFY_FAILED', '暂时无法确认媒体文件');
   if (Number(found.status) !== 0) {
-    if (missingMediaSignal(found.errMsg) || missingMediaSignal(found.code)) return 'missing';
+    if (missingMediaSignal(found.errMsg) || missingMediaSignal(found.code))
+      return { state: 'missing' };
     throw new ProfileError('MEDIA_OBJECT_VERIFY_FAILED', '暂时无法确认媒体文件');
   }
   try {
-    if (new URL(found.tempFileURL).protocol === 'https:') return 'exists';
+    const url = new URL(found.tempFileURL);
+    if (url.protocol === 'https:' && !url.username && !url.password)
+      return { state: 'exists', tempFileURL: url.toString() };
   } catch {
     // Normalize malformed platform responses below.
   }
   throw new ProfileError('MEDIA_OBJECT_VERIFY_FAILED', '暂时无法确认媒体文件');
 }
+async function inspectMediaObject(fileId, getTempFileURL) {
+  return (await resolveMediaObject(fileId, getTempFileURL)).state;
+}
 async function verifyMediaObject(fileId, getTempFileURL) {
-  if ((await inspectMediaObject(fileId, getTempFileURL)) === 'exists') return true;
+  const resolved = await resolveMediaObject(fileId, getTempFileURL);
+  if (resolved.state === 'exists') return resolved.tempFileURL;
   throw new ProfileError('MEDIA_OBJECT_NOT_FOUND', '媒体文件不存在');
 }
 
@@ -270,23 +279,131 @@ function hasImageMagic(content) {
       content.subarray(8, 12).toString('ascii') === 'WEBP')
   );
 }
-async function verifyUploadedImageObject(fileId, downloadFile) {
-  let response;
+const MEDIA_OBJECT_VERIFY_TIMEOUT_MS = 5000;
+const IMAGE_MAGIC_BYTES = 12;
+function contentLength(headers) {
+  const raw = headers?.['content-length'];
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (typeof value !== 'string' || !/^\d+$/.test(value.trim())) return undefined;
+  const size = Number(value);
+  return Number.isSafeInteger(size) && size >= 0 ? size : undefined;
+}
+function boundedMediaRequest(url, method, options = {}) {
+  const requestFactory = options.requestFactory || https.request;
+  const maxBytes = options.maxBytes ?? MAX_PROFILE_IMAGE_BYTES;
+  const timeoutMs = options.timeoutMs ?? MEDIA_OBJECT_VERIFY_TIMEOUT_MS;
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let request;
+    let response;
+    const finish = (error, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (error) reject(error);
+      else resolve(value);
+    };
+    const timer = setTimeout(() => {
+      const error = new ProfileError('MEDIA_OBJECT_VERIFY_FAILED', '暂时无法确认媒体文件');
+      finish(error);
+      request?.destroy(error);
+      response?.destroy?.(error);
+    }, timeoutMs);
+    try {
+      request = requestFactory(
+        url,
+        { method, headers: { accept: 'image/jpeg,image/png,image/webp' } },
+        (incoming) => {
+          response = incoming;
+          request.setTimeout?.(0);
+          const statusCode = Number(incoming.statusCode || 0);
+          const declared = contentLength(incoming.headers);
+          if (statusCode !== 200) {
+            finish(new ProfileError('MEDIA_OBJECT_VERIFY_FAILED', '暂时无法确认媒体文件'));
+            incoming.destroy?.();
+            return;
+          }
+          if (declared !== undefined && declared > maxBytes) {
+            const error = new ProfileError('MEDIA_OBJECT_TOO_LARGE', '图片不能超过 5MB');
+            finish(error);
+            incoming.destroy?.();
+            return;
+          }
+          let size = 0;
+          let prefix = Buffer.alloc(0);
+          incoming.on('data', (chunk) => {
+            if (settled) return;
+            const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+            size += buffer.length;
+            if (size > maxBytes) {
+              const error = new ProfileError('MEDIA_OBJECT_TOO_LARGE', '图片不能超过 5MB');
+              finish(error);
+              incoming.destroy?.();
+              return;
+            }
+            if (prefix.length < IMAGE_MAGIC_BYTES) {
+              prefix = Buffer.concat([
+                prefix,
+                buffer.subarray(0, IMAGE_MAGIC_BYTES - prefix.length),
+              ]);
+            }
+          });
+          incoming.on('end', () =>
+            finish(null, { statusCode, headers: incoming.headers || {}, size, prefix }),
+          );
+          incoming.on('error', (error) => finish(error));
+        },
+      );
+      request.setTimeout?.(timeoutMs, () => {
+        const error = new ProfileError('MEDIA_OBJECT_VERIFY_FAILED', '暂时无法确认媒体文件');
+        finish(error);
+        request.destroy?.(error);
+      });
+      request.on('error', (error) => finish(error));
+      request.end();
+    } catch (error) {
+      finish(error);
+    }
+  });
+}
+async function verifyUploadedImageObject(tempFileURL, options = {}) {
+  let url;
   try {
-    response = await downloadFile({ fileID: fileId });
+    url = new URL(tempFileURL);
+    if (url.protocol !== 'https:' || url.username || url.password)
+      throw new Error('untrusted temporary url');
   } catch {
     throw new ProfileError('MEDIA_OBJECT_VERIFY_FAILED', '暂时无法确认媒体文件');
   }
-  const content = Buffer.isBuffer(response?.fileContent)
-    ? response.fileContent
-    : response?.fileContent instanceof Uint8Array
-      ? Buffer.from(response.fileContent)
-      : undefined;
-  if (!content) throw new ProfileError('MEDIA_OBJECT_VERIFY_FAILED', '暂时无法确认媒体文件');
-  if (content.length > MAX_PROFILE_IMAGE_BYTES)
-    throw new ProfileError('MEDIA_OBJECT_TOO_LARGE', '图片不能超过 5MB');
-  if (!hasImageMagic(content)) throw new ProfileError('MEDIA_OBJECT_TYPE_INVALID', '图片格式无效');
-  return true;
+  const maxBytes = options.maxBytes ?? MAX_PROFILE_IMAGE_BYTES;
+  const totalTimeoutMs = options.totalTimeoutMs ?? MEDIA_OBJECT_VERIFY_TIMEOUT_MS;
+  const now = options.now || Date.now;
+  const startedAt = now();
+  try {
+    const head = await boundedMediaRequest(url, 'HEAD', {
+      requestFactory: options.requestFactory,
+      maxBytes,
+      timeoutMs: totalTimeoutMs,
+    });
+    const declared = contentLength(head.headers);
+    if (declared === undefined)
+      throw new ProfileError('MEDIA_OBJECT_VERIFY_FAILED', '暂时无法确认媒体文件');
+    if (declared > maxBytes) throw new ProfileError('MEDIA_OBJECT_TOO_LARGE', '图片不能超过 5MB');
+    const remainingMs = totalTimeoutMs - (now() - startedAt);
+    if (remainingMs <= 0)
+      throw new ProfileError('MEDIA_OBJECT_VERIFY_FAILED', '暂时无法确认媒体文件');
+    const body = await boundedMediaRequest(url, 'GET', {
+      requestFactory: options.requestFactory,
+      maxBytes,
+      timeoutMs: remainingMs,
+    });
+    if (!hasImageMagic(body.prefix))
+      throw new ProfileError('MEDIA_OBJECT_TYPE_INVALID', '图片格式无效');
+    return true;
+  } catch (error) {
+    if (error instanceof ProfileError) throw error;
+    throw new ProfileError('MEDIA_OBJECT_VERIFY_FAILED', '暂时无法确认媒体文件');
+  }
 }
 function registeredMedia(record, item, openid, statuses = ['active']) {
   return Boolean(
@@ -608,6 +725,7 @@ module.exports = {
   verifyUploadedMedia,
   verifyUploadedImageObject,
   MAX_PROFILE_IMAGE_BYTES,
+  MEDIA_OBJECT_VERIFY_TIMEOUT_MS,
   MEDIA_VERIFY_ATTEMPTS,
   MEDIA_VERIFY_DELAY_MS,
   isOwnerMedia,
