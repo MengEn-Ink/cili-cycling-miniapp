@@ -5,9 +5,13 @@ import { describe, expect, it } from 'vitest';
 const read = (file: string) => readFileSync(file, 'utf8');
 
 describe('native tabbar safe-area contract', () => {
-  it('keeps the native three-tab navigation on the CILI dark palette', () => {
+  it('keeps the native window and three-tab navigation on the CILI dark palette', () => {
     const app = JSON.parse(read('miniprogram/app.json'));
 
+    expect(String(app.window.navigationBarBackgroundColor || '').toLowerCase()).toBe('#0b0b0c');
+    expect(app.window.navigationBarTextStyle).toBe('white');
+    expect(String(app.window.backgroundColor || '').toLowerCase()).toBe('#0b0b0c');
+    expect(app.window.backgroundTextStyle).toBe('light');
     expect(app.tabBar).toBeDefined();
     expect(app.tabBar.custom).not.toBe(true);
     expect(existsSync('miniprogram/custom-tab-bar')).toBe(false);
@@ -20,6 +24,15 @@ describe('native tabbar safe-area contract', () => {
       'pages/registrations/index',
       'pages/profile/index',
     ]);
+  });
+
+  it('keeps every tab page root dark and full-height', () => {
+    for (const root of ['activities', 'registrations', 'profile']) {
+      const styles = read(`miniprogram/pages/${root}/index.wxss`).toLowerCase();
+
+      expect(styles).toMatch(/page\s*\{[^}]*background:\s*#0b0b0c;/s);
+      expect(styles).toMatch(new RegExp(`\\.${root}-page\\s*\\{[^}]*min-height:\\s*100vh;`, 's'));
+    }
   });
 
   it('gives all tab roots one shared safe-area bottom spacing contract', () => {

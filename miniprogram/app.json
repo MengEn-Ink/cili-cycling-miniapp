@@ -16,14 +16,16 @@
   ],
   "window": {
     "navigationBarTitleText": "此里",
-    "navigationBarBackgroundColor": "#f5f7f2",
-    "navigationBarTextStyle": "black"
+    "navigationBarBackgroundColor": "#0b0b0c",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#0b0b0c",
+    "backgroundTextStyle": "light"
   },
   "tabBar": {
-    "backgroundColor": "#0B0B0C",
+    "backgroundColor": "#0b0b0c",
     "borderStyle": "black",
-    "color": "#A8A8AD",
-    "selectedColor": "#D55B1F",
+    "color": "#a8a8ad",
+    "selectedColor": "#d55b1f",
     "list": [
       {
         "pagePath": "pages/activities/index",
