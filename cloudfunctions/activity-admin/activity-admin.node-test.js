@@ -278,6 +278,35 @@ test('更新省略后援车字段时保留当前司机，显式改为 0 才清�
     contact_phone: '',
   });
 });
+
+test('保存校验完整 effective activity，省略字段不能绕过存量非法截止时间', async () => {
+  const current = {
+    _id: 'published-invalid-deadline',
+    ...validatePublishInput({ ...input, status: 'published' }, 0, now),
+    signup_deadline: 'invalid',
+    occupied_count: 0,
+    occupancy_partition_ready: true,
+    support_vehicle_occupied_count: 0,
+    self_drive_occupied_count: 0,
+    version: 3,
+    created_by: 'admin',
+  };
+  const update = { ...input, status: 'published' };
+  delete update.signup_deadline;
+  const memory = store(current);
+
+  await assert.rejects(
+    saveActivity(memory, {
+      openid: 'admin',
+      activityId: current._id,
+      expectedVersion: 3,
+      activity: update,
+    }),
+    { code: 'VALIDATION_FAILED' },
+  );
+  assert.equal(memory.state.saved, undefined);
+  assert.equal(memory.state.audits.length, 0);
+});
 test('活动输入完整保留行程备注、GPX 与费用明细', () => {
   const value = validateActivityInput({
     ...input,

@@ -104,8 +104,9 @@ function cleanSchedule(value) {
   });
 }
 function validDate(value, label) {
-  if (typeof value !== 'string') fail('VALIDATION_FAILED', `${label}格式错误`);
-  const date = new Date(value);
+  if (typeof value !== 'string' && !(value instanceof Date))
+    fail('VALIDATION_FAILED', `${label}格式错误`);
+  const date = new Date(value instanceof Date ? value.getTime() : value);
   if (!Number.isFinite(date.getTime())) fail('VALIDATION_FAILED', `${label}格式错误`);
   return date;
 }
@@ -127,6 +128,13 @@ const ACTIVITY_INPUT_FIELDS = new Set([
   'event_end',
   'status',
 ]);
+function effectiveActivityInput(current, input) {
+  const effective = { ...input };
+  for (const field of ACTIVITY_INPUT_FIELDS)
+    if (effective[field] === undefined && current?.[field] !== undefined)
+      effective[field] = current[field];
+  return effective;
+}
 function validateOptionalNonNegativeInteger(value, label) {
   if (!Number.isInteger(value) || value < 0) fail('VALIDATION_FAILED', `${label}必须为非负整数`);
   return value;
@@ -308,6 +316,7 @@ module.exports = {
   assertTrustedOpenid,
   isEnabledAdmin,
   publicActivity,
+  effectiveActivityInput,
   validateDraftInput,
   validatePublishInput,
   validateActivityInput,

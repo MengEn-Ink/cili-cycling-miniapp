@@ -92,6 +92,9 @@ function registrationSetupReady(activity) {
   const selfDriveCapacity = activity.self_drive_capacity;
   const supportOccupied = activity.support_vehicle_occupied_count;
   const selfDriveOccupied = activity.self_drive_occupied_count;
+  const deadline = dateOrNull(activity.signup_deadline);
+  const start = dateOrNull(activity.event_start);
+  const end = dateOrNull(activity.event_end);
   if (
     activity.occupancy_partition_ready !== true ||
     !Number.isInteger(capacity) ||
@@ -111,7 +114,11 @@ function registrationSetupReady(activity) {
     selfDriveOccupied < 0 ||
     selfDriveOccupied > selfDriveCapacity ||
     supportOccupied + selfDriveOccupied !== occupied ||
-    !Number.isFinite(Date.parse(activity.signup_deadline)) ||
+    !deadline ||
+    !start ||
+    !end ||
+    deadline.getTime() >= start.getTime() ||
+    start.getTime() >= end.getTime() ||
     !hasFeeDetails(activity.fee) ||
     (supportCapacity > 0 && !hasCompleteDriver(activity.support_vehicle_driver))
   )
@@ -357,9 +364,7 @@ function publicActivity(activity, now = new Date()) {
     ...output,
     ...decision,
     ...(setupPending ? { registration_setup_pending: true } : {}),
-    ...(setupPending && !Number.isInteger(activity.capacity)
-      ? { registration_state: 'closed', closed_reason: 'unavailable' }
-      : {}),
+    ...(setupPending ? { registration_state: 'closed', closed_reason: 'unavailable' } : {}),
     server_now: now.toISOString(),
   };
 }

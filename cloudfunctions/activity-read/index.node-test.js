@@ -85,6 +85,7 @@ test('列表仍只查询 published 并由同一服务端时间裁决报名状态
       },
       fee: { remark: 'AA', included: [], excluded: [] },
       signup_deadline: '2999-01-01T00:00:00.000Z',
+      event_start: '2999-01-01T08:00:00.000Z',
       event_end: '2999-01-02T00:00:00.000Z',
     },
     {

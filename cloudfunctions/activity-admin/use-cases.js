@@ -8,6 +8,7 @@ const {
   fail,
   isEnabledAdmin,
   publicActivity,
+  effectiveActivityInput,
   validateDraftInput,
   validatePublishInput,
   assertStatusTransition,
@@ -184,13 +185,15 @@ async function saveActivity(
     const admin = await tx.getAdmin(openid);
     const isAdmin = isEnabledAdmin(admin, openid);
     const current = activityId ? await tx.getActivity(activityId) : undefined;
+    const effectiveActivity = effectiveActivityInput(current, activity);
     if (activityId && !current) fail('ACTIVITY_NOT_FOUND', '活动不存在');
     // 普通成员的权限严格绑定服务端 OPENID：只能创建草稿、编辑自己的草稿并发布。
     if (!isAdmin && current && current.created_by !== openid)
       fail('FORBIDDEN', '只能编辑自己的活动');
     if (!isAdmin && current && current.status !== 'draft')
       fail('FORBIDDEN', '普通成员只能编辑自己的草稿');
-    if (!isAdmin && activity.status === 'finished') fail('ADMIN_REQUIRED', '仅管理员可以结束活动');
+    if (!isAdmin && effectiveActivity.status === 'finished')
+      fail('ADMIN_REQUIRED', '仅管理员可以结束活动');
     let currentVersion = 0;
     if (current && current.version !== undefined) {
       if (!Number.isInteger(current.version) || current.version < 1)
@@ -209,33 +212,15 @@ async function saveActivity(
         occupiedCount > MAX_PARTITION_BACKFILL_RECORDS)
     )
       fail('PARTITION_BACKFILL_REQUIRED', '历史活动容量或占位数超过自动回填上限');
-    if (current) assertStatusTransition(current.status, activity.status);
-    else if (activity.status !== 'draft') fail('INVALID_TRANSITION', '新活动必须先保存为草稿');
-    const activityForValidation = current
-      ? {
-          ...activity,
-          ...(activity.capacity === undefined && current.capacity !== undefined
-            ? { capacity: current.capacity }
-            : {}),
-          ...(activity.support_vehicle_capacity === undefined &&
-          current.support_vehicle_capacity !== undefined
-            ? { support_vehicle_capacity: current.support_vehicle_capacity }
-            : {}),
-          ...(activity.self_drive_capacity === undefined &&
-          current.self_drive_capacity !== undefined
-            ? { self_drive_capacity: current.self_drive_capacity }
-            : {}),
-          ...(activity.support_vehicle_driver === undefined &&
-          current.support_vehicle_driver !== undefined
-            ? { support_vehicle_driver: current.support_vehicle_driver }
-            : {}),
-        }
-      : activity;
+    if (current) assertStatusTransition(current.status, effectiveActivity.status);
+    else if (effectiveActivity.status !== 'draft')
+      fail('INVALID_TRANSITION', '新活动必须先保存为草稿');
     const safe =
-      activity.status === 'draft'
-        ? validateDraftInput(activityForValidation, occupiedCount)
-        : validatePublishInput(activityForValidation, occupiedCount, now, {
-            requireFutureDeadline: current?.status === 'draft' && activity.status === 'published',
+      effectiveActivity.status === 'draft'
+        ? validateDraftInput(effectiveActivity, occupiedCount)
+        : validatePublishInput(effectiveActivity, occupiedCount, now, {
+            requireFutureDeadline:
+              current?.status === 'draft' && effectiveActivity.status === 'published',
           });
     const partitionCapacityReady =
       Number.isInteger(safe.capacity) &&

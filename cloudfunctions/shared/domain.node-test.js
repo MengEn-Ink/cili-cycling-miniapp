@@ -31,6 +31,8 @@ const activity = {
   status: 'published',
   is_deleted: false,
   signup_deadline: '2026-10-01T00:00:00.000Z',
+  event_start: '2026-10-01T08:00:00.000Z',
+  event_end: '2026-10-02T00:00:00.000Z',
   capacity: 2,
   occupied_count: 0,
   occupancy_partition_ready: true,
@@ -613,14 +615,18 @@ test('活动报名状态完全由服务端时间和活动事实裁决', () => {
     [{ signup_deadline: serverNow.toISOString(), occupied_count: 2 }, 'closed', 'deadline'],
     [{ event_end: serverNow.toISOString(), occupied_count: 2 }, 'closed', 'finished'],
     [{ status: 'finished', signup_deadline: 'invalid' }, 'closed', 'finished'],
-    [{ occupied_count: undefined }, 'closed', 'incomplete'],
-    [{ signup_deadline: 'invalid' }, 'closed', 'incomplete'],
-    [{ occupancy_partition_ready: false }, 'closed', 'incomplete'],
-    [{ support_vehicle_capacity: undefined }, 'closed', 'incomplete'],
-    [{ self_drive_capacity: 2 }, 'closed', 'incomplete'],
-    [{ support_vehicle_occupied_count: undefined }, 'closed', 'incomplete'],
-    [{ fee: undefined }, 'closed', 'incomplete'],
-    [{ support_vehicle_driver: undefined }, 'closed', 'incomplete'],
+    [{ occupied_count: undefined }, 'closed', 'unavailable'],
+    [{ signup_deadline: 'invalid' }, 'closed', 'unavailable'],
+    [{ occupancy_partition_ready: false }, 'closed', 'unavailable'],
+    [{ support_vehicle_capacity: undefined }, 'closed', 'unavailable'],
+    [{ self_drive_capacity: 2 }, 'closed', 'unavailable'],
+    [{ support_vehicle_occupied_count: undefined }, 'closed', 'unavailable'],
+    [{ fee: undefined }, 'closed', 'unavailable'],
+    [{ support_vehicle_driver: undefined }, 'closed', 'unavailable'],
+    [{ event_start: 'invalid' }, 'closed', 'unavailable'],
+    [{ event_end: 'invalid' }, 'closed', 'unavailable'],
+    [{ event_start: activity.signup_deadline }, 'closed', 'unavailable'],
+    [{ event_end: activity.event_start }, 'closed', 'unavailable'],
     [{ status: 'draft' }, 'closed', 'unavailable'],
   ];
 
@@ -633,7 +639,7 @@ test('活动报名状态完全由服务端时间和活动事实裁决', () => {
 });
 
 test('报名配置不完整时公开 DTO 对旧客户端保持可解析并标记待开放', () => {
-  const output = publicActivity(
+  const incompleteActivities = [
     {
       ...activity,
       capacity: undefined,
@@ -643,13 +649,18 @@ test('报名配置不完整时公开 DTO 对旧客户端保持可解析并标记
       occupancy_partition_ready: false,
       fee: undefined,
     },
-    now,
-  );
+    { ...activity, support_vehicle_capacity: undefined },
+    { ...activity, fee: undefined },
+    { ...activity, support_vehicle_driver: undefined },
+  ];
 
-  assert.equal(output.capacity, 0);
-  assert.equal(output.registration_state, 'closed');
-  assert.equal(output.closed_reason, 'unavailable');
-  assert.equal(output.registration_setup_pending, true);
+  for (const incomplete of incompleteActivities) {
+    const output = publicActivity(incomplete, now);
+    assert.equal(Number.isInteger(output.capacity), true);
+    assert.equal(output.registration_state, 'closed');
+    assert.equal(output.closed_reason, 'unavailable');
+    assert.equal(output.registration_setup_pending, true);
+  }
 });
 
 test('截止、结束或满员优先于配置待完善且不误标报名待开放', () => {
