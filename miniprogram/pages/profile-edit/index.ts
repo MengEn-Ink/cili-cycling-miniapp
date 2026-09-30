@@ -94,7 +94,15 @@ function mediaFailureDetail(error: unknown): string {
     import: 'Strava 头像导入失败，请重新授权或稍后重试',
   };
   const fallbackCode = fallbackByStage[stage] || 'MEDIA_OPERATION_FAILED';
-  const code = safeErrorCode(error, fallbackCode);
+  const causeCode = safeErrorCode(error, '');
+  const specificCodes = new Set([
+    'MEDIA_TOO_LARGE',
+    'MEDIA_OBJECT_NOT_FOUND',
+    'MEDIA_OBJECT_VERIFY_FAILED',
+    'MEDIA_OBJECT_TOO_LARGE',
+    'MEDIA_OBJECT_TYPE_INVALID',
+  ]);
+  const code = specificCodes.has(causeCode) ? causeCode : fallbackCode;
   return `[${code}] ${messageByStage[stage] || '媒体操作失败，请稍后重试'}`;
 }
 

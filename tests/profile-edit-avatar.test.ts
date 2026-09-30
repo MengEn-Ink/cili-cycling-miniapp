@@ -386,7 +386,7 @@ describe('资料编辑头像交互', () => {
       title: '头像更新结果未确认，请稍后重试',
       icon: 'none',
     });
-    expect(page.data.mediaError).toBe('[CALL_FAILED] 头像保存未确认，请稍后重试');
+    expect(page.data.mediaError).toBe('[AVATAR_SET_FAILED] 头像保存未确认，请稍后重试');
   });
 
   it('稳定错误码提供准确提示，未知错误回退为通用提示', async () => {
@@ -498,7 +498,9 @@ describe('资料编辑头像交互', () => {
       title: '头像更新结果未确认，请稍后重试',
       icon: 'none',
     });
-    expect(page.data.mediaError).toBe('[CALL_FAILED] Strava 头像导入失败，请重新授权或稍后重试');
+    expect(page.data.mediaError).toBe(
+      '[STRAVA_AVATAR_IMPORT_FAILED] Strava 头像导入失败，请重新授权或稍后重试',
+    );
   });
 
   it('已有 Strava 头像 re-import 完全失败时相同 revision 不得误报成功', async () => {
