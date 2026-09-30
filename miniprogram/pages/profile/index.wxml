@@ -3,10 +3,17 @@
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{error}}</view>
   <brand-logo compact="{{true}}" meta="RIDER PROFILE" />
 
-  <view class="profile-hero has-bg">
-    <swiper wx:if="{{heroBackgrounds.length}}" class="hero-swiper" circular="{{heroBackgrounds.length > 1}}" indicator-dots="{{heroBackgrounds.length > 1}}">
+  <view
+    class="profile-hero has-bg {{heroPullOffset ? 'is-pulling' : ''}}"
+    style="height: calc(600rpx + {{heroPullOffset}}px)"
+    bindtouchstart="heroTouchStart"
+    bindtouchmove="heroTouchMove"
+    bindtouchend="heroTouchEnd"
+    bindtouchcancel="heroTouchEnd"
+  >
+    <swiper wx:if="{{heroBackgrounds.length}}" class="hero-swiper" circular="{{heroBackgrounds.length > 1}}" indicator-dots="{{heroBackgrounds.length > 1}}" bindchange="heroSwiperChange">
       <swiper-item wx:for="{{heroBackgrounds}}" wx:key="url">
-        <image class="hero-bg-image" src="{{item.url}}" mode="aspectFill" aria-hidden="true" data-url="{{item.url}}" data-index="{{index}}" binderror="heroBackgroundError" />
+        <image class="hero-bg-image" src="{{item.url}}" mode="{{heroImageMode}}" aria-label="查看完整背景照片" data-url="{{item.url}}" data-index="{{index}}" bindtap="previewHeroImage" binderror="heroBackgroundError" />
       </swiper-item>
     </swiper>
     <image wx:elif="{{heroBackgroundAvatarUrl}}" class="hero-bg-image hero-fallback-image" src="{{heroBackgroundAvatarUrl}}" mode="aspectFill" aria-hidden="true" data-url="{{heroBackgroundAvatarUrl}}" binderror="heroAvatarBackgroundError" />
@@ -18,6 +25,7 @@
       <view class="hero-alpine-mark">此里</view>
     </view>
     <view class="hero-shade" aria-hidden="true"></view>
+    <view class="hero-photo-hint" wx:if="{{heroBackgrounds.length}}">下拉查看完整照片 · 点按预览</view>
     <view class="hero-identity">
       <view class="avatar">
         <image wx:if="{{heroAvatarUrl}}" class="avatar-image" src="{{heroAvatarUrl}}" mode="aspectFill" data-url="{{heroAvatarUrl}}" binderror="heroAvatarError" aria-label="{{profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '骑手')}}的头像" />

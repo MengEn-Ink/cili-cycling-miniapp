@@ -26,6 +26,10 @@ Page({
         items: (await rideService.listAdminActivities()).map((item) => ({
           ...item,
           canClone: item.status === 'finished',
+          canToggleOnline: item.status === 'draft' || item.status === 'published',
+          statusLabel:
+            item.status === 'published' ? '已上线' : item.status === 'draft' ? '已下架' : '已结束',
+          toggleLabel: item.status === 'published' ? '下架' : '上线',
         })),
         allowed: true,
         isAdmin: appStore.role === 'admin',
@@ -43,6 +47,32 @@ Page({
   },
   reviews() {
     if (this.data.isAdmin) wx.navigateTo({ url: '/pages/admin/reviews/index' });
+  },
+  async toggleOnline(event: any) {
+    const id = String(event.currentTarget.dataset.id || '');
+    const item = this.data.items.find(
+      (candidate: { id: string; canToggleOnline: boolean }) =>
+        candidate.id === id && candidate.canToggleOnline,
+    );
+    if (!item) return;
+    const nextStatus = item.status === 'published' ? 'draft' : 'published';
+    const action = nextStatus === 'published' ? '上线' : '下架';
+    const confirmed = await new Promise<boolean>((resolve) => {
+      wx.showModal({
+        title: `${action}活动`,
+        content: `确认${action}“${item.title}”吗？`,
+        success: (result: { confirm: boolean }) => resolve(result.confirm),
+        fail: () => resolve(false),
+      });
+    });
+    if (!confirmed) return;
+    try {
+      await rideService.saveActivity({ ...item, status: nextStatus }, item.id, item.version);
+      wx.showToast({ title: `已${action}`, icon: 'success' });
+      await this.onShow();
+    } catch (error) {
+      this.setData({ error: error instanceof Error ? error.message : `${action}失败` });
+    }
   },
   startClone(event: any) {
     if (this.data.cloning) return;

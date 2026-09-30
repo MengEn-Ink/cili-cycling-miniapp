@@ -385,7 +385,10 @@ Page({
       p: state.data || null,
       canEditDetails: canEditProfileDetails(state.data || null),
     });
-    if (state.data) void this.loadPhotoPreviews();
+    if (state.data) {
+      void this.loadAvatarPreview();
+      void this.loadPhotoPreviews();
+    }
   },
   async onShow() {
     await this.loadAvatarPreview();

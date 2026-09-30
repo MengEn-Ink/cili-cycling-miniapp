@@ -118,6 +118,18 @@ describe('资料编辑头像交互', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
+  it('首次资料加载完成后立即补载已有头像预览', async () => {
+    page.data.p = null;
+    page.data.avatarPreviewUrl = '';
+
+    await page.onLoad();
+    await vi.waitFor(() =>
+      expect(page.data.avatarPreviewUrl).toBe(capabilityCard().profile.avatarUrl),
+    );
+
+    expect(rideService.getPersonalCapabilityCard).toHaveBeenCalled();
+  });
+
   it('通用保存不提交昵称、头像字段，并保留敏感字段掩码语义', async () => {
     await page.save();
 

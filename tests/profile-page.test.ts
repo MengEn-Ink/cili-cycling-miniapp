@@ -104,7 +104,7 @@ describe('个人中心加载状态', () => {
     };
     appStore.ensureIdentity.mockReset().mockImplementation(authenticate);
     appStore.refreshIdentity.mockReset().mockImplementation(authenticate);
-    vi.stubGlobal('wx', { cloud: {}, navigateTo: vi.fn() });
+    vi.stubGlobal('wx', { cloud: {}, navigateTo: vi.fn(), previewImage: vi.fn() });
     vi.stubGlobal('Page', (definition: any) => {
       page = definition;
       page.data = { ...definition.data };
@@ -190,7 +190,7 @@ describe('个人中心加载状态', () => {
     expect(template).toContain('STRAVA {{heroCard.statusLabel}}');
     expect(template).toContain('{{profile.completeness}}%');
     expect(template).toContain('style="width: {{profile.completeness}}%"');
-    expect(styles).toMatch(/\.profile-hero\.has-bg\s*\{[^}]*min-height:\s*390rpx/s);
+    expect(styles).toMatch(/\.profile-hero\.has-bg\s*\{[^}]*min-height:\s*600rpx/s);
   });
 
   it('profile 请求失败时 hero 仍回退骑行名片 displayName', async () => {
@@ -276,16 +276,39 @@ describe('个人中心加载状态', () => {
     expect(wx.navigateTo).toHaveBeenCalledWith({ url: '/pages/capability-card/index' });
   });
 
-  it('hero 背景隐藏于无障碍树且头像有可读标签', () => {
+  it('可预览 hero 背景和头像有可读标签，装饰性兜底背景隐藏于无障碍树', () => {
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     const backgroundImages = template.match(/<image\b[^>]*class="hero-[^"]+"[^>]*\/>/g) || [];
     const avatarImage = template.match(/<image\b[^>]*class="avatar-image"[^>]*\/>/)?.[0] || '';
 
     expect(backgroundImages.length).toBeGreaterThanOrEqual(3);
-    expect(backgroundImages.every((image: string) => image.includes('aria-hidden="true"'))).toBe(
-      true,
-    );
+    expect(backgroundImages[0]).toContain('aria-label="查看完整背景照片"');
+    expect(
+      backgroundImages.slice(1).every((image: string) => image.includes('aria-hidden="true"')),
+    ).toBe(true);
     expect(avatarImage).toContain('aria-label=');
+  });
+
+  it('顶部下拉展示完整照片，松手恢复封面并支持点按预览', async () => {
+    await page.onShow();
+    page.onPageScroll({ scrollTop: 0 });
+    page.heroTouchStart({ touches: [{ clientY: 100 }] });
+    page.heroTouchMove({ touches: [{ clientY: 170 }] });
+
+    expect(page.data.heroPullOffset).toBe(70);
+    expect(page.data.heroImageMode).toBe('aspectFit');
+
+    page.previewHeroImage({
+      currentTarget: { dataset: { url: 'https://temporary.example/ride.jpg', index: 0 } },
+    });
+    expect(wx.previewImage).toHaveBeenCalledWith({
+      current: 'https://temporary.example/ride.jpg',
+      urls: ['https://temporary.example/ride.jpg'],
+    });
+
+    page.heroTouchEnd();
+    expect(page.data.heroPullOffset).toBe(0);
+    expect(page.data.heroImageMode).toBe('aspectFill');
   });
 
   it('hero 使用独立错误处理并以包内山景和 CSS alpine 兜底', () => {

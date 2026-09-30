@@ -54,6 +54,8 @@ function identityViewData(fallbackError = '') {
 
 Page({
   loadRequestId: 0,
+  heroTouchStartY: 0,
+  heroPageScrollTop: 0,
   data: {
     profile: null as any,
     loading: true,
@@ -70,6 +72,9 @@ Page({
     heroBackgroundAvatarUrl: '',
     heroFallbackImageUrl: HERO_BRAND_IMAGE,
     heroCard: null as PersonalCardView | null,
+    heroPullOffset: 0,
+    heroImageMode: 'aspectFill' as 'aspectFill' | 'aspectFit',
+    currentHeroIndex: 0,
     hasGuidance: false,
   },
   async onShow() {
@@ -141,6 +146,36 @@ Page({
         });
       }),
     ]);
+  },
+  onPageScroll(event: { scrollTop?: number }) {
+    this.heroPageScrollTop = Math.max(0, Number(event.scrollTop) || 0);
+  },
+  heroTouchStart(event: { touches?: { clientY?: number }[] }) {
+    this.heroTouchStartY = Number(event.touches?.[0]?.clientY) || 0;
+  },
+  heroTouchMove(event: { touches?: { clientY?: number }[] }) {
+    if (this.heroPageScrollTop > 0 || !this.data.heroBackgrounds.length) return;
+    const currentY = Number(event.touches?.[0]?.clientY) || 0;
+    const distance = Math.max(0, Math.min(180, currentY - this.heroTouchStartY));
+    this.setData({
+      heroPullOffset: distance,
+      heroImageMode: distance >= 48 ? 'aspectFit' : 'aspectFill',
+    });
+  },
+  heroTouchEnd() {
+    if (!this.data.heroPullOffset && this.data.heroImageMode === 'aspectFill') return;
+    this.setData({ heroPullOffset: 0, heroImageMode: 'aspectFill' });
+  },
+  heroSwiperChange(event: { detail?: { current?: number } }) {
+    this.setData({ currentHeroIndex: Math.max(0, Number(event.detail?.current) || 0) });
+  },
+  previewHeroImage(event: HeroImageErrorEvent) {
+    const urls = (this.data.heroBackgrounds as { url: string }[]).map((item) => item.url);
+    if (!urls.length) return;
+    const requested = event.currentTarget.dataset.url;
+    const current =
+      requested && urls.includes(requested) ? requested : urls[this.data.currentHeroIndex];
+    wx.previewImage({ current: current || urls[0], urls });
   },
   heroBackgroundError(event: HeroImageErrorEvent) {
     const backgrounds = this.data.heroBackgrounds as { url: string }[];

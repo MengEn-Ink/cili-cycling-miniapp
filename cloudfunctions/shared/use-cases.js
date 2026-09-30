@@ -72,13 +72,12 @@ async function submitRegistration(store, { openid, activityId, options }, now = 
   if (typeof activityId !== 'string' || !activityId) fail('VALIDATION_FAILED', '缺少活动 ID');
   const id = registrationId(activityId, openid);
   return store.transaction(async (tx) => {
-    const [activity, profile, existing, credential, snapshot] = await Promise.all([
-      tx.getActivity(activityId),
-      tx.getProfile(openid),
-      tx.getRegistration(id),
-      tx.getStravaCredential(openid),
-      tx.getStravaSnapshot(openid),
-    ]);
+    // 云开发事务复用同一事务上下文，依赖读取必须串行，避免并发请求令事务失效。
+    const activity = await tx.getActivity(activityId);
+    const profile = await tx.getProfile(openid);
+    const existing = await tx.getRegistration(id);
+    const credential = await tx.getStravaCredential(openid);
+    const snapshot = await tx.getStravaSnapshot(openid);
     assertActivityOpen(activity, now);
     assertProfileReady(profile);
     assertCanSubmit(existing);

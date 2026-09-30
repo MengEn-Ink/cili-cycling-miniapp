@@ -413,6 +413,41 @@ test('提交在同一事务写 submitted 审计并只保存 nullable Strava 白�
   });
 });
 
+test('报名事务按顺序读取依赖，避免共享事务上下文发生并发请求', async () => {
+  const base = memoryStore();
+  const guardedStore = {
+    state: base.state,
+    transaction(work) {
+      return base.transaction((tx) => {
+        let reading = false;
+        const serialRead =
+          (read) =>
+          async (...args) => {
+            assert.equal(reading, false, '事务读取发生并发');
+            reading = true;
+            await Promise.resolve();
+            try {
+              return await read(...args);
+            } finally {
+              reading = false;
+            }
+          };
+        return work({
+          ...tx,
+          getActivity: serialRead(tx.getActivity),
+          getProfile: serialRead(tx.getProfile),
+          getRegistration: serialRead(tx.getRegistration),
+          getStravaCredential: serialRead(tx.getStravaCredential),
+          getStravaSnapshot: serialRead(tx.getStravaSnapshot),
+        });
+      });
+    },
+  };
+
+  const result = await submitRegistration(guardedStore, input, now);
+  assert.equal(result.status, 'pending');
+});
+
 test('事务边界在满员时不写入；并发提交不会超过 capacity', async () => {
   const full = memoryStore({ activity: { capacity: 1, occupied_count: 1 } });
   await assert.rejects(

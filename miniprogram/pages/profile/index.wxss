@@ -664,19 +664,47 @@ brand-logo {
 }
 
 .profile-hero {
-  min-height: 390rpx;
-  padding: 42rpx 20rpx 18rpx;
+  box-sizing: border-box;
+  display: flex;
+  min-height: 600rpx;
+  padding: 236rpx 20rpx 18rpx;
+  flex-direction: column;
+  justify-content: flex-end;
   border: 1rpx solid #3a3a3c;
   border-radius: 48rpx;
   background: #1c1c1e;
+  transition: height 180ms ease-out;
 }
 
 .profile-hero.has-bg {
-  min-height: 390rpx;
+  min-height: 600rpx;
 }
 
 .hero-shade {
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.64) 48%, #000 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.06),
+    rgba(0, 0, 0, 0.28) 56%,
+    rgba(0, 0, 0, 0.84) 100%
+  );
+  transition: opacity 160ms ease-out;
+}
+
+.profile-hero.is-pulling .hero-shade {
+  opacity: 0.34;
+}
+
+.hero-photo-hint {
+  position: absolute;
+  top: 22rpx;
+  right: 24rpx;
+  z-index: 2;
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  background: rgba(0, 0, 0, 0.42);
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 20rpx;
+  pointer-events: none;
 }
 
 .hero-identity {
