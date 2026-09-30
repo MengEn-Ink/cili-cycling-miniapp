@@ -1,25 +1,40 @@
+page {
+  background: #0b0b0c;
+}
+
 .form-page {
   box-sizing: border-box;
   min-height: 100vh;
+  padding-top: 12rpx;
+  padding-right: 40rpx;
   padding-bottom: var(--fixed-action-reserve);
   padding-bottom: calc(var(--fixed-action-reserve) + constant(safe-area-inset-bottom));
   padding-bottom: calc(var(--fixed-action-reserve) + env(safe-area-inset-bottom));
+  padding-left: 40rpx;
   overflow-x: hidden;
-  background: #0b0b0c;
+  background: #000;
   color: #f7f7f5;
 }
 
 .form-head {
-  padding: 12rpx 0 8rpx;
+  padding: 4rpx 0 18rpx;
+}
+
+.step-line,
+.title-row,
+.context-head,
+.strava-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14rpx;
+  min-width: 0;
 }
 
 .step-line {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  margin-bottom: 20rpx;
+  margin-bottom: 14rpx;
   color: #747c77;
-  font-size: 20rpx;
+  font-size: 19rpx;
   font-weight: 800;
   letter-spacing: 1rpx;
 }
@@ -39,47 +54,37 @@
 
 .step-active,
 .step-active .step-number {
-  color: #e9753b;
+  color: #ff5722;
 }
 
 .step-rule {
   min-width: 12rpx;
   height: 1rpx;
   flex: 1;
-  margin: 0 10rpx;
-  background: #3a3a3e;
-}
-
-.title-row,
-.context-head,
-.strava-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16rpx;
-  min-width: 0;
+  margin: 0 8rpx;
+  background: #3a3a3c;
 }
 
 .hero-kicker,
 .context-kicker {
-  color: #d55b1f;
-  font-size: 20rpx;
-  font-weight: 800;
+  color: #ff5722;
+  font-size: 18rpx;
+  font-weight: 900;
   letter-spacing: 2rpx;
 }
 
 .form-title {
-  margin: 4rpx 0 14rpx;
+  margin: 3rpx 0 12rpx;
   font-size: 42rpx;
   font-weight: 900;
-  line-height: 1.2;
+  line-height: 1.15;
   letter-spacing: -1rpx;
 }
 
 .step-caption {
   flex: 0 0 auto;
   color: #89918b;
-  font-size: 19rpx;
+  font-size: 18rpx;
   font-weight: 800;
 }
 
@@ -87,18 +92,21 @@
 .submit-note {
   box-sizing: border-box;
   width: 100%;
-  padding: 18rpx 20rpx;
   overflow: hidden;
-  border: 1rpx solid #303735;
-  border-left: 6rpx solid #d55b1f;
-  border-radius: 8rpx;
-  background: #111517;
+  background: #1c1c1e;
+}
+
+.activity-context {
+  padding: 16rpx 20rpx;
+  border: 1rpx solid #3a3a3c;
+  border-left: 6rpx solid #ff5722;
+  border-radius: 32rpx 32rpx 14rpx 14rpx;
 }
 
 .context-status {
   min-width: 0;
-  color: #e9a071;
-  font-size: 21rpx;
+  color: #ff8a65;
+  font-size: 20rpx;
   font-weight: 800;
   text-align: right;
   overflow-wrap: anywhere;
@@ -106,11 +114,11 @@
 
 .context-title {
   display: -webkit-box;
-  margin-top: 5rpx;
+  margin-top: 4rpx;
   overflow: hidden;
-  font-size: 29rpx;
+  font-size: 28rpx;
   font-weight: 900;
-  line-height: 1.35;
+  line-height: 1.3;
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -120,75 +128,92 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4rpx 18rpx;
-  margin-top: 6rpx;
+  margin-top: 4rpx;
   color: #a8b0ab;
-  font-size: 22rpx;
-  line-height: 1.45;
+  font-size: 21rpx;
 }
 
 .submit-note {
-  margin-top: 10rpx;
-  padding-top: 12rpx;
-  padding-bottom: 12rpx;
-  border-left-color: #69716c;
+  margin-top: 2rpx;
+  padding: 11rpx 20rpx 13rpx;
+  border-radius: 14rpx 14rpx 28rpx 28rpx;
   color: #a8b0ab;
-  font-size: 21rpx;
-  line-height: 1.5;
+  font-size: 20rpx;
+  line-height: 1.45;
+}
+
+.form-surface {
+  overflow: hidden;
+  margin-top: 4rpx;
+  border: 1rpx solid #3a3a3c;
+  border-radius: 40rpx;
+  background: #1c1c1e;
+}
+
+.form-section {
+  padding: 18rpx 20rpx;
+  border-top: 1rpx solid #3a3a3c;
+}
+
+.form-section.first-section {
+  border-top: 0;
+}
+
+.form-section.last-section {
+  padding-bottom: 22rpx;
 }
 
 .form-page .section-label {
   display: flex;
   align-items: flex-start;
   gap: 12rpx;
-  margin-top: 22rpx;
   color: #f4f7f2;
-  font-size: 27rpx;
+  font-size: 26rpx;
   font-weight: 900;
 }
 
 .section-label > text {
   flex: 0 0 auto;
-  color: #d55b1f;
-  font-size: 20rpx;
+  color: #ff5722;
+  font-size: 19rpx;
   line-height: 1.8;
 }
 
 .section-hint {
   margin-top: 1rpx;
   color: #89918b;
-  font-size: 20rpx;
+  font-size: 19rpx;
   font-weight: 500;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 .form-card {
   box-sizing: border-box;
   width: 100%;
   margin-top: 9rpx;
-  padding: 20rpx;
-  overflow: hidden;
-  border: 1rpx solid #2b3130;
-  border-radius: 10rpx;
-  background: #171b1d;
+  background: #1c1c1e;
   color: #f4f7f2;
-  box-shadow: 0 10rpx 24rpx rgba(0, 0, 0, 0.22);
 }
 
 .identity-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) auto;
   align-items: center;
-  gap: 14rpx;
+  gap: 12rpx;
+  padding: 14rpx 16rpx;
+  border-radius: 24rpx;
+  background: #111113;
 }
 
-.identity-main {
+.identity-main,
+.strava-copy {
   min-width: 0;
 }
 
 .identity-label,
 .info-label {
   color: #89918b;
-  font-size: 20rpx;
+  font-size: 19rpx;
 }
 
 .identity-value,
@@ -206,21 +231,22 @@
 }
 
 .field-hint {
-  margin-top: 5rpx;
+  margin-top: 4rpx;
   color: #929a95;
-  font-size: 21rpx;
-  line-height: 1.45;
+  font-size: 20rpx;
+  line-height: 1.4;
   overflow-wrap: anywhere;
 }
 
 .required,
 .optional {
   margin-left: 6rpx;
-  font-size: 19rpx;
+  font-size: 18rpx;
 }
 
-.required {
-  color: #e9753b;
+.required,
+.text-button {
+  color: #ff5722;
 }
 
 .optional {
@@ -231,22 +257,22 @@
 .text-button {
   box-sizing: border-box;
   min-width: 94rpx;
-  min-height: 88rpx;
+  min-height: 76rpx;
   margin: 0;
   padding: 0 14rpx;
-  border: 1rpx solid #4a524e;
-  background: transparent;
-  color: #e9753b;
-  font-size: 22rpx;
-  font-weight: 800;
-  line-height: 86rpx;
+  border: 1rpx solid #3a3a3c;
+  border-radius: 20rpx;
+  background: #1c1c1e;
+  font-size: 21rpx;
+  font-weight: 900;
+  line-height: 74rpx;
 }
 
 .choice-group {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12rpx;
-  margin-top: 14rpx;
+  gap: 10rpx;
+  margin-top: 11rpx;
 }
 
 .choice {
@@ -254,13 +280,13 @@
   display: flex;
   align-items: flex-start;
   min-width: 0;
-  min-height: 112rpx;
-  padding: 14rpx 12rpx;
-  border: 2rpx solid #343b39;
-  border-radius: 10rpx;
-  background: #0d1012;
+  min-height: 104rpx;
+  padding: 13rpx 11rpx;
+  border: 1rpx solid #3a3a3c;
+  border-radius: 24rpx;
+  background: #111113;
   color: #cbd1cc;
-  font-size: 23rpx;
+  font-size: 22rpx;
 }
 
 .choice radio {
@@ -274,16 +300,16 @@
 }
 
 .choice-title {
-  font-weight: 800;
+  font-weight: 900;
   overflow-wrap: anywhere;
 }
 
 .choice-meta,
 .choice-remain {
-  margin-top: 3rpx;
+  margin-top: 2rpx;
   color: #929a95;
-  font-size: 20rpx;
-  line-height: 1.35;
+  font-size: 19rpx;
+  line-height: 1.3;
   overflow-wrap: anywhere;
 }
 
@@ -293,14 +319,14 @@
 
 .choice.selected,
 .segment.selected {
-  border-color: #d55b1f;
-  background: rgba(213, 91, 31, 0.12);
-  color: #ffe6d6;
+  border-color: #ff5722;
+  background: #2b1812;
+  color: #fff;
 }
 
 .choice.is-disabled {
-  border-color: #292e2c;
-  background: #0a0c0d;
+  border-color: #29292b;
+  background: #0d0d0e;
   color: #68706b;
   opacity: 0.72;
 }
@@ -308,11 +334,11 @@
 .experience-segment {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin-top: 12rpx;
+  margin-top: 10rpx;
   overflow: hidden;
-  border: 1rpx solid #3a403e;
-  border-radius: 8rpx;
-  background: #0d1012;
+  border: 1rpx solid #3a3a3c;
+  border-radius: 24rpx;
+  background: #111113;
 }
 
 .segment {
@@ -322,11 +348,11 @@
   justify-content: center;
   min-width: 0;
   min-height: 104rpx;
-  padding: 8rpx 6rpx;
-  border-right: 1rpx solid #3a403e;
+  padding: 6rpx;
+  border-right: 1rpx solid #3a3a3c;
   color: #aeb5b0;
-  font-size: 22rpx;
-  font-weight: 800;
+  font-size: 21rpx;
+  font-weight: 900;
   text-align: center;
   overflow-wrap: anywhere;
 }
@@ -347,71 +373,79 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16rpx;
+  gap: 14rpx;
   min-width: 0;
-  margin-top: 18rpx;
-  padding: 16rpx;
-  border: 1rpx solid #343b39;
-  border-left: 5rpx solid #69716c;
-  border-radius: 8rpx;
-  background: #0d1012;
+  margin-top: 12rpx;
+  padding: 13rpx 14rpx;
+  border: 1rpx solid #3a3a3c;
+  border-radius: 24rpx;
+  background: #111113;
 }
 
 .strava-copy {
-  min-width: 0;
   flex: 1;
+}
+
+.strava-brand {
+  display: inline-flex;
+  padding: 4rpx 9rpx;
+  border-radius: 8rpx;
+  background: #ff5722;
+  color: #fff;
+  font-size: 18rpx;
+  font-weight: 900;
+  letter-spacing: 1rpx;
 }
 
 .readiness-badge {
   flex: 0 0 auto;
   padding: 3rpx 9rpx;
   border-radius: 999rpx;
-  background: #292f2c;
+  background: #29292b;
   color: #bfc7c1;
-  font-size: 19rpx;
+  font-size: 18rpx;
   font-weight: 800;
 }
 
 .status-ready {
-  border-left-color: #6f9b82;
+  border-color: #496957;
 }
 
 .status-ready .readiness-badge {
-  background: rgba(111, 155, 130, 0.18);
+  background: #203128;
   color: #a9cbb6;
 }
 
 .status-syncing,
 .status-authorizing {
-  border-left-color: #d59a3a;
+  border-color: #8c6529;
 }
 
 .status-failed,
 .status-disconnected {
-  border-left-color: #d55b1f;
+  border-color: #ff5722;
 }
 
 .remark {
   box-sizing: border-box;
   width: 100%;
-  min-height: 180rpx;
-  margin-top: 14rpx;
-  padding: 16rpx;
-  border: 1rpx solid #343b39;
-  border-radius: 8rpx;
-  background: #0d1012;
+  min-height: 140rpx;
+  margin-top: 10rpx;
+  padding: 14rpx;
+  border: 1rpx solid #3a3a3c;
+  border-radius: 24rpx;
+  background: #111113;
   color: #f4f7f2;
 }
 
 .safety-box {
   display: grid;
   grid-template-columns: minmax(110rpx, 0.7fr) minmax(0, 1.7fr);
-  gap: 16rpx;
-  margin-top: 14rpx;
-  padding: 16rpx;
-  border: 1rpx solid #303735;
-  border-radius: 8rpx;
-  background: #0d1012;
+  gap: 14rpx;
+  margin-top: 10rpx;
+  padding: 13rpx 14rpx;
+  border-radius: 20rpx;
+  background: #111113;
 }
 
 .info-value {
@@ -420,30 +454,30 @@
 }
 
 .privacy-note {
-  margin-top: 12rpx;
+  margin-top: 9rpx;
   color: #929a95;
-  font-size: 20rpx;
-  line-height: 1.5;
+  font-size: 19rpx;
+  line-height: 1.45;
 }
 
 .error-card {
-  margin: 20rpx 0;
-  padding: 20rpx;
+  margin: 16rpx 0;
+  padding: 18rpx;
   border: 1rpx solid #ff5c61;
-  border-radius: 8rpx;
+  border-radius: 24rpx;
   background: #281417;
   color: #ff9a9d;
 }
 
 .error-title {
-  margin-bottom: 8rpx;
+  margin-bottom: 6rpx;
   color: #ffd4d5;
   font-weight: 900;
 }
 
 .error-item {
-  margin-top: 5rpx;
-  line-height: 1.45;
+  margin-top: 4rpx;
+  line-height: 1.4;
   overflow-wrap: anywhere;
 }
 
@@ -452,7 +486,7 @@
   min-height: var(--fixed-action-reserve);
   min-height: calc(var(--fixed-action-reserve) + constant(safe-area-inset-bottom));
   min-height: calc(var(--fixed-action-reserve) + env(safe-area-inset-bottom));
-  border-top: 1rpx solid #303735;
+  border-top: 1rpx solid #3a3a3c;
   background: rgba(11, 11, 12, 0.96);
   box-shadow: 0 -8rpx 28rpx rgba(0, 0, 0, 0.42);
 }
@@ -460,24 +494,26 @@
 .action-bar {
   display: grid;
   grid-template-columns: minmax(150rpx, 0.7fr) minmax(0, 1.3fr);
-  gap: 14rpx;
+  gap: 12rpx;
 }
 
 .action-bar button {
   box-sizing: border-box;
   width: 100%;
+  min-height: 96rpx;
   margin: 0;
+  border-radius: 28rpx !important;
 }
 
 .back-button {
-  border: 1rpx solid #4a524e;
-  background: #111517;
+  border: 1rpx solid #3a3a3c;
+  background: #1c1c1e;
   color: #cbd1cc;
 }
 
 .form-page .submit-button {
-  background: #a94416;
-  color: #f7f7f5;
+  background: #ff5722;
+  color: #fff;
   font-weight: 900;
   letter-spacing: 2rpx;
 }
@@ -489,26 +525,15 @@
 .disabled-hint {
   grid-column: 1 / -1;
   color: #9aa39d;
-  font-size: 20rpx;
+  font-size: 19rpx;
   text-align: center;
-}
-
-@media (max-width: 320px) {
-  .experience-segment {
-    box-sizing: border-box;
-    width: 100%;
-  }
-
-  .segment {
-    padding-right: 2rpx;
-    padding-left: 2rpx;
-    font-size: 20rpx;
-  }
 }
 
 @media (max-width: 340px) {
   .page.form-page {
     --fixed-action-reserve: var(--fixed-action-reserve-narrow);
+    padding-right: 32rpx;
+    padding-left: 32rpx;
   }
 
   .form-title {
@@ -530,7 +555,8 @@
     grid-template-columns: 1fr;
   }
 
-  .identity-action {
+  .identity-action,
+  .strava-row .text-button {
     width: 100%;
   }
 
@@ -543,75 +569,20 @@
     flex-direction: column;
   }
 
-  .strava-row .text-button {
-    width: 100%;
-  }
-
   .disabled-hint {
     grid-column: 1;
   }
 }
 
-/* Design reference alignment. */
-.page.form-page {
-  padding-right: 40rpx;
-  padding-left: 40rpx;
-  background: #000;
-}
-
-.activity-context,
-.submit-note,
-.form-card {
-  border-color: #3a3a3c;
-  border-radius: 40rpx;
-  background: #1c1c1e;
-  color: #f4f7f2;
-  box-shadow: none;
-}
-
-.activity-context {
-  border-left-color: #ff5722;
-}
-
-.choice,
-.experience-segment,
-.strava-row,
-.remark,
-.safety-box {
-  border-color: #3a3a3c;
-  border-radius: 16rpx;
-  background: #2c2c2e;
-}
-
-.choice.selected,
-.segment.selected {
-  border-color: #ff5722;
-  background: rgba(255, 87, 34, 0.16);
-}
-
-.hero-kicker,
-.context-kicker,
-.section-label > text,
-.required,
-.text-button {
-  color: #ff5722;
-}
-
-.form-page .submit-button {
-  min-height: 104rpx;
-  border-radius: 24rpx !important;
-  background: #ff5722;
-}
-
-.back-button {
-  min-height: 104rpx;
-  border-radius: 24rpx !important;
-  background: #2c2c2e;
-}
-
 @media (max-width: 320px) {
-  .page.form-page {
-    padding-right: 32rpx;
-    padding-left: 32rpx;
+  .experience-segment {
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .segment {
+    padding-right: 2rpx;
+    padding-left: 2rpx;
+    font-size: 20rpx;
   }
 }

@@ -1,24 +1,33 @@
-<view class="activity-card {{item.coverImage && !coverFailed ? 'activity-card--media' : 'activity-card--plain'}}" bindtap="open" hover-class="activity-card--pressed" hover-stay-time="90">
-  <view class="card-accent"></view>
-  <view class="card-media" wx:if="{{item.coverImage && !coverFailed}}">
-    <image class="card-cover" src="{{item.coverImage}}" mode="aspectFill" lazy-load="{{true}}" binderror="coverImageError" aria-label="{{item.title}}活动封面" />
+<view class="activity-card {{item.coverImage && !coverFailed ? 'activity-card--media' : 'activity-card--plain'}}" bindtap="open" hover-class="activity-card--pressed" hover-stay-time="90" role="button" aria-label="查看活动：{{item.title}}">
+  <view class="card-media">
+    <image wx:if="{{item.coverImage && !coverFailed}}" class="card-cover" src="{{item.coverImage}}" mode="aspectFill" lazy-load="{{true}}" binderror="coverImageError" aria-label="{{item.title}}活动封面" />
+    <view wx:else class="card-placeholder" aria-label="暂无活动封面">
+      <view class="placeholder-orbit"></view>
+      <view class="placeholder-mark">CILI <text>/ RIDE</text></view>
+    </view>
     <view class="card-media-shade"></view>
+    <view class="card-date">
+      <text class="date-label">RIDE DATE</text>
+      <text class="date-value">{{item.displayDate}}</text>
+    </view>
   </view>
   <view class="card-content">
     <view class="card-top">
-      <view class="date-block">
-        <text class="date-label">RIDE DATE</text>
-        <text class="date-value">{{item.date}}</text>
-      </view>
+      <view class="activity-title">{{item.title}}</view>
       <status-pill status="{{item.displayStatus}}" />
     </view>
-    <view class="activity-title">{{item.title}}</view>
-    <view class="route-line">{{item.route.start}} <text class="route-arrow">→</text> {{item.route.end}}</view>
+    <view class="route-line">{{item.route.start || '起点待公布'}} <text class="route-arrow">→</text> {{item.route.end || '终点待公布'}}</view>
     <view class="metrics">
-      <view class="metric-item"><text class="metric-value">{{item.route.distanceKm}}</text><text class="metric-unit">KM 里程</text></view>
-      <view class="metric-item"><text class="metric-value">{{item.route.elevationM}}</text><text class="metric-unit">M 爬升</text></view>
+      <view class="metric-item"><view><text class="metric-value">{{item.route.distanceKm}}</text><text class="metric-suffix"> KM</text></view><text class="metric-unit">里程</text></view>
+      <view class="metric-item"><view><text class="metric-value">{{item.route.elevationM}}</text><text class="metric-suffix"> M</text></view><text class="metric-unit">爬升</text></view>
       <view class="metric-item"><text class="metric-value">{{item.capacity > 0 ? item.remaining : '待公布'}}</text><text class="metric-unit">剩余名额</text></view>
     </view>
-    <view class="card-foot"><text class="level">{{item.route.level}}</text><text class="occupancy">{{item.capacity > 0 ? (item.occupied + ' / ' + item.capacity + ' 人占位') : '名额待公布'}} <text class="arrow">›</text></text></view>
+    <view class="card-foot">
+      <view class="card-meta">
+        <text class="level">{{item.route.level || '难度待公布'}}</text>
+        <text class="occupancy">{{item.capacity > 0 ? (item.occupied + ' / ' + item.capacity + ' 人占位') : '名额待公布'}}</text>
+      </view>
+      <view class="card-cta" aria-hidden="true">查看详情 <text>→</text></view>
+    </view>
   </view>
 </view>

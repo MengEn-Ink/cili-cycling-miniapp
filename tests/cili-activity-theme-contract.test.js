@@ -31,7 +31,7 @@ describe('CILI 活动页静态契约', () => {
   it('活动列表和详情继续渲染现有关键字段', () => {
     expect(activities).toContain('item="{{item}}"');
     expect(detail).toContain('{{item.title}}');
-    expect(detail).toContain('{{item.date}}');
+    expect(detail).toContain('{{displayDate}}');
     expect(detail).toContain('{{item.route.distanceKm}}');
     expect(detail).toContain('{{item.route.elevationM}}');
     expect(detail).toContain('{{item.capacity}}');
@@ -48,14 +48,18 @@ describe('CILI 活动页静态契约', () => {
       "item.capacity > 0 ? (item.occupied + ' / ' + item.capacity + ' 人占位') : '名额待公布'",
     );
     expect(activityCard).toContain('hover-class="activity-card--pressed"');
+    expect(activityCard).toContain('wx:else class="card-placeholder"');
+    expect(activityCard).toContain('class="card-cta"');
+    expect(activityCard).toContain('查看详情');
+    expect(activityCard).toContain('{{item.displayDate}}');
     expect(activityCardStyles).toContain('.activity-card--pressed');
+    expect(activityCardStyles).toContain('.card-placeholder');
+    expect(activityCardStyles).toContain('background: #ff5722;');
   });
 
-  it('列表首屏前置卡片，详情压缩 Hero、时间轴并保留吸底安全区', () => {
-    expect(activities).toContain('class="hero hero--compact activities-hero"');
-    expect(activitiesStyles).toMatch(
-      /\.activities-hero\s*\{[^}]*min-height:\s*(?:1\d\d|2[0-4]\d)rpx/s,
-    );
+  it('列表压缩首屏介绍并前置活动卡，详情压缩 Hero、时间轴并保留吸底安全区', () => {
+    expect(activities).toContain('class="activities-intro"');
+    expect(activities).not.toContain('class="hero hero--compact activities-hero"');
     expect(detail).toContain('class="hero-media"');
     expect(detail).toContain('wx:if="{{galleryImages.length > 1 && !coverFailed}}"');
     expect(detail).toContain('wx:elif="{{galleryImages.length === 1 && !coverFailed}}"');
@@ -73,7 +77,7 @@ describe('CILI 活动页静态契约', () => {
     expect(activitiesStyles).toContain('background: #000;');
     expect(activityCardStyles).toContain('background: #1c1c1e;');
     expect(activityCardStyles).toContain('background: #2c2c2e;');
-    expect(activityCardStyles).toContain('border-radius: 48rpx;');
+    expect(activityCardStyles).toContain('border-radius: 32rpx;');
     expect(detailStyles).toContain('background: #ff5722 !important;');
     expect(themeSources).not.toMatch(/pink|#ff69b4|#ffc0cb|#e91e63|#ec4899/i);
   });

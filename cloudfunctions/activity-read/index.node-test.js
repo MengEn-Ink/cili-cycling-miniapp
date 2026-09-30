@@ -3,7 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');
 
-function loadMain(activity, list = []) {
+function loadMain(activity, list = [], options = {}) {
   const calls = [];
   const database = {
     collection(name) {
@@ -32,6 +32,10 @@ function loadMain(activity, list = []) {
     init() {},
     database: () => database,
     getWXContext: () => ({ OPENID: 'member-openid' }),
+    async getTempFileURL(payload) {
+      calls.push({ type: 'getTempFileURL', payload });
+      return options.getTempFileURL ? options.getTempFileURL(payload) : { fileList: [] };
+    },
   };
   const originalLoad = Module._load;
   Module._load = function load(request, parent, isMain) {
@@ -168,4 +172,65 @@ test('公开活动兼容只有旧封面且路线无坐标的数据', () => {
   );
   assert.equal(result.cover_image, 'cloud://legacy.jpg');
   assert.equal(result.images, undefined);
+});
+
+test('列表批量将活动云存储图片解析为 HTTPS 临时地址并去重请求', async () => {
+  const shared = 'cloud://bucket/shared.jpg';
+  const second = 'cloud://bucket/second.jpg';
+  const external = 'https://images.example/third.jpg';
+  const list = [
+    {
+      _id: 'a1',
+      title: '活动一',
+      status: 'published',
+      cover_image: shared,
+      images: [shared, second],
+    },
+    { _id: 'a2', title: '活动二', status: 'published', cover_image: shared, images: [external] },
+  ];
+  const { main, calls } = loadMain(undefined, list, {
+    getTempFileURL: async ({ fileList }) => ({
+      fileList: fileList.map((fileID) => ({
+        fileID,
+        status: 0,
+        tempFileURL: `https://temp.example/${fileID.endsWith('shared.jpg') ? 'shared' : 'second'}.jpg`,
+      })),
+    }),
+  });
+
+  const result = await main({ action: 'list' });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(calls.find((call) => call.type === 'getTempFileURL').payload.fileList, [
+    shared,
+    second,
+  ]);
+  assert.equal(result.data[0].cover_image, 'https://temp.example/shared.jpg');
+  assert.deepEqual(result.data[0].images, [
+    'https://temp.example/shared.jpg',
+    'https://temp.example/second.jpg',
+  ]);
+  assert.deepEqual(result.data[1].images, [external]);
+});
+
+test('详情临时地址解析失败时保留原始 fileID 供客户端继续降级', async () => {
+  const fileID = 'cloud://bucket/cover.jpg';
+  const activity = {
+    _id: 'a-media',
+    title: '图集活动',
+    status: 'published',
+    cover_image: fileID,
+    images: [fileID],
+  };
+  const { main } = loadMain(activity, [], {
+    getTempFileURL: async () => {
+      throw new Error('storage unavailable');
+    },
+  });
+
+  const result = await main({ action: 'detail', activityId: activity._id });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.data.cover_image, fileID);
+  assert.deepEqual(result.data.images, [fileID]);
 });
