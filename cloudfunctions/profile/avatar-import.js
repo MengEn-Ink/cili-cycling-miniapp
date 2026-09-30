@@ -115,8 +115,7 @@ async function resolvePublicAddresses(hostname, lookup = dns.lookup, options = {
   let addresses;
   for (let attempt = 0; attempt < MAX_NETWORK_ATTEMPTS; attempt += 1) {
     const remainingMs = deadlineAt - now();
-    if (remainingMs <= 0)
-      throw avatarError('STRAVA_AVATAR_TOTAL_TIMEOUT', 'Strava 头像下载超时');
+    if (remainingMs <= 0) throw avatarError('STRAVA_AVATAR_TOTAL_TIMEOUT', 'Strava 头像下载超时');
     try {
       addresses = await withinDeadline(
         lookup(hostname, { all: true, verbatim: true }),
@@ -129,8 +128,7 @@ async function resolvePublicAddresses(hostname, lookup = dns.lookup, options = {
         RETRYABLE_NETWORK_CODES.has(error?.code) &&
         attempt + 1 < MAX_NETWORK_ATTEMPTS &&
         now() < deadlineAt;
-      if (!canRetry)
-        throw avatarError('STRAVA_AVATAR_DNS_FAILED', '无法解析 Strava 头像地址');
+      if (!canRetry) throw avatarError('STRAVA_AVATAR_DNS_FAILED', '无法解析 Strava 头像地址');
     }
   }
   if (!Array.isArray(addresses) || !addresses.length)

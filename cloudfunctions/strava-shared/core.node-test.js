@@ -261,8 +261,7 @@ test('readiness 常量和 fresh canonical snapshot 快路径', () => {
     deriveReadiness({
       credential: {
         ...credential,
-        athlete_avatar_url:
-          'https://dgalywyr863hv.cloudfront.net/pictures/athletes/42/large.jpg',
+        athlete_avatar_url: 'https://dgalywyr863hv.cloudfront.net/pictures/athletes/42/large.jpg',
       },
       snapshot,
       hasActiveOAuthState: false,
