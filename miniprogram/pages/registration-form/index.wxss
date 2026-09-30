@@ -321,7 +321,7 @@
   align-items: center;
   justify-content: center;
   min-width: 0;
-  min-height: 88rpx;
+  min-height: 104rpx;
   padding: 8rpx 6rpx;
   border-right: 1rpx solid #3a403e;
   color: #aeb5b0;
@@ -381,7 +381,8 @@
   color: #a9cbb6;
 }
 
-.status-syncing {
+.status-syncing,
+.status-authorizing {
   border-left-color: #d59a3a;
 }
 
@@ -490,6 +491,19 @@
   color: #9aa39d;
   font-size: 20rpx;
   text-align: center;
+}
+
+@media (max-width: 320px) {
+  .experience-segment {
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .segment {
+    padding-right: 2rpx;
+    padding-left: 2rpx;
+    font-size: 20rpx;
+  }
 }
 
 @media (max-width: 340px) {
