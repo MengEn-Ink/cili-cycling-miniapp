@@ -21,7 +21,7 @@ page {
   aspect-ratio: 3 / 4;
   min-height: 820rpx;
   border: 1rpx solid #3a3a3c;
-  border-radius: 48rpx;
+  border-radius: var(--radius-display);
   background: #1c1c1e;
 }
 
@@ -128,7 +128,7 @@ page {
   width: 26rpx;
   height: 21rpx;
   border: 6rpx solid #f7f7f5;
-  border-right-color: #ff5722;
+  border-right-color: var(--color-brand);
   border-radius: 8rpx 2rpx 8rpx 8rpx;
   transform: skewX(-9deg);
 }
@@ -151,7 +151,7 @@ page {
 }
 
 .strava-pill.status-verified {
-  background: #ff5722;
+  background: var(--color-brand);
 }
 
 .status-dot {
@@ -166,7 +166,7 @@ page {
 
 .status-partial,
 .status-syncing {
-  color: #ff8a65;
+  color: var(--color-brand);
 }
 
 .status-repair {
@@ -227,7 +227,7 @@ page {
   position: relative;
   padding: 18rpx 20rpx 16rpx;
   border: 1rpx solid #3a3a3c;
-  border-radius: 32rpx;
+  border-radius: var(--radius-display);
   background: rgba(28, 28, 30, 0.94);
   backdrop-filter: blur(22rpx);
 }
@@ -238,14 +238,14 @@ page {
   bottom: 0;
   width: 32rpx;
   height: 32rpx;
-  background: #ff5722;
+  background: var(--color-brand);
   content: '';
   clip-path: polygon(100% 0, 100% 100%, 0 100%);
 }
 
 .metric-kicker {
   margin-bottom: 12rpx;
-  color: #ff5722;
+  color: var(--color-brand);
   font-size: 18rpx;
   font-weight: 900;
   letter-spacing: 2rpx;
@@ -281,7 +281,7 @@ page {
 
 .metric-unit {
   margin-left: 3rpx;
-  color: #ff5722;
+  color: var(--color-brand);
   font-size: 15rpx;
   font-weight: 800;
 }
@@ -359,7 +359,7 @@ page {
 }
 
 .repair-button {
-  background: #ff5722 !important;
+  background: var(--color-brand) !important;
   color: #fff !important;
 }
 
@@ -417,5 +417,37 @@ page {
 
 /* Keep the established low-saturation event accent available for legacy snapshots. */
 .legacy-event-accent {
-  color: #d55b1f;
+  color: var(--color-brand);
+}
+
+page,
+.capability-page {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.rider-card {
+  border-color: var(--color-border);
+  border-radius: var(--radius-display);
+  background: var(--color-surface);
+}
+.repair-button,
+.photo-button {
+  min-height: 96rpx;
+  border-radius: var(--radius-display);
+}
+.repair-button {
+  background: var(--color-brand) !important;
+  color: var(--color-on-brand) !important;
+}
+.photo-button {
+  border-color: var(--color-border);
+  background: var(--color-surface) !important;
+  color: var(--color-text) !important;
+}
+/* Card artwork stays photographic: its black overlay and white typography are invariant. */
+.theme-light .rider-card {
+  --color-brand: #d55b1f;
+  --color-brand-active: #a94416;
+  --color-brand-soft: rgba(213, 91, 31, 0.14);
+  --color-on-brand: #0b0b0c;
 }

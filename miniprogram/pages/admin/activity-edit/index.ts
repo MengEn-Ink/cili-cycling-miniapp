@@ -1,5 +1,6 @@
 import type { ActivityInput } from '../../../repositories/types';
 import { rideService } from '../../../services/ride-service';
+import { syncPageTheme } from '../../../services/theme-service';
 import { appStore } from '../../../store/app-store';
 import { formatLocalDateTime, parseLocalDateTime } from '../../../utils/date-time';
 import type {
@@ -69,6 +70,8 @@ const isCancel = (error: unknown) =>
 
 Page({
   data: {
+    theme: 'dark',
+    themeClass: 'theme-dark',
     allowed: false,
     isAdmin: false,
     loading: true,
@@ -95,6 +98,9 @@ Page({
     feeIncluded: [] as string[],
     feeExcluded: [] as string[],
     form: emptyForm(),
+  },
+  onShow() {
+    syncPageTheme(this);
   },
   async onLoad(options: Record<string, string>) {
     await appStore.ensureIdentity(wx.cloud);

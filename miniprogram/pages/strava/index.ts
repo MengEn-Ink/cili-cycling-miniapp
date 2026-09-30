@@ -1,6 +1,7 @@
 import type { StravaReadiness } from '../../models';
 import { runPageTask } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
+import { syncPageTheme } from '../../services/theme-service';
 import { invalidateProfilePageCache } from '../../utils/profile-page-cache';
 import {
   pollStravaAuthorization,
@@ -54,6 +55,8 @@ function showBrowserGuide(): Promise<boolean> {
 Page({
   loadRequestId: 0,
   data: {
+    theme: 'dark',
+    themeClass: 'theme-dark',
     loading: true,
     error: '',
     readiness: null as StravaReadiness | null,
@@ -62,6 +65,7 @@ Page({
     busyAction: null as null | 'connect' | 'retry' | 'disconnect',
   },
   onShow() {
+    syncPageTheme(this);
     void this.load();
   },
   onHide() {

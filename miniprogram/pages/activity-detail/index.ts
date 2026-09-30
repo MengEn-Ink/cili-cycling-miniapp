@@ -1,4 +1,5 @@
 import { rideService } from '../../services/ride-service';
+import { syncPageTheme } from '../../services/theme-service';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
 import {
@@ -40,6 +41,8 @@ Page({
   unloaded: false,
   exportBusy: false,
   data: {
+    theme: 'dark',
+    themeClass: 'theme-dark',
     loading: true,
     error: '',
     item: null as any,
@@ -55,6 +58,9 @@ Page({
     coverFailed: false,
     exportingGpx: false,
     activityAction: unavailableAction(),
+  },
+  onShow() {
+    syncPageTheme(this);
   },
   onLoad(q: any) {
     this.unloaded = false;

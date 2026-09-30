@@ -1,4 +1,5 @@
 import { rideService } from '../../services/ride-service';
+import { syncPageTheme } from '../../services/theme-service';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
 import { formatChinaDateTime } from '../../utils/date-time';
@@ -21,6 +22,8 @@ function confirmCancellation(): Promise<boolean> {
 
 Page({
   data: {
+    theme: 'dark',
+    themeClass: 'theme-dark',
     item: null as any,
     activity: null as any,
     loading: true,
@@ -28,6 +31,9 @@ Page({
     cancelling: false,
     statusText: '',
     activityAction: unavailableAction(),
+  },
+  onShow() {
+    syncPageTheme(this);
   },
   async onLoad(q: any) {
     try {

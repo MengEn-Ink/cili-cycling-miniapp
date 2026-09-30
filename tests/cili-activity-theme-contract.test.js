@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { cssBlock, declaration, expectSemantic, themeTokens } from './theme-contract-helpers';
 
 const read = (path) => fs.readFileSync(path, 'utf8');
 const activities = read('miniprogram/pages/activities/index.wxml');
@@ -54,7 +55,10 @@ describe('CILI 活动页静态契约', () => {
     expect(activityCard).toContain('{{item.displayDate}}');
     expect(activityCardStyles).toContain('.activity-card--pressed');
     expect(activityCardStyles).toContain('.card-placeholder');
-    expect(activityCardStyles).toContain('background: #ff5722;');
+    const cta = cssBlock(activityCardStyles, '.card-cta');
+    expectSemantic(declaration(cta, 'background'), '--color-brand');
+    expectSemantic(declaration(cta, 'color'), '--color-on-brand');
+    expect(declaration(cta, 'min-height')).toBe('88rpx');
   });
 
   it('列表压缩首屏介绍并前置活动卡，详情压缩 Hero、时间轴并保留吸底安全区', () => {
@@ -73,12 +77,26 @@ describe('CILI 活动页静态契约', () => {
     expect(detail).toContain('disabled="{{loading || !item || !activityAction.enabled}}"');
   });
 
-  it('使用设计稿深黑、炭灰和鲜橙主题', () => {
-    expect(activitiesStyles).toContain('background: #0b0b0c;');
-    expect(activityCardStyles).toContain('background: #1c1c1e;');
-    expect(activityCardStyles).toContain('background: #2c2c2e;');
-    expect(activityCardStyles).toContain('border-radius: 32rpx;');
-    expect(detailStyles).toContain('background: #ff5722 !important;');
+  it('使用默认暗色、浅色覆盖和 8/16/24rpx 语义层级', () => {
+    const appStyles = read('miniprogram/app.wxss');
+    const dark = themeTokens(appStyles, 'dark');
+    const light = themeTokens(appStyles, 'light');
+    expect(dark['--color-bg']).toBe('#0b0b0c');
+    expect(light['--color-bg']).toBe('#f4f2ed');
+    expect(dark['--radius-sm']).toBe('8rpx');
+    expect(dark['--radius-md']).toBe('16rpx');
+    expect(dark['--radius-display']).toBe('24rpx');
+    const card = cssBlock(activityCardStyles, '.activity-card');
+    expectSemantic(declaration(card, 'background'), '--color-surface');
+    expectSemantic(declaration(card, 'border-radius'), '--radius-display');
+    expectSemantic(
+      declaration(cssBlock(activityCardStyles, '.metric-item'), 'background'),
+      '--color-raised',
+    );
+    expectSemantic(
+      declaration(cssBlock(detailStyles, '.detail-action .btn'), 'background'),
+      '--color-brand',
+    );
     expect(themeSources).not.toMatch(/pink|#ff69b4|#ffc0cb|#e91e63|#ec4899/i);
   });
 });

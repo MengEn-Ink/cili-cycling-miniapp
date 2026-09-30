@@ -558,4 +558,12 @@ describe('个人中心加载状态', () => {
     page.admin();
     expect(wx.navigateTo).not.toHaveBeenCalled();
   });
+
+  it('切换显示主题后立即更新个人中心根主题状态', () => {
+    page.switchTheme({ currentTarget: { dataset: { theme: 'light' } } });
+
+    expect(page.data).toMatchObject({ theme: 'light', themeClass: 'theme-light' });
+    const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
+    expect(template).toContain('aria-checked="{{theme === \'light\'}}"');
+  });
 });

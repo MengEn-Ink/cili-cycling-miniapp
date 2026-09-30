@@ -1,6 +1,7 @@
 // @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { cssBlock, declaration, expectSemantic, themeTokens } from './theme-contract-helpers';
 
 const read = (file: string) => readFileSync(file, 'utf8');
 const pageRoots = [
@@ -85,13 +86,18 @@ describe('品牌与页面体验静态契约', () => {
     expect(detail).not.toContain("item.fee || '费用待补充'");
   });
 
-  it('全局共享表面为深色，并提供低饱和成功状态', () => {
+  it('全局共享表面使用双主题语义 token，并提供低饱和成功状态', () => {
     const appStyles = read('miniprogram/app.wxss');
     const statusStyles = read('miniprogram/components/status-pill/index.wxss');
-    expect(appStyles).toContain('--cili-success: #6f9b82');
-    expect(appStyles).toMatch(/\.card\s*\{[^}]*background:\s*#1b1b1d/s);
-    expect(appStyles).toMatch(/\.fixed\s*\{[^}]*rgba\(11, 11, 12, 0\.97\)/s);
-    expect(statusStyles).toContain('rgba(111, 155, 130, 0.14)');
+    const dark = themeTokens(appStyles, 'dark');
+    const light = themeTokens(appStyles, 'light');
+    expect(dark['--color-success']).toBe('#6f9b82');
+    expect(light['--color-success']).toBe('#3f7457');
+    expectSemantic(declaration(cssBlock(appStyles, '.card'), 'background'), '--color-surface');
+    expectSemantic(declaration(cssBlock(appStyles, '.fixed'), 'background'), '--color-fixed-bar');
+    expect(statusStyles).toContain('background: rgba(111, 155, 130, 0.14)');
+    expect(statusStyles).toContain('border-color: var(--color-success)');
+    expect(statusStyles).toContain('color: var(--color-success-text)');
     expect(`${appStyles}\n${statusStyles}`).not.toMatch(/#39ff14|#00ff00|lime|neon/i);
   });
 });

@@ -1,8 +1,5 @@
-// @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-
-const read = (file: string) => readFileSync(file, 'utf8');
+import { effectiveBlock, declaration, expectSemantic, read } from './theme-contract-helpers';
 
 describe('报名、骑行名片与个人中心设计对齐', () => {
   it('报名表单使用连续深色表面并减少分区卡片碎片', () => {
@@ -16,11 +13,18 @@ describe('报名、骑行名片与个人中心设计对齐', () => {
 
     expect(template).toContain('class="form-surface"');
     expect(template.match(/class="form-section/g)).toHaveLength(4);
-    expect(styles).toMatch(
-      /\.form-surface\s*\{[^}]*border-radius:\s*40rpx[^}]*background:\s*#1c1c1e/s,
-    );
+    const surface = effectiveBlock(styles, '.form-surface');
+    expectSemantic(declaration(surface, 'border-radius'), '--radius-display');
+    expectSemantic(declaration(surface, 'background'), '--color-surface');
     expect(styles).toMatch(/\.form-section\s*\{[^}]*border-top:\s*1rpx solid #3a3a3c/s);
-    expect(styles).toContain('background: #ff5722;');
+    expectSemantic(
+      declaration(effectiveBlock(styles, '.form-section'), 'border-color'),
+      '--color-border',
+    );
+    expectSemantic(
+      declaration(effectiveBlock(styles, '.form-page .submit-button'), 'background'),
+      '--color-brand',
+    );
     expect(styles).not.toContain('linear-gradient');
   });
 
@@ -46,6 +50,10 @@ describe('报名、骑行名片与个人中心设计对齐', () => {
     expect(template).toContain('hero-capability-card {{cardExpanded');
     expect(styles).toMatch(/\.profile-hero\.has-bg\s*\{[^}]*min-height:\s*600rpx/s);
     expect(styles).toMatch(/\.menu-card,\s*\.menu-card:active\s*\{[^}]*min-height:\s*88rpx/s);
-    expect(styles).toContain('color: #ff5722;');
+    expectSemantic(declaration(effectiveBlock(styles, '.chevron'), 'color'), '--color-brand');
+    expectSemantic(
+      declaration(effectiveBlock(styles, '.profile-page .card'), 'background'),
+      '--color-surface',
+    );
   });
 });

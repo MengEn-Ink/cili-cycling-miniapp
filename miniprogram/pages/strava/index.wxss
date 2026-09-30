@@ -16,7 +16,7 @@ page {
   padding: 28rpx 8rpx;
 }
 .strava-head .hero-kicker {
-  color: #d55b1f;
+  color: var(--color-brand);
 }
 .strava-mark {
   display: flex;
@@ -26,7 +26,7 @@ page {
   width: 100rpx;
   height: 100rpx;
   border-radius: 20rpx;
-  background: #d55b1f;
+  background: var(--color-brand);
   color: #0b0b0c;
   font-size: 42rpx;
   font-weight: 900;
@@ -124,14 +124,14 @@ page {
   color: #a8a8ad;
 }
 .strava-page .big {
-  color: #f38a50;
+  color: var(--color-brand);
   font-size: 34rpx;
   font-weight: 900;
 }
 
 .strava-page .btn {
   border: 0;
-  background: #d55b1f;
+  background: var(--color-brand);
   color: #0b0b0c;
   font-weight: 900;
 }
@@ -146,4 +146,58 @@ page {
   border-radius: 14rpx;
   background: rgba(200, 32, 24, 0.12);
   color: #ff7068;
+}
+
+page,
+.strava-page {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.strava-title,
+.status-title,
+.athlete-name {
+  color: var(--color-text);
+}
+.strava-page .muted,
+.status-help,
+.strava-page .section-label {
+  color: var(--color-muted);
+}
+.status-card,
+.strava-page .card {
+  border-color: var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.strava-page .metric {
+  border-color: var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-raised);
+  color: var(--color-muted);
+}
+.strava-mark,
+.strava-page .btn {
+  background: var(--color-brand);
+  color: var(--color-on-brand);
+}
+.strava-page .secondary {
+  border-color: var(--color-border-strong);
+  background: var(--color-input-bg);
+  color: var(--color-text);
+}
+
+.status-ready {
+  border-color: var(--color-success);
+  background: var(--color-success-soft);
+}
+.status-failed,
+.status-disconnected {
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+.status-syncing,
+.status-authorizing {
+  border-color: var(--color-warning);
+  background: var(--color-warning-soft);
 }

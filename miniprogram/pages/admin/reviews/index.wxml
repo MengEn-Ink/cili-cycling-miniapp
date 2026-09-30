@@ -1,4 +1,4 @@
-<view class="page review-page">
+<view class="page review-page {{themeClass}}">
   <brand-logo compact="{{true}}" meta="ADMIN · REVIEW" />
   <view class="review-heading"><view class="hero-kicker">REVIEW</view><view class="hero-title">报名审批</view><view class="hero-subtitle">查看资料并处理报名状态</view></view>
   <view class="card danger" wx:if="{{error}}">{{error}}</view>

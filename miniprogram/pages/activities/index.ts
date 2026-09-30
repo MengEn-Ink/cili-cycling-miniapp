@@ -1,9 +1,12 @@
 import { rideService } from '../../services/ride-service';
+import { syncPageTheme } from '../../services/theme-service';
 import { activityDisplayStatus } from '../../utils/activity';
 import { formatActivityDate } from '../../utils/date-time';
 Page({
   loadRequestId: 0,
   data: {
+    theme: 'dark',
+    themeClass: 'theme-dark',
     loading: true,
     refreshing: false,
     error: '',
@@ -11,6 +14,7 @@ Page({
     items: [] as any[],
   },
   onShow() {
+    syncPageTheme(this);
     void this.load();
   },
   onHide() {

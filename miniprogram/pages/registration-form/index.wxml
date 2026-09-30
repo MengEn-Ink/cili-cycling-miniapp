@@ -1,4 +1,4 @@
-<view class="page form-page">
+<view class="page form-page {{themeClass}}">
   <state-view loading="{{loading}}" error="{{!profile && errors.length ? errors[0] : ''}}" loading-title="正在检查活动、资料与报名条件" loading-copy="正在核对活动名额、个人资料与 Strava 数据">
   <block wx:if="{{profile}}">
     <view class="form-head">

@@ -1,21 +1,81 @@
-page {
-  --cili-black: #0b0b0c;
-  --cili-charcoal: #1b1b1d;
-  --cili-panel: #242427;
-  --cili-border: #3a3a3e;
-  --cili-silver: #a8a8ad;
-  --cili-white: #f7f7f5;
-  --cili-orange: #d55b1f;
-  --cili-orange-dark: #a94416;
-  --cili-red: #c82018;
-  --cili-success: #6f9b82;
+page,
+.theme-dark {
+  --color-bg: #0b0b0c;
+  --color-surface: #1b1b1d;
+  --color-raised: #242427;
+  --color-text: #f7f7f5;
+  --color-muted: #a8a8ad;
+  --color-subtle: #85858a;
+  --color-border: #3a3a3e;
+  --color-border-strong: #55555b;
+  --color-input-bg: #151517;
+  --color-fixed-bar: rgba(11, 11, 12, 0.97);
+  --color-overlay: rgba(0, 0, 0, 0.76);
+  --color-shadow: rgba(0, 0, 0, 0.34);
+  --color-brand: #d55b1f;
+  --color-brand-active: #a94416;
+  --color-brand-soft: rgba(213, 91, 31, 0.14);
+  --color-on-brand: #0b0b0c;
+  --color-danger: #c82018;
+  --color-danger-text: #ff8f86;
+  --color-danger-soft: rgba(200, 32, 24, 0.12);
+  --color-success: #6f9b82;
+  --color-success-text: #9bc2aa;
+  --color-success-soft: rgba(111, 155, 130, 0.14);
+  --color-warning: #c88418;
+  --color-warning-text: #e7b66a;
+  --color-warning-soft: rgba(200, 132, 24, 0.12);
+  --radius-sm: 8rpx;
+  --radius-md: 16rpx;
+  --radius-display: 24rpx;
+  --cili-black: var(--color-bg);
+  --cili-charcoal: var(--color-surface);
+  --cili-panel: var(--color-raised);
+  --cili-border: var(--color-border);
+  --cili-silver: var(--color-muted);
+  --cili-white: var(--color-text);
+  --cili-orange: var(--color-brand);
+  --cili-orange-dark: var(--color-brand-active);
+  --cili-red: var(--color-danger);
+  --cili-success: var(--color-success);
   --tab-page-bottom-space: 52rpx;
   --fixed-action-reserve: 210rpx;
   --fixed-action-reserve-narrow: 320rpx;
+}
+
+.theme-light {
+  --color-bg: #f4f2ed;
+  --color-surface: #ffffff;
+  --color-raised: #ebe8e1;
+  --color-text: #151515;
+  --color-muted: #62605b;
+  --color-subtle: #7b7872;
+  --color-border: #d4d0c8;
+  --color-border-strong: #aaa59b;
+  --color-input-bg: #f8f6f1;
+  --color-fixed-bar: rgba(255, 255, 255, 0.96);
+  --color-overlay: rgba(0, 0, 0, 0.72);
+  --color-shadow: rgba(35, 31, 25, 0.16);
+  --color-brand: #a83f0d;
+  --color-brand-active: #843007;
+  --color-brand-soft: rgba(168, 63, 13, 0.12);
+  --color-on-brand: #ffffff;
+  --color-danger: #b3261e;
+  --color-danger-text: #9f2721;
+  --color-danger-soft: #fbe9e7;
+  --color-success: #3f7457;
+  --color-success-text: #356348;
+  --color-success-soft: #e5f2e9;
+  --color-warning: #9a6415;
+  --color-warning-text: #80520f;
+  --color-warning-soft: #fff0d4;
+}
+
+page {
   min-height: 100%;
   height: 100%;
-  background: #0b0b0c;
-  color: #f7f7f5;
+  background: var(--color-bg);
+  color: var(--color-text);
   font-size: 28rpx;
   line-height: 1.55;
 }
@@ -46,8 +106,8 @@ textarea {
   padding-bottom: 168rpx;
   padding-bottom: calc(168rpx + constant(safe-area-inset-bottom));
   padding-bottom: calc(168rpx + env(safe-area-inset-bottom));
-  background-color: #0b0b0c;
-  color: #f7f7f5;
+  background-color: var(--color-bg);
+  color: var(--color-text);
 }
 
 .page.activities-page,
@@ -62,11 +122,11 @@ textarea {
   position: relative;
   overflow: hidden;
   padding: 40rpx 36rpx;
-  border: 1rpx solid #343438;
-  border-radius: 8rpx;
-  background: linear-gradient(135deg, #242427 0%, #111113 68%);
-  color: #f7f7f5;
-  box-shadow: 0 18rpx 48rpx rgba(0, 0, 0, 0.36);
+  border: 1rpx solid var(--color-border);
+  border-radius: var(--radius-display);
+  background: linear-gradient(135deg, var(--color-raised) 0%, var(--color-surface) 68%);
+  color: var(--color-text);
+  box-shadow: 0 18rpx 48rpx var(--color-shadow);
 }
 
 .hero::after {
@@ -75,13 +135,13 @@ textarea {
   bottom: -76rpx;
   width: 220rpx;
   height: 220rpx;
-  border: 30rpx solid rgba(213, 91, 31, 0.12);
+  border: 30rpx solid var(--color-brand-soft);
   border-radius: 50%;
   content: '';
 }
 
 .hero-kicker {
-  color: #d55b1f;
+  color: var(--color-brand);
   font-size: 22rpx;
   font-weight: 800;
   letter-spacing: 4rpx;
@@ -96,18 +156,18 @@ textarea {
 }
 
 .hero-subtitle {
-  color: #a8a8ad;
+  color: var(--color-muted);
   font-size: 25rpx;
 }
 
 .card {
   margin-top: 20rpx;
   padding: 28rpx;
-  border: 1rpx solid #3a3a3e;
-  border-radius: 8rpx;
-  background: #1b1b1d;
-  color: #f7f7f5;
-  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.24);
+  border: 1rpx solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 10rpx 30rpx var(--color-shadow);
 }
 
 .title {
@@ -125,7 +185,7 @@ textarea {
 }
 
 .muted {
-  color: #a8a8ad;
+  color: var(--color-muted);
 }
 
 .tag {
@@ -133,25 +193,25 @@ textarea {
   align-items: center;
   min-height: 44rpx;
   padding: 4rpx 16rpx;
-  border: 1rpx solid #557363;
+  border: 1rpx solid var(--color-success);
   border-radius: 999rpx;
-  background: #1d2922;
-  color: #9bc2aa;
+  background: var(--color-success-soft);
+  color: var(--color-success-text);
   font-size: 22rpx;
   font-weight: 700;
   white-space: nowrap;
 }
 
 .warn {
-  border-color: #7a5c2c;
-  background: #2a2115;
-  color: #e7b66a;
+  border-color: var(--color-warning);
+  background: var(--color-warning-soft);
+  color: var(--color-warning-text);
 }
 
 .danger {
-  border-color: #7a302c;
-  background: #291413;
-  color: #ff8f86;
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
 }
 
 .btn,
@@ -162,7 +222,7 @@ textarea {
   justify-content: center;
   min-height: 88rpx;
   margin: 20rpx 0 0;
-  border-radius: 4rpx !important;
+  border-radius: var(--radius-sm) !important;
   font-size: 28rpx;
   font-weight: 800;
   line-height: 1.3;
@@ -178,23 +238,23 @@ textarea {
 }
 
 .btn {
-  background: linear-gradient(115deg, #b44716, #923812) !important;
-  color: #f7f7f5 !important;
+  background: linear-gradient(115deg, var(--color-brand), var(--color-brand-active)) !important;
+  color: var(--color-on-brand) !important;
 }
 
 .btn:active {
-  background: #a94416 !important;
+  background: var(--color-brand-active) !important;
 }
 
 .btn[disabled] {
-  background: #3b3b3f !important;
-  color: #a8a8ad !important;
+  background: var(--color-raised) !important;
+  color: var(--color-muted) !important;
 }
 
 .secondary {
-  border: 1rpx solid #626267;
-  background: #151517 !important;
-  color: #f7f7f5 !important;
+  border: 1rpx solid var(--color-border-strong);
+  background: var(--color-input-bg) !important;
+  color: var(--color-text) !important;
 }
 
 button::after {
@@ -207,7 +267,7 @@ button::after {
 
 .label {
   margin-bottom: 10rpx;
-  color: #c7c7ca;
+  color: var(--color-muted);
   font-size: 24rpx;
   font-weight: 600;
 }
@@ -217,10 +277,10 @@ button::after {
   width: 100%;
   min-height: 88rpx;
   padding: 20rpx 22rpx;
-  border: 1rpx solid #4a4a4f;
-  border-radius: 8rpx;
-  background: #151517;
-  color: #f7f7f5;
+  border: 1rpx solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-input-bg);
+  color: var(--color-text);
 }
 
 .textarea {
@@ -236,9 +296,9 @@ button::after {
   padding: 16rpx 24rpx;
   padding: 16rpx 24rpx calc(16rpx + constant(safe-area-inset-bottom));
   padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));
-  border-top: 1rpx solid #303034;
-  background: rgba(11, 11, 12, 0.97);
-  box-shadow: 0 -8rpx 24rpx rgba(0, 0, 0, 0.34);
+  border-top: 1rpx solid var(--color-border);
+  background: var(--color-fixed-bar);
+  box-shadow: 0 -8rpx 24rpx var(--color-shadow);
 }
 
 .fixed .btn,
@@ -255,16 +315,16 @@ button::after {
 .metric {
   min-width: 0;
   padding: 22rpx;
-  border: 1rpx solid #343438;
-  border-radius: 8rpx;
-  background: #151517;
-  color: #a8a8ad;
+  border: 1rpx solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-input-bg);
+  color: var(--color-muted);
   font-size: 23rpx;
 }
 
 .big {
   margin-bottom: 4rpx;
-  color: #f38a50;
+  color: var(--color-brand);
   font-size: 34rpx;
   font-variant-numeric: tabular-nums;
   font-weight: 900;
@@ -274,14 +334,226 @@ button::after {
 
 .empty {
   padding: 88rpx 32rpx;
-  color: #a8a8ad;
+  color: var(--color-muted);
   text-align: center;
 }
 
 .section-label {
   margin: 34rpx 4rpx 10rpx;
-  color: #a8a8ad;
+  color: var(--color-muted);
   font-size: 23rpx;
   font-weight: 700;
   letter-spacing: 2rpx;
+}
+
+/* Semantic theme bridge: page shells and data/admin surfaces inherit either theme. */
+.activities-page,
+.detail-page,
+.capability-page,
+.credential-page,
+.registrations-page,
+.profile-form-page,
+.strava-page,
+.profile-page,
+.form-page,
+.activity-form-page,
+.activity-list-page,
+.review-detail-page,
+.review-page {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.activities-page .muted,
+.detail-page .muted,
+.credential-page .muted,
+.registrations-page .muted,
+.profile-form-page .muted,
+.strava-page .muted,
+.profile-page .muted,
+.form-page .muted,
+.activity-form-page .muted,
+.activity-list-page .muted,
+.review-detail-page .muted,
+.review-page .muted,
+.hint,
+.field-hint,
+.section-hint,
+.status-help {
+  color: var(--color-muted);
+}
+
+.activity-context,
+.form-surface,
+.form-card,
+.credential-card,
+.timeline-card,
+.status-card,
+.registration-card,
+.activity-list-page .card,
+.activity-form-page .card,
+.snapshot-panel,
+.decision-panel,
+.activity-picker,
+.review-card,
+.detail-page .card,
+.metric-panel,
+.rider-card,
+.profile-page .card,
+.menu-list {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 10rpx 30rpx var(--color-shadow);
+}
+
+.identity-card,
+.choice,
+.experience-segment,
+.strava-row,
+.safety-box,
+.meet-info,
+.review-comment,
+.rider-stats view,
+.metric-item,
+.menu-card,
+.profile-refreshing,
+.profile-cache-message {
+  border-color: var(--color-border);
+  background: var(--color-raised);
+  color: var(--color-text);
+}
+
+.field input,
+.field textarea,
+.form-card .input,
+.remark,
+.review-detail-page .textarea {
+  border-color: var(--color-border-strong);
+  background: var(--color-input-bg);
+  color: var(--color-text);
+}
+
+.form-section,
+.credential-row,
+.card-footer,
+.route-location-row,
+.climb-row,
+.detail-line,
+.facts,
+.metrics,
+.sync-meta,
+brand-logo {
+  border-color: var(--color-border);
+}
+
+.fixed,
+.form-page .fixed {
+  border-color: var(--color-border);
+  background: var(--color-fixed-bar);
+  box-shadow: 0 -8rpx 28rpx var(--color-shadow);
+}
+
+.hero-kicker,
+.context-kicker,
+.section-eyebrow,
+.panel-index,
+.eyebrow,
+.picker-label,
+.metric-kicker,
+.route-arrow,
+.schedule-time,
+.check,
+.date,
+.arrow,
+.serial,
+.accent,
+.open-arrow,
+.corner-cut {
+  color: var(--color-brand);
+}
+
+.btn,
+.submit-button,
+.save-action,
+.repair-button,
+.filter-tab.is-active {
+  background-color: var(--color-brand) !important;
+  color: var(--color-on-brand) !important;
+}
+
+.secondary,
+.back-button,
+.text-button,
+.route-actions button,
+.route-location-row button,
+.media-actions button,
+.media-add,
+.location-button,
+.photo-button {
+  border-color: var(--color-border-strong);
+  background: var(--color-input-bg) !important;
+  color: var(--color-text) !important;
+}
+
+.status-pending,
+.status-approved,
+.status-checked_in,
+.status-rejected,
+.status-cancelled,
+.status-ready,
+.status-failed,
+.status-disconnected,
+.status-syncing,
+.status-authorizing {
+  color: var(--color-text);
+}
+
+/* Three-level radius system; circular avatars and pills remain circular. */
+.form-card,
+.status-card,
+.registration-card,
+.activity-list-page .card,
+.activity-form-page .card,
+.snapshot-panel,
+.decision-panel,
+.activity-picker,
+.review-card,
+.detail-page .card,
+.metric-panel,
+.rider-card,
+.profile-page .card,
+.menu-list,
+.form-surface,
+.activity-context {
+  border-radius: var(--radius-display);
+}
+
+.field input,
+.field textarea,
+.form-card .input,
+.remark,
+.review-detail-page .textarea,
+.metric-item,
+.menu-card,
+.identity-card,
+.choice,
+.experience-segment,
+.strava-row,
+.safety-box,
+.meet-info,
+.review-comment {
+  border-radius: var(--radius-md);
+}
+
+button,
+.btn,
+.secondary,
+.text-button,
+.route-actions button,
+.route-location-row button,
+.media-actions button,
+.media-add,
+.location-button {
+  min-height: 88rpx;
 }

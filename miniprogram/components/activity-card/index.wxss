@@ -3,7 +3,7 @@
   overflow: hidden;
   margin-top: 14rpx;
   border: 1rpx solid #38383a;
-  border-radius: 32rpx;
+  border-radius: var(--radius-display);
   background: #1c1c1e;
   box-shadow: none;
   transition:
@@ -13,7 +13,7 @@
 }
 
 .activity-card--pressed {
-  border-color: #ff5722;
+  border-color: var(--color-brand);
   opacity: 0.92;
   transform: scale(0.985);
 }
@@ -166,7 +166,7 @@ status-pill {
 
 .route-arrow {
   margin: 0 4rpx;
-  color: #ff5722;
+  color: var(--color-brand);
   font-weight: 900;
 }
 
@@ -250,7 +250,7 @@ status-pill {
   min-width: 150rpx;
   padding: 13rpx 18rpx;
   border-radius: 999rpx;
-  background: #ff5722;
+  background: var(--color-brand);
   color: #fff;
   font-size: 22rpx;
   font-weight: 900;
@@ -280,4 +280,37 @@ status-pill {
     padding-right: 14rpx;
     padding-left: 14rpx;
   }
+}
+
+/* Theme-aware card chrome; media overlays intentionally remain dark. */
+.activity-card {
+  border-color: var(--color-border);
+  border-radius: var(--radius-display);
+  background: var(--color-surface);
+}
+.activity-title,
+.metric-value,
+.level {
+  color: var(--color-text);
+}
+.route-line,
+.metric-unit,
+.card-meta {
+  color: var(--color-muted);
+}
+.metrics {
+  border-color: var(--color-border);
+  background: var(--color-border);
+}
+.metric-item {
+  background: var(--color-raised);
+}
+.card-foot {
+  border-color: var(--color-border);
+}
+.card-cta {
+  min-height: 88rpx;
+  border-radius: var(--radius-md);
+  background: var(--color-brand);
+  color: var(--color-on-brand);
 }

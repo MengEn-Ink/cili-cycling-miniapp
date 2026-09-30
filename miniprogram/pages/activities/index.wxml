@@ -1,4 +1,4 @@
-<view class="page activities-page">
+<view class="page activities-page {{themeClass}}">
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{refreshing ? '正在刷新活动' : ''}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{refreshError}}</view>
   <brand-logo meta="RIDES" />

@@ -142,12 +142,15 @@ describe('活动详情设计与日期契约', () => {
     expect(styles).toMatch(/\.attendee-avatar-button\s*\{[^}]*margin:\s*0 0 8rpx -14rpx;/s);
   });
 
-  it('使用等宽三列指标、16px 卡片圆角和轻量安全区 CTA', () => {
+  it('使用等宽三列指标、24rpx 展示圆角和轻量安全区 CTA', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
     expect(template.match(/class="detail-metric"/g)).toHaveLength(3);
     expect(styles).toContain('grid-template-columns: repeat(3, minmax(0, 1fr));');
-    expect(styles).toMatch(/\.detail-page \.card\s*\{[^}]*border-radius:\s*32rpx;/s);
+    expect(styles).toMatch(
+      /\.detail-page \.card\s*\{[^}]*border-radius:\s*var\(--radius-display\);/s,
+    );
+    expect(read('miniprogram/app.wxss')).toContain('--radius-display: 24rpx;');
     expect(styles).toContain('calc(12rpx + env(safe-area-inset-bottom))');
   });
 });

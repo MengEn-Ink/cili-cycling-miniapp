@@ -145,7 +145,7 @@ brand-logo {
 }
 
 .profile-copy .hero-kicker {
-  color: #d55b1f;
+  color: var(--color-brand);
   font-size: 18rpx;
   font-weight: 900;
   letter-spacing: 3rpx;
@@ -185,7 +185,7 @@ brand-logo {
   height: 9rpx;
   margin-right: 8rpx;
   border-radius: 50%;
-  background: #d55b1f;
+  background: var(--color-brand);
   box-shadow: 0 0 14rpx rgba(213, 91, 31, 0.5);
 }
 
@@ -213,7 +213,7 @@ brand-logo {
   bottom: 0;
   width: 28rpx;
   height: 28rpx;
-  background: #d55b1f;
+  background: var(--color-brand);
   content: '';
   clip-path: polygon(100% 0, 100% 100%, 0 100%);
 }
@@ -227,7 +227,7 @@ brand-logo {
 }
 
 .hero-capability-label {
-  color: #d55b1f;
+  color: var(--color-brand);
   font-size: 18rpx;
   font-weight: 900;
   letter-spacing: 2rpx;
@@ -266,7 +266,7 @@ brand-logo {
 
 .hero-capability-status.status-partial,
 .hero-capability-status.status-syncing {
-  color: #f38a50;
+  color: var(--color-brand);
 }
 
 .hero-capability-status.status-repair {
@@ -297,7 +297,7 @@ brand-logo {
 
 .hero-capability-unit {
   margin-left: 4rpx;
-  color: #d55b1f;
+  color: var(--color-brand);
   font-size: 15rpx;
   font-weight: 800;
 }
@@ -355,7 +355,7 @@ brand-logo {
 .hero-progress-value {
   max-width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, #c82018, #d55b1f);
+  background: linear-gradient(90deg, #c82018, var(--color-brand));
 }
 
 .card {
@@ -377,7 +377,7 @@ brand-logo {
 
 .panel-index {
   margin-bottom: 10rpx;
-  color: #d55b1f;
+  color: var(--color-brand);
   font-size: 18rpx;
   font-weight: 900;
   letter-spacing: 3rpx;
@@ -385,7 +385,7 @@ brand-logo {
 
 .guidance-card {
   margin-top: 18rpx;
-  border-color: #d55b1f;
+  border-color: var(--color-brand);
 }
 
 .guidance-actions {
@@ -409,7 +409,7 @@ brand-logo {
 
 .section-label text {
   margin-right: 12rpx;
-  color: #d55b1f;
+  color: var(--color-brand);
 }
 
 .profile-card,
@@ -507,7 +507,7 @@ brand-logo {
   border: 1rpx solid #77777b;
   border-radius: 5rpx;
   background: #29292c;
-  color: #d55b1f;
+  color: var(--color-brand);
   font-size: 25rpx;
   font-style: italic;
   font-weight: 900;
@@ -518,8 +518,8 @@ brand-logo {
 }
 
 .capability-entry .menu-icon {
-  border-color: #d55b1f;
-  background: #d55b1f;
+  border-color: var(--color-brand);
+  background: var(--color-brand);
   color: #0b0b0c;
 }
 
@@ -546,7 +546,7 @@ brand-logo {
 }
 
 .chevron {
-  color: #d55b1f;
+  color: var(--color-brand);
   font-size: 38rpx;
 }
 
@@ -556,7 +556,7 @@ brand-logo {
 }
 
 .btn {
-  background: #a94416 !important;
+  background: var(--color-brand-active) !important;
 }
 
 .secondary {
@@ -593,7 +593,7 @@ brand-logo {
 
 .profile-hero {
   border-color: #3a3a3c;
-  border-radius: 48rpx;
+  border-radius: var(--radius-display);
   background: #121212;
 }
 
@@ -602,7 +602,7 @@ brand-logo {
 .profile-page .card,
 .menu-list {
   border-color: #3a3a3c;
-  border-radius: 40rpx;
+  border-radius: var(--radius-display);
   background: #1c1c1e;
   box-shadow: none;
 }
@@ -628,7 +628,7 @@ brand-logo {
 .panel-index,
 .section-label text,
 .chevron {
-  color: #ff5722;
+  color: var(--color-brand);
 }
 
 .edit-button,
@@ -640,7 +640,7 @@ brand-logo {
 }
 
 .profile-page .btn {
-  background: #ff5722 !important;
+  background: var(--color-brand) !important;
 }
 
 @media (max-width: 320px) {
@@ -670,7 +670,7 @@ brand-logo {
   flex-direction: column;
   justify-content: flex-end;
   border: 1rpx solid #3a3a3c;
-  border-radius: 48rpx;
+  border-radius: var(--radius-display);
   background: #1c1c1e;
   transition: height 180ms ease-out;
 }
@@ -725,7 +725,7 @@ brand-logo {
 .panel-index,
 .section-label text,
 .chevron {
-  color: #ff5722;
+  color: var(--color-brand);
 }
 
 .profile-name {
@@ -736,14 +736,14 @@ brand-logo {
   margin-top: 14rpx;
   padding: 14rpx 16rpx;
   border-color: #3a3a3c;
-  border-radius: 28rpx;
+  border-radius: var(--radius-display);
   background: rgba(28, 28, 30, 0.92);
   box-shadow: none;
 }
 
 .hero-capability-card::after,
 .corner-cut {
-  background: #ff5722;
+  background: var(--color-brand);
 }
 
 .hero-capability-metrics {
@@ -765,12 +765,12 @@ brand-logo {
 }
 
 .hero-progress-value {
-  background: #ff5722;
+  background: var(--color-brand);
 }
 
 .profile-page .card {
   border-color: #3a3a3c;
-  border-radius: 32rpx;
+  border-radius: var(--radius-display);
   background: #1c1c1e;
   box-shadow: none;
 }
@@ -814,7 +814,7 @@ brand-logo {
 .menu-list {
   overflow: hidden;
   border-color: #3a3a3c;
-  border-radius: 32rpx;
+  border-radius: var(--radius-display);
   background: #1c1c1e;
 }
 
@@ -836,7 +836,7 @@ brand-logo {
   border-color: #3a3a3c;
   border-radius: 16rpx;
   background: #2c2c2e;
-  color: #ff5722;
+  color: var(--color-brand);
 }
 
 .capability-entry {
@@ -844,8 +844,8 @@ brand-logo {
 }
 
 .capability-entry .menu-icon {
-  border-color: #ff5722;
-  background: #ff5722;
+  border-color: var(--color-brand);
+  background: var(--color-brand);
   color: #000;
 }
 
@@ -858,7 +858,7 @@ brand-logo {
 }
 
 .profile-page .btn {
-  background: #ff5722 !important;
+  background: var(--color-brand) !important;
 }
 
 @media (max-width: 350px) {
@@ -882,7 +882,7 @@ brand-logo {
 .hero-card-logo {
   padding: 5rpx 9rpx;
   border-radius: 8rpx;
-  background: #ff5722;
+  background: var(--color-brand);
   color: #0b0b0c;
   font-size: 18rpx;
   font-weight: 950;
@@ -949,5 +949,111 @@ brand-logo {
 
 .profile-cache-message text:last-child {
   flex: 0 0 auto;
-  color: #f38a50;
+  color: var(--color-brand);
+}
+
+page,
+.page.profile-page {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.profile-page brand-logo {
+  border-color: var(--color-border);
+}
+.profile-page .card,
+.menu-list {
+  border-color: var(--color-border);
+  border-radius: var(--radius-display);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: none;
+}
+.menu-card,
+.profile-refreshing,
+.profile-cache-message {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-muted);
+}
+.menu-card:active,
+.menu-icon {
+  background: var(--color-raised);
+}
+.menu-title {
+  color: var(--color-text);
+}
+.theme-light .profile-hero {
+  --color-brand: #d55b1f;
+  --color-brand-active: #a94416;
+  --color-brand-soft: rgba(213, 91, 31, 0.14);
+  --color-on-brand: #0b0b0c;
+}
+.profile-hero,
+.profile-hero .profile-name,
+.profile-hero .hero-capability-value,
+.profile-hero .hero-capability-details text:last-child {
+  color: #f7f7f5;
+}
+.card .muted,
+.menu-card .muted,
+.hero-capability-details text:first-child {
+  color: var(--color-muted);
+}
+.edit-button,
+.profile-refresh-error button,
+.profile-page .btn,
+.profile-page .secondary {
+  min-height: 88rpx;
+  border-radius: var(--radius-display) !important;
+}
+.profile-page .btn {
+  background: var(--color-brand) !important;
+  color: var(--color-on-brand) !important;
+}
+.profile-page .secondary {
+  border-color: var(--color-border-strong);
+  background: var(--color-input-bg) !important;
+  color: var(--color-text) !important;
+}
+/* Hero identity remains white on a persistent dark photographic overlay. */
+
+.theme-setting-card {
+  display: grid;
+  gap: 12rpx;
+}
+
+.theme-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12rpx;
+  margin-top: 8rpx;
+}
+
+.theme-option {
+  min-width: 0;
+  min-height: 88rpx;
+  margin: 0;
+  padding: 16rpx 12rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  font-size: 25rpx;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.theme-option::after {
+  border: 0;
+}
+
+.theme-option.selected {
+  border-color: var(--color-brand);
+  background: var(--color-brand-soft);
+  color: var(--color-text);
+  box-shadow: inset 0 0 0 1rpx var(--color-brand);
+}
+
+.theme-option:active {
+  transform: scale(0.98);
 }

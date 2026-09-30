@@ -6,10 +6,14 @@ const mocks = vi.hoisted(() => ({
   bootstrap: vi.fn(),
   ensureIdentity: vi.fn(),
   hasFreshIdentityHint: vi.fn(),
+  applyTheme: vi.fn(),
 }));
 
 vi.mock('../miniprogram/config/cloud-init', () => ({
   initializeCloud: mocks.initializeCloud,
+}));
+vi.mock('../miniprogram/services/theme-service', () => ({
+  applyTheme: mocks.applyTheme,
 }));
 vi.mock('../miniprogram/store/app-store', () => ({
   appStore: {
@@ -53,6 +57,7 @@ describe('小程序全局运行时兜底', () => {
     expect(appDefinition).toBeTruthy();
     appDefinition.onLaunch();
 
+    expect(mocks.applyTheme).toHaveBeenCalledOnce();
     expect(mocks.bootstrap).toHaveBeenCalledOnce();
     expect(mocks.initializeCloud).toHaveBeenCalledWith(cloud);
     expect(mocks.ensureIdentity).toHaveBeenCalledWith(cloud);

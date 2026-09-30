@@ -25,7 +25,7 @@
   height: 36rpx;
   margin: 0 auto 20rpx;
   border: 5rpx solid #3f3f44;
-  border-top-color: #d55b1f;
+  border-top-color: var(--color-brand);
   border-radius: 50%;
   animation: state-spin 0.8s linear infinite;
 }
@@ -49,7 +49,7 @@
   width: 54rpx;
   height: 54rpx;
   margin: 0 auto 18rpx;
-  border: 4rpx solid #d55b1f;
+  border: 4rpx solid var(--color-brand);
   border-radius: 50%;
   color: #f7f7f5;
   font-size: 28rpx;
@@ -74,9 +74,37 @@
 
 .state-retry {
   margin-top: 24rpx;
-  border: 1rpx solid #d55b1f;
+  border: 1rpx solid var(--color-brand);
   border-radius: 4rpx;
   background: transparent;
-  color: #f38a50;
+  color: var(--color-brand);
   font-weight: 700;
+}
+
+.state-shell {
+  border-color: var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-input-bg);
+  color: var(--color-muted);
+}
+.state-mark {
+  border-color: var(--color-border);
+  border-top-color: var(--color-brand);
+}
+.state-code {
+  border-color: var(--color-brand);
+  color: var(--color-text);
+}
+.state-title {
+  color: var(--color-text);
+}
+.state-shell--error .state-code {
+  border-color: var(--color-danger);
+  color: var(--color-danger-text);
+}
+.state-retry {
+  min-height: 88rpx;
+  border-color: var(--color-brand);
+  border-radius: var(--radius-sm);
+  color: var(--color-brand);
 }

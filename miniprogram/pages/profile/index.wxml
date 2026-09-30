@@ -1,4 +1,4 @@
-<view class="page profile-page">
+<view class="page profile-page {{themeClass}}">
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{loading ? '正在读取资料。正在同步最新资料' : (refreshing ? '正在更新资料' : (!error ? '资料已就绪' : ''))}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{error}}</view>
   <brand-logo compact="{{true}}" meta="RIDER PROFILE" />
@@ -104,7 +104,17 @@
   <view class="card profile-error" wx:elif="{{error}}"><view aria-hidden="true"><view class="panel-index">PROFILE ERROR</view><view class="title">资料暂时无法加载</view><view class="muted">{{error}}</view></view><button class="secondary" bindtap="retryProfile">重试加载</button></view>
   <view class="card empty-profile" wx:else><view class="title">资料尚未配置</view><view class="muted">请创建资料后再报名。</view><button class="btn" bindtap="edit">去完善</button></view>
 
-  <view class="section-label"><text>02</text> 管理服务</view>
+  <view class="section-label"><text>02</text> 显示主题</view>
+  <view class="card theme-setting-card" role="radiogroup" aria-label="显示主题">
+    <view class="title">显示主题</view>
+    <view class="muted" role="status" aria-live="polite">当前为{{theme === 'light' ? '浅色（户外）' : '深色（默认）'}}</view>
+    <view class="theme-options">
+      <button class="theme-option {{theme === 'dark' ? 'selected' : ''}}" data-theme="dark" bindtap="switchTheme" role="radio" aria-checked="{{theme === 'dark'}}" aria-label="深色（默认）">深色（默认）</button>
+      <button class="theme-option {{theme === 'light' ? 'selected' : ''}}" data-theme="light" bindtap="switchTheme" role="radio" aria-checked="{{theme === 'light'}}" aria-label="浅色（户外）">浅色（户外）</button>
+    </view>
+  </view>
+
+  <view class="section-label"><text>03</text> 管理服务</view>
   <view class="menu-list">
     <view class="menu-card" wx:if="{{authStatus === 'authenticated'}}" bindtap="activities"><view class="menu-icon">M</view><view class="menu-copy"><view class="menu-title">活动管理</view><view class="muted">创建、编辑与发布活动</view></view><text class="chevron">›</text></view>
     <view class="menu-card" wx:if="{{isAdmin}}" bindtap="admin"><view class="menu-icon admin-icon">A</view><view class="menu-copy"><view class="menu-title">报名审批</view><view class="muted">查看并处理报名</view></view><text class="chevron">›</text></view>

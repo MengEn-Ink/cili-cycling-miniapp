@@ -1,8 +1,6 @@
-// @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { read, themeTokens } from './theme-contract-helpers';
 
-const read = (file: string) => readFileSync(file, 'utf8');
 const darkPages = [
   'miniprogram/pages/registrations',
   'miniprogram/pages/profile',
@@ -22,13 +20,19 @@ const logoPages = [
 const legacyLogoClass =
   /brand-lockup|brand-bar|cili-symbol|cili-mark|mini-symbol|brand-word|brand-cn|mark-cut|brand-rule|detail-brand|desk-code|profile-code/;
 
-describe('CILI 深色竞技页面静态契约', () => {
-  it.each(darkPages)('%s 使用极黑页面与赛事橙视觉令牌', (root) => {
+describe('CILI 双主题竞技页面静态契约', () => {
+  it.each(darkPages)('%s 默认继承暗色 token，并通过语义品牌色支持双主题', (root) => {
     const styles = read(`${root}/index.wxss`).toLowerCase();
     const config = JSON.parse(read(`${root}/index.json`));
+    const appStyles = read('miniprogram/app.wxss');
+    const dark = themeTokens(appStyles, 'dark');
+    const light = themeTokens(appStyles, 'light');
 
-    expect(styles).toContain('#0b0b0c');
-    expect(styles).toContain('#d55b1f');
+    expect(dark['--color-bg']).toBe('#0b0b0c');
+    expect(dark['--color-brand']).toBe('#d55b1f');
+    expect(light['--color-bg']).not.toBe(dark['--color-bg']);
+    expect(styles).toContain('var(--color-bg)');
+    expect(styles).toContain('var(--color-brand)');
     expect(config.navigationBarBackgroundColor.toLowerCase()).toBe('#0b0b0c');
     expect(config.navigationBarTextStyle).toBe('white');
   });

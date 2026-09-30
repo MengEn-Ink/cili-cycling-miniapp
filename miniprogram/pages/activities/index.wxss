@@ -25,7 +25,7 @@ brand-logo {
 
 .section-eyebrow {
   margin-bottom: 2rpx;
-  color: #ff5722;
+  color: var(--color-brand);
   font-size: 18rpx;
   font-weight: 800;
   letter-spacing: 3rpx;
@@ -62,7 +62,7 @@ brand-logo {
   flex: none;
   min-width: 68rpx;
   padding: 4rpx 12rpx;
-  border-left: 5rpx solid #ff5722;
+  border-left: 5rpx solid var(--color-brand);
   border-radius: 14rpx;
   background: #2c2c2e;
   color: #f7f7f5;
@@ -87,4 +87,18 @@ brand-logo {
   .page-title {
     font-size: 38rpx;
   }
+}
+
+page,
+.activities-page {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.activities-page .muted {
+  color: var(--color-muted);
+}
+.count {
+  border-radius: var(--radius-md);
+  background: var(--color-raised);
+  color: var(--color-text);
 }

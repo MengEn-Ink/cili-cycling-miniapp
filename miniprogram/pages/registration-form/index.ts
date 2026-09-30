@@ -1,6 +1,7 @@
 import type { Activity, StravaReadiness } from '../../models';
 import { runPageTask } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
+import { syncPageTheme } from '../../services/theme-service';
 import {
   pollStravaReadiness,
   stravaReadinessMessage,
@@ -72,6 +73,8 @@ Page({
   submissionPending: false,
   pageVisible: false,
   data: {
+    theme: 'dark',
+    themeClass: 'theme-dark',
     activityId: '',
     activity: null as Activity | null,
     displayActivityDate: '日期待公布',
@@ -89,6 +92,7 @@ Page({
     activityCanSubmit: false,
   },
   async onShow() {
+    syncPageTheme(this);
     this.pageVisible = true;
     const requestId = ++this.loadRequestId;
     const isCancelled = () => requestId !== this.loadRequestId;

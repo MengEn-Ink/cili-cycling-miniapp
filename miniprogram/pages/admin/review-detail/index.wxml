@@ -1,4 +1,4 @@
-<view class="page review-detail-page">
+<view class="page review-detail-page {{themeClass}}">
   <brand-logo compact="{{true}}" meta="REVIEW · DETAIL" />
   <view class="card danger" wx:if="{{error}}">{{error}}</view>
   <block wx:if="{{x && card}}">

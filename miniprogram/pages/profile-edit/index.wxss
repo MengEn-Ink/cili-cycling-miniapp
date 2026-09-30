@@ -19,7 +19,7 @@ page {
 }
 .step-kicker {
   margin-bottom: 8rpx;
-  color: #f38a50;
+  color: var(--color-brand);
   font-size: 22rpx;
   font-weight: 900;
   letter-spacing: 4rpx;
@@ -75,7 +75,7 @@ page {
   height: 100%;
 }
 .avatar-preview-placeholder {
-  color: #f38a50;
+  color: var(--color-brand);
   font-size: 52rpx;
   font-weight: 900;
 }
@@ -114,7 +114,7 @@ page {
   height: 12rpx;
   margin-right: 16rpx;
   border-radius: 50%;
-  background: #d55b1f;
+  background: var(--color-brand);
   content: '';
 }
 .avatar-action[disabled] {
@@ -260,7 +260,62 @@ page {
 .save-action {
   margin-top: 28rpx;
   border: 0;
-  background: #d55b1f;
+  background: var(--color-brand);
   color: #0b0b0c;
   font-weight: 900;
+}
+
+page,
+.profile-form-page {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.profile-form-page .form-card {
+  border-color: var(--color-border);
+  border-radius: var(--radius-display);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.profile-form-page .title {
+  color: var(--color-text);
+}
+.profile-form-page .form-card .label,
+.default-avatar-title,
+.avatar-status,
+.profile-form-page .muted,
+.profile-form-page .field-tip,
+.profile-form-page .photo-count {
+  color: var(--color-muted);
+}
+.form-card .input,
+.gender-option,
+.default-avatar-button,
+.photo-preview-button {
+  border-color: var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-input-bg);
+  color: var(--color-text);
+}
+.avatar-action,
+.profile-form-page .photo-action,
+.photo-order-button {
+  min-height: 88rpx;
+  border-color: var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-raised);
+  color: var(--color-text);
+}
+.avatar-preview-shell {
+  border-color: var(--color-border);
+  background: var(--color-raised);
+  box-shadow: 0 14rpx 30rpx var(--color-shadow);
+}
+.avatar-action::before,
+.save-action {
+  background: var(--color-brand);
+}
+.save-action {
+  min-height: 88rpx;
+  border-radius: var(--radius-md);
+  color: var(--color-on-brand);
 }

@@ -27,7 +27,7 @@
   right: -4rpx;
   width: 25rpx;
   height: 11rpx;
-  background: #d55b1f;
+  background: var(--color-brand);
   transform: skewX(-38deg);
 }
 
@@ -77,4 +77,18 @@
 
 .brand-logo--compact .brand-logo__cn {
   font-size: 21rpx;
+}
+
+.brand-logo {
+  color: var(--color-text);
+}
+.brand-logo__cut {
+  background: var(--color-brand);
+}
+.brand-logo__cn {
+  border-color: var(--color-border-strong);
+  color: var(--color-muted);
+}
+.brand-logo__meta {
+  color: var(--color-subtle);
 }

@@ -7,6 +7,13 @@
   color: #f7f7f5;
 }
 
+.theme-light .detail-hero {
+  --color-brand: #d55b1f;
+  --color-brand-active: #a94416;
+  --color-brand-soft: rgba(213, 91, 31, 0.14);
+  --color-on-brand: #0b0b0c;
+}
+
 .detail-hero {
   position: relative;
   box-sizing: border-box;
@@ -112,7 +119,7 @@ brand-logo {
 .schedule-time,
 .check {
   flex: 0 0 auto;
-  color: #ff5722;
+  color: var(--color-brand);
 }
 
 .hero-level {
@@ -121,10 +128,10 @@ brand-logo {
   min-height: 38rpx;
   margin-top: 14rpx;
   padding: 2rpx 14rpx;
-  border: 1rpx solid #ff5722;
+  border: 1rpx solid var(--color-brand);
   border-radius: 16rpx;
   background: rgba(255, 87, 34, 0.12);
-  color: #ff9b7b;
+  color: var(--color-brand);
   font-size: 21rpx;
   font-weight: 800;
 }
@@ -141,7 +148,7 @@ brand-logo {
   margin-top: -44rpx;
   overflow: hidden;
   border: 1rpx solid #3a3a3c;
-  border-radius: 32rpx;
+  border-radius: var(--radius-display);
   background: #1c1c1e;
 }
 
@@ -199,7 +206,7 @@ brand-logo {
   overflow: hidden;
   padding: 22rpx 24rpx;
   border: 1rpx solid #343438;
-  border-radius: 32rpx;
+  border-radius: var(--radius-display);
   background: #1c1c1e;
   color: #f7f7f5;
 }
@@ -270,7 +277,7 @@ brand-logo {
   height: 11rpx;
   margin-top: 11rpx;
   border-radius: 50%;
-  background: #ff5722;
+  background: var(--color-brand);
 }
 
 .schedule-copy {
@@ -297,7 +304,7 @@ brand-logo {
 }
 
 .notice-mark {
-  color: #ff8a65;
+  color: var(--color-brand);
   font-weight: 900;
 }
 
@@ -322,10 +329,10 @@ brand-logo {
   min-height: 64rpx;
   margin: 0;
   padding: 0 18rpx;
-  border: 1rpx solid #ff5722;
+  border: 1rpx solid var(--color-brand);
   border-radius: 16rpx;
   background: transparent;
-  color: #ff9b7b;
+  color: var(--color-brand);
   font-size: 24rpx;
   line-height: 62rpx;
 }
@@ -352,7 +359,7 @@ brand-logo {
 .detail-action .btn {
   min-height: 88rpx;
   border-radius: 24rpx !important;
-  background: #ff5722 !important;
+  background: var(--color-brand) !important;
 }
 
 .detail-action .btn[disabled] {
@@ -440,7 +447,7 @@ brand-logo {
   padding: 3rpx 10rpx;
   border-radius: 10rpx;
   background: rgba(255, 87, 34, 0.14);
-  color: #ff9b7b;
+  color: var(--color-brand);
   font-size: 20rpx;
 }
 
@@ -484,7 +491,7 @@ brand-logo {
 }
 
 .attendee-avatar--default {
-  background: linear-gradient(135deg, #ff5722, #ff9b7b);
+  background: var(--color-brand);
   color: #fff;
   font-size: 22rpx;
   font-weight: 900;
@@ -499,10 +506,10 @@ brand-logo {
 .route-actions button {
   min-width: 0;
   margin: 0;
-  border: 1rpx solid #ff5722;
+  border: 1rpx solid var(--color-brand);
   border-radius: 16rpx;
   background: transparent;
-  color: #ff9b7b;
+  color: var(--color-brand);
   font-size: 23rpx;
   line-height: 68rpx;
 }
@@ -524,7 +531,7 @@ brand-logo {
   max-width: 620rpx;
   padding: 30rpx;
   border: 1rpx solid #444448;
-  border-radius: 32rpx;
+  border-radius: var(--radius-display);
   background: #1c1c1e;
   color: #f7f7f5;
   box-shadow: 0 18rpx 70rpx rgba(0, 0, 0, 0.5);
@@ -564,7 +571,7 @@ brand-logo {
 }
 
 .rider-stats text:first-child {
-  color: #ff8a65;
+  color: var(--color-brand);
   font-size: 30rpx;
   font-weight: 900;
 }
@@ -573,4 +580,83 @@ brand-logo {
   margin-top: 4rpx;
   color: #a8a8ad;
   font-size: 20rpx;
+}
+
+/* Keep hero/media overlays dark and white; adapt surrounding content chrome. */
+.detail-page {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.detail-hero:not(.detail-hero--media) {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.metric-panel,
+.detail-metric,
+.detail-page .card,
+.rider-card {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.detail-metric + .detail-metric,
+.route-location-row,
+.climb-row {
+  border-color: var(--color-border);
+}
+.metric-number,
+.route-location-row,
+.time-row text:last-child,
+.rider-name {
+  color: var(--color-text);
+}
+.detail-metric,
+.metric-unit,
+.body-text,
+.list-item,
+.notice-item,
+.time-row,
+.route-empty,
+.rider-stats text:last-child {
+  color: var(--color-muted);
+}
+.fixed {
+  border-color: var(--color-border);
+  background: var(--color-fixed-bar);
+  box-shadow: 0 -6rpx 20rpx var(--color-shadow);
+}
+.detail-action .btn {
+  border-radius: var(--radius-display) !important;
+  background: var(--color-brand) !important;
+}
+.route-location-row button,
+.route-actions button {
+  min-height: 88rpx;
+  border-color: var(--color-brand);
+  border-radius: var(--radius-md);
+  color: var(--color-brand);
+}
+.attendee-avatar-button {
+  display: flex;
+  width: 88rpx;
+  height: 88rpx;
+  align-items: center;
+  justify-content: center;
+  margin: -9rpx -9rpx -1rpx -23rpx;
+}
+.attendee-avatar,
+.rider-card-avatar {
+  border-color: var(--color-surface);
+}
+.rider-modal-mask {
+  background: var(--color-overlay);
+}
+.rider-card {
+  border-radius: var(--radius-display);
+  box-shadow: 0 18rpx 70rpx var(--color-shadow);
+}
+.rider-stats view {
+  border-radius: var(--radius-md);
+  background: var(--color-raised);
 }

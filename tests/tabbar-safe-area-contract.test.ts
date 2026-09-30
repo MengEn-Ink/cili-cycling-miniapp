@@ -1,6 +1,7 @@
 // @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { cssBlock, declaration, expectSemantic, themeTokens } from './theme-contract-helpers';
 
 const read = (file: string) => readFileSync(file, 'utf8');
 
@@ -41,13 +42,19 @@ describe('native tabbar safe-area contract', () => {
     }
   });
 
-  it('keeps the global page canvas dark before page-specific styles load', () => {
+  it('keeps the global page canvas on semantic tokens with dark first paint and light override', () => {
     const appStyles = read('miniprogram/app.wxss');
-    const pageRule = appStyles.match(/(?:^|\n)page\s*\{([^}]+)\}/s)?.[1] || '';
+    const pageRule = cssBlock(appStyles, 'page');
+    const dark = themeTokens(appStyles, 'dark');
+    const light = themeTokens(appStyles, 'light');
 
-    expect(pageRule.toLowerCase()).toMatch(/background(?:-color)?:\s*#0b0b0c;/);
     expect(pageRule.toLowerCase()).toMatch(/height:\s*100%;/);
-    expect(pageRule.toLowerCase()).toMatch(/color:\s*#f7f7f5;/);
+    expectSemantic(declaration(pageRule, 'background'), '--color-bg');
+    expectSemantic(declaration(pageRule, 'color'), '--color-text');
+    expect(dark['--color-bg']).toBe('#0b0b0c');
+    expect(dark['--color-text']).toBe('#f7f7f5');
+    expect(light['--color-bg']).toBe('#f4f2ed');
+    expect(light['--color-text']).toBe('#151515');
   });
 
   it('gives all tab roots one shared safe-area bottom spacing contract', () => {

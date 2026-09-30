@@ -23,7 +23,7 @@ page {
   color: #a8a8ad;
 }
 .hero view:first-child {
-  color: #d55b1f;
+  color: var(--color-brand);
   font-size: 22rpx;
 }
 .hero .hero-title {
@@ -111,7 +111,7 @@ page {
 }
 .activity-list-page .tag {
   background: #343438;
-  color: #f38a50;
+  color: var(--color-brand);
 }
 .activity-list-page .section-title {
   color: #f7f7f5;
@@ -132,7 +132,7 @@ page {
 }
 .activity-list-page .btn {
   border: 0;
-  background: #d55b1f;
+  background: var(--color-brand);
   color: #0b0b0c;
   font-weight: 900;
 }
@@ -159,4 +159,54 @@ page {
 .activity-list-page .danger-action {
   border-color: rgba(255, 112, 104, 0.62);
   color: #ff8589;
+}
+
+page,
+.page,
+.activity-list-page {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.activity-list-page .card {
+  border-color: var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.hero,
+.hero view,
+.activity-list-page .hint,
+.activity-list-page .tag {
+  color: var(--color-muted);
+}
+.hero .hero-title,
+.title,
+.section-title,
+.field text {
+  color: var(--color-text);
+}
+.activity-list-page .tag {
+  border-color: var(--color-border);
+  background: var(--color-raised);
+}
+.activity-list-page .field input {
+  border-color: var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-input-bg);
+  color: var(--color-text);
+}
+.activity-actions button,
+.activity-list-page .btn,
+.activity-list-page .secondary {
+  min-height: 88rpx;
+  border-radius: var(--radius-md);
+}
+.activity-list-page .btn {
+  background: var(--color-brand);
+  color: var(--color-on-brand);
+}
+.activity-list-page .secondary {
+  border-color: var(--color-border);
+  background: var(--color-input-bg);
+  color: var(--color-text);
 }

@@ -1,6 +1,7 @@
 import type { AvatarSource, ClientAvatarSource, Profile } from '../../models';
 import { runPageTask } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
+import { syncPageTheme } from '../../services/theme-service';
 import { invalidateProfilePageCache } from '../../utils/profile-page-cache';
 
 const ORPHAN_LEDGER_KEY = 'profile-media-orphans-v1';
@@ -365,6 +366,8 @@ Page({
   mediaErrorStage: '',
   localPhotoPreviews: {} as Record<string, string>,
   data: {
+    theme: 'dark',
+    themeClass: 'theme-dark',
     loading: true,
     error: '',
     p: null as Profile | null,
@@ -392,6 +395,7 @@ Page({
     }
   },
   async onShow() {
+    syncPageTheme(this);
     await this.loadAvatarPreview();
   },
   onHide() {

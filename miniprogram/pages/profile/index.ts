@@ -1,6 +1,7 @@
 import type { PersonalCapabilityCard, Profile } from '../../models';
 import { runPageTask } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
+import { setTheme, syncPageTheme } from '../../services/theme-service';
 import { appStore } from '../../store/app-store';
 import { personalCardViewModel } from '../../utils/personal-card';
 import {
@@ -110,6 +111,8 @@ Page({
   cardLoadPromise: null as Promise<void> | null,
   hydratedCache: null as ProfilePageCache | null,
   data: {
+    theme: 'dark',
+    themeClass: 'theme-dark',
     profile: null as Profile | null,
     loading: true,
     refreshing: false,
@@ -153,6 +156,7 @@ Page({
     });
   },
   async onShow() {
+    syncPageTheme(this);
     this.pageVisible = true;
     this.lifecycleRevision += 1;
     const cache = this.hydrateCache();
@@ -364,6 +368,10 @@ Page({
   heroTouchEnd() {
     if (!this.data.heroPullOffset && this.data.heroImageMode === 'aspectFill') return;
     this.setData({ heroPullOffset: 0, heroImageMode: 'aspectFill' });
+  },
+  switchTheme(event: { currentTarget?: { dataset?: { theme?: unknown } } }) {
+    setTheme(event.currentTarget?.dataset?.theme);
+    syncPageTheme(this);
   },
   toggleCard() {
     this.setData({ cardExpanded: !this.data.cardExpanded });

@@ -1,4 +1,5 @@
 import { rideService } from '../../../services/ride-service';
+import { syncPageTheme } from '../../../services/theme-service';
 import { appStore } from '../../../store/app-store';
 
 const emptyCloneForm = () => ({ deadline: '', startAt: '', endAt: '' });
@@ -6,6 +7,8 @@ const newRequestId = () => `clone_${Date.now()}_${Math.random().toString(36).sli
 
 Page({
   data: {
+    theme: 'dark',
+    themeClass: 'theme-dark',
     items: [] as any[],
     error: '',
     allowed: false,
@@ -16,6 +19,7 @@ Page({
     cloning: false,
   },
   async onShow() {
+    syncPageTheme(this);
     await appStore.ensureIdentity(wx.cloud);
     if (appStore.authStatus !== 'authenticated') {
       this.setData({ error: '请先完成微信身份验证', allowed: false });

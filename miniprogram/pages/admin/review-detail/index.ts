@@ -1,4 +1,5 @@
 import { rideService } from '../../../services/ride-service';
+import { syncPageTheme } from '../../../services/theme-service';
 import { appStore } from '../../../store/app-store';
 import { capabilityCard } from '../../../utils/capability-card';
 import { formatChinaDateTime } from '../../../utils/date-time';
@@ -26,6 +27,8 @@ let loadRequestId = 0;
 
 Page({
   data: {
+    theme: 'dark',
+    themeClass: 'theme-dark',
     x: null as any,
     card: null as any,
     phone: '',
@@ -35,6 +38,9 @@ Page({
     error: '',
     loading: false,
     submitting: false,
+  },
+  onShow() {
+    syncPageTheme(this);
   },
   async onLoad(q: any) {
     const requestId = ++loadRequestId;

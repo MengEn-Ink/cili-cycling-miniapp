@@ -1,4 +1,5 @@
 import { rideService } from '../../../services/ride-service';
+import { syncPageTheme } from '../../../services/theme-service';
 import { appStore } from '../../../store/app-store';
 
 const statusText: Record<string, string> = {
@@ -12,6 +13,8 @@ let loadGeneration = 0;
 
 Page({
   data: {
+    theme: 'dark',
+    themeClass: 'theme-dark',
     tab: 'pending',
     items: [] as any[],
     all: [] as any[],
@@ -22,6 +25,7 @@ Page({
     error: '',
   },
   onShow() {
+    syncPageTheme(this);
     void this.load();
   },
   async load() {

@@ -54,7 +54,7 @@ page {
 
 .step-active,
 .step-active .step-number {
-  color: #ff5722;
+  color: var(--color-brand);
 }
 
 .step-rule {
@@ -67,7 +67,7 @@ page {
 
 .hero-kicker,
 .context-kicker {
-  color: #ff5722;
+  color: var(--color-brand);
   font-size: 18rpx;
   font-weight: 900;
   letter-spacing: 2rpx;
@@ -99,13 +99,13 @@ page {
 .activity-context {
   padding: 16rpx 20rpx;
   border: 1rpx solid #3a3a3c;
-  border-left: 6rpx solid #ff5722;
-  border-radius: 32rpx 32rpx 14rpx 14rpx;
+  border-left: 6rpx solid var(--color-brand);
+  border-radius: var(--radius-display) var(--radius-display) var(--radius-md) var(--radius-md);
 }
 
 .context-status {
   min-width: 0;
-  color: #ff8a65;
+  color: var(--color-brand);
   font-size: 20rpx;
   font-weight: 800;
   text-align: right;
@@ -146,7 +146,7 @@ page {
   overflow: hidden;
   margin-top: 4rpx;
   border: 1rpx solid #3a3a3c;
-  border-radius: 40rpx;
+  border-radius: var(--radius-display);
   background: #1c1c1e;
 }
 
@@ -174,7 +174,7 @@ page {
 
 .section-label > text {
   flex: 0 0 auto;
-  color: #ff5722;
+  color: var(--color-brand);
   font-size: 19rpx;
   line-height: 1.8;
 }
@@ -246,7 +246,7 @@ page {
 
 .required,
 .text-button {
-  color: #ff5722;
+  color: var(--color-brand);
 }
 
 .optional {
@@ -319,7 +319,7 @@ page {
 
 .choice.selected,
 .segment.selected {
-  border-color: #ff5722;
+  border-color: var(--color-brand);
   background: #2b1812;
   color: #fff;
 }
@@ -390,7 +390,7 @@ page {
   display: inline-flex;
   padding: 4rpx 9rpx;
   border-radius: 8rpx;
-  background: #ff5722;
+  background: var(--color-brand);
   color: #fff;
   font-size: 18rpx;
   font-weight: 900;
@@ -423,7 +423,7 @@ page {
 
 .status-failed,
 .status-disconnected {
-  border-color: #ff5722;
+  border-color: var(--color-brand);
 }
 
 .remark {
@@ -512,7 +512,7 @@ page {
 }
 
 .form-page .submit-button {
-  background: #ff5722;
+  background: var(--color-brand);
   color: #fff;
   font-weight: 900;
   letter-spacing: 2rpx;
@@ -585,4 +585,92 @@ page {
     padding-left: 2rpx;
     font-size: 20rpx;
   }
+}
+
+page,
+.form-page {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.activity-context,
+.submit-note,
+.form-surface,
+.form-card {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.activity-context,
+.form-surface {
+  border-radius: var(--radius-display);
+}
+.form-section {
+  border-color: var(--color-border);
+}
+.identity-card,
+.choice,
+.experience-segment,
+.strava-row,
+.safety-box {
+  border-color: var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-raised);
+  color: var(--color-text);
+}
+.segment {
+  min-height: 104rpx;
+  border-color: var(--color-border);
+  color: var(--color-muted);
+}
+.choice.selected,
+.segment.selected {
+  border-color: var(--color-brand);
+  background: var(--color-brand-soft);
+  color: var(--color-text);
+}
+.field-hint,
+.choice-meta,
+.privacy-note,
+.context-meta,
+.submit-note,
+.section-hint {
+  color: var(--color-muted);
+}
+.remark {
+  border-color: var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-input-bg);
+  color: var(--color-text);
+}
+.form-page .fixed {
+  border-color: var(--color-border);
+  background: var(--color-fixed-bar);
+  box-shadow: 0 -8rpx 28rpx var(--color-shadow);
+}
+.action-bar button,
+.text-button {
+  min-height: 88rpx;
+  border-radius: var(--radius-display) !important;
+}
+.back-button,
+.text-button {
+  border-color: var(--color-border);
+  background: var(--color-input-bg);
+  color: var(--color-text);
+}
+.form-page .submit-button {
+  background: var(--color-brand);
+  color: var(--color-on-brand);
+}
+
+.status-ready {
+  border-color: var(--color-success);
+}
+.status-syncing,
+.status-authorizing {
+  border-color: var(--color-warning);
+}
+.status-failed,
+.status-disconnected {
+  border-color: var(--color-danger);
 }

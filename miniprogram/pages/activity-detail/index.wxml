@@ -1,4 +1,4 @@
-<view class="detail-page">
+<view class="detail-page {{themeClass}}">
   <state-view loading="{{loading}}" error="{{error}}">
     <view wx:if="{{item}}">
       <view class="detail-hero {{galleryImages.length && !coverFailed ? 'detail-hero--media' : 'detail-hero--plain'}}">

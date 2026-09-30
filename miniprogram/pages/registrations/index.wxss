@@ -24,7 +24,7 @@ brand-logo {
 }
 
 .page-heading .hero-kicker {
-  color: #d55b1f;
+  color: var(--color-brand);
   font-size: 19rpx;
   font-style: italic;
   font-weight: 900;
@@ -102,7 +102,7 @@ brand-logo {
 
 .registration-card--pressed {
   transform: scale(0.988);
-  border-color: #d55b1f;
+  border-color: var(--color-brand);
   background: #242427;
 }
 
@@ -147,7 +147,7 @@ brand-logo {
 }
 
 .date {
-  color: #f38a50;
+  color: var(--color-brand);
   font-variant-numeric: tabular-nums;
   font-weight: 900;
 }
@@ -181,7 +181,7 @@ brand-logo {
 }
 
 .arrow {
-  color: #d55b1f;
+  color: var(--color-brand);
   font-size: 28rpx;
 }
 
@@ -191,7 +191,7 @@ brand-logo {
   bottom: 0;
   width: 24rpx;
   height: 24rpx;
-  background: #d55b1f;
+  background: var(--color-brand);
   clip-path: polygon(100% 0, 100% 100%, 0 100%);
 }
 
@@ -224,24 +224,24 @@ brand-logo {
 .registration-card {
   padding: 24rpx;
   border-color: #3a3a3c;
-  border-radius: 40rpx;
+  border-radius: var(--radius-display);
   background: #1c1c1e;
   box-shadow: none;
 }
 
 .registration-card--pressed {
-  border-color: #ff5722;
+  border-color: var(--color-brand);
   background: #2c2c2e;
 }
 
 .page-heading .hero-kicker,
 .date,
 .arrow {
-  color: #ff5722;
+  color: var(--color-brand);
 }
 
 .corner-cut {
-  background: #ff5722;
+  background: var(--color-brand);
 }
 
 @media (max-width: 320px) {
@@ -249,4 +249,34 @@ brand-logo {
     padding-right: 32rpx;
     padding-left: 32rpx;
   }
+}
+
+page,
+.page.registrations-page {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+brand-logo,
+.card-footer {
+  border-color: var(--color-border);
+}
+.registration-card {
+  border-color: var(--color-border);
+  border-radius: var(--radius-display);
+  background: var(--color-surface);
+  box-shadow: 0 10rpx 24rpx var(--color-shadow);
+}
+.registration-card--pressed {
+  border-color: var(--color-brand);
+  background: var(--color-raised);
+}
+.heading-count,
+.refresh-note,
+.registration-meta,
+.updated-at {
+  color: var(--color-muted);
+}
+.count-value,
+.open-link {
+  color: var(--color-text);
 }
