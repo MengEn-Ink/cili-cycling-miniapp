@@ -19,21 +19,13 @@ const {
   toError,
 } = require('./core');
 const { buildCapabilityCard } = require('./capability-card');
-const { createProfileStore } = require('./store');
+const { createProfileStore, missing: isNotFound } = require('./store');
 const { assertImportRequest, importStravaAvatar } = require('./avatar-import');
 const { canonicalizeClientMedia } = require('./media-upload');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const profileStore = createProfileStore(db);
 const ok = (data) => ({ ok: true, data });
-function isNotFound(error) {
-  const code = String(error?.errCode || error?.code || '');
-  const message = String(error?.errMsg || error?.message || '');
-  return (
-    ['DATABASE_DOCUMENT_NOT_EXIST', 'DOCUMENT_NOT_FOUND'].includes(code) ||
-    (Number(error?.errCode) === -502001 && /document.+(?:not exist|not found)/i.test(message))
-  );
-}
 async function maybeGet(collection, id) {
   try {
     return (await collection.doc(id).get()).data;

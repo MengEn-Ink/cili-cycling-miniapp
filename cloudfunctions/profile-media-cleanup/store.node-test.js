@@ -10,6 +10,14 @@ try {
   if (error.code !== 'MODULE_NOT_FOUND') throw error;
 }
 const createCleanupStore = subject.createCleanupStore || (() => ({}));
+const missing = subject.missing || (() => false);
+
+test('cleanup 仅把明确 document-not-exist 的 -1 视为缺文档', () => {
+  assert.equal(missing({ errCode: -1, errMsg: 'document with _id x does not exist' }), true);
+  assert.equal(missing({ errCode: -1, errMsg: 'not found' }), false);
+  assert.equal(missing({ errCode: -1, errMsg: 'database request fail' }), false);
+  assert.equal(missing({ errCode: -502001, errMsg: 'database request fail' }), false);
+});
 
 function mutationDatabase(seed) {
   const REMOVE = Symbol('remove');

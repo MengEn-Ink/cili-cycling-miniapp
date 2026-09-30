@@ -15,6 +15,9 @@ const missing = subject.missing || (() => true);
 test('仅明确文档不存在可降级，通用 -502001 数据库错误必须抛出', () => {
   assert.equal(missing({ errCode: -502001, errMsg: 'document with _id x does not exist' }), true);
   assert.equal(missing({ errCode: -502001, errMsg: 'database request fail' }), false);
+  assert.equal(missing({ errCode: -1, errMsg: 'document with _id x does not exist' }), true);
+  assert.equal(missing({ errCode: -1, errMsg: 'not found' }), false);
+  assert.equal(missing({ errCode: -1, errMsg: 'database request fail' }), false);
 });
 
 function fakeDb(seed) {

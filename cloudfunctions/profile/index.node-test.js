@@ -6,12 +6,17 @@ const crypto = require('node:crypto');
 const cloud = require('wx-server-sdk');
 const { mediaOwnerPrefix } = require('./core');
 
-function statefulDatabase() {
+function statefulDatabase({ throwRuntimeMissing = false } = {}) {
   const state = {};
   const ensure = (name) => (state[name] ||= new Map());
   const collection = (name) => ({
     doc: (id) => ({
-      get: async () => ({ data: ensure(name).get(id) }),
+      get: async () => {
+        const data = ensure(name).get(id);
+        if (throwRuntimeMissing && data === undefined)
+          throw { errCode: -1, errMsg: `document with _id ${id} does not exist` };
+        return { data };
+      },
       set: async ({ data }) => ensure(name).set(id, { _id: id, ...data }),
       update: async ({ data }) =>
         ensure(name).set(id, { ...(ensure(name).get(id) || { _id: id }), ...data }),
@@ -27,6 +32,20 @@ function statefulDatabase() {
     },
   };
 }
+
+test('profile 入口把运行时 -1 的精确缺文档语义用于首次资料与 intent', async () => {
+  const owner = 'owner-runtime';
+  const fixture = statefulDatabase({ throwRuntimeMissing: true });
+  const main = loadMain(owner, fixture.db);
+
+  const profile = await main({ action: 'get' });
+  const uploadPath = await main({ action: 'mediaUploadPath' });
+
+  assert.equal(profile.ok, true);
+  assert.equal(uploadPath.ok, true);
+  assert.match(uploadPath.data.cloud_path, /^profiles\/[a-f0-9]{32}\//);
+  assert.equal((fixture.state.profile_media_imports || new Map()).size, 1);
+});
 
 function loadMain(owner, db) {
   cloud.init = () => undefined;

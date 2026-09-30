@@ -110,9 +110,11 @@ function nextAvatarRevision(profile) {
 function missing(error) {
   const code = String(error?.errCode || error?.code || '');
   const message = String(error?.errMsg || error?.message || '');
+  const explicitDocumentMissing =
+    /\bdocument(?:\s+with\s+_id\s+\S+)?\s+(?:(?:does\s+)?not\s+exist|not\s+found)\b/i.test(message);
   return (
     ['DATABASE_DOCUMENT_NOT_EXIST', 'DOCUMENT_NOT_FOUND'].includes(code) ||
-    (Number(error?.errCode) === -502001 && /document.+(?:not exist|not found)/i.test(message))
+    ([-502001, -1].includes(Number(error?.errCode)) && explicitDocumentMissing)
   );
 }
 
