@@ -11,10 +11,9 @@ import {
   INDEXES,
   applyPlan,
   buildPlan,
-  createDemoActivity,
   resolveTarget,
   runBootstrap,
-  validateDemo,
+  verifyState,
 } from './bootstrap-cloudbase.mjs';
 
 const require = createRequire(import.meta.url);
@@ -26,7 +25,6 @@ const {
 const { IMPORT_LEASE_MS } = require('../cloudfunctions/profile/avatar-import');
 
 function completeState() {
-  const now = new Date('2026-09-29T00:00:00.000Z');
   return {
     tables: new Set(COLLECTIONS),
     indexes: new Map(
@@ -41,7 +39,6 @@ function completeState() {
         { AclTag: 'CUSTOM', Rule: JSON.stringify(DENY_RULE) },
       ]),
     ),
-    demo: createDemoActivity(now),
   };
 }
 
@@ -176,22 +173,11 @@ test('权限不一致时仅生成修复权限计划', () => {
   assert.deepEqual(plan.actions, [{ type: 'set_rule', collection: 'admins' }]);
 });
 
-test('demo 存在时只验证不覆盖，不存在时只插入固定 ID', () => {
+test('demo 缺失时 bootstrap plan 保持零动作且 verify 不失败', () => {
   const state = completeState();
-  assert.equal(
-    buildPlan(state).actions.some((action) => action.type === 'insert_demo'),
-    false,
-  );
   state.demo = undefined;
-  assert.deepEqual(buildPlan(state).actions, [
-    { type: 'insert_demo', collection: 'activities', id: 'demo_activity_001' },
-  ]);
-});
-
-test('demo 使用 BSON Extended JSON Date，且时间关系正确', () => {
-  const demo = createDemoActivity(new Date('2026-09-29T00:00:00.000Z'));
-  assert.deepEqual(validateDemo(demo), []);
-  assert.equal(typeof demo.event_start.$date.$numberLong, 'string');
+  assert.deepEqual(buildPlan(state), { actions: [], conflicts: [] });
+  assert.deepEqual(verifyState(state), []);
 });
 
 test('runner 错误令 bootstrap 拒绝并由入口设置非零退出码', async () => {

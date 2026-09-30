@@ -8,7 +8,6 @@ export const CLI_PACKAGE = '@cloudbase/cli@3.8.4';
 export const API_VERSION = '2018-06-08';
 export const DEFAULT_REGION = 'ap-shanghai';
 export const DENY_RULE = { read: false, write: false };
-export const DEMO_ID = 'demo_activity_001';
 export const COLLECTIONS = Object.freeze([
   'activities',
   'registrations',
@@ -433,144 +432,6 @@ function sameRule(response) {
   );
 }
 
-function unwrapRunData(response) {
-  const first = response.Data?.[0];
-  if (first === undefined) return undefined;
-  if (typeof first !== 'string') return first;
-  try {
-    return JSON.parse(first);
-  } catch {
-    throw new CliError('读取演示活动', 'RunCommands 返回了无法解析的数据', 1);
-  }
-}
-
-function decodeExtendedJson(value) {
-  if (Array.isArray(value)) return value.map(decodeExtendedJson);
-  if (!value || typeof value !== 'object') return value;
-  if ('$numberInt' in value || '$numberLong' in value || '$numberDouble' in value) {
-    return Number(value.$numberInt ?? value.$numberLong ?? value.$numberDouble);
-  }
-  return Object.fromEntries(
-    Object.entries(value).map(([key, child]) => [key, decodeExtendedJson(child)]),
-  );
-}
-
-function findDocuments(payload) {
-  if (!payload) return [];
-  const documents = Array.isArray(payload)
-    ? payload
-    : (payload.cursor?.firstBatch ?? payload.firstBatch ?? payload.documents ?? payload.data ?? []);
-  return documents.map((document) => {
-    if (typeof document !== 'string') return decodeExtendedJson(document);
-    try {
-      return decodeExtendedJson(JSON.parse(document));
-    } catch {
-      throw new CliError('读取演示活动', 'RunCommands 文档数据无法解析', 1);
-    }
-  });
-}
-
-export function extendedDate(date) {
-  return { $date: { $numberLong: String(date.getTime()) } };
-}
-
-export function createDemoActivity(now = new Date()) {
-  const signupDeadline = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  const eventStart = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-  const eventEnd = new Date(eventStart.getTime() + 4 * 60 * 60 * 1000);
-  const timestamp = extendedDate(now);
-  return {
-    _id: DEMO_ID,
-    title: 'CloudBase Bootstrap 演示骑行活动',
-    cover_image: '',
-    description: '由可审计 bootstrap 创建的非敏感演示活动。',
-    schedule: [],
-    route: {
-      start: '演示起点',
-      end: '演示终点',
-      distance_km: 20,
-      elevation_m: 0,
-      level: '休闲',
-      gpx_file_id: '',
-    },
-    notices: ['请遵守交通规则'],
-    equipment: ['头盔'],
-    fee: { included: [], excluded: [], remark: '无在线支付' },
-    capacity: 20,
-    occupied_count: 0,
-    signup_deadline: extendedDate(signupDeadline),
-    event_start: extendedDate(eventStart),
-    event_end: extendedDate(eventEnd),
-    status: 'published',
-    is_deleted: false,
-    created_by: 'system:bootstrap',
-    created_at: timestamp,
-    updated_at: timestamp,
-  };
-}
-
-function dateMillis(value) {
-  if (value instanceof Date) return value.getTime();
-  if (typeof value === 'string') {
-    const millis = Date.parse(value);
-    return Number.isNaN(millis) ? undefined : millis;
-  }
-  const raw = value?.$date?.$numberLong ?? value?.$date;
-  const millis = typeof raw === 'string' ? Number(raw) : typeof raw === 'number' ? raw : undefined;
-  return Number.isFinite(millis) ? millis : undefined;
-}
-
-export function validateDemo(document) {
-  const errors = [];
-  const exact = {
-    _id: DEMO_ID,
-    title: 'CloudBase Bootstrap 演示骑行活动',
-    cover_image: '',
-    description: '由可审计 bootstrap 创建的非敏感演示活动。',
-    capacity: 20,
-    occupied_count: 0,
-    status: 'published',
-    is_deleted: false,
-    created_by: 'system:bootstrap',
-  };
-  const deepExact = {
-    schedule: [],
-    route: {
-      start: '演示起点',
-      end: '演示终点',
-      distance_km: 20,
-      elevation_m: 0,
-      level: '休闲',
-      gpx_file_id: '',
-    },
-    notices: ['请遵守交通规则'],
-    equipment: ['头盔'],
-    fee: { included: [], excluded: [], remark: '无在线支付' },
-  };
-  for (const [field, expected] of Object.entries(exact)) {
-    if (document?.[field] !== expected) errors.push(`${field} 应为 ${JSON.stringify(expected)}`);
-  }
-  for (const [field, expected] of Object.entries(deepExact)) {
-    if (JSON.stringify(document?.[field]) !== JSON.stringify(expected)) {
-      errors.push(`${field} 与 bootstrap 定义不一致`);
-    }
-  }
-  const deadline = dateMillis(document?.signup_deadline);
-  const start = dateMillis(document?.event_start);
-  const end = dateMillis(document?.event_end);
-  if ([deadline, start, end].some((value) => value === undefined)) {
-    errors.push('signup_deadline/event_start/event_end 必须为 Date/BSON Extended JSON');
-  } else {
-    if (start - deadline !== 7 * 24 * 60 * 60 * 1000) errors.push('开始时间必须比报名截止晚 7 天');
-    if (end - start !== 4 * 60 * 60 * 1000) errors.push('结束时间必须比开始时间晚 4 小时');
-  }
-  const createdAt = dateMillis(document?.created_at);
-  const updatedAt = dateMillis(document?.updated_at);
-  if (createdAt === undefined || updatedAt === undefined)
-    errors.push('created_at/updated_at 必须为 Date/BSON Extended JSON');
-  return errors;
-}
-
 async function listTables(runner, target) {
   const names = [];
   let offset = 0;
@@ -588,28 +449,9 @@ async function listTables(runner, target) {
   return new Set(names);
 }
 
-async function readDemo(runner, target) {
-  const command = {
-    find: 'activities',
-    filter: { _id: DEMO_ID },
-    limit: 1,
-  };
-  const response = await runner.api(
-    'RunCommands',
-    {
-      EnvId: target.envId,
-      MgoCommands: [
-        { TableName: 'activities', CommandType: 'QUERY', Command: JSON.stringify(command) },
-      ],
-    },
-    target,
-  );
-  return findDocuments(unwrapRunData(response))[0];
-}
-
 export async function inspectState(runner, target) {
   const tables = await listTables(runner, target);
-  const state = { tables, indexes: new Map(), rules: new Map(), demo: undefined };
+  const state = { tables, indexes: new Map(), rules: new Map() };
   for (const collection of COLLECTIONS) {
     if (!tables.has(collection)) continue;
     const [table, rule] = await Promise.all([
@@ -623,7 +465,6 @@ export async function inspectState(runner, target) {
     state.indexes.set(collection, (table.Indexes ?? []).map(actualIndex));
     state.rules.set(collection, rule);
   }
-  if (tables.has('activities')) state.demo = await readDemo(runner, target);
   return state;
 }
 
@@ -648,13 +489,6 @@ export function buildPlan(state) {
         index: expected.name,
         reason: '同名索引定义不一致',
       });
-    }
-  }
-  if (!state.tables.has('activities') || !state.demo) {
-    actions.push({ type: 'insert_demo', collection: 'activities', id: DEMO_ID });
-  } else {
-    for (const reason of validateDemo(state.demo)) {
-      conflicts.push({ collection: 'activities', id: DEMO_ID, reason });
     }
   }
   return { actions, conflicts };
@@ -770,26 +604,6 @@ export async function applyPlan(runner, target, plan, now = new Date(), polling 
         },
         polling,
       );
-    } else if (action.type === 'insert_demo') {
-      const command = { insert: 'activities', documents: [createDemoActivity(now)], ordered: true };
-      response = await runner.api(
-        'RunCommands',
-        {
-          EnvId: target.envId,
-          MgoCommands: [
-            { TableName: 'activities', CommandType: 'INSERT', Command: JSON.stringify(command) },
-          ],
-        },
-        target,
-      );
-      await waitUntilVisible(
-        `等待演示活动 ${DEMO_ID}`,
-        async () => {
-          const document = await readDemo(runner, target);
-          return Boolean(document) && validateDemo(document).length === 0;
-        },
-        polling,
-      );
     }
     applied.push({ ...action, requestId: response.RequestId });
   }
@@ -811,9 +625,6 @@ export function verifyState(state) {
     else if (!sameIndex(named, expected))
       failures.push(`${expected.collection}.${expected.name}: 索引定义不一致`);
   }
-  if (!state.demo) failures.push(`activities.${DEMO_ID}: 演示活动缺失`);
-  else
-    failures.push(...validateDemo(state.demo).map((reason) => `activities.${DEMO_ID}: ${reason}`));
   return failures;
 }
 
