@@ -43,7 +43,7 @@ describe('报名、骑行名片与个人中心设计对齐', () => {
     const styles = read('miniprogram/pages/profile/index.wxss');
 
     expect(template).toContain('<brand-logo compact="{{true}}"');
-    expect(template).toContain('class="hero-capability-card"');
+    expect(template).toContain('hero-capability-card {{cardExpanded');
     expect(styles).toMatch(/\.profile-hero\.has-bg\s*\{[^}]*min-height:\s*600rpx/s);
     expect(styles).toMatch(/\.menu-card,\s*\.menu-card:active\s*\{[^}]*min-height:\s*88rpx/s);
     expect(styles).toContain('color: #ff5722;');

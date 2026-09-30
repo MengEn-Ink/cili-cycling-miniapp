@@ -873,3 +873,82 @@ brand-logo {
     padding-left: 14rpx;
   }
 }
+
+.hero-card-brand {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.hero-card-logo {
+  padding: 5rpx 9rpx;
+  border-radius: 8rpx;
+  background: #ff5722;
+  color: #0b0b0c;
+  font-size: 18rpx;
+  font-weight: 950;
+  letter-spacing: 2rpx;
+}
+
+.hero-capability-card.is-expanded {
+  padding-bottom: 20rpx;
+  background: rgba(18, 18, 20, 0.96);
+}
+
+.hero-capability-secondary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10rpx;
+  margin-top: 10rpx;
+}
+
+.hero-capability-secondary .hero-capability-metric {
+  min-width: 0;
+  padding: 12rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.08);
+  border-radius: 18rpx;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.hero-capability-details {
+  display: grid;
+  gap: 8rpx;
+  margin-top: 12rpx;
+  padding-top: 12rpx;
+  border-top: 1rpx solid rgba(255, 255, 255, 0.1);
+}
+
+.hero-capability-details > view,
+.profile-cache-message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.hero-capability-details text:first-child {
+  color: #8f8f94;
+  font-size: 19rpx;
+}
+
+.hero-capability-details text:last-child {
+  color: #f7f7f5;
+  font-size: 19rpx;
+  text-align: right;
+}
+
+.profile-cache-message {
+  min-height: 52rpx;
+  margin: 6rpx 0 8rpx;
+  padding: 8rpx 16rpx;
+  border: 1rpx solid #343438;
+  border-radius: 18rpx;
+  background: rgba(28, 28, 30, 0.72);
+  color: #a8a8ad;
+  font-size: 19rpx;
+}
+
+.profile-cache-message text:last-child {
+  flex: 0 0 auto;
+  color: #f38a50;
+}

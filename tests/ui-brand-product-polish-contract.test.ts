@@ -30,7 +30,7 @@ const oldLogoClass =
   /brand-lockup|brand-bar|cili-symbol|cili-mark|mini-symbol|brand-word|brand-cn|mark-cut|brand-rule|detail-brand|desk-code|profile-code/;
 
 describe('品牌与页面体验静态契约', () => {
-  it('全局和 13 个页面关闭下拉刷新并统一深色滚动边界', () => {
+  it('全局默认关闭下拉刷新，仅个人中心开放主动刷新，并统一深色滚动边界', () => {
     const app = JSON.parse(read('miniprogram/app.json'));
     expect(app.window).toMatchObject({
       enablePullDownRefresh: false,
@@ -43,7 +43,7 @@ describe('品牌与页面体验静态契约', () => {
     for (const page of pageRoots) {
       const config = JSON.parse(read(`miniprogram/pages/${page}/index.json`));
       expect(config, page).toMatchObject({
-        enablePullDownRefresh: false,
+        enablePullDownRefresh: page === 'profile',
         backgroundColor: '#0b0b0c',
         backgroundColorTop: '#0b0b0c',
         backgroundColorBottom: '#0b0b0c',

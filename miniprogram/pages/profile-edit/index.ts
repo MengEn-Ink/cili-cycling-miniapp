@@ -1,6 +1,7 @@
 import type { AvatarSource, ClientAvatarSource, Profile } from '../../models';
 import { runPageTask } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
+import { invalidateProfilePageCache } from '../../utils/profile-page-cache';
 
 const ORPHAN_LEDGER_KEY = 'profile-media-orphans-v1';
 const AVATAR_PREVIEW_DEADLINE_MS = 1_200;
@@ -482,6 +483,7 @@ Page({
   applyAvatarProfile(authoritative: Profile) {
     const p = mergeAvatarFields(this.data.p, authoritative);
     this.setData({ p, canEditDetails: canEditProfileDetails(p) });
+    invalidateProfilePageCache();
   },
   async reloadAvatarProfile(expected: {
     source: AvatarSource;
@@ -686,6 +688,7 @@ Page({
     );
     this.setData({ saving: false, error: state.error, p: state.data || p });
     if (state.data) {
+      invalidateProfilePageCache();
       await this.loadPhotoPreviews();
       wx.showToast({ title: '已安全保存' });
     }

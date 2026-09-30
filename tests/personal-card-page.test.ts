@@ -159,14 +159,15 @@ describe('个人骑行名片页面行为', () => {
 describe('个人骑行名片静态页面契约', () => {
   const read = (file: string) => (existsSync(file) ? readFileSync(file, 'utf8') : '');
 
-  it('注册私有页面并从个人中心提供入口', () => {
+  it('保留私有名片页面能力，但个人中心不再提供重复入口', () => {
     const app = JSON.parse(read('miniprogram/app.json') || '{}');
     const profileTs = read('miniprogram/pages/profile/index.ts');
     const profileWxml = read('miniprogram/pages/profile/index.wxml');
 
     expect(app.pages).toContain('pages/capability-card/index');
-    expect(profileTs).toContain("'/pages/capability-card/index'");
-    expect(profileWxml).toContain('我的骑行名片');
+    expect(profileTs).not.toContain("'/pages/capability-card/index'");
+    expect(profileWxml).not.toContain('我的骑行名片');
+    expect(profileWxml).toContain('下拉刷新并查看完整名片');
   });
 
   it('使用原生多图 swiper、隐私说明和真实五项指标列表', () => {

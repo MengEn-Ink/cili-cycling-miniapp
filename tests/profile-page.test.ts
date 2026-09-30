@@ -136,9 +136,10 @@ describe('个人中心加载状态', () => {
     await lifecycle;
   });
 
-  it('骑行名片超过短 deadline 后降级且迟到结果不得落地', async () => {
+  it('骑行名片刷新超时后保留旧内容，且迟到结果不得覆盖', async () => {
     await page.onShow();
     await vi.waitFor(() => expect(page.data.heroBackgrounds).toHaveLength(1));
+    const previousCard = page.data.heroCard;
     const pendingCard = deferred<ReturnType<typeof capabilityCard>>();
     rideService.getPersonalCapabilityCard.mockReturnValueOnce(pendingCard.promise);
     vi.useFakeTimers();
@@ -148,10 +149,11 @@ describe('个人中心加载状态', () => {
     await Promise.resolve();
     await vi.advanceTimersByTimeAsync(1_200);
 
-    expect(page.data.heroBackgrounds).toEqual([]);
-    expect(page.data.heroCard).toBeNull();
-    expect(page.data.heroBackgroundAvatarUrl).toBe('');
-    expect(page.data.heroFallbackImageUrl).toBe('/assets/profile/hero-alpine.svg');
+    expect(page.data.heroBackgrounds).toEqual([
+      expect.objectContaining({ url: 'https://temporary.example/ride.jpg' }),
+    ]);
+    expect(page.data.heroCard).toBe(previousCard);
+    expect(page.data.refreshMessage).toContain('继续展示');
 
     pendingCard.resolve(
       capabilityCard({
@@ -167,10 +169,12 @@ describe('个人中心加载状态', () => {
     await refresh;
     await Promise.resolve();
 
-    expect(page.data.heroBackgrounds).toEqual([]);
+    expect(page.data.heroBackgrounds).toEqual([
+      expect.objectContaining({ url: 'https://temporary.example/ride.jpg' }),
+    ]);
   });
 
-  it('压缩 hero 首屏展示真实名片摘要与资料完整度', async () => {
+  it('大面积 hero 默认展示摘要，下拉后提供完整名片与更新时间', async () => {
     await page.onShow();
     await vi.waitFor(() => expect(page.data.heroCard).toBeTruthy());
 
@@ -185,8 +189,10 @@ describe('个人中心加载状态', () => {
     });
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     const styles = readFileSync('miniprogram/pages/profile/index.wxss', 'utf8');
-    expect(template).toContain('class="hero-capability-card"');
-    expect(template).toContain('近 90 天骑行摘要');
+    expect(template).toContain('hero-capability-card {{cardExpanded');
+    expect(template).toContain('近 90 天骑行名片');
+    expect(template).toContain('wx:for="{{heroCard.secondaryMetrics}}"');
+    expect(template).toContain('{{updatedAtText}}');
     expect(template).toContain('STRAVA {{heroCard.statusLabel}}');
     expect(template).toContain('{{profile.completeness}}%');
     expect(template).toContain('style="width: {{profile.completeness}}%"');
@@ -259,21 +265,20 @@ describe('个人中心加载状态', () => {
     expect(page.data.heroBackgroundAvatarUrl).toBe('https://temporary.example/avatar.jpg');
   });
 
-  it('头部唯一展示 Strava 近 90 天指标，且点击后进入完整骑行名片', () => {
+  it('头部收口完整骑行名片，点按展开且不再跳转独立入口', () => {
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     const pageScript = readFileSync('miniprogram/pages/profile/index.ts', 'utf8');
 
     expect(template).not.toMatch(/<swiper\b[^>]*\bautoplay(?:=|\s|>)/);
-    expect(template).toContain('Strava 近 90 天骑行摘要');
+    expect(template).toContain('近 90 天骑行名片');
     expect(template).toContain('wx:for="{{heroCard.primaryMetrics}}"');
-    expect(template).toMatch(/class="hero-capability-card"[^>]*bindtap="capabilityCard"/);
-    expect(template).not.toContain('class="menu-title">Strava 数据</view>');
-    expect(template).not.toContain('bindtap="strava"');
-    expect(pageScript).not.toMatch(/\bstrava\s*\(\)\s*\{/);
-    expect(pageScript).not.toContain("'/pages/strava/index'");
+    expect(template).toContain('wx:for="{{heroCard.secondaryMetrics}}"');
+    expect(template).toMatch(/hero-capability-card[^>]*bindtap="toggleCard"/);
+    expect(template).not.toContain('我的骑行名片');
+    expect(pageScript).not.toContain("'/pages/capability-card/index'");
 
-    page.capabilityCard();
-    expect(wx.navigateTo).toHaveBeenCalledWith({ url: '/pages/capability-card/index' });
+    page.toggleCard();
+    expect(page.data.cardExpanded).toBe(true);
   });
 
   it('可预览 hero 背景和头像有可读标签，装饰性兜底背景隐藏于无障碍树', () => {
@@ -365,24 +370,19 @@ describe('个人中心加载状态', () => {
     expect(page.data.profile.nickname).toBe('管理员骑手');
   });
 
-  it('较慢的旧资料响应不能覆盖较新的 onShow 响应', async () => {
-    const oldRequest = deferred<ReturnType<typeof profile>>();
-    const newRequest = deferred<ReturnType<typeof profile>>();
-    rideService.getProfile
-      .mockReturnValueOnce(oldRequest.promise)
-      .mockReturnValueOnce(newRequest.promise);
+  it('并发 onShow 复用进行中的资料请求，避免重复请求和竞态覆盖', async () => {
+    const pending = deferred<ReturnType<typeof profile>>();
+    rideService.getProfile.mockReturnValueOnce(pending.promise);
 
-    const oldLoad = page.onShow();
+    const firstLoad = page.onShow();
     await vi.waitFor(() => expect(rideService.getProfile).toHaveBeenCalledTimes(1));
-    const newLoad = page.onShow();
-    await vi.waitFor(() => expect(rideService.getProfile).toHaveBeenCalledTimes(2));
+    const secondLoad = page.onShow();
+    expect(rideService.getProfile).toHaveBeenCalledTimes(1);
 
-    newRequest.resolve(profile('新资料'));
-    await newLoad;
-    oldRequest.resolve(profile('旧资料'));
-    await oldLoad;
+    pending.resolve(profile('复用请求资料'));
+    await Promise.all([firstLoad, secondLoad]);
 
-    expect(page.data.profile.nickname).toBe('新资料');
+    expect(page.data.profile.nickname).toBe('复用请求资料');
   });
 
   it.each(['onHide', 'onUnload'])('%s 使尚未完成的资料请求失效', async (hook) => {
@@ -440,8 +440,10 @@ describe('个人中心加载状态', () => {
       profile: expect.objectContaining({ nickname: '山野骑手' }),
       loading: false,
       refreshing: false,
-      error: '刷新失败',
+      error: '',
     });
+    expect(page.data.refreshMessage).toContain('刷新失败');
+    expect(page.data.refreshMessage).toContain('继续展示');
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     const polite =
       template.match(/<view\b(?=[^>]*aria-live="polite")(?=[^>]*role="status")[^>]*>/)?.[0] || '';

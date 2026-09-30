@@ -5,7 +5,7 @@
 
   <view
     class="profile-hero has-bg {{heroPullOffset ? 'is-pulling' : ''}}"
-    style="height: calc(600rpx + {{heroPullOffset}}px)"
+    style="min-height: calc(600rpx + {{heroPullOffset}}px)"
     bindtouchstart="heroTouchStart"
     bindtouchmove="heroTouchMove"
     bindtouchend="heroTouchEnd"
@@ -39,9 +39,9 @@
       </view>
     </view>
 
-    <view class="hero-capability-card" wx:if="{{heroCard}}" bindtap="capabilityCard">
+    <view class="hero-capability-card {{cardExpanded ? 'is-expanded' : ''}}" wx:if="{{heroCard}}" bindtap="toggleCard" aria-label="{{cardExpanded ? '收起骑行名片' : '展开完整骑行名片'}}">
       <view class="hero-capability-head">
-        <view class="hero-capability-label">Strava 近 90 天骑行摘要</view>
+        <view class="hero-card-brand"><text class="hero-card-logo">CILI</text><text class="hero-capability-label">近 90 天骑行名片</text></view>
         <view class="hero-capability-status status-{{heroCard.statusTone}}"><text class="status-dot"></text>STRAVA {{heroCard.statusLabel}}</view>
       </view>
       <view class="hero-capability-metrics" wx:if="{{heroCard.primaryMetrics.length}}">
@@ -51,7 +51,18 @@
         </view>
       </view>
       <view class="hero-capability-empty" wx:else>{{heroCard.emptyMetricsText}}</view>
-      <view class="hero-capability-meta" wx:if="{{heroCard.coverageText || heroCard.generatedAtText}}">{{heroCard.coverageText || heroCard.generatedAtText}}</view>
+      <view class="hero-capability-secondary" wx:if="{{cardExpanded && heroCard.secondaryMetrics.length}}">
+        <view class="hero-capability-metric" wx:for="{{heroCard.secondaryMetrics}}" wx:key="key">
+          <view class="hero-capability-value">{{item.value}}<text class="hero-capability-unit">{{item.unit}}</text></view>
+          <view class="hero-capability-name">{{item.label}}</view>
+        </view>
+      </view>
+      <view class="hero-capability-details" wx:if="{{cardExpanded}}">
+        <view wx:if="{{heroCard.coverageText}}"><text>统计范围</text><text>{{heroCard.coverageText}}</text></view>
+        <view wx:if="{{heroCard.syncedAtText}}"><text>最近同步</text><text>{{heroCard.syncedAtText}}</text></view>
+        <view><text>页面数据</text><text>{{updatedAtText}}</text></view>
+      </view>
+      <view class="hero-capability-meta">{{cardExpanded ? '点按收起' : '下拉刷新并查看完整名片'}} · {{updatedAtText}}</view>
     </view>
 
     <view class="hero-profile-progress" wx:if="{{profile}}">
@@ -76,8 +87,12 @@
   </view>
 
   <view class="section-label"><text>01</text> 我的资料</view>
-  <view class="profile-refreshing" wx:if="{{profile && refreshing}}" aria-hidden="true">正在更新资料…</view>
-  <view class="profile-refresh-error" wx:if="{{profile && error}}"><text aria-hidden="true">{{error}}</text><button bindtap="retryProfile">重试</button></view>
+  <view class="profile-refreshing" wx:if="{{profile && refreshing}}" aria-hidden="true">{{refreshMessage || '正在更新资料…'}}</view>
+  <view class="profile-cache-message {{refreshing ? 'is-refreshing' : ''}}" wx:if="{{profile && !refreshing && (refreshMessage || updatedAtText)}}">
+    <text>{{refreshMessage || (usingCache ? '已优先展示缓存数据' : '数据已就绪')}}</text>
+    <text>{{updatedAtText}}</text>
+  </view>
+  <view class="profile-refresh-error" wx:if="{{!profile && error}}"><text aria-hidden="true">{{error}}</text><button bindtap="retryProfile">重试</button></view>
   <view class="card profile-loading" wx:if="{{loading}}" aria-hidden="true"><view class="panel-index">PROFILE LOADING</view><view class="title">正在读取资料</view><view class="muted">正在同步最新资料。</view></view>
   <view class="card profile-card" wx:elif="{{profile}}">
     <view class="row">
@@ -89,9 +104,8 @@
   <view class="card profile-error" wx:elif="{{error}}"><view aria-hidden="true"><view class="panel-index">PROFILE ERROR</view><view class="title">资料暂时无法加载</view><view class="muted">{{error}}</view></view><button class="secondary" bindtap="retryProfile">重试加载</button></view>
   <view class="card empty-profile" wx:else><view class="title">资料尚未配置</view><view class="muted">请创建资料后再报名。</view><button class="btn" bindtap="edit">去完善</button></view>
 
-  <view class="section-label"><text>02</text> 骑行服务</view>
+  <view class="section-label"><text>02</text> 管理服务</view>
   <view class="menu-list">
-    <view class="menu-card capability-entry" bindtap="capabilityCard"><view class="menu-icon capability-icon">C</view><view class="menu-copy"><view class="menu-title">我的骑行名片</view><view class="muted">查看近 90 天骑行能力</view></view><text class="chevron">›</text></view>
     <view class="menu-card" wx:if="{{authStatus === 'authenticated'}}" bindtap="activities"><view class="menu-icon">M</view><view class="menu-copy"><view class="menu-title">活动管理</view><view class="muted">创建、编辑与发布活动</view></view><text class="chevron">›</text></view>
     <view class="menu-card" wx:if="{{isAdmin}}" bindtap="admin"><view class="menu-icon admin-icon">A</view><view class="menu-copy"><view class="menu-title">报名审批</view><view class="muted">查看并处理报名</view></view><text class="chevron">›</text></view>
   </view>
