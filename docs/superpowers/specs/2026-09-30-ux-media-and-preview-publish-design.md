@@ -86,3 +86,14 @@
 - 不用默认容量、虚构司机或虚构费用开放报名。
 - 不启用生产环境发布。
 - 不在本轮引入新的前端框架、全站深色主题或客户端直接写数据库。
+
+## Phase 2 安全复核 follow-up
+
+头像与图片链在部署前还必须满足以下收敛契约：
+
+- Strava DNS 解析与 HTTPS 请求都在同一个 5 秒总 deadline 内；仅 `EAI_AGAIN` 等白名单瞬时 DNS 错误重试一次，私网/保留地址、格式错误和其它安全错误立即失败。
+- `avatar_available` 仅在头像 URL 同时满足 HTTPS、无凭证、无显式端口、非 IP 且属于三项 Strava CDN allowlist 时为 true；OAuth 写入和 readiness 使用同一可信 URL 规则。
+- `registerMedia` 在调用 CloudBase 临时 URL、HEAD 或 GET 之前，先验证 fileID 的 HMAC owner 路径。对象验证先读取可信临时 URL 的 `Content-Length`，再以最多 5MiB 的流式读取核对实际大小和 JPEG/PNG/WebP magic；不使用会把整个对象载入内存的 `downloadFile`。
+- `mediaUploadPath` 在把 owner-bound cloudPath 返回客户端前，先在现有 `profile_media_imports` 集合写入 `client_upload` intent。`registerMedia` 成功时在同一事务完成媒体登记和 intent；若上传对象已落盘但客户端未收到响应，过期 intent 由既有 cleanup fence 按 owner path 恢复删除目标并回收。
+- 客户端 inline alert 与 toast 使用同一安全文案。`MEDIA_TOO_LARGE` 明确引导压缩或换图；预览成功只能清除同一预览请求产生的旧错误，不得覆盖更晚的上传、登记或保存错误。
+- 滚动部署顺序是硬门：先部署并验证 `profile`、`strava-auth`、`strava-callback` 与 `profile-media-cleanup`，确认 readiness、intent 和 cleanup 契约，再上传依赖 `avatar_available` 的小程序开发版。
