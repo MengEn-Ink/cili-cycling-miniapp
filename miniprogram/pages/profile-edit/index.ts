@@ -106,8 +106,8 @@ function mediaFailureDetail(error: unknown): string {
     MEDIA_OBJECT_NOT_FOUND: '图片暂未同步到云端，请稍后重试',
     MEDIA_OBJECT_VERIFY_FAILED: '图片暂未同步到云端，请稍后重试',
     MEDIA_CLOUD_UNAVAILABLE: '当前环境不支持云存储，请更新微信或使用支持云能力的真机后重试',
-    STRAVA_NOT_CONNECTED: 'Strava 尚未连接或没有可用头像，请先同步 Strava',
-    STRAVA_AVATAR_UNAVAILABLE: 'Strava 尚未连接或没有可用头像，请先同步 Strava',
+    STRAVA_NOT_CONNECTED: 'Strava 尚未连接，请先完成绑定',
+    STRAVA_AVATAR_UNAVAILABLE: 'Strava 已连接但没有可用头像，请重新授权或同步',
   };
   return `[${code}] ${messageByCode[causeCode] || messageByStage[stage] || '媒体操作失败，请稍后重试'}`;
 }

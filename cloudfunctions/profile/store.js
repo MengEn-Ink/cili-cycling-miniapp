@@ -39,6 +39,14 @@ function sameInstant(left, right) {
   return Number.isFinite(leftTime) && Number.isFinite(rightTime) && leftTime === rightTime;
 }
 
+function profileReferencesMedia(profile, fileId) {
+  if (!profile || typeof profile !== 'object') return false;
+  if (profile.avatar_file_id === fileId) return true;
+  return (Array.isArray(profile.photos) ? profile.photos : []).some(
+    (item) => item && item.file_id === fileId,
+  );
+}
+
 function validCredential(current, fence, openid, requireLease = true) {
   return Boolean(
     current &&
@@ -176,6 +184,7 @@ function createProfileStore(db) {
         )
           throw new ProfileError('MEDIA_UPLOAD_INTENT_INVALID', '媒体上传凭据无效');
         let sourceIntent = await get(imports, sourceIntentId);
+        let reopenedLegacySource = false;
         if (!sourceIntent) {
           const expectedSourceIntentId = clientUploadIntentId(mediaPath(intent.source_file_id));
           if (sourceIntentId !== expectedSourceIntentId)
@@ -188,6 +197,43 @@ function createProfileStore(db) {
           );
           sourceIntent.file_id = intent.source_file_id;
           sourceIntent.media_id = mediaDocumentId(intent.source_file_id);
+          await imports.doc(sourceIntentId).set({ data: writableDocument(sourceIntent) });
+        } else if (
+          sourceIntent.kind === 'client_upload' &&
+          sourceIntent.status === 'completed' &&
+          sourceIntentId === clientUploadIntentId(mediaPath(intent.source_file_id)) &&
+          sourceIntent.owner_openid === openid &&
+          sourceIntent.cloud_path === mediaPath(intent.source_file_id) &&
+          sourceIntent.file_id === intent.source_file_id &&
+          sourceIntent.media_id === mediaDocumentId(intent.source_file_id) &&
+          sourceIntent.canonical_intent_id === intent._id &&
+          sourceIntent.canonical_path === intent.cloud_path &&
+          !sourceIntent.canonical_file_id
+        ) {
+          const mediaId = mediaDocumentId(intent.source_file_id);
+          const mediaRecord = await get(tx.collection('profile_media'), mediaId);
+          const profile = await get(tx.collection('profiles'), openid);
+          const hasCanonicalBinding =
+            mediaRecord &&
+            ['canonical_file_id', 'sha256', 'size', 'mime'].some((field) =>
+              Object.prototype.hasOwnProperty.call(mediaRecord, field),
+            );
+          if (
+            !mediaRecord ||
+            mediaRecord._id !== mediaId ||
+            mediaRecord.file_id !== intent.source_file_id ||
+            mediaRecord.owner_openid !== openid ||
+            mediaRecord.status !== 'active' ||
+            hasCanonicalBinding ||
+            !profileReferencesMedia(profile, intent.source_file_id)
+          )
+            throw new ProfileError('MEDIA_UPLOAD_INTENT_INVALID', '媒体上传凭据无效');
+          sourceIntent = {
+            ...clientUploadIntent(openid, mediaPath(intent.source_file_id), secretValue, now),
+            file_id: intent.source_file_id,
+            media_id: mediaId,
+          };
+          reopenedLegacySource = true;
           await imports.doc(sourceIntentId).set({ data: writableDocument(sourceIntent) });
         }
         const clientSource =
@@ -206,6 +252,16 @@ function createProfileStore(db) {
         )
           throw new ProfileError('MEDIA_UPLOAD_INTENT_INVALID', '媒体上传凭据无效');
         const existing = await get(imports, intent._id);
+        const reopenCanonical =
+          reopenedLegacySource &&
+          existing?.status === 'deleted' &&
+          existing.kind === 'canonical_upload' &&
+          existing.owner_openid === openid &&
+          existing.source_file_id === intent.source_file_id &&
+          existing.cloud_path === intent.cloud_path &&
+          existing.sha256 === intent.sha256 &&
+          existing.size === intent.size &&
+          existing.mime === intent.mime;
         if (
           existing &&
           (existing.kind !== 'canonical_upload' ||
@@ -215,10 +271,11 @@ function createProfileStore(db) {
             existing.sha256 !== intent.sha256 ||
             existing.size !== intent.size ||
             existing.mime !== intent.mime ||
-            existing.status !== 'prepared')
+            (existing.status !== 'prepared' && !reopenCanonical))
         )
           throw new ProfileError('MEDIA_UPLOAD_INTENT_CONFLICT', '媒体上传凭据冲突');
-        if (!existing) await imports.doc(intent._id).set({ data: writableDocument(intent) });
+        if (!existing || reopenCanonical)
+          await imports.doc(intent._id).set({ data: writableDocument(intent) });
         await imports.doc(sourceIntentId).update({
           data: {
             canonical_intent_id: intent._id,
@@ -231,7 +288,7 @@ function createProfileStore(db) {
             updated_at: db.serverDate(),
           },
         });
-        return existing || intent;
+        return !existing || reopenCanonical ? intent : existing;
       }),
     completeClientMedia: (
       openid,

@@ -193,6 +193,121 @@ test('存量媒体补 canonical 时 source intent 立即绑定已知对象与 me
   assert.equal(sourceIntent.canonical_path, canonicalPath);
 });
 
+test('存量 active canonical 响应未知经 cleanup 后可用确定性 intents 安全重开', async () => {
+  const {
+    canonicalMediaBinding,
+    canonicalUploadIntent,
+    clientUploadIntentId,
+    mediaDocumentId,
+    mediaOwnerPrefix,
+    mediaRegistration,
+  } = require('./core');
+  const { createCleanupStore } = require('../profile-media-cleanup/store');
+  const owner = 'owner';
+  const secret = 'profile-media-secret-for-tests-32-bytes';
+  const createdAt = new Date('2026-09-30T00:00:00.000Z');
+  const cleanupAt = new Date('2026-09-30T00:31:00.000Z');
+  const confirmAt = new Date('2026-09-30T00:37:00.000Z');
+  const retryAt = new Date('2026-09-30T00:40:00.000Z');
+  const cloudPath = `${mediaOwnerPrefix(owner, secret)}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const fileId = `cloud://env/${cloudPath}`;
+  const mediaId = mediaDocumentId(fileId);
+  const verified = { sha256: 'c'.repeat(64), size: 5, mime: 'image/jpeg', extension: 'jpg' };
+  const initialCanonical = canonicalUploadIntent(owner, fileId, verified, secret, createdAt);
+  const sourceIntentId = clientUploadIntentId(cloudPath);
+  const fixture = statefulDb({
+    profiles: { owner: { _id: owner, avatar_file_id: fileId, avatar_source: 'custom' } },
+    profile_media: {
+      [mediaId]: {
+        _id: mediaId,
+        file_id: fileId,
+        owner_openid: owner,
+        category: 'other',
+        origin: 'custom',
+        status: 'active',
+      },
+    },
+    profile_media_imports: {},
+  });
+  const profileStore = createProfileStore(fixture.db);
+  const cleanupStore = createCleanupStore(fixture.db, secret);
+
+  await profileStore.prepareCanonicalUpload(
+    owner,
+    sourceIntentId,
+    initialCanonical,
+    secret,
+    createdAt,
+  );
+  const sourceClaim = await cleanupStore.claimImportIntent(sourceIntentId, {
+    leaseId: 'source-cleanup',
+    now: cleanupAt,
+  });
+  assert.equal(sourceClaim.completed, true);
+  assert.equal(fixture.state.profile_media_imports.get(sourceIntentId).status, 'completed');
+
+  const canonicalClaim = await cleanupStore.claimImportIntent(initialCanonical._id, {
+    leaseId: 'canonical-cleanup',
+    now: cleanupAt,
+  });
+  assert.equal(canonicalClaim.resolve_target, true);
+  const canonicalFileId = `cloud://env/${initialCanonical.cloud_path}`;
+  assert.equal(
+    await cleanupStore.attachImportDeleteTarget(initialCanonical._id, {
+      leaseId: 'canonical-cleanup',
+      now: cleanupAt,
+      fileId: canonicalFileId,
+    }),
+    true,
+  );
+  assert.equal(
+    await cleanupStore.markImportDeleted(initialCanonical._id, {
+      leaseId: 'canonical-cleanup',
+      now: cleanupAt,
+      deferCompletion: true,
+      confirmAfter: confirmAt,
+    }),
+    true,
+  );
+  const confirmClaim = await cleanupStore.claimImportIntent(initialCanonical._id, {
+    leaseId: 'canonical-confirm',
+    now: confirmAt,
+  });
+  assert.equal(confirmClaim.confirm_delete, true);
+  assert.equal(
+    await cleanupStore.markImportDeleted(initialCanonical._id, {
+      leaseId: 'canonical-confirm',
+      now: confirmAt,
+      deferCompletion: false,
+    }),
+    true,
+  );
+  assert.equal(fixture.state.profile_media_imports.get(initialCanonical._id).status, 'deleted');
+
+  const retryCanonical = canonicalUploadIntent(owner, fileId, verified, secret, retryAt);
+  await profileStore.prepareCanonicalUpload(owner, sourceIntentId, retryCanonical, secret, retryAt);
+
+  assert.equal(fixture.state.profile_media_imports.get(sourceIntentId).status, 'prepared');
+  assert.equal(fixture.state.profile_media_imports.get(retryCanonical._id).status, 'prepared');
+
+  const binding = canonicalMediaBinding(owner, fileId, canonicalFileId, verified, secret);
+  await profileStore.completeClientMedia(
+    owner,
+    fileId,
+    sourceIntentId,
+    retryCanonical._id,
+    binding,
+    secret,
+    (existing) =>
+      mediaRegistration(fileId, 'other', 'custom', owner, secret, retryAt, existing, binding),
+    retryAt,
+  );
+
+  assert.equal(fixture.state.profile_media.get(mediaId).canonical_file_id, canonicalFileId);
+  assert.equal(fixture.state.profile_media_imports.get(sourceIntentId).status, 'completed');
+  assert.equal(fixture.state.profile_media_imports.get(retryCanonical._id).status, 'completed');
+});
+
 test('setAvatar 事务重读 owner registry 并原子激活新头像、降级旧头像', async () => {
   const { mediaDocumentId, mediaOwnerPrefix } = require('./core');
   const secret = 'profile-media-secret-for-tests-32-bytes';

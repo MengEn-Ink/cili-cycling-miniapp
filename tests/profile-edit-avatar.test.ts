@@ -435,14 +435,37 @@ describe('资料编辑头像交互', () => {
     await page.runAvatarAction(() =>
       Promise.reject(Object.assign(new Error('未连接'), { code: 'STRAVA_NOT_CONNECTED' })),
     );
+    expect(page.data.mediaError).toBe('[STRAVA_NOT_CONNECTED] Strava 尚未连接，请先完成绑定');
+    expect(wx.showToast).toHaveBeenLastCalledWith({ title: page.data.mediaError, icon: 'none' });
+
+    await page.runAvatarAction(() =>
+      Promise.reject(Object.assign(new Error('无头像'), { code: 'STRAVA_AVATAR_UNAVAILABLE' })),
+    );
     expect(page.data.mediaError).toBe(
-      '[STRAVA_NOT_CONNECTED] Strava 尚未连接或没有可用头像，请先同步 Strava',
+      '[STRAVA_AVATAR_UNAVAILABLE] Strava 已连接但没有可用头像，请重新授权或同步',
     );
     expect(wx.showToast).toHaveBeenLastCalledWith({ title: page.data.mediaError, icon: 'none' });
 
     await page.runAvatarAction(() => Promise.reject(new Error('unexpected')));
     expect(page.data.mediaError).toBe('[MEDIA_OPERATION_FAILED] 媒体操作失败，请稍后重试');
     expect(wx.showToast).toHaveBeenLastCalledWith({ title: page.data.mediaError, icon: 'none' });
+  });
+
+  it.each([
+    ['STRAVA_NOT_CONNECTED', '[STRAVA_NOT_CONNECTED] Strava 尚未连接，请先完成绑定'],
+    [
+      'STRAVA_AVATAR_UNAVAILABLE',
+      '[STRAVA_AVATAR_UNAVAILABLE] Strava 已连接但没有可用头像，请重新授权或同步',
+    ],
+  ])('Strava import 抛出 %s 时显示对应恢复指引', async (code, expected) => {
+    page.data.stravaAvatarReady = true;
+    rideService.importStravaAvatar.mockRejectedValueOnce(Object.assign(new Error(code), { code }));
+    rideService.getProfile.mockResolvedValue(profile);
+
+    await page.importStravaAvatar();
+
+    expect(page.data.mediaError).toBe(expected);
+    expect(wx.showToast).toHaveBeenCalledWith({ title: expected, icon: 'none' });
   });
 
   it('Strava 未 ready 时不导入并提供绑定/同步跳转', async () => {

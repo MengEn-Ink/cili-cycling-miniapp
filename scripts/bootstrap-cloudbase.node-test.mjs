@@ -481,3 +481,12 @@ test('README 与部署包断言包含 profile_media_imports 和头像导入入�
   assert.match(readme, /11 个集合、22 个业务索引/);
   assert.match(verifier, /pack\('profile',[\s\S]*?'avatar-import\.js'/);
 });
+
+test('媒体滚动部署先发布 fail-closed admin-review 再发布 canonical profile', () => {
+  const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
+  const sequence = readme.match(/再依次部署 ([^。]+)。/)?.[1] || '';
+  const order = [...sequence.matchAll(/`([^`]+)`/g)].map((match) => match[1]);
+  assert.deepEqual(order.slice(0, 3), ['auth', 'profile-media-cleanup', 'admin-review']);
+  assert.ok(order.indexOf('admin-review') < order.indexOf('profile'));
+  assert.match(readme, /旧 `admin-review`[^。]*source[^。]*禁止进入 `profile` 部署/);
+});

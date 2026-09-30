@@ -124,3 +124,20 @@
 - [ ] When backfilling a missing source intent for an existing source object, persist `file_id` and `media_id` immediately so claim-time reference protection applies.
 - [ ] Add failing UI tests for blank profile nickname falling back to card displayName, disconnected versus connected-without-avatar guidance, and absent `wx.cloud` using one stable inline/toast error string.
 - [ ] Implement the minimal template and profile-edit state changes, then run the three focused suites, full `npm run validate`, coverage, audit, read-only plan, and `git diff --check`.
+
+### Task 8: Reopen a cleaned legacy canonical backfill safely
+
+**Files:**
+- Modify: `cloudfunctions/profile/store.js`
+- Modify: `cloudfunctions/profile/store.node-test.js`
+- Modify: `miniprogram/pages/profile-edit/index.ts`
+- Modify: `tests/profile-edit-avatar.test.ts`
+- Modify: `README.md`
+- Modify: `scripts/bootstrap-cloudbase.node-test.mjs`
+
+- [ ] Add a cross-store failing test for active legacy media: prepare canonical, lose the upload response, let cleanup complete the referenced source intent and delete the canonical intent, then repeat register and require atomic canonical registry completion.
+- [ ] Reopen only when the source intent is the exact completed client intent, the source registry is active and lacks every canonical field, the current profile still references it, and the exact canonical intent has reached `deleted`; all in-flight and ambiguous states remain conflicts.
+- [ ] Reset both deterministic intents to fresh `prepared` documents in one transaction before the next canonical upload.
+- [ ] Add import-path tests proving `STRAVA_NOT_CONNECTED` instructs binding while `STRAVA_AVATAR_UNAVAILABLE` instructs reauthorization or synchronization.
+- [ ] Lock the rollout order to storage-rule CUSTOM apply/read-back, fail-closed `admin-review`, then canonical-writing `profile`; database verify remains insufficient proof for storage rules.
+- [ ] Re-run focused tests and the full validate, coverage, audit, read-only plan, and diff checks before committing only `5e8a0e4..HEAD`.
