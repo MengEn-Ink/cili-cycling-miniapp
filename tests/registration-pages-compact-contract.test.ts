@@ -50,7 +50,8 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     expect(registrations).toContain('status-{{item.status}}');
     expect(registrations).toContain('{{item.statusText}}');
     expect(registrations).toContain('{{item.activity.title}}');
-    expect(registrations).toContain('{{item.activity.date}}');
+    expect(registrations).toContain('{{item.activity.displayDate}}');
+    expect(registrations).not.toContain('{{item.activity.date}}');
     expect(registrations).toContain('{{item.updatedAt}}');
     expect(registrations).toContain('{{item.gatheringMode}}');
     for (const status of ['pending', 'approved', 'checked_in', 'rejected', 'cancelled']) {

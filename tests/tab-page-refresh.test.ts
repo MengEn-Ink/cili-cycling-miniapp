@@ -12,6 +12,7 @@ type PageKind = 'activities' | 'registrations';
 const activity = (id: string) => ({
   id,
   title: id,
+  date: '2026-09-30T23:00:00.000Z',
   capacity: 20,
   occupiedCount: 2,
 });
@@ -96,6 +97,12 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
     await olderLoad;
 
     expect(page.data.items.map((item: any) => item.id)).toEqual(['new']);
+    if (kind === 'registrations') {
+      expect(page.data.items[0].activity).toMatchObject({
+        date: '2026-09-30T23:00:00.000Z',
+        displayDate: '10月1日 周四',
+      });
+    }
   });
 
   it.each(['onHide', 'onUnload'] as const)(
