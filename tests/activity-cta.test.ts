@@ -227,6 +227,18 @@ describe('活动详情 CTA 接线', () => {
     expect(page.data.coverFailed).toBe(false);
   });
 
+  it('轮播单图失败时只移除失败项，仍保留其他有效活动图片', () => {
+    page.data.galleryImages = ['cloud://a.jpg', 'cloud://broken.jpg', 'cloud://c.jpg'];
+
+    page.galleryImageError({ currentTarget: { dataset: { index: 1 } } });
+
+    expect(page.data.galleryImages).toEqual(['cloud://a.jpg', 'cloud://c.jpg']);
+    expect(page.data.coverFailed).toBe(false);
+    const template = readFileSync('miniprogram/pages/activity-detail/index.wxml', 'utf8');
+    expect(template).toContain('wx:elif="{{galleryImages.length === 1 && !coverFailed}}"');
+    expect(template).toContain('binderror="galleryImageError"');
+  });
+
   it('满员活动的 go handler 不允许导航到报名页', async () => {
     rideService.getActivity.mockResolvedValue(
       activity({ registrationState: 'closed', closedReason: 'full' }),
@@ -276,6 +288,29 @@ describe('活动详情 CTA 接线', () => {
     expect(page.data.activityAction).toMatchObject({ kind: 'register', enabled: true });
     expect(rideService.listRegistrations).toHaveBeenCalledTimes(1);
   });
+
+  it('有坐标时可分别导航起终点，无坐标时不调用地图', () => {
+    const openLocation = vi.fn();
+    Object.assign(wx, { openLocation });
+    page.data.item = activity({
+      route: {
+        ...open.route,
+        startLocation: { name: '起点', address: '湖滨路', latitude: 30.2, longitude: 120.1 },
+        endLocation: { name: '终点', address: '环山路', latitude: 30.3, longitude: 120.2 },
+      },
+    });
+    page.navigate({ currentTarget: { dataset: { target: 'end' } } });
+    expect(openLocation).toHaveBeenCalledWith({
+      latitude: 30.3,
+      longitude: 120.2,
+      name: '终点',
+      address: '环山路',
+      scale: 16,
+    });
+    page.data.item.route.endLocation = undefined;
+    page.navigate({ currentTarget: { dataset: { target: 'end' } } });
+    expect(openLocation).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('凭证页重报接线', () => {
@@ -310,5 +345,27 @@ describe('凭证页重报接线', () => {
 
     expect(page.data.activityAction).toMatchObject({ kind: 'view-history' });
     expect(wx.redirectTo).not.toHaveBeenCalled();
+  });
+
+  it('报名凭证仅在集合点有坐标时打开地图', () => {
+    const openLocation = vi.fn();
+    Object.assign(wx, { openLocation });
+    page.data.activity = activity({
+      route: {
+        ...open.route,
+        startLocation: { name: '集合点', address: '湖滨路', latitude: 30.2, longitude: 120.1 },
+      },
+    });
+    page.navigateToMeeting();
+    expect(openLocation).toHaveBeenCalledWith({
+      latitude: 30.2,
+      longitude: 120.1,
+      name: '集合点',
+      address: '湖滨路',
+      scale: 16,
+    });
+    page.data.activity.route.startLocation = undefined;
+    page.navigateToMeeting();
+    expect(openLocation).toHaveBeenCalledTimes(1);
   });
 });

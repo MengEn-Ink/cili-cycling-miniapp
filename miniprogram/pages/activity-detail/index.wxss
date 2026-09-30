@@ -360,3 +360,40 @@ brand-logo {
     padding-left: 32rpx;
   }
 }
+
+.hero-gallery {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.hero-shade {
+  z-index: 2;
+}
+.hero-content {
+  z-index: 3;
+}
+.route-location-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 18rpx 0;
+  border-top: 1rpx solid #3a3a3c;
+  color: #f7f7f5;
+  overflow-wrap: anywhere;
+}
+.route-location-row button {
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1rpx solid #ff5722;
+  border-radius: 24rpx;
+  background: #1c1c1e;
+  color: #ff8a65;
+}
+.route-location-label {
+  margin-bottom: 6rpx;
+  color: #a8a8ad;
+  font-size: 22rpx;
+}

@@ -7,3 +7,4 @@ miniprogram_npm/
 project.private.config.json
 *.local.json
 coverage/
+.aime-devkit/

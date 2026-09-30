@@ -65,6 +65,17 @@ Page({
       this.setData({ cancelling: false });
     }
   },
+  navigateToMeeting() {
+    const location = this.data.activity?.route?.startLocation;
+    if (!location) return;
+    wx.openLocation({
+      latitude: location.latitude,
+      longitude: location.longitude,
+      name: location.name,
+      address: location.address,
+      scale: 16,
+    });
+  },
   retry() {
     if (this.data.cancelling || this.data.activityAction.kind !== 'resubmit') return;
     wx.redirectTo({ url: '/pages/registration-form/index?id=' + this.data.item.activityId });

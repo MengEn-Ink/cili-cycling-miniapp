@@ -57,7 +57,9 @@ describe('CILI 活动页静态契约', () => {
       /\.activities-hero\s*\{[^}]*min-height:\s*(?:1\d\d|2[0-4]\d)rpx/s,
     );
     expect(detail).toContain('class="hero-media"');
-    expect(detail).toContain('wx:if="{{item.coverImage && !coverFailed}}"');
+    expect(detail).toContain('wx:if="{{galleryImages.length > 1 && !coverFailed}}"');
+    expect(detail).toContain('wx:elif="{{galleryImages.length === 1 && !coverFailed}}"');
+    expect(detail).toContain('binderror="galleryImageError"');
     expect(detail).toContain('binderror="coverImageError"');
     expect(detail).toContain('class="schedule-track"');
     expect(detailStyles).toMatch(/\.detail-hero\s*\{[^}]*min-height:\s*(?:2\d\d|3[0-6]\d)rpx/s);

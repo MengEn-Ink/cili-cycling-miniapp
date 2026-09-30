@@ -136,6 +136,28 @@ function registrationDecision(raw: Record<string, any>) {
   if (!validOpen && !validClosed) return invalidResponse();
   return { registrationState: state, closedReason: reason, serverNow };
 }
+function mapActivityLocation(raw: unknown) {
+  if (!isRecord(raw)) return undefined;
+  if (
+    typeof raw.name !== 'string' ||
+    typeof raw.address !== 'string' ||
+    typeof raw.latitude !== 'number' ||
+    !Number.isFinite(raw.latitude) ||
+    raw.latitude < -90 ||
+    raw.latitude > 90 ||
+    typeof raw.longitude !== 'number' ||
+    !Number.isFinite(raw.longitude) ||
+    raw.longitude < -180 ||
+    raw.longitude > 180
+  )
+    return undefined;
+  return {
+    name: raw.name,
+    address: raw.address,
+    latitude: raw.latitude,
+    longitude: raw.longitude,
+  };
+}
 function mapActivity(raw: unknown, requireRegistrationDecision = false): Activity {
   const value = expectRecord(raw);
   if (
@@ -145,6 +167,9 @@ function mapActivity(raw: unknown, requireRegistrationDecision = false): Activit
   )
     return invalidResponse();
   const fee = value.fee;
+  const images = Array.isArray(value.images)
+    ? value.images.filter((item: unknown) => typeof item === 'string').slice(0, 9)
+    : [];
   const mapped = {
     id: value._id,
     version: Number.isInteger(value.version) && value.version >= 1 ? value.version : 0,
@@ -196,10 +221,17 @@ function mapActivity(raw: unknown, requireRegistrationDecision = false): Activit
       : undefined,
     ...(value.registration_setup_pending === true ? { registrationSetupPending: true } : {}),
     description: typeof value.description === 'string' ? value.description : '',
-    coverImage: typeof value.cover_image === 'string' ? value.cover_image : '',
+    ...(Array.isArray(value.images) ? { images } : {}),
+    coverImage: images[0] || (typeof value.cover_image === 'string' ? value.cover_image : ''),
     route: {
       start: typeof value.route?.start === 'string' ? value.route.start : '',
       end: typeof value.route?.end === 'string' ? value.route.end : '',
+      ...(mapActivityLocation(value.route?.start_location)
+        ? { startLocation: mapActivityLocation(value.route?.start_location) }
+        : {}),
+      ...(mapActivityLocation(value.route?.end_location)
+        ? { endLocation: mapActivityLocation(value.route?.end_location) }
+        : {}),
       distanceKm: typeof value.route?.distance_km === 'number' ? value.route.distance_km : 0,
       elevationM: typeof value.route?.elevation_m === 'number' ? value.route.elevation_m : 0,
       level: typeof value.route?.level === 'string' ? value.route.level : '',
@@ -580,9 +612,28 @@ function submissionOptions(value: RegistrationSubmission) {
   };
 }
 function activityPayload(value: ActivityInput) {
+  const images = Array.isArray(value.images)
+    ? value.images.filter((item) => typeof item === 'string').slice(0, 9)
+    : [];
+  const locationPayload = (location: ActivityInput['route']['startLocation']) =>
+    location &&
+    typeof location.name === 'string' &&
+    typeof location.address === 'string' &&
+    typeof location.latitude === 'number' &&
+    Number.isFinite(location.latitude) &&
+    typeof location.longitude === 'number' &&
+    Number.isFinite(location.longitude)
+      ? {
+          name: location.name,
+          address: location.address,
+          latitude: location.latitude,
+          longitude: location.longitude,
+        }
+      : undefined;
   return {
     title: typeof value.title === 'string' ? value.title : '',
-    cover_image: typeof value.coverImage === 'string' ? value.coverImage : '',
+    ...(Array.isArray(value.images) ? { images } : {}),
+    cover_image: images[0] || (typeof value.coverImage === 'string' ? value.coverImage : ''),
     description: typeof value.description === 'string' ? value.description : '',
     schedule: Array.isArray(value.schedule)
       ? value.schedule.map((item) => ({
@@ -595,6 +646,12 @@ function activityPayload(value: ActivityInput) {
     route: {
       start: typeof value.route?.start === 'string' ? value.route.start : '',
       end: typeof value.route?.end === 'string' ? value.route.end : '',
+      ...(locationPayload(value.route?.startLocation)
+        ? { start_location: locationPayload(value.route.startLocation) }
+        : {}),
+      ...(locationPayload(value.route?.endLocation)
+        ? { end_location: locationPayload(value.route.endLocation) }
+        : {}),
       distance_km: value.route?.distanceKm,
       elevation_m: value.route?.elevationM,
       level: typeof value.route?.level === 'string' ? value.route.level : '',

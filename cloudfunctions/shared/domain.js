@@ -291,6 +291,7 @@ const ACTIVITY_FIELDS = [
   '_id',
   'title',
   'cover_image',
+  'images',
   'description',
   'schedule',
   'route',

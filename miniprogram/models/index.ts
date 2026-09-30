@@ -3,6 +3,12 @@ export type RegistrationStatus = 'pending' | 'approved' | 'rejected' | 'cancelle
 export type StravaStatus = 'pending' | 'connected' | 'exempted' | 'syncing' | 'failed';
 export type ActivityRegistrationState = 'open' | 'closed';
 export type ActivityClosedReason = 'finished' | 'deadline' | 'full' | 'incomplete' | 'unavailable';
+export interface ActivityLocation {
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+}
 export interface Activity {
   id: string;
   version: number;
@@ -24,10 +30,13 @@ export interface Activity {
   };
   occupiedCount?: number;
   description: string;
+  images?: string[];
   coverImage?: string;
   route: {
     start: string;
     end: string;
+    startLocation?: ActivityLocation;
+    endLocation?: ActivityLocation;
     distanceKm: number;
     elevationM: number;
     level: string;
