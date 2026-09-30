@@ -82,25 +82,11 @@ function statefulDb(seed) {
   };
 }
 
-test('registerMedia 事务内重读且不把 concurrent active 覆盖回 unreferenced', async () => {
-  const active = {
-    _id: 'media-1',
-    file_id: 'cloud://env/photo.jpg',
-    owner_openid: 'owner',
-    category: 'other',
-    status: 'active',
-  };
-  const db = fakeDb({ profile_media: { 'media-1': active } });
-  const result = await createProfileStore(db).registerMedia('media-1', (existing) => {
-    assert.equal(existing, active);
-    return existing;
-  });
-  assert.equal(result, active);
-  assert.deepEqual(db.sets, []);
-});
-
 test('客户端上传 intent 先持久化，registerMedia 再原子登记并完成 intent', async () => {
   const {
+    canonicalMediaBinding,
+    canonicalMediaPath,
+    canonicalUploadIntent,
     clientUploadIntent,
     mediaDocumentId,
     mediaOwnerPrefix,
@@ -114,16 +100,37 @@ test('客户端上传 intent 先持久化，registerMedia 再原子登记并完�
   const fixture = statefulDb({ profile_media: {}, profile_media_imports: {} });
   const store = createProfileStore(fixture.db);
   const intent = clientUploadIntent(owner, cloudPath, secret, now);
+  const sha256 = 'a'.repeat(64);
+  const canonicalPath = canonicalMediaPath(owner, fileId, sha256, 'jpg', secret);
+  const canonicalFileId = `cloud://env/${canonicalPath}`;
+  const binding = canonicalMediaBinding(
+    owner,
+    fileId,
+    canonicalFileId,
+    { sha256, size: 5, mime: 'image/jpeg', extension: 'jpg' },
+    secret,
+  );
+  const canonicalIntent = canonicalUploadIntent(
+    owner,
+    fileId,
+    { sha256, size: 5, mime: 'image/jpeg', extension: 'jpg' },
+    secret,
+    now,
+  );
 
   await store.prepareClientUpload(owner, intent, secret);
   assert.equal(fixture.state.profile_media_imports.get(intent._id).status, 'prepared');
+  await store.prepareCanonicalUpload(owner, intent._id, canonicalIntent, secret);
 
-  const registered = await store.registerClientMedia(
+  const registered = await store.completeClientMedia(
     owner,
     fileId,
     intent._id,
+    canonicalIntent._id,
+    binding,
     secret,
-    (existing) => mediaRegistration(fileId, 'other', 'wechat', owner, secret, now, existing),
+    (existing) =>
+      mediaRegistration(fileId, 'other', 'wechat', owner, secret, now, existing, binding),
     now,
   );
 
@@ -131,13 +138,20 @@ test('客户端上传 intent 先持久化，registerMedia 再原子登记并完�
   assert.equal(fixture.state.profile_media.get(mediaDocumentId(fileId)).status, 'unreferenced');
   assert.deepEqual(fixture.state.profile_media_imports.get(intent._id), {
     ...intent,
+    canonical_intent_id: canonicalIntent._id,
+    canonical_path: canonicalIntent.cloud_path,
+    sha256,
+    size: 5,
+    mime: 'image/jpeg',
     status: 'completed',
     file_id: fileId,
     media_id: mediaDocumentId(fileId),
+    canonical_file_id: canonicalFileId,
     completed_at: now,
     cleanup_after: null,
     updated_at: fixture.db.serverDate(),
   });
+  assert.equal(fixture.state.profile_media_imports.get(canonicalIntent._id).status, 'completed');
 });
 
 test('setAvatar 事务重读 owner registry 并原子激活新头像、降级旧头像', async () => {
@@ -600,8 +614,14 @@ test('Strava import lease 在最终事务重读 credential，换绑或解绑后�
   }
 });
 
-test('Strava import 最终事务原子登记 media、激活头像并完成 intent', async () => {
-  const { mediaDocumentId, mediaOwnerPrefix } = require('./core');
+test('Strava import 最终事务原子登记 canonical media、激活头像并完成 intents', async () => {
+  const {
+    canonicalMediaBinding,
+    canonicalMediaPath,
+    canonicalUploadIntent,
+    mediaDocumentId,
+    mediaOwnerPrefix,
+  } = require('./core');
   const owner = 'owner';
   const secret = 'profile-media-secret-for-tests-32-bytes';
   const url = 'https://dgalywyr863hv.cloudfront.net/avatar.jpg';
@@ -649,22 +669,48 @@ test('Strava import 最终事务原子登记 media、激活头像并完成 inten
   );
   await store.prepareAvatarUpload(owner, fence, cloudPath, secret, intent.created_at);
   await store.markAvatarImportUploaded(owner, fence, fileId, secret, intent.created_at);
+  const bytes = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00]);
+  const sha256 = crypto.createHash('sha256').update(bytes).digest('hex');
+  const verified = { sha256, size: bytes.length, mime: 'image/jpeg', extension: 'jpg' };
+  const canonicalIntent = canonicalUploadIntent(owner, fileId, verified, secret, intent.created_at);
+  await store.prepareCanonicalUpload(owner, intent._id, canonicalIntent, secret, intent.created_at);
+  const canonicalFileId = `cloud://env/${canonicalMediaPath(owner, fileId, sha256, 'jpg', secret)}`;
+  const binding = canonicalMediaBinding(owner, fileId, canonicalFileId, verified, secret);
 
-  const profile = await store.completeAvatarImport(owner, fence, secret, intent.created_at);
+  const profile = await store.completeAvatarImport(
+    owner,
+    fence,
+    secret,
+    intent.created_at,
+    canonicalIntent._id,
+    binding,
+  );
 
   assert.equal(profile.avatar_file_id, fileId);
   assert.equal(profile.avatar_source, 'strava');
   assert.equal(profile.avatar_revision, 1);
   assert.equal(fixture.state.profile_media.get(mediaDocumentId(fileId)).origin, 'strava');
   assert.equal(fixture.state.profile_media.get(mediaDocumentId(fileId)).status, 'active');
+  assert.equal(
+    fixture.state.profile_media.get(mediaDocumentId(fileId)).canonical_file_id,
+    canonicalFileId,
+  );
   assert.equal(fixture.state.profile_media_imports.get(intent._id).status, 'completed');
+  assert.equal(fixture.state.profile_media_imports.get(canonicalIntent._id).status, 'completed');
   assert.equal(fixture.state.strava_credentials.get(owner).avatar_import_lease_id, undefined);
   assert.equal(
     fixture.state.strava_credentials.get(owner).avatar_import_lease_expires_at,
     undefined,
   );
 
-  const repeated = await store.completeAvatarImport(owner, fence, secret, intent.created_at);
+  const repeated = await store.completeAvatarImport(
+    owner,
+    fence,
+    secret,
+    intent.created_at,
+    canonicalIntent._id,
+    binding,
+  );
   assert.equal(repeated.avatar_revision, 1);
   assert.equal(fixture.state.profiles.get(owner).avatar_revision, 1);
 });

@@ -114,7 +114,7 @@ function createCleanupStore(db, mediaSecret) {
         const record = await get(media, id);
         if (!record) return undefined;
         const profile = await get(tx.collection('profiles'), record.owner_openid);
-        const decision = claimDecision(record, profile, fence.now, fence.leaseId);
+        const decision = claimDecision(record, profile, fence.now, fence.leaseId, mediaSecret);
         if (!decision) return undefined;
         await media.doc(id).update({ data: decision.update });
         return {
@@ -122,6 +122,9 @@ function createCleanupStore(db, mediaSecret) {
           ...decision.update,
           claimed: decision.kind === 'claimed',
           reactivated: decision.kind === 'referenced',
+          delete_file_ids: [record.file_id, record.canonical_file_id].filter(
+            (value, index, values) => value && values.indexOf(value) === index,
+          ),
         };
       }),
     markDeleted: (id, fence) =>

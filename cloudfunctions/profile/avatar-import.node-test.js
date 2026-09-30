@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
 const { Readable } = require('node:stream');
-const { mediaDocumentId, mediaOwnerPrefix } = require('./core');
+const { canonicalMediaPath, mediaDocumentId, mediaOwnerPrefix } = require('./core');
 
 let subject = {};
 try {
@@ -365,6 +365,9 @@ test('导入只使用当前用户 credential URL，并按 strava origin 登记�
   const mediaSecret = 'profile-media-secret-for-tests-32-bytes';
   const prefix = mediaOwnerPrefix(openid, mediaSecret);
   const fileId = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174000.png`;
+  const sha256 = require('node:crypto').createHash('sha256').update(png).digest('hex');
+  const canonicalPath = canonicalMediaPath(openid, fileId, sha256, 'png', mediaSecret);
+  const canonicalFileId = `cloud://env/${canonicalPath}`;
   const calls = [];
   const store = {
     prepareAvatarImport: async (_openid, credential, intent) => {
@@ -376,6 +379,9 @@ test('导入只使用当前用户 credential URL，并按 strava origin 登记�
     },
     markAvatarImportUploaded: async (...args) => {
       calls.push({ operation: 'uploaded', args });
+    },
+    prepareCanonicalUpload: async (...args) => {
+      calls.push({ operation: 'prepare-canonical', args });
     },
     completeAvatarImport: async (...args) => {
       calls.push({ operation: 'complete', args });
@@ -398,9 +404,10 @@ test('导入只使用当前用户 credential URL，并按 strava origin 登记�
       return { bytes: png, contentType: 'image/png', extension: 'png' };
     },
     uploadFile: async ({ cloudPath, fileContent }) => {
-      calls.push({ operation: 'upload' });
-      assert.equal(cloudPath, `${prefix}123e4567-e89b-42d3-a456-426614174000.png`);
+      calls.push({ operation: cloudPath === canonicalPath ? 'upload-canonical' : 'upload-source' });
       assert.equal(fileContent, png);
+      if (cloudPath === canonicalPath) return { fileID: canonicalFileId };
+      assert.equal(cloudPath, `${prefix}123e4567-e89b-42d3-a456-426614174000.png`);
       return { fileID: fileId };
     },
     deleteFile: async () => ({ fileList: [] }),
@@ -416,12 +423,15 @@ test('导入只使用当前用户 credential URL，并按 strava origin 登记�
   assert.equal(JSON.stringify(calls[0].intent).includes(allowedUrl), false);
   assert.equal(calls[1].operation, 'download');
   assert.equal(calls[2].operation, 'prepare-upload');
-  assert.equal(calls[3].operation, 'upload');
+  assert.equal(calls[3].operation, 'upload-source');
   assert.equal(calls[4].operation, 'uploaded');
-  assert.equal(calls[5].operation, 'complete');
+  assert.equal(calls[5].operation, 'prepare-canonical');
+  assert.equal(calls[6].operation, 'upload-canonical');
+  assert.equal(calls[7].operation, 'complete');
   const fence = calls[2].args[1];
   assert.deepEqual(calls[4].args[1], fence);
-  assert.deepEqual(calls[5].args[1], fence);
+  assert.deepEqual(calls[7].args[1], fence);
+  assert.equal(calls[7].args[5].canonical_file_id, canonicalFileId);
   assert.equal(JSON.stringify(fence).includes(allowedUrl), false);
 });
 
@@ -445,6 +455,7 @@ test('并发导入只有 lease winner 进入下载，loser 不得清除 winner l
     },
     prepareAvatarUpload: async () => true,
     markAvatarImportUploaded: async () => true,
+    prepareCanonicalUpload: async () => true,
     completeAvatarImport: async (_openid, fence) => {
       activeIntent = '';
       return {
@@ -560,6 +571,7 @@ test('上传后登记或头像事务失败时保留旧头像并补偿 orphan', a
       Object.assign(intentState, { status: 'uploaded', file_id: uploadedFileId });
       calls.push('uploaded');
     },
+    prepareCanonicalUpload: async () => true,
     completeAvatarImport: async () => {
       calls.push('complete');
       throw new Error('registry transaction unavailable');
@@ -586,7 +598,7 @@ test('上传后登记或头像事务失败时保留旧头像并补偿 orphan', a
       },
       mediaSecret,
       download: async () => ({ bytes: jpeg, contentType: 'image/jpeg', extension: 'jpg' }),
-      uploadFile: async () => ({ fileID: fileId }),
+      uploadFile: async ({ cloudPath }) => ({ fileID: `cloud://env/${cloudPath}` }),
       deleteFile: async () => {
         calls.push('delete-failed');
         throw new Error('delete unavailable');
@@ -628,6 +640,7 @@ test('上传返回非法 fileId 时不把它送入特权删除路径', async () 
         prepareAvatarImport: async (_openid, _credential, intent) => intent,
         prepareAvatarUpload: async () => true,
         markAvatarImportUploaded: async () => {},
+        prepareCanonicalUpload: async () => true,
         completeAvatarImport: async () => {
           registered = true;
           selected = true;
@@ -665,7 +678,7 @@ test('最终事务已提交但响应丢失时不删除已激活头像', async ()
       },
       mediaSecret,
       download: async () => ({ bytes: jpeg, contentType: 'image/jpeg', extension: 'jpg' }),
-      uploadFile: async () => ({ fileID: fileId }),
+      uploadFile: async ({ cloudPath }) => ({ fileID: `cloud://env/${cloudPath}` }),
       deleteFile: async () => {
         deleted = true;
       },
@@ -673,6 +686,7 @@ test('最终事务已提交但响应丢失时不删除已激活头像', async ()
         prepareAvatarImport: async (_openid, _credential, intent) => intent,
         prepareAvatarUpload: async () => true,
         markAvatarImportUploaded: async () => {},
+        prepareCanonicalUpload: async () => true,
         completeAvatarImport: async () => {
           throw new Error('transaction response lost');
         },
@@ -702,7 +716,7 @@ test('最终事务已发出且 intent 对账失败时保留对象等待服务端
       },
       mediaSecret,
       download: async () => ({ bytes: jpeg, contentType: 'image/jpeg', extension: 'jpg' }),
-      uploadFile: async () => ({ fileID: fileId }),
+      uploadFile: async ({ cloudPath }) => ({ fileID: `cloud://env/${cloudPath}` }),
       deleteFile: async () => {
         deleted = true;
       },
@@ -710,6 +724,7 @@ test('最终事务已发出且 intent 对账失败时保留对象等待服务端
         prepareAvatarImport: async (_openid, _credential, intent) => intent,
         prepareAvatarUpload: async () => true,
         markAvatarImportUploaded: async () => {},
+        prepareCanonicalUpload: async () => true,
         completeAvatarImport: async () => {
           throw new Error('transaction response lost');
         },

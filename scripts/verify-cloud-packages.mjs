@@ -70,6 +70,7 @@ pack('profile', [
   'core.js',
   'capability-card.js',
   'avatar-import.js',
+  'media-upload.js',
   'store.js',
   'package.json',
 ]);

@@ -88,23 +88,25 @@ function safeHttpsUrl(value) {
 
 async function resolveBackgrounds(media, getTempFileURL) {
   if (!media.length) return [];
+  const storageFileId = (item) => item.storage_file_id;
   let response;
   try {
-    response = await getTempFileURL({ fileList: media.map((item) => item.file_id) });
+    response = await getTempFileURL({ fileList: media.map(storageFileId) });
   } catch {
     return [];
   }
-  const byId = new Map(media.map((item) => [item.file_id, item]));
+  const byId = new Map(media.map((item) => [storageFileId(item), item]));
   const resolved = new Map();
   for (const item of Array.isArray(response && response.fileList) ? response.fileList : []) {
     const source = byId.get(item && item.fileID);
     const url = item && Number(item.status) === 0 ? safeHttpsUrl(item.tempFileURL) : '';
-    if (source && url && !resolved.has(source.file_id)) resolved.set(source.file_id, url);
+    if (source && url && !resolved.has(storageFileId(source)))
+      resolved.set(storageFileId(source), url);
   }
   return media
-    .filter((item) => resolved.has(item.file_id))
+    .filter((item) => resolved.has(storageFileId(item)))
     .map((item) => ({
-      url: resolved.get(item.file_id),
+      url: resolved.get(storageFileId(item)),
       source: item.source,
       category: item.category,
     }));

@@ -142,6 +142,95 @@ function clientUploadIntent(openid, cloudPath, secretValue, now = new Date()) {
     cleanup_after: new Date(createdAt.getTime() + CLIENT_UPLOAD_INTENT_MS),
   };
 }
+function canonicalMediaPath(openid, sourceFileId, sha256, extension, secretValue) {
+  if (!isOwnerMedia(sourceFileId, openid, secretValue))
+    throw new ProfileError('MEDIA_NOT_OWNED', '媒体文件不属于当前用户');
+  if (!/^[a-f0-9]{64}$/.test(sha256) || !['jpg', 'png', 'webp'].includes(extension))
+    throw new ProfileError('MEDIA_OBJECT_VERIFY_FAILED', '媒体版本无效');
+  const ownerAlias = mediaOwnerPrefix(openid, secretValue).split('/')[1];
+  const sourceDigest = mediaDocumentId(sourceFileId);
+  return `profile-canonical/${ownerAlias}/${sourceDigest}/${sha256}.${extension}`;
+}
+function isOwnerCanonicalMedia(fileId, openid, secretValue) {
+  const path = mediaPath(fileId);
+  const ownerAlias = mediaOwnerPrefix(openid, secretValue).split('/')[1];
+  return new RegExp(
+    `^profile-canonical/${ownerAlias}/[a-f0-9]{64}/[a-f0-9]{64}\\.(?:jpg|png|webp)$`,
+    'i',
+  ).test(path);
+}
+function canonicalUploadIntentId(canonicalPath) {
+  if (typeof canonicalPath !== 'string' || !canonicalPath)
+    throw new ProfileError('MEDIA_PATH_INVALID', '媒体路径无效');
+  return `canonical-upload-${crypto.createHash('sha256').update(canonicalPath).digest('hex')}`;
+}
+function canonicalMediaBinding(openid, sourceFileId, canonicalFileId, verified, secretValue) {
+  const mimeExtensions = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+  };
+  const extension = mimeExtensions[verified?.mime];
+  if (
+    !isOwnerMedia(sourceFileId, openid, secretValue) ||
+    !extension ||
+    verified?.extension !== extension ||
+    !/^[a-f0-9]{64}$/.test(verified?.sha256 || '') ||
+    !Number.isSafeInteger(verified?.size) ||
+    verified.size <= 0 ||
+    verified.size > MAX_PROFILE_IMAGE_BYTES
+  )
+    throw new ProfileError('MEDIA_OBJECT_VERIFY_FAILED', '媒体版本无效');
+  const expectedPath = canonicalMediaPath(
+    openid,
+    sourceFileId,
+    verified.sha256,
+    extension,
+    secretValue,
+  );
+  if (
+    !isOwnerCanonicalMedia(canonicalFileId, openid, secretValue) ||
+    mediaPath(canonicalFileId) !== expectedPath
+  )
+    throw new ProfileError('MEDIA_CANONICAL_MISMATCH', '媒体规范副本无效');
+  return {
+    source_file_id: sourceFileId,
+    canonical_file_id: canonicalFileId,
+    sha256: verified.sha256,
+    size: verified.size,
+    mime: verified.mime,
+  };
+}
+function canonicalUploadIntent(openid, sourceFileId, verified, secretValue, now = new Date()) {
+  const cloudPath = canonicalMediaPath(
+    openid,
+    sourceFileId,
+    verified?.sha256,
+    verified?.extension,
+    secretValue,
+  );
+  if (
+    !Number.isSafeInteger(verified?.size) ||
+    verified.size <= 0 ||
+    verified.size > MAX_PROFILE_IMAGE_BYTES ||
+    !['image/jpeg', 'image/png', 'image/webp'].includes(verified?.mime)
+  )
+    throw new ProfileError('MEDIA_OBJECT_VERIFY_FAILED', '媒体版本无效');
+  const createdAt = new Date(now);
+  return {
+    _id: canonicalUploadIntentId(cloudPath),
+    kind: 'canonical_upload',
+    owner_openid: openid,
+    source_file_id: sourceFileId,
+    cloud_path: cloudPath,
+    sha256: verified.sha256,
+    size: verified.size,
+    mime: verified.mime,
+    status: 'prepared',
+    created_at: createdAt,
+    cleanup_after: new Date(createdAt.getTime() + CLIENT_UPLOAD_INTENT_MS),
+  };
+}
 function mediaPath(fileId) {
   if (typeof fileId !== 'string' || !fileId.startsWith('cloud://') || fileId.length > 512)
     return '';
@@ -167,6 +256,7 @@ function mediaRegistration(
   secretValue,
   now = new Date(),
   existing = undefined,
+  canonical = undefined,
 ) {
   if (!['ride', 'bike', 'other'].includes(category))
     throw new ProfileError('VALIDATION_FAILED', '媒体类别无效');
@@ -174,26 +264,54 @@ function mediaRegistration(
     throw new ProfileError('MEDIA_ORIGIN_INVALID', '媒体来源无效');
   if (!isOwnerMedia(fileId, openid, secretValue))
     throw new ProfileError('MEDIA_NOT_OWNED', '媒体文件不属于当前用户');
+  const binding = canonical
+    ? canonicalMediaBinding(
+        openid,
+        fileId,
+        canonical.canonical_file_id,
+        {
+          sha256: canonical.sha256,
+          size: canonical.size,
+          mime: canonical.mime,
+          extension: { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[
+            canonical.mime
+          ],
+        },
+        secretValue,
+      )
+    : {};
   const expected = {
     _id: mediaDocumentId(fileId),
     file_id: fileId,
     owner_openid: openid,
     category,
     origin,
+    ...binding,
   };
   if (existing) {
     const legacyCustomOrigin =
       !Object.prototype.hasOwnProperty.call(existing, 'origin') && origin === 'custom';
+    const canonicalFields = ['source_file_id', 'canonical_file_id', 'sha256', 'size', 'mime'];
+    const hasAnyCanonical = canonicalFields.some((field) =>
+      Object.prototype.hasOwnProperty.call(existing, field),
+    );
     if (
       existing._id !== expected._id ||
       existing.file_id !== fileId ||
       existing.owner_openid !== openid ||
       existing.category !== category ||
       (existing.origin !== origin && !legacyCustomOrigin) ||
+      (canonical &&
+        hasAnyCanonical &&
+        canonicalFields.some((field) => existing[field] !== expected[field])) ||
       !['unreferenced', 'active'].includes(existing.status)
     )
       throw new ProfileError('MEDIA_REGISTRATION_CONFLICT', '媒体登记冲突');
-    return legacyCustomOrigin ? { ...existing, origin: 'custom' } : existing;
+    return {
+      ...existing,
+      ...(legacyCustomOrigin ? { origin: 'custom' } : {}),
+      ...(!hasAnyCanonical && canonical ? binding : {}),
+    };
   }
   const createdAt = new Date(now);
   return {
@@ -353,6 +471,7 @@ function boundedMediaRequest(url, method, options = {}) {
           }
           let size = 0;
           let prefix = Buffer.alloc(0);
+          const chunks = [];
           incoming.on('data', (chunk) => {
             if (settled) return;
             const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
@@ -369,9 +488,16 @@ function boundedMediaRequest(url, method, options = {}) {
                 buffer.subarray(0, IMAGE_MAGIC_BYTES - prefix.length),
               ]);
             }
+            if (method === 'GET') chunks.push(buffer);
           });
           incoming.on('end', () =>
-            finish(null, { statusCode, headers: incoming.headers || {}, size, prefix }),
+            finish(null, {
+              statusCode,
+              headers: incoming.headers || {},
+              size,
+              prefix,
+              bytes: method === 'GET' ? Buffer.concat(chunks, size) : undefined,
+            }),
           );
           incoming.on('error', (error) => finish(error));
         },
@@ -419,9 +545,28 @@ async function verifyUploadedImageObject(tempFileURL, options = {}) {
       maxBytes,
       timeoutMs: remainingMs,
     });
-    if (!hasImageMagic(body.prefix))
+    const type =
+      body.prefix.length >= 3 &&
+      body.prefix[0] === 0xff &&
+      body.prefix[1] === 0xd8 &&
+      body.prefix[2] === 0xff
+        ? { mime: 'image/jpeg', extension: 'jpg' }
+        : body.prefix.length >= 8 &&
+            body.prefix.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'))
+          ? { mime: 'image/png', extension: 'png' }
+          : body.prefix.length >= 12 &&
+              body.prefix.subarray(0, 4).toString('ascii') === 'RIFF' &&
+              body.prefix.subarray(8, 12).toString('ascii') === 'WEBP'
+            ? { mime: 'image/webp', extension: 'webp' }
+            : undefined;
+    if (!type || !hasImageMagic(body.prefix))
       throw new ProfileError('MEDIA_OBJECT_TYPE_INVALID', '图片格式无效');
-    return true;
+    return {
+      bytes: body.bytes,
+      sha256: crypto.createHash('sha256').update(body.bytes).digest('hex'),
+      size: body.size,
+      ...type,
+    };
   } catch (error) {
     if (error instanceof ProfileError) throw error;
     throw new ProfileError('MEDIA_OBJECT_VERIFY_FAILED', '暂时无法确认媒体文件');
@@ -437,6 +582,24 @@ function registeredMedia(record, item, openid, statuses = ['active']) {
     record.category === item.category &&
     statuses.includes(record.status),
   );
+}
+function canonicalFileForRecord(record, sourceFileId, openid, secretValue) {
+  try {
+    return canonicalMediaBinding(
+      openid,
+      sourceFileId,
+      record?.canonical_file_id,
+      {
+        sha256: record?.sha256,
+        size: record?.size,
+        mime: record?.mime,
+        extension: { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[record?.mime],
+      },
+      secretValue,
+    ).canonical_file_id;
+  } catch {
+    return '';
+  }
 }
 function validateMediaUpdate(current, update, openid, secretValue, mediaRecords = []) {
   const existing = current && typeof current === 'object' ? current : {};
@@ -510,13 +673,18 @@ function ownerMedia(profile, openid, secretValue, mediaRecords = []) {
             item &&
             ['ride', 'bike', 'other'].includes(item.category) &&
             isOwnerMedia(item.file_id, openid, secretValue) &&
-            registeredMedia(records.get(item.file_id), item, openid),
+            registeredMedia(records.get(item.file_id), item, openid) &&
+            canonicalFileForRecord(records.get(item.file_id), item.file_id, openid, secretValue),
         )
-        .map((item) => ({
-          file_id: item.file_id,
-          category: item.category,
-          source: 'user_photo',
-        }))
+        .map((item) => {
+          const record = records.get(item.file_id);
+          return {
+            file_id: item.file_id,
+            storage_file_id: canonicalFileForRecord(record, item.file_id, openid, secretValue),
+            category: item.category,
+            source: 'user_photo',
+          };
+        })
     : [];
   const ordered = [
     ...photos.filter((item) => item.category === 'ride' || item.category === 'bike'),
@@ -536,7 +704,19 @@ function ownerMedia(profile, openid, secretValue, mediaRecords = []) {
       openid,
     )
   ) {
-    ordered.push({ file_id: value.avatar_file_id, category: 'other', source: 'avatar' });
+    const canonicalFileId = canonicalFileForRecord(
+      avatarRecord,
+      value.avatar_file_id,
+      openid,
+      secretValue,
+    );
+    if (canonicalFileId)
+      ordered.push({
+        file_id: value.avatar_file_id,
+        storage_file_id: canonicalFileId,
+        category: 'other',
+        source: 'avatar',
+      });
   }
   const seen = new Set();
   return ordered.filter((item) => {
@@ -551,9 +731,11 @@ function ownerAvatarMedia(profile, openid, secretValue, mediaRecords = []) {
   const record = mediaRecords.find((item) => item && item.file_id === value.avatar_file_id);
   const origin =
     record && Object.prototype.hasOwnProperty.call(record, 'origin') ? record.origin : 'custom';
+  const canonicalFileId = canonicalFileForRecord(record, value.avatar_file_id, openid, secretValue);
   if (
     origin !== value.avatar_source ||
     !isOwnerMedia(value.avatar_file_id, openid, secretValue) ||
+    !canonicalFileId ||
     !registeredMedia(
       record,
       { file_id: value.avatar_file_id, category: record && record.category },
@@ -561,7 +743,12 @@ function ownerAvatarMedia(profile, openid, secretValue, mediaRecords = []) {
     )
   )
     return undefined;
-  return { file_id: value.avatar_file_id, category: 'other', source: 'avatar' };
+  return {
+    file_id: value.avatar_file_id,
+    storage_file_id: canonicalFileId,
+    category: 'other',
+    source: 'avatar',
+  };
 }
 const sensitiveStatus = (doc) => ({
   real_name: !!doc.real_name_cipher,
@@ -737,6 +924,11 @@ module.exports = {
   issueMediaUploadPath,
   clientUploadIntentId,
   clientUploadIntent,
+  canonicalMediaPath,
+  isOwnerCanonicalMedia,
+  canonicalUploadIntentId,
+  canonicalMediaBinding,
+  canonicalUploadIntent,
   mediaOwnerPrefix,
   mediaDocumentId,
   avatarUrlFingerprint,
@@ -756,6 +948,7 @@ module.exports = {
   isOwnerMedia,
   mediaPath,
   registeredMedia,
+  canonicalFileForRecord,
   validateMediaUpdate,
   ownerMedia,
   ownerAvatarMedia,

@@ -84,6 +84,82 @@ test('claim 前重查 owner profile；仍引用则恢复 active，不引用才�
   assert.equal(claimDecision(record, { _id: 'another', photos: [] }, now, 'lease-1'), null);
 });
 
+test('解除全部引用后 source 与 canonical 由同一 fenced cleanup 删除', async () => {
+  const sourceFileId = `cloud://env/${importCloudPath}`;
+  const sourceDigest = crypto.createHash('sha256').update(sourceFileId).digest('hex');
+  const canonicalFileId = `cloud://env/profile-canonical/${ownerAlias}/${sourceDigest}/${'a'.repeat(64)}.jpg`;
+  const deleted = [];
+  const result = await drainMediaCleanup({
+    now,
+    randomUUID: () => 'lease-canonical',
+    store: {
+      listEligible: async () => ['media-canonical'],
+      listImportIntents: async () => [],
+      claim: async () => ({
+        _id: 'media-canonical',
+        file_id: sourceFileId,
+        canonical_file_id: canonicalFileId,
+        claimed: true,
+        delete_file_ids: [sourceFileId, canonicalFileId],
+      }),
+      markDeleted: async () => true,
+      markFailed: async () => true,
+    },
+    deleteFile: async ({ fileList }) => {
+      deleted.push(...fileList);
+      return { fileList: fileList.map((fileID) => ({ fileID, status: 0 })) };
+    },
+  });
+
+  assert.deepEqual(deleted, [sourceFileId, canonicalFileId]);
+  assert.equal(result.deleted, 1);
+});
+
+test('profile 仍引用 source 时 canonical 与 source 都不得删除', async () => {
+  const sourceFileId = `cloud://env/${importCloudPath}`;
+  const sourceDigest = crypto.createHash('sha256').update(sourceFileId).digest('hex');
+  const canonicalFileId = `cloud://env/profile-canonical/${ownerAlias}/${sourceDigest}/${'a'.repeat(64)}.jpg`;
+  const decision = claimDecision(
+    {
+      _id: 'media-active-reference',
+      file_id: sourceFileId,
+      canonical_file_id: canonicalFileId,
+      owner_openid: 'owner',
+      category: 'other',
+      status: 'unreferenced',
+      cleanup_after: new Date('2026-09-29T11:59:59.000Z'),
+      sha256: 'a'.repeat(64),
+      size: 5,
+      mime: 'image/jpeg',
+    },
+    { _id: 'owner', avatar_file_id: sourceFileId },
+    now,
+    'lease-canonical',
+    mediaSecret,
+  );
+
+  assert.equal(decision.kind, 'referenced');
+});
+
+test('篡改 canonical 路径进入 terminal，绝不下发特权删除', () => {
+  const decision = claimDecision(
+    {
+      ...record,
+      canonical_file_id: 'cloud://env/profile-canonical/other/forged.jpg',
+      sha256: 'a'.repeat(64),
+      size: 5,
+      mime: 'image/jpeg',
+    },
+    { _id: 'owner', photos: [] },
+    now,
+    'lease-1',
+    mediaSecret,
+  );
+
+  assert.equal(decision.kind, 'terminal');
+  assert.equal(decision.update.last_error_code, 'CANONICAL_TARGET_INVALID');
+});
+
 test('持久化 avatar import intent 可被 cleanup 收敛', async () => {
   const intent = {
     _id: 'intent-1',
@@ -221,6 +297,32 @@ test('客户端上传已落盘但响应丢失时，过期 intent 从 owner path 
     ['complete', true],
   ]);
   assert.equal(result.deleted, 1);
+});
+
+test('canonical copy 响应未知时，过期 intent 可按绑定版本路径恢复删除', () => {
+  const sourceFileId = `cloud://env/${importCloudPath}`;
+  const sourceDigest = crypto.createHash('sha256').update(sourceFileId).digest('hex');
+  const canonicalPath = `profile-canonical/${ownerAlias}/${sourceDigest}/${'a'.repeat(64)}.jpg`;
+  const decision = importClaimDecision(
+    {
+      _id: 'canonical-upload-intent',
+      kind: 'canonical_upload',
+      owner_openid: 'owner',
+      source_file_id: sourceFileId,
+      cloud_path: canonicalPath,
+      sha256: 'a'.repeat(64),
+      size: 5,
+      mime: 'image/jpeg',
+      status: 'prepared',
+      cleanup_after: new Date('2026-09-29T11:59:59.000Z'),
+    },
+    undefined,
+    now,
+    'lease-canonical',
+    mediaSecret,
+  );
+
+  assert.equal(decision.kind, 'resolve');
 });
 
 test('路径不匹配的 intent fileId 不会进入特权删除', async () => {

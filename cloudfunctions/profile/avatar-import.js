@@ -7,6 +7,8 @@ const {
   ProfileError,
   compatibleRandomUUID,
   avatarUrlFingerprint,
+  canonicalMediaBinding,
+  canonicalUploadIntent,
   isOwnerMedia,
   issueMediaUploadPath,
   mediaPath,
@@ -487,8 +489,35 @@ async function importStravaAvatar({
       throw avatarError('MEDIA_NOT_OWNED', '上传头像不属于当前用户');
     fileId = uploadedFileId;
     await store.markAvatarImportUploaded(openid, fence, fileId, mediaSecret, now);
+    const verified = {
+      bytes: downloaded.bytes,
+      sha256: require('node:crypto').createHash('sha256').update(downloaded.bytes).digest('hex'),
+      size: downloaded.bytes.length,
+      mime: downloaded.contentType,
+      extension: downloaded.extension,
+    };
+    const canonicalIntent = canonicalUploadIntent(openid, fileId, verified, mediaSecret, now);
+    await store.prepareCanonicalUpload(openid, fence.intent_id, canonicalIntent, mediaSecret, now);
+    const canonicalUpload = await uploadFile({
+      cloudPath: canonicalIntent.cloud_path,
+      fileContent: downloaded.bytes,
+    });
+    const canonical = canonicalMediaBinding(
+      openid,
+      fileId,
+      canonicalUpload?.fileID,
+      verified,
+      mediaSecret,
+    );
     completionAttempted = true;
-    return await store.completeAvatarImport(openid, fence, mediaSecret, now);
+    return await store.completeAvatarImport(
+      openid,
+      fence,
+      mediaSecret,
+      now,
+      canonicalIntent._id,
+      canonical,
+    );
   } catch (error) {
     if (acquired)
       await compensateImport({

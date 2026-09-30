@@ -67,7 +67,36 @@ function mediaDocumentId(fileId) {
   return crypto.createHash('sha256').update(fileId).digest('hex');
 }
 
-function capabilityCandidates(profile, mediaRecords, ownerOpenid) {
+function canonicalFileId(record, sourceFileId, ownerOpenid, mediaSecret) {
+  if (
+    !record ||
+    typeof record.canonical_file_id !== 'string' ||
+    typeof record.sha256 !== 'string' ||
+    !/^[a-f0-9]{64}$/.test(record.sha256) ||
+    !Number.isSafeInteger(record.size) ||
+    record.size <= 0 ||
+    record.size > 5 * 1024 * 1024 ||
+    !['image/jpeg', 'image/png', 'image/webp'].includes(record.mime) ||
+    typeof mediaSecret !== 'string' ||
+    mediaSecret.length < 32
+  )
+    return '';
+  const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[record.mime];
+  const ownerAlias = crypto
+    .createHmac('sha256', mediaSecret)
+    .update(ownerOpenid)
+    .digest('hex')
+    .slice(0, 32);
+  const expectedPath = `profile-canonical/${ownerAlias}/${mediaDocumentId(sourceFileId)}/${record.sha256}.${extension}`;
+  const slash = record.canonical_file_id.indexOf('/', 'cloud://'.length);
+  const actualPath =
+    record.canonical_file_id.startsWith('cloud://') && slash >= 0
+      ? record.canonical_file_id.slice(slash + 1)
+      : '';
+  return actualPath === expectedPath ? record.canonical_file_id : '';
+}
+
+function capabilityCandidates(profile, mediaRecords, ownerOpenid, mediaSecret) {
   const value = profile && typeof profile === 'object' ? profile : {};
   const records = new Map(
     (Array.isArray(mediaRecords) ? mediaRecords : []).map((record) => [
@@ -77,30 +106,42 @@ function capabilityCandidates(profile, mediaRecords, ownerOpenid) {
   );
   const registered = (fileId, category) => {
     const record = records.get(fileId);
-    return Boolean(
+    const canonical = canonicalFileId(record, fileId, ownerOpenid, mediaSecret);
+    return (
       record &&
       record._id === mediaDocumentId(fileId) &&
       record.file_id === fileId &&
       record.owner_openid === ownerOpenid &&
       record.category === category &&
-      record.status === 'active',
+      record.status === 'active' &&
+      canonical
     );
   };
   const photos = Array.isArray(value.photos)
     ? value.photos
         .filter((photo) => photo && typeof photo === 'object')
         .map((photo) => ({
-          file_id: safeCloudFileId(photo.file_id),
+          source_file_id: safeCloudFileId(photo.file_id),
           category: typeof photo.category === 'string' ? photo.category : '',
           source: 'user',
           visibility: photo.visibility === 'public' ? 'public' : 'private',
         }))
         .filter(
           (photo) =>
-            photo.file_id &&
+            photo.source_file_id &&
             PROFILE_PHOTO_CATEGORIES.has(photo.category) &&
-            registered(photo.file_id, photo.category),
+            registered(photo.source_file_id, photo.category),
         )
+        .map((photo) => ({
+          ...photo,
+          file_id: photo.source_file_id,
+          storage_file_id: canonicalFileId(
+            records.get(photo.source_file_id),
+            photo.source_file_id,
+            ownerOpenid,
+            mediaSecret,
+          ),
+        }))
     : [];
   const ordered = [
     ...photos.filter((photo) => isRidingCategory(photo.category)),
@@ -109,7 +150,13 @@ function capabilityCandidates(profile, mediaRecords, ownerOpenid) {
   const avatar = safeCloudFileId(value.avatar_file_id);
   const avatarRecord = records.get(avatar);
   if (avatar && registered(avatar, avatarRecord && avatarRecord.category))
-    ordered.push({ file_id: avatar, category: 'other', source: 'avatar', visibility: 'private' });
+    ordered.push({
+      file_id: avatar,
+      storage_file_id: canonicalFileId(avatarRecord, avatar, ownerOpenid, mediaSecret),
+      category: 'other',
+      source: 'avatar',
+      visibility: 'private',
+    });
 
   const seen = new Set();
   return ordered.filter((item) => {
@@ -119,39 +166,48 @@ function capabilityCandidates(profile, mediaRecords, ownerOpenid) {
   });
 }
 
-function adminCapabilityMedia(profile, mediaRecords, ownerOpenid) {
+function adminCapabilityMedia(profile, mediaRecords, ownerOpenid, mediaSecret) {
   return {
-    file_ids: capabilityCandidates(profile, mediaRecords, ownerOpenid).map((item) => item.file_id),
+    file_ids: capabilityCandidates(profile, mediaRecords, ownerOpenid, mediaSecret).map(
+      (item) => item.storage_file_id,
+    ),
   };
 }
 
-async function resolveAdminCapabilityMedia(profile, mediaRecords, ownerOpenid, getTempFileURL) {
-  const candidates = capabilityCandidates(profile, mediaRecords, ownerOpenid);
+async function resolveAdminCapabilityMedia(
+  profile,
+  mediaRecords,
+  ownerOpenid,
+  getTempFileURL,
+  mediaSecret,
+) {
+  const candidates = capabilityCandidates(profile, mediaRecords, ownerOpenid, mediaSecret);
   if (candidates.length === 0) return { photos: [], avatar_url: '' };
   let response;
   try {
-    response = await getTempFileURL({ fileList: candidates.map((item) => item.file_id) });
+    response = await getTempFileURL({ fileList: candidates.map((item) => item.storage_file_id) });
   } catch {
     return { photos: [], avatar_url: '' };
   }
-  const allowed = new Map(candidates.map((item) => [item.file_id, item]));
+  const allowed = new Map(candidates.map((item) => [item.storage_file_id, item]));
   const resolved = new Map();
   for (const item of Array.isArray(response && response.fileList) ? response.fileList : []) {
     const candidate = allowed.get(item && item.fileID);
     const url = item && Number(item.status) === 0 ? safeHttpsUrl(item.tempFileURL) : '';
-    if (candidate && url && !resolved.has(candidate.file_id)) resolved.set(candidate.file_id, url);
+    if (candidate && url && !resolved.has(candidate.storage_file_id))
+      resolved.set(candidate.storage_file_id, url);
   }
   const photos = candidates
-    .filter((item) => item.source === 'user' && resolved.has(item.file_id))
+    .filter((item) => item.source === 'user' && resolved.has(item.storage_file_id))
     .map((item) => ({
-      url: resolved.get(item.file_id),
+      url: resolved.get(item.storage_file_id),
       category: item.category,
       source: 'user',
     }));
   const avatar = candidates.find((item) => item.source === 'avatar');
   return {
     photos,
-    avatar_url: avatar ? resolved.get(avatar.file_id) || '' : '',
+    avatar_url: avatar ? resolved.get(avatar.storage_file_id) || '' : '',
   };
 }
 
@@ -241,6 +297,7 @@ async function adminCapabilityDetail({
   loadProfile,
   loadMediaRecords,
   getTempFileURL,
+  mediaSecret,
   projectRegistration,
 }) {
   await authorize();
@@ -255,6 +312,7 @@ async function adminCapabilityDetail({
     mediaRecords,
     registration.openid,
     getTempFileURL,
+    mediaSecret,
   );
   return adminCapabilityView(projectRegistration(registration), profile, resolvedMedia);
 }

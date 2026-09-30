@@ -44,6 +44,7 @@ test('registerMedia 在任何特权存储读取前拒绝跨 owner fileID', async
   const fileId = `cloud://env/${mediaOwnerPrefix('owner-b', secret)}123e4567-e89b-42d3-a456-426614174000.jpg`;
   let tempUrlCalls = 0;
   let downloadCalls = 0;
+  let uploadCalls = 0;
   const fixture = statefulDatabase();
   cloud.getTempFileURL = async ({ fileList }) => {
     tempUrlCalls += 1;
@@ -59,6 +60,10 @@ test('registerMedia 在任何特权存储读取前拒绝跨 owner fileID', async
     downloadCalls += 1;
     return { fileContent: Buffer.from([0xff, 0xd8, 0xff]) };
   };
+  cloud.uploadFile = async () => {
+    uploadCalls += 1;
+    return { fileID: 'cloud://env/profile-canonical/forbidden' };
+  };
   const main = loadMain(owner, fixture.db);
 
   const result = await main({
@@ -72,6 +77,7 @@ test('registerMedia 在任何特权存储读取前拒绝跨 owner fileID', async
   assert.equal(result.error.code, 'MEDIA_NOT_OWNED');
   assert.equal(tempUrlCalls, 0);
   assert.equal(downloadCalls, 0);
+  assert.equal(uploadCalls, 0);
 });
 
 test('mediaUploadPath 在把 owner-bound path 返回客户端前持久化 cleanup intent', async () => {

@@ -138,6 +138,7 @@ exports.main = async (event = {}) => {
         loadProfile: (profileOpenid) => maybeGet(db.collection('profiles'), profileOpenid),
         loadMediaRecords,
         getTempFileURL: (input) => cloud.getTempFileURL(input),
+        mediaSecret: process.env.PROFILE_MEDIA_PATH_SECRET,
         projectRegistration: publicRegistration,
       });
       if (!detail) fail('REGISTRATION_NOT_FOUND', '报名不存在');

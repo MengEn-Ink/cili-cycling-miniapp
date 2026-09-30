@@ -80,3 +80,24 @@
 - [ ] Run `npm run audit:all` and expect zero high-or-greater vulnerabilities.
 - [ ] Run `npm run cloudbase:plan` and expect zero actions and zero conflicts.
 - [ ] Confirm the worktree is clean and report only `de1856b..HEAD`; do not merge, deploy, or upload before independent review.
+
+### Task 6: Bind registered media to immutable canonical objects
+
+**Files:**
+- Modify: `cloudfunctions/profile/core.js`
+- Modify: `cloudfunctions/profile/index.js`
+- Modify: `cloudfunctions/profile/store.js`
+- Modify: `cloudfunctions/profile/capability-card.js`
+- Modify: `cloudfunctions/admin-review/capability-card.js`
+- Modify: `cloudfunctions/profile-media-cleanup/core.js`
+- Modify: corresponding node tests
+- Create: `cloudstorage.rules.json`
+- Modify: `scripts/bootstrap-cloudbase.node-test.mjs`
+
+- [ ] Add failing tests proving source overwrite cannot change profile/admin resolved URLs and that records without a canonical binding are hidden.
+- [ ] Make bounded GET return bytes, SHA-256, size, MIME, and extension from the exact verified stream.
+- [ ] Persist a separate `canonical_upload` intent before uploading to `profile-canonical/<owner>/<source-hash>/<content-hash>.<ext>`.
+- [ ] Atomically bind `source_file_id`, `canonical_file_id`, hash, size, and MIME to the registry and complete source/canonical intents.
+- [ ] Add failing tests for canonical upload response unknown, canonicalization failure, idempotent repeat registration, and cleanup of both source and canonical objects.
+- [ ] Add and validate a storage rule that permits client writes only below the staging `profiles/` prefix and denies `profile-canonical/` writes.
+- [ ] Document and require a post-deploy client overwrite smoke before uploading the Mini Program build.

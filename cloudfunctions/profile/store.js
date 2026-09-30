@@ -6,6 +6,10 @@ const {
   mediaPath,
   mediaDocumentId,
   clientUploadIntentId,
+  clientUploadIntent,
+  canonicalUploadIntent,
+  canonicalUploadIntentId,
+  canonicalMediaBinding,
   avatarUrlFingerprint,
   mediaRegistration,
   registeredMedia,
@@ -116,22 +120,7 @@ async function get(collection, id) {
 function createProfileStore(db) {
   const remove = () => db.command.remove();
   return {
-    registerMedia: (id, buildRecord) =>
-      db.runTransaction(async (tx) => {
-        const collection = tx.collection('profile_media');
-        const existing = await get(collection, id);
-        const record = buildRecord(existing);
-        if (!existing) {
-          const { _id, ...data } = record;
-          await collection.doc(_id).set({ data });
-        } else if (
-          !Object.prototype.hasOwnProperty.call(existing, 'origin') &&
-          Object.prototype.hasOwnProperty.call(record, 'origin')
-        ) {
-          await collection.doc(id).update({ data: { origin: record.origin } });
-        }
-        return record;
-      }),
+    getMedia: (id) => get(db.collection('profile_media'), id),
     prepareClientUpload: (openid, intent, secretValue) =>
       db.runTransaction(async (tx) => {
         const imports = tx.collection('profile_media_imports');
@@ -161,22 +150,139 @@ function createProfileStore(db) {
         await imports.doc(intent._id).set({ data: writableDocument(intent) });
         return intent;
       }),
-    registerClientMedia: (openid, fileId, intentId, secretValue, buildRecord, now = new Date()) =>
+    prepareCanonicalUpload: (openid, sourceIntentId, intent, secretValue, now = new Date()) =>
       db.runTransaction(async (tx) => {
-        if (!isOwnerMedia(fileId, openid, secretValue))
-          throw new ProfileError('MEDIA_NOT_OWNED', '媒体文件不属于当前用户');
-        const cloudPath = mediaPath(fileId);
-        const expectedIntentId = clientUploadIntentId(cloudPath);
-        if (intentId && intentId !== expectedIntentId)
+        const imports = tx.collection('profile_media_imports');
+        const expectedCanonical = canonicalUploadIntent(
+          openid,
+          intent.source_file_id,
+          {
+            sha256: intent.sha256,
+            size: intent.size,
+            mime: intent.mime,
+            extension: { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[
+              intent.mime
+            ],
+          },
+          secretValue,
+          intent.created_at,
+        );
+        if (
+          intent._id !== expectedCanonical._id ||
+          intent.cloud_path !== expectedCanonical.cloud_path ||
+          intent.owner_openid !== openid ||
+          intent.kind !== 'canonical_upload' ||
+          intent.status !== 'prepared'
+        )
+          throw new ProfileError('MEDIA_UPLOAD_INTENT_INVALID', '媒体上传凭据无效');
+        let sourceIntent = await get(imports, sourceIntentId);
+        if (!sourceIntent) {
+          const expectedSourceIntentId = clientUploadIntentId(mediaPath(intent.source_file_id));
+          if (sourceIntentId !== expectedSourceIntentId)
+            throw new ProfileError('MEDIA_UPLOAD_INTENT_INVALID', '媒体上传凭据无效');
+          sourceIntent = clientUploadIntent(
+            openid,
+            mediaPath(intent.source_file_id),
+            secretValue,
+            now,
+          );
+          await imports.doc(sourceIntentId).set({ data: writableDocument(sourceIntent) });
+        }
+        const clientSource =
+          sourceIntent.kind === 'client_upload' &&
+          sourceIntent.status === 'prepared' &&
+          sourceIntentId === clientUploadIntentId(mediaPath(intent.source_file_id));
+        const stravaSource =
+          !Object.prototype.hasOwnProperty.call(sourceIntent, 'kind') &&
+          sourceIntent.status === 'uploaded' &&
+          sourceIntent.file_id === intent.source_file_id;
+        if (
+          (!clientSource && !stravaSource) ||
+          sourceIntent.owner_openid !== openid ||
+          sourceIntent.cloud_path !== mediaPath(intent.source_file_id) ||
+          (sourceIntent.canonical_intent_id && sourceIntent.canonical_intent_id !== intent._id)
+        )
+          throw new ProfileError('MEDIA_UPLOAD_INTENT_INVALID', '媒体上传凭据无效');
+        const existing = await get(imports, intent._id);
+        if (
+          existing &&
+          (existing.kind !== 'canonical_upload' ||
+            existing.owner_openid !== openid ||
+            existing.source_file_id !== intent.source_file_id ||
+            existing.cloud_path !== intent.cloud_path ||
+            existing.sha256 !== intent.sha256 ||
+            existing.size !== intent.size ||
+            existing.mime !== intent.mime ||
+            existing.status !== 'prepared')
+        )
+          throw new ProfileError('MEDIA_UPLOAD_INTENT_CONFLICT', '媒体上传凭据冲突');
+        if (!existing) await imports.doc(intent._id).set({ data: writableDocument(intent) });
+        await imports.doc(sourceIntentId).update({
+          data: {
+            canonical_intent_id: intent._id,
+            canonical_path: intent.cloud_path,
+            sha256: intent.sha256,
+            size: intent.size,
+            mime: intent.mime,
+            updated_at: db.serverDate(),
+          },
+        });
+        return existing || intent;
+      }),
+    completeClientMedia: (
+      openid,
+      fileId,
+      sourceIntentId,
+      canonicalIntentId,
+      binding,
+      secretValue,
+      buildRecord,
+      now = new Date(),
+    ) =>
+      db.runTransaction(async (tx) => {
+        const canonical = canonicalMediaBinding(
+          openid,
+          fileId,
+          binding?.canonical_file_id,
+          {
+            sha256: binding?.sha256,
+            size: binding?.size,
+            mime: binding?.mime,
+            extension: { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[
+              binding?.mime
+            ],
+          },
+          secretValue,
+        );
+        const expectedSourceIntentId = clientUploadIntentId(mediaPath(fileId));
+        const expectedCanonicalIntentId = canonicalUploadIntentId(
+          mediaPath(canonical.canonical_file_id),
+        );
+        if (
+          sourceIntentId !== expectedSourceIntentId ||
+          canonicalIntentId !== expectedCanonicalIntentId
+        )
           throw new ProfileError('MEDIA_UPLOAD_INTENT_INVALID', '媒体上传凭据无效');
         const imports = tx.collection('profile_media_imports');
-        const intent = await get(imports, expectedIntentId);
+        const sourceIntent = await get(imports, sourceIntentId);
+        const canonicalIntent = await get(imports, canonicalIntentId);
         if (
-          intent &&
-          (intent.kind !== 'client_upload' ||
-            intent.owner_openid !== openid ||
-            intent.cloud_path !== cloudPath ||
-            !['prepared', 'completed'].includes(intent.status))
+          !sourceIntent ||
+          sourceIntent.kind !== 'client_upload' ||
+          sourceIntent.owner_openid !== openid ||
+          sourceIntent.cloud_path !== mediaPath(fileId) ||
+          sourceIntent.status !== 'prepared' ||
+          sourceIntent.canonical_intent_id !== canonicalIntentId ||
+          sourceIntent.canonical_path !== mediaPath(canonical.canonical_file_id) ||
+          sourceIntent.sha256 !== canonical.sha256 ||
+          sourceIntent.size !== canonical.size ||
+          sourceIntent.mime !== canonical.mime ||
+          !canonicalIntent ||
+          canonicalIntent.kind !== 'canonical_upload' ||
+          canonicalIntent.owner_openid !== openid ||
+          canonicalIntent.source_file_id !== fileId ||
+          canonicalIntent.cloud_path !== mediaPath(canonical.canonical_file_id) ||
+          canonicalIntent.status !== 'prepared'
         )
           throw new ProfileError('MEDIA_UPLOAD_INTENT_INVALID', '媒体上传凭据无效');
         const media = tx.collection('profile_media');
@@ -186,24 +292,20 @@ function createProfileStore(db) {
         if (!existing) {
           const { _id, ...data } = record;
           await media.doc(_id).set({ data });
-        } else if (
-          !Object.prototype.hasOwnProperty.call(existing, 'origin') &&
-          Object.prototype.hasOwnProperty.call(record, 'origin')
-        ) {
-          await media.doc(mediaId).update({ data: { origin: record.origin } });
+        } else {
+          await media.doc(mediaId).set({ data: writableDocument(record) });
         }
-        if (intent && intent.status === 'prepared') {
-          await imports.doc(expectedIntentId).update({
-            data: {
-              status: 'completed',
-              file_id: fileId,
-              media_id: mediaId,
-              completed_at: now,
-              cleanup_after: null,
-              updated_at: db.serverDate(),
-            },
-          });
-        }
+        const completed = {
+          status: 'completed',
+          file_id: fileId,
+          media_id: mediaId,
+          canonical_file_id: canonical.canonical_file_id,
+          completed_at: now,
+          cleanup_after: null,
+          updated_at: db.serverDate(),
+        };
+        await imports.doc(sourceIntentId).update({ data: completed });
+        await imports.doc(canonicalIntentId).update({ data: completed });
         return record;
       }),
     setAvatar: (openid, source, fileId, secretValue, now = new Date()) =>
@@ -401,7 +503,14 @@ function createProfileStore(db) {
         });
         return true;
       }),
-    completeAvatarImport: (openid, fence, secretValue, now = new Date()) =>
+    completeAvatarImport: (
+      openid,
+      fence,
+      secretValue,
+      now = new Date(),
+      canonicalIntentId,
+      binding,
+    ) =>
       db.runTransaction(async (tx) => {
         const credentials = tx.collection('strava_credentials');
         const imports = tx.collection('profile_media_imports');
@@ -409,6 +518,9 @@ function createProfileStore(db) {
         const profiles = tx.collection('profiles');
         const credential = await get(credentials, openid);
         const intent = await get(imports, fence?.intent_id);
+        const canonicalIntent = canonicalIntentId
+          ? await get(imports, canonicalIntentId)
+          : undefined;
         const currentProfile = (await get(profiles, openid)) || {};
         if (validIntent(intent, openid, fence, ['completed'])) {
           if (
@@ -425,10 +537,32 @@ function createProfileStore(db) {
         )
           staleImport();
         const fileId = intent.file_id;
+        const canonical = canonicalMediaBinding(
+          openid,
+          fileId,
+          binding?.canonical_file_id,
+          {
+            sha256: binding?.sha256,
+            size: binding?.size,
+            mime: binding?.mime,
+            extension: { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[
+              binding?.mime
+            ],
+          },
+          secretValue,
+        );
         if (
           !isOwnerMedia(fileId, openid, secretValue) ||
           mediaPath(fileId) !== intent.cloud_path ||
-          intent.media_id !== mediaDocumentId(fileId)
+          intent.media_id !== mediaDocumentId(fileId) ||
+          intent.canonical_intent_id !== canonicalIntentId ||
+          intent.canonical_path !== mediaPath(canonical.canonical_file_id) ||
+          !canonicalIntent ||
+          canonicalIntent.kind !== 'canonical_upload' ||
+          canonicalIntent.owner_openid !== openid ||
+          canonicalIntent.source_file_id !== fileId ||
+          canonicalIntent.cloud_path !== mediaPath(canonical.canonical_file_id) ||
+          canonicalIntent.status !== 'prepared'
         )
           staleImport();
         const selectedId = mediaDocumentId(fileId);
@@ -441,6 +575,7 @@ function createProfileStore(db) {
           secretValue,
           now,
           existingMedia,
+          canonical,
         );
         const previousFileId = currentProfile.avatar_file_id;
         const previousId = previousFileId ? mediaDocumentId(previousFileId) : '';
@@ -489,6 +624,17 @@ function createProfileStore(db) {
         await imports.doc(fence.intent_id).update({
           data: {
             status: 'completed',
+            completed_at: now,
+            cleanup_after: null,
+            updated_at: updatedAt,
+          },
+        });
+        await imports.doc(canonicalIntentId).update({
+          data: {
+            status: 'completed',
+            file_id: fileId,
+            media_id: selectedId,
+            canonical_file_id: canonical.canonical_file_id,
             completed_at: now,
             cleanup_after: null,
             updated_at: updatedAt,

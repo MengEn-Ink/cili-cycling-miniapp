@@ -28,9 +28,28 @@ const profile = {
   openid: 'private-openid',
 };
 const owner = 'member-openid';
+const mediaSecret = 'profile-media-secret-for-tests-32-bytes';
+const canonicalFor = (fileId, ownerOpenid = owner) => {
+  const ownerAlias = crypto
+    .createHmac('sha256', mediaSecret)
+    .update(ownerOpenid)
+    .digest('hex')
+    .slice(0, 32);
+  const sourceDigest = crypto.createHash('sha256').update(fileId).digest('hex');
+  const sha256 = crypto.createHash('sha256').update(`bytes:${fileId}`).digest('hex');
+  return {
+    canonicalFileId: `cloud://env/profile-canonical/${ownerAlias}/${sourceDigest}/${sha256}.jpg`,
+    sha256,
+  };
+};
 const mediaRecord = (fileId, category, status = 'active', ownerOpenid = owner) => ({
   _id: crypto.createHash('sha256').update(fileId).digest('hex'),
   file_id: fileId,
+  source_file_id: fileId,
+  canonical_file_id: canonicalFor(fileId, ownerOpenid).canonicalFileId,
+  sha256: canonicalFor(fileId, ownerOpenid).sha256,
+  size: 5,
+  mime: 'image/jpeg',
   owner_openid: ownerOpenid,
   category,
   status,
@@ -43,8 +62,10 @@ const records = [
 ];
 
 test('管理员媒体白名单按骑行照片、其他照片、头像排序去重并最多保留三张', () => {
-  assert.deepEqual(adminCapabilityMedia(profile, records, owner), {
-    file_ids: ['cloud://ride-1', 'cloud://ride-2', 'cloud://other'],
+  assert.deepEqual(adminCapabilityMedia(profile, records, owner, mediaSecret), {
+    file_ids: ['cloud://ride-1', 'cloud://ride-2', 'cloud://other'].map(
+      (fileId) => canonicalFor(fileId).canonicalFileId,
+    ),
   });
   assert.deepEqual(
     adminCapabilityMedia(
@@ -57,8 +78,13 @@ test('管理员媒体白名单按骑行照片、其他照片、头像排序去�
       },
       records,
       owner,
+      mediaSecret,
     ),
-    { file_ids: ['cloud://ride-1', 'cloud://ride-2', 'cloud://avatar'] },
+    {
+      file_ids: ['cloud://ride-1', 'cloud://ride-2', 'cloud://avatar'].map(
+        (fileId) => canonicalFor(fileId).canonicalFileId,
+      ),
+    },
   );
 });
 
@@ -77,13 +103,17 @@ test('管理员媒体只接受 profile 白名单内的 cloud file ID', () => {
       },
       [mediaRecord('cloud://ok', 'ride')],
       owner,
+      mediaSecret,
     ),
-    { file_ids: ['cloud://ok'] },
+    { file_ids: [canonicalFor('cloud://ok').canonicalFileId] },
   );
 });
 
 test('CloudBase 临时 URL 解析剔除失败项、非 https 和未知项', async () => {
   const calls = [];
+  const canonicalRide = canonicalFor('cloud://ride-1').canonicalFileId;
+  const canonicalBike = canonicalFor('cloud://ride-2').canonicalFileId;
+  const canonicalOther = canonicalFor('cloud://other').canonicalFileId;
   const result = await resolveAdminCapabilityMedia(
     profile,
     records,
@@ -93,17 +123,17 @@ test('CloudBase 临时 URL 解析剔除失败项、非 https 和未知项', asyn
       return {
         fileList: [
           {
-            fileID: 'cloud://ride-1',
+            fileID: canonicalRide,
             tempFileURL: 'https://temporary.example/ride-1',
             status: 0,
           },
           {
-            fileID: 'cloud://ride-2',
+            fileID: canonicalBike,
             tempFileURL: 'https://temporary.example/ride-2',
             status: -1,
           },
           {
-            fileID: 'cloud://other',
+            fileID: canonicalOther,
             tempFileURL: 'http://temporary.example/other',
             status: 0,
           },
@@ -115,8 +145,9 @@ test('CloudBase 临时 URL 解析剔除失败项、非 https 和未知项', asyn
         ],
       };
     },
+    mediaSecret,
   );
-  assert.deepEqual(calls, [['cloud://ride-1', 'cloud://ride-2', 'cloud://other']]);
+  assert.deepEqual(calls, [[canonicalRide, canonicalBike, canonicalOther]]);
   assert.deepEqual(result, {
     photos: [
       {
@@ -129,6 +160,73 @@ test('CloudBase 临时 URL 解析剔除失败项、非 https 和未知项', asyn
   });
   assert.equal(JSON.stringify(result).includes('cloud://'), false);
   assert.equal(JSON.stringify(result).includes('file_id'), false);
+});
+
+test('管理员能力卡只为 registry 绑定的 canonical 对象签 URL', async () => {
+  const sourceFileId = 'cloud://source/avatar';
+  const ownerAlias = crypto
+    .createHmac('sha256', mediaSecret)
+    .update(owner)
+    .digest('hex')
+    .slice(0, 32);
+  const canonicalFileId = `cloud://env/profile-canonical/${ownerAlias}/${crypto.createHash('sha256').update(sourceFileId).digest('hex')}/${'a'.repeat(64)}.jpg`;
+  const record = {
+    ...mediaRecord(sourceFileId, 'other', 'active', owner),
+    origin: 'custom',
+    source_file_id: sourceFileId,
+    canonical_file_id: canonicalFileId,
+    sha256: 'a'.repeat(64),
+    size: 5,
+    mime: 'image/jpeg',
+  };
+  const requested = [];
+
+  const result = await resolveAdminCapabilityMedia(
+    { avatar_file_id: sourceFileId, avatar_source: 'custom' },
+    [record],
+    owner,
+    async ({ fileList }) => {
+      requested.push(...fileList);
+      return {
+        fileList: fileList.map((fileID) => ({
+          fileID,
+          status: 0,
+          tempFileURL: 'https://temporary.example/canonical.jpg',
+        })),
+      };
+    },
+    mediaSecret,
+  );
+
+  assert.deepEqual(requested, [canonicalFileId]);
+  assert.equal(result.avatar_url, 'https://temporary.example/canonical.jpg');
+});
+
+test('管理员能力卡隐藏缺少 canonical 绑定的 legacy registry', async () => {
+  const sourceFileId = 'cloud://source/legacy-avatar';
+  let storageReads = 0;
+  const result = await resolveAdminCapabilityMedia(
+    { avatar_file_id: sourceFileId, avatar_source: 'custom' },
+    [
+      {
+        _id: crypto.createHash('sha256').update(sourceFileId).digest('hex'),
+        file_id: sourceFileId,
+        owner_openid: owner,
+        category: 'other',
+        origin: 'custom',
+        status: 'active',
+      },
+    ],
+    owner,
+    async () => {
+      storageReads += 1;
+      return { fileList: [] };
+    },
+    mediaSecret,
+  );
+
+  assert.equal(storageReads, 0);
+  assert.deepEqual(result, { photos: [], avatar_url: '' });
 });
 
 test('管理员详情先鉴权再解析媒体，鉴权失败不读取资料也不调用 CloudBase URL API', async () => {
@@ -155,6 +253,7 @@ test('管理员详情先鉴权再解析媒体，鉴权失败不读取资料也�
         events.push('temp-url');
         return { fileList: [] };
       },
+      mediaSecret,
       projectRegistration: (value) => value,
     }),
     /ADMIN_REQUIRED/,
@@ -181,15 +280,22 @@ test('管理员卡只解析当前 profile 仍引用且 owner/status/category 匹
       calls.push(fileList);
       return { fileList: [] };
     },
+    mediaSecret,
   );
   assert.deepEqual(result, { photos: [], avatar_url: '' });
   assert.deepEqual(calls, []);
 });
 
 test('管理员卡临时 URL 整体失败时降级为空媒体', async () => {
-  const result = await resolveAdminCapabilityMedia(profile, records, owner, async () => {
-    throw new Error('storage unavailable');
-  });
+  const result = await resolveAdminCapabilityMedia(
+    profile,
+    records,
+    owner,
+    async () => {
+      throw new Error('storage unavailable');
+    },
+    mediaSecret,
+  );
   assert.deepEqual(result, { photos: [], avatar_url: '' });
 });
 

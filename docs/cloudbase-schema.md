@@ -44,6 +44,9 @@ created_at, updated_at
 ```text
 _id: sha256(file_id)
 file_id
+source_file_id                 # 与 file_id 相同，显式标记客户端兼容引用
+canonical_file_id              # server-owned、content-addressed 展示对象
+sha256, size, mime             # canonical 对应的已验证字节版本
 owner_openid
 category: ride|bike|other
 origin: wechat|strava|custom
@@ -55,7 +58,7 @@ delete_lease_id?, delete_claimed_at?, delete_lease_expires_at?, delete_attempts?
 deleted_at?, delete_failed_at?, retry_at?, last_error_code?
 ```
 
-客户端先调用 `profile/mediaUploadPath` 取得由 `PROFILE_MEDIA_PATH_SECRET` 和可信 WXContext OPENID 派生的 opaque owner 路径，上传成功后立即调用 `profile/registerMedia`；服务端通过临时 URL API 确认对象真实存在后才登记。登记初始状态为 `unreferenced` 且幂等；只有同一事务内成功写入当前 profile 的媒体才切换为 `active`，被移除的 active 媒体在同一事务内降级为带新 `cleanup_after` 的 `unreferenced`。资料更新、个人名片和管理员名片都要求记录的 `owner_openid`、`file_id`、`category`、`status` 与当前 profile 引用匹配。存量未登记媒体不迁移、不删除，但不进入任何能力卡。临时 URL 整体或逐项失败只减少背景图，不使详情失败。
+客户端先调用 `profile/mediaUploadPath` 取得由 `PROFILE_MEDIA_PATH_SECRET` 和可信 WXContext OPENID 派生的 opaque owner staging 路径，上传成功后立即调用 `profile/registerMedia`。服务端通过临时 URL HEAD 与有界 GET 验证实际对象，计算 SHA-256，并把相同字节写入 `profile-canonical/<owner-alias>/<source-hash>/<content-hash>.<ext>`。登记初始状态为 `unreferenced` 且幂等，并绑定 source/canonical/hash/size/mime；只有同一事务内成功写入当前 profile 的媒体才切换为 `active`，被移除的 active 媒体在同一事务内降级为带新 `cleanup_after` 的 `unreferenced`。资料更新仍使用 source ID 兼容旧客户端；个人名片和管理员名片只为 owner/status/current-reference 都匹配的 canonical ID 签 URL。存量未登记或未 canonicalize 的 legacy 媒体不迁移、不删除，但不进入任何能力卡。
 
 `profile-media-cleanup` 每 10 分钟最多处理 20 条到期 `unreferenced`、过期 `deleting` 或到期 `delete_failed` 记录。该函数必须配置与 `profile` 相同的 `PROFILE_MEDIA_PATH_SECRET`。每条记录均在事务内重读 owner 当前 profile：仍被引用则恢复 `active`；未引用才写入唯一且有过期时间的删除 lease 并调用云存储删除。worker 中断后可 fenced 重领；失败或过期 recovery 合计最多尝试 3 次，随后进入 `delete_failed_terminal`，避免永久重试和索引饥饿。结果只保存稳定 `last_error_code`，不记录底层错误文本。微信/自定义上传在 `registerMedia` 与对象删除同时失败时仍由客户端 `reportOrphan` 账本补偿；Strava 服务端导入不依赖客户端账本，使用下述持久 intent。
 
@@ -65,7 +68,7 @@ deleted_at?, delete_failed_at?, retry_at?, last_error_code?
 
 ```text
 _id: avatar-import-<uuid> | client-upload-<sha256(cloud_path)>
-kind?: client_upload              # 缺失表示 Strava 服务端导入；客户端直传必须显式标记
+kind?: client_upload|canonical_upload # 缺失表示 Strava 服务端导入
 owner_openid, athlete_id?, credential_generation?, avatar_url_fingerprint?
 cloud_path                         # 上传前持久化的 owner HMAC 路径
 file_id?, media_id?                # 上传响应验证通过后写入
@@ -78,6 +81,10 @@ delete_attempts?, retry_at?, recovery_delete_pending?, delete_confirmation_pendi
 下载前先在事务中创建 `leased` intent，并以当前 credential 的 generation、athlete ID 与头像 URL SHA-256 指纹绑定 owner 级 lease；不持久化原头像 URL。未过期的其他 intent 会被拒绝，同一 intent 可幂等复用，只有 lease 过期后才能 fenced takeover。下载完成后再次核对同一 fence，写入 owner HMAC `cloud_path` 并进入 `prepared`，随后 upload、完成和失败路径都继续核对该 fence。最终事务重读 credential、intent、profile 和 media，只有 athlete、generation、URL 指纹、lease 及 owner 路径全部匹配时，才原子登记 `origin=strava` 并切换头像。失败后有上传目标的 intent 进入 `orphaned`，尚未生成目标的 `leased` intent 进入 `aborted`。
 
 微信/自定义头像和个人照片在 `mediaUploadPath` 返回前创建 `kind=client_upload,status=prepared` 的确定性 intent，`cleanup_after` 为 30 分钟。`registerMedia` 在任何特权存储读取前校验 owner HMAC 路径，成功后在同一事务写 `profile_media` 并把 intent 标记为 `completed`。旧客户端仍可忽略新增账本；服务端按 cloudPath 推导 intent ID，因此滚动升级期间不要求客户端回传新字段。
+
+服务端复制 canonical 对象前另建 `kind=canonical_upload,status=prepared` intent，并把 source intent 绑定到同一 canonical path/hash/size/mime。任何一步失败时两个 intent 都保留给 cleanup；登记成功时 registry 与两个 intent 在同一事务完成。`profile_media` 解除全部引用后，cleanup 在同一 fenced 删除中同时删除 source 与 canonical 对象。
+
+`cloudstorage.rules.json` 只允许已登录客户端写 `profiles/` staging 前缀且要求资源 owner 与当前身份一致；`profile-canonical/` 不满足客户端写规则，只能由云函数/控制台创建。规则应用与回读后，部署 smoke 必须用真实小程序身份尝试覆盖 canonical path 并确认被拒绝。
 
 若上传响应丢失，cleanup 会先用共享 secret 验证 `owner_openid` 与 HMAC 路径绑定，再对该 intent 的唯一 owner 路径写入最小占位以取得规范 file ID，并执行 fenced 删除。恢复 lease 固定为 5 分钟，显式大于 `profile-media-cleanup` 的 30 秒函数超时与 30 秒存储 settle margin；恢复任务在外部上传前后都重读 lease，旧 worker 丢失 lease 时重新持久化删除 fence 后才补偿。恢复型删除先进入 `delete_confirming`，延迟一个 5 分钟 lease 窗口后再做第二次删除并终结，从而收敛先前调用晚到的存储写。任何待删除 file ID 必须与 intent 的 `cloud_path` 完全一致。
 

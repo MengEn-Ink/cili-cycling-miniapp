@@ -50,7 +50,66 @@ function validImportCloudPath(record, secretValue) {
   );
 }
 
-function claimDecision(record, profile, now, leaseId) {
+function validCanonicalIntentPath(record, secretValue) {
+  if (
+    !record ||
+    record.kind !== 'canonical_upload' ||
+    typeof record.source_file_id !== 'string' ||
+    typeof record.sha256 !== 'string' ||
+    !/^[a-f0-9]{64}$/.test(record.sha256) ||
+    !Number.isSafeInteger(record.size) ||
+    record.size <= 0 ||
+    record.size > 5 * 1024 * 1024 ||
+    !['image/jpeg', 'image/png', 'image/webp'].includes(record.mime)
+  )
+    return false;
+  const sourceSlash = record.source_file_id.indexOf('/', 'cloud://'.length);
+  const sourcePath =
+    record.source_file_id.startsWith('cloud://') && sourceSlash >= 0
+      ? record.source_file_id.slice(sourceSlash + 1)
+      : '';
+  if (
+    !validImportCloudPath(
+      { owner_openid: record.owner_openid, cloud_path: sourcePath },
+      secretValue,
+    )
+  )
+    return false;
+  const ownerAlias = mediaOwnerPrefix(record.owner_openid, secretValue).split('/')[1];
+  const sourceDigest = crypto.createHash('sha256').update(record.source_file_id).digest('hex');
+  const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[record.mime];
+  return (
+    record.cloud_path ===
+    `profile-canonical/${ownerAlias}/${sourceDigest}/${record.sha256}.${extension}`
+  );
+}
+
+function validCanonicalMedia(record, secretValue) {
+  if (!record || !record.canonical_file_id) return true;
+  if (
+    typeof record.file_id !== 'string' ||
+    typeof record.owner_openid !== 'string' ||
+    typeof record.sha256 !== 'string' ||
+    !/^[a-f0-9]{64}$/.test(record.sha256) ||
+    !Number.isSafeInteger(record.size) ||
+    record.size <= 0 ||
+    record.size > 5 * 1024 * 1024 ||
+    !['image/jpeg', 'image/png', 'image/webp'].includes(record.mime)
+  )
+    return false;
+  const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[record.mime];
+  const ownerAlias = mediaOwnerPrefix(record.owner_openid, secretValue).split('/')[1];
+  const sourceDigest = crypto.createHash('sha256').update(record.file_id).digest('hex');
+  const expectedPath = `profile-canonical/${ownerAlias}/${sourceDigest}/${record.sha256}.${extension}`;
+  const slash = record.canonical_file_id.indexOf('/', 'cloud://'.length);
+  const actualPath =
+    record.canonical_file_id.startsWith('cloud://') && slash >= 0
+      ? record.canonical_file_id.slice(slash + 1)
+      : '';
+  return actualPath === expectedPath;
+}
+
+function claimDecision(record, profile, now, leaseId, mediaSecret) {
   if (
     !record ||
     typeof record.owner_openid !== 'string' ||
@@ -77,6 +136,12 @@ function claimDecision(record, profile, now, leaseId) {
       Number(record.delete_attempts || 0) < MAX_DELETE_ATTEMPTS &&
       due(record.retry_at));
   if (!eligible) return null;
+  if (record.canonical_file_id && !validCanonicalMedia(record, mediaSecret)) {
+    return {
+      kind: 'terminal',
+      update: failureDecision(record, now, 'CANONICAL_TARGET_INVALID'),
+    };
+  }
   if (profile && profile._id !== record.owner_openid) return null;
   if (profileReferences(profile, record.file_id)) {
     return {
@@ -121,7 +186,10 @@ function importClaimDecision(record, profile, now, leaseId, mediaSecret) {
       },
     };
   }
-  const cloudPathValid = validImportCloudPath(record, mediaSecret);
+  const cloudPathValid =
+    record.kind === 'canonical_upload'
+      ? validCanonicalIntentPath(record, mediaSecret)
+      : validImportCloudPath(record, mediaSecret);
   const slash =
     typeof record.file_id === 'string' && record.file_id.startsWith('cloud://')
       ? record.file_id.indexOf('/', 'cloud://'.length)
@@ -293,8 +361,13 @@ async function drainMediaCleanup({
           if (!reclaimed) continue;
         }
       }
-      const response = await deleteFile({ fileList: [fileId] });
-      if (!deleteAccepted(response, fileId)) coded('DELETE_REJECTED', '媒体删除未被接受');
+      const fileIds =
+        item.kind === 'media' && Array.isArray(claimed.delete_file_ids)
+          ? claimed.delete_file_ids
+          : [fileId];
+      const response = await deleteFile({ fileList: fileIds });
+      if (!fileIds.every((target) => deleteAccepted(response, target)))
+        coded('DELETE_REJECTED', '媒体删除未被接受');
       const marked =
         item.kind === 'import'
           ? await store.markImportDeleted(id, {
@@ -349,6 +422,8 @@ module.exports = {
   authorizeCleanup,
   profileReferences,
   validImportCloudPath,
+  validCanonicalIntentPath,
+  validCanonicalMedia,
   claimDecision,
   importClaimDecision,
   failureDecision,

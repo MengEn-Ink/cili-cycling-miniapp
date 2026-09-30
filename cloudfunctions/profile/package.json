@@ -4,7 +4,7 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "test": "node --test core.node-test.js capability-card.node-test.js store.node-test.js avatar-import.node-test.js index.node-test.js smoke.node-test.js"
+    "test": "node --test core.node-test.js capability-card.node-test.js store.node-test.js avatar-import.node-test.js media-upload.node-test.js index.node-test.js smoke.node-test.js"
   },
   "dependencies": {
     "wx-server-sdk": "4.0.2"

@@ -6,17 +6,13 @@ const {
   buildUpdate,
   phoneUpdate,
   issueMediaUploadPath,
-  clientUploadIntentId,
   clientUploadIntent,
   mediaDocumentId,
-  mediaPath,
   mediaRegistration,
   clientAvatarSource,
   clientMediaOrigin,
   inspectMediaObject,
   verifyMediaObject,
-  verifyUploadedMedia,
-  verifyUploadedImageObject,
   validateMediaUpdate,
   normalizeAvatarProfile,
   writableDocument,
@@ -25,6 +21,7 @@ const {
 const { buildCapabilityCard } = require('./capability-card');
 const { createProfileStore } = require('./store');
 const { assertImportRequest, importStravaAvatar } = require('./avatar-import');
+const { canonicalizeClientMedia } = require('./media-upload');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const profileStore = createProfileStore(db);
@@ -113,26 +110,18 @@ async function updateProfile(openid, event) {
   });
   return response(result);
 }
-async function registerMedia(openid, event, verifyObject) {
+async function registerMedia(openid, event) {
   const origin = clientMediaOrigin(event.origin);
-  const now = new Date();
-  const secret = process.env.PROFILE_MEDIA_PATH_SECRET;
-  mediaRegistration(event.fileId, event.category, origin, openid, secret, now);
-  if (verifyObject) {
-    const tempFileURL = await verifyUploadedMedia(event.fileId, (input) =>
-      cloud.getTempFileURL(input),
-    );
-    await verifyUploadedImageObject(tempFileURL);
-  }
-  return profileStore.registerClientMedia(
+  return canonicalizeClientMedia({
     openid,
-    event.fileId,
-    clientUploadIntentId(mediaPath(event.fileId)),
-    secret,
-    (existing) =>
-      mediaRegistration(event.fileId, event.category, origin, openid, secret, now, existing),
-    now,
-  );
+    fileId: event.fileId,
+    category: event.category,
+    origin,
+    mediaSecret: process.env.PROFILE_MEDIA_PATH_SECRET,
+    getTempFileURL: (input) => cloud.getTempFileURL(input),
+    uploadFile: (input) => cloud.uploadFile(input),
+    store: profileStore,
+  });
 }
 exports.main = async (event = {}) => {
   try {
@@ -175,7 +164,7 @@ exports.main = async (event = {}) => {
     if (event.action === 'registerMedia') {
       if (Object.prototype.hasOwnProperty.call(event, 'openid'))
         throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });
-      await registerMedia(OPENID, event, true);
+      await registerMedia(OPENID, event);
       return ok({ registered: true });
     }
     if (event.action === 'setAvatar') {
@@ -225,7 +214,7 @@ exports.main = async (event = {}) => {
         cloud.getTempFileURL(input),
       );
       if (objectState === 'missing') return ok({ reported: true, cleaned: true });
-      await registerMedia(OPENID, event, false);
+      await registerMedia(OPENID, event);
       return ok({ reported: true, cleaned: false });
     }
     if (event.action === 'update') {

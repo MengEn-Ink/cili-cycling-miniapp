@@ -97,3 +97,13 @@
 - `mediaUploadPath` 在把 owner-bound cloudPath 返回客户端前，先在现有 `profile_media_imports` 集合写入 `client_upload` intent。`registerMedia` 成功时在同一事务完成媒体登记和 intent；若上传对象已落盘但客户端未收到响应，过期 intent 由既有 cleanup fence 按 owner path 恢复删除目标并回收。
 - 客户端 inline alert 与 toast 使用同一安全文案。`MEDIA_TOO_LARGE` 明确引导压缩或换图；预览成功只能清除同一预览请求产生的旧错误，不得覆盖更晚的上传、登记或保存错误。
 - 滚动部署顺序是硬门：先部署并验证 `profile`、`strava-auth`、`strava-callback` 与 `profile-media-cleanup`，确认 readiness、intent 和 cleanup 契约，再上传依赖 `avatar_available` 的小程序开发版。
+
+### Immutable canonical media
+
+客户端可写的 `profiles/<owner-alias>/<uuid>.<ext>` 仅为 source staging path，永远不直接用于对外签 URL。服务端完成 HEAD 与有界 GET 后，对实际读取字节计算 SHA-256，并上传到 `profile-canonical/<owner-alias>/<sha256(source-file-id)>/<sha256(bytes)>.<ext>`。该路径同时绑定 owner、source 与内容版本：同一 source/内容重复登记幂等，source 被覆盖也不会改变已登记 canonical 对象；不同 source 不共享 cleanup 生命周期。
+
+`profile_media` 继续以 source fileID 的摘要为主键并兼容 profile 中的旧引用，同时新增 `source_file_id`、`canonical_file_id`、`sha256`、`size`、`mime`。个人与管理员名片仅解析 canonical fileID；缺少合法 canonical 绑定的 legacy 记录隐藏并回退品牌图，不再签 source URL。
+
+canonical 上传前先写独立 `canonical_upload` intent；响应未知时 source intent 与 canonical intent 均可由现有 fenced cleanup 按各自 owner path 收敛。登记成功必须在一个事务内写 registry 并完成两个 intent。解除全部 profile 引用后，媒体 cleanup 同批删除 source 与 canonical；仍有头像或 photos 引用时二者都不能删除。
+
+仓库声明云存储规则：客户端只可写 `profiles/` staging 前缀且需匹配资源 owner，`profile-canonical/` 只能由云函数/控制台写。发布时必须先应用并回读规则，再通过小程序真实身份尝试覆盖 canonical 路径并确认拒绝，随后才能部署依赖 canonical registry 的函数与上传客户端。

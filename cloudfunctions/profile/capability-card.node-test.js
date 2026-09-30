@@ -1,7 +1,8 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { mediaDocumentId, mediaOwnerPrefix } = require('./core');
+const crypto = require('node:crypto');
+const { canonicalMediaPath, mediaDocumentId, mediaOwnerPrefix } = require('./core');
 
 let subject = {};
 try {
@@ -36,14 +37,38 @@ const snapshot = {
   coverage_complete: true,
   synced_at: '2026-09-29T11:00:00.000Z',
 };
-const mediaRecord = (fileId, category, status = 'active', owner = openid, origin) => ({
-  _id: mediaDocumentId(fileId),
-  file_id: fileId,
-  owner_openid: owner,
-  category,
-  status,
-  ...(origin ? { origin } : {}),
-});
+const canonicalFor = (fileId, owner = openid) => {
+  const sha256 = crypto.createHash('sha256').update(`bytes:${fileId}`).digest('hex');
+  return {
+    canonicalFileId: `cloud://env/${canonicalMediaPath(owner, fileId, sha256, 'jpg', mediaSecret)}`,
+    sha256,
+  };
+};
+const mediaRecord = (fileId, category, status = 'active', owner = openid, origin) => {
+  let canonical;
+  try {
+    canonical = canonicalFor(fileId, owner);
+  } catch {
+    canonical = undefined;
+  }
+  return {
+    _id: mediaDocumentId(fileId),
+    file_id: fileId,
+    ...(canonical
+      ? {
+          source_file_id: fileId,
+          canonical_file_id: canonical.canonicalFileId,
+          sha256: canonical.sha256,
+          size: 5,
+          mime: 'image/jpeg',
+        }
+      : {}),
+    owner_openid: owner,
+    category,
+    status,
+    ...(origin ? { origin } : {}),
+  };
+};
 
 test('个人名片状态严格区分 ready/partial/syncing/failed/disconnected', () => {
   assert.equal(deriveCapabilityState({ credential, snapshot }, now), 'ready');
@@ -76,6 +101,8 @@ test('个人名片状态严格区分 ready/partial/syncing/failed/disconnected',
 test('单一响应只返回 90 天 allowlist、null 语义和 owner 媒体临时 URL', async () => {
   const ownedRide = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174000.jpg`;
   const ownedOther = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174001.jpg`;
+  const canonicalRide = canonicalFor(ownedRide).canonicalFileId;
+  const canonicalOther = canonicalFor(ownedOther).canonicalFileId;
   const response = await buildCapabilityCard(
     {
       profile: {
@@ -103,7 +130,7 @@ test('单一响应只返回 90 天 allowlist、null 语义和 owner 媒体临时
       getTempFileURL: async ({ fileList }) => ({
         fileList: fileList.map((fileID) => ({
           fileID,
-          tempFileURL: `https://temporary.example/${fileID === ownedRide ? 'ride' : fileID === ownedOther ? 'other' : 'avatar'}`,
+          tempFileURL: `https://temporary.example/${fileID === canonicalRide ? 'ride' : fileID === canonicalOther ? 'other' : 'avatar'}`,
           status: 0,
         })),
       }),
@@ -154,6 +181,100 @@ test('单一响应只返回 90 天 allowlist、null 语义和 owner 媒体临时
   }
 });
 
+test('个人名片只解析已验证 canonical 对象，source 覆盖不进入展示链', async () => {
+  const sourceFileId = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174099.jpg`;
+  const canonicalPath = canonicalMediaPath(
+    openid,
+    sourceFileId,
+    'a'.repeat(64),
+    'jpg',
+    mediaSecret,
+  );
+  const canonicalFileId = `cloud://env/${canonicalPath}`;
+  const requested = [];
+  const card = await buildCapabilityCard(
+    {
+      profile: {
+        nickname: '骑手',
+        avatar_file_id: sourceFileId,
+        avatar_source: 'custom',
+        photos: [{ file_id: sourceFileId, category: 'other' }],
+      },
+      credential,
+      snapshot,
+      mediaRecords: [
+        {
+          ...mediaRecord(sourceFileId, 'other', 'active', openid, 'custom'),
+          source_file_id: sourceFileId,
+          canonical_file_id: canonicalFileId,
+          sha256: 'a'.repeat(64),
+          size: 5,
+          mime: 'image/jpeg',
+        },
+      ],
+    },
+    {
+      openid,
+      mediaSecret,
+      now,
+      getTempFileURL: async ({ fileList }) => {
+        requested.push(...fileList);
+        return {
+          fileList: fileList.map((fileID) => ({
+            fileID,
+            tempFileURL: 'https://temporary.example/canonical.jpg',
+            status: 0,
+          })),
+        };
+      },
+    },
+  );
+
+  assert.deepEqual(requested, [canonicalFileId, canonicalFileId]);
+  assert.equal(requested.includes(sourceFileId), false);
+  assert.equal(card.profile.avatar_url, 'https://temporary.example/canonical.jpg');
+});
+
+test('存量 active registry 缺 canonical 绑定时隐藏并回退', async () => {
+  const sourceFileId = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174098.jpg`;
+  let storageReads = 0;
+  const card = await buildCapabilityCard(
+    {
+      profile: {
+        nickname: '骑手',
+        avatar_file_id: sourceFileId,
+        avatar_source: 'custom',
+        photos: [{ file_id: sourceFileId, category: 'other' }],
+      },
+      credential,
+      snapshot,
+      mediaRecords: [
+        {
+          _id: mediaDocumentId(sourceFileId),
+          file_id: sourceFileId,
+          owner_openid: openid,
+          category: 'other',
+          origin: 'custom',
+          status: 'active',
+        },
+      ],
+    },
+    {
+      openid,
+      mediaSecret,
+      now,
+      getTempFileURL: async () => {
+        storageReads += 1;
+        return { fileList: [] };
+      },
+    },
+  );
+
+  assert.equal(storageReads, 0);
+  assert.deepEqual(card.backgrounds, []);
+  assert.equal(card.profile.avatar_url, '');
+});
+
 test('临时 URL 整体失败降级为空背景而不让名片失败', async () => {
   const owned = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174000.jpg`;
   const response = await buildCapabilityCard(
@@ -180,6 +301,9 @@ test('临时 URL 逐项失败、非 https 与未知文件均被剔除', async ()
   const ride = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174000.jpg`;
   const bike = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174001.jpg`;
   const other = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174002.jpg`;
+  const canonicalRide = canonicalFor(ride).canonicalFileId;
+  const canonicalBike = canonicalFor(bike).canonicalFileId;
+  const canonicalOther = canonicalFor(other).canonicalFileId;
   const response = await buildCapabilityCard(
     {
       profile: {
@@ -204,9 +328,9 @@ test('临时 URL 逐项失败、非 https 与未知文件均被剔除', async ()
       now,
       getTempFileURL: async () => ({
         fileList: [
-          { fileID: ride, tempFileURL: 'https://temporary.example/ride', status: 0 },
-          { fileID: bike, tempFileURL: 'https://temporary.example/bike', status: -1 },
-          { fileID: other, tempFileURL: 'http://temporary.example/other', status: 0 },
+          { fileID: canonicalRide, tempFileURL: 'https://temporary.example/ride', status: 0 },
+          { fileID: canonicalBike, tempFileURL: 'https://temporary.example/bike', status: -1 },
+          { fileID: canonicalOther, tempFileURL: 'http://temporary.example/other', status: 0 },
           {
             fileID: 'cloud://env/profiles/unknown/file.jpg',
             tempFileURL: 'https://temporary.example/unknown',
@@ -339,6 +463,7 @@ test('头像独立于三张背景上限解析且与 photos 重复时仍保留头
   const rideB = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174021.jpg`;
   const rideC = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174022.jpg`;
   const avatar = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174023.jpg`;
+  const canonicalAvatar = canonicalFor(avatar).canonicalFileId;
   const profile = {
     avatar_source: 'strava',
     avatar_file_id: avatar,
@@ -365,7 +490,7 @@ test('头像独立于三张背景上限解析且与 photos 重复时仍保留头
       getTempFileURL: async ({ fileList }) => ({
         fileList: fileList.map((fileID) => ({
           fileID,
-          tempFileURL: `https://temporary.example/${fileID === avatar ? 'avatar' : 'photo'}`,
+          tempFileURL: `https://temporary.example/${fileID === canonicalAvatar ? 'avatar' : 'photo'}`,
           status: 0,
         })),
       }),

@@ -1,0 +1,4 @@
+{
+  "read": false,
+  "write": "auth != null && /^profiles\\//.test(resource.path) && resource.openid == auth.openid"
+}

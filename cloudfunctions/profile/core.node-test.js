@@ -14,6 +14,10 @@ const {
   phoneUpdate,
   issueMediaUploadPath,
   clientUploadIntent,
+  canonicalMediaPath,
+  isOwnerCanonicalMedia,
+  canonicalUploadIntent,
+  canonicalMediaBinding,
   mediaOwnerPrefix,
   mediaDocumentId,
   avatarUrlFingerprint,
@@ -307,6 +311,128 @@ test('客户端上传 intent 由 owner-bound cloudPath 确定并在过期后进�
         now,
       ),
     { code: 'MEDIA_NOT_OWNED' },
+  );
+});
+
+test('canonical path 同时绑定 owner、source 与已验证内容 hash', () => {
+  const openid = 'openid-owner-a';
+  const sourceFileId = `cloud://env/${mediaOwnerPrefix(openid, mediaSecret)}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const sha256 = 'a'.repeat(64);
+  const now = new Date('2026-09-30T00:00:00.000Z');
+  const path = canonicalMediaPath(openid, sourceFileId, sha256, 'jpg', mediaSecret);
+
+  assert.match(path, /^profile-canonical\/[a-f0-9]{32}\/[a-f0-9]{64}\/[a-f0-9]{64}\.jpg$/);
+  assert.equal(isOwnerCanonicalMedia(`cloud://env/${path}`, openid, mediaSecret), true);
+  assert.equal(isOwnerCanonicalMedia(`cloud://env/${path}`, 'openid-owner-b', mediaSecret), false);
+  assert.throws(() => canonicalMediaPath(openid, sourceFileId, 'bad', 'jpg', mediaSecret), {
+    code: 'MEDIA_OBJECT_VERIFY_FAILED',
+  });
+
+  const canonicalFileId = `cloud://env/${path}`;
+  const binding = canonicalMediaBinding(
+    openid,
+    sourceFileId,
+    canonicalFileId,
+    { sha256, size: 5, mime: 'image/jpeg', extension: 'jpg' },
+    mediaSecret,
+  );
+  assert.deepEqual(binding, {
+    source_file_id: sourceFileId,
+    canonical_file_id: canonicalFileId,
+    sha256,
+    size: 5,
+    mime: 'image/jpeg',
+  });
+  const intent = canonicalUploadIntent(
+    openid,
+    sourceFileId,
+    { sha256, size: 5, mime: 'image/jpeg', extension: 'jpg' },
+    mediaSecret,
+    now,
+  );
+  assert.deepEqual(intent, {
+    _id: `canonical-upload-${require('node:crypto').createHash('sha256').update(path).digest('hex')}`,
+    kind: 'canonical_upload',
+    owner_openid: openid,
+    source_file_id: sourceFileId,
+    cloud_path: path,
+    sha256,
+    size: 5,
+    mime: 'image/jpeg',
+    status: 'prepared',
+    created_at: now,
+    cleanup_after: new Date('2026-09-30T00:30:00.000Z'),
+  });
+});
+
+test('media registry 绑定 source 与 canonical 版本且重复登记必须完全一致', () => {
+  const openid = 'openid-owner-a';
+  const sourceFileId = `cloud://env/${mediaOwnerPrefix(openid, mediaSecret)}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const sha256 = 'b'.repeat(64);
+  const canonicalPath = canonicalMediaPath(openid, sourceFileId, sha256, 'jpg', mediaSecret);
+  const canonicalFileId = `cloud://env/${canonicalPath}`;
+  const binding = canonicalMediaBinding(
+    openid,
+    sourceFileId,
+    canonicalFileId,
+    { sha256, size: 5, mime: 'image/jpeg', extension: 'jpg' },
+    mediaSecret,
+  );
+  const now = new Date('2026-09-30T00:00:00.000Z');
+  const record = mediaRegistration(
+    sourceFileId,
+    'other',
+    'custom',
+    openid,
+    mediaSecret,
+    now,
+    undefined,
+    binding,
+  );
+
+  assert.deepEqual(record, {
+    _id: mediaDocumentId(sourceFileId),
+    file_id: sourceFileId,
+    owner_openid: openid,
+    category: 'other',
+    origin: 'custom',
+    status: 'unreferenced',
+    created_at: now,
+    cleanup_after: new Date('2026-10-01T00:00:00.000Z'),
+    ...binding,
+  });
+  assert.deepEqual(
+    mediaRegistration(sourceFileId, 'other', 'custom', openid, mediaSecret, now, record, binding),
+    record,
+  );
+  const otherSha256 = 'c'.repeat(64);
+  const otherCanonicalFileId = `cloud://env/${canonicalMediaPath(
+    openid,
+    sourceFileId,
+    otherSha256,
+    'jpg',
+    mediaSecret,
+  )}`;
+  const otherBinding = canonicalMediaBinding(
+    openid,
+    sourceFileId,
+    otherCanonicalFileId,
+    { sha256: otherSha256, size: 5, mime: 'image/jpeg', extension: 'jpg' },
+    mediaSecret,
+  );
+  assert.throws(
+    () =>
+      mediaRegistration(
+        sourceFileId,
+        'other',
+        'custom',
+        openid,
+        mediaSecret,
+        now,
+        record,
+        otherBinding,
+      ),
+    { code: 'MEDIA_REGISTRATION_CONFLICT' },
   );
 });
 
@@ -644,8 +770,9 @@ test('registerMedia 以可信临时 URL 先验大小并有界流式校验真实�
   const { verifyUploadedImageObject, MAX_PROFILE_IMAGE_BYTES } = require('./core');
   const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00]);
   const calls = [];
-  await assert.doesNotReject(
-    verifyUploadedImageObject('https://storage.example/image.jpg?signature=opaque', {
+  const verified = await verifyUploadedImageObject(
+    'https://storage.example/image.jpg?signature=opaque',
+    {
       requestFactory: storageRequestFactory(
         [
           { headers: { 'content-length': String(jpeg.length) } },
@@ -653,8 +780,15 @@ test('registerMedia 以可信临时 URL 先验大小并有界流式校验真实�
         ],
         calls,
       ),
-    }),
+    },
   );
+  assert.deepEqual(verified, {
+    bytes: jpeg,
+    sha256: require('node:crypto').createHash('sha256').update(jpeg).digest('hex'),
+    size: jpeg.length,
+    mime: 'image/jpeg',
+    extension: 'jpg',
+  });
   assert.deepEqual(calls, ['HEAD', 'GET']);
 
   const headOnly = [];
@@ -709,6 +843,14 @@ test('能力卡媒体只选择当前 owner 签发文件，legacy 与他人文件
   const ownerPrefix = mediaOwnerPrefix('openid-owner-a', mediaSecret);
   const otherPrefix = mediaOwnerPrefix('openid-owner-b', mediaSecret);
   const ownedFile = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174001.jpg`;
+  const ownedSha256 = 'd'.repeat(64);
+  const ownedCanonicalFileId = `cloud://env/${canonicalMediaPath(
+    'openid-owner-a',
+    ownedFile,
+    ownedSha256,
+    'jpg',
+    mediaSecret,
+  )}`;
   const profile = {
     avatar_file_id: 'cloud://env/profiles/legacy/avatar.jpg',
     photos: [
@@ -729,11 +871,17 @@ test('能力卡媒体只选择当前 owner 签发文件，legacy 与他人文件
         owner_openid: 'openid-owner-a',
         category: 'other',
         status: 'active',
+        source_file_id: ownedFile,
+        canonical_file_id: ownedCanonicalFileId,
+        sha256: ownedSha256,
+        size: 5,
+        mime: 'image/jpeg',
       },
     ]),
     [
       {
         file_id: ownedFile,
+        storage_file_id: ownedCanonicalFileId,
         category: 'other',
         source: 'user_photo',
       },
@@ -744,6 +892,14 @@ test('能力卡媒体只选择当前 owner 签发文件，legacy 与他人文件
 test('能力卡头像必须同时匹配当前 profile 来源与 active owner registry', () => {
   const ownerPrefix = mediaOwnerPrefix('openid-owner-a', mediaSecret);
   const avatar = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const avatarSha256 = 'e'.repeat(64);
+  const canonicalAvatar = `cloud://env/${canonicalMediaPath(
+    'openid-owner-a',
+    avatar,
+    avatarSha256,
+    'jpg',
+    mediaSecret,
+  )}`;
   const record = {
     _id: mediaDocumentId(avatar),
     file_id: avatar,
@@ -751,6 +907,11 @@ test('能力卡头像必须同时匹配当前 profile 来源与 active owner reg
     category: 'other',
     origin: 'custom',
     status: 'active',
+    source_file_id: avatar,
+    canonical_file_id: canonicalAvatar,
+    sha256: avatarSha256,
+    size: 5,
+    mime: 'image/jpeg',
   };
   assert.deepEqual(
     ownerMedia({ avatar_file_id: avatar, avatar_source: 'forged' }, 'openid-owner-a', mediaSecret, [
@@ -766,7 +927,14 @@ test('能力卡头像必须同时匹配当前 profile 来源与 active owner reg
   );
   assert.deepEqual(
     ownerMedia({ avatar_file_id: avatar }, 'openid-owner-a', mediaSecret, [record]),
-    [{ file_id: avatar, category: 'other', source: 'avatar' }],
+    [
+      {
+        file_id: avatar,
+        storage_file_id: canonicalAvatar,
+        category: 'other',
+        source: 'avatar',
+      },
+    ],
   );
 });
 
