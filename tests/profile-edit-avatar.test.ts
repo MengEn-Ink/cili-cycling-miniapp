@@ -249,9 +249,7 @@ describe('资料编辑头像交互', () => {
     const uploadFile = vi.fn();
     Object.assign(wx, {
       chooseMedia: vi.fn().mockResolvedValue({
-        tempFiles: [
-          { tempFilePath: '/private/tmp/too-large.jpg', size: 5 * 1024 * 1024 + 1 },
-        ],
+        tempFiles: [{ tempFilePath: '/private/tmp/too-large.jpg', size: 5 * 1024 * 1024 + 1 }],
       }),
       cloud: { uploadFile },
     });
@@ -500,9 +498,7 @@ describe('资料编辑头像交互', () => {
       title: '头像更新结果未确认，请稍后重试',
       icon: 'none',
     });
-    expect(page.data.mediaError).toBe(
-      '[CALL_FAILED] Strava 头像导入失败，请重新授权或稍后重试',
-    );
+    expect(page.data.mediaError).toBe('[CALL_FAILED] Strava 头像导入失败，请重新授权或稍后重试');
   });
 
   it('已有 Strava 头像 re-import 完全失败时相同 revision 不得误报成功', async () => {
@@ -674,9 +670,7 @@ describe('资料编辑头像交互', () => {
     await page.loadAvatarPreview();
 
     expect(page.data.p).not.toBeNull();
-    expect(page.data.mediaError).toBe(
-      '[AVATAR_PREVIEW_FAILED] 头像预览暂不可用，请稍后重试',
-    );
+    expect(page.data.mediaError).toBe('[AVATAR_PREVIEW_FAILED] 头像预览暂不可用，请稍后重试');
     expect(page.data.mediaError).not.toContain('private preview url');
   });
 
@@ -768,7 +762,9 @@ describe('资料编辑头像交互', () => {
 
     await page.addPhoto();
 
-    expect(page.data.mediaError).toBe('[MEDIA_UPLOAD_PATH_FAILED] 无法准备安全上传，请检查网络后重试');
+    expect(page.data.mediaError).toBe(
+      '[MEDIA_UPLOAD_PATH_FAILED] 无法准备安全上传，请检查网络后重试',
+    );
     expect(page.data.mediaError).not.toContain('private path detail');
   });
 
@@ -880,9 +876,7 @@ describe('资料编辑头像交互', () => {
     await page.addPhoto();
 
     expect(rideService.registerProfileMedia).not.toHaveBeenCalled();
-    expect(page.data.mediaError).toBe(
-      '[MEDIA_UPLOAD_FAILED] 图片上传失败，请重新选择图片后重试',
-    );
+    expect(page.data.mediaError).toBe('[MEDIA_UPLOAD_FAILED] 图片上传失败，请重新选择图片后重试');
     expect(page.data.mediaError).not.toContain('private upload detail');
   });
 

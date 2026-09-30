@@ -5,7 +5,8 @@ import { rideService } from '../../services/ride-service';
 const ORPHAN_LEDGER_KEY = 'profile-media-orphans-v1';
 const AVATAR_PREVIEW_DEADLINE_MS = 1_200;
 const MAX_LOCAL_IMAGE_BYTES = 5 * 1024 * 1024;
-type MediaStage = 'selection' | 'uploadPath' | 'upload' | 'register' | 'setAvatar' | 'preview' | 'import';
+type MediaStage =
+  'selection' | 'uploadPath' | 'upload' | 'register' | 'setAvatar' | 'preview' | 'import';
 type SelectedImage = { path: string; size?: number };
 type MediaOrphan = {
   fileId: string;
