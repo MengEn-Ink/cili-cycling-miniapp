@@ -34,6 +34,8 @@ const palettes = {
   },
 } as const;
 
+const tabs = ['activities', 'registrations', 'profile'] as const;
+
 let sessionTheme: Theme | undefined;
 
 function normalizeTheme(value: unknown): Theme {
@@ -67,6 +69,13 @@ export function applyTheme(theme: Theme = getTheme()): void {
   const palette = palettes[theme];
   safePlatformCall('setNavigationBarColor', palette.navigation);
   safePlatformCall('setTabBarStyle', palette.tabBar);
+  tabs.forEach((name, index) => {
+    safePlatformCall('setTabBarItem', {
+      index,
+      iconPath: `assets/tabbar/${name}${theme === 'light' ? '-light' : ''}.png`,
+      selectedIconPath: `assets/tabbar/${name}-active.png`,
+    });
+  });
   safePlatformCall('setBackgroundColor', palette.background);
 }
 
