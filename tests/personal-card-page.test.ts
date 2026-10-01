@@ -175,7 +175,7 @@ describe('个人骑行名片静态页面契约', () => {
 
     expect(template).toContain('<swiper');
     expect(template).toContain('autoplay="{{card.hasMultipleBackgrounds}}"');
-    expect(template).toContain('仅自己可见 · 不作为活动审核依据');
+    expect(template).toContain('仅自己可见 · 不会用于活动报名审核');
     expect(template).toContain('class="brand-signature"');
     expect(template).toContain('CILI</view>');
     expect(template).toContain('STRAVA {{card.statusLabel}}');

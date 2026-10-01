@@ -1,5 +1,5 @@
 <view class="page profile-page {{themeClass}}">
-  <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{loading ? '正在读取资料。正在同步最新资料' : (refreshing ? '正在更新资料' : (!error ? '资料已就绪' : ''))}}</view>
+  <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{loading ? '正在同步个人资料' : (refreshing ? '正在更新个人资料' : (!error ? '个人资料已就绪' : ''))}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{error}}</view>
   <view class="profile-topbar">
     <brand-logo compact="{{true}}" meta="RIDER PROFILE" />

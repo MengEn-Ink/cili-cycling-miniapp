@@ -132,14 +132,31 @@ describe('活动详情设计与日期契约', () => {
     expect(context.arc).toHaveBeenCalledTimes(4);
   });
 
-  it('提供曲线空态、热门爬坡、重叠头像与遮罩关闭的骑行卡', () => {
+  it('提供曲线空态、热门爬坡、可触控头像与完整公开骑行名片', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
     expect(template).toContain('暂无有效海拔数据');
     expect(template).toContain('item.route.popularClimbs');
     expect(template).toContain('bindtap="openAttendeeCard"');
+    expect(template).toContain('点击头像查看公开骑行名片');
+    expect(template).toContain('公开骑行名片');
+    expect(template).toContain('数据来自报名时的 Strava 骑行快照');
+    expect(
+      template.match(/<text wx:if="\{\{selectedAttendee\.card\.[a-zA-Z0-9]+ !== null\}\}">/g),
+    ).toHaveLength(4);
     expect(template).toContain('class="rider-modal-mask" bindtap="closeAttendeeCard"');
-    expect(styles).toMatch(/\.attendee-avatar-button\s*\{[^}]*margin:\s*0 0 8rpx -14rpx;/s);
+    expect(template).toContain('class="rider-card-close"');
+    expect(styles).toMatch(
+      /\.attendee-avatar-button\s*\{[^}]*width:\s*var\(--control-height\)[^}]*height:\s*var\(--control-height\)/s,
+    );
+    expect(styles).toMatch(
+      /\.route-actions button\s*\{[^}]*min-height:\s*var\(--control-height\)/s,
+    );
+    expect(styles).toMatch(/\.rider-card\s*\{[^}]*max-height:\s*calc\(100vh - 96rpx\)/s);
+    expect(styles).toMatch(/\.rider-name\s*\{[^}]*overflow-wrap:\s*anywhere/s);
+    expect(styles).toMatch(/\.rider-identity\s*\{[^}]*padding-right:\s*120rpx/s);
+    expect(styles).toMatch(/\.rider-stats > view > text:last-child\s*\{/s);
+    expect(styles).not.toMatch(/\.rider-stats text:last-child/);
   });
 
   it('使用等宽三列指标、24rpx 展示圆角和轻量安全区 CTA', () => {
@@ -185,6 +202,31 @@ describe('活动详情复制、分享与 GPX 导出', () => {
     };
     return { definition, context, repository };
   }
+
+  it('点击有效头像打开名片，关闭后清空当前骑友', async () => {
+    const { definition, context } = await loadPage(async () => ({
+      base64: 'eA==',
+      fileName: 'route.gpx',
+    }));
+    const attendee = {
+      id: 'rider-1',
+      displayName: '长距离骑行者',
+      title: '耐力骑手',
+      avatarUrl: '',
+      status: 'approved',
+      card: { rides90d: null, longestKm: 180, elevationM: 3200, speedKmh: 26.5 },
+    };
+    context.data.attendees = [attendee];
+    context.data.selectedAttendee = null;
+
+    definition.openAttendeeCard.call(context, { currentTarget: { dataset: { index: 0 } } });
+    expect(context.data.selectedAttendee).toEqual(attendee);
+    definition.closeAttendeeCard.call(context);
+    expect(context.data.selectedAttendee).toBeNull();
+
+    definition.openAttendeeCard.call(context, { currentTarget: { dataset: { index: 9 } } });
+    expect(context.data.selectedAttendee).toBeNull();
+  });
 
   it('复制 Strava/活动链接并生成分享 path', async () => {
     const { definition, context } = await loadPage(async () => ({

@@ -425,8 +425,8 @@ describe('个人中心加载状态', () => {
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     expect(template).toContain('class="card empty-profile"');
     expect(template).toContain('wx:else');
-    expect(template).toContain("{{loading ? '正在读取资料。正在同步最新资料' :");
-    expect(template).toContain("!error ? '资料已就绪' : ''");
+    expect(template).toContain("{{loading ? '正在同步个人资料' :");
+    expect(template).toContain("!error ? '个人资料已就绪' : ''");
     expect(template).toMatch(/class="card profile-loading"[^>]*aria-hidden="true"/);
   });
 
@@ -456,7 +456,7 @@ describe('个人中心加载状态', () => {
     expect(polite).not.toMatch(/wx:(?:if|elif|else)/);
     expect(assertive).toContain('aria-atomic="true"');
     expect(assertive).not.toMatch(/wx:(?:if|elif|else)/);
-    expect(template).toContain("refreshing ? '正在更新资料'");
+    expect(template).toContain("refreshing ? '正在更新个人资料'");
     expect(template).toContain('{{error}}');
     expect(visibleError).toMatch(/<text\b[^>]*aria-hidden="true"[^>]*>{{error}}<\/text>/);
     expect(visibleError).toContain('<button bindtap="retryProfile">重试</button>');

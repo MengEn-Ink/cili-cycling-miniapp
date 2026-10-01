@@ -46,7 +46,7 @@ describe('CILI 活动页静态契约', () => {
     expect(activityCard).toContain('<status-pill status="{{item.displayStatus}}" />');
     expect(activityCard.match(/class="metric-item"/g)).toHaveLength(3);
     expect(activityCard).toContain(
-      "item.capacity > 0 ? (item.occupied + ' / ' + item.capacity + ' 人占位') : '名额待公布'",
+      "item.capacity > 0 ? (item.occupied + ' / ' + item.capacity + ' 人已报名') : '名额确认中'",
     );
     expect(activityCard).toContain('hover-class="activity-card--pressed"');
     expect(activityCard).toContain('wx:else class="card-placeholder"');

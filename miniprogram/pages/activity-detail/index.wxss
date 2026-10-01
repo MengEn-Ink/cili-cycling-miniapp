@@ -459,13 +459,24 @@ brand-logo {
 .avatar-stack {
   display: flex;
   flex-wrap: wrap;
-  padding: 8rpx 0 4rpx 14rpx;
+  gap: 4rpx;
+  padding: 8rpx 0 4rpx;
+}
+
+.attendees-hint {
+  margin-top: 4rpx;
+  color: var(--color-muted);
+  font-size: 21rpx;
+  line-height: 1.4;
 }
 
 .attendee-avatar-button {
-  width: 70rpx;
-  height: 70rpx;
-  margin: 0 0 8rpx -14rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-height);
+  height: var(--control-height);
+  margin: 0;
   padding: 0;
   overflow: visible;
   border: 0;
@@ -505,13 +516,14 @@ brand-logo {
 
 .route-actions button {
   min-width: 0;
+  min-height: var(--control-height);
   margin: 0;
   border: 1rpx solid var(--color-brand);
   border-radius: 16rpx;
   background: transparent;
   color: var(--color-brand);
   font-size: 23rpx;
-  line-height: 68rpx;
+  line-height: 1.2;
 }
 
 .rider-modal-mask {
@@ -526,15 +538,49 @@ brand-logo {
 }
 
 .rider-card {
+  position: relative;
   box-sizing: border-box;
   width: 100%;
   max-width: 620rpx;
+  max-height: calc(100vh - 96rpx);
   padding: 30rpx;
+  overflow-y: auto;
   border: 1rpx solid #444448;
   border-radius: var(--radius-display);
   background: #1c1c1e;
   color: #f7f7f5;
   box-shadow: 0 18rpx 70rpx rgba(0, 0, 0, 0.5);
+}
+
+.rider-card-close {
+  position: absolute;
+  top: 16rpx;
+  right: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-height);
+  height: var(--control-height);
+  margin: 0;
+  padding: 0;
+  border: 1rpx solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-raised);
+  color: var(--color-text);
+  font-size: 36rpx;
+  line-height: 1;
+}
+
+.rider-card-close::after {
+  border: 0;
+}
+
+.rider-card-kicker {
+  margin-bottom: 22rpx;
+  color: var(--color-brand);
+  font-size: 21rpx;
+  font-weight: 900;
+  letter-spacing: 3rpx;
 }
 
 .rider-card-head {
@@ -553,6 +599,26 @@ brand-logo {
 .rider-name {
   font-size: 32rpx;
   font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.rider-identity {
+  min-width: 0;
+  padding-right: 120rpx;
+}
+
+.rider-status {
+  display: inline-flex;
+  min-height: 34rpx;
+  margin-top: 10rpx;
+  padding: 2rpx 12rpx;
+  align-items: center;
+  border: 1rpx solid rgba(255, 87, 34, 0.5);
+  border-radius: 999rpx;
+  background: rgba(255, 87, 34, 0.12);
+  color: var(--color-brand);
+  font-size: 20rpx;
+  font-weight: 800;
 }
 
 .rider-stats {
@@ -562,7 +628,7 @@ brand-logo {
   margin-top: 24rpx;
 }
 
-.rider-stats view {
+.rider-stats > view {
   display: flex;
   flex-direction: column;
   padding: 18rpx;
@@ -570,16 +636,32 @@ brand-logo {
   background: #29292c;
 }
 
-.rider-stats text:first-child {
+.rider-stat-value {
   color: var(--color-brand);
   font-size: 30rpx;
   font-weight: 900;
+  overflow-wrap: anywhere;
 }
 
-.rider-stats text:last-child {
+.rider-stat-value text {
+  margin-left: 4rpx;
+  font-size: 18rpx;
+  font-weight: 800;
+}
+
+.rider-stats > view > text:last-child {
   margin-top: 4rpx;
-  color: #a8a8ad;
-  font-size: 20rpx;
+  color: #aaaab0;
+  font-size: 21rpx;
+}
+
+.rider-card-note {
+  margin-top: 22rpx;
+  padding-top: 18rpx;
+  border-top: 1rpx solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 21rpx;
+  line-height: 1.55;
 }
 
 /* Keep hero/media overlays dark and white; adapt surrounding content chrome. */
@@ -618,7 +700,7 @@ brand-logo {
 .notice-item,
 .time-row,
 .route-empty,
-.rider-stats text:last-child {
+.rider-stats > view > text:last-child {
   color: var(--color-muted);
 }
 .fixed {
@@ -639,11 +721,11 @@ brand-logo {
 }
 .attendee-avatar-button {
   display: flex;
-  width: 88rpx;
-  height: 88rpx;
+  width: var(--control-height);
+  height: var(--control-height);
   align-items: center;
   justify-content: center;
-  margin: -9rpx -9rpx -1rpx -23rpx;
+  margin: 0;
 }
 .attendee-avatar,
 .rider-card-avatar {
@@ -656,7 +738,7 @@ brand-logo {
   border-radius: var(--radius-display);
   box-shadow: 0 18rpx 70rpx var(--color-shadow);
 }
-.rider-stats view {
+.rider-stats > view {
   border-radius: var(--radius-md);
   background: var(--color-raised);
 }

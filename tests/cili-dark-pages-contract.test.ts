@@ -76,6 +76,6 @@ describe('CILI 双主题竞技页面静态契约', () => {
 
     expect(template).toContain('wx:if="{{card.needsStravaRepair}}"');
     expect(template).toContain('wx:if="{{card.needsProfilePhoto}}"');
-    expect(template).toContain('仅自己可见 · 不作为活动审核依据');
+    expect(template).toContain('仅自己可见 · 不会用于活动报名审核');
   });
 });

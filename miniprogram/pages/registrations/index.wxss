@@ -212,8 +212,8 @@ brand-logo {
 
 /* Design reference alignment. */
 .page.registrations-page {
-  padding-right: 40rpx;
-  padding-left: 40rpx;
+  padding-right: var(--page-gutter);
+  padding-left: var(--page-gutter);
   background: #0b0b0c;
 }
 
@@ -246,8 +246,8 @@ brand-logo {
 
 @media (max-width: 320px) {
   .page.registrations-page {
-    padding-right: 32rpx;
-    padding-left: 32rpx;
+    padding-right: var(--page-gutter-narrow);
+    padding-left: var(--page-gutter-narrow);
   }
 }
 
