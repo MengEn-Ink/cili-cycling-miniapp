@@ -469,6 +469,88 @@ test('README 与部署包断言包含 profile_media_imports 和头像导入入�
   assert.match(verifier, /pack\('profile',[\s\S]*?'avatar-import\.js'/);
 });
 
+function assertClosedDocumentationGaps({ readme, requirements, seedGuide }) {
+  assert.match(
+    readme,
+    /公开骑手头像的代码契约已经要求显式公开授权[^。]*canonical 媒体签发临时地址/,
+  );
+  assert.doesNotMatch(readme, /(?:尚未|仍未|没有)[^。]{0,40}显式公开授权/);
+  assert.match(requirements, /当前代码已经持久化显式 `avatar_visibility=public` 及其授权 revision/);
+  assert.match(requirements, /活动详情仅在[^。]*canonical 路径[^。]*签发临时地址/);
+  assert.doesNotMatch(requirements, /(?:尚未|仍未|没有)[^。]{0,40}持久化显式/);
+  assert.doesNotMatch(
+    requirements,
+    /strava_route_previews[^。]{0,50}(?:尚未|仍未|并不|没有|未纳入|手工创建)[^。]{0,50}(?:bootstrap|管理)/,
+  );
+  assert.match(
+    seedGuide,
+    new RegExp(`${COLLECTIONS.length} 个核心集合、${INDEXES.length} 个业务索引`),
+  );
+  assert.match(
+    seedGuide,
+    /`strava_route_previews` 已由 bootstrap[^。]*管理，并纳入[^。]*`cloudbase:verify`/,
+  );
+  assert.doesNotMatch(
+    seedGuide,
+    /strava_route_previews[^。]*(?:尚未|仍未|并不|没有)[^。]*(?:bootstrap|管理)/,
+  );
+}
+
+test('项目与初始化文档不再保留已关闭的头像和 route preview 缺口', () => {
+  const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
+  const requirements = readFileSync(
+    new URL('../docs/requirements-design.md', import.meta.url),
+    'utf8',
+  );
+  const seedGuide = readFileSync(new URL('./seed-cloudbase/README.md', import.meta.url), 'utf8');
+
+  assertClosedDocumentationGaps({ readme, requirements, seedGuide });
+});
+
+test('文档契约测试拒绝已关闭缺口的同义否定表述', () => {
+  const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
+  const requirements = readFileSync(
+    new URL('../docs/requirements-design.md', import.meta.url),
+    'utf8',
+  );
+  const seedGuide = readFileSync(new URL('./seed-cloudbase/README.md', import.meta.url), 'utf8');
+
+  assert.throws(() =>
+    assertClosedDocumentationGaps({
+      readme: readme.replace(
+        '公开骑手头像的代码契约已经要求显式公开授权',
+        '公开骑手头像仍未具备显式公开授权',
+      ),
+      requirements,
+      seedGuide,
+    }),
+  );
+  assert.throws(() =>
+    assertClosedDocumentationGaps({
+      readme,
+      requirements: requirements.replace('当前代码已经持久化显式', '当前代码仍未持久化显式'),
+      seedGuide,
+    }),
+  );
+  assert.throws(() =>
+    assertClosedDocumentationGaps({
+      readme,
+      requirements: `${requirements}\n\`strava_route_previews\` 目前仍未纳入 bootstrap，需手工创建。`,
+      seedGuide,
+    }),
+  );
+  assert.throws(() =>
+    assertClosedDocumentationGaps({
+      readme,
+      requirements,
+      seedGuide: seedGuide.replace(
+        '`strava_route_previews` 已由 bootstrap 与其他服务端可信集合一并管理，并纳入',
+        '`strava_route_previews` 目前 bootstrap 并不管理，应手工创建；未来纳入',
+      ),
+    }),
+  );
+});
+
 test('媒体滚动部署先发布 fail-closed admin-review 再发布 canonical profile', () => {
   const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
   const sequence = readme.match(/再依次部署 ([^。]+)。/)?.[1] || '';
