@@ -30,6 +30,7 @@ export function resolveActivityAction(
   registration?: Pick<Registration, 'id' | 'status'>,
 ): ActivityAction {
   if (
+    registration?.status === 'waiting' ||
     registration?.status === 'pending' ||
     registration?.status === 'approved' ||
     registration?.status === 'checked_in'
@@ -65,6 +66,7 @@ export function resolveActivityAction(
 
 export function activityDisplayStatus(a: Activity) {
   if (a.status === 'draft') return '草稿';
+  if (a.registrationState === 'open' && a.waitlistOnly === true) return '候补报名中';
   if (a.registrationState === 'open' && a.closedReason == null) return '报名中';
   if (a.registrationState === 'closed') return closedLabel(a);
   return '活动状态不可用';

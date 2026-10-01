@@ -2,6 +2,7 @@ import { rideService } from '../../services/ride-service';
 import { syncPageTheme } from '../../services/theme-service';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
+import { buildCheckInCode, drawCode128 } from '../../utils/check-in-code';
 import { formatChinaDateTime } from '../../utils/date-time';
 
 function unavailableAction(): ActivityAction {
@@ -41,6 +42,7 @@ Page({
       if (!item) throw new Error('报名不存在');
       const activity = await rideService.getActivity(item.activityId);
       const statusText = {
+        waiting: '候补中',
         pending: '待审核',
         approved: '已通过',
         checked_in: '已签到',
@@ -48,27 +50,67 @@ Page({
         cancelled: '已取消',
       }[item.status];
       if (!activity) throw new Error('活动不存在');
-      this.setData({
-        item: {
-          ...item,
-          updatedAt: formatChinaDateTime(item.updatedAt),
-          checkedInAt: formatChinaDateTime(item.checkedInAt),
+      this.setData(
+        {
+          item: {
+            ...item,
+            updatedAt: formatChinaDateTime(item.updatedAt),
+            checkedInAt: formatChinaDateTime(item.checkedInAt),
+          },
+          activity: {
+            ...activity,
+            displayDateTime: formatChinaDateTime(activity.startAt || activity.date),
+          },
+          statusText,
+          activityAction: resolveActivityAction(activity, item),
         },
-        activity: {
-          ...activity,
-          displayDateTime: formatChinaDateTime(activity.startAt || activity.date),
-        },
-        statusText,
-        activityAction: resolveActivityAction(activity, item),
-      });
+        () => this.drawCredentialCode(),
+      );
     } catch (error) {
       this.setData({ error: error instanceof Error ? error.message : '报名凭证加载失败' });
     } finally {
       this.setData({ loading: false });
     }
   },
+  drawCredentialCode() {
+    if (!['approved', 'checked_in'].includes(this.data.item?.status)) return;
+    let value = '';
+    try {
+      value = buildCheckInCode(this.data.item.id);
+    } catch {
+      return;
+    }
+    wx.createSelectorQuery()
+      .select('#checkin-code')
+      .fields({ node: true, size: true })
+      .exec((result: any[]) => {
+        const target = result?.[0];
+        if (!target?.node || !target.width || !target.height) return;
+        const ratio = wx.getWindowInfo?.().pixelRatio || wx.getSystemInfoSync?.().pixelRatio || 1;
+        target.node.width = target.width * ratio;
+        target.node.height = target.height * ratio;
+        const context = target.node.getContext('2d');
+        context.setTransform?.(ratio, 0, 0, ratio, 0, 0);
+        drawCode128(context, target.width, target.height, value);
+      });
+  },
+  onShareAppMessage() {
+    const activity = this.data.activity;
+    const item = this.data.item;
+    const teamQuery =
+      item?.isTeamLeader && item?.teamId ? `&team_id=${encodeURIComponent(item.teamId)}` : '';
+    return {
+      title: item?.isTeamLeader
+        ? `加入${item.teamName || '我的队伍'} · ${activity?.title || '骑行活动'}`
+        : activity?.title || '骑行活动',
+      path: `pages/activity-detail/index?id=${encodeURIComponent(activity?.id || '')}${teamQuery}`,
+    };
+  },
   async cancel() {
-    if (this.data.cancelling || !['pending', 'approved'].includes(this.data.item?.status as string))
+    if (
+      this.data.cancelling ||
+      !['waiting', 'pending', 'approved'].includes(this.data.item?.status as string)
+    )
       return;
     this.setData({ cancelling: true, error: '' });
     try {

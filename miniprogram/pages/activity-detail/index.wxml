@@ -60,6 +60,7 @@
           <view class="route-actions">
             <button wx:if="{{item.route.stravaRouteUrl}}" bindtap="openStravaRoute">复制 Strava 路线</button>
             <button bindtap="copyActivityLink">复制活动链接</button>
+            <button loading="{{generatingPoster}}" disabled="{{generatingPoster}}" bindtap="generatePoster">{{generatingPoster ? '生成中' : '保存分享海报'}}</button>
             <button wx:if="{{item.route.stravaRouteId}}" loading="{{exportingGpx}}" disabled="{{exportingGpx}}" bindtap="exportGpx">{{exportingGpx ? '导出中' : '导出 GPX'}}</button>
           </view>
         </view>
@@ -97,4 +98,5 @@
   </view>
 </view>
 
+<canvas id="poster-canvas" type="2d" class="poster-canvas" aria-hidden="true"></canvas>
 <view class="fixed detail-action"><button class="btn" disabled="{{loading || !item || !activityAction.enabled}}" bindtap="go">{{activityAction.label}} <text class="button-arrow">→</text></button></view>

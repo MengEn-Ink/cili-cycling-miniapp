@@ -98,6 +98,26 @@ describe('报名提交订阅消息授权', () => {
     expect(page.data.notificationTemplateIds).toEqual(['approved-template', 'rejected-template']);
   });
 
+  it('onShow 对模板去重并限制单次授权最多三个', async () => {
+    rideService.getReviewNotificationTemplateIds.mockResolvedValueOnce([
+      'approved-template',
+      'rejected-template',
+      'approved-template',
+      'promoted-template',
+      'reminder-template',
+    ]);
+    page.data.notificationTemplateIds = [];
+
+    await page.onShow();
+    await flushMicrotasks();
+
+    expect(page.data.notificationTemplateIds).toEqual([
+      'approved-template',
+      'rejected-template',
+      'promoted-template',
+    ]);
+  });
+
   it('模板配置永不返回时主加载仍结束且报名资格不受影响', async () => {
     vi.useFakeTimers();
     rideService.getReviewNotificationTemplateIds.mockReturnValue(new Promise(() => undefined));

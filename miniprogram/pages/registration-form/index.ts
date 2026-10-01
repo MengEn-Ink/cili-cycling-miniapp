@@ -16,6 +16,7 @@ function unavailableAction(): ActivityAction {
 }
 
 const NOTIFICATION_TEMPLATE_TIMEOUT_MS = 1000;
+const MAX_SUBSCRIPTION_TEMPLATES = 3;
 
 function loadingReadiness(): StravaReadiness {
   return {
@@ -82,6 +83,9 @@ Page({
     gatheringMode: '',
     experience: '常骑',
     remark: '',
+    teamId: '',
+    teamName: '',
+    teamParameterError: '',
     readiness: loadingReadiness(),
     readinessMessage: '正在检查 Strava 数据',
     notificationTemplateIds: [] as string[],
@@ -138,7 +142,12 @@ Page({
           timeoutId = setTimeout(() => resolve([]), NOTIFICATION_TEMPLATE_TIMEOUT_MS);
         }),
       ]).catch(() => []);
-      if (requestId === this.loadRequestId) this.setData({ notificationTemplateIds: templateIds });
+      if (requestId === this.loadRequestId)
+        this.setData({
+          notificationTemplateIds: templateIds
+            .filter((item, index, values) => Boolean(item && values.indexOf(item) === index))
+            .slice(0, MAX_SUBSCRIPTION_TEMPLATES),
+        });
     } finally {
       if (timeoutId !== undefined) clearTimeout(timeoutId);
     }
@@ -154,7 +163,13 @@ Page({
     this.submitRequestId += 1;
   },
   onLoad(q: any) {
-    this.setData({ activityId: q.id || '' });
+    const rawTeamId = typeof q.team_id === 'string' ? q.team_id : '';
+    const teamId = /^team_[A-Za-z0-9_-]{8,80}$/.test(rawTeamId) ? rawTeamId : '';
+    this.setData({
+      activityId: q.id || '',
+      teamId,
+      teamParameterError: rawTeamId && !teamId ? '队伍邀请参数无效' : '',
+    });
   },
   set(e: any) {
     this.setData({ [e.currentTarget.dataset.key]: e.detail.value });
@@ -162,6 +177,12 @@ Page({
   async submit() {
     if (this.submissionPending || this.data.submitting) return;
     const errors = validateRegistration(this.data);
+    if (this.data.teamParameterError) errors.push(this.data.teamParameterError);
+    if (
+      this.data.teamName &&
+      (this.data.teamName.trim().length < 2 || this.data.teamName.trim().length > 30)
+    )
+      errors.push('队伍名称需为 2 至 30 个字符');
     if (!this.data.activityCanSubmit) errors.push(this.data.activityAction.label);
     if (errors.length) return this.setData({ errors });
     const requestId = ++this.submitRequestId;

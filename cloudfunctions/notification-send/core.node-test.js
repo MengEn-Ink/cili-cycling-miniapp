@@ -8,6 +8,7 @@ const {
   consumeNotification,
   drainNotifications,
   subscriptionTemplateIds,
+  messageData,
 } = require('./core');
 const env = {
   REVIEW_APPROVED_TEMPLATE_ID: 'approved-template',
@@ -128,25 +129,58 @@ const consume = (f, extra = {}) =>
     randomUUID: () => 'lease-current',
     ...extra,
   });
-test('订阅配置提供 allowlisted template IDs 边界', () => {
-  assert.equal(typeof subscriptionTemplateIds, 'function');
-});
-test('订阅配置只返回去重后的审核模板 ID，不泄漏其他环境变量', () => {
+test('订阅配置按报名关键路径去重且最多返回三个模板', () => {
   assert.deepEqual(
     subscriptionTemplateIds({
       REVIEW_APPROVED_TEMPLATE_ID: ' approved-template ',
       REVIEW_REJECTED_TEMPLATE_ID: 'rejected-template',
+      WAITLIST_ENTERED_TEMPLATE_ID: 'entered-template',
+      WAITLIST_PROMOTED_TEMPLATE_ID: 'promoted-template',
+      ACTIVITY_REMINDER_TEMPLATE_ID: 'reminder-template',
       STRAVA_CLIENT_SECRET: 'must-not-leak',
     }),
-    ['approved-template', 'rejected-template'],
+    ['approved-template', 'rejected-template', 'reminder-template'],
   );
   assert.deepEqual(
     subscriptionTemplateIds({
       REVIEW_APPROVED_TEMPLATE_ID: 'same-template',
       REVIEW_REJECTED_TEMPLATE_ID: 'same-template',
+      ACTIVITY_REMINDER_TEMPLATE_ID: 'reminder-template',
     }),
-    ['same-template'],
+    ['same-template', 'reminder-template'],
   );
+});
+test('订阅配置未配置模板时返回空列表', () => {
+  assert.deepEqual(subscriptionTemplateIds({}), []);
+});
+test('活动提醒时间按中国标准时间转换为微信 time 格式', () => {
+  assert.equal(
+    messageData({
+      template_key: 'activity_reminder',
+      payload: { event_start: '2026-10-11T00:00:00.000Z' },
+    }).time2.value,
+    '2026年10月11日 08:00',
+  );
+});
+test('活动提醒时间为空或非法时明确失败', () => {
+  for (const event_start of ['', 'not-a-date']) {
+    assert.throws(
+      () => messageData({ template_key: 'activity_reminder', payload: { event_start } }),
+      { code: 'PAYLOAD_INVALID' },
+    );
+  }
+});
+test('活动提醒非法时间在发送前失败并回到可重试状态', async () => {
+  const f = fixture({
+    template_key: 'activity_reminder',
+    payload: { event_start: 'not-a-date' },
+  });
+  await assert.rejects(
+    consume(f, { env: { ACTIVITY_REMINDER_TEMPLATE_ID: 'reminder-template' } }),
+    { code: 'PAYLOAD_INVALID' },
+  );
+  assert.equal(f.item.status, 'retryable');
+  assert.equal(f.calls.length, 0);
 });
 test('模板缺失明确落 retryable 且释放租约', async () => {
   const f = fixture();

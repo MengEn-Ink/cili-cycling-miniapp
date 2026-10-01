@@ -4,7 +4,7 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "test": "node --test smoke.node-test.js review.node-test.js capability-card.node-test.js"
+    "test": "node --test smoke.node-test.js review.node-test.js reminder.node-test.js capability-card.node-test.js"
   },
   "dependencies": {
     "wx-server-sdk": "4.0.2"

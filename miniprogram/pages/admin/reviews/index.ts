@@ -2,7 +2,10 @@ import { rideService } from '../../../services/ride-service';
 import { syncPageTheme } from '../../../services/theme-service';
 import { appStore } from '../../../store/app-store';
 
+import { parseCheckInScan } from '../../../utils/check-in-code';
+
 const statusText: Record<string, string> = {
+  waiting: '候补中',
   pending: '待审核',
   approved: '已通过',
   checked_in: '已签到',
@@ -22,6 +25,7 @@ Page({
     activityId: '',
     selectedActivityTitle: '',
     loading: false,
+    sendingReminders: false,
     error: '',
   },
   onShow() {
@@ -103,6 +107,40 @@ Page({
           statusText: statusText[item.status] || item.status,
         })),
     });
+  },
+  scanCheckIn() {
+    wx.scanCode({
+      scanType: ['barCode', 'qrCode'],
+      success: (result: { result?: string; path?: string }) => {
+        const registrationId = parseCheckInScan(result.result || result.path || '');
+        if (!registrationId) {
+          wx.showToast({ title: '不是有效的此里核销凭证', icon: 'none' });
+          return;
+        }
+        wx.navigateTo({
+          url: '/pages/admin/review-detail/index?id=' + encodeURIComponent(registrationId),
+        });
+      },
+      fail: (error: { errMsg?: string }) => {
+        if (!/cancel/i.test(error?.errMsg || ''))
+          wx.showToast({ title: '扫码失败，请重试', icon: 'none' });
+      },
+    });
+  },
+  async sendReminders() {
+    if (!this.data.activityId || this.data.sendingReminders) return;
+    this.setData({ sendingReminders: true, error: '' });
+    try {
+      const result = await rideService.enqueueActivityReminders(this.data.activityId);
+      wx.showToast({
+        title: result.queued ? `已入队 ${result.queued} 条` : '提醒已入队，无需重复操作',
+        icon: 'none',
+      });
+    } catch (error) {
+      this.setData({ error: error instanceof Error ? error.message : '活动提醒入队失败' });
+    } finally {
+      this.setData({ sendingReminders: false });
+    }
   },
   open(e: any) {
     wx.navigateTo({ url: '/pages/admin/review-detail/index?id=' + e.currentTarget.dataset.id });

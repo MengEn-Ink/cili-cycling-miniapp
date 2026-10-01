@@ -117,6 +117,7 @@ function memoryStore(seed = {}) {
     snapshots: new Map(
       seed.snapshot === null ? [] : [[openid, { ...snapshot, ...(seed.snapshot || {}) }]],
     ),
+    notifications: new Map(),
     audits: [],
   };
   let queue = Promise.resolve();
@@ -131,6 +132,7 @@ function memoryStore(seed = {}) {
           admins: new Map([...state.admins].map(([id, value]) => [id, { ...value }])),
           credentials: new Map([...state.credentials].map(([id, value]) => [id, { ...value }])),
           snapshots: new Map([...state.snapshots].map(([id, value]) => [id, { ...value }])),
+          notifications: new Map([...state.notifications].map(([id, value]) => [id, { ...value }])),
           audits: state.audits.slice(),
         };
         const result = await work({
@@ -140,7 +142,19 @@ function memoryStore(seed = {}) {
           getAdmin: async (id) => draft.admins.get(id),
           getStravaCredential: async (id) => draft.credentials.get(id),
           getStravaSnapshot: async (id) => draft.snapshots.get(id),
+          getTeamLeader: async (activityId, teamId) =>
+            [...draft.registrations.values()].find(
+              (value) =>
+                value.activity_id === activityId &&
+                value.team_id === teamId &&
+                value.is_team_leader === true,
+            ),
+          listWaiting: async (activityId) =>
+            [...draft.registrations.values()]
+              .filter((value) => value.activity_id === activityId && value.status === 'waiting')
+              .sort((left, right) => new Date(left.created_at) - new Date(right.created_at)),
           putRegistration: async (id, value) => draft.registrations.set(id, { ...value }),
+          putNotification: async (id, value) => draft.notifications.set(id, { ...value }),
           setOccupied: async (id, value, supportVehicleOccupied, selfDriveOccupied) => {
             const target = draft.activities.get(id);
             target.occupied_count = value;
@@ -448,13 +462,20 @@ test('报名事务按顺序读取依赖，避免共享事务上下文发生并�
   assert.equal(result.status, 'pending');
 });
 
-test('事务边界在满员时不写入；并发提交不会超过 capacity', async () => {
-  const full = memoryStore({ activity: { capacity: 1, occupied_count: 1 } });
-  await assert.rejects(
-    submitRegistration(full, input, now),
-    (error) => error.code === 'CAPACITY_FULL',
-  );
-  assert.equal(full.state.registrations.size, 0);
+test('满员提交进入候补且不占位；并发提交不会超过 capacity', async () => {
+  const full = memoryStore({
+    activity: {
+      capacity: 2,
+      occupied_count: 2,
+      support_vehicle_occupied_count: 1,
+      self_drive_occupied_count: 1,
+    },
+  });
+  const waiting = await submitRegistration(full, input, now);
+  assert.equal(waiting.status, 'waiting');
+  assert.equal(full.state.registrations.size, 1);
+  assert.equal(full.state.activities.get('a1').occupied_count, 2);
+  assert.equal(full.state.notifications.size, 1);
 
   const store = memoryStore({
     activity: {
@@ -473,10 +494,15 @@ test('事务边界在满员时不写入；并发提交不会超过 capacity', as
     submitRegistration(store, input, now),
     submitRegistration(store, { ...input, openid: 'other' }, now),
   ]);
-  assert.deepEqual(settled.map((x) => x.status).sort(), ['fulfilled', 'rejected']);
+  assert.deepEqual(
+    settled.map((x) => x.status),
+    ['fulfilled', 'fulfilled'],
+  );
+  assert.deepEqual(settled.map((x) => x.value.status).sort(), ['pending', 'waiting']);
   assert.equal(store.state.activities.get('a1').occupied_count, 1);
   assert.equal(store.state.activities.get('a1').self_drive_occupied_count, 1);
   assert.equal(store.state.activities.get('a1').support_vehicle_occupied_count, 0);
+  assert.equal(store.state.notifications.size, 1);
 });
 
 test('取消仅本人 pending/approved 并在事务内释放名额', async () => {
@@ -651,7 +677,11 @@ test('活动报名状态完全由服务端时间和活动事实裁决', () => {
   };
   const cases = [
     [{}, 'open', null],
-    [{ occupied_count: 2 }, 'closed', 'full'],
+    [
+      { occupied_count: 2, support_vehicle_occupied_count: 1, self_drive_occupied_count: 1 },
+      'open',
+      null,
+    ],
     [{ signup_deadline: serverNow.toISOString(), occupied_count: 2 }, 'closed', 'deadline'],
     [{ event_end: serverNow.toISOString(), occupied_count: 2 }, 'closed', 'finished'],
     [{ status: 'finished', signup_deadline: 'invalid' }, 'closed', 'finished'],
@@ -676,6 +706,18 @@ test('活动报名状态完全由服务端时间和活动事实裁决', () => {
     assert.equal(result.closed_reason, closedReason);
     assert.equal(result.server_now, serverNow.toISOString());
   }
+  assert.equal(
+    publicActivity(
+      {
+        ...base,
+        occupied_count: 2,
+        support_vehicle_occupied_count: 1,
+        self_drive_occupied_count: 1,
+      },
+      serverNow,
+    ).waitlist_only,
+    true,
+  );
 });
 
 test('报名配置不完整时公开 DTO 对旧客户端保持可解析并标记待开放', () => {
@@ -703,15 +745,21 @@ test('报名配置不完整时公开 DTO 对旧客户端保持可解析并标记
   }
 });
 
-test('截止、结束或满员优先于配置待完善且不误标报名待开放', () => {
+test('截止或结束优先于配置待完善，配置不完整的满员活动仍标记待开放', () => {
   for (const patch of [
     { signup_deadline: now.toISOString(), fee: undefined },
     { event_end: now.toISOString(), fee: undefined },
-    { occupied_count: activity.capacity, fee: undefined },
   ]) {
     const output = publicActivity({ ...activity, ...patch }, now);
     assert.equal(output.registration_setup_pending, undefined);
   }
+  const incompleteFull = publicActivity(
+    { ...activity, occupied_count: activity.capacity, fee: undefined },
+    now,
+  );
+  assert.equal(incompleteFull.registration_setup_pending, true);
+  assert.equal(incompleteFull.registration_state, 'closed');
+  assert.equal(incompleteFull.closed_reason, 'unavailable');
 });
 
 test('审计日志只保留安全字段，不含手机号证件号和 token', () => {
@@ -780,7 +828,7 @@ test('公开活动兼容无司机信息，异常手机号不透传非字符串�
   assert.equal(output.support_vehicle_driver.contact_phone, '');
 });
 
-test('分类满员时即使总容量未满也拒绝，分仓未就绪活动拒绝报名', async () => {
+test('分类满员时即使总容量未满也进入候补，分仓未就绪活动拒绝报名', async () => {
   const categoryFull = memoryStore({
     activity: {
       capacity: 4,
@@ -791,15 +839,15 @@ test('分类满员时即使总容量未满也拒绝，分仓未就绪活动拒�
       self_drive_occupied_count: 0,
     },
   });
-  await assert.rejects(
-    submitRegistration(
-      categoryFull,
-      { ...input, options: { ...input.options, gathering_mode: 'support_vehicle' } },
-      now,
-    ),
-    (error) => error.code === 'CATEGORY_CAPACITY_FULL',
+  const waiting = await submitRegistration(
+    categoryFull,
+    { ...input, options: { ...input.options, gathering_mode: 'support_vehicle' } },
+    now,
   );
+  assert.equal(waiting.status, 'waiting');
   assert.equal(categoryFull.state.activities.get('a1').occupied_count, 1);
+  assert.equal(categoryFull.state.activities.get('a1').support_vehicle_occupied_count, 1);
+  assert.equal(categoryFull.state.notifications.size, 1);
 
   const legacy = memoryStore({
     activity: { capacity: 2, occupied_count: 0, occupancy_partition_ready: false },

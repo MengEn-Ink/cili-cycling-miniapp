@@ -1,5 +1,6 @@
 export type Role = 'member' | 'admin';
-export type RegistrationStatus = 'pending' | 'approved' | 'checked_in' | 'rejected' | 'cancelled';
+export type RegistrationStatus =
+  'waiting' | 'pending' | 'approved' | 'checked_in' | 'rejected' | 'cancelled';
 export type StravaStatus = 'pending' | 'connected' | 'exempted' | 'syncing' | 'failed';
 export type ActivityRegistrationState = 'open' | 'closed';
 export type ActivityClosedReason = 'finished' | 'deadline' | 'full' | 'incomplete' | 'unavailable';
@@ -104,6 +105,7 @@ export interface Activity {
   registrationState?: ActivityRegistrationState;
   closedReason?: ActivityClosedReason | null;
   registrationSetupPending?: boolean;
+  waitlistOnly?: boolean;
   serverNow?: string;
   attendees?: ActivityAttendee[];
 }
@@ -233,5 +235,8 @@ export interface Registration {
   reviewComment?: string;
   serialNo?: string;
   checkedInAt?: string;
+  teamId?: string;
+  teamName?: string;
+  isTeamLeader?: boolean;
   updatedAt: string;
 }

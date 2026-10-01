@@ -38,6 +38,8 @@ export interface RegistrationSubmission {
   gatheringMode: GatheringMode;
   experience: string;
   remark?: string;
+  teamId?: string;
+  teamName?: string;
   [key: string]: unknown;
 }
 export interface AdminReviewRepository {
@@ -47,6 +49,11 @@ export interface AdminReviewRepository {
   ): Promise<Registration[]>;
   getReviewRegistration(id: string): Promise<Registration | undefined>;
   checkInRegistration(id: string): Promise<Registration>;
+  enqueueActivityReminders(activityId: string): Promise<{
+    queued: number;
+    duplicates: number;
+    total: number;
+  }>;
 }
 export interface RideRepository extends AdminReviewRepository, ActivityAdminRepository {
   listActivities(): Promise<Activity[]>;

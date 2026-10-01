@@ -32,6 +32,9 @@ function templateFor(key, env) {
   const names = {
     review_approved: 'REVIEW_APPROVED_TEMPLATE_ID',
     review_rejected: 'REVIEW_REJECTED_TEMPLATE_ID',
+    waitlist_entered: 'WAITLIST_ENTERED_TEMPLATE_ID',
+    waitlist_promoted: 'WAITLIST_PROMOTED_TEMPLATE_ID',
+    activity_reminder: 'ACTIVITY_REMINDER_TEMPLATE_ID',
   };
   const name = names[key];
   if (!name) fail('TEMPLATE_NOT_ALLOWED', '通知模板未列入审批结果白名单');
@@ -40,13 +43,48 @@ function templateFor(key, env) {
   return value.trim();
 }
 function subscriptionTemplateIds(env) {
-  return [env.REVIEW_APPROVED_TEMPLATE_ID, env.REVIEW_REJECTED_TEMPLATE_ID]
+  // 报名点击时申请审核结果和后续活动提醒，避免超过微信单次最多 3 个模板的限制。
+  return [
+    env.REVIEW_APPROVED_TEMPLATE_ID,
+    env.REVIEW_REJECTED_TEMPLATE_ID,
+    env.ACTIVITY_REMINDER_TEMPLATE_ID,
+  ]
     .filter((value) => typeof value === 'string' && value.trim())
     .map((value) => value.trim())
-    .filter((value, index, values) => values.indexOf(value) === index);
+    .filter((value, index, values) => values.indexOf(value) === index)
+    .slice(0, 3);
+}
+function formatWechatTime(value) {
+  if (value === undefined || value === null || value === '')
+    fail('PAYLOAD_INVALID', '活动提醒缺少活动开始时间');
+  const instant = value instanceof Date ? value : new Date(value);
+  if (!Number.isFinite(instant.getTime())) fail('PAYLOAD_INVALID', '活动提醒开始时间无效');
+  // 活动运营与小程序展示统一采用中国标准时间（UTC+8）。
+  const chinaTime = new Date(instant.getTime() + SHANGHAI_OFFSET_MS);
+  const pad = (part) => String(part).padStart(2, '0');
+  return `${chinaTime.getUTCFullYear()}年${pad(chinaTime.getUTCMonth() + 1)}月${pad(
+    chinaTime.getUTCDate(),
+  )}日 ${pad(chinaTime.getUTCHours())}:${pad(chinaTime.getUTCMinutes())}`;
 }
 function messageData(outbox) {
   const payload = outbox.payload || {};
+  if (outbox.template_key === 'activity_reminder') {
+    return {
+      thing1: { value: String(payload.activity_title || '骑行活动').slice(0, 20) },
+      time2: { value: formatWechatTime(payload.event_start) },
+      thing3: { value: String(payload.meeting_place || '请进入小程序查看').slice(0, 20) },
+    };
+  }
+  if (outbox.template_key === 'waitlist_entered' || outbox.template_key === 'waitlist_promoted') {
+    return {
+      thing1: {
+        value:
+          outbox.template_key === 'waitlist_promoted' ? '候补已补位，请等待审核' : '已进入候补队列',
+      },
+      thing2: { value: String(payload.registration_id || '').slice(0, 20) },
+      thing3: { value: '请进入小程序查看详情' },
+    };
+  }
   return {
     thing1: { value: payload.decision === 'approved' ? '报名审核通过' : '报名审核未通过' },
     thing2: { value: String(payload.registration_id || '').slice(0, 20) },
@@ -145,10 +183,12 @@ async function consumeNotification({
 
   const fence = { leaseId: claim.lease_id, attemptNo: claim.attempt_no, now };
   let templateId;
+  let data;
   try {
     templateId = templateFor(claim.template_key, env);
     if (typeof claim.target_openid !== 'string' || !claim.target_openid.trim())
       fail('TARGET_OPENID_INVALID', '通知目标 openid 无效');
+    data = messageData(claim);
   } catch (error) {
     await transitionOrLose(store.markRetryable, outboxId, {
       ...fence,
@@ -163,7 +203,7 @@ async function consumeNotification({
     result = await sender.send({
       touser: claim.target_openid,
       templateId,
-      data: messageData(claim),
+      data,
     });
   } catch (error) {
     const code = explicitProviderCode(error);
@@ -229,6 +269,7 @@ module.exports = {
   responseError,
   templateFor,
   subscriptionTemplateIds,
+  messageData,
   retryDelayMs,
   nextRetryAt,
   consumeNotification,

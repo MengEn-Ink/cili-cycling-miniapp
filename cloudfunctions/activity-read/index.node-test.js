@@ -163,7 +163,19 @@ test('列表仍只查询 published 并由同一服务端时间裁决报名状态
       status: 'published',
       capacity: 2,
       occupied_count: 2,
+      occupancy_partition_ready: true,
+      support_vehicle_capacity: 1,
+      self_drive_capacity: 1,
+      support_vehicle_occupied_count: 1,
+      self_drive_occupied_count: 1,
+      support_vehicle_driver: {
+        nickname: '王师傅',
+        license_plate: '粤B12345',
+        contact_phone: '13812345678',
+      },
+      fee: { remark: 'AA', included: [], excluded: [] },
       signup_deadline: '2999-01-01T00:00:00.000Z',
+      event_start: '2999-01-01T08:00:00.000Z',
       event_end: '2999-01-02T00:00:00.000Z',
     },
   ];
@@ -179,9 +191,10 @@ test('列表仍只查询 published 并由同一服务端时间裁决报名状态
     result.data.map((item) => [item.registration_state, item.closed_reason]),
     [
       ['open', null],
-      ['closed', 'full'],
+      ['open', null],
     ],
   );
+  assert.equal(result.data[1].waitlist_only, true);
   assert.equal(result.data[0].server_now, result.data[1].server_now);
 });
 

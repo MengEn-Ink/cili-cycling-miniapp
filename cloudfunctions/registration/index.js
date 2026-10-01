@@ -36,6 +36,29 @@ function transactionStore() {
           getActivity: (id) => maybeGet(transaction.collection('activities'), id),
           getProfile: (openid) => maybeGet(transaction.collection('profiles'), openid),
           getRegistration: (id) => maybeGet(transaction.collection('registrations'), id),
+          getTeamLeader: async (activityId, teamId) => {
+            const result = await transaction
+              .collection('registrations')
+              .where({ activity_id: activityId, team_id: teamId, is_team_leader: true })
+              .limit(1)
+              .get();
+            return result.data[0];
+          },
+          listWaiting: async (activityId) => {
+            const values = [];
+            const pageSize = 100;
+            for (let offset = 0; ; offset += pageSize) {
+              const result = await transaction
+                .collection('registrations')
+                .where({ activity_id: activityId, status: 'waiting' })
+                .orderBy('created_at', 'asc')
+                .skip(offset)
+                .limit(pageSize)
+                .get();
+              values.push(...result.data);
+              if (result.data.length < pageSize) return values;
+            }
+          },
           getStravaCredential: (openid) =>
             maybeGet(transaction.collection('strava_credentials'), openid),
           getStravaSnapshot: (openid) =>
@@ -61,6 +84,10 @@ function transactionStore() {
                 },
               }),
           addAudit: (audit) => transaction.collection('audit_logs').add({ data: audit }),
+          putNotification: async (id, value) => {
+            const { _id, ...data } = value;
+            await transaction.collection('notification_outbox').doc(id).set({ data });
+          },
         }),
       ),
   };
@@ -75,7 +102,7 @@ exports.main = async (event = {}) => {
       return ok(
         await submitRegistration(
           transactionStore(),
-          { openid, activityId: event.activityId, options: event.options },
+          { openid, activityId: event.activityId, options: event.options, team: event.team },
           new Date(),
         ),
       );

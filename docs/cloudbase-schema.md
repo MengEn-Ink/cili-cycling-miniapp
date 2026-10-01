@@ -18,7 +18,7 @@ Strava 报名资格唯一事实源：`strava_credentials + strava_snapshots`。`
 
 ### `registrations`
 
-`_id` 是 activity_id 与 openid 的确定性摘要；包含活动选项、脱敏 `profile_snapshot`、无 token 的 `strava_snapshot`、状态与审批历史。状态为 `pending|approved|checked_in|rejected|cancelled`；`checked_in` 记录 `checked_in_at`，操作人仅留在服务端审计字段中。`pending + approved + checked_in` 占位，提交/取消/驳回和名额更新在事务中完成；管理员签到只允许 `approved -> checked_in`，重复请求幂等。
+`_id` 是 activity_id 与 openid 的确定性摘要；包含活动选项、脱敏 `profile_snapshot`、无 token 的 `strava_snapshot`、状态与审批历史。状态为 `waiting|pending|approved|checked_in|rejected|cancelled`；`waiting` 不占位，`checked_in` 记录 `checked_in_at`，操作人仅留在服务端审计字段中。`pending + approved + checked_in` 占位；取消或驳回释放名额时，在同一事务内按 `created_at` 全局 FIFO 扫描候补，并提升最早同时满足总容量与集合方式容量的报名；分类仍满的更早候补继续等待，补位成功时 `occupied_count` 保持不变。可选的 `team_id/team_name/is_team_leader` 仅表示邀请关系，每位队员仍独立占位和审核。管理员签到只允许 `approved -> checked_in`，重复请求幂等。
 
 ### `profiles`
 
@@ -94,9 +94,9 @@ delete_attempts?, retry_at?, recovery_delete_pending?, delete_confirmation_pendi
 
 ### `notification_outbox`
 
-审批事务内原子写入的订阅消息发件箱。`_id` 为审批轮次确定性 ID，包含 `type/aggregate_id/target_openid/template_key/payload/status/attempts/attempt_no/last_error/lease_id/lease_expires_at/next_retry_at/claimed_by/dispatch_started_at/dispatch_outcome/created_at/updated_at/sent_at`。自动发送采用 `pending|retryable -> claimed -> dispatching -> sent|retryable|failed_terminal|delivery_unknown` 状态机：每次 claim 生成唯一 `lease_id` 并递增 `attempt_no`，所有后续写入都必须在事务内同时匹配 `status + lease_id + attempt_no`。短暂并发拒绝按 attempt 使用 1、2、4、8、15 分钟的有上限指数退避；日配额错误 `45009` 则推迟到上海时区次日 00:05，避免在配额恢复前耗尽尝试次数。`next_retry_at` 到达前不会进入 ready 列表。过期 `claimed` 可安全重领；`dispatching` 表示外部调用可能已发生，过期后根据已持久化的 `dispatch_outcome` 恢复为 `retryable` 或 `failed_terminal`，没有可靠 outcome 时才隔离为 `delivery_unknown`，禁止自动重发。最多尝试 5 次，并由租约扫描索引和 `status + attempts + next_retry_at` 重试索引在批次 `limit` 前排除未到期、耗尽和不可自动发送的任务；ready 扫描在 immediate、到期 retryable、过期 claimed 三组间轮转取数，任一组持续满额都不会饿死其他组。客户端 ACL 全拒绝，仅云函数可读写。
+审批、候补进入/补位与管理员显式活动提醒使用的订阅消息发件箱。候补和提醒使用确定性 `_id`，重复操作不会覆盖已发送任务；活动提醒只对 `approved` 报名入队，并写管理员审计，不宣称自动定时生成提醒。`_id` 为审批轮次确定性 ID，包含 `type/aggregate_id/target_openid/template_key/payload/status/attempts/attempt_no/last_error/lease_id/lease_expires_at/next_retry_at/claimed_by/dispatch_started_at/dispatch_outcome/created_at/updated_at/sent_at`。自动发送采用 `pending|retryable -> claimed -> dispatching -> sent|retryable|failed_terminal|delivery_unknown` 状态机：每次 claim 生成唯一 `lease_id` 并递增 `attempt_no`，所有后续写入都必须在事务内同时匹配 `status + lease_id + attempt_no`。短暂并发拒绝按 attempt 使用 1、2、4、8、15 分钟的有上限指数退避；日配额错误 `45009` 则推迟到上海时区次日 00:05，避免在配额恢复前耗尽尝试次数。`next_retry_at` 到达前不会进入 ready 列表。过期 `claimed` 可安全重领；`dispatching` 表示外部调用可能已发生，过期后根据已持久化的 `dispatch_outcome` 恢复为 `retryable` 或 `failed_terminal`，没有可靠 outcome 时才隔离为 `delivery_unknown`，禁止自动重发。最多尝试 5 次，并由租约扫描索引和 `status + attempts + next_retry_at` 重试索引在批次 `limit` 前排除未到期、耗尽和不可自动发送的任务；ready 扫描在 immediate、到期 retryable、过期 claimed 三组间轮转取数，任一组持续满额都不会饿死其他组。客户端 ACL 全拒绝，仅云函数可读写。
 
-`notification-send` 配置每分钟 CloudBase timer `notification-outbox-worker`，以无 OPENID 的平台服务身份批量扫描并消费，不能依赖管理员账号在线；小程序手工发送仍必须通过管理员白名单。模板缺失等发送前错误进入 `retryable`；微信明确拒绝时先 fenced 写入 `dispatch_outcome`，再将任务转为 `retryable` 或 `failed_terminal`，最终状态 ACK 失败只重试数据库写，恢复器随后可依据 outcome 安全收敛。网络错误、SDK `errCode=-1`、未识别的 provider code、worker 在 dispatch 后丢失以及发送成功后的数据库 ACK 失败均进入 `delivery_unknown`。任何 ACK 重试都绝不再次调用微信。登录用户可通过只读 `subscription-config` action 获取这两个审核模板 ID 以在报名点击时请求订阅，无需管理员权限；接口只从环境变量 `REVIEW_APPROVED_TEMPLATE_ID`、`REVIEW_REJECTED_TEMPLATE_ID` 构造 allowlist，不返回其他配置，也不把模板 ID 写入 outbox 或客户端可写数据。
+`notification-send` 配置每分钟 CloudBase timer `notification-outbox-worker`，以无 OPENID 的平台服务身份批量扫描并消费，不能依赖管理员账号在线；小程序手工发送仍必须通过管理员白名单。模板缺失等发送前错误进入 `retryable`；微信明确拒绝时先 fenced 写入 `dispatch_outcome`，再将任务转为 `retryable` 或 `failed_terminal`，最终状态 ACK 失败只重试数据库写，恢复器随后可依据 outcome 安全收敛。网络错误、SDK `errCode=-1`、未识别的 provider code、worker 在 dispatch 后丢失以及发送成功后的数据库 ACK 失败均进入 `delivery_unknown`。任何 ACK 重试都绝不再次调用微信。登录用户可通过只读 `subscription-config` action 获取审核、候补和活动提醒模板 ID 以在报名点击时请求订阅，无需管理员权限；接口只从环境变量 `REVIEW_APPROVED_TEMPLATE_ID`、`REVIEW_REJECTED_TEMPLATE_ID`、`WAITLIST_ENTERED_TEMPLATE_ID`、`WAITLIST_PROMOTED_TEMPLATE_ID`、`ACTIVITY_REMINDER_TEMPLATE_ID` 构造 allowlist，不返回其他配置，也不把模板 ID 写入 outbox 或客户端可写数据。
 
 ### `admins`
 
@@ -163,6 +163,8 @@ synced_at
 | activities | created_by ASC, event_start DESC | 普通；成员管理列表 |
 | registrations | activity_id ASC, openid ASC | 唯一 |
 | registrations | activity_id ASC, status ASC, created_at DESC | 普通 |
+| registrations | activity_id ASC, status ASC, options.gathering_mode ASC, created_at ASC | 普通；候补 FIFO |
+| registrations | activity_id ASC, team_id ASC, is_team_leader ASC | 普通；邀请队伍解析 |
 | registrations | openid ASC, created_at DESC | 普通 |
 | audit_logs | actor_openid ASC, created_at DESC | 普通 |
 | notification_outbox | status ASC, attempts ASC, lease_expires_at ASC | 普通；待发送与过期 claim 扫描 |
@@ -188,7 +190,7 @@ synced_at
 
 ## 部署后验证
 
-1. 校验 bootstrap 管理的 12 集合、全拒绝规则与 22 索引。确认 `activities.created_by + event_start`、`notification_outbox` 的 lease、目标与 retry 索引，`profile_media` 与 `profile_media_imports` 的 cleanup、delete lease 与 retry 索引，以及 `oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
+1. 校验 bootstrap 管理的 12 集合、全拒绝规则与 24 索引。确认 `activities.created_by + event_start`、`notification_outbox` 的 lease、目标与 retry 索引，`profile_media` 与 `profile_media_imports` 的 cleanup、delete lease 与 retry 索引，以及 `oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
 2. 真机验证 WXContext openid、微信手机号动态 code、手填手机号来源，以及资料响应中无明文/密文。
 3. 配置 callback HTTPS 路由、Strava 回调域和小程序业务域名，验证 CSRF、过期与重放。
 4. 验证 token 临期刷新、90 天分页、解绑审计及日志无敏感信息；验证跨用户媒体拒绝、未登记 legacy 不进卡、register 失败回收上传对象，以及临时 URL 故障降级。
