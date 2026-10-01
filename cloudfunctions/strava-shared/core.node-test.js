@@ -538,8 +538,138 @@ test('refresh lease 等待预算耗尽时 fail closed 且不调用 Strava', asyn
     { code: 'STRAVA_REFRESH_BUSY' },
   );
   assert.equal(acquireCalls, 20);
-  assert.equal(directReads, 0);
+  assert.equal(directReads, 1);
   assert.equal(elapsed, 2_000);
+});
+
+test('最后一次 acquire 返回 owner 时已超预算则释放 lease 且不刷新', async () => {
+  const now = new Date('2026-10-01T04:00:00.000Z');
+  const expired = tokenDocument('user-1', token(1), key, new Date(0));
+  expired.credential_generation = 7;
+  let elapsed = 0;
+  let acquireCalls = 0;
+  let refreshCalls = 0;
+  let saveCalls = 0;
+  let releaseCalls = 0;
+  let directReads = 0;
+
+  await assert.rejects(
+    resolveUsableCredential({
+      openid: 'user-1',
+      credential: expired,
+      cfg: config(env),
+      api: {
+        async refresh() {
+          refreshCalls += 1;
+          return token(Math.floor(now.getTime() / 1000) + 3600);
+        },
+      },
+      store: {
+        getCredential: async () => {
+          directReads += 1;
+          return expired;
+        },
+        acquireCredentialRefreshLease: async (_openid, { leaseId }) => {
+          acquireCalls += 1;
+          if (acquireCalls < 20) return { acquired: false, credential: expired };
+          elapsed = 2_001;
+          return {
+            acquired: true,
+            credential: {
+              ...expired,
+              token_refresh_lease_id: leaseId,
+              token_refresh_started_at: now,
+            },
+          };
+        },
+        saveRefreshedCredential: async () => {
+          saveCalls += 1;
+          return { saved: false, credential: expired };
+        },
+        releaseCredentialRefreshLease: async () => {
+          releaseCalls += 1;
+          return true;
+        },
+      },
+      now,
+      randomUUID: () => 'deadline-owner',
+      sleep: async (milliseconds) => {
+        elapsed += milliseconds;
+      },
+      clock: () => now,
+      monotonicNow: () => elapsed,
+    }),
+    { code: 'STRAVA_REFRESH_BUSY' },
+  );
+
+  assert.equal(acquireCalls, 20);
+  assert.equal(elapsed, 2_001);
+  assert.equal(refreshCalls, 0);
+  assert.equal(saveCalls, 0);
+  assert.equal(releaseCalls, 1);
+  assert.equal(directReads, 1);
+});
+
+test('最后一次 loser sleep 后最终重读 winner 凭证', async () => {
+  const now = new Date('2026-10-01T04:00:00.000Z');
+  const expired = tokenDocument('user-1', token(1), key, new Date(0));
+  expired.credential_generation = 7;
+  const fresh = tokenDocument(
+    'user-1',
+    {
+      ...token(Math.floor(now.getTime() / 1000) + 3600),
+      access_token: 'winner-after-last-sleep-access',
+      refresh_token: 'winner-after-last-sleep-refresh',
+    },
+    key,
+    now,
+  );
+  fresh.credential_generation = 7;
+  let current = expired;
+  let elapsed = 0;
+  let acquireCalls = 0;
+  let sleeps = 0;
+  let directReads = 0;
+
+  const result = await resolveUsableCredential({
+    openid: 'user-1',
+    credential: expired,
+    cfg: config(env),
+    api: {
+      async refresh() {
+        throw new Error('lease loser must not refresh');
+      },
+    },
+    store: {
+      getCredential: async () => {
+        directReads += 1;
+        return current;
+      },
+      acquireCredentialRefreshLease: async () => {
+        acquireCalls += 1;
+        return { acquired: false, credential: expired };
+      },
+      saveRefreshedCredential: async () => {
+        throw new Error('lease loser must not save');
+      },
+      releaseCredentialRefreshLease: async () => false,
+    },
+    now,
+    sleep: async (milliseconds) => {
+      sleeps += 1;
+      elapsed += milliseconds;
+      if (sleeps === 20) current = fresh;
+    },
+    clock: () => now,
+    monotonicNow: () => elapsed,
+  });
+
+  assert.equal(acquireCalls, 20);
+  assert.equal(sleeps, 20);
+  assert.equal(directReads, 1);
+  assert.equal(current, fresh);
+  assert.equal(result.document, fresh);
+  assert.equal(result.accessToken, 'winner-after-last-sleep-access');
 });
 
 test('refresh 失败只释放自己的 lease，后续调用可以重试', async () => {
@@ -720,6 +850,7 @@ test('最后一次 acquire 丢失 fence 后仍收敛到最新 rebind 凭证', as
   let elapsed = 0;
   let acquireCalls = 0;
   let refreshCalls = 0;
+  let directReads = 0;
 
   const result = await resolveUsableCredential({
     openid: 'user-1',
@@ -736,7 +867,10 @@ test('最后一次 acquire 丢失 fence 后仍收敛到最新 rebind 凭证', as
       },
     },
     store: {
-      getCredential: async () => rebound,
+      getCredential: async () => {
+        directReads += 1;
+        throw new Error('fresh CAS response must not be replaced by a direct read');
+      },
       acquireCredentialRefreshLease: async (_openid, { leaseId }) => {
         acquireCalls += 1;
         if (acquireCalls < 20) return { acquired: false, credential: expired };
@@ -763,6 +897,7 @@ test('最后一次 acquire 丢失 fence 后仍收敛到最新 rebind 凭证', as
 
   assert.equal(acquireCalls, 20);
   assert.equal(refreshCalls, 1);
+  assert.equal(directReads, 0);
   assert.equal(elapsed, 1_900);
   assert.equal(result.document, rebound);
   assert.equal(result.accessToken, 'last-attempt-rebound-access');

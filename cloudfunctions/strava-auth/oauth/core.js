@@ -438,6 +438,16 @@ async function resolveUsableCredential({
 
   let candidate = credential;
   const waitDeadline = monotonicNow() + maxWaitMs;
+  const settleCurrentCredential = async () => {
+    const current = await store.getCredential(openid);
+    if (!current) throw new StravaError('STRAVA_NOT_CONNECTED', '尚未绑定 Strava');
+    if (!credentialNeedsRefresh(current, clock()))
+      return {
+        accessToken: decrypt(current.access_token_cipher, cfg.key),
+        document: current,
+      };
+    throw new StravaError('STRAVA_REFRESH_BUSY', 'Strava 凭证正在更新，请稍后重试');
+  };
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     if (!candidate) throw new StravaError('STRAVA_NOT_CONNECTED', '尚未绑定 Strava');
     const attemptNow = attempt === 0 ? now : clock();
@@ -469,6 +479,14 @@ async function resolveUsableCredential({
         throw new StravaError('STRAVA_REFRESH_BUSY', 'Strava 凭证正在更新，请稍后重试');
       await sleep(Math.min(waitIntervalMs, remainingWait));
       continue;
+    }
+    if (monotonicNow() >= waitDeadline) {
+      await store.releaseCredentialRefreshLease(openid, {
+        leaseId,
+        expected: claim.credential,
+        finishedAt: clock(),
+      });
+      return settleCurrentCredential();
     }
 
     try {
@@ -515,7 +533,7 @@ async function resolveUsableCredential({
       accessToken: decrypt(candidate.access_token_cipher, cfg.key),
       document: candidate,
     };
-  throw new StravaError('STRAVA_REFRESH_BUSY', 'Strava 凭证正在更新，请稍后重试');
+  return settleCurrentCredential();
 }
 async function buildSyncResult({
   openid,
