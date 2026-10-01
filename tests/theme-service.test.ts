@@ -1,17 +1,24 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 type Storage = Record<string, unknown>;
+type PlatformOptions = {
+  success?: () => void;
+  fail?: () => void;
+  iconPath?: string;
+  [key: string]: unknown;
+};
 
 function wxMock(storage: Storage = {}) {
+  const succeed = vi.fn((options?: PlatformOptions) => options?.success?.());
   return {
     getStorageSync: vi.fn((key: string) => storage[key]),
     setStorageSync: vi.fn((key: string, value: unknown) => {
       storage[key] = value;
     }),
-    setNavigationBarColor: vi.fn(),
-    setTabBarStyle: vi.fn(),
-    setTabBarItem: vi.fn(),
-    setBackgroundColor: vi.fn(),
+    setNavigationBarColor: succeed,
+    setTabBarStyle: vi.fn((options?: PlatformOptions) => options?.success?.()),
+    setTabBarItem: vi.fn((options?: PlatformOptions) => options?.success?.()),
+    setBackgroundColor: vi.fn((options?: PlatformOptions) => options?.success?.()),
   };
 }
 
@@ -85,6 +92,135 @@ describe('主题服务', () => {
     expect(wxApi.setBackgroundColor).toHaveBeenCalled();
   });
 
+  it('相同主题重复返回前台时不重复触发页面和原生外观重绘', async () => {
+    const wxApi = wxMock({ 'display-theme': 'dark' });
+    const service = await loadThemeService(wxApi);
+    const page = {
+      data: { theme: 'dark', themeClass: 'theme-dark' },
+      setData: vi.fn(),
+    };
+
+    service.syncPageTheme(page);
+    service.syncPageTheme(page);
+
+    expect(page.setData).not.toHaveBeenCalled();
+    expect(wxApi.setNavigationBarColor).toHaveBeenCalledTimes(1);
+    expect(wxApi.setTabBarStyle).toHaveBeenCalledTimes(1);
+    expect(wxApi.setTabBarItem).toHaveBeenCalledTimes(3);
+    expect(wxApi.setBackgroundColor).toHaveBeenCalledTimes(1);
+  });
+
+  it('页面主题过期时只更新页面数据，不重复应用已经生效的原生主题', async () => {
+    const wxApi = wxMock({ 'display-theme': 'light' });
+    const service = await loadThemeService(wxApi);
+    const page = {
+      data: { theme: 'dark', themeClass: 'theme-dark' },
+      setData: vi.fn(),
+    };
+
+    service.applyTheme('light');
+    service.syncPageTheme(page);
+
+    expect(page.setData).toHaveBeenCalledOnce();
+    expect(page.setData).toHaveBeenCalledWith({ theme: 'light', themeClass: 'theme-light' });
+    expect(wxApi.setNavigationBarColor).toHaveBeenCalledTimes(1);
+    expect(wxApi.setTabBarStyle).toHaveBeenCalledTimes(1);
+    expect(wxApi.setTabBarItem).toHaveBeenCalledTimes(3);
+    expect(wxApi.setBackgroundColor).toHaveBeenCalledTimes(1);
+  });
+
+  it('相同主题仍在应用时不重复发起原生外观更新', async () => {
+    const wxApi = wxMock();
+    wxApi.setNavigationBarColor.mockImplementation(() => undefined);
+    const service = await loadThemeService(wxApi);
+
+    service.applyTheme('dark');
+    service.applyTheme('dark');
+
+    expect(wxApi.setNavigationBarColor).toHaveBeenCalledTimes(1);
+    expect(wxApi.setTabBarStyle).toHaveBeenCalledTimes(1);
+    expect(wxApi.setTabBarItem).toHaveBeenCalledTimes(3);
+    expect(wxApi.setBackgroundColor).toHaveBeenCalledTimes(1);
+  });
+
+  it('快速切回已生效主题时在异步浅色调用后重新应用深色', async () => {
+    const wxApi = wxMock();
+    const service = await loadThemeService(wxApi);
+    service.applyTheme('dark');
+
+    const callbacks: Array<() => void> = [];
+    const deferSuccess = (options?: PlatformOptions) => {
+      callbacks.push(() => options?.success?.());
+    };
+    wxApi.setNavigationBarColor.mockClear().mockImplementation(deferSuccess);
+    wxApi.setTabBarStyle.mockClear().mockImplementation(deferSuccess);
+    wxApi.setTabBarItem.mockClear().mockImplementation(deferSuccess);
+    wxApi.setBackgroundColor.mockClear().mockImplementation(deferSuccess);
+
+    service.applyTheme('light');
+    service.applyTheme('dark');
+
+    expect(wxApi.setNavigationBarColor).toHaveBeenCalledTimes(1);
+    expect(wxApi.setNavigationBarColor).toHaveBeenLastCalledWith(
+      expect.objectContaining({ backgroundColor: '#f6f1e8' }),
+    );
+
+    while (callbacks.length > 0) callbacks.shift()?.();
+
+    expect(wxApi.setNavigationBarColor).toHaveBeenCalledTimes(2);
+    expect(wxApi.setNavigationBarColor).toHaveBeenLastCalledWith(
+      expect.objectContaining({ backgroundColor: '#0b0b0c' }),
+    );
+    expect(wxApi.setTabBarStyle).toHaveBeenCalledTimes(2);
+    expect(wxApi.setTabBarItem).toHaveBeenCalledTimes(6);
+    expect(wxApi.setTabBarItem.mock.calls.slice(-3).map(([item]) => item?.iconPath)).toEqual([
+      'assets/tabbar/activities.png',
+      'assets/tabbar/registrations.png',
+      'assets/tabbar/profile.png',
+    ]);
+    expect(wxApi.setBackgroundColor).toHaveBeenCalledTimes(2);
+  });
+
+  it('失败批次完成前再次同步相同主题时保留重试', async () => {
+    const callbacks: PlatformOptions[] = [];
+    const defer = vi.fn((options?: PlatformOptions) => {
+      if (options) callbacks.push(options);
+    });
+    const wxApi = wxMock();
+    wxApi.setNavigationBarColor.mockImplementation(defer);
+    wxApi.setTabBarStyle.mockImplementation(defer);
+    wxApi.setTabBarItem.mockImplementation(defer);
+    wxApi.setBackgroundColor.mockImplementation(defer);
+    const service = await loadThemeService(wxApi);
+
+    service.applyTheme('dark');
+    const firstBatch = callbacks.splice(0, 6);
+    firstBatch[0].fail?.();
+    service.applyTheme('dark');
+    firstBatch.slice(1).forEach((options) => options.success?.());
+
+    expect(wxApi.setNavigationBarColor).toHaveBeenCalledTimes(2);
+    expect(wxApi.setTabBarStyle).toHaveBeenCalledTimes(2);
+    expect(wxApi.setTabBarItem).toHaveBeenCalledTimes(6);
+    expect(wxApi.setBackgroundColor).toHaveBeenCalledTimes(2);
+  });
+
+  it('原生主题 API 失败后保留下一次同步重试能力', async () => {
+    const wxApi = wxMock();
+    wxApi.setNavigationBarColor
+      .mockImplementationOnce((options?: PlatformOptions) => options?.fail?.())
+      .mockImplementation((options?: PlatformOptions) => options?.success?.());
+    const service = await loadThemeService(wxApi);
+
+    service.applyTheme('dark');
+    service.applyTheme('dark');
+
+    expect(wxApi.setNavigationBarColor).toHaveBeenCalledTimes(2);
+    expect(wxApi.setTabBarStyle).toHaveBeenCalledTimes(2);
+    expect(wxApi.setTabBarItem).toHaveBeenCalledTimes(6);
+    expect(wxApi.setBackgroundColor).toHaveBeenCalledTimes(2);
+  });
+
   it('主题切换同步三项原生 TabBar 图标', async () => {
     const wxApi = wxMock();
     const service = await loadThemeService(wxApi);
@@ -95,25 +231,28 @@ describe('主题服务', () => {
         index: 0,
         iconPath: 'assets/tabbar/activities-light.png',
         selectedIconPath: 'assets/tabbar/activities-active.png',
+        success: expect.any(Function),
         fail: expect.any(Function),
       },
       {
         index: 1,
         iconPath: 'assets/tabbar/registrations-light.png',
         selectedIconPath: 'assets/tabbar/registrations-active.png',
+        success: expect.any(Function),
         fail: expect.any(Function),
       },
       {
         index: 2,
         iconPath: 'assets/tabbar/profile-light.png',
         selectedIconPath: 'assets/tabbar/profile-active.png',
+        success: expect.any(Function),
         fail: expect.any(Function),
       },
     ]);
 
     wxApi.setTabBarItem.mockClear();
     service.applyTheme('dark');
-    expect(wxApi.setTabBarItem.mock.calls.map(([item]) => item.iconPath)).toEqual([
+    expect(wxApi.setTabBarItem.mock.calls.map(([item]) => item?.iconPath)).toEqual([
       'assets/tabbar/activities.png',
       'assets/tabbar/registrations.png',
       'assets/tabbar/profile.png',
