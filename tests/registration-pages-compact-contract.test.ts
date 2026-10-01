@@ -76,8 +76,10 @@ describe('报名、行程与凭证紧凑交互契约', () => {
 
   it('长文案和窄屏具有收缩、换行与统一安全边距保护', () => {
     expect(formStyles).toContain('overflow-x: hidden');
-    expect(formStyles).toContain('padding-right: 40rpx;');
-    expect(formStyles).toContain('padding-left: 32rpx;');
+    expect(formStyles).toContain('padding-right: var(--page-gutter);');
+    expect(formStyles).toContain('padding-left: var(--page-gutter);');
+    expect(formStyles).toContain('padding-right: var(--page-gutter-narrow);');
+    expect(formStyles).toContain('padding-left: var(--page-gutter-narrow);');
     expect(formStyles).toContain('background: var(--color-brand);');
     expect(formStyles).toMatch(
       /@media \(max-width: 320px\)[\s\S]*?\.experience-segment\s*\{[^}]*box-sizing:\s*border-box[^}]*width:\s*100%/,

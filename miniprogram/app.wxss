@@ -41,6 +41,9 @@ page,
   --tab-page-bottom-space: 52rpx;
   --fixed-action-reserve: 210rpx;
   --fixed-action-reserve-narrow: 320rpx;
+  --control-height: 88rpx;
+  --page-gutter: 32rpx;
+  --page-gutter-narrow: 24rpx;
 }
 
 .theme-light {
@@ -220,7 +223,7 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 88rpx;
+  min-height: var(--control-height);
   margin: 20rpx 0 0;
   border-radius: var(--radius-sm) !important;
   font-size: 28rpx;
@@ -275,7 +278,7 @@ button::after {
 .input,
 .textarea {
   width: 100%;
-  min-height: 88rpx;
+  min-height: var(--control-height);
   padding: 20rpx 22rpx;
   border: 1rpx solid var(--color-border-strong);
   border-radius: var(--radius-sm);
@@ -555,5 +558,5 @@ button,
 .media-actions button,
 .media-add,
 .location-button {
-  min-height: 88rpx;
+  min-height: var(--control-height);
 }

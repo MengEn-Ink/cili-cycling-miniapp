@@ -4,7 +4,7 @@ page {
 
 .activities-page {
   min-height: 100%;
-  padding: 16rpx 32rpx calc(var(--tab-page-bottom-space) + env(safe-area-inset-bottom));
+  padding: 16rpx var(--page-gutter) calc(var(--tab-page-bottom-space) + env(safe-area-inset-bottom));
   overflow: hidden;
   background: #0b0b0c;
   color: #f7f7f5;
@@ -26,7 +26,7 @@ brand-logo {
 .section-eyebrow {
   margin-bottom: 2rpx;
   color: var(--color-brand);
-  font-size: 18rpx;
+  font-size: 20rpx;
   font-weight: 800;
   letter-spacing: 3rpx;
 }
@@ -80,8 +80,8 @@ brand-logo {
 
 @media (max-width: 350px) {
   .page.activities-page {
-    padding-right: 24rpx;
-    padding-left: 24rpx;
+    padding-right: var(--page-gutter-narrow);
+    padding-left: var(--page-gutter-narrow);
   }
 
   .page-title {
