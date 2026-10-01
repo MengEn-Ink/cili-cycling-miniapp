@@ -56,24 +56,132 @@ function createReadinessStore(db) {
           data: writableDocument(credential),
         });
     },
-    saveRefreshedCredential(openid, expected, refreshed, now) {
+    acquireCredentialRefreshLease(openid, { leaseId, now, staleBefore, expected }) {
       return db.runTransaction(async (tx) => {
         const collection = tx.collection('strava_credentials');
         const current = await maybeGet(collection, openid);
-        if (!sameCredentialVersion(current, expected)) return { saved: false, credential: current };
-        const next = {
-          ...current,
-          openid,
-          athlete_id: refreshed.athlete_id,
-          athlete_name: refreshed.athlete_name,
+        const currentMatchesOpenid =
+          current &&
+          (current._id === undefined || current._id === openid) &&
+          (current.openid === undefined || current.openid === openid);
+        const expectedMatchesOpenid =
+          expected &&
+          (expected._id === undefined || expected._id === openid) &&
+          (expected.openid === undefined || expected.openid === openid);
+        const currentHasGeneration = current && Object.hasOwn(current, 'credential_generation');
+        const expectedHasGeneration = expected && Object.hasOwn(expected, 'credential_generation');
+        const legacyGeneration = !currentHasGeneration && !expectedHasGeneration;
+        const currentGeneration = legacyGeneration ? 1 : current?.credential_generation;
+        const generationMatches =
+          legacyGeneration ||
+          (Number.isSafeInteger(currentGeneration) &&
+            currentGeneration >= 1 &&
+            Number.isSafeInteger(expected?.credential_generation) &&
+            expected.credential_generation === currentGeneration);
+        if (
+          !currentMatchesOpenid ||
+          !expectedMatchesOpenid ||
+          !generationMatches ||
+          !sameCredentialVersion(current, expected)
+        )
+          return { acquired: false, credential: current };
+        const startedAt = new Date(current.token_refresh_started_at);
+        const activeLease =
+          typeof current.token_refresh_lease_id === 'string' &&
+          current.token_refresh_lease_id &&
+          Number.isFinite(startedAt.getTime()) &&
+          startedAt > staleBefore;
+        if (activeLease) return { acquired: false, credential: current };
+        const fields = {
+          credential_generation: currentGeneration,
+          token_refresh_lease_id: leaseId,
+          token_refresh_started_at: now,
+          updated_at: now,
+        };
+        await collection.doc(openid).update({ data: fields });
+        return { acquired: true, credential: { ...current, ...fields } };
+      });
+    },
+    saveRefreshedCredential(openid, expected, refreshed, now, leaseId) {
+      return db.runTransaction(async (tx) => {
+        const collection = tx.collection('strava_credentials');
+        const current = await maybeGet(collection, openid);
+        const currentMatchesOpenid =
+          current &&
+          (current._id === undefined || current._id === openid) &&
+          (current.openid === undefined || current.openid === openid);
+        const expectedMatchesOpenid =
+          expected &&
+          (expected._id === undefined || expected._id === openid) &&
+          (expected.openid === undefined || expected.openid === openid);
+        if (
+          !currentMatchesOpenid ||
+          !expectedMatchesOpenid ||
+          !Number.isSafeInteger(expected?.credential_generation) ||
+          expected.credential_generation < 1 ||
+          current.credential_generation !== expected.credential_generation ||
+          current.token_refresh_lease_id !== leaseId ||
+          !sameCredentialVersion(current, expected)
+        )
+          return { saved: false, credential: current };
+        const fields = {
           access_token_cipher: refreshed.access_token_cipher,
           refresh_token_cipher: refreshed.refresh_token_cipher,
           token_expires_at: refreshed.token_expires_at,
           scopes: refreshed.scopes,
           updated_at: now,
+          token_refresh_lease_id: command.remove(),
+          token_refresh_started_at: command.remove(),
         };
-        await collection.doc(openid).set({ data: writableDocument(next) });
-        return { saved: true, credential: { ...next, _id: openid } };
+        await collection.doc(openid).update({ data: fields });
+        return {
+          saved: true,
+          credential: (() => {
+            const { token_refresh_lease_id, token_refresh_started_at, ...withoutLease } = current;
+            void token_refresh_lease_id;
+            void token_refresh_started_at;
+            return {
+              ...withoutLease,
+              access_token_cipher: fields.access_token_cipher,
+              refresh_token_cipher: fields.refresh_token_cipher,
+              token_expires_at: fields.token_expires_at,
+              scopes: fields.scopes,
+              updated_at: now,
+            };
+          })(),
+        };
+      });
+    },
+    releaseCredentialRefreshLease(openid, { leaseId, expected, finishedAt }) {
+      return db.runTransaction(async (tx) => {
+        const collection = tx.collection('strava_credentials');
+        const current = await maybeGet(collection, openid);
+        const currentMatchesOpenid =
+          current &&
+          (current._id === undefined || current._id === openid) &&
+          (current.openid === undefined || current.openid === openid);
+        const expectedMatchesOpenid =
+          expected &&
+          (expected._id === undefined || expected._id === openid) &&
+          (expected.openid === undefined || expected.openid === openid);
+        if (
+          !currentMatchesOpenid ||
+          !expectedMatchesOpenid ||
+          !Number.isSafeInteger(expected?.credential_generation) ||
+          expected.credential_generation < 1 ||
+          current.credential_generation !== expected.credential_generation ||
+          !sameCredentialVersion(current, expected) ||
+          current.token_refresh_lease_id !== leaseId
+        )
+          return false;
+        await collection.doc(openid).update({
+          data: {
+            token_refresh_lease_id: command.remove(),
+            token_refresh_started_at: command.remove(),
+            updated_at: finishedAt,
+          },
+        });
+        return true;
       });
     },
     async saveRoutePreview(openid, preview, now) {

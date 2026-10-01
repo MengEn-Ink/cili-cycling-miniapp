@@ -26,6 +26,7 @@ function credential(overrides = {}) {
     openid: 'user',
     athlete_id: '7',
     athlete_name: 'Rider',
+    credential_generation: 1,
     access_token_cipher: encrypt('access', key),
     refresh_token_cipher: encrypt('refresh', key),
     token_expires_at: new Date(Date.now() + 3600000),
@@ -108,15 +109,36 @@ test('star_count 全部缺失时按 athlete_count 回退并诚实标注', async 
 test('routePreview 复用刷新令牌并保存服务端可信预览', async () => {
   let savedCredential;
   let savedPreview;
+  let current = credential({ token_expires_at: new Date(0) });
   const result = await routePreviewFlow({
     openid: 'user',
     routeUrl: 'https://www.strava.com/routes/42',
     env,
     store: {
-      getCredential: async () => credential({ token_expires_at: new Date(0) }),
-      saveCredential: async (value) => {
-        savedCredential = value;
+      getCredential: async () => current,
+      acquireCredentialRefreshLease: async (_openid, { leaseId, now }) => {
+        current = {
+          ...current,
+          token_refresh_lease_id: leaseId,
+          token_refresh_started_at: now,
+        };
+        return { acquired: true, credential: current };
       },
+      saveRefreshedCredential: async (_openid, _expected, refreshed) => {
+        const { token_refresh_lease_id, token_refresh_started_at, ...withoutLease } = current;
+        void token_refresh_lease_id;
+        void token_refresh_started_at;
+        current = {
+          ...withoutLease,
+          access_token_cipher: refreshed.access_token_cipher,
+          refresh_token_cipher: refreshed.refresh_token_cipher,
+          token_expires_at: refreshed.token_expires_at,
+          scopes: refreshed.scopes,
+        };
+        savedCredential = current;
+        return { saved: true, credential: current };
+      },
+      releaseCredentialRefreshLease: async () => false,
       saveRoutePreview: async (_openid, value) => {
         savedPreview = value;
       },

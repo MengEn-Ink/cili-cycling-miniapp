@@ -125,6 +125,7 @@ state 原文至少 32 随机字节，只返回给发起授权的客户端，不�
 _id/openid, athlete_id, athlete_name, athlete_avatar_url?
 credential_generation                 # 每次 OAuth credential 保存单调递增
 avatar_import_lease_id?, avatar_import_started_at?, avatar_import_lease_expires_at?
+token_refresh_lease_id?, token_refresh_started_at?  # 60 秒 token 刷新租约
 access_token_cipher, refresh_token_cipher: { v, alg, iv, tag, ciphertext }
 token_expires_at, scopes, connected_at, updated_at
 sync_status: pending|running|ready|failed
@@ -134,7 +135,7 @@ sync_finished_at?: Date
 sync_lease_id?: String
 ```
 
-两个 token 使用 `STRAVA_TOKEN_ENCRYPTION_KEY`（base64 32 bytes）分别 AES-256-GCM 加密，永不进入客户端响应。
+两个 token 使用 `STRAVA_TOKEN_ENCRYPTION_KEY`（base64 32 bytes）分别 AES-256-GCM 加密，永不进入客户端响应。token 刷新先在事务内获取短租约，再在事务外调用 Strava；获取、完成与失败释放均校验 `credential_generation + credential version + token_refresh_lease_id`，断开授权、OAuth 换绑或旧租约接管后的在途响应不能复活或覆盖当前凭证。缺少 `credential_generation` 的存量凭证仅可在版本仍匹配时，于获取租约的同一事务规范化为 `1`；非法或非正整数 generation 始终拒绝。
 
 ### `strava_snapshots`
 
