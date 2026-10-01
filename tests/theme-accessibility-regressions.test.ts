@@ -246,4 +246,50 @@ describe('theme accessibility regressions', () => {
     expect(template).toContain('<view>发现活动</view>');
     expect(template).toContain('<view>报名出发</view>');
   });
+
+  it('shares a 44px-equivalent control height and stable page gutters', () => {
+    expect(declaration(effectiveBlock(app, 'page'), '--control-height')).toBe('88rpx');
+    expect(declaration(effectiveBlock(app, 'page'), '--page-gutter')).toBe('32rpx');
+    expect(declaration(effectiveBlock(app, 'page'), '--page-gutter-narrow')).toBe('24rpx');
+
+    const profileEdit = read('miniprogram/pages/profile-edit/index.wxss');
+    expect(declaration(effectiveBlock(profileEdit, '.form-card .input'), 'min-height')).toBe(
+      'var(--control-height)',
+    );
+    expect(profileEdit).toMatch(
+      /@media \(max-width: 320px\)[\s\S]*?\.gender-options\s*\{[^}]*grid-template-columns:\s*1fr/s,
+    );
+
+    const activityEdit = read('miniprogram/pages/admin/activity-edit/index.wxss');
+    expect(declaration(effectiveBlock(activityEdit, '.field input'), 'min-height')).toBe(
+      'var(--control-height)',
+    );
+  });
+
+  it('keeps dense metrics and progress rails readable on narrow screens', () => {
+    const detail = read('miniprogram/pages/activity-detail/index.wxss');
+    expect(detail).toMatch(
+      /@media \(max-width: 350px\)[\s\S]*?\.metric-number\s*\{[^}]*font-size:\s*30rpx/s,
+    );
+    expect(detail).not.toMatch(/\.metric-number\s*\{[^}]*text-overflow:\s*ellipsis/s);
+    expect(declaration(effectiveBlock(detail, '.metric-value'), 'flex-wrap')).toBe('wrap');
+    expect(declaration(effectiveBlock(detail, '.metric-number'), 'overflow-wrap')).toBe('anywhere');
+
+    const registration = read('miniprogram/pages/registration-form/index.wxss');
+    expect(declaration(effectiveBlock(registration, '.step-rule'), 'max-width')).toBe('64rpx');
+  });
+
+  it('keeps admin filters and clone actions touchable at 320px', () => {
+    const reviews = read('miniprogram/pages/admin/reviews/index.wxss');
+    const tabs = effectiveBlock(reviews, '.filter-tabs');
+    const tab = effectiveBlock(reviews, '.filter-tab');
+    expect(declaration(tabs, 'overflow-x')).toBe('auto');
+    expect(declaration(tab, 'min-width')).toBe('112rpx');
+    expect(declaration(tab, 'min-height')).toBe('var(--control-height)');
+
+    const activities = read('miniprogram/pages/admin/activity-list/index.wxss');
+    expect(activities).toMatch(
+      /@media \(max-width: 340px\)[\s\S]*?\.clone-actions\s*\{[^}]*grid-template-columns:\s*1fr/s,
+    );
+  });
 });

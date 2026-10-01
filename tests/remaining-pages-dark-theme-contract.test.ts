@@ -110,7 +110,7 @@ describe('其余页面 CILI 双主题接入静态契约', () => {
     );
   });
 
-  it('编辑输入保持至少 96rpx 高度与窄屏单列布局', () => {
+  it('编辑输入统一为 88rpx 触控高度并保持窄屏单列布局', () => {
     const activityStyles = read('miniprogram/pages/admin/activity-edit/index.wxss');
     const activityControls =
       activityStyles.match(/\.field input,\s*\.field textarea\s*\{([^}]*)\}/s)?.[1] || '';
@@ -124,9 +124,9 @@ describe('其余页面 CILI 双主题接入静态契约', () => {
       read('miniprogram/pages/admin/activity-list/index.wxss'),
       '.activity-list-page .field input',
     );
-    expect(rpx(activityControls, 'min-height')).toBeGreaterThanOrEqual(96);
-    expect(rpx(profileInput, 'min-height')).toBeGreaterThanOrEqual(96);
-    expect(rpx(cloneInput, 'min-height')).toBeGreaterThanOrEqual(96);
+    expect(declaration(activityControls, 'min-height')).toBe('var(--control-height)');
+    expect(declaration(profileInput, 'min-height')).toBe('var(--control-height)');
+    expect(declaration(cloneInput, 'min-height')).toBe('var(--control-height)');
     expect(Number(narrowLayout[0])).toBeGreaterThanOrEqual(430);
     expect(narrowLayout[1]).toMatch(/\.split\s*\{[^}]*grid-template-columns:\s*1fr;/s);
     expect(activityStyles).not.toContain('var(--accent)');

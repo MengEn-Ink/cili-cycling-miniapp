@@ -44,7 +44,7 @@ page {
   box-sizing: border-box;
   display: block;
   width: 100%;
-  min-height: 96rpx;
+  min-height: var(--control-height);
   padding: 20rpx 24rpx;
   border: 1rpx solid #555559;
   border-radius: 8rpx;
@@ -318,6 +318,7 @@ page,
 .gender-option,
 .default-avatar-button,
 .photo-preview-button {
+  min-height: var(--control-height);
   border-color: var(--color-border-strong);
   border-radius: var(--radius-sm);
   background: var(--color-input-bg);
@@ -342,7 +343,13 @@ page,
   background: var(--color-brand);
 }
 .save-action {
-  min-height: 88rpx;
+  min-height: var(--control-height);
   border-radius: var(--radius-md);
   color: var(--color-on-brand);
+}
+
+@media (max-width: 320px) {
+  .gender-options {
+    grid-template-columns: 1fr;
+  }
 }

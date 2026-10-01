@@ -123,7 +123,7 @@ page {
 .activity-list-page .field input {
   box-sizing: border-box;
   width: 100%;
-  min-height: 96rpx;
+  min-height: var(--control-height);
   padding: 20rpx 24rpx;
   border: 1rpx solid #343438;
   border-radius: 10rpx;
@@ -209,4 +209,11 @@ page,
   border-color: var(--color-border);
   background: var(--color-input-bg);
   color: var(--color-text);
+}
+
+@media (max-width: 340px) {
+  .clone-actions {
+    grid-template-columns: 1fr;
+    gap: 12rpx;
+  }
 }

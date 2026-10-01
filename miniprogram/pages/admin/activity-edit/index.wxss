@@ -81,7 +81,7 @@
 .field textarea {
   box-sizing: border-box;
   width: 100%;
-  min-height: 96rpx;
+  min-height: var(--control-height);
   padding: 20rpx 24rpx;
   border: 1rpx solid #343b39;
   border-radius: 10rpx;

@@ -6,11 +6,11 @@ page {
   box-sizing: border-box;
   min-height: 100vh;
   padding-top: 12rpx;
-  padding-right: 40rpx;
+  padding-right: var(--page-gutter);
   padding-bottom: var(--fixed-action-reserve);
   padding-bottom: calc(var(--fixed-action-reserve) + constant(safe-area-inset-bottom));
   padding-bottom: calc(var(--fixed-action-reserve) + env(safe-area-inset-bottom));
-  padding-left: 40rpx;
+  padding-left: var(--page-gutter);
   overflow-x: hidden;
   background: #000;
   color: #f7f7f5;
@@ -59,6 +59,7 @@ page {
 
 .step-rule {
   min-width: 12rpx;
+  max-width: 64rpx;
   height: 1rpx;
   flex: 1;
   margin: 0 8rpx;
@@ -68,7 +69,7 @@ page {
 .hero-kicker,
 .context-kicker {
   color: var(--color-brand);
-  font-size: 18rpx;
+  font-size: 20rpx;
   font-weight: 900;
   letter-spacing: 2rpx;
 }
@@ -84,7 +85,7 @@ page {
 .step-caption {
   flex: 0 0 auto;
   color: #89918b;
-  font-size: 18rpx;
+  font-size: 20rpx;
   font-weight: 800;
 }
 
@@ -241,7 +242,7 @@ page {
 .required,
 .optional {
   margin-left: 6rpx;
-  font-size: 18rpx;
+  font-size: 20rpx;
 }
 
 .required,
@@ -392,7 +393,7 @@ page {
   border-radius: 8rpx;
   background: var(--color-brand);
   color: #fff;
-  font-size: 18rpx;
+  font-size: 20rpx;
   font-weight: 900;
   letter-spacing: 1rpx;
 }
@@ -403,7 +404,7 @@ page {
   border-radius: 999rpx;
   background: #29292b;
   color: #bfc7c1;
-  font-size: 18rpx;
+  font-size: 20rpx;
   font-weight: 800;
 }
 
@@ -532,8 +533,8 @@ page {
 @media (max-width: 340px) {
   .page.form-page {
     --fixed-action-reserve: var(--fixed-action-reserve-narrow);
-    padding-right: 32rpx;
-    padding-left: 32rpx;
+    padding-right: var(--page-gutter-narrow);
+    padding-left: var(--page-gutter-narrow);
   }
 
   .form-title {

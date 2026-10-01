@@ -19,7 +19,7 @@
   box-sizing: border-box;
   min-height: 356rpx;
   overflow: hidden;
-  padding: 24rpx 32rpx 72rpx;
+  padding: 24rpx var(--page-gutter) 72rpx;
   border-bottom: 1rpx solid #343438;
   background: #121212;
   color: #f7f7f5;
@@ -137,7 +137,7 @@ brand-logo {
 }
 
 .content {
-  padding: 0 32rpx;
+  padding: 0 var(--page-gutter);
 }
 
 .metric-panel {
@@ -170,18 +170,18 @@ brand-logo {
   align-items: baseline;
   justify-content: center;
   min-height: 42rpx;
-  overflow: hidden;
-  white-space: nowrap;
+  flex-wrap: wrap;
 }
 
 .metric-number {
-  overflow: hidden;
+  min-width: 0;
+  max-width: 100%;
   color: #f7f7f5;
   font-size: 34rpx;
   font-variant-numeric: tabular-nums;
   font-weight: 900;
   line-height: 1.15;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
 .metric-number--text {
@@ -375,8 +375,8 @@ brand-logo {
 @media (max-width: 350px) {
   .detail-hero {
     min-height: 330rpx;
-    padding-right: 24rpx;
-    padding-left: 24rpx;
+    padding-right: var(--page-gutter-narrow);
+    padding-left: var(--page-gutter-narrow);
   }
 
   .detail-hero--media {
@@ -388,8 +388,8 @@ brand-logo {
   }
 
   .content {
-    padding-right: 24rpx;
-    padding-left: 24rpx;
+    padding-right: var(--page-gutter-narrow);
+    padding-left: var(--page-gutter-narrow);
   }
 
   .metric-number {
