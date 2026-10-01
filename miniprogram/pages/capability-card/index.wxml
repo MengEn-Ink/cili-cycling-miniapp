@@ -50,7 +50,7 @@
           <view class="identity-block">
             <view class="rider-name">{{card.displayName}}</view>
             <view class="rider-title" wx:if="{{card.title}}">{{card.title}}</view>
-            <view class="privacy-note">仅自己可见 · 不作为活动审核依据</view>
+            <view class="privacy-note">仅自己可见 · 不会用于活动报名审核</view>
           </view>
 
           <view class="metric-sheet">

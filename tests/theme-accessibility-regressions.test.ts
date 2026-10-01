@@ -264,6 +264,17 @@ describe('theme accessibility regressions', () => {
     expect(declaration(effectiveBlock(activityEdit, '.field input'), 'min-height')).toBe(
       'var(--control-height)',
     );
+
+    const registrations = read('miniprogram/pages/registrations/index.wxss');
+    expect(registrations).toMatch(
+      /\.page\.registrations-page\s*\{[^}]*padding-right:\s*var\(--page-gutter\);[^}]*padding-left:\s*var\(--page-gutter\)/s,
+    );
+    expect(registrations).toMatch(
+      /@media \(max-width: 320px\)[\s\S]*?\.page\.registrations-page\s*\{[^}]*padding-right:\s*var\(--page-gutter-narrow\)/s,
+    );
+
+    const reviews = read('miniprogram/pages/admin/reviews/index.wxss');
+    expect(declaration(effectiveBlock(reviews, '.hero-title'), 'font-size')).toBe('46rpx');
   });
 
   it('keeps dense metrics and progress rails readable on narrow screens', () => {

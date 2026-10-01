@@ -25,7 +25,7 @@ brand-logo {
 .hero-title {
   margin: 4rpx 0 8rpx;
   color: #f7f7f5;
-  font-size: 58rpx;
+  font-size: 46rpx;
   font-style: italic;
   font-weight: 900;
   line-height: 1.1;

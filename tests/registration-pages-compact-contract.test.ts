@@ -74,6 +74,28 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     expect(credential).not.toContain('<view>已提交报名</view>');
   });
 
+  it('面向骑友解释名额与资料，不暴露技术实现术语', () => {
+    expect(form).toContain('名额以提交时的最新状态为准');
+    expect(form).not.toContain('服务端事务');
+    expect(form).not.toContain('待公布');
+
+    const activityCard = read('miniprogram/components/activity-card/index.wxml');
+    expect(activityCard).toContain('人已报名');
+    expect(activityCard).not.toContain('人占位');
+
+    const profile = read('miniprogram/pages/profile/index.wxml');
+    expect(profile).toContain('正在同步个人资料');
+    expect(profile).not.toContain('正在读取资料。正在同步最新资料');
+
+    const profileEdit = read('miniprogram/pages/profile-edit/index.wxml');
+    expect(profileEdit).toContain('为保护隐私，已保存信息仅显示部分内容');
+    expect(profileEdit).not.toContain('脱敏值');
+
+    const detail = read('miniprogram/pages/activity-detail/index.wxml');
+    expect(detail).toContain('wx:else>待确认</text>');
+    expect(detail).not.toContain('wx:else>待补充</text>');
+  });
+
   it('长文案和窄屏具有收缩、换行与统一安全边距保护', () => {
     expect(formStyles).toContain('overflow-x: hidden');
     expect(formStyles).toContain('padding-right: var(--page-gutter);');

@@ -351,9 +351,9 @@ page {
 
 .repair-button,
 .photo-button {
-  min-height: 96rpx;
+  min-height: var(--control-height);
   margin-top: 16rpx;
-  border-radius: 28rpx;
+  border-radius: var(--radius-display);
   font-size: 26rpx;
   font-weight: 900;
 }
@@ -432,7 +432,7 @@ page,
 }
 .repair-button,
 .photo-button {
-  min-height: 96rpx;
+  min-height: var(--control-height);
   border-radius: var(--radius-display);
 }
 .repair-button {
