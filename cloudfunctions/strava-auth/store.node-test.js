@@ -161,6 +161,9 @@ test('saveRefreshedCredential 仅替换匹配版本并保留同步租约', async
   const now = new Date('2026-09-29T04:00:00.000Z');
   const current = usableCredential({
     openid: 'user-1',
+    credential_generation: 3,
+    token_refresh_lease_id: 'refresh-owner',
+    token_refresh_started_at: now,
     sync_status: 'running',
     sync_lease_id: 'lease-current',
   });
@@ -179,6 +182,7 @@ test('saveRefreshedCredential 仅替换匹配版本并保留同步租约', async
     current,
     refreshed,
     now,
+    'refresh-owner',
   );
   assert.equal(saved.saved, true);
   assert.equal(saved.credential.sync_status, 'running');
@@ -192,9 +196,239 @@ test('saveRefreshedCredential 仅替换匹配版本并保留同步租约', async
       access_token_cipher: { ...current.access_token_cipher, ciphertext: 'stale' },
     }),
     now,
+    'refresh-owner',
   );
   assert.equal(stale.saved, false);
   assert.equal(stale.credential.access_token_cipher.ciphertext, 'new-access');
+
+  for (const [id, invalidCurrent, expected] of [
+    [
+      'invalid-generation',
+      usableCredential({
+        _id: 'invalid-generation',
+        openid: 'invalid-generation',
+        credential_generation: 0,
+        token_refresh_lease_id: 'refresh-owner',
+      }),
+      undefined,
+    ],
+    [
+      'expected-other-owner',
+      usableCredential({
+        _id: 'expected-other-owner',
+        openid: 'expected-other-owner',
+        credential_generation: 5,
+        token_refresh_lease_id: 'refresh-owner',
+      }),
+      { _id: 'other-user', openid: 'other-user' },
+    ],
+  ]) {
+    const guardedFixture = fakeDb({ strava_credentials: { [id]: invalidCurrent } });
+    const guardedStore = createReadinessStore(guardedFixture.db);
+    const guardedExpected = expected ? { ...invalidCurrent, ...expected } : invalidCurrent;
+    const rejected = await guardedStore.saveRefreshedCredential(
+      id,
+      guardedExpected,
+      refreshed,
+      now,
+      'refresh-owner',
+    );
+    assert.equal(rejected.saved, false);
+    assert.equal(
+      guardedFixture.state.strava_credentials.get(id).access_token_cipher.ciphertext,
+      'access-ciphertext',
+    );
+  }
+});
+
+test('refresh lease：活跃 owner 唯一、过期 lease 可接管且旧 owner 不可完成', async () => {
+  const now = new Date('2026-10-01T04:00:00.000Z');
+  const fixture = fakeDb({
+    strava_credentials: {
+      'user-1': usableCredential({
+        openid: 'user-1',
+        credential_generation: 4,
+        token_refresh_lease_id: 'stale-owner',
+        token_refresh_started_at: new Date(now.getTime() - 60_001),
+      }),
+    },
+  });
+  const store = createReadinessStore(fixture.db);
+  const expected = fixture.state.strava_credentials.get('user-1');
+  const rejected = await store.acquireCredentialRefreshLease('user-1', {
+    leaseId: 'wrong-version-owner',
+    now,
+    staleBefore: new Date(now.getTime() - 60_000),
+    expected: {
+      ...expected,
+      refresh_token_cipher: { ...expected.refresh_token_cipher, ciphertext: 'other-version' },
+    },
+  });
+  assert.equal(rejected.acquired, false);
+  assert.equal(rejected.credential.token_refresh_lease_id, 'stale-owner');
+  const foreignExpected = await store.acquireCredentialRefreshLease('user-1', {
+    leaseId: 'foreign-owner',
+    now,
+    staleBefore: new Date(now.getTime() - 60_000),
+    expected: { ...expected, _id: 'other-user', openid: 'other-user' },
+  });
+  assert.equal(foreignExpected.acquired, false);
+  assert.equal(foreignExpected.credential.token_refresh_lease_id, 'stale-owner');
+
+  const claim = await store.acquireCredentialRefreshLease('user-1', {
+    leaseId: 'new-owner',
+    now,
+    staleBefore: new Date(now.getTime() - 60_000),
+    expected,
+  });
+  assert.equal(claim.acquired, true);
+  assert.equal(claim.credential.token_refresh_lease_id, 'new-owner');
+
+  const stale = await store.saveRefreshedCredential(
+    'user-1',
+    claim.credential,
+    usableCredential({ access_token_cipher: { ciphertext: 'stale-access' } }),
+    now,
+    'stale-owner',
+  );
+  assert.equal(stale.saved, false);
+  assert.equal(fixture.state.strava_credentials.get('user-1').token_refresh_lease_id, 'new-owner');
+
+  const legacyCredential = usableCredential({ _id: 'legacy-user', openid: 'legacy-user' });
+  const legacyFixture = fakeDb({ strava_credentials: { 'legacy-user': legacyCredential } });
+  const legacyClaim = await createReadinessStore(legacyFixture.db).acquireCredentialRefreshLease(
+    'legacy-user',
+    {
+      leaseId: 'legacy-owner',
+      now,
+      staleBefore: new Date(now.getTime() - 60_000),
+      expected: legacyCredential,
+    },
+  );
+  assert.equal(legacyClaim.acquired, true);
+  assert.equal(legacyClaim.credential.credential_generation, 1);
+  assert.equal(legacyFixture.state.strava_credentials.get('legacy-user').credential_generation, 1);
+
+  for (const invalidGeneration of [0, -1, 1.5, '1', null]) {
+    const invalidCredential = usableCredential({
+      openid: 'invalid-user',
+      credential_generation: invalidGeneration,
+    });
+    const invalidFixture = fakeDb({
+      strava_credentials: { 'invalid-user': invalidCredential },
+    });
+    const invalidClaim = await createReadinessStore(
+      invalidFixture.db,
+    ).acquireCredentialRefreshLease('invalid-user', {
+      leaseId: 'invalid-owner',
+      now,
+      staleBefore: new Date(now.getTime() - 60_000),
+      expected: invalidCredential,
+    });
+    assert.equal(invalidClaim.acquired, false);
+    assert.equal(
+      invalidFixture.state.strava_credentials.get('invalid-user').credential_generation,
+      invalidGeneration,
+    );
+    assert.equal(
+      invalidFixture.state.strava_credentials.get('invalid-user').token_refresh_lease_id,
+      undefined,
+    );
+  }
+});
+
+test('refresh lease release 仅允许当前 generation 的 owner', async () => {
+  const now = new Date('2026-10-01T04:00:00.000Z');
+  const fixture = fakeDb({
+    strava_credentials: {
+      'user-1': usableCredential({
+        openid: 'user-1',
+        credential_generation: 9,
+        token_refresh_lease_id: 'current-owner',
+        token_refresh_started_at: now,
+      }),
+    },
+  });
+  const store = createReadinessStore(fixture.db);
+  const expected = fixture.state.strava_credentials.get('user-1');
+
+  assert.equal(
+    await store.releaseCredentialRefreshLease('user-1', {
+      leaseId: 'other-owner',
+      expected,
+      finishedAt: now,
+    }),
+    false,
+  );
+  assert.equal(
+    await store.releaseCredentialRefreshLease('user-1', {
+      leaseId: 'current-owner',
+      expected: { ...expected, credential_generation: 8 },
+      finishedAt: now,
+    }),
+    false,
+  );
+  assert.equal(
+    fixture.state.strava_credentials.get('user-1').token_refresh_lease_id,
+    'current-owner',
+  );
+  assert.equal(
+    await store.releaseCredentialRefreshLease('user-1', {
+      leaseId: 'current-owner',
+      expected: { ...expected, _id: 'other-user', openid: 'other-user' },
+      finishedAt: now,
+    }),
+    false,
+  );
+  assert.equal(
+    fixture.state.strava_credentials.get('user-1').token_refresh_lease_id,
+    'current-owner',
+  );
+  assert.equal(
+    await store.releaseCredentialRefreshLease('user-1', {
+      leaseId: 'current-owner',
+      expected: {
+        ...expected,
+        access_token_cipher: { ...expected.access_token_cipher, ciphertext: 'other-version' },
+      },
+      finishedAt: now,
+    }),
+    false,
+  );
+  assert.equal(
+    fixture.state.strava_credentials.get('user-1').token_refresh_lease_id,
+    'current-owner',
+  );
+  assert.equal(
+    await store.releaseCredentialRefreshLease('user-1', {
+      leaseId: 'current-owner',
+      expected,
+      finishedAt: now,
+    }),
+    true,
+  );
+  assert.equal(fixture.state.strava_credentials.get('user-1').token_refresh_lease_id, undefined);
+
+  const invalidCredential = usableCredential({
+    _id: 'invalid-user',
+    openid: 'invalid-user',
+    credential_generation: 0,
+    token_refresh_lease_id: 'invalid-owner',
+    token_refresh_started_at: now,
+  });
+  const invalidFixture = fakeDb({ strava_credentials: { 'invalid-user': invalidCredential } });
+  assert.equal(
+    await createReadinessStore(invalidFixture.db).releaseCredentialRefreshLease('invalid-user', {
+      leaseId: 'invalid-owner',
+      expected: invalidCredential,
+      finishedAt: now,
+    }),
+    false,
+  );
+  assert.equal(
+    invalidFixture.state.strava_credentials.get('invalid-user').token_refresh_lease_id,
+    'invalid-owner',
+  );
 });
 
 test('acquireSyncLease 在事务内重读且 fresh snapshot 不产生写入', async () => {
