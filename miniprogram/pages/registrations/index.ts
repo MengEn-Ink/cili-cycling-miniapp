@@ -51,6 +51,7 @@ Page({
               displayDate: formatActivityDate(activity.date),
             },
             statusText: {
+              waiting: '候补中',
               pending: '待审核',
               approved: '已通过',
               checked_in: '已签到',

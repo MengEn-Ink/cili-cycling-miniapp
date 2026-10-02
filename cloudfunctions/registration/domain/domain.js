@@ -2,6 +2,7 @@
 
 const crypto = require('node:crypto');
 const OCCUPYING = new Set(['pending', 'approved', 'checked_in']);
+const TEAM_ID_PATTERN = /^team_[A-Za-z0-9_-]{8,80}$/;
 const RESUBMITTABLE = new Set(['rejected', 'cancelled']);
 const FORBIDDEN = new Set([
   'openid',
@@ -262,6 +263,20 @@ function validateOptions(options) {
     remark: typeof options.remark === 'string' ? options.remark.slice(0, 500) : '',
   };
 }
+function validateTeamInput(team = {}) {
+  if (!team || typeof team !== 'object' || Array.isArray(team))
+    fail('VALIDATION_FAILED', '组队参数格式错误');
+  const teamId = typeof team.team_id === 'string' ? team.team_id.trim() : '';
+  const teamName = typeof team.team_name === 'string' ? team.team_name.trim() : '';
+  if (teamId && !TEAM_ID_PATTERN.test(teamId)) fail('VALIDATION_FAILED', '队伍邀请参数无效');
+  if (teamName && (teamName.length < 2 || teamName.length > 30))
+    fail('VALIDATION_FAILED', '队伍名称需为 2 至 30 个字符');
+  if (teamId && teamName) fail('VALIDATION_FAILED', '不能同时创建和加入队伍');
+  return { teamId, teamName };
+}
+function createTeamId(activityId, openid) {
+  return `team_${crypto.createHash('sha256').update(`${activityId}\u0000${openid}`).digest('hex').slice(0, 20)}`;
+}
 function assertCanSubmit(existing) {
   if (existing && !RESUBMITTABLE.has(existing.status))
     fail('REGISTRATION_EXISTS', '该活动已有占位中的报名');
@@ -269,7 +284,7 @@ function assertCanSubmit(existing) {
 function assertCanCancel(registration, openid) {
   if (!registration) fail('REGISTRATION_NOT_FOUND', '报名不存在');
   if (registration.openid !== openid) fail('FORBIDDEN', '只能取消本人的报名');
-  if (!['pending', 'approved'].includes(registration.status))
+  if (!['pending', 'approved', 'waiting'].includes(registration.status))
     fail('INVALID_TRANSITION', '当前状态不可取消');
 }
 function assertCheckInTransition(from) {
@@ -327,16 +342,14 @@ function registrationDecision(activity, now) {
     return { registration_state: 'closed', closed_reason: 'finished' };
   if (deadline && deadline.getTime() <= now.getTime())
     return { registration_state: 'closed', closed_reason: 'deadline' };
-  if (
-    Number.isInteger(activity.capacity) &&
-    activity.capacity > 0 &&
-    Number.isInteger(activity.occupied_count) &&
-    activity.occupied_count >= activity.capacity
-  )
-    return { registration_state: 'closed', closed_reason: 'full' };
   if (!registrationSetupReady(activity))
     return { registration_state: 'closed', closed_reason: 'incomplete' };
-  return { registration_state: 'open', closed_reason: null };
+  // 满员后仍开放候补入口；是否占位由提交事务基于总容量和分类容量共同判定。
+  const waitlistOnly =
+    Number.isInteger(activity.capacity) &&
+    Number.isInteger(activity.occupied_count) &&
+    activity.occupied_count >= activity.capacity;
+  return { registration_state: 'open', closed_reason: null, waitlist_only: waitlistOnly };
 }
 function publicActivity(activity, now = new Date()) {
   const output = pick(activity, ACTIVITY_FIELDS);
@@ -392,6 +405,9 @@ function publicRegistration(registration) {
     'strava_status',
     'serial_no',
     'checked_in_at',
+    'team_id',
+    'team_name',
+    'is_team_leader',
     'created_at',
     'updated_at',
   ]);
@@ -440,6 +456,8 @@ module.exports = {
   selectStrava,
   selectCanonicalStrava,
   validateOptions,
+  validateTeamInput,
+  createTeamId,
   assertCanSubmit,
   assertCanCancel,
   assertCheckInTransition,

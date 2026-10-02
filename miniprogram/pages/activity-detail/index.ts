@@ -2,6 +2,7 @@ import { rideService } from '../../services/ride-service';
 import { syncPageTheme } from '../../services/theme-service';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
+import { drawActivityPoster } from './poster';
 import {
   drawElevationProfile,
   formatActivityDate,
@@ -40,6 +41,7 @@ Page({
   loadRequestId: 0,
   unloaded: false,
   exportBusy: false,
+  posterBusy: false,
   data: {
     theme: 'dark',
     themeClass: 'theme-dark',
@@ -57,6 +59,8 @@ Page({
     hasElevationProfile: false,
     coverFailed: false,
     exportingGpx: false,
+    generatingPoster: false,
+    teamId: '',
     activityAction: unavailableAction(),
   },
   onShow() {
@@ -64,6 +68,11 @@ Page({
   },
   onLoad(q: any) {
     this.unloaded = false;
+    const teamId =
+      typeof q.team_id === 'string' && /^team_[A-Za-z0-9_-]{8,80}$/.test(q.team_id)
+        ? q.team_id
+        : '';
+    this.safeSetData({ teamId });
     wx.showShareMenu?.({ menus: ['shareAppMessage'] });
     void this.load(q.id || '');
   },
@@ -202,9 +211,13 @@ Page({
   },
   onShareAppMessage() {
     const item = this.data.item;
+    const teamId = this.data.registration?.isTeamLeader
+      ? this.data.registration.teamId
+      : this.data.teamId;
+    const teamQuery = teamId ? `&team_id=${encodeURIComponent(teamId)}` : '';
     return {
       title: item?.title || '骑行活动详情',
-      path: `pages/activity-detail/index?id=${encodeURIComponent(item?.id || '')}`,
+      path: `pages/activity-detail/index?id=${encodeURIComponent(item?.id || '')}${teamQuery}`,
     };
   },
   async exportGpx() {
@@ -241,6 +254,56 @@ Page({
       this.safeSetData({ exportingGpx: false });
     }
   },
+  async generatePoster() {
+    if (!this.data.item || this.posterBusy) return;
+    this.posterBusy = true;
+    this.safeSetData({ generatingPoster: true });
+    try {
+      const target = await new Promise<any>((resolve, reject) => {
+        wx.createSelectorQuery()
+          .select('#poster-canvas')
+          .fields({ node: true, size: true })
+          .exec((result: any[]) =>
+            result?.[0]?.node ? resolve(result[0]) : reject(new Error('海报画布不可用')),
+          );
+      });
+      const canvas = target.node;
+      const width = 375;
+      const height = 600;
+      const ratio = wx.getWindowInfo?.().pixelRatio || wx.getSystemInfoSync?.().pixelRatio || 1;
+      canvas.width = width * ratio;
+      canvas.height = height * ratio;
+      const context = canvas.getContext('2d');
+      context.setTransform?.(ratio, 0, 0, ratio, 0, 0);
+      if (!drawActivityPoster(context, width, height, this.data.item))
+        throw new Error('海报绘制失败');
+      const tempFilePath = await new Promise<string>((resolve, reject) =>
+        wx.canvasToTempFilePath({
+          canvas,
+          destWidth: width * ratio,
+          destHeight: height * ratio,
+          success: (result: { tempFilePath: string }) => resolve(result.tempFilePath),
+          fail: reject,
+        }),
+      );
+      await new Promise<void>((resolve, reject) =>
+        wx.saveImageToPhotosAlbum({
+          filePath: tempFilePath,
+          success: () => resolve(),
+          fail: reject,
+        }),
+      );
+      wx.showToast({ title: '海报已保存', icon: 'success' });
+    } catch (error) {
+      wx.showToast({
+        title: error instanceof Error ? error.message : '海报生成失败，请重试',
+        icon: 'none',
+      });
+    } finally {
+      this.posterBusy = false;
+      this.safeSetData({ generatingPoster: false });
+    }
+  },
   go() {
     const action = this.data.activityAction as ActivityAction;
     if (!action.enabled || !this.data.item) return;
@@ -249,6 +312,9 @@ Page({
         wx.navigateTo({ url: '/pages/credential/index?id=' + action.registrationId });
       return;
     }
-    wx.navigateTo({ url: '/pages/registration-form/index?id=' + this.data.item.id });
+    const teamQuery = this.data.teamId ? '&team_id=' + encodeURIComponent(this.data.teamId) : '';
+    wx.navigateTo({
+      url: '/pages/registration-form/index?id=' + this.data.item.id + teamQuery,
+    });
   },
 });

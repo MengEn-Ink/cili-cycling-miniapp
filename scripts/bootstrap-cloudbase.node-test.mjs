@@ -323,11 +323,31 @@ test('OAuth 与 Strava 集合包含唯一、普通过期时间和同步索引', 
     unique: false,
   });
   assert.equal(COLLECTIONS.length, 12);
-  assert.equal(INDEXES.length, 22);
+  assert.equal(INDEXES.length, 24);
   assert.equal(INDEXES.find((item) => item.name === 'oauth_states_state_hash')?.unique, true);
   assert.equal(
     INDEXES.some((item) => item.name === 'strava_snapshots_synced_at'),
     true,
+  );
+});
+
+test('候补 FIFO 与队伍邀请查询使用显式复合索引', () => {
+  assert.deepEqual(
+    INDEXES.find((item) => item.name === 'registrations_activity_waiting_mode_created_at')?.keys,
+    [
+      ['activity_id', 1],
+      ['status', 1],
+      ['options.gathering_mode', 1],
+      ['created_at', 1],
+    ],
+  );
+  assert.deepEqual(
+    INDEXES.find((item) => item.name === 'registrations_activity_team_leader')?.keys,
+    [
+      ['activity_id', 1],
+      ['team_id', 1],
+      ['is_team_leader', 1],
+    ],
   );
 });
 
@@ -352,12 +372,12 @@ test('notification_outbox 使用租约扫描索引并保持客户端全拒绝', 
   );
 });
 
-test('CloudBase schema 文档列出 notification_outbox 全部索引并与 22 条总数一致', () => {
+test('CloudBase schema 文档列出 notification_outbox 全部索引并与 24 条总数一致', () => {
   const schema = readFileSync(new URL('../docs/cloudbase-schema.md', import.meta.url), 'utf8');
   assert.match(schema, /notification_outbox \| status ASC, attempts ASC, lease_expires_at ASC/);
   assert.match(schema, /notification_outbox \| target_openid ASC, created_at DESC/);
   assert.match(schema, /notification_outbox \| status ASC, attempts ASC, next_retry_at ASC/);
-  assert.match(schema, /全拒绝规则与 22 索引/);
+  assert.match(schema, /全拒绝规则与 24 索引/);
 });
 
 test('profile_media 使用 owner/status 与过期清理索引并保持客户端全拒绝', () => {
@@ -389,7 +409,7 @@ test('profile_media 使用 owner/status 与过期清理索引并保持客户端�
     ['retry_at', 1],
   ]);
   assert.equal(COLLECTIONS.length, 12);
-  assert.equal(INDEXES.length, 22);
+  assert.equal(INDEXES.length, 24);
   assert.deepEqual(DENY_RULE, { read: false, write: false });
 });
 
@@ -423,7 +443,7 @@ test('profile_media_imports 使用全拒绝 ACL 与完整 cleanup 扫描索引',
   assert.match(schema, /profile_media_imports \| status ASC, cleanup_after ASC/);
   assert.match(schema, /profile_media_imports \| status ASC, delete_lease_expires_at ASC/);
   assert.match(schema, /profile_media_imports \| status ASC, retry_at ASC/);
-  assert.match(schema, /12 集合、全拒绝规则与 22 索引/);
+  assert.match(schema, /12 集合、全拒绝规则与 24 索引/);
   assert.match(schema, /avatar_revision/);
   assert.match(schema, /origin: wechat\|strava\|custom/);
   assert.match(schema, /status: leased\|prepared\|uploaded/);

@@ -358,6 +358,7 @@ function mapActivity(raw: unknown, requireRegistrationDecision = false): Activit
       ? value.closed_reason
       : undefined,
     ...(value.registration_setup_pending === true ? { registrationSetupPending: true } : {}),
+    ...(value.waitlist_only === true ? { waitlistOnly: true } : {}),
     description: typeof value.description === 'string' ? value.description : '',
     ...(Array.isArray(value.images) ? { images } : {}),
     coverImage: images[0] || (typeof value.cover_image === 'string' ? value.cover_image : ''),
@@ -561,7 +562,9 @@ function mapRegistration(raw: unknown): Registration {
   if (
     typeof value._id !== 'string' ||
     typeof value.activity_id !== 'string' ||
-    !['pending', 'approved', 'checked_in', 'rejected', 'cancelled'].includes(value.status)
+    !['waiting', 'pending', 'approved', 'checked_in', 'rejected', 'cancelled'].includes(
+      value.status,
+    )
   )
     return invalidResponse();
   const snapshot = isRecord(value.profile_snapshot) ? value.profile_snapshot : {};
@@ -644,6 +647,9 @@ function mapRegistration(raw: unknown): Registration {
     reviewComment: typeof lastReview.comment === 'string' ? lastReview.comment : undefined,
     serialNo: typeof value.serial_no === 'string' ? value.serial_no : undefined,
     checkedInAt: dateText(value.checked_in_at) || undefined,
+    teamId: typeof value.team_id === 'string' ? value.team_id : undefined,
+    teamName: typeof value.team_name === 'string' ? value.team_name : undefined,
+    isTeamLeader: value.is_team_leader === true,
     updatedAt: dateText(value.updated_at),
   };
 }
@@ -986,13 +992,19 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     );
   }
   async saveRegistration(value: RegistrationSubmission) {
-    return mapRegistration(
-      await this.call('registration', {
-        action: 'submit',
-        activityId: requiredId(value.activityId, '活动 ID'),
-        options: submissionOptions(value),
-      }),
-    );
+    const data: Record<string, unknown> = {
+      action: 'submit',
+      activityId: requiredId(value.activityId, '活动 ID'),
+      options: submissionOptions(value),
+    };
+    const teamId = typeof value.teamId === 'string' ? value.teamId : '';
+    const teamName = typeof value.teamName === 'string' ? value.teamName : '';
+    if (teamId || teamName)
+      data.team = {
+        ...(teamId ? { team_id: teamId } : {}),
+        ...(teamName ? { team_name: teamName } : {}),
+      };
+    return mapRegistration(await this.call('registration', data));
   }
   async getReviewNotificationTemplateIds(): Promise<string[]> {
     const value = expectRecord(
@@ -1008,7 +1020,8 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
   async requestReviewNotificationSubscription(templateIds: string[]): Promise<void> {
     const tmplIds = templateIds
       .filter((item) => typeof item === 'string' && item.length > 0)
-      .filter((item, index, values) => values.indexOf(item) === index);
+      .filter((item, index, values) => values.indexOf(item) === index)
+      .slice(0, 3);
     if (!tmplIds.length) return;
     const request = typeof wx !== 'undefined' ? wx.requestSubscribeMessage : undefined;
     if (typeof request !== 'function')
@@ -1052,13 +1065,26 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
       }),
     );
   }
+  async enqueueActivityReminders(activityId: string) {
+    const value = expectRecord(
+      await this.call('admin-review', {
+        action: 'enqueueReminders',
+        activityId: requiredId(activityId, '活动 ID'),
+      }),
+    );
+    for (const key of ['queued', 'duplicates', 'total'])
+      if (!Number.isInteger(value[key]) || value[key] < 0) return invalidResponse();
+    return { queued: value.queued, duplicates: value.duplicates, total: value.total };
+  }
   async listReviewRegistrations(activityId: string, status?: AdminRegistrationStatusFilter) {
     const data: Record<string, unknown> = {
       action: 'list',
       activityId: requiredId(activityId, '活动 ID'),
     };
     if (status !== undefined) {
-      if (!['pending', 'approved', 'checked_in', 'rejected', 'cancelled'].includes(status))
+      if (
+        !['waiting', 'pending', 'approved', 'checked_in', 'rejected', 'cancelled'].includes(status)
+      )
         throw new CloudRepositoryError('VALIDATION_FAILED', '报名状态无效');
       data.filterStatus = status;
     }

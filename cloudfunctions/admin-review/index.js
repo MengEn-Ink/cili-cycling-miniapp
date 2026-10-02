@@ -14,6 +14,7 @@ const {
   checkInRegistration,
 } = require('./domain');
 const { adminCapabilityDetail } = require('./capability-card');
+const { enqueueActivityReminders } = require('./reminder');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 
@@ -60,7 +61,45 @@ function transactionStore() {
         work({
           getAdmin: (id) => maybeGet(transaction.collection('admins'), id),
           getActivity: (id) => maybeGet(transaction.collection('activities'), id),
+          listApproved: async (activityId) => {
+            const values = [];
+            for (let offset = 0; offset < 1000; offset += 100) {
+              const page = await transaction
+                .collection('registrations')
+                .where({ activity_id: activityId, status: 'approved' })
+                .skip(offset)
+                .limit(100)
+                .get();
+              values.push(...page.data);
+              if (page.data.length < 100) break;
+            }
+            return values;
+          },
+          getNotification: (id) => maybeGet(transaction.collection('notification_outbox'), id),
           getRegistration: (id) => maybeGet(transaction.collection('registrations'), id),
+          getTeamLeader: async (activityId, teamId) => {
+            const result = await transaction
+              .collection('registrations')
+              .where({ activity_id: activityId, team_id: teamId, is_team_leader: true })
+              .limit(1)
+              .get();
+            return result.data[0];
+          },
+          listWaiting: async (activityId) => {
+            const values = [];
+            const pageSize = 100;
+            for (let offset = 0; ; offset += pageSize) {
+              const result = await transaction
+                .collection('registrations')
+                .where({ activity_id: activityId, status: 'waiting' })
+                .orderBy('created_at', 'asc')
+                .skip(offset)
+                .limit(pageSize)
+                .get();
+              values.push(...result.data);
+              if (result.data.length < pageSize) return values;
+            }
+          },
           putRegistration: async (id, value) => {
             const { _id, ...data } = value;
             await transaction.collection('registrations').doc(id).set({ data });
@@ -123,6 +162,15 @@ exports.main = async (event = {}) => {
         ),
       );
     }
+    if (event.action === 'enqueueReminders') {
+      return ok(
+        await enqueueActivityReminders(
+          transactionStore(),
+          { openid, activityId: event.activityId },
+          new Date(),
+        ),
+      );
+    }
     if (event.action === 'list') {
       await requireAdmin(openid);
       if (typeof event.activityId !== 'string' || !event.activityId)
@@ -130,7 +178,7 @@ exports.main = async (event = {}) => {
       const condition = { activity_id: event.activityId };
       if (event.filterStatus !== undefined) {
         if (
-          !['pending', 'approved', 'checked_in', 'rejected', 'cancelled'].includes(
+          !['waiting', 'pending', 'approved', 'checked_in', 'rejected', 'cancelled'].includes(
             event.filterStatus,
           )
         )

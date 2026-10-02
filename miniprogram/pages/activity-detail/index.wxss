@@ -742,3 +742,12 @@ brand-logo {
   border-radius: var(--radius-md);
   background: var(--color-raised);
 }
+
+.poster-canvas {
+  position: fixed;
+  top: -2000px;
+  left: -2000px;
+  width: 375px;
+  height: 600px;
+  pointer-events: none;
+}

@@ -126,6 +126,12 @@ export class MockRepository implements RideRepository {
   async reviewRegistration(id: string, decision: 'approved' | 'rejected', reason?: string) {
     return this.changeRegistration(id, decision, reason);
   }
+  async enqueueActivityReminders(activityId: string) {
+    const total = this.read().registrations.filter(
+      (item) => item.activityId === activityId && item.status === 'approved',
+    ).length;
+    return { queued: total, duplicates: 0, total };
+  }
   async checkInRegistration(id: string) {
     const s = this.read();
     const registration = s.registrations.find((item) => item.id === id);

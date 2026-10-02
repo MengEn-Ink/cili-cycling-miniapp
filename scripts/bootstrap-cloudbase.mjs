@@ -63,6 +63,27 @@ export const INDEXES = Object.freeze([
   },
   {
     collection: 'registrations',
+    name: 'registrations_activity_waiting_mode_created_at',
+    keys: [
+      ['activity_id', 1],
+      ['status', 1],
+      ['options.gathering_mode', 1],
+      ['created_at', 1],
+    ],
+    unique: false,
+  },
+  {
+    collection: 'registrations',
+    name: 'registrations_activity_team_leader',
+    keys: [
+      ['activity_id', 1],
+      ['team_id', 1],
+      ['is_team_leader', 1],
+    ],
+    unique: false,
+  },
+  {
+    collection: 'registrations',
     name: 'registrations_openid_created_at',
     keys: [
       ['openid', 1],

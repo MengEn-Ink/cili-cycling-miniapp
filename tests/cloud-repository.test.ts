@@ -383,6 +383,21 @@ describe('CloudRepository 队员报名适配', () => {
     vi.unstubAllGlobals();
   });
 
+  it('订阅请求去重且最多传递三个模板', async () => {
+    const requestSubscribeMessage = vi.fn(({ success }) => success({}));
+    vi.stubGlobal('wx', { requestSubscribeMessage });
+    const repository = new CloudRepository(cloudWith().cloud);
+
+    await repository.requestReviewNotificationSubscription(['one', 'two', 'one', 'three', 'four']);
+
+    expect(requestSubscribeMessage).toHaveBeenCalledWith({
+      tmplIds: ['one', 'two', 'three'],
+      success: expect.any(Function),
+      fail: expect.any(Function),
+    });
+    vi.unstubAllGlobals();
+  });
+
   it('订阅 API 失败映射稳定错误且不泄漏底层信息', async () => {
     vi.stubGlobal('wx', {
       requestSubscribeMessage: vi.fn(({ fail }) => fail({ errMsg: 'private platform detail' })),

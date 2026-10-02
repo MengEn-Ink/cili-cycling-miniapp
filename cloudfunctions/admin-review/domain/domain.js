@@ -2,6 +2,7 @@
 
 const crypto = require('node:crypto');
 const OCCUPYING = new Set(['pending', 'approved', 'checked_in']);
+const TEAM_ID_PATTERN = /^team_[A-Za-z0-9_-]{8,80}$/;
 const RESUBMITTABLE = new Set(['rejected', 'cancelled']);
 const FORBIDDEN = new Set([
   'openid',
@@ -9,6 +10,7 @@ const FORBIDDEN = new Set([
   'status',
   'capacity',
   'occupied_count',
+  'version',
   'amount',
   'price',
   'reviewer_openid',
@@ -64,19 +66,75 @@ function registrationId(activityId, openid) {
 function isOccupying(status) {
   return OCCUPYING.has(status);
 }
-function assertActivityOpen(activity, now) {
-  if (!activity || activity.is_deleted === true || activity.status !== 'published')
-    fail('ACTIVITY_NOT_AVAILABLE', '活动未发布或已下线');
-  const deadline = Date.parse(activity.signup_deadline);
-  if (!Number.isFinite(deadline) || deadline <= now.getTime()) fail('SIGNUP_CLOSED', '报名已截止');
+function hasFeeDetails(fee) {
+  if (typeof fee === 'string') return fee.trim().length > 0;
+  if (!fee || typeof fee !== 'object' || Array.isArray(fee)) return false;
+  return (
+    (typeof fee.remark === 'string' && fee.remark.trim().length > 0) ||
+    (Array.isArray(fee.included) &&
+      fee.included.some((item) => typeof item === 'string' && item.trim())) ||
+    (Array.isArray(fee.excluded) &&
+      fee.excluded.some((item) => typeof item === 'string' && item.trim()))
+  );
+}
+function hasCompleteDriver(driver) {
+  return Boolean(
+    driver &&
+    typeof driver === 'object' &&
+    !Array.isArray(driver) &&
+    ['nickname', 'license_plate', 'contact_phone'].every(
+      (field) => typeof driver[field] === 'string' && driver[field].trim().length > 0,
+    ),
+  );
+}
+function registrationSetupReady(activity) {
+  if (!activity || typeof activity !== 'object') return false;
+  const capacity = activity.capacity;
+  const occupied = activity.occupied_count;
+  const supportCapacity = activity.support_vehicle_capacity;
+  const selfDriveCapacity = activity.self_drive_capacity;
+  const supportOccupied = activity.support_vehicle_occupied_count;
+  const selfDriveOccupied = activity.self_drive_occupied_count;
+  const deadline = dateOrNull(activity.signup_deadline);
+  const start = dateOrNull(activity.event_start);
+  const end = dateOrNull(activity.event_end);
   if (
-    !Number.isInteger(activity.capacity) ||
-    activity.capacity < 1 ||
-    !Number.isInteger(activity.occupied_count) ||
-    activity.occupied_count < 0
-  ) {
-    fail('SCHEMA_INVALID', '活动名额计数异常');
-  }
+    activity.occupancy_partition_ready !== true ||
+    !Number.isInteger(capacity) ||
+    capacity < 1 ||
+    !Number.isInteger(supportCapacity) ||
+    supportCapacity < 0 ||
+    !Number.isInteger(selfDriveCapacity) ||
+    selfDriveCapacity < 0 ||
+    supportCapacity + selfDriveCapacity !== capacity ||
+    !Number.isInteger(occupied) ||
+    occupied < 0 ||
+    occupied > capacity ||
+    !Number.isInteger(supportOccupied) ||
+    supportOccupied < 0 ||
+    supportOccupied > supportCapacity ||
+    !Number.isInteger(selfDriveOccupied) ||
+    selfDriveOccupied < 0 ||
+    selfDriveOccupied > selfDriveCapacity ||
+    supportOccupied + selfDriveOccupied !== occupied ||
+    !deadline ||
+    !start ||
+    !end ||
+    deadline.getTime() >= start.getTime() ||
+    start.getTime() >= end.getTime() ||
+    !hasFeeDetails(activity.fee) ||
+    (supportCapacity > 0 && !hasCompleteDriver(activity.support_vehicle_driver))
+  )
+    return false;
+  return true;
+}
+function assertActivityOpen(activity, now) {
+  const decision = registrationDecision(activity, now);
+  if (decision.registration_state === 'open') return;
+  if (decision.closed_reason === 'deadline') fail('SIGNUP_CLOSED', '报名已截止');
+  if (decision.closed_reason === 'full') fail('CAPACITY_FULL', '活动名额已满');
+  if (decision.closed_reason === 'incomplete') fail('SIGNUP_INFO_INCOMPLETE', '报名信息待完善');
+  fail('ACTIVITY_NOT_AVAILABLE', '活动未发布、已结束或已下线');
 }
 function assertProfileReady(profile) {
   const sensitive = profile && profile.sensitive_status;
@@ -205,6 +263,20 @@ function validateOptions(options) {
     remark: typeof options.remark === 'string' ? options.remark.slice(0, 500) : '',
   };
 }
+function validateTeamInput(team = {}) {
+  if (!team || typeof team !== 'object' || Array.isArray(team))
+    fail('VALIDATION_FAILED', '组队参数格式错误');
+  const teamId = typeof team.team_id === 'string' ? team.team_id.trim() : '';
+  const teamName = typeof team.team_name === 'string' ? team.team_name.trim() : '';
+  if (teamId && !TEAM_ID_PATTERN.test(teamId)) fail('VALIDATION_FAILED', '队伍邀请参数无效');
+  if (teamName && (teamName.length < 2 || teamName.length > 30))
+    fail('VALIDATION_FAILED', '队伍名称需为 2 至 30 个字符');
+  if (teamId && teamName) fail('VALIDATION_FAILED', '不能同时创建和加入队伍');
+  return { teamId, teamName };
+}
+function createTeamId(activityId, openid) {
+  return `team_${crypto.createHash('sha256').update(`${activityId}\u0000${openid}`).digest('hex').slice(0, 20)}`;
+}
 function assertCanSubmit(existing) {
   if (existing && !RESUBMITTABLE.has(existing.status))
     fail('REGISTRATION_EXISTS', '该活动已有占位中的报名');
@@ -212,7 +284,7 @@ function assertCanSubmit(existing) {
 function assertCanCancel(registration, openid) {
   if (!registration) fail('REGISTRATION_NOT_FOUND', '报名不存在');
   if (registration.openid !== openid) fail('FORBIDDEN', '只能取消本人的报名');
-  if (!['pending', 'approved'].includes(registration.status))
+  if (!['pending', 'approved', 'waiting'].includes(registration.status))
     fail('INVALID_TRANSITION', '当前状态不可取消');
 }
 function assertCheckInTransition(from) {
@@ -241,6 +313,7 @@ const ACTIVITY_FIELDS = [
   '_id',
   'title',
   'cover_image',
+  'images',
   'description',
   'schedule',
   'route',
@@ -248,17 +321,80 @@ const ACTIVITY_FIELDS = [
   'equipment',
   'fee',
   'capacity',
+  'support_vehicle_capacity',
+  'self_drive_capacity',
+  'support_vehicle_driver',
   'occupied_count',
+  'version',
   'signup_deadline',
   'event_start',
   'event_end',
   'status',
 ];
-function publicActivity(activity) {
-  return pick(activity, ACTIVITY_FIELDS);
+function registrationDecision(activity, now) {
+  const end = dateOrNull(activity && activity.event_end);
+  const deadline = dateOrNull(activity && activity.signup_deadline);
+  if (activity && activity.status === 'finished')
+    return { registration_state: 'closed', closed_reason: 'finished' };
+  if (!activity || activity.is_deleted === true || activity.status !== 'published')
+    return { registration_state: 'closed', closed_reason: 'unavailable' };
+  if (end && end.getTime() <= now.getTime())
+    return { registration_state: 'closed', closed_reason: 'finished' };
+  if (deadline && deadline.getTime() <= now.getTime())
+    return { registration_state: 'closed', closed_reason: 'deadline' };
+  if (!registrationSetupReady(activity))
+    return { registration_state: 'closed', closed_reason: 'incomplete' };
+  // 满员后仍开放候补入口；是否占位由提交事务基于总容量和分类容量共同判定。
+  const waitlistOnly =
+    Number.isInteger(activity.capacity) &&
+    Number.isInteger(activity.occupied_count) &&
+    activity.occupied_count >= activity.capacity;
+  return { registration_state: 'open', closed_reason: null, waitlist_only: waitlistOnly };
+}
+function publicActivity(activity, now = new Date()) {
+  const output = pick(activity, ACTIVITY_FIELDS);
+  if (!Number.isInteger(output.capacity)) output.capacity = 0;
+  if (output.support_vehicle_driver) {
+    output.support_vehicle_driver = {
+      ...output.support_vehicle_driver,
+      contact_phone: maskPhone(output.support_vehicle_driver.contact_phone),
+    };
+  }
+  if (
+    activity.occupancy_partition_ready === true &&
+    Number.isInteger(activity.support_vehicle_capacity)
+  )
+    output.support_vehicle_remaining = Math.max(
+      0,
+      activity.support_vehicle_capacity -
+        (Number.isInteger(activity.support_vehicle_occupied_count)
+          ? activity.support_vehicle_occupied_count
+          : 0),
+    );
+  if (activity.occupancy_partition_ready === true && Number.isInteger(activity.self_drive_capacity))
+    output.self_drive_remaining = Math.max(
+      0,
+      activity.self_drive_capacity -
+        (Number.isInteger(activity.self_drive_occupied_count)
+          ? activity.self_drive_occupied_count
+          : 0),
+    );
+  const decision = registrationDecision(activity, now);
+  const setupPending = activity?.status === 'published' && decision.closed_reason === 'incomplete';
+  return {
+    ...output,
+    ...decision,
+    ...(setupPending ? { registration_setup_pending: true } : {}),
+    ...(setupPending ? { registration_state: 'closed', closed_reason: 'unavailable' } : {}),
+    server_now: now.toISOString(),
+  };
 }
 function maskPhone(value) {
-  return typeof value === 'string' ? value.replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2') : '';
+  if (typeof value !== 'string' || !value.trim()) return '';
+  const digits = value.replace(/\D/g, '');
+  if (/^\d{11}$/.test(digits)) return `${digits.slice(0, 3)}****${digits.slice(-4)}`;
+  // 无法可靠识别的电话文本也必须 fail closed，绝不回显原文。
+  return digits.length >= 4 ? `****${digits.slice(-4)}` : '****';
 }
 function publicRegistration(registration) {
   const output = pick(registration, [
@@ -269,6 +405,9 @@ function publicRegistration(registration) {
     'strava_status',
     'serial_no',
     'checked_in_at',
+    'team_id',
+    'team_name',
+    'is_team_leader',
     'created_at',
     'updated_at',
   ]);
@@ -317,11 +456,15 @@ module.exports = {
   selectStrava,
   selectCanonicalStrava,
   validateOptions,
+  validateTeamInput,
+  createTeamId,
   assertCanSubmit,
   assertCanCancel,
   assertCheckInTransition,
   assertReviewTransition,
   isEnabledAdmin,
+  registrationDecision,
+  registrationSetupReady,
   publicActivity,
   publicRegistration,
   buildAudit,
