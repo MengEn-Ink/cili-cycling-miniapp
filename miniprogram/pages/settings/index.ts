@@ -2,11 +2,23 @@ import { setTheme, syncPageTheme } from '../../services/theme-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.02.2',
+    date: '2026-10-02',
+    title: '主题切换与视觉可读性优化',
+    summary: '深色模式切换更稳定，报名提示和骑行名片信息更易阅读。',
+    latest: true,
+    features: [
+      '减少深色主题快速切换 Tab 时的重复重绘与白底闪烁',
+      '提升报名步骤、辅助提示和骑行名片说明文字的可读性',
+      '为卡片入场与按压反馈补充“减少动态效果”适配',
+    ],
+  },
+  {
     version: '2026.10.02.1',
     date: '2026-10-02',
     title: '报名体验与骑友互动升级',
     summary: '报名、候补、组队和现场核销链路更加完整，骑友信息展示也更清晰。',
-    latest: true,
+    latest: false,
     features: [
       '点击已报名骑友头像可查看公开骑行名片',
       '活动满员后支持候补排队与自动补位提醒',

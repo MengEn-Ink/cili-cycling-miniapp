@@ -18,6 +18,16 @@
   transform: scale(0.985);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .activity-card {
+    transition: none;
+  }
+
+  .activity-card--pressed {
+    transform: none;
+  }
+}
+
 .card-media {
   position: relative;
   height: 254rpx;

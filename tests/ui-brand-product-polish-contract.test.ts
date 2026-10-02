@@ -86,6 +86,37 @@ describe('品牌与页面体验静态契约', () => {
     expect(detail).not.toContain("item.fee || '费用待补充'");
   });
 
+  it('报名提示与骑行名片说明使用更清晰的语义色和字号', () => {
+    const formStyles = read('miniprogram/pages/registration-form/index.wxss');
+    const cardStyles = read('miniprogram/pages/capability-card/index.wxss');
+    const stepLine = cssBlock(formStyles, '.step-line');
+    const cardCaption = cssBlock(cardStyles, '.card-caption');
+
+    expectSemantic(declaration(stepLine, 'color'), '--color-muted');
+    expect(declaration(stepLine, 'font-size')).toBe('22rpx');
+    expect(formStyles).toMatch(
+      /\.section-hint\s*\{\s*margin-top:\s*1rpx;\s*color:\s*var\(--color-muted\);\s*font-size:\s*22rpx;/,
+    );
+    expect(declaration(cardCaption, 'color')).toBe('rgba(255, 255, 255, 0.72)');
+    expect(declaration(cardCaption, 'font-size')).toBe('20rpx');
+  });
+
+  it('卡片入场与关键按压反馈支持系统减少动态效果偏好', () => {
+    const capability = read('miniprogram/pages/capability-card/index.wxss');
+    const activityCard = read('miniprogram/components/activity-card/index.wxss');
+    const profile = read('miniprogram/pages/profile/index.wxss');
+
+    expect(capability).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.card-stage\s*\{[^}]*animation:\s*none;/,
+    );
+    expect(activityCard).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.activity-card--pressed\s*\{[^}]*transform:\s*none;/,
+    );
+    expect(profile).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.settings-entry:active\s*\{[^}]*transform:\s*none;/,
+    );
+  });
+
   it('全局共享表面使用双主题语义 token，并提供低饱和成功状态', () => {
     const appStyles = read('miniprogram/app.wxss');
     const statusStyles = read('miniprogram/components/status-pill/index.wxss');

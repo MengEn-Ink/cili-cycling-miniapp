@@ -1061,6 +1061,12 @@ page,
   transform: scale(0.98);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .settings-entry:active {
+    transform: none;
+  }
+}
+
 .settings-entry-icon {
   color: var(--color-brand);
   font-size: 30rpx;

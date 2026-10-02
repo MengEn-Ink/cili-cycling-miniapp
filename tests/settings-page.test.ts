@@ -29,11 +29,11 @@ describe('设置页', () => {
     page.onShow();
 
     expect(page.data).toMatchObject({ theme: 'dark', themeClass: 'theme-dark' });
-    expect(page.data.releaseNotes).toHaveLength(4);
+    expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.02.1',
+      version: '2026.10.02.2',
       latest: true,
-      title: '报名体验与骑友互动升级',
+      title: '主题切换与视觉可读性优化',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
