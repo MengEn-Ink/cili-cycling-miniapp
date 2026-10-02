@@ -47,6 +47,7 @@ describe('双主题页面接线', () => {
 
     expect(template).toContain('功能升级日志');
     expect(template).toContain('wx:for="{{releaseNotes}}"');
+    expect(script).toContain("version: '2026.10.02.1'");
     expect(script).toContain("version: '2026.10.01.3'");
     expect(script).toContain("version: '2026.10.01.2'");
     expect(script).toContain("version: '2026.10.01.1'");

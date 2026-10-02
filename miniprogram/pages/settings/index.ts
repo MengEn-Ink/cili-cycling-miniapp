@@ -2,11 +2,24 @@ import { setTheme, syncPageTheme } from '../../services/theme-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.02.1',
+    date: '2026-10-02',
+    title: '报名体验与骑友互动升级',
+    summary: '报名、候补、组队和现场核销链路更加完整，骑友信息展示也更清晰。',
+    latest: true,
+    features: [
+      '点击已报名骑友头像可查看公开骑行名片',
+      '活动满员后支持候补排队与自动补位提醒',
+      '新增扫码核销、活动海报和邀请组队能力',
+      '统一关键交互尺寸与文案，后续升级内容持续在设置页同步',
+    ],
+  },
+  {
     version: '2026.10.01.3',
     date: '2026-10-01',
     title: '设置中心上线',
     summary: '常用偏好与版本变化集中管理，个人中心更轻、更聚焦。',
-    latest: true,
+    latest: false,
     features: ['“我的”右上角新增设置入口', '深浅主题切换收口到设置页', '新增可追溯的功能升级日志'],
   },
   {

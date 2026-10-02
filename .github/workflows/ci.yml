@@ -15,6 +15,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -34,6 +36,8 @@ jobs:
       - name: Rebuild shared package and install every cloud function
         run: npm run cloud:install
       - name: Validate
+        env:
+          RELEASE_NOTES_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: npm run validate
       - name: Run tests with coverage
         run: npm run coverage
