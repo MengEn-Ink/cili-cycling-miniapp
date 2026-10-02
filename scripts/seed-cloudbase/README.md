@@ -16,7 +16,7 @@
 npm run cloudbase:plan
 ```
 
-计划的当前基线是 11 个核心集合、22 个业务索引和全拒绝客户端数据库规则。由环境负责人审核计划后，才可执行：
+计划的当前基线是 12 个核心集合、22 个业务索引和全拒绝客户端数据库规则。由环境负责人审核计划后，才可执行：
 
 ```bash
 npm run cloudbase:apply
@@ -27,7 +27,7 @@ npm run cloudbase:verify
 
 `cloudbase:verify` 不验证云存储规则。必须单独应用并回读 `cloudstorage.rules.json`，确认客户端只能写本人 `profiles/` staging 路径，不能写 `profile-canonical/`。
 
-Strava 路线功能还依赖第 12 个运行期集合 `strava_route_previews`，当前 bootstrap 尚未管理它。启用该功能前由环境负责人手工创建，并将客户端读写都设置为拒绝；把该集合纳入 bootstrap 是待修复的 P1 部署缺口。
+`strava_route_previews` 已由 bootstrap 与其他服务端可信集合一并管理，并纳入全拒绝客户端读写规则和 `cloudbase:verify`。不要绕过 plan/apply/verify 手工创建或放宽该集合权限。
 
 ## 3. 创建首个管理员
 

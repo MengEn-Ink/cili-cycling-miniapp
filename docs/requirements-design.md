@@ -2,7 +2,7 @@
 
 > 状态：当前产品基线，与 `main` 同步维护
 >
-> 更新时间：2026-09-30
+> 更新时间：2026-10-02
 
 ## 1. 产品目标
 
@@ -76,7 +76,7 @@ rejected|cancelled -> pending
 
 长期契约是：公开卡片只允许昵称、称号、明确授权公开的照片和非敏感骑行指标；不得包含真实姓名、电话、紧急联系人、报名备注、`openid`、token、原始文件 ID 或审计数据。公开图片还必须经过 owner/status/current-reference 校验，并只签发 canonical 媒体的临时 URL。
 
-当前活动详情已经展示最小骑手卡片，但公开头像链路尚未持久化显式 `visibility=public`，也未完成 canonical-only 校验。该能力属于上线阻断项；在可见性授权、数据迁移和回归验证完成前，不得把公开骑手头像判定为生产就绪。管理员审批卡和本人预览不等同于公开授权。
+当前代码已经持久化显式 `avatar_visibility=public` 及其授权 revision。活动详情仅在授权 revision 等于当前头像 revision，且媒体 registry 的 owner、状态、source/origin、canonical 路径和内容元数据完整匹配时签发临时地址；缺字段、旧 revision、私有授权、脏 registry、缺失媒体或签名失败均隐藏头像且不拖垮活动详情。存量资料默认按私有处理，必须由用户主动公开。代码与离线测试不代表目标环境已部署，管理员审批卡和本人预览也不等同于公开授权。
 
 ## 4. 页面与功能清单
 
@@ -118,8 +118,6 @@ rejected|cancelled -> pending
 - 在线支付、退款或押金。
 - 报名名单 Excel/CSV 导出。
 - 多俱乐部、多组织租户与独立 Web 管理后台。
-- `strava_route_previews` 纳入 bootstrap、全拒绝 ACL 和 verify 的自动治理。
-- 公开骑手头像的显式可见性、canonical-only 校验和存量数据迁移。
 
 现场签到已经实现为管理员对已通过报名的确认操作；二维码核销、离线核销和批量签到仍属于后续候选。
 
