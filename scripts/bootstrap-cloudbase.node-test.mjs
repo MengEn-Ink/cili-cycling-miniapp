@@ -485,7 +485,7 @@ test('云存储规则只允许客户端写 staging，canonical 前缀保持 serv
 test('README 与部署包断言包含 profile_media_imports 和头像导入入口', () => {
   const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
   const verifier = readFileSync(new URL('./verify-cloud-packages.mjs', import.meta.url), 'utf8');
-  assert.match(readme, /12 个集合、22 个业务索引/);
+  assert.match(readme, /12 个集合、24 个业务索引/);
   assert.match(verifier, /pack\('profile',[\s\S]*?'avatar-import\.js'/);
 });
 
