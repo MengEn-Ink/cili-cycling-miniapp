@@ -20,9 +20,11 @@
     "verify:cloud-packages": "node scripts/verify-cloud-packages.mjs",
     "coverage": "vitest run --coverage && node --experimental-test-coverage --test scripts/bootstrap-cloudbase.node-test.mjs && node scripts/check-cloud-coverage.mjs",
     "test:deploy": "node --test scripts/upload-miniprogram-ci.node-test.mjs",
+    "check:release-notes": "node scripts/check-release-notes.mjs",
+    "test:release-notes": "node --test scripts/check-release-notes.node-test.mjs",
     "deploy:miniprogram": "node scripts/upload-miniprogram-ci.mjs",
     "build": "rm -rf dist && tsc -p tsconfig.build.json && node scripts/validate.mjs",
-    "validate": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:journey-evidence && npm run test:bootstrap && npm run test:deploy && npm run test:cloud && npm run verify:cloud-packages && npm run build",
+    "validate": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:journey-evidence && npm run test:bootstrap && npm run test:deploy && npm run test:release-notes && npm run check:release-notes && npm run test:cloud && npm run verify:cloud-packages && npm run build",
     "audit:all": "npm audit --audit-level=high && npm --prefix cloudfunctions/shared audit --audit-level=high && npm --prefix cloudfunctions/auth audit --audit-level=high && npm --prefix cloudfunctions/activity-read audit --audit-level=high && npm --prefix cloudfunctions/activity-admin audit --audit-level=high && npm --prefix cloudfunctions/registration audit --audit-level=high && npm --prefix cloudfunctions/admin-review audit --audit-level=high && npm --prefix cloudfunctions/notification-send audit --audit-level=high && npm --prefix cloudfunctions/profile audit --audit-level=high && npm --prefix cloudfunctions/profile-media-cleanup audit --audit-level=high && npm --prefix cloudfunctions/strava-auth audit --audit-level=high && npm --prefix cloudfunctions/strava-callback audit --audit-level=high"
   },
   "devDependencies": {
