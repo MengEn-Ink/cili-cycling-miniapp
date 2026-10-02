@@ -18,6 +18,8 @@ const {
   isCredentialUsable,
   deriveReadiness,
   statistics,
+  lifetimeStatistics,
+  optionalLifetimeStatistics,
   fetchActivityWindow,
   fetchActivities,
   callbackFlow,
@@ -298,6 +300,52 @@ test('state 防 CSRF、过期和重放', async () => {
     { code: 'OAUTH_STATE_EXPIRED' },
   );
   await assert.rejects(consumeState(store, 'bad'), { code: 'OAUTH_STATE_INVALID' });
+});
+test('累计骑行统计转换为名片展示单位', () => {
+  assert.deepEqual(
+    lifetimeStatistics({
+      all_ride_totals: {
+        count: 486,
+        distance: 18240700,
+        moving_time: 2644200,
+        elevation_gain: 215400.4,
+      },
+    }),
+    {
+      lifetime_rides: 486,
+      lifetime_distance_km: 18240.7,
+      lifetime_moving_hours: 734.5,
+      lifetime_elevation_m: 215400,
+    },
+  );
+});
+test('累计骑行统计缺失或非法时拒绝写入快照', () => {
+  assert.throws(() => lifetimeStatistics({}), { code: 'STRAVA_API_INVALID' });
+  assert.throws(
+    () =>
+      lifetimeStatistics({
+        all_ride_totals: { count: -1, distance: 0, moving_time: 0, elevation_gain: 0 },
+      }),
+    { code: 'STRAVA_API_INVALID' },
+  );
+});
+test('累计统计接口失败时保留近期快照并标记降级', async () => {
+  const result = await optionalLifetimeStatistics(
+    {
+      athleteStats: async () => {
+        throw new Error('upstream unavailable');
+      },
+    },
+    fakeAccess,
+    '42',
+  );
+  assert.deepEqual(result, {
+    lifetime_rides: null,
+    lifetime_distance_km: null,
+    lifetime_moving_hours: null,
+    lifetime_elevation_m: null,
+    lifetime_stats_status: 'failed',
+  });
 });
 test('callback 校验错误并安全保存加密 token', async () => {
   const state = createState();
@@ -1403,6 +1451,9 @@ test('并发 ensureReady 只有 lease winner 访问一次 Strava', async () => {
       activityCalls += 1;
       return [];
     },
+    athleteStats: async () => ({
+      all_ride_totals: { count: 0, distance: 0, moving_time: 0, elevation_gain: 0 },
+    }),
   };
   await Promise.all([
     ensureReadyFlow({
@@ -1461,6 +1512,9 @@ test('ensureReady 失败只持久化稳定错误码和安全审计', async () =>
       activities: async () => {
         throw new Error(`upstream leaked ${fakeAccess}`);
       },
+      athleteStats: async () => ({
+        all_ride_totals: { count: 0, distance: 0, moving_time: 0, elevation_gain: 0 },
+      }),
     },
     now,
     randomUUID: () => 'lease-new',
@@ -1498,6 +1552,13 @@ test('token refresh 只作为 fenced completion 的输入而不提前持久化',
         assert.equal(accessToken, nextAccess);
         return [];
       },
+      athleteStats: async (accessToken, athleteId) => {
+        assert.equal(accessToken, nextAccess);
+        assert.equal(athleteId, '42');
+        return {
+          all_ride_totals: { count: 8, distance: 42500, moving_time: 7200, elevation_gain: 680 },
+        };
+      },
     },
     now,
   });
@@ -1506,6 +1567,8 @@ test('token refresh 只作为 fenced completion 的输入而不提前持久化',
   assert.equal(decrypt(built.credential.refresh_token_cipher, key), nextRefresh);
   assert.equal(built.snapshot.athlete_id, '42');
   assert.equal(built.snapshot.coverage_complete, true);
+  assert.equal(built.snapshot.lifetime_rides, 8);
+  assert.equal(built.snapshot.lifetime_distance_km, 42.5);
 });
 test('disconnect 原子委托删除凭证/快照并写审计', async () => {
   let captured;

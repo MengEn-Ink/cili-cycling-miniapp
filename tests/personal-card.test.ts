@@ -12,6 +12,10 @@ const baseCard = {
     },
   ],
   summary: {
+    lifetimeRides: 486,
+    lifetimeDistanceKm: 18240.7,
+    lifetimeMovingHours: 734.5,
+    lifetimeElevationM: 215400,
     totalKm90d: 812.5,
     rides90d: 28,
     longestKm: 126.3,
@@ -24,6 +28,7 @@ const baseCard = {
     complete: true,
   },
   syncedAt: '2026-09-29T04:05:00.000Z',
+  stravaProfileUrl: 'https://www.strava.com/athletes/42',
 };
 
 async function build(card: typeof baseCard | any) {
@@ -58,7 +63,14 @@ describe('个人骑行名片 view model', () => {
       },
     });
 
-    expect(view.metrics.map((metric: any) => metric.key)).toEqual(['totalKm90d', 'elevationM90d']);
+    expect(view.metrics.map((metric: any) => metric.key)).toEqual([
+      'lifetimeDistanceKm',
+      'lifetimeRides',
+      'lifetimeMovingHours',
+      'lifetimeElevationM',
+      'totalKm90d',
+      'elevationM90d',
+    ]);
   });
 
   it('不完整覆盖范围与同步时间保持明确', async () => {
@@ -71,6 +83,20 @@ describe('个人骑行名片 view model', () => {
     expect(view.statusLabel).toBe('数据不完整');
     expect(view.coverageText).toBe('2026年7月1日 至 2026年9月29日 · 覆盖不完整');
     expect(view.syncedAtText).toBe('同步于 2026-09-29 12:05:00');
+  });
+
+  it('累计骑行与 Strava 主页入口独立呈现', async () => {
+    const view = await build(baseCard);
+
+    expect(view.lifetimeMetrics.map((metric: any) => metric.key)).toEqual([
+      'lifetimeDistanceKm',
+      'lifetimeRides',
+      'lifetimeMovingHours',
+      'lifetimeElevationM',
+    ]);
+    expect(view.hasLifetimeMetrics).toBe(true);
+    expect(view.stravaProfileUrl).toBe('https://www.strava.com/athletes/42');
+    expect(view.hasStravaProfile).toBe(true);
   });
 
   it('无背景图时启用品牌山景并提示完善资料', async () => {

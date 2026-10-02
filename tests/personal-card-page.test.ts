@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const rideService = vi.hoisted(() => ({
   getPersonalCapabilityCard: vi.fn(),
+  syncStrava: vi.fn(),
 }));
 
 vi.mock('../miniprogram/services/ride-service', () => ({ rideService }));
@@ -14,6 +15,10 @@ const card = {
   profile: { displayName: '山野骑手', title: '周末爬坡手' },
   backgrounds: [],
   summary: {
+    lifetimeRides: 486,
+    lifetimeDistanceKm: 18240.7,
+    lifetimeMovingHours: 734.5,
+    lifetimeElevationM: 215400,
     totalKm90d: 812.5,
     rides90d: 28,
     longestKm: 126.3,
@@ -26,6 +31,7 @@ const card = {
     complete: true,
   },
   syncedAt: '2026-09-29T04:05:00.000Z',
+  stravaProfileUrl: 'https://www.strava.com/athletes/42',
 };
 
 describe('个人骑行名片页面行为', () => {
@@ -34,7 +40,13 @@ describe('个人骑行名片页面行为', () => {
   beforeEach(async () => {
     vi.resetModules();
     rideService.getPersonalCapabilityCard.mockReset().mockResolvedValue(card);
-    vi.stubGlobal('wx', { navigateTo: vi.fn() });
+    rideService.syncStrava.mockReset().mockResolvedValue({ state: 'ready', error: null });
+    vi.stubGlobal('wx', {
+      navigateTo: vi.fn(),
+      showModal: vi.fn(),
+      showToast: vi.fn(),
+      setClipboardData: vi.fn(({ success }) => success?.()),
+    });
     vi.stubGlobal('Page', (definition: any) => {
       page = definition;
       page.data = { ...definition.data };
@@ -50,6 +62,73 @@ describe('个人骑行名片页面行为', () => {
 
     expect(rideService.getPersonalCapabilityCard).toHaveBeenCalledTimes(1);
     expect(page.data.card).toMatchObject({ displayName: '山野骑手', statusLabel: '已连接' });
+  });
+
+  it('支持主动同步 Strava 并刷新名片', async () => {
+    await page.onShow();
+    await page.refreshStrava();
+
+    expect(rideService.syncStrava).toHaveBeenCalledTimes(1);
+    expect(rideService.getPersonalCapabilityCard).toHaveBeenCalledTimes(2);
+    expect(wx.showToast).toHaveBeenCalledWith({ title: 'Strava 数据已更新', icon: 'success' });
+    expect(page.data.syncing).toBe(false);
+  });
+
+  it('同步业务失败时展示后端原因而不是成功提示', async () => {
+    rideService.syncStrava.mockResolvedValueOnce({
+      state: 'failed',
+      error: { code: 'STRAVA_SYNC_FAILED', message: 'Strava 授权已失效' },
+    });
+    await page.onShow();
+
+    await page.refreshStrava();
+
+    expect(wx.showToast).toHaveBeenCalledWith({ title: 'Strava 授权已失效', icon: 'none' });
+    expect(wx.showToast).not.toHaveBeenCalledWith({
+      title: 'Strava 数据已更新',
+      icon: 'success',
+    });
+    expect(page.data.syncing).toBe(false);
+  });
+
+  it('同步租约被占用时提示稍后刷新', async () => {
+    rideService.syncStrava.mockResolvedValueOnce({ state: 'syncing', error: null });
+    await page.onShow();
+
+    await page.refreshStrava();
+
+    expect(wx.showToast).toHaveBeenCalledWith({
+      title: 'Strava 数据正在同步，请稍后刷新',
+      icon: 'none',
+    });
+  });
+
+  it('同步成功但名片刷新失败时不误报全部成功', async () => {
+    rideService.getPersonalCapabilityCard
+      .mockResolvedValueOnce(card)
+      .mockRejectedValueOnce(new Error('读取失败'));
+    await page.onShow();
+
+    await page.refreshStrava();
+
+    expect(wx.showToast).toHaveBeenCalledWith({
+      title: '数据已同步，但骑行名片刷新失败',
+      icon: 'none',
+    });
+    expect(page.data.error).toBe('读取失败');
+  });
+
+  it('Strava 主页入口复制 HTTPS 链接并说明打开方式', async () => {
+    await page.onShow();
+
+    page.openStravaProfile();
+
+    expect(wx.setClipboardData).toHaveBeenCalledWith(
+      expect.objectContaining({ data: 'https://www.strava.com/athletes/42' }),
+    );
+    expect(wx.showModal).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Strava 主页链接已复制', showCancel: false }),
+    );
   });
 
   it('从资料编辑返回时 onShow 重新读取单响应', async () => {
@@ -170,7 +249,7 @@ describe('个人骑行名片静态页面契约', () => {
     expect(profileWxml).toContain('下拉刷新并查看完整名片');
   });
 
-  it('使用原生多图 swiper、隐私说明和真实五项指标列表', () => {
+  it('使用原生多图 swiper、隐私说明、累计与近 90 天指标', () => {
     const template = read('miniprogram/pages/capability-card/index.wxml');
 
     expect(template).toContain('<swiper');
@@ -179,8 +258,12 @@ describe('个人骑行名片静态页面契约', () => {
     expect(template).toContain('class="brand-signature"');
     expect(template).toContain('CILI</view>');
     expect(template).toContain('STRAVA {{card.statusLabel}}');
-    expect(template).toContain('wx:for="{{card.metrics}}"');
+    expect(template).toContain('wx:for="{{card.lifetimeMetrics}}"');
+    expect(template).toContain('wx:for="{{card.recentMetrics}}"');
+    expect(template).toContain('STRAVA 累计骑行');
     expect(template).toContain('近 90 天真实骑行数据');
+    expect(template).toContain('bindtap="openStravaProfile"');
+    expect(template).toContain('bindtap="refreshStrava"');
     expect(template).toContain('覆盖范围');
     expect(template).toContain('{{card.coverageText}}');
     expect(template).toContain('最近同步');
@@ -193,7 +276,7 @@ describe('个人骑行名片静态页面契约', () => {
     expect(template).toContain('wx:if="{{card.needsProfilePhoto}}"');
   });
 
-  it('长姓名与长头衔可截断且五项指标保持紧凑网格', () => {
+  it('长姓名与长头衔可截断且双层指标保持紧凑网格', () => {
     const styles = read('miniprogram/pages/capability-card/index.wxss');
     const riderName = styles.match(/\.rider-name\s*\{([^}]*)\}/)?.[1] || '';
     const riderTitle = styles.match(/\.rider-title\s*\{([^}]*)\}/)?.[1] || '';

@@ -546,6 +546,18 @@ function mapPersonalCapabilityCard(raw: unknown): PersonalCapabilityCard {
     },
     backgrounds,
     summary: {
+      ...(summary.lifetime_rides === undefined
+        ? {}
+        : { lifetimeRides: nullableFiniteNumber(summary.lifetime_rides) }),
+      ...(summary.lifetime_distance_km === undefined
+        ? {}
+        : { lifetimeDistanceKm: nullableFiniteNumber(summary.lifetime_distance_km) }),
+      ...(summary.lifetime_moving_hours === undefined
+        ? {}
+        : { lifetimeMovingHours: nullableFiniteNumber(summary.lifetime_moving_hours) }),
+      ...(summary.lifetime_elevation_m === undefined
+        ? {}
+        : { lifetimeElevationM: nullableFiniteNumber(summary.lifetime_elevation_m) }),
       totalKm90d: nullableFiniteNumber(summary.total_km_90d),
       rides90d: nullableFiniteNumber(summary.rides_90d),
       longestKm: nullableFiniteNumber(summary.longest_km),
@@ -554,6 +566,9 @@ function mapPersonalCapabilityCard(raw: unknown): PersonalCapabilityCard {
     },
     coverage,
     syncedAt,
+    ...(value.strava_profile_url === undefined
+      ? {}
+      : { stravaProfileUrl: httpsUrl(value.strava_profile_url) }),
     needsStravaReauth: value.needs_strava_reauth === true,
   };
 }
@@ -1207,7 +1222,7 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     await this.call('strava-auth', { action: 'cancelAuthorization' });
   }
   async syncStrava() {
-    return mapStrava(await this.call('strava-auth', { action: 'sync' }));
+    return mapStravaReadiness(await this.call('strava-auth', { action: 'sync' }));
   }
   async previewStravaRoute(routeUrl: string) {
     if (

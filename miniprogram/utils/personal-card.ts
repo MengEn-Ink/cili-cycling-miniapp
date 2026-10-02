@@ -32,6 +32,10 @@ const METRICS: {
   label: string;
   unit: string;
 }[] = [
+  { key: 'lifetimeDistanceKm', label: '累计里程', unit: 'km' },
+  { key: 'lifetimeRides', label: '累计骑行', unit: '次' },
+  { key: 'lifetimeMovingHours', label: '移动时间', unit: 'h' },
+  { key: 'lifetimeElevationM', label: '累计爬升', unit: 'm' },
   { key: 'totalKm90d', label: '近 90 天', unit: 'km' },
   { key: 'rides90d', label: '骑行次数', unit: '次' },
   { key: 'longestKm', label: '最长骑行', unit: 'km' },
@@ -43,14 +47,22 @@ export function personalCardViewModel(card: PersonalCapabilityCard) {
   const backgrounds = card.backgrounds.slice(0, 3);
   const metrics = METRICS.flatMap((definition): PersonalCardMetric[] => {
     const value = card.summary[definition.key];
-    return value === null ? [] : [{ ...definition, value: String(value) }];
+    return typeof value === 'number' && Number.isFinite(value)
+      ? [{ ...definition, value: String(value) }]
+      : [];
   });
+  const lifetimeMetrics = metrics.filter((metric) =>
+    ['lifetimeDistanceKm', 'lifetimeRides', 'lifetimeMovingHours', 'lifetimeElevationM'].includes(
+      metric.key,
+    ),
+  );
   const primaryMetrics = metrics.filter((metric) =>
     ['totalKm90d', 'rides90d', 'longestKm'].includes(metric.key),
   );
   const secondaryMetrics = metrics.filter((metric) =>
     ['elevationM90d', 'weightedAvgSpeedKmh'].includes(metric.key),
   );
+  const recentMetrics = [...primaryMetrics, ...secondaryMetrics];
   const state = STATUS[card.state];
   return {
     state: card.state,
@@ -63,8 +75,11 @@ export function personalCardViewModel(card: PersonalCapabilityCard) {
     hasBackgrounds: backgrounds.length > 0,
     hasMultipleBackgrounds: backgrounds.length > 1,
     metrics,
+    lifetimeMetrics,
+    hasLifetimeMetrics: lifetimeMetrics.length > 0,
     primaryMetrics,
     secondaryMetrics,
+    recentMetrics,
     emptyMetricsText: EMPTY_METRICS[card.state],
     coverageText: card.coverage
       ? `${formatChinaDate(card.coverage.from)} 至 ${formatChinaDate(card.coverage.to)} · ${
@@ -73,6 +88,13 @@ export function personalCardViewModel(card: PersonalCapabilityCard) {
       : '',
     syncedAtText: card.syncedAt ? `同步于 ${formatChinaDateTime(card.syncedAt)}` : '',
     generatedAtText: `生成于 ${formatChinaDateTime(card.generatedAt)}`,
+    stravaProfileUrl: card.stravaProfileUrl || '',
+    hasStravaProfile: Boolean(card.stravaProfileUrl),
+    canSyncStrava:
+      Boolean(card.stravaProfileUrl) &&
+      card.state !== 'disconnected' &&
+      card.state !== 'failed' &&
+      !card.needsStravaReauth,
     needsStravaRepair:
       card.state === 'disconnected' || card.state === 'failed' || card.needsStravaReauth,
     needsProfilePhoto: backgrounds.length === 0,

@@ -37,12 +37,13 @@ describe('报名、骑行名片与个人中心设计对齐', () => {
     );
     expect(template).toContain('STRAVA {{card.statusLabel}}');
     expect(template).toContain('仅自己可见 · 不会用于活动报名审核');
-    expect(template).toContain('wx:for="{{card.metrics}}"');
+    expect(template).toContain('wx:for="{{card.lifetimeMetrics}}"');
+    expect(template).toContain('wx:for="{{card.recentMetrics}}"');
     expect(template).toContain('wx:else class="metric-empty">{{card.emptyMetricsText}}');
     expect(styles).toMatch(/\.metric-grid\s*\{[^}]*flex-wrap:\s*wrap/s);
-    expect(styles).toMatch(/\.rider-card\s*\{[^}]*min-height:\s*820rpx/s);
+    expect(styles).toMatch(/\.rider-card\s*\{[^}]*min-height:\s*980rpx/s);
     expect(styles).toMatch(
-      /\.repair-button,\s*\.photo-button\s*\{[^}]*min-height:\s*var\(--control-height\)/s,
+      /\.strava-profile-button,\s*\.sync-button,\s*\.repair-button,\s*\.photo-button\s*\{[^}]*min-height:\s*var\(--control-height\)/s,
     );
   });
 

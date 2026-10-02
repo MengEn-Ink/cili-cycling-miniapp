@@ -19,7 +19,7 @@ page {
   position: relative;
   overflow: hidden;
   aspect-ratio: 3 / 4;
-  min-height: 820rpx;
+  min-height: 980rpx;
   border: 1rpx solid #3a3a3c;
   border-radius: var(--radius-display);
   background: #1c1c1e;
@@ -251,6 +251,16 @@ page {
   letter-spacing: 2rpx;
 }
 
+.recent-section {
+  margin-top: 18rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid rgba(255, 255, 255, 0.14);
+}
+
+.lifetime-grid .metric-item {
+  flex-basis: 50%;
+}
+
 .metric-grid {
   display: flex;
   flex-wrap: wrap;
@@ -350,6 +360,8 @@ page {
   text-align: right;
 }
 
+.strava-profile-button,
+.sync-button,
 .repair-button,
 .photo-button {
   min-height: var(--control-height);
@@ -357,6 +369,17 @@ page {
   border-radius: var(--radius-display);
   font-size: 26rpx;
   font-weight: 900;
+}
+
+.strava-profile-button {
+  background: #fc4c02 !important;
+  color: #fff !important;
+}
+
+.sync-button {
+  border: 2rpx solid var(--color-border);
+  background: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
 }
 
 .repair-button {
@@ -442,6 +465,8 @@ page,
   border-radius: var(--radius-display);
   background: var(--color-surface);
 }
+.strava-profile-button,
+.sync-button,
 .repair-button,
 .photo-button {
   min-height: var(--control-height);
