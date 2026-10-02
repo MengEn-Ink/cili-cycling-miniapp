@@ -54,14 +54,25 @@
           </view>
 
           <view class="metric-sheet">
-            <view class="metric-kicker">近 90 天真实骑行数据</view>
-            <view class="metric-grid" wx:if="{{card.metrics.length}}">
-              <view class="metric-item" wx:for="{{card.metrics}}" wx:key="key">
-                <view class="metric-value">{{item.value}}<text class="metric-unit">{{item.unit}}</text></view>
-                <view class="metric-label">{{item.label}}</view>
+            <view wx:if="{{card.hasLifetimeMetrics}}" class="metric-section lifetime-section">
+              <view class="metric-kicker">STRAVA 累计骑行</view>
+              <view class="metric-grid lifetime-grid">
+                <view class="metric-item" wx:for="{{card.lifetimeMetrics}}" wx:key="key">
+                  <view class="metric-value">{{item.value}}<text class="metric-unit">{{item.unit}}</text></view>
+                  <view class="metric-label">{{item.label}}</view>
+                </view>
               </view>
             </view>
-            <view wx:else class="metric-empty">{{card.emptyMetricsText}}</view>
+            <view class="metric-section recent-section">
+              <view class="metric-kicker">近 90 天真实骑行数据</view>
+              <view class="metric-grid" wx:if="{{card.recentMetrics.length}}">
+                <view class="metric-item" wx:for="{{card.recentMetrics}}" wx:key="key">
+                  <view class="metric-value">{{item.value}}<text class="metric-unit">{{item.unit}}</text></view>
+                  <view class="metric-label">{{item.label}}</view>
+                </view>
+              </view>
+              <view wx:else class="metric-empty">{{card.emptyMetricsText}}</view>
+            </view>
             <view class="data-meta" wx:if="{{card.coverageText || card.syncedAtText}}">
               <view class="meta-row" wx:if="{{card.coverageText}}">
                 <text class="meta-label">覆盖范围</text>
@@ -81,6 +92,18 @@
         <text>数据仅用于本人查看</text>
       </view>
 
+      <button wx:if="{{card.hasStravaProfile}}" class="strava-profile-button" bindtap="openStravaProfile">
+        前往 Strava 主页
+      </button>
+      <button
+        wx:if="{{card.canSyncStrava}}"
+        class="sync-button"
+        loading="{{syncing}}"
+        disabled="{{syncing}}"
+        bindtap="refreshStrava"
+      >
+        {{syncing ? '正在同步' : '同步最新 Strava 数据'}}
+      </button>
       <button wx:if="{{card.needsStravaRepair}}" class="repair-button" bindtap="repairStrava">
         前往 Strava 修复连接
       </button>

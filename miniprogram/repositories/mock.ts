@@ -280,7 +280,7 @@ export class MockRepository implements RideRepository {
     this.write(s);
   }
   async syncStrava() {
-    return this.getStravaStatus();
+    return this.getStravaReadiness();
   }
   async previewStravaRoute(routeUrl: string) {
     const match = /\/routes\/(\d+)/.exec(routeUrl);

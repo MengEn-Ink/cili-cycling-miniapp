@@ -190,6 +190,10 @@ export interface PersonalCapabilityCardBackground {
   category: string;
 }
 export interface PersonalCapabilityCardSummary {
+  lifetimeRides?: number | null;
+  lifetimeDistanceKm?: number | null;
+  lifetimeMovingHours?: number | null;
+  lifetimeElevationM?: number | null;
   totalKm90d: number | null;
   rides90d: number | null;
   longestKm: number | null;
@@ -204,6 +208,7 @@ export interface PersonalCapabilityCard {
   summary: PersonalCapabilityCardSummary;
   coverage: StravaCoverage | null;
   syncedAt: string | null;
+  stravaProfileUrl?: string;
   needsStravaReauth?: boolean;
 }
 export interface StravaConnection {

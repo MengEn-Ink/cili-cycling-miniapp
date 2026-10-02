@@ -2,11 +2,24 @@ import { setTheme, syncPageTheme } from '../../services/theme-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.02.3',
+    date: '2026-10-02',
+    title: '骑行名片连接 Strava 主页',
+    summary: '骑行名片补充 Strava 累计数据与主页入口，近期和长期表现更容易查看。',
+    latest: true,
+    features: [
+      '新增累计里程、骑行次数、移动时间与累计爬升',
+      '保留近 90 天骑行表现，区分长期积累与近期状态',
+      '支持复制本人 Strava 主页链接并在浏览器打开',
+      '明确展示数据覆盖范围与最近同步时间',
+    ],
+  },
+  {
     version: '2026.10.02.2',
     date: '2026-10-02',
     title: '主题切换与视觉可读性优化',
     summary: '深色模式切换更稳定，报名提示和骑行名片信息更易阅读。',
-    latest: true,
+    latest: false,
     features: [
       '减少深色主题快速切换 Tab 时的重复重绘与白底闪烁',
       '提升报名步骤、辅助提示和骑行名片说明文字的可读性',

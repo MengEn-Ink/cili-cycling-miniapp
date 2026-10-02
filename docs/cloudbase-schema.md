@@ -141,13 +141,15 @@ sync_lease_id?: String
 
 ```text
 _id/openid
+lifetime_rides, lifetime_distance_km, lifetime_moving_hours, lifetime_elevation_m
+lifetime_stats_status: ready|failed
 total_km, activities_90d, longest_km, total_elevation_m
 weighted_avg_speed_kmh, latest_activity_at
 coverage_from, coverage_to, coverage_complete
 synced_at
 ```
 
-只统计最近 90 天 Ride 类活动，排除 trainer/commute；每页 200，最多 5 页。第 5 页仍满 200 条时 `coverage_complete=false`。加权均速为总距离/总移动时间；完整空窗口的统计值可为 0，未知或不完整值为 `null`。
+累计指标来自 Strava Athlete Stats 的 `all_ride_totals`，在同步时转换为次数、公里、小时和米；旧快照缺少累计字段时按未知值处理，不显示为 0。近期指标只统计最近 90 天 Ride 类活动，排除 trainer/commute；每页 200，最多 5 页。第 5 页仍满 200 条时 `coverage_complete=false`。加权均速为总距离/总移动时间；完整空窗口的统计值可为 0，未知或不完整值为 `null`。
 
 ### `strava_route_previews`
 

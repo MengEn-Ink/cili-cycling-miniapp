@@ -3,6 +3,10 @@
 const { ProfileError, ownerAvatarMedia, ownerMedia } = require('./core');
 const SNAPSHOT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const SUMMARY_FIELDS = [
+  ['lifetime_rides', 'lifetime_rides'],
+  ['lifetime_distance_km', 'lifetime_distance_km'],
+  ['lifetime_moving_hours', 'lifetime_moving_hours'],
+  ['lifetime_elevation_m', 'lifetime_elevation_m'],
   ['total_km_90d', 'total_km'],
   ['rides_90d', 'activities_90d'],
   ['longest_km', 'longest_km'],
@@ -112,6 +116,13 @@ async function resolveBackgrounds(media, getTempFileURL) {
     }));
 }
 
+function stravaProfileUrl(credential) {
+  const athleteId = String(credential?.athlete_id || '');
+  return usableCredential(credential) && /^\d+$/.test(athleteId)
+    ? `https://www.strava.com/athletes/${athleteId}`
+    : '';
+}
+
 async function buildCapabilityCard(
   { profile, credential, snapshot, mediaRecords = [] },
   { openid, mediaSecret, now = new Date(), getTempFileURL },
@@ -142,6 +153,7 @@ async function buildCapabilityCard(
     summary: snapshotSummary,
     coverage: snapshotCoverage,
     synced_at: syncedAt,
+    strava_profile_url: stravaProfileUrl(credential),
     needs_strava_reauth: profile?.avatar_source === 'strava' && !avatarUrl,
   };
 }

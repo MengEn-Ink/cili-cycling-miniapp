@@ -299,6 +299,31 @@ describe('CloudRepository 个人骑行名片适配', () => {
     expectCall(callFunction, 'profile', { action: 'capabilityCard' });
   });
 
+  it('映射累计骑行指标与 Strava 主页地址', async () => {
+    const { cloud } = cloudWith(
+      success({
+        ...personalCapabilityCardDto,
+        summary: {
+          ...personalCapabilityCardDto.summary,
+          lifetime_rides: 486,
+          lifetime_distance_km: 18240.7,
+          lifetime_moving_hours: 734.5,
+          lifetime_elevation_m: 215400,
+        },
+        strava_profile_url: 'https://www.strava.com/athletes/42',
+      }),
+    );
+
+    const card = await new CloudRepository(cloud).getPersonalCapabilityCard();
+    expect(card.summary).toMatchObject({
+      lifetimeRides: 486,
+      lifetimeDistanceKm: 18240.7,
+      lifetimeMovingHours: 734.5,
+      lifetimeElevationM: 215400,
+    });
+    expect(card.stravaProfileUrl).toBe('https://www.strava.com/athletes/42');
+  });
+
   it('映射头像 URL 与重授权标记', async () => {
     const { cloud } = cloudWith(
       success({
@@ -1120,7 +1145,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     const repository = new CloudRepository(cloud);
     expect((await repository.getStravaStatus()).snapshot?.totalKm).toBe(42);
     expect((await repository.startStrava()).authorizationUrl).toContain('https://');
-    expect((await repository.syncStrava()).connected).toBe(true);
+    expect((await repository.syncStrava()).state).toBe('ready');
     await repository.disconnectStrava();
     expect(callFunction.mock.calls.map((x) => x[0])).toEqual([
       { name: 'strava-auth', data: { action: 'status' } },
@@ -1170,7 +1195,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
       connected: true,
       athleteName: 'Rider',
     });
-    await expect(repository.syncStrava()).resolves.toMatchObject({ connected: true });
+    await expect(repository.syncStrava()).resolves.toMatchObject({ state: 'ready' });
   });
 
   it('映射 Strava readiness，保留 null 指标与覆盖范围', async () => {

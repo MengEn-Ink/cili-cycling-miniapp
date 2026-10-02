@@ -313,6 +313,49 @@ function statistics(activities, { now = new Date(), coverageFrom, coverageTo, co
     coverage_complete: known,
   };
 }
+function lifetimeStatistics(stats) {
+  const totals = stats && stats.all_ride_totals;
+  if (!totals || typeof totals !== 'object')
+    throw new StravaError('STRAVA_API_INVALID', 'Strava 累计骑行统计响应无效');
+  const count = Number(totals.count);
+  const distance = Number(totals.distance);
+  const movingTime = Number(totals.moving_time);
+  const elevation = Number(totals.elevation_gain);
+  if (
+    !Number.isInteger(count) ||
+    !Number.isFinite(distance) ||
+    !Number.isFinite(movingTime) ||
+    !Number.isFinite(elevation) ||
+    count < 0 ||
+    distance < 0 ||
+    movingTime < 0 ||
+    elevation < 0
+  )
+    throw new StravaError('STRAVA_API_INVALID', 'Strava 累计骑行统计响应无效');
+  return {
+    lifetime_rides: Math.trunc(count),
+    lifetime_distance_km: Number((distance / 1000).toFixed(1)),
+    lifetime_moving_hours: Number((movingTime / 3600).toFixed(1)),
+    lifetime_elevation_m: Number(elevation.toFixed(0)),
+  };
+}
+async function optionalLifetimeStatistics(api, accessToken, athleteId) {
+  try {
+    return {
+      ...lifetimeStatistics(await api.athleteStats(accessToken, athleteId)),
+      lifetime_stats_status: 'ready',
+    };
+  } catch {
+    // 累计统计只丰富名片，不得因独立接口失败阻断报名所需的 90 天快照。
+    return {
+      lifetime_rides: null,
+      lifetime_distance_km: null,
+      lifetime_moving_hours: null,
+      lifetime_elevation_m: null,
+      lifetime_stats_status: 'failed',
+    };
+  }
+}
 async function fetchActivityWindow(api, accessToken, { after, before, maxPages = 5 }) {
   const activities = [];
   for (let page = 1; page <= maxPages; page += 1) {
@@ -558,11 +601,14 @@ async function buildSyncResult({
   });
   const coverageTo = now;
   const coverageFrom = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-  const window = await fetchActivityWindow(api, refreshed.accessToken, {
-    after: Math.floor(coverageFrom.getTime() / 1000),
-    before: Math.ceil(coverageTo.getTime() / 1000),
-    maxPages,
-  });
+  const [window, stats] = await Promise.all([
+    fetchActivityWindow(api, refreshed.accessToken, {
+      after: Math.floor(coverageFrom.getTime() / 1000),
+      before: Math.ceil(coverageTo.getTime() / 1000),
+      maxPages,
+    }),
+    optionalLifetimeStatistics(api, refreshed.accessToken, refreshed.document.athlete_id),
+  ]);
   const snapshot = {
     _id: openid,
     openid,
@@ -573,6 +619,7 @@ async function buildSyncResult({
       coverageTo,
       coverageComplete: window.coverageComplete,
     }),
+    ...stats,
   };
   return { credential: refreshed.document, snapshot };
 }
@@ -692,6 +739,8 @@ module.exports = {
   isSnapshotForCredential,
   deriveReadiness,
   statistics,
+  lifetimeStatistics,
+  optionalLifetimeStatistics,
   fetchActivityWindow,
   fetchActivities,
   callbackFlow,

@@ -96,7 +96,7 @@ export interface RideRepository extends AdminReviewRepository, ActivityAdminRepo
   ensureStravaReady(): Promise<StravaReadiness>;
   startStrava(): Promise<{ authorizationUrl: string; expiresAt: string }>;
   cancelStravaAuthorization(): Promise<void>;
-  syncStrava(): Promise<StravaConnection>;
+  syncStrava(): Promise<StravaReadiness>;
   previewStravaRoute(routeUrl: string): Promise<StravaRoutePreview>;
   getStravaRouteGpx(activityId: string, routeId: string): Promise<StravaRouteGpx>;
   exportActivityGpx(activityId: string): Promise<{ base64: string; fileName: string }>;

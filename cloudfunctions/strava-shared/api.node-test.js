@@ -94,3 +94,17 @@ test('JSON 响应体解析失败保留响应无效语义且不重试', async () 
   );
   assert.equal(calls, 1);
 });
+
+test('累计骑行统计使用 athlete id 与 Bearer token 请求官方接口', async () => {
+  const { createStravaApi } = require('./api');
+  let captured;
+  const api = createStravaApi(async (url, options) => {
+    captured = { url: String(url), options };
+    return { ok: true, json: async () => ({ all_ride_totals: { count: 1 } }) };
+  });
+
+  await api.athleteStats('access-token', '42');
+
+  assert.equal(captured.url, 'https://www.strava.com/api/v3/athletes/42/stats');
+  assert.equal(captured.options.headers.authorization, 'Bearer access-token');
+});

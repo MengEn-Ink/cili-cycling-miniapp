@@ -20,13 +20,17 @@ const openid = 'openid-owner-a';
 const prefix = mediaOwnerPrefix(openid, mediaSecret);
 const envelope = { alg: 'A256GCM', iv: 'iv', tag: 'tag', ciphertext: 'ciphertext' };
 const credential = {
-  athlete_id: 'athlete-1',
+  athlete_id: '42',
   access_token_cipher: envelope,
   refresh_token_cipher: envelope,
   sync_status: 'ready',
 };
 const snapshot = {
-  athlete_id: 'athlete-1',
+  athlete_id: '42',
+  lifetime_rides: 486,
+  lifetime_distance_km: 18240.7,
+  lifetime_moving_hours: 734.5,
+  lifetime_elevation_m: 215400,
   total_km: 812.5,
   activities_90d: 28,
   longest_km: 126.3,
@@ -98,7 +102,7 @@ test('个人名片状态严格区分 ready/partial/syncing/failed/disconnected',
   assert.equal(deriveCapabilityState({}, now), 'disconnected');
 });
 
-test('单一响应只返回 90 天 allowlist、null 语义和 owner 媒体临时 URL', async () => {
+test('单一响应只返回累计与 90 天 allowlist、null 语义和 owner 媒体临时 URL', async () => {
   const ownedRide = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174000.jpg`;
   const ownedOther = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174001.jpg`;
   const canonicalRide = canonicalFor(ownedRide).canonicalFileId;
@@ -149,6 +153,10 @@ test('单一响应只返回 90 天 allowlist、null 语义和 owner 媒体临时
       { url: 'https://temporary.example/other', source: 'user_photo', category: 'other' },
     ],
     summary: {
+      lifetime_rides: 486,
+      lifetime_distance_km: 18240.7,
+      lifetime_moving_hours: 734.5,
+      lifetime_elevation_m: 215400,
       total_km_90d: 812.5,
       rides_90d: 28,
       longest_km: null,
@@ -161,6 +169,7 @@ test('单一响应只返回 90 天 allowlist、null 语义和 owner 媒体临时
       complete: true,
     },
     synced_at: '2026-09-29T11:00:00.000Z',
+    strava_profile_url: 'https://www.strava.com/athletes/42',
     needs_strava_reauth: false,
   });
   const serialized = JSON.stringify(response);
