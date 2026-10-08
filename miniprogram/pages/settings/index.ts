@@ -2,11 +2,23 @@ import { setTheme, syncPageTheme } from '../../services/theme-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.08.2',
+    date: '2026-10-08',
+    title: '个人中心与骑友头像升级',
+    summary: '个人中心减少常驻状态信息，下拉刷新和报名骑友头像反馈更加明确。',
+    latest: true,
+    features: [
+      '骑行名片默认完整展示，资料完整后自动隐藏完整度',
+      '下拉刷新时集中展示更新时间、进度与结果',
+      '报名骑友始终显示头像图片，真实头像不可用时使用品牌默认头像',
+    ],
+  },
+  {
     version: '2026.10.08.1',
     date: '2026-10-08',
     title: '编辑式骑行界面升级',
     summary: '核心页面以真实骑行内容和关键数据重新组织，活动浏览与报名判断更加直接。',
-    latest: true,
+    latest: false,
     features: [
       '活动列表突出下一场主活动，并压缩后续活动信息',
       '活动详情前置路线数据、报名状态与截止时间',

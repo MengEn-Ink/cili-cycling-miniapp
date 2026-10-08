@@ -246,7 +246,9 @@ describe('个人骑行名片静态页面契约', () => {
     expect(app.pages).toContain('pages/capability-card/index');
     expect(profileTs).not.toContain("'/pages/capability-card/index'");
     expect(profileWxml).not.toContain('我的骑行名片');
-    expect(profileWxml).toContain('下拉刷新并查看完整名片');
+    expect(profileWxml).toContain('class="hero-capability-card"');
+    expect(profileWxml).not.toContain('cardExpanded');
+    expect(profileWxml).toContain('class="profile-refresh-feedback');
   });
 
   it('使用原生多图 swiper、隐私说明、累计与近 90 天指标', () => {

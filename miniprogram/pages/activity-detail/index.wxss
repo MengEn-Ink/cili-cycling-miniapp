@@ -501,13 +501,6 @@ brand-logo {
   border-radius: 50%;
 }
 
-.attendee-avatar--default {
-  background: var(--color-brand);
-  color: #fff;
-  font-size: 22rpx;
-  font-weight: 900;
-}
-
 .route-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

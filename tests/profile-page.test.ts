@@ -104,7 +104,12 @@ describe('个人中心加载状态', () => {
     };
     appStore.ensureIdentity.mockReset().mockImplementation(authenticate);
     appStore.refreshIdentity.mockReset().mockImplementation(authenticate);
-    vi.stubGlobal('wx', { cloud: {}, navigateTo: vi.fn(), previewImage: vi.fn() });
+    vi.stubGlobal('wx', {
+      cloud: {},
+      navigateTo: vi.fn(),
+      previewImage: vi.fn(),
+      stopPullDownRefresh: vi.fn(),
+    });
     vi.stubGlobal('Page', (definition: any) => {
       page = definition;
       page.data = { ...definition.data };
@@ -174,7 +179,7 @@ describe('个人中心加载状态', () => {
     ]);
   });
 
-  it('大面积 hero 默认展示摘要，下拉后提供完整名片与更新时间', async () => {
+  it('大面积 hero 默认展示完整名片且不常驻同步状态', async () => {
     await page.onShow();
     await vi.waitFor(() => expect(page.data.heroCard).toBeTruthy());
 
@@ -189,11 +194,18 @@ describe('个人中心加载状态', () => {
     });
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     const styles = readFileSync('miniprogram/pages/profile/index.wxss', 'utf8');
-    expect(template).toContain('hero-capability-card {{cardExpanded');
+    expect(page.data).not.toHaveProperty('cardExpanded');
+    expect(template).toContain('class="hero-capability-card"');
     expect(template).toContain('近 90 天骑行名片');
-    expect(template).toContain('wx:for="{{heroCard.secondaryMetrics}}"');
-    expect(template).toContain('{{updatedAtText}}');
+    expect(template).toContain(
+      'class="hero-capability-secondary" wx:if="{{heroCard.secondaryMetrics.length}}"',
+    );
+    expect(template).toContain('class="hero-capability-details" wx:if="{{heroCard.coverageText}}"');
+    expect(template).not.toContain('最近同步');
+    expect(template).not.toContain('页面数据');
+    expect(template).not.toContain('profile-cache-message');
     expect(template).toContain('STRAVA {{heroCard.statusLabel}}');
+    expect(template).toContain('wx:if="{{profile && profile.completeness < 100}}"');
     expect(template).toContain('{{profile.completeness}}%');
     expect(template).toContain('style="width: {{profile.completeness}}%"');
     expect(styles).toMatch(/\.profile-hero\.has-bg\s*\{[^}]*min-height:\s*600rpx/s);
@@ -265,7 +277,7 @@ describe('个人中心加载状态', () => {
     expect(page.data.heroBackgroundAvatarUrl).toBe('https://temporary.example/avatar.jpg');
   });
 
-  it('头部收口完整骑行名片，点按展开且不再跳转独立入口', () => {
+  it('头部收口完整骑行名片且不再提供折叠或独立入口', () => {
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     const pageScript = readFileSync('miniprogram/pages/profile/index.ts', 'utf8');
 
@@ -273,12 +285,11 @@ describe('个人中心加载状态', () => {
     expect(template).toContain('近 90 天骑行名片');
     expect(template).toContain('wx:for="{{heroCard.primaryMetrics}}"');
     expect(template).toContain('wx:for="{{heroCard.secondaryMetrics}}"');
-    expect(template).toMatch(/hero-capability-card[^>]*bindtap="toggleCard"/);
+    expect(template).not.toContain('bindtap="toggleCard"');
+    expect(template).not.toContain('点按收起');
     expect(template).not.toContain('我的骑行名片');
+    expect(pageScript).not.toContain('toggleCard()');
     expect(pageScript).not.toContain("'/pages/capability-card/index'");
-
-    page.toggleCard();
-    expect(page.data.cardExpanded).toBe(true);
   });
 
   it('可预览 hero 背景和头像有可读标签，装饰性兜底背景隐藏于无障碍树', () => {
@@ -294,14 +305,18 @@ describe('个人中心加载状态', () => {
     expect(avatarImage).toContain('aria-label=');
   });
 
-  it('顶部下拉展示完整照片，松手恢复封面并支持点按预览', async () => {
+  it('顶部下拉只展示刷新反馈，不改变 hero 图片模式', async () => {
     await page.onShow();
     page.onPageScroll({ scrollTop: 0 });
-    page.heroTouchStart({ touches: [{ clientY: 100 }] });
-    page.heroTouchMove({ touches: [{ clientY: 170 }] });
+    page.refreshTouchStart({ touches: [{ clientY: 100 }] });
+    page.refreshTouchMove({ touches: [{ clientY: 140 }] });
 
-    expect(page.data.heroPullOffset).toBe(70);
-    expect(page.data.heroImageMode).toBe('aspectFit');
+    expect(page.data).toMatchObject({
+      refreshStage: 'pulling',
+      refreshTitle: '下拉刷新',
+      refreshPullProgress: expect.any(Number),
+    });
+    expect(page.data.refreshDetail).toContain('更新');
 
     page.previewHeroImage({
       currentTarget: { dataset: { url: 'https://temporary.example/ride.jpg', index: 0 } },
@@ -311,9 +326,40 @@ describe('个人中心加载状态', () => {
       urls: ['https://temporary.example/ride.jpg'],
     });
 
-    page.heroTouchEnd();
-    expect(page.data.heroPullOffset).toBe(0);
-    expect(page.data.heroImageMode).toBe('aspectFill');
+    page.refreshTouchMove({ touches: [{ clientY: 190 }] });
+    expect(page.data).toMatchObject({ refreshStage: 'ready', refreshTitle: '松开刷新' });
+
+    page.refreshTouchEnd();
+    expect(page.data.refreshStage).toBe('idle');
+    const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
+    expect(template).toContain('mode="aspectFill"');
+    expect(template).not.toContain('heroImageMode');
+    expect(template).not.toContain('下拉查看完整照片');
+  });
+
+  it('原生下拉刷新依次展示刷新中、成功并自动收起', async () => {
+    await page.onShow();
+    vi.useFakeTimers();
+
+    const refresh = page.onPullDownRefresh();
+    const refreshingState = { ...page.data };
+    await refresh;
+
+    expect(refreshingState).toMatchObject({
+      refreshStage: 'refreshing',
+      refreshTitle: '正在刷新',
+      refreshDetail: '正在更新资料与骑行数据',
+    });
+
+    expect(wx.stopPullDownRefresh).toHaveBeenCalledOnce();
+    expect(page.data).toMatchObject({
+      refreshStage: 'success',
+      refreshTitle: '刷新完成',
+      refreshDetail: '刚刚更新',
+    });
+
+    await vi.advanceTimersByTimeAsync(1_200);
+    expect(page.data.refreshStage).toBe('idle');
   });
 
   it('hero 使用独立错误处理并以包内山景和 CSS alpine 兜底', () => {
@@ -430,20 +476,24 @@ describe('个人中心加载状态', () => {
     expect(template).toMatch(/class="card profile-loading"[^>]*aria-hidden="true"/);
   });
 
-  it('已有资料刷新失败时保留内容并展示非阻塞错误', async () => {
+  it('已有资料下拉刷新失败时保留内容并短暂展示错误状态', async () => {
     await page.onShow();
     rideService.getProfile.mockRejectedValueOnce(new Error('刷新失败'));
+    vi.useFakeTimers();
 
-    await page.onShow();
+    await page.onPullDownRefresh();
 
     expect(page.data).toMatchObject({
       profile: expect.objectContaining({ nickname: '山野骑手' }),
       loading: false,
       refreshing: false,
       error: '',
+      refreshStage: 'error',
+      refreshTitle: '刷新未完成',
     });
     expect(page.data.refreshMessage).toContain('刷新失败');
     expect(page.data.refreshMessage).toContain('继续展示');
+    expect(page.data.refreshDetail).toContain('继续展示');
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     const polite =
       template.match(/<view\b(?=[^>]*aria-live="polite")(?=[^>]*role="status")[^>]*>/)?.[0] || '';
@@ -456,10 +506,13 @@ describe('个人中心加载状态', () => {
     expect(polite).not.toMatch(/wx:(?:if|elif|else)/);
     expect(assertive).toContain('aria-atomic="true"');
     expect(assertive).not.toMatch(/wx:(?:if|elif|else)/);
-    expect(template).toContain("refreshing ? '正在更新个人资料'");
+    expect(template).toContain('{{refreshTitle}}');
     expect(template).toContain('{{error}}');
     expect(visibleError).toMatch(/<text\b[^>]*aria-hidden="true"[^>]*>{{error}}<\/text>/);
     expect(visibleError).toContain('<button bindtap="retryProfile">重试</button>');
+
+    await vi.advanceTimersByTimeAsync(1_600);
+    expect(page.data.refreshStage).toBe('idle');
   });
 
   it('身份请求异常不吞掉成功资料，且身份错误独立展示', async () => {

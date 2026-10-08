@@ -35,7 +35,7 @@ describe('方案 A 编辑式性能布局', () => {
     expect(styles).toMatch(/\.detail-decision\s*\{[^}]*border-left:\s*6rpx solid/s);
   });
 
-  it('个人页把照片身份、骑行能力和资料完整度拆成连续层级', () => {
+  it('个人页把照片身份、完整骑行能力和未完成资料拆成连续层级', () => {
     const template = read('miniprogram/pages/profile/index.wxml');
     const styles = read('miniprogram/pages/profile/index.wxss');
 
@@ -43,7 +43,9 @@ describe('方案 A 编辑式性能布局', () => {
     expect(template.indexOf('class="profile-capability-section"')).toBeGreaterThan(
       template.indexOf('</view>\n\n  <view class="profile-capability-section"'),
     );
-    expect(template).toContain('hero-capability-card {{cardExpanded');
+    expect(template).toContain('class="hero-capability-card"');
+    expect(template).not.toContain('cardExpanded');
+    expect(template).toContain('wx:if="{{profile && profile.completeness < 100}}"');
     expect(template).toContain('class="hero-profile-progress"');
     expect(styles).toMatch(/\.profile-capability-section\s*\{/);
     expect(styles).toMatch(/\.profile-capability-section \.hero-capability-card\s*\{/);

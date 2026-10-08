@@ -1,5 +1,5 @@
-<view class="page profile-page {{themeClass}}">
-  <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{loading ? '正在同步个人资料' : (refreshing ? '正在更新个人资料' : (!error ? '个人资料已就绪' : ''))}}</view>
+<view class="page profile-page {{themeClass}}" bindtouchstart="refreshTouchStart" bindtouchmove="refreshTouchMove" bindtouchend="refreshTouchEnd" bindtouchcancel="refreshTouchEnd">
+  <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{loading ? '正在同步个人资料' : (refreshTitle || (!error ? '个人资料已就绪' : ''))}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{error}}</view>
   <view class="profile-topbar">
     <brand-logo compact="{{true}}" meta="RIDER PROFILE" />
@@ -9,17 +9,23 @@
     </button>
   </view>
 
-  <view
-    class="profile-hero has-bg {{heroPullOffset ? 'is-pulling' : ''}}"
-    style="min-height: calc(640rpx + {{heroPullOffset}}px)"
-    bindtouchstart="heroTouchStart"
-    bindtouchmove="heroTouchMove"
-    bindtouchend="heroTouchEnd"
-    bindtouchcancel="heroTouchEnd"
-  >
+  <view class="profile-refresh-feedback refresh-{{refreshStage}}" wx:if="{{refreshStage !== 'idle'}}" style="--refresh-progress: {{refreshPullProgress}}" aria-hidden="true">
+    <view class="refresh-feedback-icon">
+      <text wx:if="{{refreshStage === 'success'}}">✓</text>
+      <text wx:elif="{{refreshStage === 'error'}}">!</text>
+      <view wx:elif="{{refreshStage === 'refreshing'}}" class="refresh-feedback-spinner"></view>
+      <text wx:else class="refresh-feedback-arrow">↓</text>
+    </view>
+    <view class="refresh-feedback-copy">
+      <view class="refresh-feedback-title">{{refreshTitle}}</view>
+      <view class="refresh-feedback-detail">{{refreshDetail}}</view>
+    </view>
+  </view>
+
+  <view class="profile-hero has-bg">
     <swiper wx:if="{{heroBackgrounds.length}}" class="hero-swiper" circular="{{heroBackgrounds.length > 1}}" indicator-dots="{{heroBackgrounds.length > 1}}" bindchange="heroSwiperChange">
       <swiper-item wx:for="{{heroBackgrounds}}" wx:key="url">
-        <image class="hero-bg-image" src="{{item.url}}" mode="{{heroImageMode}}" aria-label="查看完整背景照片" data-url="{{item.url}}" data-index="{{index}}" bindtap="previewHeroImage" binderror="heroBackgroundError" />
+        <image class="hero-bg-image" src="{{item.url}}" mode="aspectFill" aria-label="查看完整背景照片" data-url="{{item.url}}" data-index="{{index}}" bindtap="previewHeroImage" binderror="heroBackgroundError" />
       </swiper-item>
     </swiper>
     <image wx:elif="{{heroBackgroundAvatarUrl}}" class="hero-bg-image hero-fallback-image" src="{{heroBackgroundAvatarUrl}}" mode="aspectFill" aria-hidden="true" data-url="{{heroBackgroundAvatarUrl}}" binderror="heroAvatarBackgroundError" />
@@ -31,7 +37,6 @@
       <view class="hero-alpine-mark">此里</view>
     </view>
     <view class="hero-shade" aria-hidden="true"></view>
-    <view class="hero-photo-hint" wx:if="{{heroBackgrounds.length}}">下拉查看完整照片 · 点按预览</view>
     <view class="hero-identity">
       <view class="avatar">
         <image wx:if="{{heroAvatarUrl}}" class="avatar-image" src="{{heroAvatarUrl}}" mode="aspectFill" data-url="{{heroAvatarUrl}}" binderror="heroAvatarError" aria-label="{{profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '骑手')}}的头像" />
@@ -47,7 +52,7 @@
   </view>
 
   <view class="profile-capability-section" wx:if="{{heroCard}}">
-    <view class="hero-capability-card {{cardExpanded ? 'is-expanded' : ''}}" wx:if="{{heroCard}}" bindtap="toggleCard" aria-label="{{cardExpanded ? '收起骑行名片' : '展开完整骑行名片'}}">
+    <view class="hero-capability-card">
       <view class="hero-capability-head">
         <view class="hero-card-brand"><text class="hero-card-logo">CILI</text><text class="hero-capability-label">近 90 天骑行名片</text></view>
         <view class="hero-capability-status status-{{heroCard.statusTone}}"><text class="status-dot"></text>STRAVA {{heroCard.statusLabel}}</view>
@@ -59,22 +64,19 @@
         </view>
       </view>
       <view class="hero-capability-empty" wx:else>{{heroCard.emptyMetricsText}}</view>
-      <view class="hero-capability-secondary" wx:if="{{cardExpanded && heroCard.secondaryMetrics.length}}">
+      <view class="hero-capability-secondary" wx:if="{{heroCard.secondaryMetrics.length}}">
         <view class="hero-capability-metric" wx:for="{{heroCard.secondaryMetrics}}" wx:key="key">
           <view class="hero-capability-value">{{item.value}}<text class="hero-capability-unit">{{item.unit}}</text></view>
           <view class="hero-capability-name">{{item.label}}</view>
         </view>
       </view>
-      <view class="hero-capability-details" wx:if="{{cardExpanded}}">
-        <view wx:if="{{heroCard.coverageText}}"><text>统计范围</text><text>{{heroCard.coverageText}}</text></view>
-        <view wx:if="{{heroCard.syncedAtText}}"><text>最近同步</text><text>{{heroCard.syncedAtText}}</text></view>
-        <view><text>页面数据</text><text>{{updatedAtText}}</text></view>
+      <view class="hero-capability-details" wx:if="{{heroCard.coverageText}}">
+        <view><text>统计范围</text><text>{{heroCard.coverageText}}</text></view>
       </view>
-      <view class="hero-capability-meta">{{cardExpanded ? '点按收起' : '下拉刷新并查看完整名片'}} · {{updatedAtText}}</view>
     </view>
   </view>
 
-  <view class="hero-profile-progress" wx:if="{{profile}}">
+  <view class="hero-profile-progress" wx:if="{{profile && profile.completeness < 100}}">
     <view class="hero-progress-head"><text>资料完整度</text><text>{{profile.completeness}}%</text></view>
     <view class="hero-progress-track"><view class="hero-progress-value" style="width: {{profile.completeness}}%"></view></view>
   </view>
@@ -95,11 +97,6 @@
   </view>
 
   <view class="section-label"><text>01</text> 我的资料</view>
-  <view class="profile-refreshing" wx:if="{{profile && refreshing}}" aria-hidden="true">{{refreshMessage || '正在更新资料…'}}</view>
-  <view class="profile-cache-message {{refreshing ? 'is-refreshing' : ''}}" wx:if="{{profile && !refreshing && (refreshMessage || updatedAtText)}}">
-    <text>{{refreshMessage || (usingCache ? '已优先展示缓存数据' : '数据已就绪')}}</text>
-    <text>{{updatedAtText}}</text>
-  </view>
   <view class="profile-refresh-error" wx:if="{{!profile && error}}"><text aria-hidden="true">{{error}}</text><button bindtap="retryProfile">重试</button></view>
   <view class="card profile-loading" wx:if="{{loading}}" aria-hidden="true"><view class="panel-index">PROFILE LOADING</view><view class="title">正在读取资料</view><view class="muted">正在同步最新资料。</view></view>
   <view class="card profile-card" wx:elif="{{profile}}">

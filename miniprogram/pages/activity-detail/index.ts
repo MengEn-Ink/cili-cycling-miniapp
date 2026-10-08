@@ -11,6 +11,7 @@ import {
 } from './format';
 
 const MAX_GPX_BYTES = 4 * 1024 * 1024;
+const DEFAULT_ATTENDEE_AVATAR = '/assets/profile/avatars/cili-orange.png';
 
 function unavailableAction(): ActivityAction {
   return { kind: 'closed', label: '活动状态不可用', enabled: false };
@@ -51,6 +52,7 @@ Page({
     registration: null as any,
     attendees: [] as any[],
     selectedAttendee: null as any,
+    defaultAttendeeAvatar: DEFAULT_ATTENDEE_AVATAR,
     galleryImages: [] as string[],
     displayDate: '',
     startTime: '',
@@ -164,8 +166,15 @@ Page({
   },
   attendeeAvatarError(event: any) {
     const index = Number(event.currentTarget.dataset.index);
-    if (!Number.isInteger(index) || !this.data.attendees[index]) return;
-    this.safeSetData({ [`attendees[${index}].avatarUrl`]: '' });
+    if (!Number.isInteger(index) || !this.data.attendees[index]?.avatarUrl) return;
+    const attendees = this.data.attendees.map((attendee: any, attendeeIndex: number) =>
+      attendeeIndex === index ? { ...attendee, avatarUrl: '' } : attendee,
+    );
+    this.safeSetData({ attendees });
+  },
+  selectedAttendeeAvatarError() {
+    if (!this.data.selectedAttendee?.avatarUrl) return;
+    this.safeSetData({ selectedAttendee: { ...this.data.selectedAttendee, avatarUrl: '' } });
   },
   openAttendeeCard(event: any) {
     const index = Number(event.currentTarget.dataset.index);

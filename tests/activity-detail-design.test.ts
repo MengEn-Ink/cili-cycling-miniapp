@@ -1,5 +1,5 @@
 // @ts-expect-error Vitest provides the Node runtime used by this repository.
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   drawElevationProfile,
@@ -141,6 +141,12 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('点击头像查看公开骑行名片');
     expect(template).toContain('公开骑行名片');
     expect(template).toContain('数据来自报名时的 Strava 骑行快照');
+    expect(template).toContain('src="{{item.avatarUrl || defaultAttendeeAvatar}}"');
+    expect(template).toContain('src="{{selectedAttendee.avatarUrl || defaultAttendeeAvatar}}"');
+    expect(template).toContain('binderror="selectedAttendeeAvatarError"');
+    expect(template).toContain('头像按骑友公开设置展示');
+    expect(template).not.toContain('attendee-avatar--default">骑');
+    expect(existsSync('miniprogram/assets/profile/avatars/cili-orange.png')).toBe(true);
     expect(
       template.match(/<text wx:if="\{\{selectedAttendee\.card\.[a-zA-Z0-9]+ !== null\}\}">/g),
     ).toHaveLength(4);
@@ -226,6 +232,33 @@ describe('活动详情复制、分享与 GPX 导出', () => {
 
     definition.openAttendeeCard.call(context, { currentTarget: { dataset: { index: 9 } } });
     expect(context.data.selectedAttendee).toBeNull();
+  });
+
+  it('远端头像加载失败时列表和弹窗都回退默认图片', async () => {
+    const { definition, context } = await loadPage(async () => ({
+      base64: 'eA==',
+      fileName: 'route.gpx',
+    }));
+    context.data.attendees = [
+      {
+        id: 'rider-1',
+        displayName: '山野骑手',
+        avatarUrl: 'https://temporary.example/avatar.jpg',
+      },
+    ];
+    context.data.selectedAttendee = {
+      ...context.data.attendees[0],
+      avatarUrl: 'https://temporary.example/modal-avatar.jpg',
+    };
+
+    definition.attendeeAvatarError.call(context, {
+      currentTarget: { dataset: { index: 0 } },
+    });
+    expect(context.data.attendees[0].avatarUrl).toBe('');
+
+    definition.selectedAttendeeAvatarError.call(context);
+    expect(context.data.selectedAttendee.avatarUrl).toBe('');
+    expect(context.data.defaultAttendeeAvatar).toBe('/assets/profile/avatars/cili-orange.png');
   });
 
   it('复制 Strava/活动链接并生成分享 path', async () => {

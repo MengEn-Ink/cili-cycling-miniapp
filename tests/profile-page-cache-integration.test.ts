@@ -133,7 +133,7 @@ describe('个人中心缓存优先与主动刷新', () => {
     expect(rideService.getPersonalCapabilityCard).not.toHaveBeenCalled();
   });
 
-  it('原生下拉强制刷新、展开完整名片并更新时间', async () => {
+  it('原生下拉强制刷新完整名片并短暂展示更新时间', async () => {
     const page = await mountPage();
     await page.onShow();
 
@@ -142,9 +142,15 @@ describe('个人中心缓存优先与主动刷新', () => {
     expect(rideService.getProfile).toHaveBeenCalledOnce();
     expect(rideService.getPersonalCapabilityCard).toHaveBeenCalledOnce();
     expect(page.data.profile.nickname).toBe('最新骑手');
-    expect(page.data.cardExpanded).toBe(true);
+    expect(page.data).not.toHaveProperty('cardExpanded');
+    expect(page.data).toMatchObject({
+      refreshStage: 'success',
+      refreshTitle: '刷新完成',
+      refreshDetail: '刚刚更新',
+    });
     expect(page.data.updatedAtText).toBe('刚刚更新');
     expect(wx.stopPullDownRefresh).toHaveBeenCalledOnce();
+    page.onHide();
   });
 
   it('账号切换时不展示上一账号缓存并改为加载当前账号资料', async () => {

@@ -57,8 +57,7 @@
           <view class="attendees-heading"><view><view class="title">已报名骑友</view><view class="attendees-hint" wx:if="{{attendees.length}}">点击头像查看公开骑行名片</view></view><view class="muted">{{attendees.length}} 位</view></view>
           <view class="avatar-stack" wx:if="{{attendees.length}}">
             <button class="attendee-avatar-button" wx:for="{{attendees}}" wx:key="id" data-index="{{index}}" bindtap="openAttendeeCard" aria-label="查看 {{item.displayName}} 的公开骑行名片">
-              <image wx:if="{{item.avatarUrl}}" class="attendee-avatar" src="{{item.avatarUrl}}" mode="aspectFill" data-index="{{index}}" binderror="attendeeAvatarError" />
-              <view wx:else class="attendee-avatar attendee-avatar--default">骑</view>
+              <image class="attendee-avatar" src="{{item.avatarUrl || defaultAttendeeAvatar}}" mode="aspectFill" data-index="{{index}}" binderror="attendeeAvatarError" />
             </button>
           </view>
           <view wx:else class="route-empty">正在等待首位骑友报名</view>
@@ -93,8 +92,7 @@
     <button class="rider-card-close" bindtap="closeAttendeeCard" aria-label="关闭骑行名片">×</button>
     <view class="rider-card-kicker">公开骑行名片</view>
     <view class="rider-card-head">
-      <image wx:if="{{selectedAttendee.avatarUrl}}" class="rider-card-avatar" src="{{selectedAttendee.avatarUrl}}" mode="aspectFill" />
-      <view wx:else class="rider-card-avatar attendee-avatar--default">骑</view>
+      <image class="rider-card-avatar" src="{{selectedAttendee.avatarUrl || defaultAttendeeAvatar}}" mode="aspectFill" binderror="selectedAttendeeAvatarError" />
       <view class="rider-identity"><view class="rider-name">{{selectedAttendee.displayName || '此里骑手'}}</view><view class="muted">{{selectedAttendee.title || '骑行爱好者'}}</view><view class="rider-status">{{selectedAttendee.status === 'checked_in' ? '已签到' : '已报名'}}</view></view>
     </view>
     <view class="rider-stats">
@@ -103,7 +101,7 @@
       <view><view class="rider-stat-value">{{selectedAttendee.card.elevationM === null ? '--' : selectedAttendee.card.elevationM}}<text wx:if="{{selectedAttendee.card.elevationM !== null}}">m</text></view><text>累计爬升</text></view>
       <view><view class="rider-stat-value">{{selectedAttendee.card.speedKmh === null ? '--' : selectedAttendee.card.speedKmh}}<text wx:if="{{selectedAttendee.card.speedKmh !== null}}">km/h</text></view><text>平均速度</text></view>
     </view>
-    <view class="rider-card-note">数据来自报名时的 Strava 骑行快照；头像仅在骑友主动公开后展示。</view>
+    <view class="rider-card-note">数据来自报名时的 Strava 骑行快照；头像按骑友公开设置展示。</view>
   </view>
 </view>
 
