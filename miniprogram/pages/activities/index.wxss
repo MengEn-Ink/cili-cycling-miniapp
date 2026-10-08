@@ -115,6 +115,7 @@ page,
 
 .activities-intro {
   padding: 12rpx 4rpx 18rpx;
+  text-align: var(--page-heading-align);
 }
 
 .section-eyebrow {

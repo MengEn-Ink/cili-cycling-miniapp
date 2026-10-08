@@ -79,7 +79,8 @@ page {
   font-size: 42rpx;
   font-weight: 900;
   line-height: 1.15;
-  letter-spacing: -1rpx;
+  letter-spacing: 0;
+  text-align: center;
 }
 
 .step-caption {
@@ -229,6 +230,7 @@ page {
   min-width: 0;
   font-weight: 800;
   overflow-wrap: anywhere;
+  text-align: left;
 }
 
 .field-hint {

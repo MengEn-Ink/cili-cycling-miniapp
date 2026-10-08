@@ -86,13 +86,43 @@ describe('主题服务', () => {
       themeClass: 'theme-light',
     });
     expect(wxApi.setNavigationBarColor).toHaveBeenLastCalledWith(
-      expect.objectContaining({ backgroundColor: '#f6f1e8', frontColor: '#000000' }),
+      expect.objectContaining({ backgroundColor: '#ffffff', frontColor: '#000000' }),
     );
     expect(wxApi.setTabBarStyle).toHaveBeenCalled();
     expect(wxApi.setBackgroundColor).toHaveBeenCalled();
   });
 
-  it('相同主题重复返回前台时不重复触发页面和原生外观重绘', async () => {
+  it('页面切换时重新应用导航栏，但不重复刷新全局 TabBar 和背景', async () => {
+    const wxApi = wxMock({ 'display-theme': 'light' });
+    const service = await loadThemeService(wxApi);
+    const firstPage = {
+      data: { theme: 'light', themeClass: 'theme-light' },
+      setData: vi.fn(),
+    };
+    const secondPage = {
+      data: { theme: 'light', themeClass: 'theme-light' },
+      setData: vi.fn(),
+    };
+
+    service.applyTheme('light');
+    wxApi.setNavigationBarColor.mockClear();
+    wxApi.setTabBarStyle.mockClear();
+    wxApi.setTabBarItem.mockClear();
+    wxApi.setBackgroundColor.mockClear();
+
+    service.syncPageTheme(firstPage);
+    service.syncPageTheme(secondPage);
+
+    expect(wxApi.setNavigationBarColor).toHaveBeenCalledTimes(2);
+    expect(wxApi.setNavigationBarColor).toHaveBeenLastCalledWith(
+      expect.objectContaining({ backgroundColor: '#ffffff', frontColor: '#000000' }),
+    );
+    expect(wxApi.setTabBarStyle).not.toHaveBeenCalled();
+    expect(wxApi.setTabBarItem).not.toHaveBeenCalled();
+    expect(wxApi.setBackgroundColor).not.toHaveBeenCalled();
+  });
+
+  it('相同主题重复返回前台时只重设页面导航栏', async () => {
     const wxApi = wxMock({ 'display-theme': 'dark' });
     const service = await loadThemeService(wxApi);
     const page = {
@@ -104,13 +134,13 @@ describe('主题服务', () => {
     service.syncPageTheme(page);
 
     expect(page.setData).not.toHaveBeenCalled();
-    expect(wxApi.setNavigationBarColor).toHaveBeenCalledTimes(1);
+    expect(wxApi.setNavigationBarColor).toHaveBeenCalledTimes(2);
     expect(wxApi.setTabBarStyle).toHaveBeenCalledTimes(1);
     expect(wxApi.setTabBarItem).toHaveBeenCalledTimes(3);
     expect(wxApi.setBackgroundColor).toHaveBeenCalledTimes(1);
   });
 
-  it('页面主题过期时只更新页面数据，不重复应用已经生效的原生主题', async () => {
+  it('页面主题过期时更新页面数据并重设页面导航栏', async () => {
     const wxApi = wxMock({ 'display-theme': 'light' });
     const service = await loadThemeService(wxApi);
     const page = {
@@ -123,7 +153,7 @@ describe('主题服务', () => {
 
     expect(page.setData).toHaveBeenCalledOnce();
     expect(page.setData).toHaveBeenCalledWith({ theme: 'light', themeClass: 'theme-light' });
-    expect(wxApi.setNavigationBarColor).toHaveBeenCalledTimes(1);
+    expect(wxApi.setNavigationBarColor).toHaveBeenCalledTimes(2);
     expect(wxApi.setTabBarStyle).toHaveBeenCalledTimes(1);
     expect(wxApi.setTabBarItem).toHaveBeenCalledTimes(3);
     expect(wxApi.setBackgroundColor).toHaveBeenCalledTimes(1);
@@ -162,7 +192,7 @@ describe('主题服务', () => {
 
     expect(wxApi.setNavigationBarColor).toHaveBeenCalledTimes(1);
     expect(wxApi.setNavigationBarColor).toHaveBeenLastCalledWith(
-      expect.objectContaining({ backgroundColor: '#f6f1e8' }),
+      expect.objectContaining({ backgroundColor: '#ffffff' }),
     );
 
     while (callbacks.length > 0) callbacks.shift()?.();

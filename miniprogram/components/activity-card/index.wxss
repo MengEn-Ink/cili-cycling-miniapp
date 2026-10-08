@@ -294,9 +294,10 @@ status-pill {
 
 /* Theme-aware card chrome; media overlays intentionally remain dark. */
 .activity-card {
-  border-color: var(--color-border);
+  border-color: var(--color-card-border);
   border-radius: var(--radius-display);
   background: var(--color-surface);
+  box-shadow: none;
 }
 .activity-title,
 .metric-value,
@@ -392,7 +393,7 @@ status-pill {
 .activity-card--featured .metric-item {
   padding: 20rpx 10rpx 18rpx;
   background: transparent;
-  text-align: left;
+  text-align: var(--metric-align);
 }
 
 .activity-card--featured .metric-item + .metric-item {
@@ -476,7 +477,7 @@ status-pill {
 .activity-card--compact .metric-item {
   padding: 15rpx 5rpx 13rpx;
   background: transparent;
-  text-align: left;
+  text-align: var(--metric-align);
 }
 
 .activity-card--compact .metric-item + .metric-item {
@@ -523,4 +524,9 @@ status-pill {
   .activity-card--compact .card-content {
     padding-left: 118rpx;
   }
+}
+
+.activity-card--featured .card-foot,
+.activity-card--compact .card-foot {
+  border-color: var(--color-border);
 }

@@ -2,11 +2,23 @@ import { setTheme, syncPageTheme } from '../../services/theme-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.08.5',
+    date: '2026-10-08',
+    title: '浅色高对比视觉系统',
+    summary: '浅色模式统一为白、黑灰与克制橙色，修正文字、居中、日期换行和操作可读性。',
+    latest: true,
+    features: [
+      '统一活动、行程、个人中心、表单与管理页面的浅色视觉层级',
+      '修正页面导航栏、指标、按钮和标题的视觉居中',
+      '提升次级文字、输入控件和日期信息在窄屏下的可读性',
+    ],
+  },
+  {
     version: '2026.10.08.4',
     date: '2026-10-08',
     title: '骑行名片与浅色主题校准',
     summary: '个人中心补齐累计骑行数据，并修正刷新反馈和浅色主题状态配色。',
-    latest: true,
+    latest: false,
     features: [
       '个人中心同时展示 Strava 累计骑行与近 90 天表现',
       '避免离开页面后的旧刷新结果覆盖当前状态',

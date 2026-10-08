@@ -1396,3 +1396,20 @@ page,
     font-size: 44rpx;
   }
 }
+
+/* Scheme C light theme: photographic identity with explicit black actions. */
+.theme-light .edit-button {
+  border-color: var(--color-text);
+  background: var(--color-text) !important;
+  color: var(--color-bg) !important;
+}
+
+.theme-light .hero-capability-metric {
+  text-align: center;
+}
+
+.theme-light .menu-list,
+.theme-light .menu-card {
+  border-radius: 0;
+  box-shadow: none;
+}

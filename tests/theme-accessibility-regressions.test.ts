@@ -31,8 +31,8 @@ describe('theme accessibility regressions', () => {
   it('uses default dark tokens, a light override, and semantic page surfaces', () => {
     expect(dark['--color-bg']).toBe('#0b0b0c');
     expect(dark['--color-text']).toBe('#f7f7f5');
-    expect(light['--color-bg']).toBe('#f4f2ed');
-    expect(light['--color-text']).toBe('#151515');
+    expect(light['--color-bg']).toBe('#ffffff');
+    expect(light['--color-text']).toBe('#080808');
     expect(contrast(light['--color-brand'], light['--color-bg'])).toBeGreaterThanOrEqual(4.5);
     expect(contrast(light['--color-brand'], light['--color-surface'])).toBeGreaterThanOrEqual(4.5);
 
@@ -176,8 +176,7 @@ describe('theme accessibility regressions', () => {
 
   it('keeps primary CTA text and brand treatment distinguishable in dark and light themes', () => {
     const button = effectiveBlock(app, '.btn');
-    expect(declaration(button, 'background')).toContain('var(--color-brand)');
-    expect(declaration(button, 'background')).toContain('var(--color-brand-active)');
+    expect(declaration(button, 'background')).toBe('var(--color-brand) !important');
     expectSemantic(declaration(button, 'color'), '--color-on-brand');
     for (const [name, tokens] of themes) {
       const foreground = resolvedHex('var(--color-on-brand)', tokens);

@@ -82,7 +82,7 @@ describe('CILI 活动页静态契约', () => {
     const dark = themeTokens(appStyles, 'dark');
     const light = themeTokens(appStyles, 'light');
     expect(dark['--color-bg']).toBe('#0b0b0c');
-    expect(light['--color-bg']).toBe('#f4f2ed');
+    expect(light['--color-bg']).toBe('#ffffff');
     expect(dark['--radius-sm']).toBe('8rpx');
     expect(dark['--radius-md']).toBe('16rpx');
     expect(dark['--radius-display']).toBe('24rpx');

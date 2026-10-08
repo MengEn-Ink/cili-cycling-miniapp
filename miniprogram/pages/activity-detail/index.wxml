@@ -106,4 +106,4 @@
 </view>
 
 <canvas id="poster-canvas" type="2d" class="poster-canvas" aria-hidden="true"></canvas>
-<view class="fixed detail-action"><button class="btn" disabled="{{loading || !item || !activityAction.enabled}}" bindtap="go">{{activityAction.label}} <text class="button-arrow">→</text></button></view>
+<view class="fixed detail-action {{themeClass}}"><button class="btn" disabled="{{loading || !item || !activityAction.enabled}}" bindtap="go">{{activityAction.label}} <text class="button-arrow">→</text></button></view>

@@ -19,17 +19,17 @@ const palettes = {
     },
   },
   light: {
-    navigation: { backgroundColor: '#f6f1e8', frontColor: '#000000' },
+    navigation: { backgroundColor: '#ffffff', frontColor: '#000000' },
     tabBar: {
-      backgroundColor: '#fffaf2',
+      backgroundColor: '#ffffff',
       borderStyle: 'white',
-      color: '#67615a',
-      selectedColor: '#d55b1f',
+      color: '#4f4f4c',
+      selectedColor: '#bd3f00',
     },
     background: {
-      backgroundColor: '#f6f1e8',
-      backgroundColorTop: '#f6f1e8',
-      backgroundColorBottom: '#f6f1e8',
+      backgroundColor: '#ffffff',
+      backgroundColorTop: '#ffffff',
+      backgroundColorBottom: '#ffffff',
     },
   },
 } as const;
@@ -158,6 +158,11 @@ export function syncPageTheme(page: {
   } catch {
     // 页面销毁竞态中的 setData 失败不影响系统主题同步。
   }
+  const refreshNavigation = appliedTheme === theme && applyingTheme === undefined;
   applyTheme(theme);
+  // 每个页面的静态 navigationBar 配置会在入栈时重新生效；全局 TabBar 可去重，页面导航栏必须重设。
+  if (refreshNavigation) {
+    safePlatformCall('setNavigationBarColor', palettes[theme].navigation, () => undefined);
+  }
   return theme;
 }

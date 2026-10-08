@@ -968,3 +968,30 @@ brand-logo {
     font-size: 50rpx;
   }
 }
+
+/* Scheme C light theme: photographic hero, then high-contrast white facts. */
+.theme-light .metric-panel {
+  border-color: var(--color-border-strong);
+}
+
+.theme-light .detail-metric {
+  background: var(--color-surface);
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.theme-light .metric-value {
+  justify-content: center;
+}
+
+.time-row {
+  display: grid;
+  grid-template-columns: 148rpx minmax(0, 1fr);
+  align-items: start;
+}
+
+.time-row text:last-child {
+  min-width: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}

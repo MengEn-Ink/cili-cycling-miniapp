@@ -278,6 +278,7 @@ page,
 }
 .profile-form-page .title {
   color: var(--color-text);
+  text-align: center;
 }
 .profile-form-page .form-card .label,
 .default-avatar-title,
@@ -286,6 +287,9 @@ page,
 .profile-form-page .field-tip,
 .profile-form-page .photo-count {
   color: var(--color-muted);
+}
+.profile-form-page .form-card .label {
+  text-align: left;
 }
 .form-card .input,
 .gender-option,

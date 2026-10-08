@@ -33,7 +33,7 @@ brand-logo {
   font-style: italic;
   font-weight: 900;
   line-height: 1.05;
-  letter-spacing: -2rpx;
+  letter-spacing: 0;
 }
 
 .hero-copy {
@@ -164,12 +164,13 @@ brand-logo {
 }
 
 .theme-preview-light {
-  background: #f4f2ed;
+  background: #ffffff;
+  border: 1rpx solid #bdbdb8;
 }
 
 .theme-preview-light view:last-child {
-  background: #ffffff;
-  box-shadow: 0 2rpx 8rpx rgba(35, 31, 25, 0.2);
+  background: #f1f1ef;
+  box-shadow: none;
 }
 
 .theme-option-copy {

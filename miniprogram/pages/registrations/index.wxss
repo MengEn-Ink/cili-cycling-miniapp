@@ -37,7 +37,7 @@ brand-logo {
   font-style: italic;
   font-weight: 900;
   line-height: 1.12;
-  letter-spacing: -2rpx;
+  letter-spacing: 0;
 }
 
 .heading-count {
@@ -261,10 +261,10 @@ brand-logo,
   border-color: var(--color-border);
 }
 .registration-card {
-  border-color: var(--color-border);
+  border-color: var(--color-card-border);
   border-radius: var(--radius-display);
   background: var(--color-surface);
-  box-shadow: 0 10rpx 24rpx var(--color-shadow);
+  box-shadow: var(--shadow-card);
 }
 .registration-card--pressed {
   border-color: var(--color-brand);
@@ -279,4 +279,9 @@ brand-logo,
 .count-value,
 .open-link {
   color: var(--color-text);
+}
+
+.theme-light .registration-card {
+  border-color: var(--color-border-strong);
+  box-shadow: none;
 }
