@@ -2,11 +2,23 @@ import { setTheme, syncPageTheme } from '../../services/theme-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.08.3',
+    date: '2026-10-08',
+    title: '头像默认展示与资料编辑简化',
+    summary: '头像默认用于报名骑友展示，资料编辑页移除不再需要的展示设置。',
+    latest: true,
+    features: [
+      '已有和新设置的有效头像默认展示在报名骑友列表',
+      '移除头像展示开关，头像用途改为固定说明',
+      '移除资料编辑页的展示身份与展示称号区块',
+    ],
+  },
+  {
     version: '2026.10.08.2',
     date: '2026-10-08',
     title: '个人中心与骑友头像升级',
     summary: '个人中心减少常驻状态信息，下拉刷新和报名骑友头像反馈更加明确。',
-    latest: true,
+    latest: false,
     features: [
       '骑行名片默认完整展示，资料完整后自动隐藏完整度',
       '下拉刷新时集中展示更新时间、进度与结果',

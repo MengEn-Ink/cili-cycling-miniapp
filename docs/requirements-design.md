@@ -74,9 +74,9 @@ rejected|cancelled -> pending
 
 ### 3.5 公开骑手卡片边界
 
-长期契约是：公开卡片只允许昵称、称号、明确授权公开的照片和非敏感骑行指标；不得包含真实姓名、电话、紧急联系人、报名备注、`openid`、token、原始文件 ID 或审计数据。公开图片还必须经过 owner/status/current-reference 校验，并只签发 canonical 媒体的临时 URL。
+长期契约是：公开卡片只允许昵称、称号、头像和非敏感骑行指标；不得包含真实姓名、电话、紧急联系人、报名备注、`openid`、token、原始文件 ID 或审计数据。公开图片还必须经过 owner/status/current-reference 校验，并只签发 canonical 媒体的临时 URL。
 
-当前代码已经持久化显式 `avatar_visibility=public` 及其授权 revision。活动详情仅在授权 revision 等于当前头像 revision，且媒体 registry 的 owner、状态、source/origin、canonical 路径和内容元数据完整匹配时签发临时地址；缺字段、旧 revision、私有授权、脏 registry、缺失媒体或签名失败均隐藏头像且不拖垮活动详情。存量资料默认按私有处理，必须由用户主动公开。代码与离线测试不代表目标环境已部署，管理员审批卡和本人预览也不等同于公开授权。
+新设置头像会同步写入 `avatar_visibility=public` 及当前 revision，用于兼容历史客户端和数据。活动详情不再以历史可见性字段作为展示门槛；只在媒体 registry 的 owner、状态、source/origin、canonical 路径和内容元数据完整匹配时签发临时地址。非法来源、脏 registry、缺失媒体或签名失败均隐藏头像且不拖垮活动详情。代码与离线测试不代表目标环境已部署，仍需核对实际云函数版本。
 
 ## 4. 页面与功能清单
 

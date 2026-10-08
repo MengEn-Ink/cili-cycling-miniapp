@@ -27,8 +27,8 @@ _id: openid
 nickname, title
 avatar_source: wechat|strava|custom
 avatar_file_id, avatar_revision       # 每次头像槽位变化时单调递增
-avatar_visibility: private|public     # 缺失按 private；只有显式授权才公开
-avatar_visibility_revision            # 绑定授权时头像版本；换头像后自动失效
+avatar_visibility: private|public     # 兼容历史客户端；当前活动头像默认展示
+avatar_visibility_revision            # 新头像同步记录当前版本，用于兼容旧响应
 photos: [{ file_id, category: ride|bike|other }]
 gender, emergency_name
 real_name_cipher, phone_cipher, emergency_phone_cipher: {

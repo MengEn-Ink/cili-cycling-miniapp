@@ -29,11 +29,11 @@ describe('设置页', () => {
     page.onShow();
 
     expect(page.data).toMatchObject({ theme: 'dark', themeClass: 'theme-dark' });
-    expect(page.data.releaseNotes).toHaveLength(8);
+    expect(page.data.releaseNotes).toHaveLength(9);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.08.2',
+      version: '2026.10.08.3',
       latest: true,
-      title: '个人中心与骑友头像升级',
+      title: '头像默认展示与资料编辑简化',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,

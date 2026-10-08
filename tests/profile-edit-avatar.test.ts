@@ -144,31 +144,8 @@ describe('资料编辑头像交互', () => {
     });
   });
 
-  it('公开头像开关只提交公开设置并采用服务端绑定版本', async () => {
-    rideService.updateProfile.mockResolvedValueOnce({
-      ...profile,
-      avatarVisibility: 'public',
-      avatarVisibilityRevision: profile.avatarRevision,
-    });
-
-    await page.onAvatarVisibilityChange({ detail: { value: true } });
-
-    expect(rideService.updateProfile).toHaveBeenCalledWith({ avatarVisibility: 'public' });
-    expect(page.data.p).toMatchObject({
-      avatarVisibility: 'public',
-      avatarVisibilityRevision: profile.avatarRevision,
-    });
-    expect(wx.showToast).toHaveBeenCalledWith({ title: '头像已公开展示' });
-  });
-
-  it('无头像或媒体操作中禁止修改公开设置', async () => {
-    page.data.p = { ...blankProfile };
-    await page.onAvatarVisibilityChange({ detail: { value: true } });
-    page.data.p = { ...profile };
-    page.data.avatarBusy = true;
-    await page.onAvatarVisibilityChange({ detail: { value: false } });
-
-    expect(rideService.updateProfile).not.toHaveBeenCalled();
+  it('不再暴露头像可见性开关处理器', () => {
+    expect(page.onAvatarVisibilityChange).toBeUndefined();
   });
 
   it('空白新用户未选择头像时资料保存被头像先行门禁拦截', async () => {
@@ -1095,10 +1072,20 @@ describe('资料编辑头像页面契约', () => {
     expect(source).not.toMatch(/getStravaReadiness|importStravaAvatar|STRAVA_AVATAR/);
   });
 
-  it('删除昵称输入与提交，展示称号保持只读', () => {
+  it('删除昵称输入、展示身份与展示称号', () => {
     expect(template).not.toContain('data-k="nickname"');
     expect(source).not.toContain('nickname: p.nickname');
-    expect(template).toMatch(/展示称号[\s\S]*?<input[^>]*disabled/);
+    expect(template).not.toContain('展示身份');
+    expect(template).not.toContain('展示称号');
+    expect(template).not.toContain('value="{{p.title}}"');
+  });
+
+  it('头像用途固定公开且不再显示开关', () => {
+    expect(template).toContain('头像会展示在活动报名骑友列表中');
+    expect(template).not.toContain('<switch');
+    expect(template).not.toContain('onAvatarVisibilityChange');
+    expect(styles).not.toContain('.avatar-visibility-row');
+    expect(styles).not.toContain('.avatar-visibility-title');
   });
 
   it('头像预览仅绑定净化后的 preview URL 并提供无障碍名称', () => {

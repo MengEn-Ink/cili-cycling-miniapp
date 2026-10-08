@@ -363,6 +363,8 @@ test('setAvatar 事务重读 owner registry 并原子激活新头像、降级旧
     avatar_file_id: nextFileId,
     avatar_source: 'wechat',
     avatar_revision: 1,
+    avatar_visibility: 'public',
+    avatar_visibility_revision: 1,
     updated_at: db.serverDate(),
   });
   assert.deepEqual(db.sets, [{ name: 'profiles', id: owner, data: result }]);
@@ -846,6 +848,8 @@ test('Strava import 最终事务原子登记 canonical media、激活头像并�
   assert.equal(profile.avatar_file_id, fileId);
   assert.equal(profile.avatar_source, 'strava');
   assert.equal(profile.avatar_revision, 1);
+  assert.equal(profile.avatar_visibility, 'public');
+  assert.equal(profile.avatar_visibility_revision, 1);
   assert.equal(fixture.state.profile_media.get(mediaDocumentId(fileId)).origin, 'strava');
   assert.equal(fixture.state.profile_media.get(mediaDocumentId(fileId)).status, 'active');
   assert.equal(

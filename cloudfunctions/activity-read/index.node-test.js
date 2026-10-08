@@ -414,7 +414,7 @@ test('详情成员超过单页时完整读取候选集后再选最早 24 人', a
   );
 });
 
-test('详情默认隐藏未授权、私有、旧版本和外部头像且不签 source URL', async () => {
+test('详情展示历史可见性状态下的有效头像，但仍拒绝外部头像', async () => {
   const cases = [
     {
       id: 'no-consent',
@@ -463,9 +463,13 @@ test('详情默认隐藏未授权、私有、旧版本和外部头像且不签 s
     approved_at: `2026-09-01T00:0${index}:00.000Z`,
   }));
   const profiles = cases.map(({ id, profile }) => ({ _id: id, nickname: id, ...profile }));
+  const mediaRecords = cases
+    .slice(0, 3)
+    .map(({ id, profile }) => canonicalMedia(profile.avatar_file_id, id));
   const { main, calls } = loadMain({ _id: 'a1', title: '活动', status: 'published' }, [], {
     registrations,
     profiles,
+    mediaRecords,
     mediaSecret: MEDIA_SECRET,
     getTempFileURL: async ({ fileList }) => ({
       fileList: fileList.map((fileID) => ({
@@ -481,15 +485,20 @@ test('详情默认隐藏未授权、私有、旧版本和外部头像且不签 s
   assert.equal(result.ok, true);
   assert.deepEqual(
     result.data.attendees.map((attendee) => attendee.avatar_url),
-    ['', '', '', ''],
+    [
+      'https://temporary.example/avatar.jpg',
+      'https://temporary.example/avatar.jpg',
+      'https://temporary.example/avatar.jpg',
+      '',
+    ],
   );
-  assert.equal(
-    calls.some((call) => call.type === 'getTempFileURL'),
-    false,
+  assert.deepEqual(
+    calls.filter((call) => call.type === 'getTempFileURL').map((call) => call.payload.fileList),
+    [mediaRecords.map((record) => record.canonical_file_id)],
   );
 });
 
-test('详情只为公开当前版本且 registry 合法的 canonical 头像签发地址', async () => {
+test('详情只为 registry 合法的 canonical 头像签发地址', async () => {
   const definitions = [
     ['missing', 'cloud://env/profiles/missing.jpg', 'custom'],
     ['inactive', 'cloud://env/profiles/inactive.jpg', 'custom'],
