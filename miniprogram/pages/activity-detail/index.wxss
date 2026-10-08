@@ -751,3 +751,180 @@ brand-logo {
   height: 600px;
   pointer-events: none;
 }
+
+/* Scheme A: photographic route story followed by decision-first content. */
+.detail-hero--media {
+  min-height: 640rpx;
+}
+
+.detail-hero--media .hero-content {
+  display: flex;
+  min-height: 520rpx;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.detail-hero--media .hero-brand-row {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+}
+
+.detail-hero .hero-title {
+  max-width: 600rpx;
+  margin-top: 10rpx;
+  font-size: 58rpx;
+  line-height: 1.06;
+}
+
+.detail-hero .hero-kicker {
+  margin-top: 0;
+  color: #f0b397;
+  font-size: 21rpx;
+  font-weight: 900;
+}
+
+.hero-route {
+  margin-top: 5rpx;
+  color: #e0dfdb;
+}
+
+.hero-level {
+  min-height: 44rpx;
+  margin-top: 18rpx;
+  padding: 5rpx 16rpx;
+  border-width: 0 0 0 5rpx;
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.34);
+  color: #f7f7f5;
+}
+
+.content {
+  padding-top: 0;
+}
+
+.metric-panel {
+  margin-top: 0;
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.detail-metric {
+  padding-top: 24rpx;
+  padding-bottom: 22rpx;
+  background: var(--color-surface);
+  text-align: left;
+}
+
+.metric-value {
+  justify-content: flex-start;
+}
+
+.metric-number {
+  font-size: 39rpx;
+}
+
+.detail-decision {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+  margin-top: 20rpx;
+  padding: 24rpx 24rpx 24rpx 26rpx;
+  border-left: 6rpx solid var(--color-brand);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.decision-kicker {
+  color: var(--color-brand);
+  font-size: 18rpx;
+  font-weight: 900;
+  letter-spacing: 2rpx;
+}
+
+.decision-title {
+  margin-top: 5rpx;
+  font-size: 30rpx;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.decision-meta {
+  margin-top: 6rpx;
+  color: var(--color-muted);
+  font-size: 21rpx;
+}
+
+.decision-capacity {
+  flex: 0 0 auto;
+  color: var(--color-muted);
+  text-align: right;
+}
+
+.decision-capacity text {
+  display: block;
+  font-size: 19rpx;
+}
+
+.decision-capacity text:first-child {
+  color: var(--color-brand);
+  font-size: 40rpx;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.detail-page .time-card,
+.detail-page .route-profile-card,
+.detail-page .climbs-card,
+.detail-page .attendees-card,
+.detail-page .route-actions-card,
+.detail-page .overview-card,
+.detail-page .route-location-card,
+.detail-page .schedule-card {
+  padding-right: 4rpx;
+  padding-left: 4rpx;
+  border-right: 0;
+  border-bottom: 1rpx solid var(--color-border);
+  border-left: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.detail-page .title {
+  font-size: 31rpx;
+  font-weight: 900;
+}
+
+.elevation-canvas {
+  height: 250rpx;
+}
+
+.detail-action {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.detail-action .btn {
+  border-radius: var(--radius-sm) !important;
+  background: var(--color-brand) !important;
+}
+
+@media (max-width: 350px) {
+  .detail-hero--media {
+    min-height: 590rpx;
+  }
+
+  .detail-hero--media .hero-content {
+    min-height: 480rpx;
+  }
+
+  .detail-hero .hero-title {
+    font-size: 50rpx;
+  }
+}

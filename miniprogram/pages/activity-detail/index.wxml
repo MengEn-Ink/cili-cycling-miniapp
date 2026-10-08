@@ -23,6 +23,15 @@
           <view class="detail-metric"><view class="metric-value"><text class="metric-number" wx:if="{{item.capacity > 0}}">{{item.capacity}}</text><text class="metric-number metric-number--text" wx:else>待确认</text></view><view class="metric-label">名额</view></view>
         </view>
 
+        <view class="detail-decision" aria-label="报名状态">
+          <view>
+            <view class="decision-kicker">SIGN-UP STATUS</view>
+            <view class="decision-title">{{activityAction.label}}</view>
+            <view class="decision-meta">报名截止 {{deadlineTime || '待公布'}}</view>
+          </view>
+          <view class="decision-capacity" wx:if="{{item.capacity > 0}}"><text>{{item.capacity}}</text><text>活动名额</text></view>
+        </view>
+
         <view class="card time-card">
           <view class="title">活动时间</view>
           <view class="time-row"><text>开始</text><text>{{startTime || '待公布'}}</text></view>

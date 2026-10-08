@@ -1071,3 +1071,215 @@ page,
   color: var(--color-brand);
   font-size: 30rpx;
 }
+
+/* Scheme A: photographic rider identity with data bands below the image. */
+.page.profile-page {
+  overflow-x: hidden;
+}
+
+.profile-topbar {
+  padding-bottom: 8rpx;
+  border-bottom: 0;
+}
+
+.profile-hero,
+.profile-hero.has-bg {
+  min-height: 640rpx;
+  padding: 370rpx 24rpx 28rpx;
+  border-radius: var(--radius-sm);
+}
+
+.hero-shade {
+  background: linear-gradient(
+    180deg,
+    rgba(11, 11, 12, 0.03),
+    rgba(11, 11, 12, 0.18) 42%,
+    rgba(11, 11, 12, 0.94) 100%
+  );
+}
+
+.hero-photo-hint {
+  border-radius: var(--radius-md);
+}
+
+.hero-identity {
+  align-items: flex-end;
+}
+
+.avatar {
+  width: 92rpx;
+  height: 92rpx;
+  flex-basis: 92rpx;
+}
+
+.profile-copy .hero-kicker {
+  font-size: 17rpx;
+}
+
+.profile-name {
+  margin-top: 6rpx;
+  font-size: 50rpx;
+  line-height: 1.02;
+}
+
+.profile-title {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+}
+
+.auth-line {
+  margin-top: 8rpx;
+  font-size: 19rpx;
+}
+
+.profile-capability-section {
+  margin-top: 0;
+}
+
+.profile-capability-section .hero-capability-card {
+  margin-top: 0;
+  padding: 24rpx 4rpx 22rpx;
+  border-width: 0 0 1rpx;
+  border-color: var(--color-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.profile-capability-section .hero-capability-card.is-expanded {
+  padding-bottom: 24rpx;
+  background: transparent;
+}
+
+.profile-capability-section .hero-capability-card::after {
+  display: none;
+}
+
+.profile-capability-section .hero-capability-head {
+  padding: 0 4rpx;
+}
+
+.profile-capability-section .hero-capability-metrics {
+  display: grid;
+  margin-top: 18rpx;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+}
+
+.profile-capability-section .hero-capability-metric {
+  padding: 4rpx 10rpx 2rpx;
+}
+
+.profile-capability-section .hero-capability-metric + .hero-capability-metric {
+  border-left: 1rpx solid var(--color-border);
+}
+
+.profile-capability-section .hero-capability-value {
+  color: var(--color-text);
+  font-size: 34rpx;
+}
+
+.profile-capability-section .hero-capability-name,
+.profile-capability-section .hero-capability-empty,
+.profile-capability-section .hero-capability-meta {
+  color: var(--color-muted);
+}
+
+.profile-capability-section .hero-capability-secondary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  padding-top: 16rpx;
+  border-top: 1rpx solid var(--color-border);
+}
+
+.profile-capability-section .hero-capability-secondary .hero-capability-metric {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.profile-capability-section
+  .hero-capability-secondary
+  .hero-capability-metric
+  + .hero-capability-metric {
+  border-left: 1rpx solid var(--color-border);
+}
+
+.profile-capability-section .hero-capability-details {
+  border-color: var(--color-border);
+}
+
+.profile-capability-section .hero-capability-details text:last-child {
+  color: var(--color-text);
+}
+
+.hero-profile-progress {
+  margin: 18rpx 0 0;
+  padding: 22rpx 24rpx;
+  border-left: 6rpx solid var(--color-brand);
+  background: var(--color-surface);
+}
+
+.hero-progress-head {
+  color: var(--color-text);
+  font-size: 23rpx;
+}
+
+.hero-progress-head text:last-child {
+  color: var(--color-brand);
+  font-size: 34rpx;
+}
+
+.hero-progress-track {
+  height: 6rpx;
+  margin-top: 12rpx;
+  background: var(--color-border);
+}
+
+.hero-progress-value {
+  background: var(--color-brand);
+}
+
+.profile-page .profile-card,
+.profile-page .profile-loading,
+.profile-page .profile-error,
+.profile-page .empty-profile {
+  padding-right: 4rpx;
+  padding-left: 4rpx;
+  border-right: 0;
+  border-bottom: 1rpx solid var(--color-border);
+  border-left: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.menu-list {
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.menu-card,
+.menu-card:active {
+  min-height: 104rpx;
+  padding-right: 4rpx;
+  padding-left: 4rpx;
+  background: transparent;
+}
+
+.menu-icon {
+  border-color: var(--color-border);
+  background: transparent;
+}
+
+@media (max-width: 350px) {
+  .profile-hero,
+  .profile-hero.has-bg {
+    min-height: 600rpx;
+    padding-top: 340rpx;
+  }
+
+  .profile-name {
+    font-size: 44rpx;
+  }
+}

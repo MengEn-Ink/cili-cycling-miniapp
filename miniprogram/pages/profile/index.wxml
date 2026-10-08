@@ -11,7 +11,7 @@
 
   <view
     class="profile-hero has-bg {{heroPullOffset ? 'is-pulling' : ''}}"
-    style="min-height: calc(600rpx + {{heroPullOffset}}px)"
+    style="min-height: calc(640rpx + {{heroPullOffset}}px)"
     bindtouchstart="heroTouchStart"
     bindtouchmove="heroTouchMove"
     bindtouchend="heroTouchEnd"
@@ -44,7 +44,9 @@
         <view class="auth-line"><text class="auth-dot {{authStatus === 'authenticated' ? 'verified' : ''}}"></text>{{authStatus === 'authenticated' ? '微信身份已验证' : '请先完成微信云身份验证'}}</view>
       </view>
     </view>
+  </view>
 
+  <view class="profile-capability-section" wx:if="{{heroCard}}">
     <view class="hero-capability-card {{cardExpanded ? 'is-expanded' : ''}}" wx:if="{{heroCard}}" bindtap="toggleCard" aria-label="{{cardExpanded ? '收起骑行名片' : '展开完整骑行名片'}}">
       <view class="hero-capability-head">
         <view class="hero-card-brand"><text class="hero-card-logo">CILI</text><text class="hero-capability-label">近 90 天骑行名片</text></view>
@@ -70,11 +72,11 @@
       </view>
       <view class="hero-capability-meta">{{cardExpanded ? '点按收起' : '下拉刷新并查看完整名片'}} · {{updatedAtText}}</view>
     </view>
+  </view>
 
-    <view class="hero-profile-progress" wx:if="{{profile}}">
-      <view class="hero-progress-head"><text>资料完整度</text><text>{{profile.completeness}}%</text></view>
-      <view class="hero-progress-track"><view class="hero-progress-value" style="width: {{profile.completeness}}%"></view></view>
-    </view>
+  <view class="hero-profile-progress" wx:if="{{profile}}">
+    <view class="hero-progress-head"><text>资料完整度</text><text>{{profile.completeness}}%</text></view>
+    <view class="hero-progress-track"><view class="hero-progress-value" style="width: {{profile.completeness}}%"></view></view>
   </view>
 
   <view class="card auth-card" wx:if="{{authStatus !== 'authenticated'}}">

@@ -324,3 +324,194 @@ status-pill {
   background: var(--color-brand);
   color: var(--color-on-brand);
 }
+
+/* Scheme A: one editorial lead ride followed by compact, scannable rows. */
+.card-identity {
+  position: absolute;
+  z-index: 2;
+  right: 24rpx;
+  bottom: 24rpx;
+  left: 24rpx;
+}
+
+.activity-card--featured {
+  margin-top: 10rpx;
+  border-radius: var(--radius-sm);
+}
+
+.activity-card--featured .card-media {
+  height: 360rpx;
+}
+
+.activity-card--featured .card-date {
+  top: 22rpx;
+  right: 24rpx;
+  bottom: auto;
+  left: 24rpx;
+  align-items: center;
+}
+
+.activity-card--featured .date-value {
+  font-size: 22rpx;
+}
+
+.activity-card--featured .activity-title {
+  max-width: 82%;
+  color: #f7f7f5;
+  font-size: 46rpx;
+  line-height: 1.08;
+}
+
+.activity-card--featured .route-line {
+  margin-top: 10rpx;
+  color: #d2d2d6;
+  font-size: 23rpx;
+}
+
+.activity-card--featured .card-content {
+  padding: 0 22rpx 18rpx;
+}
+
+.activity-card--featured .metrics {
+  margin-top: 0;
+  border: 0;
+  border-bottom: 1rpx solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.activity-card--featured .metric-item {
+  padding: 20rpx 10rpx 18rpx;
+  background: transparent;
+  text-align: left;
+}
+
+.activity-card--featured .metric-item + .metric-item {
+  border-left: 1rpx solid var(--color-border);
+}
+
+.activity-card--featured .card-foot {
+  margin-top: 0;
+  padding-top: 16rpx;
+  border-top: 0;
+}
+
+.activity-card--compact {
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+}
+
+.activity-card--compact .card-media {
+  display: grid;
+  min-height: 132rpx;
+  height: auto;
+  padding: 22rpx;
+  grid-template-columns: 92rpx minmax(0, 1fr);
+  gap: 18rpx;
+  background: transparent;
+}
+
+.activity-card--compact .card-cover,
+.activity-card--compact .card-placeholder,
+.activity-card--compact .card-media-shade {
+  display: none;
+}
+
+.activity-card--compact .card-date {
+  position: static;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.activity-card--compact .date-label {
+  color: var(--color-brand);
+  font-size: 17rpx;
+}
+
+.activity-card--compact .date-value {
+  color: var(--color-text);
+  font-size: 22rpx;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.activity-card--compact .card-identity {
+  position: static;
+  min-width: 0;
+}
+
+.activity-card--compact .activity-title {
+  font-size: 30rpx;
+  line-height: 1.2;
+}
+
+.activity-card--compact .route-line {
+  margin-top: 7rpx;
+}
+
+.activity-card--compact .card-content {
+  padding: 0 22rpx 18rpx 132rpx;
+}
+
+.activity-card--compact .metrics {
+  margin-top: 0;
+  border: 0;
+  border-top: 1rpx solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.activity-card--compact .metric-item {
+  padding: 15rpx 5rpx 13rpx;
+  background: transparent;
+  text-align: left;
+}
+
+.activity-card--compact .metric-item + .metric-item {
+  border-left: 1rpx solid var(--color-border);
+  padding-left: 12rpx;
+}
+
+.activity-card--compact .metric-value {
+  font-size: 25rpx;
+}
+
+.activity-card--compact .metric-unit {
+  font-size: 20rpx;
+}
+
+.activity-card--compact .card-foot {
+  margin-top: 0;
+  padding-top: 12rpx;
+}
+
+.activity-card--compact .card-cta {
+  min-width: var(--control-height);
+  width: var(--control-height);
+  padding: 0;
+  overflow: hidden;
+  color: transparent;
+}
+
+.activity-card--compact .card-cta text {
+  margin: 0;
+  color: var(--color-on-brand);
+  font-size: 32rpx;
+}
+
+@media (max-width: 350px) {
+  .activity-card--featured .card-media {
+    height: 330rpx;
+  }
+
+  .activity-card--featured .activity-title {
+    font-size: 40rpx;
+  }
+
+  .activity-card--compact .card-content {
+    padding-left: 118rpx;
+  }
+}

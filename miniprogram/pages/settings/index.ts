@@ -2,11 +2,24 @@ import { setTheme, syncPageTheme } from '../../services/theme-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.08.1',
+    date: '2026-10-08',
+    title: '编辑式骑行界面升级',
+    summary: '核心页面以真实骑行内容和关键数据重新组织，活动浏览与报名判断更加直接。',
+    latest: true,
+    features: [
+      '活动列表突出下一场主活动，并压缩后续活动信息',
+      '活动详情前置路线数据、报名状态与截止时间',
+      '个人中心分离骑手照片、90 天能力数据和服务入口',
+      '保留深浅主题、无障碍触控尺寸与原有业务流程',
+    ],
+  },
+  {
     version: '2026.10.02.3',
     date: '2026-10-02',
     title: '骑行名片连接 Strava 主页',
     summary: '骑行名片补充 Strava 累计数据与主页入口，近期和长期表现更容易查看。',
-    latest: true,
+    latest: false,
     features: [
       '新增累计里程、骑行次数、移动时间与累计爬升',
       '保留近 90 天骑行表现，区分长期积累与近期状态',
