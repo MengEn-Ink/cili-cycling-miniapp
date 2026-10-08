@@ -18,9 +18,12 @@ import {
 const HERO_CARD_DEADLINE_MS = 1_200;
 const HERO_BRAND_IMAGE = '/assets/profile/hero-alpine.svg';
 const CHINA_TIME_OFFSET_MS = 8 * 60 * 60_000;
-const EXPAND_THRESHOLD_PX = 96;
+const REFRESH_READY_THRESHOLD_PX = 72;
+const REFRESH_SUCCESS_DURATION_MS = 1_200;
+const REFRESH_ERROR_DURATION_MS = 1_600;
 
 type PersonalCardView = ReturnType<typeof personalCardViewModel>;
+type RefreshStage = 'idle' | 'pulling' | 'ready' | 'refreshing' | 'success' | 'error';
 
 type HeroImageErrorEvent = {
   currentTarget: { dataset: { index?: number | string; url?: string } };
@@ -83,6 +86,18 @@ function formatUpdatedAt(cachedAt: number, now = Date.now()) {
   return `缓存于 ${date.getUTCMonth() + 1}月${date.getUTCDate()}日 ${time}`;
 }
 
+function formatPullRefreshDetail(updatedAtText: string) {
+  if (!updatedAtText) return '尚无更新记录';
+  if (updatedAtText === '刚刚更新') return '上次更新 · 刚刚';
+  return `上次${updatedAtText}`;
+}
+
+function formatRetainedContent(updatedAtText: string) {
+  if (!updatedAtText) return '继续展示当前内容';
+  if (updatedAtText === '刚刚更新') return '继续展示刚刚更新的内容';
+  return `继续展示${updatedAtText.replace(/^缓存于/, '于')}的内容`;
+}
+
 function cardView(card: PersonalCapabilityCard, images: Record<string, string> = {}) {
   const view = personalCardViewModel(applyCachedImages(card, images));
   const avatarBackground =
@@ -101,8 +116,10 @@ Page({
   loadRequestId: 0,
   lifecycleRevision: 0,
   pageVisible: false,
-  heroTouchStartY: 0,
+  refreshTouchStartY: 0,
   heroPageScrollTop: 0,
+  refreshFailed: false,
+  refreshFeedbackTimer: null as ReturnType<typeof setTimeout> | null,
   loadPromise: null as {
     forceIdentity: boolean;
     forceData: boolean;
@@ -131,10 +148,11 @@ Page({
     heroBackgroundAvatarUrl: '',
     heroFallbackImageUrl: HERO_BRAND_IMAGE,
     heroCard: null as PersonalCardView | null,
-    heroPullOffset: 0,
-    heroImageMode: 'aspectFill' as 'aspectFill' | 'aspectFit',
     currentHeroIndex: 0,
-    cardExpanded: false,
+    refreshStage: 'idle' as RefreshStage,
+    refreshTitle: '',
+    refreshDetail: '',
+    refreshPullProgress: 0,
     hasGuidance: false,
   },
   hydrateCache() {
@@ -163,6 +181,8 @@ Page({
     await this.load(false, !cache || !isProfilePageCacheFresh(cache));
   },
   onHide() {
+    this.clearRefreshFeedbackTimer();
+    this.resetRefreshFeedback();
     this.pageVisible = false;
     this.lifecycleRevision += 1;
     this.loadRequestId += 1;
@@ -171,16 +191,42 @@ Page({
     this.hydratedCache = null;
   },
   onUnload() {
+    this.clearRefreshFeedbackTimer();
     this.pageVisible = false;
     this.lifecycleRevision += 1;
     this.loadRequestId += 1;
     this.loadPromise = null;
   },
   async onPullDownRefresh() {
-    this.setData({ cardExpanded: true, refreshMessage: '正在更新资料与骑行数据…' });
-    await this.load(false, true);
-    if (this.cardLoadPromise) await this.cardLoadPromise;
-    if (typeof wx.stopPullDownRefresh === 'function') wx.stopPullDownRefresh();
+    const refreshRevision = this.lifecycleRevision;
+    this.clearRefreshFeedbackTimer();
+    this.refreshFailed = false;
+    this.setData({
+      refreshStage: 'refreshing',
+      refreshTitle: '正在刷新',
+      refreshDetail: '正在更新资料与骑行数据',
+      refreshPullProgress: 100,
+      refreshMessage: '正在更新资料与骑行数据…',
+    });
+    const loadPromise = this.load(false, true);
+    const cardLoadPromise = this.cardLoadPromise;
+    try {
+      await loadPromise;
+      if (cardLoadPromise) await cardLoadPromise;
+    } finally {
+      if (typeof wx.stopPullDownRefresh === 'function') wx.stopPullDownRefresh();
+    }
+    if (!this.pageVisible || refreshRevision !== this.lifecycleRevision) return;
+    const failed = this.refreshFailed;
+    this.setData({
+      refreshStage: failed ? 'error' : 'success',
+      refreshTitle: failed ? '刷新未完成' : '刷新完成',
+      refreshDetail: failed ? formatRetainedContent(this.data.updatedAtText) : '刚刚更新',
+      refreshPullProgress: 100,
+    });
+    this.scheduleRefreshFeedbackReset(
+      failed ? REFRESH_ERROR_DURATION_MS : REFRESH_SUCCESS_DURATION_MS,
+    );
   },
   async load(forceIdentity = false, forceData = true) {
     const current = this.loadPromise;
@@ -254,6 +300,7 @@ Page({
         const card = cardState?.data || null;
         if (!card) {
           const hasPrevious = Boolean(this.data.heroCard);
+          if (this.data.refreshStage === 'refreshing') this.refreshFailed = true;
           this.setData({
             refreshing: false,
             refreshMessage: hasPrevious
@@ -330,6 +377,7 @@ Page({
 
     if (profileState.error) {
       const hasPrevious = Boolean(this.data.profile || this.data.heroCard);
+      if (this.data.refreshStage === 'refreshing') this.refreshFailed = true;
       this.setData({
         loading: false,
         refreshing: false,
@@ -351,29 +399,64 @@ Page({
   },
   onPageScroll(event: { scrollTop?: number }) {
     this.heroPageScrollTop = Math.max(0, Number(event.scrollTop) || 0);
+    if (
+      this.heroPageScrollTop > 0 &&
+      (this.data.refreshStage === 'pulling' || this.data.refreshStage === 'ready')
+    )
+      this.resetRefreshFeedback();
   },
-  heroTouchStart(event: { touches?: { clientY?: number }[] }) {
-    this.heroTouchStartY = Number(event.touches?.[0]?.clientY) || 0;
+  clearRefreshFeedbackTimer() {
+    if (this.refreshFeedbackTimer === null) return;
+    clearTimeout(this.refreshFeedbackTimer);
+    this.refreshFeedbackTimer = null;
   },
-  heroTouchMove(event: { touches?: { clientY?: number }[] }) {
-    if (this.heroPageScrollTop > 0 || !this.data.heroBackgrounds.length) return;
-    const currentY = Number(event.touches?.[0]?.clientY) || 0;
-    const distance = Math.max(0, Math.min(180, currentY - this.heroTouchStartY));
+  resetRefreshFeedback() {
+    if (this.data.refreshStage === 'idle') return;
     this.setData({
-      heroPullOffset: distance,
-      heroImageMode: distance >= 48 ? 'aspectFit' : 'aspectFill',
-      cardExpanded: this.data.cardExpanded || distance >= EXPAND_THRESHOLD_PX,
+      refreshStage: 'idle',
+      refreshTitle: '',
+      refreshDetail: '',
+      refreshPullProgress: 0,
     });
   },
-  heroTouchEnd() {
-    if (!this.data.heroPullOffset && this.data.heroImageMode === 'aspectFill') return;
-    this.setData({ heroPullOffset: 0, heroImageMode: 'aspectFill' });
+  scheduleRefreshFeedbackReset(delayMs: number) {
+    this.clearRefreshFeedbackTimer();
+    this.refreshFeedbackTimer = setTimeout(() => {
+      this.refreshFeedbackTimer = null;
+      if (this.pageVisible) this.resetRefreshFeedback();
+    }, delayMs);
+  },
+  refreshTouchStart(event: { touches?: { clientY?: number }[] }) {
+    if (this.heroPageScrollTop > 0 || this.data.refreshStage === 'refreshing') return;
+    this.clearRefreshFeedbackTimer();
+    this.refreshTouchStartY = Number(event.touches?.[0]?.clientY) || 0;
+  },
+  refreshTouchMove(event: { touches?: { clientY?: number }[] }) {
+    if (
+      this.heroPageScrollTop > 0 ||
+      ['refreshing', 'success', 'error'].includes(this.data.refreshStage)
+    )
+      return;
+    const currentY = Number(event.touches?.[0]?.clientY) || 0;
+    const distance = Math.max(0, currentY - this.refreshTouchStartY);
+    if (!distance) {
+      this.resetRefreshFeedback();
+      return;
+    }
+    const ready = distance >= REFRESH_READY_THRESHOLD_PX;
+    this.setData({
+      refreshStage: ready ? 'ready' : 'pulling',
+      refreshTitle: ready ? '松开刷新' : '下拉刷新',
+      refreshDetail: formatPullRefreshDetail(this.data.updatedAtText),
+      refreshPullProgress: Math.min(100, Math.round((distance / REFRESH_READY_THRESHOLD_PX) * 100)),
+    });
+  },
+  refreshTouchEnd() {
+    if (this.data.refreshStage === 'pulling' || this.data.refreshStage === 'ready')
+      this.resetRefreshFeedback();
   },
   openSettings() {
     wx.navigateTo({ url: '/pages/settings/index' });
-  },
-  toggleCard() {
-    this.setData({ cardExpanded: !this.data.cardExpanded });
   },
   heroSwiperChange(event: { detail?: { current?: number } }) {
     this.setData({ currentHeroIndex: Math.max(0, Number(event.detail?.current) || 0) });

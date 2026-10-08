@@ -1,5 +1,8 @@
 Component({
-  properties: { item: { type: Object, value: {} } },
+  properties: {
+    item: { type: Object, value: {} },
+    featured: { type: Boolean, value: false },
+  },
   data: {
     coverFailed: false,
   },

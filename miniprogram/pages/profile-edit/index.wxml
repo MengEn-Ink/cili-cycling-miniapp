@@ -11,7 +11,7 @@
           <view wx:else class="avatar-preview-placeholder" aria-hidden="true">骑</view>
         </view>
         <view class="avatar-panel">
-          <view class="muted avatar-note">可使用微信头像、自定义图片或 CILI 主题头像，选择后立即保存。</view>
+          <view class="muted avatar-note">可使用微信头像、自定义图片或 CILI 主题头像，选择后立即保存。头像会展示在活动报名骑友列表中。</view>
           <view class="avatar-actions">
             <button class="avatar-action avatar-action-wechat" open-type="chooseAvatar" bindchooseavatar="chooseWechatAvatar" disabled="{{avatarBusy || photoBusy || saving}}" aria-label="使用微信头像">使用微信头像</button>
             <button class="avatar-action avatar-action-custom" bindtap="chooseCustomAvatar" disabled="{{avatarBusy || photoBusy || saving}}" aria-label="选择并裁剪自定义头像">选择并裁剪图片</button>
@@ -25,25 +25,10 @@
           <text>{{item.name}}</text>
         </button>
       </view>
-      <view class="avatar-visibility-row">
-        <view class="avatar-visibility-copy">
-          <view class="avatar-visibility-title">在活动骑手列表中展示头像</view>
-          <view class="muted avatar-visibility-tip">默认隐藏。开启后仅展示当前头像；更换头像会自动关闭，需再次确认。</view>
-        </view>
-        <switch checked="{{p.avatarVisibility === 'public' && p.avatarVisibilityRevision === p.avatarRevision}}" bindchange="onAvatarVisibilityChange" disabled="{{!p.avatarId || avatarBusy || photoBusy || saving}}" color="#d55b1f" aria-label="公开展示当前头像" />
-      </view>
       <view class="avatar-status" role="status" aria-live="polite" aria-atomic="true">{{avatarBusy ? '正在更新头像' : ''}}</view>
     </view>
 
     <block wx:if="{{canEditDetails}}">
-      <view class="card form-card">
-        <view class="title">展示身份</view>
-        <view class="field">
-          <view class="label">展示称号</view>
-          <input class="input" value="{{p.title}}" disabled />
-        </view>
-      </view>
-
       <view class="card form-card">
         <view class="title">实名资料</view>
         <view class="muted form-tip">为保护隐私，已保存信息仅显示部分内容；重新填写后将以新内容为准。</view>

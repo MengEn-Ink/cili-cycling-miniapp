@@ -9,3 +9,6 @@ private.*.key
 *.local.json
 coverage/
 .aime-devkit/
+.pai/
+.superpowers/
+.trae/

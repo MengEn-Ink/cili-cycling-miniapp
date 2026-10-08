@@ -574,22 +574,6 @@ Page({
       throw error;
     }
   },
-  async onAvatarVisibilityChange(e: any) {
-    const profile = this.data.p as Profile | null;
-    if (!profile?.avatarId || this.data.avatarBusy || this.data.photoBusy || this.data.saving)
-      return;
-    const visibility = e?.detail?.value === true ? 'public' : 'private';
-    this.setData({ saving: true, error: '' });
-    const state = await runPageTask(
-      () => rideService.updateProfile({ avatarVisibility: visibility }),
-      visibility === 'public' ? '公开头像失败' : '隐藏头像失败',
-    );
-    this.setData({ saving: false, error: state.error, p: state.data || profile });
-    if (state.data) {
-      invalidateProfilePageCache();
-      wx.showToast({ title: visibility === 'public' ? '头像已公开展示' : '头像已隐藏' });
-    }
-  },
   async chooseWechatAvatar(e: any) {
     const filePath = e?.detail?.avatarUrl;
     if (typeof filePath !== 'string' || !filePath) return;

@@ -1,4 +1,4 @@
-<view class="activity-card {{item.coverImage && !coverFailed ? 'activity-card--media' : 'activity-card--plain'}}" bindtap="open" hover-class="activity-card--pressed" hover-stay-time="90" role="button" aria-label="查看活动：{{item.title}}">
+<view class="activity-card {{featured ? 'activity-card--featured' : 'activity-card--compact'}} {{item.coverImage && !coverFailed ? 'activity-card--media' : 'activity-card--plain'}}" bindtap="open" hover-class="activity-card--pressed" hover-stay-time="90" role="button" aria-label="查看活动：{{item.title}}">
   <view class="card-media">
     <image wx:if="{{item.coverImage && !coverFailed}}" class="card-cover" src="{{item.coverImage}}" mode="aspectFill" lazy-load="{{true}}" binderror="coverImageError" aria-label="{{item.title}}活动封面" />
     <view wx:else class="card-placeholder" aria-label="暂无活动封面">
@@ -10,13 +10,15 @@
       <text class="date-label">RIDE DATE</text>
       <text class="date-value">{{item.displayDate}}</text>
     </view>
+    <view class="card-identity">
+      <view class="card-top">
+        <view class="activity-title">{{item.title}}</view>
+        <status-pill status="{{item.displayStatus}}" />
+      </view>
+      <view class="route-line">{{item.route.start || '起点待公布'}} <text class="route-arrow">→</text> {{item.route.end || '终点待公布'}}</view>
+    </view>
   </view>
   <view class="card-content">
-    <view class="card-top">
-      <view class="activity-title">{{item.title}}</view>
-      <status-pill status="{{item.displayStatus}}" />
-    </view>
-    <view class="route-line">{{item.route.start || '起点待公布'}} <text class="route-arrow">→</text> {{item.route.end || '终点待公布'}}</view>
     <view class="metrics">
       <view class="metric-item"><view><text class="metric-value">{{item.route.distanceKm}}</text><text class="metric-suffix"> km</text></view><text class="metric-unit">里程</text></view>
       <view class="metric-item"><view><text class="metric-value">{{item.route.elevationM}}</text><text class="metric-suffix"> m</text></view><text class="metric-unit">爬升</text></view>

@@ -2,7 +2,7 @@
 
 > 状态：当前产品基线，与 `main` 同步维护
 >
-> 更新时间：2026-10-02
+> 更新时间：2026-10-08
 
 ## 1. 产品目标
 
@@ -44,10 +44,10 @@ draft <-> published -> finished
 2. 用户维护昵称、真实姓名、手机号、性别、紧急联系人、头像和多张个人照片。
 3. 手机号可来自微信动态授权，也可由个人主体手填；前者标记为 `wechat/verified`，后者标记为 `manual/unverified`。当前两者均满足报名门禁，审批页必须展示来源。
 4. 用户通过 OAuth 绑定 Strava。授权凭据只在云函数保存，客户端只取得连接状态和统计结果。
-5. 系统同步最近 90 天骑行数据，并生成里程、次数、最长距离、累计爬升、加权均速和最近活动时间。
+5. 系统同步 Strava 累计骑行次数、里程、移动时间和爬升，并生成最近 90 天里程、次数、最长距离、爬升、加权均速和最近活动时间。
 6. 个人页与骑行名片在云端数据暂不可用时可以先展示安全缓存，但不能把缓存当作新的服务端事实。
 
-Strava 报名资格的唯一事实源是 `strava_credentials + strava_snapshots`；`profiles.strava` 仅为兼容展示缓存。快照新鲜度为 24 小时，同步租约为 2 分钟；每页 200 条、最多 5 页，第 5 页仍满 200 条时标记 `coverage_complete=false`。完整空窗口可以显示 0，未知或不完整指标必须显示为空，不能伪造为 0。
+Strava 报名资格的唯一事实源是 `strava_credentials + strava_snapshots`；`profiles.strava` 仅为兼容展示缓存。累计指标来自 Athlete Stats，近期指标使用 90 天活动窗口。快照新鲜度为 24 小时，同步租约为 2 分钟；每页 200 条、最多 5 页，第 5 页仍满 200 条时标记 `coverage_complete=false`。完整空窗口可以显示 0，未知或不完整指标必须显示为空，不能伪造为 0。
 
 ### 3.3 报名、审批与签到
 
@@ -74,9 +74,9 @@ rejected|cancelled -> pending
 
 ### 3.5 公开骑手卡片边界
 
-长期契约是：公开卡片只允许昵称、称号、明确授权公开的照片和非敏感骑行指标；不得包含真实姓名、电话、紧急联系人、报名备注、`openid`、token、原始文件 ID 或审计数据。公开图片还必须经过 owner/status/current-reference 校验，并只签发 canonical 媒体的临时 URL。
+长期契约是：公开卡片只允许昵称、称号、头像和非敏感骑行指标；不得包含真实姓名、电话、紧急联系人、报名备注、`openid`、token、原始文件 ID 或审计数据。公开图片还必须经过 owner/status/current-reference 校验，并只签发 canonical 媒体的临时 URL。
 
-当前代码已经持久化显式 `avatar_visibility=public` 及其授权 revision。活动详情仅在授权 revision 等于当前头像 revision，且媒体 registry 的 owner、状态、source/origin、canonical 路径和内容元数据完整匹配时签发临时地址；缺字段、旧 revision、私有授权、脏 registry、缺失媒体或签名失败均隐藏头像且不拖垮活动详情。存量资料默认按私有处理，必须由用户主动公开。代码与离线测试不代表目标环境已部署，管理员审批卡和本人预览也不等同于公开授权。
+新设置头像会同步写入 `avatar_visibility=public` 及当前 revision，用于兼容历史客户端和数据。活动详情不再以历史可见性字段作为展示门槛；只在媒体 registry 的 owner、状态、source/origin、canonical 路径和内容元数据完整匹配时签发临时地址。非法来源、脏 registry、缺失媒体或签名失败均隐藏头像且不拖垮活动详情。代码与离线测试不代表目标环境已部署，仍需核对实际云函数版本。
 
 ## 4. 页面与功能清单
 
@@ -87,7 +87,7 @@ rejected|cancelled -> pending
 - 报名表单：资料与 Strava 就绪检查、集合方式、经验和备注。
 - 行程：本人报名历史和状态。
 - 凭证：通过状态、集合信息和签到状态。
-- 我的：身份状态、资料完整度、骑行名片、资料/头像/相册、Strava 入口和活动管理入口。
+- 我的：身份状态、资料完整度、累计与近 90 天骑行名片、资料/头像/相册、Strava 入口和活动管理入口。
 - Strava：授权、自动就绪、同步、解绑和错误恢复。
 
 ### 活动发起人与管理员端
@@ -133,5 +133,6 @@ rejected|cancelled -> pending
 - 产品或状态机变化：更新本文。
 - 集合、索引、安全边界或部署校验变化：更新 `cloudbase-schema.md`。
 - 真实旅程和证据格式变化：更新 `verification/p0-real-registration-journey.md` 及对应校验脚本。
+- 单次发布的测试、预览、部署和 smoke 证据：按 [验证记录索引](verification/README.md) 新增不可变记录。
 - 命令、依赖或部署顺序变化：更新根 `README.md`。
 - 阶段性设计和执行计划完成后从主文档树移除，Git 历史作为追溯来源。

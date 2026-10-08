@@ -404,12 +404,15 @@ function createProfileStore(db) {
         const previous =
           previousId && previousId !== selectedId ? await get(media, previousId) : undefined;
         const updatedAt = db.serverDate();
+        const avatarRevision = nextAvatarRevision(current);
         const next = writableDocument({
           ...current,
           _id: openid,
           avatar_source: source,
           avatar_file_id: fileId,
-          avatar_revision: nextAvatarRevision(current),
+          avatar_revision: avatarRevision,
+          avatar_visibility: 'public',
+          avatar_visibility_revision: avatarRevision,
           updated_at: updatedAt,
         });
         await profiles.doc(openid).set({ data: next });
@@ -657,12 +660,15 @@ function createProfileStore(db) {
           cleanup_after: null,
         });
         await media.doc(selectedId).set({ data: activeMedia });
+        const avatarRevision = nextAvatarRevision(currentProfile);
         const next = writableDocument({
           ...currentProfile,
           _id: openid,
           avatar_source: 'strava',
           avatar_file_id: fileId,
-          avatar_revision: nextAvatarRevision(currentProfile),
+          avatar_revision: avatarRevision,
+          avatar_visibility: 'public',
+          avatar_visibility_revision: avatarRevision,
           updated_at: updatedAt,
         });
         await profiles.doc(openid).set({ data: next });

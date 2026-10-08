@@ -40,18 +40,25 @@ function canonicalFixture() {
   };
 }
 
-test('publicAvatarSource 只接受显式公开且版本和来源有效的 cloud 头像', () => {
+test('publicAvatarSource 忽略历史可见性字段但仍要求版本、来源和 cloud 头像有效', () => {
   const { profile } = canonicalFixture();
   assert.equal(publicAvatarSource(profile), SOURCE_FILE_ID);
+  assert.equal(
+    publicAvatarSource({
+      ...profile,
+      avatar_visibility: undefined,
+      avatar_visibility_revision: undefined,
+    }),
+    SOURCE_FILE_ID,
+  );
+  assert.equal(publicAvatarSource({ ...profile, avatar_visibility: 'private' }), SOURCE_FILE_ID);
+  assert.equal(publicAvatarSource({ ...profile, avatar_visibility_revision: 2 }), SOURCE_FILE_ID);
 
   const invalidProfiles = [
     ['缺少 profile', undefined],
-    ['未授权', { ...profile, avatar_visibility: undefined }],
-    ['私有', { ...profile, avatar_visibility: 'private' }],
     ['缺少 revision', { ...profile, avatar_revision: undefined }],
     ['负 revision', { ...profile, avatar_revision: -1 }],
     ['非整数 revision', { ...profile, avatar_revision: 1.5 }],
-    ['授权 revision 不匹配', { ...profile, avatar_visibility_revision: 2 }],
     ['缺少 source', { ...profile, avatar_source: undefined }],
     ['非法 source', { ...profile, avatar_source: 'forged' }],
     ['外部 URL', { ...profile, avatar_file_id: 'https://images.example/avatar.jpg' }],

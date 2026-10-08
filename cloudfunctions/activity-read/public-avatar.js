@@ -17,10 +17,8 @@ function mediaDocumentId(fileId) {
 function publicAvatarSource(profile) {
   if (
     !profile ||
-    profile.avatar_visibility !== 'public' ||
     !Number.isSafeInteger(profile.avatar_revision) ||
     profile.avatar_revision < 0 ||
-    profile.avatar_visibility_revision !== profile.avatar_revision ||
     !AVATAR_SOURCES.has(profile.avatar_source) ||
     typeof profile.avatar_file_id !== 'string' ||
     !profile.avatar_file_id.startsWith('cloud://') ||

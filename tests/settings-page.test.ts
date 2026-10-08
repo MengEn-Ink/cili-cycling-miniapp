@@ -29,11 +29,11 @@ describe('设置页', () => {
     page.onShow();
 
     expect(page.data).toMatchObject({ theme: 'dark', themeClass: 'theme-dark' });
-    expect(page.data.releaseNotes).toHaveLength(6);
+    expect(page.data.releaseNotes).toHaveLength(10);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.02.3',
+      version: '2026.10.08.4',
       latest: true,
-      title: '骑行名片连接 Strava 主页',
+      title: '骑行名片与浅色主题校准',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,

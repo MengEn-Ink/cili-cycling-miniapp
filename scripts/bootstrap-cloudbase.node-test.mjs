@@ -490,14 +490,11 @@ test('README 与部署包断言包含 profile_media_imports 和头像导入入�
 });
 
 function assertClosedDocumentationGaps({ readme, requirements, seedGuide }) {
-  assert.match(
-    readme,
-    /公开骑手头像的代码契约已经要求显式公开授权[^。]*canonical 媒体签发临时地址/,
-  );
-  assert.doesNotMatch(readme, /(?:尚未|仍未|没有)[^。]{0,40}显式公开授权/);
-  assert.match(requirements, /当前代码已经持久化显式 `avatar_visibility=public` 及其授权 revision/);
-  assert.match(requirements, /活动详情仅在[^。]*canonical 路径[^。]*签发临时地址/);
-  assert.doesNotMatch(requirements, /(?:尚未|仍未|没有)[^。]{0,40}持久化显式/);
+  assert.match(readme, /公开骑手头像默认展示[^。]*canonical 媒体签发临时地址/);
+  assert.doesNotMatch(readme, /显式公开授权|授权 revision 与当前头像 revision 一致/);
+  assert.match(requirements, /新设置头像会同步写入 `avatar_visibility=public` 及当前 revision/);
+  assert.match(requirements, /活动详情不再以历史可见性字段作为展示门槛/);
+  assert.doesNotMatch(requirements, /存量资料默认按私有处理|必须由用户主动公开/);
   assert.doesNotMatch(
     requirements,
     /strava_route_previews[^。]{0,50}(?:尚未|仍未|并不|没有|未纳入|手工创建)[^。]{0,50}(?:bootstrap|管理)/,
@@ -537,10 +534,7 @@ test('文档契约测试拒绝已关闭缺口的同义否定表述', () => {
 
   assert.throws(() =>
     assertClosedDocumentationGaps({
-      readme: readme.replace(
-        '公开骑手头像的代码契约已经要求显式公开授权',
-        '公开骑手头像仍未具备显式公开授权',
-      ),
+      readme: readme.replace('公开骑手头像默认展示', '公开骑手头像仍未默认展示'),
       requirements,
       seedGuide,
     }),
@@ -548,7 +542,7 @@ test('文档契约测试拒绝已关闭缺口的同义否定表述', () => {
   assert.throws(() =>
     assertClosedDocumentationGaps({
       readme,
-      requirements: requirements.replace('当前代码已经持久化显式', '当前代码仍未持久化显式'),
+      requirements: requirements.replace('新设置头像会同步写入', '新设置头像仍未同步写入'),
       seedGuide,
     }),
   );
