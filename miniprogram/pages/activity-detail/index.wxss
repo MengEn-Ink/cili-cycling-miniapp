@@ -911,8 +911,28 @@ brand-logo {
 }
 
 .detail-action .btn {
+  display: flex;
+  min-height: 96rpx;
+  margin: 0;
+  padding: 0 24rpx;
+  align-items: center;
+  justify-content: center;
   border-radius: var(--radius-sm) !important;
   background: var(--color-brand) !important;
+  line-height: 1.2;
+}
+
+.route-actions button,
+.route-location-row button {
+  display: flex;
+  min-height: 88rpx;
+  margin: 0;
+  padding: 0 22rpx;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  font-size: 23rpx;
+  line-height: 1.3;
 }
 
 @media (max-width: 350px) {

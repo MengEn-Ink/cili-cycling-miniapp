@@ -319,10 +319,19 @@ status-pill {
   border-color: var(--color-border);
 }
 .card-cta {
+  display: flex;
+  width: 176rpx;
+  height: 88rpx;
+  min-width: 176rpx;
   min-height: 88rpx;
+  padding: 0 18rpx;
+  align-items: center;
+  justify-content: center;
   border-radius: var(--radius-md);
   background: var(--color-brand);
   color: var(--color-on-brand);
+  line-height: 1.2;
+  text-align: center;
 }
 
 /* Scheme A: one editorial lead ride followed by compact, scannable rows. */
