@@ -53,6 +53,10 @@ const capabilityCard = (overrides: Record<string, unknown> = {}) => ({
     },
   ],
   summary: {
+    lifetimeRides: 486,
+    lifetimeDistanceKm: 18240.7,
+    lifetimeMovingHours: 734.5,
+    lifetimeElevationM: 215400,
     totalKm90d: 812.5,
     rides90d: 28,
     longestKm: 126.3,
@@ -191,12 +195,21 @@ describe('个人中心加载状态', () => {
         { key: 'rides90d', value: '28', unit: '次' },
         { key: 'longestKm', value: '126.3', unit: 'km' },
       ],
+      lifetimeMetrics: [
+        { key: 'lifetimeDistanceKm', value: '18240.7', unit: 'km' },
+        { key: 'lifetimeRides', value: '486', unit: '次' },
+        { key: 'lifetimeMovingHours', value: '734.5', unit: 'h' },
+        { key: 'lifetimeElevationM', value: '215400', unit: 'm' },
+      ],
     });
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     const styles = readFileSync('miniprogram/pages/profile/index.wxss', 'utf8');
     expect(page.data).not.toHaveProperty('cardExpanded');
     expect(template).toContain('class="hero-capability-card"');
-    expect(template).toContain('近 90 天骑行名片');
+    expect(template).toContain('骑行能力');
+    expect(template).toContain('STRAVA 累计骑行');
+    expect(template).toContain('wx:for="{{heroCard.lifetimeMetrics}}"');
+    expect(template).toContain('近 90 天表现');
     expect(template).toContain(
       'class="hero-capability-secondary" wx:if="{{heroCard.secondaryMetrics.length}}"',
     );
@@ -282,7 +295,10 @@ describe('个人中心加载状态', () => {
     const pageScript = readFileSync('miniprogram/pages/profile/index.ts', 'utf8');
 
     expect(template).not.toMatch(/<swiper\b[^>]*\bautoplay(?:=|\s|>)/);
-    expect(template).toContain('近 90 天骑行名片');
+    expect(template).toContain('骑行能力');
+    expect(template).toContain('STRAVA 累计骑行');
+    expect(template).toContain('近 90 天表现');
+    expect(template).toContain('wx:for="{{heroCard.lifetimeMetrics}}"');
     expect(template).toContain('wx:for="{{heroCard.primaryMetrics}}"');
     expect(template).toContain('wx:for="{{heroCard.secondaryMetrics}}"');
     expect(template).not.toContain('bindtap="toggleCard"');
@@ -359,6 +375,32 @@ describe('个人中心加载状态', () => {
     });
 
     await vi.advanceTimersByTimeAsync(1_200);
+    expect(page.data.refreshStage).toBe('idle');
+  });
+
+  it('离开并重新进入后旧下拉刷新不得覆盖新生命周期状态', async () => {
+    await page.onShow();
+    const oldProfile = deferred<ReturnType<typeof profile>>();
+    const oldCard = deferred<ReturnType<typeof capabilityCard>>();
+    rideService.getProfile
+      .mockReturnValueOnce(oldProfile.promise)
+      .mockResolvedValueOnce(profile('新页面骑手'));
+    rideService.getPersonalCapabilityCard
+      .mockReturnValueOnce(oldCard.promise)
+      .mockResolvedValueOnce(capabilityCard());
+
+    const staleRefresh = page.onPullDownRefresh();
+    await vi.waitFor(() => expect(rideService.getProfile).toHaveBeenCalledTimes(2));
+    page.onHide();
+    await page.onShow();
+    if (page.cardLoadPromise) await page.cardLoadPromise;
+    expect(page.data.refreshStage).toBe('idle');
+
+    oldProfile.resolve(profile('旧刷新骑手'));
+    oldCard.resolve(capabilityCard());
+    await staleRefresh;
+
+    expect(page.data.profile.nickname).toBe('新页面骑手');
     expect(page.data.refreshStage).toBe('idle');
   });
 

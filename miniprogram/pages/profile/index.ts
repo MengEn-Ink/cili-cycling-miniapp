@@ -198,6 +198,7 @@ Page({
     this.loadPromise = null;
   },
   async onPullDownRefresh() {
+    const refreshRevision = this.lifecycleRevision;
     this.clearRefreshFeedbackTimer();
     this.refreshFailed = false;
     this.setData({
@@ -207,13 +208,15 @@ Page({
       refreshPullProgress: 100,
       refreshMessage: '正在更新资料与骑行数据…',
     });
+    const loadPromise = this.load(false, true);
+    const cardLoadPromise = this.cardLoadPromise;
     try {
-      await this.load(false, true);
-      if (this.cardLoadPromise) await this.cardLoadPromise;
+      await loadPromise;
+      if (cardLoadPromise) await cardLoadPromise;
     } finally {
       if (typeof wx.stopPullDownRefresh === 'function') wx.stopPullDownRefresh();
     }
-    if (!this.pageVisible) return;
+    if (!this.pageVisible || refreshRevision !== this.lifecycleRevision) return;
     const failed = this.refreshFailed;
     this.setData({
       refreshStage: failed ? 'error' : 'success',

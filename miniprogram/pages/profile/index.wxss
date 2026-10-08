@@ -849,7 +849,7 @@ brand-logo {
   padding: 5rpx 9rpx;
   border-radius: 8rpx;
   background: var(--color-brand);
-  color: #0b0b0c;
+  color: var(--color-on-brand);
   font-size: 18rpx;
   font-weight: 950;
   letter-spacing: 2rpx;
@@ -1114,6 +1114,66 @@ page,
 .profile-capability-section .hero-capability-name,
 .profile-capability-section .hero-capability-empty {
   color: var(--color-muted);
+}
+
+.profile-capability-section .hero-capability-status {
+  border-color: var(--color-border);
+  background: var(--color-raised);
+  color: var(--color-muted);
+}
+
+.profile-capability-section .hero-capability-status.status-verified {
+  border-color: var(--color-success);
+  background: var(--color-success-soft);
+  color: var(--color-success-text);
+}
+
+.profile-capability-section .hero-capability-status.status-partial,
+.profile-capability-section .hero-capability-status.status-syncing {
+  border-color: var(--color-warning);
+  background: var(--color-warning-soft);
+  color: var(--color-warning-text);
+}
+
+.profile-capability-section .hero-capability-status.status-repair {
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
+}
+
+.hero-capability-group {
+  margin-top: 20rpx;
+}
+
+.hero-capability-group-label {
+  color: var(--color-muted);
+  font-size: 18rpx;
+  font-weight: 800;
+}
+
+.hero-capability-lifetime {
+  display: grid;
+  margin-top: 10rpx;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  border-top: 1rpx solid var(--color-border);
+  border-bottom: 1rpx solid var(--color-border);
+}
+
+.hero-capability-lifetime .hero-capability-metric {
+  padding: 16rpx 10rpx 14rpx;
+}
+
+.hero-capability-lifetime .hero-capability-metric:nth-child(even) {
+  border-left: 1rpx solid var(--color-border);
+}
+
+.hero-capability-lifetime .hero-capability-metric:nth-child(n + 3) {
+  border-top: 1rpx solid var(--color-border);
+}
+
+.hero-capability-recent-label {
+  margin-top: 20rpx;
 }
 
 .profile-capability-section .hero-capability-secondary {

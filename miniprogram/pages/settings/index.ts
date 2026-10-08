@@ -2,11 +2,23 @@ import { setTheme, syncPageTheme } from '../../services/theme-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.08.4',
+    date: '2026-10-08',
+    title: '骑行名片与浅色主题校准',
+    summary: '个人中心补齐累计骑行数据，并修正刷新反馈和浅色主题状态配色。',
+    latest: true,
+    features: [
+      '个人中心同时展示 Strava 累计骑行与近 90 天表现',
+      '避免离开页面后的旧刷新结果覆盖当前状态',
+      '统一状态标签、无图详情和禁用按钮的浅色主题对比度',
+    ],
+  },
+  {
     version: '2026.10.08.3',
     date: '2026-10-08',
     title: '头像默认展示与资料编辑简化',
     summary: '头像默认用于报名骑友展示，资料编辑页移除不再需要的展示设置。',
-    latest: true,
+    latest: false,
     features: [
       '已有和新设置的有效头像默认展示在报名骑友列表',
       '移除头像展示开关，头像用途改为固定说明',
