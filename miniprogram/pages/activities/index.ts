@@ -45,6 +45,7 @@ Page({
   } as Record<PublicActivityView, TimelineViewState>,
   loadHandles: {} as Partial<Record<PublicActivityView, Promise<void>>>,
   loadMoreHandles: {} as Partial<Record<PublicActivityView, Promise<void>>>,
+  loadMoreOwners: {} as Partial<Record<PublicActivityView, symbol>>,
   data: {
     theme: 'dark',
     themeClass: 'theme-dark',
@@ -77,6 +78,7 @@ Page({
       this.viewStates[view] = invalidateTimelineView(this.viewStates[view]);
       delete this.loadHandles[view];
       delete this.loadMoreHandles[view];
+      delete this.loadMoreOwners[view];
     }
   },
   renderActiveView() {
@@ -104,6 +106,8 @@ Page({
   async load() {
     const view = this.data.activeView as PublicActivityView;
     const previous = invalidateTimelineView(this.viewStates[view]);
+    delete this.loadMoreHandles[view];
+    delete this.loadMoreOwners[view];
     const hasItems = previous.items.length > 0;
     const state: TimelineViewState = {
       ...previous,
@@ -149,14 +153,17 @@ Page({
   },
   async loadMore() {
     const view = this.data.activeView as PublicActivityView;
+    const state = this.viewStates[view];
+    if (this.loadHandles[view] || state.loading || state.refreshing) return;
     const existing = this.loadMoreHandles[view];
     if (existing) return existing;
-    const state = this.viewStates[view];
     const cursor = state.nextCursor;
     if (!cursor) return;
     const revision = state.revision;
     this.viewStates[view] = { ...state, loadingMore: true, refreshError: '' };
     this.renderActiveView();
+    const owner = Symbol(`loadMore:${view}:${revision}`);
+    this.loadMoreOwners[view] = owner;
     const request = (async () => {
       try {
         const result = await rideService.listActivityPage(view, cursor);
@@ -178,7 +185,10 @@ Page({
         };
         this.renderActiveView();
       } finally {
-        if (this.viewStates[view].revision === revision) delete this.loadMoreHandles[view];
+        if (this.viewStates[view].revision === revision && this.loadMoreOwners[view] === owner) {
+          delete this.loadMoreOwners[view];
+          delete this.loadMoreHandles[view];
+        }
       }
     })();
     this.loadMoreHandles[view] = request;
@@ -192,6 +202,7 @@ Page({
     this.viewStates[previous] = invalidateTimelineView(this.viewStates[previous]);
     delete this.loadHandles[previous];
     delete this.loadMoreHandles[previous];
+    delete this.loadMoreOwners[previous];
     this.setData({ activeView: candidate });
     this.renderActiveView();
     void this.load();
