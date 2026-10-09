@@ -1570,6 +1570,102 @@ test('token refresh 只作为 fenced completion 的输入而不提前持久化',
   assert.equal(built.snapshot.lifetime_rides, 8);
   assert.equal(built.snapshot.lifetime_distance_km, 42.5);
 });
+test('buildSyncResult 成功写入 Strava 注册时间', async () => {
+  const now = new Date('2026-10-09T04:00:00.000Z');
+  const credential = tokenDocument('user-1', token(), key, now);
+  const built = await buildSyncResult({
+    openid: 'user-1',
+    env,
+    credential,
+    store: refreshLeaseStore(credential),
+    api: {
+      activities: async () => [],
+      athleteStats: async () => ({
+        all_ride_totals: { count: 0, distance: 0, moving_time: 0, elevation_gain: 0 },
+      }),
+      athlete: async () => ({ id: 42, created_at: '2019-05-18T09:30:00Z' }),
+    },
+    now,
+  });
+  assert.equal(built.snapshot.athlete_created_at, '2019-05-18T09:30:00.000Z');
+});
+test('buildSyncResult athlete 接口失败时保留旧注册时间且不阻断同步', async () => {
+  const now = new Date('2026-10-09T04:00:00.000Z');
+  const credential = tokenDocument('user-1', token(), key, now);
+  const previousSnapshot = {
+    athlete_id: '42',
+    athlete_created_at: '2019-05-18T09:30:00.000Z',
+  };
+  const built = await buildSyncResult({
+    openid: 'user-1',
+    env,
+    credential,
+    previousSnapshot,
+    store: refreshLeaseStore(credential),
+    api: {
+      activities: async () => [],
+      athleteStats: async () => ({
+        all_ride_totals: { count: 0, distance: 0, moving_time: 0, elevation_gain: 0 },
+      }),
+      athlete: async () => {
+        throw new StravaError('STRAVA_API_FAILED', 'boom');
+      },
+    },
+    now,
+  });
+  assert.equal(built.snapshot.athlete_created_at, '2019-05-18T09:30:00.000Z');
+  assert.equal(built.snapshot.coverage_complete, true);
+});
+test('buildSyncResult 未来时间或非法时间不写入，有旧值则保留旧值', async () => {
+  const now = new Date('2026-10-09T04:00:00.000Z');
+  const credential = tokenDocument('user-1', token(), key, now);
+  const previousSnapshot = {
+    athlete_id: '42',
+    athlete_created_at: '2019-05-18T09:30:00.000Z',
+  };
+  const built = await buildSyncResult({
+    openid: 'user-1',
+    env,
+    credential,
+    previousSnapshot,
+    store: refreshLeaseStore(credential),
+    api: {
+      activities: async () => [],
+      athleteStats: async () => ({
+        all_ride_totals: { count: 0, distance: 0, moving_time: 0, elevation_gain: 0 },
+      }),
+      athlete: async () => ({ id: 42, created_at: '2099-01-01T00:00:00Z' }),
+    },
+    now,
+  });
+  assert.equal(built.snapshot.athlete_created_at, '2019-05-18T09:30:00.000Z');
+});
+test('buildSyncResult 骑手变化时不继承旧注册时间', async () => {
+  const now = new Date('2026-10-09T04:00:00.000Z');
+  const credential = tokenDocument('user-1', token(), key, now);
+  const previousSnapshot = {
+    athlete_id: 'old-athlete',
+    athlete_created_at: '2010-01-01T00:00:00.000Z',
+  };
+  const built = await buildSyncResult({
+    openid: 'user-1',
+    env,
+    credential,
+    previousSnapshot,
+    store: refreshLeaseStore(credential),
+    api: {
+      activities: async () => [],
+      athleteStats: async () => ({
+        all_ride_totals: { count: 0, distance: 0, moving_time: 0, elevation_gain: 0 },
+      }),
+      athlete: async () => {
+        throw new StravaError('STRAVA_API_FAILED', 'boom');
+      },
+    },
+    now,
+  });
+  assert.equal(built.snapshot.athlete_created_at, undefined);
+});
 test('disconnect 原子委托删除凭证/快照并写审计', async () => {
   let captured;
   const result = await disconnectFlow({
