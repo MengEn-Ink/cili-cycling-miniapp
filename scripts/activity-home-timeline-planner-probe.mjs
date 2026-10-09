@@ -61,14 +61,34 @@ function bsonDateAt(asOf, offsetMinutes) {
 }
 
 function bsonDateMillis(value) {
-  const raw = value?.$date;
-  const milliseconds =
-    typeof raw === 'string'
-      ? Date.parse(raw)
-      : raw && typeof raw === 'object' && /^-?\d+$/.test(raw.$numberLong)
-        ? Number(raw.$numberLong)
-        : Number.NaN;
-  return Number.isFinite(milliseconds) ? milliseconds : null;
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    Array.isArray(value) ||
+    Object.keys(value).length !== 1 ||
+    !Object.hasOwn(value, '$date')
+  )
+    return null;
+  const raw = value.$date;
+  let milliseconds;
+  if (typeof raw === 'string') {
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(raw))
+      return null;
+    milliseconds = Date.parse(raw);
+  } else {
+    if (
+      !raw ||
+      typeof raw !== 'object' ||
+      Array.isArray(raw) ||
+      Object.keys(raw).length !== 1 ||
+      typeof raw.$numberLong !== 'string' ||
+      !/^-?\d+$/.test(raw.$numberLong)
+    )
+      return null;
+    milliseconds = Number(raw.$numberLong);
+    if (!Number.isSafeInteger(milliseconds)) return null;
+  }
+  return Number.isFinite(new Date(milliseconds).getTime()) ? milliseconds : null;
 }
 
 function visibleFlag(index) {
@@ -432,6 +452,11 @@ function finiteNumberOrNull(value) {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
+function evidenceRequestId(value, action) {
+  if (typeof value !== 'string' || !value.trim()) throw new Error(`${action} 缺少有效 requestId`);
+  return value;
+}
+
 function mongoEnvelope(collection, commandType, command) {
   assertTemporaryCollection(collection);
   return [
@@ -567,7 +592,7 @@ async function readStream(executeQuery, collection, definition) {
         collection,
         command: queryCommand(collection, definition),
       });
-      requestIds.push(response.requestId);
+      requestIds.push(evidenceRequestId(response.requestId, `smoke-${definition.name}`));
       candidates = response.items;
     } else {
       const sameTime = await executeQuery({
@@ -575,7 +600,7 @@ async function readStream(executeQuery, collection, definition) {
         collection,
         command: queryCommand(collection, definition, boundary, 'same-time'),
       });
-      requestIds.push(sameTime.requestId);
+      requestIds.push(evidenceRequestId(sameTime.requestId, `smoke-${definition.name}-same-time`));
       candidates = sameTime.items.slice(0, READ_LIMIT);
       if (candidates.length < READ_LIMIT) {
         const crossTime = await executeQuery({
@@ -589,7 +614,9 @@ async function readStream(executeQuery, collection, definition) {
             READ_LIMIT - candidates.length,
           ),
         });
-        requestIds.push(crossTime.requestId);
+        requestIds.push(
+          evidenceRequestId(crossTime.requestId, `smoke-${definition.name}-cross-time`),
+        );
         candidates.push(...crossTime.items.slice(0, READ_LIMIT - candidates.length));
       }
     }
@@ -765,18 +792,21 @@ export async function runProbe({ envId, collection, execute }) {
       throw new Error('临时集合已存在，拒绝覆盖');
     const create = await execute({ kind: 'create', collection });
     created = true;
-    summary.createRequestId = create.requestId;
+    summary.createRequestId = evidenceRequestId(create.requestId, 'CreateTable');
     for (const index of INDEXES) {
       const response = await execute({ kind: 'create-index', collection, index });
-      summary.indexRequestIds.push({ name: index.name, requestId: response.requestId });
+      summary.indexRequestIds.push({
+        name: index.name,
+        requestId: evidenceRequestId(response.requestId, `CreateIndex ${index.name}`),
+      });
     }
     const fixtures = buildFixtures(PROBE_AS_OF);
     const inserted = await execute({ kind: 'insert', collection, documents: fixtures });
     summary.fixtureCount = fixtures.length;
-    summary.insertRequestId = inserted.requestId;
+    summary.insertRequestId = evidenceRequestId(inserted.requestId, 'Fixture insert');
     const dateReadback = await execute({ kind: 'verify-date-types', collection });
     summary.dateReadback = {
-      requestId: dateReadback.requestId,
+      requestId: evidenceRequestId(dateReadback.requestId, 'Date readback'),
       ids: assertDateReadback(dateReadback.items),
       bsonDateVerified: true,
     };
@@ -791,21 +821,32 @@ export async function runProbe({ envId, collection, execute }) {
         });
         summary.explains.push({
           name: item.name,
-          requestId: response.requestId,
+          requestId: evidenceRequestId(response.requestId, `Explain ${item.name}`),
           passed: true,
           ...assertExplainPlan(response.plan, item.expectedIndex, item.name),
         });
       } catch (error) {
         summary.explains.push({
           name: item.name,
-          requestId: response?.requestId ?? '',
+          requestId:
+            typeof response?.requestId === 'string' && response.requestId.trim()
+              ? response.requestId
+              : '',
           passed: false,
           error: sanitizeError(error.message),
         });
         throw error;
       }
     }
-    summary.smoke = await execute({ kind: 'smoke', collection, asOf: PROBE_AS_OF });
+    const smoke = await execute({ kind: 'smoke', collection, asOf: PROBE_AS_OF });
+    if (!Array.isArray(smoke.requestIds) || smoke.requestIds.length === 0)
+      throw new Error('Smoke 缺少有效 requestId');
+    summary.smoke = {
+      ...smoke,
+      requestIds: smoke.requestIds.map((requestId, index) =>
+        evidenceRequestId(requestId, `Smoke query ${index + 1}`),
+      ),
+    };
   } catch (error) {
     primaryError = error;
   } finally {
@@ -817,8 +858,8 @@ export async function runProbe({ envId, collection, execute }) {
         const remaining = (listed.collections ?? []).filter((item) => item.name === collection);
         if (remaining.length !== 0) throw new Error('临时集合清理未收敛');
         summary.cleanup = {
-          dropRequestId: dropped.requestId,
-          verifyRequestId: listed.requestId,
+          dropRequestId: evidenceRequestId(dropped.requestId, 'Cleanup drop'),
+          verifyRequestId: evidenceRequestId(listed.requestId, 'Cleanup verify'),
           remaining: 0,
         };
       } catch (error) {
