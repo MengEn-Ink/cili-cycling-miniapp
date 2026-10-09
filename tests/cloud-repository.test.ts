@@ -363,6 +363,27 @@ describe('CloudRepository 个人骑行名片适配', () => {
       await expectCode(new CloudRepository(cloud).getPersonalCapabilityCard(), 'INVALID_RESPONSE');
     },
   );
+
+  it('映射 Strava 注册时间', async () => {
+    const { cloud } = cloudWith(
+      success({
+        ...personalCapabilityCardDto,
+        strava_joined_at: '2019-05-18T09:30:00.000Z',
+      }),
+    );
+    const card = await new CloudRepository(cloud).getPersonalCapabilityCard();
+    expect(card.stravaJoinedAt).toBe('2019-05-18T09:30:00.000Z');
+  });
+
+  it('拒绝非法 Strava 注册时间', async () => {
+    const { cloud } = cloudWith(
+      success({
+        ...personalCapabilityCardDto,
+        strava_joined_at: 'not-a-date',
+      }),
+    );
+    await expectCode(new CloudRepository(cloud).getPersonalCapabilityCard(), 'INVALID_RESPONSE');
+  });
 });
 
 describe('CloudRepository 队员报名适配', () => {

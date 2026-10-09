@@ -569,6 +569,9 @@ function mapPersonalCapabilityCard(raw: unknown): PersonalCapabilityCard {
     ...(value.strava_profile_url === undefined
       ? {}
       : { stravaProfileUrl: httpsUrl(value.strava_profile_url) }),
+    ...(value.strava_joined_at === undefined
+      ? {}
+      : { stravaJoinedAt: strictDateText(value.strava_joined_at) }),
     needsStravaReauth: value.needs_strava_reauth === true,
   };
 }

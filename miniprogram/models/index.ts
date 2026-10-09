@@ -209,6 +209,7 @@ export interface PersonalCapabilityCard {
   coverage: StravaCoverage | null;
   syncedAt: string | null;
   stravaProfileUrl?: string;
+  stravaJoinedAt?: string;
   needsStravaReauth?: boolean;
 }
 export interface StravaConnection {
