@@ -23,6 +23,8 @@ import type {
   AdminRegistrationStatusFilter,
   AdminReviewRepository,
   CloneActivityInput,
+  PublicActivityPage,
+  PublicActivityView,
   RegistrationSubmission,
   RideRepository,
 } from './types';
@@ -117,6 +119,11 @@ function strictDateText(value: unknown): string {
 }
 function hasOwn(value: Record<string, any>, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(value, key);
+}
+function hasExactKeys(value: Record<string, any>, keys: string[]): boolean {
+  const actual = Object.keys(value).sort();
+  const expected = [...keys].sort();
+  return actual.length === expected.length && actual.every((key, index) => key === expected[index]);
 }
 function mapCoverage(raw: Record<string, any>, strict: boolean): StravaCoverage | null {
   const keys = ['coverage_from', 'coverage_to', 'coverage_complete'];
@@ -396,6 +403,23 @@ function mapActivity(raw: unknown, requireRegistrationDecision = false): Activit
       : {}),
   };
   return requireRegistrationDecision ? { ...mapped, ...registrationDecision(value) } : mapped;
+}
+function mapPublicActivityPage(raw: unknown): PublicActivityPage {
+  const value = expectRecord(raw);
+  if (!hasExactKeys(value, ['items', 'next_cursor', 'as_of'])) return invalidResponse();
+  if (
+    (value.next_cursor !== null &&
+      (typeof value.next_cursor !== 'string' ||
+        value.next_cursor.length < 1 ||
+        value.next_cursor.length > 512)) ||
+    typeof value.as_of !== 'string'
+  )
+    return invalidResponse();
+  return {
+    items: expectRecordArray(value.items).map((item) => mapActivity(item, true)),
+    nextCursor: value.next_cursor,
+    asOf: strictDateText(value.as_of),
+  };
 }
 function mapEditableActivity(raw: unknown, requireCloneDraft = false): EditableActivity {
   const value = expectRecord(raw);
@@ -1003,6 +1027,18 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     return expectRecordArray(await this.call('activity-read', data)).map((item) =>
       mapActivity(item, true),
     );
+  }
+  async listActivityPage(view: PublicActivityView, cursor?: string) {
+    if (view !== 'future' && view !== 'history')
+      throw new CloudRepositoryError('VALIDATION_FAILED', '活动视图无效');
+    if (
+      cursor !== undefined &&
+      (typeof cursor !== 'string' || cursor.length < 1 || cursor.length > 512)
+    )
+      throw new CloudRepositoryError('VALIDATION_FAILED', '活动分页游标无效');
+    const data: Record<string, unknown> = { action: 'listPage', view, page_size: 20 };
+    if (cursor !== undefined) data.cursor = cursor;
+    return mapPublicActivityPage(await this.call('activity-read', data));
   }
   async getActivity(id: string) {
     return mapActivity(

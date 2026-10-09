@@ -38,7 +38,7 @@ for (const name of ['activity-read', 'registration']) {
     'domain/index.js',
     'domain/domain.js',
     'domain/use-cases.js',
-    ...(name === 'activity-read' ? ['public-avatar.js'] : []),
+    ...(name === 'activity-read' ? ['public-avatar.js', 'list-page.js'] : []),
   ]);
 }
 pack('admin-review', [

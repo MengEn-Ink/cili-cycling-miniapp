@@ -269,6 +269,80 @@ describe('CloudRepository 活动读取适配', () => {
   });
 });
 
+describe('CloudRepository 活动时间线分页适配', () => {
+  const page = {
+    items: [activity],
+    next_cursor: 'cursor-2',
+    as_of: '2026-10-09T04:00:00.000Z',
+  };
+
+  it('首屏与游标页使用独立 listPage action，并严格映射分页 envelope', async () => {
+    const { cloud, callFunction } = cloudWith(
+      success(page),
+      success({ ...page, next_cursor: null }),
+    );
+    const repository = new CloudRepository(cloud);
+
+    await expect(repository.listActivityPage('future')).resolves.toMatchObject({
+      items: [expect.objectContaining({ id: 'a1', title: '环湖骑行' })],
+      nextCursor: 'cursor-2',
+      asOf: '2026-10-09T04:00:00.000Z',
+    });
+    expectCall(callFunction, 'activity-read', {
+      action: 'listPage',
+      view: 'future',
+      page_size: 20,
+    });
+
+    await expect(repository.listActivityPage('history', 'cursor-1')).resolves.toMatchObject({
+      items: [expect.objectContaining({ id: 'a1' })],
+      nextCursor: null,
+      asOf: '2026-10-09T04:00:00.000Z',
+    });
+    expectCall(callFunction, 'activity-read', {
+      action: 'listPage',
+      view: 'history',
+      page_size: 20,
+      cursor: 'cursor-1',
+    });
+  });
+
+  it.each([
+    null,
+    [],
+    { ...page, items: {} },
+    { ...page, items: [{ ...activity, title: 42 }] },
+    { ...page, next_cursor: undefined },
+    { ...page, next_cursor: '' },
+    { ...page, next_cursor: 'x'.repeat(513) },
+    { ...page, as_of: 'not-a-date' },
+    { ...page, as_of: new Date('2026-10-09T04:00:00.000Z') },
+    { ...page, extra: true },
+  ])('拒绝非法或非精确分页 envelope %#', async (data) => {
+    const { cloud } = cloudWith(success(data));
+    await expectCode(new CloudRepository(cloud).listActivityPage('future'), 'INVALID_RESPONSE');
+  });
+
+  it.each([
+    ['upcoming', undefined],
+    ['future', ''],
+    ['history', 'x'.repeat(513)],
+  ])('拒绝非法分页输入 view=%s cursor=%s 且不发起调用', async (view, cursor) => {
+    const { cloud, callFunction } = cloudWith();
+    await expectCode(
+      new CloudRepository(cloud).listActivityPage(view as any, cursor),
+      'VALIDATION_FAILED',
+    );
+    expect(callFunction).not.toHaveBeenCalled();
+  });
+
+  it('继续保留旧 listActivities(filter) 请求形状', async () => {
+    const { cloud, callFunction } = cloudWith(success([]));
+    await new CloudRepository(cloud).listActivities('history');
+    expectCall(callFunction, 'activity-read', { action: 'list', filter: 'history' });
+  });
+});
+
 describe('CloudRepository 个人骑行名片适配', () => {
   it('只调用 profile/capabilityCard 并映射固定 DTO', async () => {
     const { cloud, callFunction } = cloudWith(success(personalCapabilityCardDto));
@@ -1402,7 +1476,280 @@ describe('MockRepository readiness 与显式报名命令', () => {
     });
   }
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('MockRepository 使用版本化游标稳定分页并拒绝篡改游标', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-10T00:00:00.000Z'));
+    installStorage();
+    const repository = new MockRepository();
+    const state = JSON.parse(JSON.stringify(repository.read()));
+    const base = state.activities[0];
+    state.activities = Array.from({ length: 21 }, (_, index) => ({
+      ...base,
+      id: `future-${String(index).padStart(2, '0')}`,
+      startAt: `2026-10-${String(11 + Math.floor(index / 2)).padStart(2, '0')}T08:00:00.000Z`,
+      endAt: `2026-10-${String(11 + Math.floor(index / 2)).padStart(2, '0')}T10:00:00.000Z`,
+    }));
+    stored = state;
+
+    const first = await repository.listActivityPage('future');
+    const second = await repository.listActivityPage('future', first.nextCursor || undefined);
+
+    expect(first.items).toHaveLength(20);
+    expect(first.nextCursor).toEqual(expect.any(String));
+    expect(second.items).toHaveLength(1);
+    expect(new Set([...first.items, ...second.items].map((item) => item.id)).size).toBe(21);
+    expect(second.asOf).toBe(first.asOf);
+    await expect(repository.listActivityPage('future', 'tampered')).rejects.toThrow();
+  });
+
+  it('MockRepository 新分页独立保留公开预告并按冻结 asOf 派生报名状态', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-10T00:00:00.000Z'));
+    stored = undefined;
+    installStorage();
+    const repository = new MockRepository();
+    const state = JSON.parse(JSON.stringify(repository.read()));
+    const base = state.activities[0];
+    state.activities = [
+      {
+        ...base,
+        id: 'setup-pending',
+        startAt: '2026-10-12T08:00:00.000Z',
+        endAt: '2026-10-12T10:00:00.000Z',
+        deadline: undefined,
+        capacity: 0,
+        fee: '',
+        registrationState: 'open',
+        closedReason: null,
+        waitlistOnly: true,
+        serverNow: '2026-01-01T00:00:00.000Z',
+      },
+      {
+        ...base,
+        id: 'deadline-closed',
+        startAt: '2026-10-13T08:00:00.000Z',
+        endAt: '2026-10-13T10:00:00.000Z',
+        deadline: '2026-10-09T20:00:00.000Z',
+        registrationState: 'open',
+        closedReason: null,
+      },
+      {
+        ...base,
+        id: 'full-open',
+        startAt: '2026-10-14T08:00:00.000Z',
+        endAt: '2026-10-14T10:00:00.000Z',
+        deadline: '2026-10-13T20:00:00.000Z',
+        capacity: 2,
+        occupiedCount: 2,
+        registrationState: 'closed',
+        closedReason: 'full',
+      },
+      {
+        ...base,
+        id: 'history-finished',
+        status: 'finished',
+        startAt: '2026-10-15T08:00:00.000Z',
+        endAt: '2026-10-15T10:00:00.000Z',
+      },
+      {
+        ...base,
+        id: 'history-ended',
+        startAt: '2026-10-09T08:00:00.000Z',
+        endAt: '2026-10-09T10:00:00.000Z',
+      },
+      { ...base, id: 'draft', status: 'draft' },
+      { ...base, id: 'unknown', status: 'archived' },
+      { ...base, id: 'deleted', isDeleted: true },
+      { ...base, id: 'invalid', endAt: 'invalid' },
+      { ...base, id: 'missing-time', startAt: undefined },
+      {
+        ...base,
+        id: 'reversed',
+        startAt: '2026-10-20T10:00:00.000Z',
+        endAt: '2026-10-20T08:00:00.000Z',
+      },
+    ];
+    stored = state;
+
+    const future = await repository.listActivityPage('future');
+    const history = await repository.listActivityPage('history');
+
+    expect(future.items.map((item) => item.id)).toEqual([
+      'setup-pending',
+      'deadline-closed',
+      'full-open',
+    ]);
+    expect(future.items[0]).toMatchObject({
+      capacity: 0,
+      deadline: '',
+      registrationState: 'closed',
+      closedReason: 'unavailable',
+      registrationSetupPending: true,
+      serverNow: future.asOf,
+    });
+    expect(future.items[0]).not.toHaveProperty('waitlistOnly');
+    expect(future.items[1]).toMatchObject({
+      registrationState: 'closed',
+      closedReason: 'deadline',
+      serverNow: future.asOf,
+    });
+    expect(future.items[2]).toMatchObject({
+      registrationState: 'open',
+      closedReason: null,
+      waitlistOnly: true,
+      serverNow: future.asOf,
+    });
+    expect(future.items[2]).not.toHaveProperty('registrationSetupPending');
+    expect(history.items.map((item) => item.id)).toEqual(['history-finished', 'history-ended']);
+    expect(history.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          registrationState: 'closed',
+          closedReason: 'finished',
+          serverNow: history.asOf,
+        }),
+      ]),
+    );
+  });
+
+  it('MockRepository 新分页忽略陈旧 setup pending 并按完整配置重新开放报名', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-10T00:00:00.000Z'));
+    stored = undefined;
+    installStorage();
+    const repository = new MockRepository();
+    const state = JSON.parse(JSON.stringify(repository.read()));
+    const base = state.activities[0];
+    state.activities = [
+      {
+        ...base,
+        id: 'stale-setup-pending',
+        status: 'published',
+        startAt: '2026-10-12T08:00:00.000Z',
+        endAt: '2026-10-12T10:00:00.000Z',
+        deadline: '2026-10-11T20:00:00.000Z',
+        capacity: 10,
+        occupiedCount: 0,
+        fee: '100 元',
+        registrationState: 'closed',
+        closedReason: 'unavailable',
+        registrationSetupPending: true,
+        waitlistOnly: true,
+        serverNow: '2026-01-01T00:00:00.000Z',
+      },
+    ];
+    stored = state;
+
+    const future = await repository.listActivityPage('future');
+
+    expect(future.items).toHaveLength(1);
+    expect(future.items[0]).toMatchObject({
+      id: 'stale-setup-pending',
+      registrationState: 'open',
+      closedReason: null,
+      serverNow: future.asOf,
+    });
+    expect(future.items[0]).not.toHaveProperty('registrationSetupPending');
+    expect(future.items[0]).not.toHaveProperty('waitlistOnly');
+  });
+
+  it('MockRepository 新分页按 Mongo binary 双向排序且跨页固定 asOf 无漏重', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-10T00:00:00.000Z'));
+    stored = undefined;
+    installStorage();
+    const repository = new MockRepository();
+    const state = JSON.parse(JSON.stringify(repository.read()));
+    const base = state.activities[0];
+    const orderedSuffixes = [
+      'aa-bb',
+      'aaAb',
+      'aa_bb',
+      'aaab',
+      ...Array.from({ length: 17 }, (_, index) => `zz${String(index).padStart(2, '0')}`),
+    ];
+    const futureIds = orderedSuffixes.map((suffix) => `future-${suffix}`);
+    const historyIds = orderedSuffixes.map((suffix) => `history-${suffix}`);
+    state.activities = [
+      ...futureIds.map((id) => ({
+        ...base,
+        id,
+        status: 'published',
+        startAt: '2026-10-20T08:00:00.000Z',
+        endAt: '2026-10-20T10:00:00.000Z',
+        deadline: '2026-10-19T20:00:00.000Z',
+      })),
+      ...historyIds.map((id) => ({
+        ...base,
+        id,
+        status: 'finished',
+        startAt: '2026-10-09T08:00:00.000Z',
+        endAt: '2026-10-09T10:00:00.000Z',
+      })),
+    ];
+    stored = state;
+
+    const futureFirst = await repository.listActivityPage('future');
+    vi.setSystemTime(new Date('2026-11-01T00:00:00.000Z'));
+    const futureSecond = await repository.listActivityPage(
+      'future',
+      futureFirst.nextCursor || undefined,
+    );
+    vi.setSystemTime(new Date('2026-10-10T00:00:00.000Z'));
+    const historyFirst = await repository.listActivityPage('history');
+    const historySecond = await repository.listActivityPage(
+      'history',
+      historyFirst.nextCursor || undefined,
+    );
+
+    const futureAll = [...futureFirst.items, ...futureSecond.items].map((item) => item.id);
+    const historyAll = [...historyFirst.items, ...historySecond.items].map((item) => item.id);
+    expect(futureAll).toEqual(futureIds);
+    expect(historyAll).toEqual([...historyIds].reverse());
+    expect(new Set(futureAll).size).toBe(21);
+    expect(new Set(historyAll).size).toBe(21);
+    expect(futureSecond.asOf).toBe(futureFirst.asOf);
+    expect(futureSecond.items.every((item) => item.serverNow === futureFirst.asOf)).toBe(true);
+  });
+
+  it('MockRepository 新分页实现不改变旧 listActivities 筛选语义', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-10T00:00:00.000Z'));
+    stored = undefined;
+    installStorage();
+    const repository = new MockRepository();
+    const state = JSON.parse(JSON.stringify(repository.read()));
+    const base = state.activities[0];
+    state.activities = [
+      {
+        ...base,
+        id: 'legacy-upcoming',
+        startAt: '2026-10-12T08:00:00.000Z',
+        endAt: '2026-10-12T10:00:00.000Z',
+      },
+      {
+        ...base,
+        id: 'legacy-history',
+        status: 'finished',
+        startAt: '2026-10-09T08:00:00.000Z',
+        endAt: '2026-10-09T10:00:00.000Z',
+      },
+      { ...base, id: 'legacy-draft', status: 'draft' },
+    ];
+    stored = state;
+
+    expect((await repository.listActivities('upcoming')).map((item) => item.id)).toEqual([
+      'legacy-upcoming',
+    ]);
+    expect((await repository.listActivities('history')).map((item) => item.id)).toEqual([
+      'legacy-history',
+    ]);
+  });
 
   it.each([
     ['self_drive', '自驾'],

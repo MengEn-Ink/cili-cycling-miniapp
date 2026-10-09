@@ -5,11 +5,23 @@ import { setTheme, syncPageTheme } from '../../services/theme-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.10.1',
+    date: '2026-10-10',
+    title: '活动首页时间线分页升级',
+    summary: '活动首页默认展示未来与进行中活动，并可稳定分页回看历史活动。',
+    latest: true,
+    features: [
+      '默认展示未来活动，正在进行的骑行不会提前移入历史',
+      '历史活动按结束时间倒序分页，支持持续加载',
+      '切换、刷新和加载更多相互隔离，迟到请求不会覆盖当前列表',
+    ],
+  },
+  {
     version: '2026.10.09.5',
     date: '2026-10-09',
     title: '活动创建与个人体验稳定性升级',
     summary: '简化活动创建，保留历史行程，集中管理 Strava，并完善个人图片与浅色主题体验。',
-    latest: true,
+    latest: false,
     features: [
       '活动创建区分日常与精品局，支持日期时间和地点快捷选择',
       '必填遗漏通过弹窗、顶部摘要、字段高亮和自动定位同步提醒',

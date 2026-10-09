@@ -6,7 +6,7 @@
 
 ## 已实现能力
 
-- **活动**：已登录用户可创建和编辑本人草稿、发布与下架，并从本人的历史活动复制草稿；管理员可管理全部活动并结束活动。活动支持图集、集合地点、分组容量、后援车信息和 Strava 路线预览/GPX。
+- **活动**：公开首页默认展示未来与进行中活动，并可按服务端时间线稳定分页回看历史；已登录用户可创建和编辑本人草稿、发布与下架，并从本人的历史活动复制草稿；管理员可管理全部活动并结束活动。活动支持图集、集合地点、分组容量、后援车信息和 Strava 路线预览/GPX。
 - **报名**：微信身份、实名资料、微信授权或手填手机号、集合方式与骑行经验；支持提交、驳回后重报、取消、审批、凭证和管理员签到。
 - **Strava**：OAuth 绑定、自动就绪、手动同步、解绑，以及累计骑行数据和最近 90 天里程、次数、最长距离、爬升、加权均速。
 - **个人资料**：昵称、微信/自定义头像、多张骑行照片、称号展示和个人骑行名片。
@@ -117,7 +117,7 @@ npm run cloudbase:apply
 npm run cloudbase:verify
 ```
 
-bootstrap 当前管理 12 个集合、26 个业务索引和全拒绝客户端数据库规则，包含 Strava 路线短期可信快照集合 `strava_route_previews`。bootstrap 不创建业务活动，也不会自动应用 `cloudstorage.rules.json`。完整顺序：
+bootstrap 当前管理 12 个集合、28 个业务索引和全拒绝客户端数据库规则；受管定义包含活动首页 future/history 分页经 planner 验证的两个 exact 复合索引，以及 Strava 路线短期可信快照集合 `strava_route_previews`。bootstrap 不创建业务活动，也不会自动应用 `cloudstorage.rules.json`。完整顺序：
 
 1. 审阅并执行 CloudBase plan/apply/verify。
 2. 按 [CloudBase 数据契约](docs/cloudbase-schema.md) 配置云函数环境变量和 `cloudstorage.rules.json`，并回读确认 canonical 媒体路径不可由客户端写入。

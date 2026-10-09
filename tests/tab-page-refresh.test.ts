@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const rideService = vi.hoisted(() => ({
+  listActivityPage: vi.fn(),
   listActivities: vi.fn(),
   listRegistrations: vi.fn(),
 }));
@@ -15,6 +16,11 @@ const activity = (id: string) => ({
   date: '2026-09-30T23:00:00.000Z',
   capacity: 20,
   occupiedCount: 2,
+});
+const activityPage = (id: string) => ({
+  items: [activity(id)],
+  nextCursor: null,
+  asOf: '2026-09-30T10:00:00.000Z',
 });
 
 const registration = (id: string, activityId: string) => ({
@@ -51,7 +57,7 @@ async function loadPage(kind: PageKind): Promise<any> {
 
 function primeServices(kind: PageKind, id: string): void {
   if (kind === 'activities') {
-    rideService.listActivities.mockResolvedValue([activity(id)]);
+    rideService.listActivityPage.mockResolvedValue(activityPage(id));
     return;
   }
   rideService.listRegistrations.mockResolvedValue([registration(id, `activity-${id}`)]);
@@ -61,6 +67,7 @@ function primeServices(kind: PageKind, id: string): void {
 describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (kind) => {
   beforeEach(() => {
     vi.resetModules();
+    rideService.listActivityPage.mockReset();
     rideService.listActivities.mockReset();
     rideService.listRegistrations.mockReset();
   });
@@ -69,10 +76,10 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
 
   it('a newer load wins when an older request resolves last', async () => {
     const page = await loadPage(kind);
-    const first = deferred<any[]>();
-    const second = deferred<any[]>();
+    const first = deferred<any>();
+    const second = deferred<any>();
     if (kind === 'activities') {
-      rideService.listActivities
+      rideService.listActivityPage
         .mockReturnValueOnce(first.promise)
         .mockReturnValueOnce(second.promise);
     } else {
@@ -88,11 +95,11 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
     const olderLoad = page.load();
     const newerLoad = page.load();
     second.resolve(
-      kind === 'activities' ? [activity('new')] : [registration('new', 'activity-new')],
+      kind === 'activities' ? activityPage('new') : [registration('new', 'activity-new')],
     );
     await newerLoad;
     first.resolve(
-      kind === 'activities' ? [activity('old')] : [registration('old', 'activity-old')],
+      kind === 'activities' ? activityPage('old') : [registration('old', 'activity-old')],
     );
     await olderLoad;
 
@@ -137,9 +144,9 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
     async (lifecycle) => {
       const page = await loadPage(kind);
       expect(page[lifecycle]).toBeTypeOf('function');
-      const pending = deferred<any[]>();
+      const pending = deferred<any>();
       if (kind === 'activities') {
-        rideService.listActivities.mockReturnValue(pending.promise);
+        rideService.listActivityPage.mockReturnValue(pending.promise);
       } else {
         rideService.listRegistrations.mockReturnValue(pending.promise);
         rideService.listActivities.mockResolvedValue([activity('activity-late')]);
@@ -149,7 +156,7 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
       page[lifecycle]();
       page.setData.mockClear();
       pending.resolve(
-        kind === 'activities' ? [activity('late')] : [registration('late', 'activity-late')],
+        kind === 'activities' ? activityPage('late') : [registration('late', 'activity-late')],
       );
       await load;
 
@@ -161,9 +168,9 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
     const page = await loadPage(kind);
     primeServices(kind, 'cached');
     await page.load();
-    const pending = deferred<any[]>();
+    const pending = deferred<any>();
     if (kind === 'activities') {
-      rideService.listActivities.mockReturnValueOnce(pending.promise);
+      rideService.listActivityPage.mockReturnValueOnce(pending.promise);
     } else {
       rideService.listRegistrations.mockReturnValueOnce(pending.promise);
       rideService.listActivities.mockResolvedValueOnce([activity('activity-fresh')]);
@@ -175,7 +182,7 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
     expect(page.data).toMatchObject({ loading: false, refreshing: true, error: '' });
 
     pending.resolve(
-      kind === 'activities' ? [activity('fresh')] : [registration('fresh', 'activity-fresh')],
+      kind === 'activities' ? activityPage('fresh') : [registration('fresh', 'activity-fresh')],
     );
     await refresh;
 
@@ -188,7 +195,7 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
     primeServices(kind, 'cached');
     await page.load();
     if (kind === 'activities') {
-      rideService.listActivities.mockRejectedValueOnce(new Error('活动刷新失败'));
+      rideService.listActivityPage.mockRejectedValueOnce(new Error('活动刷新失败'));
     } else {
       rideService.listRegistrations.mockRejectedValueOnce(new Error('报名刷新失败'));
       rideService.listActivities.mockResolvedValueOnce([activity('activity-cached')]);
@@ -208,7 +215,7 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
   it('uses the blocking error state when the first load fails', async () => {
     const page = await loadPage(kind);
     if (kind === 'activities') {
-      rideService.listActivities.mockRejectedValueOnce(new Error('活动首次失败'));
+      rideService.listActivityPage.mockRejectedValueOnce(new Error('活动首次失败'));
     } else {
       rideService.listRegistrations.mockRejectedValueOnce(new Error('报名首次失败'));
       rideService.listActivities.mockResolvedValueOnce([]);
@@ -223,58 +230,6 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
       error: kind === 'activities' ? '活动首次失败' : '报名首次失败',
       refreshError: '',
     });
-  });
-});
-
-describe('activities time filter', () => {
-  beforeEach(() => {
-    vi.resetModules();
-    rideService.listActivities.mockReset();
-    rideService.listRegistrations.mockReset();
-  });
-
-  afterEach(() => vi.unstubAllGlobals());
-
-  it('defaults to future activities and switches to history with matching empty-state copy', async () => {
-    const page = await loadPage('activities');
-    rideService.listActivities
-      .mockResolvedValueOnce([activity('future')])
-      .mockResolvedValueOnce([]);
-
-    await page.load();
-    expect(rideService.listActivities).toHaveBeenNthCalledWith(1, 'upcoming');
-    expect(page.data).toMatchObject({
-      filter: 'upcoming',
-      sectionTitle: '下一场',
-      emptyTitle: '暂无未来活动',
-    });
-
-    page.selectFilter({ currentTarget: { dataset: { filter: 'history' } } });
-    await vi.waitFor(() =>
-      expect(rideService.listActivities).toHaveBeenNthCalledWith(2, 'history'),
-    );
-    await vi.waitFor(() =>
-      expect(page.data).toMatchObject({
-        filter: 'history',
-        loading: false,
-        items: [],
-        sectionEyebrow: 'RIDE ARCHIVE',
-        sectionTitle: '历史活动',
-        emptyTitle: '暂无历史活动',
-        emptyCopy: '完成的骑行会收录在这里',
-      }),
-    );
-  });
-
-  it('ignores repeated or unknown filters without issuing duplicate requests', async () => {
-    const page = await loadPage('activities');
-    rideService.listActivities.mockResolvedValue([]);
-
-    await page.load();
-    page.selectFilter({ currentTarget: { dataset: { filter: 'upcoming' } } });
-    page.selectFilter({ currentTarget: { dataset: { filter: 'all' } } });
-
-    expect(rideService.listActivities).toHaveBeenCalledTimes(1);
   });
 });
 

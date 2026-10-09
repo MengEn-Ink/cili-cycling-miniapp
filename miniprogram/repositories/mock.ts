@@ -15,6 +15,8 @@ import type {
   ActivityListFilter,
   ActivityInput,
   CloneActivityInput,
+  PublicActivityPage,
+  PublicActivityView,
   RegistrationSubmission,
   RideRepository,
 } from './types';
@@ -24,10 +26,197 @@ type S = {
   profile: Profile;
   stravaStatus: StravaStatus;
 };
+type MockStoredActivity = (Activity | EditableActivity) & {
+  isDeleted?: boolean;
+  is_deleted?: boolean;
+};
 const KEY = 'ride-mock-v1';
 const init = (): S => ({ activities, registrations, profile, stravaStatus: 'connected' });
 const nextAvatarRevision = (value: unknown) =>
   (Number.isInteger(value) && Number(value) >= 0 ? Number(value) : 0) + 1;
+const MOCK_PAGE_SIZE = 20;
+const BASE64URL_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+type MockCursor = {
+  version: 1;
+  view: PublicActivityView;
+  asOf: string;
+  boundary: { time: string; id: string };
+};
+function validationError(message: string): Error & { code: string } {
+  return Object.assign(new Error(message), {
+    name: 'CloudRepositoryError',
+    code: 'VALIDATION_FAILED',
+  });
+}
+function utf8Bytes(value: string): number[] {
+  const bytes: number[] = [];
+  for (const character of value) {
+    const point = character.codePointAt(0) ?? 0xfffd;
+    if (point <= 0x7f) bytes.push(point);
+    else if (point <= 0x7ff) bytes.push(0xc0 | (point >> 6), 0x80 | (point & 0x3f));
+    else if (point <= 0xffff)
+      bytes.push(0xe0 | (point >> 12), 0x80 | ((point >> 6) & 0x3f), 0x80 | (point & 0x3f));
+    else
+      bytes.push(
+        0xf0 | (point >> 18),
+        0x80 | ((point >> 12) & 0x3f),
+        0x80 | ((point >> 6) & 0x3f),
+        0x80 | (point & 0x3f),
+      );
+  }
+  return bytes;
+}
+function base64urlEncode(value: string): string {
+  const bytes = utf8Bytes(value);
+  let encoded = '';
+  for (let index = 0; index < bytes.length; index += 3) {
+    const first = bytes[index];
+    const second = bytes[index + 1];
+    const third = bytes[index + 2];
+    encoded += BASE64URL_ALPHABET[first >> 2];
+    encoded += BASE64URL_ALPHABET[((first & 3) << 4) | ((second ?? 0) >> 4)];
+    if (second !== undefined)
+      encoded += BASE64URL_ALPHABET[((second & 15) << 2) | ((third ?? 0) >> 6)];
+    if (third !== undefined) encoded += BASE64URL_ALPHABET[third & 63];
+  }
+  return encoded;
+}
+function base64urlDecode(value: string): string {
+  if (!/^[A-Za-z0-9_-]+$/.test(value) || value.length % 4 === 1)
+    throw validationError('活动分页游标无效');
+  const bytes: number[] = [];
+  for (let index = 0; index < value.length; index += 4) {
+    const chunk = [...value.slice(index, index + 4)].map((character) =>
+      BASE64URL_ALPHABET.indexOf(character),
+    );
+    const [first, second, third, fourth] = chunk;
+    bytes.push((first << 2) | (second >> 4));
+    if (third !== undefined) bytes.push(((second & 15) << 4) | (third >> 2));
+    if (fourth !== undefined) bytes.push(((third & 3) << 6) | fourth);
+  }
+  try {
+    return decodeURIComponent(
+      bytes.map((byte) => `%${byte.toString(16).padStart(2, '0')}`).join(''),
+    );
+  } catch {
+    throw validationError('活动分页游标无效');
+  }
+}
+function encodeMockCursor(cursor: MockCursor): string {
+  const encoded = base64urlEncode(JSON.stringify(cursor));
+  if (encoded.length > 512) throw validationError('活动分页游标无效');
+  return encoded;
+}
+function decodeMockCursor(value: string, view: PublicActivityView): MockCursor {
+  if (value.length < 1 || value.length > 512) throw validationError('活动分页游标无效');
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(base64urlDecode(value));
+  } catch {
+    throw validationError('活动分页游标无效');
+  }
+  if (
+    typeof parsed !== 'object' ||
+    parsed === null ||
+    Array.isArray(parsed) ||
+    Object.keys(parsed).sort().join(',') !== 'asOf,boundary,version,view'
+  )
+    throw validationError('活动分页游标无效');
+  const cursor = parsed as Partial<MockCursor>;
+  if (
+    cursor.version !== 1 ||
+    cursor.view !== view ||
+    typeof cursor.asOf !== 'string' ||
+    !Number.isFinite(new Date(cursor.asOf).getTime()) ||
+    typeof cursor.boundary !== 'object' ||
+    cursor.boundary === null ||
+    Object.keys(cursor.boundary).sort().join(',') !== 'id,time' ||
+    typeof cursor.boundary.time !== 'string' ||
+    !Number.isFinite(new Date(cursor.boundary.time).getTime()) ||
+    typeof cursor.boundary.id !== 'string' ||
+    !cursor.boundary.id
+  )
+    throw validationError('活动分页游标无效');
+  return cursor as MockCursor;
+}
+function compareText(left: string, right: string): number {
+  const a = utf8Bytes(left);
+  const b = utf8Bytes(right);
+  for (let index = 0; index < Math.min(a.length, b.length); index += 1) {
+    if (a[index] !== b[index]) return a[index] < b[index] ? -1 : 1;
+  }
+  return Math.sign(a.length - b.length);
+}
+function finiteTime(value: unknown): number | null {
+  if (typeof value !== 'string' || !value) return null;
+  const time = new Date(value).getTime();
+  return Number.isFinite(time) ? time : null;
+}
+function isPublicTimelineCandidate(item: MockStoredActivity): boolean {
+  const start = finiteTime(item.startAt);
+  const end = finiteTime(item.endAt);
+  return (
+    (item.status === 'published' || item.status === 'finished') &&
+    item.isDeleted !== true &&
+    item.is_deleted !== true &&
+    start !== null &&
+    end !== null &&
+    start < end
+  );
+}
+function deriveMockPublicActivity(item: MockStoredActivity, asOf: string): Activity {
+  const startAt = item.startAt as string;
+  const endAt = item.endAt as string;
+  const output: Activity = {
+    ...(item as Activity),
+    date: typeof item.date === 'string' ? item.date : startAt,
+    startAt,
+    endAt,
+    deadline: typeof item.deadline === 'string' ? item.deadline : '',
+    capacity: Number.isInteger(item.capacity) ? Number(item.capacity) : 0,
+    fee: typeof item.fee === 'string' ? item.fee : '',
+    serverNow: asOf,
+  };
+  delete output.registrationState;
+  delete output.closedReason;
+  delete output.registrationSetupPending;
+  delete output.waitlistOnly;
+  const snapshot = new Date(asOf).getTime();
+  const start = new Date(startAt).getTime();
+  const end = new Date(endAt).getTime();
+  const deadline = finiteTime(output.deadline);
+  if (item.status === 'finished' || end <= snapshot)
+    return { ...output, registrationState: 'closed', closedReason: 'finished' };
+  if (deadline !== null && deadline <= snapshot)
+    return { ...output, registrationState: 'closed', closedReason: 'deadline' };
+  const setupReady =
+    output.capacity > 0 && deadline !== null && deadline < start && output.fee.trim().length > 0;
+  if (!setupReady)
+    return {
+      ...output,
+      registrationState: 'closed',
+      closedReason: 'unavailable',
+      registrationSetupPending: true,
+    };
+  const waitlistOnly =
+    Number.isInteger(output.occupiedCount) && Number(output.occupiedCount) >= output.capacity;
+  return {
+    ...output,
+    registrationState: 'open',
+    closedReason: null,
+    ...(waitlistOnly ? { waitlistOnly: true } : {}),
+  };
+}
+function activityKey(item: Activity, view: PublicActivityView): { time: string; id: string } {
+  return { time: view === 'future' ? item.startAt : item.endAt, id: item.id };
+}
+function compareActivityKey(
+  left: { time: string; id: string },
+  right: { time: string; id: string },
+): number {
+  const timeDifference = new Date(left.time).getTime() - new Date(right.time).getTime();
+  return timeDifference === 0 ? compareText(left.id, right.id) : Math.sign(timeDifference);
+}
 function displayGatheringMode(
   value: RegistrationSubmission['gatheringMode'],
 ): Registration['gatheringMode'] {
@@ -68,6 +257,47 @@ export class MockRepository implements RideRepository {
         const difference = new Date(left.startAt).getTime() - new Date(right.startAt).getTime();
         return filter === 'history' ? -difference : difference;
       });
+  }
+  async listActivityPage(view: PublicActivityView, cursor?: string): Promise<PublicActivityPage> {
+    if (view !== 'future' && view !== 'history') throw validationError('活动视图无效');
+    if (cursor !== undefined && typeof cursor !== 'string')
+      throw validationError('活动分页游标无效');
+    const decoded = cursor === undefined ? undefined : decodeMockCursor(cursor, view);
+    const asOf = decoded?.asOf || new Date().toISOString();
+    const snapshot = new Date(asOf).getTime();
+    const visible = (this.read().activities as MockStoredActivity[])
+      .filter(isPublicTimelineCandidate)
+      .map((item) => deriveMockPublicActivity(item, asOf));
+    const matches = visible.filter((item) => {
+      const endAt = new Date(item.endAt).getTime();
+      const history = item.status === 'finished' || (Number.isFinite(endAt) && endAt <= snapshot);
+      return view === 'history' ? history : !history;
+    });
+    const direction = view === 'history' ? -1 : 1;
+    const sorted = matches.sort(
+      (left, right) =>
+        direction * compareActivityKey(activityKey(left, view), activityKey(right, view)),
+    );
+    const remaining = decoded
+      ? sorted.filter(
+          (item) => direction * compareActivityKey(activityKey(item, view), decoded.boundary) > 0,
+        )
+      : sorted;
+    const items = remaining.slice(0, MOCK_PAGE_SIZE);
+    const hasMore = remaining.length > items.length;
+    return {
+      items,
+      nextCursor:
+        hasMore && items.length > 0
+          ? encodeMockCursor({
+              version: 1,
+              view,
+              asOf,
+              boundary: activityKey(items[items.length - 1], view),
+            })
+          : null,
+      asOf,
+    };
   }
   async getActivity(id: string) {
     return (await this.listActivities()).find((x) => x.id === id);

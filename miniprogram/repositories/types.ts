@@ -15,6 +15,12 @@ import type {
 
 export type AdminRegistrationStatusFilter = RegistrationStatus;
 export type ActivityListFilter = 'upcoming' | 'history';
+export type PublicActivityView = 'future' | 'history';
+export interface PublicActivityPage {
+  items: Activity[];
+  nextCursor: string | null;
+  asOf: string;
+}
 export type ActivityInput = Omit<EditableActivity, 'id' | 'date' | 'occupiedCount' | 'version'>;
 export interface CloneActivityInput {
   sourceActivityId: string;
@@ -58,6 +64,7 @@ export interface AdminReviewRepository {
 }
 export interface RideRepository extends AdminReviewRepository, ActivityAdminRepository {
   listActivities(filter?: ActivityListFilter): Promise<Activity[]>;
+  listActivityPage(view: PublicActivityView, cursor?: string): Promise<PublicActivityPage>;
   getActivity(id: string): Promise<Activity | undefined>;
   listRegistrations(): Promise<Registration[]>;
   getRegistration(id: string): Promise<Registration | undefined>;

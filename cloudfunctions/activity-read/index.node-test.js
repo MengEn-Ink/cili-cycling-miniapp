@@ -35,6 +35,7 @@ function canonicalMedia(fileId, ownerOpenid, overrides = {}) {
 
 function loadMain(activity, list = [], options = {}) {
   const calls = [];
+  const queryCalls = [];
   const database = {
     command: {
       in: (values) => ({ $in: values }),
@@ -46,6 +47,7 @@ function loadMain(activity, list = [], options = {}) {
       return {
         where(condition) {
           calls.push({ type: 'where', name, condition });
+          queryCalls.push({ type: 'where', name, condition });
           let data =
             name === 'activities'
               ? list
@@ -72,7 +74,8 @@ function loadMain(activity, list = [], options = {}) {
             data = data.filter((item) => condition._id.$in.includes(item._id));
           let offset = 0;
           const query = {
-            orderBy() {
+            orderBy(field, direction) {
+              queryCalls.push({ type: 'orderBy', name, field, direction });
               return query;
             },
             skip(value) {
@@ -80,6 +83,7 @@ function loadMain(activity, list = [], options = {}) {
               return query;
             },
             limit(value) {
+              queryCalls.push({ type: 'limit', name, value });
               return { get: async () => ({ data: data.slice(offset, offset + value) }) };
             },
           };
@@ -112,6 +116,7 @@ function loadMain(activity, list = [], options = {}) {
     const invoke = require('./index').main;
     return {
       calls,
+      queryCalls,
       async main(event) {
         const originalSecret = process.env.PROFILE_MEDIA_PATH_SECRET;
         if (Object.prototype.hasOwnProperty.call(options, 'mediaSecret')) {
@@ -195,7 +200,7 @@ test('未来列表只查询尚未结束的 published 活动并由同一服务端
       event_end: '2999-01-02T00:00:00.000Z',
     },
   ];
-  const { main, calls } = loadMain(undefined, list);
+  const { main, calls, queryCalls } = loadMain(undefined, list);
 
   const result = await main({ action: 'list' });
 
@@ -203,6 +208,16 @@ test('未来列表只查询尚未结束的 published 活动并由同一服务端
   assert.equal(calls.length, 1);
   assert.deepEqual(calls[0].condition.status, 'published');
   assert.ok(calls[0].condition.event_end.$gt instanceof Date);
+  assert.deepEqual(queryCalls, [
+    { type: 'where', name: 'activities', condition: calls[0].condition },
+    {
+      type: 'orderBy',
+      name: 'activities',
+      field: 'event_start',
+      direction: 'asc',
+    },
+    { type: 'limit', name: 'activities', value: 20 },
+  ]);
   assert.deepEqual(
     result.data.map((item) => [item.registration_state, item.closed_reason]),
     [
