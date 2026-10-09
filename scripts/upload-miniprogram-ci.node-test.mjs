@@ -116,6 +116,20 @@ test('工作流锁定依赖、阻止旧 main 回退且不经 GITHUB_ENV 传递�
   assert.doesNotMatch(workflow, /npm install --no-save/);
 });
 
+test('CI 用完整 push 区间生成小程序上传判定 artifact', async () => {
+  const workflow = await readFile(
+    new URL('../.github/workflows/ci.yml', import.meta.url),
+    'utf8',
+  );
+  assert.match(workflow, /actions\/checkout@v7/);
+  assert.match(workflow, /actions\/setup-node@v7/);
+  assert.match(workflow, /miniprogram-upload-decision\.mjs create/);
+  assert.match(workflow, /github\.event\.before/);
+  assert.match(workflow, /github\.sha/);
+  assert.match(workflow, /actions\/upload-artifact@v7/);
+  assert.match(workflow, /name:\s*miniprogram-upload-decision/);
+});
+
 test('上传脚本不会读取或打印密钥正文', async () => {
   const source = await readFile(new URL('./upload-miniprogram-ci.mjs', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /readFile\(privateKeyPath/);

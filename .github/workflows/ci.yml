@@ -14,10 +14,28 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - name: Compute miniprogram upload decision
+        if: github.event_name == 'push'
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          TARGET_SHA: ${{ github.sha }}
+        run: >-
+          node scripts/miniprogram-upload-decision.mjs create
+          --before "${BEFORE_SHA}"
+          --sha "${TARGET_SHA}"
+          --output "${RUNNER_TEMP}/miniprogram-upload-decision.json"
+      - name: Publish miniprogram upload decision
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v7
+        with:
+          name: miniprogram-upload-decision
+          path: ${{ runner.temp }}/miniprogram-upload-decision.json
+          if-no-files-found: error
+          retention-days: 1
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
