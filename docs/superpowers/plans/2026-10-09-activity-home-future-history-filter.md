@@ -82,7 +82,7 @@ git cherry-pick 729937d5b8e90bc5e428faf2564126278cf7d002..docs/activity-home-tim
 git log --oneline origin/main..HEAD
 ```
 
-Expected: 只有三条 docs 提交；若 main 已包含等价提交，使用 `git cherry-pick --skip` 并以 `git range-diff` 证明等价，不重复提交。
+Expected: 只有四条 docs 提交（设计两条、计划及其格式修正各一条）；若 main 已包含等价提交，使用 `git cherry-pick --skip` 并以 `git range-diff` 证明等价，不重复提交。
 
 ---
 
@@ -806,4 +806,3 @@ Expected: 两条新索引可见且定义一致；记录 requestId，不修改业
 ## 执行交接
 
 用户已指定由 TraeX 执行者实施、TraeX 审判者独立复核、Aime 负责测试环境部署，因此不再等待执行方式选择。执行者必须从 Task 0 开始逐项勾选，Task 2 planner 未通过即停止；不得跳到生产 GREEN。
-
