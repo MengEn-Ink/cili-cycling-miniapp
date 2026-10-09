@@ -56,15 +56,7 @@
         <view class="hero-card-brand"><text class="hero-card-logo">CILI</text><text class="hero-capability-label">骑行能力</text></view>
         <view class="hero-capability-status status-{{heroCard.statusTone}}"><text class="status-dot"></text>STRAVA {{heroCard.statusLabel}}</view>
       </view>
-      <view class="hero-capability-group" wx:if="{{heroCard.lifetimeMetrics.length}}">
-        <view class="hero-capability-group-label">STRAVA 累计骑行</view>
-        <view class="hero-capability-lifetime">
-          <view class="hero-capability-metric" wx:for="{{heroCard.lifetimeMetrics}}" wx:key="key">
-            <view class="hero-capability-value">{{item.value}}<text class="hero-capability-unit">{{item.unit}}</text></view>
-            <view class="hero-capability-name">{{item.label}}</view>
-          </view>
-        </view>
-      </view>
+      <view class="hero-capability-strava-tenure" wx:if="{{heroCard.hasStravaTenure}}">{{heroCard.stravaTenureText}}</view>
       <view class="hero-capability-group-label hero-capability-recent-label" wx:if="{{heroCard.primaryMetrics.length || heroCard.secondaryMetrics.length}}">近 90 天表现</view>
       <view class="hero-capability-metrics" wx:if="{{heroCard.primaryMetrics.length}}">
         <view class="hero-capability-metric" wx:for="{{heroCard.primaryMetrics}}" wx:key="key">
@@ -72,7 +64,7 @@
           <view class="hero-capability-name">{{item.label}}</view>
         </view>
       </view>
-      <view class="hero-capability-empty" wx:if="{{!heroCard.lifetimeMetrics.length && !heroCard.primaryMetrics.length && !heroCard.secondaryMetrics.length}}">{{heroCard.emptyMetricsText}}</view>
+      <view class="hero-capability-empty" wx:if="{{!heroCard.primaryMetrics.length && !heroCard.secondaryMetrics.length}}">{{heroCard.emptyMetricsText}}</view>
       <view class="hero-capability-secondary" wx:if="{{heroCard.secondaryMetrics.length}}">
         <view class="hero-capability-metric" wx:for="{{heroCard.secondaryMetrics}}" wx:key="key">
           <view class="hero-capability-value">{{item.value}}<text class="hero-capability-unit">{{item.unit}}</text></view>

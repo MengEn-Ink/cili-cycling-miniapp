@@ -196,20 +196,15 @@ describe('个人中心加载状态', () => {
         { key: 'rides90d', value: '28', unit: '次' },
         { key: 'longestKm', value: '126.3', unit: 'km' },
       ],
-      lifetimeMetrics: [
-        { key: 'lifetimeDistanceKm', value: '18240.7', unit: 'km' },
-        { key: 'lifetimeRides', value: '486', unit: '次' },
-        { key: 'lifetimeMovingHours', value: '734.5', unit: 'h' },
-        { key: 'lifetimeElevationM', value: '215400', unit: 'm' },
-      ],
     });
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     const styles = readFileSync('miniprogram/pages/profile/index.wxss', 'utf8');
     expect(page.data).not.toHaveProperty('cardExpanded');
     expect(template).toContain('class="hero-capability-card"');
     expect(template).toContain('骑行能力');
-    expect(template).toContain('STRAVA 累计骑行');
-    expect(template).toContain('wx:for="{{heroCard.lifetimeMetrics}}"');
+    expect(template).not.toContain('STRAVA 累计骑行');
+    expect(template).not.toContain('wx:for="{{heroCard.lifetimeMetrics}}"');
+    expect(template).toContain('hero-capability-strava-tenure');
     expect(template).toContain('近 90 天表现');
     expect(template).toContain(
       'class="hero-capability-secondary" wx:if="{{heroCard.secondaryMetrics.length}}"',
@@ -297,9 +292,9 @@ describe('个人中心加载状态', () => {
 
     expect(template).not.toMatch(/<swiper\b[^>]*\bautoplay(?:=|\s|>)/);
     expect(template).toContain('骑行能力');
-    expect(template).toContain('STRAVA 累计骑行');
+    expect(template).not.toContain('STRAVA 累计骑行');
     expect(template).toContain('近 90 天表现');
-    expect(template).toContain('wx:for="{{heroCard.lifetimeMetrics}}"');
+    expect(template).not.toContain('wx:for="{{heroCard.lifetimeMetrics}}"');
     expect(template).toContain('wx:for="{{heroCard.primaryMetrics}}"');
     expect(template).toContain('wx:for="{{heroCard.secondaryMetrics}}"');
     expect(template).not.toContain('bindtap="toggleCard"');
