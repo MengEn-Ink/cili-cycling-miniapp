@@ -207,6 +207,63 @@ brand-logo {
   background: var(--color-brand);
 }
 
+.strava-settings-card {
+  padding: 24rpx;
+  border: 1rpx solid var(--color-border);
+  border-radius: var(--radius-display);
+  background: var(--color-surface);
+  box-shadow: 0 16rpx 44rpx var(--color-shadow);
+}
+
+.strava-status {
+  flex: none;
+  padding: 7rpx 12rpx;
+  border: 1rpx solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--color-muted);
+  font-size: 18rpx;
+  font-weight: 900;
+}
+
+.strava-status.status-ready {
+  border-color: var(--color-brand);
+  color: var(--color-brand);
+}
+
+.settings-inline-error {
+  margin-top: 18rpx;
+  padding: 16rpx;
+  border-radius: var(--radius-sm);
+  background: var(--color-brand-soft);
+  color: var(--color-text);
+  font-size: 22rpx;
+  line-height: 1.5;
+}
+
+.strava-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 20rpx;
+}
+
+.strava-actions button {
+  flex: 1 1 220rpx;
+  min-height: 80rpx;
+  margin: 0;
+  font-size: 24rpx;
+}
+
+.strava-manage {
+  border: 1rpx solid var(--color-border-strong);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.strava-manage::after {
+  border: 0;
+}
+
 .release-list {
   display: grid;
 }

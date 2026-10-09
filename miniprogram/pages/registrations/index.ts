@@ -39,10 +39,11 @@ Page({
       if (requestId !== this.loadRequestId) return;
       this.setData({
         items: registrations.map((item) => {
-          const activity = activities.find((candidate) => candidate.id === item.activityId) || {
-            title: '活动信息不可用',
-            date: '',
-          };
+          const activity = item.activity ||
+            activities.find((candidate) => candidate.id === item.activityId) || {
+              title: '历史活动',
+              date: item.updatedAt,
+            };
           return {
             ...item,
             updatedAt: formatChinaDateTime(item.updatedAt),

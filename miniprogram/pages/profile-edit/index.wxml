@@ -7,7 +7,7 @@
       <view class="muted form-tip" wx:if="{{!canEditDetails}}">选择头像后即可继续完善个人资料。</view>
       <view class="avatar-editor">
         <view class="avatar-preview-shell">
-          <image wx:if="{{avatarPreviewUrl}}" class="avatar-preview" src="{{avatarPreviewUrl}}" data-url="{{avatarPreviewUrl}}" mode="aspectFill" aria-label="当前头像预览" binderror="avatarPreviewError" />
+          <image wx:if="{{avatarPreviewUrl}}" class="avatar-preview" src="{{avatarPreviewUrl}}" data-url="{{avatarPreviewUrl}}" mode="aspectFill" aria-label="预览当前头像" bindtap="previewAvatar" binderror="avatarPreviewError" />
           <view wx:else class="avatar-preview-placeholder" aria-hidden="true">骑</view>
         </view>
         <view class="avatar-panel">
@@ -59,22 +59,18 @@
       </view>
 
       <view class="card form-card">
-        <view class="title">个人相册</view>
-        <view class="muted form-tip">添加骑行照片，点击缩略图可查看大图，并可调整展示顺序。</view>
-        <button class="photo-action" bindtap="addPhoto" loading="{{photoBusy}}" disabled="{{photoBusy || saving || avatarBusy}}">添加照片</button>
+        <view class="title">个人背景图</view>
+        <view class="muted form-tip">最多 1 张，用于个人中心背景；选择新图片会替换当前背景图，点击可查看大图。</view>
+        <button class="photo-action" bindtap="addPhoto" loading="{{photoBusy}}" disabled="{{photoBusy || saving || avatarBusy}}">{{p.photos.length ? '更换背景图' : '添加背景图'}}</button>
         <view class="photo-list" wx:if="{{photoItems.length}}">
           <view class="photo-item" wx:for="{{photoItems}}" wx:key="id">
-            <button class="photo-preview-button" data-url="{{item.previewUrl}}" bindtap="previewPhoto" disabled="{{!item.previewUrl}}" aria-label="预览第 {{index + 1}} 张照片">
+            <button class="photo-preview-button" data-url="{{item.previewUrl}}" bindtap="previewPhoto" disabled="{{!item.previewUrl}}" aria-label="预览个人背景图">
               <image wx:if="{{item.previewUrl}}" class="photo-thumbnail" src="{{item.previewUrl}}" mode="aspectFill" />
               <view wx:else class="photo-placeholder">图片准备中</view>
             </button>
-            <view class="photo-order-actions">
-              <button class="photo-order-button" data-index="{{index}}" data-direction="{{-1}}" bindtap="movePhoto" disabled="{{index === 0 || photoBusy || saving || avatarBusy}}" aria-label="上移第 {{index + 1}} 张照片">上移</button>
-              <button class="photo-order-button" data-index="{{index}}" data-direction="{{1}}" bindtap="movePhoto" disabled="{{index === photoItems.length - 1 || photoBusy || saving || avatarBusy}}" aria-label="下移第 {{index + 1}} 张照片">下移</button>
-            </view>
           </view>
         </view>
-        <view class="photo-count">共 {{p.photos.length}} 张</view>
+        <view class="photo-count">{{p.photos.length ? '已设置 1 张背景图' : '尚未设置背景图'}}</view>
       </view>
 
       <view class="danger form-error" wx:if="{{mediaError}}" role="alert" aria-live="assertive" aria-atomic="true">{{mediaError}}</view>

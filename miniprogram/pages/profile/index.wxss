@@ -661,7 +661,6 @@ brand-logo {
   border: 1rpx solid #3a3a3c;
   border-radius: var(--radius-display);
   background: #1c1c1e;
-  transition: height 180ms ease-out;
 }
 
 .profile-hero.has-bg {
@@ -1406,7 +1405,8 @@ page,
 }
 
 /* Scheme C light theme: photographic identity with explicit black actions. */
-.theme-light .edit-button {
+.theme-light .edit-button,
+.theme-light .profile-refresh-error button {
   border-color: var(--color-text);
   background: var(--color-text) !important;
   color: var(--color-bg) !important;

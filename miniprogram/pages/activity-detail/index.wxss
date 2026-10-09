@@ -1039,3 +1039,7 @@ brand-logo {
 .rider-card .gender-pill.gender-unknown {
   color: #e9743f;
 }
+
+.theme-light .hero-sequence {
+  color: var(--color-muted);
+}

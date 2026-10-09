@@ -424,6 +424,16 @@ function publicRegistration(registration) {
   if (registration.strava_snapshot)
     output.strava_snapshot = safeStravaSnapshot(registration.strava_snapshot);
   if (registration.exemption) output.exemption = pick(registration.exemption, ['reason', 'at']);
+  if (registration.activity_snapshot) {
+    const activity = registration.activity_snapshot;
+    output.activity_snapshot = pick(activity, [
+      '_id',
+      'title',
+      'event_start',
+      'event_end',
+      'status',
+    ]);
+  }
   const snapshot = registration.profile_snapshot || {};
   output.profile_snapshot = {
     nickname: snapshot.nickname,

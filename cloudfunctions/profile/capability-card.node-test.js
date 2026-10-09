@@ -150,7 +150,6 @@ test('单一响应只返回累计与 90 天 allowlist、null 语义和 owner 媒
     },
     backgrounds: [
       { url: 'https://temporary.example/ride', source: 'user_photo', category: 'ride' },
-      { url: 'https://temporary.example/other', source: 'user_photo', category: 'other' },
     ],
     summary: {
       lifetime_rides: 486,
@@ -501,7 +500,7 @@ test('头像仅从当前 profile 引用且 owner/active/origin 匹配的背景�
   assert.equal(cardWechat.profile.avatar_url, 'https://temp.url/avatar.jpg');
 });
 
-test('头像独立于三张背景上限解析且与 photos 重复时仍保留头像 URL', async () => {
+test('头像独立于单张背景上限解析且与 photos 重复时仍保留头像 URL', async () => {
   const rideA = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174020.jpg`;
   const rideB = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174021.jpg`;
   const rideC = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174022.jpg`;
@@ -540,7 +539,9 @@ test('头像独立于三张背景上限解析且与 photos 重复时仍保留头
     },
   );
 
-  assert.equal(card.backgrounds.length, 3);
+  assert.deepEqual(card.backgrounds, [
+    { url: 'https://temporary.example/photo', source: 'user_photo', category: 'ride' },
+  ]);
   assert.equal(card.profile.avatar_url, 'https://temporary.example/avatar');
   assert.equal(card.needs_strava_reauth, false);
 });

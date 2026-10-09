@@ -1,12 +1,41 @@
+import type { StravaReadiness } from '../../models';
+import { runPageTask } from '../../services/page-service';
+import { rideService } from '../../services/ride-service';
 import { setTheme, syncPageTheme } from '../../services/theme-service';
 
 const RELEASE_NOTES = [
+  {
+    version: '2026.10.09.5',
+    date: '2026-10-09',
+    title: '活动创建与个人体验稳定性升级',
+    summary: '简化活动创建，保留历史行程，集中管理 Strava，并完善个人图片与浅色主题体验。',
+    latest: true,
+    features: [
+      '活动创建区分日常与精品局，支持日期时间和地点快捷选择',
+      '必填遗漏通过弹窗、顶部摘要、字段高亮和自动定位同步提醒',
+      '已完成或下架活动继续保留在用户行程中',
+      '个人背景图限制为一张，头像和背景图均可点击预览',
+      '设置页集中处理 Strava 重新授权、解绑与授权异常恢复',
+    ],
+  },
+  {
+    version: '2026.10.09.4',
+    date: '2026-10-09',
+    title: '活动创建分为日常与精品局',
+    summary: '日常活动精简到最少报名信息，精品局按需展开后援车与日程，错误提示可就近定位。',
+    latest: false,
+    features: [
+      '创建活动可选择“日常活动”或“精品局活动”，按类型展示必需信息',
+      '必填遗漏通过弹窗、顶部摘要、字段高亮和自动定位同步提醒',
+      'Strava 路线权限不足时提供重新授权入口并强制确认读取权限',
+    ],
+  },
   {
     version: '2026.10.09.3',
     date: '2026-10-09',
     title: '活动首页区分未来与历史活动',
     summary: '活动首页新增时间筛选，默认聚焦未来活动，历史活动按最近结束优先展示。',
-    latest: true,
+    latest: false,
     features: [
       '活动首页新增“未来活动”和“历史活动”双入口，切换时同步更新标题与列表',
       '未来活动按开始时间正序展示，进行中的活动仍保留在未来活动中',
@@ -170,14 +199,61 @@ const RELEASE_NOTES = [
   },
 ] as const;
 
+const stravaStatusText = (readiness: StravaReadiness | null) => {
+  if (!readiness) return '暂时无法读取授权状态';
+  if (readiness.state === 'ready') return '已连接，可重新授权或解绑';
+  if (readiness.state === 'authorizing') return '等待在浏览器完成授权';
+  if (readiness.state === 'syncing') return '授权成功，正在准备骑行数据';
+  if (readiness.state === 'failed') return readiness.error?.message || '授权异常，请重新授权';
+  return '未连接 Strava';
+};
+
 Page({
+  stravaStatusRequestId: 0,
   data: {
     theme: 'dark',
     themeClass: 'theme-dark',
     releaseNotes: RELEASE_NOTES,
+    stravaLoading: true,
+    stravaLoadError: '',
+    stravaReadiness: null as StravaReadiness | null,
+    stravaStatusText: '正在读取授权状态',
   },
   onShow() {
     syncPageTheme(this);
+    void this.loadStravaStatus();
+  },
+  onHide() {
+    this.stravaStatusRequestId += 1;
+  },
+  onUnload() {
+    this.stravaStatusRequestId += 1;
+  },
+  async loadStravaStatus() {
+    const requestId = ++this.stravaStatusRequestId;
+    this.setData({ stravaLoading: true, stravaLoadError: '' });
+    const status = await runPageTask(() => rideService.getStravaReadiness(), 'Strava 状态加载失败');
+    if (requestId !== this.stravaStatusRequestId) return;
+    if (!status.data) {
+      this.setData({
+        stravaLoading: false,
+        stravaLoadError: status.error,
+        stravaReadiness: null,
+        stravaStatusText: '暂时无法读取授权状态',
+      });
+      return;
+    }
+    this.setData({
+      stravaLoading: false,
+      stravaLoadError: '',
+      stravaReadiness: status.data,
+      stravaStatusText: stravaStatusText(status.data),
+    });
+  },
+  openStrava(event: { currentTarget?: { dataset?: { action?: unknown } } }) {
+    const action = event.currentTarget?.dataset?.action;
+    const query = action === 'reauthorize' ? '?reauthorize=1' : '';
+    wx.navigateTo({ url: `/pages/strava/index${query}` });
   },
   switchTheme(event: { currentTarget?: { dataset?: { theme?: unknown } } }) {
     const theme = setTheme(event.currentTarget?.dataset?.theme);

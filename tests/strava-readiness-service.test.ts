@@ -1,3 +1,5 @@
+// @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
+import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { StravaReadiness, StravaReadinessState } from '../miniprogram/models';
 import {
@@ -229,6 +231,14 @@ describe('Strava 页面编排', () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+  });
+
+  it('从路线权限提示进入时提供重新授权入口', () => {
+    page.onLoad({ reauthorize: '1' });
+    expect(page.data.reauthorize).toBe(true);
+    expect(readFileSync('miniprogram/pages/strava/index.wxml', 'utf8')).toContain(
+      '重新授权路线读取权限',
+    );
   });
 
   it('同步中自动 ensure 直到 ready', async () => {

@@ -145,7 +145,7 @@ page {
   padding: 24rpx;
   border-radius: 14rpx;
   background: rgba(200, 32, 24, 0.12);
-  color: #ff7068;
+  color: var(--color-danger-text);
 }
 
 page,

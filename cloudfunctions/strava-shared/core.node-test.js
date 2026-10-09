@@ -162,6 +162,8 @@ test('配置缺失 fail closed 且授权 URL 不含 secret', () => {
   const state = createState(0, () => Buffer.alloc(32, 1));
   const url = authorizationUrl('36717', env.STRAVA_CALLBACK_URL, state.raw);
   assert.match(url, /client_id=36717/);
+  assert.match(url, /approval_prompt=force/);
+  assert.match(url, /scope=read%2Cactivity%3Aread_all%2Cprofile%3Aread_all/);
   assert.equal(url.includes(fakeSecret), false);
   assert.equal(state.expiresAt.toISOString(), '1970-01-01T00:10:00.000Z');
   assert.equal(hashState(state.raw), state.hash);

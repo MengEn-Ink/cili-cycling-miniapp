@@ -179,6 +179,19 @@ test('update 加密敏感字段并把手填手机号标记为未验证', () => {
   assert.equal(decrypt(data.phone_cipher, key), '13812345678');
   assert.equal(data.phone_source, 'manual');
   assert.equal(data.phone_verified, false);
+  assert.throws(
+    () =>
+      buildUpdate(
+        {
+          photos: [
+            { file_id: 'cloud://env/a.jpg', category: 'ride' },
+            { file_id: 'cloud://env/b.jpg', category: 'ride' },
+          ],
+        },
+        key,
+      ),
+    { code: 'VALIDATION_FAILED' },
+  );
   assert.throws(() => buildUpdate({ phone: 'not-phone' }, key), { code: 'PHONE_INVALID' });
   assert.throws(() => buildUpdate({ id_type: '身份证' }, key), { code: 'FORBIDDEN_FIELD' });
   assert.throws(() => buildUpdate({ id_number: 'anything' }, key), { code: 'FORBIDDEN_FIELD' });

@@ -10,9 +10,46 @@ const {
   publicRegistration,
   submitRegistration,
   cancelRegistration,
+  publicActivity,
 } = require('./domain');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
+const _ = db.command;
+
+function unavailableActivity(registration, activity) {
+  const snapshot = registration.activity_snapshot || {};
+  const source = activity || snapshot;
+  return publicActivity(
+    {
+      ...(activity || {}),
+      _id: registration.activity_id,
+      title: typeof source.title === 'string' && source.title ? source.title : '历史活动',
+      event_start: source.event_start || registration.created_at,
+      event_end: source.event_end || source.event_start || registration.created_at,
+      status: ['published', 'finished'].includes(source.status) ? source.status : 'finished',
+    },
+    new Date(),
+  );
+}
+
+async function withActivities(registrations) {
+  const byId = new Map();
+  const ids = [...new Set(registrations.map((item) => item.activity_id).filter(Boolean))];
+  for (let offset = 0; offset < ids.length; offset += 20) {
+    const batch = ids.slice(offset, offset + 20);
+    const result = await db
+      .collection('activities')
+      .where({ _id: _.in(batch) })
+      .limit(20)
+      .get();
+    for (const activity of Array.isArray(result.data) ? result.data : [])
+      byId.set(activity._id, activity);
+  }
+  return registrations.map((registration) => ({
+    ...publicRegistration(registration),
+    activity: unavailableActivity(registration, byId.get(registration.activity_id)),
+  }));
+}
 
 function isNotFound(error) {
   return (
@@ -93,6 +130,16 @@ function transactionStore() {
   };
 }
 
+function tripActivity(activity) {
+  if (!activity || typeof activity !== 'object') return undefined;
+  return {
+    _id: activity._id,
+    title: typeof activity.title === 'string' ? activity.title : '活动信息不可用',
+    event_start: activity.event_start,
+    status: activity.status,
+  };
+}
+
 exports.main = async (event = {}) => {
   try {
     const openid = cloud.getWXContext().OPENID;
@@ -125,7 +172,7 @@ exports.main = async (event = {}) => {
         .orderBy('created_at', 'desc')
         .limit(50)
         .get();
-      return ok(result.data.map(publicRegistration));
+      return ok(await withActivities(result.data));
     }
     if (event.action === 'detail') {
       if (typeof event.registrationId !== 'string' || !event.registrationId)
@@ -133,7 +180,7 @@ exports.main = async (event = {}) => {
       const registration = await maybeGet(db.collection('registrations'), event.registrationId);
       if (!registration || registration.openid !== openid)
         fail('REGISTRATION_NOT_FOUND', '报名不存在');
-      return ok(publicRegistration(registration));
+      return ok((await withActivities([registration]))[0]);
     }
     fail('UNKNOWN_ACTION', '未知操作');
   } catch (error) {

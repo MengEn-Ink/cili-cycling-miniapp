@@ -254,7 +254,7 @@ page {
   padding: 22rpx 24rpx;
   border-radius: 18rpx;
   background: rgba(200, 32, 24, 0.12);
-  color: #ff7068;
+  color: var(--color-danger-text);
   line-height: 1.6;
 }
 .save-action {
@@ -329,4 +329,13 @@ page,
   .gender-options {
     grid-template-columns: 1fr;
   }
+}
+
+.theme-light .avatar-action[disabled],
+.theme-light .default-avatar-button[disabled],
+.theme-light .photo-action[disabled],
+.theme-light .photo-order-button[disabled] {
+  border-color: var(--color-border);
+  background: var(--color-raised);
+  color: var(--color-muted);
 }

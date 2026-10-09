@@ -75,6 +75,8 @@ describe('活动编辑媒体、时间、说明与地图', () => {
       chooseMedia: vi.fn(),
       chooseLocation: vi.fn(),
       showToast: vi.fn(),
+      showModal: vi.fn(),
+      pageScrollTo: vi.fn(),
     };
     vi.stubGlobal('wx', wxApi);
     vi.stubGlobal('Page', (definition: any) => {
@@ -183,6 +185,16 @@ describe('活动编辑媒体、时间、说明与地图', () => {
       .mockResolvedValueOnce({ name: '山顶', address: '环山路', latitude: 30.3, longitude: 120.2 });
     await page.chooseRouteLocation({ currentTarget: { dataset: { target: 'start' } } });
     await page.chooseRouteLocation({ currentTarget: { dataset: { target: 'end' } } });
+    expect(wxApi.chooseLocation).toHaveBeenCalledTimes(2);
+    const template = readFileSync('miniprogram/pages/admin/activity-edit/index.wxml', 'utf8');
+    expect(template).toMatch(
+      /input value="{{form\.routeStart}}"[^>]*\/><button class="inline-action-button location-quick-button"[^>]*data-target="start"[^>]*bindtap="chooseRouteLocation"/,
+    );
+    expect(template).toContain('aria-label="在地图中选择集合点"');
+    const styles = readFileSync('miniprogram/pages/admin/activity-edit/index.wxss', 'utf8');
+    expect(styles).toMatch(
+      /\.location-quick-button\s*{[\s\S]*min-width: 136rpx;[\s\S]*min-height: 88rpx;/,
+    );
     await page.save({ currentTarget: { dataset: { status: 'draft' } } });
     expect(rideService.saveActivity.mock.calls[0][0].route).toMatchObject({
       start: '集合广场',

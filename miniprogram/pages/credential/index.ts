@@ -39,7 +39,7 @@ Page({
     try {
       const item = await rideService.getRegistration(q.id || '');
       if (!item) throw new Error('报名不存在');
-      const activity = await rideService.getActivity(item.activityId);
+      const activity = item.activity || (await rideService.getActivity(item.activityId));
       const statusText = {
         waiting: '候补中',
         pending: '待审核',

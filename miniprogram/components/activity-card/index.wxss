@@ -210,7 +210,7 @@ status-pill {
 }
 
 .metric-suffix {
-  color: #d0d0d2;
+  color: var(--color-muted);
   font-size: 18rpx;
   font-weight: 800;
 }

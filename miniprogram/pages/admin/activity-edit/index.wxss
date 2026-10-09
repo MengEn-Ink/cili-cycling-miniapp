@@ -303,3 +303,185 @@
   background: var(--color-input-bg);
   color: var(--color-text);
 }
+
+.error-summary {
+  position: sticky;
+  z-index: 20;
+  top: 16rpx;
+  margin-bottom: 20rpx;
+  padding: 22rpx 24rpx;
+  border: 2rpx solid #ff7068;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: #ff8b85;
+  box-shadow: 0 16rpx 36rpx rgba(0, 0, 0, 0.28);
+  font-size: 25rpx;
+}
+.error-summary-title {
+  margin-bottom: 6rpx;
+  color: var(--color-text);
+  font-size: 28rpx;
+  font-weight: 900;
+}
+.mode-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+}
+.mode-card {
+  display: flex;
+  min-height: 220rpx;
+  margin: 0;
+  padding: 24rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: left;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+.mode-card::after {
+  border: 0;
+}
+.mode-card.is-active {
+  border-color: var(--color-brand);
+  background: rgba(213, 91, 31, 0.1);
+  box-shadow: inset 8rpx 0 0 var(--color-brand);
+}
+.mode-title {
+  font-size: 30rpx;
+  font-weight: 900;
+}
+.mode-copy {
+  margin-top: 8rpx;
+  color: var(--color-brand);
+  font-size: 23rpx;
+  font-weight: 800;
+}
+.mode-detail {
+  margin-top: 12rpx;
+  color: var(--color-muted);
+  font-size: 22rpx;
+  line-height: 1.55;
+}
+.required {
+  margin-left: 8rpx;
+  color: #ff7068;
+  font-size: 20rpx;
+  font-weight: 800;
+}
+.field-error input,
+.field-error textarea,
+.form-card-error {
+  border-color: #ff7068 !important;
+  background: rgba(200, 32, 24, 0.08) !important;
+}
+.field-error-copy {
+  color: #ff8b85;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+.daily-note,
+.strava-reauthorize {
+  padding: 20rpx;
+  border: 1rpx solid rgba(213, 91, 31, 0.55);
+  border-radius: var(--radius-sm);
+  background: rgba(213, 91, 31, 0.1);
+  color: var(--color-muted);
+  font-size: 23rpx;
+  line-height: 1.6;
+}
+.strava-reauthorize {
+  display: flex;
+  gap: 14rpx;
+  flex-direction: column;
+  color: #ff8b85;
+}
+.strava-reauthorize button {
+  min-height: 80rpx;
+  margin: 0;
+  border: 1rpx solid #fc4c02;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: #fc6a2c;
+  font-weight: 800;
+}
+@media (max-width: 480px) {
+  .mode-grid {
+    grid-template-columns: 1fr;
+  }
+  .mode-card {
+    min-height: 176rpx;
+  }
+}
+
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+.quick-actions button {
+  min-height: 72rpx;
+  margin: 0;
+  padding: 0 22rpx;
+  border: 1rpx solid var(--color-border-strong);
+  border-radius: 999rpx;
+  background: var(--color-input-bg);
+  color: var(--color-brand);
+  font-size: 22rpx;
+  line-height: 72rpx;
+}
+.quick-actions button::after {
+  border: 0;
+}
+.input-action-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10rpx;
+}
+.input-action-row > input {
+  min-width: 0;
+  flex: 1;
+}
+.picker-actions {
+  display: flex;
+  gap: 8rpx;
+}
+.picker-button,
+.inline-action-button {
+  display: flex;
+  box-sizing: border-box;
+  min-width: 86rpx;
+  min-height: var(--control-height);
+  padding: 0 16rpx;
+  border: 1rpx solid var(--color-brand);
+  border-radius: var(--radius-sm);
+  background: rgba(213, 91, 31, 0.1);
+  color: var(--color-brand);
+  font-size: 22rpx;
+  font-weight: 800;
+  align-items: center;
+  justify-content: center;
+}
+.inline-action-button {
+  width: auto;
+  margin: 0;
+  line-height: 1;
+}
+.location-quick-button {
+  min-width: 136rpx;
+  min-height: 88rpx;
+  padding: 0 18rpx;
+  white-space: nowrap;
+}
+.inline-action-button::after {
+  border: 0;
+}
+@media (max-width: 380px) {
+  .picker-button {
+    min-width: 76rpx;
+    padding: 0 10rpx;
+  }
+}
