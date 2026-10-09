@@ -269,6 +269,80 @@ describe('CloudRepository 活动读取适配', () => {
   });
 });
 
+describe('CloudRepository 活动时间线分页适配', () => {
+  const page = {
+    items: [activity],
+    next_cursor: 'cursor-2',
+    as_of: '2026-10-09T04:00:00.000Z',
+  };
+
+  it('首屏与游标页使用独立 listPage action，并严格映射分页 envelope', async () => {
+    const { cloud, callFunction } = cloudWith(
+      success(page),
+      success({ ...page, next_cursor: null }),
+    );
+    const repository = new CloudRepository(cloud);
+
+    await expect(repository.listActivityPage('future')).resolves.toMatchObject({
+      items: [expect.objectContaining({ id: 'a1', title: '环湖骑行' })],
+      nextCursor: 'cursor-2',
+      asOf: '2026-10-09T04:00:00.000Z',
+    });
+    expectCall(callFunction, 'activity-read', {
+      action: 'listPage',
+      view: 'future',
+      page_size: 20,
+    });
+
+    await expect(repository.listActivityPage('history', 'cursor-1')).resolves.toMatchObject({
+      items: [expect.objectContaining({ id: 'a1' })],
+      nextCursor: null,
+      asOf: '2026-10-09T04:00:00.000Z',
+    });
+    expectCall(callFunction, 'activity-read', {
+      action: 'listPage',
+      view: 'history',
+      page_size: 20,
+      cursor: 'cursor-1',
+    });
+  });
+
+  it.each([
+    null,
+    [],
+    { ...page, items: {} },
+    { ...page, items: [{ ...activity, title: 42 }] },
+    { ...page, next_cursor: undefined },
+    { ...page, next_cursor: '' },
+    { ...page, next_cursor: 'x'.repeat(513) },
+    { ...page, as_of: 'not-a-date' },
+    { ...page, as_of: new Date('2026-10-09T04:00:00.000Z') },
+    { ...page, extra: true },
+  ])('拒绝非法或非精确分页 envelope %#', async (data) => {
+    const { cloud } = cloudWith(success(data));
+    await expectCode(new CloudRepository(cloud).listActivityPage('future'), 'INVALID_RESPONSE');
+  });
+
+  it.each([
+    ['upcoming', undefined],
+    ['future', ''],
+    ['history', 'x'.repeat(513)],
+  ])('拒绝非法分页输入 view=%s cursor=%s 且不发起调用', async (view, cursor) => {
+    const { cloud, callFunction } = cloudWith();
+    await expectCode(
+      new CloudRepository(cloud).listActivityPage(view as any, cursor),
+      'VALIDATION_FAILED',
+    );
+    expect(callFunction).not.toHaveBeenCalled();
+  });
+
+  it('继续保留旧 listActivities(filter) 请求形状', async () => {
+    const { cloud, callFunction } = cloudWith(success([]));
+    await new CloudRepository(cloud).listActivities('history');
+    expectCall(callFunction, 'activity-read', { action: 'list', filter: 'history' });
+  });
+});
+
 describe('CloudRepository 个人骑行名片适配', () => {
   it('只调用 profile/capabilityCard 并映射固定 DTO', async () => {
     const { cloud, callFunction } = cloudWith(success(personalCapabilityCardDto));
@@ -1402,7 +1476,36 @@ describe('MockRepository readiness 与显式报名命令', () => {
     });
   }
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('MockRepository 使用版本化游标稳定分页并拒绝篡改游标', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-10T00:00:00.000Z'));
+    installStorage();
+    const repository = new MockRepository();
+    const state = JSON.parse(JSON.stringify(repository.read()));
+    const base = state.activities[0];
+    state.activities = Array.from({ length: 21 }, (_, index) => ({
+      ...base,
+      id: `future-${String(index).padStart(2, '0')}`,
+      startAt: `2026-10-${String(11 + Math.floor(index / 2)).padStart(2, '0')}T08:00:00.000Z`,
+      endAt: `2026-10-${String(11 + Math.floor(index / 2)).padStart(2, '0')}T10:00:00.000Z`,
+    }));
+    stored = state;
+
+    const first = await repository.listActivityPage('future');
+    const second = await repository.listActivityPage('future', first.nextCursor || undefined);
+
+    expect(first.items).toHaveLength(20);
+    expect(first.nextCursor).toEqual(expect.any(String));
+    expect(second.items).toHaveLength(1);
+    expect(new Set([...first.items, ...second.items].map((item) => item.id)).size).toBe(21);
+    expect(second.asOf).toBe(first.asOf);
+    await expect(repository.listActivityPage('future', 'tampered')).rejects.toThrow();
+  });
 
   it.each([
     ['self_drive', '自驾'],
