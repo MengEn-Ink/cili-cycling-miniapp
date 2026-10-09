@@ -26,6 +26,10 @@ type S = {
   profile: Profile;
   stravaStatus: StravaStatus;
 };
+type MockStoredActivity = (Activity | EditableActivity) & {
+  isDeleted?: boolean;
+  is_deleted?: boolean;
+};
 const KEY = 'ride-mock-v1';
 const init = (): S => ({ activities, registrations, profile, stravaStatus: 'connected' });
 const nextAvatarRevision = (value: unknown) =>
@@ -136,12 +140,76 @@ function decodeMockCursor(value: string, view: PublicActivityView): MockCursor {
   return cursor as MockCursor;
 }
 function compareText(left: string, right: string): number {
-  const a = Array.from(left, (character) => character.codePointAt(0) ?? 0xfffd);
-  const b = Array.from(right, (character) => character.codePointAt(0) ?? 0xfffd);
+  const a = utf8Bytes(left);
+  const b = utf8Bytes(right);
   for (let index = 0; index < Math.min(a.length, b.length); index += 1) {
     if (a[index] !== b[index]) return a[index] < b[index] ? -1 : 1;
   }
   return Math.sign(a.length - b.length);
+}
+function finiteTime(value: unknown): number | null {
+  if (typeof value !== 'string' || !value) return null;
+  const time = new Date(value).getTime();
+  return Number.isFinite(time) ? time : null;
+}
+function isPublicTimelineCandidate(item: MockStoredActivity): boolean {
+  const start = finiteTime(item.startAt);
+  const end = finiteTime(item.endAt);
+  return (
+    (item.status === 'published' || item.status === 'finished') &&
+    item.isDeleted !== true &&
+    item.is_deleted !== true &&
+    start !== null &&
+    end !== null &&
+    start < end
+  );
+}
+function deriveMockPublicActivity(item: MockStoredActivity, asOf: string): Activity {
+  const startAt = item.startAt as string;
+  const endAt = item.endAt as string;
+  const output: Activity = {
+    ...(item as Activity),
+    date: typeof item.date === 'string' ? item.date : startAt,
+    startAt,
+    endAt,
+    deadline: typeof item.deadline === 'string' ? item.deadline : '',
+    capacity: Number.isInteger(item.capacity) ? Number(item.capacity) : 0,
+    fee: typeof item.fee === 'string' ? item.fee : '',
+    serverNow: asOf,
+  };
+  delete output.registrationState;
+  delete output.closedReason;
+  delete output.registrationSetupPending;
+  delete output.waitlistOnly;
+  const snapshot = new Date(asOf).getTime();
+  const start = new Date(startAt).getTime();
+  const end = new Date(endAt).getTime();
+  const deadline = finiteTime(output.deadline);
+  if (item.status === 'finished' || end <= snapshot)
+    return { ...output, registrationState: 'closed', closedReason: 'finished' };
+  if (deadline !== null && deadline <= snapshot)
+    return { ...output, registrationState: 'closed', closedReason: 'deadline' };
+  const setupReady =
+    output.capacity > 0 &&
+    deadline !== null &&
+    deadline < start &&
+    output.fee.trim().length > 0 &&
+    item.registrationSetupPending !== true;
+  if (!setupReady)
+    return {
+      ...output,
+      registrationState: 'closed',
+      closedReason: 'unavailable',
+      registrationSetupPending: true,
+    };
+  const waitlistOnly =
+    Number.isInteger(output.occupiedCount) && Number(output.occupiedCount) >= output.capacity;
+  return {
+    ...output,
+    registrationState: 'open',
+    closedReason: null,
+    ...(waitlistOnly ? { waitlistOnly: true } : {}),
+  };
 }
 function activityKey(item: Activity, view: PublicActivityView): { time: string; id: string } {
   return { time: view === 'future' ? item.startAt : item.endAt, id: item.id };
@@ -201,7 +269,9 @@ export class MockRepository implements RideRepository {
     const decoded = cursor === undefined ? undefined : decodeMockCursor(cursor, view);
     const asOf = decoded?.asOf || new Date().toISOString();
     const snapshot = new Date(asOf).getTime();
-    const visible = await this.listActivities();
+    const visible = (this.read().activities as MockStoredActivity[])
+      .filter(isPublicTimelineCandidate)
+      .map((item) => deriveMockPublicActivity(item, asOf));
     const matches = visible.filter((item) => {
       const endAt = new Date(item.endAt).getTime();
       const history = item.status === 'finished' || (Number.isFinite(endAt) && endAt <= snapshot);
