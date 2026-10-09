@@ -95,6 +95,21 @@ test('JSON 响应体解析失败保留响应无效语义且不重试', async () 
   assert.equal(calls, 1);
 });
 
+test('当前骑手资料使用 /athlete 与 Bearer token 请求官方接口', async () => {
+  const { createStravaApi } = require('./api');
+  let captured;
+  const api = createStravaApi(async (url, options) => {
+    captured = { url: String(url), options };
+    return { ok: true, json: async () => ({ id: 42, created_at: '2019-05-18T09:30:00Z' }) };
+  });
+
+  const result = await api.athlete('access-token');
+
+  assert.equal(captured.url, 'https://www.strava.com/api/v3/athlete');
+  assert.equal(captured.options.headers.authorization, 'Bearer access-token');
+  assert.equal(result.created_at, '2019-05-18T09:30:00Z');
+});
+
 test('累计骑行统计使用 athlete id 与 Bearer token 请求官方接口', async () => {
   const { createStravaApi } = require('./api');
   let captured;
