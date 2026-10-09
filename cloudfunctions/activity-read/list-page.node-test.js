@@ -74,7 +74,8 @@ function collectOperators(value, output = []) {
 
 function assertBaseFilter(call, status) {
   assert.equal(call.condition.status, status);
-  assert.deepEqual(call.condition.is_deleted, operator('neq', true));
+  assert.equal(call.condition.is_deleted.__operator, 'neq');
+  assert.equal(call.condition.is_deleted.value, true);
   assert.equal(collectOperators(call.condition).includes('or'), false);
 }
 
@@ -381,7 +382,8 @@ test('四流 cursor 禁止 or，same-time 仅按 _id，首屏和 cross-time 按 
       assertBaseFilter(sameTime, scenario.statuses[stream]);
       assertBaseFilter(crossTime, scenario.statuses[stream]);
       assertTimeEquality(sameTime.condition[scenario.field], boundary);
-      assert.deepEqual(sameTime.condition._id, operator(scenario.boundaryOperator, boundaryId));
+      assert.equal(sameTime.condition._id.__operator, scenario.boundaryOperator);
+      assert.equal(sameTime.condition._id.value, boundaryId);
       assert.deepEqual(sameTime.order, [['_id', scenario.direction]]);
       assert.equal(Object.hasOwn(crossTime.condition, '_id'), false);
       assert.equal(
