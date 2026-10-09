@@ -199,6 +199,58 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
   });
 });
 
+describe('activities time filter', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    rideService.listActivities.mockReset();
+    rideService.listRegistrations.mockReset();
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('defaults to future activities and switches to history with matching empty-state copy', async () => {
+    const page = await loadPage('activities');
+    rideService.listActivities
+      .mockResolvedValueOnce([activity('future')])
+      .mockResolvedValueOnce([]);
+
+    await page.load();
+    expect(rideService.listActivities).toHaveBeenNthCalledWith(1, 'upcoming');
+    expect(page.data).toMatchObject({
+      filter: 'upcoming',
+      sectionTitle: '下一场',
+      emptyTitle: '暂无未来活动',
+    });
+
+    page.selectFilter({ currentTarget: { dataset: { filter: 'history' } } });
+    await vi.waitFor(() =>
+      expect(rideService.listActivities).toHaveBeenNthCalledWith(2, 'history'),
+    );
+    await vi.waitFor(() =>
+      expect(page.data).toMatchObject({
+        filter: 'history',
+        loading: false,
+        items: [],
+        sectionEyebrow: 'RIDE ARCHIVE',
+        sectionTitle: '历史活动',
+        emptyTitle: '暂无历史活动',
+        emptyCopy: '完成的骑行会收录在这里',
+      }),
+    );
+  });
+
+  it('ignores repeated or unknown filters without issuing duplicate requests', async () => {
+    const page = await loadPage('activities');
+    rideService.listActivities.mockResolvedValue([]);
+
+    await page.load();
+    page.selectFilter({ currentTarget: { dataset: { filter: 'upcoming' } } });
+    page.selectFilter({ currentTarget: { dataset: { filter: 'all' } } });
+
+    expect(rideService.listActivities).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('registrations status presentation', () => {
   beforeEach(() => {
     vi.resetModules();

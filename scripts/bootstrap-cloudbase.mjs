@@ -35,6 +35,26 @@ export const INDEXES = Object.freeze([
   },
   {
     collection: 'activities',
+    name: 'activities_status_event_end_event_start_asc',
+    keys: [
+      ['status', 1],
+      ['event_end', 1],
+      ['event_start', 1],
+    ],
+    unique: false,
+  },
+  {
+    collection: 'activities',
+    name: 'activities_status_event_end_event_start_desc',
+    keys: [
+      ['status', 1],
+      ['event_end', 1],
+      ['event_start', -1],
+    ],
+    unique: false,
+  },
+  {
+    collection: 'activities',
     name: 'activities_created_by_event_start',
     keys: [
       ['created_by', 1],

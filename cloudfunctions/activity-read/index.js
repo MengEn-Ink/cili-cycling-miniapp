@@ -17,6 +17,20 @@ const ATTENDEE_LIMIT = 24;
 const ATTENDEE_PAGE_SIZE = 100;
 const MAX_ACTIVITY_CAPACITY = 1000;
 
+async function collectVisibleActivities(query, limit) {
+  const pageSize = Math.max(limit, 20);
+  const visible = [];
+  let offset = 0;
+  while (visible.length < limit) {
+    const result = await query.skip(offset).limit(pageSize).get();
+    const page = Array.isArray(result.data) ? result.data : [];
+    visible.push(...page.filter((item) => item.is_deleted !== true));
+    if (page.length < pageSize) break;
+    offset += page.length;
+  }
+  return visible.slice(0, limit);
+}
+
 function safeHttpsUrl(value) {
   if (typeof value !== 'string' || value.length > 2048) return '';
   try {
@@ -227,15 +241,39 @@ exports.main = async (event = {}) => {
     const now = new Date();
     if (event.action === 'list') {
       const limit = Number.isInteger(event.limit) ? Math.min(Math.max(event.limit, 1), 20) : 20;
-      const result = await db
-        .collection('activities')
-        .where({ status: 'published' })
-        .orderBy('event_start', 'asc')
-        .limit(limit)
-        .get();
-      const activities = result.data
-        .filter((item) => item.is_deleted !== true)
-        .map((item) => publicActivity(item, now));
+      const filter = event.filter === undefined ? 'upcoming' : event.filter;
+      if (!['upcoming', 'history'].includes(filter)) fail('VALIDATION_FAILED', '活动筛选条件无效');
+      let rawActivities;
+      if (filter === 'history') {
+        const [finished, ended] = await Promise.all([
+          collectVisibleActivities(
+            db
+              .collection('activities')
+              .where({ status: 'finished' })
+              .orderBy('event_start', 'desc'),
+            limit,
+          ),
+          collectVisibleActivities(
+            db
+              .collection('activities')
+              .where({ status: 'published', event_end: _.lte(now) })
+              .orderBy('event_start', 'desc'),
+            limit,
+          ),
+        ]);
+        rawActivities = [...finished, ...ended]
+          .sort((left, right) => timestamp(right.event_start) - timestamp(left.event_start))
+          .slice(0, limit);
+      } else {
+        rawActivities = await collectVisibleActivities(
+          db
+            .collection('activities')
+            .where({ status: 'published', event_end: _.gt(now) })
+            .orderBy('event_start', 'asc'),
+          limit,
+        );
+      }
+      const activities = rawActivities.map((item) => publicActivity(item, now));
       return ok(await resolveActivityMedia(activities));
     }
     if (event.action === 'detail') {

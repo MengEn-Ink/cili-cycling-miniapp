@@ -162,8 +162,13 @@ describe('theme accessibility regressions', () => {
     expect(template).toContain('{{emptyTitle}}');
     expect(template).toContain('{{emptyCopy}}');
     expect(template.match(/class="state-code" aria-hidden="true"/g)).toHaveLength(2);
-    expect(activities).toContain('empty-title="暂无活动"');
-    expect(activities).toContain('empty-copy="下一场骑行正在路上"');
+    expect(activities).toContain('empty-title="{{emptyTitle}}"');
+    expect(activities).toContain('empty-copy="{{emptyCopy}}"');
+    expect(activities).toContain('role="tablist"');
+    expect(activities.match(/role="tab"/g)).toHaveLength(2);
+    expect(activities).toContain('aria-selected="{{filter === \'upcoming\'}}"');
+    expect(activities.match(/aria-controls="activity-list-panel"/g)).toHaveLength(2);
+    expect(activities).toContain('role="tabpanel"');
     expect(registrations).toContain('empty-title="暂无行程"');
     expect(registrations).toContain('empty-copy="去发现一场活动，报名后可在这里查看进度"');
   });

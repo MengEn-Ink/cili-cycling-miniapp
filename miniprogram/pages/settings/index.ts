@@ -2,11 +2,23 @@ import { setTheme, syncPageTheme } from '../../services/theme-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.09.3',
+    date: '2026-10-09',
+    title: '活动首页区分未来与历史活动',
+    summary: '活动首页新增时间筛选，默认聚焦未来活动，历史活动按最近结束优先展示。',
+    latest: true,
+    features: [
+      '活动首页新增“未来活动”和“历史活动”双入口，切换时同步更新标题与列表',
+      '未来活动按开始时间正序展示，进行中的活动仍保留在未来活动中',
+      '历史活动按开始时间倒序展示，并提供独立空状态提示',
+    ],
+  },
+  {
     version: '2026.10.09.2',
     date: '2026-10-09',
     title: '个人中心聚焦近期骑行与 STRAVA 年限',
     summary: '个人中心仅展示近 90 天骑行数据，并按 Strava 注册年份展示加入年限。',
-    latest: true,
+    latest: false,
     features: [
       '个人中心移除累计骑行指标，只保留近 90 天里程、次数、最长、爬升与均速',
       '连接 Strava 后展示“加入 STRAVA N 年”，0 年显示未满 1 年',

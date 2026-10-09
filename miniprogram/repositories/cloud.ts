@@ -18,6 +18,7 @@ import type {
 } from '../models';
 import { normalizeGender } from '../utils/gender';
 import type {
+  ActivityListFilter,
   ActivityInput,
   AdminRegistrationStatusFilter,
   AdminReviewRepository,
@@ -991,8 +992,14 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     }
     return mapEditableActivity(await this.call('activity-admin', data), true);
   }
-  async listActivities() {
-    return expectRecordArray(await this.call('activity-read', { action: 'list' })).map((item) =>
+  async listActivities(filter?: ActivityListFilter) {
+    const data: Record<string, unknown> = { action: 'list' };
+    if (filter !== undefined) {
+      if (!['upcoming', 'history'].includes(filter))
+        throw new CloudRepositoryError('VALIDATION_FAILED', '活动筛选条件无效');
+      data.filter = filter;
+    }
+    return expectRecordArray(await this.call('activity-read', data)).map((item) =>
       mapActivity(item, true),
     );
   }

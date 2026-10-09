@@ -3,20 +3,26 @@
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{refreshError}}</view>
   <brand-logo meta="RIDES / {{items.length || '—'}}" />
   <view class="activities-intro">
-    <view class="section-eyebrow">UPCOMING RIDES</view>
+    <view class="section-eyebrow">{{sectionEyebrow}}</view>
     <view class="page-title"><view>发现活动</view><view>报名出发</view></view>
     <view class="intro-copy muted">先看路线，再决定下一次出发</view>
   </view>
+  <view class="activity-filters" role="tablist" aria-label="活动时间筛选">
+    <view class="activity-filter {{filter === 'upcoming' ? 'is-active' : ''}}" role="tab" aria-selected="{{filter === 'upcoming'}}" aria-controls="activity-list-panel" data-filter="upcoming" bindtap="selectFilter" hover-class="activity-filter--pressed">未来活动</view>
+    <view class="activity-filter {{filter === 'history' ? 'is-active' : ''}}" role="tab" aria-selected="{{filter === 'history'}}" aria-controls="activity-list-panel" data-filter="history" bindtap="selectFilter" hover-class="activity-filter--pressed">历史活动</view>
+  </view>
   <view class="section-head">
-    <view class="section-title">下一场</view>
+    <view class="section-title">{{sectionTitle}}</view>
     <text class="count" wx:if="{{items.length}}">{{items.length}} 场</text>
   </view>
   <view class="refresh-note muted" wx:if="{{refreshing}}" aria-hidden="true">正在刷新活动…</view>
   <view class="refresh-note muted" wx:if="{{refreshError}}" aria-hidden="true">{{refreshError}}</view>
-  <state-view loading="{{loading}}" error="{{error}}" empty="{{!items.length}}" empty-title="暂无活动" empty-copy="下一场骑行正在路上" retryable="{{true}}" bind:retry="load">
-    <block wx:for="{{items}}" wx:key="id">
-      <view class="following-head" wx:if="{{index === 1}}"><text>接下来</text><text>继续探索 →</text></view>
-      <activity-card item="{{item}}" featured="{{index === 0}}" data-id="{{item.id}}" bind:open="open" />
-    </block>
-  </state-view>
+  <view id="activity-list-panel" class="activity-results" role="tabpanel" aria-label="{{filter === 'history' ? '历史活动列表' : '未来活动列表'}}">
+    <state-view loading="{{loading}}" error="{{error}}" empty="{{!items.length}}" empty-title="{{emptyTitle}}" empty-copy="{{emptyCopy}}" retryable="{{true}}" bind:retry="load">
+      <block wx:for="{{items}}" wx:key="id">
+        <view class="following-head" wx:if="{{filter === 'upcoming' && index === 1}}"><text>接下来</text><text>继续探索 →</text></view>
+        <activity-card item="{{item}}" featured="{{filter === 'upcoming' && index === 0}}" data-id="{{item.id}}" bind:open="open" />
+      </block>
+    </state-view>
+  </view>
 </view>
