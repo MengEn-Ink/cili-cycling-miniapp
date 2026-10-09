@@ -116,6 +116,13 @@ Cursor 是版本化的 opaque base64url JSON，最大 512 字符。解码后只�
 
 未来 cursor 的 `boundary.time` 对应 `event_start`，历史 cursor 对应 `event_end`。cursor 不携带 openid、角色、status、删除条件或任意查询表达式。字段缺失、额外字段、非法版本、非法时间、非法 ID、超长输入和 view 不匹配全部 fail closed。
 
+Cursor 的复合边界不得使用单个 Mongo `$or`。真实 CloudBase planner 已证明 `time 严格跨边界 OR (time 等于边界且 _id 严格跨边界)` 会产生阻塞 `SORT`。每个逻辑流必须把 cursor 拆成两个物理段：
+
+1. 同时间段：`time === boundary.time`，只对 `_id` 使用严格方向边界；
+2. 跨时间段：升序流使用 `time > boundary.time`，降序流使用 `time < boundary.time`。
+
+同时间段天然排在跨时间段之前，服务端按上述顺序拼接并在达到 `page_size + 1` 后停止；不得重新引入 `$or` 或应用层全量排序。
+
 `as_of` 只冻结时间归类边界，不构成数据库快照。如果活动在翻页期间被编辑、结束或删除，当前分页链路不承诺跨写入的绝对无漏无重；用户重新进入页面或重试首屏后收敛到最新状态。静态数据集下必须无重无漏。
 
 ## 查询与分页
@@ -127,7 +134,7 @@ Cursor 是版本化的 opaque base64url JSON，最大 512 字符。解码后只�
 1. 进行中流：`event_start <= as_of && event_end > as_of`；
 2. 未开始流：`event_start > as_of && event_end > as_of`。
 
-两流都把 `status === published` 和 `is_deleted != true` 放入数据库 `where`，并按 `event_start ASC, _id ASC` 做 keyset。进行中流的所有排序键天然早于未开始流，因此服务端先读取进行中流；不足 `page_size + 1` 时再从未开始流补足。后续页把同一个 `(event_start, _id)` 严格大于条件应用到仍可能有结果的流。首轮每流最多一次 read，未来页最多两次 read，每次 limit 不超过 `page_size + 1`。
+两流都把 `status === published` 和 `is_deleted != true` 放入数据库 `where`，并按 `event_start ASC, _id ASC` 做 keyset。进行中流的所有排序键天然早于未开始流，因此服务端先读取进行中流；不足 `page_size + 1` 时再从未开始流补足。首屏每流最多一次 read，共最多两次。cursor 页对仍可能有结果的流依次读取同时间段和跨时间段，共最多四次 read。每次 limit 不超过 `page_size + 1`。
 
 ### 历史流
 
@@ -136,7 +143,7 @@ Cursor 是版本化的 opaque base64url JSON，最大 512 字符。解码后只�
 1. `status === finished && is_deleted != true` 流；
 2. `status === published && event_end <= as_of && is_deleted != true` 流。
 
-两个流都按 `event_end DESC, _id DESC` 做同一 cursor 边界下的 keyset 查询。服务端全局归并、按 `_id` 防御性去重，再截取 `page_size + 1` 判断是否还有下一页。首轮每流最多一次 read，历史页最多两次 read，每次 limit 不超过 `page_size + 1`。
+两个流都按 `event_end DESC, _id DESC` 做同一 cursor 边界下的 keyset 查询。服务端全局归并、按 `_id` 防御性去重，再截取 `page_size + 1` 判断是否还有下一页。首屏每流最多一次 read，共最多两次。cursor 页每流依次读取同时间段和跨时间段，共最多四次 read。每次 limit 不超过 `page_size + 1`。
 
 ### Legacy 删除字段
 
@@ -149,8 +156,8 @@ Cursor 是版本化的 opaque base64url JSON，最大 512 字符。解码后只�
 - 禁止 `skip`。
 - 任一数据库 read 的 `limit` 不得超过 `page_size + 1`。
 - 删除、状态、时间合法性和 cursor 边界必须在最终分页窗口形成前生效。
-- 正常页面的 read 上限为每流一次，即 future 最多两次、history 最多两次。
-- 若 CloudBase 只能通过候选批次排除某类旧非法时间，每流最多继续 4 个 keyset 批次；单页总 read 上限为 10。五个批次仍无法形成页面或确认流耗尽时，返回 `DATA_INTEGRITY_ERROR`，不返回误导性的部分页面。不能在已经截断的 20 条上做事后过滤。
+- 正常首屏的 read 上限为每逻辑流一次，即 future 最多两次、history 最多两次；正常 cursor 页每逻辑流最多两个物理段，即 future 最多四次、history 最多四次。
+- 若 CloudBase 只能通过候选批次排除某类旧非法时间，每流最多继续 4 个 keyset 批次；一个 cursor 批次最多包含同时间与跨时间两个物理 read，单页总 read 上限为 20。五个批次仍无法形成页面或确认流耗尽时，返回 `DATA_INTEGRITY_ERROR`，不返回误导性的部分页面。不能在已经截断的 20 条上做事后过滤。
 - 所有数据库响应必须验证为数组；异常统一走现有错误封装，不返回部分成功页面。
 - 媒体临时 URL 解析失败继续沿用当前降级：保留原字段，不影响列表主结果。
 
@@ -161,14 +168,14 @@ Cursor 是版本化的 opaque base64url JSON，最大 512 字符。解码后只�
 - 未来两流：`status ASC, event_start ASC, _id ASC, event_end ASC`；
 - 历史两流：`status ASC, event_end DESC, _id DESC, event_start DESC`。
 
-候选索引不是已确认事实，当前状态为 `PENDING (missing planner evidence)`。实施计划必须把 planner 取证放在生产 GREEN 之前：先只写查询形态测试和测试环境 probe，不写正式查询实现。临时集合中同时保留可能竞争的旧索引，使用真实 CloudBase `explain` 验证 ongoing-future、scheduled-future、finished-history、published-history 及各自 cursor 查询：
+候选索引不是已确认事实，当前状态为 `PENDING (missing planner evidence)`。首轮 probe 已证明四条首屏查询命中候选索引，但复合 `$or` cursor 出现阻塞 `SORT`，不能作为通过证据。修订后必须在生产 GREEN 之前重新取证：临时集合中同时保留可能竞争的旧索引，使用真实 CloudBase `explain` 验证四条首屏查询，以及 ongoing-future、scheduled-future、finished-history、published-history 各自的“同时间段 / 跨时间段”两个 cursor 物理查询，共 12 条：
 
 - 命中预期复合索引；
 - 没有阻塞 `SORT`；
 - 单次返回和 read limit 不超过 `page_size + 1`；
 - deleted、非法状态、旧 `is_deleted` 缺失记录和同时间戳记录符合契约。
 
-使用至少 101 条混合夹具做多页 smoke，其中必须包含 `is_deleted=false`、字段缺失、`is_deleted=true`、同时间戳、进行中、未开始、自然结束和提前 finished。临时集合、索引和夹具必须精确清理，并记录 requestId、查询计划摘要和清理证据。
+使用首轮同规模的 108 条混合夹具做多页 smoke，其中必须包含 `is_deleted=false`、字段缺失、`is_deleted=true`、同时间戳、进行中、未开始、自然结束和提前 finished。12 条 explain 全部通过后才可运行 smoke。临时集合、索引和夹具必须精确清理，并记录 requestId、查询计划摘要和清理证据。
 
 若任一查询出现阻塞 `SORT`、删除过滤晚于逻辑 limit、不可接受的全表扫描或无法使用 cursor 稳定续页，立即停止实现并保持 `PENDING (missing planner evidence)`。不得用内存 mock、应用层全量排序或候选索引猜测替代；先回到设计阶段调整查询、排序或单独提出数据迁移方案。
 
@@ -268,9 +275,11 @@ Cursor 是版本化的 opaque base64url JSON，最大 512 字符。解码后只�
 - future 与 history 在同时间戳下按 `_id` 稳定排序。
 - 至少 41 条数据完成 20 + 20 + 1 分页，无 skip、无重、无漏。
 - history 两流全局归并正确，cursor 同时约束两流。
+- cursor 不使用复合 `$or`；四流都先读取同时间段、再读取跨时间段，拼接后仍保持全局顺序。
 - 后续页沿用首屏 `as_of`，时间推进不改变静态数据集归类。
 - 版本、长度、字段白名单、时间、边界和 view mismatch 全部在数据库读取前拒绝。
 - 每个数据库 read 的 limit 不超过 21。
+- 首屏每个 view 最多 2 reads，正常 cursor 页最多 4 reads，非法数据五批 fail closed 时最多 20 reads。
 
 ### Repository
 
