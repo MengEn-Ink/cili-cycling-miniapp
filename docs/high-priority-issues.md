@@ -1,6 +1,6 @@
 # 高优问题清单
 
-> 最后更新：2026-10-10 01:26（CST）
+> 最后更新：2026-10-10（CST）
 >
 > 维护原则：这里只保留尚未满足关闭条件的问题。新问题先去重、澄清、拆分；已满足关闭条件的条目直接删除，Git 历史和不可变外部证据作为归档。
 
@@ -88,10 +88,10 @@
 
 ### HP-20261009-05 · 首页未来/历史时间线剩余客户端与发布链路
 
-- 优先级/状态：P1 / `IN_PROGRESS`，唯一写者正在最新 main 基线的独立 worktree 收口。
-- 当前事实：分支已提交严格 repository envelope/兼容旧 `listActivities(filter?)`（`695d12a`）、双视图 revision/single-flight 状态机（`7b16bce`）与 future/history UI/加载更多（`9e8fbf2`）；现有 main 的 26 个索引已包含 planner 证明的两个复合索引，无重复索引变更。
-- 证据/阻断：repository 144/144、页面/刷新/主题 focused、`activity-read` 47/47 与 cloud package 均通过；精确集成父提交 `b6000f0` 已在非隐藏 detached worktree 完成 `npm run validate`（Vitest 688/688、bootstrap 55/55、全云函数、release、build 全 PASS）。尚缺不可变 head 的独立复核、Draft PR 原始 CI、合并、部署和真实页面 smoke。
-- 下一步：提交本次证据状态同步后冻结精确 SHA 交审判者复核；复核通过后创建 Draft PR，禁止直接部署旧 tip。
+- 优先级/状态：P1 / `IN_PROGRESS`，不可变候选 `3338944d` 独立复核未放行，唯一写者正在同一独立 worktree 修复阻断。
+- 当前事实：分支已提交严格 repository envelope/兼容旧 `listActivities(filter?)`（`695d12a`）、双视图 revision/single-flight 状态机（`7b16bce`）与 future/history UI/加载更多（`9e8fbf2`）；独立复核确认 bootstrap 尚未管理 planner 证明的两个复合索引，现有受管索引实际为 26 条，补齐后应为 28 条。
+- 证据/阻断：精确候选完整 `npm run validate` 全绿，但独立复核仍确定性复现同视图 refresh/loadMore 双向互斥缺口，并发现 Mock 新分页在公开可见性和冻结 `asOf` 报名状态派生上偏离云端合同；两条 exact index shape 也尚未进入 bootstrap plan/conflict/verify。
+- 下一步：按已批准附录分别形成竞态、bootstrap 索引与 Mock 合同 tests-only RED，再做最小 GREEN；运行 focused、完整 validate 和目标环境只读 index verify，冻结新 SHA 后重新独立复核。
 - 负责人：TraeX 执行者；独立复核：TraeX 审判者；发布：Aime 个人助理。
 - 关闭条件：合入 main；目标环境部署；真实页面默认未来、历史切换、分页、同筛选重试及切换/迟到响应竞态全部通过；独立复核齐全。
 - 更新时间：2026-10-10。

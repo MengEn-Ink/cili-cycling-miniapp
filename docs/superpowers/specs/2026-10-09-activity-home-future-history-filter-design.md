@@ -326,6 +326,47 @@ Cursor 的复合边界不得使用单个 Mongo `$or`。真实 CloudBase planner 
 
 文档不得在真实部署前声称功能已上线。缺少真实测试环境证据时统一标记 `PENDING (missing evidence)`。
 
+## Task 4 独立复核阻断修复附录
+
+不可变候选 `708bc28b...3338944d` 的独立复核发现 refresh/loadMore 竞态、bootstrap 索引事实源和 Mock 分页合同仍未闭环。以下不变量属于本设计的强制修复门禁；它们不改变服务端分页协议、旧 `list` 兼容边界或 A/B 泳道隔离。
+
+### 同视图 refresh / loadMore 双向互斥
+
+- 同一视图的 `load()` 启动时必须先递增该视图 revision、同步把 `loadingMore` 归零，并使当前旧分页 handle 失效。
+- 当该视图存在当前首屏/刷新请求，或其 `loading` / `refreshing` 为 `true` 时，`loadMore()` 必须在方法内部直接返回且不调用 repository；WXML 的禁用态只作为交互提示，不能承担并发正确性。
+- 旧分页请求的 resolve、reject 和 finally 都必须同时校验 revision 与 owner 身份；失效请求不得写 items、cursor、error 或任何 volatile flag，也不得删除后来创建的新 handle。
+- 刷新失败时保留刷新前的 items 与 cursor；错误只写 `refreshError`，释放当前刷新状态后，同一 cursor 必须可以再次分页。
+- RED 必须覆盖 `loadMore -> refresh`、`refresh -> loadMore` 以及“refresh 失败后保留旧 cursor 且可再次分页”三条确定性交错。
+
+### Bootstrap 索引 exact shape
+
+bootstrap 必须把真实 planner 已验证的两条索引作为受管事实源，键序与方向不可调整：
+
+```text
+activities_public_event_start:
+status ASC, event_start ASC, _id ASC, event_end ASC
+
+activities_public_event_end:
+status ASC, event_end DESC, _id DESC, event_start DESC
+```
+
+- 现有 26 条受管索引加上这两条后，总数为 28；旧索引未经单独 planner 证明和迁移设计不得顺手删除。
+- plan 必须为缺失索引生成 create；同名异形必须报告 conflict；完整 exact shape 必须 verify 成功且零写动作。
+- README、schema、高优清单和相关测试必须从 bootstrap 的实际受管事实出发，不能把 planner 临时集合中存在的索引冒充为目标环境已受管。
+- `cloudbase:plan` 和目标环境 verify 只能只读。若目标环境尚缺索引，状态保持部署前 `PENDING`；本轮不写环境，也不重跑已经闭环的写 planner。
+
+### Mock 新分页合同
+
+- 新 `listActivityPage` 必须独立实现，不复用旧 `listActivities(filter?)` 的过滤器；旧接口的调用、过滤和返回语义保持完全不变。
+- 候选活动必须处于公开状态、未软删除，且 start/end 都是有限合法时间并满足 `start < end`；draft、未知状态、deleted、invalid、reversed 和 missing-time 不得占分页窗口。
+- 首屏生成 `asOf`，后续页必须沿 cursor 使用同一 `asOf`。future/history 分类、排序和 cursor 边界都以该冻结值计算。
+- 返回 DTO 必须按同一 `asOf` 派生 `registrationState`、`closedReason`、`registrationSetupPending`、`waitlistOnly` 和 `serverNow`。报名配置不完整的公开活动仍可见，但必须不可报名并明确 setup pending。
+- future 使用 `event_start ASC, _id ASC`，history 使用 `event_end DESC, _id DESC`；ID 比较采用 UTF-8 binary 语义。RED 必须同时覆盖 future/history、同时间戳混合 `-` / `_` / 大小写 ID 的精确顺序，以及跨页无漏无重。
+
+### 修复验证顺序
+
+每一段先形成 tests-only RED 提交并保留精确失败证据，再做最小 GREEN。验证顺序固定为 focused tests、bootstrap/repository/page 回归、完整 `npm run validate`、`git diff --check` 和 clean status。新候选冻结并通过独立复核前，不创建 PR、不部署、不修改 B/HP-13 文件。
+
 ## 实施与上线顺序
 
 1. 设计文档审核通过后，从届时最新 `origin/main` 新建独立 worktree；每轮开始最多 fetch 一次。
