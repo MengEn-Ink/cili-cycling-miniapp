@@ -190,10 +190,7 @@ function deriveMockPublicActivity(item: MockStoredActivity, asOf: string): Activ
   if (deadline !== null && deadline <= snapshot)
     return { ...output, registrationState: 'closed', closedReason: 'deadline' };
   const setupReady =
-    output.capacity > 0 &&
-    deadline !== null &&
-    deadline < start &&
-    output.fee.trim().length > 0;
+    output.capacity > 0 && deadline !== null && deadline < start && output.fee.trim().length > 0;
   if (!setupReady)
     return {
       ...output,
