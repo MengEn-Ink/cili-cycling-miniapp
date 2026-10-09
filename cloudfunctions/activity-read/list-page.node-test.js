@@ -368,6 +368,24 @@ test('同时间戳按 _id 稳定 keyset，41 条按 20+20+1 无漏无重', async
   assert.equal(new Set(ids).size, 41);
 });
 
+test('同时间戳混合 -/_/大小写 ID 按 Mongo binary 顺序逐页无漏无重', async () => {
+  const expected = ['activity_aa-bb', 'activity_aaAb', 'activity_aa_bb', 'activity_aaaa'];
+  const documents = expected.map((id) => bsonActivity(id));
+  const ids = [];
+  let cursor;
+
+  for (let pageNumber = 0; pageNumber < expected.length; pageNumber += 1) {
+    const result = await page(documents, 'future', cursor, 1);
+    ids.push(...result.items.map((item) => item._id));
+    cursor = result.nextCursor;
+    if (!cursor) break;
+  }
+
+  assert.deepEqual(ids, expected);
+  assert.equal(new Set(ids).size, expected.length);
+  assert.equal(cursor, null);
+});
+
 test('deleted、draft、未知状态、缺失或非法时间不占窗口', async () => {
   const invalid = [
     activity('deleted', { is_deleted: true }),
