@@ -29,6 +29,29 @@ function validExplainPlan(indexName) {
   };
 }
 
+function bsonDate(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  assert.equal(Number.isFinite(date.getTime()), true, `invalid test date: ${value}`);
+  return { $date: { $numberLong: String(date.getTime()) } };
+}
+
+function isBsonDate(value) {
+  return (
+    value &&
+    typeof value === 'object' &&
+    typeof value.$date === 'object' &&
+    /^-?\d+$/.test(value.$date.$numberLong)
+  );
+}
+
+function dateReadbackItems() {
+  return ['finished-000', 'ongoing-000', 'past-published-000', 'scheduled-000'].map((id) => ({
+    _id: id,
+    event_start: bsonDate(PROBE_AS_OF),
+    event_end: bsonDate(new Date(PROBE_AS_OF.getTime() + 60_000)),
+  }));
+}
+
 test('只允许任务专属临时集合，拒绝业务集合和相似前缀', () => {
   assert.throws(() => assertTemporaryCollection('activities'), /只允许临时集合/);
   assert.throws(
@@ -56,7 +79,35 @@ test('fixture 精确 108 条并覆盖四流、删除、legacy 和非法数据', 
   assert.ok(fixtures.some((item) => !Object.hasOwn(item, 'is_deleted')));
   assert.ok(fixtures.some((item) => item.status === 'draft'));
   assert.ok(fixtures.some((item) => item.status === 'archived'));
-  assert.ok(fixtures.some((item) => Number.isNaN(Date.parse(item.event_end))));
+  assert.equal(fixtures.find((item) => item._id === 'invalid-end')?.event_end, 'invalid-time');
+  assert.equal(
+    Object.hasOwn(
+      fixtures.find((item) => item._id === 'missing-start'),
+      'event_start',
+    ),
+    false,
+  );
+  assert.equal(
+    Object.hasOwn(
+      fixtures.find((item) => item._id === 'missing-end'),
+      'event_end',
+    ),
+    false,
+  );
+  for (const fixture of fixtures) {
+    if (Object.hasOwn(fixture, 'event_start') && fixture._id !== 'invalid-start')
+      assert.equal(
+        isBsonDate(fixture.event_start),
+        true,
+        `${fixture._id}.event_start 必须是 BSON Date`,
+      );
+    if (Object.hasOwn(fixture, 'event_end') && fixture._id !== 'invalid-end')
+      assert.equal(
+        isBsonDate(fixture.event_end),
+        true,
+        `${fixture._id}.event_end 必须是 BSON Date`,
+      );
+  }
 });
 
 test('首屏四条与 cursor 八个物理段固定为十二条受保护查询', () => {
@@ -122,12 +173,43 @@ test('cursor 物理段按 same-time 再 cross-time 生成且禁止 $or', () => {
         actual: sameTime.command.explain.sort,
         expected: expectedSameTimeSort,
       });
-    assert.equal(typeof sameTime.command.explain.filter[field], 'string');
+    assert.equal(isBsonDate(sameTime.command.explain.filter[field]), true);
     assert.equal(typeof sameTime.command.explain.filter._id, 'object');
-    assert.equal(typeof crossTime.command.explain.filter[field], 'object');
+    assert.equal(
+      isBsonDate(crossTime.command.explain.filter[field][direction === 1 ? '$gt' : '$lt']),
+      true,
+    );
     assert.equal(Object.hasOwn(crossTime.command.explain.filter, '_id'), false);
   }
   assert.deepEqual(sameTimeSortMismatches, []);
+});
+
+test('INSERT command 保留严格 EJSON BSON Date，不降级为 ISO string', async () => {
+  let insertCommand;
+  const execute = createCliExecutor({
+    envId: 'cloudbase-d0gizacy77a1ab017',
+    runner: {
+      execute(action, args) {
+        assert.equal(action, 'probe-insert');
+        const commandIndex = args.indexOf('--command');
+        const envelope = JSON.parse(args[commandIndex + 1]);
+        assert.equal(envelope[0].CommandType, 'INSERT');
+        insertCommand = JSON.parse(envelope[0].Command);
+        return { requestId: 'request-insert', data: [{ insertedCount: 108 }] };
+      },
+    },
+  });
+
+  await execute({
+    kind: 'insert',
+    collection: PROBE_COLLECTION,
+    documents: buildFixtures(PROBE_AS_OF),
+  });
+
+  assert.equal(insertCommand.documents.length, 108);
+  assert.equal(isBsonDate(insertCommand.documents[0].event_start), true);
+  assert.equal(isBsonDate(insertCommand.documents[0].event_end), true);
+  assert.equal(JSON.stringify(insertCommand).includes(PROBE_AS_OF.toISOString()), false);
 });
 
 test('CloudBase CLI 单元素数组响应解包为唯一 Mongo 文档', () => {
@@ -155,8 +237,7 @@ test('QUERY 多文档解包完整保留两条记录并接受空数组', () => {
 
 test('smoke QUERY 接受 CLI 多文档数组响应并完成四流分页', async () => {
   const pad = (value) => String(value).padStart(3, '0');
-  const at = (offsetMinutes) =>
-    new Date(PROBE_AS_OF.getTime() + offsetMinutes * 60_000).toISOString();
+  const at = (offsetMinutes) => bsonDate(new Date(PROBE_AS_OF.getTime() + offsetMinutes * 60_000));
   const rows = {
     ongoing: Array.from({ length: 25 }, (_, index) => ({
       _id: `ongoing-${pad(index)}`,
@@ -209,13 +290,14 @@ test('smoke QUERY 接受 CLI 多文档数组响应并完成四流分页', async 
       assert.equal(query.filter.status, stream === 'finished' ? 'finished' : 'published');
       assert.deepEqual(query.filter.is_deleted, { $ne: true });
       if (stream === 'ongoing' || stream === 'scheduled')
-        assert.deepEqual(query.filter.event_end, { $gt: PROBE_AS_OF.toISOString() });
+        assert.deepEqual(query.filter.event_end, { $gt: bsonDate(PROBE_AS_OF) });
       if (segment === 'same-time') {
-        assert.equal(typeof query.filter[timeField], 'string');
+        assert.equal(isBsonDate(query.filter[timeField]), true);
         assert.deepEqual(query.filter._id, { [boundaryOperator]: `${stream}-020` });
       } else if (segment === 'cross-time') {
         assert.equal(typeof query.filter[timeField], 'object');
         assert.equal(Object.hasOwn(query.filter[timeField], boundaryOperator), true);
+        assert.equal(isBsonDate(query.filter[timeField][boundaryOperator]), true);
         assert.equal(Object.hasOwn(query.filter, '_id'), false);
       } else {
         assert.equal(Object.hasOwn(query.filter, '_id'), false);
@@ -257,6 +339,50 @@ test('smoke QUERY 接受 CLI 多文档数组响应并完成四流分页', async 
   assert.equal(result.requestIds[0], 'request-smoke-ongoing-1');
   assert.equal(result.requestIds.at(-1), 'request-smoke-past-published-2-cross-time');
   assert.deepEqual(sameTimeSortMismatches, []);
+});
+
+test('插入后先回读 BSON Date 类型，再运行任何 explain', async () => {
+  const operations = [];
+  let listCalls = 0;
+  const execute = async (operation) => {
+    operations.push(operation);
+    if (operation.kind === 'list-collections') {
+      listCalls += 1;
+      return { requestId: `request-list-${listCalls}`, collections: [] };
+    }
+    if (operation.kind === 'verify-date-types')
+      return {
+        requestId: 'request-date-readback',
+        items: dateReadbackItems(),
+      };
+    if (operation.kind === 'explain')
+      return {
+        requestId: `request-${operation.name}`,
+        plan: validExplainPlan(
+          operation.name.includes('finished') || operation.name.includes('past-published')
+            ? 'public_event_end'
+            : 'public_event_start',
+        ),
+      };
+    if (operation.kind === 'smoke') return { requestIds: [], future: {}, history: {} };
+    return { requestId: `request-${operation.kind}` };
+  };
+
+  const summary = await runProbe({
+    envId: 'cloudbase-d0gizacy77a1ab017',
+    collection: PROBE_COLLECTION,
+    execute,
+  });
+
+  const readbackIndex = operations.findIndex((item) => item.kind === 'verify-date-types');
+  assert.notEqual(readbackIndex, -1);
+  assert.equal(operations[readbackIndex - 1].kind, 'insert');
+  assert.equal(operations[readbackIndex + 1].kind, 'explain');
+  assert.deepEqual(summary.dateReadback, {
+    requestId: 'request-date-readback',
+    ids: ['finished-000', 'ongoing-000', 'past-published-000', 'scheduled-000'],
+    bsonDateVerified: true,
+  });
 });
 
 test('smoke QUERY 拒绝 malformed 多文档 entry', async () => {
@@ -303,6 +429,8 @@ test('runner 失败也在 finally 精确 drop 并回读同名集合为零', asyn
           operation.name.includes('finished') ? 'public_event_end' : 'public_event_start',
         ),
       };
+    if (operation.kind === 'verify-date-types')
+      return { requestId: 'request-date-readback', items: dateReadbackItems() };
     if (operation.kind === 'list-collections') return { collections: [] };
     return { requestId: `request-${operation.kind}` };
   };
@@ -356,6 +484,8 @@ test('清理回读仍发现同名集合时 fail closed', async () => {
         ),
       };
     if (operation.kind === 'smoke') return { requestId: 'request-smoke', pages: [] };
+    if (operation.kind === 'verify-date-types')
+      return { requestId: 'request-date-readback', items: dateReadbackItems() };
     if (operation.kind === 'list-collections') {
       listCalls += 1;
       return listCalls === 1 ? { collections: [] } : { collections: [{ name: PROBE_COLLECTION }] };
@@ -399,6 +529,8 @@ test('explain 缺失或不可数值指标显式记录为 null', async () => {
       };
     }
     if (operation.kind === 'smoke') return { requestIds: [], future: {}, history: {} };
+    if (operation.kind === 'verify-date-types')
+      return { requestId: 'request-date-readback', items: dateReadbackItems() };
     return { requestId: `request-${operation.kind}` };
   };
 
