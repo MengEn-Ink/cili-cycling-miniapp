@@ -2,15 +2,18 @@
 
 ## 结论
 
-`PASS (independently reviewed)`。
+`PENDING (production BSON Date probe passed; independent review pending)`。
 
 候选索引能为四条首屏查询提供 `LIMIT -> FETCH -> IXSCAN`，但首轮复合 `$or` keyset 的
 `ongoing-cursor` 查询出现阻塞 `SORT`。按修订设计拆成 `same-time` / `cross-time` 后，第二轮
 `ongoing-cursor-same-time` 仍出现阻塞 `SORT`。第三轮移除 same-time 的常量时间排序字段后，
 12/12 explain 已通过；但 smoke 首次执行被 QUERY 多文档响应的测试设施解析错误阻断。修复
 parser 与查询形态漂移后，第四轮完整 probe 再次取得 12/12 explain，并完成 future/history
-各 50 条的真实 smoke、全部 QUERY requestId 与精确清理。Task 2 证据已由独立复核确认，无
-剩余 P0/P1。
+各 50 条的真实 smoke、全部 QUERY requestId 与精确清理。后续独立代码审查发现第四轮 fixture
+通过 JSON 写入 ISO 字符串，不能代表生产 BSON Date；同时服务端排序与 Date 合同存在缺陷，
+因此旧 requestId 仅保留为历史证据。修复 BSON Date 查询、UTF-8 binary `_id` 排序以及严格
+EJSON 回读后，第五轮已在精确 HEAD 上取得完整真实 PASS；在本轮证据完成独立复核前，结论仍
+保持 PENDING，且不得部署或启动 Task 4。
 
 ## 固定范围
 
@@ -23,6 +26,10 @@ parser 与查询形态漂移后，第四轮完整 probe 再次取得 12/12 expla
   `c917dcfb5fca58b04925d4189a971f67ff965a85`；计划来源
   `4756dff8b908e8341f37570969bcc7ce8a774d4c` 映射到
   `28804aae345b28fa74e25f7cb22f0f2ff2c9f85c`。
+- production BSON Date 复跑 HEAD：`30f6023d9d8156c164508e2f7a7b4425385d4e4e`；probe
+  SHA-256 `475a7aff7efdc5bdcf533cdf46d01aac5ff2f0c2ff96df6de3304d2817d018fa`，测试
+  SHA-256 `d994448b269d1ba01b953b4d9416a2c065b7067df085c7ae359215168d146a1e`，生产
+  `list-page.js` SHA-256 `a51661c8de8755e9032b658391d3767421b620b8eeb0ff902f3a9dafa66f930d`。
 - 测试环境：`cloudbase-d0gizacy77a1ab017`。
 - 唯一临时集合：`tmp_activity_home_timeline_f8d1d2e2`。
 - fixture：108 条，包含进行中、未开始、自然结束 published、提前 finished、同时间戳、
@@ -37,14 +44,17 @@ parser 与查询形态漂移后，第四轮完整 probe 再次取得 12/12 expla
 npm run test:bootstrap
 ```
 
-结果：35/35 PASS，其中 probe 11/11。覆盖唯一临时集合白名单、精确 108 条 fixture、四条首屏
-加八个 cursor 物理段共 12 条 explain、cursor 禁止 `$or`、CloudBase CLI 单元素数组解包、
-QUERY 多文档与空数组解包、malformed entry 拒绝、requestId 保留、COMMAND exactly-one、缺失
-指标显式 null、失败 finally drop、清理回读和既有 bootstrap 回归。plan mode 输出
-`fixtureCount=108`、`explainCount=12`。测试设施修复后 probe hash 为
-`788e42cdb4ba2aceea6ad798ee94e7c708554115`。smoke 的 fake runner 会解析真实 CLI
-`--command` envelope，并以独立期望校验 filter、sort 与 limit；explain 与 smoke 共用唯一
-`streamSort`，防止查询形态再次漂移。
+结果：54/54 PASS，其中 probe 30/30；activity-read 44/44、cloud package verifier、Prettier 与
+`git diff --check` 同时 PASS。覆盖唯一临时集合白名单、精确 108 条 strict canonical EJSON
+fixture、BSON Date 类型回读、四条首屏加八个 cursor 物理段共 12 条 explain、cursor 禁止
+`$or`、CloudBase CLI 单元素数组解包、QUERY 多文档与空数组解包、malformed entry 拒绝、全部
+远端证据 requestId fail closed、COMMAND exactly-one、缺失指标显式 null、失败 finally drop、
+清理回读和既有 bootstrap 回归。strict EJSON 回读还覆盖真实日历、relaxed absolute UTC
+1970–9999 范围、canonical 负毫秒和时区跨界；plan mode 输出 `fixtureCount=108`、
+`explainCount=12`。当前 probe hash 为
+`475a7aff7efdc5bdcf533cdf46d01aac5ff2f0c2ff96df6de3304d2817d018fa`。smoke 的 fake runner
+会解析真实 CLI `--command` envelope，并以独立期望校验 filter、sort 与 limit；explain 与
+smoke 共用唯一 `streamSort`，防止查询形态再次漂移。
 
 ## 真实环境证据
 
@@ -233,9 +243,85 @@ CloudBase payload 仍未暴露 `nReturned`、`totalKeysExamined`、`totalDocsExa
 独立复核另以只读 `ListTables` 再次确认同名集合为 0，requestId
 `e2fdeed5-2cc2-470c-b406-9e767b47020b`。
 
-## 首轮修订与当前阻断
+### 第五轮：production BSON Date 合同完整重跑（等待独立复核）
 
-当前 cursor 使用一个 `$or` 表达复合边界：
+本轮只在 HEAD `30f6023d9d8156c164508e2f7a7b4425385d4e4e` 上执行。108 条 fixture 以
+strict canonical EJSON `{"$date":{"$numberLong":"<epoch-ms>"}}` 写入；insert 后、首条
+explain 前先回读 `finished-000`、`ongoing-000`、`past-published-000`、`scheduled-000`，并
+确认 `event_start` / `event_end` 为 BSON Date。第四轮 ISO string requestId 仅保留为历史，
+不参与本轮结论。
+
+#### 资源创建与类型回读
+
+| 动作 | requestId |
+| --- | --- |
+| create collection | `440e6d69-6a60-4db0-9188-97b9cdf867fe` |
+| create `legacy_status_event_start` | `8e679732-85ad-4da7-abc7-b40c451c59a6` |
+| create `public_event_start` | `1ffb9fce-2c86-4cc3-847a-ce1af5d05785` |
+| create `public_event_end` | `a43ee202-5694-427b-bd9b-20903d85c187` |
+| insert 108 BSON Date fixtures | `65631a14-91bd-4459-b05c-ff90bb543df8` |
+| BSON Date `$type:'date'` 回读 | `708303ce-0075-4637-b3d0-bc1aeacb79e1` |
+
+#### Explain
+
+12 条查询均无阻塞 `SORT`，winning path 均为 `LIMIT -> FETCH -> IXSCAN`，并命中预期索引。
+CloudBase payload 仍未暴露 `nReturned`、`totalKeysExamined`、`totalDocsExamined` 数值，三项均
+显式记录为 null。
+
+| 查询 | requestId | index |
+| --- | --- | --- |
+| ongoing 首屏 | `005e0515-2a16-4d6e-a5ba-4181ba98410e` | `public_event_start` |
+| scheduled 首屏 | `18c99a7b-38de-4329-a74c-7875f83e3c59` | `public_event_start` |
+| finished 首屏 | `7c44abd9-670b-48be-bf7d-2b471c6b888d` | `public_event_end` |
+| past-published 首屏 | `188e863b-c0c1-49f8-a83f-ceac08d2078a` | `public_event_end` |
+| ongoing cursor same-time | `6e3966d0-5e3c-4995-a6cc-429764d6b9a2` | `public_event_start` |
+| ongoing cursor cross-time | `39ba8a35-6aab-48e5-9143-616aa22337da` | `public_event_start` |
+| scheduled cursor same-time | `1baf2834-77cd-4362-8df4-119490010306` | `public_event_start` |
+| scheduled cursor cross-time | `fb70751e-57e3-4869-8193-1a885f58ecf0` | `public_event_start` |
+| finished cursor same-time | `46a6fc4a-6b3c-4c6d-910e-371fd6feaf02` | `public_event_end` |
+| finished cursor cross-time | `ab2336ea-042c-4c08-a713-d3e03367f1d9` | `public_event_end` |
+| past-published cursor same-time | `7de7da64-01d0-45f8-beb7-50c7be5f5c2f` | `public_event_end` |
+| past-published cursor cross-time | `92e75b45-db65-4376-8d95-ce7ac125c6c0` | `public_event_end` |
+
+#### Smoke QUERY
+
+| 逻辑流 / 物理段 | requestId |
+| --- | --- |
+| ongoing 首屏 | `abab273a-f816-4e80-b15e-99553327bd0e` |
+| ongoing same-time | `ced71a0b-ba4b-4db0-bae0-a7498a42bac4` |
+| ongoing cross-time | `d6afa151-4076-4d92-a07a-3d62db84c775` |
+| scheduled 首屏 | `1bdca2a4-642a-4087-9ce4-57c27272b375` |
+| scheduled same-time | `1f9ae4a6-85de-4c65-8bce-7add9e3aa6e8` |
+| scheduled cross-time | `f493f0eb-410c-4280-b49a-0d4e5541c8ef` |
+| finished 首屏 | `598b60c4-849d-44d3-b76f-cd581eb60d2c` |
+| finished same-time | `3b1fd067-8751-4ce2-bf67-deedb4bdacfb` |
+| finished cross-time | `163db9ea-422d-4d5f-bace-c99ba7966b3b` |
+| past-published 首屏 | `ce096446-6e94-4fb9-8fac-3bc7aed401a9` |
+| past-published same-time | `0a60444f-facd-4c88-9a32-fc1c0e01465d` |
+| past-published cross-time | `76f23d10-eaa8-4608-8fd4-ddbee2cf56a8` |
+
+- future：50 条，分页 `[20, 20, 10]`，50 个唯一 ID，按 `event_start ASC, _id ASC`
+  全局有序。
+- history：50 条，分页 `[20, 20, 10]`，50 个唯一 ID，按 `event_end DESC, _id DESC`
+  全局有序。
+- 四条缺失 `is_deleted` 的 legacy 记录 `ongoing-000`、`scheduled-000`、`finished-000`、
+  `past-published-000` 均在结果中。
+- 结果 ID 仅包含 `ongoing-*`、`scheduled-*`、`finished-*`、`past-published-*`；
+  `deleted-*`、draft、archived、invalid/reversed/missing-time 均未出现。
+- create、3 个 index、insert、类型回读、12 条 explain、12 条 smoke QUERY、drop 与两次清理
+  回读的 requestId 均为非空字符串。
+
+#### 精确清理
+
+| 动作 | requestId | 结果 |
+| --- | --- | --- |
+| drop 临时集合 | `f6d78faf-a187-4fdc-91ef-2e0478506593` | 成功 |
+| probe 内 ListTables 回读 | `b7e97009-3dd9-4188-b066-d01fc3094862` | 同名集合 0 个 |
+| probe 后独立只读 ListTables 回查 | `f5519da0-3840-4b7f-854b-e29abc5db6ff` | 同名集合 0 个 |
+
+## 历史修订说明
+
+首轮 cursor 曾使用一个 `$or` 表达复合边界：
 
 ```text
 time > boundary.time
@@ -252,5 +338,6 @@ OR (time == boundary.time AND _id > boundary.id)
 same-time sort 收敛为仅 `_id` 后，12 条 explain 首次全部取得真实 PASS；修复 QUERY parser
 并让 explain/smoke 共用 `streamSort` 后，第四轮再次取得 12/12 explain，并完成同一 108
 fixture 的 20+20+10 smoke、ID 唯一性、全局排序、legacy 可见、deleted/非法记录排除与精确
-清理。Task 2 的 planner/smoke 证据已通过独立复核，无剩余 P0/P1；Task 3 已获准按 TDD
-进入服务端实现。
+清理；该轮曾通过独立复核，但 ISO string fixture 后来被证明不能代表生产类型。第五轮改用
+真实 BSON Date 写入及类型回读后再次取得同等完整 PASS，目前等待本轮不可变证据的独立复核；
+复核前不部署、不启动 Task 4。
