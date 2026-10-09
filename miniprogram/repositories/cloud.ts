@@ -16,6 +16,7 @@ import type {
   StravaRouteGpx,
   StravaRoutePreview,
 } from '../models';
+import { normalizeGender } from '../utils/gender';
 import type {
   ActivityInput,
   AdminRegistrationStatusFilter,
@@ -170,7 +171,7 @@ function mapPublicAttendees(value: unknown) {
       return {
         id: typeof attendee.id === 'string' ? attendee.id : '',
         displayName: typeof attendee.display_name === 'string' ? attendee.display_name : '',
-        title: typeof attendee.title === 'string' ? attendee.title : '',
+        gender: normalizeGender(attendee.gender),
         avatarUrl: httpsUrl(attendee.avatar_url),
         status: (attendee.status === 'checked_in' ? 'checked_in' : 'approved') as
           'approved' | 'checked_in',
@@ -502,8 +503,7 @@ function mapPersonalCapabilityCard(raw: unknown): PersonalCapabilityCard {
 
   const generatedAt = strictDateText(value.generated_at);
   const profile = expectRecord(value.profile);
-  if (typeof profile.display_name !== 'string' || typeof profile.title !== 'string')
-    return invalidResponse();
+  if (typeof profile.display_name !== 'string') return invalidResponse();
 
   if (!Array.isArray(value.backgrounds)) return invalidResponse();
   const backgrounds = value.backgrounds.map((item: unknown) => {
@@ -541,7 +541,7 @@ function mapPersonalCapabilityCard(raw: unknown): PersonalCapabilityCard {
     generatedAt,
     profile: {
       displayName: profile.display_name,
-      title: profile.title,
+      gender: normalizeGender(profile.gender),
       avatarUrl: httpsUrl(profile.avatar_url),
     },
     backgrounds,
@@ -605,7 +605,13 @@ function mapRegistration(raw: unknown): Registration {
       title: typeof capability.title === 'string' ? capability.title : '',
       realName: typeof snapshot.real_name_masked === 'string' ? snapshot.real_name_masked : '',
       phone: typeof snapshot.phone_masked === 'string' ? snapshot.phone_masked : '',
-      gender: '',
+      gender: normalizeGender(
+        typeof capability.gender === 'string'
+          ? capability.gender
+          : typeof snapshot.gender === 'string'
+            ? snapshot.gender
+            : '',
+      ),
       emergencyName: '',
       emergencyPhone: '',
       photos: Array.isArray(capability.photos)

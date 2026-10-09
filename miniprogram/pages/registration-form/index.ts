@@ -10,6 +10,7 @@ import { validateRegistration } from '../../utils/validation';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
 import { formatChinaDateTime } from '../../utils/date-time';
+import { genderView } from '../../utils/gender';
 
 function unavailableAction(): ActivityAction {
   return { kind: 'closed', label: '活动状态不可用', enabled: false };
@@ -124,7 +125,9 @@ Page({
       displayActivityDate: formatChinaDateTime(
         activityContext?.activity?.startAt || activityContext?.activity?.date,
       ),
-      profile: profileState.data || null,
+      profile: profileState.data
+        ? { ...profileState.data, ...genderView(profileState.data.gender) }
+        : null,
       readiness,
       readinessMessage: stravaReadinessMessage(readiness),
       activityAction,

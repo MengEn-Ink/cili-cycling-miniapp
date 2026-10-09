@@ -50,6 +50,7 @@ const registration = {
   status: 'pending',
   profile_snapshot: {
     nickname: '骑手',
+    gender: '女',
     real_name_masked: '曹*',
     phone_masked: '138****5678',
     id_number_masked: '11******1234',
@@ -97,7 +98,7 @@ const personalCapabilityCardDto = {
   generated_at: '2026-09-29T04:10:00.000Z',
   profile: {
     display_name: '山野骑手',
-    title: '周末爬坡手',
+    gender: '女',
   },
   backgrounds: [
     {
@@ -266,7 +267,7 @@ describe('CloudRepository 个人骑行名片适配', () => {
       generatedAt: '2026-09-29T04:10:00.000Z',
       profile: {
         displayName: '山野骑手',
-        title: '周末爬坡手',
+        gender: '女',
         avatarUrl: '',
       },
       backgrounds: [
@@ -454,6 +455,7 @@ describe('CloudRepository 队员报名适配', () => {
       serialNo: 'RE-001',
       profile: {
         nickname: '骑手',
+        gender: '女',
         realName: '曹*',
         phone: '138****5678',
       },
@@ -719,7 +721,7 @@ describe('CloudRepository 管理员审批适配', () => {
       ...registration,
       capability_profile: {
         nickname: '山野骑手',
-        title: '爬坡王',
+        gender: '男',
         phone_source: 'manual',
         phone_verified: false,
         avatar_url: 'https://temporary.example/avatar',
@@ -743,7 +745,7 @@ describe('CloudRepository 管理员审批适配', () => {
     expectCall(callFunction, 'admin-review', { action: 'detail', registrationId: 'r1' });
     expect(result?.profile).toMatchObject({
       nickname: '山野骑手',
-      title: '爬坡王',
+      gender: '男',
       avatarId: 'https://temporary.example/avatar',
       photos: [{ id: 'https://temporary.example/training', category: 'bike' }],
       sensitiveStatus: { phoneSource: 'manual', phoneVerified: false },
@@ -1891,7 +1893,7 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
           {
             id: 'r1',
             display_name: '山野骑手',
-            title: '爬坡手',
+            gender: '男',
             avatar_url: 'https://temp.example/avatar.jpg',
             status: 'approved',
             card: { rides90d: 20, longestKm: 120, elevationM: 8000, speedKmh: 26.5 },
@@ -1915,7 +1917,7 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
       {
         id: 'r1',
         displayName: '山野骑手',
-        title: '爬坡手',
+        gender: '男',
         avatarUrl: 'https://temp.example/avatar.jpg',
         status: 'approved',
         card: { rides90d: 20, longestKm: 120, elevationM: 8000, speedKmh: 26.5 },
@@ -1949,7 +1951,7 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
       {
         id: 7,
         display_name: false,
-        title: null,
+        gender: null,
         avatar_url: 'http://unsafe.example/avatar.jpg',
         status: 'checked_in',
         card: null,
@@ -1958,7 +1960,7 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
       ...Array.from({ length: 25 }, (_, index) => ({
         id: `r${index}`,
         display_name: `骑手${index}`,
-        title: '骑友',
+        gender: index === 0 ? '女' : '未知',
         avatar_url: 'https://example.com/avatar.jpg',
         status: 'unexpected',
         card: { rides90d: Number.NaN, longestKm: '120', elevationM: undefined, speedKmh: 0 },
@@ -1970,15 +1972,17 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
     expect(result.attendees[0]).toEqual({
       id: '',
       displayName: '',
-      title: '',
+      gender: '',
       avatarUrl: '',
       status: 'checked_in',
       card: { rides90d: null, longestKm: null, elevationM: null, speedKmh: null },
     });
     expect(result.attendees[1]).toMatchObject({
+      gender: '女',
       status: 'approved',
       card: { rides90d: null, longestKm: null, elevationM: null, speedKmh: 0 },
     });
+    expect(result.attendees[2]).toMatchObject({ gender: '' });
     expect(JSON.stringify(result.attendees)).not.toContain('secret');
   });
 

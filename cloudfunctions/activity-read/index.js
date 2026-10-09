@@ -1,7 +1,14 @@
 'use strict';
 
 const cloud = require('wx-server-sdk');
-const { ok, toErrorResponse, assertTrustedOpenid, publicActivity, fail } = require('./domain');
+const {
+  ok,
+  toErrorResponse,
+  assertTrustedOpenid,
+  publicActivity,
+  normalizeGender,
+  fail,
+} = require('./domain');
 const { canonicalPublicAvatar, mediaDocumentId, publicAvatarSource } = require('./public-avatar');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
@@ -72,7 +79,13 @@ function publicAttendee(registration, profile, avatarUrl) {
         : snapshot && typeof snapshot.nickname === 'string'
           ? snapshot.nickname
           : '',
-    title: profile && typeof profile.title === 'string' ? profile.title : '',
+    gender: normalizeGender(
+      snapshot && typeof snapshot.gender === 'string'
+        ? snapshot.gender
+        : profile && typeof profile.gender === 'string'
+          ? profile.gender
+          : '',
+    ),
     avatar_url: safeHttpsUrl(avatarUrl),
     status: registration.status,
     card: {

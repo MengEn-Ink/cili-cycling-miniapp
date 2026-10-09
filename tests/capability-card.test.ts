@@ -142,4 +142,15 @@ describe('骑行能力卡状态', () => {
         .stravaStatus,
     ).toBe(label);
   });
+
+  it('输出性别文字与样式类，缺失时为未标注', () => {
+    expect(capabilityCard(registration())).toMatchObject({
+      gender: '',
+      genderLabel: '未标注',
+      genderClass: 'gender-unknown',
+    });
+    expect(
+      capabilityCard(registration({ profile: { ...registration().profile, gender: '女' } })),
+    ).toMatchObject({ gender: '女', genderLabel: '女', genderClass: 'gender-female' });
+  });
 });

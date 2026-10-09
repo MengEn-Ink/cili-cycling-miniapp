@@ -3,7 +3,7 @@
   <view class="review-heading"><view class="hero-kicker">REVIEW</view><view class="hero-title">报名审批</view><view class="hero-subtitle">查看资料并处理报名状态</view></view>
   <view class="card danger" wx:if="{{error}}">{{error}}</view>
   <picker wx:if="{{activities.length}}" mode="selector" range="{{activities}}" range-key="title" value="0" bindchange="choose"><view class="activity-picker"><view class="picker-label">CURRENT EVENT</view><view class="picker-value">{{selectedActivityTitle}}</view><text>切换 ›</text></view></picker>
-  <view class="row actions" wx:if="{{activities.length}}"><button class="secondary" bindtap="scanCheckIn">扫码核销</button><button class="secondary" bindtap="sendReminders" loading="{{sendingReminders}}" disabled="{{sendingReminders}}">发送活动提醒</button></view>
+  <view class="row actions" wx:if="{{activities.length}}"><button class="secondary" bindtap="sendReminders" loading="{{sendingReminders}}" disabled="{{sendingReminders}}">发送活动提醒</button></view>
   <view class="muted" wx:if="{{activities.length}}">活动提醒由管理员显式触发，仅对已通过参与者幂等入队，不是自动定时提醒。</view>
   <view class="filter-tabs">
     <view class="filter-tab {{tab === 'waiting' ? 'is-active' : ''}}" data-v="waiting" bindtap="tab">候补</view>
@@ -17,7 +17,7 @@
   <view wx:if="{{!items.length && !error}}" class="empty">当前筛选暂无报名</view>
   <view class="review-card" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="open" hover-class="review-card--pressed">
     <view class="card-number">{{index + 1}}</view>
-    <view class="review-main"><view class="applicant-name">{{item.profile.nickname}}</view><view class="activity-name">{{item.activity.title}}</view><view class="data-line"><text>{{item.experience}}</text><text wx:if="{{item.gatheringMode}}">{{item.gatheringMode}}</text><text wx:if="{{item.teamName}}">队伍 {{item.teamName}}{{item.isTeamLeader ? ' · 队长' : ''}}</text><text wx:if="{{item.strava && item.strava.status}}">STRAVA {{item.strava.status}}</text></view></view>
+    <view class="review-main"><view class="applicant-name">{{item.profile.nickname}}</view><view class="activity-name">{{item.activity.title}}</view><view class="data-line"><text wx:if="{{item.profile.gender}}">{{item.profile.gender}}</text><text>{{item.experience}}</text><text wx:if="{{item.gatheringMode}}">{{item.gatheringMode}}</text><text wx:if="{{item.teamName}}">队伍 {{item.teamName}}{{item.isTeamLeader ? ' · 队长' : ''}}</text><text wx:if="{{item.strava && item.strava.status}}">STRAVA {{item.strava.status}}</text></view></view>
     <view class="status-tag status-{{item.status}}">{{item.statusText}}</view><text class="open-arrow">›</text><view class="corner-cut"></view>
   </view>
 </view>

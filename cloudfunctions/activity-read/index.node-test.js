@@ -324,7 +324,12 @@ test('详情成员执行状态、上限、稳定排序和隐私白名单', async
     updated_at: `2026-09-01T00:${String(index).padStart(2, '0')}:00.000Z`,
     checked_in_at:
       index % 2 ? `2026-09-02T00:${String(index).padStart(2, '0')}:00.000Z` : undefined,
-    profile_snapshot: { nickname: `旧昵称${index}`, real_name: '实名', phone: '13812345678' },
+    profile_snapshot: {
+      nickname: `旧昵称${index}`,
+      ...(index === 0 ? { gender: '男' } : index === 2 ? { gender: '未知' } : {}),
+      real_name: '实名',
+      phone: '13812345678',
+    },
     strava_snapshot: {
       activities_90d: index,
       longest_km: 100 + index,
@@ -338,7 +343,7 @@ test('详情成员执行状态、上限、稳定排序和隐私白名单', async
   const profiles = registrations.map((item, index) => ({
     _id: item.openid,
     nickname: `骑手${index}`,
-    title: index === 0 ? '公开称号' : '',
+    gender: index === 0 ? '女' : index === 1 ? '女' : index === 2 ? '未知' : '',
     avatar_file_id: `cloud://avatar-${index}.jpg`,
     phone: '13812345678',
   }));
@@ -360,9 +365,9 @@ test('详情成员执行状态、上限、稳定排序和隐私白名单', async
     'avatar_url',
     'card',
     'display_name',
+    'gender',
     'id',
     'status',
-    'title',
   ]);
   assert.deepEqual(Object.keys(result.data.attendees[0].card).sort(), [
     'elevationM',
@@ -374,6 +379,13 @@ test('详情成员执行状态、上限、稳定排序和隐私白名单', async
     result.data.attendees.some((item) => item.id === 'r-26'),
     false,
   );
+  const attendeesById = Object.fromEntries(
+    result.data.attendees.map((attendee) => [attendee.id, attendee]),
+  );
+  assert.equal(attendeesById['r-00'].gender, '男');
+  assert.equal(attendeesById['r-01'].gender, '女');
+  assert.equal(attendeesById['r-02'].gender, '');
+  assert.equal('title' in attendeesById['r-00'], false);
   assert.doesNotMatch(JSON.stringify(result.data.attendees), /13812345678|secret|private|openid/);
   assert.deepEqual(
     calls.filter((call) => call.name === 'registrations').map((call) => call.condition.status),

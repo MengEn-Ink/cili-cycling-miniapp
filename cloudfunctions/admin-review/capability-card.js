@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('node:crypto');
+const { normalizeGender } = require('./domain');
 
 const MAX_CAPABILITY_IMAGES = 3;
 const PROFILE_PHOTO_CATEGORIES = new Set(['ride', 'bike', 'other']);
@@ -16,6 +17,7 @@ const ADMIN_REGISTRATION_FIELDS = [
 const ADMIN_OPTION_FIELDS = ['experience', 'remark'];
 const ADMIN_PROFILE_FIELDS = [
   'nickname',
+  'gender',
   'real_name_masked',
   'phone_masked',
   'phone_source',
@@ -255,7 +257,13 @@ function adminCapabilityView(registration, profile, resolvedMedia) {
         : typeof safe.profile_snapshot.nickname === 'string'
           ? safe.profile_snapshot.nickname
           : '',
-    title: typeof value.title === 'string' ? value.title : '',
+    gender: normalizeGender(
+      typeof value.gender === 'string'
+        ? value.gender
+        : typeof safe.profile_snapshot.gender === 'string'
+          ? safe.profile_snapshot.gender
+          : '',
+    ),
     phone_source: ['wechat', 'manual', 'legacy'].includes(safe.profile_snapshot.phone_source)
       ? safe.profile_snapshot.phone_source
       : '',
@@ -285,7 +293,7 @@ function socialCapabilityView(profile, resolvedMedia) {
     .slice(0, MAX_CAPABILITY_IMAGES);
   return {
     nickname: typeof value.nickname === 'string' ? value.nickname : '',
-    title: typeof value.title === 'string' ? value.title : '',
+    gender: normalizeGender(value.gender),
     photos,
     strava: pick(value.strava, SOCIAL_STRAVA_FIELDS),
   };

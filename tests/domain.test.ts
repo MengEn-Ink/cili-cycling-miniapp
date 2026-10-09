@@ -194,6 +194,26 @@ describe('表单校验', () => {
       }).length,
     ).toBeGreaterThan(2);
   });
+  it('缺少性别时阻断并提示先在个人资料选择', () => {
+    expect(
+      validateRegistration({
+        profile: { ...profile, gender: '' },
+        gatheringMode: 'self_drive',
+        experience: '常骑',
+        readiness: ready,
+      }),
+    ).toContain('请先在个人资料中选择性别');
+  });
+  it('性别为非法值时同样阻断', () => {
+    expect(
+      validateRegistration({
+        profile: { ...profile, gender: '保密' },
+        gatheringMode: 'self_drive',
+        experience: '常骑',
+        readiness: ready,
+      }),
+    ).toContain('请先在个人资料中选择性别');
+  });
 });
 
 describe('报名页面门禁', () => {

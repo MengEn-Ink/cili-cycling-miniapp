@@ -2,6 +2,7 @@
 
 const {
   fail,
+  normalizeGender,
   assertNoForbiddenFields,
   assertActivityOpen,
   assertProfileReady,
@@ -161,6 +162,7 @@ async function submitRegistration(store, { openid, activityId, options, team }, 
       ...teamFields,
       profile_snapshot: {
         nickname: profile.nickname,
+        gender: normalizeGender(profile.gender),
         real_name_masked: profile.real_name_masked,
         phone_masked: profile.phone_masked,
         phone_source: ['wechat', 'manual'].includes(profile.phone_source)

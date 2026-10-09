@@ -23,6 +23,7 @@
         <view class="section-label"><text>01</text><view><view>实名信息</view><view class="section-hint">用于审核与活动安全联络</view></view></view>
         <view class="form-card identity-card">
           <view class="identity-main"><view class="identity-label">姓名</view><view class="identity-value">{{profile.realName || '未填写实名'}}</view></view>
+          <view class="identity-main"><view class="identity-label">性别</view><view class="identity-value">{{profile.genderLabel}}</view></view>
           <view class="identity-main"><view class="identity-label">手机</view><view class="identity-value">{{profile.phone || '未授权手机号'}}</view></view>
           <button class="text-button identity-action" bindtap="profile" disabled="{{submitting}}">完善资料</button>
         </view>

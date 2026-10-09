@@ -48,7 +48,7 @@ export interface StravaRouteGpx {
 export interface ActivityAttendee {
   id: string;
   displayName: string;
-  title: string;
+  gender: string;
   avatarUrl: string;
   status: 'approved' | 'checked_in';
   card: {
@@ -203,7 +203,7 @@ export interface PersonalCapabilityCardSummary {
 export interface PersonalCapabilityCard {
   state: PersonalCapabilityCardState;
   generatedAt: string;
-  profile: { displayName: string; title: string; avatarUrl?: string };
+  profile: { displayName: string; gender: string; avatarUrl?: string };
   backgrounds: PersonalCapabilityCardBackground[];
   summary: PersonalCapabilityCardSummary;
   coverage: StravaCoverage | null;

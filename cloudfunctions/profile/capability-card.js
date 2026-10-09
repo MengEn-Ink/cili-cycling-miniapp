@@ -146,7 +146,7 @@ async function buildCapabilityCard(
     generated_at: now.toISOString(),
     profile: {
       display_name: typeof profile?.nickname === 'string' ? profile.nickname : '',
-      title: typeof profile?.title === 'string' ? profile.title : '',
+      gender: profile?.gender === '男' || profile?.gender === '女' ? profile.gender : '',
       avatar_url: avatarUrl,
     },
     backgrounds,

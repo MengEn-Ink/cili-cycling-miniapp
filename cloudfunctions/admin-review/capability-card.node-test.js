@@ -12,7 +12,7 @@ const {
 
 const profile = {
   nickname: '山野骑手',
-  title: '爬坡王',
+  gender: '男',
   avatar_file_id: 'cloud://avatar',
   photos: [
     { file_id: 'cloud://other', category: 'other' },
@@ -316,6 +316,7 @@ test('管理员投影保留审批所需字段但不返回 raw file ID、token、
       strava_snapshot: { activities_90d: 12, access_token: 'secret' },
       profile_snapshot: {
         nickname: '报名昵称',
+        gender: '女',
         real_name_masked: '曹**',
         phone_masked: '138****5678',
         phone_source: 'wechat',
@@ -334,7 +335,7 @@ test('管理员投影保留审批所需字段但不返回 raw file ID、token、
   );
   assert.deepEqual(response.capability_profile, {
     nickname: '山野骑手',
-    title: '爬坡王',
+    gender: '男',
     phone_source: 'wechat',
     phone_verified: true,
     photos: [{ url: 'https://temporary.example/ride-1', category: 'ride', source: 'user' }],
@@ -417,7 +418,7 @@ test('social 投影采用独立白名单且绝不包含实名、电话、联系�
   );
   assert.deepEqual(response, {
     nickname: '山野骑手',
-    title: '爬坡王',
+    gender: '男',
     photos: [{ url: 'https://temporary.example/ride-1', category: 'ride', source: 'user' }],
     strava: { total_km: 500, activities_90d: 12, longest_km: 88 },
   });
@@ -435,4 +436,34 @@ test('social 投影采用独立白名单且绝不包含实名、电话、联系�
   ]) {
     assert.equal(serialized.includes(forbidden), false, forbidden);
   }
+});
+
+test('能力卡性别优先当前资料，其次报名快照，非法值收敛为空', () => {
+  const registration = {
+    _id: 'r1',
+    activity_id: 'a1',
+    status: 'pending',
+    options: { gathering_mode: 'self_drive', experience: 'regular' },
+    profile_snapshot: {
+      nickname: '快照骑手',
+      gender: '女',
+      phone_source: 'wechat',
+      phone_verified: true,
+    },
+  };
+
+  assert.equal(adminCapabilityView(registration, {}, undefined).capability_profile.gender, '女');
+  assert.equal(
+    adminCapabilityView(registration, { nickname: '当前骑手', gender: '男' }, undefined)
+      .capability_profile.gender,
+    '男',
+  );
+  assert.equal(
+    adminCapabilityView(
+      { ...registration, profile_snapshot: { gender: '保密' } },
+      { gender: '未知' },
+      undefined,
+    ).capability_profile.gender,
+    '',
+  );
 });

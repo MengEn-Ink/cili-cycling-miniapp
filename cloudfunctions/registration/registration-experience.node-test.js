@@ -46,6 +46,7 @@ function fixture(seed = {}) {
     getActivity: async () => state.activity,
     getProfile: async () => ({
       nickname: '骑手',
+      gender: '男',
       emergency_name: '联系人',
       sensitive_status: { real_name: true, phone_verified: true, emergency_phone: true },
     }),

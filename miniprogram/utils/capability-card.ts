@@ -1,5 +1,6 @@
 import type { Registration } from '../models';
 import { formatChinaDateOnly, formatChinaDateTime } from './date-time';
+import { genderView } from './gender';
 
 const MAX_CAPABILITY_IMAGES = 3;
 const RIDING_CATEGORIES = new Set([
@@ -80,6 +81,7 @@ export function capabilityCard(registration: Registration) {
   const coverageTo = coverage ? datePart(coverage.to) : '';
   const syncedAt = formatChinaDateTime(registration.strava.syncedAt || undefined) || '尚未同步';
   return {
+    ...genderView(registration.profile.gender),
     images,
     hasMultipleImages: images.length > 1,
     displayName: registration.profile.nickname || registration.profile.realName || '未填写昵称',

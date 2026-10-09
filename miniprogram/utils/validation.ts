@@ -1,4 +1,5 @@
 import type { Profile, StravaReadiness } from '../models';
+import { normalizeGender } from './gender';
 
 function hasSensitiveField(
   profile: Profile,
@@ -17,6 +18,7 @@ export function validateRegistration(v: {
   const e: string[] = [];
   // 云端仅返回脱敏展示值，真实填写状态必须以服务端 sensitiveStatus 为准。
   if (!v.profile.nickname.trim()) e.push('请填写昵称');
+  if (!normalizeGender(v.profile.gender)) e.push('请先在个人资料中选择性别');
   if (!hasSensitiveField(v.profile, 'realName', () => !!v.profile.realName.trim()))
     e.push('请填写真实姓名');
   if (!hasSensitiveField(v.profile, 'phone', () => /^1\d{10}$/.test(v.profile.phone)))

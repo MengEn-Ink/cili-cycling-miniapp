@@ -111,7 +111,7 @@ test('单一响应只返回累计与 90 天 allowlist、null 语义和 owner 媒
     {
       profile: {
         nickname: '山野骑手',
-        title: '爬坡王',
+        gender: '男',
         real_name_masked: '曹**',
         phone_masked: '138****5678',
         emergency_name: '联系人',
@@ -145,7 +145,7 @@ test('单一响应只返回累计与 90 天 allowlist、null 语义和 owner 媒
     generated_at: '2026-09-29T12:00:00.000Z',
     profile: {
       display_name: '山野骑手',
-      title: '爬坡王',
+      gender: '男',
       avatar_url: '',
     },
     backgrounds: [
@@ -509,4 +509,17 @@ test('头像独立于三张背景上限解析且与 photos 重复时仍保留头
   assert.equal(card.backgrounds.length, 3);
   assert.equal(card.profile.avatar_url, 'https://temporary.example/avatar');
   assert.equal(card.needs_strava_reauth, false);
+});
+
+test('个人名片性别非法或缺失时收敛为空字符串且不返回称号', async () => {
+  const card = await buildCapabilityCard(
+    {
+      profile: { nickname: '骑手', gender: '保密', title: '旧称号', photos: [] },
+      credential: undefined,
+      snapshot: undefined,
+    },
+    { openid, mediaSecret, now },
+  );
+  assert.equal(card.profile.gender, '');
+  assert.equal('title' in card.profile, false);
 });

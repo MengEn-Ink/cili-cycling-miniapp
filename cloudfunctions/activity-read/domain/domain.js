@@ -136,6 +136,9 @@ function assertActivityOpen(activity, now) {
   if (decision.closed_reason === 'incomplete') fail('SIGNUP_INFO_INCOMPLETE', '报名信息待完善');
   fail('ACTIVITY_NOT_AVAILABLE', '活动未发布、已结束或已下线');
 }
+function normalizeGender(value) {
+  return value === '男' || value === '女' ? value : '';
+}
 function assertProfileReady(profile) {
   const sensitive = profile && profile.sensitive_status;
   // 存量证件密文保持只读兼容：报名判定不读取、不解密，也不要求资料更新时删除。
@@ -154,6 +157,9 @@ function assertProfileReady(profile) {
     !emergencyReady
   ) {
     fail('PROFILE_INCOMPLETE', '请先完成并安全保存实名资料');
+  }
+  if (!normalizeGender(profile.gender)) {
+    fail('PROFILE_INCOMPLETE', '请先在个人资料中选择性别');
   }
 }
 const STRAVA_FIELDS = [
@@ -420,6 +426,7 @@ function publicRegistration(registration) {
   const snapshot = registration.profile_snapshot || {};
   output.profile_snapshot = {
     nickname: snapshot.nickname,
+    gender: normalizeGender(snapshot.gender),
     real_name_masked: snapshot.real_name_masked,
     phone_masked: maskPhone(snapshot.phone_masked),
     phone_source: ['wechat', 'manual', 'legacy'].includes(snapshot.phone_source)
@@ -447,6 +454,7 @@ module.exports = {
   fail,
   ok,
   toErrorResponse,
+  normalizeGender,
   assertTrustedOpenid,
   assertNoForbiddenFields,
   registrationId,

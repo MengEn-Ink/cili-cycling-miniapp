@@ -2,8 +2,6 @@ import { rideService } from '../../../services/ride-service';
 import { syncPageTheme } from '../../../services/theme-service';
 import { appStore } from '../../../store/app-store';
 
-import { parseCheckInScan } from '../../../utils/check-in-code';
-
 const statusText: Record<string, string> = {
   waiting: '候补中',
   pending: '待审核',
@@ -106,25 +104,6 @@ Page({
           activity,
           statusText: statusText[item.status] || item.status,
         })),
-    });
-  },
-  scanCheckIn() {
-    wx.scanCode({
-      scanType: ['barCode', 'qrCode'],
-      success: (result: { result?: string; path?: string }) => {
-        const registrationId = parseCheckInScan(result.result || result.path || '');
-        if (!registrationId) {
-          wx.showToast({ title: '不是有效的此里核销凭证', icon: 'none' });
-          return;
-        }
-        wx.navigateTo({
-          url: '/pages/admin/review-detail/index?id=' + encodeURIComponent(registrationId),
-        });
-      },
-      fail: (error: { errMsg?: string }) => {
-        if (!/cancel/i.test(error?.errMsg || ''))
-          wx.showToast({ title: '扫码失败，请重试', icon: 'none' });
-      },
     });
   },
   async sendReminders() {

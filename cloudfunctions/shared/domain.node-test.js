@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   DomainError,
+  normalizeGender,
   assertNoForbiddenFields,
   registrationId,
   isOccupying,
@@ -51,6 +52,7 @@ const activity = {
 const profile = {
   _id: openid,
   nickname: '骑手',
+  gender: '男',
   real_name_masked: '曹*',
   phone_masked: '138****5678',
   phone_source: 'wechat',
@@ -199,6 +201,7 @@ test('提交校验活动、资料、Strava 和客户端越权字段', () => {
   assert.doesNotThrow(() =>
     assertProfileReady({
       nickname: '骑手',
+      gender: '男',
       phone_cipher: { ciphertext: 'x' },
       real_name_cipher: { ciphertext: 'x' },
       emergency_name: '联系人',
@@ -208,11 +211,35 @@ test('提交校验活动、资料、Strava 和客户端越权字段', () => {
   assert.doesNotThrow(() =>
     assertProfileReady({
       nickname: '骑手',
+      gender: '男',
       phone_cipher: { ciphertext: 'x' },
       real_name_cipher: { ciphertext: 'x' },
       emergency_name: '联系人',
       sensitive_status: { emergency_phone: true },
     }),
+  );
+  expectCode(
+    () =>
+      assertProfileReady({
+        nickname: '骑手',
+        phone_cipher: { ciphertext: 'x' },
+        real_name_cipher: { ciphertext: 'x' },
+        emergency_name: '联系人',
+        emergency_phone_cipher: { ciphertext: 'x' },
+      }),
+    'PROFILE_INCOMPLETE',
+  );
+  expectCode(
+    () =>
+      assertProfileReady({
+        nickname: '骑手',
+        gender: '其他',
+        phone_cipher: { ciphertext: 'x' },
+        real_name_cipher: { ciphertext: 'x' },
+        emergency_name: '联系人',
+        emergency_phone_cipher: { ciphertext: 'x' },
+      }),
+    'PROFILE_INCOMPLETE',
   );
   expectCode(
     () =>
@@ -295,6 +322,7 @@ test('重复占位提交拒绝，驳回或取消后沿原记录重报并保留�
   assert.equal(result.status, 'pending');
   assert.deepEqual(store.state.registrations.get(id).profile_snapshot, {
     nickname: '骑手',
+    gender: '男',
     real_name_masked: '曹*',
     phone_masked: '138****5678',
     phone_source: 'wechat',
@@ -879,4 +907,41 @@ test('公开司机电话无法可靠识别时 fail closed 且不回显原文', (
       .support_vehicle_driver.contact_phone,
     '',
   );
+});
+
+test('性别规范化为男或女，公开报名快照按白名单输出', () => {
+  assert.equal(normalizeGender('男'), '男');
+  assert.equal(normalizeGender('女'), '女');
+  assert.equal(normalizeGender('其他'), '');
+  assert.equal(normalizeGender(undefined), '');
+
+  const withGender = publicRegistration({
+    _id: 'r1',
+    activity_id: 'a1',
+    status: 'pending',
+    profile_snapshot: {
+      nickname: '骑手',
+      gender: '女',
+      real_name_masked: '曹**',
+      phone_masked: '138****5678',
+      phone_source: 'wechat',
+      phone_verified: true,
+    },
+  });
+  assert.equal(withGender.profile_snapshot.gender, '女');
+
+  const invalid = publicRegistration({
+    _id: 'r2',
+    activity_id: 'a1',
+    status: 'pending',
+    profile_snapshot: { nickname: '骑手', gender: '未知' },
+  });
+  assert.equal(invalid.profile_snapshot.gender, '');
+
+  const missing = publicRegistration({
+    _id: 'r3',
+    activity_id: 'a1',
+    status: 'pending',
+  });
+  assert.equal(missing.profile_snapshot.gender, '');
 });
