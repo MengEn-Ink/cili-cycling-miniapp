@@ -52,7 +52,7 @@ describe('个人骑行名片 view model', () => {
     expect(view.metrics.map((metric: any) => metric.value)).toEqual(['0', '0', '0', '0', '0']);
   });
 
-  it('null 指标从布局中省略', async () => {
+  it('null 指标从布局中省略且不再包含累计指标', async () => {
     const view = await build({
       ...baseCard,
       summary: {
@@ -63,14 +63,7 @@ describe('个人骑行名片 view model', () => {
       },
     });
 
-    expect(view.metrics.map((metric: any) => metric.key)).toEqual([
-      'lifetimeDistanceKm',
-      'lifetimeRides',
-      'lifetimeMovingHours',
-      'lifetimeElevationM',
-      'totalKm90d',
-      'elevationM90d',
-    ]);
+    expect(view.metrics.map((metric: any) => metric.key)).toEqual(['totalKm90d', 'elevationM90d']);
   });
 
   it('不完整覆盖范围与同步时间保持明确', async () => {
@@ -85,18 +78,27 @@ describe('个人骑行名片 view model', () => {
     expect(view.syncedAtText).toBe('同步于 2026-09-29 12:05:00');
   });
 
-  it('累计骑行与 Strava 主页入口独立呈现', async () => {
+  it('Strava 主页入口独立呈现且累计指标不再输出', async () => {
     const view = await build(baseCard);
 
-    expect(view.lifetimeMetrics.map((metric: any) => metric.key)).toEqual([
-      'lifetimeDistanceKm',
-      'lifetimeRides',
-      'lifetimeMovingHours',
-      'lifetimeElevationM',
-    ]);
-    expect(view.hasLifetimeMetrics).toBe(true);
+    expect(view.lifetimeMetrics).toBeUndefined();
     expect(view.stravaProfileUrl).toBe('https://www.strava.com/athletes/42');
     expect(view.hasStravaProfile).toBe(true);
+  });
+
+  it('按服务端生成时间计算 STRAVA 加入年限', async () => {
+    const joinedOn = (value: string) => build({ ...baseCard, stravaJoinedAt: value });
+
+    const seven = await joinedOn('2019-05-18T09:30:00.000Z');
+    expect(seven.stravaTenureText).toBe('加入 STRAVA 7 年');
+    expect(seven.hasStravaTenure).toBe(true);
+
+    const notYet = await joinedOn('2026-10-01T00:00:00.000Z');
+    expect(notYet.stravaTenureText).toBe('加入 STRAVA 未满 1 年');
+
+    const missing = await build(baseCard);
+    expect(missing.stravaTenureText).toBe('');
+    expect(missing.hasStravaTenure).toBe(false);
   });
 
   it('无背景图时启用品牌山景并提示完善资料', async () => {

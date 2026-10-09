@@ -33,16 +33,22 @@ const METRICS: {
   label: string;
   unit: string;
 }[] = [
-  { key: 'lifetimeDistanceKm', label: '累计里程', unit: 'km' },
-  { key: 'lifetimeRides', label: '累计骑行', unit: '次' },
-  { key: 'lifetimeMovingHours', label: '移动时间', unit: 'h' },
-  { key: 'lifetimeElevationM', label: '累计爬升', unit: 'm' },
   { key: 'totalKm90d', label: '近 90 天', unit: 'km' },
   { key: 'rides90d', label: '骑行次数', unit: '次' },
   { key: 'longestKm', label: '最长骑行', unit: 'km' },
   { key: 'elevationM90d', label: '累计爬升', unit: 'm' },
   { key: 'weightedAvgSpeedKmh', label: '加权均速', unit: 'km/h' },
 ];
+
+function fullYearsBetween(from: Date, to: Date): number {
+  let years = to.getUTCFullYear() - from.getUTCFullYear();
+  const monthDiff = to.getUTCMonth() - from.getUTCMonth();
+  const dayDiff = to.getUTCDate() - from.getUTCDate();
+  if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+    years -= 1;
+  }
+  return years < 0 ? 0 : years;
+}
 
 export function personalCardViewModel(card: PersonalCapabilityCard) {
   const backgrounds = card.backgrounds.slice(0, 3);
@@ -52,11 +58,6 @@ export function personalCardViewModel(card: PersonalCapabilityCard) {
       ? [{ ...definition, value: String(value) }]
       : [];
   });
-  const lifetimeMetrics = metrics.filter((metric) =>
-    ['lifetimeDistanceKm', 'lifetimeRides', 'lifetimeMovingHours', 'lifetimeElevationM'].includes(
-      metric.key,
-    ),
-  );
   const primaryMetrics = metrics.filter((metric) =>
     ['totalKm90d', 'rides90d', 'longestKm'].includes(metric.key),
   );
@@ -64,6 +65,17 @@ export function personalCardViewModel(card: PersonalCapabilityCard) {
     ['elevationM90d', 'weightedAvgSpeedKmh'].includes(metric.key),
   );
   const recentMetrics = [...primaryMetrics, ...secondaryMetrics];
+  const stravaJoinedAt = card.stravaJoinedAt ? new Date(card.stravaJoinedAt) : null;
+  const stravaTenureYears =
+    stravaJoinedAt && !Number.isNaN(stravaJoinedAt.getTime())
+      ? fullYearsBetween(stravaJoinedAt, new Date(card.generatedAt))
+      : null;
+  const stravaTenureText =
+    stravaTenureYears === null
+      ? ''
+      : stravaTenureYears === 0
+        ? '加入 STRAVA 未满 1 年'
+        : `加入 STRAVA ${stravaTenureYears} 年`;
   const state = STATUS[card.state];
   return {
     state: card.state,
@@ -76,8 +88,6 @@ export function personalCardViewModel(card: PersonalCapabilityCard) {
     hasBackgrounds: backgrounds.length > 0,
     hasMultipleBackgrounds: backgrounds.length > 1,
     metrics,
-    lifetimeMetrics,
-    hasLifetimeMetrics: lifetimeMetrics.length > 0,
     primaryMetrics,
     secondaryMetrics,
     recentMetrics,
@@ -91,6 +101,8 @@ export function personalCardViewModel(card: PersonalCapabilityCard) {
     generatedAtText: `生成于 ${formatChinaDateTime(card.generatedAt)}`,
     stravaProfileUrl: card.stravaProfileUrl || '',
     hasStravaProfile: Boolean(card.stravaProfileUrl),
+    stravaTenureText,
+    hasStravaTenure: stravaTenureYears !== null,
     canSyncStrava:
       Boolean(card.stravaProfileUrl) &&
       card.state !== 'disconnected' &&
