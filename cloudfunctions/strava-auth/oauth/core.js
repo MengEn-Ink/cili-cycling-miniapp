@@ -356,6 +356,22 @@ async function optionalLifetimeStatistics(api, accessToken, athleteId) {
     };
   }
 }
+function validAthleteCreatedAt(value, now) {
+  const date = validDate(value);
+  if (!date) return null;
+  if (date.getTime() > now.getTime()) return null;
+  return date.toISOString();
+}
+async function optionalAthleteProfile(api, accessToken, now) {
+  try {
+    const athlete = await api.athlete(accessToken);
+    const createdAt = validAthleteCreatedAt(athlete && athlete.created_at, now);
+    return createdAt ? { athlete_created_at: createdAt } : {};
+  } catch {
+    // 注册时间只丰富年限文案，不得因接口失败阻断 90 天同步。
+    return {};
+  }
+}
 async function fetchActivityWindow(api, accessToken, { after, before, maxPages = 5 }) {
   const activities = [];
   for (let page = 1; page <= maxPages; page += 1) {
@@ -582,6 +598,7 @@ async function buildSyncResult({
   openid,
   env,
   credential,
+  previousSnapshot,
   api,
   store,
   now = new Date(),
@@ -601,14 +618,20 @@ async function buildSyncResult({
   });
   const coverageTo = now;
   const coverageFrom = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-  const [window, stats] = await Promise.all([
+  const [window, stats, athleteProfile] = await Promise.all([
     fetchActivityWindow(api, refreshed.accessToken, {
       after: Math.floor(coverageFrom.getTime() / 1000),
       before: Math.ceil(coverageTo.getTime() / 1000),
       maxPages,
     }),
     optionalLifetimeStatistics(api, refreshed.accessToken, refreshed.document.athlete_id),
+    optionalAthleteProfile(api, refreshed.accessToken, now),
   ]);
+  const previousCreatedAt =
+    previousSnapshot && previousSnapshot.athlete_id === refreshed.document.athlete_id
+      ? validAthleteCreatedAt(previousSnapshot.athlete_created_at, now)
+      : null;
+  const athleteCreatedAt = athleteProfile.athlete_created_at || previousCreatedAt;
   const snapshot = {
     _id: openid,
     openid,
@@ -620,6 +643,7 @@ async function buildSyncResult({
       coverageComplete: window.coverageComplete,
     }),
     ...stats,
+    ...(athleteCreatedAt ? { athlete_created_at: athleteCreatedAt } : {}),
   };
   return { credential: refreshed.document, snapshot };
 }
@@ -663,6 +687,7 @@ async function ensureReadyFlow({
       openid,
       env,
       credential: claim.credential,
+      previousSnapshot: claim.snapshot,
       api,
       store,
       now,

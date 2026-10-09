@@ -99,6 +99,8 @@ function createStravaApi(fetchImpl = globalThis.fetch) {
       for (const [key, value] of Object.entries(query)) url.searchParams.set(key, String(value));
       return json(url, { headers: { authorization: `Bearer ${token}` } });
     },
+    athlete: (token) =>
+      json(`${API_ROOT}/athlete`, { headers: { authorization: `Bearer ${token}` } }),
     athleteStats: (token, athleteId) =>
       json(`${API_ROOT}/athletes/${athleteId}/stats`, {
         headers: { authorization: `Bearer ${token}` },
