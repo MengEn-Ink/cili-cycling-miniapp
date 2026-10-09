@@ -190,6 +190,40 @@ test('单一响应只返回累计与 90 天 allowlist、null 语义和 owner 媒
   }
 });
 
+test('个人名片投影当前骑手的合法 Strava 注册时间', async () => {
+  const response = await buildCapabilityCard(
+    {
+      profile: { nickname: '骑手' },
+      credential,
+      snapshot: { ...snapshot, athlete_created_at: '2019-05-18T09:30:00.000Z' },
+    },
+    {
+      openid,
+      mediaSecret,
+      now,
+      getTempFileURL: async () => ({ fileList: [] }),
+    },
+  );
+  assert.equal(response.strava_joined_at, '2019-05-18T09:30:00.000Z');
+});
+
+test('个人名片对非法或未来 Strava 注册时间省略字段', async () => {
+  const response = await buildCapabilityCard(
+    {
+      profile: { nickname: '骑手' },
+      credential,
+      snapshot: { ...snapshot, athlete_created_at: '2099-01-01T00:00:00.000Z' },
+    },
+    {
+      openid,
+      mediaSecret,
+      now,
+      getTempFileURL: async () => ({ fileList: [] }),
+    },
+  );
+  assert.equal(Object.hasOwn(response, 'strava_joined_at'), false);
+});
+
 test('个人名片只解析已验证 canonical 对象，source 覆盖不进入展示链', async () => {
   const sourceFileId = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174099.jpg`;
   const canonicalPath = canonicalMediaPath(

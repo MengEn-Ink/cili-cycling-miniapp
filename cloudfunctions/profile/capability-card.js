@@ -133,6 +133,12 @@ async function buildCapabilityCard(
   const snapshotSummary = summary(hasSnapshot ? snapshot : undefined);
   const snapshotCoverage = hasSnapshot ? coverage(snapshot) : null;
   const syncedAt = hasSnapshot ? validDate(snapshot.synced_at).toISOString() : null;
+  const stravaJoinedAt = (() => {
+    if (!hasSnapshot) return null;
+    const date = validDate(snapshot.athlete_created_at);
+    if (!date || date.getTime() > now.getTime()) return null;
+    return date.toISOString();
+  })();
   const [backgrounds, avatar] = await Promise.all([
     resolveBackgrounds(ownerMedia(profile, openid, mediaSecret, mediaRecords), getTempFileURL),
     resolveBackgrounds(
@@ -154,6 +160,7 @@ async function buildCapabilityCard(
     coverage: snapshotCoverage,
     synced_at: syncedAt,
     strava_profile_url: stravaProfileUrl(credential),
+    ...(stravaJoinedAt ? { strava_joined_at: stravaJoinedAt } : {}),
     needs_strava_reauth: profile?.avatar_source === 'strava' && !avatarUrl,
   };
 }
