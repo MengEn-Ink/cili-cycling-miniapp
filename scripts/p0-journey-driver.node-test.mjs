@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -492,4 +492,28 @@ test('最终仍有活跃报名或活动未结束时补偿失败且不泄露状�
       !error.message.includes('SENTINEL'),
   );
   assert.equal(reads, 2);
+});
+
+test('package scripts 和现场手册接入旅程驱动', () => {
+  const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  const guide = readFileSync(
+    new URL('../docs/verification/p0-real-registration-journey.md', import.meta.url),
+    'utf8',
+  );
+
+  assert.equal(
+    packageJson.scripts['check:journey-preflight'],
+    'node scripts/p0-journey-driver.mjs preflight',
+  );
+  assert.match(
+    packageJson.scripts['test:journey-evidence'],
+    /scripts\/p0-journey-driver\.node-test\.mjs/,
+  );
+  assert.match(guide, /check:journey-preflight/);
+  assert.match(guide, /预检未通过.*未执行/s);
+  assert.match(guide, /waitForPageReady/);
+  assert.match(guide, /runReconciledWrite/);
+  assert.match(guide, /sanitizeJourneyAudits/);
+  assert.match(guide, /compensateJourney/);
+  assert.match(guide, /不得.*删除数据库记录/s);
 });
