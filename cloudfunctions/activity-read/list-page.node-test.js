@@ -41,7 +41,7 @@ function comparable(value) {
 function matchesOperator(actual, condition) {
   if (condition.__operator === 'and')
     return condition.value.every((item) => matchesOperator(actual, item));
-  if ((actual instanceof Date) !== (condition.value instanceof Date)) return false;
+  if (actual instanceof Date !== condition.value instanceof Date) return false;
   const left = comparable(actual);
   const right = comparable(condition.value);
   if (condition.__operator === 'eq') return left === right;
@@ -98,9 +98,7 @@ function collectComparisonValues(value, output = []) {
 
 function assertDateQueryBoundaries(calls) {
   const values = calls.flatMap((call) =>
-    ['event_start', 'event_end'].flatMap((field) =>
-      collectComparisonValues(call.condition[field]),
-    ),
+    ['event_start', 'event_end'].flatMap((field) => collectComparisonValues(call.condition[field])),
   );
   assert.ok(values.length > 0, 'expected at least one time comparison boundary');
   assert.equal(
@@ -161,7 +159,7 @@ function createDatabase(documents) {
 }
 
 function activity(id, overrides = {}) {
-  return {
+  const document = {
     _id: id,
     title: id,
     status: 'published',
@@ -170,6 +168,12 @@ function activity(id, overrides = {}) {
     event_end: '2026-10-10T12:00:00.000Z',
     ...overrides,
   };
+  for (const field of ['event_start', 'event_end']) {
+    if (typeof document[field] !== 'string') continue;
+    const date = new Date(document[field]);
+    if (Number.isFinite(date.getTime())) document[field] = date;
+  }
+  return document;
 }
 
 function bsonActivity(id, overrides = {}) {
@@ -496,7 +500,7 @@ test('非法数据连续五批仍无法收敛时返回 DATA_INTEGRITY_ERROR 且�
       event_start: `2026-11-${String(Math.floor(index / 24) + 1).padStart(2, '0')}T${String(
         index % 24,
       ).padStart(2, '0')}:00:00.000Z`,
-      event_end: 'invalid-time',
+      event_end: '2026-10-31T23:59:00.000Z',
     }),
   );
   const database = createDatabase(documents);

@@ -81,7 +81,7 @@ function parseListPageRequest(event = {}, now = new Date()) {
 }
 
 function streamDefinitions(view, asOf, command) {
-  const time = asOf.toISOString();
+  const time = new Date(asOf.getTime());
   const visible = command.neq(true);
   if (view === 'future')
     return [
@@ -140,7 +140,7 @@ function streamSort(definition, segment) {
 function boundaryFilter(definition, command, boundary, segment) {
   if (!boundary) return definition.filter;
   const operator = definition.direction === 'asc' ? 'gt' : 'lt';
-  const time = boundary.time.toISOString();
+  const time = new Date(boundary.time.getTime());
   if (segment === 'same-time')
     return {
       ...definition.filter,
@@ -169,8 +169,15 @@ async function executeQuery({ db, command, definition, boundary, segment, limit 
   return result.data;
 }
 
+function dateEpoch(value) {
+  if (!(value instanceof Date) && typeof value !== 'string') return undefined;
+  const date = value instanceof Date ? value : new Date(value);
+  const epoch = date.getTime();
+  return Number.isFinite(epoch) ? epoch : undefined;
+}
+
 function validDate(value) {
-  return typeof value === 'string' && Number.isFinite(Date.parse(value));
+  return dateEpoch(value) !== undefined;
 }
 
 function validForStream(item, definition, asOf) {
@@ -181,11 +188,11 @@ function validForStream(item, definition, asOf) {
     item.is_deleted === true ||
     !validDate(item.event_start) ||
     !validDate(item.event_end) ||
-    Date.parse(item.event_start) >= Date.parse(item.event_end)
+    dateEpoch(item.event_start) >= dateEpoch(item.event_end)
   )
     return false;
-  const start = Date.parse(item.event_start);
-  const end = Date.parse(item.event_end);
+  const start = dateEpoch(item.event_start);
+  const end = dateEpoch(item.event_end);
   const time = asOf.getTime();
   if (definition.name === 'ongoing')
     return item.status === 'published' && start <= time && end > time;
@@ -199,7 +206,7 @@ function nextBoundary(candidates, definition) {
   const last = candidates.at(-1);
   if (!last || typeof last._id !== 'string' || !last._id || !validDate(last[definition.field]))
     dataIntegrityFailed();
-  return { time: new Date(last[definition.field]), id: last._id };
+  return { time: new Date(dateEpoch(last[definition.field])), id: last._id };
 }
 
 async function readStream({ db, command, definition, boundary, target, asOf }) {
@@ -246,7 +253,10 @@ async function readStream({ db, command, definition, boundary, target, asOf }) {
 
 function compareItems(left, right, field, direction) {
   const multiplier = direction === 'asc' ? 1 : -1;
-  const byTime = String(left[field]).localeCompare(String(right[field])) * multiplier;
+  const leftTime = dateEpoch(left[field]);
+  const rightTime = dateEpoch(right[field]);
+  if (leftTime === undefined || rightTime === undefined) dataIntegrityFailed();
+  const byTime = (leftTime === rightTime ? 0 : leftTime < rightTime ? -1 : 1) * multiplier;
   return byTime || String(left._id).localeCompare(String(right._id)) * multiplier;
 }
 
@@ -288,7 +298,7 @@ async function listActivityPage({ db, command, request, now }) {
           v: CURSOR_VERSION,
           view: request.view,
           as_of: asOf.toISOString(),
-          boundary: { time: last[field], id: last._id },
+          boundary: { time: new Date(dateEpoch(last[field])).toISOString(), id: last._id },
         })
       : null;
   return { items, nextCursor };
