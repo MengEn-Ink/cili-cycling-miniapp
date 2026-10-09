@@ -81,7 +81,7 @@ describe('个人骑行名片 view model', () => {
   it('Strava 主页入口独立呈现且累计指标不再输出', async () => {
     const view = await build(baseCard);
 
-    expect(view.lifetimeMetrics).toBeUndefined();
+    expect((view as any).lifetimeMetrics).toBeUndefined();
     expect(view.stravaProfileUrl).toBe('https://www.strava.com/athletes/42');
     expect(view.hasStravaProfile).toBe(true);
   });

@@ -2,11 +2,23 @@ import { setTheme, syncPageTheme } from '../../services/theme-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.09.2',
+    date: '2026-10-09',
+    title: '个人中心聚焦近期骑行与 STRAVA 年限',
+    summary: '个人中心仅展示近 90 天骑行数据，并按 Strava 注册年份展示加入年限。',
+    latest: true,
+    features: [
+      '个人中心移除累计骑行指标，只保留近 90 天里程、次数、最长、爬升与均速',
+      '连接 Strava 后展示“加入 STRAVA N 年”，0 年显示未满 1 年',
+      '注册时间为 Strava 辅助数据，获取失败不影响 90 天同步与报名资格',
+    ],
+  },
+  {
     version: '2026.10.09.1',
     date: '2026-10-09',
     title: '报名与活动信息简化',
     summary: '移除条码与扫码核销，报名明确标注性别，活动编辑补齐日程与费用明细。',
-    latest: true,
+    latest: false,
     features: [
       '报名凭证与审批详情均展示性别，现场由管理员手动确认签到',
       '活动编辑支持日程行编辑与费用包含、费用不包含清单',

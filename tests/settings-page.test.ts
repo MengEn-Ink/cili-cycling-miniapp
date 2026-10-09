@@ -29,11 +29,11 @@ describe('设置页', () => {
     page.onShow();
 
     expect(page.data).toMatchObject({ theme: 'dark', themeClass: 'theme-dark' });
-    expect(page.data.releaseNotes).toHaveLength(12);
+    expect(page.data.releaseNotes).toHaveLength(13);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.09.1',
+      version: '2026.10.09.2',
       latest: true,
-      title: '报名与活动信息简化',
+      title: '个人中心聚焦近期骑行与 STRAVA 年限',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
