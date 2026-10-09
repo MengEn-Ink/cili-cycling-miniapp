@@ -12,7 +12,7 @@ describe('方案 A 编辑式性能布局', () => {
     const card = read('miniprogram/components/activity-card/index.wxml');
     const styles = read('miniprogram/components/activity-card/index.wxss');
 
-    expect(list).toContain('featured="{{filter === \'upcoming\' && index === 0}}"');
+    expect(list).toContain('featured="{{activeView === \'future\' && index === 0}}"');
     expect(component).toMatch(/featured:\s*\{\s*type:\s*Boolean,\s*value:\s*false\s*\}/);
     expect(card).toContain("featured ? 'activity-card--featured' : 'activity-card--compact'");
     expect(card).toContain('class="card-identity"');

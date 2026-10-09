@@ -54,11 +54,11 @@ describe('设置页', () => {
       stravaReadiness: readyState,
       stravaStatusText: '已连接，可重新授权或解绑',
     });
-    expect(page.data.releaseNotes).toHaveLength(16);
+    expect(page.data.releaseNotes).toHaveLength(17);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.09.5',
+      version: '2026.10.10.1',
       latest: true,
-      title: '活动创建与个人体验稳定性升级',
+      title: '活动首页时间线分页升级',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
