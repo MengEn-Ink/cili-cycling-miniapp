@@ -11,6 +11,12 @@ const REGION = 'ap-shanghai';
 const API_VERSION = '2018-06-08';
 const PAGE_SIZE = 20;
 const READ_LIMIT = PAGE_SIZE + 1;
+const DATE_READBACK_IDS = Object.freeze([
+  'finished-000',
+  'ongoing-000',
+  'past-published-000',
+  'scheduled-000',
+]);
 
 const INDEXES = Object.freeze([
   {
@@ -44,8 +50,25 @@ export function assertTemporaryCollection(name) {
   if (name !== PROBE_COLLECTION) throw new Error('只允许临时集合');
 }
 
-function isoAt(asOf, offsetMinutes) {
-  return new Date(asOf.getTime() + offsetMinutes * 60_000).toISOString();
+function bsonDate(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (!Number.isFinite(date.getTime())) throw new Error('BSON Date 非法');
+  return { $date: { $numberLong: String(date.getTime()) } };
+}
+
+function bsonDateAt(asOf, offsetMinutes) {
+  return bsonDate(new Date(asOf.getTime() + offsetMinutes * 60_000));
+}
+
+function bsonDateMillis(value) {
+  const raw = value?.$date;
+  const milliseconds =
+    typeof raw === 'string'
+      ? Date.parse(raw)
+      : raw && typeof raw === 'object' && /^-?\d+$/.test(raw.$numberLong)
+        ? Number(raw.$numberLong)
+        : Number.NaN;
+  return Number.isFinite(milliseconds) ? milliseconds : null;
 }
 
 function visibleFlag(index) {
@@ -63,8 +86,8 @@ export function buildFixtures(asOf) {
       kind: 'ongoing',
       title: `进行中 ${index}`,
       status: 'published',
-      event_start: isoAt(asOf, -720 + pair * 20),
-      event_end: isoAt(asOf, 120 + pair * 5),
+      event_start: bsonDateAt(asOf, -720 + pair * 20),
+      event_end: bsonDateAt(asOf, 120 + pair * 5),
       ...visibleFlag(index),
     });
     fixtures.push({
@@ -72,8 +95,8 @@ export function buildFixtures(asOf) {
       kind: 'scheduled',
       title: `未开始 ${index}`,
       status: 'published',
-      event_start: isoAt(asOf, 60 + pair * 20),
-      event_end: isoAt(asOf, 300 + pair * 20),
+      event_start: bsonDateAt(asOf, 60 + pair * 20),
+      event_end: bsonDateAt(asOf, 300 + pair * 20),
       ...visibleFlag(index),
     });
     fixtures.push({
@@ -81,8 +104,8 @@ export function buildFixtures(asOf) {
       kind: 'finished',
       title: `提前结束 ${index}`,
       status: 'finished',
-      event_start: isoAt(asOf, -1440 - pair * 20),
-      event_end: index === 0 ? isoAt(asOf, 360) : isoAt(asOf, -60 - pair * 20),
+      event_start: bsonDateAt(asOf, -1440 - pair * 20),
+      event_end: index === 0 ? bsonDateAt(asOf, 360) : bsonDateAt(asOf, -60 - pair * 20),
       ...visibleFlag(index),
     });
     fixtures.push({
@@ -90,8 +113,8 @@ export function buildFixtures(asOf) {
       kind: 'past-published',
       title: `自然结束 ${index}`,
       status: 'published',
-      event_start: isoAt(asOf, -1800 - pair * 20),
-      event_end: isoAt(asOf, -600 - pair * 20),
+      event_start: bsonDateAt(asOf, -1800 - pair * 20),
+      event_end: bsonDateAt(asOf, -600 - pair * 20),
       ...visibleFlag(index),
     });
   }
@@ -101,39 +124,39 @@ export function buildFixtures(asOf) {
       kind: 'deleted',
       status: 'published',
       is_deleted: true,
-      event_start: isoAt(asOf, -30),
-      event_end: isoAt(asOf, 30),
+      event_start: bsonDateAt(asOf, -30),
+      event_end: bsonDateAt(asOf, 30),
     },
     {
       _id: 'deleted-history',
       kind: 'deleted',
       status: 'finished',
       is_deleted: true,
-      event_start: isoAt(asOf, -300),
-      event_end: isoAt(asOf, -200),
+      event_start: bsonDateAt(asOf, -300),
+      event_end: bsonDateAt(asOf, -200),
     },
     {
       _id: 'draft-future',
       kind: 'invalid-status',
       status: 'draft',
       is_deleted: false,
-      event_start: isoAt(asOf, 20),
-      event_end: isoAt(asOf, 120),
+      event_start: bsonDateAt(asOf, 20),
+      event_end: bsonDateAt(asOf, 120),
     },
     {
       _id: 'archived-history',
       kind: 'invalid-status',
       status: 'archived',
       is_deleted: false,
-      event_start: isoAt(asOf, -200),
-      event_end: isoAt(asOf, -100),
+      event_start: bsonDateAt(asOf, -200),
+      event_end: bsonDateAt(asOf, -100),
     },
     {
       _id: 'invalid-end',
       kind: 'invalid-time',
       status: 'published',
       is_deleted: false,
-      event_start: isoAt(asOf, 10),
+      event_start: bsonDateAt(asOf, 10),
       event_end: 'invalid-time',
     },
     {
@@ -141,22 +164,22 @@ export function buildFixtures(asOf) {
       kind: 'invalid-time',
       status: 'published',
       is_deleted: false,
-      event_start: isoAt(asOf, 240),
-      event_end: isoAt(asOf, 120),
+      event_start: bsonDateAt(asOf, 240),
+      event_end: bsonDateAt(asOf, 120),
     },
     {
       _id: 'missing-start',
       kind: 'invalid-time',
       status: 'published',
       is_deleted: false,
-      event_end: isoAt(asOf, 120),
+      event_end: bsonDateAt(asOf, 120),
     },
     {
       _id: 'missing-end',
       kind: 'invalid-time',
       status: 'published',
       is_deleted: false,
-      event_start: isoAt(asOf, 120),
+      event_start: bsonDateAt(asOf, 120),
     },
   );
   return fixtures;
@@ -180,7 +203,7 @@ function cursorSegmentFilter(definition, boundary, segment) {
 }
 
 function streamDefinitions(asOf) {
-  const time = asOf.toISOString();
+  const time = bsonDate(asOf);
   return [
     {
       name: 'ongoing',
@@ -193,7 +216,7 @@ function streamDefinitions(asOf) {
         event_start: { $lte: time },
         event_end: { $gt: time },
       },
-      cursor: { time: isoAt(asOf, -620), id: 'ongoing-011' },
+      cursor: { time: bsonDateAt(asOf, -620), id: 'ongoing-011' },
     },
     {
       name: 'scheduled',
@@ -206,7 +229,7 @@ function streamDefinitions(asOf) {
         event_start: { $gt: time },
         event_end: { $gt: time },
       },
-      cursor: { time: isoAt(asOf, 160), id: 'scheduled-011' },
+      cursor: { time: bsonDateAt(asOf, 160), id: 'scheduled-011' },
     },
     {
       name: 'finished',
@@ -214,7 +237,7 @@ function streamDefinitions(asOf) {
       field: 'event_end',
       direction: -1,
       filter: { status: 'finished', is_deleted: { $ne: true } },
-      cursor: { time: isoAt(asOf, -160), id: 'finished-011' },
+      cursor: { time: bsonDateAt(asOf, -160), id: 'finished-011' },
     },
     {
       name: 'past-published',
@@ -226,7 +249,7 @@ function streamDefinitions(asOf) {
         is_deleted: { $ne: true },
         event_end: { $lte: time },
       },
-      cursor: { time: isoAt(asOf, -700), id: 'past-published-011' },
+      cursor: { time: bsonDateAt(asOf, -700), id: 'past-published-011' },
     },
   ];
 }
@@ -481,22 +504,46 @@ async function waitForCollection(runner, target, collection, present) {
 }
 
 function validDate(value) {
-  return typeof value === 'string' && Number.isFinite(Date.parse(value));
+  return bsonDateMillis(value) !== null;
 }
 
 function validActivity(item) {
-  return (
-    item &&
-    item.is_deleted !== true &&
-    validDate(item.event_start) &&
-    validDate(item.event_end) &&
-    Date.parse(item.event_start) < Date.parse(item.event_end)
-  );
+  const start = bsonDateMillis(item?.event_start);
+  const end = bsonDateMillis(item?.event_end);
+  return item && item.is_deleted !== true && start !== null && end !== null && start < end;
 }
 
 function compareTuple(left, right, field, direction) {
-  const byTime = left[field].localeCompare(right[field]) * direction;
-  return byTime || left._id.localeCompare(right._id) * direction;
+  const byTime = (bsonDateMillis(left[field]) - bsonDateMillis(right[field])) * direction;
+  return (
+    byTime ||
+    Buffer.compare(Buffer.from(left._id, 'utf8'), Buffer.from(right._id, 'utf8')) * direction
+  );
+}
+
+function dateReadbackCommand(collection) {
+  return {
+    find: collection,
+    filter: {
+      _id: { $in: DATE_READBACK_IDS },
+      event_start: { $type: 'date' },
+      event_end: { $type: 'date' },
+    },
+    sort: { _id: 1 },
+    limit: DATE_READBACK_IDS.length,
+  };
+}
+
+function assertDateReadback(items) {
+  if (!Array.isArray(items)) throw new Error('BSON Date 回读结果非法');
+  const ids = items.map((item) => item._id);
+  if (JSON.stringify(ids) !== JSON.stringify(DATE_READBACK_IDS))
+    throw new Error(`BSON Date 回读 ID 不完整: ${ids.join(',') || '无'}`);
+  for (const item of items) {
+    if (!validDate(item.event_start) || !validDate(item.event_end))
+      throw new Error(`BSON Date 回读类型非法: ${item._id}`);
+  }
+  return ids;
 }
 
 function queryCommand(collection, definition, boundary, segment, limit = READ_LIMIT) {
@@ -637,6 +684,18 @@ export function createCliExecutor({ envId, region = REGION, runner = new CloudBa
       );
       return { requestId: response.requestId, result: response.document };
     }
+    if (operation.kind === 'verify-date-types') {
+      const response = executeMgo(
+        runner,
+        target,
+        operation.collection,
+        'QUERY',
+        dateReadbackCommand(operation.collection),
+        'probe-date-readback',
+        'query-many',
+      );
+      return { requestId: response.requestId, items: response.document };
+    }
     if (operation.kind === 'explain') {
       const response = executeMgo(
         runner,
@@ -695,6 +754,7 @@ export async function runProbe({ envId, collection, execute }) {
     createRequestId: '',
     indexRequestIds: [],
     insertRequestId: '',
+    dateReadback: undefined,
     explains: [],
     smoke: undefined,
     cleanup: undefined,
@@ -714,6 +774,12 @@ export async function runProbe({ envId, collection, execute }) {
     const inserted = await execute({ kind: 'insert', collection, documents: fixtures });
     summary.fixtureCount = fixtures.length;
     summary.insertRequestId = inserted.requestId;
+    const dateReadback = await execute({ kind: 'verify-date-types', collection });
+    summary.dateReadback = {
+      requestId: dateReadback.requestId,
+      ids: assertDateReadback(dateReadback.items),
+      bsonDateVerified: true,
+    };
     for (const item of buildExplainCommands(collection, PROBE_AS_OF)) {
       let response;
       try {
