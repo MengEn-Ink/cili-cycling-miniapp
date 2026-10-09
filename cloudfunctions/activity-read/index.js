@@ -10,6 +10,7 @@ const {
   fail,
 } = require('./domain');
 const { canonicalPublicAvatar, mediaDocumentId, publicAvatarSource } = require('./public-avatar');
+const { parseListPageRequest, listActivityPage } = require('./list-page');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const _ = db.command;
@@ -275,6 +276,16 @@ exports.main = async (event = {}) => {
       }
       const activities = rawActivities.map((item) => publicActivity(item, now));
       return ok(await resolveActivityMedia(activities));
+    }
+    if (event.action === 'listPage') {
+      const request = parseListPageRequest(event, now);
+      const page = await listActivityPage({ db, command: _, request, now });
+      const items = page.items.map((item) => publicActivity(item, request.asOf));
+      return ok({
+        items: await resolveActivityMedia(items),
+        next_cursor: page.nextCursor,
+        as_of: request.asOf.toISOString(),
+      });
     }
     if (event.action === 'detail') {
       if (typeof event.activityId !== 'string' || !event.activityId)
