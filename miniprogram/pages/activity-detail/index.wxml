@@ -81,7 +81,19 @@
         </view>
         <view class="card schedule-card" wx:if="{{item.schedule && item.schedule.length}}"><view class="card-index">02</view><view class="title">时间安排</view><view wx:for="{{item.schedule}}" wx:key="time" class="schedule-row"><view class="schedule-time">{{item.time}}</view><view class="schedule-track"><view class="schedule-dot"></view></view><view class="schedule-copy"><view>{{item.title}}</view><view class="muted">{{item.location}}</view></view></view></view>
         <view class="card" wx:if="{{(item.equipment && item.equipment.length) || (item.notices && item.notices.length)}}"><view class="card-index">03</view><view class="title">装备与注意</view><view class="list-item" wx:for="{{item.equipment}}" wx:key="*this"><text class="check">✓</text><text>{{item}}</text></view><view class="notice-item" wx:for="{{item.notices}}" wx:key="*this"><text class="notice-mark">/</text><text>{{item}}</text></view></view>
-        <view class="card" wx:if="{{item.fee}}"><view class="card-index">04</view><view class="title">费用说明</view><view class="body-text">{{item.fee}}</view></view>
+        <view class="card fee-card" wx:if="{{item.fee || (item.feeIncluded && item.feeIncluded.length) || (item.feeExcluded && item.feeExcluded.length)}}">
+          <view class="card-index">04</view>
+          <view class="title">费用说明</view>
+          <view class="body-text" wx:if="{{item.fee}}">{{item.fee}}</view>
+          <view class="fee-block" wx:if="{{item.feeIncluded && item.feeIncluded.length}}">
+            <view class="fee-block-title">费用包含</view>
+            <view class="fee-item" wx:for="{{item.feeIncluded}}" wx:for-item="fee" wx:key="*this"><text class="fee-mark fee-included">+</text><text>{{fee}}</text></view>
+          </view>
+          <view class="fee-block" wx:if="{{item.feeExcluded && item.feeExcluded.length}}">
+            <view class="fee-block-title">费用不包含</view>
+            <view class="fee-item" wx:for="{{item.feeExcluded}}" wx:for-item="fee" wx:key="*this"><text class="fee-mark fee-excluded">−</text><text>{{fee}}</text></view>
+          </view>
+        </view>
       </view>
     </view>
   </state-view>
@@ -93,7 +105,7 @@
     <view class="rider-card-kicker">公开骑行名片</view>
     <view class="rider-card-head">
       <image class="rider-card-avatar" src="{{selectedAttendee.avatarUrl || defaultAttendeeAvatar}}" mode="aspectFill" binderror="selectedAttendeeAvatarError" />
-      <view class="rider-identity"><view class="rider-name">{{selectedAttendee.displayName || '此里骑手'}}</view><view class="muted">{{selectedAttendee.title || '骑行爱好者'}}</view><view class="rider-status">{{selectedAttendee.status === 'checked_in' ? '已签到' : '已报名'}}</view></view>
+      <view class="rider-identity"><view class="rider-name">{{selectedAttendee.displayName || '此里骑手'}}</view><view class="gender-pill {{selectedAttendee.genderClass}}">{{selectedAttendee.genderLabel}}</view><view class="rider-status">{{selectedAttendee.status === 'checked_in' ? '已签到' : '已报名'}}</view></view>
     </view>
     <view class="rider-stats">
       <view><view class="rider-stat-value">{{selectedAttendee.card.rides90d === null ? '--' : selectedAttendee.card.rides90d}}<text wx:if="{{selectedAttendee.card.rides90d !== null}}">次</text></view><text>近 90 天骑行</text></view>

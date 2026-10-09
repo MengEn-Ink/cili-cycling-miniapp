@@ -2,6 +2,7 @@ import { rideService } from '../../services/ride-service';
 import { syncPageTheme } from '../../services/theme-service';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
+import { genderView } from '../../utils/gender';
 import { drawActivityPoster } from './poster';
 import {
   drawElevationProfile,
@@ -179,7 +180,8 @@ Page({
   openAttendeeCard(event: any) {
     const index = Number(event.currentTarget.dataset.index);
     const attendee = this.data.attendees[index];
-    if (attendee) this.safeSetData({ selectedAttendee: attendee });
+    if (attendee)
+      this.safeSetData({ selectedAttendee: { ...attendee, ...genderView(attendee.gender) } });
   },
   closeAttendeeCard() {
     this.safeSetData({ selectedAttendee: null });

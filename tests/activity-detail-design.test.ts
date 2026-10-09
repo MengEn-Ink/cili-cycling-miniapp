@@ -34,6 +34,18 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('disabled="{{loading || !item || !activityAction.enabled}}"');
   });
 
+  it('路线操作完整保留复制 Strava 路线、活动链接、海报与 GPX 四项', () => {
+    const template = readFileSync('miniprogram/pages/activity-detail/index.wxml', 'utf8');
+    expect(template).toContain('bindtap="openStravaRoute"');
+    expect(template).toContain('复制 Strava 路线');
+    expect(template).toContain('bindtap="copyActivityLink"');
+    expect(template).toContain('复制活动链接');
+    expect(template).toContain('bindtap="generatePoster"');
+    expect(template).toContain('保存分享海报');
+    expect(template).toContain('bindtap="exportGpx"');
+    expect(template).toContain('导出 GPX');
+  });
+
   it('详情的开始、结束、截止时间全部使用共享秒级格式化函数', () => {
     const page = read('miniprogram/pages/activity-detail/index.ts');
     expect(page).toContain('startTime: formatChinaDateTimeSeconds(item.startAt)');
@@ -144,6 +156,10 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('src="{{item.avatarUrl || defaultAttendeeAvatar}}"');
     expect(template).toContain('src="{{selectedAttendee.avatarUrl || defaultAttendeeAvatar}}"');
     expect(template).toContain('binderror="selectedAttendeeAvatarError"');
+    expect(template).toContain('class="gender-pill {{selectedAttendee.genderClass}}"');
+    expect(template).toContain('{{selectedAttendee.genderLabel}}');
+    expect(template).not.toContain('selectedAttendee.title');
+    expect(template).not.toContain('骑行爱好者');
     expect(template).toContain('头像按骑友公开设置展示');
     expect(template).not.toContain('attendee-avatar--default">骑');
     expect(existsSync('miniprogram/assets/profile/avatars/cili-orange.png')).toBe(true);
@@ -163,6 +179,14 @@ describe('活动详情设计与日期契约', () => {
     expect(styles).toMatch(/\.rider-identity\s*\{[^}]*padding-right:\s*120rpx/s);
     expect(styles).toMatch(/\.rider-stats > view > text:last-child\s*\{/s);
     expect(styles).not.toMatch(/\.rider-stats text:last-child/);
+  });
+
+  it('费用卡支持费用说明、包含与不包含三段', () => {
+    const template = readFileSync('miniprogram/pages/activity-detail/index.wxml', 'utf8');
+    expect(template).toContain('fee-block-title">费用包含');
+    expect(template).toContain('fee-block-title">费用不包含');
+    expect(template).toContain('wx:for="{{item.feeIncluded}}"');
+    expect(template).toContain('wx:for="{{item.feeExcluded}}"');
   });
 
   it('使用等宽三列指标、24rpx 展示圆角和轻量安全区 CTA', () => {
@@ -217,7 +241,7 @@ describe('活动详情复制、分享与 GPX 导出', () => {
     const attendee = {
       id: 'rider-1',
       displayName: '长距离骑行者',
-      title: '耐力骑手',
+      gender: '女',
       avatarUrl: '',
       status: 'approved',
       card: { rides90d: null, longestKm: 180, elevationM: 3200, speedKmh: 26.5 },
@@ -226,7 +250,11 @@ describe('活动详情复制、分享与 GPX 导出', () => {
     context.data.selectedAttendee = null;
 
     definition.openAttendeeCard.call(context, { currentTarget: { dataset: { index: 0 } } });
-    expect(context.data.selectedAttendee).toEqual(attendee);
+    expect(context.data.selectedAttendee).toEqual({
+      ...attendee,
+      genderLabel: '女',
+      genderClass: 'gender-female',
+    });
     definition.closeAttendeeCard.call(context);
     expect(context.data.selectedAttendee).toBeNull();
 

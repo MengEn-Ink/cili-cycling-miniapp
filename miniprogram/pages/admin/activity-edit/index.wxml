@@ -75,9 +75,34 @@
       <view class="field"><text>路线文件 ID（选填）</text><input value="{{routeGpxFileId}}" data-name="routeGpxFileId" bindinput="assetField" /></view>
     </view>
 
-    <view class="section-label">04 · 补充说明</view>
+    <view class="section-label">04 · 日程安排</view>
+    <view class="form-card">
+      <view class="hint">按时间顺序填写，时间与事项必填；最多 50 行</view>
+      <view class="schedule-edit-row" wx:for="{{schedule}}" wx:key="index">
+        <view class="schedule-edit-head">
+          <text class="schedule-edit-index">{{index + 1}}</text>
+          <button size="mini" data-index="{{index}}" bindtap="removeScheduleRow">删除</button>
+        </view>
+        <input value="{{item.time}}" data-index="{{index}}" data-field="time" bindinput="scheduleField" maxlength="20" placeholder="时间（必填）" />
+        <input value="{{item.title}}" data-index="{{index}}" data-field="title" bindinput="scheduleField" maxlength="100" placeholder="事项（必填）" />
+        <input value="{{item.location}}" data-index="{{index}}" data-field="location" bindinput="scheduleField" maxlength="200" placeholder="地点（选填）" />
+        <input value="{{item.remark}}" data-index="{{index}}" data-field="remark" bindinput="scheduleField" maxlength="500" placeholder="备注（选填）" />
+      </view>
+      <button class="media-add" disabled="{{saving || schedule.length >= 50}}" bindtap="addScheduleRow">添加日程行</button>
+    </view>
+
+    <view class="section-label">05 · 补充说明</view>
     <view class="form-card">
       <view class="field"><text>费用说明</text><input value="{{form.fee}}" data-name="fee" bindinput="field" /></view>
+      <view class="field">
+        <view class="field-heading"><text>费用包含</text><text class="counter">{{feeIncludedText.length}}/10000</text></view>
+        <view class="hint">每行一项，最多 50 项，每项不超过 200 字</view>
+        <textarea value="{{feeIncludedText}}" data-name="feeIncludedText" bindinput="feeField" maxlength="10000" />
+      </view>
+      <view class="field">
+        <view class="field-heading"><text>费用不包含</text><text class="counter">{{feeExcludedText.length}}/10000</text></view>
+        <textarea value="{{feeExcludedText}}" data-name="feeExcludedText" bindinput="feeField" maxlength="10000" />
+      </view>
       <view class="field"><text>注意事项</text><view class="hint">每行一项，方便骑手快速阅读</view><textarea value="{{form.notices}}" data-name="notices" bindinput="field" /></view>
       <view class="field"><text>装备要求</text><textarea value="{{form.equipment}}" data-name="equipment" bindinput="field" /></view>
     </view>

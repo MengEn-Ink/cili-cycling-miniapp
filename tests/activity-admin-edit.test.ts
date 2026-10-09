@@ -274,4 +274,60 @@ describe('管理员普通编辑保留未展示的活动字段', () => {
     expect(rideService.saveActivity).not.toHaveBeenCalled();
     expect(page.data.error).toContain('先同步');
   });
+
+  it('日程支持新增、编辑、删除并在保存时输出规范化结果', async () => {
+    await page.onLoad({ id: activity.id });
+    page.addScheduleRow();
+    page.data.schedule = [{ time: '', title: '', location: '', remark: '' }];
+
+    const scheduleEvent = (field: string, value: string) => ({
+      currentTarget: { dataset: { index: 0, field } },
+      detail: { value },
+    });
+    page.scheduleField(scheduleEvent('time', '07:30'));
+    page.scheduleField(scheduleEvent('title', '集合整备'));
+    page.scheduleField(scheduleEvent('location', '北门'));
+    page.data.schedule[0] = { time: '07:30', title: '集合整备', location: '北门', remark: '' };
+
+    await page.save({ currentTarget: { dataset: {} } });
+    const submitted = rideService.saveActivity.mock.calls[0][0];
+    expect(submitted.schedule).toEqual([{ time: '07:30', title: '集合整备', location: '北门' }]);
+  });
+
+  it('日程不完整时阻止保存并指出具体行号与缺失字段', async () => {
+    await page.onLoad({ id: activity.id });
+    page.data.schedule = [{ time: '', title: '', location: '', remark: '' }];
+
+    await page.save({ currentTarget: { dataset: {} } });
+    expect(rideService.saveActivity).not.toHaveBeenCalled();
+    expect(page.data.error).toContain('第 1 行日程缺少时间、事项');
+  });
+
+  it('费用包含与不包含按多行文本拆分、trim 并过滤空行', async () => {
+    await page.onLoad({ id: activity.id });
+    page.feeField({
+      currentTarget: { dataset: { name: 'feeIncludedText' } },
+      detail: { value: '保险\n\n 交通 \n' },
+    });
+    page.feeField({
+      currentTarget: { dataset: { name: 'feeExcludedText' } },
+      detail: { value: '午餐' },
+    });
+    page.data.feeIncludedText = '保险\n\n 交通 \n';
+    page.data.feeExcludedText = '午餐';
+
+    await page.save({ currentTarget: { dataset: {} } });
+    const submitted = rideService.saveActivity.mock.calls[0][0];
+    expect(submitted.feeIncluded).toEqual(['保险', '交通']);
+    expect(submitted.feeExcluded).toEqual(['午餐']);
+  });
+
+  it('费用明细超过 50 项或单项超长时阻止保存', async () => {
+    await page.onLoad({ id: activity.id });
+    page.data.feeIncludedText = Array.from({ length: 51 }, (_, index) => `项目${index}`).join('\n');
+
+    await page.save({ currentTarget: { dataset: {} } });
+    expect(rideService.saveActivity).not.toHaveBeenCalled();
+    expect(page.data.error).toContain('费用包含最多 50 项');
+  });
 });

@@ -995,3 +995,47 @@ brand-logo {
   text-align: right;
   overflow-wrap: anywhere;
 }
+
+.fee-block {
+  margin-top: 16rpx;
+}
+.fee-block-title {
+  margin-bottom: 8rpx;
+  font-size: 26rpx;
+  letter-spacing: 4rpx;
+}
+.fee-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12rpx;
+  font-size: 26rpx;
+  line-height: 1.5;
+}
+.fee-mark {
+  font-weight: 700;
+}
+.fee-included {
+  color: #2f8f83;
+}
+.fee-excluded {
+  color: #d55b1f;
+}
+.rider-card .gender-pill {
+  display: inline-flex;
+  align-items: center;
+  margin: 8rpx 0;
+  padding: 2rpx 14rpx;
+  border: 1rpx solid currentColor;
+  border-radius: 4rpx;
+  font-size: 22rpx;
+  letter-spacing: 4rpx;
+}
+.rider-card .gender-pill.gender-male {
+  color: #4fb3a7;
+}
+.rider-card .gender-pill.gender-female {
+  color: #ef8072;
+}
+.rider-card .gender-pill.gender-unknown {
+  color: #e9743f;
+}

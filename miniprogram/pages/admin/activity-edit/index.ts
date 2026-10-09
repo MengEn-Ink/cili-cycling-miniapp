@@ -59,6 +59,43 @@ const lines = (value: string) =>
     .split('\n')
     .map((item) => item.trim())
     .filter(Boolean);
+
+type ScheduleRow = {
+  time: string;
+  title: string;
+  location: string;
+  remark?: string;
+};
+
+function validatedSchedule(rows: ScheduleRow[]): ScheduleRow[] {
+  if (rows.length > 50) throw new Error('日程最多 50 行');
+  return rows.map((row, index) => {
+    const time = row.time.trim();
+    const title = row.title.trim();
+    const location = row.location.trim();
+    const remark = typeof row.remark === 'string' ? row.remark.trim() : '';
+    if (!time || !title) {
+      const missing = [!time ? '时间' : '', !title ? '事项' : ''].filter(Boolean).join('、');
+      throw new Error(`第 ${index + 1} 行日程缺少${missing}`);
+    }
+    return {
+      time: time.slice(0, 20),
+      title: title.slice(0, 100),
+      location: location.slice(0, 200),
+      ...(remark ? { remark: remark.slice(0, 500) } : {}),
+    };
+  });
+}
+
+function validatedFeeLines(text: string, label: string): string[] {
+  const items = lines(text);
+  if (items.length > 50) throw new Error(`${label}最多 50 项`);
+  return items.map((item) => {
+    if (item.length > 200) throw new Error(`${label}每项不能超过 200 字`);
+    return item;
+  });
+}
+
 const optionalNumber = (value: string) => (value.trim() ? Number(value) : undefined);
 const mediaExtension = (path: string) => {
   const match = /\.([a-zA-Z0-9]{1,8})(?:\?|$)/.exec(path);
@@ -87,7 +124,7 @@ Page({
     occupiedCount: 0,
     images: [] as string[],
     coverImage: '',
-    schedule: [] as ActivityInput['schedule'],
+    schedule: [] as ScheduleRow[],
     routeGpxFileId: '',
     stravaRouteId: '',
     elevationProfile: [] as RouteElevationPoint[],
@@ -97,6 +134,8 @@ Page({
     routeEndLocation: undefined as ActivityLocation | undefined,
     feeIncluded: [] as string[],
     feeExcluded: [] as string[],
+    feeIncludedText: '',
+    feeExcludedText: '',
     form: emptyForm(),
   },
   onShow() {
@@ -170,6 +209,8 @@ Page({
         routeEndLocation: activity.route.endLocation,
         feeIncluded: activity.feeIncluded || [],
         feeExcluded: activity.feeExcluded || [],
+        feeIncludedText: (activity.feeIncluded || []).join('\n'),
+        feeExcludedText: (activity.feeExcluded || []).join('\n'),
         form,
       });
       this.recomputePublishReadiness();
@@ -199,6 +240,44 @@ Page({
     if (name !== 'routeGpxFileId') return;
     this.setData({ [name]: event.detail.value });
     this.recomputePublishReadiness();
+  },
+  addScheduleRow() {
+    if (this.data.schedule.length >= 50) {
+      this.setData({ error: '日程最多 50 行' });
+      return;
+    }
+    this.setData({
+      schedule: [
+        ...this.data.schedule,
+        { time: '', title: '', location: '', remark: '' } as ScheduleRow,
+      ],
+    });
+  },
+  removeScheduleRow(event: any) {
+    const index = Number(event.currentTarget.dataset.index);
+    if (!Number.isInteger(index) || index < 0 || index >= this.data.schedule.length) return;
+    this.setData({
+      schedule: this.data.schedule.filter(
+        (_: ScheduleRow, itemIndex: number) => itemIndex !== index,
+      ),
+    });
+  },
+  scheduleField(event: any) {
+    const index = Number(event.currentTarget.dataset.index);
+    const fieldName = String(event.currentTarget.dataset.field || '');
+    if (
+      !Number.isInteger(index) ||
+      index < 0 ||
+      index >= this.data.schedule.length ||
+      !['time', 'title', 'location', 'remark'].includes(fieldName)
+    )
+      return;
+    this.setData({ [`schedule[${index}].${fieldName}`]: event.detail.value });
+  },
+  feeField(event: any) {
+    const name = String(event.currentTarget.dataset.name || '');
+    if (name !== 'feeIncludedText' && name !== 'feeExcludedText') return;
+    this.setData({ [name]: event.detail.value });
   },
   recomputePublishReadiness() {
     const f = this.data.form as Form;
@@ -373,12 +452,26 @@ Page({
     const capacity = optionalNumber(f.capacity);
     const supportVehicleCapacity = optionalNumber(f.supportVehicleCapacity);
     const selfDriveCapacity = optionalNumber(f.selfDriveCapacity);
+    let schedule: ScheduleRow[];
+    try {
+      schedule = validatedSchedule(this.data.schedule);
+    } catch (error) {
+      this.setData({ error: error instanceof Error ? error.message : '日程校验失败' });
+      return;
+    }
+    let feeIncluded: string[];
+    let feeExcluded: string[];
+    try {
+      feeIncluded = validatedFeeLines(this.data.feeIncludedText, '费用包含');
+      feeExcluded = validatedFeeLines(this.data.feeExcludedText, '费用不包含');
+    } catch (error) {
+      this.setData({ error: error instanceof Error ? error.message : '费用明细校验失败' });
+      return;
+    }
     const hasDriver = Boolean(
       f.driverNickname.trim() || f.licensePlate.trim() || f.contactPhone.trim(),
     );
-    const hasFee = Boolean(
-      f.fee.trim() || this.data.feeIncluded.length || this.data.feeExcluded.length,
-    );
+    const hasFee = Boolean(f.fee.trim() || feeIncluded.length || feeExcluded.length);
     const images = [...this.data.images];
     const activity: ActivityInput = {
       title: f.title,
@@ -420,14 +513,14 @@ Page({
             }
           : {}),
       },
-      schedule: this.data.schedule,
+      schedule,
       notices: lines(f.notices),
       equipment: lines(f.equipment),
       ...(hasFee
         ? {
             fee: f.fee,
-            feeIncluded: this.data.feeIncluded,
-            feeExcluded: this.data.feeExcluded,
+            feeIncluded,
+            feeExcluded,
           }
         : {}),
     };
@@ -451,7 +544,7 @@ Page({
         occupiedCount: saved.occupiedCount || 0,
         images: savedImages,
         coverImage: savedImages[0] || saved.coverImage || '',
-        schedule: saved.schedule,
+        schedule,
         routeGpxFileId: saved.route.gpxFileId || '',
         stravaRouteId: saved.route.stravaRouteId || '',
         elevationProfile: saved.route.elevationProfile || [],
@@ -459,8 +552,10 @@ Page({
         popularClimbs: saved.route.popularClimbs || [],
         routeStartLocation: saved.route.startLocation,
         routeEndLocation: saved.route.endLocation,
-        feeIncluded: saved.feeIncluded || [],
-        feeExcluded: saved.feeExcluded || [],
+        feeIncluded,
+        feeExcluded,
+        feeIncludedText: feeIncluded.join('\n'),
+        feeExcludedText: feeExcluded.join('\n'),
       });
       this.recomputePublishReadiness();
       wx.showToast({ title: '保存成功', icon: 'success' });
