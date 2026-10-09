@@ -12,6 +12,7 @@ import type {
 import { activities, profile, registrations } from '../mock/fixtures';
 import { transition } from '../utils/registration';
 import type {
+  ActivityListFilter,
   ActivityInput,
   CloneActivityInput,
   RegistrationSubmission,
@@ -45,8 +46,8 @@ export class MockRepository implements RideRepository {
   async getAdminActivity(id: string) {
     return this.read().activities.find((x) => x.id === id);
   }
-  async listActivities() {
-    return this.read().activities.filter(
+  async listActivities(filter?: ActivityListFilter) {
+    const visible = this.read().activities.filter(
       (item): item is Activity =>
         item.status !== 'draft' &&
         typeof item.capacity === 'number' &&
@@ -55,6 +56,18 @@ export class MockRepository implements RideRepository {
         typeof item.deadline === 'string' &&
         typeof item.fee === 'string',
     );
+    if (filter === undefined) return visible;
+    const now = Date.now();
+    const isHistory = (item: Activity) => {
+      const endAt = new Date(item.endAt).getTime();
+      return item.status === 'finished' || (Number.isFinite(endAt) && endAt <= now);
+    };
+    return visible
+      .filter((item) => (filter === 'history' ? isHistory(item) : !isHistory(item)))
+      .sort((left, right) => {
+        const difference = new Date(left.startAt).getTime() - new Date(right.startAt).getTime();
+        return filter === 'history' ? -difference : difference;
+      });
   }
   async getActivity(id: string) {
     return (await this.listActivities()).find((x) => x.id === id);

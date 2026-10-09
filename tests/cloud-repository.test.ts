@@ -176,6 +176,17 @@ describe('CloudRepository 活动读取适配', () => {
     ]);
   });
 
+  it('活动列表把未来或历史筛选透传给云函数', async () => {
+    const first = cloudWith(success([]));
+    const second = cloudWith(success([]));
+
+    await new CloudRepository(first.cloud).listActivities('upcoming');
+    await new CloudRepository(second.cloud).listActivities('history');
+
+    expectCall(first.callFunction, 'activity-read', { action: 'list', filter: 'upcoming' });
+    expectCall(second.callFunction, 'activity-read', { action: 'list', filter: 'history' });
+  });
+
   it('公开预告兼容容量 0 与 unavailable，并映射报名待开放标记', async () => {
     const preview = {
       ...activity,

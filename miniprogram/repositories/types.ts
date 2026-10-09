@@ -14,6 +14,7 @@ import type {
 } from '../models';
 
 export type AdminRegistrationStatusFilter = RegistrationStatus;
+export type ActivityListFilter = 'upcoming' | 'history';
 export type ActivityInput = Omit<EditableActivity, 'id' | 'date' | 'occupiedCount' | 'version'>;
 export interface CloneActivityInput {
   sourceActivityId: string;
@@ -56,7 +57,7 @@ export interface AdminReviewRepository {
   }>;
 }
 export interface RideRepository extends AdminReviewRepository, ActivityAdminRepository {
-  listActivities(): Promise<Activity[]>;
+  listActivities(filter?: ActivityListFilter): Promise<Activity[]>;
   getActivity(id: string): Promise<Activity | undefined>;
   listRegistrations(): Promise<Registration[]>;
   getRegistration(id: string): Promise<Registration | undefined>;

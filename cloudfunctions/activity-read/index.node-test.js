@@ -36,7 +36,11 @@ function canonicalMedia(fileId, ownerOpenid, overrides = {}) {
 function loadMain(activity, list = [], options = {}) {
   const calls = [];
   const database = {
-    command: { in: (values) => ({ $in: values }) },
+    command: {
+      in: (values) => ({ $in: values }),
+      lte: (value) => ({ $lte: value }),
+      gt: (value) => ({ $gt: value }),
+    },
     collection(name) {
       assert.ok(['activities', 'registrations', 'profiles', 'profile_media'].includes(name));
       return {
@@ -50,6 +54,18 @@ function loadMain(activity, list = [], options = {}) {
                 : name === 'profiles'
                   ? options.profiles || []
                   : options.mediaRecords || [];
+          if (name === 'activities') {
+            if (typeof condition.status === 'string')
+              data = data.filter((item) => item.status === condition.status);
+            if (condition.event_end?.$lte)
+              data = data.filter(
+                (item) => new Date(item.event_end).getTime() <= condition.event_end.$lte.getTime(),
+              );
+            if (condition.event_end?.$gt)
+              data = data.filter(
+                (item) => new Date(item.event_end).getTime() > condition.event_end.$gt.getTime(),
+              );
+          }
           if (name === 'registrations' && typeof condition.status === 'string')
             data = data.filter((item) => item.status === condition.status);
           if ((name === 'profiles' || name === 'profile_media') && condition._id?.$in)
@@ -134,7 +150,7 @@ test('详情允许读取已结束活动', async () => {
   assert.equal(Number.isFinite(Date.parse(result.data.server_now)), true);
 });
 
-test('列表仍只查询 published 并由同一服务端时间裁决报名状态', async () => {
+test('未来列表只查询尚未结束的 published 活动并由同一服务端时间裁决报名状态', async () => {
   const list = [
     {
       _id: 'open',
@@ -184,9 +200,9 @@ test('列表仍只查询 published 并由同一服务端时间裁决报名状态
   const result = await main({ action: 'list' });
 
   assert.equal(result.ok, true);
-  assert.deepEqual(calls, [
-    { type: 'where', name: 'activities', condition: { status: 'published' } },
-  ]);
+  assert.equal(calls.length, 1);
+  assert.deepEqual(calls[0].condition.status, 'published');
+  assert.ok(calls[0].condition.event_end.$gt instanceof Date);
   assert.deepEqual(
     result.data.map((item) => [item.registration_state, item.closed_reason]),
     [
@@ -196,6 +212,87 @@ test('列表仍只查询 published 并由同一服务端时间裁决报名状态
   );
   assert.equal(result.data[1].waitlist_only, true);
   assert.equal(result.data[0].server_now, result.data[1].server_now);
+});
+
+test('历史列表合并已下架和已结束活动并按开始时间倒序', async () => {
+  const list = [
+    {
+      _id: 'finished-older',
+      title: '已归档活动',
+      status: 'finished',
+      event_start: '2025-01-01T00:00:00.000Z',
+      event_end: '2025-01-01T08:00:00.000Z',
+    },
+    {
+      _id: 'published-ended',
+      title: '已结束活动',
+      status: 'published',
+      event_start: '2026-01-01T00:00:00.000Z',
+      event_end: '2026-01-01T08:00:00.000Z',
+    },
+    {
+      _id: 'published-future',
+      title: '未来活动',
+      status: 'published',
+      event_start: '2999-01-01T00:00:00.000Z',
+      event_end: '2999-01-01T08:00:00.000Z',
+    },
+  ];
+  const { main, calls } = loadMain(undefined, list);
+
+  const result = await main({ action: 'list', filter: 'history' });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(
+    result.data.map((item) => item._id),
+    ['published-ended', 'finished-older'],
+  );
+  assert.deepEqual(
+    calls.map((call) => call.condition.status),
+    ['finished', 'published'],
+  );
+  assert.ok(calls[1].condition.event_end.$lte instanceof Date);
+  assert.equal(
+    result.data.every((item) => item.closed_reason === 'finished'),
+    true,
+  );
+});
+
+test('历史列表跳过软删除记录后继续分页补足有效活动', async () => {
+  const deleted = Array.from({ length: 20 }, (_, index) => ({
+    _id: `deleted-${index}`,
+    title: `已删除活动 ${index}`,
+    status: 'published',
+    is_deleted: true,
+    event_start: `2026-01-${String(31 - index).padStart(2, '0')}T00:00:00.000Z`,
+    event_end: `2026-01-${String(31 - index).padStart(2, '0')}T08:00:00.000Z`,
+  }));
+  const visible = {
+    _id: 'visible-history',
+    title: '有效历史活动',
+    status: 'published',
+    event_start: '2025-12-01T00:00:00.000Z',
+    event_end: '2025-12-01T08:00:00.000Z',
+  };
+  const { main } = loadMain(undefined, [...deleted, visible]);
+
+  const result = await main({ action: 'list', filter: 'history', limit: 20 });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(
+    result.data.map((item) => item._id),
+    ['visible-history'],
+  );
+});
+
+test('活动列表拒绝未知筛选条件且不查询数据库', async () => {
+  const { main, calls } = loadMain(undefined, []);
+
+  const result = await main({ action: 'list', filter: 'all' });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.error.code, 'VALIDATION_FAILED');
+  assert.deepEqual(calls, []);
 });
 
 test('公开活动详情脱敏后援车师傅手机号并保留容量拆分', () => {
@@ -263,10 +360,20 @@ test('列表批量将活动云存储图片解析为 HTTPS 临时地址并去重�
       _id: 'a1',
       title: '活动一',
       status: 'published',
+      event_start: '2999-01-01T00:00:00.000Z',
+      event_end: '2999-01-01T08:00:00.000Z',
       cover_image: shared,
       images: [shared, second],
     },
-    { _id: 'a2', title: '活动二', status: 'published', cover_image: shared, images: [external] },
+    {
+      _id: 'a2',
+      title: '活动二',
+      status: 'published',
+      event_start: '2999-02-01T00:00:00.000Z',
+      event_end: '2999-02-01T08:00:00.000Z',
+      cover_image: shared,
+      images: [external],
+    },
   ];
   const { main, calls } = loadMain(undefined, list, {
     getTempFileURL: async ({ fileList }) => ({
