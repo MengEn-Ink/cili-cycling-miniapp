@@ -1617,6 +1617,47 @@ describe('MockRepository readiness 与显式报名命令', () => {
     );
   });
 
+  it('MockRepository 新分页忽略陈旧 setup pending 并按完整配置重新开放报名', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-10T00:00:00.000Z'));
+    stored = undefined;
+    installStorage();
+    const repository = new MockRepository();
+    const state = JSON.parse(JSON.stringify(repository.read()));
+    const base = state.activities[0];
+    state.activities = [
+      {
+        ...base,
+        id: 'stale-setup-pending',
+        status: 'published',
+        startAt: '2026-10-12T08:00:00.000Z',
+        endAt: '2026-10-12T10:00:00.000Z',
+        deadline: '2026-10-11T20:00:00.000Z',
+        capacity: 10,
+        occupiedCount: 0,
+        fee: '100 元',
+        registrationState: 'closed',
+        closedReason: 'unavailable',
+        registrationSetupPending: true,
+        waitlistOnly: true,
+        serverNow: '2026-01-01T00:00:00.000Z',
+      },
+    ];
+    stored = state;
+
+    const future = await repository.listActivityPage('future');
+
+    expect(future.items).toHaveLength(1);
+    expect(future.items[0]).toMatchObject({
+      id: 'stale-setup-pending',
+      registrationState: 'open',
+      closedReason: null,
+      serverNow: future.asOf,
+    });
+    expect(future.items[0]).not.toHaveProperty('registrationSetupPending');
+    expect(future.items[0]).not.toHaveProperty('waitlistOnly');
+  });
+
   it('MockRepository 新分页按 Mongo binary 双向排序且跨页固定 asOf 无漏重', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-10-10T00:00:00.000Z'));
