@@ -1,11 +1,20 @@
 import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
+import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 
 import {
   buildUploadDecision,
   shouldUploadMiniProgram,
   validateUploadDecision,
 } from './miniprogram-upload-decision.mjs';
+
+const execFileAsync = promisify(execFile);
+const scriptPath = fileURLToPath(new URL('./miniprogram-upload-decision.mjs', import.meta.url));
 
 test('小程序产物和上传链路变更需要上传开发版', () => {
   for (const path of [
@@ -83,5 +92,56 @@ test('判定拒绝非法 schema 和不匹配的提交', () => {
   assert.throws(
     () => buildUploadDecision({ before: 'not-a-sha', sha: decision.sha, paths: [] }),
     /before/,
+  );
+});
+
+test('CLI 按完整提交区间创建并校验上传判定', async () => {
+  const repository = await mkdtemp(path.join(os.tmpdir(), 'cili-upload-decision-'));
+  await execFileAsync('git', ['init'], { cwd: repository });
+  await execFileAsync('git', ['config', 'user.email', 'ci@example.com'], { cwd: repository });
+  await execFileAsync('git', ['config', 'user.name', 'CI'], { cwd: repository });
+
+  await mkdir(path.join(repository, 'docs'));
+  await writeFile(path.join(repository, 'docs', 'readme.md'), 'first\n');
+  await execFileAsync('git', ['add', '.'], { cwd: repository });
+  await execFileAsync('git', ['commit', '-m', 'docs: first'], { cwd: repository });
+  const { stdout: firstStdout } = await execFileAsync('git', ['rev-parse', 'HEAD'], {
+    cwd: repository,
+  });
+  const before = firstStdout.trim();
+
+  await mkdir(path.join(repository, 'miniprogram'));
+  await writeFile(path.join(repository, 'miniprogram', 'app.ts'), 'export {};\n');
+  await writeFile(path.join(repository, 'docs', 'readme.md'), 'second\n');
+  await execFileAsync('git', ['add', '.'], { cwd: repository });
+  await execFileAsync('git', ['commit', '-m', 'feat: app'], { cwd: repository });
+  const { stdout: secondStdout } = await execFileAsync('git', ['rev-parse', 'HEAD'], {
+    cwd: repository,
+  });
+  const sha = secondStdout.trim();
+  const output = path.join(repository, 'decision.json');
+
+  await execFileAsync(
+    process.execPath,
+    [scriptPath, 'create', '--before', before, '--sha', sha, '--output', output],
+    { cwd: repository },
+  );
+  const decision = JSON.parse(await readFile(output, 'utf8'));
+  assert.deepEqual(decision.matchedPaths, ['miniprogram/app.ts']);
+
+  const verified = await execFileAsync(
+    process.execPath,
+    [scriptPath, 'verify', '--input', output, '--sha', sha],
+    { cwd: repository },
+  );
+  assert.equal(verified.stdout.trim(), 'should_upload=true');
+
+  await assert.rejects(
+    execFileAsync(
+      process.execPath,
+      [scriptPath, 'verify', '--input', output, '--sha', 'c'.repeat(40)],
+      { cwd: repository },
+    ),
+    /SHA/,
   );
 });
