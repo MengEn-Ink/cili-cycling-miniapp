@@ -26,6 +26,28 @@ export const COLLECTIONS = Object.freeze([
 export const INDEXES = Object.freeze([
   {
     collection: 'activities',
+    name: 'activities_public_event_start',
+    keys: [
+      ['status', 1],
+      ['event_start', 1],
+      ['_id', 1],
+      ['event_end', 1],
+    ],
+    unique: false,
+  },
+  {
+    collection: 'activities',
+    name: 'activities_public_event_end',
+    keys: [
+      ['status', 1],
+      ['event_end', -1],
+      ['_id', -1],
+      ['event_start', -1],
+    ],
+    unique: false,
+  },
+  {
+    collection: 'activities',
     name: 'activities_status_event_start',
     keys: [
       ['status', 1],

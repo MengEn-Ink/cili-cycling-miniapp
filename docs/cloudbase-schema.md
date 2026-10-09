@@ -163,6 +163,8 @@ synced_at
 
 | 集合 | 字段 | 属性 |
 | --- | --- | --- |
+| activities | status ASC, event_start ASC, _id ASC, event_end ASC | 普通；future 时间线 keyset |
+| activities | status ASC, event_end DESC, _id DESC, event_start DESC | 普通；history 时间线 keyset |
 | activities | status ASC, event_start ASC | 普通 |
 | activities | status ASC, event_end ASC, event_start ASC | 普通；未来活动筛选 |
 | activities | status ASC, event_end ASC, event_start DESC | 普通；历史活动筛选 |
@@ -196,7 +198,7 @@ synced_at
 
 ## 部署后验证
 
-1. 校验 bootstrap 管理的 12 集合、全拒绝规则与 26 索引。确认活动首页未来/历史筛选索引、`activities.created_by + event_start`、`notification_outbox` 的 lease、目标与 retry 索引，`profile_media` 与 `profile_media_imports` 的 cleanup、delete lease 与 retry 索引，以及 `oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
+1. 校验 bootstrap 管理的 12 集合、全拒绝规则与 28 索引。确认活动首页 future 的 `status + event_start + _id + event_end`、history 的 `status + event_end DESC + _id DESC + event_start DESC`、`activities.created_by + event_start`、`notification_outbox` 的 lease、目标与 retry 索引，`profile_media` 与 `profile_media_imports` 的 cleanup、delete lease 与 retry 索引，以及 `oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
 2. 真机验证 WXContext openid、微信手机号动态 code、手填手机号来源，以及资料响应中无明文/密文。
 3. 配置 callback HTTPS 路由、Strava 回调域和小程序业务域名，验证 CSRF、过期与重放。
 4. 验证 token 临期刷新、90 天分页、解绑审计及日志无敏感信息；验证跨用户媒体拒绝、未登记 legacy 不进卡、register 失败回收上传对象，以及临时 URL 故障降级。
