@@ -11,6 +11,8 @@ const REGION = 'ap-shanghai';
 const API_VERSION = '2018-06-08';
 const PAGE_SIZE = 20;
 const READ_LIMIT = PAGE_SIZE + 1;
+const RELAXED_DATE_MIN_MS = 0;
+const RELAXED_DATE_MAX_MS = 253_402_300_799_999;
 const DATE_READBACK_IDS = Object.freeze([
   'finished-000',
   'ongoing-000',
@@ -91,6 +93,7 @@ function bsonDateMillis(value) {
       );
     if (!match || !validRelaxedDateFields(match)) return null;
     milliseconds = Date.parse(raw);
+    if (milliseconds < RELAXED_DATE_MIN_MS || milliseconds > RELAXED_DATE_MAX_MS) return null;
   } else {
     if (
       !raw ||
