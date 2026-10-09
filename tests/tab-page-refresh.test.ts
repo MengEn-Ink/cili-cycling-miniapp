@@ -105,6 +105,33 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
     }
   });
 
+  it('registrations 优先使用报名活动投影，并兼容旧 mock 的活动列表绑定', async () => {
+    if (kind !== 'registrations') return;
+    const page = await loadPage(kind);
+    rideService.listRegistrations.mockResolvedValue([
+      {
+        ...registration('projected', 'activity-projected'),
+        activity: activity('activity-projected'),
+      },
+      registration('legacy', 'activity-legacy'),
+      registration('missing', 'activity-missing'),
+    ]);
+    rideService.listActivities.mockResolvedValue([
+      { ...activity('activity-projected'), title: '不应覆盖投影' },
+      { ...activity('activity-legacy'), title: '旧接口活动' },
+    ]);
+
+    await page.load();
+
+    expect(page.data.items[0].activity.title).toBe('activity-projected');
+    expect(page.data.items[1].activity).toMatchObject({
+      title: '旧接口活动',
+      date: '2026-09-30T23:00:00.000Z',
+      displayDate: '10月1日 周四',
+    });
+    expect(page.data.items[2].activity.title).toBe('历史活动');
+  });
+
   it.each(['onHide', 'onUnload'] as const)(
     '%s invalidates an outstanding load',
     async (lifecycle) => {

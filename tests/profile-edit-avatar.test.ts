@@ -837,10 +837,10 @@ describe('资料编辑头像交互', () => {
 
     expect(rideService.registerProfileMedia).toHaveBeenCalledWith(
       'cloud://env/profiles/owner/photo.jpg',
-      'other',
+      'ride',
     );
     expect(page.data.p.photos).toEqual([
-      { id: 'cloud://env/profiles/owner/photo.jpg', category: 'other' },
+      { id: 'cloud://env/profiles/owner/photo.jpg', category: 'ride' },
     ]);
   });
 
@@ -860,7 +860,7 @@ describe('资料编辑头像交互', () => {
     expect(uploadFile).toHaveBeenCalledWith(
       expect.objectContaining({ filePath: '/private/tmp/photo-fallback.jpg' }),
     );
-    expect(page.data.p.photos).toEqual([{ id: uploadedFileId, category: 'other' }]);
+    expect(page.data.p.photos).toEqual([{ id: uploadedFileId, category: 'ride' }]);
   });
 
   it('个人相册 owner-bound path 请求失败时不上传也不写 photos', async () => {
@@ -935,9 +935,9 @@ describe('资料编辑头像交互', () => {
     await page.addPhoto();
 
     expect(deleteFile).toHaveBeenCalledWith({ fileList: [uploadedFileId] });
-    expect(rideService.reportProfileMediaOrphan).toHaveBeenCalledWith(uploadedFileId, 'other');
+    expect(rideService.reportProfileMediaOrphan).toHaveBeenCalledWith(uploadedFileId, 'ride');
     expect(wx.setStorageSync).toHaveBeenCalledWith('profile-media-orphans-v1', [
-      { fileId: uploadedFileId, category: 'other' },
+      { fileId: uploadedFileId, category: 'ride' },
     ]);
     expect(page.data.p.photos).toEqual([]);
     expect(page.data.mediaError).toBe('[MEDIA_REGISTER_FAILED] 图片校验失败，请重新选择图片后重试');
@@ -970,6 +970,19 @@ describe('资料编辑头像交互', () => {
     expect(page.data.p.gender).toBe('女');
   });
 
+  it('头像预览可点击打开当前安全图片', () => {
+    const previewImage = vi.fn();
+    Object.assign(wx, { previewImage });
+    page.data.avatarPreviewUrl = 'https://images.example/avatar.jpg';
+
+    page.previewAvatar();
+
+    expect(previewImage).toHaveBeenCalledWith({
+      current: 'https://images.example/avatar.jpg',
+      urls: ['https://images.example/avatar.jpg'],
+    });
+  });
+
   it('已有相册文件解析为缩略图 URL，并可点击预览全部可用图片', async () => {
     const getTempFileURL = vi.fn().mockResolvedValue({
       fileList: [
@@ -996,15 +1009,17 @@ describe('资料编辑头像交互', () => {
     });
     expect(page.data.photoItems.map((item: any) => item.previewUrl)).toEqual([
       'https://temporary.example/photo-a.jpg',
-      'https://images.example/photo-b.jpg',
+    ]);
+    expect(page.data.p.photos).toEqual([
+      { id: 'cloud://env/profiles/owner/photo-a.jpg', category: 'ride' },
     ]);
     expect(previewImage).toHaveBeenCalledWith({
       current: 'https://temporary.example/photo-a.jpg',
-      urls: ['https://temporary.example/photo-a.jpg', 'https://images.example/photo-b.jpg'],
+      urls: ['https://temporary.example/photo-a.jpg'],
     });
   });
 
-  it('新增照片立即使用本地路径预览，且上下移顺序写回 p.photos 并随保存提交', async () => {
+  it('新增背景图替换旧图，立即本地预览并以 ride 分类保存', async () => {
     const uploadedFileId = 'cloud://env/profiles/owner/new-photo.jpg';
     Object.assign(wx, {
       chooseMedia: vi.fn().mockResolvedValue({
@@ -1019,35 +1034,22 @@ describe('资料编辑头像交互', () => {
 
     await page.addPhoto();
 
-    expect(page.data.photoItems[1]).toMatchObject({
-      id: uploadedFileId,
-      previewUrl: '/private/tmp/new-photo.jpg',
-    });
-
-    page.movePhoto({ currentTarget: { dataset: { index: 1, direction: -1 } } });
-    expect(page.data.p.photos.map((item: any) => item.id)).toEqual([
-      uploadedFileId,
-      'https://images.example/existing.jpg',
+    expect(page.data.photoItems).toEqual([
+      {
+        id: uploadedFileId,
+        category: 'ride',
+        previewUrl: '/private/tmp/new-photo.jpg',
+      },
     ]);
-
-    page.movePhoto({ currentTarget: { dataset: { index: 0, direction: 1 } } });
-    expect(page.data.p.photos.map((item: any) => item.id)).toEqual([
-      'https://images.example/existing.jpg',
-      uploadedFileId,
-    ]);
-
-    const expectedPhotos = [
-      { id: 'https://images.example/existing.jpg', category: 'ride' },
-      { id: uploadedFileId, category: 'other' },
-    ];
     rideService.updateProfile.mockImplementationOnce(async (patch) => ({
       ...profile,
       ...patch,
     }));
 
     await page.save();
-    expect(rideService.updateProfile.mock.calls[0][0].photos).toEqual(expectedPhotos);
-    expect(page.data.photoItems[1].previewUrl).toBe('/private/tmp/new-photo.jpg');
+    expect(rideService.updateProfile.mock.calls[0][0].photos).toEqual([
+      { id: uploadedFileId, category: 'ride' },
+    ]);
   });
 });
 
@@ -1088,6 +1090,11 @@ describe('资料编辑头像页面契约', () => {
     expect(styles).not.toContain('.avatar-visibility-title');
   });
 
+  it('头像预览等待窗口不再使用 1.2 秒短超时', () => {
+    expect(source).toContain('const AVATAR_PREVIEW_DEADLINE_MS = 8_000');
+    expect(source).not.toContain('const AVATAR_PREVIEW_DEADLINE_MS = 1_200');
+  });
+
   it('头像预览仅绑定净化后的 preview URL 并提供无障碍名称', () => {
     const preview = template.match(/<image\b[^>]*class="avatar-preview"[^>]*\/>/)?.[0] || '';
     expect(preview).toContain('src="{{avatarPreviewUrl}}"');
@@ -1117,11 +1124,13 @@ describe('资料编辑头像页面契约', () => {
     expect(template).not.toContain('data-k="gender"');
   });
 
-  it('相册提供缩略图、预览和上下移排序', () => {
+  it('背景图提供单张缩略图与大图预览，并明确替换语义', () => {
+    expect(template).toContain('个人背景图');
+    expect(template).toContain('最多 1 张');
+    expect(template).toContain("p.photos.length ? '更换背景图' : '添加背景图'");
     expect(template).toContain('class="photo-thumbnail"');
     expect(template).toContain('bindtap="previewPhoto"');
-    expect(template).toContain('data-direction="{{-1}}"');
-    expect(template).toContain('data-direction="{{1}}"');
+    expect(template).not.toContain('data-direction=');
     expect(styles).toMatch(/\.photo-thumbnail\s*\{/);
   });
 

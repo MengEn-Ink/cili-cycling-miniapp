@@ -220,6 +220,7 @@ export interface StravaConnection {
 export interface Registration {
   id: string;
   activityId: string;
+  activity?: Activity;
   status: RegistrationStatus;
   profile: Profile;
   gatheringMode: '自驾' | '需要后援车' | '';

@@ -720,7 +720,7 @@ function ownerMedia(profile, openid, secretValue, mediaRecords = []) {
   }
   const seen = new Set();
   return ordered.filter((item) => {
-    if (seen.has(item.file_id) || seen.size >= 3) return false;
+    if (seen.has(item.file_id) || seen.size >= 1) return false;
     seen.add(item.file_id);
     return true;
   });
@@ -881,7 +881,7 @@ function buildUpdate(event, keyValue, current = {}) {
   if (event.photos !== undefined) {
     if (
       !Array.isArray(event.photos) ||
-      event.photos.length > 30 ||
+      event.photos.length > 1 ||
       event.photos.some(
         (item) =>
           !item ||

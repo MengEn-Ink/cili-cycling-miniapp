@@ -160,6 +160,13 @@ async function submitRegistration(store, { openid, activityId, options, team }, 
       status,
       options: safeOptions,
       ...teamFields,
+      activity_snapshot: existing?.activity_snapshot || {
+        _id: activity._id,
+        title: activity.title,
+        event_start: activity.event_start,
+        event_end: activity.event_end,
+        status: activity.status,
+      },
       profile_snapshot: {
         nickname: profile.nickname,
         gender: normalizeGender(profile.gender),

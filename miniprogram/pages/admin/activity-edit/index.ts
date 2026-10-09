@@ -10,6 +10,8 @@ import type {
   RouteElevationPoint,
 } from '../../../models';
 
+type ActivityMode = 'daily' | 'premium';
+
 type Form = {
   title: string;
   description: string;
@@ -32,12 +34,14 @@ type Form = {
   notices: string;
   equipment: string;
 };
+type FormField = keyof Form;
+type FormErrors = Partial<Record<FormField | 'schedule', string>>;
 const emptyForm = (): Form => ({
   title: '',
   description: '',
   capacity: '20',
-  supportVehicleCapacity: '10',
-  selfDriveCapacity: '10',
+  supportVehicleCapacity: '0',
+  selfDriveCapacity: '20',
   driverNickname: '',
   licensePlate: '',
   contactPhone: '',
@@ -97,6 +101,22 @@ function validatedFeeLines(text: string, label: string): string[] {
 }
 
 const optionalNumber = (value: string) => (value.trim() ? Number(value) : undefined);
+const pickerDate = (value: string) => value.trim().slice(0, 10);
+const pickerTime = (value: string) => value.trim().slice(11, 16);
+const padDatePart = (value: number) => String(value).padStart(2, '0');
+const localDateTimeText = (date: Date, time?: string) => {
+  const dateText = `${date.getFullYear()}-${padDatePart(date.getMonth() + 1)}-${padDatePart(date.getDate())}`;
+  return `${dateText} ${time || `${padDatePart(date.getHours())}:${padDatePart(date.getMinutes())}`}:00`;
+};
+const todayText = () => localDateTimeText(new Date()).slice(0, 10);
+const dateAtOffset = (days: number, time: string, base = new Date()) => {
+  const date = new Date(base.getFullYear(), base.getMonth(), base.getDate() + days);
+  return localDateTimeText(date, time);
+};
+const nextSaturdayOffset = (base = new Date()) => {
+  const offset = (6 - base.getDay() + 7) % 7;
+  return offset || 7;
+};
 const mediaExtension = (path: string) => {
   const match = /\.([a-zA-Z0-9]{1,8})(?:\?|$)/.exec(path);
   return match ? `.${match[1].toLowerCase()}` : '.jpg';
@@ -116,6 +136,9 @@ Page({
     uploading: false,
     syncingRoute: false,
     error: '',
+    formErrors: {} as FormErrors,
+    stravaAuthorizationRequired: false,
+    activityMode: 'daily' as ActivityMode,
     fromTemplate: false,
     canPublish: false,
     id: '',
@@ -211,6 +234,7 @@ Page({
         feeExcluded: activity.feeExcluded || [],
         feeIncludedText: (activity.feeIncluded || []).join('\n'),
         feeExcludedText: (activity.feeExcluded || []).join('\n'),
+        activityMode: (activity.supportVehicleCapacity || 0) > 0 ? 'premium' : 'daily',
         form,
       });
       this.recomputePublishReadiness();
@@ -221,9 +245,43 @@ Page({
       });
     }
   },
+  showFormError(message: string, field?: FormField | 'schedule') {
+    const formErrors = field ? { [field]: message } : {};
+    this.setData({ error: message, formErrors });
+    wx.showModal({ title: '请检查活动信息', content: message, showCancel: false });
+    if (field && typeof wx.pageScrollTo === 'function')
+      wx.pageScrollTo({ selector: `[data-error-anchor="${field}"]`, duration: 240 });
+  },
+  clearFieldError(field: FormField | 'schedule') {
+    if (!(this.data.formErrors as FormErrors)[field]) return;
+    const formErrors = { ...(this.data.formErrors as FormErrors) };
+    delete formErrors[field];
+    this.setData({ formErrors, error: Object.keys(formErrors).length ? this.data.error : '' });
+  },
+  selectActivityMode(event: any) {
+    const activityMode = event.currentTarget.dataset.mode === 'premium' ? 'premium' : 'daily';
+    const patch: Record<string, unknown> = {
+      activityMode,
+      error: '',
+      formErrors: {},
+    };
+    if (activityMode === 'daily') {
+      patch['form.supportVehicleCapacity'] = '0';
+      patch['form.selfDriveCapacity'] = String((this.data.form as Form).capacity || '');
+    } else if ((optionalNumber((this.data.form as Form).supportVehicleCapacity) || 0) === 0) {
+      const capacity = optionalNumber((this.data.form as Form).capacity) || 20;
+      const supportCapacity = Math.max(1, Math.floor(capacity / 2));
+      patch['form.supportVehicleCapacity'] = String(supportCapacity);
+      patch['form.selfDriveCapacity'] = String(capacity - supportCapacity);
+    }
+    this.setData(patch);
+    this.recomputePublishReadiness();
+  },
   field(event: any) {
     const name = event.currentTarget.dataset.name as keyof Form;
     const patch: Record<string, unknown> = { [`form.${name}`]: event.detail.value };
+    if (name === 'capacity' && this.data.activityMode === 'daily')
+      patch['form.selfDriveCapacity'] = event.detail.value;
     if (name === 'routeStart') patch.routeStartLocation = undefined;
     if (name === 'routeEnd') patch.routeEndLocation = undefined;
     if (name === 'stravaRouteUrl') {
@@ -233,6 +291,48 @@ Page({
       patch.popularClimbs = [];
     }
     this.setData(patch);
+    this.clearFieldError(name);
+    this.recomputePublishReadiness();
+  },
+  dateTimePicker(event: any) {
+    const name = String(event.currentTarget.dataset.name || '') as FormField;
+    const part = event.currentTarget.dataset.part === 'time' ? 'time' : 'date';
+    if (!['deadline', 'startAt', 'endAt'].includes(name)) return;
+    const current = String((this.data.form as Form)[name] || '');
+    const date = part === 'date' ? event.detail.value : pickerDate(current) || todayText();
+    const time = part === 'time' ? event.detail.value : pickerTime(current) || '08:00';
+    this.setData({ [`form.${name}`]: `${date} ${time}:00` });
+    this.clearFieldError(name);
+    this.recomputePublishReadiness();
+  },
+  quickDateTime(event: any) {
+    const name = String(event.currentTarget.dataset.name || '') as FormField;
+    const preset = String(event.currentTarget.dataset.preset || '');
+    if (!['deadline', 'startAt', 'endAt'].includes(name)) return;
+    const now = new Date();
+    let value = '';
+    if (preset === 'tomorrow-morning') value = dateAtOffset(1, '07:00', now);
+    if (preset === 'next-saturday') value = dateAtOffset(nextSaturdayOffset(now), '08:00', now);
+    if (preset === 'tomorrow-evening') value = dateAtOffset(1, '20:00', now);
+    if (preset === 'start-minus-day') {
+      const startText = String((this.data.form as Form).startAt || '');
+      const start = new Date(startText.replace(' ', 'T'));
+      if (!Number.isNaN(start.getTime())) {
+        start.setDate(start.getDate() - 1);
+        value = localDateTimeText(start, '20:00');
+      }
+    }
+    if (preset === 'start-plus-four-hours') {
+      const startText = String((this.data.form as Form).startAt || '');
+      const start = new Date(startText.replace(' ', 'T'));
+      if (!Number.isNaN(start.getTime())) {
+        start.setHours(start.getHours() + 4);
+        value = localDateTimeText(start);
+      }
+    }
+    if (!value) return;
+    this.setData({ [`form.${name}`]: value });
+    this.clearFieldError(name);
     this.recomputePublishReadiness();
   },
   assetField(event: any) {
@@ -273,37 +373,59 @@ Page({
     )
       return;
     this.setData({ [`schedule[${index}].${fieldName}`]: event.detail.value });
+    this.clearFieldError('schedule');
   },
   feeField(event: any) {
     const name = String(event.currentTarget.dataset.name || '');
     if (name !== 'feeIncludedText' && name !== 'feeExcludedText') return;
     this.setData({ [name]: event.detail.value });
+    this.clearFieldError('fee');
+    this.recomputePublishReadiness();
   },
   recomputePublishReadiness() {
     const f = this.data.form as Form;
+    const capacity = optionalNumber(f.capacity) || 0;
     const support = optionalNumber(f.supportVehicleCapacity) || 0;
+    const selfDrive = optionalNumber(f.selfDriveCapacity) || 0;
+    let deadline: string | undefined;
     let start: string | undefined;
     let end: string | undefined;
     try {
+      deadline = parseLocalDateTime(f.deadline, '报名截止时间');
       start = parseLocalDateTime(f.startAt, '活动开始时间');
       end = parseLocalDateTime(f.endAt, '活动结束时间');
     } catch {
+      deadline = undefined;
       start = undefined;
       end = undefined;
     }
-    const driverReady =
-      support === 0 ||
-      Boolean(f.driverNickname.trim() && f.licensePlate.trim() && f.contactPhone.trim());
-    const canPublish = Boolean(
+    const baseReady = Boolean(
       f.title.trim() &&
       f.routeStart.trim() &&
       f.routeEnd.trim() &&
+      capacity > 0 &&
+      Boolean(
+        f.fee.trim() ||
+        lines(this.data.feeIncludedText).length ||
+        lines(this.data.feeExcludedText).length,
+      ) &&
+      deadline &&
       start &&
       end &&
-      new Date(start).getTime() < new Date(end).getTime() &&
-      driverReady,
+      new Date(deadline).getTime() < new Date(start).getTime() &&
+      new Date(start).getTime() < new Date(end).getTime(),
     );
-    this.setData({ canPublish });
+    const premiumReady =
+      this.data.activityMode === 'daily' ||
+      (support > 0 &&
+        support + selfDrive === capacity &&
+        Boolean(f.driverNickname.trim() && f.licensePlate.trim() && f.contactPhone.trim()) &&
+        this.data.schedule.length > 0 &&
+        this.data.schedule.every((row: ScheduleRow) => row.time.trim() && row.title.trim()));
+    this.setData({ canPublish: baseReady && premiumReady });
+  },
+  openStravaAuthorization() {
+    wx.navigateTo({ url: '/pages/strava/index?reauthorize=1' });
   },
   async syncStravaRoute() {
     if (this.data.syncingRoute || this.data.saving) return;
@@ -323,10 +445,29 @@ Page({
         elevationProfile: preview.elevationProfile,
         routeBounds: preview.routeBounds,
         popularClimbs: preview.popularClimbs,
+        stravaAuthorizationRequired: false,
       });
       wx.showToast({ title: '路线同步成功', icon: 'success' });
     } catch (error) {
-      this.setData({ error: error instanceof Error ? error.message : 'Strava 路线同步失败' });
+      const message = error instanceof Error ? error.message : 'Strava 路线同步失败';
+      const scopeRequired = (error as { code?: string })?.code === 'STRAVA_SCOPE_REQUIRED';
+      this.setData({
+        error: scopeRequired ? 'Strava 授权已过期或权限不足，请重新授权后再同步路线。' : message,
+        stravaAuthorizationRequired: scopeRequired,
+      });
+      if (scopeRequired) {
+        wx.showModal({
+          title: '需要重新授权 Strava',
+          content: '当前授权缺少读取路线所需的 read 权限。请重新授权，完成后返回本页再次同步。',
+          confirmText: '去重新授权',
+          cancelText: '稍后处理',
+          success: (result: { confirm: boolean }) => {
+            if (result.confirm) wx.navigateTo({ url: '/pages/strava/index?reauthorize=1' });
+          },
+        });
+      } else {
+        this.showFormError(message, 'stravaRouteUrl');
+      }
     } finally {
       this.setData({ syncingRoute: false });
     }
@@ -420,22 +561,61 @@ Page({
       if (!isCancel(error)) this.setData({ error: '地点选择失败，请重试' });
     }
   },
+  validateBeforeSave(nextStatus: ActivityInput['status']) {
+    const form = this.data.form as Form;
+    if (!form.title.trim()) return (this.showFormError('请填写活动标题', 'title'), false);
+    if (nextStatus === 'draft') return true;
+    const capacity = optionalNumber(form.capacity) || 0;
+    const supportCapacity = optionalNumber(form.supportVehicleCapacity) || 0;
+    const selfDriveCapacity = optionalNumber(form.selfDriveCapacity) || 0;
+    if (capacity < 1) return (this.showFormError('请填写大于 0 的报名名额', 'capacity'), false);
+    if (!form.deadline.trim()) return (this.showFormError('请填写报名截止时间', 'deadline'), false);
+    if (!form.startAt.trim()) return (this.showFormError('请填写活动开始时间', 'startAt'), false);
+    if (!form.endAt.trim()) return (this.showFormError('请填写活动结束时间', 'endAt'), false);
+    if (!form.routeStart.trim())
+      return (this.showFormError('请选择或填写集合点', 'routeStart'), false);
+    if (!form.routeEnd.trim()) return (this.showFormError('请填写路线终点', 'routeEnd'), false);
+    if (
+      !form.fee.trim() &&
+      !lines(this.data.feeIncludedText).length &&
+      !lines(this.data.feeExcludedText).length
+    )
+      return (this.showFormError('请填写费用说明；免费活动可填写“免费”', 'fee'), false);
+    if (this.data.activityMode === 'premium') {
+      if (supportCapacity < 1)
+        return (
+          this.showFormError('精品局至少需要 1 个后援车名额', 'supportVehicleCapacity'),
+          false
+        );
+      if (supportCapacity + selfDriveCapacity !== capacity)
+        return (
+          this.showFormError('后援车名额与自驾名额之和必须等于总名额', 'supportVehicleCapacity'),
+          false
+        );
+      if (!form.driverNickname.trim())
+        return (this.showFormError('请填写后援车师傅昵称', 'driverNickname'), false);
+      if (!form.licensePlate.trim())
+        return (this.showFormError('请填写后援车车牌号', 'licensePlate'), false);
+      if (!form.contactPhone.trim())
+        return (this.showFormError('请填写后援车联系电话', 'contactPhone'), false);
+      if (!this.data.schedule.length)
+        return (this.showFormError('精品局至少需要填写一条详细日程', 'schedule'), false);
+    }
+    return true;
+  },
   async save(event: any) {
     if (this.data.saving || this.data.uploading) return;
     const nextStatus = String(
       event.currentTarget.dataset.status || this.data.status,
     ) as ActivityInput['status'];
-    if (this.data.status === 'draft' && nextStatus === 'published' && !this.data.canPublish) {
-      this.setData({ error: '发布前请完成重新确认清单' });
-      return;
-    }
+    if (!this.validateBeforeSave(nextStatus)) return;
     const f = this.data.form as Form;
     if (f.description.length > 5000) {
-      this.setData({ error: '活动说明不能超过 5000 字' });
+      this.showFormError('活动说明不能超过 5000 字', 'description');
       return;
     }
     if (f.stravaRouteUrl && !this.data.stravaRouteId) {
-      this.setData({ error: '请先同步 Strava 路线后再保存' });
+      this.showFormError('请先同步 Strava 路线后再保存', 'stravaRouteUrl');
       return;
     }
     let deadline: string | undefined;
@@ -446,17 +626,19 @@ Page({
       startAt = parseLocalDateTime(f.startAt, '活动开始时间');
       endAt = parseLocalDateTime(f.endAt, '活动结束时间');
     } catch (error) {
-      this.setData({ error: error instanceof Error ? error.message : '日期时间格式错误' });
+      this.showFormError(error instanceof Error ? error.message : '日期时间格式错误', 'startAt');
       return;
     }
     const capacity = optionalNumber(f.capacity);
-    const supportVehicleCapacity = optionalNumber(f.supportVehicleCapacity);
-    const selfDriveCapacity = optionalNumber(f.selfDriveCapacity);
+    const supportVehicleCapacity =
+      this.data.activityMode === 'daily' ? 0 : optionalNumber(f.supportVehicleCapacity);
+    const selfDriveCapacity =
+      this.data.activityMode === 'daily' ? capacity : optionalNumber(f.selfDriveCapacity);
     let schedule: ScheduleRow[];
     try {
       schedule = validatedSchedule(this.data.schedule);
     } catch (error) {
-      this.setData({ error: error instanceof Error ? error.message : '日程校验失败' });
+      this.showFormError(error instanceof Error ? error.message : '日程校验失败', 'schedule');
       return;
     }
     let feeIncluded: string[];
@@ -465,12 +647,12 @@ Page({
       feeIncluded = validatedFeeLines(this.data.feeIncludedText, '费用包含');
       feeExcluded = validatedFeeLines(this.data.feeExcludedText, '费用不包含');
     } catch (error) {
-      this.setData({ error: error instanceof Error ? error.message : '费用明细校验失败' });
+      this.showFormError(error instanceof Error ? error.message : '费用明细校验失败', 'fee');
       return;
     }
-    const hasDriver = Boolean(
-      f.driverNickname.trim() || f.licensePlate.trim() || f.contactPhone.trim(),
-    );
+    const hasDriver =
+      this.data.activityMode === 'premium' &&
+      Boolean(f.driverNickname.trim() || f.licensePlate.trim() || f.contactPhone.trim());
     const hasFee = Boolean(f.fee.trim() || feeIncluded.length || feeExcluded.length);
     const images = [...this.data.images];
     const activity: ActivityInput = {
@@ -560,7 +742,7 @@ Page({
       this.recomputePublishReadiness();
       wx.showToast({ title: '保存成功', icon: 'success' });
     } catch (error) {
-      this.setData({ error: error instanceof Error ? error.message : '保存失败' });
+      this.showFormError(error instanceof Error ? error.message : '保存失败');
     } finally {
       this.setData({ saving: false });
     }

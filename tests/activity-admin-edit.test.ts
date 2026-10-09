@@ -62,7 +62,13 @@ describe('管理员普通编辑保留未展示的活动字段', () => {
     rideService.saveActivity.mockReset().mockResolvedValue({ ...activity, version: 8 });
     rideService.previewStravaRoute.mockReset();
     appStore.ensureIdentity.mockReset().mockResolvedValue(undefined);
-    vi.stubGlobal('wx', { cloud: {}, showToast: vi.fn() });
+    vi.stubGlobal('wx', {
+      cloud: {},
+      showToast: vi.fn(),
+      showModal: vi.fn(),
+      pageScrollTo: vi.fn(),
+      navigateTo: vi.fn(),
+    });
     vi.stubGlobal('Page', (definition: any) => {
       page = definition;
       page.data = { ...definition.data };
@@ -76,7 +82,10 @@ describe('管理员普通编辑保留未展示的活动字段', () => {
     await import('../miniprogram/pages/admin/activity-edit/index');
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
 
   it('只改标题时仍提交 schedule remark、GPX 与费用明细', async () => {
     await page.onLoad({ id: activity.id });
@@ -133,8 +142,8 @@ describe('管理员普通编辑保留未展示的活动字段', () => {
     expect(submitted).not.toHaveProperty('deadline');
     expect(submitted).not.toHaveProperty('startAt');
     expect(submitted).not.toHaveProperty('endAt');
-    expect(submitted).not.toHaveProperty('supportVehicleCapacity');
-    expect(submitted).not.toHaveProperty('selfDriveCapacity');
+    expect(submitted.supportVehicleCapacity).toBe(0);
+    expect(submitted.selfDriveCapacity).toBe(20);
     expect(submitted).not.toHaveProperty('supportVehicleDriver');
     expect(page.data.version).toBe(2);
   });
@@ -148,13 +157,19 @@ describe('管理员普通编辑保留未展示的活动字段', () => {
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
 
     expect(rideService.saveActivity).not.toHaveBeenCalled();
-    expect(page.data.error).toContain('发布');
+    expect(page.data.error).toContain('开始时间');
+    expect(wx.showModal).toHaveBeenCalledWith(
+      expect.objectContaining({ title: '请检查活动信息', showCancel: false }),
+    );
+    expect(wx.pageScrollTo).toHaveBeenCalledWith(
+      expect.objectContaining({ selector: '[data-error-anchor="startAt"]' }),
+    );
     const template = readFileSync('miniprogram/pages/admin/activity-edit/index.wxml', 'utf8');
-    expect(template).toContain('重新确认清单');
-    expect(template).toContain('名额、报名截止、费用和封面可后续补充');
-    expect(template).toContain('封面文件 ID（选填）');
+    expect(template).toContain('发布确认清单');
+    expect(template).toContain('日常活动只需标题、报名设置、活动时间、集合点和路线');
+    expect(template).toContain('活动图片');
     expect(template).toContain('路线文件 ID（选填）');
-    expect(template).toMatch(/data-status="published"[^>]*disabled="{{saving \|\| !canPublish}}"/);
+    expect(template).toMatch(/data-status="published"[^>]*disabled="{{saving}}"/);
   });
 
   it('无封面和 GPX 但有费用清单的完整草稿可以发布', async () => {
@@ -273,6 +288,117 @@ describe('管理员普通编辑保留未展示的活动字段', () => {
     await page.save({ currentTarget: { dataset: {} } });
     expect(rideService.saveActivity).not.toHaveBeenCalled();
     expect(page.data.error).toContain('先同步');
+  });
+
+  it('日期与时间选择器可分别快捷回填标准时间格式', async () => {
+    await page.onLoad({});
+    page.dateTimePicker({
+      currentTarget: { dataset: { name: 'startAt', part: 'date' } },
+      detail: { value: '2026-10-20' },
+    });
+    expect(page.data.form.startAt).toBe('2026-10-20 08:00:00');
+
+    page.dateTimePicker({
+      currentTarget: { dataset: { name: 'startAt', part: 'time' } },
+      detail: { value: '07:30' },
+    });
+    expect(page.data.form.startAt).toBe('2026-10-20 07:30:00');
+    const template = readFileSync('miniprogram/pages/admin/activity-edit/index.wxml', 'utf8');
+    expect(template).toContain('mode="date"');
+    expect(template).toContain('mode="time"');
+    expect(template).toContain('class="inline-action-button location-quick-button"');
+  });
+
+  it('快捷时间按近期日期和开始时间联动回填，且保留精细选择器', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 9, 9, 23, 1));
+    await page.onLoad({});
+
+    page.quickDateTime({
+      currentTarget: { dataset: { name: 'startAt', preset: 'tomorrow-morning' } },
+    });
+    expect(page.data.form.startAt).toBe('2026-10-10 07:00:00');
+    page.quickDateTime({
+      currentTarget: { dataset: { name: 'endAt', preset: 'start-plus-four-hours' } },
+    });
+    expect(page.data.form.endAt).toBe('2026-10-10 11:00:00');
+    page.quickDateTime({
+      currentTarget: { dataset: { name: 'deadline', preset: 'start-minus-day' } },
+    });
+    expect(page.data.form.deadline).toBe('2026-10-09 20:00:00');
+    page.quickDateTime({
+      currentTarget: { dataset: { name: 'startAt', preset: 'next-saturday' } },
+    });
+    expect(page.data.form.startAt).toBe('2026-10-10 08:00:00');
+
+    const template = readFileSync('miniprogram/pages/admin/activity-edit/index.wxml', 'utf8');
+    expect(template).toContain('bindtap="quickDateTime"');
+    expect(template).toContain('明早 07:00');
+    expect(template).toContain('开始前 1 天 20:00');
+    expect(template).toContain('mode="date"');
+    expect(template).toContain('mode="time"');
+  });
+
+  it('日常活动发布时不要求后援车，并把全部名额归为自行前往', async () => {
+    const draft = { ...activity, status: 'draft' as const };
+    rideService.getAdminActivity.mockResolvedValueOnce(draft);
+    rideService.saveActivity.mockResolvedValueOnce({ ...draft, version: 8 });
+    await page.onLoad({ id: draft.id });
+
+    page.selectActivityMode({ currentTarget: { dataset: { mode: 'daily' } } });
+    page.data.schedule = [];
+    page.recomputePublishReadiness();
+    expect(page.data.activityMode).toBe('daily');
+    expect(page.data.canPublish).toBe(true);
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+    expect(rideService.saveActivity).toHaveBeenCalledWith(
+      expect.objectContaining({
+        supportVehicleCapacity: 0,
+        selfDriveCapacity: 20,
+        status: 'published',
+      }),
+      draft.id,
+      draft.version,
+    );
+    expect(rideService.saveActivity.mock.calls[0][0]).not.toHaveProperty('supportVehicleDriver');
+  });
+
+  it('精品局缺少详细日程时弹窗并定位到日程区域', async () => {
+    const draft = { ...activity, status: 'draft' as const, schedule: [] };
+    rideService.getAdminActivity.mockResolvedValueOnce(draft);
+    await page.onLoad({ id: draft.id });
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(rideService.saveActivity).not.toHaveBeenCalled();
+    expect(page.data.formErrors.schedule).toContain('详细日程');
+    expect(wx.showModal).toHaveBeenCalledWith(
+      expect.objectContaining({ content: expect.stringContaining('详细日程') }),
+    );
+    expect(wx.pageScrollTo).toHaveBeenCalledWith(
+      expect.objectContaining({ selector: '[data-error-anchor="schedule"]' }),
+    );
+  });
+
+  it('Strava 缺少 read 权限时展示重新授权操作', async () => {
+    const scopeError = Object.assign(new Error('Strava 授权不足，请重新授权 read 权限'), {
+      code: 'STRAVA_SCOPE_REQUIRED',
+    });
+    rideService.previewStravaRoute.mockRejectedValueOnce(scopeError);
+    await page.onLoad({ id: activity.id });
+    page.data.form.stravaRouteUrl = 'https://www.strava.com/routes/12345';
+
+    await page.syncStravaRoute();
+
+    expect(page.data.stravaAuthorizationRequired).toBe(true);
+    expect(page.data.error).toContain('重新授权');
+    expect(wx.showModal).toHaveBeenCalledWith(
+      expect.objectContaining({ title: '需要重新授权 Strava', confirmText: '去重新授权' }),
+    );
+    expect(readFileSync('miniprogram/pages/admin/activity-edit/index.wxml', 'utf8')).toContain(
+      '重新授权 Strava',
+    );
   });
 
   it('日程支持新增、编辑、删除并在保存时输出规范化结果', async () => {

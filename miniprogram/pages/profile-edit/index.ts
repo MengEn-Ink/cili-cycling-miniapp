@@ -5,8 +5,9 @@ import { syncPageTheme } from '../../services/theme-service';
 import { invalidateProfilePageCache } from '../../utils/profile-page-cache';
 
 const ORPHAN_LEDGER_KEY = 'profile-media-orphans-v1';
-const AVATAR_PREVIEW_DEADLINE_MS = 1_200;
+const AVATAR_PREVIEW_DEADLINE_MS = 8_000;
 const MAX_LOCAL_IMAGE_BYTES = 5 * 1024 * 1024;
+const PROFILE_BACKGROUND_CATEGORY = 'ride' as const;
 const DEFAULT_AVATARS = [
   { name: '曜石黑', path: '/assets/profile/avatars/cili-black.png' },
   { name: '活力橙', path: '/assets/profile/avatars/cili-orange.png' },
@@ -17,7 +18,11 @@ type MediaStage =
   'selection' | 'crop' | 'uploadPath' | 'upload' | 'register' | 'setAvatar' | 'preview';
 type SelectedImage = { path: string; size?: number };
 type PhotoItem = { id: string; category: string; previewUrl: string };
-type MediaOrphan = { fileId: string; category: 'other'; origin?: ClientAvatarSource };
+type MediaOrphan = {
+  fileId: string;
+  category: 'ride' | 'other';
+  origin?: ClientAvatarSource;
+};
 
 function safeHttpsUrl(value: unknown): string {
   return typeof value === 'string' && /^https:\/\/[^\s/]+(?:\/[^\s]*)?$/i.test(value) ? value : '';
@@ -287,6 +292,15 @@ function canEditProfileDetails(profile: Profile | null): boolean {
   );
 }
 
+function normalizeBackgroundProfile(profile: Profile | null): Profile | null {
+  if (!profile) return null;
+  const background = profile.photos[0];
+  return {
+    ...profile,
+    photos: background ? [{ ...background, category: PROFILE_BACKGROUND_CATEGORY }] : [],
+  };
+}
+
 function confirmsAvatar(
   profile: Profile,
   expected: { source: AvatarSource; fileId?: string; revisionAfter?: number },
@@ -308,12 +322,12 @@ function readOrphanLedger(): MediaOrphan[] {
             (item) =>
               item &&
               typeof item.fileId === 'string' &&
-              item.category === 'other' &&
+              (item.category === 'other' || item.category === PROFILE_BACKGROUND_CATEGORY) &&
               (item.origin === undefined || item.origin === 'wechat' || item.origin === 'custom'),
           )
           .map((item) => ({
             fileId: item.fileId,
-            category: 'other' as const,
+            category: item.category as MediaOrphan['category'],
             ...(item.origin ? { origin: item.origin as ClientAvatarSource } : {}),
           }))
       : [];
@@ -388,13 +402,14 @@ Page({
   async onLoad() {
     await retryOrphanLedger();
     const state = await runPageTask(() => rideService.getProfile(), '资料加载失败');
+    const loadedProfile = normalizeBackgroundProfile(state.data || null);
     this.setData({
       loading: false,
       error: state.error,
-      p: state.data || null,
-      canEditDetails: canEditProfileDetails(state.data || null),
+      p: loadedProfile,
+      canEditDetails: canEditProfileDetails(loadedProfile),
     });
-    if (state.data) {
+    if (loadedProfile) {
       void this.loadAvatarPreview();
       void this.loadPhotoPreviews();
     }
@@ -452,8 +467,10 @@ Page({
     this.setData(patch);
   },
   async loadPhotoPreviews() {
-    const p = this.data.p as Profile | null;
-    if (!p) return;
+    const current = this.data.p as Profile | null;
+    if (!current) return;
+    const p = normalizeBackgroundProfile(current) as Profile;
+    if (p !== current) this.setData({ p });
     const requestId = ++this.photoPreviewRequestId;
     const unresolved = p.photos.filter(
       (photo) => !this.localPhotoPreviews[photo.id] && !safeHttpsUrl(photo.id),
@@ -619,21 +636,27 @@ Page({
       );
       uploadedFileId = uploaded.fileID;
       await atMediaStage('register', 'MEDIA_REGISTER_FAILED', () =>
-        rideService.registerProfileMedia(uploadedFileId, 'other'),
+        rideService.registerProfileMedia(uploadedFileId, PROFILE_BACKGROUND_CATEGORY),
       );
       const p = this.data.p;
       if (!p) {
-        await compensateUploadedMedia({ fileId: uploadedFileId, category: 'other' });
+        await compensateUploadedMedia({
+          fileId: uploadedFileId,
+          category: PROFILE_BACKGROUND_CATEGORY,
+        });
         return;
       }
-      p.photos = [...p.photos, { id: uploadedFileId, category: 'other' }];
-      this.localPhotoPreviews[uploadedFileId] = verifiedImage.path;
+      p.photos = [{ id: uploadedFileId, category: PROFILE_BACKGROUND_CATEGORY }];
+      this.localPhotoPreviews = { [uploadedFileId]: verifiedImage.path };
       this.setData({ p });
       await this.loadPhotoPreviews();
     } catch (error) {
       if (isUserCancellation(error)) return;
       if (uploadedFileId)
-        await compensateUploadedMedia({ fileId: uploadedFileId, category: 'other' });
+        await compensateUploadedMedia({
+          fileId: uploadedFileId,
+          category: PROFILE_BACKGROUND_CATEGORY,
+        });
       const detail = mediaFailureDetail(error);
       this.mediaErrorRevision += 1;
       this.mediaErrorStage =
@@ -647,6 +670,10 @@ Page({
     } finally {
       this.setData({ photoBusy: false });
     }
+  },
+  previewAvatar() {
+    const current = safeHttpsUrl(this.data.avatarPreviewUrl);
+    if (current) wx.previewImage({ current, urls: [current] });
   },
   previewPhoto(e: any) {
     const current = e?.currentTarget?.dataset?.url;

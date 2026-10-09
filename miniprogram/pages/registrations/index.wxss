@@ -64,7 +64,7 @@ brand-logo {
 }
 
 .refresh-error {
-  color: #ff8f86;
+  color: var(--color-danger-text);
 }
 
 .registration-list {

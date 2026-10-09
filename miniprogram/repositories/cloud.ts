@@ -597,6 +597,7 @@ function mapRegistration(raw: unknown): Registration {
   return {
     id: value._id,
     activityId: value.activity_id,
+    ...(isRecord(value.activity) ? { activity: mapActivity(value.activity, true) } : {}),
     status: value.status,
     profile: {
       avatarRevision: 0,

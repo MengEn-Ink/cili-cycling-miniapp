@@ -63,6 +63,10 @@ Page({
     readinessMessage: '',
     snapshotMeta: stravaSnapshotMeta(null),
     busyAction: null as null | 'connect' | 'retry' | 'disconnect',
+    reauthorize: false,
+  },
+  onLoad(options: Record<string, string>) {
+    this.setData({ reauthorize: options.reauthorize === '1' });
   },
   onShow() {
     syncPageTheme(this);
