@@ -12,7 +12,7 @@
 
 ## 固定基线与停止条件
 
-- 唯一设计基线：`0f3c727a81cbd1a78e0d47facc9c3feef8fdd34a`。
+- 唯一设计基线：`aba02f28bfb450041f24e4f6e612d3cd22317945`。该提交已吸收两轮真实 planner 失败结论：same-time 只按 `_id` 排序，cross-time 才按 `time, _id` 排序。
 - 实施开始时只 fetch 一次，从当时最新 `origin/main` 创建新 worktree，再 cherry-pick 设计和计划提交；不得复用 prunable 的 a81e472c worktree。
 - PR #45 只读参考，不 merge、cherry-pick 或复制其混合 diff。
 - 真实 CloudBase planner 证据当前为 `PENDING (missing planner evidence)`。Task 2 未通过时立即停止，不得执行 Task 3 及后续生产 GREEN。
@@ -114,7 +114,7 @@ test('event_end 等于 as_of 只进入 history', async () => {});
 test('同时间戳按 _id 稳定 keyset，41 条按 20+20+1 无漏无重', async () => {});
 test('deleted、draft、未知状态、缺失或非法时间不占窗口', async () => {});
 test('首屏每个 view<=2 reads，cursor 页拆同时间/跨时间两段且<=4 reads', async () => {});
-test('四流 cursor 都不生成复合 $or，先同时间段再跨时间段', async () => {});
+test('四流 cursor 都不生成复合 $or，same-time 只按 _id 且 cross-time 按 time/_id', async () => {});
 test('非法数据连续五批仍无法收敛时返回 DATA_INTEGRITY_ERROR 且不返回部分页', async () => {});
 ```
 
@@ -185,6 +185,24 @@ assert.deepEqual(
 
 再断言 runner 总在 `finally` 发送精确 drop，并在 drop 后 list collections 验证同名数量为 0。
 
+对 8 条 cursor 命令逐对断言物理查询形状。未开始或进行中流的 `timeField` 是 `event_start`，历史两流是 `event_end`；升序流方向为 `1`，降序流为 `-1`：
+
+```js
+assert.deepEqual(sameTime.command.explain.sort, { _id: direction });
+assert.equal(typeof sameTime.command.explain.filter[timeField], 'string');
+assert.equal(typeof sameTime.command.explain.filter._id, 'object');
+assert.deepEqual(crossTime.command.explain.sort, {
+  [timeField]: direction,
+  _id: direction,
+});
+assert.equal(typeof crossTime.command.explain.filter[timeField], 'object');
+assert.equal(Object.hasOwn(crossTime.command.explain.filter, '_id'), false);
+assert.equal(
+  JSON.stringify([sameTime, crossTime]).includes('"$or"'),
+  false,
+);
+```
+
 - [ ] **Step 2: 运行 probe RED**
 
 ```bash
@@ -217,7 +235,7 @@ npx --yes --package @cloudbase/cli@3.8.4 tcb -e cloudbase-d0gizacy77a1ab017 \
   db nosql execute --json --command "$MGO_COMMANDS"
 ```
 
-脚本依次执行 create、三条索引、108 条 insert、12 条 explain、future/history 多页 smoke、drop、list collections；所有写目标都必须先过 `assertTemporaryCollection`。输出结构化 JSON，日志不得含凭据。cursor query builder 禁止 `$or`：每个逻辑流分别生成 `same-time` 和 `cross-time` 两条命令。
+脚本依次执行 create、三条索引、108 条 insert、12 条 explain、future/history 多页 smoke、drop、list collections；所有写目标都必须先过 `assertTemporaryCollection`。输出结构化 JSON，日志不得含凭据。cursor query builder 禁止 `$or`：每个逻辑流分别生成 `same-time` 和 `cross-time` 两条命令。`same-time` 已用等值固定时间字段，因此 sort 必须精确为 `{_id: direction}`；`cross-time` 的 sort 才是 `{[timeField]: direction, _id: direction}`。
 
 - [ ] **Step 4: 运行 probe 单测 GREEN**
 
@@ -229,7 +247,36 @@ npm run test:bootstrap
 
 Expected: exit 0，未连接或修改 CloudBase。
 
-- [ ] **Step 5: 建立唯一临时集合并写入 108 条 fixture**
+- [ ] **Step 5: 对第二轮 probe 先取得 same-time sort 增量 RED**
+
+当 worktree 已包含第二轮 12-query probe 时，先只修改 `scripts/activity-home-timeline-planner-probe.node-test.mjs`，加入 Step 1 的精确 sort 断言，生产 probe 代码保持不变。
+
+```bash
+node --test scripts/activity-home-timeline-planner-probe.node-test.mjs
+```
+
+Expected: exit 1；108 fixtures、12 条命令、禁止 `$or`、CLI 解包和 cleanup fail-closed 断言继续 PASS，失败精确为当前 same-time sort 仍是 `{timeField: direction, _id: direction}`，而期望只有 `{_id: direction}`。
+
+- [ ] **Step 6: 最小修正 query builder 并重回本地 GREEN**
+
+只修改 `explainCommand` 的 sort 选择，不改 cursor 内容、filter、候选索引或 read limit：
+
+```js
+const sort =
+  segment === 'same-time'
+    ? { _id: definition.direction }
+    : { [definition.field]: definition.direction, _id: definition.direction };
+```
+
+```bash
+node --test scripts/activity-home-timeline-planner-probe.node-test.mjs
+npm run test:bootstrap
+git diff --check
+```
+
+Expected: 三条命令均 exit 0；plan 仍输出 `fixtureCount=108`、`explainCount=12`，生产 `cloudfunctions/activity-read/list-page.js` 仍不存在。
+
+- [ ] **Step 7: 建立唯一临时集合并写入 108 条 fixture**
 
 通过已登录的 CloudBase CLI 3.8.4，只操作测试环境和唯一集合：
 
@@ -242,7 +289,7 @@ node scripts/activity-home-timeline-planner-probe.mjs \
 
 fixture 必须包含：进行中、未开始、自然结束 published、提前 finished、相同 start/end、`is_deleted=false`、字段缺失、`is_deleted=true`、draft、非法 status 和非法时间，总数固定为 108。
 
-- [ ] **Step 6: 建立候选索引并保留竞争旧索引**
+- [ ] **Step 8: 建立候选索引并保留竞争旧索引**
 
 临时集合同时包含：
 
@@ -260,7 +307,7 @@ fixture 必须包含：进行中、未开始、自然结束 published、提前 f
 ]
 ```
 
-- [ ] **Step 7: 对四流首屏和 cursor 查询执行 explain**
+- [ ] **Step 9: 对四流首屏和 cursor 查询执行 explain**
 
 使用 `db nosql execute` 的 `COMMAND` 类型执行 Mongo `explain`。先覆盖以下四条首屏 where：
 
@@ -273,23 +320,23 @@ fixture 必须包含：进行中、未开始、自然结束 published、提前 f
 }
 ```
 
-future 两流使用 `sort:{event_start:1,_id:1},limit:21`；history 两流使用 `sort:{event_end:-1,_id:-1},limit:21`。每个逻辑流的 cursor 再拆两条：`time == boundary.time + _id 严格边界` 的 same-time 查询，以及仅 `time 严格跨 boundary.time` 的 cross-time 查询；禁止 `$or`。总计 4 条首屏 + 8 条 cursor 物理查询。每条 explain 必须证明：命中候选索引、无顶层/阻塞 `SORT`、`FETCH` 删除过滤在逻辑 `LIMIT` 前、返回和 limit 不超过 21。
+future 两流的首屏和 cross-time 使用 `sort:{event_start:1,_id:1},limit:21`；history 两流的首屏和 cross-time 使用 `sort:{event_end:-1,_id:-1},limit:21`。每个逻辑流的 cursor 再拆两条：`time == boundary.time + _id 严格边界` 的 same-time 查询只按 `_id` 同方向排序，以及仅 `time 严格跨 boundary.time` 的 cross-time 查询按 `time, _id` 同方向排序；禁止 `$or`。总计 4 条首屏 + 8 条 cursor 物理查询。必须先顺序执行 12 条 explain；任何一条失败立即进入 finally cleanup，不执行剩余 explain 或 smoke。每条 explain 必须证明：命中候选索引、无顶层/阻塞 `SORT`、`FETCH` 删除过滤在逻辑 `LIMIT` 前、返回和 limit 不超过 21。
 
-- [ ] **Step 8: 做静态数据集 20+20+1 smoke**
+- [ ] **Step 10: 仅在 12/12 explain 通过后做 108 条静态数据集 20+20+1 smoke**
 
 按 cursor 连续执行 future/history 查询并在本地按服务端算法归并。断言 IDs 唯一、future 全局 `event_start/_id ASC`、history 全局 `event_end/_id DESC`、deleted/draft/invalid 缺失、legacy `is_deleted` 缺失可见。
 
-- [ ] **Step 9: 精确清理并回读证明为零**
+- [ ] **Step 11: 精确清理并回读证明为零**
 
 只 drop `tmp_activity_home_timeline_f8d1d2e2`，再 list collections 精确确认同名集合数量为 0。禁止触碰业务 `activities`。
 
-- [ ] **Step 10: 写证据并执行门禁判断**
+- [ ] **Step 12: 写证据并执行门禁判断**
 
 证据文档记录 env 别名、临时集合名、候选/竞争索引、每条 requestId、winning plan、keys/docs examined、分页结果和清理 requestId；不得记录 token、cookie、openid 或 CLI 凭据。
 
 若任一查询有阻塞 `SORT`、删除过滤晚于逻辑 limit、不可接受全表扫描或 cursor 不稳定：停止并报告 `PENDING (missing planner evidence)`，回设计阶段，不执行 Task 3。
 
-- [ ] **Step 11: Planner 通过后提交 probe 与证据**
+- [ ] **Step 13: Planner 通过后提交 probe 与证据**
 
 ```bash
 git add scripts/activity-home-timeline-planner-probe.mjs \
@@ -328,7 +375,7 @@ async function listActivityPage({ db, command, request, now }) {}
 
 - [ ] **Step 2: 实现四流 query 与 keyset**
 
-使用 Task 2 已证明的 exact where/orderBy。每个首屏 query 按时间字段、`_id` 排序并 `limit(request.pageSize + 1)`。cursor 页不得构造复合 `$or`：每个逻辑流先读 same-time 段，再读 cross-time 段，并在凑满 `pageSize + 1` 时停止。future 先 ongoing 后 scheduled；history 两流归并。所有候选先验证 Date、`start < end`、status/delete，再形成 page；正常首屏最多 2 reads、cursor 页最多 4 reads，每流最多五批，最坏 20 reads 后抛 `DATA_INTEGRITY_ERROR`。
+使用 Task 2 已证明的 exact where/orderBy。每个首屏 query 按时间字段、`_id` 排序并 `limit(request.pageSize + 1)`。cursor 页不得构造复合 `$or`：每个逻辑流先读只按 `_id` 同方向排序的 same-time 段，再读按 `time, _id` 同方向排序的 cross-time 段，并在凑满 `pageSize + 1` 时停止。future 先 ongoing 后 scheduled；history 两流归并。所有候选先验证 Date、`start < end`、status/delete，再形成 page；正常首屏最多 2 reads、cursor 页最多 4 reads，每流最多五批，最坏 20 reads 后抛 `DATA_INTEGRITY_ERROR`。
 
 - [ ] **Step 3: 接入独立 action**
 
