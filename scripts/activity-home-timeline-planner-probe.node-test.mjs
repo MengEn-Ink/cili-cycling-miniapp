@@ -35,11 +35,17 @@ function bsonDate(value) {
   return { $date: { $numberLong: String(date.getTime()) } };
 }
 
-function isBsonDate(value) {
+function isCanonicalBsonDate(value) {
   return (
     value &&
     typeof value === 'object' &&
+    !Array.isArray(value) &&
+    Object.keys(value).length === 1 &&
     typeof value.$date === 'object' &&
+    value.$date !== null &&
+    !Array.isArray(value.$date) &&
+    Object.keys(value.$date).length === 1 &&
+    typeof value.$date.$numberLong === 'string' &&
     /^-?\d+$/.test(value.$date.$numberLong)
   );
 }
@@ -50,6 +56,47 @@ function dateReadbackItems() {
     event_start: bsonDate(PROBE_AS_OF),
     event_end: bsonDate(new Date(PROBE_AS_OF.getTime() + 60_000)),
   }));
+}
+
+async function runProbeWithDateReadback(options = {}) {
+  const items = options.items ?? dateReadbackItems();
+  const requestId = Object.hasOwn(options, 'requestId')
+    ? options.requestId
+    : 'request-date-readback';
+  const operations = [];
+  let listCalls = 0;
+  const execute = async (operation) => {
+    operations.push(operation);
+    if (operation.kind === 'list-collections') {
+      listCalls += 1;
+      return { requestId: `request-list-${listCalls}`, collections: [] };
+    }
+    if (operation.kind === 'verify-date-types') return { requestId, items };
+    if (operation.kind === 'explain')
+      return {
+        requestId: `request-${operation.name}`,
+        plan: validExplainPlan(
+          operation.name.includes('finished') || operation.name.includes('past-published')
+            ? 'public_event_end'
+            : 'public_event_start',
+        ),
+      };
+    if (operation.kind === 'smoke')
+      return { requestIds: ['request-smoke'], future: {}, history: {} };
+    return { requestId: `request-${operation.kind}` };
+  };
+  let summary;
+  let failure;
+  try {
+    summary = await runProbe({
+      envId: 'cloudbase-d0gizacy77a1ab017',
+      collection: PROBE_COLLECTION,
+      execute,
+    });
+  } catch (error) {
+    failure = error;
+  }
+  return { failure, operations, summary };
 }
 
 test('只允许任务专属临时集合，拒绝业务集合和相似前缀', () => {
@@ -97,13 +144,13 @@ test('fixture 精确 108 条并覆盖四流、删除、legacy 和非法数据', 
   for (const fixture of fixtures) {
     if (Object.hasOwn(fixture, 'event_start') && fixture._id !== 'invalid-start')
       assert.equal(
-        isBsonDate(fixture.event_start),
+        isCanonicalBsonDate(fixture.event_start),
         true,
         `${fixture._id}.event_start 必须是 BSON Date`,
       );
     if (Object.hasOwn(fixture, 'event_end') && fixture._id !== 'invalid-end')
       assert.equal(
-        isBsonDate(fixture.event_end),
+        isCanonicalBsonDate(fixture.event_end),
         true,
         `${fixture._id}.event_end 必须是 BSON Date`,
       );
@@ -173,10 +220,10 @@ test('cursor 物理段按 same-time 再 cross-time 生成且禁止 $or', () => {
         actual: sameTime.command.explain.sort,
         expected: expectedSameTimeSort,
       });
-    assert.equal(isBsonDate(sameTime.command.explain.filter[field]), true);
+    assert.equal(isCanonicalBsonDate(sameTime.command.explain.filter[field]), true);
     assert.equal(typeof sameTime.command.explain.filter._id, 'object');
     assert.equal(
-      isBsonDate(crossTime.command.explain.filter[field][direction === 1 ? '$gt' : '$lt']),
+      isCanonicalBsonDate(crossTime.command.explain.filter[field][direction === 1 ? '$gt' : '$lt']),
       true,
     );
     assert.equal(Object.hasOwn(crossTime.command.explain.filter, '_id'), false);
@@ -207,8 +254,8 @@ test('INSERT command 保留严格 EJSON BSON Date，不降级为 ISO string', as
   });
 
   assert.equal(insertCommand.documents.length, 108);
-  assert.equal(isBsonDate(insertCommand.documents[0].event_start), true);
-  assert.equal(isBsonDate(insertCommand.documents[0].event_end), true);
+  assert.equal(isCanonicalBsonDate(insertCommand.documents[0].event_start), true);
+  assert.equal(isCanonicalBsonDate(insertCommand.documents[0].event_end), true);
   assert.equal(JSON.stringify(insertCommand).includes(PROBE_AS_OF.toISOString()), false);
 });
 
@@ -292,12 +339,12 @@ test('smoke QUERY 接受 CLI 多文档数组响应并完成四流分页', async 
       if (stream === 'ongoing' || stream === 'scheduled')
         assert.deepEqual(query.filter.event_end, { $gt: bsonDate(PROBE_AS_OF) });
       if (segment === 'same-time') {
-        assert.equal(isBsonDate(query.filter[timeField]), true);
+        assert.equal(isCanonicalBsonDate(query.filter[timeField]), true);
         assert.deepEqual(query.filter._id, { [boundaryOperator]: `${stream}-020` });
       } else if (segment === 'cross-time') {
         assert.equal(typeof query.filter[timeField], 'object');
         assert.equal(Object.hasOwn(query.filter[timeField], boundaryOperator), true);
-        assert.equal(isBsonDate(query.filter[timeField][boundaryOperator]), true);
+        assert.equal(isCanonicalBsonDate(query.filter[timeField][boundaryOperator]), true);
         assert.equal(Object.hasOwn(query.filter, '_id'), false);
       } else {
         assert.equal(Object.hasOwn(query.filter, '_id'), false);
@@ -364,7 +411,8 @@ test('插入后先回读 BSON Date 类型，再运行任何 explain', async () =
             : 'public_event_start',
         ),
       };
-    if (operation.kind === 'smoke') return { requestIds: [], future: {}, history: {} };
+    if (operation.kind === 'smoke')
+      return { requestIds: ['request-smoke'], future: {}, history: {} };
     return { requestId: `request-${operation.kind}` };
   };
 
@@ -384,6 +432,69 @@ test('插入后先回读 BSON Date 类型，再运行任何 explain', async () =
     bsonDateVerified: true,
   });
 });
+
+test('BSON Date 回读接受严格 canonical 与带时区 relaxed EJSON', async () => {
+  const items = dateReadbackItems();
+  items[0] = { ...items[0], event_start: { $date: '2026-10-09T08:00:00.000Z' } };
+  items[1] = { ...items[1], event_end: { $date: '2026-10-09T16:01:00+08:00' } };
+
+  const result = await runProbeWithDateReadback({ items });
+
+  assert.equal(result.failure, undefined);
+  assert.equal(result.summary.dateReadback.bsonDateVerified, true);
+});
+
+for (const { name, value } of [
+  { name: 'relaxed 数字字符串', value: { $date: '0' } },
+  { name: 'relaxed 日期缺少时区', value: { $date: '2026-10-09T08:00:00' } },
+  { name: 'canonical $numberLong 非字符串', value: { $date: { $numberLong: 1791532800000 } } },
+  {
+    name: 'canonical 内层多余字段',
+    value: { $date: { $numberLong: '1791532800000', extra: true } },
+  },
+  {
+    name: 'EJSON 顶层多余字段',
+    value: { $date: { $numberLong: '1791532800000' }, extra: true },
+  },
+  {
+    name: 'canonical 毫秒超出 Date 有效范围',
+    value: { $date: { $numberLong: '8640000000000001' } },
+  },
+]) {
+  test(`malformed BSON Date 回读在 explain 前 fail closed：${name}`, async () => {
+    const items = dateReadbackItems();
+    items[0] = { ...items[0], event_start: value };
+
+    const result = await runProbeWithDateReadback({ items });
+
+    assert.match(result.failure?.message ?? '', /BSON Date 回读类型非法/);
+    assert.equal(
+      result.operations.some((item) => item.kind === 'explain'),
+      false,
+    );
+    assert.equal(result.operations.filter((item) => item.kind === 'drop').length, 1);
+    assert.equal(result.failure?.probeSummary?.cleanup?.remaining, 0);
+  });
+}
+
+for (const { name, requestId } of [
+  { name: '缺失', requestId: undefined },
+  { name: '空字符串', requestId: '' },
+  { name: '非字符串', requestId: 42 },
+]) {
+  test(`Date readback requestId ${name}时在 explain 前 fail closed`, async () => {
+    const result = await runProbeWithDateReadback({ requestId });
+
+    assert.match(result.failure?.message ?? '', /Date readback 缺少有效 requestId/);
+    assert.equal(
+      result.operations.some((item) => item.kind === 'explain'),
+      false,
+    );
+    assert.equal(result.operations.filter((item) => item.kind === 'drop').length, 1);
+    assert.equal(result.failure?.probeSummary?.cleanup?.remaining, 0);
+    assert.equal(result.failure?.probeSummary?.dateReadback, undefined);
+  });
+}
 
 test('smoke QUERY 拒绝 malformed 多文档 entry', async () => {
   const execute = createCliExecutor({
@@ -431,7 +542,8 @@ test('runner 失败也在 finally 精确 drop 并回读同名集合为零', asyn
       };
     if (operation.kind === 'verify-date-types')
       return { requestId: 'request-date-readback', items: dateReadbackItems() };
-    if (operation.kind === 'list-collections') return { collections: [] };
+    if (operation.kind === 'list-collections')
+      return { requestId: 'request-list', collections: [] };
     return { requestId: `request-${operation.kind}` };
   };
 
@@ -488,7 +600,12 @@ test('清理回读仍发现同名集合时 fail closed', async () => {
       return { requestId: 'request-date-readback', items: dateReadbackItems() };
     if (operation.kind === 'list-collections') {
       listCalls += 1;
-      return listCalls === 1 ? { collections: [] } : { collections: [{ name: PROBE_COLLECTION }] };
+      return listCalls === 1
+        ? { requestId: 'request-list-before', collections: [] }
+        : {
+            requestId: 'request-list-after',
+            collections: [{ name: PROBE_COLLECTION }],
+          };
     }
     return { requestId: `request-${operation.kind}` };
   };
@@ -528,7 +645,8 @@ test('explain 缺失或不可数值指标显式记录为 null', async () => {
         },
       };
     }
-    if (operation.kind === 'smoke') return { requestIds: [], future: {}, history: {} };
+    if (operation.kind === 'smoke')
+      return { requestIds: ['request-smoke'], future: {}, history: {} };
     if (operation.kind === 'verify-date-types')
       return { requestId: 'request-date-readback', items: dateReadbackItems() };
     return { requestId: `request-${operation.kind}` };
