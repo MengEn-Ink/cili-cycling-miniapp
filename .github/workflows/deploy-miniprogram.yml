@@ -23,6 +23,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: wechat-development-upload
@@ -41,11 +42,40 @@ jobs:
       CHECKOUT_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
     steps:
       - name: Checkout verified main commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ env.CHECKOUT_SHA }}
 
+      - name: Download miniprogram upload decision
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v8
+        with:
+          name: miniprogram-upload-decision
+          path: ${{ runner.temp }}/miniprogram-upload-decision
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Resolve miniprogram upload decision
+        id: decision
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
+            echo "should_upload=true" >> "${GITHUB_OUTPUT}"
+          else
+            node scripts/miniprogram-upload-decision.mjs verify \
+              --input "${RUNNER_TEMP}/miniprogram-upload-decision/miniprogram-upload-decision.json" \
+              --sha "${CHECKOUT_SHA}" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Report skipped automatic upload
+        if: steps.decision.outputs.should_upload != 'true'
+        run: echo "本次提交不影响小程序产物，跳过微信开发版上传"
+
       - name: Ensure automatic upload still targets current main
+        if: steps.decision.outputs.should_upload == 'true'
         id: main-tip
         shell: bash
         run: |
@@ -60,23 +90,23 @@ jobs:
           fi
 
       - name: Setup Node.js
-        if: steps.main-tip.outputs.should_upload == 'true'
-        uses: actions/setup-node@v4
+        if: steps.decision.outputs.should_upload == 'true' && steps.main-tip.outputs.should_upload == 'true'
+        uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: tools/miniprogram-ci/package-lock.json
 
       - name: Install locked WeChat upload client
-        if: steps.main-tip.outputs.should_upload == 'true'
+        if: steps.decision.outputs.should_upload == 'true' && steps.main-tip.outputs.should_upload == 'true'
         run: npm ci --ignore-scripts --prefix tools/miniprogram-ci
 
       - name: Verify upload script
-        if: steps.main-tip.outputs.should_upload == 'true'
+        if: steps.decision.outputs.should_upload == 'true' && steps.main-tip.outputs.should_upload == 'true'
         run: npm run test:deploy
 
       - name: Prepare temporary upload credential
-        if: steps.main-tip.outputs.should_upload == 'true'
+        if: steps.decision.outputs.should_upload == 'true' && steps.main-tip.outputs.should_upload == 'true'
         env:
           PRIVATE_KEY: ${{ secrets.WECHAT_MINIPROGRAM_PRIVATE_KEY }}
         shell: bash
@@ -90,7 +120,7 @@ jobs:
           printf '%s' "${PRIVATE_KEY}" > "${RUNNER_TEMP}/miniprogram-ci.key"
 
       - name: Upload WeChat development version
-        if: steps.main-tip.outputs.should_upload == 'true'
+        if: steps.decision.outputs.should_upload == 'true' && steps.main-tip.outputs.should_upload == 'true'
         env:
           MINIPROGRAM_CI_PRIVATE_KEY_PATH: ${{ runner.temp }}/miniprogram-ci.key
           MINIPROGRAM_VERSION: ${{ inputs.version || format('0.0.{0}.{1}', github.run_number, github.run_attempt) }}
