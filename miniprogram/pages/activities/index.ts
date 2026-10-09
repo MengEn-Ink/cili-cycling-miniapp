@@ -115,8 +115,7 @@ Page({
     this.viewStates[view] = state;
     this.renderActiveView();
     const revision = state.revision;
-    let request!: Promise<void>;
-    request = (async () => {
+    const request = (async () => {
       try {
         const result = await rideService.listActivityPage(view);
         if (!this.isCurrent(view, revision)) return;
@@ -142,7 +141,7 @@ Page({
         };
         this.renderActiveView();
       } finally {
-        if (this.loadHandles[view] === request) delete this.loadHandles[view];
+        if (this.viewStates[view].revision === revision) delete this.loadHandles[view];
       }
     })();
     this.loadHandles[view] = request;
@@ -158,8 +157,7 @@ Page({
     const revision = state.revision;
     this.viewStates[view] = { ...state, loadingMore: true, refreshError: '' };
     this.renderActiveView();
-    let request!: Promise<void>;
-    request = (async () => {
+    const request = (async () => {
       try {
         const result = await rideService.listActivityPage(view, cursor);
         if (!this.isCurrent(view, revision, cursor)) return;
@@ -180,7 +178,7 @@ Page({
         };
         this.renderActiveView();
       } finally {
-        if (this.loadMoreHandles[view] === request) delete this.loadMoreHandles[view];
+        if (this.viewStates[view].revision === revision) delete this.loadMoreHandles[view];
       }
     })();
     this.loadMoreHandles[view] = request;
