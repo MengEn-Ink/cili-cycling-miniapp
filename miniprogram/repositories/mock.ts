@@ -193,8 +193,7 @@ function deriveMockPublicActivity(item: MockStoredActivity, asOf: string): Activ
     output.capacity > 0 &&
     deadline !== null &&
     deadline < start &&
-    output.fee.trim().length > 0 &&
-    item.registrationSetupPending !== true;
+    output.fee.trim().length > 0;
   if (!setupReady)
     return {
       ...output,
