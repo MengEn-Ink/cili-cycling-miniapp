@@ -435,7 +435,7 @@ test('插入后先回读 BSON Date 类型，再运行任何 explain', async () =
 
 test('BSON Date 回读接受严格 canonical 与带时区 relaxed EJSON', async () => {
   const items = dateReadbackItems();
-  items[0] = { ...items[0], event_start: { $date: '2026-10-09T08:00:00.000Z' } };
+  items[0] = { ...items[0], event_start: { $date: '2024-02-29T08:00:00.000Z' } };
   items[1] = { ...items[1], event_end: { $date: '2026-10-09T16:01:00+08:00' } };
 
   const result = await runProbeWithDateReadback({ items });
@@ -460,6 +460,10 @@ for (const { name, value } of [
     name: 'canonical 毫秒超出 Date 有效范围',
     value: { $date: { $numberLong: '8640000000000001' } },
   },
+  { name: 'relaxed 2 月 30 日', value: { $date: '2026-02-30T08:00:00.000Z' } },
+  { name: 'relaxed 非闰年 2 月 29 日', value: { $date: '2025-02-29T08:00:00.000Z' } },
+  { name: 'relaxed 4 月 31 日', value: { $date: '2026-04-31T08:00:00.000Z' } },
+  { name: 'relaxed 24 时', value: { $date: '2026-10-09T24:00:00.000Z' } },
 ]) {
   test(`malformed BSON Date 回读在 explain 前 fail closed：${name}`, async () => {
     const items = dateReadbackItems();
