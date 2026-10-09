@@ -65,6 +65,25 @@ function matches(document, condition) {
   });
 }
 
+function collectOperators(value, output = []) {
+  if (!value || typeof value !== 'object') return output;
+  if (typeof value.__operator === 'string') output.push(value.__operator);
+  for (const child of Object.values(value)) collectOperators(child, output);
+  return output;
+}
+
+function assertBaseFilter(call, status) {
+  assert.equal(call.condition.status, status);
+  assert.deepEqual(call.condition.is_deleted, operator('neq', true));
+  assert.equal(collectOperators(call.condition).includes('or'), false);
+}
+
+function assertTimeEquality(value, expected) {
+  if (value && value.__operator === 'eq')
+    assert.equal(comparable(value.value), expected.toISOString());
+  else assert.equal(comparable(value), expected.toISOString());
+}
+
 function compareValues(left, right, direction) {
   const first = comparable(left);
   const second = comparable(right);
@@ -310,6 +329,73 @@ test('每个 read limit<=page_size+1，单页正常路径 future/history 各<=2 
     [...future.calls, ...history.calls].every((call) => call.limit <= 8),
     true,
   );
+});
+
+test('四流 cursor 禁止 or，same-time 仅按 _id，首屏和 cross-time 按 time/_id', async () => {
+  const pageSize = 7;
+  const boundary = new Date('2026-10-10T08:00:00.000Z');
+  const boundaryId = 'boundary-id';
+  const makeCursor = (view) =>
+    encodeListCursor({
+      v: 1,
+      view,
+      as_of: AS_OF.toISOString(),
+      boundary: { time: boundary.toISOString(), id: boundaryId },
+    });
+  const scenarios = [
+    {
+      view: 'future',
+      field: 'event_start',
+      direction: 'asc',
+      boundaryOperator: 'gt',
+      statuses: ['published', 'published'],
+    },
+    {
+      view: 'history',
+      field: 'event_end',
+      direction: 'desc',
+      boundaryOperator: 'lt',
+      statuses: ['finished', 'published'],
+    },
+  ];
+
+  for (const scenario of scenarios) {
+    const first = await page([], scenario.view, undefined, pageSize);
+    assert.equal(first.calls.length, 2);
+    for (let index = 0; index < first.calls.length; index += 1) {
+      const call = first.calls[index];
+      assertBaseFilter(call, scenario.statuses[index]);
+      assert.deepEqual(call.order, [
+        [scenario.field, scenario.direction],
+        ['_id', scenario.direction],
+      ]);
+      assert.equal(call.limit, pageSize + 1);
+      assert.equal(Object.hasOwn(call.condition, '_id'), false);
+    }
+
+    const cursorPage = await page([], scenario.view, makeCursor(scenario.view), pageSize);
+    assert.equal(cursorPage.calls.length, 4);
+    for (let stream = 0; stream < 2; stream += 1) {
+      const sameTime = cursorPage.calls[stream * 2];
+      const crossTime = cursorPage.calls[stream * 2 + 1];
+      assertBaseFilter(sameTime, scenario.statuses[stream]);
+      assertBaseFilter(crossTime, scenario.statuses[stream]);
+      assertTimeEquality(sameTime.condition[scenario.field], boundary);
+      assert.deepEqual(sameTime.condition._id, operator(scenario.boundaryOperator, boundaryId));
+      assert.deepEqual(sameTime.order, [['_id', scenario.direction]]);
+      assert.equal(Object.hasOwn(crossTime.condition, '_id'), false);
+      assert.equal(
+        collectOperators(crossTime.condition[scenario.field]).includes(scenario.boundaryOperator),
+        true,
+      );
+      assert.deepEqual(crossTime.order, [
+        [scenario.field, scenario.direction],
+        ['_id', scenario.direction],
+      ]);
+      assert.equal(sameTime.limit, pageSize + 1);
+      assert.equal(crossTime.limit, pageSize + 1);
+    }
+  }
 });
 
 test('非法数据连续五批仍无法收敛时返回 DATA_INTEGRITY_ERROR 且不返回部分页', async () => {
