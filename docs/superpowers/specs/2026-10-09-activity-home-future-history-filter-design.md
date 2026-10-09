@@ -118,10 +118,10 @@ Cursor 是版本化的 opaque base64url JSON，最大 512 字符。解码后只�
 
 Cursor 的复合边界不得使用单个 Mongo `$or`。真实 CloudBase planner 已证明 `time 严格跨边界 OR (time 等于边界且 _id 严格跨边界)` 会产生阻塞 `SORT`。每个逻辑流必须把 cursor 拆成两个物理段：
 
-1. 同时间段：`time === boundary.time`，只对 `_id` 使用严格方向边界；
-2. 跨时间段：升序流使用 `time > boundary.time`，降序流使用 `time < boundary.time`。
+1. 同时间段：`time === boundary.time`，只对 `_id` 使用严格方向边界，并且只按 `_id` 同方向排序；`time` 已是常量，不得再次放入 sort；
+2. 跨时间段：升序流使用 `time > boundary.time`，降序流使用 `time < boundary.time`，继续按 `time, _id` 同方向排序。
 
-同时间段天然排在跨时间段之前，服务端按上述顺序拼接并在达到 `page_size + 1` 后停止；不得重新引入 `$or` 或应用层全量排序。
+同时间段天然排在跨时间段之前，服务端按上述顺序拼接并在达到 `page_size + 1` 后停止；不得重新引入 `$or`、不得在 same-time 段保留常量时间排序，也不得使用应用层全量排序。
 
 `as_of` 只冻结时间归类边界，不构成数据库快照。如果活动在翻页期间被编辑、结束或删除，当前分页链路不承诺跨写入的绝对无漏无重；用户重新进入页面或重试首屏后收敛到最新状态。静态数据集下必须无重无漏。
 
@@ -168,7 +168,7 @@ Cursor 的复合边界不得使用单个 Mongo `$or`。真实 CloudBase planner 
 - 未来两流：`status ASC, event_start ASC, _id ASC, event_end ASC`；
 - 历史两流：`status ASC, event_end DESC, _id DESC, event_start DESC`。
 
-候选索引不是已确认事实，当前状态为 `PENDING (missing planner evidence)`。首轮 probe 已证明四条首屏查询命中候选索引，但复合 `$or` cursor 出现阻塞 `SORT`，不能作为通过证据。修订后必须在生产 GREEN 之前重新取证：临时集合中同时保留可能竞争的旧索引，使用真实 CloudBase `explain` 验证四条首屏查询，以及 ongoing-future、scheduled-future、finished-history、published-history 各自的“同时间段 / 跨时间段”两个 cursor 物理查询，共 12 条：
+候选索引不是已确认事实，当前状态为 `PENDING (missing planner evidence)`。首轮 probe 已证明四条首屏查询命中候选索引，但复合 `$or` cursor 出现阻塞 `SORT`；第二轮拆段后，same-time 仍因保留常量 `time, _id` 排序而出现阻塞 `SORT`，两轮都不能作为通过证据。下一轮必须在生产 GREEN 之前重新取证：临时集合中同时保留可能竞争的旧索引，使用真实 CloudBase `explain` 验证四条首屏查询，以及 ongoing-future、scheduled-future、finished-history、published-history 各自的“同时间段 / 跨时间段”两个 cursor 物理查询，共 12 条。same-time 的 sort 只能包含 `_id`，cross-time 的 sort 才包含 `time, _id`：
 
 - 命中预期复合索引；
 - 没有阻塞 `SORT`；
@@ -275,7 +275,7 @@ Cursor 的复合边界不得使用单个 Mongo `$or`。真实 CloudBase planner 
 - future 与 history 在同时间戳下按 `_id` 稳定排序。
 - 至少 41 条数据完成 20 + 20 + 1 分页，无 skip、无重、无漏。
 - history 两流全局归并正确，cursor 同时约束两流。
-- cursor 不使用复合 `$or`；四流都先读取同时间段、再读取跨时间段，拼接后仍保持全局顺序。
+- cursor 不使用复合 `$or`；四流都先读取只按 `_id` 排序的同时间段，再读取按 `time, _id` 排序的跨时间段，拼接后仍保持全局顺序。
 - 后续页沿用首屏 `as_of`，时间推进不改变静态数据集归类。
 - 版本、长度、字段白名单、时间、边界和 view mismatch 全部在数据库读取前拒绝。
 - 每个数据库 read 的 limit 不超过 21。
