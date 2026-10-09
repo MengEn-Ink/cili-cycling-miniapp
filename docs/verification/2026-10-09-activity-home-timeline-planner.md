@@ -2,7 +2,7 @@
 
 ## 结论
 
-`PENDING (production BSON Date probe passed; independent review pending)`。
+`PASS (production BSON Date planner/smoke independently verified)`。
 
 候选索引能为四条首屏查询提供 `LIMIT -> FETCH -> IXSCAN`，但首轮复合 `$or` keyset 的
 `ongoing-cursor` 查询出现阻塞 `SORT`。按修订设计拆成 `same-time` / `cross-time` 后，第二轮
@@ -12,8 +12,9 @@ parser 与查询形态漂移后，第四轮完整 probe 再次取得 12/12 expla
 各 50 条的真实 smoke、全部 QUERY requestId 与精确清理。后续独立代码审查发现第四轮 fixture
 通过 JSON 写入 ISO 字符串，不能代表生产 BSON Date；同时服务端排序与 Date 合同存在缺陷，
 因此旧 requestId 仅保留为历史证据。修复 BSON Date 查询、UTF-8 binary `_id` 排序以及严格
-EJSON 回读后，第五轮已在精确 HEAD 上取得完整真实 PASS；在本轮证据完成独立复核前，结论仍
-保持 PENDING，且不得部署或启动 Task 4。
+EJSON 回读后，第五轮已在精确 HEAD 上取得完整真实 PASS；独立复核未发现 P0–P2，并以第三次
+只读 ListTables 回查确认临时集合仍为 0，production BSON Date planner/smoke 证据门禁通过。
+该结论不等于代码已合并、目标环境已部署或部署后真实页面 smoke 已完成。
 
 ## 固定范围
 
@@ -243,7 +244,7 @@ CloudBase payload 仍未暴露 `nReturned`、`totalKeysExamined`、`totalDocsExa
 独立复核另以只读 `ListTables` 再次确认同名集合为 0，requestId
 `e2fdeed5-2cc2-470c-b406-9e767b47020b`。
 
-### 第五轮：production BSON Date 合同完整重跑（等待独立复核）
+### 第五轮：production BSON Date 合同完整重跑（独立复核通过）
 
 本轮只在 HEAD `30f6023d9d8156c164508e2f7a7b4425385d4e4e` 上执行。108 条 fixture 以
 strict canonical EJSON `{"$date":{"$numberLong":"<epoch-ms>"}}` 写入；insert 后、首条
@@ -318,6 +319,7 @@ CloudBase payload 仍未暴露 `nReturned`、`totalKeysExamined`、`totalDocsExa
 | drop 临时集合 | `f6d78faf-a187-4fdc-91ef-2e0478506593` | 成功 |
 | probe 内 ListTables 回读 | `b7e97009-3dd9-4188-b066-d01fc3094862` | 同名集合 0 个 |
 | probe 后独立只读 ListTables 回查 | `f5519da0-3840-4b7f-854b-e29abc5db6ff` | 同名集合 0 个 |
+| 审判者独立只读 ListTables 回查 | `3c96cd25-ca7e-4a25-b682-89bf9f0eefaf` | 同名集合 0 个 |
 
 ## 历史修订说明
 
@@ -339,5 +341,6 @@ same-time sort 收敛为仅 `_id` 后，12 条 explain 首次全部取得真实 
 并让 explain/smoke 共用 `streamSort` 后，第四轮再次取得 12/12 explain，并完成同一 108
 fixture 的 20+20+10 smoke、ID 唯一性、全局排序、legacy 可见、deleted/非法记录排除与精确
 清理；该轮曾通过独立复核，但 ISO string fixture 后来被证明不能代表生产类型。第五轮改用
-真实 BSON Date 写入及类型回读后再次取得同等完整 PASS，目前等待本轮不可变证据的独立复核；
-复核前不部署、不启动 Task 4。
+真实 BSON Date 写入及类型回读后再次取得同等完整 PASS，并由审判者复核不可变提交、完整
+requestId、排序统计及第三次只读清理回查后确认通过。后续仍须在最新 main 形成可审查集成
+SHA，并依次完成 CI、合并、部署与部署后真实 smoke，才可关闭对应高优问题。
