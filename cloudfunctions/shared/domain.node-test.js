@@ -677,7 +677,12 @@ test('活动和报名响应只含白名单字段并脱敏', () => {
     status: 'pending',
     token: 'secret',
     review_history: [{ reviewer_openid: 'admin-secret', action: 'reject', comment: 'x' }],
-    strava_snapshot: { years_on_strava: 5, activities_90d: 10, access_token: 'secret' },
+    strava_snapshot: {
+      years_on_strava: 5,
+      activities_90d: 10,
+      athlete_created_at: '2019-05-18T09:30:00.000Z',
+      access_token: 'secret',
+    },
     profile_snapshot: {
       nickname: 'n',
       phone_masked: '13812345678',
@@ -688,6 +693,7 @@ test('活动和报名响应只含白名单字段并脱敏', () => {
   assert.equal(r.token, undefined);
   assert.equal(r.strava_snapshot.years_on_strava, 5);
   assert.equal(r.strava_snapshot.activities_90d, 10);
+  assert.equal(r.strava_snapshot.athlete_created_at, '2019-05-18T09:30:00.000Z');
   assert.equal(r.strava_snapshot.access_token, undefined);
   assert.equal(r.review_history[0].reviewer_openid, undefined);
   assert.equal(r.profile_snapshot.phone_masked, '138****5678');

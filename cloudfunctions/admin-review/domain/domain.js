@@ -183,6 +183,7 @@ const STRAVA_FIELDS = [
   'connected_at',
   'latest_activity_at',
   'synced_at',
+  'athlete_created_at',
   'coverage_from',
   'coverage_to',
   'coverage_complete',
