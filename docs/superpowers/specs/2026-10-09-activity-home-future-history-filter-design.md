@@ -205,7 +205,9 @@ Cursor 是版本化的 opaque base64url JSON，最大 512 字符。解码后只�
 2. 切换到未加载视图时展示该视图自己的 loading/empty/error，不短暂显示另一视图的卡片。
 3. 切换到已有缓存的视图时先展示缓存，再做后台刷新。
 4. 每次首屏刷新先提升该视图 revision，并使旧 loadMore 失效。
-5. 响应和异常落地前同时校验 active view、revision 和请求 cursor；不匹配则整批丢弃，不写 items、cursor、loading 或 error。
+5. 离开当前视图时，先提升被离开视图的 revision，同步把它的 `loading / refreshing / loadingMore` 归零，并释放该视图的首屏与 loadMore 单飞句柄；保留 items、cursor、error 和 refreshError。
+6. 响应、异常和 `finally` 落地前都同时校验 active view、revision 和请求 cursor；不匹配则整批丢弃，不能写 items、cursor、loading、error 或单飞句柄。
+7. 切回有缓存的视图后必须能够立即发起新的后台刷新；先前废弃的 loadMore 不得阻止同一 cursor 重试。
 
 ### 加载更多
 
@@ -217,7 +219,7 @@ Cursor 是版本化的 opaque base64url JSON，最大 512 字符。解码后只�
 
 ### 生命周期
 
-`onHide` 和 `onUnload` 继续使全部在途请求失效。`onShow` 只刷新当前视图，不预取另一视图。本轮不启用下拉刷新。
+`onHide` 和 `onUnload` 对 future 与 history 分别执行与“离开视图”相同的同步失效：先提升 revision，再把 `loading / refreshing / loadingMore` 归零并释放全部单飞句柄，同时保留 items、cursor 和错误。旧请求的成功、异常与 `finally` 均不得写入新 revision。`onShow` 因而可以立即刷新当前视图，不预取另一视图。本轮不启用下拉刷新。
 
 ## 页面呈现
 
@@ -285,9 +287,11 @@ Cursor 是版本化的 opaque base64url JSON，最大 512 字符。解码后只�
 - 两视图 items、cursor、loading 和 error 隔离。
 - future 请求晚于 history 返回时不能覆盖 history。
 - loadMore 晚于同视图首屏刷新时整批丢弃。
+- future 首屏在途时切到 history、再切回 future：旧请求不落地，future 不永久 loading，能够立即重新请求。
+- future loadMore 在途时切到 history、再切回 future：旧更多不落地，`loadingMore` 与单飞句柄已释放，原 cursor 能够重试。
 - 同一 cursor 并发 loadMore 单飞。
 - loadMore 失败保留 items/cursor，重试成功且按 ID 去重。
-- `onHide/onUnload` 使首屏和 loadMore 都失效。
+- `onHide/onUnload` 使两个视图的首屏和 loadMore 都失效并同步收敛 volatile 状态，随后 `onShow` 可重新请求。
 - 文案、空态、加载更多入口、选中态和窄屏触控尺寸符合契约。
 
 ### 回归门禁
