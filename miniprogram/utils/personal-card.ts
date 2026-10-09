@@ -1,5 +1,6 @@
 import type { PersonalCapabilityCard, PersonalCapabilityCardState } from '../models/index';
 import { formatChinaDate, formatChinaDateTime } from './date-time';
+import { genderView } from './gender';
 
 export interface PersonalCardMetric {
   key: keyof PersonalCapabilityCard['summary'];
@@ -68,8 +69,8 @@ export function personalCardViewModel(card: PersonalCapabilityCard) {
     state: card.state,
     statusLabel: state.label,
     statusTone: state.tone,
+    ...genderView(card.profile.gender),
     displayName: card.profile.displayName || '此里骑手',
-    title: card.profile.title,
     avatarUrl: card.profile.avatarUrl || '',
     backgrounds,
     hasBackgrounds: backgrounds.length > 0,

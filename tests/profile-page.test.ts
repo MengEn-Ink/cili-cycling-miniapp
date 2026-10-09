@@ -37,7 +37,7 @@ const capabilityCard = (overrides: Record<string, unknown> = {}) => ({
   generatedAt: '2026-09-30T00:00:00.000Z',
   profile: {
     displayName: '山野骑手',
-    title: '周末爬坡手',
+    gender: '男',
     avatarUrl: 'https://temporary.example/avatar.jpg',
   },
   backgrounds: [
@@ -188,7 +188,8 @@ describe('个人中心加载状态', () => {
     await vi.waitFor(() => expect(page.data.heroCard).toBeTruthy());
 
     expect(page.data.heroCard).toMatchObject({
-      title: '周末爬坡手',
+      gender: '男',
+      genderLabel: '男',
       statusLabel: '已连接',
       primaryMetrics: [
         { key: 'totalKm90d', value: '812.5', unit: 'km' },

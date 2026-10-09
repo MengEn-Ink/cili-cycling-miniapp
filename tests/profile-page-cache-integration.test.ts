@@ -40,7 +40,7 @@ const card = {
   generatedAt: '2026-09-30T12:00:00.000Z',
   profile: {
     displayName: '缓存骑手',
-    title: '周末骑手',
+    gender: '男',
     avatarUrl: 'https://image.example/avatar.jpg',
   },
   backgrounds: [

@@ -167,7 +167,7 @@ export class MockRepository implements RideRepository {
       generatedAt: '2026-09-29T04:10:00.000Z',
       profile: {
         displayName: currentProfile.nickname || '此里骑手',
-        title: currentProfile.title || '',
+        gender: currentProfile.gender || '',
         ...(currentProfile.avatarId
           ? { avatarUrl: 'https://temporary.example/mock-avatar.jpg' }
           : {}),

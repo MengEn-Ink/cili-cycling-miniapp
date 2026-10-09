@@ -12,7 +12,7 @@ vi.mock('../miniprogram/services/ride-service', () => ({ rideService }));
 const card = {
   state: 'ready',
   generatedAt: '2026-09-29T04:10:00.000Z',
-  profile: { displayName: '山野骑手', title: '周末爬坡手' },
+  profile: { displayName: '山野骑手', gender: '男' },
   backgrounds: [],
   summary: {
     lifetimeRides: 486,
@@ -278,10 +278,10 @@ describe('个人骑行名片静态页面契约', () => {
     expect(template).toContain('wx:if="{{card.needsProfilePhoto}}"');
   });
 
-  it('长姓名与长头衔可截断且双层指标保持紧凑网格', () => {
+  it('长姓名可截断且性别标签与双层指标保持紧凑网格', () => {
     const styles = read('miniprogram/pages/capability-card/index.wxss');
     const riderName = styles.match(/\.rider-name\s*\{([^}]*)\}/)?.[1] || '';
-    const riderTitle = styles.match(/\.rider-title\s*\{([^}]*)\}/)?.[1] || '';
+    const genderPill = styles.match(/\.gender-pill\s*\{([^}]*)\}/)?.[1] || '';
     const metricValue = styles.match(/\.metric-value\s*\{([^}]*)\}/)?.[1] || '';
 
     expect(styles).toMatch(/\.rider-card\s*\{[^}]*aspect-ratio:\s*3\s*\/\s*4/s);
@@ -291,7 +291,7 @@ describe('个人骑行名片静态页面契约', () => {
     expect(riderName).toMatch(/line-height:\s*1\.[01]/);
     expect(riderName).toContain('text-overflow: ellipsis');
     expect(riderName).not.toContain('white-space: nowrap');
-    expect(riderTitle).toContain('-webkit-line-clamp: 2');
+    expect(genderPill).toContain('letter-spacing');
     expect(metricValue).toContain('text-overflow: ellipsis');
   });
 

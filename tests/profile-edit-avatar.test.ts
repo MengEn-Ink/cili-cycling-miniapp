@@ -44,7 +44,7 @@ const blankProfile: Profile = {
 const capabilityCard = (avatarUrl = 'https://temporary.example/old-avatar.jpg') => ({
   state: 'ready',
   generatedAt: '2026-09-30T00:00:00.000Z',
-  profile: { displayName: '骑手', title: '', avatarUrl },
+  profile: { displayName: '骑手', gender: '', avatarUrl },
   backgrounds: [],
   summary: {
     totalKm90d: null,

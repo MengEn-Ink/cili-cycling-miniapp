@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 const baseCard = {
   state: 'ready' as const,
   generatedAt: '2026-09-29T04:10:00.000Z',
-  profile: { displayName: '山野骑手', title: '周末爬坡手' },
+  profile: { displayName: '山野骑手', gender: '男' },
   backgrounds: [
     {
       url: 'https://temporary.example/ride-1.jpg',
@@ -177,5 +177,17 @@ describe('个人骑行名片 view model', () => {
     });
 
     expect(view.emptyMetricsText).toBe(message);
+  });
+
+  it('输出性别文字与样式类，缺失时为未标注', async () => {
+    const labeled = await build(baseCard);
+    expect(labeled).toMatchObject({ gender: '男', genderLabel: '男', genderClass: 'gender-male' });
+
+    const unknown = await build({ ...baseCard, profile: { displayName: '山野骑手', gender: '' } });
+    expect(unknown).toMatchObject({
+      gender: '',
+      genderLabel: '未标注',
+      genderClass: 'gender-unknown',
+    });
   });
 });
