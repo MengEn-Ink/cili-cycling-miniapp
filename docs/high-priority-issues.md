@@ -90,8 +90,8 @@
 
 - 优先级/状态：P1 / `IN_PROGRESS`，不可变候选 `3338944d` 独立复核未放行，唯一写者正在同一独立 worktree 修复阻断。
 - 当前事实：分支已提交严格 repository envelope/兼容旧 `listActivities(filter?)`（`695d12a`）、双视图 revision/single-flight 状态机（`7b16bce`）与 future/history UI/加载更多（`9e8fbf2`）；bootstrap 分支定义现管理 28 条索引，新增两条 planner 证明的 exact shape，旧索引未删除。
-- 证据/阻断：竞态 tests-only RED `f6d8ab0` 与 GREEN `43bb1da` 已锁定双向互斥和 revision+owner fence；索引 tests-only RED `ebc2d1e` 已锁定缺失 create、同名异形 conflict、完整 verify 零动作与 26→28 文档同源，本地 bootstrap 26/26、组合门禁 56/56 PASS。对目标环境 `cloudbase-d0gizacy77a1ab017` 的只读 plan/verify 均确认两条 exact 索引缺失且无冲突，因此部署前保持 `PENDING_EVIDENCE`，本轮未 apply、未写环境。Mock 新分页合同尚待 RED/GREEN，完整 validate 尚未重跑。
-- 下一步：完成 Mock tests-only RED/GREEN；随后运行 focused 与完整 validate，冻结新 SHA 后重新独立复核。独立复核与 PR/CI 通过后，才由环境负责人显式 apply 两条索引并回读验证。
+- 证据/阻断：竞态 tests-only RED `f6d8ab0` 与 GREEN `43bb1da` 已锁定双向互斥和 revision+owner fence；索引 tests-only RED `ebc2d1e` 与 GREEN `8f247e7` 已锁定 exact shape、26→28 及文档同源；Mock tests-only RED `76d0f93` 与 GREEN `c079aa5` 已锁定公开候选、冻结 `asOf` 的五个 DTO 字段、UTF-8 binary 双向分页和旧接口不变。统一 head 的页面 45/45、repository 147/147、bootstrap 26/26、组合门禁 56/56、`activity-read` 47/47 与 cloud package 均 PASS。对目标环境 `cloudbase-d0gizacy77a1ab017` 的只读 plan/verify 均确认两条 exact 索引缺失且无冲突，因此部署前保持 `PENDING_EVIDENCE`，本轮未 apply、未写环境；完整 validate 尚待精确最终 head 重跑。
+- 下一步：提交本轮证据同步并在非隐藏 detached worktree 运行完整 validate；冻结新 SHA 后重新独立复核。独立复核与 PR/CI 通过后，才由环境负责人显式 apply 两条索引并回读验证。
 - 负责人：TraeX 执行者；独立复核：TraeX 审判者；发布：Aime 个人助理。
 - 关闭条件：合入 main；目标环境部署；真实页面默认未来、历史切换、分页、同筛选重试及切换/迟到响应竞态全部通过；独立复核齐全。
 - 更新时间：2026-10-10。
