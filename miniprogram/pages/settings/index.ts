@@ -2,11 +2,23 @@ import { setTheme, syncPageTheme } from '../../services/theme-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.09.1',
+    date: '2026-10-09',
+    title: '报名与活动信息简化',
+    summary: '移除条码与扫码核销，报名明确标注性别，活动编辑补齐日程与费用明细。',
+    latest: true,
+    features: [
+      '报名凭证与审批详情均展示性别，现场由管理员手动确认签到',
+      '活动编辑支持日程行编辑与费用包含、费用不包含清单',
+      '个人名片与骑友卡按性别区分视觉，且始终保留文字标签',
+    ],
+  },
+  {
     version: '2026.10.08.5',
     date: '2026-10-08',
     title: '浅色高对比视觉系统',
     summary: '浅色模式统一为白、黑灰与克制橙色，修正文字、居中、日期换行和操作可读性。',
-    latest: true,
+    latest: false,
     features: [
       '统一活动、行程、个人中心、表单与管理页面的浅色视觉层级',
       '修正页面导航栏、指标、按钮和标题的视觉居中',
