@@ -1,6 +1,6 @@
 # 高优问题清单
 
-> 最后更新：2026-10-09 23:33（CST）
+> 最后更新：2026-10-10 01:20（CST）
 >
 > 维护原则：这里只保留尚未满足关闭条件的问题。新问题先去重、澄清、拆分；已满足关闭条件的条目直接删除，Git 历史和不可变外部证据作为归档。
 
@@ -25,10 +25,10 @@
 
 | 泳道 | ID | 优先级 | 状态 | 目标 | 唯一写者 | 复核/发布 |
 | --- | --- | --- | --- | --- | --- | --- |
-| A1 | `HP-20261009-01` | P0 | `READY` | 首页时间线兼容生产 BSON Date | TraeX 执行者 | TraeX 审判者 |
-| A2 | `HP-20261009-02` | P1 | `BLOCKED_BY(HP-20261009-01 code GREEN)` | `_id` 使用 Mongo binary 顺序 | TraeX 执行者 | TraeX 审判者 |
-| A3 | `HP-20261009-03` | P0 发布门禁 | `BLOCKED_BY(HP-20261009-01, HP-20261009-02 code GREEN)` | 真实 Date planner/smoke 重新取证 | TraeX 执行者 | TraeX 审判者 |
-| A4 | `HP-20261009-05` | P1 | `BLOCKED_BY(HP-20261009-03 evidence PASS)` | 首页时间线客户端与发布链路 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
+| A1 | `HP-20261009-01` | P0 | `IN_PROGRESS` | 首页时间线兼容生产 BSON Date | TraeX 执行者 | TraeX 审判者 |
+| A2 | `HP-20261009-02` | P1 | `IN_PROGRESS` | `_id` 使用 Mongo binary 顺序 | TraeX 执行者 | TraeX 审判者 |
+| A3 | `HP-20261009-03` | P0 发布门禁 | `IN_PROGRESS` | 真实 Date planner/smoke 重新取证 | TraeX 执行者 | TraeX 审判者 |
+| A4 | `HP-20261009-05` | P1 | `IN_PROGRESS` | 首页时间线客户端与发布链路 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
 | B | `HP-20261009-13` | P0 | `READY` | Strava 授权撤销与异常生命周期 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
 | C | `HP-20261009-04` | P1 | `READY` | PR #45 管理列表分页交付 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
 | D | `HP-20261009-06` | P1 | `READY` | 浅色主题全页对比度 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
@@ -45,36 +45,36 @@
 
 ### HP-20261009-01 · 首页时间线不兼容生产 BSON Date
 
-- 优先级/状态：P0 / `READY`。
-- 当前事实：未合入实施提交 `6033d67cbbe0d331b31968d4aaca41515ca95c4f` 的 `cloudfunctions/activity-read/list-page.js` 只接受 string，where/keyset 使用 ISO string；管理端实际把 `event_start/event_end` 写成 BSON Date。
-- 证据/阻断：独立真实 Date fixture 得到 `calls=2, itemCount=0, nextCursor=null`；该实现无 PR、未部署，独立审查 FAIL。
-- 下一步：真实 Date 查询、返回、多页 cursor RED；最小 GREEN 为 where/keyset 使用 Date、内部时间统一 epoch 比较，仅在 cursor/DTO 边界转 ISO。
+- 优先级/状态：P0 / `IN_PROGRESS`，代码与 planner 已通过独立复核，等待集成 PR/CI/部署链路。
+- 当前事实：最新 main 基线上的集成分支已包含 RED `2e4c7d7` 与 GREEN `02a2fea`；where/keyset 使用 BSON Date、内部统一 epoch 比较，仅 cursor/DTO 边界转 ISO。
+- 证据/阻断：focused、`activity-read` 全回归、cloud package 和 production BSON Date planner 已通过；当前仍未形成经 CI 的合并提交，也未部署或完成真实页面 smoke。
+- 下一步：随 HP-05 集成 head 完成完整 validate、独立复核与 Draft PR；合入后由 Aime 部署同一不可变 SHA 并执行页面 smoke。
 - 负责人：TraeX 执行者；独立复核：TraeX 审判者。
 - 实现解锁条件：Date RED 转绿、focused 回归与 package verifier 通过，可进入 HP-02/03；不要求本条先最终关闭。
 - 关闭条件：修复合入 main；HP-03 的 BSON Date planner/smoke 通过；目标环境部署；真实首页分页 smoke 通过；独立复核无 P0/P1。
-- 更新时间：2026-10-09。
+- 更新时间：2026-10-10。
 
 ### HP-20261009-02 · `_id` 归并顺序与 Mongo binary collation 不一致
 
-- 优先级/状态：P1 / `BLOCKED_BY(HP-20261009-01 code GREEN)`，与 HP-01 同文件族串行处理。
-- 当前事实：`list-page.js:247-250` 使用 `localeCompare`；Mongo simple/binary 的 `activity_aa-bb < activity_aa_bb` 与其顺序相反，`page_size=1` 可永久漏项。
-- 证据/阻断：当前同质化 fixture 未覆盖连字符、下划线、大小写混排；无真实环境证明。
-- 下一步：补同时间戳混合 ID 的 `page_size=1` 无漏无重 RED；改为 UTF-8 binary comparator，禁止 `localeCompare`。
+- 优先级/状态：P1 / `IN_PROGRESS`，代码 GREEN 已独立复核，等待集成 PR/CI/部署链路。
+- 当前事实：集成分支已包含混合 `-/_/大小写`、同时间戳、`page_size=1` 的 RED `963f1e4` 与 GREEN `49b4062`；归并使用 UTF-8 `Buffer.compare`，不再使用 `localeCompare`。
+- 证据/阻断：focused 26/26、`activity-read` 44/44、cloud package 与 planner smoke 已通过；尚未合入 main、部署或取得部署后跨页页面证据。
+- 下一步：随 HP-05 完成完整 validate、独立复核与 Draft PR；部署后验证同时间戳混合 ID 无漏无重。
 - 负责人：TraeX 执行者；独立复核：TraeX 审判者。
 - 实现解锁条件：focused GREEN 后可与 HP-01 一起进入 HP-03；不要求本条先最终关闭。
 - 关闭条件：确定性 RED 转绿；合入 main；真实 Date smoke 同时证明跨页顺序、唯一性和无遗漏；部署与页面 smoke 通过。
-- 更新时间：2026-10-09。
+- 更新时间：2026-10-10。
 
-### HP-20261009-03 · planner 证据未覆盖生产 BSON Date
+### HP-20261009-03 · production BSON Date planner 发布门禁
 
-- 优先级/状态：P0 发布门禁 / `BLOCKED_BY(HP-20261009-01, HP-20261009-02 code GREEN)`。
-- 当前事实：旧 108 条 fixture 通过 JSON 写入 ISO string，不是生产 BSON Date；旧 requestId 只能保留为历史，Task 2 当前为 `PENDING (production Date contract not verified)`。
-- 证据/阻断：12 条 explain 曾通过，但输入类型不代表生产；在本门禁通过前不得创建后续生产 GREEN、落索引或部署。
-- 下一步：probe 改为真正 BSON Date fixture，并补插入后类型回读；重新执行 12 explain、108 条分页 smoke 和 finally cleanup。
+- 优先级/状态：P0 发布门禁 / `IN_PROGRESS`，production BSON Date 证据门禁已 PASS，等待合入、部署和部署后验收。
+- 当前事实：第五轮用 108 条 strict canonical EJSON BSON Date fixture 完成类型回读、12/12 explain 与四流 smoke；报告收口提交 `ef70d50` 已在最新 main 基线的集成分支中。
+- 证据/阻断：独立复核确认 future/history 各 50 条按 `[20,20,10]` 无漏无重、legacy 可见、无效数据排除；临时集合三次只读回查 remaining=0，最后 requestId `3c96cd25-ca7e-4a25-b682-89bf9f0eefaf`。证据尚未随 PR 合入，且不代表目标环境部署或真实页面通过。
+- 下一步：随 HP-05 完成不可变集成 SHA、CI 和合并；部署同 SHA 后执行真实页面 smoke/readback。
 - 负责人：TraeX 执行者；独立复核：TraeX 审判者。
 - 实现解锁条件：以下 planner/smoke 证据 PASS 后即可启动 HP-05，条目继续保留等待最终部署证据。
 - 关闭条件：插入后回读并断言 `event_start/event_end` 为 BSON Date；查询 where/keyset 边界回读确认使用 Date；12/12 explain 无阻塞 SORT 且命中预期索引；108 条 smoke 的分页、顺序、唯一性、legacy/delete/非法数据结果正确；临时集合 remaining=0；相关代码合入、部署和独立复核完成。
-- 更新时间：2026-10-09。
+- 更新时间：2026-10-10。
 
 ### HP-20261009-04 · PR #45 活动管理分页尚未交付
 
@@ -88,13 +88,13 @@
 
 ### HP-20261009-05 · 首页未来/历史时间线剩余客户端与发布链路
 
-- 优先级/状态：P1 / `BLOCKED_BY(HP-20261009-03 evidence PASS)`。
-- 当前事实：首页默认未来/历史切换已随 PR #47 合入，但未合入的分页 worktree `6033d67...` 早于 PR #47/#48；repository/page/index/schema/docs/完整分页发布链尚未形成当前 main 上的 PR。
-- 证据/阻断：旧 worktree 不能直接续写或部署，必须在 HP-01/02/03 实现门禁通过后从最新 main 重建并与现有首页语义对齐。
-- 下一步：新建隔离 worktree，按 TDD 完成 repository、页面分页/重试/revision 隔离、索引/schema/docs、全量 CI 与 Draft PR。
+- 优先级/状态：P1 / `IN_PROGRESS`，唯一写者正在最新 main 基线的独立 worktree 收口。
+- 当前事实：分支已提交严格 repository envelope/兼容旧 `listActivities(filter?)`（`695d12a`）、双视图 revision/single-flight 状态机（`7b16bce`）与 future/history UI/加载更多（`9e8fbf2`）；现有 main 的 26 个索引已包含 planner 证明的两个复合索引，无重复索引变更。
+- 证据/阻断：repository 144/144、页面/刷新/主题 42/42 与 typecheck 已通过；产品/schema/release notes 已在同轮同步。尚缺完整 `npm run validate`、不可变独立复核、Draft PR 原始 CI、合并、部署和真实页面 smoke。
+- 下一步：完成文档和清单同步，跑完整 validate，冻结精确 SHA 交审判者复核；复核通过后创建 Draft PR，禁止直接部署旧 tip。
 - 负责人：TraeX 执行者；独立复核：TraeX 审判者；发布：Aime 个人助理。
 - 关闭条件：合入 main；目标环境部署；真实页面默认未来、历史切换、分页、同筛选重试及切换/迟到响应竞态全部通过；独立复核齐全。
-- 更新时间：2026-10-09。
+- 更新时间：2026-10-10。
 
 ### HP-20261009-06 · 浅色主题全页对比度
 

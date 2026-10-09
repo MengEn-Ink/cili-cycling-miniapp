@@ -16,6 +16,8 @@ Strava 报名资格唯一事实源：`strava_credentials + strava_snapshots`。`
 
 发布预告只强制标题、`event_start/event_end` 和路线起终点，且活动开始必须早于结束；`signup_deadline`、容量、分仓、费用和司机可暂缺。报名开放另由服务端要求 `signup_deadline < event_start < event_end`、容量为 1–1000、分仓容量合计等于总容量、费用存在，并在后援车容量大于 0 时要求完整司机信息。配置不完整的公开 DTO 使用 `registration_setup_pending=true`、`registration_state=closed`、`closed_reason=unavailable`；提交接口返回 `SIGNUP_INFO_INCOMPLETE`。容量不得低于事务内读取的 `occupied_count`。旧活动首次保存分仓时在事务内完整读取全部 `pending + approved + checked_in` 报名并按集合方式回填，自动回填最多处理 1000 个占位；容量或占位数超限、未知集合方式、分页失败或总数不一致都以 `PARTITION_BACKFILL_REQUIRED` 阻断且不写入。
 
+公开首页使用 `activity-read/listPage`，请求为 `{ action:'listPage', view:'future|history', page_size:1..20, cursor? }`，响应严格为 `{ items, next_cursor, as_of }`。future 合并“已开始但未结束”和“尚未开始”两流，按 `event_start + _id` 的 Mongo simple/binary 顺序正序；history 合并显式 `finished` 与已自然结束的 `published` 两流，按 `event_end + _id` 倒序。两者都排除 `is_deleted=true`、draft、无效或反转时间。首次请求由服务端确定 `as_of`，后续 opaque cursor 固定同一时刻并使用 BSON Date where/keyset 边界；DTO/cursor 边界才转 ISO。`as_of` 用于稳定分类与 keyset，并不是数据库快照，活动在分页期间变更仍按每次查询的当前文档状态读取。旧 `activity-read/list` 及其 `upcoming|history` 裸数组协议保持兼容，不与新 envelope 混用。真实 BSON Date、12 条 explain、108 条 smoke 与 cleanup 证据见 [活动首页时间线 planner 验证](verification/2026-10-09-activity-home-timeline-planner.md)。
+
 ### `registrations`
 
 `_id` 是 activity_id 与 openid 的确定性摘要；包含活动选项、脱敏 `profile_snapshot`、无 token 的 `strava_snapshot`、状态与审批历史。状态为 `waiting|pending|approved|checked_in|rejected|cancelled`；`waiting` 不占位，`checked_in` 记录 `checked_in_at`，操作人仅留在服务端审计字段中。`pending + approved + checked_in` 占位；取消或驳回释放名额时，在同一事务内按 `created_at` 全局 FIFO 扫描候补，并提升最早同时满足总容量与集合方式容量的报名；分类仍满的更早候补继续等待，补位成功时 `occupied_count` 保持不变。可选的 `team_id/team_name/is_team_leader` 仅表示邀请关系，每位队员仍独立占位和审核。管理员签到只允许 `approved -> checked_in`，重复请求幂等。
