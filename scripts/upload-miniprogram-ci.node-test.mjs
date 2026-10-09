@@ -117,10 +117,7 @@ test('工作流锁定依赖、阻止旧 main 回退且不经 GITHUB_ENV 传递�
 });
 
 test('CI 用完整 push 区间生成小程序上传判定 artifact', async () => {
-  const workflow = await readFile(
-    new URL('../.github/workflows/ci.yml', import.meta.url),
-    'utf8',
-  );
+  const workflow = await readFile(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
   assert.match(workflow, /actions\/checkout@v7/);
   assert.match(workflow, /actions\/setup-node@v7/);
   assert.match(workflow, /miniprogram-upload-decision\.mjs create/);
@@ -143,6 +140,20 @@ test('部署工作流校验 CI 判定后才上传且保留手动入口', async (
   assert.match(workflow, /steps\.decision\.outputs\.should_upload == 'true'/);
   assert.match(workflow, /github\.event_name == 'workflow_dispatch'/);
   assert.match(workflow, /actions\/setup-node@v7/);
+});
+
+test('部署门禁同时运行上传判定和上传客户端测试', async () => {
+  const packageJson = JSON.parse(
+    await readFile(new URL('../package.json', import.meta.url), 'utf8'),
+  );
+  assert.match(
+    packageJson.scripts['test:deploy'],
+    /scripts\/miniprogram-upload-decision\.node-test\.mjs/,
+  );
+  assert.match(
+    packageJson.scripts['test:deploy'],
+    /scripts\/upload-miniprogram-ci\.node-test\.mjs/,
+  );
 });
 
 test('上传脚本不会读取或打印密钥正文', async () => {

@@ -20,9 +20,7 @@ function normalizePath(value) {
 }
 
 function affectsMiniProgram(path) {
-  return (
-    UPLOAD_FILES.has(path) || UPLOAD_PREFIXES.some((prefix) => path.startsWith(prefix))
-  );
+  return UPLOAD_FILES.has(path) || UPLOAD_PREFIXES.some((prefix) => path.startsWith(prefix));
 }
 
 export function shouldUploadMiniProgram(paths) {
@@ -39,9 +37,7 @@ function requireSha(value, label) {
 export function buildUploadDecision({ before, sha, paths }) {
   if (!Array.isArray(paths)) throw new Error('paths 必须是数组');
   const normalizedPaths = paths.map(normalizePath);
-  const matchedPaths = [
-    ...new Set(normalizedPaths.filter((path) => affectsMiniProgram(path))),
-  ];
+  const matchedPaths = [...new Set(normalizedPaths.filter((path) => affectsMiniProgram(path)))];
   return {
     schemaVersion: 1,
     before: requireSha(before, 'before'),
@@ -69,7 +65,7 @@ export function validateUploadDecision(value, expectedSha) {
   ) {
     throw new Error('上传判定 matchedPaths 无效');
   }
-  if (value.shouldUpload !== (value.matchedPaths.length > 0)) {
+  if (value.shouldUpload !== value.matchedPaths.length > 0) {
     throw new Error('上传判定 shouldUpload 与 matchedPaths 不一致');
   }
   return {

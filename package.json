@@ -19,7 +19,7 @@
     "cloudbase:verify": "node scripts/bootstrap-cloudbase.mjs --verify",
     "verify:cloud-packages": "node scripts/verify-cloud-packages.mjs",
     "coverage": "vitest run --coverage && node --experimental-test-coverage --test scripts/bootstrap-cloudbase.node-test.mjs && node scripts/check-cloud-coverage.mjs",
-    "test:deploy": "node --test scripts/upload-miniprogram-ci.node-test.mjs",
+    "test:deploy": "node --test scripts/miniprogram-upload-decision.node-test.mjs scripts/upload-miniprogram-ci.node-test.mjs",
     "check:release-notes": "node scripts/check-release-notes.mjs",
     "test:release-notes": "node --test scripts/check-release-notes.node-test.mjs",
     "deploy:miniprogram": "node scripts/upload-miniprogram-ci.mjs",
