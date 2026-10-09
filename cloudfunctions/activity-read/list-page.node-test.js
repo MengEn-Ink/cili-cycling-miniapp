@@ -39,6 +39,9 @@ function comparable(value) {
 }
 
 function matchesOperator(actual, condition) {
+  if (condition.__operator === 'and')
+    return condition.value.every((item) => matchesOperator(actual, item));
+  if ((actual instanceof Date) !== (condition.value instanceof Date)) return false;
   const left = comparable(actual);
   const right = comparable(condition.value);
   if (condition.__operator === 'eq') return left === right;
@@ -47,8 +50,6 @@ function matchesOperator(actual, condition) {
   if (condition.__operator === 'gte') return left >= right;
   if (condition.__operator === 'lt') return left < right;
   if (condition.__operator === 'lte') return left <= right;
-  if (condition.__operator === 'and')
-    return condition.value.every((item) => matchesOperator(actual, item));
   throw new Error(`unsupported field operator: ${condition.__operator}`);
 }
 
@@ -83,6 +84,30 @@ function assertTimeEquality(value, expected) {
   if (value && value.__operator === 'eq')
     assert.equal(comparable(value.value), expected.toISOString());
   else assert.equal(comparable(value), expected.toISOString());
+}
+
+function collectComparisonValues(value, output = []) {
+  if (!value || typeof value !== 'object' || !value.__operator) return output;
+  if (value.__operator === 'and') {
+    for (const child of value.value) collectComparisonValues(child, output);
+  } else {
+    output.push(value.value);
+  }
+  return output;
+}
+
+function assertDateQueryBoundaries(calls) {
+  const values = calls.flatMap((call) =>
+    ['event_start', 'event_end'].flatMap((field) =>
+      collectComparisonValues(call.condition[field]),
+    ),
+  );
+  assert.ok(values.length > 0, 'expected at least one time comparison boundary');
+  assert.equal(
+    values.every((value) => value instanceof Date),
+    true,
+    'all where/keyset time boundaries must be Date instances',
+  );
 }
 
 function compareValues(left, right, direction) {
@@ -145,6 +170,14 @@ function activity(id, overrides = {}) {
     event_end: '2026-10-10T12:00:00.000Z',
     ...overrides,
   };
+}
+
+function bsonActivity(id, overrides = {}) {
+  return activity(id, {
+    event_start: new Date('2026-10-10T08:00:00.000Z'),
+    event_end: new Date('2026-10-10T12:00:00.000Z'),
+    ...overrides,
+  });
 }
 
 function request(view, cursor, pageSize = 20) {
@@ -251,6 +284,63 @@ test('event_end 等于 as_of 只进入 history', async () => {
     history.items.map((item) => item._id),
     ['boundary'],
   );
+});
+
+test('真实 BSON Date 首屏 where 边界保持 Date 类型', async () => {
+  const future = await page([], 'future');
+  const history = await page([], 'history');
+
+  assertDateQueryBoundaries(future.calls);
+  assertDateQueryBoundaries(history.calls);
+});
+
+test('真实 BSON Date 文档可返回，cursor 只在 DTO 边界序列化为 ISO', async () => {
+  const documents = [
+    bsonActivity('future-date-1'),
+    bsonActivity('future-date-2', {
+      event_start: new Date('2026-10-10T09:00:00.000Z'),
+      event_end: new Date('2026-10-10T13:00:00.000Z'),
+    }),
+  ];
+
+  const first = await page(documents, 'future', undefined, 1);
+
+  assert.deepEqual(
+    first.items.map((item) => item._id),
+    ['future-date-1'],
+  );
+  assert.equal(typeof first.nextCursor, 'string');
+  assert.deepEqual(decodeListCursor(first.nextCursor, 'future').boundary, {
+    time: documents[0].event_start.toISOString(),
+    id: 'future-date-1',
+  });
+});
+
+test('ISO cursor 解码后 same-time/cross-time keyset 使用 Date 并跨页无漏', async () => {
+  const boundary = new Date('2026-10-10T08:00:00.000Z');
+  const documents = [
+    bsonActivity('future-date-00', { event_start: boundary }),
+    bsonActivity('future-date-01', { event_start: boundary }),
+    bsonActivity('future-date-02', {
+      event_start: new Date('2026-10-10T09:00:00.000Z'),
+      event_end: new Date('2026-10-10T13:00:00.000Z'),
+    }),
+  ];
+  const cursor = encodeListCursor({
+    v: 1,
+    view: 'future',
+    as_of: AS_OF.toISOString(),
+    boundary: { time: boundary.toISOString(), id: 'future-date-00' },
+  });
+
+  const result = await page(documents, 'future', cursor, 2);
+
+  assertDateQueryBoundaries(result.calls);
+  assert.deepEqual(
+    result.items.map((item) => item._id),
+    ['future-date-01', 'future-date-02'],
+  );
+  assert.equal(result.nextCursor, null);
 });
 
 test('同时间戳按 _id 稳定 keyset，41 条按 20+20+1 无漏无重', async () => {
