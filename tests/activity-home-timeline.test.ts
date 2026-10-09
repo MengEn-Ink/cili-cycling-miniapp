@@ -169,6 +169,82 @@ describe('activities page timeline controller', () => {
     expect(rideService.listActivityPage).toHaveBeenLastCalledWith('future', 'cursor-1');
   });
 
+  it('同视图 loadMore 后 refresh 会失效旧 owner 且旧 finally 不删除新分页', async () => {
+    const page = await loadPage();
+    rideService.listActivityPage.mockResolvedValueOnce(pageResult(['cached'], 'cursor-old'));
+    await page.load();
+
+    const oldMore = deferred<ReturnType<typeof pageResult>>();
+    const refresh = deferred<ReturnType<typeof pageResult>>();
+    const newMore = deferred<ReturnType<typeof pageResult>>();
+    rideService.listActivityPage
+      .mockReturnValueOnce(oldMore.promise)
+      .mockReturnValueOnce(refresh.promise)
+      .mockReturnValueOnce(newMore.promise);
+
+    const oldRequest = page.loadMore();
+    const refreshRequest = page.load();
+    expect(page.data.loadingMore).toBe(false);
+
+    refresh.resolve(pageResult(['fresh'], 'cursor-new'));
+    await refreshRequest;
+    const newRequest = page.loadMore();
+    expect(rideService.listActivityPage).toHaveBeenCalledTimes(4);
+    expect(rideService.listActivityPage).toHaveBeenLastCalledWith('future', 'cursor-new');
+    const currentHandle = page.loadMoreHandles.future;
+    expect(currentHandle).toBeDefined();
+
+    oldMore.resolve(pageResult(['stale-more'], 'cursor-stale'));
+    await oldRequest;
+    expect(page.loadMoreHandles.future).toBe(currentHandle);
+    expect(page.data.items.map((item: any) => item.id)).toEqual(['fresh']);
+    expect(page.data.nextCursor).toBe('cursor-new');
+
+    newMore.resolve(pageResult(['next']));
+    await newRequest;
+    expect(page.data.items.map((item: any) => item.id)).toEqual(['fresh', 'next']);
+    expect(page.data).toMatchObject({ nextCursor: null, loadingMore: false });
+  });
+
+  it('同视图 refresh 在途时 loadMore 方法零调用，完成后才允许新 cursor 分页', async () => {
+    const page = await loadPage();
+    rideService.listActivityPage.mockResolvedValueOnce(pageResult(['cached'], 'cursor-old'));
+    await page.load();
+
+    const refresh = deferred<ReturnType<typeof pageResult>>();
+    rideService.listActivityPage.mockReturnValueOnce(refresh.promise);
+    const refreshRequest = page.load();
+    await page.loadMore();
+    expect(rideService.listActivityPage).toHaveBeenCalledTimes(2);
+
+    refresh.resolve(pageResult(['fresh'], 'cursor-new'));
+    await refreshRequest;
+    rideService.listActivityPage.mockResolvedValueOnce(pageResult(['next']));
+    await page.loadMore();
+    expect(rideService.listActivityPage).toHaveBeenLastCalledWith('future', 'cursor-new');
+  });
+
+  it('同视图 refresh 失败保留旧 cursor 并释放互斥以便再次分页', async () => {
+    const page = await loadPage();
+    rideService.listActivityPage.mockResolvedValueOnce(pageResult(['cached'], 'cursor-old'));
+    await page.load();
+    rideService.listActivityPage.mockRejectedValueOnce(new Error('刷新失败'));
+
+    await page.load();
+    expect(page.data).toMatchObject({
+      nextCursor: 'cursor-old',
+      loading: false,
+      refreshing: false,
+      loadingMore: false,
+      refreshError: '刷新失败',
+    });
+
+    rideService.listActivityPage.mockResolvedValueOnce(pageResult(['next']));
+    await page.loadMore();
+    expect(rideService.listActivityPage).toHaveBeenLastCalledWith('future', 'cursor-old');
+    expect(page.data.items.map((item: any) => item.id)).toEqual(['cached', 'next']);
+  });
+
   it('首屏在途切走再切回会释放 loading 并重新请求', async () => {
     const page = await loadPage();
     const oldFuture = deferred<ReturnType<typeof pageResult>>();
