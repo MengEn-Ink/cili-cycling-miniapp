@@ -7,8 +7,10 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import {
+  compensateJourney,
   evaluateJourneyPreflight,
   runReconciledWrite,
+  sanitizeJourneyAudits,
   waitForPageReady,
 } from './p0-journey-driver.mjs';
 
@@ -305,4 +307,189 @@ test('未知、非法或失败的回读使用固定错误且不重试写操作',
     );
     assert.equal(writes, 1);
   }
+});
+
+test('审计投影按时间排序并把真实目标替换为合成别名', () => {
+  const result = sanitizeJourneyAudits({
+    audits: [
+      {
+        action: 'registration.submitted',
+        target_id: 'REAL_REGISTRATION_SENTINEL',
+        created_at: '2026-10-09T01:01:00.000Z',
+      },
+      {
+        action: 'strava.sync.succeeded',
+        target_id: 'REAL_OPENID_SENTINEL',
+        created_at: '2026-10-09T01:00:00.000Z',
+      },
+    ],
+    subjectId: 'REAL_OPENID_SENTINEL',
+    registrationId: 'REAL_REGISTRATION_SENTINEL',
+    subjectAlias: 'user_test_P0_20261009_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    registrationAlias: 'reg_test_P0_20261009_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  });
+
+  assert.deepEqual(result, [
+    {
+      action: 'strava.sync.succeeded',
+      target_id: 'user_test_P0_20261009_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      created_at: '2026-10-09T01:00:00.000Z',
+    },
+    {
+      action: 'registration.submitted',
+      target_id: 'reg_test_P0_20261009_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      created_at: '2026-10-09T01:01:00.000Z',
+    },
+  ]);
+  assert.doesNotMatch(JSON.stringify(result), /REAL_.*_SENTINEL/);
+});
+
+test('审计投影拒绝未知动作、错误目标、额外字段、重复动作和非法时间', () => {
+  const base = {
+    audits: [
+      {
+        action: 'registration.submitted',
+        target_id: 'real-registration',
+        created_at: '2026-10-09T01:01:00.000Z',
+      },
+    ],
+    subjectId: 'real-subject',
+    registrationId: 'real-registration',
+    subjectAlias: 'user_test_P0_20261009_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+    registrationAlias: 'reg_test_P0_20261009_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+  };
+  const invalidInputs = [
+    {
+      ...base,
+      audits: [{ ...base.audits[0], action: 'registration.secret.SENTINEL' }],
+    },
+    {
+      ...base,
+      audits: [{ ...base.audits[0], target_id: 'WRONG_TARGET_SENTINEL' }],
+    },
+    {
+      ...base,
+      audits: [{ ...base.audits[0], debug: 'EXTRA_FIELD_SENTINEL' }],
+    },
+    {
+      ...base,
+      audits: [base.audits[0], { ...base.audits[0] }],
+    },
+    {
+      ...base,
+      audits: [{ ...base.audits[0], created_at: '2026-10-09 01:01:00' }],
+    },
+  ];
+
+  for (const input of invalidInputs) {
+    assert.throws(
+      () => sanitizeJourneyAudits(input),
+      (error) =>
+        error.code === 'AUDIT_SCHEMA_INVALID' &&
+        error.message === '审计记录结构无效' &&
+        !error.message.includes('SENTINEL'),
+    );
+  }
+});
+
+test('补偿只取消可取消报名并在结束活动后回读归零', async () => {
+  const calls = [];
+  let reads = 0;
+  const result = await compensateJourney({
+    readState: async () => {
+      reads += 1;
+      return reads === 1
+        ? {
+            activityStatus: 'published',
+            registrations: [
+              { id: 'r1', status: 'pending' },
+              { id: 'r2', status: 'approved' },
+              { id: 'r3', status: 'cancelled' },
+              { id: 'r4', status: 'checked_in' },
+            ],
+          }
+        : {
+            activityStatus: 'finished',
+            registrations: [
+              { id: 'r1', status: 'cancelled' },
+              { id: 'r2', status: 'cancelled' },
+              { id: 'r3', status: 'cancelled' },
+              { id: 'r4', status: 'checked_in' },
+            ],
+          };
+    },
+    cancelRegistration: async (id) => calls.push(`cancel:${id}`),
+    finishActivity: async () => calls.push('finish'),
+  });
+
+  assert.deepEqual(calls, ['cancel:r1', 'cancel:r2', 'finish']);
+  assert.equal(reads, 2);
+  assert.deepEqual(result, {
+    outcome: 'completed',
+    cancelledCount: 2,
+    activityFinished: true,
+  });
+});
+
+test('单个补偿动作失败后继续执行并以最终回读为准', async () => {
+  const calls = [];
+  let reads = 0;
+  const result = await compensateJourney({
+    readState: async () => {
+      reads += 1;
+      return reads === 1
+        ? {
+            activityStatus: 'published',
+            registrations: [
+              { id: 'r1', status: 'waiting' },
+              { id: 'r2', status: 'pending' },
+            ],
+          }
+        : {
+            activityStatus: 'finished',
+            registrations: [
+              { id: 'r1', status: 'cancelled' },
+              { id: 'r2', status: 'cancelled' },
+            ],
+          };
+    },
+    cancelRegistration: async (id) => {
+      calls.push(`cancel:${id}`);
+      if (id === 'r1') throw new Error('CANCEL_ERROR_SENTINEL');
+    },
+    finishActivity: async () => {
+      calls.push('finish');
+      throw new Error('FINISH_ERROR_SENTINEL');
+    },
+  });
+
+  assert.deepEqual(calls, ['cancel:r1', 'cancel:r2', 'finish']);
+  assert.deepEqual(result, {
+    outcome: 'completed',
+    cancelledCount: 2,
+    activityFinished: true,
+  });
+  assert.doesNotMatch(JSON.stringify(result), /SENTINEL/);
+});
+
+test('最终仍有活跃报名或活动未结束时补偿失败且不泄露状态', async () => {
+  let reads = 0;
+  await assert.rejects(
+    compensateJourney({
+      readState: async () => {
+        reads += 1;
+        return {
+          activityStatus: 'published',
+          registrations: [{ id: 'COMPENSATION_ID_SENTINEL', status: 'approved' }],
+        };
+      },
+      cancelRegistration: async () => {},
+      finishActivity: async () => {},
+    }),
+    (error) =>
+      error.code === 'COMPENSATION_INCOMPLETE' &&
+      error.message === '失败补偿未完成' &&
+      !error.message.includes('SENTINEL'),
+  );
+  assert.equal(reads, 2);
 });

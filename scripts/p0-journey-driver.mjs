@@ -20,6 +20,19 @@ const MEMBER_KEYS = new Set([
   'oauthFresh',
 ]);
 const ROUTE_FIXTURE_KEYS = new Set(['available', 'ownedByMember', 'previewReady', 'gpxReady']);
+const AUDIT_KEYS = new Set(['action', 'target_id', 'created_at']);
+const SUBJECT_ALIAS_PATTERN = /^user_test_(P0_\d{8}_[A-F0-9]{32})$/;
+const REGISTRATION_ALIAS_PATTERN = /^reg_test_(P0_\d{8}_[A-F0-9]{32})$/;
+const JOURNEY_AUDIT_TARGETS = new Map([
+  ['strava.sync.succeeded', 'subject'],
+  ['registration.submitted', 'registration'],
+  ['registration.approved', 'registration'],
+  ['registration.cancelled', 'registration'],
+  ['registration.resubmitted', 'registration'],
+]);
+const COMPENSATION_STATE_KEYS = new Set(['activityStatus', 'registrations']);
+const COMPENSATION_REGISTRATION_KEYS = new Set(['id', 'status']);
+const ACTIVE_REGISTRATION_STATUSES = new Set(['waiting', 'pending', 'approved']);
 
 export class JourneyDriverError extends Error {
   constructor(code) {
@@ -207,6 +220,157 @@ export async function runReconciledWrite({
     }
     await wait(Math.min(intervalMs, timeoutMs - elapsedMs));
   }
+}
+
+function isCanonicalTimestamp(value) {
+  if (typeof value !== 'string') return false;
+  const time = Date.parse(value);
+  return Number.isFinite(time) && new Date(time).toISOString() === value;
+}
+
+export function sanitizeJourneyAudits({
+  audits,
+  subjectId,
+  registrationId,
+  subjectAlias,
+  registrationAlias,
+}) {
+  const subjectMatch =
+    typeof subjectAlias === 'string' ? subjectAlias.match(SUBJECT_ALIAS_PATTERN) : null;
+  const registrationMatch =
+    typeof registrationAlias === 'string'
+      ? registrationAlias.match(REGISTRATION_ALIAS_PATTERN)
+      : null;
+  if (
+    !Array.isArray(audits) ||
+    typeof subjectId !== 'string' ||
+    subjectId.length === 0 ||
+    typeof registrationId !== 'string' ||
+    registrationId.length === 0 ||
+    !subjectMatch ||
+    !registrationMatch ||
+    subjectMatch[1] !== registrationMatch[1]
+  ) {
+    fail('AUDIT_SCHEMA_INVALID');
+  }
+
+  const actions = new Set();
+  for (const audit of audits) {
+    if (
+      !hasExactKeys(audit, AUDIT_KEYS) ||
+      !JOURNEY_AUDIT_TARGETS.has(audit.action) ||
+      actions.has(audit.action) ||
+      !isCanonicalTimestamp(audit.created_at)
+    ) {
+      fail('AUDIT_SCHEMA_INVALID');
+    }
+    const targetType = JOURNEY_AUDIT_TARGETS.get(audit.action);
+    const expectedTarget = targetType === 'subject' ? subjectId : registrationId;
+    if (audit.target_id !== expectedTarget) fail('AUDIT_SCHEMA_INVALID');
+    actions.add(audit.action);
+  }
+
+  return audits
+    .map((audit) => ({
+      action: audit.action,
+      target_id:
+        JOURNEY_AUDIT_TARGETS.get(audit.action) === 'subject' ? subjectAlias : registrationAlias,
+      created_at: audit.created_at,
+    }))
+    .sort((left, right) => Date.parse(left.created_at) - Date.parse(right.created_at));
+}
+
+function validateCompensationState(value) {
+  if (
+    !hasExactKeys(value, COMPENSATION_STATE_KEYS) ||
+    typeof value.activityStatus !== 'string' ||
+    !Array.isArray(value.registrations)
+  ) {
+    fail('COMPENSATION_INCOMPLETE');
+  }
+
+  const ids = new Set();
+  for (const registration of value.registrations) {
+    if (
+      !hasExactKeys(registration, COMPENSATION_REGISTRATION_KEYS) ||
+      typeof registration.id !== 'string' ||
+      registration.id.length === 0 ||
+      typeof registration.status !== 'string' ||
+      registration.status.length === 0 ||
+      ids.has(registration.id)
+    ) {
+      fail('COMPENSATION_INCOMPLETE');
+    }
+    ids.add(registration.id);
+  }
+  return value;
+}
+
+async function readCompensationState(readState) {
+  try {
+    return validateCompensationState(await readState());
+  } catch {
+    fail('COMPENSATION_INCOMPLETE');
+  }
+}
+
+export async function compensateJourney({ readState, cancelRegistration, finishActivity }) {
+  if (
+    typeof readState !== 'function' ||
+    typeof cancelRegistration !== 'function' ||
+    typeof finishActivity !== 'function'
+  ) {
+    fail('COMPENSATION_INCOMPLETE');
+  }
+
+  const initialState = await readCompensationState(readState);
+  const registrationsToCancel = initialState.registrations.filter((registration) =>
+    ACTIVE_REGISTRATION_STATUSES.has(registration.status),
+  );
+
+  for (const registration of registrationsToCancel) {
+    try {
+      await cancelRegistration(registration.id);
+    } catch {
+      // Final state reconciliation decides whether the compensation succeeded.
+    }
+  }
+
+  if (initialState.activityStatus !== 'finished') {
+    try {
+      await finishActivity();
+    } catch {
+      // Final state reconciliation decides whether the compensation succeeded.
+    }
+  }
+
+  const finalState = await readCompensationState(readState);
+  const finalRegistrations = new Map(
+    finalState.registrations.map((registration) => [registration.id, registration]),
+  );
+  const allInitialRecordsRemain = initialState.registrations.every((registration) =>
+    finalRegistrations.has(registration.id),
+  );
+  const allCancelled = registrationsToCancel.every(
+    (registration) => finalRegistrations.get(registration.id)?.status === 'cancelled',
+  );
+  const activeRegistrations = finalState.registrations.filter((registration) =>
+    ACTIVE_REGISTRATION_STATUSES.has(registration.status),
+  );
+  if (
+    finalState.activityStatus !== 'finished' ||
+    !allInitialRecordsRemain ||
+    !allCancelled ||
+    activeRegistrations.length > 0
+  ) {
+    fail('COMPENSATION_INCOMPLETE');
+  }
+
+  return {
+    outcome: 'completed',
+    cancelledCount: registrationsToCancel.length,
+    activityFinished: true,
+  };
 }
 
 async function runCli(argv) {
