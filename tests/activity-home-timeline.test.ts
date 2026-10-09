@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { read } from './theme-contract-helpers';
+import type { Activity } from '../miniprogram/models';
 import {
   appendUniqueActivities,
   createTimelineViewState,
@@ -8,15 +10,23 @@ import {
 const rideService = vi.hoisted(() => ({ listActivityPage: vi.fn() }));
 vi.mock('../miniprogram/services/ride-service', () => ({ rideService }));
 
-const activity = (id: string) => ({
+const activity = (id: string): Activity => ({
   id,
+  version: 1,
   title: id,
   date: '2026-10-18T00:00:00.000Z',
   startAt: '2026-10-18T00:00:00.000Z',
   endAt: '2026-10-18T08:00:00.000Z',
+  deadline: '2026-10-17T08:00:00.000Z',
   status: 'published',
   capacity: 20,
   occupiedCount: 2,
+  description: '',
+  route: { start: '', end: '', distanceKm: 0, elevationM: 0, level: '' },
+  schedule: [],
+  notices: [],
+  equipment: [],
+  fee: '',
 });
 const pageResult = (ids: string[], nextCursor: string | null = null) => ({
   items: ids.map(activity),
@@ -70,6 +80,20 @@ describe('activity timeline state helpers', () => {
     expect(
       appendUniqueActivities([activity('a'), activity('b')], [activity('b'), activity('c')]),
     ).toEqual([activity('a'), activity('b'), activity('c')]);
+  });
+});
+
+describe('activity timeline template contract', () => {
+  it('提供双视图语义、动态文案与加载更多入口', () => {
+    const template = read('miniprogram/pages/activities/index.wxml');
+    expect(template).toContain('class="timeline-tabs"');
+    expect(template).toContain('data-view="future"');
+    expect(template).toContain('data-view="history"');
+    expect(template).toContain('aria-selected="{{activeView === \'future\'}}"');
+    expect(template).toContain('{{followingTitle}}');
+    expect(template).toContain('bindtap="loadMore"');
+    expect(template).toContain("{{loadingMore ? '加载中…' : '加载更多'}}");
+    expect(template).toContain("{{activeView === 'history' ? '历史活动列表' : '未来活动列表'}}");
   });
 });
 

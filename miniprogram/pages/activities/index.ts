@@ -80,7 +80,7 @@ Page({
     }
   },
   renderActiveView() {
-    const view = this.data.activeView;
+    const view = this.data.activeView as PublicActivityView;
     const state = this.viewStates[view];
     this.setData({
       ...VIEW_COPY[view],
@@ -102,7 +102,7 @@ Page({
     );
   },
   async load() {
-    const view = this.data.activeView;
+    const view = this.data.activeView as PublicActivityView;
     const previous = invalidateTimelineView(this.viewStates[view]);
     const hasItems = previous.items.length > 0;
     const state: TimelineViewState = {
@@ -149,7 +149,7 @@ Page({
     await request;
   },
   async loadMore() {
-    const view = this.data.activeView;
+    const view = this.data.activeView as PublicActivityView;
     const existing = this.loadMoreHandles[view];
     if (existing) return existing;
     const state = this.viewStates[view];
@@ -190,7 +190,7 @@ Page({
     const candidate = event.currentTarget?.dataset?.view;
     if (candidate !== 'future' && candidate !== 'history') return;
     if (candidate === this.data.activeView) return;
-    const previous = this.data.activeView;
+    const previous = this.data.activeView as PublicActivityView;
     this.viewStates[previous] = invalidateTimelineView(this.viewStates[previous]);
     delete this.loadHandles[previous];
     delete this.loadMoreHandles[previous];

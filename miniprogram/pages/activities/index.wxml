@@ -1,5 +1,5 @@
 <view class="page activities-page {{themeClass}}">
-  <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{refreshing ? '正在刷新活动' : ''}}</view>
+  <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{refreshing ? '正在刷新活动' : loadingMore ? '正在加载更多活动' : ''}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{refreshError}}</view>
   <brand-logo meta="RIDES / {{items.length || '—'}}" />
   <view class="activities-intro">
@@ -7,9 +7,9 @@
     <view class="page-title"><view>发现活动</view><view>报名出发</view></view>
     <view class="intro-copy muted">先看路线，再决定下一次出发</view>
   </view>
-  <view class="activity-filters" role="tablist" aria-label="活动时间筛选">
-    <view class="activity-filter {{filter === 'upcoming' ? 'is-active' : ''}}" role="tab" aria-selected="{{filter === 'upcoming'}}" aria-controls="activity-list-panel" data-filter="upcoming" bindtap="selectFilter" hover-class="activity-filter--pressed">未来活动</view>
-    <view class="activity-filter {{filter === 'history' ? 'is-active' : ''}}" role="tab" aria-selected="{{filter === 'history'}}" aria-controls="activity-list-panel" data-filter="history" bindtap="selectFilter" hover-class="activity-filter--pressed">历史活动</view>
+  <view class="timeline-tabs" role="tablist" aria-label="活动时间筛选">
+    <view class="timeline-tab {{activeView === 'future' ? 'is-active' : ''}}" role="tab" aria-selected="{{activeView === 'future'}}" aria-controls="activity-list-panel" data-view="future" bindtap="switchView" hover-class="timeline-tab--pressed">未来活动</view>
+    <view class="timeline-tab {{activeView === 'history' ? 'is-active' : ''}}" role="tab" aria-selected="{{activeView === 'history'}}" aria-controls="activity-list-panel" data-view="history" bindtap="switchView" hover-class="timeline-tab--pressed">历史活动</view>
   </view>
   <view class="section-head">
     <view class="section-title">{{sectionTitle}}</view>
@@ -17,12 +17,13 @@
   </view>
   <view class="refresh-note muted" wx:if="{{refreshing}}" aria-hidden="true">正在刷新活动…</view>
   <view class="refresh-note muted" wx:if="{{refreshError}}" aria-hidden="true">{{refreshError}}</view>
-  <view id="activity-list-panel" class="activity-results" role="tabpanel" aria-label="{{filter === 'history' ? '历史活动列表' : '未来活动列表'}}">
+  <view id="activity-list-panel" class="activity-results" role="tabpanel" aria-label="{{activeView === 'history' ? '历史活动列表' : '未来活动列表'}}">
     <state-view loading="{{loading}}" error="{{error}}" empty="{{!items.length}}" empty-title="{{emptyTitle}}" empty-copy="{{emptyCopy}}" retryable="{{true}}" bind:retry="load">
       <block wx:for="{{items}}" wx:key="id">
-        <view class="following-head" wx:if="{{filter === 'upcoming' && index === 1}}"><text>接下来</text><text>继续探索 →</text></view>
-        <activity-card item="{{item}}" featured="{{filter === 'upcoming' && index === 0}}" data-id="{{item.id}}" bind:open="open" />
+        <view class="following-head" wx:if="{{index === 1}}"><text>{{followingTitle}}</text><text>继续探索 →</text></view>
+        <activity-card item="{{item}}" featured="{{activeView === 'future' && index === 0}}" data-id="{{item.id}}" bind:open="open" />
       </block>
     </state-view>
+    <button class="load-more" wx:if="{{nextCursor && items.length}}" bindtap="loadMore" loading="{{loadingMore}}" disabled="{{loadingMore}}" aria-disabled="{{loadingMore}}">{{loadingMore ? '加载中…' : '加载更多'}}</button>
   </view>
 </view>

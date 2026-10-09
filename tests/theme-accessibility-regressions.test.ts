@@ -166,7 +166,7 @@ describe('theme accessibility regressions', () => {
     expect(activities).toContain('empty-copy="{{emptyCopy}}"');
     expect(activities).toContain('role="tablist"');
     expect(activities.match(/role="tab"/g)).toHaveLength(2);
-    expect(activities).toContain('aria-selected="{{filter === \'upcoming\'}}"');
+    expect(activities).toContain('aria-selected="{{activeView === \'future\'}}"');
     expect(activities.match(/aria-controls="activity-list-panel"/g)).toHaveLength(2);
     expect(activities).toContain('role="tabpanel"');
     expect(registrations).toContain('empty-title="暂无行程"');
@@ -279,6 +279,18 @@ describe('theme accessibility regressions', () => {
 
     const reviews = read('miniprogram/pages/admin/reviews/index.wxss');
     expect(declaration(effectiveBlock(reviews, '.hero-title'), 'font-size')).toBe('46rpx');
+
+    const activityTimeline = read('miniprogram/pages/activities/index.wxss');
+    expect(declaration(effectiveBlock(activityTimeline, '.timeline-tab'), 'min-height')).toBe(
+      'var(--control-height)',
+    );
+    expectSemantic(
+      declaration(effectiveBlock(activityTimeline, '.timeline-tab.is-active'), 'background'),
+      '--color-brand',
+    );
+    expect(activityTimeline).toMatch(
+      /@media \(max-width: 320px\)[\s\S]*?\.timeline-tabs\s*\{[^}]*width:\s*100%/s,
+    );
   });
 
   it('keeps dense metrics and progress rails readable on narrow screens', () => {
