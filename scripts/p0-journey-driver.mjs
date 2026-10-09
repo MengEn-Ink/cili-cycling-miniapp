@@ -78,6 +78,10 @@ function validatePreflightSchema(value) {
   }
 }
 
+function defaultWait(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
 export function evaluateJourneyPreflight(value) {
   validatePreflightSchema(value);
 
@@ -99,6 +103,110 @@ export function evaluateJourneyPreflight(value) {
     outcome: blockers.length === 0 ? 'ready' : 'not_executed',
     blockers,
   };
+}
+
+export async function waitForPageReady({
+  readPage,
+  expectedPath,
+  isDataReady,
+  timeoutMs = 10_000,
+  intervalMs = 100,
+  now = Date.now,
+  wait = defaultWait,
+}) {
+  if (
+    typeof readPage !== 'function' ||
+    typeof expectedPath !== 'string' ||
+    expectedPath.length === 0 ||
+    typeof isDataReady !== 'function' ||
+    !Number.isFinite(timeoutMs) ||
+    timeoutMs < 0 ||
+    !Number.isFinite(intervalMs) ||
+    intervalMs < 0 ||
+    typeof now !== 'function' ||
+    typeof wait !== 'function'
+  ) {
+    fail('PAGE_NOT_READY');
+  }
+
+  const startedAt = now();
+  let attempts = 0;
+  while (true) {
+    attempts += 1;
+    let ready = false;
+    try {
+      const page = await readPage();
+      ready = page?.path === expectedPath && Boolean(isDataReady(page.data));
+    } catch {
+      ready = false;
+    }
+
+    const elapsedMs = Math.max(0, now() - startedAt);
+    if (ready) return { attempts, elapsedMs };
+    if (elapsedMs >= timeoutMs) fail('PAGE_NOT_READY');
+
+    await wait(Math.min(intervalMs, timeoutMs - elapsedMs));
+  }
+}
+
+export async function runReconciledWrite({
+  execute,
+  reconcile,
+  timeoutMs = 5_000,
+  intervalMs = 100,
+  now = Date.now,
+  wait = defaultWait,
+}) {
+  if (
+    typeof execute !== 'function' ||
+    typeof reconcile !== 'function' ||
+    !Number.isFinite(timeoutMs) ||
+    timeoutMs < 0 ||
+    !Number.isFinite(intervalMs) ||
+    intervalMs < 0 ||
+    typeof now !== 'function' ||
+    typeof wait !== 'function'
+  ) {
+    fail('WRITE_OUTCOME_UNKNOWN');
+  }
+
+  let writeFailed = false;
+  try {
+    await execute();
+  } catch {
+    writeFailed = true;
+  }
+
+  const startedAt = now();
+  let reconciliationAttempts = 0;
+  while (true) {
+    reconciliationAttempts += 1;
+    let outcome;
+    try {
+      outcome = await reconcile();
+    } catch {
+      fail('WRITE_OUTCOME_UNKNOWN');
+    }
+
+    if (outcome === 'committed') {
+      return {
+        outcome,
+        source: writeFailed ? 'reconciled_after_error' : 'write_confirmed',
+        reconciliationAttempts,
+      };
+    }
+    if (outcome !== 'not_committed') fail('WRITE_OUTCOME_UNKNOWN');
+
+    const elapsedMs = Math.max(0, now() - startedAt);
+    if (elapsedMs >= timeoutMs) {
+      return {
+        outcome,
+        source: writeFailed ? 'write_error_not_observed' : 'write_not_observed',
+        reconciliationAttempts,
+      };
+    }
+    await wait(Math.min(intervalMs, timeoutMs - elapsedMs));
+  }
 }
 
 async function runCli(argv) {

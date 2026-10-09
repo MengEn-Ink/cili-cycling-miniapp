@@ -6,7 +6,11 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { evaluateJourneyPreflight } from './p0-journey-driver.mjs';
+import {
+  evaluateJourneyPreflight,
+  runReconciledWrite,
+  waitForPageReady,
+} from './p0-journey-driver.mjs';
 
 const scriptPath = fileURLToPath(new URL('./p0-journey-driver.mjs', import.meta.url));
 
@@ -152,4 +156,153 @@ test('预检 CLI 拒绝额外参数且不打印堆栈', () => {
   assert.equal(result.stdout, '');
   assert.equal(result.stderr, 'P0 真实旅程预检失败: 预检命令参数无效\n');
   assert.doesNotMatch(result.stderr, /at .*p0-journey-driver/);
+});
+
+test('页面路径和业务数据在同一次读取中就绪才成功', async () => {
+  const pages = [
+    { path: '', data: null },
+    { path: 'pages/activity/list', data: { registration: null } },
+    { path: 'pages/activity/detail', data: { registration: null } },
+    { path: 'pages/activity/detail', data: { registration: { status: 'pending' } } },
+  ];
+  let time = 0;
+
+  const result = await waitForPageReady({
+    readPage: async () => pages.shift(),
+    expectedPath: 'pages/activity/detail',
+    isDataReady: (data) => data?.registration?.status === 'pending',
+    timeoutMs: 100,
+    intervalMs: 10,
+    now: () => time,
+    wait: async (milliseconds) => {
+      time += milliseconds;
+    },
+  });
+
+  assert.deepEqual(result, { attempts: 4, elapsedMs: 30 });
+  assert.equal(pages.length, 0);
+});
+
+test('页面等待超时使用固定错误且不泄露页面数据', async () => {
+  let time = 0;
+  let reads = 0;
+
+  await assert.rejects(
+    waitForPageReady({
+      readPage: async () => {
+        reads += 1;
+        return { path: 'pages/old', data: { secret: 'PAGE_DATA_SENTINEL' } };
+      },
+      expectedPath: 'pages/target',
+      isDataReady: () => false,
+      timeoutMs: 20,
+      intervalMs: 10,
+      now: () => time,
+      wait: async (milliseconds) => {
+        time += milliseconds;
+      },
+    }),
+    (error) =>
+      error.code === 'PAGE_NOT_READY' &&
+      error.message === '目标页面未就绪' &&
+      !error.message.includes('PAGE_DATA_SENTINEL'),
+  );
+  assert.equal(reads, 3);
+});
+
+test('写调用成功后仍以只读回读确认提交', async () => {
+  let writes = 0;
+  let reconciliations = 0;
+  const result = await runReconciledWrite({
+    execute: async () => {
+      writes += 1;
+    },
+    reconcile: async () => {
+      reconciliations += 1;
+      return 'committed';
+    },
+    timeoutMs: 0,
+    intervalMs: 0,
+  });
+
+  assert.equal(writes, 1);
+  assert.equal(reconciliations, 1);
+  assert.deepEqual(result, {
+    outcome: 'committed',
+    source: 'write_confirmed',
+    reconciliationAttempts: 1,
+  });
+});
+
+test('写调用抛错但回读已提交时不重试写操作', async () => {
+  let writes = 0;
+  const result = await runReconciledWrite({
+    execute: async () => {
+      writes += 1;
+      throw new Error('AUTOMATION_TIMEOUT_SENTINEL');
+    },
+    reconcile: async () => 'committed',
+    timeoutMs: 0,
+    intervalMs: 0,
+  });
+
+  assert.equal(writes, 1);
+  assert.deepEqual(result, {
+    outcome: 'committed',
+    source: 'reconciled_after_error',
+    reconciliationAttempts: 1,
+  });
+  assert.doesNotMatch(JSON.stringify(result), /AUTOMATION_TIMEOUT_SENTINEL/);
+});
+
+test('持续未提交时有界返回且不重试写操作', async () => {
+  let writes = 0;
+  let time = 0;
+  const result = await runReconciledWrite({
+    execute: async () => {
+      writes += 1;
+    },
+    reconcile: async () => 'not_committed',
+    timeoutMs: 20,
+    intervalMs: 10,
+    now: () => time,
+    wait: async (milliseconds) => {
+      time += milliseconds;
+    },
+  });
+
+  assert.equal(writes, 1);
+  assert.deepEqual(result, {
+    outcome: 'not_committed',
+    source: 'write_not_observed',
+    reconciliationAttempts: 3,
+  });
+});
+
+test('未知、非法或失败的回读使用固定错误且不重试写操作', async () => {
+  for (const reconcile of [
+    async () => 'unknown',
+    async () => 'invalid',
+    async () => {
+      throw new Error('RECONCILIATION_SECRET_SENTINEL');
+    },
+  ]) {
+    let writes = 0;
+    await assert.rejects(
+      runReconciledWrite({
+        execute: async () => {
+          writes += 1;
+          throw new Error('WRITE_SECRET_SENTINEL');
+        },
+        reconcile,
+        timeoutMs: 0,
+        intervalMs: 0,
+      }),
+      (error) =>
+        error.code === 'WRITE_OUTCOME_UNKNOWN' &&
+        error.message === '写操作结果无法确认' &&
+        !error.message.includes('SENTINEL'),
+    );
+    assert.equal(writes, 1);
+  }
 });
