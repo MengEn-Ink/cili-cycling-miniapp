@@ -257,7 +257,8 @@ function compareItems(left, right, field, direction) {
   const rightTime = dateEpoch(right[field]);
   if (leftTime === undefined || rightTime === undefined) dataIntegrityFailed();
   const byTime = (leftTime === rightTime ? 0 : leftTime < rightTime ? -1 : 1) * multiplier;
-  return byTime || String(left._id).localeCompare(String(right._id)) * multiplier;
+  const byId = Buffer.compare(Buffer.from(left._id, 'utf8'), Buffer.from(right._id, 'utf8'));
+  return byTime || byId * multiplier;
 }
 
 async function listActivityPage({ db, command, request, now }) {
