@@ -433,10 +433,12 @@ test('插入后先回读 BSON Date 类型，再运行任何 explain', async () =
   });
 });
 
-test('BSON Date 回读接受严格 canonical 与带时区 relaxed EJSON', async () => {
+test('BSON Date 回读接受 relaxed UTC 边界、合法时区与 canonical pre-1970', async () => {
   const items = dateReadbackItems();
-  items[0] = { ...items[0], event_start: { $date: '2024-02-29T08:00:00.000Z' } };
-  items[1] = { ...items[1], event_end: { $date: '2026-10-09T16:01:00+08:00' } };
+  items[0] = { ...items[0], event_start: { $date: '1970-01-01T00:00:00.000Z' } };
+  items[1] = { ...items[1], event_end: { $date: '9999-12-31T23:59:59.999Z' } };
+  items[2] = { ...items[2], event_start: { $date: '2024-02-29T16:00:00+08:00' } };
+  items[3] = { ...items[3], event_end: { $date: { $numberLong: '-1' } } };
 
   const result = await runProbeWithDateReadback({ items });
 
@@ -464,6 +466,15 @@ for (const { name, value } of [
   { name: 'relaxed 非闰年 2 月 29 日', value: { $date: '2025-02-29T08:00:00.000Z' } },
   { name: 'relaxed 4 月 31 日', value: { $date: '2026-04-31T08:00:00.000Z' } },
   { name: 'relaxed 24 时', value: { $date: '2026-10-09T24:00:00.000Z' } },
+  { name: 'relaxed UTC 早于 1970 下界', value: { $date: '1969-12-31T23:59:59.999Z' } },
+  {
+    name: 'relaxed 本地 1970 经偏移后早于 UTC 下界',
+    value: { $date: '1970-01-01T00:00:00.000+00:01' },
+  },
+  {
+    name: 'relaxed 本地 9999 经偏移后晚于 UTC 上界',
+    value: { $date: '9999-12-31T23:59:59.999-00:01' },
+  },
 ]) {
   test(`malformed BSON Date 回读在 explain 前 fail closed：${name}`, async () => {
     const items = dateReadbackItems();
