@@ -42,6 +42,7 @@ function sameInstant(left, right) {
 function profileReferencesMedia(profile, fileId) {
   if (!profile || typeof profile !== 'object') return false;
   if (profile.avatar_file_id === fileId) return true;
+  if (profile.background_photo && profile.background_photo.file_id === fileId) return true;
   return (Array.isArray(profile.photos) ? profile.photos : []).some(
     (item) => item && item.file_id === fileId,
   );
@@ -424,12 +425,13 @@ function createProfileStore(db) {
             cleanup_after: null,
           },
         });
-        const retainedByPhotos = (Array.isArray(current.photos) ? current.photos : []).some(
-          (item) => item && item.file_id === previousFileId,
+        const retainedByProfile = profileReferencesMedia(
+          { ...current, avatar_file_id: undefined },
+          previousFileId,
         );
         if (
           previous &&
-          !retainedByPhotos &&
+          !retainedByProfile &&
           registeredMedia(
             previous,
             { file_id: previousFileId, category: previous.category },
@@ -645,11 +647,12 @@ function createProfileStore(db) {
         );
         const previousFileId = currentProfile.avatar_file_id;
         const previousId = previousFileId ? mediaDocumentId(previousFileId) : '';
-        const retainedByPhotos = (
-          Array.isArray(currentProfile.photos) ? currentProfile.photos : []
-        ).some((item) => item && item.file_id === previousFileId);
+        const retainedByProfile = profileReferencesMedia(
+          { ...currentProfile, avatar_file_id: undefined },
+          previousFileId,
+        );
         const previous =
-          previousId && previousId !== selectedId && !retainedByPhotos
+          previousId && previousId !== selectedId && !retainedByProfile
             ? await get(media, previousId)
             : undefined;
         const updatedAt = db.serverDate();
@@ -780,4 +783,4 @@ function createProfileStore(db) {
   };
 }
 
-module.exports = { missing, get, createProfileStore };
+module.exports = { missing, get, profileReferencesMedia, createProfileStore };

@@ -34,6 +34,7 @@ async function maybeGet(collection, id) {
 }
 function profileMediaIds(profile) {
   const ids = [profile && profile.avatar_file_id];
+  ids.push(profile && profile.background_photo && profile.background_photo.file_id);
   for (const item of Array.isArray(profile && profile.photos) ? profile.photos : [])
     ids.push(item && item.file_id);
   return [...new Set(ids.filter((id) => typeof id === 'string' && id))];

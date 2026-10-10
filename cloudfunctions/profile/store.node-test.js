@@ -11,6 +11,7 @@ try {
 }
 const createProfileStore = subject.createProfileStore || (() => ({}));
 const missing = subject.missing || (() => true);
+const profileReferencesMedia = subject.profileReferencesMedia || (() => false);
 
 test('仅明确文档不存在可降级，通用 -502001 数据库错误必须抛出', () => {
   assert.equal(missing({ errCode: -502001, errMsg: 'document with _id x does not exist' }), true);
@@ -18,6 +19,17 @@ test('仅明确文档不存在可降级，通用 -502001 数据库错误必须�
   assert.equal(missing({ errCode: -1, errMsg: 'document with _id x does not exist' }), true);
   assert.equal(missing({ errCode: -1, errMsg: 'not found' }), false);
   assert.equal(missing({ errCode: -1, errMsg: 'database request fail' }), false);
+});
+
+test('profile 媒体引用判定包含显式背景槽位', () => {
+  const fileId = 'cloud://env/profiles/owner/background.jpg';
+  assert.equal(
+    profileReferencesMedia(
+      { background_photo: { file_id: fileId, category: 'other' }, photos: [] },
+      fileId,
+    ),
+    true,
+  );
 });
 
 function fakeDb(seed) {
@@ -404,6 +416,53 @@ test('setAvatar 不降级仍被 photos 引用的旧头像', async () => {
         avatar_file_id: previousFileId,
         avatar_source: 'custom',
         photos: [{ file_id: previousFileId, category: 'other' }],
+      },
+    },
+    profile_media: {
+      [previousId]: {
+        _id: previousId,
+        file_id: previousFileId,
+        owner_openid: owner,
+        category: 'other',
+        origin: 'custom',
+        status: 'active',
+      },
+      [nextId]: {
+        _id: nextId,
+        file_id: nextFileId,
+        owner_openid: owner,
+        category: 'other',
+        origin: 'wechat',
+        status: 'unreferenced',
+      },
+    },
+  });
+
+  await createProfileStore(db).setAvatar(owner, 'wechat', nextFileId, secret);
+
+  assert.equal(
+    db.updates.some((update) => update.id === previousId && update.data.status === 'unreferenced'),
+    false,
+  );
+});
+
+test('setAvatar 不降级仍被 background_photo 引用的旧头像', async () => {
+  const { mediaDocumentId, mediaOwnerPrefix } = require('./core');
+  const secret = 'profile-media-secret-for-tests-32-bytes';
+  const owner = 'owner';
+  const prefix = mediaOwnerPrefix(owner, secret);
+  const previousFileId = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const nextFileId = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174001.jpg`;
+  const previousId = mediaDocumentId(previousFileId);
+  const nextId = mediaDocumentId(nextFileId);
+  const db = fakeDb({
+    profiles: {
+      owner: {
+        _id: owner,
+        avatar_file_id: previousFileId,
+        avatar_source: 'custom',
+        background_photo: { file_id: previousFileId, category: 'other' },
+        photos: [],
       },
     },
     profile_media: {

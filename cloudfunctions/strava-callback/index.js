@@ -100,7 +100,8 @@ function createCredentialStore(database) {
           const retainedByPhotos = (Array.isArray(profile.photos) ? profile.photos : []).some(
             (item) => item && item.file_id === avatarFileId,
           );
-          if (!retainedByPhotos) {
+          const retainedByBackground = profile.background_photo?.file_id === avatarFileId;
+          if (!retainedByPhotos && !retainedByBackground) {
             const media = await maybeGet(tx, 'profile_media', mediaId);
             if (
               media &&

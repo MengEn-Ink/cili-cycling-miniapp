@@ -14,3 +14,8 @@ test('管理员云函数使用独立 checkIn 路由', () => {
   assert.match(source, /event\.action === 'checkIn'/);
   assert.match(source, /checkInRegistration\(/);
 });
+
+test('管理员详情加载当前背景槽位对应的媒体记录', () => {
+  const source = readFileSync(require.resolve('./index'), 'utf8');
+  assert.match(source, /profile\s*&&\s*profile\.background_photo\s*&&\s*profile\.background_photo\.file_id/);
+});

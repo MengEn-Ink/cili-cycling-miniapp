@@ -853,6 +853,38 @@ test('disconnect 清除 Strava 头像槽位但不降级仍在 photos 中的媒�
   assert.equal(fixture.state.profile_media.get(avatarMediaId).status, 'active');
 });
 
+test('disconnect 清除 Strava 头像槽位但不降级仍在 background_photo 中的媒体', async () => {
+  const avatarFileId = 'cloud://env/profiles/owner/shared-background.jpg';
+  const avatarMediaId = crypto.createHash('sha256').update(avatarFileId).digest('hex');
+  const fixture = fakeDb({
+    strava_credentials: { 'user-1': { _id: 'user-1' } },
+    strava_snapshots: { 'user-1': { _id: 'user-1' } },
+    profiles: {
+      'user-1': {
+        _id: 'user-1',
+        avatar_source: 'strava',
+        avatar_file_id: avatarFileId,
+        background_photo: { file_id: avatarFileId, category: 'other' },
+        photos: [],
+      },
+    },
+    profile_media: {
+      [avatarMediaId]: {
+        _id: avatarMediaId,
+        file_id: avatarFileId,
+        owner_openid: 'user-1',
+        origin: 'strava',
+        status: 'active',
+      },
+    },
+  });
+
+  await createReadinessStore(fixture.db).disconnect('user-1', audit('strava.disconnect'));
+
+  assert.equal(fixture.state.profiles.get('user-1').avatar_file_id, undefined);
+  assert.equal(fixture.state.profile_media.get(avatarMediaId).status, 'active');
+});
+
 test('disconnect 不得让 avatar revision 越过安全整数上限', async () => {
   const fixture = fakeDb({
     strava_credentials: { 'user-1': usableCredential() },

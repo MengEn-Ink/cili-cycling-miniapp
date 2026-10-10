@@ -238,6 +238,37 @@ test('换绑清除头像槽位时保留仍被 photos 引用的媒体', async () 
   assert.equal(database.state.profile_media.get(avatarMediaId).status, 'active');
 });
 
+test('换绑清除头像槽位时保留仍被 background_photo 引用的媒体', async () => {
+  const avatarFileId = 'cloud://env/profiles/owner/shared-background.jpg';
+  const avatarMediaId = require('node:crypto')
+    .createHash('sha256')
+    .update(avatarFileId)
+    .digest('hex');
+  const database = memoryDatabase();
+  database.state.profiles.set('openid', {
+    _id: 'openid',
+    avatar_source: 'strava',
+    avatar_file_id: avatarFileId,
+    background_photo: { file_id: avatarFileId, category: 'other' },
+    photos: [],
+  });
+  database.state.profile_media.set(avatarMediaId, {
+    _id: avatarMediaId,
+    file_id: avatarFileId,
+    owner_openid: 'openid',
+    origin: 'strava',
+    status: 'active',
+  });
+
+  await createCredentialStore(database).saveCredential(
+    { _id: 'openid', openid: 'openid', athlete_id: 'new-athlete' },
+    new Date('2026-09-29T04:00:00.000Z'),
+  );
+
+  assert.equal(database.state.profiles.get('openid').avatar_file_id, undefined);
+  assert.equal(database.state.profile_media.get(avatarMediaId).status, 'active');
+});
+
 test('profile compatibility cache 写失败会回滚 credential 和 snapshot', async () => {
   const database = memoryDatabase({ failProfileSet: true });
   const store = createCredentialStore(database);

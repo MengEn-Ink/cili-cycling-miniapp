@@ -467,10 +467,11 @@ function createReadinessStore(db) {
           };
         }
         const currentReferences = [
+          nextProfile?.background_photo?.file_id,
           ...(Array.isArray(nextProfile?.photos) ? nextProfile.photos : [])
             .map((item) => item?.file_id)
             .filter((value) => typeof value === 'string' && value),
-        ];
+        ].filter((value) => typeof value === 'string' && value);
         if (typeof nextProfile?.avatar_file_id === 'string')
           currentReferences.push(nextProfile.avatar_file_id);
         if (nextProfile) {
