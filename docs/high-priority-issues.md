@@ -1,6 +1,6 @@
 # 高优问题清单
 
-> 最后更新：2026-10-11 06:55（CST）
+> 最后更新：2026-10-11 07:45（CST）
 >
 > 维护原则：这里只保留尚未满足关闭条件的问题。新问题先去重、澄清、拆分；已满足关闭条件的条目直接删除，Git 历史和不可变外部证据作为归档。
 
@@ -40,6 +40,7 @@
 ## 当前工作交接检查点
 
 - 2026-10-11 06:35 本轮（定时对齐）再交付一条纯前端独立 PR 并上传微信开发版 `0.0.104.1`：[#103](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/103) 只读缓存支持冷启动持久化与断网兜底——回源成功后写入版本化 `wx` 同步存储，冷启动在 TTL 内直接复用并保留原始过期时刻；网络失败仅在 5 分钟离线窗口内返回上次数据，在线仍强制回源；活动/Strava 写入与账号切换同步清理内存和持久化命名空间，并新增命中率指标。PR `validate`、main CI [38091847664](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38091847664) 与微信开发版自动上传 [38091927615](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38091927615) 均 success。N7 已推进冷启动持久化/可观测部分，状态仍 `PENDING_EVIDENCE`，剩余“图片临时地址缓存及到期刷新”与真机冷启动/断网 smoke。另：共享工作区中存在他泳道未提交的“资料图片内容指纹去重”改动（`profile-edit/index.ts` + `profile-media-dedupe.test.ts`），本轮未触碰、未并入任何提交。真实阻塞维持不变：① 云函数部署需腾讯云凭证；② 大量条目需物理真机/真实验收。
+- 2026-10-11 07:45 本轮交付活动发布人展示并完成运行态验收：经核实“全员可发布”的服务端权限（普通用户创建草稿→发布自己草稿→下架自己活动，openid 绑定）与前端入口此前已具备，无需新增；[#109](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/109) 在 activity-read 按 created_by 批量解析发布人昵称与 canonical 头像，卡片与详情展示，资料缺失兜底“骑友”，并抽取共享 profiles/头像解析 helper 给参与人复用。PR validate、main CI 与微信开发版自动上传均 success，版本 `0.0.110.1`（checkout `5ddb021`）。activity-read 已通过 CloudBase CLI 部署，线上 list 调用回读真实活动返回 publisher（昵称“莫拉拉”、头像 profile-canonical）。N8 转 `PENDING_EVIDENCE`，仅剩真机 smoke/独立复核。所有 P0 及多数 P1 当前都处于“真机/真实验收”这一共同阻塞，代码、CI、部署、运行态回读层均已完成。
 - 2026-10-11 06:55 本轮补齐图片去重链路并交付一条纯前端 PR：#100 活动图片指纹去重合并后曾因 #102 docs 抢跑被上传流程判为过期，已手动 `workflow_dispatch` 补传微信开发版 `0.0.103.1`（checkout `e1b35b2`，含 #100+#101）；[#105](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/105) 个人资料客户端会话内指纹去重（头像/背景共享指纹映射、跨槽位复用，取不到指纹回退完整链路，跨会话由云端 canonical 兜底），rebase 到 #104 后日志顺延 `2026.10.11.11`，PR `validate`、main CI 与微信开发版自动上传 [38092918041](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38092918041) 均 success，微信开发版 `0.0.106.1`（checkout `b6dddd41`）。另：#94 云函数 `activity-admin` 已通过本机 CloudBase CLI 部署到 `cloudbase-d0gizacy77a1ab017` 并回读 `MATCH: 线上与本地一致`，N6 的 CloudBase 部署阻塞解除。为避让并发泳道，本轮在独立 clone（`cili-profile-dedupe`）交付，原共享工作区 `cili-work-main` 已原样归还。N5 转 `PENDING_EVIDENCE`（仅剩真机弱网/CloudBase 回读）。真实阻塞收敛为：大量条目需物理真机/真实验收。
 
 - 2026-10-11 05:50 本轮（定时对齐）再交付两条独立 PR 并上传微信开发版 `0.0.100.1`：#99 活动卡片滑动删除（接 #94 服务端删除契约）、#101 活动/Strava 内存 TTL 缓存与写后失效；两个 PR 的 PR checks、main CI 与微信开发版自动上传均 success。N6/N7 已推进到“已部署”层，状态 `PENDING_EVIDENCE`。**真实阻塞（需用户/环境决策）**：① 沙箱无 CloudBase CLI 与腾讯云凭证，#89/#94/#96 等改动的云函数（activity-read/activity-admin/registration/admin-review/profile）无法在沙箱部署，需要为沙箱配置腾讯云凭证或由用户确认部署；② 大量 `PENDING_EVIDENCE` 条目需物理真机/真实验收，代码与部署层不能替代。
@@ -63,7 +64,7 @@
 | N5   | `HP-20261010-07` | P0     | `PENDING_EVIDENCE` (#100/#105, 开发版 0.0.106.1) | 活动图片指纹去重、资料图片会话内去重与失败恢复已交付，待真机弱网/CloudBase 回读 | Aime          | 独立复核 / 真机              |
 | N6   | `HP-20261010-08` | P1     | `PENDING_EVIDENCE` (#94/#99, 开发版 0.0.106.1) | 删除契约、右滑 UI 与 activity-admin CloudBase 部署均已完成，待真机手势/独立复核          | Aime          | 独立复核 / 真机              |
 | N7   | `HP-20261010-09` | P1     | `PENDING_EVIDENCE` (#101/#103, 开发版 0.0.104.1) | 内存 TTL 缓存、冷启动持久化、断网兜底与命中率指标已交付；图片临时地址缓存及真机冷启动/断网 smoke 待补 | Aime          | 独立复核 / 真机              |
-| N8   | `HP-20261010-10` | P1     | `READY`                                  | 所有登录用户可发布活动，并在活动卡片展示发布人头像和昵称                                | -             | 独立复核 / CloudBase         |
+| N8   | `HP-20261010-10` | P1     | `PENDING_EVIDENCE` (#109, 开发版 0.0.110.1) | 全员发布权限经核实已具备，卡片/详情发布人头像昵称已交付，activity-read 已部署并运行态回读，待真机 smoke/独立复核 | Aime          | 独立复核 / 真机              |
 | N9   | `HP-20261010-11` | P1     | `READY`                                  | 建立固定稳定体验版入口、版本晋级和可追溯发布流程                                        | -             | 独立复核 / 微信后台          |
 | UI   | `HP-20261010-02` | P0     | `PENDING_EVIDENCE`                       | 单一主题底座与第一批六页已交付开发版 `0.0.55.1`，待物理真机截图与独立复核                 | -             | TraeX 审判者                 |
 | B    | `HP-20261009-13` | P0     | `PENDING_EVIDENCE`                       | `status` 已恢复，待六条真实 Strava 授权/解绑生命周期 smoke                              | -             | TraeX 审判者 / Aime 个人助理 |
@@ -145,12 +146,12 @@
 
 ### HP-20261010-10 · 全员发布活动与发布人展示
 
-- 优先级/状态：P1 / `READY`。
-- 当前事实：后端部分支持普通用户创建自己的活动草稿，但前端创建入口仍位于管理路径，活动卡片未展示发布者头像和昵称。
-- 产品口径：所有已登录且满足必要资料条件的用户都可创建、编辑和发布自己的活动；管理员保留审核/治理能力。活动卡片和详情展示发布人昵称与头像，历史活动和发布者资料变更需有稳定快照或明确回退。
-- 安全要求：服务端绑定真实 openid，禁止代他人创建/修改；限制频率和输入范围；发布人头像异常时安全降级，不暴露手机号等隐私字段。
-- 关闭条件：普通用户与管理员权限矩阵、草稿→发布→编辑链路、跨账号越权测试、CloudBase 部署、真机 smoke 与独立复核齐全。
-- 更新时间：2026-10-10 23:56（CST）。
+- 优先级/状态：P1 / `PENDING_EVIDENCE`（[#109](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/109)，开发版 `0.0.110.1`）。
+- 权限核实：服务端 `activity-admin` 早已支持普通登录用户“创建草稿 → 发布自己草稿 → 下架自己活动”，openid 严格绑定（非本人返回 FORBIDDEN），前端创建入口也已对普通用户开放，故“全员可发布”无需新增改动。
+- 已落地（发布人展示，#109）：`activity-read` 在 list/listPage/detail 按 `created_by` 批量解析发布人昵称与 canonical 头像临时地址随公开 DTO 返回；抽取 `loadProfiles`/`resolveAvatarTempUrls` 让参与人与发布人共用批量解析链路。活动模型新增 publisher，卡片与详情展示发布人头像昵称；资料缺失统一兜底“骑友”、空头像占位，不暴露手机号等隐私字段。
+- 运行态证据：activity-read 已部署 CloudBase；线上 `list` 调用回读，真实活动返回 `publisher: { nickname: '莫拉拉', avatar_url: .../profile-canonical/...jpg }`。
+- 关闭条件：普通用户与管理员权限矩阵、草稿→发布→编辑链路、跨账号越权测试、真机 smoke 与独立复核齐全（CloudBase 部署与运行态回读已满足）。
+- 更新时间：2026-10-11 07:45（CST）。
 
 ### HP-20261010-11 · 固定稳定体验版发布
 
