@@ -97,7 +97,7 @@ describe('品牌与页面体验静态契约', () => {
     expect(formStyles).toMatch(
       /\.section-hint\s*\{\s*margin-top:\s*1rpx;\s*color:\s*var\(--color-muted\);\s*font-size:\s*22rpx;/,
     );
-    expect(declaration(cardCaption, 'color')).toBe('rgba(255, 255, 255, 0.72)');
+    expectSemantic(declaration(cardCaption, 'color'), '--color-muted');
     expect(declaration(cardCaption, 'font-size')).toBe('20rpx');
   });
 

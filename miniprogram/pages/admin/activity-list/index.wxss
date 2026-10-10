@@ -107,7 +107,7 @@ page {
   color: var(--color-danger-text);
 }
 .activity-list-page .title {
-  color: #f7f7f5;
+  color: var(--color-text);
 }
 .activity-list-page .tag {
   background: #343438;

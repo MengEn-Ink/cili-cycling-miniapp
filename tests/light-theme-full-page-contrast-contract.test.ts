@@ -267,4 +267,31 @@ describe('HP-20261009-06 浅色主题全页对比度契约', () => {
     expect(dark['--color-on-media-gender-female']).toBe('#ef8072');
     expect(dark['--color-on-media-gender-unknown']).toBe('#e9743f');
   });
+
+  it('开发者工具运行态暴露的活动管理标题与骑行名片指标保持高对比', () => {
+    const activityList = read('miniprogram/pages/admin/activity-list/index.wxss');
+    expectSemantic(
+      declaration(effectiveBlock(activityList, '.activity-list-page .title'), 'color'),
+      '--color-text',
+    );
+
+    const capability = read('miniprogram/pages/capability-card/index.wxss');
+    expectSemantic(
+      declaration(effectiveBlock(capability, '.metric-sheet'), 'background'),
+      '--color-media-card-bg',
+    );
+    expectSemantic(
+      declaration(effectiveBlock(capability, '.metric-value'), 'color'),
+      '--color-on-media',
+    );
+    expectSemantic(
+      declaration(effectiveBlock(capability, '.metric-label'), 'color'),
+      '--color-media-muted',
+    );
+    expectSemantic(
+      declaration(effectiveBlock(capability, '.card-caption'), 'color'),
+      '--color-muted',
+    );
+    expect(contrast('#e06b2e', light['--color-media-card-bg'])).toBeGreaterThanOrEqual(4.5);
+  });
 });
