@@ -1,0 +1,333 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  CachingRepository,
+  REPOSITORY_CACHE_CAPACITY,
+  TtlCache,
+} from '../miniprogram/repositories/cached';
+import type { RideRepository } from '../miniprogram/repositories/types';
+
+/** 构造只包含被测路径方法的假仓储，避免依赖 wx 或真实网络。 */
+function makeInner() {
+  return {
+    listActivities: vi.fn(),
+    listActivityPage: vi.fn(),
+    getActivity: vi.fn(),
+    getStravaStatus: vi.fn(),
+    getStravaReadiness: vi.fn(),
+    saveActivity: vi.fn(),
+    cloneActivity: vi.fn(),
+    deleteActivity: vi.fn(),
+    saveRegistration: vi.fn(),
+    updateRegistration: vi.fn(),
+    cancelRegistration: vi.fn(),
+    reviewRegistration: vi.fn(),
+    checkInRegistration: vi.fn(),
+    startStrava: vi.fn(),
+    ensureStravaReady: vi.fn(),
+    syncStrava: vi.fn(),
+    cancelStravaAuthorization: vi.fn(),
+    disconnectStrava: vi.fn(),
+  } as unknown as RideRepository;
+}
+
+describe('TtlCache', () => {
+  it('写入后可读取，未命中返回 undefined', () => {
+    const cache = new TtlCache<string>(1000, 5, () => 0);
+    expect(cache.get('a')).toBeUndefined();
+    cache.set('a', 'v');
+    expect(cache.get('a')).toBe('v');
+  });
+
+  it('超过 TTL 后过期并回源', () => {
+    let now = 100;
+    const cache = new TtlCache<string>(50, 5, () => now);
+    cache.set('a', 'v');
+    now = 149;
+    expect(cache.get('a')).toBe('v');
+    now = 150;
+    expect(cache.get('a')).toBeUndefined();
+  });
+
+  it('达到容量上限时淘汰最早写入项', () => {
+    const cache = new TtlCache<string>(1000, 2, () => 0);
+    cache.set('a', '1');
+    cache.set('b', '2');
+    cache.set('c', '3');
+    expect(cache.get('a')).toBeUndefined();
+    expect(cache.get('b')).toBe('2');
+    expect(cache.get('c')).toBe('3');
+  });
+
+  it('重复写入同一 key 会刷新其淘汰顺序', () => {
+    const cache = new TtlCache<string>(1000, 2, () => 0);
+    cache.set('a', '1');
+    cache.set('b', '2');
+    cache.set('a', '1-updated');
+    cache.set('c', '3');
+    expect(cache.get('b')).toBeUndefined();
+    expect(cache.get('a')).toBe('1-updated');
+    expect(cache.get('c')).toBe('3');
+  });
+
+  it('clearPrefix 只清理指定命名空间', () => {
+    const cache = new TtlCache<string>(1000, REPOSITORY_CACHE_CAPACITY, () => 0);
+    cache.set('act:1', 'a');
+    cache.set('strava:1', 's');
+    cache.clearPrefix('act:');
+    expect(cache.get('act:1')).toBeUndefined();
+    expect(cache.get('strava:1')).toBe('s');
+    cache.clear();
+    expect(cache.size).toBe(0);
+  });
+});
+
+describe('CachingRepository 只读缓存', () => {
+  let inner: ReturnType<typeof makeInner>;
+  let repo: CachingRepository;
+
+  beforeEach(() => {
+    inner = makeInner();
+    repo = new CachingRepository(inner);
+  });
+
+  it('read-through：TTL 内相同读取只回源一次', async () => {
+    vi.mocked(inner.listActivityPage).mockResolvedValue({
+      items: [{ id: 'a1' }],
+      nextCursor: null,
+      asOf: 'now',
+    } as Awaited<ReturnType<RideRepository['listActivityPage']>>);
+    const first = await repo.listActivityPage('future');
+    const second = await repo.listActivityPage('future');
+    expect(inner.listActivityPage).toHaveBeenCalledTimes(1);
+    expect(second).toBe(first);
+  });
+
+  it('不同 view 或 cursor 使用独立缓存键', async () => {
+    vi.mocked(inner.listActivityPage).mockResolvedValue({
+      items: [],
+      nextCursor: null,
+      asOf: 'now',
+    } as Awaited<ReturnType<RideRepository['listActivityPage']>>);
+    await repo.listActivityPage('future');
+    await repo.listActivityPage('history');
+    await repo.listActivityPage('future', 'cursor-1');
+    expect(inner.listActivityPage).toHaveBeenCalledTimes(3);
+    expect(inner.listActivityPage).toHaveBeenNthCalledWith(1, 'future', undefined);
+    expect(inner.listActivityPage).toHaveBeenNthCalledWith(2, 'history', undefined);
+    expect(inner.listActivityPage).toHaveBeenNthCalledWith(3, 'future', 'cursor-1');
+  });
+
+  it('listActivities 按 filter 分别缓存', async () => {
+    vi.mocked(inner.listActivities).mockResolvedValue([{ id: 'a' }] as Awaited<
+      ReturnType<RideRepository['listActivities']>
+    >);
+    await repo.listActivities('upcoming');
+    await repo.listActivities('upcoming');
+    await repo.listActivities('history');
+    expect(inner.listActivities).toHaveBeenCalledTimes(2);
+  });
+
+  it('getActivity 按 id 分别缓存', async () => {
+    vi.mocked(inner.getActivity)
+      .mockResolvedValueOnce({ id: 'a' } as Awaited<ReturnType<RideRepository['getActivity']>>)
+      .mockResolvedValueOnce({ id: 'b' } as Awaited<ReturnType<RideRepository['getActivity']>>);
+    await repo.getActivity('a');
+    await repo.getActivity('a');
+    await repo.getActivity('b');
+    expect(inner.getActivity).toHaveBeenCalledTimes(2);
+  });
+
+  it('并发的相同读取复用同一请求，只回源一次', async () => {
+    let resolveRequest!: (value: unknown) => void;
+    const pending = new Promise<unknown>((resolve) => {
+      resolveRequest = resolve;
+    });
+    vi.mocked(inner.getActivity).mockImplementation(
+      () => pending as ReturnType<RideRepository['getActivity']>,
+    );
+    const first = repo.getActivity('same');
+    const second = repo.getActivity('same');
+    expect(inner.getActivity).toHaveBeenCalledTimes(1);
+    resolveRequest({ id: 'same' });
+    const [a, b] = await Promise.all([first, second]);
+    expect(a).toEqual({ id: 'same' });
+    expect(b).toBe(a);
+    // 完成后命中缓存，仍只回源一次。
+    await repo.getActivity('same');
+    expect(inner.getActivity).toHaveBeenCalledTimes(1);
+  });
+
+  it('读取失败不写缓存，允许后续重新回源', async () => {
+    vi.mocked(inner.getActivity)
+      .mockRejectedValueOnce(new Error('网络失败'))
+      .mockResolvedValueOnce({ id: 'retry' } as Awaited<ReturnType<RideRepository['getActivity']>>);
+    await expect(repo.getActivity('retry')).rejects.toThrow('网络失败');
+    const value = await repo.getActivity('retry');
+    expect(value).toEqual({ id: 'retry' });
+    expect(inner.getActivity).toHaveBeenCalledTimes(2);
+  });
+
+  it('回源同步抛出时转为拒绝，且清理并发标记后可重读', async () => {
+    vi.mocked(inner.getActivity).mockImplementation(() => {
+      throw new Error('同步错误');
+    });
+    await expect(repo.getActivity('boom')).rejects.toThrow('同步错误');
+    vi.mocked(inner.getActivity).mockResolvedValue({ id: 'ok' } as Awaited<
+      ReturnType<RideRepository['getActivity']>
+    >);
+    const value = await repo.getActivity('boom');
+    expect(value).toEqual({ id: 'ok' });
+    expect(inner.getActivity).toHaveBeenCalledTimes(2);
+  });
+
+  it('Strava 状态与就绪摘要在 TTL 内复用', async () => {
+    vi.mocked(inner.getStravaStatus).mockResolvedValue({
+      state: 'connected',
+    } as unknown as Awaited<ReturnType<RideRepository['getStravaStatus']>>);
+    vi.mocked(inner.getStravaReadiness).mockResolvedValue({
+      state: 'ready',
+    } as Awaited<ReturnType<RideRepository['getStravaReadiness']>>);
+    await repo.getStravaStatus();
+    await repo.getStravaStatus();
+    await repo.getStravaReadiness();
+    expect(inner.getStravaStatus).toHaveBeenCalledTimes(1);
+    expect(inner.getStravaReadiness).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('CachingRepository 写后失效', () => {
+  let inner: ReturnType<typeof makeInner>;
+  let repo: CachingRepository;
+
+  beforeEach(() => {
+    inner = makeInner();
+    repo = new CachingRepository(inner);
+    // 写方法默认成功。
+    vi.mocked(inner.saveActivity).mockResolvedValue({ id: 'a' } as Awaited<
+      ReturnType<RideRepository['saveActivity']>
+    >);
+    vi.mocked(inner.cloneActivity).mockResolvedValue({ id: 'c' } as Awaited<
+      ReturnType<RideRepository['cloneActivity']>
+    >);
+    vi.mocked(inner.deleteActivity).mockResolvedValue(undefined);
+    vi.mocked(inner.saveRegistration).mockResolvedValue({ id: 'r' } as Awaited<
+      ReturnType<RideRepository['saveRegistration']>
+    >);
+    vi.mocked(inner.updateRegistration).mockResolvedValue({ id: 'u' } as Awaited<
+      ReturnType<RideRepository['updateRegistration']>
+    >);
+    vi.mocked(inner.cancelRegistration).mockResolvedValue({ id: 'c' } as Awaited<
+      ReturnType<RideRepository['cancelRegistration']>
+    >);
+    vi.mocked(inner.reviewRegistration).mockResolvedValue({ id: 'rv' } as Awaited<
+      ReturnType<RideRepository['reviewRegistration']>
+    >);
+    vi.mocked(inner.checkInRegistration).mockResolvedValue({ id: 'ci' } as Awaited<
+      ReturnType<RideRepository['checkInRegistration']>
+    >);
+  });
+
+  it('活动或报名写入后失效活动缓存，下次读取重新回源', async () => {
+    vi.mocked(inner.getActivity).mockResolvedValue({ id: 'a' } as Awaited<
+      ReturnType<RideRepository['getActivity']>
+    >);
+    await repo.getActivity('a');
+    expect(inner.getActivity).toHaveBeenCalledTimes(1);
+
+    const activityWrites: Array<() => Promise<unknown>> = [
+      () => repo.saveActivity({} as Parameters<RideRepository['saveActivity']>[0]),
+      () =>
+        repo.cloneActivity({
+          sourceActivityId: 'a',
+          requestId: 'r',
+        } as Parameters<RideRepository['cloneActivity']>[0]),
+      () => repo.deleteActivity('a'),
+      () =>
+        repo.saveRegistration({
+          activityId: 'a',
+          gatheringMode: 'self_drive',
+          experience: 'new',
+        } as Parameters<RideRepository['saveRegistration']>[0]),
+      () => repo.updateRegistration('r', 'approved'),
+      () => repo.cancelRegistration('r'),
+      () => repo.reviewRegistration('r', 'rejected', '原因'),
+      () => repo.checkInRegistration('r'),
+    ];
+    for (const write of activityWrites) {
+      await write();
+      await repo.getActivity('a');
+    }
+    // 1 次初始读取 + 每次写后 1 次回源。
+    expect(inner.getActivity).toHaveBeenCalledTimes(1 + activityWrites.length);
+  });
+
+  it('活动写入不影响 Strava 缓存，Strava 写入不影响活动缓存', async () => {
+    vi.mocked(inner.getStravaStatus).mockResolvedValue({ state: 'connected' } as unknown as Awaited<
+      ReturnType<RideRepository['getStravaStatus']>
+    >);
+    vi.mocked(inner.getActivity).mockResolvedValue({ id: 'a' } as Awaited<
+      ReturnType<RideRepository['getActivity']>
+    >);
+    await repo.getStravaStatus();
+    await repo.getActivity('a');
+    await repo.saveActivity({} as Parameters<RideRepository['saveActivity']>[0]);
+    await repo.getStravaStatus(); // 仍命中缓存
+    await repo.getActivity('a'); // 已失效，重新回源
+    expect(inner.getStravaStatus).toHaveBeenCalledTimes(1);
+    expect(inner.getActivity).toHaveBeenCalledTimes(2);
+
+    vi.mocked(inner.disconnectStrava).mockResolvedValue(undefined);
+    await repo.disconnectStrava();
+    await repo.getStravaStatus(); // 已失效，重新回源
+    await repo.getActivity('a'); // 活动缓存仍在
+    expect(inner.getStravaStatus).toHaveBeenCalledTimes(2);
+    expect(inner.getActivity).toHaveBeenCalledTimes(2);
+  });
+
+  it('Strava 授权与同步写入后失效 Strava 缓存', async () => {
+    vi.mocked(inner.getStravaReadiness).mockResolvedValue({ state: 'ready' } as Awaited<
+      ReturnType<RideRepository['getStravaReadiness']>
+    >);
+    vi.mocked(inner.startStrava).mockResolvedValue({
+      authorizationUrl: 'url',
+      expiresAt: 't',
+    });
+    vi.mocked(inner.ensureStravaReady).mockResolvedValue({ state: 'ready' } as Awaited<
+      ReturnType<RideRepository['ensureStravaReady']>
+    >);
+    vi.mocked(inner.syncStrava).mockResolvedValue({ state: 'ready' } as Awaited<
+      ReturnType<RideRepository['syncStrava']>
+    >);
+    vi.mocked(inner.cancelStravaAuthorization).mockResolvedValue(undefined);
+
+    const stravaWrites: Array<() => Promise<unknown>> = [
+      () => repo.startStrava(),
+      () => repo.ensureStravaReady(),
+      () => repo.syncStrava(),
+      () => repo.cancelStravaAuthorization(),
+    ];
+    for (const write of stravaWrites) {
+      await repo.getStravaReadiness();
+      await write();
+      await repo.getStravaReadiness();
+    }
+    // 每轮：写前 1 次命中缓存，写后 1 次回源；首轮 2 次。
+    expect(inner.getStravaReadiness).toHaveBeenCalledTimes(1 + stravaWrites.length);
+  });
+
+  it('cacheControl.clear 清空全部缓存', async () => {
+    vi.mocked(inner.getActivity).mockResolvedValue({ id: 'a' } as Awaited<
+      ReturnType<RideRepository['getActivity']>
+    >);
+    vi.mocked(inner.getStravaStatus).mockResolvedValue({ state: 'connected' } as unknown as Awaited<
+      ReturnType<RideRepository['getStravaStatus']>
+    >);
+    await repo.getActivity('a');
+    await repo.getStravaStatus();
+    repo.cacheControl.clear();
+    await repo.getActivity('a');
+    await repo.getStravaStatus();
+    expect(inner.getActivity).toHaveBeenCalledTimes(2);
+    expect(inner.getStravaStatus).toHaveBeenCalledTimes(2);
+  });
+});

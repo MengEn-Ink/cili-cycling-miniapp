@@ -4,11 +4,24 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.11.8',
+    date: '2026-10-11',
+    title: '活动与 Strava 读取更快',
+    summary:
+      '短时间内切换 Tab、进出活动详情会复用已加载结果，活动或报名变化后自动刷新，减少重复加载。',
+    latest: true,
+    features: [
+      '未来/历史列表、活动详情和 Strava 状态在短时间内复用，减少重复加载',
+      '创建、删除活动或报名后，相关活动信息会自动重新获取，不展示旧数据',
+      '切换或退出账号时清空缓存，避免看到上一账号的活动和 Strava 信息',
+    ],
+  },
+  {
     version: '2026.10.11.7',
     date: '2026-10-11',
     title: '活动卡片滑动删除',
     summary: '我的活动列表支持滑动卡片删除活动，删除前二次确认，有成员报名时安全拦截。',
-    latest: true,
+    latest: false,
     features: [
       '活动卡片向左滑动露出删除按钮，松手自动展开或收回',
       '删除前弹窗二次确认，删除成功后立即从列表移除',
