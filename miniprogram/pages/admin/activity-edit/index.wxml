@@ -45,7 +45,7 @@
           <view class="section-title">封面照片</view>
           <view class="section-help">最多 3 张，第一张作为封面</view>
         </view>
-        <view class="image-count">{{images.length}} / 3</view>
+        <view class="image-count">{{images.length + pendingImages.length}} / 3</view>
       </view>
       <view class="image-grid">
         <view wx:for="{{images}}" wx:key="*this" class="image-item">
@@ -56,7 +56,15 @@
             <button class="image-action image-action--danger" bindtap="removeImage" data-index="{{index}}">删除</button>
           </view>
         </view>
-        <button wx:if="{{images.length < 3}}" class="upload-tile" loading="{{uploading}}" bindtap="chooseImages">
+        <view wx:for="{{pendingImages}}" wx:for-item="pendingImage" wx:key="id" class="image-item image-item--pending">
+          <image class="image-preview" src="{{pendingImage.previewPath}}" mode="aspectFill" />
+          <view class="upload-status upload-status--{{pendingImage.status}}">{{pendingImage.status === 'uploading' ? '上传中…' : pendingImage.status === 'uploaded' ? '已上传' : '上传失败'}}</view>
+          <view wx:if="{{pendingImage.status === 'failed'}}" class="image-actions">
+            <button class="image-action" bindtap="retryImage" data-id="{{pendingImage.id}}">重试</button>
+            <button class="image-action image-action--danger" bindtap="removePendingImage" data-id="{{pendingImage.id}}">删除</button>
+          </view>
+        </view>
+        <button wx:if="{{images.length + pendingImages.length < 3}}" class="upload-tile" loading="{{uploading}}" bindtap="chooseImages">
           <text class="upload-plus">＋</text>
           <text>{{uploading ? '上传中' : '添加照片'}}</text>
         </button>

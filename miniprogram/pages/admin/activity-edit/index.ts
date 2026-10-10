@@ -12,6 +12,12 @@ type Form = {
 };
 type FormField = keyof Form;
 type FormErrors = Partial<Record<FormField, string>>;
+type PendingImage = {
+  id: string;
+  previewPath: string;
+  status: 'uploading' | 'failed' | 'uploaded';
+  fileId?: string;
+};
 
 const MAX_IMAGES = 3;
 const DEFAULT_CAPACITY = 500;
@@ -80,6 +86,8 @@ function derivedTimes(startAt: string) {
 }
 
 Page({
+  unloaded: false,
+  saveInFlight: false,
   data: {
     allowed: false,
     isAdmin: false,
@@ -95,12 +103,15 @@ Page({
     title: '',
     originalActivity: undefined as Activity | undefined,
     images: [] as string[],
+    pendingImages: [] as PendingImage[],
+    sessionUploadedIds: [] as string[],
     imagesTouched: false,
     coverImage: '',
     routeStartLocation: undefined as ActivityLocation | undefined,
     form: emptyForm(),
   },
   async onLoad(options: Record<string, string>) {
+    this.unloaded = false;
     await appStore.ensureIdentity(wx.cloud);
     if (appStore.authStatus !== 'authenticated') {
       this.setData({ loading: false, error: '请先完成微信身份验证' });
@@ -143,6 +154,15 @@ Page({
       });
     }
   },
+  cleanupSessionUploads(fileList?: string[]) {
+    const targets = fileList || [...this.data.sessionUploadedIds];
+    if (!targets.length || !wx.cloud || typeof wx.cloud.deleteFile !== 'function') return;
+    void wx.cloud.deleteFile({ fileList: targets }).catch(() => undefined);
+  },
+  onUnload() {
+    this.unloaded = true;
+    if (!this.saveInFlight) this.cleanupSessionUploads();
+  },
   showFormError(message: string, field?: FormField) {
     const formErrors = field ? { [field]: message } : {};
     this.setData({ error: message, formErrors });
@@ -184,15 +204,62 @@ Page({
     this.setData({ 'form.startAt': value });
     this.clearFieldError('startAt');
   },
+  async uploadPendingImage(pendingImage: PendingImage) {
+    const random = Math.random().toString(36).slice(2, 10);
+    const cloudPath = `profiles/activity-media/${Date.now()}-${random}${mediaExtension(pendingImage.previewPath)}`;
+    try {
+      const result = await wx.cloud!.uploadFile({
+        cloudPath,
+        filePath: pendingImage.previewPath,
+      });
+      if (!result.fileID) throw new Error('云端未返回文件标识');
+      if (this.unloaded) {
+        this.cleanupSessionUploads([result.fileID]);
+        return false;
+      }
+      this.setData({
+        sessionUploadedIds: [...this.data.sessionUploadedIds, result.fileID],
+        pendingImages: this.data.pendingImages.map((item: PendingImage) =>
+          item.id === pendingImage.id
+            ? { ...item, status: 'uploaded' as const, fileId: result.fileID }
+            : item,
+        ),
+      });
+      return result.fileID;
+    } catch {
+      const pendingImages = this.data.pendingImages.map((item: PendingImage) =>
+        item.id === pendingImage.id ? { ...item, status: 'failed' as const } : item,
+      );
+      this.setData({ pendingImages });
+      return false;
+    }
+  },
+  commitUploadedPendingImages() {
+    if (
+      !this.data.pendingImages.length ||
+      this.data.pendingImages.some(
+        (item: PendingImage) => item.status !== 'uploaded' || !item.fileId,
+      )
+    )
+      return;
+    const images = [
+      ...this.data.images,
+      ...this.data.pendingImages.map((item: PendingImage) => item.fileId as string),
+    ].slice(0, MAX_IMAGES);
+    this.setData({
+      images,
+      pendingImages: [],
+      imagesTouched: true,
+      coverImage: images[0] || '',
+    });
+  },
   async chooseImages() {
     if (this.data.uploading) return;
-    const remaining = MAX_IMAGES - this.data.images.length;
+    const remaining = MAX_IMAGES - this.data.images.length - this.data.pendingImages.length;
     if (remaining <= 0) {
       this.setData({ error: `封面照片最多 ${MAX_IMAGES} 张` });
       return;
     }
-    this.setData({ uploading: true, error: '' });
-    const uploaded: string[] = [];
     try {
       const selected = await wx.chooseMedia({
         count: remaining,
@@ -201,29 +268,60 @@ Page({
       });
       const files = Array.isArray(selected.tempFiles) ? selected.tempFiles : [];
       if (!files.length) throw new Error('未选择可上传的图片');
-      for (const [index, file] of files.entries()) {
+      const pendingImages = files.map((file: { tempFilePath?: string }, index: number) => {
         if (!file || typeof file.tempFilePath !== 'string' || !file.tempFilePath)
           throw new Error(`第 ${index + 1} 张图片无效`);
-        const random = Math.random().toString(36).slice(2, 10);
-        const cloudPath = `profiles/activity-media/${Date.now()}-${random}${mediaExtension(file.tempFilePath)}`;
-        try {
-          const result = await wx.cloud!.uploadFile({ cloudPath, filePath: file.tempFilePath });
-          if (!result.fileID) throw new Error('云端未返回文件标识');
-          uploaded.push(result.fileID);
-        } catch {
-          throw new Error(`第 ${index + 1} 张图片上传失败，请重试`);
-        }
-      }
-      const images = [...this.data.images, ...uploaded].slice(0, MAX_IMAGES);
-      this.setData({ images, imagesTouched: true, coverImage: images[0] || '' });
+        return {
+          id: `${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
+          previewPath: file.tempFilePath,
+          status: 'uploading' as const,
+        };
+      });
+      this.setData({
+        uploading: true,
+        error: '',
+        pendingImages: [...this.data.pendingImages, ...pendingImages],
+      });
+      const results = await Promise.all(
+        pendingImages.map((pendingImage: PendingImage) => this.uploadPendingImage(pendingImage)),
+      );
+      this.commitUploadedPendingImages();
+      const failedCount = results.filter((fileId) => !fileId).length;
+      if (failedCount) this.setData({ error: `${failedCount} 张图片上传失败，可单独重试或删除` });
     } catch (error) {
-      if (uploaded.length && wx.cloud && typeof wx.cloud.deleteFile === 'function')
-        await wx.cloud.deleteFile({ fileList: uploaded }).catch(() => undefined);
       if (!isCancel(error))
         this.setData({ error: error instanceof Error ? error.message : '选择图片失败，请重试' });
     } finally {
       this.setData({ uploading: false });
     }
+  },
+  async retryImage(event: any) {
+    if (this.data.uploading) return;
+    const id = String(event.currentTarget.dataset.id || '');
+    const pendingImage = this.data.pendingImages.find((item: PendingImage) => item.id === id);
+    if (!pendingImage) return;
+    this.setData({
+      uploading: true,
+      error: '',
+      pendingImages: this.data.pendingImages.map((item: PendingImage) =>
+        item.id === id ? { ...item, status: 'uploading' as const } : item,
+      ),
+    });
+    const fileId = await this.uploadPendingImage({ ...pendingImage, status: 'uploading' });
+    if (fileId) this.commitUploadedPendingImages();
+    this.setData({
+      uploading: false,
+      error: fileId ? '' : '图片上传失败，可再次重试或删除',
+    });
+  },
+  removePendingImage(event: any) {
+    if (this.data.uploading) return;
+    const id = String(event.currentTarget.dataset.id || '');
+    this.setData({
+      pendingImages: this.data.pendingImages.filter((item: PendingImage) => item.id !== id),
+      error: '',
+    });
+    this.commitUploadedPendingImages();
   },
   setCover(event: any) {
     const index = Number(event.currentTarget.dataset.index);
@@ -236,8 +334,20 @@ Page({
   removeImage(event: any) {
     const index = Number(event.currentTarget.dataset.index);
     if (!Number.isInteger(index) || index < 0 || index >= this.data.images.length) return;
+    const removedFileId = this.data.images[index];
+    const shouldDeleteFile = this.data.sessionUploadedIds.includes(removedFileId);
     const images = this.data.images.filter((_: string, itemIndex: number) => itemIndex !== index);
-    this.setData({ images, imagesTouched: true, coverImage: images[0] || '' });
+    const sessionUploadedIds = this.data.sessionUploadedIds.filter(
+      (fileId: string) => fileId !== removedFileId,
+    );
+    this.setData({
+      images,
+      sessionUploadedIds,
+      imagesTouched: true,
+      coverImage: images[0] || '',
+    });
+    if (shouldDeleteFile && wx.cloud && typeof wx.cloud.deleteFile === 'function')
+      void wx.cloud.deleteFile({ fileList: [removedFileId] }).catch(() => undefined);
   },
   async chooseRouteLocation() {
     if (this.data.saving || this.data.choosingLocation) return;
@@ -291,6 +401,10 @@ Page({
   },
   async save(event: any) {
     if (this.data.saving || this.data.uploading || this.data.choosingLocation) return;
+    if (this.data.pendingImages.length) {
+      this.setData({ error: '请先重试或删除上传失败的图片' });
+      return;
+    }
     const nextStatus = String(
       event.currentTarget.dataset.status || this.data.status,
     ) as ActivityInput['status'];
@@ -402,6 +516,7 @@ Page({
       feeExcluded: original?.feeExcluded || [],
     };
     this.setData({ saving: true, error: '' });
+    this.saveInFlight = true;
     try {
       const id = this.data.id || undefined;
       const saved = await rideService.saveActivity(
@@ -421,14 +536,17 @@ Page({
         title: saved.title,
         originalActivity: saved,
         images: savedImages,
+        sessionUploadedIds: [],
         imagesTouched: false,
         coverImage: savedImages[0] || '',
         routeStartLocation: saved.route.startLocation,
       });
       wx.showToast({ title: '保存成功', icon: 'success' });
     } catch (error) {
-      this.showFormError(error instanceof Error ? error.message : '保存失败');
+      if (this.unloaded) this.cleanupSessionUploads();
+      else this.showFormError(error instanceof Error ? error.message : '保存失败');
     } finally {
+      this.saveInFlight = false;
       this.setData({ saving: false });
     }
   },
