@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "releaseId": "experience-rollback-0.0.85.1-4190831422cf-38073739247",
+  "stage": "verified",
+  "mode": "rollback",
+  "mainSha": "4190831422cf1e22e41da513bd379ae43a6115ef",
+  "version": "0.0.85.1",
+  "operationId": "38073739247",
+  "entryPath": "pages/activities/index",
+  "ciRunUrl": "https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38072731639",
+  "uploadRunUrl": "https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38072821382",
+  "smokeEvidence": "https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38072731639",
+  "smokeOutcome": "passed",
+  "candidateDigest": "sha256:28e2b62115a28117e9c03d7e8ade2caf5df5e83a3488b754fbd61fe850724e25",
+  "platformEvidence": "wechat-admin:experience:0.0.85.1:4190831422cf1e22e41da513bd379ae43a6115ef:pages/activities/index",
+  "operator": "MengEn-Ink",
+  "occurredAt": "2026-10-10T17:57:59.000Z",
+  "previousReleaseId": "experience-promote-0.0.85.1-4190831422cf-38072992383",
+  "rollbackReason": "稳定基线回读与回退门禁演练",
+  "digest": "sha256:4715f0d996f12d9964a6f279e0cf2278cf6e89ea914f3edbc1fc0ef7c39f6a48"
+}
