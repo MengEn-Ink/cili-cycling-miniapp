@@ -1,4 +1,4 @@
-<view class="page settings-page {{themeClass}}">
+<view class="page settings-page">
   <brand-logo compact="{{true}}" meta="PREFERENCES · RELEASES" />
 
   <view class="settings-hero">
@@ -6,7 +6,6 @@
     <view class="hero-title">设置</view>
     <view class="hero-copy">管理 Strava 授权，查看「此里」的每一次功能升级。</view>
   </view>
-
 
   <view class="section-label"><text>01</text> Strava 授权</view>
   <view class="card strava-settings-card">

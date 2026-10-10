@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { cssBlock, declaration, expectSemantic, themeTokens } from './theme-contract-helpers';
+import { cssBlock, declaration, expectSemantic, uiTokens } from './theme-contract-helpers';
 
 const read = (path) => fs.readFileSync(path, 'utf8');
 const activities = read('miniprogram/pages/activities/index.wxml');
@@ -77,15 +77,13 @@ describe('CILI 活动页静态契约', () => {
     expect(detail).toContain('disabled="{{loading || !item || !activityAction.enabled}}"');
   });
 
-  it('使用默认暗色、浅色覆盖和 8/16/24rpx 语义层级', () => {
+  it('使用单一明亮 token 和 16/24/32rpx 语义层级', () => {
     const appStyles = read('miniprogram/app.wxss');
-    const dark = themeTokens(appStyles, 'dark');
-    const light = themeTokens(appStyles, 'light');
-    expect(dark['--color-bg']).toBe('#0b0b0c');
-    expect(light['--color-bg']).toBe('#ffffff');
-    expect(dark['--radius-sm']).toBe('8rpx');
-    expect(dark['--radius-md']).toBe('16rpx');
-    expect(dark['--radius-display']).toBe('24rpx');
+    const tokens = uiTokens(appStyles);
+    expect(tokens['--color-bg']).toBe('#ffffff');
+    expect(tokens['--radius-sm']).toBe('16rpx');
+    expect(tokens['--radius-md']).toBe('24rpx');
+    expect(tokens['--radius-display']).toBe('32rpx');
     const card = cssBlock(activityCardStyles, '.activity-card');
     expectSemantic(declaration(card, 'background'), '--color-surface');
     expectSemantic(declaration(card, 'border-radius'), '--radius-display');

@@ -1,22 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-type Storage = Record<string, unknown>;
-
 type PlatformOptions = {
   success?: () => void;
   fail?: () => void;
   iconPath?: string;
-  selectedIconPath?: string;
   [key: string]: unknown;
 };
 
-function wxMock(storage: Storage = {}) {
+function wxMock() {
   const succeed = vi.fn((options?: PlatformOptions) => options?.success?.());
   return {
-    getStorageSync: vi.fn((key: string) => storage[key]),
-    setStorageSync: vi.fn((key: string, value: unknown) => {
-      storage[key] = value;
-    }),
     setNavigationBarColor: succeed,
     setTabBarStyle: vi.fn((options?: PlatformOptions) => options?.success?.()),
     setTabBarItem: vi.fn((options?: PlatformOptions) => options?.success?.()),
@@ -24,118 +17,110 @@ function wxMock(storage: Storage = {}) {
   };
 }
 
-async function loadThemeService(wxApi: Record<string, unknown>) {
+async function loadAppearanceService(wxApi: Record<string, unknown>) {
   vi.resetModules();
   vi.stubGlobal('wx', wxApi);
   return import('../miniprogram/services/theme-service');
 }
 
-describe('主题服务', () => {
+describe('固定明亮系统外观服务', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
-  it('无存储值时默认亮色并生成根节点类名', async () => {
-    const service = await loadThemeService(wxMock());
+  it('同步白色导航、白色 TabBar、浅色图标和白色滚动边界', async () => {
+    const wxApi = wxMock();
+    const service = await loadAppearanceService(wxApi);
 
-    expect(service.getTheme()).toBe('light');
-    expect(service.themeClass()).toBe('theme-light');
-  });
+    service.applyAppAppearance();
 
-  it('历史深色存储会被规范化为亮色但不回写', async () => {
-    const storage: Storage = { 'display-theme': 'dark' };
-    const wxApi = wxMock(storage);
-    const service = await loadThemeService(wxApi);
-
-    expect(service.getTheme()).toBe('light');
-    expect(wxApi.setStorageSync).not.toHaveBeenCalled();
-  });
-
-  it.each(['legacy-light', '', null, 1, 'dark'])('非法或旧值 %j 统一回退为亮色', async (value) => {
-    const storage: Storage = { 'display-theme': value };
-    const wxApi = wxMock(storage);
-    const service = await loadThemeService(wxApi);
-
-    expect(service.getTheme()).toBe('light');
-    expect(wxApi.setStorageSync).not.toHaveBeenCalled();
-  });
-
-  it('setTheme 接收到深色时也会收口为亮色', async () => {
-    const storage: Storage = {};
-    const wxApi = wxMock(storage);
-    const service = await loadThemeService(wxApi);
-
-    expect(service.setTheme('dark')).toBe('light');
-    expect(storage['display-theme']).toBe('light');
-  });
-
-  it('写入存储失败时保留本次会话选择（亮色）', async () => {
-    const storage: Storage = {};
-    const wxApi = wxMock(storage);
-    (wxApi.setStorageSync as any).mockImplementation(() => {
-      throw new Error('storage unavailable');
-    });
-    const service = await loadThemeService(wxApi);
-
-    expect(() => service.setTheme('light')).not.toThrow();
-    expect(service.getTheme()).toBe('light');
-  });
-
-  it('页面返回前台时同步当前主题和系统外观', async () => {
-    const storage: Storage = { 'display-theme': 'dark' };
-    const wxApi = wxMock(storage);
-    const service = await loadThemeService(wxApi);
-
-    const firstPage = { setData: vi.fn() };
-    const returningPage = { setData: vi.fn() };
-
-    service.syncPageTheme(firstPage);
-    service.syncPageTheme(returningPage);
-
-    expect(returningPage.setData).toHaveBeenCalledWith({
-      theme: 'light',
-      themeClass: 'theme-light',
-    });
-
-    expect(wxApi.setNavigationBarColor).toHaveBeenLastCalledWith(
+    expect(wxApi.setNavigationBarColor).toHaveBeenCalledWith(
       expect.objectContaining({ backgroundColor: '#ffffff', frontColor: '#000000' }),
     );
-    expect(wxApi.setTabBarStyle).toHaveBeenCalled();
-    expect(wxApi.setBackgroundColor).toHaveBeenCalled();
+    expect(wxApi.setTabBarStyle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        backgroundColor: '#ffffff',
+        borderStyle: 'white',
+        color: '#5b6258',
+        selectedColor: '#10120f',
+      }),
+    );
+    expect(wxApi.setTabBarItem.mock.calls.map(([item]) => item?.iconPath)).toEqual([
+      'assets/tabbar/activities-light.png',
+      'assets/tabbar/registrations-light.png',
+      'assets/tabbar/profile-light.png',
+    ]);
+    expect(wxApi.setBackgroundColor).toHaveBeenCalledWith(
+      expect.objectContaining({
+        backgroundColor: '#ffffff',
+        backgroundColorTop: '#ffffff',
+        backgroundColorBottom: '#ffffff',
+      }),
+    );
   });
 
-  it('主题同步会使用亮色 TabBar 图标变体', async () => {
-    const storage: Storage = { 'display-theme': 'dark' };
-    const wxApi = wxMock(storage);
-    const service = await loadThemeService(wxApi);
+  it('外观全部成功后重复同步不再刷新原生组件', async () => {
+    const wxApi = wxMock();
+    const service = await loadAppearanceService(wxApi);
 
-    service.applyTheme('dark');
+    service.applyAppAppearance();
+    service.applyAppAppearance();
 
-    const iconPaths = (wxApi.setTabBarItem as any).mock.calls.map(
-      (call: any[]) => call[0]?.iconPath,
-    );
-    const selectedIconPaths = (wxApi.setTabBarItem as any).mock.calls.map(
-      (call: any[]) => call[0]?.selectedIconPath,
-    );
-
-    expect(iconPaths).toContain('assets/tabbar/activities-light.png');
-    expect(iconPaths).toContain('assets/tabbar/registrations-light.png');
-    expect(iconPaths).toContain('assets/tabbar/profile-light.png');
-    expect(selectedIconPaths).toContain('assets/tabbar/activities-active.png');
-    expect(selectedIconPaths).toContain('assets/tabbar/registrations-active.png');
-    expect(selectedIconPaths).toContain('assets/tabbar/profile-active.png');
+    expect(wxApi.setNavigationBarColor).toHaveBeenCalledTimes(1);
+    expect(wxApi.setTabBarStyle).toHaveBeenCalledTimes(1);
+    expect(wxApi.setTabBarItem).toHaveBeenCalledTimes(3);
+    expect(wxApi.setBackgroundColor).toHaveBeenCalledTimes(1);
   });
 
-  it('系统主题 API 缺失、调用抛错或页面已销毁时不影响运行', async () => {
-    const service = await loadThemeService({
-      getStorageSync: () => 'dark',
-      setStorageSync: () => {
-        throw new Error('storage fail');
+  it('任一原生调用失败后允许下一次应用重试', async () => {
+    const wxApi = wxMock();
+    wxApi.setNavigationBarColor
+      .mockImplementationOnce((options?: PlatformOptions) => options?.fail?.())
+      .mockImplementation((options?: PlatformOptions) => options?.success?.());
+    const service = await loadAppearanceService(wxApi);
+
+    service.applyAppAppearance();
+    service.applyAppAppearance();
+
+    expect(wxApi.setNavigationBarColor).toHaveBeenCalledTimes(2);
+    expect(wxApi.setTabBarStyle).toHaveBeenCalledTimes(2);
+    expect(wxApi.setTabBarItem).toHaveBeenCalledTimes(6);
+    expect(wxApi.setBackgroundColor).toHaveBeenCalledTimes(2);
+  });
+
+  it('失败批次完成前再次同步会在批次结束后重试', async () => {
+    const callbacks: PlatformOptions[] = [];
+    const defer = vi.fn((options?: PlatformOptions) => {
+      if (options) callbacks.push(options);
+    });
+    const wxApi = wxMock();
+    wxApi.setNavigationBarColor.mockImplementation(defer);
+    wxApi.setTabBarStyle.mockImplementation(defer);
+    wxApi.setTabBarItem.mockImplementation(defer);
+    wxApi.setBackgroundColor.mockImplementation(defer);
+    const service = await loadAppearanceService(wxApi);
+
+    service.applyAppAppearance();
+    const firstBatch = callbacks.splice(0, 6);
+    firstBatch[0].fail?.();
+    service.applyAppAppearance();
+    firstBatch.slice(1).forEach((options) => options.success?.());
+
+    expect(wxApi.setNavigationBarColor).toHaveBeenCalledTimes(2);
+    expect(wxApi.setTabBarStyle).toHaveBeenCalledTimes(2);
+    expect(wxApi.setTabBarItem).toHaveBeenCalledTimes(6);
+    expect(wxApi.setBackgroundColor).toHaveBeenCalledTimes(2);
+  });
+
+  it('原生 API 缺失或抛错时不阻断应用启动', async () => {
+    const service = await loadAppearanceService({
+      setNavigationBarColor: () => {
+        throw new Error('unsupported');
       },
     });
 
-    expect(() => service.applyTheme()).not.toThrow();
-    expect(() => service.syncPageTheme(undefined as any)).not.toThrow();
+    expect(() => service.applyAppAppearance()).not.toThrow();
+    expect(() => service.applyAppAppearance()).not.toThrow();
   });
 });

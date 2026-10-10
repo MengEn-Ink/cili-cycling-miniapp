@@ -189,7 +189,7 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('wx:for="{{item.feeExcluded}}"');
   });
 
-  it('使用等宽三列指标、24rpx 展示圆角和轻量安全区 CTA', () => {
+  it('使用等宽三列指标、32rpx 展示圆角和轻量安全区 CTA', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
     expect(template.match(/class="detail-metric"/g)).toHaveLength(3);
@@ -197,7 +197,7 @@ describe('活动详情设计与日期契约', () => {
     expect(styles).toMatch(
       /\.detail-page \.card\s*\{[^}]*border-radius:\s*var\(--radius-display\);/s,
     );
-    expect(read('miniprogram/app.wxss')).toContain('--radius-display: 24rpx;');
+    expect(read('miniprogram/app.wxss')).toContain('--radius-display: 32rpx;');
     expect(styles).toContain('calc(12rpx + env(safe-area-inset-bottom))');
   });
 });

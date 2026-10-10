@@ -1,17 +1,17 @@
 page {
-  background: #0b0b0c;
+  background: var(--color-bg);
 }
 
 .profile-page {
   min-height: 100%;
-  background: radial-gradient(circle at 95% 4%, rgba(213, 91, 31, 0.14), transparent 30%), #0b0b0c;
-  color: #f7f7f5;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 brand-logo {
   display: block;
   padding: 10rpx 8rpx 16rpx;
-  border-bottom: 1rpx solid #343437;
+  border-bottom: 1rpx solid var(--color-border);
 }
 
 .profile-hero {
@@ -923,12 +923,6 @@ page,
 .menu-title {
   color: var(--color-text);
 }
-.theme-light .profile-hero {
-  --color-brand: #d55b1f;
-  --color-brand-active: #a94416;
-  --color-brand-soft: rgba(213, 91, 31, 0.14);
-  --color-on-brand: #0b0b0c;
-}
 .profile-hero,
 .profile-hero .profile-name,
 .profile-hero .hero-capability-value,
@@ -1404,20 +1398,14 @@ page,
   }
 }
 
-/* Scheme C light theme: photographic identity with explicit black actions. */
-.theme-light .edit-button,
-.theme-light .profile-refresh-error button {
+/* Photographic identity with explicit black actions. */
+.edit-button,
+.profile-refresh-error button {
   border-color: var(--color-text);
   background: var(--color-text) !important;
   color: var(--color-bg) !important;
 }
 
-.theme-light .hero-capability-metric {
+.hero-capability-metric {
   text-align: center;
-}
-
-.theme-light .menu-list,
-.theme-light .menu-card {
-  border-radius: 0;
-  box-shadow: none;
 }

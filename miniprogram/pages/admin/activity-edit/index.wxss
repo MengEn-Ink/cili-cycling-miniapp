@@ -1,8 +1,8 @@
 .activity-form-page {
   min-height: 100vh;
   padding-bottom: calc(52rpx + env(safe-area-inset-bottom));
-  background: #0b0b0c;
-  color: #f4f7f2;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 .form-head {
   padding: 32rpx 8rpx 18rpx;

@@ -1,4 +1,4 @@
-<view class="page activity-list-page {{themeClass}}">
+<view class="page activity-list-page">
   <view class="card danger" wx:if="{{error}}">{{error}}</view>
   <block wx:if="{{allowed}}">
     <view class="hero">

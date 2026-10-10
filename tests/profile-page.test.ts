@@ -650,11 +650,11 @@ describe('个人中心加载状态', () => {
     expect(wx.navigateTo).not.toHaveBeenCalled();
   });
 
-  it('浅色主题资料操作与重试按钮使用深色底和反差文字', () => {
+  it('统一明亮主题的资料操作与重试按钮使用深色底和反差文字', () => {
     const styles = readFileSync('miniprogram/pages/profile/index.wxss', 'utf8');
 
     expect(styles).toMatch(
-      /\.theme-light \.edit-button,\s*\.theme-light \.profile-refresh-error button\s*\{[^}]*background:\s*var\(--color-text\) !important;[^}]*color:\s*var\(--color-bg\) !important;/s,
+      /\.edit-button,\s*\.profile-refresh-error button\s*\{[^}]*background:\s*var\(--color-text\) !important;[^}]*color:\s*var\(--color-bg\) !important;/s,
     );
   });
 

@@ -1,16 +1,16 @@
 page {
-  background: #0b0b0c;
+  background: var(--color-bg);
 }
 .review-page {
   min-height: 100vh;
   padding-bottom: calc(52rpx + env(safe-area-inset-bottom));
-  background: radial-gradient(circle at 94% 4%, rgba(213, 91, 31, 0.12), transparent 30%), #0b0b0c;
-  color: #f7f7f5;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 brand-logo {
   display: block;
   padding: 16rpx 8rpx 26rpx;
-  border-bottom: 1rpx solid #333336;
+  border-bottom: 1rpx solid var(--color-border);
 }
 .review-heading {
   padding: 38rpx 8rpx 26rpx;

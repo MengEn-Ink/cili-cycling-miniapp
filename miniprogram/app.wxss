@@ -1,13 +1,12 @@
-page,
-.theme-dark {
-  --color-bg: #0b0b0c;
-  --color-surface: #1b1b1d;
-  --color-raised: #242427;
-  --color-text: #f7f7f5;
-  --color-muted: #a8a8ad;
-  --color-subtle: #85858a;
-  --color-placeholder: #a8a8ad;
-  --color-disabled-text: #a8a8ad;
+page {
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-raised: #f4f5f0;
+  --color-text: #10120f;
+  --color-muted: #5b6258;
+  --color-subtle: #737a70;
+  --color-placeholder: #6b7268;
+  --color-disabled-text: #5b6258;
   --color-on-media: #f7f7f5;
   --color-media-muted: #d2d2d6;
   --color-media-placeholder-bg: #101012;
@@ -15,35 +14,37 @@ page,
   --color-on-media-gender-male: #4fb3a7;
   --color-on-media-gender-female: #ef8072;
   --color-on-media-gender-unknown: #e9743f;
-  --color-gender-male: #70c6bc;
-  --color-gender-female: #ff9a90;
-  --color-gender-unknown: #f39a70;
-  --color-border: #3a3a3e;
-  --color-border-strong: #55555b;
-  --color-input-bg: #151517;
-  --color-fixed-bar: rgba(11, 11, 12, 0.97);
-  --color-overlay: rgba(0, 0, 0, 0.76);
-  --color-shadow: rgba(0, 0, 0, 0.34);
-  --color-brand: #d55b1f;
-  --color-brand-active: #a94416;
-  --color-brand-soft: rgba(213, 91, 31, 0.14);
-  --color-on-brand: #0b0b0c;
-  --color-danger: #c82018;
-  --color-danger-text: #ff8f86;
-  --color-danger-soft: rgba(200, 32, 24, 0.12);
-  --color-success: #6f9b82;
-  --color-success-text: #9bc2aa;
-  --color-success-soft: rgba(111, 155, 130, 0.14);
-  --color-warning: #c88418;
-  --color-warning-text: #e7b66a;
-  --color-warning-soft: rgba(200, 132, 24, 0.12);
-  --color-card-border: var(--color-border);
-  --shadow-card: 0 10rpx 24rpx var(--color-shadow);
+  --color-gender-male: #17665f;
+  --color-gender-female: #983c34;
+  --color-gender-unknown: #8a401f;
+  --color-border: #10120f;
+  --color-border-strong: #10120f;
+  --color-input-bg: #ffffff;
+  --color-fixed-bar: rgba(255, 255, 255, 0.98);
+  --color-overlay: rgba(0, 0, 0, 0.72);
+  --color-shadow: rgba(16, 18, 15, 0.12);
+  --color-brand: #d9ff43;
+  --color-brand-active: #c4ec23;
+  --color-brand-soft: #f2ffc2;
+  --color-on-brand: #10120f;
+  --color-danger: #b3261e;
+  --color-danger-text: #8f1d17;
+  --color-danger-soft: #fbe9e7;
+  --color-success: #356348;
+  --color-success-text: #294f39;
+  --color-success-soft: #e5f2e9;
+  --color-warning: #8a5b12;
+  --color-warning-text: #71490d;
+  --color-warning-soft: #fff0d4;
+  --color-card-border: #10120f;
+  --shadow-hard: 8rpx 8rpx 0 #10120f;
+  --shadow-card: var(--shadow-hard);
   --metric-align: left;
   --page-heading-align: left;
-  --radius-sm: 8rpx;
-  --radius-md: 16rpx;
-  --radius-display: 24rpx;
+  --radius-sm: 16rpx;
+  --radius-md: 24rpx;
+  --radius-display: 32rpx;
+  --radius-card: 32rpx;
   --cili-black: var(--color-bg);
   --cili-charcoal: var(--color-surface);
   --cili-panel: var(--color-raised);
@@ -54,57 +55,15 @@ page,
   --cili-orange-dark: var(--color-brand-active);
   --cili-red: var(--color-danger);
   --cili-success: var(--color-success);
-  --tab-page-bottom-space: 52rpx;
-  --fixed-action-reserve: 210rpx;
+  --tab-bar-height: 112rpx;
+  --tab-page-bottom-space: 32rpx;
+  --fixed-action-reserve: 224rpx;
   --fixed-action-reserve-narrow: 320rpx;
-  --control-height: 88rpx;
+  --control-height: 96rpx;
+  --segment-height: 80rpx;
   --page-gutter: 32rpx;
   --page-gutter-narrow: 24rpx;
-}
-
-.theme-light {
-  --color-bg: #ffffff;
-  --color-surface: #ffffff;
-  --color-raised: #f1f1ef;
-  --color-text: #080808;
-  --color-muted: #4f4f4c;
-  --color-subtle: #666662;
-  --color-placeholder: #5f5f5b;
-  --color-disabled-text: #4f4f4c;
-  --color-on-media: #f7f7f5;
-  --color-media-muted: #e2e2df;
-  --color-media-placeholder-bg: #101012;
-  --color-media-card-bg: #1c1c1e;
-  --color-on-media-gender-male: #4fb3a7;
-  --color-on-media-gender-female: #ef8072;
-  --color-on-media-gender-unknown: #e9743f;
-  --color-gender-male: #17665f;
-  --color-gender-female: #983c34;
-  --color-gender-unknown: #9b431c;
-  --color-border: #bdbdb8;
-  --color-border-strong: #111111;
-  --color-input-bg: #ffffff;
-  --color-fixed-bar: rgba(255, 255, 255, 0.98);
-  --color-overlay: rgba(0, 0, 0, 0.72);
-  --color-shadow: rgba(8, 8, 8, 0.1);
-  --color-brand: #bd3f00;
-  --color-brand-active: #8e2e00;
-  --color-brand-soft: #f7e8e1;
-  --color-on-brand: #ffffff;
-  --color-danger: #b3261e;
-  --color-danger-text: #9f2721;
-  --color-danger-soft: #fbe9e7;
-  --color-success: #3f7457;
-  --color-success-text: #356348;
-  --color-success-soft: #e5f2e9;
-  --color-warning: #9a6415;
-  --color-warning-text: #80520f;
-  --color-warning-soft: #fff0d4;
-  --color-card-border: var(--color-border-strong);
-  --shadow-card: none;
-  --metric-align: center;
-  --page-heading-align: center;
-  --radius-display: 16rpx;
+  --card-gap: 24rpx;
 }
 
 page {
@@ -258,19 +217,13 @@ textarea {
   justify-content: center;
   min-height: var(--control-height);
   margin: 20rpx 0 0;
+  border: 4rpx solid var(--color-border-strong);
   border-radius: var(--radius-sm) !important;
   font-size: 28rpx;
   font-weight: 800;
   line-height: 1.3;
   letter-spacing: 0;
-  clip-path: polygon(
-    22rpx 0,
-    100% 0,
-    100% calc(100% - 22rpx),
-    calc(100% - 22rpx) 100%,
-    0 100%,
-    0 22rpx
-  );
+  clip-path: none;
 }
 
 .btn {
@@ -280,10 +233,6 @@ textarea {
 
 .btn:active {
   background: var(--color-brand-active) !important;
-}
-
-.theme-light .btn {
-  clip-path: none;
 }
 
 .btn[disabled],

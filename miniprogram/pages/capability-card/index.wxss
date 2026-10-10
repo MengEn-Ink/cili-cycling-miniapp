@@ -1,12 +1,12 @@
 page {
-  background: #0b0b0c;
+  background: var(--color-bg);
 }
 
 .capability-page {
   min-height: 100vh;
   padding: 18rpx 40rpx calc(40rpx + env(safe-area-inset-bottom));
-  background: #000;
-  color: #f7f7f5;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 .card-stage {
@@ -477,13 +477,6 @@ page,
   color: var(--color-text) !important;
 }
 /* Card artwork stays photographic: its black overlay and white typography are invariant. */
-.theme-light .rider-card {
-  /* 摄影卡片仍是深色媒体面，浅色主题下提升橙色强调色亮度以满足小号文字对比度。 */
-  --color-brand: #e06b2e;
-  --color-brand-active: #a94416;
-  --color-brand-soft: rgba(213, 91, 31, 0.14);
-  --color-on-brand: #0b0b0c;
-}
 
 .gender-pill {
   display: inline-flex;
@@ -513,10 +506,4 @@ page,
 }
 .rider-card.gender-unknown .alpine-fallback .fallback-mark {
   color: var(--color-on-media-gender-unknown);
-}
-.theme-light .rider-card.gender-male .gender-pill {
-  color: var(--color-on-media-gender-male);
-}
-.theme-light .rider-card.gender-female .gender-pill {
-  color: var(--color-on-media-gender-female);
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { read, themeTokens } from './theme-contract-helpers';
+import { read, uiTokens } from './theme-contract-helpers';
 
-const darkPages = [
+const uiPages = [
   'miniprogram/pages/registrations',
   'miniprogram/pages/profile',
   'miniprogram/pages/capability-card',
@@ -20,21 +20,19 @@ const logoPages = [
 const legacyLogoClass =
   /brand-lockup|brand-bar|cili-symbol|cili-mark|mini-symbol|brand-word|brand-cn|mark-cut|brand-rule|detail-brand|desk-code|profile-code/;
 
-describe('CILI 双主题竞技页面静态契约', () => {
-  it.each(darkPages)('%s 默认继承暗色 token，并通过语义品牌色支持双主题', (root) => {
+describe('CILI 统一明亮竞技页面静态契约', () => {
+  it.each(uiPages)('%s 继承统一 token 与明亮系统外观', (root) => {
     const styles = read(`${root}/index.wxss`).toLowerCase();
     const config = JSON.parse(read(`${root}/index.json`));
     const appStyles = read('miniprogram/app.wxss');
-    const dark = themeTokens(appStyles, 'dark');
-    const light = themeTokens(appStyles, 'light');
+    const tokens = uiTokens(appStyles);
 
-    expect(dark['--color-bg']).toBe('#0b0b0c');
-    expect(dark['--color-brand']).toBe('#d55b1f');
-    expect(light['--color-bg']).not.toBe(dark['--color-bg']);
+    expect(tokens['--color-bg']).toBe('#ffffff');
+    expect(tokens['--color-brand']).toBe('#d9ff43');
     expect(styles).toContain('var(--color-bg)');
     expect(styles).toContain('var(--color-brand)');
-    expect(config.navigationBarBackgroundColor.toLowerCase()).toBe('#0b0b0c');
-    expect(config.navigationBarTextStyle).toBe('white');
+    expect(config.navigationBarBackgroundColor.toLowerCase()).toBe('#ffffff');
+    expect(config.navigationBarTextStyle).toBe('black');
   });
 
   it.each(logoPages)('%s 使用统一品牌组件且不残留旧 Logo 实现', (root) => {

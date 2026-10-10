@@ -54,15 +54,15 @@ describe('fixed action layout contract', () => {
     expect(appStyles).toContain('calc(16rpx + env(safe-area-inset-bottom))');
   });
 
-  it('matches both dark form navigation bars to their page theme', () => {
+  it('matches both form navigation bars to the unified bright theme', () => {
     for (const file of [
       'miniprogram/pages/registration-form/index.json',
       'miniprogram/pages/admin/activity-edit/index.json',
     ]) {
       const config = JSON.parse(read(file));
 
-      expect(String(config.navigationBarBackgroundColor || '').toLowerCase()).toBe('#0b0b0c');
-      expect(config.navigationBarTextStyle).toBe('white');
+      expect(String(config.navigationBarBackgroundColor || '').toLowerCase()).toBe('#ffffff');
+      expect(config.navigationBarTextStyle).toBe('black');
     }
   });
 });

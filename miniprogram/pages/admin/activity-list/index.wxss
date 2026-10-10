@@ -1,9 +1,9 @@
 page {
-  background: #0b0b0c;
+  background: var(--color-bg);
 }
 .page {
-  background: #0b0b0c;
-  color: #f7f7f5;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 .card {
@@ -91,7 +91,7 @@ page {
   gap: 20rpx;
 }
 
-/* ===== CILI 暗色竞技主题：页面级接入，沿用既有“深色页面本地 opt-in”约定 ===== */
+/* ===== CILI 统一明亮 UI：活动管理页面 ===== */
 .activity-list-page {
   min-height: 100vh;
   background: #0b0b0c;

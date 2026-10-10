@@ -1,5 +1,4 @@
 import { rideService } from '../../services/ride-service';
-import { syncPageTheme } from '../../services/theme-service';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
 import { genderView } from '../../utils/gender';
@@ -45,8 +44,6 @@ Page({
   exportBusy: false,
   posterBusy: false,
   data: {
-    theme: 'light',
-    themeClass: 'theme-light',
     loading: true,
     error: '',
     item: null as any,
@@ -66,9 +63,7 @@ Page({
     teamId: '',
     activityAction: unavailableAction(),
   },
-  onShow() {
-    syncPageTheme(this);
-  },
+  onShow() {},
   onLoad(q: any) {
     this.unloaded = false;
     const teamId =

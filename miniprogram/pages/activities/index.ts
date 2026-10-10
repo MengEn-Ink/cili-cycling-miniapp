@@ -1,7 +1,6 @@
 import type { Activity } from '../../models';
 import type { PublicActivityView } from '../../repositories/types';
 import { rideService } from '../../services/ride-service';
-import { syncPageTheme } from '../../services/theme-service';
 import { activityDisplayStatus } from '../../utils/activity';
 import { formatActivityDate } from '../../utils/date-time';
 import {
@@ -47,8 +46,6 @@ Page({
   loadMoreHandles: {} as Partial<Record<PublicActivityView, Promise<void>>>,
   loadMoreOwners: {} as Partial<Record<PublicActivityView, symbol>>,
   data: {
-    theme: 'light',
-    themeClass: 'theme-light',
     activeView: 'future' as PublicActivityView,
     loading: true,
     refreshing: false,
@@ -64,7 +61,6 @@ Page({
     items: [] as ReturnType<typeof displayActivity>[],
   },
   onShow() {
-    syncPageTheme(this);
     void this.load();
   },
   onHide() {

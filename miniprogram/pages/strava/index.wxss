@@ -1,12 +1,12 @@
-/* ===== CILI 暗色竞技主题：Strava 页页面级接入 ===== */
+/* ===== CILI 统一明亮 UI：Strava 页面 ===== */
 page {
-  background: #0b0b0c;
+  background: var(--color-bg);
 }
 .strava-page {
   min-height: 100vh;
   padding-bottom: calc(52rpx + env(safe-area-inset-bottom));
-  background: #0b0b0c;
-  color: #f7f7f5;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 .strava-head {
@@ -124,7 +124,7 @@ page {
   color: #a8a8ad;
 }
 .strava-page .big {
-  color: var(--color-brand);
+  color: var(--color-text);
   font-size: 34rpx;
   font-weight: 900;
 }

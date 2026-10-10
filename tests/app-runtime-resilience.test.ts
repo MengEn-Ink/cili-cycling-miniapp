@@ -6,14 +6,14 @@ const mocks = vi.hoisted(() => ({
   bootstrap: vi.fn(),
   ensureIdentity: vi.fn(),
   hasFreshIdentityHint: vi.fn(),
-  applyTheme: vi.fn(),
+  applyAppAppearance: vi.fn(),
 }));
 
 vi.mock('../miniprogram/config/cloud-init', () => ({
   initializeCloud: mocks.initializeCloud,
 }));
 vi.mock('../miniprogram/services/theme-service', () => ({
-  applyTheme: mocks.applyTheme,
+  applyAppAppearance: mocks.applyAppAppearance,
 }));
 vi.mock('../miniprogram/store/app-store', () => ({
   appStore: {
@@ -57,12 +57,15 @@ describe('小程序全局运行时兜底', () => {
     expect(appDefinition).toBeTruthy();
     appDefinition.onLaunch();
 
-    expect(mocks.applyTheme).toHaveBeenCalledOnce();
+    expect(mocks.applyAppAppearance).toHaveBeenCalledOnce();
     expect(mocks.bootstrap).toHaveBeenCalledOnce();
     expect(mocks.initializeCloud).toHaveBeenCalledWith(cloud);
     expect(mocks.ensureIdentity).toHaveBeenCalledWith(cloud);
     expect(onError).toHaveBeenCalledOnce();
     expect(onUnhandledRejection).toHaveBeenCalledOnce();
+
+    appDefinition.onShow();
+    expect(mocks.applyAppAppearance).toHaveBeenCalledTimes(2);
 
     const handleError = onError.mock.calls[0][0] as (error: unknown) => void;
     const scriptError = new Error('页面脚本异常');

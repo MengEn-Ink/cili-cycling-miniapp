@@ -1,7 +1,6 @@
 import type { PersonalCapabilityCard } from '../../models/index';
 import { runPageTask } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
-import { syncPageTheme } from '../../services/theme-service';
 import { personalCardViewModel } from '../../utils/personal-card';
 
 type PersonalCardView = ReturnType<typeof personalCardViewModel>;
@@ -9,15 +8,12 @@ type PersonalCardView = ReturnType<typeof personalCardViewModel>;
 Page({
   loadRequestId: 0,
   data: {
-    theme: 'light',
-    themeClass: 'theme-light',
     loading: true,
     error: '',
     syncing: false,
     card: null as PersonalCardView | null,
   },
   async onShow() {
-    syncPageTheme(this);
     await this.load();
   },
   onHide() {

@@ -298,7 +298,7 @@ status-pill {
   border-radius: var(--radius-display);
   background: var(--color-surface);
   color: var(--color-text);
-  box-shadow: none;
+  box-shadow: var(--shadow-card);
 }
 .activity-title,
 .metric-value,

@@ -16,7 +16,6 @@ const appStore = vi.hoisted(() => ({
 
 vi.mock('../miniprogram/services/ride-service', () => ({ rideService }));
 vi.mock('../miniprogram/store/app-store', () => ({ appStore }));
-vi.mock('../miniprogram/services/theme-service', () => ({ syncPageTheme: vi.fn() }));
 
 function item(id: string, status: 'draft' | 'published' | 'finished' = 'draft') {
   return { id, title: id, status, version: 1 };

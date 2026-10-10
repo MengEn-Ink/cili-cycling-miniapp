@@ -1,6 +1,6 @@
 import { initializeCloud } from './config/cloud-init';
 import type { AuthCloudApi } from './services/auth-service';
-import { applyTheme } from './services/theme-service';
+import { applyAppAppearance } from './services/theme-service';
 import { appStore } from './store/app-store';
 
 // 兜底捕获页面未处理的脚本错误与 Promise 拒绝，避免异常被静默吞掉；统一加前缀记录，便于在控制台排查。
@@ -17,7 +17,7 @@ function warmupIdentity(cloud: AuthCloudApi | undefined) {
 App({
   globalData: { store: appStore },
   onLaunch() {
-    applyTheme();
+    applyAppAppearance();
     appStore.bootstrap();
     const cloud = initializeCloud(wx.cloud) === 'initialized' ? wx.cloud : undefined;
     if (!appStore.hasFreshIdentityHint()) {
@@ -34,5 +34,8 @@ App({
         reportRuntimeError('unhandledrejection', event?.reason ?? event),
       );
     }
+  },
+  onShow() {
+    applyAppAppearance();
   },
 });

@@ -1,5 +1,4 @@
 import { rideService } from '../../../services/ride-service';
-import { syncPageTheme } from '../../../services/theme-service';
 import { appStore } from '../../../store/app-store';
 
 const emptyCloneForm = () => ({ deadline: '', startAt: '', endAt: '' });
@@ -44,8 +43,6 @@ Page({
   _loadMoreCursor: '',
   _loadMoreRevision: 0,
   data: {
-    theme: 'light',
-    themeClass: 'theme-light',
     items: [] as any[],
     error: '',
     allowed: false,
@@ -66,7 +63,6 @@ Page({
     this._loadMorePromise = undefined;
     this._loadMoreCursor = '';
     this._loadMoreRevision = revision;
-    syncPageTheme(this);
     // 新一轮刷新已经使旧分页请求失效，先收敛其视觉状态，避免身份检查失败后一直显示加载中。
     this.setData({ loadingMore: false });
     await appStore.ensureIdentity(wx.cloud);

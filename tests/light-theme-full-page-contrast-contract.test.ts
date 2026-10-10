@@ -8,16 +8,15 @@ import {
   expectSemantic,
   read,
   resolvedHex,
-  themeTokens,
+  uiTokens,
 } from './theme-contract-helpers';
 
 const app = read('miniprogram/app.wxss');
-const dark = themeTokens(app, 'dark');
-const light = themeTokens(app, 'light');
+const tokens = uiTokens(app);
 
-function expectLightContrast(foreground: string, background: string, minimum = 4.5): void {
+function expectUiContrast(foreground: string, background: string, minimum = 4.5): void {
   expect(
-    contrast(resolvedHex(foreground, light), resolvedHex(background, light)),
+    contrast(resolvedHex(foreground, tokens), resolvedHex(background, tokens)),
     `${foreground} on ${background}`,
   ).toBeGreaterThanOrEqual(minimum);
 }
@@ -38,7 +37,7 @@ function wxmlFiles(directory: string): string[] {
   );
 }
 
-describe('HP-20261009-06 浅色主题全页对比度契约', () => {
+describe('HP-20261010-02 统一明亮 UI 全页对比度契约', () => {
   it('语义 token 覆盖正文、占位符、禁用态、状态与性别徽标', () => {
     for (const [foreground, background, minimum] of [
       ['--color-text', '--color-bg', 4.5],
@@ -57,7 +56,7 @@ describe('HP-20261009-06 浅色主题全页对比度契约', () => {
       ['--color-on-media-gender-unknown', '--color-media-card-bg', 4.5],
       ['--color-on-brand', '--color-brand', 3],
     ] as const) {
-      expectLightContrast(`var(${foreground})`, `var(${background})`, minimum);
+      expectUiContrast(`var(${foreground})`, `var(${background})`, minimum);
     }
   });
 
@@ -86,7 +85,7 @@ describe('HP-20261009-06 浅色主题全页对比度契约', () => {
 
   it('profile 与 profile-edit 的操作、辅助文案、错误和禁用态保持语义色', () => {
     const profile = read('miniprogram/pages/profile/index.wxss');
-    const edit = effectiveBlock(profile, '.theme-light .edit-button');
+    const edit = effectiveBlock(profile, '.edit-button');
     expectSemantic(declaration(edit, 'background'), '--color-text');
     expectSemantic(declaration(edit, 'color'), '--color-bg');
 
@@ -111,7 +110,7 @@ describe('HP-20261009-06 浅色主题全页对比度契约', () => {
       declaration(effectiveBlock(form, '.photo-placeholder'), 'color'),
       '--color-media-muted',
     );
-    const disabled = effectiveBlock(form, '.theme-light .avatar-action[disabled]');
+    const disabled = effectiveBlock(form, '.avatar-action[disabled]');
     expectSemantic(declaration(disabled, 'background'), '--color-raised');
     expectSemantic(declaration(disabled, 'color'), '--color-muted');
   });
@@ -215,7 +214,7 @@ describe('HP-20261009-06 浅色主题全页对比度契约', () => {
     expectSemantic(declaration(waiting, 'border-color'), '--color-warning');
   });
 
-  it('共享状态与跨页性别徽标不再依赖浅色背景上的硬编码亮色', () => {
+  it('共享状态与跨页性别徽标使用统一语义色', () => {
     for (const [selector, foreground, background] of [
       ['.pill--success', '--color-success-text', '--color-success-soft'],
       ['.pill--warning', '--color-warning-text', '--color-warning-soft'],
@@ -263,9 +262,9 @@ describe('HP-20261009-06 浅色主题全页对比度契约', () => {
       );
     }
 
-    expect(dark['--color-on-media-gender-male']).toBe('#4fb3a7');
-    expect(dark['--color-on-media-gender-female']).toBe('#ef8072');
-    expect(dark['--color-on-media-gender-unknown']).toBe('#e9743f');
+    expect(tokens['--color-on-media-gender-male']).toBe('#4fb3a7');
+    expect(tokens['--color-on-media-gender-female']).toBe('#ef8072');
+    expect(tokens['--color-on-media-gender-unknown']).toBe('#e9743f');
   });
 
   it('开发者工具运行态暴露的活动管理标题与骑行名片指标保持高对比', () => {
@@ -295,6 +294,8 @@ describe('HP-20261009-06 浅色主题全页对比度契约', () => {
       declaration(effectiveBlock(capability, '.card-caption'), 'color'),
       '--color-muted',
     );
-    expect(contrast('#e06b2e', light['--color-media-card-bg'])).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrast(tokens['--color-on-media-gender-unknown'], tokens['--color-media-card-bg']),
+    ).toBeGreaterThanOrEqual(4.5);
   });
 });

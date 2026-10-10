@@ -19,21 +19,11 @@ const readyState = {
 
 describe('设置页', () => {
   let page: any;
-  let storage: Record<string, unknown>;
 
   beforeEach(async () => {
     vi.resetModules();
     mocks.getStravaReadiness.mockReset().mockResolvedValue(readyState);
-    storage = { 'display-theme': 'dark' };
     vi.stubGlobal('wx', {
-      getStorageSync: vi.fn((key: string) => storage[key]),
-      setStorageSync: vi.fn((key: string, value: unknown) => {
-        storage[key] = value;
-      }),
-      setNavigationBarColor: vi.fn(),
-      setTabBarStyle: vi.fn(),
-      setBackgroundColor: vi.fn(),
-      showToast: vi.fn(),
       navigateTo: vi.fn(),
     });
     vi.stubGlobal('Page', (definition: any) => {
@@ -44,28 +34,23 @@ describe('设置页', () => {
     await import('../miniprogram/pages/settings/index');
   });
 
-  it('进入页面时同步主题、版本日志和 Strava 授权状态', async () => {
+  it('进入页面时加载版本日志和 Strava 授权状态', async () => {
     page.onShow();
     await vi.waitFor(() => expect(page.data.stravaLoading).toBe(false));
 
     expect(page.data).toMatchObject({
-      theme: 'light',
-      themeClass: 'theme-light',
       stravaReadiness: readyState,
       stravaStatusText: '已连接，可重新授权或解绑',
     });
-    expect(storage['display-theme']).toBe('dark');
-    expect(page.data.releaseNotes).toHaveLength(26);
+    expect(page.data.releaseNotes).toHaveLength(25);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.10.10',
+      version: '2026.10.10.9',
       latest: true,
-      title: '界面统一为明亮主题',
+      title: '我的行程完整保留',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
-    expect(wx.setNavigationBarColor).toHaveBeenCalled();
-    expect(wx.setTabBarStyle).toHaveBeenCalled();
   });
 
   it('状态读取失败时结束加载且保留重试入口', async () => {
@@ -90,13 +75,5 @@ describe('设置页', () => {
 
     page.openStrava({ currentTarget: { dataset: {} } });
     expect(wx.navigateTo).toHaveBeenLastCalledWith({ url: '/pages/strava/index' });
-  });
-
-  it('历史深色主题存储不会影响页面统一亮色展示', async () => {
-    page.onShow();
-    await vi.waitFor(() => expect(page.data.stravaLoading).toBe(false));
-
-    expect(page.data).toMatchObject({ theme: 'light', themeClass: 'theme-light' });
-    expect(storage['display-theme']).toBe('dark');
   });
 });

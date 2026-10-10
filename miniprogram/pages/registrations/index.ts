@@ -1,11 +1,8 @@
 import { rideService } from '../../services/ride-service';
-import { syncPageTheme } from '../../services/theme-service';
 import { formatActivityDate, formatChinaDateTime } from '../../utils/date-time';
 Page({
   loadRequestId: 0,
   data: {
-    theme: 'light',
-    themeClass: 'theme-light',
     loading: true,
     refreshing: false,
     error: '',
@@ -13,7 +10,6 @@ Page({
     items: [] as any[],
   },
   onShow() {
-    syncPageTheme(this);
     void this.load();
   },
   onHide() {

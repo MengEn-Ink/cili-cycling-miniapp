@@ -7,16 +7,16 @@ import {
   effectiveBlock,
   expectSemantic,
   resolvedHex,
-  themeTokens,
+  uiTokens,
 } from './theme-contract-helpers';
 
 const read = (file: string) => readFileSync(file, 'utf8');
 
-describe('核心页面浅色主题配色', () => {
+describe('核心页面统一明亮主题配色', () => {
   const appStyles = read('miniprogram/app.wxss');
   const profileStyles = read('miniprogram/pages/profile/index.wxss');
   const detailStyles = read('miniprogram/pages/activity-detail/index.wxss');
-  const light = themeTokens(appStyles, 'light');
+  const tokens = uiTokens(appStyles);
 
   it.each([
     ['verified', '--color-success-text', '--color-success', '--color-success-soft'],
@@ -33,24 +33,24 @@ describe('核心页面浅色主题配色', () => {
     expectSemantic(declaration(block, 'border-color'), border);
     expectSemantic(declaration(block, 'background'), background);
     expect(
-      contrast(resolvedHex(`var(${text})`, light), resolvedHex(`var(${background})`, light)),
+      contrast(resolvedHex(`var(${text})`, tokens), resolvedHex(`var(${background})`, tokens)),
     ).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('个人中心品牌标识在浅色主题使用 on-brand 前景色', () => {
+  it('个人中心品牌标识使用 on-brand 前景色', () => {
     expectSemantic(
       declaration(effectiveBlock(profileStyles, '.hero-card-logo'), 'color'),
       '--color-on-brand',
     );
     expect(
       contrast(
-        resolvedHex('var(--color-on-brand)', light),
-        resolvedHex('var(--color-brand)', light),
+        resolvedHex('var(--color-on-brand)', tokens),
+        resolvedHex('var(--color-brand)', tokens),
       ),
     ).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('无媒体详情 Hero 与禁用操作在浅色主题保持语义层级', () => {
+  it('无媒体详情 Hero 与禁用操作保持语义层级', () => {
     expectSemantic(
       declaration(
         effectiveBlock(detailStyles, '.detail-hero:not(.detail-hero--media) .hero-kicker'),
@@ -70,7 +70,10 @@ describe('核心页面浅色主题配色', () => {
     expectSemantic(declaration(disabled, 'background'), '--color-raised');
     expectSemantic(declaration(disabled, 'color'), '--color-muted');
     expect(
-      contrast(resolvedHex('var(--color-muted)', light), resolvedHex('var(--color-raised)', light)),
+      contrast(
+        resolvedHex('var(--color-muted)', tokens),
+        resolvedHex('var(--color-raised)', tokens),
+      ),
     ).toBeGreaterThanOrEqual(4.5);
   });
 

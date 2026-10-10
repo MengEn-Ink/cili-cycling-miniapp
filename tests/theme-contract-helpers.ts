@@ -37,11 +37,9 @@ export function declaration(block: string, property: string): string {
   return match?.[1].trim() || '';
 }
 
-export function themeTokens(source: string, theme: 'dark' | 'light'): Record<string, string> {
-  const selector = theme === 'dark' ? 'page,\\s*\\.theme-dark' : '\\.theme-light';
-  const body =
-    source.match(new RegExp(`(?:^|\\n)\\s*${selector}\\s*\\{([^}]*)\\}`, 's'))?.[1] || '';
-  expect(body, `missing ${theme} theme token block`).not.toBe('');
+export function uiTokens(source: string): Record<string, string> {
+  const body = cssBlocks(source, 'page')[0] || '';
+  expect(body, 'missing unified UI token block').not.toBe('');
   return Object.fromEntries(
     [...body.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)].map((match) => [match[1], match[2].trim()]),
   );

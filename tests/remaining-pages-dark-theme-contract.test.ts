@@ -7,13 +7,11 @@ import {
   read,
   resolvedHex,
   rpx,
-  themeTokens,
+  uiTokens,
 } from './theme-contract-helpers';
 
 const app = read('miniprogram/app.wxss');
-const dark = themeTokens(app, 'dark');
-const light = themeTokens(app, 'light');
-const themes = [dark, light];
+const tokens = uiTokens(app);
 const pages = [
   { root: 'miniprogram/pages/strava', page: '.strava-page' },
   { root: 'miniprogram/pages/credential', page: '.page.credential-page' },
@@ -22,25 +20,23 @@ const pages = [
 ];
 
 function expectReadable(foreground: string, background: string, minimum = 4.5): void {
-  for (const tokens of themes) {
-    expect(
-      contrast(resolvedHex(foreground, tokens), resolvedHex(background, tokens)),
-    ).toBeGreaterThanOrEqual(minimum);
-  }
+  expect(
+    contrast(resolvedHex(foreground, tokens), resolvedHex(background, tokens)),
+  ).toBeGreaterThanOrEqual(minimum);
 }
 
-describe('其余页面 CILI 双主题接入静态契约', () => {
-  it.each(pages)('$root 保留暗色原生导航栏，页面使用双主题语义色', ({ root, page }) => {
+describe('其余页面 CILI 统一明亮 UI 静态契约', () => {
+  it.each(pages)('$root 使用明亮原生导航栏和统一语义色', ({ root, page }) => {
     const config = JSON.parse(read(`${root}/index.json`));
-    expect(config.navigationBarBackgroundColor.toLowerCase()).toBe('#0b0b0c');
-    expect(config.navigationBarTextStyle).toBe('white');
+    expect(config.navigationBarBackgroundColor.toLowerCase()).toBe('#ffffff');
+    expect(config.navigationBarTextStyle).toBe('black');
     const block = effectiveBlock(read(`${root}/index.wxss`), page);
     expectSemantic(declaration(block, 'background'), '--color-bg');
     expectSemantic(declaration(block, 'color'), '--color-text');
     expectReadable('var(--color-text)', 'var(--color-bg)');
   });
 
-  it('Strava 页状态卡、数据指标与次按钮使用语义表面且双主题可读', () => {
+  it('Strava 页状态卡、数据指标与次按钮使用可读语义表面', () => {
     const styles = read('miniprogram/pages/strava/index.wxss');
     const status = effectiveBlock(styles, '.status-card');
     expectSemantic(declaration(status, 'background'), '--color-surface');
@@ -52,7 +48,11 @@ describe('其余页面 CILI 双主题接入静态契约', () => {
     expectSemantic(declaration(metric, 'background'), '--color-raised');
     expectSemantic(declaration(metric, 'color'), '--color-muted');
     expectReadable('var(--color-muted)', 'var(--color-raised)');
-    expectReadable('var(--color-brand)', 'var(--color-raised)', 3);
+    expectSemantic(
+      declaration(effectiveBlock(styles, '.strava-page .big'), 'color'),
+      '--color-text',
+    );
+    expectReadable('var(--color-text)', 'var(--color-raised)');
     expectSemantic(
       declaration(effectiveBlock(styles, '.strava-page .secondary'), 'background'),
       '--color-input-bg',
@@ -92,7 +92,7 @@ describe('其余页面 CILI 双主题接入静态契约', () => {
     expectReadable('var(--color-text)', 'var(--color-surface)');
   });
 
-  it('活动管理页卡片、标签、克隆输入与次按钮接入双主题语义色', () => {
+  it('活动管理页卡片、标签、克隆输入与次按钮接入统一语义色', () => {
     const styles = read('miniprogram/pages/admin/activity-list/index.wxss');
     expectSemantic(
       declaration(effectiveBlock(styles, '.activity-list-page .card'), 'background'),
@@ -132,7 +132,7 @@ describe('其余页面 CILI 双主题接入静态契约', () => {
     expect(activityStyles).not.toContain('var(--accent)');
   });
 
-  it('活动状态标签在暗色与浅色表面均保持正文级对比度', () => {
+  it('活动状态标签在明亮表面保持正文级对比度', () => {
     const tag = effectiveBlock(
       read('miniprogram/pages/admin/activity-list/index.wxss'),
       '.activity-list-page .tag',
@@ -159,7 +159,7 @@ describe('其余页面 CILI 双主题接入静态契约', () => {
     expectSemantic(declaration(effectiveBlock(styles, '.section-title'), 'color'), '--color-text');
   });
 
-  it('资料编辑页标签、头像外壳、错误条与上传按钮接入双主题', () => {
+  it('资料编辑页标签、头像外壳、错误条与上传按钮接入统一主题', () => {
     const styles = read('miniprogram/pages/profile-edit/index.wxss');
     expectSemantic(
       declaration(effectiveBlock(styles, '.profile-form-page .form-card'), 'background'),

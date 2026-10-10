@@ -1,4 +1,4 @@
-<view class="detail-page {{themeClass}}">
+<view class="detail-page">
   <state-view loading="{{loading}}" error="{{error}}">
     <view wx:if="{{item}}">
       <view class="detail-hero {{galleryImages.length && !coverFailed ? 'detail-hero--media' : 'detail-hero--plain'}}">
@@ -118,4 +118,4 @@
 </view>
 
 <canvas id="poster-canvas" type="2d" class="poster-canvas" aria-hidden="true"></canvas>
-<view class="fixed detail-action {{themeClass}}"><button class="btn" disabled="{{loading || !item || !activityAction.enabled}}" bindtap="go">{{activityAction.label}} <text class="button-arrow">→</text></button></view>
+<view class="fixed detail-action"><button class="btn" disabled="{{loading || !item || !activityAction.enabled}}" bindtap="go">{{activityAction.label}} <text class="button-arrow">→</text></button></view>

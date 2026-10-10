@@ -1,27 +1,27 @@
 // @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { cssBlock, declaration, expectSemantic, themeTokens } from './theme-contract-helpers';
+import { cssBlock, declaration, expectSemantic, uiTokens } from './theme-contract-helpers';
 
 const read = (file: string) => readFileSync(file, 'utf8');
 
 describe('native tabbar safe-area contract', () => {
-  it('keeps the native window and three-tab navigation on the CILI dark palette', () => {
+  it('keeps the native window and three-tab navigation on the unified bright palette', () => {
     const app = JSON.parse(read('miniprogram/app.json'));
 
-    expect(String(app.window.navigationBarBackgroundColor || '').toLowerCase()).toBe('#0b0b0c');
-    expect(app.window.navigationBarTextStyle).toBe('white');
-    expect(String(app.window.backgroundColor || '').toLowerCase()).toBe('#0b0b0c');
-    expect(String(app.window.backgroundColorTop || '').toLowerCase()).toBe('#0b0b0c');
-    expect(String(app.window.backgroundColorBottom || '').toLowerCase()).toBe('#0b0b0c');
-    expect(app.window.backgroundTextStyle).toBe('light');
+    expect(String(app.window.navigationBarBackgroundColor || '').toLowerCase()).toBe('#ffffff');
+    expect(app.window.navigationBarTextStyle).toBe('black');
+    expect(String(app.window.backgroundColor || '').toLowerCase()).toBe('#ffffff');
+    expect(String(app.window.backgroundColorTop || '').toLowerCase()).toBe('#ffffff');
+    expect(String(app.window.backgroundColorBottom || '').toLowerCase()).toBe('#ffffff');
+    expect(app.window.backgroundTextStyle).toBe('dark');
     expect(app.tabBar).toBeDefined();
     expect(app.tabBar.custom).not.toBe(true);
     expect(existsSync('miniprogram/custom-tab-bar')).toBe(false);
-    expect(String(app.tabBar.backgroundColor || '').toLowerCase()).toBe('#0b0b0c');
-    expect(String(app.tabBar.color || '').toLowerCase()).toBe('#a8a8ad');
-    expect(String(app.tabBar.selectedColor || '').toLowerCase()).toBe('#d55b1f');
-    expect(app.tabBar.borderStyle).toBe('black');
+    expect(String(app.tabBar.backgroundColor || '').toLowerCase()).toBe('#ffffff');
+    expect(String(app.tabBar.color || '').toLowerCase()).toBe('#5b6258');
+    expect(String(app.tabBar.selectedColor || '').toLowerCase()).toBe('#10120f');
+    expect(app.tabBar.borderStyle).toBe('white');
     expect(app.tabBar.list.map((item: { pagePath: string }) => item.pagePath)).toEqual([
       'pages/activities/index',
       'pages/registrations/index',
@@ -29,32 +29,29 @@ describe('native tabbar safe-area contract', () => {
     ]);
   });
 
-  it('keeps every tab page root dark and full-height', () => {
+  it('keeps every tab page root bright, semantic and full-height', () => {
     for (const root of ['activities', 'registrations', 'profile']) {
       const config = JSON.parse(read(`miniprogram/pages/${root}/index.json`));
       const styles = read(`miniprogram/pages/${root}/index.wxss`).toLowerCase();
 
-      expect(String(config.backgroundColor || '').toLowerCase()).toBe('#0b0b0c');
-      expect(config.backgroundTextStyle).toBe('light');
-      expect(styles).toMatch(/page\s*\{[^}]*background:\s*#0b0b0c;/s);
+      expect(String(config.backgroundColor || '').toLowerCase()).toBe('#ffffff');
+      expect(config.backgroundTextStyle).toBe('dark');
+      expect(styles).toMatch(/page\s*\{[^}]*background:\s*var\(--color-bg\);/s);
       expect(styles).toMatch(new RegExp(`\\.${root}-page\\s*\\{[^}]*min-height:\\s*100%;`, 's'));
       expect(styles).not.toContain('background: #000;');
     }
   });
 
-  it('keeps the global page canvas on semantic tokens with dark first paint and light override', () => {
+  it('keeps the global page canvas on one bright semantic token set', () => {
     const appStyles = read('miniprogram/app.wxss');
     const pageRule = cssBlock(appStyles, 'page');
-    const dark = themeTokens(appStyles, 'dark');
-    const light = themeTokens(appStyles, 'light');
+    const tokens = uiTokens(appStyles);
 
     expect(pageRule.toLowerCase()).toMatch(/height:\s*100%;/);
     expectSemantic(declaration(pageRule, 'background'), '--color-bg');
     expectSemantic(declaration(pageRule, 'color'), '--color-text');
-    expect(dark['--color-bg']).toBe('#0b0b0c');
-    expect(dark['--color-text']).toBe('#f7f7f5');
-    expect(light['--color-bg']).toBe('#ffffff');
-    expect(light['--color-text']).toBe('#080808');
+    expect(tokens['--color-bg']).toBe('#ffffff');
+    expect(tokens['--color-text']).toBe('#10120f');
   });
 
   it('gives all tab roots one shared safe-area bottom spacing contract', () => {

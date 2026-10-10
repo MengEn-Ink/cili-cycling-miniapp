@@ -1,7 +1,7 @@
 // @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { cssBlock, declaration, expectSemantic, themeTokens } from './theme-contract-helpers';
+import { cssBlock, declaration, expectSemantic, uiTokens } from './theme-contract-helpers';
 
 const read = (file: string) => readFileSync(file, 'utf8');
 const pageRoots = [
@@ -31,24 +31,24 @@ const oldLogoClass =
   /brand-lockup|brand-bar|cili-symbol|cili-mark|mini-symbol|brand-word|brand-cn|mark-cut|brand-rule|detail-brand|desk-code|profile-code/;
 
 describe('品牌与页面体验静态契约', () => {
-  it('全局默认关闭下拉刷新，仅个人中心开放主动刷新，并统一深色滚动边界', () => {
+  it('全局默认关闭下拉刷新，仅个人中心开放主动刷新，并统一明亮滚动边界', () => {
     const app = JSON.parse(read('miniprogram/app.json'));
     expect(app.window).toMatchObject({
       enablePullDownRefresh: false,
-      backgroundColor: '#0b0b0c',
-      backgroundColorTop: '#0b0b0c',
-      backgroundColorBottom: '#0b0b0c',
-      backgroundTextStyle: 'light',
+      backgroundColor: '#ffffff',
+      backgroundColorTop: '#ffffff',
+      backgroundColorBottom: '#ffffff',
+      backgroundTextStyle: 'dark',
     });
 
     for (const page of pageRoots) {
       const config = JSON.parse(read(`miniprogram/pages/${page}/index.json`));
       expect(config, page).toMatchObject({
         enablePullDownRefresh: page === 'profile',
-        backgroundColor: '#0b0b0c',
-        backgroundColorTop: '#0b0b0c',
-        backgroundColorBottom: '#0b0b0c',
-        backgroundTextStyle: 'light',
+        backgroundColor: '#ffffff',
+        backgroundColorTop: '#ffffff',
+        backgroundColorBottom: '#ffffff',
+        backgroundTextStyle: 'dark',
       });
       expect(config, page).not.toHaveProperty('disableScroll');
     }
@@ -117,18 +117,17 @@ describe('品牌与页面体验静态契约', () => {
     );
   });
 
-  it('全局共享表面使用双主题语义 token，并提供低饱和成功状态', () => {
+  it('全局共享表面使用单一语义 token，并提供低饱和成功状态', () => {
     const appStyles = read('miniprogram/app.wxss');
     const statusStyles = read('miniprogram/components/status-pill/index.wxss');
-    const dark = themeTokens(appStyles, 'dark');
-    const light = themeTokens(appStyles, 'light');
-    expect(dark['--color-success']).toBe('#6f9b82');
-    expect(light['--color-success']).toBe('#3f7457');
+    const tokens = uiTokens(appStyles);
+    expect(tokens['--color-success']).toBe('#356348');
     expectSemantic(declaration(cssBlock(appStyles, '.card'), 'background'), '--color-surface');
     expectSemantic(declaration(cssBlock(appStyles, '.fixed'), 'background'), '--color-fixed-bar');
-    expect(statusStyles).toContain('background: rgba(111, 155, 130, 0.14)');
-    expect(statusStyles).toContain('border-color: var(--color-success)');
-    expect(statusStyles).toContain('color: var(--color-success-text)');
+    const success = cssBlock(statusStyles, '.pill--success');
+    expectSemantic(declaration(success, 'background'), '--color-success-soft');
+    expectSemantic(declaration(success, 'border-color'), '--color-success');
+    expectSemantic(declaration(success, 'color'), '--color-success-text');
     expect(`${appStyles}\n${statusStyles}`).not.toMatch(/#39ff14|#00ff00|lime|neon/i);
   });
 });

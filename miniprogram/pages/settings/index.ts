@@ -1,27 +1,14 @@
 import type { StravaReadiness } from '../../models';
 import { runPageTask } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
-import { syncPageTheme } from '../../services/theme-service';
 
 const RELEASE_NOTES = [
-  {
-    version: '2026.10.10.10',
-    date: '2026-10-10',
-    title: '界面统一为明亮主题',
-    summary: '根据新 UI 基线，应用默认收口为单一明亮主题，减少深浅分叉导致的样式遗漏。',
-    latest: true,
-    features: [
-      '默认外观统一为明亮主题，历史深色偏好会自动迁移',
-      '设置页移除主题切换入口，避免界面分叉导致的样式遗漏',
-      '所有页面初始渲染使用统一主题，减少首屏闪烁',
-    ],
-  },
   {
     version: '2026.10.10.9',
     date: '2026-10-10',
     title: '我的行程完整保留',
     summary: '全部报名可稳定加载，已完成、下架或活动信息缺失的历史行程不会消失。',
-    latest: false,
+    latest: true,
     features: [
       '报名超过 50 条时自动连续加载，跨页顺序稳定且不重复',
       '已完成、下架、软删和活动信息缺失的报名继续显示可解释的历史详情',
@@ -332,8 +319,6 @@ const stravaStatusText = (readiness: StravaReadiness | null) => {
 Page({
   stravaStatusRequestId: 0,
   data: {
-    theme: 'light',
-    themeClass: 'theme-light',
     releaseNotes: RELEASE_NOTES,
     stravaLoading: true,
     stravaLoadError: '',
@@ -341,7 +326,6 @@ Page({
     stravaStatusText: '正在读取授权状态',
   },
   onShow() {
-    syncPageTheme(this);
     void this.loadStravaStatus();
   },
   onHide() {

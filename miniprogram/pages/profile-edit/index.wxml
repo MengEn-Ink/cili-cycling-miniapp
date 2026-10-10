@@ -1,4 +1,4 @@
-<view class="page profile-form-page {{themeClass}}">
+<view class="page profile-form-page">
   <state-view loading="{{loading}}" error="{{!p ? error : ''}}" loading-title="正在读取个人资料" loading-copy="正在加载已保存的个人资料">
   <block wx:if="{{p}}">
     <view class="card form-card avatar-step-card">

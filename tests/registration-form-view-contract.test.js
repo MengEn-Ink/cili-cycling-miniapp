@@ -51,7 +51,7 @@ describe('报名表单受控控件与视觉契约', () => {
   });
 
   it('保持纯色 CILI 深色主题且小屏布局不溢出', () => {
-    expect(styles).toContain('background: #0b0b0c');
+    expect(styles).toContain('background: var(--color-bg)');
     expect(styles).toContain('@media (max-width: 340px)');
     expect(styles).toContain('grid-template-columns: 1fr');
     expect(styles).toContain('overflow-x: hidden');

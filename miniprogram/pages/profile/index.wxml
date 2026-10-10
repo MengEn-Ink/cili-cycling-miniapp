@@ -1,4 +1,4 @@
-<view class="page profile-page {{themeClass}}" bindtouchstart="refreshTouchStart" bindtouchmove="refreshTouchMove" bindtouchend="refreshTouchEnd" bindtouchcancel="refreshTouchEnd">
+<view class="page profile-page" bindtouchstart="refreshTouchStart" bindtouchmove="refreshTouchMove" bindtouchend="refreshTouchEnd" bindtouchcancel="refreshTouchEnd">
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{loading ? '正在同步个人资料' : (refreshTitle || (!error ? '个人资料已就绪' : ''))}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{error}}</view>
   <view class="profile-topbar">

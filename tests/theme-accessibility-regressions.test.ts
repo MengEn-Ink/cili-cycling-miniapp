@@ -7,34 +7,26 @@ import {
   read,
   resolvedHex,
   rpx,
-  themeTokens,
+  uiTokens,
 } from './theme-contract-helpers';
 
 const app = read('miniprogram/app.wxss');
-const dark = themeTokens(app, 'dark');
-const light = themeTokens(app, 'light');
-const themes = [
-  ['dark', dark],
-  ['light', light],
-] as const;
+const tokens = uiTokens(app);
 
-function expectThemeContrast(foreground: string, background: string, minimum = 4.5): void {
-  for (const [name, tokens] of themes) {
-    expect(
-      contrast(resolvedHex(foreground, tokens), resolvedHex(background, tokens)),
-      `${name} theme contrast for ${foreground} on ${background}`,
-    ).toBeGreaterThanOrEqual(minimum);
-  }
+function expectUiContrast(foreground: string, background: string, minimum = 4.5): void {
+  expect(
+    contrast(resolvedHex(foreground, tokens), resolvedHex(background, tokens)),
+    `contrast for ${foreground} on ${background}`,
+  ).toBeGreaterThanOrEqual(minimum);
 }
 
-describe('theme accessibility regressions', () => {
-  it('uses default dark tokens, a light override, and semantic page surfaces', () => {
-    expect(dark['--color-bg']).toBe('#0b0b0c');
-    expect(dark['--color-text']).toBe('#f7f7f5');
-    expect(light['--color-bg']).toBe('#ffffff');
-    expect(light['--color-text']).toBe('#080808');
-    expect(contrast(light['--color-brand'], light['--color-bg'])).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(light['--color-brand'], light['--color-surface'])).toBeGreaterThanOrEqual(4.5);
+describe('unified UI accessibility regressions', () => {
+  it('uses one bright token set and semantic page surfaces', () => {
+    expect(tokens['--color-bg']).toBe('#ffffff');
+    expect(tokens['--color-text']).toBe('#10120f');
+    expect(tokens['--color-brand']).toBe('#d9ff43');
+    expectUiContrast('var(--color-text)', 'var(--color-bg)', 7);
+    expectUiContrast('var(--color-on-brand)', 'var(--color-brand)', 7);
 
     const globalPage = effectiveBlock(app, 'page');
     expectSemantic(declaration(globalPage, 'background'), '--color-bg');
@@ -54,15 +46,15 @@ describe('theme accessibility regressions', () => {
     }
   });
 
-  it('keeps shared cards and muted copy readable in both themes', () => {
+  it('keeps shared cards and muted copy readable', () => {
     const card = effectiveBlock(app, '.card');
     const muted = effectiveBlock(app, '.muted');
     expectSemantic(declaration(card, 'background'), '--color-surface');
     expectSemantic(declaration(card, 'color'), '--color-text');
     expectSemantic(declaration(muted, 'color'), '--color-muted');
-    expectThemeContrast('var(--color-text)', 'var(--color-surface)');
-    expectThemeContrast('var(--color-muted)', 'var(--color-bg)');
-    expectThemeContrast('var(--color-muted)', 'var(--color-surface)');
+    expectUiContrast('var(--color-text)', 'var(--color-surface)');
+    expectUiContrast('var(--color-muted)', 'var(--color-bg)');
+    expectUiContrast('var(--color-muted)', 'var(--color-surface)');
 
     for (const file of [
       'miniprogram/pages/admin/activity-edit/index.wxml',
@@ -90,11 +82,11 @@ describe('theme accessibility regressions', () => {
     expectSemantic(declaration(effectiveBlock(form, '.form-card'), 'color'), '--color-text');
   });
 
-  it('keeps shared form and status primitives semantic and readable in both themes', () => {
+  it('keeps shared form and status primitives semantic and readable', () => {
     for (const selector of ['.label', '.section-label']) {
       expectSemantic(declaration(effectiveBlock(app, selector), 'color'), '--color-muted');
     }
-    expectThemeContrast('var(--color-muted)', 'var(--color-surface)');
+    expectUiContrast('var(--color-muted)', 'var(--color-surface)');
 
     const statusTokens = [
       ['.tag', '--color-success-text', '--color-success-soft'],
@@ -105,13 +97,13 @@ describe('theme accessibility regressions', () => {
       const block = effectiveBlock(app, selector);
       expectSemantic(declaration(block, 'color'), foreground);
       expectSemantic(declaration(block, 'background'), background);
-      expectThemeContrast(`var(${foreground})`, 'var(--color-surface)', 4.5);
+      expectUiContrast(`var(${foreground})`, `var(${background})`, 4.5);
     }
 
     const controls = app.match(/\.input,\s*\.textarea\s*\{([^}]*)\}/s)?.[1] || '';
     expectSemantic(declaration(controls, 'background'), '--color-input-bg');
     expectSemantic(declaration(controls, 'color'), '--color-text');
-    expectThemeContrast('var(--color-text)', 'var(--color-input-bg)');
+    expectUiContrast('var(--color-text)', 'var(--color-input-bg)');
 
     const secondary = effectiveBlock(app, '.secondary');
     expectSemantic(declaration(secondary, 'background'), '--color-input-bg');
@@ -119,8 +111,7 @@ describe('theme accessibility regressions', () => {
     const metric = effectiveBlock(app, '.metric');
     expectSemantic(declaration(metric, 'background'), '--color-input-bg');
     expectSemantic(declaration(metric, 'color'), '--color-muted');
-    expectThemeContrast('var(--color-muted)', 'var(--color-input-bg)');
-    expectThemeContrast('var(--color-brand)', 'var(--color-input-bg)', 3);
+    expectUiContrast('var(--color-muted)', 'var(--color-input-bg)');
 
     expect(read('miniprogram/pages/profile-edit/index.wxml')).toMatch(
       /class="(?:label|danger form-error)"/,
@@ -149,7 +140,7 @@ describe('theme accessibility regressions', () => {
     const reviewMetric = effectiveBlock(reviewStyles, '.review-detail-page .metric');
     expectSemantic(declaration(reviewMetric, 'background'), '--color-surface');
     expectSemantic(declaration(reviewMetric, 'color'), '--color-text');
-    expectThemeContrast('var(--color-text)', 'var(--color-surface)');
+    expectUiContrast('var(--color-text)', 'var(--color-surface)');
   });
 
   it('lets each page provide empty-state copy and hides decorative state glyphs', () => {
@@ -179,24 +170,20 @@ describe('theme accessibility regressions', () => {
     expect(template).not.toContain('饮食、健康或其他备注');
   });
 
-  it('keeps primary CTA text and brand treatment distinguishable in dark and light themes', () => {
+  it('keeps primary CTA text distinguishable on normal and active brand fills', () => {
     const button = effectiveBlock(app, '.btn');
     expect(declaration(button, 'background')).toBe('var(--color-brand) !important');
     expectSemantic(declaration(button, 'color'), '--color-on-brand');
-    for (const [name, tokens] of themes) {
-      const foreground = resolvedHex('var(--color-on-brand)', tokens);
-      expect(
-        contrast(foreground, resolvedHex('var(--color-brand)', tokens)),
-        `${name} CTA`,
-      ).toBeGreaterThanOrEqual(3);
-      expect(
-        contrast(foreground, resolvedHex('var(--color-brand-active)', tokens)),
-        `${name} active CTA`,
-      ).toBeGreaterThanOrEqual(3);
-    }
+    const foreground = resolvedHex('var(--color-on-brand)', tokens);
+    expect(contrast(foreground, resolvedHex('var(--color-brand)', tokens))).toBeGreaterThanOrEqual(
+      7,
+    );
+    expect(
+      contrast(foreground, resolvedHex('var(--color-brand-active)', tokens)),
+    ).toBeGreaterThanOrEqual(7);
   });
 
-  it('keeps photographic hero copy white in both themes', () => {
+  it('keeps photographic hero copy white on dark media overlays', () => {
     const profileStyles = read('miniprogram/pages/profile/index.wxss');
     const profileHero = effectiveBlock(profileStyles, '.profile-hero');
     expect(declaration(profileHero, 'color')).toBe('#f7f7f5');
@@ -207,21 +194,21 @@ describe('theme accessibility regressions', () => {
     expect(contrast('#f7f7f5', '#1c1c1e')).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('keeps activity card and detail metric labels readable in both themes', () => {
+  it('keeps activity card and detail metric labels readable', () => {
     const cardStyles = read('miniprogram/components/activity-card/index.wxss');
     const cardLabel = effectiveBlock(cardStyles, '.metric-unit');
     const cardSurface = effectiveBlock(cardStyles, '.metric-item');
     expect(rpx(cardLabel, 'font-size')).toBeGreaterThanOrEqual(24);
     expectSemantic(declaration(cardLabel, 'color'), '--color-muted');
     expectSemantic(declaration(cardSurface, 'background'), '--color-raised');
-    expectThemeContrast('var(--color-muted)', 'var(--color-raised)');
+    expectUiContrast('var(--color-muted)', 'var(--color-raised)');
 
     const detailStyles = read('miniprogram/pages/activity-detail/index.wxss');
     const detailMetric = effectiveBlock(detailStyles, '.detail-metric');
     expect(rpx(detailMetric, 'font-size')).toBeGreaterThanOrEqual(24);
     expectSemantic(declaration(detailMetric, 'color'), '--color-muted');
     expectSemantic(declaration(detailMetric, 'background'), '--color-surface');
-    expectThemeContrast('var(--color-muted)', 'var(--color-surface)');
+    expectUiContrast('var(--color-muted)', 'var(--color-surface)');
   });
 
   it('keeps the profile edit action at least 88rpx tall', () => {
@@ -229,7 +216,7 @@ describe('theme accessibility regressions', () => {
     expect(rpx(editButton, 'min-height')).toBeGreaterThanOrEqual(88);
   });
 
-  it('keeps registration dates and admin sync metadata readable in both themes', () => {
+  it('keeps registration metadata readable without using brand as body text', () => {
     const registrationStyles = read('miniprogram/pages/registrations/index.wxss');
     expectSemantic(
       declaration(effectiveBlock(registrationStyles, '.date'), 'color'),
@@ -240,8 +227,7 @@ describe('theme accessibility regressions', () => {
       declaration(effectiveBlock(reviewStyles, '.sync-meta'), 'color'),
       '--color-muted',
     );
-    expectThemeContrast('var(--color-brand)', 'var(--color-surface)', 3);
-    expectThemeContrast('var(--color-muted)', 'var(--color-surface)');
+    expectUiContrast('var(--color-muted)', 'var(--color-surface)');
   });
 
   it('uses only supported WXML elements for the activities headline', () => {
@@ -252,7 +238,7 @@ describe('theme accessibility regressions', () => {
   });
 
   it('shares a 44px-equivalent control height and stable page gutters', () => {
-    expect(declaration(effectiveBlock(app, 'page'), '--control-height')).toBe('88rpx');
+    expect(declaration(effectiveBlock(app, 'page'), '--control-height')).toBe('96rpx');
     expect(declaration(effectiveBlock(app, 'page'), '--page-gutter')).toBe('32rpx');
     expect(declaration(effectiveBlock(app, 'page'), '--page-gutter-narrow')).toBe('24rpx');
 

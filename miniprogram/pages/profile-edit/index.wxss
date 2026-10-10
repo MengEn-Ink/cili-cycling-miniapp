@@ -1,12 +1,12 @@
-/* ===== CILI 暗色竞技主题：资料编辑页 ===== */
+/* ===== CILI 统一明亮 UI：资料编辑页 ===== */
 page {
-  background: #0b0b0c;
+  background: var(--color-bg);
 }
 .profile-form-page {
   min-height: 100vh;
   padding-bottom: calc(190rpx + env(safe-area-inset-bottom));
-  background: #0b0b0c;
-  color: #f7f7f5;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 .profile-form-page .form-card {
   overflow: hidden;
@@ -334,10 +334,10 @@ page,
   }
 }
 
-.theme-light .avatar-action[disabled],
-.theme-light .default-avatar-button[disabled],
-.theme-light .photo-action[disabled],
-.theme-light .photo-order-button[disabled] {
+.avatar-action[disabled],
+.default-avatar-button[disabled],
+.photo-action[disabled],
+.photo-order-button[disabled] {
   border-color: var(--color-border);
   background: var(--color-raised);
   color: var(--color-muted);

@@ -1,18 +1,18 @@
 page {
-  background: #0b0b0c;
+  background: var(--color-bg);
 }
 
 .registrations-page {
   min-height: 100%;
   overflow-x: hidden;
-  background: #0b0b0c;
-  color: #f7f7f5;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 brand-logo {
   display: block;
   padding: 10rpx 4rpx 14rpx;
-  border-bottom: 1rpx solid #343437;
+  border-bottom: 1rpx solid var(--color-border);
 }
 
 .page-heading {
@@ -281,9 +281,4 @@ brand-logo,
 .count-value,
 .open-link {
   color: var(--color-text);
-}
-
-.theme-light .registration-card {
-  border-color: var(--color-border-strong);
-  box-shadow: none;
 }

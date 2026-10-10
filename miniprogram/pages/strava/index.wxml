@@ -1,4 +1,4 @@
-<view class="page strava-page {{themeClass}}">
+<view class="page strava-page">
   <view class="strava-head"><view class="strava-mark">S</view><view><view class="hero-kicker">STRAVA</view><view class="strava-title">骑行数据</view><view class="muted">授权在系统浏览器完成，返回微信后自动同步</view></view></view>
   <state-view loading="{{loading}}" error="{{!readiness ? error : ''}}" loading-title="正在读取绑定状态" loading-copy="正在检查 Strava 授权与数据准备状态" retryable="{{!readiness}}" bind:retry="load">
   <view class="error-card" wx:if="{{error}}">{{error}}</view>

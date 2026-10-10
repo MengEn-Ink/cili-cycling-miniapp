@@ -1,4 +1,4 @@
-<view class="page activity-form-page {{themeClass}}">
+<view class="page activity-form-page">
   <view class="card danger" wx:if="{{error}}">
     <view class="error-summary" role="alert">
       <view class="error-summary-title">请检查活动信息</view>

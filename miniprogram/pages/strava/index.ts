@@ -1,7 +1,6 @@
 import type { StravaReadiness } from '../../models';
 import { runPageTask } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
-import { syncPageTheme } from '../../services/theme-service';
 import { invalidateProfilePageCache } from '../../utils/profile-page-cache';
 import {
   pollStravaAuthorization,
@@ -56,8 +55,6 @@ function showBrowserGuide(): Promise<boolean> {
 Page({
   loadRequestId: 0,
   data: {
-    theme: 'light',
-    themeClass: 'theme-light',
     loading: true,
     error: '',
     readiness: null as StravaReadiness | null,
@@ -70,7 +67,6 @@ Page({
     this.setData({ reauthorize: options.reauthorize === '1' });
   },
   onShow() {
-    syncPageTheme(this);
     void this.load();
   },
   onHide() {

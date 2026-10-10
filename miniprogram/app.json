@@ -18,36 +18,36 @@
   "requiredPrivateInfos": ["chooseLocation"],
   "window": {
     "navigationBarTitleText": "此里",
-    "navigationBarBackgroundColor": "#0b0b0c",
-    "navigationBarTextStyle": "white",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
     "enablePullDownRefresh": false,
-    "backgroundColor": "#0b0b0c",
-    "backgroundColorTop": "#0b0b0c",
-    "backgroundColorBottom": "#0b0b0c",
-    "backgroundTextStyle": "light"
+    "backgroundColor": "#ffffff",
+    "backgroundColorTop": "#ffffff",
+    "backgroundColorBottom": "#ffffff",
+    "backgroundTextStyle": "dark"
   },
   "tabBar": {
-    "backgroundColor": "#0b0b0c",
-    "borderStyle": "black",
-    "color": "#a8a8ad",
-    "selectedColor": "#d55b1f",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "color": "#5b6258",
+    "selectedColor": "#10120f",
     "list": [
       {
         "pagePath": "pages/activities/index",
         "text": "活动",
-        "iconPath": "assets/tabbar/activities.png",
+        "iconPath": "assets/tabbar/activities-light.png",
         "selectedIconPath": "assets/tabbar/activities-active.png"
       },
       {
         "pagePath": "pages/registrations/index",
         "text": "行程",
-        "iconPath": "assets/tabbar/registrations.png",
+        "iconPath": "assets/tabbar/registrations-light.png",
         "selectedIconPath": "assets/tabbar/registrations-active.png"
       },
       {
         "pagePath": "pages/profile/index",
         "text": "我的",
-        "iconPath": "assets/tabbar/profile.png",
+        "iconPath": "assets/tabbar/profile-light.png",
         "selectedIconPath": "assets/tabbar/profile-active.png"
       }
     ]
