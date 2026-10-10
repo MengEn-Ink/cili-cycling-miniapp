@@ -10,6 +10,7 @@ const {
   isEnabledAdmin,
   publicActivity,
   cloneActivity,
+  deleteActivity,
   saveActivity,
   MAX_PARTITION_BACKFILL_RECORDS,
 } = require('./domain-index');
@@ -51,7 +52,7 @@ function transactionStore() {
               fail('PARTITION_BACKFILL_REQUIRED', '历史活动占位数超过自动回填上限');
             const registrations = [];
             // 复用 activity_id + status + created_at 索引，分别完整扫描各占位状态。
-            for (const status of ['pending', 'approved', 'checked_in']) {
+            for (const status of ['pending', 'approved', 'checked_in', 'waiting']) {
               let offset = 0;
               while (registrations.length <= expectedOccupiedCount) {
                 // 最多读取 expected + 1 条：多出的 1 条用于证明总数超出 occupied_count。
@@ -80,6 +81,9 @@ function transactionStore() {
           putActivity: async (id, value) => {
             const { _id, ...data } = value;
             await transaction.collection('activities').doc(id).set({ data });
+          },
+          updateActivity: async (id, data) => {
+            await transaction.collection('activities').doc(id).update({ data });
           },
           addAudit: (audit) => transaction.collection('audit_logs').add({ data: audit }),
         }),
@@ -120,6 +124,19 @@ exports.main = async (event = {}) => {
           transactionStore(),
           {
             ...event,
+            openid,
+          },
+          new Date(),
+        ),
+      );
+    }
+    if (event.action === 'delete') {
+      return ok(
+        await deleteActivity(
+          transactionStore(),
+          {
+            ...event,
+            activityId: event.id,
             openid,
           },
           new Date(),
