@@ -15,19 +15,20 @@
         <view class="activity-title">{{item.title}}</view>
         <status-pill status="{{item.displayStatus}}" />
       </view>
-      <view class="route-line">{{item.route.start || '起点待公布'}} <text class="route-arrow">→</text> {{item.route.end || '终点待公布'}}</view>
+      <view class="route-line" wx:if="{{item.registrationUnlimited}}">{{item.route.start || '集合地点待公布'}}</view>
+      <view class="route-line" wx:else>{{item.route.start || '起点待公布'}} <text class="route-arrow">→</text> {{item.route.end || '终点待公布'}}</view>
     </view>
   </view>
   <view class="card-content">
     <view class="metrics">
-      <view class="metric-item"><view><text class="metric-value">{{item.route.distanceKm}}</text><text class="metric-suffix"> km</text></view><text class="metric-unit">里程</text></view>
-      <view class="metric-item"><view><text class="metric-value">{{item.route.elevationM}}</text><text class="metric-suffix"> m</text></view><text class="metric-unit">爬升</text></view>
-      <view class="metric-item"><text class="metric-value">{{item.capacity > 0 ? item.remaining : '确认中'}}</text><text class="metric-unit">剩余名额</text></view>
+      <view wx:if="{{item.route.distanceKm > 0}}" class="metric-item"><view><text class="metric-value">{{item.route.distanceKm}}</text><text class="metric-suffix"> km</text></view><text class="metric-unit">里程</text></view>
+      <view wx:if="{{item.route.elevationM > 0}}" class="metric-item"><view><text class="metric-value">{{item.route.elevationM}}</text><text class="metric-suffix"> m</text></view><text class="metric-unit">爬升</text></view>
+      <view class="metric-item"><text class="metric-value">{{item.registrationUnlimited ? '不限' : (item.capacity > 0 ? item.remaining : '确认中')}}</text><text class="metric-unit">报名人数</text></view>
     </view>
     <view class="card-foot">
       <view class="card-meta">
-        <text class="level">{{item.route.level || '难度待公布'}}</text>
-        <text class="occupancy">{{item.capacity > 0 ? (item.occupied + ' / ' + item.capacity + ' 人已报名') : '名额确认中'}}</text>
+        <text wx:if="{{item.route.level}}" class="level">{{item.route.level}}</text>
+        <text class="occupancy">{{item.registrationUnlimited ? (item.occupied + ' 人已报名') : (item.capacity > 0 ? (item.occupied + ' / ' + item.capacity + ' 人已报名') : '名额确认中')}}</text>
       </view>
       <view class="card-cta" aria-hidden="true">查看详情 <text>→</text></view>
     </view>

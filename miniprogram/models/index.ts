@@ -68,6 +68,7 @@ export interface Activity {
   deadline: string;
   status: 'draft' | 'published' | 'finished';
   capacity: number;
+  registrationUnlimited?: boolean;
   supportVehicleCapacity?: number;
   selfDriveCapacity?: number;
   supportVehicleRemaining?: number;

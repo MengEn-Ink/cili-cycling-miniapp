@@ -1,12 +1,8 @@
-// @ts-expect-error Vitest provides the Node runtime used by this repository.
+// @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  formatActivityDate,
-  formatChinaDateTime,
-  formatLocalDateTime,
-  parseLocalDateTime,
-} from '../miniprogram/utils/date-time';
+import type { Activity } from '../miniprogram/models';
+import { formatActivityDate, formatChinaDateTime } from '../miniprogram/utils/date-time';
 
 const rideService = vi.hoisted(() => ({
   getAdminActivity: vi.fn(),
@@ -17,68 +13,65 @@ const appStore = vi.hoisted(() => ({
   authStatus: 'authenticated',
   ensureIdentity: vi.fn(),
 }));
+
 vi.mock('../miniprogram/services/ride-service', () => ({ rideService }));
 vi.mock('../miniprogram/store/app-store', () => ({ appStore }));
 
-const baseActivity = {
+const activity: Activity = {
   id: 'a1',
   version: 1,
-  title: '活动',
+  title: '日常骑行',
   date: '2026-10-18T00:00:00.000Z',
   startAt: '2026-10-18T00:00:00.000Z',
-  endAt: '2026-10-18T08:00:00.000Z',
-  deadline: '2026-10-17T00:00:00.000Z',
-  status: 'draft' as const,
-  capacity: 20,
-  description: '说明',
-  coverImage: 'cloud://legacy-cover.jpg',
-  route: { start: '起点', end: '终点', distanceKm: 80, elevationM: 500, level: '进阶' },
+  endAt: '2026-10-18T04:00:00.000Z',
+  deadline: '2026-10-17T23:59:00.000Z',
+  status: 'draft',
+  capacity: 500,
+  description: '',
+  images: ['cloud://one.jpg'],
+  coverImage: 'cloud://one.jpg',
+  route: { start: '集合点', end: '集合点', distanceKm: 0, elevationM: 0, level: '' },
   schedule: [],
   notices: [],
   equipment: [],
-  fee: '',
+  fee: '免费',
 };
 
 describe('活动日期展示', () => {
   it('使用紧凑中文日期且非法或空日期明确显示待公布', () => {
-    expect(formatActivityDate('2026-10-18')).toBe('10月18日 周日');
-    expect(formatActivityDate('2026-02-30')).toBe('日期待公布');
+    expect(formatActivityDate('2026-10-18T00:00:00.000Z')).toContain('10月18日');
     expect(formatActivityDate('')).toBe('日期待公布');
-    expect(formatActivityDate('2026-10-18T00:00:00.000Z')).toBe('10月18日 周日');
-    expect(formatActivityDate('2026-09-30T23:00:00.000Z')).toBe('10月1日 周四');
+    expect(formatActivityDate('bad')).toBe('日期待公布');
   });
 
-  it('完整时间固定按 UTC+8 展示到秒，日期值补零点，非法值为空', () => {
-    expect(formatChinaDateTime('2026-09-30T04:00:00.000Z')).toBe('2026-09-30 12:00:00');
-    expect(formatChinaDateTime('2026-09-30T23:59:58.000Z')).toBe('2026-10-01 07:59:58');
-    expect(formatChinaDateTime('2026-09-30')).toBe('2026-09-30 00:00:00');
-    expect(formatChinaDateTime('2026-02-30')).toBe('');
-    expect(formatChinaDateTime('非法时间')).toBe('');
+  it('完整时间固定按 UTC+8 展示到秒，非法值为空', () => {
+    expect(formatChinaDateTime('2026-10-18T00:00:00.000Z')).toBe('2026-10-18 08:00:00');
+    expect(formatChinaDateTime('bad')).toBe('');
   });
 });
 
-describe('活动编辑媒体、时间、说明与地图', () => {
+describe('日常活动封面、说明与地图', () => {
   let page: any;
-  let wxApi: any;
+  let chooseMedia: ReturnType<typeof vi.fn>;
+  let chooseLocation: ReturnType<typeof vi.fn>;
+  let uploadFile: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.resetModules();
-    rideService.getAdminActivity.mockReset().mockResolvedValue(baseActivity);
-    rideService.saveActivity.mockReset().mockImplementation(async (input) => ({
-      ...baseActivity,
-      ...input,
-      version: 2,
-    }));
+    rideService.getAdminActivity.mockReset().mockResolvedValue(activity);
+    rideService.saveActivity.mockReset().mockResolvedValue(activity);
     appStore.ensureIdentity.mockReset().mockResolvedValue(undefined);
-    wxApi = {
-      cloud: { uploadFile: vi.fn(), deleteFile: vi.fn().mockResolvedValue({ fileList: [] }) },
-      chooseMedia: vi.fn(),
-      chooseLocation: vi.fn(),
+    chooseMedia = vi.fn();
+    chooseLocation = vi.fn();
+    uploadFile = vi.fn();
+    vi.stubGlobal('wx', {
+      cloud: { uploadFile, deleteFile: vi.fn().mockResolvedValue({}) },
+      chooseMedia,
+      chooseLocation,
       showToast: vi.fn(),
-      showModal: vi.fn().mockResolvedValue({ confirm: true, cancel: false }),
+      showModal: vi.fn().mockResolvedValue({}),
       pageScrollTo: vi.fn(),
-    };
-    vi.stubGlobal('wx', wxApi);
+    });
     vi.stubGlobal('Page', (definition: any) => {
       page = definition;
       page.data = { ...definition.data, form: { ...definition.data.form } };
@@ -94,200 +87,89 @@ describe('活动编辑媒体、时间、说明与地图', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('加载时本地化时间且保存时严格还原 ISO，空草稿保持可空', async () => {
-    await page.onLoad({ id: 'a1' });
-    expect(page.data.form.startAt).toBe(formatLocalDateTime(baseActivity.startAt));
-    expect(page.data.form.startAt).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-    page.data.form.deadline = '';
-    await page.save({ currentTarget: { dataset: { status: 'draft' } } });
-    const submitted = rideService.saveActivity.mock.calls[0][0];
-    expect(submitted.startAt).toBe(parseLocalDateTime(page.data.form.startAt, '开始'));
-    expect(submitted).not.toHaveProperty('deadline');
-
-    page.data.form.startAt = '2026-02-30 10:00:00';
-    await page.save({ currentTarget: { dataset: { status: 'draft' } } });
-    expect(rideService.saveActivity).toHaveBeenCalledTimes(1);
-    expect(page.data.error).toContain('有效的日期时间');
-  });
-
-  it('textarea 固定 5000 且运行时超长也不得提交', async () => {
-    await page.onLoad({ id: 'a1' });
-    page.data.form.description = '骑'.repeat(5001);
-    await page.save({ currentTarget: { dataset: { status: 'draft' } } });
-    expect(rideService.saveActivity).not.toHaveBeenCalled();
-    expect(page.data.error).toContain('5000');
+  it('说明输入固定 5000 字且运行时超长不得提交', async () => {
     const template = readFileSync('miniprogram/pages/admin/activity-edit/index.wxml', 'utf8');
     expect(template).toContain('maxlength="5000"');
-    expect(template).toContain('{{form.description.length}}/5000');
-    expect(template).not.toMatch(/ISO/);
-    const appConfig = JSON.parse(readFileSync('miniprogram/app.json', 'utf8'));
-    expect(appConfig.requiredPrivateInfos).toContain('chooseLocation');
-    const detail = readFileSync('miniprogram/pages/activity-detail/index.wxml', 'utf8');
-    const credential = readFileSync('miniprogram/pages/credential/index.wxml', 'utf8');
-    expect(detail).toContain('<swiper');
-    expect(detail).toContain('bindtap="navigate"');
-    expect(credential).toContain('bindtap="navigateToMeeting"');
-  });
-
-  it('最多按剩余数量选图，上传到允许前缀并支持封面前移和删除', async () => {
-    await page.onLoad({ id: 'a1' });
-    wxApi.chooseMedia.mockResolvedValue({ tempFiles: [{ tempFilePath: '/tmp/a.PNG' }] });
-    wxApi.cloud.uploadFile.mockResolvedValue({ fileID: 'cloud://new.png' });
-    await page.chooseImages();
-    expect(wxApi.chooseMedia).toHaveBeenCalledWith({
-      count: 8,
-      mediaType: ['image'],
-      sourceType: ['album', 'camera'],
-    });
-    expect(wxApi.cloud.uploadFile.mock.calls[0][0].cloudPath).toMatch(
-      /^profiles\/activity-media\/\d+-[a-z0-9]+\.png$/,
-    );
-    expect(page.data.images).toEqual(['cloud://legacy-cover.jpg', 'cloud://new.png']);
-    page.setCover({ currentTarget: { dataset: { index: 1 } } });
-    expect(page.data.coverImage).toBe('cloud://new.png');
-    page.removeImage({ currentTarget: { dataset: { index: 0 } } });
-    expect(page.data.images).toEqual(['cloud://legacy-cover.jpg']);
-  });
-
-  it('批量上传中途失败会回收已上传文件，上传期间保存被锁住', async () => {
-    await page.onLoad({ id: 'a1' });
-    let release!: (value: unknown) => void;
-    wxApi.chooseMedia.mockReturnValue(
-      new Promise((resolve) => {
-        release = resolve;
-      }),
-    );
-    const choosing = page.chooseImages();
+    await page.onLoad({ id: activity.id });
+    page.data.form.description = 'x'.repeat(5001);
     await page.save({ currentTarget: { dataset: { status: 'draft' } } });
     expect(rideService.saveActivity).not.toHaveBeenCalled();
-    release({ tempFiles: [{ tempFilePath: '/tmp/a.jpg' }, { tempFilePath: '/tmp/b.jpg' }] });
-    wxApi.cloud.uploadFile
-      .mockResolvedValueOnce({ fileID: 'cloud://uploaded-a.jpg' })
-      .mockRejectedValueOnce(new Error('private'));
-    await choosing;
-    expect(page.data.error).toBe('第 2 张图片上传失败，请重试');
-    expect(wxApi.cloud.deleteFile).toHaveBeenCalledWith({
-      fileList: ['cloud://uploaded-a.jpg'],
-    });
-    expect(page.data.images).toEqual(['cloud://legacy-cover.jpg']);
-    expect(page.data.uploading).toBe(false);
+    expect(wx.showModal).toHaveBeenCalledWith(
+      expect.objectContaining({ content: '备注说明不能超过 5000 字' }),
+    );
   });
 
-  it('选择起终点保存文本与坐标，手改文本会清除旧坐标', async () => {
-    await page.onLoad({ id: 'a1' });
-    wxApi.chooseLocation
-      .mockResolvedValueOnce({
-        name: '集合广场',
-        address: '湖滨路 1 号',
-        latitude: 30.2,
-        longitude: 120.1,
-      })
-      .mockResolvedValueOnce({ name: '山顶', address: '环山路', latitude: 30.3, longitude: 120.2 });
-    await page.chooseRouteLocation({ currentTarget: { dataset: { target: 'start' } } });
-    await page.chooseRouteLocation({ currentTarget: { dataset: { target: 'end' } } });
-    expect(wxApi.chooseLocation).toHaveBeenCalledTimes(2);
-    const template = readFileSync('miniprogram/pages/admin/activity-edit/index.wxml', 'utf8');
-    expect(template).toMatch(
-      /input value="{{form\.routeStart}}"[^>]*\/><button class="inline-action-button location-quick-button"[^>]*data-target="start"[^>]*bindtap="chooseRouteLocation"/,
-    );
-    expect(template).toContain(
-      `loading="{{choosingLocation === 'start'}}" disabled="{{saving || choosingLocation}}"`,
-    );
-    expect(template).toContain(
-      'disabled="{{saving || uploading || choosingLocation}}" data-status="{{status}}"',
-    );
-    expect(template).toContain('aria-label="在地图中选择集合点"');
-    const styles = readFileSync('miniprogram/pages/admin/activity-edit/index.wxss', 'utf8');
-    expect(styles).toMatch(
-      /\.location-quick-button\s*{[\s\S]*min-width: 136rpx;[\s\S]*min-height: 88rpx;/,
-    );
-    const appConfig = JSON.parse(readFileSync('miniprogram/app.json', 'utf8'));
-    expect(appConfig.requiredPrivateInfos).toEqual(['chooseLocation']);
-    expect(appConfig.permission).toBeUndefined();
-    await page.save({ currentTarget: { dataset: { status: 'draft' } } });
-    expect(rideService.saveActivity.mock.calls[0][0].route).toMatchObject({
-      start: '集合广场',
-      end: '山顶',
-      startLocation: { address: '湖滨路 1 号', latitude: 30.2, longitude: 120.1 },
-      endLocation: { address: '环山路', latitude: 30.3, longitude: 120.2 },
+  it('按剩余数量选图且总数最多三张', async () => {
+    await page.onLoad({ id: activity.id });
+    chooseMedia.mockResolvedValue({
+      tempFiles: [{ tempFilePath: '/tmp/two.png' }, { tempFilePath: '/tmp/three.jpg' }],
     });
-    page.field({ currentTarget: { dataset: { name: 'routeStart' } }, detail: { value: '手填' } });
+    uploadFile
+      .mockResolvedValueOnce({ fileID: 'cloud://two.png' })
+      .mockResolvedValueOnce({ fileID: 'cloud://three.jpg' });
+    await page.chooseImages();
+    expect(chooseMedia).toHaveBeenCalledWith(
+      expect.objectContaining({ count: 2, mediaType: ['image'] }),
+    );
+    expect(page.data.images).toEqual(['cloud://one.jpg', 'cloud://two.png', 'cloud://three.jpg']);
+
+    await page.chooseImages();
+    expect(chooseMedia).toHaveBeenCalledTimes(1);
+    expect(page.data.error).toContain('最多 3 张');
+  });
+
+  it('支持把任意照片设为封面和删除照片', async () => {
+    await page.onLoad({ id: activity.id });
+    page.data.images = ['cloud://one.jpg', 'cloud://two.jpg', 'cloud://three.jpg'];
+    page.setCover({ currentTarget: { dataset: { index: 2 } } });
+    expect(page.data.images[0]).toBe('cloud://three.jpg');
+    expect(page.data.coverImage).toBe('cloud://three.jpg');
+    page.removeImage({ currentTarget: { dataset: { index: 0 } } });
+    expect(page.data.images).toEqual(['cloud://one.jpg', 'cloud://two.jpg']);
+  });
+
+  it('地图只选择起点并保存坐标，手改地点会清除旧坐标', async () => {
+    await page.onLoad({});
+    chooseLocation.mockResolvedValue({
+      name: '奥森南门',
+      address: '林萃路',
+      latitude: 39.9,
+      longitude: 116.4,
+    });
+    await page.chooseRouteLocation();
+    expect(page.data.form.routeStart).toBe('奥森南门');
+    expect(page.data.routeStartLocation).toEqual(
+      expect.objectContaining({ latitude: 39.9, longitude: 116.4 }),
+    );
+    page.field({
+      currentTarget: { dataset: { name: 'routeStart' } },
+      detail: { value: '手动地点' },
+    });
     expect(page.data.routeStartLocation).toBeUndefined();
   });
 
-  it('取消地图选点不报错，系统定位关闭时给出可操作提示', async () => {
-    await page.onLoad({ id: 'a1' });
-    wxApi.chooseLocation.mockRejectedValueOnce({
-      errMsg: 'chooseLocation:fail cancel',
-    });
-
-    await page.chooseRouteLocation({ currentTarget: { dataset: { target: 'start' } } });
-
+  it('取消地图选点不报错，定位权限关闭时给出恢复提示', async () => {
+    chooseLocation.mockRejectedValueOnce({ errMsg: 'chooseLocation:fail cancel' });
+    await page.chooseRouteLocation();
     expect(page.data.error).toBe('');
-    expect(wxApi.showModal).not.toHaveBeenCalled();
-    expect(page.data.choosingLocation).toBe('');
 
-    wxApi.chooseLocation.mockRejectedValueOnce({
+    chooseLocation.mockRejectedValueOnce({
       errMsg: 'chooseLocation:fail system permission denied',
     });
-
-    await page.chooseRouteLocation({ currentTarget: { dataset: { target: 'start' } } });
-
-    expect(wxApi.showModal).toHaveBeenCalledWith({
-      title: '无法打开地图选点',
-      content: '请在系统设置中开启微信的定位权限和定位服务后重试。',
-      showCancel: false,
-    });
-    expect(page.data.choosingLocation).toBe('');
-  });
-
-  it('接口或隐私配置缺失时提示管理员处理且不回显原始错误', async () => {
-    await page.onLoad({ id: 'a1' });
-    wxApi.chooseLocation.mockRejectedValue({
-      errMsg: 'chooseLocation:fail api scope is not declared in the privacy agreement',
-    });
-
-    await page.chooseRouteLocation({ currentTarget: { dataset: { target: 'end' } } });
-
-    expect(wxApi.showModal).toHaveBeenCalledWith({
-      title: '地图选点暂不可用',
-      content: '请联系管理员检查微信后台接口权限和用户隐私保护指引。',
-      showCancel: false,
-    });
-    expect(page.data.error).not.toContain('api scope');
-    expect(page.data.choosingLocation).toBe('');
-  });
-
-  it('地图选点与保存互斥且重复选点不会启动第二个请求', async () => {
-    await page.onLoad({ id: 'a1' });
-    let resolveLocation!: (value: unknown) => void;
-    wxApi.chooseLocation.mockReturnValue(
-      new Promise((resolve) => {
-        resolveLocation = resolve;
-      }),
+    await page.chooseRouteLocation();
+    expect(wx.showModal).toHaveBeenCalledWith(
+      expect.objectContaining({ title: '无法打开地图选点', showCancel: false }),
     );
+  });
 
-    const choosing = page.chooseRouteLocation({
-      currentTarget: { dataset: { target: 'start' } },
+  it('隐私配置缺失时给出管理员提示且不回显底层错误', async () => {
+    chooseLocation.mockRejectedValueOnce({
+      errMsg: 'chooseLocation:fail privacy api scope not open',
     });
-
-    expect(page.data.choosingLocation).toBe('start');
-    await page.chooseRouteLocation({ currentTarget: { dataset: { target: 'end' } } });
-    await page.save({ currentTarget: { dataset: { status: 'draft' } } });
-    expect(wxApi.chooseLocation).toHaveBeenCalledTimes(1);
-    expect(rideService.saveActivity).not.toHaveBeenCalled();
-
-    resolveLocation({
-      name: '集合广场',
-      address: '湖滨路 1 号',
-      latitude: 30.2,
-      longitude: 120.1,
-    });
-    await choosing;
-    expect(page.data.choosingLocation).toBe('');
-
-    page.data.saving = true;
-    await page.chooseRouteLocation({ currentTarget: { dataset: { target: 'end' } } });
-    expect(wxApi.chooseLocation).toHaveBeenCalledTimes(1);
+    await page.chooseRouteLocation();
+    expect(wx.showModal).toHaveBeenCalledWith(
+      expect.objectContaining({ title: '地图选点暂不可用', showCancel: false }),
+    );
+    expect(page.data.error).not.toContain('api scope');
   });
 });

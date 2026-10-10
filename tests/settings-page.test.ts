@@ -44,20 +44,20 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.10.20',
+      version: '2026.10.10.21',
       latest: true,
-      title: '统一明亮主题与荧光点缀收敛',
+      title: '日常活动创建流程极简化',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.10.21',
       '2026.10.10.20',
       '2026.10.10.19',
       '2026.10.10.18',
       '2026.10.10.17',
-      '2026.10.10.16',
     ]);
   });
 

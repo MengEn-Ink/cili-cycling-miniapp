@@ -253,9 +253,18 @@ async function saveActivity(
     const occupiedCount = current?.occupied_count ?? 0;
     if (!Number.isInteger(occupiedCount) || occupiedCount < 0)
       fail('SCHEMA_INVALID', '活动名额计数异常');
+    const legacyImagesUnchanged =
+      Array.isArray(current?.images) &&
+      current.images.length > 3 &&
+      current.images.length <= 9 &&
+      Array.isArray(effectiveActivity.images) &&
+      effectiveActivity.images.length === current.images.length &&
+      effectiveActivity.images.every((image, index) => image === current.images[index]);
+    const validationOptions = legacyImagesUnchanged ? { maxImages: 9 } : {};
     if (
       current?.occupancy_partition_ready !== true &&
       current &&
+      effectiveActivity.registration_unlimited !== true &&
       ((Number.isInteger(current.capacity) && current.capacity > MAX_PARTITION_BACKFILL_RECORDS) ||
         occupiedCount > MAX_PARTITION_BACKFILL_RECORDS)
     )
@@ -265,8 +274,9 @@ async function saveActivity(
       fail('INVALID_TRANSITION', '新活动必须先保存为草稿');
     const safe =
       effectiveActivity.status === 'draft'
-        ? validateDraftInput(effectiveActivity, occupiedCount)
+        ? validateDraftInput(effectiveActivity, occupiedCount, validationOptions)
         : validatePublishInput(effectiveActivity, occupiedCount, now, {
+            ...validationOptions,
             requireFutureDeadline:
               current?.status === 'draft' && effectiveActivity.status === 'published',
           });
@@ -307,8 +317,9 @@ async function saveActivity(
     if (!Number.isInteger(supportVehicleOccupiedCount) || !Number.isInteger(selfDriveOccupiedCount))
       fail('SCHEMA_INVALID', '分类名额计数异常');
     if (
-      (occupancyPartitionReady && safe.support_vehicle_capacity < supportVehicleOccupiedCount) ||
-      (occupancyPartitionReady && safe.self_drive_capacity < selfDriveOccupiedCount)
+      safe.registration_unlimited !== true &&
+      ((occupancyPartitionReady && safe.support_vehicle_capacity < supportVehicleOccupiedCount) ||
+        (occupancyPartitionReady && safe.self_drive_capacity < selfDriveOccupiedCount))
     )
       fail('CAPACITY_BELOW_OCCUPIED', '分类容量不能低于对应已占用名额');
     const id = activityId || (await tx.createActivityId());

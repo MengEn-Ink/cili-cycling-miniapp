@@ -11,35 +11,39 @@
           <view class="hero-brand-row"><brand-logo compact="{{true}}" meta="RIDE DETAIL" /><view class="hero-sequence">RIDE / 01</view></view>
           <view class="hero-kicker" aria-label="{{displayDate}}">{{displayDate}}</view>
           <view class="hero-title">{{item.title}}</view>
-          <view class="hero-route" wx:if="{{item.route.start || item.route.end}}"><text>{{item.route.start}}</text><text class="route-arrow">→</text><text>{{item.route.end}}</text></view>
+          <view class="hero-route" wx:if="{{item.registrationUnlimited && item.route.start}}"><text>{{item.route.start}}</text></view>
+          <view class="hero-route" wx:elif="{{item.route.start || item.route.end}}"><text>{{item.route.start}}</text><text class="route-arrow">→</text><text>{{item.route.end}}</text></view>
           <view class="hero-level" wx:if="{{item.route.level}}">{{item.route.level}}</view>
         </view>
       </view>
 
       <view class="content">
         <view class="metric-panel" aria-label="活动关键数据">
-          <view class="detail-metric"><view class="metric-value"><text class="metric-number">{{item.route.distanceKm}}</text><text class="metric-unit">km</text></view><view class="metric-label">里程</view></view>
-          <view class="detail-metric"><view class="metric-value"><text class="metric-number">{{item.route.elevationM}}</text><text class="metric-unit">m</text></view><view class="metric-label">爬升</view></view>
-          <view class="detail-metric"><view class="metric-value"><text class="metric-number" wx:if="{{item.capacity > 0}}">{{item.capacity}}</text><text class="metric-number metric-number--text" wx:else>待确认</text></view><view class="metric-label">名额</view></view>
+          <view wx:if="{{item.route.distanceKm > 0}}" class="detail-metric"><view class="metric-value"><text class="metric-number">{{item.route.distanceKm}}</text><text class="metric-unit">km</text></view><view class="metric-label">里程</view></view>
+          <view wx:if="{{item.route.elevationM > 0}}" class="detail-metric"><view class="metric-value"><text class="metric-number">{{item.route.elevationM}}</text><text class="metric-unit">m</text></view><view class="metric-label">爬升</view></view>
+          <view class="detail-metric"><view class="metric-value"><text wx:if="{{item.registrationUnlimited}}" class="metric-number metric-number--text">不限</text><text wx:elif="{{item.capacity > 0}}" class="metric-number">{{item.capacity}}</text><text class="metric-number metric-number--text" wx:else>待确认</text></view><view class="metric-label">报名人数</view></view>
         </view>
 
         <view class="detail-decision" aria-label="报名状态">
           <view>
             <view class="decision-kicker">SIGN-UP STATUS</view>
             <view class="decision-title">{{activityAction.label}}</view>
-            <view class="decision-meta">报名截止 {{deadlineTime || '待公布'}}</view>
+            <view class="decision-meta" wx:if="{{!item.registrationUnlimited}}">报名截止 {{deadlineTime || '待公布'}}</view>
           </view>
-          <view class="decision-capacity" wx:if="{{item.capacity > 0}}"><text>{{item.capacity}}</text><text>活动名额</text></view>
+          <view class="decision-capacity" wx:if="{{item.registrationUnlimited}}"><text>不限</text><text>报名人数</text></view>
+          <view class="decision-capacity" wx:elif="{{item.capacity > 0}}"><text>{{item.capacity}}</text><text>活动名额</text></view>
         </view>
 
         <view class="card time-card">
-          <view class="title">活动时间</view>
-          <view class="time-row"><text>开始</text><text>{{startTime || '待公布'}}</text></view>
-          <view class="time-row"><text>结束</text><text>{{endTime || '待公布'}}</text></view>
-          <view class="time-row"><text>报名截止</text><text>{{deadlineTime || '待公布'}}</text></view>
+          <view class="title">{{item.registrationUnlimited ? '集合时间' : '活动时间'}}</view>
+          <view class="time-row"><text>{{item.registrationUnlimited ? '集合' : '开始'}}</text><text>{{startTime || '待公布'}}</text></view>
+          <block wx:if="{{!item.registrationUnlimited}}">
+            <view class="time-row"><text>结束</text><text>{{endTime || '待公布'}}</text></view>
+            <view class="time-row"><text>报名截止</text><text>{{deadlineTime || '待公布'}}</text></view>
+          </block>
         </view>
 
-        <view class="card route-profile-card">
+        <view class="card route-profile-card" wx:if="{{!item.registrationUnlimited}}">
           <view class="title">路线海拔</view>
           <canvas wx:if="{{hasElevationProfile}}" id="elevation-canvas" type="2d" class="elevation-canvas" aria-label="路线海拔曲线"></canvas>
           <view wx:else class="route-empty">暂无有效海拔数据</view>
@@ -73,15 +77,15 @@
           </view>
         </view>
 
-        <view class="card overview-card" wx:if="{{item.description}}"><view class="card-index">01</view><view class="title">路线概况</view><view class="body-text">{{item.description}}</view></view>
+        <view class="card overview-card" wx:if="{{item.description}}"><view class="card-index">01</view><view class="title">{{item.registrationUnlimited ? '备注说明' : '路线概况'}}</view><view class="body-text">{{item.description}}</view></view>
         <view class="card route-location-card" wx:if="{{item.route.start || item.route.end}}">
-          <view class="title">路线地点</view>
-          <view class="route-location-row" wx:if="{{item.route.start}}"><view class="route-location-copy"><view class="route-location-label">起点</view><view>{{item.route.startLocation && item.route.startLocation.address ? item.route.startLocation.address : item.route.start}}</view></view><button wx:if="{{item.route.startLocation}}" data-target="start" bindtap="navigate">导航</button></view>
-          <view class="route-location-row" wx:if="{{item.route.end}}"><view class="route-location-copy"><view class="route-location-label">终点</view><view>{{item.route.endLocation && item.route.endLocation.address ? item.route.endLocation.address : item.route.end}}</view></view><button wx:if="{{item.route.endLocation}}" data-target="end" bindtap="navigate">导航</button></view>
+          <view class="title">{{item.registrationUnlimited ? '集合地点' : '路线地点'}}</view>
+          <view class="route-location-row" wx:if="{{item.route.start}}"><view class="route-location-copy"><view class="route-location-label">{{item.registrationUnlimited ? '地点' : '起点'}}</view><view>{{item.route.startLocation && item.route.startLocation.address ? item.route.startLocation.address : item.route.start}}</view></view><button wx:if="{{item.route.startLocation}}" data-target="start" bindtap="navigate">导航</button></view>
+          <view class="route-location-row" wx:if="{{!item.registrationUnlimited && item.route.end}}"><view class="route-location-copy"><view class="route-location-label">终点</view><view>{{item.route.endLocation && item.route.endLocation.address ? item.route.endLocation.address : item.route.end}}</view></view><button wx:if="{{item.route.endLocation}}" data-target="end" bindtap="navigate">导航</button></view>
         </view>
         <view class="card schedule-card" wx:if="{{item.schedule && item.schedule.length}}"><view class="card-index">02</view><view class="title">时间安排</view><view wx:for="{{item.schedule}}" wx:key="time" class="schedule-row"><view class="schedule-time">{{item.time}}</view><view class="schedule-track"><view class="schedule-dot"></view></view><view class="schedule-copy"><view>{{item.title}}</view><view class="muted">{{item.location}}</view></view></view></view>
         <view class="card" wx:if="{{(item.equipment && item.equipment.length) || (item.notices && item.notices.length)}}"><view class="card-index">03</view><view class="title">装备与注意</view><view class="list-item" wx:for="{{item.equipment}}" wx:key="*this"><text class="check">✓</text><text>{{item}}</text></view><view class="notice-item" wx:for="{{item.notices}}" wx:key="*this"><text class="notice-mark">/</text><text>{{item}}</text></view></view>
-        <view class="card fee-card" wx:if="{{item.fee || (item.feeIncluded && item.feeIncluded.length) || (item.feeExcluded && item.feeExcluded.length)}}">
+        <view class="card fee-card" wx:if="{{!item.registrationUnlimited && (item.fee || (item.feeIncluded && item.feeIncluded.length) || (item.feeExcluded && item.feeExcluded.length))}}">
           <view class="card-index">04</view>
           <view class="title">费用说明</view>
           <view class="body-text" wx:if="{{item.fee}}">{{item.fee}}</view>

@@ -13,7 +13,7 @@
       <view class="activity-context" wx:if="{{activity}}">
         <view class="context-head"><view class="context-kicker">CURRENT ACTIVITY</view><view class="context-status">{{activityAction.label}}</view></view>
         <view class="context-title">{{activity.title || '当前骑行活动'}}</view>
-        <view class="context-meta"><text>{{displayActivityDate}}</text><text>总名额 {{activity.capacity}}</text></view>
+        <view class="context-meta"><text>{{displayActivityDate}}</text><text>{{activity.registrationUnlimited ? '报名人数不限' : ('总名额 ' + activity.capacity)}}</text></view>
       </view>
       <view class="submit-note">提交后将进入审核，请确认联系信息与集合方式准确。</view>
     </view>

@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.10.21',
+    date: '2026-10-10',
+    title: '日常活动创建流程极简化',
+    summary: '创建活动只保留集合时间、地点、三张封面、备注和 Strava 线路链接。',
+    latest: true,
+    features: [
+      '移除结束时间、终点、里程、海拔、难度、报名人数和费用等表单项',
+      '封面照片上限收敛为 3 张，首张自动作为活动封面',
+      'Strava 线路改为仅保存链接，不再要求授权或同步路线数据',
+    ],
+  },
+  {
     version: '2026.10.10.20',
     date: '2026-10-10',
     title: '统一明亮主题与荧光点缀收敛',
     summary: '主操作改为深色高对比按钮，荧光黄绿仅保留在小型标记、边框和装饰细节。',
-    latest: true,
+    latest: false,
     features: [
       '全局主按钮、活动操作和筛选选中态统一为深色高对比底色',
       '荧光黄绿不再大面积铺设，仅用于品牌切角、状态点和细节描边',

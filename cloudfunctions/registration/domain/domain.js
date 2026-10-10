@@ -90,6 +90,7 @@ function hasCompleteDriver(driver) {
 function registrationSetupReady(activity) {
   if (!activity || typeof activity !== 'object') return false;
   const capacity = activity.capacity;
+  const unlimited = activity.registration_unlimited === true;
   const occupied = activity.occupied_count;
   const supportCapacity = activity.support_vehicle_capacity;
   const selfDriveCapacity = activity.self_drive_capacity;
@@ -109,13 +110,13 @@ function registrationSetupReady(activity) {
     supportCapacity + selfDriveCapacity !== capacity ||
     !Number.isInteger(occupied) ||
     occupied < 0 ||
-    occupied > capacity ||
+    (!unlimited && occupied > capacity) ||
     !Number.isInteger(supportOccupied) ||
     supportOccupied < 0 ||
-    supportOccupied > supportCapacity ||
+    (!unlimited && supportOccupied > supportCapacity) ||
     !Number.isInteger(selfDriveOccupied) ||
     selfDriveOccupied < 0 ||
-    selfDriveOccupied > selfDriveCapacity ||
+    (!unlimited && selfDriveOccupied > selfDriveCapacity) ||
     supportOccupied + selfDriveOccupied !== occupied ||
     !deadline ||
     !start ||
@@ -328,6 +329,7 @@ const ACTIVITY_FIELDS = [
   'equipment',
   'fee',
   'capacity',
+  'registration_unlimited',
   'support_vehicle_capacity',
   'self_drive_capacity',
   'support_vehicle_driver',
@@ -353,6 +355,7 @@ function registrationDecision(activity, now) {
     return { registration_state: 'closed', closed_reason: 'incomplete' };
   // 满员后仍开放候补入口；是否占位由提交事务基于总容量和分类容量共同判定。
   const waitlistOnly =
+    activity.registration_unlimited !== true &&
     Number.isInteger(activity.capacity) &&
     Number.isInteger(activity.occupied_count) &&
     activity.occupied_count >= activity.capacity;

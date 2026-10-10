@@ -47,6 +47,7 @@ const ACTIVITY_FIELDS = [
   'equipment',
   'fee',
   'capacity',
+  'registration_unlimited',
   'support_vehicle_capacity',
   'self_drive_capacity',
   'support_vehicle_driver',
@@ -91,8 +92,9 @@ function cleanStringArray(value, field) {
   if (!Array.isArray(value) || value.length > 50) fail('VALIDATION_FAILED', `${field}格式错误`);
   return value.map((item) => cleanText(item, field, 200)).filter(Boolean);
 }
-function cleanImages(value) {
-  if (!Array.isArray(value) || value.length > 9) fail('VALIDATION_FAILED', '活动图片格式错误');
+function cleanImages(value, maxImages = 3) {
+  if (!Array.isArray(value) || value.length > maxImages)
+    fail('VALIDATION_FAILED', '活动图片最多 3 张');
   return value.map((item) => cleanText(item, '活动图片', 500, true));
 }
 function cleanLocation(value, field) {
@@ -130,8 +132,6 @@ function cleanStravaRoute(route) {
     'popular_climbs',
   ];
   if (!extraFields.some((field) => route[field] !== undefined)) return {};
-  const id = cleanText(route.strava_route_id, 'Strava 路线 ID', 20, true);
-  if (!/^\d{1,20}$/.test(id)) fail('VALIDATION_FAILED', 'Strava 路线 ID 格式错误');
   const url = cleanText(route.strava_route_url, 'Strava 路线 URL', 256, true);
   let parsed;
   try {
@@ -148,9 +148,15 @@ function cleanStravaRoute(route) {
     parsed.password ||
     parsed.search ||
     parsed.hash ||
-    !urlMatch ||
-    urlMatch[1] !== id
+    !urlMatch
   )
+    fail('VALIDATION_FAILED', 'Strava 路线 URL 格式错误');
+  const hasSyncedData = extraFields.some(
+    (field) => field !== 'strava_route_url' && route[field] !== undefined,
+  );
+  if (!hasSyncedData) return { strava_route_url: url };
+  const id = cleanText(route.strava_route_id, 'Strava 路线 ID', 20, true);
+  if (!/^\d{1,20}$/.test(id) || urlMatch[1] !== id)
     fail('VALIDATION_FAILED', 'Strava 路线 URL 格式错误');
   if (
     !Array.isArray(route.elevation_profile) ||
@@ -296,6 +302,7 @@ const ACTIVITY_INPUT_FIELDS = new Set([
   'equipment',
   'fee',
   'capacity',
+  'registration_unlimited',
   'support_vehicle_capacity',
   'self_drive_capacity',
   'support_vehicle_driver',
@@ -336,7 +343,7 @@ function cleanDriver(driver, required) {
     contact_phone: cleanText(driver.contact_phone ?? '', '联系电话', 30, required),
   };
 }
-function validateBaseActivityInput(input, occupiedCount, allowedStatuses) {
+function validateBaseActivityInput(input, occupiedCount, allowedStatuses, options = {}) {
   if (!input || typeof input !== 'object' || Array.isArray(input))
     fail('VALIDATION_FAILED', '活动参数格式错误');
   for (const key of Object.keys(input))
@@ -344,13 +351,19 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses) {
       fail('FORBIDDEN_FIELD', '客户端不得传入服务端控制字段', { field: key });
   if (!allowedStatuses.includes(input.status)) fail('VALIDATION_FAILED', '活动状态无效');
 
+  const registrationUnlimited = input.registration_unlimited === true;
+  if (
+    input.registration_unlimited !== undefined &&
+    typeof input.registration_unlimited !== 'boolean'
+  )
+    fail('VALIDATION_FAILED', '报名人数限制格式错误');
   const capacity =
     input.capacity === undefined
       ? undefined
       : validateOptionalNonNegativeInteger(input.capacity, '活动容量');
   if (capacity !== undefined && (capacity < 1 || capacity > MAX_ACTIVITY_CAPACITY))
     fail('VALIDATION_FAILED', `活动容量必须为 1-${MAX_ACTIVITY_CAPACITY} 的整数`);
-  if (capacity !== undefined && capacity < occupiedCount)
+  if (capacity !== undefined && !registrationUnlimited && capacity < occupiedCount)
     fail('CAPACITY_BELOW_OCCUPIED', '活动容量不能低于已占用名额');
   const supportVehicleCapacity =
     input.support_vehicle_capacity === undefined
@@ -409,7 +422,8 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses) {
     input.support_vehicle_driver === undefined
       ? undefined
       : cleanDriver(input.support_vehicle_driver, false);
-  const images = input.images === undefined ? [] : cleanImages(input.images);
+  const images =
+    input.images === undefined ? [] : cleanImages(input.images, options.maxImages || 3);
   const legacyCover = cleanText(input.cover_image || '', '封面', 500);
   return {
     title: cleanText(input.title, '活动标题', 100, true),
@@ -435,6 +449,9 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses) {
     notices: cleanStringArray(input.notices || [], '注意事项'),
     equipment: cleanStringArray(input.equipment || [], '装备要求'),
     ...(fee === undefined ? {} : { fee }),
+    ...(input.registration_unlimited === undefined
+      ? {}
+      : { registration_unlimited: registrationUnlimited }),
     ...(capacity === undefined ? {} : { capacity }),
     ...(supportVehicleCapacity === undefined
       ? {}
@@ -447,14 +464,15 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses) {
     status: input.status,
   };
 }
-function validateDraftInput(input, occupiedCount = 0) {
-  return validateBaseActivityInput(input, occupiedCount, ['draft']);
+function validateDraftInput(input, occupiedCount = 0, options = {}) {
+  return validateBaseActivityInput(input, occupiedCount, ['draft'], options);
 }
 function validatePublishInput(input, occupiedCount = 0, now = new Date(), options = {}) {
-  const safe = validateBaseActivityInput(input, occupiedCount, ['published', 'finished']);
+  const safe = validateBaseActivityInput(input, occupiedCount, ['published', 'finished'], options);
   for (const field of ['event_start', 'event_end'])
     if (safe[field] === undefined) fail('VALIDATION_FAILED', '发布前请补全活动时间');
-  if (!safe.route.start || !safe.route.end) fail('VALIDATION_FAILED', '发布前请补全路线起点和终点');
+  if (!safe.route.start || (!safe.registration_unlimited && !safe.route.end))
+    fail('VALIDATION_FAILED', '发布前请补全路线起点和终点');
   if (
     options.requireFutureDeadline !== false &&
     safe.signup_deadline &&
