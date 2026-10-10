@@ -26,6 +26,7 @@ import type {
   CloneActivityInput,
   PublicActivityPage,
   PublicActivityView,
+  RegistrationPage,
   RegistrationSubmission,
   RideRepository,
 } from './types';
@@ -420,6 +421,21 @@ function mapPublicActivityPage(raw: unknown): PublicActivityPage {
     items: expectRecordArray(value.items).map((item) => mapActivity(item, true)),
     nextCursor: value.next_cursor,
     asOf: strictDateText(value.as_of),
+  };
+}
+function mapRegistrationPage(raw: unknown): RegistrationPage {
+  const value = expectRecord(raw);
+  if (!hasExactKeys(value, ['items', 'next_cursor'])) return invalidResponse();
+  if (
+    value.next_cursor !== null &&
+    (typeof value.next_cursor !== 'string' ||
+      value.next_cursor.length < 1 ||
+      value.next_cursor.length > 512)
+  )
+    return invalidResponse();
+  return {
+    items: expectRecordArray(value.items).map((item) => mapRegistration(item)),
+    nextCursor: value.next_cursor,
   };
 }
 function mapEditableActivity(raw: unknown, requireCloneDraft = false): EditableActivity {
@@ -1085,6 +1101,20 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
   async listRegistrations() {
     return expectRecordArray(await this.call('registration', { action: 'mine' })).map(
       mapRegistration,
+    );
+  }
+  async listRegistrationPage(cursor?: string) {
+    if (
+      cursor !== undefined &&
+      (typeof cursor !== 'string' || cursor.length < 1 || cursor.length > 512)
+    )
+      throw new CloudRepositoryError('VALIDATION_FAILED', '报名分页游标无效');
+    return mapRegistrationPage(
+      await this.call('registration', {
+        action: 'minePage',
+        page_size: 20,
+        ...(cursor !== undefined ? { cursor } : {}),
+      }),
     );
   }
   async getRegistration(id: string) {

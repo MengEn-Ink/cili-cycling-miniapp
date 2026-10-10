@@ -12,6 +12,7 @@ const {
   cancelRegistration,
   publicActivity,
 } = require('./domain');
+const { normalizePageSize, encodeMyCursor, decodeMyCursor } = require('./list-page');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const _ = db.command;
@@ -26,7 +27,11 @@ function unavailableActivity(registration, activity) {
       title: typeof source.title === 'string' && source.title ? source.title : '历史活动',
       event_start: source.event_start || registration.created_at,
       event_end: source.event_end || source.event_start || registration.created_at,
-      status: ['published', 'finished'].includes(source.status) ? source.status : 'finished',
+      status: activity
+        ? ['published', 'finished'].includes(source.status)
+          ? source.status
+          : 'finished'
+        : 'finished',
     },
     new Date(),
   );
@@ -173,6 +178,42 @@ exports.main = async (event = {}) => {
         .limit(50)
         .get();
       return ok(await withActivities(result.data));
+    }
+    if (event.action === 'minePage') {
+      const pageSize = normalizePageSize(event.page_size);
+      const boundary = event.cursor ? decodeMyCursor(event.cursor) : null;
+      const filter = boundary
+        ? _.and([
+            { openid },
+            _.or([
+              { created_at: _.lt(boundary.createdAt) },
+              _.and([
+                { created_at: _.eq(boundary.createdAt) },
+                { activity_id: _.lt(boundary.activityId) },
+              ]),
+            ]),
+          ])
+        : { openid };
+      const result = await db
+        .collection('registrations')
+        .where(filter)
+        .orderBy('created_at', 'desc')
+        .orderBy('activity_id', 'desc')
+        .limit(pageSize + 1)
+        .get();
+      const rows = Array.isArray(result.data) ? result.data : [];
+      const pageRows = rows.slice(0, pageSize);
+      const items = await withActivities(pageRows);
+      return ok({
+        items,
+        next_cursor:
+          rows.length > pageSize
+            ? encodeMyCursor({
+                createdAt: pageRows[pageRows.length - 1].created_at,
+                activityId: pageRows[pageRows.length - 1].activity_id,
+              })
+            : null,
+      });
     }
     if (event.action === 'detail') {
       if (typeof event.registrationId !== 'string' || !event.registrationId)

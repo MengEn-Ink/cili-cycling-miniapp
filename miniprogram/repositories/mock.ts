@@ -332,6 +332,9 @@ export class MockRepository implements RideRepository {
   async listRegistrations() {
     return this.read().registrations;
   }
+  async listRegistrationPage() {
+    return { items: this.read().registrations, nextCursor: null };
+  }
   async getRegistration(id: string) {
     return this.read().registrations.find((x) => x.id === id);
   }

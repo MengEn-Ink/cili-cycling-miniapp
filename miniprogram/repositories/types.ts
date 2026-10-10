@@ -21,6 +21,10 @@ export interface PublicActivityPage {
   nextCursor: string | null;
   asOf: string;
 }
+export interface RegistrationPage {
+  items: Registration[];
+  nextCursor: string | null;
+}
 export type ActivityInput = Omit<EditableActivity, 'id' | 'date' | 'occupiedCount' | 'version'>;
 export type ActivityAdminStatusFilter = 'all' | 'draft' | 'published' | 'finished';
 export interface ActivityAdminPageInput {
@@ -78,6 +82,7 @@ export interface RideRepository extends AdminReviewRepository, ActivityAdminRepo
   listActivityPage(view: PublicActivityView, cursor?: string): Promise<PublicActivityPage>;
   getActivity(id: string): Promise<Activity | undefined>;
   listRegistrations(): Promise<Registration[]>;
+  listRegistrationPage(cursor?: string): Promise<RegistrationPage>;
   getRegistration(id: string): Promise<Registration | undefined>;
   saveRegistration(value: RegistrationSubmission): Promise<Registration>;
   getReviewNotificationTemplateIds(): Promise<string[]>;

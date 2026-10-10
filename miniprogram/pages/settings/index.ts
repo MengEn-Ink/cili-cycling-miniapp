@@ -5,11 +5,23 @@ import { setTheme, syncPageTheme } from '../../services/theme-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.10.8',
+    date: '2026-10-10',
+    title: '我的行程支持分页加载',
+    summary: '行程超过一屏时可逐页加载全部报名，公开活动列表异常也不再影响查看行程。',
+    latest: true,
+    features: [
+      '我的行程分页加载，全部报名不再受 50 条上限',
+      '公开活动服务异常时我的行程仍可正常查看',
+      '已下架或删除的活动继续保留在行程并按已结束展示',
+    ],
+  },
+  {
     version: '2026.10.10.7',
     date: '2026-10-10',
     title: '浅色主题运行态可读性补强',
     summary: '根据开发者工具运行态复核，提升行程序号、活动管理标题和骑行名片指标的对比度。',
-    latest: true,
+    latest: false,
     features: [
       '我的行程 RIDE 序号在浅色卡片上提升到正文级可读对比度',
       '活动管理卡片标题跟随主题正文色，不再出现浅字白底',

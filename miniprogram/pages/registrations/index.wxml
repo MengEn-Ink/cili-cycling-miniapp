@@ -20,5 +20,9 @@
         <view class="corner-cut"></view>
       </view>
     </view>
+    <view class="load-more" wx:if="{{items.length}}">
+      <button class="load-more-button" loading="{{loadingMore}}" disabled="{{loadingMore || !nextCursor}}" bindtap="loadMore">{{nextCursor ? '加载更多行程' : '没有更多行程了'}}</button>
+      <view class="load-more-error" wx:if="{{loadMoreError}}" aria-live="polite">{{loadMoreError}}</view>
+    </view>
   </state-view>
 </view>

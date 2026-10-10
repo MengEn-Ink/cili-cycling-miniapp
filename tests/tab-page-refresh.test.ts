@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const rideService = vi.hoisted(() => ({
   listActivityPage: vi.fn(),
   listActivities: vi.fn(),
-  listRegistrations: vi.fn(),
+  listRegistrationPage: vi.fn(),
 }));
 
 vi.mock('../miniprogram/services/ride-service', () => ({ rideService }));
@@ -28,6 +28,10 @@ const registration = (id: string, activityId: string) => ({
   activityId,
   status: 'approved',
   updatedAt: '2026-09-30T10:00:00.000Z',
+});
+const registrationPage = (items: unknown[], nextCursor: string | null = null) => ({
+  items,
+  nextCursor,
 });
 
 function deferred<T>() {
@@ -60,7 +64,9 @@ function primeServices(kind: PageKind, id: string): void {
     rideService.listActivityPage.mockResolvedValue(activityPage(id));
     return;
   }
-  rideService.listRegistrations.mockResolvedValue([registration(id, `activity-${id}`)]);
+  rideService.listRegistrationPage.mockResolvedValue(
+    registrationPage([registration(id, `activity-${id}`)]),
+  );
   rideService.listActivities.mockResolvedValue([activity(`activity-${id}`)]);
 }
 
@@ -69,7 +75,7 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
     vi.resetModules();
     rideService.listActivityPage.mockReset();
     rideService.listActivities.mockReset();
-    rideService.listRegistrations.mockReset();
+    rideService.listRegistrationPage.mockReset();
   });
 
   afterEach(() => vi.unstubAllGlobals());
@@ -83,7 +89,7 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
         .mockReturnValueOnce(first.promise)
         .mockReturnValueOnce(second.promise);
     } else {
-      rideService.listRegistrations
+      rideService.listRegistrationPage
         .mockReturnValueOnce(first.promise)
         .mockReturnValueOnce(second.promise);
       rideService.listActivities.mockResolvedValue([
@@ -95,11 +101,15 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
     const olderLoad = page.load();
     const newerLoad = page.load();
     second.resolve(
-      kind === 'activities' ? activityPage('new') : [registration('new', 'activity-new')],
+      kind === 'activities'
+        ? activityPage('new')
+        : registrationPage([registration('new', 'activity-new')]),
     );
     await newerLoad;
     first.resolve(
-      kind === 'activities' ? activityPage('old') : [registration('old', 'activity-old')],
+      kind === 'activities'
+        ? activityPage('old')
+        : registrationPage([registration('old', 'activity-old')]),
     );
     await olderLoad;
 
@@ -115,14 +125,16 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
   it('registrations 优先使用报名活动投影，并兼容旧 mock 的活动列表绑定', async () => {
     if (kind !== 'registrations') return;
     const page = await loadPage(kind);
-    rideService.listRegistrations.mockResolvedValue([
-      {
-        ...registration('projected', 'activity-projected'),
-        activity: activity('activity-projected'),
-      },
-      registration('legacy', 'activity-legacy'),
-      registration('missing', 'activity-missing'),
-    ]);
+    rideService.listRegistrationPage.mockResolvedValue(
+      registrationPage([
+        {
+          ...registration('projected', 'activity-projected'),
+          activity: activity('activity-projected'),
+        },
+        registration('legacy', 'activity-legacy'),
+        registration('missing', 'activity-missing'),
+      ]),
+    );
     rideService.listActivities.mockResolvedValue([
       { ...activity('activity-projected'), title: '不应覆盖投影' },
       { ...activity('activity-legacy'), title: '旧接口活动' },
@@ -148,7 +160,7 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
       if (kind === 'activities') {
         rideService.listActivityPage.mockReturnValue(pending.promise);
       } else {
-        rideService.listRegistrations.mockReturnValue(pending.promise);
+        rideService.listRegistrationPage.mockReturnValue(pending.promise);
         rideService.listActivities.mockResolvedValue([activity('activity-late')]);
       }
 
@@ -156,7 +168,9 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
       page[lifecycle]();
       page.setData.mockClear();
       pending.resolve(
-        kind === 'activities' ? activityPage('late') : [registration('late', 'activity-late')],
+        kind === 'activities'
+          ? activityPage('late')
+          : registrationPage([registration('late', 'activity-late')]),
       );
       await load;
 
@@ -172,7 +186,7 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
     if (kind === 'activities') {
       rideService.listActivityPage.mockReturnValueOnce(pending.promise);
     } else {
-      rideService.listRegistrations.mockReturnValueOnce(pending.promise);
+      rideService.listRegistrationPage.mockReturnValueOnce(pending.promise);
       rideService.listActivities.mockResolvedValueOnce([activity('activity-fresh')]);
     }
 
@@ -182,7 +196,9 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
     expect(page.data).toMatchObject({ loading: false, refreshing: true, error: '' });
 
     pending.resolve(
-      kind === 'activities' ? activityPage('fresh') : [registration('fresh', 'activity-fresh')],
+      kind === 'activities'
+        ? activityPage('fresh')
+        : registrationPage([registration('fresh', 'activity-fresh')]),
     );
     await refresh;
 
@@ -197,7 +213,7 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
     if (kind === 'activities') {
       rideService.listActivityPage.mockRejectedValueOnce(new Error('活动刷新失败'));
     } else {
-      rideService.listRegistrations.mockRejectedValueOnce(new Error('报名刷新失败'));
+      rideService.listRegistrationPage.mockRejectedValueOnce(new Error('报名刷新失败'));
       rideService.listActivities.mockResolvedValueOnce([activity('activity-cached')]);
     }
 
@@ -217,7 +233,7 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
     if (kind === 'activities') {
       rideService.listActivityPage.mockRejectedValueOnce(new Error('活动首次失败'));
     } else {
-      rideService.listRegistrations.mockRejectedValueOnce(new Error('报名首次失败'));
+      rideService.listRegistrationPage.mockRejectedValueOnce(new Error('报名首次失败'));
       rideService.listActivities.mockResolvedValueOnce([]);
     }
 
@@ -237,7 +253,7 @@ describe('registrations status presentation', () => {
   beforeEach(() => {
     vi.resetModules();
     rideService.listActivities.mockReset();
-    rideService.listRegistrations.mockReset();
+    rideService.listRegistrationPage.mockReset();
   });
 
   afterEach(() => vi.unstubAllGlobals());
@@ -245,12 +261,14 @@ describe('registrations status presentation', () => {
   it('maps every status label while retaining bound trip fields', async () => {
     const page = await loadPage('registrations');
     const statuses = ['pending', 'approved', 'checked_in', 'rejected', 'cancelled'] as const;
-    rideService.listRegistrations.mockResolvedValue(
-      statuses.map((status, index) => ({
-        ...registration(`r${index}`, 'activity-shared'),
-        status,
-        gatheringMode: index % 2 ? '需要后援车' : '自驾',
-      })),
+    rideService.listRegistrationPage.mockResolvedValue(
+      registrationPage(
+        statuses.map((status, index) => ({
+          ...registration(`r${index}`, 'activity-shared'),
+          status,
+          gatheringMode: index % 2 ? '需要后援车' : '自驾',
+        })),
+      ),
     );
     rideService.listActivities.mockResolvedValue([
       { ...activity('activity-shared'), date: '2026-10-18' },

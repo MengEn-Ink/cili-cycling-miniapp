@@ -59,4 +59,15 @@ describe('报名历史活动投影', () => {
       status: 'finished',
     });
   });
+
+  it('minePage 返回报名分页并透传 next_cursor，响应缺键时判定无效', async () => {
+    const okPage = await repositoryWith({
+      items: [{ ...registration, activity: activity('a-history', '活动 1') }],
+      next_cursor: 'cursor-1',
+    }).listRegistrationPage();
+    expect(okPage.items).toHaveLength(1);
+    expect(okPage.nextCursor).toBe('cursor-1');
+
+    await expect(repositoryWith({ items: [], bad: true }).listRegistrationPage()).rejects.toThrow();
+  });
 });
