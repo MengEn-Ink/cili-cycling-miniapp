@@ -62,7 +62,7 @@
           <view wx:if="{{teamId}}" class="field-title">已通过邀请加入队伍</view>
           <view wx:if="{{teamId}}" class="field-hint">队伍编号 {{teamId}}</view>
           <block wx:else>
-            <input value="{{teamName}}" data-key="teamName" bindinput="set" maxlength="30" placeholder="填写队名后成为队长" disabled="{{submitting}}" />
+            <input value="{{teamName}}" data-key="teamName" bindinput="set" maxlength="30" placeholder-class="input-placeholder" placeholder="填写队名后成为队长" disabled="{{submitting}}" />
           </block>
         </view>
       </view>
@@ -72,7 +72,7 @@
         <view class="form-card">
           <view class="field-title">报名备注 <text class="optional">选填</text></view>
           <view class="field-hint">可填写饮食限制、集合说明或需要协助的事项，请勿填写无关敏感信息</view>
-          <textarea class="textarea remark" placeholder="饮食、集合或其他备注" value="{{remark}}" data-key="remark" bindinput="set" disabled="{{submitting}}" maxlength="500"/>
+          <textarea class="textarea remark" placeholder-class="input-placeholder" placeholder="饮食、集合或其他备注" value="{{remark}}" data-key="remark" bindinput="set" disabled="{{submitting}}" maxlength="500"/>
           <view class="safety-box"><view class="info-label">紧急联系人</view><view class="info-value">{{profile.emergencyName || '未填写'}} {{profile.emergencyPhone}}</view></view>
           <view class="privacy-note">信息仅用于活动组织与紧急安全联络，敏感字段仅展示云端脱敏值。</view>
         </view>

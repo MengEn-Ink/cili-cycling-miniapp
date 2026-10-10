@@ -264,6 +264,7 @@ brand-logo,
   border-color: var(--color-card-border);
   border-radius: var(--radius-display);
   background: var(--color-surface);
+  color: var(--color-text);
   box-shadow: var(--shadow-card);
 }
 .registration-card--pressed {

@@ -45,7 +45,7 @@
         </view>
         <view class="field">
           <view class="label">手机号</view>
-          <input class="input" type="text" maxlength="21" value="{{p.phone}}" data-k="phone" bindinput="set" placeholder="请输入本人手机号" />
+          <input class="input" type="text" maxlength="21" value="{{p.phone}}" data-k="phone" bindinput="set" placeholder-class="input-placeholder" placeholder="请输入本人手机号" />
           <view class="muted field-tip">请填写本人常用手机号，便于活动联系与安全通知。</view>
         </view>
         <view class="field">

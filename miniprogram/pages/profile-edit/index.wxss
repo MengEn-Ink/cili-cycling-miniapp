@@ -219,7 +219,7 @@ page {
   height: 100%;
   align-items: center;
   justify-content: center;
-  color: #858589;
+  color: var(--color-media-muted);
   font-size: 22rpx;
 }
 .photo-order-actions {
@@ -300,6 +300,9 @@ page,
   border-radius: var(--radius-sm);
   background: var(--color-input-bg);
   color: var(--color-text);
+}
+.photo-preview-button {
+  background: var(--color-media-placeholder-bg);
 }
 .avatar-action,
 .profile-form-page .photo-action,

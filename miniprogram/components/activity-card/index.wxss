@@ -261,7 +261,7 @@ status-pill {
   padding: 13rpx 18rpx;
   border-radius: 999rpx;
   background: var(--color-brand);
-  color: #fff;
+  color: var(--color-on-brand);
   font-size: 22rpx;
   font-weight: 900;
   line-height: 1.2;
@@ -297,6 +297,7 @@ status-pill {
   border-color: var(--color-card-border);
   border-radius: var(--radius-display);
   background: var(--color-surface);
+  color: var(--color-text);
   box-shadow: none;
 }
 .activity-title,

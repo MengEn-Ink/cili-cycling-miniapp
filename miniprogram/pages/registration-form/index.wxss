@@ -394,7 +394,7 @@ page {
   padding: 4rpx 9rpx;
   border-radius: 8rpx;
   background: var(--color-brand);
-  color: #fff;
+  color: var(--color-on-brand);
   font-size: 20rpx;
   font-weight: 900;
   letter-spacing: 1rpx;
@@ -466,15 +466,15 @@ page {
 .error-card {
   margin: 16rpx 0;
   padding: 18rpx;
-  border: 1rpx solid #ff5c61;
+  border: 1rpx solid var(--color-danger);
   border-radius: 24rpx;
-  background: #281417;
-  color: #ff9a9d;
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
 }
 
 .error-title {
   margin-bottom: 6rpx;
-  color: #ffd4d5;
+  color: var(--color-danger-text);
   font-weight: 900;
 }
 
@@ -516,13 +516,13 @@ page {
 
 .form-page .submit-button {
   background: var(--color-brand);
-  color: #fff;
+  color: var(--color-on-brand);
   font-weight: 900;
   letter-spacing: 2rpx;
 }
 
 .form-page button[disabled] {
-  opacity: 0.48;
+  opacity: 1;
 }
 
 .disabled-hint {
@@ -664,6 +664,15 @@ page,
 .form-page .submit-button {
   background: var(--color-brand);
   color: var(--color-on-brand);
+}
+
+.readiness-badge {
+  background: var(--color-raised);
+  color: var(--color-muted);
+}
+.status-ready .readiness-badge {
+  background: var(--color-success-soft);
+  color: var(--color-success-text);
 }
 
 .status-ready {
