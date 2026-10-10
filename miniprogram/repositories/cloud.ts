@@ -1086,6 +1086,13 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     }
     return mapEditableActivity(await this.call('activity-admin', data), true);
   }
+  async deleteActivity(id: string) {
+    // 服务端 delete 契约只信任调用者 OPENID 做权限与占用校验，前端不预判删除资格。
+    await this.call('activity-admin', {
+      action: 'delete',
+      id: requiredId(id, '活动 ID'),
+    });
+  }
   async listActivities(filter?: ActivityListFilter) {
     const data: Record<string, unknown> = { action: 'list' };
     if (filter !== undefined) {

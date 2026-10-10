@@ -650,4 +650,9 @@ export class MockRepository implements RideRepository {
     this.write(s);
     return draft;
   }
+  async deleteActivity(id: string) {
+    const s = this.read();
+    s.activities = s.activities.filter((item) => item.id !== id);
+    this.write(s);
+  }
 }
