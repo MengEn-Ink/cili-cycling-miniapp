@@ -33,7 +33,12 @@ function readiness(state: StravaReadinessState): StravaReadiness {
     snapshot: null,
     error:
       state === 'failed'
-        ? { code: 'STRAVA_API_FAILED', message: 'Strava 暂时不可用', retryable: true }
+        ? {
+            code: 'STRAVA_API_FAILED',
+            message: 'Strava 暂时不可用',
+            retryable: true,
+            recoveryAction: 'retry',
+          }
         : null,
   };
 }
@@ -612,10 +617,41 @@ describe('Strava 页面编排', () => {
     expect(showModal).toHaveBeenCalledWith(
       expect.objectContaining({
         title: '确认解绑 Strava',
-        content: '解绑后将无法提交新的活动报名，已提交记录不受影响。',
+        content:
+          '这只会断开此里并清理本地 Strava 数据，不会撤销 Strava 网站中的外部授权；已提交记录不受影响。',
       }),
     );
     expect(rideService.disconnectStrava).not.toHaveBeenCalled();
     expect(page.data.busyAction).toBeNull();
+  });
+});
+
+describe('Strava failed recovery action', () => {
+  it('非 retry 失败不会自动同步或被手动 retry 绕过', async () => {
+    let page: any;
+    vi.resetModules();
+    for (const value of Object.values(rideService)) value.mockReset();
+    vi.stubGlobal('wx', { showModal: vi.fn(), setClipboardData: vi.fn() });
+    vi.stubGlobal('Page', (definition: any) => {
+      page = definition;
+      page.data = { ...definition.data };
+      page.setData = (patch: Record<string, unknown>) => Object.assign(page.data, patch);
+    });
+    await import('../miniprogram/pages/strava/index');
+    const failed = readiness('failed');
+    failed.error = {
+      code: 'STRAVA_SCOPE_REQUIRED',
+      message: 'Strava 授权范围不足，请重新授权',
+      retryable: false,
+      recoveryAction: 'reauthorize',
+    };
+    rideService.getStravaReadiness.mockResolvedValue(failed);
+
+    await page.load();
+    await page.retry();
+
+    expect(page.data.readiness).toEqual(failed);
+    expect(rideService.ensureStravaReady).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
   });
 });

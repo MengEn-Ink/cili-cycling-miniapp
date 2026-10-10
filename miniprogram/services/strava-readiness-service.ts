@@ -47,6 +47,7 @@ function timeoutReadiness(previous?: StravaReadiness): StravaReadiness {
       code: 'STRAVA_SYNC_TIMEOUT',
       message: '数据准备超时，请重试',
       retryable: true,
+      recoveryAction: 'retry',
     },
   };
 }
@@ -63,6 +64,7 @@ function authorizationTimeoutReadiness(previous?: StravaReadiness): StravaReadin
       code: 'STRAVA_AUTH_STATUS_TIMEOUT',
       message: '授权状态检查超时，请返回后重试',
       retryable: true,
+      recoveryAction: 'retry',
     },
   };
 }

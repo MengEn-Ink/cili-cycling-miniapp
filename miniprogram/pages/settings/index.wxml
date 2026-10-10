@@ -81,9 +81,10 @@
       <button
         wx:elif="{{stravaReadiness && stravaReadiness.state === 'failed'}}"
         class="btn"
+        data-action="{{stravaReadiness.error && stravaReadiness.error.recoveryAction === 'reauthorize' ? 'reauthorize' : ''}}"
         bindtap="openStrava"
       >
-        修复 / 重试
+        {{stravaReadiness.error && stravaReadiness.error.recoveryAction === 'retry' ? '重试数据准备' : stravaReadiness.error && stravaReadiness.error.recoveryAction === 'reauthorize' ? '重新授权' : stravaReadiness.error && stravaReadiness.error.recoveryAction === 'disconnect' ? '本地断开' : '联系支持'}}
       </button>
       <button
         wx:elif="{{stravaReadiness && stravaReadiness.state === 'disconnected'}}"

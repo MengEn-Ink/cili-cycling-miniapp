@@ -793,13 +793,18 @@ function mapStravaReadiness(raw: unknown): StravaReadiness {
       typeof rawError.code !== 'string' ||
       !rawError.code ||
       typeof rawError.message !== 'string' ||
-      typeof rawError.retryable !== 'boolean'
+      typeof rawError.retryable !== 'boolean' ||
+      !['retry', 'reauthorize', 'disconnect', 'contact-support'].includes(
+        String(rawError.recovery_action),
+      )
     )
       return invalidResponse();
     error = {
       code: rawError.code,
       message: rawError.message,
       retryable: rawError.retryable,
+      recoveryAction: rawError.recovery_action as
+        'retry' | 'reauthorize' | 'disconnect' | 'contact-support',
     };
   }
 

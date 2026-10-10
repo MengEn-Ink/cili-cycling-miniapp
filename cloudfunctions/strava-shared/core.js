@@ -219,16 +219,53 @@ function publicSnapshot(snapshot) {
   }
   return result;
 }
-function deriveReadiness({ credential, snapshot, hasActiveOAuthState }, now = new Date()) {
+function recoveryFor(code) {
+  if (['STRAVA_SCOPE_REQUIRED'].includes(code))
+    return {
+      message: 'Strava 授权范围不足，请重新授权',
+      retryable: false,
+      recovery_action: 'reauthorize',
+    };
+  if (['STRAVA_TOKEN_INVALID', 'OAUTH_TOKEN_INVALID'].includes(code))
+    return {
+      message: 'Strava 凭证已失效，请先断开后重新连接',
+      retryable: false,
+      recovery_action: 'disconnect',
+    };
+  if (['STRAVA_CONFIG_INVALID', 'STRAVA_KEY_INVALID'].includes(code))
+    return {
+      message: 'Strava 服务配置异常，请联系支持',
+      retryable: false,
+      recovery_action: 'contact-support',
+    };
+  if (['OAUTH_ACCESS_DENIED', 'OAUTH_PROVIDER_ERROR'].includes(code))
+    return {
+      message: '你已拒绝 Strava 授权，可重新发起授权',
+      retryable: false,
+      recovery_action: 'reauthorize',
+    };
+  return {
+    message: 'Strava 服务暂时不可用，请稍后重试',
+    retryable: true,
+    recovery_action: 'retry',
+  };
+}
+function deriveReadiness(
+  { credential, snapshot, hasActiveOAuthState, authorizationErrorCode },
+  now = new Date(),
+) {
   const avatarAvailable = Boolean(trustedAvatarUrl(credential?.athlete_avatar_url));
   if (!credential) {
+    const authorizationError = authorizationErrorCode
+      ? { code: authorizationErrorCode, ...recoveryFor(authorizationErrorCode) }
+      : null;
     return {
-      state: hasActiveOAuthState ? 'authorizing' : 'disconnected',
+      state: authorizationError ? 'failed' : hasActiveOAuthState ? 'authorizing' : 'disconnected',
       can_register: false,
       avatar_available: false,
       athlete_name: null,
       snapshot: null,
-      error: null,
+      error: authorizationError,
     };
   }
   if (
@@ -246,17 +283,14 @@ function deriveReadiness({ credential, snapshot, hasActiveOAuthState }, now = ne
     };
   }
   if (credential.sync_status === 'failed') {
+    const code = credential.sync_error_code || 'STRAVA_API_FAILED';
     return {
       state: 'failed',
       can_register: false,
       avatar_available: avatarAvailable,
       athlete_name: credential.athlete_name || null,
       snapshot: null,
-      error: {
-        code: credential.sync_error_code || 'STRAVA_API_FAILED',
-        message: 'Strava 数据准备失败，请重试',
-        retryable: true,
-      },
+      error: { code, ...recoveryFor(code) },
     };
   }
   return {
@@ -392,11 +426,18 @@ async function fetchActivities(api, accessToken, after, maxPages = 5) {
   }
   return all;
 }
-async function callbackFlow({ code, state, env, store, api, now = new Date() }) {
-  const cfg = config(env);
+async function callbackFlow({ code, state, error, env, store, api, now = new Date() }) {
+  const stateDoc = await consumeState(store, state, now);
+  if (stateDoc.latest_attempt === false)
+    throw new StravaError('OAUTH_ATTEMPT_SUPERSEDED', 'OAuth 授权已被更新的尝试替代');
+  if (typeof error === 'string' && error) {
+    const code = error === 'access_denied' ? 'OAUTH_ACCESS_DENIED' : 'OAUTH_PROVIDER_ERROR';
+    await store.rejectAuthorization(stateDoc, code, now);
+    throw new StravaError(code, recoveryFor(code).message);
+  }
   if (typeof code !== 'string' || !code)
     throw new StravaError('OAUTH_CODE_MISSING', '缺少 OAuth code');
-  const stateDoc = await consumeState(store, state, now);
+  const cfg = config(env);
   const token = await api.exchange({
     client_id: cfg.clientId,
     client_secret: cfg.clientSecret,
@@ -404,7 +445,8 @@ async function callbackFlow({ code, state, env, store, api, now = new Date() }) 
     grant_type: 'authorization_code',
   });
   const credential = tokenDocument(stateDoc.openid, token, cfg.key, now);
-  await store.saveCredential(credential, now);
+  const saved = await store.saveCredential(credential, stateDoc, now);
+  if (saved === false) throw new StravaError('OAUTH_ATTEMPT_SUPERSEDED', 'OAuth 授权已失效');
   return { connected: true, athlete_name: credential.athlete_name };
 }
 function sameCipherEnvelope(left, right) {
@@ -669,7 +711,8 @@ async function ensureReadyFlow({
   if (
     readiness.state === 'ready' ||
     readiness.state === 'disconnected' ||
-    readiness.state === 'authorizing'
+    readiness.state === 'authorizing' ||
+    (readiness.state === 'failed' && !bundle.credential)
   )
     return readiness;
 
@@ -763,6 +806,7 @@ module.exports = {
   isCredentialUsable,
   isSnapshotForCredential,
   deriveReadiness,
+  recoveryFor,
   statistics,
   lifetimeStatistics,
   optionalLifetimeStatistics,

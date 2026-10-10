@@ -66,6 +66,8 @@ deleted_at?, delete_failed_at?, retry_at?, last_error_code?
 
 客户端先调用 `profile/mediaUploadPath` 取得由 `PROFILE_MEDIA_PATH_SECRET` 和可信 WXContext OPENID 派生的 opaque owner staging 路径，上传成功后立即调用 `profile/registerMedia`。服务端通过临时 URL HEAD 与有界 GET 验证实际对象，计算 SHA-256，并把相同字节写入 `profile-canonical/<owner-alias>/<source-hash>/<content-hash>.<ext>`。登记初始状态为 `unreferenced` 且幂等，并绑定 source/canonical/hash/size/mime；只有同一事务内成功写入当前 profile 的媒体才切换为 `active`，被移除的 active 媒体在同一事务内降级为带新 `cleanup_after` 的 `unreferenced`。资料更新仍使用 source ID 兼容旧客户端；个人名片和管理员名片只为 owner/status/current-reference 都匹配的 canonical ID 签 URL。存量未登记或未 canonicalize 的 legacy 媒体不迁移、不删除，但不进入任何能力卡。
 
+Strava disconnect 仅在事务内原子推进授权代际、消费 state、删除 credential/snapshot、更新 profile 并写审计；事务返回 profile 当前媒体引用。事务提交后再按 `owner_openid + origin + status + _id` 复合索引和稳定 `_id` 游标分页，将未被引用的 Strava active 媒体幂等降级为 `unreferenced`，避免媒体数量占用事务写额度。媒体清理中途失败不回滚已完成的安全断开，再次 disconnect 会继续收敛剩余 active 记录。
+
 `profile-media-cleanup` 每 10 分钟最多处理 20 条到期 `unreferenced`、过期 `deleting` 或到期 `delete_failed` 记录。该函数必须配置与 `profile` 相同的 `PROFILE_MEDIA_PATH_SECRET`。每条记录均在事务内重读 owner 当前 profile：仍被引用则恢复 `active`；未引用才写入唯一且有过期时间的删除 lease 并调用云存储删除。worker 中断后可 fenced 重领；失败或过期 recovery 合计最多尝试 3 次，随后进入 `delete_failed_terminal`，避免永久重试和索引饥饿。结果只保存稳定 `last_error_code`，不记录底层错误文本。微信/自定义上传在 `registerMedia` 与对象删除同时失败时仍由客户端 `reportOrphan` 账本补偿；Strava 服务端导入不依赖客户端账本，使用下述持久 intent。
 
 ### `profile_media_imports`
@@ -120,6 +122,18 @@ created_at
 ```
 
 state 原文至少 32 随机字节，只返回给发起授权的客户端，不落库。callback 在事务中原子检查并写入 `consumed_at`，再严格校验 `expires_at`；因此成功、失败或过期 state 均不可重放。当前 CloudBase `UpdateTable` 不接受 TTL 参数，本集合采用**非物理 TTL，应用层过期 + 限量清理**：`start/status` 每次最多删除 20 条已过期 state，不能以物理删除代替过期或重放校验。
+
+### `oauth_attempts`
+
+```text
+_id/openid
+attempt_generation              # start/cancel/disconnect 时单调递增
+status: authorizing|failed|connected|cancelled|disconnected
+error_code?: String|null        # 仅保存稳定 OAuth 错误码
+updated_at
+```
+
+每个用户仅保留当前 OAuth attempt。callback 在消费 state 时校验其 `attempt_generation` 等于当前代际，并在保存 credential 的事务内再次校验；旧 attempt、乱序 callback 或 disconnect 后晚到的换 token 响应均不能落凭证。集合只按 `_id` 点查，不添加额外业务索引；bootstrap 创建集合并应用客户端全拒绝 ACL，仅云函数可读写。
 
 ### `strava_credentials`
 
@@ -179,6 +193,7 @@ synced_at
 | notification_outbox | target_openid ASC, created_at DESC | 普通；用户通知历史查询 |
 | notification_outbox | status ASC, attempts ASC, next_retry_at ASC | 普通；到期重试扫描 |
 | profile_media | owner_openid ASC, status ASC, created_at DESC | 普通；owner 媒体查询 |
+| profile_media | owner_openid ASC, origin ASC, status ASC, _id ASC | 普通；Strava 断开后的稳定游标分页清理 |
 | profile_media | status ASC, cleanup_after ASC | 普通；未引用媒体回收扫描 |
 | profile_media | status ASC, delete_lease_expires_at ASC | 普通；中断删除重领扫描 |
 | profile_media | status ASC, retry_at ASC | 普通；失败退避重试扫描 |
@@ -198,7 +213,7 @@ synced_at
 
 ## 部署后验证
 
-1. 校验 bootstrap 管理的 12 集合、全拒绝规则与 28 索引。确认活动首页 future 的 `status + event_start + _id + event_end`、history 的 `status + event_end DESC + _id DESC + event_start DESC`、`activities.created_by + event_start`、`notification_outbox` 的 lease、目标与 retry 索引，`profile_media` 与 `profile_media_imports` 的 cleanup、delete lease 与 retry 索引，以及 `oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
+1. 校验 bootstrap 管理的 13 集合、全拒绝规则与 29 索引。确认 `oauth_attempts` 已纳入全拒绝客户端访问规则；确认活动首页 future 的 `status + event_start + _id + event_end`、history 的 `status + event_end DESC + _id DESC + event_start DESC`、`activities.created_by + event_start`、`notification_outbox` 的 lease、目标与 retry 索引，`profile_media.owner_openid + origin + status + _id` 断开分页索引，`profile_media` 与 `profile_media_imports` 的 cleanup、delete lease 与 retry 索引，以及 `oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
 2. 真机验证 WXContext openid、微信手机号动态 code、手填手机号来源，以及资料响应中无明文/密文。
 3. 配置 callback HTTPS 路由、Strava 回调域和小程序业务域名，验证 CSRF、过期与重放。
 4. 验证 token 临期刷新、90 天分页、解绑审计及日志无敏感信息；验证跨用户媒体拒绝、未登记 legacy 不进卡、register 失败回收上传对象，以及临时 URL 故障降级。

@@ -5,7 +5,9 @@ const MAX_GPX_BYTES = 4 * 1024 * 1024;
 function statusError(status) {
   if (status === 429)
     return new StravaError('STRAVA_RATE_LIMITED', 'Strava 请求频率已达上限，请稍后重试');
-  if (status === 401 || status === 403)
+  if (status === 401)
+    return new StravaError('STRAVA_TOKEN_INVALID', 'Strava 凭证已失效，请重新连接');
+  if (status === 403)
     return new StravaError('STRAVA_SCOPE_REQUIRED', 'Strava 授权不足，请重新授权 read 权限');
   return new StravaError('STRAVA_API_FAILED', `Strava API 返回 ${status}`);
 }

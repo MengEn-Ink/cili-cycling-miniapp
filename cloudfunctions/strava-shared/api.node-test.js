@@ -123,3 +123,15 @@ test('累计骑行统计使用 athlete id 与 Bearer token 请求官方接口', 
   assert.equal(captured.url, 'https://www.strava.com/api/v3/athletes/42/stats');
   assert.equal(captured.options.headers.authorization, 'Bearer access-token');
 });
+
+test('401 token 失效与 403 scope 不足使用不同稳定错误码', async () => {
+  for (const [status, code] of [
+    [401, 'STRAVA_TOKEN_INVALID'],
+    [403, 'STRAVA_SCOPE_REQUIRED'],
+  ]) {
+    await assert.rejects(
+      requestJson('https://example.test', {}, 0, 100, async () => ({ ok: false, status })),
+      { code },
+    );
+  }
+});

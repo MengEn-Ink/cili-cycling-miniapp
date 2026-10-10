@@ -1358,6 +1358,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
           code: 'STRAVA_API_FAILED',
           message: 'Strava 暂时不可用',
           retryable: true,
+          recovery_action: 'retry',
         },
       }),
     );
@@ -1372,6 +1373,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
         code: 'STRAVA_API_FAILED',
         message: 'Strava 暂时不可用',
         retryable: true,
+        recoveryAction: 'retry',
       },
     });
   });

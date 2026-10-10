@@ -36,6 +36,25 @@ function nextAvatarRevision(profile) {
   return current + 1;
 }
 
+const MEDIA_PAGE_SIZE = 100;
+
+async function forEachByIdPage(collection, command, query, visit, pageSize = MEDIA_PAGE_SIZE) {
+  let cursor;
+  while (true) {
+    const pageQuery = cursor ? { ...query, _id: command.gt(cursor) } : query;
+    const result = await collection.where(pageQuery).orderBy('_id', 'asc').limit(pageSize).get();
+    const rows = Array.isArray(result.data) ? result.data : [];
+    if (!rows.length) return;
+    for (const row of rows) await visit(row);
+    const nextCursor = rows.at(-1)?._id;
+    if (typeof nextCursor !== 'string' || (cursor !== undefined && nextCursor <= cursor)) {
+      throw Object.assign(new Error('媒体分页游标无效'), { code: 'PROFILE_MEDIA_CURSOR_INVALID' });
+    }
+    cursor = nextCursor;
+    if (rows.length < pageSize) return;
+  }
+}
+
 function createReadinessStore(db) {
   const command = db.command;
   return {
@@ -201,8 +220,45 @@ function createReadinessStore(db) {
           },
         });
     },
+    createAuthorizationAttempt(openid, state) {
+      return db.runTransaction(async (tx) => {
+        const current = (await maybeGet(tx.collection('oauth_attempts'), openid)) || {};
+        const generation = Number.isSafeInteger(current.attempt_generation)
+          ? current.attempt_generation + 1
+          : 1;
+        if (!Number.isSafeInteger(generation))
+          throw Object.assign(new Error('OAuth 授权代际无法继续递增'), {
+            code: 'OAUTH_GENERATION_EXHAUSTED',
+          });
+        await tx
+          .collection('oauth_attempts')
+          .doc(openid)
+          .set({
+            data: {
+              openid,
+              attempt_generation: generation,
+              status: 'authorizing',
+              error_code: null,
+              updated_at: db.serverDate(),
+            },
+          });
+        await tx
+          .collection('oauth_states')
+          .doc(state.hash)
+          .set({
+            data: {
+              state_hash: state.hash,
+              openid,
+              attempt_generation: generation,
+              expires_at: state.expiresAt,
+              created_at: db.serverDate(),
+            },
+          });
+        return generation;
+      });
+    },
     async readReadiness(openid, now) {
-      const [credential, snapshot, active] = await Promise.all([
+      const [credential, snapshot, active, attempt] = await Promise.all([
         maybeGet(db.collection('strava_credentials'), openid),
         maybeGet(db.collection('strava_snapshots'), openid),
         db
@@ -214,24 +270,47 @@ function createReadinessStore(db) {
           })
           .limit(1)
           .get(),
+        maybeGet(db.collection('oauth_attempts'), openid),
       ]);
       return {
         credential,
         snapshot,
         hasActiveOAuthState: Boolean(active.data && active.data.length),
+        authorizationErrorCode:
+          attempt?.status === 'failed' && typeof attempt.error_code === 'string'
+            ? attempt.error_code
+            : undefined,
       };
     },
-    async cancelAuthorization(openid, now) {
-      const cancelledAt = db.serverDate();
-      const result = await db
-        .collection('oauth_states')
-        .where({
-          openid,
-          expires_at: command.gt(now),
-          consumed_at: command.exists(false),
-        })
-        .update({ data: { consumed_at: cancelledAt, cancelled_at: cancelledAt } });
-      return { cancelled: result.stats?.updated || 0 };
+    cancelAuthorization(openid, now) {
+      return db.runTransaction(async (tx) => {
+        const cancelledAt = db.serverDate();
+        const current = (await maybeGet(tx.collection('oauth_attempts'), openid)) || {};
+        const generation = Number.isSafeInteger(current.attempt_generation)
+          ? current.attempt_generation + 1
+          : 1;
+        const result = await tx
+          .collection('oauth_states')
+          .where({
+            openid,
+            expires_at: command.gt(now),
+            consumed_at: command.exists(false),
+          })
+          .update({ data: { consumed_at: cancelledAt, cancelled_at: cancelledAt } });
+        await tx
+          .collection('oauth_attempts')
+          .doc(openid)
+          .set({
+            data: {
+              openid,
+              attempt_generation: generation,
+              status: 'cancelled',
+              error_code: null,
+              updated_at: cancelledAt,
+            },
+          });
+        return { cancelled: result.stats?.updated || 0 };
+      });
     },
     acquireSyncLease(openid, { leaseId, now, staleBefore, audit }) {
       return db.runTransaction(async (tx) => {
@@ -348,54 +427,50 @@ function createReadinessStore(db) {
         return true;
       });
     },
-    disconnect(openid, audit) {
-      return db.runTransaction(async (tx) => {
+    async disconnect(openid, audit) {
+      const referencedFileIds = await db.runTransaction(async (tx) => {
+        const disconnectedAt = db.serverDate();
+        const currentAttempt = (await maybeGet(tx.collection('oauth_attempts'), openid)) || {};
+        const generation = Number.isSafeInteger(currentAttempt.attempt_generation)
+          ? currentAttempt.attempt_generation + 1
+          : 1;
+        await tx
+          .collection('oauth_states')
+          .where({ openid, consumed_at: command.exists(false) })
+          .update({ data: { consumed_at: disconnectedAt, cancelled_at: disconnectedAt } });
+        await tx
+          .collection('oauth_attempts')
+          .doc(openid)
+          .set({
+            data: {
+              openid,
+              attempt_generation: generation,
+              status: 'disconnected',
+              error_code: null,
+              updated_at: disconnectedAt,
+            },
+          });
         await tx.collection('strava_credentials').doc(openid).remove();
         await tx.collection('strava_snapshots').doc(openid).remove();
         const profile = await maybeGet(tx.collection('profiles'), openid);
-        if (profile) {
-          let nextProfile = profile;
-          if (profile.avatar_source === 'strava' && typeof profile.avatar_file_id === 'string') {
-            const avatarFileId = profile.avatar_file_id;
-            const mediaId = crypto.createHash('sha256').update(avatarFileId).digest('hex');
-            const retainedByPhotos = (Array.isArray(profile.photos) ? profile.photos : []).some(
-              (item) => item && item.file_id === avatarFileId,
-            );
-            if (!retainedByPhotos) {
-              const media = await maybeGet(tx.collection('profile_media'), mediaId);
-              if (
-                media &&
-                media._id === mediaId &&
-                media.file_id === avatarFileId &&
-                media.owner_openid === openid &&
-                media.origin === 'strava' &&
-                media.status === 'active'
-              ) {
-                const disconnectedAt = db.serverDate();
-                await tx
-                  .collection('profile_media')
-                  .doc(mediaId)
-                  .update({
-                    data: {
-                      status: 'unreferenced',
-                      referenced_at: null,
-                      cleanup_after: new Date(
-                        new Date(audit.created_at).getTime() + 24 * 60 * 60 * 1000,
-                      ),
-                      delete_lease_id: '',
-                      updated_at: disconnectedAt,
-                    },
-                  });
-              }
-            }
-            const { avatar_source, avatar_file_id, ...withoutAvatar } = profile;
-            void avatar_source;
-            void avatar_file_id;
-            nextProfile = {
-              ...withoutAvatar,
-              avatar_revision: nextAvatarRevision(profile),
-            };
-          }
+        let nextProfile = profile;
+        if (profile?.avatar_source === 'strava' && typeof profile.avatar_file_id === 'string') {
+          const { avatar_source, avatar_file_id, ...withoutAvatar } = profile;
+          void avatar_source;
+          void avatar_file_id;
+          nextProfile = {
+            ...withoutAvatar,
+            avatar_revision: nextAvatarRevision(profile),
+          };
+        }
+        const currentReferences = [
+          ...(Array.isArray(nextProfile?.photos) ? nextProfile.photos : [])
+            .map((item) => item?.file_id)
+            .filter((value) => typeof value === 'string' && value),
+        ];
+        if (typeof nextProfile?.avatar_file_id === 'string')
+          currentReferences.push(nextProfile.avatar_file_id);
+        if (nextProfile) {
           await tx
             .collection('profiles')
             .doc(openid)
@@ -408,7 +483,36 @@ function createReadinessStore(db) {
             });
         }
         await tx.collection('audit_logs').add({ data: audit });
+        return currentReferences;
       });
+
+      const retained = new Set(referencedFileIds);
+      const cleanupAfter = new Date(new Date(audit.created_at).getTime() + 24 * 60 * 60 * 1000);
+      await forEachByIdPage(
+        db.collection('profile_media'),
+        command,
+        { owner_openid: openid, origin: 'strava', status: 'active' },
+        async (media) => {
+          if (
+            typeof media?._id !== 'string' ||
+            typeof media.file_id !== 'string' ||
+            retained.has(media.file_id)
+          )
+            return;
+          await db
+            .collection('profile_media')
+            .doc(media._id)
+            .update({
+              data: {
+                status: 'unreferenced',
+                referenced_at: null,
+                cleanup_after: cleanupAfter,
+                delete_lease_id: '',
+                updated_at: db.serverDate(),
+              },
+            });
+        },
+      );
     },
   };
 }

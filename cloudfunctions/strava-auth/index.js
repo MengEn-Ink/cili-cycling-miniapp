@@ -30,7 +30,6 @@ async function cleanupExpiredStates(now = new Date(), limit = 20) {
 }
 exports.main = async (event = {}) => {
   try {
-    const cfg = config(process.env);
     const { OPENID } = cloud.getWXContext();
     if (!OPENID) throw Object.assign(new Error('无法取得微信身份'), { code: 'UNAUTHENTICATED' });
     if (
@@ -44,18 +43,9 @@ exports.main = async (event = {}) => {
       return ok(deriveReadiness(await store.readReadiness(OPENID, now), now));
     }
     if (event.action === 'start') {
+      const cfg = config(process.env);
       const state = createState();
-      await db
-        .collection('oauth_states')
-        .doc(state.hash)
-        .set({
-          data: {
-            state_hash: state.hash,
-            openid: OPENID,
-            expires_at: state.expiresAt,
-            created_at: db.serverDate(),
-          },
-        });
+      await store.createAuthorizationAttempt(OPENID, state);
       return ok({
         authorization_url: authorizationUrl(cfg.clientId, cfg.callbackUrl, state.raw),
         expires_at: state.expiresAt.toISOString(),

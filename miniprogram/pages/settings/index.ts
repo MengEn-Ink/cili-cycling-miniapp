@@ -5,11 +5,24 @@ import { setTheme, syncPageTheme } from '../../services/theme-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.10.2',
+    date: '2026-10-10',
+    title: 'Strava 授权生命周期安全升级',
+    summary: '解绑、拒绝授权与异常恢复使用稳定服务端语义，并隔离过期授权回调。',
+    latest: true,
+    features: [
+      '本地断开后旧授权链接无法恢复凭证，并清理不再引用的 Strava 媒体',
+      '多次授权仅允许最新尝试生效，拒绝授权后不再停留在等待状态',
+      '按重试、重新授权、本地断开或联系支持提供明确恢复入口',
+      '本地断开不会撤销 Strava 网站中的外部授权',
+    ],
+  },
+  {
     version: '2026.10.10.1',
     date: '2026-10-10',
     title: '活动首页时间线分页升级',
     summary: '活动首页默认展示未来与进行中活动，并可稳定分页回看历史活动。',
-    latest: true,
+    latest: false,
     features: [
       '默认展示未来活动，正在进行的骑行不会提前移入历史',
       '历史活动按结束时间倒序分页，支持持续加载',
