@@ -28,6 +28,7 @@ function store(seed = {}) {
       ...(seed.activity || {}),
     },
     outbox: new Map(),
+    waiting: seed.waiting ? { ...seed.waiting } : undefined,
     audits: [],
     occupiedWrites: 0,
   };
@@ -39,8 +40,10 @@ function store(seed = {}) {
         getRegistration: async () => state.registration,
         getActivity: async () => state.activity,
         putRegistration: async (_id, value) => {
-          state.registration = value;
+          if (_id === state.registration._id) state.registration = value;
+          else if (_id === state.waiting?._id) state.waiting = value;
         },
+        listWaiting: async () => (state.waiting ? [state.waiting] : []),
         setOccupied: async (_id, value, supportVehicleOccupied, selfDriveOccupied) => {
           state.occupiedWrites += 1;
           state.activity.occupied_count = value;
@@ -102,6 +105,44 @@ test('驳回创建通知并释放名额', async () => {
   assert.equal(result.status, 'rejected');
   assert.equal(s.state.activity.occupied_count, 0);
   assert.equal(s.state.outbox.get(result.notification.outbox_id).template_key, 'review_rejected');
+});
+test('不限人数活动驳回后可晋级超过内部分类容量的历史候补', async () => {
+  const s = store({
+    activity: {
+      _id: 'a1',
+      registration_unlimited: true,
+      occupied_count: 501,
+      capacity: 500,
+      support_vehicle_capacity: 0,
+      self_drive_capacity: 500,
+      support_vehicle_occupied_count: 1,
+      self_drive_occupied_count: 500,
+    },
+    waiting: {
+      _id: 'w1',
+      activity_id: 'a1',
+      openid: 'waiting-member',
+      status: 'waiting',
+      options: { gathering_mode: 'self_drive' },
+      profile_snapshot: {},
+    },
+  });
+
+  await reviewRegistration(s, {
+    openid: 'admin',
+    registrationId: 'r1',
+    action: 'reject',
+    reason: '资料不完整',
+  });
+
+  assert.equal(s.state.waiting.status, 'pending');
+  assert.equal(s.state.activity.occupied_count, 501);
+  assert.equal(s.state.activity.support_vehicle_occupied_count, 0);
+  assert.equal(s.state.activity.self_drive_occupied_count, 501);
+  assert.equal(
+    [...s.state.outbox.values()].some((item) => item.template_key === 'waitlist_promoted'),
+    true,
+  );
 });
 test('未就绪旧活动驳回只释放总占位并保留现有分类计数', async () => {
   const s = store({

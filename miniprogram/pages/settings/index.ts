@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.10.22',
+    date: '2026-10-10',
+    title: '不限人数活动报名链路修复',
+    summary: '同步报名审核函数的不限人数规则，避免极简活动被错误判定为满员或配置不完整。',
+    latest: true,
+    features: [
+      '不限人数活动不再受内部容量基线限制',
+      '报名提交、候补晋级与审核详情使用一致的不限人数规则',
+      '云函数安装后的共享领域代码保持一致并通过完整校验',
+    ],
+  },
+  {
     version: '2026.10.10.21',
     date: '2026-10-10',
     title: '日常活动创建流程极简化',
     summary: '创建活动只保留集合时间、地点、三张封面、备注和 Strava 线路链接。',
-    latest: true,
+    latest: false,
     features: [
       '移除结束时间、终点、里程、海拔、难度、报名人数和费用等表单项',
       '封面照片上限收敛为 3 张，首张自动作为活动封面',
