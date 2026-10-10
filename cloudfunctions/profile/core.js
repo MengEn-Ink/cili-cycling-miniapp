@@ -779,6 +779,15 @@ function effectiveBackgroundPhoto(profile) {
   const legacy = Array.isArray(value.photos) ? value.photos.find(validPhoto) : undefined;
   return legacy ? { file_id: legacy.file_id, category: legacy.category } : null;
 }
+function assertFullProfileReady(profile) {
+  if (!['男', '女'].includes(profile.gender))
+    throw new ProfileError('VALIDATION_FAILED', '请选择性别');
+  const avatar = normalizeAvatarProfile(profile);
+  if (!avatar.avatar_file_id || !avatar.avatar_source)
+    throw new ProfileError('AVATAR_REQUIRED', '请先设置头像');
+  if (!validPhoto(effectiveBackgroundPhoto(profile)))
+    throw new ProfileError('VALIDATION_FAILED', '请上传个人照片');
+}
 function response(doc = {}) {
   const status = sensitiveStatus(doc);
   const emergencyReady =
@@ -921,6 +930,13 @@ function buildUpdate(event, keyValue, current = {}) {
   }
   const phone = cleanText(event.phone, 30, true);
   if (phone !== undefined) Object.assign(data, phoneUpdate(phone, keyValue, 'manual'));
+  if (
+    Object.prototype.hasOwnProperty.call(event, 'gender') ||
+    Object.prototype.hasOwnProperty.call(event, 'background_photo')
+  ) {
+    // 整表保存要基于“存量 + 本次更新”的最终态校验，避免只改一项时误判其它必填项缺失。
+    assertFullProfileReady({ ...current, ...data });
+  }
   return data;
 }
 function phoneUpdate(phone, keyValue, source = 'wechat') {

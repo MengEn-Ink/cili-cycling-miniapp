@@ -57,6 +57,8 @@ const profile = {
   phone_masked: '138****5678',
   phone_source: 'wechat',
   phone_verified: true,
+  avatar_file_id: 'cloud://avatar',
+  background_photo: { file_id: 'cloud://bg', category: 'ride' },
   real_name_cipher: { ciphertext: 'x' },
   emergency_name: '联系人',
   sensitive_status: {
@@ -204,6 +206,8 @@ test('提交校验活动、资料、Strava 和客户端越权字段', () => {
     assertProfileReady({
       nickname: '骑手',
       gender: '男',
+      avatar_file_id: 'cloud://avatar',
+      background_photo: { file_id: 'cloud://bg', category: 'ride' },
       phone_cipher: { ciphertext: 'x' },
       real_name_cipher: { ciphertext: 'x' },
       emergency_name: '联系人',
@@ -214,6 +218,8 @@ test('提交校验活动、资料、Strava 和客户端越权字段', () => {
     assertProfileReady({
       nickname: '骑手',
       gender: '男',
+      avatar_file_id: 'cloud://avatar',
+      background_photo: { file_id: 'cloud://bg', category: 'ride' },
       phone_cipher: { ciphertext: 'x' },
       real_name_cipher: { ciphertext: 'x' },
       emergency_name: '联系人',

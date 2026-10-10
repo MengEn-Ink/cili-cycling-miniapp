@@ -101,7 +101,11 @@ describe('资料编辑头像交互', () => {
       page = definition;
       page.data = {
         ...definition.data,
-        p: { ...profile, photos: [] },
+        p: {
+          ...profile,
+          gender: '男',
+          photos: [],
+        },
         canEditDetails: true,
         avatarPreviewUrl: 'https://temporary.example/old-avatar.jpg',
       };
@@ -131,6 +135,8 @@ describe('资料编辑头像交互', () => {
   });
 
   it('通用保存不提交昵称、头像字段，并保留敏感字段掩码语义', async () => {
+    page.data.p.photos = [{ id: 'cloud://env/profiles/owner/bg.jpg', category: 'ride' }];
+
     await page.save();
 
     const patch = rideService.updateProfile.mock.calls[0][0];
@@ -165,7 +171,7 @@ describe('资料编辑头像交互', () => {
     ['联系人', { emergencyName: '紧急联系人' }],
     ['紧急电话', { emergencyPhone: '139****0000' }],
     ['相册', { photos: [{ id: 'cloud://env/existing.jpg', category: 'ride' }] }],
-  ])('没有 avatarId 但已有%s资料的存量用户仍可编辑和保存', async (_label, fields) => {
+  ])('没有 avatarId 但已有%s资料的存量用户可编辑但保存被头像门禁拦截', async (_label, fields) => {
     const storedProfile = { ...blankProfile, ...fields } as Profile;
     rideService.getProfile.mockResolvedValueOnce(storedProfile);
     await page.onLoad();
@@ -173,7 +179,8 @@ describe('资料编辑头像交互', () => {
     expect(page.data.canEditDetails).toBe(true);
     await page.save();
 
-    expect(rideService.updateProfile).toHaveBeenCalledOnce();
+    expect(rideService.updateProfile).not.toHaveBeenCalled();
+    expect(page.data.error).toBe('请先设置头像，再保存资料');
   });
 
   it('展示时仅采用服务端返回的短期 HTTPS URL 作为头像预览', async () => {

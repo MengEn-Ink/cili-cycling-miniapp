@@ -306,6 +306,18 @@ function normalizeBackgroundProfile(profile: Profile | null): Profile | null {
   };
 }
 
+function hasBackgroundPhoto(profile: Profile): boolean {
+  const slot = profile.backgroundPhoto !== undefined ? profile.backgroundPhoto : profile.photos[0];
+  return Boolean(slot?.id?.trim());
+}
+
+function profileSaveValidationMessage(profile: Profile): string {
+  if (!profile.avatarId?.trim()) return '请先设置头像，再保存资料';
+  if (profile.gender !== '男' && profile.gender !== '女') return '请选择性别';
+  if (!hasBackgroundPhoto(profile)) return '请点击“添加背景图”上传个人照片';
+  return '';
+}
+
 function confirmsAvatar(
   profile: Profile,
   expected: { source: AvatarSource; fileId?: string; revisionAfter?: number },
@@ -711,8 +723,15 @@ Page({
       this.data.avatarBusy
     )
       return;
-    this.setData({ saving: true, error: '' });
     const p = this.data.p;
+    const validationMessage = profileSaveValidationMessage(p);
+    if (validationMessage) {
+      // 头像有独立即时保存流程；仅整表保存时合并检查必填项，避免用户提交不完整报名资料。
+      this.setData({ error: validationMessage });
+      wx.showToast({ title: validationMessage, icon: 'none' });
+      return;
+    }
+    this.setData({ saving: true, error: '' });
     const state = await runPageTask(
       () =>
         rideService.updateProfile({
@@ -726,7 +745,11 @@ Page({
         }),
       '保存失败',
     );
-    this.setData({ saving: false, error: state.error, p: state.data || p });
+    this.setData({
+      saving: false,
+      error: state.error,
+      p: state.data ? normalizeBackgroundProfile(state.data) : p,
+    });
     if (state.data) {
       invalidateProfilePageCache();
       await this.loadPhotoPreviews();

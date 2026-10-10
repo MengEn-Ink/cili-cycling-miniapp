@@ -48,6 +48,8 @@ function fixture(seed = {}) {
       nickname: '骑手',
       gender: '男',
       emergency_name: '联系人',
+      avatar_file_id: 'cloud://avatar',
+      background_photo: { file_id: 'cloud://bg', category: 'ride' },
       sensitive_status: { real_name: true, phone_verified: true, emergency_phone: true },
     }),
     getRegistration: async (id) => state.registrations.get(id),
