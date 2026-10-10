@@ -176,6 +176,30 @@ describe('CloudRepository 活动读取适配', () => {
     ]);
   });
 
+  it('活动发布人映射为昵称与头像地址，头像缺失时为空字符串', async () => {
+    const withPublisher = {
+      ...activity,
+      publisher: { nickname: '阿强', avatar_url: 'https://temp.example/a.jpg' },
+    };
+    const { cloud } = cloudWith(success([withPublisher]));
+
+    const [result] = await new CloudRepository(cloud).listActivities();
+
+    expect(result.publisher).toEqual({
+      nickname: '阿强',
+      avatarUrl: 'https://temp.example/a.jpg',
+    });
+  });
+
+  it('活动发布人头像字段缺失时映射为空头像地址', async () => {
+    const withPublisher = { ...activity, publisher: { nickname: '骑友' } };
+    const { cloud } = cloudWith(success([withPublisher]));
+
+    const [result] = await new CloudRepository(cloud).listActivities();
+
+    expect(result.publisher).toEqual({ nickname: '骑友', avatarUrl: '' });
+  });
+
   it('活动列表把未来或历史筛选透传给云函数', async () => {
     const first = cloudWith(success([]));
     const second = cloudWith(success([]));

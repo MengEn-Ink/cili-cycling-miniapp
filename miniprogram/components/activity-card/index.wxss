@@ -141,6 +141,38 @@
   padding: 18rpx 22rpx 20rpx;
 }
 
+.publisher {
+  display: flex;
+  align-items: center;
+  margin-bottom: 14rpx;
+}
+
+.publisher-avatar {
+  width: 40rpx;
+  height: 40rpx;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--color-border);
+}
+
+.publisher-avatar--empty {
+  border: 1rpx solid var(--color-border);
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.28) 0 6rpx, transparent 7rpx),
+    linear-gradient(180deg, transparent 24rpx, rgba(255, 255, 255, 0.16) 25rpx 100%);
+}
+
+.publisher-name {
+  margin-left: 12rpx;
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 23rpx;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .card-top {
   display: flex;
   align-items: flex-start;

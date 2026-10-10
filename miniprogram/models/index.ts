@@ -58,6 +58,10 @@ export interface ActivityAttendee {
     speedKmh: number | null;
   };
 }
+export interface ActivityPublisher {
+  nickname: string;
+  avatarUrl: string;
+}
 export interface Activity {
   id: string;
   version: number;
@@ -111,6 +115,7 @@ export interface Activity {
   waitlistOnly?: boolean;
   serverNow?: string;
   attendees?: ActivityAttendee[];
+  publisher?: ActivityPublisher;
 }
 export type AvatarSource = 'wechat' | 'strava' | 'custom';
 export type AvatarVisibility = 'public' | 'private';

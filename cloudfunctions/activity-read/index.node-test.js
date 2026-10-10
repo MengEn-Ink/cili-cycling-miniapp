@@ -801,3 +801,135 @@ test('头像批量解析失败时详情仍返回空头像，列表不查询成�
     ['activities'],
   );
 });
+
+test('列表为每个活动解析发布人昵称与头像', async () => {
+  const ownerA = 'owner-a';
+  const ownerB = 'owner-b';
+  const avatarA = 'cloud://env/profiles/a.jpg';
+  const avatarB = 'cloud://env/profiles/b.jpg';
+  const recordA = canonicalMedia(avatarA, ownerA);
+  const recordB = canonicalMedia(avatarB, ownerB);
+  const list = [
+    {
+      _id: 'a1',
+      title: '活动一',
+      status: 'published',
+      created_by: ownerA,
+      event_start: '2999-01-01T08:00:00.000Z',
+      event_end: '2999-01-02T00:00:00.000Z',
+    },
+    {
+      _id: 'a2',
+      title: '活动二',
+      status: 'published',
+      created_by: ownerB,
+      event_start: '2999-02-01T08:00:00.000Z',
+      event_end: '2999-02-02T00:00:00.000Z',
+    },
+  ];
+  const { main } = loadMain(undefined, list, {
+    profiles: [
+      {
+        _id: ownerA,
+        nickname: '阿强',
+        avatar_file_id: avatarA,
+        avatar_source: 'custom',
+        avatar_revision: 1,
+        avatar_visibility: 'public',
+        avatar_visibility_revision: 1,
+      },
+      {
+        _id: ownerB,
+        nickname: '阿敏',
+        avatar_file_id: avatarB,
+        avatar_source: 'custom',
+        avatar_revision: 1,
+        avatar_visibility: 'public',
+        avatar_visibility_revision: 1,
+      },
+    ],
+    mediaRecords: [recordA, recordB],
+    mediaSecret: MEDIA_SECRET,
+    getTempFileURL: async ({ fileList }) => ({
+      fileList: fileList.map((fileID) => ({
+        fileID,
+        status: 0,
+        tempFileURL: `https://temp.example/${fileID === recordA.canonical_file_id ? 'a' : 'b'}.jpg`,
+      })),
+    }),
+  });
+
+  const result = await main({ action: 'list' });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(
+    result.data.map((item) => item.publisher),
+    [
+      { nickname: '阿强', avatar_url: 'https://temp.example/a.jpg' },
+      { nickname: '阿敏', avatar_url: 'https://temp.example/b.jpg' },
+    ],
+  );
+});
+
+test('发布人资料缺失时统一兜底为骑友与空头像，不影响列表返回', async () => {
+  const list = [
+    {
+      _id: 'a1',
+      title: '无资料活动',
+      status: 'published',
+      created_by: 'ghost',
+      event_start: '2999-01-01T08:00:00.000Z',
+      event_end: '2999-01-02T00:00:00.000Z',
+    },
+  ];
+  const { main } = loadMain(undefined, list, { profiles: [], mediaRecords: [] });
+
+  const result = await main({ action: 'list' });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.data[0].publisher, { nickname: '骑友', avatar_url: '' });
+});
+
+test('详情同样带出发布人信息', async () => {
+  const owner = 'owner-a';
+  const avatar = 'cloud://env/profiles/a.jpg';
+  const record = canonicalMedia(avatar, owner);
+  const activity = {
+    _id: 'a1',
+    title: '活动',
+    status: 'published',
+    created_by: owner,
+    event_start: '2999-01-01T08:00:00.000Z',
+    event_end: '2999-01-02T00:00:00.000Z',
+  };
+  const { main } = loadMain(activity, [], {
+    profiles: [
+      {
+        _id: owner,
+        nickname: '阿强',
+        avatar_file_id: avatar,
+        avatar_source: 'custom',
+        avatar_revision: 1,
+        avatar_visibility: 'public',
+        avatar_visibility_revision: 1,
+      },
+    ],
+    mediaRecords: [record],
+    mediaSecret: MEDIA_SECRET,
+    getTempFileURL: async ({ fileList }) => ({
+      fileList: fileList.map((fileID) => ({
+        fileID,
+        status: 0,
+        tempFileURL: 'https://temp.example/a.jpg',
+      })),
+    }),
+  });
+
+  const result = await main({ action: 'detail', activityId: 'a1' });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.data.publisher, {
+    nickname: '阿强',
+    avatar_url: 'https://temp.example/a.jpg',
+  });
+});

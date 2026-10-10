@@ -20,6 +20,11 @@
     </view>
   </view>
   <view class="card-content">
+    <view class="publisher" wx:if="{{item.publisher}}">
+      <image wx:if="{{item.publisher.avatarUrl}}" class="publisher-avatar" src="{{item.publisher.avatarUrl}}" mode="aspectFill" aria-label="{{item.publisher.nickname}}的头像" />
+      <view wx:else class="publisher-avatar publisher-avatar--empty" aria-hidden="true"></view>
+      <text class="publisher-name">{{item.publisher.nickname}} 发布</text>
+    </view>
     <view class="metrics">
       <view wx:if="{{item.route.distanceKm > 0}}" class="metric-item"><view><text class="metric-value">{{item.route.distanceKm}}</text><text class="metric-suffix"> km</text></view><text class="metric-unit">里程</text></view>
       <view wx:if="{{item.route.elevationM > 0}}" class="metric-item"><view><text class="metric-value">{{item.route.elevationM}}</text><text class="metric-suffix"> m</text></view><text class="metric-unit">爬升</text></view>

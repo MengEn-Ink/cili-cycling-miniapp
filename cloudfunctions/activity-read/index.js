@@ -138,22 +138,8 @@ async function loadAttendeeRegistrations(activityId) {
   return registrations;
 }
 
-async function loadAttendees(activityId) {
-  const registrations = (await loadAttendeeRegistrations(activityId))
-    .sort(
-      (left, right) =>
-        timestamp(left.approved_at || left.checked_in_at || left.updated_at) -
-          timestamp(right.approved_at || right.checked_in_at || right.updated_at) ||
-        String(left._id).localeCompare(String(right._id)),
-    )
-    .slice(0, ATTENDEE_LIMIT);
-  const openids = [
-    ...new Set(
-      registrations
-        .map((item) => item.openid)
-        .filter((value) => typeof value === 'string' && value),
-    ),
-  ];
+// 批量按 openid 读取资料，供“活动参与人”和“发布人”信息解析复用。
+async function loadProfiles(openids) {
   const profiles = new Map();
   for (let offset = 0; offset < openids.length; offset += 20) {
     const batch = openids.slice(offset, offset + 20);
@@ -167,13 +153,19 @@ async function loadAttendees(activityId) {
         if (profile && batch.includes(profile._id)) profiles.set(profile._id, profile);
       }
     } catch {
-      // 资料读取失败时使用报名快照，头像和称号保持为空。
+      // 资料读取失败时调用方使用空头像兜底，不阻断主流程。
     }
   }
+  return profiles;
+}
+
+// 依据资料批量解析对外头像的 canonical fileId 与临时访问地址。
+// entries: [{ openid, profile }]；返回 Map(openid -> 临时地址)。
+async function resolveAvatarTempUrls(entries) {
   const avatarMediaIds = [
     ...new Set(
-      registrations
-        .map((item) => publicAvatarSource(profiles.get(item.openid)))
+      entries
+        .map((entry) => publicAvatarSource(entry.profile))
         .filter(Boolean)
         .map(mediaDocumentId),
     ),
@@ -194,49 +186,103 @@ async function loadAttendees(activityId) {
       // 媒体登记读取失败时 fail closed，仅隐藏受影响头像。
     }
   }
-  const canonicalFileIds = [
-    ...new Set(
-      registrations
-        .map((registration) => {
-          const profile = profiles.get(registration.openid);
-          const sourceFileId = publicAvatarSource(profile);
-          const record = sourceFileId ? mediaRecords.get(mediaDocumentId(sourceFileId)) : undefined;
-          return canonicalPublicAvatar(
-            profile,
-            record,
-            registration.openid,
-            process.env.PROFILE_MEDIA_PATH_SECRET,
-          );
-        })
-        .filter(Boolean),
-    ),
-  ];
-  const avatarUrls = new Map();
-  if (canonicalFileIds.length) {
-    try {
-      const response = await cloud.getTempFileURL({ fileList: canonicalFileIds });
-      for (const item of Array.isArray(response && response.fileList) ? response.fileList : []) {
-        const url = item && Number(item.status) === 0 ? safeHttpsUrl(item.tempFileURL) : '';
-        if (canonicalFileIds.includes(item && item.fileID) && url && !avatarUrls.has(item.fileID))
-          avatarUrls.set(item.fileID, url);
-      }
-    } catch {
-      // 头像解析失败不影响详情，客户端使用默认头像。
-    }
-  }
-  return registrations.map((registration) => {
-    const profile = profiles.get(registration.openid);
+  const canonicalByOpenid = new Map();
+  const canonicalFileIds = [];
+  for (const { openid, profile } of entries) {
     const sourceFileId = publicAvatarSource(profile);
     const record = sourceFileId ? mediaRecords.get(mediaDocumentId(sourceFileId)) : undefined;
     const canonicalFileId = canonicalPublicAvatar(
       profile,
       record,
-      registration.openid,
+      openid,
       process.env.PROFILE_MEDIA_PATH_SECRET,
     );
-    const url = canonicalFileId ? avatarUrls.get(canonicalFileId) || '' : '';
-    return publicAttendee(registration, profile, url);
-  });
+    if (canonicalFileId) {
+      canonicalByOpenid.set(openid, canonicalFileId);
+      if (!canonicalFileIds.includes(canonicalFileId)) canonicalFileIds.push(canonicalFileId);
+    }
+  }
+  const tempUrls = new Map();
+  if (canonicalFileIds.length) {
+    try {
+      const response = await cloud.getTempFileURL({ fileList: canonicalFileIds });
+      for (const item of Array.isArray(response && response.fileList) ? response.fileList : []) {
+        const url = item && Number(item.status) === 0 ? safeHttpsUrl(item.tempFileURL) : '';
+        if (canonicalFileIds.includes(item && item.fileID) && url && !tempUrls.has(item.fileID))
+          tempUrls.set(item.fileID, url);
+      }
+    } catch {
+      // 头像解析失败不影响主流程，客户端使用默认头像。
+    }
+  }
+  const result = new Map();
+  for (const { openid } of entries) {
+    const canonicalFileId = canonicalByOpenid.get(openid);
+    result.set(openid, canonicalFileId ? tempUrls.get(canonicalFileId) || '' : '');
+  }
+  return result;
+}
+
+// 批量解析活动发布人的昵称与头像临时地址，供活动列表、分页与详情复用。
+async function loadPublishers(rawActivities) {
+  const openids = [
+    ...new Set(
+      rawActivities
+        .map((activity) => activity && activity.created_by)
+        .filter((value) => typeof value === 'string' && value),
+    ),
+  ];
+  const profiles = await loadProfiles(openids);
+  const avatarUrls = await resolveAvatarTempUrls(
+    openids.map((openid) => ({ openid, profile: profiles.get(openid) })),
+  );
+  const result = new Map();
+  for (const openid of openids) {
+    const profile = profiles.get(openid);
+    result.set(openid, {
+      nickname: profile && typeof profile.nickname === 'string' ? profile.nickname : '',
+      avatar_url: avatarUrls.get(openid) || '',
+    });
+  }
+  return result;
+}
+
+// 把发布人信息挂到对外活动对象上；资料缺失时统一兜底为“骑友”，保证卡片字段始终可用。
+function attachPublisher(activity, publisher) {
+  activity.publisher = {
+    nickname: publisher && publisher.nickname ? publisher.nickname : '骑友',
+    avatar_url: publisher && publisher.avatar_url ? publisher.avatar_url : '',
+  };
+  return activity;
+}
+
+async function loadAttendees(activityId) {
+  const registrations = (await loadAttendeeRegistrations(activityId))
+    .sort(
+      (left, right) =>
+        timestamp(left.approved_at || left.checked_in_at || left.updated_at) -
+          timestamp(right.approved_at || right.checked_in_at || right.updated_at) ||
+        String(left._id).localeCompare(String(right._id)),
+    )
+    .slice(0, ATTENDEE_LIMIT);
+  const openids = [
+    ...new Set(
+      registrations
+        .map((item) => item.openid)
+        .filter((value) => typeof value === 'string' && value),
+    ),
+  ];
+  const profiles = await loadProfiles(openids);
+  const avatarUrls = await resolveAvatarTempUrls(
+    openids.map((openid) => ({ openid, profile: profiles.get(openid) })),
+  );
+  return registrations.map((registration) =>
+    publicAttendee(
+      registration,
+      profiles.get(registration.openid),
+      avatarUrls.get(registration.openid) || '',
+    ),
+  );
 }
 
 exports.main = async (event = {}) => {
@@ -277,13 +323,19 @@ exports.main = async (event = {}) => {
           limit,
         );
       }
-      const activities = rawActivities.map((item) => publicActivity(item, now));
+      const publisherByOpenid = await loadPublishers(rawActivities);
+      const activities = rawActivities.map((item) =>
+        attachPublisher(publicActivity(item, now), publisherByOpenid.get(item.created_by)),
+      );
       return ok(await resolveActivityMedia(activities));
     }
     if (event.action === 'listPage') {
       const request = parseListPageRequest(event, now);
       const page = await listActivityPage({ db, command: _, request, now });
-      const items = page.items.map((item) => publicActivity(item, request.asOf));
+      const publisherByOpenid = await loadPublishers(page.items);
+      const items = page.items.map((item) =>
+        attachPublisher(publicActivity(item, request.asOf), publisherByOpenid.get(item.created_by)),
+      );
       return ok({
         items: await resolveActivityMedia(items),
         next_cursor: page.nextCursor,
@@ -305,7 +357,10 @@ exports.main = async (event = {}) => {
         activity.is_deleted === true
       )
         fail('ACTIVITY_NOT_FOUND', '活动不存在');
-      const [resolvedActivity] = await resolveActivityMedia([publicActivity(activity, now)]);
+      const publisherByOpenid = await loadPublishers([activity]);
+      const [resolvedActivity] = await resolveActivityMedia([
+        attachPublisher(publicActivity(activity, now), publisherByOpenid.get(activity.created_by)),
+      ]);
       return ok({ ...resolvedActivity, attendees: await loadAttendees(event.activityId) });
     }
     fail('UNKNOWN_ACTION', '未知操作');

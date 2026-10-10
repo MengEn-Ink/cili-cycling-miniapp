@@ -393,6 +393,15 @@ function mapActivity(raw: unknown, requireRegistrationDecision = false): Activit
       ...mapActivityRouteExtras(value.route),
     },
     ...(Array.isArray(value.attendees) ? { attendees: mapPublicAttendees(value.attendees) } : {}),
+    ...(isRecord(value.publisher) && typeof value.publisher.nickname === 'string'
+      ? {
+          publisher: {
+            nickname: value.publisher.nickname,
+            avatarUrl:
+              typeof value.publisher.avatar_url === 'string' ? value.publisher.avatar_url : '',
+          },
+        }
+      : {}),
     schedule: Array.isArray(value.schedule) ? value.schedule : [],
     notices: Array.isArray(value.notices) ? value.notices : [],
     equipment: Array.isArray(value.equipment) ? value.equipment : [],
