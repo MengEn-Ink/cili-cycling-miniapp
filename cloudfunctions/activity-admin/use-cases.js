@@ -25,6 +25,13 @@ const CLONE_REQUEST_FIELDS = new Set([
   'eventStart',
   'eventEnd',
 ]);
+const DELETE_REQUEST_FIELDS = new Set(['action', 'openid', 'activityId', 'id']);
+const DELETE_BLOCKING_REGISTRATION_STATUSES = new Set([
+  'pending',
+  'approved',
+  'checked_in',
+  'waiting',
+]);
 
 function cloneActivityId(openid, requestId) {
   const digest = crypto
@@ -175,6 +182,62 @@ function partitionBackfill(registrations, occupiedCount) {
   if (supportVehicleOccupiedCount + selfDriveOccupiedCount !== occupiedCount)
     fail('PARTITION_BACKFILL_REQUIRED', '历史报名分仓统计与活动占位数不一致');
   return { supportVehicleOccupiedCount, selfDriveOccupiedCount };
+}
+
+function validateDeleteRequest(request) {
+  if (!request || typeof request !== 'object' || Array.isArray(request))
+    fail('VALIDATION_FAILED', '删除参数格式错误');
+  for (const key of Object.keys(request))
+    if (!DELETE_REQUEST_FIELDS.has(key))
+      fail('FORBIDDEN_FIELD', '删除请求包含未允许字段', { field: key });
+  assertTrustedOpenid(request.openid);
+  const activityId = request.activityId ?? request.id;
+  if (typeof activityId !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(activityId))
+    fail('VALIDATION_FAILED', '活动 ID 格式错误');
+  return { openid: request.openid, activityId };
+}
+
+function hasBlockingRegistration(registrations) {
+  return Array.isArray(registrations)
+    ? registrations.some((item) => DELETE_BLOCKING_REGISTRATION_STATUSES.has(item?.status))
+    : false;
+}
+
+async function assertNoBlockingRegistrations(tx, activityId) {
+  const registrations = await tx.getOccupyingRegistrations(activityId, 0);
+  if (hasBlockingRegistration(registrations))
+    fail('ACTIVITY_HAS_REGISTRATIONS', '已有成员报名，不能删除');
+}
+
+async function deleteActivity(store, request, now = new Date()) {
+  const { openid, activityId } = validateDeleteRequest(request);
+  return store.transaction(async (tx) => {
+    const admin = await tx.getAdmin(openid);
+    const isAdmin = isEnabledAdmin(admin, openid);
+    const current = await tx.getActivity(activityId);
+    if (!current) fail('ACTIVITY_NOT_FOUND', '活动不存在');
+    // 幂等：已软删活动再次删除直接成功，避免重复写入与重复审计。
+    if (current.is_deleted === true) return { id: activityId, deleted: true };
+    // 权限只信任服务端 OPENID：创建者本人或启用管理员才可删除。
+    if (!isAdmin && current.created_by !== openid) fail('FORBIDDEN', '只能删除自己的活动');
+    // 第一次校验：拦截删除前已存在的报名/候补。
+    await assertNoBlockingRegistrations(tx, activityId);
+    // 写入前再次校验：捕捉校验之后、写入之前并发提交的新报名，两次读取均为空才允许软删。
+    await assertNoBlockingRegistrations(tx, activityId);
+    const value = { ...current, is_deleted: true, updated_at: now };
+    // 仅软删活动文档，不物理删除活动、报名或媒体资源。
+    if (typeof tx.updateActivity === 'function')
+      await tx.updateActivity(activityId, { is_deleted: true, updated_at: now });
+    else await tx.putActivity(activityId, value);
+    await tx.addAudit({
+      actor_openid: openid,
+      action: 'activity.delete',
+      target_id: activityId,
+      created_at: now,
+      detail: { from_status: current.status, to_deleted: true },
+    });
+    return { id: activityId, deleted: true };
+  });
 }
 
 async function saveActivity(
@@ -359,5 +422,6 @@ module.exports = {
   cloneActivityId,
   cloneRequestFingerprint,
   cloneActivity,
+  deleteActivity,
   saveActivity,
 };
