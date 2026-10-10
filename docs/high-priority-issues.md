@@ -1,6 +1,6 @@
 # 高优问题清单
 
-> 最后更新：2026-10-10 13:42（CST）
+> 最后更新：2026-10-10 13:45（CST）
 >
 > 维护原则：这里只保留尚未满足关闭条件的问题。新问题先去重、澄清、拆分；已满足关闭条件的条目直接删除，Git 历史和不可变外部证据作为归档。
 
@@ -33,11 +33,12 @@
 - CloudBase 本地核验（2026-10-10）：`npm run cloudbase:verify` 通过，`profile-media-cleanup`、`activity-admin`、`strava-auth`、`strava-callback`、`profile`、`activity-read` 均为 `Active`；该证据仅证明部署状态，不替代业务链路验收。
 - HP-13 可观测性（2026-10-10）：CloudBase 日志服务已通过 CLI 开通，CLI 明确提示“不额外计费”；诊断提交 `672cb5f` 随 head `633d74f...` 的 CI run [38027332121](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38027332121) SUCCESS。`strava-auth` 强制部署后回读为 `Active`、更新时间 `2026-10-10 13:23:59`（requestId `dd84d75e-0242-4752-9581-df297e2ab33e`），线上 `$LATEST` 与本地部署包逐文件无差异。真实请求 `ae45d0b8-ade6-4a16-8eec-6f343cda303e` 输出 `stage=read-readiness/code=-1`，未记录 openid、令牌或原始错误正文。
 - HP-13 根因修复部署与回读（2026-10-10）：提交 `31404ce46723` 随 head `736274b...` 的 CI run [38027765737](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38027765737) SUCCESS，开发版 run [38027820410](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38027820410) 实际上传 `0.0.58.1`。`strava-auth` 强制部署后回读为 `Active`、更新时间 `2026-10-10 13:31:44`（requestId `d51f1a4c-f08b-47c0-a97d-67133ea0a04f`），线上 `$LATEST` 与本地逐文件无差异；设置页真实请求 `7849fefc-1c0f-48d0-b3e6-6e04541ee476` 返回 `ok:true/state:syncing`，页面回读 `stravaLoadError=""`、文案“授权成功，正在准备骑行数据”，该请求无 `strava_auth_failed` 日志。
+- HP-09 远端交付（2026-10-10）：head `65f46cc...` 的 main CI run [38028452090](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38028452090) SUCCESS；开发版 run [38028513962](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38028513962) 实际上传 `0.0.60.1`，日志含“微信开发版 0.0.60.1 上传成功”。
 
 ## 当前工作交接检查点
 
 - 本轮已完成并交付：HP-01 至 HP-05 已按完整证据链从清单删除；HP-06 已随 PR #56 合入并上传开发版，但其“深浅主题并存”产品前提已被新 UI 基线替代；HP-20261010-01 的旧浅色行程序号与三处运行态低对比过渡保护已随 PR #62/#66/#69 合入并上传开发版；HP-08 已随 PR #57 合入并交付开发版；HP-12 闰日算法已随 PR #59 合入。
-- 当前最高优先级：两个 P0 的代码、CI、开发版和可自动执行的部署回读均已完成；`HP-20261010-02` 等待物理真机复核，`HP-20261009-13` 等待真实 Strava 外部授权生命周期验收。下一项可执行工作为 `HP-20261009-09`。
+- 当前最高优先级：两个 P0 的代码、CI、开发版和可自动执行的部署回读均已完成；`HP-20261010-02` 等待物理真机复核，`HP-20261009-13` 等待真实 Strava 外部授权生命周期验收。HP-09 也已完成自动化交付并等待真机/后台证据，下一项可执行工作为 `HP-20261009-10`。
 - HP-20261010-02 进展：单一主题底座与第一批六页已推送至 main；head `4b27057...` 的 main CI run [38025995570](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38025995570) SUCCESS，微信开发版 run [38026070737](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38026070737) 实际上传 `0.0.55.1`；375×812 开发者工具六页截图及 TabBar 图标复核通过，仅余物理真机截图与独立复核。
 - HP-07 检查点：代码、全量本地/远端门禁、开发版 `0.0.52.1`（含后续 #73）、目标环境索引、`registration` Active 回读及线上代码比对已完成；仅余 50+ 真实报名页面 smoke 和独立复核，状态保持 `PENDING_EVIDENCE`。
 - HP-13 检查点：`status` 根因修复已完成 main CI、开发版 `0.0.58.1`、CloudBase Active 回读、线上代码比对和设置页真实请求验证；原 `INTERNAL_ERROR` 已恢复为 `ok:true/state:syncing`。条目转为 `PENDING_EVIDENCE`，仅保留授权成功、拒绝、scope 不足、token 失效、重新授权、解绑后旧 callback 六条真实外部生命周期 smoke。
@@ -54,7 +55,7 @@
 | D1   | `HP-20261010-01` | P1     | `SUPERSEDED_BY(HP-20261010-02)`          | 旧浅色主题与运行态低对比已随 #62/#66 补保护，最终由新 UI 统一收口                       | -             | TraeX 审判者                 |
 | E    | `HP-20261009-07` | P1     | `PENDING_EVIDENCE`                       | 我的行程已交付开发版并完成部署回读，待 50+ 真实报名 smoke 和独立复核                   | Aime 个人助理 | TraeX 审判者                 |
 | F1   | `HP-20261009-08` | P1     | `PENDING_EVIDENCE`                       | 相对快捷项前置提示已随 #57 交付开发版 0.0.37.1，仅余真机 picker 创建/编辑保存重开 smoke | TraeX 执行者  | TraeX 审判者                 |
-| F2   | `HP-20261009-09` | P1     | `DEPLOY_PENDING`                         | 选点恢复已完成本地门禁，待 CI、开发版上传后进入真机定位验收                            | TraeX 执行者  | TraeX 审判者                 |
+| F2   | `HP-20261009-09` | P1     | `PENDING_EVIDENCE`                       | 选点恢复已交付开发版 `0.0.60.1`，待真机定位与微信后台复核                              | -             | TraeX 审判者                 |
 | G1   | `HP-20261009-10` | P1     | `READY`                                  | 单背景图与预览的数据安全闭环                                                            | TraeX 执行者  | TraeX 审判者                 |
 | G2   | `HP-20261009-11` | P1     | `BLOCKED_BY(HP-20261009-10 code commit)` | 个人中心头像预览                                                                        | TraeX 执行者  | TraeX 审判者                 |
 | H    | `HP-20261009-12` | P1     | `BLOCKED_BY(HP-20261009-13 smoke)`       | 闰日周年算法已随 #59 合入，待三函数部署、真实账号回读与真机验收                         | TraeX 执行者  | TraeX 审判者                 |
@@ -140,7 +141,7 @@
 
 ### HP-20261009-09 · 创建活动地点快捷选择与权限恢复
 
-- 优先级/状态：P1 / `DEPLOY_PENDING`（HP-08 代码门禁已满足）。
+- 优先级/状态：P1 / `PENDING_EVIDENCE`（HP-08 代码门禁已满足）。
 - 用户报告：地点快捷选择应位于输入框右侧。
 - 代码/CI：PR #48 已把起终点“地图选点”放到输入框右侧，并保留坐标回填、手改文字清坐标与服务端范围校验。
 - 确认缺口：微信现行规则下 `chooseLocation` 已不再需要 `scope.userLocation`，不得新增会扩大隐私范围的 `wx.authorize/getSetting/openSetting`；当前取消、系统定位关闭、接口/隐私配置失败和保存中竞态仍未覆盖。
@@ -148,10 +149,11 @@
 - TDD RED：tests-only 提交 `213eb4c` 增加取消、系统定位关闭、平台配置错误、重复选点、保存互斥、WXML 状态和最小隐私边界合同；focused 10 项中 4 项按预期失败、6 项既有行为通过，失败原因均为状态机尚未实现。
 - TDD GREEN：提交 `401afca` 增加单一 `choosingLocation` 状态、稳定错误分类及选点/保存互斥，不新增精确定位 scope；focused 10/10、活动编辑/详情导航/统一 UI 相邻回归 59/59、typecheck、lint 和相关格式检查通过。
 - 本地交付证据：发布说明 `2026.10.10.13` 随提交 `fd9edf3` 完成 RED→GREEN；`npm run validate` 全绿，包含前端 737/737、旅程证据 82/82、bootstrap 58/58、部署链路 14/14、全部云函数、部署包一致性和 14 页构建。微信开发者工具创建页回读 `allowed=true/isAdmin=true/loading=false/error=""`，`choosingLocation=""`，两个右侧选点按钮均为 68×48px 且可用，保存按钮可用。
-- 下一步：推送并跟踪 main CI 与实际开发版上传；成功后仅保留创建/编辑真机选点、系统定位关闭恢复、保存重开、详情导航、后台接口开通和隐私指引复核。
+- 远端交付证据：main CI run [38028452090](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38028452090) SUCCESS；同一 head `65f46cc...` 的开发版 run [38028513962](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38028513962) 实际上传 `0.0.60.1`。
+- 下一步：仅保留创建/编辑真机选点、系统定位关闭恢复、保存重开、详情导航、后台接口开通和“用户选择的位置信息”隐私指引独立复核。
 - 负责人：TraeX 执行者；独立复核：TraeX 审判者；隐私配置/真机：Aime 个人助理。
 - 关闭条件：创建/编辑均可从右侧选点并持久化坐标；拒绝后有可操作恢复路径；手改文本不提交旧坐标；活动详情真实导航成功；CI、真机 smoke 与独立复核齐全。
-- 更新时间：2026-10-10 13:42（CST）。
+- 更新时间：2026-10-10 13:45（CST）。
 
 ### HP-20261009-10 · 单背景图与预览的数据安全闭环
 
