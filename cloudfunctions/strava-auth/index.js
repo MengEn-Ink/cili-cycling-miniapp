@@ -28,70 +28,106 @@ async function cleanupExpiredStates(now = new Date(), limit = 20) {
       .map((item) => db.collection('oauth_states').doc(item._id).remove()),
   );
 }
-exports.main = async (event = {}) => {
-  try {
-    const { OPENID } = cloud.getWXContext();
-    if (!OPENID) throw Object.assign(new Error('无法取得微信身份'), { code: 'UNAUTHENTICATED' });
-    if (
-      event.action === 'status' ||
-      event.action === 'start' ||
-      event.action === 'cancelAuthorization'
-    )
-      await cleanupExpiredStates();
-    if (event.action === 'status') {
-      const now = new Date();
-      return ok(deriveReadiness(await store.readReadiness(OPENID, now), now));
+function diagnosticCode(error) {
+  const value = error?.code ?? error?.errCode;
+  return ['string', 'number'].includes(typeof value) && String(value).length <= 64
+    ? String(value)
+    : 'INTERNAL_ERROR';
+}
+function createHandler({
+  getOpenId = () => cloud.getWXContext().OPENID,
+  cleanup = cleanupExpiredStates,
+  readinessStore = store,
+  logger = console,
+} = {}) {
+  return async (event = {}) => {
+    let stage = 'identity';
+    try {
+      const OPENID = getOpenId();
+      if (!OPENID) throw Object.assign(new Error('无法取得微信身份'), { code: 'UNAUTHENTICATED' });
+      if (
+        event.action === 'status' ||
+        event.action === 'start' ||
+        event.action === 'cancelAuthorization'
+      ) {
+        stage = 'cleanup-expired-states';
+        await cleanup();
+      }
+      if (event.action === 'status') {
+        stage = 'read-readiness';
+        const now = new Date();
+        return ok(deriveReadiness(await readinessStore.readReadiness(OPENID, now), now));
+      }
+      if (event.action === 'start') {
+        stage = 'start-authorization';
+        const cfg = config(process.env);
+        const state = createState();
+        await readinessStore.createAuthorizationAttempt(OPENID, state);
+        return ok({
+          authorization_url: authorizationUrl(cfg.clientId, cfg.callbackUrl, state.raw),
+          expires_at: state.expiresAt.toISOString(),
+        });
+      }
+      if (event.action === 'cancelAuthorization')
+        return ok(await readinessStore.cancelAuthorization(OPENID, new Date()));
+      if (event.action === 'ensureReady' || event.action === 'sync')
+        return ok(
+          await ensureReadyFlow({
+            openid: OPENID,
+            env: process.env,
+            api: stravaApi,
+            store: readinessStore,
+          }),
+        );
+      if (event.action === 'routePreview') {
+        stage = 'route-preview';
+        const admin = await readinessStore.getAdmin(OPENID);
+        if (!admin || admin._id !== OPENID || admin.enabled === false)
+          throw Object.assign(new Error('仅管理员可以同步 Strava 路线'), {
+            code: 'ADMIN_REQUIRED',
+          });
+        return ok(
+          await routePreviewFlow({
+            openid: OPENID,
+            routeUrl: event.routeUrl,
+            env: process.env,
+            api: stravaApi,
+            store: readinessStore,
+          }),
+        );
+      }
+      if (event.action === 'routeGpx') {
+        stage = 'route-gpx';
+        return ok(
+          await routeGpxFlow({
+            openid: OPENID,
+            activityId: event.activityId,
+            routeId: event.routeId,
+            env: process.env,
+            api: stravaApi,
+            store: readinessStore,
+          }),
+        );
+      }
+      if (event.action === 'disconnect') {
+        stage = 'disconnect';
+        return ok(await disconnectFlow({ openid: OPENID, store: readinessStore }));
+      }
+      throw Object.assign(new Error('未知操作'), { code: 'UNKNOWN_ACTION' });
+    } catch (error) {
+      if (error && error.code && !error.constructor?.name?.includes('Strava'))
+        return { ok: false, error: { code: error.code, message: error.message } };
+      const result = toError(error);
+      if (result.error.code === 'INTERNAL_ERROR') {
+        logger.error('strava_auth_failed', {
+          action: typeof event.action === 'string' ? event.action.slice(0, 64) : 'unknown',
+          stage,
+          code: diagnosticCode(error),
+        });
+      }
+      return result;
     }
-    if (event.action === 'start') {
-      const cfg = config(process.env);
-      const state = createState();
-      await store.createAuthorizationAttempt(OPENID, state);
-      return ok({
-        authorization_url: authorizationUrl(cfg.clientId, cfg.callbackUrl, state.raw),
-        expires_at: state.expiresAt.toISOString(),
-      });
-    }
-    if (event.action === 'cancelAuthorization')
-      return ok(await store.cancelAuthorization(OPENID, new Date()));
-    if (event.action === 'ensureReady' || event.action === 'sync')
-      return ok(
-        await ensureReadyFlow({
-          openid: OPENID,
-          env: process.env,
-          api: stravaApi,
-          store,
-        }),
-      );
-    if (event.action === 'routePreview') {
-      const admin = await store.getAdmin(OPENID);
-      if (!admin || admin._id !== OPENID || admin.enabled === false)
-        throw Object.assign(new Error('仅管理员可以同步 Strava 路线'), { code: 'ADMIN_REQUIRED' });
-      return ok(
-        await routePreviewFlow({
-          openid: OPENID,
-          routeUrl: event.routeUrl,
-          env: process.env,
-          api: stravaApi,
-          store,
-        }),
-      );
-    }
-    if (event.action === 'routeGpx')
-      return ok(
-        await routeGpxFlow({
-          openid: OPENID,
-          activityId: event.activityId,
-          routeId: event.routeId,
-          env: process.env,
-          api: stravaApi,
-          store,
-        }),
-      );
-    if (event.action === 'disconnect') return ok(await disconnectFlow({ openid: OPENID, store }));
-    throw Object.assign(new Error('未知操作'), { code: 'UNKNOWN_ACTION' });
-  } catch (error) {
-    if (error && error.code && !error.constructor?.name?.includes('Strava'))
-      return { ok: false, error: { code: error.code, message: error.message } };
-    return toError(error);
-  }
-};
+  };
+}
+exports.createHandler = createHandler;
+exports.main = createHandler();

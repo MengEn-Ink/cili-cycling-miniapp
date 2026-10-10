@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.10.11',
+    date: '2026-10-10',
+    title: 'Strava 状态诊断增强',
+    summary: '增强授权状态故障的服务端阶段诊断，保持用户侧错误信息简洁且不泄露敏感数据。',
+    latest: true,
+    features: [
+      '授权状态失败时记录清理或读取阶段，缩短异常定位时间',
+      '诊断日志仅保留稳定错误码，不记录账号、令牌或数据库错误正文',
+      '用户侧继续显示统一恢复提示，既有授权与解绑流程保持不变',
+    ],
+  },
+  {
     version: '2026.10.10.10',
     date: '2026-10-10',
     title: '统一明亮界面',
     summary: '移除旧版深浅主题分叉，首批核心页面统一为适合户外阅读的明亮高对比界面。',
-    latest: true,
+    latest: false,
     features: [
       '活动、详情、创建、行程、个人中心和设置统一 16px 页面边距与卡片节奏',
       '按钮和输入统一 48px 触控高度，活动筛选统一 40px 分段控件',
