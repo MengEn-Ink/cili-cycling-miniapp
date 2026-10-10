@@ -44,21 +44,20 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.11.9',
+      version: '2026.10.11.10',
       latest: true,
-      title: '活动图片重复上传治理',
-      summary: '活动图片按内容识别，重复选择不再重复上传，失败重试复用同一存储对象，减少浪费。',
+      title: '重新打开更快，弱网也能看',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.11.10',
       '2026.10.11.9',
       '2026.10.11.8',
       '2026.10.11.7',
       '2026.10.11.6',
-      '2026.10.11.5',
     ]);
   });
 

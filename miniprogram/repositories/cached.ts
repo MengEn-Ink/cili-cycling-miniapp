@@ -1,4 +1,5 @@
 import type { ActivityListFilter, PublicActivityView, RideRepository } from './types';
+import type { CacheStorage } from './persistent';
 
 /**
  * 只读数据的默认缓存时长。
@@ -6,6 +7,12 @@ import type { ActivityListFilter, PublicActivityView, RideRepository } from './t
  * 超过窗口后自动回源，避免展示陈旧数据。
  */
 export const REPOSITORY_CACHE_TTL_MS = 30_000;
+/**
+ * 弱网/断网时持久化数据的离线兜底窗口。
+ * 仅在网络请求失败、且上次数据未超过该窗口时返回旧值，在线场景一律回源，避免掩盖名额或下架变化；
+ * 取值保守以优先保证报名名额信息准确，超出窗口则把原始网络错误交给页面展示。
+ */
+export const REPOSITORY_OFFLINE_STALE_MS = 5 * 60_000;
 /** 缓存条目上限，超出后按最早写入顺序淘汰，防止长时间运行占用过多内存。 */
 export const REPOSITORY_CACHE_CAPACITY = 60;
 
@@ -40,9 +47,15 @@ export class TtlCache<V> {
   }
 
   set(key: string, value: V): void {
+    // 以当前时刻重算过期点；冷启动从持久化层恢复时改用 hydrate 保留原始过期时刻。
+    this.hydrate(key, value, this.now() + this.ttlMs);
+  }
+
+  /** 以指定过期时刻写入条目，用于跨冷启动恢复，保证 TTL 不被重新打开而延长。 */
+  hydrate(key: string, value: V, expiresAt: number): void {
     // 已存在的 key 先删除，保证其在插入顺序中重新排到末尾，淘汰口径始终为最久未写入。
     if (this.store.has(key)) this.store.delete(key);
-    this.store.set(key, { value, expiresAt: this.now() + this.ttlMs });
+    this.store.set(key, { value, expiresAt });
     while (this.store.size > this.capacity) {
       const oldest = this.store.keys().next().value;
       if (oldest === undefined) break;
@@ -64,6 +77,22 @@ export class TtlCache<V> {
   }
 }
 
+/** 缓存命中率等可观测指标快照，用于诊断和手动刷新验收。 */
+export interface CacheMetricsSnapshot {
+  /** 命中内存缓存的次数。 */
+  memoryHits: number;
+  /** 冷启动命中持久化缓存（TTL 内）的次数。 */
+  storageHits: number;
+  /** 网络失败后回退到持久化兜底数据的次数。 */
+  staleReads: number;
+  /** 真正回源成功的次数。 */
+  originLoads: number;
+  /** 持久化写入成功次数。 */
+  storageWrites: number;
+  /** 持久化写入失败次数（存储满或宿主异常）。 */
+  storageErrors: number;
+}
+
 export interface RepositoryCacheControl {
   /** 活动或报名发生变化后，让活动列表/详情下次读取重新回源。 */
   invalidateActivities(): void;
@@ -71,36 +100,116 @@ export interface RepositoryCacheControl {
   invalidateStrava(): void;
   /** 账号切换或退出时清空全部只读缓存。 */
   clear(): void;
+  /** 读取命中率等指标快照。 */
+  getMetrics(): CacheMetricsSnapshot;
+  /** 重新统计指标，用于手动刷新前后对比命中率。 */
+  resetMetrics(): void;
 }
 
 /**
  * 仓储缓存装饰器：对高频只读方法做 read-through 缓存与并发去重，写方法在成功后精准失效对应命名空间。
  * 不直接编辑各页面即可统一收口；未列出的方法原样透传，保证现有功能和协议不变。
  */
+export interface CachingRepositoryOptions {
+  /** 持久化后端；不传则仅内存缓存，行为与基线一致。 */
+  storage?: CacheStorage;
+  /** 读缓存有效期，默认 {@link REPOSITORY_CACHE_TTL_MS}。 */
+  ttlMs?: number;
+  /** 断网兜底窗口，默认 {@link REPOSITORY_OFFLINE_STALE_MS}。 */
+  staleMs?: number;
+  /** 可注入时钟。 */
+  now?: () => number;
+}
+
 export class CachingRepository implements RideRepository {
   readonly cacheControl: RepositoryCacheControl;
 
-  private readonly cache = new TtlCache<unknown>();
+  private readonly ttlMs: number;
+  private readonly staleMs: number;
+  private readonly now: () => number;
+  private readonly storage: CacheStorage | undefined;
+
+  private readonly cache: TtlCache<unknown>;
   // 进行中的请求按 key 复用，确保同一时刻并发的相同读取只发起一次网络调用。
   private readonly inflight = new Map<string, Promise<unknown>>();
+  private readonly metrics: CacheMetricsSnapshot = {
+    memoryHits: 0,
+    storageHits: 0,
+    staleReads: 0,
+    originLoads: 0,
+    storageWrites: 0,
+    storageErrors: 0,
+  };
 
-  constructor(private readonly inner: RideRepository) {
+  constructor(
+    private readonly inner: RideRepository,
+    options: CachingRepositoryOptions = {},
+  ) {
+    this.ttlMs = options.ttlMs ?? REPOSITORY_CACHE_TTL_MS;
+    this.staleMs = options.staleMs ?? REPOSITORY_OFFLINE_STALE_MS;
+    this.now = options.now ?? Date.now;
+    this.storage = options.storage;
+    this.cache = new TtlCache(this.ttlMs, REPOSITORY_CACHE_CAPACITY, this.now);
     this.cacheControl = {
-      invalidateActivities: () => this.cache.clearPrefix(ACTIVITY_PREFIX),
-      invalidateStrava: () => this.cache.clearPrefix(STRAVA_PREFIX),
+      invalidateActivities: () => this.invalidatePrefix(ACTIVITY_PREFIX),
+      invalidateStrava: () => this.invalidatePrefix(STRAVA_PREFIX),
       clear: () => {
         this.cache.clear();
         this.inflight.clear();
+        this.storage?.clearAll();
+      },
+      getMetrics: () => ({ ...this.metrics }),
+      resetMetrics: () => {
+        for (const resetKey of Object.keys(this.metrics) as Array<keyof CacheMetricsSnapshot>)
+          this.metrics[resetKey] = 0;
       },
     };
   }
 
-  /** 通用读路径：命中缓存直接返回；命中并发请求则复用；否则回源并写入缓存。错误不缓存。 */
+  /** 删除某命名空间的内存、进行中请求和持久化条目，保证写后冷启动也读不到旧数据。 */
+  private invalidatePrefix(prefix: string): void {
+    this.cache.clearPrefix(prefix);
+    for (const inflightKey of [...this.inflight.keys()])
+      if (inflightKey.startsWith(prefix)) this.inflight.delete(inflightKey);
+    this.storage?.removePrefix(prefix);
+  }
+
+  /** 从持久化层回读条目：新鲜条目 hydrate 内存；过期条目返回供网络失败时兜底。 */
+  private readPersisted<T>(key: string): { value: T; expiresAt: number } | undefined {
+    if (!this.storage) return undefined;
+    const raw = this.storage.get<unknown>(key);
+    if (!raw || typeof raw !== 'object') return undefined;
+    const entry = raw as { value?: unknown; expiresAt?: unknown };
+    if (typeof entry.expiresAt !== 'number' || !Number.isFinite(entry.expiresAt)) return undefined;
+    const value = entry.value as T;
+    if (entry.expiresAt > this.now()) {
+      // 保留原始过期时刻，冷启动恢复不会变相延长 TTL。
+      this.cache.hydrate(key, value, entry.expiresAt);
+      this.metrics.storageHits++;
+    }
+    return { value, expiresAt: entry.expiresAt };
+  }
+
+  /** 回源成功后写入持久化，失败计入指标但不影响返回。 */
+  private writePersisted(key: string, value: unknown, expiresAt: number): void {
+    if (!this.storage) return;
+    if (this.storage.set(key, { value, expiresAt })) this.metrics.storageWrites++;
+    else this.metrics.storageErrors++;
+  }
+
+  /** 通用读路径：命中内存/持久化直接返回；命中并发请求则复用；否则回源。在线错误不缓存。 */
   private readThrough<T>(key: string, produce: () => Promise<T>): Promise<T> {
     const cached = this.cache.get(key);
-    if (cached !== undefined) return Promise.resolve(cached as T);
+    if (cached !== undefined) {
+      this.metrics.memoryHits++;
+      return Promise.resolve(cached as T);
+    }
     const pending = this.inflight.get(key);
     if (pending) return pending as Promise<T>;
+    // 冷启动回读持久化：新鲜则直接复用（readPersisted 已 hydrate 内存）。
+    const persisted = this.readPersisted<T>(key);
+    if (persisted && persisted.expiresAt > this.now()) return Promise.resolve(persisted.value);
+
     // 立即触发回源（同步调用 produce），并兜住其同步抛出，保证 inflight 在返回前登记。
     let started: Promise<T>;
     try {
@@ -110,13 +219,20 @@ export class CachingRepository implements RideRepository {
     }
     const request = started.then(
       (value) => {
-        this.cache.set(key, value);
+        const expiresAt = this.now() + this.ttlMs;
+        this.cache.hydrate(key, value, expiresAt);
         this.inflight.delete(key);
+        this.writePersisted(key, value, expiresAt);
+        this.metrics.originLoads++;
         return value;
       },
       (error: unknown) => {
-        // 失败时移除并发标记且不写入缓存，允许后续重试重新回源。
+        // 失败时移除并发标记；仅在离线兜底窗口内返回上次数据，在线失败仍抛错。
         this.inflight.delete(key);
+        if (persisted && persisted.expiresAt + this.staleMs > this.now()) {
+          this.metrics.staleReads++;
+          return persisted.value;
+        }
         throw error;
       },
     );
