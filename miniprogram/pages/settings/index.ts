@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.10.13',
+    date: '2026-10-10',
+    title: '活动地图选点恢复',
+    summary: '补齐活动起终点选点失败提示和保存竞态保护。',
+    latest: true,
+    features: [
+      '取消选点不再误报错误，系统定位关闭时给出明确恢复指引',
+      '接口或隐私配置异常时提示管理员检查后台配置',
+      '选点与保存互斥，避免晚到坐标覆盖已提交表单',
+    ],
+  },
+  {
     version: '2026.10.10.12',
     date: '2026-10-10',
     title: 'Strava 状态读取恢复',
     summary: '兼容云数据库明确的缺记录响应，已连接账号可正常读取授权状态。',
-    latest: true,
+    latest: false,
     features: [
       '没有历史授权尝试记录时不再误报服务暂时不可用',
       '仅兼容平台明确标记为文档不存在的响应，其他数据库错误继续失败关闭',
