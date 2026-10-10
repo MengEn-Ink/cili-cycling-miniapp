@@ -88,7 +88,8 @@
 - 设计/计划证据：推荐方案已固化到 `docs/superpowers/specs/2026-10-10-registration-history-pagination-design.md`，TDD 步骤已固化到 `docs/superpowers/plans/2026-10-10-registration-history-pagination.md`；采用兼容式 `minePage`、`created_at + _id` 稳定游标、仓储层透明聚合和 owner-bound 活动投影，旧 `mine` 数组协议保持不变；活动物理缺失时允许本人取消并写审计，但不回写不存在的名额。
 - TDD RED：`npm --prefix cloudfunctions/registration test` 按预期因 `Cannot find module './mine-page'` 失败，既有 14 项报名测试继续通过；新测试已锁定 101 条分页、同时间戳 binary `_id` 顺序、非法游标及 `published/finished/draft/is_deleted/物理缺失` 活动投影。
 - TDD GREEN：已新增兼容式 `minePage`、严格不透明游标和安全活动投影；`npm --prefix cloudfunctions/registration test` 18/18 通过，101 条及同时间戳分页均无漏重，旧 `mine` 保持不变。
-- 下一步：锁定活动实体缺失时本人取消报名的 RED，并保持正常活动名额释放/候补提升回归不变。
+- 取消 RED：`npm --prefix cloudfunctions/shared test` 按预期 23/24 通过；活动实体缺失场景以 `SCHEMA_INVALID / 活动名额计数异常` 失败，证明异常可复现；同一测试同时锁定现存畸形活动不得绕过校验。
+- 下一步：仅在活动实体不存在时跳过名额回写，完成取消并保留审计；随后同步三个领域云函数副本。
 - 负责人：Aime 个人助理；独立复核：TraeX 审判者；部署/真机：Aime 个人助理。
 - 关闭条件：全部报名可分页且无漏重；历史/下架/软删/缺失活动可解释展示；公开活动接口失败不影响行程；`registration` 部署回读、50+ 真实数据 smoke、CI 与独立复核齐全。
 - 更新时间：2026-10-10。

@@ -107,7 +107,9 @@ function expectCode(fn, code) {
 }
 function memoryStore(seed = {}) {
   const state = {
-    activities: new Map([['a1', { ...activity, ...(seed.activity || {}) }]]),
+    activities: new Map(
+      seed.activity === null ? [] : [['a1', { ...activity, ...(seed.activity || {}) }]],
+    ),
     profiles: new Map([[openid, { ...profile, ...(seed.profile || {}) }]]),
     registrations: new Map(
       seed.registration ? [[seed.registration._id, { ...seed.registration }]] : [],
@@ -571,6 +573,35 @@ test('取消仅本人 pending/approved 并在事务内释放名额', async () =>
       to_status: 'cancelled',
     },
   });
+});
+
+test('活动实体缺失时本人仍可取消并写审计，现存畸形活动继续 fail closed', async () => {
+  const id = registrationId('a1', openid);
+  const registration = {
+    _id: id,
+    activity_id: 'a1',
+    openid,
+    status: 'approved',
+    options: { gathering_mode: 'support_vehicle' },
+    review_history: [],
+  };
+  const missingActivity = memoryStore({ activity: null, registration });
+
+  const result = await cancelRegistration(missingActivity, { openid, registrationId: id }, now);
+
+  assert.equal(result.status, 'cancelled');
+  assert.equal(missingActivity.state.registrations.get(id).status, 'cancelled');
+  assert.equal(missingActivity.state.audits.at(-1).action, 'registration.cancelled');
+
+  const malformedActivity = memoryStore({
+    activity: { occupied_count: 0 },
+    registration,
+  });
+  await assert.rejects(
+    cancelRegistration(malformedActivity, { openid, registrationId: id }, now),
+    (error) => error instanceof DomainError && error.code === 'SCHEMA_INVALID',
+  );
+  assert.equal(malformedActivity.state.registrations.get(id).status, 'approved');
 });
 
 test('旧报名取消只释放总占位，不扣减未就绪活动的新报名分类计数', async () => {
