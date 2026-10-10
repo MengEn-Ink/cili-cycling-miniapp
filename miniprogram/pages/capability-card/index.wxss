@@ -450,7 +450,7 @@ page,
 .rider-card {
   border-color: var(--color-border);
   border-radius: var(--radius-display);
-  background: var(--color-surface);
+  background: var(--color-media-card-bg);
 }
 .strava-profile-button,
 .sync-button,
@@ -488,23 +488,26 @@ page,
   letter-spacing: 6rpx;
 }
 .rider-card.gender-male .gender-pill {
-  color: #4fb3a7;
+  color: var(--color-on-media-gender-male);
 }
 .rider-card.gender-female .gender-pill {
-  color: #ef8072;
+  color: var(--color-on-media-gender-female);
 }
 .rider-card.gender-unknown .gender-pill {
-  color: #e9743f;
+  color: var(--color-on-media-gender-unknown);
 }
 .rider-card.gender-male .alpine-fallback .fallback-mark {
-  color: #4fb3a7;
+  color: var(--color-on-media-gender-male);
 }
 .rider-card.gender-female .alpine-fallback .fallback-mark {
-  color: #ef8072;
+  color: var(--color-on-media-gender-female);
+}
+.rider-card.gender-unknown .alpine-fallback .fallback-mark {
+  color: var(--color-on-media-gender-unknown);
 }
 .theme-light .rider-card.gender-male .gender-pill {
-  color: #1f7d72;
+  color: var(--color-on-media-gender-male);
 }
 .theme-light .rider-card.gender-female .gender-pill {
-  color: #c54e40;
+  color: var(--color-on-media-gender-female);
 }

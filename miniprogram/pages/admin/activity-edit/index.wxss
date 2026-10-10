@@ -38,9 +38,9 @@
   color: #f7f7f5;
 }
 .activity-form-page .card.danger {
-  border-color: rgba(200, 32, 24, 0.5);
-  background: rgba(200, 32, 24, 0.12);
-  color: #ff7068;
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
 }
 .activity-form-page .secondary {
   border: 2rpx solid #3a3a3e;
@@ -106,9 +106,9 @@
   font-weight: 900;
 }
 .danger-button {
-  border: 1rpx solid #ff5c61;
+  border: 1rpx solid var(--color-danger);
   background: transparent;
-  color: #ff8589;
+  color: var(--color-danger-text);
 }
 @media (max-width: 480px) {
   .split {
@@ -310,11 +310,11 @@
   top: 16rpx;
   margin-bottom: 20rpx;
   padding: 22rpx 24rpx;
-  border: 2rpx solid #ff7068;
+  border: 2rpx solid var(--color-danger);
   border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: #ff8b85;
-  box-shadow: 0 16rpx 36rpx rgba(0, 0, 0, 0.28);
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
+  box-shadow: 0 16rpx 36rpx var(--color-shadow);
   font-size: 25rpx;
 }
 .error-summary-title {
@@ -368,18 +368,18 @@
 }
 .required {
   margin-left: 8rpx;
-  color: #ff7068;
+  color: var(--color-danger-text);
   font-size: 20rpx;
   font-weight: 800;
 }
 .field-error input,
 .field-error textarea,
 .form-card-error {
-  border-color: #ff7068 !important;
-  background: rgba(200, 32, 24, 0.08) !important;
+  border-color: var(--color-danger) !important;
+  background: var(--color-danger-soft) !important;
 }
 .field-error-copy {
-  color: #ff8b85;
+  color: var(--color-danger-text);
   font-size: 22rpx;
   font-weight: 700;
 }
@@ -397,15 +397,15 @@
   display: flex;
   gap: 14rpx;
   flex-direction: column;
-  color: #ff8b85;
+  color: var(--color-danger-text);
 }
 .strava-reauthorize button {
   min-height: 80rpx;
   margin: 0;
-  border: 1rpx solid #fc4c02;
+  border: 1rpx solid var(--color-brand);
   border-radius: var(--radius-sm);
-  background: transparent;
-  color: #fc6a2c;
+  background: var(--color-brand-soft);
+  color: var(--color-brand);
   font-weight: 800;
 }
 @media (max-width: 480px) {

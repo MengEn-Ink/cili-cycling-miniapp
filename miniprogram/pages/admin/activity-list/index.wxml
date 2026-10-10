@@ -30,9 +30,9 @@
     <view class="card clone-panel" wx:if="{{cloneSourceId}}">
       <view class="section-title">设置新活动时间</view>
       <view class="hint">复制前必须重新填写报名截止、开始和结束时间，格式示例：2026-10-01T09:00:00+08:00。</view>
-      <view class="field"><text>报名截止时间</text><input value="{{cloneForm.deadline}}" placeholder="2026-10-01T09:00:00+08:00" data-name="deadline" bindinput="cloneField" disabled="{{cloning}}"/></view>
-      <view class="field"><text>开始时间</text><input value="{{cloneForm.startAt}}" placeholder="2026-10-01T09:00:00+08:00" data-name="startAt" bindinput="cloneField" disabled="{{cloning}}"/></view>
-      <view class="field"><text>结束时间</text><input value="{{cloneForm.endAt}}" placeholder="2026-10-01T12:00:00+08:00" data-name="endAt" bindinput="cloneField" disabled="{{cloning}}"/></view>
+      <view class="field"><text>报名截止时间</text><input value="{{cloneForm.deadline}}" placeholder-class="input-placeholder" placeholder="2026-10-01T09:00:00+08:00" data-name="deadline" bindinput="cloneField" disabled="{{cloning}}"/></view>
+      <view class="field"><text>开始时间</text><input value="{{cloneForm.startAt}}" placeholder-class="input-placeholder" placeholder="2026-10-01T09:00:00+08:00" data-name="startAt" bindinput="cloneField" disabled="{{cloning}}"/></view>
+      <view class="field"><text>结束时间</text><input value="{{cloneForm.endAt}}" placeholder-class="input-placeholder" placeholder="2026-10-01T12:00:00+08:00" data-name="endAt" bindinput="cloneField" disabled="{{cloning}}"/></view>
       <view class="clone-actions">
         <button class="secondary" bindtap="cancelClone" disabled="{{cloning}}">取消</button>
         <button class="btn" bindtap="confirmClone" loading="{{cloning}}" disabled="{{cloning}}">创建草稿</button>

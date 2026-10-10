@@ -1015,10 +1015,10 @@ brand-logo {
   font-weight: 700;
 }
 .fee-included {
-  color: #2f8f83;
+  color: var(--color-success-text);
 }
 .fee-excluded {
-  color: #d55b1f;
+  color: var(--color-danger-text);
 }
 .rider-card .gender-pill {
   display: inline-flex;
@@ -1031,13 +1031,13 @@ brand-logo {
   letter-spacing: 4rpx;
 }
 .rider-card .gender-pill.gender-male {
-  color: #4fb3a7;
+  color: var(--color-gender-male);
 }
 .rider-card .gender-pill.gender-female {
-  color: #ef8072;
+  color: var(--color-gender-female);
 }
 .rider-card .gender-pill.gender-unknown {
-  color: #e9743f;
+  color: var(--color-gender-unknown);
 }
 
 .theme-light .hero-sequence {

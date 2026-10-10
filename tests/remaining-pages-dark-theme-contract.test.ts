@@ -148,9 +148,10 @@ describe('其余页面 CILI 双主题接入静态契约', () => {
       declaration(effectiveBlock(styles, '.activity-form-page .card'), 'background'),
       '--color-surface',
     );
-    expect(
+    expectSemantic(
       declaration(effectiveBlock(styles, '.activity-form-page .card.danger'), 'background'),
-    ).toContain('rgba(200');
+      '--color-danger-soft',
+    );
     expectSemantic(
       declaration(effectiveBlock(styles, '.activity-form-page .secondary'), 'background'),
       '--color-input-bg',

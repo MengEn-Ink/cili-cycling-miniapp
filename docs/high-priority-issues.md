@@ -18,20 +18,20 @@
 - 代码合入：PR [#45](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/45)、[#48](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/48)、[#52](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/52)、[#53](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/53) 已合并；最后一次含产品/云函数变更的 main 基线为 `658ea9c6f06acf9d5658eaa9dab77c8286a1bc07`，后续纯文档清单提交不改变产品代码基线。
 - CI：PR #45、PR #52、PR #53 与产品基线 `658ea9c...` 对应 CI 均为 SUCCESS。CI 不能证明 CloudBase Active 版本或真机行为。
 - 微信开发版：Actions run [38012378411](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38012378411) 已成功上传 `0.0.33.1`，head `658ea9c...`，日志包含“微信开发版 0.0.33.1 上传成功”；PR #54 的纯文档 main workflow run [38012903064](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38012903064) 已成功跳过上传。
-- CloudBase 部署：本轮在沙箱执行 `npm run cloudbase:verify`，失败于 `No valid identity information, please use tcb login to login`；因此无法完成 `activity-read`、`strava-auth`、`strava-callback`、`registration`、`profile` 等目标函数/索引的 Active 版本回读或部署。仍需由具备目标环境 CloudBase 身份的执行者部署并补齐环境、函数版本/更新时间、只读回读 requestId 与不可变 SHA 映射。
+- CloudBase 部署：已通过本地已登录环境在 `cloudbase-d0gizacy77a1ab017` 应用并 verify 13 个集合、31 条索引；创建 `oauth_attempts` 和首页/媒体/管理分页共 5 条索引，apply requestId 分别为 `70af1f69-803e-4e65-8816-8aaf04120cc5`、`910a7036-7da5-4210-bbb5-48562d84302d`、`6028903a-c63d-4c1b-bd59-a1db4656719d`、`b6331a33-f8be-479e-9247-615a9071f3e2`、`bd79dafe-6b74-4da4-af09-af5a75196bdd`、`104e8934-617e-497e-bd12-0f302680e35c`；`activity-read`、`strava-auth`、`strava-callback`、`activity-admin` 部署命令均返回 success，函数列表回读为 Active。
 - 真实验收：新增 8 项均未取得与同一不可变 SHA 对应的完整真机/真实数据 smoke，不得标记完成。
 
 ## 当前处理顺序
 
 | 泳道 | ID | 优先级 | 状态 | 目标 | 唯一写者 | 复核/发布 |
 | --- | --- | --- | --- | --- | --- | --- |
-| A1 | `HP-20261009-01` | P0 | `DEPLOY_PENDING` | 首页时间线兼容生产 BSON Date | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
-| A2 | `HP-20261009-02` | P1 | `DEPLOY_PENDING` | `_id` 使用 Mongo binary 顺序 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
-| A3 | `HP-20261009-03` | P0 发布门禁 | `PENDING_EVIDENCE` | 真实 Date planner/smoke 重新取证 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
-| A4 | `HP-20261009-05` | P1 | `DEPLOY_PENDING` | 首页时间线客户端与发布链路 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
-| B | `HP-20261009-13` | P0 | `DEPLOY_PENDING` | Strava 授权撤销与异常生命周期 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
-| C | `HP-20261009-04` | P1 | `DEPLOY_PENDING` | PR #45 管理列表分页交付 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
-| D | `HP-20261009-06` | P1 | `READY` | 浅色主题全页对比度 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
+| A1 | `HP-20261009-01` | P0 | `PENDING_EVIDENCE` | 首页时间线兼容生产 BSON Date，已部署待真实页面 smoke | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
+| A2 | `HP-20261009-02` | P1 | `PENDING_EVIDENCE` | `_id` 使用 Mongo binary 顺序，已部署待真实页面 smoke | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
+| A3 | `HP-20261009-03` | P0 发布门禁 | `PENDING_EVIDENCE` | 真实 Date planner 已通过，待同 SHA 页面证据 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
+| A4 | `HP-20261009-05` | P1 | `PENDING_EVIDENCE` | 首页时间线客户端与发布链路，已部署待真实页面 smoke | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
+| B | `HP-20261009-13` | P0 | `PENDING_EVIDENCE` | Strava 生命周期已部署，待真实授权/解绑 smoke | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
+| C | `HP-20261009-04` | P1 | `PENDING_EVIDENCE` | 活动管理分页已部署，待 101+ 真实页面 smoke | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
+| D | `HP-20261009-06` | P1 | `IN_PROGRESS` | 浅色主题全页对比度代码完成，待 CI/开发版验收 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
 | E | `HP-20261009-07` | P1 | `READY` | 我的行程永久保留历史/下架活动 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
 | F1 | `HP-20261009-08` | P1 | `READY` | 创建活动时间快捷选择 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
 | F2 | `HP-20261009-09` | P1 | `BLOCKED_BY(HP-20261009-08 code commit)` | 创建活动地点快捷选择与权限恢复 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
@@ -45,10 +45,10 @@
 
 ### HP-20261009-01 · 首页时间线不兼容生产 BSON Date
 
-- 优先级/状态：P0 / `DEPLOY_PENDING`，代码已随 PR [#52](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/52) 合入 main，等待 CloudBase 目标环境部署、版本回读与真实页面 smoke。
+- 优先级/状态：P0 / `PENDING_EVIDENCE`，代码已随 PR [#52](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/52) 合入 main，`activity-read` 与两条首页索引已部署并 verify，等待真实页面 smoke。
 - 当前事实：merge SHA `8d54e5f6caa1e75feb9043f2d1a2e04b698d859c` 已包含 RED `2e4c7d7` 与 GREEN `02a2fea`；where/keyset 使用 BSON Date、内部统一 epoch 比较，仅 cursor/DTO 边界转 ISO。
-- 证据/阻断：PR #52 `validate` SUCCESS；main CI SUCCESS；微信开发版 run `37973713168` SUCCESS。但 `activity-read` 云函数与两条 exact 索引仍缺目标环境 Active 版本回读，且本轮 `npm run cloudbase:verify` 因缺 CloudBase 身份失败，无法完成部署或真实页面 smoke。
-- 下一步：由具备目标 CloudBase 身份的执行者对 `490044dd...`/最新 main 执行 `activity-read` 与索引部署/verify，补齐函数版本、索引回读 requestId 与首页真实分页 smoke。
+- 证据/阻断：PR #52 `validate` SUCCESS；main CI SUCCESS；微信开发版 run `37973713168` SUCCESS；`activity-read`、`activities_public_event_start`、`activities_public_event_end` 已部署并通过 bootstrap verify。当前仅缺真实首页分页 smoke。
+- 下一步：执行首页默认未来、历史切换、跨页唯一性和快速切换迟到响应真实 smoke，补齐同一部署基线的页面证据。
 - 负责人：TraeX 执行者；独立复核：TraeX 审判者。
 - 实现解锁条件：Date RED 转绿、focused 回归与 package verifier 通过，可进入 HP-02/03；不要求本条先最终关闭。
 - 关闭条件：修复合入 main；HP-03 的 BSON Date planner/smoke 通过；目标环境部署；真实首页分页 smoke 通过；独立复核无 P0/P1。
@@ -56,10 +56,10 @@
 
 ### HP-20261009-02 · `_id` 归并顺序与 Mongo binary collation 不一致
 
-- 优先级/状态：P1 / `DEPLOY_PENDING`，代码已随 PR [#52](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/52) 合入 main，等待目标环境部署和部署后跨页页面证据。
+- 优先级/状态：P1 / `PENDING_EVIDENCE`，代码已随 PR [#52](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/52) 合入 main，目标函数与索引已部署，等待跨页页面证据。
 - 当前事实：merge SHA `8d54e5f6caa1e75feb9043f2d1a2e04b698d859c` 已包含混合 `-/_/大小写`、同时间戳、`page_size=1` 的 RED `963f1e4` 与 GREEN `49b4062`；归并使用 UTF-8 `Buffer.compare`，不再使用 `localeCompare`。
-- 证据/阻断：PR #52 `validate` SUCCESS；main CI SUCCESS；微信开发版 run `37973713168` SUCCESS。但目标环境部署、CloudBase 回读和部署后同时间戳混合 ID 页面 smoke 仍缺失。
-- 下一步：随 HP-01/03/05 的 `activity-read` 与索引部署后，验证同时间戳混合 ID 跨页顺序、唯一性和无遗漏。
+- 证据/阻断：PR #52 `validate` SUCCESS；main CI SUCCESS；微信开发版 run `37973713168` SUCCESS；目标环境函数、索引与 bootstrap verify 已通过。当前缺同时间戳混合 ID 页面 smoke。
+- 下一步：验证同时间戳混合 ID 跨页顺序、唯一性和无遗漏。
 - 负责人：TraeX 执行者；独立复核：TraeX 审判者。
 - 实现解锁条件：focused GREEN 后可与 HP-01 一起进入 HP-03；不要求本条先最终关闭。
 - 关闭条件：确定性 RED 转绿；合入 main；真实 Date smoke 同时证明跨页顺序、唯一性和无遗漏；部署与页面 smoke 通过。
@@ -78,35 +78,36 @@
 
 ### HP-20261009-04 · PR #45 活动管理分页尚未交付
 
-- 优先级/状态：P1 / `DEPLOY_PENDING`，代码已随 PR [#45](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/45) 合入 main，等待测试环境 CloudBase 31 索引/`activity-admin` Active 版本回读与管理页真实 smoke。
+- 优先级/状态：P1 / `PENDING_EVIDENCE`，代码已随 PR [#45](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/45) 合入 main，CloudBase 31 索引与 `activity-admin` 已部署并 verify，等待管理页真实 smoke。
 - 当前事实：merge SHA `658ea9c6f06acf9d5658eaa9dab77c8286a1bc07` 已在最新 main（13 集合、31 索引）上完成 PR #45 冲突整合，并保留首页时间线与 Strava 生命周期实现；活动管理新增两条组合索引，使用 BSON Date 查询边界、`event_start + _id` 稳定游标、状态/owner/软删前置过滤，以及 legacy ISO 时间与无时间草稿分阶段兼容。客户端新增状态筛选，并以 revision + 同 cursor single-flight 隔离刷新、筛选和加载更多，追加时按 ID 防重。
 - 代码证据：PR #45 `validate` SUCCESS；main CI run `38012291148` SUCCESS；微信开发版 run `38012378411` 成功上传 `0.0.33.1`。活动管理 Node 测试覆盖 101 条、101 条同时间戳、BSON Date/legacy/无时间三阶段、状态与 owner/软删过滤及 cursor 绑定；Vitest 覆盖 repository 严格协议、快速刷新/筛选/加载更多迟到响应与重复请求。
-- 证据/阻断：本轮 `npm run cloudbase:verify` 因缺 CloudBase 身份失败，无法回读 31 索引或 `activity-admin` Active 版本，也无法执行 101+、同时间戳、过滤、快速刷新/筛选/加载更多竞态真实 smoke；因此不得标记完成或删除。
-- 下一步：由具备目标 CloudBase 身份的执行者部署同一 SHA，回读 31 索引和云函数版本，再执行管理页真实 smoke。
+- 证据/阻断：`activities_status_deleted_event_start_id` 与 `activities_owner_status_deleted_event_start_id` 已 apply，`activity-admin` 部署返回 success，31 索引 bootstrap verify 通过。当前缺 101+、同时间戳、过滤、快速刷新/筛选/加载更多竞态真实 smoke。
+- 下一步：在管理页执行 101+ 与竞态真实 smoke，核对分页顺序、唯一性、筛选和迟到响应隔离。
 - 负责人：TraeX 执行者；独立复核：TraeX 审判者；发布：Aime 个人助理。
 - 关闭条件：不可变 PR SHA 复核通过；CI SUCCESS；合入 main；测试环境部署成功；101+、同时间戳、过滤、刷新/筛选/加载更多竞态真实 smoke 通过。
 - 更新时间：2026-10-10。
 
 ### HP-20261009-05 · 首页未来/历史时间线剩余客户端与发布链路
 
-- 优先级/状态：P1 / `DEPLOY_PENDING`，客户端与发布链路已随 PR [#52](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/52) 合入 main，等待目标环境部署、索引回读与真实页面 smoke。
-- 当前事实：merge SHA `8d54e5f6caa1e75feb9043f2d1a2e04b698d859c` 已包含严格 repository envelope/兼容旧 `listActivities(filter?)`、双视图 revision/single-flight 状态机、future/history UI/加载更多；bootstrap 现管理 28 条索引，新增两条 planner 证明的 exact shape，旧索引未删除。
-- 证据/阻断：PR #52 `validate` SUCCESS；main CI SUCCESS；微信开发版 run `37973713168` SUCCESS。对目标环境 `cloudbase-d0gizacy77a1ab017` 的既有只读 plan/verify 曾确认两条 exact 索引缺失且无冲突；本轮 `npm run cloudbase:verify` 因缺 CloudBase 身份失败，无法确认 Active 环境是否已补齐索引或部署 `activity-read`。
-- 下一步：由具备目标 CloudBase 身份的执行者 apply/verify 两条 exact 索引并部署 `activity-read`；随后执行真实页面默认未来、历史切换、分页、同筛选重试及切换/迟到响应竞态 smoke。
+- 优先级/状态：P1 / `PENDING_EVIDENCE`，客户端与发布链路已随 PR [#52](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/52) 合入 main，目标函数与索引已部署并 verify，等待真实页面 smoke。
+- 当前事实：merge SHA `8d54e5f6caa1e75feb9043f2d1a2e04b698d859c` 已包含严格 repository envelope/兼容旧 `listActivities(filter?)`、双视图 revision/single-flight 状态机、future/history UI/加载更多；当前 bootstrap 管理 31 条索引，首页两条 exact shape 已部署。
+- 证据/阻断：PR #52 `validate` SUCCESS；main CI SUCCESS；微信开发版 run `37973713168` SUCCESS；目标环境 `cloudbase-d0gizacy77a1ab017` apply/verify 和 `activity-read` 部署成功。当前缺真实页面默认未来、历史切换与分页竞态 smoke。
+- 下一步：执行真实页面默认未来、历史切换、分页、同筛选重试及切换/迟到响应竞态 smoke。
 - 负责人：TraeX 执行者；独立复核：TraeX 审判者；发布：Aime 个人助理。
 - 关闭条件：合入 main；目标环境部署；真实页面默认未来、历史切换、分页、同筛选重试及切换/迟到响应竞态全部通过；独立复核齐全。
 - 更新时间：2026-10-10。
 
 ### HP-20261009-06 · 浅色主题全页对比度
 
-- 优先级/状态：P1 / `READY`，与后端泳道并行。
+- 优先级/状态：P1 / `IN_PROGRESS`，浅色主题对比度代码完成，待 CI、开发版与真机验收。
 - 用户报告：个人中心“编辑资料”在浅色主题出现白字难以辨认，并要求核对其他页面。
-- 代码/CI：双主题与个人中心专项修复已进入 main；PR #48 与开发版 `0.0.27.1` 已成功，但只证明代码和上传。
-- 确认缺口：生产基线仍有明确低对比候选，例如活动编辑错误色 `#ff8b85` 对白底约 2.26:1，活动详情多个标签低于 4.5:1；现有测试只覆盖局部选择器，没有 14 页真实渲染证据。
-- 下一步：建立普通文字 ≥4.5:1、大字/控件 ≥3:1 的页面清单；修复确认色值；为允许固定白字的摄影 Hero 建立最小 allowlist 与静态门禁。
+- 代码事实：已补齐占位符、禁用态、媒体前景、状态与性别徽标语义 token；修复 profile、profile-edit、registrations、activity-detail、activity-card，并同步活动编辑、报名表单、凭证、审批详情与骑行名片等扫描出的真实风险。摄影 Hero 的固定浅色文字继续由深色遮罩承载，不改变品牌视觉。
+- 本地证据：浅色主题 focused Vitest 5 文件 51/51 通过；新增全页静态契约覆盖输入占位符、错误/禁用态、辅助文案、卡片、状态和徽标，并断言普通文字 ≥4.5:1、关键控件 ≥3:1。`typecheck`、`format:check`、升级日志校验与 `git diff --check` 均通过。
+- 证据缺口：尚未取得远端 CI、同一不可变 SHA 的开发版上传、14 页常规宽度/320px 真机截图与独立复核，因此不得关闭或删除。
+- 下一步：完成独立复核、CI 与开发版上传后，在常规宽度和 320px 验证个人中心有图/无图、资料编辑错误/禁用/失败态及其余页面浅色 smoke。
 - 负责人：TraeX 执行者；独立复核：TraeX 审判者；真机验收：Aime 个人助理。
 - 关闭条件：14 页及共享可见组件在常规宽度和 320px 浅色主题通过；个人中心有图/无图、资料编辑错误/禁用/失败态通过；深色回归、CI、同 SHA 开发版 smoke 与独立复核齐全。
-- 更新时间：2026-10-09。
+- 更新时间：2026-10-10。
 
 ### HP-20261009-07 · 我的行程保留全部历史、已完成和下架活动
 
@@ -176,10 +177,10 @@
 
 ### HP-20261009-13 · 设置页 Strava 授权撤销与异常生命周期
 
-- 优先级/状态：P0 / `DEPLOY_PENDING`，代码已随 PR [#53](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/53) 合入 main，PR/main CI 与微信开发版自动上传均成功，等待 `strava-auth/strava-callback` 目标环境部署回读与六条真实授权 smoke。
+- 优先级/状态：P0 / `PENDING_EVIDENCE`，代码已随 PR [#53](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/53) 合入 main，PR/main CI、微信开发版、`strava-auth/strava-callback` 部署与 CloudBase verify 均成功，等待六条真实授权 smoke。
 - 当前事实：merge SHA `490044dd91194f9cd643c43700f97ae1ffaa74d3` 实现 attempt generation/fencing；disconnect 原子推进代际并消费全部未消费 state；callback 对乱序、解绑竞态和同步竞态 fail closed；`access_denied/error` 消费 state 并落稳定拒绝状态；readiness 按 scope/token/config/network 返回 `reauthorize/disconnect/contact-support/retry`；客户端仅按 recovery action 展示动作且不自动重跑 failed；解绑明确为本地断开，并降级所有未被 profile 引用的 Strava 媒体。
-- 证据/阻断：PR #53 `validate` SUCCESS；main CI run `38010547930` SUCCESS；微信开发版 run `38010624339` 成功上传 `0.0.32.1`。本轮 `npm run cloudbase:verify` 因缺 CloudBase 身份失败，无法部署或回读 `strava-auth/strava-callback` Active 版本，也无法执行授权成功、拒绝、scope 不足、token 失效、重新授权、解绑后旧 callback 六条真实 smoke。
-- 下一步：由具备目标 CloudBase 身份与真机/Strava 测试账号的执行者部署 `strava-auth/strava-callback` 到同一不可变 SHA，回读 Active 版本并执行六条 smoke。
+- 证据/阻断：PR #53 `validate` SUCCESS；main CI run `38010547930` SUCCESS；微信开发版 run `38010624339` 成功上传 `0.0.32.1`；`strava-auth`、`strava-callback` 部署返回 success，`oauth_attempts` 与媒体索引 apply/verify 通过。当前缺授权成功、拒绝、scope 不足、token 失效、重新授权、解绑后旧 callback 六条真实 smoke。
+- 下一步：使用真机和 Strava 测试账号执行六条授权生命周期 smoke，并确认旧 callback 无法恢复凭证。
 - 负责人：TraeX 执行者；安全/独立复核：TraeX 审判者；部署/真机：Aime 个人助理。
 - 关闭条件：解绑后所有旧 callback 被拒绝且凭证不复活；拒绝授权消费 state 并停止轮询；retry/reauthorize/disconnect/contact-support 由稳定服务端语义驱动；解绑数据保留合同明确；`strava-auth/callback` 部署回读；授权成功、拒绝、scope 不足、token 失效、重新授权、解绑后旧 callback 六条真实 smoke 通过。
 - 更新时间：2026-10-10。

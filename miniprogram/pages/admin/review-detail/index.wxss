@@ -374,17 +374,17 @@ brand-logo {
   box-shadow: inset 0 0 0 2rpx rgba(233, 116, 63, 0.55);
 }
 .capability-card.gender-male .fact:first-child strong {
-  color: #4fb3a7;
+  color: var(--color-gender-male);
 }
 .capability-card.gender-female .fact:first-child strong {
-  color: #ef8072;
+  color: var(--color-gender-female);
 }
 .capability-card.gender-unknown .fact:first-child strong {
-  color: #e9743f;
+  color: var(--color-gender-unknown);
 }
 .theme-light .capability-card.gender-male .fact:first-child strong {
-  color: #1f7d72;
+  color: var(--color-gender-male);
 }
 .theme-light .capability-card.gender-female .fact:first-child strong {
-  color: #c54e40;
+  color: var(--color-gender-female);
 }

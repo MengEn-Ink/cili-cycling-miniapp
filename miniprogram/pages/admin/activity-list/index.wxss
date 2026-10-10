@@ -11,9 +11,9 @@ page {
   background: #1b1b1d;
 }
 .card.danger {
-  border-color: rgba(200, 32, 24, 0.5);
-  background: rgba(200, 32, 24, 0.1);
-  color: #ff8589;
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
 }
 
 .hero {
@@ -103,8 +103,8 @@ page {
   color: #f7f7f5;
 }
 .activity-list-page .card.danger {
-  background: rgba(200, 32, 24, 0.12);
-  color: #ff7068;
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
 }
 .activity-list-page .title {
   color: #f7f7f5;
@@ -161,8 +161,8 @@ page {
 }
 
 .activity-list-page .danger-action {
-  border-color: rgba(255, 112, 104, 0.62);
-  color: #ff8589;
+  border-color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 page,
