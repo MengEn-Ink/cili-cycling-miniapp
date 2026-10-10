@@ -314,18 +314,19 @@ Page({
     if (preset === 'tomorrow-morning') value = dateAtOffset(1, '07:00', now);
     if (preset === 'next-saturday') value = dateAtOffset(nextSaturdayOffset(now), '08:00', now);
     if (preset === 'tomorrow-evening') value = dateAtOffset(1, '20:00', now);
-    if (preset === 'start-minus-day') {
-      const startText = String((this.data.form as Form).startAt || '');
-      const start = new Date(startText.replace(' ', 'T'));
-      if (!Number.isNaN(start.getTime())) {
+    // “开始前 1 天 20:00”和“开始后 4 小时”都依赖合法的开始时间，先统一解析一次。
+    if (preset === 'start-minus-day' || preset === 'start-plus-four-hours') {
+      const startText = String((this.data.form as Form).startAt || '').trim();
+      const start = startText ? new Date(startText.replace(' ', 'T')) : new Date(NaN);
+      // 开始时间为空或非法时明确提示，避免点击相对快捷项后静默无动作。
+      if (Number.isNaN(start.getTime())) {
+        wx.showToast({ title: '请先选择活动开始时间', icon: 'none' });
+        return;
+      }
+      if (preset === 'start-minus-day') {
         start.setDate(start.getDate() - 1);
         value = localDateTimeText(start, '20:00');
-      }
-    }
-    if (preset === 'start-plus-four-hours') {
-      const startText = String((this.data.form as Form).startAt || '');
-      const start = new Date(startText.replace(' ', 'T'));
-      if (!Number.isNaN(start.getTime())) {
+      } else {
         start.setHours(start.getHours() + 4);
         value = localDateTimeText(start);
       }

@@ -339,6 +339,109 @@ describe('管理员普通编辑保留未展示的活动字段', () => {
     expect(template).toContain('mode="time"');
   });
 
+  it('缺少开始时间时相对快捷项明确提示且不改值（HP-08）', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 9, 9, 10, 0));
+    await page.onLoad({});
+    page.data.form.endAt = '';
+    page.data.form.deadline = '';
+
+    page.quickDateTime({
+      currentTarget: { dataset: { name: 'endAt', preset: 'start-plus-four-hours' } },
+    });
+    expect(wx.showToast).toHaveBeenCalledWith(
+      expect.objectContaining({ title: expect.stringContaining('开始时间'), icon: 'none' }),
+    );
+    expect(page.data.form.endAt).toBe('');
+
+    wx.showToast.mockClear();
+    page.quickDateTime({
+      currentTarget: { dataset: { name: 'deadline', preset: 'start-minus-day' } },
+    });
+    expect(wx.showToast).toHaveBeenCalledTimes(1);
+    expect(page.data.form.deadline).toBe('');
+  });
+
+  it('开始时间非法时相对快捷项提示且保持原值（HP-08）', async () => {
+    await page.onLoad({});
+    page.data.form.startAt = 'not-a-date';
+    page.quickDateTime({
+      currentTarget: { dataset: { name: 'endAt', preset: 'start-plus-four-hours' } },
+    });
+    expect(wx.showToast).toHaveBeenCalledTimes(1);
+    expect(page.data.form.endAt).toBe('');
+  });
+
+  it('相对快捷项跨月、跨年、闰年与跨天计算正确（HP-08 边界）', async () => {
+    await page.onLoad({});
+
+    // 跨月：2026（非闰年）3/1 的前一天为 2/28
+    page.data.form.startAt = '2026-03-01 08:00:00';
+    page.quickDateTime({
+      currentTarget: { dataset: { name: 'deadline', preset: 'start-minus-day' } },
+    });
+    expect(page.data.form.deadline).toBe('2026-02-28 20:00:00');
+
+    // 跨年：2027-01-01 的前一天为 2026-12-31
+    page.data.form.startAt = '2027-01-01 08:00:00';
+    page.quickDateTime({
+      currentTarget: { dataset: { name: 'deadline', preset: 'start-minus-day' } },
+    });
+    expect(page.data.form.deadline).toBe('2026-12-31 20:00:00');
+
+    // 闰年跨月：2028（闰年）3/1 的前一天为 2/29
+    page.data.form.startAt = '2028-03-01 08:00:00';
+    page.quickDateTime({
+      currentTarget: { dataset: { name: 'deadline', preset: 'start-minus-day' } },
+    });
+    expect(page.data.form.deadline).toBe('2028-02-29 20:00:00');
+
+    // 跨天：22:00 开始后 4 小时为次日 02:00
+    page.data.form.startAt = '2026-10-10 22:00:00';
+    page.quickDateTime({
+      currentTarget: { dataset: { name: 'endAt', preset: 'start-plus-four-hours' } },
+    });
+    expect(page.data.form.endAt).toBe('2026-10-11 02:00:00');
+  });
+
+  it('周六当天点下周六快捷项跳到 7 天后（HP-08 边界）', async () => {
+    vi.useFakeTimers();
+    // 2026-10-10 是周六
+    vi.setSystemTime(new Date(2026, 9, 10, 9, 0));
+    await page.onLoad({});
+    page.quickDateTime({
+      currentTarget: { dataset: { name: 'startAt', preset: 'next-saturday' } },
+    });
+    expect(page.data.form.startAt).toBe('2026-10-17 08:00:00');
+  });
+
+  it('快捷填入的时间在创建保存时随活动提交（HP-08 保存回读）', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 9, 9, 10, 0));
+    await page.onLoad({});
+    page.quickDateTime({
+      currentTarget: { dataset: { name: 'startAt', preset: 'tomorrow-morning' } },
+    });
+    page.quickDateTime({
+      currentTarget: { dataset: { name: 'endAt', preset: 'start-plus-four-hours' } },
+    });
+    page.quickDateTime({
+      currentTarget: { dataset: { name: 'deadline', preset: 'start-minus-day' } },
+    });
+    page.data.form.title = '测试活动';
+    page.data.form.routeStart = '起点';
+    page.data.form.routeEnd = '终点';
+    page.data.form.fee = '免费';
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(rideService.saveActivity).toHaveBeenCalledTimes(1);
+    const submitted = rideService.saveActivity.mock.calls[0][0];
+    expect(submitted.startAt).toBeTruthy();
+    expect(submitted.endAt).toBeTruthy();
+    expect(submitted.deadline).toBeTruthy();
+  });
+
   it('日常活动发布时不要求后援车，并把全部名额归为自行前往', async () => {
     const draft = { ...activity, status: 'draft' as const };
     rideService.getAdminActivity.mockResolvedValueOnce(draft);
