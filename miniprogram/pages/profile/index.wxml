@@ -38,7 +38,7 @@
     <view class="hero-shade" aria-hidden="true"></view>
     <view class="hero-identity">
       <view class="avatar">
-        <image wx:if="{{heroAvatarUrl}}" class="avatar-image" src="{{heroAvatarUrl}}" mode="aspectFill" data-url="{{heroAvatarUrl}}" binderror="heroAvatarError" aria-label="{{profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '骑手')}}的头像" />
+        <image wx:if="{{heroAvatarUrl}}" class="avatar-image" src="{{heroAvatarUrl}}" mode="aspectFill" data-url="{{heroAvatarUrl}}" bindtap="previewAvatar" binderror="heroAvatarError" aria-label="{{profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '骑手')}}的头像" />
         <text wx:else aria-label="默认骑手头像">C</text>
       </view>
       <view class="profile-copy">

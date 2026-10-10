@@ -466,6 +466,11 @@ Page({
       requested && urls.includes(requested) ? requested : urls[this.data.currentHeroIndex];
     wx.previewImage({ current: current || urls[0], urls });
   },
+  previewAvatar() {
+    const current = this.data.heroAvatarUrl;
+    if (typeof current !== 'string' || !/^https:\/\/[^\s/]+(?:\/[^\s]*)?$/i.test(current)) return;
+    wx.previewImage({ current, urls: [current] });
+  },
   heroBackgroundError(event: HeroImageErrorEvent) {
     const backgrounds = this.data.heroBackgrounds as { url: string }[];
     const failedUrl = event.currentTarget.dataset.url;

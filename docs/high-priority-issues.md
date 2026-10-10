@@ -57,7 +57,7 @@
 | F1   | `HP-20261009-08` | P1     | `PENDING_EVIDENCE`                       | 相对快捷项前置提示已随 #57 交付开发版 0.0.37.1，仅余真机 picker 创建/编辑保存重开 smoke | TraeX 执行者  | TraeX 审判者                 |
 | F2   | `HP-20261009-09` | P1     | `PENDING_EVIDENCE`                       | 选点恢复已交付开发版 `0.0.60.1`，待真机定位与微信后台复核                              | -             | TraeX 审判者                 |
 | G1   | `HP-20261009-10` | P1     | `PENDING_EVIDENCE`                       | 单背景槽位协议客户端/服务端代码链路齐全，待部署回读与真实多图账号 smoke     | -             | TraeX 审判者                 |
-| G2   | `HP-20261009-11` | P1     | `READY`                                  | HP-10 代码提交后解锁，可开始头像预览 RED→GREEN                                            | -             | TraeX 审判者                 |
+| G2   | `HP-20261009-11` | P1     | `PENDING_EVIDENCE`                       | 个人中心头像点击预览已交付，待开发版 smoke 与独立复核                                       | -             | TraeX 审判者                 |
 | H    | `HP-20261009-12` | P1     | `BLOCKED_BY(HP-20261009-13 smoke)`       | 闰日周年算法已随 #59 合入，待三函数部署、真实账号回读与真机验收                         | TraeX 执行者  | TraeX 审判者                 |
 
 > `BLOCKED_BY` 只约束开始后续实现的门禁，不要求前置条目最终关闭。
@@ -171,14 +171,15 @@
 
 ### HP-20261009-11 · 个人中心头像预览不可用
 
-- 优先级/状态：P1 / `BLOCKED_BY(HP-20261009-10 code commit)`，避免并发修改 profile 文件族。
+- 优先级/状态：P1 / `PENDING_EVIDENCE`，代码已交付，待开发版和真机复核。
 - 用户报告：头像预览不可用。
-- 代码/CI：编辑资料页已有 `previewAvatar` 和 HTTPS URL 等待；PR #48 已合入。个人中心首页头像只有 `binderror`，没有 `bindtap` 或预览处理器，升级日志“头像和背景图均可点击预览”大于实现事实。
-- 证据/阻断：现有首页测试只断言 aria-label，因此在头像完全不可点击时仍可通过。
-- 下一步：先补首页头像点击 RED；实现合法 HTTPS 单图预览，无头像/非法 URL/加载失败时 fail closed；保留编辑页回归。
+- 代码：`miniprogram/pages/profile/index.wxml` 的 `avatar-image` 新增 `bindtap="previewAvatar"`；`index.ts` 的 `previewAvatar` 严格校验合法 HTTPS 临时 URL（cloud://、http:// 或空值均 fail closed），复用现有 `heroAvatarUrl`。编辑资料页既有预览保留不变。
+- 测试：`tests/profile-page.test.ts` 新增模板断言 `bindtap="previewAvatar"` 和四种输入分支（合法 HTTPS、空、cloud://、http://）；全量 Vitest 55 文件 740/740 通过。
+- 发布：设置页追加 `2026.10.10.16 个人中心头像可预览` 升级日志。
+- 下一步：push → main CI → 开发版上传；真机 smoke（已登录头像点击、未登录空占位 → 不触发预览）；由 TraeX 审判者独立复核后转关闭。
 - 负责人：TraeX 执行者；独立复核：TraeX 审判者；真机验收：Aime 个人助理。
 - 关闭条件：个人中心和编辑页均可预览头像；异常输入不调用预览且不崩溃；测试、同 SHA 开发版 smoke 与独立复核齐全。
-- 更新时间：2026-10-09。
+- 更新时间：2026-10-10 15:08（CST）。
 
 ### HP-20261009-12 · Strava 年限正确性、存量回填与部署
 

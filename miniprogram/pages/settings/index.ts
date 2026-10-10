@@ -4,11 +4,22 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.10.16',
+    date: '2026-10-10',
+    title: '个人中心头像可预览',
+    summary: '个人中心头像补齐点击预览，非法或缺失图片 fail closed。',
+    latest: true,
+    features: [
+      '点击头像使用微信原生预览查看大图',
+      '仅接受合法 HTTPS 临时 URL，cloud://、http:// 或空值不触发预览',
+      '保留原有背景图预览和 aria-label 可读性',
+    ],
+  },
+  {
     version: '2026.10.10.15',
     date: '2026-10-10',
     title: '个人背景图单槽位协议',
     summary: '客户端改用 background_photo 单槽位，不再静默截断历史相册。',
-    latest: true,
     features: [
       '编辑资料页只写 background_photo 槽位，服务端拒绝新旧协议混用',
       '存量多图账号打开后，历史相册只读保留，不会在首次保存时丢失',

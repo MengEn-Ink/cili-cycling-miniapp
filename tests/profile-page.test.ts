@@ -315,6 +315,29 @@ describe('个人中心加载状态', () => {
       backgroundImages.slice(1).every((image: string) => image.includes('aria-hidden="true"')),
     ).toBe(true);
     expect(avatarImage).toContain('aria-label=');
+    expect(avatarImage).toContain('bindtap="previewAvatar"');
+  });
+
+  it('个人中心头像点击只预览合法 HTTPS URL，非法或缺失时 fail closed', () => {
+    page.data.heroAvatarUrl = 'https://temporary.example/avatar.jpg';
+    page.previewAvatar();
+    expect(wx.previewImage).toHaveBeenCalledWith({
+      current: 'https://temporary.example/avatar.jpg',
+      urls: ['https://temporary.example/avatar.jpg'],
+    });
+
+    (wx.previewImage as any).mockClear();
+    page.data.heroAvatarUrl = '';
+    page.previewAvatar();
+    expect(wx.previewImage).not.toHaveBeenCalled();
+
+    page.data.heroAvatarUrl = 'cloud://env/profiles/legacy/avatar.jpg';
+    page.previewAvatar();
+    expect(wx.previewImage).not.toHaveBeenCalled();
+
+    page.data.heroAvatarUrl = 'http://example.com/avatar.jpg';
+    page.previewAvatar();
+    expect(wx.previewImage).not.toHaveBeenCalled();
   });
 
   it('顶部下拉只展示刷新反馈，不改变 hero 图片模式', async () => {
