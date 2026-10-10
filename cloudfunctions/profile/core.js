@@ -612,8 +612,10 @@ function validateMediaUpdate(current, update, openid, secretValue, mediaRecords 
     throw new ProfileError('FORBIDDEN_FIELD', '头像必须通过专用操作更新');
   const records = new Map(mediaRecords.map((record) => [record && record.file_id, record]));
   const activate = new Set();
+  const currentBackground = effectiveBackgroundPhoto(existing);
   const currentIds = new Set([
     existing.avatar_file_id,
+    currentBackground && currentBackground.file_id,
     ...(Array.isArray(existing.photos) ? existing.photos.map((item) => item && item.file_id) : []),
   ]);
   const accept = (item, legacy) => {
@@ -641,8 +643,30 @@ function validateMediaUpdate(current, update, openid, secretValue, mediaRecords 
       );
     }
   }
+  if (
+    Object.prototype.hasOwnProperty.call(data, 'background_photo') &&
+    data.background_photo !== null
+  ) {
+    const legacy = new Set(
+      [
+        currentBackground,
+        ...(Array.isArray(existing.photos) ? existing.photos : []),
+      ].map((item) => `${item && item.file_id}\u0000${item && item.category}`),
+    );
+    accept(
+      data.background_photo,
+      legacy.has(`${data.background_photo.file_id}\u0000${data.background_photo.category}`) &&
+        !records.has(data.background_photo.file_id),
+    );
+  }
+  const nextBackground = Object.prototype.hasOwnProperty.call(data, 'background_photo')
+    ? data.background_photo
+    : Object.prototype.hasOwnProperty.call(data, 'photos')
+      ? data.photos[0] || null
+      : currentBackground;
   const nextIds = new Set([
     normalizedExisting.avatar_file_id,
+    nextBackground && nextBackground.file_id,
     ...(Object.prototype.hasOwnProperty.call(data, 'photos')
       ? data.photos.map((item) => item.file_id)
       : Array.isArray(existing.photos)

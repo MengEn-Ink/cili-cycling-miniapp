@@ -25,6 +25,7 @@ function authorizeCleanup(event, openid) {
 function profileReferences(profile, fileId) {
   if (!profile || typeof profile !== 'object') return false;
   if (profile.avatar_file_id === fileId) return true;
+  if (profile.background_photo && profile.background_photo.file_id === fileId) return true;
   return (Array.isArray(profile.photos) ? profile.photos : []).some(
     (item) => item && item.file_id === fileId,
   );

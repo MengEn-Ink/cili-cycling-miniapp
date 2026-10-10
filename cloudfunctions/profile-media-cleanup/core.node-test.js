@@ -10,6 +10,7 @@ try {
   if (error.code !== 'MODULE_NOT_FOUND') throw error;
 }
 const authorizeCleanup = subject.authorizeCleanup || (() => 'missing');
+const profileReferences = subject.profileReferences || (() => false);
 const claimDecision = subject.claimDecision || (() => ({ kind: 'missing' }));
 const importClaimDecision = subject.importClaimDecision || (() => ({ kind: 'missing' }));
 const failureDecision = subject.failureDecision || (() => ({ status: 'missing' }));
@@ -82,6 +83,25 @@ test('claim 前重查 owner profile；仍引用则恢复 active，不引用才�
     null,
   );
   assert.equal(claimDecision(record, { _id: 'another', photos: [] }, now, 'lease-1'), null);
+});
+
+test('显式背景槽位是 live reference，清理任务必须恢复 active', () => {
+  const profile = {
+    _id: 'owner',
+    background_photo: { file_id: record.file_id, category: 'other' },
+    photos: [],
+  };
+  assert.equal(profileReferences(profile, record.file_id), true);
+  assert.deepEqual(claimDecision(record, profile, now, 'lease-background'), {
+    kind: 'referenced',
+    update: {
+      status: 'active',
+      referenced_at: now,
+      cleanup_after: null,
+      delete_lease_id: '',
+      updated_at: now,
+    },
+  });
 });
 
 test('解除全部引用后 source 与 canonical 由同一 fenced cleanup 删除', async () => {

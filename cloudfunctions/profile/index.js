@@ -44,6 +44,7 @@ function profileMediaIds(...profiles) {
   const ids = [];
   for (const profile of profiles) {
     ids.push(profile && profile.avatar_file_id);
+    ids.push(profile && profile.background_photo && profile.background_photo.file_id);
     for (const item of Array.isArray(profile && profile.photos) ? profile.photos : []) {
       ids.push(item && item.file_id);
     }

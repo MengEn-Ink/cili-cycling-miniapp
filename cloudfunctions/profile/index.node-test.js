@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const cloud = require('wx-server-sdk');
-const { mediaOwnerPrefix } = require('./core');
+const { mediaDocumentId, mediaOwnerPrefix } = require('./core');
 
 function statefulDatabase({ throwRuntimeMissing = false } = {}) {
   const state = {};
@@ -119,4 +119,45 @@ test('mediaUploadPath 在把 owner-bound path 返回客户端前持久化 cleanu
     cleanup_after: intents[0].cleanup_after,
   });
   assert.ok(new Date(intents[0].cleanup_after) > new Date(intents[0].created_at));
+});
+
+test('显式背景更新保留存量多图并只激活新槽位媒体', async () => {
+  const owner = 'owner-background';
+  const secret = 'profile-media-secret-for-tests-32-bytes';
+  const prefix = mediaOwnerPrefix(owner, secret);
+  const fileId = (suffix) =>
+    `cloud://env/${prefix}123e4567-e89b-42d3-a456-4266141740${suffix}.jpg`;
+  const photos = [
+    { file_id: fileId('00'), category: 'ride' },
+    { file_id: fileId('01'), category: 'bike' },
+    { file_id: fileId('02'), category: 'other' },
+  ];
+  const next = { file_id: fileId('03'), category: 'ride' };
+  const fixture = statefulDatabase();
+  fixture.state.profiles = new Map([[owner, { _id: owner, nickname: '骑手', photos }]]);
+  fixture.state.profile_media = new Map(
+    [...photos, next].map((photo) => [
+      mediaDocumentId(photo.file_id),
+      {
+        _id: mediaDocumentId(photo.file_id),
+        file_id: photo.file_id,
+        owner_openid: owner,
+        category: photo.category,
+        status: photo === next ? 'unreferenced' : 'active',
+      },
+    ]),
+  );
+  const main = loadMain(owner, fixture.db);
+
+  const result = await main({ action: 'update', background_photo: next });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(fixture.state.profiles.get(owner).photos, photos);
+  assert.deepEqual(fixture.state.profiles.get(owner).background_photo, next);
+  assert.equal(
+    fixture.state.profile_media.get(mediaDocumentId(next.file_id)).status,
+    'active',
+  );
+  assert.deepEqual(result.data.photos, photos);
+  assert.deepEqual(result.data.background_photo, next);
 });

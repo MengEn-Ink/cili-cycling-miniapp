@@ -698,6 +698,75 @@ test('仅有合法 HMAC 前缀但无 owner registry 记录仍拒绝', () => {
   );
 });
 
+test('设置显式背景槽位会激活新媒体并保留全部 legacy photos 引用', () => {
+  const owner = 'openid-owner-a';
+  const ownerPrefix = mediaOwnerPrefix(owner, mediaSecret);
+  const legacyA = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const legacyB = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174001.jpg`;
+  const nextFileId = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174002.jpg`;
+  const mediaRecord = (fileId, category, status) => ({
+    _id: mediaDocumentId(fileId),
+    file_id: fileId,
+    owner_openid: owner,
+    category,
+    status,
+  });
+  const plan = validateMediaUpdate(
+    {
+      photos: [
+        { file_id: legacyA, category: 'ride' },
+        { file_id: legacyB, category: 'bike' },
+      ],
+    },
+    { background_photo: { file_id: nextFileId, category: 'ride' } },
+    owner,
+    mediaSecret,
+    [
+      mediaRecord(legacyA, 'ride', 'active'),
+      mediaRecord(legacyB, 'bike', 'active'),
+      mediaRecord(nextFileId, 'ride', 'unreferenced'),
+    ],
+  );
+
+  assert.deepEqual(plan.data, {
+    background_photo: { file_id: nextFileId, category: 'ride' },
+  });
+  assert.deepEqual(plan.activate_ids, [mediaDocumentId(nextFileId)]);
+  assert.deepEqual(plan.demote_ids, []);
+});
+
+test('替换显式背景只降级不再被头像或 legacy photos 引用的旧槽位', () => {
+  const owner = 'openid-owner-a';
+  const ownerPrefix = mediaOwnerPrefix(owner, mediaSecret);
+  const legacy = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const previous = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174001.jpg`;
+  const nextFileId = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174002.jpg`;
+  const mediaRecord = (fileId, category, status) => ({
+    _id: mediaDocumentId(fileId),
+    file_id: fileId,
+    owner_openid: owner,
+    category,
+    status,
+  });
+  const plan = validateMediaUpdate(
+    {
+      background_photo: { file_id: previous, category: 'other' },
+      photos: [{ file_id: legacy, category: 'ride' }],
+    },
+    { background_photo: { file_id: nextFileId, category: 'ride' } },
+    owner,
+    mediaSecret,
+    [
+      mediaRecord(legacy, 'ride', 'active'),
+      mediaRecord(previous, 'other', 'active'),
+      mediaRecord(nextFileId, 'ride', 'unreferenced'),
+    ],
+  );
+
+  assert.deepEqual(plan.activate_ids, [mediaDocumentId(nextFileId)]);
+  assert.deepEqual(plan.demote_ids, [mediaDocumentId(previous)]);
+});
+
 test('资料更新计划把被移除的 active 媒体降级为可清理状态', () => {
   const ownerPrefix = mediaOwnerPrefix('openid-owner-a', mediaSecret);
   const fileId = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`;
