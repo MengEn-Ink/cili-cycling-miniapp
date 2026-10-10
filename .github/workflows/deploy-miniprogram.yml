@@ -120,6 +120,7 @@ jobs:
           printf '%s' "${PRIVATE_KEY}" > "${RUNNER_TEMP}/miniprogram-ci.key"
 
       - name: Upload WeChat development version
+        id: upload
         if: steps.decision.outputs.should_upload == 'true' && steps.main-tip.outputs.should_upload == 'true'
         env:
           MINIPROGRAM_CI_PRIVATE_KEY_PATH: ${{ runner.temp }}/miniprogram-ci.key
@@ -136,6 +137,34 @@ jobs:
             exit 0
           fi
           npm run deploy:miniprogram
+          echo "uploaded=true" >> "${GITHUB_OUTPUT}"
+
+      - name: Generate immutable development upload receipt
+        if: steps.upload.outputs.uploaded == 'true'
+        env:
+          MINIPROGRAM_VERSION: ${{ inputs.version || format('0.0.{0}.{1}', github.run_number, github.run_attempt) }}
+          MINIPROGRAM_CI_ROBOT: ${{ inputs.robot || '1' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -n \
+            --arg main_sha "${CHECKOUT_SHA}" \
+            --arg version "${MINIPROGRAM_VERSION}" \
+            --arg workflow_run_id "${GITHUB_RUN_ID}" \
+            --arg workflow_run_attempt "${GITHUB_RUN_ATTEMPT}" \
+            --arg robot "${MINIPROGRAM_CI_ROBOT}" \
+            --arg created_at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" \
+            '{schemaVersion:1,mainSha:$main_sha,version:$version,workflowRunId:$workflow_run_id,workflowRunAttempt:$workflow_run_attempt,robot:$robot,createdAt:$created_at}' \
+            > "${RUNNER_TEMP}/miniprogram-upload-receipt.json"
+
+      - name: Store development upload receipt
+        if: steps.upload.outputs.uploaded == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: miniprogram-upload-receipt-${{ env.CHECKOUT_SHA }}
+          path: ${{ runner.temp }}/miniprogram-upload-receipt.json
+          if-no-files-found: error
+          retention-days: 90
 
       - name: Remove temporary private key
         if: always()

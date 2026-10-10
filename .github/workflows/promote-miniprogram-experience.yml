@@ -1,0 +1,231 @@
+name: 微信体验版晋级证据门禁
+
+on:
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: candidate 生成晋级候选；verified 记录平台回读
+        required: true
+        type: choice
+        options: [candidate, verified]
+      mode:
+        description: 晋级或回退演练
+        required: true
+        type: choice
+        options: [promote, rollback]
+      main_sha:
+        description: 已通过 CI 且已上传开发版的完整 main SHA
+        required: true
+        type: string
+      version:
+        description: 对应微信开发版版本号
+        required: true
+        type: string
+      ci_run_id:
+        description: 成功的 main CI run ID
+        required: true
+        type: string
+      upload_run_id:
+        description: 成功的微信开发版上传 run ID
+        required: true
+        type: string
+      smoke_evidence:
+        description: 核心流程 smoke 通过证据 HTTPS 链接
+        required: true
+        type: string
+      candidate_run_id:
+        description: verified 阶段必填，candidate 工作流 run ID
+        required: false
+        type: string
+      candidate_digest:
+        description: verified 阶段必填，candidate 输出的 sha256 摘要
+        required: false
+        type: string
+      platform_evidence:
+        description: verified 阶段必填，微信公众平台回读证据 HTTPS 链接
+        required: false
+        type: string
+      previous_release_id:
+        description: rollback 模式必填，上一稳定体验版 release ID
+        required: false
+        type: string
+      rollback_reason:
+        description: rollback 模式必填，回退原因
+        required: false
+        type: string
+      entry_path:
+        description: 固定体验版入口路径
+        required: true
+        default: pages/activities/index
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: wechat-experience-release
+  cancel-in-progress: false
+
+jobs:
+  evidence-gate:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: wechat-experience
+    steps:
+      - name: Checkout current main release tooling
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Verify immutable main and workflow provenance
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET_SHA: ${{ inputs.main_sha }}
+          TARGET_VERSION: ${{ inputs.version }}
+          CI_RUN_ID: ${{ inputs.ci_run_id }}
+          UPLOAD_RUN_ID: ${{ inputs.upload_run_id }}
+          MODE: ${{ inputs.mode }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${TARGET_SHA}" =~ ^[0-9a-fA-F]{40}$ ]] || { echo "main_sha 必须是完整 SHA" >&2; exit 1; }
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "${TARGET_SHA}" origin/main
+          if [[ "${MODE}" == "promote" && "${TARGET_SHA}" != "$(git rev-parse origin/main)" ]]; then
+            echo "正常晋级只能选择当前 main；历史 SHA 只能走 rollback" >&2
+            exit 1
+          fi
+          if [[ "${MODE}" == "promote" ]]; then
+            for spec in "${CI_RUN_ID}:CI" "${UPLOAD_RUN_ID}:微信开发版自动上传"; do
+              run_id="${spec%%:*}"
+              expected_name="${spec#*:}"
+              run_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}")"
+              conclusion="$(jq -r '.conclusion' <<<"${run_json}")"
+              head_sha="$(jq -r '.head_sha' <<<"${run_json}")"
+              workflow_name="$(jq -r '.name' <<<"${run_json}")"
+              [[ "${conclusion}" == "success" ]] || { echo "${run_id} 未成功" >&2; exit 1; }
+              [[ "${head_sha}" == "${TARGET_SHA}" ]] || { echo "${run_id} SHA 与目标不一致" >&2; exit 1; }
+              [[ "${workflow_name}" == "${expected_name}" ]] || { echo "${run_id} 工作流名称不匹配" >&2; exit 1; }
+            done
+            mkdir -p "${RUNNER_TEMP}/upload-receipt"
+            gh run download "${UPLOAD_RUN_ID}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --name "miniprogram-upload-receipt-${TARGET_SHA}" \
+              --dir "${RUNNER_TEMP}/upload-receipt"
+            jq -e \
+              --arg sha "${TARGET_SHA}" \
+              --arg version "${TARGET_VERSION}" \
+              --arg run_id "${UPLOAD_RUN_ID}" \
+              '.schemaVersion == 1 and .mainSha == $sha and .version == $version and .workflowRunId == $run_id' \
+              "${RUNNER_TEMP}/upload-receipt/miniprogram-upload-receipt.json" >/dev/null
+          fi
+
+      - name: Verify rollback target is a recorded stable release
+        if: inputs.mode == 'rollback'
+        env:
+          TARGET_SHA: ${{ inputs.main_sha }}
+          TARGET_VERSION: ${{ inputs.version }}
+          PREVIOUS_RELEASE_ID: ${{ inputs.previous_release_id }}
+          CI_RUN_ID: ${{ inputs.ci_run_id }}
+          UPLOAD_RUN_ID: ${{ inputs.upload_run_id }}
+          SMOKE_EVIDENCE: ${{ inputs.smoke_evidence }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/miniprogram-experience-release.mjs verify-rollback \
+            --input "docs/releases/experience/${PREVIOUS_RELEASE_ID}.json" \
+            --main-sha "${TARGET_SHA}" \
+            --version "${TARGET_VERSION}" \
+            --release-id "${PREVIOUS_RELEASE_ID}" \
+            --ci-run-url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${CI_RUN_ID}" \
+            --upload-run-url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${UPLOAD_RUN_ID}" \
+            --smoke-evidence "${SMOKE_EVIDENCE}"
+
+      - name: Generate immutable experience manifest
+        id: manifest
+        env:
+          STAGE: ${{ inputs.stage }}
+          MODE: ${{ inputs.mode }}
+          TARGET_SHA: ${{ inputs.main_sha }}
+          VERSION: ${{ inputs.version }}
+          ENTRY_PATH: ${{ inputs.entry_path }}
+          CI_RUN_ID: ${{ inputs.ci_run_id }}
+          UPLOAD_RUN_ID: ${{ inputs.upload_run_id }}
+          SMOKE_EVIDENCE: ${{ inputs.smoke_evidence }}
+          CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+          CANDIDATE_DIGEST: ${{ inputs.candidate_digest }}
+          PLATFORM_EVIDENCE: ${{ inputs.platform_evidence }}
+          PREVIOUS_RELEASE_ID: ${{ inputs.previous_release_id }}
+          ROLLBACK_REASON: ${{ inputs.rollback_reason }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          candidate_path="${RUNNER_TEMP}/candidate/experience-release.json"
+          if [[ "${STAGE}" == "verified" ]]; then
+            [[ "${CANDIDATE_RUN_ID}" =~ ^[0-9]+$ ]] || { echo "verified 必须提供 candidate_run_id" >&2; exit 1; }
+            [[ "${CANDIDATE_DIGEST}" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "verified 必须提供 candidate_digest" >&2; exit 1; }
+            candidate_run="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${CANDIDATE_RUN_ID}")"
+            [[ "$(jq -r '.conclusion' <<<"${candidate_run}")" == "success" ]] || { echo "candidate run 未成功" >&2; exit 1; }
+            [[ "$(jq -r '.name' <<<"${candidate_run}")" == "微信体验版晋级证据门禁" ]] || { echo "candidate run 工作流不匹配" >&2; exit 1; }
+            mkdir -p "${RUNNER_TEMP}/candidate"
+            gh run download "${CANDIDATE_RUN_ID}" --repo "${GITHUB_REPOSITORY}" --name "experience-${VERSION}-${TARGET_SHA:0:12}-candidate" --dir "${RUNNER_TEMP}/candidate"
+            node scripts/miniprogram-experience-release.mjs verify --input "${candidate_path}" | grep -F "release_digest=${CANDIDATE_DIGEST}"
+          fi
+          args=(
+            create
+            --stage "${STAGE}"
+            --mode "${MODE}"
+            --main-sha "${TARGET_SHA}"
+            --version "${VERSION}"
+            --entry-path "${ENTRY_PATH}"
+            --ci-run-url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${CI_RUN_ID}"
+            --upload-run-url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${UPLOAD_RUN_ID}"
+            --smoke-evidence "${SMOKE_EVIDENCE}"
+            --smoke-outcome passed
+            --operator "${GITHUB_ACTOR}"
+            --occurred-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
+            --output "${RUNNER_TEMP}/experience-release.json"
+          )
+          [[ -z "${CANDIDATE_DIGEST}" ]] || args+=(--candidate-digest "${CANDIDATE_DIGEST}")
+          [[ -z "${PLATFORM_EVIDENCE}" ]] || args+=(--platform-evidence "${PLATFORM_EVIDENCE}")
+          [[ -z "${PREVIOUS_RELEASE_ID}" ]] || args+=(--previous-release-id "${PREVIOUS_RELEASE_ID}")
+          [[ -z "${ROLLBACK_REASON}" ]] || args+=(--rollback-reason "${ROLLBACK_REASON}")
+          node scripts/miniprogram-experience-release.mjs "${args[@]}" | tee -a "${GITHUB_OUTPUT}"
+          node scripts/miniprogram-experience-release.mjs verify --input "${RUNNER_TEMP}/experience-release.json"
+          if [[ "${STAGE}" == "verified" ]]; then
+            node scripts/miniprogram-experience-release.mjs verify-transition \
+              --candidate "${candidate_path}" \
+              --verified "${RUNNER_TEMP}/experience-release.json"
+          fi
+
+      - name: Store release evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.manifest.outputs.release_id }}-${{ inputs.stage }}
+          path: ${{ runner.temp }}/experience-release.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Publish operator instructions
+        env:
+          STAGE: ${{ inputs.stage }}
+          RELEASE_ID: ${{ steps.manifest.outputs.release_id }}
+          RELEASE_DIGEST: ${{ steps.manifest.outputs.release_digest }}
+          ENTRY_PATH: ${{ inputs.entry_path }}
+        shell: bash
+        run: |
+          {
+            echo "## 体验版发布证据"
+            echo "- Release ID: \`${RELEASE_ID}\`"
+            echo "- Digest: \`${RELEASE_DIGEST}\`"
+            echo "- 固定入口: \`${ENTRY_PATH}\`"
+            if [[ "${STAGE}" == "candidate" ]]; then
+              echo "- 下一步：发布负责人在微信公众平台把同版本开发版人工选为体验版，不得重新上传或改版本。"
+              echo "- 完成后：以同一组输入运行 verified，并附平台回读证据。"
+            else
+              echo "- 回读完成：将本次 verified manifest 原样提交到 \`docs/releases/experience/\`，长期固化且禁止覆盖。"
+            fi
+          } >> "${GITHUB_STEP_SUMMARY}"
