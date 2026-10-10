@@ -1,6 +1,6 @@
 # 高优问题清单
 
-> 最后更新：2026-10-10 13:30（CST）
+> 最后更新：2026-10-10 13:34（CST）
 >
 > 维护原则：这里只保留尚未满足关闭条件的问题。新问题先去重、澄清、拆分；已满足关闭条件的条目直接删除，Git 历史和不可变外部证据作为归档。
 
@@ -32,14 +32,15 @@
 - HP-08 本地运行态补证（同一 worktree）：通过真实输入框和快捷按钮得到 `startAt=2026-10-10 22:00:00`、`endAt=2026-10-11 02:00:00`；清空开始时间后点击相对截止时间，`deadline` 保持空值。该 smoke 尚未覆盖新建/编辑模式的 picker、保存、重开回读和真机独立复核。
 - CloudBase 本地核验（2026-10-10）：`npm run cloudbase:verify` 通过，`profile-media-cleanup`、`activity-admin`、`strava-auth`、`strava-callback`、`profile`、`activity-read` 均为 `Active`；该证据仅证明部署状态，不替代业务链路验收。
 - HP-13 可观测性（2026-10-10）：CloudBase 日志服务已通过 CLI 开通，CLI 明确提示“不额外计费”；诊断提交 `672cb5f` 随 head `633d74f...` 的 CI run [38027332121](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38027332121) SUCCESS。`strava-auth` 强制部署后回读为 `Active`、更新时间 `2026-10-10 13:23:59`（requestId `dd84d75e-0242-4752-9581-df297e2ab33e`），线上 `$LATEST` 与本地部署包逐文件无差异。真实请求 `ae45d0b8-ade6-4a16-8eec-6f343cda303e` 输出 `stage=read-readiness/code=-1`，未记录 openid、令牌或原始错误正文。
+- HP-13 根因修复部署与回读（2026-10-10）：提交 `31404ce46723` 随 head `736274b...` 的 CI run [38027765737](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38027765737) SUCCESS，开发版 run [38027820410](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38027820410) 实际上传 `0.0.58.1`。`strava-auth` 强制部署后回读为 `Active`、更新时间 `2026-10-10 13:31:44`（requestId `d51f1a4c-f08b-47c0-a97d-67133ea0a04f`），线上 `$LATEST` 与本地逐文件无差异；设置页真实请求 `7849fefc-1c0f-48d0-b3e6-6e04541ee476` 返回 `ok:true/state:syncing`，页面回读 `stravaLoadError=""`、文案“授权成功，正在准备骑行数据”，该请求无 `strava_auth_failed` 日志。
 
 ## 当前工作交接检查点
 
 - 本轮已完成并交付：HP-01 至 HP-05 已按完整证据链从清单删除；HP-06 已随 PR #56 合入并上传开发版，但其“深浅主题并存”产品前提已被新 UI 基线替代；HP-20261010-01 的旧浅色行程序号与三处运行态低对比过渡保护已随 PR #62/#66/#69 合入并上传开发版；HP-08 已随 PR #57 合入并交付开发版；HP-12 闰日算法已随 PR #59 合入。
-- 当前最高优先级：先实施 `HP-20261010-02` 全局统一 UI，再在新布局上继续做页面级功能验收，避免继续为即将删除的旧主题/旧布局补样式。
+- 当前最高优先级：两个 P0 的代码、CI、开发版和可自动执行的部署回读均已完成；`HP-20261010-02` 等待物理真机复核，`HP-20261009-13` 等待真实 Strava 外部授权生命周期验收。下一项可执行工作为 `HP-20261009-09`。
 - HP-20261010-02 进展：单一主题底座与第一批六页已推送至 main；head `4b27057...` 的 main CI run [38025995570](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38025995570) SUCCESS，微信开发版 run [38026070737](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38026070737) 实际上传 `0.0.55.1`；375×812 开发者工具六页截图及 TabBar 图标复核通过，仅余物理真机截图与独立复核。
 - HP-07 检查点：代码、全量本地/远端门禁、开发版 `0.0.52.1`（含后续 #73）、目标环境索引、`registration` Active 回读及线上代码比对已完成；仅余 50+ 真实报名页面 smoke 和独立复核，状态保持 `PENDING_EVIDENCE`。
-- HP-13 根因证据：诊断部署后的设置页真实调用仍返回 `INTERNAL_ERROR`（requestId `ae45d0b8-ade6-4a16-8eec-6f343cda303e`），日志将故障定位到 `read-readiness/-1`。当前账号有 `strava_credentials/strava_snapshots`，但没有 `oauth_attempts`；CloudBase 对该明确缺文档读取返回 `errCode=-1 / document with _id ... does not exist`，而 `strava-auth` 只兼容了同语义的 `-502001`。真实错误形态已由 RED 测试复现，最小修复后明确缺文档的 `-1` 正常降级，通用 `-1 / database request fail` 继续失败关闭，`strava-auth` 29/29 通过。
+- HP-13 检查点：`status` 根因修复已完成 main CI、开发版 `0.0.58.1`、CloudBase Active 回读、线上代码比对和设置页真实请求验证；原 `INTERNAL_ERROR` 已恢复为 `ok:true/state:syncing`。条目转为 `PENDING_EVIDENCE`，仅保留授权成功、拒绝、scope 不足、token 失效、重新授权、解绑后旧 callback 六条真实外部生命周期 smoke。
 - 并行状态：PR #61/#62/#63/#64/#66/#68/#69/#73 均已合入；HP-07 已解除代码文件族占用，`HP-20261010-02` 已开始推进。
 - 责任边界：TraeX 执行者负责 `HP-20261010-02` 页面与组件实施；TraeX 审判者负责逐页尺寸对照、旧主题残留扫描、功能回归、CI/开发版和真机验收。Aime 个人助理完成本次清单对齐后退出，不再占用任何代码文件族。
 
@@ -48,7 +49,7 @@
 | 泳道 | ID               | 优先级 | 状态                                     | 目标                                                                                    | 唯一写者      | 复核/发布                    |
 | ---- | ---------------- | ------ | ---------------------------------------- | --------------------------------------------------------------------------------------- | ------------- | ---------------------------- |
 | UI   | `HP-20261010-02` | P0     | `PENDING_EVIDENCE`                       | 单一主题底座与第一批六页已交付开发版 `0.0.55.1`，待物理真机截图与独立复核                 | -             | TraeX 审判者                 |
-| B    | `HP-20261009-13` | P0     | `IN_PROGRESS`                            | 正部署脱敏阶段诊断以定位 `status` INTERNAL_ERROR，随后完成真实授权/解绑 smoke            | TraeX 执行者  | TraeX 审判者 / Aime 个人助理 |
+| B    | `HP-20261009-13` | P0     | `PENDING_EVIDENCE`                       | `status` 已恢复，待六条真实 Strava 授权/解绑生命周期 smoke                              | -             | TraeX 审判者 / Aime 个人助理 |
 | D    | `HP-20261009-06` | P1     | `SUPERSEDED_BY(HP-20261010-02)`          | 旧双主题全页对比度，不再单独实施                                                        | -             | TraeX 审判者                 |
 | D1   | `HP-20261010-01` | P1     | `SUPERSEDED_BY(HP-20261010-02)`          | 旧浅色主题与运行态低对比已随 #62/#66 补保护，最终由新 UI 统一收口                       | -             | TraeX 审判者                 |
 | E    | `HP-20261009-07` | P1     | `PENDING_EVIDENCE`                       | 我的行程已交付开发版并完成部署回读，待 50+ 真实报名 smoke 和独立复核                   | Aime 个人助理 | TraeX 审判者                 |
@@ -183,15 +184,15 @@
 
 ### HP-20261009-13 · 设置页 Strava 授权撤销与异常生命周期
 
-- 优先级/状态：P0 / `IN_PROGRESS`，生命周期代码已随 PR [#53](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/53) 合入 main；阻断真实 smoke 的 `status` INTERNAL_ERROR 根因修复已提交，正等待 CI、部署与线上回读。
+- 优先级/状态：P0 / `PENDING_EVIDENCE`，生命周期代码已随 PR [#53](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/53) 合入 main；阻断真实 smoke 的 `status` INTERNAL_ERROR 已完成修复、部署与线上回读，仅余真实外部授权生命周期验收。
 - 当前事实：merge SHA `490044dd91194f9cd643c43700f97ae1ffaa74d3` 实现 attempt generation/fencing；disconnect 原子推进代际并消费全部未消费 state；callback 对乱序、解绑竞态和同步竞态 fail closed；`access_denied/error` 消费 state 并落稳定拒绝状态；readiness 按 scope/token/config/network 返回 `reauthorize/disconnect/contact-support/retry`；客户端仅按 recovery action 展示动作且不自动重跑 failed；解绑明确为本地断开，并降级所有未被 profile 引用的 Strava 媒体。
-- 证据/阻断：PR #53 `validate` SUCCESS；main CI run `38010547930` SUCCESS；微信开发版 run `38010624339` 成功上传 `0.0.32.1`；2026-10-10 已下载线上 `strava-auth/strava-callback` 代码与基线比对一致。本地真实调用 `status` 当前返回 `INTERNAL_ERROR / 服务暂时不可用`（开通日志前 requestId `8d93c87e-387f-4b93-a667-f58e515b4b4c`，开通后 requestId `c76c3181-230d-46db-bd17-25b5616e2136`）；函数 Node.js 20.19 且 Active，排除运行时版本过旧，`athlete_created_at` 缺失也不会让 readiness 抛错。CloudBase 日志服务已开通；只读探针确认空 state 集合、cleanup 查询和未消费 state 查询均可成功，旧线上函数因未输出异常阶段仍无法确定根因。
+- 证据/阻断：PR #53 `validate` SUCCESS；main CI run `38010547930` SUCCESS；微信开发版 run `38010624339` 成功上传 `0.0.32.1`；2026-10-10 已下载线上 `strava-auth/strava-callback` 代码与基线比对一致。诊断将旧失败请求 `ae45d0b8-ade6-4a16-8eec-6f343cda303e` 定位为 `read-readiness/-1`；修复部署后新请求 `7849fefc-1c0f-48d0-b3e6-6e04541ee476` 返回 `ok:true/state:syncing` 且无失败告警。剩余六条 smoke 涉及真实 Strava 登录、拒绝或凭证状态变化，不能以本地测试或数据库造数替代。
 - 诊断补丁：提交 `672cb5f` 新增可注入 `createHandler`，为身份、过期 state 清理、readiness 读取及后续动作标记阶段；仅对最终映射为 `INTERNAL_ERROR` 的异常记录 `{action, stage, code}`，不记录 openid、令牌或原始错误正文，客户端仍返回统一错误。节点测试已完成 RED→GREEN，`strava-auth` 27/27 通过；最终 `npm run validate` 全绿，包含格式、lint、typecheck、前端 734/734、旅程证据 82/82、bootstrap 58/58、部署链路 14/14、全部云函数、部署包一致性和构建。
 - 根因修复：提交 `31404ce46723` 在 `maybeGet` 中复用已由 profile 验证的严格文档缺失判定，仅当 `-1/-502001` 同时包含明确 document missing 语义时返回空记录；真实错误形态和通用 `-1` 失败关闭均有测试保护，focused 29/29 已通过。提交前 `npm run validate` 全绿：前端 734/734、旅程证据 82/82、bootstrap 58/58、部署链路 14/14、全部云函数、部署包一致性和构建均通过。
-- 下一步：推送根因修复并跟踪 CI；部署同一代码树的 `strava-auth`、下载 `$LATEST` 比对并重跑设置页 `status`。状态读取恢复后继续六条真实授权生命周期 smoke。
+- 下一步：执行授权成功、拒绝、scope 不足、token 失效、重新授权、解绑后旧 callback 六条真实 smoke，并由独立复核者确认日志与数据库不变量。
 - 负责人：TraeX 执行者；安全/独立复核：TraeX 审判者；部署/真机：Aime 个人助理。
 - 关闭条件：解绑后所有旧 callback 被拒绝且凭证不复活；拒绝授权消费 state 并停止轮询；retry/reauthorize/disconnect/contact-support 由稳定服务端语义驱动；`strava-auth/callback` 部署回读；六条真实 smoke 通过。
-- 更新时间：2026-10-10 13:30（CST）。
+- 更新时间：2026-10-10 13:34（CST）。
 
 ## 并行边界
 
