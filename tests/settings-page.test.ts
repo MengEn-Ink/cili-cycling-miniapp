@@ -44,22 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.11.8',
+      version: '2026.10.11.9',
       latest: true,
-      title: '活动与 Strava 读取更快',
-      summary:
-        '短时间内切换 Tab、进出活动详情会复用已加载结果，活动或报名变化后自动刷新，减少重复加载。',
+      title: '活动图片重复上传治理',
+      summary: '活动图片按内容识别，重复选择不再重复上传，失败重试复用同一存储对象，减少浪费。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.11.9',
       '2026.10.11.8',
       '2026.10.11.7',
       '2026.10.11.6',
       '2026.10.11.5',
-      '2026.10.11.4',
     ]);
   });
 
