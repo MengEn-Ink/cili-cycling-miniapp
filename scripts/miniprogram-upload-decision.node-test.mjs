@@ -23,6 +23,8 @@ test('小程序产物和上传链路变更需要上传开发版', () => {
     'tools/miniprogram-ci/package-lock.json',
     'scripts/upload-miniprogram-ci.mjs',
     'scripts/miniprogram-upload-decision.mjs',
+    '.github/workflows/deploy-miniprogram.yml',
+    '.github/workflows/promote-miniprogram-experience.yml',
     'project.config.json',
     'project.private.config.json',
     'package.json',
@@ -32,7 +34,7 @@ test('小程序产物和上传链路变更需要上传开发版', () => {
   }
 });
 
-test('纯文档、测试和工作流变更不上传开发版', () => {
+test('纯文档、测试和无关工作流变更不上传开发版', () => {
   assert.equal(
     shouldUploadMiniProgram([
       'docs/verification/2026-10-09.md',

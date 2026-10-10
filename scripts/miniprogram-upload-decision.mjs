@@ -7,6 +7,8 @@ const UPLOAD_PREFIXES = ['miniprogram/', 'cloudfunctions/', 'tools/miniprogram-c
 const UPLOAD_FILES = new Set([
   'scripts/upload-miniprogram-ci.mjs',
   'scripts/miniprogram-upload-decision.mjs',
+  '.github/workflows/deploy-miniprogram.yml',
+  '.github/workflows/promote-miniprogram-experience.yml',
   'project.config.json',
   'project.private.config.json',
   'package.json',
