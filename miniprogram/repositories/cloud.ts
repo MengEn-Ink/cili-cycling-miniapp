@@ -328,6 +328,7 @@ function mapActivity(raw: unknown, requireRegistrationDecision = false): Activit
     deadline: dateText(value.signup_deadline),
     status: value.status,
     capacity: Number.isInteger(value.capacity) ? value.capacity : 0,
+    ...(value.registration_unlimited === true ? { registrationUnlimited: true } : {}),
     ...(Number.isInteger(value.support_vehicle_capacity)
       ? { supportVehicleCapacity: value.support_vehicle_capacity }
       : {}),
@@ -967,6 +968,7 @@ function activityPayload(value: ActivityInput) {
         ? { fee: value.fee }
         : {}),
     ...(Number.isInteger(value.capacity) ? { capacity: value.capacity } : {}),
+    ...(value.registrationUnlimited === true ? { registration_unlimited: true } : {}),
     ...(Number.isInteger(value.supportVehicleCapacity)
       ? { support_vehicle_capacity: value.supportVehicleCapacity }
       : {}),

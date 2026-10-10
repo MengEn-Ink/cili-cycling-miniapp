@@ -1070,12 +1070,124 @@ test('活动图集严格限制数组、数量和单项长度，并同步首图�
   expectCode(() => validateDraftInput({ ...input, images: 'bad' }), 'VALIDATION_FAILED');
   expectCode(() => validateDraftInput({ ...input, images: null }), 'VALIDATION_FAILED');
   expectCode(
-    () => validateDraftInput({ ...input, images: Array(10).fill('cloud://x.jpg') }),
+    () => validateDraftInput({ ...input, images: Array(4).fill('cloud://x.jpg') }),
     'VALIDATION_FAILED',
   );
   expectCode(() => validateDraftInput({ ...input, images: [42] }), 'VALIDATION_FAILED');
   expectCode(
     () => validateDraftInput({ ...input, images: ['x'.repeat(501)] }),
+    'VALIDATION_FAILED',
+  );
+});
+
+test('存量超过三张的活动图集在未修改时可原样保存', async () => {
+  const images = ['cloud://1.jpg', 'cloud://2.jpg', 'cloud://3.jpg', 'cloud://4.jpg'];
+  const current = {
+    _id: 'legacy-images',
+    ...validateDraftInput(input),
+    images,
+    cover_image: images[0],
+    occupied_count: 0,
+    version: 2,
+    created_by: 'admin',
+  };
+  const memory = store(current);
+  const saved = await saveActivity(memory, {
+    openid: 'admin',
+    activityId: current._id,
+    expectedVersion: 2,
+    activity: { ...input, images },
+  });
+  assert.deepEqual(saved.images, images);
+  await assert.rejects(
+    saveActivity(store(current), {
+      openid: 'admin',
+      activityId: current._id,
+      expectedVersion: 2,
+      activity: { ...input, images: [...images.slice(0, 3), 'cloud://changed.jpg'] },
+    }),
+    { code: 'VALIDATION_FAILED' },
+  );
+});
+
+test('日常活动允许标记报名人数不限', () => {
+  const value = validateDraftInput({ ...input, registration_unlimited: true });
+  assert.equal(value.registration_unlimited, true);
+  assert.doesNotThrow(() =>
+    validatePublishInput(
+      {
+        ...input,
+        status: 'published',
+        registration_unlimited: true,
+        route: { ...input.route, end: '' },
+      },
+      0,
+      now,
+    ),
+  );
+  assert.doesNotThrow(() =>
+    validateDraftInput(
+      {
+        ...input,
+        capacity: 1,
+        support_vehicle_capacity: 0,
+        self_drive_capacity: 1,
+        registration_unlimited: true,
+      },
+      2,
+    ),
+  );
+  expectCode(
+    () => validateDraftInput({ ...input, registration_unlimited: 'true' }),
+    'VALIDATION_FAILED',
+  );
+});
+
+test('不限人数活动超过内部分类容量后仍可继续保存', async () => {
+  const unlimitedInput = {
+    ...input,
+    status: 'published',
+    capacity: 500,
+    support_vehicle_capacity: 0,
+    self_drive_capacity: 500,
+    registration_unlimited: true,
+    route: { ...input.route, end: '' },
+  };
+  const current = {
+    _id: 'unlimited-activity',
+    ...validatePublishInput(unlimitedInput, 501, now),
+    occupied_count: 501,
+    occupancy_partition_ready: true,
+    support_vehicle_occupied_count: 0,
+    self_drive_occupied_count: 501,
+    version: 3,
+    created_by: 'admin',
+  };
+  const memory = store(current);
+  const saved = await saveActivity(memory, {
+    openid: 'admin',
+    activityId: current._id,
+    expectedVersion: 3,
+    activity: unlimitedInput,
+  });
+  assert.equal(saved.registration_unlimited, true);
+  assert.equal(memory.state.saved.self_drive_occupied_count, 501);
+});
+
+test('Strava 线路允许只保存链接且不要求同步数据', () => {
+  const routeUrl = 'https://www.strava.com/routes/123456789';
+  const value = validateDraftInput({
+    ...input,
+    route: { ...input.route, strava_route_url: routeUrl },
+  });
+  assert.equal(value.route.strava_route_url, routeUrl);
+  assert.equal(value.route.strava_route_id, undefined);
+  expectCode(
+    () =>
+      validateDraftInput({
+        ...input,
+        route: { ...input.route, strava_route_url: 'https://example.com/routes/123456789' },
+      }),
     'VALIDATION_FAILED',
   );
 });

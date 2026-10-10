@@ -1,137 +1,84 @@
-<view class="page activity-form-page">
-  <view class="card danger" wx:if="{{error}}">
-    <view class="error-summary" role="alert">
-      <view class="error-summary-title">请检查活动信息</view>
-      <view>{{error}}</view>
-    </view>
-  </view>
-  <view class="card" wx:if="{{loading}}">正在加载...</view>
-  <view wx:if="{{allowed && !loading}}">
-    <view class="form-head">
-      <view class="hero-kicker">CILI · ACTIVITY BUILDER</view>
-      <view class="form-title">{{id ? '编辑活动' : '创建活动'}}</view>
-      <view class="muted">{{isAdmin ? '管理员可管理全部活动' : '你可以维护并发布自己的活动草稿'}} · {{status}}</view>
-    </view>
-    <view class="template-banner" wx:if="{{fromTemplate}}">已复制内容，日期、交通名额和司机信息需重新确认</view>
-    <view class="publish-checklist" wx:if="{{status === 'draft'}}">
-      <view class="section-title">发布确认清单</view>
-      <view class="hint">日常活动只需标题、报名设置、活动时间、集合点和路线；精品局还需后援车信息与详细日程。当前状态：{{canPublish ? '可发布' : '待补全'}}</view>
+<view class="page-shell activity-editor activity-form-page">
+  <view wx:if="{{loading}}" class="state-card">正在加载活动…</view>
+  <view wx:elif="{{!allowed}}" class="state-card state-card--error">{{error || '无权访问活动管理'}}</view>
+  <block wx:else>
+    <view class="editor-hero">
+      <view class="editor-kicker">DAILY RIDE</view>
+      <view class="editor-title">{{id ? '编辑日常活动' : '创建日常活动'}}</view>
+      <view class="editor-summary">只填写集合时间、地点、封面和备注，几步即可发布。</view>
     </view>
 
-    <view class="section-label">01 · 选择活动类型</view>
-    <view class="mode-grid" role="radiogroup" aria-label="活动类型">
-      <button class="mode-card {{activityMode === 'daily' ? 'is-active' : ''}}" data-mode="daily" bindtap="selectActivityMode" role="radio" aria-checked="{{activityMode === 'daily'}}">
-        <text class="mode-title">日常活动</text>
-        <text class="mode-copy">轻量出发 · 无需后援车</text>
-        <text class="mode-detail">集合点、时间、路线和最少报名信息</text>
-      </button>
-      <button class="mode-card {{activityMode === 'premium' ? 'is-active' : ''}}" data-mode="premium" bindtap="selectActivityMode" role="radio" aria-checked="{{activityMode === 'premium'}}">
-        <text class="mode-title">精品局活动</text>
-        <text class="mode-copy">完整保障 · 配置后援车</text>
-        <text class="mode-detail">交通名额、司机信息、详细日程与费用</text>
-      </button>
+    <view wx:if="{{error}}" class="card danger"><view class="error-summary">{{error}}</view></view>
+
+    <view class="form-card card">
+      <view class="section-title">集合信息</view>
+      <view class="field" data-error-anchor="startAt">
+        <view class="field-label">集合时间 <text class="required">必填</text></view>
+        <view class="date-time-row">
+          <picker mode="date" value="{{form.startAt.slice(0, 10)}}" bindchange="dateTimePicker" data-part="date">
+            <view class="picker-value">{{form.startAt.slice(0, 10) || '选择日期'}}</view>
+          </picker>
+          <picker mode="time" value="{{form.startAt.slice(11, 16)}}" bindchange="dateTimePicker" data-part="time">
+            <view class="picker-value">{{form.startAt.slice(11, 16) || '选择时间'}}</view>
+          </picker>
+        </view>
+        <view class="quick-row">
+          <button class="quick-button" bindtap="quickDateTime" data-preset="tomorrow-morning">明早 07:00</button>
+          <button class="quick-button" bindtap="quickDateTime" data-preset="next-saturday">下周六 08:00</button>
+        </view>
+        <view wx:if="{{formErrors.startAt}}" class="field-error field-error-copy">{{formErrors.startAt}}</view>
+      </view>
+
+      <view class="field" data-error-anchor="routeStart">
+        <view class="field-label">集合地点 <text class="required">必填</text></view>
+        <view class="location-row">
+          <input class="input" value="{{form.routeStart}}" placeholder-class="input-placeholder" placeholder="填写地点或从地图选择" bindinput="field" data-name="routeStart" />
+          <button class="map-button" loading="{{choosingLocation}}" bindtap="chooseRouteLocation">地图选点</button>
+        </view>
+        <view wx:if="{{formErrors.routeStart}}" class="field-error field-error-copy">{{formErrors.routeStart}}</view>
+      </view>
     </view>
 
-    <view class="section-label">02 · 基本信息</view>
-    <view class="form-card">
-      <view class="field {{formErrors.title ? 'field-error' : ''}}" data-error-anchor="title">
-        <text>活动标题 <text class="required">必填</text></text>
-        <view class="hint">简洁描述本次骑行主题</view>
-        <input value="{{form.title}}" data-name="title" bindinput="field" />
-        <view class="field-error-copy" wx:if="{{formErrors.title}}">{{formErrors.title}}</view>
+    <view class="form-card card">
+      <view class="section-head">
+        <view>
+          <view class="section-title">封面照片</view>
+          <view class="section-help">最多 3 张，第一张作为封面</view>
+        </view>
+        <view class="image-count">{{images.length}} / 3</view>
       </view>
-      <view class="field {{formErrors.description ? 'field-error' : ''}}" data-error-anchor="description">
-        <view class="field-heading"><text>活动说明</text><text class="counter">{{form.description.length}}/5000</text></view>
-        <textarea maxlength="5000" value="{{form.description}}" data-name="description" bindinput="field" />
-        <view class="field-error-copy" wx:if="{{formErrors.description}}">{{formErrors.description}}</view>
-      </view>
-      <view class="field">
-        <view class="field-heading"><text>活动图片</text><text class="counter">{{images.length}}/9</text></view>
-        <view class="hint">第一张为封面，选填</view>
-        <view class="media-grid" wx:if="{{images.length}}">
-          <view class="media-item" wx:for="{{images}}" wx:key="*this">
-            <image src="{{item}}" mode="aspectFill" />
-            <view class="cover-badge" wx:if="{{index === 0}}">封面</view>
-            <view class="media-actions">
-              <button wx:if="{{index > 0}}" size="mini" data-index="{{index}}" bindtap="setCover">设为封面</button>
-              <button size="mini" data-index="{{index}}" bindtap="removeImage">删除</button>
-            </view>
+      <view class="image-grid">
+        <view wx:for="{{images}}" wx:key="*this" class="image-item">
+          <image class="image-preview" src="{{item}}" mode="aspectFill" />
+          <view wx:if="{{index === 0}}" class="cover-badge">封面</view>
+          <view class="image-actions">
+            <button wx:if="{{index > 0}}" class="image-action" bindtap="setCover" data-index="{{index}}">设为封面</button>
+            <button class="image-action image-action--danger" bindtap="removeImage" data-index="{{index}}">删除</button>
           </view>
         </view>
-        <button class="media-add" loading="{{uploading}}" disabled="{{uploading || saving || images.length >= 9}}" bindtap="chooseImages">{{uploading ? '正在上传' : '选择图片'}}</button>
+        <button wx:if="{{images.length < 3}}" class="upload-tile" loading="{{uploading}}" bindtap="chooseImages">
+          <text class="upload-plus">＋</text>
+          <text>{{uploading ? '上传中' : '添加照片'}}</text>
+        </button>
       </view>
     </view>
 
-    <view class="section-label">03 · 时间与路线</view>
-    <view class="form-card">
-      <view class="field {{formErrors.startAt ? 'field-error' : ''}}" data-error-anchor="startAt"><text>开始日期时间 <text class="required">必填</text></text><view class="quick-actions" aria-label="开始时间快捷选择"><button data-name="startAt" data-preset="tomorrow-morning" bindtap="quickDateTime">明早 07:00</button><button data-name="startAt" data-preset="next-saturday" bindtap="quickDateTime">下个周六 08:00</button></view><view class="input-action-row"><input maxlength="19" placeholder-class="input-placeholder" placeholder="yyyy-MM-dd HH:mm:ss" value="{{form.startAt}}" data-name="startAt" bindinput="field" /><view class="picker-actions"><picker mode="date" data-name="startAt" data-part="date" bindchange="dateTimePicker"><view class="picker-button">日期</view></picker><picker mode="time" data-name="startAt" data-part="time" bindchange="dateTimePicker"><view class="picker-button">时间</view></picker></view></view><view class="field-error-copy" wx:if="{{formErrors.startAt}}">{{formErrors.startAt}}</view></view>
-      <view class="field {{formErrors.endAt ? 'field-error' : ''}}" data-error-anchor="endAt"><text>结束日期时间 <text class="required">必填</text></text><view class="quick-actions" aria-label="结束时间快捷选择"><button data-name="endAt" data-preset="start-plus-four-hours" bindtap="quickDateTime">开始后 4 小时</button></view><view class="input-action-row"><input maxlength="19" placeholder-class="input-placeholder" placeholder="yyyy-MM-dd HH:mm:ss" value="{{form.endAt}}" data-name="endAt" bindinput="field" /><view class="picker-actions"><picker mode="date" data-name="endAt" data-part="date" bindchange="dateTimePicker"><view class="picker-button">日期</view></picker><picker mode="time" data-name="endAt" data-part="time" bindchange="dateTimePicker"><view class="picker-button">时间</view></picker></view></view><view class="field-error-copy" wx:if="{{formErrors.endAt}}">{{formErrors.endAt}}</view></view>
-      <view class="field strava-route {{formErrors.stravaRouteUrl ? 'field-error' : ''}}" wx:if="{{isAdmin}}" data-error-anchor="stravaRouteUrl">
-        <text>Strava 路线 URL</text>
-        <view class="hint">粘贴路线链接后同步，自动回填里程和爬升</view>
-        <input maxlength="256" placeholder-class="input-placeholder" placeholder="https://www.strava.com/routes/123456" value="{{form.stravaRouteUrl}}" data-name="stravaRouteUrl" bindinput="field" />
-        <button class="strava-sync" loading="{{syncingRoute}}" disabled="{{syncingRoute || saving || !form.stravaRouteUrl}}" bindtap="syncStravaRoute">{{syncingRoute ? '正在同步' : '同步路线'}}</button>
-        <view class="strava-reauthorize" wx:if="{{stravaAuthorizationRequired}}">
-          <text>当前授权缺少路线读取权限</text>
-          <button bindtap="openStravaAuthorization">重新授权 Strava</button>
-        </view>
-        <view class="field-error-copy" wx:if="{{formErrors.stravaRouteUrl}}">{{formErrors.stravaRouteUrl}}</view>
-        <view class="route-summary" wx:if="{{stravaRouteId}}">
-          <text>已同步路线 #{{stravaRouteId}} · {{form.distanceKm}} km · 爬升 {{form.elevationM}} m</text>
-          <text wx:if="{{elevationProfile.length}}">海拔采样 {{elevationProfile.length}} 点</text>
-          <view wx:for="{{popularClimbs}}" wx:key="id" class="climb-row">{{item.name}} · {{item.popularityLabel}}</view>
-        </view>
+    <view class="form-card card">
+      <view class="field" data-error-anchor="description">
+        <view class="field-label">备注说明</view>
+        <textarea class="textarea" value="{{form.description}}" maxlength="5000" placeholder-class="input-placeholder" placeholder="集合提醒、补给安排或其他需要说明的内容" bindinput="field" data-name="description" />
+        <view class="char-count">{{form.description.length}} / 5000</view>
       </view>
-      <view class="split">
-        <view class="field location-field {{formErrors.routeStart ? 'field-error' : ''}}" data-error-anchor="routeStart"><text>集合点 / 路线起点 <text class="required">必填</text></text><view class="input-action-row"><input value="{{form.routeStart}}" data-name="routeStart" bindinput="field" /><button class="inline-action-button location-quick-button" loading="{{choosingLocation === 'start'}}" disabled="{{saving || choosingLocation}}" data-target="start" bindtap="chooseRouteLocation" aria-label="在地图中选择集合点">地图选点</button></view><view class="location-address" wx:if="{{routeStartLocation}}">{{routeStartLocation.address}}</view><view class="field-error-copy" wx:if="{{formErrors.routeStart}}">{{formErrors.routeStart}}</view></view>
-        <view class="field location-field {{formErrors.routeEnd ? 'field-error' : ''}}" data-error-anchor="routeEnd"><text>路线终点 <text class="required">必填</text></text><view class="input-action-row"><input value="{{form.routeEnd}}" data-name="routeEnd" bindinput="field" /><button class="inline-action-button location-quick-button" loading="{{choosingLocation === 'end'}}" disabled="{{saving || choosingLocation}}" data-target="end" bindtap="chooseRouteLocation" aria-label="在地图中选择路线终点">地图选点</button></view><view class="location-address" wx:if="{{routeEndLocation}}">{{routeEndLocation.address}}</view><view class="field-error-copy" wx:if="{{formErrors.routeEnd}}">{{formErrors.routeEnd}}</view></view>
-      </view>
-      <view class="split"><view class="field"><text>里程 km</text><input type="digit" value="{{form.distanceKm}}" data-name="distanceKm" bindinput="field" /></view><view class="field"><text>爬升 m</text><input type="digit" value="{{form.elevationM}}" data-name="elevationM" bindinput="field" /></view></view>
-      <view class="field"><text>路线难度</text><input value="{{form.level}}" data-name="level" bindinput="field" /></view>
-      <view class="field"><text>路线文件 ID（选填）</text><input value="{{routeGpxFileId}}" data-name="routeGpxFileId" bindinput="assetField" /></view>
-    </view>
-
-    <view class="section-label">04 · 报名设置</view>
-    <view class="form-card">
-      <view class="field {{formErrors.capacity ? 'field-error' : ''}}" data-error-anchor="capacity"><text>总名额 <text class="required">必填</text></text><view class="hint">不得低于已占用 {{occupiedCount}} 人</view><input type="number" value="{{form.capacity}}" data-name="capacity" bindinput="field" /><view class="field-error-copy" wx:if="{{formErrors.capacity}}">{{formErrors.capacity}}</view></view>
-      <view class="field {{formErrors.deadline ? 'field-error' : ''}}" data-error-anchor="deadline"><text>报名截止日期时间 <text class="required">必填</text></text><view class="quick-actions" aria-label="报名截止时间快捷选择"><button data-name="deadline" data-preset="tomorrow-evening" bindtap="quickDateTime">明晚 20:00</button><button data-name="deadline" data-preset="start-minus-day" bindtap="quickDateTime">开始前 1 天 20:00</button></view><view class="input-action-row"><input maxlength="19" placeholder-class="input-placeholder" placeholder="yyyy-MM-dd HH:mm:ss" value="{{form.deadline}}" data-name="deadline" bindinput="field" /><view class="picker-actions"><picker mode="date" data-name="deadline" data-part="date" bindchange="dateTimePicker"><view class="picker-button">日期</view></picker><picker mode="time" data-name="deadline" data-part="time" bindchange="dateTimePicker"><view class="picker-button">时间</view></picker></view></view><view class="field-error-copy" wx:if="{{formErrors.deadline}}">{{formErrors.deadline}}</view></view>
-      <view class="field {{formErrors.fee ? 'field-error' : ''}}" data-error-anchor="fee"><text>费用说明 <text class="required">必填</text></text><view class="hint">免费活动可填写“免费”</view><input value="{{form.fee}}" data-name="fee" bindinput="field" /><view class="field-error-copy" wx:if="{{formErrors.fee}}">{{formErrors.fee}}</view></view>
-      <view class="daily-note" wx:if="{{activityMode === 'daily'}}">日常活动全部名额默认为自行前往，不需要填写后援车信息。</view>
-      <view wx:if="{{activityMode === 'premium'}}">
-        <view class="split"><view class="field {{formErrors.supportVehicleCapacity ? 'field-error' : ''}}" data-error-anchor="supportVehicleCapacity"><text>后援车名额 <text class="required">必填</text></text><input type="number" value="{{form.supportVehicleCapacity}}" data-name="supportVehicleCapacity" bindinput="field" /><view class="field-error-copy" wx:if="{{formErrors.supportVehicleCapacity}}">{{formErrors.supportVehicleCapacity}}</view></view><view class="field"><text>自驾名额 <text class="required">必填</text></text><input type="number" value="{{form.selfDriveCapacity}}" data-name="selfDriveCapacity" bindinput="field" /></view></view>
-        <view class="hint accent">两类名额之和必须等于总名额</view>
-        <view class="field {{formErrors.driverNickname ? 'field-error' : ''}}" data-error-anchor="driverNickname"><text>师傅昵称 <text class="required">必填</text></text><input value="{{form.driverNickname}}" data-name="driverNickname" bindinput="field" /><view class="field-error-copy" wx:if="{{formErrors.driverNickname}}">{{formErrors.driverNickname}}</view></view>
-        <view class="split"><view class="field {{formErrors.licensePlate ? 'field-error' : ''}}" data-error-anchor="licensePlate"><text>车牌号 <text class="required">必填</text></text><input value="{{form.licensePlate}}" data-name="licensePlate" bindinput="field" /><view class="field-error-copy" wx:if="{{formErrors.licensePlate}}">{{formErrors.licensePlate}}</view></view><view class="field {{formErrors.contactPhone ? 'field-error' : ''}}" data-error-anchor="contactPhone"><text>联系电话 <text class="required">必填</text></text><input type="number" value="{{form.contactPhone}}" data-name="contactPhone" bindinput="field" /><view class="field-error-copy" wx:if="{{formErrors.contactPhone}}">{{formErrors.contactPhone}}</view></view></view>
+      <view class="field" data-error-anchor="stravaRouteUrl">
+        <view class="field-label">Strava 线路链接</view>
+        <input class="input" value="{{form.stravaRouteUrl}}" placeholder-class="input-placeholder" placeholder="https://www.strava.com/routes/…" bindinput="field" data-name="stravaRouteUrl" />
+        <view class="section-help">仅保存链接，不再同步里程、海拔或线路信息</view>
       </view>
     </view>
 
-    <view wx:if="{{activityMode === 'premium'}}">
-      <view class="section-label">05 · 精品局日程</view>
-      <view class="form-card {{formErrors.schedule ? 'form-card-error' : ''}}" data-error-anchor="schedule">
-        <view class="hint">至少一行；按时间顺序填写，时间与事项必填</view>
-        <view class="field-error-copy" wx:if="{{formErrors.schedule}}">{{formErrors.schedule}}</view>
-        <view class="schedule-edit-row" wx:for="{{schedule}}" wx:key="index">
-          <view class="schedule-edit-head"><text class="schedule-edit-index">{{index + 1}}</text><button size="mini" data-index="{{index}}" bindtap="removeScheduleRow">删除</button></view>
-          <input value="{{item.time}}" data-index="{{index}}" data-field="time" bindinput="scheduleField" maxlength="20" placeholder-class="input-placeholder" placeholder="时间（必填）" />
-          <input value="{{item.title}}" data-index="{{index}}" data-field="title" bindinput="scheduleField" maxlength="100" placeholder-class="input-placeholder" placeholder="事项（必填）" />
-          <input value="{{item.location}}" data-index="{{index}}" data-field="location" bindinput="scheduleField" maxlength="200" placeholder-class="input-placeholder" placeholder="地点（选填）" />
-          <input value="{{item.remark}}" data-index="{{index}}" data-field="remark" bindinput="scheduleField" maxlength="500" placeholder-class="input-placeholder" placeholder="备注（选填）" />
-        </view>
-        <button class="media-add" disabled="{{saving || schedule.length >= 50}}" bindtap="addScheduleRow">添加日程行</button>
-      </view>
-
-      <view class="section-label">06 · 精品局补充说明</view>
-      <view class="form-card">
-        <view class="field"><view class="field-heading"><text>费用包含</text><text class="counter">{{feeIncludedText.length}}/10000</text></view><view class="hint">每行一项，最多 50 项</view><textarea value="{{feeIncludedText}}" data-name="feeIncludedText" bindinput="feeField" maxlength="10000" /></view>
-        <view class="field"><view class="field-heading"><text>费用不包含</text><text class="counter">{{feeExcludedText.length}}/10000</text></view><textarea value="{{feeExcludedText}}" data-name="feeExcludedText" bindinput="feeField" maxlength="10000" /></view>
-        <view class="field"><text>注意事项</text><view class="hint">每行一项，方便骑手快速阅读</view><textarea value="{{form.notices}}" data-name="notices" bindinput="field" /></view>
-        <view class="field"><text>装备要求</text><textarea value="{{form.equipment}}" data-name="equipment" bindinput="field" /></view>
-      </view>
+    <view class="action-bar actions">
+      <button class="button button--secondary secondary" loading="{{saving}}" data-status="draft" bindtap="save">保存草稿</button>
+      <button class="button button--primary" loading="{{saving}}" data-status="published" bindtap="save">{{status === 'published' ? '保存修改' : '发布活动'}}</button>
     </view>
-    <view class="actions">
-      <button class="secondary" loading="{{saving}}" disabled="{{saving || uploading || choosingLocation}}" data-status="{{status}}" bindtap="save">保存修改</button>
-      <button wx:if="{{id && status === 'draft' && !uploading}}" class="btn" loading="{{saving}}" data-status="published" disabled="{{saving || choosingLocation}}" bindtap="save">发布活动</button>
-      <button wx:if="{{isAdmin && id && status === 'published'}}" class="danger-button" loading="{{saving}}" disabled="{{saving || uploading || choosingLocation}}" data-status="finished" bindtap="save">结束活动</button>
-    </view>
-  </view>
+  </block>
 </view>

@@ -127,6 +127,24 @@ test('正常报名占位，满员报名进入 waiting 且通知幂等键稳定',
   );
 });
 
+test('不限人数活动超过内部容量基线后仍直接报名', async () => {
+  const unlimited = fixture({
+    activity: {
+      registration_unlimited: true,
+      occupied_count: 500,
+      capacity: 500,
+      self_drive_occupied_count: 500,
+      self_drive_capacity: 500,
+      support_vehicle_occupied_count: 0,
+      support_vehicle_capacity: 0,
+      support_vehicle_driver: undefined,
+    },
+  });
+  const result = await submit(unlimited, 'member-unlimited');
+  assert.equal(result.status, 'pending');
+  assert.equal(unlimited.state.activity.occupied_count, 501);
+});
+
 test('取消按 created_at FIFO 补位且 occupied_count 保持不变', async () => {
   const active = registration('active', 'pending', '2026-09-01T00:00:00Z');
   const late = registration('late', 'waiting', '2026-09-03T00:00:00Z');

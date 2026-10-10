@@ -21,6 +21,7 @@ const {
 } = require('./domain');
 
 function categoryQuota(activity, gatheringMode) {
+  if (activity.registration_unlimited === true) return undefined;
   if (activity.occupancy_partition_ready !== true) return undefined;
   const capacityField =
     gatheringMode === 'support_vehicle' ? 'support_vehicle_capacity' : 'self_drive_capacity';
@@ -146,7 +147,8 @@ async function submitRegistration(store, { openid, activityId, options, team }, 
     const teamFields = await resolveTeam(tx, activityId, openid, team);
     const quota = categoryQuota(activity, safeOptions.gathering_mode);
     const waiting =
-      activity.occupied_count >= activity.capacity || (quota && quota.occupied >= quota.capacity);
+      activity.registration_unlimited !== true &&
+      (activity.occupied_count >= activity.capacity || (quota && quota.occupied >= quota.capacity));
     const status = waiting ? 'waiting' : 'pending';
     const nextOccupancy = waiting
       ? undefined
@@ -229,7 +231,8 @@ function activityWithOccupancy(activity, occupancy) {
 }
 
 function canPromote(activity, waiting) {
-  if (activity.occupied_count >= activity.capacity) return false;
+  if (activity.registration_unlimited !== true && activity.occupied_count >= activity.capacity)
+    return false;
   const mode = waiting.options?.gathering_mode;
   if (!['support_vehicle', 'self_drive'].includes(mode)) return false;
   const quota = categoryQuota(activity, mode);
