@@ -15,11 +15,11 @@
       <view class="field" data-error-anchor="startAt">
         <view class="field-label">集合时间 <text class="required">必填</text></view>
         <view class="date-time-row">
-          <picker mode="date" value="{{form.startAt.slice(0, 10)}}" bindchange="dateTimePicker" data-part="date">
-            <view class="picker-value">{{form.startAt.slice(0, 10) || '选择日期'}}</view>
+          <picker mode="date" value="{{form.startDate}}" bindchange="dateTimePicker" data-part="date">
+            <view class="picker-value">{{form.startDate || '选择日期'}}</view>
           </picker>
-          <picker mode="time" value="{{form.startAt.slice(11, 16)}}" bindchange="dateTimePicker" data-part="time">
-            <view class="picker-value">{{form.startAt.slice(11, 16) || '选择时间'}}</view>
+          <picker mode="time" value="{{form.startTime}}" bindchange="dateTimePicker" data-part="time">
+            <view class="picker-value">{{form.startTime || '选择时间'}}</view>
           </picker>
         </view>
         <view class="quick-row">

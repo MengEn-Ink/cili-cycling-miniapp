@@ -44,20 +44,20 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.11.3',
+      version: '2026.10.11.4',
       latest: true,
-      title: '活动删除安全规则上线',
+      title: '活动编辑回显更稳定',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.11.4',
       '2026.10.11.3',
       '2026.10.11.2',
       '2026.10.11.1',
       '2026.10.10.22',
-      '2026.10.10.21',
     ]);
   });
 

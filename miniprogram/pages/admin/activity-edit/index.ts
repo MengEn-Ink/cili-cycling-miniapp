@@ -5,13 +5,15 @@ import { appStore } from '../../../store/app-store';
 import { formatLocalDateTime, parseLocalDateTime } from '../../../utils/date-time';
 
 type Form = {
-  startAt: string;
+  startDate: string;
+  startTime: string;
   routeStart: string;
   description: string;
   stravaRouteUrl: string;
 };
 type FormField = keyof Form;
-type FormErrors = Partial<Record<FormField, string>>;
+type FormErrorAnchor = FormField | 'startAt';
+type FormErrors = Partial<Record<FormErrorAnchor, string>>;
 type PendingImage = {
   id: string;
   previewPath: string;
@@ -22,7 +24,8 @@ type PendingImage = {
 const MAX_IMAGES = 3;
 const DEFAULT_CAPACITY = 500;
 const emptyForm = (): Form => ({
-  startAt: '',
+  startDate: '',
+  startTime: '',
   routeStart: '',
   description: '',
   stravaRouteUrl: '',
@@ -34,7 +37,6 @@ const localDateTimeText = (date: Date, time?: string) => {
   const dateText = `${date.getFullYear()}-${padDatePart(date.getMonth() + 1)}-${padDatePart(date.getDate())}`;
   return `${dateText} ${time || `${padDatePart(date.getHours())}:${padDatePart(date.getMinutes())}`}:00`;
 };
-const todayText = () => localDateTimeText(new Date()).slice(0, 10);
 const dateAtOffset = (days: number, time: string, base = new Date()) => {
   const date = new Date(base.getFullYear(), base.getMonth(), base.getDate() + days);
   return localDateTimeText(date, time);
@@ -131,6 +133,7 @@ Page({
         : activity.coverImage
           ? [activity.coverImage]
           : [];
+      const startAtText = formatLocalDateTime(activity.startAt);
       this.setData({
         loading: false,
         status: activity.status,
@@ -141,7 +144,8 @@ Page({
         coverImage: images[0] || '',
         routeStartLocation: activity.route.startLocation,
         form: {
-          startAt: formatLocalDateTime(activity.startAt),
+          startDate: pickerDate(startAtText),
+          startTime: pickerTime(startAtText),
           routeStart: activity.route.start,
           description: activity.description,
           stravaRouteUrl: activity.route.stravaRouteUrl || '',
@@ -163,7 +167,7 @@ Page({
     this.unloaded = true;
     if (!this.saveInFlight) this.cleanupSessionUploads();
   },
-  showFormError(message: string, field?: FormField) {
+  showFormError(message: string, field?: FormErrorAnchor) {
     const formErrors = field ? { [field]: message } : {};
     this.setData({ error: message, formErrors });
     wx.showModal({ title: '请检查活动信息', content: message, showCancel: false });
@@ -185,10 +189,8 @@ Page({
   },
   dateTimePicker(event: any) {
     const part = event.currentTarget.dataset.part === 'time' ? 'time' : 'date';
-    const current = String((this.data.form as Form).startAt || '');
-    const date = part === 'date' ? event.detail.value : pickerDate(current) || todayText();
-    const time = part === 'time' ? event.detail.value : pickerTime(current) || '08:00';
-    this.setData({ 'form.startAt': `${date} ${time}:00` });
+    const field = part === 'time' ? 'startTime' : 'startDate';
+    this.setData({ [`form.${field}`]: event.detail.value });
     this.clearFieldError('startAt');
   },
   quickDateTime(event: any) {
@@ -201,7 +203,7 @@ Page({
           ? dateAtOffset(nextSaturdayOffset(now), '08:00', now)
           : '';
     if (!value) return;
-    this.setData({ 'form.startAt': value });
+    this.setData({ 'form.startDate': pickerDate(value), 'form.startTime': pickerTime(value) });
     this.clearFieldError('startAt');
   },
   async uploadPendingImage(pendingImage: PendingImage) {
@@ -394,7 +396,8 @@ Page({
   validateBeforeSave(nextStatus: ActivityInput['status']) {
     const form = this.data.form as Form;
     if (nextStatus === 'draft') return true;
-    if (!form.startAt.trim()) return (this.showFormError('请选择集合时间', 'startAt'), false);
+    if (!form.startDate.trim()) return (this.showFormError('请选择集合日期', 'startAt'), false);
+    if (!form.startTime.trim()) return (this.showFormError('请选择集合时间', 'startAt'), false);
     if (!form.routeStart.trim())
       return (this.showFormError('请选择或填写集合地点', 'routeStart'), false);
     return true;
@@ -416,7 +419,12 @@ Page({
     }
     let startAt: string | undefined;
     try {
-      startAt = form.startAt.trim() ? parseLocalDateTime(form.startAt, '集合时间') : undefined;
+      // 日期与时间在表单中拆分，保存时再拼回完整本地时间，避免未选时间被默认值误导。
+      const localStartAt =
+        form.startDate.trim() && form.startTime.trim()
+          ? `${form.startDate.trim()} ${form.startTime.trim()}:00`
+          : '';
+      startAt = localStartAt ? parseLocalDateTime(localStartAt, '集合时间') : undefined;
     } catch (error) {
       this.showFormError(error instanceof Error ? error.message : '日期时间格式错误', 'startAt');
       return;
