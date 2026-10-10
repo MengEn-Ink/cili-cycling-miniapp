@@ -71,15 +71,15 @@
 - 底座 RED/GREEN：新增 `tests/unified-bright-ui-contract.test.ts`，先证明系统栏、14 页运行时主题状态、设置页主题入口和双份 token 不符合新基线；现已固定白色系统栏与原生 TabBar、唯一明亮 token、48px 控件、40px 分段、16px 卡片圆角和硬阴影，并将 14 页主题同步逻辑收口为幂等系统外观应用。
 - 旧体系清理：产品代码已无 `.theme-light/.theme-dark`、`themeClass`、主题切换入口和设置页主题预览死样式；页面首次绘制背景改为 `--color-bg`，旧双主题对比度测试已迁移为单一明亮 UI 契约。
 - 底座门禁：Vitest 54 文件、728 项全部通过；`npm run typecheck`、`npm run lint`、`npm run format:check` 和 `git diff --check` 通过。
-- 底座提交：`3cf0760 feat(ui): unify bright appearance foundation` 已提交到本地 `main`；尚未推送，需与第一批六页迁移合并完成远端 CI、开发版和截图验收。
+- 实施提交：设计与计划为 `0d4dfc7 docs(ui): plan unified bright interface`，单一主题底座为 `d565968 feat(ui): unify bright appearance foundation`，第一批六页迁移为 `14f5e1c feat(ui): migrate core pages to bright layout`；三层提交均已基于 `origin/main` 的 `75d6f2b` 完成重放，待推送后完成远端 CI、开发版和截图验收。
 - 第一批 RED/GREEN：新增 `tests/unified-bright-first-batch-contract.test.ts`，先以 6/6 失败锁定活动首页、详情、创建、我的行程、个人中心和设置的尺寸偏差；现已统一 16px 页面边距、48px 控件、40px 分段、16px 卡片圆角/内边距、12px 卡片间距和 2px 描边，并将 375px 创建页收敛为单列，设置页新增 `2026.10.10.10 / 统一明亮界面` 升级日志。
-- 第一批本地门禁：2026-10-10 12:55 `npm run validate` 全通过；Vitest 55 文件、734/734，旅程/证据 82/82，bootstrap/planner 58/58，上传链路 14/14，升级日志、全部云函数测试、部署包一致性和构建均通过。
+- 第一批本地门禁：整合 `origin/main` 的 `75d6f2b` 后再次执行 `npm run validate` 并全通过；Vitest 55 文件、734/734，旅程/证据 82/82，bootstrap/planner 58/58，上传链路 14/14，升级日志、全部云函数测试、部署包一致性和构建均通过。
 - 375×812 运行态复核：微信开发者工具逐页检查活动首页、详情、创建、我的行程、个人中心和设置，确认创建页为单列，页面无可见重叠、裁切或固定操作栏遮挡；当前会话未能生成可归档截图文件，因此该证据不替代最终开发版/真机截图。
 - 待核验异常：开发者工具模拟器原生 TabBar 图标显示为破图占位，但 9 个 PNG 均为 Git 已跟踪的有效 81×81 RGBA 文件且配置路径正确，控制台未发现明确 404；保留到同 SHA 微信开发版或真机复核，不以猜测性资源改写掩盖。
-- 当前占用：TraeX 执行者继续完成第一批提交、远端整合、CI、开发版与截图证据；在开发版 TabBar 图标和真机截图确认前保持 `IN_PROGRESS`。
+- 当前占用：TraeX 执行者继续完成推送、远端 CI、开发版与截图证据；在开发版 TabBar 图标和真机截图确认前保持 `IN_PROGRESS`。
 - 审核要求：TraeX 审判者按 375×812px 逐页核对布局、字体、卡片、触控区和安全区；扫描 `theme-light/theme-dark`、主题切换入口及旧硬编码残留；执行功能回归、CI、开发版上传和真机截图验收。
 - 交付要求：产品代码同步设置页版本日志；独立 PR 保持单提交；CI 全绿；微信开发版上传；第一批六页逐页真机截图与基准尺寸对照通过后才可关闭。
-- 更新时间：2026-10-10 12:55（单一主题底座与第一批六页 GREEN，待远端 CI、开发版和真机截图验收）。
+- 更新时间：2026-10-10 13:05（已整合远端基线并完成全量本地门禁，待推送、远端 CI、开发版和真机截图验收）。
 
 ### HP-20261009-06 · 浅色主题全页对比度
 
