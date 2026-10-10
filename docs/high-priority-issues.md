@@ -1,6 +1,6 @@
 # 高优问题清单
 
-> 最后更新：2026-10-10 12:30（CST）
+> 最后更新：2026-10-10 13:05（CST）
 >
 > 维护原则：这里只保留尚未满足关闭条件的问题。新问题先去重、澄清、拆分；已满足关闭条件的条目直接删除，Git 历史和不可变外部证据作为归档。
 
@@ -15,10 +15,10 @@
 ## 当前共同证据
 
 - 用户报告：2026-10-09 群聊新增 6 组问题，已拆成 HP-06 至 HP-13 共 8 个原子项；HP-01 至 HP-05 于 2026-10-10 全部满足关闭条件并删除。
-- 代码合入：PR [#45](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/45)、[#48](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/48)、[#52](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/52)、[#53](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/53)、[#56](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/56)、[#57](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/57)、[#59](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/59)、[#62](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/62)、[#66](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/66)、[#69](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/69) 已合并；HP-01..05 验收时云函数代码基线为 `0da2ce5...`（当时 main HEAD），#56/#57/#58/#59/#62/#66/#69 均未改动 `cloudfunctions/**`，故线上函数与当前 main 云函数代码一致。
+- 代码合入：PR [#45](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/45)、[#48](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/48)、[#52](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/52)、[#53](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/53)、[#56](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/56)、[#57](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/57)、[#59](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/59)、[#62](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/62)、[#66](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/66)、[#69](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/69)、[#73](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/73) 已合并；HP-01..05 验收时云函数代码基线为 `0da2ce5...`（当时 main HEAD），#56/#57/#58/#59/#62/#66/#69/#73 均未改动 `cloudfunctions/**`，故线上函数与当前 main 云函数代码一致。
 - CI：上述 PR 的 PR CI 与 main CI 均为 SUCCESS。CI 不能证明 CloudBase Active 版本或真机行为。
 - HP-07 远端门禁：main SHA `d9d9f777450a33a6cccb664028b588b9aaade789` 的 CI run [38023441280](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38023441280) SUCCESS；validate、coverage、CloudBase bootstrap 只读验证和高危依赖审计全部通过。
-- 微信开发版：run [38023517201](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38023517201) 成功上传 `0.0.49.1`（head `d9d9f77...`，日志含“微信开发版 0.0.49.1 上传成功”）；此前 run [38020822125](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38020822125) 上传 `0.0.45.1`（head `fe616f2...`）。浅色主题首次随 run [38014100157](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38014100157) 上传 `0.0.36.1`（head `a275fc3...`）交付，活动时间快捷项随 run [38017106152](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38017106152) 的 `0.0.37.1` 交付。
+- 微信开发版：run [38024964766](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38024964766) 成功上传 `0.0.52.1`（head `54df558...`，日志含“微信开发版 0.0.52.1 上传成功”）；此前 run [38023517201](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38023517201) 上传 `0.0.49.1`（head `d9d9f77...`）。更早 run [38020822125](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38020822125) 上传 `0.0.45.1`（head `fe616f2...`）；浅色主题首次随 run [38014100157](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38014100157) 上传 `0.0.36.1`（head `a275fc3...`）交付，活动时间快捷项随 run [38017106152](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38017106152) 的 `0.0.37.1` 交付。
 - HP-07 微信开发版：同一 SHA `d9d9f77...` 的 run [38023517201](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38023517201) SUCCESS，实际上传而非跳过，日志确认“微信开发版 `0.0.49.1` 上传成功”。
 - CloudBase 部署与回读（2026-10-10，已登录本地环境执行）：`cloudbase-d0gizacy77a1ab017` 共 13 个集合、31 条索引，`node scripts/bootstrap-cloudbase.mjs --verify` 通过（不符合项 0）；10 个云函数全部部署，下载线上 `$LATEST` 代码与同基线本地包逐文件比对：首轮仅 `admin-review` 落后（缺 PR #48 的快照字段），补部署后再次下载比对 10/10 全部一致，管理台状态为部署完成。
 - HP-07 CloudBase 部署与回读（2026-10-10）：`registrations_openid_created_at_id` 索引已应用，requestId `aa271a73-b190-4329-8b4b-37f9eb9dcb83`；bootstrap verify 确认 13 个集合、32 条索引且不符合项 0。`registration` 已强制部署，函数列表回读状态为 `Active`、更新时间 `2026-10-10 12:06:42`，requestId `8f0b635a-554a-4b15-b886-14d8b4f01d35`；线上 `$LATEST` 下载后与本地部署包逐文件比对无差异。
@@ -35,16 +35,17 @@
 
 - 本轮已完成并交付：HP-01 至 HP-05 已按完整证据链从清单删除；HP-06 已随 PR #56 合入并上传开发版，但其“深浅主题并存”产品前提已被新 UI 基线替代；HP-20261010-01 的旧浅色行程序号与三处运行态低对比过渡保护已随 PR #62/#66/#69 合入并上传开发版；HP-08 已随 PR #57 合入并交付开发版；HP-12 闰日算法已随 PR #59 合入。
 - 当前最高优先级：先实施 `HP-20261010-02` 全局统一 UI，再在新布局上继续做页面级功能验收，避免继续为即将删除的旧主题/旧布局补样式。
-- HP-07 检查点：代码、全量本地/远端门禁、开发版 `0.0.49.1`、目标环境索引、`registration` Active 回读及线上代码比对已完成；仅余 50+ 真实报名页面 smoke 和独立复核，状态保持 `PENDING_EVIDENCE`。
+- HP-20261010-02 进展：PR [#73](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/73) 已合入；main CI run [38024881804](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38024881804) SUCCESS；微信开发版 run [38024964766](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38024964766) 上传 `0.0.52.1`（head `54df558...`，日志含“微信开发版 0.0.52.1 上传成功”）。
+- HP-07 检查点：代码、全量本地/远端门禁、开发版 `0.0.52.1`（含后续 #73）、目标环境索引、`registration` Active 回读及线上代码比对已完成；仅余 50+ 真实报名页面 smoke 和独立复核，状态保持 `PENDING_EVIDENCE`。
 - HP-13 运行态阻塞证据：本地微信开发者工具真实调用 `strava-auth?action=status` 返回 `INTERNAL_ERROR / 服务暂时不可用`（requestId `8d93c87e-387f-4b93-a667-f58e515b4b4c`）；函数为 `Active` 且 Node.js 20.19，`strava_credentials` / `strava_snapshots` 各有 1 条存量数据，`athlete_created_at` 缺失只影响展示字段，不足以触发该错误。当前函数未配置 CLS log topic，按 requestId 拉日志返回 `ResourceNotFound.TopicNotExist`；下一步必须先恢复可观测日志或增加可回读诊断信号，再定位 `cleanupExpiredStates` / `readReadiness` 的实际异常，禁止按猜测改业务逻辑。
-- 并行状态：PR #61/#62/#63/#64/#66/#68/#69 均已合入；HP-07 已解除代码文件族占用，切换到 P0 `HP-20261010-02`。
+- 并行状态：PR #61/#62/#63/#64/#66/#68/#69/#73 均已合入；HP-07 已解除代码文件族占用，`HP-20261010-02` 已开始推进。
 - 责任边界：TraeX 执行者负责 `HP-20261010-02` 页面与组件实施；TraeX 审判者负责逐页尺寸对照、旧主题残留扫描、功能回归、CI/开发版和真机验收。Aime 个人助理完成本次清单对齐后退出，不再占用任何代码文件族。
 
 ## 当前处理顺序
 
 | 泳道 | ID               | 优先级 | 状态                                     | 目标                                                                                    | 唯一写者      | 复核/发布                    |
 | ---- | ---------------- | ------ | ---------------------------------------- | --------------------------------------------------------------------------------------- | ------------- | ---------------------------- |
-| UI   | `HP-20261010-02` | P0     | `READY`                                  | 按确认稿统一全局 UI，移除旧布局与深浅主题分叉                                           | TraeX 执行者  | TraeX 审判者                 |
+| UI   | `HP-20261010-02` | P0     | `IN_PROGRESS`                            | 按确认稿统一全局 UI：已完成统一亮色主题与移除主题切换入口（#73），继续推进页面迁移与残留清理 | Aime 个人助理 | TraeX 审判者                 |
 | B    | `HP-20261009-13` | P0     | `PENDING_EVIDENCE`                       | Strava 生命周期已部署，待真实授权/解绑 smoke                                            | TraeX 执行者  | TraeX 审判者 / Aime 个人助理 |
 | D    | `HP-20261009-06` | P1     | `SUPERSEDED_BY(HP-20261010-02)`          | 旧双主题全页对比度，不再单独实施                                                        | -             | TraeX 审判者                 |
 | D1   | `HP-20261010-01` | P1     | `SUPERSEDED_BY(HP-20261010-02)`          | 旧浅色主题与运行态低对比已随 #62/#66 补保护，最终由新 UI 统一收口                       | -             | TraeX 审判者                 |
@@ -61,11 +62,11 @@
 
 ### HP-20261010-02 · 按确认稿统一全局 UI 并移除旧主题体系
 
-- 优先级/状态：P0 / `READY`，用户已确认效果方向并指定 TraeX 执行者实施、TraeX 审判者审核验证。
+- 优先级/状态：P0 / `IN_PROGRESS`。阶段 1（统一亮色主题与移除主题切换入口）已随 PR [#73](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/73) 合入并上传开发版 `0.0.52.1`；后续继续按确认稿推进 token、组件与页面迁移。
 - 产品基线：删除旧版布局，不再区分暗色/浅色；统一白色主背景、近黑文字、荧光黄绿色品牌色、2px 黑色描边、轻量硬阴影、大圆角卡片，禁止继续保留主题切换入口或双份主题样式。
 - 尺寸基线：375×812px 画布；状态栏 20px、导航栏 44px、TabBar 56px + 安全区；左右边距 16px、8px 栅格；页面标题 24/32px、卡片标题 18/26px、正文 14/22px、辅助文字 12/18px；主按钮和输入框 48px 高、分段控件 40px 高、卡片圆角/内边距 16px、卡片间距 12px。
 - 页面范围：活动首页、活动详情、创建活动、我的行程、个人中心、设置为第一批；随后覆盖报名、管理端、骑行能力卡和共享组件。必须保留当前真实功能、状态、分页、授权与异常恢复，不以效果图虚构功能。
-- 实施拆分：先建立单一 token/基础组件和 App 壳层，再逐页迁移；同一时间只允许一个写者修改全局 token、导航和共享组件，页面迁移可在文件族不重叠时并行。
+- 实施拆分：先建立单一 token/基础组件和 App 壳层，再逐页迁移；同一时间只允许一个写者修改全局 token、导航和共享组件，页面迁移可在文件族不重叠时并行。（已完成：统一亮色主题与移除主题切换入口，见 #73）
 - 审核要求：TraeX 审判者按 375×812px 逐页核对布局、字体、卡片、触控区和安全区；扫描 `theme-light/theme-dark`、主题切换入口及旧硬编码残留；执行功能回归、CI、开发版上传和真机截图验收。
 - 交付要求：产品代码同步设置页版本日志；独立 PR 保持单提交；CI 全绿；微信开发版上传；第一批六页逐页真机截图与基准尺寸对照通过后才可关闭。
 - 更新时间：2026-10-10。
