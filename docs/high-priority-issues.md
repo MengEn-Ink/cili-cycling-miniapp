@@ -1,6 +1,6 @@
 # 高优问题清单
 
-> 最后更新：2026-10-11 06:35（CST）
+> 最后更新：2026-10-11 06:55（CST）
 >
 > 维护原则：这里只保留尚未满足关闭条件的问题。新问题先去重、澄清、拆分；已满足关闭条件的条目直接删除，Git 历史和不可变外部证据作为归档。
 
@@ -40,6 +40,7 @@
 ## 当前工作交接检查点
 
 - 2026-10-11 06:35 本轮（定时对齐）再交付一条纯前端独立 PR 并上传微信开发版 `0.0.104.1`：[#103](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/103) 只读缓存支持冷启动持久化与断网兜底——回源成功后写入版本化 `wx` 同步存储，冷启动在 TTL 内直接复用并保留原始过期时刻；网络失败仅在 5 分钟离线窗口内返回上次数据，在线仍强制回源；活动/Strava 写入与账号切换同步清理内存和持久化命名空间，并新增命中率指标。PR `validate`、main CI [38091847664](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38091847664) 与微信开发版自动上传 [38091927615](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38091927615) 均 success。N7 已推进冷启动持久化/可观测部分，状态仍 `PENDING_EVIDENCE`，剩余“图片临时地址缓存及到期刷新”与真机冷启动/断网 smoke。另：共享工作区中存在他泳道未提交的“资料图片内容指纹去重”改动（`profile-edit/index.ts` + `profile-media-dedupe.test.ts`），本轮未触碰、未并入任何提交。真实阻塞维持不变：① 云函数部署需腾讯云凭证；② 大量条目需物理真机/真实验收。
+- 2026-10-11 06:55 本轮补齐图片去重链路并交付一条纯前端 PR：#100 活动图片指纹去重合并后曾因 #102 docs 抢跑被上传流程判为过期，已手动 `workflow_dispatch` 补传微信开发版 `0.0.103.1`（checkout `e1b35b2`，含 #100+#101）；[#105](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/105) 个人资料客户端会话内指纹去重（头像/背景共享指纹映射、跨槽位复用，取不到指纹回退完整链路，跨会话由云端 canonical 兜底），rebase 到 #104 后日志顺延 `2026.10.11.11`，PR `validate`、main CI 与微信开发版自动上传 [38092918041](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38092918041) 均 success，微信开发版 `0.0.106.1`（checkout `b6dddd41`）。另：#94 云函数 `activity-admin` 已通过本机 CloudBase CLI 部署到 `cloudbase-d0gizacy77a1ab017` 并回读 `MATCH: 线上与本地一致`，N6 的 CloudBase 部署阻塞解除。为避让并发泳道，本轮在独立 clone（`cili-profile-dedupe`）交付，原共享工作区 `cili-work-main` 已原样归还。N5 转 `PENDING_EVIDENCE`（仅剩真机弱网/CloudBase 回读）。真实阻塞收敛为：大量条目需物理真机/真实验收。
 
 - 2026-10-11 05:50 本轮（定时对齐）再交付两条独立 PR 并上传微信开发版 `0.0.100.1`：#99 活动卡片滑动删除（接 #94 服务端删除契约）、#101 活动/Strava 内存 TTL 缓存与写后失效；两个 PR 的 PR checks、main CI 与微信开发版自动上传均 success。N6/N7 已推进到“已部署”层，状态 `PENDING_EVIDENCE`。**真实阻塞（需用户/环境决策）**：① 沙箱无 CloudBase CLI 与腾讯云凭证，#89/#94/#96 等改动的云函数（activity-read/activity-admin/registration/admin-review/profile）无法在沙箱部署，需要为沙箱配置腾讯云凭证或由用户确认部署；② 大量 `PENDING_EVIDENCE` 条目需物理真机/真实验收，代码与部署层不能替代。
 - 2026-10-11 本轮（定时对齐）已完成四条独立 PR 并上传微信开发版 `0.0.97.1`：#94 活动删除服务端契约、#95 集合时间回显与图片往返、#96 资料必填与报名拦截、#97 分享卡片封面与朋友圈；四个 PR 的 main CI 与微信开发版自动上传均 success。四个条目均已推进到“已部署”层，真机 smoke/回读待做，状态统一为 `PENDING_EVIDENCE`；#94 的前端右滑 UI（分支 `fix/activity-card-swipe-delete`）已由另一泳道 `IN_PROGRESS`，#97 的活动群二维码作为剩余原子项保留在原条目。
@@ -59,8 +60,8 @@
 | N2   | `HP-20261010-04` | P0     | `PENDING_EVIDENCE` (#97, 开发版 0.0.97.1) | 分享卡片已交付；活动群二维码仍为 READY，微信群待办/置顶能力待评估                        | Aime          | 独立复核 / 真机              |
 | N3   | `HP-20261010-05` | P0     | `PENDING_EVIDENCE`                       | 14 天数据窗口已随 #89 交付开发版 `0.0.88.1`，待日期分组/快捷入口与真机复核                 | -             | 独立复核 / 真机              |
 | N4   | `HP-20261010-06` | P0     | `PENDING_EVIDENCE` (#96, 开发版 0.0.97.1) | 性别、头像、个人照片必填与报名拦截已交付，待真机资料/报名 smoke                          | Aime          | 独立复核 / 真机              |
-| N5   | `HP-20261010-07` | P0     | `READY`                                  | 恢复活动与资料图片上传，补预览、失败恢复和重复上传治理                                  | -             | 独立复核 / CloudBase         |
-| N6   | `HP-20261010-08` | P1     | `PENDING_EVIDENCE` (#94/#99, 开发版 0.0.100.1) | 删除服务端契约与前端右滑删除 UI 均已合入，待 CloudBase 部署与真机手势/独立复核          | Aime          | 独立复核 / CloudBase         |
+| N5   | `HP-20261010-07` | P0     | `PENDING_EVIDENCE` (#100/#105, 开发版 0.0.106.1) | 活动图片指纹去重、资料图片会话内去重与失败恢复已交付，待真机弱网/CloudBase 回读 | Aime          | 独立复核 / 真机              |
+| N6   | `HP-20261010-08` | P1     | `PENDING_EVIDENCE` (#94/#99, 开发版 0.0.106.1) | 删除契约、右滑 UI 与 activity-admin CloudBase 部署均已完成，待真机手势/独立复核          | Aime          | 独立复核 / 真机              |
 | N7   | `HP-20261010-09` | P1     | `PENDING_EVIDENCE` (#101/#103, 开发版 0.0.104.1) | 内存 TTL 缓存、冷启动持久化、断网兜底与命中率指标已交付；图片临时地址缓存及真机冷启动/断网 smoke 待补 | Aime          | 独立复核 / 真机              |
 | N8   | `HP-20261010-10` | P1     | `READY`                                  | 所有登录用户可发布活动，并在活动卡片展示发布人头像和昵称                                | -             | 独立复核 / CloudBase         |
 | N9   | `HP-20261010-11` | P1     | `READY`                                  | 建立固定稳定体验版入口、版本晋级和可追溯发布流程                                        | -             | 独立复核 / 微信后台          |
@@ -117,19 +118,20 @@
 
 ### HP-20261010-07 · 图片上传可用性与重复上传治理
 
-- 优先级/状态：P0 / `READY`。
-- 当前事实：活动和个人资料均直接调用 `wx.cloud.uploadFile`；文件名由时间戳和随机数组成，同一图片重复选择会产生重复对象，目前也缺少统一的上传状态、失败重试、保存回读和孤立文件治理。
-- 交付拆分：先以活动封面和个人照片分别复现并修复“不可上传/不可预览”；再引入内容指纹或等价幂等键，阻止同一业务实体重复上传；最后补替换、取消和保存失败后的安全清理，禁止误删仍被活动、资料或名片引用的文件。
+- 优先级/状态：P0 / `PENDING_EVIDENCE`（活动侧 [#100](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/100)、资料侧 [#105](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/105)，开发版 `0.0.106.1`）。
+- 已落地（活动图片，#100）：上传路径由时间戳随机名改为内容 md5 确定性路径 `profiles/activity-media/<digest>.<ext>`，已提交图片、待处理项与同批文件三处去重，失败重试复用同一 `cloudPath`；`wx.getFileInfo` 失败时降级随机路径保证可用性优先。
+- 已落地（资料图片，#105）：头像与背景照片选图后取内容 md5，命中本次会话「指纹→fileId」映射则直接复用、跳过路径申请/上传/注册，头像与背景跨槽位共享映射；取不到指纹回退完整上传链路。跨会话重复由云端既有 canonical 内容哈希机制（`profile-canonical`）兜底，随机源对象由 cleanup intent 台账到期清理。
+- 剩余增量：真机弱网与 CloudBase 回读（同一图片反复选择、断网重试、成功响应丢失等场景）以及独立复核；孤立对象审计清理依赖定期 cleanup 任务运行态证据。
 - 关闭条件：选择即本地预览，上传进度与失败原因可见，可安全重试/删除/替换；重复选择不重复计费存储；孤立对象可审计清理；真机弱网、CloudBase 回读和独立复核通过。
-- 更新时间：2026-10-10 23:56（CST）。
+- 更新时间：2026-10-11 06:55（CST）。
 
 ### HP-20261010-08 · 活动卡片右滑删除
 
-- 优先级/状态：P1 / `PENDING_EVIDENCE`：服务端契约（[#94](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/94)）与前端右滑删除 UI（[#99](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/99)，开发版 `0.0.100.1`）均已合入，待 CloudBase 部署、真机手势与独立复核。
+- 优先级/状态：P1 / `PENDING_EVIDENCE`：服务端契约（[#94](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/94)）与前端右滑删除 UI（[#99](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/99)，开发版 `0.0.106.1`）均已合入；云函数 `activity-admin` 已通过 CloudBase CLI 部署到 `cloudbase-d0gizacy77a1ab017` 并回读 `MATCH: 线上与本地一致`，仅剩真机手势与独立复核。
 - 已落地契约：`delete` action 仅发布者本人或管理员可调用；有 pending/approved/checked_in/waiting 报名或候补时禁止删除并说明原因；无报名时写入 `is_deleted` 逻辑删除，不物理删除活动、报名或媒体；重复请求幂等，不存在返回 `ACTIVITY_NOT_FOUND`；写入前二次校验报名以覆盖并发新增。
 - 已落地交互：活动卡片向左滑动露出删除按钮并自动展开/收回，删除前二次确认、删除成功即时移除；非本人或云端拦截时展示原因，不只在前端数组移除。
-- 关闭条件：真机手势、并发报名、重复删除、网络失败和撤销/恢复策略测试通过；列表/详情一致；CloudBase 部署、真机手势与独立复核齐全。服务端 node:test 用例已覆盖权限/占用/幂等/并发，前端 Vitest 已覆盖滑动/确认/云端拦截。
-- 更新时间：2026-10-11 05:50（CST）。
+- 关闭条件：真机手势、并发报名、重复删除、网络失败和撤销/恢复策略测试通过；列表/详情一致；真机手势与独立复核齐全（CloudBase 部署已完成）。服务端 node:test 用例已覆盖权限/占用/幂等/并发，前端 Vitest 已覆盖滑动/确认/云端拦截。
+- 更新时间：2026-10-11 06:55（CST）。
 
 ### HP-20261010-09 · 活动、图片与 Strava 缓存
 
