@@ -30,7 +30,7 @@
 | A3 | `HP-20261009-03` | P0 发布门禁 | `IN_PROGRESS` | 真实 Date planner/smoke 重新取证 | TraeX 执行者 | TraeX 审判者 |
 | A4 | `HP-20261009-05` | P1 | `IN_PROGRESS` | 首页时间线客户端与发布链路 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
 | B | `HP-20261009-13` | P0 | `IN_PROGRESS` | Strava 授权撤销与异常生命周期 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
-| C | `HP-20261009-04` | P1 | `READY` | PR #45 管理列表分页交付 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
+| C | `HP-20261009-04` | P1 | `IN_PROGRESS` | PR #45 管理列表分页代码完成，待集成/部署证据 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
 | D | `HP-20261009-06` | P1 | `READY` | 浅色主题全页对比度 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
 | E | `HP-20261009-07` | P1 | `READY` | 我的行程永久保留历史/下架活动 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
 | F1 | `HP-20261009-08` | P1 | `READY` | 创建活动时间快捷选择 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
@@ -78,13 +78,14 @@
 
 ### HP-20261009-04 · PR #45 活动管理分页尚未交付
 
-- 优先级/状态：P1 / `READY`，可在独立 worktree 并行。
-- 当前事实：[PR #45](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/45) OPEN、非 Draft、`CONFLICTING/DIRTY`，head `60f035df1ff630567f944328a641ba023466b83b`；旧 `validate` SUCCESS，但 0 review、未合并、未部署。
-- 证据/阻断：101+ 管理列表分页尚未进入 main；旧 CI 不能证明与当前 main 兼容或真实页面通过。
-- 下一步：从最新 main 处理冲突且保留原测试门禁；独立审查后重跑 CI，再部署测试环境并做管理页 smoke。
+- 优先级/状态：P1 / `IN_PROGRESS`，代码与本地门禁已完成，等待主代理整理单提交、独立复核、CI、合入与部署证据。
+- 当前事实：当前工作树已在最新 main（13 集合、原 29 索引）上完成 PR #45 冲突整合，并保留首页时间线与 Strava 生命周期实现；活动管理新增两条组合索引（合计 31），使用 BSON Date 查询边界、`event_start + _id` 稳定游标、状态/owner/软删前置过滤，以及 legacy ISO 时间与无时间草稿分阶段兼容。客户端新增状态筛选，并以 revision + 同 cursor single-flight 隔离刷新、筛选和加载更多，追加时按 ID 防重。
+- 代码证据：活动管理 Node 测试覆盖 101 条、101 条同时间戳、BSON Date/legacy/无时间三阶段、状态与 owner/软删过滤及 cursor 绑定；Vitest 覆盖 repository 严格协议、快速刷新/筛选/加载更多迟到响应与重复请求。相关 focused 测试与 bootstrap 31 索引测试已在未提交工作树通过；最终完整门禁结果以本次交付记录为准。
+- 证据/阻断：尚无主代理整理后的不可变单提交 SHA、远端 CI、main 合入、测试环境 CloudBase 31 索引/`activity-admin` Active 版本回读或管理页真实 smoke；因此不得标记完成或删除。
+- 下一步：主代理相对 main 整理单提交并完成独立复核/CI；由环境负责人显式部署同一 SHA，回读 31 索引和云函数版本，再执行 101+、同时间戳、过滤、快速刷新/筛选/加载更多竞态真实 smoke。
 - 负责人：TraeX 执行者；独立复核：TraeX 审判者；发布：Aime 个人助理。
-- 关闭条件：不可变 PR SHA 复核通过；CI SUCCESS；合入 main；测试环境部署成功；101+、同时间戳、过滤、刷新/加载更多竞态真实 smoke 通过。
-- 更新时间：2026-10-09。
+- 关闭条件：不可变 PR SHA 复核通过；CI SUCCESS；合入 main；测试环境部署成功；101+、同时间戳、过滤、刷新/筛选/加载更多竞态真实 smoke 通过。
+- 更新时间：2026-10-10。
 
 ### HP-20261009-05 · 首页未来/历史时间线剩余客户端与发布链路
 

@@ -22,6 +22,16 @@ export interface PublicActivityPage {
   asOf: string;
 }
 export type ActivityInput = Omit<EditableActivity, 'id' | 'date' | 'occupiedCount' | 'version'>;
+export type ActivityAdminStatusFilter = 'all' | 'draft' | 'published' | 'finished';
+export interface ActivityAdminPageInput {
+  pageSize: number;
+  cursor?: string;
+  statusFilter?: ActivityAdminStatusFilter;
+}
+export interface ActivityAdminPage {
+  items: EditableActivity[];
+  nextCursor: string | null;
+}
 export interface CloneActivityInput {
   sourceActivityId: string;
   requestId: string;
@@ -31,6 +41,7 @@ export interface CloneActivityInput {
 }
 export interface ActivityAdminRepository {
   listAdminActivities(): Promise<EditableActivity[]>;
+  listAdminActivitiesPage(input: ActivityAdminPageInput): Promise<ActivityAdminPage>;
   getAdminActivity(id: string): Promise<EditableActivity | undefined>;
   saveActivity(
     value: ActivityInput,

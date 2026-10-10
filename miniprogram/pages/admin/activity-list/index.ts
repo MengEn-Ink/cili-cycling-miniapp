@@ -4,8 +4,45 @@ import { appStore } from '../../../store/app-store';
 
 const emptyCloneForm = () => ({ deadline: '', startAt: '', endAt: '' });
 const newRequestId = () => `clone_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+const PAGE_SIZE = 50;
+type StatusFilter = 'all' | 'draft' | 'published' | 'finished';
+
+function pageInput(statusFilter: StatusFilter, cursor?: string) {
+  return {
+    pageSize: PAGE_SIZE,
+    ...(statusFilter === 'all' ? {} : { statusFilter }),
+    ...(cursor === undefined ? {} : { cursor }),
+  };
+}
+
+function displayItem(item: any) {
+  return {
+    ...item,
+    canClone: item.status === 'finished',
+    canToggleOnline: item.status === 'draft' || item.status === 'published',
+    statusLabel:
+      item.status === 'published' ? '已上线' : item.status === 'draft' ? '已下架' : '已结束',
+    toggleLabel: item.status === 'published' ? '下架' : '上线',
+  };
+}
+
+function appendUnique(current: any[], incoming: any[]) {
+  const seen = new Set(current.map((item) => item.id));
+  return [
+    ...current,
+    ...incoming.filter((item) => {
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    }),
+  ];
+}
 
 Page({
+  _listRevision: 0,
+  _loadMorePromise: undefined as Promise<void> | undefined,
+  _loadMoreCursor: '',
+  _loadMoreRevision: 0,
   data: {
     theme: 'dark',
     themeClass: 'theme-dark',
@@ -17,31 +54,104 @@ Page({
     cloneRequestId: '',
     cloneForm: emptyCloneForm(),
     cloning: false,
+    nextCursor: null as string | null,
+    hasMore: false,
+    loading: false,
+    loadingMore: false,
+    statusFilter: 'all' as StatusFilter,
   },
   async onShow() {
+    const revision = this._listRevision + 1;
+    this._listRevision = revision;
+    this._loadMorePromise = undefined;
+    this._loadMoreCursor = '';
+    this._loadMoreRevision = revision;
     syncPageTheme(this);
+    // 新一轮刷新已经使旧分页请求失效，先收敛其视觉状态，避免身份检查失败后一直显示加载中。
+    this.setData({ loadingMore: false });
     await appStore.ensureIdentity(wx.cloud);
+    if (revision !== this._listRevision) return;
     if (appStore.authStatus !== 'authenticated') {
-      this.setData({ error: '请先完成微信身份验证', allowed: false });
+      this.setData({
+        error: '请先完成微信身份验证',
+        allowed: false,
+        loading: false,
+        loadingMore: false,
+      });
       return;
     }
+    this.setData({ loading: true, loadingMore: false, error: '' });
     try {
+      const page = await rideService.listAdminActivitiesPage(
+        pageInput(this.data.statusFilter as StatusFilter),
+      );
+      if (revision !== this._listRevision) return;
       this.setData({
-        items: (await rideService.listAdminActivities()).map((item) => ({
-          ...item,
-          canClone: item.status === 'finished',
-          canToggleOnline: item.status === 'draft' || item.status === 'published',
-          statusLabel:
-            item.status === 'published' ? '已上线' : item.status === 'draft' ? '已下架' : '已结束',
-          toggleLabel: item.status === 'published' ? '下架' : '上线',
-        })),
+        items: page.items.map(displayItem),
+        nextCursor: page.nextCursor,
+        hasMore: page.nextCursor !== null,
         allowed: true,
         isAdmin: appStore.role === 'admin',
         error: '',
       });
     } catch (error) {
+      if (revision !== this._listRevision) return;
       this.setData({ error: error instanceof Error ? error.message : '加载失败' });
+    } finally {
+      if (revision === this._listRevision) this.setData({ loading: false });
     }
+  },
+  loadMore() {
+    const revision = this._listRevision;
+    const cursor = this.data.nextCursor;
+    const statusFilter = this.data.statusFilter as StatusFilter;
+    if (!this.data.hasMore || !cursor) return Promise.resolve();
+    if (
+      this._loadMorePromise &&
+      this._loadMoreRevision === revision &&
+      this._loadMoreCursor === cursor
+    )
+      return this._loadMorePromise;
+
+    this._loadMoreRevision = revision;
+    this._loadMoreCursor = cursor;
+    this.setData({ loadingMore: true, error: '' });
+    const request = (async () => {
+      try {
+        const page = await rideService.listAdminActivitiesPage(pageInput(statusFilter, cursor));
+        if (revision !== this._listRevision || cursor !== this.data.nextCursor) return;
+        this.setData({
+          items: appendUnique(this.data.items, page.items.map(displayItem)),
+          nextCursor: page.nextCursor,
+          hasMore: page.nextCursor !== null,
+          // error 已在请求开始时清空；此处不再覆盖，保留分页期间产生的更新业务错误。
+        });
+      } catch (error) {
+        if (revision !== this._listRevision || cursor !== this.data.nextCursor) return;
+        this.setData({ error: error instanceof Error ? error.message : '加载失败' });
+      } finally {
+        const ownsLoadingState =
+          this._loadMoreRevision === revision && this._loadMoreCursor === cursor;
+        if (revision === this._listRevision && ownsLoadingState)
+          this.setData({ loadingMore: false });
+        if (ownsLoadingState) {
+          this._loadMorePromise = undefined;
+          this._loadMoreCursor = '';
+        }
+      }
+    })();
+    this._loadMorePromise = request;
+    return request;
+  },
+  selectStatusFilter(event: any) {
+    const statusFilter = String(event.currentTarget.dataset.status || '') as StatusFilter;
+    if (
+      !['all', 'draft', 'published', 'finished'].includes(statusFilter) ||
+      statusFilter === this.data.statusFilter
+    )
+      return Promise.resolve();
+    this.setData({ statusFilter });
+    return this.onShow();
   },
   edit(event: any) {
     wx.navigateTo({ url: `/pages/admin/activity-edit/index?id=${event.currentTarget.dataset.id}` });

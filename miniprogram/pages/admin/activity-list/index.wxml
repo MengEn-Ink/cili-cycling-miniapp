@@ -6,6 +6,12 @@
       <view class="hero-title">我的活动</view>
       <view>{{isAdmin ? '管理全部活动与发布状态' : '创建、编辑并上下架你的活动'}}</view>
     </view>
+    <view class="status-filters" aria-label="活动状态筛选">
+      <button class="status-filter {{statusFilter === 'all' ? 'active' : ''}}" data-status="all" bindtap="selectStatusFilter">全部</button>
+      <button class="status-filter {{statusFilter === 'draft' ? 'active' : ''}}" data-status="draft" bindtap="selectStatusFilter">已下架</button>
+      <button class="status-filter {{statusFilter === 'published' ? 'active' : ''}}" data-status="published" bindtap="selectStatusFilter">已上线</button>
+      <button class="status-filter {{statusFilter === 'finished' ? 'active' : ''}}" data-status="finished" bindtap="selectStatusFilter">已结束</button>
+    </view>
     <view class="card activity-row" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="edit">
       <view class="row">
         <view class="title">{{item.title}}</view>
@@ -32,6 +38,7 @@
         <button class="btn" bindtap="confirmClone" loading="{{cloning}}" disabled="{{cloning}}">创建草稿</button>
       </view>
     </view>
+    <button wx:if="{{hasMore}}" class="secondary load-more" bindtap="loadMore" loading="{{loadingMore}}" disabled="{{loadingMore}}">加载更多</button>
     <button class="btn" bindtap="create">创建活动草稿</button>
     <button wx:if="{{isAdmin}}" class="secondary" bindtap="reviews">报名审批</button>
   </block>

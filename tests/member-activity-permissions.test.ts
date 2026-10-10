@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const rideService = vi.hoisted(() => ({
   listAdminActivities: vi.fn(),
+  listAdminActivitiesPage: vi.fn(),
   cloneActivity: vi.fn(),
 }));
 const appStore = vi.hoisted(() => ({
@@ -22,6 +23,10 @@ describe('成员活动页面权限', () => {
     appStore.authStatus = 'authenticated';
     appStore.ensureIdentity.mockReset().mockResolvedValue(undefined);
     rideService.listAdminActivities.mockReset().mockResolvedValue([]);
+    rideService.listAdminActivitiesPage.mockReset().mockResolvedValue({
+      items: [],
+      nextCursor: null,
+    });
     rideService.cloneActivity.mockReset();
     vi.stubGlobal('wx', { cloud: {}, navigateTo: vi.fn() });
     vi.stubGlobal('Page', (definition: any) => {
@@ -37,7 +42,7 @@ describe('成员活动页面权限', () => {
     await page.onShow();
     expect(appStore.ensureIdentity).toHaveBeenCalledWith(wx.cloud);
     expect(page.data).toMatchObject({ allowed: true, isAdmin: false });
-    expect(rideService.listAdminActivities).toHaveBeenCalledOnce();
+    expect(rideService.listAdminActivitiesPage).toHaveBeenCalledOnce();
     page.create();
     expect(wx.navigateTo).toHaveBeenCalledWith({ url: '/pages/admin/activity-edit/index' });
     page.reviews();
@@ -45,11 +50,14 @@ describe('成员活动页面权限', () => {
   });
 
   it('只给服务端返回的历史活动展示模板操作，不扩张成员审批权限', async () => {
-    rideService.listAdminActivities.mockResolvedValue([
-      { id: 'own-finished', title: '历史活动', status: 'finished' },
-      { id: 'own-draft', title: '草稿', status: 'draft' },
-      { id: 'own-published', title: '进行中', status: 'published' },
-    ]);
+    rideService.listAdminActivitiesPage.mockResolvedValue({
+      items: [
+        { id: 'own-finished', title: '历史活动', status: 'finished' },
+        { id: 'own-draft', title: '草稿', status: 'draft' },
+        { id: 'own-published', title: '进行中', status: 'published' },
+      ],
+      nextCursor: null,
+    });
 
     await page.onShow();
 
@@ -66,9 +74,10 @@ describe('成员活动页面权限', () => {
   });
 
   it('克隆前要求新时间，双击只提交一次且成功进入返回草稿', async () => {
-    rideService.listAdminActivities.mockResolvedValue([
-      { id: 'own-finished', title: '历史活动', status: 'finished' },
-    ]);
+    rideService.listAdminActivitiesPage.mockResolvedValue({
+      items: [{ id: 'own-finished', title: '历史活动', status: 'finished' }],
+      nextCursor: null,
+    });
     let resolveClone!: (value: unknown) => void;
     rideService.cloneActivity.mockReturnValue(
       new Promise((resolve) => {
@@ -98,9 +107,10 @@ describe('成员活动页面权限', () => {
   });
 
   it('克隆失败后重试复用同一个 requestId', async () => {
-    rideService.listAdminActivities.mockResolvedValue([
-      { id: 'own-finished', title: '历史活动', status: 'finished' },
-    ]);
+    rideService.listAdminActivitiesPage.mockResolvedValue({
+      items: [{ id: 'own-finished', title: '历史活动', status: 'finished' }],
+      nextCursor: null,
+    });
     rideService.cloneActivity
       .mockRejectedValueOnce(new Error('网络失败'))
       .mockResolvedValueOnce({ id: 'activity_clone_retry' });

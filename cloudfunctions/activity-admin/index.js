@@ -13,6 +13,7 @@ const {
   saveActivity,
   MAX_PARTITION_BACKFILL_RECORDS,
 } = require('./domain-index');
+const { listActivitiesPage } = require('./list-pagination');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const OCCUPANCY_BACKFILL_PAGE_SIZE = 100;
@@ -127,6 +128,11 @@ exports.main = async (event = {}) => {
     }
     const identity = await actor(openid);
     if (event.action === 'list') {
+      if (
+        Object.prototype.hasOwnProperty.call(event, 'page_size') ||
+        Object.prototype.hasOwnProperty.call(event, 'cursor')
+      )
+        return ok(await listActivitiesPage(db, { openid, ...identity }, event));
       let query = db.collection('activities');
       // 管理员看全部；成员查询条件由可信 OPENID 构造，客户端无权指定 owner。
       if (!identity.isAdmin) query = query.where({ created_by: openid });

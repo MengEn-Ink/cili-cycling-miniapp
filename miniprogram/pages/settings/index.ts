@@ -5,11 +5,23 @@ import { setTheme, syncPageTheme } from '../../services/theme-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.10.3',
+    date: '2026-10-10',
+    title: '活动管理分页稳定性升级',
+    summary: '活动管理列表支持稳定分批加载，并隔离快速刷新、筛选与加载更多的迟到响应。',
+    latest: true,
+    features: [
+      '活动超过 100 条时可持续加载，不遗漏同一开始时间的活动',
+      '管理员与成员过滤在数据库分页前生效，旧草稿仍可安全查看',
+      '刷新、筛选与加载更多使用单请求隔离，避免重复拼接或旧结果覆盖',
+    ],
+  },
+  {
     version: '2026.10.10.2',
     date: '2026-10-10',
     title: 'Strava 授权生命周期安全升级',
     summary: '解绑、拒绝授权与异常恢复使用稳定服务端语义，并隔离过期授权回调。',
-    latest: true,
+    latest: false,
     features: [
       '本地断开后旧授权链接无法恢复凭证，并清理不再引用的 Strava 媒体',
       '多次授权仅允许最新尝试生效，拒绝授权后不再停留在等待状态',

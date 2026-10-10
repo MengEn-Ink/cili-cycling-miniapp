@@ -232,6 +232,33 @@ export class MockRepository implements RideRepository {
   async listAdminActivities() {
     return this.read().activities;
   }
+  async listAdminActivitiesPage(input: {
+    pageSize: number;
+    cursor?: string;
+    statusFilter?: 'all' | 'draft' | 'published' | 'finished';
+  }) {
+    if (!Number.isInteger(input.pageSize) || input.pageSize < 1 || input.pageSize > 50)
+      throw new Error('分页大小格式错误');
+    const statusFilter = input.statusFilter || 'all';
+    if (!['all', 'draft', 'published', 'finished'].includes(statusFilter))
+      throw new Error('活动状态筛选格式错误');
+    let offset = 0;
+    if (input.cursor !== undefined) {
+      const match = /^mock_(all|draft|published|finished)_([1-9]\d*)$/.exec(input.cursor);
+      if (!match || match[1] !== statusFilter) throw new Error('分页游标格式错误');
+      offset = Number(match[2]);
+      if (!Number.isSafeInteger(offset)) throw new Error('分页游标格式错误');
+    }
+    const activities = this.read().activities.filter(
+      (item) => statusFilter === 'all' || item.status === statusFilter,
+    );
+    const items = activities.slice(offset, offset + input.pageSize);
+    const nextOffset = offset + items.length;
+    return {
+      items,
+      nextCursor: nextOffset < activities.length ? `mock_${statusFilter}_${nextOffset}` : null,
+    };
+  }
   async getAdminActivity(id: string) {
     return this.read().activities.find((x) => x.id === id);
   }
