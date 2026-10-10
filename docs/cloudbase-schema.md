@@ -22,6 +22,8 @@ Strava 报名资格唯一事实源：`strava_credentials + strava_snapshots`。`
 
 `_id` 是 activity_id 与 openid 的确定性摘要；包含活动选项、脱敏 `profile_snapshot`、无 token 的 `strava_snapshot`、状态与审批历史。状态为 `waiting|pending|approved|checked_in|rejected|cancelled`；`waiting` 不占位，`checked_in` 记录 `checked_in_at`，操作人仅留在服务端审计字段中。`pending + approved + checked_in` 占位；取消或驳回释放名额时，在同一事务内按 `created_at` 全局 FIFO 扫描候补，并提升最早同时满足总容量与集合方式容量的报名；分类仍满的更早候补继续等待，补位成功时 `occupied_count` 保持不变。可选的 `team_id/team_name/is_team_leader` 仅表示邀请关系，每位队员仍独立占位和审核。管理员签到只允许 `approved -> checked_in`，重复请求幂等。
 
+“我的行程”使用 `registration/minePage`，请求为 `{ action:'minePage', page_size:1..50, cursor? }`，响应严格为 `{ items, next_cursor }`。服务端只读取当前 `openid`，按 `created_at DESC + _id DESC` 稳定 keyset 分页；旧 `mine` 数组协议只用于滚动部署兼容。每条报名携带 owner-bound 活动投影；`draft`、软删或物理缺失活动降级为不可报名的历史活动，并优先保留报名时的标题与时间快照。活动实体物理缺失时，本人仍可取消报名并写审计，但不再回写不存在的名额；实体存在但名额计数畸形时继续拒绝取消。
+
 ### `profiles`
 
 ```text
@@ -190,6 +192,7 @@ synced_at
 | registrations | activity_id ASC, status ASC, options.gathering_mode ASC, created_at ASC | 普通；候补 FIFO |
 | registrations | activity_id ASC, team_id ASC, is_team_leader ASC | 普通；邀请队伍解析 |
 | registrations | openid ASC, created_at DESC | 普通 |
+| registrations | openid ASC, created_at DESC, _id DESC | 普通；我的行程稳定 keyset 分页 |
 | audit_logs | actor_openid ASC, created_at DESC | 普通 |
 | notification_outbox | status ASC, attempts ASC, lease_expires_at ASC | 普通；待发送与过期 claim 扫描 |
 | notification_outbox | target_openid ASC, created_at DESC | 普通；用户通知历史查询 |
@@ -215,7 +218,7 @@ synced_at
 
 ## 部署后验证
 
-1. 校验 bootstrap 管理的 13 集合、全拒绝规则与 31 索引。确认 `oauth_attempts` 已纳入全拒绝客户端访问规则；确认活动首页 future 的 `status + event_start + _id + event_end`、history 的 `status + event_end DESC + _id DESC + event_start DESC`、活动管理的 `status + is_deleted + event_start DESC + _id DESC` 与 `created_by + status + is_deleted + event_start DESC + _id DESC`、`activities.created_by + event_start`、`notification_outbox` 的 lease、目标与 retry 索引，`profile_media.owner_openid + origin + status + _id` 断开分页索引，`profile_media` 与 `profile_media_imports` 的 cleanup、delete lease 与 retry 索引，以及 `oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
+1. 校验 bootstrap 管理的 13 集合、全拒绝规则与 32 索引。确认 `oauth_attempts` 已纳入全拒绝客户端访问规则；确认活动首页 future 的 `status + event_start + _id + event_end`、history 的 `status + event_end DESC + _id DESC + event_start DESC`、活动管理的 `status + is_deleted + event_start DESC + _id DESC` 与 `created_by + status + is_deleted + event_start DESC + _id DESC`、`activities.created_by + event_start`、我的行程 `registrations.openid + created_at DESC + _id DESC`、`notification_outbox` 的 lease、目标与 retry 索引，`profile_media.owner_openid + origin + status + _id` 断开分页索引，`profile_media` 与 `profile_media_imports` 的 cleanup、delete lease 与 retry 索引，以及 `oauth_states.expires_at` 和 `oauth_states.openid + expires_at` 普通索引存在，并验证应用层过期、`consumed_at` 防重放及限量清理。
 2. 真机验证 WXContext openid、微信手机号动态 code、手填手机号来源，以及资料响应中无明文/密文。
 3. 配置 callback HTTPS 路由、Strava 回调域和小程序业务域名，验证 CSRF、过期与重放。
 4. 验证 token 临期刷新、90 天分页、解绑审计及日志无敏感信息；验证跨用户媒体拒绝、未登记 legacy 不进卡、register 失败回收上传对象，以及临时 URL 故障降级。

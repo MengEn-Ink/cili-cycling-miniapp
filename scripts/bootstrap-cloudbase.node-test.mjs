@@ -230,7 +230,7 @@ test('活动首页 planner 索引纳入 bootstrap exact plan 与 verify', () => 
     INDEXES.filter((index) => index.name.startsWith('activities_public_event_')),
     [PUBLIC_EVENT_START, PUBLIC_EVENT_END],
   );
-  assert.equal(INDEXES.length, 31);
+  assert.equal(INDEXES.length, 32);
 
   const missing = completeState();
   missing.indexes.set(
@@ -435,7 +435,7 @@ test('OAuth 与 Strava 集合包含 attempt fencing、唯一、普通过期时�
     unique: false,
   });
   assert.equal(COLLECTIONS.length, 13);
-  assert.equal(INDEXES.length, 31);
+  assert.equal(INDEXES.length, 32);
   assert.equal(
     INDEXES.some((item) => item.collection === 'oauth_attempts'),
     false,
@@ -509,14 +509,14 @@ test('notification_outbox 使用租约扫描索引并保持客户端全拒绝', 
   );
 });
 
-test('CloudBase schema 文档列出 notification_outbox 和活动时间线索引并与 31 条总数一致', () => {
+test('CloudBase schema 文档列出 notification_outbox 和活动时间线索引并与 32 条总数一致', () => {
   const schema = readFileSync(new URL('../docs/cloudbase-schema.md', import.meta.url), 'utf8');
   assert.match(schema, /notification_outbox \| status ASC, attempts ASC, lease_expires_at ASC/);
   assert.match(schema, /notification_outbox \| target_openid ASC, created_at DESC/);
   assert.match(schema, /notification_outbox \| status ASC, attempts ASC, next_retry_at ASC/);
   assert.match(schema, /activities \| status ASC, event_start ASC, _id ASC, event_end ASC/);
   assert.match(schema, /activities \| status ASC, event_end DESC, _id DESC, event_start DESC/);
-  assert.match(schema, /全拒绝规则与 31 索引/);
+  assert.match(schema, /全拒绝规则与 32 索引/);
 });
 
 test('profile_media 使用 owner/status、Strava 断开分页与过期清理索引并保持客户端全拒绝', () => {
@@ -557,7 +557,7 @@ test('profile_media 使用 owner/status、Strava 断开分页与过期清理索�
     ['retry_at', 1],
   ]);
   assert.equal(COLLECTIONS.length, 13);
-  assert.equal(INDEXES.length, 31);
+  assert.equal(INDEXES.length, 32);
   assert.deepEqual(DENY_RULE, { read: false, write: false });
 });
 
@@ -591,7 +591,7 @@ test('profile_media_imports 使用全拒绝 ACL 与完整 cleanup 扫描索引',
   assert.match(schema, /profile_media_imports \| status ASC, cleanup_after ASC/);
   assert.match(schema, /profile_media_imports \| status ASC, delete_lease_expires_at ASC/);
   assert.match(schema, /profile_media_imports \| status ASC, retry_at ASC/);
-  assert.match(schema, /13 集合、全拒绝规则与 31 索引/);
+  assert.match(schema, /13 集合、全拒绝规则与 32 索引/);
   assert.match(schema, /avatar_revision/);
   assert.match(schema, /origin: wechat\|strava\|custom/);
   assert.match(schema, /status: leased\|prepared\|uploaded/);
@@ -633,7 +633,7 @@ test('云存储规则只允许客户端写 staging，canonical 前缀保持 serv
 test('README 与部署包断言包含 profile_media_imports 和头像导入入口', () => {
   const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
   const verifier = readFileSync(new URL('./verify-cloud-packages.mjs', import.meta.url), 'utf8');
-  assert.match(readme, /13 个集合、31 个业务索引/);
+  assert.match(readme, /13 个集合、32 个业务索引/);
   assert.match(verifier, /pack\('profile',[\s\S]*?'avatar-import\.js'/);
 });
 
