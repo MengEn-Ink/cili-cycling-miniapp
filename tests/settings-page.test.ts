@@ -44,22 +44,22 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.11.12',
+      version: '2026.10.11.13',
       latest: true,
-      title: '活动群二维码独立维护',
+      title: '活动卡片显示发布人',
       summary:
-        '创建和编辑活动时可单独上传活动群二维码，详情页展示扫码入口，并在二维码可能过期时提醒替换。',
+        '每张活动卡片都会显示发布人的头像和昵称，一眼看出是谁组织的活动；所有登录用户都可以发布自己的活动。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.11.13',
       '2026.10.11.12',
       '2026.10.11.11',
       '2026.10.11.10',
       '2026.10.11.9',
-      '2026.10.11.8',
     ]);
   });
 
