@@ -67,7 +67,7 @@ describe('其余页面 CILI 统一明亮 UI 静态契约', () => {
         '--color-surface',
       );
     }
-    expectSemantic(declaration(effectiveBlock(styles, '.serial'), 'color'), '--color-brand');
+    expectSemantic(declaration(effectiveBlock(styles, '.serial'), 'color'), '--color-text');
     expectSemantic(
       declaration(effectiveBlock(styles, '.meet-info'), 'background'),
       '--color-raised',

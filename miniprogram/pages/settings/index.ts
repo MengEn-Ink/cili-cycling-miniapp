@@ -4,11 +4,22 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.10.14',
+    date: '2026-10-10',
+    title: '报名凭证页统一明亮主题',
+    summary: '清理报名凭证页深色硬编码色，所有文字与控件回到明亮 token。',
+    latest: true,
+    features: [
+      '活动名称、报名凭证、集合信息、时间线文字对比度全面达标',
+      '"已通过"胶囊与审批意见改为明亮描边与可读灰字',
+      '底部"取消报名"按钮使用统一 48px 控件高度与硬阴影描边',
+    ],
+  },
+  {
     version: '2026.10.10.13',
     date: '2026-10-10',
     title: '活动地图选点恢复',
     summary: '补齐活动起终点选点失败提示和保存竞态保护。',
-    latest: true,
     features: [
       '取消选点不再误报错误，系统定位关闭时给出明确恢复指引',
       '接口或隐私配置异常时提示管理员检查后台配置',

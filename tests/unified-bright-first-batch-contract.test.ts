@@ -104,4 +104,34 @@ describe('HP-20261010-02 第一批六页尺寸契约', () => {
     );
     expect(styles).not.toMatch(/theme-option|theme-preview|appearance-card/);
   });
+
+  it('报名凭证页禁用深色硬编码色并把关键文字收口到明亮 token', () => {
+    const styles = read('miniprogram/pages/credential/index.wxss');
+    const forbidden = [
+      '#f7f7f5',
+      '#c8c8cc',
+      '#a8a8ad',
+      '#9bc2aa',
+      '#e9a071',
+      '#6f9b82',
+      '#1b1b1d',
+      '#1c1c1e',
+      '#151517',
+      '#242427',
+      '#2c2c2e',
+      '#343438',
+      '#3a3a3c',
+      '#3a3a3e',
+      '#ff8f86',
+    ];
+    for (const value of forbidden) {
+      expect(styles.toLowerCase()).not.toContain(value);
+    }
+    expectSemantic(declaration(effectiveBlock(styles, '.credential-page .hero-title'), 'color'), '--color-text');
+    expectSemantic(declaration(effectiveBlock(styles, '.credential-page .hero-subtitle'), 'color'), '--color-muted');
+    expectSemantic(declaration(effectiveBlock(styles, '.serial'), 'color'), '--color-text');
+    expectSemantic(declaration(effectiveBlock(styles, '.approved-mark'), 'color'), '--color-success-text');
+    expectSemantic(declaration(effectiveBlock(styles, '.timeline-status'), 'color'), '--color-text');
+    expectSemantic(declaration(effectiveBlock(styles, '.timeline-mark'), 'background'), '--color-muted');
+  });
 });

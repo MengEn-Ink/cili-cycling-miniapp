@@ -42,11 +42,11 @@ describe('设置页', () => {
       stravaReadiness: readyState,
       stravaStatusText: '已连接，可重新授权或解绑',
     });
-    expect(page.data.releaseNotes).toHaveLength(29);
+    expect(page.data.releaseNotes).toHaveLength(30);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.10.13',
+      version: '2026.10.10.14',
       latest: true,
-      title: '活动地图选点恢复',
+      title: '报名凭证页统一明亮主题',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
