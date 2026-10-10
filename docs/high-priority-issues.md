@@ -15,11 +15,11 @@
 ## 当前共同证据
 
 - 用户报告：2026-10-09 群聊新增 6 组问题，已拆成 HP-06 至 HP-13 共 8 个原子项。
-- 代码合入：PR [#45](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/45)、[#48](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/48)、[#52](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/52)、[#53](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/53)、[#56](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/56)、[#57](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/57) 已合并；最后一次含产品/云函数变更的 main 基线为 `92f5c0b7623be6fbac642388261228b8cb5c959b`（#57 纯前端时间快捷项提示；#56 纯前端浅色主题对比度），中间的纯文档清单提交不改变产品代码基线。
-- CI：上述 PR 及产品基线 `92f5c0b...` 对应 CI 均为 SUCCESS。CI 不能证明 CloudBase Active 版本或真机行为。
-- 微信开发版：Actions run [38017106152](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38017106152) 已成功上传 `0.0.37.1`，head `92f5c0b...`，日志包含“微信开发版 0.0.37.1 上传成功”；其中浅色主题对比度（HP-06）首次随 run [38014100157](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38014100157) 上传的 `0.0.36.1`（head `a275fc3...`）交付。
+- 代码合入：PR [#45](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/45)、[#48](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/48)、[#52](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/52)、[#53](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/53)、[#56](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/56)、[#57](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/57)、[#59](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/59) 已合并；最后一次含产品/云函数变更的 main 基线为 `d3e84e6bd1104548bbe35a05b8496a277f9086c5`（#59 纯前端 Strava 闰日周年校准），中间的纯文档清单提交不改变产品代码基线。
+- CI：上述 PR 及产品基线 `d3e84e6...` 对应 CI 均为 SUCCESS；最新 main CI run [38018305836](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38018305836) SUCCESS。CI 不能证明 CloudBase Active 版本或真机行为。
+- 微信开发版：Actions run [38018365813](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38018365813) 已成功上传 `0.0.39.1`，head `d3e84e6...`，日志包含“微信开发版 0.0.39.1 上传成功”；其中浅色主题对比度（HP-06）首次随 run [38014100157](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38014100157) 上传的 `0.0.36.1`（head `a275fc3...`）交付，活动时间快捷项（HP-08）首次随 run [38017106152](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38017106152) 上传的 `0.0.37.1`（head `92f5c0b...`）交付。
 - CloudBase 部署：已通过本地已登录环境在 `cloudbase-d0gizacy77a1ab017` 应用并 verify 13 个集合、31 条索引；创建 `oauth_attempts` 和首页/媒体/管理分页共 5 条索引，apply requestId 分别为 `70af1f69-803e-4e65-8816-8aaf04120cc5`、`910a7036-7da5-4210-bbb5-48562d84302d`、`6028903a-c63d-4c1b-bd59-a1db4656719d`、`b6331a33-f8be-479e-9247-615a9071f3e2`、`bd79dafe-6b74-4da4-af09-af5a75196bdd`、`104e8934-617e-497e-bd12-0f302680e35c`；`activity-read`、`strava-auth`、`strava-callback`、`activity-admin` 部署命令均返回 success，函数列表回读为 Active。注意：本 Aime 沙箱内无 CloudBase 身份，`npm run cloudbase:verify` 返回 `No valid identity information, please use tcb login to login`，故新增云函数/索引的部署与回读只能由具备登录态的环境完成。
-- 真实验收：HP-06、HP-08 的代码门禁与开发版均已备齐，但 8 项都未取得与同一不可变 SHA 对应的完整真机/真实数据 smoke，不得删除；其中 HP-06 仅余 320px 真机截图与独立复核，HP-08 仅余真机 picker 创建/编辑保存重开 smoke。
+- 真实验收：HP-06、HP-08、HP-12 的代码门禁与开发版均已备齐，但 8 项都未取得与同一不可变 SHA 对应的完整真机/真实数据 smoke，不得删除；其中 HP-06 仅余 320px 真机截图与独立复核，HP-08 仅余真机 picker 创建/编辑保存重开 smoke，HP-12 仍需新旧账号同步回读与真机年限展示。
 
 ## 当前处理顺序
 
@@ -37,7 +37,7 @@
 | F2 | `HP-20261009-09` | P1 | `READY` | 创建活动地点快捷选择与权限恢复（HP-08 代码门禁已满足，可启动；需真机定位验证） | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
 | G1 | `HP-20261009-10` | P1 | `READY` | 单背景图与预览的数据安全闭环 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
 | G2 | `HP-20261009-11` | P1 | `BLOCKED_BY(HP-20261009-10 code commit)` | 个人中心头像预览 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
-| H | `HP-20261009-12` | P1 | `READY` | Strava 年限正确性、回填与部署 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
+| H | `HP-20261009-12` | P1 | `PENDING_EVIDENCE` | 闰日周年修复已随 #59 合入并交付开发版 0.0.39.1，待新旧账号同步回读与真机 smoke | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
 
 > `BLOCKED_BY` 只约束开始后续实现的门禁，不要求前置条目最终关闭。例如 HP-01/02 focused GREEN 且 HP-03 planner/smoke PASS 后即可启动 HP-05；HP-01/02/03 仍保留到合入、部署和真实页面 smoke 齐全，避免形成部署依赖死锁。
 
@@ -169,14 +169,15 @@
 
 ### HP-20261009-12 · Strava 年限正确性、存量回填与部署
 
-- 优先级/状态：P1 / `READY`；客户端周年算法可并行，三个云函数部署须等待 HP-13 的 CloudBase 部署回读与授权 smoke 补齐。
+- 优先级/状态：P1 / `PENDING_EVIDENCE`；闰日周年算法已随 PR [#59](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/59) 合入 main 并交付开发版，存量同步回读与真机验收尚未完成。
 - 用户报告：根据 Strava 获取骑行年限的功能为何未上线，代码是否合并。
-- 代码/CI：账号年限取自 Strava athlete `created_at`，已进入 main 并通过 CI；开发版 `0.0.27.1` 已上传。它表示 Strava 账号年龄，不是完整现实骑龄。
-- 确认缺口：`2020-02-29 -> 2021-02-28` 当前返回 0 年，违反设计期望 1 年；Aime 已报告三个相关函数 Active，但未给出与代码 SHA 的版本映射；存量快照可能缺 `athlete_created_at`，无真实同步回读。
-- 下一步：补周年前/当天/后与闰日 RED，修正算法；定义存量账号自动回填或一次性重新授权策略；在 HP-13 修复后部署同一 SHA 的三个函数。
+- 代码/CI：账号年限取自 Strava athlete `created_at`，PR #59 将目标年份的周年日收敛到当月最后一天，`2020-02-29 -> 2021-02-28` 由 0 年修正为 1 年；普通日期与闰年边界保持不变。修复前确定性 RED，修复后 focused 25/25、全量 Vitest 734/734、`personal-card.ts` lines/functions 100% 且 branches 95%；PR/main CI 均为 SUCCESS。
+- 发布证据：merge SHA `d3e84e6bd1104548bbe35a05b8496a277f9086c5`；微信开发版 run [38018365813](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38018365813) 成功上传 `0.0.39.1`。本次只修改客户端算法，无云函数、Schema 或索引变更；现有同步链会在下一次同步抓取缺失的 `athlete_created_at`，无需为本次 PR 单独部署 CloudBase。
+- 证据缺口：Aime 已报告三个相关函数 Active，但未给出与共享同步代码 SHA 的版本映射；存量快照可能缺 `athlete_created_at`，尚无真实新旧账号同步回读与真机年限展示证据。
+- 下一步：使用新旧 Strava 测试账号触发同步，回读 `strava_snapshots.athlete_created_at` 与 profile `strava_joined_at`，核对周年前/当天/后及闰日账号真机显示；补齐 Active 版本映射与独立复核。
 - 负责人：TraeX 执行者；独立复核：TraeX 审判者；部署/真机：Aime 个人助理。
 - 关闭条件：周年与闰日测试通过；main 合入且 CI 绿；三个函数 Active 版本可回读；真实账号同步后回读 `strava_snapshots.athlete_created_at` 与 profile `strava_joined_at`；新旧账号真机显示正确且无需反复授权。
-- 更新时间：2026-10-09。
+- 更新时间：2026-10-10。
 
 ### HP-20261009-13 · 设置页 Strava 授权撤销与异常生命周期
 
