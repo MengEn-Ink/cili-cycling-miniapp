@@ -127,11 +127,26 @@ describe('HP-20261010-02 第一批六页尺寸契约', () => {
     for (const value of forbidden) {
       expect(styles.toLowerCase()).not.toContain(value);
     }
-    expectSemantic(declaration(effectiveBlock(styles, '.credential-page .hero-title'), 'color'), '--color-text');
-    expectSemantic(declaration(effectiveBlock(styles, '.credential-page .hero-subtitle'), 'color'), '--color-muted');
+    expectSemantic(
+      declaration(effectiveBlock(styles, '.credential-page .hero-title'), 'color'),
+      '--color-text',
+    );
+    expectSemantic(
+      declaration(effectiveBlock(styles, '.credential-page .hero-subtitle'), 'color'),
+      '--color-muted',
+    );
     expectSemantic(declaration(effectiveBlock(styles, '.serial'), 'color'), '--color-text');
-    expectSemantic(declaration(effectiveBlock(styles, '.approved-mark'), 'color'), '--color-success-text');
-    expectSemantic(declaration(effectiveBlock(styles, '.timeline-status'), 'color'), '--color-text');
-    expectSemantic(declaration(effectiveBlock(styles, '.timeline-mark'), 'background'), '--color-muted');
+    expectSemantic(
+      declaration(effectiveBlock(styles, '.approved-mark'), 'color'),
+      '--color-success-text',
+    );
+    expectSemantic(
+      declaration(effectiveBlock(styles, '.timeline-status'), 'color'),
+      '--color-text',
+    );
+    expectSemantic(
+      declaration(effectiveBlock(styles, '.timeline-mark'), 'background'),
+      '--color-muted',
+    );
   });
 });

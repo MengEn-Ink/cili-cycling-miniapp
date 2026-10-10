@@ -648,10 +648,9 @@ function validateMediaUpdate(current, update, openid, secretValue, mediaRecords 
     data.background_photo !== null
   ) {
     const legacy = new Set(
-      [
-        currentBackground,
-        ...(Array.isArray(existing.photos) ? existing.photos : []),
-      ].map((item) => `${item && item.file_id}\u0000${item && item.category}`),
+      [currentBackground, ...(Array.isArray(existing.photos) ? existing.photos : [])].map(
+        (item) => `${item && item.file_id}\u0000${item && item.category}`,
+      ),
     );
     accept(
       data.background_photo,
@@ -692,12 +691,7 @@ function ownerMedia(profile, openid, secretValue, mediaRecords = []) {
   if (!background) return [];
   const records = new Map(mediaRecords.map((record) => [record && record.file_id, record]));
   const record = records.get(background.file_id);
-  const storageFileId = canonicalFileForRecord(
-    record,
-    background.file_id,
-    openid,
-    secretValue,
-  );
+  const storageFileId = canonicalFileForRecord(record, background.file_id, openid, secretValue);
   if (
     !isOwnerMedia(background.file_id, openid, secretValue) ||
     !registeredMedia(record, background, openid) ||
@@ -767,9 +761,9 @@ function normalizeAvatarProfile(doc = {}) {
 function validPhoto(value) {
   return Boolean(
     value &&
-      typeof value.file_id === 'string' &&
-      value.file_id &&
-      ['ride', 'bike', 'other'].includes(value.category),
+    typeof value.file_id === 'string' &&
+    value.file_id &&
+    ['ride', 'bike', 'other'].includes(value.category),
   );
 }
 function effectiveBackgroundPhoto(profile) {

@@ -119,9 +119,7 @@ test('管理员媒体按当前背景、legacy 骑行媒体、其他媒体和头�
       mediaSecret,
     ),
     {
-      file_ids: [current, rideOne, rideTwo].map(
-        (fileId) => canonicalFor(fileId).canonicalFileId,
-      ),
+      file_ids: [current, rideOne, rideTwo].map((fileId) => canonicalFor(fileId).canonicalFileId),
     },
   );
 });

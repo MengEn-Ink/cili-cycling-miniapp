@@ -125,8 +125,7 @@ test('显式背景更新保留存量多图并只激活新槽位媒体', async ()
   const owner = 'owner-background';
   const secret = 'profile-media-secret-for-tests-32-bytes';
   const prefix = mediaOwnerPrefix(owner, secret);
-  const fileId = (suffix) =>
-    `cloud://env/${prefix}123e4567-e89b-42d3-a456-4266141740${suffix}.jpg`;
+  const fileId = (suffix) => `cloud://env/${prefix}123e4567-e89b-42d3-a456-4266141740${suffix}.jpg`;
   const photos = [
     { file_id: fileId('00'), category: 'ride' },
     { file_id: fileId('01'), category: 'bike' },
@@ -154,10 +153,7 @@ test('显式背景更新保留存量多图并只激活新槽位媒体', async ()
   assert.equal(result.ok, true);
   assert.deepEqual(fixture.state.profiles.get(owner).photos, photos);
   assert.deepEqual(fixture.state.profiles.get(owner).background_photo, next);
-  assert.equal(
-    fixture.state.profile_media.get(mediaDocumentId(next.file_id)).status,
-    'active',
-  );
+  assert.equal(fixture.state.profile_media.get(mediaDocumentId(next.file_id)).status, 'active');
   assert.deepEqual(result.data.photos, photos);
   assert.deepEqual(result.data.background_photo, next);
 });

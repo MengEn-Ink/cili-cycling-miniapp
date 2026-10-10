@@ -4,11 +4,21 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.10.17',
+    date: '2026-10-10',
+    title: '代码格式与门禁对齐',
+    summary: '按 Prettier 规则重新格式化本轮产品代码，不改变运行行为。',
+    latest: true,
+    features: [
+      '个人中心头像预览、单背景槽位和明亮主题相关文件通过格式门禁',
+      '保持 CI 的 `format:check` 与 `check:release-notes` 一致',
+    ],
+  },
+  {
     version: '2026.10.10.16',
     date: '2026-10-10',
     title: '个人中心头像可预览',
     summary: '个人中心头像补齐点击预览，非法或缺失图片 fail closed。',
-    latest: true,
     features: [
       '点击头像使用微信原生预览查看大图',
       '仅接受合法 HTTPS 临时 URL，cloud://、http:// 或空值不触发预览',

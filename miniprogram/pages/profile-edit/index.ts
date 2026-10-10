@@ -718,7 +718,8 @@ Page({
         rideService.updateProfile({
           gender: p.gender,
           emergencyName: p.emergencyName,
-          backgroundPhoto: p.backgroundPhoto !== undefined ? p.backgroundPhoto : (p.photos[0] || null),
+          backgroundPhoto:
+            p.backgroundPhoto !== undefined ? p.backgroundPhoto : p.photos[0] || null,
           realName: p.realName.includes('*') ? undefined : p.realName,
           phone: p.phone.includes('*') ? undefined : p.phone,
           emergencyPhone: p.emergencyPhone.includes('*') ? undefined : p.emergencyPhone,

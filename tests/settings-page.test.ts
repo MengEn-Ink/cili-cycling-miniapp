@@ -42,11 +42,11 @@ describe('设置页', () => {
       stravaReadiness: readyState,
       stravaStatusText: '已连接，可重新授权或解绑',
     });
-    expect(page.data.releaseNotes).toHaveLength(32);
+    expect(page.data.releaseNotes).toHaveLength(33);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.10.16',
+      version: '2026.10.10.17',
       latest: true,
-      title: '个人中心头像可预览',
+      title: '代码格式与门禁对齐',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
