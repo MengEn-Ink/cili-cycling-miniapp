@@ -86,7 +86,8 @@
 - 代码/CI：PR #48 已让 `registration/mine` 返回 owner-bound 活动投影和快照降级，focused 既有测试可通过；Aime 已报告 `registration` Active，但版本映射、只读回读与真实 smoke 证据尚未补齐。
 - 确认缺口：`registration/mine` 固定 `.limit(50)` 且无分页；页面用 `Promise.all(listRegistrations,listActivities)`，无必要的公开活动读取失败会拖垮整页；真实 `draft` 下架、软删/物理缺失服务端降级未被直接测试。
 - 设计/计划证据：推荐方案已固化到 `docs/superpowers/specs/2026-10-10-registration-history-pagination-design.md`，TDD 步骤已固化到 `docs/superpowers/plans/2026-10-10-registration-history-pagination.md`；采用兼容式 `minePage`、`created_at + _id` 稳定游标、仓储层透明聚合和 owner-bound 活动投影，旧 `mine` 数组协议保持不变；活动物理缺失时允许本人取消并写审计，但不回写不存在的名额。
-- 下一步：按计划先锁 101 条分页、公开列表失败不影响行程、`published/finished/draft/is_deleted/物理缺失` 与缺失活动取消的 RED，再逐项完成最小 GREEN。
+- TDD RED：`npm --prefix cloudfunctions/registration test` 按预期因 `Cannot find module './mine-page'` 失败，既有 14 项报名测试继续通过；新测试已锁定 101 条分页、同时间戳 binary `_id` 顺序、非法游标及 `published/finished/draft/is_deleted/物理缺失` 活动投影。
+- 下一步：实现 `mine-page` 与安全活动投影的最小 GREEN，再锁定缺失活动取消 RED。
 - 负责人：Aime 个人助理；独立复核：TraeX 审判者；部署/真机：Aime 个人助理。
 - 关闭条件：全部报名可分页且无漏重；历史/下架/软删/缺失活动可解释展示；公开活动接口失败不影响行程；`registration` 部署回读、50+ 真实数据 smoke、CI 与独立复核齐全。
 - 更新时间：2026-10-10。
