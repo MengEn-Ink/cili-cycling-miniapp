@@ -1,6 +1,6 @@
 # 高优问题清单
 
-> 最后更新：2026-10-10 10:55（CST）
+> 最后更新：2026-10-10 11:00（CST）
 >
 > 维护原则：这里只保留尚未满足关闭条件的问题。新问题先去重、澄清、拆分；已满足关闭条件的条目直接删除，Git 历史和不可变外部证据作为归档。
 
@@ -8,65 +8,79 @@
 
 1. 每个 Agent 开工前先读本文件，优先处理未阻塞的 P0，再处理 P1；除非用户明确调整顺序。
 2. `用户报告`、`代码已合入`、`CI 通过`、`已部署`、`真实验收`是五层独立证据，后层不得由前层推断。
-3. `READY` 表示可立即处理；`IN_PROGRESS` 表示已有唯一写者；`BLOCKED_BY(...)` 只等待括号内的实现门禁；`DEPLOY_PENDING` 表示代码门禁已通过但目标环境部署缺失；`PENDING_EVIDENCE` 表示缺少运行态回读或真实验收。
+3. `READY` 表示可立即处理；`IN_PROGRESS` 表示已有唯一写者；`BLOCKED_BY(...)` 只等待括号内的实现门禁；`SUPERSEDED_BY(...)` 表示旧需求已被括号内的新产品基线替代，不再单独实施；`DEPLOY_PENDING` 表示代码门禁已通过但目标环境部署缺失；`PENDING_EVIDENCE` 表示缺少运行态回读或真实验收。
 4. 代码项只有在合入目标分支、所需 CI 通过、部署到目标环境、真实 smoke/readback 通过，并满足条目要求的独立复核后才可删除。
 5. 同一文件族只允许一个写者；不同处理泳道可并行。状态、负责人、证据、下一步或关闭条件变化时，必须在同一轮同步本文件。
 
 ## 当前共同证据
 
 - 用户报告：2026-10-09 群聊新增 6 组问题，已拆成 HP-06 至 HP-13 共 8 个原子项；HP-01 至 HP-05 于 2026-10-10 全部满足关闭条件并删除。
-- 代码合入：PR [#45](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/45)、[#48](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/48)、[#52](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/52)、[#53](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/53)、[#56](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/56)、[#57](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/57)、[#59](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/59) 已合并；[#58](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/58)、[#60](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/60) 为纯文档提交；最后一次含产品/云函数变更的 main 基线为 `d3e84e6bd1104548bbe35a05b8496a277f9086c5`（#59 纯前端 Strava 闰日周年校准）。
-- CI：上述 PR 及产品基线 `d3e84e6...` 对应 CI 均为 SUCCESS；最新 main CI run [38018305836](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38018305836) SUCCESS。CI 不能证明 CloudBase Active 版本或真机行为。
-- 微信开发版：run [38018365813](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38018365813) 成功上传 `0.0.39.1`（head `d3e84e6...`）；浅色主题（HP-06）首次随 run [38014100157](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38014100157) 的 `0.0.36.1`（head `a275fc3...`）交付，活动时间快捷项（HP-08）首次随 run [38017106152](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38017106152) 的 `0.0.37.1`（head `92f5c0b...`）交付。
-- CloudBase 部署与回读（2026-10-10，已登录本地环境执行，环境 `cloudbase-d0gizacy77a1ab017`）：HP-01..05 验收时 `node scripts/bootstrap-cloudbase.mjs --verify` 通过（13 个集合、31 条索引、不符合项 0），10 个云函数下载线上 `$LATEST` 与同基线本地包逐文件比对，首轮仅 `admin-review` 落后（缺 PR #48 快照字段），补部署后 10/10 全部一致；随后补建 `oauth_attempts` 与首页/媒体/管理分页共 6 条索引（apply requestId 依次为 `70af1f69-803e-4e65-8816-8aaf04120cc5`、`910a7036-7da5-4210-bbb5-48562d84302d`、`6028903a-c63d-4c1b-bd59-a1db4656719d`、`b6331a33-f8be-479e-9247-615a9071f3e2`、`bd79dafe-6b74-4da4-af09-af5a75196bdd`、`104e8934-617e-497e-bd12-0f302680e35c`），并将 `activity-read`、`strava-auth`、`strava-callback`、`activity-admin` 部署为 Active，函数列表回读成功。
-- HP-01/02/03/05 真机 smoke（2026-10-10，自动化客户端对同一部署）：向 `activities` 插入 101 条 `e2e_marker: P0SWEEP_20261010` 隔离文档（含 5 进行中、45 未来候选、30 历史候选、15 自然结束、6 draft 及两个同时间戳混合 ID 组）；首页未来视图三页 20→40→50、历史三页 20→40→45，跨页 ID 唯一；同刻未来组 UTF-8 升序为 `["e2eMIXaaa12","e2eMIXaaa13","e2eMix-Aaa-09","e2eMix-Aaa-10","e2eMix_Aaa_08","e2eMix_Aaa_11"]`，同刻历史组降序为 `["e2eOldaaa13","e2eOld_Aaa_11","e2eOld_Aaa_08","e2eOld-Aaa-10","e2eOld-Aaa-09","e2eOLDaaa12"]`；同筛选重复触发与快速切换竞态后无错误、无重复。
+- 代码合入：PR [#45](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/45)、[#48](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/48)、[#52](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/52)、[#53](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/53)、[#56](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/56)、[#57](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/57)、[#59](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/59) 已合并；HP-01..05 验收时云函数代码基线为 `0da2ce5...`（当时 main HEAD），#56/#57/#58/#59 均未改动 `cloudfunctions/**`，故线上函数与当前 main 云函数代码一致。
+- CI：上述 PR 的 PR CI 与 main CI 均为 SUCCESS。CI 不能证明 CloudBase Active 版本或真机行为。
+- 微信开发版：run [38017106152](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38017106152) 成功上传 `0.0.37.1`（head `92f5c0b...`，日志含“微信开发版 0.0.37.1 上传成功”）；浅色主题首次随 run [38014100157](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38014100157) 上传的 `0.0.36.1`（head `a275fc3...`）交付。
+- CloudBase 部署与回读（2026-10-10，已登录本地环境执行）：`cloudbase-d0gizacy77a1ab017` 共 13 个集合、31 条索引，`node scripts/bootstrap-cloudbase.mjs --verify` 通过（不符合项 0）；10 个云函数全部部署，下载线上 `$LATEST` 代码与同基线本地包逐文件比对：首轮仅 `admin-review` 落后（缺 PR #48 的快照字段），补部署后再次下载比对 10/10 全部一致，管理台状态为部署完成。
+- HP-01/02/03/05 真机 smoke（2026-10-10，自动化客户端对同一部署）：向 `activities` 插入 101 条 `e2e_marker` 隔离文档（含 5 进行中、45 未来候选、30 历史候选、15 自然结束、6 draft 及两个同时间戳混合 ID 组）；首页未来视图三页 20→40→50、历史三页 20→40→45，跨页 ID 唯一；同刻未来组 UTF-8 升序为 `["e2eMIXaaa12","e2eMIXaaa13","e2eMix-Aaa-09","e2eMix-Aaa-10","e2eMix_Aaa_08","e2eMix_Aaa_11"]`，同刻历史组降序为 `["e2eOldaaa13","e2eOld_Aaa_11","e2eOld_Aaa_08","e2eOld-Aaa-10","e2eOld-Aaa-09","e2eOLDaaa12"]`；同筛选重复触发与快速切换竞态后无错误、无重复。
 - HP-03 planner/readback（2026-10-10，同部署同基线）：探针 108 条 strict BSON Date fixture，插入 requestId `129afefc-295b-4ca0-a2b3-5922b1c05c92`，BSON Date 回读 requestId `cdded173-911f-4776-ad84-40407b15d0a9`（`bsonDateVerified: true`），12/12 explain 通过，future/history 各 50 条 smoke；清理 drop requestId `a47f4959-a36e-4935-a891-d67c96604a86`、verify requestId `0b373350-d94b-4cf1-a361-6baadbedafc2`、remaining 0。
 - HP-04 真机 smoke（2026-10-10，同一隔离集）：管理列表全部 50→100→102（101 隔离 + 1 存量草稿）、无遗漏无重复；draft 筛选 7（隔离 6）、published 50→65、finished 30；快速刷新/筛选/加载更多竞态后仍为全部/50 且无错误。
 - 隔离清理：按 marker 分批物理删除 101/101，回查 `e2e_marker` 结果集为空（requestId `817d85a8-5441-4406-a289-4c9946dc0aba`），存量 1 条草稿原样保留。
-- 剩余真实验收缺口：HP-06 仅余 320px 真机截图与独立复核；HP-08 仅余真机 picker 创建/编辑保存重开 smoke；HP-12 待真实新旧账号同步回读 `strava_snapshots.athlete_created_at` / profile `strava_joined_at` 与真机年限展示；HP-13 待六条授权生命周期 smoke。未取得完整真机 smoke 的条目不得删除。
+- 新 UI 产品基线（2026-10-10 09:58）：用户已确认按新截图重做全局 UI，移除旧版布局及深浅主题区分；采用单一明亮高对比主题，并以 375×812px、16px 页面边距、8px 栅格、48px 输入/按钮、56px TabBar、真实字体和卡片尺寸为实施基准。
+
+## 当前工作交接检查点
+
+- 本轮已完成并交付：HP-01 至 HP-05 已按完整证据链从清单删除；HP-06 已随 PR #56 合入并上传开发版，但其“深浅主题并存”产品前提已被新 UI 基线替代；HP-08 已随 PR #57 合入并交付开发版；HP-12 闰日算法已随 PR #59 合入。
+- 当前最高优先级：先实施 `HP-20261010-02` 全局统一 UI，再在新布局上继续做页面级功能验收，避免继续为即将删除的旧主题/旧布局补样式。
+- HP-07 检查点：Aime 个人助理曾在 `fix/registration-history-pagination` 上进行未提交实验，已于 UI 基线变更后停止并保护为本地 stash；没有共享 commit、PR 或可交付证据，后续执行者必须从最新 main 重新审阅方案，不得把该实验视为已完成实现。
+- 并行状态：PR #61 正在收拢本清单；当前没有其他产品代码 open PR。继续开发前必须先确认清单 PR 已合入并从最新 main 建分支。
+- 责任边界：TraeX 执行者负责 `HP-20261010-02` 页面与组件实施；TraeX 审判者负责逐页尺寸对照、旧主题残留扫描、功能回归、CI/开发版和真机验收。Aime 个人助理完成本次清单对齐后退出，不再占用任何代码文件族。
 
 ## 当前处理顺序
 
-| 泳道 | ID               | 优先级 | 状态                                     | 目标                                                                                    | 唯一写者      | 复核/发布                    |
-| ---- | ---------------- | ------ | ---------------------------------------- | --------------------------------------------------------------------------------------- | ------------- | ---------------------------- |
-| B    | `HP-20261009-13` | P0     | `PENDING_EVIDENCE`                       | Strava 生命周期已部署，待真实授权/解绑 smoke                                            | TraeX 执行者  | TraeX 审判者 / Aime 个人助理 |
-| D    | `HP-20261009-06` | P1     | `PENDING_EVIDENCE`                       | 浅色对比度已随 #56 合入并交付开发版 0.0.36.1，仅余 320px 真机截图与独立复核             | TraeX 执行者  | TraeX 审判者 / Aime 个人助理 |
-| D1   | `HP-20261010-01` | P1     | `IN_PROGRESS`                            | 浅色模式“我的行程”RIDE 序号对比度修复（#56 遗漏项，新发现）                             | Aime 个人助理 | TraeX 审判者                 |
-| E    | `HP-20261009-07` | P1     | `READY`                                  | 我的行程永久保留历史/下架活动                                                           | TraeX 执行者  | TraeX 审判者 / Aime 个人助理 |
-| F1   | `HP-20261009-08` | P1     | `PENDING_EVIDENCE`                       | 相对快捷项前置提示已随 #57 交付开发版 0.0.37.1，仅余真机 picker 创建/编辑保存重开 smoke | TraeX 执行者  | TraeX 审判者 / Aime 个人助理 |
-| F2   | `HP-20261009-09` | P1     | `READY`                                  | 创建活动地点快捷选择与权限恢复（HP-08 代码门禁已满足，可启动；需真机定位验证）          | TraeX 执行者  | TraeX 审判者 / Aime 个人助理 |
-| G1   | `HP-20261009-10` | P1     | `READY`                                  | 单背景图与预览的数据安全闭环                                                            | TraeX 执行者  | TraeX 审判者 / Aime 个人助理 |
-| G2   | `HP-20261009-11` | P1     | `BLOCKED_BY(HP-20261009-10 code commit)` | 个人中心头像预览                                                                        | TraeX 执行者  | TraeX 审判者 / Aime 个人助理 |
-| H    | `HP-20261009-12` | P1     | `PENDING_EVIDENCE`                       | 闰日修复已随 #59 合入、相关函数已部署 Active，待真实新旧账号同步回读与真机 smoke        | TraeX 执行者  | TraeX 审判者 / Aime 个人助理 |
+| 泳道 | ID               | 优先级 | 状态                                     | 目标                                                                                    | 唯一写者     | 复核/发布                    |
+| ---- | ---------------- | ------ | ---------------------------------------- | --------------------------------------------------------------------------------------- | ------------ | ---------------------------- |
+| UI   | `HP-20261010-02` | P0     | `READY`                                  | 按确认稿统一全局 UI，移除旧布局与深浅主题分叉                                           | TraeX 执行者 | TraeX 审判者                 |
+| B    | `HP-20261009-13` | P0     | `PENDING_EVIDENCE`                       | Strava 生命周期已部署，待真实授权/解绑 smoke                                            | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
+| D    | `HP-20261009-06` | P1     | `SUPERSEDED_BY(HP-20261010-02)`          | 旧双主题全页对比度，不再单独实施                                                        | -            | TraeX 审判者                 |
+| D1   | `HP-20261010-01` | P1     | `SUPERSEDED_BY(HP-20261010-02)`          | 旧浅色主题 RIDE 序号对比度，不再单独实施                                                | -            | TraeX 审判者                 |
+| E    | `HP-20261009-07` | P1     | `READY`                                  | 我的行程永久保留历史/下架活动；旧实验未提交，需从最新 main 重新实施                     | TraeX 执行者 | TraeX 审判者                 |
+| F1   | `HP-20261009-08` | P1     | `PENDING_EVIDENCE`                       | 相对快捷项前置提示已随 #57 交付开发版 0.0.37.1，仅余真机 picker 创建/编辑保存重开 smoke | TraeX 执行者 | TraeX 审判者                 |
+| F2   | `HP-20261009-09` | P1     | `READY`                                  | 创建活动地点快捷选择与权限恢复（需真机定位验证）                                        | TraeX 执行者 | TraeX 审判者                 |
+| G1   | `HP-20261009-10` | P1     | `READY`                                  | 单背景图与预览的数据安全闭环                                                            | TraeX 执行者 | TraeX 审判者                 |
+| G2   | `HP-20261009-11` | P1     | `BLOCKED_BY(HP-20261009-10 code commit)` | 个人中心头像预览                                                                        | TraeX 执行者 | TraeX 审判者                 |
+| H    | `HP-20261009-12` | P1     | `BLOCKED_BY(HP-20261009-13 smoke)`       | 闰日周年算法已随 #59 合入，待三函数部署、真实账号回读与真机验收                         | TraeX 执行者 | TraeX 审判者                 |
 
 > `BLOCKED_BY` 只约束开始后续实现的门禁，不要求前置条目最终关闭。
 
 ## 事项明细
 
+### HP-20261010-02 · 按确认稿统一全局 UI 并移除旧主题体系
+
+- 优先级/状态：P0 / `READY`，用户已确认效果方向并指定 TraeX 执行者实施、TraeX 审判者审核验证。
+- 产品基线：删除旧版布局，不再区分暗色/浅色；统一白色主背景、近黑文字、荧光黄绿色品牌色、2px 黑色描边、轻量硬阴影、大圆角卡片，禁止继续保留主题切换入口或双份主题样式。
+- 尺寸基线：375×812px 画布；状态栏 20px、导航栏 44px、TabBar 56px + 安全区；左右边距 16px、8px 栅格；页面标题 24/32px、卡片标题 18/26px、正文 14/22px、辅助文字 12/18px；主按钮和输入框 48px 高、分段控件 40px 高、卡片圆角/内边距 16px、卡片间距 12px。
+- 页面范围：活动首页、活动详情、创建活动、我的行程、个人中心、设置为第一批；随后覆盖报名、管理端、骑行能力卡和共享组件。必须保留当前真实功能、状态、分页、授权与异常恢复，不以效果图虚构功能。
+- 实施拆分：先建立单一 token/基础组件和 App 壳层，再逐页迁移；同一时间只允许一个写者修改全局 token、导航和共享组件，页面迁移可在文件族不重叠时并行。
+- 审核要求：TraeX 审判者按 375×812px 逐页核对布局、字体、卡片、触控区和安全区；扫描 `theme-light/theme-dark`、主题切换入口及旧硬编码残留；执行功能回归、CI、开发版上传和真机截图验收。
+- 交付要求：产品代码同步设置页版本日志；独立 PR 保持单提交；CI 全绿；微信开发版上传；第一批六页逐页真机截图与基准尺寸对照通过后才可关闭。
+- 更新时间：2026-10-10。
+
 ### HP-20261009-06 · 浅色主题全页对比度
 
-- 优先级/状态：P1 / `PENDING_EVIDENCE`，浅色对比度代码已随 PR [#56](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/56) 合入 main 并交付开发版，等待真机验收与独立复核。
-- 用户报告：个人中心“编辑资料”在浅色主题出现白字难以辨认，并要求核对其他页面。
-- 代码事实：已补齐占位符、禁用态、媒体前景、状态与性别徽标 token；修复 profile、profile-edit、registrations、activity-detail、activity-card，并同步活动编辑、报名表单、凭证、审批详情与骑行名片等扫描出的风险。摄影 Hero 的固定浅色文字继续由深色遮罩承载，不改变品牌视觉。
-- 本地证据：浅色主题 focused Vitest 51/51 通过；全页静态契约断言普通文字 ≥4.5:1、关键控件 ≥3:1。
-- 远端证据：main CI run [38014014812](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38014014812) SUCCESS；同 SHA `a275fc3...` 的开发版 `0.0.36.1` 已上传。
-- Aime 自动化复核进展（2026-10-10）：真实点击设置页可双向切换深浅色并持久化；settings、activities、registrations、profile、profile-edit、activity-detail、admin/activity-list 页面浅色 class 均生效；抽样真实渲染文字计算对比度，已发现 registrations 页 `.card-index` 未随浅色覆盖（拆为 HP-20261010-01 单独修复），其余在修完该遗漏后需复跑确认。
-- 证据缺口：320px 真机截图、HP-20261010-01 合入后的整页复跑与独立复核。
-- 负责人：TraeX 执行者；独立复核：TraeX 审判者；真机验收：Aime 个人助理。
-- 关闭条件：14 页及共享可见组件在常规宽度和 320px 浅色主题通过；个人中心有图/无图、资料编辑错误/禁用/失败态通过；深色回归、CI、同 SHA 开发版 smoke 与独立复核齐全。
+- 优先级/状态：P1 / `SUPERSEDED_BY(HP-20261010-02)`。
+- 已有证据：PR [#56](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/56) 已合入 main，CI 与开发版 `0.0.36.1` 成功；这些改动在新版 UI 落地前继续提供可读性保护。
+- 产品决策：用户已取消深浅主题区分，因此不再沿旧双主题基线补 320px 截图或新增样式修复；可复用的高对比语义色应收口进 `HP-20261010-02` 的单一 token 体系。
+- 退出条件：新版 UI 完成旧主题入口/类名/token 清理并通过统一主题真机验收后，随 `HP-20261010-02` 一并删除本条。
 - 更新时间：2026-10-10。
 
 ### HP-20261010-01 · 浅色模式“我的行程”RIDE 序号对比度不足
 
-- 优先级/状态：P1 / `IN_PROGRESS`，Aime 个人助理；2026-10-10 浅色真机 smoke 中发现并拆出的 #56 遗漏项。
-- 用户可感知现象：浅色模式下“我的行程”卡片左上角 `RIDE 1` 等序号沿用深色主题灰字 `#9b9ba0`，压在白色卡片上对比度仅约 2.8:1，户外强光下难辨认。
-- 修法：浅色主题 `.card-index` 改用语义弱色 `var(--color-muted)`（浅色值 `#4f4f4c`），深色主题不变；全页对比度契约增加该选择器锁定。
-- 验收：本地门禁 + PR checks + main CI + 微信开发版上传成功后，复跑浅色 smoke 确认该元素对比度 ≥4.5:1，再删除本条。
+- 优先级/状态：P1 / `SUPERSEDED_BY(HP-20261010-02)`。
+- 已知现象：旧浅色主题下 `RIDE 1` 序号与白色卡片对比不足；该问题仍需在新版“我的行程”卡片中避免。
+- 产品决策：不再为即将删除的浅色主题单独提修复 PR；由 `HP-20261010-02` 使用统一弱文字 token，并由 TraeX 审判者按真实卡片背景验证普通文字对比度 ≥4.5:1。
 - 更新时间：2026-10-10。
 
 ### HP-20261009-07 · 我的行程保留全部历史、已完成和下架活动
 
-- 优先级/状态：P1 / `READY`，报名/行程文件族独立处理。
+- 优先级/状态：P1 / `READY`，报名/行程文件族独立处理；旧实验仅保存在 Aime 本地 stash，未提交、未推送、未建 PR，执行者须从最新 main 重新核验并实现。
 - 用户报告：历史已完成或下架活动不能从用户行程消失，也不能变成异常。
 - 代码/CI：PR #48 已让 `registration/mine` 返回 owner-bound 活动投影和快照降级，focused 既有测试可通过；Aime 已报告 `registration` Active，但版本映射、只读回读与真实 smoke 证据尚未补齐。
 - 确认缺口：`registration/mine` 固定 `.limit(50)` 且无分页；页面用 `Promise.all(listRegistrations,listActivities)`，公开活动读取失败会拖垮整页；真实 `draft` 下架、软删/物理缺失服务端降级未被直接测试。
@@ -121,15 +135,13 @@
 
 ### HP-20261009-12 · Strava 年限正确性、存量回填与部署
 
-- 优先级/状态：P1 / `PENDING_EVIDENCE`；闰日周年算法已随 PR [#59](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/59) 合入 main 并交付开发版，相关云函数已部署 Active，存量同步回读与真机验收尚未完成。
+- 优先级/状态：P1 / `BLOCKED_BY(HP-20261009-13 smoke)`；客户端闰日周年算法已随 PR [#59](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/59) 合入 main。
 - 用户报告：根据 Strava 获取骑行年限的功能为何未上线，代码是否合并。
-- 代码/CI：账号年限取自 Strava athlete `created_at`，PR #59 将目标年份的周年日收敛到当月最后一天，`2020-02-29 -> 2021-02-28` 由 0 年修正为 1 年；普通日期与闰年边界保持不变。修复前确定性 RED，修复后 focused 25/25、全量 Vitest 734/734、`personal-card.ts` lines/functions 100% 且 branches 95%；PR/main CI 均为 SUCCESS。
-- 发布证据：merge SHA `d3e84e6bd1104548bbe35a05b8496a277f9086c5`；微信开发版 run [38018365813](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38018365813) 成功上传 `0.0.39.1`。
-- 部署现状：`strava-auth`、`strava-callback`、`activity-read`、`activity-admin` 已按 main 部署为 Active 并通过函数列表回读。
-- 证据缺口：尚未给出线上 Active 版本与共享同步代码 SHA 的版本映射；存量快照可能缺 `athlete_created_at`，尚无真实新旧账号同步回读与真机年限展示证据。
-- 下一步：使用新旧 Strava 测试账号触发同步，回读 `strava_snapshots.athlete_created_at` 与 profile `strava_joined_at`，核对周年前/当天/后及闰日账号真机显示；补齐 Active 版本映射与独立复核。
+- 代码/CI：账号年限取自 Strava athlete `created_at`，已进入 main 并通过 CI；它表示 Strava 账号年龄，不是完整现实骑龄。#59 按目标年份当月最后一天收敛周年日，修复 `2020-02-29 -> 2021-02-28` 少算一年的问题。
+- 证据缺口：三个云函数部署须等 HP-13 smoke；存量快照可能缺 `athlete_created_at`，缺真实同步回读；缺真机显示验收。
+- 下一步：HP-13 smoke 通过后部署同一 SHA 的三个函数；定义存量账号自动回填或一次性重新授权策略并真实回读。
 - 负责人：TraeX 执行者；独立复核：TraeX 审判者；部署/真机：Aime 个人助理。
-- 关闭条件：周年与闰日测试通过；main 合入且 CI 绿；相关函数 Active 版本可回读且有 SHA 映射；真实账号同步后回读 `strava_snapshots.athlete_created_at` 与 profile `strava_joined_at`；新旧账号真机显示正确且无需反复授权。
+- 关闭条件：周年与闰日测试通过；三个函数 Active 版本可回读；真实账号同步后回读 `strava_snapshots.athlete_created_at` 与 profile `strava_joined_at`；新旧账号真机显示正确且无需反复授权。
 - 更新时间：2026-10-10。
 
 ### HP-20261009-13 · 设置页 Strava 授权撤销与异常生命周期
@@ -144,7 +156,7 @@
 
 ## 并行边界
 
-- 泳道 B（HP-13）先处理授权安全；HP-12 客户端周年算法已并行合入，相关四个云函数已部署 Active；HP-13 真实 smoke 闭环前不得再追加共享 Strava/Profile 代码的新部署变更。
+- 泳道 B（HP-13）先处理授权安全；HP-12 的客户端周年算法可并行，但 Strava/Profile 云函数统一部署必须在 HP-13 代码复核与真实 smoke 后。
 - 泳道 D（HP-06、HP-20261010-01）、E（HP-07）文件边界独立，可并行；HP-20261010-01 与 #56 后续复核共享浅色主题验收，串行收口。
 - 泳道 F（HP-08→09）共享活动编辑页，单写者串行；泳道 G（HP-10→11）共享个人资料页，单写者串行。
 - Aime 个人助理只在不可变 SHA 通过独立复核后执行目标环境部署和真实 smoke；部署证据不得替代代码复核，开发版上传不得替代 CloudBase 部署。
