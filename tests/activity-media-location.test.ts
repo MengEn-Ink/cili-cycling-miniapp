@@ -75,7 +75,7 @@ describe('活动编辑媒体、时间、说明与地图', () => {
       chooseMedia: vi.fn(),
       chooseLocation: vi.fn(),
       showToast: vi.fn(),
-      showModal: vi.fn(),
+      showModal: vi.fn().mockResolvedValue({ confirm: true, cancel: false }),
       pageScrollTo: vi.fn(),
     };
     vi.stubGlobal('wx', wxApi);
@@ -190,11 +190,20 @@ describe('活动编辑媒体、时间、说明与地图', () => {
     expect(template).toMatch(
       /input value="{{form\.routeStart}}"[^>]*\/><button class="inline-action-button location-quick-button"[^>]*data-target="start"[^>]*bindtap="chooseRouteLocation"/,
     );
+    expect(template).toContain(
+      `loading="{{choosingLocation === 'start'}}" disabled="{{saving || choosingLocation}}"`,
+    );
+    expect(template).toContain(
+      'disabled="{{saving || uploading || choosingLocation}}" data-status="{{status}}"',
+    );
     expect(template).toContain('aria-label="在地图中选择集合点"');
     const styles = readFileSync('miniprogram/pages/admin/activity-edit/index.wxss', 'utf8');
     expect(styles).toMatch(
       /\.location-quick-button\s*{[\s\S]*min-width: 136rpx;[\s\S]*min-height: 88rpx;/,
     );
+    const appConfig = JSON.parse(readFileSync('miniprogram/app.json', 'utf8'));
+    expect(appConfig.requiredPrivateInfos).toEqual(['chooseLocation']);
+    expect(appConfig.permission).toBeUndefined();
     await page.save({ currentTarget: { dataset: { status: 'draft' } } });
     expect(rideService.saveActivity.mock.calls[0][0].route).toMatchObject({
       start: '集合广场',
@@ -204,5 +213,81 @@ describe('活动编辑媒体、时间、说明与地图', () => {
     });
     page.field({ currentTarget: { dataset: { name: 'routeStart' } }, detail: { value: '手填' } });
     expect(page.data.routeStartLocation).toBeUndefined();
+  });
+
+  it('取消地图选点不报错，系统定位关闭时给出可操作提示', async () => {
+    await page.onLoad({ id: 'a1' });
+    wxApi.chooseLocation.mockRejectedValueOnce({
+      errMsg: 'chooseLocation:fail cancel',
+    });
+
+    await page.chooseRouteLocation({ currentTarget: { dataset: { target: 'start' } } });
+
+    expect(page.data.error).toBe('');
+    expect(wxApi.showModal).not.toHaveBeenCalled();
+    expect(page.data.choosingLocation).toBe('');
+
+    wxApi.chooseLocation.mockRejectedValueOnce({
+      errMsg: 'chooseLocation:fail system permission denied',
+    });
+
+    await page.chooseRouteLocation({ currentTarget: { dataset: { target: 'start' } } });
+
+    expect(wxApi.showModal).toHaveBeenCalledWith({
+      title: '无法打开地图选点',
+      content: '请在系统设置中开启微信的定位权限和定位服务后重试。',
+      showCancel: false,
+    });
+    expect(page.data.choosingLocation).toBe('');
+  });
+
+  it('接口或隐私配置缺失时提示管理员处理且不回显原始错误', async () => {
+    await page.onLoad({ id: 'a1' });
+    wxApi.chooseLocation.mockRejectedValue({
+      errMsg: 'chooseLocation:fail api scope is not declared in the privacy agreement',
+    });
+
+    await page.chooseRouteLocation({ currentTarget: { dataset: { target: 'end' } } });
+
+    expect(wxApi.showModal).toHaveBeenCalledWith({
+      title: '地图选点暂不可用',
+      content: '请联系管理员检查微信后台接口权限和用户隐私保护指引。',
+      showCancel: false,
+    });
+    expect(page.data.error).not.toContain('api scope');
+    expect(page.data.choosingLocation).toBe('');
+  });
+
+  it('地图选点与保存互斥且重复选点不会启动第二个请求', async () => {
+    await page.onLoad({ id: 'a1' });
+    let resolveLocation!: (value: unknown) => void;
+    wxApi.chooseLocation.mockReturnValue(
+      new Promise((resolve) => {
+        resolveLocation = resolve;
+      }),
+    );
+
+    const choosing = page.chooseRouteLocation({
+      currentTarget: { dataset: { target: 'start' } },
+    });
+
+    expect(page.data.choosingLocation).toBe('start');
+    await page.chooseRouteLocation({ currentTarget: { dataset: { target: 'end' } } });
+    await page.save({ currentTarget: { dataset: { status: 'draft' } } });
+    expect(wxApi.chooseLocation).toHaveBeenCalledTimes(1);
+    expect(rideService.saveActivity).not.toHaveBeenCalled();
+
+    resolveLocation({
+      name: '集合广场',
+      address: '湖滨路 1 号',
+      latitude: 30.2,
+      longitude: 120.1,
+    });
+    await choosing;
+    expect(page.data.choosingLocation).toBe('');
+
+    page.data.saving = true;
+    await page.chooseRouteLocation({ currentTarget: { dataset: { target: 'end' } } });
+    expect(wxApi.chooseLocation).toHaveBeenCalledTimes(1);
   });
 });
