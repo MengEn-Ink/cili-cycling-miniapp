@@ -18,6 +18,7 @@ const baseInput = {
   mode: 'promote',
   mainSha: SHA,
   version: '0.0.81.1',
+  operationId: '12345',
   entryPath: 'pages/activities/index',
   ciRunUrl: 'https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/1',
   uploadRunUrl: 'https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/2',
@@ -29,7 +30,7 @@ const baseInput = {
 
 test('候选清单固定版本、主分支 SHA、入口和门禁证据', () => {
   const manifest = buildExperienceReleaseManifest(baseInput);
-  assert.equal(manifest.releaseId, `experience-0.0.81.1-${SHA.slice(0, 12)}`);
+  assert.equal(manifest.releaseId, `experience-promote-0.0.81.1-${SHA.slice(0, 12)}-12345`);
   assert.equal(manifest.entryPath, 'pages/activities/index');
   assert.equal(manifest.smokeOutcome, 'passed');
   assert.equal(manifest.platformEvidence, null);
@@ -60,6 +61,28 @@ test('非法发布字段在生成清单前被拒绝', () => {
   assert.throws(() => validateExperienceReleaseManifest([]), /必须是对象/);
 });
 
+test('smoke 与平台回读证据必须绑定可信来源和当前发布', () => {
+  assert.throws(
+    () =>
+      buildExperienceReleaseManifest({
+        ...baseInput,
+        smokeEvidence: 'https://example.com/actions/runs/3',
+      }),
+    /必须是本仓库已核验的 GitHub Actions run/,
+  );
+  const candidate = buildExperienceReleaseManifest(baseInput);
+  assert.throws(
+    () =>
+      buildExperienceReleaseManifest({
+        ...baseInput,
+        stage: 'verified',
+        candidateDigest: candidate.digest,
+        platformEvidence: 'wechat-admin:experience:0.0.99.1:wrong:pages/activities/index',
+      }),
+    /平台回读声明/,
+  );
+});
+
 test('verified 清单必须包含微信公众平台回读证据', () => {
   assert.throws(
     () => buildExperienceReleaseManifest({ ...baseInput, stage: 'verified' }),
@@ -70,7 +93,8 @@ test('verified 清单必须包含微信公众平台回读证据', () => {
       buildExperienceReleaseManifest({
         ...baseInput,
         stage: 'verified',
-        platformEvidence: 'https://github.com/MengEn-Ink/cili-cycling-miniapp/issues/100',
+        platformEvidence:
+          'wechat-admin:experience:0.0.81.1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:pages/activities/index',
       }),
     /必须关联有效 candidateDigest/,
   );
@@ -79,7 +103,8 @@ test('verified 清单必须包含微信公众平台回读证据', () => {
     ...baseInput,
     stage: 'verified',
     candidateDigest: candidate.digest,
-    platformEvidence: 'https://github.com/MengEn-Ink/cili-cycling-miniapp/issues/100',
+    platformEvidence:
+      'wechat-admin:experience:0.0.81.1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:pages/activities/index',
   });
   assert.equal(manifest.stage, 'verified');
   assert.equal(manifest.candidateDigest, candidate.digest);
@@ -89,7 +114,7 @@ test('verified 清单必须包含微信公众平台回读证据', () => {
     /必须由 candidate 进入 verified/,
   );
   assert.throws(
-    () => validateExperienceReleaseTransition(candidate, { ...manifest, version: '0.0.82.1' }),
+    () => validateExperienceReleaseTransition(candidate, { ...manifest, operator: 'changed' }),
     /摘要不匹配/,
   );
   const differentCandidate = buildExperienceReleaseManifest({ ...baseInput, version: '0.0.80.1' });
@@ -102,7 +127,8 @@ test('verified 清单必须包含微信公众平台回读证据', () => {
     stage: 'verified',
     entryPath: 'pages/profile/index',
     candidateDigest: candidate.digest,
-    platformEvidence: 'https://github.com/MengEn-Ink/cili-cycling-miniapp/issues/100',
+    platformEvidence:
+      'wechat-admin:experience:0.0.81.1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:pages/profile/index',
   });
   assert.throws(
     () => validateExperienceReleaseTransition(candidate, mismatched),
@@ -118,10 +144,12 @@ test('回退清单必须指向上一稳定版本并说明原因', () => {
   const manifest = buildExperienceReleaseManifest({
     ...baseInput,
     mode: 'rollback',
-    previousReleaseId: `experience-0.0.80.1-${'b'.repeat(12)}`,
+    previousReleaseId: `experience-promote-0.0.80.1-${'b'.repeat(12)}-999`,
     rollbackReason: '真机核心流程回归失败',
   });
   assert.equal(manifest.mode, 'rollback');
+  assert.equal(manifest.releaseId, `experience-rollback-0.0.81.1-${SHA.slice(0, 12)}-12345`);
+  assert.notEqual(manifest.releaseId, buildExperienceReleaseManifest(baseInput).releaseId);
 });
 
 test('篡改或注入清单字段后校验失败', () => {
@@ -142,7 +170,8 @@ test('回退目标必须绑定仓库内已验证的稳定晋级清单', () => {
     ...baseInput,
     stage: 'verified',
     candidateDigest: candidate.digest,
-    platformEvidence: 'https://github.com/MengEn-Ink/cili-cycling-miniapp/issues/100',
+    platformEvidence:
+      'wechat-admin:experience:0.0.81.1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:pages/activities/index',
   });
   assert.equal(
     validateRollbackTarget(verified, {
@@ -193,7 +222,8 @@ test('长期体验版记录只允许新增同名 verified 清单', async () => {
     ...baseInput,
     stage: 'verified',
     candidateDigest: candidate.digest,
-    platformEvidence: 'https://github.com/MengEn-Ink/cili-cycling-miniapp/issues/100',
+    platformEvidence:
+      'wechat-admin:experience:0.0.81.1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:pages/activities/index',
   });
   const manifestPath = path.join(directory, `${verified.releaseId}.json`);
   await writeFile(manifestPath, `${JSON.stringify(verified, null, 2)}\n`);
@@ -217,7 +247,9 @@ test('长期体验版记录只允许新增同名 verified 清单', async () => {
     ...baseInput,
     stage: 'verified',
     candidateDigest: candidate.digest,
-    platformEvidence: 'https://github.com/MengEn-Ink/cili-cycling-miniapp/issues/101',
+    operator: 'another-release-owner',
+    platformEvidence:
+      'wechat-admin:experience:0.0.81.1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:pages/activities/index',
   });
   await writeFile(manifestPath, `${JSON.stringify(changed, null, 2)}\n`);
   await execFileAsync('git', ['add', '.'], { cwd: root });
@@ -269,6 +301,8 @@ test('CLI 使用排他写入，避免覆盖既有发布证据', async () => {
     SHA,
     '--version',
     '0.0.81.1',
+    '--operation-id',
+    '12345',
     '--entry-path',
     'pages/activities/index',
     '--ci-run-url',
@@ -288,7 +322,7 @@ test('CLI 使用排他写入，避免覆盖既有发布证据', async () => {
   ];
   await execFileAsync(process.execPath, args);
   const stored = JSON.parse(await readFile(output, 'utf8'));
-  assert.equal(stored.releaseId, `experience-0.0.81.1-${SHA.slice(0, 12)}`);
+  assert.equal(stored.releaseId, `experience-promote-0.0.81.1-${SHA.slice(0, 12)}-12345`);
   const verifiedResult = await execFileAsync(process.execPath, [
     script,
     'verify',
@@ -301,7 +335,8 @@ test('CLI 使用排他写入，避免覆盖既有发布证据', async () => {
     ...baseInput,
     stage: 'verified',
     candidateDigest: stored.digest,
-    platformEvidence: 'https://github.com/MengEn-Ink/cili-cycling-miniapp/issues/100',
+    platformEvidence:
+      'wechat-admin:experience:0.0.81.1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:pages/activities/index',
   });
   await writeFile(verifiedPath, `${JSON.stringify(verifiedManifest)}\n`);
   const transition = await execFileAsync(process.execPath, [
@@ -312,7 +347,7 @@ test('CLI 使用排他写入，避免覆盖既有发布证据', async () => {
     '--verified',
     verifiedPath,
   ]);
-  assert.match(transition.stdout, /release_id=experience-0\.0\.81\.1-/);
+  assert.match(transition.stdout, /release_id=experience-promote-0\.0\.81\.1-/);
   const rollback = await execFileAsync(process.execPath, [
     script,
     'verify-rollback',

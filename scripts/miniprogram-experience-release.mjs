@@ -9,7 +9,9 @@ const execFileAsync = promisify(execFile);
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
 const VERSION_PATTERN = /^[0-9A-Za-z][0-9A-Za-z._-]{0,63}$/;
-const RELEASE_ID_PATTERN = /^experience-[0-9A-Za-z._-]+-[0-9a-f]{12}$/;
+const OPERATION_ID_PATTERN = /^[1-9][0-9]{0,19}$/;
+const RELEASE_ID_PATTERN =
+  /^experience-(?:promote|rollback)-[0-9A-Za-z._-]+-[0-9a-f]{12}-[1-9][0-9]{0,19}$/;
 const ENTRY_PATH_PATTERN = /^pages\/[0-9A-Za-z_/-]+\/[0-9A-Za-z_-]+$/;
 const COMMAND_OPTIONS = {
   create: new Set([
@@ -17,6 +19,7 @@ const COMMAND_OPTIONS = {
     'mode',
     'main-sha',
     'version',
+    'operation-id',
     'entry-path',
     'ci-run-url',
     'upload-run-url',
@@ -63,6 +66,26 @@ function requireUrl(value, name) {
   return url.toString();
 }
 
+function requireSmokeRunUrl(value, name) {
+  const url = new URL(requireUrl(value, name));
+  if (
+    url.hostname !== 'github.com' ||
+    !/^\/MengEn-Ink\/cili-cycling-miniapp\/actions\/runs\/[1-9][0-9]*\/?$/.test(url.pathname)
+  ) {
+    throw new Error(`${name} 必须是本仓库已核验的 GitHub Actions run`);
+  }
+  return url.toString();
+}
+
+function requirePlatformAttestation(value, { version, mainSha, entryPath }) {
+  const attestation = requiredText(value, 'platformEvidence');
+  const expected = `wechat-admin:experience:${version}:${mainSha}:${entryPath}`;
+  if (attestation !== expected) {
+    throw new Error('platformEvidence 必须是与版本、SHA 和入口一致的平台回读声明');
+  }
+  return attestation;
+}
+
 function requireTimestamp(value, name) {
   const text = requiredText(value, name);
   const date = new Date(text);
@@ -89,6 +112,8 @@ export function buildExperienceReleaseManifest(input) {
   const mainSha = requireSha(input.mainSha, 'mainSha');
   const version = requiredText(input.version, 'version');
   if (!VERSION_PATTERN.test(version)) throw new Error('version 格式无效');
+  const operationId = requiredText(input.operationId, 'operationId');
+  if (!OPERATION_ID_PATTERN.test(operationId)) throw new Error('operationId 必须是正整数 run ID');
   const entryPath = requiredText(input.entryPath, 'entryPath');
   if (!ENTRY_PATH_PATTERN.test(entryPath)) throw new Error('entryPath 格式无效');
   const smokeOutcome = requiredText(input.smokeOutcome, 'smokeOutcome');
@@ -106,7 +131,7 @@ export function buildExperienceReleaseManifest(input) {
   if (stage === 'verified' && !/^sha256:[0-9a-f]{64}$/.test(candidateDigest)) {
     throw new Error('verified 阶段必须关联有效 candidateDigest');
   }
-  const releaseId = `experience-${version}-${mainSha.slice(0, 12)}`;
+  const releaseId = `experience-${mode}-${version}-${mainSha.slice(0, 12)}-${operationId}`;
   const manifest = {
     schemaVersion: 1,
     releaseId,
@@ -114,13 +139,17 @@ export function buildExperienceReleaseManifest(input) {
     mode,
     mainSha,
     version,
+    operationId,
     entryPath,
     ciRunUrl: requireUrl(input.ciRunUrl, 'ciRunUrl'),
     uploadRunUrl: requireUrl(input.uploadRunUrl, 'uploadRunUrl'),
-    smokeEvidence: requireUrl(input.smokeEvidence, 'smokeEvidence'),
+    smokeEvidence: requireSmokeRunUrl(input.smokeEvidence, 'smokeEvidence'),
     smokeOutcome,
     candidateDigest: candidateDigest || null,
-    platformEvidence: platformEvidence ? requireUrl(platformEvidence, 'platformEvidence') : null,
+    platformEvidence:
+      stage === 'verified'
+        ? requirePlatformAttestation(platformEvidence, { version, mainSha, entryPath })
+        : null,
     operator: requiredText(input.operator, 'operator'),
     occurredAt: requireTimestamp(input.occurredAt, 'occurredAt'),
     previousReleaseId: previousReleaseId || null,
@@ -306,6 +335,7 @@ async function runCli(argv) {
     mode: requireOption(options, 'mode'),
     mainSha: requireOption(options, 'main-sha'),
     version: requireOption(options, 'version'),
+    operationId: requireOption(options, 'operation-id'),
     entryPath: requireOption(options, 'entry-path'),
     ciRunUrl: requireOption(options, 'ci-run-url'),
     uploadRunUrl: requireOption(options, 'upload-run-url'),
