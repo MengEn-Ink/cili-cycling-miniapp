@@ -58,7 +58,7 @@ describe('设置页', () => {
     expect(page.data.releaseNotes[0]).toMatchObject({
       version: '2026.10.10.7',
       latest: true,
-      title: '浅色行程序号更清晰',
+      title: '浅色主题运行态可读性补强',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,

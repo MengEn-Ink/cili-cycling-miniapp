@@ -215,7 +215,8 @@ page {
   padding: 18rpx 20rpx 16rpx;
   border: 1rpx solid #3a3a3c;
   border-radius: var(--radius-display);
-  background: rgba(28, 28, 30, 0.94);
+  /* 指标区位于摄影背景之上，必须使用不透明媒体底色，避免浅色照片穿透后冲淡白字。 */
+  background: var(--color-media-card-bg);
   backdrop-filter: blur(22rpx);
 }
 
@@ -267,7 +268,7 @@ page {
 
 .metric-value {
   overflow: hidden;
-  color: #f7f7f5;
+  color: var(--color-on-media);
   font-size: 31rpx;
   font-variant-numeric: tabular-nums;
   font-weight: 900;
@@ -286,7 +287,7 @@ page {
 .metric-label,
 .metric-empty,
 .data-meta {
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--color-media-muted);
   font-size: 18rpx;
 }
 
@@ -318,7 +319,7 @@ page {
 
 .meta-label {
   flex: 0 0 76rpx;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--color-media-muted);
 }
 
 .meta-value {
@@ -333,7 +334,7 @@ page {
   justify-content: space-between;
   gap: 18rpx;
   padding: 14rpx 6rpx 0;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--color-muted);
   font-size: 20rpx;
   line-height: 1.4;
 }
@@ -470,7 +471,8 @@ page,
 }
 /* Card artwork stays photographic: its black overlay and white typography are invariant. */
 .theme-light .rider-card {
-  --color-brand: #d55b1f;
+  /* 摄影卡片仍是深色媒体面，浅色主题下提升橙色强调色亮度以满足小号文字对比度。 */
+  --color-brand: #e06b2e;
   --color-brand-active: #a94416;
   --color-brand-soft: rgba(213, 91, 31, 0.14);
   --color-on-brand: #0b0b0c;
