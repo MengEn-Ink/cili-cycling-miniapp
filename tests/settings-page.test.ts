@@ -44,22 +44,22 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.11.11',
+      version: '2026.10.11.12',
       latest: true,
-      title: '个人照片重复选择治理',
+      title: '活动群二维码独立维护',
       summary:
-        '头像和背景照片重复选择同一张图时直接复用已上传文件，不再重复上传占用存储，取不到内容指纹时自动走正常流程。',
+        '创建和编辑活动时可单独上传活动群二维码，详情页展示扫码入口，并在二维码可能过期时提醒替换。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.11.12',
       '2026.10.11.11',
       '2026.10.11.10',
       '2026.10.11.9',
       '2026.10.11.8',
-      '2026.10.11.7',
     ]);
   });
 

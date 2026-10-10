@@ -12,6 +12,13 @@ import {
 
 const MAX_GPX_BYTES = 4 * 1024 * 1024;
 const DEFAULT_ATTENDEE_AVATAR = '/assets/profile/avatars/cili-orange.png';
+const GROUP_QR_EXPIRE_MS = 7 * 24 * 60 * 60 * 1000;
+
+function groupQrExpired(uploadedAt?: string) {
+  if (!uploadedAt) return false;
+  const time = new Date(uploadedAt).getTime();
+  return Number.isFinite(time) && Date.now() - time >= GROUP_QR_EXPIRE_MS;
+}
 
 function unavailableAction(): ActivityAction {
   return { kind: 'closed', label: '活动状态不可用', enabled: false };
@@ -83,6 +90,7 @@ Page({
     generatingPoster: false,
     teamId: '',
     activityAction: unavailableAction(),
+    groupQrCodeExpired: false,
   },
   onShow() {},
   onLoad(q: any) {
@@ -140,6 +148,7 @@ Page({
           deadlineTime: formatChinaDateTimeSeconds(item.deadline),
           hasElevationProfile: elevationProfile.length >= 2,
           activityAction: resolveActivityAction(item, registration),
+          groupQrCodeExpired: groupQrExpired(detail.groupQrCodeUploadedAt),
         },
         () => this.drawElevation(),
       );

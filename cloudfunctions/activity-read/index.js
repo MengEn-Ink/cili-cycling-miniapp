@@ -46,9 +46,11 @@ async function resolveActivityMedia(activities) {
   const fileIds = [
     ...new Set(
       activities.flatMap((activity) =>
-        [activity.cover_image, ...(Array.isArray(activity.images) ? activity.images : [])].filter(
-          (value) => typeof value === 'string' && value.startsWith('cloud://'),
-        ),
+        [
+          activity.cover_image,
+          activity.group_qr_code,
+          ...(Array.isArray(activity.images) ? activity.images : []),
+        ].filter((value) => typeof value === 'string' && value.startsWith('cloud://')),
       ),
     ),
   ];
@@ -70,6 +72,7 @@ async function resolveActivityMedia(activities) {
     ...activity,
     cover_image: resolve(activity.cover_image),
     images: Array.isArray(activity.images) ? activity.images.map(resolve) : activity.images,
+    group_qr_code: resolve(activity.group_qr_code),
   }));
 }
 

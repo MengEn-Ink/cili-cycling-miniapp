@@ -82,6 +82,22 @@
         <input class="input" value="{{form.stravaRouteUrl}}" placeholder-class="input-placeholder" placeholder="https://www.strava.com/routes/…" bindinput="field" data-name="stravaRouteUrl" />
         <view class="section-help">仅保存链接，不再同步里程、海拔或线路信息</view>
       </view>
+      <view class="field group-qr-field">
+        <view class="field-label">活动群二维码</view>
+        <view class="section-help">可选上传 1 张微信群二维码，便于已报名成员进群；上传超过 7 天会提示可能过期。</view>
+        <view wx:if="{{groupQrCode}}" class="group-qr-card">
+          <image class="group-qr-preview" src="{{groupQrCode}}" mode="aspectFit" />
+          <view wx:if="{{groupQrCodeExpired}}" class="group-qr-warning">二维码可能已过期，请替换为最新图片。</view>
+          <button class="image-action image-action--danger" bindtap="removeGroupQrCode">删除二维码</button>
+        </view>
+        <view wx:elif="{{pendingGroupQrCode}}" class="group-qr-card group-qr-card--pending">
+          <image class="group-qr-preview" src="{{pendingGroupQrCode.previewPath}}" mode="aspectFit" />
+          <view class="upload-status upload-status--{{pendingGroupQrCode.status}}">{{pendingGroupQrCode.status === 'uploading' ? '上传中…' : '上传失败'}}</view>
+          <button wx:if="{{pendingGroupQrCode.status === 'failed'}}" class="image-action" bindtap="chooseGroupQrCode">重新选择</button>
+          <button wx:if="{{pendingGroupQrCode.status === 'failed'}}" class="image-action image-action--danger" bindtap="removeGroupQrCode">删除</button>
+        </view>
+        <button wx:else class="upload-tile upload-tile--wide" loading="{{uploading}}" bindtap="chooseGroupQrCode">上传活动群二维码</button>
+      </view>
     </view>
 
     <view class="action-bar actions">

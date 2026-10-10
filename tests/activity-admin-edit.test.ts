@@ -33,6 +33,8 @@ const activity: Activity = {
   description: '说明',
   images: ['cloud://1.jpg', 'cloud://2.jpg', 'cloud://3.jpg', 'cloud://legacy.jpg'],
   coverImage: 'cloud://1.jpg',
+  groupQrCode: 'cloud://group-qr.jpg',
+  groupQrCodeUploadedAt: '2026-10-10T08:00:00.000Z',
   route: {
     start: '起点',
     end: '终点',
@@ -67,6 +69,8 @@ const savedActivityFromPayload = (payload: any, id = 'saved-activity'): Activity
   deadline: payload.deadline,
   images: payload.images,
   coverImage: payload.coverImage,
+  groupQrCode: payload.groupQrCode,
+  groupQrCodeUploadedAt: payload.groupQrCodeUploadedAt,
   route: { ...activity.route, ...payload.route },
 });
 
@@ -460,12 +464,54 @@ describe('日常活动极简创建与编辑', () => {
     expect(detail).toContain('route-profile-card" wx:if="{{!item.registrationUnlimited}}"');
   });
 
+  it('活动群二维码可独立上传并随活动保存回读', async () => {
+    const uploadFile = vi.fn().mockResolvedValue({ fileID: 'cloud://new-group-qr.jpg' });
+    let saved: Activity | undefined;
+    rideService.saveActivity.mockImplementation(async (payload: any) => {
+      saved = savedActivityFromPayload(payload, 'created-group-qr');
+      return saved;
+    });
+    Object.assign(wx, {
+      chooseMedia: vi
+        .fn()
+        .mockResolvedValue({ tempFiles: [{ tempFilePath: '/tmp/group-qr.jpg' }] }),
+    });
+    Object.assign(wx.cloud!, { uploadFile });
+
+    await page.onLoad({});
+    await page.chooseGroupQrCode();
+
+    expect(uploadFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cloudPath: expect.stringContaining('profiles/activity-group-qr/'),
+        filePath: '/tmp/group-qr.jpg',
+      }),
+    );
+    expect(page.data.groupQrCode).toBe('cloud://new-group-qr.jpg');
+    expect(page.data.groupQrCodeExpired).toBe(false);
+
+    page.data.form.startDate = '2026-10-20';
+    page.data.form.startTime = '07:30';
+    page.data.form.routeStart = '湖边广场';
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(rideService.saveActivity.mock.calls[0][0]).toMatchObject({
+      groupQrCode: 'cloud://new-group-qr.jpg',
+      groupQrCodeUploadedAt: expect.any(String),
+    });
+    rideService.getAdminActivity.mockResolvedValueOnce(saved);
+    await page.onLoad({ id: 'created-group-qr' });
+    expect(page.data.groupQrCode).toBe('cloud://new-group-qr.jpg');
+  });
+
   it('界面只暴露极简字段且不提供 Strava 同步入口', () => {
     const template = readFileSync('miniprogram/pages/admin/activity-edit/index.wxml', 'utf8');
     expect(template).toContain('集合时间');
     expect(template).toContain('集合地点');
     expect(template).toContain('最多 3 张');
     expect(template).toContain('备注说明');
+    expect(template).toContain('活动群二维码');
+    expect(template).toContain('二维码可能已过期');
     expect(template).toContain('仅保存链接，不再同步');
     expect(template).toContain('form.startDate');
     expect(template).toContain('form.startTime');

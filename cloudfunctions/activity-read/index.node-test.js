@@ -342,6 +342,8 @@ test('公开活动白名单透出图集与路线坐标并继续过滤私有字�
     status: 'published',
     images: ['cloud://one.jpg', 'cloud://two.jpg'],
     cover_image: 'cloud://one.jpg',
+    group_qr_code: 'cloud://group-qr.jpg',
+    group_qr_code_uploaded_at: '2026-10-10T08:00:00.000Z',
     route: {
       start: '集合点',
       end: '终点',
@@ -352,6 +354,8 @@ test('公开活动白名单透出图集与路线坐标并继续过滤私有字�
   };
   const result = publicActivity(activity, new Date('2026-09-29T04:00:00.000Z'));
   assert.deepEqual(result.images, activity.images);
+  assert.equal(result.group_qr_code, activity.group_qr_code);
+  assert.equal(result.group_qr_code_uploaded_at, activity.group_qr_code_uploaded_at);
   assert.deepEqual(result.route.start_location, activity.route.start_location);
   assert.equal(result.private_token, undefined);
 });
@@ -369,6 +373,7 @@ test('公开活动兼容只有旧封面且路线无坐标的数据', () => {
 test('列表批量将活动云存储图片解析为 HTTPS 临时地址并去重请求', async () => {
   const shared = 'cloud://bucket/shared.jpg';
   const second = 'cloud://bucket/second.jpg';
+  const groupQr = 'cloud://bucket/group-qr.jpg';
   const external = 'https://images.example/third.jpg';
   const list = [
     {
@@ -387,6 +392,7 @@ test('列表批量将活动云存储图片解析为 HTTPS 临时地址并去重�
       event_start: '2999-02-01T00:00:00.000Z',
       event_end: '2999-02-01T08:00:00.000Z',
       cover_image: shared,
+      group_qr_code: groupQr,
       images: [external],
     },
   ];
@@ -395,7 +401,7 @@ test('列表批量将活动云存储图片解析为 HTTPS 临时地址并去重�
       fileList: fileList.map((fileID) => ({
         fileID,
         status: 0,
-        tempFileURL: `https://temp.example/${fileID.endsWith('shared.jpg') ? 'shared' : 'second'}.jpg`,
+        tempFileURL: `https://temp.example/${fileID.endsWith('shared.jpg') ? 'shared' : fileID.endsWith('group-qr.jpg') ? 'group-qr' : 'second'}.jpg`,
       })),
     }),
   });
@@ -406,6 +412,7 @@ test('列表批量将活动云存储图片解析为 HTTPS 临时地址并去重�
   assert.deepEqual(calls.find((call) => call.type === 'getTempFileURL').payload.fileList, [
     shared,
     second,
+    groupQr,
   ]);
   assert.equal(result.data[0].cover_image, 'https://temp.example/shared.jpg');
   assert.deepEqual(result.data[0].images, [
@@ -413,6 +420,7 @@ test('列表批量将活动云存储图片解析为 HTTPS 临时地址并去重�
     'https://temp.example/second.jpg',
   ]);
   assert.deepEqual(result.data[1].images, [external]);
+  assert.equal(result.data[1].group_qr_code, 'https://temp.example/group-qr.jpg');
 });
 
 test('详情临时地址解析失败时保留原始 fileID 供客户端继续降级', async () => {

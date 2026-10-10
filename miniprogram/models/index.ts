@@ -82,6 +82,8 @@ export interface Activity {
   description: string;
   images?: string[];
   coverImage?: string;
+  groupQrCode?: string;
+  groupQrCodeUploadedAt?: string;
   route: {
     start: string;
     end: string;
