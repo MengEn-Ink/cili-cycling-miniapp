@@ -42,11 +42,11 @@ describe('设置页', () => {
       stravaReadiness: readyState,
       stravaStatusText: '已连接，可重新授权或解绑',
     });
-    expect(page.data.releaseNotes).toHaveLength(27);
+    expect(page.data.releaseNotes).toHaveLength(28);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.10.11',
+      version: '2026.10.10.12',
       latest: true,
-      title: 'Strava 状态诊断增强',
+      title: 'Strava 状态读取恢复',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,

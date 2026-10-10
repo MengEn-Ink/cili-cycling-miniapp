@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.10.12',
+    date: '2026-10-10',
+    title: 'Strava 状态读取恢复',
+    summary: '兼容云数据库明确的缺记录响应，已连接账号可正常读取授权状态。',
+    latest: true,
+    features: [
+      '没有历史授权尝试记录时不再误报服务暂时不可用',
+      '仅兼容平台明确标记为文档不存在的响应，其他数据库错误继续失败关闭',
+      '已连接凭证、骑行快照与授权恢复动作保持原有安全语义',
+    ],
+  },
+  {
     version: '2026.10.10.11',
     date: '2026-10-10',
     title: 'Strava 状态诊断增强',
     summary: '增强授权状态故障的服务端阶段诊断，保持用户侧错误信息简洁且不泄露敏感数据。',
-    latest: true,
+    latest: false,
     features: [
       '授权状态失败时记录清理或读取阶段，缩短异常定位时间',
       '诊断日志仅保留稳定错误码，不记录账号、令牌或数据库错误正文',

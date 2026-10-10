@@ -13,6 +13,7 @@ function fakeDb(
     queryBatchLimit = Number.POSITIVE_INFINITY,
     transactionWriteLimit = Number.POSITIVE_INFINITY,
     failProfileMediaDbUpdateAt = Number.POSITIVE_INFINITY,
+    missingDocumentError = { errCode: -502001, errMsg: 'document not found' },
   } = {},
 ) {
   const REMOVE = Symbol('remove');
@@ -57,7 +58,7 @@ function fakeDb(
       return {
         async get() {
           calls.push({ scope, operation: 'get', collection: name, id });
-          if (!ensure(name).has(id)) throw { errCode: -502001, errMsg: 'document not found' };
+          if (!ensure(name).has(id)) throw { ...missingDocumentError };
           return { data: ensure(name).get(id) };
         },
         async set({ data }) {
@@ -182,6 +183,49 @@ test('readReadiness 只把当前用户未过期未消费 state 视为 active', a
   assert.equal(result.credential, undefined);
   assert.equal(result.snapshot, undefined);
   assert.equal(result.hasActiveOAuthState, true);
+});
+
+test('readReadiness 把平台明确缺文档的 -1 视为空 attempt', async () => {
+  const now = new Date('2026-09-29T04:00:00.000Z');
+  const credential = usableCredential();
+  const snapshot = { _id: 'user-1', athlete_id: 'athlete-current' };
+  const { db } = fakeDb(
+    {
+      strava_credentials: { 'user-1': credential },
+      strava_snapshots: { 'user-1': snapshot },
+    },
+    {
+      missingDocumentError: {
+        errCode: -1,
+        errMsg: 'document with _id user-1 does not exist',
+      },
+    },
+  );
+
+  const result = await createReadinessStore(db).readReadiness('user-1', now);
+
+  assert.equal(result.credential, credential);
+  assert.equal(result.snapshot, snapshot);
+  assert.equal(result.hasActiveOAuthState, false);
+  assert.equal(result.authorizationErrorCode, undefined);
+});
+
+test('readReadiness 对通用 -1 数据库错误保持失败关闭', async () => {
+  const now = new Date('2026-09-29T04:00:00.000Z');
+  const { db } = fakeDb(
+    {},
+    {
+      missingDocumentError: {
+        errCode: -1,
+        errMsg: 'database request fail',
+      },
+    },
+  );
+
+  await assert.rejects(createReadinessStore(db).readReadiness('user-1', now), {
+    errCode: -1,
+    errMsg: 'database request fail',
+  });
 });
 
 test('cancelAuthorization 只使当前用户未过期 state 失效', async () => {

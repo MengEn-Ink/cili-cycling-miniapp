@@ -14,10 +14,13 @@ async function maybeGet(collection, id) {
   } catch (error) {
     const code = String((error && (error.errCode || error.code)) || '');
     const message = String((error && (error.errMsg || error.message)) || '');
+    const explicitDocumentMissing =
+      /\bdocument(?:\s+with\s+_id\s+\S+)?\s+(?:(?:does\s+)?not\s+exist|not\s+found)\b/i.test(
+        message,
+      );
     if (
       ['DATABASE_DOCUMENT_NOT_EXIST', 'DOCUMENT_NOT_FOUND'].includes(code) ||
-      (Number(error && error.errCode) === -502001 &&
-        /document.+(?:not exist|not found)/i.test(message))
+      ([-502001, -1].includes(Number(error && error.errCode)) && explicitDocumentMissing)
     )
       return undefined;
     throw error;
