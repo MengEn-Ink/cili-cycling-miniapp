@@ -422,6 +422,21 @@ function mapPublicActivityPage(raw: unknown): PublicActivityPage {
     asOf: strictDateText(value.as_of),
   };
 }
+function mapRegistrationPage(raw: unknown) {
+  const value = expectRecord(raw);
+  if (!hasExactKeys(value, ['items', 'next_cursor'])) return invalidResponse();
+  if (
+    value.next_cursor !== null &&
+    (typeof value.next_cursor !== 'string' ||
+      value.next_cursor.length < 1 ||
+      value.next_cursor.length > 512)
+  )
+    return invalidResponse();
+  return {
+    items: expectRecordArray(value.items).map(mapRegistration),
+    nextCursor: value.next_cursor as string | null,
+  };
+}
 function mapEditableActivity(raw: unknown, requireCloneDraft = false): EditableActivity {
   const value = expectRecord(raw);
   if (
@@ -1083,9 +1098,27 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     );
   }
   async listRegistrations() {
-    return expectRecordArray(await this.call('registration', { action: 'mine' })).map(
-      mapRegistration,
-    );
+    const items: Registration[] = [];
+    const ids = new Set<string>();
+    let cursor: string | undefined;
+    for (let page = 0; page < 200; page += 1) {
+      const value = mapRegistrationPage(
+        await this.call('registration', {
+          action: 'minePage',
+          page_size: 50,
+          ...(cursor ? { cursor } : {}),
+        }),
+      );
+      for (const item of value.items) {
+        if (ids.has(item.id)) return invalidResponse();
+        ids.add(item.id);
+        items.push(item);
+      }
+      if (value.nextCursor === null) return items;
+      if (value.nextCursor === cursor) return invalidResponse();
+      cursor = value.nextCursor;
+    }
+    return invalidResponse();
   }
   async getRegistration(id: string) {
     return mapRegistration(

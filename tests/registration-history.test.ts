@@ -25,7 +25,15 @@ function activity(id: string, title: string, patch: Record<string, unknown> = {}
 
 function repositoryWith(dto: unknown) {
   return new CloudRepository({
-    callFunction: vi.fn(async () => ({ result: { ok: true, data: dto } })),
+    callFunction: vi.fn(async ({ data }: { data?: { action?: string } }) => ({
+      result: {
+        ok: true,
+        data:
+          data?.action === 'minePage' && Array.isArray(dto)
+            ? { items: dto, next_cursor: null }
+            : dto,
+      },
+    })),
   });
 }
 

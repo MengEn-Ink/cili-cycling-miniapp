@@ -32,18 +32,14 @@ Page({
       refreshError: '',
     });
     try {
-      const [registrations, activities] = await Promise.all([
-        rideService.listRegistrations(),
-        rideService.listActivities(),
-      ]);
+      const registrations = await rideService.listRegistrations();
       if (requestId !== this.loadRequestId) return;
       this.setData({
         items: registrations.map((item) => {
-          const activity = item.activity ||
-            activities.find((candidate) => candidate.id === item.activityId) || {
-              title: '历史活动',
-              date: item.updatedAt,
-            };
+          const activity = item.activity || {
+            title: '历史活动',
+            date: item.updatedAt,
+          };
           return {
             ...item,
             updatedAt: formatChinaDateTime(item.updatedAt),

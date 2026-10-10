@@ -91,7 +91,8 @@
 - 取消 RED：`npm --prefix cloudfunctions/shared test` 按预期 23/24 通过；活动实体缺失场景以 `SCHEMA_INVALID / 活动名额计数异常` 失败，证明异常可复现；同一测试同时锁定现存畸形活动不得绕过校验。
 - 取消 GREEN：仅在活动实体不存在时跳过名额与候补回写，报名更新和审计仍处于同一事务；共享领域 24/24、报名函数 18/18 及云函数部署包一致性校验通过，正常活动与现存畸形活动合同不变。
 - 客户端 RED：`npx vitest run tests/cloud-repository.test.ts tests/tab-page-refresh.test.ts` 按预期 164/168 通过；4 项失败分别证明仓储层仍按旧数组解析且只请求 1 页，以及页面仍被公开活动列表失败拖垮。
-- 下一步：实现严格分页 envelope 聚合与 200 页上限，移除“我的行程”页面公开活动列表调用。
+- 客户端 GREEN：仓储层现以严格 envelope 透明聚合所有 `minePage`，拒绝重复 cursor、重复 ID、异常字段和超过 200 页；“我的行程”已移除公开活动列表调用。focused Vitest 3 文件 171/171 通过。
+- 下一步：先锁 `openid + created_at + _id` 复合索引 RED，再补 bootstrap/schema 并执行全量门禁。
 - 负责人：Aime 个人助理；独立复核：TraeX 审判者；部署/真机：Aime 个人助理。
 - 关闭条件：全部报名可分页且无漏重；历史/下架/软删/缺失活动可解释展示；公开活动接口失败不影响行程；`registration` 部署回读、50+ 真实数据 smoke、CI 与独立复核齐全。
 - 更新时间：2026-10-10。
