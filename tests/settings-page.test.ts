@@ -44,20 +44,20 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.10.22',
+      version: '2026.10.11.1',
       latest: true,
-      title: '不限人数活动报名链路修复',
+      title: '首页未来两周活动预览',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.11.1',
       '2026.10.10.22',
       '2026.10.10.21',
       '2026.10.10.20',
       '2026.10.10.19',
-      '2026.10.10.18',
     ]);
   });
 

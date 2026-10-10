@@ -290,6 +290,49 @@ test('event_end 等于 as_of 只进入 history', async () => {
   );
 });
 
+test('future 只返回当前时刻起 14 天内的活动且包含边界当天', async () => {
+  const documents = [
+    activity('ongoing-before-window', {
+      event_start: '2026-10-08T08:00:00.000Z',
+      event_end: '2026-10-09T10:00:00.000Z',
+    }),
+    activity('inside-window', {
+      event_start: '2026-10-16T08:00:00.000Z',
+      event_end: '2026-10-16T12:00:00.000Z',
+    }),
+    activity('window-end', {
+      event_start: '2026-10-23T08:00:00.000Z',
+      event_end: '2026-10-23T12:00:00.000Z',
+    }),
+    activity('outside-window', {
+      event_start: '2026-10-23T08:00:01.000Z',
+      event_end: '2026-10-23T12:00:01.000Z',
+    }),
+  ];
+
+  const result = await page(documents, 'future');
+
+  assert.deepEqual(
+    result.items.map((item) => item._id),
+    ['ongoing-before-window', 'inside-window', 'window-end'],
+  );
+  assert.equal(result.nextCursor, null);
+  const scheduledCall = result.calls.find(
+    (call) => call.condition.event_start?.__operator === 'and',
+  );
+  assert.ok(scheduledCall, 'scheduled stream must combine lower and upper start boundaries');
+  assert.deepEqual(
+    scheduledCall.condition.event_start.value.map((condition) => [
+      condition.__operator,
+      condition.value.toISOString(),
+    ]),
+    [
+      ['gt', AS_OF.toISOString()],
+      ['lte', '2026-10-23T08:00:00.000Z'],
+    ],
+  );
+});
+
 test('真实 BSON Date 首屏 where 边界保持 Date 类型', async () => {
   const future = await page([], 'future');
   const history = await page([], 'history');
@@ -515,10 +558,10 @@ test('四流 cursor 禁止 or，same-time 仅按 _id，首屏和 cross-time 按 
 test('非法数据连续五批仍无法收敛时返回 DATA_INTEGRITY_ERROR 且不返回部分页', async () => {
   const documents = Array.from({ length: 105 }, (_, index) =>
     activity(`invalid-${String(index).padStart(3, '0')}`, {
-      event_start: `2026-11-${String(Math.floor(index / 24) + 1).padStart(2, '0')}T${String(
+      event_start: `2026-10-${String(Math.floor(index / 24) + 10).padStart(2, '0')}T${String(
         index % 24,
       ).padStart(2, '0')}:00:00.000Z`,
-      event_end: '2026-10-31T23:59:00.000Z',
+      event_end: '2026-10-09T09:00:00.000Z',
     }),
   );
   const database = createDatabase(documents);

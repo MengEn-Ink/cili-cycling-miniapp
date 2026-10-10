@@ -6,6 +6,8 @@ const PAGE_SIZE = 20;
 const MAX_CURSOR_LENGTH = 512;
 const MAX_STREAM_BATCHES = 5;
 const CURSOR_VERSION = 1;
+const FUTURE_PREVIEW_DAYS = 14;
+const DAY_MS = 24 * 60 * 60 * 1000;
 const VIEWS = new Set(['future', 'history']);
 
 function validationFailed() {
@@ -82,6 +84,7 @@ function parseListPageRequest(event = {}, now = new Date()) {
 
 function streamDefinitions(view, asOf, command) {
   const time = new Date(asOf.getTime());
+  const futurePreviewEnd = new Date(time.getTime() + FUTURE_PREVIEW_DAYS * DAY_MS);
   const visible = command.neq(true);
   if (view === 'future')
     return [
@@ -103,7 +106,8 @@ function streamDefinitions(view, asOf, command) {
         filter: {
           status: 'published',
           is_deleted: visible,
-          event_start: command.gt(time),
+          // 首页未来预览只读取当前时刻起 14 天内的未开始活动，避免远期活动挤占近期列表和分页窗口。
+          event_start: command.and([command.gt(time), command.lte(futurePreviewEnd)]),
           event_end: command.gt(time),
         },
       },
@@ -152,7 +156,12 @@ function boundaryFilter(definition, command, boundary, segment) {
     const existing = definition.filter[definition.field];
     return {
       ...definition.filter,
-      [definition.field]: existing ? existing.and(boundaryCondition) : boundaryCondition,
+      [definition.field]: existing
+        ? command.and([
+            ...(existing.__operator === 'and' ? existing.value : [existing]),
+            boundaryCondition,
+          ])
+        : boundaryCondition,
     };
   }
   dataIntegrityFailed();
@@ -196,8 +205,10 @@ function validForStream(item, definition, asOf) {
   const time = asOf.getTime();
   if (definition.name === 'ongoing')
     return item.status === 'published' && start <= time && end > time;
-  if (definition.name === 'scheduled')
-    return item.status === 'published' && start > time && end > time;
+  if (definition.name === 'scheduled') {
+    const futurePreviewEnd = asOf.getTime() + FUTURE_PREVIEW_DAYS * DAY_MS;
+    return item.status === 'published' && start > time && start <= futurePreviewEnd && end > time;
+  }
   if (definition.name === 'finished') return item.status === 'finished';
   return item.status === 'published' && end <= time;
 }
