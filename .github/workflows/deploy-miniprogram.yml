@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 可选版本号；留空时按运行编号生成
+        description: 可选版本号；留空时按运行编号生成（恢复模式禁止填写）
         required: false
         type: string
       description:
@@ -19,6 +19,10 @@ on:
         description: 微信 CI 机器人编号（1-30）
         required: false
         default: '1'
+        type: string
+      restore_release_id:
+        description: 可选；从仓库 verified/promote 清单恢复历史稳定体验版
+        required: false
         type: string
 
 permissions:
@@ -39,12 +43,54 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      CHECKOUT_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+      TOOLING_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
     steps:
-      - name: Checkout verified main commit
+      - name: Checkout current release tooling
         uses: actions/checkout@v7
         with:
-          ref: ${{ env.CHECKOUT_SHA }}
+          ref: ${{ env.TOOLING_SHA }}
+          fetch-depth: 0
+
+      - name: Resolve upload target
+        id: release
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RESTORE_RELEASE_ID: ${{ inputs.restore_release_id }}
+          REQUESTED_VERSION: ${{ inputs.version }}
+          DEFAULT_VERSION: ${{ format('0.0.{0}.{1}', github.run_number, github.run_attempt) }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          CURRENT_MAIN="$(git rev-parse origin/main)"
+          if [[ -n "${RESTORE_RELEASE_ID}" ]]; then
+            [[ "${EVENT_NAME}" == "workflow_dispatch" ]] || { echo "历史恢复只允许手动触发" >&2; exit 1; }
+            [[ -z "${REQUESTED_VERSION}" ]] || { echo "恢复模式的版本必须从清单派生，禁止填写 version" >&2; exit 1; }
+            [[ "${TOOLING_SHA}" == "${CURRENT_MAIN}" ]] || { echo "恢复模式只允许当前 main 工具链执行" >&2; exit 1; }
+            [[ "${RESTORE_RELEASE_ID}" =~ ^experience-promote-[0-9A-Za-z._-]+-[0-9a-f]{12}-[1-9][0-9]{0,19}$ ]] || { echo "restore_release_id 格式无效" >&2; exit 1; }
+            manifest="docs/releases/experience/${RESTORE_RELEASE_ID}.json"
+            [[ -f "${manifest}" ]] || { echo "恢复清单不存在：${manifest}" >&2; exit 1; }
+            node scripts/miniprogram-experience-release.mjs verify --input "${manifest}"
+            # 只有长期固化的 verified/promote 清单可恢复，避免候选或回退操作被当作稳定源码重传。
+            jq -e --arg release_id "${RESTORE_RELEASE_ID}" \
+              '.stage == "verified" and .mode == "promote" and .releaseId == $release_id' \
+              "${manifest}" >/dev/null
+            target_sha="$(jq -r '.mainSha' "${manifest}")"
+            version="$(jq -r '.version' "${manifest}")"
+            [[ "${target_sha}" =~ ^[0-9a-f]{40}$ ]] || { echo "恢复清单 mainSha 无效" >&2; exit 1; }
+            git merge-base --is-ancestor "${target_sha}" origin/main || { echo "恢复目标不是 origin/main 祖先" >&2; exit 1; }
+            echo "restore_mode=true" >> "${GITHUB_OUTPUT}"
+            echo "restore_release_id=${RESTORE_RELEASE_ID}" >> "${GITHUB_OUTPUT}"
+          else
+            target_sha="${TOOLING_SHA}"
+            version="${REQUESTED_VERSION:-${DEFAULT_VERSION}}"
+            echo "restore_mode=false" >> "${GITHUB_OUTPUT}"
+            echo "restore_release_id=" >> "${GITHUB_OUTPUT}"
+          fi
+          # 所有步骤输出必须先通过单行白名单，避免 workflow_dispatch 输入注入额外输出键。
+          [[ "${version}" =~ ^[0-9A-Za-z][0-9A-Za-z._-]{0,63}$ ]] || { echo "上传版本格式无效" >&2; exit 1; }
+          echo "target_sha=${target_sha}" >> "${GITHUB_OUTPUT}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
 
       - name: Download miniprogram upload decision
         if: github.event_name == 'workflow_run'
@@ -59,6 +105,7 @@ jobs:
         id: decision
         env:
           EVENT_NAME: ${{ github.event_name }}
+          CHECKOUT_SHA: ${{ steps.release.outputs.target_sha }}
         shell: bash
         run: |
           set -euo pipefail
@@ -74,20 +121,31 @@ jobs:
         if: steps.decision.outputs.should_upload != 'true'
         run: echo "本次提交不影响小程序产物，跳过微信开发版上传"
 
-      - name: Ensure automatic upload still targets current main
+      - name: Ensure upload uses current main tooling
         if: steps.decision.outputs.should_upload == 'true'
         id: main-tip
+        env:
+          CHECKOUT_SHA: ${{ steps.release.outputs.target_sha }}
+          RESTORE_MODE: ${{ steps.release.outputs.restore_mode }}
         shell: bash
         run: |
           set -euo pipefail
           git fetch --no-tags origin main
           CURRENT_MAIN="$(git rev-parse origin/main)"
-          if [[ "${CHECKOUT_SHA}" == "${CURRENT_MAIN}" ]]; then
+          # 正常上传要求目标就是 main tip；恢复上传仅放宽历史源码，工具链仍必须是 main tip。
+          if [[ "${TOOLING_SHA}" == "${CURRENT_MAIN}" && ( "${RESTORE_MODE}" == "true" || "${CHECKOUT_SHA}" == "${CURRENT_MAIN}" ) ]]; then
             echo "should_upload=true" >> "${GITHUB_OUTPUT}"
           else
             echo "should_upload=false" >> "${GITHUB_OUTPUT}"
-            echo "跳过旧版 CI 重跑：${CHECKOUT_SHA} 已不是当前 main ${CURRENT_MAIN}"
+            echo "跳过过期工具链或提交：tooling=${TOOLING_SHA} target=${CHECKOUT_SHA} main=${CURRENT_MAIN}"
           fi
+
+      - name: Checkout historical stable source
+        if: steps.decision.outputs.should_upload == 'true' && steps.main-tip.outputs.should_upload == 'true' && steps.release.outputs.restore_mode == 'true'
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.release.outputs.target_sha }}
+          path: historical-source
 
       - name: Setup Node.js
         if: steps.decision.outputs.should_upload == 'true' && steps.main-tip.outputs.should_upload == 'true'
@@ -123,45 +181,75 @@ jobs:
         id: upload
         if: steps.decision.outputs.should_upload == 'true' && steps.main-tip.outputs.should_upload == 'true'
         env:
+          CHECKOUT_SHA: ${{ steps.release.outputs.target_sha }}
+          RESTORE_MODE: ${{ steps.release.outputs.restore_mode }}
+          RESTORE_RELEASE_ID: ${{ steps.release.outputs.restore_release_id }}
           MINIPROGRAM_CI_PRIVATE_KEY_PATH: ${{ runner.temp }}/miniprogram-ci.key
-          MINIPROGRAM_VERSION: ${{ inputs.version || format('0.0.{0}.{1}', github.run_number, github.run_attempt) }}
-          MINIPROGRAM_DESCRIPTION: ${{ inputs.description || format('main {0} · GitHub Actions 自动上传', env.CHECKOUT_SHA) }}
+          MINIPROGRAM_PROJECT_PATH: ${{ steps.release.outputs.restore_mode == 'true' && format('{0}/historical-source', github.workspace) || '' }}
+          MINIPROGRAM_VERSION: ${{ steps.release.outputs.version }}
+          MINIPROGRAM_DESCRIPTION: ${{ inputs.description || (steps.release.outputs.restore_mode == 'true' && format('恢复 {0} · 历史稳定体验版重传', steps.release.outputs.restore_release_id)) || format('main {0} · GitHub Actions 自动上传', steps.release.outputs.target_sha) }}
           MINIPROGRAM_CI_ROBOT: ${{ inputs.robot || '1' }}
         shell: bash
         run: |
           set -euo pipefail
-          # 依赖安装和自测期间 main 仍可能前进；真正上传前再次缩小竞态窗口。
+          # 安装和自测期间 main 仍可能前进；上传前再次确认执行脚本仍来自 main tip。
           CURRENT_MAIN="$(git ls-remote origin refs/heads/main | cut -f1)"
-          if [[ "${CHECKOUT_SHA}" != "${CURRENT_MAIN}" ]]; then
+          if [[ "${TOOLING_SHA}" != "${CURRENT_MAIN}" ]]; then
+            echo "跳过过期工具链：${TOOLING_SHA} 已不是当前 main ${CURRENT_MAIN}"
+            exit 0
+          fi
+          if [[ "${RESTORE_MODE}" != "true" && "${CHECKOUT_SHA}" != "${CURRENT_MAIN}" ]]; then
             echo "跳过过期提交：${CHECKOUT_SHA} 已不是当前 main ${CURRENT_MAIN}"
             exit 0
           fi
           npm run deploy:miniprogram
+          # 上传是不可撤销副作用；若窗口内 main 前进，阻断 receipt，避免旧工具链进入回退证据链。
+          CURRENT_MAIN_AFTER="$(git ls-remote origin refs/heads/main | cut -f1)"
+          if [[ "${TOOLING_SHA}" != "${CURRENT_MAIN_AFTER}" ]]; then
+            echo "上传完成后 main 已前进，不生成有效 receipt：${TOOLING_SHA} -> ${CURRENT_MAIN_AFTER}" >&2
+            exit 1
+          fi
           echo "uploaded=true" >> "${GITHUB_OUTPUT}"
 
       - name: Generate immutable development upload receipt
         if: steps.upload.outputs.uploaded == 'true'
         env:
-          MINIPROGRAM_VERSION: ${{ inputs.version || format('0.0.{0}.{1}', github.run_number, github.run_attempt) }}
+          CHECKOUT_SHA: ${{ steps.release.outputs.target_sha }}
+          RESTORE_MODE: ${{ steps.release.outputs.restore_mode }}
+          RESTORE_RELEASE_ID: ${{ steps.release.outputs.restore_release_id }}
+          MINIPROGRAM_VERSION: ${{ steps.release.outputs.version }}
           MINIPROGRAM_CI_ROBOT: ${{ inputs.robot || '1' }}
         shell: bash
         run: |
           set -euo pipefail
-          jq -n \
-            --arg main_sha "${CHECKOUT_SHA}" \
-            --arg version "${MINIPROGRAM_VERSION}" \
-            --arg workflow_run_id "${GITHUB_RUN_ID}" \
-            --arg workflow_run_attempt "${GITHUB_RUN_ATTEMPT}" \
-            --arg robot "${MINIPROGRAM_CI_ROBOT}" \
-            --arg created_at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" \
-            '{schemaVersion:1,mainSha:$main_sha,version:$version,workflowRunId:$workflow_run_id,workflowRunAttempt:$workflow_run_attempt,robot:$robot,createdAt:$created_at}' \
-            > "${RUNNER_TEMP}/miniprogram-upload-receipt.json"
+          if [[ "${RESTORE_MODE}" == "true" ]]; then
+            jq -n \
+              --arg main_sha "${CHECKOUT_SHA}" \
+              --arg version "${MINIPROGRAM_VERSION}" \
+              --arg workflow_run_id "${GITHUB_RUN_ID}" \
+              --arg workflow_run_attempt "${GITHUB_RUN_ATTEMPT}" \
+              --arg robot "${MINIPROGRAM_CI_ROBOT}" \
+              --arg restore_release_id "${RESTORE_RELEASE_ID}" \
+              --arg created_at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" \
+              '{schemaVersion:2,mainSha:$main_sha,version:$version,workflowRunId:$workflow_run_id,workflowRunAttempt:$workflow_run_attempt,robot:$robot,restoreReleaseId:$restore_release_id,createdAt:$created_at}' \
+              > "${RUNNER_TEMP}/miniprogram-upload-receipt.json"
+          else
+            jq -n \
+              --arg main_sha "${CHECKOUT_SHA}" \
+              --arg version "${MINIPROGRAM_VERSION}" \
+              --arg workflow_run_id "${GITHUB_RUN_ID}" \
+              --arg workflow_run_attempt "${GITHUB_RUN_ATTEMPT}" \
+              --arg robot "${MINIPROGRAM_CI_ROBOT}" \
+              --arg created_at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" \
+              '{schemaVersion:1,mainSha:$main_sha,version:$version,workflowRunId:$workflow_run_id,workflowRunAttempt:$workflow_run_attempt,robot:$robot,createdAt:$created_at}' \
+              > "${RUNNER_TEMP}/miniprogram-upload-receipt.json"
+          fi
 
       - name: Store development upload receipt
         if: steps.upload.outputs.uploaded == 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: miniprogram-upload-receipt-${{ env.CHECKOUT_SHA }}
+          name: miniprogram-upload-receipt-${{ steps.release.outputs.target_sha }}
           path: ${{ runner.temp }}/miniprogram-upload-receipt.json
           if-no-files-found: error
           retention-days: 90

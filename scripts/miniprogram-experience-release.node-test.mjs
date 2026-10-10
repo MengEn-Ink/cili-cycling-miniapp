@@ -211,6 +211,40 @@ test('回退目标必须绑定仓库内已验证的稳定晋级清单', () => {
       }),
     /必须是已验证的稳定晋级清单/,
   );
+  const rollbackCandidate = buildExperienceReleaseManifest({
+    ...baseInput,
+    mode: 'rollback',
+    previousReleaseId: verified.releaseId,
+    rollbackReason: '演练',
+  });
+  const verifiedRollback = buildExperienceReleaseManifest({
+    ...baseInput,
+    mode: 'rollback',
+    stage: 'verified',
+    previousReleaseId: verified.releaseId,
+    rollbackReason: '演练',
+    candidateDigest: rollbackCandidate.digest,
+    platformEvidence:
+      'wechat-admin:experience:0.0.81.1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:pages/activities/index',
+  });
+  assert.throws(
+    () =>
+      validateRollbackTarget(verifiedRollback, {
+        mainSha: SHA,
+        version: baseInput.version,
+        releaseId: verifiedRollback.releaseId,
+      }),
+    /必须是已验证的稳定晋级清单/,
+  );
+  assert.throws(
+    () =>
+      validateRollbackTarget(verified, {
+        mainSha: SHA,
+        version: baseInput.version,
+        releaseId: 'experience-promote-0.0.81.1-aaaaaaaaaaaa-999',
+      }),
+    /不一致/,
+  );
 });
 
 test('长期体验版记录只允许新增同名 verified 清单', async () => {
@@ -267,6 +301,10 @@ test('长期体验版记录只允许新增同名 verified 清单', async () => {
 test('体验版工作流只生成证据，不自动上传或覆盖体验基线', async () => {
   const workflow = await readFile('.github/workflows/promote-miniprogram-experience.yml', 'utf8');
   const developmentWorkflow = await readFile('.github/workflows/deploy-miniprogram.yml', 'utf8');
+  const rollbackGate = workflow.match(
+    /- name: Verify rollback target is a recorded stable release[\s\S]*?(?=\n      - name:)/,
+  )?.[0];
+  assert.ok(rollbackGate);
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /options: \[candidate, verified\]/);
   assert.match(workflow, /environment: wechat-experience/);
@@ -284,7 +322,22 @@ test('体验版工作流只生成证据，不自动上传或覆盖体验基线',
   assert.doesNotMatch(workflow, /ref: \$\{\{ inputs\.main_sha \}\}/);
   assert.doesNotMatch(workflow, /deploy:miniprogram|WECHAT_MINIPROGRAM_PRIVATE_KEY/);
   assert.match(developmentWorkflow, /echo "uploaded=true"/);
+  assert.match(developmentWorkflow, /上传版本格式无效/);
+  assert.match(developmentWorkflow, /上传完成后 main 已前进，不生成有效 receipt/);
+  assert.match(developmentWorkflow, /restore_release_id:/);
+  assert.match(developmentWorkflow, /node scripts\/miniprogram-experience-release\.mjs verify/);
+  assert.match(
+    developmentWorkflow,
+    /\.stage == "verified" and \.mode == "promote" and \.releaseId == \$release_id/,
+  );
+  assert.match(developmentWorkflow, /git merge-base --is-ancestor "\$\{target_sha\}" origin\/main/);
+  assert.match(developmentWorkflow, /\[\[ "\$\{TOOLING_SHA\}" == "\$\{CURRENT_MAIN\}" \]\]/);
+  assert.match(developmentWorkflow, /\{schemaVersion:1,/);
+  assert.match(developmentWorkflow, /\{schemaVersion:2,[^\n]*restoreReleaseId/);
   assert.match(developmentWorkflow, /miniprogram-upload-receipt-/);
+  assert.match(workflow, /\.schemaVersion == 2[^\n]*\.restoreReleaseId == \$release_id/);
+  assert.match(workflow, /--upload-run-url "\$\{GITHUB_SERVER_URL\}[^\n]*\$\{UPLOAD_RUN_ID\}"/);
+  assert.doesNotMatch(rollbackGate, /--upload-run-url/);
 });
 
 test('CLI 使用排他写入，避免覆盖既有发布证据', async () => {

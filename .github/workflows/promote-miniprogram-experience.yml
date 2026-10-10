@@ -88,6 +88,7 @@ jobs:
           CI_RUN_ID: ${{ inputs.ci_run_id }}
           UPLOAD_RUN_ID: ${{ inputs.upload_run_id }}
           SMOKE_RUN_ID: ${{ inputs.smoke_run_id }}
+          PREVIOUS_RELEASE_ID: ${{ inputs.previous_release_id }}
           MODE: ${{ inputs.mode }}
           STAGE: ${{ inputs.stage }}
         shell: bash
@@ -104,28 +105,37 @@ jobs:
           [[ "$(jq -r '.conclusion' <<<"${smoke_run_json}")" == "success" ]] || { echo "smoke run 未成功" >&2; exit 1; }
           [[ "$(jq -r '.head_sha' <<<"${smoke_run_json}")" == "${TARGET_SHA}" ]] || { echo "smoke run SHA 与目标不一致" >&2; exit 1; }
           [[ "$(jq -r '.name' <<<"${smoke_run_json}")" == "CI" ]] || { echo "smoke run 工作流名称不匹配" >&2; exit 1; }
+          ci_run_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${CI_RUN_ID}")"
+          [[ "$(jq -r '.conclusion' <<<"${ci_run_json}")" == "success" ]] || { echo "CI run 未成功" >&2; exit 1; }
+          [[ "$(jq -r '.head_sha' <<<"${ci_run_json}")" == "${TARGET_SHA}" ]] || { echo "CI run SHA 与目标不一致" >&2; exit 1; }
+          [[ "$(jq -r '.name' <<<"${ci_run_json}")" == "CI" ]] || { echo "CI run 工作流名称不匹配" >&2; exit 1; }
+
+          upload_run_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${UPLOAD_RUN_ID}")"
+          [[ "$(jq -r '.conclusion' <<<"${upload_run_json}")" == "success" ]] || { echo "上传 run 未成功" >&2; exit 1; }
+          [[ "$(jq -r '.name' <<<"${upload_run_json}")" == "微信开发版自动上传" ]] || { echo "上传 run 工作流名称不匹配" >&2; exit 1; }
           if [[ "${MODE}" == "promote" ]]; then
-            for spec in "${CI_RUN_ID}:CI" "${UPLOAD_RUN_ID}:微信开发版自动上传"; do
-              run_id="${spec%%:*}"
-              expected_name="${spec#*:}"
-              run_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}")"
-              conclusion="$(jq -r '.conclusion' <<<"${run_json}")"
-              head_sha="$(jq -r '.head_sha' <<<"${run_json}")"
-              workflow_name="$(jq -r '.name' <<<"${run_json}")"
-              [[ "${conclusion}" == "success" ]] || { echo "${run_id} 未成功" >&2; exit 1; }
-              [[ "${head_sha}" == "${TARGET_SHA}" ]] || { echo "${run_id} SHA 与目标不一致" >&2; exit 1; }
-              [[ "${workflow_name}" == "${expected_name}" ]] || { echo "${run_id} 工作流名称不匹配" >&2; exit 1; }
-            done
-            mkdir -p "${RUNNER_TEMP}/upload-receipt"
-            gh run download "${UPLOAD_RUN_ID}" \
-              --repo "${GITHUB_REPOSITORY}" \
-              --name "miniprogram-upload-receipt-${TARGET_SHA}" \
-              --dir "${RUNNER_TEMP}/upload-receipt"
+            [[ "$(jq -r '.head_sha' <<<"${upload_run_json}")" == "${TARGET_SHA}" ]] || { echo "上传 run SHA 与目标不一致" >&2; exit 1; }
+          fi
+          mkdir -p "${RUNNER_TEMP}/upload-receipt"
+          gh run download "${UPLOAD_RUN_ID}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --name "miniprogram-upload-receipt-${TARGET_SHA}" \
+            --dir "${RUNNER_TEMP}/upload-receipt"
+          if [[ "${MODE}" == "promote" ]]; then
             jq -e \
               --arg sha "${TARGET_SHA}" \
               --arg version "${TARGET_VERSION}" \
               --arg run_id "${UPLOAD_RUN_ID}" \
               '.schemaVersion == 1 and .mainSha == $sha and .version == $version and .workflowRunId == $run_id' \
+              "${RUNNER_TEMP}/upload-receipt/miniprogram-upload-receipt.json" >/dev/null
+          else
+            # rollback 必须绑定本次历史重传 receipt；不能复用已过期的原始上传 URL 冒充恢复动作。
+            jq -e \
+              --arg sha "${TARGET_SHA}" \
+              --arg version "${TARGET_VERSION}" \
+              --arg run_id "${UPLOAD_RUN_ID}" \
+              --arg release_id "${PREVIOUS_RELEASE_ID}" \
+              '.schemaVersion == 2 and .mainSha == $sha and .version == $version and .workflowRunId == $run_id and .restoreReleaseId == $release_id' \
               "${RUNNER_TEMP}/upload-receipt/miniprogram-upload-receipt.json" >/dev/null
           fi
 
@@ -147,7 +157,6 @@ jobs:
             --version "${TARGET_VERSION}" \
             --release-id "${PREVIOUS_RELEASE_ID}" \
             --ci-run-url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${CI_RUN_ID}" \
-            --upload-run-url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${UPLOAD_RUN_ID}" \
             --smoke-evidence "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${SMOKE_RUN_ID}"
 
       - name: Generate immutable experience manifest
