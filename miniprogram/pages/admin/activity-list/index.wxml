@@ -12,19 +12,31 @@
       <button class="status-filter {{statusFilter === 'published' ? 'active' : ''}}" data-status="published" bindtap="selectStatusFilter">已上线</button>
       <button class="status-filter {{statusFilter === 'finished' ? 'active' : ''}}" data-status="finished" bindtap="selectStatusFilter">已结束</button>
     </view>
-    <view class="card activity-row" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="edit">
-      <view class="row">
-        <view class="title">{{item.title}}</view>
-        <text class="tag">{{item.statusLabel}}</text>
-      </view>
-      <view class="activity-actions">
-        <button
-          wx:if="{{item.canToggleOnline}}"
-          catchtap="toggleOnline"
-          data-id="{{item.id}}"
-          class="secondary status-button {{item.status === 'published' ? 'danger-action' : ''}}"
-        >{{item.toggleLabel}}</button>
-        <button wx:if="{{item.canClone}}" catchtap="startClone" data-id="{{item.id}}" class="secondary template-button">从此活动创建</button>
+    <view class="swipe-row" wx:for="{{items}}" wx:key="id">
+      <view class="swipe-delete" data-id="{{item.id}}" catchtap="confirmDelete">删除</view>
+      <view
+        class="card activity-row swipe-content {{item.swipeAnim ? 'swipe-anim' : ''}}"
+        style="transform: translateX({{item.swipeOffset}}px);"
+        data-id="{{item.id}}"
+        bindtap="edit"
+        catchtouchstart="onRowTouchStart"
+        catchtouchmove="onRowTouchMove"
+        catchtouchend="onRowTouchEnd"
+        catchtouchcancel="onRowTouchEnd"
+      >
+        <view class="row">
+          <view class="title">{{item.title}}</view>
+          <text class="tag">{{item.statusLabel}}</text>
+        </view>
+        <view class="activity-actions">
+          <button
+            wx:if="{{item.canToggleOnline}}"
+            catchtap="toggleOnline"
+            data-id="{{item.id}}"
+            class="secondary status-button {{item.status === 'published' ? 'danger-action' : ''}}"
+          >{{item.toggleLabel}}</button>
+          <button wx:if="{{item.canClone}}" catchtap="startClone" data-id="{{item.id}}" class="secondary template-button">从此活动创建</button>
+        </view>
       </view>
     </view>
     <view class="card clone-panel" wx:if="{{cloneSourceId}}">

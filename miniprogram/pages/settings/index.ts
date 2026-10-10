@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.11.7',
+    date: '2026-10-11',
+    title: '活动卡片滑动删除',
+    summary: '我的活动列表支持滑动卡片删除活动，删除前二次确认，有成员报名时安全拦截。',
+    latest: true,
+    features: [
+      '活动卡片向左滑动露出删除按钮，松手自动展开或收回',
+      '删除前弹窗二次确认，删除成功后立即从列表移除',
+      '有报名或候补、非本人活动时展示云端拦截原因，不误删数据',
+    ],
+  },
+  {
     version: '2026.10.11.6',
     date: '2026-10-11',
     title: '活动分享卡片升级',
     summary: '活动分享卡片展示正确封面和标题，也可分享到朋友圈。',
-    latest: true,
+    latest: false,
     features: [
       '分享给好友或群时使用活动封面和活动标题',
       '支持将活动详情分享到朋友圈并保留活动入口',
