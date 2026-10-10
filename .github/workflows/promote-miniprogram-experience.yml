@@ -166,6 +166,7 @@ jobs:
           PLATFORM_EVIDENCE: ${{ inputs.platform_evidence }}
           PREVIOUS_RELEASE_ID: ${{ inputs.previous_release_id }}
           ROLLBACK_REASON: ${{ inputs.rollback_reason }}
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
