@@ -15,11 +15,11 @@
 ## 当前共同证据
 
 - 用户报告：2026-10-09 群聊新增 6 组问题，已拆成 HP-06 至 HP-13 共 8 个原子项。
-- 代码合入：PR [#45](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/45)、[#48](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/48)、[#52](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/52)、[#53](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/53) 已合并；最后一次含产品/云函数变更的 main 基线为 `658ea9c6f06acf9d5658eaa9dab77c8286a1bc07`，后续纯文档清单提交不改变产品代码基线。
-- CI：PR #45、PR #52、PR #53 与产品基线 `658ea9c...` 对应 CI 均为 SUCCESS。CI 不能证明 CloudBase Active 版本或真机行为。
-- 微信开发版：Actions run [38012378411](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38012378411) 已成功上传 `0.0.33.1`，head `658ea9c...`，日志包含“微信开发版 0.0.33.1 上传成功”；PR #54 的纯文档 main workflow run [38012903064](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38012903064) 已成功跳过上传。
-- CloudBase 部署：已通过本地已登录环境在 `cloudbase-d0gizacy77a1ab017` 应用并 verify 13 个集合、31 条索引；创建 `oauth_attempts` 和首页/媒体/管理分页共 5 条索引，apply requestId 分别为 `70af1f69-803e-4e65-8816-8aaf04120cc5`、`910a7036-7da5-4210-bbb5-48562d84302d`、`6028903a-c63d-4c1b-bd59-a1db4656719d`、`b6331a33-f8be-479e-9247-615a9071f3e2`、`bd79dafe-6b74-4da4-af09-af5a75196bdd`、`104e8934-617e-497e-bd12-0f302680e35c`；`activity-read`、`strava-auth`、`strava-callback`、`activity-admin` 部署命令均返回 success，函数列表回读为 Active。
-- 真实验收：新增 8 项均未取得与同一不可变 SHA 对应的完整真机/真实数据 smoke，不得标记完成。
+- 代码合入：PR [#45](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/45)、[#48](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/48)、[#52](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/52)、[#53](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/53)、[#56](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/56)、[#57](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/57) 已合并；最后一次含产品/云函数变更的 main 基线为 `92f5c0b7623be6fbac642388261228b8cb5c959b`（#57 纯前端时间快捷项提示；#56 纯前端浅色主题对比度），中间的纯文档清单提交不改变产品代码基线。
+- CI：上述 PR 及产品基线 `92f5c0b...` 对应 CI 均为 SUCCESS。CI 不能证明 CloudBase Active 版本或真机行为。
+- 微信开发版：Actions run [38017106152](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38017106152) 已成功上传 `0.0.37.1`，head `92f5c0b...`，日志包含“微信开发版 0.0.37.1 上传成功”；其中浅色主题对比度（HP-06）首次随 run [38014100157](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38014100157) 上传的 `0.0.36.1`（head `a275fc3...`）交付。
+- CloudBase 部署：已通过本地已登录环境在 `cloudbase-d0gizacy77a1ab017` 应用并 verify 13 个集合、31 条索引；创建 `oauth_attempts` 和首页/媒体/管理分页共 5 条索引，apply requestId 分别为 `70af1f69-803e-4e65-8816-8aaf04120cc5`、`910a7036-7da5-4210-bbb5-48562d84302d`、`6028903a-c63d-4c1b-bd59-a1db4656719d`、`b6331a33-f8be-479e-9247-615a9071f3e2`、`bd79dafe-6b74-4da4-af09-af5a75196bdd`、`104e8934-617e-497e-bd12-0f302680e35c`；`activity-read`、`strava-auth`、`strava-callback`、`activity-admin` 部署命令均返回 success，函数列表回读为 Active。注意：本 Aime 沙箱内无 CloudBase 身份，`npm run cloudbase:verify` 返回 `No valid identity information, please use tcb login to login`，故新增云函数/索引的部署与回读只能由具备登录态的环境完成。
+- 真实验收：HP-06、HP-08 的代码门禁与开发版均已备齐，但 8 项都未取得与同一不可变 SHA 对应的完整真机/真实数据 smoke，不得删除；其中 HP-06 仅余 320px 真机截图与独立复核，HP-08 仅余真机 picker 创建/编辑保存重开 smoke。
 
 ## 当前处理顺序
 
@@ -31,10 +31,10 @@
 | A4 | `HP-20261009-05` | P1 | `PENDING_EVIDENCE` | 首页时间线客户端与发布链路，已部署待真实页面 smoke | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
 | B | `HP-20261009-13` | P0 | `PENDING_EVIDENCE` | Strava 生命周期已部署，待真实授权/解绑 smoke | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
 | C | `HP-20261009-04` | P1 | `PENDING_EVIDENCE` | 活动管理分页已部署，待 101+ 真实页面 smoke | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
-| D | `HP-20261009-06` | P1 | `IN_PROGRESS` | 浅色主题全页对比度代码完成，待 CI/开发版验收 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
+| D | `HP-20261009-06` | P1 | `PENDING_EVIDENCE` | 浅色对比度已随 #56 合入并交付开发版 0.0.36.1，仅余 320px 真机截图与独立复核 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
 | E | `HP-20261009-07` | P1 | `READY` | 我的行程永久保留历史/下架活动 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
-| F1 | `HP-20261009-08` | P1 | `READY` | 创建活动时间快捷选择 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
-| F2 | `HP-20261009-09` | P1 | `BLOCKED_BY(HP-20261009-08 code commit)` | 创建活动地点快捷选择与权限恢复 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
+| F1 | `HP-20261009-08` | P1 | `PENDING_EVIDENCE` | 相对快捷项前置提示已随 #57 合入并交付开发版 0.0.37.1，仅余真机 picker 创建/编辑保存重开 smoke | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
+| F2 | `HP-20261009-09` | P1 | `READY` | 创建活动地点快捷选择与权限恢复（HP-08 代码门禁已满足，可启动；需真机定位验证） | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
 | G1 | `HP-20261009-10` | P1 | `READY` | 单背景图与预览的数据安全闭环 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
 | G2 | `HP-20261009-11` | P1 | `BLOCKED_BY(HP-20261009-10 code commit)` | 个人中心头像预览 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
 | H | `HP-20261009-12` | P1 | `READY` | Strava 年限正确性、回填与部署 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
@@ -99,12 +99,13 @@
 
 ### HP-20261009-06 · 浅色主题全页对比度
 
-- 优先级/状态：P1 / `IN_PROGRESS`，浅色主题对比度代码完成，待 CI、开发版与真机验收。
+- 优先级/状态：P1 / `PENDING_EVIDENCE`，浅色主题对比度代码已随 PR [#56](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/56) 合入 main 并交付开发版，等待真机验收与独立复核。
 - 用户报告：个人中心“编辑资料”在浅色主题出现白字难以辨认，并要求核对其他页面。
 - 代码事实：已补齐占位符、禁用态、媒体前景、状态与性别徽标语义 token；修复 profile、profile-edit、registrations、activity-detail、activity-card，并同步活动编辑、报名表单、凭证、审批详情与骑行名片等扫描出的真实风险。摄影 Hero 的固定浅色文字继续由深色遮罩承载，不改变品牌视觉。
 - 本地证据：浅色主题 focused Vitest 5 文件 51/51 通过；新增全页静态契约覆盖输入占位符、错误/禁用态、辅助文案、卡片、状态和徽标，并断言普通文字 ≥4.5:1、关键控件 ≥3:1。`typecheck`、`format:check`、升级日志校验与 `git diff --check` 均通过。
-- 证据缺口：尚未取得远端 CI、同一不可变 SHA 的开发版上传、14 页常规宽度/320px 真机截图与独立复核，因此不得关闭或删除。
-- 下一步：完成独立复核、CI 与开发版上传后，在常规宽度和 320px 验证个人中心有图/无图、资料编辑错误/禁用/失败态及其余页面浅色 smoke。
+- 远端证据：main CI run [38014014812](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38014014812) SUCCESS；同不可变 SHA `a275fc3...` 的开发版 `0.0.36.1` 已由 run [38014100157](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38014100157) 上传成功。
+- 证据缺口：仍缺 14 页常规宽度/320px 真机截图与独立复核，因此暂不删除（对比度为与宽度无关的静态色彩属性，已由全页契约逐 token 证明）。
+- 下一步：在常规宽度和 320px 对个人中心有图/无图、资料编辑错误/禁用/失败态及其余页面做浅色真机 smoke，并完成独立复核。
 - 负责人：TraeX 执行者；独立复核：TraeX 审判者；真机验收：Aime 个人助理。
 - 关闭条件：14 页及共享可见组件在常规宽度和 320px 浅色主题通过；个人中心有图/无图、资料编辑错误/禁用/失败态通过；深色回归、CI、同 SHA 开发版 smoke 与独立复核齐全。
 - 更新时间：2026-10-10。
@@ -122,14 +123,16 @@
 
 ### HP-20261009-08 · 创建活动时间快捷选择
 
-- 优先级/状态：P1 / `READY`，活动编辑文件族唯一写者先处理本项。
-- 用户报告：创建活动的时间需要控件和快捷选择。
-- 代码/CI：PR #48 已加入日期/时间 picker 与“明早 07:00、下周六 08:00、开始后 4 小时、开始前 1 天 20:00”等快捷项；开发版 `0.0.27.1` 已上传。
-- 确认缺口：开始时间为空/非法时，两个相对快捷项静默无动作；缺少跨月、跨年、周六边界、时区和真机 picker 证据。
-- 下一步：补相对快捷项前置条件 RED，改为明确禁用或提示；补边界测试并在创建/编辑两种模式真实保存回读。
+- 优先级/状态：P1 / `PENDING_EVIDENCE`，相对快捷项前置提示已随 PR [#57](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/57) 合入 main 并交付开发版，仅余真机 picker smoke。
+- 用户报告：创建活动的时间需要控件和快捷选择，且点了没反应时要有交代。
+- 代码/CI：PR #48 已加入日期/时间 picker 与“明早 07:00、下周六 08:00、开始后 4 小时、开始前 1 天 20:00”等快捷项；PR #57 修复相对快捷项在开始时间为空/非法时静默无动作的问题，并合并重复的开始时间解析。
+- 测试证据：新增缺少/非法开始时间先红后绿用例（回退修复确认失败信号复现），补跨月（3/1→2/28）、跨年（→12/31）、闰年（2028→2/29）、跨天（22:00+4h→次日 02:00）与周六当天（→+7 天）边界回归，以及快捷时间在创建保存时随活动提交的回读用例；`validate`/`coverage`/`audit:all` 全绿。
+- 远端证据：main CI run [38017029088](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38017029088) SUCCESS；同不可变 SHA `92f5c0b...` 的开发版 `0.0.37.1` 已由 run [38017106152](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38017106152) 上传成功。
+- 证据缺口：仍缺真机 picker 在创建/编辑两种模式保存后重开的 smoke 与独立复核，因此暂不删除。
+- 下一步：在真机验证创建与编辑两条路径，确认相对快捷项提示与正常回填、保存后重开值一致，并完成独立复核。
 - 负责人：TraeX 执行者；独立复核：TraeX 审判者；真机验收：Aime 个人助理。
 - 关闭条件：三个时间字段可精细和快捷选择；无静默操作；跨月/年/时区无漂移；创建与编辑保存重开正确；CI、开发版 smoke 和独立复核齐全。
-- 更新时间：2026-10-09。
+- 更新时间：2026-10-10。
 
 ### HP-20261009-09 · 创建活动地点快捷选择与权限恢复
 
