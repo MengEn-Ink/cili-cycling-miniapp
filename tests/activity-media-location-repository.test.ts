@@ -9,6 +9,8 @@ const dto = {
   description: '',
   images: ['cloud://first.jpg', 'cloud://second.jpg'],
   cover_image: 'cloud://legacy.jpg',
+  group_qr_code: 'cloud://group-qr.jpg',
+  group_qr_code_uploaded_at: '2026-10-10T08:00:00.000Z',
   event_start: '2026-10-18T00:00:00.000Z',
   event_end: '2026-10-18T08:00:00.000Z',
   signup_deadline: '2026-10-17T00:00:00.000Z',
@@ -43,6 +45,8 @@ describe('活动图集与位置仓储 DTO', () => {
     await expect(new CloudRepository(cloud).getActivity('a1')).resolves.toMatchObject({
       images: dto.images,
       coverImage: dto.images[0],
+      groupQrCode: dto.group_qr_code,
+      groupQrCodeUploadedAt: dto.group_qr_code_uploaded_at,
       route: { startLocation: location, endLocation: dto.route.end_location },
     });
   });
@@ -62,6 +66,8 @@ describe('活动图集与位置仓储 DTO', () => {
       description: '',
       images: dto.images,
       coverImage: 'cloud://ignored.jpg',
+      groupQrCode: dto.group_qr_code,
+      groupQrCodeUploadedAt: dto.group_qr_code_uploaded_at,
       startAt: dto.event_start,
       endAt: dto.event_end,
       deadline: dto.signup_deadline,
@@ -84,6 +90,8 @@ describe('活动图集与位置仓储 DTO', () => {
     expect(callFunction.mock.calls[0][0].data.activity).toMatchObject({
       images: dto.images,
       cover_image: dto.images[0],
+      group_qr_code: dto.group_qr_code,
+      group_qr_code_uploaded_at: dto.group_qr_code_uploaded_at,
       route: { start_location: location, end_location: dto.route.end_location },
     });
   });

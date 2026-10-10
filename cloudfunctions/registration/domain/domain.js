@@ -340,6 +340,8 @@ const ACTIVITY_FIELDS = [
   'title',
   'cover_image',
   'images',
+  'group_qr_code',
+  'group_qr_code_uploaded_at',
   'description',
   'schedule',
   'route',

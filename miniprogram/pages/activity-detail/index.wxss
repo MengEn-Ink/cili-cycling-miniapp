@@ -1105,3 +1105,24 @@ brand-logo {
 .climb-popularity {
   border-color: var(--color-border);
 }
+
+.group-qr-detail-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.group-qr-detail-image {
+  width: 320rpx;
+  height: 320rpx;
+  border: var(--border-width) solid var(--color-border);
+  background: #fff;
+}
+
+.group-qr-warning {
+  padding: 12rpx 16rpx;
+  border: var(--border-width) solid var(--color-warning);
+  color: var(--color-warning);
+  background: rgba(255, 193, 7, 0.12);
+  font-size: 24rpx;
+}

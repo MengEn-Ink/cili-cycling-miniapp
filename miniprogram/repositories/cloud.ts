@@ -373,6 +373,10 @@ function mapActivity(raw: unknown, requireRegistrationDecision = false): Activit
     description: typeof value.description === 'string' ? value.description : '',
     ...(Array.isArray(value.images) ? { images } : {}),
     coverImage: images[0] || (typeof value.cover_image === 'string' ? value.cover_image : ''),
+    ...(typeof value.group_qr_code === 'string' ? { groupQrCode: value.group_qr_code } : {}),
+    ...(typeof value.group_qr_code_uploaded_at === 'string'
+      ? { groupQrCodeUploadedAt: value.group_qr_code_uploaded_at }
+      : {}),
     route: {
       start: typeof value.route?.start === 'string' ? value.route.start : '',
       end: typeof value.route?.end === 'string' ? value.route.end : '',
@@ -884,6 +888,10 @@ function activityPayload(value: ActivityInput) {
     title: typeof value.title === 'string' ? value.title : '',
     ...(Array.isArray(value.images) ? { images } : {}),
     cover_image: images[0] || (typeof value.coverImage === 'string' ? value.coverImage : ''),
+    ...(typeof value.groupQrCode === 'string' ? { group_qr_code: value.groupQrCode } : {}),
+    ...(typeof value.groupQrCodeUploadedAt === 'string'
+      ? { group_qr_code_uploaded_at: value.groupQrCodeUploadedAt }
+      : {}),
     description: typeof value.description === 'string' ? value.description : '',
     schedule: Array.isArray(value.schedule)
       ? value.schedule.map((item) => ({

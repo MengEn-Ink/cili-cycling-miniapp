@@ -40,6 +40,8 @@ const ACTIVITY_FIELDS = [
   'title',
   'images',
   'cover_image',
+  'group_qr_code',
+  'group_qr_code_uploaded_at',
   'description',
   'schedule',
   'route',
@@ -96,6 +98,14 @@ function cleanImages(value, maxImages = 3) {
   if (!Array.isArray(value) || value.length > maxImages)
     fail('VALIDATION_FAILED', '活动图片最多 3 张');
   return value.map((item) => cleanText(item, '活动图片', 500, true));
+}
+function cleanOptionalDate(value, field) {
+  if (value === undefined || value === '') return undefined;
+  return validDate(value, field);
+}
+function cleanGroupQrCode(value) {
+  if (value === undefined || value === '') return '';
+  return cleanText(value, '活动群二维码', 500, true);
 }
 function cleanLocation(value, field) {
   if (!value || typeof value !== 'object' || Array.isArray(value))
@@ -295,6 +305,8 @@ const ACTIVITY_INPUT_FIELDS = new Set([
   'title',
   'images',
   'cover_image',
+  'group_qr_code',
+  'group_qr_code_uploaded_at',
   'description',
   'schedule',
   'route',
@@ -425,10 +437,19 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses, option
   const images =
     input.images === undefined ? [] : cleanImages(input.images, options.maxImages || 3);
   const legacyCover = cleanText(input.cover_image || '', '封面', 500);
+  const groupQrCode = cleanGroupQrCode(input.group_qr_code);
+  const groupQrCodeUploadedAt = cleanOptionalDate(
+    input.group_qr_code_uploaded_at,
+    '活动群二维码上传时间',
+  );
   return {
     title: cleanText(input.title, '活动标题', 100, true),
     images,
     cover_image: images[0] || legacyCover,
+    group_qr_code: groupQrCode,
+    ...(groupQrCode && groupQrCodeUploadedAt
+      ? { group_qr_code_uploaded_at: groupQrCodeUploadedAt }
+      : {}),
     description: cleanText(input.description || '', '活动说明', 5000),
     schedule: cleanSchedule(input.schedule || []),
     route: {

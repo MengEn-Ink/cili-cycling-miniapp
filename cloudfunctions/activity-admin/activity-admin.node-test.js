@@ -84,6 +84,17 @@ test('活动输入清洗且公开响应只含白名单', () => {
   assert.equal(publicActivity({ _id: 'a1', ...value, created_by: 'secret' }).created_by, undefined);
 });
 
+test('活动群二维码作为可选字段写入并公开返回', () => {
+  const value = validateActivityInput({
+    ...input,
+    group_qr_code: ' cloud://group-qr.jpg ',
+    group_qr_code_uploaded_at: '2026-10-10T08:00:00.000Z',
+  });
+  assert.equal(value.group_qr_code, 'cloud://group-qr.jpg');
+  assert.ok(value.group_qr_code_uploaded_at instanceof Date);
+  assert.equal(publicActivity({ _id: 'a1', ...value }).group_qr_code, 'cloud://group-qr.jpg');
+});
+
 test('草稿允许运营字段缺失且不补造默认值', () => {
   const draft = { ...input };
   for (const field of [

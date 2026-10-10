@@ -24,6 +24,7 @@ type PendingImage = {
 };
 
 const MAX_IMAGES = 3;
+const GROUP_QR_EXPIRE_MS = 7 * 24 * 60 * 60 * 1000;
 const DEFAULT_CAPACITY = 500;
 const emptyForm = (): Form => ({
   startDate: '',
@@ -57,17 +58,17 @@ const fileIdCloudPath = (fileId: string) => {
   return match ? fileId.slice(match[0].length) : '';
 };
 // 以文件内容 md5 作为幂等键生成确定性对象路径；取不到指纹时退回随机命名，保证上传可用性优先。
-async function contentCloudPath(previewPath: string) {
+async function contentCloudPath(previewPath: string, folder = 'profiles/activity-media') {
   try {
     const info: any = await wx.getFileInfo({ filePath: previewPath, digestAlgorithm: 'md5' });
     if (info?.digest) {
-      return `profiles/activity-media/${info.digest}${mediaExtension(previewPath)}`;
+      return `${folder}/${info.digest}${mediaExtension(previewPath)}`;
     }
   } catch {
     // 旧基础库不支持摘要或读取失败时降级为随机路径，不阻断上传。
   }
   const random = Math.random().toString(36).slice(2, 10);
-  return `profiles/activity-media/${Date.now()}-${random}${mediaExtension(previewPath)}`;
+  return `${folder}/${Date.now()}-${random}${mediaExtension(previewPath)}`;
 }
 const isCancel = (error: unknown) =>
   typeof (error as { errMsg?: unknown })?.errMsg === 'string' &&
@@ -90,6 +91,12 @@ function locationFailure(
   )
     return 'platform-config';
   return 'unknown';
+}
+
+function groupQrExpired(uploadedAt?: string) {
+  if (!uploadedAt) return false;
+  const time = new Date(uploadedAt).getTime();
+  return Number.isFinite(time) && Date.now() - time >= GROUP_QR_EXPIRE_MS;
 }
 
 function generatedTitle(startAt: string, location: string) {
@@ -129,6 +136,10 @@ Page({
     sessionUploadedIds: [] as string[],
     imagesTouched: false,
     coverImage: '',
+    groupQrCode: '',
+    groupQrCodeUploadedAt: '',
+    groupQrCodeExpired: false,
+    pendingGroupQrCode: undefined as PendingImage | undefined,
     routeStartLocation: undefined as ActivityLocation | undefined,
     form: emptyForm(),
   },
@@ -162,6 +173,10 @@ Page({
         originalActivity: activity,
         images,
         coverImage: images[0] || '',
+        groupQrCode: activity.groupQrCode || '',
+        groupQrCodeUploadedAt: activity.groupQrCodeUploadedAt || '',
+        groupQrCodeExpired: groupQrExpired(activity.groupQrCodeUploadedAt),
+        pendingGroupQrCode: undefined,
         routeStartLocation: activity.route.startLocation,
         form: {
           startDate: pickerDate(startAtText),
@@ -392,6 +407,74 @@ Page({
     if (shouldDeleteFile && wx.cloud && typeof wx.cloud.deleteFile === 'function')
       void wx.cloud.deleteFile({ fileList: [removedFileId] }).catch(() => undefined);
   },
+  async chooseGroupQrCode() {
+    if (this.data.uploading) return;
+    try {
+      const selected = await wx.chooseMedia({
+        count: 1,
+        mediaType: ['image'],
+        sourceType: ['album', 'camera'],
+      });
+      const file = Array.isArray(selected.tempFiles) ? selected.tempFiles[0] : undefined;
+      if (!file || typeof file.tempFilePath !== 'string' || !file.tempFilePath)
+        throw new Error('未选择可上传的群二维码');
+      const pendingGroupQrCode: PendingImage = {
+        id: `${Date.now()}-group-qr`,
+        previewPath: file.tempFilePath,
+        status: 'uploading',
+        cloudPath: await contentCloudPath(file.tempFilePath, 'profiles/activity-group-qr'),
+      };
+      this.setData({ uploading: true, error: '', pendingGroupQrCode });
+      const result = await wx.cloud!.uploadFile({
+        cloudPath: pendingGroupQrCode.cloudPath as string,
+        filePath: pendingGroupQrCode.previewPath,
+      });
+      if (!result.fileID) throw new Error('云端未返回群二维码标识');
+      if (this.unloaded) {
+        this.cleanupSessionUploads([result.fileID]);
+        return;
+      }
+      this.setData({
+        sessionUploadedIds: [...this.data.sessionUploadedIds, result.fileID],
+        groupQrCode: result.fileID,
+        groupQrCodeUploadedAt: new Date().toISOString(),
+        groupQrCodeExpired: false,
+        pendingGroupQrCode: undefined,
+      });
+    } catch (error) {
+      if (isCancel(error)) return;
+      const current = this.data.pendingGroupQrCode;
+      this.setData({
+        error: error instanceof Error ? error.message : '群二维码上传失败，请重试',
+        pendingGroupQrCode: current ? { ...current, status: 'failed' as const } : undefined,
+      });
+    } finally {
+      this.setData({ uploading: false });
+    }
+  },
+  removeGroupQrCode() {
+    if (this.data.uploading) return;
+    const removedFileId = this.data.groupQrCode;
+    const shouldDeleteFile = this.data.sessionUploadedIds.includes(removedFileId);
+    this.setData({
+      groupQrCode: '',
+      groupQrCodeUploadedAt: '',
+      groupQrCodeExpired: false,
+      pendingGroupQrCode: undefined,
+      sessionUploadedIds: this.data.sessionUploadedIds.filter(
+        (fileId: string) => fileId !== removedFileId,
+      ),
+      error: '',
+    });
+    if (shouldDeleteFile && wx.cloud && typeof wx.cloud.deleteFile === 'function')
+      void wx.cloud.deleteFile({ fileList: [removedFileId] }).catch(() => undefined);
+  },
+  async retryGroupQrCode() {
+    const pending = this.data.pendingGroupQrCode;
+    if (!pending || this.data.uploading) return;
+    this.setData({ pendingGroupQrCode: { ...pending, status: 'uploading' as const } });
+    await this.chooseGroupQrCode();
+  },
   async chooseRouteLocation() {
     if (this.data.saving || this.data.choosingLocation) return;
     this.setData({ choosingLocation: true, error: '' });
@@ -499,6 +582,8 @@ Page({
       description: form.description,
       images,
       coverImage: images[0] || '',
+      groupQrCode: this.data.groupQrCode,
+      groupQrCodeUploadedAt: this.data.groupQrCode ? this.data.groupQrCodeUploadedAt : '',
       capacity: original?.capacity || DEFAULT_CAPACITY,
       registrationUnlimited: original ? original.registrationUnlimited : true,
       ...(original
@@ -588,6 +673,10 @@ Page({
         sessionUploadedIds: [],
         imagesTouched: false,
         coverImage: savedImages[0] || '',
+        groupQrCode: saved.groupQrCode || '',
+        groupQrCodeUploadedAt: saved.groupQrCodeUploadedAt || '',
+        groupQrCodeExpired: groupQrExpired(saved.groupQrCodeUploadedAt),
+        pendingGroupQrCode: undefined,
         routeStartLocation: saved.route.startLocation,
       });
       wx.showToast({ title: '保存成功', icon: 'success' });
