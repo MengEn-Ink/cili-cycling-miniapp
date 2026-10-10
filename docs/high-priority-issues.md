@@ -89,7 +89,8 @@
 - TDD RED：`npm --prefix cloudfunctions/registration test` 按预期因 `Cannot find module './mine-page'` 失败，既有 14 项报名测试继续通过；新测试已锁定 101 条分页、同时间戳 binary `_id` 顺序、非法游标及 `published/finished/draft/is_deleted/物理缺失` 活动投影。
 - TDD GREEN：已新增兼容式 `minePage`、严格不透明游标和安全活动投影；`npm --prefix cloudfunctions/registration test` 18/18 通过，101 条及同时间戳分页均无漏重，旧 `mine` 保持不变。
 - 取消 RED：`npm --prefix cloudfunctions/shared test` 按预期 23/24 通过；活动实体缺失场景以 `SCHEMA_INVALID / 活动名额计数异常` 失败，证明异常可复现；同一测试同时锁定现存畸形活动不得绕过校验。
-- 下一步：仅在活动实体不存在时跳过名额回写，完成取消并保留审计；随后同步三个领域云函数副本。
+- 取消 GREEN：仅在活动实体不存在时跳过名额与候补回写，报名更新和审计仍处于同一事务；共享领域 24/24、报名函数 18/18 及云函数部署包一致性校验通过，正常活动与现存畸形活动合同不变。
+- 下一步：锁定客户端三页聚合、异常 envelope 和页面不依赖公开活动列表的 RED。
 - 负责人：Aime 个人助理；独立复核：TraeX 审判者；部署/真机：Aime 个人助理。
 - 关闭条件：全部报名可分页且无漏重；历史/下架/软删/缺失活动可解释展示；公开活动接口失败不影响行程；`registration` 部署回读、50+ 真实数据 smoke、CI 与独立复核齐全。
 - 更新时间：2026-10-10。

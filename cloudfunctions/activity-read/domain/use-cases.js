@@ -288,10 +288,12 @@ async function cancelRegistration(store, { openid, registrationId: id }, now = n
     await tx.putRegistration(id, value);
     if (!wasWaiting) {
       const activity = await tx.getActivity(registration.activity_id);
-      if (!activity || !Number.isInteger(activity.occupied_count) || activity.occupied_count < 1)
+      if (activity && (!Number.isInteger(activity.occupied_count) || activity.occupied_count < 1))
         fail('SCHEMA_INVALID', '活动名额计数异常');
-      // 释放与 FIFO 补位在同一事务；补位成功时一减一加抵消，occupied_count 保持不变。
-      await releaseAndPromote(tx, activity, registration, now);
+      if (activity) {
+        // 释放与 FIFO 补位在同一事务；补位成功时一减一加抵消，occupied_count 保持不变。
+        await releaseAndPromote(tx, activity, registration, now);
+      }
     }
     await tx.addAudit(
       buildAudit(openid, 'registration.cancelled', id, now, {
