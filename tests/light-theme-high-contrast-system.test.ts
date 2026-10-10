@@ -26,6 +26,8 @@ describe('approved unified high-contrast UI', () => {
     expect(tokens['--color-brand']).toBe('#d9ff43');
     expect(tokens['--color-brand-active']).toBe('#c4ec23');
     expect(tokens['--color-on-brand']).toBe('#10120f');
+    expect(tokens['--color-action']).toBe('#10120f');
+    expect(tokens['--color-on-action']).toBe('#ffffff');
     expect(tokens['--color-card-border']).toBe('#10120f');
     expect(tokens['--shadow-card']).toBe('var(--shadow-hard)');
     expect(tokens['--metric-align']).toBe('left');
@@ -37,14 +39,17 @@ describe('approved unified high-contrast UI', () => {
     expect(contrast(tokens['--color-text'], tokens['--color-bg'])).toBeGreaterThanOrEqual(7);
     expect(contrast(tokens['--color-muted'], tokens['--color-bg'])).toBeGreaterThanOrEqual(4.5);
     expect(contrast(tokens['--color-on-brand'], tokens['--color-brand'])).toBeGreaterThanOrEqual(7);
+    expect(contrast(tokens['--color-on-action'], tokens['--color-action'])).toBeGreaterThanOrEqual(
+      7,
+    );
   });
 
   it('centers shared control labels without decorative letter spacing or gradients', () => {
     const button = effectiveBlock(app, '.btn');
     expect(declaration(button, 'justify-content')).toBe('center');
     expect(declaration(button, 'letter-spacing')).toBe('0');
-    expect(declaration(button, 'background')).toBe('var(--color-brand) !important');
-    expectSemantic(declaration(button, 'color'), '--color-on-brand');
+    expect(declaration(button, 'background')).toBe('var(--color-action) !important');
+    expectSemantic(declaration(button, 'color'), '--color-on-action');
     expect(declaration(button, 'clip-path')).toBe('none');
   });
 
@@ -58,7 +63,7 @@ describe('approved unified high-contrast UI', () => {
     expect(
       declaration(effectiveBlock(card, '.activity-card--featured .metric-item'), 'text-align'),
     ).toBe('var(--metric-align)');
-    expectSemantic(declaration(effectiveBlock(card, '.card-cta'), 'color'), '--color-on-brand');
+    expectSemantic(declaration(effectiveBlock(card, '.card-cta'), 'color'), '--color-on-action');
   });
 
   it('keeps the activity introduction on the reading axis and uses hard card shadows', () => {

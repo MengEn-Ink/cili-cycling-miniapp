@@ -27,6 +27,9 @@ page {
   --color-brand-active: #c4ec23;
   --color-brand-soft: #f2ffc2;
   --color-on-brand: #10120f;
+  --color-action: #10120f;
+  --color-action-active: #30342e;
+  --color-on-action: #ffffff;
   --color-danger: #b3261e;
   --color-danger-text: #8f1d17;
   --color-danger-soft: #fbe9e7;
@@ -227,12 +230,12 @@ textarea {
 }
 
 .btn {
-  background: var(--color-brand) !important;
-  color: var(--color-on-brand) !important;
+  background: var(--color-action) !important;
+  color: var(--color-on-action) !important;
 }
 
 .btn:active {
-  background: var(--color-brand-active) !important;
+  background: var(--color-action-active) !important;
 }
 
 .btn[disabled],
@@ -321,7 +324,7 @@ button::after {
 
 .big {
   margin-bottom: 4rpx;
-  color: var(--color-brand);
+  color: var(--color-text);
   font-size: 34rpx;
   font-variant-numeric: tabular-nums;
   font-weight: 900;
@@ -467,7 +470,7 @@ brand-logo {
 .accent,
 .open-arrow,
 .corner-cut {
-  color: var(--color-brand);
+  color: var(--color-text);
 }
 
 .btn,
@@ -475,8 +478,8 @@ brand-logo {
 .save-action,
 .repair-button,
 .filter-tab.is-active {
-  background-color: var(--color-brand) !important;
-  color: var(--color-on-brand) !important;
+  background-color: var(--color-action) !important;
+  color: var(--color-on-action) !important;
 }
 
 .secondary,

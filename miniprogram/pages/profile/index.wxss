@@ -629,7 +629,7 @@ brand-logo {
 }
 
 .profile-page .btn {
-  background: var(--color-brand) !important;
+  background: var(--color-action) !important;
 }
 
 @media (max-width: 320px) {
@@ -823,7 +823,7 @@ brand-logo {
 }
 
 .profile-page .btn {
-  background: var(--color-brand) !important;
+  background: var(--color-action) !important;
 }
 
 @media (max-width: 350px) {
@@ -942,8 +942,8 @@ page,
   border-radius: var(--radius-display) !important;
 }
 .profile-page .btn {
-  background: var(--color-brand) !important;
-  color: var(--color-on-brand) !important;
+  background: var(--color-action) !important;
+  color: var(--color-on-action) !important;
 }
 .profile-page .secondary {
   border-color: var(--color-border-strong);

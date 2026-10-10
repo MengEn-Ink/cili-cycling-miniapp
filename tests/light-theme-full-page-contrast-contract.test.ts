@@ -55,6 +55,7 @@ describe('HP-20261010-02 统一明亮 UI 全页对比度契约', () => {
       ['--color-on-media-gender-female', '--color-media-card-bg', 4.5],
       ['--color-on-media-gender-unknown', '--color-media-card-bg', 4.5],
       ['--color-on-brand', '--color-brand', 3],
+      ['--color-on-action', '--color-action', 7],
     ] as const) {
       expectUiContrast(`var(${foreground})`, `var(${background})`, minimum);
     }
@@ -144,7 +145,7 @@ describe('HP-20261010-02 统一明亮 UI 全页对比度契约', () => {
       '--color-surface',
     );
     expectSemantic(declaration(effectiveBlock(card, '.metric-unit'), 'color'), '--color-muted');
-    expectSemantic(declaration(effectiveBlock(card, '.card-cta'), 'color'), '--color-on-brand');
+    expectSemantic(declaration(effectiveBlock(card, '.card-cta'), 'color'), '--color-on-action');
   });
 
   it('activity-detail 的无图 Hero、费用和骑友徽标使用可读语义色', () => {

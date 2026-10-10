@@ -26,18 +26,18 @@ page {
   width: 100rpx;
   height: 100rpx;
   border-radius: 20rpx;
-  background: var(--color-brand);
-  color: #0b0b0c;
+  background: var(--color-action);
+  color: var(--color-on-action);
   font-size: 42rpx;
   font-weight: 900;
 }
 .strava-title {
   font-size: 40rpx;
   font-weight: 800;
-  color: #f7f7f5;
+  color: var(--color-text);
 }
 .strava-page .muted {
-  color: #a8a8ad;
+  color: var(--color-muted);
 }
 
 .status-card {
@@ -47,8 +47,8 @@ page {
   padding: 28rpx;
   border: 1rpx solid #343438;
   border-radius: 16rpx;
-  background: #1b1b1d;
-  color: #f7f7f5;
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 .status-ready {
   border-color: rgba(24, 160, 88, 0.55);
@@ -90,11 +90,11 @@ page {
 .status-title {
   font-size: 30rpx;
   font-weight: 800;
-  color: #f7f7f5;
+  color: var(--color-text);
 }
 .status-help {
   margin-top: 8rpx;
-  color: #a8a8ad;
+  color: var(--color-muted);
   font-size: 24rpx;
 }
 
@@ -102,26 +102,26 @@ page {
   margin: 0 0 8rpx;
 }
 .strava-page .section-label {
-  color: #a8a8ad;
+  color: var(--color-muted);
 }
 .athlete-name {
   font-size: 36rpx;
   font-weight: 800;
-  color: #f7f7f5;
+  color: var(--color-text);
 }
 .snapshot {
   margin-top: 24rpx;
 }
 .strava-page .card {
   border: 1rpx solid #343438;
-  background: #242427;
-  color: #f7f7f5;
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 .strava-page .metric {
   padding: 20rpx;
   border-radius: 12rpx;
-  background: #1b1b1d;
-  color: #a8a8ad;
+  background: var(--color-surface);
+  color: var(--color-muted);
 }
 .strava-page .big {
   color: var(--color-text);
@@ -131,14 +131,14 @@ page {
 
 .strava-page .btn {
   border: 0;
-  background: var(--color-brand);
-  color: #0b0b0c;
+  background: var(--color-action);
+  color: var(--color-on-action);
   font-weight: 900;
 }
 .strava-page .secondary {
   border: 2rpx solid #3a3a3e;
-  background: #151517;
-  color: #f7f7f5;
+  background: var(--color-input-bg);
+  color: var(--color-text);
 }
 .error-card {
   margin-top: 16rpx;
@@ -178,8 +178,11 @@ page,
 }
 .strava-mark,
 .strava-page .btn {
-  background: var(--color-brand);
-  color: var(--color-on-brand);
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+.strava-mark {
+  border: 4rpx solid var(--color-brand);
 }
 .strava-page .secondary {
   border-color: var(--color-border-strong);

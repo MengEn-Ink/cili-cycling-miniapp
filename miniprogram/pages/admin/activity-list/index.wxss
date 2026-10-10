@@ -132,8 +132,8 @@ page {
 }
 .activity-list-page .btn {
   border: 0;
-  background: var(--color-brand);
-  color: #0b0b0c;
+  background: var(--color-action);
+  color: var(--color-on-action);
   font-weight: 900;
 }
 .activity-list-page .secondary {
@@ -206,8 +206,8 @@ page,
   border-radius: var(--radius-md);
 }
 .activity-list-page .btn {
-  background: var(--color-brand);
-  color: var(--color-on-brand);
+  background: var(--color-action);
+  color: var(--color-on-action);
 }
 .activity-list-page .secondary {
   border-color: var(--color-border);
@@ -242,7 +242,7 @@ page,
 
 .activity-list-page .status-filter.active {
   border-color: var(--color-brand);
-  background: var(--color-brand);
-  color: var(--color-on-brand);
+  background: var(--color-action);
+  color: var(--color-on-action);
   font-weight: 800;
 }

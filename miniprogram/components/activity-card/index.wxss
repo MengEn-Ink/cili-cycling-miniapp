@@ -260,8 +260,8 @@ status-pill {
   min-width: 150rpx;
   padding: 13rpx 18rpx;
   border-radius: 999rpx;
-  background: var(--color-brand);
-  color: var(--color-on-brand);
+  background: var(--color-action);
+  color: var(--color-on-action);
   font-size: 22rpx;
   font-weight: 900;
   line-height: 1.2;
@@ -332,8 +332,8 @@ status-pill {
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-md);
-  background: var(--color-brand);
-  color: var(--color-on-brand);
+  background: var(--color-action);
+  color: var(--color-on-action);
   line-height: 1.2;
   text-align: center;
 }

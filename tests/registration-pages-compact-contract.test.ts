@@ -102,7 +102,7 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     expect(formStyles).toContain('padding-left: var(--page-gutter);');
     expect(formStyles).toContain('padding-right: var(--page-gutter-narrow);');
     expect(formStyles).toContain('padding-left: var(--page-gutter-narrow);');
-    expect(formStyles).toContain('background: var(--color-brand);');
+    expect(formStyles).toContain('background: var(--color-action);');
     expect(formStyles).toMatch(
       /@media \(max-width: 320px\)[\s\S]*?\.experience-segment\s*\{[^}]*box-sizing:\s*border-box[^}]*width:\s*100%/,
     );

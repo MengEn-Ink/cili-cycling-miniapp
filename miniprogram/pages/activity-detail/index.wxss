@@ -352,7 +352,7 @@ brand-logo {
 .detail-action .btn {
   min-height: 88rpx;
   border-radius: 24rpx !important;
-  background: var(--color-brand) !important;
+  background: var(--color-action) !important;
 }
 
 .detail-action .btn[disabled] {
@@ -696,7 +696,7 @@ brand-logo {
 }
 .detail-action .btn {
   border-radius: var(--radius-display) !important;
-  background: var(--color-brand) !important;
+  background: var(--color-action) !important;
 }
 .route-location-row button,
 .route-actions button {
@@ -904,7 +904,7 @@ brand-logo {
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm) !important;
-  background: var(--color-brand) !important;
+  background: var(--color-action) !important;
   line-height: 1.2;
 }
 

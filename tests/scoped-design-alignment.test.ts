@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { effectiveBlock, declaration, expectSemantic, read } from './theme-contract-helpers';
 
 describe('报名、骑行名片与个人中心设计对齐', () => {
-  it('报名表单使用连续深色表面并减少分区卡片碎片', () => {
+  it('报名表单使用连续明亮表面并减少分区卡片碎片', () => {
     const page = read('miniprogram/pages/registration-form/index.ts');
     const template = read('miniprogram/pages/registration-form/index.wxml');
     const styles = read('miniprogram/pages/registration-form/index.wxss');
@@ -16,14 +16,16 @@ describe('报名、骑行名片与个人中心设计对齐', () => {
     const surface = effectiveBlock(styles, '.form-surface');
     expectSemantic(declaration(surface, 'border-radius'), '--radius-display');
     expectSemantic(declaration(surface, 'background'), '--color-surface');
-    expect(styles).toMatch(/\.form-section\s*\{[^}]*border-top:\s*1rpx solid #3a3a3c/s);
+    expect(styles).toMatch(
+      /\.form-section\s*\{[^}]*border-top:\s*1rpx solid var\(--color-border\)/s,
+    );
     expectSemantic(
       declaration(effectiveBlock(styles, '.form-section'), 'border-color'),
       '--color-border',
     );
     expectSemantic(
       declaration(effectiveBlock(styles, '.form-page .submit-button'), 'background'),
-      '--color-brand',
+      '--color-action',
     );
     expect(styles).not.toContain('linear-gradient');
   });
