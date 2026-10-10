@@ -145,7 +145,31 @@ function capabilityCandidates(profile, mediaRecords, ownerOpenid, mediaSecret) {
           ),
         }))
     : [];
+  const background = value.background_photo;
+  const currentBackground =
+    background &&
+    typeof background === 'object' &&
+    safeCloudFileId(background.file_id) &&
+    PROFILE_PHOTO_CATEGORIES.has(background.category) &&
+    registered(background.file_id, background.category)
+      ? [
+          {
+            source_file_id: background.file_id,
+            file_id: background.file_id,
+            storage_file_id: canonicalFileId(
+              records.get(background.file_id),
+              background.file_id,
+              ownerOpenid,
+              mediaSecret,
+            ),
+            category: background.category,
+            source: 'user',
+            visibility: 'private',
+          },
+        ]
+      : [];
   const ordered = [
+    ...currentBackground,
     ...photos.filter((photo) => isRidingCategory(photo.category)),
     ...photos.filter((photo) => !isRidingCategory(photo.category)),
   ];

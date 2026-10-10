@@ -149,7 +149,7 @@ test('单一响应只返回累计与 90 天 allowlist、null 语义和 owner 媒
       avatar_url: '',
     },
     backgrounds: [
-      { url: 'https://temporary.example/ride', source: 'user_photo', category: 'ride' },
+      { url: 'https://temporary.example/other', source: 'user_photo', category: 'other' },
     ],
     summary: {
       lifetime_rides: 486,
@@ -221,6 +221,110 @@ test('个人名片对非法或未来 Strava 注册时间省略字段', async () 
     },
   );
   assert.equal(Object.hasOwn(response, 'strava_joined_at'), false);
+});
+
+test('个人名片显式背景槽位优先于 legacy photos 且只返回一张', async () => {
+  const current = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174030.jpg`;
+  const legacyRide = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174031.jpg`;
+  const legacyBike = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174032.jpg`;
+  const canonicalCurrent = canonicalFor(current).canonicalFileId;
+  const card = await buildCapabilityCard(
+    {
+      profile: {
+        background_photo: { file_id: current, category: 'other' },
+        photos: [
+          { file_id: legacyRide, category: 'ride' },
+          { file_id: legacyBike, category: 'bike' },
+        ],
+      },
+      credential,
+      snapshot,
+      mediaRecords: [
+        mediaRecord(current, 'other'),
+        mediaRecord(legacyRide, 'ride'),
+        mediaRecord(legacyBike, 'bike'),
+      ],
+    },
+    {
+      openid,
+      mediaSecret,
+      now,
+      getTempFileURL: async ({ fileList }) => ({
+        fileList: fileList.map((fileID) => ({
+          fileID,
+          tempFileURL: `https://temporary.example/${fileID === canonicalCurrent ? 'current' : 'legacy'}`,
+          status: 0,
+        })),
+      }),
+    },
+  );
+
+  assert.deepEqual(card.backgrounds, [
+    { url: 'https://temporary.example/current', source: 'user_photo', category: 'other' },
+  ]);
+});
+
+test('个人名片在背景槽位缺失时只回退第一张合法 legacy photo', async () => {
+  const legacyOther = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174033.jpg`;
+  const legacyRide = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174034.jpg`;
+  const canonicalOther = canonicalFor(legacyOther).canonicalFileId;
+  const card = await buildCapabilityCard(
+    {
+      profile: {
+        photos: [
+          { file_id: legacyOther, category: 'other' },
+          { file_id: legacyRide, category: 'ride' },
+        ],
+      },
+      credential,
+      snapshot,
+      mediaRecords: [mediaRecord(legacyOther, 'other'), mediaRecord(legacyRide, 'ride')],
+    },
+    {
+      openid,
+      mediaSecret,
+      now,
+      getTempFileURL: async ({ fileList }) => ({
+        fileList: fileList.map((fileID) => ({
+          fileID,
+          tempFileURL: `https://temporary.example/${fileID === canonicalOther ? 'first' : 'second'}`,
+          status: 0,
+        })),
+      }),
+    },
+  );
+
+  assert.deepEqual(card.backgrounds, [
+    { url: 'https://temporary.example/first', source: 'user_photo', category: 'other' },
+  ]);
+});
+
+test('个人名片显式 null 背景槽位不回退 legacy photos', async () => {
+  const legacyRide = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174035.jpg`;
+  let storageReads = 0;
+  const card = await buildCapabilityCard(
+    {
+      profile: {
+        background_photo: null,
+        photos: [{ file_id: legacyRide, category: 'ride' }],
+      },
+      credential,
+      snapshot,
+      mediaRecords: [mediaRecord(legacyRide, 'ride')],
+    },
+    {
+      openid,
+      mediaSecret,
+      now,
+      getTempFileURL: async () => {
+        storageReads += 1;
+        return { fileList: [] };
+      },
+    },
+  );
+
+  assert.equal(storageReads, 0);
+  assert.deepEqual(card.backgrounds, []);
 });
 
 test('个人名片只解析已验证 canonical 对象，source 覆盖不进入展示链', async () => {

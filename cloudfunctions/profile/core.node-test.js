@@ -32,6 +32,7 @@ const {
   validateMediaUpdate,
   effectiveBackgroundPhoto,
   ownerMedia,
+  ownerAvatarMedia,
   normalizeAvatarProfile,
   writableDocument,
   toError,
@@ -1029,7 +1030,7 @@ test('registerMedia 以可信临时 URL 先验大小并有界流式校验真实�
   );
 });
 
-test('能力卡媒体只选择当前 owner 签发文件，legacy 与他人文件均不可见', () => {
+test('能力卡背景只选择当前 owner 签发槽位，legacy 与他人文件均不可见', () => {
   const ownerPrefix = mediaOwnerPrefix('openid-owner-a', mediaSecret);
   const otherPrefix = mediaOwnerPrefix('openid-owner-b', mediaSecret);
   const ownedFile = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174001.jpg`;
@@ -1043,6 +1044,7 @@ test('能力卡媒体只选择当前 owner 签发文件，legacy 与他人文件
   )}`;
   const profile = {
     avatar_file_id: 'cloud://env/profiles/legacy/avatar.jpg',
+    background_photo: { file_id: ownedFile, category: 'other' },
     photos: [
       { file_id: 'cloud://env/profiles/legacy/ride.jpg', category: 'ride' },
       {
@@ -1104,27 +1106,31 @@ test('能力卡头像必须同时匹配当前 profile 来源与 active owner reg
     mime: 'image/jpeg',
   };
   assert.deepEqual(
-    ownerMedia({ avatar_file_id: avatar, avatar_source: 'forged' }, 'openid-owner-a', mediaSecret, [
-      record,
-    ]),
-    [],
+    ownerAvatarMedia(
+      { avatar_file_id: avatar, avatar_source: 'forged' },
+      'openid-owner-a',
+      mediaSecret,
+      [record],
+    ),
+    undefined,
   );
   assert.deepEqual(
-    ownerMedia({ avatar_file_id: avatar, avatar_source: 'strava' }, 'openid-owner-a', mediaSecret, [
-      record,
-    ]),
-    [],
+    ownerAvatarMedia(
+      { avatar_file_id: avatar, avatar_source: 'strava' },
+      'openid-owner-a',
+      mediaSecret,
+      [record],
+    ),
+    undefined,
   );
   assert.deepEqual(
-    ownerMedia({ avatar_file_id: avatar }, 'openid-owner-a', mediaSecret, [record]),
-    [
-      {
-        file_id: avatar,
-        storage_file_id: canonicalAvatar,
-        category: 'other',
-        source: 'avatar',
-      },
-    ],
+    ownerAvatarMedia({ avatar_file_id: avatar }, 'openid-owner-a', mediaSecret, [record]),
+    {
+      file_id: avatar,
+      storage_file_id: canonicalAvatar,
+      category: 'other',
+      source: 'avatar',
+    },
   );
 });
 

@@ -88,6 +88,44 @@ test('管理员媒体白名单按骑行照片、其他照片、头像排序去�
   );
 });
 
+test('管理员媒体按当前背景、legacy 骑行媒体、其他媒体和头像排序去重并最多三张', () => {
+  const current = 'cloud://current';
+  const rideOne = 'cloud://legacy-ride-1';
+  const rideTwo = 'cloud://legacy-ride-2';
+  const legacyOther = 'cloud://legacy-other';
+  const avatar = 'cloud://current-avatar';
+  const mediaRecords = [
+    mediaRecord(current, 'other'),
+    mediaRecord(rideOne, 'ride'),
+    mediaRecord(rideTwo, 'bike'),
+    mediaRecord(legacyOther, 'other'),
+    mediaRecord(avatar, 'other'),
+  ];
+
+  assert.deepEqual(
+    adminCapabilityMedia(
+      {
+        background_photo: { file_id: current, category: 'other' },
+        photos: [
+          { file_id: rideOne, category: 'ride' },
+          { file_id: current, category: 'other' },
+          { file_id: legacyOther, category: 'other' },
+          { file_id: rideTwo, category: 'bike' },
+        ],
+        avatar_file_id: avatar,
+      },
+      mediaRecords,
+      owner,
+      mediaSecret,
+    ),
+    {
+      file_ids: [current, rideOne, rideTwo].map(
+        (fileId) => canonicalFor(fileId).canonicalFileId,
+      ),
+    },
+  );
+});
+
 test('管理员媒体只接受 profile 白名单内的 cloud file ID', () => {
   assert.deepEqual(
     adminCapabilityMedia(
