@@ -44,8 +44,8 @@ Page({
   _loadMoreCursor: '',
   _loadMoreRevision: 0,
   data: {
-    theme: 'dark',
-    themeClass: 'theme-dark',
+    theme: 'light',
+    themeClass: 'theme-light',
     items: [] as any[],
     error: '',
     allowed: false,

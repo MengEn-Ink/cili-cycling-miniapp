@@ -76,8 +76,8 @@ Page({
   submissionPending: false,
   pageVisible: false,
   data: {
-    theme: 'dark',
-    themeClass: 'theme-dark',
+    theme: 'light',
+    themeClass: 'theme-light',
     activityId: '',
     activity: null as Activity | null,
     displayActivityDate: '日期待公布',

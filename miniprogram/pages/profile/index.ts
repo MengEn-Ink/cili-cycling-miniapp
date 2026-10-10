@@ -128,8 +128,8 @@ Page({
   cardLoadPromise: null as Promise<void> | null,
   hydratedCache: null as ProfilePageCache | null,
   data: {
-    theme: 'dark',
-    themeClass: 'theme-dark',
+    theme: 'light',
+    themeClass: 'theme-light',
     profile: null as Profile | null,
     loading: true,
     refreshing: false,

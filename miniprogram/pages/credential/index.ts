@@ -22,8 +22,8 @@ function confirmCancellation(): Promise<boolean> {
 
 Page({
   data: {
-    theme: 'dark',
-    themeClass: 'theme-dark',
+    theme: 'light',
+    themeClass: 'theme-light',
     item: null as any,
     activity: null as any,
     loading: true,

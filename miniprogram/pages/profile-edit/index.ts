@@ -385,8 +385,8 @@ Page({
   mediaErrorStage: '',
   localPhotoPreviews: {} as Record<string, string>,
   data: {
-    theme: 'dark',
-    themeClass: 'theme-dark',
+    theme: 'light',
+    themeClass: 'theme-light',
     loading: true,
     error: '',
     p: null as Profile | null,

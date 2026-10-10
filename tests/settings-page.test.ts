@@ -49,16 +49,17 @@ describe('设置页', () => {
     await vi.waitFor(() => expect(page.data.stravaLoading).toBe(false));
 
     expect(page.data).toMatchObject({
-      theme: 'dark',
-      themeClass: 'theme-dark',
+      theme: 'light',
+      themeClass: 'theme-light',
       stravaReadiness: readyState,
       stravaStatusText: '已连接，可重新授权或解绑',
     });
-    expect(page.data.releaseNotes).toHaveLength(25);
+    expect(storage['display-theme']).toBe('dark');
+    expect(page.data.releaseNotes).toHaveLength(26);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.10.9',
+      version: '2026.10.10.10',
       latest: true,
-      title: '我的行程完整保留',
+      title: '界面统一为明亮主题',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
@@ -91,20 +92,11 @@ describe('设置页', () => {
     expect(wx.navigateTo).toHaveBeenLastCalledWith({ url: '/pages/strava/index' });
   });
 
-  it('切换浅色主题后立即持久化并反馈结果', () => {
-    page.switchTheme({ currentTarget: { dataset: { theme: 'light' } } });
+  it('历史深色主题存储不会影响页面统一亮色展示', async () => {
+    page.onShow();
+    await vi.waitFor(() => expect(page.data.stravaLoading).toBe(false));
 
-    expect(storage['display-theme']).toBe('light');
     expect(page.data).toMatchObject({ theme: 'light', themeClass: 'theme-light' });
-    expect(wx.showToast).toHaveBeenCalledWith({ title: '已切换浅色模式', icon: 'none' });
-  });
-
-  it('可从浅色主题切回默认深色主题', () => {
-    page.switchTheme({ currentTarget: { dataset: { theme: 'light' } } });
-    page.switchTheme({ currentTarget: { dataset: { theme: 'dark' } } });
-
     expect(storage['display-theme']).toBe('dark');
-    expect(page.data).toMatchObject({ theme: 'dark', themeClass: 'theme-dark' });
-    expect(wx.showToast).toHaveBeenLastCalledWith({ title: '已切换深色模式', icon: 'none' });
   });
 });

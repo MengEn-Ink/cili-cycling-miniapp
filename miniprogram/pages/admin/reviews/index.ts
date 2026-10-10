@@ -14,8 +14,8 @@ let loadGeneration = 0;
 
 Page({
   data: {
-    theme: 'dark',
-    themeClass: 'theme-dark',
+    theme: 'light',
+    themeClass: 'theme-light',
     tab: 'pending',
     items: [] as any[],
     all: [] as any[],

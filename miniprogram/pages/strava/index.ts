@@ -56,8 +56,8 @@ function showBrowserGuide(): Promise<boolean> {
 Page({
   loadRequestId: 0,
   data: {
-    theme: 'dark',
-    themeClass: 'theme-dark',
+    theme: 'light',
+    themeClass: 'theme-light',
     loading: true,
     error: '',
     readiness: null as StravaReadiness | null,

@@ -127,8 +127,8 @@ const isCancel = (error: unknown) =>
 
 Page({
   data: {
-    theme: 'dark',
-    themeClass: 'theme-dark',
+    theme: 'light',
+    themeClass: 'theme-light',
     allowed: false,
     isAdmin: false,
     loading: true,

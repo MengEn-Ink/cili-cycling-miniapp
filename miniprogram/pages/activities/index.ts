@@ -47,8 +47,8 @@ Page({
   loadMoreHandles: {} as Partial<Record<PublicActivityView, Promise<void>>>,
   loadMoreOwners: {} as Partial<Record<PublicActivityView, symbol>>,
   data: {
-    theme: 'dark',
-    themeClass: 'theme-dark',
+    theme: 'light',
+    themeClass: 'theme-light',
     activeView: 'future' as PublicActivityView,
     loading: true,
     refreshing: false,

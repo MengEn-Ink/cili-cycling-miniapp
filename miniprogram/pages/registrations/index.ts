@@ -4,8 +4,8 @@ import { formatActivityDate, formatChinaDateTime } from '../../utils/date-time';
 Page({
   loadRequestId: 0,
   data: {
-    theme: 'dark',
-    themeClass: 'theme-dark',
+    theme: 'light',
+    themeClass: 'theme-light',
     loading: true,
     refreshing: false,
     error: '',
