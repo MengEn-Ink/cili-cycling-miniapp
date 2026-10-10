@@ -15,9 +15,9 @@
 ## 当前共同证据
 
 - 用户报告：2026-10-09 群聊新增 6 组问题，已拆成 HP-06 至 HP-13 共 8 个原子项。
-- 代码合入：PR [#45](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/45)、[#48](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/48)、[#52](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/52)、[#53](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/53) 已合并，当前 `origin/main` 为 `658ea9c6f06acf9d5658eaa9dab77c8286a1bc07`；这只证明对应实现进入 main。
-- CI：PR #45、PR #52、PR #53 与 main `658ea9c...` 对应 CI 均为 SUCCESS。CI 不能证明 CloudBase Active 版本或真机行为。
-- 微信开发版：Actions run [38012378411](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38012378411) 已成功上传 `0.0.33.1`，head `658ea9c...`，日志包含“微信开发版 0.0.33.1 上传成功”。
+- 代码合入：PR [#45](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/45)、[#48](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/48)、[#52](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/52)、[#53](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/53) 已合并；最后一次含产品/云函数变更的 main 基线为 `658ea9c6f06acf9d5658eaa9dab77c8286a1bc07`，后续纯文档清单提交不改变产品代码基线。
+- CI：PR #45、PR #52、PR #53 与产品基线 `658ea9c...` 对应 CI 均为 SUCCESS。CI 不能证明 CloudBase Active 版本或真机行为。
+- 微信开发版：Actions run [38012378411](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38012378411) 已成功上传 `0.0.33.1`，head `658ea9c...`，日志包含“微信开发版 0.0.33.1 上传成功”；PR #54 的纯文档 main workflow run [38012903064](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38012903064) 已成功跳过上传。
 - CloudBase 部署：本轮在沙箱执行 `npm run cloudbase:verify`，失败于 `No valid identity information, please use tcb login to login`；因此无法完成 `activity-read`、`strava-auth`、`strava-callback`、`registration`、`profile` 等目标函数/索引的 Active 版本回读或部署。仍需由具备目标环境 CloudBase 身份的执行者部署并补齐环境、函数版本/更新时间、只读回读 requestId 与不可变 SHA 映射。
 - 真实验收：新增 8 项均未取得与同一不可变 SHA 对应的完整真机/真实数据 smoke，不得标记完成。
 
