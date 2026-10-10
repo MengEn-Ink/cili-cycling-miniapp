@@ -101,6 +101,21 @@ describe('个人骑行名片 view model', () => {
     expect(missing.hasStravaTenure).toBe(false);
   });
 
+  it.each([
+    ['2021-02-27T00:00:00.000Z', '加入 STRAVA 未满 1 年'],
+    ['2021-02-28T00:00:00.000Z', '加入 STRAVA 1 年'],
+    ['2024-02-28T00:00:00.000Z', '加入 STRAVA 3 年'],
+    ['2024-02-29T00:00:00.000Z', '加入 STRAVA 4 年'],
+  ])('按 2 月末周年计算闰日注册年限：%s', async (generatedAt, expected) => {
+    const view = await build({
+      ...baseCard,
+      generatedAt,
+      stravaJoinedAt: '2020-02-29T00:00:00.000Z',
+    });
+
+    expect(view.stravaTenureText).toBe(expected);
+  });
+
   it('无背景图时启用品牌山景并提示完善资料', async () => {
     const view = await build({ ...baseCard, backgrounds: [] });
 

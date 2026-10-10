@@ -5,11 +5,23 @@ import { setTheme, syncPageTheme } from '../../services/theme-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.10.6',
+    date: '2026-10-10',
+    title: 'Strava 加入年限闰日校准',
+    summary: '闰日注册的 Strava 账号在平年 2 月末按完整周年展示，不再少算一年。',
+    latest: true,
+    features: [
+      '2 月 29 日注册的账号在平年 2 月 28 日正确计入周年',
+      '周年前一天仍保持未满对应年限，避免提前增加',
+      '普通日期和闰年 2 月 29 日的既有计算保持不变',
+    ],
+  },
+  {
     version: '2026.10.10.5',
     date: '2026-10-10',
     title: '活动时间快捷选择更明确',
     summary: '依赖开始时间的相对快捷项在缺少开始时间时给出明确提示，不再静默无反应。',
-    latest: true,
+    latest: false,
     features: [
       '“开始后 4 小时”“开始前 1 天 20:00”在未填开始时间时提示先选择开始时间',
       '相对快捷项跨月、跨年与跨天计算保持正确，无时间漂移',

@@ -42,8 +42,14 @@ const METRICS: {
 
 function fullYearsBetween(from: Date, to: Date): number {
   let years = to.getUTCFullYear() - from.getUTCFullYear();
-  const monthDiff = to.getUTCMonth() - from.getUTCMonth();
-  const dayDiff = to.getUTCDate() - from.getUTCDate();
+  const anniversaryMonth = from.getUTCMonth();
+  // 闰日注册在平年以 2 月最后一天作为周年日，避免 2 月 28 日仍显示未满一年。
+  const anniversaryDay = Math.min(
+    from.getUTCDate(),
+    new Date(Date.UTC(to.getUTCFullYear(), anniversaryMonth + 1, 0)).getUTCDate(),
+  );
+  const monthDiff = to.getUTCMonth() - anniversaryMonth;
+  const dayDiff = to.getUTCDate() - anniversaryDay;
   if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
     years -= 1;
   }
