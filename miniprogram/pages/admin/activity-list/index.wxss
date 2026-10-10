@@ -133,7 +133,7 @@ page {
 .activity-list-page .btn {
   border: 0;
   background: var(--color-brand);
-  color: #0b0b0c;
+  color: #fff;
   font-weight: 900;
 }
 .activity-list-page .secondary {

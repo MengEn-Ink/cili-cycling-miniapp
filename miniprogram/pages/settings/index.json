@@ -3,9 +3,9 @@
   "navigationBarBackgroundColor": "#ffffff",
   "navigationBarTextStyle": "black",
   "enablePullDownRefresh": false,
-  "backgroundColor": "#ffffff",
-  "backgroundColorTop": "#ffffff",
-  "backgroundColorBottom": "#ffffff",
+  "backgroundColor": "#f6f7f4",
+  "backgroundColorTop": "#f6f7f4",
+  "backgroundColorBottom": "#f6f7f4",
   "backgroundTextStyle": "dark",
   "usingComponents": {
     "brand-logo": "/components/brand-logo/index"

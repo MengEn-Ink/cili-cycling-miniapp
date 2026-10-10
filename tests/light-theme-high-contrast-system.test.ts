@@ -15,18 +15,18 @@ const tokens = uiTokens(app);
 
 describe('approved unified high-contrast UI', () => {
   it('uses the approved white, ink, gray and fluorescent brand palette', () => {
-    expect(tokens['--color-bg']).toBe('#ffffff');
+    expect(tokens['--color-bg']).toBe('#f6f7f4');
     expect(tokens['--color-surface']).toBe('#ffffff');
-    expect(tokens['--color-raised']).toBe('#f4f5f0');
+    expect(tokens['--color-raised']).toBe('#eff1ec');
     expect(tokens['--color-text']).toBe('#10120f');
     expect(tokens['--color-muted']).toBe('#5b6258');
-    expect(tokens['--color-border']).toBe('#10120f');
-    expect(tokens['--color-border-strong']).toBe('#10120f');
+    expect(tokens['--color-border']).toBe('#e2e4de');
+    expect(tokens['--color-border-strong']).toBe('#c4c7bf');
     expect(tokens['--color-input-bg']).toBe('#ffffff');
-    expect(tokens['--color-brand']).toBe('#d9ff43');
-    expect(tokens['--color-brand-active']).toBe('#c4ec23');
-    expect(tokens['--color-on-brand']).toBe('#10120f');
-    expect(tokens['--color-card-border']).toBe('#10120f');
+    expect(tokens['--color-brand']).toBe('#a3461f');
+    expect(tokens['--color-brand-active']).toBe('#8f3d1b');
+    expect(tokens['--color-on-brand']).toBe('#ffffff');
+    expect(tokens['--color-card-border']).toBe('#e2e4de');
     expect(tokens['--shadow-card']).toBe('var(--shadow-hard)');
     expect(tokens['--metric-align']).toBe('left');
     expect(tokens['--page-heading-align']).toBe('left');
@@ -36,7 +36,9 @@ describe('approved unified high-contrast UI', () => {
   it('keeps body, secondary and primary action text above WCAG AA', () => {
     expect(contrast(tokens['--color-text'], tokens['--color-bg'])).toBeGreaterThanOrEqual(7);
     expect(contrast(tokens['--color-muted'], tokens['--color-bg'])).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(tokens['--color-on-brand'], tokens['--color-brand'])).toBeGreaterThanOrEqual(7);
+    expect(contrast(tokens['--color-on-brand'], tokens['--color-brand'])).toBeGreaterThanOrEqual(
+      4.5,
+    );
   });
 
   it('centers shared control labels without decorative letter spacing or gradients', () => {

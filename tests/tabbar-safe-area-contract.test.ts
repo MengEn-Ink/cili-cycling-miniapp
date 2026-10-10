@@ -11,9 +11,9 @@ describe('native tabbar safe-area contract', () => {
 
     expect(String(app.window.navigationBarBackgroundColor || '').toLowerCase()).toBe('#ffffff');
     expect(app.window.navigationBarTextStyle).toBe('black');
-    expect(String(app.window.backgroundColor || '').toLowerCase()).toBe('#ffffff');
-    expect(String(app.window.backgroundColorTop || '').toLowerCase()).toBe('#ffffff');
-    expect(String(app.window.backgroundColorBottom || '').toLowerCase()).toBe('#ffffff');
+    expect(String(app.window.backgroundColor || '').toLowerCase()).toBe('#f6f7f4');
+    expect(String(app.window.backgroundColorTop || '').toLowerCase()).toBe('#f6f7f4');
+    expect(String(app.window.backgroundColorBottom || '').toLowerCase()).toBe('#f6f7f4');
     expect(app.window.backgroundTextStyle).toBe('dark');
     expect(app.tabBar).toBeDefined();
     expect(app.tabBar.custom).not.toBe(true);
@@ -34,7 +34,7 @@ describe('native tabbar safe-area contract', () => {
       const config = JSON.parse(read(`miniprogram/pages/${root}/index.json`));
       const styles = read(`miniprogram/pages/${root}/index.wxss`).toLowerCase();
 
-      expect(String(config.backgroundColor || '').toLowerCase()).toBe('#ffffff');
+      expect(String(config.backgroundColor || '').toLowerCase()).toBe('#f6f7f4');
       expect(config.backgroundTextStyle).toBe('dark');
       expect(styles).toMatch(/page\s*\{[^}]*background:\s*var\(--color-bg\);/s);
       expect(styles).toMatch(new RegExp(`\\.${root}-page\\s*\\{[^}]*min-height:\\s*100%;`, 's'));
@@ -50,7 +50,7 @@ describe('native tabbar safe-area contract', () => {
     expect(pageRule.toLowerCase()).toMatch(/height:\s*100%;/);
     expectSemantic(declaration(pageRule, 'background'), '--color-bg');
     expectSemantic(declaration(pageRule, 'color'), '--color-text');
-    expect(tokens['--color-bg']).toBe('#ffffff');
+    expect(tokens['--color-bg']).toBe('#f6f7f4');
     expect(tokens['--color-text']).toBe('#10120f');
   });
 

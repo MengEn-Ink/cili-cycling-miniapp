@@ -27,8 +27,8 @@ describe('CILI 统一明亮竞技页面静态契约', () => {
     const appStyles = read('miniprogram/app.wxss');
     const tokens = uiTokens(appStyles);
 
-    expect(tokens['--color-bg']).toBe('#ffffff');
-    expect(tokens['--color-brand']).toBe('#d9ff43');
+    expect(tokens['--color-bg']).toBe('#f6f7f4');
+    expect(tokens['--color-brand']).toBe('#a3461f');
     expect(styles).toContain('var(--color-bg)');
     expect(styles).toContain('var(--color-brand)');
     expect(config.navigationBarBackgroundColor.toLowerCase()).toBe('#ffffff');

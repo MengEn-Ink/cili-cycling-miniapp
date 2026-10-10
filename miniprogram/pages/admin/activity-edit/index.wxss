@@ -102,7 +102,7 @@
 }
 .activity-form-page .btn {
   background: var(--color-brand);
-  color: #0b0b0c;
+  color: #fff;
   font-weight: 900;
 }
 .danger-button {
@@ -163,7 +163,7 @@
   padding: 4rpx 12rpx;
   border-radius: 999rpx;
   background: var(--color-brand);
-  color: #000;
+  color: #fff;
   font-size: 20rpx;
   font-weight: 800;
 }

@@ -261,7 +261,7 @@ page {
   margin-top: 28rpx;
   border: 0;
   background: var(--color-brand);
-  color: #0b0b0c;
+  color: #fff;
   font-weight: 900;
 }
 

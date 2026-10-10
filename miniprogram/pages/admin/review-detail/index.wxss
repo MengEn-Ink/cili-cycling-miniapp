@@ -293,7 +293,7 @@ brand-logo {
 }
 .actions .btn {
   background: var(--color-brand) !important;
-  color: #0b0b0c !important;
+  color: var(--color-on-brand) !important;
 }
 
 page,

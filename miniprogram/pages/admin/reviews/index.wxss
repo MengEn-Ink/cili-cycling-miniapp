@@ -95,7 +95,7 @@ brand-logo {
 }
 .filter-tab.is-active {
   background: var(--color-brand);
-  color: #0b0b0c;
+  color: #fff;
 }
 .result-count {
   margin: 30rpx 4rpx 8rpx;

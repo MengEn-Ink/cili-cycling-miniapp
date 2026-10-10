@@ -44,20 +44,20 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.10.19',
+      version: '2026.10.10.20',
       latest: true,
-      title: '资料编辑与骑行名片可读性补强',
+      title: '清爽视觉升级与品牌色焕新',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.10.20',
       '2026.10.10.19',
       '2026.10.10.18',
       '2026.10.10.17',
       '2026.10.10.16',
-      '2026.10.10.15',
     ]);
   });
 

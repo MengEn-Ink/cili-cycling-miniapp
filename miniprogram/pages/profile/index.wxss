@@ -509,7 +509,7 @@ brand-logo {
 .capability-entry .menu-icon {
   border-color: var(--color-brand);
   background: var(--color-brand);
-  color: #0b0b0c;
+  color: var(--color-on-brand);
 }
 
 .menu-copy {
@@ -811,7 +811,7 @@ brand-logo {
 .capability-entry .menu-icon {
   border-color: var(--color-brand);
   background: var(--color-brand);
-  color: #000;
+  color: #fff;
 }
 
 .edit-button,
