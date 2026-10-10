@@ -15,9 +15,9 @@
 ## 当前共同证据
 
 - 用户报告：2026-10-09 群聊新增 6 组问题，已拆成 HP-06 至 HP-13 共 8 个原子项；HP-01 至 HP-05 于 2026-10-10 全部满足关闭条件并删除。
-- 代码合入：PR [#45](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/45)、[#48](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/48)、[#52](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/52)、[#53](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/53)、[#56](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/56)、[#57](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/57)、[#59](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/59)、[#62](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/62) 已合并；HP-01..05 验收时云函数代码基线为 `0da2ce5...`（当时 main HEAD），#56/#57/#58/#59/#62 均未改动 `cloudfunctions/**`，故线上函数与当前 main 云函数代码一致。
+- 代码合入：PR [#45](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/45)、[#48](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/48)、[#52](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/52)、[#53](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/53)、[#56](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/56)、[#57](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/57)、[#59](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/59)、[#62](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/62)、[#66](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/66) 已合并；HP-01..05 验收时云函数代码基线为 `0da2ce5...`（当时 main HEAD），#56/#57/#58/#59/#62/#66 均未改动 `cloudfunctions/**`，故线上函数与当前 main 云函数代码一致。
 - CI：上述 PR 的 PR CI 与 main CI 均为 SUCCESS。CI 不能证明 CloudBase Active 版本或真机行为。
-- 微信开发版：run [38020021268](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38020021268) 成功上传 `0.0.42.1`（head `a78901a...`，日志含“微信开发版 0.0.42.1 上传成功”）；浅色主题首次随 run [38014100157](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38014100157) 上传的 `0.0.36.1`（head `a275fc3...`）交付，活动时间快捷项随 run [38017106152](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38017106152) 的 `0.0.37.1` 交付。
+- 微信开发版：run [38020822125](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38020822125) 成功上传 `0.0.45.1`（head `fe616f2...`，日志含“微信开发版 0.0.45.1 上传成功”）；浅色主题首次随 run [38014100157](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38014100157) 上传的 `0.0.36.1`（head `a275fc3...`）交付，活动时间快捷项随 run [38017106152](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38017106152) 的 `0.0.37.1` 交付。
 - CloudBase 部署与回读（2026-10-10，已登录本地环境执行）：`cloudbase-d0gizacy77a1ab017` 共 13 个集合、31 条索引，`node scripts/bootstrap-cloudbase.mjs --verify` 通过（不符合项 0）；10 个云函数全部部署，下载线上 `$LATEST` 代码与同基线本地包逐文件比对：首轮仅 `admin-review` 落后（缺 PR #48 的快照字段），补部署后再次下载比对 10/10 全部一致，管理台状态为部署完成。
 - HP-01/02/03/05 真机 smoke（2026-10-10，自动化客户端对同一部署）：向 `activities` 插入 101 条 `e2e_marker` 隔离文档（含 5 进行中、45 未来候选、30 历史候选、15 自然结束、6 draft 及两个同时间戳混合 ID 组）；首页未来视图三页 20→40→50、历史三页 20→40→45，跨页 ID 唯一；同刻未来组 UTF-8 升序为 `["e2eMIXaaa12","e2eMIXaaa13","e2eMix-Aaa-09","e2eMix-Aaa-10","e2eMix_Aaa_08","e2eMix_Aaa_11"]`，同刻历史组降序为 `["e2eOldaaa13","e2eOld_Aaa_11","e2eOld_Aaa_08","e2eOld-Aaa-10","e2eOld-Aaa-09","e2eOLDaaa12"]`；同筛选重复触发与快速切换竞态后无错误、无重复。
 - HP-03 planner/readback（2026-10-10，同部署同基线）：探针 108 条 strict BSON Date fixture，插入 requestId `129afefc-295b-4ca0-a2b3-5922b1c05c92`，BSON Date 回读 requestId `cdded173-911f-4776-ad84-40407b15d0a9`（`bsonDateVerified: true`），12/12 explain 通过，future/history 各 50 条 smoke；清理 drop requestId `a47f4959-a36e-4935-a891-d67c96604a86`、verify requestId `0b373350-d94b-4cf1-a361-6baadbedafc2`、remaining 0。
@@ -27,10 +27,10 @@
 
 ## 当前工作交接检查点
 
-- 本轮已完成并交付：HP-01 至 HP-05 已按完整证据链从清单删除；HP-06 已随 PR #56 合入并上传开发版，但其“深浅主题并存”产品前提已被新 UI 基线替代；HP-20261010-01 的旧浅色行程序号保护已随 PR #62 合入并上传开发版；HP-08 已随 PR #57 合入并交付开发版；HP-12 闰日算法已随 PR #59 合入。
+- 本轮已完成并交付：HP-01 至 HP-05 已按完整证据链从清单删除；HP-06 已随 PR #56 合入并上传开发版，但其“深浅主题并存”产品前提已被新 UI 基线替代；HP-20261010-01 的旧浅色行程序号与三处运行态低对比过渡保护已随 PR #62/#66 合入并上传开发版；HP-08 已随 PR #57 合入并交付开发版；HP-12 闰日算法已随 PR #59 合入。
 - 当前最高优先级：先实施 `HP-20261010-02` 全局统一 UI，再在新布局上继续做页面级功能验收，避免继续为即将删除的旧主题/旧布局补样式。
 - HP-07 检查点：Aime 个人助理曾在 `fix/registration-history-pagination` 上进行未提交实验，已于 UI 基线变更后停止并保护为本地 stash；没有共享 commit、PR 或可交付证据，后续执行者必须从最新 main 重新审阅方案，不得把该实验视为已完成实现。
-- 并行状态：PR #61/#62/#63 均已合入；当前没有其他产品代码 open PR。继续开发前必须从最新 main 建分支，并以 `HP-20261010-02` 为最高优先级。
+- 并行状态：PR #61/#62/#63/#64/#66 均已合入；当前没有 open PR。继续开发前必须从最新 main 建分支，并以 `HP-20261010-02` 为最高优先级。
 - 责任边界：TraeX 执行者负责 `HP-20261010-02` 页面与组件实施；TraeX 审判者负责逐页尺寸对照、旧主题残留扫描、功能回归、CI/开发版和真机验收。Aime 个人助理完成本次清单对齐后退出，不再占用任何代码文件族。
 
 ## 当前处理顺序
@@ -40,7 +40,7 @@
 | UI   | `HP-20261010-02` | P0     | `READY`                                  | 按确认稿统一全局 UI，移除旧布局与深浅主题分叉                                           | TraeX 执行者 | TraeX 审判者                 |
 | B    | `HP-20261009-13` | P0     | `PENDING_EVIDENCE`                       | Strava 生命周期已部署，待真实授权/解绑 smoke                                            | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
 | D    | `HP-20261009-06` | P1     | `SUPERSEDED_BY(HP-20261010-02)`          | 旧双主题全页对比度，不再单独实施                                                        | -            | TraeX 审判者                 |
-| D1   | `HP-20261010-01` | P1     | `SUPERSEDED_BY(HP-20261010-02)`          | 旧浅色主题 RIDE 序号对比度已随 #62 补保护，最终由新 UI 统一收口                         | -            | TraeX 审判者                 |
+| D1   | `HP-20261010-01` | P1     | `SUPERSEDED_BY(HP-20261010-02)`          | 旧浅色主题与运行态低对比已随 #62/#66 补保护，最终由新 UI 统一收口                     | -            | TraeX 审判者                 |
 | E    | `HP-20261009-07` | P1     | `READY`                                  | 我的行程永久保留历史/下架活动；旧实验未提交，需从最新 main 重新实施                     | TraeX 执行者 | TraeX 审判者                 |
 | F1   | `HP-20261009-08` | P1     | `PENDING_EVIDENCE`                       | 相对快捷项前置提示已随 #57 交付开发版 0.0.37.1，仅余真机 picker 创建/编辑保存重开 smoke | TraeX 执行者 | TraeX 审判者                 |
 | F2   | `HP-20261009-09` | P1     | `READY`                                  | 创建活动地点快捷选择与权限恢复（需真机定位验证）                                        | TraeX 执行者 | TraeX 审判者                 |
@@ -75,7 +75,7 @@
 
 - 优先级/状态：P1 / `SUPERSEDED_BY(HP-20261010-02)`。
 - 已知现象：旧浅色主题下 `RIDE 1` 序号与白色卡片对比不足；该问题仍需在新版“我的行程”卡片中避免。
-- 已处理证据：PR [#62](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/62) 已把旧浅色主题 `.card-index` 接入 `--color-muted`，PR CI、main CI run [38019940722](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38019940722) 与微信开发版 run [38020021268](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38020021268) 均 SUCCESS，开发版 `0.0.42.1` 上传成功。
+- 已处理证据：PR [#62](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/62) 已把旧浅色主题 `.card-index` 接入 `--color-muted`；PR [#66](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/66) 又收口三处运行态低对比；两者 PR CI、main CI run [38020743357](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38020743357) 与微信开发版 run [38020822125](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38020822125) 均 SUCCESS，开发版 `0.0.45.1` 上传成功。
 - 产品决策：旧浅色主题已有过渡保护，但不再追加旧主题专项验收；由 `HP-20261010-02` 使用统一弱文字 token，并由 TraeX 审判者按真实卡片背景验证普通文字对比度 ≥4.5:1。
 - 更新时间：2026-10-10。
 
