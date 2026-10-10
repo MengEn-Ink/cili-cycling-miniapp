@@ -277,6 +277,9 @@ brand-logo,
 .updated-at {
   color: var(--color-muted);
 }
+.theme-light .card-index {
+  color: var(--color-muted);
+}
 .count-value,
 .open-link {
   color: var(--color-text);

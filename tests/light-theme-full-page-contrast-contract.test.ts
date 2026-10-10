@@ -136,6 +136,12 @@ describe('HP-20261009-06 浅色主题全页对比度契约', () => {
       );
     }
 
+    expectSemantic(
+      declaration(effectiveBlock(registrations, '.theme-light .card-index'), 'color'),
+      '--color-muted',
+    );
+    expect(declaration(effectiveBlock(registrations, '.card-index'), 'color')).toBe('#9b9ba0');
+
     const card = read('miniprogram/components/activity-card/index.wxss');
     expectPair(
       'miniprogram/components/activity-card/index.wxss',
