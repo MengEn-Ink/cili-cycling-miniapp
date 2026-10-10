@@ -29,8 +29,8 @@
 
 - 本轮已完成并交付：HP-01 至 HP-05 已按完整证据链从清单删除；HP-06 已随 PR #56 合入并上传开发版，但其“深浅主题并存”产品前提已被新 UI 基线替代；HP-20261010-01 的旧浅色行程序号与三处运行态低对比过渡保护已随 PR #62/#66 合入并上传开发版；HP-08 已随 PR #57 合入并交付开发版；HP-12 闰日算法已随 PR #59 合入。
 - 当前最高优先级：先实施 `HP-20261010-02` 全局统一 UI，再在新布局上继续做页面级功能验收，避免继续为即将删除的旧主题/旧布局补样式。
-- HP-07 检查点：Aime 个人助理曾在 `fix/registration-history-pagination` 上进行未提交实验，已于 UI 基线变更后停止并保护为本地 stash；没有共享 commit、PR 或可交付证据，后续执行者必须从最新 main 重新审阅方案，不得把该实验视为已完成实现。
-- 并行状态：PR #61/#62/#63/#64/#66 均已合入；当前没有 open PR。继续开发前必须从最新 main 建分支，并以 `HP-20261010-02` 为最高优先级。
+- HP-07 检查点：Aime 个人助理的旧实验未作为证据；TraeX 执行者已从最新 main 重新审阅并固化独立设计，当前由 TraeX 唯一写入，完成交付后立即切换到 P0 `HP-20261010-02`。
+- 并行状态：PR #61/#62/#63/#64/#66 均已合入；当前没有 open PR。HP-07 完成交付后以 `HP-20261010-02` 为最高优先级。
 - 责任边界：TraeX 执行者负责 `HP-20261010-02` 页面与组件实施；TraeX 审判者负责逐页尺寸对照、旧主题残留扫描、功能回归、CI/开发版和真机验收。Aime 个人助理完成本次清单对齐后退出，不再占用任何代码文件族。
 
 ## 当前处理顺序
@@ -85,7 +85,8 @@
 - 用户报告：历史已完成或下架活动不能从用户行程消失，也不能变成异常。
 - 代码/CI：PR #48 已让 `registration/mine` 返回 owner-bound 活动投影和快照降级（缺失/软删活动回退 `activity_snapshot`）；Aime 已报告 `registration` Active，但版本映射、只读回读与真实 smoke 证据尚未补齐。
 - 确认缺口：`registration/mine` 固定 `.limit(50)` 且无分页；页面用 `Promise.all(listRegistrations,listActivities)`，公开活动读取失败会拖垮整页；真实 `draft` 下架、软删/物理缺失服务端降级未被直接测试。
-- 实施中：云函数 `mine` 改为不透明 keyset cursor 分页（`created_at desc, activity_id desc` 翻页，pageSize ≤20，含 next_cursor）；客户端“我的行程”加加载更多，公开活动列表失败降级为空候选不再拖垮行程；补 101 条分页与 draft/is_deleted/物理缺失降级 RED。
+- 设计证据：推荐方案已固化到 `docs/superpowers/specs/2026-10-10-registration-history-pagination-design.md`；采用兼容式 `minePage`、`created_at + _id` 稳定游标、仓储层透明聚合和 owner-bound 活动投影，旧 `mine` 数组协议保持不变。
+- 下一步：编写 TDD 实施计划；先锁 101 条分页、公开列表失败不影响行程、`published/finished/draft/is_deleted/物理缺失` 的 RED，再完成最小 GREEN。
 - 负责人：Aime 个人助理；独立复核：TraeX 审判者；部署/真机：Aime 个人助理。
 - 关闭条件：全部报名可分页且无漏重；历史/下架/软删/缺失活动可解释展示；公开活动接口失败不影响行程；`registration` 部署回读、50+ 真实数据 smoke、CI 与独立复核齐全。
 - 更新时间：2026-10-10。
