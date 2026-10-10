@@ -23,7 +23,9 @@ const profile: Profile = {
   gender: '男',
   emergencyName: '联系人',
   emergencyPhone: '13900139000',
-  photos: [],
+  photos: [{ id: 'cloud://bg', category: 'ride' }],
+  backgroundPhoto: { id: 'cloud://bg', category: 'ride' },
+  avatarId: 'cloud://avatar',
 };
 
 function readiness(state: StravaReadiness['state']): StravaReadiness {

@@ -133,7 +133,19 @@ test('显式背景更新保留存量多图并只激活新槽位媒体', async ()
   ];
   const next = { file_id: fileId('03'), category: 'ride' };
   const fixture = statefulDatabase();
-  fixture.state.profiles = new Map([[owner, { _id: owner, nickname: '骑手', photos }]]);
+  fixture.state.profiles = new Map([
+    [
+      owner,
+      {
+        _id: owner,
+        nickname: '骑手',
+        gender: '男',
+        avatar_file_id: fileId('04'),
+        avatar_source: 'custom',
+        photos,
+      },
+    ],
+  ]);
   fixture.state.profile_media = new Map(
     [...photos, next].map((photo) => [
       mediaDocumentId(photo.file_id),

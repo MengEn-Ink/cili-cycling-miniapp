@@ -9,6 +9,12 @@ function hasSensitiveField(
   return profile.sensitiveStatus ? profile.sensitiveStatus[key] : legacyCheck();
 }
 
+function hasPersonalPhoto(profile: Profile): boolean {
+  const background = profile.backgroundPhoto;
+  if (background !== undefined) return Boolean(background && background.id.trim());
+  return profile.photos.some((photo) => Boolean(photo.id.trim()));
+}
+
 export function validateRegistration(v: {
   profile: Profile;
   gatheringMode: string;
@@ -18,7 +24,9 @@ export function validateRegistration(v: {
   const e: string[] = [];
   // 云端仅返回脱敏展示值，真实填写状态必须以服务端 sensitiveStatus 为准。
   if (!v.profile.nickname.trim()) e.push('请填写昵称');
+  if (!v.profile.avatarId?.trim()) e.push('请先设置头像');
   if (!normalizeGender(v.profile.gender)) e.push('请先在个人资料中选择性别');
+  if (!hasPersonalPhoto(v.profile)) e.push('请先上传个人照片');
   if (!hasSensitiveField(v.profile, 'realName', () => !!v.profile.realName.trim()))
     e.push('请填写真实姓名');
   if (!hasSensitiveField(v.profile, 'phone', () => /^1\d{10}$/.test(v.profile.phone)))

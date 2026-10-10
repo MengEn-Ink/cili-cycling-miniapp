@@ -256,6 +256,61 @@ test('新旧背景协议不可混用且旧多图继续拒绝', () => {
   );
 });
 
+test('头像单独更新不触发整表必填校验', () => {
+  assert.deepEqual(buildUpdate({}, key, {}), {});
+});
+
+test('整表保存时强制校验性别、头像和背景图必填', () => {
+  const complete = {
+    gender: '男',
+    avatar_file_id: 'cloud://env/profiles/owner/avatar.jpg',
+    avatar_source: 'wechat',
+    avatar_revision: 1,
+    background_photo: { file_id: 'cloud://env/profiles/owner/bg.jpg', category: 'ride' },
+  };
+
+  // 1. 缺性别失败
+  assert.throws(
+    () => buildUpdate({ gender: '', background_photo: complete.background_photo }, key, complete),
+    { code: 'VALIDATION_FAILED', message: '请选择性别' },
+  );
+
+  // 2. 缺头像失败 (从存量合并后仍缺失)
+  assert.throws(
+    () => buildUpdate({ gender: '女', background_photo: complete.background_photo }, key, {}),
+    { code: 'AVATAR_REQUIRED', message: '请先设置头像' },
+  );
+
+  // 3. 缺背景图失败
+  assert.throws(() => buildUpdate({ gender: '女', background_photo: null }, key, complete), {
+    code: 'VALIDATION_FAILED',
+    message: '请上传个人照片',
+  });
+
+  // 4. 存量完整，整表更新部分字段成功
+  const update = buildUpdate({ gender: '女' }, key, complete);
+  assert.equal(update.gender, '女');
+
+  // 5. 试图清空性别失败
+  assert.throws(() => buildUpdate({ gender: '' }, key, complete), { code: 'VALIDATION_FAILED' });
+
+  // 6. 试图清空照片失败
+  assert.throws(() => buildUpdate({ background_photo: null }, key, complete), {
+    code: 'VALIDATION_FAILED',
+    message: '请上传个人照片',
+  });
+
+  // 7. 新旧合并后完整则成功
+  assert.deepEqual(
+    buildUpdate({ background_photo: complete.background_photo }, key, {
+      gender: '男',
+      avatar_file_id: complete.avatar_file_id,
+      avatar_source: complete.avatar_source,
+    }),
+    { background_photo: complete.background_photo },
+  );
+});
+
 test('profile 响应区分缺失与显式空背景并完整保留 legacy photos', () => {
   const photos = [
     { file_id: 'cloud://env/profiles/owner/a.jpg', category: 'ride' },

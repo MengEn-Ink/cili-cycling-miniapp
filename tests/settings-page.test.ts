@@ -44,20 +44,20 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.11.4',
+      version: '2026.10.11.5',
       latest: true,
-      title: '活动编辑回显更稳定',
+      title: '报名资料完整性提示',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.11.5',
       '2026.10.11.4',
       '2026.10.11.3',
       '2026.10.11.2',
       '2026.10.11.1',
-      '2026.10.10.22',
     ]);
   });
 

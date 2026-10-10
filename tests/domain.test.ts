@@ -10,6 +10,12 @@ import { runtimeConfig } from '../miniprogram/config/runtime';
 import { initializeCloud } from '../miniprogram/config/cloud-init';
 
 const ready = { state: 'ready' as const, canRegister: true };
+const registrationProfile = {
+  ...profile,
+  avatarId: 'cloud://avatar',
+  backgroundPhoto: { id: 'cloud://bg', category: 'ride' },
+  photos: [{ id: 'cloud://bg', category: 'ride' }],
+};
 const syncing = { state: 'syncing' as const, canRegister: false };
 const failed = { state: 'failed' as const, canRegister: false };
 const pageRideService = vi.hoisted(() => ({
@@ -107,7 +113,7 @@ describe('表单校验', () => {
   it('完整表单通过', () =>
     expect(
       validateRegistration({
-        profile,
+        profile: registrationProfile,
         gatheringMode: 'self_drive',
         experience: '常骑',
         readiness: ready,
@@ -115,12 +121,17 @@ describe('表单校验', () => {
     ).toEqual([]));
   it.each(['', 'unknown'])('缺失或未知集合方式 %s 时阻断', (gatheringMode) => {
     expect(
-      validateRegistration({ profile, gatheringMode, experience: '常骑', readiness: ready }),
+      validateRegistration({
+        profile: registrationProfile,
+        gatheringMode,
+        experience: '常骑',
+        readiness: ready,
+      }),
     ).toContain('请选择集合方式');
   });
   it('云端脱敏资料按 sensitiveStatus 校验', () => {
     const masked = {
-      ...profile,
+      ...registrationProfile,
       realName: '曹**',
       phone: '138****5678',
       emergencyPhone: '139****5678',
@@ -146,7 +157,7 @@ describe('表单校验', () => {
   it('资料完整度门禁包含昵称', () => {
     expect(
       validateRegistration({
-        profile: { ...profile, nickname: '' },
+        profile: { ...registrationProfile, nickname: '' },
         gatheringMode: 'self_drive',
         experience: '常骑',
         readiness: ready,
@@ -156,7 +167,7 @@ describe('表单校验', () => {
   it('ready 但服务端不允许报名时阻断', () => {
     expect(
       validateRegistration({
-        profile,
+        profile: registrationProfile,
         gatheringMode: 'self_drive',
         experience: '常骑',
         readiness: { state: 'ready', canRegister: false },
@@ -166,7 +177,7 @@ describe('表单校验', () => {
   it('同步中提示正在准备', () => {
     expect(
       validateRegistration({
-        profile,
+        profile: registrationProfile,
         gatheringMode: 'self_drive',
         experience: '常骑',
         readiness: syncing,
@@ -176,7 +187,7 @@ describe('表单校验', () => {
   it('失败时提示重试准备', () => {
     expect(
       validateRegistration({
-        profile,
+        profile: registrationProfile,
         gatheringMode: 'self_drive',
         experience: '常骑',
         readiness: failed,
@@ -184,7 +195,7 @@ describe('表单校验', () => {
     ).toContain('请重试 Strava 数据准备');
   });
   it('阻断未绑定 Strava 与错误手机号', () => {
-    const p = { ...profile, phone: '123' };
+    const p = { ...registrationProfile, phone: '123' };
     expect(
       validateRegistration({
         profile: p,
@@ -197,7 +208,7 @@ describe('表单校验', () => {
   it('缺少性别时阻断并提示先在个人资料选择', () => {
     expect(
       validateRegistration({
-        profile: { ...profile, gender: '' },
+        profile: { ...registrationProfile, gender: '' },
         gatheringMode: 'self_drive',
         experience: '常骑',
         readiness: ready,
@@ -207,12 +218,32 @@ describe('表单校验', () => {
   it('性别为非法值时同样阻断', () => {
     expect(
       validateRegistration({
-        profile: { ...profile, gender: '保密' },
+        profile: { ...registrationProfile, gender: '保密' },
         gatheringMode: 'self_drive',
         experience: '常骑',
         readiness: ready,
       }),
     ).toContain('请先在个人资料中选择性别');
+  });
+  it('缺失头像时阻断', () => {
+    expect(
+      validateRegistration({
+        profile: { ...registrationProfile, avatarId: '' },
+        gatheringMode: 'self_drive',
+        experience: '常骑',
+        readiness: ready,
+      }),
+    ).toContain('请先设置头像');
+  });
+  it('缺失个人照片时阻断', () => {
+    expect(
+      validateRegistration({
+        profile: { ...registrationProfile, backgroundPhoto: null, photos: [] },
+        gatheringMode: 'self_drive',
+        experience: '常骑',
+        readiness: ready,
+      }),
+    ).toContain('请先上传个人照片');
   });
 });
 

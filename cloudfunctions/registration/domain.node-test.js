@@ -8,6 +8,7 @@ const {
   isOccupying,
   publicRegistration,
   validateOptions,
+  assertProfileReady,
 } = require('./domain/domain');
 
 function expectValidationFailure(options) {
@@ -62,4 +63,37 @@ test('报名公开投影包含签到时间但不泄露签到管理员 openid', (
   assert.equal(result.status, 'checked_in');
   assert.equal(result.checked_in_at.toISOString(), '2026-09-30T10:00:00.000Z');
   assert.equal('checkin_operator_openid' in result, false);
+});
+
+test('报名资料就绪检查包含背景图', () => {
+  const baseProfile = {
+    nickname: '骑手',
+    gender: '男',
+    real_name_cipher: { v: 1 },
+    phone_cipher: { v: 1 },
+    emergency_name: '联系人',
+    emergency_phone_cipher: { v: 1 },
+    avatar_file_id: 'cloud://avatar',
+    background_photo: { file_id: 'cloud://bg', category: 'ride' },
+  };
+
+  assert.doesNotThrow(() => assertProfileReady(baseProfile));
+  assert.throws(() => assertProfileReady({ ...baseProfile, background_photo: null }), {
+    code: 'PROFILE_INCOMPLETE',
+    message: /个人照片/,
+  });
+  assert.throws(
+    () =>
+      assertProfileReady({ ...baseProfile, background_photo: { file_id: '', category: 'ride' } }),
+    { code: 'PROFILE_INCOMPLETE', message: /个人照片/ },
+  );
+  assert.throws(
+    () =>
+      assertProfileReady({
+        ...baseProfile,
+        background_photo: null,
+        photos: [{ file_id: 'legacy', category: 'ride' }],
+      }),
+    { code: 'PROFILE_INCOMPLETE', message: /个人照片/ },
+  );
 });
