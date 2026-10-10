@@ -164,10 +164,11 @@
 - 引用闭环：`profile/store.js` 的 `profileReferencesMedia`、`strava-auth/store.js` 的 disconnect 保留集、`strava-callback/index.js` 的换绑 `retainedByPhotos`、`admin-review/index.js` 的 `profileMediaIds` 都把 `background_photo.file_id` 纳入；对应 RED→GREEN 测试已验证。
 - 客户端进展：`models/Profile/ProfileUpdate` 已加 `backgroundPhoto`；cloud repo 严格 map `background_photo`（显式 null 支持、非法分类拒绝）并序列化为 `background_photo`；mock repo 保留 legacy photos；`profile-edit/index.ts` 的 `addPhoto` 写入 `backgroundPhoto`，`save` 发送 `background_photo` 单槽位且不再发送 `photos`；`docs/cloudbase-schema.md` 和设置页 `2026.10.10.15 个人背景图单槽位协议` 已同步。
 - 聚焦门禁：`profile` 98/98、`profile-media-cleanup` 37/37、`admin-review` 28/28、`strava-auth` 30/30、`strava-callback` 18/18；客户端 Vitest 55 文件 739/739；typecheck + lint 通过。
-- 下一步：push 并等待 main CI 与开发版上传；按 Aime 的部署守则部署 `profile/profile-media-cleanup/admin-review/strava-auth/strava-callback` 至 CloudBase 并做线上 `$LATEST` 比对；完成存量多图账号真实 smoke（打开→保存→不丢失，替换→旧槽位降级）；由 TraeX 审判者独立复核后转关闭。
+- CloudBase 部署与回读（2026-10-10 15:45–15:48，本机已登录 `@cloudbase/cli@3.8.4`）：`profile`、`admin-review`、`strava-auth`、`strava-callback`、`profile-media-cleanup` 五个函数 `fn deploy --force` 全部 success；`fn list` 回读五者均 `Active`（profile 15:45:01、admin-review 15:45:38、strava-auth 15:46:21、strava-callback 15:47:00、profile-media-cleanup 15:48:05）。`fn code download` 下载线上 `$LATEST` 后，与本地部署包 `diff -r`（排除 node_modules/package-lock）五函数全部零差异，核心 9 文件逐字节一致。`bootstrap-cloudbase --verify` 通过（13 集合、索引不符合项 0）。`fn invoke profile {"action":"get"}` 返回 `UNAUTHENTICATED`（requestId `59400f24-873e-4c68-8f74-848bcc47e5fa`，3ms），证明部署版可运行且入口鉴权 fail-closed。
+- 下一步：剩存量多图账号真实 smoke（微信端打开→保存→历史相册不丢失，替换→旧槽位降级）与 TraeX 审判者独立复核；CLI invoke 无微信 WXContext 无法覆盖业务数据链路。
 - 负责人：TraeX 执行者；独立复核：TraeX 审判者；部署/真机：Aime 个人助理。
 - 关闭条件：新用户只能添加/替换一张背景；编辑页与个人中心可预览；两张输入被拒；存量多图无未经确认的数据丢失；`profile` 部署、真机 smoke、CI 与复核齐全。
-- 更新时间：2026-10-10 14:59（CST）。
+- 更新时间：2026-10-10 15:50（CST）。
 
 ### HP-20261009-11 · 个人中心头像预览不可用
 
