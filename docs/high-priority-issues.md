@@ -166,9 +166,10 @@
 - 聚焦门禁：`profile` 98/98、`profile-media-cleanup` 37/37、`admin-review` 28/28、`strava-auth` 30/30、`strava-callback` 18/18；客户端 Vitest 55 文件 739/739；typecheck + lint 通过。
 - CloudBase 部署与回读（2026-10-10 15:45–15:48，本机已登录 `@cloudbase/cli@3.8.4`）：`profile`、`admin-review`、`strava-auth`、`strava-callback`、`profile-media-cleanup` 五个函数 `fn deploy --force` 全部 success；`fn list` 回读五者均 `Active`（profile 15:45:01、admin-review 15:45:38、strava-auth 15:46:21、strava-callback 15:47:00、profile-media-cleanup 15:48:05）。`fn code download` 下载线上 `$LATEST` 后，与本地部署包 `diff -r`（排除 node_modules/package-lock）五函数全部零差异，核心 9 文件逐字节一致。`bootstrap-cloudbase --verify` 通过（13 集合、索引不符合项 0）。`fn invoke profile {"action":"get"}` 返回 `UNAUTHENTICATED`（requestId `59400f24-873e-4c68-8f74-848bcc47e5fa`，3ms），证明部署版可运行且入口鉴权 fail-closed。
 - 下一步：剩存量多图账号真实 smoke（微信端打开→保存→历史相册不丢失，替换→旧槽位降级）与 TraeX 审判者独立复核；CLI invoke 无微信 WXContext 无法覆盖业务数据链路。
+- 真机 smoke（2026-10-10 16:23，`miniprogram-automator@0.12.1` 连 `cli auto` 端口 9420，设备 HUAWEI Mate 70 Pro / 基础库 3.17.4）：真实账号 `profile-edit` 加载到 `backgroundPhoto={id:cloud://...,category:ride}`、`photos.length=1`，save payload 字段 `["gender","emergencyName","backgroundPhoto"]` 且 `hasPhotos=false`；注入 3 张 legacy photos 的存量账号 `photos.length=3` 原样保留、payload 仍只含 `backgroundPhoto`（=首张 legacy，category 规整 ride）、`hasPhotos=false`，证明旧账号保存不截断历史相册。证据与截图存于 `docs/evidence/2026-10-10-profile-smoke/`。仅剩 TraeX 审判者物理真机点按独立复核。
 - 负责人：TraeX 执行者；独立复核：TraeX 审判者；部署/真机：Aime 个人助理。
 - 关闭条件：新用户只能添加/替换一张背景；编辑页与个人中心可预览；两张输入被拒；存量多图无未经确认的数据丢失；`profile` 部署、真机 smoke、CI 与复核齐全。
-- 更新时间：2026-10-10 15:50（CST）。
+- 更新时间：2026-10-10 16:24（CST）。
 
 ### HP-20261009-11 · 个人中心头像预览不可用
 
@@ -178,9 +179,10 @@
 - 测试：`tests/profile-page.test.ts` 新增模板断言 `bindtap="previewAvatar"` 和四种输入分支（合法 HTTPS、空、cloud://、http://）；全量 Vitest 55 文件 740/740 通过。
 - 发布：设置页追加 `2026.10.10.16 个人中心头像可预览` 升级日志。
 - 下一步：push → main CI → 开发版上传；真机 smoke（已登录头像点击、未登录空占位 → 不触发预览）；由 TraeX 审判者独立复核后转关闭。
+- 真机 smoke（2026-10-10 16:23，`miniprogram-automator@0.12.1` 连 `cli auto` 端口 9420，设备 HUAWEI Mate 70 Pro / 基础库 3.17.4）：部署页面 `previewAvatar` 处理器存在；拦截 `wx.previewImage` 统计四分支——`https://` 触发预览（current=该 URL），`''`/`cloud://`/`http://` 均不触发，`totalCalls=1`，fail-closed 生效；当前无头像账号渲染占位、不渲染 `.avatar-image`，符合预期。证据存于 `docs/evidence/2026-10-10-profile-smoke/`。仅剩物理真机点按独立复核。
 - 负责人：TraeX 执行者；独立复核：TraeX 审判者；真机验收：Aime 个人助理。
 - 关闭条件：个人中心和编辑页均可预览头像；异常输入不调用预览且不崩溃；测试、同 SHA 开发版 smoke 与独立复核齐全。
-- 更新时间：2026-10-10 15:08（CST）。
+- 更新时间：2026-10-10 16:24（CST）。
 
 ### HP-20261009-12 · Strava 年限正确性、存量回填与部署
 
