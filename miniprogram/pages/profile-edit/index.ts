@@ -82,6 +82,21 @@ async function atMediaStage<T>(
   }
 }
 
+// 计算本地图片内容 md5 作为会话内幂等键；基础库不支持或取指纹失败时返回空串，
+// 调用方据此走完整上传链路，保证可用性优先，跨会话重复由云端 canonical 机制兜底。
+async function contentDigest(filePath: string): Promise<string> {
+  try {
+    if (typeof wx.getFileInfo !== 'function') return '';
+    const info: { digest?: unknown } = await wx.getFileInfo({
+      filePath,
+      digestAlgorithm: 'md5',
+    });
+    return typeof info.digest === 'string' ? info.digest : '';
+  } catch {
+    return '';
+  }
+}
+
 function mediaFailureDetail(error: unknown): string {
   const value = error && typeof error === 'object' ? (error as Record<string, unknown>) : {};
   const stage = typeof value.mediaStage === 'string' ? value.mediaStage : '';
@@ -401,6 +416,8 @@ Page({
   mediaErrorRevision: 0,
   mediaErrorStage: '',
   localPhotoPreviews: {} as Record<string, string>,
+  // 会话内“内容指纹 -> 已登记 fileId”映射：重复选择同一图片直接复用，不再请求上传路径和重复上传。
+  uploadedMediaDigests: new Map<string, string>(),
   data: {
     loading: true,
     error: '',
@@ -570,6 +587,18 @@ Page({
     const cloud = wx.cloud;
     if (!cloud) throw mediaCloudUnavailableError();
     const verifiedImage = await ensureLocalImageSize(image);
+    const digest = await contentDigest(verifiedImage.path);
+    const reusedFileId = digest ? this.uploadedMediaDigests.get(digest) : '';
+    if (reusedFileId) {
+      // 同内容图片本次会话已上传并登记：跳过路径申请、上传与注册，仅把头像指向已有 fileId。
+      const authoritative = await atMediaStage('setAvatar', 'AVATAR_SET_FAILED', () =>
+        rideService.setAvatar(origin, reusedFileId),
+      );
+      this.applyAvatarProfile(authoritative);
+      await this.loadAvatarPreview();
+      wx.showToast({ title: '头像已更新' });
+      return;
+    }
     let uploadedFileId = '';
     let selectionDispatched = false;
     try {
@@ -587,6 +616,7 @@ Page({
       const authoritative = await atMediaStage('setAvatar', 'AVATAR_SET_FAILED', () =>
         rideService.setAvatar(origin, uploadedFileId),
       );
+      if (digest) this.uploadedMediaDigests.set(digest, uploadedFileId);
       this.applyAvatarProfile(authoritative);
       await this.loadAvatarPreview();
       wx.showToast({ title: '头像已更新' });
@@ -642,6 +672,19 @@ Page({
       const image = await chooseSingleImage();
       if (!image) return;
       const verifiedImage = await ensureLocalImageSize(image);
+      const photoDigest = await contentDigest(verifiedImage.path);
+      const reusedPhotoId = photoDigest ? this.uploadedMediaDigests.get(photoDigest) : '';
+      if (reusedPhotoId) {
+        // 同内容图片本次会话已上传登记：跳过路径申请、上传与注册，直接把背景槽位指向已有 fileId。
+        const current = this.data.p;
+        if (!current) return;
+        current.photos = [{ id: reusedPhotoId, category: PROFILE_BACKGROUND_CATEGORY }];
+        current.backgroundPhoto = { id: reusedPhotoId, category: PROFILE_BACKGROUND_CATEGORY };
+        this.localPhotoPreviews = { [reusedPhotoId]: verifiedImage.path };
+        this.setData({ p: current });
+        await this.loadPhotoPreviews();
+        return;
+      }
       const cloudPath = await atMediaStage('uploadPath', 'MEDIA_UPLOAD_PATH_FAILED', () =>
         rideService.getProfileMediaUploadPath(),
       );
@@ -652,6 +695,7 @@ Page({
       await atMediaStage('register', 'MEDIA_REGISTER_FAILED', () =>
         rideService.registerProfileMedia(uploadedFileId, PROFILE_BACKGROUND_CATEGORY),
       );
+      if (photoDigest) this.uploadedMediaDigests.set(photoDigest, uploadedFileId);
       const p = this.data.p;
       if (!p) {
         await compensateUploadedMedia({
