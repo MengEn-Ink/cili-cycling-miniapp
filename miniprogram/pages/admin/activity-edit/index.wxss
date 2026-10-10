@@ -485,3 +485,70 @@
     padding: 0 10rpx;
   }
 }
+
+/* Unified bright 375px form layout. */
+.activity-form-page {
+  padding-right: var(--page-gutter);
+  padding-left: var(--page-gutter);
+}
+
+.form-title {
+  font-size: 48rpx;
+  letter-spacing: 0;
+}
+
+.mode-grid,
+.split {
+  grid-template-columns: 1fr;
+  gap: var(--card-gap);
+}
+
+.form-card {
+  padding: 32rpx;
+  border-width: 4rpx;
+  border-style: solid;
+  border-color: var(--color-card-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.field input,
+.field textarea {
+  min-height: var(--control-height);
+  border-width: 4rpx;
+}
+
+.mode-card {
+  min-height: 176rpx;
+  border-width: 4rpx;
+  border-radius: var(--radius-card);
+}
+
+.mode-card.is-active {
+  border-color: var(--color-border);
+  background: var(--color-brand-soft);
+  box-shadow: inset 12rpx 0 0 var(--color-brand);
+}
+
+.mode-copy,
+.climb-row,
+.quick-actions button,
+.picker-button,
+.inline-action-button {
+  color: var(--color-text);
+}
+
+.hero-kicker,
+.section-label,
+.accent {
+  color: var(--color-text);
+}
+
+.actions button,
+.activity-form-page .secondary,
+.activity-form-page .btn,
+.danger-button,
+.media-add,
+.location-quick-button {
+  min-height: var(--control-height);
+}

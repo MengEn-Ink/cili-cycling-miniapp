@@ -1,7 +1,7 @@
 // @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { declaration, effectiveBlock, rpx } from './theme-contract-helpers';
+import { declaration, effectiveBlock } from './theme-contract-helpers';
 
 const read = (file: string) => readFileSync(file, 'utf8');
 
@@ -60,16 +60,16 @@ describe('方案 A 编辑式性能布局', () => {
     expect(declaration(cardCta, 'display')).toBe('flex');
     expect(declaration(cardCta, 'align-items')).toBe('center');
     expect(declaration(cardCta, 'justify-content')).toBe('center');
-    expect(declaration(cardCta, 'width')).toBe('176rpx');
-    expect(declaration(cardCta, 'height')).toBe('88rpx');
-    expect(rpx(cardCta, 'min-height')).toBe(88);
+    expect(declaration(cardCta, 'width')).toBe('192rpx');
+    expect(declaration(cardCta, 'height')).toBe('var(--control-height)');
+    expect(declaration(cardCta, 'min-height')).toBe('var(--control-height)');
 
     for (const selector of ['.route-actions button', '.route-location-row button']) {
       const button = effectiveBlock(detailStyles, selector);
       expect(declaration(button, 'display'), selector).toBe('flex');
       expect(declaration(button, 'align-items'), selector).toBe('center');
       expect(declaration(button, 'justify-content'), selector).toBe('center');
-      expect(rpx(button, 'min-height'), selector).toBeGreaterThanOrEqual(88);
+      expect(declaration(button, 'min-height'), selector).toBe('var(--control-height)');
       expect(declaration(button, 'line-height'), selector).toBe('1.3');
     }
 
@@ -77,7 +77,7 @@ describe('方案 A 编辑式性能布局', () => {
     expect(declaration(fixedAction, 'display')).toBe('flex');
     expect(declaration(fixedAction, 'align-items')).toBe('center');
     expect(declaration(fixedAction, 'justify-content')).toBe('center');
-    expect(rpx(fixedAction, 'min-height')).toBe(96);
+    expect(declaration(fixedAction, 'min-height')).toBe('var(--control-height)');
 
     const closeButton = effectiveBlock(detailStyles, '.rider-card-close');
     expect(declaration(closeButton, 'display')).toBe('flex');

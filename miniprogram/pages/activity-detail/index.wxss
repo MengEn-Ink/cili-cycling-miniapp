@@ -1036,3 +1036,62 @@ brand-logo {
 .hero-sequence {
   color: var(--color-muted);
 }
+
+/* Unified bright content below the photographic hero. */
+.metric-panel {
+  border-width: 4rpx;
+  border-style: solid;
+  border-color: var(--color-border-strong);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.detail-metric + .detail-metric {
+  border-left-width: 4rpx;
+}
+
+.detail-page .card {
+  padding: 32rpx;
+  border-width: 4rpx;
+  border-style: solid;
+  border-color: var(--color-card-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.detail-decision {
+  border: 4rpx solid var(--color-border);
+  border-left-width: 8rpx;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.route-actions button,
+.route-location-row button {
+  min-height: var(--control-height);
+  border-width: 4rpx;
+}
+
+.detail-action .btn {
+  min-height: var(--control-height);
+  border-width: 4rpx;
+}
+
+.detail-hero:not(.detail-hero--media) .hero-kicker,
+.detail-hero:not(.detail-hero--media) .hero-level,
+.decision-kicker,
+.decision-capacity text:first-child,
+.route-actions button,
+.route-location-row button,
+.climb-popularity,
+.check,
+.notice-mark {
+  color: var(--color-text);
+}
+
+.detail-hero:not(.detail-hero--media) .hero-level,
+.climb-popularity {
+  border-color: var(--color-border);
+}

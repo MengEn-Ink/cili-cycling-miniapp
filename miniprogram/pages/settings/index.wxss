@@ -59,14 +59,6 @@ brand-logo {
   color: var(--color-brand);
 }
 
-.appearance-card {
-  padding: 24rpx;
-  border-color: var(--color-border);
-  border-radius: var(--radius-display);
-  background: var(--color-surface);
-  box-shadow: 0 16rpx 44rpx var(--color-shadow);
-}
-
 .card-heading {
   display: flex;
   align-items: flex-start;
@@ -276,21 +268,63 @@ brand-logo {
 
 @media (max-width: 350px) {
   .settings-page {
-    padding-right: 28rpx;
-    padding-left: 28rpx;
-  }
-
-  .theme-option {
-    grid-template-columns: 72rpx minmax(0, 1fr) 36rpx;
-    gap: 12rpx;
-  }
-
-  .theme-preview {
-    width: 72rpx;
+    padding-right: var(--page-gutter);
+    padding-left: var(--page-gutter);
   }
 
   .release-date {
     width: 100%;
     margin-left: 0;
   }
+}
+
+/* Unified bright settings layout. */
+.settings-page {
+  padding-right: var(--page-gutter);
+  padding-left: var(--page-gutter);
+}
+
+.settings-hero {
+  padding: 32rpx 0 24rpx;
+}
+
+.hero-kicker,
+.section-label text,
+.release-version,
+.release-feature text:first-child {
+  color: var(--color-text);
+}
+
+.hero-title {
+  font-size: 48rpx;
+  font-style: normal;
+}
+
+.section-label text {
+  display: inline-flex;
+  min-width: 40rpx;
+  min-height: 40rpx;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-brand);
+}
+
+.strava-settings-card,
+.release-content {
+  padding: 32rpx;
+  border-width: 4rpx;
+  border-style: solid;
+  border-color: var(--color-card-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.strava-status.status-ready {
+  border-color: var(--color-success);
+  color: var(--color-success-text);
+}
+
+.strava-actions button {
+  min-height: var(--control-height);
+  border-width: 4rpx;
 }

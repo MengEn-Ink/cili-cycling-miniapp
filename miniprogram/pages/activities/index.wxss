@@ -253,3 +253,45 @@ page,
     font-size: 44rpx;
   }
 }
+
+/* Unified bright layout: 375px baseline. */
+.activities-page {
+  padding-right: var(--page-gutter);
+  padding-left: var(--page-gutter);
+}
+
+.page-title {
+  font-size: 48rpx;
+  letter-spacing: 0;
+}
+
+.section-eyebrow,
+.following-head text:last-child {
+  color: var(--color-text);
+}
+
+.timeline-tabs {
+  margin-right: 0;
+  margin-left: 0;
+  width: 100%;
+  border: 4rpx solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: 4rpx 4rpx 0 var(--color-border);
+}
+
+.timeline-tab {
+  min-height: var(--segment-height);
+}
+
+.timeline-tab + .timeline-tab {
+  border-left: 4rpx solid var(--color-border);
+}
+
+.activity-results {
+  display: grid;
+  row-gap: var(--card-gap);
+}
+
+.activity-results activity-card {
+  display: block;
+}

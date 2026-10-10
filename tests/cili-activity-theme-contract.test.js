@@ -1,6 +1,12 @@
 import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { cssBlock, declaration, expectSemantic, uiTokens } from './theme-contract-helpers';
+import {
+  cssBlock,
+  declaration,
+  effectiveBlock,
+  expectSemantic,
+  uiTokens,
+} from './theme-contract-helpers';
 
 const read = (path) => fs.readFileSync(path, 'utf8');
 const activities = read('miniprogram/pages/activities/index.wxml');
@@ -58,7 +64,7 @@ describe('CILI 活动页静态契约', () => {
     const cta = cssBlock(activityCardStyles, '.card-cta');
     expectSemantic(declaration(cta, 'background'), '--color-brand');
     expectSemantic(declaration(cta, 'color'), '--color-on-brand');
-    expect(declaration(cta, 'min-height')).toBe('88rpx');
+    expect(declaration(cta, 'min-height')).toBe('var(--control-height)');
   });
 
   it('列表压缩首屏介绍并前置活动卡，详情压缩 Hero、时间轴并保留吸底安全区', () => {
@@ -86,13 +92,13 @@ describe('CILI 活动页静态契约', () => {
     expect(tokens['--radius-display']).toBe('32rpx');
     const card = cssBlock(activityCardStyles, '.activity-card');
     expectSemantic(declaration(card, 'background'), '--color-surface');
-    expectSemantic(declaration(card, 'border-radius'), '--radius-display');
+    expectSemantic(declaration(card, 'border-radius'), '--radius-card');
     expectSemantic(
       declaration(cssBlock(activityCardStyles, '.metric-item'), 'background'),
       '--color-raised',
     );
     expectSemantic(
-      declaration(cssBlock(detailStyles, '.detail-action .btn'), 'background'),
+      declaration(effectiveBlock(detailStyles, '.detail-action .btn'), 'background'),
       '--color-brand',
     );
     expect(themeSources).not.toMatch(/pink|#ff69b4|#ffc0cb|#e91e63|#ec4899/i);

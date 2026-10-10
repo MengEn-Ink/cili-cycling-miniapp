@@ -1409,3 +1409,84 @@ page,
 .hero-capability-metric {
   text-align: center;
 }
+
+/* Unified bright profile shell; the photo hero remains a dark media surface. */
+.page.profile-page {
+  padding-right: var(--page-gutter);
+  padding-left: var(--page-gutter);
+}
+
+.profile-topbar {
+  min-height: var(--control-height);
+}
+
+.settings-entry {
+  width: var(--control-height);
+  min-width: var(--control-height);
+  min-height: var(--control-height);
+  padding: 0;
+  border-width: 4rpx;
+  border-radius: var(--radius-sm);
+  box-shadow: 4rpx 4rpx 0 var(--color-border);
+}
+
+.settings-entry-icon {
+  color: var(--color-text);
+}
+
+.profile-hero,
+.profile-hero.has-bg {
+  min-height: 640rpx;
+  border-radius: var(--radius-card);
+}
+
+.profile-page .profile-card,
+.profile-page .profile-loading,
+.profile-page .profile-error,
+.profile-page .empty-profile {
+  padding: 32rpx;
+  border-width: 4rpx;
+  border-style: solid;
+  border-color: var(--color-card-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.menu-list {
+  border-width: 4rpx;
+  border-style: solid;
+  border-color: var(--color-card-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.menu-card,
+.menu-card:active {
+  min-height: var(--control-height);
+  padding: 20rpx 24rpx;
+  background: var(--color-surface);
+}
+
+.menu-card + .menu-card {
+  border-top: 4rpx solid var(--color-border);
+}
+
+.profile-capability-section .hero-capability-label,
+.profile-capability-section .hero-capability-unit,
+.panel-index,
+.section-label text,
+.chevron,
+.hero-progress-head text:last-child {
+  color: var(--color-text);
+}
+
+.section-label text {
+  display: inline-flex;
+  min-width: 40rpx;
+  min-height: 40rpx;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-brand);
+}

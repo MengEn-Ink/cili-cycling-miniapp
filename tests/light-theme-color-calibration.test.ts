@@ -56,7 +56,7 @@ describe('核心页面统一明亮主题配色', () => {
         effectiveBlock(detailStyles, '.detail-hero:not(.detail-hero--media) .hero-kicker'),
         'color',
       ),
-      '--color-brand',
+      '--color-text',
     );
     expectSemantic(
       declaration(
@@ -77,13 +77,17 @@ describe('核心页面统一明亮主题配色', () => {
     ).toBeGreaterThanOrEqual(4.5);
   });
 
-  it.each(['.climb-popularity', '.rider-status'])(
-    '%s 使用主题品牌软色而不是固定透明橙',
-    (selector) => {
-      const block = effectiveBlock(detailStyles, selector);
-      expectSemantic(declaration(block, 'border-color'), '--color-brand');
-      expectSemantic(declaration(block, 'background'), '--color-brand-soft');
-      expectSemantic(declaration(block, 'color'), '--color-brand');
-    },
-  );
+  it('白底热门爬坡标签使用近黑文字和品牌软底', () => {
+    const block = effectiveBlock(detailStyles, '.climb-popularity');
+    expectSemantic(declaration(block, 'border-color'), '--color-border');
+    expectSemantic(declaration(block, 'background'), '--color-brand-soft');
+    expectSemantic(declaration(block, 'color'), '--color-text');
+  });
+
+  it('媒体面骑友状态保留高对比品牌色', () => {
+    const block = effectiveBlock(detailStyles, '.rider-status');
+    expectSemantic(declaration(block, 'border-color'), '--color-brand');
+    expectSemantic(declaration(block, 'background'), '--color-brand-soft');
+    expectSemantic(declaration(block, 'color'), '--color-brand');
+  });
 });

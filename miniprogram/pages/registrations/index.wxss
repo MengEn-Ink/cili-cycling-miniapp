@@ -282,3 +282,53 @@ brand-logo,
 .open-link {
   color: var(--color-text);
 }
+
+/* Unified bright layout: status rail plus high-contrast card shell. */
+.page.registrations-page {
+  padding-right: var(--page-gutter);
+  padding-left: var(--page-gutter);
+}
+
+.page-heading .hero-kicker,
+.date,
+.arrow {
+  color: var(--color-text);
+}
+
+.heading-title {
+  font-size: 48rpx;
+  font-style: normal;
+}
+
+.registration-list {
+  gap: var(--card-gap);
+}
+
+.registration-card {
+  padding: 32rpx;
+  border-width: 4rpx;
+  border-style: solid;
+  border-color: var(--color-card-border);
+  border-left-width: 8rpx;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.registration-card.status-pending {
+  border-left-color: var(--color-warning);
+}
+
+.registration-card.status-approved,
+.registration-card.status-checked_in {
+  border-left-color: var(--color-success);
+}
+
+.registration-card.status-rejected,
+.registration-card.status-cancelled {
+  border-left-color: var(--color-danger);
+}
+
+.card-index {
+  color: var(--color-muted);
+  letter-spacing: 0;
+}

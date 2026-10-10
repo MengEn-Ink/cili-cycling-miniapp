@@ -220,7 +220,7 @@ describe('unified UI accessibility regressions', () => {
     const registrationStyles = read('miniprogram/pages/registrations/index.wxss');
     expectSemantic(
       declaration(effectiveBlock(registrationStyles, '.date'), 'color'),
-      '--color-brand',
+      '--color-text',
     );
     const reviewStyles = read('miniprogram/pages/admin/review-detail/index.wxss');
     expectSemantic(
@@ -237,7 +237,7 @@ describe('unified UI accessibility regressions', () => {
     expect(template).toContain('<view>报名出发</view>');
   });
 
-  it('shares a 44px-equivalent control height and stable page gutters', () => {
+  it('shares a 48px control height, 40px segments, and stable page gutters', () => {
     expect(declaration(effectiveBlock(app, 'page'), '--control-height')).toBe('96rpx');
     expect(declaration(effectiveBlock(app, 'page'), '--page-gutter')).toBe('32rpx');
     expect(declaration(effectiveBlock(app, 'page'), '--page-gutter-narrow')).toBe('24rpx');
@@ -268,7 +268,7 @@ describe('unified UI accessibility regressions', () => {
 
     const activityTimeline = read('miniprogram/pages/activities/index.wxss');
     expect(declaration(effectiveBlock(activityTimeline, '.timeline-tab'), 'min-height')).toBe(
-      'var(--control-height)',
+      'var(--segment-height)',
     );
     expectSemantic(
       declaration(effectiveBlock(activityTimeline, '.timeline-tab.is-active'), 'background'),

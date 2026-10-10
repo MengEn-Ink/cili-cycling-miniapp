@@ -5,7 +5,6 @@
     <brand-logo compact="{{true}}" meta="RIDER PROFILE" />
     <button class="settings-entry" bindtap="openSettings" aria-label="打开设置">
       <text class="settings-entry-icon" aria-hidden="true">⚙</text>
-      <text>设置</text>
     </button>
   </view>
 
