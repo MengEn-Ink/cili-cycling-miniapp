@@ -374,7 +374,7 @@ page {
 .sync-button {
   border: 2rpx solid var(--color-border);
   background: var(--color-surface) !important;
-  color: var(--color-text-primary) !important;
+  color: var(--color-text) !important;
 }
 
 .repair-button {

@@ -342,3 +342,9 @@ page,
   background: var(--color-raised);
   color: var(--color-muted);
 }
+
+/* Brand yellow eyebrow/placeholder ink is unreadable on the bright surfaces. */
+.step-kicker,
+.avatar-preview-placeholder {
+  color: var(--color-text);
+}
