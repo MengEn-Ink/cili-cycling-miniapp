@@ -19,6 +19,8 @@ type PendingImage = {
   previewPath: string;
   status: 'uploading' | 'failed' | 'uploaded';
   fileId?: string;
+  // 上传目标路径在选择时即确定：同内容图片始终指向同一对象，重试覆盖、重复选择不产生新对象。
+  cloudPath?: string;
 };
 
 const MAX_IMAGES = 3;
@@ -49,6 +51,24 @@ const mediaExtension = (path: string) => {
   const match = /\.([a-zA-Z0-9]{1,8})(?:\?|$)/.exec(path);
   return match ? `.${match[1].toLowerCase()}` : '.jpg';
 };
+// 从云文件 ID 反解对象路径（cloud://<env>/ 之后的部分），用于与新选图片的指纹比对去重。
+const fileIdCloudPath = (fileId: string) => {
+  const match = /^cloud:\/\/[^/]+\//.exec(fileId);
+  return match ? fileId.slice(match[0].length) : '';
+};
+// 以文件内容 md5 作为幂等键生成确定性对象路径；取不到指纹时退回随机命名，保证上传可用性优先。
+async function contentCloudPath(previewPath: string) {
+  try {
+    const info: any = await wx.getFileInfo({ filePath: previewPath, digestAlgorithm: 'md5' });
+    if (info?.digest) {
+      return `profiles/activity-media/${info.digest}${mediaExtension(previewPath)}`;
+    }
+  } catch {
+    // 旧基础库不支持摘要或读取失败时降级为随机路径，不阻断上传。
+  }
+  const random = Math.random().toString(36).slice(2, 10);
+  return `profiles/activity-media/${Date.now()}-${random}${mediaExtension(previewPath)}`;
+}
 const isCancel = (error: unknown) =>
   typeof (error as { errMsg?: unknown })?.errMsg === 'string' &&
   (error as { errMsg: string }).errMsg.includes('cancel');
@@ -207,8 +227,8 @@ Page({
     this.clearFieldError('startAt');
   },
   async uploadPendingImage(pendingImage: PendingImage) {
-    const random = Math.random().toString(36).slice(2, 10);
-    const cloudPath = `profiles/activity-media/${Date.now()}-${random}${mediaExtension(pendingImage.previewPath)}`;
+    // 复用选择时确定的 cloudPath：重试与“成功但响应丢失”场景均覆盖同一对象，不产生孤立文件。
+    const cloudPath = pendingImage.cloudPath || (await contentCloudPath(pendingImage.previewPath));
     try {
       const result = await wx.cloud!.uploadFile({
         cloudPath,
@@ -245,8 +265,10 @@ Page({
     )
       return;
     const images = [
-      ...this.data.images,
-      ...this.data.pendingImages.map((item: PendingImage) => item.fileId as string),
+      ...new Set([
+        ...this.data.images,
+        ...this.data.pendingImages.map((item: PendingImage) => item.fileId as string),
+      ]),
     ].slice(0, MAX_IMAGES);
     this.setData({
       images,
@@ -270,15 +292,34 @@ Page({
       });
       const files = Array.isArray(selected.tempFiles) ? selected.tempFiles : [];
       if (!files.length) throw new Error('未选择可上传的图片');
-      const pendingImages = files.map((file: { tempFilePath?: string }, index: number) => {
+      // 已占用对象路径集合：已提交图片反解路径 + 待处理图片路径，用于拦截重复选择。
+      const usedCloudPaths = new Set<string>([
+        ...this.data.images.map((fileId: string) => fileIdCloudPath(fileId)).filter(Boolean),
+        ...this.data.pendingImages
+          .map((item: PendingImage) => item.cloudPath || '')
+          .filter(Boolean),
+      ]);
+      const batchCloudPaths = new Set<string>();
+      const pendingImages: PendingImage[] = [];
+      for (const file of files) {
         if (!file || typeof file.tempFilePath !== 'string' || !file.tempFilePath)
-          throw new Error(`第 ${index + 1} 张图片无效`);
-        return {
-          id: `${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
+          throw new Error(`第 ${pendingImages.length + 1} 张图片无效`);
+        const cloudPath = await contentCloudPath(file.tempFilePath);
+        // 与已提交、待处理或同批图片内容相同则跳过，不重复上传、不重复占用存储。
+        if (usedCloudPaths.has(cloudPath) || batchCloudPaths.has(cloudPath)) continue;
+        batchCloudPaths.add(cloudPath);
+        usedCloudPaths.add(cloudPath);
+        pendingImages.push({
+          id: `${Date.now()}-${pendingImages.length}-${Math.random().toString(36).slice(2, 8)}`,
           previewPath: file.tempFilePath,
-          status: 'uploading' as const,
-        };
-      });
+          status: 'uploading',
+          cloudPath,
+        });
+      }
+      if (!pendingImages.length) {
+        wx.showToast({ title: '图片已存在', icon: 'none' });
+        return;
+      }
       this.setData({
         uploading: true,
         error: '',
