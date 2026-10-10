@@ -5,11 +5,23 @@ import { setTheme, syncPageTheme } from '../../services/theme-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.10.7',
+    date: '2026-10-10',
+    title: '浅色行程序号更清晰',
+    summary: '我的行程卡片序号在浅色模式下使用高对比辅助色，户外查看更清楚。',
+    latest: true,
+    features: [
+      'RIDE 序号在浅色卡片上提升到正文级可读对比度',
+      '深色模式视觉保持不变，继续沿用原有灰阶层级',
+      '浅色主题对比度契约补齐行程序号，防止后续回退',
+    ],
+  },
+  {
     version: '2026.10.10.6',
     date: '2026-10-10',
     title: 'Strava 加入年限闰日校准',
     summary: '闰日注册的 Strava 账号在平年 2 月末按完整周年展示，不再少算一年。',
-    latest: true,
+    latest: false,
     features: [
       '2 月 29 日注册的账号在平年 2 月 28 日正确计入周年',
       '周年前一天仍保持未满对应年限，避免提前增加',
