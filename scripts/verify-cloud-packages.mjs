@@ -25,7 +25,7 @@ function pack(name, required) {
   for (const file of required)
     if (!files.includes(file)) throw new Error(`${name} 部署包缺少 ${file}`);
 }
-for (const name of ['activity-read', 'registration']) {
+for (const name of ['activity-read', 'registration', 'admin-review']) {
   for (const file of ['index.js', 'domain.js', 'use-cases.js'])
     if (
       hash(resolve(root, 'cloudfunctions/shared', file)) !==
@@ -41,13 +41,6 @@ for (const name of ['activity-read', 'registration']) {
     ...(name === 'activity-read' ? ['public-avatar.js', 'list-page.js'] : []),
   ]);
 }
-pack('admin-review', [
-  'index.js',
-  'package.json',
-  'domain/index.js',
-  'domain/domain.js',
-  'domain/use-cases.js',
-]);
 pack('notification-send', ['index.js', 'core.js', 'store.js', 'access.js', 'package.json']);
 const cloudbaseConfig = JSON.parse(readFileSync(resolve(root, 'cloudbaserc.json'), 'utf8'));
 const notificationFunction = cloudbaseConfig.functions.find(
