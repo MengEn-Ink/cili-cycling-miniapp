@@ -262,6 +262,13 @@ page {
   padding-right: 10rpx;
 }
 
+.metric-sheet .metric-item {
+  /* 全局浅色表单会给同名指标项铺白底；名片指标必须留在深色媒体面内。 */
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+}
+
 .metric-item:nth-child(n + 4) {
   flex-basis: 50%;
 }

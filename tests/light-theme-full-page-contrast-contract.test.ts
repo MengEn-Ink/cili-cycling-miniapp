@@ -276,6 +276,9 @@ describe('HP-20261009-06 浅色主题全页对比度契约', () => {
     );
 
     const capability = read('miniprogram/pages/capability-card/index.wxss');
+    expect(
+      declaration(effectiveBlock(capability, '.metric-sheet .metric-item'), 'background'),
+    ).toBe('transparent');
     expectSemantic(
       declaration(effectiveBlock(capability, '.metric-sheet'), 'background'),
       '--color-media-card-bg',

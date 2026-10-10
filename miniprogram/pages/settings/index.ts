@@ -5,11 +5,23 @@ import { setTheme, syncPageTheme } from '../../services/theme-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.10.8',
+    date: '2026-10-10',
+    title: '骑行名片指标恢复深色媒体面',
+    summary: '修正全局浅色卡片样式覆盖名片指标的问题，核心骑行数据不再出现白字白底。',
+    latest: true,
+    features: [
+      '指标子项显式保持透明背景，延续名片深色媒体面',
+      '数值、单位与标签继续使用媒体文字色，提升户外可读性',
+      '新增样式层叠契约，防止全局同名选择器再次覆盖',
+    ],
+  },
+  {
     version: '2026.10.10.7',
     date: '2026-10-10',
     title: '浅色主题运行态可读性补强',
     summary: '根据开发者工具运行态复核，提升行程序号、活动管理标题和骑行名片指标的对比度。',
-    latest: true,
+    latest: false,
     features: [
       '我的行程 RIDE 序号在浅色卡片上提升到正文级可读对比度',
       '活动管理卡片标题跟随主题正文色，不再出现浅字白底',
