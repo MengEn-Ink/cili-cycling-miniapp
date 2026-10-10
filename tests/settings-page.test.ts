@@ -54,11 +54,11 @@ describe('设置页', () => {
       stravaReadiness: readyState,
       stravaStatusText: '已连接，可重新授权或解绑',
     });
-    expect(page.data.releaseNotes).toHaveLength(24);
+    expect(page.data.releaseNotes).toHaveLength(25);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.10.8',
+      version: '2026.10.10.9',
       latest: true,
-      title: '骑行名片指标恢复深色媒体面',
+      title: '我的行程完整保留',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,

@@ -95,7 +95,8 @@
 - 索引 RED：`node --test scripts/bootstrap-cloudbase.node-test.mjs` 按预期 27/28 通过，新断言因 `registrations_openid_created_at_id` 缺失而失败。
 - 索引 GREEN：bootstrap 已新增 `openid ASC + created_at DESC + _id DESC` 复合索引，托管基线更新为 13 集合、32 索引；schema/README/初始化手册已同步，bootstrap 28/28 通过。
 - 门禁进展：`npm run audit:all` 已通过，12 个依赖树均为 0 vulnerability；首轮 `npm run validate` 在 typecheck 发现 `tests/registration-history.test.ts` 的 Cloud API mock 参数类型过窄，已修正为真实 `data?: unknown` 签名，产品运行代码未受影响。
-- 下一步：整合远端 main 的已闭环 P0 清单与浅色行程序号修复，从头重跑 `validate`；通过后转 `DEPLOY_PENDING`，等待目标环境索引/函数部署和 50+ 真实数据 smoke。
+- 发布日志 RED：整合远端 main 后，第二轮 `validate` 已通过 lint、typecheck、Vitest 737/737、旅程证据 82/82、bootstrap 58/58、上传链路 14/14，按预期停在升级日志缺失门禁；远端已占用 `2026.10.10.8`，`tests/settings-page.test.ts` 改以 `2026.10.10.9` 锁定“我的行程完整保留”最新日志。
+- 下一步：补齐“我的行程完整保留”升级日志并从头重跑 `validate`；通过后转 `DEPLOY_PENDING`，等待目标环境索引/函数部署和 50+ 真实数据 smoke。
 - 负责人：Aime 个人助理；独立复核：TraeX 审判者；部署/真机：Aime 个人助理。
 - 关闭条件：全部报名可分页且无漏重；历史/下架/软删/缺失活动可解释展示；公开活动接口失败不影响行程；`registration` 部署回读、50+ 真实数据 smoke、CI 与独立复核齐全。
 - 更新时间：2026-10-10。
