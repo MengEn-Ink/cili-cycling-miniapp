@@ -127,6 +127,7 @@ describe('HP-20261009-06 浅色主题全页对比度契约', () => {
     for (const selector of [
       '.heading-count',
       '.refresh-note',
+      '.card-index',
       '.registration-meta',
       '.updated-at',
     ]) {

@@ -273,6 +273,7 @@ brand-logo,
 }
 .heading-count,
 .refresh-note,
+.card-index,
 .registration-meta,
 .updated-at {
   color: var(--color-muted);
