@@ -45,8 +45,8 @@ Page({
   exportBusy: false,
   posterBusy: false,
   data: {
-    theme: 'dark',
-    themeClass: 'theme-dark',
+    theme: 'light',
+    themeClass: 'theme-light',
     loading: true,
     error: '',
     item: null as any,

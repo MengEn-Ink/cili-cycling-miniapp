@@ -9,8 +9,8 @@ type PersonalCardView = ReturnType<typeof personalCardViewModel>;
 Page({
   loadRequestId: 0,
   data: {
-    theme: 'dark',
-    themeClass: 'theme-dark',
+    theme: 'light',
+    themeClass: 'theme-light',
     loading: true,
     error: '',
     syncing: false,

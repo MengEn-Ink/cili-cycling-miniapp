@@ -1,7 +1,7 @@
 export type Theme = 'dark' | 'light';
 
 const STORAGE_KEY = 'display-theme';
-const DEFAULT_THEME: Theme = 'dark';
+const DEFAULT_THEME: Theme = 'light';
 
 const palettes = {
   dark: {
@@ -43,7 +43,8 @@ let applyingFailed = false;
 let pendingTheme: Theme | undefined;
 
 function normalizeTheme(value: unknown): Theme {
-  return value === 'light' || value === 'dark' ? value : DEFAULT_THEME;
+  // 新 UI 基线收口为单一明亮主题：历史深色值统一迁移为亮色，避免形成分叉与遗漏。
+  return value === 'light' ? 'light' : DEFAULT_THEME;
 }
 
 function safePlatformCall(
@@ -79,10 +80,11 @@ export function getTheme(): Theme {
 }
 
 export function themeClass(theme: Theme = getTheme()): string {
-  return `theme-${theme}`;
+  return `theme-${normalizeTheme(theme)}`;
 }
 
 export function applyTheme(theme: Theme = getTheme()): void {
+  theme = normalizeTheme(theme);
   // 原生主题 API 无法取消；不同主题必须串行，确保最后一次选择对应的调用最后落地。
   if (applyingTheme !== undefined) {
     // 当前批次已经失败时保留同主题重试；未失败的重复同步仍只做去重。

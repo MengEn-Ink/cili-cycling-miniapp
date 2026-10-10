@@ -28,8 +28,8 @@ let loadRequestId = 0;
 
 Page({
   data: {
-    theme: 'dark',
-    themeClass: 'theme-dark',
+    theme: 'light',
+    themeClass: 'theme-light',
     x: null as any,
     card: null as any,
     phone: '',
