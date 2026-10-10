@@ -1,6 +1,6 @@
 # 高优问题清单
 
-> 最后更新：2026-10-10 12:14（CST）
+> 最后更新：2026-10-10 12:18（CST）
 >
 > 维护原则：这里只保留尚未满足关闭条件的问题。新问题先去重、澄清、拆分；已满足关闭条件的条目直接删除，Git 历史和不可变外部证据作为归档。
 
@@ -17,7 +17,9 @@
 - 用户报告：2026-10-09 群聊新增 6 组问题，已拆成 HP-06 至 HP-13 共 8 个原子项；HP-01 至 HP-05 于 2026-10-10 全部满足关闭条件并删除。
 - 代码合入：PR [#45](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/45)、[#48](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/48)、[#52](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/52)、[#53](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/53)、[#56](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/56)、[#57](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/57)、[#59](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/59)、[#62](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/62)、[#66](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/66) 已合并；HP-01..05 验收时云函数代码基线为 `0da2ce5...`（当时 main HEAD），#56/#57/#58/#59/#62/#66 均未改动 `cloudfunctions/**`，故线上函数与当前 main 云函数代码一致。
 - CI：上述 PR 的 PR CI 与 main CI 均为 SUCCESS。CI 不能证明 CloudBase Active 版本或真机行为。
+- HP-07 远端门禁：main SHA `d9d9f777450a33a6cccb664028b588b9aaade789` 的 CI run [38023441280](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38023441280) SUCCESS；validate、coverage、CloudBase bootstrap 只读验证和高危依赖审计全部通过。
 - 微信开发版：run [38020822125](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38020822125) 成功上传 `0.0.45.1`（head `fe616f2...`，日志含“微信开发版 0.0.45.1 上传成功”）；浅色主题首次随 run [38014100157](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38014100157) 上传的 `0.0.36.1`（head `a275fc3...`）交付，活动时间快捷项随 run [38017106152](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38017106152) 的 `0.0.37.1` 交付。
+- HP-07 微信开发版：同一 SHA `d9d9f77...` 的 run [38023517201](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38023517201) SUCCESS，实际上传而非跳过，日志确认“微信开发版 `0.0.49.1` 上传成功”。
 - CloudBase 部署与回读（2026-10-10，已登录本地环境执行）：`cloudbase-d0gizacy77a1ab017` 共 13 个集合、31 条索引，`node scripts/bootstrap-cloudbase.mjs --verify` 通过（不符合项 0）；10 个云函数全部部署，下载线上 `$LATEST` 代码与同基线本地包逐文件比对：首轮仅 `admin-review` 落后（缺 PR #48 的快照字段），补部署后再次下载比对 10/10 全部一致，管理台状态为部署完成。
 - HP-07 CloudBase 部署与回读（2026-10-10）：`registrations_openid_created_at_id` 索引已应用，requestId `aa271a73-b190-4329-8b4b-37f9eb9dcb83`；bootstrap verify 确认 13 个集合、32 条索引且不符合项 0。`registration` 已强制部署，函数列表回读状态为 `Active`、更新时间 `2026-10-10 12:06:42`，requestId `8f0b635a-554a-4b15-b886-14d8b4f01d35`；线上 `$LATEST` 下载后与本地部署包逐文件比对无差异。
 - HP-01/02/03/05 真机 smoke（2026-10-10，自动化客户端对同一部署）：向 `activities` 插入 101 条 `e2e_marker` 隔离文档（含 5 进行中、45 未来候选、30 历史候选、15 自然结束、6 draft 及两个同时间戳混合 ID 组）；首页未来视图三页 20→40→50、历史三页 20→40→45，跨页 ID 唯一；同刻未来组 UTF-8 升序为 `["e2eMIXaaa12","e2eMIXaaa13","e2eMix-Aaa-09","e2eMix-Aaa-10","e2eMix_Aaa_08","e2eMix_Aaa_11"]`，同刻历史组降序为 `["e2eOldaaa13","e2eOld_Aaa_11","e2eOld_Aaa_08","e2eOld-Aaa-10","e2eOld-Aaa-09","e2eOLDaaa12"]`；同筛选重复触发与快速切换竞态后无错误、无重复。
@@ -30,8 +32,8 @@
 
 - 本轮已完成并交付：HP-01 至 HP-05 已按完整证据链从清单删除；HP-06 已随 PR #56 合入并上传开发版，但其“深浅主题并存”产品前提已被新 UI 基线替代；HP-20261010-01 的旧浅色行程序号与三处运行态低对比过渡保护已随 PR #62/#66 合入并上传开发版；HP-08 已随 PR #57 合入并交付开发版；HP-12 闰日算法已随 PR #59 合入。
 - 当前最高优先级：先实施 `HP-20261010-02` 全局统一 UI，再在新布局上继续做页面级功能验收，避免继续为即将删除的旧主题/旧布局补样式。
-- HP-07 检查点：代码、全量本地门禁、目标环境索引、`registration` Active 回读及线上代码比对已完成；仅余远端 CI/开发版、50+ 真实报名页面 smoke 和独立复核，状态转 `PENDING_EVIDENCE`。
-- 并行状态：PR #61/#62/#63/#64/#66/#68/#69 均已合入；HP-07 推送并确认远端门禁后立即切换到 P0 `HP-20261010-02`。
+- HP-07 检查点：代码、全量本地/远端门禁、开发版 `0.0.49.1`、目标环境索引、`registration` Active 回读及线上代码比对已完成；仅余 50+ 真实报名页面 smoke 和独立复核，状态保持 `PENDING_EVIDENCE`。
+- 并行状态：PR #61/#62/#63/#64/#66/#68/#69 均已合入；HP-07 已解除代码文件族占用，切换到 P0 `HP-20261010-02`。
 - 责任边界：TraeX 执行者负责 `HP-20261010-02` 页面与组件实施；TraeX 审判者负责逐页尺寸对照、旧主题残留扫描、功能回归、CI/开发版和真机验收。Aime 个人助理完成本次清单对齐后退出，不再占用任何代码文件族。
 
 ## 当前处理顺序
@@ -42,7 +44,7 @@
 | B    | `HP-20261009-13` | P0     | `PENDING_EVIDENCE`                       | Strava 生命周期已部署，待真实授权/解绑 smoke                                            | TraeX 执行者  | TraeX 审判者 / Aime 个人助理 |
 | D    | `HP-20261009-06` | P1     | `SUPERSEDED_BY(HP-20261010-02)`          | 旧双主题全页对比度，不再单独实施                                                        | -             | TraeX 审判者                 |
 | D1   | `HP-20261010-01` | P1     | `SUPERSEDED_BY(HP-20261010-02)`          | 旧浅色主题与运行态低对比已随 #62/#66 补保护，最终由新 UI 统一收口                       | -             | TraeX 审判者                 |
-| E    | `HP-20261009-07` | P1     | `PENDING_EVIDENCE`                       | 我的行程代码与部署回读完成，待远端门禁、50+ 真实报名 smoke 和独立复核                  | Aime 个人助理 | TraeX 审判者                 |
+| E    | `HP-20261009-07` | P1     | `PENDING_EVIDENCE`                       | 我的行程已交付开发版并完成部署回读，待 50+ 真实报名 smoke 和独立复核                   | Aime 个人助理 | TraeX 审判者                 |
 | F1   | `HP-20261009-08` | P1     | `PENDING_EVIDENCE`                       | 相对快捷项前置提示已随 #57 交付开发版 0.0.37.1，仅余真机 picker 创建/编辑保存重开 smoke | TraeX 执行者  | TraeX 审判者                 |
 | F2   | `HP-20261009-09` | P1     | `READY`                                  | 创建活动地点快捷选择与权限恢复（需真机定位验证）                                        | TraeX 执行者  | TraeX 审判者                 |
 | G1   | `HP-20261009-10` | P1     | `READY`                                  | 单背景图与预览的数据安全闭环                                                            | TraeX 执行者  | TraeX 审判者                 |
@@ -99,7 +101,8 @@
 - 发布日志 GREEN：设置页已新增 `2026.10.10.9 / 我的行程完整保留`，保留远端 `2026.10.10.8 / 骑行名片指标恢复深色媒体面` 并下沉为历史日志；focused 5/5 与发布日志门禁通过。
 - 本地最终门禁：基于远端 #68/#69 的合并基线，`npm run validate` 全通过；Vitest 738/738、旅程/证据 82/82、bootstrap/planner 58/58、上传链路 14/14，云函数测试、部署包一致性和构建均通过；`npm run audit:all` 的 12 个依赖树均为 0 vulnerability。
 - 部署证据：目标环境索引 apply requestId `aa271a73-b190-4329-8b4b-37f9eb9dcb83`，bootstrap verify 为 13 集合/32 索引且不符合项 0；`registration` 回读为 `Active`，更新时间 `2026-10-10 12:06:42`，requestId `8f0b635a-554a-4b15-b886-14d8b4f01d35`；线上 `$LATEST` 与本地部署包逐文件无差异。
-- 下一步：推送 main，等待远端 CI 与微信开发版上传；随后使用 50+ 真实报名完成页面总数、首尾记录、下架/删除/缺失展示和取消 smoke，并由 TraeX 审判者独立复核。
+- 远端交付：main SHA `d9d9f777450a33a6cccb664028b588b9aaade789` 的 CI run [38023441280](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38023441280) SUCCESS；同 SHA 上传 run [38023517201](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38023517201) SUCCESS，开发版 `0.0.49.1` 上传成功。
+- 下一步：使用 50+ 真实报名完成页面总数、首尾记录、下架/删除/缺失展示和取消 smoke，并由 TraeX 审判者独立复核；证据齐全前不删除本条。
 - 负责人：Aime 个人助理；独立复核：TraeX 审判者；部署/真机：Aime 个人助理。
 - 关闭条件：全部报名可分页且无漏重；历史/下架/软删/缺失活动可解释展示；公开活动接口失败不影响行程；`registration` 部署回读、50+ 真实数据 smoke、CI 与独立复核齐全。
 - 更新时间：2026-10-10。
