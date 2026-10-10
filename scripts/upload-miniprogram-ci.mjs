@@ -37,9 +37,25 @@ export function validateDescription(value) {
 }
 
 export async function loadUploadConfig(env = process.env, cwd = process.cwd()) {
-  const projectPath = resolve(cwd);
+  const requestedProjectPath =
+    typeof env.MINIPROGRAM_PROJECT_PATH === 'string' && env.MINIPROGRAM_PROJECT_PATH.trim()
+      ? env.MINIPROGRAM_PROJECT_PATH.trim()
+      : cwd;
+  const projectPath = resolve(cwd, requestedProjectPath);
+  const projectStat = await stat(projectPath).catch(() => undefined);
+  if (!projectStat?.isDirectory()) {
+    throw new Error('MINIPROGRAM_PROJECT_PATH 不存在或不是目录');
+  }
   const projectConfigPath = resolve(projectPath, 'project.config.json');
-  const projectConfig = JSON.parse(await readFile(projectConfigPath, 'utf8'));
+  let projectConfig;
+  try {
+    projectConfig = JSON.parse(await readFile(projectConfigPath, 'utf8'));
+  } catch {
+    throw new Error('MINIPROGRAM_PROJECT_PATH 中的 project.config.json 不存在或不是合法 JSON');
+  }
+  if (!projectConfig || typeof projectConfig !== 'object' || Array.isArray(projectConfig)) {
+    throw new Error('MINIPROGRAM_PROJECT_PATH 中的 project.config.json 必须是对象');
+  }
   const privateKeyPath = resolve(
     requiredText(env.MINIPROGRAM_CI_PRIVATE_KEY_PATH, 'MINIPROGRAM_CI_PRIVATE_KEY_PATH'),
   );

@@ -12,9 +12,10 @@
 
 ## 回退演练
 
-1. 只选择本目录已验证的历史稳定版本；工作流会按该 `releaseId` 回读仓库清单并强制核对目标 SHA 与版本。运行 `candidate/rollback`，填写上一稳定 `releaseId` 与回退原因。
-2. 在微信公众平台恢复该历史版本后运行 `verified/rollback`，附平台回读和 smoke 证据。
-3. 将 verified 清单原样提交到本目录；每次操作的 `releaseId` 包含模式与 candidate run ID，因此回退审计会新增记录而不会覆盖被恢复的稳定清单。随后在群内同步入口、版本、SHA 和影响。
+1. 只选择本目录已验证的历史稳定 `promote` 版本。先手动运行 `微信开发版自动上传`，填写该清单的完整 `restore_release_id`，不要填写 `version`；工作流会用当前 `main` 的脚本与锁定依赖校验清单摘要、`verified/promote` 状态、release ID 和 main 祖先关系，再从清单派生历史 SHA/版本并从独立源码目录重传。上传 receipt 为 schema 2，绑定本次 run、目标 SHA/版本和 `restoreReleaseId`。
+2. 运行 `candidate/rollback`，`previous_release_id` 填被恢复的稳定 `promote` 清单，`upload_run_id` 填上一步历史恢复上传 run；门禁会核验该 run 成功、工作流名称及 schema 2 receipt。历史清单仍严格核对原 CI 与 smoke，但不要求本次恢复上传 URL 等于原历史上传 URL。
+3. 在微信公众平台把本次重传的同版本开发版恢复为体验版后运行 `verified/rollback`，附平台回读和 smoke 证据。
+4. 将 verified 清单原样提交到本目录；新 rollback 清单的 `uploadRunUrl` 记录本次历史恢复上传。每次操作的 `releaseId` 包含模式与 candidate run ID，因此回退审计会新增记录而不会覆盖被恢复的稳定清单。随后在群内同步入口、版本、SHA 和影响。
 
 ## 验证
 

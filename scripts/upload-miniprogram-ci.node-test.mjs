@@ -38,10 +38,50 @@ test('上传配置从 project.config.json 读取 appid 并收紧密钥权限', a
   );
 
   assert.equal(config.appid, 'wx-test-appid');
+  assert.equal(config.projectPath, root);
   assert.equal(config.privateKeyPath, keyPath);
   assert.equal(config.robot, 2);
   assert.equal(config.setting.minify, true);
   assert.equal((await stat(keyPath)).mode & 0o777, 0o600);
+});
+
+test('显式历史项目路径只切换上传源码目录', async () => {
+  const { root, keyPath } = await fixture();
+  const historicalPath = path.join(root, 'historical-source');
+  await mkdir(historicalPath);
+  await writeFile(
+    path.join(historicalPath, 'project.config.json'),
+    JSON.stringify({ appid: 'wx-historical-appid', setting: { es6: false } }),
+  );
+  const config = await loadUploadConfig(
+    {
+      MINIPROGRAM_PROJECT_PATH: historicalPath,
+      MINIPROGRAM_CI_PRIVATE_KEY_PATH: keyPath,
+      MINIPROGRAM_VERSION: '0.0.85.1',
+    },
+    root,
+  );
+  assert.equal(config.projectPath, historicalPath);
+  assert.equal(config.appid, 'wx-historical-appid');
+});
+
+test('非法历史项目路径和 project.config.json 在上传前被拒绝', async () => {
+  const { root, keyPath } = await fixture();
+  const env = {
+    MINIPROGRAM_CI_PRIVATE_KEY_PATH: keyPath,
+    MINIPROGRAM_VERSION: '0.0.85.1',
+  };
+  await assert.rejects(
+    loadUploadConfig({ ...env, MINIPROGRAM_PROJECT_PATH: path.join(root, 'missing') }, root),
+    /不存在或不是目录/,
+  );
+  const invalidPath = path.join(root, 'invalid-source');
+  await mkdir(invalidPath);
+  await writeFile(path.join(invalidPath, 'project.config.json'), '{invalid');
+  await assert.rejects(
+    loadUploadConfig({ ...env, MINIPROGRAM_PROJECT_PATH: invalidPath }, root),
+    /不存在或不是合法 JSON/,
+  );
 });
 
 test('上传只把经过校验的配置传给 miniprogram-ci', async () => {
@@ -102,16 +142,26 @@ test('版本、描述、robot 和密钥缺失均在调用上传接口前失败',
   );
 });
 
-test('工作流锁定依赖、阻止旧 main 回退且不经 GITHUB_ENV 传递输入', async () => {
+test('工作流锁定依赖、区分工具链与上传源码且不经 GITHUB_ENV 传递输入', async () => {
   const workflow = await readFile(
     new URL('../.github/workflows/deploy-miniprogram.yml', import.meta.url),
     'utf8',
   );
   assert.match(workflow, /git rev-parse origin\/main/);
   assert.match(workflow, /git ls-remote origin refs\/heads\/main/);
-  assert.match(workflow, /\$\{CHECKOUT_SHA\}.*\$\{CURRENT_MAIN\}/);
+  assert.match(workflow, /TOOLING_SHA/);
+  assert.match(workflow, /target_sha/);
+  assert.match(workflow, /git merge-base --is-ancestor "\$\{target_sha\}" origin\/main/);
+  assert.match(workflow, /path: historical-source/);
+  assert.match(workflow, /MINIPROGRAM_PROJECT_PATH:.*historical-source/);
   assert.match(workflow, /npm ci --ignore-scripts --prefix tools\/miniprogram-ci/);
-  assert.match(workflow, /MINIPROGRAM_VERSION:.*inputs\.version/);
+  assert.match(workflow, /MINIPROGRAM_VERSION:.*steps\.release\.outputs\.version/);
+  assert.match(workflow, /\{schemaVersion:1,/);
+  assert.match(workflow, /\{schemaVersion:2,[^\n]*restoreReleaseId/);
+  assert.match(
+    workflow,
+    /name: miniprogram-upload-receipt-\$\{\{ steps\.release\.outputs\.target_sha \}\}/,
+  );
   assert.doesNotMatch(workflow, /GITHUB_ENV/);
   assert.doesNotMatch(workflow, /npm install --no-save/);
 });
