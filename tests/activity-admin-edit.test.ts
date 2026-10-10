@@ -169,7 +169,9 @@ describe('管理员普通编辑保留未展示的活动字段', () => {
     expect(template).toContain('日常活动只需标题、报名设置、活动时间、集合点和路线');
     expect(template).toContain('活动图片');
     expect(template).toContain('路线文件 ID（选填）');
-    expect(template).toMatch(/data-status="published"[^>]*disabled="{{saving}}"/);
+    expect(template).toMatch(
+      /data-status="published"[^>]*disabled="{{saving \|\| choosingLocation}}"/,
+    );
   });
 
   it('无封面和 GPX 但有费用清单的完整草稿可以发布', async () => {

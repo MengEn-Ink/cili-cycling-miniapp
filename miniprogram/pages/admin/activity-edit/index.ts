@@ -124,6 +124,25 @@ const isCancel = (error: unknown) =>
   typeof (error as { errMsg?: unknown })?.errMsg === 'string' &&
   (error as { errMsg: string }).errMsg.includes('cancel');
 
+type LocationFailure = 'cancel' | 'system-location' | 'platform-config' | 'unknown';
+
+function locationFailure(error: unknown): LocationFailure {
+  const message =
+    typeof (error as { errMsg?: unknown })?.errMsg === 'string'
+      ? (error as { errMsg: string }).errMsg.toLowerCase()
+      : '';
+  if (message.includes('cancel')) return 'cancel';
+  if (/system permission denied|location service|location unavailable|gps|定位服务/.test(message))
+    return 'system-location';
+  if (
+    /privacy|not declared|requiredprivateinfos|api scope|api.*not.*open|errno[:= ]*112/.test(
+      message,
+    )
+  )
+    return 'platform-config';
+  return 'unknown';
+}
+
 Page({
   data: {
     allowed: false,
@@ -132,6 +151,7 @@ Page({
     saving: false,
     uploading: false,
     syncingRoute: false,
+    choosingLocation: '' as '' | 'start' | 'end',
     error: '',
     formErrors: {} as FormErrors,
     stravaAuthorizationRequired: false,
@@ -530,7 +550,9 @@ Page({
     this.setData({ images, coverImage: images[0] || '' });
   },
   async chooseRouteLocation(event: any) {
+    if (this.data.saving || this.data.choosingLocation) return;
     const target = event.currentTarget.dataset.target === 'end' ? 'end' : 'start';
+    this.setData({ choosingLocation: target, error: '' });
     try {
       const selected = await wx.chooseLocation({});
       if (
@@ -554,7 +576,24 @@ Page({
       );
       this.recomputePublishReadiness();
     } catch (error) {
-      if (!isCancel(error)) this.setData({ error: '地点选择失败，请重试' });
+      const failure = locationFailure(error);
+      if (failure === 'system-location') {
+        await wx.showModal({
+          title: '无法打开地图选点',
+          content: '请在系统设置中开启微信的定位权限和定位服务后重试。',
+          showCancel: false,
+        });
+      } else if (failure === 'platform-config') {
+        await wx.showModal({
+          title: '地图选点暂不可用',
+          content: '请联系管理员检查微信后台接口权限和用户隐私保护指引。',
+          showCancel: false,
+        });
+      } else if (failure !== 'cancel') {
+        this.setData({ error: '地点选择失败，请重试' });
+      }
+    } finally {
+      this.setData({ choosingLocation: '' });
     }
   },
   validateBeforeSave(nextStatus: ActivityInput['status']) {
@@ -600,7 +639,7 @@ Page({
     return true;
   },
   async save(event: any) {
-    if (this.data.saving || this.data.uploading) return;
+    if (this.data.saving || this.data.uploading || this.data.choosingLocation) return;
     const nextStatus = String(
       event.currentTarget.dataset.status || this.data.status,
     ) as ActivityInput['status'];

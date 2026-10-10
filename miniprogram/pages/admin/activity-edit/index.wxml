@@ -83,8 +83,8 @@
         </view>
       </view>
       <view class="split">
-        <view class="field location-field {{formErrors.routeStart ? 'field-error' : ''}}" data-error-anchor="routeStart"><text>集合点 / 路线起点 <text class="required">必填</text></text><view class="input-action-row"><input value="{{form.routeStart}}" data-name="routeStart" bindinput="field" /><button class="inline-action-button location-quick-button" data-target="start" bindtap="chooseRouteLocation" aria-label="在地图中选择集合点">地图选点</button></view><view class="location-address" wx:if="{{routeStartLocation}}">{{routeStartLocation.address}}</view><view class="field-error-copy" wx:if="{{formErrors.routeStart}}">{{formErrors.routeStart}}</view></view>
-        <view class="field location-field {{formErrors.routeEnd ? 'field-error' : ''}}" data-error-anchor="routeEnd"><text>路线终点 <text class="required">必填</text></text><view class="input-action-row"><input value="{{form.routeEnd}}" data-name="routeEnd" bindinput="field" /><button class="inline-action-button location-quick-button" data-target="end" bindtap="chooseRouteLocation" aria-label="在地图中选择路线终点">地图选点</button></view><view class="location-address" wx:if="{{routeEndLocation}}">{{routeEndLocation.address}}</view><view class="field-error-copy" wx:if="{{formErrors.routeEnd}}">{{formErrors.routeEnd}}</view></view>
+        <view class="field location-field {{formErrors.routeStart ? 'field-error' : ''}}" data-error-anchor="routeStart"><text>集合点 / 路线起点 <text class="required">必填</text></text><view class="input-action-row"><input value="{{form.routeStart}}" data-name="routeStart" bindinput="field" /><button class="inline-action-button location-quick-button" loading="{{choosingLocation === 'start'}}" disabled="{{saving || choosingLocation}}" data-target="start" bindtap="chooseRouteLocation" aria-label="在地图中选择集合点">地图选点</button></view><view class="location-address" wx:if="{{routeStartLocation}}">{{routeStartLocation.address}}</view><view class="field-error-copy" wx:if="{{formErrors.routeStart}}">{{formErrors.routeStart}}</view></view>
+        <view class="field location-field {{formErrors.routeEnd ? 'field-error' : ''}}" data-error-anchor="routeEnd"><text>路线终点 <text class="required">必填</text></text><view class="input-action-row"><input value="{{form.routeEnd}}" data-name="routeEnd" bindinput="field" /><button class="inline-action-button location-quick-button" loading="{{choosingLocation === 'end'}}" disabled="{{saving || choosingLocation}}" data-target="end" bindtap="chooseRouteLocation" aria-label="在地图中选择路线终点">地图选点</button></view><view class="location-address" wx:if="{{routeEndLocation}}">{{routeEndLocation.address}}</view><view class="field-error-copy" wx:if="{{formErrors.routeEnd}}">{{formErrors.routeEnd}}</view></view>
       </view>
       <view class="split"><view class="field"><text>里程 km</text><input type="digit" value="{{form.distanceKm}}" data-name="distanceKm" bindinput="field" /></view><view class="field"><text>爬升 m</text><input type="digit" value="{{form.elevationM}}" data-name="elevationM" bindinput="field" /></view></view>
       <view class="field"><text>路线难度</text><input value="{{form.level}}" data-name="level" bindinput="field" /></view>
@@ -129,9 +129,9 @@
       </view>
     </view>
     <view class="actions">
-      <button class="secondary" loading="{{saving}}" disabled="{{saving || uploading}}" data-status="{{status}}" bindtap="save">保存修改</button>
-      <button wx:if="{{id && status === 'draft' && !uploading}}" class="btn" loading="{{saving}}" data-status="published" disabled="{{saving}}" bindtap="save">发布活动</button>
-      <button wx:if="{{isAdmin && id && status === 'published'}}" class="danger-button" loading="{{saving}}" disabled="{{saving || uploading}}" data-status="finished" bindtap="save">结束活动</button>
+      <button class="secondary" loading="{{saving}}" disabled="{{saving || uploading || choosingLocation}}" data-status="{{status}}" bindtap="save">保存修改</button>
+      <button wx:if="{{id && status === 'draft' && !uploading}}" class="btn" loading="{{saving}}" data-status="published" disabled="{{saving || choosingLocation}}" bindtap="save">发布活动</button>
+      <button wx:if="{{isAdmin && id && status === 'published'}}" class="danger-button" loading="{{saving}}" disabled="{{saving || uploading || choosingLocation}}" data-status="finished" bindtap="save">结束活动</button>
     </view>
   </view>
 </view>
