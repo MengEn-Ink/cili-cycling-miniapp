@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.10.18',
+    date: '2026-10-10',
+    title: '明亮界面可读性与日志收敛',
+    summary: '修复多页浅底上荧光色与近白文字看不清的问题，升级日志只展示最近 5 条。',
+    latest: true,
+    features: [
+      '报名、活动详情、我的行程、管理端等页面的荧光黄文案改为深色高对比墨色',
+      '错误重试、选点、重新授权等按钮文字在浅底上清晰可读',
+      '设置页功能升级日志仅保留最近 5 条，历史记录在代码与 Git 中留存',
+    ],
+  },
+  {
     version: '2026.10.10.17',
     date: '2026-10-10',
     title: '代码格式与门禁对齐',
     summary: '按 Prettier 规则重新格式化本轮产品代码，不改变运行行为。',
-    latest: true,
+    latest: false,
     features: [
       '个人中心头像预览、单背景槽位和明亮主题相关文件通过格式门禁',
       '保持 CI 的 `format:check` 与 `check:release-notes` 一致',
@@ -407,10 +419,12 @@ const stravaStatusText = (readiness: StravaReadiness | null) => {
   return '未连接 Strava';
 };
 
+const VISIBLE_RELEASE_NOTES = RELEASE_NOTES.slice(0, 5);
+
 Page({
   stravaStatusRequestId: 0,
   data: {
-    releaseNotes: RELEASE_NOTES,
+    releaseNotes: VISIBLE_RELEASE_NOTES,
     stravaLoading: true,
     stravaLoadError: '',
     stravaReadiness: null as StravaReadiness | null,

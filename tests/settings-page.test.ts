@@ -42,15 +42,23 @@ describe('设置页', () => {
       stravaReadiness: readyState,
       stravaStatusText: '已连接，可重新授权或解绑',
     });
-    expect(page.data.releaseNotes).toHaveLength(33);
+    expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.10.17',
+      version: '2026.10.10.18',
       latest: true,
-      title: '代码格式与门禁对齐',
+      title: '明亮界面可读性与日志收敛',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
+    const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
+    expect(versions).toEqual([
+      '2026.10.10.18',
+      '2026.10.10.17',
+      '2026.10.10.16',
+      '2026.10.10.15',
+      '2026.10.10.14',
+    ]);
   });
 
   it('状态读取失败时结束加载且保留重试入口', async () => {

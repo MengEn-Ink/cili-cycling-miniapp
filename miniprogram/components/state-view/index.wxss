@@ -106,5 +106,5 @@
   min-height: 88rpx;
   border-color: var(--color-brand);
   border-radius: var(--radius-sm);
-  color: var(--color-brand);
+  color: var(--color-text);
 }

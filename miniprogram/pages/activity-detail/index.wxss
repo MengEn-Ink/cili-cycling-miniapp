@@ -930,7 +930,12 @@ brand-logo {
 }
 
 .detail-hero:not(.detail-hero--media) .hero-level,
-.climb-popularity,
+.climb-popularity {
+  border-color: var(--color-brand);
+  background: var(--color-brand-soft);
+  color: var(--color-text);
+}
+
 .rider-status {
   border-color: var(--color-brand);
   background: var(--color-brand-soft);
@@ -1077,6 +1082,11 @@ brand-logo {
 .detail-action .btn {
   min-height: var(--control-height);
   border-width: 4rpx;
+}
+
+/* Bright content-area ink: brand yellow is unreadable on the white facts below the hero. */
+.schedule-time {
+  color: var(--color-text);
 }
 
 .detail-hero:not(.detail-hero--media) .hero-kicker,

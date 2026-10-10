@@ -376,3 +376,9 @@ brand-logo {
 .capability-card.gender-unknown .fact:first-child strong {
   color: var(--color-gender-unknown);
 }
+
+/* Brand yellow eyebrow/code labels are unreadable on the bright surfaces. */
+.eyebrow-title,
+.panel-code {
+  color: var(--color-text);
+}

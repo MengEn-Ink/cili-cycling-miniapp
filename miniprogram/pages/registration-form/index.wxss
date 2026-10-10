@@ -686,3 +686,34 @@ page,
 .status-disconnected {
   border-color: var(--color-danger);
 }
+
+/* Bright-surface ink fixes: brand yellow and near-white greys are invisible on light cards. */
+.form-page .section-label {
+  color: var(--color-text);
+}
+.hero-kicker,
+.context-kicker,
+.context-status,
+.required,
+.step-active,
+.step-active .step-number,
+.form-page .section-label > text {
+  color: var(--color-text);
+}
+.step-number,
+.step-caption,
+.optional,
+.identity-label,
+.info-label,
+.choice-remain,
+.disabled-hint {
+  color: var(--color-muted);
+}
+.step-rule {
+  background: var(--color-border);
+}
+.choice.is-disabled {
+  border-color: var(--color-border);
+  background: var(--color-raised);
+  color: var(--color-muted);
+}

@@ -544,6 +544,12 @@
   color: var(--color-text);
 }
 
+/* Brand yellow is unreadable as ink on light/brand-soft buttons; keep text dark. */
+.location-button,
+.strava-reauthorize button {
+  color: var(--color-text);
+}
+
 .actions button,
 .activity-form-page .secondary,
 .activity-form-page .btn,

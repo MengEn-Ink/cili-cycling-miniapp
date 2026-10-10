@@ -247,7 +247,7 @@ brand-logo {
 }
 .card-number {
   border-color: var(--color-border-strong);
-  color: var(--color-brand);
+  color: var(--color-text);
 }
 .status-pending {
   border-color: var(--color-brand);
@@ -266,4 +266,11 @@ brand-logo {
 .status-rejected {
   border-color: var(--color-danger);
   color: var(--color-danger-text);
+}
+
+/* Brand yellow is unreadable as ink on the bright surfaces; keep labels/arrows dark. */
+.hero-kicker,
+.picker-label,
+.open-arrow {
+  color: var(--color-text);
 }
