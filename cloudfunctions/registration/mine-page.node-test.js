@@ -90,7 +90,7 @@ async function readAll(records, pageSize = 50) {
   const { db, command, state } = fixture(records);
   const items = [];
   let cursor;
-  for (let page = 0; page < 10; page += 1) {
+  for (let page = 0; page < 200; page += 1) {
     const result = await listMinePage({
       db,
       command,

@@ -10,27 +10,12 @@ const {
   publicRegistration,
   submitRegistration,
   cancelRegistration,
-  publicActivity,
 } = require('./domain');
+const { listMinePage } = require('./mine-page');
+const { projectTripActivity } = require('./trip-activity');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const _ = db.command;
-
-function unavailableActivity(registration, activity) {
-  const snapshot = registration.activity_snapshot || {};
-  const source = activity || snapshot;
-  return publicActivity(
-    {
-      ...(activity || {}),
-      _id: registration.activity_id,
-      title: typeof source.title === 'string' && source.title ? source.title : '历史活动',
-      event_start: source.event_start || registration.created_at,
-      event_end: source.event_end || source.event_start || registration.created_at,
-      status: ['published', 'finished'].includes(source.status) ? source.status : 'finished',
-    },
-    new Date(),
-  );
-}
 
 async function withActivities(registrations) {
   const byId = new Map();
@@ -47,7 +32,7 @@ async function withActivities(registrations) {
   }
   return registrations.map((registration) => ({
     ...publicRegistration(registration),
-    activity: unavailableActivity(registration, byId.get(registration.activity_id)),
+    activity: projectTripActivity(registration, byId.get(registration.activity_id)),
   }));
 }
 
@@ -173,6 +158,13 @@ exports.main = async (event = {}) => {
         .limit(50)
         .get();
       return ok(await withActivities(result.data));
+    }
+    if (event.action === 'minePage') {
+      const page = await listMinePage({ db, command: _, openid, event });
+      return ok({
+        items: await withActivities(page.items),
+        next_cursor: page.next_cursor,
+      });
     }
     if (event.action === 'detail') {
       if (typeof event.registrationId !== 'string' || !event.registrationId)
