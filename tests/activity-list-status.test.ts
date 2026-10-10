@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const rideService = vi.hoisted(() => ({
   listAdminActivities: vi.fn(),
+  listAdminActivitiesPage: vi.fn(),
   saveActivity: vi.fn(),
   cloneActivity: vi.fn(),
 }));
@@ -23,7 +24,10 @@ describe('活动列表上下架', () => {
 
   beforeEach(async () => {
     vi.resetModules();
-    rideService.listAdminActivities.mockReset().mockResolvedValue([draft, published]);
+    rideService.listAdminActivities.mockReset();
+    rideService.listAdminActivitiesPage
+      .mockReset()
+      .mockResolvedValue({ items: [draft, published], nextCursor: null });
     rideService.saveActivity.mockReset().mockImplementation(async (value) => value);
     appStore.authStatus = 'authenticated';
     appStore.role = 'member';
@@ -64,6 +68,6 @@ describe('活动列表上下架', () => {
       3,
     );
     expect(wx.showToast).toHaveBeenCalledWith({ title: '已下架', icon: 'success' });
-    expect(rideService.listAdminActivities).toHaveBeenCalledTimes(2);
+    expect(rideService.listAdminActivitiesPage).toHaveBeenCalledTimes(2);
   });
 });

@@ -156,6 +156,10 @@ page {
   min-width: 144rpx;
 }
 
+.load-more {
+  width: 100%;
+}
+
 .activity-list-page .danger-action {
   border-color: rgba(255, 112, 104, 0.62);
   color: #ff8589;
@@ -216,4 +220,29 @@ page,
     grid-template-columns: 1fr;
     gap: 12rpx;
   }
+}
+
+.status-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12rpx;
+}
+
+.activity-list-page .status-filter {
+  min-height: 72rpx;
+  margin: 0;
+  padding: 0 8rpx;
+  border: 1rpx solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-input-bg);
+  color: var(--color-muted);
+  font-size: 24rpx;
+  line-height: 72rpx;
+}
+
+.activity-list-page .status-filter.active {
+  border-color: var(--color-brand);
+  background: var(--color-brand);
+  color: var(--color-on-brand);
+  font-weight: 800;
 }

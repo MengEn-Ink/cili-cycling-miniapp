@@ -86,6 +86,29 @@ export const INDEXES = Object.freeze([
     unique: false,
   },
   {
+    collection: 'activities',
+    name: 'activities_status_deleted_event_start_id',
+    keys: [
+      ['status', 1],
+      ['is_deleted', 1],
+      ['event_start', -1],
+      ['_id', -1],
+    ],
+    unique: false,
+  },
+  {
+    collection: 'activities',
+    name: 'activities_owner_status_deleted_event_start_id',
+    keys: [
+      ['created_by', 1],
+      ['status', 1],
+      ['is_deleted', 1],
+      ['event_start', -1],
+      ['_id', -1],
+    ],
+    unique: false,
+  },
+  {
     collection: 'registrations',
     name: 'registrations_activity_id_openid',
     keys: [

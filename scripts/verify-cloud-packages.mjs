@@ -60,6 +60,7 @@ if (!timer || typeof timer.config !== 'string' || !timer.config.trim())
   throw new Error('notification-send 缺少可部署的 notification-outbox-worker 定时触发器');
 pack('activity-admin', [
   'index.js',
+  'list-pagination.js',
   'domain-index.js',
   'domain.js',
   'use-cases.js',

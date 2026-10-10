@@ -20,6 +20,7 @@ import { normalizeGender } from '../utils/gender';
 import type {
   ActivityListFilter,
   ActivityInput,
+  ActivityAdminPageInput,
   AdminRegistrationStatusFilter,
   AdminReviewRepository,
   CloneActivityInput,
@@ -981,6 +982,36 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     return expectRecordArray(await this.call('activity-admin', { action: 'list' })).map((item) =>
       mapEditableActivity(item),
     );
+  }
+  async listAdminActivitiesPage(input: ActivityAdminPageInput) {
+    if (!Number.isInteger(input.pageSize) || input.pageSize < 1 || input.pageSize > 50)
+      throw new CloudRepositoryError('VALIDATION_FAILED', '分页大小格式错误');
+    if (
+      input.cursor !== undefined &&
+      (typeof input.cursor !== 'string' || !input.cursor || input.cursor.length > 512)
+    )
+      throw new CloudRepositoryError('VALIDATION_FAILED', '分页游标格式错误');
+    const statusFilter = input.statusFilter || 'all';
+    if (!['all', 'draft', 'published', 'finished'].includes(statusFilter))
+      throw new CloudRepositoryError('VALIDATION_FAILED', '活动状态筛选格式错误');
+    const value = expectRecord(
+      await this.call('activity-admin', {
+        action: 'list',
+        page_size: input.pageSize,
+        ...(statusFilter === 'all' ? {} : { status_filter: statusFilter }),
+        ...(input.cursor === undefined ? {} : { cursor: input.cursor }),
+      }),
+    );
+    if (
+      !Object.prototype.hasOwnProperty.call(value, 'items') ||
+      !Object.prototype.hasOwnProperty.call(value, 'next_cursor') ||
+      (value.next_cursor !== null && (typeof value.next_cursor !== 'string' || !value.next_cursor))
+    )
+      return invalidResponse();
+    return {
+      items: expectRecordArray(value.items).map((item) => mapEditableActivity(item)),
+      nextCursor: value.next_cursor as string | null,
+    };
   }
   async getAdminActivity(id: string) {
     return mapEditableActivity(
