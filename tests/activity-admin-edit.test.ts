@@ -206,6 +206,57 @@ describe('日常活动极简创建与编辑', () => {
     expect(page.data.form.startAt).toBe('2026-10-20 07:30:00');
   });
 
+  it('图片并行上传时保留成功项并为失败项提供独立重试状态', async () => {
+    const uploadFile = vi
+      .fn()
+      .mockResolvedValueOnce({ fileID: 'cloud://success.jpg' })
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce({ fileID: 'cloud://retry.jpg' });
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [{ tempFilePath: '/tmp/first.jpg' }, { tempFilePath: '/tmp/second.jpg' }],
+      }),
+    });
+    Object.assign(wx.cloud!, { uploadFile });
+
+    await page.chooseImages();
+
+    expect(uploadFile).toHaveBeenCalledTimes(2);
+    expect(page.data.images).toEqual([]);
+    expect(page.data.pendingImages).toEqual([
+      expect.objectContaining({
+        previewPath: '/tmp/first.jpg',
+        status: 'uploaded',
+        fileId: 'cloud://success.jpg',
+      }),
+      expect.objectContaining({ previewPath: '/tmp/second.jpg', status: 'failed' }),
+    ]);
+    expect(page.data.error).toContain('1 张图片上传失败');
+    expect(page.data.uploading).toBe(false);
+
+    const failedId = page.data.pendingImages[1].id;
+    await page.retryImage({ currentTarget: { dataset: { id: failedId } } });
+    expect(page.data.images).toEqual(['cloud://success.jpg', 'cloud://retry.jpg']);
+    expect(page.data.pendingImages).toEqual([]);
+  });
+
+  it('退出未保存页面时清理本次会话已上传的孤立文件', async () => {
+    const deleteFile = vi.fn().mockResolvedValue({ fileList: [] });
+    Object.assign(wx.cloud!, { deleteFile });
+    page.data.sessionUploadedIds = ['cloud://orphan.jpg'];
+
+    page.onUnload();
+    await Promise.resolve();
+
+    expect(deleteFile).toHaveBeenCalledWith({ fileList: ['cloud://orphan.jpg'] });
+
+    deleteFile.mockClear();
+    page.unloaded = false;
+    page.saveInFlight = true;
+    page.onUnload();
+    expect(deleteFile).not.toHaveBeenCalled();
+  });
+
   it('不限人数标记会让列表和详情隐藏旧路线与费用信息', () => {
     const card = readFileSync('miniprogram/components/activity-card/index.wxml', 'utf8');
     const detail = readFileSync('miniprogram/pages/activity-detail/index.wxml', 'utf8');

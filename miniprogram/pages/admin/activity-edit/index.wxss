@@ -247,6 +247,27 @@
   font-weight: 900;
 }
 
+.upload-status {
+  position: absolute;
+  top: 8rpx;
+  right: 8rpx;
+  padding: 4rpx 10rpx;
+  border: 2rpx solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 20rpx;
+  font-weight: 900;
+}
+
+.upload-status--failed {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.image-item--pending .image-preview {
+  opacity: 0.72;
+}
+
 .image-actions {
   position: absolute;
   right: 0;
