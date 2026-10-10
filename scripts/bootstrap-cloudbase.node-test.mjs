@@ -477,6 +477,17 @@ test('候补 FIFO 与队伍邀请查询使用显式复合索引', () => {
   );
 });
 
+test('我的行程稳定分页使用 openid + created_at + _id 复合索引', () => {
+  assert.deepEqual(
+    INDEXES.find((item) => item.name === 'registrations_openid_created_at_id')?.keys,
+    [
+      ['openid', 1],
+      ['created_at', -1],
+      ['_id', -1],
+    ],
+  );
+});
+
 test('notification_outbox 使用租约扫描索引并保持客户端全拒绝', () => {
   assert.ok(COLLECTIONS.includes('notification_outbox'));
   assert.deepEqual(
