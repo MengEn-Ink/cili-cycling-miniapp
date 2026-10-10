@@ -1537,6 +1537,51 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
       code: 'X',
     });
   });
+
+  it('背景槽位读写采用 background_photo 协议，服务端缺失字段时不新增键', async () => {
+    const { cloud: readCloud } = cloudWith(
+      success({
+        nickname: '骑手',
+        completeness: 25,
+        background_photo: { file_id: 'cloud://bg', category: 'ride' },
+        photos: [{ file_id: 'cloud://legacy', category: 'bike' }],
+      }),
+      success({ nickname: '骑手', completeness: 25, background_photo: null }),
+      success({ nickname: '骑手', completeness: 25 }),
+    );
+    const readRepo = new CloudRepository(readCloud);
+    expect(await readRepo.getProfile()).toMatchObject({
+      backgroundPhoto: { id: 'cloud://bg', category: 'ride' },
+      photos: [{ id: 'cloud://legacy', category: 'bike' }],
+    });
+    expect(await readRepo.getProfile()).toMatchObject({ backgroundPhoto: null });
+    const noSlot = await readRepo.getProfile();
+    expect(noSlot).not.toHaveProperty('backgroundPhoto');
+
+    const { cloud: badCloud } = cloudWith(
+      success({
+        nickname: '骑手',
+        completeness: 25,
+        background_photo: { file_id: 'cloud://bg', category: 'forged' },
+      }),
+    );
+    await expectCode(new CloudRepository(badCloud).getProfile(), 'INVALID_RESPONSE');
+
+    const dto = {
+      nickname: '骑手',
+      completeness: 25,
+      background_photo: { file_id: 'cloud://next', category: 'ride' },
+    };
+    const { cloud: writeCloud, callFunction: writeCall } = cloudWith(success(dto), success(dto));
+    const writeRepo = new CloudRepository(writeCloud);
+    await writeRepo.updateProfile({ backgroundPhoto: { id: 'cloud://next', category: 'ride' } });
+    expectCall(writeCall, 'profile', {
+      action: 'update',
+      background_photo: { file_id: 'cloud://next', category: 'ride' },
+    });
+    await writeRepo.updateProfile({ backgroundPhoto: null });
+    expectCall(writeCall, 'profile', { action: 'update', background_photo: null });
+  });
 });
 
 describe('MockRepository readiness 与显式报名命令', () => {

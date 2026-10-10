@@ -4,11 +4,22 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.10.15',
+    date: '2026-10-10',
+    title: '个人背景图单槽位协议',
+    summary: '客户端改用 background_photo 单槽位，不再静默截断历史相册。',
+    latest: true,
+    features: [
+      '编辑资料页只写 background_photo 槽位，服务端拒绝新旧协议混用',
+      '存量多图账号打开后，历史相册只读保留，不会在首次保存时丢失',
+      '个人中心与管理员审核均用新槽位做媒体引用判定',
+    ],
+  },
+  {
     version: '2026.10.10.14',
     date: '2026-10-10',
     title: '报名凭证页统一明亮主题',
     summary: '清理报名凭证页深色硬编码色，所有文字与控件回到明亮 token。',
-    latest: true,
     features: [
       '活动名称、报名凭证、集合信息、时间线文字对比度全面达标',
       '"已通过"胶囊与审批意见改为明亮描边与可读灰字',

@@ -293,10 +293,16 @@ function canEditProfileDetails(profile: Profile | null): boolean {
 
 function normalizeBackgroundProfile(profile: Profile | null): Profile | null {
   if (!profile) return null;
-  const background = profile.photos[0];
+  const slot =
+    profile.backgroundPhoto !== undefined
+      ? profile.backgroundPhoto
+      : profile.photos[0]
+        ? { ...profile.photos[0], category: PROFILE_BACKGROUND_CATEGORY }
+        : null;
   return {
     ...profile,
-    photos: background ? [{ ...background, category: PROFILE_BACKGROUND_CATEGORY }] : [],
+    photos: slot ? [{ ...slot, category: PROFILE_BACKGROUND_CATEGORY }] : [],
+    backgroundPhoto: slot ? { ...slot, category: PROFILE_BACKGROUND_CATEGORY } : null,
   };
 }
 
@@ -643,6 +649,7 @@ Page({
         return;
       }
       p.photos = [{ id: uploadedFileId, category: PROFILE_BACKGROUND_CATEGORY }];
+      p.backgroundPhoto = { id: uploadedFileId, category: PROFILE_BACKGROUND_CATEGORY };
       this.localPhotoPreviews = { [uploadedFileId]: verifiedImage.path };
       this.setData({ p });
       await this.loadPhotoPreviews();
@@ -711,7 +718,7 @@ Page({
         rideService.updateProfile({
           gender: p.gender,
           emergencyName: p.emergencyName,
-          photos: p.photos,
+          backgroundPhoto: p.backgroundPhoto !== undefined ? p.backgroundPhoto : (p.photos[0] || null),
           realName: p.realName.includes('*') ? undefined : p.realName,
           phone: p.phone.includes('*') ? undefined : p.phone,
           emergencyPhone: p.emergencyPhone.includes('*') ? undefined : p.emergencyPhone,

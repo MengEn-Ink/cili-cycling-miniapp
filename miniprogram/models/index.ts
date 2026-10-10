@@ -123,6 +123,10 @@ export type EditableActivity = Omit<
   capacity?: number;
   fee?: string;
 };
+export interface ProfilePhoto {
+  id: string;
+  category: string;
+}
 export interface Profile {
   avatarRevision: number;
   avatarVisibility?: AvatarVisibility;
@@ -134,7 +138,8 @@ export interface Profile {
   gender: string;
   emergencyName: string;
   emergencyPhone: string;
-  photos: { id: string; category: string }[];
+  photos: ProfilePhoto[];
+  backgroundPhoto?: ProfilePhoto | null;
   avatarId?: string;
   avatarSource?: AvatarSource;
   hasCompletedGuidance?: boolean;
@@ -153,7 +158,8 @@ export interface ProfileUpdate {
   emergencyName?: string;
   hasCompletedGuidance?: boolean;
   avatarVisibility?: AvatarVisibility;
-  photos?: { id: string; category: string }[];
+  photos?: ProfilePhoto[];
+  backgroundPhoto?: ProfilePhoto | null;
   realName?: string;
   phone?: string;
   emergencyPhone?: string;

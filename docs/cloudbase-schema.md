@@ -33,7 +33,9 @@ avatar_source: wechat|strava|custom
 avatar_file_id, avatar_revision       # 每次头像槽位变化时单调递增
 avatar_visibility: private|public     # 兼容历史客户端；当前活动头像默认展示
 avatar_visibility_revision            # 新头像同步记录当前版本，用于兼容旧响应
-photos: [{ file_id, category: ride|bike|other }]
+photos: [{ file_id, category: ride|bike|other }]      # 只读历史审核媒体，新客户端不再写入
+background_photo: null | { file_id, category: ride|bike|other }
+                                      # 当前背景单槽位；字段缺失时按 photos 首张合法项兼容回退，显式 null 禁止回退
 gender, emergency_name
 real_name_cipher, phone_cipher, emergency_phone_cipher: {
   v: 1, alg: A256GCM, iv, tag, ciphertext

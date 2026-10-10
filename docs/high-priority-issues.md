@@ -56,8 +56,8 @@
 | E    | `HP-20261009-07` | P1     | `PENDING_EVIDENCE`                       | 我的行程已交付开发版并完成部署回读，待 50+ 真实报名 smoke 和独立复核                   | Aime 个人助理 | TraeX 审判者                 |
 | F1   | `HP-20261009-08` | P1     | `PENDING_EVIDENCE`                       | 相对快捷项前置提示已随 #57 交付开发版 0.0.37.1，仅余真机 picker 创建/编辑保存重开 smoke | TraeX 执行者  | TraeX 审判者                 |
 | F2   | `HP-20261009-09` | P1     | `PENDING_EVIDENCE`                       | 选点恢复已交付开发版 `0.0.60.1`，待真机定位与微信后台复核                              | -             | TraeX 审判者                 |
-| G1   | `HP-20261009-10` | P1     | `IN_PROGRESS`                            | 已确认显式单背景槽位与只读历史媒体兼容方案，正在 TDD 实施                               | TraeX 执行者  | TraeX 审判者                 |
-| G2   | `HP-20261009-11` | P1     | `BLOCKED_BY(HP-20261009-10 code commit)` | 个人中心头像预览                                                                        | TraeX 执行者  | TraeX 审判者                 |
+| G1   | `HP-20261009-10` | P1     | `PENDING_EVIDENCE`                       | 单背景槽位协议客户端/服务端代码链路齐全，待部署回读与真实多图账号 smoke     | -             | TraeX 审判者                 |
+| G2   | `HP-20261009-11` | P1     | `READY`                                  | HP-10 代码提交后解锁，可开始头像预览 RED→GREEN                                            | -             | TraeX 审判者                 |
 | H    | `HP-20261009-12` | P1     | `BLOCKED_BY(HP-20261009-13 smoke)`       | 闰日周年算法已随 #59 合入，待三函数部署、真实账号回读与真机验收                         | TraeX 执行者  | TraeX 审判者                 |
 
 > `BLOCKED_BY` 只约束开始后续实现的门禁，不要求前置条目最终关闭。
@@ -157,16 +157,17 @@
 
 ### HP-20261009-10 · 单背景图与预览的数据安全闭环
 
-- 优先级/状态：P1 / `IN_PROGRESS`，个人资料媒体文件族由 TraeX 执行者唯一写入。
+- 优先级/状态：P1 / `PENDING_EVIDENCE`，代码链路已完成，仅待部署回读与真实账号 smoke。
 - 用户报告：个人只允许一张背景图片，并需要背景预览。
-- 代码/CI：PR #48 已把选择数量设为 1、只取 `photos[0]`、服务端拒绝多图，并在编辑页/个人中心加入背景预览。
-- 确认缺口：schema/模型仍把 `photos` 定义为无上限数组；存量多图账号打开并保存会静默丢弃其余引用，且与管理员审核最多三张个人媒体的既有语义冲突。
-- 已确认设计：采用 `docs/superpowers/specs/2026-10-10-profile-background-slot-design.md` 的显式可空 `background_photo` 单槽位；旧 `photos` 保留为只读历史审核媒体。字段缺失时只做首图兼容回退；新客户端只写槽位；旧客户端零/单图写入转换为槽位更新且不覆盖历史数组；管理员按“当前背景、历史媒体、头像”去重后最多三张。
-- 服务端 TDD 进展：已完成显式槽位合同、旧协议转换、存量多图引用保护、cleanup 活引用保护，以及个人名片/管理员审核媒体视图分离；个人名片只展示有效背景槽位，缺失字段才回退首张合法 legacy photo，显式 `null` 不回退；管理员按“当前背景、legacy 骑行、legacy 其他、头像”去重并封顶三张。聚焦门禁 `profile` 96/96、`profile-media-cleanup` 37/37、`admin-review` 27/27 通过。
-- 下一步：审计头像、Strava 回调等跨入口引用降级是否纳入 `background_photo`，再按 TDD 实施客户端模型、仓储、编辑页单槽位 payload；同步 schema、发布说明、部署回读和真实账号 smoke。不得以静默截断关闭。
+- 已确认设计：采用 `docs/superpowers/specs/2026-10-10-profile-background-slot-design.md` 的显式可空 `background_photo` 单槽位；旧 `photos` 保留为只读历史审核媒体。字段缺失时只做首图兼容回退；新客户端只写槽位；旧客户端零/单图写入转换为槽位更新且不覆盖历史数组；管理员按"当前背景、历史媒体、头像"去重后最多三张。
+- 服务端 TDD 进展：已完成显式槽位合同、旧协议转换、存量多图引用保护、cleanup 活引用保护，以及个人名片/管理员审核媒体视图分离；个人名片只展示有效背景槽位，缺失字段才回退首张合法 legacy photo，显式 `null` 不回退；管理员按"当前背景、legacy 骑行、legacy 其他、头像"去重并封顶三张。
+- 引用闭环：`profile/store.js` 的 `profileReferencesMedia`、`strava-auth/store.js` 的 disconnect 保留集、`strava-callback/index.js` 的换绑 `retainedByPhotos`、`admin-review/index.js` 的 `profileMediaIds` 都把 `background_photo.file_id` 纳入；对应 RED→GREEN 测试已验证。
+- 客户端进展：`models/Profile/ProfileUpdate` 已加 `backgroundPhoto`；cloud repo 严格 map `background_photo`（显式 null 支持、非法分类拒绝）并序列化为 `background_photo`；mock repo 保留 legacy photos；`profile-edit/index.ts` 的 `addPhoto` 写入 `backgroundPhoto`，`save` 发送 `background_photo` 单槽位且不再发送 `photos`；`docs/cloudbase-schema.md` 和设置页 `2026.10.10.15 个人背景图单槽位协议` 已同步。
+- 聚焦门禁：`profile` 98/98、`profile-media-cleanup` 37/37、`admin-review` 28/28、`strava-auth` 30/30、`strava-callback` 18/18；客户端 Vitest 55 文件 739/739；typecheck + lint 通过。
+- 下一步：push 并等待 main CI 与开发版上传；按 Aime 的部署守则部署 `profile/profile-media-cleanup/admin-review/strava-auth/strava-callback` 至 CloudBase 并做线上 `$LATEST` 比对；完成存量多图账号真实 smoke（打开→保存→不丢失，替换→旧槽位降级）；由 TraeX 审判者独立复核后转关闭。
 - 负责人：TraeX 执行者；独立复核：TraeX 审判者；部署/真机：Aime 个人助理。
 - 关闭条件：新用户只能添加/替换一张背景；编辑页与个人中心可预览；两张输入被拒；存量多图无未经确认的数据丢失；`profile` 部署、真机 smoke、CI 与复核齐全。
-- 更新时间：2026-10-10 13:55（CST）。
+- 更新时间：2026-10-10 14:59（CST）。
 
 ### HP-20261009-11 · 个人中心头像预览不可用
 

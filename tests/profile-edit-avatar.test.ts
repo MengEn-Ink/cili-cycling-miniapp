@@ -1047,9 +1047,11 @@ describe('资料编辑头像交互', () => {
     }));
 
     await page.save();
-    expect(rideService.updateProfile.mock.calls[0][0].photos).toEqual([
-      { id: uploadedFileId, category: 'ride' },
-    ]);
+    expect(rideService.updateProfile.mock.calls[0][0].backgroundPhoto).toEqual({
+      id: uploadedFileId,
+      category: 'ride',
+    });
+    expect(rideService.updateProfile.mock.calls[0][0]).not.toHaveProperty('photos');
   });
 });
 

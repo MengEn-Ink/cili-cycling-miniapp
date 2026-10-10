@@ -519,6 +519,22 @@ function mapProfile(raw: unknown): Profile {
           category: String(photo.category || ''),
         }))
       : [],
+    ...(Object.prototype.hasOwnProperty.call(value, 'background_photo')
+      ? {
+          backgroundPhoto:
+            value.background_photo === null
+              ? null
+              : isRecord(value.background_photo) &&
+                  typeof value.background_photo.file_id === 'string' &&
+                  value.background_photo.file_id &&
+                  ['ride', 'bike', 'other'].includes(String(value.background_photo.category))
+                ? {
+                    id: String(value.background_photo.file_id),
+                    category: String(value.background_photo.category),
+                  }
+                : invalidResponse(),
+        }
+      : {}),
     completeness: value.completeness,
     sensitiveStatus: {
       realName: status.real_name === true,
@@ -1307,6 +1323,14 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
       data.avatar_visibility = profile.avatarVisibility;
     if (Array.isArray(profile.photos))
       data.photos = profile.photos.map((item) => ({ file_id: item.id, category: item.category }));
+    if (Object.prototype.hasOwnProperty.call(profile, 'backgroundPhoto'))
+      data.background_photo =
+        profile.backgroundPhoto === null || profile.backgroundPhoto === undefined
+          ? null
+          : {
+              file_id: profile.backgroundPhoto.id,
+              category: profile.backgroundPhoto.category,
+            };
     if (typeof profile.realName === 'string' && profile.realName) data.real_name = profile.realName;
     if (typeof profile.phone === 'string' && profile.phone) data.phone = profile.phone;
     if (typeof profile.emergencyPhone === 'string' && profile.emergencyPhone)

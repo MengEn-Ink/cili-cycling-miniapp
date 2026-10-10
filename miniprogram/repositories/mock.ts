@@ -490,7 +490,13 @@ export class MockRepository implements RideRepository {
   }
   async updateProfile(patch: ProfileUpdate) {
     const current = this.read().profile;
-    const p = { ...current, ...patch, photos: patch.photos || current.photos } as Profile;
+    const hasBackground = Object.prototype.hasOwnProperty.call(patch, 'backgroundPhoto');
+    const p = {
+      ...current,
+      ...patch,
+      photos: patch.photos || current.photos,
+      ...(hasBackground ? { backgroundPhoto: patch.backgroundPhoto ?? null } : {}),
+    } as Profile;
     const s = this.read();
     s.profile = p;
     this.write(s);
