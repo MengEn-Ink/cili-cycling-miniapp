@@ -38,6 +38,27 @@ function platformCall(
   return new Promise((resolve, reject) => method({ ...options, success: resolve, fail: reject }));
 }
 
+function shareCoverImage(item: any): string {
+  const cover = typeof item?.coverImage === 'string' ? item.coverImage : '';
+  const firstImage =
+    Array.isArray(item?.images) && typeof item.images[0] === 'string' ? item.images[0] : '';
+  const imageUrl = cover || firstImage;
+  // 微信分享 imageUrl 不接受 cloud://，仅透传 activity-read 已换取的 http/https 临时地址。
+  return /^https?:\/\//i.test(imageUrl) ? imageUrl : '';
+}
+
+function shareTeamId(data: any): string {
+  return data.registration?.isTeamLeader ? data.registration.teamId : data.teamId;
+}
+
+function withShareImage<T extends { title: string }>(
+  share: T,
+  item: any,
+): T & { imageUrl?: string } {
+  const imageUrl = shareCoverImage(item);
+  return imageUrl ? { ...share, imageUrl } : share;
+}
+
 Page({
   loadRequestId: 0,
   unloaded: false,
@@ -71,7 +92,7 @@ Page({
         ? q.team_id
         : '';
     this.safeSetData({ teamId });
-    wx.showShareMenu?.({ menus: ['shareAppMessage'] });
+    wx.showShareMenu?.({ menus: ['shareAppMessage', 'shareTimeline'] });
     void this.load(q.id || '');
   },
   onReady() {
@@ -217,14 +238,27 @@ Page({
   },
   onShareAppMessage() {
     const item = this.data.item;
-    const teamId = this.data.registration?.isTeamLeader
-      ? this.data.registration.teamId
-      : this.data.teamId;
+    const teamId = shareTeamId(this.data);
     const teamQuery = teamId ? `&team_id=${encodeURIComponent(teamId)}` : '';
-    return {
-      title: item?.title || '骑行活动详情',
-      path: `pages/activity-detail/index?id=${encodeURIComponent(item?.id || '')}${teamQuery}`,
-    };
+    return withShareImage(
+      {
+        title: item?.title || '骑行活动详情',
+        path: `pages/activity-detail/index?id=${encodeURIComponent(item?.id || '')}${teamQuery}`,
+      },
+      item,
+    );
+  },
+  onShareTimeline() {
+    const item = this.data.item;
+    const teamId = shareTeamId(this.data);
+    const teamQuery = teamId ? `&team_id=${encodeURIComponent(teamId)}` : '';
+    return withShareImage(
+      {
+        title: item?.title || '骑行活动详情',
+        query: `id=${encodeURIComponent(item?.id || '')}${teamQuery}`,
+      },
+      item,
+    );
   },
   async exportGpx() {
     const activityId = this.data.item?.id;

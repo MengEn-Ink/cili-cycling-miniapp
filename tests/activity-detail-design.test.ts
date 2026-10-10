@@ -309,6 +309,69 @@ describe('活动详情复制、分享与 GPX 导出', () => {
     });
   });
 
+  it('分享给好友使用 https 封面并保留当前活动 id 与队伍参数', async () => {
+    const { definition, context } = await loadPage(async () => ({
+      base64: 'eA==',
+      fileName: 'a.gpx',
+    }));
+    context.data.item = {
+      id: 'act/current',
+      title: '夜骑浦江',
+      coverImage: 'https://temporary.example/cover.jpg',
+      images: ['https://temporary.example/first.jpg'],
+      route: {},
+    };
+    context.data.registration = { isTeamLeader: true, teamId: 'team_leader_12345678' };
+
+    expect(definition.onShareAppMessage.call(context)).toEqual({
+      title: '夜骑浦江',
+      path: 'pages/activity-detail/index?id=act%2Fcurrent&team_id=team_leader_12345678',
+      imageUrl: 'https://temporary.example/cover.jpg',
+    });
+  });
+
+  it('分享到朋友圈使用同一封面降级规则并保留 query 语义', async () => {
+    const { definition, context } = await loadPage(async () => ({
+      base64: 'eA==',
+      fileName: 'a.gpx',
+    }));
+    context.data.item = {
+      id: 'act-timeline',
+      title: '周日爬坡',
+      images: ['https://temporary.example/gallery-first.jpg'],
+      route: {},
+    };
+    context.data.teamId = 'team_from_share_12345678';
+
+    expect(definition.onShareTimeline.call(context)).toEqual({
+      title: '周日爬坡',
+      query: 'id=act-timeline&team_id=team_from_share_12345678',
+      imageUrl: 'https://temporary.example/gallery-first.jpg',
+    });
+  });
+
+  it('缺少封面或封面为 cloud:// 时分享安全降级且不写入 imageUrl', async () => {
+    const { definition, context } = await loadPage(async () => ({
+      base64: 'eA==',
+      fileName: 'a.gpx',
+    }));
+    context.data.item = { id: 'act-no-cover', title: '无图活动', route: {} };
+    expect(definition.onShareAppMessage.call(context)).toEqual({
+      title: '无图活动',
+      path: 'pages/activity-detail/index?id=act-no-cover',
+    });
+
+    context.data.item = {
+      id: 'act-cloud-cover',
+      title: '云存储原图',
+      coverImage: 'cloud://env/path/cover.jpg',
+      route: {},
+    };
+    const share = definition.onShareTimeline.call(context);
+    expect(share).toEqual({ title: '云存储原图', query: 'id=act-cloud-cover' });
+    expect(share).not.toHaveProperty('imageUrl');
+  });
+
   it('GPX 成功写入并优先分享，busy 时不重复调用', async () => {
     const exporter = vi.fn(async () => ({ base64: 'eA==', fileName: 'route.gpx' }));
     const { definition, context } = await loadPage(exporter);

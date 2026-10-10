@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.11.6',
+    date: '2026-10-11',
+    title: '活动分享卡片升级',
+    summary: '活动分享卡片展示正确封面和标题，也可分享到朋友圈。',
+    latest: true,
+    features: [
+      '分享给好友或群时使用活动封面和活动标题',
+      '支持将活动详情分享到朋友圈并保留活动入口',
+      '封面不可用时安全降级为微信默认截图，不影响分享落地页',
+    ],
+  },
+  {
     version: '2026.10.11.5',
     date: '2026-10-11',
     title: '报名资料完整性提示',
     summary: '完善资料必填提示，报名前会校验性别、头像和个人照片是否齐全。',
-    latest: true,
+    latest: false,
     features: [
       '保存个人资料时会提示补齐性别、头像和个人照片',
       '报名提交前同步检查个人照片，避免缺少骑行名片素材',
