@@ -44,21 +44,22 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.11.7',
+      version: '2026.10.11.8',
       latest: true,
-      title: '活动卡片滑动删除',
-      summary: '我的活动列表支持滑动卡片删除活动，删除前二次确认，有成员报名时安全拦截。',
+      title: '活动与 Strava 读取更快',
+      summary:
+        '短时间内切换 Tab、进出活动详情会复用已加载结果，活动或报名变化后自动刷新，减少重复加载。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.11.8',
       '2026.10.11.7',
       '2026.10.11.6',
       '2026.10.11.5',
       '2026.10.11.4',
-      '2026.10.11.3',
     ]);
   });
 

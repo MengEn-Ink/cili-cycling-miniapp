@@ -4,7 +4,7 @@ import {
   type AuthAttempt,
   type AuthCloudApi,
 } from '../services/auth-service';
-import { isMock } from '../repositories/index';
+import { isMock, repositoryCache } from '../repositories/index';
 
 export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unavailable' | 'error';
 
@@ -101,10 +101,13 @@ export class AppStore {
         // force=true 会重新发起身份请求；旧请求晚返回时只把结果交还给原调用方，不再覆盖当前身份状态。
         if (requestRevision !== this.authRequestRevision) return attempt;
         if (attempt.status === 'authenticated') {
+          const previousOpenid = this.openid;
           const verifiedAt = Date.now();
           this.openid = attempt.identity.openid;
           this.role = attempt.identity.role;
           this.isSuper = attempt.identity.isSuper;
+          // 账号切换为不同 openid 时清空旧账号只读缓存，避免展示他人的活动/Strava 数据。
+          if (previousOpenid && previousOpenid !== attempt.identity.openid) repositoryCache.clear();
           this.identityVerifiedUntil = verifiedAt + IDENTITY_TTL_MS;
           this.identityHint = { source: 'wechat_cloud', verifiedAt };
           this.authStatus = 'authenticated';
@@ -145,6 +148,8 @@ export class AppStore {
     this.role = 'member';
     this.isSuper = false;
     this.identityVerifiedUntil = 0;
+    // 身份失效或登出后清空只读缓存，防止失败后仍展示上一账号数据。
+    repositoryCache.clear();
   }
 
   hasFreshIdentityHint(now = Date.now()): boolean {
