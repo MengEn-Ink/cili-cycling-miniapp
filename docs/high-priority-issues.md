@@ -29,7 +29,7 @@
 | A2 | `HP-20261009-02` | P1 | `IN_PROGRESS` | `_id` 使用 Mongo binary 顺序 | TraeX 执行者 | TraeX 审判者 |
 | A3 | `HP-20261009-03` | P0 发布门禁 | `IN_PROGRESS` | 真实 Date planner/smoke 重新取证 | TraeX 执行者 | TraeX 审判者 |
 | A4 | `HP-20261009-05` | P1 | `IN_PROGRESS` | 首页时间线客户端与发布链路 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
-| B | `HP-20261009-13` | P0 | `READY` | Strava 授权撤销与异常生命周期 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
+| B | `HP-20261009-13` | P0 | `IN_PROGRESS` | Strava 授权撤销与异常生命周期 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
 | C | `HP-20261009-04` | P1 | `READY` | PR #45 管理列表分页交付 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
 | D | `HP-20261009-06` | P1 | `READY` | 浅色主题全页对比度 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
 | E | `HP-20261009-07` | P1 | `READY` | 我的行程永久保留历史/下架活动 | TraeX 执行者 | TraeX 审判者 / Aime 个人助理 |
@@ -175,14 +175,13 @@
 
 ### HP-20261009-13 · 设置页 Strava 授权撤销与异常生命周期
 
-- 优先级/状态：P0 / `READY`，Strava 后端/设置页发布门禁。
-- 用户报告：设置中应统一管理重新授权、解绑与授权异常处理。
-- 代码/CI：PR #48 已加入设置页状态卡和入口；既有服务端支持 start/status/sync/disconnect，CI 通过；Aime 已报告相关函数 Active，但不可变版本映射与真实授权 smoke 尚未提供。
-- 确认缺口：解绑不会作废在途 `oauth_states`，旧 callback 可在“解绑成功”后重新创建凭证；用户拒绝授权时 state 不消费并可卡 `authorizing`；failed 状态没有按 scope/token/config/network 分类恢复；当前解绑只删本地 token，未明确是否调用 Strava deauthorize。
-- 下一步：先锁 disconnect×callback、多 state 乱序、`access_denied`、failed recovery 的 RED；设计 attempt generation/fencing、稳定错误与 recovery action；明确本地断开或外部撤销语义。
+- 优先级/状态：P0 / `IN_PROGRESS`，本地代码与 focused 测试已完成，等待提交、独立复核、CI、部署与真实 smoke。
+- 当前事实：实现 attempt generation/fencing；disconnect 原子推进代际并消费全部未消费 state；callback 对乱序、解绑竞态和同步竞态 fail closed；`access_denied/error` 消费 state 并落稳定拒绝状态；readiness 按 scope/token/config/network 返回 `reauthorize/disconnect/contact-support/retry`；客户端仅按 recovery action 展示动作且不自动重跑 failed；解绑明确为本地断开，并降级所有未被 profile 引用的 Strava 媒体。
+- 证据/阻断：disconnect×callback、多 state 乱序、`access_denied`、failed recovery focused 测试均 GREEN，`cloud:prepare` 与云函数包一致性校验通过；尚未形成不可变提交，未执行独立复核、CI、目标环境部署或真实授权 smoke。
+- 下一步：冻结不可变 SHA，完成独立安全复核与 CI；随后部署 `strava-auth/strava-callback` 同一 SHA，并执行授权成功、拒绝、scope 不足、token 失效、重新授权、解绑后旧 callback 六条真实 smoke。
 - 负责人：TraeX 执行者；安全/独立复核：TraeX 审判者；部署/真机：Aime 个人助理。
 - 关闭条件：解绑后所有旧 callback 被拒绝且凭证不复活；拒绝授权消费 state 并停止轮询；retry/reauthorize/disconnect/contact-support 由稳定服务端语义驱动；解绑数据保留合同明确；`strava-auth/callback` 部署回读；授权成功、拒绝、scope 不足、token 失效、重新授权、解绑后旧 callback 六条真实 smoke 通过。
-- 更新时间：2026-10-09。
+- 更新时间：2026-10-10。
 
 ## 并行边界
 

@@ -13,6 +13,7 @@ function memoryDatabase({
 } = {}) {
   const state = {
     oauth_states: new Map(),
+    oauth_attempts: new Map(),
     strava_credentials: new Map([['openid', { athlete_id: 'old-athlete' }]]),
     strava_snapshots: new Map([['openid', { athlete_id: 'old-athlete' }]]),
     profiles: new Map([['openid', { _id: 'openid', nickname: 'Rider' }]]),
@@ -62,6 +63,7 @@ function memoryDatabase({
       calls.push({ scope: 'db', operation: 'transaction' });
       const draft = {
         oauth_states: new Map(state.oauth_states),
+        oauth_attempts: new Map(state.oauth_attempts),
         strava_credentials: new Map(state.strava_credentials),
         strava_snapshots: new Map(state.strava_snapshots),
         profiles: new Map(state.profiles),
@@ -71,6 +73,7 @@ function memoryDatabase({
       const result = await work(tx);
       state.strava_credentials = draft.strava_credentials;
       state.oauth_states = draft.oauth_states;
+      state.oauth_attempts = draft.oauth_attempts;
       state.strava_snapshots = draft.strava_snapshots;
       state.profiles = draft.profiles;
       state.profile_media = draft.profile_media;
@@ -112,11 +115,13 @@ test('保存新 OAuth credential 在同一事务删除旧账号 snapshot', async
   });
   assert.deepEqual(database.calls, [
     { scope: 'db', operation: 'transaction' },
+    { scope: 'tx', operation: 'get', collection: 'oauth_attempts', id: 'openid' },
     { scope: 'tx', operation: 'get', collection: 'profiles', id: 'openid' },
     { scope: 'tx', operation: 'get', collection: 'strava_credentials', id: 'openid' },
     { scope: 'tx', operation: 'set', collection: 'strava_credentials', id: 'openid' },
     { scope: 'tx', operation: 'remove', collection: 'strava_snapshots', id: 'openid' },
     { scope: 'tx', operation: 'set', collection: 'profiles', id: 'openid' },
+    { scope: 'tx', operation: 'set', collection: 'oauth_attempts', id: 'openid' },
   ]);
 });
 
@@ -287,4 +292,71 @@ test('OAuth 事务仅把明确 not-found 当缺失，其余 credential/media 读
     { errCode: -502001 },
   );
   assert.equal(mediaFailure.state.profiles.get('openid').avatar_source, 'strava');
+});
+
+test('多个 OAuth state 乱序回调时仅最新 attempt 可落凭证', async () => {
+  const database = memoryDatabase();
+  database.state.oauth_attempts.set('openid', {
+    openid: 'openid',
+    attempt_generation: 2,
+    status: 'authorizing',
+  });
+  database.state.oauth_states.set('old', {
+    openid: 'openid',
+    attempt_generation: 1,
+    expires_at: new Date('2099-01-01T00:00:00.000Z'),
+  });
+  database.state.oauth_states.set('latest', {
+    openid: 'openid',
+    attempt_generation: 2,
+    expires_at: new Date('2099-01-01T00:00:00.000Z'),
+  });
+  const store = createCredentialStore(database);
+
+  const oldState = await store.consumeState('old');
+  const latestState = await store.consumeState('latest');
+  assert.equal(oldState.latest_attempt, false);
+  assert.equal(latestState.latest_attempt, true);
+
+  assert.equal(
+    await store.saveCredential(
+      { _id: 'openid', openid: 'openid', athlete_id: 'stale-athlete' },
+      oldState,
+    ),
+    false,
+  );
+  assert.equal(database.state.strava_credentials.get('openid').athlete_id, 'old-athlete');
+  assert.equal(
+    await store.saveCredential(
+      { _id: 'openid', openid: 'openid', athlete_id: 'latest-athlete' },
+      latestState,
+    ),
+    true,
+  );
+  assert.equal(database.state.strava_credentials.get('openid').athlete_id, 'latest-athlete');
+});
+
+test('callback 换 token 期间 attempt 被 disconnect 推进后保存 fail closed', async () => {
+  const database = memoryDatabase();
+  database.state.oauth_attempts.set('openid', {
+    openid: 'openid',
+    attempt_generation: 7,
+    status: 'authorizing',
+  });
+  const store = createCredentialStore(database);
+  const claimedState = { openid: 'openid', attempt_generation: 7 };
+  database.state.oauth_attempts.set('openid', {
+    openid: 'openid',
+    attempt_generation: 8,
+    status: 'disconnected',
+  });
+
+  assert.equal(
+    await store.saveCredential(
+      { _id: 'openid', openid: 'openid', athlete_id: 'revived-athlete' },
+      claimedState,
+    ),
+    false,
+  );
+  assert.equal(database.state.strava_credentials.get('openid').athlete_id, 'old-athlete');
 });

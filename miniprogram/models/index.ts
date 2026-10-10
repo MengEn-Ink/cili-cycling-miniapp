@@ -174,13 +174,19 @@ export interface StravaSnapshot {
   syncedAt: string;
   coverage: StravaCoverage | null;
 }
+export type StravaRecoveryAction = 'retry' | 'reauthorize' | 'disconnect' | 'contact-support';
 export interface StravaReadiness {
   state: StravaReadinessState;
   canRegister: boolean;
   avatarAvailable: boolean;
   athleteName: string | null;
   snapshot: StravaSnapshot | null;
-  error: null | { code: string; message: string; retryable: boolean };
+  error: null | {
+    code: string;
+    message: string;
+    retryable: boolean;
+    recoveryAction: StravaRecoveryAction;
+  };
 }
 export type PersonalCapabilityCardState =
   'ready' | 'partial' | 'syncing' | 'failed' | 'disconnected';

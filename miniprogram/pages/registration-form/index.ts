@@ -41,13 +41,14 @@ function requestFailedReadiness(message: string): StravaReadiness {
       code: 'STRAVA_READINESS_UNAVAILABLE',
       message,
       retryable: true,
+      recoveryAction: 'retry',
     },
   };
 }
 
 async function loadBoundedReadiness(isCancelled: () => boolean): Promise<StravaReadiness> {
   const status = await rideService.getStravaReadiness();
-  if (isCancelled() || (status.state !== 'syncing' && status.state !== 'failed')) return status;
+  if (isCancelled() || status.state !== 'syncing') return status;
   return pollStravaReadiness(() => rideService.ensureStravaReady(), { isCancelled });
 }
 

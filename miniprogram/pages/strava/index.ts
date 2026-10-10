@@ -25,7 +25,8 @@ function confirmDisconnect(): Promise<boolean> {
   return new Promise((resolve) => {
     wx.showModal({
       title: '确认解绑 Strava',
-      content: '解绑后将无法提交新的活动报名，已提交记录不受影响。',
+      content:
+        '这只会断开此里并清理本地 Strava 数据，不会撤销 Strava 网站中的外部授权；已提交记录不受影响。',
       confirmText: '确认解绑',
       success: (result: { confirm: boolean }) => resolve(result.confirm),
       fail: () => resolve(false),
@@ -112,9 +113,7 @@ Page({
       }
       readiness = authorized.data;
     }
-    const authorizationTimedOut =
-      readiness.state === 'failed' && readiness.error?.code === 'STRAVA_AUTH_STATUS_TIMEOUT';
-    if (readiness.state === 'syncing' || (readiness.state === 'failed' && !authorizationTimedOut)) {
+    if (readiness.state === 'syncing') {
       const prepared = await runPageTask(
         () =>
           pollStravaReadiness(() => rideService.ensureStravaReady(), {
@@ -184,7 +183,12 @@ Page({
     }
   },
   async retry() {
-    if (this.data.busyAction) return;
+    if (
+      this.data.busyAction ||
+      (this.data.readiness?.state === 'failed' &&
+        this.data.readiness.error?.recoveryAction !== 'retry')
+    )
+      return;
     const requestId = ++this.loadRequestId;
     this.setData({ busyAction: 'retry', error: '' });
     try {
@@ -201,6 +205,13 @@ Page({
     } finally {
       if (requestId === this.loadRequestId) this.setData({ busyAction: null });
     }
+  },
+  contactSupport() {
+    wx.showModal({
+      title: '联系支持',
+      content: 'Strava 服务配置异常，请联系「此里」管理员处理。',
+      showCancel: false,
+    });
   },
   async disconnect() {
     if (this.data.busyAction) return;

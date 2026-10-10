@@ -117,7 +117,7 @@ npm run cloudbase:apply
 npm run cloudbase:verify
 ```
 
-bootstrap 当前管理 12 个集合、28 个业务索引和全拒绝客户端数据库规则；受管定义包含活动首页 future/history 分页经 planner 验证的两个 exact 复合索引，以及 Strava 路线短期可信快照集合 `strava_route_previews`。bootstrap 不创建业务活动，也不会自动应用 `cloudstorage.rules.json`。完整顺序：
+bootstrap 当前管理 13 个集合、29 个业务索引和全拒绝客户端数据库规则；受管定义包含活动首页 future/history 分页经 planner 验证的两个 exact 复合索引、Strava disconnect 媒体清理的 `owner_openid + origin + status + _id` 游标索引，以及 Strava OAuth 当前授权代际集合 `oauth_attempts` 和路线短期可信快照集合 `strava_route_previews`。bootstrap 不创建业务活动，也不会自动应用 `cloudstorage.rules.json`。完整顺序：
 
 1. 审阅并执行 CloudBase plan/apply/verify。
 2. 按 [CloudBase 数据契约](docs/cloudbase-schema.md) 配置云函数环境变量和 `cloudstorage.rules.json`，并回读确认 canonical 媒体路径不可由客户端写入。

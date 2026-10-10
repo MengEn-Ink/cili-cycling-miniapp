@@ -7,7 +7,14 @@ const crypto = require('node:crypto');
 Object.assign(require('./oauth/core'), require('../strava-shared/core'));
 const { createReadinessStore } = require('./store');
 
-function fakeDb(seed = {}) {
+function fakeDb(
+  seed = {},
+  {
+    queryBatchLimit = Number.POSITIVE_INFINITY,
+    transactionWriteLimit = Number.POSITIVE_INFINITY,
+    failProfileMediaDbUpdateAt = Number.POSITIVE_INFINITY,
+  } = {},
+) {
   const REMOVE = Symbol('remove');
   const SERVER_DATE = Symbol('server-date');
   const state = {};
@@ -15,6 +22,27 @@ function fakeDb(seed = {}) {
     state[name] = new Map(Object.entries(values));
   }
   const calls = [];
+  let transactionWrites = 0;
+  let profileMediaDbUpdates = 0;
+  let profileMediaFailureInjected = false;
+  const beforeWrite = (name, scope, operation) => {
+    if (scope === 'tx' && ++transactionWrites > transactionWriteLimit)
+      throw Object.assign(new Error('transaction write limit exceeded'), {
+        code: 'TRANSACTION_WRITE_LIMIT_EXCEEDED',
+      });
+    if (
+      name === 'profile_media' &&
+      scope === 'db' &&
+      operation === 'update' &&
+      ++profileMediaDbUpdates === failProfileMediaDbUpdateAt &&
+      !profileMediaFailureInjected
+    ) {
+      profileMediaFailureInjected = true;
+      throw Object.assign(new Error('injected profile media update failure'), {
+        code: 'PROFILE_MEDIA_UPDATE_FAILED',
+      });
+    }
+  };
   const ensure = (name) => (state[name] ||= new Map());
   const applyData = (current, data) => {
     const next = { ...current };
@@ -33,20 +61,24 @@ function fakeDb(seed = {}) {
           return { data: ensure(name).get(id) };
         },
         async set({ data }) {
+          beforeWrite(name, scope, 'set');
           calls.push({ scope, operation: 'set', collection: name, id });
           ensure(name).set(id, { ...data });
         },
         async update({ data }) {
+          beforeWrite(name, scope, 'update');
           calls.push({ scope, operation: 'update', collection: name, id });
           ensure(name).set(id, applyData(ensure(name).get(id) || {}, data));
         },
         async remove() {
+          beforeWrite(name, scope, 'remove');
           calls.push({ scope, operation: 'remove', collection: name, id });
           ensure(name).delete(id);
         },
       };
     },
     async add({ data }) {
+      beforeWrite(name, scope, 'add');
       calls.push({ scope, operation: 'add', collection: name });
       ensure(name).set(`audit-${ensure(name).size + 1}`, { ...data });
     },
@@ -54,29 +86,43 @@ function fakeDb(seed = {}) {
       calls.push({ scope, operation: 'where', collection: name, query });
       const matches = () =>
         [...ensure(name).entries()].filter(([, value]) => {
-          if (value.openid !== query.openid) return false;
-          if (query.expires_at?.kind === 'gt' && !(value.expires_at > query.expires_at.value))
-            return false;
-          if (query.consumed_at?.kind === 'exists' && query.consumed_at.value === false)
-            return !Object.hasOwn(value, 'consumed_at');
+          for (const [key, expected] of Object.entries(query)) {
+            if (expected?.kind === 'gt') {
+              if (!(value[key] > expected.value)) return false;
+            } else if (expected?.kind === 'exists') {
+              if (Object.hasOwn(value, key) !== expected.value) return false;
+            } else if (value[key] !== expected) return false;
+          }
           return true;
         });
-      return {
+      const queryBuilder = (order, requestedLimit) => ({
+        async get() {
+          let values = matches().map(([, value]) => value);
+          if (order) {
+            const direction = order.direction === 'desc' ? -1 : 1;
+            values.sort(
+              (left, right) =>
+                String(left[order.field]).localeCompare(String(right[order.field])) * direction,
+            );
+          }
+          const limit = Math.min(requestedLimit ?? queryBatchLimit, queryBatchLimit);
+          return { data: values.slice(0, limit) };
+        },
         async update({ data }) {
+          beforeWrite(name, scope, 'updateWhere');
           calls.push({ scope, operation: 'updateWhere', collection: name, query });
           const matched = matches();
           for (const [id, value] of matched) ensure(name).set(id, applyData(value, data));
           return { stats: { updated: matched.length } };
         },
-        limit(limit) {
-          return {
-            async get() {
-              const values = matches().map(([, value]) => value);
-              return { data: values.slice(0, limit) };
-            },
-          };
+        orderBy(field, direction) {
+          return queryBuilder({ field, direction }, requestedLimit);
         },
-      };
+        limit(limit) {
+          return queryBuilder(order, limit);
+        },
+      });
+      return queryBuilder();
     },
   });
   const db = {
@@ -869,4 +915,244 @@ test('status、ensureReady 与 cancelAuthorization 路由可用', async () => {
     }
     delete require.cache[require.resolve('./index')];
   }
+});
+
+test('disconnect 作废全部未消费 state 并推进 attempt generation', async () => {
+  const fixture = fakeDb({
+    oauth_attempts: {
+      'user-1': { openid: 'user-1', attempt_generation: 4, status: 'authorizing' },
+    },
+    oauth_states: {
+      current: { openid: 'user-1', attempt_generation: 4, expires_at: new Date('2099-01-01') },
+      expired: { openid: 'user-1', attempt_generation: 3, expires_at: new Date('2000-01-01') },
+      consumed: {
+        openid: 'user-1',
+        attempt_generation: 2,
+        expires_at: new Date('2099-01-01'),
+        consumed_at: new Date('2026-01-01'),
+      },
+      other: { openid: 'user-2', attempt_generation: 1, expires_at: new Date('2099-01-01') },
+    },
+  });
+
+  await createReadinessStore(fixture.db).disconnect('user-1', audit('strava.disconnect'));
+
+  assert.equal(fixture.state.oauth_states.get('current').consumed_at, fixture.SERVER_DATE);
+  assert.equal(fixture.state.oauth_states.get('expired').consumed_at, fixture.SERVER_DATE);
+  assert.notEqual(fixture.state.oauth_states.get('consumed').consumed_at, fixture.SERVER_DATE);
+  assert.equal(fixture.state.oauth_states.get('other').consumed_at, undefined);
+  assert.deepEqual(fixture.state.oauth_attempts.get('user-1'), {
+    openid: 'user-1',
+    attempt_generation: 5,
+    status: 'disconnected',
+    error_code: null,
+    updated_at: fixture.SERVER_DATE,
+  });
+});
+
+test('disconnect 降级所有未被 profile 引用的 Strava 媒体', async () => {
+  const retained = 'cloud://env/profiles/owner/retained.jpg';
+  const orphan = 'cloud://env/profiles/owner/orphan.jpg';
+  const fixture = fakeDb({
+    profiles: { 'user-1': { _id: 'user-1', photos: [{ file_id: retained }] } },
+    profile_media: {
+      retained: {
+        _id: 'retained',
+        file_id: retained,
+        owner_openid: 'user-1',
+        origin: 'strava',
+        status: 'active',
+      },
+      orphan: {
+        _id: 'orphan',
+        file_id: orphan,
+        owner_openid: 'user-1',
+        origin: 'strava',
+        status: 'active',
+      },
+    },
+  });
+
+  await createReadinessStore(fixture.db).disconnect('user-1', audit('strava.disconnect'));
+
+  assert.equal(fixture.state.profile_media.get('retained').status, 'active');
+  assert.equal(fixture.state.profile_media.get('orphan').status, 'unreferenced');
+});
+
+test('createAuthorizationAttempt 为并发 state 分配单调 generation', async () => {
+  const fixture = fakeDb();
+  const store = createReadinessStore(fixture.db);
+  await store.createAuthorizationAttempt('user-1', {
+    hash: 'state-1',
+    expiresAt: new Date('2026-09-29T04:10:00.000Z'),
+  });
+  await store.createAuthorizationAttempt('user-1', {
+    hash: 'state-2',
+    expiresAt: new Date('2026-09-29T04:11:00.000Z'),
+  });
+
+  assert.equal(fixture.state.oauth_states.get('state-1').attempt_generation, 1);
+  assert.equal(fixture.state.oauth_states.get('state-2').attempt_generation, 2);
+  assert.equal(fixture.state.oauth_attempts.get('user-1').attempt_generation, 2);
+});
+
+test('disconnect 用稳定 _id 游标分页降级 profile 存在时超过单批上限的媒体', async () => {
+  const profileMedia = Object.fromEntries(
+    Array.from({ length: 205 }, (_, index) => {
+      const id = `media-${String(index).padStart(3, '0')}`;
+      return [
+        id,
+        {
+          _id: id,
+          file_id: `cloud://env/profiles/owner/${id}.jpg`,
+          owner_openid: 'user-1',
+          origin: 'strava',
+          status: 'active',
+        },
+      ];
+    }),
+  );
+  const fixture = fakeDb(
+    {
+      profiles: { 'user-1': { _id: 'user-1', photos: [] } },
+      profile_media: profileMedia,
+    },
+    { transactionWriteLimit: 10 },
+  );
+
+  await createReadinessStore(fixture.db).disconnect('user-1', audit('strava.disconnect'));
+
+  assert.equal(
+    [...fixture.state.profile_media.values()].every((media) => media.status === 'unreferenced'),
+    true,
+  );
+  assert.equal(
+    fixture.calls.some((call) => call.scope === 'tx' && call.collection === 'profile_media'),
+    false,
+  );
+  assert.equal(
+    fixture.calls
+      .filter((call) => ['set', 'update', 'remove', 'add', 'updateWhere'].includes(call.operation))
+      .filter((call) => call.scope === 'tx').length <= 10,
+    true,
+  );
+});
+
+test('disconnect 在 profile 缺失时分页降级超过单批上限的孤立 Strava 媒体', async () => {
+  const profileMedia = Object.fromEntries(
+    Array.from({ length: 101 }, (_, index) => {
+      const id = `orphan-${String(index).padStart(3, '0')}`;
+      return [
+        id,
+        {
+          _id: id,
+          file_id: `cloud://env/profiles/owner/${id}.jpg`,
+          owner_openid: 'user-1',
+          origin: 'strava',
+          status: 'active',
+        },
+      ];
+    }),
+  );
+  const fixture = fakeDb({ profile_media: profileMedia });
+
+  await createReadinessStore(fixture.db).disconnect('user-1', audit('strava.disconnect'));
+
+  assert.equal(
+    [...fixture.state.profile_media.values()].every((media) => media.status === 'unreferenced'),
+    true,
+  );
+});
+
+test('disconnect 分页游标在整页媒体都被 profile 保留时仍会前进', async () => {
+  const profileMedia = Object.fromEntries(
+    Array.from({ length: 101 }, (_, index) => {
+      const id = `retained-${String(index).padStart(3, '0')}`;
+      return [
+        id,
+        {
+          _id: id,
+          file_id: `cloud://env/profiles/owner/${id}.jpg`,
+          owner_openid: 'user-1',
+          origin: 'strava',
+          status: 'active',
+        },
+      ];
+    }),
+  );
+  const fixture = fakeDb({
+    profiles: {
+      'user-1': {
+        _id: 'user-1',
+        photos: Object.values(profileMedia).map((media) => ({ file_id: media.file_id })),
+      },
+    },
+    profile_media: profileMedia,
+  });
+
+  await createReadinessStore(fixture.db).disconnect('user-1', audit('strava.disconnect'));
+
+  assert.equal(
+    [...fixture.state.profile_media.values()].every((media) => media.status === 'active'),
+    true,
+  );
+});
+
+test('disconnect 媒体清理中途失败时保留原子断开状态且重试可收敛', async () => {
+  const profileMedia = Object.fromEntries(
+    Array.from({ length: 135 }, (_, index) => {
+      const id = `retry-${String(index).padStart(3, '0')}`;
+      return [
+        id,
+        {
+          _id: id,
+          file_id: `cloud://env/profiles/owner/${id}.jpg`,
+          owner_openid: 'user-1',
+          origin: 'strava',
+          status: 'active',
+        },
+      ];
+    }),
+  );
+  const fixture = fakeDb(
+    {
+      oauth_attempts: {
+        'user-1': { openid: 'user-1', attempt_generation: 3, status: 'connected' },
+      },
+      oauth_states: {
+        current: { openid: 'user-1', attempt_generation: 3 },
+      },
+      strava_credentials: { 'user-1': { _id: 'user-1' } },
+      strava_snapshots: { 'user-1': { _id: 'user-1' } },
+      profiles: { 'user-1': { _id: 'user-1', photos: [] } },
+      profile_media: profileMedia,
+    },
+    { failProfileMediaDbUpdateAt: 57 },
+  );
+  const store = createReadinessStore(fixture.db);
+
+  await assert.rejects(store.disconnect('user-1', audit('strava.disconnect')), {
+    code: 'PROFILE_MEDIA_UPDATE_FAILED',
+  });
+
+  assert.equal(fixture.state.strava_credentials.has('user-1'), false);
+  assert.equal(fixture.state.strava_snapshots.has('user-1'), false);
+  assert.equal(fixture.state.oauth_states.get('current').consumed_at, fixture.SERVER_DATE);
+  assert.equal(fixture.state.oauth_attempts.get('user-1').status, 'disconnected');
+  assert.deepEqual(fixture.state.profiles.get('user-1').strava, { status: 'disconnected' });
+  assert.equal(
+    [...fixture.state.profile_media.values()].some((media) => media.status === 'active'),
+    true,
+  );
+
+  await store.disconnect('user-1', audit('strava.disconnect.retry'));
+
+  assert.equal(
+    [...fixture.state.profile_media.values()].every((media) => media.status === 'unreferenced'),
+    true,
+  );
+  assert.equal(
+    fixture.calls.some((call) => call.scope === 'tx' && call.collection === 'profile_media'),
+    false,
+  );
 });

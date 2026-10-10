@@ -1183,8 +1183,9 @@ test('failed credential 没有 fresh snapshot 时返回稳定安全错误', () =
   );
   assert.deepEqual(result.error, {
     code: 'STRAVA_API_INVALID',
-    message: 'Strava 数据准备失败，请重试',
+    message: 'Strava 服务暂时不可用，请稍后重试',
     retryable: true,
+    recovery_action: 'retry',
   });
   assert.equal(result.state, 'failed');
   assert.equal(result.can_register, false);
@@ -1688,4 +1689,62 @@ test('CloudBase 写入会移除保留字段 _id', () => {
   const source = { _id: 'openid', openid: 'openid' };
   assert.deepEqual(writableDocument(source), { openid: 'openid' });
   assert.equal(source._id, 'openid');
+});
+
+test('access_denied 消费 state 并持久化稳定拒绝语义', async () => {
+  const state = createState();
+  let consumed = 0;
+  let rejected;
+  let exchanged = 0;
+  await assert.rejects(
+    callbackFlow({
+      state: state.raw,
+      error: 'access_denied',
+      env: {},
+      store: {
+        consumeState: async () => {
+          consumed += 1;
+          return {
+            openid: 'user-1',
+            expires_at: new Date(Date.now() + 1000),
+            attempt_generation: 3,
+            latest_attempt: true,
+          };
+        },
+        rejectAuthorization: async (_state, code) => {
+          rejected = code;
+          return true;
+        },
+      },
+      api: {
+        exchange: async () => {
+          exchanged += 1;
+        },
+      },
+    }),
+    { code: 'OAUTH_ACCESS_DENIED', message: '你已拒绝 Strava 授权，可重新发起授权' },
+  );
+  assert.equal(consumed, 1);
+  assert.equal(rejected, 'OAUTH_ACCESS_DENIED');
+  assert.equal(exchanged, 0);
+});
+
+test('failed readiness 按服务端错误类别返回稳定 recovery action', () => {
+  const cases = [
+    ['STRAVA_SCOPE_REQUIRED', 'reauthorize', false],
+    ['STRAVA_TOKEN_INVALID', 'disconnect', false],
+    ['STRAVA_CONFIG_INVALID', 'contact-support', false],
+    ['STRAVA_API_FAILED', 'retry', true],
+  ];
+  for (const [code, action, retryable] of cases) {
+    const result = deriveReadiness({
+      credential: { athlete_name: 'Rider', sync_status: 'failed', sync_error_code: code },
+      snapshot: undefined,
+      hasActiveOAuthState: false,
+    });
+    assert.equal(result.state, 'failed');
+    assert.equal(result.error.code, code);
+    assert.equal(result.error.recovery_action, action);
+    assert.equal(result.error.retryable, retryable);
+  }
 });

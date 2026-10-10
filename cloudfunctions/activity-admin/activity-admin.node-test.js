@@ -807,7 +807,8 @@ test('旧活动容量或占位数超过回填硬上限时在分页前阻断', as
 test('结束活动使用独立审计动作', async () => {
   const current = {
     _id: 'a1',
-    ...validateActivityInput({ ...input, status: 'published' }),
+    ...input,
+    status: 'published',
     occupied_count: 0,
     occupancy_partition_ready: true,
     support_vehicle_occupied_count: 0,

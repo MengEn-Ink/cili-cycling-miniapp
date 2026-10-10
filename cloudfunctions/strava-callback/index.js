@@ -42,14 +42,45 @@ function createCredentialStore(database) {
       database.runTransaction(async (tx) => {
         const doc = await maybeGet(tx, 'oauth_states', hash);
         if (!doc || doc.consumed_at) return undefined;
+        const attempt = await maybeGet(tx, 'oauth_attempts', doc.openid);
         await tx
           .collection('oauth_states')
           .doc(hash)
           .update({ data: { consumed_at: database.serverDate() } });
-        return doc;
+        return {
+          ...doc,
+          latest_attempt:
+            Number.isSafeInteger(doc.attempt_generation) &&
+            doc.attempt_generation === attempt?.attempt_generation,
+        };
       }),
-    saveCredential: async (data, now = new Date()) => {
-      await database.runTransaction(async (tx) => {
+    rejectAuthorization: (state, errorCode) =>
+      database.runTransaction(async (tx) => {
+        const attempt = await maybeGet(tx, 'oauth_attempts', state.openid);
+        if (attempt?.attempt_generation !== state.attempt_generation) return false;
+        await tx
+          .collection('oauth_attempts')
+          .doc(state.openid)
+          .set({
+            data: {
+              ...attempt,
+              openid: state.openid,
+              status: 'failed',
+              error_code: errorCode,
+              updated_at: database.serverDate(),
+            },
+          });
+        return true;
+      }),
+    saveCredential: async (data, state, now = new Date()) => {
+      if (state instanceof Date) {
+        now = state;
+        state = undefined;
+      }
+      return database.runTransaction(async (tx) => {
+        const attempt = await maybeGet(tx, 'oauth_attempts', data.openid);
+        const expectedGeneration = state?.attempt_generation ?? attempt?.attempt_generation;
+        if (attempt?.attempt_generation !== expectedGeneration) return false;
         const [profile, previousCredential] = await Promise.all([
           maybeGet(tx, 'profiles', data.openid).then((value) => value || { _id: data.openid }),
           maybeGet(tx, 'strava_credentials', data.openid),
@@ -122,6 +153,19 @@ function createCredentialStore(database) {
               updated_at: database.serverDate(),
             }),
           });
+        await tx
+          .collection('oauth_attempts')
+          .doc(data.openid)
+          .set({
+            data: {
+              ...attempt,
+              openid: data.openid,
+              status: 'connected',
+              error_code: null,
+              updated_at: database.serverDate(),
+            },
+          });
+        return true;
       });
     },
   };
@@ -163,6 +207,7 @@ const main = createHandler({
     callbackFlow({
       code: query.code,
       state: query.state,
+      error: query.error,
       env: process.env,
       store,
       api: stravaApi,
