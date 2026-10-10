@@ -28,6 +28,7 @@ const registration = (id: string, activityId: string) => ({
   activityId,
   status: 'approved',
   updatedAt: '2026-09-30T10:00:00.000Z',
+  activity: activity(activityId),
 });
 
 function deferred<T>() {
@@ -112,7 +113,7 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
     }
   });
 
-  it('registrations 优先使用报名活动投影，并兼容旧 mock 的活动列表绑定', async () => {
+  it('registrations 只使用报名活动投影，公开活动列表失败不影响行程', async () => {
     if (kind !== 'registrations') return;
     const page = await loadPage(kind);
     rideService.listRegistrations.mockResolvedValue([
@@ -120,23 +121,18 @@ describe.each(['activities', 'registrations'] as const)('%s tab page refresh', (
         ...registration('projected', 'activity-projected'),
         activity: activity('activity-projected'),
       },
-      registration('legacy', 'activity-legacy'),
-      registration('missing', 'activity-missing'),
+      {
+        ...registration('missing', 'activity-missing'),
+        activity: undefined,
+      },
     ]);
-    rideService.listActivities.mockResolvedValue([
-      { ...activity('activity-projected'), title: '不应覆盖投影' },
-      { ...activity('activity-legacy'), title: '旧接口活动' },
-    ]);
+    rideService.listActivities.mockRejectedValue(new Error('公开活动列表不可用'));
 
     await page.load();
 
     expect(page.data.items[0].activity.title).toBe('activity-projected');
-    expect(page.data.items[1].activity).toMatchObject({
-      title: '旧接口活动',
-      date: '2026-09-30T23:00:00.000Z',
-      displayDate: '10月1日 周四',
-    });
-    expect(page.data.items[2].activity.title).toBe('历史活动');
+    expect(page.data.items[1].activity.title).toBe('历史活动');
+    expect(rideService.listActivities).not.toHaveBeenCalled();
   });
 
   it.each(['onHide', 'onUnload'] as const)(
@@ -250,11 +246,9 @@ describe('registrations status presentation', () => {
         ...registration(`r${index}`, 'activity-shared'),
         status,
         gatheringMode: index % 2 ? '需要后援车' : '自驾',
+        activity: { ...activity('activity-shared'), date: '2026-10-18' },
       })),
     );
-    rideService.listActivities.mockResolvedValue([
-      { ...activity('activity-shared'), date: '2026-10-18' },
-    ]);
 
     await page.load();
 

@@ -541,12 +541,15 @@ describe('CloudRepository 队员报名适配', () => {
     vi.unstubAllGlobals();
   });
 
-  it('我的报名和本人详情使用 registration 的 mine/detail', async () => {
-    const { cloud, callFunction } = cloudWith(success([registration]), success(registration));
+  it('我的报名和本人详情使用 registration 的 minePage/detail', async () => {
+    const { cloud, callFunction } = cloudWith(
+      success({ items: [registration], next_cursor: null }),
+      success(registration),
+    );
     const repository = new CloudRepository(cloud);
 
     const mine = await repository.listRegistrations();
-    expectCall(callFunction, 'registration', { action: 'mine' });
+    expectCall(callFunction, 'registration', { action: 'minePage', page_size: 50 });
     const detail = await repository.getRegistration('r1');
     expectCall(callFunction, 'registration', { action: 'detail', registrationId: 'r1' });
     expect(mine[0]).toEqual(detail);
@@ -1376,6 +1379,76 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
         recoveryAction: 'retry',
       },
     });
+  });
+
+  it('透明聚合 50+50+1 三页报名并传递不透明 cursor', async () => {
+    const records = Array.from({ length: 101 }, (_, index) => ({
+      ...registration,
+      _id: `r-${String(index).padStart(3, '0')}`,
+      activity_id: `a-${String(index).padStart(3, '0')}`,
+    }));
+    const { cloud, callFunction } = cloudWith(
+      success({ items: records.slice(0, 50), next_cursor: 'page-2' }),
+      success({ items: records.slice(50, 100), next_cursor: 'page-3' }),
+      success({ items: records.slice(100), next_cursor: null }),
+    );
+
+    const result = await new CloudRepository(cloud).listRegistrations();
+
+    expect(result.map((item) => item.id)).toEqual(records.map((item) => item._id));
+    expect(callFunction).toHaveBeenNthCalledWith(1, {
+      name: 'registration',
+      data: { action: 'minePage', page_size: 50 },
+    });
+    expect(callFunction).toHaveBeenNthCalledWith(2, {
+      name: 'registration',
+      data: { action: 'minePage', page_size: 50, cursor: 'page-2' },
+    });
+    expect(callFunction).toHaveBeenNthCalledWith(3, {
+      name: 'registration',
+      data: { action: 'minePage', page_size: 50, cursor: 'page-3' },
+    });
+  });
+
+  it('报名分页对异常 envelope、重复 cursor 和重复 ID fail closed', async () => {
+    const unknownKey = cloudWith(
+      success({ items: [], next_cursor: null, internal: 'must-not-pass' }),
+    );
+    await expectCode(new CloudRepository(unknownKey.cloud).listRegistrations(), 'INVALID_RESPONSE');
+
+    const invalidCursor = cloudWith(success({ items: [], next_cursor: '' }));
+    await expectCode(
+      new CloudRepository(invalidCursor.cloud).listRegistrations(),
+      'INVALID_RESPONSE',
+    );
+
+    const repeatedCursor = cloudWith(
+      success({ items: [registration], next_cursor: 'same' }),
+      success({
+        items: [{ ...registration, _id: 'r2', activity_id: 'a2' }],
+        next_cursor: 'same',
+      }),
+    );
+    await expectCode(
+      new CloudRepository(repeatedCursor.cloud).listRegistrations(),
+      'INVALID_RESPONSE',
+    );
+
+    const repeatedId = cloudWith(
+      success({ items: [registration], next_cursor: 'next' }),
+      success({ items: [registration], next_cursor: null }),
+    );
+    await expectCode(new CloudRepository(repeatedId.cloud).listRegistrations(), 'INVALID_RESPONSE');
+  });
+
+  it('报名分页超过 200 页时 fail closed', async () => {
+    const pages = Array.from({ length: 200 }, (_, index) =>
+      success({ items: [], next_cursor: `page-${index + 2}` }),
+    );
+    const { cloud, callFunction } = cloudWith(...pages);
+
+    await expectCode(new CloudRepository(cloud).listRegistrations(), 'INVALID_RESPONSE');
+    expect(callFunction).toHaveBeenCalledTimes(200);
   });
 
   it('readiness 快照存在最近活动时保留严格校验后的时间', async () => {
