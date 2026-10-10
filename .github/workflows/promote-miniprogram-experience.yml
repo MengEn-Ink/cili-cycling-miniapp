@@ -153,6 +153,7 @@ jobs:
       - name: Generate immutable experience manifest
         id: manifest
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           STAGE: ${{ inputs.stage }}
           MODE: ${{ inputs.mode }}
           TARGET_SHA: ${{ inputs.main_sha }}

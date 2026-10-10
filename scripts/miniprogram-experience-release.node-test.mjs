@@ -273,6 +273,10 @@ test('体验版工作流只生成证据，不自动上传或覆盖体验基线',
   assert.match(workflow, /git merge-base --is-ancestor/);
   assert.match(workflow, /gh run download "\$\{CANDIDATE_RUN_ID\}"/);
   assert.match(workflow, /miniprogram-upload-receipt-\$\{TARGET_SHA\}/);
+  assert.match(
+    workflow,
+    /Generate immutable experience manifest[\s\S]*GH_TOKEN: \$\{\{ secrets\.GITHUB_TOKEN \}\}/,
+  );
   assert.match(workflow, /verify-transition/);
   assert.match(workflow, /verify-rollback/);
   assert.match(workflow, /if: github\.ref == 'refs\/heads\/main'/);
