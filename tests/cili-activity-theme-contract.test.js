@@ -62,8 +62,8 @@ describe('CILI 活动页静态契约', () => {
     expect(activityCardStyles).toContain('.activity-card--pressed');
     expect(activityCardStyles).toContain('.card-placeholder');
     const cta = cssBlock(activityCardStyles, '.card-cta');
-    expectSemantic(declaration(cta, 'background'), '--color-brand');
-    expectSemantic(declaration(cta, 'color'), '--color-on-brand');
+    expectSemantic(declaration(cta, 'background'), '--color-action');
+    expectSemantic(declaration(cta, 'color'), '--color-on-action');
     expect(declaration(cta, 'min-height')).toBe('var(--control-height)');
   });
 
@@ -99,7 +99,7 @@ describe('CILI 活动页静态契约', () => {
     );
     expectSemantic(
       declaration(effectiveBlock(detailStyles, '.detail-action .btn'), 'background'),
-      '--color-brand',
+      '--color-action',
     );
     expect(themeSources).not.toMatch(/pink|#ff69b4|#ffc0cb|#e91e63|#ec4899/i);
   });

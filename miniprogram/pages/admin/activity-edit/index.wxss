@@ -101,8 +101,8 @@
   margin: 0;
 }
 .activity-form-page .btn {
-  background: var(--color-brand);
-  color: #0b0b0c;
+  background: var(--color-action);
+  color: var(--color-on-action);
   font-weight: 900;
 }
 .danger-button {
@@ -262,8 +262,8 @@
   color: var(--color-text) !important;
 }
 .activity-form-page .btn {
-  background: var(--color-brand);
-  color: var(--color-on-brand);
+  background: var(--color-action);
+  color: var(--color-on-action);
 }
 
 .schedule-edit-row {

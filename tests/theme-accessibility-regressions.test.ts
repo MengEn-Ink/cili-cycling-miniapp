@@ -25,8 +25,11 @@ describe('unified UI accessibility regressions', () => {
     expect(tokens['--color-bg']).toBe('#ffffff');
     expect(tokens['--color-text']).toBe('#10120f');
     expect(tokens['--color-brand']).toBe('#d9ff43');
+    expect(tokens['--color-action']).toBe('#10120f');
+    expect(tokens['--color-on-action']).toBe('#ffffff');
     expectUiContrast('var(--color-text)', 'var(--color-bg)', 7);
     expectUiContrast('var(--color-on-brand)', 'var(--color-brand)', 7);
+    expectUiContrast('var(--color-on-action)', 'var(--color-action)', 7);
 
     const globalPage = effectiveBlock(app, 'page');
     expectSemantic(declaration(globalPage, 'background'), '--color-bg');
@@ -170,16 +173,16 @@ describe('unified UI accessibility regressions', () => {
     expect(template).not.toContain('饮食、健康或其他备注');
   });
 
-  it('keeps primary CTA text distinguishable on normal and active brand fills', () => {
+  it('keeps primary CTA text distinguishable on normal and active action fills', () => {
     const button = effectiveBlock(app, '.btn');
-    expect(declaration(button, 'background')).toBe('var(--color-brand) !important');
-    expectSemantic(declaration(button, 'color'), '--color-on-brand');
-    const foreground = resolvedHex('var(--color-on-brand)', tokens);
-    expect(contrast(foreground, resolvedHex('var(--color-brand)', tokens))).toBeGreaterThanOrEqual(
+    expect(declaration(button, 'background')).toBe('var(--color-action) !important');
+    expectSemantic(declaration(button, 'color'), '--color-on-action');
+    const foreground = resolvedHex('var(--color-on-action)', tokens);
+    expect(contrast(foreground, resolvedHex('var(--color-action)', tokens))).toBeGreaterThanOrEqual(
       7,
     );
     expect(
-      contrast(foreground, resolvedHex('var(--color-brand-active)', tokens)),
+      contrast(foreground, resolvedHex('var(--color-action-active)', tokens)),
     ).toBeGreaterThanOrEqual(7);
   });
 
@@ -272,7 +275,7 @@ describe('unified UI accessibility regressions', () => {
     );
     expectSemantic(
       declaration(effectiveBlock(activityTimeline, '.timeline-tab.is-active'), 'background'),
-      '--color-brand',
+      '--color-action',
     );
     expect(activityTimeline).toMatch(
       /@media \(max-width: 320px\)[\s\S]*?\.timeline-tabs\s*\{[^}]*width:\s*100%/s,

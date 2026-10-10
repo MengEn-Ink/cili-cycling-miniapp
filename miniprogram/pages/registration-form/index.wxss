@@ -100,7 +100,7 @@ page {
 
 .activity-context {
   padding: 16rpx 20rpx;
-  border: 1rpx solid #3a3a3c;
+  border: 1rpx solid var(--color-border);
   border-left: 6rpx solid var(--color-brand);
   border-radius: var(--radius-display) var(--radius-display) var(--radius-md) var(--radius-md);
 }
@@ -147,14 +147,14 @@ page {
 .form-surface {
   overflow: hidden;
   margin-top: 4rpx;
-  border: 1rpx solid #3a3a3c;
+  border: 1rpx solid var(--color-border);
   border-radius: var(--radius-display);
-  background: #1c1c1e;
+  background: var(--color-surface);
 }
 
 .form-section {
   padding: 18rpx 20rpx;
-  border-top: 1rpx solid #3a3a3c;
+  border-top: 1rpx solid var(--color-border);
 }
 
 .form-section.first-section {
@@ -263,7 +263,7 @@ page {
   min-height: 76rpx;
   margin: 0;
   padding: 0 14rpx;
-  border: 1rpx solid #3a3a3c;
+  border: 1rpx solid var(--color-border);
   border-radius: 20rpx;
   background: #1c1c1e;
   font-size: 21rpx;
@@ -285,7 +285,7 @@ page {
   min-width: 0;
   min-height: 104rpx;
   padding: 13rpx 11rpx;
-  border: 1rpx solid #3a3a3c;
+  border: 1rpx solid var(--color-border);
   border-radius: 24rpx;
   background: #111113;
   color: #cbd1cc;
@@ -339,7 +339,7 @@ page {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-top: 10rpx;
   overflow: hidden;
-  border: 1rpx solid #3a3a3c;
+  border: 1rpx solid var(--color-border);
   border-radius: 24rpx;
   background: #111113;
 }
@@ -380,7 +380,7 @@ page {
   min-width: 0;
   margin-top: 12rpx;
   padding: 13rpx 14rpx;
-  border: 1rpx solid #3a3a3c;
+  border: 1rpx solid var(--color-border);
   border-radius: 24rpx;
   background: #111113;
 }
@@ -435,7 +435,7 @@ page {
   min-height: 140rpx;
   margin-top: 10rpx;
   padding: 14rpx;
-  border: 1rpx solid #3a3a3c;
+  border: 1rpx solid var(--color-border);
   border-radius: 24rpx;
   background: #111113;
   color: #f4f7f2;
@@ -509,14 +509,14 @@ page {
 }
 
 .back-button {
-  border: 1rpx solid #3a3a3c;
+  border: 1rpx solid var(--color-border);
   background: #1c1c1e;
   color: #cbd1cc;
 }
 
 .form-page .submit-button {
-  background: var(--color-brand);
-  color: var(--color-on-brand);
+  background: var(--color-action);
+  color: var(--color-on-action);
   font-weight: 900;
   letter-spacing: 2rpx;
 }
@@ -662,8 +662,8 @@ page,
   color: var(--color-text);
 }
 .form-page .submit-button {
-  background: var(--color-brand);
-  color: var(--color-on-brand);
+  background: var(--color-action);
+  color: var(--color-on-action);
 }
 
 .readiness-badge {

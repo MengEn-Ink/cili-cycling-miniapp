@@ -292,8 +292,8 @@ brand-logo {
   color: #ef6961 !important;
 }
 .actions .btn {
-  background: var(--color-brand) !important;
-  color: #0b0b0c !important;
+  background: var(--color-action) !important;
+  color: var(--color-on-action) !important;
 }
 
 page,
@@ -349,8 +349,8 @@ brand-logo {
   border-radius: var(--radius-md) !important;
 }
 .actions .btn {
-  background: var(--color-brand) !important;
-  color: var(--color-on-brand) !important;
+  background: var(--color-action) !important;
+  color: var(--color-on-action) !important;
 }
 /* Capability hero overlay remains dark with white copy. */
 .capability-hero .hero-content,

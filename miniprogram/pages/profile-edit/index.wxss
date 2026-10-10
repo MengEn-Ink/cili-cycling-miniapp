@@ -260,8 +260,8 @@ page {
 .save-action {
   margin-top: 28rpx;
   border: 0;
-  background: var(--color-brand);
-  color: #0b0b0c;
+  background: var(--color-action);
+  color: var(--color-on-action);
   font-weight: 900;
 }
 
@@ -318,14 +318,14 @@ page,
   background: var(--color-raised);
   box-shadow: 0 14rpx 30rpx var(--color-shadow);
 }
-.avatar-action::before,
-.save-action {
+.avatar-action::before {
   background: var(--color-brand);
 }
 .save-action {
   min-height: var(--control-height);
   border-radius: var(--radius-md);
-  color: var(--color-on-brand);
+  background: var(--color-action);
+  color: var(--color-on-action);
 }
 
 @media (max-width: 320px) {

@@ -378,8 +378,8 @@ page {
 }
 
 .repair-button {
-  background: var(--color-brand) !important;
-  color: #fff !important;
+  background: var(--color-action) !important;
+  color: var(--color-on-action) !important;
 }
 
 .photo-button {
@@ -468,8 +468,8 @@ page,
   border-radius: var(--radius-display);
 }
 .repair-button {
-  background: var(--color-brand) !important;
-  color: var(--color-on-brand) !important;
+  background: var(--color-action) !important;
+  color: var(--color-on-action) !important;
 }
 .photo-button {
   border-color: var(--color-border);
