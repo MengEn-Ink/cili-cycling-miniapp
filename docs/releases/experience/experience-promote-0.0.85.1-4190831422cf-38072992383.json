@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "releaseId": "experience-promote-0.0.85.1-4190831422cf-38072992383",
+  "stage": "verified",
+  "mode": "promote",
+  "mainSha": "4190831422cf1e22e41da513bd379ae43a6115ef",
+  "version": "0.0.85.1",
+  "operationId": "38072992383",
+  "entryPath": "pages/activities/index",
+  "ciRunUrl": "https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38072731639",
+  "uploadRunUrl": "https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38072821382",
+  "smokeEvidence": "https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38072731639",
+  "smokeOutcome": "passed",
+  "candidateDigest": "sha256:e9ba8cfde2dd5606a748c27358e7c221f69a072b4de3dae7bf744018bcd52244",
+  "platformEvidence": "wechat-admin:experience:0.0.85.1:4190831422cf1e22e41da513bd379ae43a6115ef:pages/activities/index",
+  "operator": "MengEn-Ink",
+  "occurredAt": "2026-10-10T17:47:51.000Z",
+  "previousReleaseId": null,
+  "rollbackReason": null,
+  "digest": "sha256:4ed655142a96565822306706ed4e3028e37d88f5b7fcf219736dfb080db8cb79"
+}
