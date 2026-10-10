@@ -51,6 +51,35 @@ const activity: Activity = {
   fee: '无报名费',
 };
 
+const splitLocalDateTime = (value: string) => {
+  const text = formatLocalDateTime(value);
+  return { startDate: text.slice(0, 10), startTime: text.slice(11, 16) };
+};
+
+const savedActivityFromPayload = (payload: any, id = 'saved-activity'): Activity => ({
+  ...activity,
+  ...payload,
+  id,
+  version: 1,
+  date: payload.startAt,
+  startAt: payload.startAt,
+  endAt: payload.endAt,
+  deadline: payload.deadline,
+  images: payload.images,
+  coverImage: payload.coverImage,
+  route: { ...activity.route, ...payload.route },
+});
+
+const deferred = <T>() => {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve;
+    reject = promiseReject;
+  });
+  return { promise, resolve, reject };
+};
+
 describe('日常活动极简创建与编辑', () => {
   let page: any;
 
@@ -83,26 +112,33 @@ describe('日常活动极简创建与编辑', () => {
   it('加载时只回填最小字段并把历史图片收敛为三张', async () => {
     await page.onLoad({ id: activity.id });
     expect(page.data.form).toEqual({
-      startAt: formatLocalDateTime(activity.startAt),
+      ...splitLocalDateTime(activity.startAt),
       routeStart: '起点',
       description: '说明',
       stravaRouteUrl: 'https://www.strava.com/routes/123',
     });
     expect(page.data.images).toEqual(activity.images?.slice(0, 3));
+    expect(page.data.form).not.toHaveProperty('startAt');
     expect(page.data.form).not.toHaveProperty('endAt');
     expect(page.data.form).not.toHaveProperty('capacity');
     expect(page.data.form).not.toHaveProperty('fee');
   });
 
-  it('发布只要求集合时间和集合地点', async () => {
+  it('发布只要求集合日期、集合时间和集合地点', async () => {
     await page.onLoad({});
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
     expect(rideService.saveActivity).not.toHaveBeenCalled();
     expect(wx.showModal).toHaveBeenCalledWith(
+      expect.objectContaining({ content: '请选择集合日期' }),
+    );
+
+    page.data.form.startDate = '2026-10-18';
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+    expect(wx.showModal).toHaveBeenLastCalledWith(
       expect.objectContaining({ content: '请选择集合时间' }),
     );
 
-    page.data.form.startAt = '2026-10-18 08:00:00';
+    page.data.form.startTime = '08:00';
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
     expect(wx.showModal).toHaveBeenLastCalledWith(
       expect.objectContaining({ content: '请选择或填写集合地点' }),
@@ -158,6 +194,20 @@ describe('日常活动极简创建与编辑', () => {
     });
   });
 
+  it('Strava 合法链接可保存，编辑时清空链接不会写入 payload', async () => {
+    await page.onLoad({ id: activity.id });
+    page.data.form.stravaRouteUrl = 'https://www.strava.com/routes/456';
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+    expect(rideService.saveActivity.mock.calls[0][0].route).toMatchObject({
+      stravaRouteUrl: 'https://www.strava.com/routes/456',
+    });
+
+    rideService.saveActivity.mockClear();
+    page.data.form.stravaRouteUrl = '';
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+    expect(rideService.saveActivity.mock.calls[0][0].route).not.toHaveProperty('stravaRouteUrl');
+  });
+
   it('编辑缺少分类名额的旧活动时不会补写冲突默认值', async () => {
     const legacy = { ...activity };
     delete legacy.supportVehicleCapacity;
@@ -193,17 +243,160 @@ describe('日常活动极简创建与编辑', () => {
     );
   });
 
-  it('日期和时间选择器共同写入集合时间', async () => {
+  it('日期和时间选择器分别写入集合日期与时间', async () => {
     await page.onLoad({});
     page.dateTimePicker({
       currentTarget: { dataset: { part: 'date' } },
       detail: { value: '2026-10-20' },
     });
+    expect(page.data.form.startDate).toBe('2026-10-20');
+    expect(page.data.form.startTime).toBe('');
+
     page.dateTimePicker({
       currentTarget: { dataset: { part: 'time' } },
       detail: { value: '07:30' },
     });
-    expect(page.data.form.startAt).toBe('2026-10-20 07:30:00');
+    expect(page.data.form).toMatchObject({ startDate: '2026-10-20', startTime: '07:30' });
+  });
+
+  it('新建模式只选日期不会注入默认时间，补选时间后可发布并在重开时回显', async () => {
+    let saved: Activity | undefined;
+    rideService.saveActivity.mockImplementation(async (payload: any) => {
+      saved = savedActivityFromPayload(payload, 'created-date-time');
+      return saved;
+    });
+    await page.onLoad({});
+
+    page.dateTimePicker({
+      currentTarget: { dataset: { part: 'date' } },
+      detail: { value: '2026-10-20' },
+    });
+    expect(page.data.form).toMatchObject({ startDate: '2026-10-20', startTime: '' });
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+    expect(rideService.saveActivity).not.toHaveBeenCalled();
+    expect(wx.showModal).toHaveBeenLastCalledWith(
+      expect.objectContaining({ content: '请选择集合时间' }),
+    );
+
+    page.dateTimePicker({
+      currentTarget: { dataset: { part: 'time' } },
+      detail: { value: '07:30' },
+    });
+    page.data.form.routeStart = '湖边广场';
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+    expect(rideService.saveActivity).toHaveBeenCalledTimes(1);
+    expect(saved).toBeDefined();
+
+    rideService.getAdminActivity.mockResolvedValueOnce(saved);
+    await page.onLoad({ id: saved!.id });
+    expect(page.data.form).toMatchObject({ startDate: '2026-10-20', startTime: '07:30' });
+  });
+
+  it('跨日深夜集合时间保存后重开仍保持原日期和时间', async () => {
+    let saved: Activity | undefined;
+    rideService.saveActivity.mockImplementation(async (payload: any) => {
+      saved = savedActivityFromPayload(payload, 'created-cross-day');
+      return saved;
+    });
+    await page.onLoad({});
+    page.data.form.startDate = '2026-10-11';
+    page.data.form.startTime = '23:30';
+    page.data.form.routeStart = '夜骑起点';
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(formatLocalDateTime(rideService.saveActivity.mock.calls[0][0].startAt)).toBe(
+      '2026-10-11 23:30:00',
+    );
+    rideService.getAdminActivity.mockResolvedValueOnce(saved);
+    await page.onLoad({ id: saved!.id });
+    expect(page.data.form).toMatchObject({ startDate: '2026-10-11', startTime: '23:30' });
+  });
+
+  it('图片选择本地预览、上传成功、保存与重开回读保持数量和顺序', async () => {
+    const firstUpload = deferred<{ fileID: string }>();
+    const secondUpload = deferred<{ fileID: string }>();
+    const uploadFile = vi
+      .fn()
+      .mockReturnValueOnce(firstUpload.promise)
+      .mockReturnValueOnce(secondUpload.promise);
+    let saved: Activity | undefined;
+    rideService.saveActivity.mockImplementation(async (payload: any) => {
+      saved = savedActivityFromPayload(payload, 'created-images');
+      return saved;
+    });
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [{ tempFilePath: '/tmp/first.jpg' }, { tempFilePath: '/tmp/second.jpg' }],
+      }),
+    });
+    Object.assign(wx.cloud!, { uploadFile });
+
+    const choosing = page.chooseImages();
+    await vi.waitFor(() => expect(page.data.pendingImages).toHaveLength(2));
+    expect(page.data.pendingImages).toEqual([
+      expect.objectContaining({ previewPath: '/tmp/first.jpg', status: 'uploading' }),
+      expect.objectContaining({ previewPath: '/tmp/second.jpg', status: 'uploading' }),
+    ]);
+
+    firstUpload.resolve({ fileID: 'cloud://first.jpg' });
+    secondUpload.resolve({ fileID: 'cloud://second.jpg' });
+    await choosing;
+    expect(page.data.images).toEqual(['cloud://first.jpg', 'cloud://second.jpg']);
+    expect(page.data.coverImage).toBe('cloud://first.jpg');
+
+    page.data.form.startDate = '2026-10-20';
+    page.data.form.startTime = '07:30';
+    page.data.form.routeStart = '湖边广场';
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+    expect(rideService.saveActivity.mock.calls[0][0]).toMatchObject({
+      images: ['cloud://first.jpg', 'cloud://second.jpg'],
+      coverImage: 'cloud://first.jpg',
+    });
+
+    rideService.getAdminActivity.mockResolvedValueOnce(saved);
+    await page.onLoad({ id: saved!.id });
+    expect(page.data.images).toEqual(['cloud://first.jpg', 'cloud://second.jpg']);
+    expect(page.data.coverImage).toBe('cloud://first.jpg');
+  });
+
+  it('图片失败项可重试恢复并在保存重开后完整回读', async () => {
+    const uploadFile = vi
+      .fn()
+      .mockResolvedValueOnce({ fileID: 'cloud://success.jpg' })
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce({ fileID: 'cloud://retry.jpg' });
+    let saved: Activity | undefined;
+    rideService.saveActivity.mockImplementation(async (payload: any) => {
+      saved = savedActivityFromPayload(payload, 'created-retry-images');
+      return saved;
+    });
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [{ tempFilePath: '/tmp/first.jpg' }, { tempFilePath: '/tmp/second.jpg' }],
+      }),
+    });
+    Object.assign(wx.cloud!, { uploadFile });
+
+    await page.chooseImages();
+    expect(page.data.images).toEqual([]);
+    expect(page.data.pendingImages).toEqual([
+      expect.objectContaining({ previewPath: '/tmp/first.jpg', status: 'uploaded' }),
+      expect.objectContaining({ previewPath: '/tmp/second.jpg', status: 'failed' }),
+    ]);
+    expect(page.data.error).toContain('上传失败');
+
+    await page.retryImage({ currentTarget: { dataset: { id: page.data.pendingImages[1].id } } });
+    expect(page.data.images).toEqual(['cloud://success.jpg', 'cloud://retry.jpg']);
+    expect(page.data.pendingImages).toEqual([]);
+
+    page.data.form.startDate = '2026-10-20';
+    page.data.form.startTime = '07:30';
+    page.data.form.routeStart = '湖边广场';
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+    rideService.getAdminActivity.mockResolvedValueOnce(saved);
+    await page.onLoad({ id: saved!.id });
+    expect(page.data.images).toEqual(['cloud://success.jpg', 'cloud://retry.jpg']);
   });
 
   it('图片并行上传时保留成功项并为失败项提供独立重试状态', async () => {
@@ -274,6 +467,9 @@ describe('日常活动极简创建与编辑', () => {
     expect(template).toContain('最多 3 张');
     expect(template).toContain('备注说明');
     expect(template).toContain('仅保存链接，不再同步');
+    expect(template).toContain('form.startDate');
+    expect(template).toContain('form.startTime');
+    expect(template).not.toContain('form.startAt');
     for (const removed of [
       '活动结束',
       '路线终点',
