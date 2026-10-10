@@ -30,6 +30,7 @@ const {
   verifyUploadedMedia,
   MEDIA_VERIFY_ATTEMPTS,
   validateMediaUpdate,
+  effectiveBackgroundPhoto,
   ownerMedia,
   normalizeAvatarProfile,
   writableDocument,
@@ -200,6 +201,77 @@ test('update 加密敏感字段并把手填手机号标记为未验证', () => {
     code: 'FORBIDDEN_FIELD',
   });
   assert.throws(() => buildUpdate({ openid: 'forged' }, key), { code: 'FORBIDDEN_FIELD' });
+});
+
+test('背景槽位显式 null 阻止 legacy photos 首图回退', () => {
+  const legacy = { file_id: 'cloud://env/profiles/legacy/ride.jpg', category: 'ride' };
+  assert.deepEqual(effectiveBackgroundPhoto({ photos: [legacy] }), legacy);
+  assert.equal(effectiveBackgroundPhoto({ background_photo: null, photos: [legacy] }), null);
+});
+
+test('旧客户端零或单图写入转换成背景槽位且不生成 photos 覆盖', () => {
+  assert.deepEqual(buildUpdate({ photos: [] }, key, {}), { background_photo: null });
+  assert.deepEqual(
+    buildUpdate(
+      { photos: [{ file_id: 'cloud://env/profiles/owner/next.jpg', category: 'ride' }] },
+      key,
+      {},
+    ),
+    {
+      background_photo: {
+        file_id: 'cloud://env/profiles/owner/next.jpg',
+        category: 'ride',
+      },
+    },
+  );
+});
+
+test('新旧背景协议不可混用且旧多图继续拒绝', () => {
+  assert.throws(
+    () =>
+      buildUpdate(
+        {
+          background_photo: null,
+          photos: [{ file_id: 'cloud://env/profiles/owner/next.jpg', category: 'ride' }],
+        },
+        key,
+        {},
+      ),
+    { code: 'VALIDATION_FAILED' },
+  );
+  assert.throws(
+    () =>
+      buildUpdate(
+        {
+          photos: [
+            { file_id: 'cloud://env/profiles/owner/a.jpg', category: 'ride' },
+            { file_id: 'cloud://env/profiles/owner/b.jpg', category: 'bike' },
+          ],
+        },
+        key,
+        {},
+      ),
+    { code: 'VALIDATION_FAILED' },
+  );
+});
+
+test('profile 响应区分缺失与显式空背景并完整保留 legacy photos', () => {
+  const photos = [
+    { file_id: 'cloud://env/profiles/owner/a.jpg', category: 'ride' },
+    { file_id: 'cloud://env/profiles/owner/b.jpg', category: 'bike' },
+  ];
+  const legacy = response({ photos });
+  assert.equal(Object.hasOwn(legacy, 'background_photo'), false);
+  assert.deepEqual(legacy.photos, photos);
+
+  const cleared = response({ background_photo: null, photos });
+  assert.equal(Object.hasOwn(cleared, 'background_photo'), true);
+  assert.equal(cleared.background_photo, null);
+  assert.deepEqual(cleared.photos, photos);
+
+  const current = response({ background_photo: photos[1], photos });
+  assert.deepEqual(current.background_photo, photos[1]);
+  assert.deepEqual(current.photos, photos);
 });
 
 test('头像公开授权绑定当前版本，撤销时清除版本且禁止客户端伪造', () => {

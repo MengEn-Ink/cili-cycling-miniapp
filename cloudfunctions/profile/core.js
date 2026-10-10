@@ -776,6 +776,27 @@ function normalizeAvatarProfile(doc = {}) {
   normalized.avatar_source = hasAvatarSource ? doc.avatar_source : 'custom';
   return normalized;
 }
+function validPhoto(value) {
+  return Boolean(
+    value &&
+      typeof value.file_id === 'string' &&
+      value.file_id &&
+      ['ride', 'bike', 'other'].includes(value.category),
+  );
+}
+function effectiveBackgroundPhoto(profile) {
+  const value = profile && typeof profile === 'object' ? profile : {};
+  if (Object.prototype.hasOwnProperty.call(value, 'background_photo')) {
+    return validPhoto(value.background_photo)
+      ? {
+          file_id: value.background_photo.file_id,
+          category: value.background_photo.category,
+        }
+      : null;
+  }
+  const legacy = Array.isArray(value.photos) ? value.photos.find(validPhoto) : undefined;
+  return legacy ? { file_id: legacy.file_id, category: legacy.category } : null;
+}
 function response(doc = {}) {
   const status = sensitiveStatus(doc);
   const emergencyReady =
@@ -800,6 +821,9 @@ function response(doc = {}) {
       Number.isSafeInteger(doc.avatar_visibility_revision) && doc.avatar_visibility_revision >= 0
         ? doc.avatar_visibility_revision
         : null,
+    ...(Object.prototype.hasOwnProperty.call(doc, 'background_photo')
+      ? { background_photo: effectiveBackgroundPhoto(doc) }
+      : {}),
     photos: Array.isArray(doc.photos) ? doc.photos : [],
     gender: typeof doc.gender === 'string' ? doc.gender : '',
     emergency_name: typeof doc.emergency_name === 'string' ? doc.emergency_name : '',
@@ -878,19 +902,30 @@ function buildUpdate(event, keyValue, current = {}) {
       data.avatar_visibility_revision = null;
     }
   }
-  if (event.photos !== undefined) {
+  const hasBackground = Object.prototype.hasOwnProperty.call(event, 'background_photo');
+  const hasLegacyPhotos = Object.prototype.hasOwnProperty.call(event, 'photos');
+  if (hasBackground && hasLegacyPhotos)
+    throw new ProfileError('VALIDATION_FAILED', '背景图片协议不可混用');
+  if (hasBackground) {
+    if (event.background_photo !== null && !validPhoto(event.background_photo))
+      throw new ProfileError('VALIDATION_FAILED', '背景图片格式错误');
+    data.background_photo =
+      event.background_photo === null
+        ? null
+        : {
+            file_id: event.background_photo.file_id,
+            category: event.background_photo.category,
+          };
+  } else if (hasLegacyPhotos) {
     if (
       !Array.isArray(event.photos) ||
       event.photos.length > 1 ||
-      event.photos.some(
-        (item) =>
-          !item ||
-          typeof item.file_id !== 'string' ||
-          !['ride', 'bike', 'other'].includes(item.category),
-      )
+      event.photos.some((item) => !validPhoto(item))
     )
       throw new ProfileError('VALIDATION_FAILED', '照片资料格式错误');
-    data.photos = event.photos.map((item) => ({ file_id: item.file_id, category: item.category }));
+    data.background_photo = event.photos.length
+      ? { file_id: event.photos[0].file_id, category: event.photos[0].category }
+      : null;
   }
   for (const [input, cipherField, maskedField, masker, max] of [
     ['real_name', 'real_name_cipher', 'real_name_masked', maskName, 80],
@@ -974,6 +1009,8 @@ module.exports = {
   registeredMedia,
   canonicalFileForRecord,
   validateMediaUpdate,
+  validPhoto,
+  effectiveBackgroundPhoto,
   ownerMedia,
   ownerAvatarMedia,
   normalizeAvatarProfile,
