@@ -1,6 +1,6 @@
 # 高优问题清单
 
-> 最后更新：2026-10-10 12:25（CST）
+> 最后更新：2026-10-10 12:30（CST）
 >
 > 维护原则：这里只保留尚未满足关闭条件的问题。新问题先去重、澄清、拆分；已满足关闭条件的条目直接删除，Git 历史和不可变外部证据作为归档。
 
@@ -27,12 +27,16 @@
 - HP-04 真机 smoke（2026-10-10，同一隔离集）：管理列表全部 50→100→102（101 隔离 + 1 存量草稿）、无遗漏无重复；draft 筛选 7（隔离 6）、published 50→65、finished 30；快速刷新/筛选/加载更多竞态后仍为全部/50 且无错误。
 - 隔离清理：按 marker 分批物理删除 101/101，回查 `e2e_marker` 结果集为空（requestId `817d85a8-5441-4406-a289-4c9946dc0aba`），存量 1 条草稿原样保留。
 - 新 UI 产品基线（2026-10-10 09:58）：用户已确认按新截图重做全局 UI，移除旧版布局及深浅主题区分；采用单一明亮高对比主题，并以 375×812px、16px 页面边距、8px 栅格、48px 输入/按钮、56px TabBar、真实字体和卡片尺寸为实施基准。
+- 旧 UI 本地运行态封板（2026-10-10 12:20）：在独立 worktree 检出 #69 合并提交 `d639b704`，通过已登录微信开发者工具（iPhone 12/13 Pro，390px，浅色主题）重跑 14 页 smoke；独立视觉复核确认骑行名片指标、活动管理标题与 `RIDE 1` 序号均 `PASS`，底部按钮未被安全区裁切。该证据仅用于封板旧 UI 过渡保护，不改变 `HP-20261010-02` 的统一 UI 优先级。
+- HP-08 本地运行态补证（同一 worktree）：通过真实输入框和快捷按钮得到 `startAt=2026-10-10 22:00:00`、`endAt=2026-10-11 02:00:00`；清空开始时间后点击相对截止时间，`deadline` 保持空值。该 smoke 尚未覆盖新建/编辑模式的 picker、保存、重开回读和真机独立复核。
+- CloudBase 本地核验（2026-10-10）：`npm run cloudbase:verify` 通过，`profile-media-cleanup`、`activity-admin`、`strava-auth`、`strava-callback`、`profile`、`activity-read` 均为 `Active`；该证据仅证明部署状态，不替代业务链路验收。
 
 ## 当前工作交接检查点
 
 - 本轮已完成并交付：HP-01 至 HP-05 已按完整证据链从清单删除；HP-06 已随 PR #56 合入并上传开发版，但其“深浅主题并存”产品前提已被新 UI 基线替代；HP-20261010-01 的旧浅色行程序号与三处运行态低对比过渡保护已随 PR #62/#66/#69 合入并上传开发版；HP-08 已随 PR #57 合入并交付开发版；HP-12 闰日算法已随 PR #59 合入。
 - 当前最高优先级：先实施 `HP-20261010-02` 全局统一 UI，再在新布局上继续做页面级功能验收，避免继续为即将删除的旧主题/旧布局补样式。
 - HP-07 检查点：代码、全量本地/远端门禁、开发版 `0.0.49.1`、目标环境索引、`registration` Active 回读及线上代码比对已完成；仅余 50+ 真实报名页面 smoke 和独立复核，状态保持 `PENDING_EVIDENCE`。
+- HP-13 运行态阻塞证据：本地微信开发者工具真实调用 `strava-auth?action=status` 返回 `INTERNAL_ERROR / 服务暂时不可用`（requestId `8d93c87e-387f-4b93-a667-f58e515b4b4c`）；函数为 `Active` 且 Node.js 20.19，`strava_credentials` / `strava_snapshots` 各有 1 条存量数据，`athlete_created_at` 缺失只影响展示字段，不足以触发该错误。当前函数未配置 CLS log topic，按 requestId 拉日志返回 `ResourceNotFound.TopicNotExist`；下一步必须先恢复可观测日志或增加可回读诊断信号，再定位 `cleanupExpiredStates` / `readReadiness` 的实际异常，禁止按猜测改业务逻辑。
 - 并行状态：PR #61/#62/#63/#64/#66/#68/#69 均已合入；HP-07 已解除代码文件族占用，切换到 P0 `HP-20261010-02`。
 - 责任边界：TraeX 执行者负责 `HP-20261010-02` 页面与组件实施；TraeX 审判者负责逐页尺寸对照、旧主题残留扫描、功能回归、CI/开发版和真机验收。Aime 个人助理完成本次清单对齐后退出，不再占用任何代码文件族。
 
@@ -113,6 +117,7 @@
 - 用户报告：创建活动的时间需要控件和快捷选择，且点了没反应时要有交代。
 - 代码/CI：PR #48 已加入 picker 与“明早 07:00、下周六 08:00、开始后 4 小时、开始前 1 天 20:00”等快捷项；PR #57 修复相对快捷项在开始时间为空/非法时静默无动作的问题。
 - 远端证据：main CI run [38017029088](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38017029088) SUCCESS；同 SHA `92f5c0b...` 的开发版 `0.0.37.1` 已上传。
+- 本地补证：在微信开发者工具中通过真实输入框填入 `2026-10-10 22:00:00` 并点击“开始后 4 小时”，回读 `endAt=2026-10-11 02:00:00`；清空开始时间后点击相对截止时间，`deadline` 保持空值，未发生静默写入。
 - 证据缺口：真机 picker 在创建/编辑两种模式保存后重开的 smoke 与独立复核。
 - 负责人：TraeX 执行者；独立复核：TraeX 审判者；真机验收：Aime 个人助理。
 - 关闭条件：三个时间字段可精细和快捷选择；无静默操作；跨月/年/时区无漂移；创建与编辑保存重开正确；CI、开发版 smoke 和独立复核齐全。
@@ -166,8 +171,8 @@
 
 - 优先级/状态：P0 / `PENDING_EVIDENCE`，代码已随 PR [#53](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/53) 合入 main，PR/main CI、微信开发版、`strava-auth/strava-callback` 部署与 CloudBase verify 均成功，等待六条真实授权 smoke。
 - 当前事实：merge SHA `490044dd91194f9cd643c43700f97ae1ffaa74d3` 实现 attempt generation/fencing；disconnect 原子推进代际并消费全部未消费 state；callback 对乱序、解绑竞态和同步竞态 fail closed；`access_denied/error` 消费 state 并落稳定拒绝状态；readiness 按 scope/token/config/network 返回 `reauthorize/disconnect/contact-support/retry`；客户端仅按 recovery action 展示动作且不自动重跑 failed；解绑明确为本地断开，并降级所有未被 profile 引用的 Strava 媒体。
-- 证据/阻断：PR #53 `validate` SUCCESS；main CI run `38010547930` SUCCESS；微信开发版 run `38010624339` 成功上传 `0.0.32.1`；2026-10-10 已下载线上 `strava-auth/strava-callback` 代码与基线比对一致。当前缺授权成功、拒绝、scope 不足、token 失效、重新授权、解绑后旧 callback 六条真实 smoke。
-- 下一步：使用真机和 Strava 测试账号执行六条授权生命周期 smoke，并确认旧 callback 无法恢复凭证。
+- 证据/阻断：PR #53 `validate` SUCCESS；main CI run `38010547930` SUCCESS；微信开发版 run `38010624339` 成功上传 `0.0.32.1`；2026-10-10 已下载线上 `strava-auth/strava-callback` 代码与基线比对一致。本地真实调用 `status` 当前返回 `INTERNAL_ERROR / 服务暂时不可用`（requestId `8d93c87e-387f-4b93-a667-f58e515b4b4c`）；函数 Node.js 20.19 且 Active，排除运行时版本过旧，`athlete_created_at` 缺失也不会让 readiness 抛错。函数未配置 CLS log topic，按 requestId 无法回读真实异常栈；六条授权 smoke 因此尚不能开始。
+- 下一步：先恢复 `strava-auth` 可观测日志或等价的可回读诊断信号，复现同一 `status` 请求并定位 `cleanupExpiredStates` / `readReadiness` 的实际异常；修复 status 后再使用真机和 Strava 测试账号执行六条授权生命周期 smoke，并确认旧 callback 无法恢复凭证。
 - 负责人：TraeX 执行者；安全/独立复核：TraeX 审判者；部署/真机：Aime 个人助理。
 - 关闭条件：解绑后所有旧 callback 被拒绝且凭证不复活；拒绝授权消费 state 并停止轮询；retry/reauthorize/disconnect/contact-support 由稳定服务端语义驱动；`strava-auth/callback` 部署回读；六条真实 smoke 通过。
 - 更新时间：2026-10-10。
