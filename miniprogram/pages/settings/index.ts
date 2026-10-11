@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.12.2',
+    date: '2026-10-12',
+    title: '活动首页支持左右滑动选活动',
+    summary: '活动列表改为单卡片轮播，左右滑动即可切换活动，并在滑到末尾时自动加载后续内容。',
+    latest: true,
+    features: [
+      '即将开始与历史活动均支持左右滑动切换卡片',
+      '增加切换进度、相邻卡片提示与轻量过渡动画',
+      '滑到末尾自动加载下一页，减少纵向滚动操作',
+    ],
+  },
+  {
     version: '2026.10.12.1',
     date: '2026-10-12',
     title: '活动首页横向空间更舒展',
     summary: '活动筛选与卡片区域移除重复的横向内边距，在保持页面安全留白的同时增加内容宽度。',
-    latest: true,
+    latest: false,
     features: [
       '活动筛选与卡片区域只保留一层页面边距',
       '普通屏幕和窄屏同步减少两侧重复留白',

@@ -38,7 +38,7 @@ describe('CILI 活动页静态契约', () => {
   });
 
   it('活动列表和详情继续渲染现有关键字段', () => {
-    expect(activities).toContain('item="{{row.item}}"');
+    expect(activities).toContain('item="{{item}}"');
     expect(detail).toContain('{{item.title}}');
     expect(detail).toContain('{{displayDate}}');
     expect(detail).toContain('{{item.route.distanceKm}}');
@@ -99,13 +99,12 @@ describe('CILI 活动页静态契约', () => {
     expect(activityCardStyles).toContain('grid-template-columns: repeat(3, minmax(0, 1fr));');
   });
 
-  it('V3.1 保留筛选与日期分组，并突出照片卡核心信息', () => {
+  it('V3.2 保留时间筛选并通过横向卡片突出照片与核心信息', () => {
     expect(activities).toContain('>即将开始</view>');
     expect(activities).toContain('>历史活动</view>');
-    expect(activities).toContain('bindtap="scrollToDay"');
-    expect(activities).toContain('id="day-{{row.dayKey}}"');
-    expect(activityCard).toContain('class="date-plate"');
-    expect(activityCard).not.toContain('{{item.displayDateLabel}}');
+    expect(activities).toContain('class="activity-carousel"');
+    expect(activities).toContain('bindchange="cardChange"');
+    expect(activities).toContain('{{item.displayDateLabel}}');
     expect(activityCard).toContain('{{item.displayTimeLabel}}');
     expect(activityCard).toContain('class="location-label">集合');
     expect(activityCard).toContain('{{item.publisher.nickname}} 发起');

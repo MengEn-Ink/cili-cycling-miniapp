@@ -9,11 +9,8 @@ import {
 } from '../../utils/date-time';
 import {
   appendUniqueActivities,
-  buildTimelineRows,
   createTimelineViewState,
   invalidateTimelineView,
-  type DayChip,
-  type TimelineRow,
   type TimelineViewState,
 } from './timeline-state';
 
@@ -70,8 +67,7 @@ Page({
     emptyTitle: VIEW_COPY.future.emptyTitle,
     emptyCopy: VIEW_COPY.future.emptyCopy,
     items: [] as ReturnType<typeof displayActivity>[],
-    rows: [] as TimelineRow[],
-    dayChips: [] as DayChip[],
+    currentCardIndex: 0,
   },
   onShow() {
     void this.load();
@@ -94,19 +90,16 @@ Page({
     const view = this.data.activeView as PublicActivityView;
     const state = this.viewStates[view];
     const displayItems = state.items.map(displayActivity);
-    // 行序列是 items 的派生展示数据：items 继续驱动计数与空态，rows 负责日期分组渲染。
-    const { rows, dayChips } = buildTimelineRows(displayItems, view);
     this.setData({
       ...VIEW_COPY[view],
       items: displayItems,
-      rows,
-      dayChips,
       nextCursor: state.nextCursor,
       loading: state.loading,
       refreshing: state.refreshing,
       loadingMore: state.loadingMore,
       error: state.error,
       refreshError: state.refreshError,
+      currentCardIndex: Math.min(this.data.currentCardIndex, Math.max(displayItems.length - 1, 0)),
     });
   },
   isCurrent(view: PublicActivityView, revision: number, cursor?: string | null) {
@@ -217,26 +210,18 @@ Page({
     delete this.loadHandles[previous];
     delete this.loadMoreHandles[previous];
     delete this.loadMoreOwners[previous];
-    this.setData({ activeView: candidate });
+    this.setData({ activeView: candidate, currentCardIndex: 0 });
     this.renderActiveView();
     void this.load();
   },
+  cardChange(event: { detail?: { current?: number } }) {
+    const current = Math.max(0, Number(event.detail?.current) || 0);
+    this.setData({ currentCardIndex: current });
+    if (current >= this.data.items.length - 1 && this.data.nextCursor && !this.data.loadingMore) {
+      void this.loadMore();
+    }
+  },
   open(event: { currentTarget: { dataset: { id: string } } }) {
     wx.navigateTo({ url: '/pages/activity-detail/index?id=' + event.currentTarget.dataset.id });
-  },
-  scrollToDay(event: { currentTarget?: { dataset?: { key?: unknown } } }) {
-    const key = event.currentTarget?.dataset?.key;
-    if (typeof key !== 'string' || !key || key === 'pending') return;
-    // 快捷定位仅为增强体验：旧基础库不支持 selector 或分组未渲染时静默降级，不阻断浏览。
-    try {
-      const result = wx.pageScrollTo({
-        selector: `#day-${key}`,
-        duration: 200,
-        offsetTop: -8,
-      } as any) as Promise<void> | undefined;
-      if (result && typeof result.catch === 'function') result.catch(() => undefined);
-    } catch {
-      /* 忽略定位失败，用户仍可手动滚动查看分组 */
-    }
   },
 });

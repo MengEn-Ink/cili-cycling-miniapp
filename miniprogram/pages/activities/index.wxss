@@ -168,13 +168,70 @@ page {
 }
 
 .activity-results {
-  display: grid;
   min-height: 360rpx;
-  row-gap: var(--card-gap);
 }
 
 .activity-results activity-card {
   display: block;
+}
+
+.activity-carousel {
+  width: 100%;
+  height: 760rpx;
+  overflow: hidden;
+}
+
+.activity-slide {
+  box-sizing: border-box;
+  height: 100%;
+  padding-right: 16rpx;
+}
+
+.activity-slide.is-active {
+  animation: card-enter 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.activity-slide-date {
+  margin-bottom: 12rpx;
+  color: var(--color-muted);
+  font-size: 22rpx;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.carousel-hint {
+  display: flex;
+  margin-top: 12rpx;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  color: var(--color-muted);
+  font-size: 20rpx;
+  font-weight: 700;
+}
+
+.carousel-progress {
+  width: 120rpx;
+  height: 4rpx;
+  overflow: hidden;
+  background: var(--color-border);
+}
+
+.carousel-progress__value {
+  height: 100%;
+  background: var(--color-brand);
+  transition: width 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateX(24rpx) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
 }
 
 .day-group-head {
@@ -263,6 +320,10 @@ page {
     font-size: 44rpx;
   }
 
+  .activity-carousel {
+    height: 720rpx;
+  }
+
   .day-chip-bar {
     width: calc(100% + 64rpx);
     margin-right: -32rpx;
@@ -272,5 +333,15 @@ page {
   .day-chip-bar__inner {
     padding-right: 32rpx;
     padding-left: 32rpx;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activity-slide.is-active {
+    animation: none;
+  }
+
+  .carousel-progress__value {
+    transition: none;
   }
 }
