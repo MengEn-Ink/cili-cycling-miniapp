@@ -175,41 +175,43 @@ describe('活动详情设计与日期契约', () => {
     expect(context.arc).toHaveBeenCalledTimes(4);
   });
 
-  it('提供曲线空态、热门爬坡、可触控头像与完整公开骑行名片', () => {
+  it('提供曲线空态、热门爬坡、含照片的缩小与完整公开骑行名片', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
     expect(template).toContain('暂无有效海拔数据');
     expect(template).toContain('item.route.popularClimbs');
+    expect(template).toContain('class="attendee-card-strip" scroll-x');
+    expect(template).toContain('class="attendee-mini-card"');
     expect(template).toContain('bindtap="openAttendeeCard"');
-    expect(template).toContain('点击头像查看公开骑行名片');
-    expect(template).toContain('公开骑行名片');
+    expect(template).toContain('左右浏览缩小骑行名片，点击查看完整名片');
+    expect(template).toContain('完整公开骑行名片');
     expect(template).toContain('数据来自报名时的 Strava 骑行快照');
     expect(template).toContain('wx:if="{{item.avatarUrl}}"');
     expect(template).toContain('wx:if="{{selectedAttendee.avatarUrl}}"');
-    expect(template).toContain('attendee-avatar-placeholder');
-    expect(template).toContain('rider-card-avatar-placeholder');
+    expect(template).toContain('attendee-mini-card__placeholder');
+    expect(template).toContain('rider-card-photo__placeholder');
     expect(template).not.toContain('defaultAttendeeAvatar');
     expect(template).toContain('binderror="selectedAttendeeAvatarError"');
     expect(template).toContain('class="gender-pill {{selectedAttendee.genderClass}}"');
     expect(template).toContain('{{selectedAttendee.genderLabel}}');
     expect(template).not.toContain('selectedAttendee.title');
     expect(template).not.toContain('骑行爱好者');
-    expect(template).toContain('头像按骑友公开设置展示');
+    expect(template).toContain('照片沿用骑友公开头像设置，不展示私人骑行照片');
     expect(template).not.toContain('attendee-avatar--default">骑');
     expect(
       template.match(/<text wx:if="\{\{selectedAttendee\.card\.[a-zA-Z0-9]+ !== null\}\}">/g),
     ).toHaveLength(4);
     expect(template).toContain('class="rider-modal-mask" bindtap="closeAttendeeCard"');
     expect(template).toContain('class="rider-card-close"');
-    expect(styles).toMatch(
-      /\.attendee-avatar-button\s*\{[^}]*width:\s*var\(--control-height\)[^}]*height:\s*var\(--control-height\)/s,
-    );
+    expect(styles).toMatch(/\.attendee-mini-card\s*\{[^}]*width:\s*224rpx;[^}]*height:\s*288rpx;/s);
     expect(styles).toMatch(
       /\.route-actions button\s*\{[^}]*min-height:\s*var\(--control-height\)/s,
     );
-    expect(styles).toMatch(/\.rider-card\s*\{[^}]*max-height:\s*calc\(100vh - 96rpx\)/s);
+    expect(styles).toMatch(
+      /\.rider-card\.rider-card--photo\s*\{[^}]*max-height:\s*calc\(100vh - 96rpx\)/s,
+    );
+    expect(styles).toMatch(/\.rider-card-photo\s*\{[^}]*height:\s*560rpx;/s);
     expect(styles).toMatch(/\.rider-name\s*\{[^}]*overflow-wrap:\s*anywhere/s);
-    expect(styles).toMatch(/\.rider-identity\s*\{[^}]*padding-right:\s*120rpx/s);
     expect(styles).toMatch(/\.rider-stats > view > text:last-child\s*\{/s);
     expect(styles).not.toMatch(/\.rider-stats text:last-child/);
   });
