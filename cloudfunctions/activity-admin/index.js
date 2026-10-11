@@ -141,8 +141,9 @@ exports.main = async (event = {}) => {
         await deleteActivity(
           transactionStore(),
           {
-            ...event,
-            activityId: event.id,
+            action: 'delete',
+            activityId: event.activityId || event.id,
+            id: event.id,
             openid,
           },
           new Date(),

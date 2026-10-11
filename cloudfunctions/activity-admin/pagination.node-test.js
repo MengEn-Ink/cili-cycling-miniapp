@@ -41,6 +41,7 @@ function loadMain() {
       created_by: 'admin',
       created_at: new Date('2026-01-01T00:00:00.000Z'),
     },
+    registrations,
     registrationCursors: [],
     audits: [],
   };
@@ -62,7 +63,7 @@ function loadMain() {
       async get() {
         const cursor = this.condition?._id?.$gt || '';
         state.registrationCursors.push(cursor || null);
-        const matching = registrations
+        const matching = state.registrations
           .filter((item) => item.status === this.condition.status && (!cursor || item._id > cursor))
           .sort((left, right) => left._id.localeCompare(right._id));
         assert.equal(this.orderField, '_id');
@@ -87,6 +88,9 @@ function loadMain() {
           }),
           set: async ({ data }) => {
             state.activity = { _id: id, ...data };
+          },
+          update: async ({ data }) => {
+            state.activity = { ...state.activity, ...data };
           },
         };
       },
@@ -135,4 +139,20 @@ test('首次分仓回填分页读取超过 100 条占位报名并证明无额外
   assert.equal(state.activity.occupancy_partition_ready, true);
   assert.equal(state.activity.support_vehicle_occupied_count, 50);
   assert.equal(state.activity.self_drive_occupied_count, 75);
+});
+
+test('删除适配器只向领域层传递可信字段，不透传运行时注入字段', async () => {
+  const { main, state } = loadMain();
+  state.registrations.length = 0;
+  state.activity.occupied_count = 0;
+
+  const result = await main({
+    action: 'delete',
+    id: 'legacy',
+    userInfo: { appId: 'runtime-injected' },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.data.deleted, true);
+  assert.equal(state.activity.is_deleted, true);
 });

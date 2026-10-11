@@ -4,11 +4,19 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.11.22',
+    date: '2026-10-11',
+    title: '活动删除兼容性修复',
+    summary: '修复活动删除请求携带运行时字段时被服务端拒绝的问题，恢复下架后正常删除。',
+    latest: true,
+    features: ['删除适配器仅向领域层传递可信字段', '补充真实运行态删除失败的回归测试'],
+  },
+  {
     version: '2026.10.11.21',
     date: '2026-10-11',
     title: '活动管理与头像选择修复',
     summary: '修复活动下架和删除链路，草稿活动可直接删除；头像只保留微信授权和自定义上传两种来源。',
-    latest: true,
+    latest: false,
     features: [
       '修复历史活动报名数据分页读取导致的下架与删除失败',
       '草稿活动提供常驻删除按钮并保留滑动删除操作',
