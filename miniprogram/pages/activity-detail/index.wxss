@@ -61,14 +61,6 @@ brand-logo {
   display: block;
 }
 
-.hero-sequence {
-  padding-top: 4rpx;
-  color: #b5b5ba;
-  font-size: 18rpx;
-  font-weight: 800;
-  letter-spacing: 3rpx;
-}
-
 .hero-kicker {
   margin-top: 24rpx;
   color: #d2d2d6;
@@ -1036,10 +1028,6 @@ brand-logo {
 }
 .rider-card .gender-pill.gender-unknown {
   color: var(--color-gender-unknown);
-}
-
-.hero-sequence {
-  color: var(--color-muted);
 }
 
 /* Unified bright content below the photographic hero. */

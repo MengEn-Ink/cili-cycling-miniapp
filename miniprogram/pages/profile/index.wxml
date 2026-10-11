@@ -2,7 +2,7 @@
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{loading ? '正在同步个人资料' : (refreshTitle || (!error ? '个人资料已就绪' : ''))}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{error}}</view>
   <view class="profile-topbar">
-    <brand-logo compact="{{true}}" meta="RIDER PROFILE" />
+    <brand-logo compact="{{true}}" meta="个人资料" />
     <button class="settings-entry" bindtap="openSettings" aria-label="打开设置">
       <text class="settings-entry-icon" aria-hidden="true">⚙</text>
     </button>
@@ -42,7 +42,6 @@
         <text wx:else aria-label="默认骑手头像">C</text>
       </view>
       <view class="profile-copy">
-        <view class="hero-kicker">RIDER PROFILE</view>
         <view class="profile-name">{{profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '欢迎来到此里')}}</view>
         <view class="auth-line"><text class="auth-dot {{authStatus === 'authenticated' ? 'verified' : ''}}"></text>{{authStatus === 'authenticated' ? '微信身份已验证' : '请先完成微信云身份验证'}}</view>
       </view>
@@ -82,7 +81,6 @@
   </view>
 
   <view class="card auth-card" wx:if="{{authStatus !== 'authenticated'}}">
-    <view class="panel-index">IDENTITY CHECK</view>
     <view class="title">身份验证</view>
     <view class="muted">{{authError || '为了您的数据安全，请先完成验证'}}</view>
     <view class="muted" wx:if="{{identityHintText}}">{{identityHintText}}</view>
@@ -98,7 +96,7 @@
 
   <view class="section-label"><text>01</text> 我的资料</view>
   <view class="profile-refresh-error" wx:if="{{!profile && error}}"><text aria-hidden="true">{{error}}</text><button bindtap="retryProfile">重试</button></view>
-  <view class="card profile-loading" wx:if="{{loading}}" aria-hidden="true"><view class="panel-index">PROFILE LOADING</view><view class="title">正在读取资料</view><view class="muted">正在同步最新资料。</view></view>
+  <view class="card profile-loading" wx:if="{{loading}}" aria-hidden="true"><view class="title">正在读取资料</view><view class="muted">正在同步最新资料。</view></view>
   <view class="card profile-card" wx:elif="{{profile}}">
     <view class="row">
       <view class="profile-card-copy"><view class="title">常用报名资料</view><view class="muted">仅你与报名审核员可见</view></view>
@@ -106,12 +104,12 @@
     </view>
     <view class="corner-cut"></view>
   </view>
-  <view class="card profile-error" wx:elif="{{error}}"><view aria-hidden="true"><view class="panel-index">PROFILE ERROR</view><view class="title">资料暂时无法加载</view><view class="muted">{{error}}</view></view><button class="secondary" bindtap="retryProfile">重试加载</button></view>
+  <view class="card profile-error" wx:elif="{{error}}"><view aria-hidden="true"><view class="title">资料暂时无法加载</view><view class="muted">{{error}}</view></view><button class="secondary" bindtap="retryProfile">重试加载</button></view>
   <view class="card empty-profile" wx:else><view class="title">资料尚未配置</view><view class="muted">请创建资料后再报名。</view><button class="btn" bindtap="edit">去完善</button></view>
 
   <view class="section-label"><text>02</text> 管理服务</view>
   <view class="menu-list">
-    <view class="menu-card" wx:if="{{authStatus === 'authenticated'}}" bindtap="activities"><view class="menu-icon">M</view><view class="menu-copy"><view class="menu-title">活动管理</view><view class="muted">创建、编辑与发布活动</view></view><text class="chevron">›</text></view>
-    <view class="menu-card" wx:if="{{isAdmin}}" bindtap="admin"><view class="menu-icon admin-icon">A</view><view class="menu-copy"><view class="menu-title">报名审批</view><view class="muted">查看并处理报名</view></view><text class="chevron">›</text></view>
+    <view class="menu-card" wx:if="{{authStatus === 'authenticated'}}" bindtap="activities"><view class="menu-icon">活</view><view class="menu-copy"><view class="menu-title">活动管理</view><view class="muted">创建、编辑与发布活动</view></view><text class="chevron">›</text></view>
+    <view class="menu-card" wx:if="{{isAdmin}}" bindtap="admin"><view class="menu-icon admin-icon">审</view><view class="menu-copy"><view class="menu-title">报名审批</view><view class="muted">查看并处理报名</view></view><text class="chevron">›</text></view>
   </view>
 </view>

@@ -8,7 +8,7 @@
         <image wx:elif="{{galleryImages.length === 1 && !coverFailed}}" class="hero-media" src="{{galleryImages[0]}}" mode="aspectFill" binderror="coverImageError" aria-label="{{item.title}}活动封面" />
         <view class="hero-shade" wx:if="{{galleryImages.length && !coverFailed}}"></view>
         <view class="hero-content">
-          <view class="hero-brand-row"><brand-logo compact="{{true}}" meta="RIDE DETAIL" /><view class="hero-sequence">RIDE / 01</view></view>
+          <view class="hero-brand-row"><brand-logo compact="{{true}}" meta="活动详情" /></view>
           <view class="hero-kicker" aria-label="{{displayDate}}">{{displayDate}}</view>
           <view class="hero-title">{{item.title}}</view>
           <view class="hero-route" wx:if="{{item.registrationUnlimited && item.route.start}}"><text>{{item.route.start}}</text></view>

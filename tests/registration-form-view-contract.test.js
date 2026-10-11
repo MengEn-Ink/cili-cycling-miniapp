@@ -27,8 +27,8 @@ describe('报名表单受控控件与视觉契约', () => {
   });
 
   it('顶部展示步骤、活动上下文和审核说明', () => {
-    expect(template).toContain('STEP 1 填写');
-    expect(template).toContain('CURRENT ACTIVITY');
+    expect(template).toContain('第一步 · 填写');
+    expect(template).toContain('当前活动');
     expect(template).toContain('{{activity.title');
     expect(template).toContain('提交后将进入审核');
   });
