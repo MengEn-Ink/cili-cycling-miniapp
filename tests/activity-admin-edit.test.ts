@@ -507,6 +507,117 @@ describe('日常活动极简创建与编辑', () => {
     expect(wx.showModal).not.toHaveBeenCalled();
   });
 
+  it('零后援容量草稿的历史司机被服务端清空后仍收敛已提交的发布', async () => {
+    let serverCurrent: Activity = {
+      ...activity,
+      id: 'publish-zero-support-driver',
+      version: 1,
+      status: 'draft',
+      supportVehicleCapacity: 0,
+      selfDriveCapacity: 20,
+      supportVehicleDriver: {
+        nickname: '历史司机',
+        licensePlate: '京A12345',
+        contactPhone: '13800000000',
+      },
+    };
+    rideService.getAdminActivity.mockImplementation(async () => serverCurrent);
+    rideService.saveActivity.mockImplementation(
+      async (payload: any, id?: string, expectedVersion?: number) => {
+        expect(id).toBe('publish-zero-support-driver');
+        expect(expectedVersion).toBe(1);
+        expect(payload).toMatchObject({
+          status: 'published',
+          supportVehicleCapacity: 0,
+          supportVehicleDriver: {
+            nickname: '历史司机',
+            licensePlate: '京A12345',
+            contactPhone: '13800000000',
+          },
+        });
+        serverCurrent = {
+          ...savedActivityFromPayload(payload, id),
+          version: 2,
+          status: 'published',
+          supportVehicleCapacity: 0,
+          selfDriveCapacity: 20,
+          supportVehicleDriver: { nickname: '', licensePlate: '', contactPhone: '' },
+        };
+        throw callFailed('发布已提交但响应丢失');
+      },
+    );
+    await page.onLoad({ id: serverCurrent.id });
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(rideService.saveActivity).toHaveBeenCalledTimes(1);
+    expect(rideService.getAdminActivity).toHaveBeenCalledTimes(2);
+    expect(serverCurrent).toMatchObject({
+      id: 'publish-zero-support-driver',
+      version: 2,
+      status: 'published',
+      supportVehicleCapacity: 0,
+      supportVehicleDriver: { nickname: '', licensePlate: '', contactPhone: '' },
+    });
+    expect(page.data).toMatchObject({
+      id: 'publish-zero-support-driver',
+      version: 2,
+      status: 'published',
+    });
+    expect(wx.showToast).toHaveBeenLastCalledWith({ title: '保存成功', icon: 'success' });
+    expect(wx.showModal).not.toHaveBeenCalled();
+  });
+
+  it('非零后援容量回读到不同司机时仍以冲突关闭', async () => {
+    const intendedDriver = {
+      nickname: '本端司机',
+      licensePlate: '京A12345',
+      contactPhone: '13800000000',
+    };
+    let serverCurrent: Activity = {
+      ...activity,
+      id: 'publish-concurrent-support-driver',
+      version: 1,
+      status: 'draft',
+      supportVehicleCapacity: 8,
+      selfDriveCapacity: 12,
+      supportVehicleDriver: intendedDriver,
+    };
+    rideService.getAdminActivity.mockImplementation(async () => serverCurrent);
+    rideService.saveActivity.mockImplementation(
+      async (payload: any, id?: string, expectedVersion?: number) => {
+        expect(id).toBe('publish-concurrent-support-driver');
+        expect(expectedVersion).toBe(1);
+        expect(payload.supportVehicleDriver).toEqual(intendedDriver);
+        serverCurrent = {
+          ...savedActivityFromPayload(payload, id),
+          version: 2,
+          status: 'published',
+          supportVehicleDriver: {
+            nickname: '另一会话司机',
+            licensePlate: '沪aB54321',
+            contactPhone: '13900000000',
+          },
+        };
+        throw callFailed('本端发布未提交');
+      },
+    );
+    await page.onLoad({ id: serverCurrent.id });
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(rideService.saveActivity).toHaveBeenCalledTimes(1);
+    expect(page.data).toMatchObject({
+      id: 'publish-concurrent-support-driver',
+      version: 1,
+      status: 'draft',
+    });
+    expect(wx.showModal).toHaveBeenLastCalledWith(
+      expect.objectContaining({ content: '活动已被其他人更新，请重新加载后再试' }),
+    );
+    expect(wx.showToast).not.toHaveBeenCalledWith({ title: '保存成功', icon: 'success' });
+  });
+
   it('本端发布未提交而另一会话发布不同内容时冲突关闭', async () => {
     let serverCurrent: Activity | undefined;
     const publishedVersions: number[] = [];

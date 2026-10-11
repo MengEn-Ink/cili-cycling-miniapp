@@ -71,15 +71,16 @@ const activityContentProjection = (activity: EditableActivity | ActivityInput) =
     typeof activity.fee === 'string' ||
     Array.isArray(activity.feeIncluded) ||
     Array.isArray(activity.feeExcluded);
-  const supportVehicleDriver = activity.supportVehicleDriver
-    ? {
-        nickname: protocolText(activity.supportVehicleDriver.nickname),
-        licensePlate: protocolText(activity.supportVehicleDriver.licensePlate).toUpperCase(),
-        contactPhone: protocolText(activity.supportVehicleDriver.contactPhone),
-      }
-    : activity.supportVehicleCapacity === 0
+  const supportVehicleDriver =
+    activity.supportVehicleCapacity === 0
       ? { nickname: '', licensePlate: '', contactPhone: '' }
-      : undefined;
+      : activity.supportVehicleDriver
+        ? {
+            nickname: protocolText(activity.supportVehicleDriver.nickname),
+            licensePlate: protocolText(activity.supportVehicleDriver.licensePlate).toUpperCase(),
+            contactPhone: protocolText(activity.supportVehicleDriver.contactPhone),
+          }
+        : undefined;
   const location = (value: ActivityLocation | undefined) =>
     value
       ? {
