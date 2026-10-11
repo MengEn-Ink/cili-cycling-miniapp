@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.12.1',
+    date: '2026-10-12',
+    title: '活动首页横向空间更舒展',
+    summary: '活动筛选与卡片区域移除重复的横向内边距，在保持页面安全留白的同时增加内容宽度。',
+    latest: true,
+    features: [
+      '活动筛选与卡片区域只保留一层页面边距',
+      '普通屏幕和窄屏同步减少两侧重复留白',
+      '首屏标题区域和其他页面布局保持不变',
+    ],
+  },
+  {
     version: '2026.10.11.35',
     date: '2026-10-11',
     title: '行程归档自动刷新',
     summary: '“我的行程”停留跨过中国时间零点时会自动刷新，过期行程无需重新进入页面即可归档。',
-    latest: true,
+    latest: false,
     features: [
       '页面停留跨过中国时间零点时自动刷新行程列表',
       '离开页面后停止归档刷新，避免后台重复请求',

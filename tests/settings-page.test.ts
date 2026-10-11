@@ -44,21 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.11.35',
+      version: '2026.10.12.1',
       latest: true,
-      title: '行程归档自动刷新',
-      summary: '“我的行程”停留跨过中国时间零点时会自动刷新，过期行程无需重新进入页面即可归档。',
+      title: '活动首页横向空间更舒展',
+      summary: '活动筛选与卡片区域移除重复的横向内边距，在保持页面安全留白的同时增加内容宽度。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.12.1',
       '2026.10.11.35',
       '2026.10.11.34',
       '2026.10.11.33',
       '2026.10.11.32',
-      '2026.10.11.31',
     ]);
   });
 

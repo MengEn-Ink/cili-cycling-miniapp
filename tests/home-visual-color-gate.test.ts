@@ -18,6 +18,12 @@ describe('首页视觉与配色门禁', () => {
     expect(homeStyles).not.toMatch(/navy|blue|gradient/i);
   });
 
+  it('内容区只使用页面单层边距，避免活动卡片两侧重复留白', () => {
+    expect(homeStyles).toMatch(/\.activities-content\s*\{[^}]*padding:\s*32rpx 0 0;/s);
+    expect(homeStyles).not.toMatch(/\.activities-content\s*\{[^}]*var\(--page-gutter\)/s);
+    expect(homeStyles).not.toMatch(/\.activities-hero,\s*\.activities-content/);
+  });
+
   it('品牌标识保持纯单色并只展示中文艺术字', () => {
     expect(logoTemplate).toContain('aria-label="此里"');
     expect(logoTemplate).toContain('>此</text>');

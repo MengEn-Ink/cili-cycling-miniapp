@@ -79,7 +79,7 @@ page {
 }
 
 .activities-content {
-  padding: 32rpx var(--page-gutter) 0;
+  padding: 32rpx 0 0;
 }
 
 .timeline-tabs {
@@ -254,8 +254,7 @@ page {
     padding-left: var(--page-gutter-narrow);
   }
 
-  .activities-hero,
-  .activities-content {
+  .activities-hero {
     padding-right: var(--page-gutter-narrow);
     padding-left: var(--page-gutter-narrow);
   }
