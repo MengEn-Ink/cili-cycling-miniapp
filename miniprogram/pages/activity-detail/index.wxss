@@ -1242,3 +1242,92 @@ brand-logo {
     grid-template-columns: 1fr;
   }
 }
+
+.detail-page {
+  --page-gutter: 48rpx;
+  --radius-card: 16rpx;
+  background: var(--color-bg);
+}
+.detail-hero {
+  padding: 32rpx var(--page-gutter) 96rpx;
+}
+.detail-hero .hero-title {
+  max-width: 560rpx;
+  margin: 16rpx 0;
+  font-size: 56rpx;
+  line-height: 1.14;
+}
+.hero-kicker,
+.hero-route {
+  line-height: 1.5;
+}
+.content {
+  padding-right: var(--page-gutter);
+  padding-left: var(--page-gutter);
+}
+.metric-panel {
+  margin-top: -48rpx;
+  border-width: 4rpx;
+  border-radius: var(--radius-card);
+  box-shadow: none;
+}
+.detail-metric {
+  padding: 24rpx 16rpx;
+  text-align: center;
+}
+.metric-value {
+  justify-content: center;
+}
+.detail-metric + .detail-metric {
+  border-left-width: 4rpx;
+}
+.detail-page .card {
+  margin-top: 32rpx;
+  padding: 32rpx;
+  border-width: 4rpx;
+  border-radius: var(--radius-card);
+  box-shadow: none;
+}
+.detail-decision {
+  margin-top: 32rpx;
+  border-width: 1rpx;
+  border-left: 8rpx solid var(--color-brand);
+  border-radius: 8rpx;
+  box-shadow: none;
+}
+.detail-page .time-card--featured {
+  padding: 32rpx;
+  border: 1rpx solid var(--color-border-strong);
+  border-left: 8rpx solid var(--color-brand);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: none;
+}
+.time-card-kicker,
+.time-card-primary {
+  color: var(--color-brand);
+}
+.time-card-primary {
+  margin-top: 16rpx;
+  font-size: 48rpx;
+}
+.time-card-secondary {
+  margin-top: 16rpx;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+.route-actions button,
+.route-location-row button,
+.detail-action .btn {
+  min-height: var(--control-height);
+  border-width: 4rpx;
+  border-radius: 8rpx;
+}
+@media (max-width: 350px) {
+  .detail-page {
+    --page-gutter: var(--page-gutter-narrow);
+  }
+  .detail-hero .hero-title {
+    font-size: 48rpx;
+  }
+}
