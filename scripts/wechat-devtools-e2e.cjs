@@ -85,9 +85,14 @@ async function main() {
     check('活动卡集合时间为自然表达', naturalTime(activity?.displayTimeLabel), {
       displayTimeLabel: activity?.displayTimeLabel,
     });
-    const headers =
-      data.rows?.filter((row) => row.kind === 'header').map((row) => row.dayLabel) || [];
-    check('活动列表日期由分组标题承载', headers.length > 0, { headers });
+    check(
+      '活动轮播日期与集合时间拆分',
+      splitDateAndTime(activity?.displayDateLabel, activity?.displayTimeLabel),
+      {
+        displayDateLabel: activity?.displayDateLabel,
+        displayTimeLabel: activity?.displayTimeLabel,
+      },
+    );
     await screenshot(miniProgram, '01-activities.png');
 
     page = await miniProgram.reLaunch('/pages/registrations/index');
