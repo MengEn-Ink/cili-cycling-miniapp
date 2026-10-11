@@ -44,22 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.11.26',
+      version: '2026.10.11.27',
       latest: true,
-      title: '行程状态与报名凭证升级',
-      summary:
-        '行程卡片按状态显示浅色提示，已取消行程可删除；报名凭证突出集合时间和地点，并展示骑手头像与背景照片。',
+      title: '我的行程信息更清楚',
+      summary: '过期行程按活动结束次日零点自动归档，行程卡片优先展示集合时间和地点。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.11.27',
       '2026.10.11.26',
       '2026.10.11.25',
       '2026.10.11.24',
       '2026.10.11.23',
-      '2026.10.11.22',
     ]);
   });
 

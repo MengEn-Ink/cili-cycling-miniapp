@@ -244,7 +244,7 @@ export interface Registration {
   activity?: Activity;
   status: RegistrationStatus;
   profile: Profile;
-  gatheringMode: '自驾' | '需要后援车' | '';
+  gatheringMode: '自行前往' | '需要后援车' | '';
   experience: string;
   remark: string;
   strava: {

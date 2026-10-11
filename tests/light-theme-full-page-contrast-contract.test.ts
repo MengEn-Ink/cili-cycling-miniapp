@@ -130,7 +130,7 @@ describe('HP-20261010-02 统一明亮 UI 全页对比度契约', () => {
       '.refresh-note',
       '.card-index',
       '.registration-meta',
-      '.updated-at',
+      '.meeting-label',
     ]) {
       expectSemantic(
         declaration(effectiveBlock(registrations, selector), 'color'),

@@ -19,7 +19,7 @@ function registration(overrides: Partial<Registration> = {}): Registration {
       avatarId: 'https://temporary.example/avatar',
       photos: [],
     },
-    gatheringMode: '自驾',
+    gatheringMode: '自行前往',
     experience: '常骑',
     remark: '',
     strava: {

@@ -220,7 +220,7 @@ function compareActivityKey(
 function displayGatheringMode(
   value: RegistrationSubmission['gatheringMode'],
 ): Registration['gatheringMode'] {
-  return ({ self_drive: '自驾', support_vehicle: '需要后援车' } as const)[value] || '';
+  return ({ self_drive: '自行前往', support_vehicle: '需要后援车' } as const)[value] || '';
 }
 export class MockRepository implements RideRepository {
   private readonly activityCreateRequests = new Map<string, string>();

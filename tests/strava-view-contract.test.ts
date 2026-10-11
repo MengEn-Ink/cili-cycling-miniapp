@@ -19,7 +19,7 @@ const registration = (coverage: Registration['strava']['coverage']): Registratio
     emergencyPhone: '',
     photos: [],
   },
-  gatheringMode: '自驾',
+  gatheringMode: '自行前往',
   experience: '常骑',
   remark: '',
   strava: {
