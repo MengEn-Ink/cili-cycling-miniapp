@@ -364,10 +364,24 @@ Page({
       return;
     }
     try {
-      await platformCall(wx.setClipboardData.bind(wx), { data: url });
+      // 剪贴板能力必须由点击事件同步触发；直接调用微信 API，避免经通用包装器丢失手势调用栈。
+      await new Promise<void>((resolve, reject) => {
+        wx.setClipboardData({ data: url, success: resolve, fail: reject });
+      });
       wx.showToast({ title: '轨迹链接已复制', icon: 'success' });
-    } catch {
-      wx.showToast({ title: '复制失败，请稍后重试', icon: 'none' });
+    } catch (error) {
+      const failure = error as { errMsg?: unknown; errno?: unknown };
+      const errMsg = typeof failure?.errMsg === 'string' ? failure.errMsg : '未知错误';
+      console.error('[activity-detail] Strava 轨迹链接复制失败', {
+        errMsg,
+        errno: failure?.errno,
+      });
+      wx.showModal({
+        title: '复制失败',
+        content: `${errMsg}\n可长按轨迹链接手动复制。`,
+        showCancel: false,
+        confirmText: '知道了',
+      });
     }
   },
   onShareAppMessage() {

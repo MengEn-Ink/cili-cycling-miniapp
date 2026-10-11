@@ -73,7 +73,7 @@
         <view class="card route-actions-card" wx:if="{{item.route.stravaRouteUrl}}">
           <view class="title">Strava 轨迹</view>
           <view class="strava-route-row">
-            <button class="strava-route-url" bindtap="copyStravaRoute" aria-label="复制 Strava 轨迹链接">{{item.route.stravaRouteUrl}}</button>
+            <button class="strava-route-url" bindtap="copyStravaRoute" aria-label="复制 Strava 轨迹链接"><text user-select="true">{{item.route.stravaRouteUrl}}</text></button>
             <button class="strava-route-action" bindtap="copyStravaRoute">复制</button>
             <button class="strava-route-action strava-route-action--primary" wx:if="{{item.route.stravaRouteId}}" loading="{{exportingGpx}}" disabled="{{exportingGpx}}" bindtap="exportGpx">{{exportingGpx ? '下载中' : '下载 GPX'}}</button>
           </view>
