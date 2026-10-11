@@ -418,7 +418,11 @@ describe('日常活动极简创建与编辑', () => {
           return serverCurrent;
         }
         expect(expectedVersion).toBe(1);
-        serverCurrent = { ...savedActivityFromPayload(payload, id), version: 2 };
+        serverCurrent = {
+          ...savedActivityFromPayload(payload, id),
+          version: 2,
+          route: payload.route,
+        };
         throw callFailed('发布已提交但响应丢失');
       },
     );
@@ -440,6 +444,57 @@ describe('日常活动极简创建与编辑', () => {
       status: 'published',
     });
     expect(wx.showToast).toHaveBeenLastCalledWith({ title: '保存成功', icon: 'success' });
+  });
+
+  it('本端发布未提交而另一会话发布不同内容时冲突关闭', async () => {
+    let serverCurrent: Activity | undefined;
+    const publishedVersions: number[] = [];
+    rideService.saveActivity.mockImplementation(
+      async (payload: any, id?: string, expectedVersion?: number) => {
+        if (!id) {
+          serverCurrent = savedActivityFromPayload(
+            { ...payload, status: 'draft' },
+            'concurrent-published',
+          );
+          return serverCurrent;
+        }
+        publishedVersions.push(expectedVersion!);
+        serverCurrent = {
+          ...serverCurrent!,
+          version: 2,
+          status: 'published',
+          title: '另一会话发布的标题',
+        };
+        throw callFailed('本端发布在服务端提交前失败');
+      },
+    );
+    rideService.getAdminActivity.mockImplementation(async () => serverCurrent);
+    await page.onLoad({});
+    Object.assign(page.data.form, {
+      title: '本端准备发布的标题',
+      startDate: '2026-10-20',
+      startTime: '07:30',
+      routeStart: '湖边广场',
+    });
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(publishedVersions).toEqual([1]);
+    expect(serverCurrent).toMatchObject({
+      version: 2,
+      status: 'published',
+      title: '另一会话发布的标题',
+    });
+    expect(page.data).toMatchObject({
+      id: 'concurrent-published',
+      version: 1,
+      status: 'draft',
+      title: '本端准备发布的标题',
+    });
+    expect(wx.showModal).toHaveBeenLastCalledWith(
+      expect.objectContaining({ content: '活动已被其他人更新，请重新加载后再试' }),
+    );
+    expect(wx.showToast).not.toHaveBeenCalledWith({ title: '保存成功', icon: 'success' });
   });
 
   it('发布模糊失败回读发现草稿被并发修改时冲突关闭且不覆盖新内容', async () => {
@@ -503,7 +558,11 @@ describe('日常活动极简创建与编辑', () => {
         if (publishedVersions.length === 1) {
           throw callFailed('第一次发布在提交前失败');
         }
-        serverCurrent = { ...savedActivityFromPayload(payload, id), version: 2 };
+        serverCurrent = {
+          ...savedActivityFromPayload(payload, id),
+          version: 2,
+          route: payload.route,
+        };
         throw callFailed('第二次发布已提交但响应丢失');
       },
     );

@@ -51,7 +51,7 @@ const stableValue = (value: unknown): unknown => {
       .map(([key, entry]) => [key, stableValue(entry)]),
   );
 };
-const draftContentFingerprint = (activity: EditableActivity) =>
+const activityContentFingerprint = (activity: EditableActivity | ActivityInput) =>
   JSON.stringify(
     stableValue({
       title: activity.title,
@@ -80,7 +80,7 @@ const draftContentFingerprint = (activity: EditableActivity) =>
 const sameDraftSnapshot = (expected: EditableActivity, current: EditableActivity) =>
   current.id === expected.id &&
   current.version === expected.version &&
-  draftContentFingerprint(current) === draftContentFingerprint(expected);
+  activityContentFingerprint(current) === activityContentFingerprint(expected);
 const activityConflict = () =>
   Object.assign(new Error('活动已被其他人更新，请重新加载后再试'), {
     code: 'ACTIVITY_CONFLICT',
@@ -262,7 +262,14 @@ Page({
         } catch {
           throw error;
         }
-        if (current.status === 'published') return current;
+        if (current.status === 'published') {
+          if (
+            current.id !== draft.id ||
+            activityContentFingerprint(current) !== activityContentFingerprint(published)
+          )
+            throw activityConflict();
+          return current;
+        }
         if (current.status !== 'draft') throw error;
         if (!sameDraftSnapshot(draft, current)) throw activityConflict();
         if (!canRetry) throw error;
