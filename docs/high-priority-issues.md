@@ -1,6 +1,6 @@
 # 高优问题清单
 
-> 最后更新：2026-10-11 08:15（CST）
+> 最后更新：2026-10-11 10:04（CST）
 >
 > 维护原则：这里只保留尚未满足关闭条件的问题。新问题先去重、澄清、拆分；已满足关闭条件的条目直接删除，Git 历史和不可变外部证据作为归档。
 
@@ -36,8 +36,11 @@
 - HP-09 远端交付（2026-10-10）：head `65f46cc...` 的 main CI run [38028452090](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38028452090) SUCCESS；开发版 run [38028513962](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38028513962) 实际上传 `0.0.60.1`，日志含“微信开发版 0.0.60.1 上传成功”。
 - 极简活动创建现状（2026-10-10）：PR [#78](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/78) 已合入 main `45b64ed...`，main CI run [38064193937](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38064193937) 与微信开发版 run [38064286120](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38064286120) SUCCESS，实际上传 `0.0.78.1`。该证据只证明代码和开发版交付，不关闭时间保存重开回显、图片本地预览/保存回读等端到端缺口。
 - 新增需求澄清（2026-10-10 23:56）：用户确认将极简创建端到端、活动分享与群二维码、首页未来两周、个人资料必填、图片上传治理、右滑删除、缓存、全员发布与发布人展示、固定体验版九项加入项目待办；其中性别和个人照片均为必填，个人照片同时作为背景照片和骑行名片必备素材。
+- 2026-10-11 10:04 对齐：最近 50 个已合并 PR 的远端 head 分支均已删除；沙箱遗留 worktree/本地分支 `feat/activity-title-card-polish` 已清理。当前 GitHub open PR 为空，清单内未发现 `READY` / `IN_PROGRESS` 的可继续编码事项。
 
 ## 当前工作交接检查点
+
+- 2026-10-11 10:04 本轮对齐确认最新代码交付：[#113](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/113) 已合入 main `89cde00...`，将活动标题改为发布人必填、移除默认/快捷集合时间、保存时不再回退默认时间，并收口活动卡片等宽指标、去荧光强调、黑底按钮白字和中文化标签。main CI [38101620274](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38101620274) 与微信开发版 [38101695758](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38101695758) 均 success，日志确认上传 `0.0.114.1`。该增量推进 N1 与 UI 的代码/自动化层，但仍缺物理真机创建/编辑保存重开、活动卡片视觉独立复核，状态保持 `PENDING_EVIDENCE`。本轮已确认最近 50 个 merged PR 远端分支均已删除，并清理沙箱本地遗留分支；无 open PR、无可并行编码的 `READY`/`IN_PROGRESS` 项，剩余均为真机/微信后台/真实外部授权证据。
 
 - 2026-10-11 06:35 本轮（定时对齐）再交付一条纯前端独立 PR 并上传微信开发版 `0.0.104.1`：[#103](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/103) 只读缓存支持冷启动持久化与断网兜底——回源成功后写入版本化 `wx` 同步存储，冷启动在 TTL 内直接复用并保留原始过期时刻；网络失败仅在 5 分钟离线窗口内返回上次数据，在线仍强制回源；活动/Strava 写入与账号切换同步清理内存和持久化命名空间，并新增命中率指标。PR `validate`、main CI [38091847664](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38091847664) 与微信开发版自动上传 [38091927615](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38091927615) 均 success。N7 已推进冷启动持久化/可观测部分，状态仍 `PENDING_EVIDENCE`，剩余“图片临时地址缓存及到期刷新”与真机冷启动/断网 smoke。另：共享工作区中存在他泳道未提交的“资料图片内容指纹去重”改动（`profile-edit/index.ts` + `profile-media-dedupe.test.ts`），本轮未触碰、未并入任何提交。真实阻塞维持不变：① 云函数部署需腾讯云凭证；② 大量条目需物理真机/真实验收。
 - 2026-10-11 08:15 本轮交付 N7 最后一条纯代码增量并修正 N9 状态：[#111](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/111) 新增 `TempFileUrlCache`，内存缓存已解析图片临时地址，DataLoader 式合并同一事件循环内请求为一次批量调用、同 fileID 并发单飞去重、临期前自动判失效并在下次解析刷新，仅缓存合法 https 结果、失败不缓存；资料编辑页照片预览已接入。PR validate、main CI 与微信开发版自动上传均 success，版本 `0.0.112.1`（checkout `08d9739`）；无云函数改动，无需 CloudBase 部署。N7 的代码/单测层全部收口，仅剩真机冷启动/断网 smoke。另修正 N9 表格行（原误标 `READY`）为 `PENDING_EVIDENCE`，与其详情一致：固定稳定体验版入口与晋级/回退门禁演练（#81–#87）已完成，等待下一开发版做实际跨版本回退和固定入口业务 smoke。至此清单内 N1–N9 已无 `READY`/`IN_PROGRESS` 的纯代码可推进项，全部收敛到“真机/真实验收/微信后台”这一共同阻塞。
@@ -47,7 +50,7 @@
 - 2026-10-11 05:50 本轮（定时对齐）再交付两条独立 PR 并上传微信开发版 `0.0.100.1`：#99 活动卡片滑动删除（接 #94 服务端删除契约）、#101 活动/Strava 内存 TTL 缓存与写后失效；两个 PR 的 PR checks、main CI 与微信开发版自动上传均 success。N6/N7 已推进到“已部署”层，状态 `PENDING_EVIDENCE`。**真实阻塞（需用户/环境决策）**：① 沙箱无 CloudBase CLI 与腾讯云凭证，#89/#94/#96 等改动的云函数（activity-read/activity-admin/registration/admin-review/profile）无法在沙箱部署，需要为沙箱配置腾讯云凭证或由用户确认部署；② 大量 `PENDING_EVIDENCE` 条目需物理真机/真实验收，代码与部署层不能替代。
 - 2026-10-11 本轮（定时对齐）已完成四条独立 PR 并上传微信开发版 `0.0.97.1`：#94 活动删除服务端契约、#95 集合时间回显与图片往返、#96 资料必填与报名拦截、#97 分享卡片封面与朋友圈；四个 PR 的 main CI 与微信开发版自动上传均 success。四个条目均已推进到“已部署”层，真机 smoke/回读待做，状态统一为 `PENDING_EVIDENCE`；#94 的前端右滑 UI（分支 `fix/activity-card-swipe-delete`）已由另一泳道 `IN_PROGRESS`，#97 的活动群二维码作为剩余原子项保留在原条目。
 - 本轮已完成并交付：HP-01 至 HP-05 已按完整证据链从清单删除；HP-06 已随 PR #56 合入并上传开发版，但其“深浅主题并存”产品前提已被新 UI 基线替代；HP-20261010-01 的旧浅色行程序号与三处运行态低对比过渡保护已随 PR #62/#66/#69 合入并上传开发版；HP-08 已随 PR #57 合入并交付开发版；HP-12 闰日算法已随 PR #59 合入。
-- 当前最高优先级：优先完成 `HP-20261010-03` 至 `HP-20261010-07` 五个新增 P0；其中 `HP-20261010-03` 已有 #78 代码与开发版基线，先补创建/编辑保存重开的端到端证据并修复实测缺陷，其余四项按文件族独立开工。既有 `HP-20261010-02`、`HP-20261009-13` 继续等待物理真机或真实外部授权证据，不阻塞无文件冲突的新任务。
+- 当前最高优先级：清单内 N1–N9 已无 `READY` / `IN_PROGRESS` 的纯代码可推进项；下一步不是继续拆 PR 写代码，而是按条目补真实证据：N1 创建/编辑真机保存重开，N2 分享/二维码真机扫码替换，N3 日期快捷/真机复核，N4 资料与报名真机 smoke，N5 弱网与 CloudBase 回读，N6 真机手势，N7 冷启动/断网，N8 普通用户发布链路，N9 体验版晋级/回退与固定入口业务 smoke。
 - HP-20261010-02 进展：单一主题底座与第一批六页已推送至 main；head `4b27057...` 的 main CI run [38025995570](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38025995570) SUCCESS，微信开发版 run [38026070737](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38026070737) 实际上传 `0.0.55.1`；375×812 开发者工具六页截图及 TabBar 图标复核通过。追加修复：报名凭证页 `credential/index.wxss` 曾残留深色主题硬编码色（`#f7f7f5`/`#a8a8ad`/`#9bc2aa`/`#e9a071` 等），`.serial`/`.hero-kicker` 还直接把 `--color-brand #d9ff43` 当文字色用，导致浅底对比度严重不足；已在 `tests/unified-bright-first-batch-contract.test.ts` 新增禁用深色色和 token 收口 RED，并把 wxss 收口为 `--color-text/--color-muted/--color-success-text/--color-raised/--color-border` 等 token，设置页追加 `2026.10.10.14 报名凭证页统一明亮主题` 升级日志；本地 Vitest 55 文件 738/738 全部通过。仍待物理真机截图与独立复核。
 - HP-07 检查点：代码、全量本地/远端门禁、开发版 `0.0.52.1`（含后续 #73）、目标环境索引、`registration` Active 回读及线上代码比对已完成；仅余 50+ 真实报名页面 smoke 和独立复核，状态保持 `PENDING_EVIDENCE`。
 - HP-13 检查点：`status` 根因修复已完成 main CI、开发版 `0.0.58.1`、CloudBase Active 回读、线上代码比对和设置页真实请求验证；原 `INTERNAL_ERROR` 已恢复为 `ok:true/state:syncing`。条目转为 `PENDING_EVIDENCE`，仅保留授权成功、拒绝、scope 不足、token 失效、重新授权、解绑后旧 callback 六条真实外部生命周期 smoke。
@@ -58,7 +61,7 @@
 
 | 泳道 | ID               | 优先级 | 状态                                     | 目标                                                                                    | 唯一写者      | 复核/发布                    |
 | ---- | ---------------- | ------ | ---------------------------------------- | --------------------------------------------------------------------------------------- | ------------- | ---------------------------- |
-| N1   | `HP-20261010-03` | P0     | `PENDING_EVIDENCE` (#95, 开发版 0.0.97.1) | 时间回显与图片预览保存重开已交付，待真机 smoke 与独立复核                               | Aime          | 独立复核 / 真机              |
+| N1   | `HP-20261010-03` | P0     | `PENDING_EVIDENCE` (#95/#113, 开发版 0.0.114.1) | 时间回显、图片预览保存重开、标题必填与去默认快捷时间已交付，待真机 smoke 与独立复核      | Aime          | 独立复核 / 真机              |
 | N2   | `HP-20261010-04` | P0     | `PENDING_EVIDENCE` (#97/#107, 开发版 0.0.108.1) | 分享卡片与活动群二维码已交付；待真机扫码/替换 smoke、独立复核，微信群待办/置顶能力待评估 | -             | 独立复核 / 真机              |
 | N3   | `HP-20261010-05` | P0     | `PENDING_EVIDENCE`                       | 14 天数据窗口已随 #89 交付开发版 `0.0.88.1`，待日期分组/快捷入口与真机复核                 | -             | 独立复核 / 真机              |
 | N4   | `HP-20261010-06` | P0     | `PENDING_EVIDENCE` (#96, 开发版 0.0.97.1) | 性别、头像、个人照片必填与报名拦截已交付，待真机资料/报名 smoke                          | Aime          | 独立复核 / 真机              |
@@ -67,7 +70,7 @@
 | N7   | `HP-20261010-09` | P1     | `PENDING_EVIDENCE` (#101/#103/#111, 开发版 0.0.112.1) | 内存 TTL 缓存、冷启动持久化、断网兜底、命中率指标与图片临时地址缓存均已交付；仅剩真机冷启动/断网 smoke | Aime          | 独立复核 / 真机              |
 | N8   | `HP-20261010-10` | P1     | `PENDING_EVIDENCE` (#109, 开发版 0.0.110.1) | 全员发布权限经核实已具备，卡片/详情发布人头像昵称已交付，activity-read 已部署并运行态回读，待真机 smoke/独立复核 | Aime          | 独立复核 / 真机              |
 | N9   | `HP-20261010-11` | P1     | `PENDING_EVIDENCE`                       | 固定稳定体验版入口与晋级/回退门禁演练已完成（#81–#87），等待下一开发版做实际跨版本回退和固定入口业务 smoke | -             | 独立复核 / 微信后台          |
-| UI   | `HP-20261010-02` | P0     | `PENDING_EVIDENCE`                       | 单一主题底座与第一批六页已交付开发版 `0.0.55.1`，待物理真机截图与独立复核                 | -             | TraeX 审判者                 |
+| UI   | `HP-20261010-02` | P0     | `PENDING_EVIDENCE`                       | 单一主题底座、第一批六页与活动卡片高对比收口已交付，待物理真机截图与独立复核             | -             | TraeX 审判者                 |
 | B    | `HP-20261009-13` | P0     | `PENDING_EVIDENCE`                       | `status` 已恢复，待六条真实 Strava 授权/解绑生命周期 smoke                              | -             | TraeX 审判者 / Aime 个人助理 |
 | D    | `HP-20261009-06` | P1     | `SUPERSEDED_BY(HP-20261010-02)`          | 旧双主题全页对比度，不再单独实施                                                        | -             | TraeX 审判者                 |
 | D1   | `HP-20261010-01` | P1     | `SUPERSEDED_BY(HP-20261010-02)`          | 旧浅色主题与运行态低对比已随 #62/#66 补保护，最终由新 UI 统一收口                       | -             | TraeX 审判者                 |
@@ -84,12 +87,12 @@
 
 ### HP-20261010-03 · 极简活动创建/编辑端到端闭环
 
-- 优先级/状态：P0 / `PENDING_EVIDENCE`；PR [#95](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/95) 已合入并随开发版 `0.0.97.1` 上传成功，自动化端到端证据齐全，尚未完成真机 smoke 与独立复核。
-- 用户可见字段：集合时间、集合地点、最多 3 张封面、备注、Strava 路线链接；标题及历史兼容字段由系统生成或维护，不重新暴露旧复杂表单。
-- 已修复：集合时间拆为日期、时间两个独立字段，不再注入默认 08:00，发布时分别必填校验，保存重开稳定回显；图片选择即本地预览，单张失败保留成功项并可独立重试，保存重开按数量与顺序完整回读。
-- 验收范围：覆盖新建与编辑的 picker 选择、取消、跨日、保存、详情展示、重新编辑回显；图片覆盖选择、顺序预览、上传中、失败重试、删除/替换、保存回读；Strava 链接覆盖合法、非法、清空和重新编辑。上述已由 `tests/activity-admin-edit.test.ts` 端到端用例锁定（含跨日深夜场景）。
+- 优先级/状态：P0 / `PENDING_EVIDENCE`；PR [#95](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/95) 已合入并随开发版 `0.0.97.1` 上传成功，PR [#113](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/113) 已随开发版 `0.0.114.1` 上传成功；自动化端到端证据齐全，尚未完成真机 smoke 与独立复核。
+- 用户可见字段：活动标题、集合时间、集合地点、最多 3 张封面、备注、Strava 路线链接；历史兼容字段继续由系统维护，不重新暴露旧复杂表单。
+- 已修复：集合时间拆为日期、时间两个独立字段，不再注入默认 08:00，发布时分别必填校验，保存重开稳定回显；图片选择即本地预览，单张失败保留成功项并可独立重试，保存重开按数量与顺序完整回读；活动标题改为发布人填写且草稿/发布均必填，移除“明早/下周六”快捷时间与自动标题生成，保存时不再回退默认时间。
+- 验收范围：覆盖新建与编辑的标题输入、picker 选择、取消、跨日、保存、详情展示、重新编辑回显；图片覆盖选择、顺序预览、上传中、失败重试、删除/替换、保存回读；Strava 链接覆盖合法、非法、清空和重新编辑。上述已由 `tests/activity-admin-edit.test.ts` 端到端用例锁定（含跨日深夜场景）。
 - 关闭条件：同一 SHA 开发版、微信开发者工具与物理真机端到端 smoke、独立复核全部通过；自动化测试、main CI 与开发版上传已完成。
-- 更新时间：2026-10-11 04:35（CST）。
+- 更新时间：2026-10-11 10:04（CST）。
 
 ### HP-20261010-04 · 活动分享卡片、微信群触达与活动群二维码
 
@@ -184,10 +187,11 @@
 - TabBar 复核：官方小程序截图中活动、行程、我的三组图标及选中态均正常；此前桌面级截图的破图仅出现在开发者工具嵌套 WebView 捕获层，重编译仍可复现，但不代表小程序内部资源加载失败。
 - 第二批可读性修复（2026-10-10 17:12）：端到端扫描发现报名、活动详情、我的行程、管理端（reviews/review-detail/activity-edit）及通用 `state-view` 组件在浅底上残留荧光黄与近白文字（如 `.card-number`/`.eyebrow-title`/`.panel-code`/`.location-button`/`.state-retry`/报名页 `.section-label` 近白标题），对比度严重不足；已将这些文字收口到 `--color-text`/`--color-muted`，深色媒体面（照片 hero、骑行名片、`.rider-status` 弹窗）保持不变并由 `light-theme-color-calibration` 契约守护。同时设置页功能升级日志仅渲染最近 5 条（`VISIBLE_RELEASE_NOTES`），历史保留在数据数组与 Git。提交 `0071bb1`，Vitest 55 文件 740/740 全绿，`prettier --check`/`eslint`/`tsc` 通过。main CI run [38040428765](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38040428765) SUCCESS，微信开发版 run [38040488247](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38040488247) 实际上传 `0.0.73.1`。
 - 第二批补强（2026-10-10 17:48，用户已确认修复）：追加 token 审计发现两处遗漏——资料编辑页 `.step-kicker`/`.avatar-preview-placeholder` 荧光黄贴白底，骑行名片 `.sync-button` 引用未定义变量 `--color-text-primary` 导致文字色失效；已分别收口到 `--color-text`。脚本比对全部 wxss 引用 token 与 `app.wxss` 定义，确认 `--color-text-primary` 为唯一未定义颜色 token，此类隐形文字风险清零；深色照片名片与媒体面保持不变。提交 `c60a47e`，Vitest 55 文件 740/740 全绿，`prettier --check`/`eslint`/`tsc` 通过。main CI run [38042509312](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38042509312) SUCCESS，微信开发版 run [38042576572](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38042576572) 实际上传 `0.0.75.1`。
-- 当前占用：代码文件族已释放；仅等待第一批六页物理真机截图与独立复核，证据齐全前保持 `PENDING_EVIDENCE`。
+- 活动卡片补强（2026-10-11 10:04）：[#113](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/113) 将活动卡片指标按实际数量等宽排列，移除荧光强调，黑底按钮统一白字，活动首页与详情装饰性英文改中文；main CI 与微信开发版 `0.0.114.1` 均成功。
+- 当前占用：代码文件族已释放；仅等待第一批六页物理真机截图、活动卡片视觉独立复核与真机点按验收，证据齐全前保持 `PENDING_EVIDENCE`。
 - 审核要求：TraeX 审判者按 375×812px 逐页核对布局、字体、卡片、触控区和安全区；扫描 `theme-light/theme-dark`、主题切换入口及旧硬编码残留；执行功能回归、CI、开发版上传和真机截图验收。
 - 交付要求：产品代码同步设置页版本日志；独立 PR 保持单提交；CI 全绿；微信开发版上传；第一批六页逐页真机截图与基准尺寸对照通过后才可关闭。
-- 更新时间：2026-10-10 17:48（第二批浅底可读性修复、补强与升级日志收敛已交付开发版 `0.0.75.1`，用户已确认；第一批六页仍待物理真机截图和独立复核）。
+- 更新时间：2026-10-11 10:04（第二批浅底可读性修复、补强、活动卡片高对比收口与升级日志均已交付开发版，第一批六页仍待物理真机截图和独立复核）。
 
 ### HP-20261009-06 · 浅色主题全页对比度
 
