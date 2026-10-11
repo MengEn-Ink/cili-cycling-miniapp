@@ -1236,6 +1236,10 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     const registrationId = requiredId(id, '报名 ID');
     return mapRegistration(await this.call('registration', { action: 'cancel', registrationId }));
   }
+  async deleteRegistration(id: string): Promise<void> {
+    const registrationId = requiredId(id, '报名 ID');
+    await this.call('registration', { action: 'delete', registrationId });
+  }
   async reviewRegistration(id: string, decision: 'approved' | 'rejected', reason?: string) {
     const registrationId = requiredId(id, '报名 ID');
     return mapRegistration(

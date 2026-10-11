@@ -90,6 +90,7 @@ export interface RideRepository extends AdminReviewRepository, ActivityAdminRepo
     comment?: string,
   ): Promise<Registration>;
   cancelRegistration(id: string): Promise<Registration>;
+  deleteRegistration(id: string): Promise<void>;
   reviewRegistration(
     id: string,
     decision: 'approved' | 'rejected',

@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const {
   submitRegistration,
   cancelRegistration,
+  deleteRegistration,
   reviewRegistration,
   validateTeamInput,
 } = require('./domain');
@@ -69,6 +70,7 @@ function fixture(seed = {}) {
         .filter((item) => item.status === 'waiting')
         .sort((a, b) => new Date(a.created_at) - new Date(b.created_at)),
     putRegistration: async (id, value) => state.registrations.set(id, value),
+    deleteRegistration: async (id) => state.registrations.delete(id),
     setOccupied: async (_id, occupied, support, selfDrive) => {
       state.occupiedWrites += 1;
       state.activity.occupied_count = occupied;
@@ -292,6 +294,33 @@ test('无候补时释放名额，重复 cancel 幂等且不重复释放', async 
   await cancelRegistration(store, { openid: 'active', registrationId: 'active' }, now);
   assert.equal(store.state.activity.occupied_count, 0);
   assert.equal(store.state.occupiedWrites, 1);
+});
+
+test('仅本人可删除已取消行程，删除保留审计且不影响名额', async () => {
+  const cancelled = registration('member-1', 'cancelled', '2026-09-01T00:00:00Z');
+  const pending = registration('member-2', 'pending', '2026-09-02T00:00:00Z');
+  const store = fixture({
+    activity: { occupied_count: 1, self_drive_occupied_count: 1 },
+    registrations: [cancelled, pending],
+  });
+
+  await assert.rejects(
+    deleteRegistration(store, { openid: 'other', registrationId: 'member-1' }, now),
+    { code: 'REGISTRATION_NOT_FOUND' },
+  );
+  await assert.rejects(
+    deleteRegistration(store, { openid: 'member-2', registrationId: 'member-2' }, now),
+    { code: 'INVALID_TRANSITION' },
+  );
+  await deleteRegistration(store, { openid: 'member-1', registrationId: 'member-1' }, now);
+  await assert.doesNotReject(() =>
+    deleteRegistration(store, { openid: 'member-1', registrationId: 'member-1' }, now),
+  );
+
+  assert.equal(store.state.registrations.has('member-1'), false);
+  assert.equal(store.state.activity.occupied_count, 1);
+  assert.equal(store.state.occupiedWrites, 0);
+  assert.equal(store.state.audits.at(-1).action, 'registration.deleted');
 });
 
 test('重复 reject 幂等；首个 reject 与补位在同一事务语义中完成', async () => {

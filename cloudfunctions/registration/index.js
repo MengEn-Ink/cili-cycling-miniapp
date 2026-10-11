@@ -10,6 +10,7 @@ const {
   publicRegistration,
   submitRegistration,
   cancelRegistration,
+  deleteRegistration,
 } = require('./domain');
 const { listMinePage } = require('./mine-page');
 const { projectTripActivity } = require('./trip-activity');
@@ -90,6 +91,7 @@ function transactionStore() {
             const { _id, ...data } = value;
             await transaction.collection('registrations').doc(id).set({ data });
           },
+          deleteRegistration: (id) => transaction.collection('registrations').doc(id).remove(),
           setOccupied: (id, occupied, supportVehicleOccupied, selfDriveOccupied) =>
             transaction
               .collection('activities')
@@ -145,6 +147,17 @@ exports.main = async (event = {}) => {
         fail('VALIDATION_FAILED', '缺少报名 ID');
       return ok(
         await cancelRegistration(
+          transactionStore(),
+          { openid, registrationId: event.registrationId },
+          new Date(),
+        ),
+      );
+    }
+    if (event.action === 'delete') {
+      if (typeof event.registrationId !== 'string' || !event.registrationId)
+        fail('VALIDATION_FAILED', '缺少报名 ID');
+      return ok(
+        await deleteRegistration(
           transactionStore(),
           { openid, registrationId: event.registrationId },
           new Date(),

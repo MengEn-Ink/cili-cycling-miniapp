@@ -263,3 +263,63 @@ brand-logo {
     transform: none;
   }
 }
+
+/* 行程状态语义：低饱和浅色背景保留正文对比度。 */
+.swipe-row {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+}
+.swipe-delete {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  width: 75px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4rpx;
+  background: var(--color-danger);
+  color: var(--color-on-action);
+  font-size: 21rpx;
+  font-weight: 800;
+}
+.swipe-delete__icon {
+  font-size: 34rpx;
+  line-height: 1;
+}
+.registration-card.status-waiting {
+  background: #fff6df;
+}
+.registration-card.status-pending {
+  background: #edf5ff;
+}
+.registration-card.status-approved {
+  background: #eaf7ee;
+}
+.registration-card.status-checked_in {
+  background: #e9f4f2;
+}
+.registration-card.status-rejected {
+  background: #fff0ef;
+}
+.registration-card.status-cancelled {
+  background: #f2f0ec;
+}
+.delete-record-button {
+  min-height: 56rpx;
+  margin: 0 0 0 auto;
+  padding: 0 18rpx;
+  border: 2rpx solid var(--color-danger);
+  border-radius: 999rpx;
+  background: var(--color-surface);
+  color: var(--color-danger-text);
+  font-size: 20rpx;
+  font-weight: 800;
+  line-height: 52rpx;
+}
+.delete-record-button::after {
+  border: 0;
+}

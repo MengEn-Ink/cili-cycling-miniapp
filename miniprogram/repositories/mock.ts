@@ -394,6 +394,14 @@ export class MockRepository implements RideRepository {
   async cancelRegistration(id: string) {
     return this.changeRegistration(id, 'cancelled');
   }
+  async deleteRegistration(id: string): Promise<void> {
+    const s = this.read();
+    const index = s.registrations.findIndex((registration) => registration.id === id);
+    if (index < 0) throw new Error('报名记录不存在');
+    if (s.registrations[index].status !== 'cancelled') throw new Error('仅已取消行程可删除');
+    s.registrations.splice(index, 1);
+    this.write(s);
+  }
   async reviewRegistration(id: string, decision: 'approved' | 'rejected', reason?: string) {
     return this.changeRegistration(id, decision, reason);
   }

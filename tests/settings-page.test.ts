@@ -44,22 +44,22 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.11.25',
+      version: '2026.10.11.26',
       latest: true,
-      title: '活动详情与分享体验升级',
+      title: '行程状态与报名凭证升级',
       summary:
-        '突出集合时间和地图导航，报名人数只展示审核通过人数，并完善管理员报名、骑友名片、Strava 路线与含群二维码的分享海报。',
+        '行程卡片按状态显示浅色提示，已取消行程可删除；报名凭证突出集合时间和地点，并展示骑手头像与背景照片。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.11.26',
       '2026.10.11.25',
       '2026.10.11.24',
       '2026.10.11.23',
       '2026.10.11.22',
-      '2026.10.11.21',
     ]);
   });
 
