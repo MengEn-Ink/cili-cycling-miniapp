@@ -5,6 +5,7 @@ import { appStore } from '../../../store/app-store';
 import { formatLocalDateTime, parseLocalDateTime } from '../../../utils/date-time';
 
 type Form = {
+  title: string;
   startDate: string;
   startTime: string;
   routeStart: string;
@@ -27,6 +28,7 @@ const MAX_IMAGES = 3;
 const GROUP_QR_EXPIRE_MS = 7 * 24 * 60 * 60 * 1000;
 const DEFAULT_CAPACITY = 500;
 const emptyForm = (): Form => ({
+  title: '',
   startDate: '',
   startTime: '',
   routeStart: '',
@@ -35,19 +37,6 @@ const emptyForm = (): Form => ({
 });
 const pickerDate = (value: string) => value.trim().slice(0, 10);
 const pickerTime = (value: string) => value.trim().slice(11, 16);
-const padDatePart = (value: number) => String(value).padStart(2, '0');
-const localDateTimeText = (date: Date, time?: string) => {
-  const dateText = `${date.getFullYear()}-${padDatePart(date.getMonth() + 1)}-${padDatePart(date.getDate())}`;
-  return `${dateText} ${time || `${padDatePart(date.getHours())}:${padDatePart(date.getMinutes())}`}:00`;
-};
-const dateAtOffset = (days: number, time: string, base = new Date()) => {
-  const date = new Date(base.getFullYear(), base.getMonth(), base.getDate() + days);
-  return localDateTimeText(date, time);
-};
-const nextSaturdayOffset = (base = new Date()) => {
-  const offset = (6 - base.getDay() + 7) % 7;
-  return offset || 7;
-};
 const mediaExtension = (path: string) => {
   const match = /\.([a-zA-Z0-9]{1,8})(?:\?|$)/.exec(path);
   return match ? `.${match[1].toLowerCase()}` : '.jpg';
@@ -99,14 +88,6 @@ function groupQrExpired(uploadedAt?: string) {
   return Number.isFinite(time) && Date.now() - time >= GROUP_QR_EXPIRE_MS;
 }
 
-function generatedTitle(startAt: string, location: string) {
-  const date = new Date(startAt);
-  const dateText = Number.isNaN(date.getTime())
-    ? '日常骑行'
-    : `${date.getMonth() + 1}月${date.getDate()}日骑行`;
-  return location.trim() ? `${dateText} · ${location.trim()}`.slice(0, 100) : dateText;
-}
-
 function derivedTimes(startAt: string) {
   const start = new Date(startAt);
   const deadline = new Date(start.getTime() - 60 * 1000);
@@ -129,7 +110,6 @@ Page({
     id: '',
     version: 0,
     status: 'draft',
-    title: '',
     originalActivity: undefined as Activity | undefined,
     images: [] as string[],
     pendingImages: [] as PendingImage[],
@@ -169,7 +149,6 @@ Page({
         loading: false,
         status: activity.status,
         version: activity.version,
-        title: activity.title,
         originalActivity: activity,
         images,
         coverImage: images[0] || '',
@@ -179,6 +158,7 @@ Page({
         pendingGroupQrCode: undefined,
         routeStartLocation: activity.route.startLocation,
         form: {
+          title: activity.title,
           startDate: pickerDate(startAtText),
           startTime: pickerTime(startAtText),
           routeStart: activity.route.start,
@@ -226,19 +206,6 @@ Page({
     const part = event.currentTarget.dataset.part === 'time' ? 'time' : 'date';
     const field = part === 'time' ? 'startTime' : 'startDate';
     this.setData({ [`form.${field}`]: event.detail.value });
-    this.clearFieldError('startAt');
-  },
-  quickDateTime(event: any) {
-    const preset = String(event.currentTarget.dataset.preset || '');
-    const now = new Date();
-    const value =
-      preset === 'tomorrow-morning'
-        ? dateAtOffset(1, '07:00', now)
-        : preset === 'next-saturday'
-          ? dateAtOffset(nextSaturdayOffset(now), '08:00', now)
-          : '';
-    if (!value) return;
-    this.setData({ 'form.startDate': pickerDate(value), 'form.startTime': pickerTime(value) });
     this.clearFieldError('startAt');
   },
   async uploadPendingImage(pendingImage: PendingImage) {
@@ -519,10 +486,10 @@ Page({
   },
   validateBeforeSave(nextStatus: ActivityInput['status']) {
     const form = this.data.form as Form;
-    if (nextStatus === 'draft') return true;
+    if (!form.title.trim()) return (this.showFormError('请输入活动标题', 'title'), false);
     if (!form.startDate.trim()) return (this.showFormError('请选择集合日期', 'startAt'), false);
     if (!form.startTime.trim()) return (this.showFormError('请选择集合时间', 'startAt'), false);
-    if (!form.routeStart.trim())
+    if (nextStatus === 'published' && !form.routeStart.trim())
       return (this.showFormError('请选择或填写集合地点', 'routeStart'), false);
     return true;
   },
@@ -553,9 +520,9 @@ Page({
       this.showFormError(error instanceof Error ? error.message : '日期时间格式错误', 'startAt');
       return;
     }
+    if (!startAt) return;
     const original = this.data.originalActivity as Activity | undefined;
-    const startForDefaults =
-      startAt || original?.startAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const startForDefaults = startAt;
     const defaults = derivedTimes(startForDefaults);
     const originalStartTime = original ? new Date(original.startAt).getTime() : Number.NaN;
     const startTime = new Date(startForDefaults).getTime();
@@ -571,7 +538,7 @@ Page({
             startTime - Math.max(originalStartTime - originalDeadlineTime, 60_000),
           ).toISOString()
         : defaults.deadline;
-    const title = original?.title || generatedTitle(startForDefaults, form.routeStart);
+    const title = form.title.trim();
     const images =
       original && !this.data.imagesTouched && original.images?.length
         ? [...original.images]

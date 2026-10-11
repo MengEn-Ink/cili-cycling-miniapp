@@ -32,6 +32,8 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('bindtap="copyActivityLink"');
     expect(template).toContain('bindtap="exportGpx"');
     expect(template).toContain('disabled="{{loading || !item || !activityAction.enabled}}"');
+    expect(template).toContain('报名状态');
+    expect(template).not.toContain('SIGN-UP STATUS');
   });
 
   it('路线操作完整保留复制 Strava 路线、活动链接、海报与 GPX 四项', () => {
