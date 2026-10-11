@@ -734,7 +734,7 @@ describe('CloudRepository 队员报名适配', () => {
     expectCall(callFunction, 'registration', { action: 'delete', registrationId: 'r1' });
   });
 
-  it('将 self_drive 集合方式映射为自驾', async () => {
+  it('将 self_drive 集合方式映射为自行前往', async () => {
     const selfDrive = {
       ...registration,
       options: { gathering_mode: 'self_drive', experience: 'regular' },
@@ -742,7 +742,7 @@ describe('CloudRepository 队员报名适配', () => {
     const { cloud } = cloudWith(success(selfDrive));
 
     await expect(new CloudRepository(cloud).getReviewRegistration('r1')).resolves.toMatchObject({
-      gatheringMode: '自驾',
+      gatheringMode: '自行前往',
     });
   });
 
@@ -1904,7 +1904,7 @@ describe('MockRepository readiness 与显式报名命令', () => {
   });
 
   it.each([
-    ['self_drive', '自驾'],
+    ['self_drive', '自行前往'],
     ['support_vehicle', '需要后援车'],
   ] as const)('新建报名将集合方式 %s 映射为展示值 %s', async (gatheringMode, expected) => {
     stored = undefined;
@@ -1937,7 +1937,7 @@ describe('MockRepository readiness 与显式报名命令', () => {
     state.registrations[0] = {
       ...state.registrations[0],
       status: 'rejected',
-      gatheringMode: '自驾',
+      gatheringMode: '自行前往',
       experience: '常骑',
       remark: '旧备注',
     };

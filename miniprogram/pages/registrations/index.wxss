@@ -174,16 +174,42 @@ brand-logo {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
+.meeting-panel {
+  display: grid;
+  gap: 14rpx;
+  padding: 20rpx 22rpx;
+  border-left: 6rpx solid var(--v31-accent);
+  border-radius: 20rpx;
+  background: #f8f2ec;
+}
+.meeting-row {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 112rpx minmax(0, 1fr);
+  align-items: start;
+  gap: 16rpx;
+}
+.meeting-label {
+  color: var(--color-muted);
+  font-size: 21rpx;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.meeting-value {
+  min-width: 0;
+  color: var(--color-text);
+  font-size: 26rpx;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
 .registration-meta {
+  margin-top: 14rpx;
   justify-content: flex-start;
   flex-wrap: wrap;
   color: var(--color-muted);
   font-size: 21rpx;
-}
-.date {
-  color: var(--color-text);
-  font-variant-numeric: tabular-nums;
-  font-weight: 900;
 }
 .gathering-mode {
   padding: 5rpx 12rpx;
@@ -191,13 +217,6 @@ brand-logo {
   background: var(--color-raised);
   color: var(--color-text);
   font-weight: 700;
-}
-.updated-at {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--color-muted);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .card-footer {
   margin-top: 20rpx;

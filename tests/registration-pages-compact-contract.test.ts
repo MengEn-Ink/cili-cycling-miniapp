@@ -52,8 +52,12 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     expect(registrations).toContain('{{item.activity.title}}');
     expect(registrations).toContain('{{item.activity.displayDate}}');
     expect(registrations).not.toContain('{{item.activity.date}}');
-    expect(registrations).toContain('{{item.updatedAt}}');
+    expect(registrations).toContain('{{item.meetingTime}}');
+    expect(registrations).toContain('{{item.meetingLocation}}');
+    expect(registrations).not.toContain('更新于 {{item.updatedAt}}');
     expect(registrations).toContain('{{item.gatheringMode}}');
+    expect(form).toContain('自行前往');
+    expect(form).not.toContain('自驾前往');
     expect(registrations).toContain('{{statusCounts.review}}');
     expect(registrations).toContain('{{statusCounts.ready}}');
     expect(registrations).toContain('{{statusCounts.expired}}');

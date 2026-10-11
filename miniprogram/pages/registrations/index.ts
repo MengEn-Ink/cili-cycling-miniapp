@@ -1,5 +1,6 @@
 import { rideService } from '../../services/ride-service';
-import { formatActivityDate, formatChinaDateTime } from '../../utils/date-time';
+import { formatActivityDate } from '../../utils/date-time';
+import { buildTripMeetingInfo, isTripArchived } from './trip-state';
 
 const SWIPE_DISTANCE_PX = 75;
 const SWIPE_OPEN_THRESHOLD_PX = 30;
@@ -45,44 +46,48 @@ Page({
     try {
       const registrations = await rideService.listRegistrations();
       if (requestId !== this.loadRequestId) return;
-      const items = registrations.map((item) => {
-        const activity = item.activity || { title: '历史活动', date: item.updatedAt };
-        const statusText = {
-          waiting: '候补中',
-          pending: '待审核',
-          approved: '已通过',
-          checked_in: '已签到',
-          rejected: '已驳回',
-          cancelled: '已取消',
-        }[item.status];
-        const displayStatusText = {
-          waiting: '候补',
-          pending: '待审核',
-          approved: '已通过',
-          checked_in: '已签到',
-          rejected: '未通过',
-          cancelled: '已取消',
-        }[item.status];
-        const statusGuidance = {
-          waiting: '等待名额释放',
-          pending: '资料审核中',
-          approved: '凭证已就绪',
-          checked_in: '本次行程已签到',
-          rejected: '查看未通过原因',
-          cancelled: '可左滑或点击删除记录',
-        }[item.status];
-        return {
-          ...item,
-          updatedAt: formatChinaDateTime(item.updatedAt),
-          activity: { ...activity, displayDate: formatActivityDate(activity.date) },
-          statusText,
-          displayStatusText,
-          statusGuidance,
-          swipeX: 0,
-          destinationLabel:
-            item.status === 'approved' || item.status === 'checked_in' ? '查看凭证' : '查看详情',
-        };
-      });
+      const items = registrations
+        .filter((item) => !isTripArchived(item.activity?.endAt))
+        .map((item) => {
+          const activity = item.activity || { title: '历史活动', date: item.updatedAt };
+          const meeting = buildTripMeetingInfo(activity);
+          const statusText = {
+            waiting: '候补中',
+            pending: '待审核',
+            approved: '已通过',
+            checked_in: '已签到',
+            rejected: '已驳回',
+            cancelled: '已取消',
+          }[item.status];
+          const displayStatusText = {
+            waiting: '候补',
+            pending: '待审核',
+            approved: '已通过',
+            checked_in: '已签到',
+            rejected: '未通过',
+            cancelled: '已取消',
+          }[item.status];
+          const statusGuidance = {
+            waiting: '等待名额释放',
+            pending: '资料审核中',
+            approved: '凭证已就绪',
+            checked_in: '本次行程已签到',
+            rejected: '查看未通过原因',
+            cancelled: '可左滑或点击删除记录',
+          }[item.status];
+          return {
+            ...item,
+            activity: { ...activity, displayDate: formatActivityDate(activity.date) },
+            meetingTime: meeting.time,
+            meetingLocation: meeting.location,
+            statusText,
+            displayStatusText,
+            statusGuidance,
+            swipeX: 0,
+            destinationLabel:
+              item.status === 'approved' || item.status === 'checked_in' ? '查看凭证' : '查看详情',
+          };
+        });
       this.setData({ items, statusCounts: statusCounts(items) });
     } catch (error) {
       if (requestId !== this.loadRequestId) return;

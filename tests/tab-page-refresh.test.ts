@@ -245,7 +245,7 @@ describe('registrations status presentation', () => {
       statuses.map((status, index) => ({
         ...registration(`r${index}`, 'activity-shared'),
         status,
-        gatheringMode: index % 2 ? '需要后援车' : '自驾',
+        gatheringMode: index % 2 ? '需要后援车' : '自行前往',
         activity: { ...activity('activity-shared'), date: '2026-10-18' },
       })),
     );
@@ -260,13 +260,44 @@ describe('registrations status presentation', () => {
       '已取消',
     ]);
     expect(page.data.items.map((item: any) => item.gatheringMode)).toEqual([
-      '自驾',
+      '自行前往',
       '需要后援车',
-      '自驾',
+      '自行前往',
       '需要后援车',
-      '自驾',
+      '自行前往',
     ]);
     expect(page.data.items.every((item: any) => item.activity.date === '2026-10-18')).toBe(true);
+  });
+
+  it('archives trips from midnight after the activity end day', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-12T00:00:00+08:00'));
+    try {
+      const page = await loadPage('registrations');
+      rideService.listRegistrations.mockResolvedValue([
+        {
+          ...registration('archived', 'old-activity'),
+          activity: {
+            ...activity('old-activity'),
+            endAt: '2026-10-11T18:00:00+08:00',
+          },
+        },
+        {
+          ...registration('visible', 'current-activity'),
+          activity: {
+            ...activity('current-activity'),
+            endAt: '2026-10-12T18:00:00+08:00',
+          },
+        },
+      ]);
+
+      await page.load();
+
+      expect(page.data.items.map((item: any) => item.id)).toEqual(['visible']);
+      expect(page.data.statusCounts).toEqual({ review: 0, ready: 1, expired: 0 });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

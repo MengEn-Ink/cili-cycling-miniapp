@@ -222,7 +222,7 @@ describe('unified UI accessibility regressions', () => {
   it('keeps registration metadata readable without using brand as body text', () => {
     const registrationStyles = read('miniprogram/pages/registrations/index.wxss');
     expectSemantic(
-      declaration(effectiveBlock(registrationStyles, '.date'), 'color'),
+      declaration(effectiveBlock(registrationStyles, '.meeting-value'), 'color'),
       '--color-text',
     );
     const reviewStyles = read('miniprogram/pages/admin/review-detail/index.wxss');

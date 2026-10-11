@@ -17,7 +17,11 @@
         <view class="registration-card status-{{item.status}}" style="transform: translateX({{item.swipeX}}px)" data-id="{{item.id}}" bindtap="open" bindtouchstart="onRowTouchStart" bindtouchmove="onRowTouchMove" bindtouchend="onRowTouchEnd" bindtouchcancel="onRowTouchCancel" hover-class="registration-card--pressed" role="button" aria-label="{{item.activity.title}}，{{item.displayStatusText}}，{{item.destinationLabel}}">
           <view class="card-head"><text class="card-index">{{item.activity.displayDate}}</text><status-pill status="{{item.displayStatusText}}"/></view>
           <view class="registration-title">{{item.activity.title}}</view>
-          <view class="registration-meta"><text wx:if="{{item.gatheringMode}}" class="gathering-mode">{{item.gatheringMode}}</text><text class="updated-at">更新于 {{item.updatedAt}}</text></view>
+          <view class="meeting-panel" aria-label="集合信息">
+            <view class="meeting-row"><text class="meeting-label">集合时间</text><text class="meeting-value">{{item.meetingTime}}</text></view>
+            <view class="meeting-row"><text class="meeting-label">集合地点</text><text class="meeting-value meeting-location">{{item.meetingLocation}}</text></view>
+          </view>
+          <view class="registration-meta" wx:if="{{item.gatheringMode}}"><text class="gathering-mode">{{item.gatheringMode}}</text></view>
           <view class="card-footer">
             <view class="status-guidance"><text class="status-dot"></text><text>{{item.statusGuidance}}</text></view>
             <button wx:if="{{item.status === 'cancelled'}}" class="delete-record-button" data-id="{{item.id}}" catchtap="confirmDelete" loading="{{deletingId === item.id}}">删除记录</button>

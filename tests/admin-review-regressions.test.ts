@@ -43,7 +43,7 @@ const registration = (id: string, activityId: string) => ({
       emergencyPhone: false,
     },
   },
-  gatheringMode: '自驾',
+  gatheringMode: '自行前往',
   experience: '常骑',
   remark: '',
   strava: {

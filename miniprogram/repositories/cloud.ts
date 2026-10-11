@@ -713,7 +713,7 @@ function mapRegistration(raw: unknown): Registration {
       },
     },
     gatheringMode:
-      ({ self_drive: '自驾', support_vehicle: '需要后援车' } as const)[
+      ({ self_drive: '自行前往', support_vehicle: '需要后援车' } as const)[
         options.gathering_mode as 'self_drive' | 'support_vehicle'
       ] || '',
     experience:
