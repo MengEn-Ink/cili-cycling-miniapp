@@ -44,21 +44,22 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.11.30',
+      version: '2026.10.11.31',
       latest: true,
-      title: '活动时间信息更精简',
-      summary: '活动卡片与行程卡片不再重复展示日期，集合时间改为更自然醒目的具体时刻。',
+      title: '活动海报长内容更稳',
+      summary:
+        '长标题和长昵称会按真实宽度安全截断，报名名单固定在群二维码左侧，避免文字遮挡二维码。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.11.31',
       '2026.10.11.30',
       '2026.10.11.29',
       '2026.10.11.28',
       '2026.10.11.27',
-      '2026.10.11.26',
     ]);
   });
 

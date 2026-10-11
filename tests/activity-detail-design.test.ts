@@ -280,6 +280,68 @@ describe('活动详情设计与日期契约', () => {
     expect(context.drawImage).toHaveBeenCalledWith(groupQrImage, 221, 524, 126, 126);
   });
 
+  it('海报长标题截断时保留最后一个可见字符', () => {
+    const texts: string[] = [];
+    const context: any = {
+      fillStyle: '',
+      font: '',
+      fillRect: vi.fn(),
+      fillText: vi.fn((text: string) => texts.push(text)),
+      drawImage: vi.fn(),
+      measureText: vi.fn((text: string) => ({
+        width: [...text].reduce((sum, char) => sum + (char === '…' ? 4 : 12), 0),
+      })),
+    };
+
+    expect(
+      drawActivityPoster(context, 375, 700, { title: '一'.repeat(53), route: {} } as any, {
+        displayTime: '2026-10-18 08:00:00',
+        locationName: '桥下咖啡集合',
+        approvedCount: 0,
+        attendeeNames: [],
+        groupQrImage: { id: 'qr' },
+      }),
+    ).toBe(true);
+    expect(texts).toContain(`${'一'.repeat(26)}…`);
+  });
+
+  it('海报报名名单只占二维码左侧单行区域', () => {
+    const textDraws: { text: string; x: number; y: number }[] = [];
+    const context: any = {
+      fillStyle: '',
+      font: '',
+      fillRect: vi.fn(),
+      fillText: vi.fn((text: string, x: number, y: number) => textDraws.push({ text, x, y })),
+      drawImage: vi.fn(),
+      measureText: vi.fn((text: string) => ({ width: text.length * 12 })),
+    };
+
+    expect(
+      drawActivityPoster(
+        context,
+        375,
+        700,
+        {
+          title: '两行标题用于压满海报上方空间并验证名单区域安全',
+          description: '两行活动说明用于验证报名名单不会向下覆盖活动群二维码区域。',
+          route: { distanceKm: 120, elevationM: 1600, level: '挑战' },
+        } as any,
+        {
+          displayTime: '2026-10-18 08:00:00',
+          locationName: '很长的集合地点名称用于验证海报换行安全区域',
+          locationAddress: '北京市朝阳区很长的集合地点详细地址 100 号',
+          approvedCount: 6,
+          attendeeNames: Array.from({ length: 6 }, (_, index) => `骑友${index + 1}号长名字`),
+          groupQrImage: { id: 'qr' },
+        },
+      ),
+    ).toBe(true);
+
+    const attendeeDraws = textDraws.filter(({ text }) => text.includes('骑友'));
+    expect(attendeeDraws).toHaveLength(1);
+    expect(attendeeDraws[0].y).toBeLessThan(524);
+  });
+
   it('使用等宽三列指标、32rpx 展示圆角和轻量安全区 CTA', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');

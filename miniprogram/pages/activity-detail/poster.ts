@@ -9,6 +9,14 @@ export interface ActivityPosterOptions {
   groupQrImage: any;
 }
 
+function fitEllipsis(context: any, text: string, maxWidth: number) {
+  const visibleChars = Array.from(text);
+  while (visibleChars.length && context.measureText(`${visibleChars.join('')}…`).width > maxWidth) {
+    visibleChars.pop();
+  }
+  return `${visibleChars.join('')}…`;
+}
+
 function lines(
   context: any,
   text: string,
@@ -25,7 +33,11 @@ function lines(
   for (const char of content) {
     const next = line + char;
     if (line && context.measureText(next).width > maxWidth) {
-      context.fillText(count + 1 === maxLines ? `${line.slice(0, -1)}…` : line, x, top);
+      context.fillText(
+        count + 1 === maxLines ? fitEllipsis(context, line, maxWidth) : line,
+        x,
+        top,
+      );
       count += 1;
       if (count >= maxLines) return top;
       line = char;
@@ -115,19 +127,21 @@ export function drawActivityPoster(
     cursor = lines(context, description, left, cursor, contentWidth, 20, 2) + 34;
   }
 
+  const qrSize = 126;
+  const qrX = width - left - qrSize;
+  const qrY = height - 176;
+  const attendeeTextWidth = Math.max(0, qrX - left - 16);
   const names = cleanList(options.attendeeNames);
   context.fillStyle = '#111111';
   context.font = 'bold 14px sans-serif';
   context.fillText(`已通过 ${Math.max(0, options.approvedCount || 0)} 人`, left, cursor);
-  if (names.length) {
+  if (names.length && attendeeTextWidth > 0) {
     context.fillStyle = '#6b6762';
     context.font = '12px sans-serif';
-    lines(context, names.slice(0, 6).join('、'), left, cursor + 24, contentWidth, 18, 2);
+    // 报名名单限定在二维码左侧单行区域，避免长昵称覆盖群二维码。
+    lines(context, names.slice(0, 6).join('、'), left, cursor + 24, attendeeTextWidth, 18, 1);
   }
 
-  const qrSize = 126;
-  const qrX = width - left - qrSize;
-  const qrY = height - 176;
   context.fillStyle = '#ffffff';
   context.fillRect(qrX - 8, qrY - 8, qrSize + 16, qrSize + 16);
   context.drawImage(options.groupQrImage, qrX, qrY, qrSize, qrSize);
