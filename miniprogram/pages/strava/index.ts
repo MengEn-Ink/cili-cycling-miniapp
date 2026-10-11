@@ -60,8 +60,10 @@ Page({
     readiness: null as StravaReadiness | null,
     readinessMessage: '',
     snapshotMeta: stravaSnapshotMeta(null),
-    busyAction: null as null | 'connect' | 'retry' | 'disconnect',
+    busyAction: null as null | 'connect' | 'retry' | 'disconnect' | 'copy',
     reauthorize: false,
+    authorizationUrl: '',
+    manualAuthorization: false,
   },
   onLoad(options: Record<string, string>) {
     this.setData({ reauthorize: options.reauthorize === '1' });
@@ -140,12 +142,19 @@ Page({
         this.setData({ error: state.error });
         return;
       }
+      const authorizationUrl = state.data.authorizationUrl;
+      this.setData({ authorizationUrl, manualAuthorization: false });
       // 真机 web-view 不能承载未配置为业务域名的 strava.com，授权链接必须交给系统浏览器。
       try {
-        await copyAuthorizationUrl(state.data.authorizationUrl);
+        await copyAuthorizationUrl(authorizationUrl);
       } catch {
-        if (requestId === this.loadRequestId)
-          this.setData({ error: '授权链接复制失败，未开始浏览器授权，请重试。' });
+        if (requestId === this.loadRequestId) {
+          this.setReadiness({ ...disconnectedReadiness(), state: 'authorizing' });
+          this.setData({
+            manualAuthorization: true,
+            error: '微信未能自动复制授权链接，请长按下方链接手动复制，或点击“再次复制”。',
+          });
+        }
         return;
       }
       if (requestId !== this.loadRequestId) return;
@@ -176,6 +185,18 @@ Page({
       }
     } finally {
       if (requestId === this.loadRequestId) this.setData({ busyAction: null });
+    }
+  },
+  async retryAuthorizationCopy() {
+    if (this.data.busyAction || !this.data.authorizationUrl) return;
+    this.setData({ busyAction: 'copy', error: '' });
+    try {
+      await copyAuthorizationUrl(this.data.authorizationUrl);
+      wx.showToast({ title: '授权链接已复制', icon: 'success' });
+    } catch {
+      this.setData({ error: '仍无法自动复制，请长按下方链接并选择复制。' });
+    } finally {
+      this.setData({ busyAction: null });
     }
   },
   async retry() {

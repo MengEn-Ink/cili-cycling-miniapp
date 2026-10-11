@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.12.15',
+    date: '2026-10-12',
+    title: 'Strava 授权复制增加手动兜底',
+    summary: '微信剪贴板受限时不再中断授权，页面会保留一次性链接供长按复制，并支持再次复制。',
+    latest: true,
+    features: [
+      '自动复制失败后保留服务端授权状态，不再要求重新发起授权',
+      '页面展示可长按选择的一次性 Strava 授权链接',
+      '提供再次复制入口，授权完成后返回微信继续自动同步',
+    ],
+  },
+  {
     version: '2026.10.12.14',
     date: '2026-10-12',
     title: '手机号可直接填写更换',
     summary: '个人资料不再要求微信手机号授权，用户可直接填写或更换本人手机号并随资料保存。',
-    latest: true,
+    latest: false,
     features: [
       '移除本人手机号的微信授权按钮和未授权异常',
       '本人手机号改为普通数字输入框，可直接填写或更换',
