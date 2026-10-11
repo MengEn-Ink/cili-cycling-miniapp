@@ -1,4 +1,4 @@
-import type { Activity, ActivityLocation } from '../../../models';
+import type { ActivityLocation, EditableActivity } from '../../../models';
 import type { ActivityInput } from '../../../repositories/types';
 import { rideService } from '../../../services/ride-service';
 import { appStore } from '../../../store/app-store';
@@ -110,7 +110,7 @@ Page({
     id: '',
     version: 0,
     status: 'draft',
-    originalActivity: undefined as Activity | undefined,
+    originalActivity: undefined as EditableActivity | undefined,
     images: [] as string[],
     pendingImages: [] as PendingImage[],
     sessionUploadedIds: [] as string[],
@@ -521,13 +521,15 @@ Page({
       return;
     }
     if (!startAt) return;
-    const original = this.data.originalActivity as Activity | undefined;
+    const original = this.data.originalActivity as EditableActivity | undefined;
     const startForDefaults = startAt;
     const defaults = derivedTimes(startForDefaults);
-    const originalStartTime = original ? new Date(original.startAt).getTime() : Number.NaN;
+    const originalStartTime = original?.startAt ? new Date(original.startAt).getTime() : Number.NaN;
     const startTime = new Date(startForDefaults).getTime();
-    const originalEndTime = original ? new Date(original.endAt).getTime() : Number.NaN;
-    const originalDeadlineTime = original ? new Date(original.deadline).getTime() : Number.NaN;
+    const originalEndTime = original?.endAt ? new Date(original.endAt).getTime() : Number.NaN;
+    const originalDeadlineTime = original?.deadline
+      ? new Date(original.deadline).getTime()
+      : Number.NaN;
     const endAt =
       original && Number.isFinite(originalEndTime) && Number.isFinite(originalStartTime)
         ? new Date(startTime + Math.max(originalEndTime - originalStartTime, 60_000)).toISOString()
@@ -620,32 +622,43 @@ Page({
     this.saveInFlight = true;
     try {
       const id = this.data.id || undefined;
-      const saved = await rideService.saveActivity(
-        activity,
-        id,
-        id ? this.data.version : undefined,
-      );
-      const savedImages = saved.images?.length
-        ? saved.images.slice(0, MAX_IMAGES)
-        : saved.coverImage
-          ? [saved.coverImage]
-          : [];
-      this.setData({
-        id: saved.id,
-        version: saved.version,
-        status: saved.status,
-        title: saved.title,
-        originalActivity: saved,
-        images: savedImages,
-        sessionUploadedIds: [],
-        imagesTouched: false,
-        coverImage: savedImages[0] || '',
-        groupQrCode: saved.groupQrCode || '',
-        groupQrCodeUploadedAt: saved.groupQrCodeUploadedAt || '',
-        groupQrCodeExpired: groupQrExpired(saved.groupQrCodeUploadedAt),
-        pendingGroupQrCode: undefined,
-        routeStartLocation: saved.route.startLocation,
-      });
+      const applySaved = (saved: EditableActivity) => {
+        const savedImages = saved.images?.length
+          ? saved.images.slice(0, MAX_IMAGES)
+          : saved.coverImage
+            ? [saved.coverImage]
+            : [];
+        this.setData({
+          id: saved.id,
+          version: saved.version,
+          status: saved.status,
+          title: saved.title,
+          originalActivity: saved,
+          images: savedImages,
+          sessionUploadedIds: [],
+          imagesTouched: false,
+          coverImage: savedImages[0] || '',
+          groupQrCode: saved.groupQrCode || '',
+          groupQrCodeUploadedAt: saved.groupQrCodeUploadedAt || '',
+          groupQrCodeExpired: groupQrExpired(saved.groupQrCodeUploadedAt),
+          pendingGroupQrCode: undefined,
+          routeStartLocation: saved.route.startLocation,
+        });
+      };
+      let saved: EditableActivity;
+      if (!id && nextStatus === 'published') {
+        const draft = await rideService.saveActivity({ ...activity, status: 'draft' });
+        // 首次草稿已成为可恢复事实：即使发布失败，也保留其 id/version 供用户原地重试。
+        applySaved(draft);
+        saved = await rideService.saveActivity(
+          { ...activity, status: 'published' },
+          draft.id,
+          draft.version,
+        );
+      } else {
+        saved = await rideService.saveActivity(activity, id, id ? this.data.version : undefined);
+      }
+      applySaved(saved);
       wx.showToast({ title: '保存成功', icon: 'success' });
     } catch (error) {
       if (this.unloaded) this.cleanupSessionUploads();

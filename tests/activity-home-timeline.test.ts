@@ -138,7 +138,7 @@ describe('activities page timeline controller', () => {
     await vi.waitFor(() => expect(page.data.loading).toBe(false));
     expect(page.data).toMatchObject({
       activeView: 'history',
-      sectionEyebrow: 'RIDE ARCHIVE',
+      sectionEyebrow: '历史活动',
       sectionTitle: '最近结束',
       followingTitle: '更早活动',
       emptyTitle: '暂无历史活动',

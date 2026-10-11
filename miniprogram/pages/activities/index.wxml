@@ -44,7 +44,7 @@
         </view>
         <block wx:if="{{row.kind === 'item'}}">
           <view class="following-head" wx:if="{{row.showFollowing}}"><text>{{followingTitle}}</text><text>继续探索 →</text></view>
-          <activity-card item="{{row.item}}" featured="{{activeView === 'future' && row.featured}}" data-id="{{row.item.id}}" bind:open="open" />
+          <activity-card item="{{row.item}}" data-id="{{row.item.id}}" bind:open="open" />
         </block>
       </block>
     </state-view>

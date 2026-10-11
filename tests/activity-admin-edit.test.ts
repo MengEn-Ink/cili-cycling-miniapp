@@ -301,12 +301,70 @@ describe('日常活动极简创建与编辑', () => {
     });
     page.data.form.routeStart = '湖边广场';
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
-    expect(rideService.saveActivity).toHaveBeenCalledTimes(1);
+    expect(rideService.saveActivity).toHaveBeenCalledTimes(2);
+    expect(rideService.saveActivity.mock.calls.map(([payload]) => payload.status)).toEqual([
+      'draft',
+      'published',
+    ]);
     expect(saved).toBeDefined();
 
     rideService.getAdminActivity.mockResolvedValueOnce(saved);
     await page.onLoad({ id: saved!.id });
     expect(page.data.form).toMatchObject({ startDate: '2026-10-20', startTime: '07:30' });
+  });
+
+  it('新建直接发布先落草稿再按返回版本发布，第二步失败后保留草稿供重试', async () => {
+    const calls: Array<{ status: string; id?: string; expectedVersion?: number }> = [];
+    let publishAttempts = 0;
+    rideService.saveActivity.mockImplementation(
+      async (payload: any, id?: string, expectedVersion?: number) => {
+        calls.push({ status: payload.status, id, expectedVersion });
+        if (!id) {
+          if (payload.status !== 'draft')
+            throw new Error('INVALID_TRANSITION / 新活动必须先保存为草稿');
+          return savedActivityFromPayload(payload, 'created-two-phase');
+        }
+        expect(id).toBe('created-two-phase');
+        expect(expectedVersion).toBe(1);
+        expect(payload.status).toBe('published');
+        publishAttempts += 1;
+        if (publishAttempts === 1) throw new Error('发布暂时失败，请重试');
+        return { ...savedActivityFromPayload(payload, id), version: 2 };
+      },
+    );
+    await page.onLoad({});
+    Object.assign(page.data.form, {
+      title: '两阶段发布晨骑',
+      startDate: '2026-10-20',
+      startTime: '07:30',
+      routeStart: '湖边广场',
+    });
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(calls.map(({ status }) => status)).toEqual(['draft', 'published']);
+    expect(page.data).toMatchObject({
+      id: 'created-two-phase',
+      version: 1,
+      status: 'draft',
+      originalActivity: expect.objectContaining({ id: 'created-two-phase', status: 'draft' }),
+    });
+    expect(wx.showModal).toHaveBeenLastCalledWith(
+      expect.objectContaining({ content: '发布暂时失败，请重试' }),
+    );
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(calls[calls.length - 1]).toEqual({
+      status: 'published',
+      id: 'created-two-phase',
+      expectedVersion: 1,
+    });
+    expect(page.data).toMatchObject({
+      id: 'created-two-phase',
+      version: 2,
+      status: 'published',
+    });
   });
 
   it('跨日深夜集合时间保存后重开仍保持原日期和时间', async () => {

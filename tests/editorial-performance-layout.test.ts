@@ -6,20 +6,21 @@ import { declaration, effectiveBlock } from './theme-contract-helpers';
 const read = (file: string) => readFileSync(file, 'utf8');
 
 describe('方案 A 编辑式性能布局', () => {
-  it('未来活动把首场提升为主视觉，历史活动保持紧凑卡片', () => {
+  it('所有活动统一使用照片主导卡片，不让后续卡片退化为无图列表', () => {
     const list = read('miniprogram/pages/activities/index.wxml');
     const component = read('miniprogram/components/activity-card/index.ts');
     const card = read('miniprogram/components/activity-card/index.wxml');
     const styles = read('miniprogram/components/activity-card/index.wxss');
 
     expect(list).toContain('wx:for="{{rows}}"');
-    expect(list).toContain('featured="{{activeView === \'future\' && row.featured}}"');
-    expect(component).toMatch(/featured:\s*\{\s*type:\s*Boolean,\s*value:\s*false\s*\}/);
-    expect(card).toContain("featured ? 'activity-card--featured' : 'activity-card--compact'");
-    expect(card).toContain('class="card-identity"');
-    expect(styles).toMatch(/\.activity-card--featured \.card-media\s*\{/);
-    expect(styles).toMatch(/\.activity-card--compact\s*\{/);
-    expect(styles).toMatch(/\.activity-card--compact \.card-media\s*\{/);
+    expect(list).not.toContain('featured="');
+    expect(component).not.toMatch(/featured:\s*\{/);
+    expect(card).not.toContain('activity-card--featured');
+    expect(card).not.toContain('activity-card--compact');
+    expect(card).toContain('class="card-media"');
+    expect(card).toContain('class="card-info"');
+    expect(styles).not.toContain('.activity-card--compact');
+    expect(styles).toMatch(/\.card-media\s*\{[^}]*height:\s*3\d\drpx/s);
   });
 
   it('活动详情以媒体 Hero 和报名决策摘要建立首屏层级', () => {

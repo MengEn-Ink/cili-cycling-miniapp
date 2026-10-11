@@ -22,7 +22,7 @@ const VIEW_COPY = {
     emptyCopy: '新的骑行活动正在筹备中',
   },
   history: {
-    sectionEyebrow: 'RIDE ARCHIVE',
+    sectionEyebrow: '历史活动',
     sectionTitle: '最近结束',
     followingTitle: '更早活动',
     emptyTitle: '暂无历史活动',

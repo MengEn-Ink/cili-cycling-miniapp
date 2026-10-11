@@ -1,7 +1,6 @@
 Component({
   properties: {
     item: { type: Object, value: {} },
-    featured: { type: Boolean, value: false },
   },
   data: {
     coverFailed: false,

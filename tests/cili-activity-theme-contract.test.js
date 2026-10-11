@@ -10,6 +10,7 @@ import {
 
 const read = (path) => fs.readFileSync(path, 'utf8');
 const activities = read('miniprogram/pages/activities/index.wxml');
+const activitiesController = read('miniprogram/pages/activities/index.ts');
 const activitiesStyles = read('miniprogram/pages/activities/index.wxss');
 const activityCard = read('miniprogram/components/activity-card/index.wxml');
 const activityCardStyles = read('miniprogram/components/activity-card/index.wxss');
@@ -67,6 +68,57 @@ describe('CILI 活动页静态契约', () => {
     expect(declaration(cta, 'min-height')).toBe('var(--control-height)');
   });
 
+  it('方案 A 让每张卡都使用固定照片区与独立信息区并稳定承载长文案', () => {
+    expect(activityCard).toContain('class="card-media"');
+    expect(activityCard).toContain('class="card-info"');
+    expect(activityCard).toContain('mode="aspectFill"');
+    expect(activityCard).toContain('wx:else class="card-placeholder"');
+    expect(activityCard).not.toContain('activity-card--featured');
+    expect(activityCard).not.toContain('activity-card--compact');
+    expect(activityCardStyles).not.toContain('.activity-card--compact');
+    expect(activityCardStyles).toMatch(/\.card-media\s*\{[^}]*height:\s*3\d\drpx/s);
+    const title = effectiveBlock(activityCardStyles, '.activity-title');
+    expect(declaration(title, '-webkit-line-clamp')).toBe('2');
+    expect(declaration(title, 'min-height')).toMatch(/^\d+rpx$/);
+    const route = effectiveBlock(activityCardStyles, '.route-line');
+    expect(declaration(route, '-webkit-line-clamp')).toBe('2');
+    expect(declaration(route, 'min-height')).toMatch(/^\d+rpx$/);
+  });
+
+  it('里程、爬升和报名保持固定三列，缺失可选指标显示占位而不折叠', () => {
+    expect(activityCard.match(/class="metric-item"/g)).toHaveLength(3);
+    expect(activityCard).toContain("item.route.distanceKm > 0 ? item.route.distanceKm : '—'");
+    expect(activityCard).toContain("item.route.elevationM > 0 ? item.route.elevationM : '—'");
+    expect(activityCard).not.toContain(
+      '<view wx:if="{{item.route.distanceKm > 0}}" class="metric-item">',
+    );
+    expect(activityCard).not.toContain(
+      '<view wx:if="{{item.route.elevationM > 0}}" class="metric-item">',
+    );
+    expect(activityCardStyles).toContain('grid-template-columns: repeat(3, minmax(0, 1fr));');
+  });
+
+  it('活动界面删除装饰英文但保留品牌与专有名词', () => {
+    expect(activities).not.toContain('RIDES /');
+    expect(activitiesController).not.toContain('RIDE ARCHIVE');
+    expect(activityCard).not.toContain('RIDE DATE');
+    expect(detail).not.toContain('RIDE DETAIL');
+    expect(detail).not.toContain('RIDE / 01');
+    expect(logo).toContain('class="brand-logo__word">CILI');
+    expect(detail).toContain('Strava');
+    expect(detail).toContain('GPX');
+  });
+
+  it('照片卡片的路线箭头与近黑 CTA 使用高对比语义色', () => {
+    expectSemantic(
+      declaration(effectiveBlock(activityCardStyles, '.route-arrow'), 'color'),
+      '--color-text',
+    );
+    const cta = effectiveBlock(activityCardStyles, '.card-cta');
+    expectSemantic(declaration(cta, 'background'), '--color-action');
+    expectSemantic(declaration(cta, 'color'), '--color-on-action');
+  });
+
   it('列表压缩首屏介绍并前置活动卡，详情压缩 Hero、时间轴并保留吸底安全区', () => {
     expect(activities).toContain('class="activities-intro"');
     expect(activities).not.toContain('class="hero hero--compact activities-hero"');
@@ -90,11 +142,11 @@ describe('CILI 活动页静态契约', () => {
     expect(tokens['--radius-sm']).toBe('16rpx');
     expect(tokens['--radius-md']).toBe('24rpx');
     expect(tokens['--radius-display']).toBe('32rpx');
-    const card = cssBlock(activityCardStyles, '.activity-card');
+    const card = effectiveBlock(activityCardStyles, '.activity-card');
     expectSemantic(declaration(card, 'background'), '--color-surface');
     expectSemantic(declaration(card, 'border-radius'), '--radius-card');
     expectSemantic(
-      declaration(cssBlock(activityCardStyles, '.metric-item'), 'background'),
+      declaration(effectiveBlock(activityCardStyles, '.metric-item'), 'background'),
       '--color-raised',
     );
     expectSemantic(
