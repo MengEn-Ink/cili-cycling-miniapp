@@ -3,14 +3,18 @@
   <view wx:elif="{{!allowed}}" class="state-card state-card--error">{{error || '无权访问活动管理'}}</view>
   <block wx:else>
     <view class="editor-hero">
-      <view class="editor-kicker">DAILY RIDE</view>
       <view class="editor-title">{{id ? '编辑日常活动' : '创建日常活动'}}</view>
-      <view class="editor-summary">只填写集合时间、地点、封面和备注，几步即可发布。</view>
+      <view class="editor-summary">填写标题、集合时间、地点、封面和备注，几步即可发布。</view>
     </view>
 
     <view wx:if="{{error}}" class="card danger"><view class="error-summary">{{error}}</view></view>
 
     <view class="form-card card">
+      <view class="field" data-error-anchor="title">
+        <view class="field-label">活动标题 <text class="required">必填</text></view>
+        <input class="input" value="{{form.title}}" maxlength="100" placeholder-class="input-placeholder" placeholder="请输入活动标题" bindinput="field" data-name="title" />
+        <view wx:if="{{formErrors.title}}" class="form-error">{{formErrors.title}}</view>
+      </view>
       <view class="section-title">集合信息</view>
       <view class="field" data-error-anchor="startAt">
         <view class="field-label">集合时间 <text class="required">必填</text></view>
@@ -21,10 +25,6 @@
           <picker mode="time" value="{{form.startTime}}" bindchange="dateTimePicker" data-part="time">
             <view class="picker-value">{{form.startTime || '选择时间'}}</view>
           </picker>
-        </view>
-        <view class="quick-row">
-          <button class="quick-button" bindtap="quickDateTime" data-preset="tomorrow-morning">明早 07:00</button>
-          <button class="quick-button" bindtap="quickDateTime" data-preset="next-saturday">下周六 08:00</button>
         </view>
         <view wx:if="{{formErrors.startAt}}" class="field-error field-error-copy">{{formErrors.startAt}}</view>
       </view>

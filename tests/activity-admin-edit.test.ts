@@ -116,6 +116,7 @@ describe('日常活动极简创建与编辑', () => {
   it('加载时只回填最小字段并把历史图片收敛为三张', async () => {
     await page.onLoad({ id: activity.id });
     expect(page.data.form).toEqual({
+      title: '环湖骑行',
       ...splitLocalDateTime(activity.startAt),
       routeStart: '起点',
       description: '说明',
@@ -128,11 +129,17 @@ describe('日常活动极简创建与编辑', () => {
     expect(page.data.form).not.toHaveProperty('fee');
   });
 
-  it('发布只要求集合日期、集合时间和集合地点', async () => {
+  it('发布要求活动标题、集合日期、集合时间和集合地点', async () => {
     await page.onLoad({});
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
     expect(rideService.saveActivity).not.toHaveBeenCalled();
     expect(wx.showModal).toHaveBeenCalledWith(
+      expect.objectContaining({ content: '请输入活动标题' }),
+    );
+
+    page.data.form.title = '周末拉练';
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+    expect(wx.showModal).toHaveBeenLastCalledWith(
       expect.objectContaining({ content: '请选择集合日期' }),
     );
 
@@ -225,12 +232,17 @@ describe('日常活动极简创建与编辑', () => {
     expect(payload.capacity).toBe(20);
   });
 
-  it('新活动自动生成兼容字段，草稿可在最小字段未完成时保存', async () => {
+  it('新活动使用用户填写的标题和集合时间生成兼容字段', async () => {
     await page.onLoad({});
+    Object.assign(page.data.form, {
+      title: '周末晨骑',
+      startDate: '2026-10-18',
+      startTime: '07:00',
+    });
     await page.save({ currentTarget: { dataset: { status: 'draft' } } });
     expect(rideService.saveActivity).toHaveBeenCalledWith(
       expect.objectContaining({
-        title: expect.stringContaining('骑行'),
+        title: '周末晨骑',
         status: 'draft',
         capacity: 500,
         registrationUnlimited: true,
@@ -270,6 +282,7 @@ describe('日常活动极简创建与编辑', () => {
       return saved;
     });
     await page.onLoad({});
+    page.data.form.title = '晨骑训练';
 
     page.dateTimePicker({
       currentTarget: { dataset: { part: 'date' } },
@@ -303,6 +316,7 @@ describe('日常活动极简创建与编辑', () => {
       return saved;
     });
     await page.onLoad({});
+    page.data.form.title = '夜骑训练';
     page.data.form.startDate = '2026-10-11';
     page.data.form.startTime = '23:30';
     page.data.form.routeStart = '夜骑起点';
@@ -349,6 +363,7 @@ describe('日常活动极简创建与编辑', () => {
     expect(page.data.images).toEqual(['cloud://first.jpg', 'cloud://second.jpg']);
     expect(page.data.coverImage).toBe('cloud://first.jpg');
 
+    page.data.form.title = '周末骑行';
     page.data.form.startDate = '2026-10-20';
     page.data.form.startTime = '07:30';
     page.data.form.routeStart = '湖边广场';
@@ -394,6 +409,7 @@ describe('日常活动极简创建与编辑', () => {
     expect(page.data.images).toEqual(['cloud://success.jpg', 'cloud://retry.jpg']);
     expect(page.data.pendingImages).toEqual([]);
 
+    page.data.form.title = '周末骑行';
     page.data.form.startDate = '2026-10-20';
     page.data.form.startTime = '07:30';
     page.data.form.routeStart = '湖边广场';
@@ -490,6 +506,7 @@ describe('日常活动极简创建与编辑', () => {
     expect(page.data.groupQrCode).toBe('cloud://new-group-qr.jpg');
     expect(page.data.groupQrCodeExpired).toBe(false);
 
+    page.data.form.title = '周末骑行';
     page.data.form.startDate = '2026-10-20';
     page.data.form.startTime = '07:30';
     page.data.form.routeStart = '湖边广场';
@@ -506,6 +523,7 @@ describe('日常活动极简创建与编辑', () => {
 
   it('界面只暴露极简字段且不提供 Strava 同步入口', () => {
     const template = readFileSync('miniprogram/pages/admin/activity-edit/index.wxml', 'utf8');
+    expect(template).toContain('活动标题');
     expect(template).toContain('集合时间');
     expect(template).toContain('集合地点');
     expect(template).toContain('最多 3 张');
@@ -513,9 +531,14 @@ describe('日常活动极简创建与编辑', () => {
     expect(template).toContain('活动群二维码');
     expect(template).toContain('二维码可能已过期');
     expect(template).toContain('仅保存链接，不再同步');
+    expect(template).toContain('form.title');
     expect(template).toContain('form.startDate');
     expect(template).toContain('form.startTime');
     expect(template).not.toContain('form.startAt');
+    expect(template).not.toContain('quick-row');
+    expect(template).not.toContain('明早');
+    expect(template).not.toContain('下周六');
+    expect(template).not.toContain('DAILY RIDE');
     for (const removed of [
       '活动结束',
       '路线终点',

@@ -44,21 +44,22 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.11.14',
+      version: '2026.10.11.15',
       latest: true,
-      title: '图片缩略图加载更省',
-      summary: '进入资料编辑页时，已解析的照片缩略图会在有效期内复用，临期自动刷新，减少重复加载。',
+      title: '活动标题与卡片体验优化',
+      summary:
+        '创建活动时由发布人填写标题和集合时间，活动卡片统一字段对齐与高对比度配色，减少英文和荧光色干扰。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.11.15',
       '2026.10.11.14',
       '2026.10.11.13',
       '2026.10.11.12',
       '2026.10.11.11',
-      '2026.10.11.10',
     ]);
   });
 

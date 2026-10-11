@@ -26,7 +26,7 @@
 
         <view class="detail-decision" aria-label="报名状态">
           <view>
-            <view class="decision-kicker">SIGN-UP STATUS</view>
+            <view class="decision-kicker">报名状态</view>
             <view class="decision-title">{{activityAction.label}}</view>
             <view class="decision-meta" wx:if="{{!item.registrationUnlimited}}">报名截止 {{deadlineTime || '待公布'}}</view>
           </view>

@@ -12,7 +12,7 @@ import {
 
 const VIEW_COPY = {
   future: {
-    sectionEyebrow: 'UPCOMING RIDES',
+    sectionEyebrow: '近期活动',
     sectionTitle: '下一场',
     followingTitle: '接下来',
     emptyTitle: '暂无未来活动',

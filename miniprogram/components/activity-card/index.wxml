@@ -3,11 +3,11 @@
     <image wx:if="{{item.coverImage && !coverFailed}}" class="card-cover" src="{{item.coverImage}}" mode="aspectFill" lazy-load="{{true}}" binderror="coverImageError" aria-label="{{item.title}}活动封面" />
     <view wx:else class="card-placeholder" aria-label="暂无活动封面">
       <view class="placeholder-orbit"></view>
-      <view class="placeholder-mark">CILI <text>/ RIDE</text></view>
+      <view class="placeholder-mark">骑有此里</view>
     </view>
     <view class="card-media-shade"></view>
     <view class="card-date">
-      <text class="date-label">RIDE DATE</text>
+      <text class="date-label">集合日期</text>
       <text class="date-value">{{item.displayDate}}</text>
     </view>
     <view class="card-identity">

@@ -114,7 +114,7 @@ describe('activities page timeline controller', () => {
     expect(rideService.listActivityPage).toHaveBeenNthCalledWith(1, 'future');
     expect(page.data).toMatchObject({
       activeView: 'future',
-      sectionEyebrow: 'UPCOMING RIDES',
+      sectionEyebrow: '近期活动',
       sectionTitle: '下一场',
       emptyCopy: '新的骑行活动正在筹备中',
       nextCursor: 'future-cursor',
