@@ -12,7 +12,8 @@ describe('方案 A 编辑式性能布局', () => {
     const card = read('miniprogram/components/activity-card/index.wxml');
     const styles = read('miniprogram/components/activity-card/index.wxss');
 
-    expect(list).toContain('wx:for="{{rows}}"');
+    expect(list).toContain('wx:for="{{items}}"');
+    expect(list).toContain('class="activity-carousel"');
     expect(list).not.toContain('featured="');
     expect(component).not.toMatch(/featured:\s*\{/);
     expect(card).not.toContain('activity-card--featured');

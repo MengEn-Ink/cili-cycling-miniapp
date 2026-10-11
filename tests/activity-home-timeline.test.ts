@@ -84,31 +84,28 @@ describe('activity timeline state helpers', () => {
 });
 
 describe('activity timeline template contract', () => {
-  it('提供双视图语义、动态文案与加载更多入口', () => {
+  it('提供双视图选择和单卡片横向轮播', () => {
     const template = read('miniprogram/pages/activities/index.wxml');
     expect(template).toContain('class="timeline-tabs"');
     expect(template).toContain('data-view="future"');
     expect(template).toContain('data-view="history"');
     expect(template).toContain('aria-selected="{{activeView === \'future\'}}"');
-    expect(template).toContain('{{followingTitle}}');
-    expect(template).toContain('bindtap="loadMore"');
-    expect(template).toContain("{{loadingMore ? '加载中…' : '加载更多'}}");
-    expect(template).toContain(
-      "{{activeView === 'history' ? '历史活动列表' : '即将开始活动列表'}}",
-    );
+    expect(template).toContain('class="activity-carousel"');
+    expect(template).toContain('current="{{currentCardIndex}}"');
+    expect(template).toContain('duration="0"');
+    expect(template).toContain('bindchange="cardChange"');
+    expect(template).toContain('wx:for="{{items}}"');
+    expect(template).toContain('左右滑动切换活动');
   });
 
-  it('未来视图提供日期分组头、锚点与日期快捷定位入口', () => {
+  it('展示卡片序号、日期、切换提示并保留加载失败重试', () => {
     const template = read('miniprogram/pages/activities/index.wxml');
-    expect(template).toContain('wx:for="{{rows}}"');
-    expect(template).toContain('class="day-group-head"');
-    expect(template).toContain('id="day-{{row.dayKey}}"');
-    expect(template).toContain('class="day-chip-bar"');
-    expect(template).toContain('wx:for="{{dayChips}}"');
-    expect(template).toContain('bindtap="scrollToDay"');
-    expect(template).toContain('data-key="{{item.key}}"');
-    // 历史视图仍保留“接下来/更早活动”分隔语义。
-    expect(template).toContain('wx:if="{{row.showFollowing}}"');
+    expect(template).toContain('{{currentCardIndex + 1}} / {{items.length}}');
+    expect(template).toContain('{{item.displayDateLabel}}');
+    expect(template).toContain('class="carousel-progress__value"');
+    expect(template).toContain('items.length === 1 || refreshError');
+    expect(template).toContain('加载更多活动');
+    expect(template).toContain('重试加载更多');
   });
 });
 
@@ -149,86 +146,46 @@ describe('activities page timeline controller', () => {
     });
   });
 
-  it('未来列表产出日期分组行与快捷 chips，items 仍驱动计数与空态', async () => {
+  it('加载活动后直接提供卡片轮播数据并重置无效索引', async () => {
     const page = await loadPage();
-    rideService.listActivityPage.mockResolvedValueOnce({
-      items: [
-        {
-          ...activity('d1'),
-          startAt: '2026-10-18T00:00:00.000Z',
-          date: '2026-10-18T00:00:00.000Z',
-        },
-        {
-          ...activity('d2'),
-          startAt: '2026-10-20T00:00:00.000Z',
-          date: '2026-10-20T00:00:00.000Z',
-        },
-      ],
-      nextCursor: null,
-      asOf: '2026-10-11T00:00:00.000Z',
-    });
+    rideService.listActivityPage.mockResolvedValueOnce(pageResult(['d1', 'd2'], null));
+    page.data.currentCardIndex = 9;
 
     await page.load();
 
     expect(page.data.items.map((item: any) => item.id)).toEqual(['d1', 'd2']);
-    expect(page.data.rows.map((row: any) => row.kind)).toEqual([
-      'header',
-      'item',
-      'header',
-      'item',
-    ]);
-    expect(page.data.rows[0]).toMatchObject({ kind: 'header', dayKey: '2026-10-18' });
-    expect(page.data.rows[1]).toMatchObject({ kind: 'item', featured: true });
-    expect(page.data.rows[1].item.id).toBe('d1');
-    expect(page.data.rows[3].item.id).toBe('d2');
-    expect(page.data.dayChips.map((chip: any) => chip.key)).toEqual(['2026-10-18', '2026-10-20']);
+    expect(page.data.currentCardIndex).toBe(0);
   });
 
-  it('历史列表只产出活动行，不插入日期头也不产出 chips', async () => {
+  it('切换时间视图时回到第一张卡片', async () => {
     const page = await loadPage();
     rideService.listActivityPage
       .mockResolvedValueOnce(pageResult(['future'], null))
       .mockResolvedValueOnce(pageResult(['h1', 'h2'], null));
-
     await page.load();
+    page.data.currentCardIndex = 1;
+
     page.switchView({ currentTarget: { dataset: { view: 'history' } } });
-    await vi.waitFor(() => expect(rideService.listActivityPage).toHaveBeenCalledTimes(2));
     await vi.waitFor(() => expect(page.data.loading).toBe(false));
 
-    expect(page.data.rows).toHaveLength(2);
-    expect(page.data.rows.every((row: any) => row.kind === 'item')).toBe(true);
-    expect(page.data.dayChips).toEqual([]);
+    expect(page.data.activeView).toBe('history');
+    expect(page.data.currentCardIndex).toBe(0);
+    expect(page.data.items.map((item: any) => item.id)).toEqual(['h1', 'h2']);
   });
 
-  it('scrollToDay 滚动到对应日期锚点，兼容 Promise 返回、异常与非法 key', async () => {
+  it('滑到最后一张时自动加载下一页，普通滑动只更新索引', async () => {
     const page = await loadPage();
-    const pageScrollTo = vi.fn();
-    vi.stubGlobal('wx', { pageScrollTo, navigateTo: vi.fn() });
+    rideService.listActivityPage.mockResolvedValueOnce(pageResult(['a', 'b'], 'cursor-1'));
+    await page.load();
+    const loadMore = vi.spyOn(page, 'loadMore').mockResolvedValue(undefined);
 
-    page.scrollToDay({ currentTarget: { dataset: { key: '2026-10-18' } } });
-    expect(pageScrollTo).toHaveBeenCalledWith(
-      expect.objectContaining({ selector: '#day-2026-10-18' }),
-    );
+    page.cardChange({ detail: { current: 0 } });
+    expect(page.data.currentCardIndex).toBe(0);
+    expect(loadMore).not.toHaveBeenCalled();
 
-    // 新基础库返回 Promise 时挂住 reject，避免未处理异常。
-    const catchSpy = vi.fn();
-    pageScrollTo.mockImplementationOnce(() => ({ catch: catchSpy }));
-    page.scrollToDay({ currentTarget: { dataset: { key: '2026-10-18' } } });
-    expect(catchSpy).toHaveBeenCalledOnce();
-
-    // 旧基础库抛错时静默降级，不阻断浏览。
-    pageScrollTo.mockImplementationOnce(() => {
-      throw new Error('unsupported');
-    });
-    expect(() =>
-      page.scrollToDay({ currentTarget: { dataset: { key: '2026-10-18' } } }),
-    ).not.toThrow();
-
-    pageScrollTo.mockClear();
-    page.scrollToDay({ currentTarget: { dataset: { key: 'pending' } } });
-    page.scrollToDay({ currentTarget: { dataset: {} } });
-    page.scrollToDay({ currentTarget: { dataset: { key: 123 } } });
-    expect(pageScrollTo).not.toHaveBeenCalled();
+    page.cardChange({ detail: { current: 1 } });
+    expect(page.data.currentCardIndex).toBe(1);
+    expect(loadMore).toHaveBeenCalledOnce();
   });
 
   it('加载更多按 cursor 单飞、按 ID 去重并更新 cursor', async () => {
