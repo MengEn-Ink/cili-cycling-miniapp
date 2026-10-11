@@ -60,9 +60,7 @@ describe('approved unified high-contrast UI', () => {
     expectSemantic(declaration(cardShell, 'background'), '--color-surface');
     expectSemantic(declaration(cardShell, 'box-shadow'), '--shadow-card');
     expect(declaration(effectiveBlock(card, '.metric-item'), 'text-align')).toBe('center');
-    expect(
-      declaration(effectiveBlock(card, '.activity-card--featured .metric-item'), 'text-align'),
-    ).toBe('var(--metric-align)');
+    expect(card).not.toContain('.activity-card--compact');
     expectSemantic(declaration(effectiveBlock(card, '.card-cta'), 'color'), '--color-on-action');
   });
 

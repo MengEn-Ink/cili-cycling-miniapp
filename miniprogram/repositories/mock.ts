@@ -223,6 +223,7 @@ function displayGatheringMode(
   return ({ self_drive: '自驾', support_vehicle: '需要后援车' } as const)[value] || '';
 }
 export class MockRepository implements RideRepository {
+  private readonly activityCreateRequests = new Map<string, string>();
   read(): S {
     return wx.getStorageSync(KEY) || init();
   }
@@ -589,7 +590,21 @@ export class MockRepository implements RideRepository {
     s.stravaStatus = 'pending';
     this.write(s);
   }
-  async saveActivity(value: ActivityInput, id?: string, expectedVersion?: number) {
+  async saveActivity(
+    value: ActivityInput,
+    id?: string,
+    expectedVersion?: number,
+    createRequestId?: string,
+  ) {
+    if (id && createRequestId) throw new Error('更新活动不能携带创建请求 ID');
+    if (!id && createRequestId) {
+      if (!/^[A-Za-z0-9_-]{8,128}$/.test(createRequestId)) throw new Error('创建请求 ID 格式错误');
+      const existingId = this.activityCreateRequests.get(createRequestId);
+      const existing = existingId
+        ? this.read().activities.find((item) => item.id === existingId)
+        : undefined;
+      if (existing) return existing;
+    }
     const current = id ? this.read().activities.find((item) => item.id === id) : undefined;
     if (current && current.version !== expectedVersion) throw new Error('活动已被其他人更新');
     const a: EditableActivity = {
@@ -604,6 +619,7 @@ export class MockRepository implements RideRepository {
     if (i < 0) s.activities.unshift(a);
     else s.activities.splice(i, 1, a);
     this.write(s);
+    if (!id && createRequestId) this.activityCreateRequests.set(createRequestId, a.id);
     return a;
   }
   async cloneActivity(input: CloneActivityInput) {

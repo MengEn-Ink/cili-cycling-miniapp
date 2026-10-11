@@ -132,13 +132,14 @@ describe('activities page timeline controller', () => {
       emptyCopy: '新的骑行活动正在筹备中',
       nextCursor: 'future-cursor',
     });
+    expect(page.data.items[0].displayDate).toBe('10月18日 周日 08:00');
 
     page.switchView({ currentTarget: { dataset: { view: 'history' } } });
     await vi.waitFor(() => expect(rideService.listActivityPage).toHaveBeenCalledTimes(2));
     await vi.waitFor(() => expect(page.data.loading).toBe(false));
     expect(page.data).toMatchObject({
       activeView: 'history',
-      sectionEyebrow: 'RIDE ARCHIVE',
+      sectionEyebrow: '历史活动',
       sectionTitle: '最近结束',
       followingTitle: '更早活动',
       emptyTitle: '暂无历史活动',

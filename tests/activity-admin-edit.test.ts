@@ -83,6 +83,7 @@ const deferred = <T>() => {
   });
   return { promise, resolve, reject };
 };
+const callFailed = (message: string) => Object.assign(new Error(message), { code: 'CALL_FAILED' });
 
 describe('日常活动极简创建与编辑', () => {
   let page: any;
@@ -251,6 +252,7 @@ describe('日常活动极简创建与编辑', () => {
       }),
       undefined,
       undefined,
+      expect.stringMatching(/^[A-Za-z0-9_-]{8,128}$/),
     );
     const payload = rideService.saveActivity.mock.calls[0][0];
     expect(new Date(payload.deadline).getTime()).toBe(new Date(payload.startAt).getTime() - 60_000);
@@ -301,12 +303,461 @@ describe('日常活动极简创建与编辑', () => {
     });
     page.data.form.routeStart = '湖边广场';
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
-    expect(rideService.saveActivity).toHaveBeenCalledTimes(1);
+    expect(rideService.saveActivity).toHaveBeenCalledTimes(2);
+    expect(rideService.saveActivity.mock.calls.map(([payload]) => payload.status)).toEqual([
+      'draft',
+      'published',
+    ]);
     expect(saved).toBeDefined();
 
     rideService.getAdminActivity.mockResolvedValueOnce(saved);
     await page.onLoad({ id: saved!.id });
     expect(page.data.form).toMatchObject({ startDate: '2026-10-20', startTime: '07:30' });
+  });
+
+  it('新建直接发布先落草稿再按返回版本发布，第二步失败后保留草稿供重试', async () => {
+    const calls: Array<{ status: string; id?: string; expectedVersion?: number }> = [];
+    let publishAttempts = 0;
+    rideService.saveActivity.mockImplementation(
+      async (payload: any, id?: string, expectedVersion?: number) => {
+        calls.push({ status: payload.status, id, expectedVersion });
+        if (!id) {
+          if (payload.status !== 'draft')
+            throw new Error('INVALID_TRANSITION / 新活动必须先保存为草稿');
+          return savedActivityFromPayload(payload, 'created-two-phase');
+        }
+        expect(id).toBe('created-two-phase');
+        expect(expectedVersion).toBe(1);
+        expect(payload.status).toBe('published');
+        publishAttempts += 1;
+        if (publishAttempts === 1) throw new Error('发布暂时失败，请重试');
+        return { ...savedActivityFromPayload(payload, id), version: 2 };
+      },
+    );
+    await page.onLoad({});
+    Object.assign(page.data.form, {
+      title: '两阶段发布晨骑',
+      startDate: '2026-10-20',
+      startTime: '07:30',
+      routeStart: '湖边广场',
+    });
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(calls.map(({ status }) => status)).toEqual(['draft', 'published']);
+    expect(page.data).toMatchObject({
+      id: 'created-two-phase',
+      version: 1,
+      status: 'draft',
+      originalActivity: expect.objectContaining({ id: 'created-two-phase', status: 'draft' }),
+    });
+    expect(wx.showModal).toHaveBeenLastCalledWith(
+      expect.objectContaining({ content: '发布暂时失败，请重试' }),
+    );
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(calls[calls.length - 1]).toEqual({
+      status: 'published',
+      id: 'created-two-phase',
+      expectedVersion: 1,
+    });
+    expect(page.data).toMatchObject({
+      id: 'created-two-phase',
+      version: 2,
+      status: 'published',
+    });
+  });
+
+  it('首次创建响应丢失时复用同一幂等键并收敛到同一草稿', async () => {
+    let serverDraft: Activity | undefined;
+    let createWrites = 0;
+    const createRequestIds: Array<string | undefined> = [];
+    rideService.saveActivity.mockImplementation(
+      async (payload: any, id?: string, expectedVersion?: number, createRequestId?: string) => {
+        if (!id) {
+          createRequestIds.push(createRequestId);
+          if (!serverDraft) {
+            createWrites += 1;
+            serverDraft = savedActivityFromPayload({ ...payload, status: 'draft' }, 'same-draft');
+          }
+          if (createRequestIds.length === 1) throw callFailed('草稿已保存但响应丢失');
+          return serverDraft;
+        }
+        expect(id).toBe('same-draft');
+        expect(expectedVersion).toBe(1);
+        return { ...savedActivityFromPayload(payload, id), version: 2 };
+      },
+    );
+    await page.onLoad({});
+    Object.assign(page.data.form, {
+      title: '幂等创建晨骑',
+      startDate: '2026-10-20',
+      startTime: '07:30',
+      routeStart: '湖边广场',
+    });
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(createRequestIds).toHaveLength(2);
+    expect(createRequestIds[0]).toMatch(/^[A-Za-z0-9_-]{8,128}$/);
+    expect(createRequestIds[1]).toBe(createRequestIds[0]);
+    expect(createWrites).toBe(1);
+    expect(page.data).toMatchObject({ id: 'same-draft', version: 2, status: 'published' });
+  });
+
+  it('发布已提交但响应丢失时按草稿 id 回读 published 新版本并收敛成功', async () => {
+    let serverCurrent: Activity | undefined;
+    rideService.saveActivity.mockImplementation(
+      async (payload: any, id?: string, expectedVersion?: number) => {
+        if (!id) {
+          serverCurrent = savedActivityFromPayload(
+            { ...payload, status: 'draft' },
+            'publish-readback',
+          );
+          return serverCurrent;
+        }
+        expect(expectedVersion).toBe(1);
+        serverCurrent = {
+          ...savedActivityFromPayload(payload, id),
+          version: 2,
+          route: payload.route,
+        };
+        throw callFailed('发布已提交但响应丢失');
+      },
+    );
+    rideService.getAdminActivity.mockImplementation(async () => serverCurrent);
+    await page.onLoad({});
+    Object.assign(page.data.form, {
+      title: '发布回读晨骑',
+      startDate: '2026-10-20',
+      startTime: '07:30',
+      routeStart: '湖边广场',
+    });
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(rideService.getAdminActivity).toHaveBeenCalledWith('publish-readback');
+    expect(page.data).toMatchObject({
+      id: 'publish-readback',
+      version: 2,
+      status: 'published',
+    });
+    expect(wx.showToast).toHaveBeenLastCalledWith({ title: '保存成功', icon: 'success' });
+  });
+
+  it('发布已提交但响应丢失时将真实 mapper 空字段与服务端 trim 形态视为同一结果', async () => {
+    let serverCurrent: Activity | undefined;
+    rideService.saveActivity.mockImplementation(
+      async (payload: any, id?: string, expectedVersion?: number) => {
+        if (!id) {
+          serverCurrent = savedActivityFromPayload(
+            { ...payload, status: 'draft' },
+            'publish-normalized-readback',
+          );
+          return serverCurrent;
+        }
+        expect(expectedVersion).toBe(1);
+        serverCurrent = {
+          ...savedActivityFromPayload(
+            {
+              ...payload,
+              description: payload.description.trim(),
+            },
+            id,
+          ),
+          version: 2,
+          route: {
+            ...payload.route,
+            start: payload.route.start.trim(),
+            gpxFileId: '',
+          },
+        };
+        delete (serverCurrent as Partial<Activity>).groupQrCodeUploadedAt;
+        throw callFailed('发布已提交但响应丢失');
+      },
+    );
+    rideService.getAdminActivity.mockImplementation(async () => serverCurrent);
+    await page.onLoad({});
+    Object.assign(page.data.form, {
+      title: '真实映射回读晨骑',
+      description: '  带首尾空格的说明  ',
+      startDate: '2026-10-20',
+      startTime: '07:30',
+      routeStart: '  湖边广场  ',
+    });
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(rideService.getAdminActivity).toHaveBeenCalledWith('publish-normalized-readback');
+    expect(serverCurrent).toMatchObject({
+      id: 'publish-normalized-readback',
+      version: 2,
+      status: 'published',
+      description: '带首尾空格的说明',
+      route: expect.objectContaining({ start: '湖边广场', gpxFileId: '' }),
+    });
+    expect(serverCurrent).not.toHaveProperty('groupQrCodeUploadedAt');
+    expect(page.data).toMatchObject({
+      id: 'publish-normalized-readback',
+      version: 2,
+      status: 'published',
+    });
+    expect(wx.showToast).toHaveBeenLastCalledWith({ title: '保存成功', icon: 'success' });
+    expect(wx.showModal).not.toHaveBeenCalled();
+  });
+
+  it('零后援容量草稿的历史司机被服务端清空后仍收敛已提交的发布', async () => {
+    let serverCurrent: Activity = {
+      ...activity,
+      id: 'publish-zero-support-driver',
+      version: 1,
+      status: 'draft',
+      supportVehicleCapacity: 0,
+      selfDriveCapacity: 20,
+      supportVehicleDriver: {
+        nickname: '历史司机',
+        licensePlate: '京A12345',
+        contactPhone: '13800000000',
+      },
+    };
+    rideService.getAdminActivity.mockImplementation(async () => serverCurrent);
+    rideService.saveActivity.mockImplementation(
+      async (payload: any, id?: string, expectedVersion?: number) => {
+        expect(id).toBe('publish-zero-support-driver');
+        expect(expectedVersion).toBe(1);
+        expect(payload).toMatchObject({
+          status: 'published',
+          supportVehicleCapacity: 0,
+          supportVehicleDriver: {
+            nickname: '历史司机',
+            licensePlate: '京A12345',
+            contactPhone: '13800000000',
+          },
+        });
+        serverCurrent = {
+          ...savedActivityFromPayload(payload, id),
+          version: 2,
+          status: 'published',
+          supportVehicleCapacity: 0,
+          selfDriveCapacity: 20,
+          supportVehicleDriver: { nickname: '', licensePlate: '', contactPhone: '' },
+        };
+        throw callFailed('发布已提交但响应丢失');
+      },
+    );
+    await page.onLoad({ id: serverCurrent.id });
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(rideService.saveActivity).toHaveBeenCalledTimes(1);
+    expect(rideService.getAdminActivity).toHaveBeenCalledTimes(2);
+    expect(serverCurrent).toMatchObject({
+      id: 'publish-zero-support-driver',
+      version: 2,
+      status: 'published',
+      supportVehicleCapacity: 0,
+      supportVehicleDriver: { nickname: '', licensePlate: '', contactPhone: '' },
+    });
+    expect(page.data).toMatchObject({
+      id: 'publish-zero-support-driver',
+      version: 2,
+      status: 'published',
+    });
+    expect(wx.showToast).toHaveBeenLastCalledWith({ title: '保存成功', icon: 'success' });
+    expect(wx.showModal).not.toHaveBeenCalled();
+  });
+
+  it('非零后援容量回读到不同司机时仍以冲突关闭', async () => {
+    const intendedDriver = {
+      nickname: '本端司机',
+      licensePlate: '京A12345',
+      contactPhone: '13800000000',
+    };
+    let serverCurrent: Activity = {
+      ...activity,
+      id: 'publish-concurrent-support-driver',
+      version: 1,
+      status: 'draft',
+      supportVehicleCapacity: 8,
+      selfDriveCapacity: 12,
+      supportVehicleDriver: intendedDriver,
+    };
+    rideService.getAdminActivity.mockImplementation(async () => serverCurrent);
+    rideService.saveActivity.mockImplementation(
+      async (payload: any, id?: string, expectedVersion?: number) => {
+        expect(id).toBe('publish-concurrent-support-driver');
+        expect(expectedVersion).toBe(1);
+        expect(payload.supportVehicleDriver).toEqual(intendedDriver);
+        serverCurrent = {
+          ...savedActivityFromPayload(payload, id),
+          version: 2,
+          status: 'published',
+          supportVehicleDriver: {
+            nickname: '另一会话司机',
+            licensePlate: '沪aB54321',
+            contactPhone: '13900000000',
+          },
+        };
+        throw callFailed('本端发布未提交');
+      },
+    );
+    await page.onLoad({ id: serverCurrent.id });
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(rideService.saveActivity).toHaveBeenCalledTimes(1);
+    expect(page.data).toMatchObject({
+      id: 'publish-concurrent-support-driver',
+      version: 1,
+      status: 'draft',
+    });
+    expect(wx.showModal).toHaveBeenLastCalledWith(
+      expect.objectContaining({ content: '活动已被其他人更新，请重新加载后再试' }),
+    );
+    expect(wx.showToast).not.toHaveBeenCalledWith({ title: '保存成功', icon: 'success' });
+  });
+
+  it('本端发布未提交而另一会话发布不同内容时冲突关闭', async () => {
+    let serverCurrent: Activity | undefined;
+    const publishedVersions: number[] = [];
+    rideService.saveActivity.mockImplementation(
+      async (payload: any, id?: string, expectedVersion?: number) => {
+        if (!id) {
+          serverCurrent = savedActivityFromPayload(
+            { ...payload, status: 'draft' },
+            'concurrent-published',
+          );
+          return serverCurrent;
+        }
+        publishedVersions.push(expectedVersion!);
+        serverCurrent = {
+          ...serverCurrent!,
+          version: 2,
+          status: 'published',
+          title: '另一会话发布的标题',
+        };
+        throw callFailed('本端发布在服务端提交前失败');
+      },
+    );
+    rideService.getAdminActivity.mockImplementation(async () => serverCurrent);
+    await page.onLoad({});
+    Object.assign(page.data.form, {
+      title: '本端准备发布的标题',
+      startDate: '2026-10-20',
+      startTime: '07:30',
+      routeStart: '湖边广场',
+    });
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(publishedVersions).toEqual([1]);
+    expect(serverCurrent).toMatchObject({
+      version: 2,
+      status: 'published',
+      title: '另一会话发布的标题',
+    });
+    expect(page.data).toMatchObject({
+      id: 'concurrent-published',
+      version: 1,
+      status: 'draft',
+      title: '本端准备发布的标题',
+    });
+    expect(wx.showModal).toHaveBeenLastCalledWith(
+      expect.objectContaining({ content: '活动已被其他人更新，请重新加载后再试' }),
+    );
+    expect(wx.showToast).not.toHaveBeenCalledWith({ title: '保存成功', icon: 'success' });
+  });
+
+  it('发布模糊失败回读发现草稿被并发修改时冲突关闭且不覆盖新内容', async () => {
+    let serverCurrent: Activity | undefined;
+    const publishedVersions: number[] = [];
+    rideService.saveActivity.mockImplementation(
+      async (payload: any, id?: string, expectedVersion?: number) => {
+        if (!id) {
+          serverCurrent = savedActivityFromPayload(
+            { ...payload, status: 'draft' },
+            'publish-retry',
+          );
+          return serverCurrent;
+        }
+        publishedVersions.push(expectedVersion!);
+        if (publishedVersions.length === 1) {
+          serverCurrent = { ...serverCurrent!, version: 3, title: '另一端已更新的标题' };
+          throw callFailed('发布结果不确定');
+        }
+        serverCurrent = { ...savedActivityFromPayload(payload, id), version: 4 };
+        return serverCurrent;
+      },
+    );
+    rideService.getAdminActivity.mockImplementation(async () => serverCurrent);
+    await page.onLoad({});
+    Object.assign(page.data.form, {
+      title: '发布重试晨骑',
+      startDate: '2026-10-20',
+      startTime: '07:30',
+      routeStart: '湖边广场',
+    });
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(publishedVersions).toEqual([1]);
+    expect(serverCurrent).toMatchObject({
+      version: 3,
+      title: '另一端已更新的标题',
+      status: 'draft',
+    });
+    expect(page.data).toMatchObject({ id: 'publish-retry', version: 1, status: 'draft' });
+    expect(wx.showModal).toHaveBeenLastCalledWith(
+      expect.objectContaining({ content: '活动已被其他人更新，请重新加载后再试' }),
+    );
+    expect(wx.showToast).not.toHaveBeenCalledWith({ title: '保存成功', icon: 'success' });
+  });
+
+  it('发布有界重试已提交但响应再次丢失时二次回读 published 并收敛成功', async () => {
+    let serverCurrent: Activity | undefined;
+    const publishedVersions: number[] = [];
+    rideService.saveActivity.mockImplementation(
+      async (payload: any, id?: string, expectedVersion?: number) => {
+        if (!id) {
+          serverCurrent = savedActivityFromPayload(
+            { ...payload, status: 'draft' },
+            'publish-second-readback',
+          );
+          return serverCurrent;
+        }
+        publishedVersions.push(expectedVersion!);
+        if (publishedVersions.length === 1) {
+          throw callFailed('第一次发布在提交前失败');
+        }
+        serverCurrent = {
+          ...savedActivityFromPayload(payload, id),
+          version: 2,
+          route: payload.route,
+        };
+        throw callFailed('第二次发布已提交但响应丢失');
+      },
+    );
+    rideService.getAdminActivity.mockImplementation(async () => serverCurrent);
+    await page.onLoad({});
+    Object.assign(page.data.form, {
+      title: '二次回读晨骑',
+      startDate: '2026-10-20',
+      startTime: '07:30',
+      routeStart: '湖边广场',
+    });
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(publishedVersions).toEqual([1, 1]);
+    expect(rideService.getAdminActivity).toHaveBeenCalledTimes(2);
+    expect(page.data).toMatchObject({
+      id: 'publish-second-readback',
+      version: 2,
+      status: 'published',
+    });
+    expect(wx.showToast).toHaveBeenLastCalledWith({ title: '保存成功', icon: 'success' });
+    expect(wx.showModal).not.toHaveBeenCalled();
   });
 
   it('跨日深夜集合时间保存后重开仍保持原日期和时间', async () => {

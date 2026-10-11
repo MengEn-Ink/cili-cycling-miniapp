@@ -146,12 +146,10 @@ describe('HP-20261010-02 统一明亮 UI 全页对比度契约', () => {
     );
     expectSemantic(declaration(effectiveBlock(card, '.metric-unit'), 'color'), '--color-muted');
     expectSemantic(declaration(effectiveBlock(card, '.card-cta'), 'color'), '--color-on-action');
-    expectSemantic(
-      declaration(effectiveBlock(card, '.activity-card--compact .card-cta text'), 'color'),
-      '--color-on-action',
+    expect(declaration(effectiveBlock(card, '.metrics'), 'grid-template-columns')).toBe(
+      'repeat(3, minmax(0, 1fr))',
     );
-    expect(declaration(effectiveBlock(card, '.metrics'), 'grid-auto-flow')).toBe('column');
-    expect(declaration(effectiveBlock(card, '.route-arrow'), 'color')).toBe('var(--color-muted)');
+    expectSemantic(declaration(effectiveBlock(card, '.route-arrow'), 'color'), '--color-text');
     const template = read('miniprogram/components/activity-card/index.wxml');
     expect(template).not.toContain('RIDE DATE');
   });

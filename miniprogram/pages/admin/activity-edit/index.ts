@@ -1,4 +1,4 @@
-import type { Activity, ActivityLocation } from '../../../models';
+import type { ActivityLocation, EditableActivity } from '../../../models';
 import type { ActivityInput } from '../../../repositories/types';
 import { rideService } from '../../../services/ride-service';
 import { appStore } from '../../../store/app-store';
@@ -37,6 +37,122 @@ const emptyForm = (): Form => ({
 });
 const pickerDate = (value: string) => value.trim().slice(0, 10);
 const pickerTime = (value: string) => value.trim().slice(11, 16);
+const newCreateRequestId = () =>
+  `activity_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
+const errorCode = (error: unknown) =>
+  typeof (error as { code?: unknown })?.code === 'string' ? (error as { code: string }).code : '';
+const protocolText = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
+const protocolDate = (value: unknown) => {
+  const text = protocolText(value);
+  if (!text) return undefined;
+  const timestamp = new Date(text).getTime();
+  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : text;
+};
+const protocolStringArray = (value: unknown) =>
+  Array.isArray(value) ? value.map(protocolText).filter(Boolean) : [];
+const stableValue = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([, entry]) => entry !== undefined)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, entry]) => [key, stableValue(entry)]),
+  );
+};
+const activityContentProjection = (activity: EditableActivity | ActivityInput) => {
+  const images = Array.isArray(activity.images) ? activity.images.map(protocolText) : [];
+  const groupQrCode = protocolText(activity.groupQrCode);
+  const route = activity.route;
+  const hasSyncedStravaRoute = Boolean(
+    route.stravaRouteId || route.elevationProfile || route.routeBounds || route.popularClimbs,
+  );
+  const feePresent =
+    typeof activity.fee === 'string' ||
+    Array.isArray(activity.feeIncluded) ||
+    Array.isArray(activity.feeExcluded);
+  const supportVehicleDriver =
+    activity.supportVehicleCapacity === 0
+      ? { nickname: '', licensePlate: '', contactPhone: '' }
+      : activity.supportVehicleDriver
+        ? {
+            nickname: protocolText(activity.supportVehicleDriver.nickname),
+            licensePlate: protocolText(activity.supportVehicleDriver.licensePlate).toUpperCase(),
+            contactPhone: protocolText(activity.supportVehicleDriver.contactPhone),
+          }
+        : undefined;
+  const location = (value: ActivityLocation | undefined) =>
+    value
+      ? {
+          name: protocolText(value.name),
+          address: protocolText(value.address),
+          latitude: value.latitude,
+          longitude: value.longitude,
+        }
+      : undefined;
+  return {
+    title: protocolText(activity.title),
+    description: protocolText(activity.description),
+    images,
+    coverImage: images[0] || protocolText(activity.coverImage),
+    groupQrCode,
+    groupQrCodeUploadedAt: groupQrCode ? protocolDate(activity.groupQrCodeUploadedAt) : undefined,
+    capacity: activity.capacity,
+    registrationUnlimited: activity.registrationUnlimited === true ? true : undefined,
+    supportVehicleCapacity: activity.supportVehicleCapacity,
+    selfDriveCapacity: activity.selfDriveCapacity,
+    supportVehicleDriver,
+    deadline: protocolDate(activity.deadline),
+    startAt: protocolDate(activity.startAt),
+    endAt: protocolDate(activity.endAt),
+    route: {
+      start: protocolText(route.start),
+      end: protocolText(route.end),
+      startLocation: location(route.startLocation),
+      endLocation: location(route.endLocation),
+      distanceKm: route.distanceKm,
+      elevationM: route.elevationM,
+      level: protocolText(route.level),
+      gpxFileId: protocolText(route.gpxFileId),
+      stravaRouteId: route.stravaRouteId ? protocolText(route.stravaRouteId) : undefined,
+      stravaRouteUrl: route.stravaRouteUrl
+        ? hasSyncedStravaRoute && route.stravaRouteId
+          ? `https://www.strava.com/routes/${protocolText(route.stravaRouteId)}`
+          : protocolText(route.stravaRouteUrl)
+        : undefined,
+      elevationProfile: route.elevationProfile,
+      routeBounds: route.routeBounds,
+      popularClimbs: route.popularClimbs?.map((climb) => ({
+        ...climb,
+        name: protocolText(climb.name),
+        popularityLabel: protocolText(climb.popularityLabel),
+      })),
+    },
+    schedule: Array.isArray(activity.schedule)
+      ? activity.schedule.map((item) => ({
+          time: protocolText(item.time),
+          title: protocolText(item.title),
+          location: protocolText(item.location),
+          remark: protocolText(item.remark),
+        }))
+      : [],
+    notices: protocolStringArray(activity.notices),
+    equipment: protocolStringArray(activity.equipment),
+    fee: feePresent ? protocolText(activity.fee) : undefined,
+    feeIncluded: feePresent ? protocolStringArray(activity.feeIncluded) : undefined,
+    feeExcluded: feePresent ? protocolStringArray(activity.feeExcluded) : undefined,
+  };
+};
+const activityContentFingerprint = (activity: EditableActivity | ActivityInput) =>
+  JSON.stringify(stableValue(activityContentProjection(activity)));
+const sameDraftSnapshot = (expected: EditableActivity, current: EditableActivity) =>
+  current.id === expected.id &&
+  current.version === expected.version &&
+  activityContentFingerprint(current) === activityContentFingerprint(expected);
+const activityConflict = () =>
+  Object.assign(new Error('活动已被其他人更新，请重新加载后再试'), {
+    code: 'ACTIVITY_CONFLICT',
+  });
 const mediaExtension = (path: string) => {
   const match = /\.([a-zA-Z0-9]{1,8})(?:\?|$)/.exec(path);
   return match ? `.${match[1].toLowerCase()}` : '.jpg';
@@ -98,6 +214,7 @@ function derivedTimes(startAt: string) {
 Page({
   unloaded: false,
   saveInFlight: false,
+  createRequestId: '',
   data: {
     allowed: false,
     isAdmin: false,
@@ -110,7 +227,7 @@ Page({
     id: '',
     version: 0,
     status: 'draft',
-    originalActivity: undefined as Activity | undefined,
+    originalActivity: undefined as EditableActivity | undefined,
     images: [] as string[],
     pendingImages: [] as PendingImage[],
     sessionUploadedIds: [] as string[],
@@ -131,6 +248,7 @@ Page({
       return;
     }
     const id = typeof options.id === 'string' ? options.id : '';
+    this.createRequestId = id ? '' : newCreateRequestId();
     this.setData({ allowed: true, isAdmin: appStore.role === 'admin', id });
     if (!id) {
       this.setData({ loading: false });
@@ -177,6 +295,56 @@ Page({
     const targets = fileList || [...this.data.sessionUploadedIds];
     if (!targets.length || !wx.cloud || typeof wx.cloud.deleteFile !== 'function') return;
     void wx.cloud.deleteFile({ fileList: targets }).catch(() => undefined);
+  },
+  async createDraft(activity: ActivityInput) {
+    if (!this.createRequestId) this.createRequestId = newCreateRequestId();
+    try {
+      return await rideService.saveActivity(
+        { ...activity, status: 'draft' },
+        undefined,
+        undefined,
+        this.createRequestId,
+      );
+    } catch (error) {
+      if (errorCode(error) !== 'CALL_FAILED') throw error;
+      return rideService.saveActivity(
+        { ...activity, status: 'draft' },
+        undefined,
+        undefined,
+        this.createRequestId,
+      );
+    }
+  },
+  async publishDraft(activity: ActivityInput, draft: EditableActivity) {
+    const published = { ...activity, status: 'published' as const };
+    const attemptPublish = async (canRetry: boolean): Promise<EditableActivity> => {
+      try {
+        return await rideService.saveActivity(published, draft.id, draft.version);
+      } catch (error) {
+        if (errorCode(error) !== 'CALL_FAILED') throw error;
+        let current: EditableActivity;
+        try {
+          const readback = await rideService.getAdminActivity(draft.id);
+          if (!readback) throw error;
+          current = readback;
+        } catch {
+          throw error;
+        }
+        if (current.status === 'published') {
+          if (
+            current.id !== draft.id ||
+            activityContentFingerprint(current) !== activityContentFingerprint(published)
+          )
+            throw activityConflict();
+          return current;
+        }
+        if (current.status !== 'draft') throw error;
+        if (!sameDraftSnapshot(draft, current)) throw activityConflict();
+        if (!canRetry) throw error;
+        return attemptPublish(false);
+      }
+    };
+    return attemptPublish(true);
   },
   onUnload() {
     this.unloaded = true;
@@ -521,13 +689,15 @@ Page({
       return;
     }
     if (!startAt) return;
-    const original = this.data.originalActivity as Activity | undefined;
+    const original = this.data.originalActivity as EditableActivity | undefined;
     const startForDefaults = startAt;
     const defaults = derivedTimes(startForDefaults);
-    const originalStartTime = original ? new Date(original.startAt).getTime() : Number.NaN;
+    const originalStartTime = original?.startAt ? new Date(original.startAt).getTime() : Number.NaN;
     const startTime = new Date(startForDefaults).getTime();
-    const originalEndTime = original ? new Date(original.endAt).getTime() : Number.NaN;
-    const originalDeadlineTime = original ? new Date(original.deadline).getTime() : Number.NaN;
+    const originalEndTime = original?.endAt ? new Date(original.endAt).getTime() : Number.NaN;
+    const originalDeadlineTime = original?.deadline
+      ? new Date(original.deadline).getTime()
+      : Number.NaN;
     const endAt =
       original && Number.isFinite(originalEndTime) && Number.isFinite(originalStartTime)
         ? new Date(startTime + Math.max(originalEndTime - originalStartTime, 60_000)).toISOString()
@@ -620,32 +790,48 @@ Page({
     this.saveInFlight = true;
     try {
       const id = this.data.id || undefined;
-      const saved = await rideService.saveActivity(
-        activity,
-        id,
-        id ? this.data.version : undefined,
-      );
-      const savedImages = saved.images?.length
-        ? saved.images.slice(0, MAX_IMAGES)
-        : saved.coverImage
-          ? [saved.coverImage]
-          : [];
-      this.setData({
-        id: saved.id,
-        version: saved.version,
-        status: saved.status,
-        title: saved.title,
-        originalActivity: saved,
-        images: savedImages,
-        sessionUploadedIds: [],
-        imagesTouched: false,
-        coverImage: savedImages[0] || '',
-        groupQrCode: saved.groupQrCode || '',
-        groupQrCodeUploadedAt: saved.groupQrCodeUploadedAt || '',
-        groupQrCodeExpired: groupQrExpired(saved.groupQrCodeUploadedAt),
-        pendingGroupQrCode: undefined,
-        routeStartLocation: saved.route.startLocation,
-      });
+      const applySaved = (saved: EditableActivity) => {
+        const savedImages = saved.images?.length
+          ? saved.images.slice(0, MAX_IMAGES)
+          : saved.coverImage
+            ? [saved.coverImage]
+            : [];
+        this.setData({
+          id: saved.id,
+          version: saved.version,
+          status: saved.status,
+          title: saved.title,
+          originalActivity: saved,
+          images: savedImages,
+          sessionUploadedIds: [],
+          imagesTouched: false,
+          coverImage: savedImages[0] || '',
+          groupQrCode: saved.groupQrCode || '',
+          groupQrCodeUploadedAt: saved.groupQrCodeUploadedAt || '',
+          groupQrCodeExpired: groupQrExpired(saved.groupQrCodeUploadedAt),
+          pendingGroupQrCode: undefined,
+          routeStartLocation: saved.route.startLocation,
+        });
+      };
+      let saved: EditableActivity;
+      if (!id && nextStatus === 'published') {
+        const draft = await this.createDraft(activity);
+        // 首次草稿已成为可恢复事实：即使发布失败，也保留其 id/version 供用户原地重试。
+        applySaved(draft);
+        saved = await this.publishDraft(activity, draft);
+      } else if (id && this.data.status === 'draft' && nextStatus === 'published') {
+        saved = await this.publishDraft(activity, {
+          ...this.data.originalActivity!,
+          id,
+          version: this.data.version,
+          status: 'draft',
+        });
+      } else {
+        saved = id
+          ? await rideService.saveActivity(activity, id, this.data.version)
+          : await rideService.saveActivity(activity, undefined, undefined, this.createRequestId);
+      }
+      applySaved(saved);
       wx.showToast({ title: '保存成功', icon: 'success' });
     } catch (error) {
       if (this.unloaded) this.cleanupSessionUploads();

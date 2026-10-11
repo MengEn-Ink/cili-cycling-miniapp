@@ -2140,13 +2140,19 @@ describe('CloudRepository 管理员活动写入契约', () => {
       equipment: ['头盔'],
       fee: '免费',
     };
-    await new CloudRepository(cloud).saveActivity({
-      ...input,
-      occupiedCount: 999,
-      created_by: 'forged',
-    } as any);
+    await new CloudRepository(cloud).saveActivity(
+      {
+        ...input,
+        occupiedCount: 999,
+        created_by: 'forged',
+      } as any,
+      undefined,
+      undefined,
+      'create-request-0001',
+    );
     expectCall(callFunction, 'activity-admin', {
       action: 'save',
+      createRequestId: 'create-request-0001',
       activity: {
         title: '环湖骑行',
         cover_image: '',

@@ -2,7 +2,7 @@ import type { Activity } from '../../models';
 import type { PublicActivityView } from '../../repositories/types';
 import { rideService } from '../../services/ride-service';
 import { activityDisplayStatus } from '../../utils/activity';
-import { formatActivityDate } from '../../utils/date-time';
+import { formatActivityDateTime } from '../../utils/date-time';
 import {
   appendUniqueActivities,
   buildTimelineRows,
@@ -22,7 +22,7 @@ const VIEW_COPY = {
     emptyCopy: '新的骑行活动正在筹备中',
   },
   history: {
-    sectionEyebrow: 'RIDE ARCHIVE',
+    sectionEyebrow: '历史活动',
     sectionTitle: '最近结束',
     followingTitle: '更早活动',
     emptyTitle: '暂无历史活动',
@@ -35,7 +35,7 @@ function displayActivity(item: Activity) {
     ...item,
     occupied: item.occupiedCount || 0,
     remaining: Math.max(item.capacity - (item.occupiedCount || 0), 0),
-    displayDate: formatActivityDate(item.startAt || item.date),
+    displayDate: formatActivityDateTime(item.startAt || item.date),
     displayStatus: activityDisplayStatus(item),
   };
 }
