@@ -63,15 +63,20 @@ describe('活动卡片滑动删除', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('WXML 声明删除按钮、触摸绑定与位移样式', () => {
+  it('WXML 保证操作按钮可点击并在侧滑展开时暴露删除层', () => {
     const template = readFileSync('miniprogram/pages/admin/activity-list/index.wxml', 'utf8');
-    expect(template).toContain('class="swipe-delete"');
+    const styles = readFileSync('miniprogram/pages/admin/activity-list/index.wxss', 'utf8');
+    expect(template).toContain(
+      `class="swipe-delete {{item.swipeOpen ? 'swipe-delete-active' : ''}}"`,
+    );
     expect(template).toContain('catchtap="confirmDelete"');
-    expect(template).toContain('catchtouchstart="onRowTouchStart"');
-    expect(template).toContain('catchtouchmove="onRowTouchMove"');
-    expect(template).toContain('catchtouchend="onRowTouchEnd"');
+    expect(template).toContain('bindtouchstart="onRowTouchStart"');
+    expect(template).toContain('bindtouchmove="onRowTouchMove"');
+    expect(template).toContain('bindtouchend="onRowTouchEnd"');
+    expect(template).not.toMatch(/catchtouch(?:start|move|end|cancel)=/);
     expect(template).toContain('translateX({{item.swipeOffset}}px)');
     expect(template).toContain('class="secondary delete-button"');
+    expect(styles).toMatch(/\.swipe-delete-active\s*\{[^}]*z-index:\s*2;/s);
   });
 
   it('横向滑动跟手位移，越过半幅松手后完全展开', () => {
