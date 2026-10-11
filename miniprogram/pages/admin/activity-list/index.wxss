@@ -274,3 +274,89 @@ page,
 .swipe-content.swipe-anim {
   transition: transform 0.2s ease;
 }
+
+.page.activity-list-page {
+  --page-gutter: 48rpx;
+  --radius-card: 16rpx;
+  min-height: 100vh;
+  padding: 32rpx var(--page-gutter) 64rpx;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.hero {
+  padding: 32rpx 0 48rpx;
+  color: var(--color-muted);
+  text-align: var(--page-heading-align);
+}
+.hero .hero-title {
+  color: var(--color-text);
+  font-size: 56rpx;
+  line-height: 1.14;
+}
+.status-filters {
+  gap: 8rpx;
+  margin-bottom: 32rpx;
+}
+.activity-list-page .status-filter {
+  min-height: var(--control-height);
+  border-radius: 8rpx;
+  background: var(--color-surface);
+  line-height: var(--control-height);
+}
+.activity-list-page .status-filter.active {
+  border-color: var(--color-text);
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+.swipe-row + .swipe-row {
+  margin-top: 32rpx;
+}
+.activity-list-page .card {
+  padding: 32rpx;
+  border: 4rpx solid var(--color-card-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: none;
+}
+.activity-row {
+  gap: 32rpx;
+}
+.activity-list-page .tag {
+  padding: 8rpx 16rpx;
+  border-radius: 8rpx;
+  background: var(--color-raised);
+  color: var(--color-muted);
+}
+.activity-actions {
+  gap: 16rpx;
+}
+.activity-actions button,
+.activity-list-page .btn,
+.activity-list-page .secondary {
+  min-height: var(--control-height);
+  border-radius: 8rpx;
+}
+.activity-list-page .secondary {
+  background: var(--color-input-bg);
+}
+.clone-panel,
+.field {
+  gap: 16rpx;
+}
+.activity-list-page .field input {
+  min-height: var(--control-height);
+  padding: 0 24rpx;
+  border-radius: 8rpx;
+  background: var(--color-input-bg);
+}
+@media (max-width: 350px) {
+  .page.activity-list-page {
+    --page-gutter: var(--page-gutter-narrow);
+    padding-right: var(--page-gutter-narrow);
+    padding-left: var(--page-gutter-narrow);
+  }
+  .hero .hero-title {
+    font-size: 48rpx;
+  }
+}

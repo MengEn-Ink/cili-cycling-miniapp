@@ -1,7 +1,13 @@
 // @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { cssBlock, declaration, expectSemantic, uiTokens } from './theme-contract-helpers';
+import {
+  cssBlock,
+  declaration,
+  effectiveBlock,
+  expectSemantic,
+  uiTokens,
+} from './theme-contract-helpers';
 
 const read = (file: string) => readFileSync(file, 'utf8');
 const pageRoots = [
@@ -115,6 +121,59 @@ describe('品牌与页面体验静态契约', () => {
     expect(profile).toMatch(
       /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.refresh-feedback-spinner\s*\{[^}]*animation-duration:\s*0\.01ms;[^}]*animation-iteration-count:\s*1;/,
     );
+  });
+
+  it('核心页面遵循瑞士网格、单一强调色与 44px 触控门禁', () => {
+    const activities = read('miniprogram/pages/activities/index.wxss');
+    const activityCard = read('miniprogram/components/activity-card/index.wxss');
+    const detail = read('miniprogram/pages/activity-detail/index.wxss');
+    const management = read('miniprogram/pages/admin/activity-list/index.wxss');
+    const profile = read('miniprogram/pages/profile/index.wxss');
+
+    for (const [styles, selector] of [
+      [activities, '.activities-page'],
+      [detail, '.detail-page'],
+      [management, '.page.activity-list-page'],
+      [profile, '.page.profile-page'],
+    ] as const) {
+      expect(styles).toContain(`${selector} {\n  --page-gutter: 48rpx;`);
+    }
+
+    expect(declaration(effectiveBlock(activityCard, '.activity-card'), 'border-radius')).toBe(
+      'var(--radius-card)',
+    );
+    expect(declaration(effectiveBlock(activityCard, '.metric-item'), 'text-align')).toBe('center');
+    expect(declaration(effectiveBlock(activityCard, '.card-cta'), 'min-height')).toBe(
+      'var(--control-height)',
+    );
+    expect(declaration(effectiveBlock(detail, '.detail-page .card'), 'border-radius')).toBe(
+      'var(--radius-card)',
+    );
+    expect(declaration(effectiveBlock(detail, '.detail-metric'), 'text-align')).toBe('center');
+    expect(
+      declaration(effectiveBlock(management, '.activity-list-page .status-filter'), 'min-height'),
+    ).toBe('var(--control-height)');
+    expect(declaration(effectiveBlock(profile, '.menu-card'), 'min-height')).toBe(
+      'var(--control-height)',
+    );
+
+    const scopedStyles = `${activities}\n${activityCard}\n${detail}\n${management}\n${profile}`;
+    expect(scopedStyles).not.toMatch(/#39ff14|#00ff00|lime|neon/i);
+  });
+
+  it('视觉升级保留核心旅程入口和真实事件绑定', () => {
+    const activities = read('miniprogram/pages/activities/index.wxml');
+    const detail = read('miniprogram/pages/activity-detail/index.wxml');
+    const management = read('miniprogram/pages/admin/activity-list/index.wxml');
+    const profile = read('miniprogram/pages/profile/index.wxml');
+
+    expect(activities).toContain('bind:open="open"');
+    expect(detail).toContain('class="fixed detail-action');
+    expect(detail).toContain('bindtap="go"');
+    expect(management).toContain('catchtap="toggleOnline"');
+    expect(management).toContain('catchtap="confirmDelete"');
+    expect(profile).toContain('bindtap="activities"');
+    expect(profile).toContain('bindtap="openSettings"');
   });
 
   it('全局共享表面使用单一语义 token，并提供低饱和成功状态', () => {

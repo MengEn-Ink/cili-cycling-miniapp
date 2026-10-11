@@ -4,11 +4,24 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.11.28',
+    date: '2026-10-11',
+    title: '瑞士网格视觉升级',
+    summary:
+      '活动、详情、管理和个人中心统一采用 24px 页面留白、8 点间距与单一橙红强调，信息更整齐易读。',
+    latest: true,
+    features: [
+      '四个核心页面统一 8 点网格和左对齐信息层级',
+      '活动照片、集合信息和骑行名片保持高对比展示',
+      '主要按钮与筛选项统一为不小于 44px 的触控区域',
+    ],
+  },
+  {
     version: '2026.10.11.27',
     date: '2026-10-11',
     title: '我的行程信息更清楚',
     summary: '过期行程按活动结束次日零点自动归档，行程卡片优先展示集合时间和地点。',
-    latest: true,
+    latest: false,
     features: [
       '活动结束次日 0 点起自动隐藏过期行程凭证',
       '行程卡片重点展示集合时间与集合地点，不再显示更新时间',

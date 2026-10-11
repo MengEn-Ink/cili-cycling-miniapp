@@ -569,3 +569,106 @@ brand-logo {
     animation-iteration-count: 1;
   }
 }
+
+.page.profile-page {
+  --page-gutter: 48rpx;
+  --radius-card: 16rpx;
+  padding: 32rpx var(--page-gutter) 64rpx;
+  background: var(--color-bg);
+}
+.profile-heading {
+  padding: 32rpx 0 48rpx;
+  text-align: var(--page-heading-align);
+}
+.profile-heading-title {
+  font-size: 56rpx;
+  line-height: 1.14;
+}
+.profile-heading-copy {
+  margin-top: 16rpx;
+  line-height: 1.5;
+}
+.profile-heading-mark {
+  width: 48rpx;
+  height: 8rpx;
+  transform: none;
+}
+.rider-card {
+  border: 4rpx solid var(--color-card-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: none;
+}
+.profile-hero,
+.profile-hero.has-bg {
+  padding-right: 32rpx;
+  padding-bottom: 32rpx;
+  padding-left: 32rpx;
+}
+.hero-identity {
+  gap: 16rpx;
+}
+.profile-name {
+  font-size: 48rpx;
+  line-height: 1.16;
+}
+.profile-capability-section {
+  padding: 32rpx;
+  border-top: 8rpx solid var(--color-brand);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.hero-capability-head,
+.hero-progress-head,
+.hero-capability-details {
+  gap: 16rpx;
+}
+.hero-capability-status {
+  padding: 8rpx 16rpx;
+  border-color: var(--color-border);
+  border-radius: 8rpx;
+  color: var(--color-text);
+}
+.hero-capability-metrics,
+.hero-capability-secondary {
+  margin-top: 32rpx;
+}
+.hero-capability-metric {
+  text-align: center;
+}
+.hero-capability-name,
+.hero-capability-strava-tenure,
+.hero-capability-details {
+  color: var(--color-muted);
+}
+.section-label {
+  margin-top: 48rpx;
+  margin-bottom: 16rpx;
+}
+.menu-list {
+  border: 1rpx solid var(--color-border);
+  border-radius: 24rpx;
+  background: var(--color-surface);
+  box-shadow: none;
+}
+.menu-card {
+  min-height: var(--control-height);
+  padding: 24rpx 32rpx;
+  background: var(--color-surface);
+}
+.identity-guide-actions button,
+.profile-page .btn,
+.profile-page .secondary {
+  min-height: var(--control-height);
+  border-radius: 8rpx;
+}
+@media (max-width: 350px) {
+  .page.profile-page {
+    --page-gutter: var(--page-gutter-narrow);
+    padding-right: var(--page-gutter-narrow);
+    padding-left: var(--page-gutter-narrow);
+  }
+  .profile-heading-title {
+    font-size: 48rpx;
+  }
+}
