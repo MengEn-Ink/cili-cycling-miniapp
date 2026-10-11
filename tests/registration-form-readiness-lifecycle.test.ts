@@ -75,6 +75,43 @@ describe('报名页 Strava readiness 请求代际', () => {
     vi.unstubAllGlobals();
   });
 
+  it('日常活动默认自行前往且不展示后援车选择', async () => {
+    rideService.getProfile.mockResolvedValue(profile);
+    rideService.getStravaReadiness.mockResolvedValue(readiness('ready'));
+
+    page.onLoad({ id: 'a1' });
+    await page.onShow();
+
+    expect(page.data).toMatchObject({
+      gatheringMode: 'self_drive',
+      showGatheringChoice: false,
+    });
+  });
+
+  it('配置后援车名额的活动继续展示集合方式选择', async () => {
+    rideService.getProfile.mockResolvedValue(profile);
+    rideService.getStravaReadiness.mockResolvedValue(readiness('ready'));
+    rideService.getActivity.mockResolvedValue({
+      id: 'a1',
+      status: 'published',
+      capacity: 20,
+      occupiedCount: 1,
+      registrationState: 'open',
+      deadline: '2099-10-15T12:00:00.000Z',
+      endAt: '2099-10-18T08:00:00.000Z',
+      supportVehicleCapacity: 4,
+      selfDriveCapacity: 16,
+    });
+
+    page.onLoad({ id: 'a1' });
+    await page.onShow();
+
+    expect(page.data).toMatchObject({
+      gatheringMode: 'self_drive',
+      showGatheringChoice: true,
+    });
+  });
+
   it('重复 onShow 时忽略较早请求的迟到结果', async () => {
     let resolveFirstProfile!: (value: Profile) => void;
     rideService.getProfile

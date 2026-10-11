@@ -79,11 +79,11 @@ Page({
     activity: null as Activity | null,
     displayActivityDate: '日期待公布',
     profile: null as any,
-    gatheringMode: '',
+    gatheringMode: 'self_drive',
+    showGatheringChoice: false,
     experience: '常骑',
     remark: '',
     teamId: '',
-    teamName: '',
     teamParameterError: '',
     readiness: loadingReadiness(),
     readinessMessage: '正在检查 Strava 数据',
@@ -121,8 +121,12 @@ Page({
     const profile = profileState.data
       ? { ...profileState.data, ...genderView(profileState.data.gender) }
       : null;
+    const activity = activityContext?.activity || null;
+    const showGatheringChoice = Number(activity?.supportVehicleCapacity || 0) > 0;
     this.setData({
-      activity: activityContext?.activity || null,
+      activity,
+      gatheringMode: showGatheringChoice ? this.data.gatheringMode || 'self_drive' : 'self_drive',
+      showGatheringChoice,
       displayActivityDate: formatChinaDateTime(
         activityContext?.activity?.startAt || activityContext?.activity?.date,
       ),
@@ -181,11 +185,6 @@ Page({
     if (this.submissionPending || this.data.submitting) return;
     const errors = validateRegistration(this.data);
     if (this.data.teamParameterError) errors.push(this.data.teamParameterError);
-    if (
-      this.data.teamName &&
-      (this.data.teamName.trim().length < 2 || this.data.teamName.trim().length > 30)
-    )
-      errors.push('队伍名称需为 2 至 30 个字符');
     if (!this.data.activityCanSubmit) errors.push(this.data.activityAction.label);
     if (errors.length) return this.setData({ errors });
     const requestId = ++this.submitRequestId;

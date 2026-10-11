@@ -588,6 +588,39 @@ page {
   min-width: 0;
 }
 
+.gathering-default {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  border-color: var(--color-brand-border);
+  background: var(--color-brand-soft);
+}
+
+.default-choice-copy {
+  min-width: 0;
+}
+
+.default-choice-copy .field-hint {
+  margin-top: 6rpx;
+}
+
+.default-choice-badge {
+  flex: 0 0 auto;
+  padding: 8rpx 14rpx;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-brand-dark);
+  font-size: 20rpx;
+  font-weight: 700;
+}
+
+.team-invite {
+  margin-top: 18rpx;
+  padding-top: 18rpx;
+  border-top: 1rpx solid var(--color-border);
+}
+
 .team-note {
   margin: 14rpx 0 8rpx;
 }

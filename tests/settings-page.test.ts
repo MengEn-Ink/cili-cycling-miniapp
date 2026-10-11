@@ -44,21 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.12.6',
+      version: '2026.10.12.7',
       latest: true,
-      title: '品牌标识与首页视觉定稿',
-      summary: '“此里”字标增加深色底牌与品牌橙终点，首页和在线演示统一采用最终三色视觉。',
+      title: '日常活动报名更省一步',
+      summary: '日常活动默认自行前往，不再要求选择后援车或填写自行组队信息。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.12.7',
       '2026.10.12.6',
       '2026.10.12.5',
       '2026.10.12.4',
       '2026.10.12.3',
-      '2026.10.12.2',
     ]);
   });
 

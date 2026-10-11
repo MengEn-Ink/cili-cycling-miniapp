@@ -26,6 +26,16 @@ describe('报名表单受控控件与视觉契约', () => {
     expect(template).not.toMatch(/bikeMode|bike_mode|用车方式|自带车|租车/);
   });
 
+  it('日常活动默认自行前往并隐藏集合方式选择，同时不提供自行组队入口', () => {
+    expect(template).toContain('wx:if="{{showGatheringChoice}}"');
+    expect(template).toContain('日常活动默认自行前往，无需额外选择');
+    expect(styles).toMatch(/\.gathering-default\s*\{[^}]*display:\s*flex/);
+    expect(styles).toMatch(/\.default-choice-badge\s*\{[^}]*flex:\s*0 0 auto/);
+    expect(template).not.toContain('组队报名');
+    expect(template).not.toContain('填写队名后成为队长');
+    expect(template).not.toContain('队伍与备注都会保留');
+  });
+
   it('顶部展示步骤、活动上下文和审核说明', () => {
     expect(template).toContain('确认报名信息');
     expect(template).toContain('当前活动');
@@ -54,7 +64,7 @@ describe('报名表单受控控件与视觉契约', () => {
     expect(template).toContain('profileErrors.length');
     expect(template).toContain('还需完善 {{profileErrors.length}} 项资料');
     expect(template).toContain('去完善个人资料');
-    expect(template).toContain('集合方式、骑行经验、队伍与备注都会保留');
+    expect(template).toContain('骑行经验与备注都会保留');
     expect(template).toContain('微信昵称');
     expect(template).toContain('联系电话');
     expect(template).not.toMatch(/真实姓名|个人照片|未填写实名/);
