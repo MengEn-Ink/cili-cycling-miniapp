@@ -220,25 +220,6 @@ async function chooseSingleImage(): Promise<SelectedImage | null> {
   );
 }
 
-function mergePhoneFields(current: Profile | null, authoritative: Profile): Profile {
-  if (!current) return authoritative;
-  const currentStatus = current.sensitiveStatus || {
-    realName: false,
-    phone: false,
-    emergencyPhone: false,
-  };
-  return {
-    ...current,
-    phone: authoritative.phone,
-    sensitiveStatus: {
-      ...currentStatus,
-      phone: authoritative.sensitiveStatus?.phone === true || currentStatus.phone,
-      phoneVerified: authoritative.sensitiveStatus?.phoneVerified,
-      phoneSource: authoritative.sensitiveStatus?.phoneSource,
-    },
-  };
-}
-
 function mergeAvatarFields(current: Profile | null, authoritative: Profile): Profile {
   if (!current) return authoritative;
   const merged = {
@@ -392,7 +373,6 @@ Page({
     p: null as Profile | null,
     saving: false,
     avatarBusy: false,
-    phoneBusy: false,
     photoBusy: false,
     mediaError: '',
     avatarPreviewUrl: '',
@@ -539,33 +519,8 @@ Page({
   selectGender(e: any) {
     this.setData({ 'p.gender': e.detail.value });
   },
-  async onGetPhoneNumber(e: any) {
-    const code = e?.detail?.code;
-    if (typeof code !== 'string' || !code.trim()) {
-      const errMsg = typeof e?.detail?.errMsg === 'string' ? e.detail.errMsg : '';
-      if (!/(?:deny|cancel)/i.test(errMsg))
-        wx.showToast({ title: '未获取到手机号，请重新授权', icon: 'none' });
-      return;
-    }
-    if (this.data.phoneBusy || this.data.avatarBusy || this.data.photoBusy || this.data.saving)
-      return;
-    this.setData({ phoneBusy: true, error: '' });
-    const state = await runPageTask(() => rideService.getPhoneNumber(code), '手机号授权失败');
-    this.setData({
-      phoneBusy: false,
-      error: state.error,
-      p: state.data
-        ? normalizeBackgroundProfile(mergePhoneFields(this.data.p, state.data))
-        : this.data.p,
-    });
-    if (state.data) {
-      invalidateProfilePageCache();
-      wx.showToast({ title: '手机号已授权' });
-    }
-  },
   async runAvatarAction(action: () => Promise<void>) {
-    if (this.data.avatarBusy || this.data.phoneBusy || this.data.photoBusy || this.data.saving)
-      return;
+    if (this.data.avatarBusy || this.data.photoBusy || this.data.saving) return;
     this.mediaErrorRevision += 1;
     this.mediaErrorStage = '';
     this.setData({ avatarBusy: true, mediaError: '' });
@@ -653,8 +608,7 @@ Page({
   },
   async addPhoto() {
     // 添加照片加在途锁，避免快速连点触发多次并发上传产生孤立文件或状态错乱。
-    if (this.data.photoBusy || this.data.phoneBusy || this.data.saving || this.data.avatarBusy)
-      return;
+    if (this.data.photoBusy || this.data.saving || this.data.avatarBusy) return;
     this.mediaErrorRevision += 1;
     this.mediaErrorStage = '';
     this.setData({ photoBusy: true, mediaError: '' });
@@ -756,7 +710,6 @@ Page({
       !this.data.p ||
       !this.data.canEditDetails ||
       this.data.saving ||
-      this.data.phoneBusy ||
       this.data.photoBusy ||
       this.data.avatarBusy
     )
@@ -774,6 +727,7 @@ Page({
       () =>
         rideService.updateProfile({
           gender: p.gender,
+          phone: p.phone.includes('*') ? undefined : p.phone,
           emergencyName: p.emergencyName,
           backgroundPhoto:
             p.backgroundPhoto !== undefined ? p.backgroundPhoto : p.photos[0] || null,

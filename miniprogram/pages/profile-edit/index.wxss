@@ -159,46 +159,6 @@ page {
   margin-top: 12rpx;
   line-height: 1.5;
 }
-.phone-authorization-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12rpx;
-}
-.phone-value {
-  box-sizing: border-box;
-  min-height: 88rpx;
-  padding: 0 24rpx;
-  border: 1rpx solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--color-input-bg);
-  color: var(--color-text);
-  font-size: 28rpx;
-  font-weight: 700;
-  line-height: 86rpx;
-}
-.phone-value--empty {
-  color: var(--color-muted);
-  font-weight: 500;
-}
-.phone-authorization-button {
-  min-height: 88rpx;
-  margin: 0;
-  padding: 0 24rpx;
-  border-radius: var(--radius-sm);
-  background: var(--color-action);
-  color: var(--color-on-action);
-  font-size: 24rpx;
-  font-weight: 800;
-  line-height: 88rpx;
-}
-.phone-authorization-button::after {
-  border: 0;
-}
-.phone-authorization-button[disabled] {
-  background: var(--color-raised);
-  color: var(--color-disabled-text);
-}
 .emergency-field {
   padding-top: 28rpx;
   border-top: 1rpx solid var(--color-border);
