@@ -69,12 +69,12 @@ describe('品牌与页面体验静态契约', () => {
     expect(viewAndStyles).not.toMatch(oldLogoClass);
   });
 
-  it('核心文案聚焦发现活动、报名出发与我的行程', () => {
+  it('核心文案聚焦选择骑行、一起出发与我的行程', () => {
     const activities = read('miniprogram/pages/activities/index.wxml');
     const registrations = read('miniprogram/pages/registrations/index.wxml');
     const form = read('miniprogram/pages/registration-form/index.wxml');
-    expect(activities).toContain('<view>发现活动</view>');
-    expect(activities).toContain('<view>报名出发</view>');
+    expect(activities).toContain('选一场骑行，一起出发');
+    expect(activities).toContain('路线、时间、集合点，一眼看清');
     expect(registrations).toContain('我的行程');
     expect(registrations).not.toContain('journey-line');
     expect(form).toContain('提交后将进入审核，请确认联系信息与集合方式准确。');

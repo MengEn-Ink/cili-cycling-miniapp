@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.11.32',
+    date: '2026-10-11',
+    title: '首页品牌视觉更加统一',
+    summary: '首页统一使用暖灰白、石墨黑和品牌橙三色，中文品牌字标与活动入口更清晰。',
+    latest: true,
+    features: [
+      '首页品牌区改为简洁的中文“此里”字标',
+      '首页配色收敛为暖灰白、石墨黑和品牌橙',
+      '活动筛选、标题和列表层级更紧凑清晰',
+    ],
+  },
+  {
     version: '2026.10.11.31',
     date: '2026-10-11',
     title: '活动海报长内容更稳',
     summary: '长标题和长昵称会按真实宽度安全截断，报名名单固定在群二维码左侧，避免文字遮挡二维码。',
-    latest: true,
+    latest: false,
     features: [
       '海报标题按实际字符宽度保留尽可能多的可见内容',
       '报名名单限制为二维码左侧单行展示',

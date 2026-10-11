@@ -236,8 +236,8 @@ describe('unified UI accessibility regressions', () => {
   it('uses only supported WXML elements for the activities headline', () => {
     const template = read('miniprogram/pages/activities/index.wxml');
     expect(template).not.toMatch(/<br\s*\/?\s*>/i);
-    expect(template).toContain('<view>发现活动</view>');
-    expect(template).toContain('<view>报名出发</view>');
+    expect(template).toContain('选一场骑行，一起出发');
+    expect(template).toContain('路线、时间、集合点，一眼看清');
   });
 
   it('shares a 44px control height, 40px segments, and stable page gutters', () => {
@@ -275,7 +275,7 @@ describe('unified UI accessibility regressions', () => {
     );
     expectSemantic(
       declaration(effectiveBlock(activityTimeline, '.timeline-tab.is-active'), 'background'),
-      '--color-surface',
+      '--color-brand',
     );
     expect(declaration(effectiveBlock(activityTimeline, '.timeline-tabs'), 'width')).toBe('100%');
     expect(activityTimeline).toMatch(
