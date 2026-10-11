@@ -11,19 +11,12 @@
           <view wx:else class="avatar-preview-placeholder" aria-hidden="true">骑</view>
         </view>
         <view class="avatar-panel">
-          <view class="muted avatar-note">可使用微信头像、自定义图片或 CILI 主题头像，选择后立即保存。头像会展示在活动报名骑友列表中。</view>
+          <view class="muted avatar-note">请选择微信头像或上传自定义图片，选择后立即保存。头像会展示在活动报名骑友列表中。</view>
           <view class="avatar-actions">
             <button class="avatar-action avatar-action-wechat" open-type="chooseAvatar" bindchooseavatar="chooseWechatAvatar" disabled="{{avatarBusy || photoBusy || saving}}" aria-label="使用微信头像">使用微信头像</button>
             <button class="avatar-action avatar-action-custom" bindtap="chooseCustomAvatar" disabled="{{avatarBusy || photoBusy || saving}}" aria-label="选择并裁剪自定义头像">选择并裁剪图片</button>
           </view>
         </view>
-      </view>
-      <view class="default-avatar-title">CILI 主题头像</view>
-      <view class="default-avatar-list">
-        <button wx:for="{{defaultAvatars}}" wx:key="path" class="default-avatar-button" data-index="{{index}}" bindtap="chooseDefaultAvatar" disabled="{{avatarBusy || photoBusy || saving}}" aria-label="选择 CILI {{item.name}}主题头像">
-          <image class="default-avatar-image" src="{{item.path}}" mode="aspectFill" />
-          <text>{{item.name}}</text>
-        </button>
       </view>
       <view class="avatar-status" role="status" aria-live="polite" aria-atomic="true">{{avatarBusy ? '正在更新头像' : ''}}</view>
     </view>

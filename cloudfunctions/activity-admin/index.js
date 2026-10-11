@@ -51,20 +51,22 @@ function transactionStore() {
             if (expectedOccupiedCount > MAX_PARTITION_BACKFILL_RECORDS)
               fail('PARTITION_BACKFILL_REQUIRED', '历史活动占位数超过自动回填上限');
             const registrations = [];
-            // 复用 activity_id + status + created_at 索引，分别完整扫描各占位状态。
+            // 事务查询不支持 skip，按稳定 _id 游标分页，最多读取 expected + 1 条证明数量是否超额。
             for (const status of ['pending', 'approved', 'checked_in', 'waiting']) {
-              let offset = 0;
+              let cursor = '';
               while (registrations.length <= expectedOccupiedCount) {
-                // 最多读取 expected + 1 条：多出的 1 条用于证明总数超出 occupied_count。
                 const limit = Math.min(
                   OCCUPANCY_BACKFILL_PAGE_SIZE,
                   expectedOccupiedCount + 1 - registrations.length,
                 );
                 const result = await transaction
                   .collection('registrations')
-                  .where({ activity_id: activityId, status })
-                  .orderBy('created_at', 'desc')
-                  .skip(offset)
+                  .where({
+                    activity_id: activityId,
+                    status,
+                    ...(cursor ? { _id: db.command.gt(cursor) } : {}),
+                  })
+                  .orderBy('_id', 'asc')
                   .limit(limit)
                   .get();
                 if (!result || !Array.isArray(result.data))
@@ -72,7 +74,10 @@ function transactionStore() {
                 registrations.push(...result.data);
                 if (registrations.length > expectedOccupiedCount) return registrations;
                 if (result.data.length < limit) break;
-                offset += result.data.length;
+                const nextCursor = result.data[result.data.length - 1]?._id;
+                if (typeof nextCursor !== 'string' || !nextCursor || nextCursor === cursor)
+                  throw new Error('invalid registration cursor');
+                cursor = nextCursor;
               }
             }
             return registrations;

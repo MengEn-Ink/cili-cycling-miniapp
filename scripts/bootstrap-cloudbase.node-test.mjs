@@ -230,7 +230,7 @@ test('活动首页 planner 索引纳入 bootstrap exact plan 与 verify', () => 
     INDEXES.filter((index) => index.name.startsWith('activities_public_event_')),
     [PUBLIC_EVENT_START, PUBLIC_EVENT_END],
   );
-  assert.equal(INDEXES.length, 32);
+  assert.equal(INDEXES.length, 33);
 
   const missing = completeState();
   missing.indexes.set(
@@ -435,7 +435,7 @@ test('OAuth 与 Strava 集合包含 attempt fencing、唯一、普通过期时�
     unique: false,
   });
   assert.equal(COLLECTIONS.length, 13);
-  assert.equal(INDEXES.length, 32);
+  assert.equal(INDEXES.length, 33);
   assert.equal(
     INDEXES.some((item) => item.collection === 'oauth_attempts'),
     false,
@@ -457,7 +457,12 @@ test('OAuth 与 Strava 集合包含 attempt fencing、唯一、普通过期时�
   assert.match(schema, /客户端全拒绝 ACL/);
 });
 
-test('候补 FIFO 与队伍邀请查询使用显式复合索引', () => {
+test('报名事务游标、候补 FIFO 与队伍邀请查询使用显式复合索引', () => {
+  assert.deepEqual(INDEXES.find((item) => item.name === 'registrations_activity_status_id')?.keys, [
+    ['activity_id', 1],
+    ['status', 1],
+    ['_id', 1],
+  ]);
   assert.deepEqual(
     INDEXES.find((item) => item.name === 'registrations_activity_waiting_mode_created_at')?.keys,
     [
@@ -557,7 +562,7 @@ test('profile_media 使用 owner/status、Strava 断开分页与过期清理索�
     ['retry_at', 1],
   ]);
   assert.equal(COLLECTIONS.length, 13);
-  assert.equal(INDEXES.length, 32);
+  assert.equal(INDEXES.length, 33);
   assert.deepEqual(DENY_RULE, { read: false, write: false });
 });
 
@@ -633,7 +638,7 @@ test('云存储规则只允许客户端写 staging，canonical 前缀保持 serv
 test('README 与部署包断言包含 profile_media_imports 和头像导入入口', () => {
   const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
   const verifier = readFileSync(new URL('./verify-cloud-packages.mjs', import.meta.url), 'utf8');
-  assert.match(readme, /13 个集合、32 个业务索引/);
+  assert.match(readme, /13 个集合、33 个业务索引/);
   assert.match(verifier, /pack\('profile',[\s\S]*?'avatar-import\.js'/);
 });
 

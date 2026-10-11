@@ -1,5 +1,5 @@
 // @ts-expect-error Vitest provides the Node runtime used by this repository.
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   drawElevationProfile,
@@ -155,8 +155,11 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('点击头像查看公开骑行名片');
     expect(template).toContain('公开骑行名片');
     expect(template).toContain('数据来自报名时的 Strava 骑行快照');
-    expect(template).toContain('src="{{item.avatarUrl || defaultAttendeeAvatar}}"');
-    expect(template).toContain('src="{{selectedAttendee.avatarUrl || defaultAttendeeAvatar}}"');
+    expect(template).toContain('wx:if="{{item.avatarUrl}}"');
+    expect(template).toContain('wx:if="{{selectedAttendee.avatarUrl}}"');
+    expect(template).toContain('attendee-avatar-placeholder');
+    expect(template).toContain('rider-card-avatar-placeholder');
+    expect(template).not.toContain('defaultAttendeeAvatar');
     expect(template).toContain('binderror="selectedAttendeeAvatarError"');
     expect(template).toContain('class="gender-pill {{selectedAttendee.genderClass}}"');
     expect(template).toContain('{{selectedAttendee.genderLabel}}');
@@ -164,7 +167,6 @@ describe('活动详情设计与日期契约', () => {
     expect(template).not.toContain('骑行爱好者');
     expect(template).toContain('头像按骑友公开设置展示');
     expect(template).not.toContain('attendee-avatar--default">骑');
-    expect(existsSync('miniprogram/assets/profile/avatars/cili-orange.png')).toBe(true);
     expect(
       template.match(/<text wx:if="\{\{selectedAttendee\.card\.[a-zA-Z0-9]+ !== null\}\}">/g),
     ).toHaveLength(4);
@@ -313,7 +315,7 @@ describe('活动详情复制、分享与 GPX 导出', () => {
 
     definition.selectedAttendeeAvatarError.call(context);
     expect(context.data.selectedAttendee.avatarUrl).toBe('');
-    expect(context.data.defaultAttendeeAvatar).toBe('/assets/profile/avatars/cili-orange.png');
+    expect(context.data.defaultAttendeeAvatar).toBeUndefined();
   });
 
   it('复制 Strava/活动链接并生成分享 path', async () => {

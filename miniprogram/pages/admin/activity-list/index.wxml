@@ -34,6 +34,7 @@
             data-id="{{item.id}}"
             class="secondary status-button {{item.status === 'published' ? 'danger-action' : ''}}"
           >{{item.toggleLabel}}</button>
+          <button wx:if="{{item.status === 'draft'}}" catchtap="confirmDelete" data-id="{{item.id}}" class="secondary delete-button">删除</button>
           <button wx:if="{{item.canClone}}" catchtap="startClone" data-id="{{item.id}}" class="secondary template-button">从此活动创建</button>
         </view>
       </view>

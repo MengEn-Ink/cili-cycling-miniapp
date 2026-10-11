@@ -71,6 +71,7 @@ describe('活动卡片滑动删除', () => {
     expect(template).toContain('catchtouchmove="onRowTouchMove"');
     expect(template).toContain('catchtouchend="onRowTouchEnd"');
     expect(template).toContain('translateX({{item.swipeOffset}}px)');
+    expect(template).toContain('class="secondary delete-button"');
   });
 
   it('横向滑动跟手位移，越过半幅松手后完全展开', () => {
@@ -147,7 +148,7 @@ describe('活动卡片滑动删除', () => {
     page.onRowTouchMove(touch('act-1', 200));
     page.onRowTouchEnd();
     await page.confirmDelete(touch('act-1', 200));
-    expect(page.data.error).toBe('已有成员报名，无法删除');
+    expect(page.data.error).toBe('活动仍有待处理报名，请先到报名审批处理后再删除');
     expect(page.data.items[0].swipeOpen).toBe(false);
     expect(page.data.items[0].swipeOffset).toBe(0);
     expect(page.data.items).toHaveLength(2);

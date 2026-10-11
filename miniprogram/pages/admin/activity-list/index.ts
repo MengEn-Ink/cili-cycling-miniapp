@@ -21,6 +21,11 @@ function pageInput(statusFilter: StatusFilter, cursor?: string) {
   };
 }
 
+function deleteErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : '删除失败';
+  return /报名/.test(message) ? '活动仍有待处理报名，请先到报名审批处理后再删除' : message;
+}
+
 function displayItem(item: any) {
   return {
     ...item,
@@ -281,7 +286,7 @@ Page({
           [`items[${index}].swipeOpen`]: false,
         });
       }
-      this.setData({ error: error instanceof Error ? error.message : '删除失败' });
+      this.setData({ error: deleteErrorMessage(error) });
     }
   },
   create() {
