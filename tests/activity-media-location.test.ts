@@ -128,7 +128,7 @@ describe('日常活动封面、说明与地图', () => {
     expect(page.data.images).toEqual(['cloud://one.jpg', 'cloud://two.jpg']);
   });
 
-  it('地图只选择起点并保存坐标，手改地点会清除旧坐标', async () => {
+  it('地图选择集合点并保存坐标，手改名称仍保留点位导航', async () => {
     await page.onLoad({});
     chooseLocation.mockResolvedValue({
       name: '奥森南门',
@@ -145,7 +145,12 @@ describe('日常活动封面、说明与地图', () => {
       currentTarget: { dataset: { name: 'routeStart' } },
       detail: { value: '手动地点' },
     });
-    expect(page.data.routeStartLocation).toBeUndefined();
+    expect(page.data.routeStartLocation).toEqual({
+      name: '手动地点',
+      address: '林萃路',
+      latitude: 39.9,
+      longitude: 116.4,
+    });
   });
 
   it('取消地图选点不报错，定位权限关闭时给出恢复提示', async () => {

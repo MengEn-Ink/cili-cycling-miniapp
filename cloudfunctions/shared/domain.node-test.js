@@ -116,7 +116,7 @@ function memoryStore(seed = {}) {
     registrations: new Map(
       seed.registration ? [[seed.registration._id, { ...seed.registration }]] : [],
     ),
-    admins: new Map([[openid, { _id: openid, enabled: true }]]),
+    admins: new Map(seed.admin ? [[openid, { _id: openid, enabled: true }]] : []),
     credentials: new Map(
       seed.credential === null ? [] : [[openid, { ...credential, ...(seed.credential || {}) }]],
     ),
@@ -349,6 +349,18 @@ test('重复占位提交拒绝，驳回或取消后沿原记录重报并保留�
       to_status: 'pending',
     },
   });
+});
+
+test('管理员报名在有名额时自动通过并写审批信息', async () => {
+  const store = memoryStore({ admin: true });
+  const result = await submitRegistration(store, input, now);
+  const stored = store.state.registrations.get(result._id);
+
+  assert.equal(result.status, 'approved');
+  assert.match(result.serial_no, /^RE-20260928-/);
+  assert.equal(stored.review_history[0].reviewer_openid, openid);
+  assert.equal(stored.review_history[0].comment, '管理员报名自动通过');
+  assert.equal(store.state.audits[0].action, 'registration.admin_auto_approved');
 });
 
 test('报名只接受完整凭证和 24 小时内的 canonical Strava 快照', async () => {
@@ -679,6 +691,7 @@ test('审批状态机、理由与管理员判断', async () => {
     review_history: [],
   };
   const store = memoryStore({
+    admin: true,
     activity: { occupied_count: 1, self_drive_occupied_count: 1 },
     registration,
   });
@@ -693,7 +706,7 @@ test('审批状态机、理由与管理员判断', async () => {
   assert.equal(store.state.audits.length, 1);
   assert.equal(store.state.audits[0].action, 'registration.rejected');
 
-  const approveStore = memoryStore({ registration });
+  const approveStore = memoryStore({ registration, admin: true });
   const approved = await reviewRegistration(
     approveStore,
     { openid, registrationId: id, action: 'approve' },

@@ -139,6 +139,7 @@ async function submitRegistration(store, { openid, activityId, options, team }, 
     const existing = await tx.getRegistration(id);
     const credential = await tx.getStravaCredential(openid);
     const snapshot = await tx.getStravaSnapshot(openid);
+    const admin = typeof tx.getAdmin === 'function' ? await tx.getAdmin(openid) : undefined;
     assertActivityOpen(activity, now);
     assertProfileReady(profile);
     assertCanSubmit(existing);
@@ -149,12 +150,25 @@ async function submitRegistration(store, { openid, activityId, options, team }, 
     const waiting =
       activity.registration_unlimited !== true &&
       (activity.occupied_count >= activity.capacity || (quota && quota.occupied >= quota.capacity));
-    const status = waiting ? 'waiting' : 'pending';
+    // 管理员仍遵守总量和分类名额；有名额时直接进入已通过状态，避免再走自审流程。
+    const adminAutoApproved = !waiting && isEnabledAdmin(admin, openid);
+    const status = waiting ? 'waiting' : adminAutoApproved ? 'approved' : 'pending';
     const nextOccupancy = waiting
       ? undefined
       : occupancyAfter(activity, safeOptions.gathering_mode, 1);
-    const history =
+    const existingHistory =
       existing && Array.isArray(existing.review_history) ? existing.review_history : [];
+    const history = adminAutoApproved
+      ? [
+          ...existingHistory,
+          {
+            reviewer_openid: openid,
+            reviewed_at: now,
+            action: 'approve',
+            comment: '管理员报名自动通过',
+          },
+        ]
+      : existingHistory;
     const value = {
       _id: id,
       activity_id: activityId,
@@ -185,6 +199,14 @@ async function submitRegistration(store, { openid, activityId, options, team }, 
       ...(strava.snapshot ? { strava_snapshot: strava.snapshot } : {}),
       ...(strava.exemption ? { exemption: strava.exemption } : {}),
       review_history: history,
+      ...(adminAutoApproved
+        ? {
+            approved_at: now,
+            serial_no:
+              existing?.serial_no ||
+              `RE-${now.toISOString().slice(0, 10).replace(/-/g, '')}-${id.slice(-6).toUpperCase()}`,
+          }
+        : {}),
       created_at: existing ? existing.created_at : now,
       updated_at: now,
     };
@@ -203,7 +225,11 @@ async function submitRegistration(store, { openid, activityId, options, team }, 
     await tx.addAudit(
       buildAudit(
         openid,
-        existing ? 'registration.resubmitted' : 'registration.submitted',
+        adminAutoApproved
+          ? 'registration.admin_auto_approved'
+          : existing
+            ? 'registration.resubmitted'
+            : 'registration.submitted',
         id,
         now,
         {
@@ -245,7 +271,34 @@ async function promoteOldestWaiting(tx, activity, nextOccupancy, now) {
   // 全局 FIFO 中可跳过分类仍满的候补，但不改变被跳过者的状态和顺序。
   const waiting = candidates.find((candidate) => canPromote(postReleaseActivity, candidate));
   if (!waiting) return null;
-  const promoted = { ...waiting, status: 'pending', updated_at: now };
+  const admin = typeof tx.getAdmin === 'function' ? await tx.getAdmin(waiting.openid) : undefined;
+  const adminAutoApproved = isEnabledAdmin(admin, waiting.openid);
+  const status = adminAutoApproved ? 'approved' : 'pending';
+  const history = adminAutoApproved
+    ? [
+        ...(Array.isArray(waiting.review_history) ? waiting.review_history : []),
+        {
+          reviewer_openid: waiting.openid,
+          reviewed_at: now,
+          action: 'approve',
+          comment: '管理员候补补位自动通过',
+        },
+      ]
+    : waiting.review_history;
+  const promoted = {
+    ...waiting,
+    status,
+    ...(adminAutoApproved
+      ? {
+          approved_at: now,
+          serial_no:
+            waiting.serial_no ||
+            `RE-${now.toISOString().slice(0, 10).replace(/-/g, '')}-${waiting._id.slice(-6).toUpperCase()}`,
+          review_history: history,
+        }
+      : {}),
+    updated_at: now,
+  };
   await tx.putRegistration(waiting._id, promoted);
   const promotedOccupancy = occupancyAfter(postReleaseActivity, waiting.options?.gathering_mode, 1);
   await tx.setOccupied(
@@ -260,7 +313,8 @@ async function promoteOldestWaiting(tx, activity, nextOccupancy, now) {
     buildAudit('system:waitlist', 'registration.waitlist_promoted', waiting._id, now, {
       activity_id: waiting.activity_id,
       from_status: 'waiting',
-      to_status: 'pending',
+      to_status: status,
+      admin_auto_approved: adminAutoApproved,
     }),
   );
   return promoted;

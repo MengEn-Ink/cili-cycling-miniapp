@@ -129,6 +129,37 @@ test('正常报名占位，满员报名进入 waiting 且通知幂等键稳定',
   );
 });
 
+test('管理员报名在有名额时自动通过，满员时仍按候补处理', async () => {
+  const available = fixture();
+  const approved = await submit(available, 'admin');
+  assert.equal(approved.status, 'approved');
+  assert.equal(available.state.activity.occupied_count, 1);
+  const stored = available.state.registrations.get(approved._id);
+  assert.ok(stored.approved_at instanceof Date);
+  assert.match(approved.serial_no, /^RE-20261001-/);
+  assert.deepEqual(approved.review_history, [
+    {
+      reviewed_at: now,
+      action: 'approve',
+      comment: '管理员报名自动通过',
+    },
+  ]);
+  assert.equal(stored.review_history[0].reviewer_openid, 'admin');
+  assert.equal(available.state.audits[0].action, 'registration.admin_auto_approved');
+
+  const full = fixture({
+    activity: {
+      occupied_count: 2,
+      self_drive_occupied_count: 1,
+      support_vehicle_occupied_count: 1,
+    },
+  });
+  const waiting = await submit(full, 'admin');
+  assert.equal(waiting.status, 'waiting');
+  assert.equal(waiting.approved_at, undefined);
+  assert.equal(full.state.activity.occupied_count, 2);
+});
+
 test('不限人数活动超过内部容量基线后仍直接报名', async () => {
   const unlimited = fixture({
     activity: {
@@ -161,6 +192,25 @@ test('取消按 created_at FIFO 补位且 occupied_count 保持不变', async ()
   assert.equal(store.state.activity.occupied_count, 1);
   assert.equal(store.state.occupiedWrites, 1);
   assert.ok([...store.state.notifications.keys()][0].startsWith('waitlist_promoted_early_'));
+});
+
+test('管理员候补释放名额后自动通过并补齐审批凭证', async () => {
+  const active = registration('active', 'pending', '2026-09-01T00:00:00Z');
+  const waitingAdmin = registration('admin', 'waiting', '2026-09-02T00:00:00Z');
+  const store = fixture({
+    activity: { occupied_count: 1, self_drive_occupied_count: 1 },
+    registrations: [active, waitingAdmin],
+  });
+
+  await cancelRegistration(store, { openid: 'active', registrationId: 'active' }, now);
+
+  const promoted = store.state.registrations.get('admin');
+  assert.equal(promoted.status, 'approved');
+  assert.ok(promoted.approved_at instanceof Date);
+  assert.match(promoted.serial_no, /^RE-20261001-/);
+  assert.equal(promoted.review_history[0].reviewer_openid, 'admin');
+  assert.equal(promoted.review_history[0].comment, '管理员候补补位自动通过');
+  assert.equal(store.state.audits[0].detail.to_status, 'approved');
 });
 
 test('释放保障车名额后可补位因总容量等待的自驾候补', async () => {

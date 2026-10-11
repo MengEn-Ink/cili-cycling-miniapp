@@ -366,7 +366,13 @@ Page({
   field(event: any) {
     const name = event.currentTarget.dataset.name as FormField;
     const patch: Record<string, unknown> = { [`form.${name}`]: event.detail.value };
-    if (name === 'routeStart') patch.routeStartLocation = undefined;
+    if (name === 'routeStart' && this.data.routeStartLocation) {
+      // 地图坐标与用户可读名称是两层信息：改名称时保留点位，详情页才能继续发起导航。
+      patch.routeStartLocation = {
+        ...this.data.routeStartLocation,
+        name: String(event.detail.value || '').trim(),
+      };
+    }
     this.setData(patch);
     this.clearFieldError(name);
   },

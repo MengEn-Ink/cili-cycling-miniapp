@@ -1155,3 +1155,90 @@ brand-logo {
   background: rgba(255, 193, 7, 0.12);
   font-size: 24rpx;
 }
+
+/* Activity-detail experience polish: stronger meeting-time hierarchy and roomier controls. */
+.detail-page .card {
+  margin-top: 24rpx;
+}
+
+.detail-page .time-card--featured {
+  padding: 36rpx 34rpx;
+  border-color: #ff5a1f;
+  background: #181513;
+  color: #fff;
+  box-shadow: 0 18rpx 42rpx rgba(52, 25, 14, 0.2);
+}
+
+.time-card-kicker {
+  color: #ff8a5b;
+  font-size: 22rpx;
+  font-weight: 900;
+  letter-spacing: 6rpx;
+}
+
+.time-card-primary {
+  margin-top: 14rpx;
+  color: #fff;
+  font-size: 46rpx;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+
+.time-card-secondary {
+  margin-top: 14rpx;
+  color: #d4cec9;
+  font-size: 23rpx;
+  line-height: 1.45;
+}
+
+.route-action-note {
+  margin: -2rpx 0 20rpx;
+  color: var(--color-muted);
+  font-size: 23rpx;
+  line-height: 1.55;
+}
+
+.route-location-copy {
+  flex: 1;
+}
+
+.route-location-name {
+  color: var(--color-text);
+  font-size: 28rpx;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.route-location-address {
+  margin-top: 6rpx;
+  color: var(--color-muted);
+  font-size: 22rpx;
+  line-height: 1.45;
+}
+
+.detail-action--admin {
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+  gap: 16rpx;
+}
+
+.detail-action .btn--secondary {
+  border-color: var(--color-border-strong) !important;
+  background: var(--color-surface) !important;
+  color: var(--color-text) !important;
+}
+
+.poster-canvas {
+  height: 700px;
+}
+
+@media (max-width: 350px) {
+  .time-card-primary {
+    font-size: 40rpx;
+  }
+
+  .route-actions {
+    grid-template-columns: 1fr;
+  }
+}

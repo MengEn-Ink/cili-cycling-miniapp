@@ -8,29 +8,41 @@ describe('活动海报', () => {
   const activity: any = {
     title: '环湖骑行',
     startAt: '2026-10-11 08:00',
+    description: '周末一起骑',
     route: { start: '湖滨广场', end: '山顶', distanceKm: 80, elevationM: 900 },
   };
+  const options: any = {
+    displayTime: '2026-10-11 08:00:00',
+    locationName: '湖滨广场',
+    locationAddress: '环湖路 1 号',
+    approvedCount: 2,
+    attendeeNames: ['骑友甲', '骑友乙'],
+    groupQrImage: { id: 'qr' },
+  };
 
-  it('包含活动名、时间、地点、路线摘要和小程序进入提示', () => {
+  it('包含活动名、集合时间地点、路线摘要、报名信息和群二维码', () => {
     const texts: string[] = [];
     const context: any = {
       fillStyle: '',
       font: '',
       fillRect: vi.fn(),
       fillText: vi.fn((text: string) => texts.push(text)),
+      drawImage: vi.fn(),
       measureText: (text: string) => ({ width: text.length * 12 }),
     };
-    expect(drawActivityPoster(context, 375, 600, activity)).toBe(true);
+    expect(drawActivityPoster(context, 375, 700, activity, options)).toBe(true);
     expect(texts.join('|')).toContain('环湖骑行');
-    expect(texts.join('|')).toContain('时间');
+    expect(texts.join('|')).toContain('集合时间');
     expect(texts.join('|')).toContain('湖滨广场');
-    expect(texts.join('|')).toContain('路线摘要');
-    expect(texts.join('|')).toContain('微信搜索「此里」小程序进入活动');
+    expect(texts.join('|')).toContain('80 km');
+    expect(texts.join('|')).toContain('已通过 2 人');
+    expect(texts.join('|')).toContain('扫码加入活动群');
+    expect(context.drawImage).toHaveBeenCalled();
   });
 
   it('画布或尺寸无效时失败且可由页面按钮重试', () => {
-    expect(drawActivityPoster(null, 375, 600, activity)).toBe(false);
-    expect(drawActivityPoster({}, 0, 600, activity)).toBe(false);
+    expect(drawActivityPoster(null, 375, 700, activity, options)).toBe(false);
+    expect(drawActivityPoster({}, 0, 700, activity, options)).toBe(false);
   });
 });
 

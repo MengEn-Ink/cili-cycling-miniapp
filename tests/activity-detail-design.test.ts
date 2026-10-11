@@ -7,6 +7,7 @@ import {
   formatChinaDateTimeSeconds,
   validElevationProfile,
 } from '../miniprogram/pages/activity-detail/format';
+import { drawActivityPoster } from '../miniprogram/pages/activity-detail/poster';
 
 const read = (file: string) => readFileSync(file, 'utf8');
 
@@ -36,16 +37,37 @@ describe('活动详情设计与日期契约', () => {
     expect(template).not.toContain('SIGN-UP STATUS');
   });
 
-  it('路线操作完整保留复制 Strava 路线、活动链接、海报与 GPX 四项', () => {
+  it('路线操作完整保留浏览器 / Strava 路线、活动链接、海报与 GPX 四项', () => {
     const template = readFileSync('miniprogram/pages/activity-detail/index.wxml', 'utf8');
     expect(template).toContain('bindtap="openStravaRoute"');
-    expect(template).toContain('复制 Strava 路线');
+    expect(template).toContain('在浏览器 / Strava 打开路线');
     expect(template).toContain('bindtap="copyActivityLink"');
     expect(template).toContain('复制活动链接');
     expect(template).toContain('bindtap="generatePoster"');
     expect(template).toContain('保存分享海报');
     expect(template).toContain('bindtap="exportGpx"');
     expect(template).toContain('导出 GPX');
+  });
+
+  it('突出集合时间、仅展示审核通过人数，并为管理员提供修改和报名双入口', () => {
+    const template = read('miniprogram/pages/activity-detail/index.wxml');
+    const styles = read('miniprogram/pages/activity-detail/index.wxss');
+    expect(template).toContain('class="card time-card time-card--featured"');
+    expect(template).toContain('class="time-card-primary"');
+    expect(template).toContain('{{item.approvedRegistrationCount || 0}}');
+    expect(template).toContain('已通过骑友');
+    expect(template).not.toContain('不限</text><text>报名人数');
+    expect(template).toContain('bindtap="editActivity">修改活动');
+    expect(template).toContain('bindtap="adminRegistration">{{adminRegistrationLabel}}');
+    expect(styles).toMatch(/\.time-card-primary\s*\{[^}]*font-size:\s*46rpx;/s);
+    expect(styles).toContain('grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);');
+  });
+
+  it('集合点同时展示自定义名称和地图地址，并保留点位导航', () => {
+    const template = read('miniprogram/pages/activity-detail/index.wxml');
+    expect(template).toContain('class="route-location-name">{{item.route.start}}');
+    expect(template).toContain('class="route-location-address"');
+    expect(template).toContain('data-target="start" bindtap="navigate">地图导航');
   });
 
   it('详情的开始、结束、截止时间全部使用共享秒级格式化函数', () => {
@@ -216,6 +238,46 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('fee-block-title">费用不包含');
     expect(template).toContain('wx:for="{{item.feeIncluded}}"');
     expect(template).toContain('wx:for="{{item.feeExcluded}}"');
+  });
+
+  it('分享海报包含活动、集合、审核通过报名与活动群二维码', () => {
+    const texts: string[] = [];
+    const context: any = {
+      fillStyle: '',
+      font: '',
+      fillRect: vi.fn(),
+      fillText: vi.fn((text: string) => texts.push(text)),
+      drawImage: vi.fn(),
+      measureText: vi.fn((text: string) => ({ width: text.length * 12 })),
+    };
+    const groupQrImage = { id: 'qr' };
+    const rendered = drawActivityPoster(
+      context,
+      375,
+      700,
+      {
+        title: '周末环湖骑行',
+        description: '一起看湖景',
+        route: { distanceKm: 80, elevationM: 600, level: '进阶' },
+      } as any,
+      {
+        displayTime: '2026-10-18 08:00:00',
+        locationName: '桥下咖啡集合',
+        locationAddress: '滨江路 1 号',
+        approvedCount: 2,
+        attendeeNames: ['小李', '小王'],
+        groupQrImage,
+      },
+    );
+
+    expect(rendered).toBe(true);
+    expect(texts.join('|')).toContain('周末环湖骑行');
+    expect(texts.join('|')).toContain('2026-10-18 08:00:00');
+    expect(texts.join('|')).toContain('桥下咖啡集合');
+    expect(texts.join('|')).toContain('已通过 2 人');
+    expect(texts.join('|')).toContain('小李、小王');
+    expect(texts.join('|')).toContain('扫码加入活动群');
+    expect(context.drawImage).toHaveBeenCalledWith(groupQrImage, 221, 524, 126, 126);
   });
 
   it('使用等宽三列指标、32rpx 展示圆角和轻量安全区 CTA', () => {
