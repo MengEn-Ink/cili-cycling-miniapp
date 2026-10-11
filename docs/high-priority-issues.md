@@ -1,6 +1,6 @@
 # 高优问题清单
 
-> 最后更新：2026-10-11 07:45（CST）
+> 最后更新：2026-10-11 08:15（CST）
 >
 > 维护原则：这里只保留尚未满足关闭条件的问题。新问题先去重、澄清、拆分；已满足关闭条件的条目直接删除，Git 历史和不可变外部证据作为归档。
 
@@ -40,6 +40,7 @@
 ## 当前工作交接检查点
 
 - 2026-10-11 06:35 本轮（定时对齐）再交付一条纯前端独立 PR 并上传微信开发版 `0.0.104.1`：[#103](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/103) 只读缓存支持冷启动持久化与断网兜底——回源成功后写入版本化 `wx` 同步存储，冷启动在 TTL 内直接复用并保留原始过期时刻；网络失败仅在 5 分钟离线窗口内返回上次数据，在线仍强制回源；活动/Strava 写入与账号切换同步清理内存和持久化命名空间，并新增命中率指标。PR `validate`、main CI [38091847664](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38091847664) 与微信开发版自动上传 [38091927615](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38091927615) 均 success。N7 已推进冷启动持久化/可观测部分，状态仍 `PENDING_EVIDENCE`，剩余“图片临时地址缓存及到期刷新”与真机冷启动/断网 smoke。另：共享工作区中存在他泳道未提交的“资料图片内容指纹去重”改动（`profile-edit/index.ts` + `profile-media-dedupe.test.ts`），本轮未触碰、未并入任何提交。真实阻塞维持不变：① 云函数部署需腾讯云凭证；② 大量条目需物理真机/真实验收。
+- 2026-10-11 08:15 本轮交付 N7 最后一条纯代码增量并修正 N9 状态：[#111](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/111) 新增 `TempFileUrlCache`，内存缓存已解析图片临时地址，DataLoader 式合并同一事件循环内请求为一次批量调用、同 fileID 并发单飞去重、临期前自动判失效并在下次解析刷新，仅缓存合法 https 结果、失败不缓存；资料编辑页照片预览已接入。PR validate、main CI 与微信开发版自动上传均 success，版本 `0.0.112.1`（checkout `08d9739`）；无云函数改动，无需 CloudBase 部署。N7 的代码/单测层全部收口，仅剩真机冷启动/断网 smoke。另修正 N9 表格行（原误标 `READY`）为 `PENDING_EVIDENCE`，与其详情一致：固定稳定体验版入口与晋级/回退门禁演练（#81–#87）已完成，等待下一开发版做实际跨版本回退和固定入口业务 smoke。至此清单内 N1–N9 已无 `READY`/`IN_PROGRESS` 的纯代码可推进项，全部收敛到“真机/真实验收/微信后台”这一共同阻塞。
 - 2026-10-11 07:45 本轮交付活动发布人展示并完成运行态验收：经核实“全员可发布”的服务端权限（普通用户创建草稿→发布自己草稿→下架自己活动，openid 绑定）与前端入口此前已具备，无需新增；[#109](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/109) 在 activity-read 按 created_by 批量解析发布人昵称与 canonical 头像，卡片与详情展示，资料缺失兜底“骑友”，并抽取共享 profiles/头像解析 helper 给参与人复用。PR validate、main CI 与微信开发版自动上传均 success，版本 `0.0.110.1`（checkout `5ddb021`）。activity-read 已通过 CloudBase CLI 部署，线上 list 调用回读真实活动返回 publisher（昵称“莫拉拉”、头像 profile-canonical）。N8 转 `PENDING_EVIDENCE`，仅剩真机 smoke/独立复核。所有 P0 及多数 P1 当前都处于“真机/真实验收”这一共同阻塞，代码、CI、部署、运行态回读层均已完成。
 - 2026-10-11 06:55 本轮补齐图片去重链路并交付一条纯前端 PR：#100 活动图片指纹去重合并后曾因 #102 docs 抢跑被上传流程判为过期，已手动 `workflow_dispatch` 补传微信开发版 `0.0.103.1`（checkout `e1b35b2`，含 #100+#101）；[#105](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/105) 个人资料客户端会话内指纹去重（头像/背景共享指纹映射、跨槽位复用，取不到指纹回退完整链路，跨会话由云端 canonical 兜底），rebase 到 #104 后日志顺延 `2026.10.11.11`，PR `validate`、main CI 与微信开发版自动上传 [38092918041](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38092918041) 均 success，微信开发版 `0.0.106.1`（checkout `b6dddd41`）。另：#94 云函数 `activity-admin` 已通过本机 CloudBase CLI 部署到 `cloudbase-d0gizacy77a1ab017` 并回读 `MATCH: 线上与本地一致`，N6 的 CloudBase 部署阻塞解除。为避让并发泳道，本轮在独立 clone（`cili-profile-dedupe`）交付，原共享工作区 `cili-work-main` 已原样归还。N5 转 `PENDING_EVIDENCE`（仅剩真机弱网/CloudBase 回读）。真实阻塞收敛为：大量条目需物理真机/真实验收。
 
@@ -63,9 +64,9 @@
 | N4   | `HP-20261010-06` | P0     | `PENDING_EVIDENCE` (#96, 开发版 0.0.97.1) | 性别、头像、个人照片必填与报名拦截已交付，待真机资料/报名 smoke                          | Aime          | 独立复核 / 真机              |
 | N5   | `HP-20261010-07` | P0     | `PENDING_EVIDENCE` (#100/#105, 开发版 0.0.106.1) | 活动图片指纹去重、资料图片会话内去重与失败恢复已交付，待真机弱网/CloudBase 回读 | Aime          | 独立复核 / 真机              |
 | N6   | `HP-20261010-08` | P1     | `PENDING_EVIDENCE` (#94/#99, 开发版 0.0.106.1) | 删除契约、右滑 UI 与 activity-admin CloudBase 部署均已完成，待真机手势/独立复核          | Aime          | 独立复核 / 真机              |
-| N7   | `HP-20261010-09` | P1     | `PENDING_EVIDENCE` (#101/#103, 开发版 0.0.104.1) | 内存 TTL 缓存、冷启动持久化、断网兜底与命中率指标已交付；图片临时地址缓存及真机冷启动/断网 smoke 待补 | Aime          | 独立复核 / 真机              |
+| N7   | `HP-20261010-09` | P1     | `PENDING_EVIDENCE` (#101/#103/#111, 开发版 0.0.112.1) | 内存 TTL 缓存、冷启动持久化、断网兜底、命中率指标与图片临时地址缓存均已交付；仅剩真机冷启动/断网 smoke | Aime          | 独立复核 / 真机              |
 | N8   | `HP-20261010-10` | P1     | `PENDING_EVIDENCE` (#109, 开发版 0.0.110.1) | 全员发布权限经核实已具备，卡片/详情发布人头像昵称已交付，activity-read 已部署并运行态回读，待真机 smoke/独立复核 | Aime          | 独立复核 / 真机              |
-| N9   | `HP-20261010-11` | P1     | `READY`                                  | 建立固定稳定体验版入口、版本晋级和可追溯发布流程                                        | -             | 独立复核 / 微信后台          |
+| N9   | `HP-20261010-11` | P1     | `PENDING_EVIDENCE`                       | 固定稳定体验版入口与晋级/回退门禁演练已完成（#81–#87），等待下一开发版做实际跨版本回退和固定入口业务 smoke | -             | 独立复核 / 微信后台          |
 | UI   | `HP-20261010-02` | P0     | `PENDING_EVIDENCE`                       | 单一主题底座与第一批六页已交付开发版 `0.0.55.1`，待物理真机截图与独立复核                 | -             | TraeX 审判者                 |
 | B    | `HP-20261009-13` | P0     | `PENDING_EVIDENCE`                       | `status` 已恢复，待六条真实 Strava 授权/解绑生命周期 smoke                              | -             | TraeX 审判者 / Aime 个人助理 |
 | D    | `HP-20261009-06` | P1     | `SUPERSEDED_BY(HP-20261010-02)`          | 旧双主题全页对比度，不再单独实施                                                        | -             | TraeX 审判者                 |
@@ -136,13 +137,14 @@
 
 ### HP-20261010-09 · 活动、图片与 Strava 缓存
 
-- 优先级/状态：P1 / `PENDING_EVIDENCE`（内存与冷启动持久化增量已交付，[#101](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/101)/[#103](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/103)，开发版 `0.0.104.1`）。
+- 优先级/状态：P1 / `PENDING_EVIDENCE`（内存、冷启动持久化与图片临时地址缓存均已交付，[#101](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/101)/[#103](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/103)/[#111](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/111)，开发版 `0.0.112.1`）。
 - 产品目标：活动列表/详情、已解析图片临时地址和 Strava 摘要减少重复请求，并保留显式刷新和过期恢复；缓存不是永久数据源，不能掩盖报名状态、权限、活动下架或 Strava 解绑变化。
 - 已交付（内存增量）：新增 `CachingRepository` 装饰器与 `TtlCache`，对活动列表/分页/详情、Strava 状态/就绪摘要做 30s read-through 缓存并对并发相同读取去重；活动/报名写入清 `act:` 命名空间、Strava 写入清 `strava:` 命名空间，过期自动回源，openid 变化或身份失效清空全部缓存。Vitest 17 例覆盖命中/过期/容量/并发/失败/命名空间隔离。
 - 已交付（冷启动持久化增量，#103）：新增版本化 `CacheStorage`（`WxCacheStorage` 用 `wx.*StorageSync` + 测试用 `MemoryCacheStorage`）；回源成功后持久化并保留原始过期时刻，冷启动 TTL 内直接复用；网络失败仅在 5 分钟离线窗口内返回上次数据，在线仍强制回源；活动/Strava 写入与账号切换同步清理持久化命名空间；新增命中率 `CacheMetrics`（含 `getMetrics/resetMetrics`）支撑可观测，手动刷新可由现有 `invalidate*` + 页面下拉刷新承接。Vitest 再增 14 例。
-- 剩余增量：已解析图片临时地址（temp file）缓存及到期刷新；以及真机冷启动/断网 smoke。
-- 关闭条件：冷启动、热启动、弱网、离线、过期、手动刷新和账号切换测试通过；命中率可观察且不展示越权/陈旧数据；真机与独立复核齐全。当前已满足热启动/冷启动/过期/账号切换的代码与单测层，图片临时地址与真机验收待补。
-- 更新时间：2026-10-11 06:35（CST）。
+- 已交付（图片临时地址缓存，#111）：新增 `TempFileUrlCache`，内存缓存 fileID -> 仍有效临时地址；同一事件循环内的解析合并为一次 `getTempFileURL` 批量调用，同 fileID 并发解析单飞去重；临期前（默认提前 5 分钟）视为失效并在下次解析时刷新；仅缓存合法 https 结果，整批失败或异常结果不入缓存以便下次重试。资料编辑页照片预览（`loadPhotoPreviews`）已接入。Vitest 再增 7 例。
+- 剩余增量：仅真机冷启动/断网 smoke 与独立复核（temp 地址会过期，缓存只做内存、不持久化）。
+- 关闭条件：冷启动、热启动、弱网、离线、过期、手动刷新和账号切换测试通过；命中率可观察且不展示越权/陈旧数据；真机与独立复核齐全。代码与单测层（热启动/冷启动/过期/账号切换/图片临时地址）已全部满足，仅剩真机验收。
+- 更新时间：2026-10-11 08:15（CST）。
 
 ### HP-20261010-10 · 全员发布活动与发布人展示
 
