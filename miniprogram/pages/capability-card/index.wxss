@@ -20,9 +20,9 @@ page {
   overflow: hidden;
   aspect-ratio: 3 / 4;
   min-height: 980rpx;
-  border: 1rpx solid #3a3a3c;
+  border: 1rpx solid var(--color-border-strong);
   border-radius: var(--radius-display);
-  background: #1c1c1e;
+  background: var(--color-media-card-bg);
 }
 
 .card-visual,

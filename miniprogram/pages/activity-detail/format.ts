@@ -50,7 +50,7 @@ export function drawElevationProfile(
     y: padding.top + ((maxElevation - point.elevationM) / elevationRange) * chartHeight,
   });
 
-  context.strokeStyle = 'rgba(255,255,255,.15)';
+  context.strokeStyle = 'rgba(32,36,31,.14)';
   context.lineWidth = 1;
   context.beginPath();
   context.moveTo(padding.left, padding.top);

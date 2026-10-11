@@ -47,7 +47,7 @@ page {
   --radius-sm: 16rpx;
   --radius-md: 24rpx;
   --radius-display: 32rpx;
-  --radius-card: 32rpx;
+  --radius-card: 16rpx;
   --cili-black: var(--color-bg);
   --cili-charcoal: var(--color-surface);
   --cili-panel: var(--color-raised);
@@ -62,11 +62,11 @@ page {
   --tab-page-bottom-space: 32rpx;
   --fixed-action-reserve: 224rpx;
   --fixed-action-reserve-narrow: 320rpx;
-  --control-height: 96rpx;
+  --control-height: 88rpx;
   --segment-height: 80rpx;
-  --page-gutter: 32rpx;
-  --page-gutter-narrow: 24rpx;
-  --card-gap: 24rpx;
+  --page-gutter: 48rpx;
+  --page-gutter-narrow: 32rpx;
+  --card-gap: 32rpx;
 }
 
 page {
@@ -526,7 +526,7 @@ brand-logo {
 .menu-list,
 .form-surface,
 .activity-context {
-  border-radius: var(--radius-display);
+  border-radius: var(--radius-card);
 }
 
 .field input,

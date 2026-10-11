@@ -14,7 +14,7 @@
   overflow: hidden;
   padding: 24rpx var(--page-gutter) 72rpx;
   border-bottom: 1rpx solid #343438;
-  background: #121212;
+  background: var(--color-media-placeholder-bg);
   color: #f7f7f5;
 }
 

@@ -4,12 +4,25 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.11.29',
+    date: '2026-10-11',
+    title: '全局界面规范统一',
+    summary:
+      '全部页面统一采用 24px 页面留白、44px 触控高度、紧凑卡片圆角和明亮语义色，组件风格更一致。',
+    latest: true,
+    features: [
+      '全局页面边距、卡片间距、圆角和控件高度统一',
+      '品牌标识、状态标签和活动卡片移除重复的旧主题样式',
+      '骑行名片、活动详情和报名表单统一接入语义色 token',
+    ],
+  },
+  {
     version: '2026.10.11.28',
     date: '2026-10-11',
     title: '瑞士网格视觉升级',
     summary:
       '活动、详情、管理和个人中心统一采用 24px 页面留白、8 点间距与单一橙红强调，信息更整齐易读。',
-    latest: true,
+    latest: false,
     features: [
       '四个核心页面统一 8 点网格和左对齐信息层级',
       '活动照片、集合信息和骑行名片保持高对比展示',
