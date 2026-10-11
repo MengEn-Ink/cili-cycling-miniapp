@@ -1,0 +1,165 @@
+{
+  "startedAt": "2026-10-11T05:25:14.083Z",
+  "git": "608590d",
+  "version": "0.0.119.1",
+  "checks": [
+    {
+      "name": "home-loads-no-error",
+      "ok": true,
+      "detail": {
+        "loading": false,
+        "error": null
+      }
+    },
+    {
+      "name": "home-items-and-cards",
+      "ok": false,
+      "detail": {
+        "items": 1,
+        "cardHosts": 0,
+        "itemRows": 1
+      }
+    },
+    {
+      "name": "home-day-group-headers",
+      "ok": true,
+      "detail": {
+        "headerRows": 1,
+        "renderedHeads": 1
+      }
+    },
+    {
+      "name": "home-day-chips-gating",
+      "ok": true,
+      "detail": {
+        "dayChips": 1,
+        "renderedChips": 0
+      }
+    },
+    {
+      "name": "home-publisher-dto",
+      "ok": true,
+      "detail": {
+        "publisher": {
+          "nickname": "莫拉拉",
+          "hasAvatar": true
+        }
+      }
+    },
+    {
+      "name": "detail-share-friend-contract",
+      "ok": true,
+      "detail": {
+        "hasTitle": true,
+        "hasPath": true,
+        "hasImageUrl": true,
+        "title": "10月17日骑行 · 辛庄桥"
+      }
+    },
+    {
+      "name": "detail-share-timeline-contract",
+      "ok": true,
+      "detail": {
+        "hasTitle": true,
+        "query": "id=activity_2d9b2361-df24-4de6-afba-046c2d93695a"
+      }
+    },
+    {
+      "name": "admin-list-loads",
+      "ok": true,
+      "detail": {
+        "allowed": true,
+        "isAdmin": true,
+        "items": 3,
+        "error": null
+      }
+    },
+    {
+      "name": "admin-swipe-rows-match-items",
+      "ok": true,
+      "detail": {
+        "swipeRows": 3,
+        "items": 3
+      }
+    },
+    {
+      "name": "admin-delete-buttons-present",
+      "ok": true,
+      "detail": {
+        "deleteButtons": 3
+      }
+    },
+    {
+      "name": "create-empty-title-blocks",
+      "ok": true,
+      "detail": {
+        "error": "请输入活动标题",
+        "formErrors": {
+          "title": "请输入活动标题"
+        }
+      }
+    },
+    {
+      "name": "create-missing-date-blocks",
+      "ok": true,
+      "detail": {
+        "error": "请选择集合日期"
+      }
+    },
+    {
+      "name": "create-missing-time-blocks",
+      "ok": true,
+      "detail": {
+        "error": "请选择集合时间"
+      }
+    },
+    {
+      "name": "profile-gender-required-blocks",
+      "ok": true,
+      "detail": {
+        "error": "请选择性别"
+      }
+    },
+    {
+      "name": "nav-/pages/registrations/index",
+      "ok": true,
+      "detail": {
+        "path": "pages/registrations/index",
+        "error": null
+      }
+    },
+    {
+      "name": "nav-/pages/profile/index",
+      "ok": true,
+      "detail": {
+        "path": "pages/profile/index",
+        "error": null
+      }
+    },
+    {
+      "name": "nav-/pages/settings/index",
+      "ok": true,
+      "detail": {
+        "path": "pages/settings/index",
+        "error": null
+      }
+    }
+  ],
+  "exceptions": [],
+  "home": {
+    "items": 1,
+    "headerRows": 1,
+    "groupHeadLabels": [
+      "10月17日 周六"
+    ],
+    "chips": 0,
+    "chipLabels": [],
+    "publisherData": {
+      "nickname": "莫拉拉",
+      "avatarUrl": "https://636c-cloudbase-d0gizacy77a1ab017-1497589790.tcb.qcloud.la/profile-canonical/726b053b132b0b2f43464f0c2897ab17/65ffdd4bd9870855a4adfd14d3a31b15953201afb95c9fa96963b30e328bd92f/2b2f2bd0d038dc60e94effe8f49d8b5e9850e9ae3301babbaee119276bc3c175.jpg?sign=39506fc9fabd5bf543f2a8659cd7884c&t=1791696322"
+    },
+    "publisherDom": null
+  },
+  "detailPath": "pages/activity-detail/index",
+  "finishedAt": "2026-10-11T05:26:34.891Z"
+}
