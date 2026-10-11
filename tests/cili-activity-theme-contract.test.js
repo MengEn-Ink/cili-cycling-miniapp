@@ -31,9 +31,10 @@ describe('CILI 活动页静态契约', () => {
   it('活动列表与详情使用统一 CILI 品牌组件', () => {
     expect(activities).toContain('<brand-logo');
     expect(detail).toContain('<brand-logo');
-    expect(logo).toContain('class="brand-logo__symbol"');
-    expect(logo).toContain('class="brand-logo__word">CILI');
-    expect(logo).toContain('class="brand-logo__cn">此里');
+    expect(logo).toContain('class="brand-logo__wordmark"');
+    expect(logo).toContain('>此</text>');
+    expect(logo).toContain('>里</text>');
+    expect(logo).not.toContain('CILI');
   });
 
   it('活动列表和详情继续渲染现有关键字段', () => {
@@ -111,10 +112,11 @@ describe('CILI 活动页静态契约', () => {
     expect(activityCard).toContain('人已报名');
   });
 
-  it('V3.1 使用橙红、炭黑、暖灰和白，不继承荧光黄视觉', () => {
-    expect(activitiesStyles).toContain('--v31-accent: var(--color-brand)');
-    expect(activitiesStyles).toContain('--v31-charcoal: var(--color-text)');
-    expect(activitiesStyles).toContain('--v31-warm-gray: var(--color-bg)');
+  it('首页只使用品牌橙、石墨黑和暖灰白主题色，不继承荧光黄视觉', () => {
+    expect(activitiesStyles).toContain('background: var(--color-text)');
+    expect(activitiesStyles).toContain('background: var(--color-bg)');
+    expect(activitiesStyles).toContain('background: var(--color-brand)');
+    expect(activitiesStyles).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(|navy|blue|gradient/i);
     expect(activityCardStyles).toContain('--card-accent: var(--color-brand)');
     expect(`${activitiesStyles}\n${activityCardStyles}`).not.toMatch(/#d9ff43|#c4ec23|#f2ffc2/i);
   });
@@ -125,7 +127,8 @@ describe('CILI 活动页静态契约', () => {
     expect(activityCard).not.toContain('RIDE DATE');
     expect(detail).not.toContain('RIDE DETAIL');
     expect(detail).not.toContain('RIDE / 01');
-    expect(logo).toContain('class="brand-logo__word">CILI');
+    expect(logo).toContain('aria-label="此里"');
+    expect(logo).not.toContain('CILI');
     expect(detail).toContain('Strava');
     expect(detail).toContain('GPX');
   });

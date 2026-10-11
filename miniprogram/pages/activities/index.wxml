@@ -1,28 +1,33 @@
 <view class="page activities-page">
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{refreshing ? '正在刷新活动' : loadingMore ? '正在加载更多活动' : ''}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{refreshError}}</view>
-  <brand-logo meta="骑行活动" />
-  <view class="activities-intro">
-    <view class="page-title"><view>发现活动</view><view>报名出发</view></view>
-    <view class="intro-copy muted">选一场合适的骑行，和大家准时集合</view>
+  <view class="activities-hero">
+    <brand-logo meta="骑行活动" />
+    <view class="activities-intro">
+      <view class="page-title">选一场骑行，一起出发</view>
+      <view class="intro-copy">路线、时间、集合点，一眼看清</view>
+    </view>
+    <view class="hero-route" aria-hidden="true"><view class="hero-route__dot"></view></view>
   </view>
-  <view class="timeline-tabs" role="tablist" aria-label="活动时间筛选">
-    <view class="timeline-tab {{activeView === 'future' ? 'is-active' : ''}}" role="tab" aria-selected="{{activeView === 'future'}}" aria-controls="activity-list-panel" data-view="future" bindtap="switchView" hover-class="timeline-tab--pressed">即将开始</view>
-    <view class="timeline-tab {{activeView === 'history' ? 'is-active' : ''}}" role="tab" aria-selected="{{activeView === 'history'}}" aria-controls="activity-list-panel" data-view="history" bindtap="switchView" hover-class="timeline-tab--pressed">历史活动</view>
-  </view>
-  <view class="section-head"><view class="section-title">{{sectionTitle}}</view><text class="count" wx:if="{{items.length}}">{{items.length}} 场</text></view>
-  <scroll-view class="day-chip-bar" scroll-x enhanced show-scrollbar="{{false}}" wx:if="{{activeView === 'future' && dayChips.length > 1}}" aria-label="按日期快速定位">
-    <view class="day-chip-bar__inner"><view class="day-chip" wx:for="{{dayChips}}" wx:key="key" role="button" data-key="{{item.key}}" bindtap="scrollToDay" hover-class="day-chip--pressed">{{item.label}}</view></view>
-  </scroll-view>
-  <view class="refresh-note muted" wx:if="{{refreshing}}" aria-hidden="true">正在刷新活动…</view>
-  <view class="refresh-note refresh-error" wx:if="{{refreshError}}" aria-hidden="true">{{refreshError}}</view>
-  <view id="activity-list-panel" class="activity-results" role="tabpanel" aria-label="{{activeView === 'history' ? '历史活动列表' : '即将开始活动列表'}}">
-    <state-view loading="{{loading}}" error="{{error}}" empty="{{!items.length}}" empty-title="{{emptyTitle}}" empty-copy="{{emptyCopy}}" retryable="{{true}}" bind:retry="load">
-      <block wx:for="{{rows}}" wx:key="rowId" wx:for-item="row">
-        <view wx:if="{{row.kind === 'header'}}" id="day-{{row.dayKey}}" class="day-group-head"><text class="day-group-head__label">{{row.dayLabel}}</text></view>
-        <block wx:if="{{row.kind === 'item'}}"><view class="following-head" wx:if="{{row.showFollowing}}"><text>{{followingTitle}}</text><text>{{activeView === 'future' ? '更多可报名活动' : '继续回看'}}</text></view><activity-card item="{{row.item}}" data-id="{{row.item.id}}" bind:open="open" /></block>
-      </block>
-    </state-view>
-    <button class="load-more" wx:if="{{nextCursor && items.length}}" bindtap="loadMore" loading="{{loadingMore}}" disabled="{{loadingMore}}" aria-disabled="{{loadingMore}}">{{loadingMore ? '加载中…' : '加载更多'}}</button>
+  <view class="activities-content">
+    <view class="timeline-tabs" role="tablist" aria-label="活动时间筛选">
+      <view class="timeline-tab {{activeView === 'future' ? 'is-active' : ''}}" role="tab" aria-selected="{{activeView === 'future'}}" aria-controls="activity-list-panel" data-view="future" bindtap="switchView" hover-class="timeline-tab--pressed">即将开始</view>
+      <view class="timeline-tab {{activeView === 'history' ? 'is-active' : ''}}" role="tab" aria-selected="{{activeView === 'history'}}" aria-controls="activity-list-panel" data-view="history" bindtap="switchView" hover-class="timeline-tab--pressed">历史活动</view>
+    </view>
+    <view class="section-head"><view class="section-title">{{sectionTitle}}</view><text class="count" wx:if="{{items.length}}">{{items.length}} 场</text></view>
+    <scroll-view class="day-chip-bar" scroll-x enhanced show-scrollbar="{{false}}" wx:if="{{activeView === 'future' && dayChips.length > 1}}" aria-label="按日期快速定位">
+      <view class="day-chip-bar__inner"><view class="day-chip" wx:for="{{dayChips}}" wx:key="key" role="button" data-key="{{item.key}}" bindtap="scrollToDay" hover-class="day-chip--pressed">{{item.label}}</view></view>
+    </scroll-view>
+    <view class="refresh-note muted" wx:if="{{refreshing}}" aria-hidden="true">正在刷新活动…</view>
+    <view class="refresh-note refresh-error" wx:if="{{refreshError}}" aria-hidden="true">{{refreshError}}</view>
+    <view id="activity-list-panel" class="activity-results" role="tabpanel" aria-label="{{activeView === 'history' ? '历史活动列表' : '即将开始活动列表'}}">
+      <state-view loading="{{loading}}" error="{{error}}" empty="{{!items.length}}" empty-title="{{emptyTitle}}" empty-copy="{{emptyCopy}}" retryable="{{true}}" bind:retry="load">
+        <block wx:for="{{rows}}" wx:key="rowId" wx:for-item="row">
+          <view wx:if="{{row.kind === 'header'}}" id="day-{{row.dayKey}}" class="day-group-head"><text class="day-group-head__label">{{row.dayLabel}}</text></view>
+          <block wx:if="{{row.kind === 'item'}}"><view class="following-head" wx:if="{{row.showFollowing}}"><text>{{followingTitle}}</text><text>{{activeView === 'future' ? '更多可报名活动' : '继续回看'}}</text></view><activity-card item="{{row.item}}" data-id="{{row.item.id}}" bind:open="open" /></block>
+        </block>
+      </state-view>
+      <button class="load-more" wx:if="{{nextCursor && items.length}}" bindtap="loadMore" loading="{{loadingMore}}" disabled="{{loadingMore}}" aria-disabled="{{loadingMore}}">{{loadingMore ? '加载中…' : '加载更多'}}</button>
+    </view>
   </view>
 </view>

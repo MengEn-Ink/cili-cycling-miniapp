@@ -4,77 +4,70 @@
 
 .brand-logo {
   display: flex;
+  min-height: 60rpx;
   align-items: center;
-  gap: 10rpx;
-  min-height: 52rpx;
   color: var(--color-text);
 }
 
-.brand-logo__symbol {
+.brand-logo__wordmark {
   position: relative;
-  box-sizing: border-box;
-  width: 52rpx;
-  height: 52rpx;
-  border: 9rpx solid currentColor;
-  border-right-color: transparent;
-  border-radius: 50%;
-  transform: rotate(-38deg);
-}
-
-.brand-logo__cut {
-  position: absolute;
-  top: -9rpx;
-  right: -4rpx;
-  width: 25rpx;
-  height: 11rpx;
-  background: var(--color-brand);
-  transform: skewX(-38deg);
-}
-
-.brand-logo__word {
-  font-size: 32rpx;
-  font-style: italic;
+  display: inline-flex;
+  align-items: center;
+  padding-right: 26rpx;
+  color: inherit;
+  font-size: 46rpx;
   font-weight: 900;
-  letter-spacing: 2rpx;
+  line-height: 1;
 }
 
-.brand-logo__cn {
-  padding-left: 10rpx;
-  border-left: 1rpx solid var(--color-border-strong);
-  color: var(--color-muted);
-  font-size: 23rpx;
-  font-weight: 800;
+.brand-logo__character {
+  position: relative;
+  z-index: 1;
+}
+
+.brand-logo__character--li {
+  margin-left: -2rpx;
+}
+
+.brand-logo__route {
+  position: absolute;
+  right: 0;
+  bottom: 3rpx;
+  width: 34rpx;
+  height: 12rpx;
+  border-bottom: 4rpx solid currentColor;
+}
+
+.brand-logo__route::after {
+  position: absolute;
+  right: 0;
+  bottom: -7rpx;
+  width: 10rpx;
+  height: 10rpx;
+  border: 4rpx solid currentColor;
+  border-radius: 50%;
+  content: '';
 }
 
 .brand-logo__meta {
   margin-left: auto;
-  color: var(--color-subtle);
+  color: inherit;
   font-size: 18rpx;
   font-weight: 800;
   letter-spacing: 2rpx;
+  opacity: 0.62;
   text-align: right;
 }
 
 .brand-logo--compact {
-  min-height: 44rpx;
+  min-height: 48rpx;
 }
 
-.brand-logo--compact .brand-logo__symbol {
-  width: 44rpx;
-  height: 44rpx;
-  border-width: 8rpx;
+.brand-logo--compact .brand-logo__wordmark {
+  padding-right: 22rpx;
+  font-size: 38rpx;
 }
 
-.brand-logo--compact .brand-logo__cut {
-  top: -8rpx;
-  width: 22rpx;
-  height: 10rpx;
-}
-
-.brand-logo--compact .brand-logo__word {
-  font-size: 28rpx;
-}
-
-.brand-logo--compact .brand-logo__cn {
-  font-size: 21rpx;
+.brand-logo--compact .brand-logo__route {
+  width: 29rpx;
 }

@@ -38,7 +38,7 @@ describe('核心页面统一明亮主题配色', () => {
     ).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('个人中心品牌标识使用炭黑文字和橙红品牌切口', () => {
+  it('个人中心品牌标识使用炭黑单色中文艺术字', () => {
     expect(read('miniprogram/pages/profile/index.wxml')).toContain(
       '<brand-logo compact="{{true}}"',
     );
@@ -46,10 +46,7 @@ describe('核心页面统一明亮主题配色', () => {
       declaration(effectiveBlock(brandStyles, '.brand-logo'), 'color'),
       '--color-text',
     );
-    expectSemantic(
-      declaration(effectiveBlock(brandStyles, '.brand-logo__cut'), 'background'),
-      '--color-brand',
-    );
+    expect(brandStyles).not.toContain('.brand-logo__cut');
     expect(
       contrast(resolvedHex('var(--color-text)', tokens), resolvedHex('var(--color-bg)', tokens)),
     ).toBeGreaterThanOrEqual(4.5);

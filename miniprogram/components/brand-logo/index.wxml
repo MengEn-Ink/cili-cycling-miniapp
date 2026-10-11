@@ -1,6 +1,4 @@
-<view class="brand-logo {{compact ? 'brand-logo--compact' : ''}}" role="img" aria-label="CILI 此里">
-  <view class="brand-logo__symbol" aria-hidden="true"><view class="brand-logo__cut"></view></view>
-  <view class="brand-logo__word">CILI</view>
-  <view class="brand-logo__cn">此里</view>
+<view class="brand-logo {{compact ? 'brand-logo--compact' : ''}}" role="img" aria-label="此里">
+  <view class="brand-logo__wordmark" aria-hidden="true"><text class="brand-logo__character brand-logo__character--ci">此</text><text class="brand-logo__character brand-logo__character--li">里</text><view class="brand-logo__route"></view></view>
   <view class="brand-logo__meta" wx:if="{{meta}}">{{meta}}</view>
 </view>
