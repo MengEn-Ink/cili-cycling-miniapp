@@ -44,22 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.11.13',
+      version: '2026.10.11.14',
       latest: true,
-      title: '活动卡片显示发布人',
-      summary:
-        '每张活动卡片都会显示发布人的头像和昵称，一眼看出是谁组织的活动；所有登录用户都可以发布自己的活动。',
+      title: '图片缩略图加载更省',
+      summary: '进入资料编辑页时，已解析的照片缩略图会在有效期内复用，临期自动刷新，减少重复加载。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.11.14',
       '2026.10.11.13',
       '2026.10.11.12',
       '2026.10.11.11',
       '2026.10.11.10',
-      '2026.10.11.9',
     ]);
   });
 

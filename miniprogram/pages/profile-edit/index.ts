@@ -2,6 +2,7 @@ import type { AvatarSource, ClientAvatarSource, Profile } from '../../models';
 import { runPageTask } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
 import { invalidateProfilePageCache } from '../../utils/profile-page-cache';
+import { TempFileUrlCache } from '../../utils/temp-file-url';
 
 const ORPHAN_LEDGER_KEY = 'profile-media-orphans-v1';
 const AVATAR_PREVIEW_DEADLINE_MS = 8_000;
@@ -418,6 +419,8 @@ Page({
   localPhotoPreviews: {} as Record<string, string>,
   // 会话内“内容指纹 -> 已登记 fileId”映射：重复选择同一图片直接复用，不再请求上传路径和重复上传。
   uploadedMediaDigests: new Map<string, string>(),
+  // 已解析图片临时地址缓存：fileID -> 仍在有效期的 https 地址，跨多次进入页面复用。
+  photoUrlCache: null as TempFileUrlCache | null,
   data: {
     loading: true,
     error: '',
@@ -497,6 +500,24 @@ Page({
     }
     this.setData(patch);
   },
+  ensurePhotoUrlCache(): TempFileUrlCache | null {
+    if (this.photoUrlCache) return this.photoUrlCache;
+    const cloud = wx.cloud as
+      | (WxCloudApi & {
+          getTempFileURL?(options: { fileList: string[] }): Promise<{
+            fileList?: { fileID?: string; tempFileURL?: string }[];
+          }>;
+        })
+      | undefined;
+    if (typeof cloud?.getTempFileURL === 'function') {
+      // 绑定回 cloud 后再交给缓存，避免调用时丢失 this。
+      const fn = cloud.getTempFileURL;
+      this.photoUrlCache = new TempFileUrlCache({
+        getTempFileURL: (options) => fn.call(cloud, options),
+      });
+    }
+    return this.photoUrlCache;
+  },
   async loadPhotoPreviews() {
     const current = this.data.p as Profile | null;
     if (!current) return;
@@ -507,25 +528,19 @@ Page({
       (photo) => !this.localPhotoPreviews[photo.id] && !safeHttpsUrl(photo.id),
     );
     const resolved: Record<string, string> = {};
-    const cloud = wx.cloud as
-      | (WxCloudApi & {
-          getTempFileURL(options: { fileList: string[] }): Promise<{
-            fileList?: { fileID?: string; tempFileURL?: string }[];
-          }>;
-        })
-      | undefined;
-    if (unresolved.length && typeof cloud?.getTempFileURL === 'function') {
-      try {
-        const result = await cloud.getTempFileURL({
-          fileList: unresolved.map((photo) => photo.id),
-        });
-        for (const file of result?.fileList || []) {
-          const id = typeof file.fileID === 'string' ? file.fileID : '';
-          const url = safeHttpsUrl(file.tempFileURL);
-          if (id && url) resolved[id] = url;
+    if (unresolved.length) {
+      const cache = this.ensurePhotoUrlCache();
+      if (cache) {
+        try {
+          // 缓存命中且仍在有效期的直接复用；临期/缺失时由缓存内部合并为一次批量解析。
+          const map = await cache.resolve(unresolved.map((photo) => photo.id));
+          for (const [id, url] of Object.entries(map)) {
+            const safe = safeHttpsUrl(url);
+            if (safe) resolved[id] = safe;
+          }
+        } catch {
+          /* 单张预览失败不阻塞资料编辑。 */
         }
-      } catch {
-        /* 单张预览失败不阻塞资料编辑。 */
       }
     }
     if (requestId !== this.photoPreviewRequestId) return;
