@@ -9,23 +9,25 @@
         <view class="step-rule"></view>
         <view class="step"><text class="step-number">03</text><text>凭证</text></view>
       </view>
-      <view class="title-row"><view><view class="form-title">确认报名信息</view></view><view class="step-caption">第一步 · 填写</view></view>
+      <view class="title-row"><view class="form-title">确认报名信息</view></view>
       <view class="activity-context" wx:if="{{activity}}">
-        <view class="context-head"><view class="context-kicker">当前活动</view><view class="context-status">{{activityAction.label}}</view></view>
+        <view class="context-head"><view class="context-kicker">当前活动</view><view class="context-status">{{activityCanSubmit ? '报名开放' : activityAction.label}}</view></view>
         <view class="context-title">{{activity.title || '当前骑行活动'}}</view>
         <view class="context-meta"><text>{{displayActivityDate}}</text><text>{{activity.registrationUnlimited ? '报名人数不限' : ('总名额 ' + activity.capacity)}}</text></view>
       </view>
-      <view class="submit-note">提交后将进入审核，请确认联系信息与集合方式准确。</view>
+      <view class="submit-note">提交后将进入审核，请确认资料和集合方式准确。</view>
     </view>
 
     <view class="form-surface">
       <view class="form-section first-section">
         <view class="section-label"><text>01</text><view><view>报名资料</view><view class="section-hint">用于审核与活动安全联络</view></view></view>
         <view class="form-card identity-card">
-          <view class="identity-main"><view class="identity-label">微信昵称</view><view class="identity-value">{{profile.nickname || '未授权昵称'}}</view></view>
-          <view class="identity-main"><view class="identity-label">性别</view><view class="identity-value">{{profile.genderLabel}}</view></view>
-          <view class="identity-main"><view class="identity-label">联系电话</view><view class="identity-value">{{profile.phone || '未填写'}}</view></view>
-          <button class="text-button identity-action" bindtap="profile" disabled="{{submitting}}">完善资料</button>
+          <view class="identity-grid">
+            <view class="identity-main"><view class="identity-label">微信昵称</view><view class="identity-value">{{profile.nickname || '未授权昵称'}}</view></view>
+            <view class="identity-main"><view class="identity-label">性别</view><view class="identity-value">{{profile.genderLabel}}</view></view>
+            <view class="identity-main"><view class="identity-label">联系电话</view><view class="identity-value identity-phone">{{profile.phone || '未填写'}}</view></view>
+          </view>
+          <button class="text-button identity-action" bindtap="profile" disabled="{{submitting}}">编辑个人资料</button>
         </view>
         <view wx:if="{{profileErrors.length}}" class="profile-alert" role="alert">
           <view class="profile-alert-title">还需完善 {{profileErrors.length}} 项资料</view>
@@ -36,10 +38,10 @@
       </view>
 
       <view class="form-section">
-        <view class="section-label"><text>02</text><view><view>集合方式</view><view class="section-hint">分类名额独立计算，请按实际出行方式选择</view></view></view>
+        <view class="section-label"><text>02</text><view><view>集合方式</view><view class="section-hint">不同集合方式分别计算名额，请按实际情况选择</view></view></view>
         <view class="form-card gathering-card">
-          <view class="field-title">选择集合方式 <text class="required">必选</text></view>
-          <view class="field-hint">名额以提交时的最新状态为准；满员或所选集合方式满额时将自动进入候补。</view>
+          <view class="field-title">集合方式 <text class="required">必选</text></view>
+          <view class="field-hint">名额以提交时状态为准；活动或所选方式满额后，将自动进入候补。</view>
           <radio-group class="choice-group transport-choices" data-key="gatheringMode" bindchange="set">
             <label class="choice choice-detail {{gatheringMode === 'self_drive' ? 'selected' : ''}}">
               <radio color="#e85b32" value="self_drive" checked="{{gatheringMode === 'self_drive'}}" disabled="{{submitting}}"/>
@@ -54,7 +56,7 @@
       </view>
 
       <view class="form-section">
-        <view class="section-label"><text>03</text><view><view>能力确认</view><view class="section-hint">骑行经验与 Strava 数据共同用于审核</view></view></view>
+        <view class="section-label"><text>03</text><view><view>能力确认</view><view class="section-hint">骑行经验与 Strava 数据将作为审核参考</view></view></view>
         <view class="form-card capability-card">
           <view class="field-title">骑行经验</view>
           <radio-group class="experience-segment" data-key="experience" bindchange="set">
@@ -77,10 +79,10 @@
         <view class="section-label"><text>04</text><view><view>备注与安全</view><view class="section-hint">仅填写组织方需要提前了解的信息</view></view></view>
         <view class="form-card">
           <view class="field-title">报名备注 <text class="optional">选填</text></view>
-          <view class="field-hint">可填写饮食限制、集合说明或需要协助的事项，请勿填写无关敏感信息</view>
+          <view class="field-hint">可填写饮食限制、集合说明或需要协助的事项，请勿填写无关敏感信息。</view>
           <textarea class="textarea remark" placeholder-class="input-placeholder" placeholder="饮食、集合或其他备注" value="{{remark}}" data-key="remark" bindinput="set" disabled="{{submitting}}" maxlength="500"/>
           <view class="safety-box"><view class="info-label">紧急联系人</view><view class="info-value">{{profile.emergencyName || '未填写'}} {{profile.emergencyPhone}}</view></view>
-          <view class="privacy-note">信息仅用于活动组织与紧急安全联络，敏感字段仅展示云端脱敏值。</view>
+          <view class="privacy-note">资料仅用于活动组织和安全联络；手机号仅本人及审核管理员可完整查看。</view>
         </view>
       </view>
     </view>
@@ -89,8 +91,8 @@
   <view wx:if="{{errors.length}}" class="error-card" role="alert"><view class="error-title">暂时无法提交，请处理以下问题</view><view class="error-item" wx:for="{{errors}}" wx:key="*this">· {{item}}</view></view>
   <view class="fixed action-bar">
     <button class="secondary back-button" bindtap="back" disabled="{{submitting}}">返回活动</button>
-    <button class="btn submit-button" loading="{{submitting}}" disabled="{{loading || submitting || !profile || profileErrors.length || !gatheringMode || !readiness.canRegister || !activityCanSubmit}}" bindtap="submit">{{submitting ? '正在提交' : '提交审核'}}</button>
-    <view class="disabled-hint" wx:if="{{!loading && !submitting && (!profile || profileErrors.length || !gatheringMode || !readiness.canRegister || !activityCanSubmit)}}">请完成页面中的必填项与数据准备后提交</view>
+    <button class="btn submit-button" loading="{{submitting}}" disabled="{{loading || submitting || !profile || profileErrors.length || !gatheringMode || !readiness.canRegister || !activityCanSubmit}}" bindtap="submit">{{submitting ? '正在提交' : '提交报名'}}</button>
+    <view class="disabled-hint" wx:if="{{!loading && !submitting && (!profile || profileErrors.length || !gatheringMode || !readiness.canRegister || !activityCanSubmit)}}">请先完成必填项并确认 Strava 数据已就绪</view>
   </view>
   </state-view>
 </view>

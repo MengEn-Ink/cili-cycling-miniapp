@@ -27,7 +27,7 @@ describe('报名表单受控控件与视觉契约', () => {
   });
 
   it('顶部展示步骤、活动上下文和审核说明', () => {
-    expect(template).toContain('第一步 · 填写');
+    expect(template).toContain('确认报名信息');
     expect(template).toContain('当前活动');
     expect(template).toContain('{{activity.title');
     expect(template).toContain('提交后将进入审核');
@@ -39,7 +39,7 @@ describe('报名表单受控控件与视觉契约', () => {
     expect(template.match(/<radio [^>]*disabled="{{[^}]*submitting[^}]*}}"/g)).toHaveLength(5);
     expect(template).toMatch(/<textarea [^>]*disabled="{{submitting}}"/);
     expect(template).toMatch(/class="secondary back-button"[^>]*disabled="{{submitting}}"/);
-    expect(template).toContain("{{submitting ? '正在提交' : '提交审核'}}");
+    expect(template).toContain("{{submitting ? '正在提交' : '提交报名'}}");
   });
 
   it('备注、错误和 disabled 状态有明确层级', () => {
@@ -61,12 +61,22 @@ describe('报名表单受控控件与视觉契约', () => {
     expect(styles).toContain('.profile-alert');
   });
 
-  it('保持纯色 CILI 深色主题且小屏布局不溢出', () => {
+  it('保持 CILI 浅色主题、资料栅格对齐且小屏布局不溢出', () => {
+    expect(template).toContain('class="identity-grid"');
+    expect(template).toContain(
+      'class="context-status">{{activityCanSubmit ? \'报名开放\' : activityAction.label}}',
+    );
+    expect(template).toContain('提交报名');
+    expect(template).toContain('请先完成必填项并确认 Strava 数据已就绪');
     expect(styles).toContain('background: var(--color-bg)');
+    expect(styles).toContain('.identity-grid');
+    expect(styles).toContain('grid-template-columns: minmax(0, 1fr) 0.62fr minmax(0, 1.35fr)');
     expect(styles).toContain('@media (max-width: 340px)');
     expect(styles).toContain('grid-template-columns: 1fr');
     expect(styles).toContain('overflow-x: hidden');
     expect(styles).not.toContain('linear-gradient');
+    expect(styles).not.toMatch(/background:\s*#(?:0d0d0e|111113|29292b)/i);
+    expect(styles).not.toContain('border-left: 6rpx');
     expect(template).not.toMatch(/<image|background-image/);
   });
 });

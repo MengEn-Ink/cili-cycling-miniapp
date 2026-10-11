@@ -66,7 +66,7 @@ describe('界面装饰文案中文化契约', () => {
       file.endsWith('registration-form/index.wxml'),
     );
     expect(form).toBeTruthy();
-    expect(form!.content).toContain('第一步 · 填写');
+    expect(form!.content).toContain('确认报名信息');
     expect(form!.content).toContain('当前活动');
   });
 });

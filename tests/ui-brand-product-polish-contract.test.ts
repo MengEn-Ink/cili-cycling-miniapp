@@ -77,7 +77,7 @@ describe('品牌与页面体验静态契约', () => {
     expect(activities).toContain('路线、时间、集合点，一眼看清');
     expect(registrations).toContain('我的行程');
     expect(registrations).not.toContain('journey-line');
-    expect(form).toContain('提交后将进入审核，请确认联系信息与集合方式准确。');
+    expect(form).toContain('提交后将进入审核，请确认资料和集合方式准确。');
     expect(`${activities}\n${registrations}\n${form}`).not.toMatch(/ROOKIE|ELITE|PELOTON/);
   });
 
