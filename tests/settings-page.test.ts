@@ -44,22 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.12.13',
+      version: '2026.10.12.14',
       latest: true,
-      title: '报名凭证展示真实骑行名片',
-      summary:
-        '报名后的骑行名片与个人中心保持一致，真实头像和背景照片分开呈现，并补充核心骑行数据。',
+      title: '手机号可直接填写更换',
+      summary: '个人资料不再要求微信手机号授权，用户可直接填写或更换本人手机号并随资料保存。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.12.14',
       '2026.10.12.13',
       '2026.10.12.12',
       '2026.10.12.11',
       '2026.10.12.10',
-      '2026.10.12.9',
     ]);
   });
 

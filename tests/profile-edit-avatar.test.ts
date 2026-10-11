@@ -10,7 +10,6 @@ const rideService = vi.hoisted(() => ({
   registerProfileMedia: vi.fn(),
   reportProfileMediaOrphan: vi.fn(),
   setAvatar: vi.fn(),
-  getPhoneNumber: vi.fn(),
   updateProfile: vi.fn(),
 }));
 
@@ -90,7 +89,6 @@ describe('资料编辑头像交互', () => {
       }),
     );
     rideService.updateProfile.mockResolvedValue(profile);
-    rideService.getPhoneNumber.mockResolvedValue({ ...profile, phone: '13900001111' });
     vi.stubGlobal('wx', {
       env: { USER_DATA_PATH: 'wxfile://usr' },
       showToast: vi.fn(),
@@ -147,9 +145,18 @@ describe('资料编辑头像交互', () => {
     expect(patch).not.toHaveProperty('avatarSource');
     expect(patch).toMatchObject({
       realName: undefined,
+      phone: undefined,
       emergencyPhone: undefined,
     });
-    expect(patch).not.toHaveProperty('phone');
+  });
+
+  it('直接填写的本人手机号随资料保存', async () => {
+    page.data.p.photos = [{ id: 'cloud://env/profiles/owner/bg.jpg', category: 'ride' }];
+    page.data.p.phone = '13800138000';
+
+    await page.save();
+
+    expect(rideService.updateProfile.mock.calls[0][0].phone).toBe('13800138000');
   });
 
   it('不再暴露头像可见性开关处理器', () => {
@@ -291,42 +298,6 @@ describe('资料编辑头像交互', () => {
     expect(rideService.getProfileMediaUploadPath).not.toHaveBeenCalled();
     expect(wx.showToast).not.toHaveBeenCalled();
     expect(page.data.avatarBusy).toBe(false);
-  });
-
-  it('手机号授权成功后立即展示完整号码并保留尚未保存的资料', async () => {
-    page.data.p = {
-      ...page.data.p,
-      realName: '尚未保存的姓名',
-      emergencyName: '尚未保存的联系人',
-    };
-
-    await page.onGetPhoneNumber({ detail: { code: 'phone-code' } });
-
-    expect(rideService.getPhoneNumber).toHaveBeenCalledWith('phone-code');
-    expect(page.data.p).toMatchObject({
-      phone: '13900001111',
-      realName: '尚未保存的姓名',
-      emergencyName: '尚未保存的联系人',
-    });
-    expect(page.data.phoneBusy).toBe(false);
-    expect(wx.showToast).toHaveBeenCalledWith({ title: '手机号已授权' });
-  });
-
-  it('用户取消手机号授权时静默结束', async () => {
-    await page.onGetPhoneNumber({ detail: { errMsg: 'getPhoneNumber:fail user deny' } });
-
-    expect(rideService.getPhoneNumber).not.toHaveBeenCalled();
-    expect(wx.showToast).not.toHaveBeenCalled();
-    expect(page.data.phoneBusy).toBe(false);
-  });
-
-  it('手机号授权失败时释放 busy lock 并展示安全错误', async () => {
-    rideService.getPhoneNumber.mockRejectedValueOnce(new Error('手机号授权失败'));
-
-    await page.onGetPhoneNumber({ detail: { code: 'phone-code' } });
-
-    expect(page.data.phoneBusy).toBe(false);
-    expect(page.data.error).toBe('手机号授权失败');
   });
 
   it('阶段化头像错误的 inline alert 与 toast 使用同一安全文案', async () => {
@@ -929,8 +900,8 @@ describe('资料编辑头像页面契约', () => {
     expect(template).toContain('bindchooseavatar="chooseWechatAvatar"');
     expect(template).not.toContain('chooseCustomAvatar');
     expect(template).toContain('mediaError');
-    expect(template).toContain('disabled="{{photoBusy || phoneBusy || saving || avatarBusy}}"');
-    expect(template).toContain('disabled="{{saving || phoneBusy || photoBusy || avatarBusy}}"');
+    expect(template).toContain('disabled="{{photoBusy || saving || avatarBusy}}"');
+    expect(template).toContain('disabled="{{saving || photoBusy || avatarBusy}}"');
   });
 
   it('彻底删除 Strava 头像 readiness、导入与引导契约', () => {
