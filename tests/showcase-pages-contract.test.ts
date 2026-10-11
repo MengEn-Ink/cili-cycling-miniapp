@@ -17,6 +17,10 @@ describe('GitHub Pages 高保真演示门禁', () => {
     expect(html).toContain('路线、时间、集合点，一眼看清');
     expect(html).toContain('查看报名凭证');
     expect(html).toContain('Strava 授权');
+    expect(html).toContain('一起骑，去更远的地方');
+    expect(html).not.toContain('<small>个人资料</small>');
+    expect(css).toMatch(/\.logo-word\{[^}]*background:var\(--text\)/);
+    expect(css).toMatch(/\.brand-lockup\{[^}]*justify-content:flex-start/);
   });
 
   it('网站与小程序共享三色品牌规范且不引入深海蓝或渐变', () => {

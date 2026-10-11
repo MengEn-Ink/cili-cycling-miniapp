@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.12.11',
+    date: '2026-10-12',
+    title: '品牌标识更加紧凑',
+    summary: '全局缩短“此里”字标底牌，并在个人页使用独立品牌话术替代重复标题。',
+    latest: true,
+    features: [
+      '所有页面的品牌底牌只包裹“此里”字标与橙色终点',
+      'Logo 旁的话术与页面名称独立展示，可按场景配置',
+      '个人页移除重复的“个人中心”标题，首屏信息更紧凑',
+    ],
+  },
+  {
     version: '2026.10.12.10',
     date: '2026-10-12',
     title: '轨迹链接复制恢复正常',
     summary: '修复真机运行时调用剪贴板接口丢失微信上下文导致的复制失败。',
-    latest: true,
+    latest: false,
     features: [
       '复制 Strava 轨迹链接时保留微信运行时调用上下文',
       '继续保留复制成功与失败的明确反馈',

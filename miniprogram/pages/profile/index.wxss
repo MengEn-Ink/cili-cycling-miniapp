@@ -11,34 +11,7 @@ page {
 
 brand-logo {
   display: block;
-  margin-bottom: 8rpx;
-}
-
-.profile-heading {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  padding: 10rpx 2rpx 22rpx;
-}
-
-.profile-heading-title {
-  font-size: 44rpx;
-  font-weight: 900;
-  line-height: 1.1;
-}
-
-.profile-heading-copy {
-  margin-top: 8rpx;
-  color: #6f6b66;
-  font-size: 22rpx;
-  font-weight: 700;
-}
-
-.profile-heading-mark {
-  width: 50rpx;
-  height: 10rpx;
-  background: var(--color-brand);
-  transform: skewX(-24deg);
+  margin-bottom: 28rpx;
 }
 
 .rider-card {
@@ -596,23 +569,6 @@ brand-logo {
   padding: 32rpx var(--page-gutter) 64rpx;
   background: var(--color-bg);
 }
-.profile-heading {
-  padding: 32rpx 0 48rpx;
-  text-align: var(--page-heading-align);
-}
-.profile-heading-title {
-  font-size: 56rpx;
-  line-height: 1.14;
-}
-.profile-heading-copy {
-  margin-top: 16rpx;
-  line-height: 1.5;
-}
-.profile-heading-mark {
-  width: 48rpx;
-  height: 8rpx;
-  transform: none;
-}
 .rider-card {
   border: 4rpx solid var(--color-card-border);
   border-radius: var(--radius-card);
@@ -687,8 +643,5 @@ brand-logo {
     --page-gutter: var(--page-gutter-narrow);
     padding-right: var(--page-gutter-narrow);
     padding-left: var(--page-gutter-narrow);
-  }
-  .profile-heading-title {
-    font-size: 48rpx;
   }
 }

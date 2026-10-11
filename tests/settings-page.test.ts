@@ -44,21 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.12.10',
+      version: '2026.10.12.11',
       latest: true,
-      title: '轨迹链接复制恢复正常',
-      summary: '修复真机运行时调用剪贴板接口丢失微信上下文导致的复制失败。',
+      title: '品牌标识更加紧凑',
+      summary: '全局缩短“此里”字标底牌，并在个人页使用独立品牌话术替代重复标题。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.12.11',
       '2026.10.12.10',
       '2026.10.12.9',
       '2026.10.12.8',
       '2026.10.12.7',
-      '2026.10.12.6',
     ]);
   });
 
