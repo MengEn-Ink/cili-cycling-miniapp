@@ -14,22 +14,22 @@ const app = read('miniprogram/app.wxss');
 const tokens = uiTokens(app);
 
 describe('approved unified high-contrast UI', () => {
-  it('uses the approved white, ink, gray and fluorescent brand palette', () => {
-    expect(tokens['--color-bg']).toBe('#ffffff');
+  it('uses the approved warm gray, charcoal and orange-red palette', () => {
+    expect(tokens['--color-bg']).toBe('#f2f3ef');
     expect(tokens['--color-surface']).toBe('#ffffff');
-    expect(tokens['--color-raised']).toBe('#f4f5f0');
-    expect(tokens['--color-text']).toBe('#10120f');
-    expect(tokens['--color-muted']).toBe('#5b6258');
-    expect(tokens['--color-border']).toBe('#10120f');
-    expect(tokens['--color-border-strong']).toBe('#10120f');
+    expect(tokens['--color-raised']).toBe('#f7f7f4');
+    expect(tokens['--color-text']).toBe('#20241f');
+    expect(tokens['--color-muted']).toBe('#5f665d');
+    expect(tokens['--color-border']).toBe('#dfe3dc');
+    expect(tokens['--color-border-strong']).toBe('#c8cec5');
     expect(tokens['--color-input-bg']).toBe('#ffffff');
-    expect(tokens['--color-brand']).toBe('#d9ff43');
-    expect(tokens['--color-brand-active']).toBe('#c4ec23');
-    expect(tokens['--color-on-brand']).toBe('#10120f');
-    expect(tokens['--color-action']).toBe('#10120f');
+    expect(tokens['--color-brand']).toBe('#e85b32');
+    expect(tokens['--color-brand-active']).toBe('#cf4520');
+    expect(tokens['--color-on-brand']).toBe('#171a16');
+    expect(tokens['--color-action']).toBe('#20241f');
     expect(tokens['--color-on-action']).toBe('#ffffff');
-    expect(tokens['--color-card-border']).toBe('#10120f');
-    expect(tokens['--shadow-card']).toBe('var(--shadow-hard)');
+    expect(tokens['--color-card-border']).toBe('#dfe3dc');
+    expect(tokens['--shadow-card']).toContain('rgba(32, 36, 31');
     expect(tokens['--metric-align']).toBe('left');
     expect(tokens['--page-heading-align']).toBe('left');
     expect(tokens['--radius-display']).toBe('32rpx');
@@ -38,7 +38,9 @@ describe('approved unified high-contrast UI', () => {
   it('keeps body, secondary and primary action text above WCAG AA', () => {
     expect(contrast(tokens['--color-text'], tokens['--color-bg'])).toBeGreaterThanOrEqual(7);
     expect(contrast(tokens['--color-muted'], tokens['--color-bg'])).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(tokens['--color-on-brand'], tokens['--color-brand'])).toBeGreaterThanOrEqual(7);
+    expect(contrast(tokens['--color-on-brand'], tokens['--color-brand'])).toBeGreaterThanOrEqual(
+      4.5,
+    );
     expect(contrast(tokens['--color-on-action'], tokens['--color-action'])).toBeGreaterThanOrEqual(
       7,
     );
@@ -89,12 +91,12 @@ describe('approved unified high-contrast UI', () => {
     );
   });
 
-  it('makes the profile edit action unmistakable and centers profile metrics', () => {
+  it('makes the profile data action unmistakable and centers profile metrics', () => {
     const profile = read('miniprogram/pages/profile/index.wxss');
-    const edit = effectiveBlock(profile, '.edit-button');
-    expectSemantic(declaration(edit, 'border-color'), '--color-text');
-    expect(declaration(edit, 'background')).toBe('var(--color-text) !important');
-    expect(declaration(edit, 'color')).toBe('var(--color-bg) !important');
+    const menuCard = effectiveBlock(profile, '.menu-card');
+    const menuList = effectiveBlock(profile, '.menu-list');
+    expect(declaration(menuList, 'border')).toContain('var(--color-border)');
+    expectSemantic(declaration(menuCard, 'background'), '--color-surface');
     expect(declaration(effectiveBlock(profile, '.hero-capability-metric'), 'text-align')).toBe(
       'center',
     );

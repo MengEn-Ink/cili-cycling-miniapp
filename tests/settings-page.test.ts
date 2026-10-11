@@ -44,22 +44,22 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.11.19',
+      version: '2026.10.11.20',
       latest: true,
-      title: '活动创建与照片卡片升级',
+      title: 'IGPSport 风格界面与报名旅程升级',
       summary:
-        '新活动按草稿到发布的状态安全保存；照片卡片统一结构、缺失指标占位，并保持日期分组与中文界面。',
+        '统一橙红、炭黑、暖灰与白色视觉，个人中心直接呈现骑行名片，并打通报名资料、行程状态和活动群资格提示。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.11.20',
       '2026.10.11.19',
       '2026.10.11.18',
       '2026.10.11.17',
       '2026.10.11.16',
-      '2026.10.11.15',
     ]);
   });
 

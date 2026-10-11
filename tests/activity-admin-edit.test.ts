@@ -924,7 +924,9 @@ describe('日常活动极简创建与编辑', () => {
   it('不限人数标记会让列表和详情隐藏旧路线与费用信息', () => {
     const card = readFileSync('miniprogram/components/activity-card/index.wxml', 'utf8');
     const detail = readFileSync('miniprogram/pages/activity-detail/index.wxml', 'utf8');
-    expect(card).toContain("item.registrationUnlimited ? '不限'");
+    expect(card).toContain("item.registrationUnlimited ? (item.occupied + ' 人已报名')");
+    expect(card).toContain("item.route.start || '集合地点待公布'");
+    expect(card).not.toContain("item.route.end || '终点待公布'");
     expect(detail).toContain("item.registrationUnlimited ? '集合时间'");
     expect(detail).toContain('!item.registrationUnlimited && item.route.end');
     expect(detail).toContain('!item.registrationUnlimited && (item.fee');

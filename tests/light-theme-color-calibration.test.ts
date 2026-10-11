@@ -15,6 +15,7 @@ const read = (file: string) => readFileSync(file, 'utf8');
 describe('核心页面统一明亮主题配色', () => {
   const appStyles = read('miniprogram/app.wxss');
   const profileStyles = read('miniprogram/pages/profile/index.wxss');
+  const brandStyles = read('miniprogram/components/brand-logo/index.wxss');
   const detailStyles = read('miniprogram/pages/activity-detail/index.wxss');
   const tokens = uiTokens(appStyles);
 
@@ -37,16 +38,20 @@ describe('核心页面统一明亮主题配色', () => {
     ).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('个人中心品牌标识使用 on-brand 前景色', () => {
+  it('个人中心品牌标识使用炭黑文字和橙红品牌切口', () => {
+    expect(read('miniprogram/pages/profile/index.wxml')).toContain(
+      '<brand-logo compact="{{true}}"',
+    );
     expectSemantic(
-      declaration(effectiveBlock(profileStyles, '.hero-card-logo'), 'color'),
-      '--color-on-brand',
+      declaration(effectiveBlock(brandStyles, '.brand-logo'), 'color'),
+      '--color-text',
+    );
+    expectSemantic(
+      declaration(effectiveBlock(brandStyles, '.brand-logo__cut'), 'background'),
+      '--color-brand',
     );
     expect(
-      contrast(
-        resolvedHex('var(--color-on-brand)', tokens),
-        resolvedHex('var(--color-brand)', tokens),
-      ),
+      contrast(resolvedHex('var(--color-text)', tokens), resolvedHex('var(--color-bg)', tokens)),
     ).toBeGreaterThanOrEqual(4.5);
   });
 

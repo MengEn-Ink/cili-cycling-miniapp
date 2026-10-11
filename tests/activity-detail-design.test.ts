@@ -183,6 +183,31 @@ describe('活动详情设计与日期契约', () => {
     expect(styles).not.toMatch(/\.rider-stats text:last-child/);
   });
 
+  it('覆盖访客、报名状态与管理角色，并严格门禁群二维码和骑友卡片', () => {
+    const page = read('miniprogram/pages/activity-detail/index.ts');
+    const template = read('miniprogram/pages/activity-detail/index.wxml');
+    for (const label of [
+      '未登录',
+      '未报名',
+      '待审核',
+      '候补中',
+      '已通过',
+      '已签到',
+      '未通过',
+      '已取消',
+      '组织者',
+      '管理员',
+    ])
+      expect(page).toContain(`label: '${label}'`);
+    expect(page).toContain('groupQrVisible(');
+    expect(page).toContain("registration?.status === 'approved'");
+    expect(page).toContain("registration?.status === 'checked_in'");
+    expect(template).toContain('wx:if="{{groupQrVisible && item.groupQrCode}}"');
+    expect(page).toContain('报名审核通过后可查看活动群二维码');
+    expect(template).toContain('wx:if="{{attendeesVisible}}"');
+    expect(template).not.toMatch(/phone|联系电话|紧急联系人|emergency/i);
+  });
+
   it('费用卡支持费用说明、包含与不包含三段', () => {
     const template = readFileSync('miniprogram/pages/activity-detail/index.wxml', 'utf8');
     expect(template).toContain('fee-block-title">费用包含');

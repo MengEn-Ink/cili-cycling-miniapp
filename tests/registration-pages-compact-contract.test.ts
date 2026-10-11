@@ -14,12 +14,12 @@ const credential = read('miniprogram/pages/credential/index.wxml');
 const credentialStyles = read('miniprogram/pages/credential/index.wxss');
 
 describe('报名、行程与凭证紧凑交互契约', () => {
-  it('首屏按步骤、活动、实名和集合方式组织，经验使用三段控件', () => {
+  it('首屏按步骤、活动、报名资料和集合方式组织，经验使用三段控件', () => {
     expect(form.indexOf('class="step-line"')).toBeLessThan(
       form.indexOf('class="activity-context"'),
     );
-    expect(form.indexOf('class="activity-context"')).toBeLessThan(form.indexOf('实名信息'));
-    expect(form.indexOf('<view>实名信息</view>')).toBeLessThan(
+    expect(form.indexOf('class="activity-context"')).toBeLessThan(form.indexOf('报名资料'));
+    expect(form.indexOf('<view>报名资料</view>')).toBeLessThan(
       form.indexOf('<view>集合方式</view>'),
     );
     expect(form).toContain('class="experience-segment"');
@@ -36,25 +36,36 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     expect(form).toContain("readiness.state === 'syncing' ? '同步中'");
     expect(form).toContain("readiness.state === 'disconnected' ? '未连接'");
     expect(form).toContain("{{submitting ? '正在提交' : '提交审核'}}");
-    expect(form.match(/disabled="{{[^}]*submitting[^}]*}}"/g)?.length).toBeGreaterThanOrEqual(8);
+    expect(form.match(/disabled="{{[^}]*submitting[^}]*}}"/g)?.length).toBeGreaterThanOrEqual(7);
     expect(formStyles).toContain('.experience-segment');
     expect(formStyles).toMatch(/\.segment\s*\{[^}]*min-height:\s*104rpx/s);
     for (const status of ['ready', 'syncing', 'authorizing', 'failed', 'disconnected']) {
       expect(formStyles).toContain(`status-${status}`);
     }
-    expect(profileStyles).toContain('.hero-capability-status.status-verified');
+    expect(profileStyles).toContain('.identity-guide');
     expect(stravaStyles).toMatch(/\.status-failed,\s*\.status-disconnected\s*\{/);
   });
 
-  it('行程卡由报名字段驱动，四种状态都有可读视觉标记', () => {
+  it('V3.1 行程统一汇总并区分六种报名状态', () => {
     expect(registrations).toContain('status-{{item.status}}');
-    expect(registrations).toContain('{{item.statusText}}');
+    expect(registrations).toContain('{{item.displayStatusText}}');
     expect(registrations).toContain('{{item.activity.title}}');
     expect(registrations).toContain('{{item.activity.displayDate}}');
     expect(registrations).not.toContain('{{item.activity.date}}');
     expect(registrations).toContain('{{item.updatedAt}}');
     expect(registrations).toContain('{{item.gatheringMode}}');
-    for (const status of ['pending', 'approved', 'checked_in', 'rejected', 'cancelled']) {
+    expect(registrations).toContain('{{statusCounts.review}}');
+    expect(registrations).toContain('{{statusCounts.ready}}');
+    expect(registrations).toContain('{{statusCounts.expired}}');
+    expect(registrations).toContain('{{item.destinationLabel}}');
+    for (const status of [
+      'waiting',
+      'pending',
+      'approved',
+      'checked_in',
+      'rejected',
+      'cancelled',
+    ]) {
       expect(registrationStyles).toContain(`status-${status}`);
     }
   });

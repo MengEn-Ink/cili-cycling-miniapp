@@ -246,7 +246,8 @@ describe('个人骑行名片静态页面契约', () => {
     expect(app.pages).toContain('pages/capability-card/index');
     expect(profileTs).not.toContain("'/pages/capability-card/index'");
     expect(profileWxml).not.toContain('我的骑行名片');
-    expect(profileWxml).toContain('class="hero-capability-card"');
+    expect(profileWxml).toContain('class="profile-capability-section"');
+    expect(profileWxml).toContain('class="hero-capability-metrics"');
     expect(profileWxml).not.toContain('cardExpanded');
     expect(profileWxml).toContain('class="profile-refresh-feedback');
   });

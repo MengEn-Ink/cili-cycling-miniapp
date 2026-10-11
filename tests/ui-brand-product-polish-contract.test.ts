@@ -113,7 +113,7 @@ describe('品牌与页面体验静态契约', () => {
       /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.activity-card--pressed\s*\{[^}]*transform:\s*none;/,
     );
     expect(profile).toMatch(
-      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.settings-entry:active\s*\{[^}]*transform:\s*none;/,
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.refresh-feedback-spinner\s*\{[^}]*animation-duration:\s*0\.01ms;[^}]*animation-iteration-count:\s*1;/,
     );
   });
 

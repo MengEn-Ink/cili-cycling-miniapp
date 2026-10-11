@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { validateRegistration } from '../miniprogram/utils/validation';
 import { drawActivityPoster } from '../miniprogram/pages/activity-detail/poster';
 
 afterEach(() => vi.unstubAllGlobals());
@@ -43,5 +44,56 @@ describe('管理员审批页不再提供扫码入口', () => {
     vi.resetModules();
     await import('../miniprogram/pages/admin/reviews/index');
     expect(definition).not.toHaveProperty('scanCheckIn');
+  });
+});
+
+describe('V3.1 报名资料门禁', () => {
+  const profile: any = {
+    nickname: '骑友',
+    avatarId: 'cloud://avatar/custom.jpg',
+    gender: '女',
+    phone: '13800000000',
+    emergencyName: '家人',
+    emergencyPhone: '13900000000',
+    realName: '',
+    photos: [],
+    backgroundPhoto: null,
+    sensitiveStatus: { realName: false, phone: true, emergencyPhone: true },
+  };
+  const input = {
+    profile,
+    gatheringMode: 'self_drive',
+    experience: '常骑',
+    readiness: { state: 'ready' as const, canRegister: true },
+  };
+
+  it('不把真实姓名或个人照片作为报名强制项', () => {
+    expect(validateRegistration(input)).toEqual([]);
+  });
+
+  it('汇总昵称、非默认头像、性别、电话、紧急联系人和 Strava 缺失项', () => {
+    const errors = validateRegistration({
+      ...input,
+      profile: {
+        ...profile,
+        nickname: '',
+        avatarId: '',
+        gender: '',
+        sensitiveStatus: { realName: false, phone: false, emergencyPhone: false },
+        emergencyName: '',
+      },
+      readiness: { state: 'disconnected' as const, canRegister: false },
+    });
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        '请授权并填写微信昵称',
+        '请设置非默认头像',
+        '请在个人资料中选择性别',
+        '请填写有效联系电话',
+        '请填写紧急联系人',
+        '请填写有效紧急联系电话',
+        '请绑定 Strava',
+      ]),
+    );
   });
 });

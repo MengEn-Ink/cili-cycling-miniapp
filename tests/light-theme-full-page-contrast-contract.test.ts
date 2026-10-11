@@ -86,9 +86,10 @@ describe('HP-20261010-02 统一明亮 UI 全页对比度契约', () => {
 
   it('profile 与 profile-edit 的操作、辅助文案、错误和禁用态保持语义色', () => {
     const profile = read('miniprogram/pages/profile/index.wxss');
-    const edit = effectiveBlock(profile, '.edit-button');
-    expectSemantic(declaration(edit, 'background'), '--color-text');
-    expectSemantic(declaration(edit, 'color'), '--color-bg');
+    const profileMenu = effectiveBlock(profile, '.menu-card');
+    expectSemantic(declaration(profileMenu, 'background'), '--color-surface');
+    expectSemantic(declaration(effectiveBlock(profile, '.menu-title'), 'color'), '--color-text');
+    expectSemantic(declaration(effectiveBlock(profile, '.muted'), 'color'), '--color-muted');
 
     const form = read('miniprogram/pages/profile-edit/index.wxss');
     expectPair(
