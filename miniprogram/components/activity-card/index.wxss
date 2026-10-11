@@ -53,27 +53,19 @@
   left: 20rpx;
   bottom: 20rpx;
   display: flex;
-  min-width: 210rpx;
-  padding: 14rpx 18rpx;
-  flex-direction: column;
+  min-width: 244rpx;
+  padding: 16rpx 20rpx;
+  align-items: center;
   border-radius: 16rpx;
   background: var(--card-accent);
   color: var(--color-on-brand);
   box-shadow: 0 8rpx 22rpx rgba(96, 30, 12, 0.25);
 }
-.date-value,
 .time-value {
   font-variant-numeric: tabular-nums;
   font-weight: 900;
-}
-.date-value {
-  font-size: 24rpx;
-  line-height: 1.25;
-}
-.time-value {
-  margin-top: 2rpx;
   font-size: 34rpx;
-  line-height: 1.1;
+  line-height: 1.15;
 }
 .media-status {
   position: absolute;

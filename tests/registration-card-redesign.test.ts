@@ -7,6 +7,8 @@ const trips = read('miniprogram/pages/registrations/index.wxml');
 const tripStyles = read('miniprogram/pages/registrations/index.wxss');
 const credential = read('miniprogram/pages/credential/index.wxml');
 const credentialStyles = read('miniprogram/pages/credential/index.wxss');
+const activityCard = read('miniprogram/components/activity-card/index.wxml');
+const activityCardStyles = read('miniprogram/components/activity-card/index.wxss');
 
 describe('行程状态卡与报名凭证重设计契约', () => {
   it.each([
@@ -30,6 +32,13 @@ describe('行程状态卡与报名凭证重设计契约', () => {
     expect(credential).toContain('{{statusText}}');
     expect(credentialStyles).toContain('.credential-visual');
     expect(credentialStyles).toContain('.rider-avatar');
+  });
+
+  it('活动卡片日期只由分组标题承载，卡片重点展示具体集合时间', () => {
+    expect(activityCard).not.toContain('class="date-value"');
+    expect(activityCard).toContain('aria-label="集合时间：{{item.displayTimeLabel}}"');
+    expect(activityCardStyles).not.toContain('.date-value');
+    expect(activityCardStyles).toMatch(/\.time-value\s*\{[^}]*font-size:\s*34rpx/s);
   });
 
   it('集合时间与集合地点成为独立高权重信息，不再展示审批意见和进度', () => {

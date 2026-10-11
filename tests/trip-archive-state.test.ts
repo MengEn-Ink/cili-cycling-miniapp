@@ -36,7 +36,7 @@ describe('行程卡片集合信息', () => {
         schedule: [{ time: '07:30', title: '集合整备', location: '旧日程地点' }],
         route: { start: '青岚公园北门' },
       }),
-    ).toEqual({ time: '10月18日 周日 07:30', location: '青岚公园北门' });
+    ).toEqual({ time: '早上 7 点半', location: '青岚公园北门' });
   });
 
   it('正式集合地点缺失时兼容旧日程地点，均缺失时明确待公布', () => {

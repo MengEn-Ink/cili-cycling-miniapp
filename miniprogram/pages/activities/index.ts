@@ -5,7 +5,7 @@ import { activityDisplayStatus } from '../../utils/activity';
 import {
   formatActivityDate,
   formatActivityDateTime,
-  formatChinaDateTime,
+  formatActivityTime,
 } from '../../utils/date-time';
 import {
   appendUniqueActivities,
@@ -36,7 +36,6 @@ const VIEW_COPY = {
 
 function displayActivity(item: Activity) {
   const startAt = item.startAt || item.date;
-  const chinaDateTime = formatChinaDateTime(startAt);
   const hasSpecificTime = Boolean(item.startAt && !/^\d{4}-\d{2}-\d{2}$/.test(item.startAt));
   return {
     ...item,
@@ -44,7 +43,7 @@ function displayActivity(item: Activity) {
     remaining: Math.max(item.capacity - (item.occupiedCount || 0), 0),
     displayDate: formatActivityDateTime(startAt),
     displayDateLabel: formatActivityDate(startAt),
-    displayTimeLabel: hasSpecificTime && chinaDateTime ? chinaDateTime.slice(11, 16) : '时间待公布',
+    displayTimeLabel: hasSpecificTime ? formatActivityTime(item.startAt) : '时间待公布',
     displayStatus: activityDisplayStatus(item),
   };
 }

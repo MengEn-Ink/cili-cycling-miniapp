@@ -2,7 +2,7 @@
   <view class="card-media">
     <image wx:if="{{item.coverImage && !coverFailed}}" class="card-cover" src="{{item.coverImage}}" mode="aspectFill" lazy-load="{{true}}" binderror="coverImageError" aria-label="{{item.title}}活动封面" />
     <view wx:else class="card-placeholder" aria-label="暂无活动封面"><view class="placeholder-mark">骑有此里</view><view class="placeholder-copy">路线风景即将更新</view></view>
-    <view class="date-plate" aria-label="{{item.displayDate}}"><text class="date-value">{{item.displayDateLabel}}</text><text class="time-value">{{item.displayTimeLabel}}</text></view>
+    <view class="date-plate" aria-label="集合时间：{{item.displayTimeLabel}}"><text class="time-value">{{item.displayTimeLabel}}</text></view>
     <view class="media-status"><status-pill status="{{item.displayStatus}}" /></view>
   </view>
   <view class="card-info">
