@@ -44,21 +44,22 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.12.7',
+      version: '2026.10.12.8',
       latest: true,
-      title: '日常活动报名更省一步',
-      summary: '日常活动默认自行前往，不再要求选择后援车或填写自行组队信息。',
+      title: '报名骑友名片更完整',
+      summary:
+        '活动详情将已通过骑友展示为含公开照片的缩小骑行名片，点击即可查看完整名片和骑行数据。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.12.8',
       '2026.10.12.7',
       '2026.10.12.6',
       '2026.10.12.5',
       '2026.10.12.4',
-      '2026.10.12.3',
     ]);
   });
 

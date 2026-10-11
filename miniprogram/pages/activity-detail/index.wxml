@@ -56,13 +56,17 @@
         </view>
 
         <view class="card attendees-card" wx:if="{{attendeesVisible}}">
-          <view class="attendees-heading"><view><view class="title">已通过骑友</view><view class="attendees-hint" wx:if="{{attendees.length}}">点击头像查看公开骑行名片</view></view><view class="muted">{{item.approvedRegistrationCount || 0}} 位</view></view>
-          <view class="avatar-stack" wx:if="{{attendees.length}}">
-            <button class="attendee-avatar-button" wx:for="{{attendees}}" wx:key="id" data-index="{{index}}" bindtap="openAttendeeCard" aria-label="查看 {{item.displayName}} 的公开骑行名片">
-              <image wx:if="{{item.avatarUrl}}" class="attendee-avatar" src="{{item.avatarUrl}}" mode="aspectFill" data-index="{{index}}" binderror="attendeeAvatarError" />
-              <view wx:else class="attendee-avatar attendee-avatar-placeholder" aria-label="{{item.displayName}}未设置头像">无</view>
-            </button>
-          </view>
+          <view class="attendees-heading"><view><view class="title">已通过骑友</view><view class="attendees-hint" wx:if="{{attendees.length}}">左右浏览缩小骑行名片，点击查看完整名片</view></view><view class="muted">{{item.approvedRegistrationCount || 0}} 位</view></view>
+          <scroll-view class="attendee-card-strip" scroll-x enhanced show-scrollbar="{{false}}" wx:if="{{attendees.length}}" aria-label="已通过骑友的骑行名片">
+            <view class="attendee-card-strip__inner">
+              <button class="attendee-mini-card" wx:for="{{attendees}}" wx:key="id" data-index="{{index}}" bindtap="openAttendeeCard" aria-label="查看 {{item.displayName}} 的完整公开骑行名片">
+                <image wx:if="{{item.avatarUrl}}" class="attendee-mini-card__photo" src="{{item.avatarUrl}}" mode="aspectFill" data-index="{{index}}" binderror="attendeeAvatarError" />
+                <view wx:else class="attendee-mini-card__photo attendee-mini-card__placeholder" aria-label="{{item.displayName}}未设置公开照片">骑有此里</view>
+                <view class="attendee-mini-card__scrim"></view>
+                <view class="attendee-mini-card__content"><view class="attendee-mini-card__name">{{item.displayName || '此里骑手'}}</view><view class="attendee-mini-card__meta">{{item.status === 'checked_in' ? '已签到' : '已报名'}} · {{item.card.rides90d === null ? '--' : item.card.rides90d}} 次骑行</view><view class="attendee-mini-card__action">查看名片 ›</view></view>
+              </button>
+            </view>
+          </scroll-view>
           <view wx:else class="route-empty">正在等待首位骑友报名</view>
         </view>
 
@@ -121,21 +125,23 @@
 </view>
 
 <view wx:if="{{selectedAttendee}}" class="rider-modal-mask" bindtap="closeAttendeeCard">
-  <view class="rider-card" catchtap="keepAttendeeCard" role="dialog" aria-label="{{selectedAttendee.displayName}} 的公开骑行名片">
-    <button class="rider-card-close" bindtap="closeAttendeeCard" aria-label="关闭骑行名片">×</button>
-    <view class="rider-card-kicker">公开骑行名片</view>
-    <view class="rider-card-head">
-      <image wx:if="{{selectedAttendee.avatarUrl}}" class="rider-card-avatar" src="{{selectedAttendee.avatarUrl}}" mode="aspectFill" binderror="selectedAttendeeAvatarError" />
-      <view wx:else class="rider-card-avatar rider-card-avatar-placeholder" aria-label="未设置头像">无头像</view>
-      <view class="rider-identity"><view class="rider-name">{{selectedAttendee.displayName || '此里骑手'}}</view><view class="gender-pill {{selectedAttendee.genderClass}}">{{selectedAttendee.genderLabel}}</view><view class="rider-status">{{selectedAttendee.status === 'checked_in' ? '已签到' : '已报名'}}</view></view>
+  <view class="rider-card rider-card--photo" catchtap="keepAttendeeCard" role="dialog" aria-label="{{selectedAttendee.displayName}} 的完整公开骑行名片">
+    <view class="rider-card-photo">
+      <image wx:if="{{selectedAttendee.avatarUrl}}" class="rider-card-photo__image" src="{{selectedAttendee.avatarUrl}}" mode="aspectFill" binderror="selectedAttendeeAvatarError" />
+      <view wx:else class="rider-card-photo__image rider-card-photo__placeholder" aria-label="未设置公开照片">骑有此里</view>
+      <view class="rider-card-photo__scrim"></view>
+      <button class="rider-card-close" bindtap="closeAttendeeCard" aria-label="关闭骑行名片">×</button>
+      <view class="rider-card-photo__identity"><view class="rider-card-kicker">完整公开骑行名片</view><view class="rider-name">{{selectedAttendee.displayName || '此里骑手'}}</view><view class="rider-card-photo__badges"><view class="gender-pill {{selectedAttendee.genderClass}}">{{selectedAttendee.genderLabel}}</view><view class="rider-status">{{selectedAttendee.status === 'checked_in' ? '已签到' : '已报名'}}</view></view></view>
     </view>
-    <view class="rider-stats">
-      <view><view class="rider-stat-value">{{selectedAttendee.card.rides90d === null ? '--' : selectedAttendee.card.rides90d}}<text wx:if="{{selectedAttendee.card.rides90d !== null}}">次</text></view><text>近 90 天骑行</text></view>
-      <view><view class="rider-stat-value">{{selectedAttendee.card.longestKm === null ? '--' : selectedAttendee.card.longestKm}}<text wx:if="{{selectedAttendee.card.longestKm !== null}}">km</text></view><text>最长骑行</text></view>
-      <view><view class="rider-stat-value">{{selectedAttendee.card.elevationM === null ? '--' : selectedAttendee.card.elevationM}}<text wx:if="{{selectedAttendee.card.elevationM !== null}}">m</text></view><text>累计爬升</text></view>
-      <view><view class="rider-stat-value">{{selectedAttendee.card.speedKmh === null ? '--' : selectedAttendee.card.speedKmh}}<text wx:if="{{selectedAttendee.card.speedKmh !== null}}">km/h</text></view><text>平均速度</text></view>
+    <view class="rider-card-body">
+      <view class="rider-stats">
+        <view><view class="rider-stat-value">{{selectedAttendee.card.rides90d === null ? '--' : selectedAttendee.card.rides90d}}<text wx:if="{{selectedAttendee.card.rides90d !== null}}">次</text></view><text>近 90 天骑行</text></view>
+        <view><view class="rider-stat-value">{{selectedAttendee.card.longestKm === null ? '--' : selectedAttendee.card.longestKm}}<text wx:if="{{selectedAttendee.card.longestKm !== null}}">km</text></view><text>最长骑行</text></view>
+        <view><view class="rider-stat-value">{{selectedAttendee.card.elevationM === null ? '--' : selectedAttendee.card.elevationM}}<text wx:if="{{selectedAttendee.card.elevationM !== null}}">m</text></view><text>累计爬升</text></view>
+        <view><view class="rider-stat-value">{{selectedAttendee.card.speedKmh === null ? '--' : selectedAttendee.card.speedKmh}}<text wx:if="{{selectedAttendee.card.speedKmh !== null}}">km/h</text></view><text>平均速度</text></view>
+      </view>
+      <view class="rider-card-note">数据来自报名时的 Strava 骑行快照；照片沿用骑友公开头像设置，不展示私人骑行照片。</view>
     </view>
-    <view class="rider-card-note">数据来自报名时的 Strava 骑行快照；头像按骑友公开设置展示。</view>
   </view>
 </view>
 
