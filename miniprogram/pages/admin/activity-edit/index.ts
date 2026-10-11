@@ -41,6 +41,15 @@ const newCreateRequestId = () =>
   `activity_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
 const errorCode = (error: unknown) =>
   typeof (error as { code?: unknown })?.code === 'string' ? (error as { code: string }).code : '';
+const protocolText = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
+const protocolDate = (value: unknown) => {
+  const text = protocolText(value);
+  if (!text) return undefined;
+  const timestamp = new Date(text).getTime();
+  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : text;
+};
+const protocolStringArray = (value: unknown) =>
+  Array.isArray(value) ? value.map(protocolText).filter(Boolean) : [];
 const stableValue = (value: unknown): unknown => {
   if (Array.isArray(value)) return value.map(stableValue);
   if (!value || typeof value !== 'object') return value;
@@ -51,32 +60,90 @@ const stableValue = (value: unknown): unknown => {
       .map(([key, entry]) => [key, stableValue(entry)]),
   );
 };
-const activityContentFingerprint = (activity: EditableActivity | ActivityInput) =>
-  JSON.stringify(
-    stableValue({
-      title: activity.title,
-      description: activity.description,
-      images: activity.images,
-      coverImage: activity.coverImage,
-      groupQrCode: activity.groupQrCode,
-      groupQrCodeUploadedAt: activity.groupQrCodeUploadedAt,
-      capacity: activity.capacity,
-      registrationUnlimited: activity.registrationUnlimited,
-      supportVehicleCapacity: activity.supportVehicleCapacity,
-      selfDriveCapacity: activity.selfDriveCapacity,
-      supportVehicleDriver: activity.supportVehicleDriver,
-      deadline: activity.deadline,
-      startAt: activity.startAt,
-      endAt: activity.endAt,
-      route: activity.route,
-      schedule: activity.schedule,
-      notices: activity.notices,
-      equipment: activity.equipment,
-      fee: activity.fee,
-      feeIncluded: activity.feeIncluded,
-      feeExcluded: activity.feeExcluded,
-    }),
+const activityContentProjection = (activity: EditableActivity | ActivityInput) => {
+  const images = Array.isArray(activity.images) ? activity.images.map(protocolText) : [];
+  const groupQrCode = protocolText(activity.groupQrCode);
+  const route = activity.route;
+  const hasSyncedStravaRoute = Boolean(
+    route.stravaRouteId || route.elevationProfile || route.routeBounds || route.popularClimbs,
   );
+  const feePresent =
+    typeof activity.fee === 'string' ||
+    Array.isArray(activity.feeIncluded) ||
+    Array.isArray(activity.feeExcluded);
+  const supportVehicleDriver = activity.supportVehicleDriver
+    ? {
+        nickname: protocolText(activity.supportVehicleDriver.nickname),
+        licensePlate: protocolText(activity.supportVehicleDriver.licensePlate).toUpperCase(),
+        contactPhone: protocolText(activity.supportVehicleDriver.contactPhone),
+      }
+    : activity.supportVehicleCapacity === 0
+      ? { nickname: '', licensePlate: '', contactPhone: '' }
+      : undefined;
+  const location = (value: ActivityLocation | undefined) =>
+    value
+      ? {
+          name: protocolText(value.name),
+          address: protocolText(value.address),
+          latitude: value.latitude,
+          longitude: value.longitude,
+        }
+      : undefined;
+  return {
+    title: protocolText(activity.title),
+    description: protocolText(activity.description),
+    images,
+    coverImage: images[0] || protocolText(activity.coverImage),
+    groupQrCode,
+    groupQrCodeUploadedAt: groupQrCode ? protocolDate(activity.groupQrCodeUploadedAt) : undefined,
+    capacity: activity.capacity,
+    registrationUnlimited: activity.registrationUnlimited === true ? true : undefined,
+    supportVehicleCapacity: activity.supportVehicleCapacity,
+    selfDriveCapacity: activity.selfDriveCapacity,
+    supportVehicleDriver,
+    deadline: protocolDate(activity.deadline),
+    startAt: protocolDate(activity.startAt),
+    endAt: protocolDate(activity.endAt),
+    route: {
+      start: protocolText(route.start),
+      end: protocolText(route.end),
+      startLocation: location(route.startLocation),
+      endLocation: location(route.endLocation),
+      distanceKm: route.distanceKm,
+      elevationM: route.elevationM,
+      level: protocolText(route.level),
+      gpxFileId: protocolText(route.gpxFileId),
+      stravaRouteId: route.stravaRouteId ? protocolText(route.stravaRouteId) : undefined,
+      stravaRouteUrl: route.stravaRouteUrl
+        ? hasSyncedStravaRoute && route.stravaRouteId
+          ? `https://www.strava.com/routes/${protocolText(route.stravaRouteId)}`
+          : protocolText(route.stravaRouteUrl)
+        : undefined,
+      elevationProfile: route.elevationProfile,
+      routeBounds: route.routeBounds,
+      popularClimbs: route.popularClimbs?.map((climb) => ({
+        ...climb,
+        name: protocolText(climb.name),
+        popularityLabel: protocolText(climb.popularityLabel),
+      })),
+    },
+    schedule: Array.isArray(activity.schedule)
+      ? activity.schedule.map((item) => ({
+          time: protocolText(item.time),
+          title: protocolText(item.title),
+          location: protocolText(item.location),
+          remark: protocolText(item.remark),
+        }))
+      : [],
+    notices: protocolStringArray(activity.notices),
+    equipment: protocolStringArray(activity.equipment),
+    fee: feePresent ? protocolText(activity.fee) : undefined,
+    feeIncluded: feePresent ? protocolStringArray(activity.feeIncluded) : undefined,
+    feeExcluded: feePresent ? protocolStringArray(activity.feeExcluded) : undefined,
+  };
+};
+const activityContentFingerprint = (activity: EditableActivity | ActivityInput) =>
+  JSON.stringify(stableValue(activityContentProjection(activity)));
 const sameDraftSnapshot = (expected: EditableActivity, current: EditableActivity) =>
   current.id === expected.id &&
   current.version === expected.version &&

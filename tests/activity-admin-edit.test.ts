@@ -446,6 +446,67 @@ describe('日常活动极简创建与编辑', () => {
     expect(wx.showToast).toHaveBeenLastCalledWith({ title: '保存成功', icon: 'success' });
   });
 
+  it('发布已提交但响应丢失时将真实 mapper 空字段与服务端 trim 形态视为同一结果', async () => {
+    let serverCurrent: Activity | undefined;
+    rideService.saveActivity.mockImplementation(
+      async (payload: any, id?: string, expectedVersion?: number) => {
+        if (!id) {
+          serverCurrent = savedActivityFromPayload(
+            { ...payload, status: 'draft' },
+            'publish-normalized-readback',
+          );
+          return serverCurrent;
+        }
+        expect(expectedVersion).toBe(1);
+        serverCurrent = {
+          ...savedActivityFromPayload(
+            {
+              ...payload,
+              description: payload.description.trim(),
+            },
+            id,
+          ),
+          version: 2,
+          route: {
+            ...payload.route,
+            start: payload.route.start.trim(),
+            gpxFileId: '',
+          },
+        };
+        delete (serverCurrent as Partial<Activity>).groupQrCodeUploadedAt;
+        throw callFailed('发布已提交但响应丢失');
+      },
+    );
+    rideService.getAdminActivity.mockImplementation(async () => serverCurrent);
+    await page.onLoad({});
+    Object.assign(page.data.form, {
+      title: '真实映射回读晨骑',
+      description: '  带首尾空格的说明  ',
+      startDate: '2026-10-20',
+      startTime: '07:30',
+      routeStart: '  湖边广场  ',
+    });
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(rideService.getAdminActivity).toHaveBeenCalledWith('publish-normalized-readback');
+    expect(serverCurrent).toMatchObject({
+      id: 'publish-normalized-readback',
+      version: 2,
+      status: 'published',
+      description: '带首尾空格的说明',
+      route: expect.objectContaining({ start: '湖边广场', gpxFileId: '' }),
+    });
+    expect(serverCurrent).not.toHaveProperty('groupQrCodeUploadedAt');
+    expect(page.data).toMatchObject({
+      id: 'publish-normalized-readback',
+      version: 2,
+      status: 'published',
+    });
+    expect(wx.showToast).toHaveBeenLastCalledWith({ title: '保存成功', icon: 'success' });
+    expect(wx.showModal).not.toHaveBeenCalled();
+  });
+
   it('本端发布未提交而另一会话发布不同内容时冲突关闭', async () => {
     let serverCurrent: Activity | undefined;
     const publishedVersions: number[] = [];
