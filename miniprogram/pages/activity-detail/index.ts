@@ -364,7 +364,7 @@ Page({
       return;
     }
     try {
-      await platformCall(wx.setClipboardData, { data: url });
+      await platformCall(wx.setClipboardData.bind(wx), { data: url });
       wx.showToast({ title: '轨迹链接已复制', icon: 'success' });
     } catch {
       wx.showToast({ title: '复制失败，请稍后重试', icon: 'none' });
