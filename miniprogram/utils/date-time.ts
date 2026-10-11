@@ -51,6 +51,39 @@ export function formatChinaDateTimeSeconds(value?: string): string {
   return formatChinaDateTime(value);
 }
 
+export function formatActivityTime(value?: string): string {
+  if (!value) return '时间待公布';
+  const text = value.trim();
+  const timeOnly = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(text);
+  let hour: number;
+  let minute: number;
+  if (timeOnly) {
+    hour = Number(timeOnly[1]);
+    minute = Number(timeOnly[2]);
+    if (hour > 23 || minute > 59) return '时间待公布';
+  } else {
+    const date = chinaDate(text);
+    if (!date) return '时间待公布';
+    hour = date.getUTCHours();
+    minute = date.getUTCMinutes();
+  }
+  const period =
+    hour < 6
+      ? '凌晨'
+      : hour < 9
+        ? '早上'
+        : hour < 12
+          ? '上午'
+          : hour < 14
+            ? '中午'
+            : hour < 18
+              ? '下午'
+              : '晚上';
+  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  const minuteText = minute === 0 ? '整' : minute === 30 ? '半' : ` ${minute} 分`;
+  return `${period} ${displayHour} 点${minuteText}`;
+}
+
 export function formatActivityDate(value?: string): string {
   if (!value) return '日期待公布';
   const text = value.trim();

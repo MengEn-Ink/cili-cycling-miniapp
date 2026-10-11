@@ -77,7 +77,12 @@ Page({
           }[item.status];
           return {
             ...item,
-            activity: { ...activity, displayDate: formatActivityDate(activity.date) },
+            activity: {
+              ...activity,
+              displayDate: formatActivityDate(
+                ('startAt' in activity && activity.startAt) || activity.date,
+              ),
+            },
             meetingTime: meeting.time,
             meetingLocation: meeting.location,
             statusText,

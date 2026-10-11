@@ -7,6 +7,7 @@ import { drawActivityPoster } from './poster';
 import {
   drawElevationProfile,
   formatActivityDate,
+  formatActivityTime,
   formatChinaDateTimeSeconds,
   validElevationProfile,
 } from './format';
@@ -266,7 +267,7 @@ Page({
               ? [item.coverImage]
               : [],
           displayDate: formatActivityDate(item.startAt || item.date),
-          startTime: formatChinaDateTimeSeconds(item.startAt),
+          startTime: formatActivityTime(item.startAt),
           endTime: formatChinaDateTimeSeconds(item.endAt),
           deadlineTime: formatChinaDateTimeSeconds(item.deadline),
           hasElevationProfile: elevationProfile.length >= 2,

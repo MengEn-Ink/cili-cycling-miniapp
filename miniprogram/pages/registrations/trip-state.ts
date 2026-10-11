@@ -1,4 +1,4 @@
-import { formatActivityDateTime } from '../../utils/date-time';
+import { formatActivityTime } from '../../utils/date-time';
 
 const CHINA_OFFSET_MS = 8 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -36,7 +36,7 @@ export function buildTripMeetingInfo(activity: TripActivitySummary) {
     ?.find((item) => item.location?.trim())
     ?.location?.trim();
   return {
-    time: formatActivityDateTime(activity.startAt || activity.date),
+    time: formatActivityTime(activity.startAt || activity.date),
     location: routeLocation || legacyScheduleLocation || '地点待公布',
   };
 }

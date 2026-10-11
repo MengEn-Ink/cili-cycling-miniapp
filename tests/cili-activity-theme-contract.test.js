@@ -59,7 +59,7 @@ describe('CILI 活动页静态契约', () => {
     expect(activityCard).toContain('wx:else class="card-placeholder"');
     expect(activityCard).toContain('class="card-cta"');
     expect(activityCard).toContain('查看详情');
-    expect(activityCard).toContain('{{item.displayDate}}');
+    expect(activityCard).toContain('aria-label="集合时间：{{item.displayTimeLabel}}"');
     expect(activityCardStyles).toContain('.activity-card--pressed');
     expect(activityCardStyles).toContain('.card-placeholder');
     const cta = cssBlock(activityCardStyles, '.card-cta');
@@ -104,7 +104,7 @@ describe('CILI 活动页静态契约', () => {
     expect(activities).toContain('bindtap="scrollToDay"');
     expect(activities).toContain('id="day-{{row.dayKey}}"');
     expect(activityCard).toContain('class="date-plate"');
-    expect(activityCard).toContain('{{item.displayDateLabel}}');
+    expect(activityCard).not.toContain('{{item.displayDateLabel}}');
     expect(activityCard).toContain('{{item.displayTimeLabel}}');
     expect(activityCard).toContain('class="location-label">集合');
     expect(activityCard).toContain('{{item.publisher.nickname}} 发起');

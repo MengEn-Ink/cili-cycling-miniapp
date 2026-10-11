@@ -70,9 +70,9 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('data-target="start" bindtap="navigate">地图导航');
   });
 
-  it('详情的开始、结束、截止时间全部使用共享秒级格式化函数', () => {
+  it('详情日期与集合时间拆开展示，结束和截止时间保留共享秒级格式', () => {
     const page = read('miniprogram/pages/activity-detail/index.ts');
-    expect(page).toContain('startTime: formatChinaDateTimeSeconds(item.startAt)');
+    expect(page).toContain('startTime: formatActivityTime(item.startAt)');
     expect(page).toContain('endTime: formatChinaDateTimeSeconds(item.endAt)');
     expect(page).toContain('deadlineTime: formatChinaDateTimeSeconds(item.deadline)');
   });

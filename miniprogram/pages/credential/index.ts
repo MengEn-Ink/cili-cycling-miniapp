@@ -1,7 +1,7 @@
 import { rideService } from '../../services/ride-service';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
-import { formatChinaDateTime } from '../../utils/date-time';
+import { formatActivityDate, formatActivityTime, formatChinaDateTime } from '../../utils/date-time';
 
 function optionalBeforeDeadline<T>(load: () => Promise<T>, timeoutMs = 1_800): Promise<T | null> {
   return new Promise((resolve) => {
@@ -128,7 +128,7 @@ Page({
         },
         activity: {
           ...activity,
-          displayDateTime: formatChinaDateTime(activity.startAt || activity.date),
+          displayDate: formatActivityDate(activity.startAt || activity.date),
         },
         statusText,
         activityAction: resolveActivityAction(activity, item),
@@ -136,7 +136,7 @@ Page({
         avatarUrl,
         avatarInitial: riderName.trim().slice(0, 1) || '骑',
         riderName,
-        meetingTime: schedule?.time || formatChinaDateTime(activity.startAt || activity.date),
+        meetingTime: formatActivityTime(schedule?.time || activity.startAt || activity.date),
         meetingLocation,
         meetingAddress,
         navigationLocation,

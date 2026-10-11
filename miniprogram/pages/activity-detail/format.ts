@@ -1,6 +1,10 @@
-import { formatActivityDate, formatChinaDateTimeSeconds } from '../../utils/date-time';
+import {
+  formatActivityDate,
+  formatActivityTime,
+  formatChinaDateTimeSeconds,
+} from '../../utils/date-time';
 
-export { formatActivityDate, formatChinaDateTimeSeconds };
+export { formatActivityDate, formatActivityTime, formatChinaDateTimeSeconds };
 
 export interface ElevationPoint {
   distanceKm: number;
