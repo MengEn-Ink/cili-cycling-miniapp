@@ -17,6 +17,7 @@ const activityCardStyles = read('miniprogram/components/activity-card/index.wxss
 const detail = read('miniprogram/pages/activity-detail/index.wxml');
 const detailStyles = read('miniprogram/pages/activity-detail/index.wxss');
 const logo = read('miniprogram/components/brand-logo/index.wxml');
+const logoStyles = read('miniprogram/components/brand-logo/index.wxss');
 const themeSources = [
   read('miniprogram/app.wxss'),
   read('miniprogram/components/brand-logo/index.wxss'),
@@ -112,7 +113,7 @@ describe('CILI 活动页静态契约', () => {
   });
 
   it('首页只使用品牌橙、石墨黑和暖灰白主题色，不继承荧光黄视觉', () => {
-    expect(activitiesStyles).toContain('background: var(--color-text)');
+    expect(logoStyles).toContain('background: var(--color-text)');
     expect(activitiesStyles).toContain('background: var(--color-bg)');
     expect(activitiesStyles).toContain('background: var(--color-brand)');
     expect(activitiesStyles).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(|navy|blue|gradient/i);

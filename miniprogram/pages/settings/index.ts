@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.12.6',
+    date: '2026-10-12',
+    title: '品牌标识与首页视觉定稿',
+    summary: '“此里”字标增加深色底牌与品牌橙终点，首页和在线演示统一采用最终三色视觉。',
+    latest: true,
+    features: [
+      '品牌字标统一使用石墨黑底、暖灰白文字与品牌橙终点',
+      '活动首页改为更轻盈的浅色首屏与紧凑品牌底牌',
+      '新增四个核心页面的在线高保真交互演示',
+    ],
+  },
+  {
     version: '2026.10.12.5',
     date: '2026-10-12',
     title: '活动轨迹下载更直接',
     summary: '活动详情直接展示 Strava 轨迹链接，右侧即可复制链接或下载 GPX 文件。',
-    latest: true,
+    latest: false,
     features: [
       'Strava 轨迹链接在活动详情中直接可见',
       '链接右侧提供复制和下载 GPX 操作',
