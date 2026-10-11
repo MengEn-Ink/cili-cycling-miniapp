@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.12.5',
+    date: '2026-10-12',
+    title: '活动轨迹下载更直接',
+    summary: '活动详情直接展示 Strava 轨迹链接，右侧即可复制链接或下载 GPX 文件。',
+    latest: true,
+    features: [
+      'Strava 轨迹链接在活动详情中直接可见',
+      '链接右侧提供复制和下载 GPX 操作',
+      '窄屏自动换行，下载中与不可用状态清晰可见',
+    ],
+  },
+  {
     version: '2026.10.12.4',
     date: '2026-10-12',
     title: 'Strava 路线信息自动同步',
     summary: '活动可从 Strava 路线同步里程、爬升和预计骑行时间，分享海报仅向已通过报名的骑友开放。',
-    latest: true,
+    latest: false,
     features: [
       '创建活动时可一键同步 Strava 路线数据',
       '活动详情新增预计骑行时间展示',

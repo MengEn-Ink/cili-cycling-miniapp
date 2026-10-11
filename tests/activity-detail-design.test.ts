@@ -29,7 +29,7 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('wx:if="{{galleryImages.length > 1 && !coverFailed}}"');
     expect(template).toContain('binderror="galleryImageError"');
     expect(template).toContain('bindtap="navigate"');
-    expect(template).toContain('bindtap="openStravaRoute"');
+    expect(template).toContain('bindtap="copyStravaRoute"');
     expect(template).toContain('bindtap="copyActivityLink"');
     expect(template).toContain('bindtap="exportGpx"');
     expect(template).toContain('disabled="{{loading || !item || !activityAction.enabled}}"');
@@ -37,18 +37,23 @@ describe('活动详情设计与日期契约', () => {
     expect(template).not.toContain('SIGN-UP STATUS');
   });
 
-  it('路线操作保留 Strava 链接、活动链接、受控海报与 GPX 四项', () => {
+  it('轨迹链接右侧提供复制与下载 GPX，并保留受控活动分享操作', () => {
     const template = readFileSync('miniprogram/pages/activity-detail/index.wxml', 'utf8');
-    expect(template).toContain('bindtap="openStravaRoute"');
-    expect(template).toContain('复制 Strava 路线链接');
+    const styles = readFileSync('miniprogram/pages/activity-detail/index.wxss', 'utf8');
+    expect(template).toContain('class="strava-route-url"');
+    expect(template).toContain('{{item.route.stravaRouteUrl}}');
+    expect(template).toContain('bindtap="copyStravaRoute"');
+    expect(template).toContain('>复制</button>');
+    expect(template).toContain('bindtap="exportGpx"');
+    expect(template).toContain("{{exportingGpx ? '下载中' : '下载 GPX'}}");
     expect(template).toContain('bindtap="copyActivityLink"');
     expect(template).toContain('复制活动链接');
     expect(template).toContain('wx:if="{{groupQrVisible}}"');
     expect(template).toContain('报名审核通过后可生成分享海报');
     expect(template).toContain('bindtap="generatePoster"');
     expect(template).toContain('保存分享海报');
-    expect(template).toContain('bindtap="exportGpx"');
-    expect(template).toContain('导出 GPX');
+    expect(styles).toContain('grid-template-columns: minmax(0, 1fr) auto auto');
+    expect(styles).toContain('@media (max-width: 360px)');
   });
 
   it('突出集合时间、仅展示审核通过人数，并为管理员提供修改和报名双入口', () => {
@@ -451,7 +456,7 @@ describe('活动详情复制、分享与 GPX 导出', () => {
       fileName: 'a.gpx',
     }));
     context.data.item.route.stravaRouteUrl = 'https://www.strava.com/routes/123';
-    definition.openStravaRoute.call(context);
+    definition.copyStravaRoute.call(context);
     expect(wx.setClipboardData).toHaveBeenLastCalledWith(
       expect.objectContaining({ data: 'https://www.strava.com/routes/123' }),
     );

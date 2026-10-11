@@ -68,13 +68,19 @@
 
         <view class="card route-actions-card">
           <view class="title">路线与分享</view>
-          <view class="route-action-note" wx:if="{{item.route.stravaRouteUrl}}">路线链接将复制到剪贴板，可在系统浏览器或 Strava 中打开。</view>
-          <view class="route-actions">
-            <button wx:if="{{item.route.stravaRouteUrl}}" bindtap="openStravaRoute">复制 Strava 路线链接</button>
+          <view class="strava-route" wx:if="{{item.route.stravaRouteUrl}}">
+            <view class="strava-route-heading">Strava 轨迹</view>
+            <view class="strava-route-row">
+              <text class="strava-route-url" bindtap="copyStravaRoute" role="button" aria-label="复制 Strava 轨迹链接">{{item.route.stravaRouteUrl}}</text>
+              <button class="strava-route-action" bindtap="copyStravaRoute">复制</button>
+              <button class="strava-route-action strava-route-action--primary" wx:if="{{item.route.stravaRouteId}}" loading="{{exportingGpx}}" disabled="{{exportingGpx}}" bindtap="exportGpx">{{exportingGpx ? '下载中' : '下载 GPX'}}</button>
+            </view>
+            <view class="route-action-note">复制后可在系统浏览器或 Strava 中打开；GPX 可分享至码表或骑行应用。</view>
+          </view>
+          <view class="route-actions route-share-actions">
             <button bindtap="copyActivityLink">复制活动链接</button>
             <button wx:if="{{groupQrVisible}}" loading="{{generatingPoster}}" disabled="{{generatingPoster}}" bindtap="generatePoster">{{generatingPoster ? '生成中' : '保存分享海报'}}</button>
             <view wx:else class="route-action-note">报名审核通过后可生成分享海报</view>
-            <button wx:if="{{item.route.stravaRouteId}}" loading="{{exportingGpx}}" disabled="{{exportingGpx}}" bindtap="exportGpx">{{exportingGpx ? '导出中' : '导出 GPX'}}</button>
           </view>
         </view>
 

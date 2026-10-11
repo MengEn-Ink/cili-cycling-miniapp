@@ -44,22 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.12.4',
+      version: '2026.10.12.5',
       latest: true,
-      title: 'Strava 路线信息自动同步',
-      summary:
-        '活动可从 Strava 路线同步里程、爬升和预计骑行时间，分享海报仅向已通过报名的骑友开放。',
+      title: '活动轨迹下载更直接',
+      summary: '活动详情直接展示 Strava 轨迹链接，右侧即可复制链接或下载 GPX 文件。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.12.5',
       '2026.10.12.4',
       '2026.10.12.3',
       '2026.10.12.2',
       '2026.10.12.1',
-      '2026.10.11.35',
     ]);
   });
 
