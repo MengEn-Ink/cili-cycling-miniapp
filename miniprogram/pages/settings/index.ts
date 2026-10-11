@@ -4,11 +4,19 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.11.24',
+    date: '2026-10-11',
+    title: '活动按钮触摸修复',
+    summary: '修复点击下架或删除时卡片重绘导致操作丢失的问题，普通点击现在可稳定触发。',
+    latest: true,
+    features: ['下架与删除点击不再被卡片触摸重绘打断', '侧滑手势仅在明确横向移动后启动'],
+  },
+  {
     version: '2026.10.11.23',
     date: '2026-10-11',
     title: '活动操作按钮修复',
     summary: '修复活动管理页上线和删除按钮点击无响应的问题，侧滑删除也可稳定触发。',
-    latest: true,
+    latest: false,
     features: ['上线与删除按钮恢复正常点击', '侧滑展开后删除操作不再被活动卡片遮挡'],
   },
   {
