@@ -1071,13 +1071,22 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
       }),
     );
   }
-  async saveActivity(value: ActivityInput, id?: string, expectedVersion?: number) {
+  async saveActivity(
+    value: ActivityInput,
+    id?: string,
+    expectedVersion?: number,
+    createRequestId?: string,
+  ) {
     const data: Record<string, unknown> = { action: 'save', activity: activityPayload(value) };
     if (id !== undefined) {
+      if (createRequestId !== undefined)
+        throw new CloudRepositoryError('VALIDATION_FAILED', '更新活动不能携带创建请求 ID');
       data.activityId = requiredId(id, '活动 ID');
       if (!Number.isInteger(expectedVersion) || Number(expectedVersion) < 0)
         throw new CloudRepositoryError('VALIDATION_FAILED', '活动版本格式错误');
       data.expectedVersion = expectedVersion;
+    } else if (createRequestId !== undefined) {
+      data.createRequestId = boundedId(createRequestId, '创建请求 ID', 8, 128);
     }
     return mapEditableActivity(await this.call('activity-admin', data));
   }

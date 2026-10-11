@@ -43,6 +43,23 @@ function cloneActivityId(openid, requestId) {
   return `activity_clone_${digest.slice(0, 32)}`;
 }
 
+function createActivityId(openid, requestId) {
+  const digest = crypto
+    .createHash('sha256')
+    .update(openid)
+    .update('\0')
+    .update(requestId)
+    .digest('hex');
+  return `activity_create_${digest.slice(0, 32)}`;
+}
+
+function createRequestFingerprint(openid, activity) {
+  return crypto
+    .createHash('sha256')
+    .update(JSON.stringify([openid, activity]))
+    .digest('hex');
+}
+
 function cloneRequestFingerprint(openid, request) {
   return crypto
     .createHash('sha256')
@@ -242,15 +259,40 @@ async function deleteActivity(store, request, now = new Date()) {
 
 async function saveActivity(
   store,
-  { openid, activityId, expectedVersion, activity },
+  { openid, activityId, expectedVersion, createRequestId, activity },
   now = new Date(),
 ) {
   if (!activity || typeof activity !== 'object' || Array.isArray(activity))
     fail('VALIDATION_FAILED', '活动参数格式错误');
+  if (
+    createRequestId !== undefined &&
+    (typeof createRequestId !== 'string' || !/^[A-Za-z0-9_-]{8,128}$/.test(createRequestId))
+  )
+    fail('VALIDATION_FAILED', '创建请求 ID 格式错误');
+  if (activityId !== undefined && createRequestId !== undefined)
+    fail('VALIDATION_FAILED', '更新活动不能携带创建请求 ID');
+  const idempotentCreateId = createRequestId
+    ? createActivityId(openid, createRequestId)
+    : undefined;
+  const createFingerprint = createRequestId
+    ? createRequestFingerprint(openid, activity)
+    : undefined;
   return store.transaction(async (tx) => {
     const admin = await tx.getAdmin(openid);
     const isAdmin = isEnabledAdmin(admin, openid);
-    const current = activityId ? await tx.getActivity(activityId) : undefined;
+    const currentId = activityId || idempotentCreateId;
+    const current = currentId ? await tx.getActivity(currentId) : undefined;
+    if (!activityId && current) {
+      if (
+        current.created_by !== openid ||
+        current.create_request_id !== createRequestId ||
+        current.create_request_fingerprint !== createFingerprint ||
+        current.is_deleted === true ||
+        !['draft', 'published'].includes(current.status)
+      )
+        fail('CREATE_CONFLICT', '创建请求与已有活动冲突');
+      return publicActivity(current, { revealContact: true });
+    }
     let effectiveActivity = effectiveActivityInput(current, activity);
     const requestedRouteId = effectiveActivity.route?.strava_route_id;
     let stravaRouteOwnerOpenid;
@@ -385,7 +427,7 @@ async function saveActivity(
         (occupancyPartitionReady && safe.self_drive_capacity < selfDriveOccupiedCount))
     )
       fail('CAPACITY_BELOW_OCCUPIED', '分类容量不能低于对应已占用名额');
-    const id = activityId || (await tx.createActivityId());
+    const id = activityId || idempotentCreateId || (await tx.createActivityId());
     const value = {
       ...(current || {}),
       ...safe,
@@ -399,6 +441,12 @@ async function saveActivity(
       created_by: current?.created_by || openid,
       created_at: current?.created_at || now,
       updated_at: now,
+      ...(createRequestId
+        ? {
+            create_request_id: createRequestId,
+            create_request_fingerprint: createFingerprint,
+          }
+        : {}),
       ...(stravaRouteOwnerOpenid ? { strava_route_owner_openid: stravaRouteOwnerOpenid } : {}),
     };
     if (!safe.route?.strava_route_id) delete value.strava_route_owner_openid;
@@ -419,6 +467,8 @@ async function saveActivity(
 }
 module.exports = {
   partitionBackfill,
+  createActivityId,
+  createRequestFingerprint,
   cloneActivityId,
   cloneRequestFingerprint,
   cloneActivity,

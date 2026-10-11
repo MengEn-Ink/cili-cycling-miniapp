@@ -274,8 +274,9 @@ export class CachingRepository implements RideRepository {
     value: Parameters<RideRepository['saveActivity']>[0],
     id?: string,
     expectedVersion?: number,
+    createRequestId?: string,
   ) {
-    const result = await this.inner.saveActivity(value, id, expectedVersion);
+    const result = await this.inner.saveActivity(value, id, expectedVersion, createRequestId);
     this.cacheControl.invalidateActivities();
     return result;
   }

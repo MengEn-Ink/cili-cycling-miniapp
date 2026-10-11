@@ -37,6 +37,10 @@ const emptyForm = (): Form => ({
 });
 const pickerDate = (value: string) => value.trim().slice(0, 10);
 const pickerTime = (value: string) => value.trim().slice(11, 16);
+const newCreateRequestId = () =>
+  `activity_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
+const errorCode = (error: unknown) =>
+  typeof (error as { code?: unknown })?.code === 'string' ? (error as { code: string }).code : '';
 const mediaExtension = (path: string) => {
   const match = /\.([a-zA-Z0-9]{1,8})(?:\?|$)/.exec(path);
   return match ? `.${match[1].toLowerCase()}` : '.jpg';
@@ -98,6 +102,7 @@ function derivedTimes(startAt: string) {
 Page({
   unloaded: false,
   saveInFlight: false,
+  createRequestId: '',
   data: {
     allowed: false,
     isAdmin: false,
@@ -131,6 +136,7 @@ Page({
       return;
     }
     const id = typeof options.id === 'string' ? options.id : '';
+    this.createRequestId = id ? '' : newCreateRequestId();
     this.setData({ allowed: true, isAdmin: appStore.role === 'admin', id });
     if (!id) {
       this.setData({ loading: false });
@@ -177,6 +183,44 @@ Page({
     const targets = fileList || [...this.data.sessionUploadedIds];
     if (!targets.length || !wx.cloud || typeof wx.cloud.deleteFile !== 'function') return;
     void wx.cloud.deleteFile({ fileList: targets }).catch(() => undefined);
+  },
+  async createDraft(activity: ActivityInput) {
+    if (!this.createRequestId) this.createRequestId = newCreateRequestId();
+    try {
+      return await rideService.saveActivity(
+        { ...activity, status: 'draft' },
+        undefined,
+        undefined,
+        this.createRequestId,
+      );
+    } catch (error) {
+      if (errorCode(error) !== 'CALL_FAILED') throw error;
+      return rideService.saveActivity(
+        { ...activity, status: 'draft' },
+        undefined,
+        undefined,
+        this.createRequestId,
+      );
+    }
+  },
+  async publishDraft(activity: ActivityInput, draft: EditableActivity) {
+    const published = { ...activity, status: 'published' as const };
+    try {
+      return await rideService.saveActivity(published, draft.id, draft.version);
+    } catch (error) {
+      if (errorCode(error) !== 'CALL_FAILED') throw error;
+      let current: EditableActivity;
+      try {
+        const readback = await rideService.getAdminActivity(draft.id);
+        if (!readback) throw error;
+        current = readback;
+      } catch {
+        throw error;
+      }
+      if (current.status === 'published') return current;
+      if (current.status !== 'draft') throw error;
+      return rideService.saveActivity(published, current.id, current.version);
+    }
   },
   onUnload() {
     this.unloaded = true;
@@ -647,16 +691,21 @@ Page({
       };
       let saved: EditableActivity;
       if (!id && nextStatus === 'published') {
-        const draft = await rideService.saveActivity({ ...activity, status: 'draft' });
+        const draft = await this.createDraft(activity);
         // 首次草稿已成为可恢复事实：即使发布失败，也保留其 id/version 供用户原地重试。
         applySaved(draft);
-        saved = await rideService.saveActivity(
-          { ...activity, status: 'published' },
-          draft.id,
-          draft.version,
-        );
+        saved = await this.publishDraft(activity, draft);
+      } else if (id && this.data.status === 'draft' && nextStatus === 'published') {
+        saved = await this.publishDraft(activity, {
+          ...this.data.originalActivity!,
+          id,
+          version: this.data.version,
+          status: 'draft',
+        });
       } else {
-        saved = await rideService.saveActivity(activity, id, id ? this.data.version : undefined);
+        saved = id
+          ? await rideService.saveActivity(activity, id, this.data.version)
+          : await rideService.saveActivity(activity, undefined, undefined, this.createRequestId);
       }
       applySaved(saved);
       wx.showToast({ title: '保存成功', icon: 'success' });

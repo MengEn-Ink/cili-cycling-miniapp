@@ -47,6 +47,7 @@ export interface ActivityAdminRepository {
     value: ActivityInput,
     id?: string,
     expectedVersion?: number,
+    createRequestId?: string,
   ): Promise<EditableActivity>;
   cloneActivity(input: CloneActivityInput): Promise<EditableActivity>;
   deleteActivity(id: string): Promise<void>;

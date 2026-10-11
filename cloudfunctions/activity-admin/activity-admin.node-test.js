@@ -400,6 +400,42 @@ test('创建必须是草稿并写入服务端控制字段与审计', async () =>
     (error) => error.code === 'INVALID_TRANSITION',
   );
 });
+test('首次创建用 owner 与 requestId 幂等落同一草稿且拒绝异源复用', async () => {
+  const activities = new Map();
+  const state = { puts: 0, audits: [] };
+  let generated = 0;
+  const memory = {
+    state,
+    transaction: (work) =>
+      work({
+        getAdmin: async () => ({ _id: 'admin', enabled: true }),
+        getActivity: async (id) => activities.get(id),
+        getOccupyingRegistrations: async () => [],
+        createActivityId: async () => `activity_random_${++generated}`,
+        putActivity: async (id, value) => {
+          state.puts += 1;
+          activities.set(id, value);
+        },
+        addAudit: async (value) => state.audits.push(value),
+      }),
+  };
+  const request = {
+    openid: 'admin',
+    createRequestId: 'create-request-0001',
+    activity: input,
+  };
+
+  const first = await saveActivity(memory, request, now);
+  const retried = await saveActivity(memory, request, now);
+
+  assert.equal(retried._id, first._id);
+  assert.equal(state.puts, 1);
+  assert.equal(state.audits.length, 1);
+  await assert.rejects(
+    saveActivity(memory, { ...request, activity: { ...input, title: '同键不同活动' } }, now),
+    { code: 'CREATE_CONFLICT' },
+  );
+});
 test('更新校验 expectedVersion、单调递增版本并区分发布审计', async () => {
   const current = {
     _id: 'a1',

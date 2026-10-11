@@ -83,6 +83,7 @@ const deferred = <T>() => {
   });
   return { promise, resolve, reject };
 };
+const callFailed = (message: string) => Object.assign(new Error(message), { code: 'CALL_FAILED' });
 
 describe('日常活动极简创建与编辑', () => {
   let page: any;
@@ -251,6 +252,7 @@ describe('日常活动极简创建与编辑', () => {
       }),
       undefined,
       undefined,
+      expect.stringMatching(/^[A-Za-z0-9_-]{8,128}$/),
     );
     const payload = rideService.saveActivity.mock.calls[0][0];
     expect(new Date(payload.deadline).getTime()).toBe(new Date(payload.startAt).getTime() - 60_000);
@@ -365,6 +367,116 @@ describe('日常活动极简创建与编辑', () => {
       version: 2,
       status: 'published',
     });
+  });
+
+  it('首次创建响应丢失时复用同一幂等键并收敛到同一草稿', async () => {
+    let serverDraft: Activity | undefined;
+    let createWrites = 0;
+    const createRequestIds: Array<string | undefined> = [];
+    rideService.saveActivity.mockImplementation(
+      async (payload: any, id?: string, expectedVersion?: number, createRequestId?: string) => {
+        if (!id) {
+          createRequestIds.push(createRequestId);
+          if (!serverDraft) {
+            createWrites += 1;
+            serverDraft = savedActivityFromPayload({ ...payload, status: 'draft' }, 'same-draft');
+          }
+          if (createRequestIds.length === 1) throw callFailed('草稿已保存但响应丢失');
+          return serverDraft;
+        }
+        expect(id).toBe('same-draft');
+        expect(expectedVersion).toBe(1);
+        return { ...savedActivityFromPayload(payload, id), version: 2 };
+      },
+    );
+    await page.onLoad({});
+    Object.assign(page.data.form, {
+      title: '幂等创建晨骑',
+      startDate: '2026-10-20',
+      startTime: '07:30',
+      routeStart: '湖边广场',
+    });
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(createRequestIds).toHaveLength(2);
+    expect(createRequestIds[0]).toMatch(/^[A-Za-z0-9_-]{8,128}$/);
+    expect(createRequestIds[1]).toBe(createRequestIds[0]);
+    expect(createWrites).toBe(1);
+    expect(page.data).toMatchObject({ id: 'same-draft', version: 2, status: 'published' });
+  });
+
+  it('发布已提交但响应丢失时按草稿 id 回读 published 新版本并收敛成功', async () => {
+    let serverCurrent: Activity | undefined;
+    rideService.saveActivity.mockImplementation(
+      async (payload: any, id?: string, expectedVersion?: number) => {
+        if (!id) {
+          serverCurrent = savedActivityFromPayload(
+            { ...payload, status: 'draft' },
+            'publish-readback',
+          );
+          return serverCurrent;
+        }
+        expect(expectedVersion).toBe(1);
+        serverCurrent = { ...savedActivityFromPayload(payload, id), version: 2 };
+        throw callFailed('发布已提交但响应丢失');
+      },
+    );
+    rideService.getAdminActivity.mockImplementation(async () => serverCurrent);
+    await page.onLoad({});
+    Object.assign(page.data.form, {
+      title: '发布回读晨骑',
+      startDate: '2026-10-20',
+      startTime: '07:30',
+      routeStart: '湖边广场',
+    });
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(rideService.getAdminActivity).toHaveBeenCalledWith('publish-readback');
+    expect(page.data).toMatchObject({
+      id: 'publish-readback',
+      version: 2,
+      status: 'published',
+    });
+    expect(wx.showToast).toHaveBeenLastCalledWith({ title: '保存成功', icon: 'success' });
+  });
+
+  it('发布模糊失败回读仍是草稿时使用回读版本重试', async () => {
+    let serverCurrent: Activity | undefined;
+    const publishedVersions: number[] = [];
+    rideService.saveActivity.mockImplementation(
+      async (payload: any, id?: string, expectedVersion?: number) => {
+        if (!id) {
+          serverCurrent = savedActivityFromPayload(
+            { ...payload, status: 'draft' },
+            'publish-retry',
+          );
+          return serverCurrent;
+        }
+        publishedVersions.push(expectedVersion!);
+        if (publishedVersions.length === 1) {
+          serverCurrent = { ...serverCurrent!, version: 3 };
+          throw callFailed('发布结果不确定');
+        }
+        expect(expectedVersion).toBe(3);
+        serverCurrent = { ...savedActivityFromPayload(payload, id), version: 4 };
+        return serverCurrent;
+      },
+    );
+    rideService.getAdminActivity.mockImplementation(async () => serverCurrent);
+    await page.onLoad({});
+    Object.assign(page.data.form, {
+      title: '发布重试晨骑',
+      startDate: '2026-10-20',
+      startTime: '07:30',
+      routeStart: '湖边广场',
+    });
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(publishedVersions).toEqual([1, 3]);
+    expect(page.data).toMatchObject({ id: 'publish-retry', version: 4, status: 'published' });
   });
 
   it('跨日深夜集合时间保存后重开仍保持原日期和时间', async () => {

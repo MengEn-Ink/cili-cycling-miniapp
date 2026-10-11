@@ -132,6 +132,7 @@ describe('activities page timeline controller', () => {
       emptyCopy: '新的骑行活动正在筹备中',
       nextCursor: 'future-cursor',
     });
+    expect(page.data.items[0].displayDate).toBe('10月18日 周日 08:00');
 
     page.switchView({ currentTarget: { dataset: { view: 'history' } } });
     await vi.waitFor(() => expect(rideService.listActivityPage).toHaveBeenCalledTimes(2));

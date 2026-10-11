@@ -158,6 +158,17 @@ export function describeActivityDay(
   return { key: chinaDayKey(target), label };
 }
 
+export function formatActivityDateTime(value?: string): string {
+  if (!value) return '时间待公布';
+  const text = value.trim();
+  const dateLabel = formatActivityDate(text);
+  if (dateLabel === '日期待公布') return '时间待公布';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return dateLabel;
+  const date = chinaDate(text);
+  if (!date) return '时间待公布';
+  return `${dateLabel} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
+}
+
 export function formatLocalDateTime(value?: string): string {
   if (!value) return '';
   const date = new Date(value);

@@ -112,6 +112,7 @@ exports.main = async (event = {}) => {
             openid,
             activityId: event.activityId,
             expectedVersion: event.expectedVersion,
+            createRequestId: event.createRequestId,
             activity: event.activity,
           },
           new Date(),
