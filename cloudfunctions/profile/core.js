@@ -2,7 +2,8 @@
 const crypto = require('node:crypto');
 const https = require('node:https');
 const AVATAR_SOURCES = ['wechat', 'strava', 'custom'];
-const CLIENT_AVATAR_SOURCES = ['wechat', 'custom'];
+const CLIENT_AVATAR_SOURCES = ['wechat'];
+const CLIENT_MEDIA_ORIGINS = ['wechat', 'custom'];
 const MAX_PROFILE_IMAGE_BYTES = 5 * 1024 * 1024;
 const CLIENT_UPLOAD_INTENT_MS = 30 * 60 * 1000;
 class ProfileError extends Error {
@@ -328,7 +329,7 @@ function clientAvatarSource(value) {
 }
 function clientMediaOrigin(value) {
   const origin = value === undefined ? 'custom' : value;
-  if (!CLIENT_AVATAR_SOURCES.includes(origin))
+  if (!CLIENT_MEDIA_ORIGINS.includes(origin))
     throw new ProfileError('MEDIA_ORIGIN_INVALID', '媒体来源无效');
   return origin;
 }
@@ -788,8 +789,9 @@ function assertFullProfileReady(profile) {
   if (!validPhoto(effectiveBackgroundPhoto(profile)))
     throw new ProfileError('VALIDATION_FAILED', '请上传个人照片');
 }
-function response(doc = {}) {
+function response(doc = {}, keyValue) {
   const status = sensitiveStatus(doc);
+  const phone = status.phone && keyValue ? decrypt(doc.phone_cipher, keyValue) : '';
   const emergencyReady =
     typeof doc.emergency_name === 'string' && !!doc.emergency_name.trim() && status.emergency_phone;
   const nicknameReady = typeof doc.nickname === 'string' && !!doc.nickname.trim();
@@ -819,6 +821,7 @@ function response(doc = {}) {
     gender: typeof doc.gender === 'string' ? doc.gender : '',
     emergency_name: typeof doc.emergency_name === 'string' ? doc.emergency_name : '',
     real_name_masked: typeof doc.real_name_masked === 'string' ? doc.real_name_masked : '',
+    ...(phone ? { phone } : {}),
     phone_masked: typeof doc.phone_masked === 'string' ? doc.phone_masked : '',
     emergency_phone_masked:
       typeof doc.emergency_phone_masked === 'string' ? doc.emergency_phone_masked : '',

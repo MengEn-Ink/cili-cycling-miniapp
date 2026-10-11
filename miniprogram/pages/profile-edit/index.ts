@@ -8,8 +8,7 @@ const ORPHAN_LEDGER_KEY = 'profile-media-orphans-v1';
 const AVATAR_PREVIEW_DEADLINE_MS = 8_000;
 const MAX_LOCAL_IMAGE_BYTES = 5 * 1024 * 1024;
 const PROFILE_BACKGROUND_CATEGORY = 'ride' as const;
-type MediaStage =
-  'selection' | 'crop' | 'uploadPath' | 'upload' | 'register' | 'setAvatar' | 'preview';
+type MediaStage = 'selection' | 'uploadPath' | 'upload' | 'register' | 'setAvatar' | 'preview';
 type SelectedImage = { path: string; size?: number };
 type PhotoItem = { id: string; category: string; previewUrl: string };
 type MediaOrphan = {
@@ -97,7 +96,6 @@ function mediaFailureDetail(error: unknown): string {
   const stage = typeof value.mediaStage === 'string' ? value.mediaStage : '';
   const fallbackByStage: Record<string, string> = {
     selection: 'MEDIA_SELECTION_FAILED',
-    crop: 'MEDIA_CROP_FAILED',
     uploadPath: 'MEDIA_UPLOAD_PATH_FAILED',
     upload: 'MEDIA_UPLOAD_FAILED',
     register: 'MEDIA_REGISTER_FAILED',
@@ -106,7 +104,6 @@ function mediaFailureDetail(error: unknown): string {
   };
   const messageByStage: Record<string, string> = {
     selection: '无法选择图片，请检查相册权限或系统设置后重试',
-    crop: '图片裁剪失败，请重新选择图片后重试',
     uploadPath: '图片准备失败，请检查网络后重试',
     upload: '图片上传失败，请重新选择图片后重试',
     register: '图片校验失败，请重新选择图片后重试',
@@ -223,24 +220,23 @@ async function chooseSingleImage(): Promise<SelectedImage | null> {
   );
 }
 
-async function cropSquare(image: SelectedImage): Promise<SelectedImage | null> {
-  if (typeof wx.cropImage !== 'function') return image;
-  try {
-    const result = await new Promise<{ tempFilePath?: unknown }>((resolve, reject) => {
-      wx.cropImage({
-        src: image.path,
-        cropScale: '1:1',
-        success: resolve,
-        fail: reject,
-      });
-    });
-    const path = result?.tempFilePath;
-    return typeof path === 'string' && path ? { path } : image;
-  } catch (error) {
-    if (isUserCancellation(error)) return null;
-    if (isUnsupportedApi(error)) return image;
-    throw mediaStageError(error, 'crop', 'MEDIA_CROP_FAILED');
-  }
+function mergePhoneFields(current: Profile | null, authoritative: Profile): Profile {
+  if (!current) return authoritative;
+  const currentStatus = current.sensitiveStatus || {
+    realName: false,
+    phone: false,
+    emergencyPhone: false,
+  };
+  return {
+    ...current,
+    phone: authoritative.phone,
+    sensitiveStatus: {
+      ...currentStatus,
+      phone: authoritative.sensitiveStatus?.phone === true || currentStatus.phone,
+      phoneVerified: authoritative.sensitiveStatus?.phoneVerified,
+      phoneSource: authoritative.sensitiveStatus?.phoneSource,
+    },
+  };
 }
 
 function mergeAvatarFields(current: Profile | null, authoritative: Profile): Profile {
@@ -396,6 +392,7 @@ Page({
     p: null as Profile | null,
     saving: false,
     avatarBusy: false,
+    phoneBusy: false,
     photoBusy: false,
     mediaError: '',
     avatarPreviewUrl: '',
@@ -542,8 +539,33 @@ Page({
   selectGender(e: any) {
     this.setData({ 'p.gender': e.detail.value });
   },
+  async onGetPhoneNumber(e: any) {
+    const code = e?.detail?.code;
+    if (typeof code !== 'string' || !code.trim()) {
+      const errMsg = typeof e?.detail?.errMsg === 'string' ? e.detail.errMsg : '';
+      if (!/(?:deny|cancel)/i.test(errMsg))
+        wx.showToast({ title: '未获取到手机号，请重新授权', icon: 'none' });
+      return;
+    }
+    if (this.data.phoneBusy || this.data.avatarBusy || this.data.photoBusy || this.data.saving)
+      return;
+    this.setData({ phoneBusy: true, error: '' });
+    const state = await runPageTask(() => rideService.getPhoneNumber(code), '手机号授权失败');
+    this.setData({
+      phoneBusy: false,
+      error: state.error,
+      p: state.data
+        ? normalizeBackgroundProfile(mergePhoneFields(this.data.p, state.data))
+        : this.data.p,
+    });
+    if (state.data) {
+      invalidateProfilePageCache();
+      wx.showToast({ title: '手机号已授权' });
+    }
+  },
   async runAvatarAction(action: () => Promise<void>) {
-    if (this.data.avatarBusy || this.data.photoBusy || this.data.saving) return;
+    if (this.data.avatarBusy || this.data.phoneBusy || this.data.photoBusy || this.data.saving)
+      return;
     this.mediaErrorRevision += 1;
     this.mediaErrorStage = '';
     this.setData({ avatarBusy: true, mediaError: '' });
@@ -566,7 +588,8 @@ Page({
       this.setData({ avatarBusy: false });
     }
   },
-  async uploadAndSetAvatar(image: SelectedImage, origin: ClientAvatarSource) {
+  async uploadAndSetAvatar(image: SelectedImage) {
+    const origin: ClientAvatarSource = 'wechat';
     const cloud = wx.cloud;
     if (!cloud) throw mediaCloudUnavailableError();
     const verifiedImage = await ensureLocalImageSize(image);
@@ -621,15 +644,7 @@ Page({
   async chooseWechatAvatar(e: any) {
     const filePath = e?.detail?.avatarUrl;
     if (typeof filePath !== 'string' || !filePath) return;
-    await this.runAvatarAction(() => this.uploadAndSetAvatar({ path: filePath }, 'wechat'));
-  },
-  async chooseCustomAvatar() {
-    await this.runAvatarAction(async () => {
-      const image = await chooseSingleImage();
-      if (!image) return;
-      const cropped = await cropSquare(image);
-      if (cropped) await this.uploadAndSetAvatar(cropped, 'custom');
-    });
+    await this.runAvatarAction(() => this.uploadAndSetAvatar({ path: filePath }));
   },
   avatarPreviewError(event: any) {
     const failedUrl = event?.currentTarget?.dataset?.url;
@@ -638,7 +653,8 @@ Page({
   },
   async addPhoto() {
     // 添加照片加在途锁，避免快速连点触发多次并发上传产生孤立文件或状态错乱。
-    if (this.data.photoBusy || this.data.saving || this.data.avatarBusy) return;
+    if (this.data.photoBusy || this.data.phoneBusy || this.data.saving || this.data.avatarBusy)
+      return;
     this.mediaErrorRevision += 1;
     this.mediaErrorStage = '';
     this.setData({ photoBusy: true, mediaError: '' });
@@ -740,6 +756,7 @@ Page({
       !this.data.p ||
       !this.data.canEditDetails ||
       this.data.saving ||
+      this.data.phoneBusy ||
       this.data.photoBusy ||
       this.data.avatarBusy
     )
@@ -761,7 +778,6 @@ Page({
           backgroundPhoto:
             p.backgroundPhoto !== undefined ? p.backgroundPhoto : p.photos[0] || null,
           realName: p.realName.includes('*') ? undefined : p.realName,
-          phone: p.phone.includes('*') ? undefined : p.phone,
           emergencyPhone: p.emergencyPhone.includes('*') ? undefined : p.emergencyPhone,
         }),
       '保存失败',

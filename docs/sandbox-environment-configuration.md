@@ -84,7 +84,7 @@ CloudBase CLI v3 支持浏览器登录、API 密钥登录和 CI 无头登录；�
 
 | 变量 | 配置到哪些函数 | 必需性与格式 |
 | --- | --- | --- |
-| `PII_ENCRYPTION_KEY` | `profile` | 必需；32 字节随机值的 base64 编码 |
+| `PII_ENCRYPTION_KEY` | `profile`、`admin-review` | 必需；32 字节随机值的 base64 编码；两个函数必须完全同值 |
 | `PROFILE_MEDIA_PATH_SECRET` | `profile`、`profile-media-cleanup`、`admin-review`、`activity-read` | 必需；至少 32 字符；四个函数必须完全同值 |
 | `STRAVA_CLIENT_ID` | `strava-auth`、`strava-callback` | 启用 Strava 时必需；十进制应用 ID |
 | `STRAVA_CLIENT_SECRET` | `strava-auth`、`strava-callback` | 启用 Strava 时必需 |
@@ -470,7 +470,7 @@ WECHAT_MINIPROGRAM_PRIVATE_KEY=<required for WeChat development upload>
 ### CloudBase 云函数
 
 ```text
-PII_ENCRYPTION_KEY=<profile>
+PII_ENCRYPTION_KEY=<same value on profile/admin-review>
 PROFILE_MEDIA_PATH_SECRET=<same value on profile/profile-media-cleanup/admin-review/activity-read>
 STRAVA_CLIENT_ID=<strava-auth/strava-callback>
 STRAVA_CLIENT_SECRET=<strava-auth/strava-callback>

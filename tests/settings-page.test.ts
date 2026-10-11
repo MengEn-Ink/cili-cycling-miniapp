@@ -44,21 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.11.32',
+      version: '2026.10.11.33',
       latest: true,
-      title: '首页品牌视觉更加统一',
-      summary: '首页统一使用暖灰白、石墨黑和品牌橙三色，中文品牌字标与活动入口更清晰。',
+      title: '资料授权与骑行卡片完善',
+      summary: '头像统一使用微信授权选择，手机号授权后默认完整可见，报名审核页恢复完整骑行卡片。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.11.33',
       '2026.10.11.32',
       '2026.10.11.31',
       '2026.10.11.30',
       '2026.10.11.29',
-      '2026.10.11.28',
     ]);
   });
 

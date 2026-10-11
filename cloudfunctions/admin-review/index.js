@@ -204,6 +204,8 @@ exports.main = async (event = {}) => {
         loadMediaRecords,
         getTempFileURL: (input) => cloud.getTempFileURL(input),
         mediaSecret: process.env.PROFILE_MEDIA_PATH_SECRET,
+        piiKey: process.env.PII_ENCRYPTION_KEY,
+        requirePhoneKey: true,
         projectRegistration: publicRegistration,
       });
       if (!detail) fail('REGISTRATION_NOT_FOUND', '报名不存在');

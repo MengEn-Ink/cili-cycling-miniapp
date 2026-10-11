@@ -52,12 +52,17 @@ const registration = {
     nickname: '骑手',
     gender: '女',
     real_name_masked: '曹*',
+    phone: '13812345678',
     phone_masked: '138****5678',
     id_number_masked: '11******1234',
   },
   options: { gathering_mode: 'support_vehicle', experience: 'regular', remark: '无忌口' },
   strava_status: 'connected',
   strava_snapshot: {
+    lifetime_rides: 486,
+    lifetime_distance_km: 18240.7,
+    lifetime_moving_hours: 734.5,
+    lifetime_elevation_m: 215400,
     years_on_strava: 4,
     total_km: 1200,
     activities_90d: 32,
@@ -592,11 +597,15 @@ describe('CloudRepository 队员报名适配', () => {
         nickname: '骑手',
         gender: '女',
         realName: '曹*',
-        phone: '138****5678',
+        phone: '13812345678',
       },
       strava: {
         status: 'connected',
         years: 4,
+        lifetimeRides: 486,
+        lifetimeDistanceKm: 18240.7,
+        lifetimeMovingHours: 734.5,
+        lifetimeElevationM: 215400,
         totalKm: 1200,
         rides90d: 32,
         longestKm: 168,
@@ -732,6 +741,20 @@ describe('CloudRepository 队员报名适配', () => {
     const { cloud, callFunction } = cloudWith(success({ deleted: true }));
     await expect(new CloudRepository(cloud).deleteRegistration('r1')).resolves.toBeUndefined();
     expectCall(callFunction, 'registration', { action: 'delete', registrationId: 'r1' });
+  });
+
+  it('管理员报名详情映射完整手机号和累计骑行指标', async () => {
+    const { cloud } = cloudWith(success(registration));
+
+    await expect(new CloudRepository(cloud).getReviewRegistration('r1')).resolves.toMatchObject({
+      profile: { phone: '13812345678' },
+      strava: {
+        lifetimeRides: 486,
+        lifetimeDistanceKm: 18240.7,
+        lifetimeMovingHours: 734.5,
+        lifetimeElevationM: 215400,
+      },
+    });
   });
 
   it('将 self_drive 集合方式映射为自行前往', async () => {
@@ -1032,6 +1055,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
       nickname: '骑手',
       completeness: 50,
       real_name_masked: '曹*',
+      phone: '13812345678',
       phone_masked: '138****5678',
       sensitive_status: {
         real_name: true,
@@ -1044,6 +1068,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     const repository = new CloudRepository(cloud);
     const profile = await repository.getProfile();
     expect(profile.realName).toBe('曹*');
+    expect(profile.phone).toBe('13812345678');
     expect(profile.sensitiveStatus).toMatchObject({
       phone: true,
       phoneVerified: false,
@@ -1120,28 +1145,40 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     expect(callFunction).not.toHaveBeenCalled();
   });
 
-  it('专用 setAvatar 发送来源与 fileId 并严格映射响应', async () => {
+  it('专用 setAvatar 只发送微信来源与 fileId 并严格映射响应', async () => {
     const dto = {
       nickname: '骑手',
       completeness: 25,
       avatar_file_id: 'cloud://env/profiles/owner/avatar.jpg',
-      avatar_source: 'custom',
+      avatar_source: 'wechat',
       avatar_revision: 3,
     };
     const { cloud, callFunction } = cloudWith(success(dto));
     await expect(
-      new CloudRepository(cloud).setAvatar('custom', dto.avatar_file_id),
+      new CloudRepository(cloud).setAvatar('wechat', dto.avatar_file_id),
     ).resolves.toMatchObject({
       nickname: '骑手',
       avatarId: dto.avatar_file_id,
-      avatarSource: 'custom',
+      avatarSource: 'wechat',
       avatarRevision: 3,
     });
     expectCall(callFunction, 'profile', {
       action: 'setAvatar',
-      source: 'custom',
+      source: 'wechat',
       fileId: dto.avatar_file_id,
     });
+  });
+
+  it('专用 setAvatar 拒绝客户端新增自定义头像', async () => {
+    const { cloud, callFunction } = cloudWith();
+    await expectCode(
+      (new CloudRepository(cloud) as any).setAvatar(
+        'custom',
+        'cloud://env/profiles/owner/avatar.jpg',
+      ),
+      'VALIDATION_FAILED',
+    );
+    expect(callFunction).not.toHaveBeenCalled();
   });
 
   it('Strava 头像导入只发送专用命令且不接受 URL 参数', async () => {

@@ -28,6 +28,17 @@ const EMPTY_METRICS: Record<PersonalCapabilityCardState, string> = {
   disconnected: '连接 Strava 后展示骑行指标',
 };
 
+const LIFETIME_METRICS: {
+  key: keyof PersonalCapabilityCard['summary'];
+  label: string;
+  unit: string;
+}[] = [
+  { key: 'lifetimeRides', label: '骑行次数', unit: '次' },
+  { key: 'lifetimeDistanceKm', label: '累计里程', unit: 'km' },
+  { key: 'lifetimeMovingHours', label: '运动时长', unit: 'h' },
+  { key: 'lifetimeElevationM', label: '累计爬升', unit: 'm' },
+];
+
 const METRICS: {
   key: keyof PersonalCapabilityCard['summary'];
   label: string;
@@ -58,12 +69,17 @@ function fullYearsBetween(from: Date, to: Date): number {
 
 export function personalCardViewModel(card: PersonalCapabilityCard) {
   const backgrounds = card.backgrounds.slice(0, 3);
-  const metrics = METRICS.flatMap((definition): PersonalCardMetric[] => {
-    const value = card.summary[definition.key];
-    return typeof value === 'number' && Number.isFinite(value)
-      ? [{ ...definition, value: String(value) }]
-      : [];
-  });
+  const buildMetrics = (
+    definitions: { key: keyof PersonalCapabilityCard['summary']; label: string; unit: string }[],
+  ) =>
+    definitions.flatMap((definition): PersonalCardMetric[] => {
+      const value = card.summary[definition.key];
+      return typeof value === 'number' && Number.isFinite(value)
+        ? [{ ...definition, value: String(value) }]
+        : [];
+    });
+  const lifetimeMetrics = buildMetrics(LIFETIME_METRICS);
+  const metrics = buildMetrics(METRICS);
   const primaryMetrics = metrics.filter((metric) =>
     ['totalKm90d', 'rides90d', 'longestKm'].includes(metric.key),
   );
@@ -93,6 +109,8 @@ export function personalCardViewModel(card: PersonalCapabilityCard) {
     backgrounds,
     hasBackgrounds: backgrounds.length > 0,
     hasMultipleBackgrounds: backgrounds.length > 1,
+    lifetimeMetrics,
+    hasLifetimeMetrics: lifetimeMetrics.length > 0,
     metrics,
     primaryMetrics,
     secondaryMetrics,

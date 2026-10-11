@@ -78,10 +78,16 @@ describe('个人骑行名片 view model', () => {
     expect(view.syncedAtText).toBe('同步于 2026-09-29 12:05:00');
   });
 
-  it('Strava 主页入口独立呈现且累计指标不再输出', async () => {
+  it('Strava 主页入口与累计指标完整呈现', async () => {
     const view = await build(baseCard);
 
-    expect((view as any).lifetimeMetrics).toBeUndefined();
+    expect(view.lifetimeMetrics).toEqual([
+      { key: 'lifetimeRides', label: '骑行次数', value: '486', unit: '次' },
+      { key: 'lifetimeDistanceKm', label: '累计里程', value: '18240.7', unit: 'km' },
+      { key: 'lifetimeMovingHours', label: '运动时长', value: '734.5', unit: 'h' },
+      { key: 'lifetimeElevationM', label: '累计爬升', value: '215400', unit: 'm' },
+    ]);
+    expect(view.hasLifetimeMetrics).toBe(true);
     expect(view.stravaProfileUrl).toBe('https://www.strava.com/athletes/42');
     expect(view.hasStravaProfile).toBe(true);
   });

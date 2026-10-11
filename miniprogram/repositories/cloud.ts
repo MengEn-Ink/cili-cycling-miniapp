@@ -86,8 +86,12 @@ function requiredId(value: unknown, label: string): string {
   return value;
 }
 function clientAvatarSource(value: unknown): ClientAvatarSource {
+  if (value !== 'wechat') throw new CloudRepositoryError('VALIDATION_FAILED', '头像来源无效');
+  return value;
+}
+function clientMediaOrigin(value: unknown): ClientAvatarSource {
   if (value !== 'wechat' && value !== 'custom')
-    throw new CloudRepositoryError('VALIDATION_FAILED', '头像来源无效');
+    throw new CloudRepositoryError('VALIDATION_FAILED', '媒体来源无效');
   return value;
 }
 function boundedId(value: unknown, label: string, min: number, max: number): string {
@@ -525,7 +529,12 @@ function mapProfile(raw: unknown): Profile {
     ...(avatarId ? { avatarSource: avatarSource as AvatarSource } : {}),
     hasCompletedGuidance: value.has_completed_guidance === true,
     realName: typeof value.real_name_masked === 'string' ? value.real_name_masked : '',
-    phone: typeof value.phone_masked === 'string' ? value.phone_masked : '',
+    phone:
+      typeof value.phone === 'string'
+        ? value.phone
+        : typeof value.phone_masked === 'string'
+          ? value.phone_masked
+          : '',
     gender: typeof value.gender === 'string' ? value.gender : '',
     emergencyName: typeof value.emergency_name === 'string' ? value.emergency_name : '',
     emergencyPhone:
@@ -682,7 +691,12 @@ function mapRegistration(raw: unknown): Registration {
             : '',
       title: typeof capability.title === 'string' ? capability.title : '',
       realName: typeof snapshot.real_name_masked === 'string' ? snapshot.real_name_masked : '',
-      phone: typeof snapshot.phone_masked === 'string' ? snapshot.phone_masked : '',
+      phone:
+        typeof snapshot.phone === 'string'
+          ? snapshot.phone
+          : typeof snapshot.phone_masked === 'string'
+            ? snapshot.phone_masked
+            : '',
       gender: normalizeGender(
         typeof capability.gender === 'string'
           ? capability.gender
@@ -734,6 +748,10 @@ function mapRegistration(raw: unknown): Registration {
                 : 'pending',
       reason: typeof exemption.reason === 'string' ? exemption.reason : undefined,
       years: finiteNumberOrNull(strava.years_on_strava),
+      lifetimeRides: finiteNumberOrNull(strava.lifetime_rides),
+      lifetimeDistanceKm: finiteNumberOrNull(strava.lifetime_distance_km),
+      lifetimeMovingHours: finiteNumberOrNull(strava.lifetime_moving_hours),
+      lifetimeElevationM: finiteNumberOrNull(strava.lifetime_elevation_m),
       totalKm: finiteNumberOrNull(strava.total_km),
       rides90d: finiteNumberOrNull(strava.activities_90d),
       longestKm: finiteNumberOrNull(strava.longest_km),
@@ -1318,7 +1336,7 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
         action: 'registerMedia',
         fileId: requiredId(fileId, '媒体文件 ID'),
         category,
-        origin: clientAvatarSource(origin),
+        origin: clientMediaOrigin(origin),
       }),
     );
     if (value.registered !== true) return invalidResponse();
@@ -1333,7 +1351,7 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
         action: 'reportOrphan',
         fileId: requiredId(fileId, '媒体文件 ID'),
         category,
-        origin: clientAvatarSource(origin),
+        origin: clientMediaOrigin(origin),
       }),
     );
     if (value.reported !== true) return invalidResponse();

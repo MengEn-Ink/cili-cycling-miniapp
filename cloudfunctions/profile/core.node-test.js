@@ -408,9 +408,9 @@ test('旧客户端无头像默认组合仅在服务端也无头像时作为整�
   );
 });
 
-test('客户端头像来源只允许 wechat/custom，内部媒体来源仍支持 strava', () => {
+test('客户端头像来源只允许微信授权，媒体登记仍兼容历史自定义来源', () => {
   assert.equal(clientAvatarSource('wechat'), 'wechat');
-  assert.equal(clientAvatarSource('custom'), 'custom');
+  assert.throws(() => clientAvatarSource('custom'), { code: 'AVATAR_SOURCE_INVALID' });
   assert.throws(() => clientAvatarSource('strava'), { code: 'AVATAR_SOURCE_INVALID' });
   assert.equal(clientMediaOrigin('wechat'), 'wechat');
   assert.equal(clientMediaOrigin('custom'), 'custom');
@@ -427,6 +427,12 @@ test('微信手机号仅由服务端结果构造并标记为已验证', () => {
   assert.throws(() => phoneUpdate('13812345678', key, 'imported'), {
     code: 'PHONE_SOURCE_INVALID',
   });
+});
+test('本人资料响应返回完整手机号，未提供密钥的兼容调用仍只返回脱敏值', () => {
+  const data = phoneUpdate('13812345678', key, 'wechat');
+  assert.equal(response({ nickname: '骑手', ...data }, key).phone, '13812345678');
+  assert.equal(response({ nickname: '骑手', ...data }).phone, undefined);
+  assert.equal(response({ nickname: '骑手', ...data }).phone_masked, '138****5678');
 });
 
 test('媒体上传路径使用服务端 secret 派生 opaque owner alias', () => {

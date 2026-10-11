@@ -251,6 +251,10 @@ export interface Registration {
     status: StravaStatus;
     reason?: string;
     years: number | null;
+    lifetimeRides?: number | null;
+    lifetimeDistanceKm?: number | null;
+    lifetimeMovingHours?: number | null;
+    lifetimeElevationM?: number | null;
     totalKm?: number | null;
     rides90d: number | null;
     longestKm: number | null;

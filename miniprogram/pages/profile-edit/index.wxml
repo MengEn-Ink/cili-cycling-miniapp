@@ -11,10 +11,9 @@
           <view wx:else class="avatar-preview-placeholder" aria-hidden="true">骑</view>
         </view>
         <view class="avatar-panel">
-          <view class="muted avatar-note">请选择微信头像或上传自定义图片，选择后立即保存。头像会展示在活动报名骑友列表中。</view>
+          <view class="muted avatar-note">请选择微信头像，选择后立即保存，并用于个人主页和活动报名中的骑手身份展示。</view>
           <view class="avatar-actions">
-            <button class="avatar-action avatar-action-wechat" open-type="chooseAvatar" bindchooseavatar="chooseWechatAvatar" disabled="{{avatarBusy || photoBusy || saving}}" aria-label="使用微信头像">使用微信头像</button>
-            <button class="avatar-action avatar-action-custom" bindtap="chooseCustomAvatar" disabled="{{avatarBusy || photoBusy || saving}}" aria-label="选择并裁剪自定义头像">选择并裁剪图片</button>
+            <button class="avatar-action avatar-action-wechat" open-type="chooseAvatar" bindchooseavatar="chooseWechatAvatar" disabled="{{avatarBusy || phoneBusy || photoBusy || saving}}" aria-label="选择微信头像">选择微信头像</button>
           </view>
         </view>
       </view>
@@ -23,11 +22,12 @@
 
     <block wx:if="{{canEditDetails}}">
       <view class="card form-card">
-        <view class="title">实名资料</view>
-        <view class="muted form-tip">为保护隐私，已保存信息仅显示部分内容；重新填写后将以新内容为准。</view>
+        <view class="title">基础资料</view>
+        <view class="muted form-tip">请填写真实、常用的信息，便于活动报名、现场联络与安全保障。</view>
+        <view class="privacy-note">敏感信息将安全保存；手机号仅本人和审核管理员可完整查看。</view>
         <view class="field">
           <view class="label">真实姓名</view>
-          <input class="input" value="{{p.realName}}" data-k="realName" bindinput="set" />
+          <input class="input" value="{{p.realName}}" data-k="realName" bindinput="set" placeholder-class="input-placeholder" placeholder="请输入真实姓名" />
         </view>
         <view class="field">
           <view class="label">性别</view>
@@ -37,24 +37,28 @@
           </radio-group>
         </view>
         <view class="field">
-          <view class="label">手机号</view>
-          <input class="input" type="text" maxlength="21" value="{{p.phone}}" data-k="phone" bindinput="set" placeholder-class="input-placeholder" placeholder="请输入本人手机号" />
-          <view class="muted field-tip">请填写本人常用手机号，便于活动联系与安全通知。</view>
+          <view class="label">本人手机号</view>
+          <view class="phone-authorization-row">
+            <view class="phone-value {{p.phone ? '' : 'phone-value--empty'}}">{{p.phone || '尚未授权'}}</view>
+            <button class="phone-authorization-button" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber" loading="{{phoneBusy}}" disabled="{{phoneBusy || avatarBusy || photoBusy || saving}}">{{p.phone ? '更新手机号' : '授权手机号'}}</button>
+          </view>
+          <view class="muted field-tip">用于活动联系与安全通知；授权后将完整显示本人手机号。</view>
         </view>
-        <view class="field">
+        <view class="field emergency-field">
           <view class="label">紧急联系人</view>
-          <input class="input" value="{{p.emergencyName}}" data-k="emergencyName" bindinput="set" />
+          <input class="input" value="{{p.emergencyName}}" data-k="emergencyName" bindinput="set" placeholder-class="input-placeholder" placeholder="请输入紧急联系人姓名" />
+          <view class="muted field-tip">仅在活动中发生紧急情况时使用。</view>
         </view>
         <view class="field">
-          <view class="label">紧急电话</view>
-          <input class="input" value="{{p.emergencyPhone}}" data-k="emergencyPhone" bindinput="set" />
+          <view class="label">紧急联系电话</view>
+          <input class="input" type="number" maxlength="21" value="{{p.emergencyPhone}}" data-k="emergencyPhone" bindinput="set" placeholder-class="input-placeholder" placeholder="请输入紧急联系人手机号" />
         </view>
       </view>
 
       <view class="card form-card">
         <view class="title">个人背景图</view>
         <view class="muted form-tip">最多 1 张，用于个人中心背景；选择新图片会替换当前背景图，点击可查看大图。</view>
-        <button class="photo-action" bindtap="addPhoto" loading="{{photoBusy}}" disabled="{{photoBusy || saving || avatarBusy}}">{{p.photos.length ? '更换背景图' : '添加背景图'}}</button>
+        <button class="photo-action" bindtap="addPhoto" loading="{{photoBusy}}" disabled="{{photoBusy || phoneBusy || saving || avatarBusy}}">{{p.photos.length ? '更换背景图' : '添加背景图'}}</button>
         <view class="photo-list" wx:if="{{photoItems.length}}">
           <view class="photo-item" wx:for="{{photoItems}}" wx:key="id">
             <button class="photo-preview-button" data-url="{{item.previewUrl}}" bindtap="previewPhoto" disabled="{{!item.previewUrl}}" aria-label="预览个人背景图">
@@ -68,7 +72,7 @@
 
       <view class="danger form-error" wx:if="{{mediaError}}" role="alert" aria-live="assertive" aria-atomic="true">{{mediaError}}</view>
       <view class="danger form-error" wx:if="{{error}}">{{error}}</view>
-      <button class="btn save-action" loading="{{saving}}" disabled="{{saving || photoBusy || avatarBusy}}" bindtap="save">保存资料</button>
+      <button class="btn save-action" loading="{{saving}}" disabled="{{saving || phoneBusy || photoBusy || avatarBusy}}" bindtap="save">保存资料</button>
     </block>
     <view class="danger form-error" wx:elif="{{mediaError}}" role="alert" aria-live="assertive" aria-atomic="true">{{mediaError}}</view>
   </block>

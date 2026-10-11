@@ -101,7 +101,7 @@ async function updateProfile(openid, event) {
     }
     return next;
   });
-  return response(result);
+  return response(result, process.env.PII_ENCRYPTION_KEY);
 }
 async function registerMedia(openid, event) {
   const origin = clientMediaOrigin(event.origin);
@@ -121,7 +121,8 @@ exports.main = async (event = {}) => {
     keyFrom(process.env.PII_ENCRYPTION_KEY);
     const { OPENID } = cloud.getWXContext();
     if (!OPENID) throw Object.assign(new Error('无法取得微信身份'), { code: 'UNAUTHENTICATED' });
-    if (event.action === 'get') return ok(response(await getDoc(OPENID)));
+    if (event.action === 'get')
+      return ok(response(await getDoc(OPENID), process.env.PII_ENCRYPTION_KEY));
     if (event.action === 'capabilityCard') {
       if (Object.prototype.hasOwnProperty.call(event, 'openid'))
         throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });
@@ -172,6 +173,7 @@ exports.main = async (event = {}) => {
             event.fileId,
             process.env.PROFILE_MEDIA_PATH_SECRET,
           ),
+          process.env.PII_ENCRYPTION_KEY,
         ),
       );
     }
@@ -190,6 +192,7 @@ exports.main = async (event = {}) => {
             deleteFile: (input) => cloud.deleteFile(input),
             store: profileStore,
           }),
+          process.env.PII_ENCRYPTION_KEY,
         ),
       );
     }
@@ -224,7 +227,9 @@ exports.main = async (event = {}) => {
       if (typeof phone !== 'string')
         throw Object.assign(new Error('微信手机号授权失败'), { code: 'PHONE_LOOKUP_FAILED' });
       const fields = phoneUpdate(phone, process.env.PII_ENCRYPTION_KEY, 'wechat');
-      return ok(response(await profileStore.mergePhone(OPENID, fields)));
+      return ok(
+        response(await profileStore.mergePhone(OPENID, fields), process.env.PII_ENCRYPTION_KEY),
+      );
     }
     throw Object.assign(new Error('未知操作'), { code: 'UNKNOWN_ACTION' });
   } catch (error) {
