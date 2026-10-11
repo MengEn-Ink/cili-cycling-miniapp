@@ -15,20 +15,18 @@ page {
 
 .activities-hero {
   position: relative;
-  min-height: 320rpx;
-  margin-right: calc(0rpx - var(--page-gutter));
-  margin-left: calc(0rpx - var(--page-gutter));
-  padding: 32rpx var(--page-gutter) 40rpx;
+  min-height: 300rpx;
+  padding: 24rpx 0 28rpx;
   overflow: hidden;
-  background: var(--color-text);
-  color: var(--color-bg);
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 .activities-hero brand-logo {
-  --color-text: var(--color-bg);
   position: relative;
   z-index: 1;
   display: block;
+  max-width: 420rpx;
 }
 
 .activities-intro {
@@ -47,7 +45,7 @@ page {
 
 .intro-copy {
   margin-top: 14rpx;
-  color: var(--color-bg);
+  color: var(--color-muted);
   font-size: 24rpx;
   font-weight: 600;
   line-height: 1.5;
@@ -60,8 +58,8 @@ page {
   bottom: 50rpx;
   width: 230rpx;
   height: 68rpx;
-  border-bottom: 4rpx solid var(--color-bg);
-  border-left: 4rpx solid var(--color-bg);
+  border-bottom: 4rpx solid var(--color-text);
+  border-left: 4rpx solid var(--color-text);
   border-bottom-left-radius: 56rpx;
   opacity: 0.16;
   transform: rotate(-8deg);
@@ -73,9 +71,9 @@ page {
   bottom: -13rpx;
   width: 20rpx;
   height: 20rpx;
-  border: 4rpx solid var(--color-bg);
+  border: 4rpx solid var(--color-brand);
   border-radius: 50%;
-  background: var(--color-text);
+  background: var(--color-bg);
 }
 
 .activities-content {

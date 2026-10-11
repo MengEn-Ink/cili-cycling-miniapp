@@ -24,13 +24,15 @@ describe('首页视觉与配色门禁', () => {
     expect(homeStyles).not.toMatch(/\.activities-hero,\s*\.activities-content/);
   });
 
-  it('品牌标识保持纯单色并只展示中文艺术字', () => {
+  it('品牌标识固定为深色底牌、暖灰白艺术字与品牌橙终点', () => {
     expect(logoTemplate).toContain('aria-label="此里"');
     expect(logoTemplate).toContain('>此</text>');
     expect(logoTemplate).toContain('>里</text>');
     expect(logoTemplate).not.toContain('CILI');
-    expect(logoStyles).toContain('color: var(--color-text)');
-    expect(logoStyles).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(|var\(--color-brand\)/i);
+    expect(logoStyles).toContain('background: var(--color-text)');
+    expect(logoStyles).toContain('color: var(--color-bg)');
+    expect(logoStyles).toContain('border: 4rpx solid var(--color-brand)');
+    expect(logoStyles).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(|navy|blue|gradient/i);
   });
 
   it('首页首屏文案与信息层级保持高保真方案', () => {

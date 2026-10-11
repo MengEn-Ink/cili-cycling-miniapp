@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f2f3ef" />
+    <meta name="description" content="此里骑行活动小程序高保真 UI 演示" />
+    <title>此里 · 小程序 UI 演示</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="site-brand" href="#demo" aria-label="此里 UI 演示首页">
+        <span class="logo-word">此里<i aria-hidden="true"></i></span>
+      </a>
+      <div>
+        <p class="eyebrow">微信小程序 · 高保真交互演示</p>
+        <h1>每一次出发，都从此里开始</h1>
+      </div>
+      <div class="palette" aria-label="品牌配色">
+        <span class="swatch swatch-bg" title="暖灰白"></span>
+        <span class="swatch swatch-text" title="石墨黑"></span>
+        <span class="swatch swatch-brand" title="品牌橙"></span>
+      </div>
+    </header>
+
+    <main id="demo" class="demo-shell">
+      <aside class="demo-nav" aria-label="页面选择">
+        <p>页面</p>
+        <button class="demo-nav-button is-active" data-screen="activities">活动首页</button>
+        <button class="demo-nav-button" data-screen="detail">活动详情</button>
+        <button class="demo-nav-button" data-screen="trips">我的行程</button>
+        <button class="demo-nav-button" data-screen="profile">个人中心</button>
+        <section class="spec-card">
+          <strong>视觉规范</strong>
+          <span>三色主题</span>
+          <span>8 点间距网格</span>
+          <span>44 px 最小触控区</span>
+          <span>单一橙色强调</span>
+        </section>
+      </aside>
+
+      <section class="device-stage" aria-live="polite">
+        <div class="phone" aria-label="此里小程序交互预览">
+          <div class="status-bar"><span>09:41</span><span>● ◔ ᯤ</span></div>
+
+          <section class="screen is-active" data-screen-panel="activities">
+            <div class="screen-scroll">
+              <div class="page-top"><span>此里活动</span><button class="more-button" aria-label="更多">•••</button></div>
+              <div class="brand-lockup"><span class="logo-word">此里<i aria-hidden="true"></i></span><small>骑行活动</small></div>
+              <div class="home-intro">
+                <h2>选一场骑行，<br />一起出发</h2>
+                <p>路线、时间、集合点，一眼看清</p>
+                <span class="route-line" aria-hidden="true"></span>
+              </div>
+              <div class="segments" role="tablist" aria-label="活动时间筛选">
+                <button class="segment is-active">即将开始</button><button class="segment">历史活动</button>
+              </div>
+              <div class="section-head"><h3>近期活动</h3><span>1 / 2</span></div>
+              <article class="event-card">
+                <div class="route-art"><span class="route-path"></span><b>报名中</b></div>
+                <div class="event-body"><small>10月17日 周六 · 07:30</small><h3>周末晨骑 · 温榆河绿道</h3><p>辛庄桥集合</p><div class="metrics"><span><b>42</b> km</span><span><b>180</b> m 爬升</span><span><b>休闲</b> 强度</span></div><button class="primary-button" data-open-detail>查看详情</button></div>
+              </article>
+              <p class="swipe-hint">左右滑动切换活动 <span></span></p>
+            </div>
+          </section>
+
+          <section class="screen" data-screen-panel="detail">
+            <div class="screen-scroll has-fixed-action">
+              <div class="page-top"><button class="back-button" data-back-home aria-label="返回">‹</button><span>活动详情</span><button class="more-button" aria-label="更多">•••</button></div>
+              <div class="detail-hero"><span class="status-pill">报名中</span><p>10月17日 周六 · 07:30</p><h2>周末晨骑<br />温榆河绿道</h2><div class="mini-route"><span></span></div></div>
+              <section class="info-card meetup-card"><small>集合信息</small><strong>07:30</strong><h3>辛庄桥集合</h3><p>请提前 10 分钟到达，完成车辆检查。</p></section>
+              <div class="detail-metrics"><span><b>42 km</b>里程</span><span><b>180 m</b>爬升</span><span><b>休闲骑</b>强度</span></div>
+              <section class="info-card"><h3>活动说明</h3><p>沿温榆河绿道完成周末晨骑，路线平缓，适合有基础骑行经验的骑友。</p><p class="muted">建议携带头盔、补给水与基础维修工具。</p></section>
+            </div>
+            <div class="fixed-action"><button class="primary-button">立即报名</button></div>
+          </section>
+
+          <section class="screen" data-screen-panel="trips">
+            <div class="screen-scroll">
+              <div class="page-top"><span>我的行程</span><button class="more-button" aria-label="更多">•••</button></div>
+              <div class="brand-lockup compact"><span class="logo-word">此里<i aria-hidden="true"></i></span><small>我的行程</small></div>
+              <div class="page-heading"><h2>准时集合，轻松出发</h2><p>报名进度与出发凭证都在这里</p></div>
+              <div class="segments"><button class="segment is-active">待出发</button><button class="segment">历史行程</button></div>
+              <article class="trip-card"><div class="trip-title"><span class="status-pill">已通过</span><small>10月17日 周六</small></div><h3>周末晨骑 · 温榆河绿道</h3><div class="meetup-grid"><span><small>集合时间</small><b>07:30</b></span><span><small>集合地点</small><b>辛庄桥</b></span></div><button class="outline-button">查看报名凭证</button></article>
+              <article class="trip-card secondary"><div class="trip-title"><span class="status-pill neutral">审核中</span><small>10月18日 周日</small></div><h3>妙峰山秋日爬坡</h3><p>苹果园集合 · 06:30</p></article>
+            </div>
+          </section>
+
+          <section class="screen" data-screen-panel="profile">
+            <div class="screen-scroll">
+              <div class="page-top"><span>我的</span><button class="more-button" aria-label="更多">•••</button></div>
+              <div class="brand-lockup compact"><span class="logo-word">此里<i aria-hidden="true"></i></span><small>个人资料</small></div>
+              <div class="profile-card"><div class="avatar">曹</div><div><small>欢迎回来</small><h2>骑手小曹</h2><p>北京 · 休闲与爬坡骑行</p></div></div>
+              <div class="profile-stats"><span><b>12</b>次活动</span><span><b>486</b>km</span><span><b>3280</b>m 爬升</span></div>
+              <div class="menu-list"><button><span>骑行资料<small>完善头像与个人名片</small></span><b>›</b></button><button><span>Strava 授权<small>已连接，数据同步正常</small></span><b>›</b></button><button><span>设置<small>版本日志与隐私设置</small></span><b>›</b></button></div>
+            </div>
+          </section>
+
+          <nav class="tab-bar" aria-label="小程序主导航"><button class="tab-button is-active" data-screen="activities"><i>⌁</i>活动</button><button class="tab-button" data-screen="trips"><i>□</i>行程</button><button class="tab-button" data-screen="profile"><i>○</i>我的</button></nav>
+        </div>
+      </section>
+
+      <aside class="screen-notes">
+        <p class="eyebrow">当前页面</p><h2 id="screen-title">活动首页</h2><p id="screen-copy">以固定品牌底牌建立识别，首屏聚焦活动发现与快速决策。</p>
+        <div class="note-list"><span>真实业务文案</span><span>与小程序同源主题色</span><span>移动端安全区适配</span><span>可交互页面切换</span></div>
+      </aside>
+    </main>
+
+    <footer><span>此里 CILI UI Showcase</span><span>高保真演示 · 与小程序视觉规范同步</span></footer>
+    <script src="./app.js"></script>
+  </body>
+</html>
