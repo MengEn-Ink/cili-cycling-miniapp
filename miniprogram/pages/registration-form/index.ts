@@ -5,7 +5,7 @@ import {
   pollStravaReadiness,
   stravaReadinessMessage,
 } from '../../services/strava-readiness-service';
-import { validateRegistration } from '../../utils/validation';
+import { validateRegistration, validateRegistrationProfile } from '../../utils/validation';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
 import { formatChinaDateTime } from '../../utils/date-time';
@@ -89,6 +89,7 @@ Page({
     readinessMessage: '正在检查 Strava 数据',
     notificationTemplateIds: [] as string[],
     errors: [] as string[],
+    profileErrors: [] as string[],
     submitting: false,
     loading: true,
     activityAction: unavailableAction(),
@@ -117,14 +118,16 @@ Page({
       requestFailedReadiness(readinessState.error || 'Strava 数据准备状态加载失败');
     const activityContext = activityState.data;
     const activityAction = activityContext?.action || unavailableAction();
+    const profile = profileState.data
+      ? { ...profileState.data, ...genderView(profileState.data.gender) }
+      : null;
     this.setData({
       activity: activityContext?.activity || null,
       displayActivityDate: formatChinaDateTime(
         activityContext?.activity?.startAt || activityContext?.activity?.date,
       ),
-      profile: profileState.data
-        ? { ...profileState.data, ...genderView(profileState.data.gender) }
-        : null,
+      profile,
+      profileErrors: profile ? validateRegistrationProfile(profile) : [],
       readiness,
       readinessMessage: stravaReadinessMessage(readiness),
       activityAction,

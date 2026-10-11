@@ -50,8 +50,8 @@ describe('native tabbar safe-area contract', () => {
     expect(pageRule.toLowerCase()).toMatch(/height:\s*100%;/);
     expectSemantic(declaration(pageRule, 'background'), '--color-bg');
     expectSemantic(declaration(pageRule, 'color'), '--color-text');
-    expect(tokens['--color-bg']).toBe('#ffffff');
-    expect(tokens['--color-text']).toBe('#10120f');
+    expect(tokens['--color-bg']).toBe('#f2f3ef');
+    expect(tokens['--color-text']).toBe('#20241f');
   });
 
   it('gives all tab roots one shared safe-area bottom spacing contract', () => {

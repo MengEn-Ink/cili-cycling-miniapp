@@ -9,10 +9,18 @@ function hasSensitiveField(
   return profile.sensitiveStatus ? profile.sensitiveStatus[key] : legacyCheck();
 }
 
-function hasPersonalPhoto(profile: Profile): boolean {
-  const background = profile.backgroundPhoto;
-  if (background !== undefined) return Boolean(background && background.id.trim());
-  return profile.photos.some((photo) => Boolean(photo.id.trim()));
+export function validateRegistrationProfile(profile: Profile): string[] {
+  const errors: string[] = [];
+  // 云端仅返回脱敏展示值，真实填写状态必须以服务端 sensitiveStatus 为准。
+  if (!profile.nickname.trim()) errors.push('请授权并填写微信昵称');
+  if (!profile.avatarId?.trim()) errors.push('请设置非默认头像');
+  if (!normalizeGender(profile.gender)) errors.push('请在个人资料中选择性别');
+  if (!hasSensitiveField(profile, 'phone', () => /^1\d{10}$/.test(profile.phone)))
+    errors.push('请填写有效联系电话');
+  if (!profile.emergencyName.trim()) errors.push('请填写紧急联系人');
+  if (!hasSensitiveField(profile, 'emergencyPhone', () => /^1\d{10}$/.test(profile.emergencyPhone)))
+    errors.push('请填写有效紧急联系电话');
+  return errors;
 }
 
 export function validateRegistration(v: {
@@ -21,23 +29,7 @@ export function validateRegistration(v: {
   experience: string;
   readiness: Pick<StravaReadiness, 'state' | 'canRegister'>;
 }) {
-  const e: string[] = [];
-  // 云端仅返回脱敏展示值，真实填写状态必须以服务端 sensitiveStatus 为准。
-  if (!v.profile.nickname.trim()) e.push('请填写昵称');
-  if (!v.profile.avatarId?.trim()) e.push('请先设置头像');
-  if (!normalizeGender(v.profile.gender)) e.push('请先在个人资料中选择性别');
-  if (!hasPersonalPhoto(v.profile)) e.push('请先上传个人照片');
-  if (!hasSensitiveField(v.profile, 'realName', () => !!v.profile.realName.trim()))
-    e.push('请填写真实姓名');
-  if (!hasSensitiveField(v.profile, 'phone', () => /^1\d{10}$/.test(v.profile.phone)))
-    e.push('手机号格式错误');
-  if (!v.profile.emergencyName.trim()) e.push('请填写紧急联系人');
-  if (
-    !hasSensitiveField(v.profile, 'emergencyPhone', () =>
-      /^1\d{10}$/.test(v.profile.emergencyPhone),
-    )
-  )
-    e.push('紧急联系电话错误');
+  const e = validateRegistrationProfile(v.profile);
   if (!['self_drive', 'support_vehicle'].includes(v.gatheringMode)) e.push('请选择集合方式');
   if (!v.experience) e.push('请选择骑行经验');
   if (!v.readiness.canRegister) {

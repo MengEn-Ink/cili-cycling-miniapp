@@ -152,7 +152,7 @@ describe('表单校验', () => {
         experience: '常骑',
         readiness: ready,
       }),
-    ).toContain('手机号格式错误');
+    ).toContain('请填写有效联系电话');
   });
   it('资料完整度门禁包含昵称', () => {
     expect(
@@ -162,7 +162,7 @@ describe('表单校验', () => {
         experience: '常骑',
         readiness: ready,
       }),
-    ).toContain('请填写昵称');
+    ).toContain('请授权并填写微信昵称');
   });
   it('ready 但服务端不允许报名时阻断', () => {
     expect(
@@ -213,7 +213,7 @@ describe('表单校验', () => {
         experience: '常骑',
         readiness: ready,
       }),
-    ).toContain('请先在个人资料中选择性别');
+    ).toContain('请在个人资料中选择性别');
   });
   it('性别为非法值时同样阻断', () => {
     expect(
@@ -223,7 +223,7 @@ describe('表单校验', () => {
         experience: '常骑',
         readiness: ready,
       }),
-    ).toContain('请先在个人资料中选择性别');
+    ).toContain('请在个人资料中选择性别');
   });
   it('缺失头像时阻断', () => {
     expect(
@@ -233,9 +233,9 @@ describe('表单校验', () => {
         experience: '常骑',
         readiness: ready,
       }),
-    ).toContain('请先设置头像');
+    ).toContain('请设置非默认头像');
   });
-  it('缺失个人照片时阻断', () => {
+  it('个人照片不再作为报名强制项', () => {
     expect(
       validateRegistration({
         profile: { ...registrationProfile, backgroundPhoto: null, photos: [] },
@@ -243,7 +243,7 @@ describe('表单校验', () => {
         experience: '常骑',
         readiness: ready,
       }),
-    ).toContain('请先上传个人照片');
+    ).toEqual([]);
   });
 });
 

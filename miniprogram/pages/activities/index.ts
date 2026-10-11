@@ -2,7 +2,11 @@ import type { Activity } from '../../models';
 import type { PublicActivityView } from '../../repositories/types';
 import { rideService } from '../../services/ride-service';
 import { activityDisplayStatus } from '../../utils/activity';
-import { formatActivityDateTime } from '../../utils/date-time';
+import {
+  formatActivityDate,
+  formatActivityDateTime,
+  formatChinaDateTime,
+} from '../../utils/date-time';
 import {
   appendUniqueActivities,
   buildTimelineRows,
@@ -15,8 +19,8 @@ import {
 
 const VIEW_COPY = {
   future: {
-    sectionEyebrow: '近期活动',
-    sectionTitle: '下一场',
+    sectionEyebrow: '即将开始',
+    sectionTitle: '即将开始',
     followingTitle: '接下来',
     emptyTitle: '暂无未来活动',
     emptyCopy: '新的骑行活动正在筹备中',
@@ -31,11 +35,16 @@ const VIEW_COPY = {
 } as const;
 
 function displayActivity(item: Activity) {
+  const startAt = item.startAt || item.date;
+  const chinaDateTime = formatChinaDateTime(startAt);
+  const hasSpecificTime = Boolean(item.startAt && !/^\d{4}-\d{2}-\d{2}$/.test(item.startAt));
   return {
     ...item,
     occupied: item.occupiedCount || 0,
     remaining: Math.max(item.capacity - (item.occupiedCount || 0), 0),
-    displayDate: formatActivityDateTime(item.startAt || item.date),
+    displayDate: formatActivityDateTime(startAt),
+    displayDateLabel: formatActivityDate(startAt),
+    displayTimeLabel: hasSpecificTime && chinaDateTime ? chinaDateTime.slice(11, 16) : '时间待公布',
     displayStatus: activityDisplayStatus(item),
   };
 }

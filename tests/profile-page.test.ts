@@ -200,12 +200,11 @@ describe('个人中心加载状态', () => {
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     const styles = readFileSync('miniprogram/pages/profile/index.wxss', 'utf8');
     expect(page.data).not.toHaveProperty('cardExpanded');
-    expect(template).toContain('class="hero-capability-card"');
-    expect(template).toContain('骑行能力');
-    expect(template).not.toContain('STRAVA 累计骑行');
+    expect(template).toContain('class="rider-card"');
+    expect(template).toContain('你的骑行名片');
+    expect(template).toContain('近 90 天骑行');
     expect(template).not.toContain('wx:for="{{heroCard.lifetimeMetrics}}"');
     expect(template).toContain('hero-capability-strava-tenure');
-    expect(template).toContain('近 90 天表现');
     expect(template).toContain(
       'class="hero-capability-secondary" wx:if="{{heroCard.secondaryMetrics.length}}"',
     );
@@ -213,7 +212,7 @@ describe('个人中心加载状态', () => {
     expect(template).not.toContain('最近同步');
     expect(template).not.toContain('页面数据');
     expect(template).not.toContain('profile-cache-message');
-    expect(template).toContain('STRAVA {{heroCard.statusLabel}}');
+    expect(template).toContain('{{heroCard.statusLabel}}');
     expect(template).toContain('wx:if="{{profile && profile.completeness < 100}}"');
     expect(template).toContain('{{profile.completeness}}%');
     expect(template).toContain('style="width: {{profile.completeness}}%"');
@@ -291,15 +290,15 @@ describe('个人中心加载状态', () => {
     const pageScript = readFileSync('miniprogram/pages/profile/index.ts', 'utf8');
 
     expect(template).not.toMatch(/<swiper\b[^>]*\bautoplay(?:=|\s|>)/);
-    expect(template).toContain('骑行能力');
-    expect(template).not.toContain('STRAVA 累计骑行');
-    expect(template).toContain('近 90 天表现');
+    expect(template).toContain('你的骑行名片');
+    expect(template).toContain('近 90 天骑行');
     expect(template).not.toContain('wx:for="{{heroCard.lifetimeMetrics}}"');
     expect(template).toContain('wx:for="{{heroCard.primaryMetrics}}"');
     expect(template).toContain('wx:for="{{heroCard.secondaryMetrics}}"');
     expect(template).not.toContain('bindtap="toggleCard"');
     expect(template).not.toContain('点按收起');
     expect(template).not.toContain('我的骑行名片');
+    expect(template).not.toMatch(/CILI|STRAVA/);
     expect(pageScript).not.toContain('toggleCard()');
     expect(pageScript).not.toContain("'/pages/capability-card/index'");
   });
@@ -435,12 +434,15 @@ describe('个人中心加载状态', () => {
     expect(existsSync('miniprogram/assets/profile/hero-alpine.svg')).toBe(true);
   });
 
-  it('入口仅沿用现有身份与管理员权限条件', () => {
+  it('活动管理仅对管理员显示且方法层同样校验权限', () => {
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
+    const pageScript = readFileSync('miniprogram/pages/profile/index.ts', 'utf8');
 
-    expect(template).toMatch(/wx:if="{{authStatus === 'authenticated'}}" bindtap="activities"/);
-    expect(template).toMatch(/wx:if="{{isAdmin}}" bindtap="admin"/);
-    expect(template).not.toMatch(/wx:if="{{isSuper}}" bindtap="admin"/);
+    expect(template).toMatch(/wx:if="{{isAdmin}}" bindtap="activities"/);
+    expect(template).not.toContain('bindtap="admin"');
+    expect(pageScript).toMatch(/activities\(\)\s*\{\s*if \(this\.data\.isAdmin\)/);
+    page.activities();
+    expect(wx.navigateTo).not.toHaveBeenCalled();
   });
 
   it('身份与资料请求并行启动，管理员入口等待本次身份确认', async () => {
@@ -637,8 +639,8 @@ describe('个人中心加载状态', () => {
       isAdmin: false,
     });
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
-    expect(template).toContain('wx:if="{{identityHintText}}"');
-    expect(template).toContain('{{identityHintText}}');
+    expect(template).toContain('wx:if="{{authError || identityHintText}}"');
+    expect(template).toContain('{{authError || identityHintText}}');
   });
 
   it('远端身份错误时仍展示上次验证提示但保持权限关闭', async () => {
@@ -673,20 +675,34 @@ describe('个人中心加载状态', () => {
     expect(wx.navigateTo).not.toHaveBeenCalled();
   });
 
-  it('统一明亮主题的资料操作与重试按钮使用深色底和反差文字', () => {
+  it('锁定橙红、炭黑、暖灰、白的高对比视觉语义且不使用荧光黄', () => {
     const styles = readFileSync('miniprogram/pages/profile/index.wxss', 'utf8');
 
-    expect(styles).toMatch(
-      /\.edit-button,\s*\.profile-refresh-error button\s*\{[^}]*background:\s*var\(--color-text\) !important;[^}]*color:\s*var\(--color-bg\) !important;/s,
-    );
+    expect(styles).toContain('var(--color-brand)');
+    expect(styles).toContain('var(--color-text)');
+    expect(styles).toContain('var(--color-bg)');
+    expect(styles).toContain('var(--color-on-media)');
+    expect(styles).not.toMatch(/#(?:ccff00|d7ff00|eaff00|ffff00)/i);
   });
 
-  it('从个人中心右上角进入设置页', () => {
+  it('下方菜单集中提供报名资料、隐私说明和设置授权，不重复活动报名状态', () => {
     page.openSettings();
 
     expect(wx.navigateTo).toHaveBeenCalledWith({ url: '/pages/settings/index' });
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
-    expect(template).toContain('aria-label="打开设置"');
-    expect(template).not.toContain('bindtap="switchTheme"');
+    expect(template).toContain('报名资料');
+    expect(template).toContain('设置与授权');
+    expect(template).toContain('联系电话仅用于活动联络');
+    expect(template).toContain('紧急联系人仅在骑行安全需要时使用');
+    expect(template).not.toMatch(/报名成功|审核中|已报名|报名状态/);
+  });
+
+  it('微信身份未授权时明确引导昵称和非默认头像', () => {
+    const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
+
+    expect(template).toContain('wx:if="{{authStatus !== \'authenticated\'}}"');
+    expect(template).toContain('请先设置常用昵称和非默认头像，再完成微信身份验证。');
+    expect(template).toContain('完善昵称与头像');
+    expect(template).toContain('验证微信身份');
   });
 });

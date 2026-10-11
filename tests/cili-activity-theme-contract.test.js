@@ -98,6 +98,27 @@ describe('CILI 活动页静态契约', () => {
     expect(activityCardStyles).toContain('grid-template-columns: repeat(3, minmax(0, 1fr));');
   });
 
+  it('V3.1 保留筛选与日期分组，并突出照片卡核心信息', () => {
+    expect(activities).toContain('>即将开始</view>');
+    expect(activities).toContain('>历史活动</view>');
+    expect(activities).toContain('bindtap="scrollToDay"');
+    expect(activities).toContain('id="day-{{row.dayKey}}"');
+    expect(activityCard).toContain('class="date-plate"');
+    expect(activityCard).toContain('{{item.displayDateLabel}}');
+    expect(activityCard).toContain('{{item.displayTimeLabel}}');
+    expect(activityCard).toContain('class="location-label">集合');
+    expect(activityCard).toContain('{{item.publisher.nickname}} 发起');
+    expect(activityCard).toContain('人已报名');
+  });
+
+  it('V3.1 使用橙红、炭黑、暖灰和白，不继承荧光黄视觉', () => {
+    expect(activitiesStyles).toContain('--v31-accent: var(--color-brand)');
+    expect(activitiesStyles).toContain('--v31-charcoal: var(--color-text)');
+    expect(activitiesStyles).toContain('--v31-warm-gray: var(--color-bg)');
+    expect(activityCardStyles).toContain('--card-accent: var(--color-brand)');
+    expect(`${activitiesStyles}\n${activityCardStyles}`).not.toMatch(/#d9ff43|#c4ec23|#f2ffc2/i);
+  });
+
   it('活动界面删除装饰英文但保留品牌与专有名词', () => {
     expect(activities).not.toContain('RIDES /');
     expect(activitiesController).not.toContain('RIDE ARCHIVE');
@@ -138,7 +159,7 @@ describe('CILI 活动页静态契约', () => {
   it('使用单一明亮 token 和 16/24/32rpx 语义层级', () => {
     const appStyles = read('miniprogram/app.wxss');
     const tokens = uiTokens(appStyles);
-    expect(tokens['--color-bg']).toBe('#ffffff');
+    expect(tokens['--color-bg']).toBe('#f2f3ef');
     expect(tokens['--radius-sm']).toBe('16rpx');
     expect(tokens['--radius-md']).toBe('24rpx');
     expect(tokens['--radius-display']).toBe('32rpx');

@@ -45,13 +45,16 @@ describe('方案 A 编辑式性能布局', () => {
     expect(template.indexOf('class="profile-capability-section"')).toBeGreaterThan(
       template.indexOf('</view>\n\n  <view class="profile-capability-section"'),
     );
-    expect(template).toContain('class="hero-capability-card"');
+    expect(template).toContain('class="hero-capability-head"');
+    expect(template).toContain('class="hero-capability-metrics"');
     expect(template).not.toContain('cardExpanded');
     expect(template).toContain('wx:if="{{profile && profile.completeness < 100}}"');
     expect(template).toContain('class="hero-profile-progress"');
     expect(styles).toMatch(/\.profile-capability-section\s*\{/);
-    expect(styles).toMatch(/\.profile-capability-section \.hero-capability-card\s*\{/);
-    expect(styles).toMatch(/\.profile-hero\.has-bg\s*\{[^}]*min-height:\s*640rpx/s);
+    expect(styles).toMatch(
+      /\.profile-capability-section\s*\{[^}]*background:\s*var\(--color-text\)/s,
+    );
+    expect(styles).toMatch(/\.profile-hero\.has-bg\s*\{[^}]*min-height:\s*600rpx/s);
   });
 
   it('活动卡和详情页操作按钮使用统一高度与双轴居中', () => {
@@ -62,7 +65,7 @@ describe('方案 A 编辑式性能布局', () => {
     expect(declaration(cardCta, 'display')).toBe('flex');
     expect(declaration(cardCta, 'align-items')).toBe('center');
     expect(declaration(cardCta, 'justify-content')).toBe('center');
-    expect(declaration(cardCta, 'width')).toBe('192rpx');
+    expect(declaration(cardCta, 'min-width')).toBe('184rpx');
     expect(declaration(cardCta, 'height')).toBe('var(--control-height)');
     expect(declaration(cardCta, 'min-height')).toBe('var(--control-height)');
 

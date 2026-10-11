@@ -93,7 +93,9 @@ describe('activity timeline template contract', () => {
     expect(template).toContain('{{followingTitle}}');
     expect(template).toContain('bindtap="loadMore"');
     expect(template).toContain("{{loadingMore ? '加载中…' : '加载更多'}}");
-    expect(template).toContain("{{activeView === 'history' ? '历史活动列表' : '未来活动列表'}}");
+    expect(template).toContain(
+      "{{activeView === 'history' ? '历史活动列表' : '即将开始活动列表'}}",
+    );
   });
 
   it('未来视图提供日期分组头、锚点与日期快捷定位入口', () => {
@@ -127,8 +129,8 @@ describe('activities page timeline controller', () => {
     expect(rideService.listActivityPage).toHaveBeenNthCalledWith(1, 'future');
     expect(page.data).toMatchObject({
       activeView: 'future',
-      sectionEyebrow: '近期活动',
-      sectionTitle: '下一场',
+      sectionEyebrow: '即将开始',
+      sectionTitle: '即将开始',
       emptyCopy: '新的骑行活动正在筹备中',
       nextCursor: 'future-cursor',
     });

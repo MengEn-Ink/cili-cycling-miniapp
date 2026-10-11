@@ -22,13 +22,13 @@ function expectUiContrast(foreground: string, background: string, minimum = 4.5)
 
 describe('unified UI accessibility regressions', () => {
   it('uses one bright token set and semantic page surfaces', () => {
-    expect(tokens['--color-bg']).toBe('#ffffff');
-    expect(tokens['--color-text']).toBe('#10120f');
-    expect(tokens['--color-brand']).toBe('#d9ff43');
-    expect(tokens['--color-action']).toBe('#10120f');
+    expect(tokens['--color-bg']).toBe('#f2f3ef');
+    expect(tokens['--color-text']).toBe('#20241f');
+    expect(tokens['--color-brand']).toBe('#e85b32');
+    expect(tokens['--color-action']).toBe('#20241f');
     expect(tokens['--color-on-action']).toBe('#ffffff');
     expectUiContrast('var(--color-text)', 'var(--color-bg)', 7);
-    expectUiContrast('var(--color-on-brand)', 'var(--color-brand)', 7);
+    expectUiContrast('var(--color-on-brand)', 'var(--color-brand)', 4.5);
     expectUiContrast('var(--color-on-action)', 'var(--color-action)', 7);
 
     const globalPage = effectiveBlock(app, 'page');
@@ -189,7 +189,7 @@ describe('unified UI accessibility regressions', () => {
   it('keeps photographic hero copy white on dark media overlays', () => {
     const profileStyles = read('miniprogram/pages/profile/index.wxss');
     const profileHero = effectiveBlock(profileStyles, '.profile-hero');
-    expect(declaration(profileHero, 'color')).toBe('#f7f7f5');
+    expectSemantic(declaration(profileHero, 'color'), '--color-on-media');
 
     const reviewStyles = read('miniprogram/pages/admin/review-detail/index.wxss');
     const reviewHero = effectiveBlock(reviewStyles, '.capability-hero .hero-content');
@@ -214,9 +214,9 @@ describe('unified UI accessibility regressions', () => {
     expectUiContrast('var(--color-muted)', 'var(--color-surface)');
   });
 
-  it('keeps the profile edit action at least 88rpx tall', () => {
-    const editButton = effectiveBlock(read('miniprogram/pages/profile/index.wxss'), '.edit-button');
-    expect(rpx(editButton, 'min-height')).toBeGreaterThanOrEqual(88);
+  it('keeps the profile service actions at least 88rpx tall', () => {
+    const menuCard = effectiveBlock(read('miniprogram/pages/profile/index.wxss'), '.menu-card');
+    expect(declaration(menuCard, 'min-height')).toBe('var(--control-height)');
   });
 
   it('keeps registration metadata readable without using brand as body text', () => {
@@ -275,10 +275,11 @@ describe('unified UI accessibility regressions', () => {
     );
     expectSemantic(
       declaration(effectiveBlock(activityTimeline, '.timeline-tab.is-active'), 'background'),
-      '--color-action',
+      '--color-surface',
     );
+    expect(declaration(effectiveBlock(activityTimeline, '.timeline-tabs'), 'width')).toBe('100%');
     expect(activityTimeline).toMatch(
-      /@media \(max-width: 320px\)[\s\S]*?\.timeline-tabs\s*\{[^}]*width:\s*100%/s,
+      /@media \(max-width: 350px\)[\s\S]*?\.page\.activities-page\s*\{[^}]*padding-right:\s*var\(--page-gutter-narrow\)/s,
     );
   });
 

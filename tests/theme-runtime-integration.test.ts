@@ -23,7 +23,7 @@ describe('单一明亮外观接线', () => {
     const profileTemplate = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     const profileScript = readFileSync('miniprogram/pages/profile/index.ts', 'utf8');
 
-    expect(profileTemplate).toContain('class="settings-entry"');
+    expect(profileTemplate).toContain('bindtap="openSettings"');
     expect(profileTemplate).toContain('aria-label="打开设置"');
     expect(profileScript).toContain("wx.navigateTo({ url: '/pages/settings/index' })");
     expect(template).not.toMatch(/显示主题|深色（默认）|浅色（户外）|theme-option/);

@@ -831,6 +831,13 @@ brand-logo {
   line-height: 1.2;
 }
 
+.decision-hint {
+  margin-top: 6rpx;
+  color: var(--color-muted);
+  font-size: 22rpx;
+  line-height: 1.4;
+}
+
 .decision-meta {
   margin-top: 6rpx;
   color: var(--color-muted);
@@ -1105,6 +1112,28 @@ brand-logo {
   height: 320rpx;
   border: var(--border-width) solid var(--color-border);
   background: #fff;
+}
+
+.group-qr-locked {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 24rpx;
+  border: 4rpx solid #d8cec8;
+  border-radius: var(--radius-md);
+  background: #f5f0ec;
+  color: #514944;
+  line-height: 1.45;
+}
+
+.group-qr-lock {
+  flex: 0 0 auto;
+  padding: 6rpx 12rpx;
+  border-radius: 8rpx;
+  background: #2c2927;
+  color: #fff;
+  font-size: 20rpx;
+  font-weight: 900;
 }
 
 .group-qr-warning {

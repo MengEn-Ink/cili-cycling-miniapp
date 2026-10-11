@@ -1,3 +1,4 @@
+import { appStore } from '../../store/app-store';
 import { rideService } from '../../services/ride-service';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
@@ -18,6 +19,54 @@ function groupQrExpired(uploadedAt?: string) {
   if (!uploadedAt) return false;
   const time = new Date(uploadedAt).getTime();
   return Number.isFinite(time) && Date.now() - time >= GROUP_QR_EXPIRE_MS;
+}
+
+function groupQrVisible(
+  registration: { status?: string } | undefined,
+  isOrganizer: boolean,
+  isAdmin: boolean,
+): boolean {
+  return (
+    isOrganizer ||
+    isAdmin ||
+    registration?.status === 'approved' ||
+    registration?.status === 'checked_in'
+  );
+}
+
+function viewerStatus(
+  registration: { status?: string } | undefined,
+  isLoggedIn: boolean,
+  isOrganizer: boolean,
+  isAdmin: boolean,
+) {
+  if (isAdmin) return { key: 'admin', label: '管理员', hint: '可管理活动与报名审核' };
+  if (isOrganizer) return { key: 'organizer', label: '组织者', hint: '可管理活动与报名骑友' };
+  if (!isLoggedIn) return { key: 'guest', label: '未登录', hint: '登录后可报名并查看报名进度' };
+  switch (registration?.status) {
+    case 'waiting':
+      return { key: 'waiting', label: '候补中', hint: '有名额释放时将按顺序递补' };
+    case 'pending':
+      return { key: 'pending', label: '待审核', hint: '组织者正在审核报名资料' };
+    case 'approved':
+      return { key: 'approved', label: '已通过', hint: '可查看行程与活动群二维码' };
+    case 'checked_in':
+      return { key: 'checked_in', label: '已签到', hint: '签到完成，可查看活动群二维码' };
+    case 'rejected':
+      return { key: 'rejected', label: '未通过', hint: '可完善资料后重新报名' };
+    case 'cancelled':
+      return { key: 'cancelled', label: '已取消', hint: '报名开放时可重新报名' };
+    default:
+      return { key: 'unregistered', label: '未报名', hint: '提交后将进入审核' };
+  }
+}
+
+function primaryAction(activity: any, registration: any, state: ReturnType<typeof viewerStatus>) {
+  if (state.key === 'guest')
+    return { kind: 'register', label: '登录后报名', enabled: true } as ActivityAction;
+  if (state.key === 'organizer' || state.key === 'admin')
+    return { kind: 'view-history', label: '管理活动', enabled: true } as ActivityAction;
+  return resolveActivityAction(activity, registration);
 }
 
 function unavailableAction(): ActivityAction {
@@ -73,6 +122,7 @@ Page({
   posterBusy: false,
   data: {
     loading: true,
+    activityId: '',
     error: '',
     item: null as any,
     registration: null as any,
@@ -90,16 +140,23 @@ Page({
     generatingPoster: false,
     teamId: '',
     activityAction: unavailableAction(),
+    viewerStatus: { key: 'guest', label: '未登录', hint: '登录后可报名并查看报名进度' },
+    attendeesVisible: false,
+    groupQrVisible: false,
+    groupQrLockedMessage: '报名审核通过后可查看活动群二维码',
     groupQrCodeExpired: false,
   },
-  onShow() {},
+  onShow() {
+    if (this.data.item && this.data.activityId && !this.data.loading)
+      void this.load(this.data.activityId);
+  },
   onLoad(q: any) {
     this.unloaded = false;
     const teamId =
       typeof q.team_id === 'string' && /^team_[A-Za-z0-9_-]{8,80}$/.test(q.team_id)
         ? q.team_id
         : '';
-    this.safeSetData({ teamId });
+    this.safeSetData({ teamId, activityId: q.id || '' });
     wx.showShareMenu?.({ menus: ['shareAppMessage', 'shareTimeline'] });
     void this.load(q.id || '');
   },
@@ -126,17 +183,52 @@ Page({
       const item = await rideService.getActivity(id);
       if (requestId !== this.loadRequestId || this.unloaded) return;
       if (!item) throw new Error('活动不存在');
-      const registration = (await rideService.listRegistrations()).find(
-        (value) => value.activityId === id,
-      );
+      const isLoggedIn = !['unavailable', 'error'].includes(appStore.authStatus);
+      const registration = isLoggedIn
+        ? (await rideService.listRegistrations()).find((value) => value.activityId === id)
+        : undefined;
       if (requestId !== this.loadRequestId || this.unloaded) return;
       const detail = item as any;
+      const isAdmin = isLoggedIn && appStore.role === 'admin';
+      let isOrganizer =
+        isLoggedIn &&
+        (detail.isOrganizer === true ||
+          detail.viewer?.isOrganizer === true ||
+          (typeof detail.createdBy === 'string' && detail.createdBy === appStore.openid));
+      if (
+        isLoggedIn &&
+        !isAdmin &&
+        !isOrganizer &&
+        typeof rideService.getAdminActivity === 'function'
+      ) {
+        // 复用现有活动管理读取权限确认发布者身份；普通骑友的无权响应安全降级为 false。
+        isOrganizer = await rideService
+          .getAdminActivity(id)
+          .then((activity) => Boolean(activity))
+          .catch(() => false);
+        if (requestId !== this.loadRequestId || this.unloaded) return;
+      }
+      const state = viewerStatus(registration, isLoggedIn, isOrganizer, isAdmin);
+      const canSeeAttendees =
+        isOrganizer ||
+        isAdmin ||
+        ['waiting', 'pending', 'approved', 'checked_in'].includes(registration?.status || '');
+      const canSeeGroupQr = groupQrVisible(registration, isOrganizer, isAdmin);
       const elevationProfile = validElevationProfile(detail.route?.elevationProfile);
       this.safeSetData(
         {
           item: detail,
           registration,
-          attendees: Array.isArray(detail.attendees) ? detail.attendees : [],
+          attendees: canSeeAttendees && Array.isArray(detail.attendees) ? detail.attendees : [],
+          attendeesVisible: canSeeAttendees,
+          viewerStatus: state,
+          groupQrVisible: canSeeGroupQr,
+          groupQrLockedMessage:
+            state.key === 'guest'
+              ? '登录并报名审核通过后可查看活动群二维码'
+              : state.key === 'rejected' || state.key === 'cancelled'
+                ? '当前报名状态不可查看，重新报名并通过审核后开放'
+                : '报名审核通过后可查看活动群二维码',
           galleryImages: item.images?.length
             ? item.images
             : item.coverImage
@@ -147,7 +239,7 @@ Page({
           endTime: formatChinaDateTimeSeconds(item.endAt),
           deadlineTime: formatChinaDateTimeSeconds(item.deadline),
           hasElevationProfile: elevationProfile.length >= 2,
-          activityAction: resolveActivityAction(item, registration),
+          activityAction: primaryAction(item, registration, state),
           groupQrCodeExpired: groupQrExpired(detail.groupQrCodeUploadedAt),
         },
         () => this.drawElevation(),
@@ -353,9 +445,19 @@ Page({
       this.safeSetData({ generatingPoster: false });
     }
   },
-  go() {
+  async go() {
     const action = this.data.activityAction as ActivityAction;
     if (!action.enabled || !this.data.item) return;
+    if (this.data.viewerStatus.key === 'guest') {
+      const attempt = await appStore.ensureIdentity(wx.cloud);
+      if (attempt.status === 'authenticated') await this.load(this.data.item.id);
+      else wx.showToast?.({ title: '登录未完成，请稍后重试', icon: 'none' });
+      return;
+    }
+    if (this.data.viewerStatus.key === 'organizer' || this.data.viewerStatus.key === 'admin') {
+      wx.navigateTo({ url: '/pages/admin/activity-edit/index?id=' + this.data.item.id });
+      return;
+    }
     if (action.kind === 'view-registration' || action.kind === 'view-history') {
       if (action.registrationId)
         wx.navigateTo({ url: '/pages/credential/index?id=' + action.registrationId });

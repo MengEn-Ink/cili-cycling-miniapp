@@ -136,7 +136,7 @@ describe('活动 CTA 九分支', () => {
 
   it('活动卡容量缺失时显示确认中而不是 0 人报名', () => {
     const template = readFileSync('miniprogram/components/activity-card/index.wxml', 'utf8');
-    expect(template).toContain("item.capacity > 0 ? item.remaining : '确认中'");
+    expect(template).toContain("item.capacity > 0 ? item.occupied : '—'");
     expect(template).toContain(
       "item.capacity > 0 ? (item.occupied + ' / ' + item.capacity + ' 人已报名') : '名额确认中'",
     );

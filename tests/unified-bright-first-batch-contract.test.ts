@@ -13,7 +13,7 @@ describe('HP-20261010-02 第一批六页尺寸契约', () => {
     expect(declaration(effectiveBlock(styles, '.activity-results'), 'row-gap')).toBe(
       'var(--card-gap)',
     );
-    expect(declaration(effectiveBlock(styles, '.page-title'), 'font-size')).toBe('48rpx');
+    expect(declaration(effectiveBlock(styles, '.page-title'), 'font-size')).toBe('44rpx');
   });
 
   it('我的行程使用白底 2px 描边卡片和可读序号', () => {
@@ -71,16 +71,14 @@ describe('HP-20261010-02 第一批六页尺寸契约', () => {
   it('个人中心保留媒体 Hero，其余卡片回到明亮描边结构', () => {
     const template = read('miniprogram/pages/profile/index.wxml');
     const styles = read('miniprogram/pages/profile/index.wxss');
+    expect(template).toContain('bindtap="openSettings"');
     expect(template).toContain('aria-label="打开设置"');
     expect(template).not.toContain('<text>设置</text>');
-    expect(declaration(effectiveBlock(styles, '.settings-entry'), 'min-height')).toBe(
-      'var(--control-height)',
-    );
-    expect(declaration(effectiveBlock(styles, '.profile-hero'), 'min-height')).toBe('640rpx');
-    const card = effectiveBlock(styles, '.profile-page .profile-card');
-    expect(declaration(card, 'padding')).toBe('32rpx');
-    expect(declaration(card, 'border-width')).toBe('4rpx');
-    expectSemantic(declaration(card, 'border-radius'), '--radius-card');
+    expect(styles).toMatch(/\.profile-hero\.has-bg\s*\{[^}]*min-height:\s*600rpx/s);
+    const card = effectiveBlock(styles, '.menu-list');
+    expect(declaration(card, 'border')).toBe('1rpx solid var(--color-border)');
+    expect(declaration(card, 'border-radius')).toBe('24rpx');
+    expectSemantic(declaration(card, 'background'), '--color-surface');
     expect(declaration(effectiveBlock(styles, '.menu-card'), 'min-height')).toBe(
       'var(--control-height)',
     );

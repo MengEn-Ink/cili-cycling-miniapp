@@ -50,6 +50,17 @@ describe('报名表单受控控件与视觉契约', () => {
     expect(styles).toContain('.form-page button[disabled]');
   });
 
+  it('资料缺失时汇总问题并引导完善，且说明返回后保留已填内容', () => {
+    expect(template).toContain('profileErrors.length');
+    expect(template).toContain('还需完善 {{profileErrors.length}} 项资料');
+    expect(template).toContain('去完善个人资料');
+    expect(template).toContain('集合方式、骑行经验、队伍与备注都会保留');
+    expect(template).toContain('微信昵称');
+    expect(template).toContain('联系电话');
+    expect(template).not.toMatch(/真实姓名|个人照片|未填写实名/);
+    expect(styles).toContain('.profile-alert');
+  });
+
   it('保持纯色 CILI 深色主题且小屏布局不溢出', () => {
     expect(styles).toContain('background: var(--color-bg)');
     expect(styles).toContain('@media (max-width: 340px)');
