@@ -378,7 +378,7 @@ Page({
       url: '/pages/registration-form/index?id=' + this.data.item.id + teamQuery,
     });
   },
-  openStravaRoute() {
+  copyStravaRoute() {
     const url = this.data.item?.route?.stravaRouteUrl;
     if (typeof url !== 'string' || !/^https:\/\//i.test(url)) {
       wx.showToast({ title: '暂无 Strava 路线', icon: 'none' });
