@@ -1,0 +1,184 @@
+{
+  "startedAt": "2026-10-11T06:41:02.521Z",
+  "git": "f0cbcbc",
+  "version": "0.0.123.1",
+  "windowWidth": 390,
+  "expectedGutterPx": 16.64,
+  "gutterRpx": 32,
+  "probes": {
+    "settings-page": {
+      "pl": 16,
+      "pr": 16,
+      "width": 390,
+      "left": 0,
+      "right": 390
+    },
+    "activities-page": {
+      "pl": 16,
+      "pr": 16,
+      "width": 390,
+      "left": 0,
+      "right": 390
+    },
+    "capability-page": {
+      "pl": 16,
+      "pr": 16,
+      "width": 390,
+      "left": 0,
+      "right": 390
+    },
+    "capability-meta": {
+      "aligns": [
+        "left",
+        "left"
+      ],
+      "lefts": [
+        87,
+        87
+      ],
+      "labels": [
+        42,
+        42
+      ]
+    }
+  },
+  "checks": [
+    {
+      "name": "settings-page-node-present",
+      "ok": true,
+      "detail": {
+        "count": 1
+      }
+    },
+    {
+      "name": "settings-page-left-gutter-32rpx",
+      "ok": true,
+      "detail": {
+        "paddingLeftPx": 16,
+        "expectPx": 16.64,
+        "raw": "16px"
+      }
+    },
+    {
+      "name": "settings-page-right-gutter-32rpx",
+      "ok": true,
+      "detail": {
+        "paddingRightPx": 16,
+        "expectPx": 16.64,
+        "raw": "16px"
+      }
+    },
+    {
+      "name": "settings-page-gutters-symmetric",
+      "ok": true,
+      "detail": {
+        "paddingLeftPx": 16,
+        "paddingRightPx": 16
+      }
+    },
+    {
+      "name": "activities-page-node-present",
+      "ok": true,
+      "detail": {
+        "count": 1
+      }
+    },
+    {
+      "name": "activities-page-left-gutter-32rpx",
+      "ok": true,
+      "detail": {
+        "paddingLeftPx": 16,
+        "expectPx": 16.64,
+        "raw": "16px"
+      }
+    },
+    {
+      "name": "activities-page-right-gutter-32rpx",
+      "ok": true,
+      "detail": {
+        "paddingRightPx": 16,
+        "expectPx": 16.64,
+        "raw": "16px"
+      }
+    },
+    {
+      "name": "activities-page-gutters-symmetric",
+      "ok": true,
+      "detail": {
+        "paddingLeftPx": 16,
+        "paddingRightPx": 16
+      }
+    },
+    {
+      "name": "capability-page-node-present",
+      "ok": true,
+      "detail": {
+        "metaRows": {
+          "hasCard": true,
+          "coverageText": "2026年7月12日 至 2026年10月10日 · 覆盖完整",
+          "syncedAtText": "同步于 2026-10-10 21:56:33",
+          "error": null
+        }
+      }
+    },
+    {
+      "name": "capability-page-left-gutter-32rpx",
+      "ok": true,
+      "detail": {
+        "paddingLeftPx": 16,
+        "expectPx": 16.64,
+        "raw": "16px"
+      }
+    },
+    {
+      "name": "capability-page-right-gutter-32rpx",
+      "ok": true,
+      "detail": {
+        "paddingRightPx": 16,
+        "expectPx": 16.64,
+        "raw": "16px"
+      }
+    },
+    {
+      "name": "capability-page-gutters-symmetric",
+      "ok": true,
+      "detail": {
+        "paddingLeftPx": 16,
+        "paddingRightPx": 16
+      }
+    },
+    {
+      "name": "capability-meta-value-text-align-left",
+      "ok": true,
+      "detail": {
+        "aligns": [
+          "left",
+          "left"
+        ]
+      }
+    },
+    {
+      "name": "capability-meta-value-same-left-column",
+      "ok": true,
+      "detail": {
+        "lefts": [
+          87,
+          87
+        ]
+      }
+    },
+    {
+      "name": "capability-meta-value-after-label-column",
+      "ok": true,
+      "detail": {
+        "labelRight": 81,
+        "valueLefts": [
+          87,
+          87
+        ]
+      }
+    }
+  ],
+  "exceptions": [],
+  "finishedAt": "2026-10-11T06:41:42.490Z"
+}
