@@ -4,7 +4,7 @@ page {
 
 .capability-page {
   min-height: 100vh;
-  padding: 18rpx 40rpx calc(40rpx + env(safe-area-inset-bottom));
+  padding: 18rpx var(--page-gutter) calc(40rpx + env(safe-area-inset-bottom));
   background: var(--color-bg);
   color: var(--color-text);
 }
@@ -333,7 +333,7 @@ page {
   min-width: 0;
   flex: 1;
   overflow-wrap: anywhere;
-  text-align: right;
+  text-align: left;
 }
 
 .card-caption {
