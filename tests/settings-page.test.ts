@@ -44,21 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.11.34',
+      version: '2026.10.11.35',
       latest: true,
-      title: '骑行名片支持访问 Strava 主页',
-      summary: '已连接 Strava 的骑友可从个人中心骑行名片复制官方主页链接，并按提示前往浏览器打开。',
+      title: '行程归档自动刷新',
+      summary: '“我的行程”停留跨过中国时间零点时会自动刷新，过期行程无需重新进入页面即可归档。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.11.35',
       '2026.10.11.34',
       '2026.10.11.33',
       '2026.10.11.32',
       '2026.10.11.31',
-      '2026.10.11.30',
     ]);
   });
 

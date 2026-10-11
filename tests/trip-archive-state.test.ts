@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildTripMeetingInfo,
   isTripArchived,
+  millisecondsUntilNextChinaMidnight,
 } from '../miniprogram/pages/registrations/trip-state';
 
 describe('我的行程归档口径', () => {
@@ -24,6 +25,13 @@ describe('我的行程归档口径', () => {
   it('结束时间缺失或非法时不误隐藏行程', () => {
     expect(isTripArchived(undefined, new Date('2026-10-12T00:00:00+08:00'))).toBe(false);
     expect(isTripArchived('not-a-date', new Date('2026-10-12T00:00:00+08:00'))).toBe(false);
+  });
+
+  it('准确计算到下一个中国时间零点的刷新间隔', () => {
+    expect(millisecondsUntilNextChinaMidnight(new Date('2026-10-11T23:59:59.900+08:00'))).toBe(100);
+    expect(millisecondsUntilNextChinaMidnight(new Date('2026-10-12T00:00:00.000+08:00'))).toBe(
+      24 * 60 * 60 * 1000,
+    );
   });
 });
 

@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.11.35',
+    date: '2026-10-11',
+    title: '行程归档自动刷新',
+    summary: '“我的行程”停留跨过中国时间零点时会自动刷新，过期行程无需重新进入页面即可归档。',
+    latest: true,
+    features: [
+      '页面停留跨过中国时间零点时自动刷新行程列表',
+      '离开页面后停止归档刷新，避免后台重复请求',
+      '继续按活动结束次日零点归档，不改变原有归档口径',
+    ],
+  },
+  {
     version: '2026.10.11.34',
     date: '2026-10-11',
     title: '骑行名片支持访问 Strava 主页',
     summary: '已连接 Strava 的骑友可从个人中心骑行名片复制官方主页链接，并按提示前往浏览器打开。',
-    latest: true,
+    latest: false,
     features: [
       '个人中心骑行名片新增 Strava 主页入口',
       '使用 Strava 官方 HTTPS 个人主页地址',
