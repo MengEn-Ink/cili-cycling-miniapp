@@ -378,33 +378,6 @@ describe('资料编辑头像交互', () => {
     expect(wx.showToast).toHaveBeenCalledWith({ title: page.data.mediaError, icon: 'none' });
   });
 
-  it.each([
-    [0, '/assets/profile/avatars/cili-black.png', 'wxfile://usr/cili-default-0.png'],
-    [1, '/assets/profile/avatars/cili-orange.png', 'wxfile://usr/cili-default-1.png'],
-    [2, '/assets/profile/avatars/cili-ivory.png', 'wxfile://usr/cili-default-2.png'],
-  ])('第 %i 个默认头像转为本地文件并复用 custom 上传链路', async (index, asset, local) => {
-    const uploadFile = vi.fn().mockResolvedValue({
-      fileID: `cloud://env/profiles/owner/default-${index}.png`,
-    });
-    const readFile = vi.fn((options) => options.success({ data: new ArrayBuffer(8) }));
-    const writeFile = vi.fn((options) => options.success({}));
-    Object.assign(wx, {
-      getFileSystemManager: () => ({ readFile, writeFile }),
-      cloud: { uploadFile, deleteFile: vi.fn() },
-    });
-
-    await page.chooseDefaultAvatar({ currentTarget: { dataset: { index } } });
-
-    expect(readFile).toHaveBeenCalledWith(expect.objectContaining({ filePath: asset }));
-    expect(writeFile).toHaveBeenCalledWith(expect.objectContaining({ filePath: local }));
-    expect(uploadFile).toHaveBeenCalledWith(expect.objectContaining({ filePath: local }));
-    expect(rideService.registerProfileMedia).toHaveBeenCalledWith(
-      `cloud://env/profiles/owner/default-${index}.png`,
-      'other',
-      'custom',
-    );
-  });
-
   it('chooseMedia 不可用时自定义头像降级 chooseImage 上传', async () => {
     const uploadedFileId = 'cloud://env/profiles/owner/custom-fallback.jpg';
     const uploadFile = vi.fn().mockResolvedValue({ fileID: uploadedFileId });
@@ -495,7 +468,6 @@ describe('资料编辑头像交互', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     const second = page.chooseCustomAvatar();
     const wechat = page.chooseWechatAvatar({ detail: { avatarUrl: '/private/tmp/wechat.jpg' } });
-    const preset = page.chooseDefaultAvatar({ currentTarget: { dataset: { index: 0 } } });
 
     expect(page.data.avatarBusy).toBe(true);
     expect(chooseMedia).toHaveBeenCalledTimes(1);
@@ -504,7 +476,7 @@ describe('资料编辑头像交互', () => {
     uploadPath.resolve(
       'profiles/0123456789abcdef0123456789abcdef/123e4567-e89b-42d3-a456-426614174000.jpg',
     );
-    await Promise.all([first, second, wechat, preset]);
+    await Promise.all([first, second, wechat]);
     expect(page.data.avatarBusy).toBe(false);
   });
 
@@ -1119,11 +1091,13 @@ describe('资料编辑头像页面契约', () => {
     expect(styles).toMatch(/\.avatar-action\s*\{[^}]*min-height:\s*88rpx/s);
   });
 
-  it('提供 CILI 黑、橙、米白三款默认头像', () => {
-    expect(source).toContain('cili-black.png');
-    expect(source).toContain('cili-orange.png');
-    expect(source).toContain('cili-ivory.png');
-    expect(template).toContain('bindtap="chooseDefaultAvatar"');
+  it('只提供微信授权与自定义上传头像，不提供任何预设头像', () => {
+    expect(template).toContain('open-type="chooseAvatar"');
+    expect(template).toContain('bindtap="chooseCustomAvatar"');
+    expect(template).not.toContain('bindtap="chooseDefaultAvatar"');
+    expect(template).not.toContain('CILI 主题头像');
+    expect(source).not.toContain('DEFAULT_AVATARS');
+    expect(source).not.toContain('materializeDefaultAvatar');
   });
 
   it('实名性别为男/女单选', () => {

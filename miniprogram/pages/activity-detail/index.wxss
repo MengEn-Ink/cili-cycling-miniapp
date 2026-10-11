@@ -486,6 +486,18 @@ brand-logo {
   border-radius: 50%;
 }
 
+.attendee-avatar-placeholder,
+.rider-card-avatar-placeholder {
+  background: var(--color-surface-muted);
+  color: var(--color-muted);
+  font-size: 20rpx;
+  font-weight: 700;
+}
+
+.rider-card-avatar-placeholder {
+  font-size: 18rpx;
+}
+
 .route-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

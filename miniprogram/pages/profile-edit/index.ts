@@ -8,12 +8,6 @@ const ORPHAN_LEDGER_KEY = 'profile-media-orphans-v1';
 const AVATAR_PREVIEW_DEADLINE_MS = 8_000;
 const MAX_LOCAL_IMAGE_BYTES = 5 * 1024 * 1024;
 const PROFILE_BACKGROUND_CATEGORY = 'ride' as const;
-const DEFAULT_AVATARS = [
-  { name: '曜石黑', path: '/assets/profile/avatars/cili-black.png' },
-  { name: '活力橙', path: '/assets/profile/avatars/cili-orange.png' },
-  { name: '米白', path: '/assets/profile/avatars/cili-ivory.png' },
-] as const;
-
 type MediaStage =
   'selection' | 'crop' | 'uploadPath' | 'upload' | 'register' | 'setAvatar' | 'preview';
 type SelectedImage = { path: string; size?: number };
@@ -249,31 +243,6 @@ async function cropSquare(image: SelectedImage): Promise<SelectedImage | null> {
   }
 }
 
-function fileSystemCall(
-  method: 'readFile' | 'writeFile',
-  options: Record<string, unknown>,
-): Promise<any> {
-  const manager = wx.getFileSystemManager?.();
-  return new Promise((resolve, reject) => {
-    if (!manager || typeof manager[method] !== 'function')
-      return reject(new Error('file system unavailable'));
-    manager[method]({ ...options, success: resolve, fail: reject });
-  });
-}
-
-async function materializeDefaultAvatar(index: number): Promise<SelectedImage> {
-  const preset = DEFAULT_AVATARS[index];
-  if (!preset) throw new Error('默认头像不存在');
-  const target = `${wx.env?.USER_DATA_PATH || 'wxfile://usr'}/cili-default-${index}.png`;
-  const read = await atMediaStage<any>('selection', 'MEDIA_SELECTION_FAILED', () =>
-    fileSystemCall('readFile', { filePath: preset.path }),
-  );
-  await atMediaStage('selection', 'MEDIA_SELECTION_FAILED', () =>
-    fileSystemCall('writeFile', { filePath: target, data: read.data }),
-  );
-  return { path: target };
-}
-
 function mergeAvatarFields(current: Profile | null, authoritative: Profile): Profile {
   if (!current) return authoritative;
   const merged = {
@@ -432,7 +401,6 @@ Page({
     avatarPreviewUrl: '',
     canEditDetails: false,
     photoItems: [] as PhotoItem[],
-    defaultAvatars: DEFAULT_AVATARS,
   },
   async onLoad() {
     await retryOrphanLedger();
@@ -662,12 +630,6 @@ Page({
       const cropped = await cropSquare(image);
       if (cropped) await this.uploadAndSetAvatar(cropped, 'custom');
     });
-  },
-  async chooseDefaultAvatar(e: any) {
-    const index = Number(e?.currentTarget?.dataset?.index);
-    await this.runAvatarAction(async () =>
-      this.uploadAndSetAvatar(await materializeDefaultAvatar(index), 'custom'),
-    );
   },
   avatarPreviewError(event: any) {
     const failedUrl = event?.currentTarget?.dataset?.url;

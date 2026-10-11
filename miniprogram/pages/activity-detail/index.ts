@@ -12,7 +12,6 @@ import {
 } from './format';
 
 const MAX_GPX_BYTES = 4 * 1024 * 1024;
-const DEFAULT_ATTENDEE_AVATAR = '/assets/profile/avatars/cili-orange.png';
 const GROUP_QR_EXPIRE_MS = 7 * 24 * 60 * 60 * 1000;
 
 function groupQrExpired(uploadedAt?: string) {
@@ -128,7 +127,6 @@ Page({
     registration: null as any,
     attendees: [] as any[],
     selectedAttendee: null as any,
-    defaultAttendeeAvatar: DEFAULT_ATTENDEE_AVATAR,
     galleryImages: [] as string[],
     displayDate: '',
     startTime: '',

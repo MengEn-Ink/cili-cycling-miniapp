@@ -44,22 +44,22 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.11.20',
+      version: '2026.10.11.21',
       latest: true,
-      title: 'IGPSport 风格界面与报名旅程升级',
+      title: '活动管理与头像选择修复',
       summary:
-        '统一橙红、炭黑、暖灰与白色视觉，个人中心直接呈现骑行名片，并打通报名资料、行程状态和活动群资格提示。',
+        '修复活动下架和删除链路，草稿活动可直接删除；头像只保留微信授权和自定义上传两种来源。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.11.21',
       '2026.10.11.20',
       '2026.10.11.19',
       '2026.10.11.18',
       '2026.10.11.17',
-      '2026.10.11.16',
     ]);
   });
 

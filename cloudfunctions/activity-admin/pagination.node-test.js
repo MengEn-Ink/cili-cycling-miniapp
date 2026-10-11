@@ -41,21 +41,18 @@ function loadMain() {
       created_by: 'admin',
       created_at: new Date('2026-01-01T00:00:00.000Z'),
     },
-    registrationOffsets: [],
+    registrationCursors: [],
     audits: [],
   };
   function query() {
     return {
-      where() {
-        this.condition = arguments[0];
+      where(condition) {
+        this.condition = condition;
         return this;
       },
-      orderBy() {
-        return this;
-      },
-      skip(offset) {
-        this.offset = offset;
-        state.registrationOffsets.push(offset);
+      orderBy(field, direction) {
+        this.orderField = field;
+        this.orderDirection = direction;
         return this;
       },
       limit(limit) {
@@ -63,8 +60,14 @@ function loadMain() {
         return this;
       },
       async get() {
-        const matching = registrations.filter((item) => item.status === this.condition.status);
-        return { data: matching.slice(this.offset, this.offset + this.pageLimit) };
+        const cursor = this.condition?._id?.$gt || '';
+        state.registrationCursors.push(cursor || null);
+        const matching = registrations
+          .filter((item) => item.status === this.condition.status && (!cursor || item._id > cursor))
+          .sort((left, right) => left._id.localeCompare(right._id));
+        assert.equal(this.orderField, '_id');
+        assert.equal(this.orderDirection, 'asc');
+        return { data: matching.slice(0, this.pageLimit) };
       },
     };
   }
@@ -90,7 +93,10 @@ function loadMain() {
     };
   }
   const database = {
-    command: { in: (values) => ({ $in: values }) },
+    command: {
+      in: (values) => ({ $in: values }),
+      gt: (value) => ({ $gt: value }),
+    },
     collection,
     runTransaction: async (work) => work({ collection }),
     serverDate: () => new Date('2026-09-30T00:00:00.000Z'),
@@ -125,7 +131,7 @@ test('首次分仓回填分页读取超过 100 条占位报名并证明无额外
   });
 
   assert.equal(result.ok, true);
-  assert.deepEqual(state.registrationOffsets, [0, 100, 0, 0, 0]);
+  assert.deepEqual(state.registrationCursors, [null, 'r124', null, null, null]);
   assert.equal(state.activity.occupancy_partition_ready, true);
   assert.equal(state.activity.support_vehicle_occupied_count, 50);
   assert.equal(state.activity.self_drive_occupied_count, 75);
