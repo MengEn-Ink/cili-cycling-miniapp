@@ -105,7 +105,7 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     expect(profile).not.toContain('正在读取资料。正在同步最新资料');
 
     const profileEdit = read('miniprogram/pages/profile-edit/index.wxml');
-    expect(profileEdit).toContain('为保护隐私，已保存信息仅显示部分内容');
+    expect(profileEdit).toContain('手机号仅本人和审核管理员可完整查看');
     expect(profileEdit).not.toContain('脱敏值');
 
     const detail = read('miniprogram/pages/activity-detail/index.wxml');

@@ -182,6 +182,10 @@ function assertProfileReady(profile) {
   }
 }
 const STRAVA_FIELDS = [
+  'lifetime_rides',
+  'lifetime_distance_km',
+  'lifetime_moving_hours',
+  'lifetime_elevation_m',
   'years_on_strava',
   'rides_per_month',
   'total_km',

@@ -24,6 +24,10 @@ const ADMIN_PROFILE_FIELDS = [
   'phone_verified',
 ];
 const ADMIN_STRAVA_FIELDS = [
+  'lifetime_rides',
+  'lifetime_distance_km',
+  'lifetime_moving_hours',
+  'lifetime_elevation_m',
   'years_on_strava',
   'total_km',
   'activities_90d',
@@ -37,6 +41,35 @@ const ADMIN_STRAVA_FIELDS = [
   'coverage_complete',
 ];
 const SOCIAL_STRAVA_FIELDS = ['total_km', 'activities_90d', 'longest_km'];
+
+function decryptPhone(cipher, keyValue) {
+  let key;
+  try {
+    key = Buffer.from(keyValue || '', 'base64');
+  } catch {
+    key = Buffer.alloc(0);
+  }
+  if (key.length !== 32)
+    throw Object.assign(new Error('资料加密服务未配置'), { code: 'PII_KEY_INVALID' });
+  if (
+    !cipher ||
+    cipher.alg !== 'A256GCM' ||
+    typeof cipher.iv !== 'string' ||
+    typeof cipher.tag !== 'string' ||
+    typeof cipher.ciphertext !== 'string'
+  )
+    return '';
+  try {
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(cipher.iv, 'base64'));
+    decipher.setAuthTag(Buffer.from(cipher.tag, 'base64'));
+    return Buffer.concat([
+      decipher.update(Buffer.from(cipher.ciphertext, 'base64')),
+      decipher.final(),
+    ]).toString('utf8');
+  } catch {
+    throw Object.assign(new Error('手机号解密失败'), { code: 'PII_DECRYPT_FAILED' });
+  }
+}
 
 function pick(object, keys) {
   return keys.reduce((output, key) => {
@@ -253,7 +286,7 @@ function safeResolvedMedia(resolvedMedia) {
   return { photos, avatar_url: safeHttpsUrl(value.avatar_url) };
 }
 
-function adminCapabilityView(registration, profile, resolvedMedia) {
+function adminCapabilityView(registration, profile, resolvedMedia, piiKey) {
   const safe = pick(registration, ADMIN_REGISTRATION_FIELDS);
   safe.options = pick(registration && registration.options, ADMIN_OPTION_FIELDS);
   const gatheringMode = registration && registration.options && registration.options.gathering_mode;
@@ -274,6 +307,13 @@ function adminCapabilityView(registration, profile, resolvedMedia) {
 
   const media = safeResolvedMedia(resolvedMedia);
   const value = profile && typeof profile === 'object' ? profile : {};
+  const phone = piiKey && value.phone_cipher ? decryptPhone(value.phone_cipher, piiKey) : '';
+  if (phone) safe.profile_snapshot.phone = phone;
+  const profilePhoneSource = ['wechat', 'manual', 'legacy'].includes(value.phone_source)
+    ? value.phone_source
+    : value.phone_cipher
+      ? 'legacy'
+      : '';
   safe.capability_profile = {
     nickname:
       typeof value.nickname === 'string'
@@ -288,10 +328,14 @@ function adminCapabilityView(registration, profile, resolvedMedia) {
           ? safe.profile_snapshot.gender
           : '',
     ),
-    phone_source: ['wechat', 'manual', 'legacy'].includes(safe.profile_snapshot.phone_source)
-      ? safe.profile_snapshot.phone_source
-      : '',
-    phone_verified: safe.profile_snapshot.phone_verified === true,
+    phone_source: phone
+      ? profilePhoneSource
+      : ['wechat', 'manual', 'legacy'].includes(safe.profile_snapshot.phone_source)
+        ? safe.profile_snapshot.phone_source
+        : '',
+    phone_verified: phone
+      ? value.phone_verified === true
+      : safe.profile_snapshot.phone_verified === true,
     photos: media.photos,
     avatar_url: media.avatar_url,
   };
@@ -330,12 +374,16 @@ async function adminCapabilityDetail({
   loadMediaRecords,
   getTempFileURL,
   mediaSecret,
+  piiKey,
+  requirePhoneKey = false,
   projectRegistration,
 }) {
   await authorize();
   const registration = await loadRegistration();
   if (!registration) return undefined;
   const profile = registration.openid ? await loadProfile(registration.openid) : undefined;
+  if (requirePhoneKey && profile && profile.phone_cipher)
+    decryptPhone(profile.phone_cipher, piiKey);
   const mediaRecords = registration.openid
     ? await loadMediaRecords(registration.openid, profile)
     : [];
@@ -346,7 +394,7 @@ async function adminCapabilityDetail({
     getTempFileURL,
     mediaSecret,
   );
-  return adminCapabilityView(projectRegistration(registration), profile, resolvedMedia);
+  return adminCapabilityView(projectRegistration(registration), profile, resolvedMedia, piiKey);
 }
 
 module.exports = {

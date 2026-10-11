@@ -75,6 +75,30 @@ export function capabilityCard(registration: Registration) {
             : { label: '已同步', tone: 'success' };
   const metric = (value: number | null | undefined, suffix = '') =>
     value === null || value === undefined ? '暂无' : `${value}${suffix}`;
+  const metricItem = (
+    key: string,
+    label: string,
+    value: number | null | undefined,
+    unit: string,
+  ) => ({
+    key,
+    label,
+    value: value === null || value === undefined ? '暂无' : String(value),
+    unit: value === null || value === undefined ? '' : unit,
+  });
+  const lifetimeMetrics = [
+    metricItem('lifetimeRides', '骑行次数', registration.strava.lifetimeRides, '次'),
+    metricItem('lifetimeDistanceKm', '累计里程', registration.strava.lifetimeDistanceKm, 'km'),
+    metricItem('lifetimeMovingHours', '运动时长', registration.strava.lifetimeMovingHours, 'h'),
+    metricItem('lifetimeElevationM', '累计爬升', registration.strava.lifetimeElevationM, 'm'),
+  ];
+  const recentMetrics = [
+    metricItem('totalKm', '骑行里程', registration.strava.totalKm, 'km'),
+    metricItem('rides90d', '骑行次数', registration.strava.rides90d, '次'),
+    metricItem('longestKm', '最长骑行', registration.strava.longestKm, 'km'),
+    metricItem('elevationM', '累计爬升', registration.strava.elevationM, 'm'),
+    metricItem('speedKmh', '加权均速', registration.strava.speedKmh, 'km/h'),
+  ];
   const coverage = registration.strava.coverage;
   const datePart = (value: string) => formatChinaDateOnly(value);
   const coverageFrom = coverage ? datePart(coverage.from) : '';
@@ -90,6 +114,8 @@ export function capabilityCard(registration: Registration) {
     remark: registration.remark || '无',
     stravaStatus: status.label,
     statusTone: status.tone,
+    lifetimeMetrics,
+    recentMetrics,
     totalKm: metric(registration.strava.totalKm, ' km'),
     rides90d: metric(registration.strava.rides90d, ' 次'),
     longestKm: metric(registration.strava.longestKm, ' km'),

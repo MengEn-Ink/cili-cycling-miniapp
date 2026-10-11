@@ -29,6 +29,19 @@ const profile = {
 };
 const owner = 'member-openid';
 const mediaSecret = 'profile-media-secret-for-tests-32-bytes';
+const piiKey = crypto.randomBytes(32).toString('base64');
+const encryptedPhone = (phone) => {
+  const key = Buffer.from(piiKey, 'base64');
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const ciphertext = Buffer.concat([cipher.update(phone, 'utf8'), cipher.final()]);
+  return {
+    alg: 'A256GCM',
+    iv: iv.toString('base64'),
+    tag: cipher.getAuthTag().toString('base64'),
+    ciphertext: ciphertext.toString('base64'),
+  };
+};
 const canonicalFor = (fileId, ownerOpenid = owner) => {
   const ownerAlias = crypto
     .createHmac('sha256', mediaSecret)
@@ -60,6 +73,24 @@ const records = [
   mediaRecord('cloud://ride-2', 'bike'),
   mediaRecord('cloud://avatar', 'other'),
 ];
+
+test('管理员详情缺少手机号解密密钥时显式失败而非静默降级', async () => {
+  await assert.rejects(
+    () =>
+      adminCapabilityDetail({
+        authorize: async () => undefined,
+        loadRegistration: async () => ({ _id: 'r1', openid: owner }),
+        loadProfile: async () => ({ phone_cipher: encryptedPhone('13812345678') }),
+        loadMediaRecords: async () => [],
+        getTempFileURL: async () => ({ fileList: [] }),
+        mediaSecret,
+        piiKey: undefined,
+        requirePhoneKey: true,
+        projectRegistration: (value) => value,
+      }),
+    { code: 'PII_KEY_INVALID' },
+  );
+});
 
 test('管理员媒体白名单按骑行照片、其他照片、头像排序去重并最多保留三张', () => {
   assert.deepEqual(adminCapabilityMedia(profile, records, owner, mediaSecret), {
@@ -349,7 +380,14 @@ test('管理员投影保留审批所需字段但不返回 raw file ID、token、
         remark: '不吃辣',
       },
       strava_status: 'connected',
-      strava_snapshot: { activities_90d: 12, access_token: 'secret' },
+      strava_snapshot: {
+        lifetime_rides: 486,
+        lifetime_distance_km: 18240.7,
+        lifetime_moving_hours: 734.5,
+        lifetime_elevation_m: 215400,
+        activities_90d: 12,
+        access_token: 'secret',
+      },
       profile_snapshot: {
         nickname: '报名昵称',
         gender: '女',
@@ -384,6 +422,13 @@ test('管理员投影保留审批所需字段但不返回 raw file ID、token、
   });
   assert.equal(response.profile_snapshot.real_name_masked, '曹**');
   assert.equal(response.profile_snapshot.phone_masked, '138****5678');
+  assert.deepEqual(response.strava_snapshot, {
+    lifetime_rides: 486,
+    lifetime_distance_km: 18240.7,
+    lifetime_moving_hours: 734.5,
+    lifetime_elevation_m: 215400,
+    activities_90d: 12,
+  });
   const serialized = JSON.stringify(response);
   for (const forbidden of [
     'cloud://',
@@ -397,6 +442,68 @@ test('管理员投影保留审批所需字段但不返回 raw file ID、token、
   ]) {
     assert.equal(serialized.includes(forbidden), false, forbidden);
   }
+});
+
+test('存量报名缺少累计指标时不混入当前账号的累计数据', () => {
+  const response = adminCapabilityView(
+    {
+      _id: 'r1',
+      activity_id: 'a1',
+      status: 'pending',
+      strava_status: 'connected',
+      strava_snapshot: { activities_90d: 12, total_km: 860 },
+      profile_snapshot: {},
+    },
+    { ...profile, phone_cipher: undefined },
+    {},
+    undefined,
+    {
+      lifetime_rides: 486,
+      lifetime_distance_km: 18240.7,
+      lifetime_moving_hours: 734.5,
+      lifetime_elevation_m: 215400,
+    },
+  );
+
+  assert.deepEqual(response.strava_snapshot, {
+    activities_90d: 12,
+    total_km: 860,
+  });
+});
+
+test('管理员报名详情默认返回完整手机号，社交投影不泄露手机号或密文', () => {
+  const registration = {
+    _id: 'r1',
+    activity_id: 'a1',
+    status: 'pending',
+    profile_snapshot: { phone_masked: '138****5678', phone_source: 'wechat' },
+  };
+  const sensitiveProfile = {
+    ...profile,
+    phone_cipher: encryptedPhone('13812345678'),
+    phone_masked: '138****5678',
+    phone_source: 'wechat',
+    phone_verified: true,
+  };
+
+  const admin = adminCapabilityView(registration, sensitiveProfile, {}, piiKey);
+  assert.equal(admin.profile_snapshot.phone, '13812345678');
+  assert.equal(admin.capability_profile.phone_source, 'wechat');
+  assert.equal(admin.capability_profile.phone_verified, true);
+  const legacy = adminCapabilityView(
+    registration,
+    { ...sensitiveProfile, phone_source: undefined, phone_verified: undefined },
+    {},
+    piiKey,
+  );
+  assert.equal(legacy.capability_profile.phone_source, 'legacy');
+  assert.equal(legacy.capability_profile.phone_verified, false);
+
+  const social = socialCapabilityView(sensitiveProfile, {});
+  const serialized = JSON.stringify(social);
+  assert.equal(serialized.includes('13812345678'), false);
+  assert.equal(serialized.includes('phone_cipher'), false);
+  assert.equal(serialized.includes('phone_masked'), false);
 });
 
 test('管理员投影忽略历史旧集合字段和未知 gathering_mode', () => {

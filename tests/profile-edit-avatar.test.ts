@@ -10,6 +10,7 @@ const rideService = vi.hoisted(() => ({
   registerProfileMedia: vi.fn(),
   reportProfileMediaOrphan: vi.fn(),
   setAvatar: vi.fn(),
+  getPhoneNumber: vi.fn(),
   updateProfile: vi.fn(),
 }));
 
@@ -89,6 +90,7 @@ describe('资料编辑头像交互', () => {
       }),
     );
     rideService.updateProfile.mockResolvedValue(profile);
+    rideService.getPhoneNumber.mockResolvedValue({ ...profile, phone: '13900001111' });
     vi.stubGlobal('wx', {
       env: { USER_DATA_PATH: 'wxfile://usr' },
       showToast: vi.fn(),
@@ -145,9 +147,9 @@ describe('资料编辑头像交互', () => {
     expect(patch).not.toHaveProperty('avatarSource');
     expect(patch).toMatchObject({
       realName: undefined,
-      phone: undefined,
       emergencyPhone: undefined,
     });
+    expect(patch).not.toHaveProperty('phone');
   });
 
   it('不再暴露头像可见性开关处理器', () => {
@@ -248,13 +250,12 @@ describe('资料编辑头像交互', () => {
     expect(page.data.mediaError).toContain('[MEDIA_TOO_LARGE]');
   });
 
-  it('自定义头像通过 chooseMedia 后以 custom 来源注册并设置', async () => {
-    const uploadedFileId = 'cloud://env/profiles/owner/custom.jpg';
+  it('微信头像临时文件以 wechat 来源注册并设置，保留尚未整表保存的资料', async () => {
+    const uploadedFileId = 'cloud://env/profiles/owner/wechat.jpg';
     const uploadFile = vi.fn().mockResolvedValue({ fileID: uploadedFileId });
-    const chooseMedia = vi.fn().mockResolvedValue({
-      tempFiles: [{ tempFilePath: '/private/tmp/custom-avatar.jpg' }],
-    });
-    Object.assign(wx, { chooseMedia, cloud: { uploadFile, deleteFile: vi.fn() } });
+    const chooseMedia = vi.fn();
+    const cropImage = vi.fn();
+    Object.assign(wx, { chooseMedia, cropImage, cloud: { uploadFile, deleteFile: vi.fn() } });
     page.data.p = {
       ...page.data.p,
       nickname: '尚未保存的昵称',
@@ -262,173 +263,70 @@ describe('资料编辑头像交互', () => {
       photos: [{ id: 'cloud://draft/photo.jpg', category: 'ride' }],
     };
 
-    await page.chooseCustomAvatar();
+    await page.chooseWechatAvatar({ detail: { avatarUrl: '/private/tmp/avatar.jpg' } });
 
-    expect(chooseMedia).toHaveBeenCalledWith({
-      count: 1,
-      mediaType: ['image'],
-      sizeType: ['compressed'],
-      sourceType: ['album', 'camera'],
-    });
+    expect(chooseMedia).not.toHaveBeenCalled();
+    expect(cropImage).not.toHaveBeenCalled();
+    expect(uploadFile).toHaveBeenCalledWith(
+      expect.objectContaining({ filePath: '/private/tmp/avatar.jpg' }),
+    );
     expect(rideService.registerProfileMedia).toHaveBeenCalledWith(
       uploadedFileId,
       'other',
-      'custom',
+      'wechat',
     );
-    expect(rideService.setAvatar).toHaveBeenCalledWith('custom', uploadedFileId);
+    expect(rideService.setAvatar).toHaveBeenCalledWith('wechat', uploadedFileId);
     expect(page.data.p).toMatchObject({
       nickname: '尚未保存的昵称',
       phone: '13900001111',
       photos: [{ id: 'cloud://draft/photo.jpg', category: 'ride' }],
       avatarId: uploadedFileId,
-      avatarSource: 'custom',
+      avatarSource: 'wechat',
     });
   });
 
-  it('自定义头像调用 cropImage 让用户手动裁剪 1:1 并上传裁剪结果', async () => {
-    const uploadFile = vi.fn().mockResolvedValue({
-      fileID: 'cloud://env/profiles/owner/cropped.jpg',
-    });
-    const cropImage = vi.fn((options) =>
-      options.success({ tempFilePath: '/private/tmp/cropped.jpg' }),
-    );
-    Object.assign(wx, {
-      chooseMedia: vi.fn().mockResolvedValue({
-        tempFiles: [{ tempFilePath: '/private/tmp/original.jpg', size: 1024 }],
-      }),
-      cropImage,
-      cloud: { uploadFile, deleteFile: vi.fn() },
-    });
+  it('微信头像回调缺少 avatarUrl 时静默结束', async () => {
+    await page.chooseWechatAvatar({ detail: {} });
 
-    await page.chooseCustomAvatar();
-
-    expect(cropImage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        src: '/private/tmp/original.jpg',
-        cropScale: '1:1',
-        success: expect.any(Function),
-        fail: expect.any(Function),
-      }),
-    );
-    expect(uploadFile).toHaveBeenCalledWith(
-      expect.objectContaining({ filePath: '/private/tmp/cropped.jpg' }),
-    );
-  });
-
-  it.each([
-    ['cropImage 缺失', false],
-    ['cropImage 报 API 不支持', true],
-  ])('%s 时安全回退上传原图', async (_label, hasCropApi) => {
-    const uploadFile = vi.fn().mockResolvedValue({
-      fileID: 'cloud://env/profiles/owner/original.jpg',
-    });
-    const cropImage = hasCropApi
-      ? vi.fn((options) => options.fail({ errMsg: 'cropImage:fail api not supported' }))
-      : undefined;
-    Object.assign(wx, {
-      chooseMedia: vi.fn().mockResolvedValue({
-        tempFiles: [{ tempFilePath: '/private/tmp/original.jpg', size: 1024 }],
-      }),
-      cropImage,
-      cloud: { uploadFile, deleteFile: vi.fn() },
-    });
-
-    await page.chooseCustomAvatar();
-
-    if (cropImage) {
-      expect(cropImage).toHaveBeenCalledWith(
-        expect.objectContaining({ success: expect.any(Function), fail: expect.any(Function) }),
-      );
-    }
-    expect(uploadFile).toHaveBeenCalledWith(
-      expect.objectContaining({ filePath: '/private/tmp/original.jpg' }),
-    );
-  });
-
-  it('用户取消裁剪时静默结束且释放 busy lock', async () => {
-    Object.assign(wx, {
-      chooseMedia: vi.fn().mockResolvedValue({
-        tempFiles: [{ tempFilePath: '/private/tmp/original.jpg' }],
-      }),
-      cropImage: vi.fn((options) => options.fail({ errMsg: 'cropImage:fail cancel' })),
-      cloud: { uploadFile: vi.fn(), deleteFile: vi.fn() },
-    });
-
-    await page.chooseCustomAvatar();
-
-    expect(wx.cloud?.uploadFile).not.toHaveBeenCalled();
+    expect(rideService.getProfileMediaUploadPath).not.toHaveBeenCalled();
     expect(wx.showToast).not.toHaveBeenCalled();
     expect(page.data.avatarBusy).toBe(false);
   });
 
-  it('裁剪的其他失败进入 crop 阶段安全错误链且不上传', async () => {
-    const uploadFile = vi.fn();
-    Object.assign(wx, {
-      chooseMedia: vi.fn().mockResolvedValue({
-        tempFiles: [{ tempFilePath: '/private/tmp/original.jpg' }],
-      }),
-      cropImage: vi.fn((options) => options.fail({ errMsg: 'cropImage:fail permission denied' })),
-      cloud: { uploadFile, deleteFile: vi.fn() },
+  it('手机号授权成功后立即展示完整号码并保留尚未保存的资料', async () => {
+    page.data.p = {
+      ...page.data.p,
+      realName: '尚未保存的姓名',
+      emergencyName: '尚未保存的联系人',
+    };
+
+    await page.onGetPhoneNumber({ detail: { code: 'phone-code' } });
+
+    expect(rideService.getPhoneNumber).toHaveBeenCalledWith('phone-code');
+    expect(page.data.p).toMatchObject({
+      phone: '13900001111',
+      realName: '尚未保存的姓名',
+      emergencyName: '尚未保存的联系人',
     });
-
-    await page.chooseCustomAvatar();
-
-    expect(uploadFile).not.toHaveBeenCalled();
-    expect(page.data.mediaError).toBe('[MEDIA_CROP_FAILED] 图片裁剪失败，请重新选择图片后重试');
-    expect(wx.showToast).toHaveBeenCalledWith({ title: page.data.mediaError, icon: 'none' });
+    expect(page.data.phoneBusy).toBe(false);
+    expect(wx.showToast).toHaveBeenCalledWith({ title: '手机号已授权' });
   });
 
-  it('chooseMedia 不可用时自定义头像降级 chooseImage 上传', async () => {
-    const uploadedFileId = 'cloud://env/profiles/owner/custom-fallback.jpg';
-    const uploadFile = vi.fn().mockResolvedValue({ fileID: uploadedFileId });
-    const chooseMedia = vi.fn().mockRejectedValue({ errMsg: 'chooseMedia:fail api not supported' });
-    const chooseImage = vi.fn().mockResolvedValue({ tempFilePaths: ['/private/tmp/fallback.jpg'] });
-    Object.assign(wx, { chooseMedia, chooseImage, cloud: { uploadFile, deleteFile: vi.fn() } });
+  it('用户取消手机号授权时静默结束', async () => {
+    await page.onGetPhoneNumber({ detail: { errMsg: 'getPhoneNumber:fail user deny' } });
 
-    await page.chooseCustomAvatar();
-
-    expect(chooseImage).toHaveBeenCalledWith({
-      count: 1,
-      sizeType: ['compressed'],
-      sourceType: ['album', 'camera'],
-    });
-    expect(uploadFile).toHaveBeenCalledWith(
-      expect.objectContaining({ filePath: '/private/tmp/fallback.jpg' }),
-    );
-    expect(rideService.setAvatar).toHaveBeenCalledWith('custom', uploadedFileId);
+    expect(rideService.getPhoneNumber).not.toHaveBeenCalled();
+    expect(wx.showToast).not.toHaveBeenCalled();
+    expect(page.data.phoneBusy).toBe(false);
   });
 
-  it('chooseMedia 权限错误不降级 chooseImage 且显示选择阶段错误码', async () => {
-    const chooseImage = vi.fn();
-    Object.assign(wx, {
-      chooseMedia: vi.fn().mockRejectedValue({ errMsg: 'chooseMedia:fail permission denied' }),
-      chooseImage,
-    });
+  it('手机号授权失败时释放 busy lock 并展示安全错误', async () => {
+    rideService.getPhoneNumber.mockRejectedValueOnce(new Error('手机号授权失败'));
 
-    await page.chooseCustomAvatar();
+    await page.onGetPhoneNumber({ detail: { code: 'phone-code' } });
 
-    expect(chooseImage).not.toHaveBeenCalled();
-    expect(page.data.mediaError).toContain('[MEDIA_SELECTION_FAILED]');
-  });
-
-  it('选择结果保留 size 并在上传前拒绝超过 5MiB 的图片', async () => {
-    const uploadFile = vi.fn();
-    Object.assign(wx, {
-      chooseMedia: vi.fn().mockResolvedValue({
-        tempFiles: [{ tempFilePath: '/private/tmp/too-large.jpg', size: 5 * 1024 * 1024 + 1 }],
-      }),
-      cloud: { uploadFile },
-    });
-
-    await page.chooseCustomAvatar();
-
-    expect(rideService.getProfileMediaUploadPath).not.toHaveBeenCalled();
-    expect(uploadFile).not.toHaveBeenCalled();
-    expect(page.data.mediaError).toBe('[MEDIA_TOO_LARGE] 图片超过 5MB，请压缩或更换图片后重试');
-    expect(wx.showToast).toHaveBeenLastCalledWith({
-      title: page.data.mediaError,
-      icon: 'none',
-    });
+    expect(page.data.phoneBusy).toBe(false);
+    expect(page.data.error).toBe('手机号授权失败');
   });
 
   it('阶段化头像错误的 inline alert 与 toast 使用同一安全文案', async () => {
@@ -448,35 +346,24 @@ describe('资料编辑头像交互', () => {
     });
   });
 
-  it('所有头像入口共用单一 busy lock 防止重复动作', async () => {
+  it('微信头像入口共用单一 busy lock 防止重复动作', async () => {
     const uploadPath = deferred<string>();
     rideService.getProfileMediaUploadPath.mockReturnValueOnce(uploadPath.promise);
-    const chooseMedia = vi.fn().mockResolvedValue({
-      tempFiles: [{ tempFilePath: '/private/tmp/custom-avatar.jpg' }],
-    });
-    const getFileSystemManager = vi.fn();
     const uploadFile = vi
       .fn()
-      .mockResolvedValue({ fileID: 'cloud://env/profiles/owner/custom.jpg' });
-    Object.assign(wx, {
-      chooseMedia,
-      getFileSystemManager,
-      cloud: { uploadFile, deleteFile: vi.fn() },
-    });
+      .mockResolvedValue({ fileID: 'cloud://env/profiles/owner/wechat.jpg' });
+    Object.assign(wx, { cloud: { uploadFile, deleteFile: vi.fn() } });
 
-    const first = page.chooseCustomAvatar();
+    const first = page.chooseWechatAvatar({ detail: { avatarUrl: '/private/tmp/first.jpg' } });
     await new Promise((resolve) => setTimeout(resolve, 0));
-    const second = page.chooseCustomAvatar();
-    const wechat = page.chooseWechatAvatar({ detail: { avatarUrl: '/private/tmp/wechat.jpg' } });
+    const second = page.chooseWechatAvatar({ detail: { avatarUrl: '/private/tmp/second.jpg' } });
 
     expect(page.data.avatarBusy).toBe(true);
-    expect(chooseMedia).toHaveBeenCalledTimes(1);
-    expect(getFileSystemManager).not.toHaveBeenCalled();
     expect(rideService.getProfileMediaUploadPath).toHaveBeenCalledTimes(1);
     uploadPath.resolve(
       'profiles/0123456789abcdef0123456789abcdef/123e4567-e89b-42d3-a456-426614174000.jpg',
     );
-    await Promise.all([first, second, wechat]);
+    await Promise.all([first, second]);
     expect(page.data.avatarBusy).toBe(false);
   });
 
@@ -497,7 +384,7 @@ describe('资料编辑头像交互', () => {
     rideService.registerProfileMedia.mockRejectedValueOnce(new Error('register failed'));
     rideService.reportProfileMediaOrphan.mockRejectedValueOnce(new Error('report unavailable'));
 
-    await page.chooseCustomAvatar();
+    await page.chooseWechatAvatar({ detail: { avatarUrl: '/private/tmp/avatar.jpg' } });
 
     expect(page.data.p).toMatchObject({
       avatarId: 'cloud://env/profiles/owner/old.jpg',
@@ -509,10 +396,10 @@ describe('资料编辑头像交互', () => {
     expect(rideService.reportProfileMediaOrphan).toHaveBeenCalledWith(
       uploadedFileId,
       'other',
-      'custom',
+      'wechat',
     );
     expect(wx.setStorageSync).toHaveBeenCalledWith('profile-media-orphans-v1', [
-      { fileId: uploadedFileId, category: 'other', origin: 'custom' },
+      { fileId: uploadedFileId, category: 'other', origin: 'wechat' },
     ]);
   });
 
@@ -537,10 +424,10 @@ describe('资料编辑头像交互', () => {
       nickname: '服务端旧昵称',
       phone: '138****5678',
       avatarId: uploadedFileId,
-      avatarSource: 'custom',
+      avatarSource: 'wechat',
     });
 
-    await page.chooseCustomAvatar();
+    await page.chooseWechatAvatar({ detail: { avatarUrl: '/private/tmp/avatar.jpg' } });
 
     expect(deleteFile).not.toHaveBeenCalled();
     expect(rideService.reportProfileMediaOrphan).not.toHaveBeenCalled();
@@ -549,7 +436,7 @@ describe('资料编辑头像交互', () => {
       nickname: '本地草稿昵称',
       phone: '13900001111',
       avatarId: uploadedFileId,
-      avatarSource: 'custom',
+      avatarSource: 'wechat',
     });
     expect(wx.showToast).toHaveBeenCalledWith({ title: '头像已更新' });
     expect(wx.showToast).not.toHaveBeenCalledWith({
@@ -574,7 +461,7 @@ describe('资料编辑头像交互', () => {
     );
     rideService.getProfile.mockResolvedValueOnce(profile);
 
-    await page.chooseCustomAvatar();
+    await page.chooseWechatAvatar({ detail: { avatarUrl: '/private/tmp/avatar.jpg' } });
 
     expect(page.data.mediaError).toBe('[AVATAR_SET_FAILED] 头像保存未确认，请稍后重试');
     expect(wx.showToast).toHaveBeenCalledWith({ title: page.data.mediaError, icon: 'none' });
@@ -725,12 +612,8 @@ describe('资料编辑头像交互', () => {
     await reload;
   });
 
-  it('用户取消 chooseMedia 时静默结束且释放 busy lock', async () => {
-    Object.assign(wx, {
-      chooseMedia: vi.fn().mockRejectedValue({ errMsg: 'chooseMedia:fail cancel' }),
-    });
-
-    await page.chooseCustomAvatar();
+  it('用户取消微信头像选择时静默结束且释放 busy lock', async () => {
+    await page.chooseWechatAvatar({ detail: { errMsg: 'chooseAvatar:fail cancel' } });
 
     expect(wx.showToast).not.toHaveBeenCalled();
     expect(rideService.getProfileMediaUploadPath).not.toHaveBeenCalled();
@@ -1039,15 +922,15 @@ describe('资料编辑头像页面契约', () => {
   const source = readFileSync('miniprogram/pages/profile-edit/index.ts', 'utf8');
   const styles = readFileSync('miniprogram/pages/profile-edit/index.wxss', 'utf8');
 
-  it('头像作为第一步门禁，并保留微信与自定义图片入口', () => {
-    expect(template.indexOf('先选择头像')).toBeLessThan(template.indexOf('实名资料'));
+  it('头像作为第一步门禁，并且只保留微信头像授权入口', () => {
+    expect(template.indexOf('先选择头像')).toBeLessThan(template.indexOf('基础资料'));
     expect(template).toContain('<block wx:if="{{canEditDetails}}">');
     expect(template).toContain('open-type="chooseAvatar"');
     expect(template).toContain('bindchooseavatar="chooseWechatAvatar"');
-    expect(template).toContain('bindtap="chooseCustomAvatar"');
+    expect(template).not.toContain('chooseCustomAvatar');
     expect(template).toContain('mediaError');
-    expect(template).toContain('disabled="{{photoBusy || saving || avatarBusy}}"');
-    expect(template).toContain('disabled="{{saving || photoBusy || avatarBusy}}"');
+    expect(template).toContain('disabled="{{photoBusy || phoneBusy || saving || avatarBusy}}"');
+    expect(template).toContain('disabled="{{saving || phoneBusy || photoBusy || avatarBusy}}"');
   });
 
   it('彻底删除 Strava 头像 readiness、导入与引导契约', () => {
@@ -1064,7 +947,7 @@ describe('资料编辑头像页面契约', () => {
   });
 
   it('头像用途固定公开且不再显示开关', () => {
-    expect(template).toContain('头像会展示在活动报名骑友列表中');
+    expect(template).toContain('用于个人主页和活动报名中的骑手身份展示');
     expect(template).not.toContain('<switch');
     expect(template).not.toContain('onAvatarVisibilityChange');
     expect(styles).not.toContain('.avatar-visibility-row');
@@ -1084,16 +967,17 @@ describe('资料编辑头像页面契约', () => {
     expect(template).not.toContain('src="{{p.avatarId}}"');
   });
 
-  it('两个头像主动作均有 aria-label 且触控高度至少 88rpx', () => {
+  it('唯一头像主动作有 aria-label 且触控高度至少 88rpx', () => {
     const avatarButtons = template.match(/<button\b[^>]*class="avatar-action[^>]*>/g) || [];
-    expect(avatarButtons).toHaveLength(2);
-    expect(avatarButtons.every((button: string) => button.includes('aria-label='))).toBe(true);
+    expect(avatarButtons).toHaveLength(1);
+    expect(avatarButtons[0]).toContain('aria-label=');
     expect(styles).toMatch(/\.avatar-action\s*\{[^}]*min-height:\s*88rpx/s);
   });
 
-  it('只提供微信授权与自定义上传头像，不提供任何预设头像', () => {
+  it('只提供微信授权头像，不提供自定义上传或预设头像', () => {
     expect(template).toContain('open-type="chooseAvatar"');
-    expect(template).toContain('bindtap="chooseCustomAvatar"');
+    expect(template).not.toContain('bindtap="chooseCustomAvatar"');
+    expect(source).not.toContain('chooseCustomAvatar');
     expect(template).not.toContain('bindtap="chooseDefaultAvatar"');
     expect(template).not.toContain('CILI 主题头像');
     expect(source).not.toContain('DEFAULT_AVATARS');

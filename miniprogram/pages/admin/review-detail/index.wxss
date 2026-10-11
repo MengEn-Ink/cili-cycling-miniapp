@@ -206,6 +206,24 @@ brand-logo {
   color: var(--color-brand);
   font-size: 34rpx;
 }
+.metric-section {
+  margin-top: 12rpx;
+}
+.metric-section-title {
+  margin: 0 28rpx;
+  padding-top: 18rpx;
+  border-top: 1rpx solid #444448;
+  color: var(--color-brand);
+  font-size: 20rpx;
+  font-weight: 900;
+  letter-spacing: 2rpx;
+}
+.metric-unit {
+  margin-left: 6rpx;
+  color: #a8a8ad;
+  font-size: 20rpx;
+  font-weight: 700;
+}
 .review-detail-page .metric {
   border: 1rpx solid #343438;
   border-radius: 6rpx;

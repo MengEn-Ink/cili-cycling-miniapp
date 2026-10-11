@@ -30,7 +30,7 @@ const registration = (id: string, activityId: string) => ({
     nickname: '骑手',
     title: '',
     realName: '曹*',
-    phone: '138****5678',
+    phone: '13812345678',
     gender: '',
     emergencyName: '',
     emergencyPhone: '',
@@ -49,6 +49,10 @@ const registration = (id: string, activityId: string) => ({
   strava: {
     status: 'connected',
     years: 3,
+    lifetimeRides: 486,
+    lifetimeDistanceKm: 18240.7,
+    lifetimeMovingHours: 734.5,
+    lifetimeElevationM: 215400,
     totalKm: 800,
     rides90d: 20,
     longestKm: 100,
@@ -124,14 +128,18 @@ describe('管理员审核详情回归', () => {
     });
   });
 
-  it('展示服务端已脱敏手机号并与验证来源同时保留', async () => {
+  it('默认展示完整手机号、验证来源和完整骑行卡片', async () => {
     await page.onLoad({ id: 'r1' });
     const template = readFileSync('miniprogram/pages/admin/review-detail/index.wxml', 'utf8');
 
-    expect(page.data.phone).toBe('138****5678');
+    expect(page.data.phone).toBe('13812345678');
     expect(page.data.phoneSource).toBe('微信授权 · 已验证');
+    expect(page.data.card.lifetimeMetrics).toHaveLength(4);
+    expect(page.data.card.recentMetrics).toHaveLength(5);
     expect(template).toContain('{{phone}}');
     expect(template).toContain('{{phoneSource}}');
+    expect(template).toContain('wx:for="{{card.lifetimeMetrics}}"');
+    expect(template).toContain('wx:for="{{card.recentMetrics}}"');
   });
 
   it('把详情中的报名状态映射为中文展示文案', async () => {
