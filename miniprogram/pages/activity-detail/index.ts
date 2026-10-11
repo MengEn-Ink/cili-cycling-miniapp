@@ -3,7 +3,6 @@ import { rideService } from '../../services/ride-service';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
 import { genderView } from '../../utils/gender';
-import { drawActivityPoster } from './poster';
 import {
   drawElevationProfile,
   formatActivityDate,
@@ -94,25 +93,6 @@ function platformCall(
   return new Promise((resolve, reject) => method({ ...options, success: resolve, fail: reject }));
 }
 
-async function posterImageSource(source: string): Promise<string> {
-  if (!source.startsWith('cloud://')) return source;
-  const cloudApi = wx.cloud as any;
-  if (!cloudApi || typeof cloudApi.downloadFile !== 'function') throw new Error('群二维码暂不可用');
-  const result = await cloudApi.downloadFile({ fileID: source });
-  if (!result.tempFilePath) throw new Error('群二维码下载失败');
-  return result.tempFilePath;
-}
-
-async function loadCanvasImage(canvas: any, source: string): Promise<any> {
-  const image = canvas.createImage();
-  const filePath = await posterImageSource(source);
-  return new Promise((resolve, reject) => {
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error('群二维码加载失败'));
-    image.src = filePath;
-  });
-}
-
 function shareCoverImage(item: any): string {
   const cover = typeof item?.coverImage === 'string' ? item.coverImage : '';
   const firstImage =
@@ -147,7 +127,6 @@ Page({
   loadRequestId: 0,
   unloaded: false,
   exportBusy: false,
-  posterBusy: false,
   data: {
     loading: true,
     activityId: '',
@@ -165,7 +144,6 @@ Page({
     hasElevationProfile: false,
     coverFailed: false,
     exportingGpx: false,
-    generatingPoster: false,
     teamId: '',
     activityAction: unavailableAction(),
     isAdmin: false,
@@ -378,38 +356,19 @@ Page({
       url: '/pages/registration-form/index?id=' + this.data.item.id + teamQuery,
     });
   },
-  copyStravaRoute() {
-    const url = this.data.item?.route?.stravaRouteUrl;
-    if (typeof url !== 'string' || !/^https:\/\//i.test(url)) {
-      wx.showToast({ title: '暂无 Strava 路线', icon: 'none' });
+  async copyStravaRoute() {
+    const rawUrl = this.data.item?.route?.stravaRouteUrl;
+    const url = typeof rawUrl === 'string' ? rawUrl.trim() : '';
+    if (!/^https:\/\/www\.strava\.com\/routes\/\d+(?:[/?#]|$)/i.test(url)) {
+      wx.showToast({ title: '暂无有效的 Strava 路线', icon: 'none' });
       return;
     }
-    wx.setClipboardData({
-      data: url,
-      success: () => {
-        if (typeof wx.showModal === 'function') {
-          wx.showModal({
-            title: 'Strava 路线链接已复制',
-            content:
-              '微信小程序不支持直接跳转外部 Strava 页面。请切换到系统浏览器或 Strava 粘贴打开。',
-            showCancel: false,
-            confirmText: '知道了',
-          });
-          return;
-        }
-        wx.showToast({ title: '链接已复制，请到浏览器或 Strava 打开', icon: 'none' });
-      },
-      fail: () => wx.showToast({ title: '复制失败，请稍后重试', icon: 'none' }),
-    });
-  },
-  copyActivityLink() {
-    const id = this.data.item?.id;
-    if (!id) return;
-    wx.setClipboardData({
-      data: `pages/activity-detail/index?id=${encodeURIComponent(id)}`,
-      success: () => wx.showToast({ title: '活动链接已复制', icon: 'success' }),
-      fail: () => wx.showToast({ title: '复制失败，请稍后重试', icon: 'none' }),
-    });
+    try {
+      await platformCall(wx.setClipboardData, { data: url });
+      wx.showToast({ title: '轨迹链接已复制', icon: 'success' });
+    } catch {
+      wx.showToast({ title: '复制失败，请稍后重试', icon: 'none' });
+    }
   },
   onShareAppMessage() {
     const item = this.data.item;
@@ -467,78 +426,6 @@ Page({
     } finally {
       this.exportBusy = false;
       this.safeSetData({ exportingGpx: false });
-    }
-  },
-  async generatePoster() {
-    if (!this.data.item || this.posterBusy) return;
-    if (!this.data.groupQrVisible || !this.data.item.groupQrCode) {
-      wx.showToast({ title: '报名审核通过后可生成含群二维码的海报', icon: 'none' });
-      return;
-    }
-    this.posterBusy = true;
-    this.safeSetData({ generatingPoster: true });
-    try {
-      const target = await new Promise<any>((resolve, reject) => {
-        wx.createSelectorQuery()
-          .select('#poster-canvas')
-          .fields({ node: true, size: true })
-          .exec((result: any[]) =>
-            result?.[0]?.node ? resolve(result[0]) : reject(new Error('海报画布不可用')),
-          );
-      });
-      const canvas = target.node;
-      const width = 375;
-      const height = 700;
-      const ratio = wx.getWindowInfo?.().pixelRatio || wx.getSystemInfoSync?.().pixelRatio || 1;
-      canvas.width = width * ratio;
-      canvas.height = height * ratio;
-      const context = canvas.getContext('2d');
-      context.setTransform?.(ratio, 0, 0, ratio, 0, 0);
-      const groupQrImage = await loadCanvasImage(canvas, this.data.item.groupQrCode);
-      const startLocation = this.data.item.route?.startLocation;
-      const approvedCount = Number.isInteger(this.data.item.approvedRegistrationCount)
-        ? this.data.item.approvedRegistrationCount
-        : this.data.attendees.length;
-      if (
-        !drawActivityPoster(context, width, height, this.data.item, {
-          displayTime: this.data.startTime || '待公布',
-          locationName:
-            this.data.item.route?.start ||
-            startLocation?.name ||
-            startLocation?.address ||
-            '待公布',
-          locationAddress: startLocation?.address,
-          approvedCount,
-          attendeeNames: this.data.attendees.map((attendee: any) => attendee.displayName),
-          groupQrImage,
-        })
-      )
-        throw new Error('海报绘制失败');
-      const tempFilePath = await new Promise<string>((resolve, reject) =>
-        wx.canvasToTempFilePath({
-          canvas,
-          destWidth: width * ratio,
-          destHeight: height * ratio,
-          success: (result: { tempFilePath: string }) => resolve(result.tempFilePath),
-          fail: reject,
-        }),
-      );
-      await new Promise<void>((resolve, reject) =>
-        wx.saveImageToPhotosAlbum({
-          filePath: tempFilePath,
-          success: () => resolve(),
-          fail: reject,
-        }),
-      );
-      wx.showToast({ title: '海报已保存', icon: 'success' });
-    } catch (error) {
-      wx.showToast({
-        title: error instanceof Error ? error.message : '海报生成失败，请重试',
-        icon: 'none',
-      });
-    } finally {
-      this.posterBusy = false;
-      this.safeSetData({ generatingPoster: false });
     }
   },
   async go() {

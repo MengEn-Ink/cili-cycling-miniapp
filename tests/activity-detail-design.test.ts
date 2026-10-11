@@ -30,30 +30,33 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('binderror="galleryImageError"');
     expect(template).toContain('bindtap="navigate"');
     expect(template).toContain('bindtap="copyStravaRoute"');
-    expect(template).toContain('bindtap="copyActivityLink"');
     expect(template).toContain('bindtap="exportGpx"');
     expect(template).toContain('disabled="{{loading || !item || !activityAction.enabled}}"');
     expect(template).toContain('报名状态');
     expect(template).not.toContain('SIGN-UP STATUS');
   });
 
-  it('轨迹链接右侧提供复制与下载 GPX，并保留受控活动分享操作', () => {
+  it('轨迹链接只保留复制与下载，并通过三色语义令牌门禁', () => {
     const template = readFileSync('miniprogram/pages/activity-detail/index.wxml', 'utf8');
     const styles = readFileSync('miniprogram/pages/activity-detail/index.wxss', 'utf8');
+    const routeStyles = styles.slice(styles.indexOf('/* Strava 轨迹操作统一使用'));
     expect(template).toContain('class="strava-route-url"');
     expect(template).toContain('{{item.route.stravaRouteUrl}}');
     expect(template).toContain('bindtap="copyStravaRoute"');
     expect(template).toContain('>复制</button>');
     expect(template).toContain('bindtap="exportGpx"');
     expect(template).toContain("{{exportingGpx ? '下载中' : '下载 GPX'}}");
-    expect(template).toContain('bindtap="copyActivityLink"');
-    expect(template).toContain('复制活动链接');
-    expect(template).toContain('wx:if="{{groupQrVisible}}"');
-    expect(template).toContain('报名审核通过后可生成分享海报');
-    expect(template).toContain('bindtap="generatePoster"');
-    expect(template).toContain('保存分享海报');
+    expect(template).not.toContain('bindtap="copyActivityLink"');
+    expect(template).not.toContain('复制活动链接');
+    expect(template).not.toContain('bindtap="generatePoster"');
+    expect(template).not.toContain('保存分享海报');
+    expect(template).not.toContain('poster-canvas');
     expect(styles).toContain('grid-template-columns: minmax(0, 1fr) auto auto');
     expect(styles).toContain('@media (max-width: 360px)');
+    expect(routeStyles).toContain('background: var(--color-surface)');
+    expect(routeStyles).toContain('color: var(--color-brand)');
+    expect(routeStyles).toContain('background: var(--color-action)');
+    expect(routeStyles).not.toMatch(/#[0-9a-f]{3,8}\b/i);
   });
 
   it('突出集合时间、仅展示审核通过人数，并为管理员提供修改和报名双入口', () => {
@@ -452,24 +455,36 @@ describe('活动详情复制、分享与 GPX 导出', () => {
     expect(context.data.defaultAttendeeAvatar).toBeUndefined();
   });
 
-  it('复制 Strava/活动链接并生成分享 path', async () => {
+  it('复制 Strava 路线并生成分享 path', async () => {
     const { definition, context } = await loadPage(async () => ({
       base64: 'eA==',
       fileName: 'a.gpx',
     }));
     context.data.item.route.stravaRouteUrl = 'https://www.strava.com/routes/123';
-    definition.copyStravaRoute.call(context);
+    await definition.copyStravaRoute.call(context);
     expect(wx.setClipboardData).toHaveBeenLastCalledWith(
       expect.objectContaining({ data: 'https://www.strava.com/routes/123' }),
     );
-    definition.copyActivityLink.call(context);
-    expect(wx.setClipboardData).toHaveBeenLastCalledWith(
-      expect.objectContaining({ data: 'pages/activity-detail/index?id=a%2F1' }),
-    );
+    expect(wx.showToast).toHaveBeenLastCalledWith({ title: '轨迹链接已复制', icon: 'success' });
     expect(definition.onShareAppMessage.call(context)).toEqual({
       title: '周末骑行',
       path: 'pages/activity-detail/index?id=a%2F1',
     });
+  });
+
+  it('Strava 路线复制失败时明确提示重试', async () => {
+    const { definition, context } = await loadPage(async () => ({
+      base64: 'eA==',
+      fileName: 'a.gpx',
+    }));
+    context.data.item.route.stravaRouteUrl = 'https://www.strava.com/routes/123';
+    vi.mocked(wx.setClipboardData).mockImplementationOnce(({ fail }: any) =>
+      fail(new Error('denied')),
+    );
+
+    await definition.copyStravaRoute.call(context);
+
+    expect(wx.showToast).toHaveBeenLastCalledWith({ title: '复制失败，请稍后重试', icon: 'none' });
   });
 
   it('分享给好友使用 https 封面并保留当前活动 id 与队伍参数', async () => {
