@@ -264,17 +264,56 @@ brand-logo {
   text-align: right;
 }
 
-.hero-strava-link {
-  display: flex;
-  min-height: var(--control-height);
-  margin: 24rpx 0 0;
-  padding: 0 24rpx;
-  align-items: center;
-  justify-content: space-between;
+.hero-strava-copy {
+  margin-top: 24rpx;
+  padding: 24rpx;
   border: 1rpx solid var(--color-border-strong);
   border-radius: 8rpx;
   background: var(--color-surface);
   color: var(--color-text);
+}
+
+.hero-strava-copy-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 22rpx;
+  font-weight: 900;
+}
+
+.hero-strava-copy-head text:last-child {
+  color: var(--color-muted);
+  font-size: 18rpx;
+  font-weight: 700;
+}
+
+.hero-strava-url {
+  display: block;
+  margin-top: 16rpx;
+  overflow-wrap: anywhere;
+  color: var(--color-brand);
+  font-size: 20rpx;
+  line-height: 1.55;
+}
+
+.hero-strava-copy-hint {
+  margin-top: 12rpx;
+  color: var(--color-muted);
+  font-size: 20rpx;
+  line-height: 1.55;
+}
+
+.hero-strava-link {
+  display: flex;
+  min-height: var(--control-height);
+  margin: 20rpx 0 0;
+  padding: 0 24rpx;
+  align-items: center;
+  justify-content: space-between;
+  border: 0;
+  border-radius: 8rpx;
+  background: var(--color-text);
+  color: var(--color-bg);
   font-size: 22rpx;
   font-weight: 900;
   line-height: var(--control-height);

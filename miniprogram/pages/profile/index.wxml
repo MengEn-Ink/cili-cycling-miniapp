@@ -59,9 +59,14 @@
         </view>
       </view>
       <view class="hero-capability-details" wx:if="{{heroCard.coverageText}}"><text>统计范围</text><text>{{heroCard.coverageText}}</text></view>
-      <button wx:if="{{heroCard.hasStravaProfile}}" class="hero-strava-link" bindtap="openStravaProfile" aria-label="复制 Strava 个人主页链接">
-        <text>查看 Strava 主页</text><text aria-hidden="true">↗</text>
-      </button>
+      <view wx:if="{{heroCard.hasStravaProfile}}" class="hero-strava-copy">
+        <view class="hero-strava-copy-head"><text>Strava 主页链接</text><text>仅支持复制</text></view>
+        <text class="hero-strava-url" user-select="true">{{heroCard.stravaProfileUrl}}</text>
+        <view class="hero-strava-copy-hint">复制后粘贴到系统默认浏览器打开，浏览器会自动尝试跳转到 Strava。</view>
+        <button class="hero-strava-link" bindtap="copyStravaProfileLink" aria-label="复制 Strava 个人主页链接">
+          <text>复制主页链接</text><text aria-hidden="true">复制</text>
+        </button>
+      </view>
     </view>
   </view>
 
