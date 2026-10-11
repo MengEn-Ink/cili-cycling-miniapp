@@ -44,22 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.11.17',
+      version: '2026.10.11.18',
       latest: true,
-      title: '界面文案统一为中文',
-      summary:
-        '清理活动、报名、个人资料、设置等页面的装饰性英文标题与角标，统一改为中文，品牌名与计量单位保持不变。',
+      title: '页面边距与文字对齐优化',
+      summary: '统一页面左右留白和同列信息的起始位置，让卡片、文字与操作区在不同屏幕宽度下更整齐。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.11.18',
       '2026.10.11.17',
       '2026.10.11.16',
       '2026.10.11.15',
       '2026.10.11.14',
-      '2026.10.11.13',
     ]);
   });
 

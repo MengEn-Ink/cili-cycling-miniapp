@@ -42,7 +42,9 @@ describe('报名、骑行名片与个人中心设计对齐', () => {
     expect(template).toContain('wx:for="{{card.lifetimeMetrics}}"');
     expect(template).toContain('wx:for="{{card.recentMetrics}}"');
     expect(template).toContain('wx:else class="metric-empty">{{card.emptyMetricsText}}');
+    expect(styles).toMatch(/\.capability-page\s*\{[^}]*padding:\s*18rpx var\(--page-gutter\)/s);
     expect(styles).toMatch(/\.metric-grid\s*\{[^}]*flex-wrap:\s*wrap/s);
+    expect(styles).toMatch(/\.meta-value\s*\{[^}]*text-align:\s*left/s);
     expect(styles).toMatch(/\.rider-card\s*\{[^}]*min-height:\s*980rpx/s);
     expect(styles).toMatch(
       /\.strava-profile-button,\s*\.sync-button,\s*\.repair-button,\s*\.photo-button\s*\{[^}]*min-height:\s*var\(--control-height\)/s,
