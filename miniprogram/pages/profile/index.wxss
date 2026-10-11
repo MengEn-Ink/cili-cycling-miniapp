@@ -291,6 +291,26 @@ brand-logo {
   text-align: right;
 }
 
+.hero-strava-link {
+  display: flex;
+  min-height: var(--control-height);
+  margin: 24rpx 0 0;
+  padding: 0 24rpx;
+  align-items: center;
+  justify-content: space-between;
+  border: 1rpx solid var(--color-border-strong);
+  border-radius: 8rpx;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 22rpx;
+  font-weight: 900;
+  line-height: var(--control-height);
+}
+
+.hero-strava-link:active {
+  background: var(--color-raised);
+}
+
 .hero-profile-progress,
 .identity-guide,
 .card,

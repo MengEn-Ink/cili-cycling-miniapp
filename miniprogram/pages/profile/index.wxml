@@ -67,6 +67,9 @@
         </view>
       </view>
       <view class="hero-capability-details" wx:if="{{heroCard.coverageText}}"><text>统计范围</text><text>{{heroCard.coverageText}}</text></view>
+      <button wx:if="{{heroCard.hasStravaProfile}}" class="hero-strava-link" bindtap="openStravaProfile" aria-label="复制 Strava 个人主页链接">
+        <text>查看 Strava 主页</text><text aria-hidden="true">↗</text>
+      </button>
     </view>
   </view>
 

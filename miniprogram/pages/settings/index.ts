@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.11.34',
+    date: '2026-10-11',
+    title: '骑行名片支持访问 Strava 主页',
+    summary: '已连接 Strava 的骑友可从个人中心骑行名片复制官方主页链接，并按提示前往浏览器打开。',
+    latest: true,
+    features: [
+      '个人中心骑行名片新增 Strava 主页入口',
+      '使用 Strava 官方 HTTPS 个人主页地址',
+      '复制成功后明确提示系统浏览器打开方式',
+    ],
+  },
+  {
     version: '2026.10.11.33',
     date: '2026-10-11',
     title: '资料授权与骑行卡片完善',
     summary: '头像统一使用微信授权选择，手机号授权后默认完整可见，报名审核页恢复完整骑行卡片。',
-    latest: true,
+    latest: false,
     features: [
       '移除自定义头像上传，仅保留微信头像授权入口',
       '资料表单文案更清晰，手机号支持微信授权并完整展示',

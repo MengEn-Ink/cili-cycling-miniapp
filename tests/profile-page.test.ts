@@ -113,6 +113,9 @@ describe('个人中心加载状态', () => {
       navigateTo: vi.fn(),
       previewImage: vi.fn(),
       stopPullDownRefresh: vi.fn(),
+      showModal: vi.fn(),
+      showToast: vi.fn(),
+      setClipboardData: vi.fn(({ success }) => success?.()),
     });
     vi.stubGlobal('Page', (definition: any) => {
       page = definition;
@@ -217,6 +220,53 @@ describe('个人中心加载状态', () => {
     expect(template).toContain('{{profile.completeness}}%');
     expect(template).toContain('style="width: {{profile.completeness}}%"');
     expect(styles).toMatch(/\.profile-hero\.has-bg\s*\{[^}]*min-height:\s*600rpx/s);
+  });
+
+  it('已连接 Strava 时从骑行名片复制官方主页链接并说明打开方式', async () => {
+    rideService.getPersonalCapabilityCard.mockResolvedValueOnce(
+      capabilityCard({ stravaProfileUrl: 'https://www.strava.com/athletes/42' }),
+    );
+    await page.onShow();
+    await vi.waitFor(() => expect(page.data.heroCard).toBeTruthy());
+
+    page.openStravaProfile();
+
+    expect(wx.setClipboardData).toHaveBeenCalledWith(
+      expect.objectContaining({ data: 'https://www.strava.com/athletes/42' }),
+    );
+    expect(wx.showModal).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Strava 主页链接已复制', showCancel: false }),
+    );
+    const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
+    expect(template).toContain('wx:if="{{heroCard.hasStravaProfile}}"');
+    expect(template).toContain('bindtap="openStravaProfile"');
+    expect(template).toContain('aria-label="复制 Strava 个人主页链接"');
+  });
+
+  it('剪贴板写入失败时提示重试且不误报已复制', async () => {
+    rideService.getPersonalCapabilityCard.mockResolvedValueOnce(
+      capabilityCard({ stravaProfileUrl: 'https://www.strava.com/athletes/42' }),
+    );
+    (wx.setClipboardData as any).mockImplementationOnce(({ fail }: { fail?: () => void }) =>
+      fail?.(),
+    );
+    await page.onShow();
+    await vi.waitFor(() => expect(page.data.heroCard).toBeTruthy());
+
+    page.openStravaProfile();
+
+    expect(wx.showToast).toHaveBeenCalledWith({ title: '复制失败，请稍后重试', icon: 'none' });
+    expect(wx.showModal).not.toHaveBeenCalled();
+  });
+
+  it('未连接 Strava 时入口隐藏且点击不写入剪贴板', async () => {
+    await page.onShow();
+    await vi.waitFor(() => expect(page.data.heroCard).toBeTruthy());
+
+    page.openStravaProfile();
+
+    expect(page.data.heroCard.hasStravaProfile).toBe(false);
+    expect(wx.setClipboardData).not.toHaveBeenCalled();
   });
 
   it('profile 请求失败时 hero 仍回退骑行名片 displayName', async () => {
