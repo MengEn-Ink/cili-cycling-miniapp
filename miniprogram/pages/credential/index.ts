@@ -3,6 +3,33 @@ import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
 import { formatChinaDateTime } from '../../utils/date-time';
 
+function optionalBeforeDeadline<T>(load: () => Promise<T>, timeoutMs = 1_800): Promise<T | null> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      resolve(null);
+    }, timeoutMs);
+    Promise.resolve()
+      .then(load)
+      .then(
+        (value) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve(value);
+        },
+        () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve(null);
+        },
+      );
+  });
+}
+
 function unavailableAction(): ActivityAction {
   return { kind: 'closed', label: '活动状态不可用', enabled: false };
 }
@@ -28,6 +55,15 @@ Page({
     cancelling: false,
     statusText: '',
     activityAction: unavailableAction(),
+    backgroundImages: [] as string[],
+    avatarUrl: '',
+    avatarInitial: '骑',
+    riderName: '骑行伙伴',
+    meetingTime: '以活动通知为准',
+    meetingLocation: '集合地点待通知',
+    meetingAddress: '',
+    navigationLocation: null as any,
+    canNavigate: false,
   },
   onShow() {},
   async onLoad(q: any) {
@@ -44,9 +80,49 @@ Page({
         cancelled: '已取消',
       }[item.status];
       if (!activity) throw new Error('活动不存在');
+      let profile = item.profile || {
+        avatarRevision: 0,
+        nickname: '',
+        title: '',
+        realName: '',
+        phone: '',
+        gender: '',
+        emergencyName: '',
+        emergencyPhone: '',
+        photos: [],
+      };
+      const [latestProfile, capabilityCard] = await Promise.all([
+        optionalBeforeDeadline(() => rideService.getProfile()),
+        optionalBeforeDeadline(() => rideService.getPersonalCapabilityCard()),
+      ]);
+      if (latestProfile) profile = latestProfile;
+      const avatarUrl = capabilityCard?.profile?.avatarUrl || '';
+      const backgroundImages = (capabilityCard?.backgrounds || [])
+        .filter((background) => background.source === 'user_photo')
+        .map((background) => background.url)
+        .filter((url, index, values) => !!url && values.indexOf(url) === index);
+      const riderName = profile.nickname || profile.realName || '骑行伙伴';
+      const schedule = Array.isArray(activity.schedule) ? activity.schedule[0] : undefined;
+      const startLocation = activity.route?.startLocation;
+      const scheduleLocation = schedule?.location?.trim() || '';
+      const displayMatchesStart =
+        !scheduleLocation ||
+        scheduleLocation === startLocation?.name ||
+        scheduleLocation === startLocation?.address;
+      const navigationLocation =
+        startLocation &&
+        displayMatchesStart &&
+        Number.isFinite(startLocation.latitude) &&
+        Number.isFinite(startLocation.longitude)
+          ? startLocation
+          : null;
+      const meetingLocation =
+        scheduleLocation || startLocation?.name || activity.route?.start || '集合地点待通知';
+      const meetingAddress = displayMatchesStart ? startLocation?.address || '' : '';
       this.setData({
         item: {
           ...item,
+          profile,
           updatedAt: formatChinaDateTime(item.updatedAt),
           checkedInAt: formatChinaDateTime(item.checkedInAt),
         },
@@ -56,6 +132,15 @@ Page({
         },
         statusText,
         activityAction: resolveActivityAction(activity, item),
+        backgroundImages,
+        avatarUrl,
+        avatarInitial: riderName.trim().slice(0, 1) || '骑',
+        riderName,
+        meetingTime: schedule?.time || formatChinaDateTime(activity.startAt || activity.date),
+        meetingLocation,
+        meetingAddress,
+        navigationLocation,
+        canNavigate: !!navigationLocation,
       });
     } catch (error) {
       this.setData({ error: error instanceof Error ? error.message : '报名凭证加载失败' });
@@ -93,7 +178,7 @@ Page({
     }
   },
   navigateToMeeting() {
-    const location = this.data.activity?.route?.startLocation;
+    const location = this.data.navigationLocation;
     if (!location) return;
     wx.openLocation({
       latitude: location.latitude,

@@ -363,6 +363,24 @@ async function cancelRegistration(store, { openid, registrationId: id }, now = n
   });
 }
 
+async function deleteRegistration(store, { openid, registrationId: id }, now = new Date()) {
+  return store.transaction(async (tx) => {
+    const registration = await tx.getRegistration(id);
+    if (!registration) return { deleted: true };
+    if (registration.openid !== openid) fail('REGISTRATION_NOT_FOUND', '报名不存在');
+    if (registration.status !== 'cancelled') fail('INVALID_TRANSITION', '仅已取消行程可删除');
+    await tx.addAudit(
+      buildAudit(openid, 'registration.deleted', id, now, {
+        activity_id: registration.activity_id,
+        from_status: 'cancelled',
+        to_status: null,
+      }),
+    );
+    await tx.deleteRegistration(id);
+    return { deleted: true };
+  });
+}
+
 async function reviewRegistration(
   store,
   { openid, registrationId: id, action, reason },
@@ -467,6 +485,7 @@ module.exports = {
   promoteOldestWaiting,
   releaseAndPromote,
   cancelRegistration,
+  deleteRegistration,
   reviewRegistration,
   checkInRegistration,
 };

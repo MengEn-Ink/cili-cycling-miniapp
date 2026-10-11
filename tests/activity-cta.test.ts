@@ -347,6 +347,34 @@ describe('凭证页重报接线', () => {
     expect(wx.redirectTo).not.toHaveBeenCalled();
   });
 
+  it('展示的日程集合地点与路线起点不一致时禁用导航', async () => {
+    rideService.getRegistration.mockResolvedValue({
+      id: 'r1',
+      activityId: 'a1',
+      status: 'approved',
+    });
+    rideService.getActivity.mockResolvedValue(
+      activity({
+        schedule: [{ time: '07:00', title: '集合', location: '北门广场' }],
+        route: {
+          ...open.route,
+          startLocation: {
+            name: '南门停车场',
+            address: '南门路',
+            latitude: 30.2,
+            longitude: 120.1,
+          },
+        },
+      }),
+    );
+
+    await page.onLoad({ id: 'r1' });
+
+    expect(page.data.meetingLocation).toBe('北门广场');
+    expect(page.data.canNavigate).toBe(false);
+    expect(page.data.navigationLocation).toBeNull();
+  });
+
   it('报名凭证仅在集合点有坐标时打开地图', () => {
     const openLocation = vi.fn();
     Object.assign(wx, { openLocation });
@@ -356,6 +384,7 @@ describe('凭证页重报接线', () => {
         startLocation: { name: '集合点', address: '湖滨路', latitude: 30.2, longitude: 120.1 },
       },
     });
+    page.data.navigationLocation = page.data.activity.route.startLocation;
     page.navigateToMeeting();
     expect(openLocation).toHaveBeenCalledWith({
       latitude: 30.2,
@@ -365,6 +394,7 @@ describe('凭证页重报接线', () => {
       scale: 16,
     });
     page.data.activity.route.startLocation = undefined;
+    page.data.navigationLocation = null;
     page.navigateToMeeting();
     expect(openLocation).toHaveBeenCalledTimes(1);
   });

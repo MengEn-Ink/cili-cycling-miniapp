@@ -316,6 +316,11 @@ export class CachingRepository implements RideRepository {
     return result;
   }
 
+  async deleteRegistration(id: string): Promise<void> {
+    await this.inner.deleteRegistration(id);
+    this.cacheControl.invalidateActivities();
+  }
+
   async reviewRegistration(id: string, decision: 'approved' | 'rejected', reason?: string) {
     const result = await this.inner.reviewRegistration(id, decision, reason);
     this.cacheControl.invalidateActivities();

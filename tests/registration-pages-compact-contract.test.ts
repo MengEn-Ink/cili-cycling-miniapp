@@ -70,19 +70,21 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     }
   });
 
-  it('凭证在 approved 和 checked_in 展示，签到后不提供取消', () => {
+  it('凭证在 approved 和 checked_in 展示，签到后不提供取消并突出集合信息', () => {
     expect(credential).toContain(
       `wx:if="{{item.status === 'approved' || item.status === 'checked_in'}}" class="credential-card"`,
     );
     expect(credential).toContain("item.status === 'pending' || item.status === 'approved'");
-    expect(credential).toContain("item.status === 'checked_in' ? 'CHECKED IN'");
     expect(credential).toContain("item.status === 'checked_in' ? '已签到' : '已通过'");
     expect(credential).toContain("activityAction.kind === 'resubmit'");
     expect(credential).toContain("activityAction.kind === 'view-history'");
     expect(credential).toContain('{{item.serialNo}}');
-    expect(credential).toContain('{{activity.schedule[0].location}}');
-    expect(credential).toContain('最近更新 {{item.updatedAt}}');
-    expect(credential).not.toContain('<view>已提交报名</view>');
+    expect(credential).toContain('{{meetingTime}}');
+    expect(credential).toContain('{{meetingLocation}}');
+    expect(credential).toContain('class="rider-avatar"');
+    expect(credential).not.toContain('CHECKED IN');
+    expect(credential).not.toContain('审批意见');
+    expect(credential).not.toContain('报名进度');
   });
 
   it('面向骑友解释名额与资料，不暴露技术实现术语', () => {

@@ -728,6 +728,12 @@ describe('CloudRepository 队员报名适配', () => {
     expect(result.status).toBe('cancelled');
   });
 
+  it('删除只发送 registration/delete', async () => {
+    const { cloud, callFunction } = cloudWith(success({ deleted: true }));
+    await expect(new CloudRepository(cloud).deleteRegistration('r1')).resolves.toBeUndefined();
+    expectCall(callFunction, 'registration', { action: 'delete', registrationId: 'r1' });
+  });
+
   it('将 self_drive 集合方式映射为自驾', async () => {
     const selfDrive = {
       ...registration,
