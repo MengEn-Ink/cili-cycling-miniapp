@@ -223,6 +223,7 @@ describe('Strava 页面编排', () => {
     showModal = vi.fn();
     vi.stubGlobal('wx', {
       showModal,
+      showToast: vi.fn(),
       setClipboardData: vi.fn(({ success }: any) => success()),
     });
     vi.stubGlobal('Page', (definition: any) => {
@@ -397,18 +398,34 @@ describe('Strava 页面编排', () => {
     expect(invalidateProfilePageCache).toHaveBeenCalledOnce();
   });
 
-  it('复制失败时保留明确错误且不伪装授权成功', async () => {
-    rideService.startStrava.mockResolvedValue({
-      authorizationUrl: 'https://www.strava.com/oauth/authorize?state=once',
-      expiresAt: 'soon',
-    });
+  it('复制失败时保留授权状态并展示手动复制降级入口', async () => {
+    const authorizationUrl = 'https://www.strava.com/oauth/authorize?state=once';
+    rideService.startStrava.mockResolvedValue({ authorizationUrl, expiresAt: 'soon' });
     vi.mocked(wx.setClipboardData).mockImplementation(({ fail }: any) => fail(new Error('no')));
 
     await page.connect();
 
-    expect(page.data.readiness).toBeNull();
-    expect(page.data.error).toContain('复制失败');
+    expect(page.data.readiness).toMatchObject({ state: 'authorizing', canRegister: false });
+    expect(page.data.authorizationUrl).toBe(authorizationUrl);
+    expect(page.data.manualAuthorization).toBe(true);
+    expect(page.data.error).toContain('长按下方链接手动复制');
     expect(showModal).not.toHaveBeenCalled();
+    const template = readFileSync('miniprogram/pages/strava/index.wxml', 'utf8');
+    expect(template).toContain('selectable user-select');
+    expect(template).toContain('bindtap="retryAuthorizationCopy"');
+  });
+
+  it('手动降级入口支持再次复制', async () => {
+    page.data.authorizationUrl = 'https://www.strava.com/oauth/authorize?state=once';
+    page.data.manualAuthorization = true;
+
+    await page.retryAuthorizationCopy();
+
+    expect(wx.setClipboardData).toHaveBeenCalledWith(
+      expect.objectContaining({ data: page.data.authorizationUrl }),
+    );
+    expect(wx.showToast).toHaveBeenCalledWith({ title: '授权链接已复制', icon: 'success' });
+    expect(page.data.error).toBe('');
   });
 
   it('用户取消浏览器引导时撤销服务端 state 并恢复未连接状态', async () => {
