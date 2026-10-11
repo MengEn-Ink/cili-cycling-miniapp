@@ -44,21 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.11.33',
+      version: '2026.10.11.34',
       latest: true,
-      title: '资料授权与骑行卡片完善',
-      summary: '头像统一使用微信授权选择，手机号授权后默认完整可见，报名审核页恢复完整骑行卡片。',
+      title: '骑行名片支持访问 Strava 主页',
+      summary: '已连接 Strava 的骑友可从个人中心骑行名片复制官方主页链接，并按提示前往浏览器打开。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.11.34',
       '2026.10.11.33',
       '2026.10.11.32',
       '2026.10.11.31',
       '2026.10.11.30',
-      '2026.10.11.29',
     ]);
   });
 
