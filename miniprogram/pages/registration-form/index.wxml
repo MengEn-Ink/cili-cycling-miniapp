@@ -9,9 +9,9 @@
         <view class="step-rule"></view>
         <view class="step"><text class="step-number">03</text><text>凭证</text></view>
       </view>
-      <view class="title-row"><view><view class="hero-kicker">CILI · REGISTRATION</view><view class="form-title">确认报名信息</view></view><view class="step-caption">STEP 1 填写</view></view>
+      <view class="title-row"><view><view class="form-title">确认报名信息</view></view><view class="step-caption">第一步 · 填写</view></view>
       <view class="activity-context" wx:if="{{activity}}">
-        <view class="context-head"><view class="context-kicker">CURRENT ACTIVITY</view><view class="context-status">{{activityAction.label}}</view></view>
+        <view class="context-head"><view class="context-kicker">当前活动</view><view class="context-status">{{activityAction.label}}</view></view>
         <view class="context-title">{{activity.title || '当前骑行活动'}}</view>
         <view class="context-meta"><text>{{displayActivityDate}}</text><text>{{activity.registrationUnlimited ? '报名人数不限' : ('总名额 ' + activity.capacity)}}</text></view>
       </view>

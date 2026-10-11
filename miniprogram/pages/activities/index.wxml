@@ -1,7 +1,7 @@
 <view class="page activities-page">
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{refreshing ? '正在刷新活动' : loadingMore ? '正在加载更多活动' : ''}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{refreshError}}</view>
-  <brand-logo meta="RIDES / {{items.length || '—'}}" />
+  <brand-logo meta="骑行活动" />
   <view class="activities-intro">
     <view class="section-eyebrow">{{sectionEyebrow}}</view>
     <view class="page-title"><view>发现活动</view><view>报名出发</view></view>

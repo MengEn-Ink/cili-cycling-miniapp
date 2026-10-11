@@ -2,7 +2,6 @@
   <view class="card danger" wx:if="{{error}}">{{error}}</view>
   <block wx:if="{{allowed}}">
     <view class="hero">
-      <view>CILI ACTIVITIES</view>
       <view class="hero-title">我的活动</view>
       <view>{{isAdmin ? '管理全部活动与发布状态' : '创建、编辑并上下架你的活动'}}</view>
     </view>

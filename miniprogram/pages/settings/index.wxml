@@ -1,8 +1,7 @@
 <view class="page settings-page">
-  <brand-logo compact="{{true}}" meta="PREFERENCES · RELEASES" />
+  <brand-logo compact="{{true}}" meta="设置" />
 
   <view class="settings-hero">
-    <view class="hero-kicker">CONTROL CENTER</view>
     <view class="hero-title">设置</view>
     <view class="hero-copy">管理 Strava 授权，查看「此里」的每一次功能升级。</view>
   </view>
@@ -80,7 +79,7 @@
       <view class="release-content">
         <view class="release-meta">
           <text class="release-version">V{{item.version}}</text>
-          <text class="release-latest" wx:if="{{item.latest}}">LATEST</text>
+          <text class="release-latest" wx:if="{{item.latest}}">最新</text>
           <text class="release-date">{{item.date}}</text>
         </view>
         <view class="release-title">{{item.title}}</view>

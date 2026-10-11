@@ -22,10 +22,6 @@ page {
 .hero view {
   color: #a8a8ad;
 }
-.hero view:first-child {
-  color: var(--color-brand);
-  font-size: 22rpx;
-}
 .hero .hero-title {
   color: #f7f7f5;
   font-size: 46rpx;
