@@ -70,22 +70,14 @@
           <view wx:else class="route-empty">正在等待首位骑友报名</view>
         </view>
 
-        <view class="card route-actions-card">
-          <view class="title">路线与分享</view>
-          <view class="strava-route" wx:if="{{item.route.stravaRouteUrl}}">
-            <view class="strava-route-heading">Strava 轨迹</view>
-            <view class="strava-route-row">
-              <text class="strava-route-url" bindtap="copyStravaRoute" role="button" aria-label="复制 Strava 轨迹链接">{{item.route.stravaRouteUrl}}</text>
-              <button class="strava-route-action" bindtap="copyStravaRoute">复制</button>
-              <button class="strava-route-action strava-route-action--primary" wx:if="{{item.route.stravaRouteId}}" loading="{{exportingGpx}}" disabled="{{exportingGpx}}" bindtap="exportGpx">{{exportingGpx ? '下载中' : '下载 GPX'}}</button>
-            </view>
-            <view class="route-action-note">复制后可在系统浏览器或 Strava 中打开；GPX 可分享至码表或骑行应用。</view>
+        <view class="card route-actions-card" wx:if="{{item.route.stravaRouteUrl}}">
+          <view class="title">Strava 轨迹</view>
+          <view class="strava-route-row">
+            <button class="strava-route-url" bindtap="copyStravaRoute" aria-label="复制 Strava 轨迹链接">{{item.route.stravaRouteUrl}}</button>
+            <button class="strava-route-action" bindtap="copyStravaRoute">复制</button>
+            <button class="strava-route-action strava-route-action--primary" wx:if="{{item.route.stravaRouteId}}" loading="{{exportingGpx}}" disabled="{{exportingGpx}}" bindtap="exportGpx">{{exportingGpx ? '下载中' : '下载 GPX'}}</button>
           </view>
-          <view class="route-actions route-share-actions">
-            <button bindtap="copyActivityLink">复制活动链接</button>
-            <button wx:if="{{groupQrVisible}}" loading="{{generatingPoster}}" disabled="{{generatingPoster}}" bindtap="generatePoster">{{generatingPoster ? '生成中' : '保存分享海报'}}</button>
-            <view wx:else class="route-action-note">报名审核通过后可生成分享海报</view>
-          </view>
+          <view class="route-action-note">复制后可在系统浏览器或 Strava 中打开；GPX 可分享至码表或骑行应用。</view>
         </view>
 
         <view class="card group-qr-detail-card" wx:if="{{item.groupQrCode || !groupQrVisible}}">
@@ -145,7 +137,6 @@
   </view>
 </view>
 
-<canvas id="poster-canvas" type="2d" class="poster-canvas" aria-hidden="true"></canvas>
 <view class="fixed detail-action detail-action--admin" wx:if="{{isAdmin}}">
   <button class="btn btn--secondary" disabled="{{loading || !item}}" bindtap="editActivity">修改活动</button>
   <button class="btn" disabled="{{loading || !item}}" bindtap="adminRegistration">{{adminRegistrationLabel}} <text class="button-arrow">→</text></button>

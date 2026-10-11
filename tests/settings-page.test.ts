@@ -44,22 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.12.8',
+      version: '2026.10.12.9',
       latest: true,
-      title: '报名骑友名片更完整',
-      summary:
-        '活动详情将已通过骑友展示为含公开照片的缩小骑行名片，点击即可查看完整名片和骑行数据。',
+      title: '轨迹操作更精简可靠',
+      summary: 'Strava 轨迹区统一最终三色主题，修复复制反馈，并移除重复的活动链接与海报操作。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.12.9',
       '2026.10.12.8',
       '2026.10.12.7',
       '2026.10.12.6',
       '2026.10.12.5',
-      '2026.10.12.4',
     ]);
   });
 

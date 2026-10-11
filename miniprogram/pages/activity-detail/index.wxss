@@ -653,15 +653,6 @@ brand-logo {
   background: var(--color-raised);
 }
 
-.poster-canvas {
-  position: fixed;
-  top: -2000px;
-  left: -2000px;
-  width: 375px;
-  height: 600px;
-  pointer-events: none;
-}
-
 /* Scheme A: photographic route story followed by decision-first content. */
 .detail-hero--media {
   min-height: 640rpx;
@@ -1149,10 +1140,6 @@ brand-logo {
   color: var(--color-text) !important;
 }
 
-.poster-canvas {
-  height: 700px;
-}
-
 @media (max-width: 350px) {
   .time-card-primary {
     font-size: 40rpx;
@@ -1422,20 +1409,12 @@ brand-logo {
   }
 }
 
-/* Strava 轨迹链接与文件操作保持在同一阅读行，小屏时让链接先占满一行。 */
-.strava-route {
-  margin-bottom: 18rpx;
-  padding: 18rpx 20rpx;
-  border: 1rpx solid #3a3a3c;
-  border-radius: var(--radius-md);
-  background: #242426;
-}
-
-.strava-route-heading {
-  margin-bottom: 12rpx;
-  color: #f7f7f5;
-  font-size: 24rpx;
-  font-weight: 800;
+/* Strava 轨迹操作统一使用全局暖灰白、石墨黑、品牌橙语义色。 */
+.detail-page .route-actions-card {
+  padding: 24rpx;
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .strava-route-row {
@@ -1448,11 +1427,17 @@ brand-logo {
 .strava-route-url {
   display: block;
   min-width: 0;
-  padding: 16rpx 0;
+  min-height: 72rpx;
+  margin: 0;
+  padding: 0;
   overflow: hidden;
-  color: #ff8a5b;
+  border: 0;
+  background: transparent;
+  color: var(--color-brand);
   font-size: 23rpx;
-  line-height: 1.35;
+  font-weight: 700;
+  line-height: 72rpx;
+  text-align: left;
   text-decoration: underline;
   text-decoration-thickness: 1rpx;
   text-overflow: ellipsis;
@@ -1460,15 +1445,20 @@ brand-logo {
   white-space: nowrap;
 }
 
+.strava-route-url::after,
+.strava-route-action::after {
+  border: 0;
+}
+
 .strava-route-action {
   min-width: 92rpx;
   min-height: 72rpx;
   margin: 0;
   padding: 0 18rpx;
-  border: 1rpx solid #ff8a5b;
+  border: 1rpx solid var(--color-brand);
   border-radius: var(--radius-sm);
-  background: transparent;
-  color: #ff8a5b;
+  background: var(--color-surface);
+  color: var(--color-brand);
   font-size: 22rpx;
   font-weight: 800;
   line-height: 72rpx;
@@ -1476,18 +1466,19 @@ brand-logo {
 
 .strava-route-action--primary {
   min-width: 154rpx;
-  background: #ff5a1f;
-  color: #ffffff;
+  background: var(--color-action);
+  color: var(--color-on-action);
 }
 
 .strava-route-action[disabled] {
-  border-color: #5d5d62;
-  background: #343438;
-  color: #9a9a9f;
+  border-color: var(--color-border-strong);
+  background: var(--color-raised);
+  color: var(--color-disabled-text);
 }
 
-.strava-route .route-action-note {
+.route-actions-card .route-action-note {
   margin: 12rpx 0 0;
+  color: var(--color-muted);
 }
 
 @media (max-width: 360px) {

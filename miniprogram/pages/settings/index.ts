@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.12.9',
+    date: '2026-10-12',
+    title: '轨迹操作更精简可靠',
+    summary: 'Strava 轨迹区统一最终三色主题，修复复制反馈，并移除重复的活动链接与海报操作。',
+    latest: true,
+    features: [
+      '轨迹卡片统一暖灰白、石墨黑与品牌橙配色',
+      '复制成功与失败均提供明确反馈',
+      '移除重复的活动链接和分享海报入口',
+    ],
+  },
+  {
     version: '2026.10.12.8',
     date: '2026-10-12',
     title: '报名骑友名片更完整',
     summary: '活动详情将已通过骑友展示为含公开照片的缩小骑行名片，点击即可查看完整名片和骑行数据。',
-    latest: true,
+    latest: false,
     features: [
       '已通过骑友区域改为可横向浏览的照片名片',
       '点击缩小名片可查看完整照片、报名状态与骑行数据',
