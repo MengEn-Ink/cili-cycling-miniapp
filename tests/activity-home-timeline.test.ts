@@ -95,6 +95,19 @@ describe('activity timeline template contract', () => {
     expect(template).toContain("{{loadingMore ? '加载中…' : '加载更多'}}");
     expect(template).toContain("{{activeView === 'history' ? '历史活动列表' : '未来活动列表'}}");
   });
+
+  it('未来视图提供日期分组头、锚点与日期快捷定位入口', () => {
+    const template = read('miniprogram/pages/activities/index.wxml');
+    expect(template).toContain('wx:for="{{rows}}"');
+    expect(template).toContain('class="day-group-head"');
+    expect(template).toContain('id="day-{{row.dayKey}}"');
+    expect(template).toContain('class="day-chip-bar"');
+    expect(template).toContain('wx:for="{{dayChips}}"');
+    expect(template).toContain('bindtap="scrollToDay"');
+    expect(template).toContain('data-key="{{item.key}}"');
+    // 历史视图仍保留“接下来/更早活动”分隔语义。
+    expect(template).toContain('wx:if="{{row.showFollowing}}"');
+  });
 });
 
 describe('activities page timeline controller', () => {
@@ -131,6 +144,88 @@ describe('activities page timeline controller', () => {
       emptyTitle: '暂无历史活动',
       emptyCopy: '完成的骑行活动会出现在这里',
     });
+  });
+
+  it('未来列表产出日期分组行与快捷 chips，items 仍驱动计数与空态', async () => {
+    const page = await loadPage();
+    rideService.listActivityPage.mockResolvedValueOnce({
+      items: [
+        {
+          ...activity('d1'),
+          startAt: '2026-10-18T00:00:00.000Z',
+          date: '2026-10-18T00:00:00.000Z',
+        },
+        {
+          ...activity('d2'),
+          startAt: '2026-10-20T00:00:00.000Z',
+          date: '2026-10-20T00:00:00.000Z',
+        },
+      ],
+      nextCursor: null,
+      asOf: '2026-10-11T00:00:00.000Z',
+    });
+
+    await page.load();
+
+    expect(page.data.items.map((item: any) => item.id)).toEqual(['d1', 'd2']);
+    expect(page.data.rows.map((row: any) => row.kind)).toEqual([
+      'header',
+      'item',
+      'header',
+      'item',
+    ]);
+    expect(page.data.rows[0]).toMatchObject({ kind: 'header', dayKey: '2026-10-18' });
+    expect(page.data.rows[1]).toMatchObject({ kind: 'item', featured: true });
+    expect(page.data.rows[1].item.id).toBe('d1');
+    expect(page.data.rows[3].item.id).toBe('d2');
+    expect(page.data.dayChips.map((chip: any) => chip.key)).toEqual(['2026-10-18', '2026-10-20']);
+  });
+
+  it('历史列表只产出活动行，不插入日期头也不产出 chips', async () => {
+    const page = await loadPage();
+    rideService.listActivityPage
+      .mockResolvedValueOnce(pageResult(['future'], null))
+      .mockResolvedValueOnce(pageResult(['h1', 'h2'], null));
+
+    await page.load();
+    page.switchView({ currentTarget: { dataset: { view: 'history' } } });
+    await vi.waitFor(() => expect(rideService.listActivityPage).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(page.data.loading).toBe(false));
+
+    expect(page.data.rows).toHaveLength(2);
+    expect(page.data.rows.every((row: any) => row.kind === 'item')).toBe(true);
+    expect(page.data.dayChips).toEqual([]);
+  });
+
+  it('scrollToDay 滚动到对应日期锚点，兼容 Promise 返回、异常与非法 key', async () => {
+    const page = await loadPage();
+    const pageScrollTo = vi.fn();
+    vi.stubGlobal('wx', { pageScrollTo, navigateTo: vi.fn() });
+
+    page.scrollToDay({ currentTarget: { dataset: { key: '2026-10-18' } } });
+    expect(pageScrollTo).toHaveBeenCalledWith(
+      expect.objectContaining({ selector: '#day-2026-10-18' }),
+    );
+
+    // 新基础库返回 Promise 时挂住 reject，避免未处理异常。
+    const catchSpy = vi.fn();
+    pageScrollTo.mockImplementationOnce(() => ({ catch: catchSpy }));
+    page.scrollToDay({ currentTarget: { dataset: { key: '2026-10-18' } } });
+    expect(catchSpy).toHaveBeenCalledOnce();
+
+    // 旧基础库抛错时静默降级，不阻断浏览。
+    pageScrollTo.mockImplementationOnce(() => {
+      throw new Error('unsupported');
+    });
+    expect(() =>
+      page.scrollToDay({ currentTarget: { dataset: { key: '2026-10-18' } } }),
+    ).not.toThrow();
+
+    pageScrollTo.mockClear();
+    page.scrollToDay({ currentTarget: { dataset: { key: 'pending' } } });
+    page.scrollToDay({ currentTarget: { dataset: {} } });
+    page.scrollToDay({ currentTarget: { dataset: { key: 123 } } });
+    expect(pageScrollTo).not.toHaveBeenCalled();
   });
 
   it('加载更多按 cursor 单飞、按 ID 去重并更新 cursor', async () => {

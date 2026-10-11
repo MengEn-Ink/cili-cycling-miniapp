@@ -15,13 +15,37 @@
     <view class="section-title">{{sectionTitle}}</view>
     <text class="count" wx:if="{{items.length}}">{{items.length}} 场</text>
   </view>
+  <scroll-view
+    class="day-chip-bar"
+    scroll-x
+    wx:if="{{activeView === 'future' && dayChips.length > 1}}"
+    aria-label="按日期快速定位"
+  >
+    <view class="day-chip-bar__inner">
+      <view
+        class="day-chip"
+        wx:for="{{dayChips}}"
+        wx:key="key"
+        role="button"
+        data-key="{{item.key}}"
+        bindtap="scrollToDay"
+        hover-class="day-chip--pressed"
+        >{{item.label}}</view
+      >
+    </view>
+  </scroll-view>
   <view class="refresh-note muted" wx:if="{{refreshing}}" aria-hidden="true">正在刷新活动…</view>
   <view class="refresh-note muted" wx:if="{{refreshError}}" aria-hidden="true">{{refreshError}}</view>
   <view id="activity-list-panel" class="activity-results" role="tabpanel" aria-label="{{activeView === 'history' ? '历史活动列表' : '未来活动列表'}}">
     <state-view loading="{{loading}}" error="{{error}}" empty="{{!items.length}}" empty-title="{{emptyTitle}}" empty-copy="{{emptyCopy}}" retryable="{{true}}" bind:retry="load">
-      <block wx:for="{{items}}" wx:key="id">
-        <view class="following-head" wx:if="{{index === 1}}"><text>{{followingTitle}}</text><text>继续探索 →</text></view>
-        <activity-card item="{{item}}" featured="{{activeView === 'future' && index === 0}}" data-id="{{item.id}}" bind:open="open" />
+      <block wx:for="{{rows}}" wx:key="rowId" wx:for-item="row">
+        <view wx:if="{{row.kind === 'header'}}" id="day-{{row.dayKey}}" class="day-group-head">
+          <text class="day-group-head__label">{{row.dayLabel}}</text>
+        </view>
+        <block wx:if="{{row.kind === 'item'}}">
+          <view class="following-head" wx:if="{{row.showFollowing}}"><text>{{followingTitle}}</text><text>继续探索 →</text></view>
+          <activity-card item="{{row.item}}" featured="{{activeView === 'future' && row.featured}}" data-id="{{row.item.id}}" bind:open="open" />
+        </block>
       </block>
     </state-view>
     <button class="load-more" wx:if="{{nextCursor && items.length}}" bindtap="loadMore" loading="{{loadingMore}}" disabled="{{loadingMore}}" aria-disabled="{{loadingMore}}">{{loadingMore ? '加载中…' : '加载更多'}}</button>

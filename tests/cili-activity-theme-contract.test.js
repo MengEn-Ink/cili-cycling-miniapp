@@ -36,7 +36,7 @@ describe('CILI 活动页静态契约', () => {
   });
 
   it('活动列表和详情继续渲染现有关键字段', () => {
-    expect(activities).toContain('item="{{item}}"');
+    expect(activities).toContain('item="{{row.item}}"');
     expect(detail).toContain('{{item.title}}');
     expect(detail).toContain('{{displayDate}}');
     expect(detail).toContain('{{item.route.distanceKm}}');
