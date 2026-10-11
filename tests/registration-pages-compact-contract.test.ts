@@ -85,7 +85,7 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     expect(credential).toContain('{{item.serialNo}}');
     expect(credential).toContain('{{meetingTime}}');
     expect(credential).toContain('{{meetingLocation}}');
-    expect(credential).toContain('class="rider-avatar"');
+    expect(credential).toContain('class="compact-rider-avatar"');
     expect(credential).not.toContain('CHECKED IN');
     expect(credential).not.toContain('审批意见');
     expect(credential).not.toContain('报名进度');

@@ -44,21 +44,22 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.12.12',
+      version: '2026.10.12.13',
       latest: true,
-      title: '轨迹复制失败原因可见',
-      summary: '轨迹复制改为点击时直接调用微信接口，失败时展示真实原因，并支持长按链接手动复制。',
+      title: '报名凭证展示真实骑行名片',
+      summary:
+        '报名后的骑行名片与个人中心保持一致，真实头像和背景照片分开呈现，并补充核心骑行数据。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.12.13',
       '2026.10.12.12',
       '2026.10.12.11',
       '2026.10.12.10',
       '2026.10.12.9',
-      '2026.10.12.8',
     ]);
   });
 

@@ -2,6 +2,7 @@ import { rideService } from '../../services/ride-service';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
 import { formatActivityDate, formatActivityTime, formatChinaDateTime } from '../../utils/date-time';
+import { personalCardViewModel } from '../../utils/personal-card';
 
 function optionalBeforeDeadline<T>(load: () => Promise<T>, timeoutMs = 1_800): Promise<T | null> {
   return new Promise((resolve) => {
@@ -57,8 +58,8 @@ Page({
     activityAction: unavailableAction(),
     backgroundImages: [] as string[],
     avatarUrl: '',
-    avatarInitial: '骑',
     riderName: '骑行伙伴',
+    cardMetrics: [] as { key: string; label: string; unit: string; value: string }[],
     meetingTime: '以活动通知为准',
     meetingLocation: '集合地点待通知',
     meetingAddress: '',
@@ -97,6 +98,7 @@ Page({
       ]);
       if (latestProfile) profile = latestProfile;
       const avatarUrl = capabilityCard?.profile?.avatarUrl || '';
+      const cardView = capabilityCard ? personalCardViewModel(capabilityCard) : null;
       const backgroundImages = (capabilityCard?.backgrounds || [])
         .filter((background) => background.source === 'user_photo')
         .map((background) => background.url)
@@ -134,8 +136,8 @@ Page({
         activityAction: resolveActivityAction(activity, item),
         backgroundImages,
         avatarUrl,
-        avatarInitial: riderName.trim().slice(0, 1) || '骑',
         riderName,
+        cardMetrics: cardView?.primaryMetrics || [],
         meetingTime: formatActivityTime(schedule?.time || activity.startAt || activity.date),
         meetingLocation,
         meetingAddress,

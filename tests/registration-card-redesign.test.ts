@@ -7,6 +7,7 @@ const trips = read('miniprogram/pages/registrations/index.wxml');
 const tripStyles = read('miniprogram/pages/registrations/index.wxss');
 const credential = read('miniprogram/pages/credential/index.wxml');
 const credentialStyles = read('miniprogram/pages/credential/index.wxss');
+const credentialPage = read('miniprogram/pages/credential/index.ts');
 const activityCard = read('miniprogram/components/activity-card/index.wxml');
 const activityCardStyles = read('miniprogram/components/activity-card/index.wxss');
 
@@ -25,13 +26,25 @@ describe('行程状态卡与报名凭证重设计契约', () => {
     );
   });
 
-  it('凭证主视觉展示背景照片、头像和单一状态', () => {
-    expect(credential).toContain('class="credential-visual status-hero status-{{item.status}}"');
+  it('凭证主视觉复用个人名片缩小布局，并严格分离真实背景与真实头像', () => {
+    expect(credential).toContain('class="compact-rider-card status-{{item.status}}"');
     expect(credential).toContain('wx:for="{{backgroundImages}}"');
-    expect(credential).toContain('class="rider-avatar"');
+    expect(credential).toContain('class="compact-rider-avatar"');
+    expect(credential).toContain('src="{{avatarUrl}}"');
+    expect(credential).toContain('class="compact-rider-metrics"');
+    expect(credential).toContain('wx:for="{{cardMetrics}}"');
     expect(credential).toContain('{{statusText}}');
-    expect(credentialStyles).toContain('.credential-visual');
-    expect(credentialStyles).toContain('.rider-avatar');
+    expect(credential).toContain('背景照片待完善');
+    expect(credential).toContain('头像待完善');
+    expect(credentialStyles).toContain('.compact-rider-card');
+    expect(credentialStyles).toContain('.compact-rider-avatar');
+  });
+
+  it('背景只接收用户真实骑行照片，头像保持独立数据源', () => {
+    expect(credentialPage).toContain("background.source === 'user_photo'");
+    expect(credentialPage).toContain("const avatarUrl = capabilityCard?.profile?.avatarUrl || ''");
+    expect(credentialPage).not.toContain('backgroundImages.push(avatarUrl)');
+    expect(credentialPage).not.toContain('backgroundImages.concat(avatarUrl)');
   });
 
   it('活动卡片日期只由分组标题承载，卡片重点展示具体集合时间', () => {
