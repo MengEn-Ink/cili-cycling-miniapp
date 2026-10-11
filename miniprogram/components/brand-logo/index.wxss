@@ -6,19 +6,22 @@
   display: flex;
   box-sizing: border-box;
   min-height: 60rpx;
-  padding: 14rpx 18rpx;
   align-items: center;
-  border-radius: var(--radius-sm);
-  background: var(--color-text);
-  color: var(--color-bg);
+  gap: 18rpx;
+  background: transparent;
+  color: var(--color-text);
 }
 
 .brand-logo__wordmark {
   position: relative;
   display: inline-flex;
+  box-sizing: border-box;
+  min-height: 60rpx;
+  padding: 14rpx 44rpx 14rpx 18rpx;
   align-items: center;
-  padding-right: 26rpx;
-  color: inherit;
+  border-radius: var(--radius-sm);
+  background: var(--color-text);
+  color: var(--color-bg);
   font-size: 46rpx;
   font-weight: 900;
   line-height: 1;
@@ -54,22 +57,23 @@
 }
 
 .brand-logo__meta {
-  margin-left: auto;
-  color: inherit;
+  margin-left: 0;
+  color: var(--color-text);
   font-size: 18rpx;
   font-weight: 800;
   letter-spacing: 2rpx;
-  opacity: 0.62;
-  text-align: right;
+  line-height: 1.45;
+  opacity: 0.72;
+  text-align: left;
 }
 
 .brand-logo--compact {
   min-height: 48rpx;
-  padding: 10rpx 14rpx;
 }
 
 .brand-logo--compact .brand-logo__wordmark {
-  padding-right: 22rpx;
+  min-height: 48rpx;
+  padding: 10rpx 36rpx 10rpx 14rpx;
   font-size: 38rpx;
 }
 

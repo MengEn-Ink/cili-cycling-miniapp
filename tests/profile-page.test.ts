@@ -204,7 +204,10 @@ describe('个人中心加载状态', () => {
     const styles = readFileSync('miniprogram/pages/profile/index.wxss', 'utf8');
     expect(page.data).not.toHaveProperty('cardExpanded');
     expect(template).toContain('class="rider-card"');
-    expect(template).toContain('你的骑行名片');
+    expect(template).toContain('meta="一起骑，去更远的地方"');
+    expect(template).not.toContain('class="profile-heading"');
+    expect(template).not.toContain('你的骑行名片');
+    expect(template).not.toContain('>个人中心</view>');
     expect(template).toContain('近 90 天骑行');
     expect(template).not.toContain('wx:for="{{heroCard.lifetimeMetrics}}"');
     expect(template).toContain('hero-capability-strava-tenure');
@@ -340,7 +343,8 @@ describe('个人中心加载状态', () => {
     const pageScript = readFileSync('miniprogram/pages/profile/index.ts', 'utf8');
 
     expect(template).not.toMatch(/<swiper\b[^>]*\bautoplay(?:=|\s|>)/);
-    expect(template).toContain('你的骑行名片');
+    expect(template).toContain('meta="一起骑，去更远的地方"');
+    expect(template).not.toContain('你的骑行名片');
     expect(template).toContain('近 90 天骑行');
     expect(template).not.toContain('wx:for="{{heroCard.lifetimeMetrics}}"');
     expect(template).toContain('wx:for="{{heroCard.primaryMetrics}}"');

@@ -29,8 +29,11 @@ describe('首页视觉与配色门禁', () => {
     expect(logoTemplate).toContain('>此</text>');
     expect(logoTemplate).toContain('>里</text>');
     expect(logoTemplate).not.toContain('CILI');
-    expect(logoStyles).toContain('background: var(--color-text)');
-    expect(logoStyles).toContain('color: var(--color-bg)');
+    expect(logoStyles).toMatch(
+      /\.brand-logo__wordmark\s*\{[^}]*background:\s*var\(--color-text\)[^}]*color:\s*var\(--color-bg\)/s,
+    );
+    expect(logoStyles).toMatch(/\.brand-logo\s*\{[^}]*background:\s*transparent/s);
+    expect(logoStyles).toMatch(/\.brand-logo__meta\s*\{[^}]*margin-left:\s*0/s);
     expect(logoStyles).toContain('border: 4rpx solid var(--color-brand)');
     expect(logoStyles).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(|navy|blue|gradient/i);
   });

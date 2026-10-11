@@ -43,10 +43,13 @@ describe('核心页面统一明亮主题配色', () => {
       '<brand-logo compact="{{true}}"',
     );
     expectSemantic(
-      declaration(effectiveBlock(brandStyles, '.brand-logo'), 'background'),
+      declaration(effectiveBlock(brandStyles, '.brand-logo__wordmark'), 'background'),
       '--color-text',
     );
-    expectSemantic(declaration(effectiveBlock(brandStyles, '.brand-logo'), 'color'), '--color-bg');
+    expectSemantic(
+      declaration(effectiveBlock(brandStyles, '.brand-logo__wordmark'), 'color'),
+      '--color-bg',
+    );
     expect(brandStyles).toContain('border: 4rpx solid var(--color-brand)');
     expect(
       contrast(resolvedHex('var(--color-text)', tokens), resolvedHex('var(--color-bg)', tokens)),
