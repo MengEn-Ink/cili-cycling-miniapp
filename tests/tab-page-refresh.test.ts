@@ -299,6 +299,37 @@ describe('registrations status presentation', () => {
       vi.useRealTimers();
     }
   });
+
+  it('页面停留跨过中国时间零点时自动刷新归档状态，隐藏后停止定时器', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-11T23:59:59.900+08:00'));
+    try {
+      const page = await loadPage('registrations');
+      rideService.listRegistrations.mockResolvedValue([
+        {
+          ...registration('ending-today', 'ending-today-activity'),
+          activity: {
+            ...activity('ending-today-activity'),
+            endAt: '2026-10-11T18:00:00+08:00',
+          },
+        },
+      ]);
+
+      page.onShow();
+      await vi.waitFor(() => expect(rideService.listRegistrations).toHaveBeenCalledTimes(1));
+      expect(page.data.items.map((item: any) => item.id)).toEqual(['ending-today']);
+
+      await vi.advanceTimersByTimeAsync(100);
+      await vi.waitFor(() => expect(rideService.listRegistrations).toHaveBeenCalledTimes(2));
+      expect(page.data.items).toEqual([]);
+
+      page.onHide();
+      await vi.advanceTimersByTimeAsync(24 * 60 * 60 * 1000);
+      expect(rideService.listRegistrations).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe('tab page refresh view contract', () => {

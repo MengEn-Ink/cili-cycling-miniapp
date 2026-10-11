@@ -24,6 +24,16 @@ function archiveAt(endAt?: string): number | null {
   return chinaDayStartUtc + DAY_MS - CHINA_OFFSET_MS;
 }
 
+export function millisecondsUntilNextChinaMidnight(now: Date = new Date()): number {
+  const chinaTime = new Date(now.getTime() + CHINA_OFFSET_MS);
+  const nextChinaDayStartUtc = Date.UTC(
+    chinaTime.getUTCFullYear(),
+    chinaTime.getUTCMonth(),
+    chinaTime.getUTCDate() + 1,
+  );
+  return Math.max(0, nextChinaDayStartUtc - CHINA_OFFSET_MS - now.getTime());
+}
+
 export function isTripArchived(endAt?: string, now: Date = new Date()): boolean {
   const cutoff = archiveAt(endAt);
   return cutoff !== null && now.getTime() >= cutoff;

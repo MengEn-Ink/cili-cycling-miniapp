@@ -1,6 +1,10 @@
 import { rideService } from '../../services/ride-service';
 import { formatActivityDate } from '../../utils/date-time';
-import { buildTripMeetingInfo, isTripArchived } from './trip-state';
+import {
+  buildTripMeetingInfo,
+  isTripArchived,
+  millisecondsUntilNextChinaMidnight,
+} from './trip-state';
 
 const SWIPE_DISTANCE_PX = 75;
 const SWIPE_OPEN_THRESHOLD_PX = 30;
@@ -21,6 +25,7 @@ Page({
   touchStartX: 0,
   touchStartY: 0,
   touchRegistrationId: '',
+  archiveRefreshTimer: null as ReturnType<typeof setTimeout> | null,
   data: {
     loading: true,
     refreshing: false,
@@ -32,12 +37,30 @@ Page({
   },
   onShow() {
     void this.load();
+    this.scheduleArchiveRefresh();
   },
   onHide() {
+    this.clearArchiveRefreshTimer();
     this.loadRequestId += 1;
   },
   onUnload() {
+    this.clearArchiveRefreshTimer();
     this.loadRequestId += 1;
+  },
+  clearArchiveRefreshTimer() {
+    if (this.archiveRefreshTimer === null) return;
+    clearTimeout(this.archiveRefreshTimer);
+    this.archiveRefreshTimer = null;
+  },
+  scheduleArchiveRefresh() {
+    this.clearArchiveRefreshTimer();
+    const delay = millisecondsUntilNextChinaMidnight();
+    // 页面持续停留时不会再次触发 onShow，因此在中国时间零点主动刷新归档口径。
+    this.archiveRefreshTimer = setTimeout(() => {
+      this.archiveRefreshTimer = null;
+      void this.load();
+      this.scheduleArchiveRefresh();
+    }, delay);
   },
   async load() {
     const requestId = ++this.loadRequestId;
