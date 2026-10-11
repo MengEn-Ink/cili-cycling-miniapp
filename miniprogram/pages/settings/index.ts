@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.12.4',
+    date: '2026-10-12',
+    title: 'Strava 路线信息自动同步',
+    summary: '活动可从 Strava 路线同步里程、爬升和预计骑行时间，分享海报仅向已通过报名的骑友开放。',
+    latest: true,
+    features: [
+      '创建活动时可一键同步 Strava 路线数据',
+      '活动详情新增预计骑行时间展示',
+      '明确外部路线打开方式并收紧海报生成权限',
+    ],
+  },
+  {
     version: '2026.10.12.3',
     date: '2026-10-12',
     title: '报名填写更清晰统一',
     summary: '报名页统一使用浅色主题与对齐栅格，资料、集合方式和提交提示更容易查看与确认。',
-    latest: true,
+    latest: false,
     features: [
       '报名资料、集合方式与底部操作统一视觉层级和间距',
       '手机号、名额和安全说明使用更准确的标准文案',

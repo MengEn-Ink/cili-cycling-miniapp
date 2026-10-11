@@ -134,6 +134,15 @@ function withShareImage<T extends { title: string }>(
   return imageUrl ? { ...share, imageUrl } : share;
 }
 
+function formatRideDuration(seconds?: number) {
+  if (!Number.isFinite(seconds) || !seconds || seconds <= 0) return '';
+  const totalMinutes = Math.round(seconds / 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (!hours) return `${minutes} 分钟`;
+  return minutes ? `${hours} 小时 ${minutes} 分` : `${hours} 小时`;
+}
+
 Page({
   loadRequestId: 0,
   unloaded: false,
@@ -152,6 +161,7 @@ Page({
     startTime: '',
     endTime: '',
     deadlineTime: '',
+    estimatedRideTime: '',
     hasElevationProfile: false,
     coverFailed: false,
     exportingGpx: false,
@@ -270,6 +280,7 @@ Page({
           startTime: formatActivityTime(item.startAt),
           endTime: formatChinaDateTimeSeconds(item.endAt),
           deadlineTime: formatChinaDateTimeSeconds(item.deadline),
+          estimatedRideTime: formatRideDuration(detail.route?.estimatedMovingTimeSeconds),
           hasElevationProfile: elevationProfile.length >= 2,
           activityAction: primaryAction(item, registration, state),
           groupQrCodeExpired: groupQrExpired(detail.groupQrCodeUploadedAt),
@@ -379,7 +390,8 @@ Page({
         if (typeof wx.showModal === 'function') {
           wx.showModal({
             title: 'Strava 路线链接已复制',
-            content: '请切换到系统浏览器或 Strava 粘贴打开，即可查看和收藏完整路线。',
+            content:
+              '微信小程序不支持直接跳转外部 Strava 页面。请切换到系统浏览器或 Strava 粘贴打开。',
             showCancel: false,
             confirmText: '知道了',
           });

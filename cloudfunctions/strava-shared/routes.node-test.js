@@ -149,6 +149,10 @@ test('routePreview 复用刷新令牌并保存服务端可信预览', async () =
         refresh_token: 'new-refresh',
         expires_at: Math.floor(Date.now() / 1000) + 3600,
       }),
+      route: async (token) => {
+        assert.equal(token, 'new-access');
+        return { estimated_moving_time: 5400 };
+      },
       routeGpx: async (token) => {
         assert.equal(token, 'new-access');
         return gpx([
@@ -161,6 +165,7 @@ test('routePreview 复用刷新令牌并保存服务端可信预览', async () =
     },
   });
   assert.equal(result.strava_route_id, '42');
+  assert.equal(result.estimated_moving_time_seconds, 5400);
   assert.equal(savedPreview.strava_route_id, '42');
   assert.deepEqual(savedCredential.scopes, ['read']);
 });

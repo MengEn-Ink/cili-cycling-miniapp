@@ -36,6 +36,7 @@ export interface StravaRoutePreview {
   stravaRouteUrl: string;
   distanceKm: number;
   elevationM: number;
+  estimatedMovingTimeSeconds: number;
   elevationProfile: RouteElevationPoint[];
   routeBounds: RouteBounds;
   popularClimbs: PopularClimb[];
@@ -96,6 +97,7 @@ export interface Activity {
     endLocation?: ActivityLocation;
     distanceKm: number;
     elevationM: number;
+    estimatedMovingTimeSeconds?: number;
     level: string;
     gpxFileId?: string;
     stravaRouteId?: string;

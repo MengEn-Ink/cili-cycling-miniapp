@@ -129,7 +129,7 @@ brand-logo {
   position: relative;
   z-index: 4;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-top: -44rpx;
   overflow: hidden;
   border: 1rpx solid #3a3a3c;

@@ -107,6 +107,8 @@ function createStravaApi(fetchImpl = globalThis.fetch) {
       json(`${API_ROOT}/athletes/${athleteId}/stats`, {
         headers: { authorization: `Bearer ${token}` },
       }),
+    route: (token, id) =>
+      json(`${API_ROOT}/routes/${id}`, { headers: { authorization: `Bearer ${token}` } }),
     routeGpx: (token, id) =>
       requestGpx(`${API_ROOT}/routes/${id}/export_gpx`, token, { fetchImpl }),
     exploreSegments: (token, bounds) => {

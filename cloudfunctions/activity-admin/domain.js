@@ -137,6 +137,7 @@ function cleanStravaRoute(route) {
   const extraFields = [
     'strava_route_id',
     'strava_route_url',
+    'estimated_moving_time_seconds',
     'elevation_profile',
     'route_bounds',
     'popular_climbs',
@@ -273,9 +274,17 @@ function cleanStravaRoute(route) {
       popularity_label: cleanText(climb.popularity_label, '热度说明', 40, true),
     };
   });
+  const estimatedMovingTime = route.estimated_moving_time_seconds ?? 0;
+  if (
+    !Number.isSafeInteger(estimatedMovingTime) ||
+    estimatedMovingTime < 0 ||
+    estimatedMovingTime > 604800
+  )
+    fail('VALIDATION_FAILED', '预计骑行时间格式错误');
   return {
     strava_route_id: id,
     strava_route_url: `https://www.strava.com/routes/${id}`,
+    estimated_moving_time_seconds: estimatedMovingTime,
     elevation_profile: elevationProfile,
     route_bounds: { south, west, north, east },
     popular_climbs: popularClimbs,
@@ -419,6 +428,7 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses, option
     'gpx_file_id',
     'strava_route_id',
     'strava_route_url',
+    'estimated_moving_time_seconds',
     'elevation_profile',
     'route_bounds',
     'popular_climbs',

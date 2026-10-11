@@ -162,11 +162,17 @@ async function access({ openid, env, store, api, now }) {
 async function routePreviewFlow({ openid, routeUrl, env, store, api, now = new Date() }) {
   const routeId = extractRouteId(routeUrl);
   const token = await access({ openid, env, store, api, now });
-  const parsed = parseGpx(await api.routeGpx(token, routeId));
+  const [route, gpx] = await Promise.all([api.route(token, routeId), api.routeGpx(token, routeId)]);
+  const parsed = parseGpx(gpx);
+  const estimatedMovingTime = Number(route?.estimated_moving_time);
   const preview = {
     strava_route_id: routeId,
     strava_route_url: `https://www.strava.com/routes/${routeId}`,
     ...parsed,
+    estimated_moving_time_seconds:
+      Number.isFinite(estimatedMovingTime) && estimatedMovingTime > 0
+        ? Math.round(estimatedMovingTime)
+        : 0,
     popular_climbs: await popularClimbs(api, token, parsed.route_bounds),
   };
   await store.saveRoutePreview(openid, preview, now);

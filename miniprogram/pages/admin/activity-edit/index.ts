@@ -65,7 +65,11 @@ const activityContentProjection = (activity: EditableActivity | ActivityInput) =
   const groupQrCode = protocolText(activity.groupQrCode);
   const route = activity.route;
   const hasSyncedStravaRoute = Boolean(
-    route.stravaRouteId || route.elevationProfile || route.routeBounds || route.popularClimbs,
+    route.stravaRouteId ||
+    route.estimatedMovingTimeSeconds ||
+    route.elevationProfile ||
+    route.routeBounds ||
+    route.popularClimbs,
   );
   const feePresent =
     typeof activity.fee === 'string' ||
@@ -112,6 +116,7 @@ const activityContentProjection = (activity: EditableActivity | ActivityInput) =
       endLocation: location(route.endLocation),
       distanceKm: route.distanceKm,
       elevationM: route.elevationM,
+      estimatedMovingTimeSeconds: route.estimatedMovingTimeSeconds,
       level: protocolText(route.level),
       gpxFileId: protocolText(route.gpxFileId),
       stravaRouteId: route.stravaRouteId ? protocolText(route.stravaRouteId) : undefined,
@@ -211,6 +216,14 @@ function derivedTimes(startAt: string) {
   return { deadline: deadline.toISOString(), endAt: end.toISOString() };
 }
 
+const formatRouteDuration = (seconds?: number) => {
+  if (!Number.isFinite(seconds) || !seconds || seconds <= 0) return '待 Strava 估算';
+  const totalMinutes = Math.round(seconds / 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return hours ? `${hours} 小时${minutes ? ` ${minutes} 分` : ''}` : `${minutes} 分钟`;
+};
+
 Page({
   unloaded: false,
   saveInFlight: false,
@@ -221,6 +234,7 @@ Page({
     loading: true,
     saving: false,
     uploading: false,
+    syncingRoute: false,
     choosingLocation: false,
     error: '',
     formErrors: {} as FormErrors,
@@ -238,6 +252,8 @@ Page({
     groupQrCodeExpired: false,
     pendingGroupQrCode: undefined as PendingImage | undefined,
     routeStartLocation: undefined as ActivityLocation | undefined,
+    stravaRoutePreview: undefined as import('../../../models').StravaRoutePreview | undefined,
+    stravaRouteTimeLabel: '',
     form: emptyForm(),
   },
   async onLoad(options: Record<string, string>) {
@@ -275,6 +291,23 @@ Page({
         groupQrCodeExpired: groupQrExpired(activity.groupQrCodeUploadedAt),
         pendingGroupQrCode: undefined,
         routeStartLocation: activity.route.startLocation,
+        stravaRoutePreview:
+          activity.route.stravaRouteId &&
+          activity.route.routeBounds &&
+          activity.route.elevationProfile &&
+          activity.route.popularClimbs
+            ? {
+                stravaRouteId: activity.route.stravaRouteId,
+                stravaRouteUrl: activity.route.stravaRouteUrl || '',
+                distanceKm: activity.route.distanceKm,
+                elevationM: activity.route.elevationM,
+                estimatedMovingTimeSeconds: activity.route.estimatedMovingTimeSeconds || 0,
+                elevationProfile: activity.route.elevationProfile || [],
+                routeBounds: activity.route.routeBounds,
+                popularClimbs: activity.route.popularClimbs,
+              }
+            : undefined,
+        stravaRouteTimeLabel: formatRouteDuration(activity.route.estimatedMovingTimeSeconds),
         form: {
           title: activity.title,
           startDate: pickerDate(startAtText),
@@ -432,6 +465,24 @@ Page({
       imagesTouched: true,
       coverImage: images[0] || '',
     });
+  },
+  async syncStravaRoute() {
+    if (this.data.syncingRoute || this.data.saving) return;
+    const routeUrl = this.data.form.stravaRouteUrl.trim();
+    this.setData({ syncingRoute: true, error: '' });
+    try {
+      const preview = await rideService.previewStravaRoute(routeUrl);
+      this.setData({
+        'form.stravaRouteUrl': preview.stravaRouteUrl,
+        stravaRoutePreview: preview,
+        stravaRouteTimeLabel: formatRouteDuration(preview.estimatedMovingTimeSeconds),
+      });
+      wx.showToast({ title: '路线信息已同步', icon: 'success' });
+    } catch (error) {
+      this.setData({ error: error instanceof Error ? error.message : 'Strava 路线同步失败' });
+    } finally {
+      this.setData({ syncingRoute: false });
+    }
   },
   async chooseImages() {
     if (this.data.uploading) return;
@@ -720,6 +771,10 @@ Page({
         ? [...original.images]
         : [...this.data.images];
     const stravaRouteUrl = form.stravaRouteUrl.trim() || undefined;
+    const syncedRoute =
+      this.data.stravaRoutePreview?.stravaRouteUrl === stravaRouteUrl
+        ? this.data.stravaRoutePreview
+        : undefined;
     const activity: ActivityInput = {
       title,
       description: form.description,
@@ -757,22 +812,30 @@ Page({
             level: original.route.level,
             ...(original.route.gpxFileId ? { gpxFileId: original.route.gpxFileId } : {}),
             ...(stravaRouteUrl ? { stravaRouteUrl } : {}),
-            ...(stravaRouteUrl === original.route.stravaRouteUrl
+            ...(syncedRoute
               ? {
-                  ...(original.route.stravaRouteId
-                    ? { stravaRouteId: original.route.stravaRouteId }
-                    : {}),
-                  ...(original.route.elevationProfile
-                    ? { elevationProfile: original.route.elevationProfile }
-                    : {}),
-                  ...(original.route.routeBounds
-                    ? { routeBounds: original.route.routeBounds }
-                    : {}),
-                  ...(original.route.popularClimbs
-                    ? { popularClimbs: original.route.popularClimbs }
-                    : {}),
+                  stravaRouteId: syncedRoute.stravaRouteId,
+                  estimatedMovingTimeSeconds: syncedRoute.estimatedMovingTimeSeconds,
+                  elevationProfile: syncedRoute.elevationProfile,
+                  routeBounds: syncedRoute.routeBounds,
+                  popularClimbs: syncedRoute.popularClimbs,
                 }
-              : {}),
+              : stravaRouteUrl === original.route.stravaRouteUrl
+                ? {
+                    ...(original.route.stravaRouteId
+                      ? { stravaRouteId: original.route.stravaRouteId }
+                      : {}),
+                    ...(original.route.elevationProfile
+                      ? { elevationProfile: original.route.elevationProfile }
+                      : {}),
+                    ...(original.route.routeBounds
+                      ? { routeBounds: original.route.routeBounds }
+                      : {}),
+                    ...(original.route.popularClimbs
+                      ? { popularClimbs: original.route.popularClimbs }
+                      : {}),
+                  }
+                : {}),
           }
         : {
             start: form.routeStart,
@@ -780,10 +843,19 @@ Page({
             ...(this.data.routeStartLocation
               ? { startLocation: this.data.routeStartLocation }
               : {}),
-            distanceKm: 0,
-            elevationM: 0,
+            distanceKm: syncedRoute?.distanceKm || 0,
+            elevationM: syncedRoute?.elevationM || 0,
+            estimatedMovingTimeSeconds: syncedRoute?.estimatedMovingTimeSeconds,
             level: '',
             ...(stravaRouteUrl ? { stravaRouteUrl } : {}),
+            ...(syncedRoute
+              ? {
+                  stravaRouteId: syncedRoute.stravaRouteId,
+                  elevationProfile: syncedRoute.elevationProfile,
+                  routeBounds: syncedRoute.routeBounds,
+                  popularClimbs: syncedRoute.popularClimbs,
+                }
+              : {}),
           },
       schedule: original?.schedule || [],
       notices: original?.notices || [],
