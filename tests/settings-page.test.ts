@@ -44,21 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.12.11',
+      version: '2026.10.12.12',
       latest: true,
-      title: '品牌标识更加紧凑',
-      summary: '全局缩短“此里”字标底牌，并在个人页使用独立品牌话术替代重复标题。',
+      title: '轨迹复制失败原因可见',
+      summary: '轨迹复制改为点击时直接调用微信接口，失败时展示真实原因，并支持长按链接手动复制。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.12.12',
       '2026.10.12.11',
       '2026.10.12.10',
       '2026.10.12.9',
       '2026.10.12.8',
-      '2026.10.12.7',
     ]);
   });
 

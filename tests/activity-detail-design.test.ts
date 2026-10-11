@@ -43,6 +43,7 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('class="strava-route-url"');
     expect(template).toContain('{{item.route.stravaRouteUrl}}');
     expect(template).toContain('bindtap="copyStravaRoute"');
+    expect(template).toContain('user-select="true"');
     expect(template).toContain('>复制</button>');
     expect(template).toContain('bindtap="exportGpx"');
     expect(template).toContain("{{exportingGpx ? '下载中' : '下载 GPX'}}");
@@ -376,6 +377,7 @@ describe('活动详情复制、分享与 GPX 导出', () => {
       env: { USER_DATA_PATH: '/tmp/user' },
       showShareMenu: vi.fn(),
       showToast: vi.fn(),
+      showModal: vi.fn(),
       setClipboardData: vi.fn(function (this: any, { success, fail }: any) {
         if (this !== wx) {
           fail(new Error('setClipboardData:fail invalid receiver'));
@@ -485,12 +487,17 @@ describe('活动详情复制、分享与 GPX 导出', () => {
     }));
     context.data.item.route.stravaRouteUrl = 'https://www.strava.com/routes/123';
     vi.mocked(wx.setClipboardData).mockImplementationOnce(({ fail }: any) =>
-      fail(new Error('denied')),
+      fail({ errMsg: 'setClipboardData:fail no permission', errno: 112 }),
     );
 
     await definition.copyStravaRoute.call(context);
 
-    expect(wx.showToast).toHaveBeenLastCalledWith({ title: '复制失败，请稍后重试', icon: 'none' });
+    expect(wx.showModal).toHaveBeenLastCalledWith({
+      title: '复制失败',
+      content: 'setClipboardData:fail no permission\n可长按轨迹链接手动复制。',
+      showCancel: false,
+      confirmText: '知道了',
+    });
   });
 
   it('分享给好友使用 https 封面并保留当前活动 id 与队伍参数', async () => {
