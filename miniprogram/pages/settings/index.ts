@@ -4,11 +4,22 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.12.10',
+    date: '2026-10-12',
+    title: '轨迹链接复制恢复正常',
+    summary: '修复真机运行时调用剪贴板接口丢失微信上下文导致的复制失败。',
+    latest: true,
+    features: [
+      '复制 Strava 轨迹链接时保留微信运行时调用上下文',
+      '继续保留复制成功与失败的明确反馈',
+    ],
+  },
+  {
     version: '2026.10.12.9',
     date: '2026-10-12',
     title: '轨迹操作更精简可靠',
     summary: 'Strava 轨迹区统一最终三色主题，修复复制反馈，并移除重复的活动链接与海报操作。',
-    latest: true,
+    latest: false,
     features: [
       '轨迹卡片统一暖灰白、石墨黑与品牌橙配色',
       '复制成功与失败均提供明确反馈',

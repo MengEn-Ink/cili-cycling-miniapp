@@ -44,21 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.12.9',
+      version: '2026.10.12.10',
       latest: true,
-      title: '轨迹操作更精简可靠',
-      summary: 'Strava 轨迹区统一最终三色主题，修复复制反馈，并移除重复的活动链接与海报操作。',
+      title: '轨迹链接复制恢复正常',
+      summary: '修复真机运行时调用剪贴板接口丢失微信上下文导致的复制失败。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.12.10',
       '2026.10.12.9',
       '2026.10.12.8',
       '2026.10.12.7',
       '2026.10.12.6',
-      '2026.10.12.5',
     ]);
   });
 

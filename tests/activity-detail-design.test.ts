@@ -376,7 +376,13 @@ describe('活动详情复制、分享与 GPX 导出', () => {
       env: { USER_DATA_PATH: '/tmp/user' },
       showShareMenu: vi.fn(),
       showToast: vi.fn(),
-      setClipboardData: vi.fn(({ success }) => success()),
+      setClipboardData: vi.fn(function (this: any, { success, fail }: any) {
+        if (this !== wx) {
+          fail(new Error('setClipboardData:fail invalid receiver'));
+          return;
+        }
+        success();
+      }),
       getFileSystemManager: vi.fn(() => fileSystem),
       shareFileMessage: vi.fn(({ success }) => success()),
       saveFile: vi.fn(({ success }) => success()),
