@@ -44,22 +44,22 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.11.15',
+      version: '2026.10.11.16',
       latest: true,
-      title: '活动标题与卡片体验优化',
+      title: '未来活动按日期分组与快速定位',
       summary:
-        '创建活动时由发布人填写标题和集合时间，活动卡片统一字段对齐与高对比度配色，减少英文和荧光色干扰。',
+        '首页未来两周活动按集合日期分组，今天、明天等就近日期显示相对称谓，并提供日期快捷入口一键定位到当天活动。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.11.16',
       '2026.10.11.15',
       '2026.10.11.14',
       '2026.10.11.13',
       '2026.10.11.12',
-      '2026.10.11.11',
     ]);
   });
 
