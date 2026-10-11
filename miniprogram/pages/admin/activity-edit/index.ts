@@ -41,6 +41,50 @@ const newCreateRequestId = () =>
   `activity_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
 const errorCode = (error: unknown) =>
   typeof (error as { code?: unknown })?.code === 'string' ? (error as { code: string }).code : '';
+const stableValue = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([, entry]) => entry !== undefined)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, entry]) => [key, stableValue(entry)]),
+  );
+};
+const draftContentFingerprint = (activity: EditableActivity) =>
+  JSON.stringify(
+    stableValue({
+      title: activity.title,
+      description: activity.description,
+      images: activity.images,
+      coverImage: activity.coverImage,
+      groupQrCode: activity.groupQrCode,
+      groupQrCodeUploadedAt: activity.groupQrCodeUploadedAt,
+      capacity: activity.capacity,
+      registrationUnlimited: activity.registrationUnlimited,
+      supportVehicleCapacity: activity.supportVehicleCapacity,
+      selfDriveCapacity: activity.selfDriveCapacity,
+      supportVehicleDriver: activity.supportVehicleDriver,
+      deadline: activity.deadline,
+      startAt: activity.startAt,
+      endAt: activity.endAt,
+      route: activity.route,
+      schedule: activity.schedule,
+      notices: activity.notices,
+      equipment: activity.equipment,
+      fee: activity.fee,
+      feeIncluded: activity.feeIncluded,
+      feeExcluded: activity.feeExcluded,
+    }),
+  );
+const sameDraftSnapshot = (expected: EditableActivity, current: EditableActivity) =>
+  current.id === expected.id &&
+  current.version === expected.version &&
+  draftContentFingerprint(current) === draftContentFingerprint(expected);
+const activityConflict = () =>
+  Object.assign(new Error('活动已被其他人更新，请重新加载后再试'), {
+    code: 'ACTIVITY_CONFLICT',
+  });
 const mediaExtension = (path: string) => {
   const match = /\.([a-zA-Z0-9]{1,8})(?:\?|$)/.exec(path);
   return match ? `.${match[1].toLowerCase()}` : '.jpg';
@@ -205,22 +249,27 @@ Page({
   },
   async publishDraft(activity: ActivityInput, draft: EditableActivity) {
     const published = { ...activity, status: 'published' as const };
-    try {
-      return await rideService.saveActivity(published, draft.id, draft.version);
-    } catch (error) {
-      if (errorCode(error) !== 'CALL_FAILED') throw error;
-      let current: EditableActivity;
+    const attemptPublish = async (canRetry: boolean): Promise<EditableActivity> => {
       try {
-        const readback = await rideService.getAdminActivity(draft.id);
-        if (!readback) throw error;
-        current = readback;
-      } catch {
-        throw error;
+        return await rideService.saveActivity(published, draft.id, draft.version);
+      } catch (error) {
+        if (errorCode(error) !== 'CALL_FAILED') throw error;
+        let current: EditableActivity;
+        try {
+          const readback = await rideService.getAdminActivity(draft.id);
+          if (!readback) throw error;
+          current = readback;
+        } catch {
+          throw error;
+        }
+        if (current.status === 'published') return current;
+        if (current.status !== 'draft') throw error;
+        if (!sameDraftSnapshot(draft, current)) throw activityConflict();
+        if (!canRetry) throw error;
+        return attemptPublish(false);
       }
-      if (current.status === 'published') return current;
-      if (current.status !== 'draft') throw error;
-      return rideService.saveActivity(published, current.id, current.version);
-    }
+    };
+    return attemptPublish(true);
   },
   onUnload() {
     this.unloaded = true;

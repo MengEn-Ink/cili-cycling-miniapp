@@ -442,7 +442,7 @@ describe('日常活动极简创建与编辑', () => {
     expect(wx.showToast).toHaveBeenLastCalledWith({ title: '保存成功', icon: 'success' });
   });
 
-  it('发布模糊失败回读仍是草稿时使用回读版本重试', async () => {
+  it('发布模糊失败回读发现草稿被并发修改时冲突关闭且不覆盖新内容', async () => {
     let serverCurrent: Activity | undefined;
     const publishedVersions: number[] = [];
     rideService.saveActivity.mockImplementation(
@@ -456,10 +456,9 @@ describe('日常活动极简创建与编辑', () => {
         }
         publishedVersions.push(expectedVersion!);
         if (publishedVersions.length === 1) {
-          serverCurrent = { ...serverCurrent!, version: 3 };
+          serverCurrent = { ...serverCurrent!, version: 3, title: '另一端已更新的标题' };
           throw callFailed('发布结果不确定');
         }
-        expect(expectedVersion).toBe(3);
         serverCurrent = { ...savedActivityFromPayload(payload, id), version: 4 };
         return serverCurrent;
       },
@@ -475,8 +474,59 @@ describe('日常活动极简创建与编辑', () => {
 
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
 
-    expect(publishedVersions).toEqual([1, 3]);
-    expect(page.data).toMatchObject({ id: 'publish-retry', version: 4, status: 'published' });
+    expect(publishedVersions).toEqual([1]);
+    expect(serverCurrent).toMatchObject({
+      version: 3,
+      title: '另一端已更新的标题',
+      status: 'draft',
+    });
+    expect(page.data).toMatchObject({ id: 'publish-retry', version: 1, status: 'draft' });
+    expect(wx.showModal).toHaveBeenLastCalledWith(
+      expect.objectContaining({ content: '活动已被其他人更新，请重新加载后再试' }),
+    );
+    expect(wx.showToast).not.toHaveBeenCalledWith({ title: '保存成功', icon: 'success' });
+  });
+
+  it('发布有界重试已提交但响应再次丢失时二次回读 published 并收敛成功', async () => {
+    let serverCurrent: Activity | undefined;
+    const publishedVersions: number[] = [];
+    rideService.saveActivity.mockImplementation(
+      async (payload: any, id?: string, expectedVersion?: number) => {
+        if (!id) {
+          serverCurrent = savedActivityFromPayload(
+            { ...payload, status: 'draft' },
+            'publish-second-readback',
+          );
+          return serverCurrent;
+        }
+        publishedVersions.push(expectedVersion!);
+        if (publishedVersions.length === 1) {
+          throw callFailed('第一次发布在提交前失败');
+        }
+        serverCurrent = { ...savedActivityFromPayload(payload, id), version: 2 };
+        throw callFailed('第二次发布已提交但响应丢失');
+      },
+    );
+    rideService.getAdminActivity.mockImplementation(async () => serverCurrent);
+    await page.onLoad({});
+    Object.assign(page.data.form, {
+      title: '二次回读晨骑',
+      startDate: '2026-10-20',
+      startTime: '07:30',
+      routeStart: '湖边广场',
+    });
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(publishedVersions).toEqual([1, 1]);
+    expect(rideService.getAdminActivity).toHaveBeenCalledTimes(2);
+    expect(page.data).toMatchObject({
+      id: 'publish-second-readback',
+      version: 2,
+      status: 'published',
+    });
+    expect(wx.showToast).toHaveBeenLastCalledWith({ title: '保存成功', icon: 'success' });
+    expect(wx.showModal).not.toHaveBeenCalled();
   });
 
   it('跨日深夜集合时间保存后重开仍保持原日期和时间', async () => {
