@@ -263,6 +263,9 @@ page,
   font-size: 28rpx;
   font-weight: 700;
 }
+.swipe-delete-active {
+  z-index: 2;
+}
 .swipe-content {
   position: relative;
   z-index: 1;

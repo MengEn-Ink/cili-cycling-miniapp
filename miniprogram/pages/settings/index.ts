@@ -4,11 +4,19 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.11.23',
+    date: '2026-10-11',
+    title: '活动操作按钮修复',
+    summary: '修复活动管理页上线和删除按钮点击无响应的问题，侧滑删除也可稳定触发。',
+    latest: true,
+    features: ['上线与删除按钮恢复正常点击', '侧滑展开后删除操作不再被活动卡片遮挡'],
+  },
+  {
     version: '2026.10.11.22',
     date: '2026-10-11',
     title: '活动删除兼容性修复',
     summary: '修复活动删除请求携带运行时字段时被服务端拒绝的问题，恢复下架后正常删除。',
-    latest: true,
+    latest: false,
     features: ['删除适配器仅向领域层传递可信字段', '补充真实运行态删除失败的回归测试'],
   },
   {

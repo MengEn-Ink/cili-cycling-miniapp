@@ -12,16 +12,16 @@
       <button class="status-filter {{statusFilter === 'finished' ? 'active' : ''}}" data-status="finished" bindtap="selectStatusFilter">已结束</button>
     </view>
     <view class="swipe-row" wx:for="{{items}}" wx:key="id">
-      <view class="swipe-delete" data-id="{{item.id}}" catchtap="confirmDelete">删除</view>
+      <view class="swipe-delete {{item.swipeOpen ? 'swipe-delete-active' : ''}}" data-id="{{item.id}}" catchtap="confirmDelete">删除</view>
       <view
         class="card activity-row swipe-content {{item.swipeAnim ? 'swipe-anim' : ''}}"
         style="transform: translateX({{item.swipeOffset}}px);"
         data-id="{{item.id}}"
         bindtap="edit"
-        catchtouchstart="onRowTouchStart"
-        catchtouchmove="onRowTouchMove"
-        catchtouchend="onRowTouchEnd"
-        catchtouchcancel="onRowTouchEnd"
+        bindtouchstart="onRowTouchStart"
+        bindtouchmove="onRowTouchMove"
+        bindtouchend="onRowTouchEnd"
+        bindtouchcancel="onRowTouchEnd"
       >
         <view class="row">
           <view class="title">{{item.title}}</view>

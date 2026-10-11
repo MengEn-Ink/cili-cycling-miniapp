@@ -44,21 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.11.22',
+      version: '2026.10.11.23',
       latest: true,
-      title: '活动删除兼容性修复',
-      summary: '修复活动删除请求携带运行时字段时被服务端拒绝的问题，恢复下架后正常删除。',
+      title: '活动操作按钮修复',
+      summary: '修复活动管理页上线和删除按钮点击无响应的问题，侧滑删除也可稳定触发。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.11.23',
       '2026.10.11.22',
       '2026.10.11.21',
       '2026.10.11.20',
       '2026.10.11.19',
-      '2026.10.11.18',
     ]);
   });
 

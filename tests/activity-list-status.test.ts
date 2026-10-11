@@ -7,6 +7,7 @@ const rideService = vi.hoisted(() => ({
   listAdminActivitiesPage: vi.fn(),
   saveActivity: vi.fn(),
   cloneActivity: vi.fn(),
+  deleteActivity: vi.fn(),
 }));
 const appStore = vi.hoisted(() => ({
   authStatus: 'authenticated',
@@ -17,7 +18,7 @@ const appStore = vi.hoisted(() => ({
 vi.mock('../miniprogram/services/ride-service', () => ({ rideService }));
 vi.mock('../miniprogram/store/app-store', () => ({ appStore }));
 
-describe('活动列表上下架', () => {
+describe('活动列表上线与删除端到端操作', () => {
   let page: any;
   const draft = { id: 'draft-1', title: '草稿活动', status: 'draft', version: 2 };
   const published = { id: 'published-1', title: '线上活动', status: 'published', version: 3 };
@@ -29,6 +30,7 @@ describe('活动列表上下架', () => {
       .mockReset()
       .mockResolvedValue({ items: [draft, published], nextCursor: null });
     rideService.saveActivity.mockReset().mockImplementation(async (value) => value);
+    rideService.deleteActivity.mockReset().mockResolvedValue({ deleted: true });
     appStore.authStatus = 'authenticated';
     appStore.role = 'member';
     appStore.ensureIdentity.mockReset().mockResolvedValue(undefined);
@@ -57,6 +59,34 @@ describe('活动列表上下架', () => {
     const template = readFileSync('miniprogram/pages/admin/activity-list/index.wxml', 'utf8');
     expect(template).toContain('catchtap="toggleOnline"');
     expect(template).toContain('{{item.statusLabel}}');
+  });
+
+  it('从页面真实按钮绑定触发上线与删除完整操作', async () => {
+    const template = readFileSync('miniprogram/pages/admin/activity-list/index.wxml', 'utf8');
+    const toggleHandler = template.match(
+      /wx:if="{{item\.canToggleOnline}}"[\s\S]*?catchtap="([^"]+)"/,
+    )?.[1];
+    const deleteHandler = template.match(
+      /wx:if="{{item\.status === 'draft'}}" catchtap="([^"]+)"/,
+    )?.[1];
+
+    expect(toggleHandler).toBe('toggleOnline');
+    expect(deleteHandler).toBe('confirmDelete');
+
+    await page[toggleHandler!]({ currentTarget: { dataset: { id: 'draft-1' } } });
+    expect(rideService.saveActivity).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'draft-1', status: 'published' }),
+      'draft-1',
+      2,
+    );
+    expect(wx.showToast).toHaveBeenCalledWith({ title: '已上线', icon: 'success' });
+
+    await page[deleteHandler!]({ currentTarget: { dataset: { id: 'draft-1' } } });
+    expect(rideService.deleteActivity).toHaveBeenCalledWith('draft-1');
+    expect(wx.showToast).toHaveBeenCalledWith({ title: '已删除', icon: 'success' });
+    expect(page.data.items).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: 'draft-1' })]),
+    );
   });
 
   it('确认后下架活动并刷新列表', async () => {
