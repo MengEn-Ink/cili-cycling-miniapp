@@ -197,9 +197,6 @@ Page({
       horizontal: false,
       locked: false,
     };
-    // 新手势关闭过渡动画，保证跟手无延迟；同时收起其他已展开卡片。
-    this.setData({ [`items[${index}].swipeAnim`]: false });
-    this.closeOtherSwipes(id);
   },
   onRowTouchMove(event: any) {
     const touchState = this._touch;
@@ -207,16 +204,20 @@ Page({
     const touch = event.changedTouches[0] || {};
     const dx = (touch.clientX || 0) - touchState.startX;
     const dy = (touch.clientY || 0) - touchState.startY;
-    // 首次超过阈值的移动决定方向：纵向交还给页面滚动，横向才接管。
+    let becameHorizontal = false;
+    // 首次超过阈值的移动决定方向：普通点击不触发 setData，避免重绘中断后续 tap。
     if (!touchState.locked) {
       if (Math.abs(dx) < SWIPE_LOCK_PX && Math.abs(dy) < SWIPE_LOCK_PX) return;
       touchState.locked = true;
       touchState.horizontal = Math.abs(dx) > Math.abs(dy);
+      becameHorizontal = touchState.horizontal;
     }
     if (!touchState.horizontal) return;
     const index = this.data.items.findIndex((item: { id: string }) => item.id === touchState.id);
     if (index < 0) return;
+    if (becameHorizontal) this.closeOtherSwipes(touchState.id);
     this.setData({
+      ...(becameHorizontal ? { [`items[${index}].swipeAnim`]: false } : {}),
       [`items[${index}].swipeOffset`]: clampSwipeOffset(touchState.baseOffset + dx),
     });
   },

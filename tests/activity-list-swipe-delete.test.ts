@@ -79,6 +79,14 @@ describe('活动卡片滑动删除', () => {
     expect(styles).toMatch(/\.swipe-delete-active\s*\{[^}]*z-index:\s*2;/s);
   });
 
+  it('普通点击的触摸开始和结束不触发视图重绘，保证按钮 tap 不丢失', () => {
+    page.setData.mockClear();
+    page.onRowTouchStart(touch('act-1', 300));
+    page.onRowTouchEnd();
+
+    expect(page.setData).not.toHaveBeenCalled();
+  });
+
   it('横向滑动跟手位移，越过半幅松手后完全展开', () => {
     page.onRowTouchStart(touch('act-1', 300));
     page.onRowTouchMove(touch('act-1', 240));
@@ -109,8 +117,10 @@ describe('活动卡片滑动删除', () => {
     page.onRowTouchMove(touch('act-1', 200));
     page.onRowTouchEnd();
     expect(page.data.items[0].swipeOpen).toBe(true);
-    // 开始滑动第二张
+    // 第二张卡片只有形成明确横向滑动后才收起其他卡片，普通点击不重绘。
     page.onRowTouchStart(touch('act-2', 300));
+    expect(page.data.items[0].swipeOpen).toBe(true);
+    page.onRowTouchMove(touch('act-2', 260));
     expect(page.data.items[0].swipeOpen).toBe(false);
     expect(page.data.items[0].swipeOffset).toBe(0);
   });
