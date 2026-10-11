@@ -1,6 +1,6 @@
 # 高优问题清单
 
-> 最后更新：2026-10-11 10:04（CST）
+> 最后更新：2026-10-11 12:02（CST）
 >
 > 维护原则：这里只保留尚未满足关闭条件的问题。新问题先去重、澄清、拆分；已满足关闭条件的条目直接删除，Git 历史和不可变外部证据作为归档。
 
@@ -15,6 +15,8 @@
 ## 当前共同证据
 
 - 用户报告：2026-10-09 群聊新增 6 组问题，已拆成 HP-06 至 HP-13 共 8 个原子项；HP-01 至 HP-05 于 2026-10-10 全部满足关闭条件并删除。
+- 代码合入（2026-10-11 12:02）：N3 剩余 UI 增量由 [#116](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/116) 交付——首页未来活动按中国自然日插入「今天/明天/后天/M月D日 周X」分组头，多日时顶部出现可点击的日期 chip 平滑定位到当天分组，历史视图与「下一场/接下来」主视觉不变；main HEAD `c6d163a`，main CI run [38110023518](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38110023518) SUCCESS，开发版 run [38110081492](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38110081492) 日志确认「微信开发版 0.0.117.1（robot 1）上传成功」。N3 至此代码/CI/开发版齐备，仅余真机日期切换 smoke。
+- 分支治理（2026-10-11 12:02）：远端仅保留 `main`，#89–#116 合并后功能分支均已删除；沙箱近期交付 worktree 的陈旧本地分支已核对（均为 squash 已合并内容）后清理，其中本地 `fix/activity-image-upload-status` 经逐文件比对，确认其能力已被当前 main 的 `pendingImages` 逐张状态/独立重试实现（#95/#100）覆盖且更完整，删除不丢需求。
 - 代码合入：PR [#45](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/45)、[#48](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/48)、[#52](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/52)、[#53](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/53)、[#56](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/56)、[#57](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/57)、[#59](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/59)、[#62](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/62)、[#66](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/66)、[#69](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/69)、[#73](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/73) 已合并；HP-01..05 验收时云函数代码基线为 `0da2ce5...`（当时 main HEAD），#56/#57/#58/#59/#62/#66/#69/#73 均未改动 `cloudfunctions/**`，故线上函数与当前 main 云函数代码一致。
 - CI：上述 PR 的 PR CI 与 main CI 均为 SUCCESS。CI 不能证明 CloudBase Active 版本或真机行为。
 - HP-07 远端门禁：main SHA `d9d9f777450a33a6cccb664028b588b9aaade789` 的 CI run [38023441280](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38023441280) SUCCESS；validate、coverage、CloudBase bootstrap 只读验证和高危依赖审计全部通过。
@@ -40,6 +42,8 @@
 
 ## 当前工作交接检查点
 
+- 2026-10-11 12:02 本轮（定时对齐）交付清单中唯一仍可独立推进的纯前端增量：[#116](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/116) 首页未来活动按中国自然日分组——在 #89 的 14 天窗口与稳定升序之上，未来列表插入「今天/明天/后天/M月D日 周X」日期头（同日多场合并为一组、跨年补年份），出现 ≥2 个日期时顶部展示横向日期 chip，点击 `wx.pageScrollTo` 平滑定位到当天锚点，旧基础库不支持 selector 时静默降级；历史视图与「下一场/接下来」主视觉零变化。新增纯函数 `describeActivityDay`/`buildTimelineRows` 并保持 `items` 驱动计数与空态；本地 `npm run validate`、`coverage`（activities 行覆盖 98.16%）、`audit:all`（0 高危）全绿。main `c6d163a`，main CI [38110023518](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38110023518) SUCCESS，微信开发版 [38110081492](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38110081492) 日志确认「微信开发版 0.0.117.1（robot 1）上传成功」。N3 代码/CI/开发版齐备，仅余真机日期切换 smoke 与独立复核；完整日历视图明确留作同契约上的独立后续 UI 增量。分支治理：远端仅 `main`，#89–#116 功能分支合并后均删除；沙箱近期交付 worktree 残留本地分支核对为 squash 已合并内容后清理，本地 `fix/activity-image-upload-status` 经逐文件比对确认已被当前 main 的 `pendingImages` 逐张状态/独立重试（#95/#100）完整覆盖。其余 N1–N10 仍统一阻塞在真机/微信后台/真实外部授权证据，无可继续纯代码推进项。
+
 - 2026-10-11 10:04 本轮对齐确认最新代码交付并补充运行态证据：[#113](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/113) 已合入 main `89cde00...`，将活动标题改为发布人必填、移除默认/快捷集合时间、保存时不再回退默认时间，并收口活动卡片等宽指标、去荧光强调、黑底按钮白字和中文化标签。main CI [38101620274](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38101620274) 与微信开发版 [38101695758](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38101695758) 均 success，日志确认上传 `0.0.114.1`；微信开发者工具官方 miniprogram-automator 22 项运行态检查全部通过，截图与结论存于 `docs/evidence/2026-10-11-title-card-smoke/`。该增量推进 N1/N10 与 UI 的代码、自动化和开发者工具运行态层，但仍缺物理真机创建/编辑保存重开、活动卡片视觉独立复核与用户人工确认，状态保持 `PENDING_EVIDENCE`。本轮已确认最近 50 个 merged PR 远端分支均已删除，并清理沙箱本地遗留分支；无可并行编码的 `READY`/`IN_PROGRESS` 项，剩余均为真机/微信后台/真实外部授权证据。
 
 - 2026-10-11 06:35 本轮（定时对齐）再交付一条纯前端独立 PR 并上传微信开发版 `0.0.104.1`：[#103](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/103) 只读缓存支持冷启动持久化与断网兜底——回源成功后写入版本化 `wx` 同步存储，冷启动在 TTL 内直接复用并保留原始过期时刻；网络失败仅在 5 分钟离线窗口内返回上次数据，在线仍强制回源；活动/Strava 写入与账号切换同步清理内存和持久化命名空间，并新增命中率指标。PR `validate`、main CI [38091847664](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38091847664) 与微信开发版自动上传 [38091927615](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38091927615) 均 success。N7 已推进冷启动持久化/可观测部分，状态仍 `PENDING_EVIDENCE`，剩余“图片临时地址缓存及到期刷新”与真机冷启动/断网 smoke。另：共享工作区中存在他泳道未提交的“资料图片内容指纹去重”改动（`profile-edit/index.ts` + `profile-media-dedupe.test.ts`），本轮未触碰、未并入任何提交。真实阻塞维持不变：① 云函数部署需腾讯云凭证；② 大量条目需物理真机/真实验收。
@@ -50,7 +54,7 @@
 - 2026-10-11 05:50 本轮（定时对齐）再交付两条独立 PR 并上传微信开发版 `0.0.100.1`：#99 活动卡片滑动删除（接 #94 服务端删除契约）、#101 活动/Strava 内存 TTL 缓存与写后失效；两个 PR 的 PR checks、main CI 与微信开发版自动上传均 success。N6/N7 已推进到“已部署”层，状态 `PENDING_EVIDENCE`。**真实阻塞（需用户/环境决策）**：① 沙箱无 CloudBase CLI 与腾讯云凭证，#89/#94/#96 等改动的云函数（activity-read/activity-admin/registration/admin-review/profile）无法在沙箱部署，需要为沙箱配置腾讯云凭证或由用户确认部署；② 大量 `PENDING_EVIDENCE` 条目需物理真机/真实验收，代码与部署层不能替代。
 - 2026-10-11 本轮（定时对齐）已完成四条独立 PR 并上传微信开发版 `0.0.97.1`：#94 活动删除服务端契约、#95 集合时间回显与图片往返、#96 资料必填与报名拦截、#97 分享卡片封面与朋友圈；四个 PR 的 main CI 与微信开发版自动上传均 success。四个条目均已推进到“已部署”层，真机 smoke/回读待做，状态统一为 `PENDING_EVIDENCE`；#94 的前端右滑 UI（分支 `fix/activity-card-swipe-delete`）已由另一泳道 `IN_PROGRESS`，#97 的活动群二维码作为剩余原子项保留在原条目。
 - 本轮已完成并交付：HP-01 至 HP-05 已按完整证据链从清单删除；HP-06 已随 PR #56 合入并上传开发版，但其“深浅主题并存”产品前提已被新 UI 基线替代；HP-20261010-01 的旧浅色行程序号与三处运行态低对比过渡保护已随 PR #62/#66/#69 合入并上传开发版；HP-08 已随 PR #57 合入并交付开发版；HP-12 闰日算法已随 PR #59 合入。
-- 当前最高优先级：清单内 N1–N10 已无 `READY` / `IN_PROGRESS` 的纯代码可推进项；下一步不是继续拆 PR 写代码，而是按条目补真实证据：N1 创建/编辑真机保存重开，N2 分享/二维码真机扫码替换，N3 日期快捷/真机复核，N4 资料与报名真机 smoke，N5 弱网与 CloudBase 回读，N6 真机手势，N7 冷启动/断网，N8 普通用户发布链路，N9 体验版晋级/回退与固定入口业务 smoke，N10 标题/时间/卡片真机和用户确认。
+- 当前最高优先级：清单内 N1–N10 已无 `READY` / `IN_PROGRESS` 的纯代码可推进项；下一步不是继续拆 PR 写代码，而是按条目补真实证据：N1 创建/编辑真机保存重开，N2 分享/二维码真机扫码替换，N3 真机日期切换复核（日期分组/快捷定位已由 #116 交付，完整日历另列后续增量），N4 资料与报名真机 smoke，N5 弱网与 CloudBase 回读，N6 真机手势，N7 冷启动/断网，N8 普通用户发布链路，N9 体验版晋级/回退与固定入口业务 smoke，N10 标题/时间/卡片真机和用户确认。
 - HP-20261010-02 进展：单一主题底座与第一批六页已推送至 main；head `4b27057...` 的 main CI run [38025995570](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38025995570) SUCCESS，微信开发版 run [38026070737](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38026070737) 实际上传 `0.0.55.1`；375×812 开发者工具六页截图及 TabBar 图标复核通过。追加修复：报名凭证页 `credential/index.wxss` 曾残留深色主题硬编码色（`#f7f7f5`/`#a8a8ad`/`#9bc2aa`/`#e9a071` 等），`.serial`/`.hero-kicker` 还直接把 `--color-brand #d9ff43` 当文字色用，导致浅底对比度严重不足；已在 `tests/unified-bright-first-batch-contract.test.ts` 新增禁用深色色和 token 收口 RED，并把 wxss 收口为 `--color-text/--color-muted/--color-success-text/--color-raised/--color-border` 等 token，设置页追加 `2026.10.10.14 报名凭证页统一明亮主题` 升级日志；本地 Vitest 55 文件 738/738 全部通过。仍待物理真机截图与独立复核。
 - HP-07 检查点：代码、全量本地/远端门禁、开发版 `0.0.52.1`（含后续 #73）、目标环境索引、`registration` Active 回读及线上代码比对已完成；仅余 50+ 真实报名页面 smoke 和独立复核，状态保持 `PENDING_EVIDENCE`。
 - HP-13 检查点：`status` 根因修复已完成 main CI、开发版 `0.0.58.1`、CloudBase Active 回读、线上代码比对和设置页真实请求验证；原 `INTERNAL_ERROR` 已恢复为 `ok:true/state:syncing`。条目转为 `PENDING_EVIDENCE`，仅保留授权成功、拒绝、scope 不足、token 失效、重新授权、解绑后旧 callback 六条真实外部生命周期 smoke。
@@ -63,7 +67,7 @@
 | ---- | ---------------- | ------ | ---------------------------------------- | --------------------------------------------------------------------------------------- | ------------- | ---------------------------- |
 | N1   | `HP-20261010-03` | P0     | `PENDING_EVIDENCE` (#95/#113, 开发版 0.0.114.1) | 时间回显、图片预览往返、标题必填与快捷时间移除均已交付，开发者工具 22 项运行态 E2E 通过，待真机 smoke 与独立复核 | Aime          | 独立复核 / 真机              |
 | N2   | `HP-20261010-04` | P0     | `PENDING_EVIDENCE` (#97/#107, 开发版 0.0.108.1) | 分享卡片与活动群二维码已交付；待真机扫码/替换 smoke、独立复核，微信群待办/置顶能力待评估 | -             | 独立复核 / 真机              |
-| N3   | `HP-20261010-05` | P0     | `PENDING_EVIDENCE`                       | 14 天数据窗口已随 #89 交付开发版 `0.0.88.1`，待日期分组/快捷入口与真机复核                 | -             | 独立复核 / 真机              |
+| N3   | `HP-20261010-05` | P0     | `PENDING_EVIDENCE` (#116, 开发版 0.0.117.1) | 14 天窗口（#89）与日期分组、快捷定位 UI（#116）均已交付，待真机日期切换 smoke 与独立复核（完整日历视图为独立后续增量） | -             | 独立复核 / 真机              |
 | N4   | `HP-20261010-06` | P0     | `PENDING_EVIDENCE` (#96, 开发版 0.0.97.1) | 性别、头像、个人照片必填与报名拦截已交付，待真机资料/报名 smoke                          | Aime          | 独立复核 / 真机              |
 | N5   | `HP-20261010-07` | P0     | `PENDING_EVIDENCE` (#100/#105, 开发版 0.0.106.1) | 活动图片指纹去重、资料图片会话内去重与失败恢复已交付，待真机弱网/CloudBase 回读 | Aime          | 独立复核 / 真机              |
 | N6   | `HP-20261010-08` | P1     | `PENDING_EVIDENCE` (#94/#99, 开发版 0.0.106.1) | 删除契约、右滑 UI 与 activity-admin CloudBase 部署均已完成，待真机手势/独立复核          | Aime          | 独立复核 / 真机              |
@@ -114,12 +118,12 @@
 
 ### HP-20261010-05 · 首页未来两周活动预览
 
-- 优先级/状态：P0 / `PENDING_EVIDENCE`；PR [#89](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/89) 已合入并随开发版 `0.0.88.1` 上传成功，首个最小交付完成 14 天查询窗口和边界测试；日期分组、快捷预览和完整日历仍作为后续 UI 增量。
-- 当前事实：首页已有未来/历史分组、分页和按时间排序，但没有未来 14 天窗口、日历视图或日期快捷定位。
+- 优先级/状态：P0 / `PENDING_EVIDENCE`；[#89](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/89) 交付 14 天查询窗口与边界测试（开发版 `0.0.88.1`），[#116](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/116) 交付日期分组与日期快捷定位（main `c6d163a`、开发版 `0.0.117.1`）；仅完整日历视图仍作为同一数据契约上的独立后续 UI 增量。
+- 当前事实：首页未来列表已限定当前起 14 天、按集合时间升序（`_id` 稳定打破同刻），并按中国自然日插入「今天/明天/后天/M月D日 周X」分组头、多日时提供可点击的日期 chip 平滑定位；历史活动入口与分页保持不变。尚缺完整月历视图与真机日期切换回读。
 - 产品口径：首页优先呈现从当前时刻起 14 天内的已发布活动，按集合时间升序并以 `_id` 稳定打破同刻排序；进行中、跨日、边界时刻、时区与无活动状态必须有明确规则，不破坏历史活动入口和分页。
-- 交付拆分：先做 14 天数据窗口与稳定排序，再做日期分组/快捷预览；完整日历作为同一数据契约上的独立 UI 增量，避免首个 PR 同时重写列表与导航。
-- 关闭条件：14 天时间边界测试、50+ 数据分页无漏重、开发版与真机日期切换 smoke、独立复核全部通过；其中查询层自动化、main CI 和开发版上传已完成，真机日期切换与 UI 增量未完成。
-- 更新时间：2026-10-11 02:21（CST，#89 已合入；main CI [38075238636](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38075238636) SUCCESS；微信开发版 [38075317318](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38075317318) 上传 `0.0.88.1` 成功）。
+- 交付拆分：14 天数据窗口与稳定排序（#89）→ 日期分组/快捷定位（#116）均已完成；完整日历作为同一数据契约上的独立 UI 增量，避免与列表/导航重写耦合。
+- 关闭条件：14 天时间边界测试、50+ 数据分页无漏重、开发版与真机日期切换 smoke、独立复核全部通过；查询层自动化、分组/快捷定位自动化、main CI 与开发版上传均已完成，仅余真机日期切换 smoke 与独立复核。
+- 更新时间：2026-10-11 12:02（CST，#116 已合入；main CI [38110023518](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38110023518) SUCCESS；微信开发版 [38110081492](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38110081492) 上传 `0.0.117.1` 成功；#89 见 [38075238636](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38075238636) 与 `0.0.88.1`）。
 
 ### HP-20261010-06 · 个人资料最小必要字段与必填口径
 
