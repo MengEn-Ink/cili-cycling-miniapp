@@ -37,12 +37,14 @@ describe('活动详情设计与日期契约', () => {
     expect(template).not.toContain('SIGN-UP STATUS');
   });
 
-  it('路线操作完整保留浏览器 / Strava 路线、活动链接、海报与 GPX 四项', () => {
+  it('路线操作保留 Strava 链接、活动链接、受控海报与 GPX 四项', () => {
     const template = readFileSync('miniprogram/pages/activity-detail/index.wxml', 'utf8');
     expect(template).toContain('bindtap="openStravaRoute"');
-    expect(template).toContain('在浏览器 / Strava 打开路线');
+    expect(template).toContain('复制 Strava 路线链接');
     expect(template).toContain('bindtap="copyActivityLink"');
     expect(template).toContain('复制活动链接');
+    expect(template).toContain('wx:if="{{groupQrVisible}}"');
+    expect(template).toContain('报名审核通过后可生成分享海报');
     expect(template).toContain('bindtap="generatePoster"');
     expect(template).toContain('保存分享海报');
     expect(template).toContain('bindtap="exportGpx"');
@@ -342,11 +344,12 @@ describe('活动详情设计与日期契约', () => {
     expect(attendeeDraws[0].y).toBeLessThan(524);
   });
 
-  it('使用等宽三列指标、32rpx 展示圆角和轻量安全区 CTA', () => {
+  it('使用等宽四列指标、32rpx 展示圆角和轻量安全区 CTA', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
-    expect(template.match(/class="detail-metric"/g)).toHaveLength(3);
-    expect(styles).toContain('grid-template-columns: repeat(3, minmax(0, 1fr));');
+    expect(template.match(/class="detail-metric"/g)).toHaveLength(4);
+    expect(template).toContain('{{estimatedRideTime}}');
+    expect(styles).toContain('grid-template-columns: repeat(4, minmax(0, 1fr));');
     expect(styles).toMatch(
       /\.detail-page \.card\s*\{[^}]*border-radius:\s*var\(--radius-display\);/s,
     );

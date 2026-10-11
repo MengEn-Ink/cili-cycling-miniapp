@@ -240,6 +240,9 @@ function mapActivityRouteExtras(raw: unknown) {
   return {
     ...(typeof raw.strava_route_id === 'string' ? { stravaRouteId: raw.strava_route_id } : {}),
     ...(httpsUrl(raw.strava_route_url) ? { stravaRouteUrl: httpsUrl(raw.strava_route_url) } : {}),
+    ...(typeof raw.estimated_moving_time_seconds === 'number'
+      ? { estimatedMovingTimeSeconds: raw.estimated_moving_time_seconds }
+      : {}),
     ...(Array.isArray(raw.elevation_profile) ? { elevationProfile: points.slice(0, 80) } : {}),
     ...(safeBounds ? { routeBounds: safeBounds } : {}),
     ...(Array.isArray(raw.popular_climbs) ? { popularClimbs: climbs.slice(0, 3) } : {}),
@@ -276,6 +279,10 @@ function mapStravaRoutePreview(raw: unknown): StravaRoutePreview {
     bounds.east > 180 ||
     bounds.south > bounds.north ||
     bounds.west > bounds.east ||
+    typeof value.estimated_moving_time_seconds !== 'number' ||
+    !Number.isSafeInteger(value.estimated_moving_time_seconds) ||
+    value.estimated_moving_time_seconds < 0 ||
+    value.estimated_moving_time_seconds > 604800 ||
     typeof value.distance_km !== 'number' ||
     !Number.isFinite(value.distance_km) ||
     value.distance_km < 0 ||
@@ -291,6 +298,7 @@ function mapStravaRoutePreview(raw: unknown): StravaRoutePreview {
     stravaRouteUrl: route.stravaRouteUrl,
     distanceKm: value.distance_km,
     elevationM: value.elevation_m,
+    estimatedMovingTimeSeconds: value.estimated_moving_time_seconds,
     elevationProfile: route.elevationProfile,
     routeBounds: bounds,
     popularClimbs: route.popularClimbs,
@@ -942,6 +950,9 @@ function activityPayload(value: ActivityInput) {
         : {}),
       distance_km: value.route?.distanceKm,
       elevation_m: value.route?.elevationM,
+      ...(typeof value.route?.estimatedMovingTimeSeconds === 'number'
+        ? { estimated_moving_time_seconds: value.route.estimatedMovingTimeSeconds }
+        : {}),
       level: typeof value.route?.level === 'string' ? value.route.level : '',
       ...(typeof value.route?.gpxFileId === 'string' ? { gpx_file_id: value.route.gpxFileId } : {}),
       ...(typeof value.route?.stravaRouteId === 'string'

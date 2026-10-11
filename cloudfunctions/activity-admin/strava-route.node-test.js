@@ -9,6 +9,7 @@ const preview = {
   strava_route_url: 'https://www.strava.com/routes/42',
   distance_km: 10,
   elevation_m: 200,
+  estimated_moving_time_seconds: 5400,
   elevation_profile: [
     { distance_km: 0, elevation_m: 10 },
     { distance_km: 10, elevation_m: 20 },
@@ -92,6 +93,7 @@ test('保存活动忽略客户端伪造曲线并采用服务端预览', async ()
   );
   assert.equal(result.route.distance_km, 10);
   assert.equal(result.route.elevation_m, 200);
+  assert.equal(result.route.estimated_moving_time_seconds, 5400);
   assert.deepEqual(result.route.elevation_profile, preview.elevation_profile);
   assert.equal(written.route.strava_route_id, '42');
   assert.equal(written.strava_route_owner_openid, 'admin');

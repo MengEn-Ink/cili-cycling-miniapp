@@ -5,6 +5,7 @@ import type { Activity } from '../miniprogram/models';
 import { formatLocalDateTime } from '../miniprogram/utils/date-time';
 
 const rideService = vi.hoisted(() => ({
+  previewStravaRoute: vi.fn(),
   getAdminActivity: vi.fn(),
   saveActivity: vi.fn(),
 }));
@@ -90,6 +91,7 @@ describe('日常活动极简创建与编辑', () => {
 
   beforeEach(async () => {
     vi.resetModules();
+    rideService.previewStravaRoute.mockReset();
     rideService.getAdminActivity.mockReset().mockResolvedValue(activity);
     rideService.saveActivity.mockReset().mockResolvedValue({ ...activity, version: 8 });
     appStore.ensureIdentity.mockReset().mockResolvedValue(undefined);
@@ -998,7 +1000,29 @@ describe('日常活动极简创建与编辑', () => {
     expect(page.data.groupQrCode).toBe('cloud://new-group-qr.jpg');
   });
 
-  it('界面只暴露极简字段且不提供 Strava 同步入口', () => {
+  it('同步 Strava 路线并保存服务端预览指标', async () => {
+    await page.onLoad({});
+    const preview = {
+      stravaRouteId: '42',
+      stravaRouteUrl: 'https://www.strava.com/routes/42',
+      distanceKm: 81.2,
+      elevationM: 930,
+      estimatedMovingTimeSeconds: 12600,
+      elevationProfile: [],
+      routeBounds: { south: 22, west: 113, north: 23, east: 114 },
+      popularClimbs: [],
+    };
+    rideService.previewStravaRoute.mockResolvedValue(preview);
+    page.data.form.stravaRouteUrl = preview.stravaRouteUrl;
+
+    await page.syncStravaRoute();
+
+    expect(rideService.previewStravaRoute).toHaveBeenCalledWith(preview.stravaRouteUrl);
+    expect(page.data.stravaRoutePreview).toEqual(preview);
+    expect(wx.showToast).toHaveBeenCalledWith({ title: '路线信息已同步', icon: 'success' });
+  });
+
+  it('界面保持极简字段并提供 Strava 路线信息同步', () => {
     const template = readFileSync('miniprogram/pages/admin/activity-edit/index.wxml', 'utf8');
     expect(template).toContain('活动标题');
     expect(template).toContain('集合时间');
@@ -1007,7 +1031,8 @@ describe('日常活动极简创建与编辑', () => {
     expect(template).toContain('备注说明');
     expect(template).toContain('活动群二维码');
     expect(template).toContain('二维码可能已过期');
-    expect(template).toContain('仅保存链接，不再同步');
+    expect(template).toContain('同步路线信息');
+    expect(template).toContain('预计骑行时间');
     expect(template).toContain('form.title');
     expect(template).toContain('form.startDate');
     expect(template).toContain('form.startTime');
@@ -1026,6 +1051,6 @@ describe('日常活动极简创建与编辑', () => {
       '费用说明',
     ])
       expect(template).not.toContain(removed);
-    expect(page.syncStravaRoute).toBeUndefined();
+    expect(page.syncStravaRoute).toBeTypeOf('function');
   });
 });

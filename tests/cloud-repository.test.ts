@@ -2618,6 +2618,7 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
       strava_route_url: 'https://www.strava.com/routes/123',
       distance_km: 12.5,
       elevation_m: 430,
+      estimated_moving_time_seconds: 7200,
       elevation_profile: [
         { distance_km: 0, elevation_m: 20 },
         { distance_km: 12.5, elevation_m: 80 },
@@ -2633,6 +2634,7 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
       stravaRouteUrl: 'https://www.strava.com/routes/123',
       distanceKm: 12.5,
       elevationM: 430,
+      estimatedMovingTimeSeconds: 7200,
       elevationProfile: [
         { distanceKm: 0, elevationM: 20 },
         { distanceKm: 12.5, elevationM: 80 },

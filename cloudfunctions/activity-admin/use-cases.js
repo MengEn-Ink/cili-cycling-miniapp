@@ -325,6 +325,7 @@ async function saveActivity(
           ...effectiveActivity.route,
           distance_km: trusted.distance_km,
           elevation_m: trusted.elevation_m,
+          estimated_moving_time_seconds: trusted.estimated_moving_time_seconds || 0,
           strava_route_id: trusted.strava_route_id,
           strava_route_url: trusted.strava_route_url,
           elevation_profile: trusted.elevation_profile,

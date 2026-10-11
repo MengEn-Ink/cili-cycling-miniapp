@@ -44,21 +44,22 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.12.3',
+      version: '2026.10.12.4',
       latest: true,
-      title: '报名填写更清晰统一',
-      summary: '报名页统一使用浅色主题与对齐栅格，资料、集合方式和提交提示更容易查看与确认。',
+      title: 'Strava 路线信息自动同步',
+      summary:
+        '活动可从 Strava 路线同步里程、爬升和预计骑行时间，分享海报仅向已通过报名的骑友开放。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.12.4',
       '2026.10.12.3',
       '2026.10.12.2',
       '2026.10.12.1',
       '2026.10.11.35',
-      '2026.10.11.34',
     ]);
   });
 

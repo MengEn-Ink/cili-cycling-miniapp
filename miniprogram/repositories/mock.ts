@@ -575,6 +575,7 @@ export class MockRepository implements RideRepository {
       stravaRouteUrl: `https://www.strava.com/routes/${match[1]}`,
       distanceKm: 80,
       elevationM: 600,
+      estimatedMovingTimeSeconds: 10800,
       elevationProfile: [],
       routeBounds: { south: 22.5, west: 113.8, north: 22.8, east: 114.2 },
       popularClimbs: [],
