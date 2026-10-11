@@ -44,22 +44,22 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.11.28',
+      version: '2026.10.11.29',
       latest: true,
-      title: '瑞士网格视觉升级',
+      title: '全局界面规范统一',
       summary:
-        '活动、详情、管理和个人中心统一采用 24px 页面留白、8 点间距与单一橙红强调，信息更整齐易读。',
+        '全部页面统一采用 24px 页面留白、44px 触控高度、紧凑卡片圆角和明亮语义色，组件风格更一致。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.11.29',
       '2026.10.11.28',
       '2026.10.11.27',
       '2026.10.11.26',
       '2026.10.11.25',
-      '2026.10.11.24',
     ]);
   });
 

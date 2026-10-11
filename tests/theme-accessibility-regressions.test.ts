@@ -240,10 +240,10 @@ describe('unified UI accessibility regressions', () => {
     expect(template).toContain('<view>报名出发</view>');
   });
 
-  it('shares a 48px control height, 40px segments, and stable page gutters', () => {
-    expect(declaration(effectiveBlock(app, 'page'), '--control-height')).toBe('96rpx');
-    expect(declaration(effectiveBlock(app, 'page'), '--page-gutter')).toBe('32rpx');
-    expect(declaration(effectiveBlock(app, 'page'), '--page-gutter-narrow')).toBe('24rpx');
+  it('shares a 44px control height, 40px segments, and stable page gutters', () => {
+    expect(declaration(effectiveBlock(app, 'page'), '--control-height')).toBe('88rpx');
+    expect(declaration(effectiveBlock(app, 'page'), '--page-gutter')).toBe('48rpx');
+    expect(declaration(effectiveBlock(app, 'page'), '--page-gutter-narrow')).toBe('32rpx');
 
     const profileEdit = read('miniprogram/pages/profile-edit/index.wxss');
     expect(declaration(effectiveBlock(profileEdit, '.form-card .input'), 'min-height')).toBe(

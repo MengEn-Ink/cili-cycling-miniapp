@@ -1,13 +1,5 @@
 .activity-card {
   --card-accent: var(--color-brand);
-  --color-surface: #ffffff;
-  --color-raised: #f7f7f4;
-  --color-muted: #5f665d;
-  --color-border: #dfe3dc;
-  --color-card-border: #dfe3dc;
-  --color-action: #20241f;
-  --color-on-action: #ffffff;
-  --shadow-card: 0 12rpx 32rpx rgba(39, 35, 30, 0.1);
   position: relative;
   overflow: hidden;
   margin-top: 0;

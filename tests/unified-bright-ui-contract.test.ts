@@ -67,6 +67,23 @@ describe('HP-20261010-02 单一明亮 UI 底座', () => {
     expect(template).toContain('功能升级日志');
   });
 
+  it('共享组件只消费全局语义 token，不保留旧暗色副本', () => {
+    const activityCard = read('miniprogram/components/activity-card/index.wxss');
+    const brandLogo = read('miniprogram/components/brand-logo/index.wxss');
+    const statusPill = read('miniprogram/components/status-pill/index.wxss');
+    const capabilityCard = read('miniprogram/pages/capability-card/index.wxss');
+    const detail = read('miniprogram/pages/activity-detail/index.wxss');
+    const registration = read('miniprogram/pages/registration-form/index.wxss');
+
+    expect(activityCard).not.toMatch(/--color-(surface|raised|muted|border|action|on-action):/);
+    expect(brandLogo).not.toMatch(/#f7f7f5|#4a4a4f|#c7c7ca|#85858a/i);
+    expect(statusPill).not.toMatch(/#29292d|#55555b|#b8b8bc|#ff7068/i);
+    expect(capabilityCard).toContain('background: var(--color-media-card-bg);');
+    expect(detail).toContain('background: var(--color-media-placeholder-bg);');
+    expect(registration).not.toContain('background: #1c1c1e;');
+    expect(registration).toMatch(/\.form-card\s*\{[^}]*color: var\(--color-text\);/s);
+  });
+
   it('全局样式只定义一套明亮 token 和确认稿尺寸', () => {
     const styles = read('miniprogram/app.wxss');
 
@@ -80,10 +97,11 @@ describe('HP-20261010-02 单一明亮 UI 底座', () => {
     expect(styles).toContain('--color-on-brand: #171a16;');
     expect(styles).toContain('--color-action: #20241f;');
     expect(styles).toContain('--color-on-action: #ffffff;');
-    expect(styles).toContain('--control-height: 96rpx;');
+    expect(styles).toContain('--control-height: 88rpx;');
     expect(styles).toContain('--segment-height: 80rpx;');
-    expect(styles).toContain('--page-gutter: 32rpx;');
-    expect(styles).toContain('--radius-card: 32rpx;');
-    expect(styles).toContain('--card-gap: 24rpx;');
+    expect(styles).toContain('--page-gutter: 48rpx;');
+    expect(styles).toContain('--page-gutter-narrow: 32rpx;');
+    expect(styles).toContain('--radius-card: 16rpx;');
+    expect(styles).toContain('--card-gap: 32rpx;');
   });
 });

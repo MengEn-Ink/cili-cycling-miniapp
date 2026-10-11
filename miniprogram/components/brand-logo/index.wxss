@@ -7,7 +7,7 @@
   align-items: center;
   gap: 10rpx;
   min-height: 52rpx;
-  color: #f7f7f5;
+  color: var(--color-text);
 }
 
 .brand-logo__symbol {
@@ -40,15 +40,15 @@
 
 .brand-logo__cn {
   padding-left: 10rpx;
-  border-left: 1rpx solid #4a4a4f;
-  color: #c7c7ca;
+  border-left: 1rpx solid var(--color-border-strong);
+  color: var(--color-muted);
   font-size: 23rpx;
   font-weight: 800;
 }
 
 .brand-logo__meta {
   margin-left: auto;
-  color: #85858a;
+  color: var(--color-subtle);
   font-size: 18rpx;
   font-weight: 800;
   letter-spacing: 2rpx;
@@ -77,18 +77,4 @@
 
 .brand-logo--compact .brand-logo__cn {
   font-size: 21rpx;
-}
-
-.brand-logo {
-  color: var(--color-text);
-}
-.brand-logo__cut {
-  background: var(--color-brand);
-}
-.brand-logo__cn {
-  border-color: var(--color-border-strong);
-  color: var(--color-muted);
-}
-.brand-logo__meta {
-  color: var(--color-subtle);
 }
