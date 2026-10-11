@@ -225,25 +225,33 @@ describe('个人中心加载状态', () => {
     expect(styles).toMatch(/\.profile-hero\.has-bg\s*\{[^}]*min-height:\s*600rpx/s);
   });
 
-  it('已连接 Strava 时从骑行名片复制官方主页链接并说明打开方式', async () => {
+  it('已连接 Strava 时只提供可选择链接与复制操作，并说明系统浏览器打开方式', async () => {
     rideService.getPersonalCapabilityCard.mockResolvedValueOnce(
       capabilityCard({ stravaProfileUrl: 'https://www.strava.com/athletes/42' }),
     );
     await page.onShow();
     await vi.waitFor(() => expect(page.data.heroCard).toBeTruthy());
 
-    page.openStravaProfile();
+    page.copyStravaProfileLink();
 
     expect(wx.setClipboardData).toHaveBeenCalledWith(
       expect.objectContaining({ data: 'https://www.strava.com/athletes/42' }),
     );
     expect(wx.showModal).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Strava 主页链接已复制', showCancel: false }),
+      expect.objectContaining({
+        title: '主页链接已复制',
+        content: '请粘贴到系统默认浏览器打开，浏览器会自动尝试跳转到 Strava。',
+        showCancel: false,
+      }),
     );
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     expect(template).toContain('wx:if="{{heroCard.hasStravaProfile}}"');
-    expect(template).toContain('bindtap="openStravaProfile"');
+    expect(template).toContain('user-select="true"');
+    expect(template).toContain('{{heroCard.stravaProfileUrl}}');
+    expect(template).toContain('复制后粘贴到系统默认浏览器打开');
+    expect(template).toContain('bindtap="copyStravaProfileLink"');
     expect(template).toContain('aria-label="复制 Strava 个人主页链接"');
+    expect(template).not.toContain('查看 Strava 主页');
   });
 
   it('剪贴板写入失败时提示重试且不误报已复制', async () => {
@@ -256,7 +264,7 @@ describe('个人中心加载状态', () => {
     await page.onShow();
     await vi.waitFor(() => expect(page.data.heroCard).toBeTruthy());
 
-    page.openStravaProfile();
+    page.copyStravaProfileLink();
 
     expect(wx.showToast).toHaveBeenCalledWith({ title: '复制失败，请稍后重试', icon: 'none' });
     expect(wx.showModal).not.toHaveBeenCalled();
@@ -266,7 +274,7 @@ describe('个人中心加载状态', () => {
     await page.onShow();
     await vi.waitFor(() => expect(page.data.heroCard).toBeTruthy());
 
-    page.openStravaProfile();
+    page.copyStravaProfileLink();
 
     expect(page.data.heroCard.hasStravaProfile).toBe(false);
     expect(wx.setClipboardData).not.toHaveBeenCalled();

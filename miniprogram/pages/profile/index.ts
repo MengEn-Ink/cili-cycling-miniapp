@@ -454,15 +454,15 @@ Page({
   openSettings() {
     wx.navigateTo({ url: '/pages/settings/index' });
   },
-  openStravaProfile() {
+  copyStravaProfileLink() {
     const url = this.data.heroCard?.stravaProfileUrl;
     if (!url) return;
     wx.setClipboardData({
       data: url,
       success: () =>
         wx.showModal({
-          title: 'Strava 主页链接已复制',
-          content: '请前往系统浏览器粘贴打开；若已安装 Strava，可继续由浏览器唤起。',
+          title: '主页链接已复制',
+          content: '请粘贴到系统默认浏览器打开，浏览器会自动尝试跳转到 Strava。',
           showCancel: false,
           confirmText: '知道了',
         }),

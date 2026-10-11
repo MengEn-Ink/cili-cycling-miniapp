@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.12.16',
+    date: '2026-10-12',
+    title: 'Strava 主页打开指引更清楚',
+    summary: '个人中心改为明确展示并复制 Strava 主页链接，提示使用系统默认浏览器打开。',
+    latest: true,
+    features: [
+      '个人中心不再提供容易误解的直接跳转入口',
+      '主页地址支持长按选择和一键复制',
+      '复制后明确提示粘贴到系统默认浏览器，由浏览器尝试跳转 Strava',
+    ],
+  },
+  {
     version: '2026.10.12.15',
     date: '2026-10-12',
     title: 'Strava 授权复制增加手动兜底',
     summary: '微信剪贴板受限时不再中断授权，页面会保留一次性链接供长按复制，并支持再次复制。',
-    latest: true,
+    latest: false,
     features: [
       '自动复制失败后保留服务端授权状态，不再要求重新发起授权',
       '页面展示可长按选择的一次性 Strava 授权链接',
