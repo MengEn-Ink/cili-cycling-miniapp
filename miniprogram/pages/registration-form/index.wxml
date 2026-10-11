@@ -15,7 +15,7 @@
         <view class="context-title">{{activity.title || '当前骑行活动'}}</view>
         <view class="context-meta"><text>{{displayActivityDate}}</text><text>{{activity.registrationUnlimited ? '报名人数不限' : ('总名额 ' + activity.capacity)}}</text></view>
       </view>
-      <view class="submit-note">提交后将进入审核，请确认资料和集合方式准确。</view>
+      <view class="submit-note">提交后将进入审核，请确认资料准确；日常活动默认自行前往。</view>
     </view>
 
     <view class="form-surface">
@@ -32,14 +32,14 @@
         <view wx:if="{{profileErrors.length}}" class="profile-alert" role="alert">
           <view class="profile-alert-title">还需完善 {{profileErrors.length}} 项资料</view>
           <view class="profile-alert-item" wx:for="{{profileErrors}}" wx:key="*this">· {{item}}</view>
-          <view class="profile-alert-note">前往个人资料完善后返回，集合方式、骑行经验、队伍与备注都会保留。</view>
+          <view class="profile-alert-note">前往个人资料完善后返回，骑行经验与备注都会保留。</view>
           <button class="profile-alert-action" bindtap="profile" disabled="{{submitting}}">去完善个人资料</button>
         </view>
       </view>
 
       <view class="form-section">
-        <view class="section-label"><text>02</text><view><view>集合方式</view><view class="section-hint">不同集合方式分别计算名额，请按实际情况选择</view></view></view>
-        <view class="form-card gathering-card">
+        <view class="section-label"><text>02</text><view><view>集合方式</view><view class="section-hint">{{showGatheringChoice ? '不同集合方式分别计算名额，请按实际情况选择' : '日常活动已使用默认方式'}}</view></view></view>
+        <view class="form-card gathering-card" wx:if="{{showGatheringChoice}}">
           <view class="field-title">集合方式 <text class="required">必选</text></view>
           <view class="field-hint">名额以提交时状态为准；活动或所选方式满额后，将自动进入候补。</view>
           <radio-group class="choice-group transport-choices" data-key="gatheringMode" bindchange="set">
@@ -53,6 +53,10 @@
             </label>
           </radio-group>
         </view>
+        <view class="form-card gathering-default" wx:else>
+          <view class="default-choice-copy"><view class="field-title">自行前往</view><view class="field-hint">日常活动默认自行前往，无需额外选择</view></view>
+          <view class="default-choice-badge">已默认</view>
+        </view>
       </view>
 
       <view class="form-section">
@@ -65,13 +69,7 @@
             <label class="segment {{experience === '常骑' ? 'selected' : ''}}"><radio color="#e85b32" value="常骑" checked="{{experience === '常骑'}}" disabled="{{submitting}}"/>常骑</label>
           </radio-group>
           <view class="strava-row status-{{readiness.state}}"><view class="strava-copy"><view class="strava-head"><view class="strava-brand">STRAVA</view><view class="readiness-badge">{{readiness.state === 'ready' ? '数据可用' : readiness.state === 'syncing' ? '同步中' : readiness.state === 'disconnected' ? '未连接' : '需处理'}}</view></view><view class="field-hint readiness">{{readinessMessage}}</view><view wx:if="{{readiness.state === 'syncing'}}" class="field-hint readiness">首次授权后会自动准备，无需手动同步。</view></view><button class="text-button" bindtap="strava" disabled="{{submitting}}">管理</button></view>
-          <view class="field-title">组队报名 <text class="optional">选填</text></view>
-          <view class="field-hint">队员独立占用名额、独立审核。</view>
-          <view wx:if="{{teamId}}" class="field-title">已通过邀请加入队伍</view>
-          <view wx:if="{{teamId}}" class="field-hint">队伍编号 {{teamId}}</view>
-          <block wx:else>
-            <input value="{{teamName}}" data-key="teamName" bindinput="set" maxlength="30" placeholder-class="input-placeholder" placeholder="填写队名后成为队长" disabled="{{submitting}}" />
-          </block>
+          <view wx:if="{{teamId}}" class="team-invite"><view class="field-title">已通过邀请加入队伍</view><view class="field-hint">队伍编号 {{teamId}}</view></view>
         </view>
       </view>
 

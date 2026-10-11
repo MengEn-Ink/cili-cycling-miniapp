@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.12.7',
+    date: '2026-10-12',
+    title: '日常活动报名更省一步',
+    summary: '日常活动默认自行前往，不再要求选择后援车或填写自行组队信息。',
+    latest: true,
+    features: [
+      '日常活动自动使用自行前往，无需额外选择集合方式',
+      '有后援车安排的活动仍可按实际需要选择',
+      '移除自行组队填写入口，报名信息更加简洁',
+    ],
+  },
+  {
     version: '2026.10.12.6',
     date: '2026-10-12',
     title: '品牌标识与首页视觉定稿',
     summary: '“此里”字标增加深色底牌与品牌橙终点，首页和在线演示统一采用最终三色视觉。',
-    latest: true,
+    latest: false,
     features: [
       '品牌字标统一使用石墨黑底、暖灰白文字与品牌橙终点',
       '活动首页改为更轻盈的浅色首屏与紧凑品牌底牌',
