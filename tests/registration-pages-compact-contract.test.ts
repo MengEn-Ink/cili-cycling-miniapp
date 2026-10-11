@@ -35,7 +35,7 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     expect(form).toContain("readiness.state === 'ready' ? '数据可用'");
     expect(form).toContain("readiness.state === 'syncing' ? '同步中'");
     expect(form).toContain("readiness.state === 'disconnected' ? '未连接'");
-    expect(form).toContain("{{submitting ? '正在提交' : '提交审核'}}");
+    expect(form).toContain("{{submitting ? '正在提交' : '提交报名'}}");
     expect(form.match(/disabled="{{[^}]*submitting[^}]*}}"/g)?.length).toBeGreaterThanOrEqual(7);
     expect(formStyles).toContain('.experience-segment');
     expect(formStyles).toMatch(/\.segment\s*\{[^}]*min-height:\s*104rpx/s);
@@ -92,7 +92,7 @@ describe('报名、行程与凭证紧凑交互契约', () => {
   });
 
   it('面向骑友解释名额与资料，不暴露技术实现术语', () => {
-    expect(form).toContain('名额以提交时的最新状态为准');
+    expect(form).toContain('名额以提交时状态为准');
     expect(form).not.toContain('服务端事务');
     expect(form).not.toContain('待公布');
 
