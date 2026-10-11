@@ -83,6 +83,7 @@ export interface Activity {
     contactPhone: string;
   };
   occupiedCount?: number;
+  approvedRegistrationCount?: number;
   description: string;
   images?: string[];
   coverImage?: string;

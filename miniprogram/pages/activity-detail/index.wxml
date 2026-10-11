@@ -21,7 +21,7 @@
         <view class="metric-panel" aria-label="活动关键数据">
           <view wx:if="{{item.route.distanceKm > 0}}" class="detail-metric"><view class="metric-value"><text class="metric-number">{{item.route.distanceKm}}</text><text class="metric-unit">km</text></view><view class="metric-label">里程</view></view>
           <view wx:if="{{item.route.elevationM > 0}}" class="detail-metric"><view class="metric-value"><text class="metric-number">{{item.route.elevationM}}</text><text class="metric-unit">m</text></view><view class="metric-label">爬升</view></view>
-          <view class="detail-metric"><view class="metric-value"><text wx:if="{{item.registrationUnlimited}}" class="metric-number metric-number--text">不限</text><text wx:elif="{{item.capacity > 0}}" class="metric-number">{{item.capacity}}</text><text class="metric-number metric-number--text" wx:else>待确认</text></view><view class="metric-label">报名人数</view></view>
+          <view class="detail-metric"><view class="metric-value"><text class="metric-number">{{item.approvedRegistrationCount || 0}}</text><text class="metric-unit">人</text></view><view class="metric-label">已通过</view></view>
         </view>
 
         <view class="detail-decision" aria-label="报名状态">
@@ -29,19 +29,15 @@
             <view class="decision-kicker">报名状态</view>
             <view class="decision-title">{{viewerStatus.label}}</view>
             <view class="decision-hint">{{viewerStatus.hint}}</view>
-            <view class="decision-meta" wx:if="{{!item.registrationUnlimited}}">报名截止 {{deadlineTime || '待公布'}}</view>
           </view>
-          <view class="decision-capacity" wx:if="{{item.registrationUnlimited}}"><text>不限</text><text>报名人数</text></view>
-          <view class="decision-capacity" wx:elif="{{item.capacity > 0}}"><text>{{item.capacity}}</text><text>活动名额</text></view>
+          <view class="decision-capacity" wx:if="{{!item.registrationUnlimited && item.capacity > 0}}"><text>{{item.capacity}}</text><text>活动名额</text></view>
         </view>
 
-        <view class="card time-card">
-          <view class="title">{{item.registrationUnlimited ? '集合时间' : '活动时间'}}</view>
-          <view class="time-row"><text>{{item.registrationUnlimited ? '集合' : '开始'}}</text><text>{{startTime || '待公布'}}</text></view>
-          <block wx:if="{{!item.registrationUnlimited}}">
-            <view class="time-row"><text>结束</text><text>{{endTime || '待公布'}}</text></view>
-            <view class="time-row"><text>报名截止</text><text>{{deadlineTime || '待公布'}}</text></view>
-          </block>
+        <view class="card time-card time-card--featured">
+          <view class="time-card-kicker">集合时间</view>
+          <view class="time-card-primary">{{startTime || '待公布'}}</view>
+          <view class="time-card-secondary" wx:if="{{!item.registrationUnlimited && endTime}}">预计结束 {{endTime}}</view>
+          <view class="time-card-secondary" wx:if="{{!item.registrationUnlimited}}">报名截止 {{deadlineTime || '待公布'}}</view>
         </view>
 
         <view class="card route-profile-card" wx:if="{{!item.registrationUnlimited}}">
@@ -59,7 +55,7 @@
         </view>
 
         <view class="card attendees-card" wx:if="{{attendeesVisible}}">
-          <view class="attendees-heading"><view><view class="title">已报名骑友</view><view class="attendees-hint" wx:if="{{attendees.length}}">点击头像查看公开骑行名片</view></view><view class="muted">{{attendees.length}} 位</view></view>
+          <view class="attendees-heading"><view><view class="title">已通过骑友</view><view class="attendees-hint" wx:if="{{attendees.length}}">点击头像查看公开骑行名片</view></view><view class="muted">{{item.approvedRegistrationCount || 0}} 位</view></view>
           <view class="avatar-stack" wx:if="{{attendees.length}}">
             <button class="attendee-avatar-button" wx:for="{{attendees}}" wx:key="id" data-index="{{index}}" bindtap="openAttendeeCard" aria-label="查看 {{item.displayName}} 的公开骑行名片">
               <image wx:if="{{item.avatarUrl}}" class="attendee-avatar" src="{{item.avatarUrl}}" mode="aspectFill" data-index="{{index}}" binderror="attendeeAvatarError" />
@@ -70,9 +66,10 @@
         </view>
 
         <view class="card route-actions-card">
-          <view class="title">路线操作</view>
+          <view class="title">路线与分享</view>
+          <view class="route-action-note" wx:if="{{item.route.stravaRouteUrl}}">路线链接将复制到剪贴板，可在系统浏览器或 Strava 中打开。</view>
           <view class="route-actions">
-            <button wx:if="{{item.route.stravaRouteUrl}}" bindtap="openStravaRoute">复制 Strava 路线</button>
+            <button wx:if="{{item.route.stravaRouteUrl}}" bindtap="openStravaRoute">在浏览器 / Strava 打开路线</button>
             <button bindtap="copyActivityLink">复制活动链接</button>
             <button loading="{{generatingPoster}}" disabled="{{generatingPoster}}" bindtap="generatePoster">{{generatingPoster ? '生成中' : '保存分享海报'}}</button>
             <button wx:if="{{item.route.stravaRouteId}}" loading="{{exportingGpx}}" disabled="{{exportingGpx}}" bindtap="exportGpx">{{exportingGpx ? '导出中' : '导出 GPX'}}</button>
@@ -92,8 +89,8 @@
         <view class="card overview-card" wx:if="{{item.description}}"><view class="card-index">01</view><view class="title">{{item.registrationUnlimited ? '备注说明' : '路线概况'}}</view><view class="body-text">{{item.description}}</view></view>
         <view class="card route-location-card" wx:if="{{item.route.start || item.route.end}}">
           <view class="title">{{item.registrationUnlimited ? '集合地点' : '路线地点'}}</view>
-          <view class="route-location-row" wx:if="{{item.route.start}}"><view class="route-location-copy"><view class="route-location-label">{{item.registrationUnlimited ? '地点' : '起点'}}</view><view>{{item.route.startLocation && item.route.startLocation.address ? item.route.startLocation.address : item.route.start}}</view></view><button wx:if="{{item.route.startLocation}}" data-target="start" bindtap="navigate">导航</button></view>
-          <view class="route-location-row" wx:if="{{!item.registrationUnlimited && item.route.end}}"><view class="route-location-copy"><view class="route-location-label">终点</view><view>{{item.route.endLocation && item.route.endLocation.address ? item.route.endLocation.address : item.route.end}}</view></view><button wx:if="{{item.route.endLocation}}" data-target="end" bindtap="navigate">导航</button></view>
+          <view class="route-location-row" wx:if="{{item.route.start}}"><view class="route-location-copy"><view class="route-location-label">{{item.registrationUnlimited ? '集合点' : '起点'}}</view><view class="route-location-name">{{item.route.start}}</view><view class="route-location-address" wx:if="{{item.route.startLocation && item.route.startLocation.address && item.route.startLocation.address !== item.route.start}}">{{item.route.startLocation.address}}</view></view><button wx:if="{{item.route.startLocation}}" data-target="start" bindtap="navigate">地图导航</button></view>
+          <view class="route-location-row" wx:if="{{!item.registrationUnlimited && item.route.end}}"><view class="route-location-copy"><view class="route-location-label">终点</view><view class="route-location-name">{{item.route.end}}</view><view class="route-location-address" wx:if="{{item.route.endLocation && item.route.endLocation.address && item.route.endLocation.address !== item.route.end}}">{{item.route.endLocation.address}}</view></view><button wx:if="{{item.route.endLocation}}" data-target="end" bindtap="navigate">地图导航</button></view>
         </view>
         <view class="card schedule-card" wx:if="{{item.schedule && item.schedule.length}}"><view class="card-index">02</view><view class="title">时间安排</view><view wx:for="{{item.schedule}}" wx:key="time" class="schedule-row"><view class="schedule-time">{{item.time}}</view><view class="schedule-track"><view class="schedule-dot"></view></view><view class="schedule-copy"><view>{{item.title}}</view><view class="muted">{{item.location}}</view></view></view></view>
         <view class="card" wx:if="{{(item.equipment && item.equipment.length) || (item.notices && item.notices.length)}}"><view class="card-index">03</view><view class="title">装备与注意</view><view class="list-item" wx:for="{{item.equipment}}" wx:key="*this"><text class="check">✓</text><text>{{item}}</text></view><view class="notice-item" wx:for="{{item.notices}}" wx:key="*this"><text class="notice-mark">/</text><text>{{item}}</text></view></view>
@@ -135,4 +132,8 @@
 </view>
 
 <canvas id="poster-canvas" type="2d" class="poster-canvas" aria-hidden="true"></canvas>
-<view class="fixed detail-action"><button class="btn" disabled="{{loading || !item || !activityAction.enabled}}" bindtap="go">{{activityAction.label}} <text class="button-arrow">→</text></button></view>
+<view class="fixed detail-action detail-action--admin" wx:if="{{isAdmin}}">
+  <button class="btn btn--secondary" disabled="{{loading || !item}}" bindtap="editActivity">修改活动</button>
+  <button class="btn" disabled="{{loading || !item}}" bindtap="adminRegistration">{{adminRegistrationLabel}} <text class="button-arrow">→</text></button>
+</view>
+<view class="fixed detail-action" wx:else><button class="btn" disabled="{{loading || !item || !activityAction.enabled}}" bindtap="go">{{activityAction.label}} <text class="button-arrow">→</text></button></view>

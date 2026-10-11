@@ -57,6 +57,7 @@ function transactionStore() {
         work({
           getActivity: (id) => maybeGet(transaction.collection('activities'), id),
           getProfile: (openid) => maybeGet(transaction.collection('profiles'), openid),
+          getAdmin: (openid) => maybeGet(transaction.collection('admins'), openid),
           getRegistration: (id) => maybeGet(transaction.collection('registrations'), id),
           getTeamLeader: async (activityId, teamId) => {
             const result = await transaction

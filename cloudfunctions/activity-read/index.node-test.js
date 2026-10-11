@@ -74,6 +74,7 @@ function loadMain(activity, list = [], options = {}) {
             data = data.filter((item) => condition._id.$in.includes(item._id));
           let offset = 0;
           const query = {
+            count: async () => ({ total: data.length }),
             orderBy(field, direction) {
               queryCalls.push({ type: 'orderBy', name, field, direction });
               return query;
@@ -490,6 +491,7 @@ test('详情成员执行状态、上限、稳定排序和隐私白名单', async
   });
   const result = await main({ action: 'detail', activityId: 'a1' });
   assert.equal(result.ok, true);
+  assert.equal(result.data.approved_registration_count, 26);
   assert.equal(result.data.attendees.length, 24);
   assert.deepEqual(Object.keys(result.data.attendees[0]).sort(), [
     'avatar_url',
@@ -519,7 +521,7 @@ test('详情成员执行状态、上限、稳定排序和隐私白名单', async
   assert.doesNotMatch(JSON.stringify(result.data.attendees), /13812345678|secret|private|openid/);
   assert.deepEqual(
     calls.filter((call) => call.name === 'registrations').map((call) => call.condition.status),
-    ['approved', 'checked_in'],
+    ['approved', 'approved', 'checked_in', 'checked_in'],
   );
 });
 
@@ -549,6 +551,7 @@ test('详情成员超过单页时完整读取候选集后再选最早 24 人', a
   const result = await main({ action: 'detail', activityId: 'a1' });
 
   assert.equal(result.ok, true);
+  assert.equal(result.data.approved_registration_count, 130);
   assert.equal(result.data.attendees.length, 24);
   assert.deepEqual(
     result.data.attendees.map((item) => item.id),
@@ -932,4 +935,27 @@ test('详情同样带出发布人信息', async () => {
     nickname: '阿强',
     avatar_url: 'https://temp.example/a.jpg',
   });
+});
+
+test('不限人数活动超过一千名通过者时人数使用数据库计数而不被头像读取上限截断', async () => {
+  const registrations = Array.from({ length: 1005 }, (_, index) => ({
+    _id: `approved-${index}`,
+    activity_id: 'a1',
+    openid: `openid-${index}`,
+    status: 'approved',
+    created_at: new Date(2026, 0, 1, 0, 0, index),
+    updated_at: new Date(2026, 0, 1, 0, 0, index),
+    profile_snapshot: { nickname: `骑友${index}` },
+  }));
+  const { main } = loadMain(
+    { _id: 'a1', title: '不限人数活动', status: 'published', registration_unlimited: true },
+    [],
+    { registrations },
+  );
+
+  const result = await main({ action: 'detail', activityId: 'a1' });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.data.approved_registration_count, 1005);
+  assert.equal(result.data.attendees.length, 24);
 });

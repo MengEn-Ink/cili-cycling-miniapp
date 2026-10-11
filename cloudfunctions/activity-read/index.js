@@ -115,6 +115,20 @@ function publicAttendee(registration, profile, avatarUrl) {
   };
 }
 
+async function countApprovedRegistrations(activityId) {
+  let total = 0;
+  for (const status of ['approved', 'checked_in']) {
+    const result = await db
+      .collection('registrations')
+      .where({ activity_id: activityId, status })
+      .count();
+    if (!result || !Number.isInteger(result.total) || result.total < 0)
+      throw new Error('invalid registration count');
+    total += result.total;
+  }
+  return total;
+}
+
 async function loadAttendeeRegistrations(activityId) {
   const registrations = [];
   // 复用现有 activity_id + status + created_at 索引，完整读取候选后再按审批时间统一稳定排序。
@@ -256,18 +270,21 @@ function attachPublisher(activity, publisher) {
   return activity;
 }
 
-async function loadAttendees(activityId) {
-  const registrations = (await loadAttendeeRegistrations(activityId))
-    .sort(
-      (left, right) =>
-        timestamp(left.approved_at || left.checked_in_at || left.updated_at) -
-          timestamp(right.approved_at || right.checked_in_at || right.updated_at) ||
-        String(left._id).localeCompare(String(right._id)),
-    )
-    .slice(0, ATTENDEE_LIMIT);
+async function loadAttendance(activityId) {
+  const [approvedRegistrationCount, registrations] = await Promise.all([
+    countApprovedRegistrations(activityId),
+    loadAttendeeRegistrations(activityId),
+  ]);
+  registrations.sort(
+    (left, right) =>
+      timestamp(left.approved_at || left.checked_in_at || left.updated_at) -
+        timestamp(right.approved_at || right.checked_in_at || right.updated_at) ||
+      String(left._id).localeCompare(String(right._id)),
+  );
+  const visibleRegistrations = registrations.slice(0, ATTENDEE_LIMIT);
   const openids = [
     ...new Set(
-      registrations
+      visibleRegistrations
         .map((item) => item.openid)
         .filter((value) => typeof value === 'string' && value),
     ),
@@ -276,13 +293,16 @@ async function loadAttendees(activityId) {
   const avatarUrls = await resolveAvatarTempUrls(
     openids.map((openid) => ({ openid, profile: profiles.get(openid) })),
   );
-  return registrations.map((registration) =>
-    publicAttendee(
-      registration,
-      profiles.get(registration.openid),
-      avatarUrls.get(registration.openid) || '',
+  return {
+    approvedRegistrationCount,
+    attendees: visibleRegistrations.map((registration) =>
+      publicAttendee(
+        registration,
+        profiles.get(registration.openid),
+        avatarUrls.get(registration.openid) || '',
+      ),
     ),
-  );
+  };
 }
 
 exports.main = async (event = {}) => {
@@ -361,7 +381,12 @@ exports.main = async (event = {}) => {
       const [resolvedActivity] = await resolveActivityMedia([
         attachPublisher(publicActivity(activity, now), publisherByOpenid.get(activity.created_by)),
       ]);
-      return ok({ ...resolvedActivity, attendees: await loadAttendees(event.activityId) });
+      const attendance = await loadAttendance(event.activityId);
+      return ok({
+        ...resolvedActivity,
+        attendees: attendance.attendees,
+        approved_registration_count: attendance.approvedRegistrationCount,
+      });
     }
     fail('UNKNOWN_ACTION', '未知操作');
   } catch (error) {

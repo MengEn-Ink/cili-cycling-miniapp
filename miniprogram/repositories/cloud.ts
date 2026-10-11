@@ -360,6 +360,9 @@ function mapActivity(raw: unknown, requireRegistrationDecision = false): Activit
         }
       : {}),
     occupiedCount: Number.isInteger(value.occupied_count) ? value.occupied_count : undefined,
+    ...(Number.isInteger(value.approved_registration_count)
+      ? { approvedRegistrationCount: value.approved_registration_count }
+      : {}),
     registrationState: ['open', 'closed'].includes(value.registration_state)
       ? value.registration_state
       : undefined,

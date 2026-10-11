@@ -93,6 +93,25 @@ function platformCall(
   return new Promise((resolve, reject) => method({ ...options, success: resolve, fail: reject }));
 }
 
+async function posterImageSource(source: string): Promise<string> {
+  if (!source.startsWith('cloud://')) return source;
+  const cloudApi = wx.cloud as any;
+  if (!cloudApi || typeof cloudApi.downloadFile !== 'function') throw new Error('群二维码暂不可用');
+  const result = await cloudApi.downloadFile({ fileID: source });
+  if (!result.tempFilePath) throw new Error('群二维码下载失败');
+  return result.tempFilePath;
+}
+
+async function loadCanvasImage(canvas: any, source: string): Promise<any> {
+  const image = canvas.createImage();
+  const filePath = await posterImageSource(source);
+  return new Promise((resolve, reject) => {
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('群二维码加载失败'));
+    image.src = filePath;
+  });
+}
+
 function shareCoverImage(item: any): string {
   const cover = typeof item?.coverImage === 'string' ? item.coverImage : '';
   const firstImage =
@@ -138,6 +157,8 @@ Page({
     generatingPoster: false,
     teamId: '',
     activityAction: unavailableAction(),
+    isAdmin: false,
+    adminRegistrationLabel: '管理员报名',
     viewerStatus: { key: 'guest', label: '未登录', hint: '登录后可报名并查看报名进度' },
     attendeesVisible: false,
     groupQrVisible: false,
@@ -207,6 +228,15 @@ Page({
         if (requestId !== this.loadRequestId || this.unloaded) return;
       }
       const state = viewerStatus(registration, isLoggedIn, isOrganizer, isAdmin);
+      const approvedRegistrationCount = Number.isInteger(detail.approvedRegistrationCount)
+        ? detail.approvedRegistrationCount
+        : Array.isArray(detail.attendees)
+          ? detail.attendees.length
+          : 0;
+      detail.approvedRegistrationCount = approvedRegistrationCount;
+      const hasActiveRegistration = ['waiting', 'pending', 'approved', 'checked_in'].includes(
+        registration?.status || '',
+      );
       const canSeeAttendees =
         isOrganizer ||
         isAdmin ||
@@ -220,7 +250,10 @@ Page({
           attendees: canSeeAttendees && Array.isArray(detail.attendees) ? detail.attendees : [],
           attendeesVisible: canSeeAttendees,
           viewerStatus: state,
+          isAdmin,
+          adminRegistrationLabel: hasActiveRegistration ? '查看我的报名' : '管理员报名',
           groupQrVisible: canSeeGroupQr,
+          attendeeSummary: `${approvedRegistrationCount} 人已通过审核`,
           groupQrLockedMessage:
             state.key === 'guest'
               ? '登录并报名审核通过后可查看活动群二维码'
@@ -314,6 +347,25 @@ Page({
       scale: 16,
     });
   },
+  editActivity() {
+    if (!this.data.item?.id) return;
+    wx.navigateTo({ url: '/pages/admin/activity-edit/index?id=' + this.data.item.id });
+  },
+  adminRegistration() {
+    if (!this.data.item?.id) return;
+    const registration = this.data.registration;
+    if (
+      registration?.id &&
+      ['waiting', 'pending', 'approved', 'checked_in'].includes(registration.status || '')
+    ) {
+      wx.navigateTo({ url: '/pages/credential/index?id=' + registration.id });
+      return;
+    }
+    const teamQuery = this.data.teamId ? '&team_id=' + encodeURIComponent(this.data.teamId) : '';
+    wx.navigateTo({
+      url: '/pages/registration-form/index?id=' + this.data.item.id + teamQuery,
+    });
+  },
   openStravaRoute() {
     const url = this.data.item?.route?.stravaRouteUrl;
     if (typeof url !== 'string' || !/^https:\/\//i.test(url)) {
@@ -322,7 +374,18 @@ Page({
     }
     wx.setClipboardData({
       data: url,
-      success: () => wx.showToast({ title: '链接已复制，请到系统浏览器打开', icon: 'none' }),
+      success: () => {
+        if (typeof wx.showModal === 'function') {
+          wx.showModal({
+            title: 'Strava 路线链接已复制',
+            content: '请切换到系统浏览器或 Strava 粘贴打开，即可查看和收藏完整路线。',
+            showCancel: false,
+            confirmText: '知道了',
+          });
+          return;
+        }
+        wx.showToast({ title: '链接已复制，请到浏览器或 Strava 打开', icon: 'none' });
+      },
       fail: () => wx.showToast({ title: '复制失败，请稍后重试', icon: 'none' }),
     });
   },
@@ -395,6 +458,10 @@ Page({
   },
   async generatePoster() {
     if (!this.data.item || this.posterBusy) return;
+    if (!this.data.groupQrVisible || !this.data.item.groupQrCode) {
+      wx.showToast({ title: '报名审核通过后可生成含群二维码的海报', icon: 'none' });
+      return;
+    }
     this.posterBusy = true;
     this.safeSetData({ generatingPoster: true });
     try {
@@ -408,13 +475,31 @@ Page({
       });
       const canvas = target.node;
       const width = 375;
-      const height = 600;
+      const height = 700;
       const ratio = wx.getWindowInfo?.().pixelRatio || wx.getSystemInfoSync?.().pixelRatio || 1;
       canvas.width = width * ratio;
       canvas.height = height * ratio;
       const context = canvas.getContext('2d');
       context.setTransform?.(ratio, 0, 0, ratio, 0, 0);
-      if (!drawActivityPoster(context, width, height, this.data.item))
+      const groupQrImage = await loadCanvasImage(canvas, this.data.item.groupQrCode);
+      const startLocation = this.data.item.route?.startLocation;
+      const approvedCount = Number.isInteger(this.data.item.approvedRegistrationCount)
+        ? this.data.item.approvedRegistrationCount
+        : this.data.attendees.length;
+      if (
+        !drawActivityPoster(context, width, height, this.data.item, {
+          displayTime: this.data.startTime || '待公布',
+          locationName:
+            this.data.item.route?.start ||
+            startLocation?.name ||
+            startLocation?.address ||
+            '待公布',
+          locationAddress: startLocation?.address,
+          approvedCount,
+          attendeeNames: this.data.attendees.map((attendee: any) => attendee.displayName),
+          groupQrImage,
+        })
+      )
         throw new Error('海报绘制失败');
       const tempFilePath = await new Promise<string>((resolve, reject) =>
         wx.canvasToTempFilePath({
@@ -452,8 +537,12 @@ Page({
       else wx.showToast?.({ title: '登录未完成，请稍后重试', icon: 'none' });
       return;
     }
-    if (this.data.viewerStatus.key === 'organizer' || this.data.viewerStatus.key === 'admin') {
-      wx.navigateTo({ url: '/pages/admin/activity-edit/index?id=' + this.data.item.id });
+    if (this.data.viewerStatus.key === 'organizer') {
+      this.editActivity();
+      return;
+    }
+    if (this.data.viewerStatus.key === 'admin') {
+      this.adminRegistration();
       return;
     }
     if (action.kind === 'view-registration' || action.kind === 'view-history') {

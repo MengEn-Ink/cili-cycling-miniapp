@@ -130,6 +130,29 @@ describe('日常活动极简创建与编辑', () => {
     expect(page.data.form).not.toHaveProperty('fee');
   });
 
+  it('修改集合地点名称时保留地图点位以继续导航', async () => {
+    await page.onLoad({ id: activity.id });
+    page.data.routeStartLocation = {
+      name: '旧集合点',
+      address: '滨江路 1 号',
+      latitude: 30.2,
+      longitude: 120.1,
+    };
+
+    page.field({
+      currentTarget: { dataset: { name: 'routeStart' } },
+      detail: { value: '桥下咖啡集合' },
+    });
+
+    expect(page.data.form.routeStart).toBe('桥下咖啡集合');
+    expect(page.data.routeStartLocation).toEqual({
+      name: '桥下咖啡集合',
+      address: '滨江路 1 号',
+      latitude: 30.2,
+      longitude: 120.1,
+    });
+  });
+
   it('发布要求活动标题、集合日期、集合时间和集合地点', async () => {
     await page.onLoad({});
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
@@ -921,13 +944,14 @@ describe('日常活动极简创建与编辑', () => {
     expect(deleteFile).not.toHaveBeenCalled();
   });
 
-  it('不限人数标记会让列表和详情隐藏旧路线与费用信息', () => {
+  it('日常活动详情隐藏旧路线费用和不限人数话术，并突出集合时间', () => {
     const card = readFileSync('miniprogram/components/activity-card/index.wxml', 'utf8');
     const detail = readFileSync('miniprogram/pages/activity-detail/index.wxml', 'utf8');
     expect(card).toContain("item.registrationUnlimited ? (item.occupied + ' 人已报名')");
     expect(card).toContain("item.route.start || '集合地点待公布'");
     expect(card).not.toContain("item.route.end || '终点待公布'");
-    expect(detail).toContain("item.registrationUnlimited ? '集合时间'");
+    expect(detail).toContain('class="time-card-primary"');
+    expect(detail).not.toContain('不限</text><text>报名人数');
     expect(detail).toContain('!item.registrationUnlimited && item.route.end');
     expect(detail).toContain('!item.registrationUnlimited && (item.fee');
     expect(detail).toContain('route-profile-card" wx:if="{{!item.registrationUnlimited}}"');
