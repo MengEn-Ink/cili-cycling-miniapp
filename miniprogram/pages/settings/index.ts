@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.12.21',
+    date: '2026-10-12',
+    title: 'Strava 授权复制始终使用新链接',
+    summary: '再次复制会重新生成一次性授权状态，并核对剪贴板内容，避免继续打开失效链接。',
+    latest: true,
+    features: [
+      '再次复制时废弃旧链接并生成新的十分钟有效链接',
+      '自动复制后回读校验，内容不一致时立即提示手动复制',
+      '授权成功或失败后清除页面中的旧授权链接',
+    ],
+  },
+  {
     version: '2026.10.12.20',
     date: '2026-10-12',
     title: 'Strava 回调失败状态可立即恢复',
     summary: '浏览器授权回调失败时会记录稳定错误状态，返回小程序后可直接看到原因并重新授权。',
-    latest: true,
+    latest: false,
     features: [
       '换取 Strava 凭证失败时不再一直停留在授权中',
       '回调缺少参数或服务配置异常时同步更新失败状态',
