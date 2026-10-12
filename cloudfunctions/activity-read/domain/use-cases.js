@@ -6,7 +6,6 @@ const {
   assertNoForbiddenFields,
   assertActivityOpen,
   assertProfileReady,
-  selectCanonicalStrava,
   validateOptions,
   validateTeamInput,
   createTeamId,
@@ -137,13 +136,10 @@ async function submitRegistration(store, { openid, activityId, options, team }, 
     const activity = await tx.getActivity(activityId);
     const profile = await tx.getProfile(openid);
     const existing = await tx.getRegistration(id);
-    const credential = await tx.getStravaCredential(openid);
-    const snapshot = await tx.getStravaSnapshot(openid);
     const admin = typeof tx.getAdmin === 'function' ? await tx.getAdmin(openid) : undefined;
     assertActivityOpen(activity, now);
     assertProfileReady(profile);
     assertCanSubmit(existing);
-    const strava = selectCanonicalStrava(credential, snapshot, now);
     const safeOptions = validateOptions(options);
     const teamFields = await resolveTeam(tx, activityId, openid, team);
     const quota = categoryQuota(activity, safeOptions.gathering_mode);
@@ -195,9 +191,7 @@ async function submitRegistration(store, { openid, activityId, options, team }, 
             : '',
         phone_verified: profile.phone_verified === true,
       },
-      strava_status: strava.status,
-      ...(strava.snapshot ? { strava_snapshot: strava.snapshot } : {}),
-      ...(strava.exemption ? { exemption: strava.exemption } : {}),
+      strava_status: 'not_required',
       review_history: history,
       ...(adminAutoApproved
         ? {

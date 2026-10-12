@@ -471,6 +471,22 @@ Page({
     const routeUrl = this.data.form.stravaRouteUrl.trim();
     this.setData({ syncingRoute: true, error: '' });
     try {
+      const readiness = await rideService.getStravaReadiness();
+      if (readiness.state !== 'ready') {
+        const authorize = await new Promise<boolean>((resolve) => {
+          wx.showModal({
+            title: '需要 Strava 授权',
+            content:
+              '仅在读取 Strava 线路时需要授权。Strava 默认仅提供 10 个共享授权名额，扩容需向官方申请；暂不授权仍可手动填写路线。',
+            confirmText: '去授权',
+            cancelText: '手动填写',
+            success: ({ confirm }: { confirm: boolean }) => resolve(confirm),
+            fail: () => resolve(false),
+          });
+        });
+        if (authorize) wx.navigateTo({ url: '/pages/strava/index?source=activity-route' });
+        return;
+      }
       const preview = await rideService.previewStravaRoute(routeUrl);
       this.setData({
         'form.stravaRouteUrl': preview.stravaRouteUrl,

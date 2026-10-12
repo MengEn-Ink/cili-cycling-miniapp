@@ -43,9 +43,9 @@ describe('报名表单受控控件与视觉契约', () => {
     expect(template).toContain('提交后将进入审核');
   });
 
-  it('提交期间禁用资料、Strava、全部 radio、备注与次按钮', () => {
+  it('提交期间禁用资料、全部 radio、备注与次按钮，且不展示 Strava', () => {
     expect(template).toMatch(/bindtap="profile"[^>]*disabled="{{submitting}}"/);
-    expect(template).toMatch(/bindtap="strava"[^>]*disabled="{{submitting}}"/);
+    expect(template).not.toContain('bindtap="strava"');
     expect(template.match(/<radio [^>]*disabled="{{[^}]*submitting[^}]*}}"/g)).toHaveLength(5);
     expect(template).toMatch(/<textarea [^>]*disabled="{{submitting}}"/);
     expect(template).toMatch(/class="secondary back-button"[^>]*disabled="{{submitting}}"/);
@@ -77,7 +77,8 @@ describe('报名表单受控控件与视觉契约', () => {
       'class="context-status">{{activityCanSubmit ? \'报名开放\' : activityAction.label}}',
     );
     expect(template).toContain('提交报名');
-    expect(template).toContain('请先完成必填项并确认 Strava 数据已就绪');
+    expect(template).toContain('请先完成必填项');
+    expect(template).not.toContain('Strava 数据');
     expect(styles).toContain('background: var(--color-bg)');
     expect(styles).toContain('.identity-grid');
     expect(styles).toContain('grid-template-columns: minmax(0, 1fr) 0.62fr minmax(0, 1.35fr)');

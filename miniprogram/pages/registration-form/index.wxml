@@ -1,5 +1,5 @@
 <view class="page form-page">
-  <state-view loading="{{loading}}" error="{{!profile && errors.length ? errors[0] : ''}}" loading-title="正在检查活动、资料与报名条件" loading-copy="正在核对活动名额、个人资料与 Strava 数据">
+  <state-view loading="{{loading}}" error="{{!profile && errors.length ? errors[0] : ''}}" loading-title="正在检查活动、资料与报名条件" loading-copy="正在核对活动名额与个人资料">
   <block wx:if="{{profile}}">
     <view class="form-head">
       <view class="step-line" aria-label="报名进度">
@@ -60,7 +60,7 @@
       </view>
 
       <view class="form-section">
-        <view class="section-label"><text>03</text><view><view>能力确认</view><view class="section-hint">骑行经验与 Strava 数据将作为审核参考</view></view></view>
+        <view class="section-label"><text>03</text><view><view>能力确认</view><view class="section-hint">骑行经验将作为审核参考</view></view></view>
         <view class="form-card capability-card">
           <view class="field-title">骑行经验</view>
           <radio-group class="experience-segment" data-key="experience" bindchange="set">
@@ -68,7 +68,6 @@
             <label class="segment {{experience === '有一定经验' ? 'selected' : ''}}"><radio color="#e85b32" value="有一定经验" checked="{{experience === '有一定经验'}}" disabled="{{submitting}}"/>有经验</label>
             <label class="segment {{experience === '常骑' ? 'selected' : ''}}"><radio color="#e85b32" value="常骑" checked="{{experience === '常骑'}}" disabled="{{submitting}}"/>常骑</label>
           </radio-group>
-          <view class="strava-row status-{{readiness.state}}"><view class="strava-copy"><view class="strava-head"><view class="strava-brand">STRAVA</view><view class="readiness-badge">{{readiness.state === 'ready' ? '数据可用' : readiness.state === 'syncing' ? '同步中' : readiness.state === 'disconnected' ? '未连接' : '需处理'}}</view></view><view class="field-hint readiness">{{readinessMessage}}</view><view wx:if="{{readiness.state === 'syncing'}}" class="field-hint readiness">首次授权后会自动准备，无需手动同步。</view></view><button class="text-button" bindtap="strava" disabled="{{submitting}}">管理</button></view>
           <view wx:if="{{teamId}}" class="team-invite"><view class="field-title">已通过邀请加入队伍</view><view class="field-hint">队伍编号 {{teamId}}</view></view>
         </view>
       </view>
@@ -89,8 +88,8 @@
   <view wx:if="{{errors.length}}" class="error-card" role="alert"><view class="error-title">暂时无法提交，请处理以下问题</view><view class="error-item" wx:for="{{errors}}" wx:key="*this">· {{item}}</view></view>
   <view class="fixed action-bar">
     <button class="secondary back-button" bindtap="back" disabled="{{submitting}}">返回活动</button>
-    <button class="btn submit-button" loading="{{submitting}}" disabled="{{loading || submitting || !profile || profileErrors.length || !gatheringMode || !readiness.canRegister || !activityCanSubmit}}" bindtap="submit">{{submitting ? '正在提交' : '提交报名'}}</button>
-    <view class="disabled-hint" wx:if="{{!loading && !submitting && (!profile || profileErrors.length || !gatheringMode || !readiness.canRegister || !activityCanSubmit)}}">请先完成必填项并确认 Strava 数据已就绪</view>
+    <button class="btn submit-button" loading="{{submitting}}" disabled="{{loading || submitting || !profile || profileErrors.length || !gatheringMode || !activityCanSubmit}}" bindtap="submit">{{submitting ? '正在提交' : '提交报名'}}</button>
+    <view class="disabled-hint" wx:if="{{!loading && !submitting && (!profile || profileErrors.length || !gatheringMode || !activityCanSubmit)}}">请先完成必填项</view>
   </view>
   </state-view>
 </view>

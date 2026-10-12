@@ -81,7 +81,7 @@
         <view class="field-label">Strava 线路链接</view>
         <input class="input" value="{{form.stravaRouteUrl}}" maxlength="256" placeholder-class="input-placeholder" placeholder="https://www.strava.com/routes/…" bindinput="field" data-name="stravaRouteUrl" />
         <button class="map-button" loading="{{syncingRoute}}" disabled="{{syncingRoute || saving || !form.stravaRouteUrl}}" bindtap="syncStravaRoute">{{syncingRoute ? '同步中…' : '同步路线信息'}}</button>
-        <view class="section-help">粘贴 Strava 路线后同步里程、爬升、预计骑行时间和海拔数据。</view>
+        <view class="section-help">仅在同步 Strava 路线时检查授权；不使用该能力也可手动填写活动信息。</view>
         <view wx:if="{{stravaRoutePreview}}" class="section-help">已同步：{{stravaRoutePreview.distanceKm}} km · 爬升 {{stravaRoutePreview.elevationM}} m · 预计 {{stravaRouteTimeLabel}}</view>
       </view>
       <view class="field group-qr-field">

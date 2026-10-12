@@ -28,7 +28,8 @@ describe('单一明亮外观接线', () => {
     expect(profileScript).toContain("wx.navigateTo({ url: '/pages/settings/index' })");
     expect(template).not.toMatch(/显示主题|深色（默认）|浅色（户外）|theme-option/);
     expect(script).not.toMatch(/setTheme|switchTheme/);
-    expect(template).toContain('Strava 授权');
+    expect(template).toContain('第三方授权');
+    expect(template).toContain("stravaReadiness.state !== 'disconnected'");
     expect(template).toContain('功能升级日志');
   });
 

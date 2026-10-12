@@ -114,6 +114,7 @@ describe('报名页 Strava readiness 请求代际', () => {
 
   it('重复 onShow 时忽略较早请求的迟到结果', async () => {
     let resolveFirstProfile!: (value: Profile) => void;
+    const newerProfile = { ...profile, nickname: '新请求' };
     rideService.getProfile
       .mockImplementationOnce(
         () =>
@@ -121,19 +122,16 @@ describe('报名页 Strava readiness 请求代际', () => {
             resolveFirstProfile = resolve;
           }),
       )
-      .mockResolvedValueOnce(profile);
-    rideService.getStravaReadiness
-      .mockResolvedValueOnce(readiness('disconnected'))
-      .mockResolvedValueOnce(readiness('ready'));
+      .mockResolvedValueOnce(newerProfile);
 
     const firstShow = page.onShow();
     const secondShow = page.onShow();
     await secondShow;
-    expect(page.data.readiness).toEqual(readiness('ready'));
+    expect(page.data.profile.nickname).toBe('新请求');
 
     resolveFirstProfile(profile);
     await firstShow;
-    expect(page.data.readiness).toEqual(readiness('ready'));
+    expect(page.data.profile.nickname).toBe('新请求');
   });
 
   it.each(['onHide', 'onUnload'] as const)('%s 后忽略在途请求结果', async (lifecycle) => {
@@ -155,41 +153,10 @@ describe('报名页 Strava readiness 请求代际', () => {
     expect(page.setData).not.toHaveBeenCalled();
   });
 
-  it.each(['onHide', 'onUnload'] as const)(
-    '%s 后当前 ensure 返回 syncing 时不再发起下一轮',
-    async (lifecycle) => {
-      vi.useFakeTimers();
-      let resolveEnsure!: (value: StravaReadiness) => void;
-      rideService.getProfile.mockResolvedValue(profile);
-      rideService.getStravaReadiness.mockResolvedValue(readiness('syncing'));
-      rideService.ensureStravaReady
-        .mockImplementationOnce(
-          () =>
-            new Promise<StravaReadiness>((resolve) => {
-              resolveEnsure = resolve;
-            }),
-        )
-        .mockResolvedValueOnce(readiness('ready'));
-
-      const show = page.onShow();
-      await flushMicrotasks();
-      expect(rideService.ensureStravaReady).toHaveBeenCalledOnce();
-
-      page[lifecycle]();
-      resolveEnsure(readiness('syncing'));
-      await flushMicrotasks();
-      await vi.advanceTimersByTimeAsync(1500);
-      await show;
-
-      expect(rideService.ensureStravaReady).toHaveBeenCalledOnce();
-    },
-  );
-
-  it('提交期间禁止跳转资料页和 Strava 页', () => {
+  it('提交期间禁止跳转资料页', () => {
     page.data.submitting = true;
 
     page.profile();
-    page.strava();
 
     expect(wx.navigateTo).not.toHaveBeenCalled();
   });

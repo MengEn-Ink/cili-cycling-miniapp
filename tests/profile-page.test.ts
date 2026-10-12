@@ -186,7 +186,7 @@ describe('个人中心加载状态', () => {
     ]);
   });
 
-  it('大面积 hero 默认展示完整名片且不常驻同步状态', async () => {
+  it('个人中心默认只展示微信身份，不展示 Strava 骑行指标', async () => {
     await page.onShow();
     await vi.waitFor(() => expect(page.data.heroCard).toBeTruthy());
 
@@ -208,17 +208,11 @@ describe('个人中心加载状态', () => {
     expect(template).not.toContain('class="profile-heading"');
     expect(template).not.toContain('你的骑行名片');
     expect(template).not.toContain('>个人中心</view>');
-    expect(template).toContain('近 90 天骑行');
-    expect(template).not.toContain('wx:for="{{heroCard.lifetimeMetrics}}"');
-    expect(template).toContain('hero-capability-strava-tenure');
-    expect(template).toContain(
-      'class="hero-capability-secondary" wx:if="{{heroCard.secondaryMetrics.length}}"',
-    );
-    expect(template).toContain('class="hero-capability-details" wx:if="{{heroCard.coverageText}}"');
-    expect(template).not.toContain('最近同步');
-    expect(template).not.toContain('页面数据');
-    expect(template).not.toContain('profile-cache-message');
-    expect(template).toContain('{{heroCard.statusLabel}}');
+    expect(template).not.toContain('近 90 天骑行');
+    expect(template).not.toContain('hero-capability-strava-tenure');
+    expect(template).not.toContain('hero-capability-secondary');
+    expect(template).not.toContain('hero-capability-details');
+    expect(template).not.toContain('{{heroCard.statusLabel}}');
     expect(template).toContain('wx:if="{{profile && profile.completeness < 100}}"');
     expect(template).toContain('{{profile.completeness}}%');
     expect(template).toContain('style="width: {{profile.completeness}}%"');
@@ -245,12 +239,10 @@ describe('个人中心加载状态', () => {
       }),
     );
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
-    expect(template).toContain('wx:if="{{heroCard.hasStravaProfile}}"');
-    expect(template).toContain('user-select="true"');
-    expect(template).toContain('{{heroCard.stravaProfileUrl}}');
-    expect(template).toContain('复制后粘贴到系统默认浏览器打开');
-    expect(template).toContain('bindtap="copyStravaProfileLink"');
-    expect(template).toContain('aria-label="复制 Strava 个人主页链接"');
+    expect(template).not.toContain('heroCard.hasStravaProfile');
+    expect(template).not.toContain('{{heroCard.stravaProfileUrl}}');
+    expect(template).not.toContain('复制后粘贴到系统默认浏览器打开');
+    expect(template).not.toContain('bindtap="copyStravaProfileLink"');
     expect(template).not.toContain('查看 Strava 主页');
   });
 
@@ -292,7 +284,7 @@ describe('个人中心加载状态', () => {
     expect(template).toContain(
       "profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '欢迎来到此里')",
     );
-    expect(template).toContain('{{heroCard.emptyMetricsText}}');
+    expect(template).not.toContain('{{heroCard.emptyMetricsText}}');
   });
 
   it('profile 昵称为空时 hero 仍回退骑行名片 displayName', async () => {
@@ -346,17 +338,16 @@ describe('个人中心加载状态', () => {
     expect(page.data.heroBackgroundAvatarUrl).toBe('https://temporary.example/avatar.jpg');
   });
 
-  it('头部收口完整骑行名片且不再提供折叠或独立入口', () => {
+  it('头部只展示微信身份且不再提供骑行指标或独立名片入口', () => {
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     const pageScript = readFileSync('miniprogram/pages/profile/index.ts', 'utf8');
 
     expect(template).not.toMatch(/<swiper\b[^>]*\bautoplay(?:=|\s|>)/);
     expect(template).toContain('meta="一起骑，去更远的地方"');
     expect(template).not.toContain('你的骑行名片');
-    expect(template).toContain('近 90 天骑行');
-    expect(template).not.toContain('wx:for="{{heroCard.lifetimeMetrics}}"');
-    expect(template).toContain('wx:for="{{heroCard.primaryMetrics}}"');
-    expect(template).toContain('wx:for="{{heroCard.secondaryMetrics}}"');
+    expect(template).not.toContain('近 90 天骑行');
+    expect(template).not.toContain('heroCard.primaryMetrics');
+    expect(template).not.toContain('heroCard.secondaryMetrics');
     expect(template).not.toContain('bindtap="toggleCard"');
     expect(template).not.toContain('点按收起');
     expect(template).not.toContain('我的骑行名片');
@@ -747,13 +738,13 @@ describe('个人中心加载状态', () => {
     expect(styles).not.toMatch(/#(?:ccff00|d7ff00|eaff00|ffff00)/i);
   });
 
-  it('下方菜单集中提供报名资料、隐私说明和设置授权，不重复活动报名状态', () => {
+  it('下方菜单集中提供报名资料、隐私说明和设置，不重复活动报名状态', () => {
     page.openSettings();
 
     expect(wx.navigateTo).toHaveBeenCalledWith({ url: '/pages/settings/index' });
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     expect(template).toContain('报名资料');
-    expect(template).toContain('设置与授权');
+    expect(template).toContain('查看应用设置与功能升级记录');
     expect(template).toContain('联系电话仅用于活动联络');
     expect(template).toContain('紧急联系人仅在骑行安全需要时使用');
     expect(template).not.toMatch(/报名成功|审核中|已报名|报名状态/);
