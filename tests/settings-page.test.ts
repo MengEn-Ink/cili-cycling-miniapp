@@ -44,21 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.12.29',
+      version: '2026.10.13.30',
       latest: true,
-      title: '活动与行程统一为票据风格',
-      summary: '活动首页与行程页共享黑白橙信息层级，活动详情改为一张完整票卡承载全部信息。',
+      title: '活动群二维码支持放大和保存',
+      summary: '报名审核通过后，可点击活动群二维码放大查看，也可直接保存到系统相册。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.13.30',
       '2026.10.12.29',
       '2026.10.12.28',
       '2026.10.12.27',
       '2026.10.12.26',
-      '2026.10.12.25',
     ]);
   });
 
