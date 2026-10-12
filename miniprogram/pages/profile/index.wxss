@@ -151,7 +151,7 @@ brand-logo {
 
 .auth-dot.verified,
 .status-verified .status-dot {
-  background: #6f9b82;
+  background: var(--color-text);
 }
 
 .profile-capability-section {
@@ -232,7 +232,7 @@ brand-logo {
 
 .hero-capability-unit {
   margin-left: 4rpx;
-  color: #f06a49;
+  color: var(--color-brand);
   font-size: 17rpx;
 }
 
@@ -345,7 +345,7 @@ brand-logo {
 }
 
 .hero-progress-head text:last-child {
-  color: #d83b1f;
+  color: var(--color-brand);
   font-size: 30rpx;
 }
 
@@ -506,7 +506,7 @@ brand-logo {
   justify-content: space-between;
   border-left: 6rpx solid var(--color-brand);
   background: #fff;
-  color: #9b2f1d;
+  color: var(--color-brand-active);
 }
 
 .profile-refresh-feedback {
@@ -529,7 +529,7 @@ brand-logo {
   justify-content: center;
   border: 2rpx solid var(--color-brand);
   border-radius: 50%;
-  color: #d83b1f;
+  color: var(--color-brand);
   font-weight: 900;
 }
 

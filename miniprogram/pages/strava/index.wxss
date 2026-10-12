@@ -43,18 +43,18 @@ page {
   color: var(--color-text);
 }
 .status-ready {
-  border-color: rgba(24, 160, 88, 0.55);
-  background: rgba(24, 160, 88, 0.1);
+  border-color: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.1);
 }
 .status-failed,
 .status-disconnected {
-  border-color: rgba(200, 32, 24, 0.55);
-  background: rgba(200, 32, 24, 0.1);
+  border-color: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.1);
 }
 .status-syncing,
 .status-authorizing {
-  border-color: rgba(200, 132, 24, 0.55);
-  background: rgba(200, 132, 24, 0.1);
+  border-color: rgba(232, 91, 50, 0.55);
+  background: rgba(232, 91, 50, 0.1);
 }
 .status-icon {
   display: flex;
@@ -64,17 +64,17 @@ page {
   width: 48rpx;
   height: 48rpx;
   border-radius: 50%;
-  background: #0b6b4f;
+  background: var(--color-text);
   color: #fff;
   font-weight: 800;
 }
 .status-failed .status-icon,
 .status-disconnected .status-icon {
-  background: #c82018;
+  background: var(--color-text);
 }
 .status-syncing .status-icon,
 .status-authorizing .status-icon {
-  background: #c88418;
+  background: var(--color-brand);
 }
 .status-copy {
   min-width: 0;
@@ -136,7 +136,7 @@ page {
   margin-top: 16rpx;
   padding: 24rpx;
   border-radius: 14rpx;
-  background: rgba(200, 32, 24, 0.12);
+  background: rgba(0, 0, 0, 0.12);
   color: var(--color-danger-text);
 }
 .manual-auth-card {

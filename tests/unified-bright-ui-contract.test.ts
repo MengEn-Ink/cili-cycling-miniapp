@@ -89,14 +89,14 @@ describe('HP-20261010-02 单一明亮 UI 底座', () => {
     const styles = read('miniprogram/app.wxss');
 
     expect(styles).not.toMatch(/\.theme-light|\.theme-dark/);
-    expect(styles).toContain('--color-bg: #f2f3ef;');
+    expect(styles).toContain('--color-bg: #f3f3f1;');
     expect(styles).toContain('--color-surface: #ffffff;');
-    expect(styles).toContain('--color-raised: #f7f7f4;');
-    expect(styles).toContain('--color-text: #20241f;');
-    expect(styles).toContain('--color-muted: #5f665d;');
+    expect(styles).toContain('--color-raised: #ececea;');
+    expect(styles).toContain('--color-text: #171717;');
+    expect(styles).toContain('--color-muted: #666666;');
     expect(styles).toContain('--color-brand: #e85b32;');
-    expect(styles).toContain('--color-on-brand: #171a16;');
-    expect(styles).toContain('--color-action: #20241f;');
+    expect(styles).toContain('--color-on-brand: #171717;');
+    expect(styles).toContain('--color-action: #171717;');
     expect(styles).toContain('--color-on-action: #ffffff;');
     expect(styles).toContain('--control-height: 88rpx;');
     expect(styles).toContain('--segment-height: 80rpx;');

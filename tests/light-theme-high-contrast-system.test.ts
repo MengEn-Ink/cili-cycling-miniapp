@@ -15,21 +15,21 @@ const tokens = uiTokens(app);
 
 describe('approved unified high-contrast UI', () => {
   it('uses the approved warm gray, charcoal and orange-red palette', () => {
-    expect(tokens['--color-bg']).toBe('#f2f3ef');
+    expect(tokens['--color-bg']).toBe('#f3f3f1');
     expect(tokens['--color-surface']).toBe('#ffffff');
-    expect(tokens['--color-raised']).toBe('#f7f7f4');
-    expect(tokens['--color-text']).toBe('#20241f');
-    expect(tokens['--color-muted']).toBe('#5f665d');
-    expect(tokens['--color-border']).toBe('#dfe3dc');
-    expect(tokens['--color-border-strong']).toBe('#c8cec5');
+    expect(tokens['--color-raised']).toBe('#ececea');
+    expect(tokens['--color-text']).toBe('#171717');
+    expect(tokens['--color-muted']).toBe('#666666');
+    expect(tokens['--color-border']).toBe('#d6d6d2');
+    expect(tokens['--color-border-strong']).toBe('#171717');
     expect(tokens['--color-input-bg']).toBe('#ffffff');
     expect(tokens['--color-brand']).toBe('#e85b32');
-    expect(tokens['--color-brand-active']).toBe('#cf4520');
-    expect(tokens['--color-on-brand']).toBe('#171a16');
-    expect(tokens['--color-action']).toBe('#20241f');
+    expect(tokens['--color-brand-active']).toBe('#c84320');
+    expect(tokens['--color-on-brand']).toBe('#171717');
+    expect(tokens['--color-action']).toBe('#171717');
     expect(tokens['--color-on-action']).toBe('#ffffff');
-    expect(tokens['--color-card-border']).toBe('#dfe3dc');
-    expect(tokens['--shadow-card']).toContain('rgba(32, 36, 31');
+    expect(tokens['--color-card-border']).toBe('#171717');
+    expect(tokens['--shadow-card']).toContain('rgba(0, 0, 0');
     expect(tokens['--metric-align']).toBe('left');
     expect(tokens['--page-heading-align']).toBe('left');
     expect(tokens['--radius-display']).toBe('32rpx');

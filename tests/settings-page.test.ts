@@ -44,21 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.12.25',
+      version: '2026.10.12.26',
       latest: true,
-      title: 'Strava 改为创建活动时按需授权',
-      summary: '普通用户不再需要连接 Strava；只有创建活动并同步线路时才会提示授权。',
+      title: '全套界面统一为黑白橙票据风格',
+      summary: '活动、行程、个人中心、Strava 与管理页面统一视觉层级，重点集合信息更醒目。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.12.26',
       '2026.10.12.25',
       '2026.10.12.24',
       '2026.10.12.23',
       '2026.10.12.22',
-      '2026.10.12.21',
     ]);
   });
 

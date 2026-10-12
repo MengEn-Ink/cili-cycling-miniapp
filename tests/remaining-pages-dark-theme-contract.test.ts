@@ -176,7 +176,7 @@ describe('其余页面 CILI 统一明亮 UI 静态契约', () => {
     );
     expect(
       declaration(effectiveBlock(styles, '.profile-form-page .form-error'), 'background'),
-    ).toContain('rgba(200');
+    ).toContain('rgba(0, 0, 0');
     expectSemantic(
       declaration(effectiveBlock(styles, '.profile-form-page .photo-action'), 'background'),
       '--color-raised',

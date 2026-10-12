@@ -22,10 +22,10 @@ function expectUiContrast(foreground: string, background: string, minimum = 4.5)
 
 describe('unified UI accessibility regressions', () => {
   it('uses one bright token set and semantic page surfaces', () => {
-    expect(tokens['--color-bg']).toBe('#f2f3ef');
-    expect(tokens['--color-text']).toBe('#20241f');
+    expect(tokens['--color-bg']).toBe('#f3f3f1');
+    expect(tokens['--color-text']).toBe('#171717');
     expect(tokens['--color-brand']).toBe('#e85b32');
-    expect(tokens['--color-action']).toBe('#20241f');
+    expect(tokens['--color-action']).toBe('#171717');
     expect(tokens['--color-on-action']).toBe('#ffffff');
     expectUiContrast('var(--color-text)', 'var(--color-bg)', 7);
     expectUiContrast('var(--color-on-brand)', 'var(--color-brand)', 4.5);
@@ -223,7 +223,7 @@ describe('unified UI accessibility regressions', () => {
     const registrationStyles = read('miniprogram/pages/registrations/index.wxss');
     expectSemantic(
       declaration(effectiveBlock(registrationStyles, '.meeting-value'), 'color'),
-      '--color-text',
+      '--color-on-action',
     );
     const reviewStyles = read('miniprogram/pages/admin/review-detail/index.wxss');
     expectSemantic(
