@@ -4,124 +4,90 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f2f3ef" />
-    <meta name="description" content="此里骑行活动小程序高保真 UI 演示" />
-    <title>此里 · 小程序 UI 演示</title>
+    <meta
+      name="description"
+      content="此里骑行活动小程序全页面高保真交互原型，覆盖真实路由、数据与关键业务状态"
+    />
+    <title>此里 · 全页面高保真原型</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <header class="site-header">
-      <a class="site-brand" href="#demo" aria-label="此里 UI 演示首页">
+      <a class="site-brand" href="#activities" aria-label="此里原型首页">
         <span class="logo-word">此里<i aria-hidden="true"></i></span>
       </a>
       <div>
-        <p class="eyebrow">微信小程序 · 高保真交互演示</p>
-        <h1>每一次出发，都从此里开始</h1>
+        <p class="eyebrow">微信小程序 · 全页面高保真交互原型</p>
+        <h1>真实页面、真实字段、完整旅程</h1>
       </div>
-      <div class="palette" aria-label="品牌配色">
-        <span class="swatch swatch-bg" title="暖灰白"></span>
-        <span class="swatch swatch-text" title="石墨黑"></span>
-        <span class="swatch swatch-brand" title="品牌橙"></span>
-      </div>
+      <div class="coverage-badge"><b>14 / 14</b><span>真实页面已覆盖</span></div>
     </header>
 
-    <main id="demo" class="demo-shell">
-      <aside class="demo-nav" aria-label="页面选择">
-        <p>页面</p>
-        <button class="demo-nav-button is-active" data-screen="activities">活动首页</button>
-        <button class="demo-nav-button" data-screen="detail">活动详情</button>
-        <button class="demo-nav-button" data-screen="trips">我的行程</button>
-        <button class="demo-nav-button" data-screen="profile">个人中心</button>
-        <section class="spec-card">
-          <strong>视觉规范</strong>
-          <span>三色主题</span>
-          <span>8 点间距网格</span>
-          <span>44 px 最小触控区</span>
-          <span>单一橙色强调</span>
-        </section>
+    <main class="showcase" id="demo">
+      <aside class="screen-nav-panel" aria-label="原型页面导航">
+        <div class="nav-heading">
+          <span>页面地图</span>
+          <small>与 app.json 路由一一对应</small>
+        </div>
+        <div id="screen-nav" class="screen-nav"></div>
+        <div class="source-note">
+          <b>数据说明</b>
+          <p>活动与骑行指标取自项目测试夹具；手机号等隐私字段已按产品规则脱敏。</p>
+        </div>
       </aside>
 
-      <section class="device-stage" aria-live="polite">
-        <div class="phone" aria-label="此里小程序交互预览">
-          <div class="status-bar"><span>09:41</span><span>● ◔ ᯤ</span></div>
-
-          <section class="screen is-active" data-screen-panel="activities">
-            <div class="screen-scroll">
-              <div class="page-top"><span>此里活动</span><button class="more-button" aria-label="更多">•••</button></div>
-              <div class="brand-lockup"><span class="logo-word">此里<i aria-hidden="true"></i></span><small>骑行活动</small></div>
-              <div class="home-intro">
-                <h2>选一场骑行，<br />一起出发</h2>
-                <p>路线、时间、集合点，一眼看清</p>
-                <span class="route-line" aria-hidden="true"></span>
-              </div>
-              <div class="segments" role="tablist" aria-label="活动时间筛选">
-                <button class="segment is-active" data-activity-filter="future" aria-selected="true">即将开始</button><button class="segment" data-activity-filter="history" aria-selected="false">历史活动</button>
-              </div>
-              <div class="section-head ticket-section-head"><h3 id="activity-section-title">近期活动</h3><span id="activity-count">1 / 2</span></div>
-              <div class="event-carousel" aria-live="polite">
-                <article class="event-card is-active" data-event-card="future">
-                  <div class="route-art"><span class="route-path"></span><b>报名中</b></div>
-                  <div class="event-body"><small>10月17日 周六 · 07:30</small><h3>周末晨骑 · 温榆河绿道</h3><p>辛庄桥集合</p><div class="metrics"><span><b>42</b> km</span><span><b>180</b> m 爬升</span><span><b>休闲</b> 强度</span></div><button class="primary-button" data-open-detail>查看详情</button></div>
-                </article>
-                <article class="event-card" data-event-card="history" hidden>
-                  <div class="route-art route-art--history"><span class="route-path"></span><b>已结束</b></div>
-                  <div class="event-body"><small>09月26日 周六 · 08:00</small><h3>秋日河畔 · 顺义慢骑</h3><p>罗马湖集合</p><div class="metrics"><span><b>36</b> km</span><span><b>120</b> m 爬升</span><span><b>完成</b> 状态</span></div><button class="outline-button" data-open-detail>查看回顾</button></div>
-                </article>
-              </div>
-              <p class="swipe-hint">点击上方标签切换活动 <span></span></p>
-            </div>
-          </section>
-
-          <section class="screen" data-screen-panel="detail">
-            <div class="screen-scroll has-fixed-action">
-              <div class="page-top"><button class="back-button" data-back-home aria-label="返回">‹</button><span>活动详情</span><button class="more-button" aria-label="更多">•••</button></div>
-              <article class="detail-card-unified">
-                <div class="detail-hero"><span class="status-pill">报名中</span><p>10月17日 周六 · 07:30</p><h2>周末晨骑<br />温榆河绿道</h2><div class="mini-route"><span></span></div></div>
-                <div class="detail-card-body">
-                  <div class="detail-metrics"><span><b>42 km</b>里程</span><span><b>180 m</b>爬升</span><span><b>休闲骑</b>强度</span></div>
-                  <section class="ticket-panel"><small>集合时间</small><strong>07:30</strong><h3>辛庄桥集合</h3><p>请提前 10 分钟到达，完成车辆检查。</p><button class="ticket-link" data-toast="已打开集合点导航">地图导航</button></section>
-                  <section class="detail-section"><div class="section-headline"><h3>线路信息</h3><span>辛庄桥 → 温榆河绿道</span></div><p>沿温榆河绿道完成周末晨骑，路线平缓，适合有基础骑行经验的骑友。</p></section>
-                  <section class="detail-section"><div class="section-headline"><h3>已报名人员</h3><span>4 位</span></div><div class="attendee-list"><button class="attendee" data-attendee="阿蒙"><span>蒙</span><small>阿蒙</small></button><button class="attendee" data-attendee="小北"><span>北</span><small>小北</small></button><button class="attendee" data-attendee="麦子"><span>麦</span><small>麦子</small></button><button class="attendee" data-attendee="路飞"><span>路</span><small>路飞</small></button></div></section>
-                  <section class="detail-section detail-notice"><div class="section-headline"><h3>备注事项</h3><span>出发准备</span></div><p>请佩戴头盔，携带补给水、备胎与基础维修工具；雨天活动另行通知。</p></section>
-                </div>
-              </article>
-            </div>
-            <div class="fixed-action"><button class="primary-button" data-register>立即报名</button></div>
-          </section>
-
-          <section class="screen" data-screen-panel="trips">
-            <div class="screen-scroll">
-              <div class="page-top"><span>我的行程</span><button class="more-button" aria-label="更多">•••</button></div>
-              <div class="brand-lockup compact"><span class="logo-word">此里<i aria-hidden="true"></i></span><small>我的行程</small></div>
-              <div class="page-heading"><h2>准时集合，轻松出发</h2><p>报名进度与出发凭证都在这里</p></div>
-              <div class="segments"><button class="segment is-active">待出发</button><button class="segment">历史行程</button></div>
-              <article class="trip-card"><div class="trip-title"><span class="status-pill">已通过</span><small>10月17日 周六</small></div><h3>周末晨骑 · 温榆河绿道</h3><div class="meetup-grid"><span><small>集合时间</small><b>07:30</b></span><span><small>集合地点</small><b>辛庄桥</b></span></div><button class="outline-button">查看报名凭证</button></article>
-              <article class="trip-card secondary"><div class="trip-title"><span class="status-pill neutral">审核中</span><small>10月18日 周日</small></div><h3>妙峰山秋日爬坡</h3><p>苹果园集合 · 06:30</p></article>
-            </div>
-          </section>
-
-          <section class="screen" data-screen-panel="profile">
-            <div class="screen-scroll">
-              <div class="page-top"><span>我的</span><button class="more-button" aria-label="更多">•••</button></div>
-              <div class="brand-lockup compact"><span class="logo-word">此里<i aria-hidden="true"></i></span><small>一起骑，去更远的地方</small></div>
-              <div class="profile-card"><div class="avatar">曹</div><div><small>欢迎回来</small><h2>骑手小曹</h2><p>北京 · 休闲与爬坡骑行</p></div></div>
-              <div class="profile-stats"><span><b>12</b>次活动</span><span><b>486</b>km</span><span><b>3280</b>m 爬升</span></div>
-              <div class="menu-list"><button><span>骑行资料<small>完善头像与个人名片</small></span><b>›</b></button><button><span>Strava 授权<small>已连接，数据同步正常</small></span><b>›</b></button><button><span>设置<small>版本日志与隐私设置</small></span><b>›</b></button></div>
-            </div>
-          </section>
-
-          <nav class="tab-bar" aria-label="小程序主导航"><button class="tab-button is-active" data-screen="activities"><i class="tab-icon tab-icon--activities" aria-hidden="true"></i>活动</button><button class="tab-button" data-screen="trips"><i class="tab-icon tab-icon--trips" aria-hidden="true"></i>行程</button><button class="tab-button" data-screen="profile"><i class="tab-icon tab-icon--profile" aria-hidden="true"></i>我的</button></nav>
-          <div class="rider-preview" data-rider-preview hidden role="dialog" aria-modal="true" aria-labelledby="rider-preview-name"><button class="rider-preview-close" data-close-rider aria-label="关闭">×</button><span class="rider-preview-avatar">骑</span><small>公开骑行名片</small><h3 id="rider-preview-name">此里骑手</h3><p>近 90 天骑行 12 次 · 最长 86 km</p></div>
-          <div class="demo-toast" data-demo-toast hidden role="status"></div>
+      <section class="phone-stage" aria-label="小程序原型预览">
+        <div class="phone-shell">
+          <div class="phone-status"><span>09:41</span><span>● ◔ ᯤ</span></div>
+          <div class="mini-program-bar">
+            <button class="mini-back" data-action="back" aria-label="返回上一页">‹</button>
+            <strong id="mini-title">此里活动</strong>
+            <button class="mini-more" data-action="toast" data-message="小程序菜单">•••</button>
+          </div>
+          <div id="screen-container" class="screen-container" aria-live="polite"></div>
+          <nav class="tab-bar" aria-label="小程序主导航">
+            <button class="tab-button" data-route="activities">
+              <i class="tab-icon tab-icon--activities" aria-hidden="true"></i>活动
+            </button>
+            <button class="tab-button" data-route="registrations">
+              <i class="tab-icon tab-icon--trips" aria-hidden="true"></i>行程
+            </button>
+            <button class="tab-button" data-route="profile">
+              <i class="tab-icon tab-icon--profile" aria-hidden="true"></i>我的
+            </button>
+          </nav>
+          <div class="prototype-modal" id="prototype-modal" hidden></div>
+          <div class="demo-toast" id="demo-toast" role="status" hidden></div>
         </div>
       </section>
 
-      <aside class="screen-notes">
-        <p class="eyebrow">当前页面</p><h2 id="screen-title">活动首页</h2><p id="screen-copy">以固定品牌底牌建立识别，首屏聚焦活动发现与快速决策。</p>
-        <div class="note-list"><span>真实业务文案</span><span>与小程序同源主题色</span><span>移动端安全区适配</span><span>可交互页面切换</span></div>
+      <aside class="screen-notes" aria-live="polite">
+        <p class="eyebrow">当前真实路由</p>
+        <code id="route-path">pages/activities/index</code>
+        <h2 id="screen-title">活动首页</h2>
+        <p id="screen-copy">浏览即将开始与历史活动，快速比较时间、地点和路线难度。</p>
+        <div class="note-grid">
+          <div><span>角色</span><b id="screen-role">骑友</b></div>
+          <div><span>数据状态</span><b id="screen-state">已发布</b></div>
+        </div>
+        <div class="journey-list">
+          <b>可模拟旅程</b>
+          <button data-journey="registration">活动报名</button>
+          <button data-journey="credential">行程凭证</button>
+          <button data-journey="profile">骑行能力</button>
+          <button data-journey="admin">管理员审核</button>
+        </div>
+        <p class="keyboard-hint">支持键盘方向键切换页面，Esc 关闭弹层。</p>
       </aside>
     </main>
 
-    <footer><span>此里 CILI UI Showcase</span><span>高保真演示 · 与小程序视觉规范同步</span></footer>
+    <footer class="site-footer">
+      <span>此里 CILI · GitHub Pages Prototype</span>
+      <span>黑 · 白 · 主题橙 / 票据式行程凭证保留</span>
+    </footer>
+
+    <script src="./schema.js"></script>
+    <script src="./templates.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

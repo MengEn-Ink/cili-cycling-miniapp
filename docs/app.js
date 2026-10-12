@@ -1,94 +1,153 @@
-const screens = {
-  activities: ['活动首页', '与行程页共用票据层级，活动时间、地点与路线信息一眼看清。'],
-  detail: ['活动详情', '一张完整票卡收拢照片、时间、地点、线路、报名人员与备注事项。'],
-  trips: ['我的行程', '通过高对比集合信息与状态标签支持准时出发。'],
-  profile: ['个人中心', '统一呈现骑行身份、数据资产、授权和设置入口。'],
-};
+(() => {
+  const data = window.prototypeData;
+  const templates = window.pageTemplates;
+  const pageById = new Map(data.pages.map((page) => [page.id, page]));
+  const routeHistory = [];
+  let currentRoute = 'activities';
+  let toastTimer;
 
-const panels = [...document.querySelectorAll('[data-screen-panel]')];
-const navButtons = [...document.querySelectorAll('[data-screen]')];
-const sideButtons = [...document.querySelectorAll('.demo-nav-button')];
-const tabButtons = [...document.querySelectorAll('.tab-button')];
-const title = document.querySelector('#screen-title');
-const copy = document.querySelector('#screen-copy');
-const riderPreview = document.querySelector('[data-rider-preview]');
-const riderName = document.querySelector('#rider-preview-name');
-const toast = document.querySelector('[data-demo-toast]');
-let toastTimer;
+  const container = document.querySelector('#screen-container');
+  const nav = document.querySelector('#screen-nav');
+  const miniTitle = document.querySelector('#mini-title');
+  const routePath = document.querySelector('#route-path');
+  const screenTitle = document.querySelector('#screen-title');
+  const screenCopy = document.querySelector('#screen-copy');
+  const screenRole = document.querySelector('#screen-role');
+  const screenState = document.querySelector('#screen-state');
+  const modal = document.querySelector('#prototype-modal');
+  const toast = document.querySelector('#demo-toast');
 
-function showScreen(name) {
-  panels.forEach((panel) => panel.classList.toggle('is-active', panel.dataset.screenPanel === name));
-  sideButtons.forEach((button) => button.classList.toggle('is-active', button.dataset.screen === name));
-  tabButtons.forEach((button) => {
-    const activeTab = name === 'detail' ? 'activities' : name;
-    button.classList.toggle('is-active', button.dataset.screen === activeTab);
-  });
-  const [heading, description] = screens[name];
-  title.textContent = heading;
-  copy.textContent = description;
-  riderPreview.hidden = true;
-  window.history.replaceState(null, '', `#${name}`);
-}
-
-function showToast(message) {
-  window.clearTimeout(toastTimer);
-  toast.textContent = message;
-  toast.hidden = false;
-  toastTimer = window.setTimeout(() => {
-    toast.hidden = true;
-  }, 1800);
-}
-
-navButtons.forEach((button) => button.addEventListener('click', () => showScreen(button.dataset.screen)));
-document
-  .querySelectorAll('[data-open-detail]')
-  .forEach((button) => button.addEventListener('click', () => showScreen('detail')));
-document
-  .querySelectorAll('[data-back-home]')
-  .forEach((button) => button.addEventListener('click', () => showScreen('activities')));
-
-document.querySelectorAll('[data-activity-filter]').forEach((button) => {
-  button.addEventListener('click', () => {
-    const filter = button.dataset.activityFilter;
-    document.querySelectorAll('[data-activity-filter]').forEach((item) => {
-      const active = item === button;
-      item.classList.toggle('is-active', active);
-      item.setAttribute('aria-selected', String(active));
-    });
-    document.querySelectorAll('[data-event-card]').forEach((card) => {
-      card.hidden = card.dataset.eventCard !== filter;
-    });
-    document.querySelector('#activity-section-title').textContent =
-      filter === 'future' ? '近期活动' : '历史活动';
-    document.querySelector('#activity-count').textContent = filter === 'future' ? '1 / 2' : '2 / 2';
-  });
-});
-
-document.querySelectorAll('[data-attendee]').forEach((button) => {
-  button.addEventListener('click', () => {
-    riderName.textContent = button.dataset.attendee;
-    riderPreview.hidden = false;
-  });
-});
-
-document.querySelector('[data-close-rider]').addEventListener('click', () => {
-  riderPreview.hidden = true;
-});
-
-document.querySelector('[data-register]').addEventListener('click', (event) => {
-  const button = event.currentTarget;
-  if (button.dataset.registered === 'true') {
-    showScreen('trips');
-    return;
+  function renderNavigation() {
+    const groups = [...new Set(data.pages.map((page) => page.group))];
+    nav.innerHTML = groups
+      .map(
+        (group) => `<section><h3>${group}</h3>${data.pages
+          .filter((page) => page.group === group)
+          .map(
+            (page, index) =>
+              `<button data-route="${page.id}"><span>${String(index + 1).padStart(2, '0')}</span><b>${page.title}</b></button>`,
+          )
+          .join('')}</section>`,
+      )
+      .join('');
   }
-  button.dataset.registered = 'true';
-  button.textContent = '报名成功 · 查看行程';
-  showToast('报名已提交，可在行程页查看进度');
-});
 
-document.querySelectorAll('[data-toast]').forEach((button) => {
-  button.addEventListener('click', () => showToast(button.dataset.toast));
-});
+  function updateChrome(page) {
+    miniTitle.textContent = page.navTitle;
+    routePath.textContent = page.path;
+    screenTitle.textContent = page.title;
+    screenCopy.textContent = page.copy;
+    screenRole.textContent = page.role;
+    screenState.textContent = page.state;
+    document.querySelectorAll('[data-route]').forEach((button) => {
+      button.classList.toggle('is-active', button.dataset.route === page.id);
+    });
+    const activeTab = page.id === 'activity-detail' || page.id === 'registration-form' ? 'activities' : page.id;
+    document.querySelectorAll('.tab-button').forEach((button) => {
+      button.classList.toggle('is-active', button.dataset.route === activeTab);
+    });
+  }
 
-const requested = window.location.hash.slice(1);
-if (screens[requested]) showScreen(requested);
+  function showPage(route, options = {}) {
+    const page = pageById.get(route) || pageById.get('activities');
+    if (!options.replace && currentRoute !== page.id) routeHistory.push(currentRoute);
+    currentRoute = page.id;
+    container.innerHTML = templates[page.id]();
+    container.scrollTop = 0;
+    updateChrome(page);
+    modal.hidden = true;
+    const hash = `#${page.id}`;
+    if (window.location.hash !== hash) {
+      window.history.replaceState(null, '', hash);
+    }
+  }
+
+  function showToast(message) {
+    window.clearTimeout(toastTimer);
+    toast.textContent = message;
+    toast.hidden = false;
+    toastTimer = window.setTimeout(() => {
+      toast.hidden = true;
+    }, 1800);
+  }
+
+  function showRider(name) {
+    modal.innerHTML = `<button class="modal-close" data-action="close-modal" aria-label="关闭">×</button><div class="rider-avatar large">${name.slice(0, 1)}</div><small>公开骑行名片</small><h3>${name}</h3><p>近 90 天骑行 ${data.rider.rides90d} 次 · 最长 ${data.rider.longestKm} km</p><button class="prototype-button button-primary button-full" data-action="route" data-route="capability-card">查看完整名片</button>`;
+    modal.hidden = false;
+  }
+
+  function goBack() {
+    const previous = routeHistory.pop();
+    showPage(previous || 'activities', { replace: true });
+  }
+
+  function runJourney(name) {
+    const starts = {
+      registration: 'activities',
+      credential: 'registrations',
+      profile: 'profile',
+      admin: 'admin-activity-list',
+    };
+    showPage(starts[name]);
+    showToast('旅程入口已切换，可在手机原型内继续操作');
+  }
+
+  document.addEventListener('click', (event) => {
+    const target = event.target.closest('[data-action], [data-route], [data-journey]');
+    if (!target) return;
+    if (target.dataset.journey) {
+      runJourney(target.dataset.journey);
+      return;
+    }
+    const action = target.dataset.action || (target.dataset.route ? 'route' : '');
+    if (action === 'route') showPage(target.dataset.route);
+    if (action === 'back') goBack();
+    if (action === 'toast') showToast(target.dataset.message || '操作已完成');
+    if (action === 'close-modal') modal.hidden = true;
+    if (action === 'rider') showRider(target.dataset.rider);
+    if (action === 'choice') {
+      target.parentElement.querySelectorAll('button').forEach((button) => button.classList.remove('is-active'));
+      target.classList.add('is-active');
+    }
+    if (action === 'filter') {
+      target.parentElement.querySelectorAll('button').forEach((button) => button.classList.remove('is-active'));
+      target.classList.add('is-active');
+      showToast(target.dataset.filter === 'history' ? '已切换至历史活动' : '已切换至即将开始');
+    }
+    if (action === 'submit-registration') {
+      showToast('报名已提交，等待管理员审核');
+      window.setTimeout(() => showPage('registrations'), 600);
+    }
+    if (action === 'save-profile') {
+      showToast('骑行资料已保存');
+      window.setTimeout(() => showPage('profile'), 500);
+    }
+    if (action === 'publish-activity') {
+      target.textContent = '已发布';
+      target.disabled = true;
+      showToast('活动已发布，骑友端现在可见');
+    }
+    if (action === 'approve-review' || action === 'reject-review') {
+      showToast(action === 'approve-review' ? '报名已通过' : '报名已驳回');
+      window.setTimeout(() => showPage('admin-reviews'), 500);
+    }
+  });
+
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') modal.hidden = true;
+    if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+    const index = data.pages.findIndex((page) => page.id === currentRoute);
+    const delta = event.key === 'ArrowRight' ? 1 : -1;
+    const next = (index + delta + data.pages.length) % data.pages.length;
+    showPage(data.pages[next].id);
+  });
+
+  window.addEventListener('hashchange', () => {
+    const requested = window.location.hash.slice(1);
+    if (pageById.has(requested) && requested !== currentRoute) showPage(requested);
+  });
+
+  renderNavigation();
+  const requested = window.location.hash.slice(1);
+  showPage(pageById.has(requested) ? requested : 'activities', { replace: true });
+})();
