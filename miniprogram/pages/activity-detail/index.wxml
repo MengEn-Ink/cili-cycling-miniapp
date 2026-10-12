@@ -84,7 +84,11 @@
           <view class="title">活动群二维码</view>
           <block wx:if="{{groupQrVisible && item.groupQrCode}}">
             <view class="body-text">扫码加入活动群，出发前请留意群内通知。</view>
-            <image class="group-qr-detail-image" src="{{item.groupQrCode}}" mode="aspectFit" />
+            <image class="group-qr-detail-image" src="{{item.groupQrCode}}" mode="aspectFit" bindtap="previewGroupQr" show-menu-by-longpress="{{true}}" aria-label="点击放大查看活动群二维码" />
+            <view class="group-qr-detail-actions">
+              <view class="group-qr-detail-hint">点击图片可放大查看</view>
+              <button class="group-qr-save" bindtap="saveGroupQr" loading="{{savingGroupQr}}" disabled="{{savingGroupQr}}" aria-label="保存活动群二维码到相册">{{savingGroupQr ? '保存中' : '保存到相册'}}</button>
+            </view>
             <view wx:if="{{groupQrCodeExpired}}" class="group-qr-warning">二维码可能已过期，请联系发布人更新。</view>
           </block>
           <view wx:else class="group-qr-locked"><view class="group-qr-lock">锁定</view><view>{{groupQrLockedMessage}}</view></view>
