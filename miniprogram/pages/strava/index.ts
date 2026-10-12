@@ -35,7 +35,17 @@ function confirmDisconnect(): Promise<boolean> {
 
 function copyAuthorizationUrl(url: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    wx.setClipboardData({ data: url, success: resolve, fail: reject });
+    wx.setClipboardData({
+      data: url,
+      success: () => {
+        wx.getClipboardData({
+          success: ({ data }: { data: string }) =>
+            data === url ? resolve() : reject(new Error('clipboard content mismatch')),
+          fail: reject,
+        });
+      },
+      fail: reject,
+    });
   });
 }
 
@@ -129,7 +139,12 @@ Page({
       readiness = prepared.data;
     }
     this.setReadiness(readiness);
-    this.setData({ loading: false });
+    this.setData({
+      loading: false,
+      ...(readiness.state === 'authorizing'
+        ? {}
+        : { authorizationUrl: '', manualAuthorization: false }),
+    });
   },
   async connect() {
     if (this.data.busyAction) return;
@@ -175,15 +190,27 @@ Page({
     }
   },
   async retryAuthorizationCopy() {
-    if (this.data.busyAction || !this.data.authorizationUrl) return;
+    if (this.data.busyAction) return;
+    const requestId = this.loadRequestId;
     this.setData({ busyAction: 'copy', error: '' });
     try {
-      await copyAuthorizationUrl(this.data.authorizationUrl);
-      wx.showToast({ title: '授权链接已复制', icon: 'success' });
+      // “再次复制”必须创建新的 OAuth state，不能继续复制已消费或已过期的旧链接。
+      const state = await runPageTask(() => rideService.startStrava(), '无法刷新 Strava 授权链接');
+      if (requestId !== this.loadRequestId) return;
+      if (!state.data) {
+        this.setData({ error: state.error });
+        return;
+      }
+      const authorizationUrl = state.data.authorizationUrl;
+      this.setData({ authorizationUrl, manualAuthorization: true });
+      await copyAuthorizationUrl(authorizationUrl);
+      if (requestId === this.loadRequestId)
+        wx.showToast({ title: '新授权链接已复制', icon: 'success' });
     } catch {
-      this.setData({ error: '仍无法自动复制，请长按下方链接并选择复制。' });
+      if (requestId === this.loadRequestId)
+        this.setData({ error: '自动复制校验失败，请长按下方最新链接并选择复制。' });
     } finally {
-      this.setData({ busyAction: null });
+      if (requestId === this.loadRequestId) this.setData({ busyAction: null });
     }
   },
   async retry() {

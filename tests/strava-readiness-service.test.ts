@@ -215,16 +215,22 @@ describe('Strava readiness 文案', () => {
 describe('Strava 页面编排', () => {
   let page: any;
   let showModal: ReturnType<typeof vi.fn>;
+  let clipboardValue: string;
 
   beforeEach(async () => {
     vi.resetModules();
+    clipboardValue = '';
     for (const value of Object.values(rideService)) value.mockReset();
     invalidateProfilePageCache.mockReset();
     showModal = vi.fn();
     vi.stubGlobal('wx', {
       showModal,
       showToast: vi.fn(),
-      setClipboardData: vi.fn(({ success }: any) => success()),
+      setClipboardData: vi.fn(({ data, success }: any) => {
+        clipboardValue = data;
+        success();
+      }),
+      getClipboardData: vi.fn(({ success }: any) => success({ data: clipboardValue })),
     });
     vi.stubGlobal('Page', (definition: any) => {
       page = definition;
@@ -441,16 +447,20 @@ describe('Strava 页面编排', () => {
     expect(template).toContain('bindtap="retryAuthorizationCopy"');
   });
 
-  it('手动降级入口支持再次复制', async () => {
-    page.data.authorizationUrl = 'https://www.strava.com/oauth/authorize?state=once';
+  it('再次复制时生成全新授权链接并校验剪贴板内容', async () => {
+    const staleUrl = 'https://www.strava.com/oauth/authorize?state=stale';
+    const freshUrl = 'https://www.strava.com/oauth/authorize?state=fresh';
+    page.data.authorizationUrl = staleUrl;
     page.data.manualAuthorization = true;
+    rideService.startStrava.mockResolvedValue({ authorizationUrl: freshUrl, expiresAt: 'soon' });
 
     await page.retryAuthorizationCopy();
 
-    expect(wx.setClipboardData).toHaveBeenCalledWith(
-      expect.objectContaining({ data: page.data.authorizationUrl }),
-    );
-    expect(wx.showToast).toHaveBeenCalledWith({ title: '授权链接已复制', icon: 'success' });
+    expect(rideService.startStrava).toHaveBeenCalledOnce();
+    expect(wx.setClipboardData).toHaveBeenCalledWith(expect.objectContaining({ data: freshUrl }));
+    expect(wx.getClipboardData).toHaveBeenCalledOnce();
+    expect(page.data.authorizationUrl).toBe(freshUrl);
+    expect(wx.showToast).toHaveBeenCalledWith({ title: '新授权链接已复制', icon: 'success' });
     expect(page.data.error).toBe('');
   });
 
