@@ -44,21 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.12.18',
+      version: '2026.10.12.19',
       latest: true,
-      title: 'Strava 授权链接复制后保持有效',
-      summary: '复制授权链接后关闭操作提示不再撤销一次性授权状态，避免粘贴到浏览器时链接已经失效。',
+      title: 'Strava 授权链接增加可见复制兜底',
+      summary: '不再只依赖微信剪贴板回调，授权页始终展示可核对、可长按复制的完整链接。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.12.19',
       '2026.10.12.18',
       '2026.10.12.17',
       '2026.10.12.16',
       '2026.10.12.15',
-      '2026.10.12.14',
     ]);
   });
 

@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.12.19',
+    date: '2026-10-12',
+    title: 'Strava 授权链接增加可见复制兜底',
+    summary: '不再只依赖微信剪贴板回调，授权页始终展示可核对、可长按复制的完整链接。',
+    latest: true,
+    features: [
+      '自动复制成功后仍保留完整授权链接',
+      '支持长按原始链接复制并核对 Strava 域名',
+      '再次复制失败时不影响手动复制和后续授权',
+    ],
+  },
+  {
     version: '2026.10.12.18',
     date: '2026-10-12',
     title: 'Strava 授权链接复制后保持有效',
     summary: '复制授权链接后关闭操作提示不再撤销一次性授权状态，避免粘贴到浏览器时链接已经失效。',
-    latest: true,
+    latest: false,
     features: [
       '授权链接复制成功后保留 10 分钟有效期',
       '操作提示改为单按钮，不再误触取消并使链接失效',

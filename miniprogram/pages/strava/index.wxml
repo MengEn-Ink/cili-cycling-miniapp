@@ -3,9 +3,9 @@
   <state-view loading="{{loading}}" error="{{!readiness ? error : ''}}" loading-title="正在读取绑定状态" loading-copy="正在检查 Strava 授权与数据准备状态" retryable="{{!readiness}}" bind:retry="load">
   <view class="error-card" wx:if="{{error}}">{{error}}</view>
   <view class="manual-auth-card" wx:if="{{manualAuthorization && authorizationUrl}}">
-    <view class="manual-auth-title">手动复制授权链接</view>
+    <view class="manual-auth-title">Strava 授权链接（可长按复制）</view>
     <text class="manual-auth-url" selectable user-select>{{authorizationUrl}}</text>
-    <view class="status-help">长按上方链接并选择复制，再到系统浏览器粘贴访问。完成授权后返回微信，本页会自动同步。</view>
+    <view class="status-help">请确认复制内容以 https://www.strava.com/oauth/authorize 开头，再到系统浏览器粘贴访问。完成授权后返回微信，本页会自动同步。</view>
     <button class="secondary manual-auth-copy" loading="{{busyAction === 'copy'}}" disabled="{{busyAction}}" bindtap="retryAuthorizationCopy">再次复制</button>
   </view>
   <view wx:if="{{!loading && readiness}}">
