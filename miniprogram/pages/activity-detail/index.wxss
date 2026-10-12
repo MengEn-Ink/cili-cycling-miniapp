@@ -1492,3 +1492,80 @@ brand-logo {
     min-width: 0;
   }
 }
+
+/* 行程票据同源：活动详情使用一张完整票卡承载照片与全部信息。 */
+.detail-unified-card {
+  margin: 24rpx var(--page-gutter) 0;
+  overflow: hidden;
+  border: 4rpx solid var(--color-card-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.detail-unified-card .detail-hero {
+  min-height: 356rpx;
+  padding-right: 28rpx;
+  padding-left: 28rpx;
+  border-bottom: 0;
+}
+
+.detail-unified-card .detail-hero--media {
+  min-height: 460rpx;
+}
+
+.detail-unified-card .content {
+  padding: 0 24rpx 28rpx;
+}
+
+.detail-unified-card .metric-panel {
+  margin-top: 0;
+  border: 0;
+  border-bottom: 2rpx solid var(--color-border-strong);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.detail-unified-card .detail-decision {
+  margin: 20rpx 0 0;
+  border: 0;
+  border-left: 8rpx solid var(--color-brand);
+  border-radius: 0;
+  background: var(--color-raised);
+}
+
+.detail-unified-card .card {
+  margin-top: 0;
+  padding: 26rpx 4rpx;
+  border: 0;
+  border-bottom: 2rpx solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.detail-unified-card .time-card--featured {
+  margin: 20rpx 0 0;
+  padding: 26rpx 24rpx;
+  border: 0;
+  border-left: 8rpx solid var(--color-brand);
+  border-radius: 8rpx;
+  background: var(--color-text);
+  color: var(--color-on-action);
+}
+
+.detail-unified-card .card:last-child {
+  border-bottom: 0;
+}
+
+@media (max-width: 350px) {
+  .detail-unified-card {
+    margin-right: var(--page-gutter-narrow);
+    margin-left: var(--page-gutter-narrow);
+  }
+
+  .detail-unified-card .content {
+    padding-right: 20rpx;
+    padding-left: 20rpx;
+  }
+}

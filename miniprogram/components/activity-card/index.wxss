@@ -303,3 +303,19 @@
     padding: 32rpx;
   }
 }
+
+/* 活动卡与行程凭证共用黑框白底、黑底白字的票据信息层级。 */
+.activity-card {
+  border-width: 4rpx;
+  border-color: var(--color-card-border);
+}
+
+.date-plate {
+  border-left: 8rpx solid var(--color-brand);
+  background: var(--color-text);
+  color: var(--color-on-action);
+}
+
+.metrics {
+  border-left: 8rpx solid var(--color-brand);
+}

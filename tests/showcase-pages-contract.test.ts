@@ -18,9 +18,23 @@ describe('GitHub Pages 高保真演示门禁', () => {
     expect(html).toContain('查看报名凭证');
     expect(html).toContain('Strava 授权');
     expect(html).toContain('一起骑，去更远的地方');
+    expect(html).toContain('class="detail-card-unified"');
+    expect(html).toContain('data-activity-filter="history"');
+    expect(html).toContain('data-register');
+    expect(html).toContain('data-attendee="阿蒙"');
     expect(html).not.toContain('<small>个人资料</small>');
     expect(css).toMatch(/\.logo-word\{[^}]*background:var\(--text\)/);
     expect(css).toMatch(/\.brand-lockup\{[^}]*justify-content:flex-start/);
+  });
+
+  it('活动演示支持筛选、报名、导航提示和骑友名片交互', () => {
+    expect(script).toContain("document.querySelectorAll('[data-activity-filter]')");
+    expect(script).toContain("document.querySelector('[data-register]')");
+    expect(script).toContain("document.querySelectorAll('[data-attendee]')");
+    expect(script).toContain("document.querySelectorAll('[data-toast]')");
+    expect(script).toContain("button.textContent = '报名成功 · 查看行程'");
+    expect(css).toMatch(/\.detail-card-unified\s*\{[^}]*border:\s*2px solid var\(--text\)/s);
+    expect(css).toMatch(/\.ticket-panel\s*\{[^}]*background:\s*var\(--text\)/s);
   });
 
   it('网站与小程序共享三色品牌规范且不引入深海蓝或渐变', () => {

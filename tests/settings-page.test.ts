@@ -44,21 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.12.28',
+      version: '2026.10.12.29',
       latest: true,
-      title: '活动详情信息更紧凑完整',
-      summary: '活动照片置于顶部背景，时间、路线、报名人员和注意事项按统一主题紧凑展示。',
+      title: '活动与行程统一为票据风格',
+      summary: '活动首页与行程页共享黑白橙信息层级，活动详情改为一张完整票卡承载全部信息。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.12.29',
       '2026.10.12.28',
       '2026.10.12.27',
       '2026.10.12.26',
       '2026.10.12.25',
-      '2026.10.12.24',
     ]);
   });
 
