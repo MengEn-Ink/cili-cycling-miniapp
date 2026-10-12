@@ -130,13 +130,16 @@ describe('HP-20261010-02 统一明亮 UI 全页对比度契约', () => {
       '.refresh-note',
       '.card-index',
       '.registration-meta',
-      '.meeting-label',
     ]) {
       expectSemantic(
         declaration(effectiveBlock(registrations, selector), 'color'),
         '--color-muted',
       );
     }
+    expectSemantic(
+      declaration(effectiveBlock(registrations, '.meeting-label'), 'color'),
+      '--color-media-muted',
+    );
 
     const card = read('miniprogram/components/activity-card/index.wxss');
     expectPair(
@@ -270,9 +273,9 @@ describe('HP-20261010-02 统一明亮 UI 全页对比度契约', () => {
       );
     }
 
-    expect(tokens['--color-on-media-gender-male']).toBe('#4fb3a7');
-    expect(tokens['--color-on-media-gender-female']).toBe('#ef8072');
-    expect(tokens['--color-on-media-gender-unknown']).toBe('#e9743f');
+    expect(tokens['--color-on-media-gender-male']).toBe('#ffffff');
+    expect(tokens['--color-on-media-gender-female']).toBe('#ffffff');
+    expect(tokens['--color-on-media-gender-unknown']).toBe('#ffffff');
   });
 
   it('开发者工具运行态暴露的活动管理标题与骑行名片指标保持高对比', () => {

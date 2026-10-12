@@ -35,10 +35,10 @@ brand-logo {
   font-size: 23rpx;
 }
 .card.danger {
-  border: 1rpx solid #85312d;
+  border: 1rpx solid var(--color-brand);
   border-radius: 6rpx;
-  background: #291413;
-  color: #ff8f86;
+  background: rgba(232, 91, 50, 0.12);
+  color: var(--color-brand);
 }
 .activity-picker {
   display: flex;
@@ -182,12 +182,12 @@ brand-logo {
 }
 .status-approved,
 .status-checked_in {
-  border-color: #557363;
-  color: #9bc2aa;
+  border-color: var(--color-text);
+  color: var(--color-on-action);
 }
 .status-rejected {
-  border-color: #7a302c;
-  color: #e45e56;
+  border-color: var(--color-brand);
+  color: var(--color-brand);
 }
 .open-arrow {
   align-self: center;

@@ -12,18 +12,22 @@ const activityCard = read('miniprogram/components/activity-card/index.wxml');
 const activityCardStyles = read('miniprogram/components/activity-card/index.wxss');
 
 describe('行程状态卡与报名凭证重设计契约', () => {
-  it.each([
-    ['waiting', '#fff6df'],
-    ['pending', '#edf5ff'],
-    ['approved', '#eaf7ee'],
-    ['checked_in', '#e9f4f2'],
-    ['rejected', '#fff0ef'],
-    ['cancelled', '#f2f0ec'],
-  ])('%s 使用可区分的浅色背景 %s', (status, color) => {
-    expect(trips).toContain(`status-{{item.status}}`);
+  it('全部状态使用统一白色票面，待处理状态仅用主题橙描边强调', () => {
+    expect(trips).toContain('status-{{item.status}}');
+    for (const status of [
+      'waiting',
+      'pending',
+      'approved',
+      'checked_in',
+      'rejected',
+      'cancelled',
+    ]) {
+      expect(tripStyles).toContain(`.registration-card.status-${status}`);
+    }
     expect(tripStyles).toMatch(
-      new RegExp(`\\.registration-card\\.status-${status}\\s*\\{[^}]*background:\\s*${color}`, 's'),
+      /\.registration-card\.status-waiting,[\s\S]*\.registration-card\.status-pending\s*\{[^}]*border-color:\s*var\(--color-brand\)/,
     );
+    expect(tripStyles).not.toMatch(/#fff6df|#edf5ff|#eaf7ee|#e9f4f2|#fff0ef/);
   });
 
   it('凭证主视觉复用个人名片缩小布局，并严格分离真实背景与真实头像', () => {

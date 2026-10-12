@@ -42,10 +42,10 @@ brand-logo {
   text-transform: uppercase;
 }
 .card.danger {
-  border: 1rpx solid #85312d;
+  border: 1rpx solid var(--color-brand);
   border-radius: 6rpx;
-  background: #291413;
-  color: #ff8f86;
+  background: rgba(232, 91, 50, 0.12);
+  color: var(--color-brand);
 }
 .capability-card {
   position: relative;
@@ -163,10 +163,10 @@ brand-logo {
   background: var(--color-brand);
 }
 .status.warning {
-  color: #e7804d;
+  color: var(--color-brand);
 }
 .status.danger {
-  color: #ef6961;
+  color: var(--color-brand);
 }
 .status.muted {
   color: #9c9ca0;
@@ -305,9 +305,9 @@ brand-logo {
   border-radius: 4rpx !important;
 }
 .actions .secondary {
-  border: 1rpx solid #8b312d;
-  background: #2a1312 !important;
-  color: #ef6961 !important;
+  border: 1rpx solid var(--color-brand);
+  background: rgba(232, 91, 50, 0.12) !important;
+  color: var(--color-brand) !important;
 }
 .actions .btn {
   background: var(--color-action) !important;
@@ -377,13 +377,13 @@ brand-logo {
 }
 
 .capability-card.gender-male .photo-empty {
-  box-shadow: inset 0 0 0 2rpx rgba(79, 179, 167, 0.55);
+  box-shadow: inset 0 0 0 2rpx rgba(255, 255, 255, 0.55);
 }
 .capability-card.gender-female .photo-empty {
-  box-shadow: inset 0 0 0 2rpx rgba(239, 128, 114, 0.55);
+  box-shadow: inset 0 0 0 2rpx rgba(232, 91, 50, 0.55);
 }
 .capability-card.gender-unknown .photo-empty {
-  box-shadow: inset 0 0 0 2rpx rgba(233, 116, 63, 0.55);
+  box-shadow: inset 0 0 0 2rpx rgba(232, 91, 50, 0.55);
 }
 .capability-card.gender-male .fact:first-child strong {
   color: var(--color-gender-male);

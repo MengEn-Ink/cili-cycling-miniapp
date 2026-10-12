@@ -176,11 +176,11 @@ describe('品牌与页面体验静态契约', () => {
     expect(profile).toContain('bindtap="openSettings"');
   });
 
-  it('全局共享表面使用单一语义 token，并提供低饱和成功状态', () => {
+  it('全局共享表面使用单一语义 token，并以黑白层级表达完成状态', () => {
     const appStyles = read('miniprogram/app.wxss');
     const statusStyles = read('miniprogram/components/status-pill/index.wxss');
     const tokens = uiTokens(appStyles);
-    expect(tokens['--color-success']).toBe('#356348');
+    expect(tokens['--color-success']).toBe('#171717');
     expectSemantic(declaration(cssBlock(appStyles, '.card'), 'background'), '--color-surface');
     expectSemantic(declaration(cssBlock(appStyles, '.fixed'), 'background'), '--color-fixed-bar');
     const success = cssBlock(statusStyles, '.pill--success');

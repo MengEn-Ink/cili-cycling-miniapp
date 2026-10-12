@@ -162,7 +162,7 @@ describe('CILI 活动页静态契约', () => {
   it('使用单一明亮 token 和 16/24/32rpx 语义层级', () => {
     const appStyles = read('miniprogram/app.wxss');
     const tokens = uiTokens(appStyles);
-    expect(tokens['--color-bg']).toBe('#f2f3ef');
+    expect(tokens['--color-bg']).toBe('#f3f3f1');
     expect(tokens['--radius-sm']).toBe('16rpx');
     expect(tokens['--radius-md']).toBe('24rpx');
     expect(tokens['--radius-display']).toBe('32rpx');

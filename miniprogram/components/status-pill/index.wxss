@@ -3,10 +3,10 @@
   align-items: center;
   min-height: 42rpx;
   padding: 4rpx 14rpx;
-  border: 1rpx solid var(--color-border-strong);
+  border: 2rpx solid var(--color-text);
   border-radius: 8rpx;
-  background: var(--color-raised);
-  color: var(--color-muted);
+  background: var(--color-surface);
+  color: var(--color-text);
   font-size: 21rpx;
   font-weight: 800;
   line-height: 1.2;

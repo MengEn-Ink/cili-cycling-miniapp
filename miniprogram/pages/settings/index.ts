@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.12.26',
+    date: '2026-10-12',
+    title: '全套界面统一为黑白橙票据风格',
+    summary: '活动、行程、个人中心、Strava 与管理页面统一视觉层级，重点集合信息更醒目。',
+    latest: true,
+    features: [
+      '行程卡改为白底黑框，集合时间与地点使用黑底白字重点展示',
+      '状态提示统一通过文字、边框和主题橙表达，不再依赖绿蓝红黄',
+      '活动详情、个人中心、Strava 与审核页面保持一致的黑白橙主题',
+    ],
+  },
+  {
     version: '2026.10.12.25',
     date: '2026-10-12',
     title: 'Strava 改为创建活动时按需授权',
     summary: '普通用户不再需要连接 Strava；只有创建活动并同步线路时才会提示授权。',
-    latest: true,
+    latest: false,
     features: [
       '报名与个人资料流程不再检查或展示 Strava 状态',
       '创建活动同步 Strava 路线时才按需提示授权',

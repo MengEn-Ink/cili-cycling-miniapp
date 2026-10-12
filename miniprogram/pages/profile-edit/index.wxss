@@ -235,7 +235,7 @@ page {
   margin-top: 24rpx;
   padding: 22rpx 24rpx;
   border-radius: 18rpx;
-  background: rgba(200, 32, 24, 0.12);
+  background: rgba(0, 0, 0, 0.12);
   color: var(--color-danger-text);
   line-height: 1.6;
 }
