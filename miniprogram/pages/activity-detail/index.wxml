@@ -56,14 +56,14 @@
         </view>
 
         <view class="card attendees-card" wx:if="{{attendeesVisible}}">
-          <view class="attendees-heading"><view><view class="title">已通过骑友</view><view class="attendees-hint" wx:if="{{attendees.length}}">左右浏览缩小骑行名片，点击查看完整名片</view></view><view class="muted">{{item.approvedRegistrationCount || 0}} 位</view></view>
-          <scroll-view class="attendee-card-strip" scroll-x enhanced show-scrollbar="{{false}}" wx:if="{{attendees.length}}" aria-label="已通过骑友的骑行名片">
+          <view class="attendees-heading"><view><view class="title">已报名人员</view><view class="attendees-hint" wx:if="{{attendees.length}}">头像与昵称经本人授权展示</view></view><view class="muted">{{item.approvedRegistrationCount || 0}} 位</view></view>
+          <scroll-view class="attendee-card-strip" scroll-x enhanced show-scrollbar="{{false}}" wx:if="{{attendees.length}}" aria-label="已报名人员头像与昵称">
             <view class="attendee-card-strip__inner">
-              <button class="attendee-mini-card" wx:for="{{attendees}}" wx:key="id" data-index="{{index}}" bindtap="openAttendeeCard" aria-label="查看 {{item.displayName}} 的完整公开骑行名片">
-                <image wx:if="{{item.avatarUrl}}" class="attendee-mini-card__photo" src="{{item.avatarUrl}}" mode="aspectFill" data-index="{{index}}" binderror="attendeeAvatarError" />
-                <view wx:else class="attendee-mini-card__photo attendee-mini-card__placeholder" aria-label="{{item.displayName}}未设置公开照片">骑有此里</view>
-                <view class="attendee-mini-card__scrim"></view>
-                <view class="attendee-mini-card__content"><view class="attendee-mini-card__name">{{item.displayName || '此里骑手'}}</view><view class="attendee-mini-card__meta">{{item.status === 'checked_in' ? '已签到' : '已报名'}} · {{item.card.rides90d === null ? '--' : item.card.rides90d}} 次骑行</view><view class="attendee-mini-card__action">查看名片 ›</view></view>
+              <button class="attendee-mini-card" wx:for="{{attendees}}" wx:key="id" data-index="{{index}}" bindtap="openAttendeeCard" aria-label="查看 {{item.displayName}} 的公开骑行名片">
+                <image wx:if="{{item.avatarUrl}}" class="attendee-avatar" src="{{item.avatarUrl}}" mode="aspectFill" data-index="{{index}}" binderror="attendeeAvatarError" />
+                <view wx:else class="attendee-avatar attendee-avatar--placeholder" aria-label="{{item.displayName}}未设置公开头像">骑</view>
+                <view class="attendee-mini-card__name">{{item.displayName || '此里骑手'}}</view>
+                <view class="attendee-mini-card__meta">{{item.status === 'checked_in' ? '已签到' : '已报名'}}</view>
               </button>
             </view>
           </scroll-view>

@@ -27,13 +27,13 @@ describe('HP-20261010-02 第一批六页尺寸契约', () => {
     expectSemantic(declaration(effectiveBlock(styles, '.card-index'), 'color'), '--color-muted');
   });
 
-  it('活动详情使用 16px 内容卡、48px 路线操作和安全区 CTA', () => {
+  it('活动详情使用 12px 紧凑内容卡、48px 路线操作和安全区 CTA', () => {
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
     const metrics = effectiveBlock(styles, '.metric-panel');
     const card = effectiveBlock(styles, '.detail-page .card');
     expect(declaration(metrics, 'border-width')).toBe('4rpx');
     expectSemantic(declaration(metrics, 'border-radius'), '--radius-card');
-    expect(declaration(card, 'padding')).toBe('32rpx');
+    expect(declaration(card, 'padding')).toBe('24rpx');
     expect(declaration(card, 'border-width')).toBe('4rpx');
     expectSemantic(declaration(card, 'border-radius'), '--radius-card');
     for (const selector of ['.route-actions button', '.route-location-row button']) {

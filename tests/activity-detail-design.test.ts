@@ -66,12 +66,16 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('class="card time-card time-card--featured"');
     expect(template).toContain('class="time-card-primary"');
     expect(template).toContain('{{item.approvedRegistrationCount || 0}}');
-    expect(template).toContain('已通过骑友');
+    expect(template).toContain('已报名人员');
     expect(template).not.toContain('不限</text><text>报名人数');
     expect(template).toContain('bindtap="editActivity">修改活动');
     expect(template).toContain('bindtap="adminRegistration">{{adminRegistrationLabel}}');
     expect(styles).toMatch(/\.time-card-primary\s*\{[^}]*font-size:\s*46rpx;/s);
     expect(styles).toContain('grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);');
+    expect(styles).toMatch(/\.detail-hero--media\s*\{[^}]*min-height:\s*460rpx;/s);
+    expect(styles).toMatch(
+      /\.time-card--featured\s*\{[^}]*background:\s*var\(--color-text\)[^}]*color:\s*var\(--color-on-action\)/s,
+    );
   });
 
   it('集合点同时展示自定义名称和地图地址，并保留点位导航', () => {
@@ -179,7 +183,7 @@ describe('活动详情设计与日期契约', () => {
     expect(context.arc).toHaveBeenCalledTimes(4);
   });
 
-  it('提供曲线空态、热门爬坡、含照片的缩小与完整公开骑行名片', () => {
+  it('提供曲线空态、热门爬坡、圆形头像昵称列表与完整公开骑行名片', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
     expect(template).toContain('暂无有效海拔数据');
@@ -187,12 +191,13 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('class="attendee-card-strip" scroll-x');
     expect(template).toContain('class="attendee-mini-card"');
     expect(template).toContain('bindtap="openAttendeeCard"');
-    expect(template).toContain('左右浏览缩小骑行名片，点击查看完整名片');
+    expect(template).toContain('头像与昵称经本人授权展示');
+    expect(template).toContain('已报名人员头像与昵称');
     expect(template).toContain('完整公开骑行名片');
     expect(template).toContain('数据来自报名时的 Strava 骑行快照');
-    expect(template).toContain('wx:if="{{item.avatarUrl}}"');
+    expect(template).toContain('wx:if="{{item.avatarUrl}}" class="attendee-avatar"');
     expect(template).toContain('wx:if="{{selectedAttendee.avatarUrl}}"');
-    expect(template).toContain('attendee-mini-card__placeholder');
+    expect(template).toContain('attendee-avatar--placeholder');
     expect(template).toContain('rider-card-photo__placeholder');
     expect(template).not.toContain('defaultAttendeeAvatar');
     expect(template).toContain('binderror="selectedAttendeeAvatarError"');
@@ -207,7 +212,12 @@ describe('活动详情设计与日期契约', () => {
     ).toHaveLength(4);
     expect(template).toContain('class="rider-modal-mask" bindtap="closeAttendeeCard"');
     expect(template).toContain('class="rider-card-close"');
-    expect(styles).toMatch(/\.attendee-mini-card\s*\{[^}]*width:\s*224rpx;[^}]*height:\s*288rpx;/s);
+    expect(styles).toMatch(
+      /\.attendee-mini-card\s*\{[^}]*width:\s*120rpx;[^}]*min-height:\s*176rpx;/s,
+    );
+    expect(styles).toMatch(
+      /\.attendee-avatar\s*\{[^}]*width:\s*88rpx;[^}]*height:\s*88rpx;[^}]*border-radius:\s*50%/s,
+    );
     expect(styles).toMatch(
       /\.route-actions button\s*\{[^}]*min-height:\s*var\(--control-height\)/s,
     );
