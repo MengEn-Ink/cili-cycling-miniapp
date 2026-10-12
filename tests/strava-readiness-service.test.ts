@@ -417,6 +417,8 @@ describe('Strava 页面编排', () => {
     expect(showModal).toHaveBeenCalledWith(
       expect.objectContaining({ showCancel: false, confirmText: '我知道了' }),
     );
+    expect(page.data.manualAuthorization).toBe(true);
+    expect(page.data.authorizationUrl).toBe(authorizationUrl);
     expect(page.data.readiness.state).toBe('authorizing');
     expect(page.data.error).toBe('');
     expect(invalidateProfilePageCache).toHaveBeenCalledOnce();

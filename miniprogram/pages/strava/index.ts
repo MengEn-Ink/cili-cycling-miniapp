@@ -144,7 +144,8 @@ Page({
         return;
       }
       const authorizationUrl = state.data.authorizationUrl;
-      this.setData({ authorizationUrl, manualAuthorization: false });
+      // 不把微信剪贴板回调当作唯一成功凭据：始终保留可选中的原始链接，方便用户核对和长按复制。
+      this.setData({ authorizationUrl, manualAuthorization: true });
       // 真机 web-view 不能承载未配置为业务域名的 strava.com，授权链接必须交给系统浏览器。
       try {
         await copyAuthorizationUrl(authorizationUrl);
