@@ -25,13 +25,8 @@ const CLONE_REQUEST_FIELDS = new Set([
   'eventStart',
   'eventEnd',
 ]);
-const DELETE_REQUEST_FIELDS = new Set(['action', 'openid', 'activityId', 'id']);
-const DELETE_BLOCKING_REGISTRATION_STATUSES = new Set([
-  'pending',
-  'approved',
-  'checked_in',
-  'waiting',
-]);
+const DELETE_REQUEST_FIELDS = new Set(['action', 'openid', 'activityId', 'id', 'reason']);
+const ACTIVE_REGISTRATION_STATUSES = new Set(['pending', 'approved', 'checked_in', 'waiting']);
 
 function cloneActivityId(openid, requestId) {
   const digest = crypto
@@ -201,6 +196,13 @@ function partitionBackfill(registrations, occupiedCount) {
   return { supportVehicleOccupiedCount, selfDriveOccupiedCount };
 }
 
+function requiredReason(reason, action) {
+  if (typeof reason !== 'string' || !reason.trim())
+    fail('VALIDATION_FAILED', `${action}必须提供理由`);
+  if (reason.trim().length > 200) fail('VALIDATION_FAILED', `${action}理由不能超过 200 字`);
+  return reason.trim();
+}
+
 function validateDeleteRequest(request) {
   if (!request || typeof request !== 'object' || Array.isArray(request))
     fail('VALIDATION_FAILED', '删除参数格式错误');
@@ -211,12 +213,19 @@ function validateDeleteRequest(request) {
   const activityId = request.activityId ?? request.id;
   if (typeof activityId !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(activityId))
     fail('VALIDATION_FAILED', '活动 ID 格式错误');
-  return { openid: request.openid, activityId };
+  return {
+    openid: request.openid,
+    activityId,
+    reason: requiredReason(request.reason, '删除活动'),
+  };
 }
 
 function hasBlockingRegistration(registrations) {
   return Array.isArray(registrations)
-    ? registrations.some((item) => DELETE_BLOCKING_REGISTRATION_STATUSES.has(item?.status))
+    ? registrations.some(
+        (item) =>
+          ACTIVE_REGISTRATION_STATUSES.has(item?.status) && !item?.credential_invalidated_at,
+      )
     : false;
 }
 
@@ -227,7 +236,7 @@ async function assertNoBlockingRegistrations(tx, activityId) {
 }
 
 async function deleteActivity(store, request, now = new Date()) {
-  const { openid, activityId } = validateDeleteRequest(request);
+  const { openid, activityId, reason } = validateDeleteRequest(request);
   return store.transaction(async (tx) => {
     const admin = await tx.getAdmin(openid);
     const isAdmin = isEnabledAdmin(admin, openid);
@@ -237,7 +246,8 @@ async function deleteActivity(store, request, now = new Date()) {
     if (current.is_deleted === true) return { id: activityId, deleted: true };
     // 权限只信任服务端 OPENID：创建者本人或启用管理员才可删除。
     if (!isAdmin && current.created_by !== openid) fail('FORBIDDEN', '只能删除自己的活动');
-    // 第一次校验：拦截删除前已存在的报名/候补。
+    if (current.status === 'published') fail('INVALID_TRANSITION', '已上线活动必须先下架再删除');
+    // 第一次校验：拦截删除前仍存在有效凭证的报名/候补。
     await assertNoBlockingRegistrations(tx, activityId);
     // 写入前再次校验：捕捉校验之后、写入之前并发提交的新报名，两次读取均为空才允许软删。
     await assertNoBlockingRegistrations(tx, activityId);
@@ -251,7 +261,7 @@ async function deleteActivity(store, request, now = new Date()) {
       action: 'activity.delete',
       target_id: activityId,
       created_at: now,
-      detail: { from_status: current.status, to_deleted: true },
+      detail: { from_status: current.status, to_deleted: true, reason },
     });
     return { id: activityId, deleted: true };
   });
@@ -259,7 +269,7 @@ async function deleteActivity(store, request, now = new Date()) {
 
 async function saveActivity(
   store,
-  { openid, activityId, expectedVersion, createRequestId, activity },
+  { openid, activityId, expectedVersion, createRequestId, activity, reason },
   now = new Date(),
 ) {
   if (!activity || typeof activity !== 'object' || Array.isArray(activity))
@@ -294,6 +304,8 @@ async function saveActivity(
       return publicActivity(current, { revealContact: true });
     }
     let effectiveActivity = effectiveActivityInput(current, activity);
+    const isUnpublish = current?.status === 'published' && effectiveActivity.status === 'draft';
+    const transitionReason = isUnpublish ? requiredReason(reason, '下架活动') : undefined;
     const requestedRouteId = effectiveActivity.route?.strava_route_id;
     let stravaRouteOwnerOpenid;
     if (requestedRouteId !== undefined) {
@@ -451,18 +463,52 @@ async function saveActivity(
       ...(stravaRouteOwnerOpenid ? { strava_route_owner_openid: stravaRouteOwnerOpenid } : {}),
     };
     if (!safe.route?.strava_route_id) delete value.strava_route_owner_openid;
+    if (isUnpublish) {
+      const registrations = await tx.listActiveRegistrations(id);
+      for (const registration of registrations.filter(
+        (item) => ACTIVE_REGISTRATION_STATUSES.has(item?.status) && !item.credential_invalidated_at,
+      )) {
+        const invalidated = {
+          ...registration,
+          credential_invalidated_at: now,
+          credential_invalidated_reason: transitionReason,
+          updated_at: now,
+        };
+        await tx.putRegistration(registration._id, invalidated);
+        const outboxId = `activity_unpublished_${id}_${registration._id}_${currentVersion + 1}`;
+        await tx.putNotification(outboxId, {
+          _id: outboxId,
+          type: 'activity_reminder',
+          aggregate_id: registration._id,
+          target_openid: registration.openid,
+          template_key: 'activity_reminder',
+          status: 'pending',
+          attempts: 0,
+          lease_expires_at: null,
+          created_at: now,
+          updated_at: now,
+          payload: {
+            activity_id: id,
+            registration_id: registration._id,
+            activity_title: current.title || '骑行活动',
+            event_start: current.event_start,
+            meeting_place: `活动下架：${transitionReason}`,
+          },
+        });
+      }
+    }
     await tx.putActivity(id, value);
-    await tx.addAudit(
-      buildActivityAudit(
-        openid,
-        activityAuditAction(current?.status, safe.status),
-        id,
-        now,
-        current?.status,
-        safe.status,
-        backfilledPartition,
-      ),
+    const audit = buildActivityAudit(
+      openid,
+      activityAuditAction(current?.status, safe.status),
+      id,
+      now,
+      current?.status,
+      safe.status,
+      backfilledPartition,
     );
+    if (transitionReason) audit.detail.reason = transitionReason;
+    await tx.addAudit(audit);
     return publicActivity(value, { revealContact: true });
   });
 }

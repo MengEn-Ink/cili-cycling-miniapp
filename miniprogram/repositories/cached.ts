@@ -275,8 +275,15 @@ export class CachingRepository implements RideRepository {
     id?: string,
     expectedVersion?: number,
     createRequestId?: string,
+    operationReason?: string,
   ) {
-    const result = await this.inner.saveActivity(value, id, expectedVersion, createRequestId);
+    const result = await this.inner.saveActivity(
+      value,
+      id,
+      expectedVersion,
+      createRequestId,
+      operationReason,
+    );
     this.cacheControl.invalidateActivities();
     return result;
   }
@@ -287,8 +294,8 @@ export class CachingRepository implements RideRepository {
     return result;
   }
 
-  async deleteActivity(id: string) {
-    await this.inner.deleteActivity(id);
+  async deleteActivity(id: string, reason: string) {
+    await this.inner.deleteActivity(id, reason);
     this.cacheControl.invalidateActivities();
   }
 

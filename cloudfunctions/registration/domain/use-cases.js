@@ -457,6 +457,14 @@ async function checkInRegistration(store, { openid, registrationId: id }, now = 
     if (!isEnabledAdmin(admin, openid)) fail('ADMIN_REQUIRED', '需要管理员权限');
     const registration = await tx.getRegistration(id);
     if (!registration) fail('REGISTRATION_NOT_FOUND', '报名不存在');
+    const activity = await tx.getActivity(registration.activity_id);
+    if (
+      !activity ||
+      activity.is_deleted === true ||
+      activity.status !== 'published' ||
+      registration.credential_invalidated_at
+    )
+      fail('CREDENTIAL_INVALID', '报名凭证已失效');
     assertCheckInTransition(registration.status);
     if (registration.status === 'checked_in') return publicRegistration(registration);
     const value = {

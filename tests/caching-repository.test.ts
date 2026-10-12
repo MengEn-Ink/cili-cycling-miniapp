@@ -241,7 +241,7 @@ describe('CachingRepository 写后失效', () => {
           sourceActivityId: 'a',
           requestId: 'r',
         } as Parameters<RideRepository['cloneActivity']>[0]),
-      () => repo.deleteActivity('a'),
+      () => repo.deleteActivity('a', '清理草稿'),
       () =>
         repo.saveRegistration({
           activityId: 'a',

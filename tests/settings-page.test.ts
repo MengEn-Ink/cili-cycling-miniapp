@@ -44,21 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.12.21',
+      version: '2026.10.12.22',
       latest: true,
-      title: 'Strava 授权复制始终使用新链接',
-      summary: '再次复制会重新生成一次性授权状态，并核对剪贴板内容，避免继续打开失效链接。',
+      title: '活动下架通知与凭证失效闭环',
+      summary: '管理员下架或删除活动时必须说明理由，下架会通知已报名用户并立即使报名凭证失效。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.12.22',
       '2026.10.12.21',
       '2026.10.12.20',
       '2026.10.12.19',
       '2026.10.12.18',
-      '2026.10.12.17',
     ]);
   });
 

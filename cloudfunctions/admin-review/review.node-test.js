@@ -21,6 +21,8 @@ function store(seed = {}) {
       ...(seed.registration || {}),
     },
     activity: {
+      _id: 'a1',
+      status: 'published',
       occupied_count: 1,
       occupancy_partition_ready: true,
       support_vehicle_occupied_count: 1,
@@ -233,4 +235,22 @@ test('非管理员不能签到', async () => {
   });
   assert.equal(s.state.registration.status, 'approved');
   assert.equal(s.state.audits.length, 0);
+});
+
+test('下架、删除活动或已标记失效的凭证均不能核销', async () => {
+  for (const seed of [
+    { activity: { status: 'draft' } },
+    { activity: { status: 'published', is_deleted: true } },
+    { registration: { credential_invalidated_at: new Date('2026-10-12T04:00:00.000Z') } },
+  ]) {
+    const s = store({
+      ...seed,
+      registration: { status: 'approved', ...(seed.registration || {}) },
+    });
+    await assert.rejects(checkInRegistration(s, { openid: 'admin', registrationId: 'r1' }), {
+      code: 'CREDENTIAL_INVALID',
+    });
+    assert.equal(s.state.registration.status, 'approved');
+    assert.equal(s.state.audits.length, 0);
+  }
 });

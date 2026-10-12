@@ -48,9 +48,10 @@ export interface ActivityAdminRepository {
     id?: string,
     expectedVersion?: number,
     createRequestId?: string,
+    operationReason?: string,
   ): Promise<EditableActivity>;
   cloneActivity(input: CloneActivityInput): Promise<EditableActivity>;
-  deleteActivity(id: string): Promise<void>;
+  deleteActivity(id: string, reason: string): Promise<void>;
 }
 export type GatheringMode = 'self_drive' | 'support_vehicle';
 export interface RegistrationSubmission {

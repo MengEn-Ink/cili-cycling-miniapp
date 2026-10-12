@@ -2257,9 +2257,18 @@ describe('CloudRepository 管理员活动写入契约', () => {
       equipment: [],
       fee: '',
     };
-    await new CloudRepository(cloud).saveActivity(value, 'a1', 7);
+    const repository = new CloudRepository(cloud);
+    await repository.saveActivity(value, 'a1', 7, undefined, '路线临时封闭');
     expect((callFunction.mock.calls[0][0].data as any).activityId).toBe('a1');
     expect((callFunction.mock.calls[0][0].data as any).expectedVersion).toBe(7);
+    expect((callFunction.mock.calls[0][0].data as any).operationReason).toBe('路线临时封闭');
+    callFunction.mockResolvedValueOnce({ result: { ok: true, data: { deleted: true } } });
+    await repository.deleteActivity('a1', '清理活动');
+    expect(callFunction.mock.calls[1][0].data).toEqual({
+      action: 'delete',
+      id: 'a1',
+      reason: '清理活动',
+    });
     const invalid = cloudWith();
     await expectCode(
       new CloudRepository(invalid.cloud).saveActivity(value, ''),

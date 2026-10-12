@@ -1108,6 +1108,7 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     id?: string,
     expectedVersion?: number,
     createRequestId?: string,
+    operationReason?: string,
   ) {
     const data: Record<string, unknown> = { action: 'save', activity: activityPayload(value) };
     if (id !== undefined) {
@@ -1120,6 +1121,7 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     } else if (createRequestId !== undefined) {
       data.createRequestId = boundedId(createRequestId, '创建请求 ID', 8, 128);
     }
+    if (operationReason !== undefined) data.operationReason = operationReason;
     return mapEditableActivity(await this.call('activity-admin', data));
   }
   async cloneActivity(input: CloneActivityInput) {
@@ -1144,11 +1146,12 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     }
     return mapEditableActivity(await this.call('activity-admin', data), true);
   }
-  async deleteActivity(id: string) {
-    // 服务端 delete 契约只信任调用者 OPENID 做权限与占用校验，前端不预判删除资格。
+  async deleteActivity(id: string, reason: string) {
+    // 服务端 delete 契约只信任调用者 OPENID 做权限校验，删除理由由页面显式采集。
     await this.call('activity-admin', {
       action: 'delete',
       id: requiredId(id, '活动 ID'),
+      reason,
     });
   }
   async listActivities(filter?: ActivityListFilter) {

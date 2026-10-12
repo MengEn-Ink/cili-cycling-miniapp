@@ -39,7 +39,9 @@ describe('活动卡片滑动删除', () => {
       cloud: {},
       navigateTo: vi.fn(),
       showToast: vi.fn(),
-      showModal: vi.fn(({ success }) => success({ confirm: true, cancel: false })),
+      showModal: vi.fn(({ success }) =>
+        success({ confirm: true, cancel: false, content: '活动安排调整' }),
+      ),
     });
     vi.stubGlobal('Page', (definition: any) => {
       page = definition;
@@ -143,7 +145,7 @@ describe('活动卡片滑动删除', () => {
 
   it('确认删除后调用云端契约、移除卡片并提示', async () => {
     await page.confirmDelete(touch('act-1', 200));
-    expect(rideService.deleteActivity).toHaveBeenCalledWith('act-1');
+    expect(rideService.deleteActivity).toHaveBeenCalledWith('act-1', '活动安排调整');
     expect(page.data.items.map((item: { id: string }) => item.id)).toEqual(['act-2']);
     expect(wx.showToast).toHaveBeenCalledWith({ title: '已删除', icon: 'success' });
   });

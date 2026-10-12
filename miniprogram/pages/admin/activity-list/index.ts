@@ -26,6 +26,28 @@ function deleteErrorMessage(error: unknown) {
   return /报名/.test(message) ? '活动仍有待处理报名，请先到报名审批处理后再删除' : message;
 }
 
+function promptOperationReason(
+  title: string,
+  placeholderText: string,
+): Promise<string | undefined> {
+  return new Promise((resolve) => {
+    wx.showModal({
+      title,
+      editable: true,
+      placeholderText,
+      confirmText: '确认',
+      success: (result: { confirm: boolean; content?: string }) => {
+        if (!result.confirm) return resolve(undefined);
+        const reason = String(result.content || '').trim();
+        if (reason) return resolve(reason);
+        wx.showToast({ title: '请填写原因', icon: 'none' });
+        resolve(undefined);
+      },
+      fail: () => resolve(undefined),
+    });
+  });
+}
+
 function displayItem(item: any) {
   return {
     ...item,
@@ -259,19 +281,11 @@ Page({
       (candidate: { id: string; title: string }) => candidate.id === id,
     );
     if (!item) return;
-    const confirmed = await new Promise<boolean>((resolve) => {
-      wx.showModal({
-        title: '删除活动',
-        content: `确认删除“${item.title}”吗？存在报名时将无法删除。`,
-        confirmText: '删除',
-        success: (result: { confirm: boolean }) => resolve(result.confirm),
-        fail: () => resolve(false),
-      });
-    });
-    if (!confirmed) return;
+    const reason = await promptOperationReason('删除活动', `请输入删除“${item.title}”的原因`);
+    if (!reason) return;
     const index = this.data.items.findIndex((candidate: { id: string }) => candidate.id === id);
     try {
-      await rideService.deleteActivity(id);
+      await rideService.deleteActivity(id, reason);
       // 删除成功后从列表移除该卡片；过滤方式不受分页数据影响。
       this.setData({
         items: this.data.items.filter((candidate: { id: string }) => candidate.id !== id),
@@ -305,17 +319,33 @@ Page({
     if (!item) return;
     const nextStatus = item.status === 'published' ? 'draft' : 'published';
     const action = nextStatus === 'published' ? '上线' : '下架';
-    const confirmed = await new Promise<boolean>((resolve) => {
-      wx.showModal({
-        title: `${action}活动`,
-        content: `确认${action}“${item.title}”吗？`,
-        success: (result: { confirm: boolean }) => resolve(result.confirm),
-        fail: () => resolve(false),
+    let operationReason: string | undefined;
+    if (nextStatus === 'draft') {
+      operationReason = await promptOperationReason('下架活动', `请输入下架“${item.title}”的原因`);
+      if (!operationReason) return;
+    } else {
+      const confirmed = await new Promise<boolean>((resolve) => {
+        wx.showModal({
+          title: `${action}活动`,
+          content: `确认${action}“${item.title}”吗？`,
+          success: (result: { confirm: boolean }) => resolve(result.confirm),
+          fail: () => resolve(false),
+        });
       });
-    });
-    if (!confirmed) return;
+      if (!confirmed) return;
+    }
     try {
-      await rideService.saveActivity({ ...item, status: nextStatus }, item.id, item.version);
+      if (operationReason) {
+        await rideService.saveActivity(
+          { ...item, status: nextStatus },
+          item.id,
+          item.version,
+          undefined,
+          operationReason,
+        );
+      } else {
+        await rideService.saveActivity({ ...item, status: nextStatus }, item.id, item.version);
+      }
       wx.showToast({ title: `已${action}`, icon: 'success' });
       await this.onShow();
     } catch (error) {
