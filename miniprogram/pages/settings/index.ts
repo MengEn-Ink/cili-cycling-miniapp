@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.12.24',
+    date: '2026-10-12',
+    title: 'Strava 授权二维码可保存到相册',
+    summary: '授权二维码新增「保存到相册」，保存后用微信或相机扫码即可完成授权。',
+    latest: true,
+    features: [
+      '一键把授权二维码保存到相册，再用微信或相机扫码授权',
+      '相册权限被拒时引导前往设置开启，不再静默失败',
+      '保留刷新二维码获取最新十分钟有效链接',
+    ],
+  },
+  {
     version: '2026.10.12.23',
     date: '2026-10-12',
     title: 'Strava 授权改为扫码',
     summary: 'Strava 授权统一改为扫描二维码，取消复制链接方式；可长按保存二维码后再扫描。',
-    latest: true,
+    latest: false,
     features: [
       '发起授权后展示二维码，用另一台手机或相机扫码即可在浏览器完成授权',
       '可长按二维码保存到相册后再扫描，并支持一键刷新为最新链接',
