@@ -2,12 +2,23 @@ import type { StravaReadiness } from '../../models';
 import { runPageTask } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
 import { invalidateProfilePageCache } from '../../utils/profile-page-cache';
+import { encodeQrCode } from '../../utils/qrcode';
+import { planQrRender, drawQrCode } from '../../utils/qrcode-canvas';
 import {
   pollStravaAuthorization,
   pollStravaReadiness,
   stravaReadinessMessage,
   stravaSnapshotMeta,
 } from '../../services/strava-readiness-service';
+
+interface StravaQrCanvas {
+  width: number;
+  height: number;
+  getContext(type: '2d'): {
+    fillStyle: string;
+    fillRect(x: number, y: number, w: number, h: number): void;
+  };
+}
 
 function disconnectedReadiness(): StravaReadiness {
   return {
@@ -33,28 +44,12 @@ function confirmDisconnect(): Promise<boolean> {
   });
 }
 
-function copyAuthorizationUrl(url: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    wx.setClipboardData({
-      data: url,
-      success: () => {
-        wx.getClipboardData({
-          success: ({ data }: { data: string }) =>
-            data === url ? resolve() : reject(new Error('clipboard content mismatch')),
-          fail: reject,
-        });
-      },
-      fail: reject,
-    });
-  });
-}
-
 function showBrowserGuide(): Promise<void> {
   return new Promise((resolve) => {
     wx.showModal({
-      title: '授权链接已复制',
+      title: '扫码完成 Strava 授权',
       content:
-        '请打开系统浏览器，粘贴并访问链接完成 Strava 授权；完成后返回微信，本页会自动同步。链接将在 10 分钟后失效。',
+        '请长按二维码保存到相册，再用微信或相机扫描，在系统浏览器完成 Strava 授权。完成后返回微信，本页会自动同步。二维码将在 10 分钟后失效。',
       confirmText: '我知道了',
       showCancel: false,
       success: () => resolve(),
@@ -71,10 +66,11 @@ Page({
     readiness: null as StravaReadiness | null,
     readinessMessage: '',
     snapshotMeta: stravaSnapshotMeta(null),
-    busyAction: null as null | 'connect' | 'retry' | 'disconnect' | 'copy',
+    busyAction: null as null | 'connect' | 'retry' | 'disconnect' | 'refresh',
     reauthorize: false,
     authorizationUrl: '',
     manualAuthorization: false,
+    qrReady: false,
   },
   onLoad(options: Record<string, string>) {
     this.setData({ reauthorize: options.reauthorize === '1' });
@@ -87,6 +83,34 @@ Page({
   },
   onUnload() {
     this.loadRequestId += 1;
+  },
+  renderAuthorizationQr() {
+    const url = this.data.authorizationUrl;
+    if (!url) return;
+    this.setData({ qrReady: false });
+    let code;
+    try {
+      code = encodeQrCode(url, 'M');
+    } catch {
+      // 编码失败时保留错误提示；授权仅支持扫码，无复制兜底。
+      this.setData({ qrReady: false, error: '二维码生成失败，请点击「刷新二维码」重试。' });
+      return;
+    }
+    wx.createSelectorQuery()
+      .in(this)
+      .select('#strava-auth-qr')
+      .fields({ node: true, size: true })
+      .exec((result: Array<{ node?: StravaQrCanvas; width: number; height: number }>) => {
+        const target = result?.[0];
+        const canvas = target?.node;
+        if (!canvas || !target.width || !target.height) return;
+        const ratio = wx.getWindowInfo?.().pixelRatio || wx.getSystemInfoSync?.().pixelRatio || 1;
+        const plan = planQrRender(code, target.width, ratio);
+        canvas.width = plan.pixelSize;
+        canvas.height = plan.pixelSize;
+        drawQrCode(canvas.getContext('2d'), code, plan);
+        this.setData({ qrReady: true });
+      });
   },
   setReadiness(readiness: StravaReadiness) {
     this.setData({
@@ -159,26 +183,15 @@ Page({
         return;
       }
       const authorizationUrl = state.data.authorizationUrl;
-      // 不把微信剪贴板回调当作唯一成功凭据：始终保留可选中的原始链接，方便用户核对和长按复制。
-      this.setData({ authorizationUrl, manualAuthorization: true });
-      // 真机 web-view 不能承载未配置为业务域名的 strava.com，授权链接必须交给系统浏览器。
-      try {
-        await copyAuthorizationUrl(authorizationUrl);
-      } catch {
-        if (requestId === this.loadRequestId) {
-          this.setReadiness({ ...disconnectedReadiness(), state: 'authorizing' });
-          this.setData({
-            manualAuthorization: true,
-            error: '微信未能自动复制授权链接，请长按下方链接手动复制，或点击“再次复制”。',
-          });
-        }
-        return;
-      }
+      // 授权仅支持扫码：把一次性授权链接渲染成二维码，用户扫码到系统浏览器完成授权。
+      this.setData({ authorizationUrl, manualAuthorization: true }, () => {
+        this.renderAuthorizationQr();
+      });
       if (requestId !== this.loadRequestId) return;
       await showBrowserGuide();
       if (requestId !== this.loadRequestId) return;
       const currentState = this.data.readiness?.state;
-      // 一次性 state 只由回调消费或到期失效；关闭提示不能撤销，否则刚复制的链接会立即失效。
+      // 一次性 state 只由回调消费或到期失效；关闭提示不能撤销，否则刚生成的二维码会立即失效。
       if (
         requestId === this.loadRequestId &&
         (currentState === 'disconnected' || currentState === 'authorizing')
@@ -189,26 +202,25 @@ Page({
       if (requestId === this.loadRequestId) this.setData({ busyAction: null });
     }
   },
-  async retryAuthorizationCopy() {
+  async refreshAuthorizationQr() {
     if (this.data.busyAction) return;
     const requestId = this.loadRequestId;
-    this.setData({ busyAction: 'copy', error: '' });
+    this.setData({ busyAction: 'refresh', error: '' });
     try {
-      // “再次复制”必须创建新的 OAuth state，不能继续复制已消费或已过期的旧链接。
-      const state = await runPageTask(() => rideService.startStrava(), '无法刷新 Strava 授权链接');
+      // 「刷新二维码」必须创建新的 OAuth state，不能继续使用已消费或已过期的旧链接。
+      const state = await runPageTask(
+        () => rideService.startStrava(),
+        '无法刷新 Strava 授权二维码',
+      );
       if (requestId !== this.loadRequestId) return;
       if (!state.data) {
         this.setData({ error: state.error });
         return;
       }
       const authorizationUrl = state.data.authorizationUrl;
-      this.setData({ authorizationUrl, manualAuthorization: true });
-      await copyAuthorizationUrl(authorizationUrl);
-      if (requestId === this.loadRequestId)
-        wx.showToast({ title: '新授权链接已复制', icon: 'success' });
-    } catch {
-      if (requestId === this.loadRequestId)
-        this.setData({ error: '自动复制校验失败，请长按下方最新链接并选择复制。' });
+      this.setData({ authorizationUrl, manualAuthorization: true }, () => {
+        this.renderAuthorizationQr();
+      });
     } finally {
       if (requestId === this.loadRequestId) this.setData({ busyAction: null });
     }

@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.12.23',
+    date: '2026-10-12',
+    title: 'Strava 授权改为扫码',
+    summary: 'Strava 授权统一改为扫描二维码，取消复制链接方式；可长按保存二维码后再扫描。',
+    latest: true,
+    features: [
+      '发起授权后展示二维码，用另一台手机或相机扫码即可在浏览器完成授权',
+      '可长按二维码保存到相册后再扫描，并支持一键刷新为最新链接',
+      '移除复制链接与「再次复制」入口，授权方式更聚焦',
+    ],
+  },
+  {
     version: '2026.10.12.22',
     date: '2026-10-12',
     title: '活动下架通知与凭证失效闭环',
     summary: '管理员下架或删除活动时必须说明理由，下架会通知已报名用户并立即使报名凭证失效。',
-    latest: true,
+    latest: false,
     features: [
       '已上线活动下架时向已报名用户发送原因通知',
       '活动下架后报名凭证立即失效，并允许继续删除活动',
