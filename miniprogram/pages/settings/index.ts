@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.12.17',
+    date: '2026-10-12',
+    title: 'Strava 授权失败后重试更准确',
+    summary: '授权状态检查异常时会优先重新确认授权结果，不再误走数据准备流程。',
+    latest: true,
+    features: [
+      '授权检查超时后提供“重新检查授权状态”操作',
+      '重试时先读取服务端 OAuth 结果，再按真实状态继续同步',
+      '授权成功、仍在授权和数据准备三种状态保持同一条恢复链路',
+    ],
+  },
+  {
     version: '2026.10.12.16',
     date: '2026-10-12',
     title: 'Strava 主页打开指引更清楚',
     summary: '个人中心改为明确展示并复制 Strava 主页链接，提示使用系统默认浏览器打开。',
-    latest: true,
+    latest: false,
     features: [
       '个人中心不再提供容易误解的直接跳转入口',
       '主页地址支持长按选择和一键复制',

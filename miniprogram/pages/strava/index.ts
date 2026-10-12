@@ -206,6 +206,11 @@ Page({
         this.data.readiness.error?.recoveryAction !== 'retry')
     )
       return;
+    // 授权状态超时说明 OAuth 是否成功仍未知，必须先重查服务端状态，不能误走数据准备接口。
+    if (this.data.readiness?.error?.code === 'STRAVA_AUTH_STATUS_TIMEOUT') {
+      await this.load();
+      return;
+    }
     const requestId = ++this.loadRequestId;
     this.setData({ busyAction: 'retry', error: '' });
     try {
