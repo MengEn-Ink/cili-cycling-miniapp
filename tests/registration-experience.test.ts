@@ -83,7 +83,7 @@ describe('V3.1 报名资料门禁', () => {
     expect(validateRegistration(input)).toEqual([]);
   });
 
-  it('汇总昵称、非默认头像、性别、电话、紧急联系人和 Strava 缺失项', () => {
+  it('汇总昵称、非默认头像、性别、电话和紧急联系人缺失项，不要求 Strava', () => {
     const errors = validateRegistration({
       ...input,
       profile: {
@@ -104,8 +104,8 @@ describe('V3.1 报名资料门禁', () => {
         '请填写有效联系电话',
         '请填写紧急联系人',
         '请填写有效紧急联系电话',
-        '请绑定 Strava',
       ]),
     );
+    expect(errors).not.toContain('请绑定 Strava');
   });
 });

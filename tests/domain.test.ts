@@ -27,6 +27,7 @@ const pageRideService = vi.hoisted(() => ({
   saveRegistration: vi.fn(),
   getRegistration: vi.fn(),
   getActivity: vi.fn(),
+  listRegistrations: vi.fn(),
   cancelRegistration: vi.fn(),
 }));
 
@@ -164,37 +165,24 @@ describe('表单校验', () => {
       }),
     ).toContain('请授权并填写微信昵称');
   });
-  it('ready 但服务端不允许报名时阻断', () => {
-    expect(
-      validateRegistration({
-        profile: registrationProfile,
-        gatheringMode: 'self_drive',
-        experience: '常骑',
-        readiness: { state: 'ready', canRegister: false },
-      }),
-    ).toContain('Strava 数据尚未准备完成');
+  it('Strava 状态不再阻断普通用户报名', () => {
+    for (const readiness of [
+      { state: 'ready', canRegister: false },
+      syncing,
+      failed,
+      { state: 'disconnected', canRegister: false },
+    ]) {
+      expect(
+        validateRegistration({
+          profile: registrationProfile,
+          gatheringMode: 'self_drive',
+          experience: '常骑',
+          readiness,
+        }),
+      ).toEqual([]);
+    }
   });
-  it('同步中提示正在准备', () => {
-    expect(
-      validateRegistration({
-        profile: registrationProfile,
-        gatheringMode: 'self_drive',
-        experience: '常骑',
-        readiness: syncing,
-      }),
-    ).toContain('Strava 数据正在准备');
-  });
-  it('失败时提示重试准备', () => {
-    expect(
-      validateRegistration({
-        profile: registrationProfile,
-        gatheringMode: 'self_drive',
-        experience: '常骑',
-        readiness: failed,
-      }),
-    ).toContain('请重试 Strava 数据准备');
-  });
-  it('阻断未绑定 Strava 与错误手机号', () => {
+  it('错误手机号与空选项仍然阻断', () => {
     const p = { ...registrationProfile, phone: '123' };
     expect(
       validateRegistration({
@@ -266,35 +254,17 @@ describe('报名页面门禁', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('onShow 自动准备 Strava 并保存完整 readiness', async () => {
+  it('onShow 只加载报名所需资料，不再请求 Strava 状态', async () => {
+    page.data.activityId = activities[0].id;
     pageRideService.getProfile.mockResolvedValue(profile);
-    pageRideService.getStravaReadiness.mockResolvedValue({
-      ...syncing,
-      athleteName: null,
-      snapshot: null,
-      error: null,
-    });
-    pageRideService.ensureStravaReady.mockResolvedValue({
-      ...ready,
-      athleteName: 'Rider',
-      snapshot: null,
-      error: null,
-    });
+    pageRideService.getActivity.mockResolvedValue(activities[0]);
+    pageRideService.listRegistrations.mockResolvedValue([]);
 
     await page.onShow();
 
-    expect(pageRideService.ensureStravaReady).toHaveBeenCalledOnce();
-    expect(page.data.readiness).toMatchObject({ state: 'ready', canRegister: true });
-  });
-
-  it('readiness 请求失败时保持失败门禁而非伪装未绑定', async () => {
-    pageRideService.getProfile.mockResolvedValue(profile);
-    pageRideService.getStravaReadiness.mockRejectedValue(new Error('网络暂不可用'));
-
-    await page.onShow();
-
-    expect(page.data.readiness).toMatchObject({ state: 'failed', canRegister: false });
-    expect(page.data.errors).toContain('网络暂不可用');
+    expect(pageRideService.getStravaReadiness).not.toHaveBeenCalled();
+    expect(pageRideService.ensureStravaReady).not.toHaveBeenCalled();
+    expect(page.data.profile).toMatchObject(profile);
   });
 
   it('提交中忽略重复提交', async () => {

@@ -6,6 +6,7 @@ import { formatLocalDateTime } from '../miniprogram/utils/date-time';
 
 const rideService = vi.hoisted(() => ({
   previewStravaRoute: vi.fn(),
+  getStravaReadiness: vi.fn(),
   getAdminActivity: vi.fn(),
   saveActivity: vi.fn(),
 }));
@@ -92,6 +93,7 @@ describe('日常活动极简创建与编辑', () => {
   beforeEach(async () => {
     vi.resetModules();
     rideService.previewStravaRoute.mockReset();
+    rideService.getStravaReadiness.mockReset().mockResolvedValue({ state: 'ready' });
     rideService.getAdminActivity.mockReset().mockResolvedValue(activity);
     rideService.saveActivity.mockReset().mockResolvedValue({ ...activity, version: 8 });
     appStore.ensureIdentity.mockReset().mockResolvedValue(undefined);
@@ -1000,6 +1002,24 @@ describe('日常活动极简创建与编辑', () => {
     expect(page.data.groupQrCode).toBe('cloud://new-group-qr.jpg');
   });
 
+  it('仅在同步线路时检测 Strava 授权，并允许返回手动填写', async () => {
+    rideService.getStravaReadiness.mockResolvedValue({ state: 'disconnected' });
+    vi.mocked(wx.showModal).mockImplementation(({ success }: any) => success({ confirm: false }));
+    page.data.form.stravaRouteUrl = 'https://www.strava.com/routes/42';
+
+    await page.syncStravaRoute();
+
+    expect(wx.showModal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: '需要 Strava 授权',
+        confirmText: '去授权',
+        cancelText: '手动填写',
+      }),
+    );
+    expect(rideService.previewStravaRoute).not.toHaveBeenCalled();
+    expect(page.data.syncingRoute).toBe(false);
+  });
+
   it('同步 Strava 路线并保存服务端预览指标', async () => {
     await page.onLoad({});
     const preview = {
@@ -1032,7 +1052,7 @@ describe('日常活动极简创建与编辑', () => {
     expect(template).toContain('活动群二维码');
     expect(template).toContain('二维码可能已过期');
     expect(template).toContain('同步路线信息');
-    expect(template).toContain('预计骑行时间');
+    expect(template).toContain('预计 {{stravaRouteTimeLabel}}');
     expect(template).toContain('form.title');
     expect(template).toContain('form.startDate');
     expect(template).toContain('form.startTime');

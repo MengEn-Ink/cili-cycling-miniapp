@@ -1,10 +1,6 @@
-import type { Activity, StravaReadiness } from '../../models';
+import type { Activity } from '../../models';
 import { runPageTask } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
-import {
-  pollStravaReadiness,
-  stravaReadinessMessage,
-} from '../../services/strava-readiness-service';
 import { validateRegistration, validateRegistrationProfile } from '../../utils/validation';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
@@ -17,39 +13,6 @@ function unavailableAction(): ActivityAction {
 
 const NOTIFICATION_TEMPLATE_TIMEOUT_MS = 1000;
 const MAX_SUBSCRIPTION_TEMPLATES = 3;
-
-function loadingReadiness(): StravaReadiness {
-  return {
-    state: 'syncing',
-    canRegister: false,
-    avatarAvailable: false,
-    athleteName: null,
-    snapshot: null,
-    error: null,
-  };
-}
-
-function requestFailedReadiness(message: string): StravaReadiness {
-  return {
-    state: 'failed',
-    canRegister: false,
-    avatarAvailable: false,
-    athleteName: null,
-    snapshot: null,
-    error: {
-      code: 'STRAVA_READINESS_UNAVAILABLE',
-      message,
-      retryable: true,
-      recoveryAction: 'retry',
-    },
-  };
-}
-
-async function loadBoundedReadiness(isCancelled: () => boolean): Promise<StravaReadiness> {
-  const status = await rideService.getStravaReadiness();
-  if (isCancelled() || status.state !== 'syncing') return status;
-  return pollStravaReadiness(() => rideService.ensureStravaReady(), { isCancelled });
-}
 
 async function loadActivityContext(
   activityId: string,
@@ -85,8 +48,6 @@ Page({
     remark: '',
     teamId: '',
     teamParameterError: '',
-    readiness: loadingReadiness(),
-    readinessMessage: '正在检查 Strava 数据',
     notificationTemplateIds: [] as string[],
     errors: [] as string[],
     profileErrors: [] as string[],
@@ -98,7 +59,6 @@ Page({
   async onShow() {
     this.pageVisible = true;
     const requestId = ++this.loadRequestId;
-    const isCancelled = () => requestId !== this.loadRequestId;
     this.setData({
       loading: true,
       errors: [],
@@ -106,16 +66,12 @@ Page({
       notificationTemplateIds: [],
     });
     void this.loadNotificationTemplates(requestId);
-    const [profileState, readinessState, activityState] = await Promise.all([
+    const [profileState, activityState] = await Promise.all([
       runPageTask(() => rideService.getProfile(), '个人资料加载失败'),
-      runPageTask(() => loadBoundedReadiness(isCancelled), 'Strava 数据准备状态加载失败'),
       runPageTask(() => loadActivityContext(this.data.activityId), '活动报名状态加载失败'),
     ]);
     if (requestId !== this.loadRequestId) return;
-    const errors = [profileState.error, readinessState.error, activityState.error].filter(Boolean);
-    const readiness =
-      readinessState.data ||
-      requestFailedReadiness(readinessState.error || 'Strava 数据准备状态加载失败');
+    const errors = [profileState.error, activityState.error].filter(Boolean);
     const activityContext = activityState.data;
     const activityAction = activityContext?.action || unavailableAction();
     const profile = profileState.data
@@ -132,8 +88,6 @@ Page({
       ),
       profile,
       profileErrors: profile ? validateRegistrationProfile(profile) : [],
-      readiness,
-      readinessMessage: stravaReadinessMessage(readiness),
       activityAction,
       activityCanSubmit: activityAction.kind === 'register' || activityAction.kind === 'resubmit',
       loading: false,
@@ -213,10 +167,6 @@ Page({
   },
   back() {
     if (!this.data.submitting) wx.navigateBack();
-  },
-  strava() {
-    if (this.data.submitting) return;
-    wx.navigateTo({ url: '/pages/strava/index' });
   },
   profile() {
     if (this.data.submitting) return;

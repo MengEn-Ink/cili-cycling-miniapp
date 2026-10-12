@@ -3,10 +3,11 @@
 
   <view class="settings-hero">
     <view class="hero-title">设置</view>
-    <view class="hero-copy">管理 Strava 授权，查看「此里」的每一次功能升级。</view>
+    <view class="hero-copy">管理个人设置，查看「此里」的每一次功能升级。</view>
   </view>
 
-  <view class="section-label"><text>01</text> Strava 授权</view>
+  <block wx:if="{{stravaReadiness && stravaReadiness.state !== 'disconnected'}}">
+  <view class="section-label"><text>01</text> 第三方授权</view>
   <view class="card strava-settings-card">
     <view class="card-heading">
       <view>
@@ -65,8 +66,9 @@
       </button>
     </view>
   </view>
+  </block>
 
-  <view class="section-label"><text>02</text> 功能升级日志</view>
+  <view class="section-label"><text>01</text> 功能升级日志</view>
   <view class="release-list">
     <view
       class="release-card {{item.latest ? 'latest' : ''}}"

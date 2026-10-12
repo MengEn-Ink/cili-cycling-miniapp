@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.12.25',
+    date: '2026-10-12',
+    title: 'Strava 改为创建活动时按需授权',
+    summary: '普通用户不再需要连接 Strava；只有创建活动并同步线路时才会提示授权。',
+    latest: true,
+    features: [
+      '报名与个人资料流程不再检查或展示 Strava 状态',
+      '创建活动同步 Strava 路线时才按需提示授权',
+      '授权页使用 Strava 官方品牌素材，并说明 10 人默认额度',
+    ],
+  },
+  {
     version: '2026.10.12.24',
     date: '2026-10-12',
     title: 'Strava 授权二维码可保存到相册',
     summary: '授权二维码新增「保存到相册」，保存后用微信或相机扫码即可完成授权。',
-    latest: true,
+    latest: false,
     features: [
       '一键把授权二维码保存到相册，再用微信或相机扫码授权',
       '相册权限被拒时引导前往设置开启，不再静默失败',

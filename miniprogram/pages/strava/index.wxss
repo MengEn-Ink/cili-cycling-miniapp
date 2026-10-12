@@ -18,18 +18,10 @@ page {
 .strava-head .hero-kicker {
   color: var(--color-brand);
 }
-.strava-mark {
-  display: flex;
-  flex: 0 0 100rpx;
-  align-items: center;
-  justify-content: center;
-  width: 100rpx;
-  height: 100rpx;
-  border-radius: 20rpx;
-  background: var(--color-action);
-  color: var(--color-on-action);
-  font-size: 42rpx;
-  font-weight: 900;
+.strava-connect-logo {
+  flex: 0 0 237rpx;
+  width: 237rpx;
+  height: 48rpx;
 }
 .strava-title {
   font-size: 40rpx;

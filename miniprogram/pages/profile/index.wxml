@@ -39,35 +39,6 @@
         </view>
       </view>
     </view>
-
-    <view class="profile-capability-section" wx:if="{{heroCard}}">
-      <view class="hero-capability-head">
-        <view><view class="hero-capability-label">近 90 天骑行</view><view class="hero-capability-strava-tenure" wx:if="{{heroCard.hasStravaTenure}}">{{heroCard.stravaTenureText}}</view></view>
-        <view class="hero-capability-status status-{{heroCard.statusTone}}"><text class="status-dot"></text>{{heroCard.statusLabel}}</view>
-      </view>
-      <view class="hero-capability-metrics" wx:if="{{heroCard.primaryMetrics.length}}">
-        <view class="hero-capability-metric" wx:for="{{heroCard.primaryMetrics}}" wx:key="key">
-          <view class="hero-capability-value">{{item.value}}<text class="hero-capability-unit">{{item.unit}}</text></view>
-          <view class="hero-capability-name">{{item.label}}</view>
-        </view>
-      </view>
-      <view class="hero-capability-empty" wx:if="{{!heroCard.primaryMetrics.length && !heroCard.secondaryMetrics.length}}">{{heroCard.emptyMetricsText}}</view>
-      <view class="hero-capability-secondary" wx:if="{{heroCard.secondaryMetrics.length}}">
-        <view class="hero-capability-metric" wx:for="{{heroCard.secondaryMetrics}}" wx:key="key">
-          <view class="hero-capability-value">{{item.value}}<text class="hero-capability-unit">{{item.unit}}</text></view>
-          <view class="hero-capability-name">{{item.label}}</view>
-        </view>
-      </view>
-      <view class="hero-capability-details" wx:if="{{heroCard.coverageText}}"><text>统计范围</text><text>{{heroCard.coverageText}}</text></view>
-      <view wx:if="{{heroCard.hasStravaProfile}}" class="hero-strava-copy">
-        <view class="hero-strava-copy-head"><text>Strava 主页链接</text><text>仅支持复制</text></view>
-        <text class="hero-strava-url" user-select="true">{{heroCard.stravaProfileUrl}}</text>
-        <view class="hero-strava-copy-hint">复制后粘贴到系统默认浏览器打开，浏览器会自动尝试跳转到 Strava。</view>
-        <button class="hero-strava-link" bindtap="copyStravaProfileLink" aria-label="复制 Strava 个人主页链接">
-          <text>复制主页链接</text><text aria-hidden="true">复制</text>
-        </button>
-      </view>
-    </view>
   </view>
 
   <view class="hero-profile-progress" wx:if="{{profile && profile.completeness < 100}}">
@@ -92,6 +63,6 @@
     <view class="menu-card" wx:if="{{isAdmin}}" bindtap="activities"><view class="menu-icon">管</view><view class="menu-copy"><view class="menu-title">活动管理</view><view class="muted">创建、编辑与发布活动</view></view><text class="chevron">›</text></view>
     <view class="menu-card" bindtap="edit"><view class="menu-icon">资</view><view class="menu-copy"><view class="menu-title">报名资料</view><view class="muted">编辑微信昵称、头像、性别与紧急联系人</view></view><text class="chevron">›</text></view>
     <view class="privacy-note"><view class="privacy-note-title">隐私说明</view><view>联系电话仅用于活动联络；紧急联系人仅在骑行安全需要时使用。资料仅你本人和报名审核员可见。</view></view>
-    <view class="menu-card" bindtap="openSettings" role="button" aria-label="打开设置"><view class="menu-icon">设</view><view class="menu-copy"><view class="menu-title">设置与授权</view><view class="muted">管理骑行数据授权与应用设置</view></view><text class="chevron" aria-hidden="true">›</text></view>
+    <view class="menu-card" bindtap="openSettings" role="button" aria-label="打开设置"><view class="menu-icon">设</view><view class="menu-copy"><view class="menu-title">设置</view><view class="muted">查看应用设置与功能升级记录</view></view><text class="chevron" aria-hidden="true">›</text></view>
   </view>
 </view>

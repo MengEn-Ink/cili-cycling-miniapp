@@ -363,73 +363,21 @@ test('管理员报名在有名额时自动通过并写审批信息', async () =>
   assert.equal(store.state.audits[0].action, 'registration.admin_auto_approved');
 });
 
-test('报名只接受完整凭证和 24 小时内的 canonical Strava 快照', async () => {
-  const legacyCredential = memoryStore();
-  const accepted = await submitRegistration(legacyCredential, input, now);
-  assert.equal(accepted.status, 'pending');
-
-  const profileOnly = memoryStore({ credential: null, snapshot: null });
-  await assert.rejects(
-    submitRegistration(profileOnly, input, now),
-    (error) => error.code === 'STRAVA_NOT_READY',
-  );
-
-  const missingRefreshToken = memoryStore({ credential: { refresh_token_cipher: null } });
-  await assert.rejects(
-    submitRegistration(missingRefreshToken, input, now),
-    (error) => error.code === 'STRAVA_NOT_READY',
-  );
-
-  for (const malformed of [
-    {},
-    { alg: 'AES-GCM', iv: 'iv', tag: 'tag', ciphertext: 'ciphertext' },
-    { alg: 'A256GCM', iv: '', tag: 'tag', ciphertext: 'ciphertext' },
-    { alg: 'A256GCM', iv: 'iv', tag: ' ', ciphertext: 'ciphertext' },
-    { alg: 'A256GCM', iv: 'iv', tag: 'tag', ciphertext: null },
+test('报名不再读取或要求 Strava 凭证与快照', async () => {
+  for (const store of [
+    memoryStore(),
+    memoryStore({ credential: null, snapshot: null }),
+    memoryStore({ credential: { refresh_token_cipher: null }, snapshot: null }),
+    memoryStore({ snapshot: { synced_at: '2026-09-27T12:00:00.000Z' } }),
   ]) {
-    await assert.rejects(
-      submitRegistration(
-        memoryStore({ credential: { access_token_cipher: malformed } }),
-        input,
-        now,
-      ),
-      (error) => error.code === 'STRAVA_NOT_READY',
-    );
-    await assert.rejects(
-      submitRegistration(
-        memoryStore({ credential: { refresh_token_cipher: malformed } }),
-        input,
-        now,
-      ),
-      (error) => error.code === 'STRAVA_NOT_READY',
-    );
-  }
-
-  const missingSnapshot = memoryStore({ snapshot: null });
-  await assert.rejects(
-    submitRegistration(missingSnapshot, input, now),
-    (error) => error.code === 'STRAVA_NOT_READY',
-  );
-
-  const staleSnapshot = memoryStore({ snapshot: { synced_at: '2026-09-27T12:00:00.000Z' } });
-  await assert.rejects(
-    submitRegistration(staleSnapshot, input, now),
-    (error) => error.code === 'STRAVA_NOT_READY',
-  );
-
-  for (const crossAccountStore of [
-    memoryStore({ snapshot: { athlete_id: 'athlete-previous' } }),
-    memoryStore({ snapshot: { athlete_id: undefined } }),
-    memoryStore({ credential: { athlete_id: undefined } }),
-  ]) {
-    await assert.rejects(
-      submitRegistration(crossAccountStore, input, now),
-      (error) => error.code === 'STRAVA_NOT_READY',
-    );
+    const accepted = await submitRegistration(store, input, now);
+    assert.equal(accepted.status, 'pending');
+    assert.equal(accepted.strava_status, 'not_required');
+    assert.equal(Object.hasOwn(accepted, 'strava_snapshot'), false);
   }
 });
 
-test('提交在同一事务写 submitted 审计并只保存 nullable Strava 白名单', async () => {
+test('提交在同一事务写 submitted 审计且不保存 Strava 快照', async () => {
   const store = memoryStore({
     snapshot: {
       total_km: undefined,
@@ -447,18 +395,8 @@ test('提交在同一事务写 submitted 审计并只保存 nullable Strava 白�
   const id = registrationId('a1', openid);
 
   assert.equal(result.status, 'pending');
-  assert.deepEqual(result.strava_snapshot, {
-    total_km: null,
-    activities_90d: null,
-    longest_km: null,
-    total_elevation_m: null,
-    weighted_avg_speed_kmh: null,
-    latest_activity_at: null,
-    synced_at: new Date('2026-09-28T11:00:00.000Z'),
-    coverage_from: null,
-    coverage_to: null,
-    coverage_complete: false,
-  });
+  assert.equal(result.strava_status, 'not_required');
+  assert.equal(Object.hasOwn(result, 'strava_snapshot'), false);
   assert.equal(JSON.stringify(result).includes('openid'), false);
   assert.equal(JSON.stringify(result).includes('cipher'), false);
   assert.equal(JSON.stringify(result).includes('lease'), false);

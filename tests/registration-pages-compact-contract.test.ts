@@ -30,18 +30,13 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     expect(form).not.toMatch(/用车方式|自带车|租车/);
   });
 
-  it('明确绑定 Strava 准备状态，并在提交期间锁定所有入口', () => {
-    expect(form).toContain('status-{{readiness.state}}');
-    expect(form).toContain("readiness.state === 'ready' ? '数据可用'");
-    expect(form).toContain("readiness.state === 'syncing' ? '同步中'");
-    expect(form).toContain("readiness.state === 'disconnected' ? '未连接'");
+  it('报名不展示 Strava 状态，并在提交期间锁定必要入口', () => {
+    expect(form).not.toContain('status-{{readiness.state}}');
+    expect(form).not.toContain('Strava');
     expect(form).toContain("{{submitting ? '正在提交' : '提交报名'}}");
-    expect(form.match(/disabled="{{[^}]*submitting[^}]*}}"/g)?.length).toBeGreaterThanOrEqual(7);
+    expect(form.match(/disabled="{{[^}]*submitting[^}]*}}"/g)?.length).toBeGreaterThanOrEqual(6);
     expect(formStyles).toContain('.experience-segment');
     expect(formStyles).toMatch(/\.segment\s*\{[^}]*min-height:\s*104rpx/s);
-    for (const status of ['ready', 'syncing', 'authorizing', 'failed', 'disconnected']) {
-      expect(formStyles).toContain(`status-${status}`);
-    }
     expect(profileStyles).toContain('.identity-guide');
     expect(stravaStyles).toMatch(/\.status-failed,\s*\.status-disconnected\s*\{/);
   });

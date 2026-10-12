@@ -51,13 +51,13 @@ describe('报名、骑行名片与个人中心设计对齐', () => {
     );
   });
 
-  it('个人中心扩大照片背景，同时保持品牌头部、摘要和菜单紧凑', () => {
+  it('个人中心保留微信身份与紧凑菜单，默认隐藏 Strava 指标', () => {
     const template = read('miniprogram/pages/profile/index.wxml');
     const styles = read('miniprogram/pages/profile/index.wxss');
 
     expect(template).toContain('<brand-logo compact="{{true}}"');
-    expect(template).toContain('class="profile-capability-section"');
-    expect(template).toContain('class="hero-capability-metrics"');
+    expect(template).not.toContain('class="profile-capability-section"');
+    expect(template).not.toContain('class="hero-capability-metrics"');
     expect(template).not.toContain('cardExpanded');
     expect(template).toContain('class="profile-refresh-feedback');
     expect(styles).toMatch(/\.profile-hero\.has-bg\s*\{[^}]*min-height:\s*600rpx/s);

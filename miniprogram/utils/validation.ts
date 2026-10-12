@@ -1,4 +1,4 @@
-import type { Profile, StravaReadiness } from '../models';
+import type { Profile } from '../models';
 import { normalizeGender } from './gender';
 
 function hasSensitiveField(
@@ -27,29 +27,10 @@ export function validateRegistration(v: {
   profile: Profile;
   gatheringMode: string;
   experience: string;
-  readiness: Pick<StravaReadiness, 'state' | 'canRegister'>;
+  readiness?: unknown;
 }) {
   const e = validateRegistrationProfile(v.profile);
   if (!['self_drive', 'support_vehicle'].includes(v.gatheringMode)) e.push('请选择集合方式');
   if (!v.experience) e.push('请选择骑行经验');
-  if (!v.readiness.canRegister) {
-    switch (v.readiness.state) {
-      case 'authorizing':
-        e.push('请先完成 Strava 授权');
-        break;
-      case 'syncing':
-        e.push('Strava 数据正在准备');
-        break;
-      case 'failed':
-        e.push('请重试 Strava 数据准备');
-        break;
-      case 'ready':
-        e.push('Strava 数据尚未准备完成');
-        break;
-      case 'disconnected':
-        e.push('请绑定 Strava');
-        break;
-    }
-  }
   return e;
 }
