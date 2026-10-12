@@ -414,6 +414,9 @@ describe('Strava 页面编排', () => {
     expect(wx.setClipboardData).toHaveBeenCalledWith(
       expect.objectContaining({ data: authorizationUrl }),
     );
+    expect(showModal).toHaveBeenCalledWith(
+      expect.objectContaining({ showCancel: false, confirmText: '我知道了' }),
+    );
     expect(page.data.readiness.state).toBe('authorizing');
     expect(page.data.error).toBe('');
     expect(invalidateProfilePageCache).toHaveBeenCalledOnce();
@@ -449,20 +452,19 @@ describe('Strava 页面编排', () => {
     expect(page.data.error).toBe('');
   });
 
-  it('用户取消浏览器引导时撤销服务端 state 并恢复未连接状态', async () => {
+  it('关闭浏览器引导后保留一次性 state，避免已复制链接立即失效', async () => {
+    page.data.readiness = readiness('disconnected');
     rideService.startStrava.mockResolvedValue({
       authorizationUrl: 'https://www.strava.com/oauth/authorize?state=once',
       expiresAt: 'soon',
     });
     showModal.mockImplementation(({ success }: any) => success({ confirm: false }));
-    rideService.cancelStravaAuthorization.mockResolvedValue(undefined);
 
     await page.connect();
 
-    expect(rideService.cancelStravaAuthorization).toHaveBeenCalledOnce();
-    expect(invalidateProfilePageCache).toHaveBeenCalledTimes(2);
-    expect(page.data.readiness).toMatchObject({ state: 'disconnected', canRegister: false });
-    expect(page.data.error).toContain('已取消浏览器授权');
+    expect(rideService.cancelStravaAuthorization).not.toHaveBeenCalled();
+    expect(page.data.readiness).toMatchObject({ state: 'authorizing', canRegister: false });
+    expect(page.data.error).toBe('');
   });
 
   it.each(['onHide', 'onUnload'] as const)(
