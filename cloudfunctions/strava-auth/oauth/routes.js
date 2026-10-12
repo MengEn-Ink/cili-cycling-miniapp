@@ -2,6 +2,8 @@
 const crypto = require('node:crypto');
 const { StravaError, config, resolveUsableCredential } = require('./core');
 const MAX_GPX_BYTES = 4 * 1024 * 1024;
+const MAX_PUBLIC_ROUTE_HTML_BYTES = 1024 * 1024;
+const PUBLIC_ROUTE_TIMEOUT_MS = 8000;
 function extractRouteId(value) {
   if (typeof value !== 'string' || value.length > 256 || value !== value.trim())
     throw new StravaError('ROUTE_URL_INVALID', '请输入有效的 Strava 路线 URL');
@@ -159,6 +161,141 @@ async function access({ openid, env, store, api, now }) {
   });
   return usable.accessToken;
 }
+function publicRouteError(status) {
+  if (status === 429)
+    return new StravaError('STRAVA_RATE_LIMITED', 'Strava 请求频率已达上限，请稍后重试');
+  return new StravaError(
+    'PUBLIC_ROUTE_UNAVAILABLE',
+    '暂时无法读取该公开路线，请确认路线公开后重试或手动填写',
+  );
+}
+function publicRouteImage(pageProps, html) {
+  const candidate = typeof pageProps?.ogImage?.url === 'string' ? pageProps.ogImage.url : '';
+  const meta =
+    /<meta\b[^>]*\bproperty=["']og:image["'][^>]*\bcontent=["']([^"']+)["'][^>]*>/i.exec(
+      html,
+    )?.[1] ||
+    /<meta\b[^>]*\bcontent=["']([^"']+)["'][^>]*\bproperty=["']og:image["'][^>]*>/i.exec(
+      html,
+    )?.[1] ||
+    '';
+  try {
+    const image = new URL(candidate || meta);
+    return image.protocol === 'https:' ? image.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+function decodeHtmlText(value) {
+  return value
+    .replace(/<[^>]*>/g, '')
+    .replace(/&quot;|&#34;/gi, '"')
+    .replace(/&apos;|&#39;|&#x27;/gi, "'")
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&#(\d{1,7});/g, (_match, code) => String.fromCodePoint(Number(code)))
+    .trim();
+}
+function publicRouteName(pageProps, html) {
+  if (typeof pageProps?.routeName === 'string' && pageProps.routeName.trim())
+    return pageProps.routeName.trim();
+  const heading =
+    /<h1\b[^>]*\bclass=["'][^"']*EntityCallToAction[^"']*["'][^>]*>([\s\S]*?)<\/h1\s*>/i.exec(
+      html,
+    )?.[1];
+  if (!heading) return '';
+  const text = decodeHtmlText(heading);
+  const quoted = /[“"](.{1,120})[”"]/.exec(text);
+  return quoted?.[1]?.trim() || '';
+}
+function parsePublicRouteHtml(html, expectedRouteId) {
+  const match = /<script\b[^>]*\bid=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script\s*>/i.exec(html);
+  if (!match)
+    throw new StravaError('PUBLIC_ROUTE_INVALID', '未能识别该 Strava 公开路线，请手动填写');
+  let data;
+  try {
+    data = JSON.parse(match[1]);
+  } catch {
+    throw new StravaError('PUBLIC_ROUTE_INVALID', '未能识别该 Strava 公开路线，请手动填写');
+  }
+  const pageProps = data?.pageProps;
+  const routeId = String(pageProps?.routeId || data?.query?.id || '');
+  const routeName = publicRouteName(pageProps, html);
+  if (
+    data?.page !== '/routes/[id]' ||
+    routeId !== expectedRouteId ||
+    !routeName ||
+    routeName.length > 120
+  )
+    throw new StravaError('PUBLIC_ROUTE_INVALID', '未能识别该 Strava 公开路线，请手动填写');
+  const result = {
+    strava_route_id: expectedRouteId,
+    strava_route_url: `https://www.strava.com/routes/${expectedRouteId}`,
+    route_name: routeName,
+  };
+  const image = publicRouteImage(pageProps, html);
+  return image ? { ...result, preview_image_url: image } : result;
+}
+async function readPublicRouteHtml(response) {
+  if (response.body?.getReader) {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let bytes = 0;
+    let html = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      bytes += value.byteLength;
+      if (bytes > MAX_PUBLIC_ROUTE_HTML_BYTES) {
+        await reader.cancel();
+        throw new StravaError('PUBLIC_ROUTE_TOO_LARGE', 'Strava 公开路线页面过大，请手动填写');
+      }
+      html += decoder.decode(value, { stream: true });
+    }
+    return html + decoder.decode();
+  }
+  const html = await response.text();
+  if (Buffer.byteLength(html) > MAX_PUBLIC_ROUTE_HTML_BYTES)
+    throw new StravaError('PUBLIC_ROUTE_TOO_LARGE', 'Strava 公开路线页面过大，请手动填写');
+  return html;
+}
+async function publicRoutePreviewFlow({
+  routeUrl,
+  fetchImpl = globalThis.fetch,
+  timeoutMs = PUBLIC_ROUTE_TIMEOUT_MS,
+}) {
+  const routeId = extractRouteId(routeUrl);
+  if (typeof fetchImpl !== 'function')
+    throw new StravaError('PUBLIC_ROUTE_UNAVAILABLE', '公开路线解析服务暂时不可用');
+  const canonicalUrl = `https://www.strava.com/routes/${routeId}`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetchImpl(canonicalUrl, {
+      method: 'GET',
+      redirect: 'manual',
+      signal: controller.signal,
+      headers: {
+        accept: 'text/html,application/xhtml+xml',
+        'user-agent': 'Mozilla/5.0 (compatible; CiliRoutePreview/1.0)',
+      },
+    });
+    if (!response?.ok) throw publicRouteError(Number(response?.status));
+    const declared = Number(response.headers?.get?.('content-length'));
+    if (Number.isFinite(declared) && declared > MAX_PUBLIC_ROUTE_HTML_BYTES)
+      throw new StravaError('PUBLIC_ROUTE_TOO_LARGE', 'Strava 公开路线页面过大，请手动填写');
+    if (response.redirected === true || (response.url && response.url !== canonicalUrl))
+      throw publicRouteError(Number(response.status));
+    const html = await readPublicRouteHtml(response);
+    return parsePublicRouteHtml(html, routeId);
+  } catch (error) {
+    if (error instanceof StravaError) throw error;
+    throw new StravaError('PUBLIC_ROUTE_UNAVAILABLE', '公开路线解析服务暂时不可用，请手动填写');
+  } finally {
+    clearTimeout(timer);
+  }
+}
 async function routePreviewFlow({ openid, routeUrl, env, store, api, now = new Date() }) {
   const routeId = extractRouteId(routeUrl);
   const token = await access({ openid, env, store, api, now });
@@ -209,12 +346,15 @@ async function routeGpxFlow({ openid, activityId, routeId, env, store, api, now 
 }
 module.exports = {
   MAX_GPX_BYTES,
+  MAX_PUBLIC_ROUTE_HTML_BYTES,
   extractRouteId,
   haversineMeters,
   parseGpx,
   popularClimbs,
   requireRead,
   previewId,
+  parsePublicRouteHtml,
+  publicRoutePreviewFlow,
   routePreviewFlow,
   routeGpxFlow,
 };

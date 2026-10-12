@@ -459,6 +459,10 @@ export class CachingRepository implements RideRepository {
     return this.inner.getPhoneNumber(code);
   }
 
+  previewPublicStravaRoute(routeUrl: string) {
+    return this.inner.previewPublicStravaRoute(routeUrl);
+  }
+
   previewStravaRoute(routeUrl: string) {
     return this.inner.previewStravaRoute(routeUrl);
   }

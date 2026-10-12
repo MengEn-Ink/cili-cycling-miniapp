@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.13.31',
+    date: '2026-10-13',
+    title: '公开 Strava 路线免授权识别',
+    summary: '创建活动时可直接识别公开 Strava 路线名称，不再要求管理员先连接 Strava。',
+    latest: true,
+    features: [
+      '粘贴公开 Strava 路线链接即可校验路线并识别名称，无需占用 Strava 授权名额',
+      '私有、失效或受限路线会提示手动填写，不阻断活动创建和发布',
+      '公开页面解析限制固定域名、响应大小与重定向，且不读取任何 Strava Cookie',
+    ],
+  },
+  {
     version: '2026.10.13.30',
     date: '2026-10-13',
     title: '活动群二维码支持放大和保存',
     summary: '报名审核通过后，可点击活动群二维码放大查看，也可直接保存到系统相册。',
-    latest: true,
+    latest: false,
     features: [
       '点击群二维码进入微信图片预览，便于放大后识别和扫码',
       '支持云文件与网络图片下载后保存到相册，并提供保存进度反馈',

@@ -5,6 +5,7 @@ import type {
   PersonalCapabilityCard,
   Profile,
   ProfileUpdate,
+  PublicStravaRoutePreview,
   Registration,
   RegistrationStatus,
   StravaConnection,
@@ -120,6 +121,7 @@ export interface RideRepository extends AdminReviewRepository, ActivityAdminRepo
   startStrava(): Promise<{ authorizationUrl: string; expiresAt: string }>;
   cancelStravaAuthorization(): Promise<void>;
   syncStrava(): Promise<StravaReadiness>;
+  previewPublicStravaRoute(routeUrl: string): Promise<PublicStravaRoutePreview>;
   previewStravaRoute(routeUrl: string): Promise<StravaRoutePreview>;
   getStravaRouteGpx(activityId: string, routeId: string): Promise<StravaRouteGpx>;
   exportActivityGpx(activityId: string): Promise<{ base64: string; fileName: string }>;

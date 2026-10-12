@@ -567,6 +567,15 @@ export class MockRepository implements RideRepository {
   async syncStrava() {
     return this.getStravaReadiness();
   }
+  async previewPublicStravaRoute(routeUrl: string) {
+    const match = /\/routes\/(\d+)/.exec(routeUrl);
+    if (!match) throw new Error('请输入有效的 Strava 路线 URL');
+    return {
+      stravaRouteId: match[1],
+      stravaRouteUrl: `https://www.strava.com/routes/${match[1]}`,
+      routeName: `公开路线 ${match[1]}`,
+    };
+  }
   async previewStravaRoute(routeUrl: string) {
     const match = /\/routes\/(\d+)/.exec(routeUrl);
     if (!match) throw new Error('请输入有效的 Strava 路线 URL');

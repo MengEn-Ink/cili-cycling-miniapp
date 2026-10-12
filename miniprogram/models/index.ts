@@ -31,6 +31,12 @@ export interface PopularClimb {
   popularity: number;
   popularityLabel: string;
 }
+export interface PublicStravaRoutePreview {
+  stravaRouteId: string;
+  stravaRouteUrl: string;
+  routeName: string;
+  previewImageUrl?: string;
+}
 export interface StravaRoutePreview {
   stravaRouteId: string;
   stravaRouteUrl: string;

@@ -44,21 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.13.30',
+      version: '2026.10.13.31',
       latest: true,
-      title: '活动群二维码支持放大和保存',
-      summary: '报名审核通过后，可点击活动群二维码放大查看，也可直接保存到系统相册。',
+      title: '公开 Strava 路线免授权识别',
+      summary: '创建活动时可直接识别公开 Strava 路线名称，不再要求管理员先连接 Strava。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.13.31',
       '2026.10.13.30',
       '2026.10.12.29',
       '2026.10.12.28',
       '2026.10.12.27',
-      '2026.10.12.26',
     ]);
   });
 
