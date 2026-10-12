@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.12.18',
+    date: '2026-10-12',
+    title: 'Strava 授权链接复制后保持有效',
+    summary: '复制授权链接后关闭操作提示不再撤销一次性授权状态，避免粘贴到浏览器时链接已经失效。',
+    latest: true,
+    features: [
+      '授权链接复制成功后保留 10 分钟有效期',
+      '操作提示改为单按钮，不再误触取消并使链接失效',
+      '保留最小读取权限，不额外申请 Strava 活动写入权限',
+    ],
+  },
+  {
     version: '2026.10.12.17',
     date: '2026-10-12',
     title: 'Strava 授权失败后重试更准确',
     summary: '授权状态检查异常时会优先重新确认授权结果，不再误走数据准备流程。',
-    latest: true,
+    latest: false,
     features: [
       '授权检查超时后提供“重新检查授权状态”操作',
       '重试时先读取服务端 OAuth 结果，再按真实状态继续同步',

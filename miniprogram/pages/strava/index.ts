@@ -39,15 +39,16 @@ function copyAuthorizationUrl(url: string): Promise<void> {
   });
 }
 
-function showBrowserGuide(): Promise<boolean> {
+function showBrowserGuide(): Promise<void> {
   return new Promise((resolve) => {
     wx.showModal({
       title: '授权链接已复制',
-      content: '请打开系统浏览器，粘贴并访问链接完成 Strava 授权；完成后返回微信，本页会自动同步。',
+      content:
+        '请打开系统浏览器，粘贴并访问链接完成 Strava 授权；完成后返回微信，本页会自动同步。链接将在 10 分钟后失效。',
       confirmText: '我知道了',
-      cancelText: '取消授权',
-      success: (result: { confirm: boolean }) => resolve(result.confirm),
-      fail: () => resolve(false),
+      showCancel: false,
+      success: () => resolve(),
+      fail: () => resolve(),
     });
   });
 }
@@ -158,25 +159,10 @@ Page({
         return;
       }
       if (requestId !== this.loadRequestId) return;
-      const confirmed = await showBrowserGuide();
+      await showBrowserGuide();
       if (requestId !== this.loadRequestId) return;
-      if (!confirmed) {
-        const cancelled = await runPageTask(
-          () => rideService.cancelStravaAuthorization(),
-          '取消授权状态失败',
-        );
-        if (!cancelled.error) invalidateProfilePageCache();
-        if (requestId !== this.loadRequestId) return;
-        if (cancelled.error) {
-          this.setData({ error: cancelled.error });
-          return;
-        }
-        this.setReadiness(disconnectedReadiness());
-        this.setData({ error: '已取消浏览器授权；如需连接，请重新点击授权。' });
-        return;
-      }
       const currentState = this.data.readiness?.state;
-      // modal 回调可能晚于返回微信后的 onShow，只允许同一轮 connect 更新未连接/授权中的旧状态。
+      // 一次性 state 只由回调消费或到期失效；关闭提示不能撤销，否则刚复制的链接会立即失效。
       if (
         requestId === this.loadRequestId &&
         (currentState === 'disconnected' || currentState === 'authorizing')
