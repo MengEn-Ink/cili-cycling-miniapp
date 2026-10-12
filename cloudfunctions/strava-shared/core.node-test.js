@@ -349,11 +349,39 @@ test('累计统计接口失败时保留近期快照并标记降级', async () =>
     lifetime_stats_status: 'failed',
   });
 });
+test('callback 换取 token 失败时持久化稳定错误码，避免小程序一直停留在授权中', async () => {
+  const state = createState();
+  let rejected;
+  await assert.rejects(
+    callbackFlow({
+      code: 'code',
+      state: state.raw,
+      env,
+      store: {
+        consumeState: async () => ({
+          openid: 'o',
+          expires_at: new Date(Date.now() + 1000),
+          attempt_generation: 1,
+          latest_attempt: true,
+        }),
+        rejectAuthorization: async (_state, code) => {
+          rejected = code;
+          return true;
+        },
+      },
+      api: { exchange: async () => Promise.reject(new Error('upstream unavailable')) },
+    }),
+    /upstream unavailable/,
+  );
+  assert.equal(rejected, 'STRAVA_API_FAILED');
+});
+
 test('callback 校验错误并安全保存加密 token', async () => {
   const state = createState();
   let saved;
   const store = {
     consumeState: async () => ({ openid: 'o', expires_at: new Date(Date.now() + 1000) }),
+    rejectAuthorization: async () => true,
     saveCredential: async (v) => {
       saved = v;
     },

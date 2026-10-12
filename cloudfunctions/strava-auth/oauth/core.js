@@ -428,26 +428,32 @@ async function fetchActivities(api, accessToken, after, maxPages = 5) {
 }
 async function callbackFlow({ code, state, error, env, store, api, now = new Date() }) {
   const stateDoc = await consumeState(store, state, now);
-  if (stateDoc.latest_attempt === false)
-    throw new StravaError('OAUTH_ATTEMPT_SUPERSEDED', 'OAuth 授权已被更新的尝试替代');
-  if (typeof error === 'string' && error) {
-    const code = error === 'access_denied' ? 'OAUTH_ACCESS_DENIED' : 'OAUTH_PROVIDER_ERROR';
-    await store.rejectAuthorization(stateDoc, code, now);
-    throw new StravaError(code, recoveryFor(code).message);
+  try {
+    if (stateDoc.latest_attempt === false)
+      throw new StravaError('OAUTH_ATTEMPT_SUPERSEDED', 'OAuth 授权已被更新的尝试替代');
+    if (typeof error === 'string' && error) {
+      const code = error === 'access_denied' ? 'OAUTH_ACCESS_DENIED' : 'OAUTH_PROVIDER_ERROR';
+      throw new StravaError(code, recoveryFor(code).message);
+    }
+    if (typeof code !== 'string' || !code)
+      throw new StravaError('OAUTH_CODE_MISSING', '缺少 OAuth code');
+    const cfg = config(env);
+    const token = await api.exchange({
+      client_id: cfg.clientId,
+      client_secret: cfg.clientSecret,
+      code,
+      grant_type: 'authorization_code',
+    });
+    const credential = tokenDocument(stateDoc.openid, token, cfg.key, now);
+    const saved = await store.saveCredential(credential, stateDoc, now);
+    if (saved === false) throw new StravaError('OAUTH_ATTEMPT_SUPERSEDED', 'OAuth 授权已失效');
+    return { connected: true, athlete_name: credential.athlete_name };
+  } catch (callbackError) {
+    const errorCode =
+      callbackError instanceof StravaError ? callbackError.code : 'STRAVA_API_FAILED';
+    await store.rejectAuthorization(stateDoc, errorCode, now);
+    throw callbackError;
   }
-  if (typeof code !== 'string' || !code)
-    throw new StravaError('OAUTH_CODE_MISSING', '缺少 OAuth code');
-  const cfg = config(env);
-  const token = await api.exchange({
-    client_id: cfg.clientId,
-    client_secret: cfg.clientSecret,
-    code,
-    grant_type: 'authorization_code',
-  });
-  const credential = tokenDocument(stateDoc.openid, token, cfg.key, now);
-  const saved = await store.saveCredential(credential, stateDoc, now);
-  if (saved === false) throw new StravaError('OAUTH_ATTEMPT_SUPERSEDED', 'OAuth 授权已失效');
-  return { connected: true, athlete_name: credential.athlete_name };
 }
 function sameCipherEnvelope(left, right) {
   return Boolean(
