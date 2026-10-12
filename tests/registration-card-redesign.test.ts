@@ -10,6 +10,7 @@ const credentialStyles = read('miniprogram/pages/credential/index.wxss');
 const credentialPage = read('miniprogram/pages/credential/index.ts');
 const activityCard = read('miniprogram/components/activity-card/index.wxml');
 const activityCardStyles = read('miniprogram/components/activity-card/index.wxss');
+const activityPageStyles = read('miniprogram/pages/activities/index.wxss');
 
 describe('行程状态卡与报名凭证重设计契约', () => {
   it('全部状态使用统一白色票面，待处理状态仅用主题橙描边强调', () => {
@@ -56,6 +57,18 @@ describe('行程状态卡与报名凭证重设计契约', () => {
     expect(activityCard).toContain('aria-label="集合时间：{{item.displayTimeLabel}}"');
     expect(activityCardStyles).not.toContain('.date-value');
     expect(activityCardStyles).toMatch(/\.time-value\s*\{[^}]*font-size:\s*34rpx/s);
+  });
+
+  it('活动首页与行程页共享黑白橙票据信息层级', () => {
+    expect(activityPageStyles).toMatch(
+      /\.section-head\s*\{[^}]*border-left:\s*8rpx solid var\(--color-brand\)[^}]*background:\s*var\(--color-text\)[^}]*color:\s*var\(--color-on-action\)/s,
+    );
+    expect(activityCardStyles).toMatch(
+      /\.date-plate\s*\{[^}]*border-left:\s*8rpx solid var\(--color-brand\)[^}]*background:\s*var\(--color-text\)[^}]*color:\s*var\(--color-on-action\)/s,
+    );
+    expect(activityCardStyles).toMatch(
+      /\.metrics\s*\{[^}]*border-left:\s*8rpx solid var\(--color-brand\)/s,
+    );
   });
 
   it('集合时间与集合地点成为独立高权重信息，不再展示审批意见和进度', () => {

@@ -1,6 +1,6 @@
 <view class="detail-page">
   <state-view loading="{{loading}}" error="{{error}}">
-    <view wx:if="{{item}}">
+    <view wx:if="{{item}}" class="detail-unified-card">
       <view class="detail-hero {{galleryImages.length && !coverFailed ? 'detail-hero--media' : 'detail-hero--plain'}}">
         <swiper wx:if="{{galleryImages.length > 1 && !coverFailed}}" class="hero-gallery" indicator-dots="{{true}}" indicator-color="rgba(255,255,255,.4)" indicator-active-color="#ff5722" circular="{{true}}">
           <swiper-item wx:for="{{galleryImages}}" wx:for-item="media" wx:key="*this"><image class="hero-media" src="{{media}}" mode="aspectFill" data-index="{{index}}" binderror="galleryImageError" aria-label="活动图片 {{index + 1}}" /></swiper-item>

@@ -78,6 +78,21 @@ describe('活动详情设计与日期契约', () => {
     );
   });
 
+  it('使用单一完整票卡承载顶部照片与全部活动信息', () => {
+    const template = read('miniprogram/pages/activity-detail/index.wxml');
+    const styles = read('miniprogram/pages/activity-detail/index.wxss');
+    expect(template).toContain('wx:if="{{item}}" class="detail-unified-card"');
+    expect(styles).toMatch(
+      /\.detail-unified-card\s*\{[^}]*border:\s*4rpx solid var\(--color-card-border\)/s,
+    );
+    expect(styles).toMatch(
+      /\.detail-unified-card \.card\s*\{[^}]*border:\s*0;[^}]*box-shadow:\s*none;/s,
+    );
+    expect(styles).toMatch(
+      /\.detail-unified-card \.time-card--featured\s*\{[^}]*background:\s*var\(--color-text\)[^}]*color:\s*var\(--color-on-action\)/s,
+    );
+  });
+
   it('集合点同时展示自定义名称和地图地址，并保留点位导航', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     expect(template).toContain('class="route-location-name">{{item.route.start}}');
