@@ -44,21 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.12.27',
+      version: '2026.10.12.28',
       latest: true,
-      title: '报名凭证重点信息更清晰',
-      summary: '集合时间、集合地点和导航入口统一为高对比黑白样式，信息缺失时也会给出明确提示。',
+      title: '活动详情信息更紧凑完整',
+      summary: '活动照片置于顶部背景，时间、路线、报名人员和注意事项按统一主题紧凑展示。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.12.28',
       '2026.10.12.27',
       '2026.10.12.26',
       '2026.10.12.25',
       '2026.10.12.24',
-      '2026.10.12.23',
     ]);
   });
 
