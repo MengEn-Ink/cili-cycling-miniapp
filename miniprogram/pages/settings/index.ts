@@ -4,11 +4,23 @@ import { rideService } from '../../services/ride-service';
 
 const RELEASE_NOTES = [
   {
+    version: '2026.10.12.20',
+    date: '2026-10-12',
+    title: 'Strava 回调失败状态可立即恢复',
+    summary: '浏览器授权回调失败时会记录稳定错误状态，返回小程序后可直接看到原因并重新授权。',
+    latest: true,
+    features: [
+      '换取 Strava 凭证失败时不再一直停留在授权中',
+      '回调缺少参数或服务配置异常时同步更新失败状态',
+      '失败信息保持脱敏，仅向小程序返回稳定错误码和恢复建议',
+    ],
+  },
+  {
     version: '2026.10.12.19',
     date: '2026-10-12',
     title: 'Strava 授权链接增加可见复制兜底',
     summary: '不再只依赖微信剪贴板回调，授权页始终展示可核对、可长按复制的完整链接。',
-    latest: true,
+    latest: false,
     features: [
       '自动复制成功后仍保留完整授权链接',
       '支持长按原始链接复制并核对 Strava 域名',
