@@ -44,21 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.12.26',
+      version: '2026.10.12.27',
       latest: true,
-      title: '全套界面统一为黑白橙票据风格',
-      summary: '活动、行程、个人中心、Strava 与管理页面统一视觉层级，重点集合信息更醒目。',
+      title: '报名凭证重点信息更清晰',
+      summary: '集合时间、集合地点和导航入口统一为高对比黑白样式，信息缺失时也会给出明确提示。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.12.27',
       '2026.10.12.26',
       '2026.10.12.25',
       '2026.10.12.24',
       '2026.10.12.23',
-      '2026.10.12.22',
     ]);
   });
 

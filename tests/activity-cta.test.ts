@@ -375,6 +375,25 @@ describe('凭证页重报接线', () => {
     expect(page.data.navigationLocation).toBeNull();
   });
 
+  it('集合时间缺失时显示明确提示而不是留下空白黑卡', async () => {
+    rideService.getRegistration.mockResolvedValue({
+      id: 'r1',
+      activityId: 'a1',
+      status: 'approved',
+    });
+    rideService.getActivity.mockResolvedValue(
+      activity({
+        date: '',
+        startAt: '',
+        schedule: [],
+      }),
+    );
+
+    await page.onLoad({ id: 'r1' });
+
+    expect(page.data.meetingTime).toBe('时间待公布');
+  });
+
   it('报名凭证仅在集合点有坐标时打开地图', () => {
     const openLocation = vi.fn();
     Object.assign(wx, { openLocation });

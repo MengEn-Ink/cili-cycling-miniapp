@@ -67,5 +67,18 @@ describe('行程状态卡与报名凭证重设计契约', () => {
     expect(credential).not.toContain('reviewComment');
     expect(credential).not.toContain('timeline-card');
     expect(credentialStyles).toContain('.meeting-spotlight');
+    expect(credentialStyles).toMatch(
+      /\.meeting-spotlight\s*\{[^}]*background:\s*var\(--color-text\)[^}]*color:\s*var\(--color-on-action\)/s,
+    );
+    expect(credentialStyles).toMatch(
+      /\.meeting-spotlight \.meet-label\s*\{[^}]*color:\s*var\(--color-on-action\)/s,
+    );
+    expect(credentialStyles).toMatch(/\.meeting-time\s*\{[^}]*color:\s*var\(--color-on-action\)/s);
+    expect(credentialStyles).toMatch(
+      /\.meeting-location-title\s*\{[^}]*color:\s*var\(--color-on-action\)/s,
+    );
+    expect(credentialStyles).toMatch(
+      /\.meeting-location button\s*\{[^}]*background:\s*var\(--color-on-action\)[^}]*color:\s*var\(--color-text\)/s,
+    );
   });
 });
