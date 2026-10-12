@@ -10,7 +10,7 @@ const {
   toError,
 } = require('./oauth/core');
 const { stravaApi } = require('./oauth/api');
-const { routePreviewFlow, routeGpxFlow } = require('./oauth/routes');
+const { publicRoutePreviewFlow, routePreviewFlow, routeGpxFlow } = require('./oauth/routes');
 const { createReadinessStore } = require('./store');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
@@ -38,6 +38,7 @@ function createHandler({
   getOpenId = () => cloud.getWXContext().OPENID,
   cleanup = cleanupExpiredStates,
   readinessStore = store,
+  publicRoutePreview = publicRoutePreviewFlow,
   logger = console,
 } = {}) {
   return async (event = {}) => {
@@ -79,13 +80,15 @@ function createHandler({
             store: readinessStore,
           }),
         );
-      if (event.action === 'routePreview') {
-        stage = 'route-preview';
+      if (event.action === 'publicRoutePreview' || event.action === 'routePreview') {
+        stage = event.action === 'publicRoutePreview' ? 'public-route-preview' : 'route-preview';
         const admin = await readinessStore.getAdmin(OPENID);
         if (!admin || admin._id !== OPENID || admin.enabled === false)
           throw Object.assign(new Error('仅管理员可以同步 Strava 路线'), {
             code: 'ADMIN_REQUIRED',
           });
+        if (event.action === 'publicRoutePreview')
+          return ok(await publicRoutePreview({ routeUrl: event.routeUrl }));
         return ok(
           await routePreviewFlow({
             openid: OPENID,

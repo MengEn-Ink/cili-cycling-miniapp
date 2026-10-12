@@ -2621,6 +2621,49 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
     });
   });
 
+  it('previewPublicStravaRoute 免授权识别公开路线摘要并严格映射', async () => {
+    const preview = {
+      strava_route_id: '123',
+      strava_route_url: 'https://www.strava.com/routes/123',
+      route_name: '周末环湖',
+      preview_image_url: 'https://dgtzuqphqg23d.cloudfront.net/route.png',
+    };
+    const { cloud, callFunction } = cloudWith(success(preview));
+
+    await expect(
+      new CloudRepository(cloud).previewPublicStravaRoute(
+        'https://www.strava.com/zh-cn/routes/123/',
+      ),
+    ).resolves.toEqual({
+      stravaRouteId: '123',
+      stravaRouteUrl: 'https://www.strava.com/routes/123',
+      routeName: '周末环湖',
+      previewImageUrl: 'https://dgtzuqphqg23d.cloudfront.net/route.png',
+    });
+    expectCall(callFunction, 'strava-auth', {
+      action: 'publicRoutePreview',
+      routeUrl: 'https://www.strava.com/zh-cn/routes/123/',
+    });
+  });
+
+  it('previewPublicStravaRoute 拒绝非法输入与伪造响应', async () => {
+    const repository = new CloudRepository(
+      cloudWith(
+        success({
+          strava_route_id: '123',
+          strava_route_url: 'https://evil.example/routes/123',
+          route_name: '伪造路线',
+        }),
+      ).cloud,
+    );
+    await expect(
+      repository.previewPublicStravaRoute('https://www.strava.com/routes/123?x=1'),
+    ).rejects.toMatchObject({ code: 'ROUTE_URL_INVALID' });
+    await expect(
+      repository.previewPublicStravaRoute('https://www.strava.com/routes/123'),
+    ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+  });
+
   it('previewStravaRoute 接受地区 URL 并严格映射完整预览', async () => {
     const preview = {
       strava_route_id: '123',

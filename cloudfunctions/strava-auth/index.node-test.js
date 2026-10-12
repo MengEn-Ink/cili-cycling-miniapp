@@ -39,3 +39,48 @@ test('status 内部失败记录脱敏阶段诊断且保持通用客户端错误'
   ]);
   assert.doesNotMatch(JSON.stringify(logs), /user-1|secret-token|query leaked/);
 });
+
+test('publicRoutePreview 仅校验管理员且不要求 OAuth 凭证', async () => {
+  let requested;
+  const handler = createHandler({
+    getOpenId: () => 'admin-1',
+    readinessStore: {
+      getAdmin: async () => ({ _id: 'admin-1', enabled: true }),
+      getCredential: () => assert.fail('公开路线解析不得读取 OAuth 凭证'),
+    },
+    publicRoutePreview: async (input) => {
+      requested = input;
+      return {
+        strava_route_id: '42',
+        strava_route_url: 'https://www.strava.com/routes/42',
+        route_name: '周末环湖',
+      };
+    },
+  });
+
+  const result = await handler({
+    action: 'publicRoutePreview',
+    routeUrl: 'https://www.strava.com/routes/42',
+  });
+
+  assert.deepEqual(requested, { routeUrl: 'https://www.strava.com/routes/42' });
+  assert.equal(result.ok, true);
+  assert.equal(result.data.route_name, '周末环湖');
+});
+
+test('publicRoutePreview 拒绝非管理员', async () => {
+  const handler = createHandler({
+    getOpenId: () => 'member-1',
+    readinessStore: { getAdmin: async () => null },
+    publicRoutePreview: () => assert.fail('非管理员不得发起公开路线抓取'),
+  });
+
+  const result = await handler({
+    action: 'publicRoutePreview',
+    routeUrl: 'https://www.strava.com/routes/42',
+  });
+  assert.deepEqual(result, {
+    ok: false,
+    error: { code: 'ADMIN_REQUIRED', message: '仅管理员可以同步 Strava 路线' },
+  });
+});

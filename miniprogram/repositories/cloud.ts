@@ -7,6 +7,7 @@ import type {
   PersonalCapabilityCardState,
   Profile,
   ProfileUpdate,
+  PublicStravaRoutePreview,
   Registration,
   RegistrationStatus,
   StravaConnection,
@@ -246,6 +247,26 @@ function mapActivityRouteExtras(raw: unknown) {
     ...(Array.isArray(raw.elevation_profile) ? { elevationProfile: points.slice(0, 80) } : {}),
     ...(safeBounds ? { routeBounds: safeBounds } : {}),
     ...(Array.isArray(raw.popular_climbs) ? { popularClimbs: climbs.slice(0, 3) } : {}),
+  };
+}
+function mapPublicStravaRoutePreview(raw: unknown): PublicStravaRoutePreview {
+  const value = expectRecord(raw);
+  const routeId = typeof value.strava_route_id === 'string' ? value.strava_route_id : '';
+  const routeUrl = httpsUrl(value.strava_route_url);
+  const routeName = typeof value.route_name === 'string' ? value.route_name.trim() : '';
+  const previewImageUrl = httpsUrl(value.preview_image_url);
+  if (
+    !/^[1-9]\d{0,19}$/.test(routeId) ||
+    routeUrl !== `https://www.strava.com/routes/${routeId}` ||
+    !routeName ||
+    routeName.length > 120
+  )
+    return invalidResponse();
+  return {
+    stravaRouteId: routeId,
+    stravaRouteUrl: routeUrl,
+    routeName,
+    ...(previewImageUrl ? { previewImageUrl } : {}),
   };
 }
 function mapStravaRoutePreview(raw: unknown): StravaRoutePreview {
@@ -1443,6 +1464,20 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
   }
   async syncStrava() {
     return mapStravaReadiness(await this.call('strava-auth', { action: 'sync' }));
+  }
+  async previewPublicStravaRoute(routeUrl: string) {
+    if (
+      typeof routeUrl !== 'string' ||
+      routeUrl.length > 256 ||
+      routeUrl !== routeUrl.trim() ||
+      !/^https:\/\/www\.strava\.com\/(?:[a-z]{2}(?:-[a-z]{2})?\/)?routes\/[1-9]\d{0,19}\/?$/i.test(
+        routeUrl,
+      )
+    )
+      throw new CloudRepositoryError('ROUTE_URL_INVALID', '请输入有效的 Strava 路线 URL');
+    return mapPublicStravaRoutePreview(
+      await this.call('strava-auth', { action: 'publicRoutePreview', routeUrl }),
+    );
   }
   async previewStravaRoute(routeUrl: string) {
     if (

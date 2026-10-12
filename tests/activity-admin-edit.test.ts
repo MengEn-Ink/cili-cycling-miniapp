@@ -5,6 +5,7 @@ import type { Activity } from '../miniprogram/models';
 import { formatLocalDateTime } from '../miniprogram/utils/date-time';
 
 const rideService = vi.hoisted(() => ({
+  previewPublicStravaRoute: vi.fn(),
   previewStravaRoute: vi.fn(),
   getStravaReadiness: vi.fn(),
   getAdminActivity: vi.fn(),
@@ -92,6 +93,7 @@ describe('日常活动极简创建与编辑', () => {
 
   beforeEach(async () => {
     vi.resetModules();
+    rideService.previewPublicStravaRoute.mockReset();
     rideService.previewStravaRoute.mockReset();
     rideService.getStravaReadiness.mockReset().mockResolvedValue({ state: 'ready' });
     rideService.getAdminActivity.mockReset().mockResolvedValue(activity);
@@ -1002,44 +1004,38 @@ describe('日常活动极简创建与编辑', () => {
     expect(page.data.groupQrCode).toBe('cloud://new-group-qr.jpg');
   });
 
-  it('仅在同步线路时检测 Strava 授权，并允许返回手动填写', async () => {
-    rideService.getStravaReadiness.mockResolvedValue({ state: 'disconnected' });
-    vi.mocked(wx.showModal).mockImplementation(({ success }: any) => success({ confirm: false }));
-    page.data.form.stravaRouteUrl = 'https://www.strava.com/routes/42';
-
-    await page.syncStravaRoute();
-
-    expect(wx.showModal).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: '需要 Strava 授权',
-        confirmText: '去授权',
-        cancelText: '手动填写',
-      }),
-    );
-    expect(rideService.previewStravaRoute).not.toHaveBeenCalled();
-    expect(page.data.syncingRoute).toBe(false);
-  });
-
-  it('同步 Strava 路线并保存服务端预览指标', async () => {
-    await page.onLoad({});
+  it('无需 Strava 授权即可识别公开路线，并保留手动填写能力', async () => {
     const preview = {
       stravaRouteId: '42',
       stravaRouteUrl: 'https://www.strava.com/routes/42',
-      distanceKm: 81.2,
-      elevationM: 930,
-      estimatedMovingTimeSeconds: 12600,
-      elevationProfile: [],
-      routeBounds: { south: 22, west: 113, north: 23, east: 114 },
-      popularClimbs: [],
+      routeName: '周末环湖',
     };
-    rideService.previewStravaRoute.mockResolvedValue(preview);
+    rideService.previewPublicStravaRoute.mockResolvedValue(preview);
     page.data.form.stravaRouteUrl = preview.stravaRouteUrl;
 
     await page.syncStravaRoute();
 
-    expect(rideService.previewStravaRoute).toHaveBeenCalledWith(preview.stravaRouteUrl);
-    expect(page.data.stravaRoutePreview).toEqual(preview);
-    expect(wx.showToast).toHaveBeenCalledWith({ title: '路线信息已同步', icon: 'success' });
+    expect(rideService.getStravaReadiness).not.toHaveBeenCalled();
+    expect(rideService.previewStravaRoute).not.toHaveBeenCalled();
+    expect(rideService.previewPublicStravaRoute).toHaveBeenCalledWith(preview.stravaRouteUrl);
+    expect(page.data.publicStravaRoutePreview).toEqual(preview);
+    expect(page.data.stravaRoutePreview).toBeUndefined();
+    expect(wx.showModal).not.toHaveBeenCalled();
+    expect(wx.showToast).toHaveBeenCalledWith({ title: '已识别公开路线', icon: 'success' });
+    expect(page.data.syncingRoute).toBe(false);
+  });
+
+  it('公开路线识别失败时保留链接和表单并提示手动填写', async () => {
+    rideService.previewPublicStravaRoute.mockRejectedValue(
+      new Error('暂时无法读取该公开路线，请手动填写'),
+    );
+    page.data.form.stravaRouteUrl = 'https://www.strava.com/routes/42';
+
+    await page.syncStravaRoute();
+
+    expect(page.data.form.stravaRouteUrl).toBe('https://www.strava.com/routes/42');
+    expect(page.data.error).toBe('暂时无法读取该公开路线，请手动填写');
+    expect(page.data.syncingRoute).toBe(false);
   });
 
   it('界面保持极简字段并提供 Strava 路线信息同步', () => {
@@ -1051,7 +1047,8 @@ describe('日常活动极简创建与编辑', () => {
     expect(template).toContain('备注说明');
     expect(template).toContain('活动群二维码');
     expect(template).toContain('二维码可能已过期');
-    expect(template).toContain('同步路线信息');
+    expect(template).toContain('识别公开路线');
+    expect(template).toContain('无需 Strava 授权');
     expect(template).toContain('预计 {{stravaRouteTimeLabel}}');
     expect(template).toContain('form.title');
     expect(template).toContain('form.startDate');

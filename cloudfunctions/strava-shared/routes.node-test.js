@@ -7,6 +7,7 @@ const {
   extractRouteId,
   parseGpx,
   popularClimbs,
+  publicRoutePreviewFlow,
   routePreviewFlow,
   routeGpxFlow,
 } = require('./routes');
@@ -106,6 +107,117 @@ test('star_count 全部缺失时按 athlete_count 回退并诚实标注', async 
   );
   assert.equal(result[0].popularity_label, '20 位骑手');
 });
+test('匿名解析公开路线页面中的可信摘要且不携带用户凭证', async () => {
+  let requested;
+  const result = await publicRoutePreviewFlow({
+    routeUrl: 'https://www.strava.com/zh-CN/routes/2995569663284766500/',
+    fetchImpl: async (url, options) => {
+      requested = { url, options };
+      return {
+        ok: true,
+        status: 200,
+        redirected: false,
+        url: 'https://www.strava.com/routes/2995569663284766500',
+        headers: { get: (name) => (name === 'content-length' ? '512' : null) },
+        text: async () =>
+          '<script id="__NEXT_DATA__" type="application/json">' +
+          JSON.stringify({
+            page: '/routes/[id]',
+            query: { id: '2995569663284766500' },
+            pageProps: {
+              isLoggedIn: false,
+              routeId: '2995569663284766500',
+              routeName: '黑分解',
+              fullUrl: 'https://www.strava.com/routes/2995569663284766500',
+              ogImage: { url: 'https://dgtzuqphqg23d.cloudfront.net/example.png' },
+            },
+          }) +
+          '</script>',
+      };
+    },
+  });
+
+  assert.deepEqual(result, {
+    strava_route_id: '2995569663284766500',
+    strava_route_url: 'https://www.strava.com/routes/2995569663284766500',
+    route_name: '黑分解',
+    preview_image_url: 'https://dgtzuqphqg23d.cloudfront.net/example.png',
+  });
+  assert.equal(requested.url, 'https://www.strava.com/routes/2995569663284766500');
+  assert.equal(requested.options.redirect, 'manual');
+  assert.equal(requested.options.headers.authorization, undefined);
+  assert.equal(requested.options.headers.cookie, undefined);
+});
+
+test('匿名解析兼容 Next pageProps 为空时的公开路线标题', async () => {
+  const result = await publicRoutePreviewFlow({
+    routeUrl: 'https://www.strava.com/routes/42',
+    fetchImpl: async () => ({
+      ok: true,
+      status: 200,
+      redirected: false,
+      url: 'https://www.strava.com/routes/42',
+      headers: { get: () => null },
+      text: async () =>
+        '<h1 class="EntityCallToAction_entityCallToAction__vkoXt"><a href="/login">登录以查看“黑&amp;白路线”</a></h1>' +
+        '<script id="__NEXT_DATA__" type="application/json">' +
+        JSON.stringify({ page: '/routes/[id]', query: { id: '42' }, pageProps: {} }) +
+        '</script>',
+    }),
+  });
+
+  assert.equal(result.route_name, '黑&白路线');
+});
+
+test('匿名路线解析拒绝重定向、限流、超大与损坏页面', async () => {
+  const call = (response) =>
+    publicRoutePreviewFlow({
+      routeUrl: 'https://www.strava.com/routes/42',
+      fetchImpl: async () => response,
+    });
+  await assert.rejects(call({ ok: false, status: 302, headers: { get: () => null } }), {
+    code: 'PUBLIC_ROUTE_UNAVAILABLE',
+  });
+  await assert.rejects(call({ ok: false, status: 429, headers: { get: () => null } }), {
+    code: 'STRAVA_RATE_LIMITED',
+  });
+  await assert.rejects(
+    call({ ok: true, status: 200, headers: { get: () => String(1024 * 1024 + 1) } }),
+    { code: 'PUBLIC_ROUTE_TOO_LARGE' },
+  );
+  let cancelled = false;
+  await assert.rejects(
+    call({
+      ok: true,
+      status: 200,
+      redirected: false,
+      url: 'https://www.strava.com/routes/42',
+      headers: { get: () => null },
+      body: {
+        getReader: () => ({
+          read: async () => ({ done: false, value: new Uint8Array(600 * 1024) }),
+          cancel: async () => {
+            cancelled = true;
+          },
+        }),
+      },
+    }),
+    { code: 'PUBLIC_ROUTE_TOO_LARGE' },
+  );
+  assert.equal(cancelled, true);
+  await assert.rejects(
+    call({
+      ok: true,
+      status: 200,
+      redirected: false,
+      url: 'https://www.strava.com/routes/42',
+      headers: { get: () => null },
+      text: async () => '<script id="__NEXT_DATA__">{broken}</script>',
+    }),
+    { code: 'PUBLIC_ROUTE_INVALID' },
+  );
+});
+
 test('routePreview 复用刷新令牌并保存服务端可信预览', async () => {
   let savedCredential;
   let savedPreview;
