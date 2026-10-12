@@ -159,20 +159,21 @@ page {
   font-size: 28rpx;
   font-weight: 800;
 }
-.manual-auth-url {
-  display: block;
-  margin: 16rpx 0;
-  padding: 20rpx;
-  border-radius: var(--radius-sm);
-  background: var(--color-input-bg);
-  color: var(--color-text);
-  font-size: 22rpx;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-  user-select: text;
-}
 .manual-auth-copy {
   margin-top: 20rpx;
+}
+.qr-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 20rpx 0;
+  padding: 24rpx;
+  border-radius: var(--radius-md);
+  background: #ffffff;
+}
+.qr-canvas {
+  width: 440rpx;
+  height: 440rpx;
 }
 
 page,

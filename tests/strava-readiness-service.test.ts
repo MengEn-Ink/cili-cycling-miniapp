@@ -409,7 +409,7 @@ describe('Strava 页面编排', () => {
     expect(rideService.ensureStravaReady).toHaveBeenCalledOnce();
   });
 
-  it('复制成功并确认后明确进入等待授权状态', async () => {
+  it('生成二维码并确认引导后明确进入等待授权状态', async () => {
     const authorizationUrl = 'https://www.strava.com/oauth/authorize?state=once';
     page.data.readiness = readiness('disconnected');
     rideService.startStrava.mockResolvedValue({ authorizationUrl, expiresAt: 'soon' });
@@ -417,9 +417,7 @@ describe('Strava 页面编排', () => {
 
     await page.connect();
 
-    expect(wx.setClipboardData).toHaveBeenCalledWith(
-      expect.objectContaining({ data: authorizationUrl }),
-    );
+    expect(wx.setClipboardData).not.toHaveBeenCalled();
     expect(showModal).toHaveBeenCalledWith(
       expect.objectContaining({ showCancel: false, confirmText: '我知道了' }),
     );
@@ -430,41 +428,31 @@ describe('Strava 页面编排', () => {
     expect(invalidateProfilePageCache).toHaveBeenCalledOnce();
   });
 
-  it('复制失败时保留授权状态并展示手动复制降级入口', async () => {
-    const authorizationUrl = 'https://www.strava.com/oauth/authorize?state=once';
-    rideService.startStrava.mockResolvedValue({ authorizationUrl, expiresAt: 'soon' });
-    vi.mocked(wx.setClipboardData).mockImplementation(({ fail }: any) => fail(new Error('no')));
-
-    await page.connect();
-
-    expect(page.data.readiness).toMatchObject({ state: 'authorizing', canRegister: false });
-    expect(page.data.authorizationUrl).toBe(authorizationUrl);
-    expect(page.data.manualAuthorization).toBe(true);
-    expect(page.data.error).toContain('长按下方链接手动复制');
-    expect(showModal).not.toHaveBeenCalled();
+  it('授权页仅提供扫码二维码，不再暴露复制链接入口', () => {
     const template = readFileSync('miniprogram/pages/strava/index.wxml', 'utf8');
-    expect(template).toContain('selectable user-select');
-    expect(template).toContain('bindtap="retryAuthorizationCopy"');
+    expect(template).toContain('id="strava-auth-qr"');
+    expect(template).toContain('bindtap="refreshAuthorizationQr"');
+    expect(template).toContain('长按二维码保存');
+    expect(template).not.toContain('retryAuthorizationCopy');
+    expect(template).not.toContain('selectable user-select');
   });
 
-  it('再次复制时生成全新授权链接并校验剪贴板内容', async () => {
+  it('刷新二维码时生成全新授权链接', async () => {
     const staleUrl = 'https://www.strava.com/oauth/authorize?state=stale';
     const freshUrl = 'https://www.strava.com/oauth/authorize?state=fresh';
     page.data.authorizationUrl = staleUrl;
     page.data.manualAuthorization = true;
     rideService.startStrava.mockResolvedValue({ authorizationUrl: freshUrl, expiresAt: 'soon' });
 
-    await page.retryAuthorizationCopy();
+    await page.refreshAuthorizationQr();
 
     expect(rideService.startStrava).toHaveBeenCalledOnce();
-    expect(wx.setClipboardData).toHaveBeenCalledWith(expect.objectContaining({ data: freshUrl }));
-    expect(wx.getClipboardData).toHaveBeenCalledOnce();
+    expect(wx.setClipboardData).not.toHaveBeenCalled();
     expect(page.data.authorizationUrl).toBe(freshUrl);
-    expect(wx.showToast).toHaveBeenCalledWith({ title: '新授权链接已复制', icon: 'success' });
     expect(page.data.error).toBe('');
   });
 
-  it('关闭浏览器引导后保留一次性 state，避免已复制链接立即失效', async () => {
+  it('关闭浏览器引导后保留一次性 state，避免刚生成的二维码立即失效', async () => {
     page.data.readiness = readiness('disconnected');
     rideService.startStrava.mockResolvedValue({
       authorizationUrl: 'https://www.strava.com/oauth/authorize?state=once',
@@ -480,7 +468,7 @@ describe('Strava 页面编排', () => {
   });
 
   it.each(['onHide', 'onUnload'] as const)(
-    'startStrava 返回前 %s，之后不复制、不弹窗、不 setData',
+    'startStrava 返回前 %s，之后不弹窗、不 setData',
     async (lifecycle) => {
       let resolveStart!: (value: { authorizationUrl: string; expiresAt: string }) => void;
       rideService.startStrava.mockImplementationOnce(
@@ -507,29 +495,6 @@ describe('Strava 页面编排', () => {
       expect(setData).not.toHaveBeenCalled();
     },
   );
-
-  it('复制完成前离页，之后不弹窗、不 setData', async () => {
-    let resolveCopy!: () => void;
-    rideService.startStrava.mockResolvedValue({
-      authorizationUrl: 'https://www.strava.com/oauth/authorize',
-      expiresAt: 'soon',
-    });
-    vi.mocked(wx.setClipboardData).mockImplementation(({ success }: any) => {
-      resolveCopy = success;
-    });
-    showModal.mockImplementation(({ success }: any) => success({ confirm: true }));
-    const setData = vi.spyOn(page, 'setData');
-
-    const connect = page.connect();
-    await flushMicrotasks();
-    page.onHide();
-    setData.mockClear();
-    resolveCopy();
-    await connect;
-
-    expect(showModal).not.toHaveBeenCalled();
-    expect(setData).not.toHaveBeenCalled();
-  });
 
   it('浏览器引导回调前离页，之后不撤销 state、不 setData', async () => {
     let resolveGuide!: (result: { confirm: boolean }) => void;
