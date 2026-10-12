@@ -44,21 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.12.16',
+      version: '2026.10.12.17',
       latest: true,
-      title: 'Strava 主页打开指引更清楚',
-      summary: '个人中心改为明确展示并复制 Strava 主页链接，提示使用系统默认浏览器打开。',
+      title: 'Strava 授权失败后重试更准确',
+      summary: '授权状态检查异常时会优先重新确认授权结果，不再误走数据准备流程。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.12.17',
       '2026.10.12.16',
       '2026.10.12.15',
       '2026.10.12.14',
       '2026.10.12.13',
-      '2026.10.12.12',
     ]);
   });
 

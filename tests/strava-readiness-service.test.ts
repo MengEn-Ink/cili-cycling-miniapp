@@ -328,6 +328,27 @@ describe('Strava 页面编排', () => {
     },
   );
 
+  it('授权状态超时后重试会重新检查授权状态而不是直接准备数据', async () => {
+    const authorizationTimeout = readiness('failed');
+    authorizationTimeout.error = {
+      code: 'STRAVA_AUTH_STATUS_TIMEOUT',
+      message: '授权状态检查超时，请返回后重试',
+      retryable: true,
+      recoveryAction: 'retry',
+    };
+    page.data.readiness = authorizationTimeout;
+    rideService.getStravaReadiness.mockResolvedValue(readiness('ready'));
+
+    await page.retry();
+
+    expect(rideService.getStravaReadiness).toHaveBeenCalledOnce();
+    expect(rideService.ensureStravaReady).not.toHaveBeenCalled();
+    expect(page.data.readiness).toEqual(readiness('ready'));
+    expect(readFileSync('miniprogram/pages/strava/index.wxml', 'utf8')).toContain(
+      '重新检查授权状态',
+    );
+  });
+
   it('新的 onShow 使手动 retry 失效且不接受其迟到结果', async () => {
     vi.useFakeTimers();
     let resolveRetry!: (value: StravaReadiness) => void;
