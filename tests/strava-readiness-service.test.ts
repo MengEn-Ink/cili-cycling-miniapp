@@ -432,9 +432,63 @@ describe('Strava 页面编排', () => {
     const template = readFileSync('miniprogram/pages/strava/index.wxml', 'utf8');
     expect(template).toContain('id="strava-auth-qr"');
     expect(template).toContain('bindtap="refreshAuthorizationQr"');
-    expect(template).toContain('长按二维码保存');
+    expect(template).toContain('bindtap="saveAuthorizationQr"');
+    expect(template).toContain('保存二维码到相册');
     expect(template).not.toContain('retryAuthorizationCopy');
     expect(template).not.toContain('selectable user-select');
+  });
+
+  it('保存二维码到相册：导出图片并写入相册', async () => {
+    page.data.qrReady = true;
+    page.qrCanvas = { width: 1, height: 1 };
+    const saveSpy = vi.fn(({ success }: any) => success());
+    const toTemp = vi.fn(({ success }: any) => success({ tempFilePath: '/tmp/qr.png' }));
+    vi.stubGlobal('wx', {
+      ...wx,
+      canvasToTempFilePath: toTemp,
+      saveImageToPhotosAlbum: saveSpy,
+      showToast: vi.fn(),
+    });
+
+    await page.saveAuthorizationQr();
+
+    expect(toTemp).toHaveBeenCalledOnce();
+    expect(saveSpy).toHaveBeenCalledWith(expect.objectContaining({ filePath: '/tmp/qr.png' }));
+    expect(wx.showToast).toHaveBeenCalledWith({ title: '二维码已保存到相册', icon: 'success' });
+    expect(page.data.busyAction).toBe(null);
+    expect(page.data.error).toBe('');
+  });
+
+  it('相册权限被拒时引导去设置而非静默失败', async () => {
+    page.data.qrReady = true;
+    page.qrCanvas = { width: 1, height: 1 };
+    const openSetting = vi.fn();
+    vi.stubGlobal('wx', {
+      ...wx,
+      canvasToTempFilePath: vi.fn(({ success }: any) => success({ tempFilePath: '/tmp/qr.png' })),
+      saveImageToPhotosAlbum: vi.fn(({ fail }: any) =>
+        fail({ errMsg: 'saveImageToPhotosAlbum:fail auth deny' }),
+      ),
+      showModal: vi.fn(({ success }: any) => success({ confirm: true })),
+      openSetting,
+    });
+
+    await page.saveAuthorizationQr();
+
+    expect(wx.showModal).toHaveBeenCalledWith(expect.objectContaining({ confirmText: '去设置' }));
+    expect(openSetting).toHaveBeenCalledOnce();
+    expect(page.data.busyAction).toBe(null);
+  });
+
+  it('二维码未就绪时不执行保存', async () => {
+    page.data.qrReady = false;
+    page.qrCanvas = null;
+    const toTemp = vi.fn();
+    vi.stubGlobal('wx', { ...wx, canvasToTempFilePath: toTemp });
+
+    await page.saveAuthorizationQr();
+
+    expect(toTemp).not.toHaveBeenCalled();
   });
 
   it('刷新二维码时生成全新授权链接', async () => {

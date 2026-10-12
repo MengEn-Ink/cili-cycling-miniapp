@@ -44,21 +44,21 @@ describe('设置页', () => {
     });
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.12.23',
+      version: '2026.10.12.24',
       latest: true,
-      title: 'Strava 授权改为扫码',
-      summary: 'Strava 授权统一改为扫描二维码，取消复制链接方式；可长按保存二维码后再扫描。',
+      title: 'Strava 授权二维码可保存到相册',
+      summary: '授权二维码新增「保存到相册」，保存后用微信或相机扫码即可完成授权。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.12.24',
       '2026.10.12.23',
       '2026.10.12.22',
       '2026.10.12.21',
       '2026.10.12.20',
-      '2026.10.12.19',
     ]);
   });
 

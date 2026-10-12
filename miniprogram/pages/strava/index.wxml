@@ -7,7 +7,8 @@
     <view class="qr-shell">
       <canvas id="strava-auth-qr" type="2d" class="qr-canvas" aria-label="Strava 授权二维码"></canvas>
     </view>
-    <view class="status-help">长按二维码保存到相册，再用微信或相机扫描，在系统浏览器完成 Strava 授权。完成后返回微信，本页会自动同步。二维码 10 分钟后失效。</view>
+    <view class="status-help">点「保存二维码到相册」后，用微信或相机扫描保存的二维码，在系统浏览器完成 Strava 授权。完成后返回微信，本页会自动同步。二维码 10 分钟后失效。</view>
+    <button class="btn manual-auth-save" loading="{{busyAction === 'save'}}" disabled="{{busyAction || !qrReady}}" bindtap="saveAuthorizationQr">保存二维码到相册</button>
     <button class="secondary manual-auth-copy" loading="{{busyAction === 'refresh'}}" disabled="{{busyAction}}" bindtap="refreshAuthorizationQr">刷新二维码</button>
   </view>
   <view wx:if="{{!loading && readiness}}">

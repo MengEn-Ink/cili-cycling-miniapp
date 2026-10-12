@@ -49,7 +49,7 @@ function showBrowserGuide(): Promise<void> {
     wx.showModal({
       title: '扫码完成 Strava 授权',
       content:
-        '请长按二维码保存到相册，再用微信或相机扫描，在系统浏览器完成 Strava 授权。完成后返回微信，本页会自动同步。二维码将在 10 分钟后失效。',
+        '请点「保存二维码到相册」，再用微信或相机扫描保存的二维码，在系统浏览器完成 Strava 授权。完成后返回微信，本页会自动同步。二维码将在 10 分钟后失效。',
       confirmText: '我知道了',
       showCancel: false,
       success: () => resolve(),
@@ -60,13 +60,14 @@ function showBrowserGuide(): Promise<void> {
 
 Page({
   loadRequestId: 0,
+  qrCanvas: null as StravaQrCanvas | null,
   data: {
     loading: true,
     error: '',
     readiness: null as StravaReadiness | null,
     readinessMessage: '',
     snapshotMeta: stravaSnapshotMeta(null),
-    busyAction: null as null | 'connect' | 'retry' | 'disconnect' | 'refresh',
+    busyAction: null as null | 'connect' | 'retry' | 'disconnect' | 'refresh' | 'save',
     reauthorize: false,
     authorizationUrl: '',
     manualAuthorization: false,
@@ -109,8 +110,49 @@ Page({
         canvas.width = plan.pixelSize;
         canvas.height = plan.pixelSize;
         drawQrCode(canvas.getContext('2d'), code, plan);
+        this.qrCanvas = canvas;
         this.setData({ qrReady: true });
       });
+  },
+  async saveAuthorizationQr() {
+    if (this.data.busyAction || !this.data.qrReady || !this.qrCanvas) return;
+    this.setData({ busyAction: 'save', error: '' });
+    try {
+      const canvas = this.qrCanvas;
+      const tempFilePath = await new Promise<string>((resolve, reject) => {
+        wx.canvasToTempFilePath({
+          canvas,
+          success: (res: { tempFilePath: string }) => resolve(res.tempFilePath),
+          fail: reject,
+        });
+      });
+      await new Promise<void>((resolve, reject) => {
+        wx.saveImageToPhotosAlbum({
+          filePath: tempFilePath,
+          success: () => resolve(),
+          fail: reject,
+        });
+      });
+      wx.showToast({ title: '二维码已保存到相册', icon: 'success' });
+    } catch (error) {
+      const message = (error as { errMsg?: string } | undefined)?.errMsg || '';
+      if (message.includes('auth deny') || message.includes('authorize')) {
+        // 相册写入权限被拒：引导去系统设置手动开启，而非反复静默失败。
+        wx.showModal({
+          title: '需要相册权限',
+          content: '保存二维码需要相册写入权限，请在设置中开启后重试。',
+          confirmText: '去设置',
+          cancelText: '取消',
+          success: (res: { confirm: boolean }) => {
+            if (res.confirm) wx.openSetting?.({});
+          },
+        });
+      } else {
+        this.setData({ error: '二维码保存失败，请重试，或直接扫描屏幕上的二维码。' });
+      }
+    } finally {
+      this.setData({ busyAction: null });
+    }
   },
   setReadiness(readiness: StravaReadiness) {
     this.setData({

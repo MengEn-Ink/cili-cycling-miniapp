@@ -16,6 +16,11 @@
     "pages/admin/review-detail/index"
   ],
   "requiredPrivateInfos": ["chooseLocation"],
+  "permission": {
+    "scope.writePhotosAlbum": {
+      "desc": "用于保存 Strava 授权二维码到相册，便于扫码授权"
+    }
+  },
   "window": {
     "navigationBarTitleText": "此里",
     "navigationBarBackgroundColor": "#ffffff",
