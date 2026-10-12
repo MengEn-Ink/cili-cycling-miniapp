@@ -46,6 +46,7 @@ function store(current, admin = { _id: 'admin', enabled: true }, registrations =
       work({
         getAdmin: async () => admin,
         getActivity: async () => state.current,
+        listActiveRegistrations: async () => state.registrations,
         getOccupyingRegistrations: async () => {
           state.backfillReads += 1;
           return state.registrations;
@@ -639,6 +640,7 @@ test('普通成员可创建并发布自己的草稿，但不能编辑他人或�
       activityId: ownDraft._id,
       expectedVersion: 1,
       activity: { ...input, status: 'draft' },
+      reason: '天气原因取消',
     },
     now,
   );
@@ -1282,6 +1284,7 @@ function deleteStore(current, admin = null, registrationReads = [[], []]) {
       work({
         getAdmin: async () => admin,
         getActivity: async () => state.current,
+        listActiveRegistrations: async () => state.registrations,
         getOccupyingRegistrations: async () => {
           const index = Math.min(state.readIndex, state.registrationReads.length - 1);
           state.readIndex += 1;
@@ -1312,7 +1315,11 @@ function deletableActivity(patch = {}) {
 test('创建者可删除无报名活动并仅软删活动', async () => {
   const memory = deleteStore(deletableActivity());
 
-  const result = await deleteActivity(memory, { openid: 'member-1', activityId: 'delete-a1' }, now);
+  const result = await deleteActivity(
+    memory,
+    { openid: 'member-1', activityId: 'delete-a1', reason: '清理草稿' },
+    now,
+  );
 
   assert.deepEqual(result, { id: 'delete-a1', deleted: true });
   assert.equal(memory.state.saved.length, 1);
@@ -1325,14 +1332,18 @@ test('管理员可删除他人无报名活动，非创建者非管理员无权�
   await assert.doesNotReject(
     deleteActivity(
       deleteStore(deletableActivity(), { _id: 'admin', enabled: true }),
-      { openid: 'admin', activityId: 'delete-a1' },
+      { openid: 'admin', activityId: 'delete-a1', reason: '管理员清理' },
       now,
     ),
   );
 
   const forbidden = deleteStore(deletableActivity());
   await assert.rejects(
-    deleteActivity(forbidden, { openid: 'member-2', activityId: 'delete-a1' }, now),
+    deleteActivity(
+      forbidden,
+      { openid: 'member-2', activityId: 'delete-a1', reason: '无权限操作' },
+      now,
+    ),
     { code: 'FORBIDDEN' },
   );
   assert.equal(forbidden.state.saved.length, 0);
@@ -1342,7 +1353,11 @@ test('存在占用报名或候补时拒绝删除且不写 is_deleted', async () 
   for (const status of ['pending', 'approved', 'checked_in', 'waiting']) {
     const memory = deleteStore(deletableActivity(), null, [[{ _id: `r-${status}`, status }]]);
     await assert.rejects(
-      deleteActivity(memory, { openid: 'member-1', activityId: 'delete-a1' }, now),
+      deleteActivity(
+        memory,
+        { openid: 'member-1', activityId: 'delete-a1', reason: '清理草稿' },
+        now,
+      ),
       { code: 'ACTIVITY_HAS_REGISTRATIONS' },
     );
     assert.equal(memory.state.saved.length, 0, status);
@@ -1359,7 +1374,11 @@ test('取消或拒绝报名不阻止删除', async () => {
   ]);
 
   await assert.doesNotReject(
-    deleteActivity(memory, { openid: 'member-1', activityId: 'delete-a1' }, now),
+    deleteActivity(
+      memory,
+      { openid: 'member-1', activityId: 'delete-a1', reason: '清理草稿' },
+      now,
+    ),
   );
   assert.equal(memory.state.saved[0].is_deleted, true);
 });
@@ -1367,7 +1386,11 @@ test('取消或拒绝报名不阻止删除', async () => {
 test('重复删除已删除活动幂等成功且不重复写入', async () => {
   const memory = deleteStore(deletableActivity({ is_deleted: true }));
 
-  const result = await deleteActivity(memory, { openid: 'member-1', activityId: 'delete-a1' }, now);
+  const result = await deleteActivity(
+    memory,
+    { openid: 'member-1', activityId: 'delete-a1', reason: '清理草稿' },
+    now,
+  );
 
   assert.deepEqual(result, { id: 'delete-a1', deleted: true });
   assert.equal(memory.state.saved.length, 0);
@@ -1377,9 +1400,12 @@ test('重复删除已删除活动幂等成功且不重复写入', async () => {
 test('删除不存在活动返回 not_found', async () => {
   const memory = deleteStore(undefined);
 
-  await assert.rejects(deleteActivity(memory, { openid: 'member-1', activityId: 'missing' }, now), {
-    code: 'ACTIVITY_NOT_FOUND',
-  });
+  await assert.rejects(
+    deleteActivity(memory, { openid: 'member-1', activityId: 'missing', reason: '清理草稿' }, now),
+    {
+      code: 'ACTIVITY_NOT_FOUND',
+    },
+  );
   assert.equal(memory.state.saved.length, 0);
 });
 
@@ -1387,9 +1413,94 @@ test('删除写入前再次校验报名，避免并发新增后误删', async ()
   const memory = deleteStore(deletableActivity(), null, [[], [{ _id: 'late', status: 'pending' }]]);
 
   await assert.rejects(
-    deleteActivity(memory, { openid: 'member-1', activityId: 'delete-a1' }, now),
+    deleteActivity(
+      memory,
+      { openid: 'member-1', activityId: 'delete-a1', reason: '清理草稿' },
+      now,
+    ),
     { code: 'ACTIVITY_HAS_REGISTRATIONS' },
   );
   assert.equal(memory.state.readIndex, 2);
   assert.equal(memory.state.saved.length, 0);
+});
+
+test('下架要求理由并批量失效凭证、逐用户通知和审计', async () => {
+  const current = {
+    _id: 'offline-a1',
+    ...validatePublishInput({ ...input, status: 'published' }, 2, now),
+    occupied_count: 2,
+    occupancy_partition_ready: true,
+    support_vehicle_occupied_count: 1,
+    self_drive_occupied_count: 1,
+    version: 7,
+    created_by: 'admin',
+  };
+  const registrations = [
+    { _id: 'r1', activity_id: current._id, openid: 'member-1', status: 'approved' },
+    { _id: 'r2', activity_id: current._id, openid: 'member-2', status: 'waiting' },
+  ];
+  const state = { registrations, writes: [], outbox: new Map(), audits: [], activity: current };
+  const memory = {
+    transaction: (work) =>
+      work({
+        getAdmin: async () => ({ _id: 'admin', enabled: true }),
+        getActivity: async () => state.activity,
+        listActiveRegistrations: async () => state.registrations,
+        getOccupyingRegistrations: async () => state.registrations,
+        putRegistration: async (_id, value) => state.writes.push(value),
+        putNotification: async (id, value) => state.outbox.set(id, value),
+        putActivity: async (_id, value) => {
+          state.activity = value;
+        },
+        addAudit: async (value) => state.audits.push(value),
+      }),
+  };
+  const request = {
+    openid: 'admin',
+    activityId: current._id,
+    expectedVersion: 7,
+    activity: { ...input, status: 'draft' },
+  };
+  await assert.rejects(saveActivity(memory, request, now), { code: 'VALIDATION_FAILED' });
+  await saveActivity(memory, { ...request, reason: ' 暴雨预警 ' }, now);
+  assert.equal(state.writes.length, 2);
+  assert.equal(state.outbox.size, 2);
+  assert.ok(state.writes.every((item) => item.credential_invalidated_at === now));
+  assert.ok(state.writes.every((item) => item.credential_invalidated_reason === '暴雨预警'));
+  assert.ok(
+    [...state.outbox.values()].every(
+      (item) =>
+        item.template_key === 'activity_reminder' &&
+        item.payload.meeting_place === '活动下架：暴雨预警',
+    ),
+  );
+  assert.equal(state.audits[0].detail.reason, '暴雨预警');
+});
+
+test('失效报名不拦截草稿删除，已上线活动与空理由删除被拒绝', async () => {
+  const invalidated = { _id: 'r1', status: 'approved', credential_invalidated_at: now };
+  const deletable = deleteStore(deletableActivity(), null, [[invalidated], [invalidated]]);
+  await deleteActivity(
+    deletable,
+    { openid: 'member-1', activityId: 'delete-a1', reason: '活动已下架' },
+    now,
+  );
+  assert.equal(deletable.state.saved[0].is_deleted, true);
+  assert.equal(deletable.state.audits[0].detail.reason, '活动已下架');
+  await assert.rejects(
+    deleteActivity(
+      deleteStore(deletableActivity({ status: 'published' })),
+      { openid: 'member-1', activityId: 'delete-a1', reason: '直接删除' },
+      now,
+    ),
+    { code: 'INVALID_TRANSITION' },
+  );
+  await assert.rejects(
+    deleteActivity(deleteStore(deletableActivity()), {
+      openid: 'member-1',
+      activityId: 'delete-a1',
+      reason: ' ',
+    }),
+    { code: 'VALIDATION_FAILED' },
+  );
 });

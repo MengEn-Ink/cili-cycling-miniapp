@@ -43,6 +43,33 @@ function transactionStore() {
         work({
           getAdmin: (id) => maybeGet(transaction.collection('admins'), id),
           getActivity: (id) => maybeGet(transaction.collection('activities'), id),
+          listActiveRegistrations: async (activityId) => {
+            const registrations = [];
+            for (const status of ['pending', 'approved', 'checked_in', 'waiting']) {
+              let cursor = '';
+              for (;;) {
+                const result = await transaction
+                  .collection('registrations')
+                  .where({
+                    activity_id: activityId,
+                    status,
+                    ...(cursor ? { _id: db.command.gt(cursor) } : {}),
+                  })
+                  .orderBy('_id', 'asc')
+                  .limit(OCCUPANCY_BACKFILL_PAGE_SIZE)
+                  .get();
+                if (!result || !Array.isArray(result.data))
+                  throw new Error('invalid registration page');
+                registrations.push(...result.data);
+                if (result.data.length < OCCUPANCY_BACKFILL_PAGE_SIZE) break;
+                const nextCursor = result.data[result.data.length - 1]?._id;
+                if (typeof nextCursor !== 'string' || !nextCursor || nextCursor === cursor)
+                  throw new Error('invalid registration cursor');
+                cursor = nextCursor;
+              }
+            }
+            return registrations;
+          },
           getRoutePreview: (openid, routeId) => {
             const id = crypto.createHash('sha256').update(`${openid}\0${routeId}`).digest('hex');
             return maybeGet(transaction.collection('strava_route_previews'), id);
@@ -90,6 +117,14 @@ function transactionStore() {
           updateActivity: async (id, data) => {
             await transaction.collection('activities').doc(id).update({ data });
           },
+          putRegistration: async (id, value) => {
+            const { _id, ...data } = value;
+            await transaction.collection('registrations').doc(id).set({ data });
+          },
+          putNotification: async (id, value) => {
+            const { _id, ...data } = value;
+            await transaction.collection('notification_outbox').doc(id).set({ data });
+          },
           addAudit: (audit) => transaction.collection('audit_logs').add({ data: audit }),
         }),
       ),
@@ -119,6 +154,7 @@ exports.main = async (event = {}) => {
             expectedVersion: event.expectedVersion,
             createRequestId: event.createRequestId,
             activity: event.activity,
+            reason: event.operationReason,
           },
           new Date(),
         ),
@@ -144,6 +180,7 @@ exports.main = async (event = {}) => {
             action: 'delete',
             activityId: event.activityId || event.id,
             id: event.id,
+            reason: event.reason,
             openid,
           },
           new Date(),

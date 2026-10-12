@@ -604,7 +604,9 @@ export class MockRepository implements RideRepository {
     id?: string,
     expectedVersion?: number,
     createRequestId?: string,
+    _operationReason?: string,
   ) {
+    void _operationReason;
     if (id && createRequestId) throw new Error('更新活动不能携带创建请求 ID');
     if (!id && createRequestId) {
       if (!/^[A-Za-z0-9_-]{8,128}$/.test(createRequestId)) throw new Error('创建请求 ID 格式错误');
@@ -675,7 +677,8 @@ export class MockRepository implements RideRepository {
     this.write(s);
     return draft;
   }
-  async deleteActivity(id: string) {
+  async deleteActivity(id: string, _reason: string) {
+    void _reason;
     const s = this.read();
     s.activities = s.activities.filter((item) => item.id !== id);
     this.write(s);

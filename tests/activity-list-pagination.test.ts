@@ -6,6 +6,7 @@ const rideService = vi.hoisted(() => ({
   listAdminActivities: vi.fn(),
   listAdminActivitiesPage: vi.fn(),
   saveActivity: vi.fn(),
+  deleteActivity: vi.fn(),
   cloneActivity: vi.fn(),
 }));
 const appStore = vi.hoisted(() => ({
@@ -37,7 +38,9 @@ async function loadPage() {
     cloud: {},
     navigateTo: vi.fn(),
     showToast: vi.fn(),
-    showModal: vi.fn(({ success }) => success({ confirm: true, cancel: false })),
+    showModal: vi.fn(({ success }) =>
+      success({ confirm: true, cancel: false, content: '路线临时封闭' }),
+    ),
     stopPullDownRefresh: vi.fn(),
   });
   vi.stubGlobal('Page', (definition: any) => {
@@ -55,6 +58,7 @@ describe('活动管理页分页状态机', () => {
     rideService.listAdminActivities.mockReset().mockResolvedValue([]);
     rideService.listAdminActivitiesPage.mockReset();
     rideService.saveActivity.mockReset();
+    rideService.deleteActivity.mockReset();
     rideService.cloneActivity.mockReset();
     appStore.authStatus = 'authenticated';
     appStore.role = 'member';
@@ -274,6 +278,30 @@ describe('活动管理页分页状态机', () => {
     more.resolve({ items: [item('second')], nextCursor: null });
     await Promise.all([first, duplicate]);
     expect(page.data.items.map((value: { id: string }) => value.id)).toEqual(['first', 'second']);
+  });
+
+  it('下架与删除通过 editable 弹窗强制采集并透传理由', async () => {
+    rideService.listAdminActivitiesPage.mockResolvedValue({
+      items: [item('published', 'published')],
+      nextCursor: null,
+    });
+    rideService.saveActivity.mockResolvedValue(item('published', 'draft'));
+    rideService.deleteActivity.mockResolvedValue(undefined);
+    const page = await loadPage();
+    await page.onShow();
+
+    await page.toggleOnline({ currentTarget: { dataset: { id: 'published' } } });
+    expect(wx.showModal).toHaveBeenCalledWith(expect.objectContaining({ editable: true }));
+    expect(rideService.saveActivity).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'draft' }),
+      'published',
+      1,
+      undefined,
+      '路线临时封闭',
+    );
+
+    await page.confirmDelete({ currentTarget: { dataset: { id: 'published' } } });
+    expect(rideService.deleteActivity).toHaveBeenCalledWith('published', '路线临时封闭');
   });
 
   it('模板提供显式加载更多入口并反映加载状态', () => {

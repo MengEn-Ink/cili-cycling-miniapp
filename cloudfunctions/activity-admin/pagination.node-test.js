@@ -149,6 +149,7 @@ test('删除适配器只向领域层传递可信字段，不透传运行时注�
   const result = await main({
     action: 'delete',
     id: 'legacy',
+    reason: '清理旧活动',
     userInfo: { appId: 'runtime-injected' },
   });
 

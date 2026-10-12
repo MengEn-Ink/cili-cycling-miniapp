@@ -38,7 +38,9 @@ describe('活动列表上线与删除端到端操作', () => {
       cloud: {},
       navigateTo: vi.fn(),
       showToast: vi.fn(),
-      showModal: vi.fn(({ success }) => success({ confirm: true, cancel: false })),
+      showModal: vi.fn(({ success }) =>
+        success({ confirm: true, cancel: false, content: '路线临时封闭' }),
+      ),
     });
     vi.stubGlobal('Page', (definition: any) => {
       page = definition;
@@ -82,7 +84,7 @@ describe('活动列表上线与删除端到端操作', () => {
     expect(wx.showToast).toHaveBeenCalledWith({ title: '已上线', icon: 'success' });
 
     await page[deleteHandler!]({ currentTarget: { dataset: { id: 'draft-1' } } });
-    expect(rideService.deleteActivity).toHaveBeenCalledWith('draft-1');
+    expect(rideService.deleteActivity).toHaveBeenCalledWith('draft-1', '路线临时封闭');
     expect(wx.showToast).toHaveBeenCalledWith({ title: '已删除', icon: 'success' });
     expect(page.data.items).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ id: 'draft-1' })]),
@@ -96,6 +98,8 @@ describe('活动列表上线与删除端到端操作', () => {
       expect.objectContaining({ id: 'published-1', status: 'draft' }),
       'published-1',
       3,
+      undefined,
+      '路线临时封闭',
     );
     expect(wx.showToast).toHaveBeenCalledWith({ title: '已下架', icon: 'success' });
     expect(rideService.listAdminActivitiesPage).toHaveBeenCalledTimes(2);
