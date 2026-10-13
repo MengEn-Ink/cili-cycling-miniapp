@@ -1,8 +1,8 @@
 # GPX 上传微信开发者工具验证
 
-> 时间：2026-10-13 19:43 CST
-> 分支：`fix/gpx-upload-no-response`
-> 基线：`main@1d579501407fbd678a4dc4acd8af5b39b8cc4a3e`
+> 时间：2026-10-13 19:51 CST
+> 分支：`main`
+> 合入提交：`07b4c1d691cb81434cbbe956e4cb3123180d6be9`（PR #194）
 
 ## 结论
 
@@ -62,7 +62,21 @@ SHA-256 为
   51 项通过。
 - `npm run validate`：通过；72 个前端测试文件、856 项测试及全部云函数测试通过。
 - `npm run audit:all`：0 漏洞。
-- UI 普通门禁：3 个未同步 UI 提交，剩余额度 1。
+- UI 普通门禁：4 个未同步 UI 提交，剩余额度 0。
+
+## 合入与开发版
+
+- PR #194 已合入 `main`。
+- main CI run
+  [38392877311](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38392877311)
+  成功。
+- GitHub Pages run
+  [38392876472](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38392876472)
+  成功。
+- 微信开发版上传 run
+  [38393011088](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38393011088)
+  成功。
+- 不可变上传回执：版本 `0.0.196.1`、robot `1`、main SHA `07b4c1d`。
 
 ## 证据
 
