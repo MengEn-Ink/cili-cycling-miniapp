@@ -23,22 +23,21 @@ describe('设置页', () => {
   it('只加载版本日志，不注册 Strava readiness 生命周期或授权入口', () => {
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.13.38',
+      version: '2026.10.13.39',
       latest: true,
-      title: '活动详情信息更紧凑',
-      summary:
-        '活动时间、集合地点、路线与报名信息集中呈现，重要内容一眼可见，同时保留完整活动功能。',
+      title: '发布活动自动解析公开路线',
+      summary: '粘贴 Strava 公开路线后直接发布，系统会先自动识别路线数据，不再只保存链接。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.13.39',
       '2026.10.13.38',
       '2026.10.13.37',
       '2026.10.13.36',
       '2026.10.13.35',
-      '2026.10.13.34',
     ]);
     expect(page.onShow).toBeUndefined();
     expect(page.loadStravaStatus).toBeUndefined();

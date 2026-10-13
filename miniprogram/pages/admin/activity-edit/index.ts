@@ -728,7 +728,13 @@ Page({
     return true;
   },
   async save(event: any) {
-    if (this.data.saving || this.data.uploading || this.data.choosingLocation) return;
+    if (
+      this.data.saving ||
+      this.data.uploading ||
+      this.data.choosingLocation ||
+      this.data.syncingRoute
+    )
+      return;
     if (this.data.pendingImages.length) {
       this.setData({ error: '请先重试或删除上传失败的图片' });
       return;
@@ -756,6 +762,30 @@ Page({
     }
     if (!startAt) return;
     const original = this.data.originalActivity as EditableActivity | undefined;
+    let stravaRouteUrl = form.stravaRouteUrl.trim() || undefined;
+    let syncedRoute =
+      this.data.stravaRoutePreview?.stravaRouteUrl === stravaRouteUrl
+        ? this.data.stravaRoutePreview
+        : undefined;
+    if (nextStatus === 'published' && stravaRouteUrl && !syncedRoute) {
+      this.setData({ syncingRoute: true, error: '' });
+      try {
+        syncedRoute = await rideService.previewPublicStravaRoute(stravaRouteUrl);
+        stravaRouteUrl = syncedRoute.stravaRouteUrl;
+        this.setData({
+          'form.stravaRouteUrl': stravaRouteUrl,
+          publicStravaRoutePreview: syncedRoute,
+          stravaRoutePreview: syncedRoute,
+          stravaRouteTimeLabel: formatRouteDuration(syncedRoute.estimatedMovingTimeSeconds),
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Strava 路线解析失败';
+        this.showFormError(`发布前需要先解析路线：${message}`, 'stravaRouteUrl');
+        return;
+      } finally {
+        this.setData({ syncingRoute: false });
+      }
+    }
     const startForDefaults = startAt;
     const defaults = derivedTimes(startForDefaults);
     const originalStartTime = original?.startAt ? new Date(original.startAt).getTime() : Number.NaN;
@@ -779,11 +809,6 @@ Page({
       original && !this.data.imagesTouched && original.images?.length
         ? [...original.images]
         : [...this.data.images];
-    const stravaRouteUrl = form.stravaRouteUrl.trim() || undefined;
-    const syncedRoute =
-      this.data.stravaRoutePreview?.stravaRouteUrl === stravaRouteUrl
-        ? this.data.stravaRoutePreview
-        : undefined;
     const activity: ActivityInput = {
       title,
       description: form.description,

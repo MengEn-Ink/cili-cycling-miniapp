@@ -187,6 +187,22 @@ describe('日常活动极简创建与编辑', () => {
   });
 
   it('编辑存量活动时只更新可见字段并保留历史运营配置', async () => {
+    rideService.previewPublicStravaRoute.mockResolvedValue({
+      stravaRouteId: '999',
+      stravaRouteUrl: 'https://www.strava.com/routes/999',
+      routeName: '新路线',
+      previewImageUrl: '',
+      distanceKm: 99,
+      elevationM: 999,
+      estimatedMovingTimeSeconds: 18_000,
+      elevationProfile: [
+        { distanceKm: 0, elevationM: 20 },
+        { distanceKm: 99, elevationM: 80 },
+      ],
+      routeBounds: { south: 39, west: 116, north: 40, east: 117 },
+      popularClimbs: [],
+      stravaGpxAvailable: false,
+    });
     await page.onLoad({ id: activity.id });
     page.data.form.routeStart = '新集合点';
     page.data.form.description = '带好水';
@@ -208,19 +224,25 @@ describe('日常活动极简创建与编辑', () => {
         route: expect.objectContaining({
           start: '新集合点',
           end: '终点',
-          distanceKm: 80,
-          elevationM: 600,
+          distanceKm: 99,
+          elevationM: 999,
           level: '进阶',
+          stravaRouteId: '999',
           stravaRouteUrl: 'https://www.strava.com/routes/999',
+          routeName: '新路线',
+          estimatedMovingTimeSeconds: 18_000,
+          stravaGpxAvailable: false,
         }),
       }),
       activity.id,
       7,
     );
+    expect(rideService.previewPublicStravaRoute).toHaveBeenCalledWith(
+      'https://www.strava.com/routes/999',
+    );
     const payload = rideService.saveActivity.mock.calls[0][0];
-    expect(payload.route).not.toHaveProperty('stravaRouteId');
-    expect(payload.route).not.toHaveProperty('elevationProfile');
-    expect(payload.route).not.toHaveProperty('routeBounds');
+    expect(payload.route.elevationProfile).toHaveLength(2);
+    expect(payload.route.routeBounds).toEqual({ south: 39, west: 116, north: 40, east: 117 });
   });
 
   it('Strava 链接未修改时保留历史同步路线数据', async () => {
@@ -235,13 +257,14 @@ describe('日常活动极简创建与编辑', () => {
     });
   });
 
-  it('Strava 合法链接可保存，编辑时清空链接不会写入 payload', async () => {
+  it('草稿可暂存 Strava 合法链接，编辑时清空链接不会写入 payload', async () => {
     await page.onLoad({ id: activity.id });
     page.data.form.stravaRouteUrl = 'https://www.strava.com/routes/456';
-    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+    await page.save({ currentTarget: { dataset: { status: 'draft' } } });
     expect(rideService.saveActivity.mock.calls[0][0].route).toMatchObject({
       stravaRouteUrl: 'https://www.strava.com/routes/456',
     });
+    expect(rideService.previewPublicStravaRoute).not.toHaveBeenCalled();
 
     rideService.saveActivity.mockClear();
     page.data.form.stravaRouteUrl = '';
@@ -1002,6 +1025,88 @@ describe('日常活动极简创建与编辑', () => {
     rideService.getAdminActivity.mockResolvedValueOnce(saved);
     await page.onLoad({ id: 'created-group-qr' });
     expect(page.data.groupQrCode).toBe('cloud://new-group-qr.jpg');
+  });
+
+  it('发布时自动解析尚未识别的公开路线并写入完整路线数据', async () => {
+    const routeUrl = 'https://www.strava.com/routes/2995569663284766500';
+    const preview = {
+      stravaRouteId: '2995569663284766500',
+      stravaRouteUrl: routeUrl,
+      routeName: '黑分解',
+      previewImageUrl: 'https://images.example/route.jpg',
+      distanceKm: 87.7,
+      elevationM: 961,
+      estimatedMovingTimeSeconds: 20117,
+      elevationProfile: [
+        { distanceKm: 0, elevationM: 20 },
+        { distanceKm: 87.7, elevationM: 80 },
+      ],
+      routeBounds: { south: 40.09, west: 116.2, north: 40.39, east: 116.3 },
+      popularClimbs: [],
+      stravaGpxAvailable: false,
+    };
+    rideService.previewPublicStravaRoute.mockResolvedValue(preview);
+    rideService.saveActivity.mockImplementation(async (payload: any) =>
+      savedActivityFromPayload(payload),
+    );
+    await page.onLoad({});
+    Object.assign(page.data.form, {
+      title: '公开路线测试',
+      startDate: '2026-10-20',
+      startTime: '07:30',
+      routeStart: '中关村广场',
+      stravaRouteUrl: routeUrl,
+    });
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(rideService.previewPublicStravaRoute).toHaveBeenCalledWith(routeUrl);
+    expect(rideService.saveActivity).toHaveBeenCalledTimes(2);
+    expect(rideService.saveActivity.mock.calls.map(([payload]) => payload.status)).toEqual([
+      'draft',
+      'published',
+    ]);
+    expect(rideService.saveActivity.mock.calls[1][0]).toEqual(
+      expect.objectContaining({
+        route: expect.objectContaining({
+          stravaRouteId: preview.stravaRouteId,
+          stravaRouteUrl: routeUrl,
+          routeName: preview.routeName,
+          distanceKm: preview.distanceKm,
+          elevationM: preview.elevationM,
+          estimatedMovingTimeSeconds: preview.estimatedMovingTimeSeconds,
+          stravaGpxAvailable: false,
+        }),
+      }),
+    );
+    expect(page.data.stravaRoutePreview).toEqual(preview);
+    expect(page.data.syncingRoute).toBe(false);
+  });
+
+  it('发布前自动解析失败时停止保存，避免生成只有链接的活动', async () => {
+    const routeUrl = 'https://www.strava.com/routes/2995569663284766500';
+    rideService.previewPublicStravaRoute.mockRejectedValue(
+      new Error('暂时无法读取该公开路线，请确认路线公开后重试或手动填写'),
+    );
+    await page.onLoad({});
+    Object.assign(page.data.form, {
+      title: '公开路线测试',
+      startDate: '2026-10-20',
+      startTime: '07:30',
+      routeStart: '中关村广场',
+      stravaRouteUrl: routeUrl,
+    });
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(rideService.previewPublicStravaRoute).toHaveBeenCalledWith(routeUrl);
+    expect(rideService.saveActivity).not.toHaveBeenCalled();
+    expect(wx.showModal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.stringContaining('发布前需要先解析路线'),
+      }),
+    );
+    expect(page.data.syncingRoute).toBe(false);
   });
 
   it('无需 Strava 授权即可识别公开路线，并保留手动填写能力', async () => {
