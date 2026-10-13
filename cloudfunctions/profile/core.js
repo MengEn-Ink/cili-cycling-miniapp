@@ -851,6 +851,7 @@ function response(doc = {}, keyValue) {
     sensitive_status: status,
     completeness: readiness.completeness,
     missing: readiness.missing,
+    missingKeys: readiness.missingKeys,
   };
 }
 function buildUpdate(event, keyValue, current = {}) {

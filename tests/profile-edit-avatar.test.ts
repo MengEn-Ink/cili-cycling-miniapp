@@ -26,6 +26,11 @@ const profile: Profile = {
   gender: '',
   emergencyName: '联系人',
   emergencyPhone: '139****0000',
+  sensitiveStatus: {
+    realName: true,
+    phone: true,
+    emergencyPhone: true,
+  },
   photos: [],
 };
 
@@ -158,6 +163,24 @@ describe('资料编辑头像交互', () => {
 
     expect(rideService.updateProfile.mock.calls[0][0].phone).toBe('13800138000');
   });
+
+  it.each([
+    ['真实姓名', 'realName', '', '请填写真实姓名'],
+    ['本人手机号', 'phone', '123', '请填写有效联系电话'],
+    ['紧急联系人姓名', 'emergencyName', '', '请填写紧急联系人'],
+    ['紧急联系人电话', 'emergencyPhone', '123', '请填写有效紧急联系电话'],
+  ] as const)(
+    '当前表单%s不完整时阻止保存并沿用报名门槛文案',
+    async (_label, key, value, message) => {
+      page.data.p[key] = value;
+
+      await page.save();
+
+      expect(rideService.updateProfile).not.toHaveBeenCalled();
+      expect(page.data.error).toBe(message);
+      expect(wx.showToast).toHaveBeenCalledWith({ title: message, icon: 'none' });
+    },
+  );
 
   it('不再暴露头像可见性开关处理器', () => {
     expect(page.onAvatarVisibilityChange).toBeUndefined();
