@@ -3,7 +3,6 @@ import { activityDisplayStatus } from '../miniprogram/utils/activity';
 import { occupiedCount } from '../miniprogram/utils/capacity';
 import { canTransition, transition } from '../miniprogram/utils/registration';
 import { validateRegistration } from '../miniprogram/utils/validation';
-import { maskId, maskPhone } from '../miniprogram/utils/mask';
 import { activities, profile } from '../miniprogram/mock/fixtures';
 import { runtimeConfig } from '../miniprogram/config/runtime';
 import { initializeCloud } from '../miniprogram/config/cloud-init';
@@ -311,9 +310,10 @@ describe('报名取消操作', () => {
     expect(pageRideService.cancelRegistration).not.toHaveBeenCalled();
   });
 });
-describe('脱敏', () => {
-  it('脱敏手机号和证件', () => {
-    expect(maskPhone('13812345678')).toBe('138****5678');
-    expect(maskId('110101199001011234')).toBe('110********1234');
+describe('个人信息完整显示', () => {
+  it('本人资料的手机号和紧急联系电话完整显示，不打星号', () => {
+    expect(profile.phone).toMatch(/^1\d{10}$/);
+    expect(profile.emergencyPhone).toBe('13900005678');
+    expect(`${profile.realName}${profile.phone}${profile.emergencyPhone}`).not.toContain('*');
   });
 });

@@ -817,6 +817,8 @@ function assertFullProfileReady(profile) {
 }
 function response(doc = {}, keyValue) {
   const status = sensitiveStatus(doc);
+  // 本人资料完整回显：真实姓名、手机号、紧急联系电话均解密返回，*_masked 仅为旧客户端兼容保留。
+  const realName = status.real_name && keyValue ? decrypt(doc.real_name_cipher, keyValue) : '';
   const phone = status.phone && keyValue ? decrypt(doc.phone_cipher, keyValue) : '';
   const emergencyPhone =
     status.emergency_phone && keyValue ? decrypt(doc.emergency_phone_cipher, keyValue) : '';
@@ -845,6 +847,7 @@ function response(doc = {}, keyValue) {
     photos: Array.isArray(doc.photos) ? doc.photos : [],
     gender: typeof doc.gender === 'string' ? doc.gender : '',
     emergency_name: typeof doc.emergency_name === 'string' ? doc.emergency_name : '',
+    ...(realName ? { real_name: realName } : {}),
     real_name_masked: typeof doc.real_name_masked === 'string' ? doc.real_name_masked : '',
     ...(phone ? { phone } : {}),
     phone_masked: typeof doc.phone_masked === 'string' ? doc.phone_masked : '',

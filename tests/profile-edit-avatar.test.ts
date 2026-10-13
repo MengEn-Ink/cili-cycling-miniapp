@@ -21,11 +21,11 @@ const profile: Profile = {
   avatarId: 'cloud://env/profiles/owner/old.jpg',
   avatarSource: 'custom',
   avatarRevision: 4,
-  realName: '曹**',
-  phone: '138****5678',
+  realName: '曹蒙恩',
+  phone: '13812345678',
   gender: '',
   emergencyName: '联系人',
-  emergencyPhone: '139****0000',
+  emergencyPhone: '13912340000',
   sensitiveStatus: {
     realName: true,
     phone: true,
@@ -114,6 +114,11 @@ describe('资料编辑头像交互', () => {
         canEditDetails: true,
         avatarPreviewUrl: 'https://temporary.example/old-avatar.jpg',
       };
+      page.loadedSensitive = {
+        realName: profile.realName,
+        phone: profile.phone,
+        emergencyPhone: profile.emergencyPhone,
+      };
       page.setData = vi.fn((patch: Record<string, unknown>) => {
         for (const [key, value] of Object.entries(patch)) {
           const [root, child] = key.split('.');
@@ -139,7 +144,7 @@ describe('资料编辑头像交互', () => {
     expect(rideService.getPersonalCapabilityCard).toHaveBeenCalled();
   });
 
-  it('通用保存提交昵称但不提交头像字段，并保留敏感字段掩码语义', async () => {
+  it('通用保存提交昵称但不提交头像字段，未改动的完整敏感字段不重复提交', async () => {
     page.data.p.photos = [{ id: 'cloud://env/profiles/owner/bg.jpg', category: 'ride' }];
 
     await page.save();
@@ -198,10 +203,10 @@ describe('资料编辑头像交互', () => {
 
   it.each([
     ['实名', { realName: '存量用户' }],
-    ['手机号', { phone: '138****5678' }],
+    ['手机号', { phone: '13812345678' }],
     ['性别', { gender: '男' }],
     ['联系人', { emergencyName: '紧急联系人' }],
-    ['紧急电话', { emergencyPhone: '139****0000' }],
+    ['紧急电话', { emergencyPhone: '13912340000' }],
     ['相册', { photos: [{ id: 'cloud://env/existing.jpg', category: 'ride' }] }],
   ])('没有 avatarId 但已有%s资料的存量用户可编辑但保存被头像门禁拦截', async (_label, fields) => {
     const storedProfile = { ...blankProfile, nickname: '骑手', ...fields } as Profile;
@@ -437,7 +442,7 @@ describe('资料编辑头像交互', () => {
     rideService.getProfile.mockResolvedValueOnce({
       ...profile,
       nickname: '服务端旧昵称',
-      phone: '138****5678',
+      phone: '13812345678',
       avatarId: uploadedFileId,
       avatarSource: 'wechat',
     });

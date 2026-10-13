@@ -185,7 +185,7 @@ function phaseStartCursor(phase, statusFilter) {
 
 function output(items, nextCursor) {
   return {
-    items: items.map((item) => publicActivity(item, { revealContact: true })),
+    items: items.map((item) => publicActivity(item)),
     next_cursor: nextCursor,
   };
 }

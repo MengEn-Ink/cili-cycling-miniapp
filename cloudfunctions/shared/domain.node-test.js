@@ -794,7 +794,7 @@ test('审计日志只保留安全字段，不含手机号证件号和 token', ()
   assert.equal(text.includes('token'), false);
 });
 
-test('公开活动保留容量拆分和司机信息，但手机号必须脱敏', () => {
+test('公开活动保留容量拆分和司机信息，司机手机号完整公开', () => {
   const output = publicActivity(
     {
       ...activity,
@@ -813,7 +813,7 @@ test('公开活动保留容量拆分和司机信息，但手机号必须脱敏',
   assert.deepEqual(output.support_vehicle_driver, {
     nickname: '王师傅',
     license_plate: '粤B12345',
-    contact_phone: '138****5678',
+    contact_phone: '13812345678',
   });
   assert.equal(output.created_by, undefined);
 });
@@ -882,14 +882,14 @@ test('分类满员时即使总容量未满也进入候补，分仓未就绪活�
   assert.equal(legacy.state.activities.get('a1').self_drive_occupied_count, 0);
 });
 
-test('公开司机电话无法可靠识别时 fail closed 且不回显原文', () => {
-  for (const contactPhone of ['12345', '010-12345678 ext 9', 'invalid']) {
+test('公开司机电话按管理员填写的原文完整返回，非字符串值置空', () => {
+  for (const contactPhone of ['12345', '010-12345678 ext 9', '13812345678']) {
     const output = publicActivity(
-      { ...activity, support_vehicle_driver: { contact_phone: contactPhone } },
+      { ...activity, support_vehicle_driver: { contact_phone: ` ${contactPhone} ` } },
       now,
     );
-    assert.notEqual(output.support_vehicle_driver.contact_phone, contactPhone);
-    assert.match(output.support_vehicle_driver.contact_phone, /^\*|^$/);
+    assert.equal(output.support_vehicle_driver.contact_phone, contactPhone);
+    assert.doesNotMatch(output.support_vehicle_driver.contact_phone, /\*/);
   }
   assert.equal(
     publicActivity({ ...activity, support_vehicle_driver: { contact_phone: { raw: true } } }, now)

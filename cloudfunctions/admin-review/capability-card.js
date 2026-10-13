@@ -284,6 +284,10 @@ function adminCapabilityView(registration, profile, resolvedMedia, piiKey) {
 
   const media = safeResolvedMedia(resolvedMedia);
   const value = profile && typeof profile === 'object' ? profile : {};
+  // 审核管理员查看完整实名与联系方式；*_masked 字段仅为旧客户端兼容保留。
+  const realName =
+    piiKey && value.real_name_cipher ? decryptPhone(value.real_name_cipher, piiKey) : '';
+  if (realName) safe.profile_snapshot.real_name = realName;
   const phone = piiKey && value.phone_cipher ? decryptPhone(value.phone_cipher, piiKey) : '';
   if (phone) safe.profile_snapshot.phone = phone;
   const emergencyPhone =
@@ -365,7 +369,12 @@ async function adminCapabilityDetail({
   const registration = await loadRegistration();
   if (!registration) return undefined;
   const profile = registration.openid ? await loadProfile(registration.openid) : undefined;
-  if (requirePhoneKey && profile && (profile.phone_cipher || profile.emergency_phone_cipher)) {
+  if (
+    requirePhoneKey &&
+    profile &&
+    (profile.real_name_cipher || profile.phone_cipher || profile.emergency_phone_cipher)
+  ) {
+    if (profile.real_name_cipher) decryptPhone(profile.real_name_cipher, piiKey);
     if (profile.phone_cipher) decryptPhone(profile.phone_cipher, piiKey);
     if (profile.emergency_phone_cipher) decryptPhone(profile.emergency_phone_cipher, piiKey);
   }

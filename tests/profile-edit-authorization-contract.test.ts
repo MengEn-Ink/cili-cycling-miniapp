@@ -22,7 +22,7 @@ describe('资料授权与骑行卡片契约', () => {
     expect(profileTemplate).toContain('可直接填写或更换');
     expect(profileTemplate).not.toContain('open-type="getPhoneNumber"');
     expect(profileTemplate).not.toContain('bindgetphonenumber="onGetPhoneNumber"');
-    expect(profileSource).toContain("phone: p.phone.includes('*') ? undefined : p.phone");
+    expect(profileSource).toContain('phone: p.phone === loaded.phone ? undefined : p.phone');
     expect(profileSource).not.toContain('rideService.getPhoneNumber(code)');
   });
 

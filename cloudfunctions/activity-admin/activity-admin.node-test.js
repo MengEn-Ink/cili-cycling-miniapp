@@ -666,7 +666,7 @@ test('普通成员可创建并发布自己的草稿，但不能编辑他人或�
   );
 });
 
-test('司机字段清洗、容量拆分校验与公开手机号脱敏', () => {
+test('司机字段清洗、容量拆分校验与公开手机号完整返回', () => {
   const value = validateActivityInput(input);
   assert.deepEqual(value.support_vehicle_driver, {
     nickname: '王师傅',
@@ -677,13 +677,13 @@ test('司机字段清洗、容量拆分校验与公开手机号脱敏', () => {
     () => validateActivityInput({ ...input, self_drive_capacity: 11 }),
     'VALIDATION_FAILED',
   );
+  // 后援车司机电话面向全部骑友公开，管理端返回同样是完整号码，不打星号。
   const publicValue = publicActivity({ _id: 'a1', ...value });
-  assert.match(publicValue.support_vehicle_driver.contact_phone, /\*{4}/);
-  const privateValue = publicActivity({ _id: 'a1', ...value }, { revealContact: true });
   assert.equal(
-    privateValue.support_vehicle_driver.contact_phone,
+    publicValue.support_vehicle_driver.contact_phone,
     value.support_vehicle_driver.contact_phone,
   );
+  assert.doesNotMatch(publicValue.support_vehicle_driver.contact_phone, /\*/);
 });
 
 test('首次启用分仓按全部占位报名回填分类并写无 PII 审计摘要', async () => {
@@ -882,17 +882,12 @@ test('空 activity 在解引用前返回 VALIDATION_FAILED', async () => {
   });
 });
 
-test('公开电话对非标准文本、区号分机和非法类型均 fail closed', () => {
-  for (const phone of ['12345', '010-12345678-分机9', 'not-a-phone']) {
+test('管理端返回完整司机电话，不再打星号', () => {
+  for (const phone of ['12345', '010-12345678-分机9', '13812345678']) {
     const output = publicActivity({ support_vehicle_driver: { contact_phone: phone } });
-    assert.notEqual(output.support_vehicle_driver.contact_phone, phone);
-    assert.match(output.support_vehicle_driver.contact_phone, /^\*|^$/);
+    assert.equal(output.support_vehicle_driver.contact_phone, phone);
+    assert.doesNotMatch(output.support_vehicle_driver.contact_phone, /\*/);
   }
-  assert.equal(
-    publicActivity({ support_vehicle_driver: { contact_phone: { unsafe: true } } })
-      .support_vehicle_driver.contact_phone,
-    '',
-  );
 });
 
 test('普通成员只能复制自己的未删除历史活动，管理员可复制他人历史活动', async () => {

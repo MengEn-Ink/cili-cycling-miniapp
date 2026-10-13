@@ -291,9 +291,7 @@ exports.main = async (event = {}) => {
       if (!identity.isAdmin) query = query.where({ created_by: openid });
       const result = await query.orderBy('event_start', 'desc').limit(100).get();
       return ok(
-        result.data
-          .filter((item) => item.is_deleted !== true)
-          .map((item) => publicActivity(item, { revealContact: true })),
+        result.data.filter((item) => item.is_deleted !== true).map((item) => publicActivity(item)),
       );
     }
     if (event.action === 'detail') {
@@ -303,7 +301,7 @@ exports.main = async (event = {}) => {
       if (!activity || activity.is_deleted === true) fail('ACTIVITY_NOT_FOUND', '活动不存在');
       if (!identity.isAdmin && activity.created_by !== openid)
         fail('FORBIDDEN', '只能查看自己的活动');
-      return ok(publicActivity(activity, { revealContact: true }));
+      return ok(publicActivity(activity));
     }
     fail('UNKNOWN_ACTION', '未知操作');
   } catch (error) {

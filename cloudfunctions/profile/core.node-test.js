@@ -497,18 +497,23 @@ test('微信手机号仅由服务端结果构造并标记为已验证', () => {
     code: 'PHONE_SOURCE_INVALID',
   });
 });
-test('本人资料响应返回完整手机号与紧急联系人电话，未提供密钥时仍只返回脱敏值', () => {
+test('本人资料响应返回完整真实姓名、手机号与紧急联系人电话，未提供密钥时仍只返回旧兼容字段', () => {
   const data = phoneUpdate('13812345678', key, 'wechat');
   const profile = {
     nickname: '骑手',
     ...data,
+    real_name_cipher: encrypt('曹蒙恩', key),
+    real_name_masked: '曹**',
     emergency_phone_cipher: encrypt('13912345678', key),
     emergency_phone_masked: '139****0000',
   };
+  assert.equal(response(profile, key).real_name, '曹蒙恩');
   assert.equal(response(profile, key).phone, '13812345678');
   assert.equal(response(profile, key).emergency_phone, '13912345678');
+  assert.equal(response(profile).real_name, undefined);
   assert.equal(response(profile).phone, undefined);
   assert.equal(response(profile).emergency_phone, undefined);
+  assert.equal(response(profile).real_name_masked, '曹**');
   assert.equal(response(profile).phone_masked, '138****5678');
   assert.equal(response(profile).emergency_phone_masked, '139****0000');
 });

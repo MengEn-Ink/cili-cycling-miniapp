@@ -51,21 +51,16 @@ export function selectCapabilityImages(profile: Registration['profile']): Capabi
   return images;
 }
 
-function maskRealName(realName: string) {
-  const name = realName.trim();
-  if (!name) return '实名信息未完善';
-  if (name.includes('*')) return name;
-  return `${name.slice(0, 1)}${'*'.repeat(Math.max(1, name.length - 1))}`;
-}
-
 export function capabilityCard(registration: Registration) {
   const images = selectCapabilityImages(registration.profile);
+  const realName = registration.profile.realName.trim();
   return {
     ...genderView(registration.profile.gender),
     images,
     hasMultipleImages: images.length > 1,
-    displayName: registration.profile.nickname || registration.profile.realName || '未填写昵称',
-    maskedName: maskRealName(registration.profile.realName),
+    displayName: registration.profile.nickname || realName || '未填写昵称',
+    // 审核管理员查看完整真实姓名，不再打星号。
+    realName: realName || '实名信息未完善',
     experience: registration.experience || '未填写',
     remark: registration.remark || '无',
   };
