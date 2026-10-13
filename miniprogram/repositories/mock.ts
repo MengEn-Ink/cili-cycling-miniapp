@@ -479,6 +479,34 @@ export class MockRepository implements RideRepository {
   async getPhoneNumber() {
     return this.read().profile;
   }
+  async previewPublicStravaRoute(routeUrl: string) {
+    const match = /\/routes\/([1-9]\d{0,19})\/?$/.exec(routeUrl);
+    const routeId = match?.[1] || '42';
+    return {
+      previewId: 'c'.repeat(64),
+      externalProvider: 'strava' as const,
+      externalRouteId: routeId,
+      externalRouteUrl: `https://www.strava.com/routes/${routeId}`,
+      routeName: '公开路线预览',
+      distanceKm: 42,
+      elevationM: 600,
+      elevationLossM: 590,
+      elevationMinM: 20,
+      elevationMaxM: 320,
+      estimatedMovingTimeSeconds: 7200,
+      estimationSource: 'cili' as const,
+      elevationProfile: [
+        { distanceKm: 0, elevationM: 20 },
+        { distanceKm: 42, elevationM: 80 },
+      ],
+      routeOutline: [
+        { latitude: 22, longitude: 114 },
+        { latitude: 22.1, longitude: 114.1 },
+      ],
+      routeBounds: { south: 22, west: 114, north: 22.1, east: 114.1 },
+      expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+    };
+  }
   async previewRouteGpx(input: RouteGpxPreviewInput) {
     return {
       previewId: 'a'.repeat(64),

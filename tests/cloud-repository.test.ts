@@ -2139,6 +2139,243 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
   });
 });
 
+describe('CloudRepository Strava 公开路线预览契约', () => {
+  const routeUrl = 'https://www.strava.com/routes/123456';
+  const previewDto = {
+    preview_id: 'c'.repeat(64),
+    external_provider: 'strava',
+    external_route_id: '123456',
+    external_route_url: routeUrl,
+    strava_route_id: '123456',
+    strava_route_url: routeUrl,
+    route_name: '  城市绿道环线  ',
+    distance_km: 52.4,
+    elevation_m: 680,
+    elevation_loss_m: 675,
+    elevation_min_m: 12,
+    elevation_max_m: 486,
+    estimated_moving_time_seconds: 10800,
+    estimation_source: 'cili',
+    elevation_profile: [
+      { distance_km: 0, elevation_m: 12 },
+      { distance_km: 52.4, elevation_m: 30 },
+    ],
+    route_outline: [
+      { latitude: 22, longitude: 114 },
+      { latitude: 22.2, longitude: 114.2 },
+    ],
+    route_bounds: { south: 22, west: 114, north: 22.2, east: 114.2 },
+    expires_at: '2026-10-13T09:30:00.000Z',
+  };
+
+  it('previewPublicStravaRoute 发送原始链接并完整映射可信响应', async () => {
+    const { cloud, callFunction } = cloudWith(success(previewDto));
+
+    await expect(new CloudRepository(cloud).previewPublicStravaRoute(routeUrl)).resolves.toEqual({
+      previewId: previewDto.preview_id,
+      externalProvider: 'strava',
+      externalRouteId: '123456',
+      externalRouteUrl: routeUrl,
+      routeName: '城市绿道环线',
+      distanceKm: 52.4,
+      elevationM: 680,
+      elevationLossM: 675,
+      elevationMinM: 12,
+      elevationMaxM: 486,
+      estimatedMovingTimeSeconds: 10800,
+      estimationSource: 'cili',
+      elevationProfile: [
+        { distanceKm: 0, elevationM: 12 },
+        { distanceKm: 52.4, elevationM: 30 },
+      ],
+      routeOutline: [
+        { latitude: 22, longitude: 114 },
+        { latitude: 22.2, longitude: 114.2 },
+      ],
+      routeBounds: { south: 22, west: 114, north: 22.2, east: 114.2 },
+      expiresAt: '2026-10-13T09:30:00.000Z',
+    });
+    expectCall(callFunction, 'activity-admin', {
+      action: 'previewPublicRoute',
+      routeUrl,
+    });
+  });
+
+  it.each([
+    ['非字符串', 123],
+    ['超过 256 字符', `https://www.strava.com/routes/${'1'.repeat(230)}`],
+  ])('previewPublicStravaRoute 在请求前拒绝%s链接', async (_label, invalidUrl) => {
+    const { cloud, callFunction } = cloudWith();
+
+    await expectCode(
+      new CloudRepository(cloud).previewPublicStravaRoute(invalidUrl as string),
+      'VALIDATION_FAILED',
+    );
+    expect(callFunction).not.toHaveBeenCalled();
+  });
+
+  const invalidCases: Array<[string, (value: Record<string, any>) => Record<string, any>]> = [
+    ['非对象响应', () => null as unknown as Record<string, any>],
+    ['非字符串 preview_id', (value) => ({ ...value, preview_id: 1 })],
+    ['非法 preview_id', (value) => ({ ...value, preview_id: 'bad' })],
+    ['错误 provider', (value) => ({ ...value, external_provider: 'garmin' })],
+    ['非字符串路线 ID', (value) => ({ ...value, external_route_id: 123456 })],
+    ['以零开头路线 ID', (value) => ({ ...value, external_route_id: '0123456' })],
+    ['超长路线 ID', (value) => ({ ...value, external_route_id: '1'.repeat(21) })],
+    ['不匹配 external URL', (value) => ({ ...value, external_route_url: `${routeUrl}/edit` })],
+    ['不匹配 legacy ID', (value) => ({ ...value, strava_route_id: '654321' })],
+    ['不匹配 legacy URL', (value) => ({ ...value, strava_route_url: `${routeUrl}?x=1` })],
+    ['非字符串路线名', (value) => ({ ...value, route_name: 1 })],
+    ['空路线名', (value) => ({ ...value, route_name: '   ' })],
+    ['超长路线名', (value) => ({ ...value, route_name: '路'.repeat(121) })],
+    ['非数字距离', (value) => ({ ...value, distance_km: '52.4' })],
+    ['非有限距离', (value) => ({ ...value, distance_km: Infinity })],
+    ['零距离', (value) => ({ ...value, distance_km: 0 })],
+    ['过大距离', (value) => ({ ...value, distance_km: 2000.1 })],
+    ['非数字爬升', (value) => ({ ...value, elevation_m: '680' })],
+    ['非有限爬升', (value) => ({ ...value, elevation_m: NaN })],
+    ['负爬升', (value) => ({ ...value, elevation_m: -1 })],
+    ['过大爬升', (value) => ({ ...value, elevation_m: 30001 })],
+    ['非数字下降', (value) => ({ ...value, elevation_loss_m: '675' })],
+    ['非有限下降', (value) => ({ ...value, elevation_loss_m: Infinity })],
+    ['非数字最低海拔', (value) => ({ ...value, elevation_min_m: '12' })],
+    ['非有限最低海拔', (value) => ({ ...value, elevation_min_m: NaN })],
+    ['非数字最高海拔', (value) => ({ ...value, elevation_max_m: '486' })],
+    ['非有限最高海拔', (value) => ({ ...value, elevation_max_m: Infinity })],
+    ['非整数预计时间', (value) => ({ ...value, estimated_moving_time_seconds: 60.5 })],
+    ['过短预计时间', (value) => ({ ...value, estimated_moving_time_seconds: 59 })],
+    ['错误估时来源', (value) => ({ ...value, estimation_source: 'strava' })],
+    ['非数组海拔曲线', (value) => ({ ...value, elevation_profile: null })],
+    [
+      '过短海拔曲线',
+      (value) => ({ ...value, elevation_profile: [{ distance_km: 0, elevation_m: 12 }] }),
+    ],
+    [
+      '过长海拔曲线',
+      (value) => ({
+        ...value,
+        elevation_profile: Array(81).fill({ distance_km: 0, elevation_m: 12 }),
+      }),
+    ],
+    [
+      '非对象海拔点',
+      (value) => ({ ...value, elevation_profile: [null, value.elevation_profile[1]] }),
+    ],
+    [
+      '海拔点含扩展字段',
+      (value) => ({
+        ...value,
+        elevation_profile: [
+          { ...value.elevation_profile[0], extra: true },
+          value.elevation_profile[1],
+        ],
+      }),
+    ],
+    [
+      '非数字曲线距离',
+      (value) => ({
+        ...value,
+        elevation_profile: [{ distance_km: '0', elevation_m: 12 }, value.elevation_profile[1]],
+      }),
+    ],
+    [
+      '非有限曲线距离',
+      (value) => ({
+        ...value,
+        elevation_profile: [{ distance_km: Infinity, elevation_m: 12 }, value.elevation_profile[1]],
+      }),
+    ],
+    [
+      '倒序曲线距离',
+      (value) => ({
+        ...value,
+        elevation_profile: [
+          { distance_km: 1, elevation_m: 12 },
+          { distance_km: 0, elevation_m: 30 },
+        ],
+      }),
+    ],
+    [
+      '非数字曲线海拔',
+      (value) => ({
+        ...value,
+        elevation_profile: [{ distance_km: 0, elevation_m: '12' }, value.elevation_profile[1]],
+      }),
+    ],
+    [
+      '非有限曲线海拔',
+      (value) => ({
+        ...value,
+        elevation_profile: [{ distance_km: 0, elevation_m: NaN }, value.elevation_profile[1]],
+      }),
+    ],
+    ['非数组路线轮廓', (value) => ({ ...value, route_outline: null })],
+    ['过短路线轮廓', (value) => ({ ...value, route_outline: [value.route_outline[0]] })],
+    [
+      '过长路线轮廓',
+      (value) => ({ ...value, route_outline: Array(241).fill({ latitude: 22, longitude: 114 }) }),
+    ],
+    ['非对象轮廓点', (value) => ({ ...value, route_outline: [null, value.route_outline[1]] })],
+    [
+      '轮廓点含扩展字段',
+      (value) => ({
+        ...value,
+        route_outline: [{ ...value.route_outline[0], extra: true }, value.route_outline[1]],
+      }),
+    ],
+    [
+      '非数字纬度',
+      (value) => ({
+        ...value,
+        route_outline: [{ latitude: '22', longitude: 114 }, value.route_outline[1]],
+      }),
+    ],
+    [
+      '非有限纬度',
+      (value) => ({
+        ...value,
+        route_outline: [{ latitude: Infinity, longitude: 114 }, value.route_outline[1]],
+      }),
+    ],
+    [
+      '非数字经度',
+      (value) => ({
+        ...value,
+        route_outline: [{ latitude: 22, longitude: '114' }, value.route_outline[1]],
+      }),
+    ],
+    [
+      '非有限经度',
+      (value) => ({
+        ...value,
+        route_outline: [{ latitude: 22, longitude: NaN }, value.route_outline[1]],
+      }),
+    ],
+    ['非对象边界', (value) => ({ ...value, route_bounds: null })],
+    [
+      '边界含扩展字段',
+      (value) => ({ ...value, route_bounds: { ...value.route_bounds, extra: true } }),
+    ],
+    [
+      '边界含非数字值',
+      (value) => ({ ...value, route_bounds: { ...value.route_bounds, south: '22' } }),
+    ],
+    [
+      '边界含非有限值',
+      (value) => ({ ...value, route_bounds: { ...value.route_bounds, east: Infinity } }),
+    ],
+    ['非法过期时间', (value) => ({ ...value, expires_at: 'not-a-date' })],
+  ];
+
+  it.each(invalidCases)('拒绝%s', async (_label, mutate) => {
+    const response = mutate({ ...previewDto });
+
+    await expect(
+      new CloudRepository(cloudWith(success(response)).cloud).previewPublicStravaRoute(routeUrl),
+    ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+  });
+});
+
 describe('CloudRepository GPX 路线契约', () => {
   const previewDto = {
     preview_id: 'a'.repeat(64),

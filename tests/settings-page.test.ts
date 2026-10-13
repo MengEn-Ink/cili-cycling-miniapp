@@ -21,18 +21,18 @@ describe('设置页', () => {
   });
 
   it('只加载当前版本日志，不注册第三方账号生命周期或入口', () => {
-    expect(page.data.releaseNotes).toHaveLength(5);
+    expect(page.data.releaseNotes).toHaveLength(6);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.13.49',
+      version: '2026.10.13.50',
       latest: true,
-      title: '资料保存与报名门槛一致',
-      summary: '保存个人资料时会一次检查报名所需的 7 项信息，避免保存成功后仍被报名拦截。',
+      title: '公开路线免授权解析与复制',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.13.50',
       '2026.10.13.49',
       '2026.10.13.48',
       '2026.10.13.47',

@@ -16,6 +16,7 @@ const {
 } = require('./domain-index');
 const { listActivitiesPage } = require('./list-pagination');
 const { previewRouteGpx, bindRoutePreviewImage } = require('./route-preview');
+const { previewPublicRoute } = require('./public-route-preview');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const OCCUPANCY_BACKFILL_PAGE_SIZE = 100;
@@ -143,6 +144,22 @@ exports.main = async (event = {}) => {
   try {
     const openid = cloud.getWXContext().OPENID;
     assertTrustedOpenid(openid);
+    if (event.action === 'previewPublicRoute') {
+      return ok(
+        await previewPublicRoute(
+          {
+            getAdmin: (id) => maybeGet(db.collection('admins'), id),
+            getPreview: (id) => maybeGet(db.collection('route_previews'), id),
+            putPreview: async (id, value) => {
+              const { _id, ...data } = value;
+              await db.collection('route_previews').doc(id).set({ data });
+            },
+          },
+          { openid, routeUrl: event.routeUrl },
+          new Date(),
+        ),
+      );
+    }
     if (event.action === 'previewRouteGpx') {
       return ok(
         await previewRouteGpx(

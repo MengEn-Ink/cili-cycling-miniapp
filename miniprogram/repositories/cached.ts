@@ -448,6 +448,10 @@ export class CachingRepository implements RideRepository {
     return result;
   }
 
+  previewPublicStravaRoute(routeUrl: string) {
+    return this.inner.previewPublicStravaRoute(routeUrl);
+  }
+
   previewRouteGpx(input: Parameters<RideRepository['previewRouteGpx']>[0]) {
     return this.inner.previewRouteGpx(input);
   }
