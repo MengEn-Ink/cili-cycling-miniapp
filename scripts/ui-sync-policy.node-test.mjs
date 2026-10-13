@@ -3,8 +3,11 @@ import test from 'node:test';
 
 import {
   classifyUiPath,
+  digestFiles,
   evaluateUiSyncPolicy,
   routeIdFromPagePath,
+  validateManifest,
+  validatePng,
 } from './ui-sync-policy.mjs';
 
 test('页面、组件和视觉资源属于 UI 范围', () => {
@@ -86,4 +89,86 @@ test('发布严格模式只接受零 UI 漂移', () => {
 test('真实页面路径映射为原型路由 id', () => {
   assert.equal(routeIdFromPagePath('pages/activities/index'), 'activities');
   assert.equal(routeIdFromPagePath('pages/admin/activity-list/index'), 'admin-activity-list');
+});
+
+test('文件摘要不受调用方路径顺序影响', () => {
+  const forward = new Map([
+    ['b.txt', Buffer.from('B')],
+    ['a.txt', Buffer.from('A')],
+  ]);
+  const reverse = new Map([...forward].reverse());
+
+  assert.equal(digestFiles(forward), digestFiles(reverse));
+  assert.match(digestFiles(forward), /^sha256:[0-9a-f]{64}$/);
+});
+
+test('PNG 证据必须包含有效签名和非零尺寸', () => {
+  const png = Buffer.alloc(24);
+  Buffer.from('89504e470d0a1a0a', 'hex').copy(png);
+  png.writeUInt32BE(390, 16);
+  png.writeUInt32BE(790, 20);
+
+  assert.deepEqual(validatePng(png, 'activities-pages.png'), {
+    width: 390,
+    height: 790,
+  });
+  assert.throws(() => validatePng(Buffer.from('not png'), 'broken.png'), /无效 PNG：broken.png/);
+});
+
+test('同步清单必须逐一覆盖 app.json 页面且证据成对存在', () => {
+  const png = Buffer.alloc(24);
+  Buffer.from('89504e470d0a1a0a', 'hex').copy(png);
+  png.writeUInt32BE(390, 16);
+  png.writeUInt32BE(790, 20);
+  const manifest = {
+    schemaVersion: 1,
+    syncedThrough: 'a'.repeat(40),
+    syncedAt: '2026-10-13T06:00:00.000Z',
+    policy: { maxUnsyncedUiCommits: 4, maxAgeDays: 7 },
+    source: { digest: `sha256:${'b'.repeat(64)}` },
+    prototype: { digest: `sha256:${'c'.repeat(64)}` },
+    routes: [
+      { id: 'activities', pagePath: 'pages/activities/index' },
+      { id: 'admin-activity-list', pagePath: 'pages/admin/activity-list/index' },
+    ],
+    evidence: {
+      directory: 'docs/evidence/ui-sync/baseline',
+      routes: [
+        {
+          id: 'activities',
+          devtools: 'activities-devtools.png',
+          pages: 'activities-pages.png',
+        },
+      ],
+    },
+  };
+
+  assert.doesNotThrow(() =>
+    validateManifest(manifest, {
+      appPages: ['pages/activities/index', 'pages/admin/activity-list/index'],
+      readEvidence: () => png,
+    }),
+  );
+  assert.throws(
+    () =>
+      validateManifest(
+        { ...manifest, routes: manifest.routes.slice(0, 1) },
+        {
+          appPages: ['pages/activities/index', 'pages/admin/activity-list/index'],
+          readEvidence: () => png,
+        },
+      ),
+    /路由映射不完整/,
+  );
+  assert.throws(
+    () =>
+      validateManifest(manifest, {
+        appPages: ['pages/activities/index', 'pages/admin/activity-list/index'],
+        readEvidence: (file) => {
+          if (file.endsWith('activities-pages.png')) throw new Error('ENOENT');
+          return png;
+        },
+      }),
+    /证据文件缺失/,
+  );
 });
