@@ -454,21 +454,6 @@ Page({
   openSettings() {
     wx.navigateTo({ url: '/pages/settings/index' });
   },
-  copyStravaProfileLink() {
-    const url = this.data.heroCard?.stravaProfileUrl;
-    if (!url) return;
-    wx.setClipboardData({
-      data: url,
-      success: () =>
-        wx.showModal({
-          title: '主页链接已复制',
-          content: '请粘贴到系统默认浏览器打开，浏览器会自动尝试跳转到 Strava。',
-          showCancel: false,
-          confirmText: '知道了',
-        }),
-      fail: () => wx.showToast({ title: '复制失败，请稍后重试', icon: 'none' }),
-    });
-  },
   heroSwiperChange(event: { detail?: { current?: number } }) {
     this.setData({ currentHeroIndex: Math.max(0, Number(event.detail?.current) || 0) });
   },

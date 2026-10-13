@@ -15,6 +15,7 @@ const {
   buildActivityAudit,
   activityAuditAction,
 } = require('./domain');
+const { assertUsableRoutePreview, mergeTrustedPreviewRoute } = require('./route-preview');
 
 const CLONE_REQUEST_FIELDS = new Set([
   'action',
@@ -27,6 +28,40 @@ const CLONE_REQUEST_FIELDS = new Set([
 ]);
 const DELETE_REQUEST_FIELDS = new Set(['action', 'openid', 'activityId', 'id', 'reason']);
 const ACTIVE_REGISTRATION_STATUSES = new Set(['pending', 'approved', 'checked_in', 'waiting']);
+const TRUSTED_GPX_ROUTE_FIELDS = [
+  'gpx_preview_id',
+  'gpx_file_id',
+  'gpx_sha256',
+  'generated_preview_file_id',
+  'route_name',
+  'distance_km',
+  'elevation_m',
+  'elevation_loss_m',
+  'elevation_min_m',
+  'elevation_max_m',
+  'estimated_moving_time_seconds',
+  'estimation_source',
+  'elevation_profile',
+  'route_outline',
+  'route_bounds',
+];
+
+function sameGpxAttachment(requested, current) {
+  return Boolean(
+    current &&
+    requested.gpx_preview_id === current.gpx_preview_id &&
+    requested.gpx_file_id === current.gpx_file_id &&
+    requested.gpx_sha256 === current.gpx_sha256 &&
+    (requested.generated_preview_file_id || '') === (current.generated_preview_file_id || ''),
+  );
+}
+
+function inheritTrustedGpxRoute(requested, current) {
+  const trusted = {};
+  for (const field of TRUSTED_GPX_ROUTE_FIELDS)
+    if (current[field] !== undefined) trusted[field] = current[field];
+  return { ...requested, ...trusted };
+}
 
 function cloneActivityId(openid, requestId) {
   const digest = crypto
@@ -303,51 +338,51 @@ async function saveActivity(
         fail('CREATE_CONFLICT', '创建请求与已有活动冲突');
       return publicActivity(current, { revealContact: true });
     }
+    const targetActivityId = currentId || (await tx.createActivityId());
     let effectiveActivity = effectiveActivityInput(current, activity);
     const isUnpublish = current?.status === 'published' && effectiveActivity.status === 'draft';
     const transitionReason = isUnpublish ? requiredReason(reason, '下架活动') : undefined;
-    const requestedRouteId = effectiveActivity.route?.strava_route_id;
-    let stravaRouteOwnerOpenid;
-    if (requestedRouteId !== undefined) {
-      if (typeof requestedRouteId !== 'string' || !/^\d{1,20}$/.test(requestedRouteId))
-        fail('VALIDATION_FAILED', 'Strava 路线 ID 格式错误');
-      const preview = await tx.getRoutePreview(openid, requestedRouteId);
-      const previewExpiresAt = new Date(preview?.expires_at).getTime();
-      const previewUsable =
-        preview &&
-        preview.owner_openid === openid &&
-        preview.strava_route_id === requestedRouteId &&
-        Number.isFinite(previewExpiresAt) &&
-        previewExpiresAt > now.getTime();
-      const trusted = previewUsable
-        ? preview
-        : current?.route?.strava_route_id === requestedRouteId
-          ? current.route
-          : undefined;
-      if (!trusted) fail('ROUTE_PREVIEW_REQUIRED', '请先重新同步 Strava 路线');
-      // 路线归属只从服务端预览或已保存活动继承，客户端无法伪造；后续 GPX 导出始终复用路线创建者凭证。
-      stravaRouteOwnerOpenid = previewUsable
-        ? preview.owner_openid
-        : current?.strava_route_owner_openid;
-      if (typeof stravaRouteOwnerOpenid !== 'string' || !stravaRouteOwnerOpenid)
-        fail('ROUTE_PREVIEW_REQUIRED', '请先重新同步 Strava 路线');
-      effectiveActivity = {
-        ...effectiveActivity,
-        route: {
-          ...effectiveActivity.route,
-          distance_km: trusted.distance_km,
-          elevation_m: trusted.elevation_m,
-          estimated_moving_time_seconds: trusted.estimated_moving_time_seconds || 0,
-          strava_route_id: trusted.strava_route_id,
-          strava_route_url: trusted.strava_route_url,
-          route_name: trusted.route_name,
-          preview_image_url: trusted.preview_image_url,
-          strava_gpx_available: trusted.strava_gpx_available !== false,
-          elevation_profile: trusted.elevation_profile,
-          route_bounds: trusted.route_bounds,
-          popular_climbs: trusted.popular_climbs,
-        },
-      };
+    const requestedGpxPreviewId = effectiveActivity.route?.gpx_preview_id;
+    let routePreviewToConsume;
+    if (requestedGpxPreviewId !== undefined) {
+      const route = effectiveActivity.route;
+      if (
+        typeof requestedGpxPreviewId !== 'string' ||
+        !/^[a-f0-9]{64}$/.test(requestedGpxPreviewId) ||
+        typeof route.gpx_file_id !== 'string' ||
+        !route.gpx_file_id ||
+        typeof route.gpx_sha256 !== 'string' ||
+        !/^[a-f0-9]{64}$/.test(route.gpx_sha256) ||
+        (route.generated_preview_file_id !== undefined &&
+          typeof route.generated_preview_file_id !== 'string')
+      )
+        fail('VALIDATION_FAILED', 'GPX 路线参数无效');
+      if (sameGpxAttachment(route, current?.route)) {
+        effectiveActivity = {
+          ...effectiveActivity,
+          route: inheritTrustedGpxRoute(route, current.route),
+        };
+      } else {
+        const preview = await tx.getRoutePreviewById(requestedGpxPreviewId);
+        routePreviewToConsume = assertUsableRoutePreview(preview, {
+          openid,
+          previewId: requestedGpxPreviewId,
+          digest: route.gpx_sha256,
+          sourceFileId: route.gpx_file_id,
+          generatedFileId: route.generated_preview_file_id || '',
+          activityId: targetActivityId,
+          now,
+        });
+        effectiveActivity = {
+          ...effectiveActivity,
+          route: mergeTrustedPreviewRoute(route, routePreviewToConsume),
+        };
+      }
+    } else if (
+      effectiveActivity.route?.gpx_file_id &&
+      effectiveActivity.route.gpx_file_id !== current?.route?.gpx_file_id
+    ) {
+      fail('ROUTE_PREVIEW_REQUIRED', '请先上传并读取 GPX 路线');
     }
     if (activityId && !current) fail('ACTIVITY_NOT_FOUND', '活动不存在');
     // 普通成员的权限严格绑定服务端 OPENID：只能管理自己的草稿，并可下架自己已上线的活动。
@@ -443,7 +478,7 @@ async function saveActivity(
         (occupancyPartitionReady && safe.self_drive_capacity < selfDriveOccupiedCount))
     )
       fail('CAPACITY_BELOW_OCCUPIED', '分类容量不能低于对应已占用名额');
-    const id = activityId || idempotentCreateId || (await tx.createActivityId());
+    const id = targetActivityId;
     const value = {
       ...(current || {}),
       ...safe,
@@ -463,9 +498,7 @@ async function saveActivity(
             create_request_fingerprint: createFingerprint,
           }
         : {}),
-      ...(stravaRouteOwnerOpenid ? { strava_route_owner_openid: stravaRouteOwnerOpenid } : {}),
     };
-    if (!safe.route?.strava_route_id) delete value.strava_route_owner_openid;
     if (isUnpublish) {
       const registrations = await tx.listActiveRegistrations(id);
       for (const registration of registrations.filter(
@@ -501,6 +534,7 @@ async function saveActivity(
       }
     }
     await tx.putActivity(id, value);
+    if (routePreviewToConsume) await tx.consumeRoutePreview(routePreviewToConsume._id, id, now);
     const audit = buildActivityAudit(
       openid,
       activityAuditAction(current?.status, safe.status),

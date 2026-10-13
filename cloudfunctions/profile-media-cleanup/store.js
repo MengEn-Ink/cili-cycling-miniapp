@@ -155,21 +155,6 @@ function createCleanupStore(db, mediaSecret) {
         );
         if (!decision) return undefined;
         await collection.doc(id).update({ data: decision.update });
-        if (decision.kind === 'aborted') {
-          const credential = await get(tx.collection('strava_credentials'), record.owner_openid);
-          if (credential?.avatar_import_lease_id === id) {
-            await tx
-              .collection('strava_credentials')
-              .doc(record.owner_openid)
-              .update({
-                data: {
-                  avatar_import_lease_id: command.remove(),
-                  avatar_import_started_at: command.remove(),
-                  avatar_import_lease_expires_at: command.remove(),
-                },
-              });
-          }
-        }
         return {
           ...record,
           ...decision.update,

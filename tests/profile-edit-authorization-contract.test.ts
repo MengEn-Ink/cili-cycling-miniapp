@@ -6,7 +6,7 @@ const profileTemplate = readFileSync('miniprogram/pages/profile-edit/index.wxml'
 const profileSource = readFileSync('miniprogram/pages/profile-edit/index.ts', 'utf8');
 const reviewTemplate = readFileSync('miniprogram/pages/admin/review-detail/index.wxml', 'utf8');
 
-describe('资料授权与完整骑行卡片契约', () => {
+describe('资料授权与骑行卡片契约', () => {
   it('头像只保留微信选择能力并移除自定义头像上传', () => {
     expect(profileTemplate).toContain('open-type="chooseAvatar"');
     expect(profileTemplate).toContain('bindchooseavatar="chooseWechatAvatar"');
@@ -26,10 +26,10 @@ describe('资料授权与完整骑行卡片契约', () => {
     expect(profileSource).not.toContain('rideService.getPhoneNumber(code)');
   });
 
-  it('报名详情保留累计与近 90 天两组完整骑行指标', () => {
-    expect(reviewTemplate).toContain('wx:for="{{card.lifetimeMetrics}}"');
-    expect(reviewTemplate).toContain('wx:for="{{card.recentMetrics}}"');
-    expect(reviewTemplate).toContain('累计骑行');
-    expect(reviewTemplate).toContain('近 90 天');
+  it('报名详情只展示本人维护的资料、照片和报名信息', () => {
+    expect(reviewTemplate).toContain('资料与照片由骑友本人维护');
+    expect(reviewTemplate).toContain('{{card.experience}}');
+    expect(reviewTemplate).toContain('{{phone}}');
+    expect(reviewTemplate).not.toMatch(/lifetimeMetrics|recentMetrics|累计骑行|近 90 天/);
   });
 });

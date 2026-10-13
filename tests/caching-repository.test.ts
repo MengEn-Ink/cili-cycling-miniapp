@@ -16,8 +16,6 @@ function makeInner() {
     getProfile: vi.fn(),
     getPersonalCapabilityCard: vi.fn(),
     getPhoneNumber: vi.fn(),
-    getStravaStatus: vi.fn(),
-    getStravaReadiness: vi.fn(),
     saveActivity: vi.fn(),
     cloneActivity: vi.fn(),
     deleteActivity: vi.fn(),
@@ -28,15 +26,15 @@ function makeInner() {
     checkInRegistration: vi.fn(),
     registerProfileMedia: vi.fn(),
     setAvatar: vi.fn(),
-    importStravaAvatar: vi.fn(),
     updateProfile: vi.fn(),
-    startStrava: vi.fn(),
-    ensureStravaReady: vi.fn(),
-    syncStrava: vi.fn(),
-    cancelStravaAuthorization: vi.fn(),
-    disconnectStrava: vi.fn(),
   } as unknown as RideRepository;
 }
+
+const capabilityCard = {
+  generatedAt: '2026-10-13T08:00:00.000Z',
+  profile: { displayName: '骑手', gender: '' },
+  backgrounds: [],
+};
 
 describe('TtlCache', () => {
   it('写入后可读取，未命中返回 undefined', () => {
@@ -80,10 +78,10 @@ describe('TtlCache', () => {
   it('clearPrefix 只清理指定命名空间', () => {
     const cache = new TtlCache<string>(1000, REPOSITORY_CACHE_CAPACITY, () => 0);
     cache.set('act:1', 'a');
-    cache.set('strava:1', 's');
+    cache.set('profile:1', 'p');
     cache.clearPrefix('act:');
     expect(cache.get('act:1')).toBeUndefined();
-    expect(cache.get('strava:1')).toBe('s');
+    expect(cache.get('profile:1')).toBe('p');
     cache.clear();
     expect(cache.size).toBe(0);
   });
@@ -192,9 +190,9 @@ describe('CachingRepository 只读缓存', () => {
     vi.mocked(inner.getProfile).mockResolvedValue({ nickname: '骑手' } as Awaited<
       ReturnType<RideRepository['getProfile']>
     >);
-    vi.mocked(inner.getPersonalCapabilityCard).mockResolvedValue({ state: 'ready' } as Awaited<
-      ReturnType<RideRepository['getPersonalCapabilityCard']>
-    >);
+    vi.mocked(inner.getPersonalCapabilityCard).mockResolvedValue(
+      capabilityCard as Awaited<ReturnType<RideRepository['getPersonalCapabilityCard']>>,
+    );
     vi.mocked(inner.listRegistrations).mockResolvedValue([]);
     vi.mocked(inner.getPhoneNumber).mockResolvedValue({ nickname: '骑手' } as Awaited<
       ReturnType<RideRepository['getPhoneNumber']>
@@ -213,20 +211,6 @@ describe('CachingRepository 只读缓存', () => {
     expect(inner.getPersonalCapabilityCard).toHaveBeenCalledOnce();
     expect(inner.listRegistrations).toHaveBeenCalledOnce();
     expect(inner.getPhoneNumber).toHaveBeenCalledTimes(2);
-  });
-
-  it('Strava 状态与就绪摘要在 TTL 内复用', async () => {
-    vi.mocked(inner.getStravaStatus).mockResolvedValue({
-      state: 'connected',
-    } as unknown as Awaited<ReturnType<RideRepository['getStravaStatus']>>);
-    vi.mocked(inner.getStravaReadiness).mockResolvedValue({
-      state: 'ready',
-    } as Awaited<ReturnType<RideRepository['getStravaReadiness']>>);
-    await repo.getStravaStatus();
-    await repo.getStravaStatus();
-    await repo.getStravaReadiness();
-    expect(inner.getStravaStatus).toHaveBeenCalledTimes(1);
-    expect(inner.getStravaReadiness).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -300,9 +284,9 @@ describe('CachingRepository 写后失效', () => {
     vi.mocked(inner.getProfile).mockResolvedValue({ nickname: '骑手' } as Awaited<
       ReturnType<RideRepository['getProfile']>
     >);
-    vi.mocked(inner.getPersonalCapabilityCard).mockResolvedValue({ state: 'ready' } as Awaited<
-      ReturnType<RideRepository['getPersonalCapabilityCard']>
-    >);
+    vi.mocked(inner.getPersonalCapabilityCard).mockResolvedValue(
+      capabilityCard as Awaited<ReturnType<RideRepository['getPersonalCapabilityCard']>>,
+    );
     vi.mocked(inner.listRegistrations).mockResolvedValue([]);
     vi.mocked(inner.getActivity).mockResolvedValue({ id: 'a' } as Awaited<
       ReturnType<RideRepository['getActivity']>
@@ -363,73 +347,13 @@ describe('CachingRepository 写后失效', () => {
     expect(inner.getProfile).toHaveBeenCalledTimes(2);
   });
 
-  it('活动写入不影响 Strava 缓存，Strava 写入不影响活动缓存', async () => {
-    vi.mocked(inner.getStravaStatus).mockResolvedValue({ state: 'connected' } as unknown as Awaited<
-      ReturnType<RideRepository['getStravaStatus']>
-    >);
-    vi.mocked(inner.getActivity).mockResolvedValue({ id: 'a' } as Awaited<
-      ReturnType<RideRepository['getActivity']>
-    >);
-    await repo.getStravaStatus();
-    await repo.getActivity('a');
-    await repo.saveActivity({} as Parameters<RideRepository['saveActivity']>[0]);
-    await repo.getStravaStatus(); // 仍命中缓存
-    await repo.getActivity('a'); // 已失效，重新回源
-    expect(inner.getStravaStatus).toHaveBeenCalledTimes(1);
-    expect(inner.getActivity).toHaveBeenCalledTimes(2);
-
-    vi.mocked(inner.disconnectStrava).mockResolvedValue(undefined);
-    await repo.disconnectStrava();
-    await repo.getStravaStatus(); // 已失效，重新回源
-    await repo.getActivity('a'); // 活动缓存仍在
-    expect(inner.getStravaStatus).toHaveBeenCalledTimes(2);
-    expect(inner.getActivity).toHaveBeenCalledTimes(2);
-  });
-
-  it('Strava 授权与同步写入后失效 Strava 缓存', async () => {
-    vi.mocked(inner.getStravaReadiness).mockResolvedValue({ state: 'ready' } as Awaited<
-      ReturnType<RideRepository['getStravaReadiness']>
-    >);
-    vi.mocked(inner.startStrava).mockResolvedValue({
-      authorizationUrl: 'url',
-      expiresAt: 't',
-    });
-    vi.mocked(inner.ensureStravaReady).mockResolvedValue({ state: 'ready' } as Awaited<
-      ReturnType<RideRepository['ensureStravaReady']>
-    >);
-    vi.mocked(inner.syncStrava).mockResolvedValue({ state: 'ready' } as Awaited<
-      ReturnType<RideRepository['syncStrava']>
-    >);
-    vi.mocked(inner.cancelStravaAuthorization).mockResolvedValue(undefined);
-
-    const stravaWrites: Array<() => Promise<unknown>> = [
-      () => repo.startStrava(),
-      () => repo.ensureStravaReady(),
-      () => repo.syncStrava(),
-      () => repo.cancelStravaAuthorization(),
-    ];
-    for (const write of stravaWrites) {
-      await repo.getStravaReadiness();
-      await write();
-      await repo.getStravaReadiness();
-    }
-    // 每轮：写前 1 次命中缓存，写后 1 次回源；首轮 2 次。
-    expect(inner.getStravaReadiness).toHaveBeenCalledTimes(1 + stravaWrites.length);
-  });
-
   it('cacheControl.clear 清空全部缓存', async () => {
     vi.mocked(inner.getActivity).mockResolvedValue({ id: 'a' } as Awaited<
       ReturnType<RideRepository['getActivity']>
     >);
-    vi.mocked(inner.getStravaStatus).mockResolvedValue({ state: 'connected' } as unknown as Awaited<
-      ReturnType<RideRepository['getStravaStatus']>
-    >);
     await repo.getActivity('a');
-    await repo.getStravaStatus();
     repo.cacheControl.clear();
     await repo.getActivity('a');
-    await repo.getStravaStatus();
     expect(inner.getActivity).toHaveBeenCalledTimes(2);
-    expect(inner.getStravaStatus).toHaveBeenCalledTimes(2);
   });
 });

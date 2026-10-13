@@ -366,7 +366,7 @@ test('管理员卡临时 URL 整体失败时降级为空媒体', async () => {
   assert.deepEqual(result, { photos: [], avatar_url: '' });
 });
 
-test('管理员投影保留审批所需字段但不返回 raw file ID、token、openid 或身份证字段', () => {
+test('管理员投影保留审批所需字段但不返回第三方指标或敏感字段', () => {
   const response = adminCapabilityView(
     {
       _id: 'r1',
@@ -422,13 +422,8 @@ test('管理员投影保留审批所需字段但不返回 raw file ID、token、
   });
   assert.equal(response.profile_snapshot.real_name_masked, '曹**');
   assert.equal(response.profile_snapshot.phone_masked, '138****5678');
-  assert.deepEqual(response.strava_snapshot, {
-    lifetime_rides: 486,
-    lifetime_distance_km: 18240.7,
-    lifetime_moving_hours: 734.5,
-    lifetime_elevation_m: 215400,
-    activities_90d: 12,
-  });
+  assert.equal(Object.hasOwn(response, 'strava_status'), false);
+  assert.equal(Object.hasOwn(response, 'strava_snapshot'), false);
   const serialized = JSON.stringify(response);
   for (const forbidden of [
     'cloud://',
@@ -444,7 +439,7 @@ test('管理员投影保留审批所需字段但不返回 raw file ID、token、
   }
 });
 
-test('存量报名缺少累计指标时不混入当前账号的累计数据', () => {
+test('存量报名第三方指标不进入管理员响应', () => {
   const response = adminCapabilityView(
     {
       _id: 'r1',
@@ -465,10 +460,8 @@ test('存量报名缺少累计指标时不混入当前账号的累计数据', ()
     },
   );
 
-  assert.deepEqual(response.strava_snapshot, {
-    activities_90d: 12,
-    total_km: 860,
-  });
+  assert.equal(Object.hasOwn(response, 'strava_status'), false);
+  assert.equal(Object.hasOwn(response, 'strava_snapshot'), false);
 });
 
 test('管理员报名详情默认返回完整手机号，社交投影不泄露手机号或密文', () => {
@@ -563,7 +556,6 @@ test('social 投影采用独立白名单且绝不包含实名、电话、联系�
     nickname: '山野骑手',
     gender: '男',
     photos: [{ url: 'https://temporary.example/ride-1', category: 'ride', source: 'user' }],
-    strava: { total_km: 500, activities_90d: 12, longest_km: 88 },
   });
   const serialized = JSON.stringify(response);
   for (const forbidden of [

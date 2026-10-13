@@ -1224,13 +1224,16 @@ test('不限人数活动超过内部分类容量后仍可继续保存', async ()
   assert.equal(memory.state.saved.self_drive_occupied_count, 501);
 });
 
-test('Strava 线路允许只保存链接且不要求同步数据', () => {
-  const routeUrl = 'https://www.strava.com/routes/123456789';
+test('历史 Strava 线路链接保存时改写为通用官方路线字段', () => {
+  const routeUrl = 'https://www.strava.com/zh-CN/routes/123456789/';
   const value = validateDraftInput({
     ...input,
     route: { ...input.route, strava_route_url: routeUrl },
   });
-  assert.equal(value.route.strava_route_url, routeUrl);
+  assert.equal(value.route.external_provider, 'strava');
+  assert.equal(value.route.external_route_id, '123456789');
+  assert.equal(value.route.external_route_url, 'https://www.strava.com/routes/123456789');
+  assert.equal(value.route.strava_route_url, undefined);
   assert.equal(value.route.strava_route_id, undefined);
   expectCode(
     () =>

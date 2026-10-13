@@ -1,5 +1,4 @@
 import type { Registration } from '../models';
-import { formatChinaDateOnly, formatChinaDateTime } from './date-time';
 import { genderView } from './gender';
 
 const MAX_CAPABILITY_IMAGES = 3;
@@ -61,49 +60,6 @@ function maskRealName(realName: string) {
 
 export function capabilityCard(registration: Registration) {
   const images = selectCapabilityImages(registration.profile);
-  const hasSnapshot = Boolean(registration.strava.syncedAt);
-  const status =
-    registration.strava.status === 'pending'
-      ? { label: '未授权', tone: 'muted' }
-      : registration.strava.status === 'syncing' ||
-          (registration.strava.status === 'connected' && !hasSnapshot)
-        ? { label: '同步中', tone: 'warning' }
-        : registration.strava.status === 'failed'
-          ? { label: '数据失败', tone: 'danger' }
-          : registration.strava.status === 'exempted'
-            ? { label: '人工豁免', tone: 'warning' }
-            : { label: '已同步', tone: 'success' };
-  const metric = (value: number | null | undefined, suffix = '') =>
-    value === null || value === undefined ? '暂无' : `${value}${suffix}`;
-  const metricItem = (
-    key: string,
-    label: string,
-    value: number | null | undefined,
-    unit: string,
-  ) => ({
-    key,
-    label,
-    value: value === null || value === undefined ? '暂无' : String(value),
-    unit: value === null || value === undefined ? '' : unit,
-  });
-  const lifetimeMetrics = [
-    metricItem('lifetimeRides', '骑行次数', registration.strava.lifetimeRides, '次'),
-    metricItem('lifetimeDistanceKm', '累计里程', registration.strava.lifetimeDistanceKm, 'km'),
-    metricItem('lifetimeMovingHours', '运动时长', registration.strava.lifetimeMovingHours, 'h'),
-    metricItem('lifetimeElevationM', '累计爬升', registration.strava.lifetimeElevationM, 'm'),
-  ];
-  const recentMetrics = [
-    metricItem('totalKm', '骑行里程', registration.strava.totalKm, 'km'),
-    metricItem('rides90d', '骑行次数', registration.strava.rides90d, '次'),
-    metricItem('longestKm', '最长骑行', registration.strava.longestKm, 'km'),
-    metricItem('elevationM', '累计爬升', registration.strava.elevationM, 'm'),
-    metricItem('speedKmh', '加权均速', registration.strava.speedKmh, 'km/h'),
-  ];
-  const coverage = registration.strava.coverage;
-  const datePart = (value: string) => formatChinaDateOnly(value);
-  const coverageFrom = coverage ? datePart(coverage.from) : '';
-  const coverageTo = coverage ? datePart(coverage.to) : '';
-  const syncedAt = formatChinaDateTime(registration.strava.syncedAt || undefined) || '尚未同步';
   return {
     ...genderView(registration.profile.gender),
     images,
@@ -112,21 +68,5 @@ export function capabilityCard(registration: Registration) {
     maskedName: maskRealName(registration.profile.realName),
     experience: registration.experience || '未填写',
     remark: registration.remark || '无',
-    stravaStatus: status.label,
-    statusTone: status.tone,
-    lifetimeMetrics,
-    recentMetrics,
-    totalKm: metric(registration.strava.totalKm, ' km'),
-    rides90d: metric(registration.strava.rides90d, ' 次'),
-    longestKm: metric(registration.strava.longestKm, ' km'),
-    elevationM: metric(registration.strava.elevationM, ' m'),
-    speedKmh: metric(registration.strava.speedKmh, ' km/h'),
-    coverageRange: coverageFrom && coverageTo ? `${coverageFrom} 至 ${coverageTo}` : '覆盖范围未知',
-    coverageState: coverage
-      ? coverage.complete
-        ? '数据覆盖完整'
-        : '数据覆盖不完整'
-      : '完整性未知',
-    syncedAt,
   };
 }

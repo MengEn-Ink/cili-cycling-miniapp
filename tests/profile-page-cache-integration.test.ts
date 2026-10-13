@@ -36,7 +36,6 @@ const fullProfile = {
   completeness: 90,
 };
 const card = {
-  state: 'ready',
   generatedAt: '2026-09-30T12:00:00.000Z',
   profile: {
     displayName: '缓存骑手',
@@ -50,15 +49,6 @@ const card = {
       category: 'ride',
     },
   ],
-  summary: {
-    totalKm90d: 500,
-    rides90d: 20,
-    longestKm: 100,
-    elevationM90d: 5000,
-    weightedAvgSpeedKmh: 25,
-  },
-  coverage: null,
-  syncedAt: '2026-09-30T11:00:00.000Z',
 };
 
 async function mountPage(
@@ -69,7 +59,7 @@ async function mountPage(
 ) {
   let page: any;
   const cache = {
-    version: 1,
+    version: 2,
     ownerOpenid,
     cachedAt,
     profile: cachedProfile,
@@ -259,18 +249,6 @@ describe('个人中心缓存优先与主动刷新', () => {
 
     expect(rideService.getProfile).not.toHaveBeenCalled();
     expect(rideService.getPersonalCapabilityCard).not.toHaveBeenCalled();
-  });
-
-  it('过渡状态缓存会先展示并立即后台刷新', async () => {
-    const page = await mountPage(Date.now(), 'member-openid', { ...card, state: 'syncing' });
-
-    const loading = page.onShow();
-    expect(page.data.profile.nickname).toBe('缓存骑手');
-    await loading;
-    if (page.cardLoadPromise) await page.cardLoadPromise;
-
-    expect(rideService.getProfile).toHaveBeenCalledOnce();
-    expect(rideService.getPersonalCapabilityCard).toHaveBeenCalledOnce();
   });
 
   it('首次图片部分失败时提交成功项并让失败项继续使用远端地址', async () => {

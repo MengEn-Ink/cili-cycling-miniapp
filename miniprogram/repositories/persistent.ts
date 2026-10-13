@@ -22,7 +22,7 @@ export interface CacheStorage {
 }
 
 /** 持久化命名空间带版本号：缓存结构升级时整体作废旧数据，避免反序列化到不兼容结构。 */
-export const REPO_CACHE_STORAGE_NAMESPACE = 'cili-repo-cache-v1:';
+export const REPO_CACHE_STORAGE_NAMESPACE = 'cili-repo-cache-v2:';
 
 interface WxStorageSyncApi {
   getStorageSync(key: string): unknown;

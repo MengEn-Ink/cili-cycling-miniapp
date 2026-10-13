@@ -46,15 +46,15 @@ describe('黑白橙全局主题契约', () => {
     }
   });
 
-  it('行程、Strava 和审核模块用结构与黑白橙区分状态', () => {
+  it('行程、路线查看和审核模块用结构与黑白橙区分状态', () => {
     const trips = readFileSync('miniprogram/pages/registrations/index.wxss', 'utf8');
-    const strava = readFileSync('miniprogram/pages/strava/index.wxss', 'utf8');
+    const routeView = readFileSync('miniprogram/pages/route-view/index.wxss', 'utf8');
     const reviews = readFileSync('miniprogram/pages/admin/reviews/index.wxss', 'utf8');
 
     expect(trips).toContain('background: var(--color-text);');
     expect(trips).toContain('border-color: var(--color-brand);');
-    expect(strava).toContain('.status-ready');
-    expect(strava).toContain('background: var(--color-text);');
+    expect(routeView).toContain('.route-view-action--primary');
+    expect(routeView).toContain('background: var(--color-action);');
     expect(reviews).toContain('border-color: var(--color-brand);');
   });
 });

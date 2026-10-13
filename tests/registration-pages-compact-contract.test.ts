@@ -7,7 +7,6 @@ const read = (file: string) => readFileSync(file, 'utf8');
 const form = read('miniprogram/pages/registration-form/index.wxml');
 const formStyles = read('miniprogram/pages/registration-form/index.wxss');
 const profileStyles = read('miniprogram/pages/profile/index.wxss');
-const stravaStyles = read('miniprogram/pages/strava/index.wxss');
 const registrations = read('miniprogram/pages/registrations/index.wxml');
 const registrationStyles = read('miniprogram/pages/registrations/index.wxss');
 const credential = read('miniprogram/pages/credential/index.wxml');
@@ -38,7 +37,6 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     expect(formStyles).toContain('.experience-segment');
     expect(formStyles).toMatch(/\.segment\s*\{[^}]*min-height:\s*104rpx/s);
     expect(profileStyles).toContain('.identity-guide');
-    expect(stravaStyles).toMatch(/\.status-failed,\s*\.status-disconnected\s*\{/);
   });
 
   it('V3.1 行程统一汇总并区分六种报名状态', () => {

@@ -486,8 +486,7 @@ brand-logo {
 }
 
 .attendee-mini-card::after,
-.strava-route-url::after,
-.strava-route-action::after {
+.route-action::after {
   border: 0;
 }
 
@@ -528,81 +527,167 @@ brand-logo {
   line-height: 1.2;
 }
 
-/* Strava 轨迹操作统一使用全局暖灰白、石墨黑、品牌橙语义色。 */
-.detail-page .route-actions-card {
-  padding-top: 18rpx;
-  padding-bottom: 18rpx;
+/* 路线区域统一使用全局暖灰白、石墨黑、品牌橙语义色。 */
+.official-route-card,
+.gpx-route-card {
+  padding: 24rpx 4rpx;
+  border-bottom: 2rpx solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-text);
 }
 
-.route-actions-card .route-preview-image {
+.official-route-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.route-native-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 18rpx;
+  border: 1rpx solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.route-native-metrics > view {
+  display: flex;
+  min-width: 0;
+  min-height: 104rpx;
+  align-items: center;
+  justify-content: center;
+  padding: 12rpx 6rpx;
+  flex-direction: column;
+  background: var(--color-surface);
+  text-align: center;
+}
+
+.route-native-metrics > view + view {
+  border-left: 1rpx solid var(--color-border);
+}
+
+.route-native-metrics text:first-child {
+  max-width: 100%;
+  color: var(--color-text);
+  font-size: 27rpx;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.route-native-metrics text:last-child {
+  margin-top: 4rpx;
+  color: var(--color-muted);
+  font-size: 21rpx;
+  font-weight: 700;
+}
+
+.route-estimate {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12rpx;
+  padding: 12rpx 0;
+  border-bottom: 1rpx solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 22rpx;
+}
+
+.route-estimate text:last-child {
+  color: var(--color-text);
+  font-weight: 900;
+}
+
+.route-visual-heading {
+  margin-top: 22rpx;
+  color: var(--color-text);
+  font-size: 23rpx;
+  font-weight: 900;
+}
+
+.route-outline-canvas,
+.route-outline-image {
   display: block;
   width: 100%;
-  height: 340rpx;
-  margin: 12rpx 0;
+  height: 320rpx;
+  margin-top: 8rpx;
   overflow: hidden;
   border: 1rpx solid var(--color-border);
   border-radius: var(--radius-control);
   background: var(--color-raised);
 }
 
-.strava-route-row {
+.route-outline-canvas {
+  height: 320rpx;
+}
+
+.route-coordinate-list {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 8rpx;
   margin-top: 8rpx;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8rpx;
 }
 
-.strava-route-url {
-  display: block;
+.route-coordinate-list > view {
+  display: flex;
   min-width: 0;
-  min-height: 64rpx;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  border: 0;
-  background: transparent;
-  color: var(--color-brand);
+  padding: 10rpx 12rpx;
+  flex-direction: column;
+  border: 1rpx solid var(--color-border);
+  background: var(--color-raised);
+  color: var(--color-muted);
   font-size: 21rpx;
-  font-weight: 700;
-  line-height: 64rpx;
-  text-align: left;
-  text-decoration: underline;
-  text-overflow: ellipsis;
-  text-underline-offset: 4rpx;
-  white-space: nowrap;
 }
 
-.strava-route-action {
-  min-width: 80rpx;
+.route-coordinate-list text:last-child {
+  margin-top: 2rpx;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.gpx-download-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-top: 18rpx;
+}
+
+.route-action,
+.route-location-row button {
+  display: flex;
+  min-width: 148rpx;
   min-height: var(--control-height);
+  align-items: center;
+  justify-content: center;
   margin: 0;
-  padding: 0 14rpx;
+  padding: 0 16rpx;
   border: 1rpx solid var(--color-brand);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-brand);
-  font-size: 21rpx;
-  font-weight: 800;
-  line-height: var(--control-height);
+  font-size: 22rpx;
+  font-weight: 900;
+  line-height: 1.3;
+  white-space: nowrap;
 }
 
-.strava-route-action--primary {
-  min-width: 132rpx;
+.route-action--primary {
   background: var(--color-action);
   color: var(--color-on-action);
 }
 
-.strava-route-action[disabled] {
+.route-action[disabled] {
   border-color: var(--color-border-strong);
   background: var(--color-raised);
   color: var(--color-disabled-text);
 }
 
-.route-actions-card .route-action-note {
-  margin: 8rpx 0 0;
+.route-action-note {
+  color: var(--color-muted);
   font-size: 21rpx;
   line-height: 1.4;
 }
@@ -688,24 +773,6 @@ brand-logo {
   color: var(--color-muted);
   font-size: 21rpx;
   line-height: 1.35;
-}
-
-.route-actions button,
-.route-location-row button {
-  display: flex;
-  min-width: 104rpx;
-  min-height: var(--control-height);
-  margin: 0;
-  padding: 0 16rpx;
-  align-items: center;
-  justify-content: center;
-  border: 1rpx solid var(--color-brand);
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--color-brand);
-  font-size: 22rpx;
-  font-weight: 800;
-  line-height: 1.3;
 }
 
 .schedule-row {
@@ -1028,16 +1095,37 @@ brand-logo {
 }
 
 @media (max-width: 360px) {
-  .strava-route-row {
-    grid-template-columns: minmax(0, 1fr) auto;
+  .official-route-card,
+  .gpx-download-row {
+    align-items: stretch;
+    grid-template-columns: 1fr;
   }
 
-  .strava-route-url {
-    grid-column: 1 / -1;
+  .official-route-card {
+    display: grid;
   }
 
-  .strava-route-action--primary {
-    min-width: 0;
+  .gpx-download-row {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .route-native-metrics,
+  .route-coordinate-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .route-native-metrics > view:nth-child(3) {
+    border-top: 1rpx solid var(--color-border);
+    border-left: 0;
+  }
+
+  .route-native-metrics > view:nth-child(4) {
+    border-top: 1rpx solid var(--color-border);
+  }
+
+  .route-action {
+    width: 100%;
   }
 }
 

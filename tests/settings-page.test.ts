@@ -20,24 +20,24 @@ describe('设置页', () => {
     await import('../miniprogram/pages/settings/index');
   });
 
-  it('只加载版本日志，不注册 Strava readiness 生命周期或授权入口', () => {
+  it('只加载当前版本日志，不注册第三方账号生命周期或入口', () => {
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.13.44',
+      version: '2026.10.13.45',
       latest: true,
-      title: '活动卡片浏览更利落',
-      summary: '去掉重复的详情按钮，整张活动卡都可点击，并将多日期选中态收敛为主题橙边框。',
+      title: '官方路线与 GPX 详情',
+      summary: '活动路线现在支持官方链接和 GPX 文件，两种方式可以单独使用，也可以一起添加。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.13.45',
       '2026.10.13.44',
       '2026.10.13.43',
       '2026.10.13.42',
       '2026.10.13.41',
-      '2026.10.13.40',
     ]);
     expect(page.onShow).toBeUndefined();
     expect(page.loadStravaStatus).toBeUndefined();

@@ -191,7 +191,6 @@ async function submitRegistration(store, { openid, activityId, options, team }, 
             : '',
         phone_verified: profile.phone_verified === true,
       },
-      strava_status: 'not_required',
       review_history: history,
       ...(adminAutoApproved
         ? {

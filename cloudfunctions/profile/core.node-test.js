@@ -20,7 +20,6 @@ const {
   canonicalMediaBinding,
   mediaOwnerPrefix,
   mediaDocumentId,
-  avatarUrlFingerprint,
   mediaRegistration,
   clientAvatarSource,
   clientMediaOrigin,
@@ -39,13 +38,6 @@ const {
 } = require('./core');
 const key = require('node:crypto').randomBytes(32).toString('base64');
 const mediaSecret = 'profile-media-secret-for-tests-32-bytes';
-test('Strava 头像 URL 只以稳定 SHA-256 指纹进入持久 lease', () => {
-  const url = 'https://dgalywyr863hv.cloudfront.net/private/avatar.jpg';
-  const fingerprint = avatarUrlFingerprint(url);
-  assert.match(fingerprint, /^[a-f0-9]{64}$/);
-  assert.equal(fingerprint.includes(url), false);
-  assert.notEqual(fingerprint, avatarUrlFingerprint(`${url}?changed=1`));
-});
 test('AES-256-GCM 可往返且随机 IV', () => {
   const a = encrypt('敏感值', key);
   const b = encrypt('敏感值', key);
@@ -918,7 +910,7 @@ test('registerMedia 记录幂等且在 profile 引用前可清理', () => {
   assert.throws(
     () =>
       mediaRegistration(fileId, 'ride', 'strava', 'openid-owner-a', mediaSecret, createdAt, record),
-    { code: 'MEDIA_REGISTRATION_CONFLICT' },
+    { code: 'MEDIA_ORIGIN_INVALID' },
   );
   const { origin, ...legacyRecord } = record;
   void origin;

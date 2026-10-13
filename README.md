@@ -1,19 +1,19 @@
 # 骑有此里（此里）· 骑行活动微信小程序
 
-“骑有此里”是面向骑行俱乐部的原生微信小程序，覆盖活动发布、路线展示、实名资料、Strava 能力数据、报名审批、签到和个人骑行名片。小程序内使用简称“此里”。
+“骑有此里”是面向骑行俱乐部的原生微信小程序，覆盖活动发布、官方路线与 GPX 详情、实名资料、报名审批、签到和个人骑行名片。小程序内使用简称“此里”。
 
-项目基于微信云开发（CloudBase）。业务数据库集合只允许云函数访问；客户端仅可按存储规则写入与本人绑定的 `profiles/` staging 路径。本地构建或测试通过不代表云端资源已经部署，也不代表真实报名旅程已经验证。
+项目基于微信云开发（CloudBase）。业务数据库集合只允许云函数访问；客户端仅可按存储规则写入与本人绑定的 `profiles/` 和 `activity-routes/` staging 路径。本地构建或测试通过不代表云端资源已经部署，也不代表真实报名旅程已经验证。
 
 ## 已实现能力
 
-- **活动**：公开首页默认展示未来与进行中活动，并可按服务端时间线稳定分页回看历史；已登录用户可创建和编辑本人草稿、发布与下架，并从本人的历史活动复制草稿；管理员可管理全部活动并结束活动。活动支持图集、集合地点、分组容量、后援车信息和 Strava 路线预览/GPX。
+- **活动**：公开首页默认展示未来与进行中活动，并可按服务端时间线稳定分页回看历史；已登录用户可创建和编辑本人草稿、发布与下架，并从本人的历史活动复制草稿；管理员可管理全部活动并结束活动。活动支持图集、集合地点、分组容量、后援车信息、Strava 官方公开路线和 GPX 原生详情。
 - **报名**：微信身份、实名资料、微信授权手机号、集合方式与骑行经验；支持提交、驳回后重报、取消、审批、凭证和管理员签到。
-- **Strava**：创建活动时免授权解析公开路线并生成路线预览/GPX；历史已连接用户仍可查看和同步累计骑行数据，但不再提供新的 OAuth 授权入口。
+- **路线**：粘贴 Strava 公开路线链接即可通过官方 Embed 查看；上传 GPX 后原生展示里程、升降、海拔范围、路线轮廓与海拔曲线，并支持原件下载和路线图背景。
 - **个人资料**：昵称、微信授权头像、骑行背景图、称号展示和个人骑行名片。
 - **通知**：报名时请求订阅授权；审批结果通过带租约和退避的 Outbox 异步发送。
 - **安全与可靠性**：服务端可信 `OPENID`、管理员白名单、敏感字段 AES-256-GCM 加密、媒体 owner/canonical 校验、容量事务和操作审计。
 
-当前不包含在线支付、Strava 豁免流程、管理员白名单维护界面、报名名单导出或多俱乐部租户体系。完整产品边界见 [产品需求与当前能力](docs/requirements-design.md)。
+当前不包含在线支付、第三方账号授权、管理员白名单维护界面、报名名单导出或多俱乐部租户体系。完整产品边界见 [产品需求与当前能力](docs/requirements-design.md)。
 
 公开骑手头像默认展示，但仍只为 owner/current registry 完整匹配的 canonical 媒体签发临时地址；来源、归属、状态、内容元数据或签名校验失败时一律隐藏头像。代码和自动化验证不代表目标环境已经部署，仍须按对应不可变提交核对云函数版本、同值 `PROFILE_MEDIA_PATH_SECRET` 和真实 smoke，证据缺失时不得宣称生产就绪。
 
@@ -22,7 +22,7 @@
 - 原生微信小程序：TypeScript、WXML、WXSS
 - 微信云开发：云函数、云数据库、云存储、HTTP 网关、定时触发器
 - Node.js 24、npm、Vitest、ESLint、Prettier
-- Strava 公开路线页面解析；历史授权数据兼容只读 API
+- Strava 官方 Route Embed；服务端受限 GPX XML 解析
 
 ## 目录
 
@@ -30,7 +30,8 @@
 miniprogram/                 小程序页面、组件、仓库层和领域视图模型
 cloudfunctions/              可独立部署的 CloudBase 云函数
 cloudfunctions/shared/       报名领域的共享源码
-cloudfunctions/strava-shared/ Strava 领域的共享源码
+cloudfunctions/route-web/     Strava 官方路线 Embed HTTP 函数
+cloudfunctions/route-maintenance/ 路线文件回收与历史数据迁移定时函数
 scripts/                     部署准备、CloudBase bootstrap 和证据校验
 tests/                       小程序与跨模块回归测试
 docs/                        产品、数据契约和真实环境验证文档
@@ -57,7 +58,7 @@ npm run format:check     # Markdown、JSON、TS/JS 等格式
 npm run lint             # TypeScript ESLint
 npm run typecheck        # TypeScript 类型检查
 npm test                 # 小程序与共享领域测试
-npm run test:cloud       # 各云函数及 Strava 共享模块测试
+npm run test:cloud       # 各云函数与路线函数测试
 npm run coverage         # 覆盖率门禁
 npm run audit:all        # 根项目和云函数依赖审计
 ```
@@ -100,9 +101,7 @@ npm run deploy:miniprogram
 | ------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `PII_ENCRYPTION_KEY`                                          | `profile`、`admin-review`                                           | base64 编码的 32 字节密钥；两者必须完全一致                        |
 | `PROFILE_MEDIA_PATH_SECRET`                                   | `profile`、`profile-media-cleanup`、`admin-review`、`activity-read` | 至少 32 字符，四者必须一致；`activity-read` 缺失时头像 fail closed |
-| `STRAVA_CLIENT_ID` / `STRAVA_CLIENT_SECRET`                   | Strava 函数                                                         | Strava 应用凭据                                                    |
-| `STRAVA_TOKEN_ENCRYPTION_KEY`                                 | Strava 函数                                                         | base64 编码的 32 字节密钥                                          |
-| `STRAVA_CALLBACK_URL`                                         | Strava 函数                                                         | 完整 HTTPS 回调地址                                                |
+| `OAUTH_RETIREMENT_PURGE_ENABLED`                              | `route-maintenance`                                                 | 默认关闭；仅在新链路运行时验收后临时设为 `1`，清空回读后移除       |
 | `REVIEW_APPROVED_TEMPLATE_ID` / `REVIEW_REJECTED_TEMPLATE_ID` | `notification-send`                                                 | 审批订阅消息模板                                                   |
 
 仓库禁止保存 secret、token、真实 `openid`、手机号、OAuth code/state、密文或真实旅程原始证据。
@@ -117,14 +116,16 @@ npm run cloudbase:apply
 npm run cloudbase:verify
 ```
 
-bootstrap 当前管理 13 个集合、33 个业务索引和全拒绝客户端数据库规则；受管定义包含活动管理分页所需的 `status + is_deleted + event_start + _id` 与 `created_by + status + is_deleted + event_start + _id` 两个组合索引、活动首页 future/history 分页经 planner 验证的两个 exact 复合索引、“我的行程”使用的 `openid + created_at + _id` 稳定分页索引、Strava disconnect 媒体清理的 `owner_openid + origin + status + _id` 游标索引，以及 Strava OAuth 当前授权代际集合 `oauth_attempts` 和路线短期可信快照集合 `strava_route_previews`。bootstrap 不创建业务活动，也不会自动应用 `cloudstorage.rules.json`。完整顺序：
+bootstrap 当前管理 9 个集合、29 个业务索引和全拒绝客户端数据库规则；受管定义包含活动首页与管理分页、我的行程、通知 Outbox、媒体清理以及 GPX 可信预览集合 `route_previews`。bootstrap 不创建业务活动，也不会自动应用 `cloudstorage.rules.json`。完整顺序：
 
 1. 审阅并执行 CloudBase plan/apply/verify。
-2. 按 [CloudBase 数据契约](docs/cloudbase-schema.md) 配置云函数环境变量和 `cloudstorage.rules.json`，并回读确认 canonical 媒体路径不可由客户端写入。
-3. 运行 `npm run cloud:install`，再依次部署 `auth`、`profile-media-cleanup`、`admin-review`、`profile`、`strava-callback`、`strava-auth`、`activity-read`、`activity-admin`、`registration`、`notification-send`。必须先验证 fail-closed 新版 `admin-review` 已生效；旧 `admin-review` 仍可能为可变 source 签 URL 时禁止进入 `profile` 部署。
-4. 应用并回读 `cloudbaserc.json` 中 `/strava/callback`、`/strava/success`、`/strava/failure` 三条 HTTPS 网关路由；把完整 callback 地址配置到 Strava 应用，并把网关域名加入小程序 `web-view` 业务域名。OAuth scope 固定为 `read,activity:read_all,profile:read_all`。
-5. 按 [安全初始化说明](scripts/seed-cloudbase/README.md) 创建首个管理员；活动只能通过已部署的活动管理业务流程创建。
-6. 在隔离测试环境按 [P0 真实报名旅程手册](docs/verification/p0-real-registration-journey.md) 验证。缺少真实环境证据时结论只能是“未执行”，不能写成通过。
+2. 按 [CloudBase 数据契约](docs/cloudbase-schema.md) 配置云函数环境变量和 `cloudstorage.rules.json`，并回读确认客户端只能写本人资料与路线 staging，canonical 媒体路径不可由客户端写入。
+3. 运行 `npm run cloud:install`，再依次部署 `auth`、`profile-media-cleanup`、`admin-review`、`profile`、`activity-read`、`activity-admin`、`registration`、`notification-send`、`route-web` 和 `route-maintenance`。
+4. 应用并回读 `cloudbaserc.json` 中 `/route/embed` HTTPS 网关路由，并把网关域名加入小程序 `web-view` 业务域名。
+5. 在开发者工具和真机完成官方路线、GPX 上传/保存/下载及失败回退验收；此前 `OAUTH_RETIREMENT_PURGE_ENABLED` 必须保持关闭。
+6. 验收通过后临时开启 purge，等待旧账号数据与预览清空并回读，再移除该开关和线上旧资源。
+7. 按 [安全初始化说明](scripts/seed-cloudbase/README.md) 创建首个管理员；活动只能通过已部署的活动管理业务流程创建。
+8. 在隔离测试环境按 [P0 真实报名旅程手册](docs/verification/p0-real-registration-journey.md) 验证。缺少真实环境证据时结论只能是“未执行”，不能写成通过。
 
 ## 文档导航
 

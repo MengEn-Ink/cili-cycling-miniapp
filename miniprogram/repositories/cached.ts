@@ -8,7 +8,7 @@ import type { CacheStorage } from './persistent';
 
 /**
  * 只读数据的默认缓存时长。
- * 列表/详情/Strava 摘要在该窗口内复用结果，用来合并页面 onShow、Tab 切换和详情返回带来的重复请求；
+ * 列表、详情和资料摘要在该窗口内复用结果，用来合并页面 onShow、Tab 切换和详情返回带来的重复请求；
  * 超过窗口后自动回源，避免展示陈旧数据。
  */
 export const REPOSITORY_CACHE_TTL_MS = 30_000;
@@ -21,11 +21,10 @@ export const REPOSITORY_OFFLINE_STALE_MS = 5 * 60_000;
 /** 缓存条目上限，超出后按最早写入顺序淘汰，防止长时间运行占用过多内存。 */
 export const REPOSITORY_CACHE_CAPACITY = 60;
 
-// 资源前缀即“失效命名空间”：活动相关写入只清 act: 前缀，Strava 变更只清 strava: 前缀。
+// 资源前缀即“失效命名空间”：活动、报名和资料写入各自清理相关缓存。
 const ACTIVITY_PREFIX = 'act:';
 const REGISTRATION_PREFIX = 'reg:';
 const PROFILE_PREFIX = 'profile:';
-const STRAVA_PREFIX = 'strava:';
 
 interface Entry<V> {
   value: V;
@@ -105,8 +104,6 @@ export interface RepositoryCacheControl {
   peekActivityPage(view: PublicActivityView): PublicActivityPage | undefined;
   /** 活动或报名发生变化后，让活动列表/详情下次读取重新回源。 */
   invalidateActivities(): void;
-  /** Strava 授权、解绑或同步后，让 Strava 摘要下次读取重新回源。 */
-  invalidateStrava(): void;
   /** 账号切换或退出时清空全部只读缓存。 */
   clear(): void;
   /** 读取命中率等指标快照。 */
@@ -163,7 +160,6 @@ export class CachingRepository implements RideRepository {
       peekActivityPage: (view) =>
         this.peekFresh<PublicActivityPage>(`${ACTIVITY_PREFIX}page:${view}:`),
       invalidateActivities: () => this.invalidatePrefix(ACTIVITY_PREFIX),
-      invalidateStrava: () => this.invalidatePrefix(STRAVA_PREFIX),
       clear: () => {
         this.cache.clear();
         this.inflight.clear();
@@ -280,16 +276,6 @@ export class CachingRepository implements RideRepository {
     return this.readThrough(`${ACTIVITY_PREFIX}item:${id}`, () => this.inner.getActivity(id));
   }
 
-  // ---- Strava 摘要（strava: 命名空间）----
-
-  getStravaStatus() {
-    return this.readThrough(`${STRAVA_PREFIX}status`, () => this.inner.getStravaStatus());
-  }
-
-  getStravaReadiness() {
-    return this.readThrough(`${STRAVA_PREFIX}readiness`, () => this.inner.getStravaReadiness());
-  }
-
   // ---- 活动写入：成功后失效活动命名空间 ----
 
   async saveActivity(
@@ -366,36 +352,6 @@ export class CachingRepository implements RideRepository {
     this.cacheControl.invalidateActivities();
     this.invalidatePrefix(REGISTRATION_PREFIX);
     return result;
-  }
-
-  // ---- Strava 写入：成功后失效 Strava 命名空间 ----
-
-  async startStrava() {
-    const result = await this.inner.startStrava();
-    this.cacheControl.invalidateStrava();
-    return result;
-  }
-
-  async ensureStravaReady() {
-    const result = await this.inner.ensureStravaReady();
-    this.cacheControl.invalidateStrava();
-    return result;
-  }
-
-  async syncStrava() {
-    const result = await this.inner.syncStrava();
-    this.cacheControl.invalidateStrava();
-    return result;
-  }
-
-  async cancelStravaAuthorization() {
-    await this.inner.cancelStravaAuthorization();
-    this.cacheControl.invalidateStrava();
-  }
-
-  async disconnectStrava() {
-    await this.inner.disconnectStrava();
-    this.cacheControl.invalidateStrava();
   }
 
   // ---- 其余方法原样透传，不做缓存 ----
@@ -480,12 +436,6 @@ export class CachingRepository implements RideRepository {
     return result;
   }
 
-  async importStravaAvatar() {
-    const result = await this.inner.importStravaAvatar();
-    this.invalidatePrefix(PROFILE_PREFIX);
-    return result;
-  }
-
   async updateProfile(profile: Parameters<RideRepository['updateProfile']>[0]) {
     const result = await this.inner.updateProfile(profile);
     this.invalidatePrefix(PROFILE_PREFIX);
@@ -498,19 +448,15 @@ export class CachingRepository implements RideRepository {
     return result;
   }
 
-  previewPublicStravaRoute(routeUrl: string) {
-    return this.inner.previewPublicStravaRoute(routeUrl);
+  previewRouteGpx(input: Parameters<RideRepository['previewRouteGpx']>[0]) {
+    return this.inner.previewRouteGpx(input);
   }
 
-  previewStravaRoute(routeUrl: string) {
-    return this.inner.previewStravaRoute(routeUrl);
+  bindRoutePreviewImage(previewId: string, generatedPreviewFileId: string) {
+    return this.inner.bindRoutePreviewImage(previewId, generatedPreviewFileId);
   }
 
-  getStravaRouteGpx(activityId: string, routeId: string) {
-    return this.inner.getStravaRouteGpx(activityId, routeId);
-  }
-
-  exportActivityGpx(activityId: string) {
-    return this.inner.exportActivityGpx(activityId);
+  downloadRouteGpx(activityId: string) {
+    return this.inner.downloadRouteGpx(activityId);
   }
 }

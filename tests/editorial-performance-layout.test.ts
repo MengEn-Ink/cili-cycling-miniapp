@@ -64,7 +64,7 @@ describe('方案 A 编辑式性能布局', () => {
     expect(cardTemplate).not.toContain('查看详情');
     expect(cardStyles).not.toContain('.card-cta');
 
-    for (const selector of ['.route-actions button', '.route-location-row button']) {
+    for (const selector of ['.route-action', '.route-location-row button']) {
       const button = effectiveBlock(detailStyles, selector);
       expect(declaration(button, 'display'), selector).toBe('flex');
       expect(declaration(button, 'align-items'), selector).toBe('center');

@@ -1,84 +1,6 @@
 'use strict';
 
 const { ProfileError, ownerAvatarMedia, ownerMedia } = require('./core');
-const SNAPSHOT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
-const SUMMARY_FIELDS = [
-  ['lifetime_rides', 'lifetime_rides'],
-  ['lifetime_distance_km', 'lifetime_distance_km'],
-  ['lifetime_moving_hours', 'lifetime_moving_hours'],
-  ['lifetime_elevation_m', 'lifetime_elevation_m'],
-  ['total_km_90d', 'total_km'],
-  ['rides_90d', 'activities_90d'],
-  ['longest_km', 'longest_km'],
-  ['elevation_m_90d', 'total_elevation_m'],
-  ['weighted_avg_speed_kmh', 'weighted_avg_speed_kmh'],
-];
-
-function validDate(value) {
-  const date = new Date(value);
-  return Number.isFinite(date.getTime()) ? date : undefined;
-}
-
-function validEnvelope(value) {
-  return Boolean(
-    value &&
-    value.alg === 'A256GCM' &&
-    ['iv', 'tag', 'ciphertext'].every(
-      (field) => typeof value[field] === 'string' && value[field].trim(),
-    ),
-  );
-}
-
-function usableCredential(credential) {
-  return Boolean(
-    credential &&
-    typeof credential.athlete_id === 'string' &&
-    credential.athlete_id &&
-    validEnvelope(credential.access_token_cipher) &&
-    validEnvelope(credential.refresh_token_cipher),
-  );
-}
-
-function canonicalSnapshot(credential, snapshot) {
-  return Boolean(
-    usableCredential(credential) &&
-    snapshot &&
-    snapshot.athlete_id === credential.athlete_id &&
-    validDate(snapshot.synced_at),
-  );
-}
-
-function summary(snapshot) {
-  return SUMMARY_FIELDS.reduce((output, [target, source]) => {
-    output[target] =
-      snapshot && typeof snapshot[source] === 'number' && Number.isFinite(snapshot[source])
-        ? snapshot[source]
-        : null;
-    return output;
-  }, {});
-}
-
-function coverage(snapshot) {
-  const from = validDate(snapshot && snapshot.coverage_from);
-  const to = validDate(snapshot && snapshot.coverage_to);
-  if (!from || !to || typeof snapshot.coverage_complete !== 'boolean') return null;
-  return { from: from.toISOString(), to: to.toISOString(), complete: snapshot.coverage_complete };
-}
-
-function deriveCapabilityState({ credential, snapshot }, now = new Date()) {
-  if (!usableCredential(credential)) return 'disconnected';
-  if (canonicalSnapshot(credential, snapshot)) {
-    const snapshotSummary = summary(snapshot);
-    const snapshotCoverage = coverage(snapshot);
-    const syncedAt = validDate(snapshot.synced_at);
-    const fresh = now.getTime() - syncedAt.getTime() < SNAPSHOT_MAX_AGE_MS;
-    const completeMetrics = Object.values(snapshotSummary).every((value) => value !== null);
-    return fresh && snapshotCoverage && snapshotCoverage.complete && completeMetrics
-      ? 'ready'
-      : 'partial';
-  }
-  return credential.sync_status === 'failed' ? 'failed' : 'syncing';
-}
 
 function safeHttpsUrl(value) {
   if (typeof value !== 'string' || value.length > 2048) return '';
@@ -116,29 +38,12 @@ async function resolveBackgrounds(media, getTempFileURL) {
     }));
 }
 
-function stravaProfileUrl(credential) {
-  const athleteId = String(credential?.athlete_id || '');
-  return usableCredential(credential) && /^\d+$/.test(athleteId)
-    ? `https://www.strava.com/athletes/${athleteId}`
-    : '';
-}
-
 async function buildCapabilityCard(
-  { profile, credential, snapshot, mediaRecords = [] },
+  { profile, mediaRecords = [] },
   { openid, mediaSecret, now = new Date(), getTempFileURL },
 ) {
   if (typeof openid !== 'string' || !openid)
     throw new ProfileError('UNAUTHENTICATED', '无法取得微信身份');
-  const hasSnapshot = canonicalSnapshot(credential, snapshot);
-  const snapshotSummary = summary(hasSnapshot ? snapshot : undefined);
-  const snapshotCoverage = hasSnapshot ? coverage(snapshot) : null;
-  const syncedAt = hasSnapshot ? validDate(snapshot.synced_at).toISOString() : null;
-  const stravaJoinedAt = (() => {
-    if (!hasSnapshot) return null;
-    const date = validDate(snapshot.athlete_created_at);
-    if (!date || date.getTime() > now.getTime()) return null;
-    return date.toISOString();
-  })();
   const [backgrounds, avatar] = await Promise.all([
     resolveBackgrounds(ownerMedia(profile, openid, mediaSecret, mediaRecords), getTempFileURL),
     resolveBackgrounds(
@@ -148,7 +53,6 @@ async function buildCapabilityCard(
   ]);
   const avatarUrl = avatar[0]?.url || '';
   return {
-    state: deriveCapabilityState({ credential, snapshot }, now),
     generated_at: now.toISOString(),
     profile: {
       display_name: typeof profile?.nickname === 'string' ? profile.nickname : '',
@@ -156,17 +60,9 @@ async function buildCapabilityCard(
       avatar_url: avatarUrl,
     },
     backgrounds,
-    summary: snapshotSummary,
-    coverage: snapshotCoverage,
-    synced_at: syncedAt,
-    strava_profile_url: stravaProfileUrl(credential),
-    ...(stravaJoinedAt ? { strava_joined_at: stravaJoinedAt } : {}),
-    needs_strava_reauth: profile?.avatar_source === 'strava' && !avatarUrl,
   };
 }
 
 module.exports = {
-  SNAPSHOT_MAX_AGE_MS,
-  deriveCapabilityState,
   buildCapabilityCard,
 };

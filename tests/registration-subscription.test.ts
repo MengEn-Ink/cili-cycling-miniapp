@@ -1,12 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Profile, Registration, StravaReadiness } from '../miniprogram/models';
+import type { Profile, Registration } from '../miniprogram/models';
 
 const rideService = vi.hoisted(() => ({
   getProfile: vi.fn(),
   getActivity: vi.fn(),
   listRegistrations: vi.fn(),
-  getStravaReadiness: vi.fn(),
-  ensureStravaReady: vi.fn(),
   getReviewNotificationTemplateIds: vi.fn(),
   requestReviewNotificationSubscription: vi.fn(),
   saveRegistration: vi.fn(),
@@ -26,14 +24,6 @@ const profile: Profile = {
   photos: [{ id: 'cloud://bg', category: 'ride' }],
   backgroundPhoto: { id: 'cloud://bg', category: 'ride' },
   avatarId: 'cloud://avatar',
-};
-const readiness: StravaReadiness = {
-  state: 'ready',
-  canRegister: true,
-  avatarAvailable: true,
-  athleteName: 'Rider',
-  snapshot: null,
-  error: null,
 };
 const registration = { id: 'r1' } as Registration;
 
@@ -57,7 +47,6 @@ describe('报名提交订阅消息授权', () => {
         activityId: 'a1',
         gatheringMode: 'self_drive',
         profile,
-        readiness,
         notificationTemplateIds: ['approved-template', 'rejected-template'],
         activityAction: { kind: 'register', label: '立即报名', enabled: true },
         activityCanSubmit: true,
@@ -77,7 +66,6 @@ describe('报名提交订阅消息授权', () => {
       endAt: '2099-10-18T08:00:00.000Z',
     });
     rideService.listRegistrations.mockResolvedValue([]);
-    rideService.getStravaReadiness.mockResolvedValue(readiness);
     rideService.getReviewNotificationTemplateIds.mockResolvedValue([
       'approved-template',
       'rejected-template',

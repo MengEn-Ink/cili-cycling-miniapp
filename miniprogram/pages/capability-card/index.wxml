@@ -3,7 +3,7 @@
     loading="{{loading}}"
     error="{{error}}"
     loading-title="正在生成骑行名片"
-    loading-copy="正在整理骑行数据与照片"
+    loading-copy="正在整理你的公开资料与照片"
     retryable="{{true}}"
     bind:retry="load"
   >
@@ -42,68 +42,22 @@
         <view class="image-shade" aria-hidden="true"></view>
         <view class="card-topline">
           <view class="brand-signature"><brand-logo compact="{{true}}" /></view>
-          <view class="strava-pill status-{{card.statusTone}}">
-            <text class="status-dot"></text>STRAVA {{card.statusLabel}}
-          </view>
+          <view class="card-label"><text class="status-dot"></text>公开骑行名片</view>
         </view>
         <view class="card-content">
           <view class="identity-block">
             <view class="rider-name">{{card.displayName}}</view>
             <view class="gender-pill {{card.genderClass}}">{{card.genderLabel}}</view>
-            <view class="privacy-note">仅自己可见 · 不会用于活动报名审核</view>
-          </view>
-
-          <view class="metric-sheet">
-            <view wx:if="{{card.hasLifetimeMetrics}}" class="metric-section lifetime-section">
-              <view class="metric-kicker">STRAVA 累计骑行</view>
-              <view class="metric-grid lifetime-grid">
-                <view class="metric-item" wx:for="{{card.lifetimeMetrics}}" wx:key="key">
-                  <view class="metric-value">{{item.value}}<text class="metric-unit">{{item.unit}}</text></view>
-                  <view class="metric-label">{{item.label}}</view>
-                </view>
-              </view>
-            </view>
-            <view class="metric-section recent-section">
-              <view class="metric-kicker">近 90 天真实骑行数据</view>
-              <view class="metric-grid" wx:if="{{card.recentMetrics.length}}">
-                <view class="metric-item" wx:for="{{card.recentMetrics}}" wx:key="key">
-                  <view class="metric-value">{{item.value}}<text class="metric-unit">{{item.unit}}</text></view>
-                  <view class="metric-label">{{item.label}}</view>
-                </view>
-              </view>
-              <view wx:else class="metric-empty">{{card.emptyMetricsText}}</view>
-            </view>
-            <view class="data-meta" wx:if="{{card.coverageText || card.syncedAtText}}">
-              <view class="meta-row" wx:if="{{card.coverageText}}">
-                <text class="meta-label">覆盖范围</text>
-                <text class="meta-value">{{card.coverageText}}</text>
-              </view>
-              <view class="meta-row" wx:if="{{card.syncedAtText}}">
-                <text class="meta-label">最近同步</text>
-                <text class="meta-value">{{card.syncedAtText}}</text>
-              </view>
-            </view>
+            <view class="privacy-note">这是你在活动中展示的公开资料</view>
           </view>
         </view>
       </view>
 
       <view class="card-caption">
         <text>{{card.generatedAtText}}</text>
-        <text>数据仅用于本人查看</text>
+        <text>昵称、头像和照片由你维护</text>
       </view>
 
-      <button wx:if="{{card.hasStravaProfile}}" class="strava-profile-button" bindtap="openStravaProfile">
-        前往 Strava 主页
-      </button>
-      <button
-        wx:if="{{card.canSyncStrava}}"
-        class="sync-button"
-        loading="{{syncing}}"
-        disabled="{{syncing}}"
-        bindtap="refreshStrava"
-      >
-        {{syncing ? '正在同步' : '同步最新 Strava 数据'}}
-      </button>
       <button wx:if="{{card.needsProfilePhoto}}" class="photo-button" bindtap="completeProfile">
         添加个人骑行照片
       </button>

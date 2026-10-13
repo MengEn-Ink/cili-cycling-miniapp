@@ -181,103 +181,10 @@ function assertProfileReady(profile) {
     fail('PROFILE_INCOMPLETE', '请先在个人资料中上传个人照片');
   }
 }
-const STRAVA_FIELDS = [
-  'lifetime_rides',
-  'lifetime_distance_km',
-  'lifetime_moving_hours',
-  'lifetime_elevation_m',
-  'years_on_strava',
-  'rides_per_month',
-  'total_km',
-  'activities_90d',
-  'activities_4w',
-  'longest_km',
-  'longest_name',
-  'max_elevation_m',
-  'max_elevation_name',
-  'total_elevation_m',
-  'weighted_avg_speed_kmh',
-  'race_count',
-  'races',
-  'clubs',
-  'primary_club_name',
-  'bikes',
-  'coverage',
-  'connected_at',
-  'latest_activity_at',
-  'synced_at',
-  'athlete_created_at',
-  'coverage_from',
-  'coverage_to',
-  'coverage_complete',
-];
-function safeStravaSnapshot(snapshot) {
-  return pick(snapshot, STRAVA_FIELDS);
-}
-function selectStrava(profile) {
-  const strava = profile.strava || {};
-  if (strava.status === 'connected' && strava.snapshot && typeof strava.snapshot === 'object') {
-    return { status: 'connected', snapshot: safeStravaSnapshot(strava.snapshot) };
-  }
-  if (
-    strava.exempt &&
-    strava.exempt.enabled === true &&
-    typeof strava.exempt.reason === 'string' &&
-    strava.exempt.reason.trim()
-  ) {
-    return {
-      status: 'exempted',
-      exemption: { reason: strava.exempt.reason, at: strava.exempt.at },
-    };
-  }
-  fail('STRAVA_REQUIRED', '请先绑定 Strava 或取得豁免');
-}
-function finiteNumberOrNull(value) {
-  return typeof value === 'number' && Number.isFinite(value) ? value : null;
-}
 function dateOrNull(value) {
   if (value === null || value === undefined || value === '') return null;
   const date = new Date(value);
   return Number.isFinite(date.getTime()) ? date : null;
-}
-function isTokenEnvelope(value) {
-  return Boolean(
-    value &&
-    value.alg === 'A256GCM' &&
-    ['iv', 'tag', 'ciphertext'].every(
-      (field) => typeof value[field] === 'string' && value[field].trim().length > 0,
-    ),
-  );
-}
-function selectCanonicalStrava(credential, snapshot, now = new Date()) {
-  if (
-    !credential ||
-    typeof credential.athlete_id !== 'string' ||
-    !credential.athlete_id ||
-    !isTokenEnvelope(credential.access_token_cipher) ||
-    !isTokenEnvelope(credential.refresh_token_cipher) ||
-    !snapshot ||
-    snapshot.athlete_id !== credential.athlete_id
-  )
-    fail('STRAVA_NOT_READY', 'Strava 数据尚未准备完成');
-  const syncedAt = dateOrNull(snapshot && snapshot.synced_at);
-  if (!syncedAt || now.getTime() - syncedAt.getTime() >= 24 * 60 * 60 * 1000)
-    fail('STRAVA_NOT_READY', 'Strava 数据已过期，请重新准备');
-  return {
-    status: 'connected',
-    snapshot: {
-      total_km: finiteNumberOrNull(snapshot.total_km),
-      activities_90d: finiteNumberOrNull(snapshot.activities_90d),
-      longest_km: finiteNumberOrNull(snapshot.longest_km),
-      total_elevation_m: finiteNumberOrNull(snapshot.total_elevation_m),
-      weighted_avg_speed_kmh: finiteNumberOrNull(snapshot.weighted_avg_speed_kmh),
-      latest_activity_at: dateOrNull(snapshot.latest_activity_at),
-      synced_at: syncedAt,
-      coverage_from: dateOrNull(snapshot.coverage_from),
-      coverage_to: dateOrNull(snapshot.coverage_to),
-      coverage_complete: snapshot.coverage_complete === true,
-    },
-  };
 }
 function validateOptions(options) {
   if (
@@ -436,7 +343,6 @@ function publicRegistration(registration) {
     'activity_id',
     'status',
     'options',
-    'strava_status',
     'serial_no',
     'checked_in_at',
     'team_id',
@@ -448,9 +354,6 @@ function publicRegistration(registration) {
   output.review_history = Array.isArray(registration.review_history)
     ? registration.review_history.map((item) => pick(item, ['reviewed_at', 'action', 'comment']))
     : [];
-  if (registration.strava_snapshot)
-    output.strava_snapshot = safeStravaSnapshot(registration.strava_snapshot);
-  if (registration.exemption) output.exemption = pick(registration.exemption, ['reason', 'at']);
   if (registration.activity_snapshot) {
     const activity = registration.activity_snapshot;
     output.activity_snapshot = pick(activity, [
@@ -499,8 +402,6 @@ module.exports = {
   isOccupying,
   assertActivityOpen,
   assertProfileReady,
-  selectStrava,
-  selectCanonicalStrava,
   validateOptions,
   validateTeamInput,
   createTeamId,

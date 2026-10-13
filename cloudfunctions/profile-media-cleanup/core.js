@@ -187,7 +187,7 @@ function importClaimDecision(record, profile, now, leaseId, mediaSecret) {
       update: {
         status: 'aborted',
         cleanup_after: null,
-        last_error_code: 'STRAVA_AVATAR_LEASE_EXPIRED',
+        last_error_code: 'MEDIA_IMPORT_LEASE_EXPIRED',
         failed_at: now,
         updated_at: now,
       },

@@ -83,10 +83,6 @@ function transactionStore() {
               if (result.data.length < pageSize) return values;
             }
           },
-          getStravaCredential: (openid) =>
-            maybeGet(transaction.collection('strava_credentials'), openid),
-          getStravaSnapshot: (openid) =>
-            maybeGet(transaction.collection('strava_snapshots'), openid),
           putRegistration: async (id, value) => {
             const { _id, ...data } = value;
             await transaction.collection('registrations').doc(id).set({ data });

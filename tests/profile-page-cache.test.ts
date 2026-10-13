@@ -15,7 +15,6 @@ const profile: Profile = {
 };
 
 const card: PersonalCapabilityCard = {
-  state: 'ready',
   generatedAt: '2026-09-30T12:00:00.000Z',
   profile: {
     displayName: '缓存骑手',
@@ -29,15 +28,6 @@ const card: PersonalCapabilityCard = {
       category: 'ride',
     },
   ],
-  summary: {
-    totalKm90d: 500,
-    rides90d: 20,
-    longestKm: 100,
-    elevationM90d: 5000,
-    weightedAvgSpeedKmh: 25,
-  },
-  coverage: null,
-  syncedAt: '2026-09-30T11:00:00.000Z',
 };
 
 describe('个人中心缓存', () => {
@@ -167,15 +157,15 @@ describe('个人中心缓存', () => {
     expect(wx.removeSavedFile).not.toHaveBeenCalled();
   });
 
-  it('过渡状态即使未超过 TTL 也会触发刷新', async () => {
-    const { isProfilePageCacheFresh, readProfilePageCache, writeProfilePageCache } =
-      await import('../miniprogram/utils/profile-page-cache');
-    const now = Date.UTC(2026, 8, 30, 12);
-
-    for (const state of ['partial', 'syncing', 'failed', 'disconnected'] as const) {
-      writeProfilePageCache('openid-a', profile, { ...card, state }, {}, now);
-      expect(isProfilePageCacheFresh(readProfilePageCache()!, now + 1)).toBe(false);
-    }
+  it('账号指标旧版本缓存不会进入新的资料卡缓存', async () => {
+    const { readProfilePageCache } = await import('../miniprogram/utils/profile-page-cache');
+    storage['cili-profile-page-cache-v1'] = {
+      version: 1,
+      ownerOpenid: 'openid-a',
+      cachedAt: Date.now(),
+      card: { state: 'ready', summary: { rides90d: 20 } },
+    };
+    expect(readProfilePageCache()).toBeNull();
   });
 
   it('新缓存成功提交后才删除旧图片', async () => {

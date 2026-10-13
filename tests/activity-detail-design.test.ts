@@ -24,42 +24,42 @@ describe('活动详情设计与日期契约', () => {
     expect(formatActivityDate('2026-02-30')).toBe('日期待公布');
   });
 
-  it('保持轮播降级、地图导航、路线操作和真实 CTA 状态接线', () => {
+  it('保持轮播降级、地图导航、双路线操作和真实 CTA 状态接线', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     expect(template).toContain('wx:if="{{galleryImages.length > 1 && !coverFailed}}"');
     expect(template).toContain('binderror="galleryImageError"');
     expect(template).toContain('bindtap="navigate"');
-    expect(template).toContain('bindtap="copyStravaRoute"');
-    expect(template).toContain('bindtap="exportGpx"');
+    expect(template).toContain('bindtap="openOfficialRoute"');
+    expect(template).toContain('bindtap="downloadGpx"');
     expect(template).toContain('disabled="{{loading || !item || !activityAction.enabled}}"');
     expect(template).toContain('报名状态');
     expect(template).not.toContain('SIGN-UP STATUS');
   });
 
-  it('轨迹链接只保留复制与下载，并通过三色语义令牌门禁', () => {
+  it('官方路线与 GPX 详情各自清晰呈现，并通过三色语义令牌门禁', () => {
     const template = readFileSync('miniprogram/pages/activity-detail/index.wxml', 'utf8');
     const styles = readFileSync('miniprogram/pages/activity-detail/index.wxss', 'utf8');
-    const routeStyles = styles.slice(styles.indexOf('/* Strava 轨迹操作统一使用'));
-    expect(template).toContain('class="strava-route-url"');
-    expect(template).toContain('{{item.route.stravaRouteUrl}}');
-    expect(template).toContain("{{item.route.routeName || 'Strava 轨迹'}}");
-    expect(template).toContain('item.route.previewImageUrl');
+    const routeStyles = styles.slice(styles.indexOf('/* 路线区域统一使用'));
+    expect(template).toContain('class="official-route-card"');
+    expect(template).toContain('Strava 官方路线');
+    expect(template).toContain('bindtap="openOfficialRoute">查看官方路线');
+    expect(template).toContain('class="gpx-route-card"');
+    expect(template).toContain("{{item.route.routeName || 'GPX 路线详情'}}");
+    expect(template).toContain('item.route.generatedPreviewUrl');
     expect(template).toContain('mode="aspectFit"');
     expect(template).toContain('bindtap="previewRouteImage"');
-    expect(styles).toMatch(/\.route-preview-image\s*\{[^}]*height:\s*340rpx;/s);
-    expect(template).toContain('bindtap="copyStravaRoute"');
-    expect(template).toContain('user-select="true"');
-    expect(template).toContain('>复制</button>');
-    expect(template).toContain('bindtap="exportGpx"');
-    expect(template).toContain('item.route.stravaGpxAvailable !== false');
-    expect(template).toContain('此公开路线不提供 GPX 下载。');
-    expect(template).toContain("{{exportingGpx ? '下载中' : '下载 GPX'}}");
+    expect(styles).toMatch(/\.route-outline-canvas\s*\{[^}]*height:\s*320rpx;/s);
+    expect(template).toContain('bindtap="downloadGpx"');
+    expect(template).toContain("{{downloadingGpx ? '下载中' : '下载 GPX'}}");
+    expect(template).toContain('下载后可导入码表或骑行应用');
+    expect(template).not.toContain('bindtap="copyStravaRoute"');
+    expect(template).not.toContain('item.route.stravaGpxAvailable');
     expect(template).not.toContain('bindtap="copyActivityLink"');
     expect(template).not.toContain('复制活动链接');
     expect(template).not.toContain('bindtap="generatePoster"');
     expect(template).not.toContain('保存分享海报');
     expect(template).not.toContain('poster-canvas');
-    expect(styles).toContain('grid-template-columns: minmax(0, 1fr) auto auto');
+    expect(styles).toContain('grid-template-columns: repeat(4, minmax(0, 1fr));');
     expect(styles).toContain('@media (max-width: 360px)');
     expect(routeStyles).toContain('background: var(--color-surface)');
     expect(routeStyles).toContain('color: var(--color-brand)');
@@ -89,12 +89,14 @@ describe('活动详情设计与日期契约', () => {
     );
   });
 
-  it('保留完整可发现功能，并以 token、横向操作和 chips 落地黑白橙票据', () => {
+  it('保留完整可发现功能，并以 token、路线详情和 chips 落地黑白橙票据', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
     for (const marker of [
-      '路线海拔',
-      '热门爬坡',
+      '海拔曲线',
+      '路线轮廓',
+      'Strava 官方路线',
+      '下载 GPX',
       '已报名人员',
       '活动群二维码',
       '路线概况',
@@ -107,9 +109,9 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('class="chip-list"');
     expect(template).toContain('class="gear-chip"');
     expect(template).toContain('class="notice-chip"');
-    expect(styles).toContain('grid-template-columns: minmax(0, 1fr) auto auto;');
+    expect(styles).toContain('grid-template-columns: repeat(4, minmax(0, 1fr));');
     expect(styles).toMatch(
-      /\.strava-route-action\s*\{[^}]*min-height:\s*var\(--control-height\);/s,
+      /\.route-action,\s*\.route-location-row button\s*\{[^}]*min-height:\s*var\(--control-height\);/s,
     );
     expect(styles).not.toMatch(/#[0-9a-f]{3,8}\b/i);
   });
@@ -258,18 +260,19 @@ describe('活动详情设计与日期契约', () => {
     expect(context.arc).toHaveBeenCalledTimes(4);
   });
 
-  it('提供曲线空态、热门爬坡、圆形头像昵称列表与完整公开骑行名片', () => {
+  it('提供曲线空态、路线轮廓、圆形头像昵称列表与完整公开骑行名片', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
     expect(template).toContain('暂无有效海拔数据');
-    expect(template).toContain('item.route.popularClimbs');
+    expect(template).toContain('id="route-outline-canvas"');
+    expect(template).not.toContain('item.route.popularClimbs');
     expect(template).toContain('class="attendee-card-strip" scroll-x');
     expect(template).toContain('class="attendee-mini-card"');
     expect(template).toContain('bindtap="openAttendeeCard"');
     expect(template).toContain('头像与昵称经本人授权展示');
     expect(template).toContain('已报名人员头像与昵称');
     expect(template).toContain('完整公开骑行名片');
-    expect(template).toContain('数据来自报名时的 Strava 骑行快照');
+    expect(template).toContain('昵称、头像与照片由骑友本人维护，仅展示公开资料');
     expect(template).toContain('wx:if="{{item.avatarUrl}}" class="attendee-avatar"');
     expect(template).toContain('wx:if="{{selectedAttendee.avatarUrl}}"');
     expect(template).toContain('attendee-avatar--placeholder');
@@ -280,11 +283,9 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('{{selectedAttendee.genderLabel}}');
     expect(template).not.toContain('selectedAttendee.title');
     expect(template).not.toContain('骑行爱好者');
-    expect(template).toContain('照片沿用骑友公开头像设置，不展示私人骑行照片');
+    expect(template).toContain('昵称、头像与照片由骑友本人维护，仅展示公开资料');
     expect(template).not.toContain('attendee-avatar--default">骑');
-    expect(
-      template.match(/<text wx:if="\{\{selectedAttendee\.card\.[a-zA-Z0-9]+ !== null\}\}">/g),
-    ).toHaveLength(4);
+    expect(template).not.toContain('selectedAttendee.card');
     expect(template).toContain('class="rider-modal-mask" bindtap="closeAttendeeCard"');
     expect(template).toContain('class="rider-card-close"');
     expect(styles).toMatch(
@@ -294,7 +295,7 @@ describe('活动详情设计与日期契约', () => {
       /\.attendee-avatar\s*\{[^}]*width:\s*72rpx;[^}]*height:\s*72rpx;[^}]*border-radius:\s*50%/s,
     );
     expect(styles).toMatch(
-      /\.route-actions button,\s*\.route-location-row button\s*\{[^}]*min-height:\s*var\(--control-height\)/s,
+      /\.route-action,\s*\.route-location-row button\s*\{[^}]*min-height:\s*var\(--control-height\)/s,
     );
     expect(styles).toMatch(
       /\.rider-card\.rider-card--photo\s*\{[^}]*max-height:\s*calc\(100vh - 96rpx\)/s,
@@ -453,8 +454,8 @@ describe('活动详情设计与日期契约', () => {
   });
 });
 
-describe('活动详情复制、分享与 GPX 导出', () => {
-  async function loadPage(exporter: (id: string) => Promise<any>) {
+describe('活动详情官方路线、分享与 GPX 下载', () => {
+  async function loadPage(downloader: (id: string) => Promise<any>) {
     let definition: any;
     const fileSystem = { writeFile: vi.fn(({ success }) => success()) };
     vi.stubGlobal('wx', {
@@ -473,17 +474,29 @@ describe('活动详情复制、分享与 GPX 导出', () => {
       getFileSystemManager: vi.fn(() => fileSystem),
       shareFileMessage: vi.fn(({ success }) => success()),
       saveFile: vi.fn(({ success }) => success()),
+      navigateTo: vi.fn(),
     });
     vi.stubGlobal('Page', (value: any) => {
       definition = value;
     });
     vi.resetModules();
     const { repository } = await import('../miniprogram/repositories');
-    vi.spyOn(repository, 'exportActivityGpx').mockImplementation(exporter);
+    vi.spyOn(repository, 'downloadRouteGpx').mockImplementation(downloader);
     await import('../miniprogram/pages/activity-detail/index');
     const context = {
       ...definition,
-      data: { ...definition.data, item: { id: 'a/1', title: '周末骑行', route: {} } },
+      data: {
+        ...definition.data,
+        hasGpxRoute: true,
+        item: {
+          id: 'a/1',
+          title: '周末骑行',
+          route: {
+            gpxFileId: 'cloud://env/activity-routes/owner/route.gpx',
+            gpxSha256: 'a'.repeat(64),
+          },
+        },
+      },
       setData(patch: Record<string, unknown>, callback?: () => void) {
         Object.assign(this.data, patch);
         callback?.();
@@ -531,7 +544,7 @@ describe('活动详情复制、分享与 GPX 导出', () => {
 
   it('路线预览图支持点击全屏查看并处理打开失败', async () => {
     const { definition, context } = await loadPage(async () => ({}));
-    context.data.item.route.previewImageUrl = 'https://images.example/route.jpg';
+    context.data.item.route.generatedPreviewUrl = 'https://images.example/route.jpg';
 
     definition.previewRouteImage.call(context);
     expect(wx.previewImage).toHaveBeenCalledWith(
@@ -549,7 +562,7 @@ describe('活动详情复制、分享与 GPX 导出', () => {
     });
 
     vi.clearAllMocks();
-    context.data.item.route.previewImageUrl = '   ';
+    context.data.item.route.generatedPreviewUrl = '   ';
     definition.previewRouteImage.call(context);
     expect(wx.previewImage).not.toHaveBeenCalled();
   });
@@ -610,52 +623,84 @@ describe('活动详情复制、分享与 GPX 导出', () => {
     expect(context.data.defaultAttendeeAvatar).toBeUndefined();
   });
 
-  it('复制 Strava 路线并生成分享 path', async () => {
+  it('在专用页面打开经过验证的官方路线并生成分享 path', async () => {
     const { definition, context } = await loadPage(async () => ({
       base64: 'eA==',
-      fileName: 'a.gpx',
+      fileName: 'route.gpx',
     }));
-    context.data.item.route.stravaRouteUrl = 'https://www.strava.com/routes/123';
-    await definition.copyStravaRoute.call(context);
-    expect(wx.setClipboardData).toHaveBeenLastCalledWith(
-      expect.objectContaining({ data: 'https://www.strava.com/routes/123' }),
-    );
-    expect(wx.showToast).toHaveBeenLastCalledWith({ title: '轨迹链接已复制', icon: 'success' });
+    context.data.officialRouteId = '42';
+    definition.openOfficialRoute.call(context);
+    expect(wx.navigateTo).toHaveBeenLastCalledWith({
+      url: '/pages/route-view/index?id=42',
+    });
     expect(definition.onShareAppMessage.call(context)).toEqual({
       title: '周末骑行',
       path: 'pages/activity-detail/index?id=a%2F1',
     });
   });
 
-  it('Strava 路线复制失败时明确提示重试', async () => {
+  it('拒绝在专用页面打开无效官方路线 ID', async () => {
     const { definition, context } = await loadPage(async () => ({
       base64: 'eA==',
-      fileName: 'a.gpx',
+      fileName: 'route.gpx',
     }));
-    context.data.item.route.stravaRouteUrl = 'https://www.strava.com/routes/123';
-    vi.mocked(wx.setClipboardData).mockImplementationOnce(({ fail }: any) =>
-      fail({ errMsg: 'setClipboardData:fail no permission', errno: 112 }),
-    );
+    for (const routeId of ['', '0', 'abc', '1'.repeat(21)]) {
+      context.data.officialRouteId = routeId;
+      definition.openOfficialRoute.call(context);
+    }
+    expect(wx.navigateTo).not.toHaveBeenCalled();
+  });
 
-    await definition.copyStravaRoute.call(context);
+  it('以可信 GPX 生成原生状态，且通用官方路线字段存在时不回退旧字段', async () => {
+    const { definition, context, repository } = await loadPage(async () => ({
+      base64: 'eA==',
+      fileName: 'route.gpx',
+    }));
+    vi.spyOn(repository, 'getActivity').mockResolvedValue({
+      id: 'a/1',
+      title: '周末骑行',
+      images: [],
+      route: {
+        start: '',
+        end: '',
+        distanceKm: 80,
+        elevationM: 900,
+        level: '',
+        gpxFileId: 'cloud://env/activity-routes/owner/route.gpx',
+        gpxSha256: 'a'.repeat(64),
+        estimatedMovingTimeSeconds: 14_400,
+        elevationProfile: [
+          { distanceKm: 0, elevationM: 20 },
+          { distanceKm: 80, elevationM: 120 },
+        ],
+        routeOutline: [
+          { latitude: 22.123456, longitude: 114.123456 },
+          { latitude: 22.223456, longitude: 114.223456 },
+        ],
+        externalProvider: 'strava',
+        externalRouteId: '42',
+        externalRouteUrl: 'https://evil.example/routes/42',
+        stravaRouteId: '99',
+        stravaRouteUrl: 'https://www.strava.com/routes/99',
+      },
+      schedule: [],
+      notices: [],
+      equipment: [],
+    } as any);
+    vi.spyOn(repository, 'listRegistrations').mockResolvedValue([]);
+    context.drawElevation = vi.fn();
+    context.drawRouteOutline = vi.fn();
 
-    expect(wx.showModal).toHaveBeenLastCalledWith({
-      title: '复制失败',
-      content: '暂时无法复制，请稍后重试；也可长按轨迹链接手动复制。',
-      showCancel: false,
-      confirmText: '知道了',
-    });
+    await definition.performLoad.call(context, 'a/1');
 
-    vi.mocked(wx.setClipboardData).mockImplementationOnce(({ fail }: any) =>
-      fail({ errMsg: 'setClipboardData:fail api scope is not declared in the privacy agreement' }),
-    );
-    await definition.copyStravaRoute.call(context);
-    expect(wx.showModal).toHaveBeenLastCalledWith({
-      title: '复制失败',
-      content: '微信隐私保护指引正在更新，请稍后重试；也可长按轨迹链接手动复制。',
-      showCancel: false,
-      confirmText: '知道了',
-    });
+    expect(context.data.hasGpxRoute).toBe(true);
+    expect(context.data.item.route.elevationProfile).toHaveLength(2);
+    expect(context.data.hasElevationProfile).toBe(true);
+    expect(context.data.hasRouteOutline).toBe(true);
+    expect(context.data.routeStartCoordinate).toBe('22.12346, 114.12346');
+    expect(context.data.routeEndCoordinate).toBe('22.22346, 114.22346');
+    expect(context.data.estimatedRideTime).toBe('4 小时');
+    expect(context.data.officialRouteId).toBe('');
   });
 
   it('分享给好友使用 https 封面并保留当前活动 id 与队伍参数', async () => {
@@ -721,24 +766,24 @@ describe('活动详情复制、分享与 GPX 导出', () => {
     expect(share).not.toHaveProperty('imageUrl');
   });
 
-  it('GPX 成功写入并优先分享，busy 时不重复调用', async () => {
-    const exporter = vi.fn(async () => ({ base64: 'eA==', fileName: 'route.gpx' }));
-    const { definition, context } = await loadPage(exporter);
-    await definition.exportGpx.call(context);
-    expect(exporter).toHaveBeenCalledWith('a/1');
+  it('下载活动上传的原始 GPX 并优先分享，busy 时不重复调用', async () => {
+    const downloader = vi.fn(async () => ({ base64: 'eA==', fileName: 'route.gpx' }));
+    const { definition, context } = await loadPage(downloader);
+    await definition.downloadGpx.call(context);
+    expect(downloader).toHaveBeenCalledWith('a/1');
     expect(wx.getFileSystemManager().writeFile).toHaveBeenCalledWith(
       expect.objectContaining({ encoding: 'base64' }),
     );
     expect(wx.shareFileMessage).toHaveBeenCalled();
-    context.exportBusy = true;
-    await definition.exportGpx.call(context);
-    expect(exporter).toHaveBeenCalledTimes(1);
+    context.downloadBusy = true;
+    await definition.downloadGpx.call(context);
+    expect(downloader).toHaveBeenCalledTimes(1);
   });
 
   it('不支持分享文件时保存 GPX 并明确提示', async () => {
     const loaded = await loadPage(async () => ({ base64: 'eA==', fileName: 'route.gpx' }));
     (wx as any).shareFileMessage = undefined;
-    await loaded.definition.exportGpx.call(loaded.context);
+    await loaded.definition.downloadGpx.call(loaded.context);
     expect(wx.saveFile).toHaveBeenCalledWith(
       expect.objectContaining({ tempFilePath: '/tmp/user/route.gpx' }),
     );
@@ -750,16 +795,48 @@ describe('活动详情复制、分享与 GPX 导出', () => {
       base64: 'A'.repeat(5_592_408),
       fileName: 'large.gpx',
     }));
-    await oversized.definition.exportGpx.call(oversized.context);
+    await oversized.definition.downloadGpx.call(oversized.context);
     expect(wx.getFileSystemManager().writeFile).not.toHaveBeenCalled();
     expect(wx.showToast).toHaveBeenCalledWith(
       expect.objectContaining({ title: expect.stringContaining('4MB') }),
     );
 
     const failed = await loadPage(async () => {
-      throw new Error('导出服务不可用');
+      throw new Error('下载服务不可用');
     });
-    await failed.definition.exportGpx.call(failed.context);
-    expect(wx.showToast).toHaveBeenCalledWith(expect.objectContaining({ title: '导出服务不可用' }));
+    await failed.definition.downloadGpx.call(failed.context);
+    expect(wx.showToast).toHaveBeenCalledWith(expect.objectContaining({ title: '下载服务不可用' }));
+  });
+});
+
+describe('官方路线专用查看页', () => {
+  it('注册专用页面与固定的一方 Embed 域名', () => {
+    const app = JSON.parse(read('miniprogram/app.json'));
+    const runtime = read('miniprogram/config/runtime.ts');
+    expect(app.pages).toContain('pages/route-view/index');
+    expect(app.pages).not.toContain('pages/strava/index');
+    expect(runtime).toContain(
+      "routeEmbedOrigin: 'https://cloudbase-d0gizacy77a1ab017-1497589790.ap-shanghai.app.tcloudbase.com'",
+    );
+  });
+
+  it('仅接受数字路线 ID，并构建一方 Embed 地址', () => {
+    const script = read('miniprogram/pages/route-view/index.ts');
+    expect(script).toContain('/route/embed?id=${encodeURIComponent(routeId)}');
+    expect(script).toContain('https://www.strava.com/routes/${routeId}');
+    expect(script).toContain('/^[1-9]\\d{0,19}$/');
+    expect(script).not.toContain('decodeURIComponent');
+  });
+
+  it('官方页面加载失败时保留用户可执行的复制与返回操作', () => {
+    const template = read('miniprogram/pages/route-view/index.wxml');
+    const styles = read('miniprogram/pages/route-view/index.wxss');
+    expect(template).toContain('binderror="routeFailed"');
+    expect(template).toContain('路线暂时无法显示');
+    expect(template).toContain('bindtap="copyRouteUrl">复制路线链接');
+    expect(template).toContain('bindtap="goBack">返回活动');
+    expect(styles).toContain('color: var(--color-text)');
+    expect(styles).toContain('background: var(--color-surface)');
+    expect(styles).not.toMatch(/#[0-9a-f]{3,8}\b/i);
   });
 });

@@ -20,7 +20,6 @@ const {
 } = require('./core');
 const { buildCapabilityCard } = require('./capability-card');
 const { createProfileStore, missing: isNotFound } = require('./store');
-const { assertImportRequest, importStravaAvatar } = require('./avatar-import');
 const { canonicalizeClientMedia } = require('./media-upload');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
@@ -36,9 +35,6 @@ async function maybeGet(collection, id) {
 }
 async function getDoc(openid) {
   return (await maybeGet(db.collection('profiles'), openid)) || {};
-}
-async function getById(collection, id) {
-  return maybeGet(db.collection(collection), id);
 }
 function profileMediaIds(...profiles) {
   const ids = [];
@@ -126,15 +122,11 @@ exports.main = async (event = {}) => {
     if (event.action === 'capabilityCard') {
       if (Object.prototype.hasOwnProperty.call(event, 'openid'))
         throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });
-      const [profile, credential, snapshot] = await Promise.all([
-        getDoc(OPENID),
-        getById('strava_credentials', OPENID),
-        getById('strava_snapshots', OPENID),
-      ]);
+      const profile = await getDoc(OPENID);
       const mediaRecords = await getMediaRecords(db.collection('profile_media'), profile);
       return ok(
         await buildCapabilityCard(
-          { profile, credential, snapshot, mediaRecords },
+          { profile, mediaRecords },
           {
             openid: OPENID,
             mediaSecret: process.env.PROFILE_MEDIA_PATH_SECRET,
@@ -173,25 +165,6 @@ exports.main = async (event = {}) => {
             event.fileId,
             process.env.PROFILE_MEDIA_PATH_SECRET,
           ),
-          process.env.PII_ENCRYPTION_KEY,
-        ),
-      );
-    }
-    if (event.action === 'importStravaAvatar') {
-      if (Object.prototype.hasOwnProperty.call(event, 'openid'))
-        throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });
-      assertImportRequest(event);
-      const credential = await getById('strava_credentials', OPENID);
-      return ok(
-        response(
-          await importStravaAvatar({
-            openid: OPENID,
-            credential,
-            mediaSecret: process.env.PROFILE_MEDIA_PATH_SECRET,
-            uploadFile: (input) => cloud.uploadFile(input),
-            deleteFile: (input) => cloud.deleteFile(input),
-            store: profileStore,
-          }),
           process.env.PII_ENCRYPTION_KEY,
         ),
       );

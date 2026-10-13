@@ -1,0 +1,72 @@
+page {
+  min-height: 100%;
+  background: var(--color-surface);
+}
+
+.route-view-page {
+  display: flex;
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 96rpx var(--page-gutter) calc(48rpx + env(safe-area-inset-bottom));
+  flex-direction: column;
+  justify-content: center;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.route-view-kicker {
+  color: var(--color-brand);
+  font-size: 22rpx;
+  font-weight: 900;
+}
+
+.route-view-title {
+  margin-top: 12rpx;
+  color: var(--color-text);
+  font-size: 44rpx;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.route-view-copy {
+  max-width: 620rpx;
+  margin-top: 24rpx;
+  color: var(--color-muted);
+  font-size: 27rpx;
+  line-height: 1.6;
+}
+
+.route-view-actions {
+  display: grid;
+  margin-top: 48rpx;
+  gap: 16rpx;
+}
+
+.route-view-action {
+  display: flex;
+  width: 100%;
+  min-height: var(--control-height);
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  border: 2rpx solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 27rpx;
+  font-weight: 900;
+}
+
+.route-view-action::after {
+  border: 0;
+}
+
+.route-view-action--primary {
+  border-color: var(--color-action);
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+
+.route-view-action:active {
+  opacity: 0.78;
+}

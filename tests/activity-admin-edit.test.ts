@@ -3,8 +3,11 @@ import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Activity } from '../miniprogram/models';
 import { formatLocalDateTime } from '../miniprogram/utils/date-time';
+import { sha256Hex } from '../miniprogram/utils/route';
 
 const rideService = vi.hoisted(() => ({
+  previewRouteGpx: vi.fn(),
+  bindRoutePreviewImage: vi.fn(),
   previewPublicStravaRoute: vi.fn(),
   previewStravaRoute: vi.fn(),
   getStravaReadiness: vi.fn(),
@@ -12,6 +15,7 @@ const rideService = vi.hoisted(() => ({
   saveActivity: vi.fn(),
 }));
 const appStore = vi.hoisted(() => ({
+  openid: 'owner-openid',
   role: 'admin',
   authStatus: 'authenticated',
   ensureIdentity: vi.fn(),
@@ -48,7 +52,6 @@ const activity: Activity = {
     stravaRouteUrl: 'https://www.strava.com/routes/123',
     elevationProfile: [{ distanceKm: 0, elevationM: 20 }],
     routeBounds: { south: 39, west: 116, north: 40, east: 117 },
-    popularClimbs: [],
   },
   schedule: [{ time: '08:00', title: '集合', location: '起点' }],
   notices: ['守规'],
@@ -93,6 +96,8 @@ describe('日常活动极简创建与编辑', () => {
 
   beforeEach(async () => {
     vi.resetModules();
+    rideService.previewRouteGpx.mockReset();
+    rideService.bindRoutePreviewImage.mockReset();
     rideService.previewPublicStravaRoute.mockReset();
     rideService.previewStravaRoute.mockReset();
     rideService.getStravaReadiness.mockReset().mockResolvedValue({ state: 'ready' });
@@ -187,22 +192,6 @@ describe('日常活动极简创建与编辑', () => {
   });
 
   it('编辑存量活动时只更新可见字段并保留历史运营配置', async () => {
-    rideService.previewPublicStravaRoute.mockResolvedValue({
-      stravaRouteId: '999',
-      stravaRouteUrl: 'https://www.strava.com/routes/999',
-      routeName: '新路线',
-      previewImageUrl: '',
-      distanceKm: 99,
-      elevationM: 999,
-      estimatedMovingTimeSeconds: 18_000,
-      elevationProfile: [
-        { distanceKm: 0, elevationM: 20 },
-        { distanceKm: 99, elevationM: 80 },
-      ],
-      routeBounds: { south: 39, west: 116, north: 40, east: 117 },
-      popularClimbs: [],
-      stravaGpxAvailable: false,
-    });
     await page.onLoad({ id: activity.id });
     page.data.form.routeStart = '新集合点';
     page.data.form.description = '带好水';
@@ -224,37 +213,34 @@ describe('日常活动极简创建与编辑', () => {
         route: expect.objectContaining({
           start: '新集合点',
           end: '终点',
-          distanceKm: 99,
-          elevationM: 999,
+          distanceKm: 80,
+          elevationM: 600,
           level: '进阶',
-          stravaRouteId: '999',
-          stravaRouteUrl: 'https://www.strava.com/routes/999',
-          routeName: '新路线',
-          estimatedMovingTimeSeconds: 18_000,
-          stravaGpxAvailable: false,
+          externalProvider: 'strava',
+          externalRouteId: '999',
+          externalRouteUrl: 'https://www.strava.com/routes/999',
         }),
       }),
       activity.id,
       7,
     );
-    expect(rideService.previewPublicStravaRoute).toHaveBeenCalledWith(
-      'https://www.strava.com/routes/999',
-    );
+    expect(rideService.previewPublicStravaRoute).not.toHaveBeenCalled();
     const payload = rideService.saveActivity.mock.calls[0][0];
-    expect(payload.route.elevationProfile).toHaveLength(2);
-    expect(payload.route.routeBounds).toEqual({ south: 39, west: 116, north: 40, east: 117 });
+    expect(payload.route).not.toHaveProperty('elevationProfile');
+    expect(payload.route).not.toHaveProperty('routeBounds');
   });
 
-  it('Strava 链接未修改时保留历史同步路线数据', async () => {
+  it('历史 Strava 链接未修改时改写为通用官方路线字段', async () => {
     await page.onLoad({ id: activity.id });
     await page.save({ currentTarget: { dataset: { status: 'draft' } } });
     const payload = rideService.saveActivity.mock.calls[0][0];
     expect(payload.route).toMatchObject({
-      stravaRouteId: '123',
-      stravaRouteUrl: 'https://www.strava.com/routes/123',
-      elevationProfile: activity.route.elevationProfile,
-      routeBounds: activity.route.routeBounds,
+      externalProvider: 'strava',
+      externalRouteId: '123',
+      externalRouteUrl: 'https://www.strava.com/routes/123',
     });
+    expect(payload.route).not.toHaveProperty('stravaRouteId');
+    expect(payload.route).not.toHaveProperty('elevationProfile');
   });
 
   it('草稿可暂存 Strava 合法链接，编辑时清空链接不会写入 payload', async () => {
@@ -262,14 +248,16 @@ describe('日常活动极简创建与编辑', () => {
     page.data.form.stravaRouteUrl = 'https://www.strava.com/routes/456';
     await page.save({ currentTarget: { dataset: { status: 'draft' } } });
     expect(rideService.saveActivity.mock.calls[0][0].route).toMatchObject({
-      stravaRouteUrl: 'https://www.strava.com/routes/456',
+      externalProvider: 'strava',
+      externalRouteId: '456',
+      externalRouteUrl: 'https://www.strava.com/routes/456',
     });
     expect(rideService.previewPublicStravaRoute).not.toHaveBeenCalled();
 
     rideService.saveActivity.mockClear();
     page.data.form.stravaRouteUrl = '';
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
-    expect(rideService.saveActivity.mock.calls[0][0].route).not.toHaveProperty('stravaRouteUrl');
+    expect(rideService.saveActivity.mock.calls[0][0].route).not.toHaveProperty('externalRouteUrl');
   });
 
   it('编辑缺少分类名额的旧活动时不会补写冲突默认值', async () => {
@@ -973,7 +961,7 @@ describe('日常活动极简创建与编辑', () => {
     expect(deleteFile).not.toHaveBeenCalled();
   });
 
-  it('日常活动详情隐藏旧路线费用和不限人数话术，并突出集合时间', () => {
+  it('日常活动详情隐藏旧路线费用和不限人数话术，并只为可信 GPX 展示路线详情', () => {
     const card = readFileSync('miniprogram/components/activity-card/index.wxml', 'utf8');
     const detail = readFileSync('miniprogram/pages/activity-detail/index.wxml', 'utf8');
     expect(card).toContain('item.registrationUnlimited ? item.occupied');
@@ -988,7 +976,8 @@ describe('日常活动极简创建与编辑', () => {
     expect(detail).not.toContain('不限</text><text>报名人数');
     expect(detail).toContain('!item.registrationUnlimited && item.route.end');
     expect(detail).toContain('!item.registrationUnlimited && (item.fee');
-    expect(detail).toContain('route-profile-card" wx:if="{{!item.registrationUnlimited}}"');
+    expect(detail).toContain('class="gpx-route-card" wx:if="{{hasGpxRoute}}"');
+    expect(detail).not.toContain('route-profile-card');
   });
 
   it('活动群二维码可独立上传并随活动保存回读', async () => {
@@ -1032,25 +1021,267 @@ describe('日常活动极简创建与编辑', () => {
     expect(page.data.groupQrCode).toBe('cloud://new-group-qr.jpg');
   });
 
-  it('发布时自动解析尚未识别的公开路线并写入完整路线数据', async () => {
-    const routeUrl = 'https://www.strava.com/routes/2995569663284766500';
+  it('添加官方路线只校验并归一化链接，不请求 Strava 页面数据', async () => {
+    await page.onLoad({});
+    page.data.form.stravaRouteUrl = 'https://www.strava.com/zh-CN/routes/42/';
+
+    page.addOfficialRoute();
+
+    expect(page.data.form.stravaRouteUrl).toBe('https://www.strava.com/routes/42');
+    expect(page.data.officialRoute).toEqual({
+      provider: 'strava',
+      routeId: '42',
+      url: 'https://www.strava.com/routes/42',
+    });
+    expect(rideService.previewPublicStravaRoute).not.toHaveBeenCalled();
+    expect(rideService.previewStravaRoute).not.toHaveBeenCalled();
+    expect(wx.showToast).toHaveBeenCalledWith({
+      title: '已添加。参与者可查看 Strava 官方路线。',
+      icon: 'none',
+    });
+  });
+
+  it('选择 GPX 后按 SHA-256 所有者路径上传并读取可信详情', async () => {
+    const source = new TextEncoder().encode('<gpx>route</gpx>');
+    const digest = sha256Hex(source);
+    const fileId = `cloud://env/activity-routes/${appStore.openid}/${digest}.gpx`;
     const preview = {
-      stravaRouteId: '2995569663284766500',
-      stravaRouteUrl: routeUrl,
-      routeName: '黑分解',
-      previewImageUrl: 'https://images.example/route.jpg',
-      distanceKm: 87.7,
-      elevationM: 961,
-      estimatedMovingTimeSeconds: 20117,
+      previewId: 'a'.repeat(64),
+      gpxFileId: fileId,
+      gpxSha256: digest,
+      routeName: '周末环湖',
+      distanceKm: 52.4,
+      elevationM: 680,
+      elevationLossM: 675,
+      elevationMinM: 12,
+      elevationMaxM: 486,
+      estimatedMovingTimeSeconds: 10800,
+      estimationSource: 'cili',
       elevationProfile: [
-        { distanceKm: 0, elevationM: 20 },
-        { distanceKm: 87.7, elevationM: 80 },
+        { distanceKm: 0, elevationM: 12 },
+        { distanceKm: 52.4, elevationM: 30 },
       ],
-      routeBounds: { south: 40.09, west: 116.2, north: 40.39, east: 116.3 },
-      popularClimbs: [],
-      stravaGpxAvailable: false,
+      routeOutline: [
+        { latitude: 22, longitude: 114 },
+        { latitude: 22.2, longitude: 114.2 },
+      ],
+      routeBounds: { south: 22, west: 114, north: 22.2, east: 114.2 },
+      expiresAt: '2026-10-13T09:30:00.000Z',
     };
-    rideService.previewPublicStravaRoute.mockResolvedValue(preview);
+    const uploadFile = vi.fn().mockResolvedValue({ fileID: fileId });
+    Object.assign(wx, {
+      chooseMessageFile: vi.fn().mockResolvedValue({
+        tempFiles: [{ name: 'weekend.gpx', path: '/tmp/weekend.gpx', size: source.byteLength }],
+      }),
+      getFileSystemManager: () => ({
+        readFile: ({ success }: any) => success({ data: source.buffer }),
+      }),
+    });
+    Object.assign(wx.cloud!, { uploadFile, deleteFile: vi.fn().mockResolvedValue({}) });
+    rideService.previewRouteGpx.mockResolvedValue(preview);
+    await page.onLoad({});
+
+    await page.chooseRouteGpx();
+
+    expect(uploadFile).toHaveBeenCalledWith({
+      cloudPath: `activity-routes/${appStore.openid}/${digest}.gpx`,
+      filePath: '/tmp/weekend.gpx',
+    });
+    expect(rideService.previewRouteGpx).toHaveBeenCalledWith({
+      gpxFileId: fileId,
+      gpxSha256: digest,
+      fileName: 'weekend.gpx',
+      requestId: expect.stringMatching(/^[A-Za-z0-9_-]{8,128}$/),
+    });
+    expect(page.data.routePreview).toEqual(preview);
+    expect(page.data.routeStatusMessage).toBe('路线详情已准备好');
+    expect(page.data.sessionRouteFileIds).toEqual([fileId]);
+  });
+
+  it('路线轮廓 Canvas 生成 PNG 后绑定为同摘要预览图', async () => {
+    const digest = 'b'.repeat(64);
+    const generatedFileId = `cloud://env/activity-routes/${appStore.openid}/${digest}.png`;
+    const preview = {
+      previewId: 'a'.repeat(64),
+      gpxFileId: `cloud://env/activity-routes/${appStore.openid}/${digest}.gpx`,
+      gpxSha256: digest,
+      routeName: '周末环湖',
+      distanceKm: 52.4,
+      elevationM: 680,
+      elevationLossM: 675,
+      elevationMinM: 12,
+      elevationMaxM: 486,
+      estimatedMovingTimeSeconds: 10800,
+      estimationSource: 'cili',
+      elevationProfile: [
+        { distanceKm: 0, elevationM: 12 },
+        { distanceKm: 52.4, elevationM: 30 },
+      ],
+      routeOutline: [
+        { latitude: 22, longitude: 114 },
+        { latitude: 22.2, longitude: 114.2 },
+      ],
+      routeBounds: { south: 22, west: 114, north: 22.2, east: 114.2 },
+      expiresAt: '2026-10-13T09:30:00.000Z',
+    };
+    const gradient = { addColorStop: vi.fn() };
+    const context = {
+      setTransform: vi.fn(),
+      clearRect: vi.fn(),
+      fillRect: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      arc: vi.fn(),
+      fill: vi.fn(),
+      fillText: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      closePath: vi.fn(),
+      createLinearGradient: vi.fn(() => gradient),
+    };
+    const outlineCanvas = { getContext: vi.fn(() => context), width: 0, height: 0 };
+    const elevationCanvas = { getContext: vi.fn(() => context), width: 0, height: 0 };
+    Object.assign(wx, {
+      getWindowInfo: () => ({ pixelRatio: 2 }),
+      createSelectorQuery: () => {
+        let selector = '';
+        const query = {
+          in: () => query,
+          select: (value: string) => {
+            selector = value;
+            return query;
+          },
+          fields: () => query,
+          exec: (callback: (value: any[]) => void) =>
+            callback([
+              {
+                node: selector.includes('outline') ? outlineCanvas : elevationCanvas,
+                width: 320,
+                height: selector.includes('outline') ? 180 : 140,
+              },
+            ]),
+        };
+        return query;
+      },
+      canvasToTempFilePath: vi.fn(({ success }: any) =>
+        success({ tempFilePath: '/tmp/route.png' }),
+      ),
+    });
+    const uploadFile = vi.fn().mockResolvedValue({ fileID: generatedFileId });
+    Object.assign(wx.cloud!, { uploadFile });
+    rideService.bindRoutePreviewImage.mockResolvedValue({
+      ...preview,
+      generatedPreviewFileId: generatedFileId,
+    });
+    page.data.routePreview = preview;
+
+    await page.renderRouteVisuals();
+
+    expect(uploadFile).toHaveBeenCalledWith({
+      cloudPath: `activity-routes/${appStore.openid}/${digest}.png`,
+      filePath: '/tmp/route.png',
+    });
+    expect(rideService.bindRoutePreviewImage).toHaveBeenCalledWith(
+      preview.previewId,
+      generatedFileId,
+    );
+    expect(page.data.routePreview.generatedPreviewFileId).toBe(generatedFileId);
+    expect(page.data.sessionRouteFileIds).toContain(generatedFileId);
+  });
+
+  it('GPX 取消选择不报错，超限文件在上传前给出明确操作', async () => {
+    Object.assign(wx, {
+      chooseMessageFile: vi
+        .fn()
+        .mockRejectedValueOnce({ errMsg: 'chooseMessageFile:fail cancel' })
+        .mockResolvedValueOnce({
+          tempFiles: [{ name: 'large.gpx', path: '/tmp/large.gpx', size: 4 * 1024 * 1024 + 1 }],
+        }),
+    });
+    Object.assign(wx.cloud!, { uploadFile: vi.fn() });
+    await page.onLoad({});
+
+    await page.chooseRouteGpx();
+    expect(page.data.error).toBe('');
+
+    await page.chooseRouteGpx();
+    expect(page.data.error).toBe('文件超过 4 MB，请选择更小的 GPX');
+    expect(wx.cloud!.uploadFile).not.toHaveBeenCalled();
+  });
+
+  it('移除未保存 GPX 会清理本次会话文件', () => {
+    const fileId = `cloud://env/activity-routes/${appStore.openid}/${'b'.repeat(64)}.gpx`;
+    const deleteFile = vi.fn().mockResolvedValue({});
+    Object.assign(wx.cloud!, { deleteFile });
+    page.data.routePreview = { previewId: 'a'.repeat(64), gpxFileId: fileId };
+    page.data.sessionRouteFileIds = [fileId];
+
+    page.removeRouteDetails();
+
+    expect(deleteFile).toHaveBeenCalledWith({ fileList: [fileId] });
+    expect(page.data.routePreview).toBeUndefined();
+    expect(page.data.sessionRouteFileIds).toEqual([]);
+  });
+
+  it('保存时 GPX 指标优先并与官方路线字段独立提交', async () => {
+    await page.onLoad({});
+    Object.assign(page.data.form, {
+      title: '路线双模式',
+      startDate: '2026-10-20',
+      startTime: '07:30',
+      routeStart: '湖边广场',
+      stravaRouteUrl: 'https://www.strava.com/routes/42',
+    });
+    page.addOfficialRoute();
+    page.data.routePreview = {
+      previewId: 'a'.repeat(64),
+      gpxFileId: `cloud://env/activity-routes/${appStore.openid}/${'b'.repeat(64)}.gpx`,
+      gpxSha256: 'b'.repeat(64),
+      generatedPreviewFileId: `cloud://env/activity-routes/${appStore.openid}/${'b'.repeat(64)}.png`,
+      routeName: '周末环湖',
+      distanceKm: 52.4,
+      elevationM: 680,
+      elevationLossM: 675,
+      elevationMinM: 12,
+      elevationMaxM: 486,
+      estimatedMovingTimeSeconds: 10800,
+      estimationSource: 'cili',
+      elevationProfile: [
+        { distanceKm: 0, elevationM: 12 },
+        { distanceKm: 52.4, elevationM: 30 },
+      ],
+      routeOutline: [
+        { latitude: 22, longitude: 114 },
+        { latitude: 22.2, longitude: 114.2 },
+      ],
+      routeBounds: { south: 22, west: 114, north: 22.2, east: 114.2 },
+      expiresAt: '2026-10-13T09:30:00.000Z',
+    };
+
+    await page.save({ currentTarget: { dataset: { status: 'draft' } } });
+
+    expect(rideService.saveActivity.mock.calls[0][0].route).toMatchObject({
+      externalProvider: 'strava',
+      externalRouteId: '42',
+      externalRouteUrl: 'https://www.strava.com/routes/42',
+      gpxPreviewId: 'a'.repeat(64),
+      gpxSha256: 'b'.repeat(64),
+      routeName: '周末环湖',
+      distanceKm: 52.4,
+      elevationM: 680,
+      elevationLossM: 675,
+      elevationMinM: 12,
+      elevationMaxM: 486,
+      estimationSource: 'cili',
+    });
+    expect(rideService.previewPublicStravaRoute).not.toHaveBeenCalled();
+  });
+
+  it('发布只保存官方路线链接，不调用页面读取服务', async () => {
+    const routeUrl = 'https://www.strava.com/routes/2995569663284766500';
+    rideService.previewPublicStravaRoute.mockRejectedValue(new Error('不应调用旧页面读取服务'));
     rideService.saveActivity.mockImplementation(async (payload: any) =>
       savedActivityFromPayload(payload),
     );
@@ -1065,101 +1296,18 @@ describe('日常活动极简创建与编辑', () => {
 
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
 
-    expect(rideService.previewPublicStravaRoute).toHaveBeenCalledWith(routeUrl);
+    expect(rideService.previewPublicStravaRoute).not.toHaveBeenCalled();
     expect(rideService.saveActivity).toHaveBeenCalledTimes(2);
-    expect(rideService.saveActivity.mock.calls.map(([payload]) => payload.status)).toEqual([
-      'draft',
-      'published',
-    ]);
-    expect(rideService.saveActivity.mock.calls[1][0]).toEqual(
-      expect.objectContaining({
-        route: expect.objectContaining({
-          stravaRouteId: preview.stravaRouteId,
-          stravaRouteUrl: routeUrl,
-          routeName: preview.routeName,
-          distanceKm: preview.distanceKm,
-          elevationM: preview.elevationM,
-          estimatedMovingTimeSeconds: preview.estimatedMovingTimeSeconds,
-          stravaGpxAvailable: false,
-        }),
-      }),
-    );
-    expect(page.data.stravaRoutePreview).toEqual(preview);
-    expect(page.data.syncingRoute).toBe(false);
-  });
-
-  it('发布前自动解析失败时停止保存，避免生成只有链接的活动', async () => {
-    const routeUrl = 'https://www.strava.com/routes/2995569663284766500';
-    rideService.previewPublicStravaRoute.mockRejectedValue(
-      new Error('暂时无法读取该公开路线，请确认路线公开后重试或手动填写'),
-    );
-    await page.onLoad({});
-    Object.assign(page.data.form, {
-      title: '公开路线测试',
-      startDate: '2026-10-20',
-      startTime: '07:30',
-      routeStart: '中关村广场',
-      stravaRouteUrl: routeUrl,
+    expect(rideService.saveActivity.mock.calls[1][0].route).toMatchObject({
+      externalProvider: 'strava',
+      externalRouteId: '2995569663284766500',
+      externalRouteUrl: routeUrl,
+      distanceKm: 0,
+      elevationM: 0,
     });
-
-    await page.save({ currentTarget: { dataset: { status: 'published' } } });
-
-    expect(rideService.previewPublicStravaRoute).toHaveBeenCalledWith(routeUrl);
-    expect(rideService.saveActivity).not.toHaveBeenCalled();
-    expect(wx.showModal).toHaveBeenCalledWith(
-      expect.objectContaining({
-        content: expect.stringContaining('发布前需要先解析路线'),
-      }),
-    );
-    expect(page.data.syncingRoute).toBe(false);
   });
 
-  it('无需 Strava 授权即可识别公开路线，并保留手动填写能力', async () => {
-    const preview = {
-      stravaRouteId: '42',
-      stravaRouteUrl: 'https://www.strava.com/routes/42',
-      routeName: '周末环湖',
-      previewImageUrl: 'https://images.example/route.jpg',
-      distanceKm: 42.5,
-      elevationM: 860,
-      estimatedMovingTimeSeconds: 7200,
-      elevationProfile: [
-        { distanceKm: 0, elevationM: 20 },
-        { distanceKm: 42.5, elevationM: 80 },
-      ],
-      routeBounds: { south: 22, west: 113, north: 23, east: 114 },
-      popularClimbs: [],
-    };
-    rideService.previewPublicStravaRoute.mockResolvedValue(preview);
-    page.data.form.stravaRouteUrl = preview.stravaRouteUrl;
-
-    await page.syncStravaRoute();
-
-    expect(rideService.getStravaReadiness).not.toHaveBeenCalled();
-    expect(rideService.previewStravaRoute).not.toHaveBeenCalled();
-    expect(rideService.previewPublicStravaRoute).toHaveBeenCalledWith(preview.stravaRouteUrl);
-    expect(page.data.publicStravaRoutePreview).toEqual(preview);
-    expect(page.data.stravaRoutePreview).toEqual(preview);
-    expect(page.data.stravaRouteTimeLabel).toBe('2 小时');
-    expect(wx.showModal).not.toHaveBeenCalled();
-    expect(wx.showToast).toHaveBeenCalledWith({ title: '已识别公开路线', icon: 'success' });
-    expect(page.data.syncingRoute).toBe(false);
-  });
-
-  it('公开路线识别失败时保留链接和表单并提示手动填写', async () => {
-    rideService.previewPublicStravaRoute.mockRejectedValue(
-      new Error('暂时无法读取该公开路线，请手动填写'),
-    );
-    page.data.form.stravaRouteUrl = 'https://www.strava.com/routes/42';
-
-    await page.syncStravaRoute();
-
-    expect(page.data.form.stravaRouteUrl).toBe('https://www.strava.com/routes/42');
-    expect(page.data.error).toBe('暂时无法读取该公开路线，请手动填写');
-    expect(page.data.syncingRoute).toBe(false);
-  });
-
-  it('界面保持极简字段并提供 Strava 路线信息同步', () => {
+  it('界面保持极简字段并提供官方路线与 GPX 增强', () => {
     const template = readFileSync('miniprogram/pages/admin/activity-edit/index.wxml', 'utf8');
     expect(template).toContain('活动标题');
     expect(template).toContain('集合时间');
@@ -1168,11 +1316,17 @@ describe('日常活动极简创建与编辑', () => {
     expect(template).toContain('备注说明');
     expect(template).toContain('活动群二维码');
     expect(template).toContain('二维码可能已过期');
-    expect(template).toContain('识别公开路线');
-    expect(template).toContain('无需 Strava 授权');
-    expect(template).toContain('此里估算 {{stravaRouteTimeLabel}}');
-    expect(template).toContain('stravaRoutePreview.routeName');
-    expect(template).toContain('stravaRoutePreview.previewImageUrl');
+    expect(template).toContain('Strava 官方路线（可选）');
+    expect(template).toContain('添加官方路线');
+    expect(template).toContain('查看官方路线');
+    expect(template).toContain('GPX 路线详情（推荐）');
+    expect(template).toContain('上传 GPX');
+    expect(template).toContain('路线详情已准备好');
+    expect(template).toContain('此里估算 {{routeTimeLabel}}');
+    expect(template).toContain('routePreview.routeName');
+    expect(template).toContain('id="route-outline-canvas"');
+    expect(template).toContain('id="route-elevation-canvas"');
+    expect(template).not.toMatch(/OAuth|授权|令牌|回调|完整识别|自动解析/);
     expect(template).toContain('form.title');
     expect(template).toContain('form.startDate');
     expect(template).toContain('form.startTime');
@@ -1191,6 +1345,8 @@ describe('日常活动极简创建与编辑', () => {
       '费用说明',
     ])
       expect(template).not.toContain(removed);
-    expect(page.syncStravaRoute).toBeTypeOf('function');
+    expect(page.addOfficialRoute).toBeTypeOf('function');
+    expect(page.chooseRouteGpx).toBeTypeOf('function');
+    expect(page.removeRouteDetails).toBeTypeOf('function');
   });
 });

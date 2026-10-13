@@ -81,41 +81,34 @@
       ]
     },
     {
-      "name": "strava-auth",
+      "name": "route-web",
       "handler": "index.main",
       "runtime": "Nodejs20.19",
-      "timeout": 30,
+      "timeout": 5,
       "memorySize": 256,
       "installDependency": true
     },
     {
-      "name": "strava-callback",
+      "name": "route-maintenance",
       "handler": "index.main",
       "runtime": "Nodejs20.19",
-      "timeout": 15,
+      "timeout": 30,
       "memorySize": 256,
-      "installDependency": true
+      "installDependency": true,
+      "triggers": [
+        {
+          "name": "route-maintenance-worker",
+          "type": "timer",
+          "config": "0 */10 * * * * *"
+        }
+      ]
     }
   ],
   "gateway": {
     "routes": [
       {
-        "path": "/strava/callback",
-        "target": "function:strava-callback",
-        "enableAuth": false,
-        "enablePathTransmission": true,
-        "domain": "*"
-      },
-      {
-        "path": "/strava/success",
-        "target": "function:strava-callback",
-        "enableAuth": false,
-        "enablePathTransmission": true,
-        "domain": "*"
-      },
-      {
-        "path": "/strava/failure",
-        "target": "function:strava-callback",
+        "path": "/route/embed",
+        "target": "function:route-web",
         "enableAuth": false,
         "enablePathTransmission": true,
         "domain": "*"

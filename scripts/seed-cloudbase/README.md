@@ -16,7 +16,7 @@
 npm run cloudbase:plan
 ```
 
-计划的当前基线是 13 个核心集合、33 个业务索引和全拒绝客户端数据库规则。由环境负责人审核计划后，才可执行：
+计划的当前基线是 9 个核心集合、29 个业务索引和全拒绝客户端数据库规则。由环境负责人审核计划后，才可执行：
 
 ```bash
 npm run cloudbase:apply
@@ -25,9 +25,9 @@ npm run cloudbase:verify
 
 覆盖 `cloudbaserc.json` 中的环境时，使用脚本支持的 `--env-id` 和完全相同的 `--confirm-env-id`，不要依赖未展开的环境变量或模糊环境名称。
 
-`cloudbase:verify` 不验证云存储规则。必须单独应用并回读 `cloudstorage.rules.json`，确认客户端只能写本人 `profiles/` staging 路径，不能写 `profile-canonical/`。
+`cloudbase:verify` 不验证云存储规则。必须单独应用并回读 `cloudstorage.rules.json`，确认客户端只能写本人 `profiles/` 与 `activity-routes/` staging 路径，不能写 `profile-canonical/`。
 
-`strava_route_previews` 已由 bootstrap 与其他服务端可信集合一并管理，并纳入全拒绝客户端读写规则和 `cloudbase:verify`。不要绕过 plan/apply/verify 手工创建或放宽该集合权限。
+`route_previews` 已由 bootstrap 与其他服务端可信集合一并管理，并纳入全拒绝客户端读写规则和 `cloudbase:verify`。不要绕过 plan/apply/verify 手工创建或放宽该集合权限。
 
 ## 3. 创建首个管理员
 
@@ -46,7 +46,8 @@ npm run cloudbase:verify
 ## 5. 验证与安全约束
 
 - 运行 `npm run cloudbase:verify`，确认集合、索引和全拒绝客户端规则。
-- 按根 README 的顺序部署云函数和定时触发器，应用并回读三条 OAuth HTTPS 网关路由；同步配置 Strava callback 和小程序 `web-view` 业务域名。
+- 按根 README 的顺序部署云函数和定时触发器，应用并回读 `/route/embed` HTTPS 网关路由；同步配置小程序 `web-view` 业务域名。
+- 新路线链路运行时验收前保持退休 purge 关闭；验收通过后才临时开启，旧数据清空回读后立即移除。
 - 在隔离测试环境按 `docs/verification/p0-real-registration-journey.md` 执行真实旅程。
-- 不得提交真实 `openid`、手机号、OAuth code/state、Strava token、密钥、密文、控制台导出数据或未脱敏证据。
+- 不得提交真实 `openid`、手机号、历史授权参数或 token、密钥、密文、控制台导出数据或未脱敏证据。
 - 不得用 Mock、本地构建结果或手工改库代替真实环境验证。

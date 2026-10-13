@@ -5,13 +5,11 @@ import type {
   PersonalCapabilityCard,
   Profile,
   ProfileUpdate,
-  PublicStravaRoutePreview,
   Registration,
   RegistrationStatus,
-  StravaConnection,
-  StravaReadiness,
-  StravaRouteGpx,
-  StravaRoutePreview,
+  RouteGpxDownload,
+  RouteGpxPreview,
+  RouteGpxPreviewInput,
 } from '../models';
 
 export type AdminRegistrationStatusFilter = RegistrationStatus;
@@ -112,18 +110,12 @@ export interface RideRepository extends AdminReviewRepository, ActivityAdminRepo
     origin?: ClientAvatarSource,
   ): Promise<void>;
   setAvatar(source: ClientAvatarSource, fileId: string): Promise<Profile>;
-  importStravaAvatar(): Promise<Profile>;
   updateProfile(profile: ProfileUpdate): Promise<Profile>;
   getPhoneNumber(code: string): Promise<Profile>;
-  getStravaStatus(): Promise<StravaConnection>;
-  getStravaReadiness(): Promise<StravaReadiness>;
-  ensureStravaReady(): Promise<StravaReadiness>;
-  startStrava(): Promise<{ authorizationUrl: string; expiresAt: string }>;
-  cancelStravaAuthorization(): Promise<void>;
-  syncStrava(): Promise<StravaReadiness>;
-  previewPublicStravaRoute(routeUrl: string): Promise<PublicStravaRoutePreview>;
-  previewStravaRoute(routeUrl: string): Promise<StravaRoutePreview>;
-  getStravaRouteGpx(activityId: string, routeId: string): Promise<StravaRouteGpx>;
-  exportActivityGpx(activityId: string): Promise<{ base64: string; fileName: string }>;
-  disconnectStrava(): Promise<void>;
+  previewRouteGpx(input: RouteGpxPreviewInput): Promise<RouteGpxPreview>;
+  bindRoutePreviewImage(
+    previewId: string,
+    generatedPreviewFileId: string,
+  ): Promise<RouteGpxPreview>;
+  downloadRouteGpx(activityId: string): Promise<RouteGpxDownload>;
 }

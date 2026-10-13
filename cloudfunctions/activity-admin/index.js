@@ -15,6 +15,7 @@ const {
   MAX_PARTITION_BACKFILL_RECORDS,
 } = require('./domain-index');
 const { listActivitiesPage } = require('./list-pagination');
+const { previewRouteGpx, bindRoutePreviewImage } = require('./route-preview');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const OCCUPANCY_BACKFILL_PAGE_SIZE = 100;
@@ -70,10 +71,18 @@ function transactionStore() {
             }
             return registrations;
           },
-          getRoutePreview: (openid, routeId) => {
-            const id = crypto.createHash('sha256').update(`${openid}\0${routeId}`).digest('hex');
-            return maybeGet(transaction.collection('strava_route_previews'), id);
-          },
+          getRoutePreviewById: (id) => maybeGet(transaction.collection('route_previews'), id),
+          consumeRoutePreview: (id, activityId, consumedAt) =>
+            transaction
+              .collection('route_previews')
+              .doc(id)
+              .update({
+                data: {
+                  consumed_at: consumedAt,
+                  attached_activity_id: activityId,
+                  updated_at: consumedAt,
+                },
+              }),
           getOccupyingRegistrations: async (activityId, expectedOccupiedCount) => {
             if (expectedOccupiedCount > MAX_PARTITION_BACKFILL_RECORDS)
               fail('PARTITION_BACKFILL_REQUIRED', '历史活动占位数超过自动回填上限');
@@ -134,6 +143,72 @@ exports.main = async (event = {}) => {
   try {
     const openid = cloud.getWXContext().OPENID;
     assertTrustedOpenid(openid);
+    if (event.action === 'previewRouteGpx') {
+      return ok(
+        await previewRouteGpx(
+          {
+            getAdmin: (id) => maybeGet(db.collection('admins'), id),
+            downloadFile: (input) => cloud.downloadFile(input),
+            getPreview: (id) => maybeGet(db.collection('route_previews'), id),
+            putPreview: async (id, value) => {
+              const { _id, ...data } = value;
+              await db.collection('route_previews').doc(id).set({ data });
+            },
+          },
+          {
+            ...Object.fromEntries(
+              Object.entries(event).filter(
+                ([key]) =>
+                  ![
+                    'action',
+                    'userInfo',
+                    'tcbContext',
+                    'gpxFileId',
+                    'gpxSha256',
+                    'fileName',
+                    'requestId',
+                  ].includes(key),
+              ),
+            ),
+            openid,
+            gpxFileId: event.gpxFileId,
+            gpxSha256: event.gpxSha256,
+            fileName: event.fileName,
+            requestId: event.requestId,
+          },
+          new Date(),
+        ),
+      );
+    }
+    if (event.action === 'bindRoutePreviewImage') {
+      return ok(
+        await bindRoutePreviewImage(
+          {
+            getAdmin: (id) => maybeGet(db.collection('admins'), id),
+            getPreview: (id) => maybeGet(db.collection('route_previews'), id),
+            updatePreview: (id, data) => db.collection('route_previews').doc(id).update({ data }),
+          },
+          {
+            ...Object.fromEntries(
+              Object.entries(event).filter(
+                ([key]) =>
+                  ![
+                    'action',
+                    'userInfo',
+                    'tcbContext',
+                    'previewId',
+                    'generatedPreviewFileId',
+                  ].includes(key),
+              ),
+            ),
+            openid,
+            previewId: event.previewId,
+            generatedPreviewFileId: event.generatedPreviewFileId,
+          },
+          new Date(),
+        ),
+      );
+    }
     if (event.action === 'save') {
       if (
         event.activityId !== undefined &&

@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest';
 const appConfig = JSON.parse(readFileSync('miniprogram/app.json', 'utf8')) as { pages: string[] };
 
 describe('单一明亮外观接线', () => {
-  it('13 个页面不再保存或同步运行时主题', () => {
-    expect(appConfig.pages).toHaveLength(13);
+  it('14 个页面不再保存或同步运行时主题', () => {
+    expect(appConfig.pages).toHaveLength(14);
 
     for (const pagePath of appConfig.pages) {
       const script = readFileSync(`miniprogram/${pagePath}.ts`, 'utf8');
@@ -39,10 +39,8 @@ describe('单一明亮外观接线', () => {
 
     expect(template).toContain('功能升级日志');
     expect(template).toContain('wx:for="{{releaseNotes}}"');
-    expect(script).toContain("version: '2026.10.02.2'");
-    expect(script).toContain("version: '2026.10.02.1'");
-    expect(script).toContain("version: '2026.10.01.3'");
-    expect(script).toContain("version: '2026.10.01.2'");
-    expect(script).toContain("version: '2026.10.01.1'");
+    expect(script).toContain("version: '2026.10.13.43'");
+    expect(script).toContain("title: '官方路线与 GPX 详情'");
+    expect(script).toContain('上传 GPX 后可查看里程、升降、海拔范围、路线轮廓和海拔曲线');
   });
 });

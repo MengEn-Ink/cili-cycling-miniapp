@@ -199,13 +199,6 @@ describe('HP-20261010-02 统一明亮 UI 全页对比度契约', () => {
     expect(
       declaration(effectiveBlock(registration, '.form-page button[disabled]'), 'opacity'),
     ).toBe('1');
-    expectPair(
-      'miniprogram/pages/registration-form/index.wxss',
-      '.status-ready .readiness-badge',
-      '--color-success-text',
-      '--color-success-soft',
-    );
-
     const credential = read('miniprogram/pages/credential/index.wxss');
     const waiting = effectiveBlock(credential, '.status-waiting');
     expectSemantic(declaration(waiting, 'background'), '--color-warning-soft');

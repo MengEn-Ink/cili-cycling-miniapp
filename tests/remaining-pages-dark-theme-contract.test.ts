@@ -13,7 +13,7 @@ import {
 const app = read('miniprogram/app.wxss');
 const tokens = uiTokens(app);
 const pages = [
-  { root: 'miniprogram/pages/strava', page: '.strava-page' },
+  { root: 'miniprogram/pages/route-view', page: '.route-view-page', background: '--color-surface' },
   { root: 'miniprogram/pages/credential', page: '.page.credential-page' },
   { root: 'miniprogram/pages/admin/activity-list', page: '.activity-list-page' },
   { root: 'miniprogram/pages/profile-edit', page: '.profile-form-page' },
@@ -26,38 +26,18 @@ function expectReadable(foreground: string, background: string, minimum = 4.5): 
 }
 
 describe('其余页面 CILI 统一明亮 UI 静态契约', () => {
-  it.each(pages)('$root 使用明亮原生导航栏和统一语义色', ({ root, page }) => {
-    const config = JSON.parse(read(`${root}/index.json`));
-    expect(config.navigationBarBackgroundColor.toLowerCase()).toBe('#ffffff');
-    expect(config.navigationBarTextStyle).toBe('black');
-    const block = effectiveBlock(read(`${root}/index.wxss`), page);
-    expectSemantic(declaration(block, 'background'), '--color-bg');
-    expectSemantic(declaration(block, 'color'), '--color-text');
-    expectReadable('var(--color-text)', 'var(--color-bg)');
-  });
-
-  it('Strava 页状态卡、数据指标与次按钮使用可读语义表面', () => {
-    const styles = read('miniprogram/pages/strava/index.wxss');
-    const status = effectiveBlock(styles, '.status-card');
-    expectSemantic(declaration(status, 'background'), '--color-surface');
-    expectSemantic(declaration(status, 'color'), '--color-text');
-    expectSemantic(declaration(effectiveBlock(styles, '.status-help'), 'color'), '--color-muted');
-    const card = effectiveBlock(styles, '.strava-page .card');
-    expectSemantic(declaration(card, 'background'), '--color-surface');
-    const metric = effectiveBlock(styles, '.strava-page .metric');
-    expectSemantic(declaration(metric, 'background'), '--color-raised');
-    expectSemantic(declaration(metric, 'color'), '--color-muted');
-    expectReadable('var(--color-muted)', 'var(--color-raised)');
-    expectSemantic(
-      declaration(effectiveBlock(styles, '.strava-page .big'), 'color'),
-      '--color-text',
-    );
-    expectReadable('var(--color-text)', 'var(--color-raised)');
-    expectSemantic(
-      declaration(effectiveBlock(styles, '.strava-page .secondary'), 'background'),
-      '--color-input-bg',
-    );
-  });
+  it.each(pages)(
+    '$root 使用明亮原生导航栏和统一语义色',
+    ({ root, page, background = '--color-bg' }) => {
+      const config = JSON.parse(read(`${root}/index.json`));
+      expect(config.navigationBarBackgroundColor.toLowerCase()).toBe('#ffffff');
+      expect(config.navigationBarTextStyle).toBe('black');
+      const block = effectiveBlock(read(`${root}/index.wxss`), page);
+      expectSemantic(declaration(block, 'background'), background);
+      expectSemantic(declaration(block, 'color'), '--color-text');
+      expectReadable('var(--color-text)', `var(${background})`);
+    },
+  );
 
   it('报名凭证页主视觉、凭证卡与时间线使用语义 token', () => {
     const styles = read('miniprogram/pages/credential/index.wxss');

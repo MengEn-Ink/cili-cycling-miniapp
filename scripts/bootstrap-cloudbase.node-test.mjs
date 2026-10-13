@@ -22,7 +22,6 @@ const {
   RECOVERY_CONFIRMATION_MS,
   STORAGE_SETTLE_MARGIN_MS,
 } = require('../cloudfunctions/profile-media-cleanup/core');
-const { IMPORT_LEASE_MS } = require('../cloudfunctions/profile/avatar-import');
 
 const PUBLIC_EVENT_START = {
   collection: 'activities',
@@ -230,7 +229,7 @@ test('活动首页 planner 索引纳入 bootstrap exact plan 与 verify', () => 
     INDEXES.filter((index) => index.name.startsWith('activities_public_event_')),
     [PUBLIC_EVENT_START, PUBLIC_EVENT_END],
   );
-  assert.equal(INDEXES.length, 33);
+  assert.equal(INDEXES.length, 29);
 
   const missing = completeState();
   missing.indexes.set(
@@ -409,51 +408,47 @@ test('环境覆盖必须与显式确认完全一致', () => {
   );
 });
 
-test('OAuth 与 Strava 集合包含 attempt fencing、唯一、普通过期时间和同步索引', () => {
-  assert.equal(COLLECTIONS.includes('oauth_states'), true);
-  assert.equal(COLLECTIONS.includes('oauth_attempts'), true);
-  assert.equal(COLLECTIONS.includes('strava_credentials'), true);
-  assert.equal(COLLECTIONS.includes('strava_snapshots'), true);
-  assert.equal(COLLECTIONS.includes('strava_route_previews'), true);
+test('只保留可信 GPX 路线预览集合与清理索引', () => {
+  for (const retired of [
+    'oauth_states',
+    'oauth_attempts',
+    'strava_credentials',
+    'strava_snapshots',
+    'strava_route_previews',
+  ])
+    assert.equal(COLLECTIONS.includes(retired), false);
+  assert.equal(COLLECTIONS.includes('route_previews'), true);
   assert.deepEqual(
-    INDEXES.find((item) => item.name === 'oauth_states_expires_at'),
+    INDEXES.find((item) => item.name === 'route_previews_expires_at'),
     {
-      collection: 'oauth_states',
-      name: 'oauth_states_expires_at',
+      collection: 'route_previews',
+      name: 'route_previews_expires_at',
       keys: [['expires_at', 1]],
       unique: false,
     },
   );
-  const activeStateIndex = INDEXES.find((item) => item.name === 'oauth_states_openid_expires_at');
-  assert.deepEqual(activeStateIndex, {
-    collection: 'oauth_states',
-    name: 'oauth_states_openid_expires_at',
-    keys: [
-      ['openid', 1],
-      ['expires_at', -1],
-    ],
-    unique: false,
-  });
-  assert.equal(COLLECTIONS.length, 13);
-  assert.equal(INDEXES.length, 33);
-  assert.equal(
-    INDEXES.some((item) => item.collection === 'oauth_attempts'),
-    false,
+  assert.deepEqual(
+    INDEXES.find((item) => item.name === 'route_previews_owner_expires_at'),
+    {
+      collection: 'route_previews',
+      name: 'route_previews_owner_expires_at',
+      keys: [
+        ['owner_openid', 1],
+        ['expires_at', 1],
+      ],
+      unique: false,
+    },
   );
+  assert.equal(COLLECTIONS.length, 9);
+  assert.equal(INDEXES.length, 29);
   const complete = completeState();
-  assert.deepEqual(complete.rules.get('oauth_attempts'), {
+  assert.deepEqual(complete.rules.get('route_previews'), {
     AclTag: 'CUSTOM',
     Rule: JSON.stringify(DENY_RULE),
   });
-  assert.equal(INDEXES.find((item) => item.name === 'oauth_states_state_hash')?.unique, true);
-  assert.equal(
-    INDEXES.some((item) => item.name === 'strava_snapshots_synced_at'),
-    true,
-  );
   const schema = readFileSync(new URL('../docs/cloudbase-schema.md', import.meta.url), 'utf8');
-  assert.match(schema, /### `oauth_attempts`/);
-  assert.match(schema, /attempt_generation/);
-  assert.match(schema, /不添加额外业务索引/);
+  assert.match(schema, /### `route_previews`/);
+  assert.doesNotMatch(schema, /oauth_states|oauth_attempts|strava_credentials|strava_snapshots/);
   assert.match(schema, /客户端全拒绝 ACL/);
 });
 
@@ -514,17 +509,17 @@ test('notification_outbox 使用租约扫描索引并保持客户端全拒绝', 
   );
 });
 
-test('CloudBase schema 文档列出 notification_outbox 和活动时间线索引并与 32 条总数一致', () => {
+test('CloudBase schema 文档列出 notification_outbox 和活动时间线索引并与 29 条总数一致', () => {
   const schema = readFileSync(new URL('../docs/cloudbase-schema.md', import.meta.url), 'utf8');
   assert.match(schema, /notification_outbox \| status ASC, attempts ASC, lease_expires_at ASC/);
   assert.match(schema, /notification_outbox \| target_openid ASC, created_at DESC/);
   assert.match(schema, /notification_outbox \| status ASC, attempts ASC, next_retry_at ASC/);
   assert.match(schema, /activities \| status ASC, event_start ASC, _id ASC, event_end ASC/);
   assert.match(schema, /activities \| status ASC, event_end DESC, _id DESC, event_start DESC/);
-  assert.match(schema, /全拒绝规则与 32 索引/);
+  assert.match(schema, /全拒绝规则与 29 索引/);
 });
 
-test('profile_media 使用 owner/status、Strava 断开分页与过期清理索引并保持客户端全拒绝', () => {
+test('profile_media 使用 owner/status 与过期清理索引并保持客户端全拒绝', () => {
   assert.ok(COLLECTIONS.includes('profile_media'));
   assert.deepEqual(
     INDEXES.find((index) => index.name === 'profile_media_owner_status_created_at')?.keys,
@@ -561,8 +556,8 @@ test('profile_media 使用 owner/status、Strava 断开分页与过期清理索�
     ['status', 1],
     ['retry_at', 1],
   ]);
-  assert.equal(COLLECTIONS.length, 13);
-  assert.equal(INDEXES.length, 33);
+  assert.equal(COLLECTIONS.length, 9);
+  assert.equal(INDEXES.length, 29);
   assert.deepEqual(DENY_RULE, { read: false, write: false });
 });
 
@@ -596,19 +591,15 @@ test('profile_media_imports 使用全拒绝 ACL 与完整 cleanup 扫描索引',
   assert.match(schema, /profile_media_imports \| status ASC, cleanup_after ASC/);
   assert.match(schema, /profile_media_imports \| status ASC, delete_lease_expires_at ASC/);
   assert.match(schema, /profile_media_imports \| status ASC, retry_at ASC/);
-  assert.match(schema, /13 集合、全拒绝规则与 32 索引/);
+  assert.match(schema, /9 集合、全拒绝规则与 29 索引/);
   assert.match(schema, /avatar_revision/);
-  assert.match(schema, /origin: wechat\|strava\|custom/);
-  assert.match(schema, /status: leased\|prepared\|uploaded/);
-  assert.match(schema, /avatar_url_fingerprint/);
-  assert.match(schema, /avatar_import_lease_expires_at/);
+  assert.match(schema, /origin: wechat\|custom/);
+  assert.doesNotMatch(schema, /avatar_url_fingerprint|avatar_import_lease_expires_at/);
 });
 
 test('profile_media cleanup 配置真实且有界的定时执行器', () => {
   const config = JSON.parse(readFileSync(new URL('../cloudbaserc.json', import.meta.url), 'utf8'));
-  const profile = config.functions.find((item) => item.name === 'profile');
   const cleanup = config.functions.find((item) => item.name === 'profile-media-cleanup');
-  assert.ok(IMPORT_LEASE_MS > profile.timeout * 1000 + STORAGE_SETTLE_MARGIN_MS);
   assert.equal(cleanup?.handler, 'index.main');
   assert.equal(cleanup?.runtime, 'Nodejs20.19');
   assert.deepEqual(cleanup?.triggers, [
@@ -623,23 +614,23 @@ test('profile_media cleanup 配置真实且有界的定时执行器', () => {
   assert.ok(RECOVERY_CONFIRMATION_MS > runtimeUpperBoundMs);
 });
 
-test('云存储规则只允许客户端写 staging，canonical 前缀保持 server-only', () => {
+test('云存储规则只允许 owner 写资料与路线 staging，canonical 前缀保持 server-only', () => {
   const rules = JSON.parse(
     readFileSync(new URL('../cloudstorage.rules.json', import.meta.url), 'utf8'),
   );
   assert.equal(rules.read, false);
   assert.equal(
     rules.write,
-    'auth != null && /^profiles\\//.test(resource.path) && resource.openid == auth.openid',
+    'auth != null && (/^profiles\\//.test(resource.path) || /^activity-routes\\//.test(resource.path)) && resource.openid == auth.openid',
   );
   assert.equal(rules.write.includes('profile-canonical'), false);
 });
 
-test('README 与部署包断言包含 profile_media_imports 和头像导入入口', () => {
+test('README 与部署包断言包含 profile_media_imports 且不再包含第三方头像导入', () => {
   const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
   const verifier = readFileSync(new URL('./verify-cloud-packages.mjs', import.meta.url), 'utf8');
-  assert.match(readme, /13 个集合、33 个业务索引/);
-  assert.match(verifier, /pack\('profile',[\s\S]*?'avatar-import\.js'/);
+  assert.match(readme, /9 个集合、29 个业务索引/);
+  assert.doesNotMatch(verifier, /avatar-import\.js/);
 });
 
 function assertClosedDocumentationGaps({ readme, requirements, seedGuide }) {
@@ -650,7 +641,7 @@ function assertClosedDocumentationGaps({ readme, requirements, seedGuide }) {
   assert.doesNotMatch(requirements, /存量资料默认按私有处理|必须由用户主动公开/);
   assert.doesNotMatch(
     requirements,
-    /strava_route_previews[^。]{0,50}(?:尚未|仍未|并不|没有|未纳入|手工创建)[^。]{0,50}(?:bootstrap|管理)/,
+    /route_previews[^。]{0,50}(?:尚未|仍未|并不|没有|未纳入|手工创建)[^。]{0,50}(?:bootstrap|管理)/,
   );
   assert.match(
     seedGuide,
@@ -658,11 +649,11 @@ function assertClosedDocumentationGaps({ readme, requirements, seedGuide }) {
   );
   assert.match(
     seedGuide,
-    /`strava_route_previews` 已由 bootstrap[^。]*管理，并纳入[^。]*`cloudbase:verify`/,
+    /`route_previews` 已由 bootstrap[^。]*管理，并纳入[^。]*`cloudbase:verify`/,
   );
   assert.doesNotMatch(
     seedGuide,
-    /strava_route_previews[^。]*(?:尚未|仍未|并不|没有)[^。]*(?:bootstrap|管理)/,
+    /route_previews[^。]*(?:尚未|仍未|并不|没有)[^。]*(?:bootstrap|管理)/,
   );
 }
 
@@ -702,7 +693,7 @@ test('文档契约测试拒绝已关闭缺口的同义否定表述', () => {
   assert.throws(() =>
     assertClosedDocumentationGaps({
       readme,
-      requirements: `${requirements}\n\`strava_route_previews\` 目前仍未纳入 bootstrap，需手工创建。`,
+      requirements: `${requirements}\n\`route_previews\` 目前仍未纳入 bootstrap，需手工创建。`,
       seedGuide,
     }),
   );
@@ -711,18 +702,19 @@ test('文档契约测试拒绝已关闭缺口的同义否定表述', () => {
       readme,
       requirements,
       seedGuide: seedGuide.replace(
-        '`strava_route_previews` 已由 bootstrap 与其他服务端可信集合一并管理，并纳入',
-        '`strava_route_previews` 目前 bootstrap 并不管理，应手工创建；未来纳入',
+        '`route_previews` 已由 bootstrap 与其他服务端可信集合一并管理，并纳入',
+        '`route_previews` 目前 bootstrap 并不管理，应手工创建；未来纳入',
       ),
     }),
   );
 });
 
-test('媒体滚动部署先发布 fail-closed admin-review 再发布 canonical profile', () => {
+test('部署顺序保留媒体 fail-closed 边界并包含 route-web', () => {
   const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
   const sequence = readme.match(/再依次部署 ([^。]+)。/)?.[1] || '';
   const order = [...sequence.matchAll(/`([^`]+)`/g)].map((match) => match[1]);
   assert.deepEqual(order.slice(0, 3), ['auth', 'profile-media-cleanup', 'admin-review']);
   assert.ok(order.indexOf('admin-review') < order.indexOf('profile'));
-  assert.match(readme, /旧 `admin-review`[^。]*source[^。]*禁止进入 `profile` 部署/);
+  assert.ok(order.includes('route-web'));
+  assert.doesNotMatch(readme, /`strava-auth`|`strava-callback`/);
 });

@@ -7,7 +7,7 @@ const MIME_EXTENSIONS = {
   'image/png': 'png',
   'image/webp': 'webp',
 };
-const AVATAR_SOURCES = new Set(['wechat', 'strava', 'custom']);
+const AVATAR_SOURCES = new Set(['wechat', 'custom']);
 const MAX_PROFILE_IMAGE_BYTES = 5 * 1024 * 1024;
 
 function mediaDocumentId(fileId) {

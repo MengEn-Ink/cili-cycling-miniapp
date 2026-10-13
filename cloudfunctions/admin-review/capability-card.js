@@ -23,24 +23,6 @@ const ADMIN_PROFILE_FIELDS = [
   'phone_source',
   'phone_verified',
 ];
-const ADMIN_STRAVA_FIELDS = [
-  'lifetime_rides',
-  'lifetime_distance_km',
-  'lifetime_moving_hours',
-  'lifetime_elevation_m',
-  'years_on_strava',
-  'total_km',
-  'activities_90d',
-  'longest_km',
-  'total_elevation_m',
-  'weighted_avg_speed_kmh',
-  'latest_activity_at',
-  'synced_at',
-  'coverage_from',
-  'coverage_to',
-  'coverage_complete',
-];
-const SOCIAL_STRAVA_FIELDS = ['total_km', 'activities_90d', 'longest_km'];
 
 function decryptPhone(cipher, keyValue) {
   let key;
@@ -294,13 +276,6 @@ function adminCapabilityView(registration, profile, resolvedMedia, piiKey) {
     safe.options.gathering_mode = gatheringMode;
   }
   safe.profile_snapshot = pick(registration && registration.profile_snapshot, ADMIN_PROFILE_FIELDS);
-  safe.strava_status = registration && registration.strava_status;
-  if (registration && registration.strava_snapshot) {
-    safe.strava_snapshot = pick(registration.strava_snapshot, ADMIN_STRAVA_FIELDS);
-  }
-  if (registration && registration.exemption) {
-    safe.exemption = pick(registration.exemption, ['reason', 'at']);
-  }
   safe.review_history = Array.isArray(registration && registration.review_history)
     ? registration.review_history.map((item) => pick(item, ['reviewed_at', 'action', 'comment']))
     : [];
@@ -363,7 +338,6 @@ function socialCapabilityView(profile, resolvedMedia) {
     nickname: typeof value.nickname === 'string' ? value.nickname : '',
     gender: normalizeGender(value.gender),
     photos,
-    strava: pick(value.strava, SOCIAL_STRAVA_FIELDS),
   };
 }
 

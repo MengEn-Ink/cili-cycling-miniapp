@@ -79,31 +79,12 @@ const registration = {
   serial_no: 'RE-001',
   updated_at: new Date('2026-09-28T12:00:00.000Z'),
 };
-const readinessDto = {
-  state: 'ready',
-  can_register: true,
-  avatar_available: true,
-  athlete_name: 'Rider',
-  snapshot: {
-    total_km: 1200,
-    activities_90d: 32,
-    longest_km: null,
-    total_elevation_m: 9000,
-    weighted_avg_speed_kmh: 27.4,
-    latest_activity_at: null,
-    synced_at: '2026-09-29T04:00:00.000Z',
-    coverage_from: '2026-07-01T04:00:00.000Z',
-    coverage_to: '2026-09-29T04:00:00.000Z',
-    coverage_complete: false,
-  },
-  error: null,
-};
 const personalCapabilityCardDto = {
-  state: 'partial',
   generated_at: '2026-09-29T04:10:00.000Z',
   profile: {
     display_name: '山野骑手',
     gender: '女',
+    avatar_url: '',
   },
   backgrounds: [
     {
@@ -117,19 +98,6 @@ const personalCapabilityCardDto = {
       category: 'bike',
     },
   ],
-  summary: {
-    total_km_90d: 812.5,
-    rides_90d: 28,
-    longest_km: null,
-    elevation_m_90d: 9300,
-    weighted_avg_speed_kmh: 25.6,
-  },
-  coverage: {
-    from: '2026-07-01T04:00:00.000Z',
-    to: '2026-09-29T04:00:00.000Z',
-    complete: false,
-  },
-  synced_at: '2026-09-29T04:05:00.000Z',
 };
 
 function expectCall(callFunction: ReturnType<typeof vi.fn>, name: string, data: unknown) {
@@ -375,11 +343,10 @@ describe('CloudRepository 活动时间线分页适配', () => {
 });
 
 describe('CloudRepository 个人骑行名片适配', () => {
-  it('只调用 profile/capabilityCard 并映射固定 DTO', async () => {
+  it('只调用 profile/capabilityCard 并映射资料与照片 DTO', async () => {
     const { cloud, callFunction } = cloudWith(success(personalCapabilityCardDto));
 
     await expect(new CloudRepository(cloud).getPersonalCapabilityCard()).resolves.toEqual({
-      state: 'partial',
       generatedAt: '2026-09-29T04:10:00.000Z',
       profile: {
         displayName: '山野骑手',
@@ -398,107 +365,24 @@ describe('CloudRepository 个人骑行名片适配', () => {
           category: 'bike',
         },
       ],
-      summary: {
-        totalKm90d: 812.5,
-        rides90d: 28,
-        longestKm: null,
-        elevationM90d: 9300,
-        weightedAvgSpeedKmh: 25.6,
-      },
-      coverage: {
-        from: '2026-07-01T04:00:00.000Z',
-        to: '2026-09-29T04:00:00.000Z',
-        complete: false,
-      },
-      syncedAt: '2026-09-29T04:05:00.000Z',
-      needsStravaReauth: false,
     });
     expectCall(callFunction, 'profile', { action: 'capabilityCard' });
   });
 
-  it('映射累计骑行指标与 Strava 主页地址', async () => {
-    const { cloud } = cloudWith(
-      success({
+  it('拒绝额外账号字段、非 HTTPS 背景和非法生成时间', async () => {
+    for (const dto of [
+      { ...personalCapabilityCardDto, summary: { rides_90d: 12 } },
+      {
         ...personalCapabilityCardDto,
-        summary: {
-          ...personalCapabilityCardDto.summary,
-          lifetime_rides: 486,
-          lifetime_distance_km: 18240.7,
-          lifetime_moving_hours: 734.5,
-          lifetime_elevation_m: 215400,
-        },
-        strava_profile_url: 'https://www.strava.com/athletes/42',
-      }),
-    );
-
-    const card = await new CloudRepository(cloud).getPersonalCapabilityCard();
-    expect(card.summary).toMatchObject({
-      lifetimeRides: 486,
-      lifetimeDistanceKm: 18240.7,
-      lifetimeMovingHours: 734.5,
-      lifetimeElevationM: 215400,
-    });
-    expect(card.stravaProfileUrl).toBe('https://www.strava.com/athletes/42');
-  });
-
-  it('映射头像 URL 与重授权标记', async () => {
-    const { cloud } = cloudWith(
-      success({
-        ...personalCapabilityCardDto,
-        profile: { ...personalCapabilityCardDto.profile, avatar_url: 'https://strava.com/a.jpg' },
-        needs_strava_reauth: true,
-      }),
-    );
-    const card = await new CloudRepository(cloud).getPersonalCapabilityCard();
-    expect(card.profile.avatarUrl).toBe('https://strava.com/a.jpg');
-    expect(card.needsStravaReauth).toBe(true);
-  });
-
-  it.each(['cloud://raw-photo', 'http://temporary.example/insecure.jpg'])(
-    '拒绝非 HTTPS 名片背景 %s',
-    async (url) => {
-      const { cloud } = cloudWith(
-        success({
-          ...personalCapabilityCardDto,
-          backgrounds: [{ ...personalCapabilityCardDto.backgrounds[0], url }],
-        }),
-      );
+        backgrounds: [
+          { ...personalCapabilityCardDto.backgrounds[0], url: 'http://example.test/ride.jpg' },
+        ],
+      },
+      { ...personalCapabilityCardDto, generated_at: 'not-a-date' },
+    ]) {
+      const { cloud } = cloudWith(success(dto));
       await expectCode(new CloudRepository(cloud).getPersonalCapabilityCard(), 'INVALID_RESPONSE');
-    },
-  );
-
-  it.each(['812.5', Number.POSITIVE_INFINITY])(
-    '拒绝非 nullable finite number 指标 %#',
-    async (totalKm90d) => {
-      const { cloud } = cloudWith(
-        success({
-          ...personalCapabilityCardDto,
-          summary: { ...personalCapabilityCardDto.summary, total_km_90d: totalKm90d },
-        }),
-      );
-      await expectCode(new CloudRepository(cloud).getPersonalCapabilityCard(), 'INVALID_RESPONSE');
-    },
-  );
-
-  it('映射 Strava 注册时间', async () => {
-    const { cloud } = cloudWith(
-      success({
-        ...personalCapabilityCardDto,
-        strava_joined_at: '2019-05-18T09:30:00.000Z',
-      }),
-    );
-    const card = await new CloudRepository(cloud).getPersonalCapabilityCard();
-    expect(card.stravaJoinedAt).toBe('2019-05-18T09:30:00.000Z');
-  });
-
-  it('拒绝非法 Strava 注册时间', async () => {
-    const { cloud } = cloudWith(
-      success({
-        ...personalCapabilityCardDto,
-        strava_joined_at: 'not-a-date',
-      }),
-    );
-    await expectCode(new CloudRepository(cloud).getPersonalCapabilityCard(), 'INVALID_RESPONSE');
+    }
   });
 });
 
@@ -599,28 +483,9 @@ describe('CloudRepository 队员报名适配', () => {
         realName: '曹*',
         phone: '13812345678',
       },
-      strava: {
-        status: 'connected',
-        years: 4,
-        lifetimeRides: 486,
-        lifetimeDistanceKm: 18240.7,
-        lifetimeMovingHours: 734.5,
-        lifetimeElevationM: 215400,
-        totalKm: 1200,
-        rides90d: 32,
-        longestKm: 168,
-        elevationM: 1850,
-        speedKmh: 27.4,
-        latestActivityAt: null,
-        syncedAt: '2026-09-29T04:00:00.000Z',
-        coverage: {
-          from: '2026-07-01T04:00:00.000Z',
-          to: '2026-09-29T04:00:00.000Z',
-          complete: true,
-        },
-      },
       updatedAt: '2026-09-28T12:00:00.000Z',
     });
+    expect(detail).not.toHaveProperty('strava');
   });
 
   it('提交只发送白名单字段，运行时脏对象不能透传可信字段', async () => {
@@ -743,18 +608,12 @@ describe('CloudRepository 队员报名适配', () => {
     expectCall(callFunction, 'registration', { action: 'delete', registrationId: 'r1' });
   });
 
-  it('管理员报名详情映射完整手机号和累计骑行指标', async () => {
+  it('管理员报名详情映射完整手机号并忽略历史第三方指标', async () => {
     const { cloud } = cloudWith(success(registration));
 
-    await expect(new CloudRepository(cloud).getReviewRegistration('r1')).resolves.toMatchObject({
-      profile: { phone: '13812345678' },
-      strava: {
-        lifetimeRides: 486,
-        lifetimeDistanceKm: 18240.7,
-        lifetimeMovingHours: 734.5,
-        lifetimeElevationM: 215400,
-      },
-    });
+    const result = await new CloudRepository(cloud).getReviewRegistration('r1');
+    expect(result).toMatchObject({ profile: { phone: '13812345678' } });
+    expect(result).not.toHaveProperty('strava');
   });
 
   it('将 self_drive 集合方式映射为自行前往', async () => {
@@ -797,7 +656,7 @@ describe('CloudRepository 队员报名适配', () => {
     });
   });
 
-  it('报名 DTO 缺少可选对象时使用空值，并映射 exempted', async () => {
+  it('报名 DTO 缺少可选对象时使用空值并忽略历史账号字段', async () => {
     const edge = {
       _id: 'r2',
       activity_id: 'a2',
@@ -817,37 +676,9 @@ describe('CloudRepository 队员报名适配', () => {
       remark: '',
       reviewComment: undefined,
       profile: { nickname: '', realName: '', phone: '' },
-      strava: {
-        status: 'exempted',
-        reason: '人工核验',
-        years: null,
-        totalKm: null,
-        rides90d: null,
-        longestKm: null,
-        elevationM: null,
-        speedKmh: null,
-        latestActivityAt: null,
-        syncedAt: '',
-        coverage: null,
-      },
       updatedAt: '刚刚',
     });
-  });
-
-  it.each([
-    ['缺失', {}],
-    ['非有限值', { years_on_strava: Number.POSITIVE_INFINITY }],
-  ])('报名 DTO 的 Strava 年限%s时保留为 null', async (_label, stravaSnapshot) => {
-    const { cloud } = cloudWith(
-      success({
-        ...registration,
-        strava_snapshot: stravaSnapshot,
-      }),
-    );
-
-    await expect(new CloudRepository(cloud).getRegistration('r1')).resolves.toMatchObject({
-      strava: { years: null },
-    });
+    expect(result).not.toHaveProperty('strava');
   });
 });
 
@@ -1181,25 +1012,6 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     expect(callFunction).not.toHaveBeenCalled();
   });
 
-  it('Strava 头像导入只发送专用命令且不接受 URL 参数', async () => {
-    const dto = {
-      nickname: '骑手',
-      completeness: 25,
-      avatar_file_id: 'cloud://env/profiles/owner/strava.jpg',
-      avatar_source: 'strava',
-      avatar_revision: 4,
-    };
-    const { cloud, callFunction } = cloudWith(success(dto));
-
-    await expect(new CloudRepository(cloud).importStravaAvatar()).resolves.toMatchObject({
-      nickname: '骑手',
-      avatarId: dto.avatar_file_id,
-      avatarSource: 'strava',
-      avatarRevision: 4,
-    });
-    expectCall(callFunction, 'profile', { action: 'importStravaAvatar' });
-  });
-
   it('删除失败后可上报 orphan 且不发送客户端身份', async () => {
     const { cloud, callFunction } = cloudWith(success({ reported: true }));
     await expect(
@@ -1223,7 +1035,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
         completeness: 100,
         title: '领队',
         avatar_file_id: 'cloud://avatar',
-        avatar_source: 'strava',
+        avatar_source: 'custom',
         avatar_revision: 7,
         owner_openid: 'must-not-leak',
         origin: 'must-not-leak',
@@ -1251,7 +1063,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     expect(mapped).toMatchObject({
       title: '领队',
       avatarId: 'cloud://avatar',
-      avatarSource: 'strava',
+      avatarSource: 'custom',
       avatarRevision: 7,
       gender: '男',
       emergencyName: '紧急联系人',
@@ -1276,6 +1088,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
   it.each([
     { avatar_file_id: 'cloud://avatar' },
     { avatar_file_id: '', avatar_source: 'wechat' },
+    { avatar_file_id: 'cloud://avatar', avatar_source: 'strava' },
     { avatar_file_id: 'cloud://avatar', avatar_source: 'forged' },
   ])('拒绝不一致或非法头像 DTO %#', async (avatar) => {
     const { cloud } = cloudWith(success({ nickname: '骑手', completeness: 25, ...avatar }));
@@ -1297,157 +1110,6 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     expect(profile.avatarId).toBe('');
     expect(profile).not.toHaveProperty('avatarSource');
     expect(profile.avatarRevision).toBe(0);
-  });
-
-  it('Strava 状态、授权、同步与解绑均调用真实云函数', async () => {
-    const status = {
-      connected: true,
-      athlete_name: 'Test Rider',
-      snapshot: {
-        total_km: 42,
-        activities_90d: 2,
-        longest_km: 30,
-        total_elevation_m: 500,
-        weighted_avg_speed_kmh: 24,
-        latest_activity_at: '2026-09-01',
-        synced_at: '2026-09-02',
-      },
-    };
-    const { cloud, callFunction } = cloudWith(
-      success(status),
-      success({
-        authorization_url: 'https://www.strava.com/oauth/authorize?state=x',
-        expires_at: '2026-09-01',
-      }),
-      success(status),
-      success({ connected: false }),
-    );
-    const repository = new CloudRepository(cloud);
-    expect((await repository.getStravaStatus()).snapshot?.totalKm).toBe(42);
-    expect((await repository.startStrava()).authorizationUrl).toContain('https://');
-    expect((await repository.syncStrava()).state).toBe('ready');
-    await repository.disconnectStrava();
-    expect(callFunction.mock.calls.map((x) => x[0])).toEqual([
-      { name: 'strava-auth', data: { action: 'status' } },
-      { name: 'strava-auth', data: { action: 'start' } },
-      { name: 'strava-auth', data: { action: 'sync' } },
-      { name: 'strava-auth', data: { action: 'disconnect' } },
-    ]);
-  });
-
-  it('兼容滚动部署期间的旧版 Strava connected 响应', async () => {
-    const legacyConnected = {
-      connected: true,
-      athlete_name: 'Legacy Rider',
-      snapshot: {
-        total_km: 42,
-        activities_90d: 2,
-        longest_km: 30,
-        total_elevation_m: 500,
-        weighted_avg_speed_kmh: 24,
-        latest_activity_at: '2026-09-28T04:00:00.000Z',
-        synced_at: '2026-09-29T04:00:00.000Z',
-      },
-    };
-    const { cloud } = cloudWith(success(legacyConnected), success({ connected: false }));
-    const repository = new CloudRepository(cloud);
-
-    await expect(repository.getStravaReadiness()).resolves.toMatchObject({
-      state: 'ready',
-      canRegister: true,
-      athleteName: 'Legacy Rider',
-    });
-    await expect(repository.getStravaReadiness()).resolves.toEqual({
-      state: 'disconnected',
-      canRegister: false,
-      avatarAvailable: false,
-      athleteName: null,
-      snapshot: null,
-      error: null,
-    });
-  });
-
-  it('旧连接接口兼容新版 readiness 响应', async () => {
-    const { cloud } = cloudWith(success(readinessDto), success(readinessDto));
-    const repository = new CloudRepository(cloud);
-
-    await expect(repository.getStravaStatus()).resolves.toMatchObject({
-      connected: true,
-      athleteName: 'Rider',
-    });
-    await expect(repository.syncStrava()).resolves.toMatchObject({ state: 'ready' });
-  });
-
-  it('映射 Strava readiness，保留 null 指标与覆盖范围', async () => {
-    const { cloud, callFunction } = cloudWith(success(readinessDto), success(readinessDto));
-    const repository = new CloudRepository(cloud);
-
-    await expect(repository.getStravaReadiness()).resolves.toEqual({
-      state: 'ready',
-      canRegister: true,
-      avatarAvailable: true,
-      athleteName: 'Rider',
-      snapshot: {
-        totalKm: 1200,
-        rides90d: 32,
-        longestKm: null,
-        elevationM: 9000,
-        speedKmh: 27.4,
-        latestActivityAt: null,
-        syncedAt: '2026-09-29T04:00:00.000Z',
-        coverage: {
-          from: '2026-07-01T04:00:00.000Z',
-          to: '2026-09-29T04:00:00.000Z',
-          complete: false,
-        },
-      },
-      error: null,
-    });
-    await expect(repository.ensureStravaReady()).resolves.toMatchObject({ state: 'ready' });
-    expect(callFunction.mock.calls.map((call) => call[0])).toEqual([
-      { name: 'strava-auth', data: { action: 'status' } },
-      { name: 'strava-auth', data: { action: 'ensureReady' } },
-    ]);
-  });
-
-  it('取消浏览器授权只发送 cancelAuthorization action', async () => {
-    const { cloud, callFunction } = cloudWith(success({ cancelled: 1 }));
-
-    await new CloudRepository(cloud).cancelStravaAuthorization();
-
-    expectCall(callFunction, 'strava-auth', { action: 'cancelAuthorization' });
-  });
-
-  it('映射失败的 Strava readiness，保留可重试错误且不伪造快照', async () => {
-    const { cloud } = cloudWith(
-      success({
-        state: 'failed',
-        can_register: false,
-        avatar_available: false,
-        athlete_name: null,
-        snapshot: null,
-        error: {
-          code: 'STRAVA_API_FAILED',
-          message: 'Strava 暂时不可用',
-          retryable: true,
-          recovery_action: 'retry',
-        },
-      }),
-    );
-
-    await expect(new CloudRepository(cloud).getStravaReadiness()).resolves.toEqual({
-      state: 'failed',
-      canRegister: false,
-      avatarAvailable: false,
-      athleteName: null,
-      snapshot: null,
-      error: {
-        code: 'STRAVA_API_FAILED',
-        message: 'Strava 暂时不可用',
-        retryable: true,
-        recoveryAction: 'retry',
-      },
-    });
   });
 
   it('透明聚合 50+50+1 三页报名并传递不透明 cursor', async () => {
@@ -1518,86 +1180,6 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
 
     await expectCode(new CloudRepository(cloud).listRegistrations(), 'INVALID_RESPONSE');
     expect(callFunction).toHaveBeenCalledTimes(200);
-  });
-
-  it('readiness 快照存在最近活动时保留严格校验后的时间', async () => {
-    const { cloud } = cloudWith(
-      success({
-        ...readinessDto,
-        snapshot: {
-          ...readinessDto.snapshot,
-          latest_activity_at: '2026-09-28T04:00:00.000Z',
-        },
-      }),
-    );
-
-    await expect(new CloudRepository(cloud).getStravaReadiness()).resolves.toMatchObject({
-      snapshot: { latestActivityAt: '2026-09-28T04:00:00.000Z' },
-    });
-  });
-
-  it('拒绝非字符串的 readiness 运动员名称', async () => {
-    const { cloud } = cloudWith(success({ ...readinessDto, athlete_name: 42 }));
-
-    await expectCode(new CloudRepository(cloud).getStravaReadiness(), 'INVALID_RESPONSE');
-  });
-
-  it('readiness 的旧快照缺少覆盖范围时映射为 null', async () => {
-    const snapshot = { ...readinessDto.snapshot } as Record<string, unknown>;
-    delete snapshot.coverage_from;
-    delete snapshot.coverage_to;
-    delete snapshot.coverage_complete;
-    const { cloud } = cloudWith(success({ ...readinessDto, snapshot }));
-
-    await expect(new CloudRepository(cloud).getStravaReadiness()).resolves.toMatchObject({
-      snapshot: { coverage: null },
-    });
-  });
-
-  it.each([
-    { ...readinessDto, state: 'complete' },
-    {
-      ...readinessDto,
-      snapshot: { ...readinessDto.snapshot, total_km: Number.POSITIVE_INFINITY },
-    },
-    {
-      ...readinessDto,
-      error: { code: 'STRAVA_API_FAILED', message: '失败', retryable: 'yes' },
-    },
-  ])('拒绝异常 readiness 状态、指标或错误对象 %#', async (dto) => {
-    const { cloud } = cloudWith(success(dto));
-    await expectCode(new CloudRepository(cloud).getStravaReadiness(), 'INVALID_RESPONSE');
-  });
-
-  it('拒绝字段不完整的 readiness 覆盖范围', async () => {
-    const { cloud } = cloudWith(
-      success({
-        ...readinessDto,
-        snapshot: { ...readinessDto.snapshot, coverage_to: undefined },
-      }),
-    );
-    await expectCode(new CloudRepository(cloud).getStravaReadiness(), 'INVALID_RESPONSE');
-  });
-
-  it('拒绝不可解析的 readiness 时间字段', async () => {
-    const { cloud } = cloudWith(
-      success({
-        ...readinessDto,
-        snapshot: { ...readinessDto.snapshot, coverage_from: 'not-a-date' },
-      }),
-    );
-    await expectCode(new CloudRepository(cloud).getStravaReadiness(), 'INVALID_RESPONSE');
-  });
-
-  it('拒绝无效 Profile/Strava DTO 与动态 code', async () => {
-    const first = cloudWith(success({ nickname: 'x' }));
-    await expectCode(new CloudRepository(first.cloud).getProfile(), 'INVALID_RESPONSE');
-    const second = cloudWith(success({ connected: 'yes' }));
-    await expectCode(new CloudRepository(second.cloud).getStravaStatus(), 'INVALID_RESPONSE');
-    const third = cloudWith();
-    await expectCode(new CloudRepository(third.cloud).getPhoneNumber(''), 'VALIDATION_FAILED');
-    const fourth = cloudWith(success({ authorization_url: 'javascript:bad', expires_at: 'x' }));
-    await expectCode(new CloudRepository(fourth.cloud).startStrava(), 'INVALID_RESPONSE');
   });
 
   it('CloudRepositoryError 保持稳定名称', () => {
@@ -1997,27 +1579,6 @@ describe('MockRepository readiness 与显式报名命令', () => {
     expect(result).not.toHaveProperty('internalOnly');
   });
 
-  it('ensureStravaReady 从 disconnected 收敛到确定的 ready 快照', async () => {
-    installStorage();
-    const repository = new MockRepository();
-    await repository.disconnectStrava();
-
-    await expect(repository.getStravaReadiness()).resolves.toMatchObject({
-      state: 'disconnected',
-      canRegister: false,
-      snapshot: null,
-    });
-    await expect(repository.ensureStravaReady()).resolves.toMatchObject({
-      state: 'ready',
-      canRegister: true,
-      athleteName: 'Mock Rider',
-      snapshot: {
-        longestKm: 168,
-        coverage: { complete: true },
-      },
-    });
-  });
-
   it('显式取消与审批命令复用确定的状态迁移', async () => {
     installStorage();
     const repository = new MockRepository();
@@ -2058,13 +1619,9 @@ describe('MockRepository readiness 与显式报名命令', () => {
   it('提供确定的自用骑行名片响应', async () => {
     installStorage();
     await expect(new MockRepository().getPersonalCapabilityCard()).resolves.toMatchObject({
-      state: 'ready',
       profile: { displayName: expect.any(String) },
       backgrounds: expect.any(Array),
-      summary: {
-        totalKm90d: expect.any(Number),
-        rides90d: expect.any(Number),
-      },
+      generatedAt: expect.any(String),
     });
   });
 
@@ -2105,22 +1662,6 @@ describe('MockRepository readiness 与显式报名命令', () => {
     expect(first).not.toHaveProperty('selfDriveCapacity');
     expect(first).not.toHaveProperty('supportVehicleDriver');
     expect(repository.read().activities).toHaveLength(2);
-  });
-
-  it('与云仓储保持 importStravaAvatar parity', async () => {
-    installStorage();
-    const repository = new MockRepository();
-    stored = JSON.parse(JSON.stringify(repository.read()));
-    delete (stored as any).profile.avatarRevision;
-
-    const imported = await repository.importStravaAvatar();
-    const card = await repository.getPersonalCapabilityCard();
-
-    expect(imported).toMatchObject({ avatarSource: 'strava' });
-    expect(imported.avatarId).toMatch(/^cloud:\/\/mock\//);
-    expect(imported.avatarRevision).toBe(1);
-    await expect(repository.importStravaAvatar()).resolves.toMatchObject({ avatarRevision: 2 });
-    expect(card.profile.avatarUrl).toMatch(/^https:\/\//);
   });
 });
 
@@ -2446,7 +1987,7 @@ describe('CloudRepository 活动后援车字段映射', () => {
 });
 
 describe('CloudRepository 活动详情路线与公开成员', () => {
-  it('映射 camelCase 路线体验和严格公开成员卡', async () => {
+  it('兼容历史官方路线字段并忽略旧预览指标和成员账号卡', async () => {
     const { cloud } = cloudWith(
       success({
         ...activity,
@@ -2493,13 +2034,13 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
       stravaRouteId: '123',
       stravaRouteUrl: 'https://www.strava.com/routes/123',
       routeName: '周末环湖',
-      previewImageUrl: 'https://images.example/route.jpg',
       elevationProfile: [
         { distanceKm: 0, elevationM: 20 },
         { distanceKm: 5, elevationM: 80 },
       ],
-      popularClimbs: [expect.objectContaining({ name: '南山', popularityLabel: '18 人骑过' })],
     });
+    expect(result.route).not.toHaveProperty('previewImageUrl');
+    expect(result.route).not.toHaveProperty('popularClimbs');
     expect(result.attendees).toEqual([
       {
         id: 'r1',
@@ -2507,29 +2048,9 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
         gender: '男',
         avatarUrl: 'https://temp.example/avatar.jpg',
         status: 'approved',
-        card: { rides90d: 20, longestKm: 120, elevationM: 8000, speedKmh: 26.5 },
       },
     ]);
     expect(JSON.stringify(result.attendees)).not.toMatch(/openid|phone|138/);
-  });
-
-  it('exportActivityGpx 根据活动路线调用 strava-auth routeGpx 并映射文件名', async () => {
-    const { cloud, callFunction } = cloudWith(
-      success({
-        ...activity,
-        route: { ...activity.route, strava_route_id: '123' },
-      }),
-      success({ base64: 'eA==', filename: 'route.gpx', content_type: 'application/gpx+xml' }),
-    );
-    await expect(new CloudRepository(cloud).exportActivityGpx('a1')).resolves.toEqual({
-      base64: 'eA==',
-      fileName: 'route.gpx',
-    });
-    expectCall(callFunction, 'strava-auth', {
-      action: 'routeGpx',
-      activityId: 'a1',
-      routeId: '123',
-    });
   });
 
   it('公开成员只保留白名单、限制 24 人并收敛非法值', async () => {
@@ -2562,18 +2083,16 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
       gender: '',
       avatarUrl: '',
       status: 'checked_in',
-      card: { rides90d: null, longestKm: null, elevationM: null, speedKmh: null },
     });
     expect(result.attendees[1]).toMatchObject({
       gender: '女',
       status: 'approved',
-      card: { rides90d: null, longestKm: null, elevationM: null, speedKmh: 0 },
     });
     expect(result.attendees[2]).toMatchObject({ gender: '' });
     expect(JSON.stringify(result.attendees)).not.toContain('secret');
   });
 
-  it('路线扩展字段过滤非法点、限制列表并忽略不安全 URL 与 bounds', async () => {
+  it('路线扩展字段过滤非法点并忽略旧预览字段、不安全 URL 与 bounds', async () => {
     const points = Array.from({ length: 81 }, (_, index) => ({
       distance_km: index,
       elevation_m: index + 10,
@@ -2611,243 +2130,231 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
     expect(result.route).not.toHaveProperty('stravaRouteUrl');
     expect(result.route).not.toHaveProperty('routeBounds');
     expect(result.route.elevationProfile).toHaveLength(80);
-    expect(result.route.popularClimbs).toHaveLength(3);
-    expect(result.route.popularClimbs[0]).toEqual({
-      id: '',
-      name: '',
-      distanceKm: 0,
-      elevationGainM: 0,
-      averageGrade: 0,
-      maxGrade: 0,
-      climbCategory: 0,
-      popularity: 0,
-      popularityLabel: '',
-    });
+    expect(result.route).not.toHaveProperty('popularClimbs');
   });
+});
 
-  it('previewPublicStravaRoute 免授权识别公开路线摘要并严格映射', async () => {
-    const preview = {
-      strava_route_id: '123',
-      strava_route_url: 'https://www.strava.com/routes/123',
-      route_name: '周末环湖',
-      preview_image_url: 'https://dgtzuqphqg23d.cloudfront.net/route.png',
-      distance_km: 12.5,
-      elevation_m: 430,
-      estimated_moving_time_seconds: 7200,
-      elevation_profile: [
-        { distance_km: 0, elevation_m: 20 },
-        { distance_km: 12.5, elevation_m: 80 },
-      ],
-      route_bounds: { south: 22, west: 113, north: 23, east: 114 },
-      popular_climbs: [],
-      strava_gpx_available: false,
-    };
-    const { cloud, callFunction } = cloudWith(success(preview));
+describe('CloudRepository GPX 路线契约', () => {
+  const previewDto = {
+    preview_id: 'a'.repeat(64),
+    gpx_file_id: `cloud://env/activity-routes/owner/${'b'.repeat(64)}.gpx`,
+    gpx_sha256: 'b'.repeat(64),
+    generated_preview_file_id: `cloud://env/activity-routes/owner/${'b'.repeat(64)}.png`,
+    route_name: '周末环湖',
+    distance_km: 52.4,
+    elevation_m: 680,
+    elevation_loss_m: 675,
+    elevation_min_m: 12,
+    elevation_max_m: 486,
+    estimated_moving_time_seconds: 10800,
+    estimation_source: 'cili',
+    elevation_profile: [
+      { distance_km: 0, elevation_m: 12 },
+      { distance_km: 52.4, elevation_m: 30 },
+    ],
+    route_outline: [
+      { latitude: 22, longitude: 114 },
+      { latitude: 22.2, longitude: 114.2 },
+    ],
+    route_bounds: { south: 22, west: 114, north: 22.2, east: 114.2 },
+    expires_at: '2026-10-13T09:30:00.000Z',
+  };
 
-    await expect(
-      new CloudRepository(cloud).previewPublicStravaRoute(
-        'https://www.strava.com/zh-cn/routes/123/',
-      ),
-    ).resolves.toEqual({
-      stravaRouteId: '123',
-      stravaRouteUrl: 'https://www.strava.com/routes/123',
-      routeName: '周末环湖',
-      previewImageUrl: 'https://dgtzuqphqg23d.cloudfront.net/route.png',
-      distanceKm: 12.5,
-      elevationM: 430,
-      estimatedMovingTimeSeconds: 7200,
-      elevationProfile: [
-        { distanceKm: 0, elevationM: 20 },
-        { distanceKm: 12.5, elevationM: 80 },
-      ],
-      routeBounds: { south: 22, west: 113, north: 23, east: 114 },
-      popularClimbs: [],
-      stravaGpxAvailable: false,
-    });
-    expectCall(callFunction, 'strava-auth', {
-      action: 'publicRoutePreview',
-      routeUrl: 'https://www.strava.com/zh-cn/routes/123/',
-    });
-  });
-
-  it('previewPublicStravaRoute 拒绝非法输入与伪造响应', async () => {
-    const repository = new CloudRepository(
-      cloudWith(
-        success({
-          strava_route_id: '123',
-          strava_route_url: 'https://evil.example/routes/123',
-          route_name: '伪造路线',
-        }),
-      ).cloud,
-    );
-    await expect(
-      repository.previewPublicStravaRoute('https://www.strava.com/routes/123?x=1'),
-    ).rejects.toMatchObject({ code: 'ROUTE_URL_INVALID' });
-    await expect(
-      repository.previewPublicStravaRoute('https://www.strava.com/routes/123'),
-    ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
-  });
-
-  it('previewStravaRoute 接受地区 URL 并严格映射完整预览', async () => {
-    const preview = {
-      strava_route_id: '123',
-      strava_route_url: 'https://www.strava.com/routes/123',
-      distance_km: 12.5,
-      elevation_m: 430,
-      estimated_moving_time_seconds: 7200,
-      elevation_profile: [
-        { distance_km: 0, elevation_m: 20 },
-        { distance_km: 12.5, elevation_m: 80 },
-      ],
-      route_bounds: { south: 22, west: 113, north: 23, east: 114 },
-      popular_climbs: [],
-    };
-    const { cloud, callFunction } = cloudWith(success(preview));
-    await expect(
-      new CloudRepository(cloud).previewStravaRoute('https://www.strava.com/zh-cn/routes/123/'),
-    ).resolves.toEqual({
-      stravaRouteId: '123',
-      stravaRouteUrl: 'https://www.strava.com/routes/123',
-      distanceKm: 12.5,
-      elevationM: 430,
-      estimatedMovingTimeSeconds: 7200,
-      elevationProfile: [
-        { distanceKm: 0, elevationM: 20 },
-        { distanceKm: 12.5, elevationM: 80 },
-      ],
-      routeBounds: { south: 22, west: 113, north: 23, east: 114 },
-      popularClimbs: [],
-    });
-    expectCall(callFunction, 'strava-auth', {
-      action: 'routePreview',
-      routeUrl: 'https://www.strava.com/zh-cn/routes/123/',
-    });
-  });
-
-  it('previewStravaRoute 拒绝非法输入和每类非法响应边界', async () => {
-    const valid = {
-      strava_route_id: '123',
-      strava_route_url: 'https://www.strava.com/routes/123',
-      distance_km: 10,
-      elevation_m: 100,
-      elevation_profile: [
-        { distance_km: 0, elevation_m: 1 },
-        { distance_km: 10, elevation_m: 2 },
-      ],
-      route_bounds: { south: 1, west: 2, north: 3, east: 4 },
-      popular_climbs: [],
-    };
-    const invalid = [
-      null,
-      { ...valid, strava_route_id: undefined },
-      { ...valid, strava_route_id: 'abc' },
-      { ...valid, strava_route_url: undefined },
-      { ...valid, strava_route_url: 'https://evil.example/routes/123' },
-      { ...valid, elevation_profile: undefined },
-      { ...valid, elevation_profile: [{ distance_km: 0, elevation_m: 1 }] },
-      {
-        ...valid,
-        elevation_profile: Array.from({ length: 81 }, () => ({
-          distance_km: 1,
-          elevation_m: 1,
-        })),
-      },
-      { ...valid, popular_climbs: undefined },
-      { ...valid, popular_climbs: Array.from({ length: 4 }, () => ({})) },
-      { ...valid, route_bounds: undefined },
-      { ...valid, route_bounds: { ...valid.route_bounds, south: Number.NaN } },
-      { ...valid, route_bounds: { ...valid.route_bounds, south: -91 } },
-      { ...valid, route_bounds: { ...valid.route_bounds, north: 91 } },
-      { ...valid, route_bounds: { ...valid.route_bounds, west: -181 } },
-      { ...valid, route_bounds: { ...valid.route_bounds, east: 181 } },
-      { ...valid, route_bounds: { south: 4, west: 2, north: 3, east: 4 } },
-      { ...valid, route_bounds: { south: 1, west: 5, north: 3, east: 4 } },
-      { ...valid, distance_km: '10' },
-      { ...valid, distance_km: Number.NaN },
-      { ...valid, distance_km: -1 },
-      { ...valid, distance_km: 20001 },
-      { ...valid, elevation_m: '100' },
-      { ...valid, elevation_m: Number.NaN },
-      { ...valid, elevation_m: -1 },
-      { ...valid, elevation_m: 100001 },
-    ];
-    const { cloud, callFunction } = cloudWith(...invalid.map(success));
+  it('previewRouteGpx 调用 activity-admin 并严格映射可信预览', async () => {
+    const { cloud, callFunction } = cloudWith(success(previewDto));
     const repository = new CloudRepository(cloud);
-    for (const value of [
-      123 as any,
-      `https://www.strava.com/routes/${'1'.repeat(240)}`,
-      ' https://www.strava.com/routes/123',
-      'https://www.strava.com/routes/0',
-    ]) {
-      await expect(repository.previewStravaRoute(value)).rejects.toMatchObject({
-        code: 'ROUTE_URL_INVALID',
-      });
-    }
-    expect(callFunction).not.toHaveBeenCalled();
+
+    await expect(
+      repository.previewRouteGpx({
+        gpxFileId: previewDto.gpx_file_id,
+        gpxSha256: previewDto.gpx_sha256,
+        fileName: 'weekend.gpx',
+        requestId: 'route_request_123',
+      }),
+    ).resolves.toEqual({
+      previewId: previewDto.preview_id,
+      gpxFileId: previewDto.gpx_file_id,
+      gpxSha256: previewDto.gpx_sha256,
+      generatedPreviewFileId: previewDto.generated_preview_file_id,
+      routeName: '周末环湖',
+      distanceKm: 52.4,
+      elevationM: 680,
+      elevationLossM: 675,
+      elevationMinM: 12,
+      elevationMaxM: 486,
+      estimatedMovingTimeSeconds: 10800,
+      estimationSource: 'cili',
+      elevationProfile: [
+        { distanceKm: 0, elevationM: 12 },
+        { distanceKm: 52.4, elevationM: 30 },
+      ],
+      routeOutline: [
+        { latitude: 22, longitude: 114 },
+        { latitude: 22.2, longitude: 114.2 },
+      ],
+      routeBounds: { south: 22, west: 114, north: 22.2, east: 114.2 },
+      expiresAt: '2026-10-13T09:30:00.000Z',
+    });
+    expectCall(callFunction, 'activity-admin', {
+      action: 'previewRouteGpx',
+      gpxFileId: previewDto.gpx_file_id,
+      gpxSha256: previewDto.gpx_sha256,
+      fileName: 'weekend.gpx',
+      requestId: 'route_request_123',
+    });
+  });
+
+  it('bindRoutePreviewImage 绑定同摘要 PNG 并返回更新预览', async () => {
+    const { cloud, callFunction } = cloudWith(success(previewDto));
+    const repository = new CloudRepository(cloud);
+
+    await expect(
+      repository.bindRoutePreviewImage(previewDto.preview_id, previewDto.generated_preview_file_id),
+    ).resolves.toMatchObject({
+      previewId: previewDto.preview_id,
+      generatedPreviewFileId: previewDto.generated_preview_file_id,
+    });
+    expectCall(callFunction, 'activity-admin', {
+      action: 'bindRoutePreviewImage',
+      previewId: previewDto.preview_id,
+      generatedPreviewFileId: previewDto.generated_preview_file_id,
+    });
+  });
+
+  it('downloadRouteGpx 只调用 activity-read 并映射原始文件', async () => {
+    const { cloud, callFunction } = cloudWith(
+      success({
+        base64: 'PD94bWwgdmVyc2lvbj0iMS4wIj8+PGdweC8+',
+        filename: 'activity-a1.gpx',
+        content_type: 'application/gpx+xml',
+      }),
+    );
+    const repository = new CloudRepository(cloud);
+
+    await expect(repository.downloadRouteGpx('a1')).resolves.toEqual({
+      base64: 'PD94bWwgdmVyc2lvbj0iMS4wIj8+PGdweC8+',
+      fileName: 'activity-a1.gpx',
+    });
+    expectCall(callFunction, 'activity-read', {
+      action: 'downloadRouteGpx',
+      activityId: 'a1',
+    });
+  });
+
+  it('活动详情映射通用官方路线、GPX 指标、轮廓与生成图地址', async () => {
+    const { cloud } = cloudWith(
+      success({
+        ...activity,
+        route: {
+          ...activity.route,
+          external_provider: 'strava',
+          external_route_id: '42',
+          external_route_url: 'https://www.strava.com/routes/42',
+          gpx_preview_id: previewDto.preview_id,
+          gpx_file_id: previewDto.gpx_file_id,
+          gpx_sha256: previewDto.gpx_sha256,
+          generated_preview_file_id: previewDto.generated_preview_file_id,
+          generated_preview_url: 'https://temp.example/route.png',
+          route_name: previewDto.route_name,
+          elevation_loss_m: previewDto.elevation_loss_m,
+          elevation_min_m: previewDto.elevation_min_m,
+          elevation_max_m: previewDto.elevation_max_m,
+          estimated_moving_time_seconds: previewDto.estimated_moving_time_seconds,
+          estimation_source: 'cili',
+          elevation_profile: previewDto.elevation_profile,
+          route_outline: previewDto.route_outline,
+          route_bounds: previewDto.route_bounds,
+        },
+      }),
+    );
+
+    const result = await new CloudRepository(cloud).getActivity('a1');
+
+    expect(result?.route).toMatchObject({
+      externalProvider: 'strava',
+      externalRouteId: '42',
+      externalRouteUrl: 'https://www.strava.com/routes/42',
+      gpxPreviewId: previewDto.preview_id,
+      gpxFileId: previewDto.gpx_file_id,
+      gpxSha256: previewDto.gpx_sha256,
+      generatedPreviewFileId: previewDto.generated_preview_file_id,
+      generatedPreviewUrl: 'https://temp.example/route.png',
+      elevationLossM: 675,
+      elevationMinM: 12,
+      elevationMaxM: 486,
+      estimationSource: 'cili',
+      routeOutline: [
+        { latitude: 22, longitude: 114 },
+        { latitude: 22.2, longitude: 114.2 },
+      ],
+    });
+  });
+
+  it('保存活动时保留可信生成路线图作为封面', async () => {
+    const { cloud, callFunction } = cloudWith(success({ ...activity, status: 'draft' }));
+    const repository = new CloudRepository(cloud);
+
+    await repository.saveActivity({
+      title: '路线封面',
+      description: '',
+      status: 'draft',
+      images: ['cloud://env/profiles/photo.jpg'],
+      coverImage: previewDto.generated_preview_file_id,
+      route: {
+        start: '集合点',
+        end: '',
+        distanceKm: previewDto.distance_km,
+        elevationM: previewDto.elevation_m,
+        level: '',
+        gpxPreviewId: previewDto.preview_id,
+        gpxFileId: previewDto.gpx_file_id,
+        gpxSha256: previewDto.gpx_sha256,
+        generatedPreviewFileId: previewDto.generated_preview_file_id,
+        routeName: previewDto.route_name,
+        elevationLossM: previewDto.elevation_loss_m,
+        elevationMinM: previewDto.elevation_min_m,
+        elevationMaxM: previewDto.elevation_max_m,
+        estimatedMovingTimeSeconds: previewDto.estimated_moving_time_seconds,
+        estimationSource: 'cili',
+        elevationProfile: previewDto.elevation_profile.map((point) => ({
+          distanceKm: point.distance_km,
+          elevationM: point.elevation_m,
+        })),
+        routeOutline: previewDto.route_outline,
+        routeBounds: previewDto.route_bounds,
+      },
+      schedule: [],
+      notices: [],
+      equipment: [],
+      fee: '免费',
+    });
+
+    expect((callFunction.mock.calls[0][0].data as any).activity.cover_image).toBe(
+      previewDto.generated_preview_file_id,
+    );
+  });
+
+  it('拒绝伪造的 GPX 预览响应', async () => {
+    const invalid = [
+      { ...previewDto, preview_id: 'bad' },
+      { ...previewDto, gpx_sha256: 'bad' },
+      { ...previewDto, estimation_source: 'strava' },
+      { ...previewDto, elevation_profile: [{ distance_km: 0, elevation_m: 1 }] },
+      { ...previewDto, route_outline: [{ latitude: 22, longitude: 114 }] },
+      { ...previewDto, expires_at: 'not-a-date' },
+    ];
+    const repository = new CloudRepository(cloudWith(...invalid.map(success)).cloud);
+
     for (const value of invalid) {
       void value;
       await expect(
-        repository.previewStravaRoute('https://www.strava.com/routes/123'),
+        repository.previewRouteGpx({
+          gpxFileId: previewDto.gpx_file_id,
+          gpxSha256: previewDto.gpx_sha256,
+          fileName: 'weekend.gpx',
+          requestId: 'route_request_123',
+        }),
       ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
-    }
-  });
-
-  it('routeGpx 拒绝非法 ID、缺失路线和云函数错误', async () => {
-    const repository = new CloudRepository(cloudWith().cloud);
-    await expect(repository.getStravaRouteGpx('a1', 123 as any)).rejects.toMatchObject({
-      code: 'ROUTE_ID_INVALID',
-    });
-    await expect(repository.getStravaRouteGpx('a1', 'abc')).rejects.toMatchObject({
-      code: 'ROUTE_ID_INVALID',
-    });
-    await expect(repository.getStravaRouteGpx('bad/id', '123')).rejects.toMatchObject({
-      code: 'VALIDATION_FAILED',
-    });
-
-    const withoutRoute = new CloudRepository(cloudWith(success(activity)).cloud);
-    await expect(withoutRoute.exportActivityGpx('a1')).rejects.toMatchObject({
-      code: 'ROUTE_NOT_AVAILABLE',
-    });
-
-    const failed = new CloudRepository(
-      cloudWith(
-        success({ ...activity, route: { ...activity.route, strava_route_id: '123' } }),
-        new Error('network down'),
-      ).cloud,
-    );
-    await expect(failed.exportActivityGpx('a1')).rejects.toMatchObject({
-      code: 'CALL_FAILED',
-      message: '云函数调用失败',
-    });
-  });
-
-  it('routeGpx 严格拒绝非法 base64、文件名、大小和内容类型', async () => {
-    const maxBase64Length = Math.ceil((4 * 1024 * 1024) / 3) * 4;
-    const invalid = [
-      null,
-      { base64: 1, filename: 'route.gpx', content_type: 'application/gpx+xml' },
-      {
-        base64: 'A'.repeat(maxBase64Length + 1),
-        filename: 'route.gpx',
-        content_type: 'application/gpx+xml',
-      },
-      { base64: '***', filename: 'route.gpx', content_type: 'application/gpx+xml' },
-      { base64: 'eA==', filename: 1, content_type: 'application/gpx+xml' },
-      {
-        base64: 'eA==',
-        filename: `${'a'.repeat(157)}.gpx`,
-        content_type: 'application/gpx+xml',
-      },
-      { base64: 'eA==', filename: '../route.gpx', content_type: 'application/gpx+xml' },
-      { base64: 'eA==', filename: 'route.gpx', content_type: 'text/xml' },
-    ];
-    const { cloud } = cloudWith(...invalid.map(success));
-    const repository = new CloudRepository(cloud);
-    for (const value of invalid) {
-      void value;
-      await expect(repository.getStravaRouteGpx('a1', '123')).rejects.toMatchObject({
-        code: 'INVALID_RESPONSE',
-      });
     }
   });
 });

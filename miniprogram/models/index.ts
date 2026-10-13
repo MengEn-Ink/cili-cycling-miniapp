@@ -1,7 +1,6 @@
 export type Role = 'member' | 'admin';
 export type RegistrationStatus =
   'waiting' | 'pending' | 'approved' | 'checked_in' | 'rejected' | 'cancelled';
-export type StravaStatus = 'pending' | 'connected' | 'exempted' | 'syncing' | 'failed';
 export type ActivityRegistrationState = 'open' | 'closed';
 export type ActivityClosedReason = 'finished' | 'deadline' | 'full' | 'incomplete' | 'unavailable';
 export interface ActivityLocation {
@@ -20,37 +19,37 @@ export interface RouteBounds {
   north: number;
   east: number;
 }
-export interface PopularClimb {
-  id: string;
-  name: string;
-  distanceKm: number;
-  elevationGainM: number;
-  averageGrade: number;
-  maxGrade: number;
-  climbCategory: number;
-  popularity: number;
-  popularityLabel: string;
+export interface RouteCoordinate {
+  latitude: number;
+  longitude: number;
 }
-export interface StravaRoutePreview {
-  stravaRouteId: string;
-  stravaRouteUrl: string;
-  routeName?: string;
-  previewImageUrl?: string;
+export interface RouteGpxPreviewInput {
+  gpxFileId: string;
+  gpxSha256: string;
+  fileName: string;
+  requestId: string;
+}
+export interface RouteGpxPreview {
+  previewId: string;
+  gpxFileId: string;
+  gpxSha256: string;
+  generatedPreviewFileId?: string;
+  routeName: string;
   distanceKm: number;
   elevationM: number;
+  elevationLossM: number;
+  elevationMinM: number;
+  elevationMaxM: number;
   estimatedMovingTimeSeconds: number;
+  estimationSource: 'cili';
   elevationProfile: RouteElevationPoint[];
+  routeOutline: RouteCoordinate[];
   routeBounds: RouteBounds;
-  popularClimbs: PopularClimb[];
-  stravaGpxAvailable?: boolean;
+  expiresAt: string;
 }
-export interface PublicStravaRoutePreview extends StravaRoutePreview {
-  routeName: string;
-}
-export interface StravaRouteGpx {
+export interface RouteGpxDownload {
   base64: string;
-  filename: string;
-  contentType: 'application/gpx+xml';
+  fileName: string;
 }
 export interface ActivityAttendee {
   id: string;
@@ -58,12 +57,6 @@ export interface ActivityAttendee {
   gender: string;
   avatarUrl: string;
   status: 'approved' | 'checked_in';
-  card: {
-    rides90d: number | null;
-    longestKm: number | null;
-    elevationM: number | null;
-    speedKmh: number | null;
-  };
 }
 export interface ActivityPublisher {
   nickname: string;
@@ -106,14 +99,23 @@ export interface Activity {
     estimatedMovingTimeSeconds?: number;
     level: string;
     gpxFileId?: string;
+    gpxPreviewId?: string;
+    gpxSha256?: string;
+    generatedPreviewFileId?: string;
+    generatedPreviewUrl?: string;
+    elevationLossM?: number;
+    elevationMinM?: number;
+    elevationMaxM?: number;
+    estimationSource?: 'cili';
+    routeOutline?: RouteCoordinate[];
+    externalProvider?: 'strava';
+    externalRouteId?: string;
+    externalRouteUrl?: string;
     stravaRouteId?: string;
     stravaRouteUrl?: string;
     routeName?: string;
-    previewImageUrl?: string;
     elevationProfile?: RouteElevationPoint[];
     routeBounds?: RouteBounds;
-    popularClimbs?: PopularClimb[];
-    stravaGpxAvailable?: boolean;
   };
   schedule: { time: string; title: string; location: string; remark?: string }[];
   notices: string[];
@@ -129,9 +131,9 @@ export interface Activity {
   attendees?: ActivityAttendee[];
   publisher?: ActivityPublisher;
 }
-export type AvatarSource = 'wechat' | 'strava' | 'custom';
+export type AvatarSource = 'wechat' | 'custom';
 export type AvatarVisibility = 'public' | 'private';
-export type ClientAvatarSource = Exclude<AvatarSource, 'strava'>;
+export type ClientAvatarSource = AvatarSource;
 export type EditableActivity = Omit<
   Activity,
   'date' | 'startAt' | 'endAt' | 'deadline' | 'capacity' | 'fee'
@@ -184,70 +186,15 @@ export interface ProfileUpdate {
   phone?: string;
   emergencyPhone?: string;
 }
-export type StravaReadinessState = 'disconnected' | 'authorizing' | 'syncing' | 'ready' | 'failed';
-export interface StravaCoverage {
-  from: string;
-  to: string;
-  complete: boolean;
-}
-export interface StravaSnapshot {
-  totalKm: number | null;
-  rides90d: number | null;
-  longestKm: number | null;
-  elevationM: number | null;
-  speedKmh: number | null;
-  latestActivityAt: string | null;
-  syncedAt: string;
-  coverage: StravaCoverage | null;
-}
-export type StravaRecoveryAction = 'retry' | 'reauthorize' | 'disconnect' | 'contact-support';
-export interface StravaReadiness {
-  state: StravaReadinessState;
-  canRegister: boolean;
-  avatarAvailable: boolean;
-  athleteName: string | null;
-  snapshot: StravaSnapshot | null;
-  error: null | {
-    code: string;
-    message: string;
-    retryable: boolean;
-    recoveryAction: StravaRecoveryAction;
-  };
-}
-export type PersonalCapabilityCardState =
-  'ready' | 'partial' | 'syncing' | 'failed' | 'disconnected';
 export interface PersonalCapabilityCardBackground {
   url: string;
   source: 'user_photo' | 'avatar';
   category: string;
 }
-export interface PersonalCapabilityCardSummary {
-  lifetimeRides?: number | null;
-  lifetimeDistanceKm?: number | null;
-  lifetimeMovingHours?: number | null;
-  lifetimeElevationM?: number | null;
-  totalKm90d: number | null;
-  rides90d: number | null;
-  longestKm: number | null;
-  elevationM90d: number | null;
-  weightedAvgSpeedKmh: number | null;
-}
 export interface PersonalCapabilityCard {
-  state: PersonalCapabilityCardState;
   generatedAt: string;
   profile: { displayName: string; gender: string; avatarUrl?: string };
   backgrounds: PersonalCapabilityCardBackground[];
-  summary: PersonalCapabilityCardSummary;
-  coverage: StravaCoverage | null;
-  syncedAt: string | null;
-  stravaProfileUrl?: string;
-  stravaJoinedAt?: string;
-  needsStravaReauth?: boolean;
-}
-export interface StravaConnection {
-  connected: boolean;
-  athleteName?: string;
-  snapshot?: StravaSnapshot;
 }
 export interface Registration {
   id: string;
@@ -258,23 +205,6 @@ export interface Registration {
   gatheringMode: '自行前往' | '需要后援车' | '';
   experience: string;
   remark: string;
-  strava: {
-    status: StravaStatus;
-    reason?: string;
-    years: number | null;
-    lifetimeRides?: number | null;
-    lifetimeDistanceKm?: number | null;
-    lifetimeMovingHours?: number | null;
-    lifetimeElevationM?: number | null;
-    totalKm?: number | null;
-    rides90d: number | null;
-    longestKm: number | null;
-    elevationM: number | null;
-    speedKmh: number | null;
-    latestActivityAt?: string | null;
-    syncedAt?: string;
-    coverage?: StravaCoverage | null;
-  };
   reviewComment?: string;
   serialNo?: string;
   checkedInAt?: string;

@@ -4,24 +4,18 @@ import { occupiedCount } from '../miniprogram/utils/capacity';
 import { canTransition, transition } from '../miniprogram/utils/registration';
 import { validateRegistration } from '../miniprogram/utils/validation';
 import { maskId, maskPhone } from '../miniprogram/utils/mask';
-import { weightedAverageSpeed } from '../miniprogram/utils/strava';
 import { activities, profile } from '../miniprogram/mock/fixtures';
 import { runtimeConfig } from '../miniprogram/config/runtime';
 import { initializeCloud } from '../miniprogram/config/cloud-init';
 
-const ready = { state: 'ready' as const, canRegister: true };
 const registrationProfile = {
   ...profile,
   avatarId: 'cloud://avatar',
   backgroundPhoto: { id: 'cloud://bg', category: 'ride' },
   photos: [{ id: 'cloud://bg', category: 'ride' }],
 };
-const syncing = { state: 'syncing' as const, canRegister: false };
-const failed = { state: 'failed' as const, canRegister: false };
 const pageRideService = vi.hoisted(() => ({
   getProfile: vi.fn(),
-  getStravaReadiness: vi.fn(),
-  ensureStravaReady: vi.fn(),
   getReviewNotificationTemplateIds: vi.fn(),
   requestReviewNotificationSubscription: vi.fn(),
   saveRegistration: vi.fn(),
@@ -38,6 +32,8 @@ describe('运行时配置', () => {
     expect(runtimeConfig).toEqual({
       brandName: '此里',
       cloudEnvId: 'cloudbase-d0gizacy77a1ab017',
+      routeEmbedOrigin:
+        'https://cloudbase-d0gizacy77a1ab017-1497589790.ap-shanghai.app.tcloudbase.com',
       dataMode: 'cloud',
     });
   });
@@ -117,7 +113,6 @@ describe('表单校验', () => {
         profile: registrationProfile,
         gatheringMode: 'self_drive',
         experience: '常骑',
-        readiness: ready,
       }),
     ).toEqual([]));
   it.each(['', 'unknown'])('缺失或未知集合方式 %s 时阻断', (gatheringMode) => {
@@ -126,7 +121,6 @@ describe('表单校验', () => {
         profile: registrationProfile,
         gatheringMode,
         experience: '常骑',
-        readiness: ready,
       }),
     ).toContain('请选择集合方式');
   });
@@ -143,7 +137,6 @@ describe('表单校验', () => {
         profile: masked,
         gatheringMode: 'self_drive',
         experience: '常骑',
-        readiness: ready,
       }),
     ).toEqual([]);
     expect(
@@ -151,7 +144,6 @@ describe('表单校验', () => {
         profile: { ...masked, sensitiveStatus: { ...masked.sensitiveStatus, phone: false } },
         gatheringMode: 'self_drive',
         experience: '常骑',
-        readiness: ready,
       }),
     ).toContain('请填写有效联系电话');
   });
@@ -161,26 +153,8 @@ describe('表单校验', () => {
         profile: { ...registrationProfile, nickname: '' },
         gatheringMode: 'self_drive',
         experience: '常骑',
-        readiness: ready,
       }),
     ).toContain('请授权并填写微信昵称');
-  });
-  it('Strava 状态不再阻断普通用户报名', () => {
-    for (const readiness of [
-      { state: 'ready', canRegister: false },
-      syncing,
-      failed,
-      { state: 'disconnected', canRegister: false },
-    ]) {
-      expect(
-        validateRegistration({
-          profile: registrationProfile,
-          gatheringMode: 'self_drive',
-          experience: '常骑',
-          readiness,
-        }),
-      ).toEqual([]);
-    }
   });
   it('错误手机号与空选项仍然阻断', () => {
     const p = { ...registrationProfile, phone: '123' };
@@ -189,7 +163,6 @@ describe('表单校验', () => {
         profile: p,
         gatheringMode: '',
         experience: '',
-        readiness: { state: 'disconnected', canRegister: false },
       }).length,
     ).toBeGreaterThan(2);
   });
@@ -199,7 +172,6 @@ describe('表单校验', () => {
         profile: { ...registrationProfile, gender: '' },
         gatheringMode: 'self_drive',
         experience: '常骑',
-        readiness: ready,
       }),
     ).toContain('请在个人资料中选择性别');
   });
@@ -209,7 +181,6 @@ describe('表单校验', () => {
         profile: { ...registrationProfile, gender: '保密' },
         gatheringMode: 'self_drive',
         experience: '常骑',
-        readiness: ready,
       }),
     ).toContain('请在个人资料中选择性别');
   });
@@ -219,7 +190,6 @@ describe('表单校验', () => {
         profile: { ...registrationProfile, avatarId: '' },
         gatheringMode: 'self_drive',
         experience: '常骑',
-        readiness: ready,
       }),
     ).toContain('请设置非默认头像');
   });
@@ -229,7 +199,6 @@ describe('表单校验', () => {
         profile: { ...registrationProfile, backgroundPhoto: null, photos: [] },
         gatheringMode: 'self_drive',
         experience: '常骑',
-        readiness: ready,
       }),
     ).toEqual([]);
   });
@@ -254,7 +223,7 @@ describe('报名页面门禁', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('onShow 只加载报名所需资料，不再请求 Strava 状态', async () => {
+  it('onShow 只加载报名所需资料', async () => {
     page.data.activityId = activities[0].id;
     pageRideService.getProfile.mockResolvedValue(profile);
     pageRideService.getActivity.mockResolvedValue(activities[0]);
@@ -262,13 +231,11 @@ describe('报名页面门禁', () => {
 
     await page.onShow();
 
-    expect(pageRideService.getStravaReadiness).not.toHaveBeenCalled();
-    expect(pageRideService.ensureStravaReady).not.toHaveBeenCalled();
     expect(page.data.profile).toMatchObject(profile);
   });
 
   it('提交中忽略重复提交', async () => {
-    page.data = { ...page.data, profile, readiness: ready, submitting: true };
+    page.data = { ...page.data, profile, submitting: true };
 
     await page.submit();
 
@@ -336,14 +303,4 @@ describe('脱敏', () => {
     expect(maskPhone('13812345678')).toBe('138****5678');
     expect(maskId('110101199001011234')).toBe('110********1234');
   });
-});
-describe('Strava 加权速度', () => {
-  it('按总距离/总移动时间计算', () =>
-    expect(
-      weightedAverageSpeed([
-        { distanceM: 10000, movingTimeS: 1800 },
-        { distanceM: 50000, movingTimeS: 7200 },
-      ]),
-    ).toBe(24));
-  it('空数据返回 0', () => expect(weightedAverageSpeed([])).toBe(0));
 });
