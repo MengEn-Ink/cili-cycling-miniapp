@@ -2,11 +2,6 @@ interface WxCloudApi {
   init(options: { env: string; traceUser?: boolean }): void;
   callFunction(options: { name: string; data?: unknown }): Promise<{ result?: unknown }>;
   uploadFile(options: { cloudPath: string; filePath: string }): Promise<{ fileID: string }>;
-  downloadFile(options: {
-    fileID: string;
-    success?(result: { tempFilePath: string }): void;
-    fail?(error: unknown): void;
-  }): void;
   deleteFile(options: {
     fileList: string[];
   }): Promise<{ fileList?: { fileID?: string; status?: number; errMsg?: string }[] }>;

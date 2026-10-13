@@ -403,17 +403,7 @@ describe('活动详情复制、分享与 GPX 导出', () => {
       showShareMenu: vi.fn(),
       showToast: vi.fn(),
       showModal: vi.fn(),
-      openSetting: vi.fn(),
       previewImage: vi.fn(({ success }: any) => success?.()),
-      downloadFile: vi.fn(({ success }: any) =>
-        success({ statusCode: 200, tempFilePath: '/tmp/group-qr-network.jpg' }),
-      ),
-      saveImageToPhotosAlbum: vi.fn(({ success }: any) => success()),
-      cloud: {
-        downloadFile: vi.fn(({ success }: any) =>
-          success({ tempFilePath: '/tmp/group-qr-cloud.jpg' }),
-        ),
-      },
       setClipboardData: vi.fn(function (this: any, { success, fail }: any) {
         if (this !== wx) {
           fail(new Error('setClipboardData:fail invalid receiver'));
@@ -443,16 +433,15 @@ describe('活动详情复制、分享与 GPX 导出', () => {
     return { definition, context, repository };
   }
 
-  it('群二维码支持点击放大、长按菜单和保存到相册', () => {
+  it('群二维码保留点击放大和长按菜单，不展示保存按钮', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
     expect(template).toContain('bindtap="previewGroupQr"');
     expect(template).toContain('show-menu-by-longpress="{{true}}"');
-    expect(template).toContain('bindtap="saveGroupQr"');
-    expect(template).toContain("{{savingGroupQr ? '保存中' : '保存到相册'}}");
-    expect(styles).toMatch(
-      /\.group-qr-save\s*\{[^}]*min-height:\s*var\(--control-height\)[^}]*background:\s*var\(--color-text\)[^}]*color:\s*var\(--color-on-action\)/s,
-    );
+    expect(template).toContain('点击图片可放大查看');
+    expect(template).not.toContain('bindtap="saveGroupQr"');
+    expect(template).not.toContain('保存到相册');
+    expect(styles).not.toContain('.group-qr-save');
   });
 
   it('仅对有权限的可见二维码开放预览', async () => {
@@ -479,74 +468,6 @@ describe('活动详情复制、分享与 GPX 导出', () => {
     context.data.item.groupQrCode = '   ';
     definition.previewGroupQr.call(context);
     expect(wx.previewImage).not.toHaveBeenCalled();
-  });
-
-  it('云文件和网络图片下载到临时路径后保存，并阻止重复点击', async () => {
-    const { definition, context } = await loadPage(async () => ({}));
-    context.data.groupQrVisible = true;
-    context.data.item.groupQrCode = 'cloud://bucket/group.jpg';
-    await definition.saveGroupQr.call(context);
-    expect(wx.cloud!.downloadFile).toHaveBeenCalledWith(
-      expect.objectContaining({ fileID: 'cloud://bucket/group.jpg' }),
-    );
-    expect(wx.saveImageToPhotosAlbum).toHaveBeenCalledWith(
-      expect.objectContaining({ filePath: '/tmp/group-qr-cloud.jpg' }),
-    );
-    expect(wx.showToast).toHaveBeenCalledWith({ title: '群二维码已保存到相册', icon: 'success' });
-    expect(context.data.savingGroupQr).toBe(false);
-
-    vi.clearAllMocks();
-    context.data.item.groupQrCode = 'https://example.com/group.jpg';
-    await definition.saveGroupQr.call(context);
-    expect(wx.downloadFile).toHaveBeenCalledWith(
-      expect.objectContaining({ url: 'https://example.com/group.jpg' }),
-    );
-    expect(wx.saveImageToPhotosAlbum).toHaveBeenCalledWith(
-      expect.objectContaining({ filePath: '/tmp/group-qr-network.jpg' }),
-    );
-
-    vi.clearAllMocks();
-    context.data.savingGroupQr = true;
-    await definition.saveGroupQr.call(context);
-    expect(wx.downloadFile).not.toHaveBeenCalled();
-    expect(wx.saveImageToPhotosAlbum).not.toHaveBeenCalled();
-  });
-
-  it('网络图片下载异常时不写相册并提示重试', async () => {
-    const { definition, context } = await loadPage(async () => ({}));
-    context.data.groupQrVisible = true;
-    context.data.item.groupQrCode = 'https://example.com/group.jpg';
-    vi.mocked(wx.downloadFile).mockImplementationOnce(({ success }: any) =>
-      success({ statusCode: 503, tempFilePath: '' }),
-    );
-    await definition.saveGroupQr.call(context);
-    expect(wx.saveImageToPhotosAlbum).not.toHaveBeenCalled();
-    expect(wx.showToast).toHaveBeenCalledWith({ title: '群二维码保存失败，请重试', icon: 'none' });
-    expect(context.data.savingGroupQr).toBe(false);
-  });
-
-  it('相册权限被拒时引导去设置，普通失败则提示重试', async () => {
-    const { definition, context } = await loadPage(async () => ({}));
-    context.data.groupQrVisible = true;
-    context.data.item.groupQrCode = '/tmp/group.jpg';
-    vi.mocked(wx.saveImageToPhotosAlbum).mockImplementationOnce(({ fail }: any) =>
-      fail({ errMsg: 'saveImageToPhotosAlbum:fail auth deny' }),
-    );
-    vi.mocked(wx.showModal).mockImplementationOnce(({ success }: any) =>
-      success({ confirm: true }),
-    );
-    await definition.saveGroupQr.call(context);
-    expect(wx.showModal).toHaveBeenCalledWith(
-      expect.objectContaining({ title: '需要相册权限', confirmText: '去设置' }),
-    );
-    expect(wx.openSetting).toHaveBeenCalled();
-
-    vi.mocked(wx.saveImageToPhotosAlbum).mockImplementationOnce(({ fail }: any) =>
-      fail({ errMsg: 'saveImageToPhotosAlbum:fail disk error' }),
-    );
-    await definition.saveGroupQr.call(context);
-    expect(wx.showToast).toHaveBeenCalledWith({ title: '群二维码保存失败，请重试', icon: 'none' });
-    expect(context.data.savingGroupQr).toBe(false);
   });
 
   it('点击有效头像打开名片，关闭后清空当前骑友', async () => {
