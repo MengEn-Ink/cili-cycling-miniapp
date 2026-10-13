@@ -8,6 +8,7 @@ const MIME_EXTENSIONS = {
   'image/webp': 'webp',
 };
 const AVATAR_SOURCES = new Set(['wechat', 'custom']);
+const PHOTO_CATEGORIES = new Set(['ride', 'bike', 'other']);
 const MAX_PROFILE_IMAGE_BYTES = 5 * 1024 * 1024;
 
 function mediaDocumentId(fileId) {
@@ -28,11 +29,34 @@ function publicAvatarSource(profile) {
   return profile.avatar_file_id;
 }
 
-function canonicalPublicAvatar(profile, record, ownerOpenid, secretValue) {
-  const sourceFileId = publicAvatarSource(profile);
+function publicBackgroundSource(profile) {
+  const current = profile && profile.background_photo;
+  const legacy =
+    profile && Array.isArray(profile.photos) ? profile.photos.find(validPhoto) : undefined;
+  const value = validPhoto(current) ? current : legacy;
+  return value ? { fileId: value.file_id, category: value.category } : undefined;
+}
+
+function validPhoto(value) {
+  return (
+    value &&
+    typeof value.file_id === 'string' &&
+    value.file_id.startsWith('cloud://') &&
+    value.file_id.length <= 512 &&
+    PHOTO_CATEGORIES.has(value.category)
+  );
+}
+
+function canonicalPublicMedia(
+  sourceFileId,
+  record,
+  ownerOpenid,
+  secretValue,
+  expectedCategory,
+  expectedOrigin,
+) {
   const secret = typeof secretValue === 'string' ? secretValue.trim() : '';
   const extension = MIME_EXTENSIONS[record && record.mime];
-  const expectedOrigin = profile && profile.avatar_source;
   if (
     !sourceFileId ||
     typeof ownerOpenid !== 'string' ||
@@ -43,7 +67,7 @@ function canonicalPublicAvatar(profile, record, ownerOpenid, secretValue) {
     record.file_id !== sourceFileId ||
     record.source_file_id !== sourceFileId ||
     record.owner_openid !== ownerOpenid ||
-    record.category !== 'other' ||
+    record.category !== expectedCategory ||
     record.origin !== expectedOrigin ||
     record.status !== 'active' ||
     typeof record.canonical_file_id !== 'string' ||
@@ -67,4 +91,33 @@ function canonicalPublicAvatar(profile, record, ownerOpenid, secretValue) {
   return actualPath === expectedPath ? record.canonical_file_id : '';
 }
 
-module.exports = { canonicalPublicAvatar, mediaDocumentId, publicAvatarSource };
+function canonicalPublicAvatar(profile, record, ownerOpenid, secretValue) {
+  return canonicalPublicMedia(
+    publicAvatarSource(profile),
+    record,
+    ownerOpenid,
+    secretValue,
+    'other',
+    profile && profile.avatar_source,
+  );
+}
+
+function canonicalPublicBackground(profile, record, ownerOpenid, secretValue) {
+  const source = publicBackgroundSource(profile);
+  return canonicalPublicMedia(
+    source && source.fileId,
+    record,
+    ownerOpenid,
+    secretValue,
+    source && source.category,
+    'custom',
+  );
+}
+
+module.exports = {
+  canonicalPublicAvatar,
+  canonicalPublicBackground,
+  mediaDocumentId,
+  publicAvatarSource,
+  publicBackgroundSource,
+};

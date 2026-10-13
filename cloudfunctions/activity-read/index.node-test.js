@@ -601,6 +601,7 @@ test('详情成员执行状态、上限、稳定排序和隐私白名单', async
   assert.equal(result.data.attendees.length, 24);
   assert.deepEqual(Object.keys(result.data.attendees[0]).sort(), [
     'avatar_url',
+    'background_url',
     'display_name',
     'gender',
     'id',
@@ -740,6 +741,49 @@ test('详情展示历史可见性状态下的有效头像，但仍拒绝外部�
     calls.filter((call) => call.type === 'getTempFileURL').map((call) => call.payload.fileList),
     [mediaRecords.map((record) => record.canonical_file_id)],
   );
+});
+
+test('详情成员骑行名片使用本人上传背景而不是头像', async () => {
+  const openid = 'rider-background';
+  const avatarFileId = 'cloud://env/profiles/avatar.jpg';
+  const backgroundFileId = 'cloud://env/profiles/background.jpg';
+  const mediaRecords = [
+    canonicalMedia(avatarFileId, openid),
+    canonicalMedia(backgroundFileId, openid, { category: 'ride' }),
+  ];
+  const { main } = loadMain({ _id: 'a1', title: '活动', status: 'published' }, [], {
+    registrations: [
+      { _id: 'r1', activity_id: 'a1', openid, status: 'approved', approved_at: '2026-09-01' },
+    ],
+    profiles: [
+      {
+        _id: openid,
+        nickname: '山野骑手',
+        avatar_file_id: avatarFileId,
+        avatar_source: 'custom',
+        avatar_revision: 1,
+        background_photo: { file_id: backgroundFileId, category: 'ride' },
+      },
+    ],
+    mediaRecords,
+    mediaSecret: MEDIA_SECRET,
+    getTempFileURL: async ({ fileList }) => ({
+      fileList: fileList.map((fileID) => ({
+        fileID,
+        status: 0,
+        tempFileURL:
+          fileID === mediaRecords[0].canonical_file_id
+            ? 'https://temporary.example/avatar.jpg'
+            : 'https://temporary.example/background.jpg',
+      })),
+    }),
+  });
+
+  const result = await main({ action: 'detail', activityId: 'a1' });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.data.attendees[0].avatar_url, 'https://temporary.example/avatar.jpg');
+  assert.equal(result.data.attendees[0].background_url, 'https://temporary.example/background.jpg');
 });
 
 test('详情只为 registry 合法的 canonical 头像签发地址', async () => {
@@ -910,7 +954,10 @@ test('列表为每个活动解析发布人昵称与头像', async () => {
   const avatarA = 'cloud://env/profiles/a.jpg';
   const avatarB = 'cloud://env/profiles/b.jpg';
   const recordA = canonicalMedia(avatarA, ownerA);
+  const backgroundA = 'cloud://env/profiles/a-background.jpg';
+  const backgroundRecordA = canonicalMedia(backgroundA, ownerA, { category: 'ride' });
   const recordB = canonicalMedia(avatarB, ownerB);
+  const tempFileRequests = [];
   const list = [
     {
       _id: 'a1',
@@ -939,6 +986,7 @@ test('列表为每个活动解析发布人昵称与头像', async () => {
         avatar_revision: 1,
         avatar_visibility: 'public',
         avatar_visibility_revision: 1,
+        background_photo: { file_id: backgroundA, category: 'ride' },
       },
       {
         _id: ownerB,
@@ -950,20 +998,24 @@ test('列表为每个活动解析发布人昵称与头像', async () => {
         avatar_visibility_revision: 1,
       },
     ],
-    mediaRecords: [recordA, recordB],
+    mediaRecords: [recordA, backgroundRecordA, recordB],
     mediaSecret: MEDIA_SECRET,
-    getTempFileURL: async ({ fileList }) => ({
-      fileList: fileList.map((fileID) => ({
-        fileID,
-        status: 0,
-        tempFileURL: `https://temp.example/${fileID === recordA.canonical_file_id ? 'a' : 'b'}.jpg`,
-      })),
-    }),
+    getTempFileURL: async ({ fileList }) => {
+      tempFileRequests.push([...fileList]);
+      return {
+        fileList: fileList.map((fileID) => ({
+          fileID,
+          status: 0,
+          tempFileURL: `https://temp.example/${fileID === recordA.canonical_file_id ? 'a' : 'b'}.jpg`,
+        })),
+      };
+    },
   });
 
   const result = await main({ action: 'list' });
 
   assert.equal(result.ok, true);
+  assert.equal(tempFileRequests.flat().includes(backgroundRecordA.canonical_file_id), false);
   assert.deepEqual(
     result.data.map((item) => item.publisher),
     [

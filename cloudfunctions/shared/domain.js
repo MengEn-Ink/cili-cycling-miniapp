@@ -359,6 +359,9 @@ function publicRegistration(registration) {
       ? snapshot.phone_source
       : '',
     phone_verified: snapshot.phone_verified === true,
+    emergency_name: typeof snapshot.emergency_name === 'string' ? snapshot.emergency_name : '',
+    emergency_phone_masked:
+      typeof snapshot.emergency_phone_masked === 'string' ? snapshot.emergency_phone_masked : '',
   };
   return output;
 }

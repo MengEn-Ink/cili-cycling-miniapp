@@ -74,6 +74,7 @@ export interface ActivityAttendee {
   displayName: string;
   gender: string;
   avatarUrl: string;
+  backgroundUrl: string;
   status: 'approved' | 'checked_in';
 }
 export interface ActivityPublisher {

@@ -9,6 +9,7 @@ import { rideService } from '../../../services/ride-service';
 import { appStore } from '../../../store/app-store';
 import { formatLocalDateTime, parseLocalDateTime } from '../../../utils/date-time';
 import { drawRouteOutline } from '../../../utils/route-outline';
+import { TempFileUrlCache } from '../../../utils/temp-file-url';
 import {
   normalizeStravaRouteUrl,
   routeErrorMessage,
@@ -65,6 +66,8 @@ const newRouteRequestId = () =>
 const errorCode = (error: unknown) =>
   typeof (error as { code?: unknown })?.code === 'string' ? (error as { code: string }).code : '';
 const protocolText = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
+const safeHttpsUrl = (value: unknown) =>
+  typeof value === 'string' && /^https:\/\/[^\s/]+(?:\/[^\s]*)?$/i.test(value) ? value : '';
 const protocolDate = (value: unknown) => {
   const text = protocolText(value);
   if (!text) return undefined;
@@ -362,6 +365,8 @@ Page({
   saveInFlight: false,
   createRequestId: '',
   routeRequestId: '',
+  mediaPreviewRequestId: 0,
+  mediaUrlCache: null as TempFileUrlCache | null,
   data: {
     allowed: false,
     isAdmin: false,
@@ -378,11 +383,13 @@ Page({
     status: 'draft',
     originalActivity: undefined as EditableActivity | undefined,
     images: [] as string[],
+    imagePreviewUrls: [] as string[],
     pendingImages: [] as PendingImage[],
     sessionUploadedIds: [] as string[],
     imagesTouched: false,
     coverImage: '',
     groupQrCode: '',
+    groupQrPreviewUrl: '',
     groupQrCodeUploadedAt: '',
     groupQrCodeExpired: false,
     pendingGroupQrCode: undefined as PendingImage | undefined,
@@ -458,12 +465,68 @@ Page({
           stravaRouteUrl: officialRoute?.url || '',
         } as Form,
       });
+      void this.refreshMediaPreviews();
     } catch (error) {
       this.setData({
         loading: false,
         error: error instanceof Error ? error.message : '活动加载失败',
       });
     }
+  },
+  onShow() {
+    if (!this.data.loading) void this.refreshMediaPreviews();
+  },
+  ensureMediaUrlCache(): TempFileUrlCache | null {
+    if (this.mediaUrlCache) return this.mediaUrlCache;
+    const cloud = wx.cloud as
+      | (WxCloudApi & {
+          getTempFileURL?(options: { fileList: string[] }): Promise<{
+            fileList?: { fileID?: string; tempFileURL?: string }[];
+          }>;
+        })
+      | undefined;
+    if (typeof cloud?.getTempFileURL !== 'function') return null;
+    const getTempFileURL = cloud.getTempFileURL;
+    this.mediaUrlCache = new TempFileUrlCache({
+      getTempFileURL: (options) => getTempFileURL.call(cloud, options),
+    });
+    return this.mediaUrlCache;
+  },
+  async refreshMediaPreviews() {
+    const images = [...this.data.images];
+    const groupQrCode = this.data.groupQrCode;
+    const cloudFileIds = [...images, groupQrCode].filter(
+      (value): value is string => typeof value === 'string' && value.startsWith('cloud://'),
+    );
+    const requestId = ++this.mediaPreviewRequestId;
+    let resolved: Record<string, string> = {};
+    const cache = this.ensureMediaUrlCache();
+    if (cache && cloudFileIds.length) {
+      try {
+        resolved = await cache.resolve(cloudFileIds);
+      } catch {
+        // 单张预览失败不阻断活动编辑；下次 onShow 会自动重试。
+      }
+    }
+    if (requestId !== this.mediaPreviewRequestId || this.unloaded) return;
+    const latestImages = [...this.data.images];
+    const latestGroupQrCode = this.data.groupQrCode;
+    const existingByFileId = new Map(
+      latestImages.map((fileId: string, index: number) => [
+        fileId,
+        this.data.imagePreviewUrls[index] || '',
+      ]),
+    );
+    this.setData({
+      imagePreviewUrls: latestImages.map(
+        (fileId) => safeHttpsUrl(fileId) || resolved[fileId] || existingByFileId.get(fileId) || '',
+      ),
+      groupQrPreviewUrl:
+        safeHttpsUrl(latestGroupQrCode) ||
+        resolved[latestGroupQrCode] ||
+        (latestGroupQrCode === groupQrCode ? this.data.groupQrPreviewUrl : '') ||
+        '',
+    });
   },
   onReady() {
     void this.renderRouteVisuals();
@@ -527,6 +590,7 @@ Page({
   },
   onUnload() {
     this.unloaded = true;
+    this.mediaPreviewRequestId += 1;
     if (!this.saveInFlight) this.cleanupSessionUploads();
   },
   showFormError(message: string, field?: FormErrorAnchor) {
@@ -605,12 +669,24 @@ Page({
         ...this.data.pendingImages.map((item: PendingImage) => item.fileId as string),
       ]),
     ].slice(0, MAX_IMAGES);
+    const previewByFileId = new Map(
+      this.data.pendingImages
+        .filter((item: PendingImage) => item.fileId)
+        .map((item: PendingImage) => [item.fileId as string, item.previewPath]),
+    );
     this.setData({
       images,
+      imagePreviewUrls: images.map(
+        (fileId) =>
+          previewByFileId.get(fileId) ||
+          this.data.imagePreviewUrls[this.data.images.indexOf(fileId)] ||
+          safeHttpsUrl(fileId),
+      ),
       pendingImages: [],
       imagesTouched: true,
       coverImage: images[0] || '',
     });
+    void this.refreshMediaPreviews();
   },
   async addOfficialRoute() {
     if (this.data.saving || this.data.syncingRoute) return;
@@ -949,10 +1025,14 @@ Page({
     const index = Number(event.currentTarget.dataset.index);
     if (!Number.isInteger(index) || index < 0 || index >= this.data.images.length) return;
     const images = [...this.data.images];
+    const imagePreviewUrls = [...this.data.imagePreviewUrls];
     const [selected] = images.splice(index, 1);
+    const [selectedPreview] = imagePreviewUrls.splice(index, 1);
     images.unshift(selected);
+    imagePreviewUrls.unshift(selectedPreview || '');
     this.setData({
       images,
+      imagePreviewUrls,
       imagesTouched: true,
       routeCoverSelected: false,
       coverImage: images[0],
@@ -964,11 +1044,15 @@ Page({
     const removedFileId = this.data.images[index];
     const shouldDeleteFile = this.data.sessionUploadedIds.includes(removedFileId);
     const images = this.data.images.filter((_: string, itemIndex: number) => itemIndex !== index);
+    const imagePreviewUrls = this.data.imagePreviewUrls.filter(
+      (_: string, itemIndex: number) => itemIndex !== index,
+    );
     const sessionUploadedIds = this.data.sessionUploadedIds.filter(
       (fileId: string) => fileId !== removedFileId,
     );
     this.setData({
       images,
+      imagePreviewUrls,
       sessionUploadedIds,
       imagesTouched: true,
       coverImage: images[0] || '',
@@ -1006,10 +1090,12 @@ Page({
       this.setData({
         sessionUploadedIds: [...this.data.sessionUploadedIds, result.fileID],
         groupQrCode: result.fileID,
+        groupQrPreviewUrl: pendingGroupQrCode.previewPath,
         groupQrCodeUploadedAt: new Date().toISOString(),
         groupQrCodeExpired: false,
         pendingGroupQrCode: undefined,
       });
+      void this.refreshMediaPreviews();
     } catch (error) {
       if (isCancel(error)) return;
       const current = this.data.pendingGroupQrCode;
@@ -1027,6 +1113,7 @@ Page({
     const shouldDeleteFile = this.data.sessionUploadedIds.includes(removedFileId);
     this.setData({
       groupQrCode: '',
+      groupQrPreviewUrl: '',
       groupQrCodeUploadedAt: '',
       groupQrCodeExpired: false,
       pendingGroupQrCode: undefined,
@@ -1313,6 +1400,7 @@ Page({
             saved.coverImage === savedRoutePreview.generatedPreviewFileId,
           ),
         });
+        void this.refreshMediaPreviews();
       };
       let saved: EditableActivity;
       if (!id && nextStatus === 'published') {

@@ -818,6 +818,8 @@ function assertFullProfileReady(profile) {
 function response(doc = {}, keyValue) {
   const status = sensitiveStatus(doc);
   const phone = status.phone && keyValue ? decrypt(doc.phone_cipher, keyValue) : '';
+  const emergencyPhone =
+    status.emergency_phone && keyValue ? decrypt(doc.emergency_phone_cipher, keyValue) : '';
   const readiness = profileReadiness(doc);
   const avatar = normalizeAvatarProfile(doc);
   const avatarFileId = avatar.avatar_file_id || '';
@@ -846,6 +848,7 @@ function response(doc = {}, keyValue) {
     real_name_masked: typeof doc.real_name_masked === 'string' ? doc.real_name_masked : '',
     ...(phone ? { phone } : {}),
     phone_masked: typeof doc.phone_masked === 'string' ? doc.phone_masked : '',
+    ...(emergencyPhone ? { emergency_phone: emergencyPhone } : {}),
     emergency_phone_masked:
       typeof doc.emergency_phone_masked === 'string' ? doc.emergency_phone_masked : '',
     sensitive_status: status,

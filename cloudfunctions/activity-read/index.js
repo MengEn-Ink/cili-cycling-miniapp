@@ -10,7 +10,13 @@ const {
   normalizeGender,
   fail,
 } = require('./domain');
-const { canonicalPublicAvatar, mediaDocumentId, publicAvatarSource } = require('./public-avatar');
+const {
+  canonicalPublicAvatar,
+  canonicalPublicBackground,
+  mediaDocumentId,
+  publicAvatarSource,
+  publicBackgroundSource,
+} = require('./public-avatar');
 const { parseListPageRequest, listActivityPage } = require('./list-page');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
@@ -149,7 +155,7 @@ function timestamp(value) {
   return Number.isFinite(time) ? time : 0;
 }
 
-function publicAttendee(registration, profile, avatarUrl) {
+function publicAttendee(registration, profile, media = {}) {
   const snapshot = registration && registration.profile_snapshot;
   return {
     id: typeof registration._id === 'string' ? registration._id : '',
@@ -166,7 +172,8 @@ function publicAttendee(registration, profile, avatarUrl) {
           ? profile.gender
           : '',
     ),
-    avatar_url: safeHttpsUrl(avatarUrl),
+    avatar_url: safeHttpsUrl(media.avatarUrl),
+    background_url: safeHttpsUrl(media.backgroundUrl),
     status: registration.status,
   };
 }
@@ -229,20 +236,21 @@ async function loadProfiles(openids) {
   return profiles;
 }
 
-// 依据资料批量解析对外头像的 canonical fileId 与临时访问地址。
-// entries: [{ openid, profile }]；返回 Map(openid -> 临时地址)。
-async function resolveAvatarTempUrls(entries) {
-  const avatarMediaIds = [
+// 依据资料批量解析公开头像与骑行名片背景的 canonical fileId 和临时访问地址。
+// entries: [{ openid, profile }]；返回 Map(openid -> { avatarUrl, backgroundUrl })。
+async function resolveProfileMediaTempUrls(entries, { includeBackground = false } = {}) {
+  const sourceMediaIds = [
     ...new Set(
-      entries
-        .map((entry) => publicAvatarSource(entry.profile))
-        .filter(Boolean)
-        .map(mediaDocumentId),
+      entries.flatMap((entry) => {
+        const avatar = publicAvatarSource(entry.profile);
+        const background = includeBackground ? publicBackgroundSource(entry.profile) : undefined;
+        return [avatar, background && background.fileId].filter(Boolean).map(mediaDocumentId);
+      }),
     ),
   ];
   const mediaRecords = new Map();
-  for (let offset = 0; offset < avatarMediaIds.length; offset += 20) {
-    const batch = avatarMediaIds.slice(offset, offset + 20);
+  for (let offset = 0; offset < sourceMediaIds.length; offset += 20) {
+    const batch = sourceMediaIds.slice(offset, offset + 20);
     try {
       const response = await db
         .collection('profile_media')
@@ -253,24 +261,31 @@ async function resolveAvatarTempUrls(entries) {
         if (record && batch.includes(record._id)) mediaRecords.set(record._id, record);
       }
     } catch {
-      // 媒体登记读取失败时 fail closed，仅隐藏受影响头像。
+      // 媒体登记读取失败时 fail closed，仅隐藏受影响图片。
     }
   }
   const canonicalByOpenid = new Map();
   const canonicalFileIds = [];
   for (const { openid, profile } of entries) {
-    const sourceFileId = publicAvatarSource(profile);
-    const record = sourceFileId ? mediaRecords.get(mediaDocumentId(sourceFileId)) : undefined;
-    const canonicalFileId = canonicalPublicAvatar(
+    const avatarSource = publicAvatarSource(profile);
+    const backgroundSource = includeBackground ? publicBackgroundSource(profile) : undefined;
+    const avatarFileId = canonicalPublicAvatar(
       profile,
-      record,
+      avatarSource ? mediaRecords.get(mediaDocumentId(avatarSource)) : undefined,
       openid,
       process.env.PROFILE_MEDIA_PATH_SECRET,
     );
-    if (canonicalFileId) {
-      canonicalByOpenid.set(openid, canonicalFileId);
-      if (!canonicalFileIds.includes(canonicalFileId)) canonicalFileIds.push(canonicalFileId);
-    }
+    const backgroundFileId = backgroundSource
+      ? canonicalPublicBackground(
+          profile,
+          mediaRecords.get(mediaDocumentId(backgroundSource.fileId)),
+          openid,
+          process.env.PROFILE_MEDIA_PATH_SECRET,
+        )
+      : '';
+    canonicalByOpenid.set(openid, { avatarFileId, backgroundFileId });
+    for (const fileId of [avatarFileId, backgroundFileId])
+      if (fileId && !canonicalFileIds.includes(fileId)) canonicalFileIds.push(fileId);
   }
   const tempUrls = new Map();
   if (canonicalFileIds.length) {
@@ -282,13 +297,18 @@ async function resolveAvatarTempUrls(entries) {
           tempUrls.set(item.fileID, url);
       }
     } catch {
-      // 头像解析失败不影响主流程，客户端使用默认头像。
+      // 临时地址解析失败不影响主流程，客户端使用图片空态。
     }
   }
   const result = new Map();
   for (const { openid } of entries) {
-    const canonicalFileId = canonicalByOpenid.get(openid);
-    result.set(openid, canonicalFileId ? tempUrls.get(canonicalFileId) || '' : '');
+    const canonical = canonicalByOpenid.get(openid) || {};
+    result.set(openid, {
+      avatarUrl: canonical.avatarFileId ? tempUrls.get(canonical.avatarFileId) || '' : '',
+      backgroundUrl: canonical.backgroundFileId
+        ? tempUrls.get(canonical.backgroundFileId) || ''
+        : '',
+    });
   }
   return result;
 }
@@ -303,7 +323,7 @@ async function loadPublishers(rawActivities) {
     ),
   ];
   const profiles = await loadProfiles(openids);
-  const avatarUrls = await resolveAvatarTempUrls(
+  const profileMedia = await resolveProfileMediaTempUrls(
     openids.map((openid) => ({ openid, profile: profiles.get(openid) })),
   );
   const result = new Map();
@@ -311,7 +331,7 @@ async function loadPublishers(rawActivities) {
     const profile = profiles.get(openid);
     result.set(openid, {
       nickname: profile && typeof profile.nickname === 'string' ? profile.nickname : '',
-      avatar_url: avatarUrls.get(openid) || '',
+      avatar_url: profileMedia.get(openid)?.avatarUrl || '',
     });
   }
   return result;
@@ -346,8 +366,9 @@ async function loadAttendance(activityId) {
     ),
   ];
   const profiles = await loadProfiles(openids);
-  const avatarUrls = await resolveAvatarTempUrls(
+  const profileMedia = await resolveProfileMediaTempUrls(
     openids.map((openid) => ({ openid, profile: profiles.get(openid) })),
+    { includeBackground: true },
   );
   return {
     approvedRegistrationCount,
@@ -355,7 +376,7 @@ async function loadAttendance(activityId) {
       publicAttendee(
         registration,
         profiles.get(registration.openid),
-        avatarUrls.get(registration.openid) || '',
+        profileMedia.get(registration.openid) || {},
       ),
     ),
   };

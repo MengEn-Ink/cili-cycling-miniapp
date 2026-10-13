@@ -402,7 +402,7 @@ Page({
     }
   },
   async onShow() {
-    await this.loadAvatarPreview();
+    await Promise.all([this.loadAvatarPreview(), this.loadPhotoPreviews()]);
   },
   onHide() {
     this.avatarPreviewRequestId += 1;

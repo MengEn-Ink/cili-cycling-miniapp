@@ -190,6 +190,12 @@ async function submitRegistration(store, { openid, activityId, options, team }, 
             ? 'legacy'
             : '',
         phone_verified: profile.phone_verified === true,
+        ...(typeof profile.emergency_name === 'string'
+          ? { emergency_name: profile.emergency_name }
+          : {}),
+        ...(typeof profile.emergency_phone_masked === 'string'
+          ? { emergency_phone_masked: profile.emergency_phone_masked }
+          : {}),
       },
       review_history: history,
       ...(adminAutoApproved

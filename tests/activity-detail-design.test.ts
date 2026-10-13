@@ -275,11 +275,11 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('完整公开骑行名片');
     expect(template).toContain('昵称、头像与照片由骑友本人维护，仅展示公开资料');
     expect(template).toContain('wx:if="{{item.avatarUrl}}" class="attendee-avatar"');
-    expect(template).toContain('wx:if="{{selectedAttendee.avatarUrl}}"');
+    expect(template).toContain('wx:if="{{selectedAttendee.backgroundUrl}}"');
     expect(template).toContain('attendee-avatar--placeholder');
     expect(template).toContain('rider-card-photo__placeholder');
     expect(template).not.toContain('defaultAttendeeAvatar');
-    expect(template).toContain('binderror="selectedAttendeeAvatarError"');
+    expect(template).toContain('binderror="selectedAttendeeBackgroundError"');
     expect(template).toContain('class="gender-pill {{selectedAttendee.genderClass}}"');
     expect(template).toContain('{{selectedAttendee.genderLabel}}');
     expect(template).not.toContain('selectedAttendee.title');
@@ -578,6 +578,7 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
       displayName: '长距离骑行者',
       gender: '女',
       avatarUrl: '',
+      backgroundUrl: 'https://temporary.example/background.jpg',
       status: 'approved',
       card: { rides90d: null, longestKm: 180, elevationM: 3200, speedKmh: 26.5 },
     };
@@ -597,7 +598,7 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
     expect(context.data.selectedAttendee).toBeNull();
   });
 
-  it('远端头像加载失败时列表和弹窗都回退默认图片', async () => {
+  it('远端头像和名片背景加载失败时分别回退默认图片', async () => {
     const { definition, context } = await loadPage(async () => ({
       base64: 'eA==',
       fileName: 'route.gpx',
@@ -611,7 +612,7 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
     ];
     context.data.selectedAttendee = {
       ...context.data.attendees[0],
-      avatarUrl: 'https://temporary.example/modal-avatar.jpg',
+      backgroundUrl: 'https://temporary.example/modal-background.jpg',
     };
 
     definition.attendeeAvatarError.call(context, {
@@ -619,8 +620,8 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
     });
     expect(context.data.attendees[0].avatarUrl).toBe('');
 
-    definition.selectedAttendeeAvatarError.call(context);
-    expect(context.data.selectedAttendee.avatarUrl).toBe('');
+    definition.selectedAttendeeBackgroundError.call(context);
+    expect(context.data.selectedAttendee.backgroundUrl).toBe('');
     expect(context.data.defaultAttendeeAvatar).toBeUndefined();
   });
 

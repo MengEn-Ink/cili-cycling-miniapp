@@ -155,6 +155,7 @@ function mapPublicAttendees(value: unknown) {
       displayName: typeof attendee.display_name === 'string' ? attendee.display_name : '',
       gender: normalizeGender(attendee.gender),
       avatarUrl: httpsUrl(attendee.avatar_url),
+      backgroundUrl: httpsUrl(attendee.background_url),
       status: (attendee.status === 'checked_in' ? 'checked_in' : 'approved') as
         'approved' | 'checked_in',
     }));
@@ -749,7 +750,11 @@ function mapProfile(raw: unknown): Profile {
     gender: typeof value.gender === 'string' ? value.gender : '',
     emergencyName: typeof value.emergency_name === 'string' ? value.emergency_name : '',
     emergencyPhone:
-      typeof value.emergency_phone_masked === 'string' ? value.emergency_phone_masked : '',
+      typeof value.emergency_phone === 'string'
+        ? value.emergency_phone
+        : typeof value.emergency_phone_masked === 'string'
+          ? value.emergency_phone_masked
+          : '',
     photos: Array.isArray(value.photos)
       ? value.photos.filter(isRecord).map((photo) => ({
           id: String(photo.file_id || ''),
@@ -875,8 +880,13 @@ function mapRegistration(raw: unknown): Registration {
             ? snapshot.gender
             : '',
       ),
-      emergencyName: '',
-      emergencyPhone: '',
+      emergencyName: typeof snapshot.emergency_name === 'string' ? snapshot.emergency_name : '',
+      emergencyPhone:
+        typeof snapshot.emergency_phone === 'string'
+          ? snapshot.emergency_phone
+          : typeof snapshot.emergency_phone_masked === 'string'
+            ? snapshot.emergency_phone_masked
+            : '',
       photos: Array.isArray(capability.photos)
         ? capability.photos
             .filter(isRecord)
@@ -894,7 +904,10 @@ function mapRegistration(raw: unknown): Registration {
         phoneSource: ['wechat', 'manual', 'legacy'].includes(String(capability.phone_source))
           ? (capability.phone_source as 'wechat' | 'manual' | 'legacy')
           : '',
-        emergencyPhone: false,
+        emergencyPhone:
+          (typeof snapshot.emergency_phone === 'string' && !!snapshot.emergency_phone) ||
+          (typeof snapshot.emergency_phone_masked === 'string' &&
+            !!snapshot.emergency_phone_masked),
       },
     },
     gatheringMode:

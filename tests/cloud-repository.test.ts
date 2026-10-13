@@ -1048,6 +1048,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
         id_number_masked: 'E1****89',
         gender: '男',
         emergency_name: '紧急联系人',
+        emergency_phone: '13912345678',
         emergency_phone_masked: '139****0000',
         photos: [{ file_id: 'cloud://photo-1', category: 'ride' }, null],
         sensitive_status: {
@@ -1072,7 +1073,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
       missingKeys: ['emergency_name'],
       gender: '男',
       emergencyName: '紧急联系人',
-      emergencyPhone: '139****0000',
+      emergencyPhone: '13912345678',
       photos: [{ id: 'cloud://photo-1', category: 'ride' }],
       sensitiveStatus: {
         realName: true,
@@ -2026,6 +2027,7 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
             display_name: '山野骑手',
             gender: '男',
             avatar_url: 'https://temp.example/avatar.jpg',
+            background_url: 'https://temp.example/background.jpg',
             status: 'approved',
             card: { rides90d: 20, longestKm: 120, elevationM: 8000, speedKmh: 26.5 },
             openid: 'must-not-map',
@@ -2052,6 +2054,7 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
         displayName: '山野骑手',
         gender: '男',
         avatarUrl: 'https://temp.example/avatar.jpg',
+        backgroundUrl: 'https://temp.example/background.jpg',
         status: 'approved',
       },
     ]);
@@ -2087,6 +2090,7 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
       displayName: '',
       gender: '',
       avatarUrl: '',
+      backgroundUrl: '',
       status: 'checked_in',
     });
     expect(result.attendees[1]).toMatchObject({

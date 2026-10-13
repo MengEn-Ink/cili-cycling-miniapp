@@ -458,6 +458,17 @@ npm run deploy:miniprogram
 - timer、网关路由和数据库/存储安全规则已回读；
 - 对应业务 smoke 或 P0 旅程已执行；无法执行的项目明确记为“未执行”。
 
+### 7.6 资料页提示“服务暂时不可用”
+
+优先检查 `profile` 云函数的运行时环境变量，而不是只核对本地 `.env`：函数入口会先校验 `PII_ENCRYPTION_KEY`，缺失、非 base64 或解码后不是 32 字节时会以 `PII_KEY_INVALID` 失败；图片上传/回显链路还要求 `PROFILE_MEDIA_PATH_SECRET` 至少 32 字符。常见根因是代码已更新，但云端函数未重新部署或部署时没有同步环境变量。
+
+修复后必须同时核对：
+
+- `profile` 与 `admin-review` 的 `PII_ENCRYPTION_KEY` 完全一致；
+- `profile`、`profile-media-cleanup`、`admin-review`、`activity-read` 的 `PROFILE_MEDIA_PATH_SECRET` 完全一致；
+- 重新部署受影响函数，并分别执行资料读取、资料保存、活动详情成员背景图 smoke；
+- 不在命令输出、PR 描述或验收记录中打印密钥原值。
+
 ## 8. 最终交付验收
 
 只有适用项都通过后才能宣布交付完成：
