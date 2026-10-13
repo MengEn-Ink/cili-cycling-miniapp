@@ -1,8 +1,8 @@
 # GPX 上传微信开发者工具验证
 
-> 时间：2026-10-13 20:21 CST
-> 分支：`fix/gpx-picker-privacy-feedback`
-> 基线：`main@99426b680e2bf0d2f8b66c402b2282b0968eacd3`
+> 时间：2026-10-13 20:30 CST
+> 分支：`main`
+> 合入提交：`c35e942e0cbd33aa461ef9d83a1208718c9fa9d2`（PR #196）
 
 ## 结论
 
@@ -95,17 +95,17 @@ SHA-256 为
 
 ## 合入与开发版
 
-- PR #194 已合入 `main`。
+- PR #194 已交付路线图竞态修复；PR #196 已交付隐私错误分类和严格视觉基线。
 - main CI run
-  [38392877311](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38392877311)
+  [38397558479](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38397558479)
   成功。
 - GitHub Pages run
-  [38392876472](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38392876472)
+  [38397557582](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38397557582)
   成功。
 - 微信开发版上传 run
-  [38393011088](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38393011088)
+  [38397674379](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38397674379)
   成功。
-- 不可变上传回执：版本 `0.0.196.1`、robot `1`、main SHA `07b4c1d`。
+- 不可变上传回执：版本 `0.0.198.1`、robot `1`、main SHA `c35e942`。
 
 ## 证据
 
