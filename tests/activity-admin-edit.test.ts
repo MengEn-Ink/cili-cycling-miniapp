@@ -113,11 +113,12 @@ describe('日常活动极简创建与编辑', () => {
     vi.stubGlobal('Page', (definition: any) => {
       page = definition;
       page.data = { ...definition.data, form: { ...definition.data.form } };
-      page.setData = (patch: Record<string, unknown>) => {
+      page.setData = (patch: Record<string, unknown>, callback?: () => void) => {
         for (const [key, value] of Object.entries(patch)) {
           if (key.startsWith('form.')) page.data.form[key.slice(5)] = value;
           else page.data[key] = value;
         }
+        callback?.();
       };
     });
     await import('../miniprogram/pages/admin/activity-edit/index');
@@ -1096,6 +1097,87 @@ describe('日常活动极简创建与编辑', () => {
     expect(page.data.routePreview).toEqual(preview);
     expect(page.data.routeStatusMessage).toBe('路线详情已准备好');
     expect(page.data.sessionRouteFileIds).toEqual([fileId]);
+  });
+
+  it('路线图生成完成前保持上传锁，完成后才显示路线详情已准备好', async () => {
+    const source = new TextEncoder().encode('<gpx>route</gpx>');
+    const digest = sha256Hex(source);
+    const fileId = `cloud://env/activity-routes/${appStore.openid}/${digest}.gpx`;
+    const preview = {
+      previewId: 'a'.repeat(64),
+      gpxFileId: fileId,
+      gpxSha256: digest,
+      routeName: '周末环湖',
+      distanceKm: 52.4,
+      elevationM: 680,
+      elevationLossM: 675,
+      elevationMinM: 12,
+      elevationMaxM: 486,
+      estimatedMovingTimeSeconds: 10800,
+      estimationSource: 'cili',
+      elevationProfile: [
+        { distanceKm: 0, elevationM: 12 },
+        { distanceKm: 52.4, elevationM: 30 },
+      ],
+      routeOutline: [
+        { latitude: 22, longitude: 114 },
+        { latitude: 22.2, longitude: 114.2 },
+      ],
+      routeBounds: { south: 22, west: 114, north: 22.2, east: 114.2 },
+      expiresAt: '2026-10-13T09:30:00.000Z',
+    };
+    let finishRendering!: () => void;
+    const rendering = new Promise<void>((resolve) => {
+      finishRendering = resolve;
+    });
+    Object.assign(wx, {
+      chooseMessageFile: vi.fn().mockResolvedValue({
+        tempFiles: [{ name: 'weekend.gpx', path: '/tmp/weekend.gpx', size: source.byteLength }],
+      }),
+      getFileSystemManager: () => ({
+        readFile: ({ success }: any) => success({ data: source.buffer }),
+      }),
+    });
+    Object.assign(wx.cloud!, {
+      uploadFile: vi.fn().mockResolvedValue({ fileID: fileId }),
+      deleteFile: vi.fn().mockResolvedValue({}),
+    });
+    rideService.previewRouteGpx.mockResolvedValue(preview);
+    await page.onLoad({});
+    page.renderRouteVisuals = vi.fn(() => rendering);
+
+    const choosing = page.chooseRouteGpx();
+    await vi.waitFor(() => expect(page.data.routePreview).toEqual(preview));
+
+    expect(page.data.uploadingRoute).toBe(true);
+    expect(page.data.routeStatusMessage).toBe('正在生成路线图');
+
+    finishRendering();
+    await choosing;
+
+    expect(page.renderRouteVisuals).toHaveBeenCalledOnce();
+    expect(page.data.uploadingRoute).toBe(false);
+    expect(page.data.routeStatusMessage).toBe('路线详情已准备好');
+  });
+
+  it('文件选择器无法打开时在 GPX 控件旁提示真机重试', async () => {
+    Object.assign(wx, {
+      chooseMessageFile: vi
+        .fn()
+        .mockRejectedValue({ errMsg: 'chooseMessageFile:fail not supported' }),
+    });
+    await page.onLoad({});
+
+    await page.chooseRouteGpx();
+
+    const message = '当前环境无法打开文件选择器，请使用微信真机上传 GPX';
+    expect(page.data.error).toBe(message);
+    expect(page.data.routeStatusMessage).toBe(message);
+    expect(wx.showToast).toHaveBeenCalledWith({
+      title: message,
+      icon: 'none',
+      duration: 3000,
+    });
   });
 
   it('路线轮廓 Canvas 生成 PNG 后绑定为同摘要预览图', async () => {
