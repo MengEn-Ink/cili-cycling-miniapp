@@ -45,28 +45,38 @@
           </view>
         </view>
 
-        <view class="card route-actions-card" wx:if="{{item.route.stravaRouteUrl}}">
-          <view class="section-heading"><view class="title">{{item.route.routeName || 'Strava 轨迹'}}</view><view class="section-tag">路线文件</view></view>
-          <image wx:if="{{item.route.previewImageUrl}}" class="route-preview-image" src="{{item.route.previewImageUrl}}" mode="aspectFit" bindtap="previewRouteImage" aria-label="点击查看{{item.route.routeName || 'Strava 路线'}}完整预览图" />
-          <view class="strava-route-row">
-            <button class="strava-route-url" bindtap="copyStravaRoute" aria-label="复制 Strava 轨迹链接"><text user-select="true">{{item.route.stravaRouteUrl}}</text></button>
-            <button class="strava-route-action" bindtap="copyStravaRoute">复制</button>
-            <button class="strava-route-action strava-route-action--primary" wx:if="{{item.route.stravaRouteId && item.route.stravaGpxAvailable !== false}}" loading="{{exportingGpx}}" disabled="{{exportingGpx}}" bindtap="exportGpx">{{exportingGpx ? '下载中' : '下载 GPX'}}</button>
-          </view>
-          <view class="route-action-note">复制后可在系统浏览器或 Strava 中打开；{{item.route.stravaGpxAvailable === false ? '此公开路线不提供 GPX 下载。' : 'GPX 可分享至码表或骑行应用。'}}</view>
+        <view class="official-route-card" wx:if="{{officialRouteId}}">
+          <view class="section-heading"><view><view class="title">Strava 官方路线</view><view class="route-action-note">查看组织者分享的公开路线。</view></view><view class="section-tag">官方</view></view>
+          <button class="route-action route-action--primary" bindtap="openOfficialRoute">查看官方路线</button>
         </view>
 
-        <view class="card route-profile-card" wx:if="{{!item.registrationUnlimited}}">
-          <view class="title">路线海拔</view>
+        <view class="gpx-route-card" wx:if="{{hasGpxRoute}}">
+          <view class="section-heading"><view><view class="title">{{item.route.routeName || 'GPX 路线详情'}}</view><view class="route-action-note">路线数据来自组织者上传的 GPX 文件。</view></view><view class="section-tag">路线详情</view></view>
+          <view class="route-native-metrics" aria-label="GPX 路线数据">
+            <view><text>{{item.route.distanceKm}}</text><text>km 距离</text></view>
+            <view><text>{{item.route.elevationM}}</text><text>m 爬升</text></view>
+            <view><text>{{item.route.elevationLossM}}</text><text>m 下降</text></view>
+            <view><text>{{item.route.elevationMinM}}–{{item.route.elevationMaxM}}</text><text>m 海拔</text></view>
+          </view>
+          <view class="route-estimate" wx:if="{{estimatedRideTime}}"><text>此里估算</text><text>{{estimatedRideTime}}</text></view>
+
+          <view class="route-visual-heading">路线轮廓</view>
+          <canvas wx:if="{{hasRouteOutline}}" id="route-outline-canvas" type="2d" class="route-outline-canvas" aria-label="{{item.route.routeName || 'GPX 路线'}}路线轮廓"></canvas>
+          <image wx:elif="{{item.route.generatedPreviewUrl}}" class="route-outline-image" src="{{item.route.generatedPreviewUrl}}" mode="aspectFit" bindtap="previewRouteImage" aria-label="点击查看{{item.route.routeName || 'GPX 路线'}}完整路线图" />
+          <view wx:else class="route-empty">暂无有效路线轮廓</view>
+
+          <view class="route-coordinate-list" wx:if="{{routeStartCoordinate || routeEndCoordinate}}">
+            <view wx:if="{{routeStartCoordinate}}"><text>起点坐标</text><text>{{routeStartCoordinate}}</text></view>
+            <view wx:if="{{routeEndCoordinate}}"><text>终点坐标</text><text>{{routeEndCoordinate}}</text></view>
+          </view>
+
+          <view class="route-visual-heading">海拔曲线</view>
           <canvas wx:if="{{hasElevationProfile}}" id="elevation-canvas" type="2d" class="elevation-canvas" aria-label="路线海拔曲线"></canvas>
           <view wx:else class="route-empty">暂无有效海拔数据</view>
-        </view>
 
-        <view class="card climbs-card" wx:if="{{item.route.popularClimbs && item.route.popularClimbs.length}}">
-          <view class="title">热门爬坡</view>
-          <view class="climb-row" wx:for="{{item.route.popularClimbs}}" wx:key="id">
-            <view class="climb-main"><text class="climb-name">{{item.name}}</text><text class="climb-popularity">{{item.popularityLabel}}</text></view>
-            <view class="muted">{{item.climbCategory}} 类 · {{item.distanceKm}} km · 均坡 {{item.averageGrade}}%</view>
+          <view class="gpx-download-row">
+            <view class="route-action-note">下载后可导入码表或骑行应用。</view>
+            <button class="route-action route-action--primary" loading="{{downloadingGpx}}" disabled="{{downloadingGpx}}" bindtap="downloadGpx">{{downloadingGpx ? '下载中' : '下载 GPX'}}</button>
           </view>
         </view>
 

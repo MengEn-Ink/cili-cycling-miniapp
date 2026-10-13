@@ -3,6 +3,7 @@ import { rideService } from '../../services/ride-service';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
 import { genderView } from '../../utils/gender';
+import { drawRouteOutline as renderRouteOutline } from '../../utils/route-outline';
 import {
   drawElevationProfile,
   formatActivityDate,
@@ -123,12 +124,54 @@ function formatRideDuration(seconds?: number) {
   return minutes ? `${hours} 小时 ${minutes} 分` : `${hours} 小时`;
 }
 
+function officialRouteId(route: any): string {
+  const valid = (provider: unknown, id: unknown, url: unknown) =>
+    provider === 'strava' &&
+    typeof id === 'string' &&
+    /^[1-9]\d{0,19}$/.test(id) &&
+    url === `https://www.strava.com/routes/${id}`;
+  const hasGeneric =
+    route?.externalProvider !== undefined ||
+    route?.externalRouteId !== undefined ||
+    route?.externalRouteUrl !== undefined;
+  if (hasGeneric)
+    return valid(route.externalProvider, route.externalRouteId, route.externalRouteUrl)
+      ? route.externalRouteId
+      : '';
+  return valid('strava', route?.stravaRouteId, route?.stravaRouteUrl) ? route.stravaRouteId : '';
+}
+
+function attachedGpx(route: any): boolean {
+  return (
+    typeof route?.gpxFileId === 'string' &&
+    route.gpxFileId.startsWith('cloud://') &&
+    typeof route?.gpxSha256 === 'string' &&
+    /^[a-f0-9]{64}$/.test(route.gpxSha256)
+  );
+}
+
+function coordinateLabel(point: any): string {
+  if (
+    !point ||
+    typeof point.latitude !== 'number' ||
+    !Number.isFinite(point.latitude) ||
+    point.latitude < -90 ||
+    point.latitude > 90 ||
+    typeof point.longitude !== 'number' ||
+    !Number.isFinite(point.longitude) ||
+    point.longitude < -180 ||
+    point.longitude > 180
+  )
+    return '';
+  return `${point.latitude.toFixed(5)}, ${point.longitude.toFixed(5)}`;
+}
+
 Page({
   loadRequestId: 0,
   initialShowPending: false,
   loadPromise: null as { id: string; promise: Promise<void> } | null,
   unloaded: false,
-  exportBusy: false,
+  downloadBusy: false,
   data: {
     loading: true,
     activityId: '',
@@ -143,9 +186,14 @@ Page({
     endTime: '',
     deadlineTime: '',
     estimatedRideTime: '',
+    officialRouteId: '',
+    hasGpxRoute: false,
     hasElevationProfile: false,
+    hasRouteOutline: false,
+    routeStartCoordinate: '',
+    routeEndCoordinate: '',
     coverFailed: false,
-    exportingGpx: false,
+    downloadingGpx: false,
     teamId: '',
     activityAction: unavailableAction(),
     isAdmin: false,
@@ -177,6 +225,7 @@ Page({
   },
   onReady() {
     this.drawElevation();
+    this.drawRouteOutline();
   },
   onUnload() {
     this.unloaded = true;
@@ -249,7 +298,12 @@ Page({
         isAdmin ||
         ['waiting', 'pending', 'approved', 'checked_in'].includes(registration?.status || '');
       const canSeeGroupQr = groupQrVisible(registration, isOrganizer, isAdmin);
-      const elevationProfile = validElevationProfile(detail.route?.elevationProfile);
+      const hasGpxRoute = attachedGpx(detail.route);
+      const elevationProfile = hasGpxRoute
+        ? validElevationProfile(detail.route?.elevationProfile)
+        : [];
+      const routeOutline =
+        hasGpxRoute && Array.isArray(detail.route?.routeOutline) ? detail.route.routeOutline : [];
       this.safeSetData(
         {
           item: detail,
@@ -276,12 +330,22 @@ Page({
           startTime: formatActivityTime(item.startAt),
           endTime: formatChinaDateTimeSeconds(item.endAt),
           deadlineTime: formatChinaDateTimeSeconds(item.deadline),
-          estimatedRideTime: formatRideDuration(detail.route?.estimatedMovingTimeSeconds),
+          estimatedRideTime: formatRideDuration(
+            hasGpxRoute ? detail.route?.estimatedMovingTimeSeconds : undefined,
+          ),
+          officialRouteId: officialRouteId(detail.route),
+          hasGpxRoute,
           hasElevationProfile: elevationProfile.length >= 2,
+          hasRouteOutline: routeOutline.length >= 2,
+          routeStartCoordinate: coordinateLabel(routeOutline[0]),
+          routeEndCoordinate: coordinateLabel(routeOutline[routeOutline.length - 1]),
           activityAction: primaryAction(item, registration, state),
           groupQrCodeExpired: groupQrExpired(detail.groupQrCodeUploadedAt),
         },
-        () => this.drawElevation(),
+        () => {
+          this.drawElevation();
+          this.drawRouteOutline();
+        },
       );
     } catch (error) {
       if (requestId !== this.loadRequestId || this.unloaded) return;
@@ -308,6 +372,30 @@ Page({
         canvas.width = target.width * ratio;
         canvas.height = target.height * ratio;
         drawElevationProfile(canvas.getContext('2d'), target.width, target.height, profile, ratio);
+      });
+  },
+  drawRouteOutline() {
+    const outline = this.data.item?.route?.routeOutline;
+    if (!this.data.hasGpxRoute || !this.data.hasRouteOutline || this.unloaded) return;
+    wx.createSelectorQuery()
+      .select('#route-outline-canvas')
+      .fields({ node: true, size: true })
+      .exec((result: any[]) => {
+        if (this.unloaded) return;
+        const target = result?.[0];
+        const canvas = target?.node;
+        if (!canvas || !target.width || !target.height) return;
+        const ratio = wx.getWindowInfo?.().pixelRatio || wx.getSystemInfoSync?.().pixelRatio || 1;
+        canvas.width = target.width * ratio;
+        canvas.height = target.height * ratio;
+        renderRouteOutline(
+          canvas.getContext('2d'),
+          target.width,
+          target.height,
+          outline,
+          ratio,
+          this.data.item?.route?.routeName || 'GPX 路线详情',
+        );
       });
   },
   coverImageError() {
@@ -385,7 +473,7 @@ Page({
     });
   },
   previewRouteImage() {
-    const rawSource = this.data.item?.route?.previewImageUrl;
+    const rawSource = this.data.item?.route?.generatedPreviewUrl;
     const source = typeof rawSource === 'string' ? rawSource.trim() : '';
     if (!source) return;
     wx.previewImage({
@@ -394,36 +482,10 @@ Page({
       fail: () => wx.showToast({ title: '路线预览图打开失败，请重试', icon: 'none' }),
     });
   },
-  async copyStravaRoute() {
-    const rawUrl = this.data.item?.route?.stravaRouteUrl;
-    const url = typeof rawUrl === 'string' ? rawUrl.trim() : '';
-    if (!/^https:\/\/www\.strava\.com\/routes\/\d+(?:[/?#]|$)/i.test(url)) {
-      wx.showToast({ title: '暂无有效的 Strava 路线', icon: 'none' });
-      return;
-    }
-    try {
-      // 剪贴板能力必须由点击事件同步触发；直接调用微信 API，避免经通用包装器丢失手势调用栈。
-      await new Promise<void>((resolve, reject) => {
-        wx.setClipboardData({ data: url, success: resolve, fail: reject });
-      });
-      wx.showToast({ title: '轨迹链接已复制', icon: 'success' });
-    } catch (error) {
-      const failure = error as { errMsg?: unknown; errno?: unknown };
-      const errMsg = typeof failure?.errMsg === 'string' ? failure.errMsg : '未知错误';
-      console.error('[activity-detail] Strava 轨迹链接复制失败', {
-        errMsg,
-        errno: failure?.errno,
-      });
-      const privacyBlocked = /privacy agreement/i.test(errMsg);
-      wx.showModal({
-        title: '复制失败',
-        content: privacyBlocked
-          ? '微信隐私保护指引正在更新，请稍后重试；也可长按轨迹链接手动复制。'
-          : '暂时无法复制，请稍后重试；也可长按轨迹链接手动复制。',
-        showCancel: false,
-        confirmText: '知道了',
-      });
-    }
+  openOfficialRoute() {
+    const routeId = this.data.officialRouteId;
+    if (!/^[1-9]\d{0,19}$/.test(routeId)) return;
+    wx.navigateTo({ url: `/pages/route-view/index?id=${encodeURIComponent(routeId)}` });
   },
   onShareAppMessage() {
     const item = this.data.item;
@@ -449,16 +511,16 @@ Page({
       item,
     );
   },
-  async exportGpx() {
+  async downloadGpx() {
     const activityId = this.data.item?.id;
-    if (!activityId || this.exportBusy) return;
-    this.exportBusy = true;
-    this.safeSetData({ exportingGpx: true });
+    if (!activityId || !this.data.hasGpxRoute || this.downloadBusy) return;
+    this.downloadBusy = true;
+    this.safeSetData({ downloadingGpx: true });
     try {
-      const result = await rideService.exportActivityGpx(activityId);
+      const result = await rideService.downloadRouteGpx(activityId);
       const bytes = base64Bytes(result?.base64);
       if (bytes < 0) throw new Error('路线文件格式错误');
-      if (bytes > MAX_GPX_BYTES) throw new Error('路线文件超过 4MB，请先在 Strava 简化路线后重试');
+      if (bytes > MAX_GPX_BYTES) throw new Error('路线文件超过 4MB，请联系活动组织者更新');
       const fileName = safeGpxName(result?.fileName);
       const filePath = `${wx.env.USER_DATA_PATH}/${fileName}`;
       const fileSystem = wx.getFileSystemManager();
@@ -475,12 +537,12 @@ Page({
       }
     } catch (error) {
       wx.showToast({
-        title: error instanceof Error ? error.message : 'GPX 导出失败，请稍后重试',
+        title: error instanceof Error ? error.message : 'GPX 下载失败，请稍后重试',
         icon: 'none',
       });
     } finally {
-      this.exportBusy = false;
-      this.safeSetData({ exportingGpx: false });
+      this.downloadBusy = false;
+      this.safeSetData({ downloadingGpx: false });
     }
   },
   async go() {

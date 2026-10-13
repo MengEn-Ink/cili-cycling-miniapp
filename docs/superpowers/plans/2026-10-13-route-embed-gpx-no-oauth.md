@@ -528,7 +528,7 @@ git commit -m "feat(route): upload GPX and preview native details"
 - Modify: `miniprogram/pages/activity-detail/index.wxss`
 - Modify: `tests/activity-detail-design.test.ts`
 
-- [ ] **Step 1: Write failing viewer/detail tests**
+- [x] **Step 1: Write failing viewer/detail tests**
 
 ```ts
 it('opens a validated official route in the dedicated viewer', () => {
@@ -544,13 +544,13 @@ it('downloads the uploaded original GPX without a route-owner token path', async
 });
 ```
 
-- [ ] **Step 2: Run focused tests and confirm failures**
+- [x] **Step 2: Run focused tests and confirm failures**
 
 Run: `npx vitest run tests/activity-detail-design.test.ts`
 
 Expected: FAIL for absent route viewer, generic fields, and uploaded GPX action.
 
-- [ ] **Step 3: Implement viewer and native detail**
+- [x] **Step 3: Implement viewer and native detail**
 
 ```ts
 const src = `${runtimeConfig.routeEmbedOrigin}/route/embed?id=${encodeURIComponent(routeId)}`;
@@ -566,13 +566,13 @@ GPX attached -> native metrics, gain/loss, min/max, estimate, elevation chart,
 
 When the embed page fails, keep `复制路线链接` visible. GPX values always win over external-link data.
 
-- [ ] **Step 4: Run detail tests and source validation**
+- [x] **Step 4: Run detail tests and source validation**
 
 Run: `npx vitest run tests/activity-detail-design.test.ts && npm run build`
 
 Expected: PASS and the source completeness check reports 14 pages.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add miniprogram/pages/route-view miniprogram/pages/activity-detail miniprogram/app.json miniprogram/config/runtime.ts tests/activity-detail-design.test.ts

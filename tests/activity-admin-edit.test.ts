@@ -962,7 +962,7 @@ describe('日常活动极简创建与编辑', () => {
     expect(deleteFile).not.toHaveBeenCalled();
   });
 
-  it('日常活动详情隐藏旧路线费用和不限人数话术，并突出集合时间', () => {
+  it('日常活动详情隐藏旧路线费用和不限人数话术，并只为可信 GPX 展示路线详情', () => {
     const card = readFileSync('miniprogram/components/activity-card/index.wxml', 'utf8');
     const detail = readFileSync('miniprogram/pages/activity-detail/index.wxml', 'utf8');
     expect(card).toContain("item.registrationUnlimited ? (item.occupied + ' 人已报名')");
@@ -972,7 +972,8 @@ describe('日常活动极简创建与编辑', () => {
     expect(detail).not.toContain('不限</text><text>报名人数');
     expect(detail).toContain('!item.registrationUnlimited && item.route.end');
     expect(detail).toContain('!item.registrationUnlimited && (item.fee');
-    expect(detail).toContain('route-profile-card" wx:if="{{!item.registrationUnlimited}}"');
+    expect(detail).toContain('class="gpx-route-card" wx:if="{{hasGpxRoute}}"');
+    expect(detail).not.toContain('route-profile-card');
   });
 
   it('活动群二维码可独立上传并随活动保存回读', async () => {

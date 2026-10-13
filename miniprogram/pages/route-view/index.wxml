@@ -1,0 +1,11 @@
+<web-view wx:if="{{src && !failed}}" src="{{src}}" bindload="routeLoaded" binderror="routeFailed"></web-view>
+
+<view wx:else class="route-view-page">
+  <view class="route-view-kicker">STRAVA 官方路线</view>
+  <view class="route-view-title">路线暂时无法显示</view>
+  <view class="route-view-copy">你可以复制路线链接后在浏览器或 Strava 中打开，也可以返回活动继续查看其他信息。</view>
+  <view class="route-view-actions">
+    <button wx:if="{{officialUrl}}" class="route-view-action route-view-action--primary" bindtap="copyRouteUrl">复制路线链接</button>
+    <button class="route-view-action" bindtap="goBack">返回活动</button>
+  </view>
+</view>
