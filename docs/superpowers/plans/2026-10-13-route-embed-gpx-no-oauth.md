@@ -185,7 +185,7 @@ git commit -m "feat(route): parse uploaded GPX details"
 - Modify: `cloudfunctions/activity-admin/activity-admin.node-test.js`
 - Replace: `cloudfunctions/activity-admin/strava-route.node-test.js`
 
-- [ ] **Step 1: Write failing preview and save tests**
+- [x] **Step 1: Write failing preview and save tests**
 
 ```js
 test('preview binds owner path, sha256 and parsed route for two hours', async () => {
@@ -208,13 +208,13 @@ test('save ignores client metrics and consumes only the matching trusted preview
 });
 ```
 
-- [ ] **Step 2: Run tests and confirm the new actions fail**
+- [x] **Step 2: Run tests and confirm the new actions fail**
 
 Run: `npm --prefix cloudfunctions/activity-admin test`
 
 Expected: FAIL for missing preview functions and unsupported route fields.
 
-- [ ] **Step 3: Implement preview creation and save consumption**
+- [x] **Step 3: Implement preview creation and save consumption**
 
 ```js
 const preview = await tx.getRoutePreviewById(route.gpx_preview_id);
@@ -238,13 +238,13 @@ gpx_preview_id/gpx_file_id/gpx_sha256/generated_preview_file_id
 
 All native metrics copied into the activity come from `preview.summary`.
 
-- [ ] **Step 4: Run activity-admin tests**
+- [x] **Step 4: Run activity-admin tests**
 
 Run: `npm --prefix cloudfunctions/activity-admin test`
 
 Expected: PASS for owner isolation, digest mismatch, expiry, generated-image binding, one-time consumption, retry of an already attached preview, and legacy URL rewrite.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add cloudfunctions/activity-admin

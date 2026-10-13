@@ -15,6 +15,7 @@ const {
   buildActivityAudit,
   activityAuditAction,
 } = require('./domain');
+const { assertUsableRoutePreview, mergeTrustedPreviewRoute } = require('./route-preview');
 
 const CLONE_REQUEST_FIELDS = new Set([
   'action',
@@ -303,9 +304,45 @@ async function saveActivity(
         fail('CREATE_CONFLICT', '创建请求与已有活动冲突');
       return publicActivity(current, { revealContact: true });
     }
+    const targetActivityId = currentId || (await tx.createActivityId());
     let effectiveActivity = effectiveActivityInput(current, activity);
     const isUnpublish = current?.status === 'published' && effectiveActivity.status === 'draft';
     const transitionReason = isUnpublish ? requiredReason(reason, '下架活动') : undefined;
+    const requestedGpxPreviewId = effectiveActivity.route?.gpx_preview_id;
+    let routePreviewToConsume;
+    if (requestedGpxPreviewId !== undefined) {
+      const route = effectiveActivity.route;
+      if (
+        typeof requestedGpxPreviewId !== 'string' ||
+        !/^[a-f0-9]{64}$/.test(requestedGpxPreviewId) ||
+        typeof route.gpx_file_id !== 'string' ||
+        !route.gpx_file_id ||
+        typeof route.gpx_sha256 !== 'string' ||
+        !/^[a-f0-9]{64}$/.test(route.gpx_sha256) ||
+        (route.generated_preview_file_id !== undefined &&
+          typeof route.generated_preview_file_id !== 'string')
+      )
+        fail('VALIDATION_FAILED', 'GPX 路线参数无效');
+      const preview = await tx.getRoutePreviewById(requestedGpxPreviewId);
+      routePreviewToConsume = assertUsableRoutePreview(preview, {
+        openid,
+        previewId: requestedGpxPreviewId,
+        digest: route.gpx_sha256,
+        sourceFileId: route.gpx_file_id,
+        generatedFileId: route.generated_preview_file_id || '',
+        activityId: targetActivityId,
+        now,
+      });
+      effectiveActivity = {
+        ...effectiveActivity,
+        route: mergeTrustedPreviewRoute(route, routePreviewToConsume),
+      };
+    } else if (
+      effectiveActivity.route?.gpx_file_id &&
+      effectiveActivity.route.gpx_file_id !== current?.route?.gpx_file_id
+    ) {
+      fail('ROUTE_PREVIEW_REQUIRED', '请先上传并读取 GPX 路线');
+    }
     const requestedRouteId = effectiveActivity.route?.strava_route_id;
     let stravaRouteOwnerOpenid;
     if (requestedRouteId !== undefined) {
@@ -443,7 +480,7 @@ async function saveActivity(
         (occupancyPartitionReady && safe.self_drive_capacity < selfDriveOccupiedCount))
     )
       fail('CAPACITY_BELOW_OCCUPIED', '分类容量不能低于对应已占用名额');
-    const id = activityId || idempotentCreateId || (await tx.createActivityId());
+    const id = targetActivityId;
     const value = {
       ...(current || {}),
       ...safe,
@@ -501,6 +538,7 @@ async function saveActivity(
       }
     }
     await tx.putActivity(id, value);
+    if (routePreviewToConsume) await tx.consumeRoutePreview(routePreviewToConsume._id, id, now);
     const audit = buildActivityAudit(
       openid,
       activityAuditAction(current?.status, safe.status),

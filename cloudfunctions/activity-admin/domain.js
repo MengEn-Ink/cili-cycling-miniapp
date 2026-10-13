@@ -134,6 +134,7 @@ function cleanLocation(value, field) {
   };
 }
 function cleanStravaRoute(route) {
+  if (route.strava_route_id === undefined && route.strava_route_url === undefined) return {};
   const extraFields = [
     'strava_route_id',
     'strava_route_url',
@@ -168,7 +169,7 @@ function cleanStravaRoute(route) {
   const hasSyncedData = extraFields.some(
     (field) => field !== 'strava_route_url' && route[field] !== undefined,
   );
-  if (!hasSyncedData) return { strava_route_url: url };
+  if (!hasSyncedData) return {};
   const id = cleanText(route.strava_route_id, 'Strava 路线 ID', 20, true);
   if (!/^\d{1,20}$/.test(id) || urlMatch[1] !== id)
     fail('VALIDATION_FAILED', 'Strava 路线 URL 格式错误');
@@ -317,6 +318,194 @@ function cleanStravaRoute(route) {
     popular_climbs: popularClimbs,
   };
 }
+function cleanExternalRoute(route) {
+  const hasGeneric = ['external_provider', 'external_route_id', 'external_route_url'].some(
+    (field) => route[field] !== undefined,
+  );
+  const legacyUrl =
+    route.strava_route_url !== undefined && route.strava_route_id === undefined
+      ? route.strava_route_url
+      : undefined;
+  if (!hasGeneric && legacyUrl === undefined) return {};
+  if (hasGeneric && route.external_provider !== 'strava')
+    fail('VALIDATION_FAILED', '官方路线来源无效');
+  const rawUrl = cleanText(
+    hasGeneric ? route.external_route_url : legacyUrl,
+    'Strava 官方路线链接',
+    256,
+    true,
+  );
+  let url;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    fail('VALIDATION_FAILED', 'Strava 官方路线链接无效');
+  }
+  const match = /^\/(?:[a-z]{2}(?:-[a-z]{2})?\/)?routes\/([1-9]\d{0,19})\/?$/i.exec(url.pathname);
+  const requestedId = hasGeneric
+    ? cleanText(route.external_route_id, '官方路线 ID', 20, true)
+    : match?.[1];
+  if (
+    url.protocol !== 'https:' ||
+    url.hostname.toLowerCase() !== 'www.strava.com' ||
+    url.port ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash ||
+    !match ||
+    !/^[1-9]\d{0,19}$/.test(requestedId || '') ||
+    match[1] !== requestedId
+  )
+    fail('VALIDATION_FAILED', 'Strava 官方路线链接无效');
+  return {
+    external_provider: 'strava',
+    external_route_id: requestedId,
+    external_route_url: `https://www.strava.com/routes/${requestedId}`,
+  };
+}
+function cleanGpxRoute(route) {
+  const gpxFields = [
+    'gpx_preview_id',
+    'gpx_sha256',
+    'generated_preview_file_id',
+    'elevation_loss_m',
+    'elevation_min_m',
+    'elevation_max_m',
+    'estimation_source',
+    'route_outline',
+  ];
+  if (!gpxFields.some((field) => route[field] !== undefined)) return {};
+  const previewId = cleanText(route.gpx_preview_id, '路线预览标识', 64, true);
+  const digest = cleanText(route.gpx_sha256, 'GPX 文件摘要', 64, true);
+  const gpxFileId = cleanText(route.gpx_file_id, 'GPX 文件', 500, true);
+  if (!/^[a-f0-9]{64}$/.test(previewId) || !/^[a-f0-9]{64}$/.test(digest))
+    fail('VALIDATION_FAILED', 'GPX 路线参数无效');
+  if (!/^cloud:\/\/[^/]+\/activity-routes\/[^/]+\/[a-f0-9]{64}\.gpx$/.test(gpxFileId))
+    fail('VALIDATION_FAILED', 'GPX 文件格式错误');
+  let generatedPreviewFileId;
+  if (route.generated_preview_file_id !== undefined && route.generated_preview_file_id !== '') {
+    generatedPreviewFileId = cleanText(route.generated_preview_file_id, '路线图文件', 500, true);
+    if (
+      !/^cloud:\/\/[^/]+\/activity-routes\/[^/]+\/[a-f0-9]{64}\.png$/.test(generatedPreviewFileId)
+    )
+      fail('VALIDATION_FAILED', '路线图文件格式错误');
+  }
+  const elevationLoss = route.elevation_loss_m;
+  const elevationMinimum = route.elevation_min_m;
+  const elevationMaximum = route.elevation_max_m;
+  if (
+    typeof elevationLoss !== 'number' ||
+    !Number.isFinite(elevationLoss) ||
+    elevationLoss < 0 ||
+    elevationLoss > 100000 ||
+    typeof elevationMinimum !== 'number' ||
+    !Number.isFinite(elevationMinimum) ||
+    elevationMinimum < -1000 ||
+    elevationMinimum > 10000 ||
+    typeof elevationMaximum !== 'number' ||
+    !Number.isFinite(elevationMaximum) ||
+    elevationMaximum < -1000 ||
+    elevationMaximum > 10000 ||
+    elevationMinimum > elevationMaximum
+  )
+    fail('VALIDATION_FAILED', 'GPX 海拔数据无效');
+  if (route.estimation_source !== 'cili') fail('VALIDATION_FAILED', '路线预计时间来源无效');
+  const estimatedMovingTime = route.estimated_moving_time_seconds;
+  if (
+    !Number.isSafeInteger(estimatedMovingTime) ||
+    estimatedMovingTime < 60 ||
+    estimatedMovingTime > 604800
+  )
+    fail('VALIDATION_FAILED', '预计骑行时间格式错误');
+  if (
+    !Array.isArray(route.elevation_profile) ||
+    route.elevation_profile.length < 2 ||
+    route.elevation_profile.length > 120
+  )
+    fail('VALIDATION_FAILED', '海拔曲线格式错误');
+  let previousDistance = -1;
+  const elevationProfile = route.elevation_profile.map((point) => {
+    if (
+      !point ||
+      typeof point !== 'object' ||
+      Array.isArray(point) ||
+      Object.keys(point).some((key) => !['distance_km', 'elevation_m'].includes(key)) ||
+      typeof point.distance_km !== 'number' ||
+      !Number.isFinite(point.distance_km) ||
+      point.distance_km < previousDistance ||
+      point.distance_km < 0 ||
+      point.distance_km > 20000 ||
+      typeof point.elevation_m !== 'number' ||
+      !Number.isFinite(point.elevation_m) ||
+      point.elevation_m < -1000 ||
+      point.elevation_m > 10000
+    )
+      fail('VALIDATION_FAILED', '海拔曲线格式错误');
+    previousDistance = point.distance_km;
+    return { distance_km: point.distance_km, elevation_m: point.elevation_m };
+  });
+  if (
+    !Array.isArray(route.route_outline) ||
+    route.route_outline.length < 2 ||
+    route.route_outline.length > 240
+  )
+    fail('VALIDATION_FAILED', '路线轮廓格式错误');
+  const routeOutline = route.route_outline.map((point) => {
+    if (
+      !point ||
+      typeof point !== 'object' ||
+      Array.isArray(point) ||
+      Object.keys(point).some((key) => !['latitude', 'longitude'].includes(key)) ||
+      typeof point.latitude !== 'number' ||
+      !Number.isFinite(point.latitude) ||
+      point.latitude < -90 ||
+      point.latitude > 90 ||
+      typeof point.longitude !== 'number' ||
+      !Number.isFinite(point.longitude) ||
+      point.longitude < -180 ||
+      point.longitude > 180
+    )
+      fail('VALIDATION_FAILED', '路线轮廓格式错误');
+    return { latitude: point.latitude, longitude: point.longitude };
+  });
+  const bounds = route.route_bounds;
+  if (
+    !bounds ||
+    typeof bounds !== 'object' ||
+    Array.isArray(bounds) ||
+    Object.keys(bounds).some((key) => !['south', 'west', 'north', 'east'].includes(key))
+  )
+    fail('VALIDATION_FAILED', '路线边界格式错误');
+  const { south, west, north, east } = bounds;
+  if (
+    ![south, west, north, east].every(
+      (value) => typeof value === 'number' && Number.isFinite(value),
+    ) ||
+    south < -90 ||
+    north > 90 ||
+    west < -180 ||
+    east > 180 ||
+    south > north ||
+    west > east
+  )
+    fail('VALIDATION_FAILED', '路线边界格式错误');
+  return {
+    gpx_preview_id: previewId,
+    gpx_file_id: gpxFileId,
+    gpx_sha256: digest,
+    ...(generatedPreviewFileId ? { generated_preview_file_id: generatedPreviewFileId } : {}),
+    route_name: cleanText(route.route_name, '路线名称', 120, true),
+    elevation_loss_m: elevationLoss,
+    elevation_min_m: elevationMinimum,
+    elevation_max_m: elevationMaximum,
+    estimated_moving_time_seconds: estimatedMovingTime,
+    estimation_source: 'cili',
+    elevation_profile: elevationProfile,
+    route_outline: routeOutline,
+    route_bounds: { south, west, north, east },
+  };
+}
 function cleanSchedule(value) {
   if (!Array.isArray(value) || value.length > 50) fail('VALIDATION_FAILED', '行程格式错误');
   return value.map((item) => {
@@ -453,6 +642,17 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses, option
     'elevation_m',
     'level',
     'gpx_file_id',
+    'gpx_preview_id',
+    'gpx_sha256',
+    'generated_preview_file_id',
+    'elevation_loss_m',
+    'elevation_min_m',
+    'elevation_max_m',
+    'estimation_source',
+    'route_outline',
+    'external_provider',
+    'external_route_id',
+    'external_route_url',
     'strava_route_id',
     'strava_route_url',
     'route_name',
@@ -505,6 +705,8 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses, option
       elevation_m: elevation,
       level: cleanText(route.level || '', '路线难度', 50),
       gpx_file_id: cleanText(route.gpx_file_id || '', 'GPX 文件', 500),
+      ...cleanExternalRoute(route),
+      ...cleanGpxRoute(route),
       ...cleanStravaRoute(route),
     },
     notices: cleanStringArray(input.notices || [], '注意事项'),
