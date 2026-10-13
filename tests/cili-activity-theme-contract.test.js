@@ -55,8 +55,10 @@ describe('CILI 活动页静态契约', () => {
     expect(activityCard).toContain('<status-pill status="{{item.displayStatus}}" />');
     expect(activityCard.match(/class="metric-item"/g)).toHaveLength(3);
     expect(activityCard).toContain(
-      "item.capacity > 0 ? (item.occupied + ' / ' + item.capacity + ' 人已报名') : '名额确认中'",
+      "item.capacity > 0 ? (item.occupied + ' / ' + item.capacity) : '待确认'",
     );
+    expect(activityCard).toContain("item.capacity <= 0 ? '名额' : '报名'");
+    expect(activityCard).not.toContain('人已报名');
     expect(activityCard).toContain('hover-class="activity-card--pressed"');
     expect(activityCard).toContain('wx:else class="card-placeholder"');
     expect(activityCard).toContain('class="card-cta"');
@@ -78,7 +80,7 @@ describe('CILI 活动页静态契约', () => {
     expect(activityCard).not.toContain('activity-card--featured');
     expect(activityCard).not.toContain('activity-card--compact');
     expect(activityCardStyles).not.toContain('.activity-card--compact');
-    expect(activityCardStyles).toMatch(/\.card-media\s*\{[^}]*height:\s*3\d\drpx/s);
+    expect(activityCardStyles).toMatch(/\.card-media\s*\{[^}]*height:\s*2[4-8]\drpx/s);
     const title = effectiveBlock(activityCardStyles, '.activity-title');
     expect(declaration(title, '-webkit-line-clamp')).toBe('2');
     expect(declaration(title, 'min-height')).toMatch(/^\d+rpx$/);
@@ -109,7 +111,7 @@ describe('CILI 活动页静态契约', () => {
     expect(activityCard).toContain('{{item.displayTimeLabel}}');
     expect(activityCard).toContain('class="location-label">集合');
     expect(activityCard).toContain('{{item.publisher.nickname}} 发起');
-    expect(activityCard).toContain('人已报名');
+    expect(activityCard).toContain("item.capacity <= 0 ? '名额' : '报名'");
   });
 
   it('首页只使用品牌橙、石墨黑和暖灰白主题色，不继承荧光黄视觉', () => {

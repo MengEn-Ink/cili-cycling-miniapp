@@ -92,7 +92,11 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     expect(form).not.toContain('待公布');
 
     const activityCard = read('miniprogram/components/activity-card/index.wxml');
-    expect(activityCard).toContain('人已报名');
+    expect(activityCard).toContain("item.capacity <= 0 ? '名额' : '报名'");
+    expect(activityCard).toContain(
+      "item.capacity > 0 ? (item.occupied + ' / ' + item.capacity) : '待确认'",
+    );
+    expect(activityCard).not.toContain('人已报名');
     expect(activityCard).not.toContain('人占位');
 
     const profile = read('miniprogram/pages/profile/index.wxml');

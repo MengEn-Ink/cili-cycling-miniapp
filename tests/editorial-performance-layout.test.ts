@@ -21,7 +21,7 @@ describe('方案 A 编辑式性能布局', () => {
     expect(card).toContain('class="card-media"');
     expect(card).toContain('class="card-info"');
     expect(styles).not.toContain('.activity-card--compact');
-    expect(styles).toMatch(/\.card-media\s*\{[^}]*height:\s*3\d\drpx/s);
+    expect(styles).toMatch(/\.card-media\s*\{[^}]*height:\s*2[4-8]\drpx/s);
   });
 
   it('活动详情以媒体 Hero 和报名决策摘要建立首屏层级', () => {
