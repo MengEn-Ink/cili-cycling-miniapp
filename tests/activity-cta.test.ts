@@ -134,12 +134,13 @@ describe('活动 CTA 九分支', () => {
     ).toBe('报名待开放');
   });
 
-  it('活动卡容量缺失时显示确认中而不是 0 人报名', () => {
+  it('活动卡容量缺失时明确提示名额待确认', () => {
     const template = readFileSync('miniprogram/components/activity-card/index.wxml', 'utf8');
-    expect(template).toContain("item.capacity > 0 ? item.occupied : '—'");
     expect(template).toContain(
-      "item.capacity > 0 ? (item.occupied + ' / ' + item.capacity + ' 人已报名') : '名额确认中'",
+      "item.capacity > 0 ? (item.occupied + ' / ' + item.capacity) : '待确认'",
     );
+    expect(template).toContain("item.capacity <= 0 ? '名额' : '报名'");
+    expect(template).not.toContain('人已报名');
   });
 
   it('无报名且已到截止时间时禁用', () => {

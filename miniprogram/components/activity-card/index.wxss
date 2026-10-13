@@ -1,9 +1,10 @@
 .activity-card {
   --card-accent: var(--color-brand);
+  --radius-card: 16rpx;
   position: relative;
   overflow: hidden;
   margin-top: 0;
-  border: 1rpx solid var(--color-card-border);
+  border: 4rpx solid var(--color-card-border);
   border-color: var(--color-card-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
@@ -19,7 +20,7 @@
 }
 .card-media {
   position: relative;
-  height: 340rpx;
+  height: 260rpx;
   overflow: hidden;
   background: var(--color-raised);
 }
@@ -49,16 +50,16 @@
 }
 .date-plate {
   position: absolute;
-  left: 20rpx;
-  bottom: 20rpx;
+  left: 24rpx;
+  bottom: 24rpx;
   display: flex;
   min-width: 244rpx;
-  padding: 16rpx 20rpx;
+  padding: 12rpx 14rpx;
   align-items: center;
-  border-radius: 16rpx;
-  background: var(--card-accent);
-  color: var(--color-on-brand);
-  box-shadow: 0 8rpx 22rpx rgba(96, 30, 12, 0.25);
+  border-left: 8rpx solid var(--color-brand);
+  border-radius: 8rpx;
+  background: var(--color-text);
+  color: var(--color-on-action);
 }
 .time-value {
   font-variant-numeric: tabular-nums;
@@ -72,7 +73,7 @@
   right: 18rpx;
 }
 .card-info {
-  padding: 26rpx;
+  padding: 22rpx 24rpx 24rpx;
 }
 .publisher {
   display: flex;
@@ -103,25 +104,25 @@
 }
 .activity-title {
   display: -webkit-box;
-  min-height: 84rpx;
-  margin-top: 16rpx;
+  min-height: 70rpx;
+  margin-top: 10rpx;
   overflow: hidden;
   color: var(--color-text);
   font-size: 34rpx;
   font-weight: 900;
-  line-height: 1.24;
+  line-height: 1.25;
   word-break: break-word;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 .route-line {
   display: -webkit-box;
-  min-height: 62rpx;
+  min-height: 52rpx;
   margin-top: 8rpx;
   overflow: hidden;
   color: var(--color-muted);
   font-size: 24rpx;
-  line-height: 1.35;
+  line-height: 1.4;
   word-break: break-word;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -134,15 +135,16 @@
 .metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin-top: 18rpx;
+  margin-top: 16rpx;
   overflow: hidden;
   border-top: 1rpx solid var(--color-border);
   border-bottom: 1rpx solid var(--color-border);
+  border-left: 8rpx solid var(--color-brand);
 }
 .metric-item {
   min-width: 0;
-  min-height: 104rpx;
-  padding: 16rpx 8rpx 12rpx;
+  min-height: 82rpx;
+  padding: 10rpx 8rpx;
   background: var(--color-raised);
   text-align: center;
 }
@@ -174,11 +176,11 @@
 }
 .card-foot {
   display: flex;
-  min-height: var(--control-height);
+  min-height: 80rpx;
   align-items: center;
   justify-content: space-between;
-  gap: 16rpx;
-  margin-top: 14rpx;
+  gap: 12rpx;
+  margin-top: 10rpx;
 }
 .card-meta {
   display: flex;
@@ -188,8 +190,7 @@
   color: var(--color-muted);
   font-size: 21rpx;
 }
-.level,
-.occupancy {
+.level {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -203,6 +204,7 @@
   min-width: 184rpx;
   height: var(--control-height);
   min-height: var(--control-height);
+  margin-left: auto;
   padding: 0 20rpx;
   flex: none;
   align-items: center;
@@ -223,17 +225,17 @@
 }
 @media (max-width: 350px) {
   .card-media {
-    height: 320rpx;
+    height: 248rpx;
   }
   .card-info {
-    padding: 22rpx;
+    padding: 20rpx;
   }
   .activity-title {
-    min-height: 78rpx;
-    font-size: 31rpx;
+    min-height: 68rpx;
+    font-size: 30rpx;
   }
   .route-line {
-    min-height: 58rpx;
+    min-height: 52rpx;
     font-size: 22rpx;
   }
 }
@@ -244,77 +246,4 @@
   .activity-card--pressed {
     transform: none;
   }
-}
-
-.activity-card {
-  --radius-card: 16rpx;
-  border-color: var(--color-card-border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-card);
-}
-.card-media {
-  height: 320rpx;
-}
-.date-plate {
-  left: 32rpx;
-  bottom: 32rpx;
-  padding: 16rpx;
-  border-radius: 8rpx;
-  box-shadow: none;
-}
-.card-info {
-  padding: 32rpx;
-}
-.publisher-name {
-  margin-left: 16rpx;
-}
-.activity-title {
-  margin-top: 16rpx;
-  font-size: 36rpx;
-  line-height: 1.33;
-}
-.route-line {
-  margin-top: 16rpx;
-  line-height: 1.5;
-}
-.metrics {
-  margin-top: 32rpx;
-}
-.metric-item {
-  min-height: 104rpx;
-  padding: 16rpx;
-  text-align: center;
-}
-.card-foot {
-  min-height: 88rpx;
-  gap: 16rpx;
-  margin-top: 16rpx;
-}
-.card-cta {
-  min-height: var(--control-height);
-  border-radius: 8rpx;
-  background: var(--color-action);
-  color: var(--color-on-action);
-}
-@media (max-width: 350px) {
-  .card-info {
-    padding: 32rpx;
-  }
-}
-
-/* 活动卡与行程凭证共用黑框白底、黑底白字的票据信息层级。 */
-.activity-card {
-  border-width: 4rpx;
-  border-color: var(--color-card-border);
-}
-
-.date-plate {
-  border-left: 8rpx solid var(--color-brand);
-  background: var(--color-text);
-  color: var(--color-on-action);
-}
-
-.metrics {
-  border-left: 8rpx solid var(--color-brand);
 }

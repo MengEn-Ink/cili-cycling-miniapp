@@ -14,7 +14,9 @@
       <view class="timeline-tab {{activeView === 'future' ? 'is-active' : ''}}" role="tab" aria-selected="{{activeView === 'future'}}" aria-controls="activity-list-panel" data-view="future" bindtap="switchView" hover-class="timeline-tab--pressed">即将开始</view>
       <view class="timeline-tab {{activeView === 'history' ? 'is-active' : ''}}" role="tab" aria-selected="{{activeView === 'history'}}" aria-controls="activity-list-panel" data-view="history" bindtap="switchView" hover-class="timeline-tab--pressed">历史活动</view>
     </view>
-    <view class="section-head"><view class="section-title">{{sectionTitle}}</view><text class="count" wx:if="{{items.length}}">{{currentCardIndex + 1}} / {{items.length}}</text></view>
+    <scroll-view class="day-chip-bar" scroll-x enhanced show-scrollbar="{{false}}" wx:if="{{activeView === 'future' && dayChips.length > 1}}" aria-label="按日期快速选择活动">
+      <view class="day-chip-bar__inner"><view class="day-chip {{selectedDayKey === item.key ? 'is-active' : ''}}" wx:for="{{dayChips}}" wx:key="key" role="button" aria-pressed="{{selectedDayKey === item.key}}" data-index="{{item.index}}" bindtap="selectDay" hover-class="day-chip--pressed">{{item.label}}</view></view>
+    </scroll-view>
     <view class="refresh-note muted" wx:if="{{refreshing}}" aria-hidden="true">正在刷新活动…</view>
     <view class="refresh-note refresh-error" wx:if="{{refreshError}}" aria-hidden="true">{{refreshError}}</view>
     <view id="activity-list-panel" class="activity-results" role="tabpanel" aria-label="{{activeView === 'history' ? '历史活动卡片' : '即将开始活动卡片'}}">

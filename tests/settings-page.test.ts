@@ -23,21 +23,21 @@ describe('设置页', () => {
   it('只加载版本日志，不注册 Strava readiness 生命周期或授权入口', () => {
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.13.42',
+      version: '2026.10.13.43',
       latest: true,
-      title: '活动管理视觉对齐',
-      summary: '拉开标题区与状态选项卡间距，并统一筛选、卡片和按钮的黑白橙主题。',
+      title: '活动首页选活动更快捷',
+      summary: '精简重复提示，恢复多活动日期快捷选择，并用更紧凑的卡片集中展示关键信息。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.13.43',
       '2026.10.13.42',
       '2026.10.13.41',
       '2026.10.13.40',
       '2026.10.13.39',
-      '2026.10.13.38',
     ]);
     expect(page.onShow).toBeUndefined();
     expect(page.loadStravaStatus).toBeUndefined();
