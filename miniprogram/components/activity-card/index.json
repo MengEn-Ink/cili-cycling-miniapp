@@ -1,6 +1,7 @@
 {
   "component": true,
   "usingComponents": {
+    "brand-logo": "/components/brand-logo/index",
     "status-pill": "/components/status-pill/index"
   }
 }

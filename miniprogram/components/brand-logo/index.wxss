@@ -20,8 +20,8 @@
   padding: 14rpx 44rpx 14rpx 18rpx;
   align-items: center;
   border-radius: var(--radius-sm);
-  background: var(--color-text);
-  color: var(--color-bg);
+  background: var(--color-logo-background);
+  color: var(--color-logo-foreground);
   font-size: 46rpx;
   font-weight: 900;
   line-height: 1;
@@ -51,7 +51,7 @@
   bottom: -7rpx;
   width: 10rpx;
   height: 10rpx;
-  border: 4rpx solid var(--color-brand);
+  border: 4rpx solid var(--color-logo-accent);
   border-radius: 50%;
   content: '';
 }

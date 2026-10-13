@@ -23,21 +23,21 @@ describe('设置页', () => {
   it('只加载版本日志，不注册 Strava readiness 生命周期或授权入口', () => {
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.13.36',
+      version: '2026.10.13.37',
       latest: true,
-      title: '核心页面加载更快更稳定',
-      summary: '首页、活动详情和个人中心减少重复等待，弱网与图片缓存异常时也能平稳展示已有内容。',
+      title: '全场景 Logo 统一升级',
+      summary: '小程序头像、活动占位图、骑行名片与分享物料统一使用黑底白字的“此里”品牌标识。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.13.37',
       '2026.10.13.36',
       '2026.10.13.35',
       '2026.10.13.34',
       '2026.10.13.33',
-      '2026.10.13.32',
     ]);
     expect(page.onShow).toBeUndefined();
     expect(page.loadStravaStatus).toBeUndefined();

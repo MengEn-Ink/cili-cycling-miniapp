@@ -84,9 +84,8 @@ page {
   height: 100%;
 }
 .avatar-preview-placeholder {
-  color: var(--color-brand);
-  font-size: 52rpx;
-  font-weight: 900;
+  width: 100%;
+  height: 100%;
 }
 .avatar-panel {
   min-width: 0;

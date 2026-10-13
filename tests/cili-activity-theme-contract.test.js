@@ -113,7 +113,7 @@ describe('CILI 活动页静态契约', () => {
   });
 
   it('首页只使用品牌橙、石墨黑和暖灰白主题色，不继承荧光黄视觉', () => {
-    expect(logoStyles).toContain('background: var(--color-text)');
+    expect(logoStyles).toContain('background: var(--color-logo-background)');
     expect(activitiesStyles).toContain('background: var(--color-bg)');
     expect(activitiesStyles).toContain('background: var(--color-brand)');
     expect(activitiesStyles).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(|navy|blue|gradient/i);
