@@ -1,253 +1,78 @@
 page {
   background: var(--color-bg);
 }
-.page {
+
+.activity-list-page {
+  min-height: 100vh;
   background: var(--color-bg);
   color: var(--color-text);
 }
 
-.card {
-  border: 1rpx solid #2b2b2e;
-  background: #1b1b1d;
+.page.activity-list-page {
+  --page-gutter: 48rpx;
+  padding: 32rpx var(--page-gutter) 64rpx;
 }
-.card.danger {
+
+.activity-list-page .card.danger {
   border-color: var(--color-danger);
   background: var(--color-danger-soft);
   color: var(--color-danger-text);
 }
 
 .hero {
-  color: #a8a8ad;
-}
-.hero view {
-  color: #a8a8ad;
-}
-.hero .hero-title {
-  color: #f7f7f5;
-  font-size: 46rpx;
-  font-weight: 900;
-}
-.hero view:last-child {
-  font-size: 26rpx;
-}
-
-.activity-row {
-  display: grid;
-  gap: 20rpx;
-}
-.row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16rpx;
-}
-.title {
-  color: #f7f7f5;
-}
-.tag {
-  border: 1rpx solid #4a4a4e;
-  background: transparent;
-  color: #a8a8ad;
-}
-
-.template-button {
-  margin: 0;
-}
-.section-title {
-  color: #f7f7f5;
-}
-.hint {
-  color: #8a8a8e;
-}
-
-.clone-panel {
-  display: grid;
-  gap: 24rpx;
-}
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 10rpx;
-}
-.field text {
-  color: #f7f7f5;
-  font-weight: 700;
-}
-.field input {
-  min-height: 88rpx;
-  padding: 0 20rpx;
-  border: 1rpx solid #3b3b3f;
-  border-radius: 8rpx;
-  background: #0d1012;
-  color: #f7f7f5;
-}
-.clone-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20rpx;
-}
-
-/* ===== CILI 统一明亮 UI：活动管理页面 ===== */
-.activity-list-page {
-  min-height: 100vh;
-  background: #0b0b0c;
-  color: #f7f7f5;
-}
-.activity-list-page .card {
-  border: 1rpx solid #343438;
-  background: #242427;
-  color: #f7f7f5;
-}
-.activity-list-page .card.danger {
-  background: var(--color-danger-soft);
-  color: var(--color-danger-text);
-}
-.activity-list-page .title {
-  color: var(--color-text);
-}
-.activity-list-page .tag {
-  background: #343438;
-  color: var(--color-brand);
-}
-.activity-list-page .section-title {
-  color: #f7f7f5;
-}
-.activity-list-page .hint {
-  color: #a8a8ad;
-}
-/* 克隆表单使用裸 input，这里统一为暗色控件，避免出现系统默认白底输入框 */
-.activity-list-page .field input {
-  box-sizing: border-box;
-  width: 100%;
-  min-height: var(--control-height);
-  padding: 20rpx 24rpx;
-  border: 1rpx solid #343438;
-  border-radius: 10rpx;
-  background: #151517;
-  color: #f7f7f5;
-}
-.activity-list-page .btn {
-  border: 0;
-  background: var(--color-action);
-  color: var(--color-on-action);
-  font-weight: 900;
-}
-.activity-list-page .secondary {
-  border: 2rpx solid #3a3a3e;
-  background: #151517;
-  color: #f7f7f5;
-}
-
-.activity-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16rpx;
-}
-
-.activity-actions button {
-  margin: 0;
-}
-
-.status-button {
-  min-width: 144rpx;
-}
-
-.load-more {
-  width: 100%;
-}
-
-.activity-list-page .danger-action {
-  border-color: var(--color-danger);
-  color: var(--color-danger-text);
-}
-
-page,
-.page,
-.activity-list-page {
-  background: var(--color-bg);
-  color: var(--color-text);
-}
-.activity-list-page .card {
-  border-color: var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-text);
-}
-.hero,
-.hero view,
-.activity-list-page .hint,
-.activity-list-page .tag {
   color: var(--color-muted);
-}
-.hero .hero-title,
-.title,
-.section-title,
-.field text {
-  color: var(--color-text);
-}
-.activity-list-page .tag {
-  border-color: var(--color-border);
-  background: var(--color-raised);
-}
-.activity-list-page .field input {
-  border-color: var(--color-border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--color-input-bg);
-  color: var(--color-text);
-}
-.activity-actions button,
-.activity-list-page .btn,
-.activity-list-page .secondary {
-  min-height: 88rpx;
-  border-radius: var(--radius-md);
-}
-.activity-list-page .btn {
-  background: var(--color-action);
-  color: var(--color-on-action);
-}
-.activity-list-page .secondary {
-  border-color: var(--color-border);
-  background: var(--color-input-bg);
-  color: var(--color-text);
+  text-align: var(--page-heading-align);
 }
 
-@media (max-width: 340px) {
-  .clone-actions {
-    grid-template-columns: 1fr;
-    gap: 12rpx;
-  }
+.hero .hero-title {
+  color: var(--color-text);
+  font-size: 56rpx;
+  line-height: 1.14;
+}
+
+.hero-subtitle {
+  color: var(--color-muted);
+  font-size: 25rpx;
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 .status-filters {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12rpx;
+  gap: 8rpx;
+  margin: var(--card-gap) 0 var(--card-gap);
 }
 
 .activity-list-page .status-filter {
-  min-height: 72rpx;
+  min-height: var(--control-height);
   margin: 0;
   padding: 0 8rpx;
-  border: 1rpx solid var(--color-border);
+  border: 1rpx solid var(--color-border-strong);
   border-radius: var(--radius-sm);
-  background: var(--color-input-bg);
-  color: var(--color-muted);
+  background: var(--color-surface);
+  color: var(--color-text);
   font-size: 24rpx;
-  line-height: 72rpx;
+  font-weight: 700;
+  line-height: var(--control-height);
 }
 
 .activity-list-page .status-filter.active {
   border-color: var(--color-brand);
-  background: var(--color-action);
-  color: var(--color-on-action);
-  font-weight: 800;
+  background: var(--color-brand);
+  color: var(--color-on-brand);
+  font-weight: 900;
 }
 
-/* ===== 活动卡片右滑删除 ===== */
 .swipe-row {
   position: relative;
   overflow: hidden;
 }
+
+.swipe-row + .swipe-row {
+  margin-top: var(--card-gap);
+}
+
 .swipe-delete {
   position: absolute;
   top: 0;
@@ -257,106 +82,172 @@ page,
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 24rpx;
+  border-radius: var(--radius-card);
   background: var(--color-danger);
-  color: #f7f7f5;
+  color: var(--color-on-action);
   font-size: 28rpx;
-  font-weight: 700;
+  font-weight: 800;
 }
+
 .swipe-delete-active {
   z-index: 2;
 }
+
 .swipe-content {
   position: relative;
   z-index: 1;
 }
-/* 手势期间无过渡（保持跟手）；松手吸附时才启用过渡。 */
+
+/* 手势期间保持跟手，松手吸附时再启用过渡。 */
 .swipe-content.swipe-anim {
   transition: transform 0.2s ease;
 }
 
-.page.activity-list-page {
-  --page-gutter: 48rpx;
-  --radius-card: 16rpx;
-  min-height: 100vh;
-  padding: 32rpx var(--page-gutter) 64rpx;
-  background: var(--color-bg);
-  color: var(--color-text);
-}
-.hero {
-  padding: 32rpx 0 48rpx;
-  color: var(--color-muted);
-  text-align: var(--page-heading-align);
-}
-.hero .hero-title {
-  color: var(--color-text);
-  font-size: 56rpx;
-  line-height: 1.14;
-}
-.status-filters {
-  gap: 8rpx;
-  margin-bottom: 32rpx;
-}
-.activity-list-page .status-filter {
-  min-height: var(--control-height);
-  border-radius: 8rpx;
-  background: var(--color-surface);
-  line-height: var(--control-height);
-}
-.activity-list-page .status-filter.active {
-  border-color: var(--color-text);
-  background: var(--color-action);
-  color: var(--color-on-action);
-}
-.swipe-row + .swipe-row {
-  margin-top: 32rpx;
-}
 .activity-list-page .card {
+  margin-top: 0;
   padding: 32rpx;
-  border: 4rpx solid var(--color-card-border);
+  border: 1rpx solid var(--color-card-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
   color: var(--color-text);
-  box-shadow: none;
+  box-shadow: var(--shadow-card);
 }
+
 .activity-row {
-  gap: 32rpx;
+  display: grid;
+  gap: 28rpx;
 }
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.activity-list-page .title {
+  min-width: 0;
+  margin: 0;
+  color: var(--color-text);
+  font-size: 32rpx;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.section-title,
+.field text {
+  color: var(--color-text);
+}
+
 .activity-list-page .tag {
+  flex-shrink: 0;
   padding: 8rpx 16rpx;
-  border-radius: 8rpx;
+  border: 1rpx solid var(--color-border);
+  border-radius: 999rpx;
   background: var(--color-raised);
   color: var(--color-muted);
 }
+
 .activity-actions {
+  display: flex;
+  flex-wrap: wrap;
   gap: 16rpx;
 }
-.activity-actions button,
+
+.activity-actions button {
+  min-height: var(--control-height);
+  margin: 0;
+  border-radius: var(--radius-sm);
+}
+
+.status-button {
+  min-width: 144rpx;
+}
+
+.template-button {
+  margin: 0;
+}
+
 .activity-list-page .btn,
 .activity-list-page .secondary {
   min-height: var(--control-height);
-  border-radius: 8rpx;
+  border-radius: var(--radius-sm);
 }
+
 .activity-list-page .secondary {
+  border-color: var(--color-border-strong);
   background: var(--color-input-bg);
+  color: var(--color-text);
 }
-.clone-panel,
+
+.activity-list-page .danger-action {
+  border-color: var(--color-danger);
+  color: var(--color-danger-text);
+}
+
+.load-more {
+  width: 100%;
+}
+
+.clone-panel {
+  display: grid;
+  gap: 24rpx;
+  margin-top: var(--card-gap) !important;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 900;
+}
+
+.hint {
+  color: var(--color-muted);
+}
+
 .field {
-  gap: 16rpx;
+  display: flex;
+  margin: 0;
+  flex-direction: column;
+  gap: 10rpx;
 }
+
 .activity-list-page .field input {
+  width: 100%;
   min-height: var(--control-height);
   padding: 0 24rpx;
-  border-radius: 8rpx;
+  border: 1rpx solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
   background: var(--color-input-bg);
+  color: var(--color-text);
 }
-@media (max-width: 350px) {
+
+.clone-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20rpx;
+}
+
+.clone-actions button {
+  margin: 0;
+}
+
+@media (max-width: 340px) {
   .page.activity-list-page {
     --page-gutter: var(--page-gutter-narrow);
     padding-right: var(--page-gutter-narrow);
     padding-left: var(--page-gutter-narrow);
   }
+
   .hero .hero-title {
     font-size: 48rpx;
+  }
+
+  .status-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .clone-actions {
+    grid-template-columns: 1fr;
+    gap: 12rpx;
   }
 }
