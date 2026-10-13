@@ -23,21 +23,21 @@ describe('设置页', () => {
   it('只加载版本日志，不注册 Strava readiness 生命周期或授权入口', () => {
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.13.33',
+      version: '2026.10.13.34',
       latest: true,
-      title: '公开路线完整免授权解析',
-      summary: '创建活动时无需连接 Strava，即可识别公开路线的完整骑行数据和预览信息。',
+      title: '个人中心背景图打开更快',
+      summary: '个人背景图片改为稳定复用本地缓存，重复进入个人中心时不再因临时链接变化重新下载。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.13.34',
       '2026.10.13.33',
       '2026.10.13.32',
       '2026.10.13.31',
       '2026.10.13.30',
-      '2026.10.12.29',
     ]);
     expect(page.onShow).toBeUndefined();
     expect(page.loadStravaStatus).toBeUndefined();

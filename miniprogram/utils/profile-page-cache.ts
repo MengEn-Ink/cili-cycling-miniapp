@@ -8,6 +8,19 @@ type CachedProfile = Pick<Profile, 'nickname' | 'hasCompletedGuidance' | 'comple
 
 type ImageCache = Record<string, string>;
 
+function imageCacheKey(sourceUrl: string) {
+  // 云存储临时链接会轮换鉴权参数；图片路径才代表同一资源，避免每次进页面都重复下载。
+  return /^https:\/\//.test(sourceUrl) ? sourceUrl.replace(/[?#].*$/, '') : sourceUrl;
+}
+
+function cachedImage(images: ImageCache, sourceUrl: string) {
+  const key = imageCacheKey(sourceUrl);
+  if (images[key]) return images[key];
+  if (images[sourceUrl]) return images[sourceUrl];
+  const legacyKey = Object.keys(images).find((candidate) => imageCacheKey(candidate) === key);
+  return legacyKey ? images[legacyKey] : '';
+}
+
 export interface ProfilePageCache {
   version: 1;
   ownerOpenid: string;
@@ -114,12 +127,12 @@ export function applyCachedImages(
     profile: {
       ...card.profile,
       avatarUrl: card.profile.avatarUrl
-        ? images[card.profile.avatarUrl] || card.profile.avatarUrl
+        ? cachedImage(images, card.profile.avatarUrl) || card.profile.avatarUrl
         : undefined,
     },
     backgrounds: card.backgrounds.map((background) => ({
       ...background,
-      url: images[background.url] || background.url,
+      url: cachedImage(images, background.url) || background.url,
     })),
   };
 }
@@ -163,22 +176,26 @@ export async function persistProfileCardImages(
   const sources = [card.profile.avatarUrl, ...card.backgrounds.map((item) => item.url)].filter(
     (value): value is string => Boolean(value),
   );
+  const distinctSources = [
+    ...new Map(sources.map((source) => [imageCacheKey(source), source])).entries(),
+  ];
   const next: ImageCache = {};
   const created = new Set<string>();
   await Promise.all(
-    sources.map(async (source) => {
-      if (previous[source]) {
-        next[source] = previous[source];
+    distinctSources.map(async ([key, source]) => {
+      const cached = cachedImage(previous, source);
+      if (cached) {
+        next[key] = cached;
         return;
       }
       const saved = await saveImage(source);
       if (saved) {
-        next[source] = saved;
+        next[key] = saved;
         created.add(saved);
       }
     }),
   );
-  const complete = sources.every((source) => Boolean(next[source]));
+  const complete = distinctSources.every(([key]) => Boolean(next[key]));
   if (!complete) {
     // 图片采用整组原子替换；部分失败时回滚本轮文件，避免产生无引用的持久文件。
     discardPersistedProfileCardImages([...created]);

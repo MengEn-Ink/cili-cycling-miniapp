@@ -95,6 +95,34 @@ describe('个人中心缓存', () => {
     expect(cached.backgrounds[0].url).toContain('saved://');
   });
 
+  it('临时鉴权参数变化时复用已保存背景图，不重复下载', async () => {
+    const { applyCachedImages, persistProfileCardImages } =
+      await import('../miniprogram/utils/profile-page-cache');
+    const previous = {
+      'https://image.example/avatar.jpg?token=old': 'saved://avatar.jpg',
+      'https://image.example/background.jpg?token=old': 'saved://background.jpg',
+    };
+    const refreshedCard = {
+      ...card,
+      profile: { ...card.profile, avatarUrl: 'https://image.example/avatar.jpg?token=new' },
+      backgrounds: [
+        { ...card.backgrounds[0], url: 'https://image.example/background.jpg?token=new' },
+      ],
+    };
+
+    const persisted = await persistProfileCardImages(refreshedCard, previous);
+    const cached = applyCachedImages(refreshedCard, persisted.images);
+
+    expect(persisted.complete).toBe(true);
+    expect(wx.getImageInfo).not.toHaveBeenCalled();
+    expect(cached.profile.avatarUrl).toBe('saved://avatar.jpg');
+    expect(cached.backgrounds[0].url).toBe('saved://background.jpg');
+    expect(persisted.images).toEqual({
+      'https://image.example/avatar.jpg': 'saved://avatar.jpg',
+      'https://image.example/background.jpg': 'saved://background.jpg',
+    });
+  });
+
   it('任一图片持久化失败时回滚本轮新增文件并保留旧映射', async () => {
     const { persistProfileCardImages } = await import('../miniprogram/utils/profile-page-cache');
     const existing = { 'https://image.example/avatar.jpg': 'saved://avatar.jpg' };
