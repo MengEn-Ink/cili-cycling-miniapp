@@ -1,0 +1,72 @@
+# GPX 上传微信开发者工具验证
+
+> 时间：2026-10-13 19:43 CST
+> 分支：`fix/gpx-upload-no-response`
+> 基线：`main@1d579501407fbd678a4dc4acd8af5b39b8cc4a3e`
+
+## 结论
+
+用户提供的 `解字石- 铁炉--南山环线.gpx` 文件有效，大小 326086 字节，
+SHA-256 为
+`980d83baf2cb4288b30e01c891419e1da2553bf8369e7c054a1473c2eaed297b`。
+
+问题包含三个独立因素：
+
+1. 微信开发者工具最初加载的是旧的
+   `ride-event-miniprogram-ui-sync@cb9c080`，不是最新主干。
+2. DevTools 模拟器无法打开 `wx.chooseMessageFile` 的聊天文件选择器。修复前错误
+   被压成“路线读取失败，请稍后重试”并只显示在页面顶部，位于 GPX 区域的用户
+   会感觉点击无响应。
+3. GPX 可信解析完成后，页面异步生成路线图但提前显示“路线详情已准备好”并解除
+   上传锁；用户立即发布时，服务端可能以“请重新生成路线图”拒绝。
+
+本轮修复让选择器失败在 GPX 控件旁持续显示并通过 Toast 即时反馈；同时在路线图
+生成与绑定完成前保持上传锁，完成后才宣告路线详情已准备好。
+
+## DevTools 完整链路
+
+由于模拟器不支持系统文件选择器，自动化把同一文件字节写入
+`wx.env.USER_DATA_PATH`，仅绕过文件选择动作。后续全部使用真实小程序与 CloudBase
+链路：
+
+1. `wx.cloud.uploadFile`
+2. `activity-admin.previewRouteGpx`
+3. Canvas 路线图生成与 `bindRoutePreviewImage`
+4. 创建草稿并发布
+5. `activity-read` 详情读取
+6. `downloadRouteGpx` 下载并比较 SHA-256
+7. 下架并软删除测试活动
+
+结果：
+
+| 检查项 | 结果 |
+| --- | --- |
+| 上传与可信解析 | 通过 |
+| 上传/下载 SHA-256 | 与源文件一致 |
+| 路线名称 | 解字石- 铁炉--南山环线 |
+| 距离 | 159.07 km |
+| 爬升 / 下降 | 1277 m / 1217 m |
+| 最低 / 最高海拔 | 41.5 m / 768 m |
+| 预计骑行 | 9 小时 22 分 |
+| 海拔曲线 / 路线轮廓 | 120 / 240 点 |
+| 发布与详情 | 通过 |
+| 测试数据清理 | 已下架并删除 |
+| 运行时异常 | 0 |
+
+## 修复验证
+
+- 修复前：真实点击后只在页面顶部显示通用错误；路线图未绑定时可立即发布并失败。
+- 修复后：GPX 区域显示“当前环境无法打开文件选择器，请使用微信真机上传 GPX”；
+  路线图生成期间保持 `uploadingRoute=true`，完成后才显示“路线详情已准备好”。
+- 定向单测：`tests/activity-admin-edit.test.ts` 与 `tests/route-utils.test.ts` 共
+  51 项通过。
+- `npm run validate`：通过；72 个前端测试文件、856 项测试及全部云函数测试通过。
+- `npm run audit:all`：0 漏洞。
+- UI 普通门禁：3 个未同步 UI 提交，剩余额度 1。
+
+## 证据
+
+- `docs/evidence/gpx-upload/2026-10-13-devtools/chooser-feedback.png`
+- `docs/evidence/gpx-upload/2026-10-13-devtools/activity-detail.png`
+
+开发者工具证据不替代 iOS/Android 物理真机文件选择器和系统权限验收。
