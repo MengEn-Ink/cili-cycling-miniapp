@@ -1,14 +1,14 @@
 # 高优问题清单
 
-> 最后更新：2026-10-13 19:08（CST）
+> 最后更新：2026-10-13 19:17（CST）
 >
 > 本文件只保留**尚未完成的实际交付或验收**。已合并 PR、历史 CI 流水账、已关闭问题和被新产品口径取代的方案，以 Git/GitHub 历史为准，不再复制到活跃清单。
 
 ## 当前基线
 
-- 当前 main 基线：`e033018fbb1b0906038c4126d121f2b7a1a959a4`（PR #191）。
-- main CI：run [38371136664](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38371136664) 成功；GitHub Pages run [38371136544](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38371136544) 成功。
-- 微信开发版：run [38371311988](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38371311988) 成功，对应提交 `e033018`。
+- 当前 main 基线：`1e72c85b664a47bf0314ae30ea0b15d1bb2fe3e3`（PR #192）。
+- main CI：run [38388886507](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38388886507) 成功；GitHub Pages run [38388886411](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38388886411) 成功。
+- 微信开发版：run [38389045290](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38389045290) 成功，版本 `0.0.194.1`，回执绑定提交 `1e72c85`。
 - 活动详情交付：PR #129 已合并；`activity-read`、`registration`、`admin-review` 已部署到 `cloudbase-d0gizacy77a1ab017`，部署后线上代码与对应本地包一致。
 - 活跃任务分支必须通过 PR 合入并在合并后删除；是否存在开放 PR 以 GitHub 实时状态为准。
 
@@ -17,8 +17,8 @@
 | 优先级 | 待办 | 已完成 | 剩余关闭条件 |
 | --- | --- | --- | --- |
 | P0 | 核心活动链路真机验收 | 创建/编辑、发布、详情报名、管理员自动通过、已通过人数、头像名片、Strava 路线、群二维码与分享海报均已有代码/自动化/开发版；海报长标题按实际宽度截断，报名名单限制在二维码左侧单行安全区 | 在 iOS 与 Android 各完成一次创建→发布→报名→审批/自动通过→查看名片→导航/Strava→保存海报；核对 Canvas 字体、换行、二维码与照片不缺失 |
-| P0 | 统一视觉与触控验收 | PR #132 已合并；核心页面已统一 24px 留白、8 点网格、左对齐层级、单一橙红强调和 44px 触控门禁；开发版 `0.0.135.1` 已上传 | 按 375×812 基线在 iOS 与 Android 真机核对核心页面、安全区、长标题、小屏退化和高对比可读性 |
-| P0 | Strava OAuth 下线与路线双模式 | 代码、原型、视觉证据和全量门禁已完成；`route_previews`、ACL、索引及存储规则已应用回读，`activity-admin`、`activity-read`、`route-web`、`route-maintenance` 均 Active 且源码回读匹配；真实微信身份 GPX 云链路已通过上传→解析→发布→详情→下载同字节→软删/对象清理；部署后平台元数据兼容修复已提交并再次通过 `npm run validate`；维护触发器已关闭且 purge 未开启 | 绑定已备案自定义域名以移除 CloudBase 默认域名风险中间页，更新 Embed origin 和微信业务域名；合入 `main` 后上传开发版，完成 iOS/Android 官方路线、真实 GPX UI 与 Canvas 验收；随后恢复维护触发器，最终 purge 并删除旧函数/网关/密钥 |
+| P0 | 统一视觉与触控验收 | PR #132 已合并；核心页面已统一 24px 留白、8 点网格、左对齐层级、单一橙红强调和 44px 触控门禁；最新开发版 `0.0.194.1` 已上传 | 按 375×812 基线在 iOS 与 Android 真机核对核心页面、安全区、长标题、小屏退化和高对比可读性 |
+| P0 | Strava OAuth 下线与路线双模式 | PR #192 已合入 `main`；CI、Pages 和开发版 `0.0.194.1` 上传成功；`route_previews`、ACL、索引及存储规则已回读，四个路线函数均 Active 且线上源码与主干匹配；真实微信身份 GPX 云链路已通过；维护触发器已关闭且 purge 未开启 | 绑定已备案自定义域名以移除默认域名风险中间页，更新 Embed origin 和微信业务域名；把当前 3 个 UI 漂移提交同步为严格模式零漂移；完成开发者工具及 iOS/Android 官方路线、真实 GPX UI、Canvas 与下载验收；随后恢复维护触发器，最终 purge 并删除旧函数/网关/密钥 |
 | P1 | 行程卡片与归档验收 | PR #130/#131 已合并；取消记录、报名凭证、集合信息优先和结束次日归档已交付；页面停留跨 CST 00:00 时会自动刷新归档状态，隐藏后停止定时器 | 真机验证取消记录侧滑手势、凭证背景裁切与集合信息可读性；跨 CST 00:00 观察自动归档刷新 |
 | P1 | 图片与个人资料运行态验收 | 资料必填、单背景槽位、头像预览、内容指纹去重、失败重试与临时地址缓存已交付 | 真机覆盖弱网、重复选图、替换/删除、旧账号多图兼容；检查孤立对象清理任务日志和存储回收结果 |
 | P1 | 缓存与离线恢复 | 活动与资料 TTL、冷启动持久化、断网兜底、临时图片 URL 刷新和写后失效已有自动化；旧账号指标缓存命名空间已整体失效 | 真机覆盖冷启动、热启动、离线、过期、手动刷新、账号切换，确认不展示跨账号或过期状态 |
@@ -27,10 +27,9 @@
 ## 分支与工作树状态
 
 - 远端长期分支仅保留 `main`；任务分支在 PR 合并后删除。
-- `origin` 当前保留 `main` 与 PR #189 的 `docs/ui-sync-baseline-label`。
-- `feat/route-embed-gpx-no-oauth` 从最新 `origin/main` 创建，负责本轮 OAuth 下线与 GPX 路线交付。
-- `fix/strava-oauth-expiry-rotation` 已被新产品方向取代，但仍含未提交代码；在新方案部署验收前不得清理。
-- `docs/ui-sync-baseline-label` 挂载独立工作树并对应开放 PR #189，不得清理。
+- `origin` 当前仅保留 `main`；PR #192 的提交分支已在合并后删除。
+- 本地 `feat/route-embed-gpx-no-oauth` 仍含未进入 PR #192 的参会者横向列表设计提交，拆分或归档前不得清理。
+- `fix/strava-oauth-expiry-rotation` 已被新产品方向取代但仍含未提交代码；最终 purge 和人工判定前不得清理。
 
 ## 维护规则
 
