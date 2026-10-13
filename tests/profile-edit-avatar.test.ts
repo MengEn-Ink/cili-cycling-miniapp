@@ -232,6 +232,27 @@ describe('资料编辑头像交互', () => {
     expect(page.data.avatarPreviewUrl).toBe('https://temporary.example/signed-avatar.jpg');
   });
 
+  it('每次回到编辑页都会刷新头像与背景图预览', async () => {
+    const getTempFileURL = vi.fn().mockResolvedValue({
+      fileList: [
+        {
+          fileID: 'cloud://env/profiles/owner/background.jpg',
+          tempFileURL: 'https://temporary.example/background.jpg',
+        },
+      ],
+    });
+    Object.assign(wx, { cloud: { getTempFileURL } });
+    page.data.p.photos = [{ id: 'cloud://env/profiles/owner/background.jpg', category: 'ride' }];
+
+    await page.onShow();
+
+    expect(rideService.getPersonalCapabilityCard).toHaveBeenCalledTimes(1);
+    expect(getTempFileURL).toHaveBeenCalledWith({
+      fileList: ['cloud://env/profiles/owner/background.jpg'],
+    });
+    expect(page.data.photoItems[0].previewUrl).toBe('https://temporary.example/background.jpg');
+  });
+
   it('微信选择入口按 owner path→upload→register(wechat)→setAvatar 顺序执行', async () => {
     const uploadedFileId = 'cloud://env/profiles/owner/wechat.jpg';
     const uploadFile = vi.fn().mockResolvedValue({ fileID: uploadedFileId });

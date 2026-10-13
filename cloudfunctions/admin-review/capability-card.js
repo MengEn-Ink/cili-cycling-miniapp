@@ -22,6 +22,8 @@ const ADMIN_PROFILE_FIELDS = [
   'phone_masked',
   'phone_source',
   'phone_verified',
+  'emergency_name',
+  'emergency_phone_masked',
 ];
 
 function decryptPhone(cipher, keyValue) {
@@ -284,6 +286,13 @@ function adminCapabilityView(registration, profile, resolvedMedia, piiKey) {
   const value = profile && typeof profile === 'object' ? profile : {};
   const phone = piiKey && value.phone_cipher ? decryptPhone(value.phone_cipher, piiKey) : '';
   if (phone) safe.profile_snapshot.phone = phone;
+  const emergencyPhone =
+    piiKey && value.emergency_phone_cipher
+      ? decryptPhone(value.emergency_phone_cipher, piiKey)
+      : '';
+  if (emergencyPhone) safe.profile_snapshot.emergency_phone = emergencyPhone;
+  if (typeof value.emergency_name === 'string')
+    safe.profile_snapshot.emergency_name = value.emergency_name;
   const profilePhoneSource = ['wechat', 'manual', 'legacy'].includes(value.phone_source)
     ? value.phone_source
     : value.phone_cipher
@@ -356,8 +365,10 @@ async function adminCapabilityDetail({
   const registration = await loadRegistration();
   if (!registration) return undefined;
   const profile = registration.openid ? await loadProfile(registration.openid) : undefined;
-  if (requirePhoneKey && profile && profile.phone_cipher)
-    decryptPhone(profile.phone_cipher, piiKey);
+  if (requirePhoneKey && profile && (profile.phone_cipher || profile.emergency_phone_cipher)) {
+    if (profile.phone_cipher) decryptPhone(profile.phone_cipher, piiKey);
+    if (profile.emergency_phone_cipher) decryptPhone(profile.emergency_phone_cipher, piiKey);
+  }
   const mediaRecords = registration.openid
     ? await loadMediaRecords(registration.openid, profile)
     : [];

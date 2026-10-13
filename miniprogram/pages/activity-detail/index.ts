@@ -433,9 +433,11 @@ Page({
     );
     this.safeSetData({ attendees });
   },
-  selectedAttendeeAvatarError() {
-    if (!this.data.selectedAttendee?.avatarUrl) return;
-    this.safeSetData({ selectedAttendee: { ...this.data.selectedAttendee, avatarUrl: '' } });
+  selectedAttendeeBackgroundError() {
+    if (!this.data.selectedAttendee?.backgroundUrl) return;
+    this.safeSetData({
+      selectedAttendee: { ...this.data.selectedAttendee, backgroundUrl: '' },
+    });
   },
   openAttendeeCard(event: any) {
     const index = Number(event.currentTarget.dataset.index);

@@ -60,6 +60,7 @@ const profile = {
   background_photo: { file_id: 'cloud://bg', category: 'ride' },
   real_name_cipher: { ciphertext: 'x' },
   emergency_name: '联系人',
+  emergency_phone_masked: '139****0000',
   sensitive_status: {
     phone_verified: true,
     emergency_phone: true,
@@ -329,6 +330,8 @@ test('重复占位提交拒绝，驳回或取消后沿原记录重报并保留�
     phone_masked: '138****5678',
     phone_source: 'wechat',
     phone_verified: true,
+    emergency_name: '联系人',
+    emergency_phone_masked: '139****0000',
   });
   assert.equal(store.state.registrations.get(id).review_history.length, 1);
   assert.equal(store.state.activities.get('a1').occupied_count, 1);

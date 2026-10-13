@@ -133,7 +133,7 @@
 <view wx:if="{{selectedAttendee}}" class="rider-modal-mask" bindtap="closeAttendeeCard">
   <view class="rider-card rider-card--photo" catchtap="keepAttendeeCard" role="dialog" aria-label="{{selectedAttendee.displayName}} 的完整公开骑行名片">
     <view class="rider-card-photo">
-      <image wx:if="{{selectedAttendee.avatarUrl}}" class="rider-card-photo__image" src="{{selectedAttendee.avatarUrl}}" mode="aspectFill" binderror="selectedAttendeeAvatarError" />
+      <image wx:if="{{selectedAttendee.backgroundUrl}}" class="rider-card-photo__image" src="{{selectedAttendee.backgroundUrl}}" mode="aspectFill" binderror="selectedAttendeeBackgroundError" />
       <image wx:else class="rider-card-photo__image rider-card-photo__placeholder" src="/assets/brand/logo-share-500x400.png" mode="aspectFill" aria-label="此里默认骑行名片背景" />
       <view class="rider-card-photo__scrim"></view>
       <button class="rider-card-close" bindtap="closeAttendeeCard" aria-label="关闭骑行名片">×</button>

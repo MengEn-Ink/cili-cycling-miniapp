@@ -169,6 +169,65 @@ describe('日常活动极简创建与编辑', () => {
     expect(page.data.form).not.toHaveProperty('fee');
   });
 
+  it('编辑页把活动图片与群二维码 cloud fileID 解析为可回显的 HTTPS 地址', async () => {
+    const getTempFileURL = vi.fn(async ({ fileList }: { fileList: string[] }) => ({
+      fileList: fileList.map((fileID) => ({
+        fileID,
+        status: 0,
+        tempFileURL: `https://temporary.example/${encodeURIComponent(fileID)}`,
+      })),
+    }));
+    Object.assign(wx.cloud!, { getTempFileURL });
+
+    await page.onLoad({ id: activity.id });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(getTempFileURL).toHaveBeenCalledWith({
+      fileList: [...(activity.images?.slice(0, 3) || []), activity.groupQrCode],
+    });
+    expect(page.data.imagePreviewUrls).toEqual(
+      activity.images
+        ?.slice(0, 3)
+        .map((fileID) => `https://temporary.example/${encodeURIComponent(fileID)}`),
+    );
+    expect(page.data.groupQrPreviewUrl).toBe(
+      `https://temporary.example/${encodeURIComponent(activity.groupQrCode || '')}`,
+    );
+  });
+
+  it('临时地址返回前调整封面不会让图片预览恢复旧顺序', async () => {
+    let resolveTemp!: (value: {
+      fileList: { fileID: string; status: number; tempFileURL: string }[];
+    }) => void;
+    let requested: string[] = [];
+    const getTempFileURL = vi.fn(({ fileList }: { fileList: string[] }) => {
+      requested = [...fileList];
+      return new Promise<{
+        fileList: { fileID: string; status: number; tempFileURL: string }[];
+      }>((resolve) => {
+        resolveTemp = resolve;
+      });
+    });
+    Object.assign(wx.cloud!, { getTempFileURL });
+
+    await page.onLoad({ id: activity.id });
+    page.setCover({ currentTarget: { dataset: { index: 1 } } });
+    resolveTemp({
+      fileList: requested.map((fileID) => ({
+        fileID,
+        status: 0,
+        tempFileURL: `https://temporary.example/${encodeURIComponent(fileID)}`,
+      })),
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(page.data.imagePreviewUrls).toEqual(
+      page.data.images.map(
+        (fileID: string) => `https://temporary.example/${encodeURIComponent(fileID)}`,
+      ),
+    );
+  });
+
   it('修改集合地点名称时保留地图点位以继续导航', async () => {
     await page.onLoad({ id: activity.id });
     page.data.routeStartLocation = {

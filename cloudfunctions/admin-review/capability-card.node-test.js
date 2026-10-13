@@ -422,6 +422,7 @@ test('管理员投影保留审批所需字段但不返回第三方指标或敏�
   });
   assert.equal(response.profile_snapshot.real_name_masked, '曹**');
   assert.equal(response.profile_snapshot.phone_masked, '138****5678');
+  assert.equal(response.profile_snapshot.emergency_name, '联系人');
   assert.equal(Object.hasOwn(response, 'strava_status'), false);
   assert.equal(Object.hasOwn(response, 'strava_snapshot'), false);
   const serialized = JSON.stringify(response);
@@ -433,7 +434,6 @@ test('管理员投影保留审批所需字段但不返回第三方指标或敏�
     'openid',
     'token',
     'audit',
-    'emergency',
   ]) {
     assert.equal(serialized.includes(forbidden), false, forbidden);
   }
@@ -477,10 +477,15 @@ test('管理员报名详情默认返回完整手机号，社交投影不泄露�
     phone_masked: '138****5678',
     phone_source: 'wechat',
     phone_verified: true,
+    emergency_name: '紧急联系人',
+    emergency_phone_cipher: encryptedPhone('13912345678'),
+    emergency_phone_masked: '139****0000',
   };
 
   const admin = adminCapabilityView(registration, sensitiveProfile, {}, piiKey);
   assert.equal(admin.profile_snapshot.phone, '13812345678');
+  assert.equal(admin.profile_snapshot.emergency_name, '紧急联系人');
+  assert.equal(admin.profile_snapshot.emergency_phone, '13912345678');
   assert.equal(admin.capability_profile.phone_source, 'wechat');
   assert.equal(admin.capability_profile.phone_verified, true);
   const legacy = adminCapabilityView(
@@ -495,6 +500,7 @@ test('管理员报名详情默认返回完整手机号，社交投影不泄露�
   const social = socialCapabilityView(sensitiveProfile, {});
   const serialized = JSON.stringify(social);
   assert.equal(serialized.includes('13812345678'), false);
+  assert.equal(serialized.includes('13912345678'), false);
   assert.equal(serialized.includes('phone_cipher'), false);
   assert.equal(serialized.includes('phone_masked'), false);
 });

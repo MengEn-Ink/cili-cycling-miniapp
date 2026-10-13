@@ -497,11 +497,20 @@ test('微信手机号仅由服务端结果构造并标记为已验证', () => {
     code: 'PHONE_SOURCE_INVALID',
   });
 });
-test('本人资料响应返回完整手机号，未提供密钥的兼容调用仍只返回脱敏值', () => {
+test('本人资料响应返回完整手机号与紧急联系人电话，未提供密钥时仍只返回脱敏值', () => {
   const data = phoneUpdate('13812345678', key, 'wechat');
-  assert.equal(response({ nickname: '骑手', ...data }, key).phone, '13812345678');
-  assert.equal(response({ nickname: '骑手', ...data }).phone, undefined);
-  assert.equal(response({ nickname: '骑手', ...data }).phone_masked, '138****5678');
+  const profile = {
+    nickname: '骑手',
+    ...data,
+    emergency_phone_cipher: encrypt('13912345678', key),
+    emergency_phone_masked: '139****0000',
+  };
+  assert.equal(response(profile, key).phone, '13812345678');
+  assert.equal(response(profile, key).emergency_phone, '13912345678');
+  assert.equal(response(profile).phone, undefined);
+  assert.equal(response(profile).emergency_phone, undefined);
+  assert.equal(response(profile).phone_masked, '138****5678');
+  assert.equal(response(profile).emergency_phone_masked, '139****0000');
 });
 
 test('媒体上传路径使用服务端 secret 派生 opaque owner alias', () => {
