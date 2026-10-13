@@ -100,10 +100,7 @@ Page({
     const displayItems = state.items.map(displayActivity);
     // 仅在当前索引越界时下钳，避免刷新/加载更多等常规渲染反复把受控 current 写回同值，
     // 否则会与 swiper 手势位置互相争用，触发 is-active 入场动画重放，表现为卡片闪烁/频繁切换。
-    const clampedIndex = Math.min(
-      this.data.currentCardIndex,
-      Math.max(displayItems.length - 1, 0),
-    );
+    const clampedIndex = Math.min(this.data.currentCardIndex, Math.max(displayItems.length - 1, 0));
     const dayChips = view === 'future' ? buildCarouselDayChips(state.items) : [];
     const selectedDayKey =
       [...dayChips].reverse().find((chip) => chip.index <= clampedIndex)?.key ?? '';
