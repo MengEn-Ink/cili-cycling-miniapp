@@ -836,7 +836,7 @@ git commit -m "test(route): capture GPX route visual evidence"
 - Modify: `docs/high-priority-issues.md`
 - Create: `docs/verification/2026-10-13-route-embed-gpx-no-oauth.md`
 
-- [ ] **Step 1: Apply and verify desired CloudBase resources**
+- [x] **Step 1: Apply and verify desired CloudBase resources**
 
 Run:
 
@@ -848,7 +848,7 @@ npm run cloudbase:verify
 
 Expected: `route_previews`, route indexes, `route-web`, and `route-maintenance` desired resources are present; OAuth resources are absent from desired configuration.
 
-- [ ] **Step 2: Deploy new route functions before the mini program**
+- [x] **Step 2: Deploy new route functions before the mini program**
 
 Run:
 
