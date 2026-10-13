@@ -23,21 +23,21 @@ describe('设置页', () => {
   it('只加载版本日志，不注册 Strava readiness 生命周期或授权入口', () => {
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.13.34',
+      version: '2026.10.13.35',
       latest: true,
-      title: '个人中心背景图打开更快',
-      summary: '个人背景图片改为稳定复用本地缓存，重复进入个人中心时不再因临时链接变化重新下载。',
+      title: '微信身份卡片不再重复出现',
+      summary: '已完成验证时先同步身份状态，不再短暂误显示待验证引导卡片。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.13.35',
       '2026.10.13.34',
       '2026.10.13.33',
       '2026.10.13.32',
       '2026.10.13.31',
-      '2026.10.13.30',
     ]);
     expect(page.onShow).toBeUndefined();
     expect(page.loadStravaStatus).toBeUndefined();
