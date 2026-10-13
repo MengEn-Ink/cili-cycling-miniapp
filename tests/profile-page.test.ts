@@ -750,10 +750,43 @@ describe('个人中心加载状态', () => {
     expect(template).not.toMatch(/报名成功|审核中|已报名|报名状态/);
   });
 
+  it('微信身份同步期间不误显示待验证引导卡片', async () => {
+    const identity = deferred<unknown>();
+    appStore.identityHint = {
+      source: 'wechat_cloud',
+      verifiedAt: Date.UTC(2026, 9, 13, 1, 58),
+    };
+    appStore.ensureIdentity.mockImplementationOnce(() => {
+      appStore.authStatus = 'loading';
+      return identity.promise;
+    });
+
+    const loading = page.onShow();
+
+    expect(page.data).toMatchObject({
+      authStatus: 'loading',
+      identityHintText: '上次已完成微信身份验证 2026-10-13 09:58',
+    });
+    const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
+    expect(template).toContain("authStatus === 'loading' || authStatus === 'idle'");
+    expect(template).toContain(
+      "wx:if=\"{{authStatus === 'unavailable' || authStatus === 'error'}}\"",
+    );
+
+    appStore.authStatus = 'authenticated';
+    identity.resolve({
+      status: 'authenticated',
+      identity: { openid: 'openid-1', role: 'member', isSuper: false },
+    });
+    await loading;
+  });
+
   it('微信身份未授权时明确引导昵称和非默认头像', () => {
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
 
-    expect(template).toContain('wx:if="{{authStatus !== \'authenticated\'}}"');
+    expect(template).toContain(
+      "wx:if=\"{{authStatus === 'unavailable' || authStatus === 'error'}}\"",
+    );
     expect(template).toContain('请先设置常用昵称和非默认头像，再完成微信身份验证。');
     expect(template).toContain('完善昵称与头像');
     expect(template).toContain('验证微信身份');
