@@ -110,7 +110,7 @@ brand-logo {
   align-items: center;
   gap: 12rpx;
 }
-.masked-name {
+.real-name {
   overflow: hidden;
   color: #f7f7f5;
   font-size: 24rpx;

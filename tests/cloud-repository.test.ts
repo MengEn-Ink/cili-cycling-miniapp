@@ -51,6 +51,7 @@ const registration = {
   profile_snapshot: {
     nickname: '骑手',
     gender: '女',
+    real_name: '曹蒙恩',
     real_name_masked: '曹*',
     phone: '13812345678',
     phone_masked: '138****5678',
@@ -480,7 +481,7 @@ describe('CloudRepository 队员报名适配', () => {
       profile: {
         nickname: '骑手',
         gender: '女',
-        realName: '曹*',
+        realName: '曹蒙恩',
         phone: '13812345678',
       },
       updatedAt: '2026-09-28T12:00:00.000Z',
@@ -885,6 +886,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     const dto = {
       nickname: '骑手',
       completeness: 50,
+      real_name: '曹蒙恩',
       real_name_masked: '曹*',
       phone: '13812345678',
       phone_masked: '138****5678',
@@ -898,8 +900,20 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     const { cloud, callFunction } = cloudWith(success(dto), success(dto), success(dto));
     const repository = new CloudRepository(cloud);
     const profile = await repository.getProfile();
-    expect(profile.realName).toBe('曹*');
+    expect(profile.realName).toBe('曹蒙恩');
     expect(profile.phone).toBe('13812345678');
+    const maskedOnly = cloudWith(
+      success({
+        ...dto,
+        real_name: undefined,
+        phone: undefined,
+        emergency_phone_masked: '139****0000',
+      }),
+    );
+    const legacy = await new CloudRepository(maskedOnly.cloud).getProfile();
+    // 本人资料不再把旧版 *_masked 当作展示值回退，避免页面出现星号。
+    expect([legacy.realName, legacy.phone, legacy.emergencyPhone]).toEqual(['', '', '']);
+    expect(legacy.sensitiveStatus?.realName).toBe(true);
     expect(profile.sensitiveStatus).toMatchObject({
       phone: true,
       phoneVerified: false,

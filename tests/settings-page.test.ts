@@ -23,20 +23,20 @@ describe('设置页', () => {
   it('只加载当前版本日志，不注册第三方账号生命周期或入口', () => {
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.13.52',
+      version: '2026.10.13.53',
       latest: true,
-      title: '填写报名页更清晰',
+      title: '本人资料完整显示',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.13.53',
       '2026.10.13.52',
       '2026.10.13.51',
       '2026.10.13.50',
       '2026.10.13.49',
-      '2026.10.13.48',
     ]);
     expect(page.onShow).toBeUndefined();
     expect(page.loadStravaStatus).toBeUndefined();

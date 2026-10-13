@@ -316,7 +316,7 @@ test('活动列表拒绝未知筛选条件且不查询数据库', async () => {
   assert.deepEqual(calls, []);
 });
 
-test('公开活动详情脱敏后援车师傅手机号并保留容量拆分', () => {
+test('公开活动详情完整返回后援车师傅手机号并保留容量拆分', () => {
   const { publicActivity } = require('./domain/domain');
   const result = publicActivity(
     {
@@ -337,7 +337,8 @@ test('公开活动详情脱敏后援车师傅手机号并保留容量拆分', ()
     new Date('2026-09-29T04:00:00.000Z'),
   );
   assert.equal(result.support_vehicle_capacity + result.self_drive_capacity, result.capacity);
-  assert.match(result.support_vehicle_driver.contact_phone, /\*{4}/);
+  // 后援车司机电话面向全部骑友公开，必须完整显示，不能打星号。
+  assert.equal(result.support_vehicle_driver.contact_phone, '13812345678');
 });
 
 test('公开活动白名单透出图集与路线坐标并继续过滤私有字段', () => {
@@ -565,7 +566,12 @@ test('详情成员执行状态、上限、稳定排序和隐私白名单', async
       nickname: `旧昵称${index}`,
       ...(index === 0 ? { gender: '男' } : index === 2 ? { gender: '未知' } : {}),
       real_name: '实名',
+      real_name_masked: '实*',
       phone: '13812345678',
+      phone_masked: '138****5678',
+      emergency_name: '紧急联系人',
+      emergency_phone: '13987654321',
+      emergency_phone_masked: '139****4321',
     },
     strava_snapshot: {
       activities_90d: index,
@@ -619,6 +625,11 @@ test('详情成员执行状态、上限、稳定排序和隐私白名单', async
   assert.equal(attendeesById['r-02'].gender, '');
   assert.equal('title' in attendeesById['r-00'], false);
   assert.doesNotMatch(JSON.stringify(result.data.attendees), /13812345678|secret|private|openid/);
+  // 其他骑友可见的报名名单只给昵称：不返回真实姓名、手机号、紧急联系人，也不返回打星号版本。
+  assert.doesNotMatch(
+    JSON.stringify(result.data.attendees),
+    /实名|实\*|1398765|\*{4}|紧急联系人|real_name|phone|emergency/,
+  );
   assert.deepEqual(
     calls.filter((call) => call.name === 'registrations').map((call) => call.condition.status),
     ['approved', 'approved', 'checked_in', 'checked_in'],

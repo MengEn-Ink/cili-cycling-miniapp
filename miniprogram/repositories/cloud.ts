@@ -740,21 +740,12 @@ function mapProfile(raw: unknown): Profile {
     avatarId,
     ...(avatarId ? { avatarSource: avatarSource as AvatarSource } : {}),
     hasCompletedGuidance: value.has_completed_guidance === true,
-    realName: typeof value.real_name_masked === 'string' ? value.real_name_masked : '',
-    phone:
-      typeof value.phone === 'string'
-        ? value.phone
-        : typeof value.phone_masked === 'string'
-          ? value.phone_masked
-          : '',
+    // 本人资料完整回显；*_masked 仅作旧版云函数兼容，不再用于页面展示。
+    realName: typeof value.real_name === 'string' ? value.real_name : '',
+    phone: typeof value.phone === 'string' ? value.phone : '',
     gender: typeof value.gender === 'string' ? value.gender : '',
     emergencyName: typeof value.emergency_name === 'string' ? value.emergency_name : '',
-    emergencyPhone:
-      typeof value.emergency_phone === 'string'
-        ? value.emergency_phone
-        : typeof value.emergency_phone_masked === 'string'
-          ? value.emergency_phone_masked
-          : '',
+    emergencyPhone: typeof value.emergency_phone === 'string' ? value.emergency_phone : '',
     photos: Array.isArray(value.photos)
       ? value.photos.filter(isRecord).map((photo) => ({
           id: String(photo.file_id || ''),
@@ -866,13 +857,9 @@ function mapRegistration(raw: unknown): Registration {
             ? snapshot.nickname
             : '',
       title: typeof capability.title === 'string' ? capability.title : '',
-      realName: typeof snapshot.real_name_masked === 'string' ? snapshot.real_name_masked : '',
-      phone:
-        typeof snapshot.phone === 'string'
-          ? snapshot.phone
-          : typeof snapshot.phone_masked === 'string'
-            ? snapshot.phone_masked
-            : '',
+      // 本人报名凭证与审核后台展示完整实名与电话；*_masked 仅用于判断旧快照是否已填写。
+      realName: typeof snapshot.real_name === 'string' ? snapshot.real_name : '',
+      phone: typeof snapshot.phone === 'string' ? snapshot.phone : '',
       gender: normalizeGender(
         typeof capability.gender === 'string'
           ? capability.gender
@@ -881,12 +868,7 @@ function mapRegistration(raw: unknown): Registration {
             : '',
       ),
       emergencyName: typeof snapshot.emergency_name === 'string' ? snapshot.emergency_name : '',
-      emergencyPhone:
-        typeof snapshot.emergency_phone === 'string'
-          ? snapshot.emergency_phone
-          : typeof snapshot.emergency_phone_masked === 'string'
-            ? snapshot.emergency_phone_masked
-            : '',
+      emergencyPhone: typeof snapshot.emergency_phone === 'string' ? snapshot.emergency_phone : '',
       photos: Array.isArray(capability.photos)
         ? capability.photos
             .filter(isRecord)
@@ -898,8 +880,12 @@ function mapRegistration(raw: unknown): Registration {
         : [],
       avatarId: httpsUrl(capability.avatar_url),
       sensitiveStatus: {
-        realName: typeof snapshot.real_name_masked === 'string' && !!snapshot.real_name_masked,
-        phone: typeof snapshot.phone_masked === 'string' && !!snapshot.phone_masked,
+        realName:
+          (typeof snapshot.real_name === 'string' && !!snapshot.real_name) ||
+          (typeof snapshot.real_name_masked === 'string' && !!snapshot.real_name_masked),
+        phone:
+          (typeof snapshot.phone === 'string' && !!snapshot.phone) ||
+          (typeof snapshot.phone_masked === 'string' && !!snapshot.phone_masked),
         phoneVerified: capability.phone_verified === true,
         phoneSource: ['wechat', 'manual', 'legacy'].includes(String(capability.phone_source))
           ? (capability.phone_source as 'wechat' | 'manual' | 'legacy')

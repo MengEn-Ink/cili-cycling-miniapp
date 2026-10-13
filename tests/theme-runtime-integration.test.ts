@@ -39,10 +39,11 @@ describe('单一明亮外观接线', () => {
 
     expect(template).toContain('功能升级日志');
     expect(template).toContain('wx:for="{{releaseNotes}}"');
+    expect(script).toContain("version: '2026.10.13.53'");
+    expect(script).toContain("title: '本人资料完整显示'");
     expect(script).toContain("version: '2026.10.13.52'");
     expect(script).toContain("title: '填写报名页更清晰'");
-    expect(script).toContain("version: '2026.10.13.48'");
-    expect(script).toContain("title: '个人资料完整度更清晰'");
-    expect(script).toContain('完整度按昵称、真实姓名、手机号、紧急联系人、性别和头像统一计算');
+    expect(script).toContain("version: '2026.10.13.49'");
+    expect(script).toContain("title: '资料保存与报名门槛一致'");
   });
 });

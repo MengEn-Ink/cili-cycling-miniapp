@@ -196,7 +196,7 @@ async function cloneActivity(store, request, now = new Date()) {
         existing.is_deleted === true
       )
         fail('CLONE_CONFLICT', '复制请求与已有草稿冲突');
-      return publicActivity(existing, { revealContact: true });
+      return publicActivity(existing);
     }
 
     const route = source.route && typeof source.route === 'object' ? source.route : {};
@@ -256,7 +256,7 @@ async function cloneActivity(store, request, now = new Date()) {
         to_status: 'draft',
       },
     });
-    return publicActivity(value, { revealContact: true });
+    return publicActivity(value);
   });
 }
 
@@ -383,7 +383,7 @@ async function saveActivity(
         !['draft', 'published'].includes(current.status)
       )
         fail('CREATE_CONFLICT', '创建请求与已有活动冲突');
-      return publicActivity(current, { revealContact: true });
+      return publicActivity(current);
     }
     const targetActivityId = currentId || (await tx.createActivityId());
     let effectiveActivity = effectiveActivityInput(current, activity);
@@ -631,7 +631,7 @@ async function saveActivity(
     );
     if (transitionReason) audit.detail.reason = transitionReason;
     await tx.addAudit(audit);
-    return publicActivity(value, { revealContact: true });
+    return publicActivity(value);
   });
 }
 module.exports = {

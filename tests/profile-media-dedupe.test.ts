@@ -19,11 +19,11 @@ const profile: Profile = {
   avatarId: 'cloud://env/profiles/owner/old.jpg',
   avatarSource: 'custom',
   avatarRevision: 4,
-  realName: '曹**',
-  phone: '138****5678',
+  realName: '曹蒙恩',
+  phone: '13812345678',
   gender: '',
   emergencyName: '联系人',
-  emergencyPhone: '139****0000',
+  emergencyPhone: '13912340000',
   photos: [],
 };
 
