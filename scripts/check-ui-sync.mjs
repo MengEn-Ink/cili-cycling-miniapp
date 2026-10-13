@@ -121,6 +121,8 @@ function readGitHubEvent(env) {
 export function shouldSkipUiSync({ strict, env = process.env, event } = {}) {
   if (strict) return false;
   if (env.CILI_SKIP_UI_SYNC === '1') return true;
+  // 合入主分支前已经由 PR 门禁校验；push CI 不重复消费同一份视觉漂移预算。
+  if (env.GITHUB_EVENT_NAME === 'push' && env.GITHUB_REF === 'refs/heads/main') return true;
   const payload = event ?? readGitHubEvent(env);
   return (
     payload?.pull_request?.labels?.some((label) => label?.name === 'sandbox-skip-ui-sync') === true
