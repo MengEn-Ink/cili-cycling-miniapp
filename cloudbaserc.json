@@ -95,10 +95,25 @@
       "timeout": 15,
       "memorySize": 256,
       "installDependency": true
+    },
+    {
+      "name": "route-web",
+      "handler": "index.main",
+      "runtime": "Nodejs20.19",
+      "timeout": 5,
+      "memorySize": 256,
+      "installDependency": true
     }
   ],
   "gateway": {
     "routes": [
+      {
+        "path": "/route/embed",
+        "target": "function:route-web",
+        "enableAuth": false,
+        "enablePathTransmission": true,
+        "domain": "*"
+      },
       {
         "path": "/strava/callback",
         "target": "function:strava-callback",

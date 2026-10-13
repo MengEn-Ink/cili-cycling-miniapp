@@ -318,7 +318,7 @@ git commit -m "feat(route): serve attached GPX details and downloads"
 - Create: `cloudfunctions/route-web/package-lock.json`
 - Modify: `cloudbaserc.json`
 
-- [ ] **Step 1: Write failing HTTP tests**
+- [x] **Step 1: Write failing HTTP tests**
 
 ```js
 test('renders only the documented Strava embed for a numeric route id', async () => {
@@ -330,13 +330,13 @@ test('renders only the documented Strava embed for a numeric route id', async ()
 });
 ```
 
-- [ ] **Step 2: Run tests and confirm the function is missing**
+- [x] **Step 2: Run tests and confirm the function is missing**
 
 Run: `node --test cloudfunctions/route-web/index.node-test.js`
 
 Expected: FAIL because the function does not exist.
 
-- [ ] **Step 3: Implement CSP-protected embed HTML**
+- [x] **Step 3: Implement CSP-protected embed HTML**
 
 ```html
 <div class="strava-embed-placeholder" data-embed-type="route" data-embed-id="42"></div>
@@ -345,13 +345,13 @@ Expected: FAIL because the function does not exist.
 
 Return a strict CSP that allows scripts and frames only from the documented Strava embed origin. Include a visible `在 Strava 查看` fallback link; do not request, parse, proxy, cache, or rewrite Strava content.
 
-- [ ] **Step 4: Run endpoint tests**
+- [x] **Step 4: Run endpoint tests**
 
 Run: `node --test cloudfunctions/route-web/index.node-test.js`
 
 Expected: PASS for valid ID, invalid ID, CSP, cache policy, and fallback URL.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add cloudfunctions/route-web cloudbaserc.json
