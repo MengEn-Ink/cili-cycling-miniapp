@@ -14,44 +14,6 @@ import {
 const MAX_GPX_BYTES = 4 * 1024 * 1024;
 const GROUP_QR_EXPIRE_MS = 7 * 24 * 60 * 60 * 1000;
 
-function downloadGroupQrImage(source: string): Promise<string> {
-  if (source.startsWith('cloud://')) {
-    return new Promise((resolve, reject) => {
-      const cloud = wx.cloud;
-      if (!cloud) {
-        reject(new Error('微信云能力不可用'));
-        return;
-      }
-      cloud.downloadFile({
-        fileID: source,
-        success: (result: { tempFilePath: string }) => resolve(result.tempFilePath),
-        fail: reject,
-      });
-    });
-  }
-  if (/^https?:\/\//i.test(source)) {
-    return new Promise((resolve, reject) => {
-      wx.downloadFile({
-        url: source,
-        success: (result: { statusCode: number; tempFilePath: string }) => {
-          if (result.statusCode >= 200 && result.statusCode < 300 && result.tempFilePath) {
-            resolve(result.tempFilePath);
-            return;
-          }
-          reject(new Error(`downloadFile:fail status ${result.statusCode}`));
-        },
-        fail: reject,
-      });
-    });
-  }
-  return Promise.resolve(source);
-}
-
-function albumPermissionDenied(error: unknown): boolean {
-  const message = (error as { errMsg?: string } | undefined)?.errMsg || '';
-  return /auth deny|authorize|permission/i.test(message);
-}
-
 function groupQrExpired(uploadedAt?: string) {
   if (!uploadedAt) return false;
   const time = new Date(uploadedAt).getTime();
@@ -191,7 +153,6 @@ Page({
     groupQrVisible: false,
     groupQrLockedMessage: '报名审核通过后可查看活动群二维码',
     groupQrCodeExpired: false,
-    savingGroupQr: false,
   },
   onShow() {
     if (this.data.item && this.data.activityId && !this.data.loading)
@@ -404,40 +365,6 @@ Page({
       urls: [source],
       fail: () => wx.showToast({ title: '二维码预览失败，请重试', icon: 'none' }),
     });
-  },
-  async saveGroupQr() {
-    const source =
-      typeof this.data.item?.groupQrCode === 'string' ? this.data.item.groupQrCode.trim() : '';
-    if (!this.data.groupQrVisible || !source || this.data.savingGroupQr) return;
-    this.setData({ savingGroupQr: true });
-    try {
-      // 相册接口只接受本地文件；云文件和网络图片必须先下载到临时路径。
-      const filePath = await downloadGroupQrImage(source);
-      await new Promise<void>((resolve, reject) => {
-        wx.saveImageToPhotosAlbum({
-          filePath,
-          success: () => resolve(),
-          fail: reject,
-        });
-      });
-      wx.showToast({ title: '群二维码已保存到相册', icon: 'success' });
-    } catch (error) {
-      if (albumPermissionDenied(error)) {
-        wx.showModal({
-          title: '需要相册权限',
-          content: '保存群二维码需要相册写入权限，请在设置中开启后重试。',
-          confirmText: '去设置',
-          cancelText: '取消',
-          success: (result: { confirm: boolean }) => {
-            if (result.confirm) wx.openSetting?.({});
-          },
-        });
-      } else {
-        wx.showToast({ title: '群二维码保存失败，请重试', icon: 'none' });
-      }
-    } finally {
-      this.setData({ savingGroupQr: false });
-    }
   },
   async copyStravaRoute() {
     const rawUrl = this.data.item?.route?.stravaRouteUrl;

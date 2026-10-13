@@ -1037,36 +1037,9 @@ brand-logo {
   background: var(--color-surface);
 }
 
-.group-qr-detail-actions {
-  display: flex;
-  min-height: var(--control-height);
-  align-items: center;
-  justify-content: space-between;
-  gap: 20rpx;
-}
-
 .group-qr-detail-hint {
   color: var(--color-muted);
   font-size: 22rpx;
-}
-
-.group-qr-save {
-  min-height: var(--control-height);
-  margin: 0;
-  padding: 0 28rpx;
-  border: 2rpx solid var(--color-text);
-  border-radius: 8rpx;
-  background: var(--color-text);
-  color: var(--color-on-action);
-  font-size: 24rpx;
-  font-weight: 900;
-  line-height: var(--control-height);
-}
-
-.group-qr-save[disabled] {
-  border-color: var(--color-border);
-  background: var(--color-raised);
-  color: var(--color-disabled-text);
 }
 
 .group-qr-locked {
