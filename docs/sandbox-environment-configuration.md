@@ -238,7 +238,40 @@ git diff --check
 - `npm run audit:all` 审计根项目及各云函数的高危依赖。
 - 产品代码变化必须更新 `miniprogram/pages/settings/index.ts` 的 `RELEASE_NOTES`；纯文档、测试、CI 或开发脚本变化不要求新增应用日志。
 
-### 4.3 CloudBase 资源验证
+### 4.3 GitHub Pages UI 同步门禁
+
+`docs/ui-sync-manifest.json` 记录最近一次小程序 UI 与 GitHub Pages
+高保真原型同步的完整 Git SHA、内容摘要、13 个真实页面路由和双端截图证据。
+普通 CI 允许短期批量同步，体验版晋级要求零漂移。
+
+普通模式规则：
+
+- 最多允许 4 个未同步 UI 提交；第 5 个提交阻断。
+- 存在 UI 漂移时，距最近同步超过 7 天即阻断。
+- `miniprogram/app.json`、`miniprogram/app.wxss`、品牌资产目录和
+  `brand-logo` 组件变化必须立即同步。
+- P0 用户可见性修复即使未命中自动分类，也必须在同一 PR 更新原型和证据。
+
+本地检查：
+
+```bash
+npm run test:ui-sync
+npm run check:ui-sync
+npm run check:ui-sync -- --strict
+```
+
+`npm run check:ui-sync` 与普通 CI 使用提交数/时间预算；
+`npm run check:ui-sync -- --strict` 用于体验版晋级，只接受零 UI 漂移。
+证据存放在 `docs/evidence/ui-sync/<date>-main-<sha>/`，每个覆盖路由必须同时
+提供 `*-devtools.png` 和 `*-pages.png`，并记录截图视口、采集方式和
+Automator 断言结果。
+
+同步时从目标 `main` SHA 采集微信开发者工具截图，更新 `docs/` 原型，
+使用相同路由生成 Pages 截图，再更新根清单的 source/prototype 摘要。
+不得只修改清单摘要绕过视觉核对。GitHub Pages 正式地址部署后还要复核
+13 个路由、移动端/桌面端布局和浅色主题可读性，才算本轮同步完成。
+
+### 4.4 CloudBase 资源验证
 
 ```bash
 # 只读计划；默认入口
@@ -264,7 +297,7 @@ node scripts/bootstrap-cloudbase.mjs \
 
 `cloudbase:verify` 不验证 `cloudstorage.rules.json`、云函数版本和网关路由。它们必须分别应用并回读。
 
-### 4.4 P0 真实旅程验证
+### 4.5 P0 真实旅程验证
 
 真实旅程需要：
 
