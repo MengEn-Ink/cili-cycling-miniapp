@@ -63,7 +63,7 @@ describe('approved unified high-contrast UI', () => {
     expectSemantic(declaration(cardShell, 'box-shadow'), '--shadow-card');
     expect(declaration(effectiveBlock(card, '.metric-item'), 'text-align')).toBe('center');
     expect(card).not.toContain('.activity-card--compact');
-    expectSemantic(declaration(effectiveBlock(card, '.card-cta'), 'color'), '--color-on-action');
+    expect(card).not.toContain('.card-cta');
   });
 
   it('keeps the activity introduction on the reading axis and uses hard card shadows', () => {

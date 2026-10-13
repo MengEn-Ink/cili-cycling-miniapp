@@ -145,9 +145,8 @@ describe('品牌与页面体验静态契约', () => {
       'var(--radius-card)',
     );
     expect(declaration(effectiveBlock(activityCard, '.metric-item'), 'text-align')).toBe('center');
-    expect(declaration(effectiveBlock(activityCard, '.card-cta'), 'min-height')).toBe(
-      'var(--control-height)',
-    );
+    expect(declaration(effectiveBlock(activityCard, '.card-foot'), 'min-height')).toBe('32rpx');
+    expect(activityCard).not.toContain('.card-cta');
     expect(declaration(effectiveBlock(detail, '.detail-page .card'), 'border-radius')).toBe('0');
     expect(declaration(effectiveBlock(detail, '.detail-metric'), 'text-align')).toBe('center');
     expect(
