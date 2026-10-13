@@ -2454,6 +2454,8 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
           ...activity.route,
           strava_route_id: '123',
           strava_route_url: 'https://www.strava.com/routes/123',
+          route_name: '周末环湖',
+          preview_image_url: 'https://images.example/route.jpg',
           elevation_profile: [
             { distance_km: 0, elevation_m: 20 },
             { distance_km: 5, elevation_m: 80 },
@@ -2490,6 +2492,8 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
     expect(result.route).toMatchObject({
       stravaRouteId: '123',
       stravaRouteUrl: 'https://www.strava.com/routes/123',
+      routeName: '周末环湖',
+      previewImageUrl: 'https://images.example/route.jpg',
       elevationProfile: [
         { distanceKm: 0, elevationM: 20 },
         { distanceKm: 5, elevationM: 80 },
@@ -2627,6 +2631,16 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
       strava_route_url: 'https://www.strava.com/routes/123',
       route_name: '周末环湖',
       preview_image_url: 'https://dgtzuqphqg23d.cloudfront.net/route.png',
+      distance_km: 12.5,
+      elevation_m: 430,
+      estimated_moving_time_seconds: 7200,
+      elevation_profile: [
+        { distance_km: 0, elevation_m: 20 },
+        { distance_km: 12.5, elevation_m: 80 },
+      ],
+      route_bounds: { south: 22, west: 113, north: 23, east: 114 },
+      popular_climbs: [],
+      strava_gpx_available: false,
     };
     const { cloud, callFunction } = cloudWith(success(preview));
 
@@ -2639,6 +2653,16 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
       stravaRouteUrl: 'https://www.strava.com/routes/123',
       routeName: '周末环湖',
       previewImageUrl: 'https://dgtzuqphqg23d.cloudfront.net/route.png',
+      distanceKm: 12.5,
+      elevationM: 430,
+      estimatedMovingTimeSeconds: 7200,
+      elevationProfile: [
+        { distanceKm: 0, elevationM: 20 },
+        { distanceKm: 12.5, elevationM: 80 },
+      ],
+      routeBounds: { south: 22, west: 113, north: 23, east: 114 },
+      popularClimbs: [],
+      stravaGpxAvailable: false,
     });
     expectCall(callFunction, 'strava-auth', {
       action: 'publicRoutePreview',

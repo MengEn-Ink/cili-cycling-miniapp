@@ -1,14 +1,24 @@
-import type { StravaReadiness } from '../../models';
-import { runPageTask } from '../../services/page-service';
-import { rideService } from '../../services/ride-service';
+export {};
 
 const RELEASE_NOTES = [
+  {
+    version: '2026.10.13.33',
+    date: '2026-10-13',
+    title: '公开路线完整免授权解析',
+    summary: '创建活动时无需连接 Strava，即可识别公开路线的完整骑行数据和预览信息。',
+    latest: true,
+    features: [
+      '粘贴公开 Strava 路线链接即可识别名称、里程、爬升、预计时间、海拔曲线与路线边界',
+      '可展示公开路线预览图，识别失败时仍可保留链接并手动填写活动',
+      '设置与骑行名片不再提供 Strava 授权入口，历史已连接数据仍可查看和同步',
+    ],
+  },
   {
     version: '2026.10.13.32',
     date: '2026-10-13',
     title: '移除群二维码保存按钮',
     summary: '活动群二维码保留点击放大与长按查看，移除保存到相册按钮，避免保存失败影响使用。',
-    latest: true,
+    latest: false,
     features: [
       '活动详情不再展示“保存到相册”按钮',
       '继续支持点击二维码进入微信图片预览',
@@ -1262,59 +1272,10 @@ const RELEASE_NOTES = [
   },
 ] as const;
 
-const stravaStatusText = (readiness: StravaReadiness | null) => {
-  if (!readiness) return '暂时无法读取授权状态';
-  if (readiness.state === 'ready') return '已连接，可重新授权或解绑';
-  if (readiness.state === 'authorizing') return '等待在浏览器完成授权';
-  if (readiness.state === 'syncing') return '授权成功，正在准备骑行数据';
-  if (readiness.state === 'failed') return readiness.error?.message || '授权异常，请重新授权';
-  return '未连接 Strava';
-};
-
 const VISIBLE_RELEASE_NOTES = RELEASE_NOTES.slice(0, 5);
 
 Page({
-  stravaStatusRequestId: 0,
   data: {
     releaseNotes: VISIBLE_RELEASE_NOTES,
-    stravaLoading: true,
-    stravaLoadError: '',
-    stravaReadiness: null as StravaReadiness | null,
-    stravaStatusText: '正在读取授权状态',
-  },
-  onShow() {
-    void this.loadStravaStatus();
-  },
-  onHide() {
-    this.stravaStatusRequestId += 1;
-  },
-  onUnload() {
-    this.stravaStatusRequestId += 1;
-  },
-  async loadStravaStatus() {
-    const requestId = ++this.stravaStatusRequestId;
-    this.setData({ stravaLoading: true, stravaLoadError: '' });
-    const status = await runPageTask(() => rideService.getStravaReadiness(), 'Strava 状态加载失败');
-    if (requestId !== this.stravaStatusRequestId) return;
-    if (!status.data) {
-      this.setData({
-        stravaLoading: false,
-        stravaLoadError: status.error,
-        stravaReadiness: null,
-        stravaStatusText: '暂时无法读取授权状态',
-      });
-      return;
-    }
-    this.setData({
-      stravaLoading: false,
-      stravaLoadError: '',
-      stravaReadiness: status.data,
-      stravaStatusText: stravaStatusText(status.data),
-    });
-  },
-  openStrava(event: { currentTarget?: { dataset?: { action?: unknown } } }) {
-    const action = event.currentTarget?.dataset?.action;
-    const query = action === 'reauthorize' ? '?reauthorize=1' : '';
-    wx.navigateTo({ url: `/pages/strava/index${query}` });
   },
 });

@@ -177,12 +177,15 @@ describe('个人骑行名片页面行为', () => {
     expect(page.data.card.displayName).toBe('新名片');
   });
 
-  it.each(['disconnected', 'failed'])('%s 状态跳转 Strava 修复', async (state) => {
+  it.each(['disconnected', 'failed'])('%s 状态不提供 Strava 修复授权入口', async (state) => {
     rideService.getPersonalCapabilityCard.mockResolvedValueOnce({ ...card, state });
     await page.onShow();
-    page.repairStrava();
 
-    expect(wx.navigateTo).toHaveBeenCalledWith({ url: '/pages/strava/index' });
+    expect(page.repairStrava).toBeUndefined();
+    expect(wx.navigateTo).not.toHaveBeenCalledWith({ url: '/pages/strava/index' });
+    const template = readFileSync('miniprogram/pages/capability-card/index.wxml', 'utf8');
+    expect(template).not.toContain('repairStrava');
+    expect(template).not.toContain('修复连接');
   });
 
   it('缺少背景图时跳转资料编辑', async () => {

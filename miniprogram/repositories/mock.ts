@@ -574,6 +574,15 @@ export class MockRepository implements RideRepository {
       stravaRouteId: match[1],
       stravaRouteUrl: `https://www.strava.com/routes/${match[1]}`,
       routeName: `公开路线 ${match[1]}`,
+      distanceKm: 80,
+      elevationM: 600,
+      estimatedMovingTimeSeconds: 10800,
+      elevationProfile: [
+        { distanceKm: 0, elevationM: 20 },
+        { distanceKm: 80, elevationM: 120 },
+      ],
+      routeBounds: { south: 22.5, west: 113.8, north: 22.8, east: 114.2 },
+      popularClimbs: [],
     };
   }
   async previewStravaRoute(routeUrl: string) {

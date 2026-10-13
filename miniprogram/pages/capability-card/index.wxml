@@ -104,9 +104,6 @@
       >
         {{syncing ? '正在同步' : '同步最新 Strava 数据'}}
       </button>
-      <button wx:if="{{card.needsStravaRepair}}" class="repair-button" bindtap="repairStrava">
-        前往 Strava 修复连接
-      </button>
       <button wx:if="{{card.needsProfilePhoto}}" class="photo-button" bindtap="completeProfile">
         添加个人骑行照片
       </button>

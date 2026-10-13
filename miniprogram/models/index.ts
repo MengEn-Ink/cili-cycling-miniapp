@@ -31,21 +31,21 @@ export interface PopularClimb {
   popularity: number;
   popularityLabel: string;
 }
-export interface PublicStravaRoutePreview {
-  stravaRouteId: string;
-  stravaRouteUrl: string;
-  routeName: string;
-  previewImageUrl?: string;
-}
 export interface StravaRoutePreview {
   stravaRouteId: string;
   stravaRouteUrl: string;
+  routeName?: string;
+  previewImageUrl?: string;
   distanceKm: number;
   elevationM: number;
   estimatedMovingTimeSeconds: number;
   elevationProfile: RouteElevationPoint[];
   routeBounds: RouteBounds;
   popularClimbs: PopularClimb[];
+  stravaGpxAvailable?: boolean;
+}
+export interface PublicStravaRoutePreview extends StravaRoutePreview {
+  routeName: string;
 }
 export interface StravaRouteGpx {
   base64: string;
@@ -108,9 +108,12 @@ export interface Activity {
     gpxFileId?: string;
     stravaRouteId?: string;
     stravaRouteUrl?: string;
+    routeName?: string;
+    previewImageUrl?: string;
     elevationProfile?: RouteElevationPoint[];
     routeBounds?: RouteBounds;
     popularClimbs?: PopularClimb[];
+    stravaGpxAvailable?: boolean;
   };
   schedule: { time: string; title: string; location: string; remark?: string }[];
   notices: string[];

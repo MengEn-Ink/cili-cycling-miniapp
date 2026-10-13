@@ -350,6 +350,9 @@ test('公开活动白名单透出图集与路线坐标并继续过滤私有字�
       end: '终点',
       start_location: { name: '集合点', address: '湖滨路', latitude: 30.2, longitude: 120.1 },
       end_location: { name: '终点', address: '环山路', latitude: 30.3, longitude: 120.2 },
+      route_name: '周末环湖',
+      preview_image_url: 'https://images.example/route.jpg',
+      strava_gpx_available: false,
     },
     private_token: 'secret',
   };
@@ -358,6 +361,9 @@ test('公开活动白名单透出图集与路线坐标并继续过滤私有字�
   assert.equal(result.group_qr_code, activity.group_qr_code);
   assert.equal(result.group_qr_code_uploaded_at, activity.group_qr_code_uploaded_at);
   assert.deepEqual(result.route.start_location, activity.route.start_location);
+  assert.equal(result.route.route_name, '周末环湖');
+  assert.equal(result.route.preview_image_url, 'https://images.example/route.jpg');
+  assert.equal(result.route.strava_gpx_available, false);
   assert.equal(result.private_token, undefined);
 });
 

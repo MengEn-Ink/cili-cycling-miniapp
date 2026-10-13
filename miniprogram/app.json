@@ -9,7 +9,6 @@
     "pages/settings/index",
     "pages/capability-card/index",
     "pages/profile-edit/index",
-    "pages/strava/index",
     "pages/admin/activity-list/index",
     "pages/admin/activity-edit/index",
     "pages/admin/reviews/index",
@@ -18,7 +17,7 @@
   "requiredPrivateInfos": ["chooseLocation"],
   "permission": {
     "scope.writePhotosAlbum": {
-      "desc": "用于保存 Strava 授权二维码到相册，便于扫码授权"
+      "desc": "仅用于保存活动群二维码到相册"
     }
   },
   "window": {

@@ -41,7 +41,7 @@ describe('HP-20261010-02 单一明亮 UI 底座', () => {
   });
 
   it('全部页面固定明亮系统外观且不再同步运行时主题', () => {
-    expect(appConfig.pages).toHaveLength(14);
+    expect(appConfig.pages).toHaveLength(13);
 
     for (const pagePath of appConfig.pages) {
       const root = `miniprogram/${pagePath}`;
@@ -57,14 +57,14 @@ describe('HP-20261010-02 单一明亮 UI 底座', () => {
     }
   });
 
-  it('设置页删除主题选择、默认隐藏未连接的第三方授权并保留升级日志', () => {
+  it('设置页删除主题选择与第三方授权并保留升级日志', () => {
     const template = read('miniprogram/pages/settings/index.wxml');
     const script = read('miniprogram/pages/settings/index.ts');
 
     expect(template).not.toMatch(/显示主题|深色（默认）|浅色（户外）|theme-option/);
     expect(script).not.toMatch(/setTheme|switchTheme|themeClass|display-theme/);
-    expect(template).toContain('第三方授权');
-    expect(template).toContain("stravaReadiness.state !== 'disconnected'");
+    expect(template).not.toContain('第三方授权');
+    expect(script).not.toContain('getStravaReadiness');
     expect(template).toContain('功能升级日志');
   });
 

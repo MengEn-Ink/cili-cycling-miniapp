@@ -20,7 +20,6 @@ const prototypeRoutes = [
   'settings',
   'capability-card',
   'profile-edit',
-  'strava',
   'admin-activity-list',
   'admin-activity-edit',
   'admin-reviews',
@@ -33,15 +32,15 @@ const routeToPagePath = (route: string) =>
     : `pages/${route}/index`;
 
 describe('GitHub Pages 全页面高保真原型门禁', () => {
-  it('与 app.json 的 14 个真实页面逐一对应，不遗漏也不虚构路由', () => {
-    expect(prototypeRoutes).toHaveLength(14);
+  it('与 app.json 的 13 个真实页面逐一对应，不遗漏也不虚构路由', () => {
+    expect(prototypeRoutes).toHaveLength(13);
     expect(prototypeRoutes.map(routeToPagePath)).toEqual(appConfig.pages);
     for (const route of prototypeRoutes) {
       expect(schema).toContain(`id: '${route}'`);
       expect(schema).toContain(`path: '${routeToPagePath(route)}'`);
       expect(templates).toMatch(new RegExp(`(?:^|\\n)    ['"]?${route}['"]?: \\(\\) =>`));
     }
-    expect(html).toContain('14 / 14');
+    expect(html).toContain('13 / 13');
     expect(html).toContain('与 app.json 路由一一对应');
   });
 

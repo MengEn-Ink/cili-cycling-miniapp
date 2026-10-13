@@ -40,14 +40,17 @@ test('status 内部失败记录脱敏阶段诊断且保持通用客户端错误'
   assert.doesNotMatch(JSON.stringify(logs), /user-1|secret-token|query leaked/);
 });
 
-test('publicRoutePreview 仅校验管理员且不要求 OAuth 凭证', async () => {
+test('publicRoutePreview 仅校验管理员且传入身份、存储与时间，不要求 OAuth 凭证', async () => {
   let requested;
+  const fixedNow = new Date('2026-10-13T01:00:00.000Z');
+  const readinessStore = {
+    getAdmin: async () => ({ _id: 'admin-1', enabled: true }),
+    getCredential: () => assert.fail('公开路线解析不得读取 OAuth 凭证'),
+  };
   const handler = createHandler({
     getOpenId: () => 'admin-1',
-    readinessStore: {
-      getAdmin: async () => ({ _id: 'admin-1', enabled: true }),
-      getCredential: () => assert.fail('公开路线解析不得读取 OAuth 凭证'),
-    },
+    readinessStore,
+    now: () => fixedNow,
     publicRoutePreview: async (input) => {
       requested = input;
       return {
@@ -63,7 +66,12 @@ test('publicRoutePreview 仅校验管理员且不要求 OAuth 凭证', async () 
     routeUrl: 'https://www.strava.com/routes/42',
   });
 
-  assert.deepEqual(requested, { routeUrl: 'https://www.strava.com/routes/42' });
+  assert.deepEqual(requested, {
+    openid: 'admin-1',
+    routeUrl: 'https://www.strava.com/routes/42',
+    store: readinessStore,
+    now: fixedNow,
+  });
   assert.equal(result.ok, true);
   assert.equal(result.data.route_name, '周末环湖');
 });

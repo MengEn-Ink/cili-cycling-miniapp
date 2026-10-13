@@ -39,6 +39,7 @@ function createHandler({
   cleanup = cleanupExpiredStates,
   readinessStore = store,
   publicRoutePreview = publicRoutePreviewFlow,
+  now = () => new Date(),
   logger = console,
 } = {}) {
   return async (event = {}) => {
@@ -88,7 +89,14 @@ function createHandler({
             code: 'ADMIN_REQUIRED',
           });
         if (event.action === 'publicRoutePreview')
-          return ok(await publicRoutePreview({ routeUrl: event.routeUrl }));
+          return ok(
+            await publicRoutePreview({
+              openid: OPENID,
+              routeUrl: event.routeUrl,
+              store: readinessStore,
+              now: now(),
+            }),
+          );
         return ok(
           await routePreviewFlow({
             openid: OPENID,

@@ -69,10 +69,11 @@ describe('CILI 统一明亮竞技页面静态契约', () => {
     expect(source).not.toMatch(/maskPhone/);
   });
 
-  it('个人名片继续保留 Strava 缺失修复条件和私有提示', () => {
+  it('个人名片隐藏 Strava 修复入口并保留资料补全和私有提示', () => {
     const template = read('miniprogram/pages/capability-card/index.wxml');
 
-    expect(template).toContain('wx:if="{{card.needsStravaRepair}}"');
+    expect(template).not.toContain('card.needsStravaRepair');
+    expect(template).not.toContain('repairStrava');
     expect(template).toContain('wx:if="{{card.needsProfilePhoto}}"');
     expect(template).toContain('仅自己可见 · 不会用于活动报名审核');
   });

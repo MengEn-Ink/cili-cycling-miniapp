@@ -81,9 +81,12 @@
         <view class="field-label">Strava 线路链接</view>
         <input class="input" value="{{form.stravaRouteUrl}}" maxlength="256" placeholder-class="input-placeholder" placeholder="https://www.strava.com/routes/…" bindinput="field" data-name="stravaRouteUrl" />
         <button class="map-button" loading="{{syncingRoute}}" disabled="{{syncingRoute || saving || !form.stravaRouteUrl}}" bindtap="syncStravaRoute">{{syncingRoute ? '识别中…' : '识别公开路线'}}</button>
-        <view class="section-help">公开路线无需 Strava 授权即可识别名称；距离、爬升等信息请按需手动填写。</view>
-        <view wx:if="{{publicStravaRoutePreview}}" class="section-help">已识别：{{publicStravaRoutePreview.routeName}}</view>
-        <view wx:elif="{{stravaRoutePreview}}" class="section-help">已同步：{{stravaRoutePreview.distanceKm}} km · 爬升 {{stravaRoutePreview.elevationM}} m · 预计 {{stravaRouteTimeLabel}}</view>
+        <view class="section-help">公开路线无需 Strava 授权即可完整识别；识别失败时仍可保留链接并手动填写。</view>
+        <view wx:if="{{stravaRoutePreview}}" class="route-preview-card">
+          <image wx:if="{{stravaRoutePreview.previewImageUrl}}" class="route-preview-image" src="{{stravaRoutePreview.previewImageUrl}}" mode="aspectFill" aria-label="{{stravaRoutePreview.routeName}}路线预览" />
+          <view class="section-help">已识别：{{stravaRoutePreview.routeName || 'Strava 公开路线'}}</view>
+          <view class="section-help">{{stravaRoutePreview.distanceKm}} km · 爬升 {{stravaRoutePreview.elevationM}} m · 此里估算 {{stravaRouteTimeLabel}}</view>
+        </view>
       </view>
       <view class="field group-qr-field">
         <view class="field-label">活动群二维码</view>
