@@ -131,6 +131,7 @@ bootstrap 当前管理 9 个集合、29 个业务索引和全拒绝客户端数�
 
 - [沙箱环境、测试、部署与代码交付配置指南](docs/sandbox-environment-configuration.md)：统一说明所需 Secret、环境变量、配置方式、测试门禁和部署验收。
 - [产品需求与当前能力](docs/requirements-design.md)：用户、流程、已实现范围和后续边界。
+- [产品待办澄清与推荐方案（2026-10-13）](docs/product-backlog-clarification-2026-10-13.md)：通知、发起人权限、活动模板、凭证与图片语义、双主题和更新日志的现状、分期与验收口径。
 - [CloudBase 数据契约与安全边界](docs/cloudbase-schema.md)：集合、索引、状态机、错误码和部署后检查。
 - [验证记录索引](docs/verification/README.md)：区分长期运行手册、单次发布证据和外部 CI 证据。
 - [P0 真实报名旅程手册](docs/verification/p0-real-registration-journey.md)：测试环境端到端验证和脱敏证据格式。
