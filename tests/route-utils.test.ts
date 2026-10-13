@@ -55,6 +55,29 @@ describe('GPX 内容寻址', () => {
 });
 
 describe('路线错误文案', () => {
+  it('区分文件隐私声明缺失、用户未授权和环境不支持', () => {
+    expect(
+      routeErrorMessage({
+        errMsg: 'chooseMessageFile:fail api scope is not declared in the privacy agreement',
+      }),
+    ).toBe('请联系管理员在微信后台隐私保护指引中声明“收集你选中的文件”后重新发布');
+    expect(
+      routeErrorMessage({
+        errMsg: 'chooseMessageFile:fail appid privacy api banned',
+      }),
+    ).toBe('请联系管理员在微信后台隐私保护指引中声明“收集你选中的文件”后重新发布');
+    expect(
+      routeErrorMessage({
+        errMsg: 'chooseMessageFile:fail privacy permission is not authorized errno: 104',
+      }),
+    ).toBe('请先同意小程序隐私保护指引，再上传 GPX');
+    expect(
+      routeErrorMessage({
+        errMsg: 'chooseMessageFile:fail not supported in devtools',
+      }),
+    ).toBe('当前环境无法打开文件选择器，请使用微信真机上传 GPX');
+  });
+
   it('把服务端稳定错误码映射为用户下一步', () => {
     expect(routeErrorMessage({ code: 'GPX_TOO_LARGE' })).toBe('文件超过 4 MB，请选择更小的 GPX');
     expect(routeErrorMessage({ code: 'GPX_ELEVATION_REQUIRED' })).toBe(
