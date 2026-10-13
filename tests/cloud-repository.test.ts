@@ -1032,7 +1032,9 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     const { cloud } = cloudWith(
       success({
         nickname: '完整骑手',
-        completeness: 100,
+        completeness: 71,
+        missing: ['填写紧急联系人姓名', 42],
+        missingKeys: ['emergency_name', 42],
         title: '领队',
         avatar_file_id: 'cloud://avatar',
         avatar_source: 'custom',
@@ -1065,6 +1067,9 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
       avatarId: 'cloud://avatar',
       avatarSource: 'custom',
       avatarRevision: 7,
+      completeness: 71,
+      missing: ['填写紧急联系人姓名'],
+      missingKeys: ['emergency_name'],
       gender: '男',
       emergencyName: '紧急联系人',
       emergencyPhone: '139****0000',

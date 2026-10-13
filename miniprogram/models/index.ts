@@ -167,6 +167,7 @@ export interface Profile {
   hasCompletedGuidance?: boolean;
   completeness?: number;
   missing?: string[];
+  missingKeys?: string[];
   sensitiveStatus?: {
     realName: boolean;
     phone: boolean;

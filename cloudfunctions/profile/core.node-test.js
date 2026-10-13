@@ -76,6 +76,7 @@ test('脱敏与响应不返回敏感明文/密文', () => {
     '选择性别',
     '设置头像',
   ]);
+  assert.deepEqual(dto.missingKeys, ['emergency_name', 'emergency_phone', 'gender', 'avatar']);
   assert.equal(Object.hasOwn(dto, 'avatar_source'), false);
   assert.equal(dto.has_completed_guidance, false);
   assert.deepEqual(dto.sensitive_status, {
@@ -175,6 +176,7 @@ test('头像响应只返回规范来源，并为合法 legacy 头像推断 custo
       '填写紧急联系人电话',
       '选择性别',
     ],
+    missingKeys: ['nickname', 'real_name', 'phone', 'emergency_name', 'emergency_phone', 'gender'],
   });
   assert.equal(
     response({ avatar_file_id: 'cloud://env/wechat.jpg', avatar_source: 'wechat' }).avatar_source,

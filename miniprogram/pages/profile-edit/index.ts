@@ -3,6 +3,7 @@ import { runPageTask } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
 import { invalidateProfilePageCache } from '../../utils/profile-page-cache';
 import { TempFileUrlCache } from '../../utils/temp-file-url';
+import { validateRegistrationProfile } from '../../utils/validation';
 
 const ORPHAN_LEDGER_KEY = 'profile-media-orphans-v1';
 const AVATAR_PREVIEW_DEADLINE_MS = 8_000;
@@ -269,10 +270,21 @@ function normalizeBackgroundProfile(profile: Profile | null): Profile | null {
 }
 
 function profileSaveValidationMessage(profile: Profile): string {
-  if (!profile.nickname.trim()) return '请填写昵称';
   if (!profile.avatarId?.trim()) return '请先设置头像，再保存资料';
-  if (profile.gender !== '男' && profile.gender !== '女') return '请选择性别';
-  return '';
+  // 脱敏值沿用服务端状态；用户重新输入或清空后改按当前表单值校验，避免旧状态掩盖编辑结果。
+  const sensitiveStatus = {
+    realName: profile.realName.includes('*')
+      ? profile.sensitiveStatus?.realName === true
+      : !!profile.realName.trim(),
+    phone: profile.phone.includes('*')
+      ? profile.sensitiveStatus?.phone === true
+      : /^1\d{10}$/.test(profile.phone),
+    emergencyPhone: profile.emergencyPhone.includes('*')
+      ? profile.sensitiveStatus?.emergencyPhone === true
+      : /^1\d{10}$/.test(profile.emergencyPhone),
+  };
+  // 资料保存、完整度和报名门槛共用同一 7 项口径，避免“保存成功后仍无法报名”。
+  return validateRegistrationProfile({ ...profile, sensitiveStatus })[0] || '';
 }
 
 function confirmsAvatar(

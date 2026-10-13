@@ -673,6 +673,9 @@ function mapProfile(raw: unknown): Profile {
     missing: Array.isArray(value.missing)
       ? value.missing.filter((item): item is string => typeof item === 'string')
       : [],
+    missingKeys: Array.isArray(value.missingKeys)
+      ? value.missingKeys.filter((item): item is string => typeof item === 'string')
+      : [],
     sensitiveStatus: {
       realName: status.real_name === true,
       phone: status.phone === true,
