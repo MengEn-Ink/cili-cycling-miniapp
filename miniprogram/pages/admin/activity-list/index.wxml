@@ -3,13 +3,13 @@
   <block wx:if="{{allowed}}">
     <view class="hero">
       <view class="hero-title">我的活动</view>
-      <view>{{isAdmin ? '管理全部活动与发布状态' : '创建、编辑并上下架你的活动'}}</view>
+      <view class="hero-subtitle">{{isAdmin ? '管理全部活动与发布状态' : '创建、编辑并上下架你的活动'}}</view>
     </view>
-    <view class="status-filters" aria-label="活动状态筛选">
-      <button class="status-filter {{statusFilter === 'all' ? 'active' : ''}}" data-status="all" bindtap="selectStatusFilter">全部</button>
-      <button class="status-filter {{statusFilter === 'draft' ? 'active' : ''}}" data-status="draft" bindtap="selectStatusFilter">已下架</button>
-      <button class="status-filter {{statusFilter === 'published' ? 'active' : ''}}" data-status="published" bindtap="selectStatusFilter">已上线</button>
-      <button class="status-filter {{statusFilter === 'finished' ? 'active' : ''}}" data-status="finished" bindtap="selectStatusFilter">已结束</button>
+    <view class="status-filters" role="tablist" aria-label="活动状态筛选">
+      <button class="status-filter {{statusFilter === 'all' ? 'active' : ''}}" role="tab" aria-selected="{{statusFilter === 'all'}}" data-status="all" bindtap="selectStatusFilter">全部</button>
+      <button class="status-filter {{statusFilter === 'draft' ? 'active' : ''}}" role="tab" aria-selected="{{statusFilter === 'draft'}}" data-status="draft" bindtap="selectStatusFilter">已下架</button>
+      <button class="status-filter {{statusFilter === 'published' ? 'active' : ''}}" role="tab" aria-selected="{{statusFilter === 'published'}}" data-status="published" bindtap="selectStatusFilter">已上线</button>
+      <button class="status-filter {{statusFilter === 'finished' ? 'active' : ''}}" role="tab" aria-selected="{{statusFilter === 'finished'}}" data-status="finished" bindtap="selectStatusFilter">已结束</button>
     </view>
     <view class="swipe-row" wx:for="{{items}}" wx:key="id">
       <view class="swipe-delete {{item.swipeOpen ? 'swipe-delete-active' : ''}}" data-id="{{item.id}}" catchtap="confirmDelete">删除</view>

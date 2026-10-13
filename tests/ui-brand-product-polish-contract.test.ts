@@ -161,6 +161,24 @@ describe('品牌与页面体验静态契约', () => {
     expect(scopedStyles).not.toMatch(/#39ff14|#00ff00|lime|neon/i);
   });
 
+  it('活动管理标题、筛选器与卡片遵循统一间距和黑白橙主题', () => {
+    const template = read('miniprogram/pages/admin/activity-list/index.wxml');
+    const management = read('miniprogram/pages/admin/activity-list/index.wxss');
+    const filters = effectiveBlock(management, '.status-filters');
+    const activeFilter = effectiveBlock(management, '.activity-list-page .status-filter.active');
+    const card = effectiveBlock(management, '.activity-list-page .card');
+
+    expect(template).toContain('class="hero-subtitle"');
+    expect(template).toContain('role="tablist"');
+    expect(template).toContain('aria-selected="{{statusFilter === \'all\'}}"');
+    expect(declaration(filters, 'margin')).toBe('var(--card-gap) 0 var(--card-gap)');
+    expectSemantic(declaration(activeFilter, 'background'), '--color-brand');
+    expectSemantic(declaration(activeFilter, 'border-color'), '--color-brand');
+    expect(declaration(card, 'border')).toBe('1rpx solid var(--color-card-border)');
+    expect(declaration(card, 'box-shadow')).toBe('var(--shadow-card)');
+    expect(management).not.toMatch(/#0b0b0c|#242427|#343438|#151517/i);
+  });
+
   it('视觉升级保留核心旅程入口和真实事件绑定', () => {
     const activities = read('miniprogram/pages/activities/index.wxml');
     const detail = read('miniprogram/pages/activity-detail/index.wxml');
