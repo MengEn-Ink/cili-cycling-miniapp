@@ -28,6 +28,40 @@ const CLONE_REQUEST_FIELDS = new Set([
 ]);
 const DELETE_REQUEST_FIELDS = new Set(['action', 'openid', 'activityId', 'id', 'reason']);
 const ACTIVE_REGISTRATION_STATUSES = new Set(['pending', 'approved', 'checked_in', 'waiting']);
+const TRUSTED_GPX_ROUTE_FIELDS = [
+  'gpx_preview_id',
+  'gpx_file_id',
+  'gpx_sha256',
+  'generated_preview_file_id',
+  'route_name',
+  'distance_km',
+  'elevation_m',
+  'elevation_loss_m',
+  'elevation_min_m',
+  'elevation_max_m',
+  'estimated_moving_time_seconds',
+  'estimation_source',
+  'elevation_profile',
+  'route_outline',
+  'route_bounds',
+];
+
+function sameGpxAttachment(requested, current) {
+  return Boolean(
+    current &&
+    requested.gpx_preview_id === current.gpx_preview_id &&
+    requested.gpx_file_id === current.gpx_file_id &&
+    requested.gpx_sha256 === current.gpx_sha256 &&
+    (requested.generated_preview_file_id || '') === (current.generated_preview_file_id || ''),
+  );
+}
+
+function inheritTrustedGpxRoute(requested, current) {
+  const trusted = {};
+  for (const field of TRUSTED_GPX_ROUTE_FIELDS)
+    if (current[field] !== undefined) trusted[field] = current[field];
+  return { ...requested, ...trusted };
+}
 
 function cloneActivityId(openid, requestId) {
   const digest = crypto
@@ -323,20 +357,27 @@ async function saveActivity(
           typeof route.generated_preview_file_id !== 'string')
       )
         fail('VALIDATION_FAILED', 'GPX 路线参数无效');
-      const preview = await tx.getRoutePreviewById(requestedGpxPreviewId);
-      routePreviewToConsume = assertUsableRoutePreview(preview, {
-        openid,
-        previewId: requestedGpxPreviewId,
-        digest: route.gpx_sha256,
-        sourceFileId: route.gpx_file_id,
-        generatedFileId: route.generated_preview_file_id || '',
-        activityId: targetActivityId,
-        now,
-      });
-      effectiveActivity = {
-        ...effectiveActivity,
-        route: mergeTrustedPreviewRoute(route, routePreviewToConsume),
-      };
+      if (sameGpxAttachment(route, current?.route)) {
+        effectiveActivity = {
+          ...effectiveActivity,
+          route: inheritTrustedGpxRoute(route, current.route),
+        };
+      } else {
+        const preview = await tx.getRoutePreviewById(requestedGpxPreviewId);
+        routePreviewToConsume = assertUsableRoutePreview(preview, {
+          openid,
+          previewId: requestedGpxPreviewId,
+          digest: route.gpx_sha256,
+          sourceFileId: route.gpx_file_id,
+          generatedFileId: route.generated_preview_file_id || '',
+          activityId: targetActivityId,
+          now,
+        });
+        effectiveActivity = {
+          ...effectiveActivity,
+          route: mergeTrustedPreviewRoute(route, routePreviewToConsume),
+        };
+      }
     } else if (
       effectiveActivity.route?.gpx_file_id &&
       effectiveActivity.route.gpx_file_id !== current?.route?.gpx_file_id

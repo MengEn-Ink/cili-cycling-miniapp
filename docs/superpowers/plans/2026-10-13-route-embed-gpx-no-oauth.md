@@ -441,7 +441,7 @@ git commit -m "refactor(route): replace account APIs with GPX contracts"
 - Modify: `miniprogram/pages/admin/activity-edit/index.json`
 - Modify: `tests/activity-admin-edit.test.ts`
 
-- [ ] **Step 1: Write failing page and Canvas tests**
+- [x] **Step 1: Write failing page and Canvas tests**
 
 ```ts
 it('uploads one GPX, requests a trusted preview, and shows user-facing metrics', async () => {
@@ -459,13 +459,13 @@ it('replace/remove/unload clean only unattached session files', async () => {
 });
 ```
 
-- [ ] **Step 2: Run focused tests and confirm failures**
+- [x] **Step 2: Run focused tests and confirm failures**
 
 Run: `npx vitest run tests/route-outline.test.ts tests/activity-admin-edit.test.ts`
 
 Expected: FAIL for missing GPX controls, preview state, and outline renderer.
 
-- [ ] **Step 3: Implement the upload and preview flow**
+- [x] **Step 3: Implement the upload and preview flow**
 
 ```ts
 const selected = await wx.chooseMessageFile({ count: 1, type: 'file', extension: ['gpx'] });
@@ -477,12 +477,13 @@ const preview = await rideService.previewRouteGpx({
   gpxFileId: upload.fileID,
   gpxSha256: sha256,
   fileName: file.name,
+  requestId,
 });
 ```
 
 Render the elevation chart and route outline on Canvas. Export the outline as PNG, upload it to `activity-routes/<openid>/<sha256>.png`, bind it to the preview, and offer it as a background choice beside uploaded activity photos.
 
-- [ ] **Step 4: Use user-first route copy**
+- [x] **Step 4: Use user-first route copy**
 
 The template must include these exact visible strings:
 
@@ -500,13 +501,13 @@ GPX 路线详情（推荐）
 
 The page must not contain account authorization, scopes, tokens, callbacks, XML parsing, or internal error codes.
 
-- [ ] **Step 5: Run editor tests and typecheck**
+- [x] **Step 5: Run editor tests and typecheck**
 
 Run: `npx vitest run tests/route-outline.test.ts tests/activity-admin-edit.test.ts && npm run typecheck`
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add miniprogram/pages/admin/activity-edit miniprogram/utils/route-outline.ts tests/route-outline.test.ts tests/activity-admin-edit.test.ts

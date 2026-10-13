@@ -3008,6 +3008,50 @@ describe('CloudRepository GPX 路线契约', () => {
     });
   });
 
+  it('保存活动时保留可信生成路线图作为封面', async () => {
+    const { cloud, callFunction } = cloudWith(success({ ...activity, status: 'draft' }));
+    const repository = new CloudRepository(cloud);
+
+    await repository.saveActivity({
+      title: '路线封面',
+      description: '',
+      status: 'draft',
+      images: ['cloud://env/profiles/photo.jpg'],
+      coverImage: previewDto.generated_preview_file_id,
+      route: {
+        start: '集合点',
+        end: '',
+        distanceKm: previewDto.distance_km,
+        elevationM: previewDto.elevation_m,
+        level: '',
+        gpxPreviewId: previewDto.preview_id,
+        gpxFileId: previewDto.gpx_file_id,
+        gpxSha256: previewDto.gpx_sha256,
+        generatedPreviewFileId: previewDto.generated_preview_file_id,
+        routeName: previewDto.route_name,
+        elevationLossM: previewDto.elevation_loss_m,
+        elevationMinM: previewDto.elevation_min_m,
+        elevationMaxM: previewDto.elevation_max_m,
+        estimatedMovingTimeSeconds: previewDto.estimated_moving_time_seconds,
+        estimationSource: 'cili',
+        elevationProfile: previewDto.elevation_profile.map((point) => ({
+          distanceKm: point.distance_km,
+          elevationM: point.elevation_m,
+        })),
+        routeOutline: previewDto.route_outline,
+        routeBounds: previewDto.route_bounds,
+      },
+      schedule: [],
+      notices: [],
+      equipment: [],
+      fee: '免费',
+    });
+
+    expect((callFunction.mock.calls[0][0].data as any).activity.cover_image).toBe(
+      previewDto.generated_preview_file_id,
+    );
+  });
+
   it('拒绝伪造的 GPX 预览响应', async () => {
     const invalid = [
       { ...previewDto, preview_id: 'bad' },

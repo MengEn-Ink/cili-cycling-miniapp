@@ -1,8 +1,17 @@
-import type { ActivityLocation, EditableActivity } from '../../../models';
+import type { ActivityLocation, EditableActivity, RouteGpxPreview } from '../../../models';
 import type { ActivityInput } from '../../../repositories/types';
 import { rideService } from '../../../services/ride-service';
 import { appStore } from '../../../store/app-store';
 import { formatLocalDateTime, parseLocalDateTime } from '../../../utils/date-time';
+import { drawRouteOutline } from '../../../utils/route-outline';
+import {
+  normalizeStravaRouteUrl,
+  routeErrorMessage,
+  routeUploadPath,
+  sha256Hex,
+  type ExternalRouteReference,
+} from '../../../utils/route';
+import { drawElevationProfile } from '../../activity-detail/format';
 
 type Form = {
   title: string;
@@ -23,8 +32,15 @@ type PendingImage = {
   // 上传目标路径在选择时即确定：同内容图片始终指向同一对象，重试覆盖、重复选择不产生新对象。
   cloudPath?: string;
 };
+type PendingRouteUpload = {
+  gpxFileId: string;
+  gpxSha256: string;
+  fileName: string;
+  requestId: string;
+};
 
 const MAX_IMAGES = 3;
+const MAX_GPX_BYTES = 4 * 1024 * 1024;
 const GROUP_QR_EXPIRE_MS = 7 * 24 * 60 * 60 * 1000;
 const DEFAULT_CAPACITY = 500;
 const emptyForm = (): Form => ({
@@ -39,6 +55,8 @@ const pickerDate = (value: string) => value.trim().slice(0, 10);
 const pickerTime = (value: string) => value.trim().slice(11, 16);
 const newCreateRequestId = () =>
   `activity_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
+const newRouteRequestId = () =>
+  `route_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
 const errorCode = (error: unknown) =>
   typeof (error as { code?: unknown })?.code === 'string' ? (error as { code: string }).code : '';
 const protocolText = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
@@ -64,13 +82,13 @@ const activityContentProjection = (activity: EditableActivity | ActivityInput) =
   const images = Array.isArray(activity.images) ? activity.images.map(protocolText) : [];
   const groupQrCode = protocolText(activity.groupQrCode);
   const route = activity.route;
-  const hasSyncedStravaRoute = Boolean(
-    route.stravaRouteId ||
-    route.estimatedMovingTimeSeconds ||
-    route.elevationProfile ||
-    route.routeBounds ||
-    route.popularClimbs,
-  );
+  let externalRoute: ExternalRouteReference | undefined;
+  try {
+    const routeUrl = route.externalRouteUrl || route.stravaRouteUrl;
+    externalRoute = routeUrl ? normalizeStravaRouteUrl(routeUrl) : undefined;
+  } catch {
+    externalRoute = undefined;
+  }
   const feePresent =
     typeof activity.fee === 'string' ||
     Array.isArray(activity.feeIncluded) ||
@@ -98,7 +116,7 @@ const activityContentProjection = (activity: EditableActivity | ActivityInput) =
     title: protocolText(activity.title),
     description: protocolText(activity.description),
     images,
-    coverImage: images[0] || protocolText(activity.coverImage),
+    coverImage: protocolText(activity.coverImage) || images[0],
     groupQrCode,
     groupQrCodeUploadedAt: groupQrCode ? protocolDate(activity.groupQrCodeUploadedAt) : undefined,
     capacity: activity.capacity,
@@ -119,22 +137,20 @@ const activityContentProjection = (activity: EditableActivity | ActivityInput) =
       estimatedMovingTimeSeconds: route.estimatedMovingTimeSeconds,
       level: protocolText(route.level),
       gpxFileId: protocolText(route.gpxFileId),
-      stravaRouteId: route.stravaRouteId ? protocolText(route.stravaRouteId) : undefined,
-      stravaRouteUrl: route.stravaRouteUrl
-        ? hasSyncedStravaRoute && route.stravaRouteId
-          ? `https://www.strava.com/routes/${protocolText(route.stravaRouteId)}`
-          : protocolText(route.stravaRouteUrl)
-        : undefined,
-      routeName: protocolText(route.routeName),
-      previewImageUrl: protocolText(route.previewImageUrl),
-      stravaGpxAvailable: route.stravaGpxAvailable,
-      elevationProfile: route.elevationProfile,
-      routeBounds: route.routeBounds,
-      popularClimbs: route.popularClimbs?.map((climb) => ({
-        ...climb,
-        name: protocolText(climb.name),
-        popularityLabel: protocolText(climb.popularityLabel),
-      })),
+      gpxPreviewId: protocolText(route.gpxPreviewId),
+      gpxSha256: protocolText(route.gpxSha256),
+      generatedPreviewFileId: protocolText(route.generatedPreviewFileId),
+      elevationLossM: route.gpxPreviewId ? route.elevationLossM : undefined,
+      elevationMinM: route.gpxPreviewId ? route.elevationMinM : undefined,
+      elevationMaxM: route.gpxPreviewId ? route.elevationMaxM : undefined,
+      estimationSource: route.gpxPreviewId ? route.estimationSource : undefined,
+      routeOutline: route.gpxPreviewId ? route.routeOutline : undefined,
+      externalProvider: externalRoute?.provider,
+      externalRouteId: externalRoute?.routeId,
+      externalRouteUrl: externalRoute?.url,
+      routeName: route.gpxPreviewId ? protocolText(route.routeName) : undefined,
+      elevationProfile: route.gpxPreviewId ? route.elevationProfile : undefined,
+      routeBounds: route.gpxPreviewId ? route.routeBounds : undefined,
     },
     schedule: Array.isArray(activity.schedule)
       ? activity.schedule.map((item) => ({
@@ -186,6 +202,74 @@ async function contentCloudPath(previewPath: string, folder = 'profiles/activity
 const isCancel = (error: unknown) =>
   typeof (error as { errMsg?: unknown })?.errMsg === 'string' &&
   (error as { errMsg: string }).errMsg.includes('cancel');
+const userError = (message: string, code = 'ROUTE_USER_ERROR') =>
+  Object.assign(new Error(message), { code });
+
+function readFileBytes(filePath: string): Promise<Uint8Array> {
+  return new Promise((resolve, reject) => {
+    wx.getFileSystemManager().readFile({
+      filePath,
+      success: (result: { data: ArrayBuffer | string }) => {
+        if (typeof result.data === 'string') {
+          reject(userError('这个文件不是有效的 GPX，请重新导出后上传', 'GPX_INVALID'));
+          return;
+        }
+        resolve(new Uint8Array(result.data));
+      },
+      fail: reject,
+    });
+  });
+}
+
+function activityOfficialRoute(activity: EditableActivity): ExternalRouteReference | undefined {
+  const url = activity.route.externalRouteUrl || activity.route.stravaRouteUrl || '';
+  if (!url) return undefined;
+  try {
+    return normalizeStravaRouteUrl(url);
+  } catch {
+    return undefined;
+  }
+}
+
+function activityRoutePreview(activity: EditableActivity): RouteGpxPreview | undefined {
+  const route = activity.route;
+  if (
+    !route.gpxPreviewId ||
+    !route.gpxFileId ||
+    !route.gpxSha256 ||
+    !route.routeName ||
+    !Number.isFinite(route.elevationLossM) ||
+    !Number.isFinite(route.elevationMinM) ||
+    !Number.isFinite(route.elevationMaxM) ||
+    route.estimationSource !== 'cili' ||
+    !route.elevationProfile ||
+    route.elevationProfile.length < 2 ||
+    !route.routeOutline ||
+    route.routeOutline.length < 2 ||
+    !route.routeBounds
+  )
+    return undefined;
+  return {
+    previewId: route.gpxPreviewId,
+    gpxFileId: route.gpxFileId,
+    gpxSha256: route.gpxSha256,
+    ...(route.generatedPreviewFileId
+      ? { generatedPreviewFileId: route.generatedPreviewFileId }
+      : {}),
+    routeName: route.routeName,
+    distanceKm: route.distanceKm,
+    elevationM: route.elevationM,
+    elevationLossM: route.elevationLossM!,
+    elevationMinM: route.elevationMinM!,
+    elevationMaxM: route.elevationMaxM!,
+    estimatedMovingTimeSeconds: route.estimatedMovingTimeSeconds || 60,
+    estimationSource: 'cili',
+    elevationProfile: route.elevationProfile,
+    routeOutline: route.routeOutline,
+    routeBounds: route.routeBounds,
+    expiresAt: '',
+  };
+}
 
 function locationFailure(
   error: unknown,
@@ -220,7 +304,7 @@ function derivedTimes(startAt: string) {
 }
 
 const formatRouteDuration = (seconds?: number) => {
-  if (!Number.isFinite(seconds) || !seconds || seconds <= 0) return '待 Strava 估算';
+  if (!Number.isFinite(seconds) || !seconds || seconds <= 0) return '待估算';
   const totalMinutes = Math.round(seconds / 60);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
@@ -231,6 +315,7 @@ Page({
   unloaded: false,
   saveInFlight: false,
   createRequestId: '',
+  routeRequestId: '',
   data: {
     allowed: false,
     isAdmin: false,
@@ -238,6 +323,7 @@ Page({
     saving: false,
     uploading: false,
     syncingRoute: false,
+    uploadingRoute: false,
     choosingLocation: false,
     error: '',
     formErrors: {} as FormErrors,
@@ -255,6 +341,12 @@ Page({
     groupQrCodeExpired: false,
     pendingGroupQrCode: undefined as PendingImage | undefined,
     routeStartLocation: undefined as ActivityLocation | undefined,
+    officialRoute: undefined as ExternalRouteReference | undefined,
+    routePreview: undefined as RouteGpxPreview | undefined,
+    pendingRouteUpload: undefined as PendingRouteUpload | undefined,
+    sessionRouteFileIds: [] as string[],
+    routeStatusMessage: '',
+    routeCoverSelected: false,
     stravaRoutePreview: undefined as import('../../../models').StravaRoutePreview | undefined,
     publicStravaRoutePreview: undefined as
       import('../../../models').PublicStravaRoutePreview | undefined,
@@ -270,6 +362,7 @@ Page({
     }
     const id = typeof options.id === 'string' ? options.id : '';
     this.createRequestId = id ? '' : newCreateRequestId();
+    this.routeRequestId = newRouteRequestId();
     this.setData({ allowed: true, isAdmin: appStore.role === 'admin', id });
     if (!id) {
       this.setData({ loading: false });
@@ -284,18 +377,27 @@ Page({
           ? [activity.coverImage]
           : [];
       const startAtText = formatLocalDateTime(activity.startAt);
+      const officialRoute = activityOfficialRoute(activity);
+      const routePreview = activityRoutePreview(activity);
       this.setData({
         loading: false,
         status: activity.status,
         version: activity.version,
         originalActivity: activity,
         images,
-        coverImage: images[0] || '',
+        coverImage: activity.coverImage || images[0] || '',
         groupQrCode: activity.groupQrCode || '',
         groupQrCodeUploadedAt: activity.groupQrCodeUploadedAt || '',
         groupQrCodeExpired: groupQrExpired(activity.groupQrCodeUploadedAt),
         pendingGroupQrCode: undefined,
         routeStartLocation: activity.route.startLocation,
+        officialRoute,
+        routePreview,
+        routeStatusMessage: routePreview ? '路线详情已准备好' : '',
+        routeCoverSelected: Boolean(
+          routePreview?.generatedPreviewFileId &&
+          activity.coverImage === routePreview.generatedPreviewFileId,
+        ),
         stravaRoutePreview:
           activity.route.stravaRouteId &&
           activity.route.routeBounds &&
@@ -322,7 +424,7 @@ Page({
           startTime: pickerTime(startAtText),
           routeStart: activity.route.start,
           description: activity.description,
-          stravaRouteUrl: activity.route.stravaRouteUrl || '',
+          stravaRouteUrl: officialRoute?.url || '',
         } as Form,
       });
     } catch (error) {
@@ -332,8 +434,13 @@ Page({
       });
     }
   },
+  onReady() {
+    void this.renderRouteVisuals();
+  },
   cleanupSessionUploads(fileList?: string[]) {
-    const targets = fileList || [...this.data.sessionUploadedIds];
+    const targets = fileList || [
+      ...new Set([...this.data.sessionUploadedIds, ...this.data.sessionRouteFileIds]),
+    ];
     if (!targets.length || !wx.cloud || typeof wx.cloud.deleteFile !== 'function') return;
     void wx.cloud.deleteFile({ fileList: targets }).catch(() => undefined);
   },
@@ -474,24 +581,237 @@ Page({
       coverImage: images[0] || '',
     });
   },
-  async syncStravaRoute() {
-    if (this.data.syncingRoute || this.data.saving) return;
-    const routeUrl = this.data.form.stravaRouteUrl.trim();
-    this.setData({ syncingRoute: true, error: '' });
+  addOfficialRoute() {
+    if (this.data.saving) return;
     try {
-      const preview = await rideService.previewPublicStravaRoute(routeUrl);
+      const officialRoute = normalizeStravaRouteUrl(this.data.form.stravaRouteUrl);
       this.setData({
-        'form.stravaRouteUrl': preview.stravaRouteUrl,
-        publicStravaRoutePreview: preview,
-        stravaRoutePreview: preview,
-        stravaRouteTimeLabel: formatRouteDuration(preview.estimatedMovingTimeSeconds),
+        'form.stravaRouteUrl': officialRoute.url,
+        officialRoute,
+        error: '',
       });
-      wx.showToast({ title: '已识别公开路线', icon: 'success' });
+      wx.showToast({
+        title: '已添加。参与者可查看 Strava 官方路线。',
+        icon: 'none',
+      });
     } catch (error) {
-      this.setData({ error: error instanceof Error ? error.message : 'Strava 路线同步失败' });
-    } finally {
-      this.setData({ syncingRoute: false });
+      this.setData({
+        officialRoute: undefined,
+        error: error instanceof Error ? error.message : '请输入有效的 Strava 公开路线链接',
+      });
     }
+  },
+  syncStravaRoute() {
+    this.addOfficialRoute();
+  },
+  async previewPendingRoute(pending: PendingRouteUpload) {
+    const preview = await rideService.previewRouteGpx({
+      gpxFileId: pending.gpxFileId,
+      gpxSha256: pending.gpxSha256,
+      fileName: pending.fileName,
+      requestId: pending.requestId,
+    });
+    if (this.unloaded) {
+      this.cleanupSessionUploads([pending.gpxFileId]);
+      return;
+    }
+    this.setData(
+      {
+        routePreview: preview,
+        pendingRouteUpload: undefined,
+        routeStatusMessage: '路线详情已准备好',
+        stravaRouteTimeLabel: formatRouteDuration(preview.estimatedMovingTimeSeconds),
+        error: '',
+      },
+      () => {
+        void this.renderRouteVisuals().catch(() => {
+          if (!this.unloaded) this.setData({ error: '路线图生成失败，请重试' });
+        });
+      },
+    );
+  },
+  routeCanvas(selector: string): Promise<any | undefined> {
+    if (typeof wx.createSelectorQuery !== 'function') return Promise.resolve(undefined);
+    return new Promise((resolve) => {
+      let query = wx.createSelectorQuery();
+      if (typeof query.in === 'function') query = query.in(this);
+      query
+        .select(selector)
+        .fields({ node: true, size: true })
+        .exec((result: any[]) => resolve(result?.[0]));
+    });
+  },
+  async renderRouteVisuals() {
+    const preview = this.data.routePreview as RouteGpxPreview | undefined;
+    if (!preview || this.unloaded) return;
+    const [outlineTarget, elevationTarget] = await Promise.all([
+      this.routeCanvas('#route-outline-canvas'),
+      this.routeCanvas('#route-elevation-canvas'),
+    ]);
+    const ratio = wx.getWindowInfo?.().pixelRatio || wx.getSystemInfoSync?.().pixelRatio || 1;
+    if (outlineTarget?.node && outlineTarget.width && outlineTarget.height) {
+      const canvas = outlineTarget.node;
+      canvas.width = outlineTarget.width * ratio;
+      canvas.height = outlineTarget.height * ratio;
+      drawRouteOutline(
+        canvas.getContext('2d'),
+        outlineTarget.width,
+        outlineTarget.height,
+        preview.routeOutline,
+        ratio,
+        preview.routeName,
+      );
+      if (
+        !preview.generatedPreviewFileId &&
+        typeof wx.canvasToTempFilePath === 'function' &&
+        appStore.openid
+      ) {
+        const filePath = await new Promise<string>((resolve, reject) => {
+          wx.canvasToTempFilePath(
+            {
+              canvas,
+              fileType: 'png',
+              quality: 1,
+              success: (result: { tempFilePath: string }) => resolve(result.tempFilePath),
+              fail: reject,
+            },
+            this,
+          );
+        });
+        const uploaded = await wx.cloud!.uploadFile({
+          cloudPath: routeUploadPath(appStore.openid, preview.gpxSha256, 'png'),
+          filePath,
+        });
+        if (!uploaded.fileID) throw userError('路线图生成失败，请重试');
+        if (this.unloaded) {
+          this.cleanupSessionUploads([uploaded.fileID]);
+          return;
+        }
+        const bound = await rideService.bindRoutePreviewImage(preview.previewId, uploaded.fileID);
+        this.setData({
+          routePreview: bound,
+          sessionRouteFileIds: [...new Set([...this.data.sessionRouteFileIds, uploaded.fileID])],
+        });
+      }
+    }
+    if (elevationTarget?.node && elevationTarget.width && elevationTarget.height) {
+      const canvas = elevationTarget.node;
+      canvas.width = elevationTarget.width * ratio;
+      canvas.height = elevationTarget.height * ratio;
+      drawElevationProfile(
+        canvas.getContext('2d'),
+        elevationTarget.width,
+        elevationTarget.height,
+        preview.elevationProfile,
+        ratio,
+      );
+    }
+  },
+  async chooseRouteGpx() {
+    if (this.data.uploadingRoute || this.data.saving) return;
+    this.setData({
+      uploadingRoute: true,
+      routeStatusMessage: '正在读取路线',
+      error: '',
+    });
+    try {
+      const selected = await wx.chooseMessageFile({
+        count: 1,
+        type: 'file',
+        extension: ['gpx'],
+      });
+      const file = Array.isArray(selected.tempFiles) ? selected.tempFiles[0] : undefined;
+      if (!file) throw userError('没有选中文件，请重新选择', 'NO_FILE_SELECTED');
+      const fileName = typeof file.name === 'string' ? file.name : '';
+      const filePath =
+        typeof (file as { path?: unknown }).path === 'string'
+          ? (file as { path: string }).path
+          : typeof (file as { tempFilePath?: unknown }).tempFilePath === 'string'
+            ? (file as { tempFilePath: string }).tempFilePath
+            : '';
+      if (!/^[^/\\\0]+\.gpx$/i.test(fileName) || !filePath)
+        throw userError('这个文件不是有效的 GPX，请重新导出后上传', 'GPX_INVALID');
+      if (typeof file.size === 'number' && file.size > MAX_GPX_BYTES)
+        throw userError('文件超过 4 MB，请选择更小的 GPX', 'GPX_TOO_LARGE');
+      const bytes = await readFileBytes(filePath);
+      if (bytes.byteLength > MAX_GPX_BYTES)
+        throw userError('文件超过 4 MB，请选择更小的 GPX', 'GPX_TOO_LARGE');
+      const digest = sha256Hex(bytes);
+      if (!appStore.openid) throw userError('请先完成微信身份验证');
+      const upload = await wx.cloud!.uploadFile({
+        cloudPath: routeUploadPath(appStore.openid, digest, 'gpx'),
+        filePath,
+      });
+      if (!upload.fileID) throw userError('路线上传失败，请稍后重试');
+      const pending: PendingRouteUpload = {
+        gpxFileId: upload.fileID,
+        gpxSha256: digest,
+        fileName,
+        requestId: this.routeRequestId || newRouteRequestId(),
+      };
+      this.setData({
+        pendingRouteUpload: pending,
+        sessionRouteFileIds: [...new Set([...this.data.sessionRouteFileIds, upload.fileID])],
+      });
+      await this.previewPendingRoute(pending);
+    } catch (error) {
+      if (isCancel(error)) {
+        this.setData({ routeStatusMessage: '', error: '' });
+        return;
+      }
+      const code = errorCode(error);
+      const message =
+        code === 'NO_FILE_SELECTED' && error instanceof Error
+          ? error.message
+          : routeErrorMessage(error);
+      this.setData({ routeStatusMessage: '', error: message });
+    } finally {
+      this.setData({ uploadingRoute: false });
+    }
+  },
+  async retryRouteGpx() {
+    const pending = this.data.pendingRouteUpload as PendingRouteUpload | undefined;
+    if (!pending || this.data.uploadingRoute || this.data.saving) return;
+    this.setData({
+      uploadingRoute: true,
+      routeStatusMessage: '正在读取路线',
+      error: '',
+    });
+    try {
+      await this.previewPendingRoute(pending);
+    } catch (error) {
+      this.setData({ routeStatusMessage: '', error: routeErrorMessage(error) });
+    } finally {
+      this.setData({ uploadingRoute: false });
+    }
+  },
+  removeRouteDetails() {
+    if (this.data.uploadingRoute || this.data.saving) return;
+    const sessionRouteFileIds = [...this.data.sessionRouteFileIds];
+    this.cleanupSessionUploads(sessionRouteFileIds);
+    this.setData({
+      routePreview: undefined,
+      pendingRouteUpload: undefined,
+      sessionRouteFileIds: [],
+      routeStatusMessage: '',
+      routeCoverSelected: false,
+      error: '',
+    });
+  },
+  previewOfficialRoute() {
+    const route = this.data.officialRoute as ExternalRouteReference | undefined;
+    if (!route) return;
+    wx.navigateTo({
+      url: `/pages/route-view/index?id=${encodeURIComponent(route.routeId)}`,
+    });
+  },
+  useRouteAsCover() {
+    const preview = this.data.routePreview as RouteGpxPreview | undefined;
+    if (!preview?.generatedPreviewFileId) return;
+    this.setData({
+      routeCoverSelected: true,
+      coverImage: preview.generatedPreviewFileId,
+    });
   },
   async chooseImages() {
     if (this.data.uploading) return;
@@ -588,7 +908,12 @@ Page({
     const images = [...this.data.images];
     const [selected] = images.splice(index, 1);
     images.unshift(selected);
-    this.setData({ images, imagesTouched: true, coverImage: images[0] });
+    this.setData({
+      images,
+      imagesTouched: true,
+      routeCoverSelected: false,
+      coverImage: images[0],
+    });
   },
   removeImage(event: any) {
     const index = Number(event.currentTarget.dataset.index);
@@ -731,12 +1056,17 @@ Page({
     if (
       this.data.saving ||
       this.data.uploading ||
+      this.data.uploadingRoute ||
       this.data.choosingLocation ||
       this.data.syncingRoute
     )
       return;
     if (this.data.pendingImages.length) {
       this.setData({ error: '请先重试或删除上传失败的图片' });
+      return;
+    }
+    if (this.data.pendingRouteUpload) {
+      this.setData({ error: '路线详情尚未准备好，请重试或移除 GPX' });
       return;
     }
     const nextStatus = String(
@@ -762,28 +1092,20 @@ Page({
     }
     if (!startAt) return;
     const original = this.data.originalActivity as EditableActivity | undefined;
-    let stravaRouteUrl = form.stravaRouteUrl.trim() || undefined;
-    let syncedRoute =
-      this.data.stravaRoutePreview?.stravaRouteUrl === stravaRouteUrl
-        ? this.data.stravaRoutePreview
-        : undefined;
-    if (nextStatus === 'published' && stravaRouteUrl && !syncedRoute) {
-      this.setData({ syncingRoute: true, error: '' });
+    let officialRoute: ExternalRouteReference | undefined;
+    if (form.stravaRouteUrl.trim()) {
       try {
-        syncedRoute = await rideService.previewPublicStravaRoute(stravaRouteUrl);
-        stravaRouteUrl = syncedRoute.stravaRouteUrl;
+        officialRoute = normalizeStravaRouteUrl(form.stravaRouteUrl);
         this.setData({
-          'form.stravaRouteUrl': stravaRouteUrl,
-          publicStravaRoutePreview: syncedRoute,
-          stravaRoutePreview: syncedRoute,
-          stravaRouteTimeLabel: formatRouteDuration(syncedRoute.estimatedMovingTimeSeconds),
+          'form.stravaRouteUrl': officialRoute.url,
+          officialRoute,
         });
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Strava 路线解析失败';
-        this.showFormError(`发布前需要先解析路线：${message}`, 'stravaRouteUrl');
+        this.showFormError(
+          error instanceof Error ? error.message : '请输入有效的 Strava 公开路线链接',
+          'stravaRouteUrl',
+        );
         return;
-      } finally {
-        this.setData({ syncingRoute: false });
       }
     }
     const startForDefaults = startAt;
@@ -809,11 +1131,52 @@ Page({
       original && !this.data.imagesTouched && original.images?.length
         ? [...original.images]
         : [...this.data.images];
+    const routePreview = this.data.routePreview as RouteGpxPreview | undefined;
+    const route: ActivityInput['route'] = {
+      start: form.routeStart,
+      end: original?.route.end || '',
+      ...(this.data.routeStartLocation ? { startLocation: this.data.routeStartLocation } : {}),
+      ...(original?.route.endLocation ? { endLocation: original.route.endLocation } : {}),
+      distanceKm: routePreview?.distanceKm ?? original?.route.distanceKm ?? 0,
+      elevationM: routePreview?.elevationM ?? original?.route.elevationM ?? 0,
+      level: original?.route.level || '',
+      ...(officialRoute
+        ? {
+            externalProvider: 'strava',
+            externalRouteId: officialRoute.routeId,
+            externalRouteUrl: officialRoute.url,
+          }
+        : {}),
+      ...(routePreview
+        ? {
+            gpxPreviewId: routePreview.previewId,
+            gpxFileId: routePreview.gpxFileId,
+            gpxSha256: routePreview.gpxSha256,
+            ...(routePreview.generatedPreviewFileId
+              ? {
+                  generatedPreviewFileId: routePreview.generatedPreviewFileId,
+                }
+              : {}),
+            routeName: routePreview.routeName,
+            elevationLossM: routePreview.elevationLossM,
+            elevationMinM: routePreview.elevationMinM,
+            elevationMaxM: routePreview.elevationMaxM,
+            estimatedMovingTimeSeconds: routePreview.estimatedMovingTimeSeconds,
+            estimationSource: 'cili',
+            elevationProfile: routePreview.elevationProfile,
+            routeOutline: routePreview.routeOutline,
+            routeBounds: routePreview.routeBounds,
+          }
+        : {}),
+    };
     const activity: ActivityInput = {
       title,
       description: form.description,
       images,
-      coverImage: images[0] || '',
+      coverImage:
+        this.data.routeCoverSelected && routePreview?.generatedPreviewFileId
+          ? routePreview.generatedPreviewFileId
+          : images[0] || '',
       groupQrCode: this.data.groupQrCode,
       groupQrCodeUploadedAt: this.data.groupQrCode ? this.data.groupQrCodeUploadedAt : '',
       capacity: original?.capacity || DEFAULT_CAPACITY,
@@ -835,75 +1198,7 @@ Page({
       startAt: startForDefaults,
       endAt,
       status: nextStatus,
-      route: original
-        ? {
-            start: form.routeStart,
-            end: original.route.end,
-            startLocation: this.data.routeStartLocation,
-            ...(original.route.endLocation ? { endLocation: original.route.endLocation } : {}),
-            distanceKm: syncedRoute?.distanceKm ?? original.route.distanceKm,
-            elevationM: syncedRoute?.elevationM ?? original.route.elevationM,
-            level: original.route.level,
-            ...(original.route.gpxFileId ? { gpxFileId: original.route.gpxFileId } : {}),
-            ...(stravaRouteUrl ? { stravaRouteUrl } : {}),
-            ...(syncedRoute
-              ? {
-                  stravaRouteId: syncedRoute.stravaRouteId,
-                  routeName: syncedRoute.routeName,
-                  previewImageUrl: syncedRoute.previewImageUrl,
-                  estimatedMovingTimeSeconds: syncedRoute.estimatedMovingTimeSeconds,
-                  elevationProfile: syncedRoute.elevationProfile,
-                  routeBounds: syncedRoute.routeBounds,
-                  popularClimbs: syncedRoute.popularClimbs,
-                  stravaGpxAvailable: syncedRoute.stravaGpxAvailable,
-                }
-              : stravaRouteUrl === original.route.stravaRouteUrl
-                ? {
-                    ...(original.route.stravaRouteId
-                      ? { stravaRouteId: original.route.stravaRouteId }
-                      : {}),
-                    ...(original.route.routeName ? { routeName: original.route.routeName } : {}),
-                    ...(original.route.previewImageUrl
-                      ? { previewImageUrl: original.route.previewImageUrl }
-                      : {}),
-                    ...(original.route.elevationProfile
-                      ? { elevationProfile: original.route.elevationProfile }
-                      : {}),
-                    ...(original.route.routeBounds
-                      ? { routeBounds: original.route.routeBounds }
-                      : {}),
-                    ...(original.route.popularClimbs
-                      ? { popularClimbs: original.route.popularClimbs }
-                      : {}),
-                    ...(typeof original.route.stravaGpxAvailable === 'boolean'
-                      ? { stravaGpxAvailable: original.route.stravaGpxAvailable }
-                      : {}),
-                  }
-                : {}),
-          }
-        : {
-            start: form.routeStart,
-            end: '',
-            ...(this.data.routeStartLocation
-              ? { startLocation: this.data.routeStartLocation }
-              : {}),
-            distanceKm: syncedRoute?.distanceKm || 0,
-            elevationM: syncedRoute?.elevationM || 0,
-            estimatedMovingTimeSeconds: syncedRoute?.estimatedMovingTimeSeconds,
-            level: '',
-            ...(stravaRouteUrl ? { stravaRouteUrl } : {}),
-            ...(syncedRoute
-              ? {
-                  stravaRouteId: syncedRoute.stravaRouteId,
-                  routeName: syncedRoute.routeName,
-                  previewImageUrl: syncedRoute.previewImageUrl,
-                  elevationProfile: syncedRoute.elevationProfile,
-                  routeBounds: syncedRoute.routeBounds,
-                  popularClimbs: syncedRoute.popularClimbs,
-                  stravaGpxAvailable: syncedRoute.stravaGpxAvailable,
-                }
-              : {}),
-          },
+      route,
       schedule: original?.schedule || [],
       notices: original?.notices || [],
       equipment: original?.equipment || [],
@@ -916,9 +1211,11 @@ Page({
     try {
       const id = this.data.id || undefined;
       const applySaved = (saved: EditableActivity) => {
+        const savedRoutePreview = activityRoutePreview(saved);
+        const savedOfficialRoute = activityOfficialRoute(saved);
         const savedImages = saved.images?.length
           ? saved.images.slice(0, MAX_IMAGES)
-          : saved.coverImage
+          : saved.coverImage && saved.coverImage !== savedRoutePreview?.generatedPreviewFileId
             ? [saved.coverImage]
             : [];
         this.setData({
@@ -929,13 +1226,22 @@ Page({
           originalActivity: saved,
           images: savedImages,
           sessionUploadedIds: [],
+          sessionRouteFileIds: [],
           imagesTouched: false,
-          coverImage: savedImages[0] || '',
+          coverImage: saved.coverImage || savedImages[0] || '',
           groupQrCode: saved.groupQrCode || '',
           groupQrCodeUploadedAt: saved.groupQrCodeUploadedAt || '',
           groupQrCodeExpired: groupQrExpired(saved.groupQrCodeUploadedAt),
           pendingGroupQrCode: undefined,
           routeStartLocation: saved.route.startLocation,
+          officialRoute: savedOfficialRoute,
+          routePreview: savedRoutePreview,
+          pendingRouteUpload: undefined,
+          routeStatusMessage: savedRoutePreview ? '路线详情已准备好' : '',
+          routeCoverSelected: Boolean(
+            savedRoutePreview?.generatedPreviewFileId &&
+            saved.coverImage === savedRoutePreview.generatedPreviewFileId,
+          ),
         });
       };
       let saved: EditableActivity;

@@ -77,15 +77,45 @@
         <textarea class="textarea" value="{{form.description}}" maxlength="5000" placeholder-class="input-placeholder" placeholder="集合提醒、补给安排或其他需要说明的内容" bindinput="field" data-name="description" />
         <view class="char-count">{{form.description.length}} / 5000</view>
       </view>
+      <view class="section-title">活动路线</view>
       <view class="field" data-error-anchor="stravaRouteUrl">
-        <view class="field-label">Strava 线路链接</view>
-        <input class="input" value="{{form.stravaRouteUrl}}" maxlength="256" placeholder-class="input-placeholder" placeholder="https://www.strava.com/routes/…" bindinput="field" data-name="stravaRouteUrl" />
-        <button class="map-button" loading="{{syncingRoute}}" disabled="{{syncingRoute || saving || !form.stravaRouteUrl}}" bindtap="syncStravaRoute">{{syncingRoute ? '识别中…' : '识别公开路线'}}</button>
-        <view class="section-help">公开路线无需 Strava 授权即可完整识别；粘贴链接后可手动识别，直接发布时也会自动解析。</view>
-        <view wx:if="{{stravaRoutePreview}}" class="route-preview-card">
-          <image wx:if="{{stravaRoutePreview.previewImageUrl}}" class="route-preview-image" src="{{stravaRoutePreview.previewImageUrl}}" mode="aspectFill" aria-label="{{stravaRoutePreview.routeName}}路线预览" />
-          <view class="section-help">已识别：{{stravaRoutePreview.routeName || 'Strava 公开路线'}}</view>
-          <view class="section-help">{{stravaRoutePreview.distanceKm}} km · 爬升 {{stravaRoutePreview.elevationM}} m · 此里估算 {{stravaRouteTimeLabel}}</view>
+        <view class="field-label">Strava 官方路线（可选）</view>
+        <input class="input" value="{{form.stravaRouteUrl}}" maxlength="256" placeholder-class="input-placeholder" placeholder="粘贴公开路线链接" bindinput="field" data-name="stravaRouteUrl" />
+        <view class="route-command-row">
+          <button class="map-button" disabled="{{saving || !form.stravaRouteUrl}}" bindtap="addOfficialRoute">添加官方路线</button>
+          <button wx:if="{{officialRoute}}" class="map-button map-button--secondary" bindtap="previewOfficialRoute">查看官方路线</button>
+        </view>
+        <view class="section-help">这里只保存路线链接。如需在活动中展示海拔曲线和完整数据，请继续上传 GPX。</view>
+        <view wx:if="{{officialRoute}}" class="route-success">已添加。参与者可查看 Strava 官方路线。</view>
+      </view>
+
+      <view class="field route-detail-field">
+        <view class="field-label">GPX 路线详情（推荐）</view>
+        <view class="section-help">上传后可展示里程、爬升、海拔曲线和路线图，参与者也可下载原文件。</view>
+        <button wx:if="{{!routePreview}}" class="upload-tile upload-tile--wide route-upload-button" loading="{{uploadingRoute}}" disabled="{{saving || uploadingRoute}}" bindtap="chooseRouteGpx">{{uploadingRoute ? '正在读取路线' : '上传 GPX'}}</button>
+        <view wx:if="{{routeStatusMessage}}" class="route-status">{{routeStatusMessage}}</view>
+        <view wx:if="{{pendingRouteUpload && !uploadingRoute}}" class="route-command-row">
+          <button class="map-button" bindtap="retryRouteGpx">重试读取</button>
+          <button class="map-button map-button--secondary" bindtap="removeRouteDetails">移除路线详情</button>
+        </view>
+        <view wx:if="{{routePreview}}" class="route-preview-card">
+          <view class="route-preview-heading">
+            <view><view class="route-preview-name">{{routePreview.routeName}}</view><view class="section-help">此里估算 {{stravaRouteTimeLabel}}</view></view>
+            <view class="route-ready-mark">路线详情已准备好</view>
+          </view>
+          <view class="route-metric-grid">
+            <view><text>{{routePreview.distanceKm}}</text><text>km 里程</text></view>
+            <view><text>{{routePreview.elevationM}}</text><text>m 爬升</text></view>
+            <view><text>{{routePreview.elevationLossM}}</text><text>m 下降</text></view>
+            <view><text>{{routePreview.elevationMinM}}–{{routePreview.elevationMaxM}}</text><text>m 海拔</text></view>
+          </view>
+          <canvas id="route-outline-canvas" type="2d" class="route-outline-canvas" aria-label="{{routePreview.routeName}}路线轮廓"></canvas>
+          <canvas id="route-elevation-canvas" type="2d" class="route-elevation-canvas" aria-label="{{routePreview.routeName}}海拔曲线"></canvas>
+          <view class="route-command-row">
+            <button class="map-button" loading="{{uploadingRoute}}" disabled="{{saving || uploadingRoute}}" bindtap="chooseRouteGpx">更换 GPX</button>
+            <button class="map-button map-button--secondary" disabled="{{saving || uploadingRoute}}" bindtap="removeRouteDetails">移除路线详情</button>
+            <button wx:if="{{routePreview.generatedPreviewFileId}}" class="map-button map-button--secondary" bindtap="useRouteAsCover">{{routeCoverSelected ? '已设为活动背景' : '设为活动背景'}}</button>
+          </view>
         </view>
       </view>
       <view class="field group-qr-field">

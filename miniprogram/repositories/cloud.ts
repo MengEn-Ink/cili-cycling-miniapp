@@ -1229,7 +1229,7 @@ function activityPayload(value: ActivityInput) {
   return {
     title: typeof value.title === 'string' ? value.title : '',
     ...(Array.isArray(value.images) ? { images } : {}),
-    cover_image: images[0] || (typeof value.coverImage === 'string' ? value.coverImage : ''),
+    cover_image: (typeof value.coverImage === 'string' ? value.coverImage : '') || images[0] || '',
     ...(typeof value.groupQrCode === 'string' ? { group_qr_code: value.groupQrCode } : {}),
     ...(typeof value.groupQrCodeUploadedAt === 'string'
       ? { group_qr_code_uploaded_at: value.groupQrCodeUploadedAt }

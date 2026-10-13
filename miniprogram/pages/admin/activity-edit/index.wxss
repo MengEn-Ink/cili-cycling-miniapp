@@ -402,16 +402,110 @@
 
 .route-preview-card {
   margin-top: 16rpx;
+  padding: 20rpx;
   overflow: hidden;
   border: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
 }
 
-.route-preview-image {
+.route-detail-field {
+  margin-top: 28rpx;
+}
+
+.route-command-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 14rpx;
+}
+
+.route-command-row .map-button {
+  flex: 1 1 180rpx;
+  min-width: 0;
+}
+
+.map-button--secondary {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.route-success,
+.route-status {
+  margin-top: 12rpx;
+  color: var(--color-text);
+  font-size: 24rpx;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.route-upload-button {
+  margin-top: 16rpx;
+}
+
+.route-preview-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.route-preview-name {
+  color: var(--color-text);
+  font-size: 28rpx;
+  font-weight: 900;
+  line-height: 1.3;
+}
+
+.route-ready-mark {
+  flex: 0 0 auto;
+  padding: 6rpx 10rpx;
+  background: var(--color-text);
+  color: var(--color-on-action);
+  font-size: 20rpx;
+  font-weight: 800;
+}
+
+.route-metric-grid {
+  display: grid;
+  margin-top: 18rpx;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: var(--border-width) solid var(--color-border);
+  border-left: var(--border-width) solid var(--color-border);
+}
+
+.route-metric-grid > view {
+  display: flex;
+  min-width: 0;
+  min-height: 96rpx;
+  flex-direction: column;
+  justify-content: center;
+  padding: 12rpx;
+  border-right: var(--border-width) solid var(--color-border);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.route-metric-grid text:first-child {
+  color: var(--color-text);
+  font-size: 28rpx;
+  font-weight: 900;
+}
+
+.route-metric-grid text:last-child {
+  color: var(--color-muted);
+  font-size: 21rpx;
+}
+
+.route-outline-canvas,
+.route-elevation-canvas {
   display: block;
   width: 100%;
-  height: 260rpx;
+  height: 280rpx;
+  margin-top: 16rpx;
+  border: var(--border-width) solid var(--color-border);
+  background: #fff;
 }
 
-.route-preview-card .section-help {
-  padding: 0 16rpx 12rpx;
+.route-elevation-canvas {
+  height: 220rpx;
 }

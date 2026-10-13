@@ -682,33 +682,38 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses, option
     input.group_qr_code_uploaded_at,
     '活动群二维码上传时间',
   );
+  const safeRoute = {
+    start: cleanText(route.start || '', '路线起点', 200),
+    end: cleanText(route.end || '', '路线终点', 200),
+    ...(route.start_location === undefined
+      ? {}
+      : { start_location: cleanLocation(route.start_location, '路线起点') }),
+    ...(route.end_location === undefined
+      ? {}
+      : { end_location: cleanLocation(route.end_location, '路线终点') }),
+    distance_km: distance,
+    elevation_m: elevation,
+    level: cleanText(route.level || '', '路线难度', 50),
+    gpx_file_id: cleanText(route.gpx_file_id || '', 'GPX 文件', 500),
+    ...cleanExternalRoute(route),
+    ...cleanGpxRoute(route),
+    ...cleanStravaRoute(route),
+  };
+  const generatedRouteCover =
+    safeRoute.generated_preview_file_id && legacyCover === safeRoute.generated_preview_file_id
+      ? legacyCover
+      : '';
   return {
     title: cleanText(input.title, '活动标题', 100, true),
     images,
-    cover_image: images[0] || legacyCover,
+    cover_image: generatedRouteCover || images[0] || legacyCover,
     group_qr_code: groupQrCode,
     ...(groupQrCode && groupQrCodeUploadedAt
       ? { group_qr_code_uploaded_at: groupQrCodeUploadedAt }
       : {}),
     description: cleanText(input.description || '', '活动说明', 5000),
     schedule: cleanSchedule(input.schedule || []),
-    route: {
-      start: cleanText(route.start || '', '路线起点', 200),
-      end: cleanText(route.end || '', '路线终点', 200),
-      ...(route.start_location === undefined
-        ? {}
-        : { start_location: cleanLocation(route.start_location, '路线起点') }),
-      ...(route.end_location === undefined
-        ? {}
-        : { end_location: cleanLocation(route.end_location, '路线终点') }),
-      distance_km: distance,
-      elevation_m: elevation,
-      level: cleanText(route.level || '', '路线难度', 50),
-      gpx_file_id: cleanText(route.gpx_file_id || '', 'GPX 文件', 500),
-      ...cleanExternalRoute(route),
-      ...cleanGpxRoute(route),
-      ...cleanStravaRoute(route),
-    },
+    route: safeRoute,
     notices: cleanStringArray(input.notices || [], '注意事项'),
     equipment: cleanStringArray(input.equipment || [], '装备要求'),
     ...(fee === undefined ? {} : { fee }),

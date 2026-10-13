@@ -103,6 +103,7 @@ export function routeUploadPath(openid: string, digest: string, extension: 'gpx'
 }
 
 const ROUTE_ERRORS: Record<string, string> = {
+  NO_FILE_SELECTED: '没有选中文件，请重新选择',
   GPX_TOO_LARGE: '文件超过 4 MB，请选择更小的 GPX',
   GPX_INVALID: '这个文件不是有效的 GPX，请重新导出后上传',
   GPX_FILE_INVALID: '这个文件不是有效的 GPX，请重新选择',

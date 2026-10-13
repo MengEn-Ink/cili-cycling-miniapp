@@ -229,6 +229,8 @@ test('保存活动只采用匹配可信预览的原生指标并原子消费记�
       openid: owner,
       activity: {
         title: '活动',
+        images: ['cloud://env/profiles/activity-photo.jpg'],
+        cover_image: generatedFileId,
         description: '',
         schedule: [],
         notices: [],
@@ -264,6 +266,7 @@ test('保存活动只采用匹配可信预览的原生指标并原子消费记�
   assert.deepEqual(result.route.elevation_profile, preview.summary.elevation_profile);
   assert.deepEqual(result.route.route_outline, preview.summary.route_outline);
   assert.equal(result.route.external_provider, 'strava');
+  assert.equal(result.cover_image, generatedFileId);
   assert.equal(written.strava_route_owner_openid, undefined);
   assert.deepEqual(consumed, {
     previewId: preview._id,
@@ -386,6 +389,80 @@ test('已绑定同一活动的可信预览过期后仍允许编辑其他活动�
 
   assert.equal(result.title, '新标题');
   assert.equal(result.route.gpx_sha256, digest);
+});
+
+test('短期预览记录清理后仍从当前活动继承可信 GPX 指标', async () => {
+  const preview = previewFixture();
+  const route = {
+    start: '集合点',
+    end: '',
+    distance_km: preview.summary.distance_km,
+    elevation_m: preview.summary.elevation_m,
+    level: '',
+    gpx_preview_id: preview._id,
+    gpx_file_id: gpxFileId,
+    gpx_sha256: digest,
+    generated_preview_file_id: generatedFileId,
+    ...preview.summary,
+  };
+  const current = {
+    _id: 'activity_1',
+    title: '原活动',
+    description: '',
+    schedule: [],
+    notices: [],
+    equipment: [],
+    status: 'draft',
+    route,
+    occupied_count: 0,
+    version: 1,
+    created_by: owner,
+    created_at: new Date(now.getTime() - 24 * 60 * 60 * 1000),
+  };
+  let saved;
+  const store = {
+    transaction: (work) =>
+      work({
+        getAdmin: async () => ({ _id: owner, enabled: true }),
+        getActivity: async () => current,
+        getRoutePreviewById: async () => undefined,
+        consumeRoutePreview: async () => assert.fail('存量可信路线不应再次消费预览'),
+        putActivity: async (_id, value) => {
+          saved = value;
+        },
+        addAudit: async () => {},
+      }),
+  };
+
+  const result = await saveActivity(
+    store,
+    {
+      openid: owner,
+      activityId: current._id,
+      expectedVersion: 1,
+      activity: {
+        title: '新标题',
+        description: '',
+        schedule: [],
+        notices: [],
+        equipment: [],
+        status: 'draft',
+        route: {
+          ...route,
+          distance_km: 999,
+          elevation_m: 999,
+          elevation_loss_m: 999,
+        },
+      },
+    },
+    now,
+  );
+
+  assert.equal(result.title, '新标题');
+  assert.equal(result.route.distance_km, preview.summary.distance_km);
+  assert.equal(result.route.elevation_m, preview.summary.elevation_m);
+  assert.equal(result.route.elevation_loss_m, preview.summary.elevation_loss_m);
+  assert.equal(saved.route.gpx_sha256, digest);
 });
 
 test('云函数 previewRouteGpx action 下载文件并持久化可信预览', async () => {
