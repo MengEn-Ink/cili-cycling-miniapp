@@ -8,7 +8,7 @@
       <view class="avatar-editor">
         <view class="avatar-preview-shell">
           <image wx:if="{{avatarPreviewUrl}}" class="avatar-preview" src="{{avatarPreviewUrl}}" data-url="{{avatarPreviewUrl}}" mode="aspectFill" aria-label="预览当前头像" bindtap="previewAvatar" binderror="avatarPreviewError" />
-          <view wx:else class="avatar-preview-placeholder" aria-hidden="true">骑</view>
+          <image wx:else class="avatar-preview-placeholder" src="/assets/brand/logo-circle-144.png" mode="aspectFill" aria-label="此里默认头像" />
         </view>
         <view class="avatar-panel">
           <view class="muted avatar-note">请选择微信头像，选择后立即保存，并用于个人主页和活动报名中的骑手身份展示。</view>

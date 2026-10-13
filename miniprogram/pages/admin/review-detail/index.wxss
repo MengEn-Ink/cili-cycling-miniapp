@@ -138,10 +138,11 @@ brand-logo {
   );
 }
 .empty-mark {
-  color: rgba(247, 247, 245, 0.18);
-  font-size: 76rpx;
-  font-style: italic;
-  font-weight: 900;
+  opacity: 0.72;
+}
+
+.empty-mark brand-logo {
+  display: block;
 }
 .summary-row {
   padding: 22rpx 28rpx 8rpx;

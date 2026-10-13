@@ -39,9 +39,8 @@
   color: var(--color-text);
   text-align: center;
 }
-.placeholder-mark {
-  font-size: 38rpx;
-  font-weight: 900;
+.card-placeholder brand-logo {
+  display: block;
 }
 .placeholder-copy {
   color: var(--color-muted);

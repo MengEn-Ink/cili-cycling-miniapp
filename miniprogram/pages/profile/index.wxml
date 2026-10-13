@@ -30,7 +30,7 @@
       <view class="hero-identity">
         <view class="avatar">
           <image wx:if="{{heroAvatarUrl}}" class="avatar-image" src="{{heroAvatarUrl}}" mode="aspectFill" data-url="{{heroAvatarUrl}}" bindtap="previewAvatar" binderror="heroAvatarError" aria-label="{{profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '骑手')}}的头像" />
-          <text wx:else aria-label="默认骑手头像">骑</text>
+          <image wx:else class="avatar-image" src="/assets/brand/logo-circle-144.png" mode="aspectFill" aria-label="此里默认头像" />
         </view>
         <view class="profile-copy">
           <view class="profile-name">{{profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '欢迎来到此里')}}</view>

@@ -264,15 +264,9 @@ describe('HP-20261010-02 统一明亮 UI 全页对比度契约', () => {
         declaration(effectiveBlock(capability, `.rider-card.gender-${tone} .gender-pill`), 'color'),
         token,
       );
-      expectSemantic(
-        declaration(
-          effectiveBlock(capability, `.rider-card.gender-${tone} .alpine-fallback .fallback-mark`),
-          'color',
-        ),
-        token,
-      );
     }
 
+    expect(capability).toMatch(/\.fallback-logo\s*\{[^}]*opacity:\s*0\.72/s);
     expect(tokens['--color-on-media-gender-male']).toBe('#ffffff');
     expect(tokens['--color-on-media-gender-female']).toBe('#ffffff');
     expect(tokens['--color-on-media-gender-unknown']).toBe('#ffffff');

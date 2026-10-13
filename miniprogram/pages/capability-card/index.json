@@ -8,6 +8,7 @@
   "backgroundColorBottom": "#ffffff",
   "backgroundTextStyle": "dark",
   "usingComponents": {
+    "brand-logo": "/components/brand-logo/index",
     "state-view": "/components/state-view/index"
   }
 }

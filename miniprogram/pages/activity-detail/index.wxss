@@ -1298,21 +1298,14 @@ brand-logo {
   background: var(--color-raised);
 }
 
-.attendee-avatar--placeholder,
-.rider-card-photo__placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text);
-  font-size: 30rpx;
-  font-weight: 900;
+.attendee-avatar--placeholder {
+  display: block;
+  background: var(--color-text);
 }
 
 .rider-card-photo__placeholder {
+  display: block;
   background: var(--color-media-placeholder-bg);
-  color: var(--color-on-media);
-  font-size: 24rpx;
-  letter-spacing: 4rpx;
 }
 
 .rider-card-photo__scrim {

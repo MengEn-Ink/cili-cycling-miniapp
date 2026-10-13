@@ -1,0 +1,17 @@
+{
+  "brand": "此里",
+  "version": 1,
+  "colors": {
+    "background": "#20241F",
+    "foreground": "#FFFFFF",
+    "accent": "#E85B32"
+  },
+  "assets": [
+    {"path": "docs/brand/logo-materials/generated/logo-wechat-144.png", "format": "png", "width": 144, "height": 144, "usage": "微信小程序平台头像与基础 Logo"},
+    {"path": "docs/brand/logo-materials/generated/logo-square-1024.png", "format": "png", "width": 1024, "height": 1024, "usage": "高清方形 Logo"},
+    {"path": "docs/brand/logo-materials/generated/logo-circle-144.png", "format": "png", "width": 144, "height": 144, "usage": "圆形头像与圆形裁切场景"},
+    {"path": "docs/brand/logo-materials/generated/logo-photo-watermark-360x144.png", "format": "png", "width": 360, "height": 144, "usage": "照片角标与水印"},
+    {"path": "docs/brand/logo-materials/generated/logo-share-500x400.png", "format": "png", "width": 500, "height": 400, "usage": "微信分享图与分享卡片"},
+    {"path": "docs/brand/logo-materials/generated/logo-loading-512.gif", "format": "gif", "width": 512, "height": 512, "usage": "循环加载动画", "frameCount": 8, "frameDurationMs": 110}
+  ]
+}

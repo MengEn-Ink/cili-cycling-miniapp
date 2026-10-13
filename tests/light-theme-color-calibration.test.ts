@@ -44,15 +44,18 @@ describe('核心页面统一明亮主题配色', () => {
     );
     expectSemantic(
       declaration(effectiveBlock(brandStyles, '.brand-logo__wordmark'), 'background'),
-      '--color-text',
+      '--color-logo-background',
     );
     expectSemantic(
       declaration(effectiveBlock(brandStyles, '.brand-logo__wordmark'), 'color'),
-      '--color-bg',
+      '--color-logo-foreground',
     );
-    expect(brandStyles).toContain('border: 4rpx solid var(--color-brand)');
+    expect(brandStyles).toContain('border: 4rpx solid var(--color-logo-accent)');
     expect(
-      contrast(resolvedHex('var(--color-text)', tokens), resolvedHex('var(--color-bg)', tokens)),
+      contrast(
+        resolvedHex('var(--color-logo-foreground)', tokens),
+        resolvedHex('var(--color-logo-background)', tokens),
+      ),
     ).toBeGreaterThanOrEqual(4.5);
   });
 

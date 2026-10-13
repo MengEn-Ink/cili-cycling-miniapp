@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="400" viewBox="0 0 500 400" role="img" aria-label="此里分享图">
+  <rect width="500" height="400" fill="#20241f"/>
+  <text x="24" y="248" fill="#ffffff" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="208" font-weight="900" letter-spacing="-10">此里</text>
+  <path d="M340 282H500" fill="none" stroke="#ffffff" stroke-width="15"/>
+  <circle cx="456" cy="310" r="21" fill="#20241f" stroke="#e85b32" stroke-width="15"/>
+</svg>

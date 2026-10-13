@@ -26,6 +26,9 @@ page {
   --color-brand: #e85b32;
   --color-brand-active: #c84320;
   --color-brand-soft: #fff0e9;
+  --color-logo-background: #20241f;
+  --color-logo-foreground: #ffffff;
+  --color-logo-accent: #e85b32;
   --color-on-brand: #171717;
   --color-action: #171717;
   --color-action-active: #333333;
