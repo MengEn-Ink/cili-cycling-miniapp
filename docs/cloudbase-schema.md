@@ -2,6 +2,16 @@
 
 所有业务集合使用客户端全拒绝 ACL，仅云函数访问。运行时身份只来自 `cloud.getWXContext().OPENID`；响应统一为 `{ ok: true, data }` 或 `{ ok: false, error }`。日志和审计不得包含 PII、密钥、密文或第三方凭证。
 
+## 个人信息展示规则
+
+用户已确认（2026-10-13）：
+
+- 本人和审核管理员可见的页面（报名表单、编辑资料、个人中心、本人报名凭证、审核后台）完整显示真实姓名、手机号和紧急联系人电话，不打星号。
+- 其他骑友可见的地方（报名名单、骑友卡、公开主页）只显示昵称，接口不返回、页面不展示真实姓名和手机号。
+- 后援车司机电话面向所有骑友公开，完整显示。
+- 云端加密存储不变：`real_name_cipher`、`phone_cipher`、`emergency_phone_cipher` 仍以 `PII_ENCRYPTION_KEY` 加密；完整值只在 `profile`（本人）和 `admin-review`（管理员详情）中按请求解密返回。`*_masked` 字段仅为旧客户端兼容保留，不再用于页面展示。本规则只决定页面是否打星号。
+- 日志、审计和证据文件仍不得包含 PII。
+
 ## 集合
 
 ### `activities`
@@ -30,7 +40,7 @@ elevation_profile, route_outline, route_bounds
 
 ### `registrations`
 
-`_id` 是 `activity_id + openid` 的确定性摘要。包含活动选项、脱敏 `profile_snapshot`、状态、审批历史和可选队伍字段；不读取或对外投影第三方账号状态、快照或指标。
+`_id` 是 `activity_id + openid` 的确定性摘要。包含活动选项、`profile_snapshot`（只存昵称、性别、`*_masked` 兼容字段和电话来源，不存明文实名和手机号；展示口径见“个人信息展示规则”）、状态、审批历史和可选队伍字段；不读取或对外投影第三方账号状态、快照或指标。
 
 状态为 `waiting|pending|approved|checked_in|rejected|cancelled`。`waiting` 不占位，`pending + approved + checked_in` 占位；取消或驳回释放名额并按 FIFO 规则补位。
 

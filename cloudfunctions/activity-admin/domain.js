@@ -66,22 +66,9 @@ function pick(object, keys) {
     return out;
   }, {});
 }
-function maskPhone(value) {
-  if (typeof value !== 'string' || !value.trim()) return '';
-  const digits = value.replace(/\D/g, '');
-  if (/^\d{11}$/.test(digits)) return `${digits.slice(0, 3)}****${digits.slice(-4)}`;
-  // 无法可靠识别的电话文本也必须 fail closed，绝不回显原文。
-  return digits.length >= 4 ? `****${digits.slice(-4)}` : '****';
-}
-function publicActivity(activity, options = {}) {
-  const output = pick(activity, ACTIVITY_FIELDS);
-  if (output.support_vehicle_driver && !options.revealContact) {
-    output.support_vehicle_driver = {
-      ...output.support_vehicle_driver,
-      contact_phone: maskPhone(output.support_vehicle_driver.contact_phone),
-    };
-  }
-  return output;
+// 后援车司机电话面向全部骑友公开，管理端与骑友端一致返回完整号码。
+function publicActivity(activity) {
+  return pick(activity, ACTIVITY_FIELDS);
 }
 function cleanText(value, field, max, required = false) {
   if (typeof value !== 'string') fail('VALIDATION_FAILED', `${field}格式错误`);
@@ -867,5 +854,4 @@ module.exports = {
   assertStatusTransition,
   buildActivityAudit,
   activityAuditAction,
-  maskPhone,
 };

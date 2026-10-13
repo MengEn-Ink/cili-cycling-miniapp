@@ -464,7 +464,7 @@ test('存量报名第三方指标不进入管理员响应', () => {
   assert.equal(Object.hasOwn(response, 'strava_snapshot'), false);
 });
 
-test('管理员报名详情默认返回完整手机号，社交投影不泄露手机号或密文', () => {
+test('管理员报名详情默认返回完整真实姓名与手机号，社交投影不泄露实名、手机号或密文', () => {
   const registration = {
     _id: 'r1',
     activity_id: 'a1',
@@ -473,6 +473,8 @@ test('管理员报名详情默认返回完整手机号，社交投影不泄露�
   };
   const sensitiveProfile = {
     ...profile,
+    real_name_cipher: encryptedPhone('曹蒙恩'),
+    real_name_masked: '曹**',
     phone_cipher: encryptedPhone('13812345678'),
     phone_masked: '138****5678',
     phone_source: 'wechat',
@@ -483,6 +485,7 @@ test('管理员报名详情默认返回完整手机号，社交投影不泄露�
   };
 
   const admin = adminCapabilityView(registration, sensitiveProfile, {}, piiKey);
+  assert.equal(admin.profile_snapshot.real_name, '曹蒙恩');
   assert.equal(admin.profile_snapshot.phone, '13812345678');
   assert.equal(admin.profile_snapshot.emergency_name, '紧急联系人');
   assert.equal(admin.profile_snapshot.emergency_phone, '13912345678');
@@ -501,6 +504,8 @@ test('管理员报名详情默认返回完整手机号，社交投影不泄露�
   const serialized = JSON.stringify(social);
   assert.equal(serialized.includes('13812345678'), false);
   assert.equal(serialized.includes('13912345678'), false);
+  assert.equal(serialized.includes('曹蒙恩'), false);
+  assert.equal(serialized.includes('real_name'), false);
   assert.equal(serialized.includes('phone_cipher'), false);
   assert.equal(serialized.includes('phone_masked'), false);
 });

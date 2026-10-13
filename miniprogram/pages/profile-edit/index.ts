@@ -269,19 +269,27 @@ function normalizeBackgroundProfile(profile: Profile | null): Profile | null {
   };
 }
 
-function profileSaveValidationMessage(profile: Profile): string {
+type SensitiveValues = Pick<Profile, 'realName' | 'phone' | 'emergencyPhone'>;
+
+function sensitiveValues(profile: Profile | null): SensitiveValues {
+  return {
+    realName: profile?.realName || '',
+    phone: profile?.phone || '',
+    emergencyPhone: profile?.emergencyPhone || '',
+  };
+}
+
+function profileSaveValidationMessage(profile: Profile, loaded: SensitiveValues): string {
   if (!profile.avatarId?.trim()) return '请先设置头像，再保存资料';
-  // 脱敏值沿用服务端状态；用户重新输入或清空后改按当前表单值校验，避免旧状态掩盖编辑结果。
+  // 未改动的字段沿用服务端填写状态（兼容旧版云函数未回传完整值）；改动或清空后按当前表单值校验。
+  const filled = (key: keyof SensitiveValues, valid: boolean) =>
+    profile[key] === loaded[key] && profile.sensitiveStatus
+      ? profile.sensitiveStatus[key] === true
+      : valid;
   const sensitiveStatus = {
-    realName: profile.realName.includes('*')
-      ? profile.sensitiveStatus?.realName === true
-      : !!profile.realName.trim(),
-    phone: profile.phone.includes('*')
-      ? profile.sensitiveStatus?.phone === true
-      : /^1\d{10}$/.test(profile.phone),
-    emergencyPhone: profile.emergencyPhone.includes('*')
-      ? profile.sensitiveStatus?.emergencyPhone === true
-      : /^1\d{10}$/.test(profile.emergencyPhone),
+    realName: filled('realName', !!profile.realName.trim()),
+    phone: filled('phone', /^1\d{10}$/.test(profile.phone)),
+    emergencyPhone: filled('emergencyPhone', /^1\d{10}$/.test(profile.emergencyPhone)),
   };
   // 资料保存、完整度和报名门槛共用同一 7 项口径，避免“保存成功后仍无法报名”。
   return validateRegistrationProfile({ ...profile, sensitiveStatus })[0] || '';
@@ -374,6 +382,8 @@ Page({
   uploadedMediaDigests: new Map<string, string>(),
   // 已解析图片临时地址缓存：fileID -> 仍在有效期的 https 地址，跨多次进入页面复用。
   photoUrlCache: null as TempFileUrlCache | null,
+  // 加载/保存后服务端回传的实名与电话原值：未改动的字段保存时不重复提交。
+  loadedSensitive: sensitiveValues(null),
   data: {
     loading: true,
     error: '',
@@ -390,6 +400,7 @@ Page({
     await retryOrphanLedger();
     const state = await runPageTask(() => rideService.getProfile(), '资料加载失败');
     const loadedProfile = normalizeBackgroundProfile(state.data || null);
+    this.loadedSensitive = sensitiveValues(loadedProfile);
     this.setData({
       loading: false,
       error: state.error,
@@ -722,7 +733,8 @@ Page({
     )
       return;
     const p = this.data.p;
-    const validationMessage = profileSaveValidationMessage(p);
+    const loaded = this.loadedSensitive;
+    const validationMessage = profileSaveValidationMessage(p, loaded);
     if (validationMessage) {
       // 头像有独立即时保存流程；仅整表保存时合并检查必填项，避免用户提交不完整报名资料。
       this.setData({ error: validationMessage });
@@ -735,15 +747,16 @@ Page({
         rideService.updateProfile({
           nickname: p.nickname,
           gender: p.gender,
-          phone: p.phone.includes('*') ? undefined : p.phone,
+          phone: p.phone === loaded.phone ? undefined : p.phone,
           emergencyName: p.emergencyName,
           backgroundPhoto:
             p.backgroundPhoto !== undefined ? p.backgroundPhoto : p.photos[0] || null,
-          realName: p.realName.includes('*') ? undefined : p.realName,
-          emergencyPhone: p.emergencyPhone.includes('*') ? undefined : p.emergencyPhone,
+          realName: p.realName === loaded.realName ? undefined : p.realName,
+          emergencyPhone: p.emergencyPhone === loaded.emergencyPhone ? undefined : p.emergencyPhone,
         }),
       '保存失败',
     );
+    if (state.data) this.loadedSensitive = sensitiveValues(state.data);
     this.setData({
       saving: false,
       error: state.error,

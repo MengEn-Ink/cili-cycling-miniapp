@@ -280,10 +280,12 @@ function registrationDecision(activity, now) {
 function publicActivity(activity, now = new Date()) {
   const output = pick(activity, ACTIVITY_FIELDS);
   if (!Number.isInteger(output.capacity)) output.capacity = 0;
+  // 后援车司机电话面向全部骑友公开，完整返回，便于集合当天直接拨打；非字符串值不透传。
   if (output.support_vehicle_driver) {
+    const phone = output.support_vehicle_driver.contact_phone;
     output.support_vehicle_driver = {
       ...output.support_vehicle_driver,
-      contact_phone: maskPhone(output.support_vehicle_driver.contact_phone),
+      contact_phone: typeof phone === 'string' ? phone.trim() : '',
     };
   }
   if (

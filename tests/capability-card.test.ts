@@ -7,7 +7,7 @@ const profile: Profile = {
   nickname: '山野骑手',
   title: '',
   realName: '曹蒙恩',
-  phone: '138****5678',
+  phone: '13812345678',
   gender: '男',
   emergencyName: '',
   emergencyPhone: '',
@@ -72,7 +72,7 @@ describe('骑行能力卡资料', () => {
       ),
     ).toMatchObject({
       displayName: '山野骑手',
-      maskedName: '曹**',
+      realName: '曹蒙恩',
       experience: '常骑',
       remark: '无',
       genderLabel: '男',
