@@ -110,7 +110,7 @@
 - Modify: `cloudfunctions/activity-admin/package.json`
 - Modify: `cloudfunctions/activity-admin/package-lock.json`
 
-- [ ] **Step 1: Write failing parser tests**
+- [x] **Step 1: Write failing parser tests**
 
 ```js
 test('parses namespaced track and route points into bounded native metrics', () => {
@@ -127,13 +127,13 @@ test('rejects DTD, entities, missing elevation, invalid coordinates and point ov
 });
 ```
 
-- [ ] **Step 2: Run the tests and confirm the parser is missing**
+- [x] **Step 2: Run the tests and confirm the parser is missing**
 
 Run: `node --test cloudfunctions/activity-admin/gpx.node-test.js`
 
 Expected: FAIL because `./gpx` does not exist.
 
-- [ ] **Step 3: Implement the parser**
+- [x] **Step 3: Implement the parser**
 
 ```js
 function parseGpx(bytes, { fileName = 'route.gpx' } = {}) {
@@ -161,13 +161,13 @@ function parseGpx(bytes, { fileName = 'route.gpx' } = {}) {
 
 Configure `fast-xml-parser` with `processEntities: false`, `htmlEntities: false`, strict attribute handling, and a pre-parse rejection for `<!DOCTYPE`/`<!ENTITY`.
 
-- [ ] **Step 4: Run parser tests**
+- [x] **Step 4: Run parser tests**
 
 Run: `npm --prefix cloudfunctions/activity-admin test`
 
 Expected: PASS, including parser geometry and hostile XML cases.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add cloudfunctions/activity-admin/gpx.js cloudfunctions/activity-admin/gpx.node-test.js cloudfunctions/activity-admin/package.json cloudfunctions/activity-admin/package-lock.json
