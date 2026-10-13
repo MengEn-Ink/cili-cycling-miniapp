@@ -149,13 +149,8 @@ function timestamp(value) {
   return Number.isFinite(time) ? time : 0;
 }
 
-function publicMetric(value) {
-  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
-}
-
 function publicAttendee(registration, profile, avatarUrl) {
   const snapshot = registration && registration.profile_snapshot;
-  const strava = registration && registration.strava_snapshot;
   return {
     id: typeof registration._id === 'string' ? registration._id : '',
     display_name:
@@ -173,12 +168,6 @@ function publicAttendee(registration, profile, avatarUrl) {
     ),
     avatar_url: safeHttpsUrl(avatarUrl),
     status: registration.status,
-    card: {
-      rides90d: publicMetric(strava && strava.activities_90d),
-      longestKm: publicMetric(strava && strava.longest_km),
-      elevationM: publicMetric(strava && strava.total_elevation_m),
-      speedKmh: publicMetric(strava && strava.weighted_avg_speed_kmh),
-    },
   };
 }
 

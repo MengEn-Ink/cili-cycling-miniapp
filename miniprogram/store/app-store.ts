@@ -106,7 +106,7 @@ export class AppStore {
           this.openid = attempt.identity.openid;
           this.role = attempt.identity.role;
           this.isSuper = attempt.identity.isSuper;
-          // 账号切换为不同 openid 时清空旧账号只读缓存，避免展示他人的活动/Strava 数据。
+          // 账号切换为不同 openid 时清空旧账号只读缓存，避免展示他人的活动或资料。
           if (previousOpenid && previousOpenid !== attempt.identity.openid) repositoryCache.clear();
           this.identityVerifiedUntil = verifiedAt + IDENTITY_TTL_MS;
           this.identityHint = { source: 'wechat_cloud', verifiedAt };

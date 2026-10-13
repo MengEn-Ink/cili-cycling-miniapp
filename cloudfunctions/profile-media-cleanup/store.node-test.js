@@ -49,42 +49,6 @@ function mutationDatabase(seed) {
   };
 }
 
-test('到期 leased intent 原子终止并仅释放自己的 credential lease', async () => {
-  const now = new Date('2026-09-29T12:00:00.000Z');
-  const fixture = mutationDatabase({
-    profile_media_imports: {
-      'intent-old': {
-        _id: 'intent-old',
-        owner_openid: 'owner',
-        status: 'leased',
-        cleanup_after: new Date('2026-09-29T11:59:59.000Z'),
-      },
-    },
-    profiles: { owner: { _id: 'owner' } },
-    strava_credentials: {
-      owner: {
-        _id: 'owner',
-        avatar_import_lease_id: 'intent-old',
-        avatar_import_started_at: new Date('2026-09-29T11:49:59.000Z'),
-        avatar_import_lease_expires_at: new Date('2026-09-29T11:59:59.000Z'),
-      },
-    },
-  });
-
-  const result = await createCleanupStore(
-    fixture.db,
-    'profile-media-secret-for-tests-32-bytes',
-  ).claimImportIntent('intent-old', { leaseId: 'cleanup', now });
-
-  assert.equal(result.aborted, true);
-  assert.equal(fixture.state.profile_media_imports.get('intent-old').status, 'aborted');
-  assert.equal(fixture.state.strava_credentials.get('owner').avatar_import_lease_id, undefined);
-  assert.equal(
-    fixture.state.strava_credentials.get('owner').avatar_import_lease_expires_at,
-    undefined,
-  );
-});
-
 test('lost recovery 只有 owner 路径未被 profile 引用时才能重建删除 fence', async () => {
   const secret = 'profile-media-secret-for-tests-32-bytes';
   const owner = 'owner';

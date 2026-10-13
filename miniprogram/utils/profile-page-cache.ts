@@ -1,7 +1,7 @@
 import type { PersonalCapabilityCard, Profile } from '../models';
 
-const STORAGE_KEY = 'cili-profile-page-cache-v1';
-const CACHE_VERSION = 1;
+const STORAGE_KEY = 'cili-profile-page-cache-v2';
+const CACHE_VERSION = 2;
 export const PROFILE_PAGE_CACHE_TTL_MS = 6 * 60 * 60_000;
 
 type CachedProfile = Pick<Profile, 'nickname' | 'hasCompletedGuidance' | 'completeness'>;
@@ -22,7 +22,7 @@ function cachedImage(images: ImageCache, sourceUrl: string) {
 }
 
 export interface ProfilePageCache {
-  version: 1;
+  version: 2;
   ownerOpenid: string;
   cachedAt: number;
   profile: CachedProfile;
@@ -60,7 +60,7 @@ export function readProfilePageCache(): ProfilePageCache | null {
 }
 
 export function isProfilePageCacheFresh(cache: ProfilePageCache, now = Date.now()) {
-  return cache.card.state === 'ready' && now - cache.cachedAt <= PROFILE_PAGE_CACHE_TTL_MS;
+  return now - cache.cachedAt <= PROFILE_PAGE_CACHE_TTL_MS;
 }
 
 export function writeProfilePageCache(

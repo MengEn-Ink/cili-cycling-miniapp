@@ -21,8 +21,7 @@ page {
 }
 
 .title-row,
-.context-head,
-.strava-head {
+.context-head {
   display: flex;
   align-items: center;
   min-width: 0;
@@ -486,100 +485,12 @@ page {
   pointer-events: none;
 }
 
-.strava-row,
 .safety-box {
   box-sizing: border-box;
   width: 100%;
   border: 1rpx solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-raised);
-}
-
-.strava-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16rpx;
-  min-width: 0;
-  margin-top: 14rpx;
-  padding: 16rpx;
-}
-
-.strava-copy {
-  min-width: 0;
-  flex: 1;
-}
-
-.strava-head {
-  flex-wrap: wrap;
-  gap: 8rpx;
-}
-
-.strava-brand {
-  display: inline-flex;
-  padding: 5rpx 10rpx;
-  border-radius: 8rpx;
-  background: var(--color-brand);
-  color: var(--color-on-brand);
-  font-size: 19rpx;
-  font-weight: 900;
-  line-height: 1.25;
-  letter-spacing: 1rpx;
-}
-
-.readiness-badge {
-  color: var(--color-muted);
-  font-size: 20rpx;
-  font-weight: 800;
-}
-
-.status-ready {
-  border-color: var(--color-success);
-  background: var(--color-success-soft);
-}
-
-.status-ready .readiness-badge {
-  background: var(--color-success-soft);
-  color: var(--color-success-text);
-}
-
-.status-syncing,
-.status-authorizing,
-.status-partial {
-  border-color: var(--color-warning);
-  background: var(--color-warning-soft);
-}
-
-.status-syncing .readiness-badge,
-.status-authorizing .readiness-badge,
-.status-partial .readiness-badge {
-  background: var(--color-warning-soft);
-  color: var(--color-warning-text);
-}
-
-.status-disconnected,
-.status-failed {
-  border-color: var(--color-danger);
-  background: var(--color-danger-soft);
-}
-
-.status-disconnected .readiness-badge,
-.status-failed .readiness-badge {
-  background: var(--color-danger-soft);
-  color: var(--color-danger-text);
-}
-
-.strava-message {
-  margin-top: 8rpx;
-  color: var(--color-muted);
-  font-size: 20rpx;
-  line-height: 1.45;
-}
-
-.strava-row .text-button {
-  flex: 0 0 auto;
-  min-width: 128rpx;
-  padding: 0 16rpx;
 }
 
 .team-card,
@@ -812,13 +723,7 @@ page {
     padding-bottom: 0;
   }
 
-  .strava-row {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .identity-action,
-  .strava-row .text-button {
+  .identity-action {
     width: 100%;
   }
 

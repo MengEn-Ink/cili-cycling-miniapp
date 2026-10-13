@@ -10,7 +10,6 @@ const {
   isOccupying,
   assertActivityOpen,
   assertProfileReady,
-  selectStrava,
   validateOptions,
   assertCanSubmit,
   assertCanCancel,
@@ -192,7 +191,7 @@ const input = {
   options: { gathering_mode: 'self_drive', experience: 'regular', remark: 'ok' },
 };
 
-test('提交校验活动、资料、Strava 和客户端越权字段', () => {
+test('提交校验活动、资料和客户端越权字段', () => {
   expectCode(
     () => assertActivityOpen({ ...activity, status: 'draft' }, now),
     'ACTIVITY_NOT_AVAILABLE',
@@ -271,11 +270,6 @@ test('提交校验活动、资料、Strava 和客户端越权字段', () => {
     'PROFILE_INCOMPLETE',
   );
 
-  expectCode(() => selectStrava({ strava: {} }), 'STRAVA_REQUIRED');
-  assert.equal(
-    selectStrava({ strava: { exempt: { enabled: true, reason: '人工核验' } } }).status,
-    'exempted',
-  );
   for (const gatheringMode of ['self_drive', 'support_vehicle']) {
     assert.deepEqual(
       validateOptions({
@@ -363,7 +357,7 @@ test('管理员报名在有名额时自动通过并写审批信息', async () =>
   assert.equal(store.state.audits[0].action, 'registration.admin_auto_approved');
 });
 
-test('报名不再读取或要求 Strava 凭证与快照', async () => {
+test('报名不读取第三方凭证或快照', async () => {
   for (const store of [
     memoryStore(),
     memoryStore({ credential: null, snapshot: null }),
@@ -372,7 +366,7 @@ test('报名不再读取或要求 Strava 凭证与快照', async () => {
   ]) {
     const accepted = await submitRegistration(store, input, now);
     assert.equal(accepted.status, 'pending');
-    assert.equal(accepted.strava_status, 'not_required');
+    assert.equal(Object.hasOwn(accepted, 'strava_status'), false);
     assert.equal(Object.hasOwn(accepted, 'strava_snapshot'), false);
   }
 });
@@ -395,7 +389,7 @@ test('提交在同一事务写 submitted 审计且不保存 Strava 快照', asyn
   const id = registrationId('a1', openid);
 
   assert.equal(result.status, 'pending');
-  assert.equal(result.strava_status, 'not_required');
+  assert.equal(Object.hasOwn(result, 'strava_status'), false);
   assert.equal(Object.hasOwn(result, 'strava_snapshot'), false);
   assert.equal(JSON.stringify(result).includes('openid'), false);
   assert.equal(JSON.stringify(result).includes('cipher'), false);
@@ -679,10 +673,8 @@ test('活动和报名响应只含白名单字段并脱敏', () => {
   });
   assert.equal(r.openid, undefined);
   assert.equal(r.token, undefined);
-  assert.equal(r.strava_snapshot.years_on_strava, 5);
-  assert.equal(r.strava_snapshot.activities_90d, 10);
-  assert.equal(r.strava_snapshot.athlete_created_at, '2019-05-18T09:30:00.000Z');
-  assert.equal(r.strava_snapshot.access_token, undefined);
+  assert.equal(Object.hasOwn(r, 'strava_status'), false);
+  assert.equal(Object.hasOwn(r, 'strava_snapshot'), false);
   assert.equal(r.review_history[0].reviewer_openid, undefined);
   assert.equal(r.profile_snapshot.phone_masked, '138****5678');
   assert.equal(Object.hasOwn(r.profile_snapshot, 'id_number_masked'), false);

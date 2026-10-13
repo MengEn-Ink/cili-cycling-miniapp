@@ -59,7 +59,7 @@ describe('活动图集与位置仓储 DTO', () => {
     expect(result).not.toHaveProperty('images');
   });
 
-  it('写入 images、首图封面及位置白名单字段', async () => {
+  it('写入 images、显式封面及位置白名单字段', async () => {
     const { cloud, callFunction } = cloudWith(dto);
     await new CloudRepository(cloud).saveActivity({
       title: '活动',
@@ -89,7 +89,7 @@ describe('活动图集与位置仓储 DTO', () => {
     });
     expect(callFunction.mock.calls[0][0].data.activity).toMatchObject({
       images: dto.images,
-      cover_image: dto.images[0],
+      cover_image: 'cloud://ignored.jpg',
       group_qr_code: dto.group_qr_code,
       group_qr_code_uploaded_at: dto.group_qr_code_uploaded_at,
       route: { start_location: location, end_location: dto.route.end_location },

@@ -52,7 +52,6 @@ const activity: Activity = {
     stravaRouteUrl: 'https://www.strava.com/routes/123',
     elevationProfile: [{ distanceKm: 0, elevationM: 20 }],
     routeBounds: { south: 39, west: 116, north: 40, east: 117 },
-    popularClimbs: [],
   },
   schedule: [{ time: '08:00', title: '集合', location: '起点' }],
   notices: ['守规'],
@@ -1318,7 +1317,7 @@ describe('日常活动极简创建与编辑', () => {
     expect(template).toContain('GPX 路线详情（推荐）');
     expect(template).toContain('上传 GPX');
     expect(template).toContain('路线详情已准备好');
-    expect(template).toContain('此里估算 {{stravaRouteTimeLabel}}');
+    expect(template).toContain('此里估算 {{routeTimeLabel}}');
     expect(template).toContain('routePreview.routeName');
     expect(template).toContain('id="route-outline-canvas"');
     expect(template).toContain('id="route-elevation-canvas"');

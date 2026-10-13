@@ -36,7 +36,7 @@ describe('HP-20261010-02 第一批六页尺寸契约', () => {
     expect(declaration(card, 'padding')).toBe('24rpx 4rpx');
     expect(declaration(card, 'border-width')).toBe('0 0 2rpx');
     expect(declaration(card, 'border-radius')).toBe('0');
-    for (const selector of ['.route-actions button', '.route-location-row button']) {
+    for (const selector of ['.route-action', '.route-location-row button']) {
       expect(declaration(effectiveBlock(styles, selector), 'min-height')).toBe(
         'var(--control-height)',
       );
@@ -85,19 +85,13 @@ describe('HP-20261010-02 第一批六页尺寸契约', () => {
   it('设置页使用 16px 边距、紧凑标题、16px 卡片和 48px 操作', () => {
     const styles = read('miniprogram/pages/settings/index.wxss');
     const page = effectiveBlock(styles, '.settings-page');
-    const strava = effectiveBlock(styles, '.strava-settings-card');
     const release = effectiveBlock(styles, '.release-content');
     expect(declaration(page, 'padding-right')).toBe('var(--page-gutter)');
     expect(declaration(page, 'padding-left')).toBe('var(--page-gutter)');
     expect(declaration(effectiveBlock(styles, '.hero-title'), 'font-size')).toBe('48rpx');
-    for (const card of [strava, release]) {
-      expect(declaration(card, 'padding')).toBe('32rpx');
-      expect(declaration(card, 'border-width')).toBe('4rpx');
-      expectSemantic(declaration(card, 'border-radius'), '--radius-card');
-    }
-    expect(declaration(effectiveBlock(styles, '.strava-actions button'), 'min-height')).toBe(
-      'var(--control-height)',
-    );
+    expect(declaration(release, 'padding')).toBe('32rpx');
+    expect(declaration(release, 'border-width')).toBe('4rpx');
+    expectSemantic(declaration(release, 'border-radius'), '--radius-card');
     expect(styles).not.toMatch(/theme-option|theme-preview|appearance-card/);
   });
 

@@ -100,7 +100,7 @@
         </view>
         <view wx:if="{{routePreview}}" class="route-preview-card">
           <view class="route-preview-heading">
-            <view><view class="route-preview-name">{{routePreview.routeName}}</view><view class="section-help">此里估算 {{stravaRouteTimeLabel}}</view></view>
+            <view><view class="route-preview-name">{{routePreview.routeName}}</view><view class="section-help">此里估算 {{routeTimeLabel}}</view></view>
             <view class="route-ready-mark">路线详情已准备好</view>
           </view>
           <view class="route-metric-grid">

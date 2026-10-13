@@ -1,7 +1,7 @@
 'use strict';
 const crypto = require('node:crypto');
 const https = require('node:https');
-const AVATAR_SOURCES = ['wechat', 'strava', 'custom'];
+const AVATAR_SOURCES = ['wechat', 'custom'];
 const CLIENT_AVATAR_SOURCES = ['wechat'];
 const CLIENT_MEDIA_ORIGINS = ['wechat', 'custom'];
 const MAX_PROFILE_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -95,11 +95,6 @@ function mediaDocumentId(fileId) {
   if (typeof fileId !== 'string' || !fileId)
     throw new ProfileError('VALIDATION_FAILED', '媒体文件 ID 无效');
   return crypto.createHash('sha256').update(fileId).digest('hex');
-}
-function avatarUrlFingerprint(value) {
-  if (typeof value !== 'string' || !value)
-    throw new ProfileError('STRAVA_AVATAR_URL_INVALID', 'Strava 头像地址无效');
-  return crypto.createHash('sha256').update(value).digest('hex');
 }
 function compatibleRandomUUID() {
   if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
@@ -991,7 +986,6 @@ module.exports = {
   canonicalUploadIntent,
   mediaOwnerPrefix,
   mediaDocumentId,
-  avatarUrlFingerprint,
   mediaRegistration,
   clientAvatarSource,
   clientMediaOrigin,

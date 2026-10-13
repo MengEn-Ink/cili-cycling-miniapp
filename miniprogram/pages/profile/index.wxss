@@ -174,12 +174,6 @@ brand-logo {
   font-weight: 900;
 }
 
-.hero-capability-strava-tenure {
-  margin-top: 6rpx;
-  color: #aaa6a0;
-  font-size: 18rpx;
-}
-
 .hero-capability-status {
   padding: 8rpx 14rpx;
   border: 1rpx solid #5b5c60;
@@ -262,65 +256,6 @@ brand-logo {
 .hero-capability-details text:last-child {
   color: var(--color-on-media);
   text-align: right;
-}
-
-.hero-strava-copy {
-  margin-top: 24rpx;
-  padding: 24rpx;
-  border: 1rpx solid var(--color-border-strong);
-  border-radius: 8rpx;
-  background: var(--color-surface);
-  color: var(--color-text);
-}
-
-.hero-strava-copy-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 22rpx;
-  font-weight: 900;
-}
-
-.hero-strava-copy-head text:last-child {
-  color: var(--color-muted);
-  font-size: 18rpx;
-  font-weight: 700;
-}
-
-.hero-strava-url {
-  display: block;
-  margin-top: 16rpx;
-  overflow-wrap: anywhere;
-  color: var(--color-brand);
-  font-size: 20rpx;
-  line-height: 1.55;
-}
-
-.hero-strava-copy-hint {
-  margin-top: 12rpx;
-  color: var(--color-muted);
-  font-size: 20rpx;
-  line-height: 1.55;
-}
-
-.hero-strava-link {
-  display: flex;
-  min-height: var(--control-height);
-  margin: 20rpx 0 0;
-  padding: 0 24rpx;
-  align-items: center;
-  justify-content: space-between;
-  border: 0;
-  border-radius: 8rpx;
-  background: var(--color-text);
-  color: var(--color-bg);
-  font-size: 22rpx;
-  font-weight: 900;
-  line-height: var(--control-height);
-}
-
-.hero-strava-link:active {
-  background: var(--color-raised);
 }
 
 .hero-profile-progress,
@@ -652,7 +587,6 @@ brand-logo {
   text-align: center;
 }
 .hero-capability-name,
-.hero-capability-strava-tenure,
 .hero-capability-details {
   color: var(--color-muted);
 }

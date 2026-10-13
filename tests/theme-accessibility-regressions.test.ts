@@ -62,7 +62,7 @@ describe('unified UI accessibility regressions', () => {
     for (const file of [
       'miniprogram/pages/admin/activity-edit/index.wxml',
       'miniprogram/pages/credential/index.wxml',
-      'miniprogram/pages/strava/index.wxml',
+      'miniprogram/pages/capability-card/index.wxml',
       'miniprogram/pages/profile-edit/index.wxml',
     ]) {
       expect(read(file)).toMatch(/class="[^"]*\b(?:card|muted)\b/);
@@ -118,9 +118,7 @@ describe('unified UI accessibility regressions', () => {
     expect(read('miniprogram/pages/profile-edit/index.wxml')).toMatch(
       /class="(?:label|danger form-error)"/,
     );
-    expect(read('miniprogram/pages/strava/index.wxml')).toContain(
-      'class="section-label inner-label"',
-    );
+    expect(read('miniprogram/pages/capability-card/index.wxml')).toContain('class="privacy-note"');
     expect(read('miniprogram/pages/admin/activity-list/index.wxml')).toContain('class="tag"');
     expect(read('miniprogram/pages/admin/activity-edit/index.wxml')).toContain(
       'class="card danger"',

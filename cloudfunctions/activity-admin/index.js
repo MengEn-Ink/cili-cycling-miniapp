@@ -71,10 +71,6 @@ function transactionStore() {
             }
             return registrations;
           },
-          getRoutePreview: (openid, routeId) => {
-            const id = crypto.createHash('sha256').update(`${openid}\0${routeId}`).digest('hex');
-            return maybeGet(transaction.collection('strava_route_previews'), id);
-          },
           getRoutePreviewById: (id) => maybeGet(transaction.collection('route_previews'), id),
           consumeRoutePreview: (id, activityId, consumedAt) =>
             transaction

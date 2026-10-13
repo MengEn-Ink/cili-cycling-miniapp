@@ -17,11 +17,7 @@ export const COLLECTIONS = Object.freeze([
   'notification_outbox',
   'profile_media',
   'profile_media_imports',
-  'oauth_states',
-  'oauth_attempts',
-  'strava_credentials',
-  'strava_snapshots',
-  'strava_route_previews',
+  'route_previews',
 ]);
 
 export const INDEXES = Object.freeze([
@@ -282,42 +278,18 @@ export const INDEXES = Object.freeze([
     unique: false,
   },
   {
-    collection: 'oauth_states',
-    name: 'oauth_states_state_hash',
-    keys: [['state_hash', 1]],
-    unique: true,
-  },
-  {
-    collection: 'oauth_states',
-    name: 'oauth_states_expires_at',
+    collection: 'route_previews',
+    name: 'route_previews_expires_at',
     keys: [['expires_at', 1]],
     unique: false,
   },
   {
-    collection: 'oauth_states',
-    name: 'oauth_states_openid_expires_at',
+    collection: 'route_previews',
+    name: 'route_previews_owner_expires_at',
     keys: [
-      ['openid', 1],
-      ['expires_at', -1],
+      ['owner_openid', 1],
+      ['expires_at', 1],
     ],
-    unique: false,
-  },
-  {
-    collection: 'strava_credentials',
-    name: 'strava_credentials_openid',
-    keys: [['openid', 1]],
-    unique: true,
-  },
-  {
-    collection: 'strava_snapshots',
-    name: 'strava_snapshots_openid',
-    keys: [['openid', 1]],
-    unique: true,
-  },
-  {
-    collection: 'strava_snapshots',
-    name: 'strava_snapshots_synced_at',
-    keys: [['synced_at', -1]],
     unique: false,
   },
   {

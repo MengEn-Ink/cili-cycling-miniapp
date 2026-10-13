@@ -64,7 +64,6 @@ pack('profile', [
   'index.js',
   'core.js',
   'capability-card.js',
-  'avatar-import.js',
   'media-upload.js',
   'store.js',
   'package.json',
@@ -82,14 +81,5 @@ if (
 )
   throw new Error('profile-media-cleanup 缺少可部署的定时触发器');
 pack('profile-media-cleanup', ['index.js', 'core.js', 'store.js', 'package.json']);
-for (const name of ['strava-auth', 'strava-callback']) {
-  for (const file of ['core.js', 'api.js'])
-    if (
-      hash(resolve(root, 'cloudfunctions/strava-shared', file)) !==
-      hash(resolve(root, 'cloudfunctions', name, 'oauth', file))
-    )
-      throw new Error(`${name}/oauth/${file} 与共享源码不一致`);
-  const packageRootFiles = name === 'strava-auth' ? ['store.js'] : ['http.js'];
-  pack(name, ['index.js', 'package.json', 'oauth/core.js', 'oauth/api.js', ...packageRootFiles]);
-}
+pack('route-web', ['index.js', 'package.json']);
 console.log('云函数部署包校验通过：源码自包含、共享代码一致且依赖均来自 registry');

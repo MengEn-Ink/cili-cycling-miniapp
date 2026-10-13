@@ -117,7 +117,7 @@ page {
   display: block;
 }
 
-.strava-pill {
+.card-label {
   display: inline-flex;
   flex: 0 1 auto;
   align-items: center;
@@ -132,10 +132,6 @@ page {
   letter-spacing: 1rpx;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.strava-pill.status-verified {
-  background: var(--color-brand);
 }
 
 .status-dot {
@@ -339,9 +335,6 @@ page {
   text-align: right;
 }
 
-.strava-profile-button,
-.sync-button,
-.repair-button,
 .photo-button {
   min-height: var(--control-height);
   margin-top: 16rpx;
@@ -350,29 +343,12 @@ page {
   font-weight: 900;
 }
 
-.strava-profile-button {
-  background: #fc4c02 !important;
-  color: #fff !important;
-}
-
-.sync-button {
-  border: 2rpx solid var(--color-border);
-  background: var(--color-surface) !important;
-  color: var(--color-text) !important;
-}
-
-.repair-button {
-  background: var(--color-action) !important;
-  color: var(--color-on-action) !important;
-}
-
 .photo-button {
   border: 1rpx solid #3a3a3c;
   background: #1c1c1e !important;
   color: #fff !important;
 }
 
-.repair-button:active,
 .photo-button:active {
   transform: scale(0.985);
   opacity: 0.86;
@@ -444,16 +420,9 @@ page,
   border-radius: var(--radius-display);
   background: var(--color-media-card-bg);
 }
-.strava-profile-button,
-.sync-button,
-.repair-button,
 .photo-button {
   min-height: var(--control-height);
   border-radius: var(--radius-display);
-}
-.repair-button {
-  background: var(--color-action) !important;
-  color: var(--color-on-action) !important;
 }
 .photo-button {
   border-color: var(--color-border);

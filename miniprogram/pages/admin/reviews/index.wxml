@@ -17,7 +17,7 @@
   <view wx:if="{{!items.length && !error}}" class="empty">当前筛选暂无报名</view>
   <view class="review-card" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="open" hover-class="review-card--pressed">
     <view class="card-number">{{index + 1}}</view>
-    <view class="review-main"><view class="applicant-name">{{item.profile.nickname}}</view><view class="activity-name">{{item.activity.title}}</view><view class="data-line"><text wx:if="{{item.profile.gender}}">{{item.profile.gender}}</text><text>{{item.experience}}</text><text wx:if="{{item.gatheringMode}}">{{item.gatheringMode}}</text><text wx:if="{{item.teamName}}">队伍 {{item.teamName}}{{item.isTeamLeader ? ' · 队长' : ''}}</text><text wx:if="{{item.strava && item.strava.status}}">STRAVA {{item.strava.status}}</text></view></view>
+    <view class="review-main"><view class="applicant-name">{{item.profile.nickname}}</view><view class="activity-name">{{item.activity.title}}</view><view class="data-line"><text wx:if="{{item.profile.gender}}">{{item.profile.gender}}</text><text>{{item.experience}}</text><text wx:if="{{item.gatheringMode}}">{{item.gatheringMode}}</text><text wx:if="{{item.teamName}}">队伍 {{item.teamName}}{{item.isTeamLeader ? ' · 队长' : ''}}</text></view></view>
     <view class="status-tag status-{{item.status}}">{{item.statusText}}</view><text class="open-arrow">›</text><view class="corner-cut"></view>
   </view>
 </view>

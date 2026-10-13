@@ -7,8 +7,6 @@ import type {
   Registration,
   RegistrationStatus,
   RouteGpxPreviewInput,
-  StravaReadiness,
-  StravaStatus,
 } from '../models';
 import { activities, profile, registrations } from '../mock/fixtures';
 import { transition } from '../utils/registration';
@@ -25,14 +23,13 @@ type S = {
   activities: (Activity | EditableActivity)[];
   registrations: Registration[];
   profile: Profile;
-  stravaStatus: StravaStatus;
 };
 type MockStoredActivity = (Activity | EditableActivity) & {
   isDeleted?: boolean;
   is_deleted?: boolean;
 };
 const KEY = 'ride-mock-v1';
-const init = (): S => ({ activities, registrations, profile, stravaStatus: 'connected' });
+const init = (): S => ({ activities, registrations, profile });
 const nextAvatarRevision = (value: unknown) =>
   (Number.isInteger(value) && Number(value) >= 0 ? Number(value) : 0) + 1;
 const MOCK_PAGE_SIZE = 20;
@@ -366,14 +363,6 @@ export class MockRepository implements RideRepository {
       status: 'pending',
       profile: s.profile,
       ...submitted,
-      strava: {
-        status: s.stravaStatus,
-        years: 4,
-        rides90d: 32,
-        longestKm: 168,
-        elevationM: 1850,
-        speedKmh: 27.4,
-      },
       updatedAt: '刚刚',
     };
     s.registrations.unshift(x);
@@ -443,7 +432,6 @@ export class MockRepository implements RideRepository {
   async getPersonalCapabilityCard(): Promise<PersonalCapabilityCard> {
     const currentProfile = this.read().profile;
     return {
-      state: 'ready',
       generatedAt: '2026-09-29T04:10:00.000Z',
       profile: {
         displayName: currentProfile.nickname || '此里骑手',
@@ -459,19 +447,6 @@ export class MockRepository implements RideRepository {
           category: 'ride',
         },
       ],
-      summary: {
-        totalKm90d: 1200,
-        rides90d: 32,
-        longestKm: 168,
-        elevationM90d: 9000,
-        weightedAvgSpeedKmh: 27.4,
-      },
-      coverage: {
-        from: '2026-07-01T04:00:00.000Z',
-        to: '2026-09-29T04:00:00.000Z',
-        complete: true,
-      },
-      syncedAt: '2026-09-29T04:05:00.000Z',
     };
   }
   async registerProfileMedia() {}
@@ -482,17 +457,6 @@ export class MockRepository implements RideRepository {
       ...state.profile,
       avatarId: fileId,
       avatarSource: source,
-      avatarRevision: nextAvatarRevision(state.profile.avatarRevision),
-    };
-    this.write(state);
-    return state.profile;
-  }
-  async importStravaAvatar() {
-    const state = this.read();
-    state.profile = {
-      ...state.profile,
-      avatarId: 'cloud://mock/profiles/current-user/strava-avatar.jpg',
-      avatarSource: 'strava',
       avatarRevision: nextAvatarRevision(state.profile.avatarRevision),
     };
     this.write(state);
@@ -514,91 +478,6 @@ export class MockRepository implements RideRepository {
   }
   async getPhoneNumber() {
     return this.read().profile;
-  }
-  async getStravaStatus() {
-    return { connected: this.read().stravaStatus === 'connected' };
-  }
-  async getStravaReadiness(): Promise<StravaReadiness> {
-    if (this.read().stravaStatus !== 'connected') {
-      return {
-        state: 'disconnected',
-        canRegister: false,
-        avatarAvailable: false,
-        athleteName: null,
-        snapshot: null,
-        error: null,
-      };
-    }
-    return {
-      state: 'ready',
-      canRegister: true,
-      avatarAvailable: true,
-      athleteName: 'Mock Rider',
-      snapshot: {
-        totalKm: 1200,
-        rides90d: 32,
-        longestKm: 168,
-        elevationM: 9000,
-        speedKmh: 27.4,
-        latestActivityAt: '2026-09-28T04:00:00.000Z',
-        syncedAt: '2026-09-29T04:00:00.000Z',
-        coverage: {
-          from: '2026-07-01T04:00:00.000Z',
-          to: '2026-09-29T04:00:00.000Z',
-          complete: true,
-        },
-      },
-      error: null,
-    };
-  }
-  async ensureStravaReady() {
-    const s = this.read();
-    s.stravaStatus = 'connected';
-    this.write(s);
-    return this.getStravaReadiness();
-  }
-  async startStrava() {
-    return { authorizationUrl: 'https://example.test/mock', expiresAt: new Date().toISOString() };
-  }
-  async cancelStravaAuthorization() {
-    const s = this.read();
-    s.stravaStatus = 'pending';
-    this.write(s);
-  }
-  async syncStrava() {
-    return this.getStravaReadiness();
-  }
-  async previewPublicStravaRoute(routeUrl: string) {
-    const match = /\/routes\/(\d+)/.exec(routeUrl);
-    if (!match) throw new Error('请输入有效的 Strava 路线 URL');
-    return {
-      stravaRouteId: match[1],
-      stravaRouteUrl: `https://www.strava.com/routes/${match[1]}`,
-      routeName: `公开路线 ${match[1]}`,
-      distanceKm: 80,
-      elevationM: 600,
-      estimatedMovingTimeSeconds: 10800,
-      elevationProfile: [
-        { distanceKm: 0, elevationM: 20 },
-        { distanceKm: 80, elevationM: 120 },
-      ],
-      routeBounds: { south: 22.5, west: 113.8, north: 22.8, east: 114.2 },
-      popularClimbs: [],
-    };
-  }
-  async previewStravaRoute(routeUrl: string) {
-    const match = /\/routes\/(\d+)/.exec(routeUrl);
-    if (!match) throw new Error('请输入有效的 Strava 路线 URL');
-    return {
-      stravaRouteId: match[1],
-      stravaRouteUrl: `https://www.strava.com/routes/${match[1]}`,
-      distanceKm: 80,
-      elevationM: 600,
-      estimatedMovingTimeSeconds: 10800,
-      elevationProfile: [],
-      routeBounds: { south: 22.5, west: 113.8, north: 22.8, east: 114.2 },
-      popularClimbs: [],
-    };
   }
   async previewRouteGpx(input: RouteGpxPreviewInput) {
     return {
@@ -639,24 +518,6 @@ export class MockRepository implements RideRepository {
       base64: 'PD94bWwgdmVyc2lvbj0iMS4wIj8+PGdweC8+',
       fileName: `${activityId}-route.gpx`,
     };
-  }
-  async getStravaRouteGpx(activityId: string, routeId: string) {
-    return {
-      base64: '',
-      filename: `${activityId}-strava-route-${routeId}.gpx`,
-      contentType: 'application/gpx+xml' as const,
-    };
-  }
-  async exportActivityGpx(activityId: string) {
-    return {
-      base64: 'PD94bWwgdmVyc2lvbj0iMS4wIj8+PGdweC8+',
-      fileName: `${activityId}-route.gpx`,
-    };
-  }
-  async disconnectStrava() {
-    const s = this.read();
-    s.stravaStatus = 'pending';
-    this.write(s);
   }
   async saveActivity(
     value: ActivityInput,

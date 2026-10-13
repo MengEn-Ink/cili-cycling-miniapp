@@ -140,13 +140,7 @@
       <view class="rider-card-photo__identity"><view class="rider-card-kicker">完整公开骑行名片</view><view class="rider-name">{{selectedAttendee.displayName || '此里骑手'}}</view><view class="rider-card-photo__badges"><view class="gender-pill {{selectedAttendee.genderClass}}">{{selectedAttendee.genderLabel}}</view><view class="rider-status">{{selectedAttendee.status === 'checked_in' ? '已签到' : '已报名'}}</view></view></view>
     </view>
     <view class="rider-card-body">
-      <view class="rider-stats">
-        <view><view class="rider-stat-value">{{selectedAttendee.card.rides90d === null ? '--' : selectedAttendee.card.rides90d}}<text wx:if="{{selectedAttendee.card.rides90d !== null}}">次</text></view><text>近 90 天骑行</text></view>
-        <view><view class="rider-stat-value">{{selectedAttendee.card.longestKm === null ? '--' : selectedAttendee.card.longestKm}}<text wx:if="{{selectedAttendee.card.longestKm !== null}}">km</text></view><text>最长骑行</text></view>
-        <view><view class="rider-stat-value">{{selectedAttendee.card.elevationM === null ? '--' : selectedAttendee.card.elevationM}}<text wx:if="{{selectedAttendee.card.elevationM !== null}}">m</text></view><text>累计爬升</text></view>
-        <view><view class="rider-stat-value">{{selectedAttendee.card.speedKmh === null ? '--' : selectedAttendee.card.speedKmh}}<text wx:if="{{selectedAttendee.card.speedKmh !== null}}">km/h</text></view><text>平均速度</text></view>
-      </view>
-      <view class="rider-card-note">数据来自报名时的 Strava 骑行快照；照片沿用骑友公开头像设置，不展示私人骑行照片。</view>
+      <view class="rider-card-note">昵称、头像与照片由骑友本人维护，仅展示公开资料。</view>
     </view>
   </view>
 </view>

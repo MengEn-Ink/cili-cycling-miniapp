@@ -1,156 +1,86 @@
 import { describe, expect, it } from 'vitest';
-import type { Registration } from '../miniprogram/models';
+import type { Profile, Registration } from '../miniprogram/models';
 import { capabilityCard, selectCapabilityImages } from '../miniprogram/utils/capability-card';
 
-function registration(overrides: Partial<Registration> = {}): Registration {
-  return {
-    id: 'r1',
-    activityId: 'a1',
-    status: 'pending',
-    profile: {
-      avatarRevision: 0,
-      nickname: '山野骑手',
-      realName: '曹蒙恩',
-      phone: '138****5678',
-      title: '',
-      gender: '',
-      emergencyName: '',
-      emergencyPhone: '',
-      avatarId: 'https://temporary.example/avatar',
-      photos: [],
-    },
-    gatheringMode: '自行前往',
-    experience: '常骑',
-    remark: '',
-    strava: {
-      status: 'connected',
-      years: 3,
-      totalKm: 812,
-      rides90d: 28,
-      longestKm: 126,
-      elevationM: 9300,
-      speedKmh: 25.6,
-      syncedAt: '2026-09-29T04:00:00.000Z',
-    },
-    updatedAt: '',
-    ...overrides,
-  };
-}
+const profile: Profile = {
+  avatarRevision: 1,
+  nickname: '山野骑手',
+  title: '',
+  realName: '曹蒙恩',
+  phone: '138****5678',
+  gender: '男',
+  emergencyName: '',
+  emergencyPhone: '',
+  photos: [],
+};
 
-const profileWith = (
-  photos: { id: string; category: string }[],
-  avatarId = 'https://temporary.example/avatar',
-) => ({
-  ...registration().profile,
-  photos,
-  avatarId,
+const registration = (patch: Partial<Registration> = {}): Registration => ({
+  id: 'r1',
+  activityId: 'a1',
+  status: 'pending',
+  profile,
+  gatheringMode: '自行前往',
+  experience: '常骑',
+  remark: '无',
+  updatedAt: '2026-10-13T08:00:00.000Z',
+  ...patch,
 });
 
 describe('骑行能力卡图片', () => {
-  it('5 张照片最多截取 3 张', () => {
-    const photos = ['1', '2', '3', '4', '5'].map((id) => ({
-      id: `https://temporary.example/${id}`,
-      category: '生活',
-    }));
-    expect(selectCapabilityImages(profileWith(photos))).toEqual([
-      { url: 'https://temporary.example/1', source: '个人上传' },
-      { url: 'https://temporary.example/2', source: '个人上传' },
-      { url: 'https://temporary.example/3', source: '个人上传' },
+  it('骑行照片优先、其他照片补位并最多保留三张', () => {
+    const images = selectCapabilityImages({
+      ...profile,
+      photos: [
+        { id: 'https://example.test/other.jpg', category: 'other' },
+        { id: 'https://example.test/ride.jpg', category: 'ride' },
+        { id: 'https://example.test/bike.jpg', category: 'bike' },
+        { id: 'https://example.test/fourth.jpg', category: 'other' },
+      ],
+    });
+    expect(images).toEqual([
+      { url: 'https://example.test/ride.jpg', source: '个人上传' },
+      { url: 'https://example.test/bike.jpg', source: '个人上传' },
+      { url: 'https://example.test/other.jpg', source: '个人上传' },
     ]);
   });
 
-  it('骑行和训练相关照片优先且保持原有顺序', () => {
-    const images = selectCapabilityImages(
-      profileWith([
-        { id: 'https://temporary.example/life', category: '生活' },
-        { id: 'https://temporary.example/training', category: 'training' },
-        { id: 'https://temporary.example/bike', category: 'bike' },
-        { id: 'https://temporary.example/pet', category: '宠物' },
-      ]),
-    );
-    expect(images.map((image) => image.url)).toEqual([
-      'https://temporary.example/training',
-      'https://temporary.example/bike',
-      'https://temporary.example/life',
-    ]);
-  });
-
-  it('其他个人上传照片补足骑行照片后的空位', () => {
-    expect(
-      selectCapabilityImages(
-        profileWith([
-          { id: 'https://temporary.example/portrait', category: '人像' },
-          { id: 'https://temporary.example/ride', category: '骑行照' },
-        ]),
-      ),
-    ).toEqual([
-      { url: 'https://temporary.example/ride', source: '个人上传' },
-      { url: 'https://temporary.example/portrait', source: '个人上传' },
-      { url: 'https://temporary.example/avatar', source: '头像' },
-    ]);
-  });
-
-  it('头像与上传照片重复时去重，并保留个人上传来源', () => {
-    expect(
-      selectCapabilityImages(
-        profileWith(
-          [{ id: 'https://temporary.example/avatar', category: 'cycling' }],
-          'https://temporary.example/avatar',
-        ),
-      ),
-    ).toEqual([{ url: 'https://temporary.example/avatar', source: '个人上传' }]);
-  });
-
-  it('仅头像时返回单图静态卡所需数据', () => {
-    const card = capabilityCard(registration());
-    expect(card.images).toEqual([{ url: 'https://temporary.example/avatar', source: '头像' }]);
-    expect(card.hasMultipleImages).toBe(false);
-    expect(card.maskedName).toBe('曹**');
-    expect(card).not.toHaveProperty('bikeMode');
-  });
-
-  it('无上传照片且无头像时保留无图占位所需数据', () => {
-    const card = capabilityCard(registration({ profile: profileWith([], '') }));
-    expect(card.images).toEqual([]);
-    expect(card.hasMultipleImages).toBe(false);
-  });
-
-  it('客户端能力卡拒绝 raw cloud file ID 和非 https URL', () => {
-    expect(
-      selectCapabilityImages(
-        profileWith(
-          [
-            { id: 'cloud://raw-photo', category: 'ride' },
-            { id: 'http://temporary.example/insecure', category: 'ride' },
-            { id: 'https://temporary.example/safe', category: 'ride' },
-          ],
-          'cloud://raw-avatar',
-        ),
-      ),
-    ).toEqual([{ url: 'https://temporary.example/safe', source: '个人上传' }]);
+  it('头像与照片重复时去重，非法 URL 不进入名片', () => {
+    const url = 'https://example.test/avatar.jpg';
+    const images = selectCapabilityImages({
+      ...profile,
+      avatarId: url,
+      photos: [
+        { id: url, category: 'ride' },
+        { id: 'cloud://private.jpg', category: 'ride' },
+      ],
+    });
+    expect(images).toEqual([{ url, source: '个人上传' }]);
   });
 });
 
-describe('骑行能力卡状态', () => {
-  it.each([
-    ['pending', '未授权'],
-    ['syncing', '同步中'],
-    ['failed', '数据失败'],
-  ] as const)('展示 Strava %s 缺失态', (status, label) => {
+describe('骑行能力卡资料', () => {
+  it('只返回审核所需资料和照片', () => {
     expect(
-      capabilityCard(registration({ strava: { ...registration().strava, status, syncedAt: '' } }))
-        .stravaStatus,
-    ).toBe(label);
-  });
-
-  it('输出性别文字与样式类，缺失时为未标注', () => {
-    expect(capabilityCard(registration())).toMatchObject({
-      gender: '',
-      genderLabel: '未标注',
-      genderClass: 'gender-unknown',
+      capabilityCard(
+        registration({
+          profile: {
+            ...profile,
+            avatarId: 'https://example.test/avatar.jpg',
+            photos: [{ id: 'https://example.test/ride.jpg', category: 'ride' }],
+          },
+        }),
+      ),
+    ).toMatchObject({
+      displayName: '山野骑手',
+      maskedName: '曹**',
+      experience: '常骑',
+      remark: '无',
+      genderLabel: '男',
+      images: [
+        { url: 'https://example.test/ride.jpg', source: '个人上传' },
+        { url: 'https://example.test/avatar.jpg', source: '头像' },
+      ],
+      hasMultipleImages: true,
     });
-    expect(
-      capabilityCard(registration({ profile: { ...registration().profile, gender: '女' } })),
-    ).toMatchObject({ gender: '女', genderLabel: '女', genderClass: 'gender-female' });
   });
 });

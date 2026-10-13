@@ -128,18 +128,21 @@ describe('管理员审核详情回归', () => {
     });
   });
 
-  it('默认展示完整手机号、验证来源和完整骑行卡片', async () => {
+  it('默认展示完整手机号、验证来源、资料与照片', async () => {
     await page.onLoad({ id: 'r1' });
     const template = readFileSync('miniprogram/pages/admin/review-detail/index.wxml', 'utf8');
 
     expect(page.data.phone).toBe('13812345678');
     expect(page.data.phoneSource).toBe('微信授权 · 已验证');
-    expect(page.data.card.lifetimeMetrics).toHaveLength(4);
-    expect(page.data.card.recentMetrics).toHaveLength(5);
+    expect(page.data.card).toMatchObject({
+      displayName: expect.any(String),
+      images: expect.any(Array),
+    });
     expect(template).toContain('{{phone}}');
     expect(template).toContain('{{phoneSource}}');
-    expect(template).toContain('wx:for="{{card.lifetimeMetrics}}"');
-    expect(template).toContain('wx:for="{{card.recentMetrics}}"');
+    expect(template).toContain('资料与照片由骑友本人维护');
+    expect(template).not.toContain('lifetimeMetrics');
+    expect(template).not.toContain('recentMetrics');
   });
 
   it('把详情中的报名状态映射为中文展示文案', async () => {

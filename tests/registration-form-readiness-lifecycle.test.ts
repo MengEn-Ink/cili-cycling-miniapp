@@ -1,12 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Profile, StravaReadiness } from '../miniprogram/models';
+import type { Profile } from '../miniprogram/models';
 
 const rideService = vi.hoisted(() => ({
   getProfile: vi.fn(),
   getActivity: vi.fn(),
   listRegistrations: vi.fn(),
-  getStravaReadiness: vi.fn(),
-  ensureStravaReady: vi.fn(),
   getReviewNotificationTemplateIds: vi.fn(),
   requestReviewNotificationSubscription: vi.fn(),
   saveRegistration: vi.fn(),
@@ -28,22 +26,11 @@ const profile: Profile = {
   avatarId: 'cloud://avatar',
 };
 
-function readiness(state: StravaReadiness['state']): StravaReadiness {
-  return {
-    state,
-    canRegister: state === 'ready',
-    avatarAvailable: state === 'ready',
-    athleteName: state === 'ready' ? 'Rider' : null,
-    snapshot: null,
-    error: null,
-  };
-}
-
 async function flushMicrotasks(): Promise<void> {
   for (let index = 0; index < 5; index += 1) await Promise.resolve();
 }
 
-describe('报名页 Strava readiness 请求代际', () => {
+describe('报名页请求代际', () => {
   let page: any;
 
   beforeEach(async () => {
@@ -77,7 +64,6 @@ describe('报名页 Strava readiness 请求代际', () => {
 
   it('日常活动默认自行前往且不展示后援车选择', async () => {
     rideService.getProfile.mockResolvedValue(profile);
-    rideService.getStravaReadiness.mockResolvedValue(readiness('ready'));
 
     page.onLoad({ id: 'a1' });
     await page.onShow();
@@ -90,7 +76,6 @@ describe('报名页 Strava readiness 请求代际', () => {
 
   it('配置后援车名额的活动继续展示集合方式选择', async () => {
     rideService.getProfile.mockResolvedValue(profile);
-    rideService.getStravaReadiness.mockResolvedValue(readiness('ready'));
     rideService.getActivity.mockResolvedValue({
       id: 'a1',
       status: 'published',
@@ -142,8 +127,6 @@ describe('报名页 Strava readiness 请求代际', () => {
           resolveProfile = resolve;
         }),
     );
-    rideService.getStravaReadiness.mockResolvedValue(readiness('ready'));
-
     const show = page.onShow();
     page[lifecycle]?.();
     page.setData.mockClear();
@@ -166,7 +149,6 @@ describe('报名页 Strava readiness 请求代际', () => {
     async (lifecycle) => {
       let resolveSubmission!: (value: { id: string }) => void;
       rideService.getProfile.mockResolvedValue(profile);
-      rideService.getStravaReadiness.mockResolvedValue(readiness('ready'));
       rideService.saveRegistration.mockImplementationOnce(
         () =>
           new Promise((resolve) => {
@@ -192,7 +174,6 @@ describe('报名页 Strava readiness 请求代际', () => {
   it('在途提交返回前再次 onShow 仍保持锁定且不能重复提交', async () => {
     let resolveSubmission!: (value: { id: string }) => void;
     rideService.getProfile.mockResolvedValue(profile);
-    rideService.getStravaReadiness.mockResolvedValue(readiness('ready'));
     rideService.saveRegistration.mockImplementation(
       () =>
         new Promise((resolve) => {

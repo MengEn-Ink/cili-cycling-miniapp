@@ -1,216 +1,63 @@
 import { describe, expect, it } from 'vitest';
+import type { PersonalCapabilityCard } from '../miniprogram/models';
+import { personalCardViewModel } from '../miniprogram/utils/personal-card';
 
-const baseCard = {
-  state: 'ready' as const,
+const baseCard: PersonalCapabilityCard = {
   generatedAt: '2026-09-29T04:10:00.000Z',
-  profile: { displayName: '山野骑手', gender: '男' },
+  profile: {
+    displayName: '山野骑手',
+    gender: '男',
+    avatarUrl: 'https://temporary.example/avatar.jpg',
+  },
   backgrounds: [
-    {
-      url: 'https://temporary.example/ride-1.jpg',
-      source: 'user_photo' as const,
-      category: 'ride' as const,
-    },
+    { url: 'https://temporary.example/ride.jpg', source: 'user_photo', category: 'ride' },
   ],
-  summary: {
-    lifetimeRides: 486,
-    lifetimeDistanceKm: 18240.7,
-    lifetimeMovingHours: 734.5,
-    lifetimeElevationM: 215400,
-    totalKm90d: 812.5,
-    rides90d: 28,
-    longestKm: 126.3,
-    elevationM90d: 9300,
-    weightedAvgSpeedKmh: 25.6,
-  },
-  coverage: {
-    from: '2026-07-01T04:00:00.000Z',
-    to: '2026-09-29T04:00:00.000Z',
-    complete: true,
-  },
-  syncedAt: '2026-09-29T04:05:00.000Z',
-  stravaProfileUrl: 'https://www.strava.com/athletes/42',
 };
 
-async function build(card: typeof baseCard | any) {
-  const { personalCardViewModel } = await import('../miniprogram/utils/personal-card');
-  return personalCardViewModel(card);
-}
-
 describe('个人骑行名片 view model', () => {
-  it('真实零值保留为指标而不是隐藏', async () => {
-    const view = await build({
-      ...baseCard,
-      summary: {
-        totalKm90d: 0,
-        rides90d: 0,
-        longestKm: 0,
-        elevationM90d: 0,
-        weightedAvgSpeedKmh: 0,
-      },
-    });
-
-    expect(view.metrics.map((metric: any) => metric.value)).toEqual(['0', '0', '0', '0', '0']);
-  });
-
-  it('null 指标从布局中省略且不再包含累计指标', async () => {
-    const view = await build({
-      ...baseCard,
-      summary: {
-        ...baseCard.summary,
-        rides90d: null,
-        longestKm: null,
-        weightedAvgSpeedKmh: null,
-      },
-    });
-
-    expect(view.metrics.map((metric: any) => metric.key)).toEqual(['totalKm90d', 'elevationM90d']);
-  });
-
-  it('不完整覆盖范围与同步时间保持明确', async () => {
-    const view = await build({
-      ...baseCard,
-      state: 'partial',
-      coverage: { ...baseCard.coverage, complete: false },
-    });
-
-    expect(view.statusLabel).toBe('数据不完整');
-    expect(view.coverageText).toBe('2026年7月1日 至 2026年9月29日 · 覆盖不完整');
-    expect(view.syncedAtText).toBe('同步于 2026-09-29 12:05:00');
-  });
-
-  it('Strava 主页入口与累计指标完整呈现', async () => {
-    const view = await build(baseCard);
-
-    expect(view.lifetimeMetrics).toEqual([
-      { key: 'lifetimeRides', label: '骑行次数', value: '486', unit: '次' },
-      { key: 'lifetimeDistanceKm', label: '累计里程', value: '18240.7', unit: 'km' },
-      { key: 'lifetimeMovingHours', label: '运动时长', value: '734.5', unit: 'h' },
-      { key: 'lifetimeElevationM', label: '累计爬升', value: '215400', unit: 'm' },
-    ]);
-    expect(view.hasLifetimeMetrics).toBe(true);
-    expect(view.stravaProfileUrl).toBe('https://www.strava.com/athletes/42');
-    expect(view.hasStravaProfile).toBe(true);
-  });
-
-  it('按服务端生成时间计算 STRAVA 加入年限', async () => {
-    const joinedOn = (value: string) => build({ ...baseCard, stravaJoinedAt: value });
-
-    const seven = await joinedOn('2019-05-18T09:30:00.000Z');
-    expect(seven.stravaTenureText).toBe('加入 STRAVA 7 年');
-    expect(seven.hasStravaTenure).toBe(true);
-
-    const notYet = await joinedOn('2026-10-01T00:00:00.000Z');
-    expect(notYet.stravaTenureText).toBe('加入 STRAVA 未满 1 年');
-
-    const missing = await build(baseCard);
-    expect(missing.stravaTenureText).toBe('');
-    expect(missing.hasStravaTenure).toBe(false);
-  });
-
-  it.each([
-    ['2021-02-27T00:00:00.000Z', '加入 STRAVA 未满 1 年'],
-    ['2021-02-28T00:00:00.000Z', '加入 STRAVA 1 年'],
-    ['2024-02-28T00:00:00.000Z', '加入 STRAVA 3 年'],
-    ['2024-02-29T00:00:00.000Z', '加入 STRAVA 4 年'],
-  ])('按 2 月末周年计算闰日注册年限：%s', async (generatedAt, expected) => {
-    const view = await build({
-      ...baseCard,
-      generatedAt,
-      stravaJoinedAt: '2020-02-29T00:00:00.000Z',
-    });
-
-    expect(view.stravaTenureText).toBe(expected);
-  });
-
-  it('无背景图时启用品牌山景并提示完善资料', async () => {
-    const view = await build({ ...baseCard, backgrounds: [] });
-
-    expect(view).toMatchObject({
-      backgrounds: [],
-      hasBackgrounds: false,
+  it('只投影用户资料、照片与生成时间', () => {
+    expect(personalCardViewModel(baseCard)).toEqual({
+      displayName: '山野骑手',
+      avatarUrl: 'https://temporary.example/avatar.jpg',
+      backgrounds: baseCard.backgrounds,
+      hasBackgrounds: true,
       hasMultipleBackgrounds: false,
-      needsProfilePhoto: true,
+      generatedAtText: '生成于 2026-09-29 12:10:00',
+      needsProfilePhoto: false,
+      gender: '男',
+      genderLabel: '男',
+      genderClass: 'gender-male',
     });
   });
 
-  it('单图不启用轮播自动切换', async () => {
-    const view = await build(baseCard);
+  it('无照片时启用资料完善入口', () => {
+    const view = personalCardViewModel({ ...baseCard, backgrounds: [] });
+    expect(view.hasBackgrounds).toBe(false);
     expect(view.hasMultipleBackgrounds).toBe(false);
+    expect(view.needsProfilePhoto).toBe(true);
   });
 
-  it('三图保持服务端排序', async () => {
-    const backgrounds = ['ride-1', 'bike-1', 'other-1'].map((name, index) => ({
-      url: `https://temporary.example/${name}.jpg`,
-      source: index === 2 ? ('avatar' as const) : ('user_photo' as const),
-      category:
-        index === 0 ? ('ride' as const) : index === 1 ? ('bike' as const) : ('other' as const),
+  it('最多保留前三张背景并维持服务端顺序', () => {
+    const backgrounds = Array.from({ length: 4 }, (_, index) => ({
+      url: `https://temporary.example/${index}.jpg`,
+      source: 'user_photo' as const,
+      category: 'ride',
     }));
-    const view = await build({ ...baseCard, backgrounds });
-
-    expect(view.backgrounds.map((background: any) => background.url)).toEqual(
-      backgrounds.map((background) => background.url),
+    const view = personalCardViewModel({ ...baseCard, backgrounds });
+    expect(view.backgrounds.map((item) => item.url)).toEqual(
+      backgrounds.slice(0, 3).map((item) => item.url),
     );
     expect(view.hasMultipleBackgrounds).toBe(true);
   });
 
-  it('先分组三项核心摘要，再放入其余真实指标', async () => {
-    const view = await build(baseCard);
-
-    expect(view.primaryMetrics.map((metric: any) => metric.key)).toEqual([
-      'totalKm90d',
-      'rides90d',
-      'longestKm',
-    ]);
-    expect(view.secondaryMetrics.map((metric: any) => metric.key)).toEqual([
-      'elevationM90d',
-      'weightedAvgSpeedKmh',
-    ]);
-  });
-
-  it('识别旧 Strava 用户并建议重授权以获取头像', async () => {
-    const view = await build({ ...baseCard, needsStravaReauth: true });
-    expect(view.needsStravaRepair).toBe(true);
-    expect(view.isOldStravaUser).toBe(true);
-  });
-
-  it('头像 URL 优先于默认字母展示', async () => {
-    const view = await build({
+  it('昵称、头像和性别缺失时提供可读降级', () => {
+    const view = personalCardViewModel({
       ...baseCard,
-      profile: { ...baseCard.profile, avatarUrl: 'https://avatar.jpg' },
+      profile: { displayName: '', gender: '' },
     });
-    expect(view.avatarUrl).toBe('https://avatar.jpg');
-  });
-
-  it.each([
-    ['syncing', 'Strava 数据同步中，请稍后查看'],
-    ['failed', 'Strava 数据同步失败，请前往修复'],
-    ['partial', '暂无可展示的骑行指标'],
-    ['disconnected', '连接 Strava 后展示骑行指标'],
-  ] as const)('%s 空指标展示对应状态说明', async (state, message) => {
-    const view = await build({
-      ...baseCard,
-      state,
-      summary: {
-        totalKm90d: null,
-        rides90d: null,
-        longestKm: null,
-        elevationM90d: null,
-        weightedAvgSpeedKmh: null,
-      },
-    });
-
-    expect(view.emptyMetricsText).toBe(message);
-  });
-
-  it('输出性别文字与样式类，缺失时为未标注', async () => {
-    const labeled = await build(baseCard);
-    expect(labeled).toMatchObject({ gender: '男', genderLabel: '男', genderClass: 'gender-male' });
-
-    const unknown = await build({ ...baseCard, profile: { displayName: '山野骑手', gender: '' } });
-    expect(unknown).toMatchObject({
-      gender: '',
-      genderLabel: '未标注',
-      genderClass: 'gender-unknown',
-    });
+    expect(view.displayName).toBe('此里骑手');
+    expect(view.avatarUrl).toBe('');
+    expect(view.genderLabel).toBe('未标注');
+    expect(view.genderClass).toBe('gender-unknown');
   });
 });

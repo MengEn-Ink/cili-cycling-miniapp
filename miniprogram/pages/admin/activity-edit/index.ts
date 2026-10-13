@@ -347,10 +347,7 @@ Page({
     sessionRouteFileIds: [] as string[],
     routeStatusMessage: '',
     routeCoverSelected: false,
-    stravaRoutePreview: undefined as import('../../../models').StravaRoutePreview | undefined,
-    publicStravaRoutePreview: undefined as
-      import('../../../models').PublicStravaRoutePreview | undefined,
-    stravaRouteTimeLabel: '',
+    routeTimeLabel: '',
     form: emptyForm(),
   },
   async onLoad(options: Record<string, string>) {
@@ -398,26 +395,7 @@ Page({
           routePreview?.generatedPreviewFileId &&
           activity.coverImage === routePreview.generatedPreviewFileId,
         ),
-        stravaRoutePreview:
-          activity.route.stravaRouteId &&
-          activity.route.routeBounds &&
-          activity.route.elevationProfile &&
-          activity.route.popularClimbs
-            ? {
-                stravaRouteId: activity.route.stravaRouteId,
-                stravaRouteUrl: activity.route.stravaRouteUrl || '',
-                routeName: activity.route.routeName,
-                previewImageUrl: activity.route.previewImageUrl,
-                distanceKm: activity.route.distanceKm,
-                elevationM: activity.route.elevationM,
-                estimatedMovingTimeSeconds: activity.route.estimatedMovingTimeSeconds || 0,
-                elevationProfile: activity.route.elevationProfile || [],
-                routeBounds: activity.route.routeBounds,
-                popularClimbs: activity.route.popularClimbs,
-                stravaGpxAvailable: activity.route.stravaGpxAvailable,
-              }
-            : undefined,
-        stravaRouteTimeLabel: formatRouteDuration(activity.route.estimatedMovingTimeSeconds),
+        routeTimeLabel: formatRouteDuration(activity.route.estimatedMovingTimeSeconds),
         form: {
           title: activity.title,
           startDate: pickerDate(startAtText),
@@ -601,9 +579,6 @@ Page({
       });
     }
   },
-  syncStravaRoute() {
-    this.addOfficialRoute();
-  },
   async previewPendingRoute(pending: PendingRouteUpload) {
     const preview = await rideService.previewRouteGpx({
       gpxFileId: pending.gpxFileId,
@@ -620,7 +595,7 @@ Page({
         routePreview: preview,
         pendingRouteUpload: undefined,
         routeStatusMessage: '路线详情已准备好',
-        stravaRouteTimeLabel: formatRouteDuration(preview.estimatedMovingTimeSeconds),
+        routeTimeLabel: formatRouteDuration(preview.estimatedMovingTimeSeconds),
         error: '',
       },
       () => {

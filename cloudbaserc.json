@@ -81,22 +81,6 @@
       ]
     },
     {
-      "name": "strava-auth",
-      "handler": "index.main",
-      "runtime": "Nodejs20.19",
-      "timeout": 30,
-      "memorySize": 256,
-      "installDependency": true
-    },
-    {
-      "name": "strava-callback",
-      "handler": "index.main",
-      "runtime": "Nodejs20.19",
-      "timeout": 15,
-      "memorySize": 256,
-      "installDependency": true
-    },
-    {
       "name": "route-web",
       "handler": "index.main",
       "runtime": "Nodejs20.19",
@@ -110,27 +94,6 @@
       {
         "path": "/route/embed",
         "target": "function:route-web",
-        "enableAuth": false,
-        "enablePathTransmission": true,
-        "domain": "*"
-      },
-      {
-        "path": "/strava/callback",
-        "target": "function:strava-callback",
-        "enableAuth": false,
-        "enablePathTransmission": true,
-        "domain": "*"
-      },
-      {
-        "path": "/strava/success",
-        "target": "function:strava-callback",
-        "enableAuth": false,
-        "enablePathTransmission": true,
-        "domain": "*"
-      },
-      {
-        "path": "/strava/failure",
-        "target": "function:strava-callback",
         "enableAuth": false,
         "enablePathTransmission": true,
         "domain": "*"

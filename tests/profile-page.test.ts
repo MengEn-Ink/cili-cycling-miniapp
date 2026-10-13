@@ -33,7 +33,6 @@ const profile = (nickname: string) => ({
 });
 
 const capabilityCard = (overrides: Record<string, unknown> = {}) => ({
-  state: 'ready',
   generatedAt: '2026-09-30T00:00:00.000Z',
   profile: {
     displayName: '山野骑手',
@@ -52,24 +51,6 @@ const capabilityCard = (overrides: Record<string, unknown> = {}) => ({
       category: 'other',
     },
   ],
-  summary: {
-    lifetimeRides: 486,
-    lifetimeDistanceKm: 18240.7,
-    lifetimeMovingHours: 734.5,
-    lifetimeElevationM: 215400,
-    totalKm90d: 812.5,
-    rides90d: 28,
-    longestKm: 126.3,
-    elevationM90d: 9300,
-    weightedAvgSpeedKmh: 25.6,
-  },
-  coverage: {
-    from: '2026-07-02T00:00:00.000Z',
-    to: '2026-09-30T00:00:00.000Z',
-    complete: true,
-  },
-  syncedAt: '2026-09-30T00:00:00.000Z',
-  needsStravaReauth: false,
   ...overrides,
 });
 
@@ -186,19 +167,14 @@ describe('个人中心加载状态', () => {
     ]);
   });
 
-  it('个人中心默认只展示微信身份，不展示 Strava 骑行指标', async () => {
+  it('个人中心只展示微信身份、昵称与照片', async () => {
     await page.onShow();
     await vi.waitFor(() => expect(page.data.heroCard).toBeTruthy());
 
     expect(page.data.heroCard).toMatchObject({
       gender: '男',
       genderLabel: '男',
-      statusLabel: '已连接',
-      primaryMetrics: [
-        { key: 'totalKm90d', value: '812.5', unit: 'km' },
-        { key: 'rides90d', value: '28', unit: '次' },
-        { key: 'longestKm', value: '126.3', unit: 'km' },
-      ],
+      displayName: '山野骑手',
     });
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     const styles = readFileSync('miniprogram/pages/profile/index.wxss', 'utf8');
@@ -213,63 +189,11 @@ describe('个人中心加载状态', () => {
     expect(template).not.toContain('hero-capability-secondary');
     expect(template).not.toContain('hero-capability-details');
     expect(template).not.toContain('{{heroCard.statusLabel}}');
+    expect(page.copyStravaProfileLink).toBeUndefined();
     expect(template).toContain('wx:if="{{profile && profile.completeness < 100}}"');
     expect(template).toContain('{{profile.completeness}}%');
     expect(template).toContain('style="width: {{profile.completeness}}%"');
     expect(styles).toMatch(/\.profile-hero\.has-bg\s*\{[^}]*min-height:\s*600rpx/s);
-  });
-
-  it('已连接 Strava 时只提供可选择链接与复制操作，并说明系统浏览器打开方式', async () => {
-    rideService.getPersonalCapabilityCard.mockResolvedValueOnce(
-      capabilityCard({ stravaProfileUrl: 'https://www.strava.com/athletes/42' }),
-    );
-    await page.onShow();
-    await vi.waitFor(() => expect(page.data.heroCard).toBeTruthy());
-
-    page.copyStravaProfileLink();
-
-    expect(wx.setClipboardData).toHaveBeenCalledWith(
-      expect.objectContaining({ data: 'https://www.strava.com/athletes/42' }),
-    );
-    expect(wx.showModal).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: '主页链接已复制',
-        content: '请粘贴到系统默认浏览器打开，浏览器会自动尝试跳转到 Strava。',
-        showCancel: false,
-      }),
-    );
-    const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
-    expect(template).not.toContain('heroCard.hasStravaProfile');
-    expect(template).not.toContain('{{heroCard.stravaProfileUrl}}');
-    expect(template).not.toContain('复制后粘贴到系统默认浏览器打开');
-    expect(template).not.toContain('bindtap="copyStravaProfileLink"');
-    expect(template).not.toContain('查看 Strava 主页');
-  });
-
-  it('剪贴板写入失败时提示重试且不误报已复制', async () => {
-    rideService.getPersonalCapabilityCard.mockResolvedValueOnce(
-      capabilityCard({ stravaProfileUrl: 'https://www.strava.com/athletes/42' }),
-    );
-    (wx.setClipboardData as any).mockImplementationOnce(({ fail }: { fail?: () => void }) =>
-      fail?.(),
-    );
-    await page.onShow();
-    await vi.waitFor(() => expect(page.data.heroCard).toBeTruthy());
-
-    page.copyStravaProfileLink();
-
-    expect(wx.showToast).toHaveBeenCalledWith({ title: '复制失败，请稍后重试', icon: 'none' });
-    expect(wx.showModal).not.toHaveBeenCalled();
-  });
-
-  it('未连接 Strava 时入口隐藏且点击不写入剪贴板', async () => {
-    await page.onShow();
-    await vi.waitFor(() => expect(page.data.heroCard).toBeTruthy());
-
-    page.copyStravaProfileLink();
-
-    expect(page.data.heroCard.hasStravaProfile).toBe(false);
-    expect(wx.setClipboardData).not.toHaveBeenCalled();
   });
 
   it('profile 请求失败时 hero 仍回退骑行名片 displayName', async () => {

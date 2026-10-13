@@ -609,7 +609,7 @@ git commit -m "feat(route): show official embed and native GPX details"
 - Modify: `miniprogram/utils/capability-card.ts`
 - Modify: all affected tests under `tests/` and cloud-function test files
 
-- [ ] **Step 1: Add a failing retirement contract test**
+- [x] **Step 1: Add a failing retirement contract test**
 
 ```ts
 it('contains no OAuth runtime, account page, credential collection, or user-facing account copy', () => {
@@ -619,13 +619,13 @@ it('contains no OAuth runtime, account page, credential collection, or user-faci
 });
 ```
 
-- [ ] **Step 2: Run retirement tests and confirm current violations**
+- [x] **Step 2: Run retirement tests and confirm current violations**
 
 Run: `npx vitest run tests/strava-retirement.test.ts`
 
 Expected: FAIL and list the remaining account/OAuth surfaces.
 
-- [ ] **Step 3: Remove account APIs and projections**
+- [x] **Step 3: Remove account APIs and projections**
 
 Profile capability responses become:
 
@@ -639,17 +639,17 @@ Profile capability responses become:
 
 Registration and admin-review responses omit `strava_status`, `strava_snapshot`, account metrics, profile URLs, tenure, and repair/sync actions. Existing stored fields remain unread until the purge phase.
 
-- [ ] **Step 4: Remove OAuth runtime directories and obsolete tests**
+- [x] **Step 4: Remove OAuth runtime directories and obsolete tests**
 
 Delete the three runtime directories and replace authorization/readiness tests with retirement and route tests. Preserve historical design/verification documents as history, but current requirements, schema, deployment, and UI artifacts must describe only the new model.
 
-- [ ] **Step 5: Run all client and cloud tests**
+- [x] **Step 5: Run all client and cloud tests**
 
 Run: `npm test && npm run test:cloud`
 
 Expected: PASS with zero runtime reference to `strava-auth`, `strava-callback`, OAuth state, token encryption, or page parsing.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A

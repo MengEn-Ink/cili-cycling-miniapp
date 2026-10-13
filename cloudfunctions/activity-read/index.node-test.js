@@ -601,17 +601,10 @@ test('详情成员执行状态、上限、稳定排序和隐私白名单', async
   assert.equal(result.data.attendees.length, 24);
   assert.deepEqual(Object.keys(result.data.attendees[0]).sort(), [
     'avatar_url',
-    'card',
     'display_name',
     'gender',
     'id',
     'status',
-  ]);
-  assert.deepEqual(Object.keys(result.data.attendees[0].card).sort(), [
-    'elevationM',
-    'longestKm',
-    'rides90d',
-    'speedKmh',
   ]);
   assert.equal(
     result.data.attendees.some((item) => item.id === 'r-26'),

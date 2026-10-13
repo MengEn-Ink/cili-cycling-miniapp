@@ -272,7 +272,7 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('头像与昵称经本人授权展示');
     expect(template).toContain('已报名人员头像与昵称');
     expect(template).toContain('完整公开骑行名片');
-    expect(template).toContain('数据来自报名时的 Strava 骑行快照');
+    expect(template).toContain('昵称、头像与照片由骑友本人维护，仅展示公开资料');
     expect(template).toContain('wx:if="{{item.avatarUrl}}" class="attendee-avatar"');
     expect(template).toContain('wx:if="{{selectedAttendee.avatarUrl}}"');
     expect(template).toContain('attendee-avatar--placeholder');
@@ -283,11 +283,9 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('{{selectedAttendee.genderLabel}}');
     expect(template).not.toContain('selectedAttendee.title');
     expect(template).not.toContain('骑行爱好者');
-    expect(template).toContain('照片沿用骑友公开头像设置，不展示私人骑行照片');
+    expect(template).toContain('昵称、头像与照片由骑友本人维护，仅展示公开资料');
     expect(template).not.toContain('attendee-avatar--default">骑');
-    expect(
-      template.match(/<text wx:if="\{\{selectedAttendee\.card\.[a-zA-Z0-9]+ !== null\}\}">/g),
-    ).toHaveLength(4);
+    expect(template).not.toContain('selectedAttendee.card');
     expect(template).toContain('class="rider-modal-mask" bindtap="closeAttendeeCard"');
     expect(template).toContain('class="rider-card-close"');
     expect(styles).toMatch(
