@@ -3,93 +3,87 @@
   <block wx:if="{{profile}}">
     <view class="form-head">
       <view class="step-line" aria-label="报名进度">
-        <view class="step step-active"><text class="step-number">01</text><text>填写</text></view>
-        <view class="step-rule"></view>
+        <view class="step step-active" aria-current="step"><text class="step-number">01</text><text>填写</text></view>
         <view class="step"><text class="step-number">02</text><text>审核</text></view>
-        <view class="step-rule"></view>
         <view class="step"><text class="step-number">03</text><text>凭证</text></view>
       </view>
       <view class="title-row"><view class="form-title">确认报名信息</view></view>
+      <view class="submit-note">提交后将进入审核，请确认资料准确；日常活动默认自行前往。</view>
       <view class="activity-context" wx:if="{{activity}}">
         <view class="context-head"><view class="context-kicker">当前活动</view><view class="context-status">{{activityCanSubmit ? '报名开放' : activityAction.label}}</view></view>
         <view class="context-title">{{activity.title || '当前骑行活动'}}</view>
         <view class="context-meta"><text>{{displayActivityDate}}</text><text>{{activity.registrationUnlimited ? '报名人数不限' : ('总名额 ' + activity.capacity)}}</text></view>
       </view>
-      <view class="submit-note">提交后将进入审核，请确认资料准确；日常活动默认自行前往。</view>
     </view>
 
-    <view class="form-surface">
-      <view class="form-section first-section">
-        <view class="section-label"><text>01</text><view><view>报名资料</view><view class="section-hint">用于审核与活动安全联络</view></view></view>
-        <view class="form-card identity-card">
-          <view class="identity-grid">
-            <view class="identity-main"><view class="identity-label">微信昵称</view><view class="identity-value">{{profile.nickname || '未授权昵称'}}</view></view>
-            <view class="identity-main"><view class="identity-label">性别</view><view class="identity-value">{{profile.genderLabel}}</view></view>
-            <view class="identity-main"><view class="identity-label">联系电话</view><view class="identity-value identity-phone">{{profile.phone || '未填写'}}</view></view>
-          </view>
-          <button class="text-button identity-action" bindtap="profile" disabled="{{submitting}}">编辑个人资料</button>
-        </view>
-        <view wx:if="{{profileErrors.length}}" class="profile-alert" role="alert">
-          <view class="profile-alert-title">还需完善 {{profileErrors.length}} 项资料</view>
-          <view class="profile-alert-item" wx:for="{{profileErrors}}" wx:key="*this">· {{item}}</view>
-          <view class="profile-alert-note">前往个人资料完善后返回，骑行经验与备注都会保留。</view>
-          <button class="profile-alert-action" bindtap="profile" disabled="{{submitting}}">去完善个人资料</button>
-        </view>
+    <view class="form-section form-card identity-card">
+      <view class="section-label"><text>01</text><view><view>报名资料</view><view class="section-hint">用于审核与活动安全联络，仅你本人与审核管理员可见</view></view></view>
+      <view class="identity-list">
+        <view class="identity-row"><view class="identity-label">真实姓名</view><view class="identity-value">{{profile.realName || '未填写'}}</view></view>
+        <view class="identity-row"><view class="identity-label">微信昵称</view><view class="identity-value">{{profile.nickname || '未授权昵称'}}</view></view>
+        <view class="identity-row"><view class="identity-label">性别</view><view class="identity-value">{{profile.genderLabel}}</view></view>
+        <view class="identity-row"><view class="identity-label">联系电话</view><view class="identity-value identity-phone">{{profile.phone || '未填写'}}</view></view>
       </view>
+      <button class="text-button identity-action" bindtap="profile" disabled="{{submitting}}">编辑个人资料</button>
+      <view wx:if="{{profileErrors.length}}" class="profile-alert" role="alert">
+        <view class="profile-alert-title">还需完善 {{profileErrors.length}} 项资料</view>
+        <view class="profile-alert-item" wx:for="{{profileErrors}}" wx:key="*this">· {{item}}</view>
+        <view class="profile-alert-note">前往个人资料完善后返回，骑行经验与备注都会保留。</view>
+        <button class="profile-alert-action" bindtap="profile" disabled="{{submitting}}">去完善个人资料</button>
+      </view>
+    </view>
 
-      <view class="form-section">
-        <view class="section-label"><text>02</text><view><view>集合方式</view><view class="section-hint">{{showGatheringChoice ? '不同集合方式分别计算名额，请按实际情况选择' : '日常活动已使用默认方式'}}</view></view></view>
-        <view class="form-card gathering-card" wx:if="{{showGatheringChoice}}">
-          <view class="field-title">集合方式 <text class="required">必选</text></view>
-          <view class="field-hint">名额以提交时状态为准；活动或所选方式满额后，将自动进入候补。</view>
-          <radio-group class="choice-group transport-choices" data-key="gatheringMode" bindchange="set">
-            <label class="choice choice-detail {{gatheringMode === 'self_drive' ? 'selected' : ''}}">
-              <radio color="#e85b32" value="self_drive" checked="{{gatheringMode === 'self_drive'}}" disabled="{{submitting}}"/>
-              <view class="choice-copy"><view class="choice-title">自行前往</view><view class="choice-meta">名额 {{activity && activity.selfDriveCapacity !== undefined ? activity.selfDriveCapacity : '待确认'}}</view><view class="choice-remain">剩余 {{activity && activity.selfDriveRemaining !== undefined ? activity.selfDriveRemaining : '待确认'}}</view></view>
-            </label>
-            <label class="choice choice-detail {{gatheringMode === 'support_vehicle' ? 'selected' : ''}}">
-              <radio color="#e85b32" value="support_vehicle" checked="{{gatheringMode === 'support_vehicle'}}" disabled="{{submitting}}"/>
-              <view class="choice-copy"><view class="choice-title">需要后援车</view><view class="choice-meta">名额 {{activity && activity.supportVehicleCapacity !== undefined ? activity.supportVehicleCapacity : '待确认'}}</view><view class="choice-remain">剩余 {{activity && activity.supportVehicleRemaining !== undefined ? activity.supportVehicleRemaining : '待确认'}}</view></view>
-            </label>
-          </radio-group>
-        </view>
-        <view class="form-card gathering-default" wx:else>
-          <view class="default-choice-copy"><view class="field-title">自行前往</view><view class="field-hint">日常活动默认自行前往，无需额外选择</view></view>
-          <view class="default-choice-badge">已默认</view>
-        </view>
+    <view class="form-section form-card gathering-card">
+      <view class="section-label"><text>02</text><view><view>集合方式</view><view class="section-hint" wx:if="{{showGatheringChoice}}">不同集合方式分别计算名额，请按实际情况选择</view></view></view>
+      <block wx:if="{{showGatheringChoice}}">
+        <view class="field-title">集合方式 <text class="required">必选</text></view>
+        <view class="field-hint">名额以提交时状态为准；活动或所选方式满额后，将自动进入候补。</view>
+        <radio-group class="choice-group transport-choices" data-key="gatheringMode" bindchange="set">
+          <label class="choice choice-detail {{gatheringMode === 'self_drive' ? 'selected' : ''}}">
+            <radio value="self_drive" checked="{{gatheringMode === 'self_drive'}}" disabled="{{submitting}}"/>
+            <view class="choice-copy"><view class="choice-title">自行前往</view><view class="choice-meta">名额 {{activity && activity.selfDriveCapacity !== undefined ? activity.selfDriveCapacity : '待确认'}}</view><view class="choice-remain">剩余 {{activity && activity.selfDriveRemaining !== undefined ? activity.selfDriveRemaining : '待确认'}}</view></view>
+          </label>
+          <label class="choice choice-detail {{gatheringMode === 'support_vehicle' ? 'selected' : ''}}">
+            <radio value="support_vehicle" checked="{{gatheringMode === 'support_vehicle'}}" disabled="{{submitting}}"/>
+            <view class="choice-copy"><view class="choice-title">需要后援车</view><view class="choice-meta">名额 {{activity && activity.supportVehicleCapacity !== undefined ? activity.supportVehicleCapacity : '待确认'}}</view><view class="choice-remain">剩余 {{activity && activity.supportVehicleRemaining !== undefined ? activity.supportVehicleRemaining : '待确认'}}</view></view>
+          </label>
+        </radio-group>
+      </block>
+      <view class="gathering-default" wx:else>
+        <view class="default-choice-copy">日常活动默认自行前往，无需额外选择</view>
+        <view class="default-choice-value">自行前往</view>
+        <view class="default-choice-badge">默认</view>
       </view>
+    </view>
 
-      <view class="form-section">
-        <view class="section-label"><text>03</text><view><view>能力确认</view><view class="section-hint">骑行经验将作为审核参考</view></view></view>
-        <view class="form-card capability-card">
-          <view class="field-title">骑行经验</view>
-          <radio-group class="experience-segment" data-key="experience" bindchange="set">
-            <label class="segment {{experience === '新手' ? 'selected' : ''}}"><radio color="#e85b32" value="新手" checked="{{experience === '新手'}}" disabled="{{submitting}}"/>新手</label>
-            <label class="segment {{experience === '有一定经验' ? 'selected' : ''}}"><radio color="#e85b32" value="有一定经验" checked="{{experience === '有一定经验'}}" disabled="{{submitting}}"/>有经验</label>
-            <label class="segment {{experience === '常骑' ? 'selected' : ''}}"><radio color="#e85b32" value="常骑" checked="{{experience === '常骑'}}" disabled="{{submitting}}"/>常骑</label>
-          </radio-group>
-          <view wx:if="{{teamId}}" class="team-invite"><view class="field-title">已通过邀请加入队伍</view><view class="field-hint">队伍编号 {{teamId}}</view></view>
-        </view>
-      </view>
+    <view class="form-section form-card capability-card">
+      <view class="section-label"><text>03</text><view><view>能力确认</view><view class="section-hint">骑行经验将作为审核参考</view></view></view>
+      <view class="field-title">骑行经验 <text class="required">必选</text></view>
+      <radio-group class="experience-segment" data-key="experience" bindchange="set">
+        <label class="segment {{experience === '新手' ? 'selected' : ''}}"><radio value="新手" checked="{{experience === '新手'}}" disabled="{{submitting}}"/>新手</label>
+        <label class="segment {{experience === '有一定经验' ? 'selected' : ''}}"><radio value="有一定经验" checked="{{experience === '有一定经验'}}" disabled="{{submitting}}"/>有经验</label>
+        <label class="segment {{experience === '常骑' ? 'selected' : ''}}"><radio value="常骑" checked="{{experience === '常骑'}}" disabled="{{submitting}}"/>常骑</label>
+      </radio-group>
+      <view wx:if="{{!experience}}" class="pending-hint">请选择一项后再提交</view>
+      <view wx:if="{{teamId}}" class="team-invite"><view class="field-title">已通过邀请加入队伍</view><view class="field-hint">队伍编号 {{teamId}}</view></view>
+    </view>
 
-      <view class="form-section last-section">
-        <view class="section-label"><text>04</text><view><view>备注与安全</view><view class="section-hint">仅填写组织方需要提前了解的信息</view></view></view>
-        <view class="form-card">
-          <view class="field-title">报名备注 <text class="optional">选填</text></view>
-          <view class="field-hint">可填写饮食限制、集合说明或需要协助的事项，请勿填写无关敏感信息。</view>
-          <textarea class="textarea remark" placeholder-class="input-placeholder" placeholder="饮食、集合或其他备注" value="{{remark}}" data-key="remark" bindinput="set" disabled="{{submitting}}" maxlength="500"/>
-          <view class="safety-box"><view class="info-label">紧急联系人</view><view class="info-value">{{profile.emergencyName || '未填写'}} {{profile.emergencyPhone}}</view></view>
-          <view class="privacy-note">资料仅用于活动组织和安全联络；手机号仅本人及审核管理员可完整查看。</view>
-        </view>
-      </view>
+    <view class="form-section form-card">
+      <view class="section-label"><text>04</text><view><view>备注与安全</view><view class="section-hint">仅填写组织方需要提前了解的信息</view></view></view>
+      <view class="field-title">报名备注 <text class="optional">选填</text></view>
+      <view class="field-hint">可填写饮食限制、集合说明或需要协助的事项，请勿填写无关敏感信息。</view>
+      <textarea class="textarea remark" placeholder-class="input-placeholder" placeholder="饮食、集合或其他备注" value="{{remark}}" data-key="remark" bindinput="set" disabled="{{submitting}}" maxlength="500"/>
+      <view class="remark-count">{{remark.length}}/500</view>
+      <view class="safety-box"><view class="info-label">紧急联系人</view><view class="info-value">{{profile.emergencyName || '未填写'}} {{profile.emergencyPhone}}</view></view>
+      <view class="privacy-note">资料仅用于活动组织和安全联络；姓名与电话仅本人及审核管理员可见，不向其他骑友展示。</view>
     </view>
   </block>
 
   <view wx:if="{{errors.length}}" class="error-card" role="alert"><view class="error-title">暂时无法提交，请处理以下问题</view><view class="error-item" wx:for="{{errors}}" wx:key="*this">· {{item}}</view></view>
   <view class="fixed action-bar">
+    <view class="disabled-hint" wx:if="{{!loading && !submitting && submitBlockedHint}}">{{submitBlockedHint}}</view>
     <button class="secondary back-button" bindtap="back" disabled="{{submitting}}">返回活动</button>
-    <button class="btn submit-button" loading="{{submitting}}" disabled="{{loading || submitting || !profile || profileErrors.length || !gatheringMode || !activityCanSubmit}}" bindtap="submit">{{submitting ? '正在提交' : '提交报名'}}</button>
-    <view class="disabled-hint" wx:if="{{!loading && !submitting && (!profile || profileErrors.length || !gatheringMode || !activityCanSubmit)}}">请先完成必填项</view>
+    <button class="btn submit-button" loading="{{submitting}}" disabled="{{loading || submitting || !!submitBlockedHint}}" bindtap="submit">{{submitting ? '正在提交' : '提交报名'}}</button>
   </view>
   </state-view>
 </view>

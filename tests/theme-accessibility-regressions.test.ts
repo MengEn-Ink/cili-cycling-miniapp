@@ -290,7 +290,9 @@ describe('unified UI accessibility regressions', () => {
     expect(declaration(effectiveBlock(detail, '.metric-number'), 'overflow-wrap')).toBe('anywhere');
 
     const registration = read('miniprogram/pages/registration-form/index.wxss');
-    expect(declaration(effectiveBlock(registration, '.step-rule'), 'max-width')).toBe('64rpx');
+    const steps = effectiveBlock(registration, '.step-line');
+    expect(declaration(steps, 'grid-template-columns')).toBe('repeat(3, minmax(0, 1fr))');
+    expect(declaration(effectiveBlock(registration, '.step'), 'white-space')).toBe('nowrap');
   });
 
   it('keeps admin filters and clone actions touchable at 320px', () => {

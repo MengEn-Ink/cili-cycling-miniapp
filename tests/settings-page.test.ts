@@ -21,25 +21,22 @@ describe('设置页', () => {
   });
 
   it('只加载当前版本日志，不注册第三方账号生命周期或入口', () => {
-    expect(page.data.releaseNotes).toHaveLength(7);
+    expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.13.51',
+      version: '2026.10.13.52',
       latest: true,
-      title: '资料与活动图片回显更稳定',
-      summary: '编辑页会稳定回显已上传图片，紧急联系人电话可直接查看，骑行名片使用本人背景照片。',
+      title: '填写报名页更清晰',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.13.52',
       '2026.10.13.51',
       '2026.10.13.50',
       '2026.10.13.49',
       '2026.10.13.48',
-      '2026.10.13.47',
-      '2026.10.13.46',
-      '2026.10.13.45',
     ]);
     expect(page.onShow).toBeUndefined();
     expect(page.loadStravaStatus).toBeUndefined();

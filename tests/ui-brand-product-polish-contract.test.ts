@@ -100,9 +100,9 @@ describe('品牌与页面体验静态契约', () => {
     const cardCaption = cssBlock(cardStyles, '.card-caption');
 
     expectSemantic(declaration(stepLine, 'color'), '--color-muted');
-    expect(declaration(stepLine, 'font-size')).toBe('22rpx');
+    expect(declaration(stepLine, 'font-size')).toBe('24rpx');
     expect(formStyles).toMatch(
-      /\.section-hint\s*\{\s*margin-top:\s*1rpx;\s*color:\s*var\(--color-muted\);\s*font-size:\s*22rpx;/,
+      /\.section-hint\s*\{\s*margin-top:\s*0;\s*color:\s*var\(--color-muted\);\s*font-size:\s*24rpx;/,
     );
     expectSemantic(declaration(cardCaption, 'color'), '--color-muted');
     expect(declaration(cardCaption, 'font-size')).toBe('20rpx');

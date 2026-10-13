@@ -35,7 +35,7 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     expect(form).toContain("{{submitting ? '正在提交' : '提交报名'}}");
     expect(form.match(/disabled="{{[^}]*submitting[^}]*}}"/g)?.length).toBeGreaterThanOrEqual(6);
     expect(formStyles).toContain('.experience-segment');
-    expect(formStyles).toMatch(/\.segment\s*\{[^}]*min-height:\s*104rpx/s);
+    expect(formStyles).toMatch(/\.segment\s*\{[^}]*min-height:\s*var\(--control-height\)/s);
     expect(profileStyles).toContain('.identity-guide');
   });
 
