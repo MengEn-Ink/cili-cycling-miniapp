@@ -2,7 +2,7 @@
 
 “骑有此里”是面向骑行俱乐部的原生微信小程序，覆盖活动发布、官方路线与 GPX 详情、实名资料、报名审批、签到和个人骑行名片。小程序内使用简称“此里”。
 
-项目基于微信云开发（CloudBase）。业务数据库集合只允许云函数访问；客户端仅可按存储规则写入与本人绑定的 `profiles/` staging 路径。本地构建或测试通过不代表云端资源已经部署，也不代表真实报名旅程已经验证。
+项目基于微信云开发（CloudBase）。业务数据库集合只允许云函数访问；客户端仅可按存储规则写入与本人绑定的 `profiles/` 和 `activity-routes/` staging 路径。本地构建或测试通过不代表云端资源已经部署，也不代表真实报名旅程已经验证。
 
 ## 已实现能力
 
@@ -31,6 +31,7 @@ miniprogram/                 小程序页面、组件、仓库层和领域视图
 cloudfunctions/              可独立部署的 CloudBase 云函数
 cloudfunctions/shared/       报名领域的共享源码
 cloudfunctions/route-web/     Strava 官方路线 Embed HTTP 函数
+cloudfunctions/route-maintenance/ 路线文件回收与历史数据迁移定时函数
 scripts/                     部署准备、CloudBase bootstrap 和证据校验
 tests/                       小程序与跨模块回归测试
 docs/                        产品、数据契约和真实环境验证文档
@@ -100,6 +101,7 @@ npm run deploy:miniprogram
 | ------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `PII_ENCRYPTION_KEY`                                          | `profile`、`admin-review`                                           | base64 编码的 32 字节密钥；两者必须完全一致                        |
 | `PROFILE_MEDIA_PATH_SECRET`                                   | `profile`、`profile-media-cleanup`、`admin-review`、`activity-read` | 至少 32 字符，四者必须一致；`activity-read` 缺失时头像 fail closed |
+| `OAUTH_RETIREMENT_PURGE_ENABLED`                              | `route-maintenance`                                                 | 默认关闭；仅在新链路运行时验收后临时设为 `1`，清空回读后移除       |
 | `REVIEW_APPROVED_TEMPLATE_ID` / `REVIEW_REJECTED_TEMPLATE_ID` | `notification-send`                                                 | 审批订阅消息模板                                                   |
 
 仓库禁止保存 secret、token、真实 `openid`、手机号、OAuth code/state、密文或真实旅程原始证据。
@@ -117,11 +119,13 @@ npm run cloudbase:verify
 bootstrap 当前管理 9 个集合、29 个业务索引和全拒绝客户端数据库规则；受管定义包含活动首页与管理分页、我的行程、通知 Outbox、媒体清理以及 GPX 可信预览集合 `route_previews`。bootstrap 不创建业务活动，也不会自动应用 `cloudstorage.rules.json`。完整顺序：
 
 1. 审阅并执行 CloudBase plan/apply/verify。
-2. 按 [CloudBase 数据契约](docs/cloudbase-schema.md) 配置云函数环境变量和 `cloudstorage.rules.json`，并回读确认 canonical 媒体路径不可由客户端写入。
-3. 运行 `npm run cloud:install`，再依次部署 `auth`、`profile-media-cleanup`、`admin-review`、`profile`、`activity-read`、`activity-admin`、`registration`、`notification-send` 和 `route-web`。
+2. 按 [CloudBase 数据契约](docs/cloudbase-schema.md) 配置云函数环境变量和 `cloudstorage.rules.json`，并回读确认客户端只能写本人资料与路线 staging，canonical 媒体路径不可由客户端写入。
+3. 运行 `npm run cloud:install`，再依次部署 `auth`、`profile-media-cleanup`、`admin-review`、`profile`、`activity-read`、`activity-admin`、`registration`、`notification-send`、`route-web` 和 `route-maintenance`。
 4. 应用并回读 `cloudbaserc.json` 中 `/route/embed` HTTPS 网关路由，并把网关域名加入小程序 `web-view` 业务域名。
-5. 按 [安全初始化说明](scripts/seed-cloudbase/README.md) 创建首个管理员；活动只能通过已部署的活动管理业务流程创建。
-6. 在隔离测试环境按 [P0 真实报名旅程手册](docs/verification/p0-real-registration-journey.md) 验证。缺少真实环境证据时结论只能是“未执行”，不能写成通过。
+5. 在开发者工具和真机完成官方路线、GPX 上传/保存/下载及失败回退验收；此前 `OAUTH_RETIREMENT_PURGE_ENABLED` 必须保持关闭。
+6. 验收通过后临时开启 purge，等待旧账号数据与预览清空并回读，再移除该开关和线上旧资源。
+7. 按 [安全初始化说明](scripts/seed-cloudbase/README.md) 创建首个管理员；活动只能通过已部署的活动管理业务流程创建。
+8. 在隔离测试环境按 [P0 真实报名旅程手册](docs/verification/p0-real-registration-journey.md) 验证。缺少真实环境证据时结论只能是“未执行”，不能写成通过。
 
 ## 文档导航
 

@@ -13,6 +13,7 @@ const templates = read('docs/templates.js');
 const prototypeRoutes = [
   'activities',
   'activity-detail',
+  'route-view',
   'registration-form',
   'registrations',
   'credential',
@@ -32,15 +33,15 @@ const routeToPagePath = (route: string) =>
     : `pages/${route}/index`;
 
 describe('GitHub Pages 全页面高保真原型门禁', () => {
-  it('与 app.json 的 13 个真实页面逐一对应，不遗漏也不虚构路由', () => {
-    expect(prototypeRoutes).toHaveLength(13);
+  it('与 app.json 的 14 个真实页面逐一对应，不遗漏也不虚构路由', () => {
+    expect(prototypeRoutes).toHaveLength(14);
     expect(prototypeRoutes.map(routeToPagePath)).toEqual(appConfig.pages);
     for (const route of prototypeRoutes) {
       expect(schema).toContain(`id: '${route}'`);
       expect(schema).toContain(`path: '${routeToPagePath(route)}'`);
       expect(templates).toMatch(new RegExp(`(?:^|\\n)    ['"]?${route}['"]?: \\(\\) =>`));
     }
-    expect(html).toContain('13 / 13');
+    expect(html).toContain('14 / 14');
     expect(html).toContain('与 app.json 路由一一对应');
   });
 
@@ -95,21 +96,60 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(html).not.toMatch(/href="\/(styles|app)|src="\/(schema|templates|app)/);
   });
 
-  it('标记当前 main 基线并复用正式 Logo 物料', () => {
-    expect(html).toContain('main@7038e5c');
+  it('用用户可理解的路线双模式标记当前原型并复用正式 Logo 物料', () => {
+    expect(html).toContain('路线双模式');
+    expect(html).not.toContain('feat/route-embed-gpx-no-oauth');
     expect(html).toContain('./brand/logo-materials/generated/logo-square-1024.png');
     expect(html).not.toContain('<span class="logo-word">');
     expect(templates).toContain('class="prototype-brand-logo"');
   });
 
-  it('活动详情同步四指标、报名状态和 Strava 路线操作', () => {
+  it('活动详情同步四指标、报名状态、官方路线与 GPX 原生详情', () => {
     expect(templates).toContain('预计骑行');
     expect(templates).toContain('已通过');
     expect(templates).toContain('class="detail-decision"');
-    expect(templates).toContain('class="route-preview-image"');
-    expect(templates).toContain('复制');
+    expect(templates).toContain('Strava 官方路线');
+    expect(templates).toContain('查看官方路线');
+    expect(templates).toContain('GPX 路线详情');
+    expect(templates).toContain('路线轮廓');
+    expect(templates).toContain('海拔曲线');
     expect(templates).toContain('下载 GPX');
     expect(templates).toContain('活动群二维码');
+  });
+
+  it('不再展示 Strava 账号授权、同步或解绑能力', () => {
+    const currentPrototype = [html, schema, templates, script].join('\n');
+    expect(currentPrototype).not.toMatch(
+      /Strava 授权|重新授权 Strava|解绑 Strava|同步最新 Strava|STRAVA 数据已同步|data-route="strava"/i,
+    );
+    expect(schema).toContain("copy: '查看公开骑行资料与照片，不依赖第三方账号数据。'");
+    expect(templates).toContain('设置与升级日志');
+    expect(templates).not.toContain('Strava 状态');
+  });
+
+  it('活动编辑同步官方链接与 GPX 双模式，路线查看页提供失败回退', () => {
+    expect(templates).toContain('Strava 官方路线（可选）');
+    expect(templates).toContain('粘贴公开路线链接');
+    expect(templates).toContain('添加官方路线');
+    expect(templates).toContain('GPX 路线详情（推荐）');
+    expect(templates).toContain('上传 GPX');
+    expect(templates).toContain('路线详情已准备好');
+    expect(templates).toContain('设为活动背景');
+    expect(templates).toContain('路线暂时无法显示');
+    expect(templates).toContain('复制路线链接');
+    expect(templates).toContain('无需连接 Strava 账号');
+    expect(script).toContain("if (action === 'toggle-route-fallback')");
+  });
+
+  it('个人名片与审核页面只保留资料、照片和骑行经验', () => {
+    expect(templates).toContain('公开骑行名片');
+    expect(templates).toContain('骑行照片');
+    expect(templates).toContain('资料仅用于本次活动审核');
+    expect(templates).toContain('活动中公开');
+    expect(templates).not.toContain('仅本人查看');
+    expect(templates).not.toContain('加权均速');
+    expect(templates).not.toContain('累计爬升');
+    expect(templates).not.toContain('90 天次数');
   });
 
   it('活动管理同步四态筛选与真实运行态示例', () => {

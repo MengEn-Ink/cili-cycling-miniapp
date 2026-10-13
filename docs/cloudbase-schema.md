@@ -108,6 +108,8 @@ cleanup_after, delete_lease_expires_at, retry_at
 
 组织者上传 GPX 后产生的两小时可信预览。记录绑定 `owner_openid`、文件路径、SHA-256、解析指标、路线轮廓、海拔曲线、生成图和 `expires_at`。保存活动时按 owner、摘要、来源文件、生成图和目标活动进行事务校验与消费。
 
+`route-maintenance` 使用保留文档 `__route_maintenance_v1__` 保存各集合稳定 `_id` 游标。定时任务只在预览创建超过 24 小时后回收对象；活动仍在引用或同摘要的新预览仍在使用时不会删除 GPX/PNG。历史账号集合仅在 `OAUTH_RETIREMENT_PURGE_ENABLED=1` 时按批清空，该开关必须在新路线链路运行时验收后才可开启。
+
 ## 受管索引
 
 | 集合 | 字段 |
@@ -148,6 +150,6 @@ bootstrap 当前管理 9 集合、全拒绝规则与 29 索引。`route_previews
 
 1. 执行 `npm run cloudbase:plan`，审核后运行 apply 与 verify。
 2. 应用并回读 `cloudstorage.rules.json`，确认客户端只能写本人 `profiles/` 与 `activity-routes/<openid>/` staging 路径。
-3. 部署 `route-web` 并回读 `/route/embed` 网关；该函数只渲染官方 Embed，不抓取路线页面。
-4. 核对资料、报名和审核响应不含历史账号字段；旧集合与字段由迁移清理任务有界删除。
-5. 在开发者工具和真机验证官方路线查看、GPX 原生详情与原件下载。
+3. 部署 `route-web` 与 `route-maintenance`，回读维护定时器和 `/route/embed` 网关；Embed 函数只渲染官方组件，不抓取路线页面。
+4. 核对资料、报名和审核响应不含历史账号字段；保持 purge 关闭并完成官方路线查看、GPX 上传/保存/下载及失败回退验收。
+5. 验收通过后临时开启 purge，等待旧集合、兼容字段和旧预览清空并回读，再移除开关和线上旧资源。

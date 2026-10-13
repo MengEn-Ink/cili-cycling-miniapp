@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "sourceBaseline": "54ac489933fd0cf4ac8d7170272b88e601d92634",
+  "fixtureMode": "visual-state-only",
+  "startedAt": "2026-10-13T10:03:24.220Z",
+  "routes": [
+    {
+      "id": "admin-activity-edit",
+      "pagePath": "pages/admin/activity-edit/index",
+      "screenshot": "admin-activity-edit-devtools.png",
+      "pageSize": {
+        "width": 390,
+        "height": 753
+      },
+      "dataError": ""
+    },
+    {
+      "id": "activity-detail",
+      "pagePath": "pages/activity-detail/index",
+      "screenshot": "activity-detail-devtools.png",
+      "pageSize": {
+        "width": 390,
+        "height": 753
+      },
+      "dataError": ""
+    },
+    {
+      "id": "route-view",
+      "pagePath": "pages/route-view/index",
+      "screenshot": "route-view-devtools.png",
+      "pageSize": {
+        "width": 390,
+        "height": 753
+      },
+      "dataError": ""
+    },
+    {
+      "id": "profile",
+      "pagePath": "pages/profile/index",
+      "screenshot": "profile-devtools.png",
+      "pageSize": {
+        "width": 390,
+        "height": 671
+      },
+      "dataError": ""
+    },
+    {
+      "id": "capability-card",
+      "pagePath": "pages/capability-card/index",
+      "screenshot": "capability-card-devtools.png",
+      "pageSize": {
+        "width": 390,
+        "height": 753
+      },
+      "dataError": ""
+    },
+    {
+      "id": "admin-reviews",
+      "pagePath": "pages/admin/reviews/index",
+      "screenshot": "admin-reviews-devtools.png",
+      "pageSize": {
+        "width": 390,
+        "height": 753
+      },
+      "dataError": ""
+    },
+    {
+      "id": "admin-review-detail",
+      "pagePath": "pages/admin/review-detail/index",
+      "screenshot": "admin-review-detail-devtools.png",
+      "pageSize": {
+        "width": 390,
+        "height": 753
+      },
+      "dataError": ""
+    }
+  ],
+  "exceptions": [],
+  "finishedAt": "2026-10-13T10:04:35.921Z"
+}

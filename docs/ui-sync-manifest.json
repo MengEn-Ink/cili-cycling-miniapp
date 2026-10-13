@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
-  "syncedThrough": "7038e5c44a958e4d553b218f2303217773c96310",
-  "syncedAt": "2026-10-13T07:18:06Z",
+  "syncedThrough": "54ac489933fd0cf4ac8d7170272b88e601d92634",
+  "syncedAt": "2026-10-13T10:06:07Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:219d4571f1573c94fa5f148cdb8b0f8a92670f6078a5bdf1fbef3b6bed1461ed"
+    "digest": "sha256:16c623ab30f57f76332beabcbbb6c33aaf0b49212f9d8d09142c55568f4865b5"
   },
   "prototype": {
-    "digest": "sha256:36697fa25779ca12d9d7acdd0880ad3ccf89ea0e2f3a127fe439a553f0c37263"
+    "digest": "sha256:329b9bd4cc721cea4e73a2133014008eef7778222751764521e71d145074b692"
   },
   "routes": [
     {
@@ -20,6 +20,10 @@
     {
       "id": "activity-detail",
       "pagePath": "pages/activity-detail/index"
+    },
+    {
+      "id": "route-view",
+      "pagePath": "pages/route-view/index"
     },
     {
       "id": "registration-form",
@@ -67,17 +71,12 @@
     }
   ],
   "evidence": {
-    "directory": "docs/evidence/ui-sync/2026-10-13-main-7038e5c",
+    "directory": "docs/evidence/ui-sync/2026-10-13-route-embed-gpx-no-oauth",
     "routes": [
       {
-        "id": "activities",
-        "devtools": "activities-devtools.png",
-        "pages": "activities-pages.png"
-      },
-      {
-        "id": "registrations",
-        "devtools": "registrations-devtools.png",
-        "pages": "registrations-pages.png"
+        "id": "admin-activity-edit",
+        "devtools": "admin-activity-edit-devtools.png",
+        "pages": "admin-activity-edit-pages.png"
       },
       {
         "id": "activity-detail",
@@ -85,14 +84,29 @@
         "pages": "activity-detail-pages.png"
       },
       {
-        "id": "credential",
-        "devtools": "credential-devtools.png",
-        "pages": "credential-pages.png"
+        "id": "route-view",
+        "devtools": "route-view-devtools.png",
+        "pages": "route-view-pages.png"
       },
       {
-        "id": "admin-activity-list",
-        "devtools": "admin-activity-list-devtools.png",
-        "pages": "admin-activity-list-pages.png"
+        "id": "profile",
+        "devtools": "profile-devtools.png",
+        "pages": "profile-pages.png"
+      },
+      {
+        "id": "capability-card",
+        "devtools": "capability-card-devtools.png",
+        "pages": "capability-card-pages.png"
+      },
+      {
+        "id": "admin-reviews",
+        "devtools": "admin-reviews-devtools.png",
+        "pages": "admin-reviews-pages.png"
+      },
+      {
+        "id": "admin-review-detail",
+        "devtools": "admin-review-detail-devtools.png",
+        "pages": "admin-review-detail-pages.png"
       }
     ]
   }

@@ -10,7 +10,7 @@
 | --- | --- | --- | --- |
 | Aime 沙箱 Secret | GitHub 推送/PR、CloudBase 自动化认证 | Aime 空间的 Secret/环境变量管理 | 否 |
 | GitHub Actions Secret | 合并后上传微信开发版 | GitHub 仓库 Settings → Secrets and variables → Actions | 否 |
-| CloudBase 云函数环境变量 | 运行时加密、Strava、订阅消息 | CloudBase 控制台中对应云函数的环境变量 | 否 |
+| CloudBase 云函数环境变量 | 运行时加密、路线退休清理、订阅消息 | CloudBase 控制台中对应云函数的环境变量 | 否 |
 | 仓库固定配置 | AppID、CloudBase EnvID、函数清单、网关路由 | `project.config.json`、`cloudbaserc.json` | 是 |
 | 本地私有文件 | 微信开发者工具个人设置、现场证据签发密钥 | 未跟踪文件或受控目录 | 否 |
 | 普通命令参数 | 版本号、说明、robot、目标环境确认 | 单次命令或 workflow input | 不保存 |
@@ -86,10 +86,7 @@ CloudBase CLI v3 支持浏览器登录、API 密钥登录和 CI 无头登录；�
 | --- | --- | --- |
 | `PII_ENCRYPTION_KEY` | `profile`、`admin-review` | 必需；32 字节随机值的 base64 编码；两个函数必须完全同值 |
 | `PROFILE_MEDIA_PATH_SECRET` | `profile`、`profile-media-cleanup`、`admin-review`、`activity-read` | 必需；至少 32 字符；四个函数必须完全同值 |
-| `STRAVA_CLIENT_ID` | `strava-auth`、`strava-callback` | 启用 Strava 时必需；十进制应用 ID |
-| `STRAVA_CLIENT_SECRET` | `strava-auth`、`strava-callback` | 启用 Strava 时必需 |
-| `STRAVA_TOKEN_ENCRYPTION_KEY` | `strava-auth`、`strava-callback` | 启用 Strava 时必需；32 字节随机值的 base64 编码；两者同值 |
-| `STRAVA_CALLBACK_URL` | `strava-auth`、`strava-callback` | 启用 Strava 时必需；完整 HTTPS `/strava/callback` 地址；两者同值 |
+| `OAUTH_RETIREMENT_PURGE_ENABLED` | `route-maintenance` | 默认不配置或设为 `0`；仅在新路线链路部署并完成运行时验收后临时设为 `1`，旧数据清空回读后移除 |
 | `REVIEW_APPROVED_TEMPLATE_ID` | `notification-send` | 启用“审核通过”订阅消息时必需 |
 | `REVIEW_REJECTED_TEMPLATE_ID` | `notification-send` | 启用“审核驳回”订阅消息时必需 |
 | `WAITLIST_ENTERED_TEMPLATE_ID` | `notification-send` | 启用“进入候补”订阅消息时必需 |
@@ -99,14 +96,14 @@ CloudBase CLI v3 支持浏览器登录、API 密钥登录和 CI 无头登录；�
 安全生成命令应在受控终端执行，输出直接进入 Secret 管理器，不要回传到聊天：
 
 ```bash
-# PII_ENCRYPTION_KEY / STRAVA_TOKEN_ENCRYPTION_KEY
+# PII_ENCRYPTION_KEY
 openssl rand -base64 32
 
 # PROFILE_MEDIA_PATH_SECRET；48 字节随机值会生成长度充足的 base64 文本
 openssl rand -base64 48
 ```
 
-`PII_ENCRYPTION_KEY`、`STRAVA_TOKEN_ENCRYPTION_KEY` 和 `PROFILE_MEDIA_PATH_SECRET` 是三个不同用途的密钥，不得复用。轮换前必须先评估存量密文和存量媒体路径兼容性，不能直接覆盖生产值。
+`PII_ENCRYPTION_KEY` 和 `PROFILE_MEDIA_PATH_SECRET` 用途不同，不得复用。轮换前必须先评估存量密文和存量媒体路径兼容性，不能直接覆盖生产值。
 
 ### 2.4 现场验证与本地私有文件
 
@@ -241,7 +238,7 @@ git diff --check
 ### 4.3 GitHub Pages UI 同步门禁
 
 `docs/ui-sync-manifest.json` 记录最近一次小程序 UI 与 GitHub Pages
-高保真原型同步的完整 Git SHA、内容摘要、13 个真实页面路由和双端截图证据。
+高保真原型同步的完整 Git SHA、内容摘要、14 个真实页面路由和双端截图证据。
 普通 CI 允许短期批量同步，体验版晋级要求零漂移。
 
 普通模式规则：
@@ -269,7 +266,7 @@ Automator 断言结果。
 同步时从目标 `main` SHA 采集微信开发者工具截图，更新 `docs/` 原型，
 使用相同路由生成 Pages 截图，再更新根清单的 source/prototype 摘要。
 不得只修改清单摘要绕过视觉核对。GitHub Pages 正式地址部署后还要复核
-13 个路由、移动端/桌面端布局和浅色主题可读性，才算本轮同步完成。
+14 个路由、移动端/桌面端布局和浅色主题可读性，才算本轮同步完成。
 
 ### 4.4 CloudBase 资源验证
 
@@ -303,8 +300,8 @@ node scripts/bootstrap-cloudbase.mjs \
 
 - 已部署到隔离测试环境的不可变提交；
 - 一个管理员账号和一个普通新测试用户；
-- 可用的 Strava 测试授权与路线夹具；
-- 已验证可访问的 OAuth 回调；
+- 一条可公开访问的 Strava 官方路线和一份含海拔的 GPX 夹具；
+- 已验证可访问的 `/route/embed` 网关及小程序 `web-view` 业务域名；
 - 受控的 `journey-run.key`；
 - 不含真实标识和凭据的 preflight/evidence 文件。
 
@@ -457,7 +454,7 @@ npm run deploy:miniprogram
 - 目标函数状态为 Active；
 - 部署版本对应已验证的不可变 commit；
 - 四个媒体相关函数使用同值 `PROFILE_MEDIA_PATH_SECRET`；
-- 两个 Strava 函数使用同值的 Strava 配置；
+- `route-web` 与 `route-maintenance` 均已部署，运行时验收前 purge 开关保持关闭；
 - timer、网关路由和数据库/存储安全规则已回读；
 - 对应业务 smoke 或 P0 旅程已执行；无法执行的项目明确记为“未执行”。
 
@@ -505,10 +502,7 @@ WECHAT_MINIPROGRAM_PRIVATE_KEY=<required for WeChat development upload>
 ```text
 PII_ENCRYPTION_KEY=<same value on profile/admin-review>
 PROFILE_MEDIA_PATH_SECRET=<same value on profile/profile-media-cleanup/admin-review/activity-read>
-STRAVA_CLIENT_ID=<strava-auth/strava-callback>
-STRAVA_CLIENT_SECRET=<strava-auth/strava-callback>
-STRAVA_TOKEN_ENCRYPTION_KEY=<same value on strava-auth/strava-callback>
-STRAVA_CALLBACK_URL=<same HTTPS URL on strava-auth/strava-callback>
+OAUTH_RETIREMENT_PURGE_ENABLED=<route-maintenance; keep 0 until runtime acceptance>
 REVIEW_APPROVED_TEMPLATE_ID=<notification-send>
 REVIEW_REJECTED_TEMPLATE_ID=<notification-send>
 WAITLIST_ENTERED_TEMPLATE_ID=<notification-send>

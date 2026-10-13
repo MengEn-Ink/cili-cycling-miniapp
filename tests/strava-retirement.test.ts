@@ -43,7 +43,9 @@ describe('Strava 账号能力退役契约', () => {
   it('运行时代码不再读取凭证、账号快照或调用旧账号仓储方法', () => {
     const runtimeSources = readFiles([
       ...collectFiles('miniprogram', new Set(['.ts', '.js', '.json', '.wxml'])),
-      ...collectFiles('cloudfunctions', new Set(['.js', '.json'])),
+      ...collectFiles('cloudfunctions', new Set(['.js', '.json'])).filter(
+        (file) => !file.startsWith('cloudfunctions/route-maintenance/'),
+      ),
       ...collectFiles('scripts', new Set(['.js', '.mjs', '.cjs'])),
     ]);
 
@@ -52,6 +54,22 @@ describe('Strava 账号能力退役契约', () => {
     );
     expect(runtimeSources).not.toMatch(
       /importStravaAvatar|getStravaReadiness|ensureStravaReady|startStrava|cancelStravaAuthorization|syncStrava|disconnectStrava|previewPublicStravaRoute|previewStravaRoute|getStravaRouteGpx|exportActivityGpx/,
+    );
+  });
+
+  it('当前产品与部署文档只描述官方公开路线和 GPX，不再要求 OAuth 配置', () => {
+    const currentDocs = readFiles([
+      'README.md',
+      'docs/requirements-design.md',
+      'docs/cloudbase-schema.md',
+      'docs/sandbox-environment-configuration.md',
+      'scripts/seed-cloudbase/README.md',
+    ]);
+
+    expect(currentDocs).toContain('Strava 官方');
+    expect(currentDocs).toContain('GPX');
+    expect(currentDocs).not.toMatch(
+      /STRAVA_CLIENT_SECRET|STRAVA_TOKEN_ENCRYPTION_KEY|STRAVA_CALLBACK_URL|strava-auth|strava-callback|可用的 Strava 测试授权|OAuth 回调/,
     );
   });
 

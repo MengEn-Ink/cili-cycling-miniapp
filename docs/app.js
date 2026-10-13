@@ -42,7 +42,9 @@
     document.querySelectorAll('[data-route]').forEach((button) => {
       button.classList.toggle('is-active', button.dataset.route === page.id);
     });
-    const activeTab = page.id === 'activity-detail' || page.id === 'registration-form' ? 'activities' : page.id;
+    const activeTab = ['activity-detail', 'route-view', 'registration-form'].includes(page.id)
+      ? 'activities'
+      : page.id;
     document.querySelectorAll('.tab-button').forEach((button) => {
       button.classList.toggle('is-active', button.dataset.route === activeTab);
     });
@@ -72,7 +74,7 @@
   }
 
   function showRider(name) {
-    modal.innerHTML = `<button class="modal-close" data-action="close-modal" aria-label="关闭">×</button><div class="rider-avatar large">${name.slice(0, 1)}</div><small>公开骑行名片</small><h3>${name}</h3><p>近 90 天骑行 ${data.rider.rides90d} 次 · 最长 ${data.rider.longestKm} km</p><button class="prototype-button button-primary button-full" data-action="route" data-route="capability-card">查看完整名片</button>`;
+    modal.innerHTML = `<button class="modal-close" data-action="close-modal" aria-label="关闭">×</button><div class="rider-avatar large">${name.slice(0, 1)}</div><small>公开骑行名片</small><h3>${name}</h3><p>${data.rider.city} · ${data.rider.experience}</p><button class="prototype-button button-primary button-full" data-action="route" data-route="capability-card">查看照片与公开资料</button>`;
     modal.hidden = false;
   }
 
@@ -105,6 +107,10 @@
     if (action === 'toast') showToast(target.dataset.message || '操作已完成');
     if (action === 'close-modal') modal.hidden = true;
     if (action === 'rider') showRider(target.dataset.rider);
+    if (action === 'toggle-route-fallback') {
+      container.querySelector('[data-route-embed]').hidden = true;
+      container.querySelector('[data-route-fallback]').hidden = false;
+    }
     if (action === 'choice') {
       target.parentElement.querySelectorAll('button').forEach((button) => button.classList.remove('is-active'));
       target.classList.add('is-active');

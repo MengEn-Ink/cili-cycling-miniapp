@@ -742,7 +742,7 @@ git commit -m "chore(cloud): govern route previews and OAuth retirement"
 - Modify: `docs/high-priority-issues.md`
 - Modify: relevant current tests under `tests/`
 
-- [ ] **Step 1: Write failing current-document and showcase contracts**
+- [x] **Step 1: Write failing current-document and showcase contracts**
 
 ```ts
 expect(requirements).toContain('Strava 官方路线');
@@ -752,23 +752,23 @@ expect(showcaseTemplates).toContain('上传 GPX');
 expect(showcaseTemplates).toContain('查看官方路线');
 ```
 
-- [ ] **Step 2: Run documentation/UI tests and confirm failures**
+- [x] **Step 2: Run documentation/UI tests and confirm failures**
 
 Run: `npm run test:ui-sync && npm run check:ui-sync && npm run test:release-notes`
 
 Expected: FAIL until current artifacts describe the new route experience.
 
-- [ ] **Step 3: Update current product/deployment documents and showcase**
+- [x] **Step 3: Update current product/deployment documents and showcase**
 
 Historical specs, plans, releases, and evidence remain unchanged. Current requirements, schema, README, sandbox setup, Pages prototype, route manifest, and high-priority status describe the new model and user-first copy.
 
-- [ ] **Step 4: Run documentation/UI gates**
+- [x] **Step 4: Run documentation/UI gates**
 
 Run: `npm run test:ui-sync && npm run check:ui-sync && npm run test:release-notes && npm run check:release-notes`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add README.md docs
@@ -784,7 +784,7 @@ git commit -m "docs(route): document official embed and GPX details"
 - Modify: `docs/ui-sync-manifest.json`
 - Modify: `docs/high-priority-issues.md`
 
-- [ ] **Step 1: Run focused suites**
+- [x] **Step 1: Run focused suites**
 
 Run:
 
@@ -797,13 +797,13 @@ node --test cloudfunctions/route-web/index.node-test.js cloudfunctions/route-mai
 
 Expected: PASS.
 
-- [ ] **Step 2: Run repository validation**
+- [x] **Step 2: Run repository validation**
 
 Run: `npm run validate`
 
 Expected: PASS for format, lint, typecheck, client tests, cloud tests, schema/bootstrap, release notes, package verification, UI sync, and build.
 
-- [ ] **Step 3: Capture 375x812 visual evidence**
+- [x] **Step 3: Capture 375x812 visual evidence**
 
 Run the Pages prototype and WeChat DevTools against:
 
@@ -819,11 +819,11 @@ pages/admin/review-detail/index
 
 Expected: matching route identity, visible light-theme copy and controls, no overlap, route charts/outline visible, and no account authorization UI.
 
-- [ ] **Step 4: Update evidence and high-priority status**
+- [x] **Step 4: Update evidence and high-priority status**
 
 Record the commit, exact test commands, image dimensions, compared routes, and remaining physical-device checks. Do not mark the P0 complete before deployed runtime and device acceptance.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add docs/evidence docs/ui-sync-manifest.json docs/high-priority-issues.md
