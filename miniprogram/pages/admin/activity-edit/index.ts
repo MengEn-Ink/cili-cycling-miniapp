@@ -590,20 +590,26 @@ Page({
       this.cleanupSessionUploads([pending.gpxFileId]);
       return;
     }
-    this.setData(
-      {
-        routePreview: preview,
+    await new Promise<void>((resolve) => {
+      this.setData(
+        {
+          routePreview: preview,
+          routeStatusMessage: '正在生成路线图',
+          routeTimeLabel: formatRouteDuration(preview.estimatedMovingTimeSeconds),
+          error: '',
+        },
+        resolve,
+      );
+    });
+    await this.renderRouteVisuals();
+    if (!this.unloaded) {
+      this.setData({
         pendingRouteUpload: undefined,
         routeStatusMessage: '路线详情已准备好',
         routeTimeLabel: formatRouteDuration(preview.estimatedMovingTimeSeconds),
         error: '',
-      },
-      () => {
-        void this.renderRouteVisuals().catch(() => {
-          if (!this.unloaded) this.setData({ error: '路线图生成失败，请重试' });
-        });
-      },
-    );
+      });
+    }
   },
   routeCanvas(selector: string): Promise<any | undefined> {
     if (typeof wx.createSelectorQuery !== 'function') return Promise.resolve(undefined);
@@ -739,7 +745,8 @@ Page({
         code === 'NO_FILE_SELECTED' && error instanceof Error
           ? error.message
           : routeErrorMessage(error);
-      this.setData({ routeStatusMessage: '', error: message });
+      this.setData({ routeStatusMessage: message, error: message });
+      wx.showToast({ title: message, icon: 'none', duration: 3000 });
     } finally {
       this.setData({ uploadingRoute: false });
     }

@@ -117,6 +117,14 @@ const ROUTE_ERRORS: Record<string, string> = {
 };
 
 export function routeErrorMessage(error: unknown): string {
+  const platformMessage =
+    typeof error === 'object' &&
+    error !== null &&
+    typeof (error as { errMsg?: unknown }).errMsg === 'string'
+      ? (error as { errMsg: string }).errMsg
+      : '';
+  if (/chooseMessageFile/i.test(platformMessage))
+    return '当前环境无法打开文件选择器，请使用微信真机上传 GPX';
   const code =
     typeof error === 'object' &&
     error !== null &&

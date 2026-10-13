@@ -23,21 +23,21 @@ describe('设置页', () => {
   it('只加载当前版本日志，不注册第三方账号生命周期或入口', () => {
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.13.45',
+      version: '2026.10.13.46',
       latest: true,
-      title: '官方路线与 GPX 详情',
-      summary: '活动路线现在支持官方链接和 GPX 文件，两种方式可以单独使用，也可以一起添加。',
+      title: 'GPX 上传反馈更清晰',
+      summary: '文件选择失败会在上传区域直接提示，路线图准备完成前也不会提前进入可发布状态。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.13.46',
       '2026.10.13.45',
       '2026.10.13.44',
       '2026.10.13.43',
       '2026.10.13.42',
-      '2026.10.13.41',
     ]);
     expect(page.onShow).toBeUndefined();
     expect(page.loadStravaStatus).toBeUndefined();
