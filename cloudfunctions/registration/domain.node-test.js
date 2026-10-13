@@ -65,7 +65,7 @@ test('报名公开投影包含签到时间但不泄露签到管理员 openid', (
   assert.equal('checkin_operator_openid' in result, false);
 });
 
-test('报名资料就绪检查包含背景图', () => {
+test('报名资料就绪检查不再把背景图作为硬门槛', () => {
   const baseProfile = {
     nickname: '骑手',
     gender: '男',
@@ -78,22 +78,35 @@ test('报名资料就绪检查包含背景图', () => {
   };
 
   assert.doesNotThrow(() => assertProfileReady(baseProfile));
-  assert.throws(() => assertProfileReady({ ...baseProfile, background_photo: null }), {
+  // 背景图缺失不影响报名就绪判定
+  assert.doesNotThrow(() => assertProfileReady({ ...baseProfile, background_photo: null }));
+  assert.doesNotThrow(() =>
+    assertProfileReady({ ...baseProfile, background_photo: { file_id: '', category: 'ride' } }),
+  );
+  assert.doesNotThrow(() =>
+    assertProfileReady({ ...baseProfile, background_photo: null, photos: [] }),
+  );
+});
+
+test('报名资料就绪检查缺少核心项时拒绝', () => {
+  const baseProfile = {
+    nickname: '骑手',
+    gender: '男',
+    real_name_cipher: { v: 1 },
+    phone_cipher: { v: 1 },
+    emergency_name: '联系人',
+    emergency_phone_cipher: { v: 1 },
+    avatar_file_id: 'cloud://avatar',
+  };
+
+  assert.doesNotThrow(() => assertProfileReady(baseProfile));
+  assert.throws(() => assertProfileReady({ ...baseProfile, nickname: '  ' }), {
     code: 'PROFILE_INCOMPLETE',
-    message: /个人照片/,
   });
-  assert.throws(
-    () =>
-      assertProfileReady({ ...baseProfile, background_photo: { file_id: '', category: 'ride' } }),
-    { code: 'PROFILE_INCOMPLETE', message: /个人照片/ },
-  );
-  assert.throws(
-    () =>
-      assertProfileReady({
-        ...baseProfile,
-        background_photo: null,
-        photos: [{ file_id: 'legacy', category: 'ride' }],
-      }),
-    { code: 'PROFILE_INCOMPLETE', message: /个人照片/ },
-  );
+  assert.throws(() => assertProfileReady({ ...baseProfile, gender: '' }), {
+    code: 'PROFILE_INCOMPLETE',
+  });
+  assert.throws(() => assertProfileReady({ ...baseProfile, avatar_file_id: '' }), {
+    code: 'PROFILE_INCOMPLETE',
+  });
 });

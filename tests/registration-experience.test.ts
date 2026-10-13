@@ -67,10 +67,10 @@ describe('V3.1 报名资料门禁', () => {
     phone: '13800000000',
     emergencyName: '家人',
     emergencyPhone: '13900000000',
-    realName: '',
+    realName: '骑行者',
     photos: [],
     backgroundPhoto: null,
-    sensitiveStatus: { realName: false, phone: true, emergencyPhone: true },
+    sensitiveStatus: { realName: true, phone: true, emergencyPhone: true },
   };
   const input = {
     profile,
@@ -79,11 +79,23 @@ describe('V3.1 报名资料门禁', () => {
     readiness: { state: 'ready' as const, canRegister: true },
   };
 
-  it('不把真实姓名或个人照片作为报名强制项', () => {
+  it('真实姓名为报名硬门槛，个人照片不作强制项', () => {
+    // Q1=A1：真实姓名强制必填。已填真实姓名（sensitiveStatus.realName=true）且无个人照片时应放行。
     expect(validateRegistration(input)).toEqual([]);
+    // 真实姓名缺失时必须拦截。
+    expect(
+      validateRegistration({
+        ...input,
+        profile: {
+          ...profile,
+          realName: '',
+          sensitiveStatus: { realName: false, phone: true, emergencyPhone: true },
+        },
+      }),
+    ).toContain('请填写真实姓名');
   });
 
-  it('汇总昵称、非默认头像、性别、电话和紧急联系人缺失项，不要求 Strava', () => {
+  it('汇总昵称、真实姓名、非默认头像、性别、电话和紧急联系人缺失项，不要求 Strava', () => {
     const errors = validateRegistration({
       ...input,
       profile: {
@@ -99,6 +111,7 @@ describe('V3.1 报名资料门禁', () => {
     expect(errors).toEqual(
       expect.arrayContaining([
         '请授权并填写微信昵称',
+        '请填写真实姓名',
         '请设置非默认头像',
         '请在个人资料中选择性别',
         '请填写有效联系电话',

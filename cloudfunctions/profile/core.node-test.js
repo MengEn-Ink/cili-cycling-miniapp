@@ -10,6 +10,7 @@ const {
   maskName,
   maskPhone,
   response,
+  profileReadiness,
   buildUpdate,
   phoneUpdate,
   issueMediaUploadPath,
@@ -66,7 +67,15 @@ test('脱敏与响应不返回敏感明文/密文', () => {
     id_number_masked: '110***********1234',
   };
   const dto = response(source);
-  assert.equal(dto.completeness, 75);
+  // 完整度口径为 7 项（昵称/真实姓名/手机号/紧急联系人姓名/紧急联系人电话/性别/头像），各约 14%。
+  // source 命中 昵称/真实姓名/手机号 共 3 项 → round(3/7*100)=43。
+  assert.equal(dto.completeness, 43);
+  assert.deepEqual(dto.missing, [
+    '填写紧急联系人姓名',
+    '填写紧急联系人电话',
+    '选择性别',
+    '设置头像',
+  ]);
   assert.equal(Object.hasOwn(dto, 'avatar_source'), false);
   assert.equal(dto.has_completed_guidance, false);
   assert.deepEqual(dto.sensitive_status, {
@@ -82,8 +91,9 @@ test('脱敏与响应不返回敏感明文/密文', () => {
   assert.equal(Object.hasOwn(dto, 'owner_openid'), false);
   assert.equal(Object.hasOwn(dto, 'origin'), false);
   assert.equal(Object.hasOwn(dto, 'status'), false);
-  assert.equal(response({ ...source, gender: '男' }).completeness, 75);
-  assert.equal(response({ ...source, emergency_name: '联系人' }).completeness, 75);
+  // 补一项 → 4/7，round(57.14)=57。
+  assert.equal(response({ ...source, gender: '男' }).completeness, 57);
+  assert.equal(response({ ...source, emergency_name: '联系人' }).completeness, 57);
   assert.equal(
     response({
       nickname: '骑手',
@@ -91,15 +101,80 @@ test('脱敏与响应不返回敏感明文/密文', () => {
       phone_cipher: {},
       emergency_name: '联系人',
       emergency_phone_cipher: {},
+      gender: '男',
+      avatar_file_id: 'cloud://env/avatar.jpg',
+      avatar_source: 'wechat',
     }).completeness,
     100,
   );
+  // 完整资料的缺失项为空。
+  assert.deepEqual(
+    response({
+      nickname: '骑手',
+      real_name_cipher: {},
+      phone_cipher: {},
+      emergency_name: '联系人',
+      emergency_phone_cipher: {},
+      gender: '男',
+      avatar_file_id: 'cloud://env/avatar.jpg',
+      avatar_source: 'wechat',
+    }).missing,
+    [],
+  );
+});
+test('profileReadiness 以 7 项口径计算完整度与缺失项，背景图不计入', () => {
+  const full = {
+    nickname: '骑手',
+    real_name_cipher: {},
+    phone_cipher: {},
+    emergency_name: '联系人',
+    emergency_phone_cipher: {},
+    gender: '男',
+    avatar_file_id: 'cloud://env/avatar.jpg',
+    avatar_source: 'wechat',
+  };
+  const ready = profileReadiness(full);
+  assert.equal(ready.completeness, 100);
+  assert.deepEqual(ready.missing, []);
+  assert.deepEqual(ready.missingKeys, []);
+
+  // 空文档缺全部 7 项。
+  const empty = profileReadiness({});
+  assert.equal(empty.completeness, 0);
+  assert.deepEqual(empty.missingKeys, [
+    'nickname',
+    'real_name',
+    'phone',
+    'emergency_name',
+    'emergency_phone',
+    'gender',
+    'avatar',
+  ]);
+
+  // 背景图不影响完整度：补齐背景图仍为 100%，缺失背景图也不进入 missing。
+  assert.equal(
+    profileReadiness({ ...full, background_photo: { file_id: 'cloud://bg', category: 'ride' } })
+      .completeness,
+    100,
+  );
+  const partial = profileReadiness({ ...full, gender: '', avatar_file_id: '' });
+  assert.equal(partial.completeness, 71); // 5/7 → round(71.4)
+  assert.deepEqual(partial.missingKeys, ['gender', 'avatar']);
 });
 test('头像响应只返回规范来源，并为合法 legacy 头像推断 custom', () => {
   assert.deepEqual(response({ avatar_file_id: 'cloud://env/legacy.jpg' }), {
     ...response({}),
     avatar_file_id: 'cloud://env/legacy.jpg',
     avatar_source: 'custom',
+    completeness: 14,
+    missing: [
+      '设置昵称',
+      '填写真实姓名',
+      '填写本人手机号',
+      '填写紧急联系人姓名',
+      '填写紧急联系人电话',
+      '选择性别',
+    ],
   });
   assert.equal(
     response({ avatar_file_id: 'cloud://env/wechat.jpg', avatar_source: 'wechat' }).avatar_source,
@@ -252,7 +327,7 @@ test('头像单独更新不触发整表必填校验', () => {
   assert.deepEqual(buildUpdate({}, key, {}), {});
 });
 
-test('整表保存时强制校验性别、头像和背景图必填', () => {
+test('整表保存时强制校验性别、头像与背景图必填（Q3=C2：背景图为公开展示路径硬门槛）', () => {
   const complete = {
     gender: '男',
     avatar_file_id: 'cloud://env/profiles/owner/avatar.jpg',
@@ -273,7 +348,7 @@ test('整表保存时强制校验性别、头像和背景图必填', () => {
     { code: 'AVATAR_REQUIRED', message: '请先设置头像' },
   );
 
-  // 3. 缺背景图失败
+  // 3. 清空背景图失败（背景图不计入完整度，但公开展示路径仍必填）
   assert.throws(() => buildUpdate({ gender: '女', background_photo: null }, key, complete), {
     code: 'VALIDATION_FAILED',
     message: '请上传个人照片',
@@ -286,13 +361,13 @@ test('整表保存时强制校验性别、头像和背景图必填', () => {
   // 5. 试图清空性别失败
   assert.throws(() => buildUpdate({ gender: '' }, key, complete), { code: 'VALIDATION_FAILED' });
 
-  // 6. 试图清空照片失败
+  // 6. 仅清空背景图同样失败（展示路径必填）
   assert.throws(() => buildUpdate({ background_photo: null }, key, complete), {
     code: 'VALIDATION_FAILED',
     message: '请上传个人照片',
   });
 
-  // 7. 新旧合并后完整则成功
+  // 7. 新旧合并后完整（含背景图）则成功
   assert.deepEqual(
     buildUpdate({ background_photo: complete.background_photo }, key, {
       gender: '男',
