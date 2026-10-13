@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "syncedThrough": "7038e5c44a958e4d553b218f2303217773c96310",
+  "syncedAt": "2026-10-13T07:18:06Z",
+  "policy": {
+    "maxUnsyncedUiCommits": 4,
+    "maxAgeDays": 7
+  },
+  "source": {
+    "digest": "sha256:219d4571f1573c94fa5f148cdb8b0f8a92670f6078a5bdf1fbef3b6bed1461ed"
+  },
+  "prototype": {
+    "digest": "sha256:36697fa25779ca12d9d7acdd0880ad3ccf89ea0e2f3a127fe439a553f0c37263"
+  },
+  "routes": [
+    {
+      "id": "activities",
+      "pagePath": "pages/activities/index"
+    },
+    {
+      "id": "activity-detail",
+      "pagePath": "pages/activity-detail/index"
+    },
+    {
+      "id": "registration-form",
+      "pagePath": "pages/registration-form/index"
+    },
+    {
+      "id": "registrations",
+      "pagePath": "pages/registrations/index"
+    },
+    {
+      "id": "credential",
+      "pagePath": "pages/credential/index"
+    },
+    {
+      "id": "profile",
+      "pagePath": "pages/profile/index"
+    },
+    {
+      "id": "settings",
+      "pagePath": "pages/settings/index"
+    },
+    {
+      "id": "capability-card",
+      "pagePath": "pages/capability-card/index"
+    },
+    {
+      "id": "profile-edit",
+      "pagePath": "pages/profile-edit/index"
+    },
+    {
+      "id": "admin-activity-list",
+      "pagePath": "pages/admin/activity-list/index"
+    },
+    {
+      "id": "admin-activity-edit",
+      "pagePath": "pages/admin/activity-edit/index"
+    },
+    {
+      "id": "admin-reviews",
+      "pagePath": "pages/admin/reviews/index"
+    },
+    {
+      "id": "admin-review-detail",
+      "pagePath": "pages/admin/review-detail/index"
+    }
+  ],
+  "evidence": {
+    "directory": "docs/evidence/ui-sync/2026-10-13-main-7038e5c",
+    "routes": [
+      {
+        "id": "activities",
+        "devtools": "activities-devtools.png",
+        "pages": "activities-pages.png"
+      },
+      {
+        "id": "registrations",
+        "devtools": "registrations-devtools.png",
+        "pages": "registrations-pages.png"
+      },
+      {
+        "id": "activity-detail",
+        "devtools": "activity-detail-devtools.png",
+        "pages": "activity-detail-pages.png"
+      },
+      {
+        "id": "credential",
+        "devtools": "credential-devtools.png",
+        "pages": "credential-pages.png"
+      },
+      {
+        "id": "admin-activity-list",
+        "devtools": "admin-activity-list-devtools.png",
+        "pages": "admin-activity-list-pages.png"
+      }
+    ]
+  }
+}

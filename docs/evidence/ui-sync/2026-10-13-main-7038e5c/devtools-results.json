@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "startedAt": "2026-10-13T06:39:01.980Z",
+  "git": "7038e5c44a958e4d553b218f2303217773c96310",
+  "projectPath": "/tmp/cili-ui-baseline-7038e5c",
+  "checks": [
+    {
+      "name": "活动首页加载",
+      "ok": true,
+      "detail": {
+        "error": null,
+        "count": 1
+      }
+    },
+    {
+      "name": "活动卡集合时间为自然表达",
+      "ok": true,
+      "detail": {
+        "displayTimeLabel": "早上 6 点 20 分"
+      }
+    },
+    {
+      "name": "活动轮播日期与集合时间拆分",
+      "ok": true,
+      "detail": {
+        "displayDateLabel": "10月18日 周日",
+        "displayTimeLabel": "早上 6 点 20 分"
+      }
+    },
+    {
+      "name": "我的行程加载",
+      "ok": true,
+      "detail": {
+        "error": null,
+        "count": 2
+      }
+    },
+    {
+      "name": "行程日期与集合时间拆分",
+      "ok": true,
+      "detail": {
+        "displayDate": "10月17日 周六",
+        "meetingTime": "早上 8 点整"
+      }
+    },
+    {
+      "name": "活动详情日期与集合时间拆分",
+      "ok": true,
+      "detail": {
+        "displayDate": "10月18日 周日",
+        "startTime": "早上 6 点 20 分"
+      }
+    },
+    {
+      "name": "报名凭证日期与集合时间拆分",
+      "ok": true,
+      "detail": {
+        "error": null,
+        "displayDate": "10月17日 周六",
+        "meetingTime": "早上 8 点整"
+      }
+    }
+  ],
+  "exceptions": [],
+  "finishedAt": "2026-10-13T06:39:55.058Z",
+  "passed": 7,
+  "failed": 0
+}
