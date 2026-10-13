@@ -51,6 +51,7 @@ jobs:
             cloudfunctions/profile/package-lock.json
             cloudfunctions/profile-media-cleanup/package-lock.json
             cloudfunctions/route-web/package-lock.json
+            cloudfunctions/route-maintenance/package-lock.json
       - name: Install root dependencies
         run: npm ci
       - name: Rebuild shared package and install every cloud function

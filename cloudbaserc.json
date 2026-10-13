@@ -87,6 +87,21 @@
       "timeout": 5,
       "memorySize": 256,
       "installDependency": true
+    },
+    {
+      "name": "route-maintenance",
+      "handler": "index.main",
+      "runtime": "Nodejs20.19",
+      "timeout": 30,
+      "memorySize": 256,
+      "installDependency": true,
+      "triggers": [
+        {
+          "name": "route-maintenance-worker",
+          "type": "timer",
+          "config": "0 */10 * * * * *"
+        }
+      ]
     }
   ],
   "gateway": {

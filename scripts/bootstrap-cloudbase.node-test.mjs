@@ -614,14 +614,14 @@ test('profile_media cleanup 配置真实且有界的定时执行器', () => {
   assert.ok(RECOVERY_CONFIRMATION_MS > runtimeUpperBoundMs);
 });
 
-test('云存储规则只允许客户端写 staging，canonical 前缀保持 server-only', () => {
+test('云存储规则只允许 owner 写资料与路线 staging，canonical 前缀保持 server-only', () => {
   const rules = JSON.parse(
     readFileSync(new URL('../cloudstorage.rules.json', import.meta.url), 'utf8'),
   );
   assert.equal(rules.read, false);
   assert.equal(
     rules.write,
-    'auth != null && /^profiles\\//.test(resource.path) && resource.openid == auth.openid',
+    'auth != null && (/^profiles\\//.test(resource.path) || /^activity-routes\\//.test(resource.path)) && resource.openid == auth.openid',
   );
   assert.equal(rules.write.includes('profile-canonical'), false);
 });

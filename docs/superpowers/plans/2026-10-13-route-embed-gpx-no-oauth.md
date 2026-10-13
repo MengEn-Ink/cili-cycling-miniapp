@@ -672,7 +672,7 @@ git commit -m "refactor(strava): retire account authorization and metrics"
 - Modify: `.github/workflows/ci.yml`
 - Modify: `cloudstorage.rules.json`
 
-- [ ] **Step 1: Write failing governance and cleanup tests**
+- [x] **Step 1: Write failing governance and cleanup tests**
 
 ```js
 test('bootstrap manages route_previews and no OAuth collections', () => {
@@ -687,13 +687,13 @@ test('cleanup never deletes attached GPX or generated route images', async () =>
 });
 ```
 
-- [ ] **Step 2: Run governance tests and confirm failures**
+- [x] **Step 2: Run governance tests and confirm failures**
 
 Run: `npm run test:bootstrap && node --test cloudfunctions/route-maintenance/index.node-test.js`
 
 Expected: FAIL for missing route resources and remaining OAuth resources.
 
-- [ ] **Step 3: Implement bounded cleanup and retirement migration**
+- [x] **Step 3: Implement bounded cleanup and retirement migration**
 
 The maintenance function processes stable `_id` cursor batches and:
 
@@ -707,7 +707,7 @@ The maintenance function processes stable `_id` cursor batches and:
    OAUTH_RETIREMENT_PURGE_ENABLED=1 is set on the maintenance function.
 ```
 
-- [ ] **Step 4: Update build/install/audit and storage policy**
+- [x] **Step 4: Update build/install/audit and storage policy**
 
 `package.json` and CI install, test, cache, and audit `route-web`/`route-maintenance`; no command mentions the deleted OAuth packages. Storage allows only authenticated owner writes to:
 
@@ -716,13 +716,13 @@ profiles/<openid>/...
 activity-routes/<openid>/...
 ```
 
-- [ ] **Step 5: Run governance and package verification**
+- [x] **Step 5: Run governance and package verification**
 
 Run: `npm run test:bootstrap && npm run verify:cloud-packages && npm run cloudbase:plan`
 
 Expected: PASS; the read-only plan targets the configured environment, adds route resources, and reports no OAuth resources in desired state.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add cloudfunctions/route-maintenance cloudbaserc.json cloudstorage.rules.json scripts package.json package-lock.json .github/workflows/ci.yml

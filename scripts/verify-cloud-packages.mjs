@@ -82,4 +82,17 @@ if (
   throw new Error('profile-media-cleanup 缺少可部署的定时触发器');
 pack('profile-media-cleanup', ['index.js', 'core.js', 'store.js', 'package.json']);
 pack('route-web', ['index.js', 'package.json']);
+const routeMaintenanceFunction = cloudbaseConfig.functions.find(
+  (item) => item.name === 'route-maintenance',
+);
+const routeMaintenanceTimer = routeMaintenanceFunction?.triggers?.find(
+  (item) => item.name === 'route-maintenance-worker' && item.type === 'timer',
+);
+if (
+  !routeMaintenanceTimer ||
+  typeof routeMaintenanceTimer.config !== 'string' ||
+  !routeMaintenanceTimer.config.trim()
+)
+  throw new Error('route-maintenance 缺少可部署的定时触发器');
+pack('route-maintenance', ['index.js', 'package.json']);
 console.log('云函数部署包校验通过：源码自包含、共享代码一致且依赖均来自 registry');
