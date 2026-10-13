@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 
-const UI_PATH =
-  /^miniprogram\/(?:app\.(?:json|wxss)|(?:pages|components|assets)\/)/;
+const UI_PATH = /^miniprogram\/(?:app\.(?:json|wxss)|(?:pages|components|assets)\/)/;
 const IMMEDIATE_PATH =
   /^miniprogram\/(?:app\.(?:json|wxss)|assets\/brand\/|components\/brand-logo\/)/;
 
@@ -71,9 +70,7 @@ export function routeIdFromPagePath(pagePath) {
 
 export function digestFiles(files) {
   const hash = createHash('sha256');
-  for (const [file, content] of [...files].sort(([left], [right]) =>
-    left.localeCompare(right),
-  )) {
+  for (const [file, content] of [...files].sort(([left], [right]) => left.localeCompare(right))) {
     hash.update(`${file}\0`);
     hash.update(content);
     hash.update('\0');
@@ -82,10 +79,7 @@ export function digestFiles(files) {
 }
 
 export function validatePng(buffer, file) {
-  if (
-    buffer.length < 24 ||
-    buffer.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a'
-  ) {
+  if (buffer.length < 24 || buffer.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') {
     throw new Error(`无效 PNG：${file}`);
   }
   const width = buffer.readUInt32BE(16);
@@ -122,7 +116,10 @@ export function validateManifest(manifest, { appPages, readEvidence }) {
       `路由映射不完整：期望 ${expectedPaths.join(', ')}；实际 ${actualPaths.join(', ')}`,
     );
   }
-  if (new Set(routePaths).size !== routePaths.length || new Set(routeIds).size !== routeIds.length) {
+  if (
+    new Set(routePaths).size !== routePaths.length ||
+    new Set(routeIds).size !== routeIds.length
+  ) {
     throw new Error('同步清单存在重复路由');
   }
   for (const route of routes) {

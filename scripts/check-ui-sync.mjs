@@ -40,9 +40,7 @@ export function assessUiSyncState({
 }) {
   validateManifest(manifest, { appPages, readEvidence });
   if (baselineUiDigest !== manifest.source.digest) {
-    throw new Error(
-      `UI 基线摘要不匹配：清单 ${manifest.source.digest}，Git ${baselineUiDigest}`,
-    );
+    throw new Error(`UI 基线摘要不匹配：清单 ${manifest.source.digest}，Git ${baselineUiDigest}`);
   }
   if (currentPrototypeDigest !== manifest.prototype.digest) {
     throw new Error(
@@ -50,11 +48,10 @@ export function assessUiSyncState({
     );
   }
 
-  const immediateFiles = [...new Set(changedFiles.filter((file) => classifyUiPath(file).immediate))];
-  const ageDays = Math.max(
-    0,
-    Math.floor((now.getTime() - Date.parse(manifest.syncedAt)) / DAY_MS),
-  );
+  const immediateFiles = [
+    ...new Set(changedFiles.filter((file) => classifyUiPath(file).immediate)),
+  ];
+  const ageDays = Math.max(0, Math.floor((now.getTime() - Date.parse(manifest.syncedAt)) / DAY_MS));
   const policy = evaluateUiSyncPolicy({
     uiCommits: new Set(uiCommitShas).size,
     ageDays,
@@ -93,15 +90,11 @@ function baselineUiDigest(ref) {
   const files = lines(gitText(['ls-tree', '-r', '--name-only', ref, '--', ...UI_PATHS])).filter(
     (file) => classifyUiPath(file).ui,
   );
-  return digestFiles(
-    new Map(files.map((file) => [file, gitBuffer(['show', `${ref}:${file}`])])),
-  );
+  return digestFiles(new Map(files.map((file) => [file, gitBuffer(['show', `${ref}:${file}`])])));
 }
 
 function currentPrototypeDigest() {
-  return digestFiles(
-    new Map(PROTOTYPE_FILES.map((file) => [file, readFileSync(file)])),
-  );
+  return digestFiles(new Map(PROTOTYPE_FILES.map((file) => [file, readFileSync(file)])));
 }
 
 function readManifest() {
