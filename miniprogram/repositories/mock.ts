@@ -6,6 +6,7 @@ import type {
   ProfileUpdate,
   Registration,
   RegistrationStatus,
+  RouteGpxPreviewInput,
   StravaReadiness,
   StravaStatus,
 } from '../models';
@@ -597,6 +598,46 @@ export class MockRepository implements RideRepository {
       elevationProfile: [],
       routeBounds: { south: 22.5, west: 113.8, north: 22.8, east: 114.2 },
       popularClimbs: [],
+    };
+  }
+  async previewRouteGpx(input: RouteGpxPreviewInput) {
+    return {
+      previewId: 'a'.repeat(64),
+      gpxFileId: input.gpxFileId,
+      gpxSha256: input.gpxSha256,
+      routeName: input.fileName.replace(/\.gpx$/i, ''),
+      distanceKm: 80,
+      elevationM: 600,
+      elevationLossM: 590,
+      elevationMinM: 20,
+      elevationMaxM: 620,
+      estimatedMovingTimeSeconds: 10800,
+      estimationSource: 'cili' as const,
+      elevationProfile: [
+        { distanceKm: 0, elevationM: 20 },
+        { distanceKm: 80, elevationM: 120 },
+      ],
+      routeOutline: [
+        { latitude: 22.5, longitude: 113.8 },
+        { latitude: 22.8, longitude: 114.2 },
+      ],
+      routeBounds: { south: 22.5, west: 113.8, north: 22.8, east: 114.2 },
+      expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+    };
+  }
+  async bindRoutePreviewImage(previewId: string, generatedPreviewFileId: string) {
+    const preview = await this.previewRouteGpx({
+      gpxFileId: `cloud://mock/activity-routes/mock/${'b'.repeat(64)}.gpx`,
+      gpxSha256: 'b'.repeat(64),
+      fileName: 'mock-route.gpx',
+      requestId: 'mock_route_request',
+    });
+    return { ...preview, previewId, generatedPreviewFileId };
+  }
+  async downloadRouteGpx(activityId: string) {
+    return {
+      base64: 'PD94bWwgdmVyc2lvbj0iMS4wIj8+PGdweC8+',
+      fileName: `${activityId}-route.gpx`,
     };
   }
   async getStravaRouteGpx(activityId: string, routeId: string) {

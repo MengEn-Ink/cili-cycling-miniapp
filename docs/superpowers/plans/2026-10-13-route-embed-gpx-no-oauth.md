@@ -372,7 +372,7 @@ git commit -m "feat(route): host official Strava route embed"
 - Modify: `tests/caching-repository.test.ts`
 - Modify: `tests/caching-repository-persist.test.ts`
 
-- [ ] **Step 1: Write failing repository and utility tests**
+- [x] **Step 1: Write failing repository and utility tests**
 
 ```ts
 expect(normalizeStravaRouteUrl('https://www.strava.com/zh-CN/routes/42/')).toEqual({
@@ -389,13 +389,13 @@ await expect(repository.previewRouteGpx(input)).resolves.toMatchObject({
 });
 ```
 
-- [ ] **Step 2: Run client tests and confirm the contracts are absent**
+- [x] **Step 2: Run client tests and confirm the contracts are absent**
 
 Run: `npx vitest run tests/route-utils.test.ts tests/cloud-repository.test.ts tests/caching-repository.test.ts tests/caching-repository-persist.test.ts`
 
 Expected: FAIL for missing route utility/types and obsolete OAuth methods.
 
-- [ ] **Step 3: Implement strict route contracts**
+- [x] **Step 3: Implement strict route contracts with rolling compatibility**
 
 ```ts
 export interface RouteGpxPreview {
@@ -404,7 +404,7 @@ export interface RouteGpxPreview {
   gpxSha256: string;
   routeName: string;
   distanceKm: number;
-  elevationGainM: number;
+  elevationM: number;
   elevationLossM: number;
   elevationMinM: number;
   elevationMaxM: number;
@@ -415,15 +415,15 @@ export interface RouteGpxPreview {
 }
 ```
 
-Remove account readiness, authorization, sync, disconnect, public-page preview, route-owner GPX, and Strava avatar methods from `RideRepository`.
+Add the generic route methods and strict DTO mapping first. Keep the old account methods only for rolling compatibility until Task 8 removes their remaining page and service callers, then delete the methods and Strava avatar API from `RideRepository`.
 
-- [ ] **Step 4: Run repository and utility tests**
+- [x] **Step 4: Run repository and utility tests**
 
 Run: `npx vitest run tests/route-utils.test.ts tests/cloud-repository.test.ts tests/caching-repository.test.ts tests/caching-repository-persist.test.ts`
 
-Expected: PASS with no `strava-auth` cloud calls.
+Expected: PASS; the new route tests call only `activity-admin` and `activity-read`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add miniprogram/models miniprogram/repositories miniprogram/utils/route.ts tests/route-utils.test.ts tests/cloud-repository.test.ts tests/caching-repository.test.ts tests/caching-repository-persist.test.ts

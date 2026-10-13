@@ -506,6 +506,18 @@ export class CachingRepository implements RideRepository {
     return this.inner.previewStravaRoute(routeUrl);
   }
 
+  previewRouteGpx(input: Parameters<RideRepository['previewRouteGpx']>[0]) {
+    return this.inner.previewRouteGpx(input);
+  }
+
+  bindRoutePreviewImage(previewId: string, generatedPreviewFileId: string) {
+    return this.inner.bindRoutePreviewImage(previewId, generatedPreviewFileId);
+  }
+
+  downloadRouteGpx(activityId: string) {
+    return this.inner.downloadRouteGpx(activityId);
+  }
+
   getStravaRouteGpx(activityId: string, routeId: string) {
     return this.inner.getStravaRouteGpx(activityId, routeId);
   }

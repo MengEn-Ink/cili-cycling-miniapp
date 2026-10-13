@@ -20,6 +20,38 @@ export interface RouteBounds {
   north: number;
   east: number;
 }
+export interface RouteCoordinate {
+  latitude: number;
+  longitude: number;
+}
+export interface RouteGpxPreviewInput {
+  gpxFileId: string;
+  gpxSha256: string;
+  fileName: string;
+  requestId: string;
+}
+export interface RouteGpxPreview {
+  previewId: string;
+  gpxFileId: string;
+  gpxSha256: string;
+  generatedPreviewFileId?: string;
+  routeName: string;
+  distanceKm: number;
+  elevationM: number;
+  elevationLossM: number;
+  elevationMinM: number;
+  elevationMaxM: number;
+  estimatedMovingTimeSeconds: number;
+  estimationSource: 'cili';
+  elevationProfile: RouteElevationPoint[];
+  routeOutline: RouteCoordinate[];
+  routeBounds: RouteBounds;
+  expiresAt: string;
+}
+export interface RouteGpxDownload {
+  base64: string;
+  fileName: string;
+}
 export interface PopularClimb {
   id: string;
   name: string;
@@ -106,6 +138,18 @@ export interface Activity {
     estimatedMovingTimeSeconds?: number;
     level: string;
     gpxFileId?: string;
+    gpxPreviewId?: string;
+    gpxSha256?: string;
+    generatedPreviewFileId?: string;
+    generatedPreviewUrl?: string;
+    elevationLossM?: number;
+    elevationMinM?: number;
+    elevationMaxM?: number;
+    estimationSource?: 'cili';
+    routeOutline?: RouteCoordinate[];
+    externalProvider?: 'strava';
+    externalRouteId?: string;
+    externalRouteUrl?: string;
     stravaRouteId?: string;
     stravaRouteUrl?: string;
     routeName?: string;

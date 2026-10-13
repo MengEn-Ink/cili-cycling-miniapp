@@ -10,6 +10,10 @@ import type {
   PublicStravaRoutePreview,
   Registration,
   RegistrationStatus,
+  RouteCoordinate,
+  RouteGpxDownload,
+  RouteGpxPreview,
+  RouteGpxPreviewInput,
   StravaConnection,
   StravaCoverage,
   StravaReadiness,
@@ -200,6 +204,14 @@ function mapPublicAttendees(value: unknown) {
 }
 function mapActivityRouteExtras(raw: unknown) {
   if (!isRecord(raw)) return {};
+  const gpxPreviewId =
+    typeof raw.gpx_preview_id === 'string' && /^[a-f0-9]{64}$/.test(raw.gpx_preview_id)
+      ? raw.gpx_preview_id
+      : '';
+  const gpxSha256 =
+    typeof raw.gpx_sha256 === 'string' && /^[a-f0-9]{64}$/.test(raw.gpx_sha256)
+      ? raw.gpx_sha256
+      : '';
   const points = Array.isArray(raw.elevation_profile)
     ? raw.elevation_profile
         .filter(isRecord)
@@ -211,6 +223,23 @@ function mapActivityRouteExtras(raw: unknown) {
             typeof point.elevationM === 'number' &&
             Number.isFinite(point.elevationM),
         )
+    : [];
+  const outline = Array.isArray(raw.route_outline)
+    ? raw.route_outline
+        .filter(isRecord)
+        .map((point) => ({ latitude: point.latitude, longitude: point.longitude }))
+        .filter(
+          (point): point is RouteCoordinate =>
+            typeof point.latitude === 'number' &&
+            Number.isFinite(point.latitude) &&
+            point.latitude >= -90 &&
+            point.latitude <= 90 &&
+            typeof point.longitude === 'number' &&
+            Number.isFinite(point.longitude) &&
+            point.longitude >= -180 &&
+            point.longitude <= 180,
+        )
+        .slice(0, 240)
     : [];
   const climbs = Array.isArray(raw.popular_climbs)
     ? raw.popular_climbs.filter(isRecord).map((climb) => ({
@@ -238,7 +267,53 @@ function mapActivityRouteExtras(raw: unknown) {
     Object.values(bounds).every((item) => typeof item === 'number' && Number.isFinite(item))
       ? bounds
       : undefined;
+  const externalRouteId =
+    raw.external_provider === 'strava' &&
+    typeof raw.external_route_id === 'string' &&
+    /^[1-9]\d{0,19}$/.test(raw.external_route_id)
+      ? raw.external_route_id
+      : '';
+  const externalRouteUrl =
+    externalRouteId && raw.external_route_url === `https://www.strava.com/routes/${externalRouteId}`
+      ? raw.external_route_url
+      : '';
+  const generatedPreviewFileId =
+    gpxSha256 &&
+    typeof raw.generated_preview_file_id === 'string' &&
+    new RegExp(`^cloud://[^/]+/activity-routes/[^/]+/${gpxSha256}\\.png$`).test(
+      raw.generated_preview_file_id,
+    )
+      ? raw.generated_preview_file_id
+      : '';
+  const optionalMetric = (value: unknown, minimum: number, maximum: number) =>
+    typeof value === 'number' && Number.isFinite(value) && value >= minimum && value <= maximum
+      ? value
+      : undefined;
   return {
+    ...(externalRouteId && externalRouteUrl
+      ? {
+          externalProvider: 'strava' as const,
+          externalRouteId,
+          externalRouteUrl,
+        }
+      : {}),
+    ...(gpxPreviewId ? { gpxPreviewId } : {}),
+    ...(gpxSha256 ? { gpxSha256 } : {}),
+    ...(generatedPreviewFileId ? { generatedPreviewFileId } : {}),
+    ...(httpsUrl(raw.generated_preview_url)
+      ? { generatedPreviewUrl: httpsUrl(raw.generated_preview_url) }
+      : {}),
+    ...(optionalMetric(raw.elevation_loss_m, 0, 100000) === undefined
+      ? {}
+      : { elevationLossM: optionalMetric(raw.elevation_loss_m, 0, 100000) }),
+    ...(optionalMetric(raw.elevation_min_m, -1000, 10000) === undefined
+      ? {}
+      : { elevationMinM: optionalMetric(raw.elevation_min_m, -1000, 10000) }),
+    ...(optionalMetric(raw.elevation_max_m, -1000, 10000) === undefined
+      ? {}
+      : { elevationMaxM: optionalMetric(raw.elevation_max_m, -1000, 10000) }),
+    ...(raw.estimation_source === 'cili' ? { estimationSource: 'cili' as const } : {}),
+    ...(Array.isArray(raw.route_outline) ? { routeOutline: outline } : {}),
     ...(typeof raw.strava_route_id === 'string' ? { stravaRouteId: raw.strava_route_id } : {}),
     ...(httpsUrl(raw.strava_route_url) ? { stravaRouteUrl: httpsUrl(raw.strava_route_url) } : {}),
     ...(typeof raw.route_name === 'string' && raw.route_name.trim().length <= 120
@@ -250,7 +325,9 @@ function mapActivityRouteExtras(raw: unknown) {
     ...(typeof raw.estimated_moving_time_seconds === 'number'
       ? { estimatedMovingTimeSeconds: raw.estimated_moving_time_seconds }
       : {}),
-    ...(Array.isArray(raw.elevation_profile) ? { elevationProfile: points.slice(0, 80) } : {}),
+    ...(Array.isArray(raw.elevation_profile)
+      ? { elevationProfile: points.slice(0, gpxPreviewId ? 120 : 80) }
+      : {}),
     ...(safeBounds ? { routeBounds: safeBounds } : {}),
     ...(Array.isArray(raw.popular_climbs) ? { popularClimbs: climbs.slice(0, 3) } : {}),
     ...(typeof raw.strava_gpx_available === 'boolean'
@@ -396,6 +473,139 @@ function mapStravaRoutePreview(raw: unknown): StravaRoutePreview {
     elevationProfile: route.elevationProfile,
     routeBounds: bounds,
     popularClimbs: route.popularClimbs,
+  };
+}
+function mapRouteGpxPreview(raw: unknown): RouteGpxPreview {
+  const value = expectRecord(raw);
+  if (
+    typeof value.preview_id !== 'string' ||
+    !/^[a-f0-9]{64}$/.test(value.preview_id) ||
+    typeof value.gpx_sha256 !== 'string' ||
+    !/^[a-f0-9]{64}$/.test(value.gpx_sha256) ||
+    typeof value.gpx_file_id !== 'string' ||
+    !new RegExp(`^cloud://[^/]+/activity-routes/[^/]+/${value.gpx_sha256}\\.gpx$`).test(
+      value.gpx_file_id,
+    ) ||
+    typeof value.route_name !== 'string' ||
+    !value.route_name.trim() ||
+    value.route_name.length > 120 ||
+    typeof value.distance_km !== 'number' ||
+    !Number.isFinite(value.distance_km) ||
+    value.distance_km < 0 ||
+    value.distance_km > 20000 ||
+    typeof value.elevation_m !== 'number' ||
+    !Number.isFinite(value.elevation_m) ||
+    value.elevation_m < 0 ||
+    value.elevation_m > 100000 ||
+    typeof value.elevation_loss_m !== 'number' ||
+    !Number.isFinite(value.elevation_loss_m) ||
+    value.elevation_loss_m < 0 ||
+    value.elevation_loss_m > 100000 ||
+    typeof value.elevation_min_m !== 'number' ||
+    !Number.isFinite(value.elevation_min_m) ||
+    value.elevation_min_m < -1000 ||
+    value.elevation_min_m > 10000 ||
+    typeof value.elevation_max_m !== 'number' ||
+    !Number.isFinite(value.elevation_max_m) ||
+    value.elevation_max_m < value.elevation_min_m ||
+    value.elevation_max_m > 10000 ||
+    !Number.isSafeInteger(value.estimated_moving_time_seconds) ||
+    value.estimated_moving_time_seconds < 60 ||
+    value.estimated_moving_time_seconds > 604800 ||
+    value.estimation_source !== 'cili'
+  )
+    return invalidResponse();
+  if (
+    value.generated_preview_file_id !== undefined &&
+    (typeof value.generated_preview_file_id !== 'string' ||
+      !new RegExp(`^cloud://[^/]+/activity-routes/[^/]+/${value.gpx_sha256}\\.png$`).test(
+        value.generated_preview_file_id,
+      ))
+  )
+    return invalidResponse();
+  let previousDistance = -1;
+  if (
+    !Array.isArray(value.elevation_profile) ||
+    value.elevation_profile.length < 2 ||
+    value.elevation_profile.length > 120
+  )
+    return invalidResponse();
+  const elevationProfile = value.elevation_profile.map((point: unknown) => {
+    const item = expectRecord(point);
+    if (
+      !hasExactKeys(item, ['distance_km', 'elevation_m']) ||
+      typeof item.distance_km !== 'number' ||
+      !Number.isFinite(item.distance_km) ||
+      item.distance_km < previousDistance ||
+      item.distance_km < 0 ||
+      item.distance_km > 20000 ||
+      typeof item.elevation_m !== 'number' ||
+      !Number.isFinite(item.elevation_m) ||
+      item.elevation_m < -1000 ||
+      item.elevation_m > 10000
+    )
+      return invalidResponse();
+    previousDistance = item.distance_km;
+    return { distanceKm: item.distance_km, elevationM: item.elevation_m };
+  });
+  if (
+    !Array.isArray(value.route_outline) ||
+    value.route_outline.length < 2 ||
+    value.route_outline.length > 240
+  )
+    return invalidResponse();
+  const routeOutline = value.route_outline.map((point: unknown) => {
+    const item = expectRecord(point);
+    if (
+      !hasExactKeys(item, ['latitude', 'longitude']) ||
+      typeof item.latitude !== 'number' ||
+      !Number.isFinite(item.latitude) ||
+      item.latitude < -90 ||
+      item.latitude > 90 ||
+      typeof item.longitude !== 'number' ||
+      !Number.isFinite(item.longitude) ||
+      item.longitude < -180 ||
+      item.longitude > 180
+    )
+      return invalidResponse();
+    return { latitude: item.latitude, longitude: item.longitude };
+  });
+  const bounds = expectRecord(value.route_bounds);
+  if (
+    !hasExactKeys(bounds, ['south', 'west', 'north', 'east']) ||
+    !Object.values(bounds).every((item) => typeof item === 'number' && Number.isFinite(item)) ||
+    bounds.south < -90 ||
+    bounds.north > 90 ||
+    bounds.west < -180 ||
+    bounds.east > 180 ||
+    bounds.south > bounds.north ||
+    bounds.west > bounds.east
+  )
+    return invalidResponse();
+  return {
+    previewId: value.preview_id,
+    gpxFileId: value.gpx_file_id,
+    gpxSha256: value.gpx_sha256,
+    ...(value.generated_preview_file_id
+      ? { generatedPreviewFileId: value.generated_preview_file_id }
+      : {}),
+    routeName: value.route_name.trim(),
+    distanceKm: value.distance_km,
+    elevationM: value.elevation_m,
+    elevationLossM: value.elevation_loss_m,
+    elevationMinM: value.elevation_min_m,
+    elevationMaxM: value.elevation_max_m,
+    estimatedMovingTimeSeconds: value.estimated_moving_time_seconds,
+    estimationSource: 'cili',
+    elevationProfile,
+    routeOutline,
+    routeBounds: {
+      south: bounds.south,
+      west: bounds.west,
+      north: bounds.north,
+      east: bounds.east,
+    },
+    expiresAt: strictDateText(value.expires_at),
   };
 }
 function mapRouteGpx(raw: unknown): StravaRouteGpx {
@@ -1049,6 +1259,39 @@ function activityPayload(value: ActivityInput) {
         : {}),
       level: typeof value.route?.level === 'string' ? value.route.level : '',
       ...(typeof value.route?.gpxFileId === 'string' ? { gpx_file_id: value.route.gpxFileId } : {}),
+      ...(typeof value.route?.gpxPreviewId === 'string'
+        ? { gpx_preview_id: value.route.gpxPreviewId }
+        : {}),
+      ...(typeof value.route?.gpxSha256 === 'string' ? { gpx_sha256: value.route.gpxSha256 } : {}),
+      ...(typeof value.route?.generatedPreviewFileId === 'string'
+        ? { generated_preview_file_id: value.route.generatedPreviewFileId }
+        : {}),
+      ...(value.route?.externalProvider === 'strava' ? { external_provider: 'strava' } : {}),
+      ...(typeof value.route?.externalRouteId === 'string'
+        ? { external_route_id: value.route.externalRouteId }
+        : {}),
+      ...(httpsUrl(value.route?.externalRouteUrl)
+        ? { external_route_url: httpsUrl(value.route.externalRouteUrl) }
+        : {}),
+      ...(typeof value.route?.routeName === 'string' ? { route_name: value.route.routeName } : {}),
+      ...(typeof value.route?.elevationLossM === 'number'
+        ? { elevation_loss_m: value.route.elevationLossM }
+        : {}),
+      ...(typeof value.route?.elevationMinM === 'number'
+        ? { elevation_min_m: value.route.elevationMinM }
+        : {}),
+      ...(typeof value.route?.elevationMaxM === 'number'
+        ? { elevation_max_m: value.route.elevationMaxM }
+        : {}),
+      ...(value.route?.estimationSource === 'cili' ? { estimation_source: 'cili' } : {}),
+      ...(Array.isArray(value.route?.routeOutline)
+        ? {
+            route_outline: value.route.routeOutline.map((point) => ({
+              latitude: point.latitude,
+              longitude: point.longitude,
+            })),
+          }
+        : {}),
       ...(typeof value.route?.stravaRouteId === 'string'
         ? { strava_route_id: value.route.stravaRouteId }
         : {}),
@@ -1540,6 +1783,62 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
   }
   async syncStrava() {
     return mapStravaReadiness(await this.call('strava-auth', { action: 'sync' }));
+  }
+  async previewRouteGpx(input: RouteGpxPreviewInput): Promise<RouteGpxPreview> {
+    if (
+      !input ||
+      typeof input !== 'object' ||
+      typeof input.gpxSha256 !== 'string' ||
+      !/^[a-f0-9]{64}$/.test(input.gpxSha256) ||
+      typeof input.gpxFileId !== 'string' ||
+      !new RegExp(`^cloud://[^/]+/activity-routes/[^/]+/${input.gpxSha256}\\.gpx$`).test(
+        input.gpxFileId,
+      ) ||
+      typeof input.fileName !== 'string' ||
+      input.fileName.length < 5 ||
+      input.fileName.length > 120 ||
+      !/^[^/\\\0]+\.gpx$/i.test(input.fileName) ||
+      typeof input.requestId !== 'string' ||
+      !/^[A-Za-z0-9_-]{8,128}$/.test(input.requestId)
+    )
+      throw new CloudRepositoryError('VALIDATION_FAILED', '路线文件参数无效');
+    return mapRouteGpxPreview(
+      await this.call('activity-admin', {
+        action: 'previewRouteGpx',
+        gpxFileId: input.gpxFileId,
+        gpxSha256: input.gpxSha256,
+        fileName: input.fileName,
+        requestId: input.requestId,
+      }),
+    );
+  }
+  async bindRoutePreviewImage(
+    previewId: string,
+    generatedPreviewFileId: string,
+  ): Promise<RouteGpxPreview> {
+    if (
+      typeof previewId !== 'string' ||
+      !/^[a-f0-9]{64}$/.test(previewId) ||
+      typeof generatedPreviewFileId !== 'string' ||
+      !/^cloud:\/\/[^/]+\/activity-routes\/[^/]+\/[a-f0-9]{64}\.png$/.test(generatedPreviewFileId)
+    )
+      throw new CloudRepositoryError('VALIDATION_FAILED', '路线图参数无效');
+    return mapRouteGpxPreview(
+      await this.call('activity-admin', {
+        action: 'bindRoutePreviewImage',
+        previewId,
+        generatedPreviewFileId,
+      }),
+    );
+  }
+  async downloadRouteGpx(activityId: string): Promise<RouteGpxDownload> {
+    const value = mapRouteGpx(
+      await this.call('activity-read', {
+        action: 'downloadRouteGpx',
+        activityId: boundedId(activityId, '活动 ID', 1, 128),
+      }),
+    );
+    return { base64: value.base64, fileName: value.filename };
   }
   async previewPublicStravaRoute(routeUrl: string) {
     if (

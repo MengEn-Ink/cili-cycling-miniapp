@@ -8,6 +8,9 @@ import type {
   PublicStravaRoutePreview,
   Registration,
   RegistrationStatus,
+  RouteGpxDownload,
+  RouteGpxPreview,
+  RouteGpxPreviewInput,
   StravaConnection,
   StravaReadiness,
   StravaRouteGpx,
@@ -123,6 +126,12 @@ export interface RideRepository extends AdminReviewRepository, ActivityAdminRepo
   syncStrava(): Promise<StravaReadiness>;
   previewPublicStravaRoute(routeUrl: string): Promise<PublicStravaRoutePreview>;
   previewStravaRoute(routeUrl: string): Promise<StravaRoutePreview>;
+  previewRouteGpx(input: RouteGpxPreviewInput): Promise<RouteGpxPreview>;
+  bindRoutePreviewImage(
+    previewId: string,
+    generatedPreviewFileId: string,
+  ): Promise<RouteGpxPreview>;
+  downloadRouteGpx(activityId: string): Promise<RouteGpxDownload>;
   getStravaRouteGpx(activityId: string, routeId: string): Promise<StravaRouteGpx>;
   exportActivityGpx(activityId: string): Promise<{ base64: string; fileName: string }>;
   disconnectStrava(): Promise<void>;

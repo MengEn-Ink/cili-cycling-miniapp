@@ -2851,3 +2851,184 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
     }
   });
 });
+
+describe('CloudRepository GPX 路线契约', () => {
+  const previewDto = {
+    preview_id: 'a'.repeat(64),
+    gpx_file_id: `cloud://env/activity-routes/owner/${'b'.repeat(64)}.gpx`,
+    gpx_sha256: 'b'.repeat(64),
+    generated_preview_file_id: `cloud://env/activity-routes/owner/${'b'.repeat(64)}.png`,
+    route_name: '周末环湖',
+    distance_km: 52.4,
+    elevation_m: 680,
+    elevation_loss_m: 675,
+    elevation_min_m: 12,
+    elevation_max_m: 486,
+    estimated_moving_time_seconds: 10800,
+    estimation_source: 'cili',
+    elevation_profile: [
+      { distance_km: 0, elevation_m: 12 },
+      { distance_km: 52.4, elevation_m: 30 },
+    ],
+    route_outline: [
+      { latitude: 22, longitude: 114 },
+      { latitude: 22.2, longitude: 114.2 },
+    ],
+    route_bounds: { south: 22, west: 114, north: 22.2, east: 114.2 },
+    expires_at: '2026-10-13T09:30:00.000Z',
+  };
+
+  it('previewRouteGpx 调用 activity-admin 并严格映射可信预览', async () => {
+    const { cloud, callFunction } = cloudWith(success(previewDto));
+    const repository = new CloudRepository(cloud);
+
+    await expect(
+      repository.previewRouteGpx({
+        gpxFileId: previewDto.gpx_file_id,
+        gpxSha256: previewDto.gpx_sha256,
+        fileName: 'weekend.gpx',
+        requestId: 'route_request_123',
+      }),
+    ).resolves.toEqual({
+      previewId: previewDto.preview_id,
+      gpxFileId: previewDto.gpx_file_id,
+      gpxSha256: previewDto.gpx_sha256,
+      generatedPreviewFileId: previewDto.generated_preview_file_id,
+      routeName: '周末环湖',
+      distanceKm: 52.4,
+      elevationM: 680,
+      elevationLossM: 675,
+      elevationMinM: 12,
+      elevationMaxM: 486,
+      estimatedMovingTimeSeconds: 10800,
+      estimationSource: 'cili',
+      elevationProfile: [
+        { distanceKm: 0, elevationM: 12 },
+        { distanceKm: 52.4, elevationM: 30 },
+      ],
+      routeOutline: [
+        { latitude: 22, longitude: 114 },
+        { latitude: 22.2, longitude: 114.2 },
+      ],
+      routeBounds: { south: 22, west: 114, north: 22.2, east: 114.2 },
+      expiresAt: '2026-10-13T09:30:00.000Z',
+    });
+    expectCall(callFunction, 'activity-admin', {
+      action: 'previewRouteGpx',
+      gpxFileId: previewDto.gpx_file_id,
+      gpxSha256: previewDto.gpx_sha256,
+      fileName: 'weekend.gpx',
+      requestId: 'route_request_123',
+    });
+  });
+
+  it('bindRoutePreviewImage 绑定同摘要 PNG 并返回更新预览', async () => {
+    const { cloud, callFunction } = cloudWith(success(previewDto));
+    const repository = new CloudRepository(cloud);
+
+    await expect(
+      repository.bindRoutePreviewImage(previewDto.preview_id, previewDto.generated_preview_file_id),
+    ).resolves.toMatchObject({
+      previewId: previewDto.preview_id,
+      generatedPreviewFileId: previewDto.generated_preview_file_id,
+    });
+    expectCall(callFunction, 'activity-admin', {
+      action: 'bindRoutePreviewImage',
+      previewId: previewDto.preview_id,
+      generatedPreviewFileId: previewDto.generated_preview_file_id,
+    });
+  });
+
+  it('downloadRouteGpx 只调用 activity-read 并映射原始文件', async () => {
+    const { cloud, callFunction } = cloudWith(
+      success({
+        base64: 'PD94bWwgdmVyc2lvbj0iMS4wIj8+PGdweC8+',
+        filename: 'activity-a1.gpx',
+        content_type: 'application/gpx+xml',
+      }),
+    );
+    const repository = new CloudRepository(cloud);
+
+    await expect(repository.downloadRouteGpx('a1')).resolves.toEqual({
+      base64: 'PD94bWwgdmVyc2lvbj0iMS4wIj8+PGdweC8+',
+      fileName: 'activity-a1.gpx',
+    });
+    expectCall(callFunction, 'activity-read', {
+      action: 'downloadRouteGpx',
+      activityId: 'a1',
+    });
+  });
+
+  it('活动详情映射通用官方路线、GPX 指标、轮廓与生成图地址', async () => {
+    const { cloud } = cloudWith(
+      success({
+        ...activity,
+        route: {
+          ...activity.route,
+          external_provider: 'strava',
+          external_route_id: '42',
+          external_route_url: 'https://www.strava.com/routes/42',
+          gpx_preview_id: previewDto.preview_id,
+          gpx_file_id: previewDto.gpx_file_id,
+          gpx_sha256: previewDto.gpx_sha256,
+          generated_preview_file_id: previewDto.generated_preview_file_id,
+          generated_preview_url: 'https://temp.example/route.png',
+          route_name: previewDto.route_name,
+          elevation_loss_m: previewDto.elevation_loss_m,
+          elevation_min_m: previewDto.elevation_min_m,
+          elevation_max_m: previewDto.elevation_max_m,
+          estimated_moving_time_seconds: previewDto.estimated_moving_time_seconds,
+          estimation_source: 'cili',
+          elevation_profile: previewDto.elevation_profile,
+          route_outline: previewDto.route_outline,
+          route_bounds: previewDto.route_bounds,
+        },
+      }),
+    );
+
+    const result = await new CloudRepository(cloud).getActivity('a1');
+
+    expect(result?.route).toMatchObject({
+      externalProvider: 'strava',
+      externalRouteId: '42',
+      externalRouteUrl: 'https://www.strava.com/routes/42',
+      gpxPreviewId: previewDto.preview_id,
+      gpxFileId: previewDto.gpx_file_id,
+      gpxSha256: previewDto.gpx_sha256,
+      generatedPreviewFileId: previewDto.generated_preview_file_id,
+      generatedPreviewUrl: 'https://temp.example/route.png',
+      elevationLossM: 675,
+      elevationMinM: 12,
+      elevationMaxM: 486,
+      estimationSource: 'cili',
+      routeOutline: [
+        { latitude: 22, longitude: 114 },
+        { latitude: 22.2, longitude: 114.2 },
+      ],
+    });
+  });
+
+  it('拒绝伪造的 GPX 预览响应', async () => {
+    const invalid = [
+      { ...previewDto, preview_id: 'bad' },
+      { ...previewDto, gpx_sha256: 'bad' },
+      { ...previewDto, estimation_source: 'strava' },
+      { ...previewDto, elevation_profile: [{ distance_km: 0, elevation_m: 1 }] },
+      { ...previewDto, route_outline: [{ latitude: 22, longitude: 114 }] },
+      { ...previewDto, expires_at: 'not-a-date' },
+    ];
+    const repository = new CloudRepository(cloudWith(...invalid.map(success)).cloud);
+
+    for (const value of invalid) {
+      void value;
+      await expect(
+        repository.previewRouteGpx({
+          gpxFileId: previewDto.gpx_file_id,
+          gpxSha256: previewDto.gpx_sha256,
+          fileName: 'weekend.gpx',
+          requestId: 'route_request_123',
+        }),
+      ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+    }
+  });
+});
