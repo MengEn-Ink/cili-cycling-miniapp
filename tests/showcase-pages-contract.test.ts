@@ -94,4 +94,32 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(html).toContain('src="./app.js"');
     expect(html).not.toMatch(/href="\/(styles|app)|src="\/(schema|templates|app)/);
   });
+
+  it('标记当前 main 基线并复用正式 Logo 物料', () => {
+    expect(html).toContain('main@7038e5c');
+    expect(html).toContain('./brand/logo-materials/generated/logo-square-1024.png');
+    expect(html).not.toContain('<span class="logo-word">');
+    expect(templates).toContain('class="prototype-brand-logo"');
+  });
+
+  it('活动详情同步四指标、报名状态和 Strava 路线操作', () => {
+    expect(templates).toContain('预计骑行');
+    expect(templates).toContain('已通过');
+    expect(templates).toContain('class="detail-decision"');
+    expect(templates).toContain('class="route-preview-image"');
+    expect(templates).toContain('复制');
+    expect(templates).toContain('下载 GPX');
+    expect(templates).toContain('活动群二维码');
+  });
+
+  it('活动管理同步四态筛选与真实运行态示例', () => {
+    expect(templates).toContain('全部');
+    expect(templates).toContain('已下架');
+    expect(templates).toContain('已上线');
+    expect(templates).toContain('已结束');
+    expect(schema).toContain("title: '云蒙山&喇叭沟 RIDE'");
+    expect(schema).toContain("title: '黑分解 RIDE'");
+    expect(schema).toContain("time: '早上 6 点 20 分'");
+    expect(schema).toContain("time: '早上 8 点整'");
+  });
 });

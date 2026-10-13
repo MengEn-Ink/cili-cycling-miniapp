@@ -43,30 +43,17 @@ button {
 }
 
 .site-brand {
+  display: block;
   color: var(--text);
   text-decoration: none;
 }
 
-.logo-word {
-  position: relative;
-  display: inline-block;
-  padding: 12px 38px 12px 15px;
-  border-radius: 12px;
-  background: var(--text);
-  color: var(--bg);
-  font-size: 30px;
-  font-weight: 950;
-  letter-spacing: -3px;
-  line-height: 1;
-}
-
-.logo-word::after {
-  position: absolute;
-  right: 0;
-  bottom: 1px;
-  width: 17px;
-  border-bottom: 3px solid var(--brand);
-  content: "";
+.site-logo-image {
+  display: block;
+  width: 62px;
+  height: 62px;
+  border-radius: 8px;
+  object-fit: cover;
 }
 
 .eyebrow {
@@ -81,7 +68,7 @@ button {
 .site-header h1 {
   margin: 0;
   font-size: clamp(25px, 3vw, 40px);
-  letter-spacing: -0.05em;
+  letter-spacing: 0;
 }
 
 .coverage-badge {
@@ -361,11 +348,40 @@ button {
   letter-spacing: 0.12em;
 }
 
+.prototype-brand-logo {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  align-items: center;
+}
+
+.prototype-brand-logo img {
+  display: block;
+  width: 31px;
+  height: 31px;
+  flex: 0 0 auto;
+  border-radius: 5px;
+  object-fit: cover;
+}
+
+.prototype-brand-logo span {
+  overflow: hidden;
+  color: var(--brand);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 .prototype-head h2 {
   margin: 4px 0;
   font-size: 24px;
   line-height: 1.12;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
 }
 
 .prototype-head p {
@@ -505,6 +521,13 @@ button {
   margin: 0 0 10px;
 }
 
+.activity-card-actions {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 7px;
+}
+
 .dark-metrics,
 .detail-metrics,
 .trip-summary,
@@ -592,6 +615,16 @@ button {
   color: var(--bg);
 }
 
+.detail-visual .prototype-brand-logo span {
+  color: var(--bg);
+}
+
+.detail-visual .status-chip {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+
 .detail-visual small,
 .detail-visual h2 {
   position: relative;
@@ -600,7 +633,7 @@ button {
 }
 
 .detail-visual small {
-  margin-top: 38px;
+  margin-top: 32px;
   font-size: 9px;
   font-weight: 800;
 }
@@ -618,6 +651,7 @@ button {
 }
 
 .detail-metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   border-bottom: 1px solid var(--text);
 }
 
@@ -625,6 +659,53 @@ button {
 .profile-metrics span + span,
 .trip-summary span + span {
   border-left: 1px solid var(--line);
+}
+
+.detail-metrics span {
+  min-width: 0;
+  padding-right: 2px;
+  padding-left: 2px;
+}
+
+.detail-metrics b {
+  overflow-wrap: anywhere;
+}
+
+.detail-decision {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px;
+  align-items: center;
+  border: 1px solid var(--text);
+  border-left: 4px solid var(--brand);
+}
+
+.detail-decision div {
+  display: grid;
+  gap: 2px;
+}
+
+.detail-decision small,
+.detail-decision p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.detail-decision strong {
+  font-size: 17px;
+}
+
+.detail-decision > span {
+  display: grid;
+  justify-items: center;
+  font-size: 8px;
+}
+
+.detail-decision > span b {
+  font-size: 19px;
 }
 
 .black-ticket,
@@ -652,6 +733,12 @@ button {
   font-size: 28px;
 }
 
+.black-ticket strong {
+  max-width: calc(100% - 58px);
+  font-size: 21px;
+  line-height: 1.2;
+}
+
 .black-ticket h3,
 .black-ticket p,
 .credential-spotlight h3,
@@ -671,6 +758,152 @@ button {
   color: var(--text);
   font-size: 9px;
   font-weight: 900;
+}
+
+.route-actions-card,
+.group-qr-card {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--text);
+  background: var(--bg);
+}
+
+.detail-section-heading > div {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.detail-section-heading b {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-section-heading small {
+  flex: 0 0 auto;
+  color: var(--brand);
+  font-size: 8px;
+  font-weight: 900;
+}
+
+.route-preview-image {
+  position: relative;
+  height: 116px;
+  margin-top: 10px;
+  overflow: hidden;
+  border: 1px solid var(--text);
+  background: var(--brand);
+}
+
+.route-preview-image::before,
+.route-preview-image::after,
+.route-preview-image i {
+  position: absolute;
+  content: "";
+}
+
+.route-preview-image::before {
+  top: 22px;
+  right: 28px;
+  bottom: 18px;
+  left: 22px;
+  border-top: 5px solid var(--text);
+  border-right: 5px solid var(--text);
+  border-bottom: 5px solid var(--text);
+  border-radius: 50% 12px 42% 12px;
+  transform: rotate(-8deg);
+}
+
+.route-preview-image::after {
+  top: 16px;
+  right: 24px;
+  width: 13px;
+  height: 13px;
+  border: 4px solid var(--bg);
+  border-radius: 50%;
+  background: var(--text);
+}
+
+.route-preview-image i {
+  bottom: 13px;
+  left: 18px;
+  width: 12px;
+  height: 12px;
+  border: 4px solid var(--bg);
+  border-radius: 50%;
+  background: var(--text);
+}
+
+.route-preview-image span {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  padding: 3px 5px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 8px;
+  font-weight: 900;
+}
+
+.strava-route-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.strava-route-row button {
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 8px;
+  border: 1px solid var(--text);
+  border-radius: 6px;
+  background: var(--bg);
+  font-size: 8px;
+  font-weight: 850;
+}
+
+.strava-route-row .strava-route-url {
+  overflow: hidden;
+  color: var(--muted);
+  font-weight: 500;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.strava-route-row .is-primary {
+  border-color: var(--brand);
+  background: var(--brand);
+}
+
+.route-actions-card > p,
+.group-qr-card p {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+.group-qr-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 68px;
+  gap: 12px;
+  align-items: center;
+  border-left: 4px solid var(--brand);
+}
+
+.group-qr-card b {
+  font-size: 11px;
+}
+
+.group-qr-card .fake-qr {
+  padding: 0;
+  cursor: pointer;
 }
 
 .detail-row {
@@ -947,10 +1180,28 @@ button {
 .credential-status {
   display: flex;
   padding: 11px 13px;
+  align-items: center;
   justify-content: space-between;
   background: var(--text);
   color: var(--bg);
   font-size: 9px;
+}
+
+.credential-brand .prototype-brand-logo img {
+  width: 28px;
+  height: 28px;
+}
+
+.credential-brand .prototype-brand-logo span {
+  color: var(--bg);
+}
+
+.credential-brand > span {
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 7px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .credential-status {
@@ -981,6 +1232,11 @@ button {
 
 .credential-spotlight {
   margin: 0;
+}
+
+.credential-spotlight strong {
+  font-size: 21px;
+  line-height: 1.2;
 }
 
 .ticket-white {
@@ -1276,13 +1532,20 @@ button {
 
 .admin-toolbar {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr;
   gap: 8px;
   align-items: center;
 }
 
 .admin-toolbar .prototype-segments {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-flow: initial;
   min-width: 0;
+  margin-bottom: 0;
+}
+
+.admin-toolbar > .prototype-button {
+  width: 100%;
 }
 
 .admin-list,
@@ -1320,6 +1583,7 @@ button {
 .inline-actions {
   display: flex;
   gap: 7px;
+  flex-wrap: wrap;
 }
 
 .inline-actions button {
@@ -1478,7 +1742,7 @@ button {
 .screen-notes h2 {
   margin: 12px 0 6px;
   font-size: 26px;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
 }
 
 .screen-notes > p:not(.eyebrow):not(.keyboard-hint) {
@@ -1602,8 +1866,9 @@ button {
     font-size: 22px;
   }
 
-  .logo-word {
-    font-size: 25px;
+  .site-logo-image {
+    width: 52px;
+    height: 52px;
   }
 
   .showcase {

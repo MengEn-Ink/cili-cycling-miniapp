@@ -1,16 +1,19 @@
 (() => {
   const { activities, rider, attendees, releaseNotes } = window.prototypeData;
   const primary = activities[0];
+  const trip = activities[1];
 
   const button = (label, action, extra = '') =>
     `<button class="prototype-button ${extra}" data-action="${action}">${label}</button>`;
   const metric = (value, label) => `<span><b>${value}</b><small>${label}</small></span>`;
+  const brandLogo = (meta) =>
+    `<div class="prototype-brand-logo"><img src="./brand/logo-materials/generated/logo-square-1024.png" alt="此里" /><span>${meta}</span></div>`;
   const avatar = (name) =>
     `<button class="prototype-avatar" data-action="rider" data-rider="${name}"><i>${name.slice(0, 1)}</i><small>${name}</small></button>`;
   const field = (label, value, extra = '') =>
     `<label class="form-field ${extra}"><span>${label}</span><div>${value}</div></label>`;
   const pageHead = (eyebrow, title, copy = '') =>
-    `<header class="prototype-head"><small>${eyebrow}</small><h2>${title}</h2>${copy ? `<p>${copy}</p>` : ''}</header>`;
+    `<header class="prototype-head">${brandLogo(eyebrow)}<h2>${title}</h2>${copy ? `<p>${copy}</p>` : ''}</header>`;
 
   const templates = {
     activities: () => `${pageHead('此里骑行活动', '选一场骑行，一起出发', '路线、时间、集合点，一眼看清')}
@@ -22,19 +25,22 @@
             <div class="activity-visual"><span class="route-stroke"></span><b>${activity.status}</b></div>
             <div class="activity-ticket-body"><small>${activity.date} · ${activity.time}</small><h3>${activity.title}</h3><p>${activity.start}集合</p>
             <div class="dark-metrics">${metric(`${activity.distanceKm} km`, '里程')}${metric(`${activity.elevationM} m`, '爬升')}${metric(activity.level, '难度')}</div>
-            ${button('查看活动详情', 'route', 'button-primary').replace('data-action="route"', 'data-action="route" data-route="activity-detail"')}</div>
+            <div class="activity-card-actions">${button('查看活动详情', 'route', index ? 'button-outline' : 'button-primary').replace('data-action="route"', 'data-action="route" data-route="activity-detail"')}${index ? button('报名活动', 'route', 'button-primary').replace('data-action="route"', 'data-action="route" data-route="registration-form"') : ''}</div></div>
           </article>`,
         )
         .join('')}</div>`,
 
     'activity-detail': () => `<article class="unified-detail-card">
-      <div class="activity-visual detail-visual"><span class="status-chip">${primary.status}</span><small>${primary.date} · ${primary.time}</small><h2>${primary.title}</h2><span class="route-stroke"></span></div>
-      <div class="unified-detail-body"><div class="detail-metrics">${metric(`${primary.distanceKm} km`, '里程')}${metric(`${primary.elevationM} m`, '爬升')}${metric(primary.level, '难度')}</div>
-      <section class="black-ticket"><small>集合时间</small><strong>${primary.time}</strong><h3>${primary.start}集合</h3><p>请提前 10 分钟到达，完成车辆检查。</p><button data-action="toast" data-message="已打开集合点导航">地图导航</button></section>
-      <section class="detail-row"><div><b>线路信息</b><span>${primary.route}</span></div><p>全程 ${primary.distanceKm} km，累计爬升 ${primary.elevationM} m，建议具备中长距离骑行经验。</p></section>
-      <section class="detail-row"><div><b>已报名人员</b><span>${primary.occupied} / ${primary.capacity}</span></div><div class="avatar-row">${attendees.map(avatar).join('')}</div></section>
+      <div class="activity-visual detail-visual">${brandLogo('活动详情')}<span class="status-chip">${primary.level}</span><small>${primary.date}</small><h2>${primary.title}</h2><span class="route-stroke"></span></div>
+      <div class="unified-detail-body"><div class="detail-metrics">${metric(`${primary.distanceKm} km`, '里程')}${metric(`${primary.elevationM} m`, '爬升')}${metric(primary.estimatedRideTime, '预计骑行')}${metric(`${primary.approved} 人`, '已通过')}</div>
+      <section class="detail-decision"><div><small>报名状态</small><strong>${primary.status}</strong><p>可查看行程与活动群二维码</p></div><span><b>${primary.capacity}</b> 名额</span></section>
+      <section class="black-ticket"><small>集合时间</small><strong>${primary.time}</strong><h3>${primary.start}</h3><p>请提前 10 分钟到达，完成车辆检查。</p><button data-action="toast" data-message="已打开集合点导航">导航</button></section>
+      <section class="route-actions-card"><div class="detail-section-heading"><div><b>${primary.routeName}</b><small>路线文件</small></div></div><div class="route-preview-image" role="img" aria-label="${primary.routeName}路线预览"><i></i><span>${primary.distanceKm} KM</span></div><div class="strava-route-row"><button class="strava-route-url" data-action="toast" data-message="轨迹链接已复制">${primary.routeUrl}</button><button data-action="toast" data-message="轨迹链接已复制">复制</button><button class="is-primary" data-action="toast" data-message="GPX 下载已开始">下载 GPX</button></div><p>复制后可在系统浏览器或 Strava 中打开；GPX 可分享至码表或骑行应用。</p></section>
+      <section class="detail-row"><div><b>线路信息</b><span>${primary.route}</span></div><p>全程 ${primary.distanceKm} km，累计爬升 ${primary.elevationM} m，建议具备长距离及连续爬升经验。</p></section>
+      <section class="detail-row"><div><b>已报名人员</b><span>${primary.approved} / ${primary.capacity}</span></div><div class="avatar-row">${attendees.map(avatar).join('')}</div></section>
+      <section class="group-qr-card"><div><b>活动群二维码</b><p>扫码加入活动群，出发前请留意群内通知。</p></div><button class="fake-qr" data-action="toast" data-message="活动群二维码已放大" aria-label="点击放大活动群二维码"></button></section>
       <section class="detail-row"><div><b>备注事项</b><span>${primary.fee}</span></div><p>请佩戴头盔，携带补给水、备胎和基础维修工具；雨天活动另行通知。</p></section></div></article>
-      <div class="sticky-prototype-action">${button('立即报名', 'route', 'button-primary').replace('data-action="route"', 'data-action="route" data-route="registration-form"')}</div>`,
+      <div class="sticky-prototype-action">${button('查看我的行程', 'route', 'button-primary').replace('data-action="route"', 'data-action="route" data-route="registrations"')}</div>`,
 
     'registration-form': () => `${pageHead('活动报名', primary.title, '第 1 步 / 共 2 步 · 确认骑行身份')}
       <div class="progress-track"><i></i></div>
@@ -45,17 +51,16 @@
       ${button('提交报名', 'submit-registration', 'button-primary button-full')}`,
 
     registrations: () => `${pageHead('此里 · 我的行程', '准时集合，轻松出发', '报名进度与出发凭证都在这里')}
-      <div class="trip-summary">${metric('1', '待出发')}${metric('1', '审核中')}${metric('6', '已完成')}</div>
-      <div class="prototype-segments"><button class="is-active">待出发</button><button>历史行程</button></div>
-      <article class="trip-ticket"><div class="trip-ticket-top"><span>已通过</span><small>${primary.date}</small></div><h3>${primary.title}</h3><div class="trip-ticket-info"><div><small>集合时间</small><b>${primary.time}</b></div><div><small>集合地点</small><b>${primary.start}</b></div></div>${button('查看票据式行程凭证', 'route', 'button-outline').replace('data-action="route"', 'data-action="route" data-route="credential"')}</article>
-      <article class="trip-ticket trip-ticket--pending"><div class="trip-ticket-top"><span>待审核</span><small>${activities[1].date}</small></div><h3>${activities[1].title}</h3><p>${activities[1].start} · ${activities[1].time}</p></article>`,
+      <div class="trip-summary">${metric('1', '审核中')}${metric('1', '可出发')}${metric('0', '已失效')}</div>
+      <article class="trip-ticket"><div class="trip-ticket-top"><span>已通过</span><small>${trip.date}</small></div><h3>${trip.title}</h3><div class="trip-ticket-info"><div><small>集合时间</small><b>${trip.time}</b></div><div><small>集合地点</small><b>${trip.start}</b></div></div>${button('查看票据式行程凭证', 'route', 'button-outline').replace('data-action="route"', 'data-action="route" data-route="credential"')}</article>
+      <article class="trip-ticket trip-ticket--pending"><div class="trip-ticket-top"><span>待审核</span><small>${primary.date}</small></div><h3>${primary.title}</h3><p>${primary.start} · ${primary.time}</p><small class="status-guidance">资料审核中，结果将在行程页同步</small></article>`,
 
     credential: () => `<article class="credential-ticket">
-      <div class="credential-brand"><b>此里 CILI</b><span>出发凭证</span></div><div class="credential-status">已通过 · 准时集合</div>
-      <div class="credential-main"><small>活动</small><h2>${primary.title}</h2><p>${primary.date}</p></div>
-      <div class="credential-spotlight"><small>集合时间</small><strong>${primary.time}</strong><small>集合地点</small><h3>${primary.start}</h3><p>北京市朝阳区温榆河绿道西入口</p>${button('地图导航', 'toast', 'ticket-white').replace('data-action="toast"', 'data-action="toast" data-message="已打开集合点导航"')}</div>
+      <div class="credential-brand">${brandLogo('报名凭证')}<span>CILI-${trip.id.toUpperCase()}-012</span></div><div class="credential-status">已通过 · 准时集合</div>
+      <div class="credential-main"><small>活动</small><h2>${trip.title}</h2><p>${trip.date}</p></div>
+      <div class="credential-spotlight"><small>集合时间</small><strong>${trip.time}</strong><small>集合地点</small><h3>${trip.start}</h3><p>北京市门头沟区黑石头村入口</p>${button('地图导航', 'toast', 'ticket-white').replace('data-action="toast"', 'data-action="toast" data-message="已打开集合点导航"')}</div>
       <div class="credential-person"><div class="rider-avatar">风</div><div><small>报名骑手</small><b>${rider.nickname}</b><span>自行前往 · 稳定骑行</span></div></div>
-      <div class="credential-code"><div class="fake-qr" aria-label="模拟签到二维码"></div><p>管理员扫码签到<br /><small>凭证编号 CILI-1017-018</small></p></div>
+      <div class="credential-code"><div class="fake-qr" aria-label="模拟签到二维码"></div><p>管理员扫码签到<br /><small>凭证编号 CILI-1017-012</small></p></div>
       <div class="credential-cut">••••••••••••••••••••••••••</div><footer>请勿转发 · 现场核验后状态更新为已签到</footer>
     </article>`,
 
@@ -77,11 +82,11 @@
       <p class="privacy-note">真实姓名、手机号和紧急联系人不会出现在公开名片中。</p>${button('保存资料', 'save-profile', 'button-primary button-full')}`,
 
     'admin-activity-list': () => `${pageHead('管理员', '活动管理', '发布、编辑活动并处理报名审核')}
-      <div class="admin-toolbar"><div class="prototype-segments"><button class="is-active">全部</button><button>进行中</button><button>已结束</button></div>${button('新建活动', 'route', 'button-primary').replace('data-action="route"', 'data-action="route" data-route="admin-activity-edit"')}</div>
-      <div class="admin-list">${activities.map((activity, index) => `<article><div><span>${index ? '草稿' : '已发布'}</span><small>${activity.date} · ${activity.time}</small></div><h3>${activity.title}</h3><p>${activity.distanceKm} km · ${activity.elevationM} m · ${activity.occupied}/${activity.capacity} 人</p><div class="inline-actions"><button data-action="route" data-route="admin-activity-edit">编辑</button><button data-action="route" data-route="admin-reviews">审核报名</button></div></article>`).join('')}</div>`,
+      <div class="admin-toolbar"><div class="prototype-segments"><button class="is-active">全部</button><button>已下架</button><button>已上线</button><button>已结束</button></div>${button('新建活动', 'route', 'button-primary').replace('data-action="route"', 'data-action="route" data-route="admin-activity-edit"')}</div>
+      <div class="admin-list">${activities.map((activity) => `<article><div><span>${activity.adminStatus}</span><small>${activity.date} · ${activity.time}</small></div><h3>${activity.title}</h3><p>${activity.distanceKm} km · ${activity.elevationM} m · ${activity.approved}/${activity.capacity} 人</p><div class="inline-actions"><button data-action="route" data-route="admin-activity-edit">编辑</button><button data-action="route" data-route="admin-reviews">审核报名</button><button data-action="toast" data-message="${activity.adminStatus === '已上线' ? '活动已下架' : '活动已上线'}">${activity.adminStatus === '已上线' ? '下架' : '上线'}</button></div></article>`).join('')}</div>`,
 
-    'admin-activity-edit': () => `${pageHead('管理员', '编辑活动', '秋日环湖耐力骑 · 草稿自动保存')}
-      <section class="prototype-card form-section">${field('活动标题', primary.title)}${field('开始时间', '2026-10-17 07:30')}${field('集合地点', `${primary.start} · 已选择地图点位`)}${field('线路', primary.route)}<div class="field-grid">${field('里程', `${primary.distanceKm} km`)}${field('爬升', `${primary.elevationM} m`)}</div>${field('难度', primary.level)}${field('人数上限', `${primary.capacity} 人`)}${field('活动费用', primary.fee)}${field('活动照片', '3 张 · 首张作为详情背景')}</section>
+    'admin-activity-edit': () => `${pageHead('管理员', '编辑活动', `${primary.title} · 草稿自动保存`)}
+      <section class="prototype-card form-section">${field('活动标题', primary.title)}${field('开始时间', `2026-10-18 · ${primary.time}`)}${field('集合地点', `${primary.start} · 已选择地图点位`)}${field('Strava 路线', primary.routeName)}<div class="field-grid">${field('里程', `${primary.distanceKm} km`)}${field('爬升', `${primary.elevationM} m`)}</div>${field('预计骑行', primary.estimatedRideTime)}${field('难度', primary.level)}${field('人数上限', `${primary.capacity} 人`)}${field('活动费用', primary.fee)}${field('活动群二维码', '已上传 · 点击替换')}</section>
       <div class="button-pair">${button('保存草稿', 'toast', 'button-outline').replace('data-action="toast"', 'data-action="toast" data-message="草稿已保存"')}${button('发布活动', 'publish-activity', 'button-primary')}</div>`,
 
     'admin-reviews': () => `${pageHead('管理员', '报名审核', `${primary.title} · 2 人待审核`)}
