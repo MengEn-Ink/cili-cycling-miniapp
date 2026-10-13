@@ -23,6 +23,24 @@ export interface RouteCoordinate {
   latitude: number;
   longitude: number;
 }
+export interface PublicRoutePreview {
+  previewId: string;
+  externalProvider: 'strava';
+  externalRouteId: string;
+  externalRouteUrl: string;
+  routeName: string;
+  distanceKm: number;
+  elevationM: number;
+  elevationLossM: number;
+  elevationMinM: number;
+  elevationMaxM: number;
+  estimatedMovingTimeSeconds: number;
+  estimationSource: 'cili';
+  elevationProfile: RouteElevationPoint[];
+  routeOutline: RouteCoordinate[];
+  routeBounds: RouteBounds;
+  expiresAt: string;
+}
 export interface RouteGpxPreviewInput {
   gpxFileId: string;
   gpxSha256: string;
@@ -109,6 +127,7 @@ export interface Activity {
     estimationSource?: 'cili';
     routeOutline?: RouteCoordinate[];
     externalProvider?: 'strava';
+    publicRoutePreviewId?: string;
     externalRouteId?: string;
     externalRouteUrl?: string;
     stravaRouteId?: string;

@@ -3,6 +3,7 @@ import type {
   ClientAvatarSource,
   EditableActivity,
   PersonalCapabilityCard,
+  PublicRoutePreview,
   Profile,
   ProfileUpdate,
   Registration,
@@ -112,6 +113,7 @@ export interface RideRepository extends AdminReviewRepository, ActivityAdminRepo
   setAvatar(source: ClientAvatarSource, fileId: string): Promise<Profile>;
   updateProfile(profile: ProfileUpdate): Promise<Profile>;
   getPhoneNumber(code: string): Promise<Profile>;
+  previewPublicStravaRoute(routeUrl: string): Promise<PublicRoutePreview>;
   previewRouteGpx(input: RouteGpxPreviewInput): Promise<RouteGpxPreview>;
   bindRoutePreviewImage(
     previewId: string,

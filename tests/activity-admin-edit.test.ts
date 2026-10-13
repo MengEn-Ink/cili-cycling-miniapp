@@ -59,6 +59,31 @@ const activity: Activity = {
   fee: '无报名费',
 };
 
+const publicPreviewFor = (routeId: string) => ({
+  previewId: 'c'.repeat(64),
+  externalProvider: 'strava' as const,
+  externalRouteId: routeId,
+  externalRouteUrl: `https://www.strava.com/routes/${routeId}`,
+  routeName: '服务端公开路线',
+  distanceKm: 42.5,
+  elevationM: 860,
+  elevationLossM: 800,
+  elevationMinM: 20,
+  elevationMaxM: 220,
+  estimatedMovingTimeSeconds: 7200,
+  estimationSource: 'cili' as const,
+  elevationProfile: [
+    { distanceKm: 0, elevationM: 20 },
+    { distanceKm: 42.5, elevationM: 60 },
+  ],
+  routeOutline: [
+    { latitude: 22, longitude: 114 },
+    { latitude: 22.2, longitude: 114.2 },
+  ],
+  routeBounds: { south: 22, west: 114, north: 22.2, east: 114.2 },
+  expiresAt: '2026-10-13T15:30:00.000Z',
+});
+
 const splitLocalDateTime = (value: string) => {
   const text = formatLocalDateTime(value);
   return { startDate: text.slice(0, 10), startTime: text.slice(11, 16) };
@@ -98,7 +123,9 @@ describe('日常活动极简创建与编辑', () => {
     vi.resetModules();
     rideService.previewRouteGpx.mockReset();
     rideService.bindRoutePreviewImage.mockReset();
-    rideService.previewPublicStravaRoute.mockReset();
+    rideService.previewPublicStravaRoute
+      .mockReset()
+      .mockImplementation(async (url: string) => publicPreviewFor(url.split('/').pop() || '42'));
     rideService.previewStravaRoute.mockReset();
     rideService.getStravaReadiness.mockReset().mockResolvedValue({ state: 'ready' });
     rideService.getAdminActivity.mockReset().mockResolvedValue(activity);
@@ -214,8 +241,8 @@ describe('日常活动极简创建与编辑', () => {
         route: expect.objectContaining({
           start: '新集合点',
           end: '终点',
-          distanceKm: 80,
-          elevationM: 600,
+          distanceKm: 42.5,
+          elevationM: 860,
           level: '进阶',
           externalProvider: 'strava',
           externalRouteId: '999',
@@ -225,10 +252,16 @@ describe('日常活动极简创建与编辑', () => {
       activity.id,
       7,
     );
-    expect(rideService.previewPublicStravaRoute).not.toHaveBeenCalled();
+    expect(rideService.previewPublicStravaRoute).toHaveBeenCalledWith(
+      'https://www.strava.com/routes/999',
+    );
     const payload = rideService.saveActivity.mock.calls[0][0];
-    expect(payload.route).not.toHaveProperty('elevationProfile');
-    expect(payload.route).not.toHaveProperty('routeBounds');
+    expect(payload.route).toMatchObject({
+      publicRoutePreviewId: 'c'.repeat(64),
+      routeName: '服务端公开路线',
+    });
+    expect(payload.route.elevationProfile).toHaveLength(2);
+    expect(payload.route.routeBounds).toEqual({ south: 22, west: 114, north: 22.2, east: 114.2 });
   });
 
   it('历史 Strava 链接未修改时改写为通用官方路线字段', async () => {
@@ -240,8 +273,8 @@ describe('日常活动极简创建与编辑', () => {
       externalRouteId: '123',
       externalRouteUrl: 'https://www.strava.com/routes/123',
     });
-    expect(payload.route).not.toHaveProperty('stravaRouteId');
-    expect(payload.route).not.toHaveProperty('elevationProfile');
+    expect(payload.route.publicRoutePreviewId).toBe('c'.repeat(64));
+    expect(payload.route.elevationProfile).toHaveLength(2);
   });
 
   it('草稿可暂存 Strava 合法链接，编辑时清空链接不会写入 payload', async () => {
@@ -253,7 +286,9 @@ describe('日常活动极简创建与编辑', () => {
       externalRouteId: '456',
       externalRouteUrl: 'https://www.strava.com/routes/456',
     });
-    expect(rideService.previewPublicStravaRoute).not.toHaveBeenCalled();
+    expect(rideService.previewPublicStravaRoute).toHaveBeenCalledWith(
+      'https://www.strava.com/routes/456',
+    );
 
     rideService.saveActivity.mockClear();
     page.data.form.stravaRouteUrl = '';
@@ -962,7 +997,7 @@ describe('日常活动极简创建与编辑', () => {
     expect(deleteFile).not.toHaveBeenCalled();
   });
 
-  it('日常活动详情隐藏旧路线费用和不限人数话术，并只为可信 GPX 展示路线详情', () => {
+  it('日常活动详情隐藏旧路线费用和不限人数话术，并展示可信公开路线或 GPX 详情', () => {
     const card = readFileSync('miniprogram/components/activity-card/index.wxml', 'utf8');
     const detail = readFileSync('miniprogram/pages/activity-detail/index.wxml', 'utf8');
     expect(card).toContain('item.registrationUnlimited ? item.occupied');
@@ -977,7 +1012,7 @@ describe('日常活动极简创建与编辑', () => {
     expect(detail).not.toContain('不限</text><text>报名人数');
     expect(detail).toContain('!item.registrationUnlimited && item.route.end');
     expect(detail).toContain('!item.registrationUnlimited && (item.fee');
-    expect(detail).toContain('class="gpx-route-card" wx:if="{{hasGpxRoute}}"');
+    expect(detail).toContain('class="gpx-route-card" wx:if="{{hasRouteDetails}}"');
     expect(detail).not.toContain('route-profile-card');
   });
 
@@ -1022,11 +1057,11 @@ describe('日常活动极简创建与编辑', () => {
     expect(page.data.groupQrCode).toBe('cloud://new-group-qr.jpg');
   });
 
-  it('添加官方路线只校验并归一化链接，不请求 Strava 页面数据', async () => {
+  it('添加官方路线调用免授权解析并回显可信路线详情', async () => {
     await page.onLoad({});
     page.data.form.stravaRouteUrl = 'https://www.strava.com/zh-CN/routes/42/';
 
-    page.addOfficialRoute();
+    await page.addOfficialRoute();
 
     expect(page.data.form.stravaRouteUrl).toBe('https://www.strava.com/routes/42');
     expect(page.data.officialRoute).toEqual({
@@ -1034,12 +1069,17 @@ describe('日常活动极简创建与编辑', () => {
       routeId: '42',
       url: 'https://www.strava.com/routes/42',
     });
-    expect(rideService.previewPublicStravaRoute).not.toHaveBeenCalled();
-    expect(rideService.previewStravaRoute).not.toHaveBeenCalled();
-    expect(wx.showToast).toHaveBeenCalledWith({
-      title: '已添加。参与者可查看 Strava 官方路线。',
-      icon: 'none',
+    expect(rideService.previewPublicStravaRoute).toHaveBeenCalledWith(
+      'https://www.strava.com/routes/42',
+    );
+    expect(page.data.publicRoutePreview).toMatchObject({
+      previewId: 'c'.repeat(64),
+      routeName: '服务端公开路线',
+      distanceKm: 42.5,
+      elevationM: 860,
     });
+    expect(rideService.previewStravaRoute).not.toHaveBeenCalled();
+    expect(wx.showToast).toHaveBeenCalledWith({ title: '已解析公开路线', icon: 'success' });
   });
 
   it('选择 GPX 后按 SHA-256 所有者路径上传并读取可信详情', async () => {
@@ -1316,7 +1356,7 @@ describe('日常活动极简创建与编辑', () => {
       routeStart: '湖边广场',
       stravaRouteUrl: 'https://www.strava.com/routes/42',
     });
-    page.addOfficialRoute();
+    await page.addOfficialRoute();
     page.data.routePreview = {
       previewId: 'a'.repeat(64),
       gpxFileId: `cloud://env/activity-routes/${appStore.openid}/${'b'.repeat(64)}.gpx`,
@@ -1358,12 +1398,13 @@ describe('日常活动极简创建与编辑', () => {
       elevationMaxM: 486,
       estimationSource: 'cili',
     });
-    expect(rideService.previewPublicStravaRoute).not.toHaveBeenCalled();
+    expect(rideService.previewPublicStravaRoute).toHaveBeenCalledWith(
+      'https://www.strava.com/routes/42',
+    );
   });
 
-  it('发布只保存官方路线链接，不调用页面读取服务', async () => {
+  it('发布前自动解析公开路线并提交可信预览标识与完整详情', async () => {
     const routeUrl = 'https://www.strava.com/routes/2995569663284766500';
-    rideService.previewPublicStravaRoute.mockRejectedValue(new Error('不应调用旧页面读取服务'));
     rideService.saveActivity.mockImplementation(async (payload: any) =>
       savedActivityFromPayload(payload),
     );
@@ -1378,14 +1419,16 @@ describe('日常活动极简创建与编辑', () => {
 
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
 
-    expect(rideService.previewPublicStravaRoute).not.toHaveBeenCalled();
+    expect(rideService.previewPublicStravaRoute).toHaveBeenCalledWith(routeUrl);
     expect(rideService.saveActivity).toHaveBeenCalledTimes(2);
     expect(rideService.saveActivity.mock.calls[1][0].route).toMatchObject({
       externalProvider: 'strava',
       externalRouteId: '2995569663284766500',
       externalRouteUrl: routeUrl,
-      distanceKm: 0,
-      elevationM: 0,
+      publicRoutePreviewId: 'c'.repeat(64),
+      routeName: '服务端公开路线',
+      distanceKm: 42.5,
+      elevationM: 860,
     });
   });
 
@@ -1399,8 +1442,10 @@ describe('日常活动极简创建与编辑', () => {
     expect(template).toContain('活动群二维码');
     expect(template).toContain('二维码可能已过期');
     expect(template).toContain('Strava 官方路线（可选）');
-    expect(template).toContain('添加官方路线');
-    expect(template).toContain('查看官方路线');
+    expect(template).toContain('添加并解析路线');
+    expect(template).toContain('无需 Strava 授权');
+    expect(template).toContain('publicRoutePreview.routeName');
+    expect(template).not.toContain('查看官方路线');
     expect(template).toContain('GPX 路线详情（推荐）');
     expect(template).toContain('上传 GPX');
     expect(template).toContain('路线详情已准备好');
@@ -1408,7 +1453,7 @@ describe('日常活动极简创建与编辑', () => {
     expect(template).toContain('routePreview.routeName');
     expect(template).toContain('id="route-outline-canvas"');
     expect(template).toContain('id="route-elevation-canvas"');
-    expect(template).not.toMatch(/OAuth|授权|令牌|回调|完整识别|自动解析/);
+    expect(template).not.toMatch(/OAuth|令牌|回调|完整识别/);
     expect(template).toContain('form.title');
     expect(template).toContain('form.startDate');
     expect(template).toContain('form.startTime');

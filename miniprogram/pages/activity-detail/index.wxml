@@ -46,13 +46,13 @@
         </view>
 
         <view class="official-route-card" wx:if="{{officialRouteId}}">
-          <view class="section-heading"><view><view class="title">Strava 官方路线</view><view class="route-action-note">查看组织者分享的公开路线。</view></view><view class="section-tag">官方</view></view>
-          <button class="route-action route-action--primary" bindtap="openOfficialRoute">查看官方路线</button>
+          <view class="section-heading"><view><view class="title">Strava 官方路线</view><view class="route-action-note">复制组织者分享的规范化公开路线链接。</view></view><view class="section-tag">官方</view></view>
+          <button class="route-action route-action--primary" bindtap="copyOfficialRoute">复制路线链接</button>
         </view>
 
-        <view class="gpx-route-card" wx:if="{{hasGpxRoute}}">
-          <view class="section-heading"><view><view class="title">{{item.route.routeName || 'GPX 路线详情'}}</view><view class="route-action-note">路线数据来自组织者上传的 GPX 文件。</view></view><view class="section-tag">路线详情</view></view>
-          <view class="route-native-metrics" aria-label="GPX 路线数据">
+        <view class="gpx-route-card" wx:if="{{hasRouteDetails}}">
+          <view class="section-heading"><view><view class="title">{{item.route.routeName || '路线详情'}}</view><view class="route-action-note">{{hasGpxRoute ? '路线数据来自组织者上传的 GPX 文件。' : '路线数据来自免授权公开路线解析。'}}</view></view><view class="section-tag">路线详情</view></view>
+          <view class="route-native-metrics" aria-label="路线数据">
             <view><text>{{item.route.distanceKm}}</text><text>km 距离</text></view>
             <view><text>{{item.route.elevationM}}</text><text>m 爬升</text></view>
             <view><text>{{item.route.elevationLossM}}</text><text>m 下降</text></view>
@@ -74,7 +74,7 @@
           <canvas wx:if="{{hasElevationProfile}}" id="elevation-canvas" type="2d" class="elevation-canvas" aria-label="路线海拔曲线"></canvas>
           <view wx:else class="route-empty">暂无有效海拔数据</view>
 
-          <view class="gpx-download-row">
+          <view class="gpx-download-row" wx:if="{{hasGpxRoute}}">
             <view class="route-action-note">下载后可导入码表或骑行应用。</view>
             <button class="route-action route-action--primary" loading="{{downloadingGpx}}" disabled="{{downloadingGpx}}" bindtap="downloadGpx">{{downloadingGpx ? '下载中' : '下载 GPX'}}</button>
           </view>

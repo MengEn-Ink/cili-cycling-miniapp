@@ -306,6 +306,48 @@ function cleanStravaRoute(route) {
   const stravaGpxAvailable = route.strava_gpx_available;
   if (typeof stravaGpxAvailable !== 'boolean')
     fail('VALIDATION_FAILED', 'Strava GPX 可用性格式错误');
+  const routeOutline = route.route_outline;
+  let safeOutline;
+  if (routeOutline !== undefined) {
+    if (!Array.isArray(routeOutline) || routeOutline.length < 2 || routeOutline.length > 240)
+      fail('VALIDATION_FAILED', '路线轮廓格式错误');
+    safeOutline = routeOutline.map((point) => {
+      if (
+        !point ||
+        typeof point !== 'object' ||
+        Array.isArray(point) ||
+        Object.keys(point).some((key) => !['latitude', 'longitude'].includes(key)) ||
+        typeof point.latitude !== 'number' ||
+        !Number.isFinite(point.latitude) ||
+        point.latitude < -90 ||
+        point.latitude > 90 ||
+        typeof point.longitude !== 'number' ||
+        !Number.isFinite(point.longitude) ||
+        point.longitude < -180 ||
+        point.longitude > 180
+      )
+        fail('VALIDATION_FAILED', '路线轮廓格式错误');
+      return { latitude: point.latitude, longitude: point.longitude };
+    });
+  }
+  const elevationLoss = route.elevation_loss_m;
+  const elevationMinimum = route.elevation_min_m;
+  const elevationMaximum = route.elevation_max_m;
+  const hasExtendedElevation =
+    elevationLoss !== undefined || elevationMinimum !== undefined || elevationMaximum !== undefined;
+  if (
+    hasExtendedElevation &&
+    (![elevationLoss, elevationMinimum, elevationMaximum].every(
+      (value) => typeof value === 'number' && Number.isFinite(value),
+    ) ||
+      elevationLoss < 0 ||
+      elevationLoss > 100000 ||
+      elevationMinimum < -1000 ||
+      elevationMaximum > 10000 ||
+      elevationMinimum > elevationMaximum ||
+      route.estimation_source !== 'cili')
+  )
+    fail('VALIDATION_FAILED', '路线海拔数据无效');
   return {
     strava_route_id: id,
     strava_route_url: `https://www.strava.com/routes/${id}`,
@@ -313,7 +355,16 @@ function cleanStravaRoute(route) {
     ...(previewImageUrl ? { preview_image_url: previewImageUrl } : {}),
     strava_gpx_available: stravaGpxAvailable,
     estimated_moving_time_seconds: estimatedMovingTime,
+    ...(hasExtendedElevation
+      ? {
+          estimation_source: 'cili',
+          elevation_loss_m: elevationLoss,
+          elevation_min_m: elevationMinimum,
+          elevation_max_m: elevationMaximum,
+        }
+      : {}),
     elevation_profile: elevationProfile,
+    ...(safeOutline ? { route_outline: safeOutline } : {}),
     route_bounds: { south, west, north, east },
     popular_climbs: popularClimbs,
   };
@@ -365,16 +416,7 @@ function cleanExternalRoute(route) {
   };
 }
 function cleanGpxRoute(route) {
-  const gpxFields = [
-    'gpx_preview_id',
-    'gpx_sha256',
-    'generated_preview_file_id',
-    'elevation_loss_m',
-    'elevation_min_m',
-    'elevation_max_m',
-    'estimation_source',
-    'route_outline',
-  ];
+  const gpxFields = ['gpx_preview_id', 'gpx_sha256', 'generated_preview_file_id'];
   if (!gpxFields.some((field) => route[field] !== undefined)) return {};
   const previewId = cleanText(route.gpx_preview_id, '路线预览标识', 64, true);
   const digest = cleanText(route.gpx_sha256, 'GPX 文件摘要', 64, true);
@@ -650,6 +692,7 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses, option
     'elevation_max_m',
     'estimation_source',
     'route_outline',
+    'public_route_preview_id',
     'external_provider',
     'external_route_id',
     'external_route_url',
@@ -695,6 +738,16 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses, option
     elevation_m: elevation,
     level: cleanText(route.level || '', '路线难度', 50),
     gpx_file_id: cleanText(route.gpx_file_id || '', 'GPX 文件', 500),
+    ...(route.public_route_preview_id === undefined
+      ? {}
+      : {
+          public_route_preview_id: cleanText(
+            route.public_route_preview_id,
+            '公开路线预览标识',
+            64,
+            true,
+          ),
+        }),
     ...cleanExternalRoute(route),
     ...cleanGpxRoute(route),
     ...cleanStravaRoute(route),

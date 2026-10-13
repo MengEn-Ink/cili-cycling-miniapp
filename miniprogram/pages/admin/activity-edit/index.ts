@@ -1,4 +1,9 @@
-import type { ActivityLocation, EditableActivity, RouteGpxPreview } from '../../../models';
+import type {
+  ActivityLocation,
+  EditableActivity,
+  PublicRoutePreview,
+  RouteGpxPreview,
+} from '../../../models';
 import type { ActivityInput } from '../../../repositories/types';
 import { rideService } from '../../../services/ride-service';
 import { appStore } from '../../../store/app-store';
@@ -82,6 +87,7 @@ const activityContentProjection = (activity: EditableActivity | ActivityInput) =
   const images = Array.isArray(activity.images) ? activity.images.map(protocolText) : [];
   const groupQrCode = protocolText(activity.groupQrCode);
   const route = activity.route;
+  const hasTrustedDetails = Boolean(route.gpxPreviewId || route.publicRoutePreviewId);
   let externalRoute: ExternalRouteReference | undefined;
   try {
     const routeUrl = route.externalRouteUrl || route.stravaRouteUrl;
@@ -138,19 +144,20 @@ const activityContentProjection = (activity: EditableActivity | ActivityInput) =
       level: protocolText(route.level),
       gpxFileId: protocolText(route.gpxFileId),
       gpxPreviewId: protocolText(route.gpxPreviewId),
+      publicRoutePreviewId: protocolText(route.publicRoutePreviewId),
       gpxSha256: protocolText(route.gpxSha256),
       generatedPreviewFileId: protocolText(route.generatedPreviewFileId),
-      elevationLossM: route.gpxPreviewId ? route.elevationLossM : undefined,
-      elevationMinM: route.gpxPreviewId ? route.elevationMinM : undefined,
-      elevationMaxM: route.gpxPreviewId ? route.elevationMaxM : undefined,
-      estimationSource: route.gpxPreviewId ? route.estimationSource : undefined,
-      routeOutline: route.gpxPreviewId ? route.routeOutline : undefined,
+      elevationLossM: hasTrustedDetails ? route.elevationLossM : undefined,
+      elevationMinM: hasTrustedDetails ? route.elevationMinM : undefined,
+      elevationMaxM: hasTrustedDetails ? route.elevationMaxM : undefined,
+      estimationSource: hasTrustedDetails ? route.estimationSource : undefined,
+      routeOutline: hasTrustedDetails ? route.routeOutline : undefined,
       externalProvider: externalRoute?.provider,
       externalRouteId: externalRoute?.routeId,
       externalRouteUrl: externalRoute?.url,
-      routeName: route.gpxPreviewId ? protocolText(route.routeName) : undefined,
-      elevationProfile: route.gpxPreviewId ? route.elevationProfile : undefined,
-      routeBounds: route.gpxPreviewId ? route.routeBounds : undefined,
+      routeName: hasTrustedDetails ? protocolText(route.routeName) : undefined,
+      elevationProfile: hasTrustedDetails ? route.elevationProfile : undefined,
+      routeBounds: hasTrustedDetails ? route.routeBounds : undefined,
     },
     schedule: Array.isArray(activity.schedule)
       ? activity.schedule.map((item) => ({
@@ -271,6 +278,45 @@ function activityRoutePreview(activity: EditableActivity): RouteGpxPreview | und
   };
 }
 
+function activityPublicRoutePreview(activity: EditableActivity): PublicRoutePreview | undefined {
+  const route = activity.route;
+  if (
+    !route.publicRoutePreviewId ||
+    route.externalProvider !== 'strava' ||
+    !route.externalRouteId ||
+    !route.externalRouteUrl ||
+    !route.routeName ||
+    !Number.isFinite(route.elevationLossM) ||
+    !Number.isFinite(route.elevationMinM) ||
+    !Number.isFinite(route.elevationMaxM) ||
+    route.estimationSource !== 'cili' ||
+    !route.elevationProfile ||
+    route.elevationProfile.length < 2 ||
+    !route.routeOutline ||
+    route.routeOutline.length < 2 ||
+    !route.routeBounds
+  )
+    return undefined;
+  return {
+    previewId: route.publicRoutePreviewId,
+    externalProvider: 'strava',
+    externalRouteId: route.externalRouteId,
+    externalRouteUrl: route.externalRouteUrl,
+    routeName: route.routeName,
+    distanceKm: route.distanceKm,
+    elevationM: route.elevationM,
+    elevationLossM: route.elevationLossM!,
+    elevationMinM: route.elevationMinM!,
+    elevationMaxM: route.elevationMaxM!,
+    estimatedMovingTimeSeconds: route.estimatedMovingTimeSeconds || 60,
+    estimationSource: 'cili',
+    elevationProfile: route.elevationProfile,
+    routeOutline: route.routeOutline,
+    routeBounds: route.routeBounds,
+    expiresAt: '',
+  };
+}
+
 function locationFailure(
   error: unknown,
 ): 'cancel' | 'system-location' | 'platform-config' | 'unknown' {
@@ -342,6 +388,7 @@ Page({
     pendingGroupQrCode: undefined as PendingImage | undefined,
     routeStartLocation: undefined as ActivityLocation | undefined,
     officialRoute: undefined as ExternalRouteReference | undefined,
+    publicRoutePreview: undefined as PublicRoutePreview | undefined,
     routePreview: undefined as RouteGpxPreview | undefined,
     pendingRouteUpload: undefined as PendingRouteUpload | undefined,
     sessionRouteFileIds: [] as string[],
@@ -375,6 +422,7 @@ Page({
           : [];
       const startAtText = formatLocalDateTime(activity.startAt);
       const officialRoute = activityOfficialRoute(activity);
+      const publicRoutePreview = activityPublicRoutePreview(activity);
       const routePreview = activityRoutePreview(activity);
       this.setData({
         loading: false,
@@ -389,13 +437,18 @@ Page({
         pendingGroupQrCode: undefined,
         routeStartLocation: activity.route.startLocation,
         officialRoute,
+        publicRoutePreview,
         routePreview,
         routeStatusMessage: routePreview ? '路线详情已准备好' : '',
         routeCoverSelected: Boolean(
           routePreview?.generatedPreviewFileId &&
           activity.coverImage === routePreview.generatedPreviewFileId,
         ),
-        routeTimeLabel: formatRouteDuration(activity.route.estimatedMovingTimeSeconds),
+        routeTimeLabel: formatRouteDuration(
+          routePreview?.estimatedMovingTimeSeconds ||
+            publicRoutePreview?.estimatedMovingTimeSeconds ||
+            activity.route.estimatedMovingTimeSeconds,
+        ),
         form: {
           title: activity.title,
           startDate: pickerDate(startAtText),
@@ -559,24 +612,37 @@ Page({
       coverImage: images[0] || '',
     });
   },
-  addOfficialRoute() {
-    if (this.data.saving) return;
+  async addOfficialRoute() {
+    if (this.data.saving || this.data.syncingRoute) return;
+    this.setData({ syncingRoute: true, error: '' });
     try {
       const officialRoute = normalizeStravaRouteUrl(this.data.form.stravaRouteUrl);
-      this.setData({
-        'form.stravaRouteUrl': officialRoute.url,
-        officialRoute,
-        error: '',
+      const preview = await rideService.previewPublicStravaRoute(officialRoute.url);
+      await new Promise<void>((resolve) => {
+        this.setData(
+          {
+            'form.stravaRouteUrl': preview.externalRouteUrl,
+            officialRoute: {
+              provider: 'strava',
+              routeId: preview.externalRouteId,
+              url: preview.externalRouteUrl,
+            },
+            publicRoutePreview: preview,
+            routeTimeLabel: formatRouteDuration(preview.estimatedMovingTimeSeconds),
+            error: '',
+          },
+          resolve,
+        );
       });
-      wx.showToast({
-        title: '已添加。参与者可查看 Strava 官方路线。',
-        icon: 'none',
-      });
+      await this.renderRouteVisuals();
+      wx.showToast({ title: '已解析公开路线', icon: 'success' });
     } catch (error) {
       this.setData({
-        officialRoute: undefined,
-        error: error instanceof Error ? error.message : '请输入有效的 Strava 公开路线链接',
+        publicRoutePreview: undefined,
+        error: error instanceof Error ? error.message : 'Strava 公开路线解析失败',
       });
+    } finally {
+      this.setData({ syncingRoute: false });
     }
   },
   async previewPendingRoute(pending: PendingRouteUpload) {
@@ -623,7 +689,8 @@ Page({
     });
   },
   async renderRouteVisuals() {
-    const preview = this.data.routePreview as RouteGpxPreview | undefined;
+    const preview = (this.data.routePreview || this.data.publicRoutePreview) as
+      RouteGpxPreview | PublicRoutePreview | undefined;
     if (!preview || this.unloaded) return;
     const [outlineTarget, elevationTarget] = await Promise.all([
       this.routeCanvas('#route-outline-canvas'),
@@ -643,6 +710,7 @@ Page({
         preview.routeName,
       );
       if (
+        'gpxSha256' in preview &&
         !preview.generatedPreviewFileId &&
         typeof wx.canvasToTempFilePath === 'function' &&
         appStore.openid
@@ -778,13 +846,6 @@ Page({
       routeStatusMessage: '',
       routeCoverSelected: false,
       error: '',
-    });
-  },
-  previewOfficialRoute() {
-    const route = this.data.officialRoute as ExternalRouteReference | undefined;
-    if (!route) return;
-    wx.navigateTo({
-      url: `/pages/route-view/index?id=${encodeURIComponent(route.routeId)}`,
     });
   },
   useRouteAsCover() {
@@ -1075,20 +1136,32 @@ Page({
     if (!startAt) return;
     const original = this.data.originalActivity as EditableActivity | undefined;
     let officialRoute: ExternalRouteReference | undefined;
+    let publicRoutePreview = this.data.publicRoutePreview as PublicRoutePreview | undefined;
     if (form.stravaRouteUrl.trim()) {
       try {
         officialRoute = normalizeStravaRouteUrl(form.stravaRouteUrl);
+        if (publicRoutePreview?.externalRouteUrl !== officialRoute.url) {
+          this.setData({ syncingRoute: true, error: '' });
+          publicRoutePreview = await rideService.previewPublicStravaRoute(officialRoute.url);
+        }
         this.setData({
           'form.stravaRouteUrl': officialRoute.url,
           officialRoute,
+          publicRoutePreview,
+          routeTimeLabel: formatRouteDuration(publicRoutePreview.estimatedMovingTimeSeconds),
         });
       } catch (error) {
+        this.setData({ syncingRoute: false });
         this.showFormError(
-          error instanceof Error ? error.message : '请输入有效的 Strava 公开路线链接',
+          error instanceof Error ? error.message : 'Strava 公开路线解析失败',
           'stravaRouteUrl',
         );
         return;
+      } finally {
+        this.setData({ syncingRoute: false });
       }
+    } else {
+      publicRoutePreview = undefined;
     }
     const startForDefaults = startAt;
     const defaults = derivedTimes(startForDefaults);
@@ -1114,19 +1187,34 @@ Page({
         ? [...original.images]
         : [...this.data.images];
     const routePreview = this.data.routePreview as RouteGpxPreview | undefined;
+    const trustedRoutePreview = routePreview || publicRoutePreview;
     const route: ActivityInput['route'] = {
       start: form.routeStart,
       end: original?.route.end || '',
       ...(this.data.routeStartLocation ? { startLocation: this.data.routeStartLocation } : {}),
       ...(original?.route.endLocation ? { endLocation: original.route.endLocation } : {}),
-      distanceKm: routePreview?.distanceKm ?? original?.route.distanceKm ?? 0,
-      elevationM: routePreview?.elevationM ?? original?.route.elevationM ?? 0,
+      distanceKm: trustedRoutePreview?.distanceKm ?? original?.route.distanceKm ?? 0,
+      elevationM: trustedRoutePreview?.elevationM ?? original?.route.elevationM ?? 0,
       level: original?.route.level || '',
       ...(officialRoute
         ? {
             externalProvider: 'strava',
             externalRouteId: officialRoute.routeId,
             externalRouteUrl: officialRoute.url,
+          }
+        : {}),
+      ...(publicRoutePreview
+        ? {
+            publicRoutePreviewId: publicRoutePreview.previewId,
+            routeName: publicRoutePreview.routeName,
+            elevationLossM: publicRoutePreview.elevationLossM,
+            elevationMinM: publicRoutePreview.elevationMinM,
+            elevationMaxM: publicRoutePreview.elevationMaxM,
+            estimatedMovingTimeSeconds: publicRoutePreview.estimatedMovingTimeSeconds,
+            estimationSource: 'cili' as const,
+            elevationProfile: publicRoutePreview.elevationProfile,
+            routeOutline: publicRoutePreview.routeOutline,
+            routeBounds: publicRoutePreview.routeBounds,
           }
         : {}),
       ...(routePreview

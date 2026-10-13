@@ -53,7 +53,7 @@ describe('Strava 账号能力退役契约', () => {
       /oauth_states|oauth_attempts|strava_credentials|strava_snapshots|STRAVA_TOKEN_KEY/,
     );
     expect(runtimeSources).not.toMatch(
-      /importStravaAvatar|getStravaReadiness|ensureStravaReady|startStrava|cancelStravaAuthorization|syncStrava|disconnectStrava|previewPublicStravaRoute|previewStravaRoute|getStravaRouteGpx|exportActivityGpx/,
+      /importStravaAvatar|getStravaReadiness|ensureStravaReady|startStrava|cancelStravaAuthorization|syncStrava|disconnectStrava|previewStravaRoute|getStravaRouteGpx|exportActivityGpx/,
     );
   });
 

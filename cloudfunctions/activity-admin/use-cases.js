@@ -16,6 +16,7 @@ const {
   activityAuditAction,
 } = require('./domain');
 const { assertUsableRoutePreview, mergeTrustedPreviewRoute } = require('./route-preview');
+const { assertUsablePublicRoutePreview } = require('./public-route-preview');
 
 const CLONE_REQUEST_FIELDS = new Set([
   'action',
@@ -45,6 +46,27 @@ const TRUSTED_GPX_ROUTE_FIELDS = [
   'route_outline',
   'route_bounds',
 ];
+const TRUSTED_PUBLIC_ROUTE_FIELDS = [
+  'public_route_preview_id',
+  'external_provider',
+  'external_route_id',
+  'external_route_url',
+  'strava_route_id',
+  'strava_route_url',
+  'route_name',
+  'distance_km',
+  'elevation_m',
+  'elevation_loss_m',
+  'elevation_min_m',
+  'elevation_max_m',
+  'estimated_moving_time_seconds',
+  'estimation_source',
+  'elevation_profile',
+  'route_outline',
+  'route_bounds',
+  'popular_climbs',
+  'strava_gpx_available',
+];
 
 function sameGpxAttachment(requested, current) {
   return Boolean(
@@ -61,6 +83,31 @@ function inheritTrustedGpxRoute(requested, current) {
   for (const field of TRUSTED_GPX_ROUTE_FIELDS)
     if (current[field] !== undefined) trusted[field] = current[field];
   return { ...requested, ...trusted };
+}
+
+function samePublicRouteAttachment(requested, current) {
+  return Boolean(
+    current &&
+    requested.public_route_preview_id === current.public_route_preview_id &&
+    requested.external_provider === 'strava' &&
+    requested.external_route_id === current.external_route_id &&
+    requested.external_route_url === current.external_route_url,
+  );
+}
+
+function inheritTrustedPublicRoute(requested, current) {
+  const trusted = {};
+  for (const field of TRUSTED_PUBLIC_ROUTE_FIELDS)
+    if (current[field] !== undefined) trusted[field] = current[field];
+  return { ...requested, ...trusted };
+}
+
+function mergeTrustedPublicRoute(requested, preview) {
+  return {
+    ...requested,
+    public_route_preview_id: preview._id,
+    ...preview.summary,
+  };
 }
 
 function cloneActivityId(openid, requestId) {
@@ -342,6 +389,42 @@ async function saveActivity(
     let effectiveActivity = effectiveActivityInput(current, activity);
     const isUnpublish = current?.status === 'published' && effectiveActivity.status === 'draft';
     const transitionReason = isUnpublish ? requiredReason(reason, '下架活动') : undefined;
+    const routePreviewsToConsume = [];
+    const requestedPublicPreviewId = effectiveActivity.route?.public_route_preview_id;
+    if (requestedPublicPreviewId !== undefined) {
+      const route = effectiveActivity.route;
+      if (
+        typeof requestedPublicPreviewId !== 'string' ||
+        !/^[a-f0-9]{64}$/.test(requestedPublicPreviewId) ||
+        route.external_provider !== 'strava' ||
+        typeof route.external_route_id !== 'string' ||
+        !/^[1-9]\d{0,19}$/.test(route.external_route_id) ||
+        route.external_route_url !== `https://www.strava.com/routes/${route.external_route_id}`
+      )
+        fail('VALIDATION_FAILED', '公开路线预览参数无效');
+      if (samePublicRouteAttachment(route, current?.route)) {
+        effectiveActivity = {
+          ...effectiveActivity,
+          route: inheritTrustedPublicRoute(route, current.route),
+        };
+      } else {
+        const preview = assertUsablePublicRoutePreview(
+          await tx.getRoutePreviewById(requestedPublicPreviewId),
+          {
+            openid,
+            previewId: requestedPublicPreviewId,
+            routeId: route.external_route_id,
+            activityId: targetActivityId,
+            now,
+          },
+        );
+        routePreviewsToConsume.push(preview);
+        effectiveActivity = {
+          ...effectiveActivity,
+          route: mergeTrustedPublicRoute(route, preview),
+        };
+      }
+    }
     const requestedGpxPreviewId = effectiveActivity.route?.gpx_preview_id;
     let routePreviewToConsume;
     if (requestedGpxPreviewId !== undefined) {
@@ -373,6 +456,7 @@ async function saveActivity(
           activityId: targetActivityId,
           now,
         });
+        routePreviewsToConsume.push(routePreviewToConsume);
         effectiveActivity = {
           ...effectiveActivity,
           route: mergeTrustedPreviewRoute(route, routePreviewToConsume),
@@ -534,7 +618,8 @@ async function saveActivity(
       }
     }
     await tx.putActivity(id, value);
-    if (routePreviewToConsume) await tx.consumeRoutePreview(routePreviewToConsume._id, id, now);
+    for (const preview of routePreviewsToConsume)
+      await tx.consumeRoutePreview(preview._id, id, now);
     const audit = buildActivityAudit(
       openid,
       activityAuditAction(current?.status, safe.status),

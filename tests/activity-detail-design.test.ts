@@ -29,7 +29,7 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('wx:if="{{galleryImages.length > 1 && !coverFailed}}"');
     expect(template).toContain('binderror="galleryImageError"');
     expect(template).toContain('bindtap="navigate"');
-    expect(template).toContain('bindtap="openOfficialRoute"');
+    expect(template).toContain('bindtap="copyOfficialRoute"');
     expect(template).toContain('bindtap="downloadGpx"');
     expect(template).toContain('disabled="{{loading || !item || !activityAction.enabled}}"');
     expect(template).toContain('报名状态');
@@ -42,9 +42,10 @@ describe('活动详情设计与日期契约', () => {
     const routeStyles = styles.slice(styles.indexOf('/* 路线区域统一使用'));
     expect(template).toContain('class="official-route-card"');
     expect(template).toContain('Strava 官方路线');
-    expect(template).toContain('bindtap="openOfficialRoute">查看官方路线');
+    expect(template).toContain('bindtap="copyOfficialRoute">复制路线链接');
+    expect(template).not.toContain('bindtap="openOfficialRoute"');
     expect(template).toContain('class="gpx-route-card"');
-    expect(template).toContain("{{item.route.routeName || 'GPX 路线详情'}}");
+    expect(template).toContain("{{item.route.routeName || '路线详情'}}");
     expect(template).toContain('item.route.generatedPreviewUrl');
     expect(template).toContain('mode="aspectFit"');
     expect(template).toContain('bindtap="previewRouteImage"');
@@ -52,7 +53,7 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('bindtap="downloadGpx"');
     expect(template).toContain("{{downloadingGpx ? '下载中' : '下载 GPX'}}");
     expect(template).toContain('下载后可导入码表或骑行应用');
-    expect(template).not.toContain('bindtap="copyStravaRoute"');
+    expect(template).toContain('bindtap="copyOfficialRoute"');
     expect(template).not.toContain('item.route.stravaGpxAvailable');
     expect(template).not.toContain('bindtap="copyActivityLink"');
     expect(template).not.toContain('复制活动链接');
@@ -623,31 +624,31 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
     expect(context.data.defaultAttendeeAvatar).toBeUndefined();
   });
 
-  it('在专用页面打开经过验证的官方路线并生成分享 path', async () => {
+  it('复制经过验证和规范化的官方路线并保留活动分享 path', async () => {
     const { definition, context } = await loadPage(async () => ({
       base64: 'eA==',
       fileName: 'route.gpx',
     }));
-    context.data.officialRouteId = '42';
-    definition.openOfficialRoute.call(context);
-    expect(wx.navigateTo).toHaveBeenLastCalledWith({
-      url: '/pages/route-view/index?id=42',
-    });
+    context.data.officialRouteUrl = 'https://www.strava.com/routes/42';
+    definition.copyOfficialRoute.call(context);
+    expect(wx.setClipboardData).toHaveBeenLastCalledWith(
+      expect.objectContaining({ data: 'https://www.strava.com/routes/42' }),
+    );
+    expect(wx.navigateTo).not.toHaveBeenCalled();
     expect(definition.onShareAppMessage.call(context)).toEqual({
       title: '周末骑行',
       path: 'pages/activity-detail/index?id=a%2F1',
     });
   });
 
-  it('拒绝在专用页面打开无效官方路线 ID', async () => {
+  it('缺少规范官方路线链接时不复制也不导航', async () => {
     const { definition, context } = await loadPage(async () => ({
       base64: 'eA==',
       fileName: 'route.gpx',
     }));
-    for (const routeId of ['', '0', 'abc', '1'.repeat(21)]) {
-      context.data.officialRouteId = routeId;
-      definition.openOfficialRoute.call(context);
-    }
+    context.data.officialRouteUrl = '';
+    definition.copyOfficialRoute.call(context);
+    expect(wx.setClipboardData).not.toHaveBeenCalled();
     expect(wx.navigateTo).not.toHaveBeenCalled();
   });
 

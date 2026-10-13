@@ -142,6 +142,11 @@ function officialRouteId(route: any): string {
   return valid('strava', route?.stravaRouteId, route?.stravaRouteUrl) ? route.stravaRouteId : '';
 }
 
+function officialRouteUrl(route: any): string {
+  const id = officialRouteId(route);
+  return id ? `https://www.strava.com/routes/${id}` : '';
+}
+
 function attachedGpx(route: any): boolean {
   return (
     typeof route?.gpxFileId === 'string' &&
@@ -188,6 +193,8 @@ Page({
     deadlineTime: '',
     estimatedRideTime: '',
     officialRouteId: '',
+    officialRouteUrl: '',
+    hasRouteDetails: false,
     hasGpxRoute: false,
     hasElevationProfile: false,
     hasRouteOutline: false,
@@ -300,11 +307,17 @@ Page({
         ['waiting', 'pending', 'approved', 'checked_in'].includes(registration?.status || '');
       const canSeeGroupQr = groupQrVisible(registration, isOrganizer, isAdmin);
       const hasGpxRoute = attachedGpx(detail.route);
-      const elevationProfile = hasGpxRoute
+      const hasPublicRouteDetails =
+        typeof detail.route?.publicRoutePreviewId === 'string' &&
+        /^[a-f0-9]{64}$/.test(detail.route.publicRoutePreviewId);
+      const hasRouteDetails = hasGpxRoute || hasPublicRouteDetails;
+      const elevationProfile = hasRouteDetails
         ? validElevationProfile(detail.route?.elevationProfile)
         : [];
       const routeOutline =
-        hasGpxRoute && Array.isArray(detail.route?.routeOutline) ? detail.route.routeOutline : [];
+        hasRouteDetails && Array.isArray(detail.route?.routeOutline)
+          ? detail.route.routeOutline
+          : [];
       this.safeSetData(
         {
           item: detail,
@@ -332,9 +345,11 @@ Page({
           endTime: formatChinaDateTimeSeconds(item.endAt),
           deadlineTime: formatChinaDateTimeSeconds(item.deadline),
           estimatedRideTime: formatRideDuration(
-            hasGpxRoute ? detail.route?.estimatedMovingTimeSeconds : undefined,
+            hasRouteDetails ? detail.route?.estimatedMovingTimeSeconds : undefined,
           ),
           officialRouteId: officialRouteId(detail.route),
+          officialRouteUrl: officialRouteUrl(detail.route),
+          hasRouteDetails,
           hasGpxRoute,
           hasElevationProfile: elevationProfile.length >= 2,
           hasRouteOutline: routeOutline.length >= 2,
@@ -377,7 +392,7 @@ Page({
   },
   drawRouteOutline() {
     const outline = this.data.item?.route?.routeOutline;
-    if (!this.data.hasGpxRoute || !this.data.hasRouteOutline || this.unloaded) return;
+    if (!this.data.hasRouteDetails || !this.data.hasRouteOutline || this.unloaded) return;
     wx.createSelectorQuery()
       .select('#route-outline-canvas')
       .fields({ node: true, size: true })
@@ -483,10 +498,14 @@ Page({
       fail: () => wx.showToast({ title: '路线预览图打开失败，请重试', icon: 'none' }),
     });
   },
-  openOfficialRoute() {
-    const routeId = this.data.officialRouteId;
-    if (!/^[1-9]\d{0,19}$/.test(routeId)) return;
-    wx.navigateTo({ url: `/pages/route-view/index?id=${encodeURIComponent(routeId)}` });
+  copyOfficialRoute() {
+    const routeUrl = this.data.officialRouteUrl;
+    if (!routeUrl) return;
+    wx.setClipboardData({
+      data: routeUrl,
+      success: () => wx.showToast({ title: '路线链接已复制', icon: 'success' }),
+      fail: () => wx.showToast({ title: '复制失败，请稍后重试', icon: 'none' }),
+    });
   },
   onShareAppMessage() {
     const item = this.data.item;
