@@ -47,8 +47,12 @@ test('publicRoutePreview 仅校验管理员且传入身份、存储与时间，�
     getAdmin: async () => ({ _id: 'admin-1', enabled: true }),
     getCredential: () => assert.fail('公开路线解析不得读取 OAuth 凭证'),
   };
+  let cleanupCalls = 0;
   const handler = createHandler({
     getOpenId: () => 'admin-1',
+    cleanup: async () => {
+      cleanupCalls += 1;
+    },
     readinessStore,
     now: () => fixedNow,
     publicRoutePreview: async (input) => {
@@ -74,6 +78,7 @@ test('publicRoutePreview 仅校验管理员且传入身份、存储与时间，�
   });
   assert.equal(result.ok, true);
   assert.equal(result.data.route_name, '周末环湖');
+  assert.equal(cleanupCalls, 0, '公开路线主路径不应同步等待 OAuth state 维护清理');
 });
 
 test('publicRoutePreview 拒绝非管理员', async () => {

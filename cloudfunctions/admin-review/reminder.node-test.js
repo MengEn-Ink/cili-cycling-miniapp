@@ -1,4 +1,6 @@
 'use strict';
+const fs = require('node:fs');
+const path = require('node:path');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { enqueueActivityReminders, reminderOutboxId } = require('./reminder');
@@ -8,7 +10,7 @@ function fixture({ admin = true, existing = [] } = {}) {
   const audits = [];
   const registrations = [
     { _id: 'r1', openid: 'member-1', status: 'approved' },
-    { _id: 'r2', openid: 'member-2', status: 'approved' },
+    { _id: 'r2', openid: 'member-2', status: 'checked_in' },
   ];
   return {
     outbox,
@@ -22,7 +24,11 @@ function fixture({ admin = true, existing = [] } = {}) {
           event_start: '2026-10-11T00:00:00Z',
           route: { start: '湖滨广场' },
         }),
-        listApproved: async () => registrations,
+        listReminderRecipients: async (activityId, statuses) => {
+          assert.equal(activityId, 'a1');
+          assert.deepEqual(statuses, ['approved', 'checked_in']);
+          return registrations.filter((item) => statuses.includes(item.status));
+        },
         getNotification: async (id) => outbox.get(id),
         putNotification: async (id, value) => outbox.set(id, value),
         addAudit: async (value) => audits.push(value),
@@ -30,7 +36,7 @@ function fixture({ admin = true, existing = [] } = {}) {
   };
 }
 
-test('管理员显式触发只对 approved 幂等入队并写审计', async () => {
+test('管理员显式触发对 approved 与 checked_in 幂等入队并写审计', async () => {
   const store = fixture();
   const first = await enqueueActivityReminders(store, { openid: 'admin', activityId: 'a1' });
   const second = await enqueueActivityReminders(store, { openid: 'admin', activityId: 'a1' });
@@ -40,6 +46,14 @@ test('管理员显式触发只对 approved 幂等入队并写审计', async () =
   assert.equal(store.audits.length, 2);
   assert.match(store.audits[1].detail.reason, /queued=0,duplicates=2/);
   assert.equal(store.outbox.get(reminderOutboxId('a1', 'r1')).template_key, 'activity_reminder');
+});
+
+test('提醒收件人使用与复合索引一致的稳定顺序分页', () => {
+  const source = fs.readFileSync(path.join(__dirname, 'index.js'), 'utf8');
+  assert.match(
+    source,
+    /where\(\{ activity_id: activityId, status: db\.command\.in\(statuses\) \}\)[\s\S]*?\.orderBy\('_id', 'asc'\)[\s\S]*?\.skip\(offset\)/,
+  );
 });
 
 test('已有 sent 提醒不会被覆盖回 pending', async () => {

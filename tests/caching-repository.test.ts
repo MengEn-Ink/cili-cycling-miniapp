@@ -12,6 +12,10 @@ function makeInner() {
     listActivities: vi.fn(),
     listActivityPage: vi.fn(),
     getActivity: vi.fn(),
+    listRegistrations: vi.fn(),
+    getProfile: vi.fn(),
+    getPersonalCapabilityCard: vi.fn(),
+    getPhoneNumber: vi.fn(),
     getStravaStatus: vi.fn(),
     getStravaReadiness: vi.fn(),
     saveActivity: vi.fn(),
@@ -22,6 +26,10 @@ function makeInner() {
     cancelRegistration: vi.fn(),
     reviewRegistration: vi.fn(),
     checkInRegistration: vi.fn(),
+    registerProfileMedia: vi.fn(),
+    setAvatar: vi.fn(),
+    importStravaAvatar: vi.fn(),
+    updateProfile: vi.fn(),
     startStrava: vi.fn(),
     ensureStravaReady: vi.fn(),
     syncStrava: vi.fn(),
@@ -180,6 +188,33 @@ describe('CachingRepository 只读缓存', () => {
     expect(inner.getActivity).toHaveBeenCalledTimes(2);
   });
 
+  it('个人资料、能力卡与我的报名使用短 TTL，权限判断保持直通', async () => {
+    vi.mocked(inner.getProfile).mockResolvedValue({ nickname: '骑手' } as Awaited<
+      ReturnType<RideRepository['getProfile']>
+    >);
+    vi.mocked(inner.getPersonalCapabilityCard).mockResolvedValue({ state: 'ready' } as Awaited<
+      ReturnType<RideRepository['getPersonalCapabilityCard']>
+    >);
+    vi.mocked(inner.listRegistrations).mockResolvedValue([]);
+    vi.mocked(inner.getPhoneNumber).mockResolvedValue({ nickname: '骑手' } as Awaited<
+      ReturnType<RideRepository['getPhoneNumber']>
+    >);
+
+    await repo.getProfile();
+    await repo.getProfile();
+    await repo.getPersonalCapabilityCard();
+    await repo.getPersonalCapabilityCard();
+    await repo.listRegistrations();
+    await repo.listRegistrations();
+    await repo.getPhoneNumber('code');
+    await repo.getPhoneNumber('code');
+
+    expect(inner.getProfile).toHaveBeenCalledOnce();
+    expect(inner.getPersonalCapabilityCard).toHaveBeenCalledOnce();
+    expect(inner.listRegistrations).toHaveBeenCalledOnce();
+    expect(inner.getPhoneNumber).toHaveBeenCalledTimes(2);
+  });
+
   it('Strava 状态与就绪摘要在 TTL 内复用', async () => {
     vi.mocked(inner.getStravaStatus).mockResolvedValue({
       state: 'connected',
@@ -259,6 +294,73 @@ describe('CachingRepository 写后失效', () => {
     }
     // 1 次初始读取 + 每次写后 1 次回源。
     expect(inner.getActivity).toHaveBeenCalledTimes(1 + activityWrites.length);
+  });
+
+  it('资料写入只失效资料缓存，报名写入精确失效报名与活动缓存', async () => {
+    vi.mocked(inner.getProfile).mockResolvedValue({ nickname: '骑手' } as Awaited<
+      ReturnType<RideRepository['getProfile']>
+    >);
+    vi.mocked(inner.getPersonalCapabilityCard).mockResolvedValue({ state: 'ready' } as Awaited<
+      ReturnType<RideRepository['getPersonalCapabilityCard']>
+    >);
+    vi.mocked(inner.listRegistrations).mockResolvedValue([]);
+    vi.mocked(inner.getActivity).mockResolvedValue({ id: 'a' } as Awaited<
+      ReturnType<RideRepository['getActivity']>
+    >);
+    vi.mocked(inner.updateProfile).mockResolvedValue({ nickname: '新骑手' } as Awaited<
+      ReturnType<RideRepository['updateProfile']>
+    >);
+
+    await Promise.all([
+      repo.getProfile(),
+      repo.getPersonalCapabilityCard(),
+      repo.listRegistrations(),
+      repo.getActivity('a'),
+    ]);
+    await repo.updateProfile({ nickname: '新骑手' });
+    await Promise.all([
+      repo.getProfile(),
+      repo.getPersonalCapabilityCard(),
+      repo.listRegistrations(),
+      repo.getActivity('a'),
+    ]);
+    expect(inner.getProfile).toHaveBeenCalledTimes(2);
+    expect(inner.getPersonalCapabilityCard).toHaveBeenCalledTimes(2);
+    expect(inner.listRegistrations).toHaveBeenCalledOnce();
+    expect(inner.getActivity).toHaveBeenCalledOnce();
+
+    await repo.saveRegistration({ activityId: 'a' } as Parameters<
+      RideRepository['saveRegistration']
+    >[0]);
+    await Promise.all([repo.getProfile(), repo.listRegistrations(), repo.getActivity('a')]);
+    expect(inner.getProfile).toHaveBeenCalledTimes(2);
+    expect(inner.listRegistrations).toHaveBeenCalledTimes(2);
+    expect(inner.getActivity).toHaveBeenCalledTimes(2);
+  });
+
+  it('写入失效后晚到的旧读取不会重新污染资料缓存', async () => {
+    let resolveOld!: (value: Awaited<ReturnType<RideRepository['getProfile']>>) => void;
+    const old = new Promise<Awaited<ReturnType<RideRepository['getProfile']>>>((resolve) => {
+      resolveOld = resolve;
+    });
+    vi.mocked(inner.getProfile)
+      .mockReturnValueOnce(old)
+      .mockResolvedValue({ nickname: '新资料' } as Awaited<
+        ReturnType<RideRepository['getProfile']>
+      >);
+    vi.mocked(inner.updateProfile).mockResolvedValue({ nickname: '已保存' } as Awaited<
+      ReturnType<RideRepository['updateProfile']>
+    >);
+
+    const staleRead = repo.getProfile();
+    await repo.updateProfile({ nickname: '已保存' });
+    const fresh = await repo.getProfile();
+    resolveOld({ nickname: '旧资料' } as Awaited<ReturnType<RideRepository['getProfile']>>);
+    await staleRead;
+
+    expect(fresh).toMatchObject({ nickname: '新资料' });
+    await expect(repo.getProfile()).resolves.toMatchObject({ nickname: '新资料' });
+    expect(inner.getProfile).toHaveBeenCalledTimes(2);
   });
 
   it('活动写入不影响 Strava 缓存，Strava 写入不影响活动缓存', async () => {

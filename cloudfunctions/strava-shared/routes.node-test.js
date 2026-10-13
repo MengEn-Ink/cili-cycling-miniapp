@@ -35,16 +35,38 @@ function credential(overrides = {}) {
     ...overrides,
   };
 }
-test('仅提取严格 Strava 路线 URL，兼容地区前缀', () => {
+test('仅提取 allowlist 内 Strava 路线 URL，兼容地区前缀、尾随参数与片段', () => {
   assert.equal(extractRouteId('https://www.strava.com/routes/12345'), '12345');
   assert.equal(extractRouteId('https://www.strava.com/zh-CN/routes/987/'), '987');
+  assert.equal(
+    extractRouteId('https://www.strava.com/fr-FR/routes/42?utm_source=share#route'),
+    '42',
+  );
   for (const value of [
     'http://www.strava.com/routes/1',
     'https://strava.com/routes/1',
-    'https://www.strava.com/routes/1?x=1',
+    'https://www.strava.com.evil.test/routes/1?utm_source=share',
     'https://www.strava.com/athletes/1',
   ])
     assert.throws(() => extractRouteId(value), { code: 'ROUTE_URL_INVALID' });
+});
+test('GPX 点位兼容 namespace、单双引号、属性换行与任意顺序', () => {
+  const result = parseGpx(`<?xml version="1.0"?>
+    <gpx:gpx xmlns:gpx="urn:gpx">
+      <gpx:trk><gpx:trkseg>
+        <gpx:trkpt data-id="first"
+          lon='114.0000'
+          lat="22.0000"><gpx:ele>10</gpx:ele></gpx:trkpt>
+        <gpx:trkpt lat='22.0100' extra="x" lon="114.0100">
+          <gpx:ele>
+            25
+          </gpx:ele>
+        </gpx:trkpt>
+      </gpx:trkseg></gpx:trk>
+    </gpx:gpx>`);
+  assert.deepEqual(result.route_bounds, { south: 22, west: 114, north: 22.01, east: 114.01 });
+  assert.equal(result.elevation_m, 15);
+  assert.equal(result.elevation_profile.length, 2);
 });
 test('GPX 计算 haversine、正向总爬升、bounds 并均匀抽稀至 80 点', () => {
   const points = Array.from({ length: 101 }, (_, index) => [

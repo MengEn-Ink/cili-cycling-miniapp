@@ -191,6 +191,7 @@ synced_at
 | activities | created_by ASC, status ASC, is_deleted ASC, event_start DESC, _id DESC | 普通；成员活动 keyset 分页 |
 | registrations | activity_id ASC, openid ASC | 唯一 |
 | registrations | activity_id ASC, status ASC, created_at DESC | 普通 |
+| registrations | activity_id ASC, status ASC, _id ASC | 普通；按状态稳定读取报名成员 |
 | registrations | activity_id ASC, status ASC, options.gathering_mode ASC, created_at ASC | 普通；候补 FIFO |
 | registrations | activity_id ASC, team_id ASC, is_team_leader ASC | 普通；邀请队伍解析 |
 | registrations | openid ASC, created_at DESC | 普通 |

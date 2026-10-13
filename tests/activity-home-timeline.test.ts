@@ -8,7 +8,9 @@ import {
 } from '../miniprogram/pages/activities/timeline-state';
 
 const rideService = vi.hoisted(() => ({ listActivityPage: vi.fn() }));
+const repositoryCache = vi.hoisted(() => ({ peekActivityPage: vi.fn() }));
 vi.mock('../miniprogram/services/ride-service', () => ({ rideService }));
+vi.mock('../miniprogram/repositories', () => ({ repositoryCache }));
 
 const activity = (id: string): Activity => ({
   id,
@@ -113,8 +115,21 @@ describe('activities page timeline controller', () => {
   beforeEach(() => {
     vi.resetModules();
     rideService.listActivityPage.mockReset();
+    repositoryCache.peekActivityPage.mockReset().mockReturnValue(undefined);
   });
   afterEach(() => vi.unstubAllGlobals());
+
+  it('磁盘缓存有效时 onShow 同步保留内容且不闪回 loading 空态', async () => {
+    repositoryCache.peekActivityPage.mockReturnValue(pageResult(['disk-cached'], 'cursor-1'));
+    rideService.listActivityPage.mockResolvedValue(pageResult(['disk-cached'], 'cursor-1'));
+    const page = await loadPage();
+
+    page.onShow();
+
+    expect(page.data.items.map((item: any) => item.id)).toEqual(['disk-cached']);
+    expect(page.data.loading).toBe(false);
+    await vi.waitFor(() => expect(page.data.refreshing).toBe(false));
+  });
 
   it('默认加载 future，切换 history 使用隔离状态与动态文案', async () => {
     const page = await loadPage();

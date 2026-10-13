@@ -13,7 +13,7 @@ async function enqueueActivityReminders(store, { openid, activityId }, now = new
     if (!isEnabledAdmin(admin, openid)) fail('ADMIN_REQUIRED', '需要管理员权限');
     const activity = await tx.getActivity(activityId);
     if (!activity || activity.is_deleted === true) fail('ACTIVITY_NOT_FOUND', '活动不存在');
-    const registrations = await tx.listApproved(activityId);
+    const registrations = await tx.listReminderRecipients(activityId, ['approved', 'checked_in']);
     let queued = 0;
     let duplicates = 0;
     for (const registration of registrations) {

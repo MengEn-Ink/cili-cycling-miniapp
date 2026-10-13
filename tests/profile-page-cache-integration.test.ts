@@ -118,7 +118,51 @@ describe('个人中心缓存优先与主动刷新', () => {
     });
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('弱网 1200ms 后仍等待合理窗口并展示成功返回的能力卡', async () => {
+    vi.useFakeTimers();
+    const page = await mountPage(Date.now(), 'member-openid', card, false);
+    rideService.getPersonalCapabilityCard.mockImplementationOnce(
+      () =>
+        new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                ...card,
+                profile: { ...card.profile, displayName: '弱网骑手' },
+              }),
+            1_500,
+          ),
+        ),
+    );
+
+    const showing = page.onShow();
+    await vi.advanceTimersByTimeAsync(1_500);
+    await showing;
+    if (page.cardLoadPromise) await page.cardLoadPromise;
+
+    expect(page.data.heroCard.displayName).toBe('弱网骑手');
+    expect(page.data.refreshMessage).not.toContain('超时');
+  });
+
+  it('核心资料请求到达截止时间后明确降级且不会无限等待', async () => {
+    vi.useFakeTimers();
+    const page = await mountPage(Date.now(), 'member-openid', card, false);
+    rideService.getProfile.mockReturnValueOnce(new Promise(() => undefined));
+
+    const showing = page.onShow();
+    await vi.advanceTimersByTimeAsync(8_000);
+    await showing;
+
+    expect(page.data.loading).toBe(false);
+    expect(page.data.error).toBe('');
+    expect(page.data.refreshMessage).toContain('资料加载超时，请重试');
+    expect(page.data.heroCard).not.toBeNull();
+  });
 
   it('六小时内先展示本地数据且不重复请求业务接口', async () => {
     const page = await mountPage();
@@ -229,7 +273,7 @@ describe('个人中心缓存优先与主动刷新', () => {
     expect(rideService.getPersonalCapabilityCard).toHaveBeenCalledOnce();
   });
 
-  it('首次图片部分失败时不写入六小时新鲜缓存', async () => {
+  it('首次图片部分失败时提交成功项并让失败项继续使用远端地址', async () => {
     const page = await mountPage(Date.now(), 'member-openid', card, false);
     vi.mocked(wx.saveFile).mockImplementation(({ tempFilePath, success, fail }: any) => {
       if (String(tempFilePath).includes('background')) fail?.();
@@ -239,8 +283,17 @@ describe('个人中心缓存优先与主动刷新', () => {
     await page.onShow();
     if (page.cardLoadPromise) await page.cardLoadPromise;
 
-    expect(wx.setStorageSync).not.toHaveBeenCalled();
-    expect(wx.removeSavedFile).toHaveBeenCalled();
+    expect(wx.setStorageSync).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        images: {
+          'https://image.example/avatar.jpg': expect.stringContaining('saved://'),
+        },
+      }),
+    );
+    expect(page.data.heroAvatarUrl).toContain('saved://');
+    expect(page.data.heroBackgrounds[0].url).toBe('https://image.example/background.jpg');
+    expect(wx.removeSavedFile).not.toHaveBeenCalled();
   });
 
   it('页面隐藏后回收本轮新图片且不替换旧缓存', async () => {

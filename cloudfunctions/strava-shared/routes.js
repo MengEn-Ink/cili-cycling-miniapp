@@ -16,8 +16,6 @@ function extractRouteId(value) {
       url.port ||
       url.username ||
       url.password ||
-      url.search ||
-      url.hash ||
       !match
     )
       throw new Error();
@@ -41,13 +39,23 @@ function parseGpx(input, maxPoints = 80) {
   if (!Number.isInteger(maxPoints) || maxPoints < 2 || maxPoints > 80)
     throw new StravaError('GPX_INVALID', '海拔采样参数无效');
   const points = [];
-  const pattern = /<trkpt\b([^>]*)>([\s\S]*?)<\/trkpt\s*>/gi;
+  const xmlPrefix = '(?:[A-Za-z_][\\w.-]*:)?';
+  const pattern = new RegExp(
+    `<${xmlPrefix}trkpt\\b([^>]*)>([\\s\\S]*?)<\\/${xmlPrefix}trkpt\\s*>`,
+    'gi',
+  );
+  const attribute = (attributes, name) =>
+    new RegExp(`(?:^|\\s)${xmlPrefix}${name}\\s*=\\s*["']([^"']+)["']`, 'i').exec(attributes)?.[1];
+  const elevation = (contents) =>
+    new RegExp(`<${xmlPrefix}ele\\b[^>]*>\\s*([^<]+?)\\s*<\\/${xmlPrefix}ele\\s*>`, 'i').exec(
+      contents,
+    )?.[1];
   let match;
   while ((match = pattern.exec(xml))) {
     if (points.length >= 200000) throw new StravaError('GPX_INVALID', 'Strava 路线轨迹点过多');
-    const lat = Number(/\blat\s*=\s*["']([^"']+)["']/i.exec(match[1])?.[1]);
-    const lon = Number(/\blon\s*=\s*["']([^"']+)["']/i.exec(match[1])?.[1]);
-    const ele = Number(/<ele\b[^>]*>\s*([^<]+)\s*<\/ele\s*>/i.exec(match[2])?.[1]);
+    const lat = Number(attribute(match[1], 'lat'));
+    const lon = Number(attribute(match[1], 'lon'));
+    const ele = Number(elevation(match[2]));
     if (
       !Number.isFinite(lat) ||
       lat < -90 ||

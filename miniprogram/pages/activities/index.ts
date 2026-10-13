@@ -1,4 +1,5 @@
 import type { Activity } from '../../models';
+import { repositoryCache } from '../../repositories/index';
 import type { PublicActivityView } from '../../repositories/types';
 import { rideService } from '../../services/ride-service';
 import { activityDisplayStatus } from '../../utils/activity';
@@ -70,6 +71,18 @@ Page({
     currentCardIndex: 0,
   },
   onShow() {
+    const view = this.data.activeView as PublicActivityView;
+    const cached = repositoryCache.peekActivityPage(view);
+    if (cached && this.viewStates[view].items.length === 0) {
+      this.viewStates[view] = {
+        ...this.viewStates[view],
+        items: cached.items,
+        nextCursor: cached.nextCursor,
+        loading: false,
+        loaded: true,
+      };
+      this.renderActiveView();
+    }
     void this.load();
   },
   onHide() {

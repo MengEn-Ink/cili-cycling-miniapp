@@ -159,7 +159,7 @@ describe('个人中心加载状态', () => {
     const refresh = page.onShow();
     await Promise.resolve();
     await Promise.resolve();
-    await vi.advanceTimersByTimeAsync(1_200);
+    await vi.advanceTimersByTimeAsync(8_000);
 
     expect(page.data.heroBackgrounds).toEqual([
       expect.objectContaining({ url: 'https://temporary.example/ride.jpg' }),
