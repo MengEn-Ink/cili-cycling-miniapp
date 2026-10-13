@@ -132,12 +132,14 @@ describe('品牌与页面体验静态契约', () => {
 
     for (const [styles, selector] of [
       [activities, '.activities-page'],
-      [detail, '.detail-page'],
       [management, '.page.activity-list-page'],
       [profile, '.page.profile-page'],
     ] as const) {
       expect(styles).toContain(`${selector} {\n  --page-gutter: 48rpx;`);
     }
+    expect(declaration(effectiveBlock(detail, '.detail-unified-card'), 'margin')).toContain(
+      'var(--page-gutter)',
+    );
 
     expect(declaration(effectiveBlock(activityCard, '.activity-card'), 'border-radius')).toBe(
       'var(--radius-card)',
@@ -146,9 +148,7 @@ describe('品牌与页面体验静态契约', () => {
     expect(declaration(effectiveBlock(activityCard, '.card-cta'), 'min-height')).toBe(
       'var(--control-height)',
     );
-    expect(declaration(effectiveBlock(detail, '.detail-page .card'), 'border-radius')).toBe(
-      'var(--radius-card)',
-    );
+    expect(declaration(effectiveBlock(detail, '.detail-page .card'), 'border-radius')).toBe('0');
     expect(declaration(effectiveBlock(detail, '.detail-metric'), 'text-align')).toBe('center');
     expect(
       declaration(effectiveBlock(management, '.activity-list-page .status-filter'), 'min-height'),

@@ -69,9 +69,8 @@ describe('unified UI accessibility regressions', () => {
     }
 
     const detail = read('miniprogram/pages/activity-detail/index.wxss');
-    expectSemantic(
-      declaration(effectiveBlock(detail, '.detail-page .card'), 'background'),
-      '--color-surface',
+    expect(declaration(effectiveBlock(detail, '.detail-page .card'), 'background')).toBe(
+      'transparent',
     );
     expectSemantic(
       declaration(effectiveBlock(app, '.detail-page .muted'), 'color'),

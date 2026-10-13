@@ -59,20 +59,17 @@ describe('核心页面统一明亮主题配色', () => {
     ).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('无媒体详情 Hero 与禁用操作保持语义层级', () => {
+  it('无媒体详情 Hero、集合位置与禁用操作保持语义层级', () => {
     expectSemantic(
       declaration(
         effectiveBlock(detailStyles, '.detail-hero:not(.detail-hero--media) .hero-kicker'),
         'color',
       ),
-      '--color-text',
+      '--color-brand',
     );
     expectSemantic(
-      declaration(
-        effectiveBlock(detailStyles, '.detail-hero:not(.detail-hero--media) .hero-route'),
-        'color',
-      ),
-      '--color-muted',
+      declaration(effectiveBlock(detailStyles, '.meeting-location__label'), 'color'),
+      '--color-media-muted',
     );
     const disabled = effectiveBlock(detailStyles, '.detail-action .btn[disabled]');
     expectSemantic(declaration(disabled, 'border-color'), '--color-border');
@@ -88,15 +85,14 @@ describe('核心页面统一明亮主题配色', () => {
 
   it('白底热门爬坡标签使用近黑文字和品牌软底', () => {
     const block = effectiveBlock(detailStyles, '.climb-popularity');
-    expectSemantic(declaration(block, 'border-color'), '--color-border');
+    expect(declaration(block, 'border')).toContain('var(--color-brand)');
     expectSemantic(declaration(block, 'background'), '--color-brand-soft');
     expectSemantic(declaration(block, 'color'), '--color-text');
   });
 
-  it('媒体面骑友状态保留高对比品牌色', () => {
+  it('媒体面骑友状态使用白色高对比描边', () => {
     const block = effectiveBlock(detailStyles, '.rider-status');
-    expectSemantic(declaration(block, 'border-color'), '--color-brand');
-    expectSemantic(declaration(block, 'background'), '--color-brand-soft');
-    expectSemantic(declaration(block, 'color'), '--color-brand');
+    expect(declaration(block, 'border')).toContain('currentColor');
+    expectSemantic(declaration(block, 'color'), '--color-on-media');
   });
 });

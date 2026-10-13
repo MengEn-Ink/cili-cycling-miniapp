@@ -158,30 +158,17 @@ describe('HP-20261010-02 统一明亮 UI 全页对比度契约', () => {
     expect(template).not.toContain('RIDE DATE');
   });
 
-  it('activity-detail 的无图 Hero、费用和骑友徽标使用可读语义色', () => {
+  it('activity-detail 的票据 Hero、费用和骑友徽标使用可读语义色', () => {
     const detail = read('miniprogram/pages/activity-detail/index.wxss');
     expectSemantic(
-      declaration(
-        effectiveBlock(detail, '.detail-hero:not(.detail-hero--media) .hero-route'),
-        'color',
-      ),
-      '--color-muted',
+      declaration(effectiveBlock(detail, '.meeting-location__label'), 'color'),
+      '--color-media-muted',
     );
+    expectSemantic(declaration(effectiveBlock(detail, '.fee-included'), 'color'), '--color-text');
+    expectSemantic(declaration(effectiveBlock(detail, '.fee-excluded'), 'color'), '--color-text');
     expectSemantic(
-      declaration(effectiveBlock(detail, '.fee-included'), 'color'),
-      '--color-success-text',
-    );
-    expectSemantic(
-      declaration(effectiveBlock(detail, '.fee-excluded'), 'color'),
-      '--color-danger-text',
-    );
-    expectSemantic(
-      declaration(effectiveBlock(detail, '.rider-card .gender-pill.gender-male'), 'color'),
-      '--color-gender-male',
-    );
-    expectSemantic(
-      declaration(effectiveBlock(detail, '.rider-card .gender-pill.gender-female'), 'color'),
-      '--color-gender-female',
+      declaration(effectiveBlock(detail, '.rider-card .gender-pill'), 'color'),
+      '--color-on-media',
     );
   });
 

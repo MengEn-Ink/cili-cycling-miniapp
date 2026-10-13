@@ -42,8 +42,8 @@ describe('CILI 活动页静态契约', () => {
     expect(activities).toContain('item="{{item}}"');
     expect(detail).toContain('{{item.title}}');
     expect(detail).toContain('{{displayDate}}');
-    expect(detail).toContain('{{item.route.distanceKm}}');
-    expect(detail).toContain('{{item.route.elevationM}}');
+    expect(detail).toContain('item.route.distanceKm > 0 ? item.route.distanceKm');
+    expect(detail).toContain('item.route.elevationM > 0 ? item.route.elevationM');
     expect(detail).toContain('{{item.capacity}}');
     expect(detail).toContain('{{activityAction.label}}');
   });
