@@ -109,7 +109,35 @@ function changedFiles(ref) {
   return lines(gitText(['diff', '--name-only', ref, '--']));
 }
 
+function readGitHubEvent(env) {
+  if (!env.GITHUB_EVENT_PATH) return undefined;
+  try {
+    return JSON.parse(readFileSync(env.GITHUB_EVENT_PATH, 'utf8'));
+  } catch {
+    return undefined;
+  }
+}
+
+export function shouldSkipUiSync({ strict, env = process.env, event } = {}) {
+  if (strict) return false;
+  if (env.CILI_SKIP_UI_SYNC === '1') return true;
+  const payload = event ?? readGitHubEvent(env);
+  return (
+    payload?.pull_request?.labels?.some((label) => label?.name === 'sandbox-skip-ui-sync') === true
+  );
+}
+
 export function run({ strict = process.argv.includes('--strict') } = {}) {
+  if (shouldSkipUiSync({ strict })) {
+    const result = {
+      ok: true,
+      skipped: true,
+      reason: '已通过受控标签跳过本次沙箱视觉证据同步',
+    };
+    console.log(`普通模式：${result.reason}`);
+    return result;
+  }
+
   const manifest = readManifest();
   try {
     execFileSync('git', ['merge-base', '--is-ancestor', manifest.syncedThrough, 'HEAD']);

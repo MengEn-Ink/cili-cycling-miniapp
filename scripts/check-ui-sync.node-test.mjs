@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-import { assessUiSyncState } from './check-ui-sync.mjs';
+import { assessUiSyncState, shouldSkipUiSync } from './check-ui-sync.mjs';
 
 function png() {
   const buffer = Buffer.alloc(24);
@@ -142,4 +142,19 @@ test('普通 CI 和体验版晋级分别执行预算与零漂移门禁', () => {
   assert.match(packageJson.scripts.validate, /npm run check:ui-sync/);
   assert.match(ci, /npm run validate/);
   assert.match(promotion, /npm run check:ui-sync -- --strict/);
+});
+
+test('受控标签只跳过普通模式，严格发布模式仍执行视觉同步门禁', () => {
+  const env = { CILI_SKIP_UI_SYNC: '1' };
+  const labeledEvent = {
+    pull_request: { labels: [{ name: 'sandbox-skip-ui-sync' }] },
+  };
+  assert.equal(shouldSkipUiSync({ strict: false, env }), true);
+  assert.equal(shouldSkipUiSync({ strict: true, env }), false);
+  assert.equal(shouldSkipUiSync({ strict: false, env: {}, event: labeledEvent }), true);
+  assert.equal(shouldSkipUiSync({ strict: true, env: {}, event: labeledEvent }), false);
+  assert.equal(
+    shouldSkipUiSync({ strict: false, env: {}, event: { pull_request: { labels: [] } } }),
+    false,
+  );
 });
