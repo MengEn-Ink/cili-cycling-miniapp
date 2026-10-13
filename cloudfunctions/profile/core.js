@@ -775,22 +775,50 @@ function effectiveBackgroundPhoto(profile) {
   const legacy = Array.isArray(value.photos) ? value.photos.find(validPhoto) : undefined;
   return legacy ? { file_id: legacy.file_id, category: legacy.category } : null;
 }
+// 报名所需的完整资料口径：三处门禁（完整度、资料保存、报名校验）共用同一字段集合。
+// 背景图属展示美化项，不计入完整度，也不作为报名硬门槛。
+const PROFILE_REQUIREMENTS = [
+  { key: 'nickname', label: '设置昵称' },
+  { key: 'real_name', label: '填写真实姓名' },
+  { key: 'phone', label: '填写本人手机号' },
+  { key: 'emergency_name', label: '填写紧急联系人姓名' },
+  { key: 'emergency_phone', label: '填写紧急联系人电话' },
+  { key: 'gender', label: '选择性别' },
+  { key: 'avatar', label: '设置头像' },
+];
+function profileReadiness(doc = {}) {
+  const status = sensitiveStatus(doc);
+  const avatar = normalizeAvatarProfile(doc);
+  const ready = {
+    nickname: typeof doc.nickname === 'string' && !!doc.nickname.trim(),
+    real_name: status.real_name,
+    phone: status.phone,
+    emergency_name: typeof doc.emergency_name === 'string' && !!doc.emergency_name.trim(),
+    emergency_phone: status.emergency_phone,
+    gender: ['男', '女'].includes(doc.gender),
+    avatar: !!avatar.avatar_file_id && !!avatar.avatar_source,
+  };
+  const missing = PROFILE_REQUIREMENTS.filter((item) => !ready[item.key]);
+  const met = PROFILE_REQUIREMENTS.length - missing.length;
+  return {
+    ready,
+    missing: missing.map((item) => item.label),
+    missingKeys: missing.map((item) => item.key),
+    completeness: Math.round((met / PROFILE_REQUIREMENTS.length) * 100),
+  };
+}
 function assertFullProfileReady(profile) {
-  if (!['男', '女'].includes(profile.gender))
-    throw new ProfileError('VALIDATION_FAILED', '请选择性别');
-  const avatar = normalizeAvatarProfile(profile);
-  if (!avatar.avatar_file_id || !avatar.avatar_source)
-    throw new ProfileError('AVATAR_REQUIRED', '请先设置头像');
+  const { ready } = profileReadiness(profile);
+  if (!ready.gender) throw new ProfileError('VALIDATION_FAILED', '请选择性别');
+  if (!ready.avatar) throw new ProfileError('AVATAR_REQUIRED', '请先设置头像');
+  // 背景图（个人照片）不计入完整度，但公开展示路径仍要求必填，与报名门槛/完整度口径相互独立。
   if (!validPhoto(effectiveBackgroundPhoto(profile)))
     throw new ProfileError('VALIDATION_FAILED', '请上传个人照片');
 }
 function response(doc = {}, keyValue) {
   const status = sensitiveStatus(doc);
   const phone = status.phone && keyValue ? decrypt(doc.phone_cipher, keyValue) : '';
-  const emergencyReady =
-    typeof doc.emergency_name === 'string' && !!doc.emergency_name.trim() && status.emergency_phone;
-  const nicknameReady = typeof doc.nickname === 'string' && !!doc.nickname.trim();
-  const checks = [nicknameReady, status.real_name, status.phone, emergencyReady];
+  const readiness = profileReadiness(doc);
   const avatar = normalizeAvatarProfile(doc);
   const avatarFileId = avatar.avatar_file_id || '';
   const avatarSource = avatar.avatar_source;
@@ -821,7 +849,8 @@ function response(doc = {}, keyValue) {
     emergency_phone_masked:
       typeof doc.emergency_phone_masked === 'string' ? doc.emergency_phone_masked : '',
     sensitive_status: status,
-    completeness: Math.round((checks.filter(Boolean).length / checks.length) * 100),
+    completeness: readiness.completeness,
+    missing: readiness.missing,
   };
 }
 function buildUpdate(event, keyValue, current = {}) {
@@ -973,6 +1002,7 @@ module.exports = {
   maskName,
   maskPhone,
   response,
+  profileReadiness,
   buildUpdate,
   phoneUpdate,
   compatibleRandomUUID,

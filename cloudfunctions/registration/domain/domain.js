@@ -140,18 +140,6 @@ function assertActivityOpen(activity, now) {
 function normalizeGender(value) {
   return value === '男' || value === '女' ? value : '';
 }
-function hasReadyBackgroundPhoto(profile) {
-  const background =
-    profile && Object.prototype.hasOwnProperty.call(profile, 'background_photo')
-      ? profile.background_photo
-      : undefined;
-  return Boolean(
-    background &&
-    typeof background === 'object' &&
-    typeof background.file_id === 'string' &&
-    background.file_id.trim(),
-  );
-}
 function assertProfileReady(profile) {
   const sensitive = profile && profile.sensitive_status;
   // 存量证件密文保持只读兼容：报名判定不读取、不解密，也不要求资料更新时删除。
@@ -176,9 +164,6 @@ function assertProfileReady(profile) {
   }
   if (typeof profile.avatar_file_id !== 'string' || !profile.avatar_file_id.trim()) {
     fail('PROFILE_INCOMPLETE', '请先在个人资料中设置头像');
-  }
-  if (!hasReadyBackgroundPhoto(profile)) {
-    fail('PROFILE_INCOMPLETE', '请先在个人资料中上传个人照片');
   }
 }
 function dateOrNull(value) {

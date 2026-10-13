@@ -35,7 +35,7 @@
         <view class="profile-copy">
           <view class="profile-name">{{profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '欢迎来到此里')}}</view>
           <view class="profile-title" wx:if="{{profile && profile.title}}">{{profile.title}}</view>
-          <view class="auth-line"><text class="auth-dot {{authStatus === 'authenticated' ? 'verified' : ''}}"></text>{{authStatus === 'authenticated' ? '微信身份已验证' : ((authStatus === 'loading' || authStatus === 'idle') ? '微信身份同步中' : '微信身份待验证')}}</view>
+          <view class="auth-line"><text class="auth-dot {{authStatus === 'authenticated' ? 'verified' : ''}}"></text>{{authStatus === 'authenticated' ? '微信已登录' : ((authStatus === 'loading' || authStatus === 'idle') ? '微信登录同步中' : '微信未登录')}}</view>
         </view>
       </view>
     </view>
@@ -44,13 +44,14 @@
   <view class="hero-profile-progress" wx:if="{{profile && profile.completeness < 100}}">
     <view class="hero-progress-head"><text>资料完整度</text><text>{{profile.completeness}}%</text></view>
     <view class="hero-progress-track"><view class="hero-progress-value" style="width: {{profile.completeness}}%"></view></view>
+    <view class="hero-progress-missing" wx:if="{{profile.missing.length}}">还差：<text wx:for="{{profile.missing}}" wx:key="*this">{{item}}{{index < profile.missing.length - 1 ? '、' : ''}}</text></view>
   </view>
 
   <view class="identity-guide" wx:if="{{authStatus === 'unavailable' || authStatus === 'error'}}">
     <view class="identity-guide-title">让骑友认出你</view>
-    <view class="identity-guide-copy">请先设置常用昵称和非默认头像，再完成微信身份验证。</view>
+    <view class="identity-guide-copy">设置常用昵称和非默认头像，让骑友认出你。</view>
     <view class="identity-guide-copy" wx:if="{{authError || identityHintText}}">{{authError || identityHintText}}</view>
-    <view class="identity-guide-actions"><button class="secondary" bindtap="edit">完善昵称与头像</button><button class="btn" bindtap="retryAuth">验证微信身份</button></view>
+    <view class="identity-guide-actions"><button class="secondary" bindtap="edit">完善昵称与头像</button><button class="btn" bindtap="retryAuth">重新登录</button></view>
   </view>
 
   <view class="profile-refresh-error" wx:if="{{!profile && error}}"><text aria-hidden="true">{{error}}</text><button bindtap="retryProfile">重试</button></view>

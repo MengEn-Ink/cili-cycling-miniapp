@@ -670,6 +670,9 @@ function mapProfile(raw: unknown): Profile {
         }
       : {}),
     completeness: value.completeness,
+    missing: Array.isArray(value.missing)
+      ? value.missing.filter((item): item is string => typeof item === 'string')
+      : [],
     sensitiveStatus: {
       realName: status.real_name === true,
       phone: status.phone === true,

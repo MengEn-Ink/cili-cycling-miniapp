@@ -98,13 +98,12 @@ Page({
     const view = this.data.activeView as PublicActivityView;
     const state = this.viewStates[view];
     const displayItems = state.items.map(displayActivity);
-    const currentCardIndex = Math.min(
-      this.data.currentCardIndex,
-      Math.max(displayItems.length - 1, 0),
-    );
+    // 仅在当前索引越界时下钳，避免刷新/加载更多等常规渲染反复把受控 current 写回同值，
+    // 否则会与 swiper 手势位置互相争用，触发 is-active 入场动画重放，表现为卡片闪烁/频繁切换。
+    const clampedIndex = Math.min(this.data.currentCardIndex, Math.max(displayItems.length - 1, 0));
     const dayChips = view === 'future' ? buildCarouselDayChips(state.items) : [];
     const selectedDayKey =
-      [...dayChips].reverse().find((chip) => chip.index <= currentCardIndex)?.key ?? '';
+      [...dayChips].reverse().find((chip) => chip.index <= clampedIndex)?.key ?? '';
     this.setData({
       ...VIEW_COPY[view],
       items: displayItems,
@@ -116,7 +115,7 @@ Page({
       loadingMore: state.loadingMore,
       error: state.error,
       refreshError: state.refreshError,
-      currentCardIndex,
+      ...(clampedIndex !== this.data.currentCardIndex ? { currentCardIndex: clampedIndex } : {}),
     });
   },
   isCurrent(view: PublicActivityView, revision: number, cursor?: string | null) {
@@ -233,10 +232,14 @@ Page({
   },
   cardChange(event: { detail?: { current?: number } }) {
     const current = Math.max(0, Number(event.detail?.current) || 0);
-    const selectedDayKey =
-      [...this.data.dayChips].reverse().find((chip: CarouselDayChip) => chip.index <= current)
-        ?.key ?? '';
-    this.setData({ currentCardIndex: current, selectedDayKey });
+    // swiper 滑动结算阶段可能连续派发同一 current；仅在索引真正变化时写入，
+    // 避免对受控 current 做无意义回写放大手势与渲染之间的抖动。
+    if (current !== this.data.currentCardIndex) {
+      const selectedDayKey =
+        [...this.data.dayChips].reverse().find((chip: CarouselDayChip) => chip.index <= current)
+          ?.key ?? '';
+      this.setData({ currentCardIndex: current, selectedDayKey });
+    }
     if (current >= this.data.items.length - 1 && this.data.nextCursor && !this.data.loadingMore) {
       void this.loadMore();
     }

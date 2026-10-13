@@ -134,13 +134,13 @@ describe('资料编辑头像交互', () => {
     expect(rideService.getPersonalCapabilityCard).toHaveBeenCalled();
   });
 
-  it('通用保存不提交昵称、头像字段，并保留敏感字段掩码语义', async () => {
+  it('通用保存提交昵称但不提交头像字段，并保留敏感字段掩码语义', async () => {
     page.data.p.photos = [{ id: 'cloud://env/profiles/owner/bg.jpg', category: 'ride' }];
 
     await page.save();
 
     const patch = rideService.updateProfile.mock.calls[0][0];
-    expect(patch).not.toHaveProperty('nickname');
+    expect(patch.nickname).toBe(page.data.p.nickname);
     expect(patch).not.toHaveProperty('avatarFileId');
     expect(patch).not.toHaveProperty('avatarSource');
     expect(patch).toMatchObject({
@@ -181,7 +181,7 @@ describe('资料编辑头像交互', () => {
     ['紧急电话', { emergencyPhone: '139****0000' }],
     ['相册', { photos: [{ id: 'cloud://env/existing.jpg', category: 'ride' }] }],
   ])('没有 avatarId 但已有%s资料的存量用户可编辑但保存被头像门禁拦截', async (_label, fields) => {
-    const storedProfile = { ...blankProfile, ...fields } as Profile;
+    const storedProfile = { ...blankProfile, nickname: '骑手', ...fields } as Profile;
     rideService.getProfile.mockResolvedValueOnce(storedProfile);
     await page.onLoad();
 
@@ -909,9 +909,10 @@ describe('资料编辑头像页面契约', () => {
     expect(source).not.toMatch(/getStravaReadiness|importStravaAvatar|STRAVA_AVATAR/);
   });
 
-  it('删除昵称输入、展示身份与展示称号', () => {
-    expect(template).not.toContain('data-k="nickname"');
-    expect(source).not.toContain('nickname: p.nickname');
+  it('提供微信昵称输入并随资料保存，展示身份与展示称号已移除', () => {
+    expect(template).toContain('data-k="nickname"');
+    expect(template).toContain('type="nickname"');
+    expect(source).toContain('nickname: p.nickname');
     expect(template).not.toContain('展示身份');
     expect(template).not.toContain('展示称号');
     expect(template).not.toContain('value="{{p.title}}"');

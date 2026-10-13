@@ -596,7 +596,7 @@ describe('个人中心加载状态', () => {
 
     expect(page.data).toMatchObject({
       authStatus: 'loading',
-      identityHintText: '上次已完成微信身份验证 2026-09-30 09:02',
+      identityHintText: '上次微信登录 2026-09-30 09:02',
       isAdmin: false,
     });
     page.activities();
@@ -612,7 +612,7 @@ describe('个人中心加载状态', () => {
 
     expect(page.data).toMatchObject({
       authStatus: 'unavailable',
-      identityHintText: '上次已完成微信身份验证 2026-09-30 09:02',
+      identityHintText: '上次微信登录 2026-09-30 09:02',
       isAdmin: false,
     });
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
@@ -644,7 +644,7 @@ describe('个人中心加载状态', () => {
     expect(page.data).toMatchObject({
       authStatus: 'error',
       authError: '身份服务暂时不可用',
-      identityHintText: '上次已完成微信身份验证 2026-09-30 09:02',
+      identityHintText: '上次微信登录 2026-09-30 09:02',
       isAdmin: false,
     });
     page.activities();
@@ -689,7 +689,7 @@ describe('个人中心加载状态', () => {
 
     expect(page.data).toMatchObject({
       authStatus: 'loading',
-      identityHintText: '上次已完成微信身份验证 2026-10-13 09:58',
+      identityHintText: '上次微信登录 2026-10-13 09:58',
     });
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     expect(template).toContain("authStatus === 'loading' || authStatus === 'idle'");
@@ -711,8 +711,8 @@ describe('个人中心加载状态', () => {
     expect(template).toContain(
       "wx:if=\"{{authStatus === 'unavailable' || authStatus === 'error'}}\"",
     );
-    expect(template).toContain('请先设置常用昵称和非默认头像，再完成微信身份验证。');
+    expect(template).toContain('设置常用昵称和非默认头像，让骑友认出你。');
     expect(template).toContain('完善昵称与头像');
-    expect(template).toContain('验证微信身份');
+    expect(template).toContain('重新登录');
   });
 });

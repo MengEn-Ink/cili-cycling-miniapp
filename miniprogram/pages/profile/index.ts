@@ -57,7 +57,7 @@ function formatIdentityHint(authStatus: string) {
   const date = new Date(hint.verifiedAt + CHINA_TIME_OFFSET_MS);
   if (!Number.isFinite(date.getTime())) return '';
   const pad = (value: number) => String(value).padStart(2, '0');
-  return `上次已完成微信身份验证 ${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
+  return `上次微信登录 ${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
 }
 
 function identityViewData(fallbackError = '') {

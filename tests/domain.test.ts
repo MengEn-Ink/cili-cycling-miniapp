@@ -156,6 +156,19 @@ describe('表单校验', () => {
       }),
     ).toContain('请授权并填写微信昵称');
   });
+  it('缺少真实姓名时阻断（真实姓名为报名硬门槛）', () => {
+    expect(
+      validateRegistration({
+        profile: {
+          ...registrationProfile,
+          realName: '',
+          sensitiveStatus: { realName: false, phone: true, emergencyPhone: true },
+        },
+        gatheringMode: 'self_drive',
+        experience: '常骑',
+      }),
+    ).toContain('请填写真实姓名');
+  });
   it('错误手机号与空选项仍然阻断', () => {
     const p = { ...registrationProfile, phone: '123' };
     expect(
