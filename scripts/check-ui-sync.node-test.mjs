@@ -154,6 +154,20 @@ test('受控标签只跳过普通模式，严格发布模式仍执行视觉同�
   assert.equal(shouldSkipUiSync({ strict: false, env: {}, event: labeledEvent }), true);
   assert.equal(shouldSkipUiSync({ strict: true, env: {}, event: labeledEvent }), false);
   assert.equal(
+    shouldSkipUiSync({
+      strict: false,
+      env: { GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/main' },
+    }),
+    true,
+  );
+  assert.equal(
+    shouldSkipUiSync({
+      strict: true,
+      env: { GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/main' },
+    }),
+    false,
+  );
+  assert.equal(
     shouldSkipUiSync({ strict: false, env: {}, event: { pull_request: { labels: [] } } }),
     false,
   );
