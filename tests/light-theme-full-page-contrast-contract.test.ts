@@ -149,13 +149,13 @@ describe('HP-20261010-02 统一明亮 UI 全页对比度契约', () => {
       '--color-surface',
     );
     expectSemantic(declaration(effectiveBlock(card, '.metric-unit'), 'color'), '--color-muted');
-    expectSemantic(declaration(effectiveBlock(card, '.card-cta'), 'color'), '--color-on-action');
     expect(declaration(effectiveBlock(card, '.metrics'), 'grid-template-columns')).toBe(
       'repeat(3, minmax(0, 1fr))',
     );
-    expectSemantic(declaration(effectiveBlock(card, '.route-arrow'), 'color'), '--color-text');
     const template = read('miniprogram/components/activity-card/index.wxml');
     expect(template).not.toContain('RIDE DATE');
+    expect(template).toContain('bindtap="open"');
+    expect(template).not.toContain('查看详情');
   });
 
   it('activity-detail 的票据 Hero、费用和骑友徽标使用可读语义色', () => {

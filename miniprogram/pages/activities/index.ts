@@ -10,23 +10,19 @@ import {
 } from '../../utils/date-time';
 import {
   appendUniqueActivities,
+  buildCarouselDayChips,
   createTimelineViewState,
   invalidateTimelineView,
+  type CarouselDayChip,
   type TimelineViewState,
 } from './timeline-state';
 
 const VIEW_COPY = {
   future: {
-    sectionEyebrow: '即将开始',
-    sectionTitle: '即将开始',
-    followingTitle: '接下来',
     emptyTitle: '暂无未来活动',
     emptyCopy: '新的骑行活动正在筹备中',
   },
   history: {
-    sectionEyebrow: '历史活动',
-    sectionTitle: '最近结束',
-    followingTitle: '更早活动',
     emptyTitle: '暂无历史活动',
     emptyCopy: '完成的骑行活动会出现在这里',
   },
@@ -62,12 +58,11 @@ Page({
     error: '',
     refreshError: '',
     nextCursor: null as string | null,
-    sectionEyebrow: VIEW_COPY.future.sectionEyebrow,
-    sectionTitle: VIEW_COPY.future.sectionTitle,
-    followingTitle: VIEW_COPY.future.followingTitle,
     emptyTitle: VIEW_COPY.future.emptyTitle,
     emptyCopy: VIEW_COPY.future.emptyCopy,
     items: [] as ReturnType<typeof displayActivity>[],
+    dayChips: [] as CarouselDayChip[],
+    selectedDayKey: '',
     currentCardIndex: 0,
   },
   onShow() {
@@ -103,16 +98,25 @@ Page({
     const view = this.data.activeView as PublicActivityView;
     const state = this.viewStates[view];
     const displayItems = state.items.map(displayActivity);
+    const currentCardIndex = Math.min(
+      this.data.currentCardIndex,
+      Math.max(displayItems.length - 1, 0),
+    );
+    const dayChips = view === 'future' ? buildCarouselDayChips(state.items) : [];
+    const selectedDayKey =
+      [...dayChips].reverse().find((chip) => chip.index <= currentCardIndex)?.key ?? '';
     this.setData({
       ...VIEW_COPY[view],
       items: displayItems,
+      dayChips,
+      selectedDayKey,
       nextCursor: state.nextCursor,
       loading: state.loading,
       refreshing: state.refreshing,
       loadingMore: state.loadingMore,
       error: state.error,
       refreshError: state.refreshError,
-      currentCardIndex: Math.min(this.data.currentCardIndex, Math.max(displayItems.length - 1, 0)),
+      currentCardIndex,
     });
   },
   isCurrent(view: PublicActivityView, revision: number, cursor?: string | null) {
@@ -229,10 +233,20 @@ Page({
   },
   cardChange(event: { detail?: { current?: number } }) {
     const current = Math.max(0, Number(event.detail?.current) || 0);
-    this.setData({ currentCardIndex: current });
+    const selectedDayKey =
+      [...this.data.dayChips].reverse().find((chip: CarouselDayChip) => chip.index <= current)
+        ?.key ?? '';
+    this.setData({ currentCardIndex: current, selectedDayKey });
     if (current >= this.data.items.length - 1 && this.data.nextCursor && !this.data.loadingMore) {
       void this.loadMore();
     }
+  },
+  selectDay(event: { currentTarget?: { dataset?: { index?: unknown } } }) {
+    const index = Number(event.currentTarget?.dataset?.index);
+    if (!Number.isInteger(index) || index < 0 || index >= this.data.items.length) return;
+    const selectedDayKey =
+      this.data.dayChips.find((chip: CarouselDayChip) => chip.index === index)?.key ?? '';
+    this.setData({ currentCardIndex: index, selectedDayKey });
   },
   open(event: { currentTarget: { dataset: { id: string } } }) {
     wx.navigateTo({ url: '/pages/activity-detail/index?id=' + event.currentTarget.dataset.id });

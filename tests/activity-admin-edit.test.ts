@@ -964,7 +964,12 @@ describe('日常活动极简创建与编辑', () => {
   it('日常活动详情隐藏旧路线费用和不限人数话术，并只为可信 GPX 展示路线详情', () => {
     const card = readFileSync('miniprogram/components/activity-card/index.wxml', 'utf8');
     const detail = readFileSync('miniprogram/pages/activity-detail/index.wxml', 'utf8');
-    expect(card).toContain("item.registrationUnlimited ? (item.occupied + ' 人已报名')");
+    expect(card).toContain('item.registrationUnlimited ? item.occupied');
+    expect(card).toContain(
+      "item.capacity > 0 ? (item.occupied + ' / ' + item.capacity) : '待确认'",
+    );
+    expect(card).toContain("item.capacity <= 0 ? '名额' : '报名'");
+    expect(card).not.toContain('人已报名');
     expect(card).toContain("item.route.start || '集合地点待公布'");
     expect(card).not.toContain("item.route.end || '终点待公布'");
     expect(detail).toContain('class="time-card-primary"');

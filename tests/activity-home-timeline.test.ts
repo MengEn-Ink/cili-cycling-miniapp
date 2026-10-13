@@ -3,6 +3,7 @@ import { read } from './theme-contract-helpers';
 import type { Activity } from '../miniprogram/models';
 import {
   appendUniqueActivities,
+  buildCarouselDayChips,
   createTimelineViewState,
   invalidateTimelineView,
 } from '../miniprogram/pages/activities/timeline-state';
@@ -83,6 +84,22 @@ describe('activity timeline state helpers', () => {
       appendUniqueActivities([activity('a'), activity('b')], [activity('b'), activity('c')]),
     ).toEqual([activity('a'), activity('b'), activity('c')]);
   });
+  it('多活动按自然日生成快捷选择，并定位到该日第一张卡片', () => {
+    const nextDay = {
+      ...activity('b'),
+      date: '2026-10-19T00:00:00.000Z',
+      startAt: '2026-10-19T00:00:00.000Z',
+    };
+    expect(
+      buildCarouselDayChips(
+        [activity('a'), activity('same-day'), nextDay],
+        '2026-10-17T00:00:00.000Z',
+      ),
+    ).toEqual([
+      { key: '2026-10-18', label: '明天', index: 0 },
+      { key: '2026-10-19', label: '后天', index: 2 },
+    ]);
+  });
 });
 
 describe('activity timeline template contract', () => {
@@ -90,9 +107,14 @@ describe('activity timeline template contract', () => {
     const template = read('miniprogram/pages/activities/index.wxml');
     expect(template).toContain('class="timeline-tabs"');
     expect(template).toContain('data-view="future"');
+    expect(template.match(/>即将开始<\/view>/g)).toHaveLength(1);
     expect(template).toContain('data-view="history"');
     expect(template).toContain('aria-selected="{{activeView === \'future\'}}"');
     expect(template).toContain('class="activity-carousel"');
+    expect(template).toContain('class="day-chip-bar"');
+    expect(template).toContain('data-index="{{item.index}}"');
+    expect(template).toContain('bindtap="selectDay"');
+    expect(template).not.toContain('<view class="section-title">{{sectionTitle}}</view>');
     expect(template).toContain('current="{{currentCardIndex}}"');
     expect(template).toContain('duration="0"');
     expect(template).toContain('bindchange="cardChange"');
@@ -102,7 +124,9 @@ describe('activity timeline template contract', () => {
 
   it('展示卡片序号、日期、切换提示并保留加载失败重试', () => {
     const template = read('miniprogram/pages/activities/index.wxml');
-    expect(template).toContain('{{currentCardIndex + 1}} / {{items.length}}');
+    expect(template).toContain(
+      "'正在查看第 ' + (currentCardIndex + 1) + ' 场，共 ' + items.length + ' 场'",
+    );
     expect(template).toContain('{{item.displayDateLabel}}');
     expect(template).toContain('class="carousel-progress__value"');
     expect(template).toContain('items.length === 1 || refreshError');
@@ -141,8 +165,6 @@ describe('activities page timeline controller', () => {
     expect(rideService.listActivityPage).toHaveBeenNthCalledWith(1, 'future');
     expect(page.data).toMatchObject({
       activeView: 'future',
-      sectionEyebrow: '即将开始',
-      sectionTitle: '即将开始',
       emptyCopy: '新的骑行活动正在筹备中',
       nextCursor: 'future-cursor',
     });
@@ -153,9 +175,6 @@ describe('activities page timeline controller', () => {
     await vi.waitFor(() => expect(page.data.loading).toBe(false));
     expect(page.data).toMatchObject({
       activeView: 'history',
-      sectionEyebrow: '历史活动',
-      sectionTitle: '最近结束',
-      followingTitle: '更早活动',
       emptyTitle: '暂无历史活动',
       emptyCopy: '完成的骑行活动会出现在这里',
     });
@@ -186,6 +205,20 @@ describe('activities page timeline controller', () => {
     expect(page.data.activeView).toBe('history');
     expect(page.data.currentCardIndex).toBe(0);
     expect(page.data.items.map((item: any) => item.id)).toEqual(['h1', 'h2']);
+  });
+
+  it('点击日期快捷入口直接切换到当天第一张卡片', async () => {
+    const page = await loadPage();
+    page.data.items = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
+    page.data.dayChips = [
+      { key: '2026-10-18', label: '明天', index: 0 },
+      { key: '2026-10-19', label: '后天', index: 2 },
+    ];
+
+    page.selectDay({ currentTarget: { dataset: { index: 2 } } });
+
+    expect(page.data.currentCardIndex).toBe(2);
+    expect(page.data.selectedDayKey).toBe('2026-10-19');
   });
 
   it('滑到最后一张时自动加载下一页，普通滑动只更新索引', async () => {

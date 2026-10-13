@@ -1,14 +1,14 @@
 # 高优问题清单
 
-> 最后更新：2026-10-13 18:36（CST）
+> 最后更新：2026-10-13 19:08（CST）
 >
 > 本文件只保留**尚未完成的实际交付或验收**。已合并 PR、历史 CI 流水账、已关闭问题和被新产品口径取代的方案，以 Git/GitHub 历史为准，不再复制到活跃清单。
 
 ## 当前基线
 
-- 当前 main 基线：`d414f7dad4acf0cfed58e87c360ee272a06f3e67`（PR #188）。
-- main CI：run [38363104873](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38363104873) 成功；GitHub Pages run [38363104065](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38363104065) 成功。
-- 微信开发版：run [38363263500](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38363263500) 成功，对应提交 `d414f7d`。
+- 当前 main 基线：`e033018fbb1b0906038c4126d121f2b7a1a959a4`（PR #191）。
+- main CI：run [38371136664](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38371136664) 成功；GitHub Pages run [38371136544](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38371136544) 成功。
+- 微信开发版：run [38371311988](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38371311988) 成功，对应提交 `e033018`。
 - 活动详情交付：PR #129 已合并；`activity-read`、`registration`、`admin-review` 已部署到 `cloudbase-d0gizacy77a1ab017`，部署后线上代码与对应本地包一致。
 - 活跃任务分支必须通过 PR 合入并在合并后删除；是否存在开放 PR 以 GitHub 实时状态为准。
 
