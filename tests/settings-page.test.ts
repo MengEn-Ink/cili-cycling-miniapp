@@ -23,21 +23,21 @@ describe('设置页', () => {
   it('只加载当前版本日志，不注册第三方账号生命周期或入口', () => {
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.13.46',
+      version: '2026.10.13.47',
       latest: true,
-      title: 'GPX 上传反馈更清晰',
-      summary: '文件选择失败会在上传区域直接提示，路线图准备完成前也不会提前进入可发布状态。',
+      title: 'GPX 隐私提示更准确',
+      summary: '文件选择失败现在会区分后台隐私声明、用户授权和当前环境支持情况。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.13.47',
       '2026.10.13.46',
       '2026.10.13.45',
       '2026.10.13.44',
       '2026.10.13.43',
-      '2026.10.13.42',
     ]);
     expect(page.onShow).toBeUndefined();
     expect(page.loadStravaStatus).toBeUndefined();

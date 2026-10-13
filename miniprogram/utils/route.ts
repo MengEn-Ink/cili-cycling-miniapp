@@ -123,8 +123,25 @@ export function routeErrorMessage(error: unknown): string {
     typeof (error as { errMsg?: unknown }).errMsg === 'string'
       ? (error as { errMsg: string }).errMsg
       : '';
-  if (/chooseMessageFile/i.test(platformMessage))
+  const normalizedPlatformMessage = platformMessage.toLowerCase();
+  if (
+    /not declared|requiredprivateinfos|api scope|api.*not.*open|appid privacy api banned|errno[:= ]*112/.test(
+      normalizedPlatformMessage,
+    )
+  )
+    return '请联系管理员在微信后台隐私保护指引中声明“收集你选中的文件”后重新发布';
+  if (
+    /permission is not authorized|auth deny|user deny|errno[:= ]*104/.test(
+      normalizedPlatformMessage,
+    )
+  )
+    return '请先同意小程序隐私保护指引，再上传 GPX';
+  if (
+    /choosemessagefile/.test(normalizedPlatformMessage) &&
+    /not supported|unsupported|devtools/.test(normalizedPlatformMessage)
+  )
     return '当前环境无法打开文件选择器，请使用微信真机上传 GPX';
+  if (/choosemessagefile/.test(normalizedPlatformMessage)) return '文件选择器打开失败，请稍后重试';
   const code =
     typeof error === 'object' &&
     error !== null &&

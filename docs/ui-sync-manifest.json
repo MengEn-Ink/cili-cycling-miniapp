@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
-  "syncedThrough": "54ac489933fd0cf4ac8d7170272b88e601d92634",
-  "syncedAt": "2026-10-13T10:06:07Z",
+  "syncedThrough": "a551a3aabb95f68825863d599a55c54a0982bd33",
+  "syncedAt": "2026-10-13T12:20:34Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:16c623ab30f57f76332beabcbbb6c33aaf0b49212f9d8d09142c55568f4865b5"
+    "digest": "sha256:5cdf9335b677502f04222c069f267801e0726ff63e5f752e893b6c773d6f11ac"
   },
   "prototype": {
-    "digest": "sha256:329b9bd4cc721cea4e73a2133014008eef7778222751764521e71d145074b692"
+    "digest": "sha256:7c9862771c0ee9e4ce508097d0f949ee985402d162eaaf075e8080349184d414"
   },
   "routes": [
     {
@@ -71,42 +71,22 @@
     }
   ],
   "evidence": {
-    "directory": "docs/evidence/ui-sync/2026-10-13-route-embed-gpx-no-oauth",
+    "directory": "docs/evidence/ui-sync/2026-10-13-gpx-privacy-a551a3a",
     "routes": [
+      {
+        "id": "activities",
+        "devtools": "activities-devtools.png",
+        "pages": "activities-pages.png"
+      },
       {
         "id": "admin-activity-edit",
         "devtools": "admin-activity-edit-devtools.png",
         "pages": "admin-activity-edit-pages.png"
       },
       {
-        "id": "activity-detail",
-        "devtools": "activity-detail-devtools.png",
-        "pages": "activity-detail-pages.png"
-      },
-      {
-        "id": "route-view",
-        "devtools": "route-view-devtools.png",
-        "pages": "route-view-pages.png"
-      },
-      {
-        "id": "profile",
-        "devtools": "profile-devtools.png",
-        "pages": "profile-pages.png"
-      },
-      {
-        "id": "capability-card",
-        "devtools": "capability-card-devtools.png",
-        "pages": "capability-card-pages.png"
-      },
-      {
-        "id": "admin-reviews",
-        "devtools": "admin-reviews-devtools.png",
-        "pages": "admin-reviews-pages.png"
-      },
-      {
-        "id": "admin-review-detail",
-        "devtools": "admin-review-detail-devtools.png",
-        "pages": "admin-review-detail-pages.png"
+        "id": "settings",
+        "devtools": "settings-devtools.png",
+        "pages": "settings-pages.png"
       }
     ]
   }

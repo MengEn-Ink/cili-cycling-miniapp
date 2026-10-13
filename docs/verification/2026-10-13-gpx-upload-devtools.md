@@ -1,8 +1,8 @@
 # GPX 上传微信开发者工具验证
 
-> 时间：2026-10-13 19:51 CST
-> 分支：`main`
-> 合入提交：`07b4c1d691cb81434cbbe956e4cb3123180d6be9`（PR #194）
+> 时间：2026-10-13 20:21 CST
+> 分支：`fix/gpx-picker-privacy-feedback`
+> 基线：`main@99426b680e2bf0d2f8b66c402b2282b0968eacd3`
 
 ## 结论
 
@@ -22,6 +22,35 @@ SHA-256 为
 
 本轮修复让选择器失败在 GPX 控件旁持续显示并通过 Toast 即时反馈；同时在路线图
 生成与绑定完成前保持上传锁，完成后才宣告路线详情已准备好。
+
+## 真机隐私诊断
+
+微信官方把 `wx.chooseMessageFile` 对应到“收集你选中的文件”。仅有在小程序管理
+后台隐私保护指引中声明该信息类型，平台才允许调用对应接口；未声明时返回
+`errno: 112` 或 `api scope is not declared in the privacy agreement`。若提审时勾选
+“未采集隐私”或隐私协议未声明，平台可能返回 `appid privacy api banned`。
+
+本项目 `app.json` 中的 `requiredPrivateInfos: ["chooseLocation"]` 只负责位置接口，
+不能替代 `MessageFile` 的后台隐私声明。真机修复步骤：
+
+1. 微信公众平台进入“设置→服务内容声明→用户隐私保护指引”。
+2. 增加“收集你选中的文件”。
+3. 用途填写：`用于活动组织者上传 GPX 路线文件，解析里程、爬升、海拔曲线和
+   路线轮廓，并向活动参与者提供原文件下载。`
+4. 保存后等待约 5 分钟生效。
+5. 若仍返回 `appid privacy api banned`，修正提审时“未采集隐私”的声明并重新
+   提交发布。
+
+客户端错误提示已拆分：
+
+- 后台未声明：提示管理员补充“收集你选中的文件”并重新发布。
+- 用户未授权（errno 103/104）：提示先同意小程序隐私保护指引。
+- DevTools/当前环境不支持：提示改用微信真机。
+
+官方参考：
+
+- https://developers.weixin.qq.com/miniprogram/dev/framework/user-privacy/miniprogram-intro.html
+- https://developers.weixin.qq.com/miniprogram/dev/framework/user-privacy/PrivacyAuthorize.html
 
 ## DevTools 完整链路
 
@@ -59,10 +88,10 @@ SHA-256 为
 - 修复后：GPX 区域显示“当前环境无法打开文件选择器，请使用微信真机上传 GPX”；
   路线图生成期间保持 `uploadingRoute=true`，完成后才显示“路线详情已准备好”。
 - 定向单测：`tests/activity-admin-edit.test.ts` 与 `tests/route-utils.test.ts` 共
-  51 项通过。
-- `npm run validate`：通过；72 个前端测试文件、856 项测试及全部云函数测试通过。
+  52 项通过。
+- `npm run validate`：通过；72 个前端测试文件、857 项测试及全部云函数测试通过。
 - `npm run audit:all`：0 漏洞。
-- UI 普通门禁：4 个未同步 UI 提交，剩余额度 0。
+- UI 发布严格模式：0 个未同步 UI 提交，剩余额度 4。
 
 ## 合入与开发版
 
