@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "sourceBaseline": "7038e5c44a958e4d553b218f2303217773c96310",
+  "capturedAt": "2026-10-13T07:18:06Z",
+  "viewport": {
+    "width": 726,
+    "height": 1570
+  },
+  "devtoolsResults": {
+    "file": "devtools-results.json",
+    "sha256": "96ab52ae17134363c2633fb12e83e5a255a8a3fcb54b758a26b1636051e92bee",
+    "passed": 7,
+    "failed": 0,
+    "exceptions": 0
+  },
+  "routes": [
+    {
+      "id": "activities",
+      "devtools": "activities-devtools.png",
+      "devtoolsSha256": "e5da92bfebabab41c6941b3e8e716a72914c1973d6b16dca8950074be55b5b65",
+      "pages": "activities-pages.png",
+      "pagesSha256": "d5dbda55460d585dd9c2443f55b0724463005dd5ea7f0b4ec61d8b97bdb982cc"
+    },
+    {
+      "id": "registrations",
+      "devtools": "registrations-devtools.png",
+      "devtoolsSha256": "4e87041b43ef8ccd69c92041ab57a161ab70f6fbd756ec725a92129bdc87f9df",
+      "pages": "registrations-pages.png",
+      "pagesSha256": "7a0e5e78a08ef95706a1f588b81b77191c3e735040bb0cfdb2a8c5c232abc6e3"
+    },
+    {
+      "id": "activity-detail",
+      "devtools": "activity-detail-devtools.png",
+      "devtoolsSha256": "f1b4e28b4abd7b21a3e607a823c7751c12105868c5e8a42fe84f23ea1f9c3727",
+      "pages": "activity-detail-pages.png",
+      "pagesSha256": "2ff52691952b7dac495d5599a6aec9c061d7002c0a47cc101a9ac0570079e8d7"
+    },
+    {
+      "id": "credential",
+      "devtools": "credential-devtools.png",
+      "devtoolsSha256": "3e7b158710f9f7108efb4963f2a341a1878fdaa21dc5acce435240fad636e160",
+      "pages": "credential-pages.png",
+      "pagesSha256": "6045b5f0df380c04541695245c55145e7d5f49283cab857d5492ca815f80b040"
+    },
+    {
+      "id": "admin-activity-list",
+      "devtools": "admin-activity-list-devtools.png",
+      "devtoolsSha256": "3a7bab3fb87e4ab1579f3b512083e9c17c1eecaa7b169a943b8911b45ea85317",
+      "pages": "admin-activity-list-pages.png",
+      "pagesSha256": "ad493c9e5c979b997029d1d3e85f213202bc44d03243b340a0671f062e130bbe"
+    }
+  ]
+}
