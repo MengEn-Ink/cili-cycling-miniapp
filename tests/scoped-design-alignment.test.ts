@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { effectiveBlock, declaration, expectSemantic, read } from './theme-contract-helpers';
 
 describe('报名、骑行名片与个人中心设计对齐', () => {
-  it('报名表单使用连续明亮表面并减少分区卡片碎片', () => {
+  it('报名表单使用四张同级分区卡片，不再嵌套外层表面', () => {
     const page = read('miniprogram/pages/registration-form/index.ts');
     const template = read('miniprogram/pages/registration-form/index.wxml');
     const styles = read('miniprogram/pages/registration-form/index.wxss');
@@ -11,17 +11,14 @@ describe('报名、骑行名片与个人中心设计对齐', () => {
     expect(template).toContain('{{displayActivityDate}}');
     expect(template).not.toContain('{{activity.date}}');
 
-    expect(template).toContain('class="form-surface"');
-    expect(template.match(/class="form-section/g)).toHaveLength(4);
-    const surface = effectiveBlock(styles, '.form-surface');
-    expectSemantic(declaration(surface, 'border-radius'), '--radius-display');
-    expectSemantic(declaration(surface, 'background'), '--color-surface');
-    expect(styles).toMatch(
-      /\.form-section\s*\{[^}]*border-top:\s*1rpx solid var\(--color-border\)/s,
-    );
+    expect(template).not.toContain('class="form-surface"');
+    expect(template.match(/class="form-section form-card/g)).toHaveLength(4);
+    const section = effectiveBlock(styles, '.form-section');
+    expect(section).toContain('border: 4rpx solid var(--color-card-border)');
+    expectSemantic(declaration(section, 'border-radius'), '--radius-card');
     expectSemantic(
-      declaration(effectiveBlock(styles, '.form-section'), 'border-color'),
-      '--color-border',
+      declaration(effectiveBlock(styles, '.form-card'), 'background'),
+      '--color-surface',
     );
     expectSemantic(
       declaration(effectiveBlock(styles, '.form-page .submit-button'), 'background'),

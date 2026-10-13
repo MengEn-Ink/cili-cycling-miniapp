@@ -11,6 +11,25 @@ function unavailableAction(): ActivityAction {
   return { kind: 'closed', label: '活动状态不可用', enabled: false };
 }
 
+// 提交按钮置灰时给出的唯一提示；返回空串表示可以提交。
+function submitBlockedHint(state: {
+  profile: unknown;
+  profileErrors: string[];
+  gatheringMode: string;
+  experience: string;
+  activityCanSubmit: boolean;
+  activityAction: ActivityAction;
+}): string {
+  if (!state.profile) return '请先完成必填项';
+  const missing = [
+    state.profileErrors.length ? '个人资料' : '',
+    state.gatheringMode ? '' : '集合方式',
+    state.experience ? '' : '骑行经验',
+  ].filter(Boolean);
+  if (missing.length) return `还差 ${missing.length} 项：${missing.join('、')}`;
+  return state.activityCanSubmit ? '' : state.activityAction.label;
+}
+
 const NOTIFICATION_TEMPLATE_TIMEOUT_MS = 1000;
 const MAX_SUBSCRIPTION_TEMPLATES = 3;
 
@@ -44,7 +63,8 @@ Page({
     profile: null as any,
     gatheringMode: 'self_drive',
     showGatheringChoice: false,
-    experience: '常骑',
+    // 骑行经验是审核参考，必须由本人主动选择，不预置默认值。
+    experience: '',
     remark: '',
     teamId: '',
     teamParameterError: '',
@@ -55,6 +75,7 @@ Page({
     loading: true,
     activityAction: unavailableAction(),
     activityCanSubmit: false,
+    submitBlockedHint: '请先完成必填项',
   },
   async onShow() {
     this.pageVisible = true;
@@ -79,17 +100,21 @@ Page({
       : null;
     const activity = activityContext?.activity || null;
     const showGatheringChoice = Number(activity?.supportVehicleCapacity || 0) > 0;
-    this.setData({
-      activity,
+    const next = {
       gatheringMode: showGatheringChoice ? this.data.gatheringMode || 'self_drive' : 'self_drive',
-      showGatheringChoice,
-      displayActivityDate: formatChinaDateTime(
-        activityContext?.activity?.startAt || activityContext?.activity?.date,
-      ),
       profile,
       profileErrors: profile ? validateRegistrationProfile(profile) : [],
       activityAction,
       activityCanSubmit: activityAction.kind === 'register' || activityAction.kind === 'resubmit',
+    };
+    this.setData({
+      ...next,
+      activity,
+      showGatheringChoice,
+      displayActivityDate: formatChinaDateTime(
+        activityContext?.activity?.startAt || activityContext?.activity?.date,
+      ),
+      submitBlockedHint: submitBlockedHint({ ...next, experience: this.data.experience }),
       loading: false,
       errors,
     });
@@ -133,7 +158,11 @@ Page({
     });
   },
   set(e: any) {
-    this.setData({ [e.currentTarget.dataset.key]: e.detail.value });
+    const key = e.currentTarget.dataset.key;
+    const patch: Record<string, unknown> = { [key]: e.detail.value };
+    if (key === 'gatheringMode' || key === 'experience')
+      patch.submitBlockedHint = submitBlockedHint({ ...this.data, [key]: e.detail.value });
+    this.setData(patch);
   },
   async submit() {
     if (this.submissionPending || this.data.submitting) return;

@@ -74,6 +74,30 @@ describe('报名页请求代际', () => {
     });
   });
 
+  it('骑行经验默认不选，未选时提交按钮置灰并提示还差 1 项', async () => {
+    rideService.getProfile.mockResolvedValue(profile);
+
+    page.onLoad({ id: 'a1' });
+    await page.onShow();
+
+    expect(page.data.experience).toBe('');
+    expect(page.data.submitBlockedHint).toBe('还差 1 项：骑行经验');
+
+    page.set({ currentTarget: { dataset: { key: 'experience' } }, detail: { value: '新手' } });
+    expect(page.data.experience).toBe('新手');
+    expect(page.data.submitBlockedHint).toBe('');
+  });
+
+  it('资料与集合方式同时缺失时汇总剩余项数', async () => {
+    rideService.getProfile.mockResolvedValue({ ...profile, phone: '' });
+
+    page.onLoad({ id: 'a1' });
+    await page.onShow();
+    page.set({ currentTarget: { dataset: { key: 'gatheringMode' } }, detail: { value: '' } });
+
+    expect(page.data.submitBlockedHint).toBe('还差 3 项：个人资料、集合方式、骑行经验');
+  });
+
   it('配置后援车名额的活动继续展示集合方式选择', async () => {
     rideService.getProfile.mockResolvedValue(profile);
     rideService.getActivity.mockResolvedValue({
@@ -159,6 +183,7 @@ describe('报名页请求代际', () => {
       await page.onShow();
       expect(page.data.activityCanSubmit).toBe(true);
       page.data.gatheringMode = 'self_drive';
+      page.data.experience = '常骑';
 
       const submission = page.submit();
       await flushMicrotasks();
@@ -183,6 +208,7 @@ describe('报名页请求代际', () => {
     page.onLoad({ id: 'a1' });
     await page.onShow();
     page.data.gatheringMode = 'self_drive';
+    page.data.experience = '常骑';
 
     const firstSubmission = page.submit();
     await flushMicrotasks();

@@ -39,10 +39,10 @@ describe('单一明亮外观接线', () => {
 
     expect(template).toContain('功能升级日志');
     expect(template).toContain('wx:for="{{releaseNotes}}"');
-    expect(script).toContain("version: '2026.10.13.49'");
-    expect(script).toContain("title: '资料保存与报名门槛一致'");
-    expect(script).toContain("version: '2026.10.13.45'");
-    expect(script).toContain("title: '官方路线与 GPX 详情'");
-    expect(script).toContain('上传 GPX 后可查看里程、升降、海拔范围、路线轮廓和海拔曲线');
+    expect(script).toContain("version: '2026.10.13.52'");
+    expect(script).toContain("title: '填写报名页更清晰'");
+    expect(script).toContain("version: '2026.10.13.48'");
+    expect(script).toContain("title: '个人资料完整度更清晰'");
+    expect(script).toContain('完整度按昵称、真实姓名、手机号、紧急联系人、性别和头像统一计算');
   });
 });

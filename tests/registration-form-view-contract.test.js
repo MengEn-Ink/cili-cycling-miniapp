@@ -67,21 +67,40 @@ describe('报名表单受控控件与视觉契约', () => {
     expect(template).toContain('骑行经验与备注都会保留');
     expect(template).toContain('微信昵称');
     expect(template).toContain('联系电话');
-    expect(template).not.toMatch(/真实姓名|个人照片|未填写实名/);
+    // 真实姓名对本人完整展示；个人照片与“未填写实名”这类旧文案仍不出现。
+    expect(template).toContain('真实姓名');
+    expect(template).toContain("{{profile.realName || '未填写'}}");
+    expect(template).not.toMatch(/个人照片|未填写实名/);
     expect(styles).toContain('.profile-alert');
   });
 
-  it('保持 CILI 浅色主题、资料栅格对齐且小屏布局不溢出', () => {
-    expect(template).toContain('class="identity-grid"');
+  it('骑行经验默认不选且必选，未选时按钮置灰并给出剩余项提示', () => {
+    expect(template).not.toMatch(/checked="{{true}}"/);
+    expect(template).toContain('<view wx:if="{{!experience}}" class="pending-hint">');
+    expect(template).toContain(
+      'disabled="{{loading || submitting || !!submitBlockedHint}}" bindtap="submit"',
+    );
+    expect(template).toContain('{{submitBlockedHint}}');
+    expect(template.indexOf('class="disabled-hint"')).toBeLessThan(
+      template.indexOf('class="secondary back-button"'),
+    );
+    expect(template).not.toMatch(/color="#[0-9a-f]{3,6}"/i);
+  });
+
+  it('保持 CILI 浅色主题、资料“标签—值”列表对齐且小屏布局不溢出', () => {
+    expect(template).toContain('class="identity-list"');
+    expect(template.match(/class="identity-row"/g)).toHaveLength(4);
     expect(template).toContain(
       'class="context-status">{{activityCanSubmit ? \'报名开放\' : activityAction.label}}',
     );
     expect(template).toContain('提交报名');
-    expect(template).toContain('请先完成必填项');
     expect(template).not.toContain('Strava 数据');
     expect(styles).toContain('background: var(--color-bg)');
-    expect(styles).toContain('.identity-grid');
-    expect(styles).toContain('grid-template-columns: minmax(0, 1fr) 0.62fr minmax(0, 1.35fr)');
+    expect(styles).toMatch(
+      /\.identity-row \{[^}]*justify-content: space-between;[^}]*min-height: var\(--control-height\);/,
+    );
+    expect(styles).toMatch(/\.activity-context \{[^}]*background: var\(--color-media-card-bg\);/);
+    expect(styles).not.toMatch(/#[0-9a-f]{3,8}\b/i);
     expect(styles).toContain('@media (max-width: 340px)');
     expect(styles).toContain('grid-template-columns: 1fr');
     expect(styles).toContain('overflow-x: hidden');

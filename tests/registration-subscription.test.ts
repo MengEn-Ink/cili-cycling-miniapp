@@ -46,6 +46,7 @@ describe('报名提交订阅消息授权', () => {
         ...definition.data,
         activityId: 'a1',
         gatheringMode: 'self_drive',
+        experience: '常骑',
         profile,
         notificationTemplateIds: ['approved-template', 'rejected-template'],
         activityAction: { kind: 'register', label: '立即报名', enabled: true },
@@ -182,6 +183,13 @@ describe('报名提交订阅消息授权', () => {
     expect(rideService.saveRegistration).not.toHaveBeenCalled();
 
     page.data.gatheringMode = 'self_drive';
+    page.data.experience = '';
+    await page.submit();
+    expect(page.data.errors).toContain('请选择骑行经验');
+    expect(rideService.requestReviewNotificationSubscription).not.toHaveBeenCalled();
+    expect(rideService.saveRegistration).not.toHaveBeenCalled();
+
+    page.data.experience = '常骑';
     page.data.submitting = true;
     await page.submit();
     expect(rideService.requestReviewNotificationSubscription).not.toHaveBeenCalled();
