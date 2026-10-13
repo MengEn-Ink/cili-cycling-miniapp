@@ -6,8 +6,8 @@
 
 ## 当前基线
 
-- 当前 main 基线：`72d2276b20aa275a3e8436803e84061eac56a691`（PR #187）。
-- main CI：run [38362465723](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38362465723) 成功；GitHub Pages run [38362466024](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38362466024) 已部署并完成 13 路由、移动端和桌面端验收。
+- UI 交付基线：`72d2276b20aa275a3e8436803e84061eac56a691`（PR #187）。
+- UI 交付 CI：run [38362465723](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38362465723) 成功；GitHub Pages run [38362466024](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38362466024) 已部署并完成 13 路由、移动端和桌面端验收。
 - 微信开发版：run [38146452513](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38146452513) 成功，版本 `0.0.135.1`。
 - 活动详情交付：PR #129 已合并；`activity-read`、`registration`、`admin-review` 已部署到 `cloudbase-d0gizacy77a1ab017`，部署后线上代码与对应本地包一致。
 - 活跃任务分支必须通过 PR 合入并在合并后删除；是否存在开放 PR 以 GitHub 实时状态为准。
