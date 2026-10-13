@@ -33,7 +33,7 @@ describe('HP-20261010-02 第一批六页尺寸契约', () => {
     const card = effectiveBlock(styles, '.detail-page .card');
     expect(declaration(metrics, 'border-width')).toBe('0 0 2rpx');
     expect(declaration(metrics, 'border-radius')).toBe('0');
-    expect(declaration(card, 'padding')).toBe('20rpx 4rpx');
+    expect(declaration(card, 'padding')).toBe('24rpx 4rpx');
     expect(declaration(card, 'border-width')).toBe('0 0 2rpx');
     expect(declaration(card, 'border-radius')).toBe('0');
     for (const selector of ['.route-actions button', '.route-location-row button']) {

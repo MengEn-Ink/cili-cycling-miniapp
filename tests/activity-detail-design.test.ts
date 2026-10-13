@@ -64,7 +64,7 @@ describe('活动详情设计与日期契约', () => {
     expect(routeStyles).not.toMatch(/#[0-9a-f]{3,8}\b/i);
   });
 
-  it('首屏使用 252rpx 票据头图、四列指标、同行状态与黑底集合重点区', () => {
+  it('首屏使用舒展票据头图、四列指标、同行状态与黑底集合重点区', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
     expect(template).toContain('class="card time-card time-card--featured"');
@@ -77,8 +77,8 @@ describe('活动详情设计与日期契约', () => {
     expect(template).not.toContain('{{item.approvedRegistrationCount || 0}} 位');
     expect(template).toContain('bindtap="editActivity">修改活动');
     expect(template).toContain('bindtap="adminRegistration">{{adminRegistrationLabel}}');
-    expect(styles).toMatch(/\.detail-hero\s*\{[^}]*min-height:\s*252rpx;/s);
-    expect(styles).toMatch(/\.detail-hero--media\s*\{[^}]*min-height:\s*252rpx;/s);
+    expect(styles).toMatch(/\.detail-hero\s*\{[^}]*min-height:\s*280rpx;/s);
+    expect(styles).toMatch(/\.detail-hero--media\s*\{[^}]*min-height:\s*280rpx;/s);
     expect(styles).toMatch(/\.time-card-primary\s*\{[^}]*font-size:\s*3[6-9]rpx;/s);
     expect(styles).toContain('grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);');
     expect(styles).toMatch(
@@ -109,6 +109,18 @@ describe('活动详情设计与日期契约', () => {
       /\.strava-route-action\s*\{[^}]*min-height:\s*var\(--control-height\);/s,
     );
     expect(styles).not.toMatch(/#[0-9a-f]{3,8}\b/i);
+  });
+
+  it('内容较少时票卡自适应承接可用高度，避免局部过挤与卡片外大块空白', () => {
+    const styles = read('miniprogram/pages/activity-detail/index.wxss');
+    expect(styles).toMatch(
+      /\.detail-unified-card\s*\{[^}]*display:\s*flex;[^}]*min-height:\s*calc\(100vh - var\(--fixed-action-reserve\) - 32rpx\)/s,
+    );
+    expect(styles).toMatch(/\.content\s*\{[^}]*display:\s*flex;[^}]*flex:\s*1;/s);
+    expect(styles).toMatch(/\.attendees-card\s*\{[^}]*min-height:\s*180rpx;[^}]*flex:\s*1;/s);
+    expect(styles).toMatch(
+      /\.attendees-card \.route-empty\s*\{[^}]*align-items:\s*center;[^}]*justify-content:\s*center;/s,
+    );
   });
 
   it('使用单一完整票卡承载顶部照片与全部活动信息', () => {
