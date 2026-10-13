@@ -1,12 +1,6 @@
 import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import {
-  cssBlock,
-  declaration,
-  effectiveBlock,
-  expectSemantic,
-  uiTokens,
-} from './theme-contract-helpers';
+import { declaration, effectiveBlock, expectSemantic, uiTokens } from './theme-contract-helpers';
 
 const read = (path) => fs.readFileSync(path, 'utf8');
 const activities = read('miniprogram/pages/activities/index.wxml');
@@ -61,15 +55,13 @@ describe('CILI 活动页静态契约', () => {
     expect(activityCard).not.toContain('人已报名');
     expect(activityCard).toContain('hover-class="activity-card--pressed"');
     expect(activityCard).toContain('wx:else class="card-placeholder"');
-    expect(activityCard).toContain('class="card-cta"');
-    expect(activityCard).toContain('查看详情');
+    expect(activityCard).toContain('bindtap="open"');
+    expect(activityCard).not.toContain('class="card-cta"');
+    expect(activityCard).not.toContain('查看详情');
     expect(activityCard).toContain('aria-label="集合时间：{{item.displayTimeLabel}}"');
     expect(activityCardStyles).toContain('.activity-card--pressed');
     expect(activityCardStyles).toContain('.card-placeholder');
-    const cta = cssBlock(activityCardStyles, '.card-cta');
-    expectSemantic(declaration(cta, 'background'), '--color-action');
-    expectSemantic(declaration(cta, 'color'), '--color-on-action');
-    expect(declaration(cta, 'min-height')).toBe('var(--control-height)');
+    expect(activityCardStyles).not.toContain('.card-cta');
   });
 
   it('方案 A 让每张卡都使用固定照片区与独立信息区并稳定承载长文案', () => {
@@ -117,7 +109,11 @@ describe('CILI 活动页静态契约', () => {
   it('首页只使用品牌橙、石墨黑和暖灰白主题色，不继承荧光黄视觉', () => {
     expect(logoStyles).toContain('background: var(--color-logo-background)');
     expect(activitiesStyles).toContain('background: var(--color-bg)');
-    expect(activitiesStyles).toContain('background: var(--color-brand)');
+    expect(activitiesStyles).toContain('border-color: var(--color-brand)');
+    expect(activitiesStyles).toContain('background: var(--color-bg)');
+    expect(activitiesStyles).not.toMatch(
+      /\.day-chip\.is-active\s*\{[^}]*background:\s*var\(--color-brand\)/s,
+    );
     expect(activitiesStyles).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(|navy|blue|gradient/i);
     expect(activityCardStyles).toContain('--card-accent: var(--color-brand)');
     expect(`${activitiesStyles}\n${activityCardStyles}`).not.toMatch(/#d9ff43|#c4ec23|#f2ffc2/i);
@@ -135,14 +131,11 @@ describe('CILI 活动页静态契约', () => {
     expect(detail).toContain('GPX');
   });
 
-  it('照片卡片的路线箭头与近黑 CTA 使用高对比语义色', () => {
-    expectSemantic(
-      declaration(effectiveBlock(activityCardStyles, '.route-arrow'), 'color'),
-      '--color-text',
-    );
-    const cta = effectiveBlock(activityCardStyles, '.card-cta');
-    expectSemantic(declaration(cta, 'background'), '--color-action');
-    expectSemantic(declaration(cta, 'color'), '--color-on-action');
+  it('照片卡片只保留整卡点击入口，不重复展示详情按钮', () => {
+    expect(activityCard).toContain('bindtap="open"');
+    expect(activityCard).not.toContain('查看详情');
+    expect(activityCardStyles).not.toContain('.route-arrow');
+    expect(activityCardStyles).not.toContain('.card-cta');
   });
 
   it('列表压缩首屏介绍并前置活动卡，详情压缩 Hero、时间轴并保留吸底安全区', () => {

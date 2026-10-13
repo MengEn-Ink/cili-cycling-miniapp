@@ -176,52 +176,17 @@
 }
 .card-foot {
   display: flex;
-  min-height: 80rpx;
+  min-height: 32rpx;
   align-items: center;
-  justify-content: space-between;
-  gap: 12rpx;
   margin-top: 10rpx;
-}
-.card-meta {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  color: var(--color-muted);
-  font-size: 21rpx;
 }
 .level {
   overflow: hidden;
+  color: var(--color-text);
+  font-size: 21rpx;
+  font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.level {
-  color: var(--color-text);
-  font-weight: 800;
-}
-.card-cta {
-  display: flex;
-  min-width: 184rpx;
-  height: var(--control-height);
-  min-height: var(--control-height);
-  margin-left: auto;
-  padding: 0 20rpx;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  border-radius: 18rpx;
-  background: var(--color-action);
-  color: var(--color-on-action);
-  font-size: 24rpx;
-  font-weight: 900;
-}
-.route-arrow {
-  margin-left: 8rpx;
-  color: var(--color-text);
-  font-size: 32rpx;
-}
-.card-cta .route-arrow {
-  color: var(--color-on-action);
 }
 @media (max-width: 350px) {
   .card-media {

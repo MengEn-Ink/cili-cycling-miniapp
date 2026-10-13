@@ -64,7 +64,7 @@ describe('行程状态卡与报名凭证重设计契约', () => {
       /\.timeline-tab\.is-active\s*\{[^}]*background:\s*var\(--color-brand\)[^}]*color:\s*var\(--color-on-brand\)/s,
     );
     expect(activityPageStyles).toMatch(
-      /\.day-chip\.is-active\s*\{[^}]*background:\s*var\(--color-brand\)[^}]*color:\s*var\(--color-on-brand\)/s,
+      /\.day-chip\.is-active\s*\{[^}]*border-color:\s*var\(--color-brand\)[^}]*background:\s*var\(--color-bg\)[^}]*color:\s*var\(--color-text\)/s,
     );
     expect(activityCardStyles).toMatch(
       /\.date-plate\s*\{[^}]*border-left:\s*8rpx solid var\(--color-brand\)[^}]*background:\s*var\(--color-text\)[^}]*color:\s*var\(--color-on-action\)/s,
