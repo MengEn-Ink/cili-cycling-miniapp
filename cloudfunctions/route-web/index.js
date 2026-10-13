@@ -15,6 +15,7 @@ const SECURITY_HEADERS = Object.freeze({
     "form-action 'none'",
     'frame-ancestors *',
   ].join('; '),
+  'content-disposition': 'inline',
   'content-type': 'text/html; charset=utf-8',
   'referrer-policy': 'no-referrer',
   'x-content-type-options': 'nosniff',
@@ -58,7 +59,7 @@ function routeId(event) {
 }
 
 async function main(event = {}) {
-  if (event.path !== '/route/embed')
+  if (!['/', '/route/embed'].includes(event.path))
     return response(404, htmlPage('页面不存在', '<div class="message">页面不存在</div>'));
   const id = routeId(event);
   if (!id)

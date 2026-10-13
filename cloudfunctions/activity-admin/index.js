@@ -159,7 +159,15 @@ exports.main = async (event = {}) => {
             ...Object.fromEntries(
               Object.entries(event).filter(
                 ([key]) =>
-                  !['action', 'gpxFileId', 'gpxSha256', 'fileName', 'requestId'].includes(key),
+                  ![
+                    'action',
+                    'userInfo',
+                    'tcbContext',
+                    'gpxFileId',
+                    'gpxSha256',
+                    'fileName',
+                    'requestId',
+                  ].includes(key),
               ),
             ),
             openid,
@@ -183,7 +191,14 @@ exports.main = async (event = {}) => {
           {
             ...Object.fromEntries(
               Object.entries(event).filter(
-                ([key]) => !['action', 'previewId', 'generatedPreviewFileId'].includes(key),
+                ([key]) =>
+                  ![
+                    'action',
+                    'userInfo',
+                    'tcbContext',
+                    'previewId',
+                    'generatedPreviewFileId',
+                  ].includes(key),
               ),
             ),
             openid,

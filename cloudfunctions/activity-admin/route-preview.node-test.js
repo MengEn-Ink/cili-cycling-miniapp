@@ -516,6 +516,8 @@ test('云函数 previewRouteGpx action 下载文件并持久化可信预览', as
   const result = await main({
     action: 'previewRouteGpx',
     openid: 'attacker-controlled',
+    userInfo: { openId: owner, appId: 'platform-injected' },
+    tcbContext: { requestId: 'platform-injected' },
     gpxFileId,
     gpxSha256: digest,
     fileName: 'weekend.gpx',

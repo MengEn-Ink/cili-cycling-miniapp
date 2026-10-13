@@ -21,6 +21,17 @@ test('数字路线 ID 渲染 Strava 官方 Embed 与直接查看兜底', async (
   assert.doesNotMatch(response.body, /fetch\s*\(|XMLHttpRequest|api\/v3|__NEXT_DATA__/);
 });
 
+test('HTTP 访问服务剥离挂载路径后仍以内联 HTML 渲染', async () => {
+  const response = await main({
+    path: '/',
+    queryStringParameters: { id: '42' },
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.headers['content-disposition'], 'inline');
+  assert.match(response.body, /data-embed-id="42"/);
+});
+
 test('响应限制脚本来源且不允许缓存用户数据', async () => {
   const response = await main({
     path: '/route/embed',
