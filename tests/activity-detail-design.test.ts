@@ -64,22 +64,51 @@ describe('活动详情设计与日期契约', () => {
     expect(routeStyles).not.toMatch(/#[0-9a-f]{3,8}\b/i);
   });
 
-  it('突出集合时间、仅展示审核通过人数，并为管理员提供修改和报名双入口', () => {
+  it('首屏使用 252rpx 票据头图、四列指标、同行状态与黑底集合重点区', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
     expect(template).toContain('class="card time-card time-card--featured"');
     expect(template).toContain('class="time-card-primary"');
-    expect(template).toContain('{{item.approvedRegistrationCount || 0}}');
+    expect(template).toContain('class="meeting-location"');
+    expect(template.match(/{{startTime \|\| '待公布'}}/g)).toHaveLength(1);
+    expect(template.match(/{{viewerStatus.label}}/g)).toHaveLength(1);
+    expect(template.match(/{{item.approvedRegistrationCount \|\| 0}}/g)).toHaveLength(1);
     expect(template).toContain('已报名人员');
-    expect(template).not.toContain('不限</text><text>报名人数');
+    expect(template).not.toContain('{{item.approvedRegistrationCount || 0}} 位');
     expect(template).toContain('bindtap="editActivity">修改活动');
     expect(template).toContain('bindtap="adminRegistration">{{adminRegistrationLabel}}');
-    expect(styles).toMatch(/\.time-card-primary\s*\{[^}]*font-size:\s*46rpx;/s);
+    expect(styles).toMatch(/\.detail-hero\s*\{[^}]*min-height:\s*252rpx;/s);
+    expect(styles).toMatch(/\.detail-hero--media\s*\{[^}]*min-height:\s*252rpx;/s);
+    expect(styles).toMatch(/\.time-card-primary\s*\{[^}]*font-size:\s*3[6-9]rpx;/s);
     expect(styles).toContain('grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);');
-    expect(styles).toMatch(/\.detail-hero--media\s*\{[^}]*min-height:\s*460rpx;/s);
     expect(styles).toMatch(
       /\.time-card--featured\s*\{[^}]*background:\s*var\(--color-text\)[^}]*color:\s*var\(--color-on-action\)/s,
     );
+  });
+
+  it('保留完整可发现功能，并以 token、横向操作和 chips 落地黑白橙票据', () => {
+    const template = read('miniprogram/pages/activity-detail/index.wxml');
+    const styles = read('miniprogram/pages/activity-detail/index.wxss');
+    for (const marker of [
+      '路线海拔',
+      '热门爬坡',
+      '已报名人员',
+      '活动群二维码',
+      '路线概况',
+      '终点导航',
+      '时间安排',
+      '装备与注意',
+      '费用说明',
+    ])
+      expect(template).toContain(marker);
+    expect(template).toContain('class="chip-list"');
+    expect(template).toContain('class="gear-chip"');
+    expect(template).toContain('class="notice-chip"');
+    expect(styles).toContain('grid-template-columns: minmax(0, 1fr) auto auto;');
+    expect(styles).toMatch(
+      /\.strava-route-action\s*\{[^}]*min-height:\s*var\(--control-height\);/s,
+    );
+    expect(styles).not.toMatch(/#[0-9a-f]{3,8}\b/i);
   });
 
   it('使用单一完整票卡承载顶部照片与全部活动信息', () => {
@@ -89,19 +118,31 @@ describe('活动详情设计与日期契约', () => {
     expect(styles).toMatch(
       /\.detail-unified-card\s*\{[^}]*border:\s*4rpx solid var\(--color-card-border\)/s,
     );
+    expect(styles).toMatch(/\.detail-page \.card\s*\{[^}]*border:\s*0;[^}]*box-shadow:\s*none;/s);
     expect(styles).toMatch(
-      /\.detail-unified-card \.card\s*\{[^}]*border:\s*0;[^}]*box-shadow:\s*none;/s,
-    );
-    expect(styles).toMatch(
-      /\.detail-unified-card \.time-card--featured\s*\{[^}]*background:\s*var\(--color-text\)[^}]*color:\s*var\(--color-on-action\)/s,
+      /\.detail-page \.time-card--featured\s*\{[^}]*background:\s*var\(--color-text\)[^}]*color:\s*var\(--color-on-action\)/s,
     );
   });
 
-  it('集合点同时展示自定义名称和地图地址，并保留点位导航', () => {
+  it('集合点只在重点票卡展示名称和地图地址，同时保留点位导航', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
-    expect(template).toContain('class="route-location-name">{{item.route.start}}');
-    expect(template).toContain('class="route-location-address"');
-    expect(template).toContain('data-target="start" bindtap="navigate">地图导航');
+    const styles = read('miniprogram/pages/activity-detail/index.wxss');
+    expect(template).toContain('class="meeting-location__name">{{item.route.start}}');
+    expect(template).toContain('class="meeting-location__address"');
+    expect(template).toContain('data-target="start" bindtap="navigate">导航');
+    expect(template.match(/>\{\{item\.route\.start\}\}</g)).toHaveLength(1);
+    expect(template).not.toContain('class="hero-route"');
+    expect(styles).toMatch(
+      /\.meeting-location__action\s*\{[^}]*min-height:\s*var\(--control-height\)/s,
+    );
+  });
+
+  it('常见屏宽与小屏都完整展示报名状态提示，不以密度为由隐藏下一步说明', () => {
+    const styles = read('miniprogram/pages/activity-detail/index.wxss');
+    expect(styles).not.toMatch(/\.decision-hint\s*\{[^}]*display:\s*none/s);
+    expect(styles).toMatch(/\.decision-hint\s*\{[^}]*grid-row:\s*2/s);
+    expect(styles).toMatch(/\.decision-hint\s*\{[^}]*grid-column:\s*1 \/ -1/s);
+    expect(styles).not.toMatch(/\.decision-hint\s*\{[^}]*white-space:\s*nowrap/s);
   });
 
   it('详情日期与集合时间拆开展示，结束和截止时间保留共享秒级格式', () => {
@@ -232,13 +273,13 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('class="rider-modal-mask" bindtap="closeAttendeeCard"');
     expect(template).toContain('class="rider-card-close"');
     expect(styles).toMatch(
-      /\.attendee-mini-card\s*\{[^}]*width:\s*120rpx;[^}]*min-height:\s*176rpx;/s,
+      /\.attendee-mini-card\s*\{[^}]*width:\s*104rpx;[^}]*min-height:\s*150rpx;/s,
     );
     expect(styles).toMatch(
-      /\.attendee-avatar\s*\{[^}]*width:\s*88rpx;[^}]*height:\s*88rpx;[^}]*border-radius:\s*50%/s,
+      /\.attendee-avatar\s*\{[^}]*width:\s*72rpx;[^}]*height:\s*72rpx;[^}]*border-radius:\s*50%/s,
     );
     expect(styles).toMatch(
-      /\.route-actions button\s*\{[^}]*min-height:\s*var\(--control-height\)/s,
+      /\.route-actions button,\s*\.route-location-row button\s*\{[^}]*min-height:\s*var\(--control-height\)/s,
     );
     expect(styles).toMatch(
       /\.rider-card\.rider-card--photo\s*\{[^}]*max-height:\s*calc\(100vh - 96rpx\)/s,
@@ -384,16 +425,15 @@ describe('活动详情设计与日期契约', () => {
     expect(attendeeDraws[0].y).toBeLessThan(524);
   });
 
-  it('使用等宽四列指标、32rpx 展示圆角和轻量安全区 CTA', () => {
+  it('使用等宽四列指标、统一票卡和轻量安全区 CTA', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
     expect(template.match(/class="detail-metric"/g)).toHaveLength(4);
-    expect(template).toContain('{{estimatedRideTime}}');
+    expect(template).toContain("{{estimatedRideTime || '--'}}");
     expect(styles).toContain('grid-template-columns: repeat(4, minmax(0, 1fr));');
     expect(styles).toMatch(
-      /\.detail-page \.card\s*\{[^}]*border-radius:\s*var\(--radius-display\);/s,
+      /\.detail-unified-card\s*\{[^}]*border-radius:\s*var\(--radius-card\);/s,
     );
-    expect(read('miniprogram/app.wxss')).toContain('--radius-display: 32rpx;');
     expect(styles).toContain('calc(12rpx + env(safe-area-inset-bottom))');
   });
 });

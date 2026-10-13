@@ -34,7 +34,7 @@ describe('方案 A 编辑式性能布局', () => {
     expect(template.indexOf('class="detail-decision"')).toBeLessThan(
       template.indexOf('class="card time-card time-card--featured"'),
     );
-    expect(styles).toMatch(/\.detail-hero--media\s*\{[^}]*min-height:\s*460rpx/s);
+    expect(styles).toMatch(/\.detail-hero--media\s*\{[^}]*min-height:\s*252rpx/s);
     expect(styles).toMatch(/\.detail-decision\s*\{[^}]*border-left:\s*6rpx solid/s);
   });
 

@@ -78,13 +78,16 @@ describe('approved unified high-contrast UI', () => {
     expectSemantic(declaration(registrationCard, 'border-color'), '--color-card-border');
   });
 
-  it('centers detail metrics and gives time facts a stable two-column grid', () => {
+  it('centers detail metrics and gives meeting facts a stable responsive grid', () => {
     const detail = read('miniprogram/pages/activity-detail/index.wxss');
     expect(declaration(effectiveBlock(detail, '.detail-metric'), 'text-align')).toBe('center');
     expect(declaration(effectiveBlock(detail, '.metric-value'), 'justify-content')).toBe('center');
-    expect(declaration(effectiveBlock(detail, '.time-row'), 'display')).toBe('grid');
-    expect(declaration(effectiveBlock(detail, '.time-row'), 'grid-template-columns')).toBe(
-      '148rpx minmax(0, 1fr)',
+    expect(declaration(effectiveBlock(detail, '.time-card-main'), 'display')).toBe('grid');
+    expect(detail).toMatch(
+      /\.time-card-main\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(180rpx, 0\.8fr\)/s,
+    );
+    expect(declaration(effectiveBlock(detail, '.time-card-main'), 'grid-template-columns')).toBe(
+      '1fr',
     );
     expect(read('miniprogram/pages/activity-detail/index.wxml')).toContain(
       'class="fixed detail-action"',
