@@ -166,6 +166,7 @@ export interface Profile {
   avatarSource?: AvatarSource;
   hasCompletedGuidance?: boolean;
   completeness?: number;
+  missing?: string[];
   sensitiveStatus?: {
     realName: boolean;
     phone: boolean;

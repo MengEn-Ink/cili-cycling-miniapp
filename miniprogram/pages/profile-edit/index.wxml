@@ -26,6 +26,11 @@
         <view class="muted form-tip">请填写真实、常用的信息，便于活动报名、现场联络与安全保障。</view>
         <view class="privacy-note">敏感信息将安全保存；手机号仅本人和审核管理员可完整查看。</view>
         <view class="field">
+          <view class="label">昵称</view>
+          <input class="input" type="nickname" value="{{p.nickname}}" data-k="nickname" bindinput="set" bindblur="set" placeholder-class="input-placeholder" placeholder="点击使用微信昵称或自定义" />
+          <view class="muted field-tip">默认取微信昵称，可自行修改，用于个人主页和活动报名的骑手展示。</view>
+        </view>
+        <view class="field">
           <view class="label">真实姓名</view>
           <input class="input" value="{{p.realName}}" data-k="realName" bindinput="set" placeholder-class="input-placeholder" placeholder="请输入真实姓名" />
         </view>

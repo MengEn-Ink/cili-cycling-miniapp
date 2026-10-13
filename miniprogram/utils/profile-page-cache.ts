@@ -4,7 +4,10 @@ const STORAGE_KEY = 'cili-profile-page-cache-v2';
 const CACHE_VERSION = 2;
 export const PROFILE_PAGE_CACHE_TTL_MS = 6 * 60 * 60_000;
 
-type CachedProfile = Pick<Profile, 'nickname' | 'hasCompletedGuidance' | 'completeness'>;
+type CachedProfile = Pick<
+  Profile,
+  'nickname' | 'hasCompletedGuidance' | 'completeness' | 'missing'
+>;
 
 type ImageCache = Record<string, string>;
 
@@ -80,6 +83,7 @@ export function writeProfilePageCache(
       nickname: profile.nickname,
       hasCompletedGuidance: profile.hasCompletedGuidance,
       completeness: profile.completeness,
+      missing: Array.isArray(profile.missing) ? profile.missing : [],
     },
     card,
     images,

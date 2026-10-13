@@ -268,15 +268,10 @@ function normalizeBackgroundProfile(profile: Profile | null): Profile | null {
   };
 }
 
-function hasBackgroundPhoto(profile: Profile): boolean {
-  const slot = profile.backgroundPhoto !== undefined ? profile.backgroundPhoto : profile.photos[0];
-  return Boolean(slot?.id?.trim());
-}
-
 function profileSaveValidationMessage(profile: Profile): string {
+  if (!profile.nickname.trim()) return '请填写昵称';
   if (!profile.avatarId?.trim()) return '请先设置头像，再保存资料';
   if (profile.gender !== '男' && profile.gender !== '女') return '请选择性别';
-  if (!hasBackgroundPhoto(profile)) return '请点击“添加背景图”上传个人照片';
   return '';
 }
 
@@ -726,6 +721,7 @@ Page({
     const state = await runPageTask(
       () =>
         rideService.updateProfile({
+          nickname: p.nickname,
           gender: p.gender,
           phone: p.phone.includes('*') ? undefined : p.phone,
           emergencyName: p.emergencyName,

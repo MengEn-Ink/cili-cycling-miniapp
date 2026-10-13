@@ -298,6 +298,13 @@ brand-logo {
   background: var(--color-brand);
 }
 
+.hero-progress-missing {
+  margin-top: 14rpx;
+  font-size: 23rpx;
+  font-weight: 600;
+  color: #8a6a1f;
+}
+
 .identity-guide {
   border-left: 8rpx solid var(--color-brand);
 }

@@ -3,6 +3,7 @@ import { rideService } from '../../services/ride-service';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
 import { genderView } from '../../utils/gender';
+import { validateRegistrationProfile } from '../../utils/validation';
 import { drawRouteOutline as renderRouteOutline } from '../../utils/route-outline';
 import {
   drawElevationProfile,
@@ -568,8 +569,33 @@ Page({
       return;
     }
     const teamQuery = this.data.teamId ? '&team_id=' + encodeURIComponent(this.data.teamId) : '';
+    if (!(await this.ensureProfileReadyForRegistration())) return;
     wx.navigateTo({
       url: '/pages/registration-form/index?id=' + this.data.item.id + teamQuery,
     });
+  },
+  async ensureProfileReadyForRegistration(): Promise<boolean> {
+    // 报名入口前置校验：资料未完整时引导去补全，避免进入表单后才发现按钮被禁用而无反馈。
+    let profile;
+    try {
+      profile = await rideService.getProfile();
+    } catch {
+      // 资料拉取失败不拦截报名，交由表单内再次校验兜底。
+      return true;
+    }
+    const errors = validateRegistrationProfile({ ...profile, ...genderView(profile.gender) });
+    if (!errors.length) return true;
+    const confirm = await new Promise<boolean>((resolve) => {
+      wx.showModal({
+        title: '资料未完善',
+        content: '报名前需先补全资料：\n' + errors.join('、'),
+        confirmText: '去完善',
+        cancelText: '暂不',
+        success: (result: { confirm: boolean }) => resolve(result.confirm),
+        fail: () => resolve(false),
+      });
+    });
+    if (confirm) wx.navigateTo({ url: '/pages/profile-edit/index' });
+    return false;
   },
 });
