@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import { assessUiSyncState } from './check-ui-sync.mjs';
@@ -125,4 +126,20 @@ test('即时文件变化和发布严格模式阻断未同步 UI', () => {
   });
   assert.equal(strict.ok, false);
   assert.match(strict.reason, /零漂移/);
+});
+
+test('普通 CI 和体验版晋级分别执行预算与零漂移门禁', () => {
+  const packageJson = JSON.parse(readFileSync('package.json', 'utf8'));
+  const ci = readFileSync('.github/workflows/ci.yml', 'utf8');
+  const promotion = readFileSync('.github/workflows/promote-miniprogram-experience.yml', 'utf8');
+
+  assert.equal(
+    packageJson.scripts['test:ui-sync'],
+    'node --test scripts/ui-sync-policy.node-test.mjs scripts/check-ui-sync.node-test.mjs',
+  );
+  assert.equal(packageJson.scripts['check:ui-sync'], 'node scripts/check-ui-sync.mjs');
+  assert.match(packageJson.scripts.validate, /npm run test:ui-sync/);
+  assert.match(packageJson.scripts.validate, /npm run check:ui-sync/);
+  assert.match(ci, /npm run validate/);
+  assert.match(promotion, /npm run check:ui-sync -- --strict/);
 });

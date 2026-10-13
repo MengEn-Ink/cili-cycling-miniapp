@@ -80,6 +80,9 @@ jobs:
           fetch-depth: 0
           ref: main
 
+      - name: Require zero GitHub Pages UI drift
+        run: npm run check:ui-sync -- --strict
+
       - name: Verify immutable main and workflow provenance
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
