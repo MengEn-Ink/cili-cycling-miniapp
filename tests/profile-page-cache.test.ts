@@ -123,8 +123,9 @@ describe('个人中心缓存', () => {
     });
   });
 
-  it('任一图片持久化失败时回滚本轮新增文件并保留旧映射', async () => {
-    const { persistProfileCardImages } = await import('../miniprogram/utils/profile-page-cache');
+  it('图片持久化局部失败时保留成功项，失败项回退远端地址', async () => {
+    const { applyCachedImages, persistProfileCardImages } =
+      await import('../miniprogram/utils/profile-page-cache');
     const existing = { 'https://image.example/avatar.jpg': 'saved://avatar.jpg' };
     vi.mocked(wx.saveFile).mockImplementation(({ tempFilePath, success, fail }: any) => {
       if (String(tempFilePath).includes('background')) fail?.();
@@ -139,11 +140,18 @@ describe('个人中心缓存', () => {
     } as PersonalCapabilityCard;
 
     const persisted = await persistProfileCardImages(cardWithTwoNewImages, existing);
+    const cached = applyCachedImages(cardWithTwoNewImages, persisted.images);
 
-    expect(persisted).toEqual({ images: existing, created: [], complete: false });
-    expect(wx.removeSavedFile).toHaveBeenCalledWith(
-      expect.objectContaining({ filePath: expect.stringContaining('second.jpg') }),
-    );
+    expect(persisted.complete).toBe(false);
+    expect(persisted.images).toEqual({
+      'https://image.example/avatar.jpg': 'saved://avatar.jpg',
+      'https://image.example/second.jpg': expect.stringContaining('saved://'),
+    });
+    expect(persisted.created).toHaveLength(1);
+    expect(cached.profile.avatarUrl).toBe('saved://avatar.jpg');
+    expect(cached.backgrounds[0].url).toBe('https://image.example/background.jpg');
+    expect(cached.backgrounds[1].url).toContain('saved://');
+    expect(wx.removeSavedFile).not.toHaveBeenCalled();
   });
 
   it('资料更新后只标记缓存过期并保留已保存图片', async () => {

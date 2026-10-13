@@ -54,6 +54,22 @@ describe('CachingRepository 冷启动持久化', () => {
     });
   }
 
+  it('首页可同步查看新鲜磁盘首屏缓存且不回源', () => {
+    const cached = { items: [{ id: 'a' }], nextCursor: null, asOf: 'now' };
+    seed(storage, 'act:page:future:', cached, 1_050);
+    const repo = build();
+
+    expect(repo.cacheControl.peekActivityPage('future')).toEqual(cached);
+    expect(inner.listActivityPage).not.toHaveBeenCalled();
+  });
+
+  it('过期磁盘首屏缓存不会用于首页首帧', () => {
+    seed(storage, 'act:page:future:', { items: [{ id: 'old' }] }, 999);
+    const repo = build();
+
+    expect(repo.cacheControl.peekActivityPage('future')).toBeUndefined();
+  });
+
   it('冷启动命中新鲜持久化数据，直接复用且不回源', async () => {
     seed(storage, 'act:item:a', { id: 'a' }, 1_050);
     const repo = build();

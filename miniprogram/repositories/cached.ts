@@ -1,4 +1,9 @@
-import type { ActivityListFilter, PublicActivityView, RideRepository } from './types';
+import type {
+  ActivityListFilter,
+  PublicActivityPage,
+  PublicActivityView,
+  RideRepository,
+} from './types';
 import type { CacheStorage } from './persistent';
 
 /**
@@ -18,6 +23,8 @@ export const REPOSITORY_CACHE_CAPACITY = 60;
 
 // 资源前缀即“失效命名空间”：活动相关写入只清 act: 前缀，Strava 变更只清 strava: 前缀。
 const ACTIVITY_PREFIX = 'act:';
+const REGISTRATION_PREFIX = 'reg:';
+const PROFILE_PREFIX = 'profile:';
 const STRAVA_PREFIX = 'strava:';
 
 interface Entry<V> {
@@ -94,6 +101,8 @@ export interface CacheMetricsSnapshot {
 }
 
 export interface RepositoryCacheControl {
+  /** 同步读取首页首屏的新鲜缓存，供页面在网络刷新前避免空态闪烁。 */
+  peekActivityPage(view: PublicActivityView): PublicActivityPage | undefined;
   /** 活动或报名发生变化后，让活动列表/详情下次读取重新回源。 */
   invalidateActivities(): void;
   /** Strava 授权、解绑或同步后，让 Strava 摘要下次读取重新回源。 */
@@ -151,6 +160,8 @@ export class CachingRepository implements RideRepository {
     this.storage = options.storage;
     this.cache = new TtlCache(this.ttlMs, REPOSITORY_CACHE_CAPACITY, this.now);
     this.cacheControl = {
+      peekActivityPage: (view) =>
+        this.peekFresh<PublicActivityPage>(`${ACTIVITY_PREFIX}page:${view}:`),
       invalidateActivities: () => this.invalidatePrefix(ACTIVITY_PREFIX),
       invalidateStrava: () => this.invalidatePrefix(STRAVA_PREFIX),
       clear: () => {
@@ -172,6 +183,14 @@ export class CachingRepository implements RideRepository {
     for (const inflightKey of [...this.inflight.keys()])
       if (inflightKey.startsWith(prefix)) this.inflight.delete(inflightKey);
     this.storage?.removePrefix(prefix);
+  }
+
+  /** 同步查看新鲜缓存；仅供页面首帧预热，不触发回源。 */
+  private peekFresh<T>(key: string): T | undefined {
+    const cached = this.cache.get(key);
+    if (cached !== undefined) return cached as T;
+    const persisted = this.readPersisted<T>(key);
+    return persisted && persisted.expiresAt > this.now() ? persisted.value : undefined;
   }
 
   /** 从持久化层回读条目：新鲜条目 hydrate 内存；过期条目返回供网络失败时兜底。 */
@@ -219,16 +238,19 @@ export class CachingRepository implements RideRepository {
     }
     const request = started.then(
       (value) => {
-        const expiresAt = this.now() + this.ttlMs;
-        this.cache.hydrate(key, value, expiresAt);
-        this.inflight.delete(key);
-        this.writePersisted(key, value, expiresAt);
+        // 写操作失效或新一轮请求已接管时，旧响应只返回给原调用方，不得重新污染缓存。
+        if (this.inflight.get(key) === request) {
+          const expiresAt = this.now() + this.ttlMs;
+          this.cache.hydrate(key, value, expiresAt);
+          this.inflight.delete(key);
+          this.writePersisted(key, value, expiresAt);
+        }
         this.metrics.originLoads++;
         return value;
       },
       (error: unknown) => {
-        // 失败时移除并发标记；仅在离线兜底窗口内返回上次数据，在线失败仍抛错。
-        this.inflight.delete(key);
+        // 失败时仅清理自己持有的并发标记；仅在离线兜底窗口内返回上次数据。
+        if (this.inflight.get(key) === request) this.inflight.delete(key);
         if (persisted && persisted.expiresAt + this.staleMs > this.now()) {
           this.metrics.staleReads++;
           return persisted.value;
@@ -304,6 +326,7 @@ export class CachingRepository implements RideRepository {
   async saveRegistration(value: Parameters<RideRepository['saveRegistration']>[0]) {
     const result = await this.inner.saveRegistration(value);
     this.cacheControl.invalidateActivities();
+    this.invalidatePrefix(REGISTRATION_PREFIX);
     return result;
   }
 
@@ -314,29 +337,34 @@ export class CachingRepository implements RideRepository {
   ) {
     const result = await this.inner.updateRegistration(id, status, comment);
     this.cacheControl.invalidateActivities();
+    this.invalidatePrefix(REGISTRATION_PREFIX);
     return result;
   }
 
   async cancelRegistration(id: string) {
     const result = await this.inner.cancelRegistration(id);
     this.cacheControl.invalidateActivities();
+    this.invalidatePrefix(REGISTRATION_PREFIX);
     return result;
   }
 
   async deleteRegistration(id: string): Promise<void> {
     await this.inner.deleteRegistration(id);
     this.cacheControl.invalidateActivities();
+    this.invalidatePrefix(REGISTRATION_PREFIX);
   }
 
   async reviewRegistration(id: string, decision: 'approved' | 'rejected', reason?: string) {
     const result = await this.inner.reviewRegistration(id, decision, reason);
     this.cacheControl.invalidateActivities();
+    this.invalidatePrefix(REGISTRATION_PREFIX);
     return result;
   }
 
   async checkInRegistration(id: string) {
     const result = await this.inner.checkInRegistration(id);
     this.cacheControl.invalidateActivities();
+    this.invalidatePrefix(REGISTRATION_PREFIX);
     return result;
   }
 
@@ -373,7 +401,7 @@ export class CachingRepository implements RideRepository {
   // ---- 其余方法原样透传，不做缓存 ----
 
   listRegistrations() {
-    return this.inner.listRegistrations();
+    return this.readThrough(`${REGISTRATION_PREFIX}mine`, () => this.inner.listRegistrations());
   }
 
   getRegistration(id: string) {
@@ -416,7 +444,7 @@ export class CachingRepository implements RideRepository {
   }
 
   getProfile() {
-    return this.inner.getProfile();
+    return this.readThrough(`${PROFILE_PREFIX}self`, () => this.inner.getProfile());
   }
 
   getProfileMediaUploadPath() {
@@ -424,15 +452,18 @@ export class CachingRepository implements RideRepository {
   }
 
   getPersonalCapabilityCard() {
-    return this.inner.getPersonalCapabilityCard();
+    return this.readThrough(`${PROFILE_PREFIX}capability-card`, () =>
+      this.inner.getPersonalCapabilityCard(),
+    );
   }
 
-  registerProfileMedia(
+  async registerProfileMedia(
     fileId: string,
     category: 'ride' | 'bike' | 'other',
     origin?: Parameters<RideRepository['registerProfileMedia']>[2],
   ) {
-    return this.inner.registerProfileMedia(fileId, category, origin);
+    await this.inner.registerProfileMedia(fileId, category, origin);
+    this.invalidatePrefix(PROFILE_PREFIX);
   }
 
   reportProfileMediaOrphan(
@@ -443,20 +474,28 @@ export class CachingRepository implements RideRepository {
     return this.inner.reportProfileMediaOrphan(fileId, category, origin);
   }
 
-  setAvatar(source: Parameters<RideRepository['setAvatar']>[0], fileId: string) {
-    return this.inner.setAvatar(source, fileId);
+  async setAvatar(source: Parameters<RideRepository['setAvatar']>[0], fileId: string) {
+    const result = await this.inner.setAvatar(source, fileId);
+    this.invalidatePrefix(PROFILE_PREFIX);
+    return result;
   }
 
-  importStravaAvatar() {
-    return this.inner.importStravaAvatar();
+  async importStravaAvatar() {
+    const result = await this.inner.importStravaAvatar();
+    this.invalidatePrefix(PROFILE_PREFIX);
+    return result;
   }
 
-  updateProfile(profile: Parameters<RideRepository['updateProfile']>[0]) {
-    return this.inner.updateProfile(profile);
+  async updateProfile(profile: Parameters<RideRepository['updateProfile']>[0]) {
+    const result = await this.inner.updateProfile(profile);
+    this.invalidatePrefix(PROFILE_PREFIX);
+    return result;
   }
 
-  getPhoneNumber(code: string) {
-    return this.inner.getPhoneNumber(code);
+  async getPhoneNumber(code: string) {
+    const result = await this.inner.getPhoneNumber(code);
+    this.invalidatePrefix(PROFILE_PREFIX);
+    return result;
   }
 
   previewPublicStravaRoute(routeUrl: string) {

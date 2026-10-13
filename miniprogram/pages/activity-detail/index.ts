@@ -125,6 +125,8 @@ function formatRideDuration(seconds?: number) {
 
 Page({
   loadRequestId: 0,
+  initialShowPending: false,
+  loadPromise: null as { id: string; promise: Promise<void> } | null,
   unloaded: false,
   exportBusy: false,
   data: {
@@ -155,11 +157,16 @@ Page({
     groupQrCodeExpired: false,
   },
   onShow() {
+    if (this.initialShowPending) {
+      this.initialShowPending = false;
+      return;
+    }
     if (this.data.item && this.data.activityId && !this.data.loading)
       void this.load(this.data.activityId);
   },
   onLoad(q: any) {
     this.unloaded = false;
+    this.initialShowPending = true;
     const teamId =
       typeof q.team_id === 'string' && /^team_[A-Za-z0-9_-]{8,80}$/.test(q.team_id)
         ? q.team_id
@@ -174,11 +181,22 @@ Page({
   onUnload() {
     this.unloaded = true;
     this.loadRequestId += 1;
+    this.loadPromise = null;
   },
   safeSetData(value: Record<string, unknown>, callback?: () => void) {
     if (!this.unloaded) this.setData(value, callback);
   },
-  async load(id: string) {
+  load(id: string) {
+    const current = this.loadPromise;
+    if (current?.id === id) return current.promise;
+    const run = this.performLoad(id);
+    const tracked = run.finally(() => {
+      if (this.loadPromise?.promise === tracked) this.loadPromise = null;
+    });
+    this.loadPromise = { id, promise: tracked };
+    return tracked;
+  },
+  async performLoad(id: string) {
     const requestId = ++this.loadRequestId;
     this.safeSetData({
       loading: true,

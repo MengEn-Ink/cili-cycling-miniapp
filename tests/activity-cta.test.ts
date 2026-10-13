@@ -216,6 +216,34 @@ describe('活动详情 CTA 接线', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
+  it('同一页面实例首次 onLoad/onShow 只加载一次', async () => {
+    rideService.getActivity.mockResolvedValue(open);
+    rideService.listRegistrations.mockResolvedValue([]);
+
+    page.onLoad({ id: 'a1' });
+    await vi.waitFor(() => expect(page.data.loading).toBe(false));
+    page.onShow();
+    await Promise.resolve();
+
+    expect(rideService.getActivity).toHaveBeenCalledOnce();
+    expect(rideService.listRegistrations).toHaveBeenCalledOnce();
+  });
+
+  it('同一活动并发加载复用单飞请求', async () => {
+    const pending = deferred<ServerActivity>();
+    rideService.getActivity.mockReturnValueOnce(pending.promise);
+    rideService.listRegistrations.mockResolvedValue([]);
+
+    const first = page.load('a1');
+    const second = page.load('a1');
+
+    expect(second).toBe(first);
+    expect(rideService.getActivity).toHaveBeenCalledOnce();
+    pending.resolve(open);
+    await Promise.all([first, second]);
+    expect(rideService.listRegistrations).toHaveBeenCalledOnce();
+  });
+
   it('活动封面加载失败后降级为纯色 Hero，重新加载时恢复媒体尝试', async () => {
     page.coverImageError();
     expect(page.data.coverFailed).toBe(true);

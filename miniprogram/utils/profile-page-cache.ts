@@ -196,10 +196,6 @@ export async function persistProfileCardImages(
     }),
   );
   const complete = distinctSources.every(([key]) => Boolean(next[key]));
-  if (!complete) {
-    // 图片采用整组原子替换；部分失败时回滚本轮文件，避免产生无引用的持久文件。
-    discardPersistedProfileCardImages([...created]);
-    return { images: previous, created: [], complete: false };
-  }
-  return { images: next, created: [...created], complete: true };
+  // 成功项可独立复用；未保存的项不写映射，渲染时自然回退远端 URL。
+  return { images: next, created: [...created], complete };
 }

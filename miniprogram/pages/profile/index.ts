@@ -1,5 +1,5 @@
 import type { PersonalCapabilityCard, Profile } from '../../models';
-import { runPageTask } from '../../services/page-service';
+import { runPageTask, type PageTaskState } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
 import { appStore } from '../../store/app-store';
 import { personalCardViewModel } from '../../utils/personal-card';
@@ -14,7 +14,7 @@ import {
   type ProfilePageCache,
 } from '../../utils/profile-page-cache';
 
-const HERO_CARD_DEADLINE_MS = 1_200;
+const PROFILE_REQUEST_DEADLINE_MS = 8_000;
 const HERO_BRAND_IMAGE = '/assets/profile/hero-alpine.svg';
 const CHINA_TIME_OFFSET_MS = 8 * 60 * 60_000;
 const REFRESH_READY_THRESHOLD_PX = 72;
@@ -28,27 +28,25 @@ type HeroImageErrorEvent = {
   currentTarget: { dataset: { index?: number | string; url?: string } };
 };
 
-function settleBeforeDeadline<T>(promise: Promise<T>, timeoutMs: number): Promise<T | null> {
+function settlePageTaskBeforeDeadline<T>(
+  promise: Promise<PageTaskState<T>>,
+  timeoutMessage: string,
+): Promise<PageTaskState<T>> {
   return new Promise((resolve) => {
     let settled = false;
-    const timer = setTimeout(() => {
+    const finish = (value: PageTaskState<T>) => {
       if (settled) return;
       settled = true;
-      resolve(null);
-    }, timeoutMs);
+      clearTimeout(timer);
+      resolve(value);
+    };
+    const timer = setTimeout(
+      () => finish({ loading: false, error: timeoutMessage }),
+      PROFILE_REQUEST_DEADLINE_MS,
+    );
     promise.then(
-      (value) => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        resolve(value);
-      },
-      () => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        resolve(null);
-      },
+      (value) => finish(value),
+      () => finish({ loading: false, error: timeoutMessage }),
     );
   });
 }
@@ -282,10 +280,13 @@ Page({
       return;
     }
 
-    const profileTask = runPageTask(() => rideService.getProfile(), '资料服务暂不可用');
-    const cardTask = settleBeforeDeadline(
+    const profileTask = settlePageTaskBeforeDeadline(
+      runPageTask(() => rideService.getProfile(), '资料服务暂不可用'),
+      '资料加载超时，请重试',
+    );
+    const cardTask = settlePageTaskBeforeDeadline(
       runPageTask(() => rideService.getPersonalCapabilityCard(), '骑行名片暂不可用'),
-      HERO_CARD_DEADLINE_MS,
+      '骑行数据更新超时，请重试',
     );
     const previousCache = this.hydratedCache;
 
@@ -300,8 +301,8 @@ Page({
           this.setData({
             refreshing: false,
             refreshMessage: hasPrevious
-              ? `骑行数据更新超时，继续展示${this.data.updatedAtText || '缓存数据'}`
-              : '',
+              ? `${cardState.error || '骑行数据更新失败'}，继续展示${this.data.updatedAtText || '缓存数据'}`
+              : cardState.error,
           });
           return;
         }
@@ -329,7 +330,6 @@ Page({
           discardPersistedProfileCardImages(persisted.created);
           return;
         }
-        if (!persisted.complete) return;
         const committed = writeProfilePageCache(
           ownerOpenid,
           profile,

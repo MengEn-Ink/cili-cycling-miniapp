@@ -62,12 +62,14 @@ function transactionStore() {
         work({
           getAdmin: (id) => maybeGet(transaction.collection('admins'), id),
           getActivity: (id) => maybeGet(transaction.collection('activities'), id),
-          listApproved: async (activityId) => {
+          listReminderRecipients: async (activityId, statuses) => {
             const values = [];
             for (let offset = 0; offset < 1000; offset += 100) {
               const page = await transaction
                 .collection('registrations')
-                .where({ activity_id: activityId, status: 'approved' })
+                .where({ activity_id: activityId, status: db.command.in(statuses) })
+                // skip 分页必须绑定稳定顺序，否则跨页时数据库默认顺序变化会造成提醒漏发或重复读取。
+                .orderBy('_id', 'asc')
                 .skip(offset)
                 .limit(100)
                 .get();
