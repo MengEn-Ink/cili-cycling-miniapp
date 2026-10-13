@@ -44,6 +44,9 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('{{item.route.stravaRouteUrl}}');
     expect(template).toContain("{{item.route.routeName || 'Strava 轨迹'}}");
     expect(template).toContain('item.route.previewImageUrl');
+    expect(template).toContain('mode="aspectFit"');
+    expect(template).toContain('bindtap="previewRouteImage"');
+    expect(styles).toMatch(/\.route-preview-image\s*\{[^}]*height:\s*340rpx;/s);
     expect(template).toContain('bindtap="copyStravaRoute"');
     expect(template).toContain('user-select="true"');
     expect(template).toContain('>复制</button>');
@@ -526,6 +529,31 @@ describe('活动详情复制、分享与 GPX 导出', () => {
     expect(wx.previewImage).not.toHaveBeenCalled();
   });
 
+  it('路线预览图支持点击全屏查看并处理打开失败', async () => {
+    const { definition, context } = await loadPage(async () => ({}));
+    context.data.item.route.previewImageUrl = 'https://images.example/route.jpg';
+
+    definition.previewRouteImage.call(context);
+    expect(wx.previewImage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        current: 'https://images.example/route.jpg',
+        urls: ['https://images.example/route.jpg'],
+      }),
+    );
+
+    vi.mocked(wx.previewImage).mockImplementationOnce(({ fail }: any) => fail());
+    definition.previewRouteImage.call(context);
+    expect(wx.showToast).toHaveBeenCalledWith({
+      title: '路线预览图打开失败，请重试',
+      icon: 'none',
+    });
+
+    vi.clearAllMocks();
+    context.data.item.route.previewImageUrl = '   ';
+    definition.previewRouteImage.call(context);
+    expect(wx.previewImage).not.toHaveBeenCalled();
+  });
+
   it('点击有效头像打开名片，关闭后清空当前骑友', async () => {
     const { definition, context } = await loadPage(async () => ({
       base64: 'eA==',
@@ -613,7 +641,18 @@ describe('活动详情复制、分享与 GPX 导出', () => {
 
     expect(wx.showModal).toHaveBeenLastCalledWith({
       title: '复制失败',
-      content: 'setClipboardData:fail no permission\n可长按轨迹链接手动复制。',
+      content: '暂时无法复制，请稍后重试；也可长按轨迹链接手动复制。',
+      showCancel: false,
+      confirmText: '知道了',
+    });
+
+    vi.mocked(wx.setClipboardData).mockImplementationOnce(({ fail }: any) =>
+      fail({ errMsg: 'setClipboardData:fail api scope is not declared in the privacy agreement' }),
+    );
+    await definition.copyStravaRoute.call(context);
+    expect(wx.showModal).toHaveBeenLastCalledWith({
+      title: '复制失败',
+      content: '微信隐私保护指引正在更新，请稍后重试；也可长按轨迹链接手动复制。',
       showCancel: false,
       confirmText: '知道了',
     });

@@ -23,21 +23,21 @@ describe('设置页', () => {
   it('只加载版本日志，不注册 Strava readiness 生命周期或授权入口', () => {
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.13.40',
+      version: '2026.10.13.41',
       latest: true,
-      title: '活动详情布局更舒展',
-      summary: '在保持一页优先的同时平衡信息密度，减少内容较少时的底部空白与局部拥挤。',
+      title: '路线复制与预览体验修复',
+      summary: '补全微信剪贴板隐私声明，并放大路线预览图，复制和查看公开路线更顺畅。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.13.41',
       '2026.10.13.40',
       '2026.10.13.39',
       '2026.10.13.38',
       '2026.10.13.37',
-      '2026.10.13.36',
     ]);
     expect(page.onShow).toBeUndefined();
     expect(page.loadStravaStatus).toBeUndefined();
