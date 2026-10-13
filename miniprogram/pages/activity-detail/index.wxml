@@ -47,7 +47,7 @@
 
         <view class="card route-actions-card" wx:if="{{item.route.stravaRouteUrl}}">
           <view class="section-heading"><view class="title">{{item.route.routeName || 'Strava 轨迹'}}</view><view class="section-tag">路线文件</view></view>
-          <image wx:if="{{item.route.previewImageUrl}}" class="route-preview-image" src="{{item.route.previewImageUrl}}" mode="aspectFill" aria-label="{{item.route.routeName || 'Strava 路线'}}预览图" />
+          <image wx:if="{{item.route.previewImageUrl}}" class="route-preview-image" src="{{item.route.previewImageUrl}}" mode="aspectFit" bindtap="previewRouteImage" aria-label="点击查看{{item.route.routeName || 'Strava 路线'}}完整预览图" />
           <view class="strava-route-row">
             <button class="strava-route-url" bindtap="copyStravaRoute" aria-label="复制 Strava 轨迹链接"><text user-select="true">{{item.route.stravaRouteUrl}}</text></button>
             <button class="strava-route-action" bindtap="copyStravaRoute">复制</button>

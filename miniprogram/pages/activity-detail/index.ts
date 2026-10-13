@@ -384,6 +384,16 @@ Page({
       fail: () => wx.showToast({ title: '二维码预览失败，请重试', icon: 'none' }),
     });
   },
+  previewRouteImage() {
+    const rawSource = this.data.item?.route?.previewImageUrl;
+    const source = typeof rawSource === 'string' ? rawSource.trim() : '';
+    if (!source) return;
+    wx.previewImage({
+      current: source,
+      urls: [source],
+      fail: () => wx.showToast({ title: '路线预览图打开失败，请重试', icon: 'none' }),
+    });
+  },
   async copyStravaRoute() {
     const rawUrl = this.data.item?.route?.stravaRouteUrl;
     const url = typeof rawUrl === 'string' ? rawUrl.trim() : '';
@@ -404,9 +414,12 @@ Page({
         errMsg,
         errno: failure?.errno,
       });
+      const privacyBlocked = /privacy agreement/i.test(errMsg);
       wx.showModal({
         title: '复制失败',
-        content: `${errMsg}\n可长按轨迹链接手动复制。`,
+        content: privacyBlocked
+          ? '微信隐私保护指引正在更新，请稍后重试；也可长按轨迹链接手动复制。'
+          : '暂时无法复制，请稍后重试；也可长按轨迹链接手动复制。',
         showCancel: false,
         confirmText: '知道了',
       });
