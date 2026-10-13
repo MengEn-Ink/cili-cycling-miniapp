@@ -241,31 +241,39 @@ function mapActivityRouteExtras(raw: unknown) {
   return {
     ...(typeof raw.strava_route_id === 'string' ? { stravaRouteId: raw.strava_route_id } : {}),
     ...(httpsUrl(raw.strava_route_url) ? { stravaRouteUrl: httpsUrl(raw.strava_route_url) } : {}),
+    ...(typeof raw.route_name === 'string' && raw.route_name.trim().length <= 120
+      ? { routeName: raw.route_name.trim() }
+      : {}),
+    ...(httpsUrl(raw.preview_image_url)
+      ? { previewImageUrl: httpsUrl(raw.preview_image_url) }
+      : {}),
     ...(typeof raw.estimated_moving_time_seconds === 'number'
       ? { estimatedMovingTimeSeconds: raw.estimated_moving_time_seconds }
       : {}),
     ...(Array.isArray(raw.elevation_profile) ? { elevationProfile: points.slice(0, 80) } : {}),
     ...(safeBounds ? { routeBounds: safeBounds } : {}),
     ...(Array.isArray(raw.popular_climbs) ? { popularClimbs: climbs.slice(0, 3) } : {}),
+    ...(typeof raw.strava_gpx_available === 'boolean'
+      ? { stravaGpxAvailable: raw.strava_gpx_available }
+      : {}),
   };
 }
 function mapPublicStravaRoutePreview(raw: unknown): PublicStravaRoutePreview {
   const value = expectRecord(raw);
-  const routeId = typeof value.strava_route_id === 'string' ? value.strava_route_id : '';
-  const routeUrl = httpsUrl(value.strava_route_url);
+  const preview = mapStravaRoutePreview(value);
   const routeName = typeof value.route_name === 'string' ? value.route_name.trim() : '';
   const previewImageUrl = httpsUrl(value.preview_image_url);
   if (
-    !/^[1-9]\d{0,19}$/.test(routeId) ||
-    routeUrl !== `https://www.strava.com/routes/${routeId}` ||
     !routeName ||
-    routeName.length > 120
+    routeName.length > 120 ||
+    value.strava_gpx_available !== false ||
+    (value.preview_image_url !== null && value.preview_image_url !== undefined && !previewImageUrl)
   )
     return invalidResponse();
   return {
-    stravaRouteId: routeId,
-    stravaRouteUrl: routeUrl,
+    ...preview,
     routeName,
+    stravaGpxAvailable: false,
     ...(previewImageUrl ? { previewImageUrl } : {}),
   };
 }
@@ -280,15 +288,80 @@ function mapStravaRoutePreview(raw: unknown): StravaRoutePreview {
         east: value.route_bounds.east,
       }
     : undefined;
+  let previousDistance = -1;
+  const profileValid =
+    Array.isArray(value.elevation_profile) &&
+    value.elevation_profile.every((point) => {
+      if (
+        !isRecord(point) ||
+        Object.keys(point).some((key) => !['distance_km', 'elevation_m'].includes(key)) ||
+        typeof point.distance_km !== 'number' ||
+        !Number.isFinite(point.distance_km) ||
+        point.distance_km < previousDistance ||
+        point.distance_km < 0 ||
+        point.distance_km > 20000 ||
+        typeof point.elevation_m !== 'number' ||
+        !Number.isFinite(point.elevation_m) ||
+        point.elevation_m < -1000 ||
+        point.elevation_m > 10000
+      )
+        return false;
+      previousDistance = point.distance_km;
+      return true;
+    });
+  const climbFields = [
+    'id',
+    'name',
+    'distance_km',
+    'elevation_gain_m',
+    'average_grade',
+    'max_grade',
+    'climb_category',
+    'popularity',
+    'popularity_label',
+  ];
+  const climbsValid =
+    Array.isArray(value.popular_climbs) &&
+    value.popular_climbs.every(
+      (climb) =>
+        isRecord(climb) &&
+        !Object.keys(climb).some((key) => !climbFields.includes(key)) &&
+        typeof climb.id === 'string' &&
+        /^\d{1,20}$/.test(climb.id) &&
+        typeof climb.name === 'string' &&
+        climb.name.length <= 120 &&
+        typeof climb.popularity_label === 'string' &&
+        climb.popularity_label.length <= 40 &&
+        ['distance_km', 'elevation_gain_m', 'average_grade', 'max_grade'].every(
+          (key) => typeof climb[key] === 'number' && Number.isFinite(climb[key] as number),
+        ) &&
+        typeof climb.climb_category === 'number' &&
+        Number.isInteger(climb.climb_category) &&
+        climb.climb_category >= 0 &&
+        climb.climb_category <= 5 &&
+        typeof climb.popularity === 'number' &&
+        Number.isSafeInteger(climb.popularity) &&
+        climb.popularity >= 0 &&
+        (climb.distance_km as number) >= 0 &&
+        (climb.distance_km as number) <= 1000 &&
+        (climb.elevation_gain_m as number) >= 0 &&
+        (climb.elevation_gain_m as number) <= 100000 &&
+        (climb.average_grade as number) >= -100 &&
+        (climb.average_grade as number) <= 100 &&
+        (climb.max_grade as number) >= -100 &&
+        (climb.max_grade as number) <= 100,
+    );
   if (
     !route.stravaRouteId ||
-    !/^\d{1,20}$/.test(route.stravaRouteId) ||
+    !/^[1-9]\d{0,19}$/.test(route.stravaRouteId) ||
     !route.stravaRouteUrl ||
-    !/^https:\/\/www\.strava\.com\/routes\/\d+\/?$/i.test(route.stravaRouteUrl) ||
+    route.stravaRouteUrl !== `https://www.strava.com/routes/${route.stravaRouteId}` ||
+    !profileValid ||
     !Array.isArray(route.elevationProfile) ||
     route.elevationProfile.length < 2 ||
     !Array.isArray(value.elevation_profile) ||
     value.elevation_profile.length > 80 ||
+    !climbsValid ||
     !Array.isArray(route.popularClimbs) ||
     !Array.isArray(value.popular_climbs) ||
     value.popular_climbs.length > 3 ||
@@ -981,6 +1054,9 @@ function activityPayload(value: ActivityInput) {
         : {}),
       ...(httpsUrl(value.route?.stravaRouteUrl)
         ? { strava_route_url: httpsUrl(value.route.stravaRouteUrl) }
+        : {}),
+      ...(typeof value.route?.stravaGpxAvailable === 'boolean'
+        ? { strava_gpx_available: value.route.stravaGpxAvailable }
         : {}),
       ...(Array.isArray(value.route?.elevationProfile)
         ? {

@@ -125,6 +125,9 @@ const activityContentProjection = (activity: EditableActivity | ActivityInput) =
           ? `https://www.strava.com/routes/${protocolText(route.stravaRouteId)}`
           : protocolText(route.stravaRouteUrl)
         : undefined,
+      routeName: protocolText(route.routeName),
+      previewImageUrl: protocolText(route.previewImageUrl),
+      stravaGpxAvailable: route.stravaGpxAvailable,
       elevationProfile: route.elevationProfile,
       routeBounds: route.routeBounds,
       popularClimbs: route.popularClimbs?.map((climb) => ({
@@ -301,12 +304,15 @@ Page({
             ? {
                 stravaRouteId: activity.route.stravaRouteId,
                 stravaRouteUrl: activity.route.stravaRouteUrl || '',
+                routeName: activity.route.routeName,
+                previewImageUrl: activity.route.previewImageUrl,
                 distanceKm: activity.route.distanceKm,
                 elevationM: activity.route.elevationM,
                 estimatedMovingTimeSeconds: activity.route.estimatedMovingTimeSeconds || 0,
                 elevationProfile: activity.route.elevationProfile || [],
                 routeBounds: activity.route.routeBounds,
                 popularClimbs: activity.route.popularClimbs,
+                stravaGpxAvailable: activity.route.stravaGpxAvailable,
               }
             : undefined,
         stravaRouteTimeLabel: formatRouteDuration(activity.route.estimatedMovingTimeSeconds),
@@ -477,8 +483,8 @@ Page({
       this.setData({
         'form.stravaRouteUrl': preview.stravaRouteUrl,
         publicStravaRoutePreview: preview,
-        stravaRoutePreview: undefined,
-        stravaRouteTimeLabel: '',
+        stravaRoutePreview: preview,
+        stravaRouteTimeLabel: formatRouteDuration(preview.estimatedMovingTimeSeconds),
       });
       wx.showToast({ title: '已识别公开路线', icon: 'success' });
     } catch (error) {
@@ -810,23 +816,30 @@ Page({
             end: original.route.end,
             startLocation: this.data.routeStartLocation,
             ...(original.route.endLocation ? { endLocation: original.route.endLocation } : {}),
-            distanceKm: original.route.distanceKm,
-            elevationM: original.route.elevationM,
+            distanceKm: syncedRoute?.distanceKm ?? original.route.distanceKm,
+            elevationM: syncedRoute?.elevationM ?? original.route.elevationM,
             level: original.route.level,
             ...(original.route.gpxFileId ? { gpxFileId: original.route.gpxFileId } : {}),
             ...(stravaRouteUrl ? { stravaRouteUrl } : {}),
             ...(syncedRoute
               ? {
                   stravaRouteId: syncedRoute.stravaRouteId,
+                  routeName: syncedRoute.routeName,
+                  previewImageUrl: syncedRoute.previewImageUrl,
                   estimatedMovingTimeSeconds: syncedRoute.estimatedMovingTimeSeconds,
                   elevationProfile: syncedRoute.elevationProfile,
                   routeBounds: syncedRoute.routeBounds,
                   popularClimbs: syncedRoute.popularClimbs,
+                  stravaGpxAvailable: syncedRoute.stravaGpxAvailable,
                 }
               : stravaRouteUrl === original.route.stravaRouteUrl
                 ? {
                     ...(original.route.stravaRouteId
                       ? { stravaRouteId: original.route.stravaRouteId }
+                      : {}),
+                    ...(original.route.routeName ? { routeName: original.route.routeName } : {}),
+                    ...(original.route.previewImageUrl
+                      ? { previewImageUrl: original.route.previewImageUrl }
                       : {}),
                     ...(original.route.elevationProfile
                       ? { elevationProfile: original.route.elevationProfile }
@@ -836,6 +849,9 @@ Page({
                       : {}),
                     ...(original.route.popularClimbs
                       ? { popularClimbs: original.route.popularClimbs }
+                      : {}),
+                    ...(typeof original.route.stravaGpxAvailable === 'boolean'
+                      ? { stravaGpxAvailable: original.route.stravaGpxAvailable }
                       : {}),
                   }
                 : {}),
@@ -854,9 +870,12 @@ Page({
             ...(syncedRoute
               ? {
                   stravaRouteId: syncedRoute.stravaRouteId,
+                  routeName: syncedRoute.routeName,
+                  previewImageUrl: syncedRoute.previewImageUrl,
                   elevationProfile: syncedRoute.elevationProfile,
                   routeBounds: syncedRoute.routeBounds,
                   popularClimbs: syncedRoute.popularClimbs,
+                  stravaGpxAvailable: syncedRoute.stravaGpxAvailable,
                 }
               : {}),
           },

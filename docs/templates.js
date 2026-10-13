@@ -76,12 +76,6 @@
       <section class="prototype-card form-section">${field('昵称', rider.nickname)}${field('所在城市', rider.city)}${field('手机号', rider.phone)}${field('骑行经验', rider.experience)}${field('紧急联系人', '已填写 · 仅管理员可见')}</section>
       <p class="privacy-note">真实姓名、手机号和紧急联系人不会出现在公开名片中。</p>${button('保存资料', 'save-profile', 'button-primary button-full')}`,
 
-    strava: () => `${pageHead('骑行数据', 'Strava 已连接', '授权状态正常，能力数据可用于活动审核')}
-      <section class="strava-status"><span>STRAVA</span><b>连接正常</b><p>最近同步：2026.10.12 22:48</p></section>
-      <div class="profile-metrics">${metric(rider.rides90d, '90 天骑行')}${metric(`${rider.longestKm} km`, '最长距离')}${metric(`${rider.speedKmh}`, '加权均速')}</div>
-      <section class="prototype-card qr-auth"><div class="fake-qr"></div><div><h3>需要重新授权？</h3><p>保存二维码后使用另一台设备扫码，或直接打开授权页。</p></div></section>
-      <div class="button-pair">${button('保存授权二维码', 'toast', 'button-outline').replace('data-action="toast"', 'data-action="toast" data-message="二维码已保存到相册"')}${button('重新授权', 'toast', 'button-primary').replace('data-action="toast"', 'data-action="toast" data-message="正在打开 Strava 授权"')}</div><button class="text-danger" data-action="toast" data-message="解绑操作需要再次确认">解除 Strava 连接</button>`,
-
     'admin-activity-list': () => `${pageHead('管理员', '活动管理', '发布、编辑活动并处理报名审核')}
       <div class="admin-toolbar"><div class="prototype-segments"><button class="is-active">全部</button><button>进行中</button><button>已结束</button></div>${button('新建活动', 'route', 'button-primary').replace('data-action="route"', 'data-action="route" data-route="admin-activity-edit"')}</div>
       <div class="admin-list">${activities.map((activity, index) => `<article><div><span>${index ? '草稿' : '已发布'}</span><small>${activity.date} · ${activity.time}</small></div><h3>${activity.title}</h3><p>${activity.distanceKm} km · ${activity.elevationM} m · ${activity.occupied}/${activity.capacity} 人</p><div class="inline-actions"><button data-action="route" data-route="admin-activity-edit">编辑</button><button data-action="route" data-route="admin-reviews">审核报名</button></div></article>`).join('')}</div>`,

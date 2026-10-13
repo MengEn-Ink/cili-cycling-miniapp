@@ -107,9 +107,6 @@ Page({
       fail: () => wx.showToast({ title: '复制失败，请稍后重试', icon: 'none' }),
     });
   },
-  repairStrava() {
-    if (this.data.card?.needsStravaRepair) wx.navigateTo({ url: '/pages/strava/index' });
-  },
   completeProfile() {
     if (this.data.card?.needsProfilePhoto) wx.navigateTo({ url: '/pages/profile-edit/index' });
   },

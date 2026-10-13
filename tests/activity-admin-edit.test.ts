@@ -1009,6 +1009,16 @@ describe('日常活动极简创建与编辑', () => {
       stravaRouteId: '42',
       stravaRouteUrl: 'https://www.strava.com/routes/42',
       routeName: '周末环湖',
+      previewImageUrl: 'https://images.example/route.jpg',
+      distanceKm: 42.5,
+      elevationM: 860,
+      estimatedMovingTimeSeconds: 7200,
+      elevationProfile: [
+        { distanceKm: 0, elevationM: 20 },
+        { distanceKm: 42.5, elevationM: 80 },
+      ],
+      routeBounds: { south: 22, west: 113, north: 23, east: 114 },
+      popularClimbs: [],
     };
     rideService.previewPublicStravaRoute.mockResolvedValue(preview);
     page.data.form.stravaRouteUrl = preview.stravaRouteUrl;
@@ -1019,7 +1029,8 @@ describe('日常活动极简创建与编辑', () => {
     expect(rideService.previewStravaRoute).not.toHaveBeenCalled();
     expect(rideService.previewPublicStravaRoute).toHaveBeenCalledWith(preview.stravaRouteUrl);
     expect(page.data.publicStravaRoutePreview).toEqual(preview);
-    expect(page.data.stravaRoutePreview).toBeUndefined();
+    expect(page.data.stravaRoutePreview).toEqual(preview);
+    expect(page.data.stravaRouteTimeLabel).toBe('2 小时');
     expect(wx.showModal).not.toHaveBeenCalled();
     expect(wx.showToast).toHaveBeenCalledWith({ title: '已识别公开路线', icon: 'success' });
     expect(page.data.syncingRoute).toBe(false);
@@ -1049,7 +1060,9 @@ describe('日常活动极简创建与编辑', () => {
     expect(template).toContain('二维码可能已过期');
     expect(template).toContain('识别公开路线');
     expect(template).toContain('无需 Strava 授权');
-    expect(template).toContain('预计 {{stravaRouteTimeLabel}}');
+    expect(template).toContain('此里估算 {{stravaRouteTimeLabel}}');
+    expect(template).toContain('stravaRoutePreview.routeName');
+    expect(template).toContain('stravaRoutePreview.previewImageUrl');
     expect(template).toContain('form.title');
     expect(template).toContain('form.startDate');
     expect(template).toContain('form.startTime');

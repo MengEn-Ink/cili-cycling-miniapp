@@ -7,6 +7,9 @@ const preview = {
   owner_openid: 'admin',
   strava_route_id: '42',
   strava_route_url: 'https://www.strava.com/routes/42',
+  route_name: '服务端可信路线',
+  preview_image_url: 'https://images.example/route.jpg',
+  strava_gpx_available: false,
   distance_km: 10,
   elevation_m: 200,
   estimated_moving_time_seconds: 5400,
@@ -88,12 +91,26 @@ test('保存活动忽略客户端伪造曲线并采用服务端预览', async ()
   };
   const result = await saveActivity(
     store,
-    { openid: 'admin', activity: input },
+    {
+      openid: 'admin',
+      activity: {
+        ...input,
+        route: {
+          ...input.route,
+          route_name: '客户端伪造路线',
+          preview_image_url: 'https://evil.example/fake.jpg',
+          strava_gpx_available: true,
+        },
+      },
+    },
     new Date('2026-09-30T12:00:00Z'),
   );
   assert.equal(result.route.distance_km, 10);
   assert.equal(result.route.elevation_m, 200);
   assert.equal(result.route.estimated_moving_time_seconds, 5400);
+  assert.equal(result.route.route_name, '服务端可信路线');
+  assert.equal(result.route.preview_image_url, 'https://images.example/route.jpg');
+  assert.equal(result.route.strava_gpx_available, false);
   assert.deepEqual(result.route.elevation_profile, preview.elevation_profile);
   assert.equal(written.route.strava_route_id, '42');
   assert.equal(written.strava_route_owner_openid, 'admin');

@@ -169,6 +169,9 @@ function publicRouteError(status) {
     '暂时无法读取该公开路线，请确认路线公开后重试或手动填写',
   );
 }
+function invalidPublicRoute() {
+  return new StravaError('PUBLIC_ROUTE_INVALID', '未能识别该 Strava 公开路线，请手动填写');
+}
 function publicRouteImage(pageProps, html) {
   const candidate = typeof pageProps?.ogImage?.url === 'string' ? pageProps.ogImage.url : '';
   const meta =
@@ -189,6 +192,7 @@ function publicRouteImage(pageProps, html) {
 function decodeHtmlText(value) {
   return value
     .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;|&#160;/gi, ' ')
     .replace(/&quot;|&#34;/gi, '"')
     .replace(/&apos;|&#39;|&#x27;/gi, "'")
     .replace(/&amp;/gi, '&')
@@ -211,13 +215,12 @@ function publicRouteName(pageProps, html) {
 }
 function parsePublicRouteHtml(html, expectedRouteId) {
   const match = /<script\b[^>]*\bid=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script\s*>/i.exec(html);
-  if (!match)
-    throw new StravaError('PUBLIC_ROUTE_INVALID', '未能识别该 Strava 公开路线，请手动填写');
+  if (!match) throw invalidPublicRoute();
   let data;
   try {
     data = JSON.parse(match[1]);
   } catch {
-    throw new StravaError('PUBLIC_ROUTE_INVALID', '未能识别该 Strava 公开路线，请手动填写');
+    throw invalidPublicRoute();
   }
   const pageProps = data?.pageProps;
   const routeId = String(pageProps?.routeId || data?.query?.id || '');
@@ -228,7 +231,7 @@ function parsePublicRouteHtml(html, expectedRouteId) {
     !routeName ||
     routeName.length > 120
   )
-    throw new StravaError('PUBLIC_ROUTE_INVALID', '未能识别该 Strava 公开路线，请手动填写');
+    throw invalidPublicRoute();
   const result = {
     strava_route_id: expectedRouteId,
     strava_route_url: `https://www.strava.com/routes/${expectedRouteId}`,
@@ -236,6 +239,123 @@ function parsePublicRouteHtml(html, expectedRouteId) {
   };
   const image = publicRouteImage(pageProps, html);
   return image ? { ...result, preview_image_url: image } : result;
+}
+function parseRouteStat(statsHtml, label) {
+  const pattern = new RegExp(
+    `<div\\b[^>]*class=["'][^"']*stat-label[^"']*["'][^>]*>\\s*${label}\\s*<\\/div>\\s*<div\\b[^>]*class=["'][^"']*stat-value[^"']*["'][^>]*>([\\s\\S]*?)<\\/div>`,
+    'i',
+  );
+  return decodeHtmlText(pattern.exec(statsHtml)?.[1] || '');
+}
+function parseRouteMeasure(value, units) {
+  const match = /^([0-9]+(?:\.[0-9]+)?)\s*(km|mi|m|ft)$/i.exec(value.replace(/,/g, '').trim());
+  if (!match || !units.includes(match[2].toLowerCase())) throw invalidPublicRoute();
+  return { value: Number(match[1]), unit: match[2].toLowerCase() };
+}
+function parseEmbedRouteIdentity(html, expectedRouteId) {
+  const match =
+    /<a\b([^>]*)>(?:(?!<\/a>)[\s\S])*?<h1\b[^>]*class=["'][^"']*\btitle\b[^"']*["'][^>]*>([\s\S]*?)<\/h1>(?:(?!<\/a>)[\s\S])*?<\/a>/i.exec(
+      html,
+    );
+  const href = /\bhref=["']([^"']+)["']/i.exec(match?.[1] || '')?.[1];
+  const title = decodeHtmlText(match?.[2] || '');
+  try {
+    const link = new URL(decodeHtmlText(href || ''));
+    const fallback = new URL(link.searchParams.get('$fallback_url') || '');
+    if (
+      fallback.protocol !== 'https:' ||
+      fallback.hostname !== 'strava.com' ||
+      fallback.port ||
+      fallback.pathname !== `/routes/${expectedRouteId}` ||
+      !title ||
+      title.length > 120
+    )
+      throw new Error();
+  } catch {
+    throw invalidPublicRoute();
+  }
+  return title;
+}
+function parsePublicRouteEmbedHtml(html, expectedRouteId, expectedTitle, maxPoints = 80) {
+  const embedTitle = parseEmbedRouteIdentity(html, expectedRouteId);
+  if (embedTitle !== expectedTitle) throw invalidPublicRoute();
+  const statsHtml =
+    /<div\b[^>]*class=["'][^"']*\bstats\b[^"']*["'][^>]*>([\s\S]*?)<script\b/i.exec(html)?.[1] ||
+    html;
+  const type = parseRouteStat(statsHtml, 'Type');
+  const distance = parseRouteMeasure(parseRouteStat(statsHtml, 'Distance'), ['km', 'mi']);
+  const elevation = parseRouteMeasure(parseRouteStat(statsHtml, 'Elev Gain'), ['m', 'ft']);
+  if (!type || type.length > 40) throw invalidPublicRoute();
+  const distanceKm = distance.value * (distance.unit === 'mi' ? 1.609344 : 1);
+  const elevationM = elevation.value * (elevation.unit === 'ft' ? 0.3048 : 1);
+  if (!(distanceKm > 0 && distanceKm <= 2000 && elevationM >= 0 && elevationM <= 30000))
+    throw invalidPublicRoute();
+  const script =
+    /<script\b[^>]*\bid=["']__ROUTE_DATA__["'][^>]*\btype=["']application\/json["'][^>]*>([\s\S]*?)<\/script\s*>/i.exec(
+      html,
+    );
+  let data;
+  try {
+    data = JSON.parse(script?.[1] || '');
+  } catch {
+    throw invalidPublicRoute();
+  }
+  const coordinates = data?.coordinates;
+  if (!Array.isArray(coordinates) || coordinates.length < 2 || coordinates.length > 200000)
+    throw invalidPublicRoute();
+  const points = coordinates.map((coordinate) => {
+    if (!Array.isArray(coordinate) || coordinate.length !== 3) throw invalidPublicRoute();
+    const [lon, lat, ele] = coordinate;
+    if (
+      !Number.isFinite(lon) ||
+      lon < -180 ||
+      lon > 180 ||
+      !Number.isFinite(lat) ||
+      lat < -90 ||
+      lat > 90 ||
+      !Number.isFinite(ele) ||
+      ele < -1000 ||
+      ele > 10000
+    )
+      throw invalidPublicRoute();
+    return { lon, lat, ele, distance: 0 };
+  });
+  let geometryDistance = 0;
+  let south = points[0].lat;
+  let north = south;
+  let west = points[0].lon;
+  let east = west;
+  for (let index = 1; index < points.length; index += 1) {
+    geometryDistance += haversineMeters(points[index - 1], points[index]);
+    points[index].distance = geometryDistance;
+    south = Math.min(south, points[index].lat);
+    north = Math.max(north, points[index].lat);
+    west = Math.min(west, points[index].lon);
+    east = Math.max(east, points[index].lon);
+  }
+  if (!(geometryDistance > 0)) throw invalidPublicRoute();
+  const count = Math.min(points.length, maxPoints);
+  const indexes = Array.from({ length: count }, (_, index) =>
+    Math.round((index * (points.length - 1)) / (count - 1)),
+  );
+  return {
+    distance_km: Number(distanceKm.toFixed(2)),
+    elevation_m: Number(elevationM.toFixed(1)),
+    elevation_profile: indexes.map((index) => ({
+      distance_km: Number(((points[index].distance / geometryDistance) * distanceKm).toFixed(3)),
+      elevation_m: Number(points[index].ele.toFixed(1)),
+    })),
+    route_bounds: {
+      south: Number(south.toFixed(6)),
+      west: Number(west.toFixed(6)),
+      north: Number(north.toFixed(6)),
+      east: Number(east.toFixed(6)),
+    },
+  };
+}
+function estimatePublicRouteMovingTime(distanceKm, elevationM) {
+  const seconds = Math.round((distanceKm / 22 + elevationM / 600) * 60 * 60);
+  return Math.min(7 * 24 * 60 * 60, Math.max(60, seconds));
 }
 async function readPublicRouteHtml(response) {
   if (response.body?.getReader) {
@@ -260,8 +380,31 @@ async function readPublicRouteHtml(response) {
     throw new StravaError('PUBLIC_ROUTE_TOO_LARGE', 'Strava 公开路线页面过大，请手动填写');
   return html;
 }
+async function fetchPublicRouteHtml(fetchImpl, url, signal) {
+  const response = await fetchImpl(url, {
+    method: 'GET',
+    redirect: 'manual',
+    signal,
+    headers: {
+      accept: 'text/html,application/xhtml+xml',
+      'user-agent': 'Mozilla/5.0 (compatible; CiliRoutePreview/1.0)',
+    },
+  });
+  if (!response?.ok) throw publicRouteError(Number(response?.status));
+  const declaredHeader = response.headers?.get?.('content-length');
+  const declared =
+    declaredHeader === null || declaredHeader === undefined ? NaN : Number(declaredHeader);
+  if (Number.isFinite(declared) && declared > MAX_PUBLIC_ROUTE_HTML_BYTES)
+    throw new StravaError('PUBLIC_ROUTE_TOO_LARGE', 'Strava 公开路线页面过大，请手动填写');
+  if (response.redirected === true || (response.url && response.url !== url))
+    throw publicRouteError(Number(response.status));
+  return readPublicRouteHtml(response);
+}
 async function publicRoutePreviewFlow({
+  openid,
   routeUrl,
+  store,
+  now = new Date(),
   fetchImpl = globalThis.fetch,
   timeoutMs = PUBLIC_ROUTE_TIMEOUT_MS,
 }) {
@@ -269,31 +412,34 @@ async function publicRoutePreviewFlow({
   if (typeof fetchImpl !== 'function')
     throw new StravaError('PUBLIC_ROUTE_UNAVAILABLE', '公开路线解析服务暂时不可用');
   const canonicalUrl = `https://www.strava.com/routes/${routeId}`;
+  const embedUrl = `https://strava-embeds.com/route/${routeId}`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetchImpl(canonicalUrl, {
-      method: 'GET',
-      redirect: 'manual',
-      signal: controller.signal,
-      headers: {
-        accept: 'text/html,application/xhtml+xml',
-        'user-agent': 'Mozilla/5.0 (compatible; CiliRoutePreview/1.0)',
-      },
-    });
-    if (!response?.ok) throw publicRouteError(Number(response?.status));
-    const declared = Number(response.headers?.get?.('content-length'));
-    if (Number.isFinite(declared) && declared > MAX_PUBLIC_ROUTE_HTML_BYTES)
-      throw new StravaError('PUBLIC_ROUTE_TOO_LARGE', 'Strava 公开路线页面过大，请手动填写');
-    if (response.redirected === true || (response.url && response.url !== canonicalUrl))
-      throw publicRouteError(Number(response.status));
-    const html = await readPublicRouteHtml(response);
-    return parsePublicRouteHtml(html, routeId);
+    const [canonicalHtml, embedHtml] = await Promise.all([
+      fetchPublicRouteHtml(fetchImpl, canonicalUrl, controller.signal),
+      fetchPublicRouteHtml(fetchImpl, embedUrl, controller.signal),
+    ]);
+    const identity = parsePublicRouteHtml(canonicalHtml, routeId);
+    const details = parsePublicRouteEmbedHtml(embedHtml, routeId, identity.route_name);
+    const preview = {
+      ...identity,
+      ...details,
+      estimated_moving_time_seconds: estimatePublicRouteMovingTime(
+        details.distance_km,
+        details.elevation_m,
+      ),
+      popular_climbs: [],
+      strava_gpx_available: false,
+    };
+    if (store?.saveRoutePreview) await store.saveRoutePreview(openid, preview, now);
+    return preview;
   } catch (error) {
     if (error instanceof StravaError) throw error;
     throw new StravaError('PUBLIC_ROUTE_UNAVAILABLE', '公开路线解析服务暂时不可用，请手动填写');
   } finally {
     clearTimeout(timer);
+    controller.abort();
   }
 }
 async function routePreviewFlow({ openid, routeUrl, env, store, api, now = new Date() }) {

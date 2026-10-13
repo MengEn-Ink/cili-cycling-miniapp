@@ -91,16 +91,6 @@ window.prototypeData = {
       copy: '编辑昵称、城市、手机号、紧急联系人和骑行经验。',
     },
     {
-      id: 'strava',
-      path: 'pages/strava/index',
-      title: 'Strava 授权',
-      navTitle: 'Strava',
-      group: '个人资料',
-      role: '骑友',
-      state: '已连接',
-      copy: '展示授权状态、同步指标、二维码授权与解绑入口。',
-    },
-    {
       id: 'admin-activity-list',
       path: 'pages/admin/activity-list/index',
       title: '活动管理',

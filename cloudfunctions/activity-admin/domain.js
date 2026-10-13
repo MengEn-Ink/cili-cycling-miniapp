@@ -137,6 +137,9 @@ function cleanStravaRoute(route) {
   const extraFields = [
     'strava_route_id',
     'strava_route_url',
+    'route_name',
+    'preview_image_url',
+    'strava_gpx_available',
     'estimated_moving_time_seconds',
     'elevation_profile',
     'route_bounds',
@@ -281,9 +284,33 @@ function cleanStravaRoute(route) {
     estimatedMovingTime > 604800
   )
     fail('VALIDATION_FAILED', '预计骑行时间格式错误');
+  const routeName =
+    route.route_name === undefined ? undefined : cleanText(route.route_name, '路线名称', 120, true);
+  let previewImageUrl;
+  if (route.preview_image_url !== undefined) {
+    previewImageUrl = cleanText(route.preview_image_url, '路线预览图', 500, true);
+    let parsedPreviewImage;
+    try {
+      parsedPreviewImage = new URL(previewImageUrl);
+    } catch {
+      fail('VALIDATION_FAILED', '路线预览图格式错误');
+    }
+    if (
+      parsedPreviewImage.protocol !== 'https:' ||
+      parsedPreviewImage.username ||
+      parsedPreviewImage.password
+    )
+      fail('VALIDATION_FAILED', '路线预览图格式错误');
+  }
+  const stravaGpxAvailable = route.strava_gpx_available;
+  if (typeof stravaGpxAvailable !== 'boolean')
+    fail('VALIDATION_FAILED', 'Strava GPX 可用性格式错误');
   return {
     strava_route_id: id,
     strava_route_url: `https://www.strava.com/routes/${id}`,
+    ...(routeName ? { route_name: routeName } : {}),
+    ...(previewImageUrl ? { preview_image_url: previewImageUrl } : {}),
+    strava_gpx_available: stravaGpxAvailable,
     estimated_moving_time_seconds: estimatedMovingTime,
     elevation_profile: elevationProfile,
     route_bounds: { south, west, north, east },
@@ -428,6 +455,9 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses, option
     'gpx_file_id',
     'strava_route_id',
     'strava_route_url',
+    'route_name',
+    'preview_image_url',
+    'strava_gpx_available',
     'estimated_moving_time_seconds',
     'elevation_profile',
     'route_bounds',

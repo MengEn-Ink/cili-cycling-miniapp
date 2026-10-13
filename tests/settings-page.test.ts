@@ -1,88 +1,62 @@
+// @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
+import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({
-  getStravaReadiness: vi.fn(),
-}));
-
+const readiness = vi.hoisted(() => vi.fn());
 vi.mock('../miniprogram/repositories/index', () => ({
-  repository: { getStravaReadiness: mocks.getStravaReadiness },
+  repository: { getStravaReadiness: readiness },
 }));
-
-const readyState = {
-  state: 'ready',
-  canRegister: true,
-  avatarAvailable: true,
-  athleteName: '曹蒙恩',
-  snapshot: null,
-  error: null,
-};
 
 describe('设置页', () => {
   let page: any;
 
   beforeEach(async () => {
     vi.resetModules();
-    mocks.getStravaReadiness.mockReset().mockResolvedValue(readyState);
-    vi.stubGlobal('wx', {
-      navigateTo: vi.fn(),
-    });
+    readiness.mockReset();
     vi.stubGlobal('Page', (definition: any) => {
       page = definition;
       page.data = { ...definition.data };
-      page.setData = vi.fn((patch: Record<string, unknown>) => Object.assign(page.data, patch));
     });
     await import('../miniprogram/pages/settings/index');
   });
 
-  it('进入页面时加载版本日志和 Strava 授权状态', async () => {
-    page.onShow();
-    await vi.waitFor(() => expect(page.data.stravaLoading).toBe(false));
-
-    expect(page.data).toMatchObject({
-      stravaReadiness: readyState,
-      stravaStatusText: '已连接，可重新授权或解绑',
-    });
+  it('只加载版本日志，不注册 Strava readiness 生命周期或授权入口', () => {
     expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.13.32',
+      version: '2026.10.13.33',
       latest: true,
-      title: '移除群二维码保存按钮',
-      summary: '活动群二维码保留点击放大与长按查看，移除保存到相册按钮，避免保存失败影响使用。',
+      title: '公开路线完整免授权解析',
+      summary: '创建活动时无需连接 Strava，即可识别公开路线的完整骑行数据和预览信息。',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.13.33',
       '2026.10.13.32',
       '2026.10.13.31',
       '2026.10.13.30',
       '2026.10.12.29',
-      '2026.10.12.28',
     ]);
+    expect(page.onShow).toBeUndefined();
+    expect(page.loadStravaStatus).toBeUndefined();
+    expect(page.openStrava).toBeUndefined();
+    expect(readiness).not.toHaveBeenCalled();
   });
 
-  it('状态读取失败时结束加载且保留重试入口', async () => {
-    mocks.getStravaReadiness.mockRejectedValueOnce(new Error('网络暂不可用'));
-
-    await page.loadStravaStatus();
-
-    expect(page.data).toMatchObject({
-      stravaLoading: false,
-      stravaLoadError: '网络暂不可用',
-      stravaReadiness: null,
-      stravaStatusText: '暂时无法读取授权状态',
-    });
-    mocks.getStravaReadiness.mockResolvedValueOnce(readyState);
-    await page.loadStravaStatus();
-    expect(page.data.stravaReadiness).toEqual(readyState);
+  it('模板不再包含第三方授权区或 Strava 页面跳转', () => {
+    const template = readFileSync('miniprogram/pages/settings/index.wxml', 'utf8');
+    const script = readFileSync('miniprogram/pages/settings/index.ts', 'utf8');
+    expect(template).not.toContain('第三方授权');
+    expect(template).not.toContain('loadStravaStatus');
+    expect(script).not.toContain('/pages/strava/index');
+    expect(script).not.toContain('getStravaReadiness');
   });
 
-  it('复用 Strava 页面处理重新授权、修复和解绑', () => {
-    page.openStrava({ currentTarget: { dataset: { action: 'reauthorize' } } });
-    expect(wx.navigateTo).toHaveBeenLastCalledWith({ url: '/pages/strava/index?reauthorize=1' });
-
-    page.openStrava({ currentTarget: { dataset: {} } });
-    expect(wx.navigateTo).toHaveBeenLastCalledWith({ url: '/pages/strava/index' });
+  it('小程序清单隐藏 OAuth 页面并将相册权限限定为活动群二维码', () => {
+    const config = JSON.parse(readFileSync('miniprogram/app.json', 'utf8'));
+    expect(config.pages).not.toContain('pages/strava/index');
+    expect(config.permission['scope.writePhotosAlbum'].desc).toBe('仅用于保存活动群二维码到相册');
   });
 });

@@ -6,68 +6,6 @@
     <view class="hero-copy">管理个人设置，查看「此里」的每一次功能升级。</view>
   </view>
 
-  <block wx:if="{{stravaReadiness && stravaReadiness.state !== 'disconnected'}}">
-  <view class="section-label"><text>01</text> 第三方授权</view>
-  <view class="card strava-settings-card">
-    <view class="card-heading">
-      <view>
-        <view class="title">Strava 骑行数据</view>
-        <view class="muted" role="status" aria-live="polite">{{stravaStatusText}}</view>
-      </view>
-      <view class="strava-status status-{{stravaReadiness ? stravaReadiness.state : 'unknown'}}"
-        >{{stravaLoading ? '读取中' : stravaReadiness && stravaReadiness.state === 'ready' ?
-        '已连接' : stravaReadiness && stravaReadiness.state === 'disconnected' ? '未连接' :
-        stravaLoadError ? '加载失败' : '需处理'}}</view
-      >
-    </view>
-    <view class="settings-inline-error" wx:if="{{stravaLoadError}}"
-      >{{stravaLoadError}}。其他设置仍可正常使用。</view
-    >
-    <view class="strava-actions">
-      <button wx:if="{{stravaLoadError}}" class="secondary" bindtap="loadStravaStatus">
-        重试状态检查
-      </button>
-      <button
-        wx:elif="{{stravaReadiness && stravaReadiness.state === 'ready'}}"
-        class="secondary"
-        data-action="reauthorize"
-        bindtap="openStrava"
-      >
-        重新授权
-      </button>
-      <button
-        wx:elif="{{stravaReadiness && stravaReadiness.state === 'failed'}}"
-        class="btn"
-        data-action="{{stravaReadiness.error && stravaReadiness.error.recoveryAction === 'reauthorize' ? 'reauthorize' : ''}}"
-        bindtap="openStrava"
-      >
-        {{stravaReadiness.error && stravaReadiness.error.recoveryAction === 'retry' ? '重试数据准备' : stravaReadiness.error && stravaReadiness.error.recoveryAction === 'reauthorize' ? '重新授权' : stravaReadiness.error && stravaReadiness.error.recoveryAction === 'disconnect' ? '本地断开' : '联系支持'}}
-      </button>
-      <button
-        wx:elif="{{stravaReadiness && stravaReadiness.state === 'disconnected'}}"
-        class="btn"
-        bindtap="openStrava"
-      >
-        连接 Strava
-      </button>
-      <button
-        wx:elif="{{stravaReadiness && (stravaReadiness.state === 'authorizing' || stravaReadiness.state === 'syncing')}}"
-        class="btn"
-        bindtap="openStrava"
-      >
-        继续处理
-      </button>
-      <button
-        wx:if="{{stravaReadiness && (stravaReadiness.state === 'ready' || stravaReadiness.state === 'syncing' || stravaReadiness.state === 'failed')}}"
-        class="strava-manage"
-        bindtap="openStrava"
-      >
-        管理与解绑
-      </button>
-    </view>
-  </view>
-  </block>
-
   <view class="section-label"><text>01</text> 功能升级日志</view>
   <view class="release-list">
     <view

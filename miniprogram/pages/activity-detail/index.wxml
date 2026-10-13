@@ -71,13 +71,14 @@
         </view>
 
         <view class="card route-actions-card" wx:if="{{item.route.stravaRouteUrl}}">
-          <view class="title">Strava 轨迹</view>
+          <view class="title">{{item.route.routeName || 'Strava 轨迹'}}</view>
+          <image wx:if="{{item.route.previewImageUrl}}" class="route-preview-image" src="{{item.route.previewImageUrl}}" mode="aspectFill" aria-label="{{item.route.routeName || 'Strava 路线'}}预览图" />
           <view class="strava-route-row">
             <button class="strava-route-url" bindtap="copyStravaRoute" aria-label="复制 Strava 轨迹链接"><text user-select="true">{{item.route.stravaRouteUrl}}</text></button>
             <button class="strava-route-action" bindtap="copyStravaRoute">复制</button>
-            <button class="strava-route-action strava-route-action--primary" wx:if="{{item.route.stravaRouteId}}" loading="{{exportingGpx}}" disabled="{{exportingGpx}}" bindtap="exportGpx">{{exportingGpx ? '下载中' : '下载 GPX'}}</button>
+            <button class="strava-route-action strava-route-action--primary" wx:if="{{item.route.stravaRouteId && item.route.stravaGpxAvailable !== false}}" loading="{{exportingGpx}}" disabled="{{exportingGpx}}" bindtap="exportGpx">{{exportingGpx ? '下载中' : '下载 GPX'}}</button>
           </view>
-          <view class="route-action-note">复制后可在系统浏览器或 Strava 中打开；GPX 可分享至码表或骑行应用。</view>
+          <view class="route-action-note">复制后可在系统浏览器或 Strava 中打开；{{item.route.stravaGpxAvailable === false ? '此公开路线不提供 GPX 下载。' : 'GPX 可分享至码表或骑行应用。'}}</view>
         </view>
 
         <view class="card group-qr-detail-card" wx:if="{{item.groupQrCode || !groupQrVisible}}">

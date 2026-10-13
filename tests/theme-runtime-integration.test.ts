@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest';
 const appConfig = JSON.parse(readFileSync('miniprogram/app.json', 'utf8')) as { pages: string[] };
 
 describe('单一明亮外观接线', () => {
-  it('14 个页面不再保存或同步运行时主题', () => {
-    expect(appConfig.pages).toHaveLength(14);
+  it('13 个页面不再保存或同步运行时主题', () => {
+    expect(appConfig.pages).toHaveLength(13);
 
     for (const pagePath of appConfig.pages) {
       const script = readFileSync(`miniprogram/${pagePath}.ts`, 'utf8');
@@ -28,8 +28,8 @@ describe('单一明亮外观接线', () => {
     expect(profileScript).toContain("wx.navigateTo({ url: '/pages/settings/index' })");
     expect(template).not.toMatch(/显示主题|深色（默认）|浅色（户外）|theme-option/);
     expect(script).not.toMatch(/setTheme|switchTheme/);
-    expect(template).toContain('第三方授权');
-    expect(template).toContain("stravaReadiness.state !== 'disconnected'");
+    expect(template).not.toContain('第三方授权');
+    expect(script).not.toContain('getStravaReadiness');
     expect(template).toContain('功能升级日志');
   });
 

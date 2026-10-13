@@ -42,10 +42,14 @@ describe('活动详情设计与日期契约', () => {
     const routeStyles = styles.slice(styles.indexOf('/* Strava 轨迹操作统一使用'));
     expect(template).toContain('class="strava-route-url"');
     expect(template).toContain('{{item.route.stravaRouteUrl}}');
+    expect(template).toContain("{{item.route.routeName || 'Strava 轨迹'}}");
+    expect(template).toContain('item.route.previewImageUrl');
     expect(template).toContain('bindtap="copyStravaRoute"');
     expect(template).toContain('user-select="true"');
     expect(template).toContain('>复制</button>');
     expect(template).toContain('bindtap="exportGpx"');
+    expect(template).toContain('item.route.stravaGpxAvailable !== false');
+    expect(template).toContain('此公开路线不提供 GPX 下载。');
     expect(template).toContain("{{exportingGpx ? '下载中' : '下载 GPX'}}");
     expect(template).not.toContain('bindtap="copyActivityLink"');
     expect(template).not.toContain('复制活动链接');
