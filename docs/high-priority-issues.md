@@ -1,13 +1,13 @@
 # 高优问题清单
 
-> 最后更新：2026-10-13 15:18（CST）
+> 最后更新：2026-10-13 15:27（CST）
 >
 > 本文件只保留**尚未完成的实际交付或验收**。已合并 PR、历史 CI 流水账、已关闭问题和被新产品口径取代的方案，以 Git/GitHub 历史为准，不再复制到活跃清单。
 
 ## 当前基线
 
-- 本轮开工基线：`ddf673d72479b2192cfa14c5381b4eeccf603407`（PR #134）；后续状态以仓库 `main` 与本表验收项为准。
-- main CI：run [38146321545](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38146321545) 成功。
+- 当前 main 基线：`72d2276b20aa275a3e8436803e84061eac56a691`（PR #187）。
+- main CI：run [38362465723](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38362465723) 成功；GitHub Pages run [38362466024](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38362466024) 已部署并完成 13 路由、移动端和桌面端验收。
 - 微信开发版：run [38146452513](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38146452513) 成功，版本 `0.0.135.1`。
 - 活动详情交付：PR #129 已合并；`activity-read`、`registration`、`admin-review` 已部署到 `cloudbase-d0gizacy77a1ab017`，部署后线上代码与对应本地包一致。
 - 活跃任务分支必须通过 PR 合入并在合并后删除；是否存在开放 PR 以 GitHub 实时状态为准。
@@ -23,7 +23,6 @@
 | P1 | 缓存与离线恢复 | 活动/Strava TTL、冷启动持久化、断网兜底、临时图片 URL 刷新和写后失效已有自动化 | 真机覆盖冷启动、热启动、离线、过期、手动刷新、账号切换，确认不展示跨账号或过期状态 |
 | P1 | Strava 真实账号生命周期 | 授权状态机、拒绝/解绑/重试语义、闰日周年算法与相关云函数代码已交付 | 用真实账号完成授权成功、拒绝、scope 不足、token 失效、重新授权、解绑后旧 callback 六条 smoke，并回读骑行年限字段 |
 | P1 | 稳定体验版发布治理 | 固定体验版清单、候选与回退门禁已有自动化和历史演练 | 将下一合格开发版晋级体验版，执行一次真实跨版本回退，再恢复目标版本并核对固定入口和核心业务 |
-| P1 | GitHub Pages 高保真原型同步门禁 | 已按 `main@7038e5c` 同步 13 个路由，建立最多 4 个 UI 提交/7 天预算、即时同步规则、体验版零漂移门禁和 5 组双端截图证据 | PR 合并后确认 CI、GitHub Pages 正式地址及 13 个路由均正常，复核线上移动端/桌面端浅色可见性；通过后删除本行 |
 
 ## 分支与工作树状态
 
