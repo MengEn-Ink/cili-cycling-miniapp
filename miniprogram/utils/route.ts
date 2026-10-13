@@ -141,8 +141,7 @@ export function routeErrorMessage(error: unknown): string {
     /not supported|unsupported|devtools/.test(normalizedPlatformMessage)
   )
     return '当前环境无法打开文件选择器，请使用微信真机上传 GPX';
-  if (/choosemessagefile/.test(normalizedPlatformMessage))
-    return '文件选择器打开失败，请稍后重试';
+  if (/choosemessagefile/.test(normalizedPlatformMessage)) return '文件选择器打开失败，请稍后重试';
   const code =
     typeof error === 'object' &&
     error !== null &&
