@@ -259,7 +259,7 @@ git commit -m "feat(route): trust GPX previews when saving activities"
 - Modify: `cloudfunctions/activity-read/package.json`
 - Modify: `cloudfunctions/activity-read/package-lock.json`
 
-- [ ] **Step 1: Write failing read/download tests**
+- [x] **Step 1: Write failing read/download tests**
 
 ```js
 test('detail resolves generated route preview media without exposing storage internals', async () => {
@@ -274,13 +274,13 @@ test('downloadRouteGpx returns the original attached GPX only for a visible acti
 });
 ```
 
-- [ ] **Step 2: Run tests and confirm the action is absent**
+- [x] **Step 2: Run tests and confirm the action is absent**
 
 Run: `npm --prefix cloudfunctions/activity-read test`
 
 Expected: FAIL because generated route media and `downloadRouteGpx` are not implemented.
 
-- [ ] **Step 3: Implement bounded media resolution and download**
+- [x] **Step 3: Implement bounded media resolution and download**
 
 ```js
 if (event.action === 'downloadRouteGpx') {
@@ -296,13 +296,13 @@ if (event.action === 'downloadRouteGpx') {
 }
 ```
 
-- [ ] **Step 4: Run activity-read tests**
+- [x] **Step 4: Run activity-read tests**
 
 Run: `npm --prefix cloudfunctions/activity-read test`
 
 Expected: PASS, including draft/deleted/missing/oversize rejection.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add cloudfunctions/activity-read

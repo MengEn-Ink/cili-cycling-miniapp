@@ -1,5 +1,6 @@
 'use strict';
 
+const crypto = require('node:crypto');
 const cloud = require('wx-server-sdk');
 const {
   ok,
@@ -17,6 +18,7 @@ const _ = db.command;
 const ATTENDEE_LIMIT = 24;
 const ATTENDEE_PAGE_SIZE = 100;
 const MAX_ACTIVITY_CAPACITY = 1000;
+const MAX_GPX_BYTES = 4 * 1024 * 1024;
 
 async function collectVisibleActivities(query, limit) {
   const pageSize = Math.max(limit, 20);
@@ -49,6 +51,7 @@ async function resolveActivityMedia(activities) {
         [
           activity.cover_image,
           activity.group_qr_code,
+          activity.route && activity.route.generated_preview_file_id,
           ...(Array.isArray(activity.images) ? activity.images : []),
         ].filter((value) => typeof value === 'string' && value.startsWith('cloud://')),
       ),
@@ -73,7 +76,71 @@ async function resolveActivityMedia(activities) {
     cover_image: resolve(activity.cover_image),
     images: Array.isArray(activity.images) ? activity.images.map(resolve) : activity.images,
     group_qr_code: resolve(activity.group_qr_code),
+    ...(activity.route && typeof activity.route === 'object'
+      ? {
+          route: {
+            ...activity.route,
+            ...(resolved.has(activity.route.generated_preview_file_id)
+              ? {
+                  generated_preview_url: resolved.get(activity.route.generated_preview_file_id),
+                }
+              : {}),
+          },
+        }
+      : {}),
   }));
+}
+
+async function visibleActivity(activityId) {
+  if (
+    typeof activityId !== 'string' ||
+    !activityId ||
+    activityId.length > 128 ||
+    !/^[A-Za-z0-9_-]+$/.test(activityId)
+  )
+    fail('VALIDATION_FAILED', '缺少活动 ID');
+  let activity;
+  try {
+    activity = (await db.collection('activities').doc(activityId).get()).data;
+  } catch (_error) {
+    activity = undefined;
+  }
+  if (
+    !activity ||
+    !['published', 'finished'].includes(activity.status) ||
+    activity.is_deleted === true
+  )
+    fail('ACTIVITY_NOT_FOUND', '活动不存在');
+  return activity;
+}
+
+function attachedGpxFile(activity) {
+  const route = activity && activity.route;
+  const digest = route && route.gpx_sha256;
+  const fileId = route && route.gpx_file_id;
+  if (
+    typeof digest !== 'string' ||
+    !/^[a-f0-9]{64}$/.test(digest) ||
+    typeof fileId !== 'string' ||
+    fileId.length > 512 ||
+    !new RegExp(`^cloud://[^/]+/activity-routes/[^/]+/${digest}\\.gpx$`).test(fileId)
+  )
+    fail('GPX_NOT_AVAILABLE', '这个活动暂未提供 GPX');
+  return { digest, fileId };
+}
+
+function routeDownloadName(activity) {
+  const routeName = typeof activity.route?.route_name === 'string' ? activity.route.route_name : '';
+  const asciiName = routeName
+    .normalize('NFKD')
+    .replace(/[^\x20-\x7E]/g, '')
+    .replace(/[^A-Za-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 100);
+  const activityId = String(activity._id || 'activity')
+    .replace(/[^A-Za-z0-9_-]/g, '')
+    .slice(0, 80);
+  return `${asciiName || `activity-${activityId || 'route'}`}.gpx`;
 }
 
 function timestamp(value) {
@@ -363,20 +430,7 @@ exports.main = async (event = {}) => {
       });
     }
     if (event.action === 'detail') {
-      if (typeof event.activityId !== 'string' || !event.activityId)
-        fail('VALIDATION_FAILED', '缺少活动 ID');
-      let activity;
-      try {
-        activity = (await db.collection('activities').doc(event.activityId).get()).data;
-      } catch (_error) {
-        activity = undefined;
-      }
-      if (
-        !activity ||
-        !['published', 'finished'].includes(activity.status) ||
-        activity.is_deleted === true
-      )
-        fail('ACTIVITY_NOT_FOUND', '活动不存在');
+      const activity = await visibleActivity(event.activityId);
       const publisherByOpenid = await loadPublishers([activity]);
       const [resolvedActivity] = await resolveActivityMedia([
         attachPublisher(publicActivity(activity, now), publisherByOpenid.get(activity.created_by)),
@@ -386,6 +440,22 @@ exports.main = async (event = {}) => {
         ...resolvedActivity,
         attendees: attendance.attendees,
         approved_registration_count: attendance.approvedRegistrationCount,
+      });
+    }
+    if (event.action === 'downloadRouteGpx') {
+      const activity = await visibleActivity(event.activityId);
+      const source = attachedGpxFile(activity);
+      const downloaded = await cloud.downloadFile({ fileID: source.fileId });
+      const bytes = Buffer.from(downloaded?.fileContent || []);
+      if (bytes.length === 0) fail('GPX_NOT_AVAILABLE', '这个活动暂未提供 GPX');
+      if (bytes.length > MAX_GPX_BYTES) fail('GPX_TOO_LARGE', '路线文件超过 4 MB，暂时无法下载');
+      const actualDigest = crypto.createHash('sha256').update(bytes).digest('hex');
+      if (actualDigest !== source.digest)
+        fail('GPX_DIGEST_MISMATCH', '路线文件校验失败，请稍后重试');
+      return ok({
+        base64: bytes.toString('base64'),
+        filename: routeDownloadName(activity),
+        content_type: 'application/gpx+xml',
       });
     }
     fail('UNKNOWN_ACTION', '未知操作');
