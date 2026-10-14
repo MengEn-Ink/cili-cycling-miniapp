@@ -85,6 +85,21 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain("currentState === 'create' ? '创建活动'");
   });
 
+  it('总览整理为需求、PRD、原型和验收资料入口，并支持章节直达', () => {
+    expect(html).toContain('此里骑行活动小程序产品中心');
+    expect(html).toContain('href="#requirements"');
+    expect(html).toContain('href="#prd"');
+    expect(script).toContain('id="requirements"');
+    expect(script).toContain('id="prd"');
+    expect(script).toContain('id="prototype"');
+    expect(script).toContain('产品需求与当前能力');
+    expect(script).toContain('P0 真实报名旅程');
+    expect(script).toContain("new Set(['overview', 'requirements', 'prd', 'prototype'])");
+    expect(script).toContain('document.getElementById(targetSection)?.scrollIntoView');
+    expect(css).toContain('@media (max-width: 560px)');
+    expect(css).toMatch(/\.product-card-grid,[^}]*grid-template-columns:\s*1fr/s);
+  });
+
   it('保留票据式行程与凭证，并覆盖活动报名、能力和管理员审核旅程', () => {
     expect(templates).toContain('查看票据式行程凭证');
     expect(templates).toContain('class="credential-ticket"');
