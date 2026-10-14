@@ -26,6 +26,35 @@
 .activity-row .title {
   margin-top: 16rpx;
 }
+.management-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  margin-top: 24rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-border);
+  gap: 2rpx;
+}
+.management-metrics > view {
+  min-width: 0;
+  padding: 16rpx 8rpx;
+  background: var(--color-surface);
+  text-align: center;
+}
+.management-metrics text:first-child {
+  display: block;
+  font-size: 36rpx;
+  line-height: 52rpx;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.management-metrics text:last-child {
+  display: block;
+  color: var(--color-muted);
+  font-size: 24rpx;
+  line-height: 36rpx;
+}
 .activity-actions,
 .page-actions,
 .clone-actions {

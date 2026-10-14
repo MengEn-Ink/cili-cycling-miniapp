@@ -4,7 +4,8 @@
   <brand-logo compact="{{true}}" meta="我的行程" />
   <view class="page-heading"><view><view class="heading-title">我的行程</view><view class="heading-copy">报名进度、出发凭证都在这里</view></view><view class="heading-count">共 {{items.length}} 场</view></view>
   <view class="trip-stats" wx:if="{{items.length}}" aria-label="行程状态统计">
-    <view class="trip-stat trip-stat--review"><text class="trip-stat__value">{{statusCounts.review}}</text><text class="trip-stat__label">审核中</text></view>
+    <view wx:if="{{statusCounts.review > 0}}" class="trip-stat trip-stat--review"><text class="trip-stat__value">{{statusCounts.review}}</text><text class="trip-stat__label">审核中</text></view>
+    <view wx:else class="trip-stat"><text class="trip-stat__value">0</text><text class="trip-stat__label">审核中</text></view>
     <view class="trip-stat trip-stat--ready"><text class="trip-stat__value">{{statusCounts.ready}}</text><text class="trip-stat__label">可出发</text></view>
     <view class="trip-stat trip-stat--expired"><text class="trip-stat__value">{{statusCounts.expired}}</text><text class="trip-stat__label">已失效</text></view>
   </view>
@@ -25,7 +26,7 @@
           <view class="card-footer">
             <view class="status-guidance"><text class="status-dot"></text><text>{{item.statusGuidance}}</text></view>
             <button wx:if="{{item.status === 'cancelled'}}" class="delete-record-button" data-id="{{item.id}}" catchtap="confirmDelete" loading="{{deletingId === item.id}}">删除记录</button>
-            <text class="open-link">{{item.destinationLabel}} <text class="arrow">›</text></text>
+            <button class="secondary trip-action" data-id="{{item.id}}" catchtap="open" aria-label="{{item.destinationLabel}}：{{item.activity.title}}">{{item.destinationLabel}}</button>
           </view>
         </view>
       </view>

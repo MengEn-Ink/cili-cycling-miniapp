@@ -8,12 +8,14 @@ page {
   --color-placeholder: #737373;
   --color-disabled-text: #666666;
   --color-border: #d6d6d2;
+  --color-border-subtle: var(--color-border);
   --color-border-strong: #171717;
   --color-card-border: #171717;
   --color-input-bg: #ffffff;
   --color-action: #171717;
   --color-action-active: #333333;
   --color-on-action: #ffffff;
+  --color-on-action-muted: var(--color-media-muted);
   --color-on-media: #ffffff;
   --color-media-muted: #d4d4d4;
   --color-media-card-bg: #171717;
@@ -65,6 +67,7 @@ page {
   --fixed-action-reserve-narrow: 276rpx;
   --metric-align: left;
   --page-heading-align: left;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --cili-black: var(--color-bg);
   --cili-charcoal: var(--color-surface);
   --cili-panel: var(--color-raised);
@@ -92,6 +95,7 @@ image {
   box-sizing: border-box;
 }
 button {
+  min-height: var(--control-height);
   margin: 0;
   padding: 0;
   font-size: 28rpx;
@@ -253,7 +257,10 @@ button::after {
 .btn[disabled],
 .secondary[disabled],
 .button[disabled],
-button[disabled] {
+button[disabled],
+input[disabled],
+textarea[disabled],
+picker[disabled] {
   border-color: var(--color-border) !important;
   background: var(--color-raised) !important;
   color: var(--color-disabled-text) !important;

@@ -131,16 +131,20 @@
   font-size: 24rpx;
 }
 .card-footer {
+  flex-wrap: wrap;
   min-height: 88rpx;
   margin-top: 16rpx;
 }
 .status-guidance {
-  flex: 1;
+  flex: 1 1 240rpx;
   color: var(--color-muted);
   font-size: 24rpx;
 }
-.open-link {
-  font-weight: 800;
+.trip-action {
+  flex: 0 0 auto;
+  min-width: 192rpx;
+  min-height: var(--control-height);
+  margin: 0;
 }
 .delete-record-button {
   min-height: 72rpx;

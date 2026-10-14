@@ -23,20 +23,36 @@
 }
 .day-chip {
   flex: 0 0 auto;
-  min-width: 128rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 144rpx;
   height: 104rpx;
-  padding: 0 20rpx;
+  padding: 0 24rpx;
   border: 4rpx solid var(--color-border-strong);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text);
+  text-align: left;
+}
+.day-chip__relative {
+  font-size: 28rpx;
+  line-height: 44rpx;
+  font-weight: 800;
+}
+.day-chip__date {
+  color: var(--color-muted);
   font-size: 24rpx;
   line-height: 36rpx;
-  font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }
 .day-chip.is-active {
   background: var(--color-action);
   color: var(--color-on-action);
+}
+.day-chip.is-active .day-chip__date {
+  color: var(--color-media-muted);
 }
 .list-count {
   display: flex;

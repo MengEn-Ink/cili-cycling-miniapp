@@ -695,6 +695,13 @@ Page({
       this.setData({ photoBusy: false });
     }
   },
+  removeBackgroundPhoto() {
+    if (!this.data.p || this.data.photoBusy || this.data.saving || this.data.avatarBusy) return;
+    this.data.p.photos = [];
+    this.data.p.backgroundPhoto = null;
+    this.localPhotoPreviews = {};
+    this.setData({ p: this.data.p, photoItems: [], mediaError: '' });
+  },
   previewAvatar() {
     const current = safeHttpsUrl(this.data.avatarPreviewUrl);
     if (current) wx.previewImage({ current, urls: [current] });

@@ -83,16 +83,19 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.card-action {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: var(--control-height);
+.card-actions {
+  display: grid;
+  grid-template-columns: 0.82fr 1.18fr;
+  gap: 16rpx;
   margin-top: 24rpx;
+  padding-top: 24rpx;
   border-top: 2rpx solid var(--color-border);
-  color: var(--color-text);
-  font-size: 28rpx;
-  font-weight: 800;
+}
+.card-action {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--control-height);
+  margin: 0;
 }
 @media (prefers-reduced-motion: reduce) {
   .activity-card--pressed {

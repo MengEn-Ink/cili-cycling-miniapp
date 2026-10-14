@@ -12,7 +12,7 @@
     <button class="timeline-tab {{activeView === 'history' ? 'is-active' : ''}}" role="tab" aria-selected="{{activeView === 'history'}}" aria-controls="activity-list-panel" data-view="history" bindtap="switchView">历史活动</button>
   </view>
   <scroll-view class="day-chip-bar" scroll-x enhanced show-scrollbar="{{false}}" wx:if="{{activeView === 'future' && dayChips.length > 1}}" aria-label="按日期快速选择活动">
-    <view class="day-chip-bar__inner"><button class="day-chip {{selectedDayKey === item.key ? 'is-active' : ''}}" wx:for="{{dayChips}}" wx:key="key" aria-pressed="{{selectedDayKey === item.key}}" data-index="{{item.index}}" bindtap="selectDay"><text>{{item.label}}</text></button></view>
+    <view class="day-chip-bar__inner"><button class="day-chip {{selectedDayKey === item.key ? 'is-active' : ''}}" wx:for="{{dayChips}}" wx:key="key" aria-pressed="{{selectedDayKey === item.key}}" aria-label="{{item.label}}，{{item.dateLabel}}" data-index="{{item.index}}" bindtap="selectDay"><text class="day-chip__relative">{{item.label}}</text><text class="day-chip__date">{{item.dateLabel}}</text></button></view>
   </scroll-view>
 
   <view class="list-count" wx:if="{{items.length}}"><text>{{activeView === 'history' ? '历史活动' : '近期活动'}}</text><text>共 {{items.length}} 场</text></view>

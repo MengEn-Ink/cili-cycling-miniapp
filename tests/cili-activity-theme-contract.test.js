@@ -57,7 +57,7 @@ describe('CILI 活动页静态契约', () => {
     expect(activityCard).toContain('wx:else class="card-placeholder"');
     expect(activityCard).toContain('bindtap="open"');
     expect(activityCard).not.toContain('class="card-cta"');
-    expect(activityCard).not.toContain('查看详情');
+    expect(activityCard).toContain('查看详情');
     expect(activityCard).toContain('aria-label="查看活动：{{item.title}}"');
     expect(activityCardStyles).toContain('.activity-card--pressed');
     expect(activityCardStyles).toContain('.card-placeholder');
@@ -131,9 +131,9 @@ describe('CILI 活动页静态契约', () => {
     expect(detail).toContain('GPX');
   });
 
-  it('照片卡片只保留整卡点击入口，不重复展示详情按钮', () => {
+  it('照片卡片保留整卡点击，并提供清晰的主次操作', () => {
     expect(activityCard).toContain('bindtap="open"');
-    expect(activityCard).not.toContain('查看详情');
+    expect(activityCard).toContain('查看详情');
     expect(activityCardStyles).not.toContain('.route-arrow');
     expect(activityCardStyles).not.toContain('.card-cta');
   });

@@ -37,8 +37,8 @@
         <view class="field">
           <view class="label">性别</view>
           <radio-group class="gender-options" bindchange="selectGender">
-            <label class="gender-option"><radio value="男" checked="{{p.gender === '男'}}" />男</label>
-            <label class="gender-option"><radio value="女" checked="{{p.gender === '女'}}" />女</label>
+            <label class="gender-option {{p.gender === '男' ? 'is-selected' : ''}}"><radio value="男" checked="{{p.gender === '男'}}" />男</label>
+            <label class="gender-option {{p.gender === '女' ? 'is-selected' : ''}}"><radio value="女" checked="{{p.gender === '女'}}" />女</label>
           </radio-group>
         </view>
         <view class="field">
@@ -60,7 +60,10 @@
       <view class="card form-card">
         <view class="title">个人背景图</view>
         <view class="muted form-tip">最多 1 张，用于个人中心背景；选择新图片会替换当前背景图，点击可查看大图。</view>
-        <button class="photo-action" bindtap="addPhoto" loading="{{photoBusy}}" disabled="{{photoBusy || saving || avatarBusy}}">{{p.photos.length ? '更换背景图' : '添加背景图'}}</button>
+        <view class="photo-actions">
+          <button class="photo-action" bindtap="addPhoto" loading="{{photoBusy}}" disabled="{{photoBusy || saving || avatarBusy}}">{{p.photos.length ? '更换背景图' : '添加背景图'}}</button>
+          <button wx:if="{{p.photos.length}}" class="text-button photo-remove" bindtap="removeBackgroundPhoto" disabled="{{photoBusy || saving || avatarBusy}}">删除背景图</button>
+        </view>
         <view class="photo-list" wx:if="{{photoItems.length}}">
           <view class="photo-item" wx:for="{{photoItems}}" wx:key="id">
             <button class="photo-preview-button" data-url="{{item.previewUrl}}" bindtap="previewPhoto" disabled="{{!item.previewUrl}}" aria-label="预览个人背景图">

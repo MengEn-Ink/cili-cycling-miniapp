@@ -10,6 +10,7 @@ const statusText: Record<string, string> = {
   cancelled: '已取消',
 };
 let loadGeneration = 0;
+const failedAvatarIds = new Set<string>();
 
 Page({
   data: {
@@ -95,12 +96,28 @@ Page({
     this.setData({
       items: this.data.all
         .filter((item: any) => this.data.tab === 'all' || item.status === this.data.tab)
-        .map((item: any) => ({
-          ...item,
-          activity,
-          statusText: statusText[item.status] || item.status,
-        })),
+        .map((item: any) => {
+          const nickname = String(item.profile?.nickname || '').trim();
+          const avatarUrl = failedAvatarIds.has(String(item.id))
+            ? ''
+            : String(item.profile?.avatarUrl || item.profile?.avatarId || '').trim();
+          return {
+            ...item,
+            activity,
+            avatarUrl,
+            avatarInitial: nickname.slice(0, 1) || '骑',
+            submittedAt: item.createdAt || item.updatedAt || '',
+            statusText: statusText[item.status] || item.status,
+          };
+        }),
     });
+  },
+  avatarError(e: any) {
+    const id = String(e.currentTarget.dataset.id || '');
+    if (!id) return;
+    failedAvatarIds.add(id);
+    const index = this.data.items.findIndex((item: { id: string }) => item.id === id);
+    if (index >= 0) this.setData({ [`items[${index}].avatarUrl`]: '' });
   },
   async sendReminders() {
     if (!this.data.activityId || this.data.sendingReminders) return;
@@ -108,11 +125,11 @@ Page({
     try {
       const result = await rideService.enqueueActivityReminders(this.data.activityId);
       wx.showToast({
-        title: result.queued ? `已入队 ${result.queued} 条` : '提醒已入队，无需重复操作',
+        title: result.queued ? `已安排 ${result.queued} 条提醒` : '提醒已安排，无需重复操作',
         icon: 'none',
       });
     } catch (error) {
-      this.setData({ error: error instanceof Error ? error.message : '活动提醒入队失败' });
+      this.setData({ error: error instanceof Error ? error.message : '活动提醒安排失败' });
     } finally {
       this.setData({ sendingReminders: false });
     }

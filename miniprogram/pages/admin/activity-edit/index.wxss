@@ -53,7 +53,7 @@
   background: var(--color-overlay);
 }
 .image-action {
-  min-height: 72rpx;
+  min-height: 88rpx;
   padding: 0 12rpx;
   color: var(--color-on-media);
   font-size: 24rpx;
