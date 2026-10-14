@@ -56,14 +56,14 @@ describe('方案 A 编辑式性能布局', () => {
     expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*360rpx/s);
   });
 
-  it('活动卡使用整卡点击，详情页操作按钮保持统一高度与双轴居中', () => {
+  it('活动卡同时提供整卡点击和清晰的详情入口，详情页按钮保持统一高度', () => {
     const cardTemplate = read('miniprogram/components/activity-card/index.wxml');
     const cardStyles = read('miniprogram/components/activity-card/index.wxss');
     const detailStyles = read('miniprogram/pages/activity-detail/index.wxss');
 
     expect(cardTemplate).toContain('bindtap="open"');
-    expect(cardTemplate).not.toContain('查看详情');
-    expect(cardStyles).not.toContain('.card-cta');
+    expect(cardTemplate).toContain('查看详情');
+    expect(cardStyles).toContain('.card-actions');
 
     const appStyles = read('miniprogram/app.wxss');
     for (const [source, selector] of [

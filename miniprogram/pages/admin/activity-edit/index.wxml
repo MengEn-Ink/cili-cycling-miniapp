@@ -34,7 +34,7 @@
         <view class="field-label">集合地点 <text class="required">必填</text></view>
         <view class="location-row">
           <input class="input" value="{{form.routeStart}}" placeholder-class="input-placeholder" placeholder="填写地点或从地图选择" bindinput="field" data-name="routeStart" />
-          <button class="map-button" loading="{{choosingLocation}}" bindtap="chooseRouteLocation">地图选点</button>
+          <button class="map-button map-button--secondary" loading="{{choosingLocation}}" bindtap="chooseRouteLocation">地图选点</button>
         </view>
         <view wx:if="{{formErrors.routeStart}}" class="field-error field-error-copy">{{formErrors.routeStart}}</view>
       </view>
@@ -85,7 +85,7 @@
         <view class="field-label">Strava 官方路线（可选）</view>
         <input class="input" value="{{form.stravaRouteUrl}}" maxlength="256" placeholder-class="input-placeholder" placeholder="粘贴公开路线链接" bindinput="field" data-name="stravaRouteUrl" />
         <view class="route-command-row">
-          <button class="map-button" loading="{{syncingRoute}}" disabled="{{saving || syncingRoute || !form.stravaRouteUrl}}" bindtap="addOfficialRoute">{{syncingRoute ? '正在解析' : '添加并解析路线'}}</button>
+          <button class="map-button map-button--secondary" loading="{{syncingRoute}}" disabled="{{saving || syncingRoute || !form.stravaRouteUrl}}" bindtap="addOfficialRoute">{{syncingRoute ? '正在解析' : '添加并解析路线'}}</button>
         </view>
         <view class="section-help">无需 Strava 授权；解析公开路线后会保存可信的路线详情。</view>
         <view wx:if="{{publicRoutePreview && !routePreview}}" class="route-preview-card">

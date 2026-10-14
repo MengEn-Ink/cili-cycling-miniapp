@@ -74,9 +74,27 @@
 .gender-option + .gender-option {
   border-left: 4rpx solid var(--color-border-strong);
 }
-.photo-action {
-  width: 100%;
+.gender-option radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+}
+.gender-option.is-selected {
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+.photo-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8rpx;
   margin-top: 24rpx;
+}
+.photo-action,
+.photo-remove {
+  width: 100%;
+  min-height: 88rpx;
 }
 .photo-list {
   grid-template-columns: 1fr;

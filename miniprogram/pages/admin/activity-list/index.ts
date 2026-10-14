@@ -48,9 +48,17 @@ function promptOperationReason(
   });
 }
 
+function metricValue(...values: unknown[]) {
+  const value = values.find((candidate) => Number.isInteger(candidate) && Number(candidate) >= 0);
+  return value === undefined ? '—' : String(value);
+}
+
 function displayItem(item: any) {
   return {
     ...item,
+    registrationMetric: metricValue(item.occupiedCount),
+    pendingMetric: metricValue(item.pendingRegistrationCount, item.pendingCount),
+    approvedMetric: metricValue(item.approvedRegistrationCount, item.approvedCount),
     canClone: item.status === 'finished',
     canToggleOnline: item.status === 'draft' || item.status === 'published',
     statusLabel:

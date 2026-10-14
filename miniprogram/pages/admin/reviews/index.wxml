@@ -14,7 +14,16 @@
   <view wx:elif="{{!items.length && !error}}" class="state-card"><view class="title">当前筛选暂无报名</view><view class="muted">新的报名提交后会出现在这里。</view></view>
   <view class="state-card" wx:if="{{error}}" role="alert"><view class="title">加载失败</view><view class="muted">{{error}}</view><button class="btn" bindtap="load">重新加载</button></view>
   <button class="review-card" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="open" hover-class="review-card--pressed">
-    <view class="review-main"><view class="applicant-name">{{item.profile.nickname}}</view><view class="muted">{{item.activity.title}}</view><view class="data-line"><text wx:if="{{item.gatheringMode}}">{{item.gatheringMode}}</text><text>{{item.experience}}</text><text wx:if="{{item.createdAt}}">提交于 {{item.createdAt}}</text></view></view>
-    <view class="status-tag status-{{item.status}}">{{item.statusText}}</view><text class="open-arrow">›</text>
+    <view class="review-avatar" aria-label="{{item.profile.nickname || '骑手'}}头像">
+      <image wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" mode="aspectFill" data-id="{{item.id}}" binderror="avatarError" />
+      <text wx:else>{{item.avatarInitial}}</text>
+    </view>
+    <view class="review-main">
+      <view class="applicant-row"><view class="applicant-name">{{item.profile.nickname || '未设置昵称'}}</view><view class="status-tag status-{{item.status}}">{{item.statusText}}</view></view>
+      <view class="muted">{{item.activity.title}}</view>
+      <view class="data-line"><text wx:if="{{item.gatheringMode}}">{{item.gatheringMode}}</text><text>{{item.experience}}</text></view>
+      <view class="submitted-at" wx:if="{{item.submittedAt}}">提交于 {{item.submittedAt}}</view>
+    </view>
+    <text class="open-arrow">›</text>
   </button>
 </view>

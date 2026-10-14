@@ -26,6 +26,11 @@
       >
         <view class="admin-card-head"><text class="tag {{item.status === 'published' ? 'tag-solid' : 'tag-outline'}}">{{item.statusLabel}}</text><text class="muted">{{item.displayDate || item.startAt}}</text></view>
         <view class="title">{{item.title}}</view>
+        <view class="management-metrics" aria-label="活动报名指标">
+          <view><text>{{item.registrationMetric}}</text><text>报名</text></view>
+          <view class="pending-metric"><text>{{item.pendingMetric}}</text><text>待审核</text></view>
+          <view><text>{{item.approvedMetric}}</text><text>已通过</text></view>
+        </view>
         <view class="activity-actions">
           <button class="secondary" catchtap="edit" data-id="{{item.id}}">编辑</button>
           <button wx:if="{{item.canToggleOnline}}" catchtap="toggleOnline" data-id="{{item.id}}" class="secondary">{{item.toggleLabel}}</button>

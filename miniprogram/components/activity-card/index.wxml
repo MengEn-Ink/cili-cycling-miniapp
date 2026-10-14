@@ -13,6 +13,9 @@
       <view class="metric-item"><text class="metric-value">{{item.route.elevationM > 0 ? item.route.elevationM : '—'}}{{item.route.elevationM > 0 ? ' m' : ''}}</text><text class="metric-unit">爬升</text></view>
       <view class="metric-item"><text class="metric-value">{{item.registrationUnlimited ? item.occupied : (item.capacity > 0 ? (item.occupied + ' / ' + item.capacity) : '待确认')}}</text><text class="metric-unit">{{!item.registrationUnlimited && item.capacity <= 0 ? '名额' : '报名'}}</text></view>
     </view>
-    <view class="card-action">查看活动 <text>›</text></view>
+    <view class="card-actions" aria-label="活动操作">
+      <button class="secondary card-action card-action--detail" catchtap="open">查看详情</button>
+      <button class="btn card-action card-action--primary" catchtap="open">{{item.registrationStatus ? '查看行程' : '报名活动'}}</button>
+    </view>
   </view>
 </view>

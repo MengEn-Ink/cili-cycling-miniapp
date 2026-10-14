@@ -147,7 +147,7 @@ describe('HP-20261010-02 统一明亮 UI 全页对比度契约', () => {
     const template = read('miniprogram/components/activity-card/index.wxml');
     expect(template).not.toContain('RIDE DATE');
     expect(template).toContain('bindtap="open"');
-    expect(template).toContain('class="card-action"');
+    expect(template).toContain('card-action');
   });
 
   it('activity-detail 的集合、费用和骑友名片使用可读语义色', () => {
