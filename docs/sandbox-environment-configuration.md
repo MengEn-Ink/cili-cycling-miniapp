@@ -238,7 +238,7 @@ git diff --check
 ### 4.3 GitHub Pages UI 同步门禁
 
 `docs/ui-sync-manifest.json` 记录最近一次小程序 UI 与 GitHub Pages
-高保真原型同步的完整 Git SHA、内容摘要、14 个真实页面路由和双端截图证据。
+高保真原型同步的完整 Git SHA、内容摘要、13 个真实页面路由和双端截图证据。
 普通 CI 允许短期批量同步，体验版晋级要求零漂移。
 
 普通模式规则：
@@ -301,7 +301,7 @@ node scripts/bootstrap-cloudbase.mjs \
 - 已部署到隔离测试环境的不可变提交；
 - 一个管理员账号和一个普通新测试用户；
 - 一条可公开访问的 Strava 官方路线和一份含海拔的 GPX 夹具；
-- 已验证可访问的 `/route/embed` 网关及小程序 `web-view` 业务域名；
+- 已验证可访问的 `/route/embed` 网关（小程序不再使用 `web-view`，无需业务域名）；
 - 受控的 `journey-run.key`；
 - 不含真实标识和凭据的 preflight/evidence 文件。
 
