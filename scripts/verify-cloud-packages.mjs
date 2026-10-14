@@ -81,7 +81,6 @@ if (
 )
   throw new Error('profile-media-cleanup 缺少可部署的定时触发器');
 pack('profile-media-cleanup', ['index.js', 'core.js', 'store.js', 'package.json']);
-pack('route-web', ['index.js', 'package.json']);
 const routeMaintenanceFunction = cloudbaseConfig.functions.find(
   (item) => item.name === 'route-maintenance',
 );

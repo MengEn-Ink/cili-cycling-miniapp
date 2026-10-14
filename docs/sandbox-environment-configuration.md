@@ -301,7 +301,6 @@ node scripts/bootstrap-cloudbase.mjs \
 - 已部署到隔离测试环境的不可变提交；
 - 一个管理员账号和一个普通新测试用户；
 - 一条可公开访问的 Strava 官方路线和一份含海拔的 GPX 夹具；
-- 已验证可访问的 `/route/embed` 网关（小程序不再使用 `web-view`，无需业务域名）；
 - 受控的 `journey-run.key`；
 - 不含真实标识和凭据的 preflight/evidence 文件。
 
@@ -454,8 +453,8 @@ npm run deploy:miniprogram
 - 目标函数状态为 Active；
 - 部署版本对应已验证的不可变 commit；
 - 四个媒体相关函数使用同值 `PROFILE_MEDIA_PATH_SECRET`；
-- `route-web` 与 `route-maintenance` 均已部署，运行时验收前 purge 开关保持关闭；
-- timer、网关路由和数据库/存储安全规则已回读；
+- `route-maintenance` 已部署，运行时验收前 purge 开关保持关闭（官方路线页已下线，`route-web` 不再部署）；
+- timer 和数据库/存储安全规则已回读；
 - 对应业务 smoke 或 P0 旅程已执行；无法执行的项目明确记为“未执行”。
 
 ### 7.6 资料页提示“服务暂时不可用”

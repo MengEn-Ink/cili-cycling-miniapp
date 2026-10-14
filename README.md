@@ -30,7 +30,6 @@
 miniprogram/                 小程序页面、组件、仓库层和领域视图模型
 cloudfunctions/              可独立部署的 CloudBase 云函数
 cloudfunctions/shared/       报名领域的共享源码
-cloudfunctions/route-web/     Strava 官方路线 Embed HTTP 函数
 cloudfunctions/route-maintenance/ 路线文件回收与历史数据迁移定时函数
 scripts/                     部署准备、CloudBase bootstrap 和证据校验
 tests/                       小程序与跨模块回归测试
@@ -120,8 +119,8 @@ bootstrap 当前管理 9 个集合、29 个业务索引和全拒绝客户端数�
 
 1. 审阅并执行 CloudBase plan/apply/verify。
 2. 按 [CloudBase 数据契约](docs/cloudbase-schema.md) 配置云函数环境变量和 `cloudstorage.rules.json`，并回读确认客户端只能写本人资料与路线 staging，canonical 媒体路径不可由客户端写入。
-3. 运行 `npm run cloud:install`，再依次部署 `auth`、`profile-media-cleanup`、`admin-review`、`profile`、`activity-read`、`activity-admin`、`registration`、`notification-send`、`route-web` 和 `route-maintenance`。
-4. 应用并回读 `cloudbaserc.json` 中 `/route/embed` HTTPS 网关路由（小程序已不再内嵌 `web-view`，无需配置业务域名）。
+3. 运行 `npm run cloud:install`，再依次部署 `auth`、`profile-media-cleanup`、`admin-review`、`profile`、`activity-read`、`activity-admin`、`registration`、`notification-send` 和 `route-maintenance`。
+4. 应用并回读 `cloudbaserc.json` 中的云函数触发器（小程序已不再内嵌 `web-view`，官方路线页已下线，无需配置 Embed 网关或业务域名）。
 5. 在开发者工具和真机完成官方路线、GPX 上传/保存/下载及失败回退验收；此前 `OAUTH_RETIREMENT_PURGE_ENABLED` 必须保持关闭。
 6. 验收通过后临时开启 purge，等待旧账号数据与预览清空并回读，再移除该开关和线上旧资源。
 7. 按 [安全初始化说明](scripts/seed-cloudbase/README.md) 创建首个管理员；活动只能通过已部署的活动管理业务流程创建。

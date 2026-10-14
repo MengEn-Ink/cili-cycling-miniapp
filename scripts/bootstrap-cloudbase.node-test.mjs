@@ -709,12 +709,12 @@ test('文档契约测试拒绝已关闭缺口的同义否定表述', () => {
   );
 });
 
-test('部署顺序保留媒体 fail-closed 边界并包含 route-web', () => {
+test('部署顺序保留媒体 fail-closed 边界且已移除 route-web', () => {
   const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
   const sequence = readme.match(/再依次部署 ([^。]+)。/)?.[1] || '';
   const order = [...sequence.matchAll(/`([^`]+)`/g)].map((match) => match[1]);
   assert.deepEqual(order.slice(0, 3), ['auth', 'profile-media-cleanup', 'admin-review']);
   assert.ok(order.indexOf('admin-review') < order.indexOf('profile'));
-  assert.ok(order.includes('route-web'));
+  assert.ok(!order.includes('route-web'));
   assert.doesNotMatch(readme, /`strava-auth`|`strava-callback`/);
 });
