@@ -74,11 +74,13 @@ describe('CILI 活动页静态契约', () => {
     expect(activityCardStyles).not.toContain('.activity-card--compact');
     expect(activityCardStyles).toMatch(/\.card-media\s*\{[^}]*height:\s*360rpx/s);
     const title = effectiveBlock(activityCardStyles, '.activity-title');
-    expect(declaration(title, '-webkit-line-clamp')).toBe('2');
-    expect(declaration(title, 'min-height')).toMatch(/^\d+rpx$/);
+    expect(declaration(title, 'white-space')).toBe('nowrap');
+    expect(declaration(title, 'text-overflow')).toBe('ellipsis');
+    expect(title).not.toMatch(/(?:^|\n)\s*min-height\s*:/);
     const route = effectiveBlock(activityCardStyles, '.route-line');
-    expect(declaration(route, '-webkit-line-clamp')).toBe('2');
-    expect(declaration(route, 'min-height')).toMatch(/^\d+rpx$/);
+    expect(declaration(route, 'white-space')).toBe('nowrap');
+    expect(declaration(route, 'text-overflow')).toBe('ellipsis');
+    expect(route).not.toMatch(/(?:^|\n)\s*min-height\s*:/);
   });
 
   it('里程、爬升和报名保持固定三列，缺失可选指标显示占位而不折叠', () => {

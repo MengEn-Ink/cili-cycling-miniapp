@@ -177,10 +177,14 @@
 }
 .route-native-metrics > view {
   min-height: 120rpx;
+  text-align: center;
 }
 .route-native-metrics > view > text:first-child {
   display: block;
+  overflow: hidden;
   margin-bottom: 4rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .route-estimate {
   display: flex;
@@ -195,8 +199,12 @@
   font-weight: 800;
 }
 .route-estimate text:last-child {
+  min-width: 0;
+  overflow: hidden;
   color: var(--color-action);
   font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .route-visual-heading {
   margin-top: 32rpx;
