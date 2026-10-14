@@ -6,7 +6,7 @@
 
 ## 当前基线
 
-- 当前 main 基线：`e5c0ce5be967f1133861a4ff778e389fcc95342e`（PR #209，已包含先合并的 PR #210）。
+- 当前产品代码与 Pages 原型基线：`e5c0ce5be967f1133861a4ff778e389fcc95342e`（PR #209，已包含先合并的 PR #210）；其后的 PR #211 仅同步交付状态。
 - main CI：run [38527875193](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38527875193) 成功。
 - 微信开发版：run [38527028185](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38527028185) 成功，版本 `0.0.213.1`，回执绑定提交 `86507bf`（PR #210）；PR #209 仅修改文档与原型，run [38528023936](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38528023936) 按规则跳过重复上传。当前版本尚未晋级体验版（需在微信公众平台人工选择）。
 - 云函数基线：PR #203 的 `activity-admin` 已部署；PR #208 又修改 `profile`、`registration`、`activity-read`、`activity-admin`、`admin-review`，最新代码已合入但仍需使用 CloudBase 凭证重新部署。
