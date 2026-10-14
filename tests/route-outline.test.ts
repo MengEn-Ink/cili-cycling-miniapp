@@ -95,7 +95,16 @@ describe('路线轮廓 Canvas', () => {
     expect(context.moveTo).toHaveBeenCalledOnce();
     expect(context.lineTo).toHaveBeenCalledOnce();
     expect(context.stroke).toHaveBeenCalledOnce();
+    expect(context.lineWidth).toBe(6);
     expect(context.arc).toHaveBeenCalledTimes(2);
+    expect(context.arc).toHaveBeenNthCalledWith(
+      1,
+      expect.any(Number),
+      expect.any(Number),
+      8,
+      0,
+      Math.PI * 2,
+    );
     expect(context.fillText).toHaveBeenCalledWith('周末环湖', 24, 24);
   });
 });

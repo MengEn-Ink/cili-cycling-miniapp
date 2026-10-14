@@ -487,6 +487,7 @@ page {
 .pending-hint {
   position: relative;
   margin-top: 16rpx;
+  margin-bottom: 16rpx;
   padding: 16rpx 24rpx 16rpx 32rpx;
   border: 4rpx solid var(--color-brand);
   border-radius: 8rpx;

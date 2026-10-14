@@ -85,7 +85,7 @@
 }
 .card-actions {
   display: grid;
-  grid-template-columns: 0.82fr 1.18fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16rpx;
   margin-top: 24rpx;
   padding-top: 24rpx;

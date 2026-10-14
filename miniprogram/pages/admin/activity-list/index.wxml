@@ -24,7 +24,7 @@
         bindtouchend="onRowTouchEnd"
         bindtouchcancel="onRowTouchEnd"
       >
-        <view class="admin-card-head"><text class="tag {{item.status === 'published' ? 'tag-solid' : 'tag-outline'}}">{{item.statusLabel}}</text><text class="muted">{{item.displayDate || item.startAt}}</text></view>
+        <view class="admin-card-head"><text class="tag {{item.status === 'published' ? 'tag-solid' : 'tag-outline'}}">{{item.statusLabel}}</text><text class="muted">{{item.displayDate || '活动时间待公布'}}</text></view>
         <view class="title">{{item.title}}</view>
         <view class="management-metrics" aria-label="活动报名指标">
           <view><text>{{item.registrationMetric}}</text><text>报名</text></view>

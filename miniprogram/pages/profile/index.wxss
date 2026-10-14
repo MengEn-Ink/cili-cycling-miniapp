@@ -223,9 +223,16 @@
   font-size: 36rpx;
 }
 .privacy-note {
-  margin: 16rpx 0;
+  margin: 0;
+  padding: 24rpx 0;
+  border-bottom: 2rpx solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 24rpx;
+  line-height: 36rpx;
 }
 .privacy-note-title {
+  margin-bottom: 8rpx;
+  color: var(--color-text);
   font-weight: 800;
 }
 .profile-loading,

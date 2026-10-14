@@ -67,11 +67,6 @@
           <image wx:elif="{{item.route.generatedPreviewUrl}}" class="route-outline-image" src="{{item.route.generatedPreviewUrl}}" mode="aspectFit" bindtap="previewRouteImage" aria-label="点击查看{{item.route.routeName || 'GPX 路线'}}完整路线图" />
           <view wx:else class="route-empty">暂无有效路线轮廓</view>
 
-          <view class="route-coordinate-list" wx:if="{{routeStartCoordinate || routeEndCoordinate}}">
-            <view wx:if="{{routeStartCoordinate}}"><text>起点坐标</text><text>{{routeStartCoordinate}}</text></view>
-            <view wx:if="{{routeEndCoordinate}}"><text>终点坐标</text><text>{{routeEndCoordinate}}</text></view>
-          </view>
-
           <view class="route-visual-heading">海拔曲线</view>
           <canvas wx:if="{{hasElevationProfile}}" id="elevation-canvas" type="2d" class="elevation-canvas" aria-label="路线海拔曲线"></canvas>
           <view wx:else class="route-empty">暂无有效海拔数据</view>

@@ -132,9 +132,7 @@ describe('品牌与页面体验静态契约', () => {
 
     expect(tokens['--page-gutter']).toBe('48rpx');
     expect(tokens['--control-height']).toBe('88rpx');
-    expect(declaration(effectiveBlock(activities, '.activity-list'), 'gap')).toBe(
-      'var(--card-gap)',
-    );
+    expect(declaration(effectiveBlock(activities, '.activity-carousel'), 'height')).toBe('1040rpx');
     expect(declaration(effectiveBlock(activityCard, '.activity-card'), 'border-radius')).toBe(
       'var(--radius-card)',
     );

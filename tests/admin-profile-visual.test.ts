@@ -17,6 +17,9 @@ describe('管理端与个人资料视觉契约', () => {
     expect(template).toContain('<text>报名</text>');
     expect(template).toContain('<text>待审核</text>');
     expect(template).toContain('<text>已通过</text>');
+    expect(source).toContain('displayDate: formatActivityDateTime(item.startAt || item.date)');
+    expect(template).toContain("{{item.displayDate || '活动时间待公布'}}");
+    expect(template).not.toContain('{{item.displayDate || item.startAt}}');
     expect(source).toContain("return value === undefined ? '—' : String(value)");
     expect(source).toContain('registrationMetric: metricValue(item.occupiedCount)');
     expect(source).toContain('approvedRegistrationCount');
@@ -64,6 +67,7 @@ describe('管理端与个人资料视觉契约', () => {
     expect(styles).toMatch(
       /\.gender-option\.is-selected\s*\{[^}]*background:\s*var\(--color-action\);[^}]*color:\s*var\(--color-on-action\)/s,
     );
+    expect(template).toContain('背景图处理中，稍后即可预览');
     expect(styles).toMatch(/\.photo-remove\s*\{[^}]*min-height:\s*88rpx/s);
   });
 });

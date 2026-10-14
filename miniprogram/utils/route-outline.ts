@@ -100,12 +100,12 @@ export function drawRouteOutline(
   context.textBaseline = 'top';
   context.fillText(routeName || '路线详情', 24, 24);
 
-  const projected = projectRouteOutline(points, width, height, 32);
+  const projected = projectRouteOutline(points, width, height, 16);
   if (projected.length >= 2) {
     context.beginPath();
     context.moveTo(projected[0].x, projected[0].y);
     for (const point of projected.slice(1)) context.lineTo(point.x, point.y);
-    context.lineWidth = 4;
+    context.lineWidth = 6;
     context.lineCap = 'round';
     context.lineJoin = 'round';
     context.strokeStyle = '#10120f';
@@ -115,7 +115,7 @@ export function drawRouteOutline(
     endpoints.forEach((point, index) => {
       context.beginPath();
       context.fillStyle = index === 0 ? '#ff5722' : '#10120f';
-      context.arc(point.x, point.y, 6, 0, Math.PI * 2);
+      context.arc(point.x, point.y, 8, 0, Math.PI * 2);
       context.fill();
     });
   }

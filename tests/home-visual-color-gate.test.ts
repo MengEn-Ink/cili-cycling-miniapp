@@ -18,12 +18,14 @@ describe('首页视觉与配色门禁', () => {
     expect(homeStyles).not.toMatch(/navy|blue|gradient/i);
   });
 
-  it('内容区使用页面统一边距并由列表间距维持稳定节奏', () => {
+  it('内容区使用页面统一边距并为轮播与日期滑动保留稳定节奏', () => {
     expect(homeStyles).toMatch(
-      /\.activity-list\s*\{[^}]*gap:\s*var\(--card-gap\)[^}]*margin-top:\s*16rpx;/s,
+      /\.activity-carousel\s*\{[^}]*height:\s*1040rpx[^}]*margin-top:\s*16rpx;/s,
     );
-    expect(homeStyles).toMatch(/\.day-chip-bar__inner\s*\{[^}]*padding:\s*0 var\(--page-gutter\)/s);
-    expect(homeStyles).not.toMatch(/\.activity-list\s*\{[^}]*padding:/s);
+    expect(homeStyles).toMatch(
+      /\.day-chip-bar__inner\s*\{[^}]*padding:\s*0 calc\(var\(--page-gutter\) \+ 48rpx\) 8rpx var\(--page-gutter\)/s,
+    );
+    expect(homeStyles).not.toMatch(/\.activity-carousel\s*\{[^}]*padding:/s);
   });
 
   it('品牌标识固定为深色底牌、暖灰白艺术字与品牌橙终点', () => {
@@ -44,7 +46,7 @@ describe('首页视觉与配色门禁', () => {
     expect(homeTemplate).toContain('class="activities-intro"');
     expect(homeTemplate).toContain('选一场骑行，一起出发');
     expect(homeTemplate).toContain('路线、时间、集合点，一眼看清');
-    expect(homeTemplate).toContain('class="activity-list"');
+    expect(homeTemplate).toContain('class="activity-carousel"');
     expect(homeTemplate).toContain('即将开始');
     expect(homeTemplate).toContain('历史活动');
   });
