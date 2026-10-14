@@ -28,10 +28,7 @@
       <view wx:else class="hero-alpine" aria-hidden="true"><view class="hero-ridge hero-ridge-far"></view><view class="hero-ridge hero-ridge-near"></view></view>
       <view class="hero-shade" aria-hidden="true"></view>
       <view class="hero-identity">
-        <view class="avatar">
-          <image wx:if="{{heroAvatarUrl}}" class="avatar-image" src="{{heroAvatarUrl}}" mode="aspectFill" data-url="{{heroAvatarUrl}}" bindtap="previewAvatar" binderror="heroAvatarError" aria-label="{{profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '骑手')}}的头像" />
-          <image wx:else class="avatar-image" src="/assets/brand/logo-circle-144.png" mode="aspectFill" aria-label="此里默认头像" />
-        </view>
+        <cili-avatar size="lg" src="{{heroAvatarUrl}}" on-media="{{true}}" data-url="{{heroAvatarUrl}}" bindtap="previewAvatar" binderror="heroAvatarError" aria-label="{{profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '骑手')}}的头像" />
         <view class="profile-copy">
           <view class="profile-name">{{profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '欢迎来到此里')}}</view>
           <view class="profile-title" wx:if="{{profile && profile.title}}">{{profile.title}}</view>

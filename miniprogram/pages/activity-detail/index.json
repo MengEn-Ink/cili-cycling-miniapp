@@ -9,6 +9,7 @@
   "backgroundTextStyle": "dark",
   "usingComponents": {
     "brand-logo": "/components/brand-logo/index",
+    "metric-grid": "/components/metric-grid/index",
     "state-view": "/components/state-view/index"
   }
 }

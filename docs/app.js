@@ -16,7 +16,9 @@
   const demo = $('#demo');
   const overview = $('#overview-view');
 
-  if (new URLSearchParams(window.location.search).has('capture')) document.body.classList.add('capture');
+  const queryParams = new URLSearchParams(window.location.search);
+  if (queryParams.has('capture')) document.body.classList.add('capture');
+  if (queryParams.get('viewport') === '340') document.body.classList.add('is-narrow');
 
   /* ---------- 对比度（WCAG 2.1 相对亮度），直接读取 CSS 变量计算 ---------- */
   const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();

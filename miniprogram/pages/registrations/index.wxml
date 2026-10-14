@@ -2,31 +2,31 @@
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{refreshing ? '正在刷新行程' : ''}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{refreshError}}</view>
   <brand-logo compact="{{true}}" meta="我的行程" />
-  <view class="page-heading"><view><view class="heading-title">我的行程</view><view class="heading-copy">报名进度、出发凭证都在这里</view></view><view class="heading-count">共 {{items.length}} 场</view></view>
-  <view class="trip-stats" wx:if="{{items.length}}" aria-label="行程状态统计">
-    <view wx:if="{{statusCounts.review > 0}}" class="trip-stat trip-stat--review"><text class="trip-stat__value">{{statusCounts.review}}</text><text class="trip-stat__label">审核中</text></view>
-    <view wx:else class="trip-stat"><text class="trip-stat__value">0</text><text class="trip-stat__label">审核中</text></view>
-    <view class="trip-stat trip-stat--ready"><text class="trip-stat__value">{{statusCounts.ready}}</text><text class="trip-stat__label">可出发</text></view>
-    <view class="trip-stat trip-stat--expired"><text class="trip-stat__value">{{statusCounts.expired}}</text><text class="trip-stat__label">已失效</text></view>
+  <view class="page-heading"><view class="heading-main"><view class="heading-title">我的行程</view><view class="heading-copy">审核状态与出发凭证，一处确认</view></view><view class="heading-count">共 {{items.length}} 场</view></view>
+  <view class="trip-stats" wx:if="{{items.length}}" role="list" aria-label="行程票据状态统计">
+    <view wx:if="{{statusCounts.review > 0}}" class="trip-stat trip-stat--review" role="listitem"><text class="trip-stat__label">审核中</text><text class="trip-stat__value">{{statusCounts.review}}</text></view>
+    <view wx:else class="trip-stat" role="listitem"><text class="trip-stat__label">审核中</text><text class="trip-stat__value">0</text></view>
+    <view class="trip-stat trip-stat--ready" role="listitem"><text class="trip-stat__label">可出发</text><text class="trip-stat__value">{{statusCounts.ready}}</text></view>
+    <view class="trip-stat trip-stat--expired" role="listitem"><text class="trip-stat__label">已失效</text><text class="trip-stat__value">{{statusCounts.expired}}</text></view>
   </view>
   <view class="refresh-note" wx:if="{{refreshing}}" aria-hidden="true">正在刷新行程…</view>
   <view class="refresh-note refresh-error" wx:if="{{refreshError}}" aria-hidden="true">{{refreshError}}</view>
   <state-view loading="{{loading}}" error="{{error}}" empty="{{!items.length}}" empty-title="暂无行程" empty-copy="去发现一场活动，报名后可在这里查看进度" retryable="{{true}}" bind:retry="load">
-    <view class="registration-list">
-      <view class="swipe-row" wx:for="{{items}}" wx:key="id">
-        <view wx:if="{{item.status === 'cancelled'}}" class="swipe-delete" data-id="{{item.id}}" catchtap="confirmDelete"><text class="swipe-delete__icon">×</text><text>{{deletingId === item.id ? '删除中' : '删除记录'}}</text></view>
-        <view class="registration-card status-{{item.status}}" style="transform: translateX({{item.swipeX}}px)" data-id="{{item.id}}" bindtap="open" bindtouchstart="onRowTouchStart" bindtouchmove="onRowTouchMove" bindtouchend="onRowTouchEnd" bindtouchcancel="onRowTouchCancel" hover-class="registration-card--pressed" role="button" aria-label="{{item.activity.title}}，{{item.displayStatusText}}，{{item.destinationLabel}}">
-          <view class="card-head"><text class="card-index">{{item.activity.displayDate}}</text><status-pill status="{{item.displayStatusText}}"/></view>
+    <view class="registration-list" role="list" aria-label="我的报名票据">
+      <view class="swipe-row" wx:for="{{items}}" wx:key="id" role="listitem">
+        <view wx:if="{{item.status === 'cancelled'}}" class="swipe-delete" data-id="{{item.id}}" catchtap="confirmDelete" role="button" aria-label="删除已取消的行程：{{item.activity.title}}"><text class="swipe-delete__icon" aria-hidden="true">×</text><text>{{deletingId === item.id ? '删除中' : '删除记录'}}</text></view>
+        <view class="registration-card status-{{item.status}}" style="transform: translateX({{item.swipeX}}px)" data-id="{{item.id}}" bindtap="open" bindtouchstart="onRowTouchStart" bindtouchmove="onRowTouchMove" bindtouchend="onRowTouchEnd" bindtouchcancel="onRowTouchCancel" hover-class="registration-card--pressed" role="button" aria-label="{{item.activity.title}}，票据状态{{item.displayStatusText}}，{{item.destinationLabel}}">
+          <view class="ticket-head"><view class="ticket-date"><text class="ticket-label">骑行票据</text><text class="card-index">{{item.activity.displayDate}}</text></view><status-pill status="{{item.displayStatusText}}"/></view>
           <view class="registration-title">{{item.activity.title}}</view>
           <view class="meeting-panel" aria-label="集合信息">
             <view class="meeting-row"><text class="meeting-label">集合时间</text><text class="meeting-value">{{item.meetingTime}}</text></view>
             <view class="meeting-row"><text class="meeting-label">集合地点</text><text class="meeting-value meeting-location">{{item.meetingLocation}}</text></view>
           </view>
-          <view class="registration-meta" wx:if="{{item.gatheringMode}}"><text class="gathering-mode">{{item.gatheringMode}}</text></view>
-          <view class="card-footer">
-            <view class="status-guidance"><text class="status-dot"></text><text>{{item.statusGuidance}}</text></view>
-            <button wx:if="{{item.status === 'cancelled'}}" class="delete-record-button" data-id="{{item.id}}" catchtap="confirmDelete" loading="{{deletingId === item.id}}">删除记录</button>
-            <button class="secondary trip-action" data-id="{{item.id}}" catchtap="open" aria-label="{{item.destinationLabel}}：{{item.activity.title}}">{{item.destinationLabel}}</button>
+          <view class="ticket-meta" wx:if="{{item.gatheringMode}}"><text class="ticket-meta__label">集合方式</text><text class="gathering-mode">{{item.gatheringMode}}</text></view>
+          <view class="status-guidance" role="status"><text class="status-dot" aria-hidden="true"></text><text>{{item.statusGuidance}}</text></view>
+          <view class="card-actions">
+            <button wx:if="{{item.status === 'cancelled'}}" class="delete-record-button" data-id="{{item.id}}" catchtap="confirmDelete" loading="{{deletingId === item.id}}" aria-label="删除行程记录：{{item.activity.title}}">删除记录</button>
+            <button class="secondary trip-action" data-id="{{item.id}}" catchtap="open" aria-label="{{item.destinationLabel}}：{{item.activity.title}}"><text class="{{item.status === 'approved' || item.status === 'checked_in' ? 'trip-action__label--primary' : ''}}">{{item.destinationLabel}}</text></button>
           </view>
         </view>
       </view>

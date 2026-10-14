@@ -58,12 +58,14 @@ describe('统一 Logo 物料与页面接入契约', () => {
 
   it('默认头像和名片背景统一引用品牌图片物料', () => {
     const profile = read('miniprogram/pages/profile/index.wxml');
+    const avatar = read('miniprogram/components/cili-avatar/index.wxml');
     const profileEdit = read('miniprogram/pages/profile-edit/index.wxml');
     const detail = read('miniprogram/pages/activity-detail/index.wxml');
     const settings = read('miniprogram/pages/settings/index.wxml');
     const hero = read('miniprogram/assets/profile/hero-alpine.svg');
 
-    expect(profile).toContain('src="/assets/brand/logo-circle-144.png"');
+    expect(profile).toContain('<cili-avatar');
+    expect(avatar).toContain('src="/assets/brand/logo-circle-144.png"');
     expect(profileEdit).toContain('src="/assets/brand/logo-circle-144.png"');
     expect(detail).toContain('src="/assets/brand/logo-circle-144.png"');
     expect(detail).toContain('src="/assets/brand/logo-share-500x400.png"');

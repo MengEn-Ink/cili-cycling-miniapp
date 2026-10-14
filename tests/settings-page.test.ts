@@ -21,11 +21,11 @@ describe('设置页', () => {
   });
 
   it('只加载当前版本日志，不注册第三方账号生命周期或入口', () => {
-    expect(page.data.releaseNotes).toHaveLength(9);
+    expect(page.data.releaseNotes).toHaveLength(10);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.14.58',
+      version: '2026.10.14.59',
       latest: true,
-      title: '关键信息排版更稳定',
+      title: '核心骑行流程更清晰稳定',
     });
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(
       1,
@@ -35,6 +35,7 @@ describe('设置页', () => {
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.14.59',
       '2026.10.14.58',
       '2026.10.14.57',
       '2026.10.14.56',
