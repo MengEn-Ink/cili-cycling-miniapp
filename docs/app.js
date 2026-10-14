@@ -3,6 +3,7 @@
   const templates = window.pageTemplates;
   const pageById = new Map(data.pages.map((page) => [page.id, page]));
   const tabRoutes = ['activities', 'registrations', 'profile'];
+  const overviewSections = new Set(['overview', 'requirements', 'prd', 'prototype']);
   const routeHistory = [];
   let currentRoute = 'activities';
   let currentState = '';
@@ -63,7 +64,7 @@
     const pageCards = data.pages
       .map(
         (page, index) =>
-          `<a href="#${page.id}"><small>${String(index + 1).padStart(2, '0')} · ${page.group} · ${page.path}</small><b>${page.title}</b><p>${page.fixes[0]}</p><p>关键状态：${page.states.map(([, label]) => label).join(' / ')}</p></a>`,
+          `<a href="#${page.id}"><small>${String(index + 1).padStart(2, '0')} · ${page.group} · ${page.path}</small><b>${page.title}</b><p>${page.copy}</p><p>关键状态：${page.states.map(([, label]) => label).join(' / ')}</p></a>`,
       )
       .join('');
     const contrast = contrastRows
@@ -80,24 +81,72 @@
       )
       .join('');
     overview.innerHTML = `
-      <p class="eyebrow">总览 · 2026-10-14 全套 UI 改版</p>
-      <h2 style="margin-top:4px">以报名表单设计稿为基准，统一 13 个页面</h2>
-      <p class="lead">继承 2026-10-10 统一明亮 UI（只有明亮主题、8px 栅格、字号 24/18/14/12、卡片圆角）与 2026-10-12 黑白灰 + 主题橙规范；颜色变量与 miniprogram/app.wxss 同名同值。橙色只用于当前步骤、必选与待处理；重点信息用黑底白字条块。</p>
-      <h2>页面清单（13 / 13，与 app.json 路由一一对应）</h2>
-      <p class="card-hint">app.json 中的 pages/route-view/index（官方路线 web-view）没有任何页面跳转到它，属于孤立页；小程序不跳转第三方页面，本稿不设计该页，Strava 只能复制链接。</p>
-      <div class="overview-grid">${pageCards}</div>
-      <h2>公共组件示例</h2>
-      <div class="spec-demo">
-        <div><h3>按钮：主 / 次 / 文字 / 禁用 / 加载</h3><div class="btn-row"><button class="btn">提交报名</button><button class="btn-secondary">保存草稿</button></div><div class="btn-row"><button class="btn is-disabled">名额已满</button><button class="btn is-loading">提交中</button></div><button class="btn-text">删除</button></div>
-        <div><h3>标签：中性 / 已通过 / 待审核 / 线框 / 已结束</h3><div class="chips"><span class="tag tag-neutral">默认</span><span class="tag tag-solid">已通过</span><span class="tag tag-pending">待审核</span><span class="tag tag-outline">已下架</span><span class="tag tag-muted">已结束</span></div><div class="steps" style="margin-top:12px"><div class="step is-done"><b>✓</b>填写报名</div><div class="step is-current"><b>02</b>等待审核</div><div class="step"><b>03</b>出发凭证</div></div></div>
-        <div><h3>输入框：默认 / 聚焦 / 错误 / 禁用</h3><div class="input"><span class="ph">例如：周末环湖骑</span></div><div class="input is-focus"><span>云蒙山&amp;喇叭沟 RIDE<i class="caret"></i></span></div><div class="input is-error"><span class="ph">请填写活动标题</span></div><p class="field-msg is-error">请填写活动标题</p><div class="input is-disabled"><span>资料完整，欢迎参加</span></div></div>
-        <div><h3>黑底信息条</h3><section class="info-bar" style="margin-top:0"><div class="info-head"><span class="info-kicker">10月18日 周日 · 高阶</span><span class="info-tag">报名中</span></div><h2 class="info-title">云蒙山&amp;喇叭沟 RIDE</h2><p class="info-meta"><span>早上 6 点 20 分集合</span><span>望京西地铁站</span></p></section></div>
-      </div>
-      <h2>浅色对比度检查表（实时读取 CSS 变量计算）</h2>
-      <table class="overview-table"><thead><tr><th>用途</th><th>前景</th><th>背景</th><th>对比度</th><th>门槛</th><th>使用位置</th></tr></thead><tbody>${contrast}</tbody></table>
-      <p class="lead">--color-subtle（#737373）对页面底 #f3f3f1 只有 4.27 : 1，不得用于页面底上的文字，只用于白底或线稿；--color-border 只作分隔线，不作控件边框。</p>
-      <h2>截图问题对照表（${data.issues.length} 条，全部有对应方案）</h2>
-      <table class="overview-table"><thead><tr><th>编号</th><th>页面</th><th>问题</th><th>改版方案</th><th>规范</th></tr></thead><tbody>${issues}</tbody></table>`;
+      <section class="product-hero">
+        <p class="eyebrow">产品中心 · 当前基线同步至 main</p>
+        <h2>让骑行俱乐部从发布活动到签到出发，都在一个小程序里完成</h2>
+        <p class="lead">“此里”面向单个骑行俱乐部，把活动发布、官方路线与 GPX、骑手资料、报名审批、行程凭证和签到收口到同一条可信旅程，减少微信群接龙和人工核对。</p>
+        <div class="product-actions"><a class="btn" href="#activities">体验骑手旅程</a><a class="btn-secondary" href="#admin-activity-list">体验管理员旅程</a></div>
+      </section>
+
+      <section class="product-section" id="requirements">
+        <p class="eyebrow">01 · 需求概览</p>
+        <h2>谁在使用，解决什么问题</h2>
+        <div class="product-card-grid">
+          <article class="product-card"><span>骑手</span><h3>看活动、报名和出发</h3><p>比较时间、集合点、路线与强度，维护本人资料，提交报名并查看审核、凭证和签到状态。</p></article>
+          <article class="product-card"><span>活动发起人</span><h3>发布与维护本人活动</h3><p>创建草稿、配置路线和分组容量、发布或下架活动，并复用本人历史活动建立新草稿。</p></article>
+          <article class="product-card"><span>俱乐部管理员</span><h3>统一审批与现场管理</h3><p>查看全部活动与报名资料，执行通过、驳回、签到和活动结束，所有权限均由服务端校验。</p></article>
+        </div>
+        <div class="requirements-grid">
+          <article><b>活动发现</b><p>未来与进行中活动默认正序展示，历史活动倒序分页；列表状态互不串扰。</p></article>
+          <article><b>资料与隐私</b><p>本人和审核管理员按权限查看完整资料，其他骑友只看到公开昵称与名片信息。</p></article>
+          <article><b>报名审批</b><p>服务端复核资料、名额、截止时间和活动状态；重复提交幂等，审批与容量在事务内一致。</p></article>
+          <article><b>路线与行程</b><p>详情展示官方路线、GPX 与集合信息；不使用 web-view 跳转第三方页面。</p></article>
+        </div>
+      </section>
+
+      <section class="product-section" id="prd">
+        <p class="eyebrow">02 · PRD</p>
+        <h2>核心旅程、业务规则与验收口径</h2>
+        <div class="prd-flow" aria-label="核心产品旅程">
+          <div><span>01</span><b>发现活动</b><p>按日期与状态筛选，比较路线事实和剩余名额。</p></div>
+          <div><span>02</span><b>完善资料</b><p>校验实名、电话、紧急联系人和骑行经验。</p></div>
+          <div><span>03</span><b>提交报名</b><p>选择集合方式，服务端原子占用活动与分组名额。</p></div>
+          <div><span>04</span><b>审核出发</b><p>管理员审批并签到，骑手在行程与凭证中查看结果。</p></div>
+        </div>
+        <div class="prd-columns">
+          <article><h3>关键业务规则</h3><ul><li>活动状态遵循 draft ↔ published → finished。</li><li>活动已发布不代表允许报名，报名状态由服务端根据配置与时间动态计算。</li><li>pending、approved、checked_in 占用名额；取消或驳回释放名额。</li><li>客户端传入的角色、openid 或本地缓存均不能授予权限。</li></ul></article>
+          <article><h3>本期验收标准</h3><ul><li>13 个 app.json 可达页面均有对应原型与关键状态。</li><li>340px 窄屏无横向溢出，主要操作满足安全区和触控高度。</li><li>真实报名主链覆盖浏览、资料、报名、审批、凭证、取消与重报。</li><li>用户可见页面不展示第三方授权入口、内部状态机或敏感数据。</li></ul></article>
+        </div>
+        <div class="source-links">
+          <a href="https://github.com/MengEn-Ink/cili-cycling-miniapp/blob/main/docs/requirements-design.md"><b>产品需求与当前能力</b><span>角色、核心旅程、功能清单与数据安全边界</span></a>
+          <a href="https://github.com/MengEn-Ink/cili-cycling-miniapp/blob/main/docs/superpowers/specs/2026-10-14-full-ui-redesign.md"><b>UI 设计演进记录</b><span>2026-10-14 页面结构与阶段验收口径，最终视觉以在线原型为准</span></a>
+          <a href="https://github.com/MengEn-Ink/cili-cycling-miniapp/blob/main/docs/verification/p0-real-registration-journey.md"><b>P0 真实报名旅程</b><span>报名、审批、凭证、取消与重报的真实环境验证手册</span></a>
+          <a href="https://github.com/MengEn-Ink/cili-cycling-miniapp/blob/main/docs/product-backlog-clarification-2026-10-13.md"><b>产品路线图</b><span>权限、通知、凭证、模板、主题与更新日志的后续计划</span></a>
+        </div>
+      </section>
+
+      <section class="product-section" id="prototype">
+        <p class="eyebrow">03 · 交互原型</p>
+        <h2>13 个真实页面，与 app.json 路由一一对应</h2>
+        <p class="card-hint">官方路线独立页已从产品路由删除；活动详情直接承载路线事实与 GPX 能力，Strava 路线只提供规范化链接复制。</p>
+        <div class="overview-grid">${pageCards}</div>
+      </section>
+
+      <details class="reference-panel">
+        <summary>设计规范与历史问题对照</summary>
+        <div class="reference-content">
+          <h2>公共组件示例</h2>
+          <div class="spec-demo">
+            <div><h3>按钮：主 / 次 / 文字 / 禁用 / 加载</h3><div class="btn-row"><button class="btn">提交报名</button><button class="btn-secondary">保存草稿</button></div><div class="btn-row"><button class="btn is-disabled">名额已满</button><button class="btn is-loading">提交中</button></div><button class="btn-text">删除</button></div>
+            <div><h3>标签：中性 / 已通过 / 待审核 / 线框 / 已结束</h3><div class="chips"><span class="tag tag-neutral">默认</span><span class="tag tag-solid">已通过</span><span class="tag tag-pending">待审核</span><span class="tag tag-outline">已下架</span><span class="tag tag-muted">已结束</span></div></div>
+            <div><h3>输入框：默认 / 聚焦 / 错误 / 禁用</h3><div class="input"><span class="ph">例如：周末环湖骑</span></div><div class="input is-focus"><span>云蒙山&amp;喇叭沟 RIDE<i class="caret"></i></span></div><div class="input is-error"><span class="ph">请填写活动标题</span></div><p class="field-msg is-error">请填写活动标题</p><div class="input is-disabled"><span>资料完整，欢迎参加</span></div></div>
+          </div>
+          <h2>浅色对比度检查表</h2>
+          <table class="overview-table"><thead><tr><th>用途</th><th>前景</th><th>背景</th><th>对比度</th><th>门槛</th><th>使用位置</th></tr></thead><tbody>${contrast}</tbody></table>
+          <h2>历史问题对照表（${data.issues.length} 条）</h2>
+          <table class="overview-table"><thead><tr><th>编号</th><th>页面</th><th>问题</th><th>改版方案</th><th>规范</th></tr></thead><tbody>${issues}</tbody></table>
+        </div>
+      </details>`;
   }
 
   function renderNavigation() {
@@ -144,11 +193,19 @@
     });
   }
 
-  function showOverview() {
+  function showOverview(section = 'overview') {
+    const targetSection = overviewSections.has(section) ? section : 'overview';
     demo.hidden = true;
     overview.hidden = false;
     if (!overview.innerHTML) renderOverview();
-    if (window.location.hash !== '#overview') window.history.replaceState(null, '', '#overview');
+    if (window.location.hash !== `#${targetSection}`) {
+      window.history.replaceState(null, '', `#${targetSection}`);
+    }
+    if (targetSection !== 'overview') {
+      window.requestAnimationFrame(() => {
+        document.getElementById(targetSection)?.scrollIntoView({ block: 'start' });
+      });
+    }
   }
 
   function showPage(route, options = {}) {
@@ -294,12 +351,12 @@
 
   window.addEventListener('hashchange', () => {
     const { route, state } = parseHash();
-    if (route === 'overview') showOverview();
+    if (overviewSections.has(route)) showOverview(route);
     else if (pageById.has(route)) showPage(route, { state, replace: route === currentRoute });
   });
 
   renderNavigation();
   const initial = parseHash();
-  if (initial.route === 'overview') showOverview();
+  if (overviewSections.has(initial.route)) showOverview(initial.route);
   else showPage(pageById.has(initial.route) ? initial.route : 'activities', { state: initial.state, replace: true });
 })();
