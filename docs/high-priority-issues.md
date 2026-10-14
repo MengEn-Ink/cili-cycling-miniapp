@@ -1,14 +1,14 @@
 # 高优问题清单
 
-> 最后更新：2026-10-14 14:00（CST）
+> 最后更新：2026-10-14 15:58（CST）
 >
 > 本文件只保留**尚未完成的实际交付或验收**。已合并 PR、历史 CI 流水账、已关闭问题和被新产品口径取代的方案，以 Git/GitHub 历史为准，不再复制到活跃清单。
 
 ## 当前基线
 
-- 当前 main 基线：`a07ccd8504c90469baa719464933f148150b3a98`（PR #208）。
-- main CI：run [38484311612](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38484311612) 成功。
-- 微信开发版：run [38484458682](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38484458682) 成功，版本 `0.0.209.1`，回执绑定提交 `a07ccd8`；尚未晋级体验版（需在微信公众平台人工选择）。
+- 当前 main 基线：`e5c0ce5be967f1133861a4ff778e389fcc95342e`（PR #209，已包含先合并的 PR #210）。
+- main CI：run [38527875193](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38527875193) 成功。
+- 微信开发版：run [38527028185](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38527028185) 成功，版本 `0.0.213.1`，回执绑定提交 `86507bf`（PR #210）；PR #209 仅修改文档与原型，run [38528023936](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38528023936) 按规则跳过重复上传。当前版本尚未晋级体验版（需在微信公众平台人工选择）。
 - 云函数基线：PR #203 的 `activity-admin` 已部署；PR #208 又修改 `profile`、`registration`、`activity-read`、`activity-admin`、`admin-review`，最新代码已合入但仍需使用 CloudBase 凭证重新部署。
 - 活跃任务分支必须通过 PR 合入并在合并后删除；是否存在开放 PR 以 GitHub 实时状态为准。
 
@@ -23,15 +23,15 @@
 | P1 | 图片与个人资料运行态验收 | PR #198/#200/#205 已统一七项资料完整度、保存与报名门槛并修复图片回显；PR #208 已合并，新增本人及审核管理员完整资料回显、后援车司机电话完整展示并升级缓存命名空间；微信开发版 `0.0.209.1` 已上传 | 先使用 CloudBase 凭证重新部署 `profile`、`registration`、`activity-read`、`activity-admin`、`admin-review`；随后在 iOS/Android 真机核对本人、管理员、普通骑友和后援司机四类展示边界，并覆盖弱网、替换/删除图片、旧账号缓存和资料完整度 0→100% |
 | P1 | 缓存与离线恢复 | 活动与资料 TTL、冷启动持久化、断网兜底、临时图片 URL 刷新和写后失效已有自动化；旧账号指标缓存命名空间已整体失效 | 真机覆盖冷启动、热启动、离线、过期、手动刷新、账号切换，确认不展示跨账号或过期状态 |
 | P1 | 稳定体验版发布治理 | 固定体验版清单、候选与回退门禁已有自动化和历史演练 | 将下一合格开发版晋级体验版，执行一次真实跨版本回退，再恢复目标版本并核对固定入口和核心业务 |
-| P1 | 全套页面 UI 改版设计稿待确认 | 主题规范 `docs/superpowers/specs/2026-10-14-theme-constraints.md` 已确认（含小范围成功 / 警告色）；设计说明 `docs/superpowers/specs/2026-10-14-full-ui-redesign.md` 与 Pages 高保真原型已在 PR #209 按 main 与该规范逐页核对：13 个可达页面、多状态、截图问题对照；官方路线页已随 #210 删除，Strava 只复制链接，不跳转第三方 / web-view；仅含 docs 与原型契约测试 | 用户确认设计稿后合并 PR #209（已在 #210 之后 rebase、重算 UI 同步清单摘要）；按设计说明 §5 分 7 批开发产品代码，第 1 批把成功 / 警告色变量加入 app.wxss；每批部署并真机验收后再关闭对应问题 |
-| P2 | 删除孤立官方路线页 `pages/route-view` | 分支 `chore/remove-route-view-page` 已提交 PR：删除页面、`app.json` 注册与 `routeEmbedOrigin`，同步测试、Pages 原型与 UI 同步清单（13 页），升级日志新增 `2026.10.14.54`；活动详情“复制路线链接”保留；同批下线 `route-web` 云函数与 `/route/embed` 网关并清理部署脚本、`cloudbaserc.json`、CI 缓存与文档引用 | PR 通过 CI 并合并；上传新开发版后在 iOS/Android 确认活动详情复制 Strava 路线链接正常、无残留入口跳转到已删除页面 |
+| P1 | 全套页面 UI 改版设计稿待确认 | 主题规范 `docs/superpowers/specs/2026-10-14-theme-constraints.md` 已确认（含小范围成功 / 警告色）；设计说明 `docs/superpowers/specs/2026-10-14-full-ui-redesign.md` 与 Pages 高保真原型已由 PR #209 合入 main，并按规范逐页核对 13 个可达页面、多状态和截图问题；官方路线页已随 #210 删除，Strava 只复制链接，不跳转第三方 / web-view | 用户确认设计稿；按设计说明 §5 分 7 批开发产品代码，第 1 批把成功 / 警告色变量加入 app.wxss；每批部署并真机验收后再关闭对应问题 |
+| P2 | 删除孤立官方路线页 `pages/route-view` | PR #210 已合并且 CI 成功：删除页面、`app.json` 注册与 `routeEmbedOrigin`，同步测试、Pages 原型与 UI 同步清单（13 页），并从代码、部署脚本和 `cloudbaserc.json` 移除 `route-web` 与 `/route/embed`；开发版 `0.0.213.1` 已上传 | 回读确认线上 `route-web` 云函数与 `/route/embed` 网关已下线；在 iOS/Android 确认活动详情复制 Strava 路线链接正常、无残留入口跳转到已删除页面 |
 
 ## 分支与工作树状态
 
 - 远端长期分支仅保留 `main`；任务分支在对应 PR 合并或被替代后删除。
 - 开放 PR 与远端任务分支以 GitHub 实时状态为准，不在本文固化瞬时数量。
-- 本地 `feat/route-embed-gpx-no-oauth` 仍含未进入 PR #192 的参会者横向列表设计提交，拆分或归档前不得清理。
-- `fix/strava-oauth-expiry-rotation` 已被新产品方向取代但仍含未提交代码；最终 purge 和人工判定前不得清理。
+- 本地 `docs/attendee-horizontal-strip-design` 仍含未进入主线的参会者横向列表设计提交，拆分或归档前不得清理。
+- 已被新产品方向取代的 Strava OAuth 未提交代码与本地设计产物已归档到 stash `archive: pre-purge Strava OAuth and local UI artifacts 2026-10-14`；最终 purge 和人工判定前不得删除该 stash。
 
 ## 维护规则
 
