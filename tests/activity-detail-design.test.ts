@@ -414,9 +414,10 @@ describe('活动详情设计与日期契约', () => {
   it('使用两列核心指标、同级卡片和轻量安全区 CTA', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
-    expect(template.match(/class="detail-metric"/g)).toHaveLength(4);
-    expect(template).toContain("{{estimatedRideTime || '--'}}");
-    expect(styles).toContain('grid-template-columns: repeat(2, minmax(0, 1fr));');
+    expect(template).toContain('<metric-grid class="metric-panel"');
+    expect(template).toContain("value: estimatedRideTime || '--'");
+    expect(template).toContain("label: '已通过'");
+    expect(template).toContain('columns="2" narrow-columns="2"');
     expect(styles).toContain('var(--radius-card)');
     expect(styles).toContain('env(safe-area-inset-bottom)');
   });

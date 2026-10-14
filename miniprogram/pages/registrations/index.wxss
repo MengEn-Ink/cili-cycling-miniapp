@@ -1,12 +1,26 @@
 .registrations-page {
   background: var(--color-bg);
 }
+.page-heading,
+.heading-main,
+.ticket-head,
+.ticket-date,
+.registration-card,
+.meeting-row,
+.ticket-meta,
+.status-guidance,
+.card-actions {
+  min-width: 0;
+}
 .page-heading {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 16rpx;
   margin-top: 16rpx;
+}
+.heading-main {
+  flex: 1;
 }
 .heading-copy,
 .heading-count {
@@ -15,22 +29,30 @@
   line-height: 36rpx;
 }
 .heading-count {
+  flex: 0 0 auto;
   color: var(--color-text);
   font-size: 28rpx;
   font-weight: 800;
 }
 .trip-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
   padding: 24rpx 0;
 }
 .trip-stat {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   padding: 0 32rpx;
 }
 .trip-stat + .trip-stat {
   border-left: 2rpx solid var(--color-subtle);
+}
+.trip-stat__label {
+  color: var(--color-media-muted);
+  font-size: 24rpx;
+  line-height: 36rpx;
 }
 .trip-stat__value {
   position: relative;
@@ -38,6 +60,7 @@
   font-size: 48rpx;
   line-height: 64rpx;
   font-weight: 900;
+  font-variant-numeric: tabular-nums;
 }
 .trip-stat--review .trip-stat__value:not(:empty)::after {
   position: absolute;
@@ -49,10 +72,6 @@
   background: var(--color-brand);
   content: '';
 }
-.trip-stat__label {
-  color: var(--color-media-muted);
-  font-size: 24rpx;
-}
 .registration-list {
   display: flex;
   flex-direction: column;
@@ -61,17 +80,19 @@
 }
 .swipe-row {
   position: relative;
+  min-width: 0;
 }
 .swipe-delete {
   position: absolute;
-  right: 0;
   top: 0;
+  right: 0;
   bottom: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 160rpx;
+  min-height: var(--control-height);
   border-radius: var(--radius-card);
   background: var(--color-action);
   color: var(--color-on-action);
@@ -85,21 +106,34 @@
 .registration-card--pressed {
   background: var(--color-raised);
 }
-.card-head,
-.card-footer {
+.ticket-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16rpx;
+}
+.ticket-date {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+.ticket-label {
+  color: var(--color-text);
+  font-size: 24rpx;
+  line-height: 36rpx;
+  font-weight: 900;
 }
 .card-index {
   color: var(--color-muted);
   font-size: 24rpx;
+  line-height: 36rpx;
+  font-variant-numeric: tabular-nums;
 }
 .registration-title {
   display: -webkit-box;
-  margin-top: 8rpx;
+  margin-top: 12rpx;
   overflow: hidden;
+  color: var(--color-text);
   font-size: 36rpx;
   line-height: 52rpx;
   font-weight: 900;
@@ -112,46 +146,131 @@
   border-radius: 0;
 }
 .meeting-row {
+  align-items: flex-start;
   border-color: var(--color-subtle);
 }
 .meeting-label {
+  flex: 0 0 auto;
   color: var(--color-media-muted);
 }
 .meeting-value {
+  min-width: 0;
   color: var(--color-on-media);
   font-weight: 800;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
-.registration-meta {
+.meeting-location {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.ticket-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  min-height: 64rpx;
   margin-top: 16rpx;
 }
+.ticket-meta__label {
+  flex: 0 0 auto;
+  color: var(--color-muted);
+  font-size: 24rpx;
+}
 .gathering-mode {
+  min-width: 0;
   padding: 4rpx 12rpx;
   border-radius: 8rpx;
   background: var(--color-raised);
   font-size: 24rpx;
-}
-.card-footer {
-  flex-wrap: wrap;
-  min-height: 88rpx;
-  margin-top: 16rpx;
+  font-weight: 800;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 .status-guidance {
-  flex: 1 1 240rpx;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 16rpx;
   color: var(--color-muted);
   font-size: 24rpx;
+  line-height: 36rpx;
 }
-.trip-action {
-  flex: 0 0 auto;
-  min-width: 192rpx;
+.status-dot {
+  flex: 0 0 12rpx;
+  width: 12rpx;
+  height: 12rpx;
+  background: var(--color-brand);
+}
+.card-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16rpx;
+  margin-top: 16rpx;
+  padding-top: 16rpx;
+  border-top: 2rpx solid var(--color-border);
+}
+.card-actions > button:only-child {
+  grid-column: 1 / -1;
+}
+.trip-action,
+.delete-record-button {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
   min-height: var(--control-height);
   margin: 0;
-}
-.delete-record-button {
-  min-height: 72rpx;
   padding: 0 16rpx;
-  border: 2rpx solid var(--color-border-strong);
+  border: 4rpx solid var(--color-border-strong);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text);
-  font-size: 24rpx;
+  font-size: 28rpx;
+  font-weight: 800;
+}
+.trip-action {
+  min-height: var(--control-height);
+}
+.trip-action__label--primary {
+  color: var(--color-text);
+  font-weight: 900;
+  text-decoration: underline;
+  text-decoration-color: var(--color-brand);
+  text-decoration-thickness: 4rpx;
+  text-underline-offset: 8rpx;
+}
+@media (max-width: 340px) {
+  .heading-title {
+    font-size: 40rpx;
+    line-height: 56rpx;
+  }
+  .trip-stat {
+    padding: 0 16rpx;
+  }
+  .trip-stat__value {
+    font-size: 40rpx;
+    line-height: 56rpx;
+  }
+  .meeting-row {
+    flex-wrap: wrap;
+    gap: 4rpx;
+    padding: 16rpx 0;
+  }
+  .meeting-value {
+    flex-basis: 100%;
+    text-align: left;
+  }
+  .card-actions {
+    grid-template-columns: 1fr;
+  }
+  .card-actions > button:only-child {
+    grid-column: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .registration-card {
+    transition: none;
+  }
 }

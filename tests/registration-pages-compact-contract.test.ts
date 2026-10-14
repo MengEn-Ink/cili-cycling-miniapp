@@ -111,8 +111,8 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     expect(profileEdit).not.toContain('脱敏值');
 
     const detail = read('miniprogram/pages/activity-detail/index.wxml');
-    expect(detail).toContain('{{item.approvedRegistrationCount || 0}}');
-    expect(detail).toContain('已通过');
+    expect(detail).toContain('value: item.approvedRegistrationCount || 0');
+    expect(detail).toContain("label: '已通过'");
     expect(detail).not.toContain('wx:else>待补充</text>');
   });
 

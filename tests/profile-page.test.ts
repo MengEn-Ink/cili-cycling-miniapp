@@ -283,15 +283,15 @@ describe('个人中心加载状态', () => {
   it('可预览 hero 背景和头像有可读标签，装饰性兜底背景隐藏于无障碍树', () => {
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     const backgroundImages = template.match(/<image\b[^>]*class="hero-[^"]+"[^>]*\/>/g) || [];
-    const avatarImage = template.match(/<image\b[^>]*class="avatar-image"[^>]*\/>/)?.[0] || '';
+    const avatarComponent = template.match(/<cili-avatar\b[^>]*\/>/)?.[0] || '';
 
     expect(backgroundImages.length).toBeGreaterThanOrEqual(3);
     expect(backgroundImages[0]).toContain('aria-label="查看完整背景照片"');
     expect(
       backgroundImages.slice(1).every((image: string) => image.includes('aria-hidden="true"')),
     ).toBe(true);
-    expect(avatarImage).toContain('aria-label=');
-    expect(avatarImage).toContain('bindtap="previewAvatar"');
+    expect(avatarComponent).toContain('aria-label=');
+    expect(avatarComponent).toContain('bindtap="previewAvatar"');
   });
 
   it('个人中心头像点击只预览合法 HTTPS URL，非法或缺失时 fail closed', () => {

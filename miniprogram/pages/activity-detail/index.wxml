@@ -17,12 +17,7 @@
       </view>
 
       <view class="content">
-        <view class="metric-panel" aria-label="活动关键数据">
-          <view class="detail-metric"><view class="metric-value"><text class="metric-number">{{item.route.distanceKm > 0 ? item.route.distanceKm : '--'}}</text><text class="metric-unit">km</text></view><view class="metric-label">里程</view></view>
-          <view class="detail-metric"><view class="metric-value"><text class="metric-number">{{item.route.elevationM > 0 ? item.route.elevationM : '--'}}</text><text class="metric-unit">m</text></view><view class="metric-label">爬升</view></view>
-          <view class="detail-metric"><view class="metric-value"><text class="metric-number metric-number--text">{{estimatedRideTime || '--'}}</text></view><view class="metric-label">预计骑行</view></view>
-          <view class="detail-metric"><view class="metric-value"><text class="metric-number">{{item.approvedRegistrationCount || 0}}</text><text class="metric-unit">人</text></view><view class="metric-label">已通过</view></view>
-        </view>
+        <metric-grid class="metric-panel" items="{{[{ value: item.route.distanceKm > 0 ? item.route.distanceKm : '--', unit: 'km', label: '里程' }, { value: item.route.elevationM > 0 ? item.route.elevationM : '--', unit: 'm', label: '爬升' }, { value: estimatedRideTime || '--', unit: '', label: '预计骑行' }, { value: item.approvedRegistrationCount || 0, unit: '人', label: '已通过' }]}}" columns="2" narrow-columns="2" aria-label="活动关键数据" />
 
         <view class="detail-decision" aria-label="报名状态">
           <view class="decision-status"><text class="decision-kicker">报名状态</text><text class="decision-title">{{viewerStatus.label}}</text></view>

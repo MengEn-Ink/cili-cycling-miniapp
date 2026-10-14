@@ -1,0 +1,4 @@
+<view class="avatar avatar--{{size}} {{onMedia ? 'avatar--on-media' : ''}}" role="{{ariaLabel ? 'img' : ''}}" aria-label="{{ariaLabel}}" aria-hidden="{{!ariaLabel}}" bindtap="avatarTap">
+  <image wx:if="{{src && !imageFailed}}" class="avatar__image" src="{{src}}" mode="aspectFill" binderror="imageError" />
+  <image wx:else class="avatar__image avatar__fallback" src="/assets/brand/logo-circle-144.png" mode="aspectFill" />
+</view>

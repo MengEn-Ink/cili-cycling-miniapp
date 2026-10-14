@@ -35,8 +35,15 @@
   --color-status-success-soft: #e7f4eb;
   --color-status-warning: #7a5c00;
   --color-status-warning-soft: #fbf1cc;
+  --radius-xs: 4px;
   --radius-sm: 8px;
+  --radius-md: 12px;
   --radius-card: 8px;
+  --radius-full: 9999px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
   --control-height: 44px;
   --segment-height: 40px;
   --page-gutter: 24px;
@@ -2533,4 +2540,478 @@ body.capture .screen-notes {
 
 .pass.is-fail {
   color: var(--color-brand-active);
+}
+
+/* ---------- 2026-10-14 UI system refactor sync ---------- */
+.long-copy,
+.info-title,
+.card-title,
+.activity-card-body h3,
+.trip-ticket h3,
+.review-activity,
+.review-facts dd,
+.privacy-panel p {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.list-count em {
+  margin-left: var(--spacing-sm);
+  color: var(--color-text);
+  font-style: normal;
+  font-weight: 800;
+}
+
+/* 通用头像与两列指标：与 cili-avatar / metric-grid 同步。 */
+.avatar {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+.avatar.ring {
+  border: 3px solid var(--color-on-media);
+}
+
+.metric-grid,
+.metric-grid.three {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+}
+
+.metric-grid > span,
+.metric-grid.three > span {
+  min-width: 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.metric-reading {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: var(--spacing-xs);
+}
+
+.metric-reading b {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.metric-reading i {
+  flex: 0 0 auto;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 18px;
+  font-style: normal;
+}
+
+/* 报名流程：三阶段，阶段标题与时机分层。 */
+.registration-title {
+  margin-top: var(--spacing-lg);
+}
+
+.steps {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.step {
+  min-width: 0;
+  min-height: var(--control-height);
+  height: auto;
+  padding: var(--spacing-sm);
+  gap: var(--spacing-sm);
+}
+
+.step b {
+  display: inline-flex;
+  flex: 0 0 16px;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-full);
+}
+
+.step > span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.step strong,
+.step small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.step strong {
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.step small {
+  font-size: 10px;
+  line-height: 14px;
+  font-weight: 600;
+}
+
+.step.is-current small {
+  color: var(--color-on-brand);
+}
+
+.registration-page .pending-note {
+  border: 2px solid var(--color-brand);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface);
+}
+
+/* 票据式行程：票头、集合信息、状态引导与动作。 */
+.page-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-lg);
+}
+
+.page-heading .page-title {
+  margin-top: 0;
+}
+
+.page-heading > b {
+  flex: 0 0 auto;
+}
+
+.trip-ticket-top > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.ticket-label {
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.ticket-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-lg);
+  min-height: 40px;
+  padding: 0 16px;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.ticket-meta b {
+  color: var(--color-text);
+}
+
+.status-guidance {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin: 0 16px;
+  padding: var(--spacing-sm) 0;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.status-guidance i {
+  flex: 0 0 6px;
+  width: 6px;
+  height: 6px;
+  background: var(--color-brand);
+}
+
+/* 个人资料：媒体名片、品牌头像与统一服务列表。 */
+.profile-hero-card {
+  position: relative;
+  height: 180px;
+  margin-top: var(--spacing-lg);
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  background: var(--color-media-card-bg);
+}
+
+.profile-hero-card > img,
+.profile-hero-shade {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.profile-hero-card > img {
+  object-fit: cover;
+}
+
+.profile-hero-shade {
+  background: var(--color-overlay);
+  opacity: 0.45;
+}
+
+.profile-hero-identity {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  color: var(--color-on-media);
+}
+
+.profile-hero-identity > div {
+  min-width: 0;
+}
+
+.profile-hero-identity h2 {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 900;
+}
+
+.profile-hero-identity p {
+  color: var(--color-media-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.auth-line {
+  display: flex;
+  align-items: center;
+}
+
+.privacy-panel {
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-raised);
+}
+
+.privacy-panel p {
+  margin-top: var(--spacing-xs);
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* 组织者审核：活动 → 状态筛选 → 身份 → 活动 → 事实 → 动作。 */
+.review-filter {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  margin-top: var(--spacing-lg);
+  border: 2px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.review-filter button {
+  display: flex;
+  min-width: 0;
+  min-height: var(--control-height);
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  border-right: 2px solid var(--color-border-strong);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.review-filter button:nth-child(3n) {
+  border-right: 0;
+}
+
+.review-filter button:nth-child(n + 4) {
+  border-top: 2px solid var(--color-border-strong);
+}
+
+.review-filter button.is-active {
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+
+.review-filter small {
+  font-size: 10px;
+}
+
+.review-person {
+  min-width: 0;
+}
+
+.review-person h3,
+.review-person p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.review-activity {
+  display: -webkit-box;
+  margin-top: var(--spacing-md);
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 800;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.review-facts {
+  margin-top: var(--spacing-sm);
+  border-top: 1px solid var(--color-border);
+}
+
+.review-facts > div {
+  display: flex;
+  min-width: 0;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 12px;
+}
+
+.review-facts dt {
+  flex: 0 0 auto;
+  color: var(--color-muted);
+}
+
+.review-facts dd {
+  min-width: 0;
+  font-weight: 800;
+  text-align: right;
+}
+
+.review-action {
+  margin-top: var(--spacing-md);
+  border: 2px solid var(--color-action);
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+
+.reminder-card {
+  margin-top: 24px;
+}
+
+/* 340px 内容宽度：不缩放组件，按信息层级重排。 */
+body.is-narrow .phone-shell {
+  width: 340px;
+}
+
+body.is-narrow .phone-inner {
+  border-radius: 30px;
+}
+
+@media (max-width: 340px) {
+  :root {
+    --page-gutter: 16px;
+  }
+
+  .phone-shell {
+    width: 100vw;
+    padding: 0;
+    border-radius: 0;
+  }
+
+  .phone-inner {
+    border-radius: 0;
+  }
+
+  .page-title {
+    font-size: 20px;
+    line-height: 28px;
+  }
+
+  .step {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .step > span {
+    align-items: center;
+  }
+
+  .step strong,
+  .step small {
+    font-size: 10px;
+    line-height: 14px;
+  }
+
+  .rows > .row,
+  .meeting-row,
+  .review-facts > div {
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+  }
+
+  .rows > .row .v,
+  .meeting-value,
+  .review-facts dd {
+    flex-basis: 100%;
+    text-align: left;
+  }
+
+  .bar-actions,
+  .btn-row,
+  .info-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .review-item-head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .review-item-head .tag {
+    grid-column: 1 / -1;
+    justify-self: start;
+    margin-left: 0;
+  }
+
+  .metric-grid > span,
+  .metric-grid.three > span {
+    padding: var(--spacing-sm);
+  }
+}
+
+body.capture.is-narrow {
+  background: var(--color-media-card-bg);
+}
+
+body.capture.is-narrow .showcase {
+  display: block;
+  width: 340px;
+  padding: 0;
+}
+
+body.capture.is-narrow .phone-stage {
+  width: 340px;
+}
+
+body.capture.is-narrow .phone-shell {
+  width: 340px;
+  height: 812px;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+body.capture.is-narrow .phone-inner {
+  height: 812px;
+  border-radius: 0;
+}
+
+body.capture.is-narrow .screen-container {
+  overflow-y: auto;
+}
+
+body.capture.is-narrow .screen-notes {
+  display: none;
 }

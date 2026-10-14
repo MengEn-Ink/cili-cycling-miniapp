@@ -20,7 +20,13 @@
   const rows = (list) => `<div class="rows">${list.map(([k, v]) => row(k, v)).join('')}</div>`;
   const linkRow = (icon, title, sub, route, right = '') =>
     `<button class="row is-link" data-route="${route}"><span class="k"><span class="menu-icon ${icon}"><i></i></span><span>${title}<small>${sub}</small></span></span><span class="v">${right}<span class="chev">›</span></span></button>`;
-  const metric = (value, label, extra = '') => `<span class="${extra}"><b>${value}</b><small>${label}</small></span>`;
+  const metric = (value, label, extra = '') => {
+    const match = String(value).match(/^(.+?)\s+(km|m|人)$/);
+    const reading = match
+      ? `<span class="metric-reading"><b>${match[1]}</b><i>${match[2]}</i></span>`
+      : `<span class="metric-reading"><b>${value}</b></span>`;
+    return `<span class="${extra}">${reading}<small>${label}</small></span>`;
+  };
   const metrics = (list, extra = '') =>
     `<div class="metric-grid ${extra}">${list.map(([v, l, e]) => metric(v, l, e)).join('')}</div>`;
   const cardHead = (no, title, right = '', hint = '') =>
@@ -28,14 +34,20 @@
   const btn = (label, attrs = '', kind = 'btn') => `<button class="${kind}" ${attrs}>${label}</button>`;
   const go = (route) => `data-route="${route}"`;
   const toast = (message) => `data-action="toast" data-message="${message}"`;
-  const steps = (current) =>
-    `<div class="steps">${['填写报名', '等待审核', '出发凭证']
-      .map((label, index) => {
+  const steps = (current) => {
+    const stages = [
+      ['填写报名', '当前'],
+      ['组织审核', '提交后'],
+      ['获取凭证', '通过后'],
+    ];
+    return `<div class="steps" role="list" aria-label="报名流程，共三阶段">${stages
+      .map(([label, state], index) => {
         const n = index + 1;
         const cls = n === current ? 'is-current' : n < current ? 'is-done' : '';
-        return `<div class="step ${cls}"><b>${n < current ? '✓' : `0${n}`}</b>${label}</div>`;
+        return `<div class="step ${cls}" role="listitem" ${n === current ? 'aria-current="step"' : ''}><b>${n < current ? '✓' : n}</b><span><strong>${label}</strong><small>${state}</small></span></div>`;
       })
       .join('')}</div>`;
+  };
   const fixedBar = (hint, actions, neutral = false) =>
     `<div class="fixed-bar">${hint ? `<p class="bar-hint ${neutral ? 'is-neutral' : ''}">${hint}</p>` : ''}<div class="bar-actions ${actions.length === 1 ? 'single' : ''}">${actions.join('')}</div></div>`;
   const stateView = (mark, title, desc, action = '', error = false) =>
@@ -92,7 +104,7 @@
   const templates = {
     activities: () => {
       if (is('loading')) return `<div class="pg">${brandLogo('此里骑行活动')}<h2 class="page-title">选一场骑行，一起出发</h2>${skeletons(2, true)}</div>`;
-      const head = `${brandLogo('此里骑行活动')}<h2 class="page-title">选一场骑行，一起出发</h2><p class="page-sub">路线、时间、集合点，一眼看清</p>
+      const head = `${brandLogo('此里骑行活动')}<h2 class="page-title">选一场骑行，一起出发</h2><p class="page-sub long-copy">路线、时间、集合点，一眼看清；先看状态与路线强度，再决定是否出发</p>
         <div class="seg"><button class="is-active" data-action="choice">即将开始</button><button data-action="choice">历史活动</button></div>`;
       if (is('empty'))
         return `<div class="pg">${head}${stateView('0', '近期暂无活动', '新的骑行发布后会出现在这里，可以先看看历史活动。', btn('查看历史活动', toast('已切换至历史活动'), 'btn-secondary'))}</div>`;
@@ -107,7 +119,7 @@
       ];
       return `<div class="pg">${head}
         <div class="chips">${chips.map(([a, b], i) => `<button class="chip ${i ? '' : 'is-active'}" data-action="choice">${a}<small>${b}</small></button>`).join('')}</div>
-        <div class="list-count"><span>近期活动</span><b>共 2 场</b></div>
+        <div class="list-count"><span>近期活动 <em>当前第 1 场</em></span><b>共 2 场</b></div>
         ${activities
           .map(
             (a, i) => `<article class="activity-card">
@@ -161,24 +173,25 @@
         : selected
           ? btn('提交报名', 'data-action="submit-registration"')
           : btn('提交报名', 'disabled', 'btn is-disabled');
-      return `<div class="pg">${steps(1)}
-        <section class="info-bar"><div class="info-head"><span class="info-kicker">报名活动</span><span class="info-tag">${primary.level}</span></div><h2 class="info-title">${primary.title}</h2><p class="info-meta"><span>${primary.date} · ${primary.time}</span><span>${primary.start}集合</span></p></section>
+      return `<div class="pg registration-page">${steps(1)}
+        <h2 class="page-title registration-title">确认报名信息</h2><p class="page-sub long-copy">提交后将进入审核，请确认资料准确；集合方式与能力自评将供组织者审核，通过后可查看出发凭证。</p>
+        <section class="info-bar"><div class="info-head"><span class="info-kicker">当前活动</span><span class="info-tag">报名开放</span></div><h2 class="info-title">${primary.title}</h2><p class="info-meta"><span>${primary.date} · ${primary.time}</span><span>总名额 ${primary.capacity}</span></p></section>
         <div class="card">${cardHead('01', '报名资料', tag('neutral', '本人可见'), '用于审核与活动安全联络，仅你本人与审核管理员可见')}${rows([['昵称', rider.nickname], ['真实姓名', rider.realName], ['手机号', rider.phone], ['紧急联系人', rider.emergency]])}<button class="btn-text" ${go('profile-edit')}>修改资料</button></div>
         <div class="card">${cardHead('02', '集合方式', tag('neutral', '默认'), '不同集合方式分别计算名额，请按实际情况选择')}${choices(['自行前往', '需要后援车'], '自行前往')}<p class="card-hint">名额以提交时状态为准；活动或所选方式满额后，将自动进入候补。</p></div>
-        <div class="card">${cardHead('03', '能力确认', tag('pending', '必选'), '骑行经验将作为审核参考')}${choices(['新手', '有经验', '常骑'], selected ? '有经验' : '')}${selected ? '' : '<p class="field-msg">请选择一项后再提交</p>'}</div>
+        <div class="card">${cardHead('03', '能力自评', tag('pending', '必选'), '请选择最接近当前骑行能力的一项，供组织者审核参考')}${choices(['新手', '有经验', '常骑'], selected ? '有经验' : '')}${selected ? '' : '<p class="pending-note">请选择骑行经验后再提交</p>'}</div>
         <div class="card">${cardHead('04', '备注与安全', tag('neutral', '选填'), '仅填写组织方需要提前了解的信息')}${input('', { cls: 'textarea', ph: '饮食、集合或其他备注', count: '0/500' })}</div>
       </div>${fixedBar(selected ? '资料已完整，可以提交' : '还差 1 项：骑行经验', [btn('返回活动', go('activity-detail'), 'btn-secondary'), action], selected)}`;
     },
 
     registrations: () => {
-      const head = `${brandLogo('此里 · 我的行程')}<h2 class="page-title">准时集合，轻松出发</h2><p class="page-sub">报名进度与出发凭证都在这里</p>`;
+      const head = `${brandLogo('此里 · 我的行程')}<div class="page-heading"><div><h2 class="page-title">我的行程</h2><p class="page-sub">审核状态与出发凭证，一处确认</p></div><b>共 3 场</b></div>`;
       if (is('loading')) return `<div class="pg">${head}${skeletons(2)}</div>`;
       if (is('empty'))
         return `<div class="pg">${head}<div class="trip-summary">${metric('0', '审核中')}${metric('0', '可出发')}${metric('0', '已失效')}</div>${stateView('0', '还没有行程', '报名活动后，审核进度和出发凭证都会出现在这里。', btn('去看看活动', go('activities')))}</div>`;
       return `<div class="pg">${head}
         <div class="trip-summary"><span><b class="is-pending">1</b><small>审核中</small></span>${metric('1', '可出发')}${metric('1', '已失效')}</div>
         <div class="list-count"><span>全部行程</span><b>共 3 场</b></div>
-        <article class="trip-ticket"><div class="trip-ticket-top">${tag('success', '✓ 已通过')}<span class="meta-line">${trip.date}</span></div><h3>${trip.title}</h3><div class="trip-ticket-info"><div><small>集合时间</small><b>${trip.time}</b></div><div><small>集合地点</small><b>${trip.start}</b></div></div>${btn('查看票据式行程凭证', go('credential'), 'btn-secondary')}</article>
+        <article class="trip-ticket"><div class="trip-ticket-top"><div><b class="ticket-label">骑行票据</b><span class="meta-line">${trip.date}</span></div>${tag('success', '✓ 已通过')}</div><h3>${trip.title}</h3><div class="trip-ticket-info"><div><small>集合时间</small><b>${trip.time}</b></div><div><small>集合地点</small><b>${trip.start}</b></div></div><div class="ticket-meta"><span>集合方式</span><b>自行前往</b></div><p class="status-guidance"><i></i>审核已通过，出发前请确认凭证</p>${btn('查看票据式行程凭证', go('credential'), 'btn-secondary')}</article>
         <article class="trip-ticket"><div class="trip-ticket-top">${tag('pending', '待审核')}<span class="meta-line">${primary.date}</span></div><h3>${primary.title}</h3><div class="trip-ticket-info"><div><small>集合时间</small><b>${primary.time}</b></div><div><small>集合地点</small><b>${primary.start}</b></div></div><p class="neutral-note">资料审核中，结果将在行程页同步。</p></article>
         <article class="trip-ticket"><div class="trip-ticket-top">${tag('muted', '未通过')}<span class="meta-line">10月11日 周六</span></div><h3>秋日环湖耐力骑</h3><p class="neutral-note">未通过原因：本场需具备 80 km 以上骑行经验，可报名其他活动。</p></article>
       </div>`;
@@ -209,16 +222,16 @@
       if (is('guest'))
         return `<div class="pg">${brandLogo('此里')}<h2 class="page-title">一起骑，去更远的地方</h2>${stateView('此', '微信未登录', '使用微信身份登录，报名资料仅用于活动联络与安全保障。', btn('重新登录', toast('微信授权中')))}${notice}</div>`;
       const admin = is('', 'admin');
-      return `<div class="pg">${brandLogo('此里')}
-        <section class="profile-head"><span class="avatar lg"><img src="${IMG.avatar}" alt="${rider.nickname}" /></span><div><p class="meta-line">${rider.title}</p><h2>${rider.nickname}</h2><p class="meta-line">${rider.gender} · 微信身份已验证</p></div></section>
-        <div class="card completion"><div class="row" style="min-height:24px;border:0"><span class="k">资料完整度</span><span class="v">80%</span></div><div class="progress on-light"><i style="width:80%"></i></div><p class="card-hint">补充骑行照片后，公开名片会更完整。</p></div>
+      return `<div class="pg">${brandLogo('此里 · 一起骑，去更远的地方')}
+        <section class="profile-hero-card"><img src="${IMG.rider}" alt="骑行背景照片" /><div class="profile-hero-shade"></div><div class="profile-hero-identity"><span class="avatar lg ring"><img src="${IMG.avatar}" alt="${rider.nickname}" /></span><div><h2>${rider.nickname}</h2><p>${rider.title}</p><p class="auth-line">微信已登录</p></div></div></section>
+        <div class="card completion"><div class="row" style="min-height:24px;border:0"><span class="k">资料完整度</span><span class="v">80%</span></div><div class="progress on-light"><i style="width:80%"></i></div><p class="card-hint">还差：骑行照片。补充后公开名片会更完整。</p></div>
+        <p class="section-label">常用服务</p>
         <div class="menu-card">
+          ${admin ? linkRow('i-admin', '活动管理', '创建、编辑、上下架与报名审批', 'admin-activity-list') : ''}
           ${linkRow('i-profile', '报名资料', '头像、昵称、实名、电话与紧急联系人', 'profile-edit')}
-          ${linkRow('i-card', '公开骑行名片', '骑行照片和公开资料', 'capability-card')}
-          ${linkRow('i-settings', '设置', '设置与升级日志', 'settings')}
+          ${linkRow('i-settings', '设置', '查看应用设置与功能升级记录', 'settings')}
         </div>
-        ${admin ? `<p class="section-label">管理员</p><div class="menu-card">${linkRow('i-admin', '活动管理', '发布、编辑、上下架与报名审批', 'admin-activity-list')}</div>` : ''}
-        ${notice}</div>`;
+        <div class="privacy-panel"><b>隐私说明</b><p>联系电话仅用于活动联络；紧急联系人仅在骑行安全需要时使用。资料仅你本人和报名审核员可见。</p></div></div>`;
     },
 
     settings: () => `<div class="pg"><h2 class="page-title">设置</h2><p class="page-sub">设置与升级日志</p>
@@ -317,9 +330,8 @@
     },
 
     'admin-reviews': () => {
-      const head = `<section class="info-bar" style="margin-top:0"><div class="info-head"><span class="info-kicker">当前活动 · ${primary.date}</span><span class="info-tag ${is('empty') ? '' : 'is-pending'}">${is('empty') ? '0' : '2'} 待审核</span></div><h2 class="info-title">${primary.title}</h2><p class="info-meta"><span>已通过 ${primary.approved}/${primary.capacity}</span><span>${primary.time}集合</span></p><div style="margin-top:12px">${btn('切换活动', toast('已打开活动选择'), 'btn-inverse is-ghost')}</div></section>
-        <div class="card">${cardHead('', '发送活动提醒', '', '只发给已通过的骑友，重复点击不会重复发送；不是自动定时提醒。')}${btn('发送活动提醒', toast('提醒已发送给 18 位骑友'), 'btn-secondary')}</div>
-        <div class="chips" style="margin-top:16px">${[['候补', 0], ['待审核', is('empty') ? 0 : 2], ['已通过', 18], ['已签到', 0], ['已驳回', 1], ['全部', is('empty') ? 19 : 21]].map(([label, n]) => `<button class="chip ${label === '待审核' ? 'is-active' : ''}" data-action="choice">${label}<small>${n}</small></button>`).join('')}</div>`;
+      const head = `<section class="info-bar" style="margin-top:0"><div class="info-head"><h2 class="info-title">${primary.title}</h2><span class="info-tag ${is('empty') ? '' : 'is-pending'}">${is('empty') ? '0' : '2'} 待审核</span></div><div style="margin-top:12px">${btn('切换活动', toast('已打开活动选择'), 'btn-inverse is-ghost')}</div></section>
+        <div class="review-filter">${[['候补', 0], ['待审核', is('empty') ? 0 : 2], ['已通过', 18], ['已签到', 0], ['已驳回', 1], ['全部', is('empty') ? 19 : 21]].map(([label, n]) => `<button class="${label === '待审核' ? 'is-active' : ''}" data-action="choice">${label}<small>${n}</small></button>`).join('')}</div>`;
       if (is('loading')) return `<div class="pg">${head}${skeletons(2)}</div>`;
       if (is('empty')) return `<div class="pg">${head}${stateView('0', '当前筛选暂无报名', '新的报名提交后会出现在这里。', btn('查看已通过', toast('已切换至已通过'), 'btn-secondary'))}</div>`;
       if (is('error')) return `<div class="pg">${head}${stateView('!', '报名列表加载失败', '网络不稳定，请稍后重试。', btn('重新加载', toast('正在重新加载')), true)}</div>`;
@@ -330,10 +342,10 @@
       return `<div class="pg">${head}<div class="list-count"><span>报名列表</span><b>共 2 人</b></div>
         ${people
           .map(
-            (p) => `<button class="review-item" data-route="admin-review-detail"><div class="review-item-head"><span class="avatar">${p.img ? `<img src="${p.img}" alt="${p.name}" />` : p.name.slice(0, 1)}</span><div><h3>${p.name}</h3><p class="meta-line">提交于 ${p.time}</p></div>${tag('pending', '待审核')}</div>
-            <div class="chips" style="margin-top:8px">${tag('neutral', p.way)}${tag('neutral', p.exp)}</div></button>`,
+            (p) => `<article class="review-item"><div class="review-item-head"><span class="avatar">${p.img ? `<img src="${p.img}" alt="${p.name}" />` : p.name.slice(0, 1)}</span><div class="review-person"><h3>${p.name === rider.nickname ? rider.realName : p.name}</h3><p class="meta-line">骑友 · ${p.name}</p></div>${tag('pending', '待审核')}</div>
+            <h4 class="review-activity">${primary.title}</h4><dl class="review-facts"><div><dt>集合方式</dt><dd>${p.way}</dd></div><div><dt>能力自评</dt><dd>${p.exp}</dd></div><div><dt>提交时间</dt><dd>${p.time}</dd></div></dl>${btn('审核报名', 'data-route="admin-review-detail"', 'review-action')}</article>`,
           )
-          .join('')}</div>`;
+          .join('')}<div class="card reminder-card">${cardHead('', '活动提醒', '', '仅向已通过的骑友发送；重复操作不会重复发送。')}${btn('发送活动提醒', toast('提醒已发送给 18 位骑友'), 'btn-secondary')}</div></div>`;
     },
 
     'admin-review-detail': () => {

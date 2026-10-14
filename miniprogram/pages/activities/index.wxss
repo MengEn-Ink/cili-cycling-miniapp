@@ -1,10 +1,18 @@
 .activities-page {
   background: var(--color-bg);
 }
+.activities-intro,
+.activities-intro > view,
+.list-count,
+.list-count__main,
+.carousel-guide {
+  min-width: 0;
+}
 .activities-intro {
   margin-top: 16rpx;
 }
 .intro-copy {
+  max-width: 560rpx;
   color: var(--color-muted);
   font-size: 24rpx;
   line-height: 36rpx;
@@ -12,6 +20,10 @@
 .timeline-tabs {
   grid-template-columns: 1fr 1fr;
   margin-top: 32rpx;
+}
+.timeline-tab {
+  min-width: 0;
+  min-height: var(--control-height);
 }
 .day-chip-shell {
   position: relative;
@@ -34,8 +46,8 @@
   justify-content: center;
   box-sizing: border-box;
   min-width: 168rpx;
-  height: 104rpx;
-  padding: 0 24rpx;
+  min-height: 104rpx;
+  padding: 8rpx 24rpx;
   border: 4rpx solid var(--color-border-strong);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
@@ -75,13 +87,25 @@
 }
 .list-count {
   display: flex;
+  align-items: flex-end;
   justify-content: space-between;
+  gap: 16rpx;
   margin-top: 32rpx;
   color: var(--color-muted);
   font-size: 24rpx;
   line-height: 36rpx;
 }
-.list-count text:last-child {
+.list-count__main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4rpx 16rpx;
+}
+.list-count__current {
+  color: var(--color-text);
+  font-weight: 800;
+}
+.list-count__total {
+  flex: 0 0 auto;
   color: var(--color-text);
   font-size: 28rpx;
   font-weight: 800;
@@ -94,12 +118,13 @@
 }
 .activity-slide {
   box-sizing: border-box;
+  min-width: 0;
   height: 100%;
   padding-bottom: 8rpx;
 }
 .carousel-guide {
   display: grid;
-  grid-template-columns: auto auto minmax(120rpx, 1fr);
+  grid-template-columns: auto minmax(80rpx, 1fr) auto;
   align-items: center;
   gap: 16rpx;
   margin-top: 16rpx;
@@ -108,11 +133,12 @@
   line-height: 36rpx;
   font-variant-numeric: tabular-nums;
 }
-.carousel-guide text:first-child {
+.carousel-guide > text:first-child {
   color: var(--color-text);
   font-weight: 900;
 }
 .carousel-progress {
+  min-width: 0;
   height: 8rpx;
   overflow: hidden;
   border-radius: 999rpx;
@@ -121,12 +147,29 @@
 .carousel-progress__value {
   height: 100%;
   border-radius: inherit;
-  background: var(--color-action);
+  background: var(--color-brand);
   transition: width 220ms ease;
 }
 .load-more {
   width: 100%;
   margin-top: 32rpx;
+}
+@media (max-width: 340px) {
+  .page-title {
+    font-size: 40rpx;
+    line-height: 56rpx;
+  }
+  .day-chip {
+    min-width: 152rpx;
+    padding-right: 16rpx;
+    padding-left: 16rpx;
+  }
+  .carousel-guide {
+    grid-template-columns: auto minmax(64rpx, 1fr);
+  }
+  .carousel-guide > text:last-child {
+    display: none;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .carousel-progress__value {

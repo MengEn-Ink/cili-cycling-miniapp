@@ -1,29 +1,37 @@
 <view class="page review-page">
   <brand-logo compact="{{true}}" meta="报名审批" />
-  <view class="info-bar" wx:if="{{activities.length}}">
-    <view class="info-head"><text class="info-kicker">当前活动</text><text class="info-tag {{tab === 'pending' && items.length ? 'is-pending' : ''}}">{{tab === 'pending' ? items.length : '—'}} 待审核</text></view>
-    <view class="info-title">{{selectedActivityTitle}}</view>
-    <picker mode="selector" range="{{activities}}" range-key="title" value="0" bindchange="choose"><button class="switch-activity">切换活动 ›</button></picker>
+  <view class="info-bar" wx:if="{{activities.length}}" aria-label="当前审批活动">
+    <view class="info-head"><view class="info-title">{{selectedActivityTitle}}</view><text class="info-tag {{tab === 'pending' && items.length ? 'is-pending' : ''}}">{{tab === 'pending' ? items.length : '—'}} 待审核</text></view>
+    <picker mode="selector" range="{{activities}}" range-key="title" value="0" bindchange="choose"><button class="switch-activity" aria-label="切换当前审批活动">切换活动</button></picker>
   </view>
-  <view class="card reminder-card" wx:if="{{activities.length}}"><view class="title">发送活动提醒</view><view class="muted">只发给已通过的骑友，重复点击不会重复发送；不是自动定时提醒。</view><button class="secondary" bindtap="sendReminders" loading="{{sendingReminders}}" disabled="{{sendingReminders}}">{{sendingReminders ? '发送中…' : '发送活动提醒'}}</button></view>
-  <view class="filter-tabs">
-    <button class="filter-tab {{tab === 'waiting' ? 'is-active' : ''}}" data-v="waiting" bindtap="tab">候补</button><button class="filter-tab {{tab === 'pending' ? 'is-active' : ''}}" data-v="pending" bindtap="tab">待审核</button><button class="filter-tab {{tab === 'approved' ? 'is-active' : ''}}" data-v="approved" bindtap="tab">已通过</button><button class="filter-tab {{tab === 'checked_in' ? 'is-active' : ''}}" data-v="checked_in" bindtap="tab">已签到</button><button class="filter-tab {{tab === 'rejected' ? 'is-active' : ''}}" data-v="rejected" bindtap="tab">已驳回</button><button class="filter-tab {{tab === 'all' ? 'is-active' : ''}}" data-v="all" bindtap="tab">全部</button>
+
+  <view class="filter-tabs" role="tablist" aria-label="按审核状态筛选">
+    <button class="filter-tab {{tab === 'waiting' ? 'is-active' : ''}}" role="tab" aria-selected="{{tab === 'waiting'}}" data-v="waiting" bindtap="tab">候补</button><button class="filter-tab {{tab === 'pending' ? 'is-active' : ''}}" role="tab" aria-selected="{{tab === 'pending'}}" data-v="pending" bindtap="tab">待审核</button><button class="filter-tab {{tab === 'approved' ? 'is-active' : ''}}" role="tab" aria-selected="{{tab === 'approved'}}" data-v="approved" bindtap="tab">已通过</button><button class="filter-tab {{tab === 'checked_in' ? 'is-active' : ''}}" role="tab" aria-selected="{{tab === 'checked_in'}}" data-v="checked_in" bindtap="tab">已签到</button><button class="filter-tab {{tab === 'rejected' ? 'is-active' : ''}}" role="tab" aria-selected="{{tab === 'rejected'}}" data-v="rejected" bindtap="tab">已驳回</button><button class="filter-tab {{tab === 'all' ? 'is-active' : ''}}" role="tab" aria-selected="{{tab === 'all'}}" data-v="all" bindtap="tab">全部</button>
   </view>
-  <view class="result-count" wx:if="{{!loading && !error}}">共 {{items.length}} 人</view>
-  <view class="skeleton" wx:if="{{loading}}"><view></view><view></view><view></view></view>
+  <view class="result-count" wx:if="{{!loading && !error}}" role="status">当前筛选共 {{items.length}} 人</view>
+  <view class="skeleton" wx:if="{{loading}}" aria-label="正在加载审批列表"><view></view><view></view><view></view></view>
   <view wx:elif="{{!items.length && !error}}" class="state-card"><view class="title">当前筛选暂无报名</view><view class="muted">新的报名提交后会出现在这里。</view></view>
-  <view class="state-card" wx:if="{{error}}" role="alert"><view class="title">加载失败</view><view class="muted">{{error}}</view><button class="btn" bindtap="load">重新加载</button></view>
-  <button class="review-card" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="open" hover-class="review-card--pressed">
-    <view class="review-avatar" aria-label="{{item.profile.nickname || '骑手'}}头像">
-      <image wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" mode="aspectFill" data-id="{{item.id}}" binderror="avatarError" />
-      <text wx:else>{{item.avatarInitial}}</text>
+  <view class="state-card" wx:if="{{error}}" role="alert"><view class="title">加载失败</view><view class="muted">{{error}}</view><button class="btn" bindtap="load" aria-label="重新加载审批列表">重新加载</button></view>
+
+  <view class="review-list" role="list" aria-label="报名审批列表">
+    <view class="review-card" wx:for="{{items}}" wx:key="id" role="listitem">
+      <view class="review-identity">
+        <view class="review-avatar" aria-label="{{item.profile.nickname || '骑友'}}头像">
+          <image wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" mode="aspectFill" data-id="{{item.id}}" binderror="avatarError" />
+          <text wx:else>{{item.avatarInitial}}</text>
+        </view>
+        <view class="rider-copy"><view class="applicant-name">{{item.profile.realName || item.profile.nickname || '未填写姓名'}}</view><view class="rider-account">骑友 · {{item.profile.nickname || '未设置昵称'}}</view></view>
+        <view class="status-tag status-{{item.status}}">{{item.statusText}}</view>
+      </view>
+      <view class="review-activity">{{item.activity.title}}</view>
+      <view class="review-facts" aria-label="报名资料摘要">
+        <view class="review-fact" wx:if="{{item.gatheringMode}}"><text class="fact-label">集合方式</text><text class="fact-value">{{item.gatheringMode}}</text></view>
+        <view class="review-fact"><text class="fact-label">能力自评</text><text class="fact-value">{{item.experience || '未填写'}}</text></view>
+        <view class="review-fact" wx:if="{{item.submittedAt}}"><text class="fact-label">提交时间</text><text class="fact-value">{{item.submittedAt}}</text></view>
+      </view>
+      <button class="review-action {{item.status === 'pending' ? 'review-action--primary' : ''}}" data-id="{{item.id}}" bindtap="open" aria-label="查看{{item.profile.realName || item.profile.nickname || '该骑友'}}的报名并处理">{{item.status === 'pending' ? '审核报名' : '查看报名'}}</button>
     </view>
-    <view class="review-main">
-      <view class="applicant-row"><view class="applicant-name">{{item.profile.nickname || '未设置昵称'}}</view><view class="status-tag status-{{item.status}}">{{item.statusText}}</view></view>
-      <view class="muted">{{item.activity.title}}</view>
-      <view class="data-line"><text wx:if="{{item.gatheringMode}}">{{item.gatheringMode}}</text><text>{{item.experience}}</text></view>
-      <view class="submitted-at" wx:if="{{item.submittedAt}}">提交于 {{item.submittedAt}}</view>
-    </view>
-    <text class="open-arrow">›</text>
-  </button>
+  </view>
+
+  <view class="card reminder-card" wx:if="{{activities.length}}"><view class="title">活动提醒</view><view class="muted">仅向已通过的骑友发送；重复操作不会重复发送。</view><button class="secondary" bindtap="sendReminders" loading="{{sendingReminders}}" disabled="{{sendingReminders}}" aria-label="向已通过的骑友发送活动提醒">{{sendingReminders ? '发送中…' : '发送活动提醒'}}</button></view>
 </view>
