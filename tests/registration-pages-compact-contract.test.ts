@@ -55,6 +55,8 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     expect(registrations).toContain('{{statusCounts.ready}}');
     expect(registrations).toContain('{{statusCounts.expired}}');
     expect(registrations).toContain('{{item.destinationLabel}}');
+    const registrationScript = read('miniprogram/pages/registrations/index.ts');
+    const statusPill = read('miniprogram/components/status-pill/index.wxml');
     for (const status of [
       'waiting',
       'pending',
@@ -63,8 +65,11 @@ describe('报名、行程与凭证紧凑交互契约', () => {
       'rejected',
       'cancelled',
     ]) {
-      expect(registrationStyles).toContain(`status-${status}`);
+      expect(registrationScript).toContain(`${status}:`);
     }
+    expect(registrations).toContain('status-pill status="{{item.displayStatusText}}"');
+    expect(statusPill).toContain("status === '已驳回' || status === '已取消'");
+    expect(statusPill).toContain("status === '已通过'");
   });
 
   it('凭证在 approved 和 checked_in 展示，签到后不提供取消并突出集合信息', () => {
@@ -112,6 +117,7 @@ describe('报名、行程与凭证紧凑交互契约', () => {
   });
 
   it('长文案和窄屏具有收缩、换行与统一安全边距保护', () => {
+    const appStyles = read('miniprogram/app.wxss');
     expect(formStyles).toContain('overflow-x: hidden');
     expect(formStyles).toContain('padding-right: var(--page-gutter);');
     expect(formStyles).toContain('padding-left: var(--page-gutter);');
@@ -121,11 +127,9 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     expect(formStyles).toMatch(
       /@media \(max-width: 320px\)[\s\S]*?\.experience-segment\s*\{[^}]*box-sizing:\s*border-box[^}]*width:\s*100%/,
     );
-    expect(registrationStyles).toContain('overflow-x: hidden');
-    expect(credentialStyles).toContain('overflow-x: hidden');
-    expect(`${formStyles}\n${registrationStyles}\n${credentialStyles}`).toContain(
-      '@media (max-width: 340px)',
-    );
+    expect(appStyles).toContain('overflow-x: hidden');
+    expect(appStyles).toContain('--page-gutter-narrow: 32rpx;');
+    expect(appStyles).toContain('@media (max-width: 340px)');
     expect(registrationStyles).toContain('-webkit-line-clamp: 2');
     expect(credentialStyles).toContain('overflow-wrap: anywhere');
   });

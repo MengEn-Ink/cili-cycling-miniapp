@@ -1,253 +1,111 @@
-page {
-  background: var(--color-bg);
-}
-
 .activity-list-page {
-  min-height: 100vh;
   background: var(--color-bg);
-  color: var(--color-text);
 }
-
-.page.activity-list-page {
-  --page-gutter: 48rpx;
-  padding: 32rpx var(--page-gutter) 64rpx;
-}
-
-.activity-list-page .card.danger {
-  border-color: var(--color-danger);
-  background: var(--color-danger-soft);
-  color: var(--color-danger-text);
-}
-
-.hero {
-  color: var(--color-muted);
-  text-align: var(--page-heading-align);
-}
-
-.hero .hero-title {
-  color: var(--color-text);
-  font-size: 56rpx;
-  line-height: 1.14;
-}
-
-.hero-subtitle {
-  color: var(--color-muted);
-  font-size: 25rpx;
-  font-weight: 600;
-  line-height: 1.5;
-}
-
 .status-filters {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8rpx;
-  margin: var(--card-gap) 0 var(--card-gap);
+  grid-template-columns: repeat(4, 1fr);
+  margin-top: 32rpx;
 }
-
-.activity-list-page .status-filter {
-  min-height: var(--control-height);
-  margin: 0;
-  padding: 0 8rpx;
-  border: 1rpx solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: 24rpx;
-  font-weight: 700;
-  line-height: var(--control-height);
-}
-
-.activity-list-page .status-filter.active {
-  border-color: var(--color-brand);
-  background: var(--color-brand);
-  color: var(--color-on-brand);
-  font-weight: 900;
-}
-
-.swipe-row {
-  position: relative;
-  overflow: hidden;
-}
-
-.swipe-row + .swipe-row {
-  margin-top: var(--card-gap);
-}
-
-.swipe-delete {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 160rpx;
-  height: 100%;
+.list-count,
+.admin-card-head,
+.low-actions {
   display: flex;
   align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-card);
-  background: var(--color-danger);
-  color: var(--color-on-action);
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.list-count {
+  margin-top: 32rpx;
+  color: var(--color-muted);
+  font-size: 24rpx;
+}
+.list-count text:last-child {
+  color: var(--color-text);
   font-size: 28rpx;
   font-weight: 800;
 }
-
-.swipe-delete-active {
-  z-index: 2;
+.activity-row .title {
+  margin-top: 16rpx;
 }
-
-.swipe-content {
-  position: relative;
-  z-index: 1;
-}
-
-/* 手势期间保持跟手，松手吸附时再启用过渡。 */
-.swipe-content.swipe-anim {
-  transition: transform 0.2s ease;
-}
-
-.activity-list-page .card {
-  margin-top: 0;
-  padding: 32rpx;
-  border: 1rpx solid var(--color-card-border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-  color: var(--color-text);
-  box-shadow: var(--shadow-card);
-}
-
-.activity-row {
-  display: grid;
-  gap: 28rpx;
-}
-
-.row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20rpx;
-}
-
-.activity-list-page .title {
-  min-width: 0;
-  margin: 0;
-  color: var(--color-text);
-  font-size: 32rpx;
-  font-weight: 900;
-  line-height: 1.35;
-}
-
-.section-title,
-.field text {
-  color: var(--color-text);
-}
-
-.activity-list-page .tag {
-  flex-shrink: 0;
-  padding: 8rpx 16rpx;
-  border: 1rpx solid var(--color-border);
-  border-radius: 999rpx;
-  background: var(--color-raised);
-  color: var(--color-muted);
-}
-
-.activity-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16rpx;
-}
-
-.activity-actions button {
-  min-height: var(--control-height);
-  margin: 0;
-  border-radius: var(--radius-sm);
-}
-
-.status-button {
-  min-width: 144rpx;
-}
-
-.template-button {
-  margin: 0;
-}
-
-.activity-list-page .btn,
-.activity-list-page .secondary {
-  min-height: var(--control-height);
-  border-radius: var(--radius-sm);
-}
-
-.activity-list-page .secondary {
-  border-color: var(--color-border-strong);
-  background: var(--color-input-bg);
-  color: var(--color-text);
-}
-
-.activity-list-page .danger-action {
-  border-color: var(--color-danger);
-  color: var(--color-danger-text);
-}
-
-.load-more {
-  width: 100%;
-}
-
-.clone-panel {
-  display: grid;
-  gap: 24rpx;
-  margin-top: var(--card-gap) !important;
-}
-
-.section-title {
-  font-size: 32rpx;
-  font-weight: 900;
-}
-
-.hint {
-  color: var(--color-muted);
-}
-
-.field {
-  display: flex;
-  margin: 0;
-  flex-direction: column;
-  gap: 10rpx;
-}
-
-.activity-list-page .field input {
-  width: 100%;
-  min-height: var(--control-height);
-  padding: 0 24rpx;
-  border: 1rpx solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--color-input-bg);
-  color: var(--color-text);
-}
-
+.activity-actions,
+.page-actions,
 .clone-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20rpx;
+  gap: 16rpx;
+  margin-top: 24rpx;
 }
-
-.clone-actions button {
-  margin: 0;
+.low-actions {
+  margin-top: 8rpx;
 }
-
+.load-more {
+  width: 100%;
+  margin-top: 32rpx;
+}
+.state-card .btn {
+  margin-top: 24rpx;
+}
+.skeleton {
+  padding: 32rpx;
+}
+.skeleton view {
+  height: 28rpx;
+  margin-top: 24rpx;
+  border-radius: 8rpx;
+  background: var(--color-raised);
+}
+.modal-mask {
+  position: fixed;
+  z-index: 200;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  background: var(--color-overlay);
+}
+.modal-sheet {
+  width: 100%;
+  padding: 48rpx 32rpx calc(32rpx + env(safe-area-inset-bottom));
+  border-radius: 32rpx 32rpx 0 0;
+  background: var(--color-surface);
+}
 @media (max-width: 340px) {
-  .page.activity-list-page {
-    --page-gutter: var(--page-gutter-narrow);
-    padding-right: var(--page-gutter-narrow);
-    padding-left: var(--page-gutter-narrow);
-  }
-
-  .hero .hero-title {
-    font-size: 48rpx;
-  }
-
   .status-filters {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr 1fr;
   }
-
+  .status-filter:nth-child(2) {
+    border-right: 0;
+  }
+  .activity-actions,
+  .page-actions,
   .clone-actions {
     grid-template-columns: 1fr;
-    gap: 12rpx;
   }
+}
+
+.swipe-delete {
+  position: relative;
+  overflow: hidden;
+  margin-top: var(--card-gap);
+  border-radius: var(--radius-card);
+}
+.swipe-delete-active {
+  z-index: 2;
+}
+.swipe-delete .activity-row {
+  position: relative;
+  z-index: 1;
+  margin-top: 0;
+}
+.swipe-delete .activity-row.is-animating {
+  transition: transform 180ms ease-out;
+}
+.delete-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 160rpx;
+  min-height: 100%;
+  border-color: var(--color-brand);
+  border-radius: 0 var(--radius-card) var(--radius-card) 0;
+  color: var(--color-brand-active);
 }

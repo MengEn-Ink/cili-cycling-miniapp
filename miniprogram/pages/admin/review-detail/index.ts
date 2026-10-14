@@ -33,6 +33,7 @@ Page({
     phoneSource: '',
     statusText: '',
     reason: '',
+    reasonError: '',
     error: '',
     loading: false,
     submitting: false,
@@ -83,7 +84,7 @@ Page({
     loadRequestId += 1;
   },
   reason(e: any) {
-    this.setData({ reason: e.detail.value });
+    this.setData({ reason: e.detail.value, reasonError: '' });
   },
   async checkIn() {
     if (this.data.submitting || this.data.x?.status !== 'approved') return;
@@ -114,8 +115,11 @@ Page({
   async act(e: any) {
     if (this.data.submitting || !this.data.x) return;
     const status = e.currentTarget.dataset.s;
-    if (status === 'rejected' && !this.data.reason.trim())
-      return wx.showToast({ title: '驳回理由必填', icon: 'none' });
+    if (status === 'rejected' && !this.data.reason.trim()) {
+      this.setData({ reasonError: '驳回理由必填' });
+      wx.showToast({ title: '驳回理由必填', icon: 'none' });
+      return;
+    }
     // 记录提交瞬间的加载代次，onUnload 会递增 loadRequestId 使在途请求的代次失效。
     const requestId = loadRequestId;
     this.setData({ submitting: true, error: '' });

@@ -14,31 +14,62 @@ const read = (file: string) => readFileSync(file, 'utf8');
 
 describe('核心页面统一明亮主题配色', () => {
   const appStyles = read('miniprogram/app.wxss');
-  const profileStyles = read('miniprogram/pages/profile/index.wxss');
   const brandStyles = read('miniprogram/components/brand-logo/index.wxss');
   const detailStyles = read('miniprogram/pages/activity-detail/index.wxss');
+  const pillStyles = read('miniprogram/components/status-pill/index.wxss');
   const tokens = uiTokens(appStyles);
 
   it.each([
-    ['verified', '--color-success-text', '--color-success', '--color-success-soft'],
-    ['partial', '--color-warning-text', '--color-warning', '--color-warning-soft'],
-    ['syncing', '--color-warning-text', '--color-warning', '--color-warning-soft'],
-    ['repair', '--color-danger-text', '--color-danger', '--color-danger-soft'],
-  ])('%s 状态使用可读的语义前景、边框和背景', (tone, text, border, background) => {
-    const block = effectiveBlock(
-      profileStyles,
-      `.profile-capability-section .hero-capability-status.status-${tone}`,
-    );
-
-    expectSemantic(declaration(block, 'color'), text);
-    expectSemantic(declaration(block, 'border-color'), border);
+    ['success', '--color-status-success', '--color-status-success-soft'],
+    ['warning', '--color-status-warning', '--color-status-warning-soft'],
+  ])('%s 状态使用可读的语义前景、边框和背景', (tone, foreground, background) => {
+    const block = effectiveBlock(pillStyles, `.pill--${tone}`);
+    expect(declaration(block, 'border')).toContain(`var(${foreground})`);
+    expectSemantic(declaration(block, 'color'), foreground);
     expectSemantic(declaration(block, 'background'), background);
     expect(
-      contrast(resolvedHex(`var(${text})`, tokens), resolvedHex(`var(${background})`, tokens)),
+      contrast(
+        resolvedHex(`var(${foreground})`, tokens),
+        resolvedHex(`var(${background})`, tokens),
+      ),
     ).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('个人中心品牌标识使用石墨黑底牌、暖灰白文字和橙色终点', () => {
+  it.each(['已驳回', '已取消'])('%s 使用品牌橙危险语义而不回退红色', (status) => {
+    const template = read('miniprogram/components/status-pill/index.wxml');
+    const block = effectiveBlock(pillStyles, '.pill--danger');
+    expect(template).toContain(`status === '${status}'`);
+    expectSemantic(declaration(block, 'color'), '--color-brand-active');
+    expect(declaration(block, 'border')).toContain('var(--color-brand)');
+    expectSemantic(declaration(block, 'background'), '--color-surface');
+    expect(
+      contrast(tokens['--color-brand-active'], tokens['--color-surface']),
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('媒体表面保持白字高对比，辅助文字也不低于正文门槛', () => {
+    expect(
+      contrast(tokens['--color-on-media'], tokens['--color-media-card-bg']),
+    ).toBeGreaterThanOrEqual(7);
+    expect(
+      contrast(tokens['--color-media-muted'], tokens['--color-media-card-bg']),
+    ).toBeGreaterThanOrEqual(4.5);
+    expectSemantic(
+      declaration(effectiveBlock(detailStyles, '.hero-placeholder'), 'color'),
+      '--color-media-muted',
+    );
+  });
+
+  it('品牌软底只承载品牌语义且正文保持可读', () => {
+    expect(tokens['--color-brand-soft']).toBe('#fff0e9');
+    expect(contrast(tokens['--color-text'], tokens['--color-brand-soft'])).toBeGreaterThanOrEqual(
+      7,
+    );
+    expect(tokens['--color-brand']).not.toBe(tokens['--color-status-success']);
+    expect(tokens['--color-brand']).not.toBe(tokens['--color-status-warning']);
+  });
+
+  it('个人中心品牌标识使用石墨黑底牌、白色文字和橙色终点', () => {
     expect(read('miniprogram/pages/profile/index.wxml')).toContain(
       '<brand-logo compact="{{true}}"',
     );
@@ -52,47 +83,24 @@ describe('核心页面统一明亮主题配色', () => {
     );
     expect(brandStyles).toContain('border: 4rpx solid var(--color-logo-accent)');
     expect(
-      contrast(
-        resolvedHex('var(--color-logo-foreground)', tokens),
-        resolvedHex('var(--color-logo-background)', tokens),
-      ),
+      contrast(tokens['--color-logo-foreground'], tokens['--color-logo-background']),
     ).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('无媒体详情 Hero、集合位置与禁用操作保持语义层级', () => {
-    expectSemantic(
-      declaration(
-        effectiveBlock(detailStyles, '.detail-hero:not(.detail-hero--media) .hero-kicker'),
-        'color',
-      ),
-      '--color-brand',
-    );
+  it('集合位置、禁用操作和成功反馈保持语义层级', () => {
     expectSemantic(
       declaration(effectiveBlock(detailStyles, '.meeting-location__label'), 'color'),
-      '--color-media-muted',
+      '--color-muted',
     );
-    const disabled = effectiveBlock(detailStyles, '.detail-action .btn[disabled]');
-    expectSemantic(declaration(disabled, 'border-color'), '--color-border');
-    expectSemantic(declaration(disabled, 'background'), '--color-raised');
-    expectSemantic(declaration(disabled, 'color'), '--color-muted');
+    const disabled = effectiveBlock(appStyles, '.btn[disabled]');
+    expect(declaration(disabled, 'border-color')).toContain('var(--color-border)');
+    expect(declaration(disabled, 'background')).toContain('var(--color-raised)');
+    expect(declaration(disabled, 'color')).toContain('var(--color-disabled-text)');
     expect(
-      contrast(
-        resolvedHex('var(--color-muted)', tokens),
-        resolvedHex('var(--color-raised)', tokens),
-      ),
+      contrast(tokens['--color-disabled-text'], tokens['--color-raised']),
     ).toBeGreaterThanOrEqual(4.5);
-  });
-
-  it('白底热门爬坡标签使用近黑文字和品牌软底', () => {
-    const block = effectiveBlock(detailStyles, '.climb-popularity');
-    expect(declaration(block, 'border')).toContain('var(--color-brand)');
-    expectSemantic(declaration(block, 'background'), '--color-brand-soft');
-    expectSemantic(declaration(block, 'color'), '--color-text');
-  });
-
-  it('媒体面骑友状态使用白色高对比描边', () => {
-    const block = effectiveBlock(detailStyles, '.rider-status');
-    expect(declaration(block, 'border')).toContain('currentColor');
-    expectSemantic(declaration(block, 'color'), '--color-on-media');
+    const success = effectiveBlock(detailStyles, '.inline-feedback--success');
+    expectSemantic(declaration(success, 'color'), '--color-status-success');
+    expectSemantic(declaration(success, 'background'), '--color-status-success-soft');
   });
 });

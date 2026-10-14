@@ -38,14 +38,15 @@ describe('unified UI accessibility regressions', () => {
     for (const [file, selector] of [
       ['miniprogram/pages/activities/index.wxss', '.activities-page'],
       ['miniprogram/pages/activity-detail/index.wxss', '.detail-page'],
-      ['miniprogram/pages/profile/index.wxss', '.page.profile-page'],
+      ['miniprogram/pages/profile/index.wxss', '.profile-page'],
       ['miniprogram/pages/registration-form/index.wxss', '.form-page'],
-      ['miniprogram/pages/registrations/index.wxss', '.page.registrations-page'],
+      ['miniprogram/pages/registrations/index.wxss', '.registrations-page'],
       ['miniprogram/pages/admin/review-detail/index.wxss', '.review-detail-page'],
     ] as const) {
-      const block = effectiveBlock(read(file), selector);
+      const source = read(file);
+      const block = effectiveBlock(source, selector);
       expectSemantic(declaration(block, 'background'), '--color-bg');
-      expectSemantic(declaration(block, 'color'), '--color-text');
+      expect(source).not.toMatch(/color:\s*#(?:fff|ffffff|000|000000)\b/i);
     }
   });
 
@@ -68,78 +69,66 @@ describe('unified UI accessibility regressions', () => {
       expect(read(file)).toMatch(/class="[^"]*\b(?:card|muted)\b/);
     }
 
-    const detail = read('miniprogram/pages/activity-detail/index.wxss');
-    expect(declaration(effectiveBlock(detail, '.detail-page .card'), 'background')).toBe(
-      'transparent',
-    );
-    expectSemantic(
-      declaration(effectiveBlock(app, '.detail-page .muted'), 'color'),
-      '--color-muted',
-    );
-    const form = read('miniprogram/pages/registration-form/index.wxss');
-    expectSemantic(
-      declaration(effectiveBlock(form, '.form-card'), 'background'),
-      '--color-surface',
-    );
-    expectSemantic(declaration(effectiveBlock(form, '.form-card'), 'color'), '--color-text');
+    const detailCard = effectiveBlock(app, '.card');
+    expectSemantic(declaration(detailCard, 'background'), '--color-surface');
+    expectSemantic(declaration(detailCard, 'color'), '--color-text');
+    expectSemantic(declaration(effectiveBlock(app, '.muted'), 'color'), '--color-muted');
+    const formCard = effectiveBlock(app, '.form-card');
+    expectSemantic(declaration(formCard, 'background'), '--color-surface');
+    expectSemantic(declaration(formCard, 'color'), '--color-text');
   });
 
   it('keeps shared form and status primitives semantic and readable', () => {
-    for (const selector of ['.label', '.section-label']) {
-      expectSemantic(declaration(effectiveBlock(app, selector), 'color'), '--color-muted');
-    }
-    expectUiContrast('var(--color-muted)', 'var(--color-surface)');
+    expectSemantic(declaration(effectiveBlock(app, '.label'), 'color'), '--color-text');
+    expectSemantic(declaration(effectiveBlock(app, '.section-label'), 'color'), '--color-muted');
+    expectUiContrast('var(--color-text)', 'var(--color-surface)');
 
+    const statusStyles = read('miniprogram/components/status-pill/index.wxss');
     const statusTokens = [
-      ['.tag', '--color-success-text', '--color-success-soft'],
-      ['.warn', '--color-warning-text', '--color-warning-soft'],
-      ['.danger', '--color-danger-text', '--color-danger-soft'],
+      ['.pill--success', '--color-status-success', '--color-status-success-soft'],
+      ['.pill--warning', '--color-status-warning', '--color-status-warning-soft'],
+      ['.pill--danger', '--color-brand-active', '--color-surface'],
     ] as const;
     for (const [selector, foreground, background] of statusTokens) {
-      const block = effectiveBlock(app, selector);
+      const block = effectiveBlock(statusStyles, selector);
       expectSemantic(declaration(block, 'color'), foreground);
       expectSemantic(declaration(block, 'background'), background);
       expectUiContrast(`var(${foreground})`, `var(${background})`, 4.5);
     }
 
-    const controls = app.match(/\.input,\s*\.textarea\s*\{([^}]*)\}/s)?.[1] || '';
+    const controls = effectiveBlock(app, '.input');
     expectSemantic(declaration(controls, 'background'), '--color-input-bg');
     expectSemantic(declaration(controls, 'color'), '--color-text');
     expectUiContrast('var(--color-text)', 'var(--color-input-bg)');
 
     const secondary = effectiveBlock(app, '.secondary');
-    expectSemantic(declaration(secondary, 'background'), '--color-input-bg');
+    expectSemantic(declaration(secondary, 'background'), '--color-surface');
     expectSemantic(declaration(secondary, 'color'), '--color-text');
-    const metric = effectiveBlock(app, '.metric');
-    expectSemantic(declaration(metric, 'background'), '--color-input-bg');
-    expectSemantic(declaration(metric, 'color'), '--color-muted');
-    expectUiContrast('var(--color-muted)', 'var(--color-input-bg)');
+    const metric = effectiveBlock(app, '.metric-item');
+    expectSemantic(declaration(metric, 'background'), '--color-surface');
+    expectSemantic(declaration(effectiveBlock(app, '.metric-label'), 'color'), '--color-muted');
+    expectUiContrast('var(--color-muted)', 'var(--color-surface)');
 
     expect(read('miniprogram/pages/profile-edit/index.wxml')).toMatch(
       /class="(?:label|danger form-error)"/,
     );
     expect(read('miniprogram/pages/capability-card/index.wxml')).toContain('class="privacy-note"');
-    expect(read('miniprogram/pages/admin/activity-list/index.wxml')).toContain('class="tag"');
+    expect(read('miniprogram/pages/admin/activity-list/index.wxml')).toContain('class="tag ');
     expect(read('miniprogram/pages/admin/activity-edit/index.wxml')).toContain(
       'class="card danger"',
     );
   });
 
   it('keeps themed consumers on semantic fixed, surface, and text tokens', () => {
-    for (const [file, selector] of [
-      ['miniprogram/pages/activity-detail/index.wxss', '.fixed'],
-      ['miniprogram/pages/registration-form/index.wxss', '.form-page .fixed'],
-    ] as const) {
-      expectSemantic(
-        declaration(effectiveBlock(read(file), selector), 'background'),
-        '--color-fixed-bar',
-      );
-    }
+    expectSemantic(declaration(effectiveBlock(app, '.fixed'), 'background'), '--color-fixed-bar');
+    expectSemantic(
+      declaration(effectiveBlock(app, '.action-bar'), 'background'),
+      '--color-fixed-bar',
+    );
 
-    const reviewStyles = read('miniprogram/pages/admin/review-detail/index.wxss');
-    const reviewMetric = effectiveBlock(reviewStyles, '.review-detail-page .metric');
+    const reviewMetric = effectiveBlock(app, '.detail-metric');
     expectSemantic(declaration(reviewMetric, 'background'), '--color-surface');
-    expectSemantic(declaration(reviewMetric, 'color'), '--color-text');
+    expectSemantic(declaration(effectiveBlock(app, '.metric-number'), 'color'), '--color-text');
     expectUiContrast('var(--color-text)', 'var(--color-surface)');
   });
 
@@ -185,49 +174,46 @@ describe('unified UI accessibility regressions', () => {
 
   it('keeps photographic hero copy white on dark media overlays', () => {
     const profileStyles = read('miniprogram/pages/profile/index.wxss');
-    const profileHero = effectiveBlock(profileStyles, '.profile-hero');
+    const profileHero = effectiveBlock(profileStyles, '.hero-identity');
     expectSemantic(declaration(profileHero, 'color'), '--color-on-media');
 
-    const reviewStyles = read('miniprogram/pages/admin/review-detail/index.wxss');
-    const reviewHero = effectiveBlock(reviewStyles, '.capability-hero .hero-content');
-    expect(declaration(reviewHero, 'color')).toBe('#f7f7f5');
-    expect(contrast('#f7f7f5', '#1c1c1e')).toBeGreaterThanOrEqual(4.5);
+    const reviewHero = effectiveBlock(app, '.info-bar');
+    expectSemantic(declaration(reviewHero, 'color'), '--color-on-media');
+    expectUiContrast('var(--color-on-media)', 'var(--color-action)', 7);
   });
 
   it('keeps activity card and detail metric labels readable', () => {
-    const cardStyles = read('miniprogram/components/activity-card/index.wxss');
-    const cardLabel = effectiveBlock(cardStyles, '.metric-unit');
-    const cardSurface = effectiveBlock(cardStyles, '.metric-item');
+    const cardLabel = effectiveBlock(app, '.metric-unit');
+    const cardSurface = effectiveBlock(app, '.metric-item');
     expect(rpx(cardLabel, 'font-size')).toBeGreaterThanOrEqual(24);
     expectSemantic(declaration(cardLabel, 'color'), '--color-muted');
-    expectSemantic(declaration(cardSurface, 'background'), '--color-raised');
-    expectUiContrast('var(--color-muted)', 'var(--color-raised)');
+    expectSemantic(declaration(cardSurface, 'background'), '--color-surface');
+    expectUiContrast('var(--color-muted)', 'var(--color-surface)');
 
-    const detailStyles = read('miniprogram/pages/activity-detail/index.wxss');
-    const detailMetric = effectiveBlock(detailStyles, '.detail-metric');
-    expect(rpx(detailMetric, 'font-size')).toBeGreaterThanOrEqual(24);
-    expectSemantic(declaration(detailMetric, 'color'), '--color-muted');
+    const detailMetric = effectiveBlock(app, '.detail-metric');
+    expect(rpx(effectiveBlock(app, '.metric-label'), 'font-size')).toBeGreaterThanOrEqual(24);
+    expectSemantic(declaration(effectiveBlock(app, '.metric-label'), 'color'), '--color-muted');
     expectSemantic(declaration(detailMetric, 'background'), '--color-surface');
     expectUiContrast('var(--color-muted)', 'var(--color-surface)');
   });
 
   it('keeps the profile service actions at least 88rpx tall', () => {
     const menuCard = effectiveBlock(read('miniprogram/pages/profile/index.wxss'), '.menu-card');
-    expect(declaration(menuCard, 'min-height')).toBe('var(--control-height)');
+    expect(rpx(menuCard, 'min-height')).toBeGreaterThanOrEqual(88);
   });
 
   it('keeps registration metadata readable without using brand as body text', () => {
     const registrationStyles = read('miniprogram/pages/registrations/index.wxss');
     expectSemantic(
       declaration(effectiveBlock(registrationStyles, '.meeting-value'), 'color'),
-      '--color-on-action',
+      '--color-on-media',
     );
     const reviewStyles = read('miniprogram/pages/admin/review-detail/index.wxss');
     expectSemantic(
-      declaration(effectiveBlock(reviewStyles, '.sync-meta'), 'color'),
-      '--color-muted',
+      declaration(effectiveBlock(reviewStyles, '.status-explain'), 'color'),
+      '--color-media-muted',
     );
-    expectUiContrast('var(--color-muted)', 'var(--color-surface)');
+    expectUiContrast('var(--color-media-muted)', 'var(--color-action)');
   });
 
   it('uses only supported WXML elements for the activities headline', () => {
@@ -238,56 +224,54 @@ describe('unified UI accessibility regressions', () => {
   });
 
   it('shares a 44px control height, 40px segments, and stable page gutters', () => {
-    expect(declaration(effectiveBlock(app, 'page'), '--control-height')).toBe('88rpx');
-    expect(declaration(effectiveBlock(app, 'page'), '--page-gutter')).toBe('48rpx');
-    expect(declaration(effectiveBlock(app, 'page'), '--page-gutter-narrow')).toBe('32rpx');
+    expect(tokens['--control-height']).toBe('88rpx');
+    expect(tokens['--page-gutter']).toBe('48rpx');
+    expect(tokens['--page-gutter-narrow']).toBe('32rpx');
 
     const profileEdit = read('miniprogram/pages/profile-edit/index.wxss');
-    expect(declaration(effectiveBlock(profileEdit, '.form-card .input'), 'min-height')).toBe(
-      'var(--control-height)',
-    );
+    expect(declaration(effectiveBlock(app, '.input'), 'min-height')).toBe('var(--control-height)');
     expect(profileEdit).toMatch(
-      /@media \(max-width: 320px\)[\s\S]*?\.gender-options\s*\{[^}]*grid-template-columns:\s*1fr/s,
+      /@media \(max-width: 340px\)[\s\S]*?\.avatar-editor\s*\{[^}]*flex-direction:\s*column/s,
+    );
+    expect(declaration(effectiveBlock(profileEdit, '.gender-option'), 'min-height')).toBe(
+      'var(--segment-height)',
     );
 
-    const activityEdit = read('miniprogram/pages/admin/activity-edit/index.wxss');
-    expect(declaration(effectiveBlock(activityEdit, '.field input'), 'min-height')).toBe(
+    expect(declaration(effectiveBlock(app, '.field input'), 'min-height')).toBe(
       'var(--control-height)',
     );
 
-    const registrations = read('miniprogram/pages/registrations/index.wxss');
-    expect(registrations).toMatch(
-      /\.page\.registrations-page\s*\{[^}]*padding-right:\s*var\(--page-gutter\);[^}]*padding-left:\s*var\(--page-gutter\)/s,
-    );
-    expect(registrations).toMatch(
-      /@media \(max-width: 320px\)[\s\S]*?\.page\.registrations-page\s*\{[^}]*padding-right:\s*var\(--page-gutter-narrow\)/s,
+    expect(app).toContain('padding: 32rpx var(--page-gutter);');
+    expect(app).toMatch(
+      /@media \(max-width: 340px\)[\s\S]*?page\s*\{[^}]*--page-gutter:\s*var\(--page-gutter-narrow\)/s,
     );
 
-    const reviews = read('miniprogram/pages/admin/reviews/index.wxss');
-    expect(declaration(effectiveBlock(reviews, '.hero-title'), 'font-size')).toBe('46rpx');
+    expect(declaration(effectiveBlock(app, '.hero-title'), 'font-size')).toBe('48rpx');
 
     const activityTimeline = read('miniprogram/pages/activities/index.wxss');
-    expect(declaration(effectiveBlock(activityTimeline, '.timeline-tab'), 'min-height')).toBe(
+    expect(declaration(effectiveBlock(app, '.timeline-tab'), 'min-height')).toBe(
       'var(--segment-height)',
     );
     expectSemantic(
-      declaration(effectiveBlock(activityTimeline, '.timeline-tab.is-active'), 'background'),
-      '--color-brand',
+      declaration(effectiveBlock(app, '.timeline-tab.is-active'), 'background'),
+      '--color-action',
     );
-    expect(declaration(effectiveBlock(activityTimeline, '.timeline-tabs'), 'width')).toBe('100%');
-    expect(activityTimeline).toMatch(
-      /@media \(max-width: 350px\)[\s\S]*?\.page\.activities-page\s*\{[^}]*padding-right:\s*var\(--page-gutter-narrow\)/s,
+    expect(
+      declaration(effectiveBlock(activityTimeline, '.timeline-tabs'), 'grid-template-columns'),
+    ).toBe('1fr 1fr');
+    expect(app).toMatch(
+      /@media \(max-width: 340px\)[\s\S]*?page\s*\{[^}]*--page-gutter:\s*var\(--page-gutter-narrow\)/s,
     );
   });
 
   it('keeps dense metrics and progress rails readable on narrow screens', () => {
-    const detail = read('miniprogram/pages/activity-detail/index.wxss');
-    expect(detail).toMatch(
-      /@media \(max-width: 350px\)[\s\S]*?\.metric-number\s*\{[^}]*font-size:\s*30rpx/s,
+    expect(rpx(effectiveBlock(app, '.metric-number'), 'font-size')).toBeGreaterThanOrEqual(30);
+    expect(declaration(effectiveBlock(app, '.metric-number'), 'font-variant-numeric')).toBe(
+      'tabular-nums',
     );
-    expect(detail).not.toMatch(/\.metric-number\s*\{[^}]*text-overflow:\s*ellipsis/s);
-    expect(declaration(effectiveBlock(detail, '.metric-value'), 'flex-wrap')).toBe('wrap');
-    expect(declaration(effectiveBlock(detail, '.metric-number'), 'overflow-wrap')).toBe('anywhere');
+    expect(app).toMatch(
+      /@media \(max-width: 340px\)[\s\S]*?\.metric-panel,[\s\S]*?grid-template-columns:\s*1fr/s,
+    );
 
     const registration = read('miniprogram/pages/registration-form/index.wxss');
     const steps = effectiveBlock(registration, '.step-line');
@@ -298,10 +282,9 @@ describe('unified UI accessibility regressions', () => {
   it('keeps admin filters and clone actions touchable at 320px', () => {
     const reviews = read('miniprogram/pages/admin/reviews/index.wxss');
     const tabs = effectiveBlock(reviews, '.filter-tabs');
-    const tab = effectiveBlock(reviews, '.filter-tab');
-    expect(declaration(tabs, 'overflow-x')).toBe('auto');
-    expect(declaration(tab, 'min-width')).toBe('112rpx');
-    expect(declaration(tab, 'min-height')).toBe('var(--control-height)');
+    const tab = effectiveBlock(app, '.filter-tab');
+    expect(declaration(tabs, 'grid-template-columns')).toBe('repeat(3, 1fr)');
+    expect(declaration(tab, 'min-height')).toBe('var(--segment-height)');
 
     const activities = read('miniprogram/pages/admin/activity-list/index.wxss');
     expect(activities).toMatch(

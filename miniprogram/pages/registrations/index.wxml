@@ -2,7 +2,7 @@
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{refreshing ? '正在刷新行程' : ''}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{refreshError}}</view>
   <brand-logo compact="{{true}}" meta="我的行程" />
-  <view class="page-heading"><view><view class="heading-title">我的行程</view><view class="heading-copy">报名进度、出发凭证都在这里</view></view><view class="heading-count"><text class="count-value">{{items.length}}</text><text>条</text></view></view>
+  <view class="page-heading"><view><view class="heading-title">我的行程</view><view class="heading-copy">报名进度、出发凭证都在这里</view></view><view class="heading-count">共 {{items.length}} 场</view></view>
   <view class="trip-stats" wx:if="{{items.length}}" aria-label="行程状态统计">
     <view class="trip-stat trip-stat--review"><text class="trip-stat__value">{{statusCounts.review}}</text><text class="trip-stat__label">审核中</text></view>
     <view class="trip-stat trip-stat--ready"><text class="trip-stat__value">{{statusCounts.ready}}</text><text class="trip-stat__label">可出发</text></view>

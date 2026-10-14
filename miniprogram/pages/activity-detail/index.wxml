@@ -1,20 +1,19 @@
 <view class="detail-page">
   <state-view loading="{{loading}}" error="{{error}}">
     <view wx:if="{{item}}" class="detail-unified-card">
-      <view class="detail-hero {{galleryImages.length && !coverFailed ? 'detail-hero--media' : 'detail-hero--plain'}}">
-        <swiper wx:if="{{galleryImages.length > 1 && !coverFailed}}" class="hero-gallery" indicator-dots="{{true}}" indicator-color="rgba(255,255,255,.4)" indicator-active-color="#ff5722" circular="{{true}}">
+      <brand-logo compact="{{true}}" meta="活动详情" />
+      <view class="detail-hero">
+        <swiper wx:if="{{galleryImages.length > 1 && !coverFailed}}" class="hero-gallery" indicator-dots="{{true}}" indicator-color="{{colorMediaMuted}}" indicator-active-color="{{colorOnMedia}}" circular="{{true}}">
           <swiper-item wx:for="{{galleryImages}}" wx:for-item="media" wx:key="*this"><image class="hero-media" src="{{media}}" mode="aspectFill" data-index="{{index}}" binderror="galleryImageError" aria-label="活动图片 {{index + 1}}" /></swiper-item>
         </swiper>
         <image wx:elif="{{galleryImages.length === 1 && !coverFailed}}" class="hero-media" src="{{galleryImages[0]}}" mode="aspectFill" binderror="coverImageError" aria-label="{{item.title}}活动封面" />
-        <view class="hero-shade" wx:if="{{galleryImages.length && !coverFailed}}"></view>
-        <view class="hero-content">
-          <view class="hero-brand-row"><brand-logo compact="{{true}}" meta="活动详情" /></view>
-          <view class="hero-copy">
-            <view class="hero-kicker" aria-label="{{displayDate}}">{{displayDate}}</view>
-            <view class="hero-title">{{item.title}}</view>
-          </view>
-          <view class="hero-level" wx:if="{{item.route.level}}">{{item.route.level}}</view>
-        </view>
+        <view wx:else class="hero-placeholder"><brand-logo compact="{{true}}" /><text>活动封面待更新</text></view>
+        <view class="cover-count" wx:if="{{galleryImages.length}}">1 / {{galleryImages.length}}</view>
+      </view>
+      <view class="info-bar">
+        <view class="info-head"><text class="info-kicker">{{displayDate}}{{item.route.level ? ' · ' + item.route.level : ''}}</text><text class="info-tag">{{viewerStatus.label}}</text></view>
+        <view class="info-title">{{item.title}}</view>
+        <view class="info-meta"><text>{{startTime || '集合时间待公布'}}</text><text>{{item.route.start || '集合地点待公布'}}</text></view>
       </view>
 
       <view class="content">
@@ -48,6 +47,9 @@
         <view class="official-route-card" wx:if="{{officialRouteId}}">
           <view class="section-heading"><view><view class="title">Strava 官方路线</view><view class="route-action-note">复制组织者分享的规范化公开路线链接。</view></view><view class="section-tag">官方</view></view>
           <button class="route-action route-action--primary" bindtap="copyOfficialRoute">复制路线链接</button>
+          <view wx:if="{{copyFeedback === 'success'}}" class="inline-feedback inline-feedback--success" role="status">✓ 路线链接已复制</view>
+          <view wx:elif="{{copyFeedback === 'error'}}" class="inline-feedback inline-feedback--error" role="alert">! 复制失败，请稍后重试</view>
+          <view class="route-action-note">小程序内不打开第三方页面，复制后可自行粘贴使用。</view>
         </view>
 
         <view class="gpx-route-card" wx:if="{{hasRouteDetails}}">

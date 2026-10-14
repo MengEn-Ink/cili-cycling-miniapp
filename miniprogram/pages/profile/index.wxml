@@ -61,9 +61,9 @@
 
   <view class="section-label">常用服务</view>
   <view class="menu-list">
-    <view class="menu-card" wx:if="{{isAdmin}}" bindtap="activities"><view class="menu-icon">管</view><view class="menu-copy"><view class="menu-title">活动管理</view><view class="muted">创建、编辑与发布活动</view></view><text class="chevron">›</text></view>
-    <view class="menu-card" bindtap="edit"><view class="menu-icon">资</view><view class="menu-copy"><view class="menu-title">报名资料</view><view class="muted">编辑微信昵称、头像、性别与紧急联系人</view></view><text class="chevron">›</text></view>
+    <button class="menu-card" wx:if="{{isAdmin}}" bindtap="activities"><view class="menu-icon i-admin"><view></view></view><view class="menu-copy"><view class="menu-title">活动管理</view><view class="muted">创建、编辑、上下架与报名审批</view></view><text class="chevron">›</text></button>
+    <button class="menu-card" bindtap="edit"><view class="menu-icon i-profile"><view></view></view><view class="menu-copy"><view class="menu-title">报名资料</view><view class="muted">头像、昵称、实名、电话与紧急联系人</view></view><text class="chevron">›</text></button>
     <view class="privacy-note"><view class="privacy-note-title">隐私说明</view><view>联系电话仅用于活动联络；紧急联系人仅在骑行安全需要时使用。资料仅你本人和报名审核员可见。</view></view>
-    <view class="menu-card" bindtap="openSettings" role="button" aria-label="打开设置"><view class="menu-icon">设</view><view class="menu-copy"><view class="menu-title">设置</view><view class="muted">查看应用设置与功能升级记录</view></view><text class="chevron" aria-hidden="true">›</text></view>
+    <button class="menu-card" bindtap="openSettings" aria-label="打开设置"><view class="menu-icon i-settings"><view></view></view><view class="menu-copy"><view class="menu-title">设置</view><view class="muted">查看应用设置与功能升级记录</view></view><text class="chevron" aria-hidden="true">›</text></button>
   </view>
 </view>

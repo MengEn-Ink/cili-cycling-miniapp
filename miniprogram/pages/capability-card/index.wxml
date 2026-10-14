@@ -32,11 +32,10 @@
             />
           </swiper-item>
         </swiper>
-        <view wx:else class="card-visual alpine-fallback" aria-hidden="true">
-          <view class="alpine-sun"></view>
-          <view class="ridge ridge-far"></view>
-          <view class="ridge ridge-near"></view>
+        <view wx:else class="card-visual alpine-fallback" aria-label="品牌骑行名片背景">
+          <view class="route-line-art"></view>
           <view class="fallback-logo"><brand-logo compact="{{true}}" /></view>
+          <view class="brand-word">CILI RIDER</view>
         </view>
 
         <view class="image-shade" aria-hidden="true"></view>

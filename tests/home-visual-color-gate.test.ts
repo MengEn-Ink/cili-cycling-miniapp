@@ -10,18 +10,20 @@ const logoTemplate = read('miniprogram/components/brand-logo/index.wxml');
 const logoStyles = read('miniprogram/components/brand-logo/index.wxss');
 
 describe('首页视觉与配色门禁', () => {
-  it('首页沿用项目三色主题且不引入页面级硬编码色值', () => {
+  it('首页沿用全局明亮主题且不引入页面级硬编码色值', () => {
     expect(homeStyles).toContain('var(--color-bg)');
     expect(homeStyles).toContain('var(--color-text)');
-    expect(homeStyles).toContain('var(--color-brand)');
+    expect(homeStyles).toContain('var(--color-action)');
     expect(homeStyles).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
     expect(homeStyles).not.toMatch(/navy|blue|gradient/i);
   });
 
-  it('内容区只使用页面单层边距，避免活动卡片两侧重复留白', () => {
-    expect(homeStyles).toMatch(/\.activities-content\s*\{[^}]*padding:\s*32rpx 0 0;/s);
-    expect(homeStyles).not.toMatch(/\.activities-content\s*\{[^}]*var\(--page-gutter\)/s);
-    expect(homeStyles).not.toMatch(/\.activities-hero,\s*\.activities-content/);
+  it('内容区使用页面统一边距并由列表间距维持稳定节奏', () => {
+    expect(homeStyles).toMatch(
+      /\.activity-list\s*\{[^}]*gap:\s*var\(--card-gap\)[^}]*margin-top:\s*16rpx;/s,
+    );
+    expect(homeStyles).toMatch(/\.day-chip-bar__inner\s*\{[^}]*padding:\s*0 var\(--page-gutter\)/s);
+    expect(homeStyles).not.toMatch(/\.activity-list\s*\{[^}]*padding:/s);
   });
 
   it('品牌标识固定为深色底牌、暖灰白艺术字与品牌橙终点', () => {
@@ -39,10 +41,10 @@ describe('首页视觉与配色门禁', () => {
   });
 
   it('首页首屏文案与信息层级保持高保真方案', () => {
-    expect(homeTemplate).toContain('class="activities-hero"');
+    expect(homeTemplate).toContain('class="activities-intro"');
     expect(homeTemplate).toContain('选一场骑行，一起出发');
     expect(homeTemplate).toContain('路线、时间、集合点，一眼看清');
-    expect(homeTemplate).toContain('class="activities-content"');
+    expect(homeTemplate).toContain('class="activity-list"');
     expect(homeTemplate).toContain('即将开始');
     expect(homeTemplate).toContain('历史活动');
   });

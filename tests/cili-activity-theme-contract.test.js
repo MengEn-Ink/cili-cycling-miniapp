@@ -58,7 +58,7 @@ describe('CILI 活动页静态契约', () => {
     expect(activityCard).toContain('bindtap="open"');
     expect(activityCard).not.toContain('class="card-cta"');
     expect(activityCard).not.toContain('查看详情');
-    expect(activityCard).toContain('aria-label="集合时间：{{item.displayTimeLabel}}"');
+    expect(activityCard).toContain('aria-label="查看活动：{{item.title}}"');
     expect(activityCardStyles).toContain('.activity-card--pressed');
     expect(activityCardStyles).toContain('.card-placeholder');
     expect(activityCardStyles).not.toContain('.card-cta');
@@ -72,7 +72,7 @@ describe('CILI 活动页静态契约', () => {
     expect(activityCard).not.toContain('activity-card--featured');
     expect(activityCard).not.toContain('activity-card--compact');
     expect(activityCardStyles).not.toContain('.activity-card--compact');
-    expect(activityCardStyles).toMatch(/\.card-media\s*\{[^}]*height:\s*2[4-8]\drpx/s);
+    expect(activityCardStyles).toMatch(/\.card-media\s*\{[^}]*height:\s*360rpx/s);
     const title = effectiveBlock(activityCardStyles, '.activity-title');
     expect(declaration(title, '-webkit-line-clamp')).toBe('2');
     expect(declaration(title, 'min-height')).toMatch(/^\d+rpx$/);
@@ -94,23 +94,23 @@ describe('CILI 活动页静态契约', () => {
     expect(activityCardStyles).toContain('grid-template-columns: repeat(3, minmax(0, 1fr));');
   });
 
-  it('V3.2 保留时间筛选并通过横向卡片突出照片与核心信息', () => {
-    expect(activities).toContain('>即将开始</view>');
-    expect(activities).toContain('>历史活动</view>');
-    expect(activities).toContain('class="activity-carousel"');
-    expect(activities).toContain('bindchange="cardChange"');
-    expect(activities).toContain('{{item.displayDateLabel}}');
+  it('V4 保留时间筛选并通过纵向照片卡片突出核心信息', () => {
+    expect(activities).toContain('>即将开始</button>');
+    expect(activities).toContain('>历史活动</button>');
+    expect(activities).toContain('class="activity-list"');
+    expect(activities).toContain('role="tabpanel"');
+    expect(activityCard).toContain('{{item.displayDateLabel}}');
     expect(activityCard).toContain('{{item.displayTimeLabel}}');
     expect(activityCard).toContain('class="location-label">集合');
-    expect(activityCard).toContain('{{item.publisher.nickname}} 发起');
+    expect(activityCard).toContain('{{item.route.start');
     expect(activityCard).toContain("item.capacity <= 0 ? '名额' : '报名'");
   });
 
   it('首页只使用品牌橙、石墨黑和暖灰白主题色，不继承荧光黄视觉', () => {
     expect(logoStyles).toContain('background: var(--color-logo-background)');
     expect(activitiesStyles).toContain('background: var(--color-bg)');
-    expect(activitiesStyles).toContain('border-color: var(--color-brand)');
-    expect(activitiesStyles).toContain('background: var(--color-bg)');
+    expect(activitiesStyles).toContain('border: 4rpx solid var(--color-border-strong)');
+    expect(activitiesStyles).toContain('background: var(--color-action)');
     expect(activitiesStyles).not.toMatch(
       /\.day-chip\.is-active\s*\{[^}]*background:\s*var\(--color-brand\)/s,
     );
@@ -147,7 +147,7 @@ describe('CILI 活动页静态契约', () => {
     expect(detail).toContain('binderror="galleryImageError"');
     expect(detail).toContain('binderror="coverImageError"');
     expect(detail).toContain('class="schedule-track"');
-    expect(detailStyles).toMatch(/\.detail-hero\s*\{[^}]*min-height:\s*(?:2\d\d|3[0-6]\d)rpx/s);
+    expect(detailStyles).toMatch(/\.detail-hero\s*\{[^}]*height:\s*360rpx/s);
     expect(detailStyles).toContain(
       'padding-bottom: calc(var(--fixed-action-reserve) + env(safe-area-inset-bottom));',
     );
@@ -165,8 +165,8 @@ describe('CILI 活动页静态契约', () => {
     expectSemantic(declaration(card, 'background'), '--color-surface');
     expectSemantic(declaration(card, 'border-radius'), '--radius-card');
     expectSemantic(
-      declaration(effectiveBlock(activityCardStyles, '.metric-item'), 'background'),
-      '--color-raised',
+      declaration(effectiveBlock(read('miniprogram/app.wxss'), '.metric-item'), 'background'),
+      '--color-surface',
     );
     expectSemantic(
       declaration(effectiveBlock(detailStyles, '.detail-action .btn'), 'background'),

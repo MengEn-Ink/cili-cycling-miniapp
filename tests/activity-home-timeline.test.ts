@@ -103,33 +103,30 @@ describe('activity timeline state helpers', () => {
 });
 
 describe('activity timeline template contract', () => {
-  it('提供双视图选择和单卡片横向轮播', () => {
+  it('提供双视图选择、日期快捷入口和纵向同级活动卡片', () => {
     const template = read('miniprogram/pages/activities/index.wxml');
     expect(template).toContain('class="timeline-tabs"');
     expect(template).toContain('data-view="future"');
-    expect(template.match(/>即将开始<\/view>/g)).toHaveLength(1);
+    expect(template.match(/>即将开始<\/button>/g)).toHaveLength(1);
     expect(template).toContain('data-view="history"');
     expect(template).toContain('aria-selected="{{activeView === \'future\'}}"');
-    expect(template).toContain('class="activity-carousel"');
     expect(template).toContain('class="day-chip-bar"');
     expect(template).toContain('data-index="{{item.index}}"');
     expect(template).toContain('bindtap="selectDay"');
     expect(template).not.toContain('<view class="section-title">{{sectionTitle}}</view>');
-    expect(template).toContain('current="{{currentCardIndex}}"');
-    expect(template).toContain('duration="0"');
-    expect(template).toContain('bindchange="cardChange"');
+    expect(template).toContain('class="activity-list"');
+    expect(template).toContain('role="tabpanel"');
     expect(template).toContain('wx:for="{{items}}"');
-    expect(template).toContain('左右滑动切换活动');
+    expect(template).toContain('bind:open="open"');
+    expect(template).not.toContain('class="activity-carousel"');
   });
 
-  it('展示卡片序号、日期、切换提示并保留加载失败重试', () => {
+  it('展示列表数量、日期入口并保留加载失败重试', () => {
     const template = read('miniprogram/pages/activities/index.wxml');
-    expect(template).toContain(
-      "'正在查看第 ' + (currentCardIndex + 1) + ' 场，共 ' + items.length + ' 场'",
-    );
-    expect(template).toContain('{{item.displayDateLabel}}');
-    expect(template).toContain('class="carousel-progress__value"');
-    expect(template).toContain('items.length === 1 || refreshError');
+    expect(template).toContain('共 {{items.length}} 场');
+    expect(template).toContain('{{item.label}}');
+    expect(template).toContain('aria-pressed="{{selectedDayKey === item.key}}"');
+    expect(template).toContain('wx:if="{{nextCursor && items.length}}"');
     expect(template).toContain('加载更多活动');
     expect(template).toContain('重试加载更多');
   });

@@ -3,13 +3,14 @@
   <view wx:elif="{{!allowed}}" class="state-card state-card--error">{{error || '无权访问活动管理'}}</view>
   <block wx:else>
     <view class="editor-hero">
-      <view class="editor-title">{{id ? '编辑日常活动' : '创建日常活动'}}</view>
-      <view class="editor-summary">填写标题、集合时间、地点、封面和备注，几步即可发布。</view>
+      <view class="editor-title">{{id ? '编辑活动' : '创建活动'}}</view>
+      <view class="editor-summary">填写活动信息，保存草稿后可继续完善。</view>
     </view>
 
     <view wx:if="{{error}}" class="card danger"><view class="error-summary">{{error}}</view></view>
 
     <view class="form-card card">
+      <view class="card-head"><text class="card-no">01</text><view class="card-title">基本信息</view></view>
       <view class="field" data-error-anchor="title">
         <view class="field-label">活动标题 <text class="required">必填</text></view>
         <input class="input" value="{{form.title}}" maxlength="100" placeholder-class="input-placeholder" placeholder="请输入活动标题" bindinput="field" data-name="title" />
@@ -40,6 +41,7 @@
     </view>
 
     <view class="form-card card">
+      <view class="card-head"><text class="card-no">02</text><view class="card-title">活动封面</view></view>
       <view class="section-head">
         <view>
           <view class="section-title">封面照片</view>
@@ -72,6 +74,7 @@
     </view>
 
     <view class="form-card card">
+      <view class="card-head"><text class="card-no">03</text><view class="card-title">备注、路线与群二维码</view></view>
       <view class="field" data-error-anchor="description">
         <view class="field-label">备注说明</view>
         <textarea class="textarea" value="{{form.description}}" maxlength="5000" placeholder-class="input-placeholder" placeholder="集合提醒、补给安排或其他需要说明的内容" bindinput="field" data-name="description" />

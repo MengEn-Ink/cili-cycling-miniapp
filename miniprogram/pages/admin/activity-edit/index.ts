@@ -412,6 +412,9 @@ Page({
       return;
     }
     const id = typeof options.id === 'string' ? options.id : '';
+    if (typeof wx.setNavigationBarTitle === 'function') {
+      wx.setNavigationBarTitle({ title: id ? '编辑活动' : '创建活动' });
+    }
     this.createRequestId = id ? '' : newCreateRequestId();
     this.routeRequestId = newRouteRequestId();
     this.setData({ allowed: true, isAdmin: appStore.role === 'admin', id });

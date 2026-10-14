@@ -45,14 +45,14 @@ describe('统一 Logo 物料与页面接入契约', () => {
     expect(logoStyles).toContain('border: 4rpx solid var(--color-logo-accent);');
   });
 
-  it('活动空态与骑行名片统一复用 brand-logo，不再展示旧 CILI 字标', () => {
+  it('活动空态与核心名片页面统一复用 brand-logo，不再展示旧 CILI 字标', () => {
     const activityCard = read('miniprogram/components/activity-card/index.wxml');
     const capabilityCard = read('miniprogram/pages/capability-card/index.wxml');
     const reviewDetail = read('miniprogram/pages/admin/review-detail/index.wxml');
 
     expect(activityCard).toContain('<brand-logo compact="{{true}}"');
     expect(capabilityCard.match(/<brand-logo compact="\{\{true\}\}"/g)).toHaveLength(2);
-    expect(reviewDetail).toContain('<view class="empty-mark"><brand-logo compact="{{true}}" />');
+    expect(reviewDetail).toContain('<brand-logo compact="{{true}}" meta="审批详情" />');
     expect(`${activityCard}\n${capabilityCard}\n${reviewDetail}`).not.toMatch(/>CILI<|骑有此里/);
   });
 

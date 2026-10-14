@@ -1,160 +1,61 @@
-page {
-  background: var(--color-bg);
-}
 .review-page {
-  min-height: 100vh;
-  padding-bottom: calc(52rpx + env(safe-area-inset-bottom));
   background: var(--color-bg);
-  color: var(--color-text);
 }
-brand-logo {
-  display: block;
-  padding: 16rpx 8rpx 26rpx;
-  border-bottom: 1rpx solid var(--color-border);
-}
-.review-heading {
-  padding: 38rpx 8rpx 26rpx;
-}
-.hero-kicker {
-  color: var(--color-brand);
-  font-size: 21rpx;
-  font-style: italic;
-  font-weight: 900;
-  letter-spacing: 3rpx;
-}
-.hero-title {
-  margin: 4rpx 0 8rpx;
-  color: #f7f7f5;
-  font-size: 46rpx;
-  font-style: italic;
-  font-weight: 900;
-  line-height: 1.1;
-}
-.hero-subtitle {
-  color: #808084;
-  font-size: 23rpx;
-}
-.card.danger {
-  border: 1rpx solid var(--color-brand);
-  border-radius: 6rpx;
-  background: rgba(232, 91, 50, 0.12);
-  color: var(--color-brand);
-}
-.activity-picker {
+.info-head {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 18rpx;
-  padding: 24rpx;
-  border: 1rpx solid #555559;
-  border-radius: 6rpx;
-  background: #1a1a1c;
 }
-.picker-label {
-  color: var(--color-brand);
-  font-size: 17rpx;
-  font-weight: 900;
-  letter-spacing: 2rpx;
+.info-tag {
+  border: 4rpx solid var(--color-media-muted);
 }
-.picker-value {
-  overflow: hidden;
-  flex: 1;
-  font-size: 27rpx;
-  font-weight: 850;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.info-tag.is-pending {
+  border-color: var(--color-brand);
 }
-.activity-picker > text {
-  color: #949498;
-  font-size: 21rpx;
+.switch-activity {
+  min-height: var(--control-height);
+  margin-top: 24rpx;
+  padding: 0 24rpx;
+  border: 4rpx solid var(--color-on-media);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-on-media);
+  font-weight: 800;
+}
+.reminder-card .secondary {
+  width: 100%;
+  margin-top: 24rpx;
 }
 .filter-tabs {
-  display: flex;
-  overflow-x: auto;
-  margin-top: 20rpx;
-  border: 1rpx solid #47474b;
-  background: #151517;
-  white-space: nowrap;
-  -webkit-overflow-scrolling: touch;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 32rpx;
 }
-.filter-tab {
-  display: flex;
-  min-width: 112rpx;
-  min-height: var(--control-height);
-  flex: 1 0 112rpx;
-  padding: 16rpx 10rpx;
-  align-items: center;
-  justify-content: center;
-  border-right: 1rpx solid #47474b;
-  color: #858589;
-  font-size: 22rpx;
-  font-weight: 800;
-  text-align: center;
-}
-.filter-tab:last-child {
+.filter-tab:nth-child(3n) {
   border-right: 0;
 }
-.filter-tab.is-active {
-  background: var(--color-action);
-  color: var(--color-on-action);
-}
 .result-count {
-  margin: 30rpx 4rpx 8rpx;
-  color: #717175;
-  font-size: 19rpx;
-  font-weight: 900;
-  letter-spacing: 3rpx;
-}
-.empty {
-  margin-top: 16rpx;
-  border: 1rpx dashed #48484c;
-  color: #77777b;
+  color: var(--color-text);
+  font-size: 28rpx;
+  font-weight: 800;
 }
 .review-card {
   position: relative;
   display: flex;
-  align-items: flex-start;
-  gap: 20rpx;
-  overflow: hidden;
-  margin-top: 14rpx;
-  padding: 26rpx 24rpx;
-  border: 1rpx solid #4a4a4e;
-  border-radius: 6rpx;
-  background: linear-gradient(120deg, #202023, #151517);
+  align-items: center;
+  width: 100%;
+  text-align: left;
 }
 .review-card--pressed {
-  transform: scale(0.99);
-  border-color: var(--color-brand);
-}
-.card-number {
-  display: flex;
-  flex: 0 0 46rpx;
-  align-items: center;
-  justify-content: center;
-  width: 46rpx;
-  height: 46rpx;
-  border: 1rpx solid #68686c;
-  color: var(--color-brand);
-  font-size: 20rpx;
-  font-weight: 900;
+  background: var(--color-raised);
 }
 .review-main {
-  min-width: 0;
   flex: 1;
+  min-width: 0;
 }
 .applicant-name {
-  overflow: hidden;
-  font-size: 32rpx;
+  font-size: 36rpx;
+  line-height: 52rpx;
   font-weight: 900;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.activity-name {
-  overflow: hidden;
-  margin-top: 4rpx;
-  color: #9b9b9f;
-  font-size: 22rpx;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .data-line {
   display: flex;
@@ -163,114 +64,26 @@ brand-logo {
   margin-top: 16rpx;
 }
 .data-line text {
-  padding: 4rpx 9rpx;
-  border: 1rpx solid #444448;
-  color: #aaaab0;
-  font-size: 18rpx;
-}
-.status-tag {
-  flex: 0 0 auto;
-  padding: 7rpx 12rpx;
-  border: 1rpx solid #66666a;
-  color: #c6c6c8;
-  font-size: 19rpx;
-  font-weight: 800;
-}
-.status-pending {
-  border-color: var(--color-brand);
-  color: var(--color-brand);
-}
-.status-approved,
-.status-checked_in {
-  border-color: var(--color-text);
-  color: var(--color-on-action);
-}
-.status-rejected {
-  border-color: var(--color-brand);
-  color: var(--color-brand);
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  background: var(--color-raised);
+  font-size: 24rpx;
+  line-height: 36rpx;
 }
 .open-arrow {
-  align-self: center;
-  color: var(--color-brand);
+  margin-left: 16rpx;
+  color: var(--color-muted);
   font-size: 36rpx;
 }
-.corner-cut {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 28rpx;
+.state-card .btn {
+  margin-top: 24rpx;
+}
+.skeleton {
+  padding: 32rpx;
+}
+.skeleton view {
   height: 28rpx;
-  background: var(--color-brand);
-  clip-path: polygon(100% 0, 100% 100%, 0 100%);
-}
-
-page,
-.review-page {
-  background: var(--color-bg);
-  color: var(--color-text);
-}
-brand-logo {
-  border-color: var(--color-border);
-}
-.hero-title,
-.picker-value,
-.applicant-name {
-  color: var(--color-text);
-}
-.hero-subtitle,
-.activity-picker > text,
-.result-count,
-.activity-name,
-.data-line text {
-  color: var(--color-muted);
-}
-.activity-picker,
-.filter-tabs,
-.review-card {
-  border-color: var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-text);
-}
-.filter-tab,
-.data-line text,
-.status-tag {
-  border-color: var(--color-border);
-  color: var(--color-muted);
-}
-.filter-tab.is-active {
-  background: var(--color-action);
-  color: var(--color-on-action);
-}
-.review-card--pressed {
-  border-color: var(--color-brand);
-}
-.card-number {
-  border-color: var(--color-border-strong);
-  color: var(--color-text);
-}
-.status-pending {
-  border-color: var(--color-brand);
-  color: var(--color-brand);
-}
-
-.status-pending {
-  border-color: var(--color-warning);
-  color: var(--color-warning-text);
-}
-.status-approved,
-.status-checked_in {
-  border-color: var(--color-success);
-  color: var(--color-success-text);
-}
-.status-rejected {
-  border-color: var(--color-danger);
-  color: var(--color-danger-text);
-}
-
-/* Brand yellow is unreadable as ink on the bright surfaces; keep labels/arrows dark. */
-.hero-kicker,
-.picker-label,
-.open-arrow {
-  color: var(--color-text);
+  margin-top: 24rpx;
+  border-radius: 8rpx;
+  background: var(--color-raised);
 }

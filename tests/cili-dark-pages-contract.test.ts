@@ -30,7 +30,8 @@ describe('CILI 统一明亮竞技页面静态契约', () => {
     expect(tokens['--color-bg']).toBe('#f3f3f1');
     expect(tokens['--color-brand']).toBe('#e85b32');
     expect(styles).toContain('var(--color-bg)');
-    expect(styles).toContain('var(--color-brand)');
+    expect(styles).not.toMatch(/#[0-9a-f]{3,8}\b/i);
+    expect(tokens['--color-brand']).toBe('#e85b32');
     expect(config.navigationBarBackgroundColor.toLowerCase()).toBe('#ffffff');
     expect(config.navigationBarTextStyle).toBe('black');
   });

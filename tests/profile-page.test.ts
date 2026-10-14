@@ -193,7 +193,7 @@ describe('个人中心加载状态', () => {
     expect(template).toContain('wx:if="{{profile && profile.completeness < 100}}"');
     expect(template).toContain('{{profile.completeness}}%');
     expect(template).toContain('style="width: {{profile.completeness}}%"');
-    expect(styles).toMatch(/\.profile-hero\.has-bg\s*\{[^}]*min-height:\s*600rpx/s);
+    expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*360rpx/s);
   });
 
   it('profile 请求失败时 hero 仍回退骑行名片 displayName', async () => {
@@ -655,7 +655,7 @@ describe('个人中心加载状态', () => {
   it('锁定橙红、炭黑、暖灰、白的高对比视觉语义且不使用荧光黄', () => {
     const styles = readFileSync('miniprogram/pages/profile/index.wxss', 'utf8');
 
-    expect(styles).toContain('var(--color-brand)');
+    expect(styles).toContain('var(--color-status-success)');
     expect(styles).toContain('var(--color-text)');
     expect(styles).toContain('var(--color-bg)');
     expect(styles).toContain('var(--color-on-media)');

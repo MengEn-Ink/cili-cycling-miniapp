@@ -38,9 +38,11 @@ describe('报名、骑行名片与个人中心设计对齐', () => {
     expect(template).toContain('这是你在活动中展示的公开资料');
     expect(template).toContain('昵称、头像和照片由你维护');
     expect(template).not.toMatch(/lifetimeMetrics|recentMetrics|emptyMetricsText|STRAVA/);
-    expect(styles).toMatch(/\.capability-page\s*\{[^}]*padding:\s*18rpx var\(--page-gutter\)/s);
-    expect(styles).toMatch(/\.rider-card\s*\{[^}]*min-height:\s*980rpx/s);
-    expect(styles).toMatch(/\.photo-button[^}]*\{[^}]*min-height:\s*var\(--control-height\)/s);
+    expect(styles).toMatch(/\.capability-page\s*\{[^}]*padding:\s*32rpx var\(--page-gutter\)/s);
+    expect(styles).toMatch(/\.card-visual\s*\{[^}]*height:\s*336rpx/s);
+    expect(
+      declaration(effectiveBlock(read('miniprogram/app.wxss'), '.photo-button'), 'min-height'),
+    ).toBe('var(--control-height)');
   });
 
   it('个人中心保留微信身份与紧凑菜单，默认隐藏 Strava 指标', () => {
@@ -52,11 +54,9 @@ describe('报名、骑行名片与个人中心设计对齐', () => {
     expect(template).not.toContain('class="hero-capability-metrics"');
     expect(template).not.toContain('cardExpanded');
     expect(template).toContain('class="profile-refresh-feedback');
-    expect(styles).toMatch(/\.profile-hero\.has-bg\s*\{[^}]*min-height:\s*600rpx/s);
-    expect(declaration(effectiveBlock(styles, '.menu-card'), 'min-height')).toBe(
-      'var(--control-height)',
-    );
-    expectSemantic(declaration(effectiveBlock(styles, '.chevron'), 'color'), '--color-brand');
+    expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*360rpx/s);
+    expect(declaration(effectiveBlock(styles, '.menu-card'), 'min-height')).toBe('120rpx');
+    expectSemantic(declaration(effectiveBlock(styles, '.chevron'), 'color'), '--color-muted');
     expectSemantic(
       declaration(effectiveBlock(styles, '.menu-list'), 'background'),
       '--color-surface',

@@ -2,68 +2,63 @@ import { describe, expect, it } from 'vitest';
 import { declaration, effectiveBlock, expectSemantic, read } from './theme-contract-helpers';
 
 describe('HP-20261010-02 第一批六页尺寸契约', () => {
-  it('活动首页使用 16px 边距、40px 分段控件和 12px 活动间距', () => {
+  it('活动首页使用统一页边距、40px 分段控件和同级活动间距', () => {
+    const app = read('miniprogram/app.wxss');
     const styles = read('miniprogram/pages/activities/index.wxss');
-    const page = effectiveBlock(styles, '.activities-page');
-    expect(declaration(page, 'padding-right')).toBe('var(--page-gutter)');
-    expect(declaration(page, 'padding-left')).toBe('var(--page-gutter)');
-    expect(declaration(effectiveBlock(styles, '.timeline-tab'), 'min-height')).toBe(
+    expect(app).toContain('padding: 32rpx var(--page-gutter);');
+    expect(declaration(effectiveBlock(app, '.timeline-tab'), 'min-height')).toBe(
       'var(--segment-height)',
     );
-    expect(declaration(effectiveBlock(styles, '.activity-carousel'), 'height')).toBe('700rpx');
-    expect(declaration(effectiveBlock(styles, '.page-title'), 'font-size')).toBe('44rpx');
+    expect(declaration(effectiveBlock(styles, '.activity-list'), 'gap')).toBe('var(--card-gap)');
+    expect(declaration(effectiveBlock(app, '.page-title'), 'font-size')).toBe('48rpx');
   });
 
   it('我的行程使用白底 2px 描边卡片和可读序号', () => {
+    const app = read('miniprogram/app.wxss');
     const styles = read('miniprogram/pages/registrations/index.wxss');
     const list = effectiveBlock(styles, '.registration-list');
-    const card = effectiveBlock(styles, '.registration-card');
+    const card = effectiveBlock(app, '.registration-card');
     expect(declaration(list, 'gap')).toBe('var(--card-gap)');
     expect(declaration(card, 'padding')).toBe('32rpx');
-    expect(declaration(card, 'border-width')).toBe('4rpx');
-    expectSemantic(declaration(card, 'border-color'), '--color-card-border');
+    expect(declaration(card, 'border')).toBe('4rpx solid var(--color-card-border)');
     expectSemantic(declaration(card, 'border-radius'), '--radius-card');
-    expectSemantic(declaration(card, 'box-shadow'), '--shadow-card');
+    expect(declaration(card, 'box-shadow')).toBe('none');
     expectSemantic(declaration(effectiveBlock(styles, '.card-index'), 'color'), '--color-muted');
   });
 
-  it('活动详情使用统一票据分区、紧凑路线操作和安全区 CTA', () => {
+  it('活动详情使用统一同级分区、紧凑路线操作和安全区 CTA', () => {
+    const app = read('miniprogram/app.wxss');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
-    const metrics = effectiveBlock(styles, '.metric-panel');
-    const card = effectiveBlock(styles, '.detail-page .card');
-    expect(declaration(metrics, 'border-width')).toBe('0 0 2rpx');
-    expect(declaration(metrics, 'border-radius')).toBe('0');
-    expect(declaration(card, 'padding')).toBe('24rpx 4rpx');
-    expect(declaration(card, 'border-width')).toBe('0 0 2rpx');
-    expect(declaration(card, 'border-radius')).toBe('0');
-    for (const selector of ['.route-action', '.route-location-row button']) {
-      expect(declaration(effectiveBlock(styles, selector), 'min-height')).toBe(
-        'var(--control-height)',
-      );
-    }
-    expect(declaration(effectiveBlock(styles, '.detail-action .btn'), 'min-height')).toBe(
+    const metrics = effectiveBlock(app, '.metric-panel');
+    const card = effectiveBlock(app, '.card');
+    expect(declaration(metrics, 'border')).toBe('2rpx solid var(--color-border)');
+    expect(declaration(metrics, 'border-radius')).toBe('var(--radius-card)');
+    expect(declaration(card, 'padding')).toBe('32rpx');
+    expect(declaration(card, 'border')).toBe('4rpx solid var(--color-card-border)');
+    expect(declaration(card, 'border-radius')).toBe('var(--radius-card)');
+    expect(declaration(effectiveBlock(styles, '.route-location-row button'), 'min-height')).toBe(
       'var(--control-height)',
     );
-    expect(styles).toContain('calc(12rpx + env(safe-area-inset-bottom))');
+    expect(declaration(effectiveBlock(app, '.btn'), 'min-height')).toBe('var(--control-height)');
+    expect(app).toContain('calc(16rpx + env(safe-area-inset-bottom))');
   });
 
-  it('创建活动在 375px 使用单列、16px 卡片和 48px 控件', () => {
+  it('创建活动使用统一页边距、16px 卡片和 44px 控件', () => {
+    const app = read('miniprogram/app.wxss');
     const styles = read('miniprogram/pages/admin/activity-edit/index.wxss');
-    const page = effectiveBlock(styles, '.activity-form-page');
-    const card = effectiveBlock(styles, '.form-card');
-    expect(declaration(page, 'padding-right')).toBe('var(--page-gutter)');
-    expect(declaration(page, 'padding-left')).toBe('var(--page-gutter)');
-    expect(declaration(effectiveBlock(styles, '.mode-grid'), 'grid-template-columns')).toBe('1fr');
-    expect(declaration(effectiveBlock(styles, '.split'), 'grid-template-columns')).toBe('1fr');
+    const card = effectiveBlock(app, '.form-card');
+    expect(app).toContain('padding: 32rpx var(--page-gutter);');
+    expect(styles).toMatch(/\.date-time-row\s*\{[^}]*grid-template-columns:\s*1fr 1fr/s);
+    expect(declaration(effectiveBlock(styles, '.date-time-row'), 'grid-template-columns')).toBe(
+      '1fr',
+    );
     expect(declaration(card, 'padding')).toBe('32rpx');
-    expect(declaration(card, 'border-width')).toBe('4rpx');
+    expect(declaration(card, 'border')).toBe('4rpx solid var(--color-card-border)');
     expectSemantic(declaration(card, 'border-radius'), '--radius-card');
-    expect(declaration(effectiveBlock(styles, '.field input'), 'min-height')).toBe(
+    expect(declaration(effectiveBlock(app, '.field input'), 'min-height')).toBe(
       'var(--control-height)',
     );
-    expect(declaration(effectiveBlock(styles, '.actions button'), 'min-height')).toBe(
-      'var(--control-height)',
-    );
+    expect(declaration(effectiveBlock(app, '.btn'), 'min-height')).toBe('var(--control-height)');
   });
 
   it('个人中心保留媒体 Hero，其余卡片回到明亮描边结构', () => {
@@ -72,26 +67,24 @@ describe('HP-20261010-02 第一批六页尺寸契约', () => {
     expect(template).toContain('bindtap="openSettings"');
     expect(template).toContain('aria-label="打开设置"');
     expect(template).not.toContain('<text>设置</text>');
-    expect(styles).toMatch(/\.profile-hero\.has-bg\s*\{[^}]*min-height:\s*600rpx/s);
+    expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*360rpx/s);
     const card = effectiveBlock(styles, '.menu-list');
-    expect(declaration(card, 'border')).toBe('1rpx solid var(--color-border)');
-    expect(declaration(card, 'border-radius')).toBe('24rpx');
+    expect(declaration(card, 'border')).toBe('4rpx solid var(--color-border-strong)');
+    expect(declaration(card, 'border-radius')).toBe('var(--radius-card)');
     expectSemantic(declaration(card, 'background'), '--color-surface');
-    expect(declaration(effectiveBlock(styles, '.menu-card'), 'min-height')).toBe(
-      'var(--control-height)',
-    );
+    expect(declaration(effectiveBlock(styles, '.menu-card'), 'min-height')).toBe('120rpx');
   });
 
-  it('设置页使用 16px 边距、紧凑标题、16px 卡片和 48px 操作', () => {
+  it('设置页使用统一边距、四级标题和 16px 卡片', () => {
+    const app = read('miniprogram/app.wxss');
     const styles = read('miniprogram/pages/settings/index.wxss');
-    const page = effectiveBlock(styles, '.settings-page');
     const release = effectiveBlock(styles, '.release-content');
-    expect(declaration(page, 'padding-right')).toBe('var(--page-gutter)');
-    expect(declaration(page, 'padding-left')).toBe('var(--page-gutter)');
+    const releaseCard = effectiveBlock(styles, '.release-card');
+    expect(app).toContain('padding: 32rpx var(--page-gutter);');
     expect(declaration(effectiveBlock(styles, '.hero-title'), 'font-size')).toBe('48rpx');
-    expect(declaration(release, 'padding')).toBe('32rpx');
-    expect(declaration(release, 'border-width')).toBe('4rpx');
-    expectSemantic(declaration(release, 'border-radius'), '--radius-card');
+    expect(declaration(release, 'padding')).toBe('28rpx');
+    expect(declaration(releaseCard, 'border')).toBe('4rpx solid var(--color-border-strong)');
+    expectSemantic(declaration(releaseCard, 'border-radius'), '--radius-card');
     expect(styles).not.toMatch(/theme-option|theme-preview|appearance-card/);
   });
 
@@ -117,26 +110,23 @@ describe('HP-20261010-02 第一批六页尺寸契约', () => {
     for (const value of forbidden) {
       expect(styles.toLowerCase()).not.toContain(value);
     }
+    const app = read('miniprogram/app.wxss');
     expectSemantic(
-      declaration(effectiveBlock(styles, '.credential-page .hero-title'), 'color'),
-      '--color-text',
+      declaration(effectiveBlock(styles, '.credential-page'), 'background'),
+      '--color-bg',
     );
     expectSemantic(
-      declaration(effectiveBlock(styles, '.credential-page .hero-subtitle'), 'color'),
-      '--color-muted',
+      declaration(effectiveBlock(app, '.credential-card'), 'background'),
+      '--color-surface',
     );
-    expectSemantic(declaration(effectiveBlock(styles, '.serial'), 'color'), '--color-text');
+    expectSemantic(declaration(effectiveBlock(styles, '.serial'), 'color'), '--color-muted');
     expectSemantic(
-      declaration(effectiveBlock(styles, '.approved-mark'), 'color'),
-      '--color-success-text',
-    );
-    expectSemantic(
-      declaration(effectiveBlock(styles, '.timeline-status'), 'color'),
-      '--color-text',
+      declaration(effectiveBlock(app, '.approved-mark'), 'color'),
+      '--color-status-success',
     );
     expectSemantic(
-      declaration(effectiveBlock(styles, '.timeline-mark'), 'background'),
-      '--color-muted',
+      declaration(effectiveBlock(app, '.approved-mark'), 'background'),
+      '--color-status-success-soft',
     );
   });
 });

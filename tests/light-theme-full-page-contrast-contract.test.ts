@@ -88,199 +88,146 @@ describe('HP-20261010-02 统一明亮 UI 全页对比度契约', () => {
     const profile = read('miniprogram/pages/profile/index.wxss');
     const profileMenu = effectiveBlock(profile, '.menu-card');
     expectSemantic(declaration(profileMenu, 'background'), '--color-surface');
-    expectSemantic(declaration(effectiveBlock(profile, '.menu-title'), 'color'), '--color-text');
-    expectSemantic(declaration(effectiveBlock(profile, '.muted'), 'color'), '--color-muted');
+    expectSemantic(declaration(profileMenu, 'color'), '--color-text');
+    expectSemantic(declaration(effectiveBlock(app, '.muted'), 'color'), '--color-muted');
 
     const form = read('miniprogram/pages/profile-edit/index.wxss');
-    expectPair(
-      'miniprogram/pages/profile-edit/index.wxss',
-      '.profile-form-page .form-card',
-      '--color-text',
-      '--color-surface',
+    const formCard = effectiveBlock(app, '.form-card');
+    expectSemantic(declaration(formCard, 'color'), '--color-text');
+    expectSemantic(declaration(formCard, 'background'), '--color-surface');
+    expectSemantic(
+      declaration(effectiveBlock(form, '.form-error'), 'color'),
+      '--color-brand-active',
     );
     expectSemantic(
-      declaration(effectiveBlock(form, '.profile-form-page .form-error'), 'color'),
-      '--color-danger-text',
-    );
-    expectPair(
-      'miniprogram/pages/profile-edit/index.wxss',
-      '.photo-preview-button',
-      '--color-text',
-      '--color-media-placeholder-bg',
+      declaration(effectiveBlock(form, '.photo-preview-button'), 'background'),
+      '--color-raised',
     );
     expectSemantic(
       declaration(effectiveBlock(form, '.photo-placeholder'), 'color'),
-      '--color-media-muted',
+      '--color-muted',
     );
-    const disabled = effectiveBlock(form, '.avatar-action[disabled]');
-    expectSemantic(declaration(disabled, 'background'), '--color-raised');
-    expectSemantic(declaration(disabled, 'color'), '--color-muted');
+    expectSemantic(
+      declaration(effectiveBlock(app, 'button[disabled]'), 'background'),
+      '--color-raised',
+    );
+    expectSemantic(
+      declaration(effectiveBlock(app, 'button[disabled]'), 'color'),
+      '--color-disabled-text',
+    );
   });
 
   it('registrations 与 activity-card 的卡片正文、辅助信息和 CTA 可读', () => {
-    expectPair(
-      'miniprogram/pages/registrations/index.wxss',
-      '.registration-card',
-      '--color-text',
-      '--color-surface',
-    );
+    const sharedCard = effectiveBlock(app, '.registration-card');
+    expectSemantic(declaration(sharedCard, 'color'), '--color-text');
+    expectSemantic(declaration(sharedCard, 'background'), '--color-surface');
     const registrations = read('miniprogram/pages/registrations/index.wxss');
-    for (const selector of [
-      '.heading-count',
-      '.refresh-note',
-      '.card-index',
-      '.registration-meta',
-    ]) {
-      expectSemantic(
-        declaration(effectiveBlock(registrations, selector), 'color'),
-        '--color-muted',
-      );
-    }
+    expectSemantic(
+      declaration(effectiveBlock(registrations, '.heading-copy'), 'color'),
+      '--color-muted',
+    );
+    expectSemantic(
+      declaration(effectiveBlock(registrations, '.card-index'), 'color'),
+      '--color-muted',
+    );
     expectSemantic(
       declaration(effectiveBlock(registrations, '.meeting-label'), 'color'),
       '--color-media-muted',
     );
 
     const card = read('miniprogram/components/activity-card/index.wxss');
-    expectPair(
-      'miniprogram/components/activity-card/index.wxss',
-      '.activity-card',
-      '--color-text',
+    expectSemantic(
+      declaration(effectiveBlock(card, '.activity-card'), 'background'),
       '--color-surface',
     );
-    expectSemantic(declaration(effectiveBlock(card, '.metric-unit'), 'color'), '--color-muted');
+    expectSemantic(declaration(effectiveBlock(app, '.metric-unit'), 'color'), '--color-muted');
     expect(declaration(effectiveBlock(card, '.metrics'), 'grid-template-columns')).toBe(
       'repeat(3, minmax(0, 1fr))',
     );
     const template = read('miniprogram/components/activity-card/index.wxml');
     expect(template).not.toContain('RIDE DATE');
     expect(template).toContain('bindtap="open"');
-    expect(template).not.toContain('查看详情');
+    expect(template).toContain('class="card-action"');
   });
 
-  it('activity-detail 的票据 Hero、费用和骑友徽标使用可读语义色', () => {
+  it('activity-detail 的集合、费用和骑友名片使用可读语义色', () => {
     const detail = read('miniprogram/pages/activity-detail/index.wxss');
     expectSemantic(
       declaration(effectiveBlock(detail, '.meeting-location__label'), 'color'),
-      '--color-media-muted',
+      '--color-muted',
     );
-    expectSemantic(declaration(effectiveBlock(detail, '.fee-included'), 'color'), '--color-text');
-    expectSemantic(declaration(effectiveBlock(detail, '.fee-excluded'), 'color'), '--color-text');
     expectSemantic(
-      declaration(effectiveBlock(detail, '.rider-card .gender-pill'), 'color'),
+      declaration(effectiveBlock(detail, '.check'), 'color'),
+      '--color-status-success',
+    );
+    expectSemantic(
+      declaration(effectiveBlock(detail, '.rider-card-photo__identity'), 'color'),
       '--color-on-media',
     );
   });
 
-  it('扫描出的活动编辑、报名表单和凭证页风险均接入语义状态色', () => {
-    expectPair(
-      'miniprogram/pages/admin/activity-edit/index.wxss',
-      '.error-summary',
-      '--color-danger-text',
-      '--color-danger-soft',
-    );
-    const activityEdit = read('miniprogram/pages/admin/activity-edit/index.wxss');
-    expectSemantic(
-      declaration(effectiveBlock(activityEdit, '.field-error-copy'), 'color'),
-      '--color-danger-text',
-    );
-    expectSemantic(
-      declaration(effectiveBlock(activityEdit, '.required'), 'color'),
-      '--color-danger-text',
+  it('活动编辑、报名表单和凭证页风险均接入 V4 语义状态色', () => {
+    const activityEdit = read('miniprogram/pages/admin/activity-edit/index.wxml');
+    expect(activityEdit).toContain('class="card danger"');
+    expectSemantic(declaration(effectiveBlock(app, '.danger'), 'color'), '--color-brand-active');
+    expect(declaration(effectiveBlock(app, '.required'), 'border')).toBe(
+      '4rpx solid var(--color-brand)',
     );
 
-    expectPair(
-      'miniprogram/pages/registration-form/index.wxss',
-      '.error-card',
-      '--color-danger-text',
-      '--color-danger-soft',
-    );
     const registration = read('miniprogram/pages/registration-form/index.wxss');
+    expect(declaration(effectiveBlock(registration, '.error-card'), 'border')).toBe(
+      '4rpx solid var(--color-brand)',
+    );
     expect(
       declaration(effectiveBlock(registration, '.form-page button[disabled]'), 'opacity'),
     ).toBe('1');
-    const credential = read('miniprogram/pages/credential/index.wxss');
-    const waiting = effectiveBlock(credential, '.status-waiting');
-    expectSemantic(declaration(waiting, 'background'), '--color-warning-soft');
-    expectSemantic(declaration(waiting, 'border-color'), '--color-warning');
+    const credential = read('miniprogram/pages/credential/index.wxml');
+    expect(credential).toContain('class="status-label">{{statusText}}');
+    expect(credential).toContain("item.status === 'approved' || item.status === 'checked_in'");
   });
 
   it('共享状态与跨页性别徽标使用统一语义色', () => {
     for (const [selector, foreground, background] of [
-      ['.pill--success', '--color-success-text', '--color-success-soft'],
-      ['.pill--warning', '--color-warning-text', '--color-warning-soft'],
-      ['.pill--danger', '--color-danger-text', '--color-danger-soft'],
+      ['.pill--success', '--color-status-success', '--color-status-success-soft'],
+      ['.pill--warning', '--color-status-warning', '--color-status-warning-soft'],
+      ['.pill--danger', '--color-brand-active', '--color-surface'],
     ] as const) {
       expectPair('miniprogram/components/status-pill/index.wxss', selector, foreground, background);
     }
 
-    const review = read('miniprogram/pages/admin/review-detail/index.wxss');
-    expectSemantic(
-      declaration(
-        effectiveBlock(review, '.capability-card.gender-male .fact:first-child strong'),
-        'color',
-      ),
-      '--color-gender-male',
-    );
-    expectSemantic(
-      declaration(
-        effectiveBlock(review, '.capability-card.gender-female .fact:first-child strong'),
-        'color',
-      ),
-      '--color-gender-female',
-    );
+    expect(tokens['--color-gender-male']).toBe('var(--color-text)');
+    expect(tokens['--color-gender-female']).toBe('var(--color-text)');
 
     const capability = read('miniprogram/pages/capability-card/index.wxss');
     expectSemantic(
-      declaration(effectiveBlock(capability, '.rider-card'), 'background'),
+      declaration(effectiveBlock(capability, '.card-visual'), 'background'),
       '--color-media-card-bg',
     );
-    for (const [tone, token] of [
-      ['male', '--color-on-media-gender-male'],
-      ['female', '--color-on-media-gender-female'],
-      ['unknown', '--color-on-media-gender-unknown'],
-    ] as const) {
-      expectSemantic(
-        declaration(effectiveBlock(capability, `.rider-card.gender-${tone} .gender-pill`), 'color'),
-        token,
-      );
-    }
-
-    expect(capability).toMatch(/\.fallback-logo\s*\{[^}]*opacity:\s*0\.72/s);
-    expect(tokens['--color-on-media-gender-male']).toBe('#ffffff');
-    expect(tokens['--color-on-media-gender-female']).toBe('#ffffff');
-    expect(tokens['--color-on-media-gender-unknown']).toBe('#ffffff');
+    expect(declaration(effectiveBlock(capability, '.gender-pill'), 'border')).toBe(
+      '2rpx solid var(--color-border-strong)',
+    );
+    expect(capability).toMatch(/\.fallback-logo\s*\{[^}]*position:\s*absolute/s);
+    expect(tokens['--color-on-media-gender-male']).toBe('var(--color-on-media)');
+    expect(tokens['--color-on-media-gender-female']).toBe('var(--color-on-media)');
+    expect(tokens['--color-on-media-gender-unknown']).toBe('var(--color-on-media)');
   });
 
   it('开发者工具运行态暴露的活动管理标题与骑行名片指标保持高对比', () => {
-    const activityList = read('miniprogram/pages/admin/activity-list/index.wxss');
-    expectSemantic(
-      declaration(effectiveBlock(activityList, '.activity-list-page .title'), 'color'),
-      '--color-text',
-    );
+    expectSemantic(declaration(effectiveBlock(app, 'page'), 'color'), '--color-text');
 
     const capability = read('miniprogram/pages/capability-card/index.wxss');
-    expect(
-      declaration(effectiveBlock(capability, '.metric-sheet .metric-item'), 'background'),
-    ).toBe('transparent');
     expectSemantic(
-      declaration(effectiveBlock(capability, '.metric-sheet'), 'background'),
+      declaration(effectiveBlock(capability, '.card-visual'), 'background'),
       '--color-media-card-bg',
     );
     expectSemantic(
-      declaration(effectiveBlock(capability, '.metric-value'), 'color'),
+      declaration(effectiveBlock(capability, '.card-label'), 'color'),
       '--color-on-media',
-    );
-    expectSemantic(
-      declaration(effectiveBlock(capability, '.metric-label'), 'color'),
-      '--color-media-muted',
     );
     expectSemantic(
       declaration(effectiveBlock(capability, '.card-caption'), 'color'),
       '--color-muted',
     );
-    expect(
-      contrast(tokens['--color-on-media-gender-unknown'], tokens['--color-media-card-bg']),
-    ).toBeGreaterThanOrEqual(4.5);
+    expectUiContrast('var(--color-on-media-gender-unknown)', 'var(--color-media-card-bg)', 4.5);
   });
 });

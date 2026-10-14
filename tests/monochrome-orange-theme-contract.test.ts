@@ -26,15 +26,16 @@ const forbiddenThemeColors = [
 ];
 
 describe('黑白橙全局主题契约', () => {
-  it('全局语义 token 只以黑白灰和主题橙表达状态', () => {
+  it('全局语义 token 使用黑白灰、品牌橙及 V4 成功/提醒色', () => {
     const app = readFileSync('miniprogram/app.wxss', 'utf8');
     expect(app).toContain('--color-brand: #e85b32;');
     expect(app).toContain('--color-text: #171717;');
-    expect(app).toContain('--color-success: #171717;');
-    expect(app).toContain('--color-danger: #171717;');
-    expect(app).toContain('--color-warning: #e85b32;');
-    expect(app).toContain('--color-on-media-gender-male: #ffffff;');
-    expect(app).toContain('--color-on-media-gender-female: #ffffff;');
+    expect(app).toContain('--color-status-success: #1d7a3e;');
+    expect(app).toContain('--color-status-warning: #7a5c00;');
+    expect(app).toContain('--color-danger: var(--color-text);');
+    expect(app).toContain('--color-warning: var(--color-brand);');
+    expect(app).toContain('--color-on-media-gender-male: var(--color-on-media);');
+    expect(app).toContain('--color-on-media-gender-female: var(--color-on-media);');
   });
 
   it('全部页面和组件不再引入旧的绿蓝红黄状态色', () => {
@@ -46,12 +47,14 @@ describe('黑白橙全局主题契约', () => {
     }
   });
 
-  it('行程和审核模块用结构与黑白橙区分状态', () => {
-    const trips = readFileSync('miniprogram/pages/registrations/index.wxss', 'utf8');
-    const reviews = readFileSync('miniprogram/pages/admin/reviews/index.wxss', 'utf8');
+  it('行程和审核模块通过结构与 V4 语义状态色区分状态', () => {
+    const app = readFileSync('miniprogram/app.wxss', 'utf8');
+    const trips = readFileSync('miniprogram/pages/registrations/index.wxml', 'utf8');
+    const reviews = readFileSync('miniprogram/pages/admin/reviews/index.wxml', 'utf8');
 
-    expect(trips).toContain('background: var(--color-text);');
-    expect(trips).toContain('border-color: var(--color-brand);');
-    expect(reviews).toContain('border-color: var(--color-brand);');
+    expect(app).toContain('background: var(--color-status-success-soft);');
+    expect(app).toContain('border: 2rpx solid var(--color-status-warning);');
+    expect(trips).toContain('status-pill status="{{item.displayStatusText}}"');
+    expect(reviews).toContain('class="status-tag status-{{item.status}}"');
   });
 });
