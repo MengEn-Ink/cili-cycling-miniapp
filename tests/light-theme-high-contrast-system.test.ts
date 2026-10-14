@@ -56,7 +56,7 @@ describe('approved unified high-contrast UI', () => {
   it('uses strong activity chrome while preserving a fixed metric grid', () => {
     const card = read('miniprogram/components/activity-card/index.wxss');
     const cardShell = effectiveBlock(card, '.activity-card');
-    expect(declaration(cardShell, 'border')).toContain('var(--color-card-border)');
+    expect(declaration(cardShell, 'border')).toContain('var(--color-border)');
     expectSemantic(declaration(cardShell, 'background'), '--color-surface');
     expect(declaration(effectiveBlock(card, '.metrics'), 'grid-template-columns')).toBe(
       'repeat(3, minmax(0, 1fr))',
@@ -92,7 +92,7 @@ describe('approved unified high-contrast UI', () => {
     const profile = read('miniprogram/pages/profile/index.wxss');
     const menuCard = effectiveBlock(profile, '.menu-card');
     const menuList = effectiveBlock(profile, '.menu-list');
-    expect(declaration(menuList, 'border')).toContain('var(--color-border-strong)');
+    expect(declaration(menuList, 'border')).toContain('var(--color-border)');
     expectSemantic(declaration(menuCard, 'background'), '--color-surface');
     expect(declaration(menuCard, 'min-height')).toBe('120rpx');
   });

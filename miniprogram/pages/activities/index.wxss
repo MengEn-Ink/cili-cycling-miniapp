@@ -25,6 +25,11 @@
   min-width: 0;
   min-height: var(--control-height);
 }
+.timeline-tab.is-active {
+  border-color: var(--color-brand);
+  background: var(--color-brand);
+  color: var(--color-on-media);
+}
 .day-chip-shell {
   position: relative;
   margin: 24rpx calc(0rpx - var(--page-gutter)) 0;
@@ -35,7 +40,7 @@
 }
 .day-chip-bar__inner {
   display: inline-flex;
-  gap: 16rpx;
+  gap: 12rpx;
   padding: 0 calc(var(--page-gutter) + 48rpx) 8rpx var(--page-gutter);
 }
 .day-chip {
@@ -45,10 +50,10 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  min-width: 168rpx;
+  min-width: 128rpx;
   min-height: 104rpx;
-  padding: 8rpx 24rpx;
-  border: 4rpx solid var(--color-border-strong);
+  padding: 8rpx 16rpx;
+  border: 2rpx solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text);
@@ -68,11 +73,12 @@
   white-space: nowrap;
 }
 .day-chip.is-active {
-  background: var(--color-action);
-  color: var(--color-on-action);
+  border-color: var(--color-brand);
+  background: var(--color-brand);
+  color: var(--color-on-media);
 }
 .day-chip.is-active .day-chip__date {
-  color: var(--color-media-muted);
+  color: var(--color-on-action);
 }
 .day-chip-fade {
   position: absolute;
@@ -80,10 +86,10 @@
   top: 0;
   right: 0;
   bottom: 8rpx;
-  width: 48rpx;
+  width: 32rpx;
   pointer-events: none;
   background: var(--color-bg);
-  opacity: 0.88;
+  opacity: 0.72;
 }
 .list-count {
   display: flex;
@@ -160,9 +166,9 @@
     line-height: 56rpx;
   }
   .day-chip {
-    min-width: 152rpx;
-    padding-right: 16rpx;
-    padding-left: 16rpx;
+    min-width: 120rpx;
+    padding-right: 12rpx;
+    padding-left: 12rpx;
   }
   .carousel-guide {
     grid-template-columns: auto minmax(64rpx, 1fr);

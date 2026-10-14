@@ -99,7 +99,7 @@ describe('报名表单受控控件与视觉契约', () => {
     expect(styles).toMatch(
       /\.identity-row \{[^}]*justify-content: space-between;[^}]*min-height: var\(--control-height\);/,
     );
-    expect(styles).toMatch(/\.activity-context \{[^}]*background: var\(--color-media-card-bg\);/);
+    expect(styles).toMatch(/\.activity-context \{[^}]*background: var\(--color-surface\);/);
     expect(styles).not.toMatch(/#[0-9a-f]{3,8}\b/i);
     expect(styles).toContain('@media (max-width: 340px)');
     expect(styles).toContain('grid-template-columns: 1fr');

@@ -40,6 +40,18 @@
   font-size: 24rpx;
   font-weight: 800;
 }
+.detail-page .info-bar {
+  border: 2rpx solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.detail-page .info-kicker,
+.detail-page .info-meta {
+  color: var(--color-muted);
+}
+.detail-page .info-title {
+  color: var(--color-text);
+}
 .info-head,
 .section-heading,
 .attendees-heading {
@@ -50,9 +62,9 @@
 }
 .info-tag {
   padding: 4rpx 16rpx;
-  border: 4rpx solid var(--color-media-muted);
-  border-radius: 8rpx;
-  color: var(--color-on-media);
+  border: 2rpx solid var(--color-border);
+  border-radius: 20rpx;
+  color: var(--color-text);
   font-size: 24rpx;
   font-weight: 800;
 }
@@ -68,6 +80,13 @@
 .content > .detail-decision,
 .content > .metric-panel {
   margin-top: 0;
+}
+.detail-page .card,
+.detail-page .official-route-card,
+.detail-page .gpx-route-card,
+.detail-page .detail-decision {
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-display);
 }
 .metric-panel {
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -393,9 +412,13 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .detail-action .btn {
-  background: var(--color-action) !important;
+  border-color: var(--color-brand);
+  border-radius: 999rpx !important;
+  background: var(--color-brand) !important;
+  color: var(--color-on-media) !important;
 }
 .detail-action .btn--secondary {
+  border-color: var(--color-border);
   background: var(--color-surface) !important;
   color: var(--color-text) !important;
 }

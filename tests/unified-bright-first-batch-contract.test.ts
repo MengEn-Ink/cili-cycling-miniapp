@@ -69,8 +69,8 @@ describe('HP-20261010-02 第一批六页尺寸契约', () => {
     expect(template).not.toContain('<text>设置</text>');
     expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*360rpx/s);
     const card = effectiveBlock(styles, '.menu-list');
-    expect(declaration(card, 'border')).toBe('4rpx solid var(--color-border-strong)');
-    expect(declaration(card, 'border-radius')).toBe('var(--radius-card)');
+    expect(declaration(card, 'border')).toBe('2rpx solid var(--color-border)');
+    expect(declaration(card, 'border-radius')).toBe('var(--radius-display)');
     expectSemantic(declaration(card, 'background'), '--color-surface');
     expect(declaration(effectiveBlock(styles, '.menu-card'), 'min-height')).toBe('120rpx');
   });

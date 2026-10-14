@@ -1,7 +1,7 @@
 /*
  * 此里 · 全套 UI 改版高保真原型（2026-10-14）
  * 颜色变量与 miniprogram/app.wxss 一一对应（同名、同值）；1rpx = 0.5px。
- * 只有明亮主题；黑白灰为主，主题橙只用于当前步骤、必选与待处理。
+ * 只有明亮主题；暖灰背景与浅边框承载内容，主题橙用于主操作、当前步骤和待处理状态。
  * --color-status-* 为 theme-constraints.md §2.3 的“原型先行”变量（开发第 1 批进入 app.wxss），
  * 只用于 success / warning 小标签、行内提示和图标（§3.3）。
  */
@@ -27,18 +27,18 @@
   --color-brand-active: #c84320;
   --color-brand-soft: #fff0e9;
   --color-logo-background: #20241f;
-  --color-on-brand: #171717;
-  --color-action: #171717;
-  --color-action-active: #333333;
+  --color-on-brand: #ffffff;
+  --color-action: #e85b32;
+  --color-action-active: #c84320;
   --color-on-action: #ffffff;
   --color-status-success: #1d7a3e;
   --color-status-success-soft: #e7f4eb;
   --color-status-warning: #7a5c00;
   --color-status-warning-soft: #fbf1cc;
   --radius-xs: 4px;
-  --radius-sm: 8px;
+  --radius-sm: 10px;
   --radius-md: 12px;
-  --radius-card: 8px;
+  --radius-card: 14px;
   --radius-full: 9999px;
   --spacing-xs: 4px;
   --spacing-sm: 8px;
@@ -125,7 +125,7 @@ code {
   align-items: center;
   height: var(--control-height);
   padding: 0 16px;
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   color: var(--color-text);
   font-weight: 800;
@@ -185,7 +185,7 @@ code {
   max-height: calc(100vh - 32px);
   overflow: auto;
   padding: 16px;
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
 }
@@ -361,7 +361,7 @@ code {
 }
 
 .tab-button.is-active {
-  color: var(--color-text);
+  color: var(--color-brand);
 }
 
 .tab-icon {
@@ -541,7 +541,7 @@ code {
 .state-switch button {
   height: 36px;
   padding: 0 12px;
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   font-size: 12px;
   font-weight: 800;
@@ -589,7 +589,7 @@ code {
 .journey-list button {
   height: 36px;
   padding: 0 12px;
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   font-size: 12px;
   font-weight: 800;
@@ -656,7 +656,7 @@ code {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   overflow: hidden;
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
 }
 
@@ -673,7 +673,7 @@ code {
 }
 
 .step + .step {
-  border-left: 2px solid var(--color-border-strong);
+  border-left: 1px solid var(--color-border);
 }
 
 .step b {
@@ -690,14 +690,15 @@ code {
   color: var(--color-on-brand);
 }
 
-/* 黑底信息条（票据） */
+/* 关键信息条：浅色卡片承载内容，左侧品牌橙标识业务上下文。 */
 .info-bar {
   position: relative;
   margin-top: 16px;
   padding: 16px 16px 16px 20px;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
-  background: var(--color-media-card-bg);
-  color: var(--color-on-media);
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .info-bar::before {
@@ -721,7 +722,7 @@ code {
   font-size: 12px;
   line-height: 18px;
   font-weight: 700;
-  color: var(--color-media-muted);
+  color: var(--color-muted);
 }
 
 .info-title {
@@ -745,7 +746,7 @@ code {
   margin-top: 8px;
   font-size: 12px;
   line-height: 18px;
-  color: var(--color-media-muted);
+  color: var(--color-muted);
 }
 
 .info-rows {
@@ -757,7 +758,7 @@ code {
 }
 
 .info-rows .row .k {
-  color: var(--color-media-muted);
+  color: var(--color-muted);
 }
 
 .info-tag {
@@ -765,12 +766,12 @@ code {
   align-items: center;
   height: 24px;
   padding: 0 8px;
-  border: 2px solid var(--color-media-muted);
-  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
-  color: var(--color-on-media);
+  color: var(--color-text);
 }
 
 .info-tag.is-pending {
@@ -788,7 +789,7 @@ code {
 .card {
   margin-top: var(--card-gap);
   padding: 16px;
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
 }
@@ -899,7 +900,7 @@ code {
   width: 100%;
   height: var(--control-height);
   padding: 0 12px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-full);
   font-size: 16px;
   font-weight: 800;
   text-align: center;
@@ -917,7 +918,7 @@ code {
 }
 
 .btn-secondary {
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   background: var(--color-input-bg);
   color: var(--color-text);
 }
@@ -1024,7 +1025,7 @@ code {
 }
 
 .tag-outline {
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   color: var(--color-text);
   background: var(--color-surface);
 }
@@ -1058,7 +1059,7 @@ code {
   grid-auto-flow: column;
   overflow: hidden;
   margin-top: 8px;
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
 }
 
@@ -1077,7 +1078,7 @@ code {
 }
 
 .seg button + button {
-  border-left: 2px solid var(--color-border-strong);
+  border-left: 1px solid var(--color-border);
 }
 
 .seg button.is-active {
@@ -1093,7 +1094,7 @@ code {
 
 .chips {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   overflow-x: auto;
   margin-top: 12px;
   padding-bottom: 2px;
@@ -1106,10 +1107,10 @@ code {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: 64px;
-  height: 52px;
-  padding: 0 8px;
-  border: 2px solid var(--color-border-strong);
+  min-width: 56px;
+  height: 48px;
+  padding: 0 6px;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   font-size: 14px;
@@ -1130,7 +1131,7 @@ code {
 }
 
 .chip.is-active small {
-  color: var(--color-media-muted);
+  color: var(--color-on-action);
 }
 
 /* 输入框 */
@@ -1158,7 +1159,7 @@ code {
   min-height: var(--control-height);
   margin-top: 8px;
   padding: 0 12px;
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-input-bg);
   font-size: 14px;
@@ -1319,7 +1320,7 @@ code {
 }
 
 .upload-thumb {
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   background: var(--color-raised);
 }
 
@@ -1451,16 +1452,16 @@ code {
 }
 
 .metric-grid.on-dark {
-  border-color: var(--color-subtle);
-  background: var(--color-subtle);
+  border-color: var(--color-border);
+  background: var(--color-border);
 }
 
 .metric-grid.on-dark > span {
-  background: var(--color-media-card-bg);
+  background: var(--color-surface);
 }
 
 .metric-grid.on-dark small {
-  color: var(--color-media-muted);
+  color: var(--color-muted);
 }
 
 /* 头像、媒体 */
@@ -1616,7 +1617,7 @@ code {
   flex: 0 0 auto;
   width: 96px;
   height: 96px;
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   padding: 6px;
@@ -1803,7 +1804,7 @@ code {
 .activity-card {
   overflow: hidden;
   margin-top: var(--card-gap);
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
 }
@@ -1856,9 +1857,10 @@ code {
   grid-template-columns: repeat(3, 1fr);
   margin-top: 16px;
   padding: 12px 0;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
-  background: var(--color-media-card-bg);
-  color: var(--color-on-media);
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .trip-summary span {
@@ -1892,13 +1894,13 @@ code {
 .trip-summary small {
   font-size: 12px;
   line-height: 18px;
-  color: var(--color-media-muted);
+  color: var(--color-muted);
 }
 
 .trip-ticket {
   overflow: hidden;
   margin-top: var(--card-gap);
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
 }
@@ -1923,15 +1925,15 @@ code {
   gap: 8px;
   margin: 12px 0 0;
   padding: 12px 16px;
-  background: var(--color-media-card-bg);
-  color: var(--color-on-media);
+  background: var(--color-raised);
+  color: var(--color-text);
 }
 
 .trip-ticket-info small {
   display: block;
   font-size: 12px;
   line-height: 18px;
-  color: var(--color-media-muted);
+  color: var(--color-muted);
 }
 
 .trip-ticket-info b {
@@ -1960,7 +1962,7 @@ code {
   position: relative;
   margin-top: 16px;
   overflow: hidden;
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
 }
@@ -2006,7 +2008,7 @@ code {
   position: relative;
   overflow: hidden;
   margin-top: var(--card-gap);
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
 }
@@ -2119,7 +2121,7 @@ code {
 .menu-card {
   margin-top: var(--card-gap);
   padding: 0 16px;
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
 }
@@ -2136,7 +2138,7 @@ code {
   width: 32px;
   height: 32px;
   margin-right: 12px;
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
 }
 
@@ -2229,7 +2231,7 @@ code {
   line-height: 18px;
   font-weight: 800;
   letter-spacing: 3px;
-  color: var(--color-media-muted);
+  color: var(--color-muted);
 }
 
 /* 输入光标（聚焦态示意） */
@@ -2287,7 +2289,7 @@ code {
   width: 100%;
   margin-top: var(--card-gap);
   padding: 12px 16px;
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
   text-align: left;
@@ -2316,7 +2318,7 @@ code {
 .admin-card {
   margin-top: var(--card-gap);
   padding: 16px;
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
 }
@@ -2384,7 +2386,7 @@ code {
   margin-top: 8px;
   font-size: 12px;
   line-height: 18px;
-  color: var(--color-media-muted);
+  color: var(--color-muted);
 }
 
 /* 路线查看 */
@@ -2449,7 +2451,7 @@ body.capture .screen-notes {
 .overview-grid a {
   display: block;
   padding: 16px;
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
   color: var(--color-text);
@@ -2486,7 +2488,7 @@ body.capture .screen-notes {
   margin-top: 12px;
   border-collapse: collapse;
   background: var(--color-surface);
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   font-size: 14px;
   line-height: 22px;
 }
@@ -2524,7 +2526,7 @@ body.capture .screen-notes {
 
 .spec-demo > div {
   padding: 16px;
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-bg);
 }
@@ -2808,7 +2810,7 @@ body.capture .screen-notes {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   overflow: hidden;
   margin-top: var(--spacing-lg);
-  border: 2px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
 }
 
@@ -2829,12 +2831,12 @@ body.capture .screen-notes {
 }
 
 .review-filter button:nth-child(n + 4) {
-  border-top: 2px solid var(--color-border-strong);
+  border-top: 1px solid var(--color-border);
 }
 
 .review-filter button.is-active {
-  background: var(--color-action);
-  color: var(--color-on-action);
+  background: var(--color-brand);
+  color: var(--color-on-brand);
 }
 
 .review-filter small {

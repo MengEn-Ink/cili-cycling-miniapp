@@ -112,9 +112,9 @@ describe('CILI 活动页静态契约', () => {
   it('首页只使用品牌橙、石墨黑和暖灰白主题色，不继承荧光黄视觉', () => {
     expect(logoStyles).toContain('background: var(--color-logo-background)');
     expect(activitiesStyles).toContain('background: var(--color-bg)');
-    expect(activitiesStyles).toContain('border: 4rpx solid var(--color-border-strong)');
-    expect(activitiesStyles).toContain('background: var(--color-action)');
-    expect(activitiesStyles).not.toMatch(
+    expect(activitiesStyles).toContain('border: 2rpx solid var(--color-border)');
+    expect(activitiesStyles).toContain('background: var(--color-brand)');
+    expect(activitiesStyles).toMatch(
       /\.day-chip\.is-active\s*\{[^}]*background:\s*var\(--color-brand\)/s,
     );
     expect(activitiesStyles).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(|navy|blue|gradient/i);
@@ -168,14 +168,14 @@ describe('CILI 活动页静态契约', () => {
     expect(tokens['--radius-display']).toBe('32rpx');
     const card = effectiveBlock(activityCardStyles, '.activity-card');
     expectSemantic(declaration(card, 'background'), '--color-surface');
-    expectSemantic(declaration(card, 'border-radius'), '--radius-card');
+    expectSemantic(declaration(card, 'border-radius'), '--radius-display');
     expectSemantic(
       declaration(effectiveBlock(read('miniprogram/app.wxss'), '.metric-item'), 'background'),
       '--color-surface',
     );
     expectSemantic(
       declaration(effectiveBlock(detailStyles, '.detail-action .btn'), 'background'),
-      '--color-action',
+      '--color-brand',
     );
     expect(themeSources).not.toMatch(/pink|#ff69b4|#ffc0cb|#e91e63|#ec4899/i);
   });

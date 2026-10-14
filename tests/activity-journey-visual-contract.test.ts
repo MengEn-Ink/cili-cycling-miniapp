@@ -22,7 +22,7 @@ describe('activity journey visual contract', () => {
     expect(activityStyles).toMatch(/\.day-chip\s*\{[^}]*height:\s*104rpx/s);
     expect(activityStyles).toMatch(/\.day-chip\s*\{[^}]*flex-direction:\s*column/s);
     expect(activityStyles).toMatch(
-      /\.day-chip\.is-active\s*\{[^}]*background:\s*var\(--color-action\)/s,
+      /\.day-chip\.is-active\s*\{[^}]*background:\s*var\(--color-brand\)/s,
     );
   });
 

@@ -54,7 +54,7 @@ describe('活动详情设计与日期契约', () => {
     expect(styles).toContain('min-height: var(--control-height)');
   });
 
-  it('首屏使用独立头图、黑底信息条、同行状态与集合重点区', () => {
+  it('首屏使用独立头图、浅色信息卡、同行状态与集合重点区', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
     expect(template).toContain('class="detail-hero"');
@@ -67,8 +67,8 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('bindtap="editActivity">修改活动');
     expect(template).toContain('bindtap="adminRegistration">{{adminRegistrationLabel}}');
     expect(styles).toMatch(/\.detail-hero\s*\{[^}]*height:\s*360rpx/s);
-    expect(read('miniprogram/app.wxss')).toMatch(
-      /\.info-bar,[\s\S]*background:\s*var\(--color-media-card-bg\)/s,
+    expect(styles).toMatch(
+      /\.detail-page \.info-bar\s*\{[^}]*background:\s*var\(--color-surface\)/s,
     );
     expect(styles).toMatch(/\.time-card-primary\s*\{[^}]*font-size:\s*48rpx/s);
   });
