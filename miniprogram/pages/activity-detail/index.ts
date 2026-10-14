@@ -156,22 +156,6 @@ function attachedGpx(route: any): boolean {
   );
 }
 
-function coordinateLabel(point: any): string {
-  if (
-    !point ||
-    typeof point.latitude !== 'number' ||
-    !Number.isFinite(point.latitude) ||
-    point.latitude < -90 ||
-    point.latitude > 90 ||
-    typeof point.longitude !== 'number' ||
-    !Number.isFinite(point.longitude) ||
-    point.longitude < -180 ||
-    point.longitude > 180
-  )
-    return '';
-  return `${point.latitude.toFixed(5)}, ${point.longitude.toFixed(5)}`;
-}
-
 Page({
   loadRequestId: 0,
   initialShowPending: false,
@@ -200,8 +184,6 @@ Page({
     hasGpxRoute: false,
     hasElevationProfile: false,
     hasRouteOutline: false,
-    routeStartCoordinate: '',
-    routeEndCoordinate: '',
     coverFailed: false,
     downloadingGpx: false,
     teamId: '',
@@ -356,8 +338,6 @@ Page({
           hasGpxRoute,
           hasElevationProfile: elevationProfile.length >= 2,
           hasRouteOutline: routeOutline.length >= 2,
-          routeStartCoordinate: coordinateLabel(routeOutline[0]),
-          routeEndCoordinate: coordinateLabel(routeOutline[routeOutline.length - 1]),
           activityAction: primaryAction(item, registration, state),
           groupQrCodeExpired: groupQrExpired(detail.groupQrCodeUploadedAt),
         },

@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { declaration, effectiveBlock, expectSemantic, read } from './theme-contract-helpers';
 
 describe('HP-20261010-02 第一批六页尺寸契约', () => {
-  it('活动首页使用统一页边距、40px 分段控件和同级活动间距', () => {
+  it('活动首页使用统一页边距、40px 分段控件和完整卡片轮播', () => {
     const app = read('miniprogram/app.wxss');
     const styles = read('miniprogram/pages/activities/index.wxss');
     expect(app).toContain('padding: 32rpx var(--page-gutter);');
     expect(declaration(effectiveBlock(app, '.timeline-tab'), 'min-height')).toBe(
       'var(--segment-height)',
     );
-    expect(declaration(effectiveBlock(styles, '.activity-list'), 'gap')).toBe('var(--card-gap)');
+    expect(declaration(effectiveBlock(styles, '.activity-carousel'), 'height')).toBe('1040rpx');
     expect(declaration(effectiveBlock(app, '.page-title'), 'font-size')).toBe('48rpx');
   });
 

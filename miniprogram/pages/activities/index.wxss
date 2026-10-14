@@ -13,13 +13,18 @@
   grid-template-columns: 1fr 1fr;
   margin-top: 32rpx;
 }
-.day-chip-bar {
+.day-chip-shell {
+  position: relative;
   margin: 24rpx calc(0rpx - var(--page-gutter)) 0;
 }
+.day-chip-bar {
+  width: 100%;
+  white-space: nowrap;
+}
 .day-chip-bar__inner {
-  display: flex;
+  display: inline-flex;
   gap: 16rpx;
-  padding: 0 var(--page-gutter);
+  padding: 0 calc(var(--page-gutter) + 48rpx) 8rpx var(--page-gutter);
 }
 .day-chip {
   flex: 0 0 auto;
@@ -27,7 +32,8 @@
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  min-width: 144rpx;
+  box-sizing: border-box;
+  min-width: 168rpx;
   height: 104rpx;
   padding: 0 24rpx;
   border: 4rpx solid var(--color-border-strong);
@@ -38,14 +44,16 @@
 }
 .day-chip__relative {
   font-size: 28rpx;
-  line-height: 44rpx;
+  line-height: 40rpx;
   font-weight: 800;
+  white-space: nowrap;
 }
 .day-chip__date {
   color: var(--color-muted);
   font-size: 24rpx;
   line-height: 36rpx;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .day-chip.is-active {
   background: var(--color-action);
@@ -53,6 +61,17 @@
 }
 .day-chip.is-active .day-chip__date {
   color: var(--color-media-muted);
+}
+.day-chip-fade {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 0;
+  bottom: 8rpx;
+  width: 48rpx;
+  pointer-events: none;
+  background: var(--color-bg);
+  opacity: 0.88;
 }
 .list-count {
   display: flex;
@@ -67,13 +86,50 @@
   font-size: 28rpx;
   font-weight: 800;
 }
-.activity-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--card-gap);
+.activity-carousel {
+  width: 100%;
+  height: 1040rpx;
   margin-top: 16rpx;
+  overflow: hidden;
+}
+.activity-slide {
+  box-sizing: border-box;
+  height: 100%;
+  padding-bottom: 8rpx;
+}
+.carousel-guide {
+  display: grid;
+  grid-template-columns: auto auto minmax(120rpx, 1fr);
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 16rpx;
+  color: var(--color-muted);
+  font-size: 24rpx;
+  line-height: 36rpx;
+  font-variant-numeric: tabular-nums;
+}
+.carousel-guide text:first-child {
+  color: var(--color-text);
+  font-weight: 900;
+}
+.carousel-progress {
+  height: 8rpx;
+  overflow: hidden;
+  border-radius: 999rpx;
+  background: var(--color-border);
+}
+.carousel-progress__value {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-action);
+  transition: width 220ms ease;
 }
 .load-more {
   width: 100%;
   margin-top: 32rpx;
+}
+@media (prefers-reduced-motion: reduce) {
+  .carousel-progress__value {
+    transition: none;
+  }
 }

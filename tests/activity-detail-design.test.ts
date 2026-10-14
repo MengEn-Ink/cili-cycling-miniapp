@@ -238,6 +238,10 @@ describe('活动详情设计与日期契约', () => {
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
     expect(template).toContain('暂无有效海拔数据');
     expect(template).toContain('id="route-outline-canvas"');
+    expect(template).not.toContain('起点坐标');
+    expect(template).not.toContain('终点坐标');
+    expect(template).not.toContain('routeStartCoordinate');
+    expect(styles).toMatch(/\.route-outline-canvas,[\s\S]*?height:\s*440rpx/);
     expect(template).not.toContain('item.route.popularClimbs');
     expect(template).toContain('class="attendee-card-strip" scroll-x');
     expect(template).toContain('class="attendee-mini-card"');
@@ -662,8 +666,8 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
     expect(context.data.item.route.elevationProfile).toHaveLength(2);
     expect(context.data.hasElevationProfile).toBe(true);
     expect(context.data.hasRouteOutline).toBe(true);
-    expect(context.data.routeStartCoordinate).toBe('22.12346, 114.12346');
-    expect(context.data.routeEndCoordinate).toBe('22.22346, 114.22346');
+    expect(context.data).not.toHaveProperty('routeStartCoordinate');
+    expect(context.data).not.toHaveProperty('routeEndCoordinate');
     expect(context.data.estimatedRideTime).toBe('4 小时');
     expect(context.data.officialRouteId).toBe('');
   });

@@ -1,5 +1,6 @@
 import { rideService } from '../../../services/ride-service';
 import { appStore } from '../../../store/app-store';
+import { formatActivityDateTime } from '../../../utils/date-time';
 
 const emptyCloneForm = () => ({ deadline: '', startAt: '', endAt: '' });
 const newRequestId = () => `clone_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
@@ -56,6 +57,7 @@ function metricValue(...values: unknown[]) {
 function displayItem(item: any) {
   return {
     ...item,
+    displayDate: formatActivityDateTime(item.startAt || item.date),
     registrationMetric: metricValue(item.occupiedCount),
     pendingMetric: metricValue(item.pendingRegistrationCount, item.pendingCount),
     approvedMetric: metricValue(item.approvedRegistrationCount, item.approvedCount),

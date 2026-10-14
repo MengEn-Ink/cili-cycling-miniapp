@@ -33,7 +33,7 @@ describe('activity journey visual contract', () => {
     expect(activityCard).toContain("item.registrationStatus ? '查看行程' : '报名活动'");
     expect(activityCard.match(/catchtap="open"/g)).toHaveLength(2);
     expect(activityCardStyles).toMatch(
-      /\.card-actions\s*\{[^}]*grid-template-columns:\s*0\.82fr 1\.18fr/s,
+      /\.card-actions\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s,
     );
   });
 

@@ -94,10 +94,11 @@ describe('CILI 活动页静态契约', () => {
     expect(activityCardStyles).toContain('grid-template-columns: repeat(3, minmax(0, 1fr));');
   });
 
-  it('V4 保留时间筛选并通过纵向照片卡片突出核心信息', () => {
+  it('V4 保留时间筛选并通过横向照片卡片突出核心信息', () => {
     expect(activities).toContain('>即将开始</button>');
     expect(activities).toContain('>历史活动</button>');
-    expect(activities).toContain('class="activity-list"');
+    expect(activities).toContain('class="activity-carousel"');
+    expect(activities).toContain('bindchange="cardChange"');
     expect(activities).toContain('role="tabpanel"');
     expect(activityCard).toContain('{{item.displayDateLabel}}');
     expect(activityCard).toContain('{{item.displayTimeLabel}}');
@@ -134,6 +135,8 @@ describe('CILI 活动页静态契约', () => {
   it('照片卡片保留整卡点击，并提供清晰的主次操作', () => {
     expect(activityCard).toContain('bindtap="open"');
     expect(activityCard).toContain('查看详情');
+    expect(activityCard).toContain('class="card-actions"');
+    expect(activityCardStyles).toContain('grid-template-columns: repeat(2, minmax(0, 1fr));');
     expect(activityCardStyles).not.toContain('.route-arrow');
     expect(activityCardStyles).not.toContain('.card-cta');
   });

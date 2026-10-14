@@ -68,7 +68,7 @@
           <view class="photo-item" wx:for="{{photoItems}}" wx:key="id">
             <button class="photo-preview-button" data-url="{{item.previewUrl}}" bindtap="previewPhoto" disabled="{{!item.previewUrl}}" aria-label="预览个人背景图">
               <image wx:if="{{item.previewUrl}}" class="photo-thumbnail" src="{{item.previewUrl}}" mode="aspectFill" />
-              <view wx:else class="photo-placeholder">图片准备中</view>
+              <view wx:else class="photo-placeholder">背景图处理中，稍后即可预览</view>
             </button>
           </view>
         </view>

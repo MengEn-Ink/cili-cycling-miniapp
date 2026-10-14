@@ -173,20 +173,46 @@
 }
 .route-native-metrics {
   margin-top: 24rpx;
+  border-radius: var(--radius-sm);
+}
+.route-native-metrics > view {
+  min-height: 120rpx;
+}
+.route-native-metrics > view > text:first-child {
+  display: block;
+  margin-bottom: 4rpx;
 }
 .route-estimate {
   display: flex;
   justify-content: space-between;
   min-height: 88rpx;
+  margin-top: 16rpx;
+  padding: 0 24rpx;
   align-items: center;
-  border-bottom: 2rpx solid var(--color-border);
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-raised);
+  font-weight: 800;
+}
+.route-estimate text:last-child {
+  color: var(--color-action);
+  font-variant-numeric: tabular-nums;
 }
 .route-visual-heading {
   margin-top: 32rpx;
   font-weight: 900;
 }
 .route-outline-canvas,
-.route-outline-image,
+.route-outline-image {
+  position: relative;
+  z-index: 0;
+  width: 100%;
+  height: 440rpx;
+  margin-top: 16rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
 .elevation-canvas {
   position: relative;
   z-index: 0;
@@ -206,14 +232,6 @@
   border: 4rpx dashed var(--color-border);
   border-radius: var(--radius-sm);
   color: var(--color-muted);
-}
-.route-coordinate-list > view {
-  display: flex;
-  justify-content: space-between;
-  min-height: 72rpx;
-  align-items: center;
-  border-bottom: 2rpx solid var(--color-border);
-  font-size: 24rpx;
 }
 .gpx-download-row {
   margin-top: 24rpx;
@@ -362,6 +380,9 @@
 }
 .rider-card-body {
   padding: 32rpx;
+}
+.detail-action--admin {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .detail-action .btn {
   background: var(--color-action) !important;

@@ -28,11 +28,15 @@ const VIEW_COPY = {
   },
 } as const;
 
-type DisplayDayChip = CarouselDayChip & { dateLabel: string };
+type DisplayDayChip = CarouselDayChip & { relativeLabel: string; dateLabel: string };
 
 function displayDayChip(chip: CarouselDayChip): DisplayDayChip {
   const [, month, day] = chip.key.split('-');
-  return { ...chip, dateLabel: `${Number(month)}月${Number(day)}日` };
+  const labelParts = chip.label.split(' ');
+  const relativeLabel = /^(今天|明天|后天)$/.test(chip.label)
+    ? chip.label
+    : labelParts[labelParts.length - 1] || '活动日';
+  return { ...chip, relativeLabel, dateLabel: `${Number(month)}月${Number(day)}日` };
 }
 
 function displayActivity(item: Activity) {
