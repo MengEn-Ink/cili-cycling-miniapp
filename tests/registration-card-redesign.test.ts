@@ -1,6 +1,7 @@
 // @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { declaration, effectiveBlock, expectSemantic } from './theme-contract-helpers';
 
 const read = (file: string) => readFileSync(file, 'utf8');
 const trips = read('miniprogram/pages/registrations/index.wxml');
@@ -11,23 +12,22 @@ const credentialPage = read('miniprogram/pages/credential/index.ts');
 const activityCard = read('miniprogram/components/activity-card/index.wxml');
 const activityCardStyles = read('miniprogram/components/activity-card/index.wxss');
 const activityPageStyles = read('miniprogram/pages/activities/index.wxss');
+const appStyles = read('miniprogram/app.wxss');
+const statusPill = read('miniprogram/components/status-pill/index.wxml');
+const statusPillStyles = read('miniprogram/components/status-pill/index.wxss');
 
 describe('行程状态卡与报名凭证重设计契约', () => {
-  it('全部状态使用统一白色票面，待处理状态仅用主题橙描边强调', () => {
+  it('全部状态使用统一白色票面，状态语义由统一状态组件承载', () => {
     expect(trips).toContain('status-{{item.status}}');
-    for (const status of [
-      'waiting',
-      'pending',
-      'approved',
-      'checked_in',
-      'rejected',
-      'cancelled',
-    ]) {
-      expect(tripStyles).toContain(`.registration-card.status-${status}`);
-    }
-    expect(tripStyles).toMatch(
-      /\.registration-card\.status-waiting,[\s\S]*\.registration-card\.status-pending\s*\{[^}]*border-color:\s*var\(--color-brand\)/,
+    expect(trips).toContain('status-pill status="{{item.displayStatusText}}"');
+    expectSemantic(
+      declaration(effectiveBlock(appStyles, '.registration-card'), 'background'),
+      '--color-surface',
     );
+    expect(statusPill).toContain("status === '已驳回' || status === '已取消'");
+    const danger = effectiveBlock(statusPillStyles, '.pill--danger');
+    expect(declaration(danger, 'border')).toContain('var(--color-brand)');
+    expectSemantic(declaration(danger, 'color'), '--color-brand-active');
     expect(tripStyles).not.toMatch(/#fff6df|#edf5ff|#eaf7ee|#e9f4f2|#fff0ef/);
   });
 
@@ -39,8 +39,8 @@ describe('行程状态卡与报名凭证重设计契约', () => {
     expect(credential).toContain('你的公开资料与照片已随报名提交');
     expect(credential).not.toContain('cardMetrics');
     expect(credential).toContain('{{statusText}}');
-    expect(credential).toContain('背景照片待完善');
-    expect(credential).toContain('头像待完善');
+    expect(credential).toContain('以品牌底图展示');
+    expect(credential).toContain('avatar-missing');
     expect(credentialStyles).toContain('.compact-rider-card');
     expect(credentialStyles).toContain('.compact-rider-avatar');
   });
@@ -52,25 +52,24 @@ describe('行程状态卡与报名凭证重设计契约', () => {
     expect(credentialPage).not.toContain('backgroundImages.concat(avatarUrl)');
   });
 
-  it('活动卡片日期只由分组标题承载，卡片重点展示具体集合时间', () => {
-    expect(activityCard).not.toContain('class="date-value"');
-    expect(activityCard).toContain('aria-label="集合时间：{{item.displayTimeLabel}}"');
-    expect(activityCardStyles).not.toContain('.date-value');
-    expect(activityCardStyles).toMatch(/\.time-value\s*\{[^}]*font-size:\s*34rpx/s);
+  it('活动卡片同时展示日期、集合时间与集合地点，不丢失关键决策信息', () => {
+    expect(activityCard).toContain('{{item.displayDateLabel}}');
+    expect(activityCard).toContain('{{item.displayTimeLabel}}');
+    expect(activityCard).toContain("item.route.start || '集合地点待公布'");
+    expect(activityCardStyles).toMatch(/\.activity-title\s*\{[^}]*-webkit-line-clamp:\s*2/s);
+    expect(activityCardStyles).toMatch(/\.route-line\s*\{[^}]*-webkit-line-clamp:\s*2/s);
   });
 
-  it('活动首页与行程页共享黑白橙票据信息层级', () => {
+  it('活动首页与行程页共享黑白橙的信息层级', () => {
     expect(activityPageStyles).toMatch(
-      /\.timeline-tab\.is-active\s*\{[^}]*background:\s*var\(--color-brand\)[^}]*color:\s*var\(--color-on-brand\)/s,
-    );
-    expect(activityPageStyles).toMatch(
-      /\.day-chip\.is-active\s*\{[^}]*border-color:\s*var\(--color-brand\)[^}]*background:\s*var\(--color-bg\)[^}]*color:\s*var\(--color-text\)/s,
+      /\.day-chip\.is-active\s*\{[^}]*background:\s*var\(--color-action\)[^}]*color:\s*var\(--color-on-action\)/s,
     );
     expect(activityCardStyles).toMatch(
-      /\.date-plate\s*\{[^}]*border-left:\s*8rpx solid var\(--color-brand\)[^}]*background:\s*var\(--color-text\)[^}]*color:\s*var\(--color-on-action\)/s,
+      /\.activity-card\s*\{[^}]*border:\s*4rpx solid var\(--color-card-border\)[^}]*background:\s*var\(--color-surface\)/s,
     );
-    expect(activityCardStyles).toMatch(
-      /\.metrics\s*\{[^}]*border-left:\s*8rpx solid var\(--color-brand\)/s,
+    expect(activityCardStyles).toContain('--card-accent: var(--color-brand)');
+    expect(tripStyles).toMatch(
+      /\.trip-stat--review \.trip-stat__value:not\(:empty\)::after\s*\{[^}]*background:\s*var\(--color-brand\)/s,
     );
   });
 
@@ -82,19 +81,21 @@ describe('行程状态卡与报名凭证重设计契约', () => {
     expect(credential).not.toContain('审批意见');
     expect(credential).not.toContain('reviewComment');
     expect(credential).not.toContain('timeline-card');
-    expect(credentialStyles).toContain('.meeting-spotlight');
-    expect(credentialStyles).toMatch(
-      /\.meeting-spotlight\s*\{[^}]*background:\s*var\(--color-text\)[^}]*color:\s*var\(--color-on-action\)/s,
+    expectSemantic(
+      declaration(effectiveBlock(appStyles, '.meeting-spotlight'), 'background'),
+      '--color-media-card-bg',
     );
-    expect(credentialStyles).toMatch(
-      /\.meeting-spotlight \.meet-label\s*\{[^}]*color:\s*var\(--color-on-action\)/s,
+    expectSemantic(
+      declaration(effectiveBlock(appStyles, '.meeting-time'), 'color'),
+      '--color-on-media',
     );
-    expect(credentialStyles).toMatch(/\.meeting-time\s*\{[^}]*color:\s*var\(--color-on-action\)/s);
-    expect(credentialStyles).toMatch(
-      /\.meeting-location-title\s*\{[^}]*color:\s*var\(--color-on-action\)/s,
+    expectSemantic(
+      declaration(effectiveBlock(credentialStyles, '.meeting-location-title'), 'color'),
+      '--color-on-media',
     );
-    expect(credentialStyles).toMatch(
-      /\.meeting-location button\s*\{[^}]*background:\s*var\(--color-on-action\)[^}]*color:\s*var\(--color-text\)/s,
+    expectSemantic(
+      declaration(effectiveBlock(credentialStyles, '.meeting-location button'), 'background'),
+      '--color-surface',
     );
   });
 });

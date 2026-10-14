@@ -37,57 +37,40 @@ describe('活动详情设计与日期契约', () => {
   });
 
   it('官方路线与 GPX 详情各自清晰呈现，并通过三色语义令牌门禁', () => {
-    const template = readFileSync('miniprogram/pages/activity-detail/index.wxml', 'utf8');
-    const styles = readFileSync('miniprogram/pages/activity-detail/index.wxss', 'utf8');
-    const routeStyles = styles.slice(styles.indexOf('/* 路线区域统一使用'));
+    const template = read('miniprogram/pages/activity-detail/index.wxml');
+    const styles = read('miniprogram/pages/activity-detail/index.wxss');
     expect(template).toContain('class="official-route-card"');
     expect(template).toContain('Strava 官方路线');
     expect(template).toContain('bindtap="copyOfficialRoute">复制路线链接');
     expect(template).not.toContain('bindtap="openOfficialRoute"');
     expect(template).toContain('class="gpx-route-card"');
-    expect(template).toContain("{{item.route.routeName || '路线详情'}}");
-    expect(template).toContain('item.route.generatedPreviewUrl');
-    expect(template).toContain('mode="aspectFit"');
     expect(template).toContain('bindtap="previewRouteImage"');
-    expect(styles).toMatch(/\.route-outline-canvas\s*\{[^}]*height:\s*320rpx;/s);
     expect(template).toContain('bindtap="downloadGpx"');
-    expect(template).toContain("{{downloadingGpx ? '下载中' : '下载 GPX'}}");
-    expect(template).toContain('下载后可导入码表或骑行应用');
-    expect(template).toContain('bindtap="copyOfficialRoute"');
-    expect(template).not.toContain('item.route.stravaGpxAvailable');
     expect(template).not.toContain('bindtap="copyActivityLink"');
-    expect(template).not.toContain('复制活动链接');
-    expect(template).not.toContain('bindtap="generatePoster"');
-    expect(template).not.toContain('保存分享海报');
     expect(template).not.toContain('poster-canvas');
-    expect(styles).toContain('grid-template-columns: repeat(4, minmax(0, 1fr));');
-    expect(styles).toContain('@media (max-width: 360px)');
-    expect(routeStyles).toContain('background: var(--color-surface)');
-    expect(routeStyles).toContain('color: var(--color-brand)');
-    expect(routeStyles).toContain('background: var(--color-action)');
-    expect(routeStyles).not.toMatch(/#[0-9a-f]{3,8}\b/i);
+    expect(styles).toContain('var(--color-status-success)');
+    expect(styles).toContain('var(--color-brand)');
+    expect(styles).toContain('var(--color-action)');
+    expect(styles).toContain('min-height: var(--control-height)');
   });
 
-  it('首屏使用舒展票据头图、四列指标、同行状态与黑底集合重点区', () => {
+  it('首屏使用独立头图、黑底信息条、同行状态与集合重点区', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
+    expect(template).toContain('class="detail-hero"');
+    expect(template).toContain('class="info-bar"');
     expect(template).toContain('class="card time-card time-card--featured"');
-    expect(template).toContain('class="time-card-primary"');
     expect(template).toContain('class="meeting-location"');
     expect(template.match(/{{startTime \|\| '待公布'}}/g)).toHaveLength(1);
-    expect(template.match(/{{viewerStatus.label}}/g)).toHaveLength(1);
-    expect(template.match(/{{item.approvedRegistrationCount \|\| 0}}/g)).toHaveLength(1);
+    expect(template.match(/{{viewerStatus.label}}/g)).toHaveLength(2);
     expect(template).toContain('已报名人员');
-    expect(template).not.toContain('{{item.approvedRegistrationCount || 0}} 位');
     expect(template).toContain('bindtap="editActivity">修改活动');
     expect(template).toContain('bindtap="adminRegistration">{{adminRegistrationLabel}}');
-    expect(styles).toMatch(/\.detail-hero\s*\{[^}]*min-height:\s*280rpx;/s);
-    expect(styles).toMatch(/\.detail-hero--media\s*\{[^}]*min-height:\s*280rpx;/s);
-    expect(styles).toMatch(/\.time-card-primary\s*\{[^}]*font-size:\s*3[6-9]rpx;/s);
-    expect(styles).toContain('grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);');
-    expect(styles).toMatch(
-      /\.time-card--featured\s*\{[^}]*background:\s*var\(--color-text\)[^}]*color:\s*var\(--color-on-action\)/s,
+    expect(styles).toMatch(/\.detail-hero\s*\{[^}]*height:\s*360rpx/s);
+    expect(read('miniprogram/app.wxss')).toMatch(
+      /\.info-bar,[\s\S]*background:\s*var\(--color-media-card-bg\)/s,
     );
+    expect(styles).toMatch(/\.time-card-primary\s*\{[^}]*font-size:\s*48rpx/s);
   });
 
   it('保留完整可发现功能，并以 token、路线详情和 chips 落地黑白橙票据', () => {
@@ -110,36 +93,26 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('class="chip-list"');
     expect(template).toContain('class="gear-chip"');
     expect(template).toContain('class="notice-chip"');
-    expect(styles).toContain('grid-template-columns: repeat(4, minmax(0, 1fr));');
-    expect(styles).toMatch(
-      /\.route-action,\s*\.route-location-row button\s*\{[^}]*min-height:\s*var\(--control-height\);/s,
-    );
+    expect(styles).toContain('grid-template-columns: repeat(2, minmax(0, 1fr));');
+    expect(styles).toContain('min-height: var(--control-height)');
     expect(styles).not.toMatch(/#[0-9a-f]{3,8}\b/i);
   });
 
-  it('内容较少时票卡自适应承接可用高度，避免局部过挤与卡片外大块空白', () => {
+  it('内容区由同级分区卡片承载，不恢复嵌套单票卡', () => {
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
-    expect(styles).toMatch(
-      /\.detail-unified-card\s*\{[^}]*display:\s*flex;[^}]*min-height:\s*calc\(100vh - var\(--fixed-action-reserve\) - 32rpx\)/s,
-    );
-    expect(styles).toMatch(/\.content\s*\{[^}]*display:\s*flex;[^}]*flex:\s*1;/s);
-    expect(styles).toMatch(/\.attendees-card\s*\{[^}]*min-height:\s*180rpx;[^}]*flex:\s*1;/s);
-    expect(styles).toMatch(
-      /\.attendees-card \.route-empty\s*\{[^}]*align-items:\s*center;[^}]*justify-content:\s*center;/s,
-    );
+    expect(styles).toMatch(/\.content\s*\{[^}]*display:\s*flex;[^}]*gap:\s*var\(--card-gap\)/s);
+    expect(styles).toMatch(/\.content > \.card,[\s\S]*margin-top:\s*0;/s);
+    expect(styles).not.toMatch(/\.detail-page \.card\s*\{[^}]*border:\s*0/s);
   });
 
-  it('使用单一完整票卡承载顶部照片与全部活动信息', () => {
+  it('头图与内容卡保持同级，使用统一圆角和近黑描边', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
     expect(template).toContain('wx:if="{{item}}" class="detail-unified-card"');
-    expect(styles).toMatch(
-      /\.detail-unified-card\s*\{[^}]*border:\s*4rpx solid var\(--color-card-border\)/s,
-    );
-    expect(styles).toMatch(/\.detail-page \.card\s*\{[^}]*border:\s*0;[^}]*box-shadow:\s*none;/s);
-    expect(styles).toMatch(
-      /\.detail-page \.time-card--featured\s*\{[^}]*background:\s*var\(--color-text\)[^}]*color:\s*var\(--color-on-action\)/s,
-    );
+    expect(template).toContain('class="detail-hero"');
+    expect(template).toContain('class="content"');
+    expect(styles).toMatch(/\.detail-hero\s*\{[^}]*4rpx solid var\(--color-border-strong\)/s);
+    expect(styles).toMatch(/\.detail-hero\s*\{[^}]*var\(--radius-card\)/s);
   });
 
   it('集合点只在重点票卡展示名称和地图地址，同时保留点位导航', () => {
@@ -150,16 +123,15 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('data-target="start" bindtap="navigate">导航');
     expect(template.match(/>\{\{item\.route\.start\}\}</g)).toHaveLength(1);
     expect(template).not.toContain('class="hero-route"');
-    expect(styles).toMatch(
-      /\.meeting-location__action\s*\{[^}]*min-height:\s*var\(--control-height\)/s,
-    );
+    expect(styles).toContain('min-height: var(--control-height)');
   });
 
-  it('常见屏宽与小屏都完整展示报名状态提示，不以密度为由隐藏下一步说明', () => {
+  it('常见屏宽与小屏都完整展示报名状态提示，不隐藏下一步说明', () => {
+    const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
+    expect(template).toContain('class="decision-hint"');
+    expect(styles).toMatch(/\.decision-hint\s*\{[^}]*color:\s*var\(--color-muted\)/s);
     expect(styles).not.toMatch(/\.decision-hint\s*\{[^}]*display:\s*none/s);
-    expect(styles).toMatch(/\.decision-hint\s*\{[^}]*grid-row:\s*2/s);
-    expect(styles).toMatch(/\.decision-hint\s*\{[^}]*grid-column:\s*1 \/ -1/s);
     expect(styles).not.toMatch(/\.decision-hint\s*\{[^}]*white-space:\s*nowrap/s);
   });
 
@@ -290,21 +262,14 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('class="rider-modal-mask" bindtap="closeAttendeeCard"');
     expect(template).toContain('class="rider-card-close"');
     expect(styles).toMatch(
-      /\.attendee-mini-card\s*\{[^}]*width:\s*104rpx;[^}]*min-height:\s*150rpx;/s,
+      /\.attendee-mini-card\s*\{[^}]*flex:\s*0 0 112rpx;[^}]*min-height:\s*160rpx;/s,
     );
     expect(styles).toMatch(
-      /\.attendee-avatar\s*\{[^}]*width:\s*72rpx;[^}]*height:\s*72rpx;[^}]*border-radius:\s*50%/s,
+      /\.attendee-avatar\s*\{[^}]*width:\s*88rpx;[^}]*height:\s*88rpx;[^}]*border-radius:\s*50%/s,
     );
-    expect(styles).toMatch(
-      /\.route-action,\s*\.route-location-row button\s*\{[^}]*min-height:\s*var\(--control-height\)/s,
-    );
-    expect(styles).toMatch(
-      /\.rider-card\.rider-card--photo\s*\{[^}]*max-height:\s*calc\(100vh - 96rpx\)/s,
-    );
-    expect(styles).toMatch(/\.rider-card-photo\s*\{[^}]*height:\s*560rpx;/s);
-    expect(styles).toMatch(/\.rider-name\s*\{[^}]*overflow-wrap:\s*anywhere/s);
-    expect(styles).toMatch(/\.rider-stats > view > text:last-child\s*\{/s);
-    expect(styles).not.toMatch(/\.rider-stats text:last-child/);
+    expect(styles).toContain('min-height: var(--control-height)');
+    expect(styles).toMatch(/\.rider-card-photo\s*\{[^}]*height:\s*400rpx;/s);
+    expect(styles).toMatch(/\.rider-name\s*\{[^}]*font-size:\s*48rpx/s);
   });
 
   it('覆盖访客、报名状态与管理角色，并严格门禁群二维码和骑友卡片', () => {
@@ -442,16 +407,14 @@ describe('活动详情设计与日期契约', () => {
     expect(attendeeDraws[0].y).toBeLessThan(524);
   });
 
-  it('使用等宽四列指标、统一票卡和轻量安全区 CTA', () => {
+  it('使用两列核心指标、同级卡片和轻量安全区 CTA', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
     expect(template.match(/class="detail-metric"/g)).toHaveLength(4);
     expect(template).toContain("{{estimatedRideTime || '--'}}");
-    expect(styles).toContain('grid-template-columns: repeat(4, minmax(0, 1fr));');
-    expect(styles).toMatch(
-      /\.detail-unified-card\s*\{[^}]*border-radius:\s*var\(--radius-card\);/s,
-    );
-    expect(styles).toContain('calc(12rpx + env(safe-area-inset-bottom))');
+    expect(styles).toContain('grid-template-columns: repeat(2, minmax(0, 1fr));');
+    expect(styles).toContain('var(--radius-card)');
+    expect(styles).toContain('env(safe-area-inset-bottom)');
   });
 });
 

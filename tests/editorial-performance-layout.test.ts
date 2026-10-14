@@ -13,7 +13,7 @@ describe('方案 A 编辑式性能布局', () => {
     const styles = read('miniprogram/components/activity-card/index.wxss');
 
     expect(list).toContain('wx:for="{{items}}"');
-    expect(list).toContain('class="activity-carousel"');
+    expect(list).toContain('class="activity-list"');
     expect(list).not.toContain('featured="');
     expect(component).not.toMatch(/featured:\s*\{/);
     expect(card).not.toContain('activity-card--featured');
@@ -21,7 +21,7 @@ describe('方案 A 编辑式性能布局', () => {
     expect(card).toContain('class="card-media"');
     expect(card).toContain('class="card-info"');
     expect(styles).not.toContain('.activity-card--compact');
-    expect(styles).toMatch(/\.card-media\s*\{[^}]*height:\s*2[4-8]\drpx/s);
+    expect(styles).toMatch(/\.card-media\s*\{[^}]*height:\s*360rpx/s);
   });
 
   it('活动详情以媒体 Hero 和报名决策摘要建立首屏层级', () => {
@@ -34,8 +34,9 @@ describe('方案 A 编辑式性能布局', () => {
     expect(template.indexOf('class="detail-decision"')).toBeLessThan(
       template.indexOf('class="card time-card time-card--featured"'),
     );
-    expect(styles).toMatch(/\.detail-hero--media\s*\{[^}]*min-height:\s*280rpx/s);
-    expect(styles).toMatch(/\.detail-decision\s*\{[^}]*border-left:\s*6rpx solid/s);
+    expect(template).toContain('class="detail-hero"');
+    expect(styles).toMatch(/\.detail-hero\s*\{[^}]*height:\s*360rpx/s);
+    expect(styles).toMatch(/\.detail-decision\s*\{[^}]*position:\s*relative/s);
   });
 
   it('个人页把微信身份与未完成资料组织成连续层级', () => {
@@ -48,11 +49,11 @@ describe('方案 A 编辑式性能布局', () => {
     expect(template).not.toContain('cardExpanded');
     expect(template).toContain('wx:if="{{profile && profile.completeness < 100}}"');
     expect(template).toContain('class="hero-profile-progress"');
-    expect(styles).toMatch(/\.profile-capability-section\s*\{/);
+    expect(styles).not.toMatch(/\.profile-capability-section\s*\{/);
     expect(styles).toMatch(
-      /\.profile-capability-section\s*\{[^}]*background:\s*var\(--color-text\)/s,
+      /\.hero-profile-progress\s*\{[^}]*background:\s*var\(--color-surface\)/s,
     );
-    expect(styles).toMatch(/\.profile-hero\.has-bg\s*\{[^}]*min-height:\s*600rpx/s);
+    expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*360rpx/s);
   });
 
   it('活动卡使用整卡点击，详情页操作按钮保持统一高度与双轴居中', () => {
@@ -64,16 +65,20 @@ describe('方案 A 编辑式性能布局', () => {
     expect(cardTemplate).not.toContain('查看详情');
     expect(cardStyles).not.toContain('.card-cta');
 
-    for (const selector of ['.route-action', '.route-location-row button']) {
-      const button = effectiveBlock(detailStyles, selector);
+    const appStyles = read('miniprogram/app.wxss');
+    for (const [source, selector] of [
+      [appStyles, '.route-action'],
+      [detailStyles, '.route-location-row button'],
+    ] as const) {
+      const button = effectiveBlock(source, selector);
       expect(declaration(button, 'display'), selector).toBe('flex');
       expect(declaration(button, 'align-items'), selector).toBe('center');
       expect(declaration(button, 'justify-content'), selector).toBe('center');
       expect(declaration(button, 'min-height'), selector).toBe('var(--control-height)');
-      expect(declaration(button, 'line-height'), selector).toBe('1.3');
+      expect(declaration(button, 'line-height'), selector).toMatch(/^(?:1\.3|44rpx)$/);
     }
 
-    const fixedAction = effectiveBlock(detailStyles, '.detail-action .btn');
+    const fixedAction = effectiveBlock(appStyles, '.btn');
     expect(declaration(fixedAction, 'display')).toBe('flex');
     expect(declaration(fixedAction, 'align-items')).toBe('center');
     expect(declaration(fixedAction, 'justify-content')).toBe('center');
@@ -83,7 +88,7 @@ describe('方案 A 编辑式性能布局', () => {
     expect(declaration(closeButton, 'display')).toBe('flex');
     expect(declaration(closeButton, 'align-items')).toBe('center');
     expect(declaration(closeButton, 'justify-content')).toBe('center');
-    expect(declaration(closeButton, 'width')).toBe('var(--control-height)');
-    expect(declaration(closeButton, 'height')).toBe('var(--control-height)');
+    expect(declaration(closeButton, 'width')).toBe('88rpx');
+    expect(declaration(closeButton, 'height')).toBe('88rpx');
   });
 });

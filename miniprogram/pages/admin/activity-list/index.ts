@@ -374,6 +374,7 @@ Page({
     if (!['deadline', 'startAt', 'endAt'].includes(name)) return;
     this.setData({ [`cloneForm.${name}`]: event.detail.value });
   },
+  keepClonePanel() {},
   cancelClone() {
     if (this.data.cloning) return;
     this.setData({ cloneSourceId: '', cloneRequestId: '', cloneForm: emptyCloneForm(), error: '' });

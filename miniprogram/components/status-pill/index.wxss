@@ -1,32 +1,37 @@
 .pill {
   display: inline-flex;
   align-items: center;
-  min-height: 42rpx;
-  padding: 4rpx 14rpx;
-  border: 2rpx solid var(--color-text);
+  min-height: 48rpx;
+  padding: 0 16rpx;
   border-radius: 8rpx;
-  background: var(--color-surface);
+  background: var(--color-raised);
   color: var(--color-text);
-  font-size: 21rpx;
+  font-size: 24rpx;
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 36rpx;
   white-space: nowrap;
 }
-
+.pill--solid {
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+.pill--pending {
+  border: 4rpx solid var(--color-brand);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
 .pill--success {
-  border-color: var(--color-success);
-  background: var(--color-success-soft);
-  color: var(--color-success-text);
+  border: 2rpx solid var(--color-status-success);
+  background: var(--color-status-success-soft);
+  color: var(--color-status-success);
 }
-
 .pill--warning {
-  border-color: var(--color-warning);
-  background: var(--color-warning-soft);
-  color: var(--color-warning-text);
+  border: 2rpx solid var(--color-status-warning);
+  background: var(--color-status-warning-soft);
+  color: var(--color-status-warning);
 }
-
 .pill--danger {
-  border-color: var(--color-danger);
-  background: var(--color-danger-soft);
-  color: var(--color-danger-text);
+  border: 2rpx solid var(--color-brand);
+  background: var(--color-surface);
+  color: var(--color-brand-active);
 }

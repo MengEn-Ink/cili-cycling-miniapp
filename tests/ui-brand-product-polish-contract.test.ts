@@ -104,7 +104,7 @@ describe('品牌与页面体验静态契约', () => {
       /\.section-hint\s*\{\s*margin-top:\s*0;\s*color:\s*var\(--color-muted\);\s*font-size:\s*24rpx;/,
     );
     expectSemantic(declaration(cardCaption, 'color'), '--color-muted');
-    expect(declaration(cardCaption, 'font-size')).toBe('20rpx');
+    expect(declaration(cardCaption, 'font-size')).toBe('24rpx');
   });
 
   it('卡片入场与关键按压反馈支持系统减少动态效果偏好', () => {
@@ -112,9 +112,7 @@ describe('品牌与页面体验静态契约', () => {
     const activityCard = read('miniprogram/components/activity-card/index.wxss');
     const profile = read('miniprogram/pages/profile/index.wxss');
 
-    expect(capability).toMatch(
-      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.card-stage\s*\{[^}]*animation:\s*none;/,
-    );
+    expect(capability).not.toMatch(/\b(?:animation|transition):/);
     expect(activityCard).toMatch(
       /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.activity-card--pressed\s*\{[^}]*transform:\s*none;/,
     );
@@ -123,38 +121,35 @@ describe('品牌与页面体验静态契约', () => {
     );
   });
 
-  it('核心页面遵循瑞士网格、单一强调色与 44px 触控门禁', () => {
+  it('核心页面遵循统一栅格、单一强调色与 44px 触控门禁', () => {
+    const appStyles = read('miniprogram/app.wxss');
     const activities = read('miniprogram/pages/activities/index.wxss');
     const activityCard = read('miniprogram/components/activity-card/index.wxss');
     const detail = read('miniprogram/pages/activity-detail/index.wxss');
     const management = read('miniprogram/pages/admin/activity-list/index.wxss');
     const profile = read('miniprogram/pages/profile/index.wxss');
+    const tokens = uiTokens(appStyles);
 
-    for (const [styles, selector] of [
-      [activities, '.activities-page'],
-      [management, '.page.activity-list-page'],
-      [profile, '.page.profile-page'],
-    ] as const) {
-      expect(styles).toContain(`${selector} {\n  --page-gutter: 48rpx;`);
-    }
-    expect(declaration(effectiveBlock(detail, '.detail-unified-card'), 'margin')).toContain(
-      'var(--page-gutter)',
+    expect(tokens['--page-gutter']).toBe('48rpx');
+    expect(tokens['--control-height']).toBe('88rpx');
+    expect(declaration(effectiveBlock(activities, '.activity-list'), 'gap')).toBe(
+      'var(--card-gap)',
     );
-
     expect(declaration(effectiveBlock(activityCard, '.activity-card'), 'border-radius')).toBe(
       'var(--radius-card)',
     );
-    expect(declaration(effectiveBlock(activityCard, '.metric-item'), 'text-align')).toBe('center');
-    expect(declaration(effectiveBlock(activityCard, '.card-foot'), 'min-height')).toBe('32rpx');
-    expect(activityCard).not.toContain('.card-cta');
-    expect(declaration(effectiveBlock(detail, '.detail-page .card'), 'border-radius')).toBe('0');
-    expect(declaration(effectiveBlock(detail, '.detail-metric'), 'text-align')).toBe('center');
-    expect(
-      declaration(effectiveBlock(management, '.activity-list-page .status-filter'), 'min-height'),
-    ).toBe('var(--control-height)');
-    expect(declaration(effectiveBlock(profile, '.menu-card'), 'min-height')).toBe(
+    expect(tokens['--metric-align']).toBe('left');
+    expect(declaration(effectiveBlock(activityCard, '.card-action'), 'min-height')).toBe(
       'var(--control-height)',
     );
+    expect(declaration(effectiveBlock(detail, '.detail-unified-card'), 'width')).toBe('100%');
+    expect(declaration(effectiveBlock(appStyles, '.detail-metric'), 'background')).toBe(
+      'var(--color-surface)',
+    );
+    expect(declaration(effectiveBlock(appStyles, '.status-filter'), 'min-height')).toBe(
+      'var(--segment-height)',
+    );
+    expect(declaration(effectiveBlock(profile, '.menu-card'), 'min-height')).toBe('120rpx');
 
     const scopedStyles = `${activities}\n${activityCard}\n${detail}\n${management}\n${profile}`;
     expect(scopedStyles).not.toMatch(/#39ff14|#00ff00|lime|neon/i);
@@ -163,18 +158,18 @@ describe('品牌与页面体验静态契约', () => {
   it('活动管理标题、筛选器与卡片遵循统一间距和黑白橙主题', () => {
     const template = read('miniprogram/pages/admin/activity-list/index.wxml');
     const management = read('miniprogram/pages/admin/activity-list/index.wxss');
+    const appStyles = read('miniprogram/app.wxss');
     const filters = effectiveBlock(management, '.status-filters');
-    const activeFilter = effectiveBlock(management, '.activity-list-page .status-filter.active');
-    const card = effectiveBlock(management, '.activity-list-page .card');
+    const activeFilter = effectiveBlock(appStyles, '.status-filter.active');
+    const card = effectiveBlock(appStyles, '.card');
 
     expect(template).toContain('class="hero-subtitle"');
     expect(template).toContain('role="tablist"');
     expect(template).toContain('aria-selected="{{statusFilter === \'all\'}}"');
-    expect(declaration(filters, 'margin')).toBe('var(--card-gap) 0 var(--card-gap)');
-    expectSemantic(declaration(activeFilter, 'background'), '--color-brand');
-    expectSemantic(declaration(activeFilter, 'border-color'), '--color-brand');
-    expect(declaration(card, 'border')).toBe('1rpx solid var(--color-card-border)');
-    expect(declaration(card, 'box-shadow')).toBe('var(--shadow-card)');
+    expect(declaration(filters, 'margin-top')).toBe('32rpx');
+    expectSemantic(declaration(activeFilter, 'background'), '--color-action');
+    expect(declaration(card, 'border')).toBe('4rpx solid var(--color-card-border)');
+    expect(declaration(card, 'box-shadow')).toBe('none');
     expect(management).not.toMatch(/#0b0b0c|#242427|#343438|#151517/i);
   });
 
@@ -197,13 +192,20 @@ describe('品牌与页面体验静态契约', () => {
     const appStyles = read('miniprogram/app.wxss');
     const statusStyles = read('miniprogram/components/status-pill/index.wxss');
     const tokens = uiTokens(appStyles);
-    expect(tokens['--color-success']).toBe('#171717');
-    expectSemantic(declaration(cssBlock(appStyles, '.card'), 'background'), '--color-surface');
-    expectSemantic(declaration(cssBlock(appStyles, '.fixed'), 'background'), '--color-fixed-bar');
+    expect(tokens['--color-status-success']).toBe('#1d7a3e');
+    expect(tokens['--color-status-success-soft']).toBe('#e7f4eb');
+    expectSemantic(
+      declaration(effectiveBlock(appStyles, '.card'), 'background'),
+      '--color-surface',
+    );
+    expectSemantic(
+      declaration(effectiveBlock(appStyles, '.fixed'), 'background'),
+      '--color-fixed-bar',
+    );
     const success = cssBlock(statusStyles, '.pill--success');
-    expectSemantic(declaration(success, 'background'), '--color-success-soft');
-    expectSemantic(declaration(success, 'border-color'), '--color-success');
-    expectSemantic(declaration(success, 'color'), '--color-success-text');
+    expectSemantic(declaration(success, 'background'), '--color-status-success-soft');
+    expect(declaration(success, 'border')).toBe('2rpx solid var(--color-status-success)');
+    expectSemantic(declaration(success, 'color'), '--color-status-success');
     expect(`${appStyles}\n${statusStyles}`).not.toMatch(/#39ff14|#00ff00|lime|neon/i);
   });
 });

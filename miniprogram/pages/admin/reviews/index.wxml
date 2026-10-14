@@ -1,23 +1,20 @@
 <view class="page review-page">
   <brand-logo compact="{{true}}" meta="报名审批" />
-  <view class="review-heading"><view class="hero-title">报名审批</view><view class="hero-subtitle">查看资料并处理报名状态</view></view>
-  <view class="card danger" wx:if="{{error}}">{{error}}</view>
-  <picker wx:if="{{activities.length}}" mode="selector" range="{{activities}}" range-key="title" value="0" bindchange="choose"><view class="activity-picker"><view class="picker-label">当前活动</view><view class="picker-value">{{selectedActivityTitle}}</view><text>切换 ›</text></view></picker>
-  <view class="row actions" wx:if="{{activities.length}}"><button class="secondary" bindtap="sendReminders" loading="{{sendingReminders}}" disabled="{{sendingReminders}}">发送活动提醒</button></view>
-  <view class="muted" wx:if="{{activities.length}}">活动提醒由管理员显式触发，仅对已通过参与者幂等入队，不是自动定时提醒。</view>
+  <view class="info-bar" wx:if="{{activities.length}}">
+    <view class="info-head"><text class="info-kicker">当前活动</text><text class="info-tag {{tab === 'pending' && items.length ? 'is-pending' : ''}}">{{tab === 'pending' ? items.length : '—'}} 待审核</text></view>
+    <view class="info-title">{{selectedActivityTitle}}</view>
+    <picker mode="selector" range="{{activities}}" range-key="title" value="0" bindchange="choose"><button class="switch-activity">切换活动 ›</button></picker>
+  </view>
+  <view class="card reminder-card" wx:if="{{activities.length}}"><view class="title">发送活动提醒</view><view class="muted">只发给已通过的骑友，重复点击不会重复发送；不是自动定时提醒。</view><button class="secondary" bindtap="sendReminders" loading="{{sendingReminders}}" disabled="{{sendingReminders}}">{{sendingReminders ? '发送中…' : '发送活动提醒'}}</button></view>
   <view class="filter-tabs">
-    <view class="filter-tab {{tab === 'waiting' ? 'is-active' : ''}}" data-v="waiting" bindtap="tab">候补</view>
-    <view class="filter-tab {{tab === 'pending' ? 'is-active' : ''}}" data-v="pending" bindtap="tab">待审核</view>
-    <view class="filter-tab {{tab === 'approved' ? 'is-active' : ''}}" data-v="approved" bindtap="tab">已通过</view>
-    <view class="filter-tab {{tab === 'checked_in' ? 'is-active' : ''}}" data-v="checked_in" bindtap="tab">已签到</view>
-    <view class="filter-tab {{tab === 'rejected' ? 'is-active' : ''}}" data-v="rejected" bindtap="tab">已驳回</view>
-    <view class="filter-tab {{tab === 'all' ? 'is-active' : ''}}" data-v="all" bindtap="tab">全部</view>
+    <button class="filter-tab {{tab === 'waiting' ? 'is-active' : ''}}" data-v="waiting" bindtap="tab">候补</button><button class="filter-tab {{tab === 'pending' ? 'is-active' : ''}}" data-v="pending" bindtap="tab">待审核</button><button class="filter-tab {{tab === 'approved' ? 'is-active' : ''}}" data-v="approved" bindtap="tab">已通过</button><button class="filter-tab {{tab === 'checked_in' ? 'is-active' : ''}}" data-v="checked_in" bindtap="tab">已签到</button><button class="filter-tab {{tab === 'rejected' ? 'is-active' : ''}}" data-v="rejected" bindtap="tab">已驳回</button><button class="filter-tab {{tab === 'all' ? 'is-active' : ''}}" data-v="all" bindtap="tab">全部</button>
   </view>
-  <view class="result-count">RESULT / {{items.length}}</view>
-  <view wx:if="{{!items.length && !error}}" class="empty">当前筛选暂无报名</view>
-  <view class="review-card" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="open" hover-class="review-card--pressed">
-    <view class="card-number">{{index + 1}}</view>
-    <view class="review-main"><view class="applicant-name">{{item.profile.nickname}}</view><view class="activity-name">{{item.activity.title}}</view><view class="data-line"><text wx:if="{{item.profile.gender}}">{{item.profile.gender}}</text><text>{{item.experience}}</text><text wx:if="{{item.gatheringMode}}">{{item.gatheringMode}}</text><text wx:if="{{item.teamName}}">队伍 {{item.teamName}}{{item.isTeamLeader ? ' · 队长' : ''}}</text></view></view>
-    <view class="status-tag status-{{item.status}}">{{item.statusText}}</view><text class="open-arrow">›</text><view class="corner-cut"></view>
-  </view>
+  <view class="result-count" wx:if="{{!loading && !error}}">共 {{items.length}} 人</view>
+  <view class="skeleton" wx:if="{{loading}}"><view></view><view></view><view></view></view>
+  <view wx:elif="{{!items.length && !error}}" class="state-card"><view class="title">当前筛选暂无报名</view><view class="muted">新的报名提交后会出现在这里。</view></view>
+  <view class="state-card" wx:if="{{error}}" role="alert"><view class="title">加载失败</view><view class="muted">{{error}}</view><button class="btn" bindtap="load">重新加载</button></view>
+  <button class="review-card" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="open" hover-class="review-card--pressed">
+    <view class="review-main"><view class="applicant-name">{{item.profile.nickname}}</view><view class="muted">{{item.activity.title}}</view><view class="data-line"><text wx:if="{{item.gatheringMode}}">{{item.gatheringMode}}</text><text>{{item.experience}}</text><text wx:if="{{item.createdAt}}">提交于 {{item.createdAt}}</text></view></view>
+    <view class="status-tag status-{{item.status}}">{{item.statusText}}</view><text class="open-arrow">›</text>
+  </button>
 </view>

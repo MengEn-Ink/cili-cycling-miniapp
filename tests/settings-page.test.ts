@@ -21,17 +21,18 @@ describe('设置页', () => {
   });
 
   it('只加载当前版本日志，不注册第三方账号生命周期或入口', () => {
-    expect(page.data.releaseNotes).toHaveLength(5);
+    expect(page.data.releaseNotes).toHaveLength(6);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.14.54',
+      version: '2026.10.14.55',
       latest: true,
-      title: '移除未使用的官方路线页面',
+      title: '全套页面主题焕新',
     });
     expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
       true,
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.14.55',
       '2026.10.14.54',
       '2026.10.13.53',
       '2026.10.13.52',

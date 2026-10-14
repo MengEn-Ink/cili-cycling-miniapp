@@ -1,21 +1,22 @@
 <view class="page activity-list-page">
-  <view class="card danger" wx:if="{{error}}">{{error}}</view>
   <block wx:if="{{allowed}}">
-    <view class="hero">
-      <view class="hero-title">我的活动</view>
-      <view class="hero-subtitle">{{isAdmin ? '管理全部活动与发布状态' : '创建、编辑并上下架你的活动'}}</view>
-    </view>
+    <view class="page-title">我的活动</view>
+    <view class="hero-subtitle">{{isAdmin ? '管理全部活动与发布状态' : '创建、编辑并上下架你的活动'}}</view>
     <view class="status-filters" role="tablist" aria-label="活动状态筛选">
       <button class="status-filter {{statusFilter === 'all' ? 'active' : ''}}" role="tab" aria-selected="{{statusFilter === 'all'}}" data-status="all" bindtap="selectStatusFilter">全部</button>
       <button class="status-filter {{statusFilter === 'draft' ? 'active' : ''}}" role="tab" aria-selected="{{statusFilter === 'draft'}}" data-status="draft" bindtap="selectStatusFilter">已下架</button>
       <button class="status-filter {{statusFilter === 'published' ? 'active' : ''}}" role="tab" aria-selected="{{statusFilter === 'published'}}" data-status="published" bindtap="selectStatusFilter">已上线</button>
       <button class="status-filter {{statusFilter === 'finished' ? 'active' : ''}}" role="tab" aria-selected="{{statusFilter === 'finished'}}" data-status="finished" bindtap="selectStatusFilter">已结束</button>
     </view>
-    <view class="swipe-row" wx:for="{{items}}" wx:key="id">
-      <view class="swipe-delete {{item.swipeOpen ? 'swipe-delete-active' : ''}}" data-id="{{item.id}}" catchtap="confirmDelete">删除</view>
+    <view class="list-count" wx:if="{{items.length}}"><text>活动列表</text><text>共 {{items.length}} 场</text></view>
+    <view class="skeleton" wx:if="{{loading}}"><view></view><view></view><view></view></view>
+    <view class="state-card" wx:elif="{{!items.length && !error}}"><view class="title">还没有活动</view><view class="muted">创建第一场骑行活动草稿，发布后骑友即可报名。</view><button class="btn" bindtap="create">创建活动草稿</button></view>
+    <view class="card danger" wx:if="{{error}}" role="alert"><view class="title">加载失败</view><view>{{error}}</view></view>
+    <view class="swipe-delete {{item.swipeOpen ? 'swipe-delete-active' : ''}}" wx:for="{{items}}" wx:key="id">
+      <button class="secondary delete-button" catchtap="confirmDelete" data-id="{{item.id}}">删除</button>
       <view
-        class="card activity-row swipe-content {{item.swipeAnim ? 'swipe-anim' : ''}}"
-        style="transform: translateX({{item.swipeOffset}}px);"
+        class="card activity-row {{item.swipeAnim ? 'is-animating' : ''}}"
+        style="transform: translateX({{item.swipeOffset}}px)"
         data-id="{{item.id}}"
         bindtap="edit"
         bindtouchstart="onRowTouchStart"
@@ -23,35 +24,24 @@
         bindtouchend="onRowTouchEnd"
         bindtouchcancel="onRowTouchEnd"
       >
-        <view class="row">
-          <view class="title">{{item.title}}</view>
-          <text class="tag">{{item.statusLabel}}</text>
-        </view>
+        <view class="admin-card-head"><text class="tag {{item.status === 'published' ? 'tag-solid' : 'tag-outline'}}">{{item.statusLabel}}</text><text class="muted">{{item.displayDate || item.startAt}}</text></view>
+        <view class="title">{{item.title}}</view>
         <view class="activity-actions">
-          <button
-            wx:if="{{item.canToggleOnline}}"
-            catchtap="toggleOnline"
-            data-id="{{item.id}}"
-            class="secondary status-button {{item.status === 'published' ? 'danger-action' : ''}}"
-          >{{item.toggleLabel}}</button>
-          <button wx:if="{{item.status === 'draft'}}" catchtap="confirmDelete" data-id="{{item.id}}" class="secondary delete-button">删除</button>
-          <button wx:if="{{item.canClone}}" catchtap="startClone" data-id="{{item.id}}" class="secondary template-button">从此活动创建</button>
+          <button class="secondary" catchtap="edit" data-id="{{item.id}}">编辑</button>
+          <button wx:if="{{item.canToggleOnline}}" catchtap="toggleOnline" data-id="{{item.id}}" class="secondary">{{item.toggleLabel}}</button>
         </view>
-      </view>
-    </view>
-    <view class="card clone-panel" wx:if="{{cloneSourceId}}">
-      <view class="section-title">设置新活动时间</view>
-      <view class="hint">复制前必须重新填写报名截止、开始和结束时间，格式示例：2026-10-01T09:00:00+08:00。</view>
-      <view class="field"><text>报名截止时间</text><input value="{{cloneForm.deadline}}" placeholder-class="input-placeholder" placeholder="2026-10-01T09:00:00+08:00" data-name="deadline" bindinput="cloneField" disabled="{{cloning}}"/></view>
-      <view class="field"><text>开始时间</text><input value="{{cloneForm.startAt}}" placeholder-class="input-placeholder" placeholder="2026-10-01T09:00:00+08:00" data-name="startAt" bindinput="cloneField" disabled="{{cloning}}"/></view>
-      <view class="field"><text>结束时间</text><input value="{{cloneForm.endAt}}" placeholder-class="input-placeholder" placeholder="2026-10-01T12:00:00+08:00" data-name="endAt" bindinput="cloneField" disabled="{{cloning}}"/></view>
-      <view class="clone-actions">
-        <button class="secondary" bindtap="cancelClone" disabled="{{cloning}}">取消</button>
-        <button class="btn" bindtap="confirmClone" loading="{{cloning}}" disabled="{{cloning}}">创建草稿</button>
+        <view class="low-actions"><button wx:if="{{item.status === 'draft'}}" catchtap="confirmDelete" data-id="{{item.id}}" class="text-button">删除（仅草稿）</button><button wx:if="{{item.canClone}}" catchtap="startClone" data-id="{{item.id}}" class="text-button">从此活动创建</button></view>
       </view>
     </view>
     <button wx:if="{{hasMore}}" class="secondary load-more" bindtap="loadMore" loading="{{loadingMore}}" disabled="{{loadingMore}}">加载更多</button>
-    <button class="btn" bindtap="create">创建活动草稿</button>
-    <button wx:if="{{isAdmin}}" class="secondary" bindtap="reviews">报名审批</button>
+    <view class="page-actions"><button wx:if="{{isAdmin}}" class="secondary" bindtap="reviews">报名审批</button><button class="btn" bindtap="create">创建活动草稿</button></view>
   </block>
+
+  <view class="modal-mask" wx:if="{{cloneSourceId}}" catchtap="cancelClone"><view class="modal-sheet" catchtap="keepClonePanel">
+    <view class="title">从此活动创建</view><view class="muted">请重新设置报名截止、开始和结束时间。</view>
+    <view class="field"><text class="field-label">报名截止时间</text><input class="input" value="{{cloneForm.deadline}}" placeholder-class="input-placeholder" placeholder="2026-10-18T20:00:00+08:00" data-name="deadline" bindinput="cloneField" disabled="{{cloning}}"/></view>
+    <view class="field"><text class="field-label">开始时间</text><input class="input" value="{{cloneForm.startAt}}" placeholder-class="input-placeholder" placeholder="2026-10-19T06:20:00+08:00" data-name="startAt" bindinput="cloneField" disabled="{{cloning}}"/></view>
+    <view class="field"><text class="field-label">结束时间</text><input class="input" value="{{cloneForm.endAt}}" placeholder-class="input-placeholder" placeholder="2026-10-19T12:00:00+08:00" data-name="endAt" bindinput="cloneField" disabled="{{cloning}}"/></view>
+    <view class="clone-actions"><button class="secondary" bindtap="cancelClone" disabled="{{cloning}}">取消</button><button class="btn" bindtap="confirmClone" loading="{{cloning}}" disabled="{{cloning}}">创建草稿</button></view>
+  </view></view>
 </view>

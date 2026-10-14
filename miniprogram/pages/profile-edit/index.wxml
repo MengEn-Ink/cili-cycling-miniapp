@@ -37,8 +37,8 @@
         <view class="field">
           <view class="label">性别</view>
           <radio-group class="gender-options" bindchange="selectGender">
-            <label class="gender-option"><radio value="男" checked="{{p.gender === '男'}}" color="#d55b1f" />男</label>
-            <label class="gender-option"><radio value="女" checked="{{p.gender === '女'}}" color="#d55b1f" />女</label>
+            <label class="gender-option"><radio value="男" checked="{{p.gender === '男'}}" />男</label>
+            <label class="gender-option"><radio value="女" checked="{{p.gender === '女'}}" />女</label>
           </radio-group>
         </view>
         <view class="field">

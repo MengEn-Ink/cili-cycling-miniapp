@@ -187,6 +187,8 @@ Page({
     attendees: [] as any[],
     selectedAttendee: null as any,
     galleryImages: [] as string[],
+    colorMediaMuted: 'rgba(255, 255, 255, 0.55)',
+    colorOnMedia: '#ffffff',
     displayDate: '',
     startTime: '',
     endTime: '',
@@ -211,6 +213,7 @@ Page({
     groupQrVisible: false,
     groupQrLockedMessage: '报名审核通过后可查看活动群二维码',
     groupQrCodeExpired: false,
+    copyFeedback: '' as '' | 'success' | 'error',
   },
   onShow() {
     if (this.initialShowPending) {
@@ -503,10 +506,17 @@ Page({
   copyOfficialRoute() {
     const routeUrl = this.data.officialRouteUrl;
     if (!routeUrl) return;
+    this.setData({ copyFeedback: '' });
     wx.setClipboardData({
       data: routeUrl,
-      success: () => wx.showToast({ title: '路线链接已复制', icon: 'success' }),
-      fail: () => wx.showToast({ title: '复制失败，请稍后重试', icon: 'none' }),
+      success: () => {
+        this.setData({ copyFeedback: 'success' });
+        wx.showToast({ title: '路线链接已复制', icon: 'success', duration: 2000 });
+      },
+      fail: () => {
+        this.setData({ copyFeedback: 'error' });
+        wx.showToast({ title: '复制失败，请稍后重试', icon: 'none', duration: 2000 });
+      },
     });
   },
   onShareAppMessage() {

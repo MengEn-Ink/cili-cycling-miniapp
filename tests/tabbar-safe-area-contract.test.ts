@@ -1,7 +1,7 @@
 // @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { cssBlock, declaration, expectSemantic, uiTokens } from './theme-contract-helpers';
+import { uiTokens } from './theme-contract-helpers';
 
 const read = (file: string) => readFileSync(file, 'utf8');
 
@@ -36,20 +36,21 @@ describe('native tabbar safe-area contract', () => {
 
       expect(String(config.backgroundColor || '').toLowerCase()).toBe('#ffffff');
       expect(config.backgroundTextStyle).toBe('dark');
-      expect(styles).toMatch(/page\s*\{[^}]*background:\s*var\(--color-bg\);/s);
-      expect(styles).toMatch(new RegExp(`\\.${root}-page\\s*\\{[^}]*min-height:\\s*100%;`, 's'));
+      expect(styles).toMatch(/(?:page|\.[a-z-]+-page)\s*\{[^}]*background:\s*var\(--color-bg\);/s);
+      expect(read(`miniprogram/pages/${root}/index.wxml`)).toMatch(
+        new RegExp(`class="page ${root}-page"`),
+      );
       expect(styles).not.toContain('background: #000;');
     }
   });
 
   it('keeps the global page canvas on one bright semantic token set', () => {
     const appStyles = read('miniprogram/app.wxss');
-    const pageRule = cssBlock(appStyles, 'page');
     const tokens = uiTokens(appStyles);
 
-    expect(pageRule.toLowerCase()).toMatch(/height:\s*100%;/);
-    expectSemantic(declaration(pageRule, 'background'), '--color-bg');
-    expectSemantic(declaration(pageRule, 'color'), '--color-text');
+    expect(appStyles).toMatch(/^page\s*\{[\s\S]*?min-height:\s*100%;/);
+    expect(appStyles).toContain('background: var(--color-bg);');
+    expect(appStyles).toContain('color: var(--color-text);');
     expect(tokens['--color-bg']).toBe('#f3f3f1');
     expect(tokens['--color-text']).toBe('#171717');
   });

@@ -1,195 +1,95 @@
-/* ===== CILI 统一明亮 UI：资料编辑页 ===== */
-page {
-  background: var(--color-bg);
-}
 .profile-form-page {
-  min-height: 100vh;
-  padding-bottom: calc(190rpx + env(safe-area-inset-bottom));
   background: var(--color-bg);
   color: var(--color-text);
 }
-.profile-form-page .form-card {
-  overflow: hidden;
-  border: 1rpx solid #4a4a4e;
-  background: #1a1a1c;
-  color: #f7f7f5;
-}
-.profile-form-page .title {
-  color: #f7f7f5;
+.form-card {
+  margin-top: var(--card-gap);
 }
 .step-kicker {
-  margin-bottom: 8rpx;
-  color: var(--color-brand);
-  font-size: 22rpx;
-  font-weight: 900;
-  letter-spacing: 4rpx;
-}
-.form-tip {
-  margin-bottom: 12rpx;
-  line-height: 1.7;
-}
-.privacy-note {
-  margin-bottom: 28rpx;
-  padding: 14rpx 16rpx;
-  border-left: 4rpx solid var(--color-brand);
-  background: var(--color-raised);
   color: var(--color-muted);
   font-size: 24rpx;
-  line-height: 1.6;
+  line-height: 36rpx;
+  font-weight: 900;
 }
-.form-card .field {
-  margin: 0;
-}
-.form-card .field + .field {
-  margin-top: 30rpx;
-}
-.profile-form-page .form-card .label {
-  display: block;
-  margin-bottom: 12rpx;
-  color: #a8a8ad;
-  line-height: 34rpx;
-}
-.form-card .input {
-  box-sizing: border-box;
-  display: block;
-  width: 100%;
-  min-height: var(--control-height);
-  padding: 20rpx 24rpx;
-  border: 1rpx solid #555559;
-  border-radius: 8rpx;
-  background: #101012;
-  color: #f7f7f5;
+.form-tip,
+.field-tip,
+.avatar-note {
+  color: var(--color-muted);
+  font-size: 24rpx;
+  line-height: 36rpx;
 }
 .avatar-editor {
   display: flex;
-  align-items: flex-start;
-  gap: 28rpx;
+  align-items: center;
+  gap: 24rpx;
   margin-top: 24rpx;
 }
-.profile-form-page .avatar-preview-shell {
-  display: flex;
+.avatar-preview-shell {
   flex: 0 0 144rpx;
-  align-items: center;
-  justify-content: center;
   width: 144rpx;
   height: 144rpx;
   overflow: hidden;
-  border: 4rpx solid #343438;
+  border: 6rpx solid var(--color-border-strong);
   border-radius: 50%;
-  background: #151517;
-  box-shadow: 0 14rpx 30rpx rgba(0, 0, 0, 0.4);
+  background: var(--color-raised);
 }
-.avatar-preview {
-  width: 100%;
-  height: 100%;
-}
+.avatar-preview,
 .avatar-preview-placeholder {
   width: 100%;
   height: 100%;
 }
 .avatar-panel {
-  min-width: 0;
   flex: 1;
-}
-.avatar-note {
-  margin-bottom: 18rpx;
-  font-size: 23rpx;
-  line-height: 1.55;
-}
-.avatar-actions {
-  display: grid;
-  gap: 12rpx;
+  min-width: 0;
 }
 .avatar-action {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
   width: 100%;
   min-height: 88rpx;
-  margin: 0;
-  padding: 18rpx 22rpx;
-  border: 2rpx solid #555559;
-  border-radius: 14rpx;
-  background: #151517;
-  color: #f7f7f5;
-  font-size: 25rpx;
+  margin-top: 16rpx;
+  border: 4rpx solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
   font-weight: 800;
-  line-height: 1.35;
-  text-align: left;
-}
-.avatar-action::before {
-  width: 12rpx;
-  height: 12rpx;
-  margin-right: 16rpx;
-  border-radius: 50%;
-  background: var(--color-brand);
-  content: '';
-}
-.avatar-action[disabled] {
-  background: #1d1d20;
-  color: #858589;
-}
-.avatar-action[disabled]::before {
-  background: #5a5a5e;
 }
 .avatar-status {
-  min-height: 38rpx;
-  margin-top: 16rpx;
-  color: #aaaab0;
-  font-size: 22rpx;
-  line-height: 1.55;
+  min-height: 36rpx;
+  margin-top: 8rpx;
+  color: var(--color-muted);
+  font-size: 24rpx;
 }
 .gender-options {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16rpx;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+  border: 4rpx solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
 }
 .gender-option {
   display: flex;
-  min-height: 88rpx;
   align-items: center;
-  gap: 12rpx;
-  padding: 0 24rpx;
-  border: 1rpx solid #555559;
-  border-radius: 8rpx;
-  background: #101012;
+  justify-content: center;
+  min-height: var(--segment-height);
 }
-.field-tip {
-  margin-top: 12rpx;
-  line-height: 1.5;
+.gender-option + .gender-option {
+  border-left: 4rpx solid var(--color-border-strong);
 }
-.emergency-field {
-  padding-top: 28rpx;
-  border-top: 1rpx solid var(--color-border);
-}
-.profile-form-page .photo-action {
-  min-height: 88rpx;
-  margin-top: 20rpx;
-  border: 2rpx solid #3a3a3e;
-  border-radius: 12rpx;
-  background: #151517;
-  color: #f7f7f5;
+.photo-action {
+  width: 100%;
+  margin-top: 24rpx;
 }
 .photo-list {
-  display: grid;
-  gap: 22rpx;
-  margin-top: 28rpx;
+  grid-template-columns: 1fr;
 }
 .photo-item {
-  display: grid;
-  grid-template-columns: 180rpx 1fr;
-  align-items: center;
-  gap: 20rpx;
+  overflow: hidden;
+  border: 4rpx solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
 }
 .photo-preview-button {
-  width: 180rpx;
-  height: 130rpx;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  border: 1rpx solid #4a4a4e;
-  border-radius: 12rpx;
-  background: #101012;
+  width: 100%;
+  height: 320rpx;
+  background: var(--color-raised);
 }
 .photo-thumbnail {
   width: 100%;
@@ -197,135 +97,35 @@ page {
 }
 .photo-placeholder {
   display: flex;
-  height: 100%;
   align-items: center;
   justify-content: center;
-  color: var(--color-media-muted);
-  font-size: 22rpx;
-}
-.photo-order-actions {
-  display: flex;
-  gap: 12rpx;
-}
-.photo-order-button {
-  min-width: 100rpx;
-  min-height: 76rpx;
-  margin: 0;
-  padding: 0 20rpx;
-  border: 1rpx solid #555559;
-  border-radius: 10rpx;
-  background: #151517;
-  color: #f7f7f5;
-  font-size: 24rpx;
-}
-.photo-order-button[disabled] {
-  color: #67676c;
+  height: 100%;
+  color: var(--color-muted);
 }
 .photo-count {
-  margin-top: 20rpx;
-}
-.profile-form-page .muted,
-.profile-form-page .field-tip,
-.profile-form-page .photo-count {
-  color: #aaaab0;
-}
-.profile-form-page .form-error {
-  box-sizing: border-box;
-  margin-top: 24rpx;
-  padding: 22rpx 24rpx;
-  border-radius: 18rpx;
-  background: rgba(0, 0, 0, 0.12);
-  color: var(--color-danger-text);
-  line-height: 1.6;
-}
-.save-action {
-  margin-top: 28rpx;
-  border: 0;
-  background: var(--color-action);
-  color: var(--color-on-action);
-  font-weight: 900;
-}
-
-page,
-.profile-form-page {
-  background: var(--color-bg);
-  color: var(--color-text);
-}
-.profile-form-page .form-card {
-  border-color: var(--color-border);
-  border-radius: var(--radius-display);
-  background: var(--color-surface);
-  color: var(--color-text);
-}
-.profile-form-page .title {
-  color: var(--color-text);
-  text-align: center;
-}
-.profile-form-page .form-card .label,
-.default-avatar-title,
-.avatar-status,
-.profile-form-page .muted,
-.profile-form-page .field-tip,
-.profile-form-page .photo-count {
+  margin-top: 8rpx;
   color: var(--color-muted);
+  font-size: 24rpx;
+  text-align: right;
 }
-.profile-form-page .form-card .label {
-  text-align: left;
-}
-.form-card .input,
-.gender-option,
-.default-avatar-button,
-.photo-preview-button {
-  min-height: var(--control-height);
-  border-color: var(--color-border-strong);
+.form-error {
+  margin-top: 16rpx;
+  padding: 16rpx 24rpx;
+  border: 4rpx solid var(--color-brand);
   border-radius: var(--radius-sm);
-  background: var(--color-input-bg);
-  color: var(--color-text);
-}
-.photo-preview-button {
-  background: var(--color-media-placeholder-bg);
-}
-.avatar-action,
-.profile-form-page .photo-action,
-.photo-order-button {
-  min-height: 88rpx;
-  border-color: var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-raised);
-  color: var(--color-text);
-}
-.avatar-preview-shell {
-  border-color: var(--color-border);
-  background: var(--color-raised);
-  box-shadow: 0 14rpx 30rpx var(--color-shadow);
-}
-.avatar-action::before {
-  background: var(--color-brand);
+  background: var(--color-surface);
+  color: var(--color-brand-active);
 }
 .save-action {
-  min-height: var(--control-height);
-  border-radius: var(--radius-md);
-  background: var(--color-action);
-  color: var(--color-on-action);
+  width: 100%;
+  margin-top: var(--card-gap);
 }
-
-@media (max-width: 320px) {
-  .gender-options {
-    grid-template-columns: 1fr;
+@media (max-width: 340px) {
+  .avatar-editor {
+    align-items: stretch;
+    flex-direction: column;
   }
-}
-
-.avatar-action[disabled],
-.default-avatar-button[disabled],
-.photo-action[disabled],
-.photo-order-button[disabled] {
-  border-color: var(--color-border);
-  background: var(--color-raised);
-  color: var(--color-muted);
-}
-
-/* Brand yellow eyebrow/placeholder ink is unreadable on the bright surfaces. */
-.step-kicker,
-.avatar-preview-placeholder {
-  color: var(--color-text);
+  .avatar-preview-shell {
+    align-self: center;
+  }
 }
