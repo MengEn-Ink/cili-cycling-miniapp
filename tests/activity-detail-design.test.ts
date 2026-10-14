@@ -811,34 +811,12 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
   });
 });
 
-describe('官方路线专用查看页', () => {
-  it('注册专用页面与固定的一方 Embed 域名', () => {
+describe('官方路线不再提供站内查看页', () => {
+  it('不注册 route-view 页面，也不保留 Embed 域名配置', () => {
     const app = JSON.parse(read('miniprogram/app.json'));
     const runtime = read('miniprogram/config/runtime.ts');
-    expect(app.pages).toContain('pages/route-view/index');
+    expect(app.pages).not.toContain('pages/route-view/index');
     expect(app.pages).not.toContain('pages/strava/index');
-    expect(runtime).toContain(
-      "routeEmbedOrigin: 'https://cloudbase-d0gizacy77a1ab017-1497589790.ap-shanghai.app.tcloudbase.com'",
-    );
-  });
-
-  it('仅接受数字路线 ID，并构建一方 Embed 地址', () => {
-    const script = read('miniprogram/pages/route-view/index.ts');
-    expect(script).toContain('/route/embed?id=${encodeURIComponent(routeId)}');
-    expect(script).toContain('https://www.strava.com/routes/${routeId}');
-    expect(script).toContain('/^[1-9]\\d{0,19}$/');
-    expect(script).not.toContain('decodeURIComponent');
-  });
-
-  it('官方页面加载失败时保留用户可执行的复制与返回操作', () => {
-    const template = read('miniprogram/pages/route-view/index.wxml');
-    const styles = read('miniprogram/pages/route-view/index.wxss');
-    expect(template).toContain('binderror="routeFailed"');
-    expect(template).toContain('路线暂时无法显示');
-    expect(template).toContain('bindtap="copyRouteUrl">复制路线链接');
-    expect(template).toContain('bindtap="goBack">返回活动');
-    expect(styles).toContain('color: var(--color-text)');
-    expect(styles).toContain('background: var(--color-surface)');
-    expect(styles).not.toMatch(/#[0-9a-f]{3,8}\b/i);
+    expect(runtime).not.toContain('routeEmbedOrigin');
   });
 });

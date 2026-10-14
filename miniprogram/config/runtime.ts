@@ -6,6 +6,5 @@ export const DEVELOPMENT_MOCK = false;
 export const runtimeConfig = Object.freeze({
   brandName: '此里',
   cloudEnvId: 'cloudbase-d0gizacy77a1ab017',
-  routeEmbedOrigin: 'https://cloudbase-d0gizacy77a1ab017-1497589790.ap-shanghai.app.tcloudbase.com',
   dataMode: 'cloud' as DataMode,
 });

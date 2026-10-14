@@ -42,7 +42,7 @@
     document.querySelectorAll('[data-route]').forEach((button) => {
       button.classList.toggle('is-active', button.dataset.route === page.id);
     });
-    const activeTab = ['activity-detail', 'route-view', 'registration-form'].includes(page.id)
+    const activeTab = ['activity-detail', 'registration-form'].includes(page.id)
       ? 'activities'
       : page.id;
     document.querySelectorAll('.tab-button').forEach((button) => {
@@ -107,10 +107,6 @@
     if (action === 'toast') showToast(target.dataset.message || '操作已完成');
     if (action === 'close-modal') modal.hidden = true;
     if (action === 'rider') showRider(target.dataset.rider);
-    if (action === 'toggle-route-fallback') {
-      container.querySelector('[data-route-embed]').hidden = true;
-      container.querySelector('[data-route-fallback]').hidden = false;
-    }
     if (action === 'choice') {
       target.parentElement.querySelectorAll('button').forEach((button) => button.classList.remove('is-active'));
       target.classList.add('is-active');

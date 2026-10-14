@@ -35,7 +35,7 @@
       <div class="unified-detail-body"><div class="detail-metrics">${metric(`${primary.distanceKm} km`, '里程')}${metric(`${primary.elevationM} m`, '爬升')}${metric(primary.estimatedRideTime, '预计骑行')}${metric(`${primary.approved} 人`, '已通过')}</div>
       <section class="detail-decision"><div><small>报名状态</small><strong>${primary.status}</strong><p>可查看行程与活动群二维码</p></div><span><b>${primary.capacity}</b> 名额</span></section>
       <section class="black-ticket"><small>集合时间</small><strong>${primary.time}</strong><h3>${primary.start}</h3><p>请提前 10 分钟到达，完成车辆检查。</p><button data-action="toast" data-message="已打开集合点导航">导航</button></section>
-      <section class="route-actions-card official-route-card"><div class="detail-section-heading"><div><b>Strava 官方路线</b><small>公开路线</small></div></div><p>查看组织者分享的公开路线，无需连接 Strava 账号。</p>${button('查看官方路线', 'route', 'button-primary button-full').replace('data-action="route"', 'data-action="route" data-route="route-view"')}</section>
+      <section class="route-actions-card official-route-card"><div class="detail-section-heading"><div><b>Strava 官方路线</b><small>公开路线</small></div></div><p>复制组织者分享的公开路线链接，无需连接 Strava 账号。</p>${button('复制路线链接', 'toast', 'button-primary button-full').replace('data-action="toast"', 'data-action="toast" data-message="路线链接已复制"')}</section>
       <section class="route-actions-card gpx-route-card"><div class="detail-section-heading"><div><b>${primary.routeName}</b><small>GPX 路线详情</small></div></div>
         <div class="route-native-metrics">${metric(`${primary.distanceKm} km`, '距离')}${metric(`${primary.elevationM} m`, '爬升')}${metric(`${primary.elevationLossM} m`, '下降')}${metric(`${primary.elevationMinM}–${primary.elevationMaxM} m`, '海拔')}</div>
         <div class="route-estimate"><span>此里估算</span><b>${primary.estimatedRideTime}</b></div>
@@ -49,19 +49,6 @@
       <section class="group-qr-card"><div><b>活动群二维码</b><p>扫码加入活动群，出发前请留意群内通知。</p></div><button class="fake-qr" data-action="toast" data-message="活动群二维码已放大" aria-label="点击放大活动群二维码"></button></section>
       <section class="detail-row"><div><b>备注事项</b><span>${primary.fee}</span></div><p>请佩戴头盔，携带补给水、备胎和基础维修工具；雨天活动另行通知。</p></section></div></article>
       <div class="sticky-prototype-action">${button('查看我的行程', 'route', 'button-primary').replace('data-action="route"', 'data-action="route" data-route="registrations"')}</div>`,
-
-    'route-view': () => `<section class="route-view-screen">
-      <div class="route-view-status"><span>STRAVA 官方路线</span><b>公开路线</b></div>
-      <div class="route-embed-shell" data-route-embed>
-        <div class="route-embed-brand"><b>STRAVA</b><span>ROUTE</span></div>
-        <h2>云蒙山&喇叭沟</h2><p>组织者分享的官方公开路线</p>
-        <div class="route-embed-map"><span class="route-stroke"></span><i>起</i><i>终</i></div>
-        <div class="route-embed-facts">${metric(`${primary.distanceKm} km`, '距离')}${metric(`${primary.elevationM} m`, '爬升')}</div>
-        <button class="prototype-button button-outline button-full" data-action="toggle-route-fallback">模拟页面加载失败</button>
-      </div>
-      <div class="route-view-fallback" data-route-fallback hidden><small>STRAVA 官方路线</small><h2>路线暂时无法显示</h2><p>你可以复制路线链接后在浏览器或 Strava 中打开，也可以返回活动继续查看其他信息。</p><div class="button-pair"><button class="prototype-button button-primary" data-action="toast" data-message="路线链接已复制">复制路线链接</button><button class="prototype-button button-outline" data-action="route" data-route="activity-detail">返回活动</button></div></div>
-      <p class="route-account-note">无需连接 Strava 账号，仅展示组织者分享的公开路线。</p>
-    </section>`,
 
     'registration-form': () => `${pageHead('活动报名', primary.title, '第 1 步 / 共 2 步 · 确认骑行身份')}
       <div class="progress-track"><i></i></div>
@@ -108,7 +95,7 @@
 
     'admin-activity-edit': () => `${pageHead('管理员', '编辑活动', `${primary.title} · 草稿自动保存`)}
       <section class="prototype-card form-section">${field('活动标题', primary.title)}${field('开始时间', `2026-10-18 · ${primary.time}`)}${field('集合地点', `${primary.start} · 已选择地图点位`)}${field('备注说明', '集合提醒、补给安排和车辆检查')}</section>
-      <section class="route-editor-section"><div class="route-editor-heading"><span>01</span><div><b>Strava 官方路线（可选）</b><small>这里只保存公开路线链接</small></div></div><div class="route-input">粘贴公开路线链接</div><div class="button-pair"><button data-action="toast" data-message="官方路线已添加">添加官方路线</button><button data-action="route" data-route="route-view">查看官方路线</button></div><p>已添加。参与者可查看 Strava 官方路线。</p><small>如需在活动中展示海拔曲线和完整数据，请继续上传 GPX。</small></section>
+      <section class="route-editor-section"><div class="route-editor-heading"><span>01</span><div><b>Strava 官方路线（可选）</b><small>这里只保存公开路线链接</small></div></div><div class="route-input">粘贴公开路线链接</div><div class="button-pair"><button data-action="toast" data-message="官方路线已添加">添加官方路线</button></div><p>已添加。参与者可在活动详情复制 Strava 官方路线链接。</p><small>如需在活动中展示海拔曲线和完整数据，请继续上传 GPX。</small></section>
       <section class="route-editor-section route-editor-section--gpx"><div class="route-editor-heading"><span>02</span><div><b>GPX 路线详情（推荐）</b><small>原生数据 · 可下载文件</small></div></div><p>上传后可展示里程、爬升、海拔曲线和路线图，参与者也可下载原文件。</p><button class="gpx-upload-button" data-action="toast" data-message="GPX 已上传并完成解析">上传 GPX</button><div class="route-ready-panel"><div><small>路线详情已准备好</small><b>${primary.routeName}</b><span>此里估算 ${primary.estimatedRideTime}</span></div><div class="route-native-metrics compact">${metric(`${primary.distanceKm} km`, '里程')}${metric(`${primary.elevationM} m`, '爬升')}${metric(`${primary.elevationLossM} m`, '下降')}${metric(`${primary.elevationMinM}–${primary.elevationMaxM} m`, '海拔')}</div><div class="route-preview-image"><i></i><span>GPX</span></div><div class="inline-actions"><button data-action="toast" data-message="已打开 GPX 选择器">更换 GPX</button><button data-action="toast" data-message="路线详情已移除">移除路线详情</button><button data-action="toast" data-message="已设为活动背景">设为活动背景</button></div></div></section>
       <section class="prototype-card form-section">${field('人数上限', `${primary.capacity} 人`)}${field('活动群二维码', '已上传 · 点击替换')}</section>
       <div class="button-pair">${button('保存草稿', 'toast', 'button-outline').replace('data-action="toast"', 'data-action="toast" data-message="草稿已保存"')}${button('发布活动', 'publish-activity', 'button-primary')}</div>`,

@@ -21,16 +21,6 @@ window.prototypeData = {
       copy: '查看活动照片、集合信息、线路、报名人员、备注和报名状态。',
     },
     {
-      id: 'route-view',
-      path: 'pages/route-view/index',
-      title: '官方路线',
-      navTitle: '官方路线',
-      group: '骑友端',
-      role: '骑友',
-      state: '公开路线',
-      copy: '无需连接 Strava 账号即可查看组织者分享的官方公开路线。',
-    },
-    {
       id: 'registration-form',
       path: 'pages/registration-form/index',
       title: '填写报名',
