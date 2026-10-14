@@ -3,18 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f2f3ef" />
+    <meta name="theme-color" content="#f3f3f1" />
     <meta
       name="description"
-      content="此里骑行活动小程序全页面高保真交互原型，覆盖真实路由、数据与关键业务状态"
+      content="此里骑行活动小程序全套 UI 改版高保真原型：13 个真实页面、关键状态与逐页设计说明"
     />
-    <title>此里 · 全页面高保真原型</title>
+    <title>此里 · 全套 UI 改版高保真原型</title>
     <link rel="icon" href="./brand/logo-materials/generated/logo-square-1024.png" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <header class="site-header">
-      <a class="site-brand" href="#activities" aria-label="此里原型首页">
+      <a class="site-brand" href="#overview" aria-label="此里原型总览">
         <img
           class="site-logo-image"
           src="./brand/logo-materials/generated/logo-square-1024.png"
@@ -22,47 +22,57 @@
         />
       </a>
       <div>
-        <p class="eyebrow">微信小程序 · 13 页高保真原型 · 路线双模式</p>
-        <h1>官方路线 + GPX 详情</h1>
+        <p class="eyebrow">微信小程序 · 全套 UI 改版 2026-10-14 · 路线双模式（复制链接 + GPX） · 只有明亮主题</p>
+        <h1>黑白灰 + 主题橙（小范围成功 / 提醒色） · 13 页高保真原型</h1>
+      </div>
+      <div class="header-links">
+        <a class="header-link" href="#overview">总览与规范</a>
+        <a class="header-link is-primary" href="#activities">进入原型</a>
       </div>
       <div class="coverage-badge"><b>13 / 13</b><span>真实页面已覆盖</span></div>
     </header>
+
+    <section class="overview" id="overview-view" hidden></section>
 
     <main class="showcase" id="demo">
       <aside class="screen-nav-panel" aria-label="原型页面导航">
         <div class="nav-heading">
           <span>页面地图</span>
-          <small>与 app.json 路由一一对应</small>
+          <small>与 app.json 路由一一对应（官方路线页已删除）</small>
         </div>
         <div id="screen-nav" class="screen-nav"></div>
         <div class="source-note">
           <b>数据说明</b>
-          <p>活动与骑行指标取自项目测试夹具；手机号等隐私字段已按产品规则脱敏。</p>
+          <p>
+            活动与骑行指标取自项目测试夹具。个人信息按产品规则展示：本人与审核管理员完整显示实名和电话，其他骑友只见昵称，后援车司机电话公开完整显示。示例照片为 AI 生成示意图。
+          </p>
         </div>
       </aside>
 
       <section class="phone-stage" aria-label="小程序原型预览">
         <div class="phone-shell">
-          <div class="phone-status"><span>09:41</span><span>● ◔ ᯤ</span></div>
-          <div class="mini-program-bar">
-            <button class="mini-back" data-action="back" aria-label="返回上一页">‹</button>
-            <strong id="mini-title">此里活动</strong>
-            <button class="mini-more" data-action="toast" data-message="小程序菜单">•••</button>
+          <div class="phone-inner">
+            <div class="phone-status"><span>09:41</span><span>● ◔ ᯤ</span></div>
+            <div class="mini-program-bar">
+              <button class="mini-back" data-action="back" aria-label="返回上一页">‹</button>
+              <strong id="mini-title">此里活动</strong>
+              <button class="mini-more" data-action="toast" data-message="小程序菜单">•••</button>
+            </div>
+            <div id="screen-container" class="screen-container" aria-live="polite"></div>
+            <nav class="tab-bar" id="tab-bar" aria-label="小程序主导航">
+              <button class="tab-button" data-route="activities">
+                <i class="tab-icon tab-icon--activities" aria-hidden="true"></i>活动
+              </button>
+              <button class="tab-button" data-route="registrations">
+                <i class="tab-icon tab-icon--trips" aria-hidden="true"></i>行程
+              </button>
+              <button class="tab-button" data-route="profile">
+                <i class="tab-icon tab-icon--profile" aria-hidden="true"></i>我的
+              </button>
+            </nav>
+            <div class="prototype-modal" id="prototype-modal" hidden></div>
+            <div class="demo-toast" id="demo-toast" role="status" hidden></div>
           </div>
-          <div id="screen-container" class="screen-container" aria-live="polite"></div>
-          <nav class="tab-bar" aria-label="小程序主导航">
-            <button class="tab-button" data-route="activities">
-              <i class="tab-icon tab-icon--activities" aria-hidden="true"></i>活动
-            </button>
-            <button class="tab-button" data-route="registrations">
-              <i class="tab-icon tab-icon--trips" aria-hidden="true"></i>行程
-            </button>
-            <button class="tab-button" data-route="profile">
-              <i class="tab-icon tab-icon--profile" aria-hidden="true"></i>我的
-            </button>
-          </nav>
-          <div class="prototype-modal" id="prototype-modal" hidden></div>
-          <div class="demo-toast" id="demo-toast" role="status" hidden></div>
         </div>
       </section>
 
@@ -73,22 +83,42 @@
         <p id="screen-copy">浏览即将开始与历史活动，快速比较时间、地点和路线难度。</p>
         <div class="note-grid">
           <div><span>角色</span><b id="screen-role">骑友</b></div>
-          <div><span>数据状态</span><b id="screen-state">已发布</b></div>
+          <div><span>当前状态</span><b id="screen-state">有活动</b></div>
         </div>
-        <div class="journey-list">
-          <b>可模拟旅程</b>
-          <button data-journey="registration">活动报名</button>
-          <button data-journey="credential">行程凭证</button>
-          <button data-journey="profile">骑行名片</button>
-          <button data-journey="admin">管理员审核</button>
+        <div class="note-block">
+          <h3>浅色关键状态</h3>
+          <div class="state-switch" id="state-switch"></div>
         </div>
-        <p class="keyboard-hint">支持键盘方向键切换页面，Esc 关闭弹层。</p>
+        <div class="note-block">
+          <h3>截图问题</h3>
+          <ul id="screen-problems"></ul>
+        </div>
+        <div class="note-block">
+          <h3>改版方案</h3>
+          <ul id="screen-fixes"></ul>
+        </div>
+        <div class="note-block">
+          <h3>对应规范</h3>
+          <div class="state-switch" id="screen-spec"></div>
+        </div>
+        <div class="note-block">
+          <h3>可模拟旅程</h3>
+          <div class="journey-list">
+            <button data-journey="registration">活动报名</button>
+            <button data-journey="credential">行程凭证</button>
+            <button data-journey="profile">骑行名片</button>
+            <button data-journey="admin">管理员审核</button>
+          </div>
+        </div>
+        <p class="keyboard-hint">
+          方向键 ← → 切换页面，↑ ↓ 切换状态，Esc 关闭弹层。链接可带状态：#credential/no-photo。
+        </p>
       </aside>
     </main>
 
     <footer class="site-footer">
       <span>此里 CILI · GitHub Pages Prototype</span>
-      <span>官方路线 + GPX 详情 · 黑 · 白 · 主题橙 / 票据式行程凭证保留</span>
+      <span>设计说明：docs/superpowers/specs/2026-10-14-full-ui-redesign.md · 黑 · 白 · 灰 · 主题橙</span>
     </footer>
 
     <script src="./schema.js"></script>
