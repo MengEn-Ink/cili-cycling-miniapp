@@ -56,8 +56,12 @@ describe('行程状态卡与报名凭证重设计契约', () => {
     expect(activityCard).toContain('{{item.displayDateLabel}}');
     expect(activityCard).toContain('{{item.displayTimeLabel}}');
     expect(activityCard).toContain("item.route.start || '集合地点待公布'");
-    expect(activityCardStyles).toMatch(/\.activity-title\s*\{[^}]*-webkit-line-clamp:\s*2/s);
-    expect(activityCardStyles).toMatch(/\.route-line\s*\{[^}]*-webkit-line-clamp:\s*2/s);
+    expect(activityCardStyles).toMatch(
+      /\.activity-title\s*\{[^}]*text-overflow:\s*ellipsis;[^}]*white-space:\s*nowrap/s,
+    );
+    expect(activityCardStyles).toMatch(
+      /\.route-line\s*\{[^}]*text-overflow:\s*ellipsis;[^}]*white-space:\s*nowrap/s,
+    );
   });
 
   it('活动首页与行程页共享黑白橙的信息层级', () => {

@@ -125,7 +125,7 @@ describe('activity timeline template contract', () => {
     expect(template).toContain('role="tabpanel"');
     expect(template).toContain('wx:for="{{items}}"');
     expect(template).toContain('bind:open="open"');
-    expect(styles).toContain('height: 1040rpx');
+    expect(styles).toContain('height: 900rpx');
   });
 
   it('展示列表数量、日期入口并保留加载失败重试', () => {

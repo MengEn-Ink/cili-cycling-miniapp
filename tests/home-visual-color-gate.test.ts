@@ -20,7 +20,7 @@ describe('首页视觉与配色门禁', () => {
 
   it('内容区使用页面统一边距并为轮播与日期滑动保留稳定节奏', () => {
     expect(homeStyles).toMatch(
-      /\.activity-carousel\s*\{[^}]*height:\s*1040rpx[^}]*margin-top:\s*16rpx;/s,
+      /\.activity-carousel\s*\{[^}]*height:\s*900rpx[^}]*margin-top:\s*16rpx;/s,
     );
     expect(homeStyles).toMatch(
       /\.day-chip-bar__inner\s*\{[^}]*padding:\s*0 calc\(var\(--page-gutter\) \+ 48rpx\) 8rpx var\(--page-gutter\)/s,

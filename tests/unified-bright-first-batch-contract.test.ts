@@ -9,7 +9,7 @@ describe('HP-20261010-02 第一批六页尺寸契约', () => {
     expect(declaration(effectiveBlock(app, '.timeline-tab'), 'min-height')).toBe(
       'var(--segment-height)',
     );
-    expect(declaration(effectiveBlock(styles, '.activity-carousel'), 'height')).toBe('1040rpx');
+    expect(declaration(effectiveBlock(styles, '.activity-carousel'), 'height')).toBe('900rpx');
     expect(declaration(effectiveBlock(app, '.page-title'), 'font-size')).toBe('48rpx');
   });
 
