@@ -13,7 +13,7 @@ describe('首页视觉与配色门禁', () => {
   it('首页沿用全局明亮主题且不引入页面级硬编码色值', () => {
     expect(homeStyles).toContain('var(--color-bg)');
     expect(homeStyles).toContain('var(--color-text)');
-    expect(homeStyles).toContain('var(--color-action)');
+    expect(homeStyles).toContain('var(--color-brand)');
     expect(homeStyles).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
     expect(homeStyles).not.toMatch(/navy|blue|gradient/i);
   });

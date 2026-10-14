@@ -14,6 +14,18 @@
 .review-fact {
   min-width: 0;
 }
+.review-page .info-bar {
+  border: 2rpx solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.review-page .info-kicker,
+.review-page .info-meta {
+  color: var(--color-muted);
+}
+.review-page .info-title {
+  color: var(--color-text);
+}
 .info-head {
   display: flex;
   align-items: flex-start;
@@ -31,7 +43,8 @@
 }
 .info-tag {
   flex: 0 0 auto;
-  border: 4rpx solid var(--color-media-muted);
+  border: 2rpx solid var(--color-border);
+  color: var(--color-text);
 }
 .info-tag.is-pending {
   border-color: var(--color-brand);
@@ -41,10 +54,10 @@
   min-height: var(--control-height);
   margin-top: 24rpx;
   padding: 0 24rpx;
-  border: 4rpx solid var(--color-on-media);
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--color-on-media);
+  border: 2rpx solid var(--color-border);
+  border-radius: 999rpx;
+  background: var(--color-surface);
+  color: var(--color-text);
   font-weight: 800;
 }
 .filter-tabs {
@@ -60,7 +73,12 @@
   border-right: 0;
 }
 .filter-tab:nth-child(n + 4) {
-  border-top: 4rpx solid var(--color-border-strong);
+  border-top: 2rpx solid var(--color-border);
+}
+.filter-tab.is-active {
+  border-color: var(--color-brand);
+  background: var(--color-brand);
+  color: var(--color-on-media);
 }
 .result-count {
   color: var(--color-text);
@@ -75,6 +93,8 @@
 }
 .review-card {
   margin-top: 0;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-display);
   text-align: left;
 }
 .review-identity {
@@ -91,7 +111,7 @@
   width: 88rpx;
   height: 88rpx;
   overflow: hidden;
-  border: 4rpx solid var(--color-border-strong);
+  border: 2rpx solid var(--color-border);
   border-radius: 50%;
   background: var(--color-raised);
   color: var(--color-text);
@@ -163,16 +183,17 @@
   min-height: var(--control-height);
   margin-top: 24rpx;
   padding: 0 24rpx;
-  border: 4rpx solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
+  border: 2rpx solid var(--color-border);
+  border-radius: 999rpx;
   background: var(--color-surface);
   color: var(--color-text);
   font-size: 28rpx;
   font-weight: 900;
 }
 .review-action--primary {
-  background: var(--color-action);
-  color: var(--color-on-action);
+  border-color: var(--color-brand);
+  background: var(--color-brand);
+  color: var(--color-on-media);
 }
 .reminder-card {
   margin-top: 48rpx;

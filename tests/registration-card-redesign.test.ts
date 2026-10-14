@@ -66,10 +66,10 @@ describe('行程状态卡与报名凭证重设计契约', () => {
 
   it('活动首页与行程页共享黑白橙的信息层级', () => {
     expect(activityPageStyles).toMatch(
-      /\.day-chip\.is-active\s*\{[^}]*background:\s*var\(--color-action\)[^}]*color:\s*var\(--color-on-action\)/s,
+      /\.day-chip\.is-active\s*\{[^}]*background:\s*var\(--color-brand\)[^}]*color:\s*var\(--color-on-media\)/s,
     );
     expect(activityCardStyles).toMatch(
-      /\.activity-card\s*\{[^}]*border:\s*4rpx solid var\(--color-card-border\)[^}]*background:\s*var\(--color-surface\)/s,
+      /\.activity-card\s*\{[^}]*border:\s*2rpx solid var\(--color-border\)[^}]*background:\s*var\(--color-surface\)/s,
     );
     expect(activityCardStyles).toContain('--card-accent: var(--color-brand)');
     expect(tripStyles).toMatch(

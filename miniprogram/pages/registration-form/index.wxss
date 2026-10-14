@@ -28,15 +28,15 @@ page {
   min-width: 0;
 }
 
-/* 步骤条：三格票据，当前步骤主题橙底 + 近黑字。 */
+/* 步骤条：三格轻量票据，当前步骤使用主题橙底白字。 */
 .step-line {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   overflow: hidden;
   min-width: 0;
   margin-bottom: 32rpx;
-  border: 4rpx solid var(--color-border-strong);
-  border-radius: 8rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-muted);
   font-size: 24rpx;
@@ -51,7 +51,7 @@ page {
   min-width: 0;
   min-height: var(--control-height);
   padding: 8rpx;
-  border-left: 4rpx solid var(--color-border-strong);
+  border-left: 2rpx solid var(--color-border);
   white-space: nowrap;
 }
 
@@ -125,15 +125,15 @@ page {
   line-height: 1.5;
 }
 
-/* 活动信息：黑底白字票据条，左侧主题橙短线。 */
+/* 活动信息：浅色卡片承载核心上下文，左侧主题橙短线强化识别。 */
 .activity-context {
   position: relative;
   margin-top: 24rpx;
   padding: 24rpx 24rpx 24rpx 40rpx;
-  border: 0;
-  border-radius: var(--radius-card);
-  background: var(--color-media-card-bg);
-  color: var(--color-on-media);
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-display);
+  background: var(--color-surface);
+  color: var(--color-text);
   box-shadow: none;
 }
 
@@ -153,7 +153,7 @@ page {
 }
 
 .form-page .context-kicker {
-  color: var(--color-media-muted);
+  color: var(--color-muted);
   font-size: 24rpx;
   font-weight: 700;
 }
@@ -164,7 +164,7 @@ page {
   padding: 4rpx 16rpx;
   border: 2rpx solid var(--color-brand);
   border-radius: 8rpx;
-  color: var(--color-on-media);
+  color: var(--color-text);
   font-size: 24rpx;
   font-weight: 800;
   line-height: 1.4;
@@ -175,7 +175,7 @@ page {
   display: -webkit-box;
   margin-top: 16rpx;
   overflow: hidden;
-  color: var(--color-on-media);
+  color: var(--color-text);
   font-size: 36rpx;
   font-weight: 900;
   line-height: 1.4;
@@ -189,7 +189,7 @@ page {
   flex-wrap: wrap;
   gap: 8rpx 24rpx;
   margin-top: 8rpx;
-  color: var(--color-media-muted);
+  color: var(--color-muted);
   font-size: 24rpx;
   line-height: 1.5;
   font-variant-numeric: tabular-nums;
@@ -204,8 +204,8 @@ page {
 
 .form-section {
   padding: 32rpx 24rpx;
-  border: 4rpx solid var(--color-card-border);
-  border-radius: var(--radius-card);
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-display);
   box-shadow: none;
 }
 
@@ -300,7 +300,7 @@ page {
   box-sizing: border-box;
   width: 100%;
   border: 4rpx solid var(--color-brand);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-display);
   background: var(--color-surface);
   color: var(--color-text);
 }
@@ -632,31 +632,31 @@ page {
   min-height: var(--control-height);
   margin: 0;
   padding: 0 24rpx;
-  border-radius: 8rpx !important;
+  border-radius: 999rpx !important;
   font-size: 28rpx;
   font-weight: 900;
   line-height: 1.2;
 }
 
 .form-page .back-button {
-  border: 4rpx solid var(--color-border-strong);
+  border: 2rpx solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-text);
 }
 
 .submit-button {
-  border: 4rpx solid var(--color-action);
-  background: var(--color-action);
-  color: var(--color-on-action);
+  border-color: var(--color-brand);
+  background: var(--color-brand);
+  color: var(--color-on-media);
 }
 
 .form-page .submit-button {
-  background: var(--color-action);
-  color: var(--color-on-action);
+  background: var(--color-brand);
+  color: var(--color-on-media);
 }
 
 .submit-button:active {
-  background: var(--color-action-active);
+  background: var(--color-brand-active);
 }
 
 .form-page button[disabled] {

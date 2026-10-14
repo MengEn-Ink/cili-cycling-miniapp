@@ -14,15 +14,15 @@ describe('报名、骑行名片与个人中心设计对齐', () => {
     expect(template).not.toContain('class="form-surface"');
     expect(template.match(/class="form-section form-card/g)).toHaveLength(4);
     const section = effectiveBlock(styles, '.form-section');
-    expect(section).toContain('border: 4rpx solid var(--color-card-border)');
-    expectSemantic(declaration(section, 'border-radius'), '--radius-card');
+    expect(section).toContain('border: 2rpx solid var(--color-border)');
+    expectSemantic(declaration(section, 'border-radius'), '--radius-display');
     expectSemantic(
       declaration(effectiveBlock(styles, '.form-card'), 'background'),
       '--color-surface',
     );
     expectSemantic(
       declaration(effectiveBlock(styles, '.form-page .submit-button'), 'background'),
-      '--color-action',
+      '--color-brand',
     );
     expect(styles).not.toContain('linear-gradient');
   });

@@ -12,6 +12,8 @@
 .rider-card {
   overflow: hidden;
   padding: 0;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-display);
 }
 .profile-hero {
   position: relative;
@@ -72,8 +74,8 @@
 .hero-profile-progress {
   margin-top: var(--card-gap);
   padding: 32rpx;
-  border: 4rpx solid var(--color-border-strong);
-  border-radius: var(--radius-card);
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-display);
   background: var(--color-surface);
 }
 .hero-progress-head {
@@ -90,7 +92,7 @@
 .hero-progress-value {
   height: 100%;
   border-radius: 6rpx;
-  background: var(--color-action);
+  background: var(--color-brand);
 }
 .hero-progress-missing {
   margin-top: 12rpx;
@@ -101,8 +103,8 @@
 .profile-refresh-error {
   margin-top: var(--card-gap);
   padding: 32rpx;
-  border: 4rpx solid var(--color-border-strong);
-  border-radius: var(--radius-card);
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-display);
   background: var(--color-surface);
 }
 .identity-guide-title {
@@ -122,8 +124,8 @@
 .menu-list {
   overflow: hidden;
   padding: 0 32rpx;
-  border: 4rpx solid var(--color-border-strong);
-  border-radius: var(--radius-card);
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-display);
   background: var(--color-surface);
 }
 .menu-card {
@@ -224,6 +226,18 @@
   margin-bottom: 8rpx;
   color: var(--color-text);
   font-weight: 800;
+}
+.profile-page .btn {
+  border-color: var(--color-brand);
+  border-radius: 999rpx !important;
+  background: var(--color-brand) !important;
+  color: var(--color-on-media) !important;
+}
+.profile-page .secondary {
+  border-color: var(--color-border);
+  border-radius: 999rpx !important;
+  background: var(--color-surface) !important;
+  color: var(--color-text) !important;
 }
 .profile-loading,
 .profile-error,

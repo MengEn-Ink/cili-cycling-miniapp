@@ -121,11 +121,18 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
       ['--color-status-warning', '#7a5c00'],
       ['--color-status-warning-soft', '#fbf1cc'],
     ]);
+    const prototypeInteractionVars = new Map([
+      ['--color-on-brand', '#ffffff'],
+      ['--color-action', '#e85b32'],
+      ['--color-action-active', '#c84320'],
+      ['--color-on-action', '#ffffff'],
+    ]);
     const cssVars = [...css.matchAll(/(--color-[a-z-]+):\s*(#[0-9a-f]{6})\b/gi)];
     expect(cssVars.length).toBeGreaterThan(10);
     for (const [, name, value] of cssVars) {
-      // §2.3 的成功 / 警告色在开发第 1 批进入 app.wxss 前按规范色值检查；进入后须同名同值。
-      const expected = wxssVars.get(name) ?? statusVars.get(name);
+      // 浏览器原型的交互别名先行切到品牌橙；其余共享变量与小程序保持同名同值。
+      const expected =
+        prototypeInteractionVars.get(name) ?? wxssVars.get(name) ?? statusVars.get(name);
       expect(expected, name).toBe(value.toLowerCase());
     }
     const declaredHex = new Set(cssVars.map(([, , value]) => value.toLowerCase()));
@@ -137,7 +144,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(css).toMatch(
       /\.credential-spotlight\s*\{[^}]*background:\s*var\(--color-media-card-bg\)/s,
     );
-    expect(css).toMatch(/\.trip-ticket-info\s*\{[^}]*background:\s*var\(--color-media-card-bg\)/s);
+    expect(css).toMatch(/\.trip-ticket-info\s*\{[^}]*background:\s*var\(--color-raised\)/s);
   });
 
   it('成功 / 警告色只小范围用于小标签、行内提示和图标，不做底色、按钮、描边卡片', () => {
@@ -167,7 +174,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(templates).not.toContain("tag('new'");
     expect(css).not.toContain('.tag-new');
     expect(css).toMatch(/\.card-no\s*\{[^}]*color:\s*var\(--color-text\)/s);
-    expect(css).toMatch(/\.info-tag\s*\{[^}]*border:\s*2px solid var\(--color-media-muted\)/s);
+    expect(css).toMatch(/\.info-tag\s*\{[^}]*border:\s*1px solid var\(--color-border\)/s);
     expect(css).toContain('--page-gutter: 24px');
     expect(css).toContain('--card-gap: 16px');
     expect(script).toContain("showToast('驳回时请填写理由', 'error')");

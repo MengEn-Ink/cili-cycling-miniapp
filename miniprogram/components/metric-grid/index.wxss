@@ -7,7 +7,7 @@
   gap: 2rpx;
   overflow: hidden;
   border: 2rpx solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: 20rpx;
   background: var(--color-border);
 }
 .metric-grid--3 {
