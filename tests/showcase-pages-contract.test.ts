@@ -32,36 +32,65 @@ const routeToPagePath = (route: string) =>
     : `pages/${route}/index`;
 
 describe('GitHub Pages 全页面高保真原型门禁', () => {
-  it('与 app.json 的 13 个真实页面逐一对应，不遗漏也不虚构路由', () => {
+  it('与 app.json 的 13 个可达页面逐一对应，官方路线页 route-view 不进入原型', () => {
     expect(prototypeRoutes).toHaveLength(13);
-    expect(prototypeRoutes.map(routeToPagePath)).toEqual(appConfig.pages);
+    // route-view 由 #210 从 app.json 删除；合并前后本断言都成立。
+    expect(prototypeRoutes.map(routeToPagePath)).toEqual(
+      appConfig.pages.filter((page) => page !== 'pages/route-view/index'),
+    );
     for (const route of prototypeRoutes) {
       expect(schema).toContain(`id: '${route}'`);
       expect(schema).toContain(`path: '${routeToPagePath(route)}'`);
       expect(templates).toMatch(new RegExp(`(?:^|\\n)    ['"]?${route}['"]?: \\(\\) =>`));
     }
-    expect(schema).not.toContain('route-view');
-    expect(templates).not.toContain('route-view');
+    expect(schema).not.toContain("id: 'route-view'");
+    expect(templates).not.toMatch(/['"]?route-view['"]?: \(\) =>/);
     expect(html).toContain('13 / 13');
     expect(html).toContain('与 app.json 路由一一对应');
   });
 
-  it('使用项目真实夹具口径填充活动和骑行指标，同时对隐私字段脱敏', () => {
+  it('使用项目真实夹具口径填充活动和骑行指标，并按已确认的个人信息展示规则显示', () => {
     expect(schema).toContain("title: '秋日环湖耐力骑'");
     expect(schema).toContain('distanceKm: 82');
     expect(schema).toContain('elevationM: 680');
     expect(schema).toContain("title: '海风新手友好骑'");
     expect(schema).toContain("nickname: '风向骑手'");
-    expect(schema).toContain("phone: '138****5678'");
+    expect(schema).toContain("phone: '138 0000 5678'");
+    expect(schema).not.toContain('****');
     expect(schema).not.toMatch(/access_token|refresh_token|emergencyPhone/);
-    expect(html).toContain('手机号等隐私字段已按产品规则脱敏');
+    expect(html).toContain('本人与审核管理员完整显示实名和电话，其他骑友只见昵称');
+    expect(templates).toContain('其他骑友只显示昵称');
+  });
+
+  it('每页都带浅色关键状态与“问题 → 改法 → 规范”设计说明，并提供总览页', () => {
+    expect(schema.match(/\n {6}states: \[/g)).toHaveLength(13);
+    expect(schema.match(/\n {6}problems: \[/g)).toHaveLength(13);
+    expect(schema.match(/\n {6}fixes: \[/g)).toHaveLength(13);
+    expect(schema.match(/\n {6}spec: \[/g)).toHaveLength(13);
+    for (const state of [
+      "'empty'",
+      "'loading'",
+      "'error'",
+      "'uploading'",
+      "'no-photo'",
+      "'with-photo'",
+      "'selected'",
+    ]) {
+      expect(schema).toContain(`[${state},`);
+    }
+    expect(templates).toContain('btn is-disabled');
+    expect(html).toContain('id="overview-view"');
+    expect(html).toContain('id="state-switch"');
+    expect(script).toContain('window.prototypeState = currentState');
+    expect(script).toContain("currentState === 'create' ? '创建活动'");
   });
 
   it('保留票据式行程与凭证，并覆盖活动报名、能力和管理员审核旅程', () => {
     expect(templates).toContain('查看票据式行程凭证');
     expect(templates).toContain('class="credential-ticket"');
     expect(templates).toContain('class="credential-spotlight"');
-    expect(templates).toContain('管理员扫码签到');
+    expect(templates).toContain('取消报名');
+    expect(templates).toContain('队伍');
     expect(templates).toContain('data-route="registration-form"');
     expect(templates).toContain('data-route="admin-review-detail"');
     expect(script).toContain("registration: 'activities'");
@@ -78,15 +107,70 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain("if (action === 'publish-activity')");
   });
 
-  it('网站继续遵循黑白橙三色规范且不引入装饰性渐变', () => {
-    const hexColors = [...css.matchAll(/#[0-9a-f]{6}\b/gi)].map(([color]) => color.toLowerCase());
-    expect(new Set(hexColors)).toEqual(new Set(['#f2f3ef', '#20241f', '#e85b32']));
+  it('颜色变量与 miniprogram/app.wxss 同名同值（成功 / 警告色按规范先行），不引入装饰性渐变', () => {
+    const wxss = read('miniprogram/app.wxss');
+    const wxssVars = new Map(
+      [...wxss.matchAll(/(--color-[a-z-]+):\s*(#[0-9a-f]{6})\b/gi)].map(([, name, value]) => [
+        name,
+        value.toLowerCase(),
+      ]),
+    );
+    const statusVars = new Map([
+      ['--color-status-success', '#1d7a3e'],
+      ['--color-status-success-soft', '#e7f4eb'],
+      ['--color-status-warning', '#7a5c00'],
+      ['--color-status-warning-soft', '#fbf1cc'],
+    ]);
+    const cssVars = [...css.matchAll(/(--color-[a-z-]+):\s*(#[0-9a-f]{6})\b/gi)];
+    expect(cssVars.length).toBeGreaterThan(10);
+    for (const [, name, value] of cssVars) {
+      // §2.3 的成功 / 警告色在开发第 1 批进入 app.wxss 前按规范色值检查；进入后须同名同值。
+      const expected = wxssVars.get(name) ?? statusVars.get(name);
+      expect(expected, name).toBe(value.toLowerCase());
+    }
+    const declaredHex = new Set(cssVars.map(([, , value]) => value.toLowerCase()));
+    const allHex = [...css.matchAll(/#[0-9a-f]{6}\b/gi)].map(([color]) => color.toLowerCase());
+    expect(allHex.every((color) => declaredHex.has(color))).toBe(true);
     expect(css).not.toMatch(/navy|blue|linear-gradient|radial-gradient/i);
-    expect(css).toContain('--bg: #f2f3ef');
-    expect(css).toContain('--text: #20241f');
-    expect(css).toContain('--brand: #e85b32');
-    expect(css).toMatch(/\.credential-spotlight\s*\{[^}]*background:\s*var\(--text\)/s);
-    expect(css).toMatch(/\.trip-ticket-info\s*\{[^}]*background:\s*var\(--text\)/s);
+    expect(css).toContain('--color-text: #171717');
+    expect(css).toContain('--color-brand: #e85b32');
+    expect(css).toMatch(
+      /\.credential-spotlight\s*\{[^}]*background:\s*var\(--color-media-card-bg\)/s,
+    );
+    expect(css).toMatch(/\.trip-ticket-info\s*\{[^}]*background:\s*var\(--color-media-card-bg\)/s);
+  });
+
+  it('成功 / 警告色只小范围用于小标签、行内提示和图标，不做底色、按钮、描边卡片', () => {
+    for (const [name, value] of [
+      ['--color-status-success', '#1d7a3e'],
+      ['--color-status-success-soft', '#e7f4eb'],
+      ['--color-status-warning', '#7a5c00'],
+      ['--color-status-warning-soft', '#fbf1cc'],
+    ]) {
+      expect(css).toContain(`${name}: ${value}`);
+    }
+    const allowedSelectors = /^\.(tag-success|tag-warning|inline-toast)$/;
+    const cssNoComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
+    for (const [, selector, body] of cssNoComments.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+      if (!/var\(--color-status-/.test(body)) continue;
+      for (const one of String(selector)
+        .split(',')
+        .map((item: string) => item.trim())) {
+        expect(one, one).toMatch(allowedSelectors);
+      }
+    }
+    expect(templates).toContain("tag('success', '✓ 已通过')");
+    expect(templates).not.toContain("tag('solid', '已通过')");
+    expect(templates).toContain("tag('warning', '⚠ 名额紧张')");
+    expect(templates).toContain('⚠ 即将截止');
+    expect(templates).toContain('可能过期');
+    expect(templates).not.toContain("tag('new'");
+    expect(css).not.toContain('.tag-new');
+    expect(css).toMatch(/\.card-no\s*\{[^}]*color:\s*var\(--color-text\)/s);
+    expect(css).toMatch(/\.info-tag\s*\{[^}]*border:\s*2px solid var\(--color-media-muted\)/s);
+    expect(css).toContain('--page-gutter: 24px');
+    expect(css).toContain('--card-gap: 16px');
+    expect(script).toContain("showToast('驳回时请填写理由', 'error')");
   });
 
   it('GitHub Pages 使用 docs 根目录的相对静态资源', () => {
@@ -105,13 +189,19 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(templates).toContain('class="prototype-brand-logo"');
   });
 
-  it('活动详情同步四指标、报名状态、官方路线与 GPX 原生详情', () => {
+  it('活动详情同步四指标、报名状态、Strava 只复制链接与 GPX 原生详情', () => {
     expect(templates).toContain('预计骑行');
     expect(templates).toContain('已通过');
     expect(templates).toContain('class="detail-decision"');
     expect(templates).toContain('Strava 官方路线');
     expect(templates).toContain('复制路线链接');
-    expect(templates).not.toContain('查看官方路线');
+    expect(templates).toContain('data-action="copy-route"');
+    expect(templates).toContain('路线链接已复制');
+    expect(templates).toContain('复制失败，请稍后重试');
+    expect(schema).toContain("['copied', '路线链接已复制']");
+    expect(schema).toContain("['copy-failed', '复制失败']");
+    expect(script).toContain("if (action === 'copy-route')");
+    expect(css).toContain('.inline-toast');
     expect(templates).toContain('GPX 路线详情');
     expect(templates).toContain('路线轮廓');
     expect(templates).toContain('海拔曲线');
@@ -122,25 +212,30 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   it('不再展示 Strava 账号授权、同步或解绑能力', () => {
     const currentPrototype = [html, schema, templates, script].join('\n');
     expect(currentPrototype).not.toMatch(
-      /Strava 授权|重新授权 Strava|解绑 Strava|同步最新 Strava|STRAVA 数据已同步|data-route="strava"/i,
+      /(?<!无需 )Strava 授权|重新授权 Strava|解绑 Strava|同步最新 Strava|STRAVA 数据已同步|data-route="strava"/i,
     );
     expect(schema).toContain("copy: '查看公开骑行资料与照片，不依赖第三方账号数据。'");
     expect(templates).toContain('设置与升级日志');
     expect(templates).not.toContain('Strava 状态');
   });
 
-  it('活动编辑同步官方链接与 GPX 双模式，活动详情只复制路线链接', () => {
+  it('活动编辑只填写并解析 Strava 链接，全原型不跳转第三方页面', () => {
     expect(templates).toContain('Strava 官方路线（可选）');
     expect(templates).toContain('粘贴公开路线链接');
-    expect(templates).toContain('添加官方路线');
+    expect(templates).toContain('添加并解析路线');
+    expect(templates).toContain('公开路线已解析');
     expect(templates).toContain('GPX 路线详情（推荐）');
     expect(templates).toContain('上传 GPX');
     expect(templates).toContain('路线详情已准备好');
     expect(templates).toContain('设为活动背景');
-    expect(templates).not.toContain('路线暂时无法显示');
-    expect(templates).toContain('复制路线链接');
-    expect(templates).toContain('无需连接 Strava 账号');
-    expect(script).not.toContain('toggle-route-fallback');
+    const currentPrototype = [html, schema, templates, script].join('\n');
+    expect(currentPrototype).not.toContain('查看官方路线');
+    expect(currentPrototype).not.toContain('data-route="route-view"');
+    expect(currentPrototype).not.toContain("go('route-view')");
+    expect(currentPrototype).not.toContain('toggle-route-fallback');
+    expect(currentPrototype).not.toContain('无需连接 Strava 账号');
+    expect(currentPrototype).not.toMatch(/打开 Strava|查看 Strava|跳转 Strava|在 Strava 中打开/);
+    expect([schema, templates].join('\n')).not.toContain('web-view');
   });
 
   it('个人名片与审核页面只保留资料、照片和骑行经验', () => {
