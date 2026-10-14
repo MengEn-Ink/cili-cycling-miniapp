@@ -10,7 +10,7 @@
     "digest": "sha256:5cdf9335b677502f04222c069f267801e0726ff63e5f752e893b6c773d6f11ac"
   },
   "prototype": {
-    "digest": "sha256:7c9862771c0ee9e4ce508097d0f949ee985402d162eaaf075e8080349184d414"
+    "digest": "sha256:9cac8653d16eb3c655ae16ebcb71c577507020df2383c144bdb344d0430cde92"
   },
   "routes": [
     {
@@ -20,10 +20,6 @@
     {
       "id": "activity-detail",
       "pagePath": "pages/activity-detail/index"
-    },
-    {
-      "id": "route-view",
-      "pagePath": "pages/route-view/index"
     },
     {
       "id": "registration-form",

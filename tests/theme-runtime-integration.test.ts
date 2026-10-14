@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest';
 const appConfig = JSON.parse(readFileSync('miniprogram/app.json', 'utf8')) as { pages: string[] };
 
 describe('单一明亮外观接线', () => {
-  it('14 个页面不再保存或同步运行时主题', () => {
-    expect(appConfig.pages).toHaveLength(14);
+  it('13 个页面不再保存或同步运行时主题', () => {
+    expect(appConfig.pages).toHaveLength(13);
 
     for (const pagePath of appConfig.pages) {
       const script = readFileSync(`miniprogram/${pagePath}.ts`, 'utf8');
@@ -39,11 +39,13 @@ describe('单一明亮外观接线', () => {
 
     expect(template).toContain('功能升级日志');
     expect(template).toContain('wx:for="{{releaseNotes}}"');
+    expect(script).toContain("version: '2026.10.14.54'");
+    expect(script).toContain("title: '移除未使用的官方路线页面'");
     expect(script).toContain("version: '2026.10.13.53'");
     expect(script).toContain("title: '本人资料完整显示'");
     expect(script).toContain("version: '2026.10.13.52'");
     expect(script).toContain("title: '填写报名页更清晰'");
-    expect(script).toContain("version: '2026.10.13.49'");
-    expect(script).toContain("title: '资料保存与报名门槛一致'");
+    expect(script).toContain("version: '2026.10.13.50'");
+    expect(script).toContain("title: '公开路线免授权解析与复制'");
   });
 });

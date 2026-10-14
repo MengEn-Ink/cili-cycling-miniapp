@@ -13,7 +13,6 @@ import {
 const app = read('miniprogram/app.wxss');
 const tokens = uiTokens(app);
 const pages = [
-  { root: 'miniprogram/pages/route-view', page: '.route-view-page', background: '--color-surface' },
   { root: 'miniprogram/pages/credential', page: '.page.credential-page' },
   { root: 'miniprogram/pages/admin/activity-list', page: '.activity-list-page' },
   { root: 'miniprogram/pages/profile-edit', page: '.profile-form-page' },
@@ -26,18 +25,15 @@ function expectReadable(foreground: string, background: string, minimum = 4.5): 
 }
 
 describe('其余页面 CILI 统一明亮 UI 静态契约', () => {
-  it.each(pages)(
-    '$root 使用明亮原生导航栏和统一语义色',
-    ({ root, page, background = '--color-bg' }) => {
-      const config = JSON.parse(read(`${root}/index.json`));
-      expect(config.navigationBarBackgroundColor.toLowerCase()).toBe('#ffffff');
-      expect(config.navigationBarTextStyle).toBe('black');
-      const block = effectiveBlock(read(`${root}/index.wxss`), page);
-      expectSemantic(declaration(block, 'background'), background);
-      expectSemantic(declaration(block, 'color'), '--color-text');
-      expectReadable('var(--color-text)', `var(${background})`);
-    },
-  );
+  it.each(pages)('$root 使用明亮原生导航栏和统一语义色', ({ root, page }) => {
+    const config = JSON.parse(read(`${root}/index.json`));
+    expect(config.navigationBarBackgroundColor.toLowerCase()).toBe('#ffffff');
+    expect(config.navigationBarTextStyle).toBe('black');
+    const block = effectiveBlock(read(`${root}/index.wxss`), page);
+    expectSemantic(declaration(block, 'background'), '--color-bg');
+    expectSemantic(declaration(block, 'color'), '--color-text');
+    expectReadable('var(--color-text)', 'var(--color-bg)');
+  });
 
   it('报名凭证页主视觉、凭证卡与时间线使用语义 token', () => {
     const styles = read('miniprogram/pages/credential/index.wxss');

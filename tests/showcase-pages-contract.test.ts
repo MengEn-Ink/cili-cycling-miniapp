@@ -13,7 +13,6 @@ const templates = read('docs/templates.js');
 const prototypeRoutes = [
   'activities',
   'activity-detail',
-  'route-view',
   'registration-form',
   'registrations',
   'credential',
@@ -33,15 +32,17 @@ const routeToPagePath = (route: string) =>
     : `pages/${route}/index`;
 
 describe('GitHub Pages 全页面高保真原型门禁', () => {
-  it('与 app.json 的 14 个真实页面逐一对应，不遗漏也不虚构路由', () => {
-    expect(prototypeRoutes).toHaveLength(14);
+  it('与 app.json 的 13 个真实页面逐一对应，不遗漏也不虚构路由', () => {
+    expect(prototypeRoutes).toHaveLength(13);
     expect(prototypeRoutes.map(routeToPagePath)).toEqual(appConfig.pages);
     for (const route of prototypeRoutes) {
       expect(schema).toContain(`id: '${route}'`);
       expect(schema).toContain(`path: '${routeToPagePath(route)}'`);
       expect(templates).toMatch(new RegExp(`(?:^|\\n)    ['"]?${route}['"]?: \\(\\) =>`));
     }
-    expect(html).toContain('14 / 14');
+    expect(schema).not.toContain('route-view');
+    expect(templates).not.toContain('route-view');
+    expect(html).toContain('13 / 13');
     expect(html).toContain('与 app.json 路由一一对应');
   });
 
@@ -109,7 +110,8 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(templates).toContain('已通过');
     expect(templates).toContain('class="detail-decision"');
     expect(templates).toContain('Strava 官方路线');
-    expect(templates).toContain('查看官方路线');
+    expect(templates).toContain('复制路线链接');
+    expect(templates).not.toContain('查看官方路线');
     expect(templates).toContain('GPX 路线详情');
     expect(templates).toContain('路线轮廓');
     expect(templates).toContain('海拔曲线');
@@ -127,7 +129,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(templates).not.toContain('Strava 状态');
   });
 
-  it('活动编辑同步官方链接与 GPX 双模式，路线查看页提供失败回退', () => {
+  it('活动编辑同步官方链接与 GPX 双模式，活动详情只复制路线链接', () => {
     expect(templates).toContain('Strava 官方路线（可选）');
     expect(templates).toContain('粘贴公开路线链接');
     expect(templates).toContain('添加官方路线');
@@ -135,10 +137,10 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(templates).toContain('上传 GPX');
     expect(templates).toContain('路线详情已准备好');
     expect(templates).toContain('设为活动背景');
-    expect(templates).toContain('路线暂时无法显示');
+    expect(templates).not.toContain('路线暂时无法显示');
     expect(templates).toContain('复制路线链接');
     expect(templates).toContain('无需连接 Strava 账号');
-    expect(script).toContain("if (action === 'toggle-route-fallback')");
+    expect(script).not.toContain('toggle-route-fallback');
   });
 
   it('个人名片与审核页面只保留资料、照片和骑行经验', () => {

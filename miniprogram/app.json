@@ -2,7 +2,6 @@
   "pages": [
     "pages/activities/index",
     "pages/activity-detail/index",
-    "pages/route-view/index",
     "pages/registration-form/index",
     "pages/registrations/index",
     "pages/credential/index",

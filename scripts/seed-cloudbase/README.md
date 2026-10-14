@@ -46,7 +46,7 @@ npm run cloudbase:verify
 ## 5. 验证与安全约束
 
 - 运行 `npm run cloudbase:verify`，确认集合、索引和全拒绝客户端规则。
-- 按根 README 的顺序部署云函数和定时触发器，应用并回读 `/route/embed` HTTPS 网关路由；同步配置小程序 `web-view` 业务域名。
+- 按根 README 的顺序部署云函数和定时触发器（小程序已不再内嵌 `web-view`，官方路线页已下线，无需配置 Embed 网关或业务域名）。
 - 新路线链路运行时验收前保持退休 purge 关闭；验收通过后才临时开启，旧数据清空回读后立即移除。
 - 在隔离测试环境按 `docs/verification/p0-real-registration-journey.md` 执行真实旅程。
 - 不得提交真实 `openid`、手机号、历史授权参数或 token、密钥、密文、控制台导出数据或未脱敏证据。

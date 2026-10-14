@@ -13,7 +13,6 @@ const read = (file: string) => readFileSync(file, 'utf8');
 const pageRoots = [
   'activities',
   'activity-detail',
-  'route-view',
   'registration-form',
   'registrations',
   'credential',

@@ -1,9 +1,0 @@
-{
-  "name": "route-web",
-  "version": "1.0.0",
-  "private": true,
-  "main": "index.js",
-  "scripts": {
-    "test": "node --test index.node-test.js"
-  }
-}

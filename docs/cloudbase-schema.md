@@ -160,6 +160,6 @@ bootstrap 当前管理 9 集合、全拒绝规则与 29 索引。`route_previews
 
 1. 执行 `npm run cloudbase:plan`，审核后运行 apply 与 verify。
 2. 应用并回读 `cloudstorage.rules.json`，确认客户端只能写本人 `profiles/` 与 `activity-routes/<openid>/` staging 路径。
-3. 部署 `route-web` 与 `route-maintenance`，回读维护定时器和 `/route/embed` 网关；Embed 函数只渲染官方组件，不抓取路线页面。
+3. 部署 `route-maintenance`，回读维护定时器；官方路线页已下线，不再部署 `route-web` 或配置 `/route/embed` 网关。
 4. 核对资料、报名和审核响应不含历史账号字段；保持 purge 关闭并完成官方路线查看、GPX 上传/保存/下载及失败回退验收。
 5. 验收通过后临时开启 purge，等待旧集合、兼容字段和旧预览清空并回读，再移除开关和线上旧资源。

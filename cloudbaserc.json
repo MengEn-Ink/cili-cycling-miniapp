@@ -81,14 +81,6 @@
       ]
     },
     {
-      "name": "route-web",
-      "handler": "index.main",
-      "runtime": "Nodejs20.19",
-      "timeout": 5,
-      "memorySize": 256,
-      "installDependency": true
-    },
-    {
       "name": "route-maintenance",
       "handler": "index.main",
       "runtime": "Nodejs20.19",
@@ -103,16 +95,5 @@
         }
       ]
     }
-  ],
-  "gateway": {
-    "routes": [
-      {
-        "path": "/route/embed",
-        "target": "function:route-web",
-        "enableAuth": false,
-        "enablePathTransmission": true,
-        "domain": "*"
-      }
-    ]
-  }
+  ]
 }

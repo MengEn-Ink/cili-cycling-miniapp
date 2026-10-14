@@ -31,8 +31,6 @@ describe('运行时配置', () => {
     expect(runtimeConfig).toEqual({
       brandName: '此里',
       cloudEnvId: 'cloudbase-d0gizacy77a1ab017',
-      routeEmbedOrigin:
-        'https://cloudbase-d0gizacy77a1ab017-1497589790.ap-shanghai.app.tcloudbase.com',
       dataMode: 'cloud',
     });
   });
