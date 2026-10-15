@@ -4,6 +4,17 @@
 
 项目基于微信云开发（CloudBase）。业务数据库集合只允许云函数访问；客户端仅可按存储规则写入与本人绑定的 `profiles/` 和 `activity-routes/` staging 路径。本地构建或测试通过不代表云端资源已经部署，也不代表真实报名旅程已经验证。
 
+## 产品预览
+
+- **GitHub Pages 产品中心**：[https://mengen-ink.github.io/cili-cycling-miniapp/](https://mengen-ink.github.io/cili-cycling-miniapp/)
+- **页面范围**：活动浏览与详情、活动创建与编辑、实名报名、管理员审核、个人骑行名片、设置等核心旅程。
+- **图片说明**：以下图片是仓库内留存的真机/开发者工具视觉证据，用于说明产品形态；最新交互与页面状态以 Pages 产品中心和当前 `main` 为准。
+
+| 活动首页                                                                                                           | GPX 路线详情                                                                                                   | 个人骑行名片                                                                                                |
+| ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| ![活动首页展示近期骑行活动、日期筛选和报名入口](docs/evidence/2026-10-10-unified-bright-ui/activities-375x812.png) | ![活动详情展示 GPX 路线轮廓、里程和海拔信息](docs/evidence/gpx-upload/2026-10-13-devtools/activity-detail.png) | ![个人中心展示骑行资料、常用服务和个人名片](docs/evidence/2026-10-10-unified-bright-ui/profile-375x812.png) |
+| 浏览活动与报名入口                                                                                                 | 查看路线轮廓与海拔数据                                                                                         | 管理资料与常用服务                                                                                          |
+
 ## 已实现能力
 
 - **活动**：公开首页默认展示未来与进行中活动，并可按服务端时间线稳定分页回看历史；已登录用户可创建和编辑本人草稿、发布与下架，并从本人的历史活动复制草稿；管理员可管理全部活动并结束活动。活动支持图集、集合地点、分组容量、后援车信息、Strava 官方公开路线和 GPX 原生详情。
@@ -45,10 +56,13 @@ docs/                        产品、数据契约和真实环境验证文档
 ```bash
 npm ci
 npm run cloud:install
+cp project.private.config.example.json project.private.config.json
 npm run validate
 ```
 
 然后用微信开发者工具导入仓库根目录。`project.config.json` 已声明 `miniprogram/` 和 `cloudfunctions/`；个人开发者配置写入未跟踪的 `project.private.config.json`，不要提交真实账号或环境凭据。
+
+根目录 [`.env.example`](.env.example) 汇总本地验证、远端自动化和手动上传可能使用的变量名，`cloudfunctions/.env.example` 单独列出云函数运行时变量。两者都只提供键名和安全默认值：仓库脚本**不会自动加载 `.env`**，真实值应通过受控终端、Aime/GitHub Secret 或 CloudBase 控制台按用途注入，不得提交。
 
 常用检查：
 
@@ -63,6 +77,20 @@ npm run audit:all        # 根项目和云函数依赖审计
 ```
 
 `npm run validate` 会串行执行格式、Lint、类型、测试、证据工具、bootstrap、部署脚本单测、云函数包和构建检查。它不连接或修改 CloudBase。
+
+## 从开发到部署
+
+完整配置、权限边界和故障处理见 [沙箱环境、测试、部署与代码交付配置指南](docs/sandbox-environment-configuration.md)。标准交付流程如下：
+
+1. **同步与建分支**：检查未提交改动和 open PR，拉取最新 `origin/main`，再创建 `feat/*`、`fix/*`、`docs/*` 或 `chore/*` 分支。
+2. **安装与配置**：运行 `npm ci`、`npm run cloud:install`；按需创建未跟踪的 `project.private.config.json`，并通过安全入口注入变量。
+3. **开发与自测**：在微信开发者工具完成页面调试；提交前运行 `npm run validate`、`npm run coverage`、`npm run audit:all` 和 `git diff --check`。产品代码变化需同步设置页 `RELEASE_NOTES`。
+4. **提交与评审**：保持相对 `main` 的单个语义提交，推送工作分支并创建 PR；PR checks 全绿后才能合入。
+5. **CloudBase 变更**：涉及集合、索引或数据库规则时先运行 `npm run cloudbase:plan`，经环境负责人明确授权后再 `apply`，最后 `verify`；涉及云函数时仅部署受影响函数并执行对应 smoke。
+6. **微信开发版**：PR 合入后等待 `main` CI；若变更影响小程序产物，CI 成功会触发微信开发版自动上传，纯文档/测试变更会安全跳过。
+7. **验收与收尾**：核对 main CI、部署或安全跳过结论、必要的真机/P0 旅程证据，再删除已合并工作分支；无法执行的线上验证必须明确记录为“未执行”。
+
+> 微信开发版上传不会部署 CloudBase 云函数、集合、索引、数据库/存储规则或网关；这些资源必须根据 diff 单独部署并回读。
 
 ## 协作与发布规则
 
