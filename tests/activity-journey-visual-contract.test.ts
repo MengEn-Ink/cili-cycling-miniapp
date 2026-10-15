@@ -48,6 +48,21 @@ describe('activity journey visual contract', () => {
     );
   });
 
+  it('行程统计统一居中对齐，主动作不再使用误导性的粗下划线', () => {
+    expect(registrationStyles).toMatch(/\.trip-stat\s*\{[^}]*align-items:\s*center/s);
+    expect(registrationStyles).toMatch(/\.trip-stat\s*\{[^}]*text-align:\s*center/s);
+    expect(registrationStyles).not.toMatch(/text-decoration-thickness:\s*4rpx/);
+  });
+
+  it('行程首屏使用骨架结构且加载完成前不展示错误的 0 场统计', () => {
+    expect(registrations).toContain('class="trip-skeleton"');
+    expect(registrations).toContain('loading && !items.length');
+    expect(registrations).toContain('同步中');
+    expect(registrations).toContain('<state-view wx:else loading="{{false}}"');
+    expect(registrationStyles).toMatch(/\.trip-skeleton__stats\s*\{/);
+    expect(registrationStyles).toMatch(/\.trip-skeleton__card\s*\{/);
+  });
+
   it('公开骑行名片置于凭证顶部，集合时间使用 48rpx', () => {
     expect(credential.indexOf('class="public-card-heading"')).toBeLessThan(
       credential.indexOf('class="compact-rider-card'),

@@ -46,9 +46,11 @@
 }
 .trip-stat {
   display: flex;
+  align-items: center;
   flex-direction: column;
   min-width: 0;
   padding: 0 32rpx;
+  text-align: center;
 }
 .trip-stat + .trip-stat {
   border-left: 2rpx solid var(--color-border);
@@ -56,10 +58,11 @@
 .trip-stat__label {
   color: var(--color-muted);
   font-size: 24rpx;
-  line-height: 36rpx;
+  line-height: 32rpx;
 }
 .trip-stat__value {
   position: relative;
+  margin-top: 4rpx;
   color: var(--color-text);
   font-size: 48rpx;
   line-height: 64rpx;
@@ -242,10 +245,55 @@
 .trip-action__label--primary {
   color: var(--color-text);
   font-weight: 900;
-  text-decoration: underline;
-  text-decoration-color: var(--color-brand);
-  text-decoration-thickness: 4rpx;
-  text-underline-offset: 8rpx;
+}
+.trip-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+  margin-top: var(--card-gap);
+  animation: trip-skeleton-pulse 1.2s ease-in-out infinite alternate;
+}
+.trip-skeleton__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24rpx;
+  padding: 32rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-display);
+  background: var(--color-surface);
+}
+.trip-skeleton__stats view,
+.trip-skeleton__card view {
+  height: 32rpx;
+  border-radius: var(--radius-sm);
+  background: var(--color-raised);
+}
+.trip-skeleton__card {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  padding: 28rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+.trip-skeleton__card view:first-child {
+  width: 44%;
+}
+.trip-skeleton__card view:nth-child(2) {
+  width: 72%;
+  height: 48rpx;
+}
+.trip-skeleton__card view:last-child {
+  width: 58%;
+}
+@keyframes trip-skeleton-pulse {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+  }
 }
 @media (max-width: 340px) {
   .heading-title {
@@ -276,7 +324,9 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .registration-card {
+  .registration-card,
+  .trip-skeleton {
     transition: none;
+    animation: none;
   }
 }

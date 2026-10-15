@@ -258,6 +258,111 @@ describe('资料编辑头像交互', () => {
     expect(page.data.photoItems[0].previewUrl).toBe('https://temporary.example/background.jpg');
   });
 
+  it('背景图地址失效时自动刷新一次，连续失败后保留手动重试入口', async () => {
+    const getTempFileURL = vi
+      .fn()
+      .mockResolvedValueOnce({
+        fileList: [
+          {
+            fileID: 'cloud://env/profiles/owner/photo-a.jpg',
+            tempFileURL: 'https://temporary.example/photo-a-old.jpg',
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        fileList: [
+          {
+            fileID: 'cloud://env/profiles/owner/photo-a.jpg',
+            tempFileURL: 'https://temporary.example/photo-a-new.jpg',
+          },
+        ],
+      });
+    Object.assign(wx, { cloud: { getTempFileURL } });
+    page.data.p.photos = [{ id: 'cloud://env/profiles/owner/photo-a.jpg', category: 'ride' }];
+
+    await page.loadPhotoPreviews();
+    page.photoPreviewError({
+      currentTarget: { dataset: { id: 'cloud://env/profiles/owner/photo-a.jpg' } },
+    });
+    await vi.waitFor(() => {
+      expect(page.data.photoItems[0].previewUrl).toBe('https://temporary.example/photo-a-new.jpg');
+    });
+    page.photoPreviewError({
+      currentTarget: { dataset: { id: 'cloud://env/profiles/owner/photo-a.jpg' } },
+    });
+
+    expect(getTempFileURL).toHaveBeenCalledTimes(2);
+    expect(page.data.photoItems[0]).toMatchObject({ previewUrl: '', previewState: 'failed' });
+  });
+
+  it('旧图片节点的迟到错误不会清空已经刷新的新地址', async () => {
+    const fileId = 'cloud://env/profiles/owner/photo-a.jpg';
+    const getTempFileURL = vi.fn().mockResolvedValue({
+      fileList: [{ fileID: fileId, tempFileURL: 'https://temporary.example/photo-a-new.jpg' }],
+    });
+    Object.assign(wx, { cloud: { getTempFileURL } });
+    page.data.p.photos = [{ id: fileId, category: 'ride' }];
+    await page.loadPhotoPreviews();
+
+    page.photoPreviewError({
+      currentTarget: {
+        dataset: { id: fileId, url: 'https://temporary.example/photo-a-old.jpg' },
+      },
+    });
+
+    expect(page.data.photoItems[0].previewUrl).toBe('https://temporary.example/photo-a-new.jpg');
+    expect(getTempFileURL).toHaveBeenCalledTimes(1);
+  });
+
+  it('孤儿媒体补偿在后台执行，不阻塞个人资料首屏', async () => {
+    const orphanRetry = deferred<void>();
+    wx.getStorageSync.mockReturnValueOnce([
+      { fileId: 'cloud://env/profiles/owner/orphan.jpg', category: 'other' },
+    ]);
+    rideService.reportProfileMediaOrphan.mockReturnValueOnce(orphanRetry.promise);
+
+    await page.onLoad();
+
+    expect(page.data.loading).toBe(false);
+    expect(page.data.p).not.toBeNull();
+    expect(rideService.reportProfileMediaOrphan).toHaveBeenCalled();
+    orphanRetry.resolve();
+    await orphanRetry.promise;
+  });
+
+  it('后台补偿写账本失败也不形成未处理拒绝或阻塞首屏', async () => {
+    wx.getStorageSync.mockReturnValue([
+      { fileId: 'cloud://env/profiles/owner/orphan.jpg', category: 'other' },
+    ]);
+    wx.setStorageSync.mockImplementation(() => {
+      throw new Error('storage unavailable');
+    });
+
+    await page.onLoad();
+    await vi.waitFor(() => expect(rideService.reportProfileMediaOrphan).toHaveBeenCalled());
+
+    expect(page.data.loading).toBe(false);
+    expect(page.data.p).not.toBeNull();
+  });
+
+  it('后台补偿完成时保留并发新增的孤儿媒体记录', async () => {
+    const initial = { fileId: 'cloud://env/profiles/owner/old-orphan.jpg', category: 'other' };
+    const appended = { fileId: 'cloud://env/profiles/owner/new-orphan.jpg', category: 'ride' };
+    let ledger = [initial];
+    const orphanRetry = deferred<void>();
+    wx.getStorageSync.mockImplementation(() => ledger);
+    wx.setStorageSync.mockImplementation((_key: string, value: typeof ledger) => {
+      ledger = value;
+    });
+    rideService.reportProfileMediaOrphan.mockReturnValueOnce(orphanRetry.promise);
+
+    await page.onLoad();
+    ledger = [initial, appended];
+    orphanRetry.resolve();
+    await orphanRetry.promise;
+    await vi.waitFor(() => expect(ledger).toEqual([appended]));
+  });
+
   it('微信选择入口按 owner path→upload→register(wechat)→setAvatar 顺序执行', async () => {
     const uploadedFileId = 'cloud://env/profiles/owner/wechat.jpg';
     const uploadFile = vi.fn().mockResolvedValue({ fileID: uploadedFileId });
@@ -921,6 +1026,7 @@ describe('资料编辑头像交互', () => {
         id: uploadedFileId,
         category: 'ride',
         previewUrl: '/private/tmp/new-photo.jpg',
+        previewState: 'ready',
       },
     ]);
     rideService.updateProfile.mockImplementationOnce(async (patch) => ({
@@ -1020,6 +1126,23 @@ describe('资料编辑头像页面契约', () => {
     expect(template).toContain('bindtap="previewPhoto"');
     expect(template).not.toContain('data-direction=');
     expect(styles).toMatch(/\.photo-thumbnail\s*\{/);
+  });
+
+  it('微信头像预览和选择区使用固定头像列与自适应操作列对齐', () => {
+    expect(styles).toMatch(
+      /\.avatar-editor\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*144rpx minmax\(0, 1fr\)/s,
+    );
+    expect(styles).toMatch(/\.avatar-panel\s*\{[^}]*align-self:\s*stretch/s);
+    expect(styles).toMatch(/\.avatar-action\s*\{[^}]*box-sizing:\s*border-box[^}]*width:\s*100%/s);
+  });
+
+  it('背景图预览区区分加载与失败状态，并提供自动刷新和手动重试', () => {
+    expect(template).toContain('binderror="photoPreviewError"');
+    expect(template).toContain('bindtap="retryPhotoPreview"');
+    expect(template).toContain("item.previewState === 'loading'");
+    expect(template).toContain('图片加载失败，点击重试');
+    expect(source).toContain('photoPreviewRetryIds');
+    expect(source).toContain('this.ensurePhotoUrlCache()?.invalidate([id])');
   });
 
   it('面向用户的页面和错误文案不出现实现技术词或主体限制', () => {

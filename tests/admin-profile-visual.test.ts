@@ -73,7 +73,8 @@ describe('管理端与个人资料视觉契约', () => {
     expect(styles).toMatch(
       /\.gender-option\.is-selected\s*\{[^}]*background:\s*var\(--color-action\);[^}]*color:\s*var\(--color-on-action\)/s,
     );
-    expect(template).toContain('背景图处理中，稍后即可预览');
+    expect(template).toContain('背景图加载中…');
+    expect(template).toContain('图片加载失败，点击重试');
     expect(styles).toMatch(/\.photo-remove\s*\{[^}]*min-height:\s*88rpx/s);
     expect(styles).toMatch(
       /\.photo-remove\s*\{[^}]*background:\s*var\(--color-danger-soft\);[^}]*color:\s*var\(--color-danger-text\)/s,

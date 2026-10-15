@@ -26,7 +26,8 @@
   line-height: 36rpx;
 }
 .avatar-editor {
-  display: flex;
+  display: grid;
+  grid-template-columns: 144rpx minmax(0, 1fr);
   align-items: center;
   gap: 24rpx;
   margin-top: 24rpx;
@@ -46,13 +47,21 @@
   height: 100%;
 }
 .avatar-panel {
+  display: flex;
+  align-self: stretch;
+  justify-content: center;
   flex: 1;
+  flex-direction: column;
   min-width: 0;
 }
+.avatar-actions {
+  width: 100%;
+}
 .avatar-action {
+  box-sizing: border-box;
   width: 100%;
   min-height: 88rpx;
-  margin-top: 16rpx;
+  margin-top: 12rpx;
   border: 2rpx solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
@@ -121,6 +130,7 @@
 .photo-preview-button {
   width: 100%;
   height: 320rpx;
+  overflow: hidden;
   background: var(--color-raised);
 }
 .photo-thumbnail {
@@ -128,13 +138,26 @@
   height: 100%;
 }
 .photo-placeholder {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  color: var(--color-muted);
+  font-size: 24rpx;
+}
+.photo-placeholder--loading {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
-  color: var(--color-muted);
 }
-.photo-placeholder::before {
+.photo-placeholder--failed {
+  background: var(--color-raised);
+  color: var(--color-brand-active);
+  font-weight: 800;
+}
+.photo-placeholder--loading::before {
   width: 24rpx;
   height: 24rpx;
   margin-right: 12rpx;
@@ -169,8 +192,8 @@
 }
 @media (max-width: 340px) {
   .avatar-editor {
+    grid-template-columns: 1fr;
     align-items: stretch;
-    flex-direction: column;
   }
   .avatar-preview-shell {
     align-self: center;

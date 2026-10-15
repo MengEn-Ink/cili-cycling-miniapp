@@ -184,7 +184,7 @@
     },
 
     registrations: () => {
-      const head = `${brandLogo('此里 · 我的行程')}<div class="page-heading"><div><h2 class="page-title">我的行程</h2><p class="page-sub">审核状态与出发凭证，一处确认</p></div><b>共 3 场</b></div>`;
+      const head = `${brandLogo('此里 · 我的行程')}<div class="page-heading"><div><h2 class="page-title">我的行程</h2><p class="page-sub">审核状态与出发凭证，一处确认</p></div><b>${is('loading') ? '同步中' : '共 3 场'}</b></div>`;
       if (is('loading')) return `<div class="pg">${head}${skeletons(2)}</div>`;
       if (is('empty'))
         return `<div class="pg">${head}<div class="trip-summary">${metric('0', '审核中')}${metric('0', '可出发')}${metric('0', '已失效')}</div>${stateView('0', '还没有行程', '报名活动后，审核进度和出发凭证都会出现在这里。', btn('去看看活动', go('activities')))}</div>`;
@@ -253,9 +253,8 @@
       const error = is('error');
       const uploading = is('uploading');
       return `<div class="pg">
-        <div class="card">${cardHead('01', '头像与昵称')}<div class="row" style="margin-top:8px"><span class="k"><span class="avatar lg"><img src="${IMG.avatar}" alt="头像" /></span></span><span class="v">${btn('更换头像', toast('已打开头像选择器'), 'btn-secondary btn-sm')}</span></div>
-          ${field('昵称', input(rider.nickname, { count: '4/16' }))}</div>
-        <div class="card">${cardHead('02', '联系信息', tag('neutral', '本人与审核管理员可见'))}
+        <div class="card">${cardHead('01', '更新头像')}<div class="profile-avatar-editor"><span class="avatar profile-avatar-preview"><img src="${IMG.avatar}" alt="当前微信头像" /></span><div class="profile-avatar-panel"><p>请选择微信头像，选择后立即保存，并用于个人主页和活动报名中的骑手身份展示。</p>${btn('选择微信头像', toast('已打开微信头像选择器'), 'btn-secondary')}</div></div></div>
+        <div class="card">${cardHead('02', '基础资料')}${field('昵称', input(rider.nickname, { count: '4/16' }))}
           ${field('真实姓名', input(focus ? `${rider.realName}<i class="caret"></i>` : rider.realName, { cls: focus ? 'is-focus' : '' }))}
           ${field('手机号', input(error ? '138 0000 567' : rider.phone, { cls: error ? 'is-error' : '', error: error ? '手机号应为 11 位数字' : '' }))}
           ${field('性别', choices(['男', '女'], rider.gender))}
