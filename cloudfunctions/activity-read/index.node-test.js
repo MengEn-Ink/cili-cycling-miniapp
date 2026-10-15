@@ -606,7 +606,9 @@ test('详情成员执行状态、上限、稳定排序和隐私白名单', async
   assert.equal(result.data.approved_registration_count, 26);
   assert.equal(result.data.attendees.length, 24);
   assert.deepEqual(Object.keys(result.data.attendees[0]).sort(), [
+    'avatar_file_id',
     'avatar_url',
+    'background_file_id',
     'background_url',
     'display_name',
     'gender',
@@ -793,7 +795,9 @@ test('详情成员骑行名片使用本人上传背景而不是头像', async ()
   const result = await main({ action: 'detail', activityId: 'a1' });
 
   assert.equal(result.ok, true);
+  assert.equal(result.data.attendees[0].avatar_file_id, mediaRecords[0].canonical_file_id);
   assert.equal(result.data.attendees[0].avatar_url, 'https://temporary.example/avatar.jpg');
+  assert.equal(result.data.attendees[0].background_file_id, mediaRecords[1].canonical_file_id);
   assert.equal(result.data.attendees[0].background_url, 'https://temporary.example/background.jpg');
 });
 

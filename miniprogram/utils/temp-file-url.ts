@@ -1,8 +1,8 @@
 /**
  * 已解析云存储临时地址（getTempFileURL）缓存。
  *
- * 微信云存储的 tempFileURL 是带有效期的 https 地址：每次进入资料编辑页若都重新调用
- * getTempFileURL，会产生重复请求。这里在内存中缓存 fileID -> tempFileURL，并：
+ * 微信云存储的 tempFileURL 是带有效期的 https 地址：每个页面若都重新调用
+ * getTempFileURL，会产生重复请求。这里以应用级单例缓存 fileID -> tempFileURL，并：
  * - 合并同一事件循环内的解析请求为一次批量调用（DataLoader 式）；
  * - 对同一 fileID 的并发解析做单飞去重；
  * - 在临期前视为失效并自动重新解析，避免拿到临界过期地址；
@@ -42,6 +42,13 @@ type Waiter = {
   resolve: (url: string) => void;
   reject: (error: unknown) => void;
 };
+
+export function getSharedTempFileUrlCache(options: TempFileUrlCacheOptions): TempFileUrlCache {
+  sharedTempFileUrlCache ??= new TempFileUrlCache(options);
+  return sharedTempFileUrlCache;
+}
+
+let sharedTempFileUrlCache: TempFileUrlCache | null = null;
 
 export class TempFileUrlCache {
   private readonly entries = new Map<string, Entry>();

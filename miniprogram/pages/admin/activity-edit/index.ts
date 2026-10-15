@@ -9,7 +9,7 @@ import { rideService } from '../../../services/ride-service';
 import { appStore } from '../../../store/app-store';
 import { formatLocalDateTime, parseLocalDateTime } from '../../../utils/date-time';
 import { drawRouteOutline } from '../../../utils/route-outline';
-import { TempFileUrlCache } from '../../../utils/temp-file-url';
+import { getSharedTempFileUrlCache, type TempFileUrlCache } from '../../../utils/temp-file-url';
 import {
   normalizeStravaRouteUrl,
   routeErrorMessage,
@@ -366,7 +366,6 @@ Page({
   createRequestId: '',
   routeRequestId: '',
   mediaPreviewRequestId: 0,
-  mediaUrlCache: null as TempFileUrlCache | null,
   mediaPreviewRetryIds: new Set<string>(),
   data: {
     allowed: false,
@@ -482,7 +481,6 @@ Page({
     if (!this.data.loading) void this.refreshMediaPreviews();
   },
   ensureMediaUrlCache(): TempFileUrlCache | null {
-    if (this.mediaUrlCache) return this.mediaUrlCache;
     const cloud = wx.cloud as
       | (WxCloudApi & {
           getTempFileURL?(options: { fileList: string[] }): Promise<{
@@ -492,10 +490,9 @@ Page({
       | undefined;
     if (typeof cloud?.getTempFileURL !== 'function') return null;
     const getTempFileURL = cloud.getTempFileURL;
-    this.mediaUrlCache = new TempFileUrlCache({
+    return getSharedTempFileUrlCache({
       getTempFileURL: (options) => getTempFileURL.call(cloud, options),
     });
-    return this.mediaUrlCache;
   },
   async refreshMediaPreviews() {
     const images = [...this.data.images];

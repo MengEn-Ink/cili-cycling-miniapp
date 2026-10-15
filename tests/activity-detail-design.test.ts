@@ -258,6 +258,13 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('已报名人员头像与昵称');
     expect(template).toContain('完整公开骑行名片');
     expect(template).toContain('昵称、头像与照片由骑友本人维护，仅展示公开资料');
+    expect(template).toContain('bindload="attendeeAvatarLoad"');
+    expect(template).toContain('bindload="selectedAttendeeBackgroundLoad"');
+    expect(template).toContain('catchtouchmove="keepAttendeeCard"');
+    expect(styles).toMatch(/\.rider-modal-mask\s*\{[\s\S]*?align-items:\s*center/);
+    expect(styles).toMatch(/\.rider-modal-mask\s*\{[\s\S]*?justify-content:\s*center/);
+    expect(styles).toMatch(/\.rider-card\s*\{[\s\S]*?max-height:\s*82vh/);
+    expect(styles).not.toMatch(/\.rider-modal-mask\s*\{[\s\S]*?align-items:\s*flex-end/);
     expect(template).toContain('wx:if="{{item.avatarUrl}}" class="attendee-avatar"');
     expect(template).toContain('wx:if="{{selectedAttendee.backgroundUrl}}"');
     expect(template).toContain('attendee-avatar--placeholder');
@@ -591,12 +598,18 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
       backgroundUrl: 'https://temporary.example/modal-background.jpg',
     };
 
-    definition.attendeeAvatarError.call(context, {
-      currentTarget: { dataset: { index: 0 } },
+    await definition.attendeeAvatarError.call(context, {
+      currentTarget: {
+        dataset: { index: 0, url: 'https://temporary.example/avatar.jpg' },
+      },
     });
     expect(context.data.attendees[0].avatarUrl).toBe('');
 
-    definition.selectedAttendeeBackgroundError.call(context);
+    await definition.selectedAttendeeBackgroundError.call(context, {
+      currentTarget: {
+        dataset: { url: 'https://temporary.example/modal-background.jpg' },
+      },
+    });
     expect(context.data.selectedAttendee.backgroundUrl).toBe('');
     expect(context.data.defaultAttendeeAvatar).toBeUndefined();
   });
