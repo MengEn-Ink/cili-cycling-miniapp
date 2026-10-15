@@ -68,6 +68,7 @@ describe('Strava 账号能力退役契约', () => {
 
     expect(currentDocs).toContain('Strava 官方');
     expect(currentDocs).toContain('GPX');
+    expect(currentDocs).not.toMatch(/Route Embed|通过官方 Embed 查看/);
     expect(currentDocs).not.toMatch(
       /STRAVA_CLIENT_SECRET|STRAVA_TOKEN_ENCRYPTION_KEY|STRAVA_CALLBACK_URL|strava-auth|strava-callback|可用的 Strava 测试授权|OAuth 回调/,
     );

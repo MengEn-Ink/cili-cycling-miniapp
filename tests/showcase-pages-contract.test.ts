@@ -85,19 +85,52 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain("currentState === 'create' ? '创建活动'");
   });
 
-  it('总览整理为需求、PRD、原型和验收资料入口，并支持章节直达', () => {
+  it('总览整理为需求、PRD、搭建指南、原型和验收资料入口，并支持章节直达', () => {
     expect(html).toContain('此里骑行活动小程序产品中心');
     expect(html).toContain('href="#requirements"');
     expect(html).toContain('href="#prd"');
+    expect(html).toContain('href="#guide"');
     expect(script).toContain('id="requirements"');
     expect(script).toContain('id="prd"');
+    expect(script).toContain('id="guide"');
     expect(script).toContain('id="prototype"');
     expect(script).toContain('产品需求与当前能力');
     expect(script).toContain('P0 真实报名旅程');
-    expect(script).toContain("new Set(['overview', 'requirements', 'prd', 'prototype'])");
+    expect(script).toContain("new Set(['overview', 'requirements', 'prd', 'guide', 'prototype'])");
     expect(script).toContain('document.getElementById(targetSection)?.scrollIntoView');
     expect(css).toContain('@media (max-width: 560px)');
     expect(css).toMatch(/\.product-card-grid,[^}]*grid-template-columns:\s*1fr/s);
+  });
+
+  it('搭建指南覆盖九步交付、技术选型、核心变量、合规清单与项目审计', () => {
+    expect(script.match(/\['0[1-9]',/g)).toHaveLength(9);
+    for (const content of [
+      '先判断交付物',
+      '原生小程序',
+      '跨端框架',
+      '微信云开发',
+      '自建后端',
+      '小程序 CI 私钥',
+      'CloudBase API Key',
+      '提审前检查',
+      '不把经验帖当平台规则',
+      '当前项目审计',
+      'msgSecCheck / mediaCheckAsync',
+    ]) {
+      expect(script).toContain(content);
+    }
+    expect(script).toContain('https://mp.weixin.qq.com/');
+    expect(script).toContain('https://developers.weixin.qq.com/miniprogram/dev/framework/');
+    expect(script).toContain(
+      'https://developers.weixin.qq.com/miniprogram/dev/framework/user-privacy/',
+    );
+    expect(script).toContain(
+      'https://developers.weixin.qq.com/miniprogram/dev/server/API/sec-center/sec-check/',
+    );
+    expect(script).not.toMatch(/30\s*元|300\s*元|19\.9\s*元|1\s*[-~到]\s*7\s*天/);
+    expect(css).toContain('.guide-timeline');
+    expect(css).toContain('.guide-table');
+    expect(css).toContain('.audit-list');
   });
 
   it('保留票据式行程与凭证，并覆盖活动报名、能力和管理员审核旅程', () => {
