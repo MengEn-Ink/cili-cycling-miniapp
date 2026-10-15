@@ -79,7 +79,7 @@
           <scroll-view class="attendee-card-strip" scroll-x enhanced show-scrollbar="{{false}}" wx:if="{{attendees.length}}" aria-label="已报名人员头像与昵称">
             <view class="attendee-card-strip__inner">
               <button class="attendee-mini-card" wx:for="{{attendees}}" wx:key="id" data-index="{{index}}" bindtap="openAttendeeCard" aria-label="查看 {{item.displayName}} 的公开骑行名片">
-                <image wx:if="{{item.avatarUrl}}" class="attendee-avatar" src="{{item.avatarUrl}}" mode="aspectFill" data-index="{{index}}" binderror="attendeeAvatarError" />
+                <image wx:if="{{item.avatarUrl}}" class="attendee-avatar" src="{{item.avatarUrl}}" mode="aspectFill" data-index="{{index}}" data-url="{{item.avatarUrl}}" bindload="attendeeAvatarLoad" binderror="attendeeAvatarError" />
                 <image wx:else class="attendee-avatar attendee-avatar--placeholder" src="/assets/brand/logo-circle-144.png" mode="aspectFill" aria-label="{{item.displayName}}未设置公开头像" />
                 <view class="attendee-mini-card__name">{{item.displayName || '此里骑手'}}</view>
                 <view class="attendee-mini-card__meta">{{item.status === 'checked_in' ? '已签到' : '已报名'}}</view>
@@ -124,10 +124,10 @@
   </state-view>
 </view>
 
-<view wx:if="{{selectedAttendee}}" class="rider-modal-mask" bindtap="closeAttendeeCard">
+<view wx:if="{{selectedAttendee}}" class="rider-modal-mask" bindtap="closeAttendeeCard" catchtouchmove="keepAttendeeCard">
   <view class="rider-card rider-card--photo" catchtap="keepAttendeeCard" role="dialog" aria-label="{{selectedAttendee.displayName}} 的完整公开骑行名片">
     <view class="rider-card-photo">
-      <image wx:if="{{selectedAttendee.backgroundUrl}}" class="rider-card-photo__image" src="{{selectedAttendee.backgroundUrl}}" mode="aspectFill" binderror="selectedAttendeeBackgroundError" />
+      <image wx:if="{{selectedAttendee.backgroundUrl}}" class="rider-card-photo__image" src="{{selectedAttendee.backgroundUrl}}" mode="aspectFill" data-url="{{selectedAttendee.backgroundUrl}}" bindload="selectedAttendeeBackgroundLoad" binderror="selectedAttendeeBackgroundError" />
       <image wx:else class="rider-card-photo__image rider-card-photo__placeholder" src="/assets/brand/logo-share-500x400.png" mode="aspectFill" aria-label="此里默认骑行名片背景" />
       <view class="rider-card-photo__scrim"></view>
       <button class="rider-card-close" bindtap="closeAttendeeCard" aria-label="关闭骑行名片">×</button>

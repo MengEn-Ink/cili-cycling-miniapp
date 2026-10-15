@@ -2,7 +2,7 @@ import type { AvatarSource, ClientAvatarSource, Profile } from '../../models';
 import { runPageTask } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
 import { invalidateProfilePageCache } from '../../utils/profile-page-cache';
-import { TempFileUrlCache } from '../../utils/temp-file-url';
+import { getSharedTempFileUrlCache, type TempFileUrlCache } from '../../utils/temp-file-url';
 import { validateRegistrationProfile } from '../../utils/validation';
 
 const ORPHAN_LEDGER_KEY = 'profile-media-orphans-v1';
@@ -394,8 +394,7 @@ Page({
   localPhotoPreviews: {} as Record<string, string>,
   // 会话内“内容指纹 -> 已登记 fileId”映射：重复选择同一图片直接复用，不再请求上传路径和重复上传。
   uploadedMediaDigests: new Map<string, string>(),
-  // 已解析图片临时地址缓存：fileID -> 仍在有效期的 https 地址，跨多次进入页面复用。
-  photoUrlCache: null as TempFileUrlCache | null,
+  // 跨页面共享 fileID -> 临时地址；相同照片只解析一次，失效时由 binderror 主动淘汰。
   photoPreviewRetryIds: new Set<string>(),
   // 加载/保存后服务端回传的实名与电话原值：未改动的字段保存时不重复提交。
   loadedSensitive: sensitiveValues(null),
@@ -480,7 +479,6 @@ Page({
     this.setData(patch);
   },
   ensurePhotoUrlCache(): TempFileUrlCache | null {
-    if (this.photoUrlCache) return this.photoUrlCache;
     const cloud = wx.cloud as
       | (WxCloudApi & {
           getTempFileURL?(options: { fileList: string[] }): Promise<{
@@ -488,14 +486,12 @@ Page({
           }>;
         })
       | undefined;
-    if (typeof cloud?.getTempFileURL === 'function') {
-      // 绑定回 cloud 后再交给缓存，避免调用时丢失 this。
-      const fn = cloud.getTempFileURL;
-      this.photoUrlCache = new TempFileUrlCache({
-        getTempFileURL: (options) => fn.call(cloud, options),
-      });
-    }
-    return this.photoUrlCache;
+    if (typeof cloud?.getTempFileURL !== 'function') return null;
+    // 绑定回 cloud 后交给应用级单例，个人资料、活动编辑和骑行名片复用同一批临时地址。
+    const fn = cloud.getTempFileURL;
+    return getSharedTempFileUrlCache({
+      getTempFileURL: (options) => fn.call(cloud, options),
+    });
   },
   async loadPhotoPreviews() {
     const current = this.data.p as Profile | null;

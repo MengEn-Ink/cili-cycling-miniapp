@@ -73,7 +73,9 @@ export interface ActivityAttendee {
   id: string;
   displayName: string;
   gender: string;
+  avatarFileId: string;
   avatarUrl: string;
+  backgroundFileId: string;
   backgroundUrl: string;
   status: 'approved' | 'checked_in';
 }

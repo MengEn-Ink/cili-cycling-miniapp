@@ -3,6 +3,7 @@ import { rideService } from '../../services/ride-service';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
 import { genderView } from '../../utils/gender';
+import { getSharedTempFileUrlCache, type TempFileUrlCache } from '../../utils/temp-file-url';
 import { validateRegistrationProfile } from '../../utils/validation';
 import { drawRouteOutline as renderRouteOutline } from '../../utils/route-outline';
 import {
@@ -162,6 +163,7 @@ Page({
   loadPromise: null as { id: string; promise: Promise<void> } | null,
   unloaded: false,
   downloadBusy: false,
+  attendeeMediaRetryKeys: new Set<string>(),
   data: {
     loading: true,
     activityId: '',
@@ -344,6 +346,7 @@ Page({
         () => {
           this.drawElevation();
           this.drawRouteOutline();
+          void this.refreshAttendeeMedia(requestId);
         },
       );
     } catch (error) {
@@ -427,6 +430,105 @@ Page({
         this.snapshotCanvas(canvas, target.width, target.height, 'routeOutlineImage');
       });
   },
+  ensureAttendeeMediaCache(): TempFileUrlCache | null {
+    const cloud = wx.cloud as
+      | {
+          getTempFileURL?(options: { fileList: string[] }): Promise<{
+            fileList?: { fileID?: string; tempFileURL?: string }[];
+          }>;
+        }
+      | undefined;
+    if (typeof cloud?.getTempFileURL !== 'function') return null;
+    const getTempFileURL = cloud.getTempFileURL;
+    return getSharedTempFileUrlCache({
+      getTempFileURL: (options) => getTempFileURL.call(cloud, options),
+    });
+  },
+  async refreshAttendeeMedia(requestId: number) {
+    const cache = this.ensureAttendeeMediaCache();
+    if (!cache || !this.data.attendees.length) return;
+    const attendees = await Promise.all(
+      this.data.attendees.map(async (attendee: any) => {
+        const [avatarUrl, backgroundUrl] = await Promise.all([
+          attendee.avatarFileId
+            ? cache
+                .resolve([attendee.avatarFileId])
+                .then(
+                  (urls: Record<string, string>) =>
+                    urls[attendee.avatarFileId] || attendee.avatarUrl || '',
+                )
+                .catch(() => attendee.avatarUrl || '')
+            : Promise.resolve(attendee.avatarUrl || ''),
+          attendee.backgroundFileId
+            ? cache
+                .resolve([attendee.backgroundFileId])
+                .then(
+                  (urls: Record<string, string>) =>
+                    urls[attendee.backgroundFileId] || attendee.backgroundUrl || '',
+                )
+                .catch(() => attendee.backgroundUrl || '')
+            : Promise.resolve(attendee.backgroundUrl || ''),
+        ]);
+        return { ...attendee, avatarUrl, backgroundUrl };
+      }),
+    );
+    if (requestId !== this.loadRequestId || this.unloaded) return;
+    const selected = this.data.selectedAttendee;
+    this.safeSetData({
+      attendees,
+      selectedAttendee: selected
+        ? {
+            ...selected,
+            ...(attendees.find((attendee: any) => attendee.id === selected.id) || {}),
+          }
+        : null,
+    });
+  },
+  async retryAttendeeMedia(attendeeId: string, kind: 'avatar' | 'background', failedUrl: string) {
+    const attendee = this.data.attendees.find((item: any) => item.id === attendeeId);
+    if (!attendee) return;
+    const urlKey = kind === 'avatar' ? 'avatarUrl' : 'backgroundUrl';
+    const fileKey = kind === 'avatar' ? 'avatarFileId' : 'backgroundFileId';
+    const selectedUrl =
+      this.data.selectedAttendee?.id === attendeeId ? this.data.selectedAttendee[urlKey] : '';
+    if (failedUrl && attendee[urlKey] !== failedUrl && selectedUrl !== failedUrl) return;
+    const fileId =
+      attendee[fileKey] ||
+      (this.data.selectedAttendee?.id === attendeeId ? this.data.selectedAttendee[fileKey] : '');
+    const retryKey = `${attendeeId}:${kind}`;
+    const cache = this.ensureAttendeeMediaCache();
+    if (fileId && cache && !this.attendeeMediaRetryKeys.has(retryKey)) {
+      this.attendeeMediaRetryKeys.add(retryKey);
+      cache.invalidate([fileId]);
+      const refreshedUrl = await cache
+        .resolve([fileId])
+        .then((urls: Record<string, string>) => urls[fileId] || '')
+        .catch(() => '');
+      if (refreshedUrl && !this.unloaded) {
+        const attendees = this.data.attendees.map((item: any) =>
+          item.id === attendeeId ? { ...item, [urlKey]: refreshedUrl } : item,
+        );
+        this.safeSetData({
+          attendees,
+          selectedAttendee:
+            this.data.selectedAttendee?.id === attendeeId
+              ? { ...this.data.selectedAttendee, [urlKey]: refreshedUrl }
+              : this.data.selectedAttendee,
+        });
+        return;
+      }
+    }
+    const attendees = this.data.attendees.map((item: any) =>
+      item.id === attendeeId ? { ...item, [urlKey]: '' } : item,
+    );
+    this.safeSetData({
+      attendees,
+      selectedAttendee:
+        this.data.selectedAttendee?.id === attendeeId
+          ? { ...this.data.selectedAttendee, [urlKey]: '' }
+          : this.data.selectedAttendee,
+    });
+  },
   coverImageError() {
     this.safeSetData({ coverFailed: true, galleryImages: [] });
   },
@@ -438,19 +540,33 @@ Page({
     );
     this.safeSetData({ galleryImages, coverFailed: galleryImages.length === 0 });
   },
+  attendeeAvatarLoad(event: any) {
+    const index = Number(event.currentTarget.dataset.index);
+    const attendee = this.data.attendees[index];
+    if (attendee) this.attendeeMediaRetryKeys.delete(`${attendee.id}:avatar`);
+  },
   attendeeAvatarError(event: any) {
     const index = Number(event.currentTarget.dataset.index);
-    if (!Number.isInteger(index) || !this.data.attendees[index]?.avatarUrl) return;
-    const attendees = this.data.attendees.map((attendee: any, attendeeIndex: number) =>
-      attendeeIndex === index ? { ...attendee, avatarUrl: '' } : attendee,
+    const attendee = this.data.attendees[index];
+    if (!Number.isInteger(index) || !attendee) return;
+    return this.retryAttendeeMedia(
+      attendee.id,
+      'avatar',
+      String(event.currentTarget.dataset.url || ''),
     );
-    this.safeSetData({ attendees });
   },
-  selectedAttendeeBackgroundError() {
-    if (!this.data.selectedAttendee?.backgroundUrl) return;
-    this.safeSetData({
-      selectedAttendee: { ...this.data.selectedAttendee, backgroundUrl: '' },
-    });
+  selectedAttendeeBackgroundLoad() {
+    const attendee = this.data.selectedAttendee;
+    if (attendee) this.attendeeMediaRetryKeys.delete(`${attendee.id}:background`);
+  },
+  selectedAttendeeBackgroundError(event: any) {
+    const attendee = this.data.selectedAttendee;
+    if (!attendee) return;
+    return this.retryAttendeeMedia(
+      attendee.id,
+      'background',
+      String(event.currentTarget.dataset.url || ''),
+    );
   },
   openAttendeeCard(event: any) {
     const index = Number(event.currentTarget.dataset.index);

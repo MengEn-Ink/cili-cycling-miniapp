@@ -371,13 +371,19 @@
   z-index: 200;
   inset: 0;
   display: flex;
-  align-items: flex-end;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  padding: calc(32rpx + env(safe-area-inset-top)) 32rpx calc(32rpx + env(safe-area-inset-bottom));
   background: var(--color-overlay);
 }
 .rider-card {
   width: 100%;
+  max-width: 640rpx;
+  max-height: 82vh;
   margin: 0;
-  border-radius: 32rpx 32rpx 0 0;
+  overflow-y: auto;
+  border-radius: 32rpx;
 }
 .rider-card-photo {
   position: relative;
@@ -430,8 +436,11 @@
   background: var(--color-surface) !important;
   color: var(--color-text) !important;
 }
-@media (max-width: 340px) {
+@media (max-width: 340px), (max-height: 560px) {
   .time-card-meta {
     flex-direction: column;
+  }
+  .rider-card-photo {
+    height: 320rpx;
   }
 }

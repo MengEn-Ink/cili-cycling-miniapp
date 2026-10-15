@@ -38,6 +38,14 @@
   font-weight: 900;
   font-variant-numeric: tabular-nums;
 }
+.metric-grid--4 .metric-grid__item {
+  padding-right: 16rpx;
+  padding-left: 16rpx;
+}
+.metric-grid--4 .metric-grid__value {
+  font-size: 36rpx;
+  line-height: 48rpx;
+}
 .metric-grid__unit,
 .metric-grid__label {
   color: var(--color-muted);

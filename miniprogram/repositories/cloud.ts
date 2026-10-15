@@ -78,6 +78,9 @@ function dateText(value: unknown): string {
 function httpsUrl(value: unknown): string {
   return typeof value === 'string' && /^https:\/\/[^\s/]+(?:\/[^\s]*)?$/i.test(value) ? value : '';
 }
+function cloudFileId(value: unknown): string {
+  return typeof value === 'string' && /^cloud:\/\/[^\s]+$/i.test(value) ? value : '';
+}
 function requiredId(value: unknown, label: string): string {
   if (typeof value !== 'string' || !value)
     throw new CloudRepositoryError('VALIDATION_FAILED', `缺少${label}`);
@@ -154,7 +157,9 @@ function mapPublicAttendees(value: unknown) {
       id: typeof attendee.id === 'string' ? attendee.id : '',
       displayName: typeof attendee.display_name === 'string' ? attendee.display_name : '',
       gender: normalizeGender(attendee.gender),
+      avatarFileId: cloudFileId(attendee.avatar_file_id),
       avatarUrl: httpsUrl(attendee.avatar_url),
+      backgroundFileId: cloudFileId(attendee.background_file_id),
       backgroundUrl: httpsUrl(attendee.background_url),
       status: (attendee.status === 'checked_in' ? 'checked_in' : 'approved') as
         'approved' | 'checked_in',
