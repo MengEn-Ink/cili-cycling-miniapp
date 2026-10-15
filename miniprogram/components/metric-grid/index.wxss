@@ -22,17 +22,19 @@
   background: var(--color-surface);
 }
 .metric-grid__reading {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   min-width: 0;
-  align-items: baseline;
+  align-items: end;
   gap: 8rpx;
 }
 .metric-grid__value {
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  white-space: nowrap;
   color: var(--color-text);
-  font-size: 36rpx;
-  line-height: 52rpx;
+  font-size: 48rpx;
+  line-height: 60rpx;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
 }
@@ -43,7 +45,11 @@
   line-height: 36rpx;
 }
 .metric-grid__unit {
+  align-self: end;
   flex: 0 0 auto;
+  padding-bottom: 6rpx;
+  font-size: 20rpx;
+  line-height: 28rpx;
 }
 .metric-grid__label {
   display: block;

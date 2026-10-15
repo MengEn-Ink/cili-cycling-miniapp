@@ -195,6 +195,30 @@ describe('日常活动极简创建与编辑', () => {
     );
   });
 
+  it('历史图片临时地址失效时自动刷新一次并提供显式重试入口', async () => {
+    const getTempFileURL = vi.fn(async ({ fileList }: { fileList: string[] }) => ({
+      fileList: fileList.map((fileID) => ({
+        fileID,
+        status: 0,
+        tempFileURL: `https://temporary.example/${getTempFileURL.mock.calls.length}/${encodeURIComponent(fileID)}`,
+      })),
+    }));
+    Object.assign(wx.cloud!, { getTempFileURL });
+    await page.onLoad({ id: activity.id });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const failedFileId = page.data.images[0];
+    page.storedMediaPreviewError({ currentTarget: { dataset: { fileId: failedFileId } } });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(getTempFileURL).toHaveBeenLastCalledWith({ fileList: [failedFileId] });
+    expect(page.data.imagePreviewUrls[0]).toContain(encodeURIComponent(failedFileId));
+    const template = readFileSync('miniprogram/pages/admin/activity-edit/index.wxml', 'utf8');
+    expect(template).toContain('binderror="storedMediaPreviewError"');
+    expect(template).toContain('bindtap="retryStoredMediaPreview"');
+    expect(template).not.toContain('imagePreviewUrls[index] || item');
+  });
+
   it('临时地址返回前调整封面不会让图片预览恢复旧顺序', async () => {
     let resolveTemp!: (value: {
       fileList: { fileID: string; status: number; tempFileURL: string }[];

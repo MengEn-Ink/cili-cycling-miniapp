@@ -367,6 +367,7 @@ Page({
   routeRequestId: '',
   mediaPreviewRequestId: 0,
   mediaUrlCache: null as TempFileUrlCache | null,
+  mediaPreviewRetryIds: new Set<string>(),
   data: {
     allowed: false,
     isAdmin: false,
@@ -384,6 +385,7 @@ Page({
     originalActivity: undefined as EditableActivity | undefined,
     images: [] as string[],
     imagePreviewUrls: [] as string[],
+    mediaPreviewLoading: false,
     pendingImages: [] as PendingImage[],
     sessionUploadedIds: [] as string[],
     imagesTouched: false,
@@ -498,10 +500,11 @@ Page({
   async refreshMediaPreviews() {
     const images = [...this.data.images];
     const groupQrCode = this.data.groupQrCode;
+    const requestId = ++this.mediaPreviewRequestId;
+    this.setData({ mediaPreviewLoading: true });
     const cloudFileIds = [...images, groupQrCode].filter(
       (value): value is string => typeof value === 'string' && value.startsWith('cloud://'),
     );
-    const requestId = ++this.mediaPreviewRequestId;
     let resolved: Record<string, string> = {};
     const cache = this.ensureMediaUrlCache();
     if (cache && cloudFileIds.length) {
@@ -529,7 +532,34 @@ Page({
         resolved[latestGroupQrCode] ||
         (latestGroupQrCode === groupQrCode ? this.data.groupQrPreviewUrl : '') ||
         '',
+      mediaPreviewLoading: false,
     });
+  },
+  storedMediaPreviewLoad(event: any) {
+    const fileId = event?.currentTarget?.dataset?.fileId;
+    if (typeof fileId === 'string') this.mediaPreviewRetryIds.delete(fileId);
+  },
+  storedMediaPreviewError(event: any) {
+    const fileId = event?.currentTarget?.dataset?.fileId;
+    if (typeof fileId !== 'string' || !fileId) return;
+    const cache = this.ensureMediaUrlCache();
+    cache?.invalidate([fileId]);
+    const imageIndex = this.data.images.indexOf(fileId);
+    if (imageIndex >= 0) {
+      const imagePreviewUrls = [...this.data.imagePreviewUrls];
+      imagePreviewUrls[imageIndex] = '';
+      this.setData({ imagePreviewUrls });
+    }
+    if (fileId === this.data.groupQrCode) this.setData({ groupQrPreviewUrl: '' });
+    if (this.mediaPreviewRetryIds.has(fileId)) return;
+    // 临时地址可能刚好过期；每个文件自动刷新一次，二次失败后保留可点击重试入口。
+    this.mediaPreviewRetryIds.add(fileId);
+    void this.refreshMediaPreviews();
+  },
+  retryStoredMediaPreview(event: any) {
+    const fileId = event?.currentTarget?.dataset?.fileId;
+    if (typeof fileId === 'string') this.mediaPreviewRetryIds.delete(fileId);
+    void this.refreshMediaPreviews();
   },
   onReady() {
     void this.renderRouteVisuals();

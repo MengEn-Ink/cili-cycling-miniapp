@@ -17,7 +17,7 @@
       </view>
 
       <view class="content">
-        <metric-grid class="metric-panel" items="{{[{ value: item.route.distanceKm > 0 ? item.route.distanceKm : '--', unit: 'km', label: '里程' }, { value: item.route.elevationM > 0 ? item.route.elevationM : '--', unit: 'm', label: '爬升' }, { value: estimatedRideTime || '--', unit: '', label: '预计骑行' }, { value: item.approvedRegistrationCount || 0, unit: '人', label: '已通过' }]}}" columns="2" narrow-columns="2" aria-label="活动关键数据" />
+        <metric-grid class="detail-metric-panel" items="{{[{ value: item.route.distanceKm > 0 ? item.route.distanceKm : '--', unit: 'km', label: '里程' }, { value: item.route.elevationM > 0 ? item.route.elevationM : '--', unit: 'm', label: '爬升' }, { value: estimatedRideTime || '--', unit: '', label: '预计骑行' }, { value: item.approvedRegistrationCount || 0, unit: '人', label: '已通过' }]}}" columns="2" narrow-columns="2" aria-label="活动关键数据" />
 
         <view class="detail-decision" aria-label="报名状态">
           <view class="decision-status"><text class="decision-kicker">报名状态</text><text class="decision-title">{{viewerStatus.label}}</text></view>
@@ -58,12 +58,14 @@
           <view class="route-estimate" wx:if="{{estimatedRideTime}}"><text>此里估算</text><text>{{estimatedRideTime}}</text></view>
 
           <view class="route-visual-heading">路线轮廓</view>
-          <canvas wx:if="{{hasRouteOutline}}" id="route-outline-canvas" type="2d" class="route-outline-canvas" aria-label="{{item.route.routeName || 'GPX 路线'}}路线轮廓"></canvas>
+          <image wx:if="{{routeOutlineImage}}" class="route-outline-image" src="{{routeOutlineImage}}" mode="aspectFit" bindtap="previewRouteImage" aria-label="点击查看{{item.route.routeName || 'GPX 路线'}}完整路线图" />
           <image wx:elif="{{item.route.generatedPreviewUrl}}" class="route-outline-image" src="{{item.route.generatedPreviewUrl}}" mode="aspectFit" bindtap="previewRouteImage" aria-label="点击查看{{item.route.routeName || 'GPX 路线'}}完整路线图" />
+          <canvas wx:elif="{{hasRouteOutline}}" id="route-outline-canvas" type="2d" class="route-outline-canvas" aria-label="{{item.route.routeName || 'GPX 路线'}}路线轮廓"></canvas>
           <view wx:else class="route-empty">暂无有效路线轮廓</view>
 
           <view class="route-visual-heading">海拔曲线</view>
-          <canvas wx:if="{{hasElevationProfile}}" id="elevation-canvas" type="2d" class="elevation-canvas" aria-label="路线海拔曲线"></canvas>
+          <image wx:if="{{elevationImage}}" class="elevation-image" src="{{elevationImage}}" mode="aspectFit" aria-label="路线海拔曲线" />
+          <canvas wx:elif="{{hasElevationProfile}}" id="elevation-canvas" type="2d" class="elevation-canvas" aria-label="路线海拔曲线"></canvas>
           <view wx:else class="route-empty">暂无有效海拔数据</view>
 
           <view class="gpx-download-row" wx:if="{{hasGpxRoute}}">

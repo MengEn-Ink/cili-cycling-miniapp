@@ -153,8 +153,8 @@ describe('CILI 活动页静态契约', () => {
     expect(detail).toContain('binderror="coverImageError"');
     expect(detail).toContain('class="schedule-track"');
     expect(detailStyles).toMatch(/\.detail-hero\s*\{[^}]*height:\s*360rpx/s);
-    expect(detailStyles).toContain(
-      'padding-bottom: calc(var(--fixed-action-reserve) + env(safe-area-inset-bottom));',
+    expect(detailStyles).toMatch(
+      /padding-bottom:\s*calc\(\s*var\(--fixed-action-reserve\) \+ var\(--card-gap\) \+ env\(safe-area-inset-bottom\)\s*\)/s,
     );
     expect(detail).toContain('disabled="{{loading || !item || !activityAction.enabled}}"');
   });

@@ -171,6 +171,8 @@ Page({
     attendees: [] as any[],
     selectedAttendee: null as any,
     galleryImages: [] as string[],
+    routeOutlineImage: '',
+    elevationImage: '',
     colorMediaMuted: 'rgba(255, 255, 255, 0.55)',
     colorOnMedia: '#ffffff',
     displayDate: '',
@@ -320,11 +322,9 @@ Page({
               : state.key === 'rejected' || state.key === 'cancelled'
                 ? '当前报名状态不可查看，重新报名并通过审核后开放'
                 : '报名审核通过后可查看活动群二维码',
-          galleryImages: item.images?.length
-            ? item.images
-            : item.coverImage
-              ? [item.coverImage]
-              : [],
+          galleryImages: [...new Set([item.coverImage, ...(item.images || [])].filter(Boolean))],
+          routeOutlineImage: '',
+          elevationImage: '',
           displayDate: formatActivityDate(item.startAt || item.date),
           startTime: formatActivityTime(item.startAt),
           endTime: formatChinaDateTimeSeconds(item.endAt),
@@ -356,6 +356,32 @@ Page({
       if (requestId === this.loadRequestId && !this.unloaded) this.safeSetData({ loading: false });
     }
   },
+  snapshotCanvas(
+    canvas: any,
+    width: number,
+    height: number,
+    dataKey: 'routeOutlineImage' | 'elevationImage',
+  ) {
+    if (typeof wx.canvasToTempFilePath !== 'function') return;
+    const requestId = this.loadRequestId;
+    wx.canvasToTempFilePath(
+      {
+        canvas,
+        x: 0,
+        y: 0,
+        width,
+        height,
+        destWidth: canvas.width,
+        destHeight: canvas.height,
+        fileType: 'png',
+        success: (result: { tempFilePath?: string }) => {
+          if (requestId !== this.loadRequestId || this.unloaded) return;
+          if (result.tempFilePath) this.safeSetData({ [dataKey]: result.tempFilePath });
+        },
+      },
+      this,
+    );
+  },
   drawElevation() {
     const profile = this.data.item?.route?.elevationProfile;
     if (!this.data.hasElevationProfile || this.unloaded) return;
@@ -371,6 +397,8 @@ Page({
         canvas.width = target.width * ratio;
         canvas.height = target.height * ratio;
         drawElevationProfile(canvas.getContext('2d'), target.width, target.height, profile, ratio);
+        // 2D canvas 在部分真机仍会盖住 fixed 按钮，绘制后转成图片并移除原生层。
+        this.snapshotCanvas(canvas, target.width, target.height, 'elevationImage');
       });
   },
   drawRouteOutline() {
@@ -395,6 +423,8 @@ Page({
           ratio,
           this.data.item?.route?.routeName || 'GPX 路线详情',
         );
+        // 路线轮廓导出为普通图片，避免原生 canvas 穿透并遮挡底部操作栏。
+        this.snapshotCanvas(canvas, target.width, target.height, 'routeOutlineImage');
       });
   },
   coverImageError() {
@@ -474,7 +504,7 @@ Page({
     });
   },
   previewRouteImage() {
-    const rawSource = this.data.item?.route?.generatedPreviewUrl;
+    const rawSource = this.data.routeOutlineImage || this.data.item?.route?.generatedPreviewUrl;
     const source = typeof rawSource === 'string' ? rawSource.trim() : '';
     if (!source) return;
     wx.previewImage({
