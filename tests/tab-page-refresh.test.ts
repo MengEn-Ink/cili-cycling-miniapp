@@ -363,7 +363,12 @@ describe('tab page refresh view contract', () => {
       expect(template).toContain('{{refreshError}}');
       expect(refreshingVisual).not.toBe('');
       expect(refreshErrorVisual).not.toBe('');
-      expect(stateView).toContain('loading="{{loading}}"');
+      if (page === 'registrations') {
+        expect(stateView).toContain('loading="{{false}}"');
+        expect(template).toContain('class="trip-skeleton"');
+      } else {
+        expect(stateView).toContain('loading="{{loading}}"');
+      }
       expect(stateView).toContain('error="{{error}}"');
       expect(stateView).toContain('retryable="{{true}}"');
       expect(stateView).toContain('bind:retry="load"');

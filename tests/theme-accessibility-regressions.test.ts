@@ -231,7 +231,7 @@ describe('unified UI accessibility regressions', () => {
     const profileEdit = read('miniprogram/pages/profile-edit/index.wxss');
     expect(declaration(effectiveBlock(app, '.input'), 'min-height')).toBe('var(--control-height)');
     expect(profileEdit).toMatch(
-      /@media \(max-width: 340px\)[\s\S]*?\.avatar-editor\s*\{[^}]*flex-direction:\s*column/s,
+      /@media \(max-width: 340px\)[\s\S]*?\.avatar-editor\s*\{[^}]*grid-template-columns:\s*1fr/s,
     );
     expect(declaration(effectiveBlock(profileEdit, '.gender-option'), 'min-height')).toBe(
       'var(--segment-height)',

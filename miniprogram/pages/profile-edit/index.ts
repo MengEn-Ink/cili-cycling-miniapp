@@ -11,7 +11,12 @@ const MAX_LOCAL_IMAGE_BYTES = 5 * 1024 * 1024;
 const PROFILE_BACKGROUND_CATEGORY = 'ride' as const;
 type MediaStage = 'selection' | 'uploadPath' | 'upload' | 'register' | 'setAvatar' | 'preview';
 type SelectedImage = { path: string; size?: number };
-type PhotoItem = { id: string; category: string; previewUrl: string };
+type PhotoItem = {
+  id: string;
+  category: string;
+  previewUrl: string;
+  previewState: 'ready' | 'loading' | 'failed';
+};
 type MediaOrphan = {
   fileId: string;
   category: 'ride' | 'other';
@@ -340,15 +345,24 @@ async function reportOrphan(entry: MediaOrphan) {
   else await rideService.reportProfileMediaOrphan(entry.fileId, entry.category);
 }
 async function retryOrphanLedger() {
+  const initial = readOrphanLedger();
+  const initialKeys = new Set(
+    initial.map((entry) => `${entry.fileId}\u0000${entry.category}\u0000${entry.origin || ''}`),
+  );
   const remaining: MediaOrphan[] = [];
-  for (const entry of readOrphanLedger()) {
+  for (const entry of initial) {
     try {
       await reportOrphan(entry);
     } catch {
       remaining.push(entry);
     }
   }
-  saveOrphanLedger(remaining);
+  // 后台补偿期间可能产生新的孤儿记录；合并新增项，避免旧任务完成时覆盖新账本。
+  const appended = readOrphanLedger().filter(
+    (entry) =>
+      !initialKeys.has(`${entry.fileId}\u0000${entry.category}\u0000${entry.origin || ''}`),
+  );
+  saveOrphanLedger([...remaining, ...appended]);
 }
 
 async function compensateUploadedMedia(entry: MediaOrphan) {
@@ -382,6 +396,7 @@ Page({
   uploadedMediaDigests: new Map<string, string>(),
   // 已解析图片临时地址缓存：fileID -> 仍在有效期的 https 地址，跨多次进入页面复用。
   photoUrlCache: null as TempFileUrlCache | null,
+  photoPreviewRetryIds: new Set<string>(),
   // 加载/保存后服务端回传的实名与电话原值：未改动的字段保存时不重复提交。
   loadedSensitive: sensitiveValues(null),
   data: {
@@ -397,7 +412,8 @@ Page({
     photoItems: [] as PhotoItem[],
   },
   async onLoad() {
-    await retryOrphanLedger();
+    // 孤儿媒体补偿不影响资料首屏；同步存储异常时保留原账本，等待下次进入重试。
+    void retryOrphanLedger().catch(() => undefined);
     const state = await runPageTask(() => rideService.getProfile(), '资料加载失败');
     const loadedProfile = normalizeBackgroundProfile(state.data || null);
     this.loadedSensitive = sensitiveValues(loadedProfile);
@@ -487,6 +503,15 @@ Page({
     const p = normalizeBackgroundProfile(current) as Profile;
     if (p !== current) this.setData({ p });
     const requestId = ++this.photoPreviewRequestId;
+    const currentItems = p.photos.map((photo) => {
+      const previewUrl = this.localPhotoPreviews[photo.id] || safeHttpsUrl(photo.id);
+      return {
+        ...photo,
+        previewUrl,
+        previewState: previewUrl ? ('ready' as const) : ('loading' as const),
+      };
+    });
+    this.setData({ photoItems: currentItems });
     const unresolved = p.photos.filter(
       (photo) => !this.localPhotoPreviews[photo.id] && !safeHttpsUrl(photo.id),
     );
@@ -502,18 +527,50 @@ Page({
             if (safe) resolved[id] = safe;
           }
         } catch {
-          /* 单张预览失败不阻塞资料编辑。 */
+          /* 单张预览失败不阻塞资料编辑，由明确失败态提供重试入口。 */
         }
       }
     }
     if (requestId !== this.photoPreviewRequestId) return;
     this.setData({
-      photoItems: p.photos.map((photo) => ({
-        ...photo,
-        previewUrl:
-          this.localPhotoPreviews[photo.id] || safeHttpsUrl(photo.id) || resolved[photo.id] || '',
-      })),
+      photoItems: p.photos.map((photo) => {
+        const previewUrl =
+          this.localPhotoPreviews[photo.id] || safeHttpsUrl(photo.id) || resolved[photo.id] || '';
+        return {
+          ...photo,
+          previewUrl,
+          previewState: previewUrl ? ('ready' as const) : ('failed' as const),
+        };
+      }),
     });
+  },
+  photoPreviewLoad(e: any) {
+    const id = String(e.currentTarget?.dataset?.id || '');
+    if (id) this.photoPreviewRetryIds.delete(id);
+  },
+  photoPreviewError(e: any) {
+    const id = String(e.currentTarget?.dataset?.id || '');
+    const failedUrl = String(e.currentTarget?.dataset?.url || '');
+    if (!id) return;
+    const current = this.data.photoItems.find((item: PhotoItem) => item.id === id);
+    // 旧节点的迟到 error 不得清空已经刷新的新地址。
+    if (!current || (failedUrl && current.previewUrl !== failedUrl)) return;
+    this.ensurePhotoUrlCache()?.invalidate([id]);
+    this.setData({
+      photoItems: this.data.photoItems.map((item: PhotoItem) =>
+        item.id === id ? { ...item, previewUrl: '', previewState: 'failed' } : item,
+      ),
+    });
+    if (this.photoPreviewRetryIds.has(id)) return;
+    this.photoPreviewRetryIds.add(id);
+    void this.loadPhotoPreviews();
+  },
+  retryPhotoPreview(e: any) {
+    const id = String(e.currentTarget?.dataset?.id || '');
+    if (!id) return;
+    this.photoPreviewRetryIds.delete(id);
+    this.ensurePhotoUrlCache()?.invalidate([id]);
+    void this.loadPhotoPreviews();
   },
   applyAvatarProfile(authoritative: Profile) {
     const p = mergeAvatarFields(this.data.p, authoritative);

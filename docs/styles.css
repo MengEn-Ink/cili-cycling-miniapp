@@ -1545,6 +1545,39 @@ code {
   font-weight: 800;
 }
 
+.profile-avatar-editor {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.profile-avatar-preview {
+  width: 72px;
+  height: 72px;
+  border: 2px solid var(--color-border);
+}
+
+.profile-avatar-panel {
+  display: flex;
+  align-self: stretch;
+  justify-content: center;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.profile-avatar-panel p {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--color-muted);
+}
+
+.profile-avatar-panel .btn-secondary {
+  width: 100%;
+  margin-top: 6px;
+}
+
 .avatar-row {
   display: flex;
   gap: 12px;
@@ -1865,9 +1898,10 @@ code {
 
 .trip-summary span {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  flex-direction: column-reverse;
+  align-items: center;
   padding: 0 16px;
+  text-align: center;
 }
 
 .trip-summary span + span {

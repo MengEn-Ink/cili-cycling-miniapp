@@ -66,10 +66,11 @@
         </view>
         <view class="photo-list" wx:if="{{photoItems.length}}">
           <view class="photo-item" wx:for="{{photoItems}}" wx:key="id">
-            <button class="photo-preview-button" data-url="{{item.previewUrl}}" bindtap="previewPhoto" disabled="{{!item.previewUrl}}" aria-label="预览个人背景图">
-              <image wx:if="{{item.previewUrl}}" class="photo-thumbnail" src="{{item.previewUrl}}" mode="aspectFill" />
-              <view wx:else class="photo-placeholder">背景图处理中，稍后即可预览</view>
-            </button>
+            <view class="photo-preview-button">
+              <image wx:if="{{item.previewUrl}}" class="photo-thumbnail" src="{{item.previewUrl}}" data-id="{{item.id}}" data-url="{{item.previewUrl}}" mode="aspectFill" bindtap="previewPhoto" bindload="photoPreviewLoad" binderror="photoPreviewError" role="button" aria-label="预览个人背景图" />
+              <view wx:elif="{{item.previewState === 'loading'}}" class="photo-placeholder photo-placeholder--loading">背景图加载中…</view>
+              <button wx:else class="photo-placeholder photo-placeholder--failed" data-id="{{item.id}}" bindtap="retryPhotoPreview">图片加载失败，点击重试</button>
+            </view>
           </view>
         </view>
         <view class="photo-count">{{p.photos.length ? '已设置 1 张背景图' : '尚未设置背景图'}}</view>
