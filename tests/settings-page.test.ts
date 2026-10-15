@@ -1,6 +1,7 @@
 // @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
 import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { CLIENT_RELEASE_VERSION } from '../miniprogram/config/release';
 
 const readiness = vi.hoisted(() => vi.fn());
 vi.mock('../miniprogram/repositories/index', () => ({
@@ -21,11 +22,11 @@ describe('设置页', () => {
   });
 
   it('只加载当前版本日志，不注册第三方账号生命周期或入口', () => {
-    expect(page.data.releaseNotes).toHaveLength(16);
+    expect(page.data.releaseNotes).toHaveLength(17);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.15.65',
+      version: CLIENT_RELEASE_VERSION,
       latest: true,
-      title: '骑行名片与照片改由服务端恢复',
+      title: '图片回显恢复与版本日志可核对',
     });
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(
       1,
@@ -35,6 +36,7 @@ describe('设置页', () => {
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      CLIENT_RELEASE_VERSION,
       '2026.10.15.65',
       '2026.10.15.64',
       '2026.10.15.63',

@@ -1,11 +1,12 @@
 import { initializeCloud } from './config/cloud-init';
+import { CLIENT_RELEASE_VERSION } from './config/release';
 import type { AuthCloudApi } from './services/auth-service';
 import { applyAppAppearance } from './services/theme-service';
 import { appStore } from './store/app-store';
 
 // 兜底捕获页面未处理的脚本错误与 Promise 拒绝，避免异常被静默吞掉；统一加前缀记录，便于在控制台排查。
 function reportRuntimeError(scope: string, error: unknown) {
-  console.error(`[此里运行时异常:${scope}]`, error);
+  console.error(`[此里运行时异常][${CLIENT_RELEASE_VERSION}][${scope}]`, error);
 }
 
 function warmupIdentity(cloud: AuthCloudApi | undefined) {
@@ -17,6 +18,7 @@ function warmupIdentity(cloud: AuthCloudApi | undefined) {
 App({
   globalData: { store: appStore },
   onLaunch() {
+    console.info(`[此里版本][${CLIENT_RELEASE_VERSION}]`);
     applyAppAppearance();
     appStore.bootstrap();
     const cloud = initializeCloud(wx.cloud) === 'initialized' ? wx.cloud : undefined;

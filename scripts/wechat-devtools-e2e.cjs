@@ -41,6 +41,24 @@ function splitDateAndTime(date, time) {
   return /月\d+日 周[一二三四五六日]/.test(date || '') && naturalTime(time) && !/月|周/.test(time);
 }
 
+function isHttps(value) {
+  return /^https:\/\//i.test(value || '');
+}
+
+function isRenderableMedia(value) {
+  return /^(?:https?|wxfile):\/\//i.test(value || '');
+}
+
+function releaseVersion() {
+  const source = fs.readFileSync(
+    path.join(projectPath, 'miniprogram', 'config', 'release.ts'),
+    'utf8',
+  );
+  const match = source.match(/CLIENT_RELEASE_VERSION\s*=\s*['"]([^'"]+)['"]/);
+  if (!match) throw new Error('无法读取 CLIENT_RELEASE_VERSION');
+  return match[1];
+}
+
 async function main() {
   if (process.platform !== 'darwin') throw new Error('微信开发者工具 E2E 目前仅支持 macOS。');
   if (!fs.existsSync(cliPath)) throw new Error(`未找到微信开发者工具 CLI：${cliPath}`);
@@ -50,14 +68,17 @@ async function main() {
   fs.mkdirSync(outputPath, { recursive: true });
 
   const automator = loadAutomator();
+  const version = releaseVersion();
   const result = {
-    schemaVersion: 1,
+    schemaVersion: 2,
+    releaseVersion: version,
     startedAt: new Date().toISOString(),
     git: execFileSync('git', ['-C', projectPath, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
     projectPath,
     checks: [],
     exceptions: [],
   };
+  console.log(`RELEASE_VERSION ${version}`);
   const check = (name, ok, detail) => {
     result.checks.push({ name, ok: Boolean(ok), detail: detail || null });
     console.log(`${ok ? 'PASS' : 'FAIL'} ${name} ${JSON.stringify(detail || {})}`);
@@ -77,7 +98,8 @@ async function main() {
     let page = await miniProgram.reLaunch('/pages/activities/index');
     await sleep(6000);
     let data = await page.data();
-    const activity = data.items?.[0];
+    const activities = data.items || [];
+    const activity = activities[0];
     check('活动首页加载', !data.error && Boolean(activity), {
       error: data.error || null,
       count: data.items?.length || 0,
@@ -112,16 +134,53 @@ async function main() {
     await screenshot(miniProgram, '02-trips.png');
 
     if (activity?.id) {
-      page = await miniProgram.reLaunch(
-        `/pages/activity-detail/index?id=${encodeURIComponent(activity.id)}`,
-      );
-      await sleep(4500);
-      data = await page.data();
+      let attendeeActivity = null;
+      for (const candidate of activities.slice(0, 5)) {
+        page = await miniProgram.reLaunch(
+          `/pages/activity-detail/index?id=${encodeURIComponent(candidate.id)}`,
+        );
+        await sleep(7000);
+        data = await page.data();
+        if (!attendeeActivity) attendeeActivity = { candidate, data };
+        if ((data.attendees || []).length > 0) {
+          attendeeActivity = { candidate, data };
+          break;
+        }
+      }
+      data = attendeeActivity?.data || data;
       check('活动详情日期与集合时间拆分', splitDateAndTime(data.displayDate, data.startTime), {
         displayDate: data.displayDate,
         startTime: data.startTime,
       });
-      await screenshot(miniProgram, '03-detail.png');
+      const attendees = data.attendees || [];
+      check(
+        '报名人员头像与骑行名片背景均为服务端 HTTPS 地址',
+        attendees.length > 0 &&
+          attendees.every((item) => isHttps(item.avatarUrl) && isHttps(item.backgroundUrl)),
+        {
+          count: attendees.length,
+          avatarHttps: attendees.filter((item) => isHttps(item.avatarUrl)).length,
+          backgroundHttps: attendees.filter((item) => isHttps(item.backgroundUrl)).length,
+        },
+      );
+      const attendeeButton = await page.$('.attendee-mini-card');
+      if (attendeeButton) {
+        await attendeeButton.tap();
+        await sleep(2500);
+        data = await page.data();
+      }
+      check(
+        '报名人员骑行名片弹层图片回显',
+        Boolean(data.selectedAttendee) &&
+          isHttps(data.selectedAttendee?.avatarUrl) &&
+          isHttps(data.selectedAttendee?.backgroundUrl),
+        {
+          selected: Boolean(data.selectedAttendee),
+          avatarHttps: isHttps(data.selectedAttendee?.avatarUrl),
+          backgroundHttps: isHttps(data.selectedAttendee?.backgroundUrl),
+        },
+      );
+      await screenshot(miniProgram, '03-detail-attendee-card.png');
     }
 
     const credentialTrip =
@@ -145,6 +204,65 @@ async function main() {
     } else {
       check('报名凭证存在可验证记录', false, { reason: '当前账号没有行程记录' });
     }
+
+    page = await miniProgram.reLaunch('/pages/profile/index');
+    await sleep(7000);
+    data = await page.data();
+    const profileUrls = [data.heroAvatarUrl, data.heroBackgroundAvatarUrl].filter(Boolean);
+    check(
+      '个人中心图片回显',
+      !data.error &&
+        (data.heroBackgrounds || []).every((item) => isRenderableMedia(item.url)) &&
+        profileUrls.every(isRenderableMedia),
+      {
+        error: data.error || null,
+        backgrounds: data.heroBackgrounds?.length || 0,
+        renderableBackgrounds: (data.heroBackgrounds || []).filter((item) =>
+          isRenderableMedia(item.url),
+        ).length,
+        profileUrls: profileUrls.length,
+        renderableProfileUrls: profileUrls.filter(isRenderableMedia).length,
+      },
+    );
+    await screenshot(miniProgram, '05-profile.png');
+
+    page = await miniProgram.reLaunch('/pages/profile-edit/index');
+    await sleep(7000);
+    data = await page.data();
+    const photoItems = data.photoItems || [];
+    check(
+      '资料编辑页头像与照片回显',
+      !data.error &&
+        photoItems.length > 0 &&
+        photoItems.every((item) => item.previewState === 'ready' && isHttps(item.previewUrl)) &&
+        (!data.avatarPreviewUrl || isHttps(data.avatarPreviewUrl)),
+      {
+        error: data.error || null,
+        photos: photoItems.length,
+        readyHttps: photoItems.filter(
+          (item) => item.previewState === 'ready' && isHttps(item.previewUrl),
+        ).length,
+        failed: photoItems.filter((item) => item.previewState === 'failed').length,
+        avatarHttps: isHttps(data.avatarPreviewUrl),
+      },
+    );
+    await screenshot(miniProgram, '06-profile-edit.png');
+
+    page = await miniProgram.reLaunch('/pages/capability-card/index');
+    await sleep(7000);
+    data = await page.data();
+    const backgrounds = data.card?.backgrounds || [];
+    check(
+      '骑行名片背景图回显',
+      !data.error && backgrounds.length > 0 && backgrounds.every((item) => isHttps(item.url)),
+      {
+        error: data.error || null,
+        backgrounds: backgrounds.length,
+        httpsBackgrounds: backgrounds.filter((item) => isHttps(item.url)).length,
+        needsProfilePhoto: Boolean(data.card?.needsProfilePhoto),
+      },
+    );
+    await screenshot(miniProgram, '07-capability-card.png');
   } finally {
     await miniProgram.close();
   }
@@ -154,7 +272,7 @@ async function main() {
   result.failed = result.checks.filter((item) => !item.ok).length;
   fs.writeFileSync(path.join(outputPath, 'results.json'), JSON.stringify(result, null, 2));
   console.log(
-    `SUMMARY pass=${result.passed} fail=${result.failed} exceptions=${result.exceptions.length} output=${outputPath}`,
+    `SUMMARY version=${version} pass=${result.passed} fail=${result.failed} exceptions=${result.exceptions.length} output=${outputPath}`,
   );
   if (result.failed || result.exceptions.length) process.exitCode = 1;
 }
