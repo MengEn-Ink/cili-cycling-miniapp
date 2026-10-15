@@ -697,6 +697,32 @@ function mapEditableActivity(raw: unknown, requireCloneDraft = false): EditableA
   }
   if (value.event_end === undefined) delete mapped.endAt;
   if (value.fee === undefined) delete mapped.fee;
+  if (value.image_preview_urls !== undefined) {
+    if (
+      !Array.isArray(value.image_preview_urls) ||
+      value.image_preview_urls.some(
+        (url: unknown) => typeof url !== 'string' || (url !== '' && !httpsUrl(url)),
+      )
+    )
+      return invalidResponse();
+    mapped.imagePreviewUrls = value.image_preview_urls.map(httpsUrl);
+  }
+  if (value.cover_preview_url !== undefined) {
+    if (
+      typeof value.cover_preview_url !== 'string' ||
+      (value.cover_preview_url !== '' && !httpsUrl(value.cover_preview_url))
+    )
+      return invalidResponse();
+    mapped.coverPreviewUrl = httpsUrl(value.cover_preview_url);
+  }
+  if (value.group_qr_preview_url !== undefined) {
+    if (
+      typeof value.group_qr_preview_url !== 'string' ||
+      (value.group_qr_preview_url !== '' && !httpsUrl(value.group_qr_preview_url))
+    )
+      return invalidResponse();
+    mapped.groupQrPreviewUrl = httpsUrl(value.group_qr_preview_url);
+  }
   return mapped;
 }
 function mapProfile(raw: unknown): Profile {

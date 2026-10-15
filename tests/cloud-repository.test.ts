@@ -1699,6 +1699,27 @@ describe('CloudRepository 管理员活动写入契约', () => {
     expectCall(callFunction, 'activity-admin', { action: 'detail', activityId: 'a1' });
   });
 
+  it('管理详情保留云函数签发的活动图片、群二维码与路线图地址', async () => {
+    const mediaActivity = {
+      ...activity,
+      image_preview_urls: ['https://signed.example/activity.jpg'],
+      cover_preview_url: 'https://signed.example/cover.jpg',
+      group_qr_preview_url: 'https://signed.example/group.jpg',
+      route: {
+        ...activity.route,
+        generated_preview_url: 'https://signed.example/route.png',
+      },
+    };
+    const { cloud } = cloudWith(success(mediaActivity));
+
+    const result = await new CloudRepository(cloud).getAdminActivity('a1');
+
+    expect(result?.imagePreviewUrls).toEqual(['https://signed.example/activity.jpg']);
+    expect(result?.coverPreviewUrl).toBe('https://signed.example/cover.jpg');
+    expect(result?.groupQrPreviewUrl).toBe('https://signed.example/group.jpg');
+    expect(result?.route.generatedPreviewUrl).toBe('https://signed.example/route.png');
+  });
+
   it.each(['published', 'finished'] as const)(
     '管理 DTO 允许 %s 活动缺少运营字段并保留 optional',
     async (status) => {

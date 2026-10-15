@@ -100,9 +100,13 @@ async function main() {
     let data = await page.data();
     const activities = data.items || [];
     const activity = activities[0];
+    const editableActivity = activities.find((item) => item.images?.length);
     check('活动首页加载', !data.error && Boolean(activity), {
       error: data.error || null,
       count: data.items?.length || 0,
+    });
+    check('存在带图片的活动编辑验收样本', Boolean(editableActivity), {
+      count: activities.filter((item) => item.images?.length).length,
     });
     check('活动卡集合时间为自然表达', naturalTime(activity?.displayTimeLabel), {
       displayTimeLabel: activity?.displayTimeLabel,
@@ -116,6 +120,39 @@ async function main() {
       },
     );
     await screenshot(miniProgram, '01-activities.png');
+
+    if (editableActivity?.id) {
+      page = await miniProgram.reLaunch(
+        `/pages/admin/activity-edit/index?id=${encodeURIComponent(editableActivity.id)}`,
+      );
+      await sleep(7000);
+      data = await page.data();
+      const editImages = data.images || [];
+      const editImagePreviewUrls = data.imagePreviewUrls || [];
+      const hasGroupQr = Boolean(data.groupQrCode);
+      const hasRoutePreviewFile = Boolean(
+        data.originalActivity?.route?.generatedPreviewFileId ||
+        data.routePreview?.generatedPreviewFileId,
+      );
+      check(
+        '活动编辑页图片由管理云函数回显',
+        !data.error &&
+          editImages.length > 0 &&
+          editImagePreviewUrls.length === editImages.length &&
+          editImagePreviewUrls.every(isHttps) &&
+          (!hasGroupQr || isHttps(data.groupQrPreviewUrl)) &&
+          (!hasRoutePreviewFile || isHttps(data.routePreview?.generatedPreviewUrl)),
+        {
+          error: data.error || null,
+          images: editImages.length,
+          imageHttps: editImagePreviewUrls.filter(isHttps).length,
+          groupQrHttps: !hasGroupQr || isHttps(data.groupQrPreviewUrl),
+          routePreviewHttps:
+            !hasRoutePreviewFile || isHttps(data.routePreview?.generatedPreviewUrl),
+        },
+      );
+      await screenshot(miniProgram, '01b-activity-edit.png');
+    }
 
     page = await miniProgram.reLaunch('/pages/registrations/index');
     await sleep(5000);

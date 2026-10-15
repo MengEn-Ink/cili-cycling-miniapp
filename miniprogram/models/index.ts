@@ -164,6 +164,9 @@ export type EditableActivity = Omit<
   deadline?: string;
   capacity?: number;
   fee?: string;
+  imagePreviewUrls?: string[];
+  coverPreviewUrl?: string;
+  groupQrPreviewUrl?: string;
 };
 export interface ProfilePhoto {
   id: string;

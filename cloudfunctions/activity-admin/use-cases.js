@@ -17,6 +17,7 @@ const {
 } = require('./domain');
 const { assertUsableRoutePreview, mergeTrustedPreviewRoute } = require('./route-preview');
 const { assertUsablePublicRoutePreview } = require('./public-route-preview');
+const { validateActivityMediaOwnership } = require('./media');
 
 const CLONE_REQUEST_FIELDS = new Set([
   'action',
@@ -501,6 +502,8 @@ async function saveActivity(
       effectiveActivity.images.length === current.images.length &&
       effectiveActivity.images.every((image, index) => image === current.images[index]);
     const validationOptions = legacyImagesUnchanged ? { maxImages: 9 } : {};
+    if (!validateActivityMediaOwnership(openid, effectiveActivity, current))
+      fail('VALIDATION_FAILED', '活动媒体文件归属无效');
     if (
       current?.occupancy_partition_ready !== true &&
       current &&

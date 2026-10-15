@@ -17,6 +17,7 @@ const {
 const { listActivitiesPage } = require('./list-pagination');
 const { previewRouteGpx, bindRoutePreviewImage } = require('./route-preview');
 const { previewPublicRoute } = require('./public-route-preview');
+const { resolveActivityMedia } = require('./media');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const OCCUPANCY_BACKFILL_PAGE_SIZE = 100;
@@ -237,20 +238,19 @@ exports.main = async (event = {}) => {
         (!Number.isInteger(event.expectedVersion) || event.expectedVersion < 0)
       )
         fail('VALIDATION_FAILED', '活动版本格式错误');
-      return ok(
-        await saveActivity(
-          transactionStore(),
-          {
-            openid,
-            activityId: event.activityId,
-            expectedVersion: event.expectedVersion,
-            createRequestId: event.createRequestId,
-            activity: event.activity,
-            reason: event.operationReason,
-          },
-          new Date(),
-        ),
+      const saved = await saveActivity(
+        transactionStore(),
+        {
+          openid,
+          activityId: event.activityId,
+          expectedVersion: event.expectedVersion,
+          createRequestId: event.createRequestId,
+          activity: event.activity,
+          reason: event.operationReason,
+        },
+        new Date(),
       );
+      return ok(await resolveActivityMedia(cloud, saved, openid));
     }
     if (event.action === 'clone') {
       return ok(
@@ -301,7 +301,7 @@ exports.main = async (event = {}) => {
       if (!activity || activity.is_deleted === true) fail('ACTIVITY_NOT_FOUND', '活动不存在');
       if (!identity.isAdmin && activity.created_by !== openid)
         fail('FORBIDDEN', '只能查看自己的活动');
-      return ok(publicActivity(activity));
+      return ok(await resolveActivityMedia(cloud, publicActivity(activity), openid));
     }
     fail('UNKNOWN_ACTION', '未知操作');
   } catch (error) {
