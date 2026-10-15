@@ -200,6 +200,8 @@
     credential: () => {
       const hasPhoto = !is('no-photo');
       return `<div class="pg">
+        <p class="section-label credential-rider-heading">公开骑行名片</p>
+        ${riderCard(hasPhoto, hasPhoto ? '' : `<p class="neutral-note" style="margin:0 16px 12px">添加一张骑行照片，名片会更有辨识度。</p><div style="padding:0 16px 16px">${btn('添加骑行照片', go('profile-edit'), 'btn-secondary')}</div>`)}
         <article class="credential-ticket">
           <div class="ticket-head">${brandLogo('报名凭证')}<code>CILI-1017-012</code></div>
           <div class="ticket-body">${tag('success', '✓ 已通过 · 准时集合')}<h2 class="card-title" style="margin-top:8px">${trip.title}</h2><p class="meta-line">${trip.date}</p></div>
@@ -212,8 +214,6 @@
         </article>
         <div class="card">${cardHead('', '队伍：风向小队')}<p class="card-hint">我是队长，可使用右上角分享邀请队员</p></div>
         <div style="margin-top:12px">${btn('取消报名', toast('已取消报名'), 'btn-secondary')}</div>
-        <p class="section-label">公开骑行名片</p>
-        ${riderCard(hasPhoto, hasPhoto ? '' : `<p class="neutral-note" style="margin:0 16px 12px">添加一张骑行照片，名片会更有辨识度。</p><div style="padding:0 16px 16px">${btn('添加骑行照片', go('profile-edit'), 'btn-secondary')}</div>`)}
       </div>`;
     },
 

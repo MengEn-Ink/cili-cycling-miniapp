@@ -36,6 +36,12 @@ describe('管理端与个人资料视觉契约', () => {
       /class="map-button map-button--secondary"[^>]*bindtap="addOfficialRoute"/,
     );
     expect(styles).toMatch(/\.image-action\s*\{[^}]*min-height:\s*88rpx/s);
+    expect(styles).toMatch(
+      /\.group-qr-card \.image-action--danger\s*\{[^}]*background:\s*var\(--color-danger-soft\);[^}]*color:\s*var\(--color-danger-text\)/s,
+    );
+    expect(styles).toMatch(
+      /\.activity-editor\s*\{[^}]*padding-bottom:\s*calc\(var\(--fixed-action-reserve\) \+ var\(--card-gap\) \+ env\(safe-area-inset-bottom\)\)/s,
+    );
   });
 
   it('审批列表使用现有头像字段并提供昵称首字回退', () => {
@@ -69,5 +75,9 @@ describe('管理端与个人资料视觉契约', () => {
     );
     expect(template).toContain('背景图处理中，稍后即可预览');
     expect(styles).toMatch(/\.photo-remove\s*\{[^}]*min-height:\s*88rpx/s);
+    expect(styles).toMatch(
+      /\.photo-remove\s*\{[^}]*background:\s*var\(--color-danger-soft\);[^}]*color:\s*var\(--color-danger-text\)/s,
+    );
+    expect(styles).toContain('animation: photo-loading-spin 0.9s linear infinite');
   });
 });
