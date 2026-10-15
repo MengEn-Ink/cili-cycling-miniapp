@@ -1,7 +1,22 @@
 .activity-editor {
-  padding-bottom: calc(var(--fixed-action-reserve) + env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--fixed-action-reserve) + var(--card-gap) + env(safe-area-inset-bottom));
   background: var(--color-bg);
   color: var(--color-text);
+}
+.activity-editor .card {
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-display);
+}
+.activity-editor .field .input,
+.activity-editor .field .textarea,
+.activity-editor .picker-value {
+  border-width: 2rpx;
+}
+.activity-editor .required {
+  border-width: 2rpx;
+  border-radius: 999rpx;
+  background: var(--color-brand-soft);
+  color: var(--color-brand-active);
 }
 .editor-summary {
   color: var(--color-muted);
@@ -118,8 +133,17 @@
 .group-qr-preview {
   width: 280rpx;
   height: 280rpx;
-  border: 4rpx solid var(--color-border-strong);
+  border: 2rpx solid var(--color-border);
   border-radius: var(--radius-sm);
+}
+.group-qr-card .image-action--danger {
+  margin-top: 16rpx;
+  padding: 0 24rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: 999rpx;
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
+  text-decoration: none;
 }
 .action-bar {
   grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);

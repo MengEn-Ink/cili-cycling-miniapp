@@ -1957,6 +1957,10 @@ code {
   margin: 12px 16px 16px;
 }
 
+.credential-rider-heading {
+  margin-top: 0;
+}
+
 /* 凭证 */
 .credential-ticket {
   position: relative;

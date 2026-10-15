@@ -10,7 +10,7 @@
   height: 360rpx;
   margin-top: 16rpx;
   overflow: hidden;
-  border: 4rpx solid var(--color-border-strong);
+  border: 2rpx solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-media-placeholder-bg);
 }

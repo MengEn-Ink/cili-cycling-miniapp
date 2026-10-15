@@ -48,12 +48,12 @@ describe('activity journey visual contract', () => {
     );
   });
 
-  it('凭证票据优先于公开名片，集合时间使用 48rpx', () => {
-    expect(credential.indexOf('class="credential-card"')).toBeLessThan(
-      credential.indexOf('class="public-card-heading"'),
-    );
+  it('公开骑行名片置于凭证顶部，集合时间使用 48rpx', () => {
     expect(credential.indexOf('class="public-card-heading"')).toBeLessThan(
       credential.indexOf('class="compact-rider-card'),
+    );
+    expect(credential.indexOf('class="compact-rider-card')).toBeLessThan(
+      credential.indexOf('class="credential-card"'),
     );
     expect(credential).toContain('公开骑行名片');
     expect(credential).toContain('class="meeting-navigation"');

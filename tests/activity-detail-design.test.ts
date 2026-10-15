@@ -111,7 +111,7 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('wx:if="{{item}}" class="detail-unified-card"');
     expect(template).toContain('class="detail-hero"');
     expect(template).toContain('class="content"');
-    expect(styles).toMatch(/\.detail-hero\s*\{[^}]*4rpx solid var\(--color-border-strong\)/s);
+    expect(styles).toMatch(/\.detail-hero\s*\{[^}]*2rpx solid var\(--color-border\)/s);
     expect(styles).toMatch(/\.detail-hero\s*\{[^}]*var\(--radius-card\)/s);
   });
 

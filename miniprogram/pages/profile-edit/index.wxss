@@ -2,6 +2,13 @@
   background: var(--color-bg);
   color: var(--color-text);
 }
+.profile-form-page .card {
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-display);
+}
+.profile-form-page .field .input {
+  border-width: 2rpx;
+}
 .form-card {
   margin-top: var(--card-gap);
 }
@@ -29,7 +36,7 @@
   width: 144rpx;
   height: 144rpx;
   overflow: hidden;
-  border: 6rpx solid var(--color-border-strong);
+  border: 4rpx solid var(--color-border);
   border-radius: 50%;
   background: var(--color-raised);
 }
@@ -46,7 +53,7 @@
   width: 100%;
   min-height: 88rpx;
   margin-top: 16rpx;
-  border: 4rpx solid var(--color-border-strong);
+  border: 2rpx solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text);
@@ -62,7 +69,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   overflow: hidden;
-  border: 4rpx solid var(--color-border-strong);
+  border: 2rpx solid var(--color-border);
   border-radius: var(--radius-sm);
 }
 .gender-option {
@@ -72,7 +79,7 @@
   min-height: var(--segment-height);
 }
 .gender-option + .gender-option {
-  border-left: 4rpx solid var(--color-border-strong);
+  border-left: 2rpx solid var(--color-border);
 }
 .gender-option radio {
   position: absolute;
@@ -96,12 +103,19 @@
   width: 100%;
   min-height: 88rpx;
 }
+.photo-remove {
+  border: 2rpx solid var(--color-border);
+  border-radius: 999rpx;
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
+  text-decoration: none;
+}
 .photo-list {
   grid-template-columns: 1fr;
 }
 .photo-item {
   overflow: hidden;
-  border: 4rpx solid var(--color-border-strong);
+  border: 2rpx solid var(--color-border);
   border-radius: var(--radius-sm);
 }
 .photo-preview-button {
@@ -119,6 +133,21 @@
   justify-content: center;
   height: 100%;
   color: var(--color-muted);
+}
+.photo-placeholder::before {
+  width: 24rpx;
+  height: 24rpx;
+  margin-right: 12rpx;
+  border: 4rpx solid var(--color-border);
+  border-top-color: var(--color-brand);
+  border-radius: 50%;
+  animation: photo-loading-spin 0.9s linear infinite;
+  content: '';
+}
+@keyframes photo-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 .photo-count {
   margin-top: 8rpx;

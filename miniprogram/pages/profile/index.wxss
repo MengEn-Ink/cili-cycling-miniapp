@@ -147,7 +147,7 @@
   flex: 0 0 64rpx;
   width: 64rpx;
   height: 64rpx;
-  border: 4rpx solid var(--color-border-strong);
+  border: 2rpx solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
 }
@@ -155,7 +155,7 @@
 .menu-icon::after,
 .menu-icon view {
   position: absolute;
-  border: 3rpx solid var(--color-border-strong);
+  border: 2rpx solid var(--color-border-strong);
   content: '';
 }
 .i-profile::before {

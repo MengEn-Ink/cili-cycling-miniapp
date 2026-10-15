@@ -262,6 +262,9 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
 
   it('个人名片与审核页面只保留资料、照片和骑行经验', () => {
     expect(templates).toContain('公开骑行名片');
+    expect(templates.indexOf('credential-rider-heading')).toBeLessThan(
+      templates.indexOf('<article class="credential-ticket">'),
+    );
     expect(templates).toContain('骑行照片');
     expect(templates).toContain('资料仅用于本次活动审核');
     expect(templates).toContain('活动中公开');
