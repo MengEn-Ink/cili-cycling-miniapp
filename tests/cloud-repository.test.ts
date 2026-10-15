@@ -89,11 +89,13 @@ const personalCapabilityCardDto = {
   },
   backgrounds: [
     {
+      file_id: 'cloud://env/profiles/owner/ride-1.jpg',
       url: 'https://temporary.example/ride-1.jpg',
       source: 'user_photo',
       category: 'ride',
     },
     {
+      file_id: 'cloud://env/profiles/owner/bike-1.jpg',
       url: 'https://temporary.example/bike-1.jpg',
       source: 'user_photo',
       category: 'bike',
@@ -356,11 +358,13 @@ describe('CloudRepository 个人骑行名片适配', () => {
       },
       backgrounds: [
         {
+          id: 'cloud://env/profiles/owner/ride-1.jpg',
           url: 'https://temporary.example/ride-1.jpg',
           source: 'user_photo',
           category: 'ride',
         },
         {
+          id: 'cloud://env/profiles/owner/bike-1.jpg',
           url: 'https://temporary.example/bike-1.jpg',
           source: 'user_photo',
           category: 'bike',
@@ -2069,9 +2073,7 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
         id: 'r1',
         displayName: '山野骑手',
         gender: '男',
-        avatarFileId: 'cloud://env/profile-canonical/r1/avatar.jpg',
         avatarUrl: 'https://temp.example/avatar.jpg',
-        backgroundFileId: 'cloud://env/profile-canonical/r1/background.jpg',
         backgroundUrl: 'https://temp.example/background.jpg',
         status: 'approved',
       },
@@ -2108,9 +2110,7 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
       displayName: '',
       gender: '',
       avatarUrl: '',
-      avatarFileId: '',
       backgroundUrl: '',
-      backgroundFileId: '',
       status: 'checked_in',
     });
     expect(result.attendees[1]).toMatchObject({

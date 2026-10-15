@@ -1,3 +1,4 @@
+import { repositoryCache } from '../../repositories/index';
 import type { PersonalCapabilityCard } from '../../models/index';
 import { runPageTask } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
@@ -7,12 +8,14 @@ type PersonalCardView = ReturnType<typeof personalCardViewModel>;
 
 Page({
   loadRequestId: 0,
+  mediaRetryKeys: new Set<string>(),
   data: {
     loading: true,
     error: '',
     card: null as PersonalCardView | null,
   },
   async onShow() {
+    this.mediaRetryKeys.clear();
     await this.load();
   },
   onHide() {
@@ -36,7 +39,10 @@ Page({
     });
     return !result.error;
   },
-  backgroundError(event: {
+  backgroundLoad() {
+    // 每个图片槽位在一次页面生命周期内最多自动重试一次；再次进入页面时 onShow 重置。
+  },
+  async backgroundError(event: {
     currentTarget: { dataset: { index?: number | string; url?: string } };
   }) {
     const card = this.data.card as PersonalCardView | null;
@@ -50,16 +56,45 @@ Page({
             (background: PersonalCardView['backgrounds'][number]) => background.url === failedUrl,
           );
     if (matchingIndex < 0) return;
-    const backgrounds = card.backgrounds.filter(
+    const retryKey = `background:${matchingIndex}`;
+    const requestId = this.loadRequestId;
+    if (failedUrl && !this.mediaRetryKeys.has(retryKey)) {
+      this.mediaRetryKeys.add(retryKey);
+      repositoryCache.invalidateProfiles();
+      const result = await runPageTask(
+        () => rideService.getPersonalCapabilityCard(),
+        '骑行名片照片暂时无法加载',
+      );
+      if (requestId !== this.loadRequestId) return;
+      const refreshedCard = result.data
+        ? personalCardViewModel(result.data as PersonalCapabilityCard)
+        : null;
+      if (refreshedCard) {
+        const refreshedUrl = refreshedCard.backgrounds[matchingIndex]?.url || '';
+        if (refreshedUrl && refreshedUrl !== failedUrl) {
+          this.setData({ error: '', card: refreshedCard });
+          return;
+        }
+      }
+    }
+    const retainedBackgrounds = card.backgrounds.filter(
       (_: PersonalCardView['backgrounds'][number], index: number) => index !== matchingIndex,
     );
+    const backgrounds = retainedBackgrounds.length
+      ? retainedBackgrounds
+      : card.avatarUrl
+        ? [{ url: card.avatarUrl, source: 'avatar' as const, category: 'avatar' }]
+        : [];
     this.setData({
       card: {
         ...card,
         backgrounds,
         hasBackgrounds: backgrounds.length > 0,
         hasMultipleBackgrounds: backgrounds.length > 1,
-        needsProfilePhoto: backgrounds.length === 0,
+        needsProfilePhoto: !retainedBackgrounds.some(
+          (background: PersonalCardView['backgrounds'][number]) =>
+            background.source === 'user_photo',
+        ),
       },
     });
   },

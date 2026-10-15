@@ -21,11 +21,11 @@ describe('设置页', () => {
   });
 
   it('只加载当前版本日志，不注册第三方账号生命周期或入口', () => {
-    expect(page.data.releaseNotes).toHaveLength(15);
+    expect(page.data.releaseNotes).toHaveLength(16);
     expect(page.data.releaseNotes[0]).toMatchObject({
-      version: '2026.10.15.64',
+      version: '2026.10.15.65',
       latest: true,
-      title: '骑行名片和照片复用更稳定',
+      title: '骑行名片与照片改由服务端恢复',
     });
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(
       1,
@@ -35,6 +35,7 @@ describe('设置页', () => {
     );
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
+      '2026.10.15.65',
       '2026.10.15.64',
       '2026.10.15.63',
       '2026.10.15.62',

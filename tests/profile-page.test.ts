@@ -249,6 +249,33 @@ describe('个人中心加载状态', () => {
     expect(page.data.heroFallbackImageUrl).toBe('');
   });
 
+  it('hero 图片失效时清除旧缓存并向云函数重新签发地址', async () => {
+    await page.onShow();
+    await vi.waitFor(() => expect(page.data.heroBackgrounds).toHaveLength(1));
+    rideService.getPersonalCapabilityCard.mockResolvedValueOnce(
+      capabilityCard({
+        backgrounds: [
+          {
+            url: 'https://temporary.example/ride-fresh.jpg',
+            source: 'user_photo',
+            category: 'ride',
+          },
+        ],
+      }),
+    );
+
+    page.heroBackgroundError({
+      currentTarget: {
+        dataset: { index: 0, url: 'https://temporary.example/ride.jpg' },
+      },
+    });
+
+    await vi.waitFor(() => {
+      expect(rideService.getPersonalCapabilityCard).toHaveBeenCalledTimes(2);
+      expect(page.data.heroBackgrounds[0]?.url).toBe('https://temporary.example/ride-fresh.jpg');
+    });
+  });
+
   it('头像加载失败只降级头像，不移除仍可用的 hero 背景', async () => {
     await page.onShow();
     await vi.waitFor(() => expect(page.data.heroAvatarUrl).toBeTruthy());

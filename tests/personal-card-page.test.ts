@@ -77,7 +77,7 @@ describe('个人骑行名片页面行为', () => {
 
   it('单张加载失败时只移除对应背景并重算轮播状态', async () => {
     await page.onShow();
-    page.backgroundError({
+    await page.backgroundError({
       currentTarget: { dataset: { index: 0, url: card.backgrounds[0].url } },
     });
     expect(page.data.card.backgrounds).toHaveLength(1);

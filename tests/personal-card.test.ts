@@ -30,9 +30,16 @@ describe('个人骑行名片 view model', () => {
     });
   });
 
-  it('无照片时启用资料完善入口', () => {
+  it('无照片时用头像补位并保留资料完善入口', () => {
     const view = personalCardViewModel({ ...baseCard, backgrounds: [] });
-    expect(view.hasBackgrounds).toBe(false);
+    expect(view.hasBackgrounds).toBe(true);
+    expect(view.backgrounds).toEqual([
+      {
+        url: 'https://temporary.example/avatar.jpg',
+        source: 'avatar',
+        category: 'avatar',
+      },
+    ]);
     expect(view.hasMultipleBackgrounds).toBe(false);
     expect(view.needsProfilePhoto).toBe(true);
   });

@@ -32,6 +32,7 @@ async function resolveBackgrounds(media, getTempFileURL) {
   return media
     .filter((item) => resolved.has(storageFileId(item)))
     .map((item) => ({
+      file_id: item.file_id,
       url: resolved.get(storageFileId(item)),
       source: item.source,
       category: item.category,

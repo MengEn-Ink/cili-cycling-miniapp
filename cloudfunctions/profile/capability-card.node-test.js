@@ -68,6 +68,7 @@ test('个人名片只返回资料、照片和生成时间，不投影第三方�
     profile: { display_name: '山野骑手', gender: '男', avatar_url: '' },
     backgrounds: [
       {
+        file_id: background,
         url: 'https://temporary.example/ride.jpg',
         source: 'user_photo',
         category: 'ride',
@@ -77,7 +78,7 @@ test('个人名片只返回资料、照片和生成时间，不投影第三方�
   assert.doesNotMatch(JSON.stringify(card), /token|snapshot|summary|coverage|sync|strava/i);
 });
 
-test('显式背景槽位优先，缺失时只回退第一张合法旧照片', async () => {
+test('显式背景槽位优先并继续签发其余合法照片，缺失时回退旧照片', async () => {
   const current = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174001.jpg`;
   const legacy = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174002.jpg`;
   const records = [mediaRecord(current, 'other'), mediaRecord(legacy, 'ride')];
@@ -99,7 +100,13 @@ test('显式背景槽位优先，缺失时只回退第一张合法旧照片', as
     },
     { openid, mediaSecret, now, getTempFileURL },
   );
-  assert.equal(explicit.backgrounds[0].url, 'https://temporary.example/current.jpg');
+  assert.deepEqual(
+    explicit.backgrounds.map((item) => ({ file_id: item.file_id, url: item.url })),
+    [
+      { file_id: current, url: 'https://temporary.example/current.jpg' },
+      { file_id: legacy, url: 'https://temporary.example/legacy.jpg' },
+    ],
+  );
 
   const fallback = await buildCapabilityCard(
     { profile: { photos: [{ file_id: legacy, category: 'ride' }] }, mediaRecords: records },
@@ -107,6 +114,7 @@ test('显式背景槽位优先，缺失时只回退第一张合法旧照片', as
   );
   assert.deepEqual(fallback.backgrounds, [
     {
+      file_id: legacy,
       url: 'https://temporary.example/legacy.jpg',
       source: 'user_photo',
       category: 'ride',

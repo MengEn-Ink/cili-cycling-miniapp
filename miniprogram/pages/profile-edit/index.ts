@@ -1,4 +1,10 @@
-import type { AvatarSource, ClientAvatarSource, Profile } from '../../models';
+import type {
+  AvatarSource,
+  ClientAvatarSource,
+  PersonalCapabilityCard,
+  Profile,
+} from '../../models';
+import { repositoryCache } from '../../repositories/index';
 import { runPageTask } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
 import { invalidateProfilePageCache } from '../../utils/profile-page-cache';
@@ -396,6 +402,8 @@ Page({
   uploadedMediaDigests: new Map<string, string>(),
   // 跨页面共享 fileID -> 临时地址；相同照片只解析一次，失效时由 binderror 主动淘汰。
   photoPreviewRetryIds: new Set<string>(),
+  // 头像在一次页面展示周期内最多自动重试一次，避免动态签名 URL 持续失效时循环回源。
+  avatarPreviewRetryAttempted: false,
   // 加载/保存后服务端回传的实名与电话原值：未改动的字段保存时不重复提交。
   loadedSensitive: sensitiveValues(null),
   data: {
@@ -428,7 +436,12 @@ Page({
     }
   },
   async onShow() {
-    await Promise.all([this.loadAvatarPreview(), this.loadPhotoPreviews()]);
+    this.avatarPreviewRetryAttempted = false;
+    const cardPromise = settleBeforeDeadline(
+      rideService.getPersonalCapabilityCard(),
+      AVATAR_PREVIEW_DEADLINE_MS,
+    );
+    await Promise.all([this.loadAvatarPreview(cardPromise), this.loadPhotoPreviews(cardPromise)]);
   },
   onHide() {
     this.avatarPreviewRequestId += 1;
@@ -438,17 +451,15 @@ Page({
     this.avatarPreviewRequestId += 1;
     this.photoPreviewRequestId += 1;
   },
-  async loadAvatarPreview() {
+  async loadAvatarPreview(cardPromise?: Promise<PersonalCapabilityCard | null>) {
     if (!this.data.p?.avatarId) {
       this.setData({ avatarPreviewUrl: '' });
       return;
     }
     const requestId = ++this.avatarPreviewRequestId;
     const errorRevision = this.mediaErrorRevision;
-    const card = await settleBeforeDeadline(
-      rideService.getPersonalCapabilityCard(),
-      AVATAR_PREVIEW_DEADLINE_MS,
-    );
+    const card = await (cardPromise ||
+      settleBeforeDeadline(rideService.getPersonalCapabilityCard(), AVATAR_PREVIEW_DEADLINE_MS));
     if (requestId !== this.avatarPreviewRequestId) return;
     if (!card) {
       if (
@@ -493,7 +504,7 @@ Page({
       getTempFileURL: (options) => fn.call(cloud, options),
     });
   },
-  async loadPhotoPreviews() {
+  async loadPhotoPreviews(cardPromise?: Promise<PersonalCapabilityCard | null>) {
     const current = this.data.p as Profile | null;
     if (!current) return;
     const p = normalizeBackgroundProfile(current) as Profile;
@@ -513,11 +524,26 @@ Page({
     );
     const resolved: Record<string, string> = {};
     if (unresolved.length) {
+      const card = await (cardPromise ||
+        settleBeforeDeadline(rideService.getPersonalCapabilityCard(), AVATAR_PREVIEW_DEADLINE_MS));
+      const serverBackgrounds = new Map(
+        (card?.backgrounds || [])
+          .filter(
+            (background) =>
+              background.source === 'user_photo' && background.id && safeHttpsUrl(background.url),
+          )
+          .map((background) => [background.id as string, safeHttpsUrl(background.url)]),
+      );
+      unresolved.forEach((photo) => {
+        const serverUrl = serverBackgrounds.get(photo.id);
+        if (serverUrl) resolved[photo.id] = serverUrl;
+      });
+      const clientUnresolved = unresolved.filter((photo) => !resolved[photo.id]);
       const cache = this.ensurePhotoUrlCache();
-      if (cache) {
+      if (cache && clientUnresolved.length) {
         try {
-          // 缓存命中且仍在有效期的直接复用；临期/缺失时由缓存内部合并为一次批量解析。
-          const map = await cache.resolve(unresolved.map((photo) => photo.id));
+          // 服务端签名地址不可用时才由客户端缓存兜底；受保护媒体不依赖客户端存储读权限。
+          const map = await cache.resolve(clientUnresolved.map((photo) => photo.id));
           for (const [id, url] of Object.entries(map)) {
             const safe = safeHttpsUrl(url);
             if (safe) resolved[id] = safe;
@@ -552,6 +578,7 @@ Page({
     // 旧节点的迟到 error 不得清空已经刷新的新地址。
     if (!current || (failedUrl && current.previewUrl !== failedUrl)) return;
     this.ensurePhotoUrlCache()?.invalidate([id]);
+    repositoryCache.invalidateProfiles();
     this.setData({
       photoItems: this.data.photoItems.map((item: PhotoItem) =>
         item.id === id ? { ...item, previewUrl: '', previewState: 'failed' } : item,
@@ -566,6 +593,7 @@ Page({
     if (!id) return;
     this.photoPreviewRetryIds.delete(id);
     this.ensurePhotoUrlCache()?.invalidate([id]);
+    repositoryCache.invalidateProfiles();
     void this.loadPhotoPreviews();
   },
   applyAvatarProfile(authoritative: Profile) {
@@ -674,8 +702,13 @@ Page({
   },
   avatarPreviewError(event: any) {
     const failedUrl = event?.currentTarget?.dataset?.url;
-    if (typeof failedUrl === 'string' && failedUrl === this.data.avatarPreviewUrl)
+    if (typeof failedUrl === 'string' && failedUrl === this.data.avatarPreviewUrl) {
+      repositoryCache.invalidateProfiles();
       this.setData({ avatarPreviewUrl: '' });
+      if (this.avatarPreviewRetryAttempted) return;
+      this.avatarPreviewRetryAttempted = true;
+      void this.loadAvatarPreview();
+    }
   },
   async addPhoto() {
     // 添加照片加在途锁，避免快速连点触发多次并发上传产生孤立文件或状态错乱。
