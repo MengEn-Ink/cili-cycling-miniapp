@@ -3,7 +3,36 @@
   const templates = window.pageTemplates;
   const pageById = new Map(data.pages.map((page) => [page.id, page]));
   const tabRoutes = ['activities', 'registrations', 'profile'];
-  const overviewSections = new Set(['overview', 'requirements', 'prd', 'prototype']);
+  const overviewSections = new Set(['overview', 'requirements', 'prd', 'guide', 'prototype']);
+  const setupSteps = [
+    ['01', '先定目标与主体', '确认核心用户、服务范围、是否商用，再选择个人或企业主体；名称、简介、类目和实际功能保持一致。'],
+    ['02', '注册并取得 AppID', '在微信公众平台注册小程序；AppID 位于“开发—开发设置”，它是项目标识，不是服务端密钥。'],
+    ['03', '选择技术路线', '简单项目优先原生小程序；需要跨端复用再评估 Taro/uni-app；希望少运维可选微信云开发。'],
+    ['04', '搭建开发环境', '安装 Node.js、微信开发者工具与 Git，导入项目后先跑模拟器，再做真机预览和弱网验证。'],
+    ['05', '划清数据边界', '敏感写操作进云函数；客户端不保存 AppSecret，只申请完成当前动作所需的最小权限。'],
+    ['06', '并行准备合规', '开发同时确认服务类目、备案、用户隐私保护指引和内容安全方案，避免完成后再返工。'],
+    ['07', '测试关键旅程', '覆盖游客浏览、登录授权、图片上传、数据保存、分享、失败重试，以及不同机型和网络。'],
+    ['08', '上传并提交审核', '开发者工具上传代码，在小程序后台提交审核；版本备注应准确描述本次用户可见变化。'],
+    ['09', '发布与持续运营', '审核通过后仍需执行发布；上线后监控错误、成本、内容安全结果，并保留可回滚版本。'],
+  ];
+  const stackChoices = [
+    ['原生小程序', '首选', '微信能力直连、包体可控，适合单端和中小团队；此里采用这条路线。'],
+    ['跨端框架', '按需', '已有 React/Vue 团队且必须复用多端代码时评估，同时预算平台差异与调试成本。'],
+    ['微信云开发', '低运维', '数据库、存储和云函数一体化，适合快速上线；仍需做环境隔离、权限规则和成本监控。'],
+    ['自建后端', '高控制', '需要复杂集成或独立基础设施时选择，同时承担服务器、域名、安全和运维责任。'],
+  ];
+  const coreVariables = [
+    ['AppID', '微信公众平台 → 开发 → 开发设置', '项目标识；可进入 project.config.json'],
+    ['CloudBase EnvID', '开发者工具 → 云开发 → 环境设置', '环境标识；开发、测试、生产应明确归属'],
+    ['小程序 CI 私钥', '公众平台 → 开发管理 → 开发设置 → 小程序代码上传', 'Secret；仅放 CI/Aime Secret，不进仓库'],
+    ['CloudBase API Key', 'CloudBase 控制台 → API Key / 访问密钥（以当前入口为准）', 'Secret；仅部署环境需要，按有效期轮换'],
+  ];
+  const projectAudit = [
+    ['P0', '补齐 UGC 内容安全闭环', '活动标题、说明、昵称和图片目前未见统一安全检查入口；建议在云函数写入前集中接入 msgSecCheck / mediaCheckAsync，并保留审核结果与失败策略。'],
+    ['P1', '把合规检查变成发布门禁', '将备案状态、服务类目、隐私保护指引与实际接口调用的核对加入提审清单；规则以公众平台当前提示为准。'],
+    ['P1', '明确多环境映射', '当前 runtime.ts 固定一个 CloudBase EnvID；在准备正式环境前建立开发/测试/生产映射与防误连校验。'],
+    ['P2', '持续清理文档漂移', '产品已移除内嵌 Route Embed，但部分说明仍沿用旧表述；本次先修 README 与需求文档，后续由契约测试保护关键能力描述。'],
+  ];
   const routeHistory = [];
   let currentRoute = 'activities';
   let currentState = '';
@@ -67,6 +96,30 @@
           `<a href="#${page.id}"><small>${String(index + 1).padStart(2, '0')} · ${page.group} · ${page.path}</small><b>${page.title}</b><p>${page.copy}</p><p>关键状态：${page.states.map(([, label]) => label).join(' / ')}</p></a>`,
       )
       .join('');
+    const setupTimeline = setupSteps
+      .map(
+        ([number, title, description]) =>
+          `<article class="guide-step"><span>${number}</span><h3>${title}</h3><p>${description}</p></article>`,
+      )
+      .join('');
+    const stackCards = stackChoices
+      .map(
+        ([title, badge, description]) =>
+          `<article class="stack-choice"><div><h3>${title}</h3><span>${badge}</span></div><p>${description}</p></article>`,
+      )
+      .join('');
+    const variableRows = coreVariables
+      .map(
+        ([name, source, usage]) =>
+          `<tr><th scope="row"><code>${name}</code></th><td>${source}</td><td>${usage}</td></tr>`,
+      )
+      .join('');
+    const auditRows = projectAudit
+      .map(
+        ([priority, title, description]) =>
+          `<article class="audit-item"><span class="audit-priority audit-${priority.toLowerCase()}">${priority}</span><div><h3>${title}</h3><p>${description}</p></div></article>`,
+      )
+      .join('');
     const contrast = contrastRows
       .map(([name, fg, bg, min, usage]) => {
         const value = ratio(fg, bg);
@@ -125,8 +178,79 @@
         </div>
       </section>
 
+      <section class="product-section guide-section" id="guide">
+        <div class="guide-heading">
+          <div>
+            <p class="eyebrow">03 · 从零搭建</p>
+            <h2>先把产品、平台和安全边界想清楚，再开始写代码</h2>
+          </div>
+          <p>这份路线把“做出一个页面”扩展为可审核、可发布、可运营的小程序。政策、费用和处理时长会变化，最终以微信公众平台当前页面为准。</p>
+        </div>
+
+        <div class="guide-callout">
+          <b>先判断交付物</b>
+          <p>网页、React 或普通 HTML 不能直接上传为微信小程序。需要使用 WXML / WXSS / JavaScript 或 TypeScript，并按小程序的页面、组件、权限和生命周期重新实现。</p>
+        </div>
+
+        <div class="guide-timeline" aria-label="微信小程序从零到发布九步">${setupTimeline}</div>
+
+        <div class="guide-subsection">
+          <p class="section-label">技术选型</p>
+          <h2>不是框架越多越专业，而是边界越清楚越容易上线</h2>
+          <div class="stack-grid">${stackCards}</div>
+        </div>
+
+        <div class="guide-subsection">
+          <p class="section-label">核心环境变量</p>
+          <h2>只准备真正影响构建与部署的四项</h2>
+          <p class="card-hint">AppSecret、CI 私钥和 API Key 都不是前端变量。示例文件只记录键名，真实值进入受控 Secret 管理器。</p>
+          <div class="table-scroll">
+            <table class="guide-table">
+              <thead><tr><th>变量</th><th>获取路径</th><th>边界</th></tr></thead>
+              <tbody>${variableRows}</tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="guide-columns">
+          <article>
+            <p class="section-label">提审前检查</p>
+            <h3>功能、合规和真实设备一起过</h3>
+            <ul class="check-list">
+              <li>名称、简介、服务类目、备案与实际功能一致</li>
+              <li>游客可先浏览，敏感信息在需要时再授权</li>
+              <li>隐私保护指引覆盖真实调用的个人信息接口</li>
+              <li>用户输入的文字、图片与音频经过服务端内容安全检查</li>
+              <li>加载、空、失败、弱网和权限拒绝都有恢复路径</li>
+              <li>分享、登录、上传、保存和核心业务旅程完成真机回归</li>
+              <li>审核通过后执行发布，并核对线上版本与回滚点</li>
+            </ul>
+          </article>
+          <article class="fact-check">
+            <p class="section-label">不把经验帖当平台规则</p>
+            <h3>这些结论必须到后台复核</h3>
+            <p>认证费用、审核时长、名称敏感词、个人主体能力、支付与广告门槛会随主体、类目、地区和平台规则变化，不在项目文档中写死。</p>
+            <div class="official-links">
+              <a href="https://mp.weixin.qq.com/" target="_blank" rel="noreferrer">微信公众平台</a>
+              <a href="https://developers.weixin.qq.com/miniprogram/dev/framework/" target="_blank" rel="noreferrer">小程序开发文档</a>
+              <a href="https://developers.weixin.qq.com/miniprogram/dev/wxcloudservice/wxcloud/quick-start/miniprogram.html" target="_blank" rel="noreferrer">云开发快速开始</a>
+              <a href="https://developers.weixin.qq.com/miniprogram/dev/framework/user-privacy/" target="_blank" rel="noreferrer">隐私保护</a>
+              <a href="https://developers.weixin.qq.com/miniprogram/dev/server/API/sec-center/sec-check/" target="_blank" rel="noreferrer">内容安全</a>
+              <a href="https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/share.html" target="_blank" rel="noreferrer">转发能力</a>
+            </div>
+          </article>
+        </div>
+
+        <div class="guide-subsection project-audit">
+          <p class="section-label">当前项目审计</p>
+          <h2>已有基础扎实，下一步优先补安全与发布治理</h2>
+          <p class="card-hint">已确认：可信 OPENID、管理员白名单、敏感字段加密、加载/失败状态、分享、自动测试与微信开发版上传均已落地。以下只列仍有代码证据的改进项。</p>
+          <div class="audit-list">${auditRows}</div>
+        </div>
+      </section>
+
       <section class="product-section" id="prototype">
-        <p class="eyebrow">03 · 交互原型</p>
+        <p class="eyebrow">04 · 交互原型</p>
         <h2>13 个真实页面，与 app.json 路由一一对应</h2>
         <p class="card-hint">官方路线独立页已从产品路由删除；活动详情直接承载路线事实与 GPX 能力，Strava 路线只提供规范化链接复制。</p>
         <div class="overview-grid">${pageCards}</div>
