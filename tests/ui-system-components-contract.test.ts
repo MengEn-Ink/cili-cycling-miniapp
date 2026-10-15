@@ -39,6 +39,12 @@ describe('UI 重构通用组件契约', () => {
     expect(template).toContain('wx:for="{{items}}"');
     expect(template).toContain('metric-grid--narrow-{{narrowColumns}}');
     expect(styles).toContain('@media (max-width: 340px)');
+    expect(styles).toMatch(
+      /\.metric-grid__value\s*\{[^}]*white-space:\s*nowrap[^}]*font-size:\s*48rpx/s,
+    );
+    expect(styles).toMatch(
+      /\.metric-grid__unit\s*\{[^}]*align-self:\s*end[^}]*padding-bottom:\s*6rpx/s,
+    );
   });
 
   it('详情与个人资料页注册并使用通用组件', () => {
@@ -48,7 +54,7 @@ describe('UI 重构通用组件契约', () => {
     const profileTemplate = read('miniprogram/pages/profile/index.wxml');
 
     expect(detailConfig).toContain('"metric-grid": "/components/metric-grid/index"');
-    expect(detailTemplate).toContain('<metric-grid class="metric-panel"');
+    expect(detailTemplate).toContain('<metric-grid class="detail-metric-panel"');
     expect(profileConfig).toContain('"cili-avatar": "/components/cili-avatar/index"');
     expect(profileTemplate).toContain('<cili-avatar');
   });

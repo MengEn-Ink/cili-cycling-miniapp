@@ -51,7 +51,8 @@
       </view>
       <view class="image-grid">
         <view wx:for="{{images}}" wx:key="*this" class="image-item">
-          <image class="image-preview" src="{{imagePreviewUrls[index] || item}}" mode="aspectFill" />
+          <image wx:if="{{imagePreviewUrls[index]}}" class="image-preview" src="{{imagePreviewUrls[index]}}" mode="aspectFill" data-file-id="{{item}}" bindload="storedMediaPreviewLoad" binderror="storedMediaPreviewError" />
+          <button wx:else class="stored-media-placeholder" data-file-id="{{item}}" bindtap="retryStoredMediaPreview">{{mediaPreviewLoading ? '图片加载中…' : '图片加载失败，点击重试'}}</button>
           <view wx:if="{{index === 0}}" class="cover-badge">封面</view>
           <view class="image-actions">
             <button wx:if="{{index > 0}}" class="image-action" bindtap="setCover" data-index="{{index}}">设为封面</button>
@@ -137,7 +138,8 @@
         <view class="field-label">活动群二维码</view>
         <view class="section-help">可选上传 1 张微信群二维码，便于已报名成员进群；上传超过 7 天会提示可能过期。</view>
         <view wx:if="{{groupQrCode}}" class="group-qr-card">
-          <image class="group-qr-preview" src="{{groupQrPreviewUrl || groupQrCode}}" mode="aspectFit" />
+          <image wx:if="{{groupQrPreviewUrl}}" class="group-qr-preview" src="{{groupQrPreviewUrl}}" mode="aspectFit" data-file-id="{{groupQrCode}}" bindload="storedMediaPreviewLoad" binderror="storedMediaPreviewError" />
+          <button wx:else class="stored-media-placeholder group-qr-preview" data-file-id="{{groupQrCode}}" bindtap="retryStoredMediaPreview">{{mediaPreviewLoading ? '二维码加载中…' : '二维码加载失败，点击重试'}}</button>
           <view wx:if="{{groupQrCodeExpired}}" class="group-qr-warning">二维码可能已过期，请替换为最新图片。</view>
           <button class="image-action image-action--danger" bindtap="removeGroupQrCode">删除二维码</button>
         </view>

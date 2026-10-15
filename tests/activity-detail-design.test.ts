@@ -111,6 +111,14 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('wx:if="{{item}}" class="detail-unified-card"');
     expect(template).toContain('class="detail-hero"');
     expect(template).toContain('class="content"');
+    expect(template).toContain('class="route-outline-image"');
+    expect(template).toContain('class="elevation-image"');
+    expect(template).toContain('wx:elif="{{hasRouteOutline}}" id="route-outline-canvas"');
+    expect(template).toContain('wx:elif="{{hasElevationProfile}}" id="elevation-canvas"');
+    expect(styles).toMatch(/\.detail-metric-panel\s*\{[^}]*width:\s*100%/s);
+    expect(styles).toMatch(
+      /\.detail-page\s*\{[^}]*var\(--fixed-action-reserve\)[^}]*var\(--card-gap\)/s,
+    );
     expect(styles).toMatch(/\.detail-hero\s*\{[^}]*2rpx solid var\(--color-border\)/s);
     expect(styles).toMatch(/\.detail-hero\s*\{[^}]*var\(--radius-card\)/s);
   });
@@ -414,7 +422,7 @@ describe('活动详情设计与日期契约', () => {
   it('使用两列核心指标、同级卡片和轻量安全区 CTA', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
-    expect(template).toContain('<metric-grid class="metric-panel"');
+    expect(template).toContain('<metric-grid class="detail-metric-panel"');
     expect(template).toContain("value: estimatedRideTime || '--'");
     expect(template).toContain("label: '已通过'");
     expect(template).toContain('columns="2" narrow-columns="2"');

@@ -245,6 +245,56 @@ describe('活动详情 CTA 接线', () => {
     expect(rideService.listRegistrations).toHaveBeenCalledOnce();
   });
 
+  it('路线 canvas 绘制后导出为普通图片，避免真机原生层遮挡固定按钮', () => {
+    const canvasToTempFilePath = vi.fn((options: any) =>
+      options.success({ tempFilePath: 'wxfile://route-outline.png' }),
+    );
+    Object.assign(wx, { canvasToTempFilePath });
+    const canvas = { width: 640, height: 360 };
+
+    page.snapshotCanvas(canvas, 320, 180, 'routeOutlineImage');
+
+    expect(page.data.routeOutlineImage).toBe('wxfile://route-outline.png');
+    expect(canvasToTempFilePath).toHaveBeenCalledWith(
+      expect.objectContaining({ canvas, width: 320, height: 180, destWidth: 640, destHeight: 360 }),
+      page,
+    );
+  });
+
+  it('旧活动的异步导图结果不能覆盖新活动', () => {
+    let exportSuccess: ((result: { tempFilePath?: string }) => void) | undefined;
+    Object.assign(wx, {
+      canvasToTempFilePath: vi.fn((options: any) => {
+        exportSuccess = options.success;
+      }),
+    });
+    const canvas = { width: 640, height: 360 };
+
+    page.loadRequestId = 1;
+    page.snapshotCanvas(canvas, 320, 180, 'routeOutlineImage');
+    page.loadRequestId = 2;
+    exportSuccess?.({ tempFilePath: 'wxfile://stale-route-outline.png' });
+
+    expect(page.data.routeOutlineImage).toBe('');
+  });
+
+  it('活动仅保存封面或封面不在图片列表时仍完整回显媒体', async () => {
+    rideService.getActivity.mockResolvedValue(
+      activity({
+        coverImage: 'https://example.com/cover.jpg',
+        images: ['https://example.com/detail.jpg', 'https://example.com/cover.jpg'],
+      }),
+    );
+    rideService.listRegistrations.mockResolvedValue([]);
+
+    await page.load('a1');
+
+    expect(page.data.galleryImages).toEqual([
+      'https://example.com/cover.jpg',
+      'https://example.com/detail.jpg',
+    ]);
+  });
+
   it('活动封面加载失败后降级为纯色 Hero，重新加载时恢复媒体尝试', async () => {
     page.coverImageError();
     expect(page.data.coverFailed).toBe(true);

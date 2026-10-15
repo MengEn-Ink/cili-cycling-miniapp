@@ -55,6 +55,21 @@
 .map-button {
   align-self: stretch;
 }
+.stored-media-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 24rpx;
+  border: 0;
+  border-radius: 0;
+  background: var(--color-raised);
+  color: var(--color-muted);
+  font-size: 24rpx;
+  line-height: 36rpx;
+  text-align: center;
+}
 .image-count {
   margin-left: auto;
 }
