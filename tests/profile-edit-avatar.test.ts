@@ -237,6 +237,31 @@ describe('资料编辑头像交互', () => {
     expect(page.data.avatarPreviewUrl).toBe('https://temporary.example/signed-avatar.jpg');
   });
 
+  it('资料照片优先复用云函数签发地址，不要求客户端读取受保护存储', async () => {
+    const fileId = 'cloud://env/profile-canonical/owner/background.jpg';
+    const getTempFileURL = vi.fn();
+    Object.assign(wx, { cloud: { getTempFileURL } });
+    page.data.p.photos = [{ id: fileId, category: 'ride' }];
+    rideService.getPersonalCapabilityCard.mockResolvedValueOnce({
+      ...capabilityCard(),
+      backgrounds: [
+        {
+          id: fileId,
+          url: 'https://temporary.example/server-signed-background.jpg',
+          source: 'user_photo',
+          category: 'ride',
+        },
+      ],
+    });
+
+    await page.onShow();
+
+    expect(page.data.photoItems[0].previewUrl).toBe(
+      'https://temporary.example/server-signed-background.jpg',
+    );
+    expect(getTempFileURL).not.toHaveBeenCalled();
+  });
+
   it('每次回到编辑页都会刷新头像与背景图预览', async () => {
     const getTempFileURL = vi.fn().mockResolvedValue({
       fileList: [

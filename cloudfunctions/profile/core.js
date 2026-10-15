@@ -683,25 +683,38 @@ function validateMediaUpdate(current, update, openid, secretValue, mediaRecords 
   return { data, activate_ids: [...activate], demote_ids: demote };
 }
 function ownerMedia(profile, openid, secretValue, mediaRecords = []) {
-  const background = effectiveBackgroundPhoto(profile);
-  if (!background) return [];
+  const candidates = [
+    effectiveBackgroundPhoto(profile),
+    ...(Array.isArray(profile && profile.photos) ? profile.photos : []),
+  ].filter(Boolean);
+  const unique = [];
+  const seen = new Set();
+  for (const candidate of candidates) {
+    if (!candidate || seen.has(candidate.file_id)) continue;
+    seen.add(candidate.file_id);
+    unique.push(candidate);
+  }
   const records = new Map(mediaRecords.map((record) => [record && record.file_id, record]));
-  const record = records.get(background.file_id);
-  const storageFileId = canonicalFileForRecord(record, background.file_id, openid, secretValue);
-  if (
-    !isOwnerMedia(background.file_id, openid, secretValue) ||
-    !registeredMedia(record, background, openid) ||
-    !storageFileId
-  )
-    return [];
-  return [
-    {
-      file_id: background.file_id,
-      storage_file_id: storageFileId,
-      category: background.category,
-      source: 'user_photo',
-    },
-  ];
+  return unique
+    .flatMap((background) => {
+      const record = records.get(background.file_id);
+      const storageFileId = canonicalFileForRecord(record, background.file_id, openid, secretValue);
+      if (
+        !isOwnerMedia(background.file_id, openid, secretValue) ||
+        !registeredMedia(record, background, openid) ||
+        !storageFileId
+      )
+        return [];
+      return [
+        {
+          file_id: background.file_id,
+          storage_file_id: storageFileId,
+          category: background.category,
+          source: 'user_photo',
+        },
+      ];
+    })
+    .slice(0, 3);
 }
 function ownerAvatarMedia(profile, openid, secretValue, mediaRecords = []) {
   const value = normalizeAvatarProfile(profile && typeof profile === 'object' ? profile : {});

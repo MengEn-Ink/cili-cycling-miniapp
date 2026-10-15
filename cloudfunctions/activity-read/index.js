@@ -172,9 +172,7 @@ function publicAttendee(registration, profile, media = {}) {
           ? profile.gender
           : '',
     ),
-    avatar_file_id: typeof media.avatarFileId === 'string' ? media.avatarFileId : '',
     avatar_url: safeHttpsUrl(media.avatarUrl),
-    background_file_id: typeof media.backgroundFileId === 'string' ? media.backgroundFileId : '',
     background_url: safeHttpsUrl(media.backgroundUrl),
     status: registration.status,
   };
@@ -238,8 +236,8 @@ async function loadProfiles(openids) {
   return profiles;
 }
 
-// 依据资料批量解析公开头像与骑行名片背景的 canonical fileId 和临时访问地址。
-// entries: [{ openid, profile }]；返回 Map(openid -> canonical fileId 与临时访问地址)。
+// 依据资料批量解析公开头像与骑行名片背景的服务端签名临时访问地址。
+// canonical fileId 仅在云函数内部用于签名，不下发客户端，避免受保护存储权限失败或标识泄露。
 async function resolveProfileMediaTempUrls(entries, { includeBackground = false } = {}) {
   const sourceMediaIds = [
     ...new Set(

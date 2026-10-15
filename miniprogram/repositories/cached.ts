@@ -102,8 +102,12 @@ export interface CacheMetricsSnapshot {
 export interface RepositoryCacheControl {
   /** 同步读取首页首屏的新鲜缓存，供页面在网络刷新前避免空态闪烁。 */
   peekActivityPage(view: PublicActivityView): PublicActivityPage | undefined;
+  /** 单场活动的签名媒体失效后，仅让该详情重新回源。 */
+  invalidateActivity(id: string): void;
   /** 活动或报名发生变化后，让活动列表/详情下次读取重新回源。 */
   invalidateActivities(): void;
+  /** 资料媒体加载失败后，让资料和骑行名片下次读取重新向云函数签发地址。 */
+  invalidateProfiles(): void;
   /** 账号切换或退出时清空全部只读缓存。 */
   clear(): void;
   /** 读取命中率等指标快照。 */
@@ -159,7 +163,9 @@ export class CachingRepository implements RideRepository {
     this.cacheControl = {
       peekActivityPage: (view) =>
         this.peekFresh<PublicActivityPage>(`${ACTIVITY_PREFIX}page:${view}:`),
+      invalidateActivity: (id) => this.invalidatePrefix(`${ACTIVITY_PREFIX}item:${id}`),
       invalidateActivities: () => this.invalidatePrefix(ACTIVITY_PREFIX),
+      invalidateProfiles: () => this.invalidatePrefix(PROFILE_PREFIX),
       clear: () => {
         this.cache.clear();
         this.inflight.clear();

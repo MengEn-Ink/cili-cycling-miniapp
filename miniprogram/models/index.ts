@@ -73,9 +73,7 @@ export interface ActivityAttendee {
   id: string;
   displayName: string;
   gender: string;
-  avatarFileId: string;
   avatarUrl: string;
-  backgroundFileId: string;
   backgroundUrl: string;
   status: 'approved' | 'checked_in';
 }
@@ -211,6 +209,7 @@ export interface ProfileUpdate {
   emergencyPhone?: string;
 }
 export interface PersonalCapabilityCardBackground {
+  id?: string;
   url: string;
   source: 'user_photo' | 'avatar';
   category: string;

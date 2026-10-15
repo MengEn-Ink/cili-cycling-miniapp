@@ -1,9 +1,9 @@
+import { repositoryCache } from '../../repositories/index';
 import { appStore } from '../../store/app-store';
 import { rideService } from '../../services/ride-service';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
 import { genderView } from '../../utils/gender';
-import { getSharedTempFileUrlCache, type TempFileUrlCache } from '../../utils/temp-file-url';
 import { validateRegistrationProfile } from '../../utils/validation';
 import { drawRouteOutline as renderRouteOutline } from '../../utils/route-outline';
 import {
@@ -346,7 +346,6 @@ Page({
         () => {
           this.drawElevation();
           this.drawRouteOutline();
-          void this.refreshAttendeeMedia(requestId);
         },
       );
     } catch (error) {
@@ -430,81 +429,26 @@ Page({
         this.snapshotCanvas(canvas, target.width, target.height, 'routeOutlineImage');
       });
   },
-  ensureAttendeeMediaCache(): TempFileUrlCache | null {
-    const cloud = wx.cloud as
-      | {
-          getTempFileURL?(options: { fileList: string[] }): Promise<{
-            fileList?: { fileID?: string; tempFileURL?: string }[];
-          }>;
-        }
-      | undefined;
-    if (typeof cloud?.getTempFileURL !== 'function') return null;
-    const getTempFileURL = cloud.getTempFileURL;
-    return getSharedTempFileUrlCache({
-      getTempFileURL: (options) => getTempFileURL.call(cloud, options),
-    });
-  },
-  async refreshAttendeeMedia(requestId: number) {
-    const cache = this.ensureAttendeeMediaCache();
-    if (!cache || !this.data.attendees.length) return;
-    const attendees = await Promise.all(
-      this.data.attendees.map(async (attendee: any) => {
-        const [avatarUrl, backgroundUrl] = await Promise.all([
-          attendee.avatarFileId
-            ? cache
-                .resolve([attendee.avatarFileId])
-                .then(
-                  (urls: Record<string, string>) =>
-                    urls[attendee.avatarFileId] || attendee.avatarUrl || '',
-                )
-                .catch(() => attendee.avatarUrl || '')
-            : Promise.resolve(attendee.avatarUrl || ''),
-          attendee.backgroundFileId
-            ? cache
-                .resolve([attendee.backgroundFileId])
-                .then(
-                  (urls: Record<string, string>) =>
-                    urls[attendee.backgroundFileId] || attendee.backgroundUrl || '',
-                )
-                .catch(() => attendee.backgroundUrl || '')
-            : Promise.resolve(attendee.backgroundUrl || ''),
-        ]);
-        return { ...attendee, avatarUrl, backgroundUrl };
-      }),
-    );
-    if (requestId !== this.loadRequestId || this.unloaded) return;
-    const selected = this.data.selectedAttendee;
-    this.safeSetData({
-      attendees,
-      selectedAttendee: selected
-        ? {
-            ...selected,
-            ...(attendees.find((attendee: any) => attendee.id === selected.id) || {}),
-          }
-        : null,
-    });
-  },
   async retryAttendeeMedia(attendeeId: string, kind: 'avatar' | 'background', failedUrl: string) {
     const attendee = this.data.attendees.find((item: any) => item.id === attendeeId);
-    if (!attendee) return;
+    const activityId = this.data.item?.id;
+    if (!attendee || !activityId) return;
     const urlKey = kind === 'avatar' ? 'avatarUrl' : 'backgroundUrl';
-    const fileKey = kind === 'avatar' ? 'avatarFileId' : 'backgroundFileId';
     const selectedUrl =
       this.data.selectedAttendee?.id === attendeeId ? this.data.selectedAttendee[urlKey] : '';
     if (failedUrl && attendee[urlKey] !== failedUrl && selectedUrl !== failedUrl) return;
-    const fileId =
-      attendee[fileKey] ||
-      (this.data.selectedAttendee?.id === attendeeId ? this.data.selectedAttendee[fileKey] : '');
     const retryKey = `${attendeeId}:${kind}`;
-    const cache = this.ensureAttendeeMediaCache();
-    if (fileId && cache && !this.attendeeMediaRetryKeys.has(retryKey)) {
+    if (!this.attendeeMediaRetryKeys.has(retryKey)) {
       this.attendeeMediaRetryKeys.add(retryKey);
-      cache.invalidate([fileId]);
-      const refreshedUrl = await cache
-        .resolve([fileId])
-        .then((urls: Record<string, string>) => urls[fileId] || '')
-        .catch(() => '');
-      if (refreshedUrl && !this.unloaded) {
+      const requestId = this.loadRequestId;
+      repositoryCache.invalidateActivity(activityId);
+      const refreshedActivity = await rideService.getActivity(activityId).catch(() => null);
+      if (requestId !== this.loadRequestId || this.unloaded) return;
+      const refreshedAttendee = refreshedActivity?.attendees?.find(
+        (item: any) => item.id === attendeeId,
+      );
+      const refreshedUrl = refreshedAttendee?.[urlKey] || '';
+      if (refreshedUrl && refreshedUrl !== failedUrl) {
         const attendees = this.data.attendees.map((item: any) =>
           item.id === attendeeId ? { ...item, [urlKey]: refreshedUrl } : item,
         );

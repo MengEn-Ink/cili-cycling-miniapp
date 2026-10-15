@@ -1,4 +1,5 @@
 import type { PersonalCapabilityCard, Profile } from '../../models';
+import { repositoryCache } from '../../repositories/index';
 import { runPageTask, type PageTaskState } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
 import { appStore } from '../../store/app-store';
@@ -124,6 +125,8 @@ Page({
   } | null,
   cardLoadPromise: null as Promise<void> | null,
   hydratedCache: null as ProfilePageCache | null,
+  heroMediaRetryUrls: new Set<string>(),
+  heroMediaRecoveryPending: false,
   data: {
     profile: null as Profile | null,
     loading: true,
@@ -170,6 +173,7 @@ Page({
   },
   async onShow() {
     this.pageVisible = true;
+    this.heroMediaRetryUrls.clear();
     this.lifecycleRevision += 1;
     const cache = this.hydrateCache();
     await this.load(false, !cache || !isProfilePageCacheFresh(cache));
@@ -309,11 +313,14 @@ Page({
 
         const cachedAt = Date.now();
         const nextCardView = cardView(card);
-        const hasStableImages = Boolean(
-          this.data.heroBackgrounds.length ||
-          this.data.heroAvatarUrl ||
-          this.data.heroBackgroundAvatarUrl,
-        );
+        const hasStableImages =
+          !this.heroMediaRecoveryPending &&
+          Boolean(
+            this.data.heroBackgrounds.length ||
+            this.data.heroAvatarUrl ||
+            this.data.heroBackgroundAvatarUrl,
+          );
+        this.heroMediaRecoveryPending = false;
         this.setData({
           refreshing: false,
           refreshMessage: profile ? '已更新全部名片信息' : this.data.refreshMessage,
@@ -471,6 +478,15 @@ Page({
     if (typeof current !== 'string' || !/^https:\/\/[^\s/]+(?:\/[^\s]*)?$/i.test(current)) return;
     wx.previewImage({ current, urls: [current] });
   },
+  recoverHeroMedia(retryKey: string) {
+    if (!retryKey || this.heroMediaRetryUrls.has(retryKey)) return;
+    this.heroMediaRetryUrls.add(retryKey);
+    this.heroMediaRecoveryPending = true;
+    repositoryCache.invalidateProfiles();
+    clearProfilePageCache();
+    this.hydratedCache = null;
+    void this.load(false, true);
+  },
   heroBackgroundError(event: HeroImageErrorEvent) {
     const backgrounds = this.data.heroBackgrounds as { url: string }[];
     const failedUrl = event.currentTarget.dataset.url;
@@ -483,10 +499,12 @@ Page({
     this.setData({
       heroBackgrounds: backgrounds.filter((_, index) => index !== matchingIndex),
     });
+    this.recoverHeroMedia(`background:${matchingIndex}`);
   },
   heroAvatarBackgroundError(event: HeroImageErrorEvent) {
     if (event.currentTarget.dataset.url !== this.data.heroBackgroundAvatarUrl) return;
     this.setData({ heroBackgroundAvatarUrl: '' });
+    this.recoverHeroMedia('avatar');
   },
   heroFallbackBackgroundError(event: HeroImageErrorEvent) {
     if (event.currentTarget.dataset.url !== this.data.heroFallbackImageUrl) return;
@@ -495,6 +513,7 @@ Page({
   heroAvatarError(event: HeroImageErrorEvent) {
     if (event.currentTarget.dataset.url !== this.data.heroAvatarUrl) return;
     this.setData({ heroAvatarUrl: '' });
+    this.recoverHeroMedia('avatar');
   },
   async dismissGuidance() {
     if (!this.data.profile) return;

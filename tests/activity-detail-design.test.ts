@@ -464,7 +464,7 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
       definition = value;
     });
     vi.resetModules();
-    const { repository } = await import('../miniprogram/repositories');
+    const { repository, repositoryCache } = await import('../miniprogram/repositories');
     vi.spyOn(repository, 'downloadRouteGpx').mockImplementation(downloader);
     await import('../miniprogram/pages/activity-detail/index');
     const context = {
@@ -486,7 +486,7 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
         callback?.();
       },
     };
-    return { definition, context, repository };
+    return { definition, context, repository, repositoryCache };
   }
 
   it('群二维码保留点击放大和长按菜单，不展示保存按钮', () => {
@@ -612,6 +612,55 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
     });
     expect(context.data.selectedAttendee.backgroundUrl).toBe('');
     expect(context.data.defaultAttendeeAvatar).toBeUndefined();
+  });
+
+  it('报名人员签名地址失效时重新调用云函数获取新地址', async () => {
+    const { definition, context, repository, repositoryCache } = await loadPage(async () => ({
+      base64: 'eA==',
+      fileName: 'route.gpx',
+    }));
+    context.data.attendees = [
+      {
+        id: 'rider-1',
+        displayName: '山野骑手',
+        avatarUrl: 'https://temporary.example/expired-avatar.jpg',
+        backgroundUrl: 'https://temporary.example/expired-background.jpg',
+      },
+    ];
+    context.data.selectedAttendee = { ...context.data.attendees[0] };
+    const invalidate = vi.spyOn(repositoryCache, 'invalidateActivity');
+    vi.spyOn(repository, 'getActivity').mockResolvedValue({
+      attendees: [
+        {
+          ...context.data.attendees[0],
+          avatarUrl: 'https://temporary.example/fresh-avatar.jpg',
+          backgroundUrl: 'https://temporary.example/fresh-background.jpg',
+        },
+      ],
+    } as any);
+
+    await definition.attendeeAvatarError.call(context, {
+      currentTarget: {
+        dataset: { index: 0, url: 'https://temporary.example/expired-avatar.jpg' },
+      },
+    });
+    await definition.selectedAttendeeBackgroundError.call(context, {
+      currentTarget: {
+        dataset: { url: 'https://temporary.example/expired-background.jpg' },
+      },
+    });
+
+    expect(invalidate).toHaveBeenCalledTimes(2);
+    expect(invalidate).toHaveBeenCalledWith('a/1');
+    expect(repository.getActivity).toHaveBeenCalledWith('a/1');
+    expect(context.data.attendees[0]).toMatchObject({
+      avatarUrl: 'https://temporary.example/fresh-avatar.jpg',
+      backgroundUrl: 'https://temporary.example/fresh-background.jpg',
+    });
+    expect(context.data.selectedAttendee).toMatchObject({
+      avatarUrl: 'https://temporary.example/fresh-avatar.jpg',
+      backgroundUrl: 'https://temporary.example/fresh-background.jpg',
+    });
   });
 
   it('复制经过验证和规范化的官方路线并保留活动分享 path', async () => {
