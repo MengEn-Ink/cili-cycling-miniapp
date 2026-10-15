@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { CLIENT_RELEASE_VERSION } from '../miniprogram/config/release';
 
 // 通过 hoisted 占位，保证 vi.mock 工厂可以稳定引用同一批 spy。
 const mocks = vi.hoisted(() => ({
@@ -40,6 +41,7 @@ describe('小程序全局运行时兜底', () => {
     mocks.ensureIdentity.mockResolvedValue(undefined);
     mocks.hasFreshIdentityHint.mockReturnValue(false);
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.spyOn(console, 'info').mockImplementation(() => undefined);
   });
 
   afterEach(() => {
@@ -61,6 +63,7 @@ describe('小程序全局运行时兜底', () => {
     expect(mocks.bootstrap).toHaveBeenCalledOnce();
     expect(mocks.initializeCloud).toHaveBeenCalledWith(cloud);
     expect(mocks.ensureIdentity).toHaveBeenCalledWith(cloud);
+    expect(console.info).toHaveBeenCalledWith(`[此里版本][${CLIENT_RELEASE_VERSION}]`);
     expect(onError).toHaveBeenCalledOnce();
     expect(onUnhandledRejection).toHaveBeenCalledOnce();
 
@@ -70,18 +73,27 @@ describe('小程序全局运行时兜底', () => {
     const handleError = onError.mock.calls[0][0] as (error: unknown) => void;
     const scriptError = new Error('页面脚本异常');
     handleError(scriptError);
-    expect(console.error).toHaveBeenCalledWith('[此里运行时异常:error]', scriptError);
+    expect(console.error).toHaveBeenCalledWith(
+      `[此里运行时异常][${CLIENT_RELEASE_VERSION}][error]`,
+      scriptError,
+    );
 
     const handleRejection = onUnhandledRejection.mock.calls[0][0] as (event: {
       reason?: unknown;
     }) => void;
     const reason = new Error('未处理的 Promise 拒绝');
     handleRejection({ reason });
-    expect(console.error).toHaveBeenCalledWith('[此里运行时异常:unhandledrejection]', reason);
+    expect(console.error).toHaveBeenCalledWith(
+      `[此里运行时异常][${CLIENT_RELEASE_VERSION}][unhandledrejection]`,
+      reason,
+    );
 
     // 回调事件缺少 reason 时回退记录整个事件对象，不抛出二次异常。
     handleRejection({});
-    expect(console.error).toHaveBeenCalledWith('[此里运行时异常:unhandledrejection]', {});
+    expect(console.error).toHaveBeenCalledWith(
+      `[此里运行时异常][${CLIENT_RELEASE_VERSION}][unhandledrejection]`,
+      {},
+    );
   });
 
   it('基础库缺少错误监听 API 时，onLaunch 不抛错且照常初始化身份', async () => {
@@ -103,6 +115,9 @@ describe('小程序全局运行时兜底', () => {
     await Promise.resolve();
 
     expect(mocks.ensureIdentity).toHaveBeenCalledWith(cloud);
-    expect(console.error).toHaveBeenCalledWith('[此里运行时异常:identity-warmup]', error);
+    expect(console.error).toHaveBeenCalledWith(
+      `[此里运行时异常][${CLIENT_RELEASE_VERSION}][identity-warmup]`,
+      error,
+    );
   });
 });

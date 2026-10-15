@@ -320,6 +320,36 @@ describe('资料编辑头像交互', () => {
     expect(page.data.photoItems[0]).toMatchObject({ previewUrl: '', previewState: 'failed' });
   });
 
+  it('本地临时照片失效后清除实例缓存并改用云函数重新签发地址', async () => {
+    const fileId = 'cloud://env/profiles/owner/photo-local.jpg';
+    page.data.p.photos = [{ id: fileId, category: 'ride' }];
+    page.localPhotoPreviews[fileId] = 'wxfile://expired/photo-local.jpg';
+    rideService.getPersonalCapabilityCard.mockResolvedValue({
+      ...capabilityCard(),
+      backgrounds: [
+        {
+          id: fileId,
+          url: 'https://temporary.example/photo-local-fresh.jpg',
+          source: 'user_photo',
+          category: 'ride',
+        },
+      ],
+    });
+    await page.loadPhotoPreviews();
+    expect(page.data.photoItems[0].previewUrl).toBe('wxfile://expired/photo-local.jpg');
+
+    page.photoPreviewError({
+      currentTarget: { dataset: { id: fileId, url: 'wxfile://expired/photo-local.jpg' } },
+    });
+
+    await vi.waitFor(() => {
+      expect(page.data.photoItems[0].previewUrl).toBe(
+        'https://temporary.example/photo-local-fresh.jpg',
+      );
+    });
+    expect(page.localPhotoPreviews[fileId]).toBeUndefined();
+  });
+
   it('旧图片节点的迟到错误不会清空已经刷新的新地址', async () => {
     const fileId = 'cloud://env/profiles/owner/photo-a.jpg';
     const getTempFileURL = vi.fn().mockResolvedValue({

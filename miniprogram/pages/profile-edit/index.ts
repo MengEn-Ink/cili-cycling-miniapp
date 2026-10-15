@@ -7,6 +7,7 @@ import type {
 import { repositoryCache } from '../../repositories/index';
 import { runPageTask } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
+import { mediaSourceKind, reportMediaDiagnostic } from '../../utils/media-diagnostic';
 import { invalidateProfilePageCache } from '../../utils/profile-page-cache';
 import { getSharedTempFileUrlCache, type TempFileUrlCache } from '../../utils/temp-file-url';
 import { validateRegistrationProfile } from '../../utils/validation';
@@ -577,6 +578,15 @@ Page({
     const current = this.data.photoItems.find((item: PhotoItem) => item.id === id);
     // 旧节点的迟到 error 不得清空已经刷新的新地址。
     if (!current || (failedUrl && current.previewUrl !== failedUrl)) return;
+    const source = mediaSourceKind(failedUrl);
+    // 本地临时文件一旦触发 binderror 就不可继续优先复用；仅删除与失败节点同值的路径，避免迟到错误覆盖新选择。
+    if (source === 'local' && this.localPhotoPreviews[id] === failedUrl) {
+      delete this.localPhotoPreviews[id];
+    }
+    reportMediaDiagnostic('profile-edit.photo', 'load-error', {
+      source,
+      retryAttempted: this.photoPreviewRetryIds.has(id),
+    });
     this.ensurePhotoUrlCache()?.invalidate([id]);
     repositoryCache.invalidateProfiles();
     this.setData({
@@ -591,6 +601,8 @@ Page({
   retryPhotoPreview(e: any) {
     const id = String(e.currentTarget?.dataset?.id || '');
     if (!id) return;
+    delete this.localPhotoPreviews[id];
+    reportMediaDiagnostic('profile-edit.photo', 'manual-retry', {});
     this.photoPreviewRetryIds.delete(id);
     this.ensurePhotoUrlCache()?.invalidate([id]);
     repositoryCache.invalidateProfiles();
@@ -703,6 +715,10 @@ Page({
   avatarPreviewError(event: any) {
     const failedUrl = event?.currentTarget?.dataset?.url;
     if (typeof failedUrl === 'string' && failedUrl === this.data.avatarPreviewUrl) {
+      reportMediaDiagnostic('profile-edit.avatar', 'load-error', {
+        source: mediaSourceKind(failedUrl),
+        retryAttempted: this.avatarPreviewRetryAttempted,
+      });
       repositoryCache.invalidateProfiles();
       this.setData({ avatarPreviewUrl: '' });
       if (this.avatarPreviewRetryAttempted) return;

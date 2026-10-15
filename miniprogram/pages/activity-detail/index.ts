@@ -4,6 +4,7 @@ import { rideService } from '../../services/ride-service';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
 import { genderView } from '../../utils/gender';
+import { mediaSourceKind, reportMediaDiagnostic } from '../../utils/media-diagnostic';
 import { validateRegistrationProfile } from '../../utils/validation';
 import { drawRouteOutline as renderRouteOutline } from '../../utils/route-outline';
 import {
@@ -438,6 +439,10 @@ Page({
       this.data.selectedAttendee?.id === attendeeId ? this.data.selectedAttendee[urlKey] : '';
     if (failedUrl && attendee[urlKey] !== failedUrl && selectedUrl !== failedUrl) return;
     const retryKey = `${attendeeId}:${kind}`;
+    reportMediaDiagnostic(`activity-detail.attendee-${kind}`, 'load-error', {
+      source: mediaSourceKind(failedUrl),
+      retryAttempted: this.attendeeMediaRetryKeys.has(retryKey),
+    });
     if (!this.attendeeMediaRetryKeys.has(retryKey)) {
       this.attendeeMediaRetryKeys.add(retryKey);
       const requestId = this.loadRequestId;
