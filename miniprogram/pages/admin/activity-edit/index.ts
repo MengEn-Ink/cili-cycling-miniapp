@@ -198,16 +198,17 @@ const fileIdCloudPath = (fileId: string) => {
 };
 // 以文件内容 md5 作为幂等键生成确定性对象路径；取不到指纹时退回随机命名，保证上传可用性优先。
 async function contentCloudPath(previewPath: string, folder = 'profiles/activity-media') {
+  const ownerFolder = appStore.openid ? `${folder}/${appStore.openid}` : folder;
   try {
     const info: any = await wx.getFileInfo({ filePath: previewPath, digestAlgorithm: 'md5' });
     if (info?.digest) {
-      return `${folder}/${info.digest}${mediaExtension(previewPath)}`;
+      return `${ownerFolder}/${info.digest}${mediaExtension(previewPath)}`;
     }
   } catch {
     // 旧基础库不支持摘要或读取失败时降级为随机路径，不阻断上传。
   }
   const random = Math.random().toString(36).slice(2, 10);
-  return `${folder}/${Date.now()}-${random}${mediaExtension(previewPath)}`;
+  return `${ownerFolder}/${Date.now()}-${random}${mediaExtension(previewPath)}`;
 }
 const isCancel = (error: unknown) =>
   typeof (error as { errMsg?: unknown })?.errMsg === 'string' &&
@@ -266,6 +267,7 @@ function activityRoutePreview(activity: EditableActivity): RouteGpxPreview | und
     ...(route.generatedPreviewFileId
       ? { generatedPreviewFileId: route.generatedPreviewFileId }
       : {}),
+    ...(route.generatedPreviewUrl ? { generatedPreviewUrl: route.generatedPreviewUrl } : {}),
     routeName: route.routeName,
     distanceKm: route.distanceKm,
     elevationM: route.elevationM,
@@ -441,8 +443,16 @@ Page({
         version: activity.version,
         originalActivity: activity,
         images,
+        imagePreviewUrls: images.map(
+          (fileId) =>
+            safeHttpsUrl(fileId) ||
+            activity.imagePreviewUrls?.[activity.images?.indexOf(fileId) ?? -1] ||
+            (fileId === activity.coverImage ? activity.coverPreviewUrl : '') ||
+            '',
+        ),
         coverImage: activity.coverImage || images[0] || '',
         groupQrCode: activity.groupQrCode || '',
+        groupQrPreviewUrl: activity.groupQrPreviewUrl || '',
         groupQrCodeUploadedAt: activity.groupQrCodeUploadedAt || '',
         groupQrCodeExpired: groupQrExpired(activity.groupQrCodeUploadedAt),
         pendingGroupQrCode: undefined,
@@ -469,7 +479,7 @@ Page({
           stravaRouteUrl: officialRoute?.url || '',
         } as Form,
       });
-      void this.refreshMediaPreviews();
+      void this.refreshMediaPreviews(activity);
     } catch (error) {
       this.setData({
         loading: false,
@@ -494,13 +504,47 @@ Page({
       getTempFileURL: (options) => getTempFileURL.call(cloud, options),
     });
   },
-  async refreshMediaPreviews() {
+  async refreshMediaPreviews(authoritativeActivity?: EditableActivity) {
     const images = [...this.data.images];
     const groupQrCode = this.data.groupQrCode;
     const requestId = ++this.mediaPreviewRequestId;
     this.setData({ mediaPreviewLoading: true });
+    let authoritative = authoritativeActivity;
+    if (!authoritative && this.data.id) {
+      try {
+        authoritative = await rideService.getAdminActivity(this.data.id);
+      } catch {
+        // 管理端临时地址刷新失败时，继续尝试兼容旧版云函数的客户端解析。
+      }
+    }
+    const signedByFileId = new Map<string, string>();
+    const authoritativePreviewUrls = authoritative?.imagePreviewUrls;
+    authoritative?.images?.forEach((fileId, index) => {
+      const url = safeHttpsUrl(authoritativePreviewUrls?.[index] || '');
+      if (url) signedByFileId.set(fileId, url);
+    });
+    if (authoritative?.coverImage) {
+      const coverUrl = safeHttpsUrl(authoritative.coverPreviewUrl || '');
+      if (coverUrl) signedByFileId.set(authoritative.coverImage, coverUrl);
+    }
+    const authoritativeGroupQrCode = authoritative?.groupQrCode;
+    const authoritativeGroupQrUrl = authoritative?.groupQrPreviewUrl;
+    const signedGroupQrUrl =
+      authoritativeGroupQrCode === groupQrCode ? safeHttpsUrl(authoritativeGroupQrUrl || '') : '';
+    const currentRoutePreview = this.data.routePreview;
+    const authoritativeRoute = authoritative?.route;
+    const authoritativeRoutePreviewUrl = authoritativeRoute?.generatedPreviewUrl;
+    const refreshedRouteUrl =
+      currentRoutePreview?.generatedPreviewFileId &&
+      currentRoutePreview.generatedPreviewFileId === authoritativeRoute?.generatedPreviewFileId
+        ? safeHttpsUrl(authoritativeRoutePreviewUrl || '')
+        : '';
     const cloudFileIds = [...images, groupQrCode].filter(
-      (value): value is string => typeof value === 'string' && value.startsWith('cloud://'),
+      (value): value is string =>
+        typeof value === 'string' &&
+        value.startsWith('cloud://') &&
+        !signedByFileId.has(value) &&
+        !(value === groupQrCode && signedGroupQrUrl),
     );
     let resolved: Record<string, string> = {};
     const cache = this.ensureMediaUrlCache();
@@ -514,6 +558,12 @@ Page({
     if (requestId !== this.mediaPreviewRequestId || this.unloaded) return;
     const latestImages = [...this.data.images];
     const latestGroupQrCode = this.data.groupQrCode;
+    const latestRoutePreview = this.data.routePreview;
+    const refreshedRoutePreview =
+      refreshedRouteUrl &&
+      latestRoutePreview?.generatedPreviewFileId === currentRoutePreview?.generatedPreviewFileId
+        ? { ...latestRoutePreview, generatedPreviewUrl: refreshedRouteUrl }
+        : undefined;
     const existingByFileId = new Map(
       latestImages.map((fileId: string, index: number) => [
         fileId,
@@ -522,14 +572,21 @@ Page({
     );
     this.setData({
       imagePreviewUrls: latestImages.map(
-        (fileId) => safeHttpsUrl(fileId) || resolved[fileId] || existingByFileId.get(fileId) || '',
+        (fileId) =>
+          safeHttpsUrl(fileId) ||
+          signedByFileId.get(fileId) ||
+          resolved[fileId] ||
+          existingByFileId.get(fileId) ||
+          '',
       ),
       groupQrPreviewUrl:
         safeHttpsUrl(latestGroupQrCode) ||
+        signedGroupQrUrl ||
         resolved[latestGroupQrCode] ||
         (latestGroupQrCode === groupQrCode ? this.data.groupQrPreviewUrl : '') ||
         '',
       mediaPreviewLoading: false,
+      ...(refreshedRoutePreview ? { routePreview: refreshedRoutePreview } : {}),
     });
   },
   storedMediaPreviewLoad(event: any) {
@@ -1430,7 +1487,7 @@ Page({
             saved.coverImage === savedRoutePreview.generatedPreviewFileId,
           ),
         });
-        void this.refreshMediaPreviews();
+        void this.refreshMediaPreviews(saved);
       };
       let saved: EditableActivity;
       if (!id && nextStatus === 'published') {

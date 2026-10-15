@@ -195,6 +195,84 @@ describe('日常活动极简创建与编辑', () => {
     );
   });
 
+  it('客户端无云存储读取权限时直接使用管理云函数签发的图片地址', async () => {
+    const getTempFileURL = vi.fn(async () => Promise.reject(new Error('permission denied')));
+    Object.assign(wx.cloud!, { getTempFileURL });
+    const images = activity.images?.slice(0, 3) || [];
+    const imagePreviewUrls = images.map(
+      (_, index) => `https://server-signed.example/activity-${index}.jpg`,
+    );
+    rideService.getAdminActivity.mockResolvedValueOnce({
+      ...activity,
+      imagePreviewUrls,
+      groupQrPreviewUrl: 'https://server-signed.example/group-qr.jpg',
+      route: {
+        ...activity.route,
+        gpxPreviewId: 'preview-1',
+        gpxFileId: 'cloud://route.gpx',
+        gpxSha256: 'a'.repeat(64),
+        generatedPreviewFileId: 'cloud://route.png',
+        routeName: '环湖路线',
+        elevationLossM: 580,
+        elevationMinM: 20,
+        elevationMaxM: 620,
+        estimatedMovingTimeSeconds: 10_800,
+        estimationSource: 'cili',
+        elevationProfile: [
+          { distanceKm: 0, elevationM: 20 },
+          { distanceKm: 80, elevationM: 20 },
+        ],
+        routeOutline: [
+          { latitude: 30, longitude: 120 },
+          { latitude: 30.1, longitude: 120.1 },
+        ],
+        generatedPreviewUrl: 'https://server-signed.example/route.png',
+      },
+    });
+
+    await page.onLoad({ id: activity.id });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(page.data.imagePreviewUrls).toEqual(imagePreviewUrls);
+    expect(page.data.groupQrPreviewUrl).toBe('https://server-signed.example/group-qr.jpg');
+    expect(getTempFileURL).not.toHaveBeenCalled();
+    expect(page.data.routePreview?.generatedPreviewUrl).toBe(
+      'https://server-signed.example/route.png',
+    );
+
+    rideService.getAdminActivity.mockResolvedValueOnce({
+      ...activity,
+      imagePreviewUrls,
+      groupQrPreviewUrl: 'https://server-signed.example/group-qr-new.jpg',
+      route: {
+        ...page.data.originalActivity.route,
+        generatedPreviewUrl: 'https://server-signed.example/route-new.png',
+      },
+    });
+    page.onShow();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(page.data.groupQrPreviewUrl).toBe('https://server-signed.example/group-qr-new.jpg');
+    expect(page.data.routePreview?.generatedPreviewUrl).toBe(
+      'https://server-signed.example/route-new.png',
+    );
+  });
+
+  it('仅保留历史封面的活动使用服务端签发地址回显', async () => {
+    rideService.getAdminActivity.mockResolvedValueOnce({
+      ...activity,
+      images: [],
+      coverImage: 'cloud://env/profiles/activity-media/legacy-cover.jpg',
+      coverPreviewUrl: 'https://server-signed.example/legacy-cover.jpg',
+    });
+
+    await page.onLoad({ id: activity.id });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(page.data.images).toEqual(['cloud://env/profiles/activity-media/legacy-cover.jpg']);
+    expect(page.data.imagePreviewUrls).toEqual(['https://server-signed.example/legacy-cover.jpg']);
+  });
+
   it('历史图片临时地址失效时自动刷新一次并提供显式重试入口', async () => {
     const getTempFileURL = vi.fn(async ({ fileList }: { fileList: string[] }) => ({
       fileList: fileList.map((fileID) => ({

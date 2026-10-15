@@ -229,7 +229,7 @@ test('保存活动只采用匹配可信预览的原生指标并原子消费记�
       openid: owner,
       activity: {
         title: '活动',
-        images: ['cloud://env/profiles/activity-photo.jpg'],
+        images: [`cloud://env/profiles/activity-media/${owner}/activity-photo.jpg`],
         cover_image: generatedFileId,
         description: '',
         schedule: [],
