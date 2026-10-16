@@ -15,11 +15,6 @@
     "pages/admin/review-detail/index"
   ],
   "requiredPrivateInfos": ["chooseLocation"],
-  "permission": {
-    "scope.writePhotosAlbum": {
-      "desc": "仅用于保存活动群二维码到相册"
-    }
-  },
   "window": {
     "navigationBarTitleText": "此里",
     "navigationBarBackgroundColor": "#fbf5ea",

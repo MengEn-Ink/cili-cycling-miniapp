@@ -184,7 +184,7 @@
 }
 .meeting-row {
   display: flex;
-  align-items: flex-start;
+  align-items: baseline;
   justify-content: space-between;
   gap: 24rpx;
   min-height: var(--control-height);

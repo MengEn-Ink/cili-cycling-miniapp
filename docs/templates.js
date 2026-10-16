@@ -229,16 +229,19 @@
         <div class="menu-card">
           ${admin ? linkRow('i-admin', '活动管理', '创建、编辑、上下架与报名审批', 'admin-activity-list') : ''}
           ${linkRow('i-profile', '报名资料', '头像、昵称、实名、电话与紧急联系人', 'profile-edit')}
-          ${linkRow('i-settings', '设置', '查看应用设置与功能升级记录', 'settings')}
+          ${linkRow('i-settings', '设置', '查看当前版本与本次更新内容', 'settings')}
         </div>
         <div class="privacy-panel"><b>隐私说明</b><p>联系电话仅用于活动联络；紧急联系人仅在骑行安全需要时使用。资料仅你本人和报名审核员可见。</p></div></div>`;
     },
 
-    settings: () => `<div class="pg"><h2 class="page-title">设置</h2><p class="page-sub">设置与升级日志</p>
-      <div class="card">${cardHead('01', '功能升级日志', '', '「此里」最近五次功能升级')}${releaseNotes
-        .map(([version, title, summary], index) => `<div class="release"><code>V${version}</code>${index ? '' : tag('solid', '最新')}<p>${title}</p><p class="card-hint">→ ${summary}</p></div>`)
-        .join('')}</div>
-      <p class="neutral-note">此里 · 持续为每一次出发升级</p></div>`,
+    settings: () => {
+      const [version, title, summary] = releaseNotes[0];
+      return `<div class="pg"><h2 class="page-title">设置</h2><p class="page-sub">查看当前版本信息与本次更新内容</p>
+      <div class="card">${cardHead('01', 'App 更新', '', '当前版本的更新概览')}
+        <div class="release release-current"><code>V${version}</code>${tag('solid', '当前版本')}<p>${title}</p><p class="card-hint">→ ${summary}</p></div>
+      </div>
+      <p class="neutral-note">此里 · 持续为每一次出发升级</p></div>`;
+    },
 
     'capability-card': () => {
       const hasPhoto = !is('no-photo');

@@ -193,7 +193,7 @@ describe('个人中心加载状态', () => {
     expect(template).toContain('wx:if="{{profile && profile.completeness < 100}}"');
     expect(template).toContain('{{profile.completeness}}%');
     expect(template).toContain('style="width: {{profile.completeness}}%"');
-    expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*360rpx/s);
+    expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*472rpx/s);
   });
 
   it('profile 请求失败时 hero 仍回退骑行名片 displayName', async () => {
@@ -695,7 +695,8 @@ describe('个人中心加载状态', () => {
     expect(wx.navigateTo).toHaveBeenCalledWith({ url: '/pages/settings/index' });
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     expect(template).toContain('报名资料');
-    expect(template).toContain('查看应用设置与功能升级记录');
+    expect(template).toContain('查看当前版本与本次更新内容');
+    expect(template).not.toContain('功能升级记录');
     expect(template).toContain('联系电话仅用于活动联络');
     expect(template).toContain('紧急联系人仅在骑行安全需要时使用');
     expect(template).not.toMatch(/报名成功|审核中|已报名|报名状态/);

@@ -21,31 +21,51 @@ describe('设置页', () => {
     await import('../miniprogram/pages/settings/index');
   });
 
-  it('只加载当前版本日志，不注册第三方账号生命周期或入口', () => {
-    expect(page.data.releaseNotes).toHaveLength(5);
+  it('只展示当前版本的 App 更新卡片，不展示历史日志', () => {
+    // RELEASE_NOTES 仍保留最新一条，供 scripts/check-release-notes.mjs 发布门禁识别。
+    expect(page.data.releaseNotes).toHaveLength(1);
     expect(page.data.releaseNotes[0]).toMatchObject({
       version: CLIENT_RELEASE_VERSION,
+      date: '2026-10-17',
       latest: true,
-      title: '沸点主题全站统一与行程页精确对齐',
     });
+    expect(page.data.currentRelease).toBe(page.data.releaseNotes[0]);
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(
       1,
     );
-    expect(page.data.releaseNotes.slice(1).every((note: { latest: boolean }) => !note.latest)).toBe(
-      true,
-    );
-    const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
-    expect(versions).toEqual([
-      CLIENT_RELEASE_VERSION,
-      '2026.10.16.72',
-      '2026.10.16.70',
-      '2026.10.16.68',
-      '2026.10.15.67',
-    ]);
     expect(page.onShow).toBeUndefined();
     expect(page.loadStravaStatus).toBeUndefined();
     expect(page.openStrava).toBeUndefined();
     expect(readiness).not.toHaveBeenCalled();
+  });
+
+  it('版本号与日期对齐 2026.10.17.74', () => {
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.17.74');
+    expect(page.data.currentRelease.version).toBe('2026.10.17.74');
+    expect(page.data.currentRelease.date).toBe('2026-10-17');
+  });
+
+  it('设置页模板只渲染当前版本卡片，不出现历史时间线容器', () => {
+    const template = readFileSync('miniprogram/pages/settings/index.wxml', 'utf8');
+    expect(template).toContain('App 更新');
+    expect(template).toContain('{{currentRelease.version}}');
+    expect(template).toContain('wx:if="{{currentRelease}}"');
+    expect(template).not.toContain('wx:for="{{releaseNotes}}"');
+    expect(template).not.toContain('release-rail');
+    expect(template).not.toContain('release-dot');
+  });
+
+  it('面向用户的设置页模板中不出现门禁、接口、令牌、OpenID、FileID 等技术词', () => {
+    const template = readFileSync('miniprogram/pages/settings/index.wxml', 'utf8');
+    expect(template).not.toMatch(
+      /门禁|接口|令牌|token|OpenID|openid|fileID|FileID|云开发|云存储|云端(?!更新)/,
+    );
+    // 用户可见数据来源于 TS 中的 RELEASE_NOTES[0]，验证其面向用户的字段不含技术词。
+    const script = readFileSync('miniprogram/pages/settings/index.ts', 'utf8');
+    const releaseNotesBlock = script.match(/const RELEASE_NOTES[\s\S]*?\]\s*as const;/)?.[0] || '';
+    expect(releaseNotesBlock).not.toMatch(
+      /门禁|接口|令牌|token|OpenID|openid|fileID|FileID|云开发|云存储|云端(?!更新)/,
+    );
   });
 
   it('模板不再包含第三方授权区或 Strava 页面跳转', () => {
@@ -57,9 +77,10 @@ describe('设置页', () => {
     expect(script).not.toContain('getStravaReadiness');
   });
 
-  it('小程序清单隐藏 OAuth 页面并将相册权限限定为活动群二维码', () => {
+  it('小程序清单隐藏 OAuth 页面并只声明实际使用的位置能力', () => {
     const config = JSON.parse(readFileSync('miniprogram/app.json', 'utf8'));
     expect(config.pages).not.toContain('pages/strava/index');
-    expect(config.permission['scope.writePhotosAlbum'].desc).toBe('仅用于保存活动群二维码到相册');
+    expect(config.requiredPrivateInfos).toEqual(['chooseLocation']);
+    expect(config.permission).toBeUndefined();
   });
 });

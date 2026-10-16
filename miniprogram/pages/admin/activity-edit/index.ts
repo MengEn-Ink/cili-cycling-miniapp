@@ -720,7 +720,7 @@ Page({
         cloudPath,
         filePath: pendingImage.previewPath,
       });
-      if (!result.fileID) throw new Error('云端未返回文件标识');
+      if (!result.fileID) throw new Error('图片上传未完成，请重试');
       if (this.unloaded) {
         this.cleanupSessionUploads([result.fileID]);
         return false;
@@ -1252,7 +1252,7 @@ Page({
       else if (failure === 'platform-config')
         await wx.showModal({
           title: '地图选点暂不可用',
-          content: '请联系管理员检查微信后台接口权限和用户隐私保护指引。',
+          content: '当前环境暂时无法打开微信地图选点，可直接在集合地点中输入地址，或稍后再试。',
           showCancel: false,
         });
       else if (failure !== 'cancel') this.setData({ error: '地点选择失败，请重试' });

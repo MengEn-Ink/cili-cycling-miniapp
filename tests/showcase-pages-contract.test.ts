@@ -167,14 +167,13 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(css).toMatch(/\.custom-tab-navigation \.mini-program-bar\s*\{[^}]*height:\s*0;/s);
   });
 
-  it('设置页原型同步当前客户端版本与最新功能日志', () => {
-    expect(schema).toContain("state: 'V2026.10.16.73'");
+  it('设置页原型同步当前客户端版本与当前 App 更新', () => {
+    expect(schema).toContain("state: 'V2026.10.17.74'");
     expect(schema).toContain(
-      "['2026.10.16.73', '沸点主题全站统一与行程页精确对齐', '按最终设计稿修正行程页顶部、票据和状态层级，清理旧主题别名与过期视觉约束，并同步全站空状态。']",
+      "['2026.10.17.74', '界面更清晰，操作更顺手', '统一按钮与页面细节，放大个人中心背景图，并将设置页精简为当前版本更新，让常用信息更容易找到。']",
     );
-    expect(schema).toContain(
-      "['2026.10.16.70', '公开路线解析更安全稳定', '加固 Strava 路线名称解析，避免特殊编码内容被重复转换，同时保持公开路线正常回显。']",
-    );
+    expect(templates).toContain('App 更新');
+    expect(templates).not.toContain('最近五次');
   });
 
   it('支持哈希路由、页面回退、键盘切换和关键业务反馈', () => {
@@ -218,7 +217,15 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     const declaredHex = new Set(cssVars.map(([, , value]) => value.toLowerCase()));
     const allHex = [...css.matchAll(/#[0-9a-f]{6}\b/gi)].map(([color]) => color.toLowerCase());
     expect(allHex.every((color) => declaredHex.has(color))).toBe(true);
-    expect(css).not.toMatch(/navy|blue|linear-gradient|radial-gradient/i);
+    expect(css).not.toMatch(/\bnavy\b|\bblue\b|radial-gradient/i);
+    // profile-hero 顶图使用从透明到墨黑的垂直渐变遮罩，保证昵称可读；
+    // 这是唯一允许的 linear-gradient，用于与小程序 .hero-shade 对齐。
+    const gradientMatches = css.match(/linear-gradient\([^)]*\)/g) || [];
+    expect(gradientMatches.length).toBeGreaterThanOrEqual(1);
+    for (const gradient of gradientMatches) {
+      expect(gradient).toMatch(/rgba\(0,\s*0,\s*0/);
+    }
+    expect(css).toMatch(/\.profile-hero-shade\s*\{[^}]*linear-gradient/s);
     expect(css).toContain('--color-text: #211f1c');
     expect(css).toContain('--color-brand: #e13b2b');
     expect(css).toMatch(
@@ -315,7 +322,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
       /(?<!无需 )Strava 授权|重新授权 Strava|解绑 Strava|同步最新 Strava|STRAVA 数据已同步|data-route="strava"/i,
     );
     expect(schema).toContain("copy: '查看公开骑行资料与照片，不依赖第三方账号数据。'");
-    expect(templates).toContain('设置与升级日志');
+    expect(templates).toContain('App 更新');
     expect(templates).not.toContain('Strava 状态');
   });
 
