@@ -146,7 +146,7 @@ export async function waitForPageReady({
   let attempts = 0;
   while (true) {
     attempts += 1;
-    let ready = false;
+    let ready;
     try {
       const page = await readPage();
       ready = page?.path === expectedPath && Boolean(isDataReady(page.data));

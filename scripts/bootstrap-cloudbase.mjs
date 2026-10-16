@@ -620,7 +620,7 @@ async function waitUntilVisible(
   }
 }
 
-export async function applyPlan(runner, target, plan, now = new Date(), polling = {}) {
+export async function applyPlan(runner, target, plan, _now = new Date(), polling = {}) {
   if (plan.conflicts.length) throw new Error('存在冲突，已阻止 apply');
   const applied = [];
   for (const action of plan.actions) {

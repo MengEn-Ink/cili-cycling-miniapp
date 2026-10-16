@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable no-console */
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -24,6 +23,7 @@ function loadAutomator() {
     } catch (error) {
       throw new Error(
         `未找到 miniprogram-automator。请先执行：mkdir -p ~/.cili-devtools-e2e && cd ~/.cili-devtools-e2e && npm init -y && npm install miniprogram-automator@0.12.1\n也可通过 MINIPROGRAM_AUTOMATOR_PATH 指定模块路径。原始错误：${error.message}`,
+        { cause: error },
       );
     }
   }
@@ -300,6 +300,16 @@ async function main() {
       },
     );
     await screenshot(miniProgram, '07-capability-card.png');
+
+    page = await miniProgram.reLaunch('/pages/settings/index');
+    await sleep(2500);
+    data = await page.data();
+    const currentVersion = data.releaseNotes?.[0]?.version;
+    check('设置页版本与运行时一致', currentVersion === version, {
+      expected: version,
+      actual: currentVersion || null,
+    });
+    await screenshot(miniProgram, '08-settings.png');
   } finally {
     await miniProgram.close();
   }
