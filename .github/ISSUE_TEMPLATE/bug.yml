@@ -1,0 +1,78 @@
+name: 缺陷报告
+description: 报告可复现的小程序、云函数或研发交付问题
+title: '[Bug] '
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。请勿在 Issue 中提交密钥、真实联系方式、受保护媒体地址或未公开的漏洞细节；安全问题请按仓库安全政策私密报告。
+  - type: dropdown
+    id: environment
+    attributes:
+      label: 运行环境
+      options:
+        - 微信开发版
+        - 微信体验版
+        - 微信正式版
+        - GitHub Pages
+        - CloudBase / 云函数
+        - GitHub Actions / CI
+        - 本地开发环境
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 版本或提交
+      description: 请填写设置页版本、微信代码版本、完整提交 SHA 或工作流链接。
+      placeholder: 例如 2026.10.16.68 / 0.0.237.1 / commit SHA
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: 设备与基础库
+      description: 客户端问题请填写机型、系统、微信版本和基础库；非客户端问题填“不适用”。
+      placeholder: 例如 iPhone 15 / iOS 18 / 微信 8.x / 基础库 3.x
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开……
+        2. 点击……
+        3. 观察到……
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期结果
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际结果
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 脱敏证据
+      description: 可附截图、录屏、Actions 链接、脱敏日志或请求标识，禁止粘贴任何凭证和个人隐私。
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我已搜索现有 Issue，确认不是重复问题。
+          required: true
+        - label: 我已删除凭证、真实联系方式和其他个人隐私。
+          required: true
+        - label: 这不是需要私密披露的安全漏洞。
+          required: true

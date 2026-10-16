@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安全漏洞私密报告
+    url: https://github.com/MengEn-Ink/cili-cycling-miniapp/security/policy
+    about: 请先阅读安全政策，禁止在公开 Issue 中披露漏洞细节或凭证。
+  - name: 研发交付中心
+    url: https://mengen-ink.github.io/cili-cycling-miniapp/
+    about: 先查看需求、设计、技术、测试和发布文档，确认问题是否已有说明。

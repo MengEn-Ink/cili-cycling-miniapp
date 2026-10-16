@@ -1,0 +1,50 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directories:
+      - /
+      - /tools/miniprogram-ci
+      - /cloudfunctions/shared
+      - /cloudfunctions/auth
+      - /cloudfunctions/activity-read
+      - /cloudfunctions/activity-admin
+      - /cloudfunctions/registration
+      - /cloudfunctions/admin-review
+      - /cloudfunctions/notification-send
+      - /cloudfunctions/profile
+      - /cloudfunctions/profile-media-cleanup
+      - /cloudfunctions/route-maintenance
+    schedule:
+      interval: weekly
+      day: monday
+      time: '04:17'
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-and-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+    ignore:
+      - dependency-name: '*'
+        update-types:
+          - version-update:semver-major
+    commit-message:
+      prefix: 'chore(deps)'
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '04:37'
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 3
+    groups:
+      github-actions:
+        patterns:
+          - '*'
+    commit-message:
+      prefix: 'chore(actions)'
