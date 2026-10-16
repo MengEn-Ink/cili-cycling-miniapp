@@ -26,16 +26,6 @@
   width: 100%;
   height: 100%;
 }
-.hero-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16rpx;
-  height: 100%;
-  color: var(--color-media-muted);
-  font-size: 24rpx;
-}
 .cover-count {
   position: absolute;
   top: 16rpx;
@@ -288,9 +278,23 @@
   font-size: 24rpx;
 }
 .attendee-avatar {
+  box-sizing: border-box;
   width: 88rpx;
   height: 88rpx;
+  border: 6rpx solid var(--color-border-strong);
   border-radius: 50%;
+}
+.attendee-avatar.gender-male,
+.rider-card-avatar.gender-male {
+  border-color: var(--color-text);
+}
+.attendee-avatar.gender-female,
+.rider-card-avatar.gender-female {
+  border-color: var(--color-brand);
+}
+.attendee-avatar.gender-unknown,
+.rider-card-avatar.gender-unknown {
+  border-color: var(--color-border-strong);
 }
 .group-qr-detail-image {
   width: 320rpx;
@@ -374,53 +378,138 @@
   box-sizing: border-box;
   align-items: center;
   justify-content: center;
-  padding: calc(32rpx + env(safe-area-inset-top)) 32rpx calc(32rpx + env(safe-area-inset-bottom));
+  padding: calc(32rpx + env(safe-area-inset-top)) 0 calc(32rpx + env(safe-area-inset-bottom));
   background: var(--color-overlay);
 }
 .rider-card {
+  position: relative;
   width: 100%;
-  max-width: 640rpx;
-  max-height: 82vh;
+  max-width: 750rpx;
   margin: 0;
-  overflow-y: auto;
-  border-radius: 32rpx;
+  border: 0;
+  background: transparent;
+}
+.rider-card-swiper {
+  width: 100%;
+  height: 72vh;
 }
 .rider-card-photo {
   position: relative;
-  height: 400rpx;
+  height: 100%;
+  margin: 0 12rpx;
   overflow: hidden;
+  border: 0;
+  border-radius: 32rpx;
   background: var(--color-media-card-bg);
 }
 .rider-card-photo__image {
   width: 100%;
   height: 100%;
 }
+.rider-card-photo__scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--color-media-scrim);
+}
 .rider-card-close {
   position: absolute;
-  top: 16rpx;
-  right: 16rpx;
+  z-index: 3;
+  top: -104rpx;
+  right: 32rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 88rpx;
   height: 88rpx;
+  border: 0;
   border-radius: 50%;
   background: var(--color-surface);
+  color: var(--color-text);
   font-size: 36rpx;
 }
 .rider-card-photo__identity {
   position: absolute;
   right: 32rpx;
-  bottom: 32rpx;
+  bottom: 104rpx;
   left: 32rpx;
+  display: flex;
+  align-items: flex-end;
+  gap: 20rpx;
   color: var(--color-on-media);
 }
-.rider-name {
-  font-size: 48rpx;
+.rider-card-avatar {
+  box-sizing: border-box;
+  width: 112rpx;
+  height: 112rpx;
+  flex: 0 0 112rpx;
+  border: 8rpx solid var(--color-border-strong);
+  border-radius: 50%;
+}
+.rider-card-avatar--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 40rpx;
   font-weight: 900;
 }
-.rider-card-body {
-  padding: 32rpx;
+.rider-card-copy {
+  min-width: 0;
+  flex: 1;
+}
+.rider-card-kicker {
+  color: var(--color-media-muted);
+  font-size: 20rpx;
+  font-weight: 800;
+  letter-spacing: 2rpx;
+}
+.rider-name {
+  overflow: hidden;
+  margin-top: 4rpx;
+  font-size: 48rpx;
+  line-height: 1.12;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rider-card-photo__badges {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 12rpx;
+}
+.gender-pill,
+.rider-status {
+  padding: 6rpx 12rpx;
+  border: 2rpx solid var(--color-on-media);
+  color: var(--color-on-media);
+  font-size: 22rpx;
+  font-weight: 800;
+}
+.gender-pill.gender-female {
+  border-color: var(--color-brand);
+  background: var(--color-brand);
+}
+.gender-pill.gender-male {
+  background: var(--color-text);
+}
+.rider-card-note {
+  position: absolute;
+  right: 32rpx;
+  bottom: 28rpx;
+  left: 32rpx;
+  color: var(--color-media-muted);
+  font-size: 22rpx;
+  line-height: 1.45;
+}
+.rider-card-pagination {
+  display: flex;
+  justify-content: center;
+  gap: 24rpx;
+  margin-top: 20rpx;
+  color: var(--color-on-media);
+  font-size: 24rpx;
+  font-weight: 800;
 }
 .detail-action--admin {
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -440,7 +529,7 @@
   .time-card-meta {
     flex-direction: column;
   }
-  .rider-card-photo {
-    height: 320rpx;
+  .rider-card-swiper {
+    height: 64vh;
   }
 }

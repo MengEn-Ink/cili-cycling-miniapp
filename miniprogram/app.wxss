@@ -19,6 +19,7 @@ page {
   --color-media-muted: #d4d4d4;
   --color-media-card-bg: #211f1c;
   --color-media-placeholder-bg: #211f1c;
+  --color-media-scrim: rgba(12, 10, 7, 0.58);
   --color-brand: #e13b2b;
   --color-brand-active: #c0321f;
   --color-brand-soft: #fcebea;

@@ -1,0 +1,17 @@
+<view class="generated-cover generated-cover--{{variant}}" aria-label="{{item.title}}专属活动封面">
+  <view class="generated-cover__rail" aria-hidden="true"></view>
+  <view class="generated-cover__header">
+    <brand-logo compact="{{true}}" meta="专属路线封面" />
+    <text class="generated-cover__level">{{item.route.level || '主题骑行'}}</text>
+  </view>
+  <view class="generated-cover__body">
+    <text class="generated-cover__eyebrow">{{item.displayDateLabel || '出发日期待定'}} · {{item.displayTimeLabel || '集合时间待定'}}</text>
+    <text class="generated-cover__title">{{item.title || '一起出发去骑行'}}</text>
+    <text class="generated-cover__route">{{item.route.routeName || item.route.start || '路线信息即将公布'}}</text>
+  </view>
+  <view class="generated-cover__footer">
+    <view class="generated-cover__metric"><text class="generated-cover__metric-value">{{item.route.distanceKm > 0 ? item.route.distanceKm : '—'}}</text><text class="generated-cover__metric-unit">KM</text></view>
+    <view class="generated-cover__metric"><text class="generated-cover__metric-value">{{item.route.elevationM > 0 ? item.route.elevationM : '—'}}</text><text class="generated-cover__metric-unit">M 爬升</text></view>
+    <text class="generated-cover__stamp">专属路线封面</text>
+  </view>
+</view>

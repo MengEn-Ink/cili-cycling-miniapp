@@ -1,7 +1,7 @@
 <view class="activity-card" bindtap="open" hover-class="activity-card--pressed" role="button" aria-label="查看活动：{{item.title}}">
   <view class="card-media">
     <image wx:if="{{item.coverImage && !coverFailed}}" class="card-cover" src="{{item.coverImage}}" mode="aspectFill" lazy-load="{{true}}" binderror="coverImageError" aria-label="{{item.title}}活动封面" />
-    <view wx:else class="card-placeholder"><brand-logo compact="{{true}}" /><text>路线风景即将更新</text></view>
+    <generated-activity-cover wx:else item="{{item}}" variant="card" />
     <view class="media-status"><status-pill status="{{item.displayStatus}}" /></view>
   </view>
   <view class="card-info">

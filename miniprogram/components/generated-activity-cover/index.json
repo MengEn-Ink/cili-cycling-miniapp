@@ -1,0 +1,6 @@
+{
+  "component": true,
+  "usingComponents": {
+    "brand-logo": "/components/brand-logo/index"
+  }
+}

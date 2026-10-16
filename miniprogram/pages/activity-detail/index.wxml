@@ -7,7 +7,7 @@
           <swiper-item wx:for="{{galleryImages}}" wx:for-item="media" wx:key="*this"><image class="hero-media" src="{{media}}" mode="aspectFill" data-index="{{index}}" binderror="galleryImageError" aria-label="活动图片 {{index + 1}}" /></swiper-item>
         </swiper>
         <image wx:elif="{{galleryImages.length === 1 && !coverFailed}}" class="hero-media" src="{{galleryImages[0]}}" mode="aspectFill" binderror="coverImageError" aria-label="{{item.title}}活动封面" />
-        <view wx:else class="hero-placeholder"><brand-logo compact="{{true}}" /><text>活动封面待更新</text></view>
+        <generated-activity-cover wx:else item="{{item}}" variant="detail" />
         <view class="cover-count" wx:if="{{galleryImages.length}}">1 / {{galleryImages.length}}</view>
       </view>
       <view class="info-bar">
@@ -79,8 +79,8 @@
           <scroll-view class="attendee-card-strip" scroll-x enhanced show-scrollbar="{{false}}" wx:if="{{attendees.length}}" aria-label="已报名人员头像与昵称">
             <view class="attendee-card-strip__inner">
               <button class="attendee-mini-card" wx:for="{{attendees}}" wx:key="id" data-index="{{index}}" bindtap="openAttendeeCard" aria-label="查看 {{item.displayName}} 的公开骑行名片">
-                <image wx:if="{{item.avatarUrl}}" class="attendee-avatar" src="{{item.avatarUrl}}" mode="aspectFill" data-index="{{index}}" data-url="{{item.avatarUrl}}" bindload="attendeeAvatarLoad" binderror="attendeeAvatarError" />
-                <image wx:else class="attendee-avatar attendee-avatar--placeholder" src="/assets/brand/logo-circle-144.png" mode="aspectFill" aria-label="{{item.displayName}}未设置公开头像" />
+                <image wx:if="{{item.avatarUrl}}" class="attendee-avatar {{item.genderClass}}" src="{{item.avatarUrl}}" mode="aspectFill" data-index="{{index}}" data-url="{{item.avatarUrl}}" bindload="attendeeAvatarLoad" binderror="attendeeAvatarError" />
+                <image wx:else class="attendee-avatar attendee-avatar--placeholder {{item.genderClass}}" src="/assets/brand/logo-circle-144.png" mode="aspectFill" aria-label="{{item.displayName}}未设置公开头像" />
                 <view class="attendee-mini-card__name">{{item.displayName || '此里骑手'}}</view>
                 <view class="attendee-mini-card__meta">{{item.status === 'checked_in' ? '已签到' : '已报名'}}</view>
               </button>
@@ -125,17 +125,24 @@
 </view>
 
 <view wx:if="{{selectedAttendee}}" class="rider-modal-mask" bindtap="closeAttendeeCard" catchtouchmove="keepAttendeeCard">
-  <view class="rider-card rider-card--photo" catchtap="keepAttendeeCard" role="dialog" aria-label="{{selectedAttendee.displayName}} 的完整公开骑行名片">
-    <view class="rider-card-photo">
-      <image wx:if="{{selectedAttendee.backgroundUrl}}" class="rider-card-photo__image" src="{{selectedAttendee.backgroundUrl}}" mode="aspectFill" data-url="{{selectedAttendee.backgroundUrl}}" bindload="selectedAttendeeBackgroundLoad" binderror="selectedAttendeeBackgroundError" />
-      <image wx:else class="rider-card-photo__image rider-card-photo__placeholder" src="/assets/brand/logo-share-500x400.png" mode="aspectFill" aria-label="此里默认骑行名片背景" />
-      <view class="rider-card-photo__scrim"></view>
-      <button class="rider-card-close" bindtap="closeAttendeeCard" aria-label="关闭骑行名片">×</button>
-      <view class="rider-card-photo__identity"><view class="rider-card-kicker">完整公开骑行名片</view><view class="rider-name">{{selectedAttendee.displayName || '此里骑手'}}</view><view class="rider-card-photo__badges"><view class="gender-pill {{selectedAttendee.genderClass}}">{{selectedAttendee.genderLabel}}</view><view class="rider-status">{{selectedAttendee.status === 'checked_in' ? '已签到' : '已报名'}}</view></view></view>
-    </view>
-    <view class="rider-card-body">
-      <view class="rider-card-note">昵称、头像与照片由骑友本人维护，仅展示公开资料。</view>
-    </view>
+  <view class="rider-card" catchtap="keepAttendeeCard" role="dialog" aria-label="活动报名骑手公开名片">
+    <button class="rider-card-close" bindtap="closeAttendeeCard" aria-label="关闭骑行名片">×</button>
+    <swiper class="rider-card-swiper" current="{{selectedAttendeeIndex}}" circular="{{attendees.length > 1}}" previous-margin="{{attendees.length > 1 ? '28rpx' : '0'}}" next-margin="{{attendees.length > 1 ? '28rpx' : '0'}}" bindchange="attendeeCardChange">
+      <swiper-item wx:for="{{attendees}}" wx:for-item="rider" wx:key="id">
+        <view class="rider-card-photo" aria-label="{{rider.displayName}} 的完整公开骑行名片">
+          <image wx:if="{{rider.backgroundUrl}}" class="rider-card-photo__image" src="{{rider.backgroundUrl}}" mode="aspectFill" data-index="{{index}}" data-url="{{rider.backgroundUrl}}" bindload="selectedAttendeeBackgroundLoad" binderror="selectedAttendeeBackgroundError" />
+          <image wx:else class="rider-card-photo__image rider-card-photo__placeholder" src="/assets/brand/logo-share-500x400.png" mode="aspectFill" aria-label="此里默认骑行名片背景" />
+          <view class="rider-card-photo__scrim"></view>
+          <view class="rider-card-photo__identity">
+            <image wx:if="{{rider.avatarUrl}}" class="rider-card-avatar {{rider.genderClass}}" src="{{rider.avatarUrl}}" mode="aspectFill" data-index="{{index}}" data-url="{{rider.avatarUrl}}" bindload="attendeeAvatarLoad" binderror="attendeeAvatarError" />
+            <view wx:else class="rider-card-avatar rider-card-avatar--placeholder {{rider.genderClass}}">骑</view>
+            <view class="rider-card-copy"><view class="rider-card-kicker">完整公开骑行名片</view><view class="rider-name">{{rider.displayName || '此里骑手'}}</view><view class="rider-card-photo__badges"><view class="gender-pill {{rider.genderClass}}">{{rider.genderLabel}}</view><view class="rider-status">{{rider.status === 'checked_in' ? '已签到' : '已报名'}}</view></view></view>
+          </view>
+          <view class="rider-card-note">昵称、头像与照片由骑友本人维护，仅展示公开资料。</view>
+        </view>
+      </swiper-item>
+    </swiper>
+    <view class="rider-card-pagination" wx:if="{{attendees.length > 1}}"><text>{{selectedAttendeeIndex + 1}} / {{attendees.length}}</text><text>左右滑动查看其他骑友</text></view>
   </view>
 </view>
 

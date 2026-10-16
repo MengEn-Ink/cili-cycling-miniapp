@@ -54,9 +54,12 @@ describe('核心页面沸点浅色主题配色', () => {
     expect(
       contrast(tokens['--color-media-muted'], tokens['--color-media-card-bg']),
     ).toBeGreaterThanOrEqual(4.5);
-    expectSemantic(
-      declaration(effectiveBlock(detailStyles, '.hero-placeholder'), 'color'),
-      '--color-media-muted',
+    const generatedCoverStyles = readFileSync(
+      'miniprogram/components/generated-activity-cover/index.wxss',
+      'utf8',
+    );
+    expect(generatedCoverStyles).toMatch(
+      /\.generated-cover__eyebrow,[\s\S]*?color:\s*var\(--color-media-muted\)/,
     );
   });
 

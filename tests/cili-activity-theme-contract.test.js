@@ -8,6 +8,8 @@ const activitiesController = read('miniprogram/pages/activities/index.ts');
 const activitiesStyles = read('miniprogram/pages/activities/index.wxss');
 const activityCard = read('miniprogram/components/activity-card/index.wxml');
 const activityCardStyles = read('miniprogram/components/activity-card/index.wxss');
+const generatedCover = read('miniprogram/components/generated-activity-cover/index.wxml');
+const generatedCoverStyles = read('miniprogram/components/generated-activity-cover/index.wxss');
 const detail = read('miniprogram/pages/activity-detail/index.wxml');
 const detailStyles = read('miniprogram/pages/activity-detail/index.wxss');
 const logo = read('miniprogram/components/brand-logo/index.wxml');
@@ -54,21 +56,29 @@ describe('CILI 活动页静态契约', () => {
     expect(activityCard).toContain("item.capacity <= 0 ? '名额' : '报名'");
     expect(activityCard).not.toContain('人已报名');
     expect(activityCard).toContain('hover-class="activity-card--pressed"');
-    expect(activityCard).toContain('wx:else class="card-placeholder"');
+    expect(activityCard).toContain('wx:else item="{{item}}" variant="card"');
     expect(activityCard).toContain('bindtap="open"');
     expect(activityCard).not.toContain('class="card-cta"');
     expect(activityCard).toContain('查看详情');
     expect(activityCard).toContain('aria-label="查看活动：{{item.title}}"');
     expect(activityCardStyles).toContain('.activity-card--pressed');
-    expect(activityCardStyles).toContain('.card-placeholder');
+    expect(activityCardStyles).not.toContain('.card-placeholder');
     expect(activityCardStyles).not.toContain('.card-cta');
+    expect(generatedCover).toContain("{{item.title || '一起出发去骑行'}}");
+    expect(generatedCover).toContain(
+      "{{item.route.routeName || item.route.start || '路线信息即将公布'}}",
+    );
+    expect(generatedCover).toContain("{{item.route.distanceKm > 0 ? item.route.distanceKm : '—'}}");
+    expect(generatedCoverStyles).toContain('background: var(--color-media-card-bg)');
+    expect(generatedCoverStyles).toContain('background: var(--color-brand)');
+    expect(generatedCoverStyles).not.toContain('linear-gradient');
   });
 
   it('方案 A 让每张卡都使用固定照片区与独立信息区并稳定承载长文案', () => {
     expect(activityCard).toContain('class="card-media"');
     expect(activityCard).toContain('class="card-info"');
     expect(activityCard).toContain('mode="aspectFill"');
-    expect(activityCard).toContain('wx:else class="card-placeholder"');
+    expect(activityCard).toContain('wx:else item="{{item}}" variant="card"');
     expect(activityCard).not.toContain('activity-card--featured');
     expect(activityCard).not.toContain('activity-card--compact');
     expect(activityCardStyles).not.toContain('.activity-card--compact');

@@ -168,9 +168,9 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   });
 
   it('设置页原型同步当前客户端版本与当前 App 更新', () => {
-    expect(schema).toContain("state: 'V2026.10.17.74'");
+    expect(schema).toContain("state: 'V2026.10.17.75'");
     expect(schema).toContain(
-      "['2026.10.17.74', '界面更清晰，操作更顺手', '统一按钮与页面细节，放大个人中心背景图，并将设置页精简为当前版本更新，让常用信息更容易找到。']",
+      "['2026.10.17.75', '骑行名片支持滑动浏览与专属活动封面', '报名骑友名片改为沉浸式无边框展示，多人可左右滑动查看；活动未上传照片时自动生成路线主题封面。']",
     );
     expect(templates).toContain('App 更新');
     expect(templates).not.toContain('最近五次');
