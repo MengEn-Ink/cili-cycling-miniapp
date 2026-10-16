@@ -127,7 +127,7 @@ async function main() {
     save: (report) =>
       fs.writeFileSync(path.join(outputPath, 'results.json'), JSON.stringify(report, null, 2)),
     execute: async () => {
-      miniProgram = await automator.launch({ cliPath, projectPath, launchTimeout: 180000 });
+      miniProgram = await automator.launch({ cliPath, projectPath, timeout: 180000 });
       miniProgram.on('exception', (payload) => result.exceptions.push(payload));
       const device = await miniProgram.callWxMethod('getSystemInfoSync');
       result.device = Object.fromEntries(

@@ -5,7 +5,20 @@ import { createHmac, randomBytes } from 'node:crypto';
 import { JourneyEvidenceKeyError, readJourneyEvidenceKey } from './journey-evidence-key.mjs';
 
 const FAILURE_PREFIX = 'P0 真实旅程签发失败';
-const SIGNATURE_DOMAIN = 'ride-event:p0-journey-run:v1';
+const SIGNATURE_DOMAIN = 'ride-event:p0-journey-run:v2';
+const ROUTE_MODES = Object.freeze(['public_strava', 'gpx']);
+const DEVICE_PLATFORMS = Object.freeze(['ios', 'android']);
+const UAT_CHECKS = Object.freeze([
+  'ordinary_member_write',
+  'admin_review',
+  'automatic_approval',
+  'duplicate_submit',
+  'privacy_roles',
+  'protected_media',
+  'canvas',
+  'share',
+  'network_retry',
+]);
 
 class IssuanceError extends Error {}
 
@@ -54,11 +67,15 @@ async function main() {
   const issuedAt = new Date().toISOString();
   const runId = `P0_${shanghaiDateSegment(issuedAt)}_${randomBytes(16).toString('hex').toUpperCase()}`;
   const template = {
+    schemaVersion: 2,
     marker: `E2E_RESULT:${runId}`,
     issuedAt,
     subjectAlias: `user_test_${runId}`,
     registrationId: `reg_test_${runId}`,
     runSignature: signRun(key, runId, issuedAt),
+    routeModes: ROUTE_MODES,
+    devicePlatforms: DEVICE_PLATFORMS,
+    uatChecks: UAT_CHECKS,
   };
 
   console.log(JSON.stringify(template, null, 2));

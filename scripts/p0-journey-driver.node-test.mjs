@@ -37,10 +37,55 @@ function readyPreflight() {
   };
 }
 
+function readyCurrentPreflight() {
+  return {
+    schemaVersion: 2,
+    environment: { kind: 'test', deployed: true },
+    member: {
+      available: true,
+      role: 'member',
+      profileReady: true,
+    },
+    routeFixture: {
+      publicRouteReady: true,
+      publicRoutePreviewReady: true,
+      gpxReady: true,
+      gpxPreviewReady: true,
+      gpxDownloadReady: true,
+    },
+    devices: {
+      iosReady: true,
+      androidReady: true,
+    },
+  };
+}
+
 test('完整普通成员和路线夹具预检通过', () => {
   assert.deepEqual(evaluateJourneyPreflight(readyPreflight()), {
     outcome: 'ready',
     blockers: [],
+  });
+});
+
+test('当前公开路线和 GPX 旅程不要求历史 OAuth 且要求双平台设备', () => {
+  assert.deepEqual(evaluateJourneyPreflight(readyCurrentPreflight()), {
+    outcome: 'ready',
+    blockers: [],
+  });
+
+  const blocked = readyCurrentPreflight();
+  blocked.routeFixture.publicRoutePreviewReady = false;
+  blocked.routeFixture.gpxDownloadReady = false;
+  blocked.devices.iosReady = false;
+  blocked.devices.androidReady = false;
+  assert.deepEqual(evaluateJourneyPreflight(blocked), {
+    outcome: 'not_executed',
+    blockers: [
+      'PUBLIC_ROUTE_PREVIEW_NOT_READY',
+      'ROUTE_GPX_DOWNLOAD_NOT_READY',
+      'IOS_DEVICE_NOT_READY',
+      'ANDROID_DEVICE_NOT_READY',
+    ],
   });
 });
 
@@ -392,6 +437,43 @@ test('审计投影拒绝未知动作、错误目标、额外字段、重复动�
   }
 });
 
+test('审计投影保留取消重报后的收尾取消并维持时间顺序', () => {
+  const registrationId = 'real-registration';
+  const registrationAlias = 'reg_test_P0_20261009_CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC';
+  const result = sanitizeJourneyAudits({
+    audits: [
+      {
+        action: 'registration.cancelled',
+        target_id: registrationId,
+        created_at: '2026-10-09T01:05:00.000Z',
+      },
+      {
+        action: 'registration.resubmitted',
+        target_id: registrationId,
+        created_at: '2026-10-09T01:04:00.000Z',
+      },
+      {
+        action: 'registration.cancelled',
+        target_id: registrationId,
+        created_at: '2026-10-09T01:03:00.000Z',
+      },
+    ],
+    subjectId: 'real-subject',
+    registrationId,
+    subjectAlias: 'user_test_P0_20261009_CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
+    registrationAlias,
+  });
+
+  assert.deepEqual(
+    result.map(({ action, target_id }) => ({ action, target_id })),
+    [
+      { action: 'registration.cancelled', target_id: registrationAlias },
+      { action: 'registration.resubmitted', target_id: registrationAlias },
+      { action: 'registration.cancelled', target_id: registrationAlias },
+    ],
+  );
+});
+
 test('补偿只取消可取消报名并在结束活动后回读归零', async () => {
   const calls = [];
   let reads = 0;
@@ -494,7 +576,7 @@ test('最终仍有活跃报名或活动未结束时补偿失败且不泄露状�
   assert.equal(reads, 2);
 });
 
-test('现场手册复用通用驱动并明确历史 OAuth 预检不能签发当前旅程', () => {
+test('现场手册使用 v2 当前旅程并把 v1 明确限定为历史兼容', () => {
   const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
   const guide = readFileSync(
     new URL('../docs/verification/p0-real-registration-journey.md', import.meta.url),
@@ -511,7 +593,9 @@ test('现场手册复用通用驱动并明确历史 OAuth 预检不能签发当�
   );
   assert.match(guide, /公开 Strava URL.*GPX/s);
   assert.match(guide, /条件不足.*not_executed/);
-  assert.match(guide, /历史 v1 OAuth.*不得用于签发当前完整旅程通过/s);
+  assert.match(guide, /schemaVersion.*2/s);
+  assert.match(guide, /IOS_DEVICE_NOT_READY.*ANDROID_DEVICE_NOT_READY/s);
+  assert.match(guide, /历史 v1.*仅用于验证历史证据/s);
   assert.match(guide, /waitForPageReady/);
   assert.match(guide, /runReconciledWrite/);
   assert.match(guide, /sanitizeJourneyAudits/);

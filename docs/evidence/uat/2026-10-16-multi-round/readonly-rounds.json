@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "mode": "real-cloud-readonly",
+  "git": "ce79517239e78fe400a4b46cd918e02cc45a2c0b",
+  "sourceDirty": true,
+  "clientVersion": "2026.10.16.69",
+  "uiDigest": "sha256:d288df5e7ab3a0002ca7a4aaf832ad686db4f5990cc0922b2bd2911a80182dbd",
+  "summary": {
+    "rounds": 3,
+    "passedChecks": 72,
+    "failedChecks": 0,
+    "runtimeExceptions": 0,
+    "routeVisits": 39,
+    "localScreenshots": 48
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "startedAt": "2026-10-16T06:48:17.641Z",
+      "finishedAt": "2026-10-16T06:49:41.272Z",
+      "passed": 24,
+      "failed": 0,
+      "exceptions": 0,
+      "routes": 13,
+      "screenshots": 16,
+      "outcome": "passed"
+    },
+    {
+      "round": 2,
+      "startedAt": "2026-10-16T06:50:32.389Z",
+      "finishedAt": "2026-10-16T06:51:57.791Z",
+      "passed": 24,
+      "failed": 0,
+      "exceptions": 0,
+      "routes": 13,
+      "screenshots": 16,
+      "outcome": "passed"
+    },
+    {
+      "round": 3,
+      "startedAt": "2026-10-16T06:52:59.119Z",
+      "finishedAt": "2026-10-16T06:54:21.945Z",
+      "passed": 24,
+      "failed": 0,
+      "exceptions": 0,
+      "routes": 13,
+      "screenshots": 16,
+      "outcome": "passed"
+    }
+  ],
+  "evidenceNote": "原始截图与 results.json 保留在执行机受控目录；本文件仅归档非敏感汇总。运行时工作区包含本轮脚本和文档修改，但 UI 摘要与已部署基线一致。"
+}
