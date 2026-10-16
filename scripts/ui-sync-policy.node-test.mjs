@@ -172,3 +172,53 @@ test('同步清单必须逐一覆盖 app.json 页面且证据成对存在', () =
     /证据文件缺失/,
   );
 });
+
+test('v2 要求每个路由有双端证据、状态说明和相同 CSS 视口', () => {
+  const png = Buffer.alloc(24);
+  Buffer.from('89504e470d0a1a0a', 'hex').copy(png);
+  png.writeUInt32BE(375, 16);
+  png.writeUInt32BE(812, 20);
+  const manifest = {
+    schemaVersion: 2,
+    syncedThrough: 'a'.repeat(40),
+    syncedAt: '2026-10-16T06:00:00.000Z',
+    source: { digest: `sha256:${'b'.repeat(64)}` },
+    prototype: { digest: `sha256:${'c'.repeat(64)}` },
+    routes: [{ id: 'activities', pagePath: 'pages/activities/index' }],
+    evidence: {
+      directory: 'docs/evidence/ui-sync/current',
+      viewport: { width: 375, height: 812 },
+      routes: [
+        {
+          id: 'activities',
+          devtools: 'a.png',
+          pages: 'b.png',
+          state: 'loaded',
+          data: 'sanitized-runtime',
+          review: 'aligned',
+          note: '使用不同活动样本，比较结构与控件',
+        },
+      ],
+    },
+  };
+  const options = { appPages: ['pages/activities/index'], readEvidence: () => png };
+  assert.doesNotThrow(() => validateManifest(manifest, options));
+  for (const field of ['state', 'data', 'review', 'note']) {
+    const bad = structuredClone(manifest);
+    delete bad.evidence.routes[0][field];
+    assert.throws(() => validateManifest(bad, options), /证据说明/);
+  }
+  const missing = structuredClone(manifest);
+  missing.routes.push({ id: 'profile', pagePath: 'pages/profile/index' });
+  assert.throws(
+    () =>
+      validateManifest(missing, {
+        ...options,
+        appPages: [...options.appPages, 'pages/profile/index'],
+      }),
+    /截图覆盖/,
+  );
+  const mismatch = structuredClone(manifest);
+  mismatch.evidence.viewport.width = 365;
+  assert.throws(() => validateManifest(mismatch, options), /视口/);
+});

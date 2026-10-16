@@ -13,7 +13,7 @@ describe('UI 重构通用组件契约', () => {
     }
     expect(styles).toContain('--color-brand: #e85b32');
     expect(styles).toContain('--color-border: #d6d6d2');
-    expect(read('docs/styles.css')).toContain('--color-action: #e85b32');
+    expect(read('docs/styles.css')).toContain('--color-action: #c84320');
   });
 
   it('头像组件在远端图片失败时回退品牌物料并透传事件', () => {

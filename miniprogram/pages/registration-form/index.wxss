@@ -645,14 +645,14 @@ page {
 }
 
 .submit-button {
-  border-color: var(--color-brand);
-  background: var(--color-brand);
-  color: var(--color-on-media);
+  border-color: var(--color-action);
+  background: var(--color-action);
+  color: var(--color-on-action);
 }
 
 .form-page .submit-button {
-  background: var(--color-brand);
-  color: var(--color-on-media);
+  background: var(--color-action);
+  color: var(--color-on-action);
 }
 
 .submit-button:active {

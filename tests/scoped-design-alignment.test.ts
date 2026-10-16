@@ -22,7 +22,7 @@ describe('报名、骑行名片与个人中心设计对齐', () => {
     );
     expectSemantic(
       declaration(effectiveBlock(styles, '.form-page .submit-button'), 'background'),
-      '--color-brand',
+      '--color-action',
     );
     expect(styles).not.toContain('linear-gradient');
   });

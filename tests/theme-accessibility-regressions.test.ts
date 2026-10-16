@@ -25,11 +25,11 @@ describe('unified UI accessibility regressions', () => {
     expect(tokens['--color-bg']).toBe('#f3f3f1');
     expect(tokens['--color-text']).toBe('#171717');
     expect(tokens['--color-brand']).toBe('#e85b32');
-    expect(tokens['--color-action']).toBe('#171717');
+    expect(tokens['--color-action']).toBe('#c84320');
     expect(tokens['--color-on-action']).toBe('#ffffff');
     expectUiContrast('var(--color-text)', 'var(--color-bg)', 7);
     expectUiContrast('var(--color-on-brand)', 'var(--color-brand)', 4.5);
-    expectUiContrast('var(--color-on-action)', 'var(--color-action)', 7);
+    expectUiContrast('var(--color-on-action)', 'var(--color-action)', 4.5);
 
     const globalPage = effectiveBlock(app, 'page');
     expectSemantic(declaration(globalPage, 'background'), '--color-bg');
@@ -165,11 +165,11 @@ describe('unified UI accessibility regressions', () => {
     expectSemantic(declaration(button, 'color'), '--color-on-action');
     const foreground = resolvedHex('var(--color-on-action)', tokens);
     expect(contrast(foreground, resolvedHex('var(--color-action)', tokens))).toBeGreaterThanOrEqual(
-      7,
+      4.5,
     );
     expect(
       contrast(foreground, resolvedHex('var(--color-action-active)', tokens)),
-    ).toBeGreaterThanOrEqual(7);
+    ).toBeGreaterThanOrEqual(4.5);
   });
 
   it('keeps photographic hero copy white on dark media overlays', () => {
@@ -179,7 +179,8 @@ describe('unified UI accessibility regressions', () => {
 
     const reviewHero = effectiveBlock(app, '.info-bar');
     expectSemantic(declaration(reviewHero, 'color'), '--color-on-media');
-    expectUiContrast('var(--color-on-media)', 'var(--color-action)', 7);
+    expectSemantic(declaration(reviewHero, 'background'), '--color-media-card-bg');
+    expectUiContrast('var(--color-on-media)', 'var(--color-media-card-bg)', 7);
   });
 
   it('keeps activity card and detail metric labels readable', () => {
@@ -211,9 +212,9 @@ describe('unified UI accessibility regressions', () => {
     const reviewStyles = read('miniprogram/pages/admin/review-detail/index.wxss');
     expectSemantic(
       declaration(effectiveBlock(reviewStyles, '.status-explain'), 'color'),
-      '--color-media-muted',
+      '--color-muted',
     );
-    expectUiContrast('var(--color-media-muted)', 'var(--color-action)');
+    expectUiContrast('var(--color-muted)', 'var(--color-surface)');
   });
 
   it('uses only supported WXML elements for the activities headline', () => {

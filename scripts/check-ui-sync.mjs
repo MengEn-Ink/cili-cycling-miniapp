@@ -32,6 +32,7 @@ export function assessUiSyncState({
   manifest,
   appPages,
   baselineUiDigest,
+  currentUiDigest,
   currentPrototypeDigest,
   uiCommitShas,
   changedFiles,
@@ -40,13 +41,26 @@ export function assessUiSyncState({
   strict = false,
 }) {
   validateManifest(manifest, { appPages, readEvidence });
-  if (baselineUiDigest !== manifest.source.digest) {
+  if (manifest.schemaVersion === 2 && currentUiDigest !== manifest.source.digest) {
+    throw new Error('截图对应的 UI 内容摘要不匹配，请重新采集并核对双端证据');
+  }
+  if (manifest.schemaVersion === 1 && baselineUiDigest !== manifest.source.digest) {
     throw new Error(`UI 基线摘要不匹配：清单 ${manifest.source.digest}，Git ${baselineUiDigest}`);
   }
   if (currentPrototypeDigest !== manifest.prototype.digest) {
     throw new Error(
       `Pages 原型摘要不匹配：清单 ${manifest.prototype.digest}，当前 ${currentPrototypeDigest}`,
     );
+  }
+  if (manifest.schemaVersion === 2) {
+    return {
+      ok: true,
+      uiCommits: 0,
+      ageDays: Math.max(0, Math.floor((now.getTime() - Date.parse(manifest.syncedAt)) / DAY_MS)),
+      remaining: manifest.policy.maxUnsyncedUiCommits,
+      immediateFiles: [],
+      reason: '双端截图与当前 UI / Pages 内容摘要一致（业务与真机验收见独立记录）',
+    };
   }
 
   const immediateFiles = [
@@ -96,6 +110,13 @@ function baselineUiDigest(ref) {
 
 function currentPrototypeDigest() {
   return digestFiles(new Map(PROTOTYPE_FILES.map((file) => [file, readFileSync(file)])));
+}
+
+function currentUiDigest() {
+  const files = lines(
+    gitText(['ls-files', '--cached', '--others', '--exclude-standard', '--', ...UI_PATHS]),
+  ).filter((file) => classifyUiPath(file).ui);
+  return digestFiles(new Map([...new Set(files)].map((file) => [file, readFileSync(file)])));
 }
 
 function readManifest() {
@@ -152,7 +173,9 @@ export function run({ strict = process.argv.includes('--strict') } = {}) {
   const result = assessUiSyncState({
     manifest,
     appPages: appConfig.pages,
-    baselineUiDigest: baselineUiDigest(manifest.syncedThrough),
+    baselineUiDigest:
+      manifest.schemaVersion === 1 ? baselineUiDigest(manifest.syncedThrough) : undefined,
+    currentUiDigest: currentUiDigest(),
     currentPrototypeDigest: currentPrototypeDigest(),
     uiCommitShas: uiCommitShas(manifest.syncedThrough),
     changedFiles: changedFiles(manifest.syncedThrough),

@@ -26,10 +26,12 @@
     "check:release-notes": "node scripts/check-release-notes.mjs",
     "test:release-notes": "node --test scripts/check-release-notes.node-test.mjs",
     "test:ui-sync": "node --test scripts/ui-sync-policy.node-test.mjs scripts/check-ui-sync.node-test.mjs",
+    "test:design": "node --test scripts/design-contract.node-test.mjs scripts/e2e-report.node-test.mjs",
+    "check:design": "node scripts/check-design-contract.mjs",
     "deploy:miniprogram": "node scripts/upload-miniprogram-ci.mjs",
     "check:ui-sync": "node scripts/check-ui-sync.mjs",
     "build": "rm -rf dist && tsc -p tsconfig.build.json && node scripts/validate.mjs",
-    "validate": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:journey-evidence && npm run test:bootstrap && npm run test:deploy && npm run check:experience-releases && npm run test:release-notes && npm run test:ui-sync && npm run check:release-notes && npm run check:ui-sync && npm run test:cloud && npm run verify:cloud-packages && npm run build",
+    "validate": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:journey-evidence && npm run test:bootstrap && npm run test:deploy && npm run check:experience-releases && npm run test:release-notes && npm run test:ui-sync && npm run test:design && npm run check:design && npm run check:release-notes && npm run check:ui-sync && npm run test:cloud && npm run verify:cloud-packages && npm run build",
     "audit:all": "npm audit --audit-level=high && npm --prefix cloudfunctions/shared audit --audit-level=high && npm --prefix cloudfunctions/auth audit --audit-level=high && npm --prefix cloudfunctions/activity-read audit --audit-level=high && npm --prefix cloudfunctions/activity-admin audit --audit-level=high && npm --prefix cloudfunctions/registration audit --audit-level=high && npm --prefix cloudfunctions/admin-review audit --audit-level=high && npm --prefix cloudfunctions/notification-send audit --audit-level=high && npm --prefix cloudfunctions/profile audit --audit-level=high && npm --prefix cloudfunctions/profile-media-cleanup audit --audit-level=high && npm --prefix cloudfunctions/route-maintenance audit --audit-level=high"
   },
   "devDependencies": {

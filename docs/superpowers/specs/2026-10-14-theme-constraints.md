@@ -1,7 +1,7 @@
 # 此里小程序主题规范（统一约束，2026-10-14）
 
-> 状态：用户已确认（2026-10-14，含小范围成功 / 警告色补充）。本文是全套 UI（产品代码、GitHub Pages 原型、设计说明）唯一的主题约束。
-> 事实源：origin/main `47b10436` 的 `miniprogram/app.wxss`。本文与 app.wxss 不一致时，以 app.wxss 为准，并回头修正本文。
+> 状态：历史设计记录。2026-10-16 起，正式约束统一由 [design-system.md](../../design-system.md) 与 [design-contract.json](../../design-contract.json) 管理。
+> 下文黑色 CTA、2px 黑卡片边线及“原型先行”是历史决策，不作为当前门禁；当前 Pages 与小程序共同使用满足白字对比度的深橙主操作。
 > 适用范围：`miniprogram/**/*.wxss`、`docs/styles.css`、`docs/templates.js`，以及所有设计说明。逐页设计见 [2026-10-14-full-ui-redesign.md](2026-10-14-full-ui-redesign.md)；该文档 §2“公共规范”改为引用本文，不再另写一份。
 
 ## 0. 为什么单独成文

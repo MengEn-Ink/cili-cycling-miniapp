@@ -101,8 +101,8 @@
   width: 160rpx;
   min-height: var(--control-height);
   border-radius: 999rpx;
-  background: var(--color-brand);
-  color: var(--color-on-media);
+  background: var(--color-action);
+  color: var(--color-on-action);
 }
 .registration-card {
   position: relative;

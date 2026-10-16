@@ -53,6 +53,7 @@
 
   const queryParams = new URLSearchParams(window.location.search);
   if (queryParams.has('capture')) document.body.classList.add('capture');
+  if (queryParams.get('capture') === 'viewport') document.body.classList.add('capture-viewport');
   if (queryParams.get('viewport') === '340') document.body.classList.add('is-narrow');
 
   /* ---------- 对比度（WCAG 2.1 相对亮度），直接读取 CSS 变量计算 ---------- */
@@ -78,7 +79,7 @@
     ['次要文字 / 灰底', '--color-muted', '--color-raised', 4.5, '中性提示条、已结束标签'],
     ['占位文字', '--color-placeholder', '--color-surface', 4.5, '输入框 placeholder（只放在白底）'],
     ['禁用文字', '--color-disabled-text', '--color-raised', 4.5, '禁用按钮'],
-    ['主按钮', '--color-on-action', '--color-action', 4.5, '黑底白字主按钮、选中项'],
+    ['主按钮', '--color-on-action', '--color-action', 4.5, '深橙底白字主按钮、选中项'],
     ['黑底辅助文字', '--color-media-muted', '--color-media-card-bg', 4.5, '黑底信息条的时间、地点'],
     ['当前步骤', '--color-on-brand', '--color-brand', 4.5, '橙底近黑字步骤条'],
     ['错误说明', '--color-brand-active', '--color-surface', 4.5, '白底卡片内的字段错误说明'],

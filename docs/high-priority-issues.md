@@ -6,7 +6,7 @@
 
 ## 当前基线
 
-- 代码与 Pages 基线：`main` 最新提交；最近一次已核验基线为 `c16da08`（PR #230，研发交付中心）。
+- 代码与 Pages 基线：`main` 最新提交；本轮起点为 `40324f1b`（PR #232），在 `fix/e2e-design-acceptance-20261016` 进行部署验收与设计契约校准。
 - main CI：run [38833306179](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38833306179) 成功；Pages：run [38833306570](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38833306570) 成功。
 - 最近一次已核验微信开发版：run [38695551594](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38695551594) 成功，版本 `0.0.231.2`；是否存在更新版本以微信后台和最新 workflow 为准。
 - 云函数：`profile`、`registration`、`activity-read`、`activity-admin`、`admin-review` 已按对应功能 PR 部署；`route-web` 与 `/route/embed` 已确认下线。纯文档、测试和未引用资源清理不触发云函数部署。
@@ -21,6 +21,8 @@
 | P0 | Strava / GPX 路线双模式验收 | Strava 公开路线免授权解析、规范化链接复制、GPX 解析与下载已实现；旧 OAuth、`route-web` 和内嵌路线页已退役 | 使用当前开发版完成 iOS/Android 的公开路线解析、GPX 文件选择、Canvas 和下载验收；确认历史 OAuth 数据 dry-run 与备份后再决定是否执行 purge |
 | P0 | 云端密钥与媒体链路就绪性 | 媒体 owner/canonical、`PROFILE_MEDIA_PATH_SECRET`、加密与服务端临时地址签发均有测试和部署记录 | 在目标环境回读受影响函数配置并完成真实头像、背景图、活动图、群二维码和路线图 smoke；缺证据时不得宣称线上就绪 |
 | P1 | 体验版晋级与 UAT | 开发版自动上传和候选/验证两阶段晋级工作流已具备 | 选择已核验开发版晋级体验版，完成用户验收并留存版本、时间、验收人和结果 |
+| P1 | Pages / 微信统一设计与运行证据 | 统一规范、32 个变量与 15 组对比度；只读 E2E 24 项通过；13 对截图已脱敏归档；长编号与窄屏命令溢出已修复；validate、coverage、audit 和 v2 严格门禁通过，正在提交 PR | 完成 PR 与部署回读；继续收敛行程票据、名片、设置页等结构差异（逐页见本轮验收记录）；普通成员写链路与物理真机独立验收 |
+| P1 | 当前旅程离线签发器迁移 | 当前 P0 手册已移除 OAuth 前置；旧 v1 工具仅用于历史证据，写后对账与补偿 API 可复用 | 将签发与预检协议迁移到公开路线 / GPX 和当前报名状态；不得用历史 v1 通过代替当前 P0 验收 |
 
 ## 分支与交付约束
 

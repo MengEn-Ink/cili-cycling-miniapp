@@ -55,7 +55,7 @@ describe('HP-20261010-02 统一明亮 UI 全页对比度契约', () => {
       ['--color-on-media-gender-female', '--color-media-card-bg', 4.5],
       ['--color-on-media-gender-unknown', '--color-media-card-bg', 4.5],
       ['--color-on-brand', '--color-brand', 3],
-      ['--color-on-action', '--color-action', 7],
+      ['--color-on-action', '--color-action', 4.5],
     ] as const) {
       expectUiContrast(`var(${foreground})`, `var(${background})`, minimum);
     }

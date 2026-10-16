@@ -8,3 +8,5 @@
 - 每次提交、部署、验收或阻塞变化后，都要同步更新清单状态和下一步。
 - 不在清单中保留已完成事项，Git 历史即归档。
 - 个人信息展示规则（用户已确认）：本人与审核管理员完整显示实名和电话，其他骑友只见昵称，后援车司机电话公开完整显示；详见 [`docs/cloudbase-schema.md`](docs/cloudbase-schema.md) 的“个人信息展示规则”。
+- UI 修改前先读 [`docs/design-system.md`](docs/design-system.md) 与对应 Pages 路由；变量遵循 `docs/design-contract.json`，浅色文字和控件必须可读。
+- UI 交付须通过 `check:design`、`check:ui-sync -- --strict` 与全量 `validate`；13 页双端截图须绑定实际内容摘要并标注状态、脱敏和差异。模拟器通过不能替代物理真机或完整写链路验收。

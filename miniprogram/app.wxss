@@ -10,12 +10,12 @@ page {
   --color-border: #d6d6d2;
   --color-border-subtle: var(--color-border);
   --color-border-strong: #171717;
-  --color-card-border: #171717;
+  --color-card-border: #d6d6d2;
   --color-input-bg: #ffffff;
-  --color-action: #171717;
-  --color-action-active: #333333;
+  --color-action: #c84320;
+  --color-action-active: #a93619;
   --color-on-action: #ffffff;
-  --color-on-action-muted: var(--color-media-muted);
+  --color-on-action-muted: #ffffff;
   --color-on-media: #ffffff;
   --color-media-muted: #d4d4d4;
   --color-media-card-bg: #171717;
@@ -52,12 +52,12 @@ page {
   --color-on-media-gender-unknown: var(--color-on-media);
   --shadow-hard: 0 14rpx 36rpx var(--color-shadow);
   --shadow-card: 0 10rpx 28rpx var(--color-shadow);
-  --radius-sm: 16rpx;
+  --radius-sm: 20rpx;
   --radius-md: 24rpx;
   --radius-display: 32rpx;
-  --radius-card: 16rpx;
+  --radius-card: 28rpx;
   --control-height: 88rpx;
-  --segment-height: 80rpx;
+  --segment-height: 88rpx;
   --page-gutter: 48rpx;
   --page-gutter-narrow: 32rpx;
   --card-gap: 32rpx;
@@ -182,7 +182,7 @@ button::after {
 .state-card {
   margin-top: var(--card-gap);
   padding: 32rpx;
-  border: 4rpx solid var(--color-card-border);
+  border: 2rpx solid var(--color-card-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
   color: var(--color-text);
@@ -231,7 +231,7 @@ button::after {
   justify-content: center;
   min-height: var(--control-height);
   padding: 0 24rpx;
-  border: 4rpx solid var(--color-border-strong);
+  border: 2rpx solid var(--color-border);
   border-radius: var(--radius-sm) !important;
   background: var(--color-action) !important;
   color: var(--color-on-action) !important;
@@ -708,5 +708,23 @@ picker[disabled] {
   .route-native-metrics,
   .route-metric-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 375px) {
+  button,
+  button.btn,
+  button.secondary,
+  button.button,
+  button.text-button,
+  button.image-action,
+  button.map-button,
+  button.photo-action,
+  button.route-action,
+  .timeline-tabs .timeline-tab,
+  .status-filters .status-filter,
+  .filter-tabs .filter-tab,
+  .experience-segment .segment {
+    min-height: 44px;
   }
 }

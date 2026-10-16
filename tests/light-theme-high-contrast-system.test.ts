@@ -38,7 +38,7 @@ describe('approved unified high-contrast UI', () => {
       4.5,
     );
     expect(contrast(tokens['--color-on-action'], tokens['--color-action'])).toBeGreaterThanOrEqual(
-      7,
+      4.5,
     );
   });
 
