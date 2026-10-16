@@ -1,0 +1,81 @@
+<view class="route-analysis-page">
+  <state-view loading="{{loading}}" error="{{error}}" empty="{{empty}}" retryable="{{true}}" bindretry="retry" loading-title="正在分析路线" loading-copy="正在读取活动路线并计算关键坡段" empty-title="暂无可分析路线" empty-copy="活动尚未提供距离、海拔剖面或路线轮廓">
+    <view class="analysis-header">
+      <view class="analysis-kicker">完整路线分析 · 只读</view>
+      <view class="analysis-title">{{activityTitle}}</view>
+      <view class="analysis-route">{{routeTitle}}</view>
+      <view class="analysis-boundary">使用活动已有路线数据进行本地规则分析，不含实时导航、天气或道路事件判断。</view>
+    </view>
+
+    <metric-grid class="overview-grid" items="{{overviewItems}}" columns="2" narrow-columns="2" aria-label="路线总览指标" />
+
+    <view class="analysis-card">
+      <view class="section-title">路线策略</view>
+      <view class="bullet-row" wx:for="{{strategySummary}}" wx:key="*this"><text class="bullet-mark">/</text><text>{{item}}</text></view>
+    </view>
+
+    <view class="analysis-card">
+      <view class="section-title">海拔剖面</view>
+      <view class="section-hint">点击关键公里点或分段后，游标与范围会同步更新。首期不支持图表拖动。</view>
+      <canvas wx:if="{{profileAvailable}}" id="route-analysis-elevation" type="2d" class="elevation-chart" aria-label="路线海拔剖面与当前选择"></canvas>
+      <view wx:else class="analysis-empty">暂无有效海拔剖面，坡度与精确坡段已降级。</view>
+    </view>
+
+    <view class="analysis-card">
+      <view class="section-title">关键公里点</view>
+      <view class="point-list">
+        <button class="point-item {{selectedPointId === point.id ? 'is-selected' : ''}}" wx:for="{{keyPoints}}" wx:for-item="point" wx:key="id" data-id="{{point.id}}" bindtap="selectPoint" aria-label="选择{{point.name}}">
+          <view class="point-main"><text class="point-name">{{point.name}}</text><text class="point-source">{{point.source}} · 置信度{{point.confidence}}</text></view>
+          <view class="point-metric"><text>{{point.kmText}}</text><text>{{point.elevationText}}</text></view>
+        </button>
+      </view>
+    </view>
+
+    <view class="analysis-card">
+      <view class="section-title">主要分段</view>
+      <button class="segment-item {{selectedSegmentId === segment.id ? 'is-selected' : ''}}" wx:for="{{segments}}" wx:for-item="segment" wx:key="id" data-id="{{segment.id}}" bindtap="selectSegment" aria-label="选择{{segment.name}}分段">
+        <view class="segment-head"><text class="segment-name">{{segment.name}}</text><text class="difficulty">{{segment.difficulty}}</text></view>
+        <view class="segment-range">{{segment.rangeText}} · {{segment.changeText}}</view>
+        <view class="segment-grade">{{segment.gradeText}}</view>
+        <view class="segment-strategy">{{segment.strategy}}</view>
+      </button>
+    </view>
+
+    <view class="analysis-card map-card">
+      <view class="section-title">路线地图</view>
+      <view class="section-hint">地图仅展示活动已有路线，不读取当前位置，也不是实时导航。</view>
+      <map wx:if="{{mapAvailable}}" id="route-analysis-map" class="route-map" latitude="{{mapLatitude}}" longitude="{{mapLongitude}}" scale="12" markers="{{markers}}" polyline="{{polylines}}" include-points="{{mapPoints}}" bindmarkertap="markerTap" show-location="{{false}}"></map>
+      <view wx:else class="analysis-empty">暂无有效路线轮廓，地图已降级；仍可查看已有指标与关键公里数。</view>
+    </view>
+
+    <view class="analysis-card selected-card" wx:if="{{selectedPoint}}">
+      <view class="section-title">当前关键点</view>
+      <view class="selected-name">{{selectedPoint.name}}</view>
+      <view class="selected-grid">
+        <view><text>公里</text><text>{{selectedPoint.kmText}}</text></view>
+        <view><text>海拔</text><text>{{selectedPoint.elevationText}}</text></view>
+        <view><text>来源</text><text>{{selectedPoint.source}}</text></view>
+        <view><text>置信度</text><text>{{selectedPoint.confidence}}</text></view>
+      </view>
+      <view class="coordinate-row"><text>坐标</text><text class="coordinate-value">{{selectedPoint.coordinateText}}</text></view>
+      <view class="point-note">{{selectedPoint.note}}</view>
+      <button wx:if="{{selectedPoint.hasCoordinate}}" class="copy-button" bindtap="copyCoordinate">复制坐标</button>
+    </view>
+
+    <view class="analysis-card external-card">
+      <view class="section-title">外部增强能力状态</view>
+      <view class="boundary-item"><view class="boundary-status">实时天气未接入</view><view>需要天气服务授权、服务端代理、逐点逐时匹配、缓存与费用策略；当前不生成天气或穿衣结论。</view></view>
+      <view class="boundary-item"><view class="boundary-status">交通事件覆盖待开通</view><view>施工、事故、管制与封路需要商业数据授权和区域覆盖验证；无覆盖数据不等于道路畅通。</view></view>
+    </view>
+
+    <view class="analysis-card">
+      <view class="section-title">基础装备建议</view>
+      <view class="equipment-row" wx:for="{{equipment}}" wx:key="*this"><text>✓</text><text>{{item}}</text></view>
+    </view>
+
+    <view class="analysis-card quality-card">
+      <view class="section-title">数据来源与质量</view>
+      <view class="quality-row" wx:for="{{quality}}" wx:key="*this">{{item}}</view>
+    </view>
+  </state-view>
+</view>

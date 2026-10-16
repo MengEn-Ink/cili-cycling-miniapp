@@ -74,6 +74,11 @@
           </view>
         </view>
 
+        <view class="card route-analysis-entry" wx:if="{{canAnalyzeRoute}}">
+          <view class="section-heading"><view><view class="title">完整路线分析</view><view class="route-action-note">查看关键公里点、主要坡段、海拔联动地图与基础装备建议。</view></view><view class="section-tag">分析</view></view>
+          <button class="route-action route-action--primary" bindtap="openRouteAnalysis">查看完整路线分析</button>
+        </view>
+
         <view class="card attendees-card" wx:if="{{attendeesVisible}}">
           <view class="attendees-heading"><view><view class="title">已报名人员</view><view class="attendees-hint" wx:if="{{attendees.length}}">头像与昵称经本人授权展示</view></view></view>
           <scroll-view class="attendee-card-strip" scroll-x enhanced show-scrollbar="{{false}}" wx:if="{{attendees.length}}" aria-label="已报名人员头像与昵称">

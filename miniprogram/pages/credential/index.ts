@@ -2,6 +2,7 @@ import { rideService } from '../../services/ride-service';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
 import { formatActivityDate, formatActivityTime, formatChinaDateTime } from '../../utils/date-time';
+import { hasAnalyzableRoute } from '../../utils/route-analysis';
 
 function optionalBeforeDeadline<T>(load: () => Promise<T>, timeoutMs = 1_800): Promise<T | null> {
   return new Promise((resolve) => {
@@ -63,6 +64,7 @@ Page({
     meetingAddress: '',
     navigationLocation: null as any,
     canNavigate: false,
+    canAnalyzeRoute: false,
   },
   onShow() {},
   async onLoad(q: any) {
@@ -139,6 +141,7 @@ Page({
         meetingAddress,
         navigationLocation,
         canNavigate: !!navigationLocation,
+        canAnalyzeRoute: hasAnalyzableRoute(activity.route),
       });
     } catch (error) {
       this.setData({ error: error instanceof Error ? error.message : '报名凭证加载失败' });
@@ -174,6 +177,11 @@ Page({
     } finally {
       this.setData({ cancelling: false });
     }
+  },
+  openRouteAnalysis() {
+    const id = this.data.activity?.id;
+    if (!id || !this.data.canAnalyzeRoute) return;
+    wx.navigateTo({ url: `/pages/route-analysis/index?id=${encodeURIComponent(id)}` });
   },
   navigateToMeeting() {
     const location = this.data.navigationLocation;

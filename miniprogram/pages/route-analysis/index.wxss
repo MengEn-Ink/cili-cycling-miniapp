@@ -1,0 +1,279 @@
+.route-analysis-page {
+  min-height: 100vh;
+  padding: 32rpx var(--page-gutter) calc(40rpx + env(safe-area-inset-bottom));
+  overflow-x: hidden;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.analysis-header,
+.analysis-card {
+  padding: 32rpx;
+  border: 2rpx solid var(--color-card-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.analysis-card,
+.overview-grid {
+  display: block;
+  width: 100%;
+  margin-top: var(--card-gap);
+}
+
+.analysis-kicker,
+.point-source,
+.section-hint,
+.segment-range,
+.segment-grade,
+.quality-row {
+  color: var(--color-muted);
+}
+
+.analysis-kicker {
+  font-size: 24rpx;
+  font-weight: 800;
+  letter-spacing: 2rpx;
+}
+
+.analysis-title {
+  margin-top: 12rpx;
+  font-size: 48rpx;
+  line-height: 64rpx;
+  font-weight: 900;
+}
+
+.analysis-route {
+  margin-top: 8rpx;
+  font-size: 32rpx;
+  line-height: 48rpx;
+  font-weight: 800;
+}
+
+.analysis-boundary,
+.section-hint,
+.point-note,
+.boundary-item,
+.quality-row {
+  margin-top: 16rpx;
+  line-height: 42rpx;
+}
+
+.section-title {
+  font-size: 36rpx;
+  line-height: 52rpx;
+  font-weight: 900;
+}
+
+.bullet-row,
+.equipment-row {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 20rpx;
+  align-items: flex-start;
+}
+
+.bullet-mark,
+.equipment-row > text:first-child {
+  color: var(--color-brand-active);
+  font-weight: 900;
+}
+
+.elevation-chart {
+  width: 100%;
+  height: 320rpx;
+  margin-top: 24rpx;
+  border-radius: var(--radius-md);
+  background: var(--color-raised);
+}
+
+.analysis-empty {
+  margin-top: 20rpx;
+  padding: 24rpx;
+  border-radius: var(--radius-md);
+  background: var(--color-raised);
+  color: var(--color-muted);
+}
+
+.point-list {
+  margin-top: 12rpx;
+}
+
+.point-item,
+.segment-item {
+  width: 100%;
+  min-height: 96rpx;
+  margin-top: 16rpx;
+  padding: 20rpx 24rpx;
+  border: 2rpx solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: left;
+}
+
+.point-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.point-item.is-selected,
+.segment-item.is-selected {
+  border-color: var(--color-action);
+  background: var(--color-brand-soft);
+}
+
+.point-main,
+.point-metric {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.point-main {
+  min-width: 0;
+  align-items: flex-start;
+}
+
+.point-metric {
+  flex: 0 0 auto;
+  align-items: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+
+.point-name,
+.segment-name,
+.selected-name,
+.boundary-status {
+  font-weight: 900;
+}
+
+.point-source,
+.segment-range,
+.segment-grade {
+  font-size: 24rpx;
+  line-height: 36rpx;
+}
+
+.segment-item {
+  display: block;
+}
+
+.segment-head,
+.coordinate-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.difficulty {
+  padding: 4rpx 14rpx;
+  border-radius: 999rpx;
+  background: var(--color-raised);
+  color: var(--color-text);
+  font-size: 24rpx;
+}
+
+.segment-strategy {
+  margin-top: 12rpx;
+  line-height: 42rpx;
+}
+
+.route-map {
+  width: 100%;
+  height: 520rpx;
+  margin-top: 24rpx;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.selected-card {
+  position: relative;
+  z-index: 0;
+}
+
+.selected-name {
+  margin-top: 16rpx;
+  font-size: 32rpx;
+}
+
+.selected-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+
+.selected-grid > view {
+  display: flex;
+  flex-direction: column;
+  padding: 20rpx;
+  border-radius: var(--radius-sm);
+  background: var(--color-raised);
+}
+
+.selected-grid > view > text:first-child,
+.coordinate-row > text:first-child {
+  color: var(--color-muted);
+  font-size: 24rpx;
+}
+
+.coordinate-row {
+  margin-top: 20rpx;
+  align-items: center;
+}
+
+.coordinate-value {
+  font-family: var(--font-mono);
+  font-size: 24rpx;
+  overflow-wrap: anywhere;
+}
+
+.copy-button {
+  width: 100%;
+  min-height: var(--control-height);
+  margin-top: 24rpx;
+  border: 2rpx solid var(--color-action);
+  border-radius: var(--radius-sm);
+  background: var(--color-action);
+  color: var(--color-on-action);
+  font-weight: 800;
+}
+
+.boundary-item {
+  padding: 24rpx;
+  border-radius: var(--radius-md);
+  background: var(--color-status-warning-soft);
+  color: var(--color-status-warning);
+}
+
+.equipment-row {
+  padding-bottom: 16rpx;
+  border-bottom: 2rpx solid var(--color-border);
+}
+
+.quality-card {
+  margin-bottom: 0;
+}
+
+@media (max-width: 340px) {
+  .route-analysis-page {
+    padding-right: var(--page-gutter-narrow);
+    padding-left: var(--page-gutter-narrow);
+  }
+
+  .analysis-header,
+  .analysis-card {
+    padding: 24rpx;
+  }
+
+  .point-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .point-metric {
+    align-items: flex-start;
+  }
+}

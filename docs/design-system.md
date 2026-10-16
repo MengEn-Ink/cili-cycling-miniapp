@@ -1,6 +1,6 @@
 # 此里统一设计规范
 
-状态：沸点风格令牌已在双端实施，等待部署与真机验收后将基线锁定为正式。基线日期 2026-10-16。适用于 `app.json` 全部 13 页、共享组件和 Pages。结构与交互以当前 Pages 为参照，变量与可读性以 [design-contract.json](design-contract.json) 为机器可校验标准；[沸点手稿与全套设计交接成果](designs/2026-10-16-boiling-point/index.html)负责视觉验收，[沸点风格设计令牌方案](superpowers/specs/2026-10-16-boiling-point-design-tokens.md)负责实施规则。历史橙黑/暖灰主题文档仅保留决策背景。
+状态：沸点风格令牌已在双端实施，等待部署与真机验收后将基线锁定为正式。基线日期 2026-10-16。适用于 `app.json` 注册页面、共享组件和 Pages；新增路线分析页的 Pages 原型、截图与严格 UI 同步由后续全量门禁补齐。结构与交互以当前 Pages 为参照，变量与可读性以 [design-contract.json](design-contract.json) 为机器可校验标准；[沸点手稿与全套设计交接成果](designs/2026-10-16-boiling-point/index.html)负责视觉验收，[沸点风格设计令牌方案](superpowers/specs/2026-10-16-boiling-point-design-tokens.md)负责实施规则。历史橙黑/暖灰主题文档仅保留决策背景。
 
 ## 色彩与可读性
 

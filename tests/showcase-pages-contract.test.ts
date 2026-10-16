@@ -14,6 +14,7 @@ const templates = read('docs/templates.js');
 const prototypeRoutes = [
   'activities',
   'activity-detail',
+  'route-analysis',
   'registration-form',
   'registrations',
   'credential',
@@ -33,9 +34,9 @@ const routeToPagePath = (route: string) =>
     : `pages/${route}/index`;
 
 describe('GitHub Pages 全页面高保真原型门禁', () => {
-  it('与 app.json 的 13 个可达页面逐一对应，官方路线页 route-view 不进入原型', () => {
-    expect(prototypeRoutes).toHaveLength(13);
-    // route-view 由 #210 从 app.json 删除；合并前后本断言都成立。
+  it('与 app.json 的 14 个可达页面逐一对应，官方路线页 route-view 不进入原型', () => {
+    expect(prototypeRoutes).toHaveLength(14);
+    // route-view 由 #210 从 app.json 删除；新增完整路线分析页同步进入原型。
     expect(prototypeRoutes.map(routeToPagePath)).toEqual(
       appConfig.pages.filter((page) => page !== 'pages/route-view/index'),
     );
@@ -46,7 +47,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     }
     expect(schema).not.toContain("id: 'route-view'");
     expect(templates).not.toMatch(/['"]?route-view['"]?: \(\) =>/);
-    expect(html).toContain('13 个真实页面原型');
+    expect(html).toContain('14 个真实页面原型');
     expect(html).toContain('与 app.json 路由一一对应');
   });
 
@@ -64,10 +65,10 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   });
 
   it('每页都带浅色关键状态与“问题 → 改法 → 规范”设计说明，并提供总览页', () => {
-    expect(schema.match(/\n {6}states: \[/g)).toHaveLength(13);
-    expect(schema.match(/\n {6}problems: \[/g)).toHaveLength(13);
-    expect(schema.match(/\n {6}fixes: \[/g)).toHaveLength(13);
-    expect(schema.match(/\n {6}spec: \[/g)).toHaveLength(13);
+    expect(schema.match(/\n {6}states: \[/g)).toHaveLength(14);
+    expect(schema.match(/\n {6}problems: \[/g)).toHaveLength(14);
+    expect(schema.match(/\n {6}fixes: \[/g)).toHaveLength(14);
+    expect(schema.match(/\n {6}spec: \[/g)).toHaveLength(14);
     for (const state of [
       "'empty'",
       "'loading'",
@@ -168,9 +169,9 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   });
 
   it('设置页原型同步当前客户端版本与当前 App 更新', () => {
-    expect(schema).toContain("state: 'V2026.10.17.76'");
+    expect(schema).toContain("state: 'V2026.10.17.77'");
     expect(schema).toContain(
-      "['2026.10.17.76', '背景图更好调整，页面加载更轻快', '个人背景图支持移动和缩放后再上传，网络波动时会自动重试；活动列表与详情加载也更轻快。']",
+      "['2026.10.17.77', '完整路线分析已上线', '活动路线新增关键公里点、坡段策略、海拔与地图联动分析，并明确展示天气和交通数据边界。']",
     );
     expect(templates).toContain('App 更新');
     expect(templates).not.toContain('最近五次');

@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "731489ac047d04fc2f06ab8f0f73bfca474fd90b",
-  "syncedAt": "2026-10-16T17:45:00.000Z",
+  "syncedThrough": "047d7693b79c8b79c039682d533140ab57990c91",
+  "syncedAt": "2026-10-17T02:55:00.000Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:0113409eed65004ed654aa1b6dbefafd36cc64abfc50ac660fcc22d7c27cc2d2"
+    "digest": "sha256:c5af83a75fde27d100680496a03f9ec594ddf125fc12e59c9c8ca6e0b738c18e"
   },
   "prototype": {
-    "digest": "sha256:d95a81a3b421bc1b60e67fbec9b21a42aae583cc525ab19ab3ffdbc66cecc7f1"
+    "digest": "sha256:98f30100758068a3c2d9681c07876c679f66e89431aea564fcda7946134b8019"
   },
   "routes": [
     {
@@ -20,6 +20,10 @@
     {
       "id": "activity-detail",
       "pagePath": "pages/activity-detail/index"
+    },
+    {
+      "id": "route-analysis",
+      "pagePath": "pages/route-analysis/index"
     },
     {
       "id": "registration-form",
@@ -92,6 +96,15 @@
         "note": "代码与 Pages 原型已同步到 2026.10.17.76 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
       },
       {
+        "id": "route-analysis",
+        "devtools": "route-analysis-devtools.png",
+        "pages": "route-analysis-pages.png",
+        "state": "完整路线分析 / 关键点选中",
+        "data": "sanitized-runtime",
+        "review": "blocked",
+        "note": "Pages 已完成 375×812 浏览器验收；沙箱没有微信开发者工具，DevTools 证据为明确标记的阻塞占位图，不能替代合并后微信开发版真机验收。"
+      },
+      {
         "id": "registration-form",
         "devtools": "registration-form-devtools.png",
         "pages": "registration-form-pages.png",
@@ -131,10 +144,10 @@
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "默认，客户端 2026.10.17.76",
+        "state": "默认，客户端 2026.10.17.77",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "Pages 375×812 设置页截图已按 2026.10.17.76 重新采集；微信端截图沿用既有布局基线，开发版上传后补做 iOS / Android 双端版本文案确认。"
+        "note": "Pages 已同步到 2026.10.17.77 路线分析版本并重新采集 375×812 截图；微信 DevTools 仍以独立真机验收为准。"
       },
       {
         "id": "capability-card",
