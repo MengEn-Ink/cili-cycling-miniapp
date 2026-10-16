@@ -19,6 +19,8 @@
 
 统一口径见 [设计规范](docs/design-system.md) 和 [E2E 验收流程](docs/verification/wechat-devtools-e2e.md)；[双端截图对照](https://mengen-ink.github.io/cili-cycling-miniapp/evidence/ui-sync/2026-10-16-design-acceptance/) 记录本轮 13 页真实运行、脱敏范围与剩余差异。
 
+下一轮首要可执行 P0 的[沸点设计成果交接](https://mengen-ink.github.io/cili-cycling-miniapp/designs/2026-10-16-boiling-point/)已归档最终手稿、13 页高清长图、五类状态板与令牌规格；[离线交接说明](docs/designs/2026-10-16-boiling-point/README.md)提供文件索引与实施边界。该主题的双端实施、部署和真机验收待完成。
+
 ## 已实现能力
 
 - **活动**：公开首页默认展示未来与进行中活动，并可按服务端时间线稳定分页回看历史；已登录用户可创建和编辑本人草稿、发布与下架，并从本人的历史活动复制草稿；管理员可管理全部活动并结束活动。活动支持图集、集合地点、分组容量、后援车信息、Strava 公开路线和 GPX 原生详情。

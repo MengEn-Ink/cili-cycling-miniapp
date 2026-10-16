@@ -11,7 +11,7 @@
 
 本方案是下一轮实施的视觉目标。[统一设计规范](../../design-system.md) 与 [design-contract.json](../../design-contract.json) 仍是当前运行基线；后续实施时同步更新契约、小程序 WXSS、Pages CSS 与相关验证，完成部署验收后再更新正式基线状态。历史主题说明只作背景，不覆盖本文的目标值。
 
-已确认的本地设计稿位于 `.superpowers/brainstorm/10993-1792138144/content/`，该目录未纳入 Git。以下内容摘要绑定本次规格所依据的源文件，临时预览地址不作为版本标识：
+已确认的设计成果已归档至 [`docs/designs/2026-10-16-boiling-point/`](../../designs/2026-10-16-boiling-point/README.md)，可从[交接首页](../../designs/2026-10-16-boiling-point/index.html)阅读两份离线手稿、13 页高清长图、五类状态板与完整规格；原始 HTML 保存在 `sources/`，离线稿仅补归档注释并替换图片路径。以下内容摘要继续绑定未经修改的原始文件，临时预览地址不作为版本标识：
 
 | 源文件 | 页面 | SHA-256 |
 | --- | --- | --- |
