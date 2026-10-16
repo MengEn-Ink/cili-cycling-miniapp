@@ -65,7 +65,10 @@ describe('统一 Logo 物料与页面接入契约', () => {
     const capabilityCard = read('miniprogram/pages/capability-card/index.wxml');
     const reviewDetail = read('miniprogram/pages/admin/review-detail/index.wxml');
 
-    expect(activityCard).toContain('<brand-logo compact="{{true}}"');
+    expect(activityCard).toContain('<generated-activity-cover');
+    expect(read('miniprogram/components/generated-activity-cover/index.wxml')).toContain(
+      '<brand-logo compact="{{true}}"',
+    );
     expect(capabilityCard.match(/<brand-logo compact="\{\{true\}\}"/g)).toHaveLength(2);
     expect(reviewDetail).toContain('<brand-logo compact="{{true}}" meta="审批详情" />');
     expect(`${activityCard}\n${capabilityCard}\n${reviewDetail}`).not.toMatch(/>CILI<|骑有此里/);

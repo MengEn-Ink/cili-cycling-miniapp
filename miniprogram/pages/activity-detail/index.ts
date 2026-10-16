@@ -173,6 +173,7 @@ Page({
     registration: null as any,
     attendees: [] as any[],
     selectedAttendee: null as any,
+    selectedAttendeeIndex: 0,
     galleryImages: [] as string[],
     routeOutlineImage: '',
     elevationImage: '',
@@ -308,11 +309,19 @@ Page({
         hasRouteDetails && Array.isArray(detail.route?.routeOutline)
           ? detail.route.routeOutline
           : [];
+      // 在数据进入视图时统一补齐性别展示信息，列表头像和滑动名片共用同一语义。
+      const attendees =
+        canSeeAttendees && Array.isArray(detail.attendees)
+          ? detail.attendees.map((attendee: any) => ({
+              ...attendee,
+              ...genderView(attendee.gender),
+            }))
+          : [];
       this.safeSetData(
         {
           item: detail,
           registration,
-          attendees: canSeeAttendees && Array.isArray(detail.attendees) ? detail.attendees : [],
+          attendees,
           attendeesVisible: canSeeAttendees,
           viewerStatus: state,
           isAdmin,
@@ -504,12 +513,14 @@ Page({
       String(event.currentTarget.dataset.url || ''),
     );
   },
-  selectedAttendeeBackgroundLoad() {
-    const attendee = this.data.selectedAttendee;
+  selectedAttendeeBackgroundLoad(event: any) {
+    const index = Number(event.currentTarget.dataset.index);
+    const attendee = this.data.attendees[index] || this.data.selectedAttendee;
     if (attendee) this.attendeeMediaRetryKeys.delete(`${attendee.id}:background`);
   },
   selectedAttendeeBackgroundError(event: any) {
-    const attendee = this.data.selectedAttendee;
+    const index = Number(event.currentTarget.dataset.index);
+    const attendee = this.data.attendees[index] || this.data.selectedAttendee;
     if (!attendee) return;
     return this.retryAttendeeMedia(
       attendee.id,
@@ -521,10 +532,22 @@ Page({
     const index = Number(event.currentTarget.dataset.index);
     const attendee = this.data.attendees[index];
     if (attendee)
-      this.safeSetData({ selectedAttendee: { ...attendee, ...genderView(attendee.gender) } });
+      this.safeSetData({
+        selectedAttendee: { ...attendee, ...genderView(attendee.gender) },
+        selectedAttendeeIndex: index,
+      });
+  },
+  attendeeCardChange(event: any) {
+    const index = Number(event.detail?.current);
+    const attendee = this.data.attendees[index];
+    if (Number.isInteger(index) && attendee)
+      this.safeSetData({
+        selectedAttendee: { ...attendee, ...genderView(attendee.gender) },
+        selectedAttendeeIndex: index,
+      });
   },
   closeAttendeeCard() {
-    this.safeSetData({ selectedAttendee: null });
+    this.safeSetData({ selectedAttendee: null, selectedAttendeeIndex: 0 });
   },
   keepAttendeeCard() {},
   navigate(event: any) {

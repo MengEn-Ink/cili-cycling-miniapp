@@ -1,0 +1,113 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.generated-cover {
+  position: relative;
+  display: flex;
+  box-sizing: border-box;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  padding: 32rpx;
+  background: var(--color-media-card-bg);
+  color: var(--color-on-media);
+}
+.generated-cover__rail {
+  position: absolute;
+  top: -20%;
+  right: 12%;
+  width: 14rpx;
+  height: 140%;
+  transform: rotate(24deg);
+  background: var(--color-brand);
+  box-shadow:
+    34rpx 0 0 var(--color-surface),
+    68rpx 0 0 var(--color-brand);
+  opacity: 0.92;
+}
+.generated-cover__header,
+.generated-cover__footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.generated-cover__level,
+.generated-cover__eyebrow,
+.generated-cover__metric-unit,
+.generated-cover__stamp {
+  font-size: 20rpx;
+  line-height: 1.4;
+  font-weight: 800;
+  letter-spacing: 2rpx;
+}
+.generated-cover__level,
+.generated-cover__stamp {
+  padding: 6rpx 12rpx;
+}
+.generated-cover__level {
+  background: var(--color-brand);
+  color: var(--color-on-brand);
+}
+.generated-cover__body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  max-width: 82%;
+  flex-direction: column;
+  gap: 10rpx;
+}
+.generated-cover__eyebrow,
+.generated-cover__route,
+.generated-cover__metric-unit {
+  color: var(--color-media-muted);
+}
+.generated-cover__title {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 46rpx;
+  line-height: 1.08;
+  font-weight: 900;
+  letter-spacing: 0;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.generated-cover__route {
+  overflow: hidden;
+  font-size: 24rpx;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.generated-cover__footer {
+  justify-content: flex-start;
+  gap: 32rpx;
+}
+.generated-cover__metric {
+  display: flex;
+  align-items: baseline;
+  gap: 6rpx;
+}
+.generated-cover__metric-value {
+  font-size: 34rpx;
+  line-height: 1;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.generated-cover__stamp {
+  margin-left: auto;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.generated-cover--detail {
+  padding: 40rpx;
+}
+.generated-cover--detail .generated-cover__title {
+  max-width: 90%;
+  font-size: 54rpx;
+}

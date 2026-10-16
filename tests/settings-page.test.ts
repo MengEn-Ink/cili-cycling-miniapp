@@ -28,6 +28,7 @@ describe('设置页', () => {
       version: CLIENT_RELEASE_VERSION,
       date: '2026-10-17',
       latest: true,
+      title: '骑行名片支持滑动浏览与专属活动封面',
     });
     expect(page.data.currentRelease).toBe(page.data.releaseNotes[0]);
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(
@@ -39,9 +40,9 @@ describe('设置页', () => {
     expect(readiness).not.toHaveBeenCalled();
   });
 
-  it('版本号与日期对齐 2026.10.17.74', () => {
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.17.74');
-    expect(page.data.currentRelease.version).toBe('2026.10.17.74');
+  it('版本号与日期对齐 2026.10.17.75', () => {
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.17.75');
+    expect(page.data.currentRelease.version).toBe('2026.10.17.75');
     expect(page.data.currentRelease.date).toBe('2026-10-17');
   });
 

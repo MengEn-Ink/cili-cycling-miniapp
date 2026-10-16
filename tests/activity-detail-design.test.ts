@@ -263,16 +263,21 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('catchtouchmove="keepAttendeeCard"');
     expect(styles).toMatch(/\.rider-modal-mask\s*\{[\s\S]*?align-items:\s*center/);
     expect(styles).toMatch(/\.rider-modal-mask\s*\{[\s\S]*?justify-content:\s*center/);
-    expect(styles).toMatch(/\.rider-card\s*\{[\s\S]*?max-height:\s*82vh/);
-    expect(styles).not.toMatch(/\.rider-modal-mask\s*\{[\s\S]*?align-items:\s*flex-end/);
-    expect(template).toContain('wx:if="{{item.avatarUrl}}" class="attendee-avatar"');
-    expect(template).toContain('wx:if="{{selectedAttendee.backgroundUrl}}"');
-    expect(template).toContain('attendee-avatar--placeholder');
+    expect(styles).toMatch(
+      /\.rider-card\s*\{[\s\S]*?border:\s*0;[\s\S]*?background:\s*transparent/,
+    );
+    expect(styles).not.toMatch(/\.rider-modal-mask\s*\{[^}]*align-items:\s*flex-end/);
+    expect(template).toContain('class="attendee-avatar {{item.genderClass}}"');
+    expect(template).toContain('wx:if="{{rider.backgroundUrl}}"');
+    expect(template).toContain('attendee-avatar--placeholder {{item.genderClass}}');
     expect(template).toContain('rider-card-photo__placeholder');
     expect(template).not.toContain('defaultAttendeeAvatar');
     expect(template).toContain('binderror="selectedAttendeeBackgroundError"');
-    expect(template).toContain('class="gender-pill {{selectedAttendee.genderClass}}"');
-    expect(template).toContain('{{selectedAttendee.genderLabel}}');
+    expect(template).toContain('class="gender-pill {{rider.genderClass}}"');
+    expect(template).toContain('{{rider.genderLabel}}');
+    expect(template).toContain('bindchange="attendeeCardChange"');
+    expect(template).toContain('左右滑动查看其他骑友');
+    expect(template).toContain("previous-margin=\"{{attendees.length > 1 ? '28rpx' : '0'}}\"");
     expect(template).not.toContain('selectedAttendee.title');
     expect(template).not.toContain('骑行爱好者');
     expect(template).toContain('昵称、头像与照片由骑友本人维护，仅展示公开资料');
@@ -284,10 +289,16 @@ describe('活动详情设计与日期契约', () => {
       /\.attendee-mini-card\s*\{[^}]*flex:\s*0 0 112rpx;[^}]*min-height:\s*160rpx;/s,
     );
     expect(styles).toMatch(
-      /\.attendee-avatar\s*\{[^}]*width:\s*88rpx;[^}]*height:\s*88rpx;[^}]*border-radius:\s*50%/s,
+      /\.attendee-avatar\s*\{[^}]*width:\s*88rpx;[^}]*height:\s*88rpx;[^}]*border:\s*6rpx solid var\(--color-border-strong\);[^}]*border-radius:\s*50%/s,
+    );
+    expect(styles).toMatch(
+      /\.attendee-avatar\.gender-male,[\s\S]*?border-color:\s*var\(--color-text\)/,
+    );
+    expect(styles).toMatch(
+      /\.attendee-avatar\.gender-female,[\s\S]*?border-color:\s*var\(--color-brand\)/,
     );
     expect(styles).toContain('min-height: var(--control-height)');
-    expect(styles).toMatch(/\.rider-card-photo\s*\{[^}]*height:\s*400rpx;/s);
+    expect(styles).toMatch(/\.rider-card-swiper\s*\{[^}]*height:\s*72vh/s);
     expect(styles).toMatch(/\.rider-name\s*\{[^}]*font-size:\s*48rpx/s);
   });
 
@@ -551,7 +562,7 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
     expect(wx.previewImage).not.toHaveBeenCalled();
   });
 
-  it('点击有效头像打开名片，关闭后清空当前骑友', async () => {
+  it('点击头像打开对应名片，并可左右滑动切换其他骑友', async () => {
     const { definition, context } = await loadPage(async () => ({
       base64: 'eA==',
       fileName: 'route.gpx',
@@ -565,8 +576,15 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
       status: 'approved',
       card: { rides90d: null, longestKm: 180, elevationM: 3200, speedKmh: 26.5 },
     };
-    context.data.attendees = [attendee];
+    const nextAttendee = {
+      ...attendee,
+      id: 'rider-2',
+      displayName: '城市骑手',
+      gender: '男',
+    };
+    context.data.attendees = [attendee, nextAttendee];
     context.data.selectedAttendee = null;
+    context.data.selectedAttendeeIndex = 0;
 
     definition.openAttendeeCard.call(context, { currentTarget: { dataset: { index: 0 } } });
     expect(context.data.selectedAttendee).toEqual({
@@ -574,8 +592,19 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
       genderLabel: '女',
       genderClass: 'gender-female',
     });
+    expect(context.data.selectedAttendeeIndex).toBe(0);
+
+    definition.attendeeCardChange.call(context, { detail: { current: 1 } });
+    expect(context.data.selectedAttendee).toMatchObject({
+      id: 'rider-2',
+      genderLabel: '男',
+      genderClass: 'gender-male',
+    });
+    expect(context.data.selectedAttendeeIndex).toBe(1);
+
     definition.closeAttendeeCard.call(context);
     expect(context.data.selectedAttendee).toBeNull();
+    expect(context.data.selectedAttendeeIndex).toBe(0);
 
     definition.openAttendeeCard.call(context, { currentTarget: { dataset: { index: 9 } } });
     expect(context.data.selectedAttendee).toBeNull();

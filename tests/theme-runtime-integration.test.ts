@@ -42,6 +42,7 @@ describe('单一明亮外观接线', () => {
     expect(template).not.toContain('wx:for="{{releaseNotes}}"');
     expect(script).toContain("date: '2026-10-17'");
     expect(script).toContain('version: CLIENT_RELEASE_VERSION');
+    expect(script).toContain("title: '骑行名片支持滑动浏览与专属活动封面'");
     const latestMatches = script.match(/latest:\s*true/g) || [];
     expect(latestMatches).toHaveLength(1);
   });
