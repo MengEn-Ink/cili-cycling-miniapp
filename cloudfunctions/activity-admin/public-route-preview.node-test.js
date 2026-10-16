@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const {
   MAX_PUBLIC_ROUTE_HTML_BYTES,
   extractRouteId,
+  parseCanonicalHtml,
   previewId,
   previewPublicRoute,
 } = require('./public-route-preview');
@@ -66,6 +67,32 @@ test('公开路线 URL 仅接受规范 Strava HTTPS host 且拒绝查询、凭�
     assert.throws(() => extractRouteId(value), { code: 'ROUTE_URL_INVALID' });
 });
 
+test('路线标题仅解码一层 HTML 实体并保留双重编码文本', () => {
+  const html = `<script id="__NEXT_DATA__">${JSON.stringify({
+    page: '/routes/[id]',
+    query: { id: routeId },
+    pageProps: { routeId },
+  })}</script><h1 class="EntityCallToAction">“<em>周末</em> A > B、A < 10、A<B、A</B &amp;lt;script&amp;gt; &amp; &#x8DEF;&#32447; &#9999999;”</h1>`;
+
+  assert.equal(
+    parseCanonicalHtml(html, routeId),
+    '周末 A > B、A < 10、A<B、A</B &lt;script&gt; & 路线 &#9999999;',
+  );
+});
+
+test('路线标题只解码合法 Unicode 标量值', () => {
+  const html = `<script id="__NEXT_DATA__">${JSON.stringify({
+    page: '/routes/[id]',
+    query: { id: routeId },
+    pageProps: { routeId },
+  })}</script><h1 class="EntityCallToAction">“&#55295; &#55296; &#xDFFF; &#xE000; &#1114111;”</h1>`;
+
+  assert.equal(
+    parseCanonicalHtml(html, routeId),
+    `${String.fromCodePoint(0xd7ff)} &#55296; &#xDFFF; ${String.fromCodePoint(0xe000)} ${String.fromCodePoint(0x10ffff)}`,
+  );
+});
+
 test('免 OAuth 解析只请求固定 host、禁重定向且不发送 Cookie/Authorization', async () => {
   const calls = [];
   let saved;
@@ -73,7 +100,10 @@ test('免 OAuth 解析只请求固定 host、禁重定向且不发送 Cookie/Aut
     {
       ...deps(async (url, options) => {
         calls.push({ url, options });
-        return response(url, url.includes('strava-embeds.com') ? embedHtml : canonicalHtml);
+        return response(
+          url,
+          new URL(url).hostname === 'strava-embeds.com' ? embedHtml : canonicalHtml,
+        );
       }),
       putPreview: async (_id, value) => {
         saved = value;

@@ -44,16 +44,44 @@ function unavailable(status) {
   fail('PUBLIC_ROUTE_UNAVAILABLE', '暂时无法读取该公开路线，请确认路线公开后重试');
 }
 
+function stripHtmlTags(value) {
+  const input = String(value || '');
+  let text = '';
+  for (let index = 0; index < input.length; index += 1) {
+    if (input[index] !== '<') {
+      text += input[index];
+      continue;
+    }
+    const tagEnd = input.indexOf('>', index + 1);
+    if (tagEnd < 0) {
+      text += '<';
+      continue;
+    }
+    const candidate = input.slice(index + 1, tagEnd);
+    const isTag =
+      /^\/?[A-Za-z][A-Za-z0-9:-]*(?:\s[^<>]*)?\/?$/.test(candidate) ||
+      /^!--[\s\S]*--$/.test(candidate);
+    if (isTag) index = tagEnd;
+    else text += '<';
+  }
+  return text;
+}
+
 function decodeHtmlText(value) {
-  return String(value || '')
-    .replace(/<[^>]*>/g, '')
-    .replace(/&nbsp;|&#160;/gi, ' ')
-    .replace(/&quot;|&#34;/gi, '"')
-    .replace(/&apos;|&#39;|&#x27;/gi, "'")
-    .replace(/&amp;/gi, '&')
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>')
-    .replace(/&#(\d{1,7});/g, (_match, code) => String.fromCodePoint(Number(code)))
+  const namedEntities = { nbsp: ' ', quot: '"', apos: "'", amp: '&', lt: '<', gt: '>' };
+  const withoutTags = stripHtmlTags(value);
+  // 实体只解码一次，避免链式替换把双重编码内容二次解码成标签。
+  return withoutTags
+    .replace(
+      /&(?:#(\d{1,7})|#x([0-9a-f]{1,6})|([a-z]+));/gi,
+      (entity, decimal, hexadecimal, named) => {
+        if (named) return namedEntities[named.toLowerCase()] ?? entity;
+        const codePoint = Number.parseInt(decimal || hexadecimal, decimal ? 10 : 16);
+        const isUnicodeScalar =
+          codePoint <= 0x10ffff && !(codePoint >= 0xd800 && codePoint <= 0xdfff);
+        return isUnicodeScalar ? String.fromCodePoint(codePoint) : entity;
+      },
+    )
     .trim();
 }
 

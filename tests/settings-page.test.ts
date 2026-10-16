@@ -26,7 +26,7 @@ describe('设置页', () => {
     expect(page.data.releaseNotes[0]).toMatchObject({
       version: CLIENT_RELEASE_VERSION,
       latest: true,
-      title: '页面配色与操作更清晰',
+      title: '公开路线解析更安全稳定',
     });
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(
       1,
@@ -37,6 +37,7 @@ describe('设置页', () => {
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
       CLIENT_RELEASE_VERSION,
+      '2026.10.16.69',
       '2026.10.16.68',
       '2026.10.15.67',
       '2026.10.15.66',
@@ -54,7 +55,6 @@ describe('设置页', () => {
       '2026.10.14.54',
       '2026.10.13.53',
       '2026.10.13.52',
-      '2026.10.13.51',
       '2026.10.13.50',
     ]);
     expect(page.onShow).toBeUndefined();
