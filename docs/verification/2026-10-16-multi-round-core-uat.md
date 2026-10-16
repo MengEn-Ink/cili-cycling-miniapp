@@ -1,10 +1,10 @@
 # 2026-10-16 多轮核心链路与 UAT 前置验收
 
-状态：PR #238 已合入并上传开发版；三轮真实云只读 E2E 通过，当前旅程 v2 预检与证据工具已上线。PR #240 已阻止旧页面句柄造成错页误验收；后续 tabBar 导航与有界重发修复分支在客户端 `.69`、`.70` 各完成 24/24 真实云回归，仍需合入后从干净主干复测。普通成员写链路、iOS/Android 物理真机和体验版 UAT 因现场前置不足标记为 `not_executed`，不能关闭对应 P0/P1。
+状态：PR #238 已合入并上传开发版；三轮真实云只读 E2E 通过，当前旅程 v2 预检与证据工具已上线。PR #240 已阻止旧页面句柄造成错页误验收；PR #242 已合入 tabBar 导航与有界重发修复，并从干净主干完成 24/24 真实云回归。普通成员写链路、iOS/Android 物理真机和体验版 UAT 因现场前置不足标记为 `not_executed`，不能关闭对应 P0/P1。
 
 三轮原始运行基线为 `ce79517239e78fe400a4b46cd918e02cc45a2c0b`；v2 功能提交为 `ce94914c1b93364d4361fbc1a39580027af68b13`，客户端 `2026.10.16.69`，开发版 `0.0.241.1`。main CI [38865578645](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38865578645)、Pages [38865578539](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38865578539) 和上传 [38865736980](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38865736980) 均成功。
 
-最新合入基线为 `8d408852141f18181a3f08e67f1eef9251b8218f`（PR #241），客户端 `2026.10.16.70`，开发版 `0.0.244.1`。main CI [38870368656](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38870368656)、Pages [38870369347](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38870369347)、CodeQL [38870368600](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38870368600) 和上传 [38870500651](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38870500651) 均成功。
+最新合入基线为 `eb088b95e46a138c4a4ad3a1878e2659a9a25bca`（PR #242），客户端 `2026.10.16.70`。main CI [38872806202](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38872806202)、Pages [38872805753](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38872805753) 和 CodeQL [38872806284](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38872806284) 均成功。最近一次实际上传的开发版仍为 `0.0.244.1`，回执 SHA 为 `8d408852`；PR #242 的上传 run [38872915510](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38872915510) 判定 `shouldUpload=false`，未生成重复版本。
 
 ## 验收矩阵
 
@@ -16,7 +16,7 @@
 | 审计与脱敏 | 单测通过 | 支持取消→重报→收尾取消的第二条 cancelled；真实目标替换为同 RUN_ID 合成别名 |
 | 签名与敏感字段 | 单测通过 | v2 独立签名域；未知字段、重复 JSON key、敏感 key、伪造别名继续拒绝 |
 | 冷启动稳定性 | 已修复 | `miniprogram-automator` 实际参数为 `timeout`；旧 `launchTimeout` 未生效 |
-| 真实云只读 | 基线 3 轮及修复分支 2 轮通过 | 基线每轮 24 项、13 路由、16 张本地截图，合计 72/72；tabBar 修复分支在客户端 `.69`、`.70` 各有 24/24、0 异常 |
+| 真实云只读 | 基线 3 轮、修复分支 2 轮及最终主干 1 轮通过 | 6 次成功运行合计 144/144；每轮覆盖 24 项、13 个唯一路由、16 张本地截图，均为 0 异常 |
 | 管理员自报名写入 | 未进入业务步骤 | 两次均在创建活动页前丢失页面上下文；0 活动、0 报名、无需补偿，停止重试 |
 | 普通成员写链路 | `not_executed` | 开发者工具 `testAccounts()` 返回 0，当前登录账号是管理员，禁止用管理员冒充普通成员 |
 | iOS 真机 | `not_executed` | 未连接 iOS 物理设备，不能验证相册、扫码、分享、安全区和系统字体 |
@@ -45,6 +45,8 @@ PR #240 合入后的干净主干 `056929bd` 首轮复测在 0 项业务检查时
 修复分支冷启动实跑 2026-10-16 07:53:50–07:55:18 UTC 为 24/24、13 路由、16 张本地截图、0 异常。活动页与行程页截图分别显示对应标题、内容和选中 tab，375×812 模拟器视口未见错页、浅色文字消失或明显溢出。报告基线 SHA 为 `056929bd` 且 `dirty=true`，原始证据位于 `/tmp/cili-e2e-20261016/tabbar-cold-2/`；因此该结果证明修复分支有效，但仍不替代合入后的干净主干复测。
 
 同步 PR #241 后，客户端 `.70` 的首轮热会话在 0 项检查时以 `PAGE_NOT_READY` 退出并保留失败报告；正常退出 IDE 后只进行一次冷启动复测，2026-10-16 08:00:18–08:01:51 UTC 为 24/24、13 路由、16 张本地截图、0 异常，设置页版本也与 `.70` 一致。报告基线 SHA 为 `8d408852` 且 `dirty=true`，原始成功证据位于 `/tmp/cili-e2e-20261016/tabbar-main-8d408852-cold/`，失败证据位于相邻的 `tabbar-main-8d408852/`；两者都不替代合入后的干净主干复测。
+
+PR #242 合入后从干净主干 `eb088b95` 冷启动复测，2026-10-16 08:19:14–08:20:38 UTC 为 24/24、13 个唯一路由、16 张本地截图、0 异常，客户端版本为 `.70`，报告 `dirty=false`。原始证据位于 `/tmp/cili-e2e-20261016/final-main-eb088b95/`；公开运行报告和设置页截图已由该轮结果刷新。该轮关闭“修复合入后从干净主干复测”的条件，但不改变普通成员写链路、物理真机和体验版仍为 `not_executed` 的结论。
 
 ## 完整写链路复测步骤
 
