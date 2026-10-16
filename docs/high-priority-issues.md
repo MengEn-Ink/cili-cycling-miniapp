@@ -6,7 +6,7 @@
 
 ## 当前基线
 
-- 代码基线：`origin/main` 最新提交 `3a7f6982`（PR #243，归档干净主干验收结果）；运行代码基线为 `eb088b95`（PR #242），旅程 v2 功能提交为 `ce94914c`（PR #238）。PR #242 已修正 tabBar 导航方法、首次丢失的只读路由命令有界重发，并同步客户端 `.70` 的 Pages 设置页证据。客户端为 `2026.10.16.70`。
+- 代码基线：本轮方案与优先级变更基于 `origin/main` `3a7f6982`（PR #243，归档干净主干验收结果）；运行代码基线为 `eb088b95`（PR #242），旅程 v2 功能提交为 `ce94914c`（PR #238）。PR #242 已修正 tabBar 导航方法、首次丢失的只读路由命令有界重发，并同步客户端 `.70` 的 Pages 设置页证据。客户端为 `2026.10.16.70`。
 - PR #242 main CI：run [38872806202](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38872806202) 成功；Pages：run [38872805753](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38872805753) 成功；CodeQL：run [38872806284](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38872806284) 成功。
 - 最近一次已核验微信开发版仍为 run [38870500651](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38870500651) 实际上传的 `0.0.244.1`，回执 SHA 为 `8d408852`。PR #242 的上传 run [38872915510](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38872915510) 判定 `shouldUpload=false`，未生成重复开发版。
 - 云函数：`profile`、`registration`、`activity-read`、`activity-admin`、`admin-review` 已按对应功能 PR 部署；`route-web` 与 `/route/embed` 已确认下线。纯文档、测试和未引用资源清理不触发云函数部署。
@@ -14,10 +14,12 @@
 
 ## 当前待办
 
+**用户指定的首要可执行 P0：沸点风格设计令牌方案实施与验收。** 下一轮先迁移双端令牌与公共组件，再推进 13 页布局、门禁与新主题截图，最后完成部署和真机验收；大字号、呼吸感、浅色可读性与 44px 实际热区是必须满足的交付条件。方案已确认，实施尚未开始。
+
 | 优先级 | 待办 | 已完成 | 剩余关闭条件 |
 | --- | --- | --- | --- |
+| P0 | **沸点风格设计令牌方案实施与验收（首要可执行项）** | [方案](superpowers/specs/2026-10-16-boiling-point-design-tokens.md)已确认并固化；当前运行主题的 13 页已完成浅色重构和截图对齐，现有自动化覆盖 340px 窄屏、44px 触控与高对比；沸点方案尚未迁移到业务代码 | **下一轮首先实施双端契约与公共组件，再迁移 13 页**，落实占位色、控件边界与 44px 热区；通过全量门禁并采集新主题双端证据，部署后在 iOS / Android 真机核对安全区、长标题、小屏退化、系统字体放大和可读性 |
 | P0 | 核心活动链路真机验收 | 创建/编辑、发布、报名、审批/自动通过、凭证、名片、Strava、GPX、群二维码和分享海报已有代码、自动化与开发版；本轮三次真实云只读回归 72/72 通过 | 当前无普通成员 test ticket、无已连接 iOS/Android 设备；补齐后在双平台各完成完整旅程，核对 Canvas、二维码、照片、受保护媒体与地址续签 |
-| P0 | 统一视觉与触控验收 | 当前运行主题的 13 个核心页面已完成浅色重构和多轮截图对齐，自动化覆盖 340px 窄屏、44px 触控、高对比与核心视觉契约；下一轮[沸点风格令牌方案](superpowers/specs/2026-10-16-boiling-point-design-tokens.md)已确认并固化，业务代码尚未迁移 | 先同步新方案的双端契约与公共组件，落实占位色、控件边界及 44px 热区；重新采集新主题证据，再按 375×812 基线在 iOS 与 Android 真机核对安全区、长标题、小屏退化、系统字体放大和可读性 |
 | P0 | Strava / GPX 路线双模式验收 | Strava 公开路线免授权解析、规范化链接复制、GPX 解析与下载已实现；旧 OAuth、`route-web` 和内嵌路线页已退役 | 使用当前开发版完成 iOS/Android 的公开路线解析、GPX 文件选择、Canvas 和下载验收；确认历史 OAuth 数据 dry-run 与备份后再决定是否执行 purge |
 | P0 | 云端密钥与媒体链路就绪性 | 媒体 owner/canonical、`PROFILE_MEDIA_PATH_SECRET`、加密与服务端临时地址签发均有测试和部署记录 | 在目标环境回读受影响函数配置并完成真实头像、背景图、活动图、群二维码和路线图 smoke；缺证据时不得宣称线上就绪 |
 | P1 | 体验版晋级与 UAT | 开发版自动上传和候选/验证两阶段晋级工作流已具备；本轮前置探测和 `not_executed` 证据已归档 | 配置普通成员 test ticket、连接双真机并完成写链路后，选择已核验开发版晋级体验版，留存版本、时间、验收人和结果 |
