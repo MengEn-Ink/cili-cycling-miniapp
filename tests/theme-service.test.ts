@@ -29,14 +29,14 @@ describe('固定明亮系统外观服务', () => {
     vi.restoreAllMocks();
   });
 
-  it('同步白色导航、白色 TabBar、浅色图标和白色滚动边界', async () => {
+  it('同步暖米白导航、白色 TabBar、浅色图标和暖米白滚动边界', async () => {
     const wxApi = wxMock();
     const service = await loadAppearanceService(wxApi);
 
     service.applyAppAppearance();
 
     expect(wxApi.setNavigationBarColor).toHaveBeenCalledWith(
-      expect.objectContaining({ backgroundColor: '#ffffff', frontColor: '#000000' }),
+      expect.objectContaining({ backgroundColor: '#fbf5ea', frontColor: '#000000' }),
     );
     expect(wxApi.setTabBarStyle).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -53,9 +53,9 @@ describe('固定明亮系统外观服务', () => {
     ]);
     expect(wxApi.setBackgroundColor).toHaveBeenCalledWith(
       expect.objectContaining({
-        backgroundColor: '#ffffff',
-        backgroundColorTop: '#ffffff',
-        backgroundColorBottom: '#ffffff',
+        backgroundColor: '#fbf5ea',
+        backgroundColorTop: '#fbf5ea',
+        backgroundColorBottom: '#fbf5ea',
       }),
     );
   });

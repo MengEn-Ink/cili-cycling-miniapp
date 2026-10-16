@@ -22,11 +22,11 @@ describe('设置页', () => {
   });
 
   it('只加载当前版本日志，不注册第三方账号生命周期或入口', () => {
-    expect(page.data.releaseNotes).toHaveLength(22);
+    expect(page.data.releaseNotes).toHaveLength(5);
     expect(page.data.releaseNotes[0]).toMatchObject({
       version: CLIENT_RELEASE_VERSION,
       latest: true,
-      title: '我的行程严格对齐沸点设计稿',
+      title: '沸点主题全站统一与行程页精确对齐',
     });
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(
       1,
@@ -37,27 +37,10 @@ describe('设置页', () => {
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
       CLIENT_RELEASE_VERSION,
-      '2026.10.16.71',
+      '2026.10.16.72',
       '2026.10.16.70',
-      '2026.10.16.69',
       '2026.10.16.68',
       '2026.10.15.67',
-      '2026.10.15.66',
-      '2026.10.15.65',
-      '2026.10.15.64',
-      '2026.10.15.63',
-      '2026.10.15.62',
-      '2026.10.15.61',
-      '2026.10.15.60',
-      '2026.10.14.59',
-      '2026.10.14.58',
-      '2026.10.14.57',
-      '2026.10.14.56',
-      '2026.10.14.55',
-      '2026.10.14.54',
-      '2026.10.13.53',
-      '2026.10.13.52',
-      '2026.10.13.50',
     ]);
     expect(page.onShow).toBeUndefined();
     expect(page.loadStravaStatus).toBeUndefined();

@@ -12,9 +12,9 @@
 .state-shell {
   margin-top: 48rpx;
   padding: 64rpx 32rpx;
-  border: 4rpx solid var(--color-border-strong);
+  border: 0;
   border-radius: var(--radius-card);
-  background: var(--color-surface);
+  background: transparent;
   color: var(--color-muted);
   text-align: center;
 }
@@ -43,7 +43,7 @@
   width: 96rpx;
   height: 96rpx;
   margin: 0 auto 24rpx;
-  border-radius: var(--radius-sm);
+  border-radius: 30rpx;
   background: var(--color-raised);
   color: var(--color-text);
   font-size: 48rpx;
@@ -51,8 +51,14 @@
   font-weight: 900;
 }
 .state-shell--error .state-code {
-  background: var(--color-brand);
-  color: var(--color-on-brand);
+  width: 60rpx;
+  height: 60rpx;
+  border: 3rpx solid var(--color-action);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-action);
+  font-size: 32rpx;
+  line-height: 40rpx;
 }
 .state-title {
   color: var(--color-text);
@@ -67,16 +73,18 @@
   line-height: 36rpx;
 }
 .state-retry {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  width: auto;
+  min-width: 192rpx;
   min-height: var(--control-height);
   margin-top: 24rpx;
-  border: 4rpx solid var(--color-action);
-  border-radius: var(--radius-sm);
-  background: var(--color-action);
-  color: var(--color-on-action);
+  padding: 0 36rpx;
+  border: 3rpx solid var(--color-action);
+  border-radius: 999rpx;
+  background: var(--color-surface);
+  color: var(--color-action);
   font-size: 28rpx;
   font-weight: 800;
 }

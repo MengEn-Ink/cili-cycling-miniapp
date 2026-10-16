@@ -14,7 +14,7 @@
 
   /* ---------- 公共组件（与设计说明“公共规范”对应） ---------- */
   const brandLogo = (meta) =>
-    `<div class="prototype-brand-logo"><img src="./brand/logo-materials/generated/logo-square-1024.png" alt="此里" /><span>${meta}</span></div>`;
+    `<div class="prototype-brand-logo"><span class="prototype-wordmark" aria-hidden="true"><span>此</span><span>里</span><i></i></span><span class="prototype-brand-meta">${meta}</span></div>`;
   const tag = (type, label) => `<span class="tag tag-${type}">${label}</span>`;
   const row = (k, v) => `<div class="row"><span class="k">${k}</span><span class="v">${v}</span></div>`;
   const rows = (list) => `<div class="rows">${list.map(([k, v]) => row(k, v)).join('')}</div>`;
@@ -90,7 +90,7 @@
     return `<div class="qr" role="img" aria-label="二维码示意"><svg viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges">${cells.join('')}</svg></div>`;
   };
   const emptyMedia = () =>
-    `<div class="rider-card-media is-empty"><svg viewBox="0 0 360 168" preserveAspectRatio="none"><path d="M-10 140 C 60 120, 90 60, 150 72 S 240 150, 300 90 S 350 30, 380 40" style="fill:none;stroke:var(--color-subtle);stroke-width:2"/><path d="M-10 160 C 70 140, 110 96, 170 104 S 250 160, 380 110" style="fill:none;stroke:var(--color-subtle);stroke-width:1.5"/><path d="M20 128 C 80 112, 104 70, 150 78" style="fill:none;stroke:var(--color-brand);stroke-width:3;stroke-linecap:round"/></svg><span class="brand-word">CILI RIDER</span></div>`;
+    `<div class="rider-card-media is-empty"><svg viewBox="0 0 360 168" preserveAspectRatio="none"><path d="M-10 140 C 60 120, 90 60, 150 72 S 240 150, 300 90 S 350 30, 380 40" style="fill:none;stroke:var(--color-muted);stroke-width:2"/><path d="M-10 160 C 70 140, 110 96, 170 104 S 250 160, 380 110" style="fill:none;stroke:var(--color-muted);stroke-width:1.5"/><path d="M20 128 C 80 112, 104 70, 150 78" style="fill:none;stroke:var(--color-brand);stroke-width:3;stroke-linecap:round"/></svg><span class="brand-word">CILI RIDER</span></div>`;
   const riderCard = (hasPhoto, extra = '') => `<article class="rider-card">
       ${hasPhoto ? `<div class="rider-card-media"><img src="${IMG.rider}" alt="骑行照片" />${tag('neutral', '骑行照片').replace('class="tag', 'class="media-label tag')}</div>` : emptyMedia()}
       <div class="rider-card-person"><span class="avatar lg">${hasPhoto ? `<img src="${IMG.avatar}" alt="${rider.nickname}" />` : rider.nickname.slice(0, 1)}</span><div><h3>${rider.nickname} ${tag('neutral', rider.gender)}</h3><p>${rider.title}</p></div></div>

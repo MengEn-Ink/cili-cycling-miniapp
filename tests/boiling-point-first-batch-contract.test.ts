@@ -55,9 +55,7 @@ describe('沸点首批六页尺寸契约', () => {
     expect(declaration(effectiveBlock(styles, '.route-location-row button'), 'min-height')).toBe(
       'var(--control-height)',
     );
-    expect(declaration(effectiveBlock(app, '.btn'), 'min-height')).toBe(
-      'var(--primary-control-height)',
-    );
+    expect(declaration(effectiveBlock(app, '.btn'), 'min-height')).toBe('var(--control-height)');
     expect(app).toContain('calc(16rpx + env(safe-area-inset-bottom))');
   });
 
@@ -76,9 +74,7 @@ describe('沸点首批六页尺寸契约', () => {
     expect(declaration(effectiveBlock(app, '.field input'), 'min-height')).toBe(
       'var(--control-height)',
     );
-    expect(declaration(effectiveBlock(app, '.btn'), 'min-height')).toBe(
-      'var(--primary-control-height)',
-    );
+    expect(declaration(effectiveBlock(app, '.btn'), 'min-height')).toBe('var(--control-height)');
   });
 
   it('个人中心保留媒体 Hero，其余卡片回到沸点白卡描边结构', () => {

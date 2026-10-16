@@ -45,15 +45,11 @@ describe('沸点浅色 UI 全页对比度契约', () => {
       ['--color-placeholder', '--color-input-bg', 4.5],
       ['--color-disabled-text', '--color-raised', 4.5],
       ['--color-danger-text', '--color-danger-soft', 4.5],
-      ['--color-success-text', '--color-success-soft', 4.5],
-      ['--color-warning-text', '--color-warning-soft', 4.5],
-      ['--color-gender-male', '--color-surface', 4.5],
-      ['--color-gender-female', '--color-surface', 4.5],
-      ['--color-gender-unknown', '--color-surface', 4.5],
+      ['--color-status-success', '--color-status-success-soft', 4.5],
+      ['--color-status-warning', '--color-status-warning-soft', 4.5],
+      ['--color-text', '--color-surface', 4.5],
       ['--color-media-muted', '--color-media-placeholder-bg', 4.5],
-      ['--color-on-media-gender-male', '--color-media-card-bg', 4.5],
-      ['--color-on-media-gender-female', '--color-media-card-bg', 4.5],
-      ['--color-on-media-gender-unknown', '--color-media-card-bg', 4.5],
+      ['--color-on-media', '--color-media-card-bg', 4.5],
       ['--color-on-brand', '--color-brand', 3],
       ['--color-on-action', '--color-action', 4.5],
     ] as const) {
@@ -118,10 +114,10 @@ describe('沸点浅色 UI 全页对比度契约', () => {
   });
 
   it('registrations 与 activity-card 的卡片正文、辅助信息和 CTA 可读', () => {
-    const sharedCard = effectiveBlock(app, '.registration-card');
+    const registrations = read('miniprogram/pages/registrations/index.wxss');
+    const sharedCard = effectiveBlock(registrations, '.registration-card');
     expectSemantic(declaration(sharedCard, 'color'), '--color-text');
     expectSemantic(declaration(sharedCard, 'background'), '--color-surface');
-    const registrations = read('miniprogram/pages/registrations/index.wxss');
     expectSemantic(
       declaration(effectiveBlock(registrations, '.heading-copy'), 'color'),
       '--color-muted',
@@ -195,8 +191,7 @@ describe('沸点浅色 UI 全页对比度契约', () => {
       expectPair('miniprogram/components/status-pill/index.wxss', selector, foreground, background);
     }
 
-    expect(tokens['--color-gender-male']).toBe('var(--color-text)');
-    expect(tokens['--color-gender-female']).toBe('var(--color-text)');
+    expectUiContrast('var(--color-text)', 'var(--color-surface)', 4.5);
 
     const capability = read('miniprogram/pages/capability-card/index.wxss');
     expectSemantic(
@@ -207,9 +202,7 @@ describe('沸点浅色 UI 全页对比度契约', () => {
       '2rpx solid var(--color-border-strong)',
     );
     expect(capability).toMatch(/\.fallback-logo\s*\{[^}]*position:\s*absolute/s);
-    expect(tokens['--color-on-media-gender-male']).toBe('var(--color-on-media)');
-    expect(tokens['--color-on-media-gender-female']).toBe('var(--color-on-media)');
-    expect(tokens['--color-on-media-gender-unknown']).toBe('var(--color-on-media)');
+    expectUiContrast('var(--color-on-media)', 'var(--color-media-card-bg)', 4.5);
   });
 
   it('开发者工具运行态暴露的活动管理标题与骑行名片指标保持高对比', () => {
@@ -228,6 +221,6 @@ describe('沸点浅色 UI 全页对比度契约', () => {
       declaration(effectiveBlock(capability, '.card-caption'), 'color'),
       '--color-muted',
     );
-    expectUiContrast('var(--color-on-media-gender-unknown)', 'var(--color-media-card-bg)', 4.5);
+    expectUiContrast('var(--color-on-media)', 'var(--color-media-card-bg)', 4.5);
   });
 });

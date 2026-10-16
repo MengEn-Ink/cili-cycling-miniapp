@@ -33,9 +33,8 @@ describe('沸点红白墨黑全局主题契约', () => {
     expect(app).toContain('--color-status-success: #16633a;');
     expect(app).toContain('--color-status-warning: #7a5c00;');
     expect(app).toContain('--color-danger: var(--color-text);');
-    expect(app).toContain('--color-warning: var(--color-brand);');
-    expect(app).toContain('--color-on-media-gender-male: var(--color-on-media);');
-    expect(app).toContain('--color-on-media-gender-female: var(--color-on-media);');
+    expect(app).toContain('--color-status-success-soft: #e7f4eb;');
+    expect(app).toContain('--color-status-warning-soft: #fff2c7;');
   });
 
   it('全部页面和组件不再引入旧的绿蓝红黄状态色', () => {

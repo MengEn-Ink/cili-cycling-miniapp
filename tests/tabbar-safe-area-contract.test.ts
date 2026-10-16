@@ -9,11 +9,11 @@ describe('native tabbar safe-area contract', () => {
   it('keeps the native window and three-tab navigation on the unified bright palette', () => {
     const app = JSON.parse(read('miniprogram/app.json'));
 
-    expect(String(app.window.navigationBarBackgroundColor || '').toLowerCase()).toBe('#ffffff');
+    expect(String(app.window.navigationBarBackgroundColor || '').toLowerCase()).toBe('#fbf5ea');
     expect(app.window.navigationBarTextStyle).toBe('black');
-    expect(String(app.window.backgroundColor || '').toLowerCase()).toBe('#ffffff');
-    expect(String(app.window.backgroundColorTop || '').toLowerCase()).toBe('#ffffff');
-    expect(String(app.window.backgroundColorBottom || '').toLowerCase()).toBe('#ffffff');
+    expect(String(app.window.backgroundColor || '').toLowerCase()).toBe('#fbf5ea');
+    expect(String(app.window.backgroundColorTop || '').toLowerCase()).toBe('#fbf5ea');
+    expect(String(app.window.backgroundColorBottom || '').toLowerCase()).toBe('#fbf5ea');
     expect(app.window.backgroundTextStyle).toBe('dark');
     expect(app.tabBar).toBeDefined();
     expect(app.tabBar.custom).not.toBe(true);
@@ -30,16 +30,21 @@ describe('native tabbar safe-area contract', () => {
   });
 
   it('keeps every tab page root bright, semantic and full-height', () => {
+    const appStyles = read('miniprogram/app.wxss').toLowerCase();
+    expect(appStyles).toMatch(/\.page\s*,[\s\S]*?\{[^}]*background:\s*var\(--color-bg\);/s);
+
     for (const root of ['activities', 'registrations', 'profile']) {
       const config = JSON.parse(read(`miniprogram/pages/${root}/index.json`));
       const styles = read(`miniprogram/pages/${root}/index.wxss`).toLowerCase();
+      const template = read(`miniprogram/pages/${root}/index.wxml`);
+      const script = read(`miniprogram/pages/${root}/index.ts`);
 
-      expect(String(config.backgroundColor || '').toLowerCase()).toBe('#ffffff');
+      expect(String(config.backgroundColor || '').toLowerCase()).toBe('#fbf5ea');
+      expect(config.navigationStyle).toBe('custom');
       expect(config.backgroundTextStyle).toBe('dark');
-      expect(styles).toMatch(/(?:page|\.[a-z-]+-page)\s*\{[^}]*background:\s*var\(--color-bg\);/s);
-      expect(read(`miniprogram/pages/${root}/index.wxml`)).toMatch(
-        new RegExp(`class="page ${root}-page"`),
-      );
+      expect(template).toContain('style="padding-top: {{navigationTopPx}}px"');
+      expect(script).toContain('navigationTopPx: customNavigationTopPx()');
+      expect(template).toMatch(new RegExp(`class="page ${root}-page"`));
       expect(styles).not.toContain('background: #000;');
     }
   });

@@ -4,7 +4,6 @@ page {
   --color-raised: #f3e6d0;
   --color-text: #211f1c;
   --color-muted: #6f675d;
-  --color-subtle: #6f675d;
   --color-placeholder: #6f675d;
   --color-disabled-text: #6f675d;
   --color-border: #ededed;
@@ -34,22 +33,9 @@ page {
   --color-fixed-bar: rgba(255, 255, 255, 0.98);
   --color-overlay: rgba(0, 0, 0, 0.72);
   --color-shadow: rgba(33, 31, 28, 0.06);
-  /* Semantic aliases retained for existing components during the boiling-point migration. */
   --color-danger: var(--color-text);
   --color-danger-text: var(--color-text);
   --color-danger-soft: var(--color-raised);
-  --color-success: var(--color-action);
-  --color-success-text: var(--color-on-action);
-  --color-success-soft: var(--color-action);
-  --color-warning: var(--color-brand);
-  --color-warning-text: var(--color-text);
-  --color-warning-soft: var(--color-brand-soft);
-  --color-gender-male: var(--color-text);
-  --color-gender-female: var(--color-text);
-  --color-gender-unknown: var(--color-text);
-  --color-on-media-gender-male: var(--color-on-media);
-  --color-on-media-gender-female: var(--color-on-media);
-  --color-on-media-gender-unknown: var(--color-on-media);
   --shadow-hard: 0 14rpx 36rpx var(--color-shadow);
   --shadow-card: 0 12rpx 36rpx var(--color-shadow);
   --radius-sm: 20rpx;
@@ -57,17 +43,13 @@ page {
   --radius-display: 40rpx;
   --radius-card: 36rpx;
   --control-height: 96rpx;
-  --primary-control-height: 104rpx;
   --segment-height: 92rpx;
   --page-gutter: 32rpx;
   --page-gutter-narrow: 24rpx;
   --card-gap: 28rpx;
-  --tab-bar-height: 112rpx;
   --tab-page-bottom-space: 32rpx;
   --fixed-action-reserve: 240rpx;
   --fixed-action-reserve-narrow: 292rpx;
-  --metric-align: left;
-  --page-heading-align: left;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   min-height: 100%;
   background: var(--color-bg);
@@ -157,7 +139,6 @@ button::after {
 .card,
 .form-card,
 .status-card,
-.registration-card,
 .review-card,
 .snapshot-panel,
 .decision-panel,
@@ -232,7 +213,7 @@ button::after {
   text-align: center;
 }
 .btn {
-  min-height: var(--primary-control-height);
+  min-height: var(--control-height);
 }
 .secondary,
 .button--secondary,
@@ -368,7 +349,7 @@ picker[disabled] {
   color: var(--color-on-action);
 }
 .tag-pending,
-.status-pending,
+.status-tag.status-pending,
 .required {
   border: 4rpx solid var(--color-brand);
   background: var(--color-surface);
@@ -379,8 +360,8 @@ picker[disabled] {
   background: var(--color-surface);
 }
 .tag-success,
-.status-approved,
-.status-checked_in,
+.status-tag.status-approved,
+.status-tag.status-checked_in,
 .approved-mark {
   border: 2rpx solid var(--color-status-success);
   background: var(--color-status-success-soft);
@@ -395,9 +376,7 @@ picker[disabled] {
 
 .info-bar,
 .activity-context,
-.meeting-panel,
-.meeting-spotlight,
-.trip-stats {
+.meeting-spotlight {
   position: relative;
   margin-top: var(--card-gap);
   padding: 32rpx 32rpx 32rpx 40rpx;
@@ -419,8 +398,7 @@ picker[disabled] {
 }
 .context-kicker,
 .info-kicker,
-.meet-label,
-.meeting-label {
+.meet-label {
   color: var(--color-media-muted);
   font-size: 24rpx;
   line-height: 36rpx;
@@ -447,8 +425,7 @@ picker[disabled] {
 
 .identity-row,
 .credential-row,
-.detail-line,
-.meeting-row {
+.detail-line {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -707,7 +684,7 @@ picker[disabled] {
 
 @media (max-width: 375px) {
   button.btn {
-    min-height: var(--primary-control-height);
+    min-height: var(--control-height);
   }
   button,
   button.secondary,

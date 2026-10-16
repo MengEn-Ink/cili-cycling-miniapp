@@ -21,7 +21,7 @@ describe('行程状态卡与报名凭证重设计契约', () => {
     expect(trips).toContain('status-{{item.status}}');
     expect(trips).toContain('status-pill ticket="{{true}}" status="{{item.displayStatusText}}"');
     expectSemantic(
-      declaration(effectiveBlock(appStyles, '.registration-card'), 'background'),
+      declaration(effectiveBlock(tripStyles, '.registration-card'), 'background'),
       '--color-surface',
     );
     expect(statusPill).toContain("status === '已驳回' || status === '已取消'");
@@ -32,7 +32,8 @@ describe('行程状态卡与报名凭证重设计契约', () => {
   });
 
   it('凭证主视觉复用个人名片缩小布局，并严格分离真实背景与真实头像', () => {
-    expect(credential).toContain('class="compact-rider-card status-{{item.status}}"');
+    expect(credential).toContain('class="compact-rider-card"');
+    expect(credential).not.toMatch(/class="[^"]*\bstatus-\{\{item\.status\}\}\b/);
     expect(credential).toContain('wx:for="{{backgroundImages}}"');
     expect(credential).toContain('class="compact-rider-avatar"');
     expect(credential).toContain('src="{{avatarUrl}}"');

@@ -3,6 +3,7 @@ import { repositoryCache } from '../../repositories/index';
 import { runPageTask, type PageTaskState } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
 import { appStore } from '../../store/app-store';
+import { customNavigationTopPx } from '../../utils/custom-navigation';
 import { personalCardViewModel } from '../../utils/personal-card';
 import {
   applyCachedImages,
@@ -128,6 +129,7 @@ Page({
   heroMediaRetryUrls: new Set<string>(),
   heroMediaRecoveryPending: false,
   data: {
+    navigationTopPx: customNavigationTopPx(),
     profile: null as Profile | null,
     loading: true,
     refreshing: false,

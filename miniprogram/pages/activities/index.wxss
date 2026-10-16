@@ -1,6 +1,3 @@
-.activities-page {
-  background: var(--color-bg);
-}
 .activities-intro,
 .activities-intro > view,
 .list-count,

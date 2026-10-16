@@ -1,5 +1,5 @@
 const APPEARANCE = {
-  navigation: { backgroundColor: '#ffffff', frontColor: '#000000' },
+  navigation: { backgroundColor: '#fbf5ea', frontColor: '#000000' },
   tabBar: {
     backgroundColor: '#ffffff',
     borderStyle: 'white',
@@ -7,9 +7,9 @@ const APPEARANCE = {
     selectedColor: '#211f1c',
   },
   background: {
-    backgroundColor: '#ffffff',
-    backgroundColorTop: '#ffffff',
-    backgroundColorBottom: '#ffffff',
+    backgroundColor: '#fbf5ea',
+    backgroundColorTop: '#fbf5ea',
+    backgroundColorBottom: '#fbf5ea',
   },
 } as const;
 

@@ -22,12 +22,12 @@
   },
   "window": {
     "navigationBarTitleText": "此里",
-    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarBackgroundColor": "#fbf5ea",
     "navigationBarTextStyle": "black",
     "enablePullDownRefresh": false,
-    "backgroundColor": "#ffffff",
-    "backgroundColorTop": "#ffffff",
-    "backgroundColorBottom": "#ffffff",
+    "backgroundColor": "#fbf5ea",
+    "backgroundColorTop": "#fbf5ea",
+    "backgroundColorBottom": "#fbf5ea",
     "backgroundTextStyle": "dark"
   },
   "tabBar": {

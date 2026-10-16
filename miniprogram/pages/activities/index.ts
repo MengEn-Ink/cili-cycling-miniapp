@@ -3,6 +3,7 @@ import { repositoryCache } from '../../repositories/index';
 import type { PublicActivityView } from '../../repositories/types';
 import { rideService } from '../../services/ride-service';
 import { activityDisplayStatus } from '../../utils/activity';
+import { customNavigationTopPx } from '../../utils/custom-navigation';
 import {
   formatActivityDate,
   formatActivityDateTime,
@@ -62,6 +63,7 @@ Page({
   loadMoreHandles: {} as Partial<Record<PublicActivityView, Promise<void>>>,
   loadMoreOwners: {} as Partial<Record<PublicActivityView, symbol>>,
   data: {
+    navigationTopPx: customNavigationTopPx(),
     activeView: 'future' as PublicActivityView,
     loading: true,
     refreshing: false,
