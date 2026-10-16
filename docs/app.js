@@ -253,8 +253,8 @@
 
       <section class="product-section" id="prototype">
         <p class="eyebrow">04 · 交互原型</p>
-        <h2>13 个真实页面，与 app.json 路由一一对应</h2>
-        <p class="card-hint">官方路线独立页已从产品路由删除；活动详情直接承载路线事实与 GPX 能力，Strava 路线只提供规范化链接复制。</p>
+        <h2>13 个真实页面 + 8 页 M0 组织地基与审批原型</h2>
+        <p class="card-hint">13 个页面与 app.json 路由一一对应；另 8 页 M0 原型（组织地基与审批）仅为设计表达，服务端尚未实现。官方路线独立页已从产品路由删除；活动详情直接承载路线事实与 GPX 能力，Strava 路线只提供规范化链接复制。</p>
         <div class="overview-grid">${pageCards}</div>
       </section>
 
@@ -293,7 +293,8 @@
 
 
   function updateChrome(page) {
-    const stateLabel = (page.states.find(([id]) => id === currentState) || page.states[0])[1];
+    const baseState = currentState.split('--')[0];
+    const stateLabel = (page.states.find(([id]) => id === baseState) || page.states[0])[1];
     $('.phone-inner').classList.toggle('custom-tab-navigation', tabRoutes.includes(page.id));
     $('#mini-title').textContent =
       page.id === 'admin-activity-edit' && currentState === 'create' ? '创建活动' : page.navTitle;
@@ -305,7 +306,7 @@
     $('#state-switch').innerHTML = page.states
       .map(
         ([id, label]) =>
-          `<button class="${id === currentState ? 'is-active' : ''}" data-state="${id}" data-route="${page.id}">${label}</button>`,
+          `<button class="${id === baseState ? 'is-active' : ''}" data-state="${id}" data-route="${page.id}">${label}</button>`,
       )
       .join('');
     nav.querySelectorAll('[data-route]').forEach((button) => {
@@ -332,6 +333,14 @@
     }
   }
 
+  function normalizePrototypeState(stateIds, requestedState) {
+    const requested = requestedState || '';
+    const baseState = requested.split('--')[0];
+    return stateIds.includes(baseState) ? requested : stateIds[0];
+  }
+
+  window.normalizePrototypeState = normalizePrototypeState;
+
   function showPage(route, options = {}) {
     if (route === 'overview') {
       showOverview();
@@ -343,7 +352,7 @@
     if (!options.replace && currentRoute !== page.id) routeHistory.push(currentRoute);
     currentRoute = page.id;
     const stateIds = page.states.map(([id]) => id);
-    currentState = stateIds.includes(options.state) ? options.state : page.states[0][0];
+    currentState = normalizePrototypeState(stateIds, options.state);
     window.prototypeState = currentState;
     container.innerHTML = templates[page.id]();
     container.scrollTop = 0;
@@ -401,6 +410,7 @@
       credential: 'registrations',
       profile: 'profile',
       admin: 'admin-activity-list',
+      'org-approval': 'org-overview',
     };
     showPage(starts[name]);
     showToast('旅程入口已切换，可在手机原型内继续操作', 'info');
@@ -456,13 +466,51 @@
       showToast('活动已发布，骑友端现在可见');
     }
     if (action === 'approve-review' || action === 'reject-review') {
-      if (action === 'reject-review' && currentState !== 'reject-error') {
+      const rejectReason = document.getElementById('registration-reject-reason')?.value.trim();
+      if (action === 'reject-review' && !rejectReason) {
         showPage('admin-review-detail', { state: 'reject-error', replace: true });
         showToast('驳回时请填写理由', 'error');
         return;
       }
       showToast(action === 'approve-review' ? '报名已通过' : '报名已驳回');
       window.setTimeout(() => showPage('admin-reviews'), 500);
+    }
+    if (action === 'confirm-club-application') {
+      showPage('club-application-edit', { state: 'submit-confirm', replace: true });
+    }
+    if (action === 'submit-club-application') {
+      showToast('申请已提交，等待平台所有者审批');
+      window.setTimeout(() => showPage('club-applications', { state: 'pending_review' }), 500);
+    }
+    if (action === 'publish-target-admin') {
+      showPage('approval-outcome', { state: 'role-auto' });
+      showToast('已以俱乐部管理员身份发布');
+    }
+    if (action === 'publish-target-submit') {
+      const pendingState = target.dataset.pendingState;
+      showPage('approval-outcome', { state: pendingState });
+      showToast(`已提交审核，${pendingState.startsWith('pending-club') ? '等待俱乐部管理员处理' : '等待平台所有者处理'}`);
+    }
+    if (action === 'publish-target-platform') {
+      showPage('approval-outcome', { state: 'platform-owner-public' });
+      showToast('已显式确认并发布');
+    }
+    if (action === 'org-approve') {
+      const outcomeContext = target.dataset.outcomeContext;
+      showPage('approval-outcome', { state: `manual--${outcomeContext}` });
+      showToast(outcomeContext.startsWith('club-application') ? '申请已通过并创建俱乐部' : outcomeContext.startsWith('public-activity') ? '公开活动已通过并发布' : '俱乐部活动已通过并发布');
+    }
+    if (action === 'org-reject') {
+      const rejectReason = document.getElementById('org-reject-reason')?.value.trim();
+      if (!rejectReason) {
+        const errorState = currentState.includes('--') ? `${currentState}--reject-error` : 'reject-error';
+        showPage('approval-detail', { state: errorState, replace: true });
+        showToast('驳回时请填写理由', 'error');
+        return;
+      }
+      const outcomeContext = target.dataset.outcomeContext;
+      showPage('approval-outcome', { state: `rejected--${outcomeContext}` });
+      showToast(outcomeContext.startsWith('club-application') ? '俱乐部申请已驳回' : outcomeContext.startsWith('public-activity') ? '公开活动已驳回' : '俱乐部活动已驳回');
     }
   });
 
@@ -471,7 +519,8 @@
     if (!demo.hidden && ['ArrowUp', 'ArrowDown'].includes(event.key)) {
       event.preventDefault();
       const page = pageById.get(currentRoute);
-      const index = page.states.findIndex(([id]) => id === currentState);
+      const baseState = currentState.split('--')[0];
+      const index = page.states.findIndex(([id]) => id === baseState);
       const delta = event.key === 'ArrowDown' ? 1 : -1;
       const next = page.states[(index + delta + page.states.length) % page.states.length][0];
       showPage(currentRoute, { state: next, replace: true });

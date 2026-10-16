@@ -1260,6 +1260,20 @@ code {
   padding: 10px 12px;
 }
 
+textarea.input.textarea {
+  display: block;
+  width: 100%;
+  resize: vertical;
+  font: inherit;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+textarea.input.textarea::placeholder {
+  color: var(--color-placeholder);
+  font-weight: 400;
+}
+
 .input-group {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -4871,5 +4885,838 @@ body.capture-viewport .screen-notes {
 
   .route-analysis-page .selected-grid {
     grid-template-columns: 1fr;
+/* ================================================================
+ * 组织地基与审批（M0 待实施）：原型样式
+ * 复用 --color-*、--radius-*、.card、.tag-* 等既有 token；
+ * 以 .org- 前缀表达“组织治理视图”的信息层级（身份、路由、差异、异常）
+ * ================================================================ */
+
+/* 身份 / 分段切换：加大触控区，支持窄屏自动换行 */
+.org-seg {
+  grid-auto-flow: unset;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(var(--segment-height, 44px), auto);
+}
+
+.org-inbox-seg,
+.org-outcome-seg,
+.org-role-seg {
+  grid-auto-flow: unset;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  grid-auto-rows: minmax(var(--segment-height, 44px), auto);
+}
+
+.org-seg button,
+.org-inbox-seg button,
+.org-outcome-seg button,
+.org-role-seg button {
+  min-height: 44px;
+  height: auto;
+  padding: 4px 8px;
+  font-size: 13px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.org-seg button + button,
+.org-inbox-seg button + button,
+.org-outcome-seg button + button,
+.org-role-seg button + button {
+  border-left: 1px solid var(--color-border);
+}
+
+.org-inbox-seg button.is-disabled {
+  color: var(--color-disabled-text);
+  background: var(--color-raised);
+  cursor: not-allowed;
+}
+
+/* 发布目标路由卡：三步流 + 规则 */
+.org-route-card .card-head .tag {
+  flex: 0 0 auto;
+}
+
+.org-route-body {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.org-route-flow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.org-flow-step {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 10px 8px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  text-align: center;
+}
+
+.org-flow-step b {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 900;
+  color: var(--color-text);
+}
+
+.org-flow-step small {
+  font-size: 11px;
+  line-height: 15px;
+  color: var(--color-muted);
+  font-weight: 500;
+}
+
+.org-flow-arrow {
+  align-self: center;
+  color: var(--color-muted);
+  font-weight: 900;
+}
+
+.org-principle .org-rules {
+  margin: 8px 0 0;
+  padding-left: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.org-principle .org-rules li {
+  position: relative;
+  padding: 10px 12px 10px 30px;
+  border-radius: var(--radius-sm);
+  background: var(--color-raised);
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--color-text);
+}
+
+.org-principle .org-rules li::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 15px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--color-brand);
+  background: var(--color-surface);
+}
+
+/* 俱乐部申请列表：卡片 */
+.org-app-card {
+  display: grid;
+  gap: 8px;
+}
+
+.org-app-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.org-app-head .meta-line {
+  margin-left: auto;
+  color: var(--color-muted);
+}
+
+.org-app-card code {
+  padding: 1px 4px;
+  border-radius: var(--radius-xs);
+  background: var(--color-raised);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.org-reject-reason {
+  margin-top: 2px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--color-brand);
+  background: var(--color-brand-soft);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.org-reject-reason b {
+  display: block;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--color-brand-active);
+  font-weight: 900;
+  margin-bottom: 4px;
+}
+
+.org-reject-reason p {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--color-text);
+}
+
+.org-app-actions {
+  margin-top: 4px;
+}
+
+/* 俱乐部申请表单：重名提醒 */
+.org-name-conflict {
+  padding: 10px 12px;
+  border-left: 3px solid var(--color-brand);
+  background: var(--color-brand-soft);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  color: var(--color-text);
+}
+
+.org-name-conflict b {
+  color: var(--color-brand);
+  font-weight: 900;
+  margin-right: 4px;
+}
+
+/* 提交确认 modal */
+.org-confirm-modal {
+  position: fixed;
+  inset: 0;
+  background: var(--color-overlay);
+  z-index: 90;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.org-confirm-modal .modal-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  padding: 20px 20px 24px;
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  background: var(--color-surface);
+  box-shadow: 0 -12px 36px var(--color-shadow);
+  animation: org-sheet-in 180ms ease-out;
+}
+
+.org-confirm-modal .modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-raised);
+  color: var(--color-text);
+  font-size: 18px;
+}
+
+.org-confirm-modal .btn-row {
+  margin-top: 16px;
+}
+
+@keyframes org-sheet-in {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* 发布目标选择：目标卡 + 俱乐部选择 + 路由预览 */
+.org-target-card {
+  display: grid;
+  gap: 10px;
+  cursor: pointer;
+  transition: border-color 120ms ease;
+}
+
+.org-target-card.is-selected {
+  border: 2px solid var(--color-text);
+  padding: 15px;
+}
+
+.org-target-card.is-locked {
+  opacity: 0.65;
+}
+
+.org-target-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.org-target-head > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.org-target-head .tag {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.org-target-radio {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  border: 2px solid var(--color-border-strong);
+  background: var(--color-surface);
+  position: relative;
+}
+
+.org-target-card.is-selected .org-target-radio {
+  border-color: var(--color-text);
+}
+
+.org-target-card.is-selected .org-target-radio::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--color-text);
+}
+
+.org-club-picker .org-club-list {
+  margin-top: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.org-club-option {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    "name meta"
+    "elig elig";
+  gap: 4px 10px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.org-club-option.is-selected {
+  border: 2px solid var(--color-text);
+  padding: 11px;
+}
+
+.org-club-name {
+  grid-area: name;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.org-club-name b {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 900;
+}
+
+.org-club-name small {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-muted);
+}
+
+.org-club-meta {
+  grid-area: meta;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.org-club-eligibility {
+  grid-area: elig;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--color-muted);
+}
+
+.org-route-preview {
+  margin-top: 8px;
+  display: grid;
+  gap: 12px;
+}
+
+.org-route-preview > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-raised);
+}
+
+.org-route-preview b {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 900;
+  color: var(--color-text);
+  word-break: break-all;
+}
+
+.org-route-preview code {
+  padding: 1px 4px;
+  border-radius: var(--radius-xs);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  font-size: 12px;
+}
+
+/* 审批待办卡 */
+.org-todo-card {
+  display: grid;
+  gap: 4px;
+}
+
+.org-todo-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.org-todo-head .meta-line {
+  margin-left: auto;
+  color: var(--color-muted);
+}
+
+.org-todo-coreviewers {
+  margin-top: 4px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--color-raised);
+  color: var(--color-text);
+}
+
+/* 审批详情：差异表 + 顶部提醒条 */
+.org-banner {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--color-brand);
+  background: var(--color-brand-soft);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.org-banner b {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--color-brand-active);
+  font-weight: 900;
+}
+
+.org-banner.is-expired {
+  border-left-color: var(--color-brand);
+  background: var(--color-brand-soft);
+}
+
+.org-banner.is-expired b {
+  color: var(--color-brand-active);
+}
+
+.org-banner code {
+  padding: 1px 4px;
+  border-radius: var(--radius-xs);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.org-diff {
+  margin-top: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.org-diff-head,
+.org-diff-row {
+  display: grid;
+  grid-template-columns: 92px 1fr 1fr;
+  gap: 10px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.org-diff-head {
+  background: var(--color-raised);
+  color: var(--color-muted);
+  font-weight: 800;
+}
+
+.org-diff-row {
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.org-diff-row.is-changed {
+  background: var(--color-brand-soft);
+}
+
+.org-diff-label {
+  color: var(--color-muted);
+  font-weight: 700;
+}
+
+.org-diff-before {
+  color: var(--color-muted);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in oklab, var(--color-muted) 60%, transparent);
+}
+
+.org-diff-after {
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.org-diff-row.is-changed .org-diff-after {
+  color: var(--color-brand-active);
+}
+
+/* 发布结果：时间线 + 审计 JSON */
+.org-timeline {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 12px;
+}
+
+.org-timeline li {
+  position: relative;
+  padding-left: 28px;
+}
+
+.org-timeline li::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 10px;
+  bottom: -14px;
+  width: 2px;
+  background: var(--color-border);
+}
+
+.org-timeline li:last-child::before {
+  display: none;
+}
+
+.org-timeline-dot {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border-strong);
+  background: var(--color-surface);
+}
+
+.org-timeline li.is-highlight .org-timeline-dot {
+  border-color: var(--color-brand);
+  background: var(--color-brand);
+}
+
+.org-timeline li > div {
+  display: grid;
+  gap: 2px;
+}
+
+.org-timeline li b {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 900;
+}
+
+.org-timeline li small {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.org-timeline li p {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--color-text);
+  word-break: break-all;
+}
+
+.org-audit-json {
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-media-card-bg);
+  color: var(--color-on-media);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-x: auto;
+}
+
+/* 关键异常：顶部红左线事实卡 */
+.org-exception-head {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border-left: 3px solid var(--color-brand);
+  background: var(--color-brand-soft);
+  border-radius: 0 var(--radius-card) var(--radius-card) 0;
+  display: grid;
+  gap: 6px;
+}
+
+.org-exception-head .page-title {
+  margin: 0;
+  font-size: 22px;
+  line-height: 28px;
+  color: var(--color-text);
+}
+
+.org-exception-head .pending-note {
+  margin: 0;
+  color: var(--color-brand-active);
+}
+
+/* 窄屏回退：330px 下保证不横向溢出 */
+@media (max-width: 360px) {
+  .org-route-flow {
+    grid-template-columns: 1fr;
   }
+
+  .org-route-flow .org-flow-arrow {
+    transform: rotate(90deg);
+  }
+
+  .org-diff-head,
+  .org-diff-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .org-diff-before,
+  .org-diff-after {
+    padding-left: 10px;
+  }
+}
+
+
+/* ============================================================
+   俱乐部身份：头像、紧凑身份行、头像组、主办方卡与个人中心俱乐部卡
+   —— 严格复用沸点色彩令牌（墨黑、暖米白、品牌红、功能色），不新增新色
+   —— 在 340px 到 390px 之间保持不溢出；长俱乐部名用省略号折叠
+   ============================================================ */
+
+.club-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--color-text);
+  color: var(--color-on-media);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+.club-avatar b { font-weight: 600; font-size: inherit; }
+.club-avatar-sm { width: 24px; height: 24px; font-size: 11px; }
+.club-avatar-md { width: 40px; height: 40px; font-size: 13px; }
+
+/* tone 变体——仅在既有令牌基础上调色 */
+.club-avatar-ink { background: var(--color-text); color: var(--color-on-media); }
+.club-avatar-brand {
+  background: var(--color-media-card-bg);
+  color: var(--color-on-media);
+}
+.club-avatar-muted { background: var(--color-raised); color: var(--color-text); }
+.club-avatar-warm { background: var(--color-logo-background); color: var(--color-on-media); }
+.club-avatar-public {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: inset 0 0 0 1px var(--color-border-strong);
+}
+.club-avatar-overflow {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: inset 0 0 0 1px var(--color-border-strong);
+}
+
+/* 紧凑身份行：俱乐部头像 + 名称 + 可选小字（如“俱乐部活动”或“发布时快照”） */
+.club-identity {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+}
+.club-identity-name {
+  display: inline-flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+.club-identity-name b {
+  font-size: 13px;
+  color: var(--color-text);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.club-identity-name small {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--color-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.club-identity.is-public .club-identity-name b { color: var(--color-text); }
+
+/* 活动卡 / 行程卡 / 凭证中的紧凑身份行 */
+.activity-host-line,
+.trip-host-line,
+.credential-host-line {
+  margin: 2px 0 6px;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.credential-host-line { margin-top: 6px; }
+
+/* 多俱乐部头像组 */
+.club-avatar-stack {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+.club-avatar-stack .club-avatar {
+  position: relative;
+  margin-left: -4px;
+  box-shadow: 0 0 0 2px var(--color-surface);
+}
+.club-avatar-stack .club-avatar:first-child { margin-left: 0; }
+
+/* 活动详情·主办方卡 */
+.host-card { padding: 16px; }
+.host-card .card-head { margin-bottom: 12px; }
+.host-card-body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.host-card-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.host-card-text b {
+  font-size: 15px;
+  color: var(--color-text);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.host-card-text .meta-line {
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.host-card .card-hint { margin-top: 10px; }
+
+/* 个人中心·我的俱乐部分区 */
+.profile-club-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-lg, 12px);
+  padding: 16px;
+  margin: 12px 0 4px;
+  box-shadow: 0 1px 2px var(--color-shadow);
+}
+.profile-club-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.profile-club-head .section-label { margin: 0; }
+.profile-club-head .meta-line {
+  color: var(--color-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.profile-club-single {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.profile-club-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.profile-club-text b {
+  font-size: 15px;
+  color: var(--color-text);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.profile-club-text .meta-line {
+  margin-top: 2px;
+  color: var(--color-muted);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.profile-club-multi {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.profile-club-multi .club-avatar-stack { flex: 0 0 auto; }
+.profile-club-hint {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+.profile-club-empty { margin: 0 0 12px; color: var(--color-muted); font-size: 13px; }
+.profile-club-card .card-hint { margin-top: 10px; }
+
+/* 凭证“活动归属”行的发布快照提示 */
+.credential-snapshot-hint {
+  margin-top: 10px;
+  color: var(--color-muted);
+  font-size: 12px;
 }
