@@ -131,6 +131,27 @@ describe('静态图片资源完整性', () => {
     expect(brokenReferences(sourceFiles, markupImageReferences)).toEqual([]);
   });
 
+  it('README 产品预览只引用当前 UI 同步清单登记的 Pages 截图', () => {
+    const readme = readFileSync(path.join(ROOT, 'README.md'), 'utf8');
+    const previewSection = readme.match(/## 产品预览([\s\S]*?)(?=\n## )/)?.[1] ?? '';
+    const manifest = JSON.parse(
+      readFileSync(path.join(ROOT, 'docs/ui-sync-manifest.json'), 'utf8'),
+    ) as {
+      evidence: { directory: string; routes: Array<{ pages: string }> };
+    };
+    const allowed = new Set(
+      manifest.evidence.routes.map((route) =>
+        path.posix.join(manifest.evidence.directory, route.pages),
+      ),
+    );
+    const actual = markupImageReferences(previewSection)
+      .map(localReference)
+      .filter((reference): reference is string => Boolean(reference));
+
+    expect(actual.length).toBeGreaterThan(0);
+    expect(actual.filter((reference) => !allowed.has(reference))).toEqual([]);
+  });
+
   it('README 与文档中的本地链接全部可达', () => {
     const markdownFiles = [
       path.join(ROOT, 'README.md'),
