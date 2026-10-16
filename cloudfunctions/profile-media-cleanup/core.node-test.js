@@ -15,6 +15,7 @@ const claimDecision = subject.claimDecision || (() => ({ kind: 'missing' }));
 const importClaimDecision = subject.importClaimDecision || (() => ({ kind: 'missing' }));
 const failureDecision = subject.failureDecision || (() => ({ status: 'missing' }));
 const drainMediaCleanup = subject.drainMediaCleanup || (async () => ({ deleted: -1 }));
+const cleanupBatchSummary = subject.cleanupBatchSummary || (() => ({}));
 
 const now = new Date('2026-09-29T12:00:00.000Z');
 const mediaSecret = 'profile-media-secret-for-tests-32-bytes';
@@ -1065,4 +1066,47 @@ test('包含模糊 not found 文案但非可信对象不存在码时记录删除
   assert.deepEqual(failed, ['media-1']);
   assert.equal(result.deleted, 0);
   assert.equal(result.failed, 1);
+});
+
+test('删除失败时租约已失效只计入跳过，不虚增失败数', async () => {
+  const result = await drainMediaCleanup({
+    now,
+    randomUUID: () => 'lease-expired',
+    store: {
+      listEligible: async () => ['media-1'],
+      claim: async () => ({ ...record, claimed: true, delete_lease_id: 'lease-expired' }),
+      markDeleted: async () => false,
+      markFailed: async () => false,
+    },
+    deleteFile: async () => {
+      throw new Error('storage unavailable');
+    },
+  });
+
+  assert.equal(result.processed, 1);
+  assert.equal(result.deleted, 0);
+  assert.equal(result.failed, 0);
+  assert.equal(result.skipped, 1);
+});
+
+test('批次汇总结构化统计处理、删除、引用跳过、失败与其他跳过', () => {
+  assert.deepEqual(
+    cleanupBatchSummary({
+      processed: 8,
+      deleted: 3,
+      skippedReferenced: 2,
+      skipped: 2,
+      failed: 1,
+      claimed: 4,
+    }),
+    {
+      event: 'profile_media_cleanup_batch',
+      processed: 8,
+      deleted: 3,
+      skippedReferenced: 2,
+      skipped: 2,
+      failed: 1,
+      claimed: 4,
+    },
+  );
 });

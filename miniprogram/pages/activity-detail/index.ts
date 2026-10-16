@@ -254,14 +254,15 @@ Page({
       activityAction: unavailableAction(),
     });
     try {
-      const item = await rideService.getActivity(id);
+      const isLoggedIn = !['unavailable', 'error'].includes(appStore.authStatus);
+      // 活动详情与“我的报名”彼此独立，同时请求以缩短首屏等待；游客不发起报名请求。
+      const [item, registrations] = await Promise.all([
+        rideService.getActivity(id),
+        isLoggedIn ? rideService.listRegistrations() : Promise.resolve([]),
+      ]);
       if (requestId !== this.loadRequestId || this.unloaded) return;
       if (!item) throw new Error('活动不存在');
-      const isLoggedIn = !['unavailable', 'error'].includes(appStore.authStatus);
-      const registration = isLoggedIn
-        ? (await rideService.listRegistrations()).find((value) => value.activityId === id)
-        : undefined;
-      if (requestId !== this.loadRequestId || this.unloaded) return;
+      const registration = registrations.find((value) => value.activityId === id);
       const detail = item as any;
       const isAdmin = isLoggedIn && appStore.role === 'admin';
       let isOrganizer =

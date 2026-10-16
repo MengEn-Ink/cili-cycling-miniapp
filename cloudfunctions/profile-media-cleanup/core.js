@@ -330,7 +330,16 @@ async function drainMediaCleanup({
     const importId = imports.shift();
     if (importId && work.length < boundedLimit) work.push({ kind: 'import', id: importId });
   }
-  const result = { discovered: work.length, claimed: 0, deleted: 0, failed: 0, reactivated: 0 };
+  const result = {
+    discovered: work.length,
+    processed: work.length,
+    claimed: 0,
+    deleted: 0,
+    failed: 0,
+    reactivated: 0,
+    skippedReferenced: 0,
+    skipped: 0,
+  };
   for (const item of work) {
     const { id } = item;
     const leaseId = randomUUID();
@@ -340,10 +349,17 @@ async function drainMediaCleanup({
         : await store.claim(id, { leaseId, now });
     if (claimed && claimed.reactivated) {
       result.reactivated += 1;
+      result.skippedReferenced += 1;
       continue;
     }
-    if (!claimed || claimed.invalid || claimed.completed || claimed.aborted) continue;
-    if (claimed.claimed !== true && claimed.resolve_target !== true) continue;
+    if (!claimed || claimed.invalid || claimed.completed || claimed.aborted) {
+      result.skipped += 1;
+      continue;
+    }
+    if (claimed.claimed !== true && claimed.resolve_target !== true) {
+      result.skipped += 1;
+      continue;
+    }
     result.claimed += 1;
     const deferCompletion = claimed.resolve_target === true || claimed.defer_completion === true;
     const confirmAfter = new Date(now.getTime() + RECOVERY_CONFIRMATION_MS);
@@ -397,13 +413,35 @@ async function drainMediaCleanup({
           : await store.markDeleted(id, { leaseId, now });
       if (marked) result.deleted += 1;
     } catch {
-      if (item.kind === 'import')
-        await store.markImportFailed(id, { leaseId, now, errorCode: 'DELETE_FAILED' });
-      else await store.markFailed(id, { leaseId, now, errorCode: 'DELETE_FAILED' });
-      result.failed += 1;
+      const marked =
+        item.kind === 'import'
+          ? await store.markImportFailed(id, { leaseId, now, errorCode: 'DELETE_FAILED' })
+          : await store.markFailed(id, { leaseId, now, errorCode: 'DELETE_FAILED' });
+      if (marked) result.failed += 1;
+      else result.skipped += 1;
     }
   }
+  result.skipped = Math.max(
+    result.skipped,
+    result.processed - result.deleted - result.failed - result.skippedReferenced,
+  );
   return result;
+}
+
+function cleanupBatchSummary(result) {
+  const count = (key) => {
+    const value = Number(result?.[key]);
+    return Number.isSafeInteger(value) && value >= 0 ? value : 0;
+  };
+  return {
+    event: 'profile_media_cleanup_batch',
+    processed: count('processed'),
+    deleted: count('deleted'),
+    skippedReferenced: count('skippedReferenced'),
+    skipped: count('skipped'),
+    failed: count('failed'),
+    claimed: count('claimed'),
+  };
 }
 
 function responseError(error) {
@@ -435,5 +473,6 @@ module.exports = {
   failureDecision,
   isTrustedObjectMissing,
   drainMediaCleanup,
+  cleanupBatchSummary,
   responseError,
 };

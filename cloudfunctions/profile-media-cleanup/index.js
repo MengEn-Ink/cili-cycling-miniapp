@@ -1,7 +1,12 @@
 'use strict';
 
 const cloud = require('wx-server-sdk');
-const { authorizeCleanup, drainMediaCleanup, responseError } = require('./core');
+const {
+  authorizeCleanup,
+  cleanupBatchSummary,
+  drainMediaCleanup,
+  responseError,
+} = require('./core');
 const { createCleanupStore } = require('./store');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
@@ -15,6 +20,7 @@ exports.main = async (event = {}) => {
       uploadFile: (input) => cloud.uploadFile(input),
       deleteFile: (input) => cloud.deleteFile(input),
     });
+    console.info('[profile-media-cleanup] batch', cleanupBatchSummary(data));
     return { ok: true, data };
   } catch (error) {
     console.error(

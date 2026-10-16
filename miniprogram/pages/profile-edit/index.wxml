@@ -17,7 +17,7 @@
           </view>
         </view>
       </view>
-      <view class="avatar-status" role="status" aria-live="polite" aria-atomic="true">{{avatarBusy ? '正在更新头像' : ''}}</view>
+      <view class="avatar-status" role="status" aria-live="polite" aria-atomic="true">{{avatarBusy ? (mediaProgress || '正在更新头像…') : ''}}</view>
     </view>
 
     <block wx:if="{{canEditDetails}}">
@@ -59,11 +59,12 @@
 
       <view class="card form-card">
         <view class="title">个人背景图</view>
-        <view class="muted form-tip">最多 1 张，用作个人中心顶部的大图背景；选择新图片会替换当前背景图，点击可查看大图。</view>
+        <view class="muted form-tip">最多 1 张，用作个人中心顶部的大图背景。选择后可移动和缩放画面，建议使用横向照片；新图片会替换当前背景图。</view>
         <view class="photo-actions">
           <button class="photo-action" bindtap="addPhoto" loading="{{photoBusy}}" disabled="{{photoBusy || saving || avatarBusy}}">{{p.photos.length ? '更换背景图' : '添加背景图'}}</button>
           <button wx:if="{{p.photos.length}}" class="text-button photo-remove" bindtap="removeBackgroundPhoto" disabled="{{photoBusy || saving || avatarBusy}}">删除背景图</button>
         </view>
+        <view class="avatar-status" wx:if="{{photoBusy}}" role="status" aria-live="polite" aria-atomic="true">{{mediaProgress || '正在处理背景图…'}}</view>
         <view class="photo-list" wx:if="{{photoItems.length}}">
           <view class="photo-item" wx:for="{{photoItems}}" wx:key="id">
             <view class="photo-preview-button">

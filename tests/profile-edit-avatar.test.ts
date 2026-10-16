@@ -1161,6 +1161,107 @@ describe('资料编辑头像交互', () => {
     });
     expect(rideService.updateProfile.mock.calls[0][0]).not.toHaveProperty('photos');
   });
+  it('背景图裁剪固定使用 cropScale 16:9，并上传裁剪后的路径', async () => {
+    const uploadFile = vi
+      .fn()
+      .mockResolvedValue({ fileID: 'cloud://env/profiles/owner/cropped.jpg' });
+    const cropImage = vi.fn((options: { success: (value: unknown) => void }) => {
+      options.success({ tempFilePath: '/private/tmp/cropped.jpg' });
+    });
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [{ tempFilePath: '/private/tmp/original.jpg', size: 1024 }],
+      }),
+      cropImage,
+      cloud: { uploadFile, deleteFile: vi.fn() },
+    });
+
+    await page.addPhoto();
+
+    expect(cropImage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        src: '/private/tmp/original.jpg',
+        cropScale: '16:9',
+        success: expect.any(Function),
+        fail: expect.any(Function),
+      }),
+    );
+    expect(uploadFile).toHaveBeenCalledWith(
+      expect.objectContaining({ filePath: '/private/tmp/cropped.jpg' }),
+    );
+  });
+
+  it('cropImage 不存在时友好降级并上传原图', async () => {
+    const uploadFile = vi
+      .fn()
+      .mockResolvedValue({ fileID: 'cloud://env/profiles/owner/original.jpg' });
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [{ tempFilePath: '/private/tmp/original.jpg', size: 1024 }],
+      }),
+      cropImage: undefined,
+      cloud: { uploadFile, deleteFile: vi.fn() },
+    });
+
+    await page.addPhoto();
+
+    expect(uploadFile).toHaveBeenCalledWith(
+      expect.objectContaining({ filePath: '/private/tmp/original.jpg' }),
+    );
+  });
+
+  it('用户取消背景图裁剪时取消整个选择，不上传也不报错', async () => {
+    const uploadFile = vi.fn();
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [{ tempFilePath: '/private/tmp/original.jpg', size: 1024 }],
+      }),
+      cropImage: vi.fn((options: { fail: (error: unknown) => void }) => {
+        options.fail({ errMsg: 'cropImage:fail cancel' });
+      }),
+      cloud: { uploadFile, deleteFile: vi.fn() },
+    });
+
+    await page.addPhoto();
+
+    expect(uploadFile).not.toHaveBeenCalled();
+    expect(rideService.getProfileMediaUploadPath).not.toHaveBeenCalled();
+    expect(wx.showToast).not.toHaveBeenCalled();
+  });
+
+  it('瞬时上传失败后使用同一 cloudPath 自动重试并成功', async () => {
+    const uploadFile = vi
+      .fn()
+      .mockRejectedValueOnce({ errMsg: 'uploadFile:fail network timeout' })
+      .mockResolvedValueOnce({ fileID: 'cloud://env/profiles/owner/retried.jpg' });
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [{ tempFilePath: '/private/tmp/retried.jpg', size: 1024 }],
+      }),
+      cloud: { uploadFile, deleteFile: vi.fn() },
+    });
+
+    await page.addPhoto();
+
+    expect(uploadFile).toHaveBeenCalledTimes(2);
+    expect(uploadFile.mock.calls[0][0].cloudPath).toBe(uploadFile.mock.calls[1][0].cloudPath);
+    expect(page.data.p.photos[0].id).toBe('cloud://env/profiles/owner/retried.jpg');
+  });
+
+  it('文件类上传错误不可重试', async () => {
+    const uploadFile = vi.fn().mockRejectedValue({ errMsg: 'uploadFile:fail file not found' });
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [{ tempFilePath: '/private/tmp/missing.jpg', size: 1024 }],
+      }),
+      cloud: { uploadFile, deleteFile: vi.fn() },
+    });
+
+    await page.addPhoto();
+
+    expect(uploadFile).toHaveBeenCalledOnce();
+    expect(rideService.registerProfileMedia).not.toHaveBeenCalled();
+  });
 });
 
 describe('资料编辑头像页面契约', () => {
@@ -1244,6 +1345,11 @@ describe('资料编辑头像页面契约', () => {
     expect(template).toContain("p.photos.length ? '更换背景图' : '添加背景图'");
     expect(template).toContain('class="photo-thumbnail"');
     expect(template).toContain('bindtap="previewPhoto"');
+    expect(template).toContain('选择后可移动和缩放画面，建议使用横向照片');
+    expect(source).toMatch(
+      /wx\.cropImage\(\{\s*src:\s*image\.path,\s*cropScale:\s*'16:9',\s*success:\s*resolve,\s*fail:\s*reject/s,
+    );
+    expect(source).not.toContain('aspectRatio');
     expect(template).not.toContain('data-direction=');
     expect(styles).toMatch(/\.photo-thumbnail\s*\{/);
   });

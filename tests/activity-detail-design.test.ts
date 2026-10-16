@@ -887,3 +887,33 @@ describe('官方路线不再提供站内查看页', () => {
     expect(runtime).not.toContain('routeEmbedOrigin');
   });
 });
+
+describe('活动详情加载性能契约', () => {
+  it('并行请求独立的活动详情与我的报名，并让骑友头像按需加载', () => {
+    const source = read('miniprogram/pages/activity-detail/index.ts');
+    const template = read('miniprogram/pages/activity-detail/index.wxml');
+    expect(source).toMatch(
+      /Promise\.all\(\[\s*rideService\.getActivity\(id\),\s*isLoggedIn\s*\?\s*rideService\.listRegistrations\(\)/s,
+    );
+    const attendeeAvatar =
+      template.match(
+        /<image\b[^>]*class="attendee-avatar \{\{item\.genderClass\}\}"[^>]*\/>/,
+      )?.[0] || '';
+    const riderAvatar =
+      template.match(
+        /<image\b[^>]*class="rider-card-avatar \{\{rider\.genderClass\}\}"[^>]*\/>/,
+      )?.[0] || '';
+    expect(attendeeAvatar).toContain('lazy-load="{{true}}"');
+    expect(riderAvatar).toContain('lazy-load="{{true}}"');
+  });
+
+  it('活动列表首屏使用与活动卡片结构一致的轻量骨架', () => {
+    const template = read('miniprogram/pages/activities/index.wxml');
+    const styles = read('miniprogram/pages/activities/index.wxss');
+    expect(template).toContain('class="activity-card-skeleton" wx:if="{{loading}}"');
+    expect(template).toContain('activity-card-skeleton__media skeleton');
+    expect(template).toContain('activity-card-skeleton__metrics skeleton');
+    expect(styles).toMatch(/\.activity-card-skeleton\s*\{[^}]*height:\s*900rpx/s);
+    expect(styles).toMatch(/\.activity-card-skeleton__media\s*\{[^}]*height:\s*360rpx/s);
+  });
+});

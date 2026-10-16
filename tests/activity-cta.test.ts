@@ -365,7 +365,8 @@ describe('活动详情 CTA 接线', () => {
 
     expect(page.data.item.title).toBe('新活动');
     expect(page.data.activityAction).toMatchObject({ kind: 'register', enabled: true });
-    expect(rideService.listRegistrations).toHaveBeenCalledTimes(1);
+    // 两次详情请求会并行读取报名状态；底层缓存仓库负责合并同一时刻的真实云请求。
+    expect(rideService.listRegistrations).toHaveBeenCalledTimes(2);
   });
 
   it('有坐标时可分别导航起终点，无坐标时不调用地图', () => {
