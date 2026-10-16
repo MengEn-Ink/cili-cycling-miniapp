@@ -19,7 +19,7 @@ const statusPillStyles = read('miniprogram/components/status-pill/index.wxss');
 describe('行程状态卡与报名凭证重设计契约', () => {
   it('全部状态使用统一白色票面，状态语义由统一状态组件承载', () => {
     expect(trips).toContain('status-{{item.status}}');
-    expect(trips).toContain('status-pill status="{{item.displayStatusText}}"');
+    expect(trips).toContain('status-pill ticket="{{true}}" status="{{item.displayStatusText}}"');
     expectSemantic(
       declaration(effectiveBlock(appStyles, '.registration-card'), 'background'),
       '--color-surface',

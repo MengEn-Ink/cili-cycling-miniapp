@@ -68,7 +68,7 @@ describe('沸点红白墨黑全局主题契约', () => {
 
     expect(app).toContain('background: var(--color-status-success-soft);');
     expect(app).toContain('border: 2rpx solid var(--color-status-warning);');
-    expect(trips).toContain('status-pill status="{{item.displayStatusText}}"');
+    expect(trips).toContain('status-pill ticket="{{true}}" status="{{item.displayStatusText}}"');
     expect(reviews).toContain('class="status-tag status-{{item.status}}"');
   });
 });

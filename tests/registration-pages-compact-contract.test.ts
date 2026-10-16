@@ -67,7 +67,9 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     ]) {
       expect(registrationScript).toContain(`${status}:`);
     }
-    expect(registrations).toContain('status-pill status="{{item.displayStatusText}}"');
+    expect(registrations).toContain(
+      'status-pill ticket="{{true}}" status="{{item.displayStatusText}}"',
+    );
     expect(statusPill).toContain("status === '已驳回' || status === '已取消'");
     expect(statusPill).toContain("status === '已通过'");
   });

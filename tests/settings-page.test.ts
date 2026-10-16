@@ -22,11 +22,11 @@ describe('设置页', () => {
   });
 
   it('只加载当前版本日志，不注册第三方账号生命周期或入口', () => {
-    expect(page.data.releaseNotes).toHaveLength(21);
+    expect(page.data.releaseNotes).toHaveLength(22);
     expect(page.data.releaseNotes[0]).toMatchObject({
       version: CLIENT_RELEASE_VERSION,
       latest: true,
-      title: '沸点风格设计令牌全站替换',
+      title: '我的行程严格对齐沸点设计稿',
     });
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(
       1,
@@ -37,6 +37,7 @@ describe('设置页', () => {
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
       CLIENT_RELEASE_VERSION,
+      '2026.10.16.71',
       '2026.10.16.70',
       '2026.10.16.69',
       '2026.10.16.68',

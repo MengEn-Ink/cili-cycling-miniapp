@@ -185,7 +185,7 @@ Page({
         title: '删除已取消行程？',
         content: '删除后，这条行程记录将不再显示且无法恢复。',
         confirmText: '删除记录',
-        confirmColor: '#b43b32',
+        confirmColor: '#c0321f',
         success: (result: { confirm: boolean }) => resolve(result.confirm),
         fail: () => resolve(false),
       });

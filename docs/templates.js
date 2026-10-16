@@ -184,16 +184,16 @@
     },
 
     registrations: () => {
-      const head = `${brandLogo('此里 · 我的行程')}<div class="page-heading"><div><h2 class="page-title">我的行程</h2><p class="page-sub">审核状态与出发凭证，一处确认</p></div><b>${is('loading') ? '同步中' : '共 3 场'}</b></div>`;
-      if (is('loading')) return `<div class="pg">${head}${skeletons(2)}</div>`;
+      const cancelledDeleted = Boolean(window.prototypeCancelledTripDeleted);
+      const tripCount = is('empty') ? 0 : cancelledDeleted ? 1 : 2;
+      const head = `${brandLogo('我的行程')}<div class="page-heading"><div><h2 class="page-title">我的行程</h2><p class="page-sub">审核状态与出发凭证，一处确认</p></div><b>${is('loading') ? '同步中' : `共 ${tripCount} 场`}</b></div>`;
+      if (is('loading')) return `<div class="pg registrations-prototype">${head}${skeletons(2)}</div>`;
       if (is('empty'))
-        return `<div class="pg">${head}<div class="trip-summary">${metric('0', '审核中')}${metric('0', '可出发')}${metric('0', '已失效')}</div>${stateView('0', '还没有行程', '报名活动后，审核进度和出发凭证都会出现在这里。', btn('去看看活动', go('activities')))}</div>`;
-      return `<div class="pg">${head}
-        <div class="trip-summary"><span><b class="is-pending">1</b><small>审核中</small></span>${metric('1', '可出发')}${metric('1', '已失效')}</div>
-        <div class="list-count"><span>全部行程</span><b>共 3 场</b></div>
-        <article class="trip-ticket"><div class="trip-ticket-top"><div><b class="ticket-label">骑行票据</b><span class="meta-line">${trip.date}</span></div>${tag('success', '✓ 已通过')}</div><h3>${trip.title}</h3><div class="trip-ticket-info"><div><small>集合时间</small><b>${trip.time}</b></div><div><small>集合地点</small><b>${trip.start}</b></div></div><div class="ticket-meta"><span>集合方式</span><b>自行前往</b></div><p class="status-guidance"><i></i>审核已通过，出发前请确认凭证</p>${btn('查看票据式行程凭证', go('credential'), 'btn-secondary')}</article>
-        <article class="trip-ticket"><div class="trip-ticket-top">${tag('pending', '待审核')}<span class="meta-line">${primary.date}</span></div><h3>${primary.title}</h3><div class="trip-ticket-info"><div><small>集合时间</small><b>${primary.time}</b></div><div><small>集合地点</small><b>${primary.start}</b></div></div><p class="neutral-note">资料审核中，结果将在行程页同步。</p></article>
-        <article class="trip-ticket"><div class="trip-ticket-top">${tag('muted', '未通过')}<span class="meta-line">10月11日 周六</span></div><h3>秋日环湖耐力骑</h3><p class="neutral-note">未通过原因：本场需具备 80 km 以上骑行经验，可报名其他活动。</p></article>
+        return `<div class="pg registrations-prototype">${head}<div class="trip-summary">${metric('0', '审核中')}${metric('0', '可出发', 'is-ready')}${metric('0', '已失效')}</div>${stateView('0', '还没有行程', '报名活动后，审核进度和出发凭证都会出现在这里。', btn('去看看活动', go('activities')))}</div>`;
+      return `<div class="pg registrations-prototype">${head}
+        <div class="trip-summary">${metric('0', '审核中')}${metric('1', '可出发', 'is-ready')}${metric(cancelledDeleted ? '0' : '1', '已失效')}</div>
+        <article class="trip-ticket"><div class="trip-ticket-top"><b class="ticket-label">骑行票据</b><span class="ticket-date">10月18日 周日</span>${tag('success', '✓ 已通过')}</div><div class="trip-ticket-body"><h3>浦东滨江夜骑 · 鎏金落日线</h3><div class="trip-ticket-info"><div><small>集合时间</small><b>17:30</b></div><div><small>集合地点</small><b>浦东滨江 12 号望江台</b></div></div><div class="ticket-meta"><span>集合方式</span><b>自行前往</b></div><p class="status-guidance"><i></i>凭证已就绪，出发当天向组织者出示</p>${btn('查看凭证', go('credential'), 'btn trip-ticket-primary')}</div></article>
+        ${cancelledDeleted ? '' : `<article class="trip-ticket trip-ticket-cancelled"><div class="trip-ticket-top"><b class="ticket-label">骑行票据</b><span class="ticket-date">10月11日 周日</span>${tag('muted', '已取消')}</div><div class="trip-ticket-body"><h3>奉贤海湾拉练</h3><div class="trip-ticket-info"><div><small>集合时间</small><b>07:00</b></div><div><small>集合地点</small><b>奉贤海湾旅游区集合点</b></div></div><p class="status-guidance"><i></i>可左滑或点击删除记录</p><div class="trip-ticket-actions"><button class="btn trip-ticket-delete" data-action="delete-trip">删除记录</button><button class="btn-secondary" data-action="cancelled-trip-detail">查看详情</button></div></div></article>`}
       </div>`;
     },
 

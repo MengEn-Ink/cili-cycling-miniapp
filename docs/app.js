@@ -377,6 +377,11 @@
     modal.hidden = false;
   }
 
+  function showCancelledTripDetail() {
+    modal.innerHTML = `<div class="modal-sheet"><button class="modal-close" data-action="close-modal" aria-label="关闭">×</button><span class="tag tag-muted">已取消</span><h3 class="card-title" style="margin-top:12px">奉贤海湾拉练</h3><div class="row-list"><div class="row"><span>集合时间</span><strong>10月11日 周日 07:00</strong></div><div class="row"><span>集合地点</span><strong>奉贤海湾旅游区集合点</strong></div></div><p class="neutral-note">此行程已取消，不再提供出发凭证。</p></div>`;
+    modal.hidden = false;
+  }
+
   function showCopyActivity() {
     modal.innerHTML = `<div class="modal-sheet"><button class="modal-close" data-action="close-modal" aria-label="关闭">×</button><h3 class="card-title">从此活动创建</h3><p class="card-hint">默认带入原活动时间，确认后生成草稿</p>
       ${[['报名截止', '2026-10-24', '20:00'], ['开始', '2026-10-25', '06:20'], ['结束', '2026-10-25', '15:00']].map(([label, d, t]) => `<div class="field"><div class="field-label">${label}</div><div class="field-2col"><div class="input"><span>${d}</span><span class="unit">›</span></div><div class="input"><span>${t}</span><span class="unit">›</span></div></div></div>`).join('')}
@@ -420,6 +425,12 @@
     }
     if (action === 'close-modal') modal.hidden = true;
     if (action === 'rider') showRider(target.dataset.rider);
+    if (action === 'cancelled-trip-detail') showCancelledTripDetail();
+    if (action === 'delete-trip') {
+      window.prototypeCancelledTripDeleted = true;
+      showPage(currentRoute, { state: currentState, replace: true });
+      showToast('已删除行程记录');
+    }
     if (action === 'copy-activity') showCopyActivity();
     if (action === 'copy-route') {
       showPage('activity-detail', { state: 'copied', replace: true });

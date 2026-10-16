@@ -151,7 +151,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   });
 
   it('保留票据式行程与凭证，并覆盖活动报名、能力和管理员审核旅程', () => {
-    expect(templates).toContain('查看票据式行程凭证');
+    expect(templates).toContain('查看凭证');
     expect(templates).toContain('class="credential-ticket"');
     expect(templates).toContain('class="credential-spotlight"');
     expect(templates).toContain('取消报名');
@@ -164,9 +164,9 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   });
 
   it('设置页原型同步当前客户端版本与最新功能日志', () => {
-    expect(schema).toContain("state: 'V2026.10.16.71'");
+    expect(schema).toContain("state: 'V2026.10.16.72'");
     expect(schema).toContain(
-      "['2026.10.16.71', '沸点风格设计令牌全站替换', '小程序与 GitHub Pages 同步切换为暖米白画布、墨黑信息块与深行动红主行动，等待部署与真机验收采集新主题截图。']",
+      "['2026.10.16.72', '我的行程严格对齐沸点设计稿', '按交接照片逐项还原行程统计、票据头、集合信息和操作按钮，并同步更新 GitHub Pages 高保真原型。']",
     );
     expect(schema).toContain(
       "['2026.10.16.70', '公开路线解析更安全稳定', '加固 Strava 路线名称解析，避免特殊编码内容被重复转换，同时保持公开路线正常回显。']",
@@ -205,7 +205,20 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(css).toMatch(
       /\.credential-spotlight\s*\{[^}]*background:\s*var\(--color-media-card-bg\)/s,
     );
-    expect(css).toMatch(/\.trip-ticket-info\s*\{[^}]*background:\s*var\(--color-raised\)/s);
+    expect(css).toMatch(/\.trip-ticket-info\s*\{[^}]*background:\s*var\(--color-bg\)/s);
+    expect(css).toMatch(
+      /\.trip-summary > span\.is-ready\s*\{[^}]*background:\s*var\(--color-media-card-bg\)/s,
+    );
+    expect(css).toMatch(/\.trip-ticket-top\s*\{[^}]*background:\s*var\(--color-media-card-bg\)/s);
+    expect(css).toMatch(/\.trip-ticket-primary\s*\{[^}]*width:\s*100%/s);
+    expect(templates).toContain('class="trip-ticket trip-ticket-cancelled"');
+    expect(templates).toContain('data-action="delete-trip"');
+    expect(templates).toContain('data-action="cancelled-trip-detail"');
+    expect(templates).toContain("is('empty') ? 0 : cancelledDeleted ? 1 : 2");
+    expect(script).toContain("if (action === 'delete-trip')");
+    expect(script).toContain("if (action === 'cancelled-trip-detail')");
+    expect(templates).toContain('浦东滨江夜骑 · 鎏金落日线');
+    expect(templates).toContain('奉贤海湾拉练');
   });
 
   it('成功 / 警告色只小范围用于小标签、行内提示和图标，不做底色、按钮、描边卡片', () => {

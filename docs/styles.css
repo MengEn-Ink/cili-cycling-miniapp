@@ -1893,108 +1893,171 @@ code {
 
 .trip-summary {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  margin-top: 16px;
-  padding: 12px 0;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-  color: var(--color-text);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 15px;
 }
 
-.trip-summary span {
+.trip-summary > span {
   display: flex;
-  flex-direction: column-reverse;
+  min-width: 0;
+  min-height: 94px;
+  flex-direction: column;
   align-items: center;
-  padding: 0 16px;
+  justify-content: center;
+  padding: 14px 6px;
+  border-radius: 16px;
+  background: var(--color-surface);
   text-align: center;
 }
 
-.trip-summary span + span {
-  border-left: 1px solid var(--color-subtle);
+.trip-summary > span.is-ready {
+  background: var(--color-media-card-bg);
+  color: var(--color-on-media);
 }
 
 .trip-summary b {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 24px;
-  line-height: 32px;
+  display: block;
+  font-size: 22px;
+  line-height: 28px;
   font-weight: 900;
 }
 
-.trip-summary b.is-pending::after {
-  content: '';
-  width: 8px;
-  height: 8px;
-  border-radius: 2px;
-  background: var(--color-brand);
-}
-
 .trip-summary small {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-muted);
   font-size: 12px;
   line-height: 18px;
-  color: var(--color-muted);
+}
+
+.trip-summary .is-ready small {
+  color: var(--color-media-muted);
 }
 
 .trip-ticket {
   overflow: hidden;
   margin-top: var(--card-gap);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
+  border: 0;
+  border-radius: 20px;
   background: var(--color-surface);
 }
 
+.trip-ticket-cancelled {
+  opacity: 0.92;
+}
+
 .trip-ticket-top {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px 0;
+  gap: 8px;
+  min-height: 56px;
+  padding: 12px 16px;
+  background: var(--color-media-card-bg);
+  color: var(--color-on-media);
+}
+
+.trip-ticket-cancelled .trip-ticket-top {
+  background: var(--color-muted);
+}
+
+.trip-ticket-top .ticket-label {
+  color: currentColor;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.trip-ticket-top .ticket-date {
+  color: var(--color-media-muted);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.trip-ticket-body {
+  padding: 15px 17px 17px;
 }
 
 .trip-ticket h3 {
-  padding: 4px 16px 0;
-  font-size: 18px;
-  line-height: 26px;
+  font-size: 17px;
+  line-height: 25px;
   font-weight: 900;
 }
 
 .trip-ticket-info {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin: 12px 0 0;
-  padding: 12px 16px;
-  background: var(--color-raised);
+  gap: 4px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--color-bg);
   color: var(--color-text);
 }
 
-.trip-ticket-info small {
-  display: block;
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--color-muted);
+.trip-ticket-info > div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.trip-ticket-info b {
-  font-size: 14px;
+.trip-ticket-info small {
+  flex: 0 0 auto;
+  color: var(--color-muted);
+  font-size: 12px;
   line-height: 22px;
 }
 
-.trip-ticket .btn-row,
-.trip-ticket > .btn-secondary {
-  margin: 0;
-  padding: 12px 16px 16px;
+.trip-ticket-info b {
+  min-width: 0;
+  font-size: 13px;
+  line-height: 22px;
+  text-align: right;
 }
 
-.trip-ticket > .btn-secondary {
-  width: calc(100% - 32px);
-  margin: 12px 16px 16px;
-  padding: 0 12px;
+.trip-ticket .ticket-meta {
+  justify-content: flex-start;
+  gap: 10px;
+  margin-top: 12px;
 }
 
-.trip-ticket .neutral-note {
-  margin: 12px 16px 16px;
+.trip-ticket .status-guidance {
+  margin: 12px 0 0;
+}
+
+.trip-ticket .status-guidance i {
+  border-radius: 50%;
+  background: var(--color-brand-active);
+}
+
+.trip-ticket-primary,
+.trip-ticket-actions .btn,
+.trip-ticket-actions .btn-secondary {
+  min-height: var(--control-height);
+  border-radius: var(--radius-full);
+}
+
+.trip-ticket-primary {
+  width: 100%;
+  margin-top: 15px;
+}
+
+.trip-ticket-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.trip-ticket-actions .trip-ticket-delete {
+  border: 1.5px solid var(--color-brand-active);
+  background: var(--color-surface);
+  color: var(--color-brand-active);
+  box-shadow: none;
 }
 
 .credential-rider-heading {

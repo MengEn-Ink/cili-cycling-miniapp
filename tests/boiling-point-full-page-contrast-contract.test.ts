@@ -128,11 +128,11 @@ describe('沸点浅色 UI 全页对比度契约', () => {
     );
     expectSemantic(
       declaration(effectiveBlock(registrations, '.card-index'), 'color'),
-      '--color-muted',
+      '--color-media-muted',
     );
     expectSemantic(
       declaration(effectiveBlock(registrations, '.meeting-label'), 'color'),
-      '--color-media-muted',
+      '--color-muted',
     );
 
     const card = read('miniprogram/components/activity-card/index.wxss');

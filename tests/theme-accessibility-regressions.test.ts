@@ -207,7 +207,7 @@ describe('unified UI accessibility regressions', () => {
     const registrationStyles = read('miniprogram/pages/registrations/index.wxss');
     expectSemantic(
       declaration(effectiveBlock(registrationStyles, '.meeting-value'), 'color'),
-      '--color-on-media',
+      '--color-text',
     );
     const reviewStyles = read('miniprogram/pages/admin/review-detail/index.wxss');
     expectSemantic(
