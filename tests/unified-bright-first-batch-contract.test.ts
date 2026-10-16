@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { declaration, effectiveBlock, expectSemantic, read } from './theme-contract-helpers';
 
 describe('HP-20261010-02 第一批六页尺寸契约', () => {
-  it('活动首页使用统一页边距、40px 分段控件和完整卡片轮播', () => {
+  it('活动首页使用统一页边距、44px 分段控件和完整卡片轮播', () => {
     const app = read('miniprogram/app.wxss');
     const styles = read('miniprogram/pages/activities/index.wxss');
     expect(app).toContain('padding: 32rpx var(--page-gutter);');
@@ -13,14 +13,14 @@ describe('HP-20261010-02 第一批六页尺寸契约', () => {
     expect(declaration(effectiveBlock(app, '.page-title'), 'font-size')).toBe('48rpx');
   });
 
-  it('我的行程使用白底 2px 描边卡片和可读序号', () => {
+  it('我的行程使用白底 1px 描边卡片和可读序号', () => {
     const app = read('miniprogram/app.wxss');
     const styles = read('miniprogram/pages/registrations/index.wxss');
     const list = effectiveBlock(styles, '.registration-list');
     const card = effectiveBlock(app, '.registration-card');
     expect(declaration(list, 'gap')).toBe('var(--card-gap)');
     expect(declaration(card, 'padding')).toBe('32rpx');
-    expect(declaration(card, 'border')).toBe('4rpx solid var(--color-card-border)');
+    expect(declaration(card, 'border')).toBe('2rpx solid var(--color-card-border)');
     expectSemantic(declaration(card, 'border-radius'), '--radius-card');
     expect(declaration(card, 'box-shadow')).toBe('none');
     expectSemantic(declaration(effectiveBlock(styles, '.card-index'), 'color'), '--color-muted');
@@ -34,7 +34,7 @@ describe('HP-20261010-02 第一批六页尺寸契约', () => {
     expect(declaration(metrics, 'border')).toBe('2rpx solid var(--color-border)');
     expect(declaration(metrics, 'border-radius')).toBe('var(--radius-card)');
     expect(declaration(card, 'padding')).toBe('32rpx');
-    expect(declaration(card, 'border')).toBe('4rpx solid var(--color-card-border)');
+    expect(declaration(card, 'border')).toBe('2rpx solid var(--color-card-border)');
     expect(declaration(card, 'border-radius')).toBe('var(--radius-card)');
     expect(declaration(effectiveBlock(styles, '.route-location-row button'), 'min-height')).toBe(
       'var(--control-height)',
@@ -53,7 +53,7 @@ describe('HP-20261010-02 第一批六页尺寸契约', () => {
       '1fr',
     );
     expect(declaration(card, 'padding')).toBe('32rpx');
-    expect(declaration(card, 'border')).toBe('4rpx solid var(--color-card-border)');
+    expect(declaration(card, 'border')).toBe('2rpx solid var(--color-card-border)');
     expectSemantic(declaration(card, 'border-radius'), '--radius-card');
     expect(declaration(effectiveBlock(app, '.field input'), 'min-height')).toBe(
       'var(--control-height)',

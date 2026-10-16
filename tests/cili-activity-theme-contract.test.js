@@ -115,7 +115,7 @@ describe('CILI 活动页静态契约', () => {
     expect(activitiesStyles).toContain('border: 2rpx solid var(--color-border)');
     expect(activitiesStyles).toContain('background: var(--color-brand)');
     expect(activitiesStyles).toMatch(
-      /\.day-chip\.is-active\s*\{[^}]*background:\s*var\(--color-brand\)/s,
+      /\.day-chip\.is-active\s*\{[^}]*background:\s*var\(--color-action\)/s,
     );
     expect(activitiesStyles).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(|navy|blue|gradient/i);
     expect(activityCardStyles).toContain('--card-accent: var(--color-brand)');
@@ -159,11 +159,11 @@ describe('CILI 活动页静态契约', () => {
     expect(detail).toContain('disabled="{{loading || !item || !activityAction.enabled}}"');
   });
 
-  it('使用单一明亮 token 和 16/24/32rpx 语义层级', () => {
+  it('使用单一明亮 token 和 20/24/32rpx 语义层级', () => {
     const appStyles = read('miniprogram/app.wxss');
     const tokens = uiTokens(appStyles);
     expect(tokens['--color-bg']).toBe('#f3f3f1');
-    expect(tokens['--radius-sm']).toBe('16rpx');
+    expect(tokens['--radius-sm']).toBe('20rpx');
     expect(tokens['--radius-md']).toBe('24rpx');
     expect(tokens['--radius-display']).toBe('32rpx');
     const card = effectiveBlock(activityCardStyles, '.activity-card');
@@ -175,7 +175,7 @@ describe('CILI 活动页静态契约', () => {
     );
     expectSemantic(
       declaration(effectiveBlock(detailStyles, '.detail-action .btn'), 'background'),
-      '--color-brand',
+      '--color-action',
     );
     expect(themeSources).not.toMatch(/pink|#ff69b4|#ffc0cb|#e91e63|#ec4899/i);
   });

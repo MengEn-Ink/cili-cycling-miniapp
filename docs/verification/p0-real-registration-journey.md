@@ -1,145 +1,45 @@
-# P0 真实报名旅程现场验证手册
+# P0 真实报名旅程验收
 
-本手册用于在测试环境完成一次真实的 Strava 就绪、报名、审核、凭证、取消和重新报名旅程，并导出不含敏感数据的离线证据。它不授权部署、修改凭证或操作生产数据。
+当前产品口径：2026-10-16。Strava 使用公开路线解析与规范化链接复制，GPX 独立导入；均不要求 OAuth。历史 OAuth、自动同步与 `strava.sync.succeeded` 不属于当前发布门禁。
 
-## 现场验证前置条件
+## 前置条件与角色
 
-开始前，由环境负责人确认以下条件已经满足：
+- 记录已部署的 Git SHA、客户端版本、开发版上传版本、Pages workflow、云环境、函数部署记录、时间与验收人。
+- 使用隔离测试环境、可管理测试活动的管理员、资料完整且未参加目标活动的普通成员。管理员自报名只算 smoke。
+- 两台物理设备分别覆盖 iOS、Android，记录系统、微信版本、基础库、字体大小、网络。模拟器不能替代相册权限、扫码、分享与安全区验收。
+- 活动使用唯一 `E2E_RESULT:` 标记，至少留两名额。受控目录保留真实 ID 映射；公开证据仅使用别名、状态、数量和审计动作。
+- 条件不足记录 `not_executed`、缺失条件及负责人；不得修改快照把未执行变为通过。
 
-- 本次待验证提交对应的 CloudBase 函数、OAuth 路由和小程序构建均已部署到隔离测试环境。
-- 测试环境中有可创建、发布、审核和停用活动的管理员账号，以及一个未参加目标活动的新测试用户。
-- OAuth 回调地址已由环境负责人配置并验证可访问；执行记录只记“有查询参数”，不得复制查询参数的名称或值。
-- 测试用户可完成安全资料，并可使用手工填写且未核验的手机号路径。
-- 执行人已记录构建版本、环境名称、开始时间和负责人，但不得把手机号、证件号、OAuth code/state、token 或密文写入证据文件。
+## 从部署到回收
 
-如果任一前置条件缺失，停止现场验证并记录为“未执行”。不得用 mock、手工同步按钮或本地伪造数据代替真实旅程。
+| 顺序 | 实操 | 必须回读的事实 |
+| --- | --- | --- |
+| 1 | 创建草稿，填写时间、地点、照片与路线 | 草稿归属正确，照片为可用临时 HTTPS 地址 |
+| 2 | 解析公开 Strava URL，另测 GPX 导入 | 路线事实、Canvas、规范化链接复制、GPX 选择及下载可用；无授权入口 |
+| 3 | 发布测试活动 | 骑友可见；报名开关、截止时间、总量与分组容量正确 |
+| 4 | 普通成员填写资料与进入报名 | 实名、电话完整对本人可见；未验证手机号路径提示准确 |
+| 5 | 单击提交，并独立覆盖快速双击 | 只有一条记录；`occupied` 仅增加 1；`registration.submitted`；重复提交被前端阻止或返回稳定业务错误 |
+| 6 | 管理员审批；另测自动通过配置 | 审批旅程 pending → approved，自动通过旅程直接 approved；凭证与人数一致 |
+| 7 | 打开凭证、群二维码、名片与海报 | 日期/集合时间分开；受保护媒体回显，Canvas 字体、换行及二维码可读 |
+| 8 | 本人取消 | cancelled，名额回到基线，`registration.cancelled` |
+| 9 | 本人重新报名 | 沿用记录 ID，状态与配置一致，名额仅增加 1，`registration.resubmitted` |
+| 10 | 独立样本测试签到 | approved → checked_in，重复签到幂等；不可取消样本明确记入回收计划 |
+| 11 | 普通成员与管理员交叉查看 | 审核管理员完整资料；其他骑友只见昵称；司机电话公开完整显示 |
+| 12 | 网络失败、重试和地址续签 | 不重复写入；临时 URL 失效后恢复；原始媒体地址不泄露 |
+| 13 | 取消可取消的测试报名，结束隔离活动 | 活跃报名为 0 或明确记录 checked_in 残留与负责人；保存最终回读 |
 
-## 自动化预检
+## 写操作与失败补偿
 
-现场适配器必须先把远端只读检查投影为驱动允许的布尔快照。快照只允许包含测试环境部署状态、普通成员角色与资料状态、Strava 连接与 ready 状态、OAuth 新鲜度，以及路线夹具的归属、预览和 GPX 就绪状态。不得写入真实账号标识、手机号、路线 ID、OAuth 参数或任何凭证。
+写入超时后先只读对账，确认结果再决定下一步；禁止盲目重试发布、提交、审批或取消。可复用 `scripts/p0-journey-driver.mjs` 中不依赖 OAuth 的 `waitForPageReady`、`runReconciledWrite`、`compensateJourney`。
 
-在任何活动创建、报名或其他写操作前运行：
+补偿使用正常业务取消与结束活动能力，不直接删除数据库。未知结果、连接中断、断言失败后仍执行补偿并保存报告。无法补偿时记录残留资源别名、最终状态、失败原因及下一步，完整旅程不得标记通过。
 
-```bash
-npm run check:journey-preflight -- --input /absolute/path/to/sanitized-preflight.json
-```
+## 证据与判定
 
-退出码 `0` 表示可以继续；退出码 `2` 表示预检未通过，本轮必须记录为“未执行”并停止所有写操作；退出码 `1` 表示输入或命令无效，修正脱敏快照后重新预检。不得通过修改布尔值绕过真实环境检查。
+每个用例记录：编号、设备/角色、步骤、预期、实际、`passed / failed / blocked / not_executed`、脱敏截图文件名、时间、数据回读与补偿结果。报名审计至少包含 submitted、approved（人工审批旅程）、cancelled、resubmitted；所有时间戳有序，计数与状态互相印证。
 
-微信开发者工具和 CloudBase 现场适配器必须复用以下驱动 API：
+公开证据不包含真实姓名、电话、openid、身份证、二维码、临时媒体 URL、凭据或密文。本人/管理员界面完整展示是产品规则，公开证据脱敏是交付规则，两者分别验收。
 
-- `waitForPageReady`：同时等待目标页面路径和关键业务数据；
-- `runReconciledWrite`：每个写动作最多执行一次，随后只读对账；
-- `sanitizeJourneyAudits`：把受控进程内的真实目标映射为签发器提供的合成别名；
-- `compensateJourney`：取消仍可取消的测试报名、结束隔离活动并最终回读。
+`scripts/verify-journey-evidence.mjs`、`issue-journey-run.mjs`、`evaluateJourneyPreflight` 和 `sanitizeJourneyAudits` 当前保留历史 v1 OAuth 证据兼容，**不得用于签发当前完整旅程通过**。历史格式与命令见 [40324f1 版手册](https://github.com/MengEn-Ink/cili-cycling-miniapp/blob/40324f1b10304b52895d182e1e3a66a0d44b4625/docs/verification/p0-real-registration-journey.md)。当前写链路以本表逐项人工回读验收；v2 离线签发器迁移在高优清单跟进。
 
-驱动补偿只能调用正常业务取消和结束活动能力，不得借助该驱动删除数据库记录。需要处理 `checked_in` 等不可取消数据时，必须进入另行审核的隔离数据清理流程。
-
-## 执行步骤与通过标准
-
-1. 创建并发布一个隔离活动。活动标记必须唯一，以 `E2E_RESULT:` 开头，并至少保留两个空余名额。记录提交前的 `occupied` 基线值。
-2. 使用一个新的测试用户进入活动。通过“手工填写、未核验手机号”的路径完成安全资料；不要截取、导出或粘贴手机号和证件内容。
-3. 完成 OAuth。仅现场确认初始回调请求带有查询参数；随后确认用户可见结果页为 `/strava/success` 且地址不带查询参数。证据中不得记录初始回调 URL 或查询参数。
-4. 返回小程序，等待自动同步达到 ready。不得点击或调用手工同步动作；记录 `strava.sync.succeeded` 审计动作及其时间戳。导出证据时把该测试用户稳定映射为 `user_test_*` 合成别名，不保留真实 openid。
-5. 单击提交一次。确认报名状态为 `pending`、`occupied` 相对基线增加 1，并出现 `registration.submitted` 审计动作。
-6. 在相同初始条件下快速双击提交。第二次提交可以被客户端进行中状态阻止，或由服务端返回稳定的 `REGISTRATION_EXISTS`；不得要求第二次请求成功。通过标准是系统仍只有一条报名记录、报名 ID 不变，且 `occupied` 仍只比基线增加 1。
-7. 由管理员批准报名。确认报名状态为 `approved`、凭证页可正常展示，并出现 `registration.approved` 审计动作。不要把凭证中的个人信息复制到证据。
-8. 经用户确认后取消报名。确认状态为 `cancelled`、`occupied` 回到基线，并出现 `registration.cancelled` 审计动作。
-9. 重新提交报名。确认报名状态回到 `pending`，报名 ID 与首次提交相同，历史审计仍保留，`occupied` 再次比基线增加 1，并出现 `registration.resubmitted` 审计动作。
-10. 导出只包含下述白名单结构的 JSON，并运行离线校验。只有校验命令退出码为 0 且打印 `P0 真实旅程证据校验通过` 时，证据才可交付。
-11. 证据捕获后停用或删除隔离活动。把清理结果记入执行记录；如果 UI 清理失败，记录残留资源、失败原因和负责人并继续收尾。清理失败不改变已完成旅程的验证结论。
-
-## 自动化执行约束
-
-- 页面导航后必须等待目标页面路径和关键业务数据同时就绪，不能用导航调用已返回代替页面加载成功。
-- 写操作出现自动化超时、连接中断或未知结果时，先按隔离活动标记回读活动和报名状态。不得在未对账前重试提交、审批、取消或重报。
-- 自动化失败后仍需执行补偿清理：取消该活动下仍为 `waiting`、`pending` 或 `approved` 的测试报名，再停用活动，并最终确认活跃报名数为 0。
-- 管理员自报名只能作为真实云函数和页面 smoke，不能替代新的非管理员测试用户、OAuth 和角色隔离验证，也不能签发完整 P0 通过证据。
-
-## 脱敏证据格式
-
-证据只保留旅程判断所需字段：
-
-首次使用时在受控目录生成至少 32 字节的签发密钥，权限限制为仅当前用户可读：
-
-```bash
-umask 077
-openssl rand 32 > /absolute/secure/path/journey-run.key
-chmod 600 /absolute/secure/path/journey-run.key
-```
-
-每次执行前由签发器自行生成 128-bit 随机 nonce 和上海时区日期；不接受外部传入的 `RUN_ID`：
-
-```bash
-npm run issue:journey-run -- --key-file /absolute/secure/path/journey-run.key \
-  > /absolute/secure/path/journey-run-template.json
-```
-
-`RUN_ID` 必须严格匹配 `^P0_\d{8}_[A-F0-9]{32}$`。签发器输出 `marker`、`issuedAt`、`subjectAlias`、`registrationId` 和 `runSignature`；将这五个字段原样合并到现场证据，不得手工改写。下方示例使用固定的测试值。
-
-```json
-{
-  "marker": "E2E_RESULT:P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
-  "issuedAt": "2026-09-29T04:00:00.000Z",
-  "subjectAlias": "user_test_P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
-  "registrationId": "reg_test_P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
-  "runSignature": "F2303BB578C5ADA9B3A564A187078B66DAF220125955A334E2C2A078F3B9EABD",
-  "statuses": ["pending", "approved", "cancelled", "pending"],
-  "occupiedCounts": [3, 4, 4, 3, 4],
-  "audits": [
-    {
-      "action": "strava.sync.succeeded",
-      "target_id": "user_test_P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
-      "created_at": "2026-09-29T04:00:00.000Z"
-    },
-    {
-      "action": "registration.submitted",
-      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
-      "created_at": "2026-09-29T04:01:00.000Z"
-    },
-    {
-      "action": "registration.approved",
-      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
-      "created_at": "2026-09-29T04:02:00.000Z"
-    },
-    {
-      "action": "registration.cancelled",
-      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
-      "created_at": "2026-09-29T04:03:00.000Z"
-    },
-    {
-      "action": "registration.resubmitted",
-      "target_id": "reg_test_P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
-      "created_at": "2026-09-29T04:04:00.000Z"
-    }
-  ]
-}
-```
-
-`marker` 冒号后的完整内容是本次执行的 `RUN_ID`。其日期段必须是真实日期且与 `issuedAt` 在 `Asia/Shanghai` 时区下的日期一致。`subjectAlias` 必须等于 `user_test_<RUN_ID>`，`registrationId` 必须等于 `reg_test_<RUN_ID>`。`strava.sync.succeeded` 的 `target_id` 必须等于 `subjectAlias`，四条报名审计的 `target_id` 必须等于 `registrationId`。`runSignature` 是大写十六进制 HMAC-SHA256，签名输入按顺序为固定域 `ride-event:p0-journey-run:v1`、NUL 分隔符、`RUN_ID`、NUL 分隔符和 `issuedAt`。
-
-`occupiedCounts` 依次表示提交前、首次提交后、双击提交后、取消后、重新提交后。五条必要审计必须按旅程顺序出现，时间戳使用规范的 ISO 8601 UTC 格式。
-
-校验器会在解析前拒绝根节点或嵌套对象中的重复 JSON 键，并递归检查规范化后的键名。手机号、OpenID、证件号、访问或刷新 token、密文、OAuth code/state 相关字段都会令校验失败。值不使用子串猜测；真实平台标识、原始哈希、包装或串用的其他执行别名会被上述精确派生关系拒绝。失败输出只包含固定的有限原因，不会回显证据对象或敏感值。
-
-## 离线校验
-
-在仓库根目录运行：
-
-```bash
-npm run verify:journey-evidence -- \
-  --key-file /absolute/secure/path/journey-run.key \
-  /absolute/path/to/sanitized-evidence.json
-```
-
-成功标准：命令退出码为 `0`，校验器输出且只输出：
-
-```text
-P0 真实旅程证据校验通过
-```
-
-失败时不要把原始证据粘贴到工单、聊天或日志。先在受控环境内删除敏感字段或修正旅程证据，再重新运行校验。
-
-## 收尾记录
-
-现场执行记录应包含构建版本、环境、开始/结束时间、验证人、证据文件校验结果，以及隔离活动的停用/删除结果。不得包含被校验器禁止的数据。只有在全部前置部署完成后才能开始本手册的现场步骤；本仓库的离线校验通过不代表现场旅程已经执行。
+总结果只有在真实普通成员、双平台设备、回读与补偿均满足后才能标为完整通过。模拟器结果单独引用 [只读 E2E 手册](wechat-devtools-e2e.md)，不得关闭物理真机 P0。

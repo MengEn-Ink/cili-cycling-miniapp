@@ -1,6 +1,21 @@
 .review-detail-page {
   background: var(--color-bg);
 }
+.info-bar {
+  border: 2rpx solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.info-kicker {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  color: var(--color-muted);
+}
+.info-title {
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+}
 .info-head,
 .card-head {
   display: flex;
@@ -11,14 +26,18 @@
   justify-content: space-between;
 }
 .info-tag {
-  border: 4rpx solid var(--color-media-muted);
+  flex-shrink: 0;
+  padding: 4rpx 12rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
 }
 .info-tag.is-pending {
   border-color: var(--color-brand);
 }
 .status-explain {
   margin-top: 16rpx;
-  color: var(--color-media-muted);
+  color: var(--color-muted);
   font-size: 24rpx;
   line-height: 36rpx;
 }

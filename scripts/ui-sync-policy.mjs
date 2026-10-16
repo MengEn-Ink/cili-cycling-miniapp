@@ -89,7 +89,8 @@ export function validatePng(buffer, file) {
 }
 
 export function validateManifest(manifest, { appPages, readEvidence }) {
-  if (manifest.schemaVersion !== 1) throw new Error('同步清单 schemaVersion 必须为 1');
+  if (![1, 2].includes(manifest.schemaVersion))
+    throw new Error('同步清单 schemaVersion 必须为 1 或 2');
   if (!/^[0-9a-f]{40}$/.test(manifest.syncedThrough || '')) {
     throw new Error('同步清单 syncedThrough 必须是完整 Git SHA');
   }
@@ -138,6 +139,15 @@ export function validateManifest(manifest, { appPages, readEvidence }) {
     if (!knownRouteIds.has(route.id)) throw new Error(`证据引用未知路由：${route.id}`);
     if (evidenceRouteIds.has(route.id)) throw new Error(`证据路由重复：${route.id}`);
     evidenceRouteIds.add(route.id);
+    if (manifest.schemaVersion === 2) {
+      if (
+        !route.state ||
+        !route.note ||
+        !['sanitized-runtime', 'real-runtime', 'fixture'].includes(route.data) ||
+        !['aligned', 'differences', 'blocked'].includes(route.review)
+      )
+        throw new Error(`证据说明不完整：${route.id}`);
+    }
     for (const side of ['devtools', 'pages']) {
       const file = route[side];
       if (!file || file.includes('/') || file.includes('\\')) {
@@ -150,8 +160,23 @@ export function validateManifest(manifest, { appPages, readEvidence }) {
       } catch {
         throw new Error(`证据文件缺失：${path}`);
       }
-      validatePng(buffer, path);
+      const size = validatePng(buffer, path);
+      if (manifest.schemaVersion === 2) {
+        const viewport = evidence.viewport;
+        const scale = size.width / viewport?.width;
+        if (
+          !Number.isInteger(scale) ||
+          scale < 1 ||
+          scale > 3 ||
+          size.height !== viewport.height * scale
+        ) {
+          throw new Error(`证据视口不一致：${path}`);
+        }
+      }
     }
+  }
+  if (manifest.schemaVersion === 2 && evidenceRouteIds.size !== routeIds.length) {
+    throw new Error('v2 截图覆盖必须包含所有路由');
   }
 
   return { routes: routes.length, evidenceRoutes: evidence.routes.length };

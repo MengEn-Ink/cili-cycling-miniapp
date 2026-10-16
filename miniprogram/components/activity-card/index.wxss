@@ -136,9 +136,9 @@
   color: var(--color-text);
 }
 .card-action--primary {
-  border-color: var(--color-brand);
-  background: var(--color-brand);
-  color: var(--color-on-media);
+  border-color: var(--color-action);
+  background: var(--color-action);
+  color: var(--color-on-action);
 }
 @media (prefers-reduced-motion: reduce) {
   .activity-card--pressed {

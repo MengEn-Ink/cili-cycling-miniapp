@@ -1,16 +1,16 @@
 {
-  "schemaVersion": 1,
-  "syncedThrough": "3ced77dc07cc39091dbd05c00872a63af30d50f6",
-  "syncedAt": "2026-10-16T04:09:51Z",
+  "schemaVersion": 2,
+  "syncedThrough": "40324f1b10304b52895d182e1e3a66a0d44b4625",
+  "syncedAt": "2026-10-16T05:37:01.144Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:939b331625bf639dc0860092395b3e0f7f334a97f2cd18c3c84203f18a2c726b"
+    "digest": "sha256:d288df5e7ab3a0002ca7a4aaf832ad686db4f5990cc0922b2bd2911a80182dbd"
   },
   "prototype": {
-    "digest": "sha256:0b54882d48b6b3cbf5f3f465ec592226926cb617fca5d6d27e7f2de03a4c3920"
+    "digest": "sha256:41c4f2d7248e1cfa1e6c640a65f9494f849d30fc417b0c464e465cfcfd4f8e7a"
   },
   "routes": [
     {
@@ -67,22 +67,128 @@
     }
   ],
   "evidence": {
-    "directory": "docs/evidence/ui-sync/2026-10-16-main-3ced77d",
+    "directory": "docs/evidence/ui-sync/2026-10-16-design-acceptance",
+    "viewport": {
+      "width": 375,
+      "height": 812
+    },
     "routes": [
       {
         "id": "activities",
         "devtools": "activities-devtools.png",
-        "pages": "activities-pages.png"
+        "pages": "activities-pages.png",
+        "state": "有活动",
+        "data": "real-runtime",
+        "review": "differences",
+        "note": "核对主操作、卡片与底栏。云端为两场近期活动；Pages 日期筛选、指标与示例图片不同，运行态品牌标识和边线更重。"
       },
       {
-        "id": "admin-activity-edit",
-        "devtools": "admin-activity-edit-devtools.png",
-        "pages": "admin-activity-edit-pages.png"
+        "id": "activity-detail",
+        "devtools": "activity-detail-devtools.png",
+        "pages": "activity-detail-pages.png",
+        "state": "管理员 / Pages 已通过",
+        "data": "real-runtime",
+        "review": "differences",
+        "note": "核对标题、指标与固定操作栏。管理员运行态包含修改入口；Pages 是已通过骑友态。品牌条、指标字号及首屏卡片位置仍有差异。"
+      },
+      {
+        "id": "registration-form",
+        "devtools": "registration-form-devtools.png",
+        "pages": "registration-form-pages.png",
+        "state": "未选骑行经验，提交禁用",
+        "data": "sanitized-runtime",
+        "review": "differences",
+        "note": "步骤、禁用提交与缺失项提示已核对。实名/昵称/联系方式已遮盖；两端资料字段顺序与活动上下文存在差异。"
+      },
+      {
+        "id": "registrations",
+        "devtools": "registrations-devtools.png",
+        "pages": "registrations-pages.png",
+        "state": "已通过行程",
+        "data": "real-runtime",
+        "review": "differences",
+        "note": "日期和自然时间拆分正确。运行态票据使用绿底状态区与深色集合区；Pages 使用白底与浅灰集合区，作为后续布局校准项。"
+      },
+      {
+        "id": "credential",
+        "devtools": "credential-devtools.png",
+        "pages": "credential-pages.png",
+        "state": "已通过凭证",
+        "data": "sanitized-runtime",
+        "review": "differences",
+        "note": "核对名片置顶、集合时间与导航入口；照片、昵称、头像、凭证号及姓名遮盖。两端名片身份区排版和凭证首屏高度不同。"
+      },
+      {
+        "id": "profile",
+        "devtools": "profile-devtools.png",
+        "pages": "profile-pages.png",
+        "state": "管理员",
+        "data": "sanitized-runtime",
+        "review": "differences",
+        "note": "核对照片承载、服务入口和隐私说明；个人照片/头像/昵称整块遮盖。Pages 多出资料完整度卡，运行态无该卡。"
       },
       {
         "id": "settings",
         "devtools": "settings-devtools.png",
-        "pages": "settings-pages.png"
+        "pages": "settings-pages.png",
+        "state": "默认，客户端 2026.10.16.69",
+        "data": "real-runtime",
+        "review": "differences",
+        "note": "版本号与最新日志已同步。运行态保留橙色页头与独立日志卡；Pages 为浅色页头和日志列表，两端均可读。"
+      },
+      {
+        "id": "capability-card",
+        "devtools": "capability-card-devtools.png",
+        "pages": "capability-card-pages.png",
+        "state": "有背景图",
+        "data": "sanitized-runtime",
+        "review": "differences",
+        "note": "照片与昵称已遮盖；运行态海报式名片和 Pages 资料卡结构不同。公开信息范围与照片承载已核对，不替代真实分享验收。"
+      },
+      {
+        "id": "profile-edit",
+        "devtools": "profile-edit-devtools.png",
+        "pages": "profile-edit-pages.png",
+        "state": "本人已有资料",
+        "data": "sanitized-runtime",
+        "review": "differences",
+        "note": "头像/昵称/实名遮盖。核对输入可读性与头像选择入口；两端字段位置和说明密度不同，本轮未保存资料。"
+      },
+      {
+        "id": "admin-activity-list",
+        "devtools": "admin-activity-list-devtools.png",
+        "pages": "admin-activity-list-pages.png",
+        "state": "有活动",
+        "data": "real-runtime",
+        "review": "differences",
+        "note": "筛选与编辑/下架入口可见。Pages 有示例计数、活动摘要和复制入口，运行态样本数量与卡片密度不同。未执行下架。"
+      },
+      {
+        "id": "admin-activity-edit",
+        "devtools": "admin-activity-edit-devtools.png",
+        "pages": "admin-activity-edit-pages.png",
+        "state": "空白创建",
+        "data": "real-runtime",
+        "review": "differences",
+        "note": "按 Pages /create 采集；标题、集合信息、照片入口与固定按钮已核对。运行态照片分区文案和必填标签样式略有差异；另测空白发布校验，未创建活动。"
+      },
+      {
+        "id": "admin-reviews",
+        "devtools": "admin-reviews-devtools.png",
+        "pages": "admin-reviews-pages.png",
+        "state": "待审核筛选为空",
+        "data": "real-runtime",
+        "review": "differences",
+        "note": "按 Pages /empty 采集；空状态与提醒入口可见。运行态有切换活动按钮；Pages 示例活动和筛选计数不同，未发送提醒。"
+      },
+      {
+        "id": "admin-review-detail",
+        "devtools": "admin-review-detail-devtools.png",
+        "pages": "admin-review-detail-pages.png",
+        "state": "已通过，可签到",
+        "data": "sanitized-runtime",
+        "review": "differences",
+        "note": "按 Pages /approved 采集；长编号已换行且状态不被挤出，浅色信息条校准。编号/昵称/姓名/电话遮盖；运行态顶部品牌条和资料说明仍有差异。未签到。"
       }
     ]
   }

@@ -26,9 +26,9 @@
   min-height: var(--control-height);
 }
 .timeline-tab.is-active {
-  border-color: var(--color-brand);
-  background: var(--color-brand);
-  color: var(--color-on-media);
+  border-color: var(--color-action);
+  background: var(--color-action);
+  color: var(--color-on-action);
 }
 .day-chip-shell {
   position: relative;
@@ -73,9 +73,9 @@
   white-space: nowrap;
 }
 .day-chip.is-active {
-  border-color: var(--color-brand);
-  background: var(--color-brand);
-  color: var(--color-on-media);
+  border-color: var(--color-action);
+  background: var(--color-action);
+  color: var(--color-on-action);
 }
 .day-chip.is-active .day-chip__date {
   color: var(--color-on-action);

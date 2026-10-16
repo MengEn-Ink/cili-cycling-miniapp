@@ -494,7 +494,7 @@ test('最终仍有活跃报名或活动未结束时补偿失败且不泄露状�
   assert.equal(reads, 2);
 });
 
-test('package scripts 和现场手册接入旅程驱动', () => {
+test('现场手册复用通用驱动并明确历史 OAuth 预检不能签发当前旅程', () => {
   const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
   const guide = readFileSync(
     new URL('../docs/verification/p0-real-registration-journey.md', import.meta.url),
@@ -509,11 +509,12 @@ test('package scripts 和现场手册接入旅程驱动', () => {
     packageJson.scripts['test:journey-evidence'],
     /scripts\/p0-journey-driver\.node-test\.mjs/,
   );
-  assert.match(guide, /check:journey-preflight/);
-  assert.match(guide, /预检未通过.*未执行/s);
+  assert.match(guide, /公开 Strava URL.*GPX/s);
+  assert.match(guide, /条件不足.*not_executed/);
+  assert.match(guide, /历史 v1 OAuth.*不得用于签发当前完整旅程通过/s);
   assert.match(guide, /waitForPageReady/);
   assert.match(guide, /runReconciledWrite/);
   assert.match(guide, /sanitizeJourneyAudits/);
   assert.match(guide, /compensateJourney/);
-  assert.match(guide, /不得.*删除数据库记录/s);
+  assert.match(guide, /不直接删除数据库/);
 });

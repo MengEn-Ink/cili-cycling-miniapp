@@ -16,7 +16,7 @@
   border-width: 2rpx;
   border-radius: 999rpx;
   background: var(--color-brand-soft);
-  color: var(--color-brand-active);
+  color: var(--color-action-active);
 }
 .editor-summary {
   color: var(--color-muted);
@@ -85,6 +85,7 @@
 .image-action {
   min-height: 88rpx;
   padding: 0 12rpx;
+  background: var(--color-media-card-bg);
   color: var(--color-on-media);
   font-size: 24rpx;
 }

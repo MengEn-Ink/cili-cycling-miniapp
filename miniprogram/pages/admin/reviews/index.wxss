@@ -76,9 +76,9 @@
   border-top: 2rpx solid var(--color-border);
 }
 .filter-tab.is-active {
-  border-color: var(--color-brand);
-  background: var(--color-brand);
-  color: var(--color-on-media);
+  border-color: var(--color-action);
+  background: var(--color-action);
+  color: var(--color-on-action);
 }
 .result-count {
   color: var(--color-text);
@@ -191,9 +191,9 @@
   font-weight: 900;
 }
 .review-action--primary {
-  border-color: var(--color-brand);
-  background: var(--color-brand);
-  color: var(--color-on-media);
+  border-color: var(--color-action);
+  background: var(--color-action);
+  color: var(--color-on-action);
 }
 .reminder-card {
   margin-top: 48rpx;

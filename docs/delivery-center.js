@@ -139,7 +139,7 @@
       id: 'design-ia',
       number: '03',
       title: '设计与体验',
-      lead: '当前 UI 设计稿、主题约束、交互原型与资产同步清单；最终视觉以在线原型为准。',
+      lead: '统一设计规范、可计算契约、交互原型与双端证据；结构以 Pages 为参照，可读性以契约为准。',
       cards: [
         {
           id: 'ui-spec',
@@ -150,10 +150,14 @@
         },
         {
           id: 'theme-constraints',
-          title: '主题约束与色彩语义',
-          summary: '明亮主题、暖灰背景、品牌橙只用于主操作/当前步骤/待处理；小范围 success / warning 变量为“原型先行”。',
+          title: '统一设计规范与约束门禁',
+          summary: '32 个双端变量、15 组对比度；深橙主操作白字 4.91:1，44px 控件，明确媒体按钮背景、安全区与 13 页截图口径。',
           maturity: 'baseline',
-          sources: [{ label: 'docs/superpowers/specs/2026-10-14-theme-constraints.md', href: BASE + 'docs/superpowers/specs/2026-10-14-theme-constraints.md' }],
+          sources: [
+            { label: '统一设计规范', href: BASE + 'docs/design-system.md' },
+            { label: '设计契约 JSON', href: BASE + 'docs/design-contract.json' },
+            { label: '门禁脚本', href: BASE + 'scripts/check-design-contract.mjs' },
+          ],
         },
         {
           id: 'prototype-entry',
@@ -169,11 +173,12 @@
         {
           id: 'ui-sync',
           title: 'UI 同步清单',
-          summary: '13 页覆盖、变更追踪的 manifest；配合 check:ui-sync 做静态门禁。',
+          summary: 'v2 清单要求全部路由双端 PNG、同视口、状态与差异说明，并绑定 UI / Pages 内容摘要；截图完整不等于业务与真机通过。',
           maturity: 'baseline',
           sources: [
             { label: 'docs/ui-sync-manifest.json', href: BASE + 'docs/ui-sync-manifest.json' },
             { label: 'docs/evidence/ui-sync/', href: RAW + 'docs/evidence/ui-sync' },
+            { label: '本轮双端截图与逐页差异', href: 'evidence/ui-sync/2026-10-16-design-acceptance/index.html' },
           ],
         },
         {
@@ -310,6 +315,18 @@
       lead: '测试策略、质量门禁与真实环境验证手册；UAT 模板和外部签字以线下归档为准。',
       cards: [
         {
+          id: 'e2e-acceptance',
+          title: '从部署到端到端验收',
+          summary: '最新主干 → 静态门禁 → 云端只读 smoke → Pages / 微信同视口校准 → PR / 开发版部署 → 普通成员写链路 → 双平台真机 UAT。',
+          maturity: 'baseline',
+          inline: 'e2e-acceptance',
+          sources: [
+            { label: '完整验收流程', href: BASE + 'docs/verification/wechat-devtools-e2e.md' },
+            { label: '本轮实操与差异', href: BASE + 'docs/verification/2026-10-16-design-e2e-acceptance.md' },
+            { label: '高优待验收项', href: BASE + 'docs/high-priority-issues.md' },
+          ],
+        },
+        {
           id: 'test-strategy',
           title: '测试策略与命令矩阵',
           summary:
@@ -320,7 +337,7 @@
         {
           id: 'core-flow',
           title: '核心流程端到端验证',
-          summary: '两轮真实报名主链、数据库审计、失败补偿与剩余 P0 缺口。',
+          summary: '2026-10-09 历史记录：真实报名主链、数据库审计与失败补偿；当前验收以本页最新流程为准。',
           maturity: 'baseline',
           sources: [{ label: 'docs/verification/2026-10-09-core-flow-e2e.md', href: BASE + 'docs/verification/2026-10-09-core-flow-e2e.md' }],
         },
@@ -349,7 +366,7 @@
           id: 'quality-gate',
           title: '质量门禁',
           summary:
-            'validate / coverage / audit:all / check:experience-releases / check:release-notes / check:ui-sync 组合成本地与 CI 的强制门禁。',
+            'validate / coverage / audit:all / check:design / check:ui-sync 组合成本地与 CI 门禁；写链路与物理真机另行验收。',
           maturity: 'baseline',
           inline: 'quality-gate',
         },
@@ -481,7 +498,7 @@
           id: 'manual-admin',
           title: '管理员操作手册',
           summary:
-            '审批列表筛选报名 → 查看脱敏资料 → 通过 / 驳回（需填理由） → 签到。可查看全部活动并结束活动。',
+            '审批列表筛选报名 → 按审核权限查看完整资料 → 通过 / 驳回（需填理由） → 签到。可查看全部活动并结束活动。',
           maturity: 'aggregated',
           inline: 'manual-admin',
         },
@@ -535,6 +552,13 @@
     `<dl class="dc-dl">${rows.map(([key, value]) => `<div><dt>${key}</dt><dd>${value}</dd></div>`).join('')}</dl>`;
 
   const inlineBlocks = {
+    'e2e-acceptance': () => `
+      <ol class="dc-pipeline">
+        <li><b>固定基线</b><p>记录 main SHA、客户端版本、云环境、账号角色；检查 CI 与 Pages 部署状态。</p></li>
+        <li><b>运行与校准</b><p><code>npm run test:devtools:e2e</code> 读取真实云数据并保存失败报告；使用 <code>?capture=viewport#activities</code> 采集同视口设计。</p></li>
+        <li><b>约束门禁</b><p><code>npm run check:design</code> 校验变量与对比度；<code>npm run check:ui-sync -- --strict</code> 校验 13 页截图和内容摘要。</p></li>
+        <li><b>部署后复验</b><p>PR / main CI → Pages → 微信开发版上传 → 设置页版本回读 → 同版本模拟器复测；普通成员写链路与 iOS/Android 真机单独记录。</p></li>
+      </ol>`,
     'sdlc-matrix': () => `
       <div class="dc-matrix-scroll">
       <table class="dc-matrix">
@@ -633,6 +657,8 @@
         ['Bootstrap', '<code>npm run test:bootstrap</code>'],
         ['发布记录', '<code>npm run check:experience-releases</code> · <code>npm run check:release-notes</code>'],
         ['UI 同步', '<code>npm run check:ui-sync</code>'],
+        ['设计约束', '<code>npm run test:design</code> · <code>npm run check:design</code>'],
+        ['模拟器实操', '<code>npm run test:devtools:e2e</code> · 真实云端只读，13 页截图'],
         ['CloudBase 规划 / 校验', '<code>npm run cloudbase:plan</code> → 人工审核 → <code>cloudbase:apply</code> → <code>cloudbase:verify</code>'],
         ['真机验证', '按 <code>docs/verification/p0-real-registration-journey.md</code> 现场执行'],
       ]),
@@ -642,6 +668,7 @@
         '<code>npm run coverage</code>：覆盖率门禁 + 云函数覆盖检查。',
         '<code>npm run audit:all</code>：根项目与所有云函数的 high 级依赖审计。',
         '<code>npm run check:ui-sync</code>：UI 同步清单与原型页面覆盖。',
+        '<code>npm run check:design</code>：双端变量、浅色文字与操作对比度；包含在 validate。',
         '<code>npm run check:experience-releases</code>：体验版清单一致性。',
         'GitHub CI：ci.yml 对 PR 和 main 均执行同一套 validate。',
       ]),
@@ -670,7 +697,7 @@
     'manual-admin': () =>
       ul([
         '在管理员入口查看全部活动与报名；可按状态筛选 pending / approved / checked_in / rejected / cancelled。',
-        '在审批详情查看脱敏资料、手机号来源、骑行照片、经验与集合方式。',
+        '在审批详情按审核权限查看完整实名与电话、手机号来源、骑行照片、经验与集合方式；公开验收截图另行脱敏。',
         '通过 / 驳回；驳回必须填写理由；驳回或取消释放名额。',
         '对 approved 报名执行签到（checked_in）；重复签到幂等。',
         '可结束活动，结束后为终态；活动结束后次日自动归档到历史活动视图。',

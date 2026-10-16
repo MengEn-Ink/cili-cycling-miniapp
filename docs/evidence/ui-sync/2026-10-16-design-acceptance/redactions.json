@@ -1,0 +1,110 @@
+[
+  {
+    "file": "registration-form-devtools.png",
+    "cssPixelRectangles": [
+      [
+        145,
+        500,
+        354,
+        708
+      ]
+    ]
+  },
+  {
+    "file": "credential-devtools.png",
+    "cssPixelRectangles": [
+      [
+        24,
+        137,
+        351,
+        385
+      ],
+      [
+        162,
+        410,
+        353,
+        444
+      ],
+      [
+        180,
+        728,
+        354,
+        812
+      ]
+    ]
+  },
+  {
+    "file": "profile-devtools.png",
+    "cssPixelRectangles": [
+      [
+        24,
+        149,
+        351,
+        332
+      ]
+    ]
+  },
+  {
+    "file": "capability-card-devtools.png",
+    "cssPixelRectangles": [
+      [
+        24,
+        120,
+        351,
+        333
+      ],
+      [
+        24,
+        333,
+        210,
+        382
+      ]
+    ]
+  },
+  {
+    "file": "profile-edit-devtools.png",
+    "cssPixelRectangles": [
+      [
+        40,
+        205,
+        126,
+        292
+      ],
+      [
+        39,
+        533,
+        339,
+        580
+      ],
+      [
+        39,
+        649,
+        339,
+        697
+      ]
+    ]
+  },
+  {
+    "file": "admin-review-detail-devtools.png",
+    "cssPixelRectangles": [
+      [
+        41,
+        166,
+        274,
+        219
+      ],
+      [
+        41,
+        225,
+        272,
+        250
+      ],
+      [
+        162,
+        354,
+        350,
+        577
+      ]
+    ]
+  }
+]

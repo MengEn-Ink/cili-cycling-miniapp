@@ -157,7 +157,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain("if (action === 'publish-activity')");
   });
 
-  it('颜色变量与 miniprogram/app.wxss 同名同值（成功 / 警告色按规范先行），不引入装饰性渐变', () => {
+  it('颜色变量与 miniprogram/app.wxss 同名同值，不引入装饰性渐变', () => {
     const wxss = read('miniprogram/app.wxss');
     const wxssVars = new Map(
       [...wxss.matchAll(/(--color-[a-z-]+):\s*(#[0-9a-f]{6})\b/gi)].map(([, name, value]) => [
@@ -165,24 +165,10 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
         value.toLowerCase(),
       ]),
     );
-    const statusVars = new Map([
-      ['--color-status-success', '#1d7a3e'],
-      ['--color-status-success-soft', '#e7f4eb'],
-      ['--color-status-warning', '#7a5c00'],
-      ['--color-status-warning-soft', '#fbf1cc'],
-    ]);
-    const prototypeInteractionVars = new Map([
-      ['--color-on-brand', '#ffffff'],
-      ['--color-action', '#e85b32'],
-      ['--color-action-active', '#c84320'],
-      ['--color-on-action', '#ffffff'],
-    ]);
     const cssVars = [...css.matchAll(/(--color-[a-z-]+):\s*(#[0-9a-f]{6})\b/gi)];
     expect(cssVars.length).toBeGreaterThan(10);
     for (const [, name, value] of cssVars) {
-      // 浏览器原型的交互别名先行切到品牌橙；其余共享变量与小程序保持同名同值。
-      const expected =
-        prototypeInteractionVars.get(name) ?? wxssVars.get(name) ?? statusVars.get(name);
+      const expected = wxssVars.get(name);
       expect(expected, name).toBe(value.toLowerCase());
     }
     const declaredHex = new Set(cssVars.map(([, , value]) => value.toLowerCase()));

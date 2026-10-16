@@ -172,3 +172,30 @@ test('受控标签只跳过普通模式，严格发布模式仍执行视觉同�
     false,
   );
 });
+
+test('v2 按截图对应的内容摘要校验，提交重写不失效，内容变更必失败', () => {
+  const current = manifest();
+  current.schemaVersion = 2;
+  current.evidence.viewport = { width: 390, height: 790 };
+  Object.assign(current.evidence.routes[0], {
+    state: 'loaded',
+    data: 'sanitized-runtime',
+    review: 'differences',
+    note: '数据样本不同',
+  });
+  const state = {
+    ...baseState,
+    manifest: current,
+    currentUiDigest: current.source.digest,
+    baselineUiDigest: `sha256:${'f'.repeat(64)}`,
+    uiCommitShas: ['rewritten'],
+    changedFiles: ['miniprogram/app.wxss'],
+    strict: true,
+  };
+  assert.equal(assessUiSyncState(state).ok, true);
+  assert.throws(
+    () => assessUiSyncState({ ...state, currentUiDigest: `sha256:${'e'.repeat(64)}` }),
+    /截图.*摘要/,
+  );
+  assert.throws(() => assessUiSyncState({ ...state, currentUiDigest: undefined }), /截图.*摘要/);
+});
