@@ -39,6 +39,10 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 20rpx;
   margin-top: 30rpx;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--color-text);
 }
 .trip-stat {
@@ -117,6 +121,9 @@
   overflow: hidden;
   border: 0;
   border-radius: var(--radius-display);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: none;
   transition: transform 0.2s ease-out;
 }
 .registration-card--pressed {
@@ -176,7 +183,11 @@
   color: var(--color-text);
 }
 .meeting-row {
+  display: flex;
   align-items: flex-start;
+  justify-content: space-between;
+  gap: 24rpx;
+  min-height: var(--control-height);
   padding: 0;
   border: 0;
 }
@@ -186,10 +197,14 @@
 .meeting-label {
   flex: 0 0 auto;
   color: var(--color-muted);
+  font-size: 24rpx;
+  line-height: 36rpx;
 }
 .meeting-value {
   min-width: 0;
   color: var(--color-text);
+  font-size: 28rpx;
+  line-height: 40rpx;
   font-weight: 800;
   text-align: right;
   overflow-wrap: anywhere;

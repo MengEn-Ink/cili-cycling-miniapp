@@ -16,11 +16,11 @@ const appConfig = JSON.parse(read('miniprogram/app.json')) as {
 };
 
 const brightWindow = {
-  navigationBarBackgroundColor: '#ffffff',
+  navigationBarBackgroundColor: '#fbf5ea',
   navigationBarTextStyle: 'black',
-  backgroundColor: '#ffffff',
-  backgroundColorTop: '#ffffff',
-  backgroundColorBottom: '#ffffff',
+  backgroundColor: '#fbf5ea',
+  backgroundColorTop: '#fbf5ea',
+  backgroundColorBottom: '#fbf5ea',
   backgroundTextStyle: 'dark',
 };
 

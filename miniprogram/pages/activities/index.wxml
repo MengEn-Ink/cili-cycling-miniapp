@@ -1,4 +1,4 @@
-<view class="page activities-page">
+<view class="page activities-page" style="padding-top: {{navigationTopPx}}px">
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{refreshing ? '正在刷新活动' : loadingMore ? '正在加载更多活动' : ''}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{refreshError}}</view>
   <brand-logo meta="骑行活动" />

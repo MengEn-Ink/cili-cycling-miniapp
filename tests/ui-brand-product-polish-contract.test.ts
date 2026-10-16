@@ -41,9 +41,9 @@ describe('品牌与页面体验静态契约', () => {
     const app = JSON.parse(read('miniprogram/app.json'));
     expect(app.window).toMatchObject({
       enablePullDownRefresh: false,
-      backgroundColor: '#ffffff',
-      backgroundColorTop: '#ffffff',
-      backgroundColorBottom: '#ffffff',
+      backgroundColor: '#fbf5ea',
+      backgroundColorTop: '#fbf5ea',
+      backgroundColorBottom: '#fbf5ea',
       backgroundTextStyle: 'dark',
     });
 
@@ -51,9 +51,9 @@ describe('品牌与页面体验静态契约', () => {
       const config = JSON.parse(read(`miniprogram/pages/${page}/index.json`));
       expect(config, page).toMatchObject({
         enablePullDownRefresh: page === 'profile',
-        backgroundColor: '#ffffff',
-        backgroundColorTop: '#ffffff',
-        backgroundColorBottom: '#ffffff',
+        backgroundColor: '#fbf5ea',
+        backgroundColorTop: '#fbf5ea',
+        backgroundColorBottom: '#fbf5ea',
         backgroundTextStyle: 'dark',
       });
       expect(config, page).not.toHaveProperty('disableScroll');
@@ -136,7 +136,6 @@ describe('品牌与页面体验静态契约', () => {
     expect(declaration(effectiveBlock(activityCard, '.activity-card'), 'border-radius')).toBe(
       'var(--radius-display)',
     );
-    expect(tokens['--metric-align']).toBe('left');
     expect(declaration(effectiveBlock(activityCard, '.card-action'), 'min-height')).toBe(
       'var(--control-height)',
     );

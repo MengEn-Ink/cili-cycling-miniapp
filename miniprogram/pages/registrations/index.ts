@@ -1,4 +1,5 @@
 import { rideService } from '../../services/ride-service';
+import { customNavigationTopPx } from '../../utils/custom-navigation';
 import { formatActivityDate } from '../../utils/date-time';
 import {
   buildTripMeetingInfo,
@@ -27,6 +28,7 @@ Page({
   touchRegistrationId: '',
   archiveRefreshTimer: null as ReturnType<typeof setTimeout> | null,
   data: {
+    navigationTopPx: customNavigationTopPx(),
     loading: true,
     refreshing: false,
     error: '',

@@ -3,7 +3,7 @@
 
   <view class="settings-hero">
     <view class="hero-title">设置</view>
-    <view class="hero-copy">管理个人设置，查看「此里」的每一次功能升级。</view>
+    <view class="hero-copy">管理个人设置，查看「此里」最近五次有效功能升级。</view>
   </view>
 
   <view class="section-label"><text>01</text> 功能升级日志</view>

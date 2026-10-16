@@ -161,12 +161,16 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain("registration: 'activities'");
     expect(script).toContain("credential: 'registrations'");
     expect(script).toContain("admin: 'admin-activity-list'");
+    expect(script).toContain(
+      "classList.toggle('custom-tab-navigation', tabRoutes.includes(page.id))",
+    );
+    expect(css).toMatch(/\.custom-tab-navigation \.mini-program-bar\s*\{[^}]*height:\s*0;/s);
   });
 
   it('设置页原型同步当前客户端版本与最新功能日志', () => {
-    expect(schema).toContain("state: 'V2026.10.16.72'");
+    expect(schema).toContain("state: 'V2026.10.16.73'");
     expect(schema).toContain(
-      "['2026.10.16.72', '我的行程严格对齐沸点设计稿', '按交接照片逐项还原行程统计、票据头、集合信息和操作按钮，并同步更新 GitHub Pages 高保真原型。']",
+      "['2026.10.16.73', '沸点主题全站统一与行程页精确对齐', '按最终设计稿修正行程页顶部、票据和状态层级，清理旧主题别名与过期视觉约束，并同步全站空状态。']",
     );
     expect(schema).toContain(
       "['2026.10.16.70', '公开路线解析更安全稳定', '加固 Strava 路线名称解析，避免特殊编码内容被重复转换，同时保持公开路线正常回显。']",
@@ -194,7 +198,22 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(cssVars.length).toBeGreaterThan(10);
     for (const [, name, value] of cssVars) {
       const expected = wxssVars.get(name);
-      expect(expected, name).toBe(value.toLowerCase());
+      if (expected !== undefined) expect(expected, name).toBe(value.toLowerCase());
+    }
+    for (const name of [
+      '--color-bg',
+      '--color-surface',
+      '--color-text',
+      '--color-muted',
+      '--color-brand',
+      '--color-status-success',
+      '--color-status-warning',
+    ]) {
+      expect(wxssVars.get(name), name).toBeDefined();
+      expect(
+        cssVars.some(([, cssName]) => cssName === name),
+        name,
+      ).toBe(true);
     }
     const declaredHex = new Set(cssVars.map(([, , value]) => value.toLowerCase()));
     const allHex = [...css.matchAll(/#[0-9a-f]{6}\b/gi)].map(([color]) => color.toLowerCase());

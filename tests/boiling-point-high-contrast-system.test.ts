@@ -26,8 +26,6 @@ describe('approved unified high-contrast UI', () => {
     expect(tokens['--color-brand-active']).toBe('#c0321f');
     expect(tokens['--color-status-success']).toBe('#16633a');
     expect(tokens['--color-status-warning']).toBe('#7a5c00');
-    expect(tokens['--metric-align']).toBe('left');
-    expect(tokens['--page-heading-align']).toBe('left');
     expect(tokens['--radius-display']).toBe('40rpx');
   });
 
@@ -47,7 +45,7 @@ describe('approved unified high-contrast UI', () => {
     expect(declaration(button, 'display')).toBe('flex');
     expect(declaration(button, 'align-items')).toBe('center');
     expect(declaration(button, 'justify-content')).toBe('center');
-    expect(declaration(button, 'min-height')).toBe('var(--primary-control-height)');
+    expect(declaration(button, 'min-height')).toBe('var(--control-height)');
     expect(declaration(button, 'background')).toBe('var(--color-action) !important');
     expect(declaration(button, 'color')).toBe('var(--color-on-action) !important');
     expect(button).not.toMatch(/gradient/i);
@@ -65,13 +63,17 @@ describe('approved unified high-contrast UI', () => {
     expect(card).not.toContain('.card-cta');
   });
 
-  it('keeps the activity introduction on the reading axis and card borders visible', () => {
+  it('keeps the activity introduction on the reading axis and trip card surfaces visible', () => {
     const activities = read('miniprogram/pages/activities/index.wxss');
     expect(declaration(effectiveBlock(activities, '.activities-intro'), 'margin-top')).toBe(
       '16rpx',
     );
-    const registrationCard = effectiveBlock(app, '.registration-card');
-    expect(declaration(registrationCard, 'border')).toContain('var(--color-card-border)');
+    const registrationCard = effectiveBlock(
+      read('miniprogram/pages/registrations/index.wxss'),
+      '.registration-card',
+    );
+    expect(declaration(registrationCard, 'border')).toBe('0');
+    expect(declaration(registrationCard, 'border-radius')).toBe('var(--radius-display)');
     expectSemantic(declaration(registrationCard, 'background'), '--color-surface');
   });
 

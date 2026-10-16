@@ -56,7 +56,7 @@ describe('沸点固定操作区布局契约', () => {
     ]) {
       const config = JSON.parse(read(file));
 
-      expect(String(config.navigationBarBackgroundColor || '').toLowerCase()).toBe('#ffffff');
+      expect(String(config.navigationBarBackgroundColor || '').toLowerCase()).toBe('#fbf5ea');
       expect(config.navigationBarTextStyle).toBe('black');
     }
   });

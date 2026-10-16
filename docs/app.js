@@ -294,6 +294,7 @@
 
   function updateChrome(page) {
     const stateLabel = (page.states.find(([id]) => id === currentState) || page.states[0])[1];
+    $('.phone-inner').classList.toggle('custom-tab-navigation', tabRoutes.includes(page.id));
     $('#mini-title').textContent =
       page.id === 'admin-activity-edit' && currentState === 'create' ? '创建活动' : page.navTitle;
     $('#route-path').textContent = page.path;

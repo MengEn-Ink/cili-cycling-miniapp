@@ -1,11 +1,12 @@
 {
+  "navigationStyle": "custom",
   "navigationBarTitleText": "个人中心",
-  "navigationBarBackgroundColor": "#ffffff",
+  "navigationBarBackgroundColor": "#fbf5ea",
   "navigationBarTextStyle": "black",
   "enablePullDownRefresh": true,
-  "backgroundColor": "#ffffff",
-  "backgroundColorTop": "#ffffff",
-  "backgroundColorBottom": "#ffffff",
+  "backgroundColor": "#fbf5ea",
+  "backgroundColorTop": "#fbf5ea",
+  "backgroundColorBottom": "#fbf5ea",
   "backgroundTextStyle": "dark",
   "usingComponents": {
     "brand-logo": "/components/brand-logo/index",

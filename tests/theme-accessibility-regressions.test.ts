@@ -36,7 +36,7 @@ describe('unified UI accessibility regressions', () => {
     expectSemantic(declaration(globalPage, 'color'), '--color-text');
 
     for (const [file, selector] of [
-      ['miniprogram/pages/activities/index.wxss', '.activities-page'],
+      ['miniprogram/app.wxss', '.page'],
       ['miniprogram/pages/activity-detail/index.wxss', '.detail-page'],
       ['miniprogram/pages/profile/index.wxss', '.profile-page'],
       ['miniprogram/pages/registration-form/index.wxss', '.form-page'],

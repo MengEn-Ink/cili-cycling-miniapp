@@ -32,7 +32,11 @@ describe('CILI 沸点浅色竞技页面静态契约', () => {
     expect(styles).toContain('var(--color-bg)');
     expect(styles).not.toMatch(/#[0-9a-f]{3,8}\b/i);
     expect(tokens['--color-brand']).toBe('#e13b2b');
-    expect(config.navigationBarBackgroundColor.toLowerCase()).toBe('#ffffff');
+    if (root.endsWith('/registrations')) {
+      expect(config.navigationStyle).toBe('custom');
+    } else {
+      expect(config.navigationBarBackgroundColor.toLowerCase()).toBe('#fbf5ea');
+    }
     expect(config.navigationBarTextStyle).toBe('black');
   });
 

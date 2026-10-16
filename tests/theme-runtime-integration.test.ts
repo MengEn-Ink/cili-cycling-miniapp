@@ -39,13 +39,11 @@ describe('单一明亮外观接线', () => {
 
     expect(template).toContain('功能升级日志');
     expect(template).toContain('wx:for="{{releaseNotes}}"');
-    expect(script).toContain("version: '2026.10.14.54'");
-    expect(script).toContain("title: '移除未使用的官方路线页面'");
-    expect(script).toContain("version: '2026.10.13.53'");
-    expect(script).toContain("title: '本人资料完整显示'");
-    expect(script).toContain("version: '2026.10.13.52'");
-    expect(script).toContain("title: '填写报名页更清晰'");
-    expect(script).toContain("version: '2026.10.13.50'");
-    expect(script).toContain("title: '公开路线免授权解析与复制'");
+    expect(script).toContain("title: '沸点主题全站统一与行程页精确对齐'");
+    expect(script).toContain("version: '2026.10.16.72'");
+    expect(script).toContain("version: '2026.10.16.70'");
+    expect(script).toContain("version: '2026.10.16.68'");
+    expect(script).toContain("version: '2026.10.15.67'");
+    expect(script).not.toContain("version: '2026.10.16.71'");
   });
 });

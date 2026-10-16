@@ -27,7 +27,7 @@ describe('其余页面 CILI 沸点浅色 UI 静态契约', () => {
   it.each(pages)('$root 使用明亮原生导航栏和统一语义色', ({ root, page }) => {
     const config = JSON.parse(read(`${root}/index.json`));
     const styles = read(`${root}/index.wxss`);
-    expect(config.navigationBarBackgroundColor.toLowerCase()).toBe('#ffffff');
+    expect(config.navigationBarBackgroundColor.toLowerCase()).toBe('#fbf5ea');
     expect(config.navigationBarTextStyle).toBe('black');
     expectSemantic(declaration(effectiveBlock(styles, page), 'background'), '--color-bg');
     expectSemantic(declaration(effectiveBlock(app, '.page'), 'color'), '--color-text');
