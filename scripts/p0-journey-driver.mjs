@@ -218,44 +218,54 @@ export async function relaunchWhenReady({
   isDataReady,
   timeoutMs = 30_000,
   intervalMs = 250,
+  maxAttempts = 2,
+  navigationMethod = 'reLaunch',
   now = Date.now,
   wait = defaultWait,
 }) {
   const expectedPath = typeof url === 'string' ? url.split(/[?#]/, 1)[0].replace(/^\/+/, '') : '';
+  const navigate = miniProgram?.[navigationMethod];
   if (
     !miniProgram ||
-    typeof miniProgram.reLaunch !== 'function' ||
+    !['reLaunch', 'switchTab'].includes(navigationMethod) ||
+    typeof navigate !== 'function' ||
     typeof miniProgram.currentPage !== 'function' ||
     !expectedPath ||
-    typeof isDataReady !== 'function'
+    typeof isDataReady !== 'function' ||
+    !Number.isInteger(maxAttempts) ||
+    maxAttempts < 1 ||
+    maxAttempts > 3
   ) {
     fail('PAGE_NOT_READY');
   }
 
-  try {
-    await miniProgram.reLaunch(url);
-  } catch {
-    fail('PAGE_NOT_READY');
+  const attemptTimeoutMs = timeoutMs / maxAttempts;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    let readyPage;
+    try {
+      await navigate.call(miniProgram, url);
+      await waitForPageReady({
+        expectedPath,
+        timeoutMs: attemptTimeoutMs,
+        intervalMs,
+        now,
+        wait,
+        readPage: async () => {
+          const page = await miniProgram.currentPage();
+          readyPage = page;
+          return {
+            path: page?.path,
+            data: await page?.data(),
+          };
+        },
+        isDataReady,
+      });
+      return readyPage;
+    } catch {
+      if (attempt === maxAttempts) fail('PAGE_NOT_READY');
+    }
   }
-
-  let readyPage;
-  await waitForPageReady({
-    expectedPath,
-    timeoutMs,
-    intervalMs,
-    now,
-    wait,
-    readPage: async () => {
-      const page = await miniProgram.currentPage();
-      readyPage = page;
-      return {
-        path: page?.path,
-        data: await page?.data(),
-      };
-    },
-    isDataReady,
-  });
-  return readyPage;
+  fail('PAGE_NOT_READY');
 }
 
 export async function runReconciledWrite({

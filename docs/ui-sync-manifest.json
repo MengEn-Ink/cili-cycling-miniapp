@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "40324f1b10304b52895d182e1e3a66a0d44b4625",
-  "syncedAt": "2026-10-16T05:37:01.144Z",
+  "syncedThrough": "8d408852141f18181a3f08e67f1eef9251b8218f",
+  "syncedAt": "2026-10-16T08:01:51.791Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:d288df5e7ab3a0002ca7a4aaf832ad686db4f5990cc0922b2bd2911a80182dbd"
+    "digest": "sha256:92a1444583cfd1a6b4b39de7e21608343aa0ce71db38a6ec67d9ec5f853013df"
   },
   "prototype": {
-    "digest": "sha256:41c4f2d7248e1cfa1e6c640a65f9494f849d30fc417b0c464e465cfcfd4f8e7a"
+    "digest": "sha256:cd50c8174874d24b31c4dea769cf9238d372cdb7c050c48f7ff367eb629de486"
   },
   "routes": [
     {
@@ -131,10 +131,10 @@
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "默认，客户端 2026.10.16.69",
+        "state": "默认，客户端 2026.10.16.70",
         "data": "real-runtime",
         "review": "differences",
-        "note": "版本号与最新日志已同步。运行态保留橙色页头与独立日志卡；Pages 为浅色页头和日志列表，两端均可读。"
+        "note": "版本号与最新日志已同步至 2026.10.16.70。运行态保留橙色页头与独立日志卡；Pages 为浅色页头和日志列表，两端均可读且无横向裁切。"
       },
       {
         "id": "capability-card",

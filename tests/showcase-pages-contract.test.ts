@@ -148,6 +148,16 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain("admin: 'admin-activity-list'");
   });
 
+  it('设置页原型同步当前客户端版本与最新功能日志', () => {
+    expect(schema).toContain("state: 'V2026.10.16.70'");
+    expect(schema).toContain(
+      "['2026.10.16.70', '公开路线解析更安全稳定', '加固 Strava 路线名称解析，避免特殊编码内容被重复转换，同时保持公开路线正常回显。']",
+    );
+    expect(schema).toContain(
+      "['2026.10.16.69', '页面配色与操作更清晰', '统一活动与报名按钮配色，修复照片删除按钮看不清的问题，提升浅色页面和小屏控件可读性。']",
+    );
+  });
+
   it('支持哈希路由、页面回退、键盘切换和关键业务反馈', () => {
     expect(script).toContain("window.addEventListener('hashchange'");
     expect(script).toContain("window.addEventListener('keydown'");
