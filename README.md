@@ -1,14 +1,14 @@
 # 骑有此里（此里）· 骑行活动微信小程序
 
-“骑有此里”是面向骑行俱乐部的原生微信小程序，覆盖活动发布、官方路线与 GPX 详情、实名资料、报名审批、签到和个人骑行名片。小程序内使用简称“此里”。
+“骑有此里”是面向骑行俱乐部的原生微信小程序，覆盖活动发布、公开 Strava 路线与 GPX 详情、实名资料、报名审批、签到和个人骑行名片。小程序内使用简称“此里”。
 
 项目基于微信云开发（CloudBase）。业务数据库集合只允许云函数访问；客户端仅可按存储规则写入与本人绑定的 `profiles/` 和 `activity-routes/` staging 路径。本地构建或测试通过不代表云端资源已经部署，也不代表真实报名旅程已经验证。
 
 ## 产品预览
 
-- **GitHub Pages 产品中心**：[https://mengen-ink.github.io/cili-cycling-miniapp/](https://mengen-ink.github.io/cili-cycling-miniapp/)
-- **页面范围**：活动浏览与详情、活动创建与编辑、实名报名、管理员审核、个人骑行名片、设置等核心旅程。
-- **图片说明**：以下图片是仓库内留存的真机/开发者工具视觉证据，用于说明产品形态；最新交互与页面状态以 Pages 产品中心和当前 `main` 为准。
+- **GitHub Pages 研发交付中心**：[https://mengen-ink.github.io/cili-cycling-miniapp/](https://mengen-ink.github.io/cili-cycling-miniapp/)
+- **页面范围**：项目总览、产品与需求、设计与体验、技术与架构、开发规范、测试与验收、发布与运维、版本与复盘，以及 13 个核心页面原型。
+- **图片说明**：以下图片是仓库内仍有效的真机/开发者工具视觉证据；最新交互、文档成熟度和页面状态以研发交付中心和当前 `main` 为准。
 
 | 活动首页                                                                                                           | GPX 路线详情                                                                                                   | 个人骑行名片                                                                                                |
 | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -17,9 +17,9 @@
 
 ## 已实现能力
 
-- **活动**：公开首页默认展示未来与进行中活动，并可按服务端时间线稳定分页回看历史；已登录用户可创建和编辑本人草稿、发布与下架，并从本人的历史活动复制草稿；管理员可管理全部活动并结束活动。活动支持图集、集合地点、分组容量、后援车信息、Strava 官方公开路线和 GPX 原生详情。
+- **活动**：公开首页默认展示未来与进行中活动，并可按服务端时间线稳定分页回看历史；已登录用户可创建和编辑本人草稿、发布与下架，并从本人的历史活动复制草稿；管理员可管理全部活动并结束活动。活动支持图集、集合地点、分组容量、后援车信息、Strava 公开路线和 GPX 原生详情。
 - **报名**：微信身份、实名资料、微信授权手机号、集合方式与骑行经验；支持提交、驳回后重报、取消、审批、凭证和管理员签到。
-- **路线**：粘贴 Strava 公开路线链接后，可在活动详情核验并复制规范化官方路线地址；上传 GPX 后原生展示里程、升降、海拔范围、路线轮廓与海拔曲线，并支持原件下载和路线图背景。
+- **路线**：管理端粘贴 Strava 公开路线链接即可免授权解析可信路线详情；活动详情页仅支持复制规范化 Strava 路线链接，不再内嵌 `web-view` / Embed；上传 GPX 后原生展示里程、升降、海拔范围、路线轮廓与海拔曲线，并支持原件下载和路线图背景。
 - **个人资料**：昵称、微信授权头像、骑行背景图、称号展示和个人骑行名片。
 - **通知**：报名时请求订阅授权；审批结果通过带租约和退避的 Outbox 异步发送。
 - **安全与可靠性**：服务端可信 `OPENID`、管理员白名单、敏感字段 AES-256-GCM 加密、媒体 owner/canonical 校验、容量事务和操作审计。
@@ -32,8 +32,9 @@
 
 - 原生微信小程序：TypeScript、WXML、WXSS
 - 微信云开发：云函数、云数据库、云存储、HTTP 网关、定时触发器
-- Node.js 24、npm、Vitest、ESLint、Prettier
-- Strava 官方公开路线链接核验与复制；服务端受限 GPX XML 解析
+- 构建与质量门禁：Node.js 24、npm、Vitest、ESLint、Prettier
+- 云函数运行时：CloudBase `Nodejs20.19`
+- Strava 公开路线免授权解析；服务端受限 GPX XML 解析
 
 ## 目录
 
@@ -43,8 +44,9 @@ cloudfunctions/              可独立部署的 CloudBase 云函数
 cloudfunctions/shared/       报名领域的共享源码
 cloudfunctions/route-maintenance/ 路线文件回收与历史数据迁移定时函数
 scripts/                     部署准备、CloudBase bootstrap 和证据校验
+tools/miniprogram-ci/        锁定版本的微信代码上传依赖
 tests/                       小程序与跨模块回归测试
-docs/                        产品、数据契约和真实环境验证文档
+docs/                        产品文档、GitHub Pages 原型、部署说明与真实环境验证记录
 ```
 
 `.pai/`、`.superpowers/`、`.trae/` 仅用于本地工具运行和临时工作树，必须保持未跟踪状态，不进入交付提交。
@@ -88,7 +90,8 @@ npm run audit:all        # 根项目和云函数依赖审计
 4. **提交与评审**：保持相对 `main` 的单个语义提交，推送工作分支并创建 PR；PR checks 全绿后才能合入。
 5. **CloudBase 变更**：涉及集合、索引或数据库规则时先运行 `npm run cloudbase:plan`，经环境负责人明确授权后再 `apply`，最后 `verify`；涉及云函数时仅部署受影响函数并执行对应 smoke。
 6. **微信开发版**：PR 合入后等待 `main` CI；若变更影响小程序产物，CI 成功会触发微信开发版自动上传，纯文档/测试变更会安全跳过。
-7. **验收与收尾**：核对 main CI、部署或安全跳过结论、必要的真机/P0 旅程证据，再删除已合并工作分支；无法执行的线上验证必须明确记录为“未执行”。
+7. **体验版晋级**：开发版上传成功后，再通过 `promote-miniprogram-experience.yml` 的 `candidate -> verified` 两阶段流程人工晋级；自动上传不会覆盖体验版基线。
+8. **验收与收尾**：核对 main CI、部署或安全跳过结论、必要的真机/P0 旅程证据，再删除已合并工作分支；无法执行的线上验证必须明确记录为“未执行”。
 
 > 微信开发版上传不会部署 CloudBase 云函数、集合、索引、数据库/存储规则或网关；这些资源必须根据 diff 单独部署并回读。
 
@@ -120,16 +123,29 @@ npm run deploy:miniprogram
 
 紧急停用时，在 Actions 页面禁用“微信开发版自动上传”工作流并删除 `WECHAT_MINIPROGRAM_PRIVATE_KEY`；若怀疑密钥泄露，还应立即在微信公众平台重置代码上传密钥。
 
+## 体验版晋级与回退
+
+体验版不会随着开发版自动上传而自动更新。当前仓库采用受证据约束的两阶段人工晋级流程：
+
+1. 先确认目标提交仍是当前 `main`，且 `CI`、微信开发版上传与核心 smoke 均已成功。
+2. 手动运行 `.github/workflows/promote-miniprogram-experience.yml`，先生成 `candidate/promote` 候选清单。
+3. 由发布负责人在微信公众平台把同一开发版选为体验版，并回读版本、SHA 与入口。
+4. 以同一组参数运行 `verified/promote`，再把验证后的 manifest 固化到 [`docs/releases/experience/`](docs/releases/experience/README.md)。
+
+固定入口为 `pages/activities/index`。完整晋级、回退和长期审计规则见 [`docs/releases/experience/README.md`](docs/releases/experience/README.md)。
+
 ## 配置
 
 以 `cloudfunctions/.env.example` 为键名清单，只在 CloudBase 控制台配置真实值：
 
-| 变量                                                          | 使用方                                                              | 说明                                                               |
-| ------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `PII_ENCRYPTION_KEY`                                          | `profile`、`admin-review`                                           | base64 编码的 32 字节密钥；两者必须完全一致                        |
-| `PROFILE_MEDIA_PATH_SECRET`                                   | `profile`、`profile-media-cleanup`、`admin-review`、`activity-read` | 至少 32 字符，四者必须一致；`activity-read` 缺失时头像 fail closed |
-| `OAUTH_RETIREMENT_PURGE_ENABLED`                              | `route-maintenance`                                                 | 默认关闭；仅在新链路运行时验收后临时设为 `1`，清空回读后移除       |
-| `REVIEW_APPROVED_TEMPLATE_ID` / `REVIEW_REJECTED_TEMPLATE_ID` | `notification-send`                                                 | 审批订阅消息模板                                                   |
+| 变量                                                             | 使用方                                                              | 说明                                                               |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `PII_ENCRYPTION_KEY`                                             | `profile`、`admin-review`                                           | base64 编码的 32 字节密钥；两者必须完全一致                        |
+| `PROFILE_MEDIA_PATH_SECRET`                                      | `profile`、`profile-media-cleanup`、`admin-review`、`activity-read` | 至少 32 字符，四者必须一致；`activity-read` 缺失时头像 fail closed |
+| `REVIEW_APPROVED_TEMPLATE_ID` / `REVIEW_REJECTED_TEMPLATE_ID`    | `notification-send`                                                 | 审批订阅消息模板                                                   |
+| `WAITLIST_ENTERED_TEMPLATE_ID` / `WAITLIST_PROMOTED_TEMPLATE_ID` | `notification-send`                                                 | 候补进入与候补转正消息模板                                         |
+| `ACTIVITY_REMINDER_TEMPLATE_ID`                                  | `notification-send`                                                 | 活动提醒消息模板                                                   |
+| `OAUTH_RETIREMENT_PURGE_ENABLED`                                 | `route-maintenance`                                                 | 默认 `0`；仅在新链路验收、dry-run 与备份核对后临时设为 `1`         |
 
 仓库禁止保存 secret、token、真实 `openid`、手机号、OAuth code/state、密文或真实旅程原始证据。
 
@@ -148,7 +164,7 @@ bootstrap 当前管理 9 个集合、29 个业务索引和全拒绝客户端数�
 1. 审阅并执行 CloudBase plan/apply/verify。
 2. 按 [CloudBase 数据契约](docs/cloudbase-schema.md) 配置云函数环境变量和 `cloudstorage.rules.json`，并回读确认客户端只能写本人资料与路线 staging，canonical 媒体路径不可由客户端写入。
 3. 运行 `npm run cloud:install`，再依次部署 `auth`、`profile-media-cleanup`、`admin-review`、`profile`、`activity-read`、`activity-admin`、`registration`、`notification-send` 和 `route-maintenance`。
-4. 应用并回读 `cloudbaserc.json` 中的云函数触发器（小程序已不再内嵌 `web-view`，官方路线页已下线，无需配置 Embed 网关或业务域名）。
+4. 应用并回读 `cloudbaserc.json` 中的云函数触发器（小程序已不再内嵌 `web-view`，`pages/route-view` 与 `cloudfunctions/route-web` 已删除，无需配置 `/route/embed` 网关或 Embed 业务域名）。
 5. 在开发者工具和真机完成官方路线、GPX 上传/保存/下载及失败回退验收；此前 `OAUTH_RETIREMENT_PURGE_ENABLED` 必须保持关闭。
 6. 验收通过后临时开启 purge，等待旧账号数据与预览清空并回读，再移除该开关和线上旧资源。
 7. 按 [安全初始化说明](scripts/seed-cloudbase/README.md) 创建首个管理员；活动只能通过已部署的活动管理业务流程创建。
@@ -158,10 +174,11 @@ bootstrap 当前管理 9 个集合、29 个业务索引和全拒绝客户端数�
 
 - [沙箱环境、测试、部署与代码交付配置指南](docs/sandbox-environment-configuration.md)：统一说明所需 Secret、环境变量、配置方式、测试门禁和部署验收。
 - [产品需求与当前能力](docs/requirements-design.md)：用户、流程、已实现范围和后续边界。
-- [产品待办澄清与推荐方案（2026-10-13）](docs/product-backlog-clarification-2026-10-13.md)：通知、发起人权限、活动模板、凭证与图片语义、双主题和更新日志的现状、分期与验收口径。
+- [产品待办澄清与历史方案（2026-10-13）](docs/product-backlog-clarification-2026-10-13.md)：通知、发起人权限、活动模板、凭证与图片语义，以及已被后续单一明亮主题方案取代的历史讨论。
 - [CloudBase 数据契约与安全边界](docs/cloudbase-schema.md)：集合、索引、状态机、错误码和部署后检查。
 - [验证记录索引](docs/verification/README.md)：区分长期运行手册、单次发布证据和外部 CI 证据。
 - [P0 真实报名旅程手册](docs/verification/p0-real-registration-journey.md)：测试环境端到端验证和脱敏证据格式。
+- [固定体验版发布记录](docs/releases/experience/README.md)：体验版 `candidate/verified` 晋级、回退与长期审计规则。
 - [首个管理员初始化](scripts/seed-admin/README.md)：管理员白名单的人工引导。
 - [CloudBase 安全初始化](scripts/seed-cloudbase/README.md)：bootstrap、权限和首个业务数据入口。
 

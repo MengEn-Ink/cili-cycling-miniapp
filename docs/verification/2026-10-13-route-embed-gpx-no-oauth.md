@@ -3,6 +3,8 @@
 > 时间：2026-10-13 19:17 CST
 > 分支：`main`
 > 合入提交：`1e72c85b664a47bf0314ae30ea0b15d1bb2fe3e3`（PR #192）
+>
+> 历史说明：本文记录的是 `route-web` / `pages/route-view` 仍存在时的阶段性验收。后续 PR #210 已删除官方路线页、下线 `route-web` 与 `/route/embed`，当前主线以“活动详情仅复制 Strava 路线链接”为准；阅读本文时请勿把其中的 Embed / web-view 结论当作现行实现。
 
 ## 结论
 

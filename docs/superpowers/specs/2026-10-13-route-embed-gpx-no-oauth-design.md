@@ -1,5 +1,7 @@
 # Strava Official Embed + GPX Route Design
 
+> **历史归档说明：** 本文描述的是旧的 Strava Embed + `web-view` 设计。当前主线已删除 `route-web`、`pages/route-view` 与 `/route/embed`，活动详情页仅保留复制路线链接；请勿把本文当作现行实现。
+
 ## Context
 
 The Strava real-account validation cycle is complete. The product no longer needs account
