@@ -3675,3 +3675,693 @@ body.capture.is-narrow .screen-container {
 body.capture.is-narrow .screen-notes {
   display: none;
 }
+
+
+/* =============================================================
+ * 研发交付中心（Delivery Center）
+ * 沿用黑白灰 + 品牌橙；不引入新色号。
+ * ============================================================= */
+
+.dc-hero {
+  margin-top: 20px;
+  padding: 32px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.7fr);
+  gap: 40px;
+  align-items: stretch;
+  border: 2px solid var(--color-border-strong);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  scroll-margin-top: 24px;
+}
+
+.dc-hero-left h2 {
+  margin-top: 8px;
+  font-size: 30px;
+  line-height: 38px;
+  font-weight: 900;
+  max-width: 680px;
+}
+
+.dc-hero-left .lead {
+  margin-top: 10px;
+  max-width: 680px;
+  color: var(--color-muted);
+  font-size: 15px;
+  line-height: 24px;
+}
+
+.dc-hero-actions {
+  margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.dc-hero-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 160px;
+  text-decoration: none;
+}
+
+.dc-hero-right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  border-left: 1px solid var(--color-border);
+}
+
+.dc-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dc-stat b {
+  font-size: 44px;
+  line-height: 1;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.dc-stat span {
+  color: var(--color-muted);
+  font-size: 14px;
+}
+
+.dc-legend {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dc-legend li {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  column-gap: 10px;
+  row-gap: 2px;
+  align-items: center;
+}
+
+.dc-legend li em {
+  font-style: normal;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  font-size: 14px;
+}
+
+.dc-legend li p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* ---------- 成熟度 pill（三档，黑白灰 + 橙描边） ---------- */
+.dc-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  border: 1.5px solid transparent;
+}
+
+.dc-pill-baseline {
+  background: var(--color-media-card-bg);
+  color: var(--color-on-media);
+}
+
+.dc-pill-aggregated {
+  background: var(--color-raised);
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+
+.dc-pill-template {
+  background: var(--color-surface);
+  color: var(--color-brand-active);
+  border-color: var(--color-brand);
+}
+
+/* ---------- 分类导航 ---------- */
+.dc-nav {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.dc-nav a {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  min-height: 72px;
+  color: var(--color-text);
+  text-decoration: none;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  transition: background 120ms ease;
+}
+
+.dc-nav a:nth-child(4n) {
+  border-right: 0;
+}
+
+.dc-nav a:nth-last-child(-n + 4) {
+  border-bottom: 0;
+}
+
+.dc-nav a:hover,
+.dc-nav a:focus-visible {
+  background: var(--color-raised);
+  outline: none;
+}
+
+.dc-nav a b {
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--color-brand);
+  letter-spacing: 0.12em;
+}
+
+.dc-nav a span {
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 20px;
+}
+
+.dc-nav a em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+/* ---------- 分类容器 ---------- */
+.dc-category {
+  margin-top: 24px;
+  padding: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  scroll-margin-top: 24px;
+}
+
+.dc-cat-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 20px;
+  align-items: center;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dc-cat-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: var(--color-text);
+  color: var(--color-on-media);
+  font-size: 22px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.dc-cat-head h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: 900;
+}
+
+.dc-cat-head p {
+  margin: 4px 0 0;
+  color: var(--color-muted);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.dc-cat-count {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.dc-cat-count b {
+  font-size: 20px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.dc-cat-count span {
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.dc-card-grid {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+/* ---------- 单张文档卡 ---------- */
+.dc-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-bg);
+  min-width: 0;
+}
+
+.dc-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dc-card-head h3 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 900;
+}
+
+.dc-card-body {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 13.5px;
+  line-height: 21px;
+}
+
+/* ---------- 文档卡内行内 details（事实索引、模板待补、聚合内容） ---------- */
+.dc-card details {
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.dc-card details summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--color-text);
+  position: relative;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+}
+
+.dc-card details summary::-webkit-details-marker {
+  display: none;
+}
+
+.dc-card details summary::after {
+  content: '＋';
+  position: absolute;
+  right: 12px;
+  font-weight: 900;
+  color: var(--color-muted);
+}
+
+.dc-card details[open] summary::after {
+  content: '−';
+}
+
+.dc-card details[open] summary {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dc-template ul,
+.dc-inline-body ul,
+.dc-list {
+  margin: 0;
+  padding: 10px 12px 12px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dc-template li,
+.dc-inline-body li,
+.dc-list li {
+  color: var(--color-text);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.dc-inline-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dc-inline-body > *:first-child {
+  margin-top: 0;
+}
+
+/* 定义列表（dl）布局：标签 — 值 */
+.dc-dl {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dc-dl > div {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.dc-dl dt {
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--color-brand);
+  letter-spacing: 0.04em;
+}
+
+.dc-dl dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--color-text);
+}
+
+.dc-dl code,
+.dc-inline-body code,
+.dc-list code {
+  padding: 1px 4px;
+  background: var(--color-raised);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* 聚合内容里的小卡片 */
+.dc-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.dc-sub {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+}
+
+.dc-sub h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--color-text);
+}
+
+.dc-sub p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.dc-sub .dc-list {
+  padding-left: 18px;
+}
+
+/* 微信发布链路步骤 */
+.dc-pipeline {
+  list-style: none;
+  padding: 12px;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  counter-reset: pipeline;
+}
+
+.dc-pipeline li {
+  position: relative;
+  padding: 12px 12px 12px 44px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  counter-increment: pipeline;
+}
+
+.dc-pipeline li::before {
+  content: counter(pipeline);
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--color-brand);
+  color: var(--color-on-brand);
+  font-weight: 900;
+  font-size: 12px;
+}
+
+.dc-pipeline li b {
+  display: block;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.dc-pipeline li p {
+  margin: 4px 0 0;
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+/* SDLC 矩阵表 */
+.dc-matrix-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dc-matrix {
+  width: 100%;
+  min-width: 420px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.dc-matrix th,
+.dc-matrix td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.dc-matrix thead th {
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--color-muted);
+  letter-spacing: 0.04em;
+  background: var(--color-raised);
+}
+
+.dc-matrix tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* ---------- 来源链接 ---------- */
+.dc-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.dc-sources a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+  line-height: 1;
+  max-width: 100%;
+}
+
+.dc-sources a:hover,
+.dc-sources a:focus-visible {
+  background: var(--color-text);
+  color: var(--color-on-media);
+  outline: none;
+}
+
+.dc-sources a span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* ---------- 响应式 ---------- */
+@media (max-width: 1024px) {
+  .dc-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dc-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dc-nav a:nth-child(4n) {
+    border-right: 1px solid var(--color-border);
+  }
+
+  .dc-nav a:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .dc-nav a:nth-last-child(-n + 4) {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .dc-nav a:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .dc-hero {
+    grid-template-columns: 1fr;
+    padding: 24px;
+    gap: 24px;
+  }
+
+  .dc-hero-right {
+    border-left: 0;
+    border-top: 1px solid var(--color-border);
+    padding: 20px 0 0;
+  }
+
+  .dc-hero-left h2 {
+    font-size: 24px;
+    line-height: 32px;
+  }
+
+  .dc-category {
+    padding: 20px;
+  }
+
+  .dc-cat-head {
+    grid-template-columns: auto minmax(0, 1fr);
+    row-gap: 8px;
+  }
+
+  .dc-cat-count {
+    grid-column: 2 / -1;
+    flex-direction: row;
+    gap: 6px;
+    align-items: baseline;
+  }
+
+  .dc-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .dc-hero {
+    padding: 20px;
+  }
+
+  .dc-hero-left h2 {
+    font-size: 22px;
+    line-height: 30px;
+  }
+
+  .dc-nav {
+    grid-template-columns: 1fr;
+  }
+
+  .dc-nav a {
+    border-right: 0 !important;
+  }
+
+  .dc-nav a:not(:last-child) {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .dc-category {
+    padding: 16px;
+  }
+
+  .dc-cat-head {
+    grid-template-columns: 1fr;
+    row-gap: 10px;
+  }
+
+  .dc-cat-number {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+
+  .dc-card {
+    padding: 14px;
+  }
+
+  .dc-dl > div {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .dc-matrix th,
+  .dc-matrix td {
+    padding: 6px 8px;
+  }
+
+  .dc-hero-actions a {
+    min-width: 100%;
+  }
+}

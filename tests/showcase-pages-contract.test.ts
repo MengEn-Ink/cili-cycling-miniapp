@@ -45,7 +45,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     }
     expect(schema).not.toContain("id: 'route-view'");
     expect(templates).not.toMatch(/['"]?route-view['"]?: \(\) =>/);
-    expect(html).toContain('13 / 13');
+    expect(html).toContain('13 个真实页面原型');
     expect(html).toContain('与 app.json 路由一一对应');
   });
 
@@ -85,18 +85,20 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain("currentState === 'create' ? '创建活动'");
   });
 
-  it('总览整理为需求、PRD、搭建指南、原型和验收资料入口，并支持章节直达', () => {
-    expect(html).toContain('此里骑行活动小程序产品中心');
+  it('总览整理为研发交付中心、需求、搭建指南、原型和验收资料入口，并支持章节直达', () => {
+    expect(html).toContain('此里骑行活动小程序 · 研发交付中心');
+    expect(html).toContain('href="#delivery"');
     expect(html).toContain('href="#requirements"');
-    expect(html).toContain('href="#prd"');
     expect(html).toContain('href="#guide"');
+    expect(html).toContain('src="./delivery-center.js"');
     expect(script).toContain('id="requirements"');
     expect(script).toContain('id="prd"');
     expect(script).toContain('id="guide"');
     expect(script).toContain('id="prototype"');
     expect(script).toContain('产品需求与当前能力');
     expect(script).toContain('P0 真实报名旅程');
-    expect(script).toContain("new Set(['overview', 'requirements', 'prd', 'guide', 'prototype'])");
+    expect(script).toContain("'delivery'");
+    expect(script).toContain('deliveryCenter.extraOverviewAnchors');
     expect(script).toContain('document.getElementById(targetSection)?.scrollIntoView');
     expect(css).toContain('@media (max-width: 560px)');
     expect(css).toMatch(/\.product-card-grid,[^}]*grid-template-columns:\s*1fr/s);

@@ -22,6 +22,7 @@ const PROTOTYPE_FILES = [
   'docs/index.html',
   'docs/styles.css',
   'docs/app.js',
+  'docs/delivery-center.js',
   'docs/schema.js',
   'docs/templates.js',
 ];
