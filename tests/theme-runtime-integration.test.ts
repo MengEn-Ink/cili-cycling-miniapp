@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest';
 const appConfig = JSON.parse(readFileSync('miniprogram/app.json', 'utf8')) as { pages: string[] };
 
 describe('单一明亮外观接线', () => {
-  it('13 个页面不再保存或同步运行时主题', () => {
-    expect(appConfig.pages).toHaveLength(13);
+  it('14 个页面不再保存或同步运行时主题', () => {
+    expect(appConfig.pages).toHaveLength(14);
 
     for (const pagePath of appConfig.pages) {
       const script = readFileSync(`miniprogram/${pagePath}.ts`, 'utf8');
@@ -42,7 +42,7 @@ describe('单一明亮外观接线', () => {
     expect(template).not.toContain('wx:for="{{releaseNotes}}"');
     expect(script).toContain("date: '2026-10-17'");
     expect(script).toContain('version: CLIENT_RELEASE_VERSION');
-    expect(script).toContain("title: '背景图更好调整，页面加载更轻快'");
+    expect(script).toContain("title: '完整路线分析已上线'");
     const latestMatches = script.match(/latest:\s*true/g) || [];
     expect(latestMatches).toHaveLength(1);
   });

@@ -7,6 +7,7 @@ import { genderView } from '../../utils/gender';
 import { mediaSourceKind, reportMediaDiagnostic } from '../../utils/media-diagnostic';
 import { validateRegistrationProfile } from '../../utils/validation';
 import { drawRouteOutline as renderRouteOutline } from '../../utils/route-outline';
+import { hasAnalyzableRoute } from '../../utils/route-analysis';
 import {
   drawElevationProfile,
   formatActivityDate,
@@ -190,6 +191,7 @@ Page({
     hasGpxRoute: false,
     hasElevationProfile: false,
     hasRouteOutline: false,
+    canAnalyzeRoute: false,
     coverFailed: false,
     downloadingGpx: false,
     teamId: '',
@@ -351,6 +353,7 @@ Page({
           hasGpxRoute,
           hasElevationProfile: elevationProfile.length >= 2,
           hasRouteOutline: routeOutline.length >= 2,
+          canAnalyzeRoute: hasAnalyzableRoute(detail.route),
           activityAction: primaryAction(item, registration, state),
           groupQrCodeExpired: groupQrExpired(detail.groupQrCodeUploadedAt),
         },
@@ -581,6 +584,11 @@ Page({
     wx.navigateTo({
       url: '/pages/registration-form/index?id=' + this.data.item.id + teamQuery,
     });
+  },
+  openRouteAnalysis() {
+    const id = this.data.item?.id;
+    if (!id || !this.data.canAnalyzeRoute) return;
+    wx.navigateTo({ url: `/pages/route-analysis/index?id=${encodeURIComponent(id)}` });
   },
   previewGroupQr() {
     const source =

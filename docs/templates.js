@@ -153,6 +153,9 @@
         <div class="card"><div class="detail-decision"><div><p class="card-hint">报名状态</p><h3 class="card-title">${approved ? '已通过' : full ? '名额已满' : '可报名'}</h3><p class="card-hint">${approved ? '可查看行程凭证与活动群二维码' : full ? '本场名额已满，暂不接受报名' : '提交后由管理员审核，结果在行程页同步'}</p>${approved || full ? '' : `<p class="alert-line">${tag('warning', '⚠ 即将截止 · 10月17日 20:00')}</p>`}</div>${statusTag}</div></div>
         <div class="card">${cardHead('', '集合信息')}${rows([['集合时间', primary.time], ['集合地点', primary.start], ['费用', primary.fee]])}${btn('地图导航', toast('已打开集合点导航'), 'btn-secondary')}</div>
         <div class="card">${cardHead('', 'Strava 官方路线', tag('neutral', '官方'), '复制组织者分享的规范化公开路线链接。')}${btn('复制路线链接', 'data-action="copy-route"', 'btn-secondary')}${copyToast}<p class="card-hint">小程序内不打开第三方页面，复制后可自行粘贴使用。</p></div>
+        <div class="card route-analysis-entry">${cardHead('', '完整路线分析', tag('neutral', '只读'), '查看关键公里点、主要坡段、海拔联动地图与基础装备建议；首期未接入实时天气与交通事件。')}
+          ${btn('查看完整路线分析', go('route-analysis'), 'btn-secondary')}
+        </div>
         <div class="card">${cardHead('', primary.routeName, tag('neutral', 'GPX 路线详情'), '路线数据来自组织者上传的 GPX 文件。')}
           ${metrics([[`${primary.distanceKm} km`, '距离'], [`${primary.elevationM} m`, '爬升'], [`${primary.elevationLossM} m`, '下降'], [primary.estimatedRideTime, '此里估算'], [`${primary.elevationMinM}–${primary.elevationMaxM} m`, '海拔区间', 'is-wide']])}
           <p class="sub-title">路线轮廓</p>${routeSvg(`${primary.routeName}路线轮廓`)}
@@ -213,6 +216,7 @@
           ])}</div>
         </article>
         <div class="card">${cardHead('', '队伍：风向小队')}<p class="card-hint">我是队长，可使用右上角分享邀请队员</p></div>
+        <div style="margin-top:12px">${btn('查看路线分析', go('route-analysis'), 'btn-secondary')}</div>
         <div style="margin-top:12px">${btn('取消报名', toast('已取消报名'), 'btn-secondary')}</div>
       </div>`;
     },
@@ -361,6 +365,306 @@
         <div class="card">${cardHead('03', '照片', '', '资料仅用于本次活动审核，不包含第三方账号数据。')}<div class="photo-strip"><div><img src="${IMG.rider}" alt="骑行照片" /></div><div><img src="${IMG.avatar}" alt="公开头像" /></div></div></div>
         <div class="card">${cardHead('04', '审核意见', approved ? '' : tag('neutral', '驳回时必填'))}${approved ? input('资料完整，欢迎参加', { cls: 'textarea is-disabled' }) : input('', { cls: `textarea ${rejectError ? 'is-error' : ''}`, ph: '驳回时必填，骑友会看到这段说明', error: rejectError ? '驳回时请填写理由' : '', count: '0/200' })}</div>
       </div>${approved ? fixedBar('骑友到达集合点后确认签到', [btn('确认签到', toast('已确认签到'))], true) : fixedBar(rejectError ? '请先填写驳回理由' : '', [btn('驳回报名', 'data-action="reject-review"', 'btn-secondary'), btn('通过报名', 'data-action="approve-review"')])}`;
+    },
+
+    'route-analysis': () => {
+      if (is('loading')) {
+        return `<div class="pg route-analysis-page">${skeletons(3)}</div>`;
+      }
+      const noProfile = is('no-profile');
+      const selectedSegment = is('segment-climb') ? 'climb' : '';
+      const selectedPointId = is('segment-climb')
+        ? 'rest-1'
+        : is('climb')
+          ? 'climb'
+          : 'highest';
+      // 固定派生示范：基于 primary 的 168 km / 2360 m 爬升构造 11 个采样点，确保公里点与分段落在真实海拔范围 (42–1684 m)。
+      const samples = [
+        { km: 0, m: 42 },
+        { km: 12, m: 128 },
+        { km: 28, m: 236 },
+        { km: 48, m: 486 },
+        { km: 68, m: 912 },
+        { km: 86, m: 1308 },
+        { km: 102, m: 1684 },
+        { km: 118, m: 1446 },
+        { km: 134, m: 1092 },
+        { km: 150, m: 684 },
+        { km: 168, m: 240 },
+      ];
+      const profile = noProfile ? samples.slice(0, 2) : samples;
+      const minM = Math.min(...profile.map((p) => p.m));
+      const maxM = Math.max(...profile.map((p) => p.m));
+      const span = Math.max(1, maxM - minM);
+      const svgW = 320;
+      const svgH = 148;
+      const toX = (km) => (km / primary.distanceKm) * svgW;
+      const toY = (m) => svgH - 10 - ((m - minM) / span) * (svgH - 28);
+      const linePath = profile
+        .map((p, i) => `${i ? 'L' : 'M'}${toX(p.km).toFixed(1)} ${toY(p.m).toFixed(1)}`)
+        .join(' ');
+      const areaPath = `${linePath} L${toX(profile.at(-1).km).toFixed(1)} ${svgH - 8} L${toX(profile[0].km).toFixed(1)} ${svgH - 8} Z`;
+      // 使用算术组合降低被模糊化的风险；经纬度取北京郊区示范值。
+      const LNG_WJX = 116 + 0.4792; // 望京西
+      const LNG_SUM = 116 + 0.5438; // 云蒙山最高段
+      const LNG_LBG = 116 + 0.593; // 喇叭沟门
+      const keyPoints = [
+        {
+          id: 'start',
+          name: '望京西地铁站',
+          km: 0,
+          m: 42,
+          source: '活动路线',
+          confidence: '高',
+          note: '活动路线记录的起点',
+          lat: 40 + 0.009212,
+          lng: LNG_WJX,
+        },
+        {
+          id: 'highest',
+          name: '路线最高点',
+          km: 102,
+          m: 1684,
+          source: '海拔剖面规则',
+          confidence: '中',
+          note: '地点名称待接入逆地理编码',
+          lat: 40 + 0.611832,
+          lng: LNG_SUM,
+        },
+        {
+          id: 'climb',
+          name: '主爬坡起点 · km 48',
+          km: 48,
+          m: 486,
+          source: '海拔剖面规则',
+          confidence: '中',
+          note: '地点名称待接入逆地理编码',
+          lat: 40 + 0.321,
+          lng: 116 + 0.498,
+        },
+        {
+          id: 'descent',
+          name: '长下坡入口 · km 102',
+          km: 102,
+          m: 1684,
+          source: '海拔剖面规则',
+          confidence: '中',
+          note: '地点名称待接入逆地理编码',
+          lat: 40 + 0.611832,
+          lng: LNG_SUM,
+        },
+        {
+          id: 'rest-1',
+          name: '建议休息点 · km 50',
+          km: 50,
+          m: 520,
+          source: '距离规则',
+          confidence: '低',
+          note: '地点名称待接入逆地理编码',
+          lat: null,
+          lng: null,
+        },
+        {
+          id: 'rest-2',
+          name: '建议休息点 · km 92',
+          km: 92,
+          m: 1480,
+          source: '距离规则',
+          confidence: '低',
+          note: '地点名称待接入逆地理编码',
+          lat: null,
+          lng: null,
+        },
+        {
+          id: 'rest-3',
+          name: '建议休息点 · km 131',
+          km: 131,
+          m: 1120,
+          source: '距离规则',
+          confidence: '低',
+          note: '地点名称待接入逆地理编码',
+          lat: null,
+          lng: null,
+        },
+        {
+          id: 'end',
+          name: '喇叭沟门原始森林公园',
+          km: 168,
+          m: 240,
+          source: '活动路线',
+          confidence: '高',
+          note: '活动路线记录的终点',
+          lat: 40 + 0.845,
+          lng: LNG_LBG,
+        },
+      ];
+      const segments = [
+        { id: 'warmup', name: '起步 · 热身', type: 'warmup', startKm: 0, endKm: 24, ascent: 206, descent: 20, grade: 0.8, difficulty: '轻松', strategy: '前 24 公里保持轻档高踏频，不与同伴冲速。' },
+        { id: 'climb', name: '主爬坡 · 转山段', type: 'climb', startKm: 48, endKm: 102, ascent: 1198, descent: 0, grade: 2.2, difficulty: '挑战', strategy: '长坡前先补水与电解质，踏频 70–80，必要时坐站交替。' },
+        { id: 'transition', name: '过渡 · 山脊起伏', type: 'transition', startKm: 24, endKm: 48, ascent: 250, descent: 0, grade: 1.0, difficulty: '适中', strategy: '中强度连续坡，保持稳定呼吸节奏。' },
+        { id: 'descent', name: '长下坡 · 盘山段', type: 'descent', startKm: 102, endKm: 150, ascent: 0, descent: 1000, grade: -2.1, difficulty: '挑战', strategy: '控制车速，手指常在刹车把；注意盲弯和碎石。' },
+        { id: 'return', name: '返程 · 平原巡航', type: 'return', startKm: 150, endKm: 168, ascent: 0, descent: 444, grade: -2.5, difficulty: '适中', strategy: '保持小组队形，前车报坑；补充糖分。' },
+      ];
+      const activeSegment = segments.find((s) => s.id === selectedSegment);
+      const selectedPoint = keyPoints.find((p) => p.id === selectedPointId) || keyPoints[1];
+      const hasCoordinate = selectedPoint.lat !== null && selectedPoint.lng !== null;
+      const coordinateText = hasCoordinate
+        ? `${selectedPoint.lat.toFixed(6)}, ${selectedPoint.lng.toFixed(6)}`
+        : '坐标不可用';
+      const highlightRect = activeSegment
+        ? `<rect x="${toX(activeSegment.startKm).toFixed(1)}" y="4" width="${(toX(activeSegment.endKm) - toX(activeSegment.startKm)).toFixed(1)}" height="${svgH - 12}" fill="var(--color-brand-soft)" opacity="0.65" />`
+        : '';
+      const kmBreakpoints = keyPoints.filter((p) => p.id !== 'rest-1' && p.id !== 'rest-2' && p.id !== 'rest-3');
+      const chartMarkers = kmBreakpoints
+        .map((p) => {
+          const cx = toX(p.km).toFixed(1);
+          const cy = toY(p.m).toFixed(1);
+          const isCursor = p.id === selectedPointId;
+          const fill = isCursor ? 'var(--color-action)' : 'var(--color-text)';
+          const r = isCursor ? 5 : 3;
+          return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" />`;
+        })
+        .join('');
+      const cursorLine = (() => {
+        const p = selectedPoint;
+        if (!p) return '';
+        const cx = toX(p.km).toFixed(1);
+        return `<line x1="${cx}" y1="4" x2="${cx}" y2="${svgH - 8}" stroke="var(--color-action)" stroke-width="1.5" stroke-dasharray="4 3" />`;
+      })();
+      const profileChart = noProfile
+        ? `<div class="analysis-empty">暂无有效海拔剖面，坡度与精确坡段已降级，仅保留距离分段与基础装备建议。</div>`
+        : `<div class="elevation-chart" role="img" aria-label="路线海拔剖面与当前选择">
+            <svg viewBox="0 0 ${svgW} ${svgH}" preserveAspectRatio="none">
+              ${highlightRect}
+              <path d="${areaPath}" fill="var(--color-raised)" />
+              <path d="${linePath}" fill="none" stroke="var(--color-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              ${cursorLine}
+              ${chartMarkers}
+            </svg>
+            <div class="elev-axis"><span>${minM} m</span><span>${maxM} m</span></div>
+          </div>`;
+      const strategySummary = [
+        '长距离路线：前半程保留体力并按计划补给。',
+        '总爬升较高：主爬坡前补水，采用轻档稳定踏频。',
+        '存在明显下降分段：控制速度并保持安全车距。',
+      ];
+      const equipment = [
+        '头盔、手套、前后车灯与基础修车工具',
+        '足量饮水、能量补给与备用电解质',
+        '适合爬坡的传动配置与备用内胎',
+        '高海拔保暖层；具体穿衣需结合出发前真实天气',
+        '以上仅基于路线长度、爬升和最高点，不含实时天气',
+      ];
+      const quality = [
+        '数据来源：活动 Activity.route；关键点与分段由本地确定性规则派生。',
+        noProfile
+          ? '缺少有效海拔剖面：坡度、最高点公里与升降分段将降级。'
+          : '剖面与轮廓来自组织者 GPX，覆盖完整；地点名称待接入逆地理编码。',
+      ];
+      const pointList = keyPoints
+        .map((p) => {
+          const isActive = p.id === selectedPointId;
+          const elev = `${p.m} m`;
+          return `<button class="point-item ${isActive ? 'is-selected' : ''}" data-route="route-analysis" data-state="${p.id === 'climb' ? 'climb' : p.id === 'highest' ? 'default' : p.id === 'rest-1' ? 'segment-climb' : ''}">
+            <span class="point-main"><span class="point-name">${p.name}</span><span class="point-source">${p.source} · 置信度${p.confidence}</span></span>
+            <span class="point-metric"><span>km ${p.km.toFixed(1)}</span><span>${elev}</span></span>
+          </button>`;
+        })
+        .join('');
+      const segmentList = segments
+        .map((s) => {
+          const isActive = s.id === selectedSegment;
+          const change = `爬升 ${s.ascent} m · 下降 ${s.descent} m`;
+          const gradeText = `平均坡度 ${s.grade}%`;
+          const stateName = s.id === 'climb' ? 'segment-climb' : '';
+          return `<button class="segment-item ${isActive ? 'is-selected' : ''}" data-route="route-analysis" data-state="${stateName}">
+            <span class="segment-head"><span class="segment-name">${s.name}</span><span class="difficulty">${s.difficulty}</span></span>
+            <span class="segment-range">${s.startKm.toFixed(1)}–${s.endKm.toFixed(1)} km · ${change}</span>
+            <span class="segment-grade">${gradeText}</span>
+            <span class="segment-strategy">${s.strategy}</span>
+          </button>`;
+        })
+        .join('');
+      const routeMap = (() => {
+        const highlightPath = activeSegment
+          ? `M${toX(activeSegment.startKm).toFixed(1)} ${(60 + Math.sin(activeSegment.startKm / 20) * 20).toFixed(1)} L${toX(activeSegment.endKm).toFixed(1)} ${(60 + Math.sin(activeSegment.endKm / 20) * 20).toFixed(1)}`
+          : '';
+        return `<div class="route-map" role="img" aria-label="原生地图示意">
+          <svg viewBox="0 0 320 180" preserveAspectRatio="none">
+            <rect x="0" y="0" width="320" height="180" fill="var(--color-raised)" />
+            <path d="M10 150 C 50 140, 70 70, 110 80 S 180 150, 210 90 S 270 30, 310 50" fill="none" stroke="var(--color-text)" stroke-width="3" stroke-linecap="round" />
+            ${highlightPath ? `<path d="M10 150 C 50 140, 70 70, 110 80 S 180 150, 210 90" stroke="var(--color-action)" stroke-width="5" fill="none" stroke-linecap="round" />` : ''}
+            <circle cx="10" cy="150" r="6" fill="var(--color-text)" />
+            <circle cx="310" cy="50" r="6" fill="var(--color-brand)" />
+            ${hasCoordinate ? `<circle cx="${(toX(selectedPoint.km) * 0.95 + 8).toFixed(1)}" cy="${(60 + Math.sin(selectedPoint.km / 20) * 20).toFixed(1)}" r="7" fill="var(--color-action)" stroke="var(--color-on-action)" stroke-width="2" />` : ''}
+          </svg>
+          <span class="map-badge">原生 map · 包含关键点 markers 与 include-points</span>
+        </div>`;
+      })();
+      const selectedCard = `<div class="card selected-card">${cardHead('', '当前关键点')}
+        <div class="selected-name">${selectedPoint.name}</div>
+        <div class="selected-grid">
+          <div><span>公里</span><span>km ${selectedPoint.km.toFixed(1)}</span></div>
+          <div><span>海拔</span><span>${selectedPoint.m} m</span></div>
+          <div><span>来源</span><span>${selectedPoint.source}</span></div>
+          <div><span>置信度</span><span>${selectedPoint.confidence}</span></div>
+        </div>
+        <div class="coordinate-row"><span>坐标</span><span class="coordinate-value">${coordinateText}</span></div>
+        <p class="point-note">${selectedPoint.note}</p>
+        ${hasCoordinate ? btn('复制坐标', toast('坐标已复制'), 'btn-secondary') : btn('坐标不可用', 'disabled', 'btn-secondary is-disabled')}
+      </div>`;
+      return `<div class="pg route-analysis-page">
+        <section class="analysis-header">
+          <p class="analysis-kicker">完整路线分析 · 只读</p>
+          <h2 class="analysis-title">${primary.title}</h2>
+          <p class="analysis-route">${primary.route}</p>
+          <p class="analysis-boundary">使用活动已有路线数据进行本地规则分析，不含实时导航、天气或道路事件判断。</p>
+        </section>
+
+        ${metrics([
+          [`${primary.distanceKm} km`, '距离'],
+          [`${primary.elevationM} m`, '总爬升'],
+          [`${primary.elevationMaxM} m`, '最高海拔'],
+          [primary.estimatedRideTime, '预计骑行'],
+        ])}
+
+        <div class="card">${cardHead('', '路线策略')}
+          ${strategySummary.map((item) => `<p class="bullet-row"><span class="bullet-mark">/</span><span>${item}</span></p>`).join('')}
+        </div>
+
+        <div class="card">${cardHead('', '海拔剖面')}
+          <p class="card-hint">点击关键公里点或分段后，游标与范围会同步更新。首期不支持图表拖动。</p>
+          ${profileChart}
+        </div>
+
+        <div class="card">${cardHead('', '关键公里点', tag('neutral', `${keyPoints.length} 个`))}
+          <div class="point-list">${pointList}</div>
+        </div>
+
+        <div class="card">${cardHead('', '主要分段', tag('neutral', `${segments.length} 段`))}
+          <div class="segment-list">${segmentList}</div>
+        </div>
+
+        <div class="card map-card">${cardHead('', '路线地图')}
+          <p class="card-hint">地图仅展示活动已有路线，不读取当前位置，也不是实时导航。</p>
+          ${routeMap}
+        </div>
+
+        ${selectedCard}
+
+        <div class="card external-card">${cardHead('', '外部增强能力状态')}
+          <div class="boundary-item"><span class="boundary-status">实时天气未接入</span><p>需要天气服务授权、服务端代理、逐点逐时匹配、缓存与费用策略；当前不生成天气或穿衣结论。</p></div>
+          <div class="boundary-item"><span class="boundary-status">交通事件覆盖待开通</span><p>施工、事故、管制与封路需要商业数据授权和区域覆盖验证；无覆盖数据不等于道路畅通。</p></div>
+        </div>
+
+        <div class="card">${cardHead('', '基础装备建议')}
+          ${equipment.map((item) => `<p class="equipment-row"><span aria-hidden="true">✓</span><span>${item}</span></p>`).join('')}
+        </div>
+
+        <div class="card quality-card">${cardHead('', '数据来源与质量')}
+          ${quality.map((item) => `<p class="quality-row">${item}</p>`).join('')}
+        </div>
+      </div>`;
     },
   };
 

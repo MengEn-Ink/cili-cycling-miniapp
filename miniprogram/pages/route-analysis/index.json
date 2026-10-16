@@ -1,0 +1,14 @@
+{
+  "navigationBarTitleText": "完整路线分析",
+  "navigationBarBackgroundColor": "#fbf5ea",
+  "navigationBarTextStyle": "black",
+  "enablePullDownRefresh": false,
+  "backgroundColor": "#fbf5ea",
+  "backgroundColorTop": "#fbf5ea",
+  "backgroundColorBottom": "#fbf5ea",
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "metric-grid": "/components/metric-grid/index",
+    "state-view": "/components/state-view/index"
+  }
+}
