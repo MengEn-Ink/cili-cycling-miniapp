@@ -20,12 +20,23 @@ export function validateReleaseNotes(changedFiles, source) {
 
   const latestMatches = source.match(/latest:\s*true/g) || [];
   if (latestMatches.length !== 1) {
-    throw new Error('功能升级日志必须且只能有一条 latest: true');
+    throw new Error('App 更新必须且只能有一条 latest: true');
+  }
+
+  const versionMatches = source.match(/\bversion\s*:/g) || [];
+  if (versionMatches.length !== 1) {
+    throw new Error('App 更新只保留当前版本，不得继续展示历史记录');
+  }
+  if (!/version:\s*CLIENT_RELEASE_VERSION/.test(source)) {
+    throw new Error('App 更新版本必须使用 CLIENT_RELEASE_VERSION');
+  }
+  if (!/currentRelease:\s*RELEASE_NOTES\[0\]/.test(source)) {
+    throw new Error('设置页必须只展示当前版本的 App 更新');
   }
 
   const firstEntry = source.match(/const RELEASE_NOTES\s*=\s*\[\s*\{([\s\S]*?)\n\s*\},/);
   if (!firstEntry?.[1].includes('latest: true')) {
-    throw new Error('功能升级日志的第一条必须标记为 latest: true');
+    throw new Error('App 更新的当前版本必须标记为 latest: true');
   }
 
   return { required: true, productFiles };
@@ -56,8 +67,8 @@ export function run() {
 
   console.log(
     result.required
-      ? `功能升级日志校验通过：${result.productFiles.length} 个产品文件已记录`
-      : '功能升级日志校验通过：本次无产品代码改动',
+      ? `App 更新校验通过：${result.productFiles.length} 个产品文件已记录`
+      : 'App 更新校验通过：本次无产品代码改动',
   );
 }
 

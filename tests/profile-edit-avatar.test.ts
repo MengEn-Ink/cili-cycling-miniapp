@@ -463,7 +463,7 @@ describe('资料编辑头像交互', () => {
 
     expect(rideService.getProfileMediaUploadPath).not.toHaveBeenCalled();
     expect(uploadFile).not.toHaveBeenCalled();
-    expect(page.data.mediaError).toContain('[MEDIA_TOO_LARGE]');
+    expect(page.data.mediaError).toBe('图片超过 5MB，请压缩或更换图片后重试');
   });
 
   it('微信头像临时文件以 wechat 来源注册并设置，保留尚未整表保存的资料', async () => {
@@ -519,7 +519,7 @@ describe('资料编辑头像交互', () => {
       ),
     );
 
-    expect(page.data.mediaError).toBe('[MEDIA_UPLOAD_FAILED] 图片上传失败，请重新选择图片后重试');
+    expect(page.data.mediaError).toBe('图片上传失败，请重新选择图片后重试');
     expect(wx.showToast).toHaveBeenLastCalledWith({
       title: page.data.mediaError,
       icon: 'none',
@@ -643,7 +643,7 @@ describe('资料编辑头像交互', () => {
 
     await page.chooseWechatAvatar({ detail: { avatarUrl: '/private/tmp/avatar.jpg' } });
 
-    expect(page.data.mediaError).toBe('[AVATAR_SET_FAILED] 头像保存未确认，请稍后重试');
+    expect(page.data.mediaError).toBe('头像保存未确认，请稍后重试');
     expect(wx.showToast).toHaveBeenCalledWith({ title: page.data.mediaError, icon: 'none' });
   });
 
@@ -653,12 +653,79 @@ describe('资料编辑头像交互', () => {
         Object.assign(new Error('对象尚不可见'), { code: 'MEDIA_OBJECT_VERIFY_FAILED' }),
       ),
     );
-    expect(page.data.mediaError).toBe('[MEDIA_OBJECT_VERIFY_FAILED] 图片暂未准备好，请稍后重试');
+    expect(page.data.mediaError).toBe('图片暂未准备好，请稍后重试');
     expect(wx.showToast).toHaveBeenLastCalledWith({ title: page.data.mediaError, icon: 'none' });
 
     await page.runAvatarAction(() => Promise.reject(new Error('unexpected')));
-    expect(page.data.mediaError).toBe('[MEDIA_OPERATION_FAILED] 媒体操作失败，请稍后重试');
+    expect(page.data.mediaError).toBe('媒体操作失败，请稍后重试');
     expect(wx.showToast).toHaveBeenLastCalledWith({ title: page.data.mediaError, icon: 'none' });
+  });
+
+  it('运行时各阶段失败后 mediaError 与 toast 都不含方括号技术码', async () => {
+    const scenarios: Array<[string, string, () => Promise<void>]> = [
+      [
+        'upload',
+        'MEDIA_UPLOAD_FAILED',
+        () =>
+          page.runAvatarAction(() =>
+            Promise.reject(
+              Object.assign(new Error('private'), {
+                code: 'MEDIA_UPLOAD_FAILED',
+                mediaStage: 'upload',
+              }),
+            ),
+          ),
+      ],
+      [
+        'register',
+        'MEDIA_REGISTER_FAILED',
+        () =>
+          page.runAvatarAction(() =>
+            Promise.reject(
+              Object.assign(new Error('private'), {
+                code: 'MEDIA_REGISTER_FAILED',
+                mediaStage: 'register',
+              }),
+            ),
+          ),
+      ],
+      [
+        'setAvatar',
+        'AVATAR_SET_FAILED',
+        () =>
+          page.runAvatarAction(() =>
+            Promise.reject(
+              Object.assign(new Error('private'), {
+                code: 'AVATAR_SET_FAILED',
+                mediaStage: 'setAvatar',
+              }),
+            ),
+          ),
+      ],
+      [
+        'preview',
+        'AVATAR_PREVIEW_FAILED',
+        () =>
+          page.runAvatarAction(() =>
+            Promise.reject(
+              Object.assign(new Error('private'), {
+                code: 'AVATAR_PREVIEW_FAILED',
+                mediaStage: 'preview',
+              }),
+            ),
+          ),
+      ],
+    ];
+    for (const [label, code, run] of scenarios) {
+      await run();
+      expect(page.data.mediaError, label).not.toMatch(/\[[A-Z0-9_]+\]/);
+      expect(page.data.mediaError, label).not.toContain(code);
+      expect(page.data.mediaError, label).not.toContain('[');
+      expect(wx.showToast).toHaveBeenLastCalledWith({
+        title: page.data.mediaError,
+        icon: 'none',
+      });
+    }
   });
 
   it('较早头像预览不得覆盖较新的预览结果', async () => {
@@ -685,12 +752,12 @@ describe('资料编辑头像交互', () => {
 
     expect(page.data.p).not.toBeNull();
     expect(page.data.avatarPreviewUrl).toBe('https://temporary.example/old-avatar.jpg');
-    expect(page.data.mediaError).toBe('[AVATAR_PREVIEW_FAILED] 头像预览暂不可用，请稍后重试');
+    expect(page.data.mediaError).toBe('头像预览暂不可用，请稍后重试');
     expect(page.data.mediaError).not.toContain('private preview url');
   });
 
   it('新预览成功会清除旧 preview error', async () => {
-    page.data.mediaError = '[AVATAR_PREVIEW_FAILED] 头像预览暂不可用，请稍后重试';
+    page.data.mediaError = '头像预览暂不可用，请稍后重试';
     page.mediaErrorStage = 'preview';
     rideService.getPersonalCapabilityCard.mockResolvedValueOnce(
       capabilityCard('https://temporary.example/recovered.jpg'),
@@ -827,7 +894,7 @@ describe('资料编辑头像交互', () => {
 
     await page.addPhoto();
 
-    expect(page.data.mediaError).toBe('[MEDIA_UPLOAD_PATH_FAILED] 图片准备失败，请检查网络后重试');
+    expect(page.data.mediaError).toBe('图片准备失败，请检查网络后重试');
     expect(page.data.mediaError).not.toContain('private path detail');
   });
 
@@ -919,7 +986,7 @@ describe('资料编辑头像交互', () => {
 
     expect(uploadFile).not.toHaveBeenCalled();
     expect(page.data.p.photos).toEqual([]);
-    expect(page.data.mediaError).toBe('[MEDIA_UPLOAD_PATH_FAILED] 图片准备失败，请检查网络后重试');
+    expect(page.data.mediaError).toBe('图片准备失败，请检查网络后重试');
     expect(wx.showToast).toHaveBeenCalledWith({ title: page.data.mediaError, icon: 'none' });
   });
 
@@ -934,7 +1001,7 @@ describe('资料编辑头像交互', () => {
     await page.addPhoto();
 
     expect(rideService.registerProfileMedia).not.toHaveBeenCalled();
-    expect(page.data.mediaError).toBe('[MEDIA_UPLOAD_FAILED] 图片上传失败，请重新选择图片后重试');
+    expect(page.data.mediaError).toBe('图片上传失败，请重新选择图片后重试');
     expect(page.data.mediaError).not.toContain('private upload detail');
   });
 
@@ -951,9 +1018,7 @@ describe('资料编辑头像交互', () => {
 
     await action();
 
-    expect(page.data.mediaError).toBe(
-      '[MEDIA_CLOUD_UNAVAILABLE] 当前环境暂不支持图片上传，请更新微信后重试',
-    );
+    expect(page.data.mediaError).toBe('当前环境暂不支持图片上传，请更新微信后重试');
     expect(wx.showToast).toHaveBeenCalledWith({ title: page.data.mediaError, icon: 'none' });
   });
 
@@ -982,7 +1047,7 @@ describe('资料编辑头像交互', () => {
       { fileId: uploadedFileId, category: 'ride' },
     ]);
     expect(page.data.p.photos).toEqual([]);
-    expect(page.data.mediaError).toBe('[MEDIA_REGISTER_FAILED] 图片校验失败，请重新选择图片后重试');
+    expect(page.data.mediaError).toBe('图片校验失败，请重新选择图片后重试');
   });
 
   it('再次进入资料页会重试 durable orphan ledger 并在成功后清除', async () => {
@@ -1203,5 +1268,40 @@ describe('资料编辑头像页面契约', () => {
   it('面向用户的页面和错误文案不出现实现技术词或主体限制', () => {
     expect(template).not.toMatch(/云存储|云端|owner path|fileID|主体限制|个人主体/);
     expect(source).not.toMatch(/当前环境不支持云存储|云端图片校验|同步到云端/);
+  });
+
+  it('mediaFailureDetail 返回面向用户的成熟中文，且不包含方括号技术码', () => {
+    const stages = [
+      { code: 'MEDIA_SELECTION_FAILED', stage: 'selection' },
+      { code: 'MEDIA_UPLOAD_PATH_FAILED', stage: 'uploadPath' },
+      { code: 'MEDIA_UPLOAD_FAILED', stage: 'upload' },
+      { code: 'MEDIA_REGISTER_FAILED', stage: 'register' },
+      { code: 'AVATAR_SET_FAILED', stage: 'setAvatar' },
+      { code: 'AVATAR_PREVIEW_FAILED', stage: 'preview' },
+    ] as const;
+    for (const { code, stage } of stages) {
+      const detail = (globalThis as any).__mediaFailureDetailForTest?.(stage, code);
+      // 若未暴露内部函数，退化为按消息列表核对（主路径通过运行时测试已覆盖）。
+      if (typeof detail === 'string') {
+        expect(detail, `stage=${stage}`).not.toMatch(/\[[A-Z0-9_]+\]/);
+        expect(detail, `stage=${stage}`).not.toContain(code);
+      }
+    }
+    // 直接扫描源码：选择图片阶段用户文案满足“请确认已允许使用相册或相机，也可稍后再试”。
+    expect(source).toContain('选择图片失败，请确认已允许使用相册或相机，也可稍后再试');
+    // 源码中 user-facing fallback 均不以方括号包裹的技术码开头。
+    const stageMessages = source.match(
+      /messageByStage:\s*Record<string, string>\s*=\s*\{[\s\S]*?\};/,
+    )?.[0];
+    expect(stageMessages, 'messageByStage block').toBeTruthy();
+    expect(stageMessages).not.toMatch(/\[[A-Z0-9_]+\]/);
+    const codeMessages = source.match(
+      /messageByCode:\s*Record<string, string>\s*=\s*\{[\s\S]*?\};/,
+    )?.[0];
+    expect(codeMessages, 'messageByCode block').toBeTruthy();
+    expect(codeMessages).not.toMatch(/\[[A-Z0-9_]+\]/);
+    // 技术码只走内部诊断（console.warn），不再拼回面向用户的字符串。
+    expect(source).not.toMatch(/`\[\$\{code\}\]/);
+    expect(source).toContain("console.warn('[profile-edit] media failure'");
   });
 });

@@ -3358,7 +3358,7 @@ body.capture .screen-notes {
 /* 个人资料：媒体名片、品牌头像与统一服务列表。 */
 .profile-hero-card {
   position: relative;
-  height: 180px;
+  height: 236px;
   margin-top: var(--spacing-lg);
   overflow: hidden;
   border-radius: var(--radius-card);
@@ -3378,8 +3378,13 @@ body.capture .screen-notes {
 }
 
 .profile-hero-shade {
-  background: var(--color-overlay);
-  opacity: 0.45;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.18) 48%,
+    rgba(0, 0, 0, 0.68) 100%
+  );
+  opacity: 1;
 }
 
 .profile-hero-identity {
@@ -3391,6 +3396,7 @@ body.capture .screen-notes {
   align-items: center;
   gap: var(--spacing-md);
   color: var(--color-on-media);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
 }
 
 .profile-hero-identity > div {

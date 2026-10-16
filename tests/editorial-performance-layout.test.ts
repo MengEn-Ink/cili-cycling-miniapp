@@ -53,7 +53,7 @@ describe('方案 A 编辑式性能布局', () => {
     expect(styles).toMatch(
       /\.hero-profile-progress\s*\{[^}]*background:\s*var\(--color-surface\)/s,
     );
-    expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*360rpx/s);
+    expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*472rpx/s);
   });
 
   it('活动卡同时提供整卡点击和清晰的详情入口，详情页按钮保持统一高度', () => {

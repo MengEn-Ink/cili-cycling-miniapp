@@ -83,7 +83,7 @@ describe('沸点首批六页尺寸契约', () => {
     expect(template).toContain('bindtap="openSettings"');
     expect(template).toContain('aria-label="打开设置"');
     expect(template).not.toContain('<text>设置</text>');
-    expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*360rpx/s);
+    expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*472rpx/s);
     const card = effectiveBlock(styles, '.menu-list');
     expect(declaration(card, 'border')).toBe('2rpx solid var(--color-border)');
     expect(declaration(card, 'border-radius')).toBe('var(--radius-display)');

@@ -3,31 +3,24 @@
 
   <view class="settings-hero">
     <view class="hero-title">设置</view>
-    <view class="hero-copy">管理个人设置，查看「此里」最近五次有效功能升级。</view>
+    <view class="hero-copy">查看当前版本信息与本次更新内容。</view>
   </view>
 
-  <view class="section-label"><text>01</text> 功能升级日志</view>
+  <view class="section-label"><text>01</text> App 更新</view>
   <view class="release-list">
-    <view
-      class="release-card {{item.latest ? 'latest' : ''}}"
-      wx:for="{{releaseNotes}}"
-      wx:key="version"
-    >
-      <view class="release-rail"
-        ><view class="release-dot"></view><view class="release-line"></view
-      ></view>
+    <view class="release-card latest" wx:if="{{currentRelease}}">
       <view class="release-content">
         <view class="release-meta">
-          <text class="release-version">V{{item.version}}</text>
-          <text class="release-latest" wx:if="{{item.latest}}">最新</text>
-          <text class="release-date">{{item.date}}</text>
+          <text class="release-version">V{{currentRelease.version}}</text>
+          <text class="release-latest">当前版本</text>
+          <text class="release-date">{{currentRelease.date}}</text>
         </view>
-        <view class="release-title">{{item.title}}</view>
-        <view class="release-summary">{{item.summary}}</view>
+        <view class="release-title">{{currentRelease.title}}</view>
+        <view class="release-summary">{{currentRelease.summary}}</view>
         <view class="release-features">
           <view
             class="release-feature"
-            wx:for="{{item.features}}"
+            wx:for="{{currentRelease.features}}"
             wx:for-item="feature"
             wx:key="*this"
             ><text aria-hidden="true">→</text><text>{{feature}}</text></view

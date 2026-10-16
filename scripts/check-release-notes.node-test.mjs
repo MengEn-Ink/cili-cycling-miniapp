@@ -6,44 +6,40 @@ import { validateReleaseNotes } from './check-release-notes.mjs';
 const validSource = `
 const RELEASE_NOTES = [
   {
-    version: '2026.10.02.1',
+    version: CLIENT_RELEASE_VERSION,
     latest: true,
   },
-  {
-    version: '2026.10.01.3',
-    latest: false,
-  },
 ];
+Page({ data: { currentRelease: RELEASE_NOTES[0] } });
 `;
 
-test('产品代码改动必须同步设置页功能升级日志', () => {
+const changedProductFiles = [
+  'miniprogram/pages/profile/index.ts',
+  'miniprogram/pages/settings/index.ts',
+];
+
+test('产品代码改动必须同步设置页 App 更新', () => {
   assert.throws(
     () => validateReleaseNotes(['miniprogram/pages/activity-detail/index.ts'], validSource),
     /未更新 miniprogram\/pages\/settings\/index\.ts/,
   );
 });
 
-test('云函数改动同样必须同步设置页功能升级日志', () => {
+test('云函数改动同样必须同步设置页 App 更新', () => {
   assert.throws(
     () => validateReleaseNotes(['cloudfunctions/registration/index.js'], validSource),
     /未更新 miniprogram\/pages\/settings\/index\.ts/,
   );
 });
 
-test('产品代码和设置页日志同时改动时通过', () => {
-  assert.deepEqual(
-    validateReleaseNotes(
-      ['miniprogram/pages/activity-detail/index.ts', 'miniprogram/pages/settings/index.ts'],
-      validSource,
-    ),
-    {
-      required: true,
-      productFiles: ['miniprogram/pages/activity-detail/index.ts'],
-    },
-  );
+test('产品代码和当前版本 App 更新同时改动时通过', () => {
+  assert.deepEqual(validateReleaseNotes(changedProductFiles, validSource), {
+    required: true,
+    productFiles: ['miniprogram/pages/profile/index.ts'],
+  });
 });
 
-test('纯测试、文档和交付脚本改动无需新增应用日志', () => {
+test('纯测试、文档和交付脚本改动无需新增 App 更新', () => {
   assert.deepEqual(
     validateReleaseNotes(
       ['tests/settings-page.test.ts', 'docs/README.md', 'scripts/release.mjs'],
@@ -53,33 +49,37 @@ test('纯测试、文档和交付脚本改动无需新增应用日志', () => {
   );
 });
 
-test('最新日志必须位于第一条且只能存在一条', () => {
-  assert.throws(
-    () =>
-      validateReleaseNotes(
-        ['miniprogram/pages/profile/index.ts', 'miniprogram/pages/settings/index.ts'],
-        validSource.replace('latest: false', 'latest: true'),
-      ),
-    /必须且只能有一条/,
+test('App 更新必须只保留当前版本并使用统一版本号', () => {
+  const withHistory = validSource.replace(
+    '];',
+    "  { version: '2026.10.16.73', latest: false },\n];",
   );
-  const staleSource = `
-const RELEASE_NOTES = [
-  {
-    version: '2026.10.02.1',
-    latest: false,
-  },
-  {
-    version: '2026.10.01.3',
-    latest: true,
-  },
-];
-`;
+  assert.throws(() => validateReleaseNotes(changedProductFiles, withHistory), /只保留当前版本/);
   assert.throws(
     () =>
       validateReleaseNotes(
-        ['miniprogram/pages/profile/index.ts', 'miniprogram/pages/settings/index.ts'],
-        staleSource,
+        changedProductFiles,
+        validSource.replace('CLIENT_RELEASE_VERSION', "'2026.10.16.73'"),
       ),
-    /第一条必须标记/,
+    /必须使用 CLIENT_RELEASE_VERSION/,
+  );
+});
+
+test('设置页必须将当前版本作为唯一 App 更新展示', () => {
+  assert.throws(
+    () =>
+      validateReleaseNotes(
+        changedProductFiles,
+        validSource.replace('latest: true', 'latest: false'),
+      ),
+    /latest: true/,
+  );
+  assert.throws(
+    () =>
+      validateReleaseNotes(
+        changedProductFiles,
+        validSource.replace('currentRelease', 'releaseNotes'),
+      ),
+    /只展示当前版本/,
   );
 });

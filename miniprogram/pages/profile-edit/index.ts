@@ -116,7 +116,7 @@ function mediaFailureDetail(error: unknown): string {
     preview: 'AVATAR_PREVIEW_FAILED',
   };
   const messageByStage: Record<string, string> = {
-    selection: '无法选择图片，请检查相册权限或系统设置后重试',
+    selection: '选择图片失败，请确认已允许使用相册或相机，也可稍后再试',
     uploadPath: '图片准备失败，请检查网络后重试',
     upload: '图片上传失败，请重新选择图片后重试',
     register: '图片校验失败，请重新选择图片后重试',
@@ -143,7 +143,29 @@ function mediaFailureDetail(error: unknown): string {
     MEDIA_OBJECT_VERIFY_FAILED: '图片暂未准备好，请稍后重试',
     MEDIA_CLOUD_UNAVAILABLE: '当前环境暂不支持图片上传，请更新微信后重试',
   };
-  return `[${code}] ${messageByCode[causeCode] || messageByStage[stage] || '媒体操作失败，请稍后重试'}`;
+  const userMessage =
+    messageByCode[causeCode] || messageByStage[stage] || '媒体操作失败，请稍后重试';
+  // 技术码仅用于内部诊断（console.warn / 异常对象字段），不展示给用户。
+  try {
+    const diagnosticMessage =
+      error &&
+      typeof error === 'object' &&
+      typeof (error as { message?: unknown }).message === 'string'
+        ? (error as { message: string }).message
+        : '';
+    // eslint-disable-next-line no-console
+    console.warn('[profile-edit] media failure', { code, stage, diagnosticMessage });
+  } catch {
+    // 诊断日志不影响用户路径。
+  }
+  if (error && typeof error === 'object') {
+    try {
+      (error as { diagnosticCode?: string }).diagnosticCode = code;
+    } catch {
+      // ignore
+    }
+  }
+  return userMessage;
 }
 
 function settleBeforeDeadline<T>(promise: Promise<T>, timeoutMs: number): Promise<T | null> {

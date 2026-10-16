@@ -54,7 +54,7 @@ describe('报名、骑行名片与个人中心设计对齐', () => {
     expect(template).not.toContain('class="hero-capability-metrics"');
     expect(template).not.toContain('cardExpanded');
     expect(template).toContain('class="profile-refresh-feedback');
-    expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*360rpx/s);
+    expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*472rpx/s);
     expect(declaration(effectiveBlock(styles, '.menu-card'), 'min-height')).toBe('120rpx');
     expectSemantic(declaration(effectiveBlock(styles, '.chevron'), 'color'), '--color-muted');
     expectSemantic(

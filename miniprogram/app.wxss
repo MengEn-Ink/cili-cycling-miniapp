@@ -68,6 +68,9 @@ image {
   box-sizing: border-box;
 }
 button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-height: var(--control-height);
   margin: 0;
   padding: 0;

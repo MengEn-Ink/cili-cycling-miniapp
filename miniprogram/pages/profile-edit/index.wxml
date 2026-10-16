@@ -59,7 +59,7 @@
 
       <view class="card form-card">
         <view class="title">个人背景图</view>
-        <view class="muted form-tip">最多 1 张，用于个人中心背景；选择新图片会替换当前背景图，点击可查看大图。</view>
+        <view class="muted form-tip">最多 1 张，用作个人中心顶部的大图背景；选择新图片会替换当前背景图，点击可查看大图。</view>
         <view class="photo-actions">
           <button class="photo-action" bindtap="addPhoto" loading="{{photoBusy}}" disabled="{{photoBusy || saving || avatarBusy}}">{{p.photos.length ? '更换背景图' : '添加背景图'}}</button>
           <button wx:if="{{p.photos.length}}" class="text-button photo-remove" bindtap="removeBackgroundPhoto" disabled="{{photoBusy || saving || avatarBusy}}">删除背景图</button>

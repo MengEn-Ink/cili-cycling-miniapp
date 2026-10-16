@@ -4,6 +4,7 @@
   min-height: 48rpx;
   align-items: center;
   justify-content: center;
+  gap: 6rpx;
   padding: 8rpx 16rpx;
   border-radius: var(--radius-sm);
   background: var(--color-raised);
@@ -16,6 +17,15 @@
   vertical-align: middle;
   white-space: normal;
   word-break: break-word;
+}
+.pill-icon,
+.pill-label {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+.pill-icon {
+  font-size: 24rpx;
 }
 .pill--solid {
   background: var(--color-action);

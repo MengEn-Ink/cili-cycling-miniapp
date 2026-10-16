@@ -17,7 +17,7 @@
 }
 .profile-hero {
   position: relative;
-  min-height: 360rpx;
+  min-height: 472rpx;
   overflow: hidden;
   background: var(--color-media-card-bg);
 }
@@ -36,8 +36,12 @@
 .hero-shade {
   position: absolute;
   inset: 0;
-  background: var(--color-overlay);
-  opacity: 0.45;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.18) 48%,
+    rgba(0, 0, 0, 0.68) 100%
+  );
 }
 .hero-identity {
   position: absolute;
@@ -48,6 +52,7 @@
   align-items: center;
   gap: 24rpx;
   color: var(--color-on-media);
+  text-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.35);
 }
 .profile-name {
   font-size: 48rpx;

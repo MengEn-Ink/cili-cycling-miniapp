@@ -57,7 +57,7 @@ describe('HP-20261010-02 单一明亮 UI 底座', () => {
     }
   });
 
-  it('设置页删除主题选择与第三方授权并保留升级日志', () => {
+  it('设置页删除主题选择与第三方授权并保留当前版本 App 更新卡片', () => {
     const template = read('miniprogram/pages/settings/index.wxml');
     const script = read('miniprogram/pages/settings/index.ts');
 
@@ -65,7 +65,7 @@ describe('HP-20261010-02 单一明亮 UI 底座', () => {
     expect(script).not.toMatch(/setTheme|switchTheme|themeClass|display-theme/);
     expect(template).not.toContain('第三方授权');
     expect(script).not.toContain('getStravaReadiness');
-    expect(template).toContain('功能升级日志');
+    expect(template).toContain('App 更新');
   });
 
   it('共享组件只消费全局语义 token，不保留旧暗色副本', () => {
