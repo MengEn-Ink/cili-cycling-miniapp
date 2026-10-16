@@ -128,7 +128,7 @@ describe('报名、行程与凭证紧凑交互契约', () => {
       /@media \(max-width: 320px\)[\s\S]*?\.experience-segment\s*\{[^}]*box-sizing:\s*border-box[^}]*width:\s*100%/,
     );
     expect(appStyles).toContain('overflow-x: hidden');
-    expect(appStyles).toContain('--page-gutter-narrow: 32rpx;');
+    expect(appStyles).toContain('--page-gutter-narrow: 24rpx;');
     expect(appStyles).toContain('@media (max-width: 340px)');
     expect(registrationStyles).toContain('-webkit-line-clamp: 2');
     expect(credentialStyles).toContain('overflow-wrap: anywhere');

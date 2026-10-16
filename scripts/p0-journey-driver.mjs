@@ -194,7 +194,7 @@ export async function waitForPageReady({
 
   const startedAt = now();
   let attempts = 0;
-  while (true) {
+  for (;;) {
     attempts += 1;
     let ready;
     try {
@@ -298,7 +298,7 @@ export async function runReconciledWrite({
 
   const startedAt = now();
   let reconciliationAttempts = 0;
-  while (true) {
+  for (;;) {
     reconciliationAttempts += 1;
     let outcome;
     try {

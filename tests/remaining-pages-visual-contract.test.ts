@@ -23,7 +23,7 @@ function expectReadable(foreground: string, background: string, minimum = 4.5): 
   ).toBeGreaterThanOrEqual(minimum);
 }
 
-describe('其余页面 CILI 统一明亮 UI 静态契约', () => {
+describe('其余页面 CILI 沸点浅色 UI 静态契约', () => {
   it.each(pages)('$root 使用明亮原生导航栏和统一语义色', ({ root, page }) => {
     const config = JSON.parse(read(`${root}/index.json`));
     const styles = read(`${root}/index.wxss`);
@@ -72,10 +72,10 @@ describe('其余页面 CILI 统一明亮 UI 静态契约', () => {
     );
   });
 
-  it('编辑输入统一为 88rpx 触控高度并保持窄屏单列布局', () => {
+  it('编辑输入统一为 96rpx 触控高度并保持窄屏单列布局', () => {
     const activityStyles = read('miniprogram/pages/admin/activity-edit/index.wxss');
     const profileStyles = read('miniprogram/pages/profile-edit/index.wxss');
-    expect(tokens['--control-height']).toBe('88rpx');
+    expect(tokens['--control-height']).toBe('96rpx');
     expect(declaration(effectiveBlock(app, '.field input'), 'min-height')).toBe(
       'var(--control-height)',
     );

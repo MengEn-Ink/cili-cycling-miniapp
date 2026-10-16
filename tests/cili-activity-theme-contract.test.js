@@ -109,7 +109,7 @@ describe('CILI 活动页静态契约', () => {
     expect(activityCard).toContain("item.capacity <= 0 ? '名额' : '报名'");
   });
 
-  it('首页只使用品牌橙、石墨黑和暖灰白主题色，不继承荧光黄视觉', () => {
+  it('首页只使用品牌红、墨黑和暖米白主题色，不继承荧光黄视觉', () => {
     expect(logoStyles).toContain('background: var(--color-logo-background)');
     expect(activitiesStyles).toContain('background: var(--color-bg)');
     expect(activitiesStyles).toContain('border: 2rpx solid var(--color-border)');
@@ -159,13 +159,13 @@ describe('CILI 活动页静态契约', () => {
     expect(detail).toContain('disabled="{{loading || !item || !activityAction.enabled}}"');
   });
 
-  it('使用单一明亮 token 和 20/24/32rpx 语义层级', () => {
+  it('使用单一明亮 token 和沸点语义层级', () => {
     const appStyles = read('miniprogram/app.wxss');
     const tokens = uiTokens(appStyles);
-    expect(tokens['--color-bg']).toBe('#f3f3f1');
+    expect(tokens['--color-bg']).toBe('#fbf5ea');
     expect(tokens['--radius-sm']).toBe('20rpx');
-    expect(tokens['--radius-md']).toBe('24rpx');
-    expect(tokens['--radius-display']).toBe('32rpx');
+    expect(tokens['--radius-md']).toBe('26rpx');
+    expect(tokens['--radius-display']).toBe('40rpx');
     const card = effectiveBlock(activityCardStyles, '.activity-card');
     expectSemantic(declaration(card, 'background'), '--color-surface');
     expectSemantic(declaration(card, 'border-radius'), '--radius-display');

@@ -3,8 +3,8 @@ const APPEARANCE = {
   tabBar: {
     backgroundColor: '#ffffff',
     borderStyle: 'white',
-    color: '#5b6258',
-    selectedColor: '#10120f',
+    color: '#6f675d',
+    selectedColor: '#211f1c',
   },
   background: {
     backgroundColor: '#ffffff',

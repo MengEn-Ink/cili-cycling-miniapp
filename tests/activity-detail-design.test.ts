@@ -184,7 +184,7 @@ describe('活动详情设计与日期契约', () => {
     expect(gradient.addColorStop).toHaveBeenCalledTimes(2);
     expect(context.fillText).toHaveBeenCalledTimes(4);
     expect(context.arc).toHaveBeenCalledTimes(2);
-    expect(context.strokeStyle).toBe('#ff5722');
+    expect(context.strokeStyle).toBe('#c0321f');
   });
 
   it('海拔数据过滤非法点并按里程排序', () => {

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144" role="img" aria-label="此里圆形标志">
-  <circle cx="72" cy="72" r="71" fill="#20241f"/>
+  <circle cx="72" cy="72" r="71" fill="#211f1c"/>
   <text x="8" y="91" fill="#ffffff" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="64" font-weight="900" letter-spacing="-3">此里</text>
   <path d="M98 102H144" fill="none" stroke="#ffffff" stroke-width="5"/>
-  <circle cx="132" cy="111" r="7" fill="#20241f" stroke="#e85b32" stroke-width="5"/>
+  <circle cx="132" cy="111" r="7" fill="#211f1c" stroke="#e13b2b" stroke-width="5"/>
 </svg>

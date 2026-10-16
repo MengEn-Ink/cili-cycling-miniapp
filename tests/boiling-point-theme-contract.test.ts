@@ -25,12 +25,12 @@ const forbiddenThemeColors = [
   /rgba\(200,\s*132,\s*24/i,
 ];
 
-describe('黑白橙全局主题契约', () => {
-  it('全局语义 token 使用黑白灰、品牌橙及 V4 成功/提醒色', () => {
+describe('沸点红白墨黑全局主题契约', () => {
+  it('全局语义 token 使用米白墨黑、品牌红及 V4 成功/提醒色', () => {
     const app = readFileSync('miniprogram/app.wxss', 'utf8');
-    expect(app).toContain('--color-brand: #e85b32;');
-    expect(app).toContain('--color-text: #171717;');
-    expect(app).toContain('--color-status-success: #1d7a3e;');
+    expect(app).toContain('--color-brand: #e13b2b;');
+    expect(app).toContain('--color-text: #211f1c;');
+    expect(app).toContain('--color-status-success: #16633a;');
     expect(app).toContain('--color-status-warning: #7a5c00;');
     expect(app).toContain('--color-danger: var(--color-text);');
     expect(app).toContain('--color-warning: var(--color-brand);');
@@ -45,6 +45,20 @@ describe('黑白橙全局主题契约', () => {
         expect(styles, `${file} contains ${forbidden}`).not.toMatch(forbidden);
       }
     }
+  });
+
+  it('Canvas 路线、海拔和分享海报清除旧橙黑并使用沸点色板', () => {
+    const canvasSources = [
+      readFileSync('miniprogram/utils/route-outline.ts', 'utf8'),
+      readFileSync('miniprogram/pages/activity-detail/format.ts', 'utf8'),
+      readFileSync('miniprogram/pages/activity-detail/poster.ts', 'utf8'),
+    ].join('\n');
+
+    expect(canvasSources).toContain('#211f1c');
+    expect(canvasSources).toContain('#c0321f');
+    expect(canvasSources).toContain('#e13b2b');
+    expect(canvasSources).toContain('#fbf5ea');
+    expect(canvasSources).not.toMatch(/#10120f|#ff5722|#ff5a1f|#ff7a42|#f4f1eb/i);
   });
 
   it('行程和审核模块通过结构与 V4 语义状态色区分状态', () => {

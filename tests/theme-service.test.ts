@@ -42,8 +42,8 @@ describe('固定明亮系统外观服务', () => {
       expect.objectContaining({
         backgroundColor: '#ffffff',
         borderStyle: 'white',
-        color: '#5b6258',
-        selectedColor: '#10120f',
+        color: '#6f675d',
+        selectedColor: '#211f1c',
       }),
     );
     expect(wxApi.setTabBarItem.mock.calls.map(([item]) => item?.iconPath)).toEqual([

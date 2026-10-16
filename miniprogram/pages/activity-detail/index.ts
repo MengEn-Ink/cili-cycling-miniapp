@@ -176,7 +176,7 @@ Page({
     galleryImages: [] as string[],
     routeOutlineImage: '',
     elevationImage: '',
-    colorMediaMuted: 'rgba(255, 255, 255, 0.55)',
+    colorMediaMuted: '#d4d4d4',
     colorOnMedia: '#ffffff',
     displayDate: '',
     startTime: '',

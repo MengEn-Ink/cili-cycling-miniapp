@@ -8,6 +8,7 @@ const html = read('docs/index.html');
 const css = read('docs/styles.css');
 const script = read('docs/app.js');
 const schema = read('docs/schema.js');
+const deliveryCenter = read('docs/delivery-center.js');
 const templates = read('docs/templates.js');
 
 const prototypeRoutes = [
@@ -99,6 +100,10 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain('P0 真实报名旅程');
     expect(script).toContain("'delivery'");
     expect(script).toContain('deliveryCenter.extraOverviewAnchors');
+    expect(deliveryCenter).toContain('沸点手稿与全套设计交接成果');
+    expect(deliveryCenter).toContain('docs/designs/2026-10-16-boiling-point/index.html');
+    expect(deliveryCenter).toContain('深行动红白字、48px 主控件');
+    expect(deliveryCenter).not.toContain('深橙主操作白字 4.91:1');
     expect(script).toContain('document.getElementById(targetSection)?.scrollIntoView');
     expect(css).toContain('@media (max-width: 560px)');
     expect(css).toMatch(/\.product-card-grid,[^}]*grid-template-columns:\s*1fr/s);
@@ -149,12 +154,12 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   });
 
   it('设置页原型同步当前客户端版本与最新功能日志', () => {
-    expect(schema).toContain("state: 'V2026.10.16.70'");
+    expect(schema).toContain("state: 'V2026.10.16.71'");
     expect(schema).toContain(
-      "['2026.10.16.70', '公开路线解析更安全稳定', '加固 Strava 路线名称解析，避免特殊编码内容被重复转换，同时保持公开路线正常回显。']",
+      "['2026.10.16.71', '沸点风格设计令牌全站替换', '小程序与 GitHub Pages 同步切换为暖米白画布、墨黑信息块与深行动红主行动，等待部署与真机验收采集新主题截图。']",
     );
     expect(schema).toContain(
-      "['2026.10.16.69', '页面配色与操作更清晰', '统一活动与报名按钮配色，修复照片删除按钮看不清的问题，提升浅色页面和小屏控件可读性。']",
+      "['2026.10.16.70', '公开路线解析更安全稳定', '加固 Strava 路线名称解析，避免特殊编码内容被重复转换，同时保持公开路线正常回显。']",
     );
   });
 
@@ -185,8 +190,8 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     const allHex = [...css.matchAll(/#[0-9a-f]{6}\b/gi)].map(([color]) => color.toLowerCase());
     expect(allHex.every((color) => declaredHex.has(color))).toBe(true);
     expect(css).not.toMatch(/navy|blue|linear-gradient|radial-gradient/i);
-    expect(css).toContain('--color-text: #171717');
-    expect(css).toContain('--color-brand: #e85b32');
+    expect(css).toContain('--color-text: #211f1c');
+    expect(css).toContain('--color-brand: #e13b2b');
     expect(css).toMatch(
       /\.credential-spotlight\s*\{[^}]*background:\s*var\(--color-media-card-bg\)/s,
     );
@@ -195,10 +200,10 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
 
   it('成功 / 警告色只小范围用于小标签、行内提示和图标，不做底色、按钮、描边卡片', () => {
     for (const [name, value] of [
-      ['--color-status-success', '#1d7a3e'],
+      ['--color-status-success', '#16633a'],
       ['--color-status-success-soft', '#e7f4eb'],
       ['--color-status-warning', '#7a5c00'],
-      ['--color-status-warning-soft', '#fbf1cc'],
+      ['--color-status-warning-soft', '#fff2c7'],
     ]) {
       expect(css).toContain(`${name}: ${value}`);
     }
@@ -221,8 +226,8 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(css).not.toContain('.tag-new');
     expect(css).toMatch(/\.card-no\s*\{[^}]*color:\s*var\(--color-text\)/s);
     expect(css).toMatch(/\.info-tag\s*\{[^}]*border:\s*1px solid var\(--color-border\)/s);
-    expect(css).toContain('--page-gutter: 24px');
-    expect(css).toContain('--card-gap: 16px');
+    expect(css).toContain('--page-gutter: 16px');
+    expect(css).toContain('--card-gap: 14px');
     expect(script).toContain("showToast('驳回时请填写理由', 'error')");
   });
 

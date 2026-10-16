@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { declaration, effectiveBlock, expectSemantic, read } from './theme-contract-helpers';
 
-describe('HP-20261010-02 第一批六页尺寸契约', () => {
-  it('活动首页使用统一页边距、44px 分段控件和完整卡片轮播', () => {
+describe('沸点首批六页尺寸契约', () => {
+  it('活动首页使用统一页边距、46px 分段控件和完整卡片轮播', () => {
     const app = read('miniprogram/app.wxss');
     const styles = read('miniprogram/pages/activities/index.wxss');
     expect(app).toContain('padding: 32rpx var(--page-gutter);');
@@ -39,11 +39,13 @@ describe('HP-20261010-02 第一批六页尺寸契约', () => {
     expect(declaration(effectiveBlock(styles, '.route-location-row button'), 'min-height')).toBe(
       'var(--control-height)',
     );
-    expect(declaration(effectiveBlock(app, '.btn'), 'min-height')).toBe('var(--control-height)');
+    expect(declaration(effectiveBlock(app, '.btn'), 'min-height')).toBe(
+      'var(--primary-control-height)',
+    );
     expect(app).toContain('calc(16rpx + env(safe-area-inset-bottom))');
   });
 
-  it('创建活动使用统一页边距、16px 卡片和 44px 控件', () => {
+  it('创建活动使用统一页边距、18px 卡片和 48px 控件', () => {
     const app = read('miniprogram/app.wxss');
     const styles = read('miniprogram/pages/admin/activity-edit/index.wxss');
     const card = effectiveBlock(app, '.form-card');
@@ -58,10 +60,12 @@ describe('HP-20261010-02 第一批六页尺寸契约', () => {
     expect(declaration(effectiveBlock(app, '.field input'), 'min-height')).toBe(
       'var(--control-height)',
     );
-    expect(declaration(effectiveBlock(app, '.btn'), 'min-height')).toBe('var(--control-height)');
+    expect(declaration(effectiveBlock(app, '.btn'), 'min-height')).toBe(
+      'var(--primary-control-height)',
+    );
   });
 
-  it('个人中心保留媒体 Hero，其余卡片回到明亮描边结构', () => {
+  it('个人中心保留媒体 Hero，其余卡片回到沸点白卡描边结构', () => {
     const template = read('miniprogram/pages/profile/index.wxml');
     const styles = read('miniprogram/pages/profile/index.wxss');
     expect(template).toContain('bindtap="openSettings"');
@@ -75,7 +79,7 @@ describe('HP-20261010-02 第一批六页尺寸契约', () => {
     expect(declaration(effectiveBlock(styles, '.menu-card'), 'min-height')).toBe('120rpx');
   });
 
-  it('设置页使用统一边距、四级标题和 16px 卡片', () => {
+  it('设置页使用统一边距、四级标题和 18px 卡片', () => {
     const app = read('miniprogram/app.wxss');
     const styles = read('miniprogram/pages/settings/index.wxss');
     const release = effectiveBlock(styles, '.release-content');
@@ -88,7 +92,7 @@ describe('HP-20261010-02 第一批六页尺寸契约', () => {
     expect(styles).not.toMatch(/theme-option|theme-preview|appearance-card/);
   });
 
-  it('报名凭证页禁用深色硬编码色并把关键文字收口到明亮 token', () => {
+  it('报名凭证页禁用历史硬编码色并把关键文字收口到沸点 token', () => {
     const styles = read('miniprogram/pages/credential/index.wxss');
     const forbidden = [
       '#f7f7f5',

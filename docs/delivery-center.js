@@ -142,20 +142,24 @@
       lead: '统一设计规范、可计算契约、交互原型与双端证据；结构以 Pages 为参照，可读性以契约为准。',
       cards: [
         {
-          id: 'ui-spec',
-          title: '全套 UI 改版设计稿（2026-10-14）',
-          summary: '页面结构、阶段验收口径与截图问题对照；13 个 app.json 可达页面逐页核对。',
+          id: 'boiling-point-handoff',
+          title: '沸点手稿与全套设计交接成果',
+          summary: '13 页高清长图、五类状态板、两份离线手稿与完整令牌清单，是当前双端视觉验收的唯一参考。',
           maturity: 'baseline',
-          sources: [{ label: 'docs/superpowers/specs/2026-10-14-full-ui-redesign.md', href: BASE + 'docs/superpowers/specs/2026-10-14-full-ui-redesign.md' }],
+          sources: [
+            { label: '设计交接首页', href: BASE + 'docs/designs/2026-10-16-boiling-point/index.html' },
+            { label: '沸点令牌清单', href: BASE + 'docs/designs/2026-10-16-boiling-point/tokens.json' },
+          ],
         },
         {
           id: 'theme-constraints',
-          title: '统一设计规范与约束门禁',
-          summary: '32 个双端变量、15 组对比度；深橙主操作白字 4.91:1，44px 控件，明确媒体按钮背景、安全区与 13 页截图口径。',
+          title: '沸点设计规范与约束门禁',
+          summary: '32 个双端变量、15 组对比度；暖米白画布、墨黑信息块、深行动红白字、48px 主控件与 13 页长屏呼吸布局。',
           maturity: 'baseline',
           sources: [
             { label: '统一设计规范', href: BASE + 'docs/design-system.md' },
             { label: '设计契约 JSON', href: BASE + 'docs/design-contract.json' },
+            { label: '沸点实施规格', href: BASE + 'docs/superpowers/specs/2026-10-16-boiling-point-design-tokens.md' },
             { label: '门禁脚本', href: BASE + 'scripts/check-design-contract.mjs' },
           ],
         },

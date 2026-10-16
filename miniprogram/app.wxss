@@ -1,40 +1,40 @@
 page {
-  --color-bg: #f3f3f1;
+  --color-bg: #fbf5ea;
   --color-surface: #ffffff;
-  --color-raised: #ececea;
-  --color-text: #171717;
-  --color-muted: #666666;
-  --color-subtle: #737373;
-  --color-placeholder: #737373;
-  --color-disabled-text: #666666;
-  --color-border: #d6d6d2;
+  --color-raised: #f3e6d0;
+  --color-text: #211f1c;
+  --color-muted: #6f675d;
+  --color-subtle: #6f675d;
+  --color-placeholder: #6f675d;
+  --color-disabled-text: #6f675d;
+  --color-border: #ededed;
   --color-border-subtle: var(--color-border);
-  --color-border-strong: #171717;
-  --color-card-border: #d6d6d2;
+  --color-border-strong: #9a9186;
+  --color-card-border: #ededed;
   --color-input-bg: #ffffff;
-  --color-action: #c84320;
-  --color-action-active: #a93619;
+  --color-action: #c0321f;
+  --color-action-active: #a52a1c;
   --color-on-action: #ffffff;
   --color-on-action-muted: #ffffff;
   --color-on-media: #ffffff;
   --color-media-muted: #d4d4d4;
-  --color-media-card-bg: #171717;
-  --color-media-placeholder-bg: #171717;
-  --color-brand: #e85b32;
-  --color-brand-active: #c84320;
-  --color-brand-soft: #fff0e9;
-  --color-on-brand: #171717;
-  --color-status-success: #1d7a3e;
+  --color-media-card-bg: #211f1c;
+  --color-media-placeholder-bg: #211f1c;
+  --color-brand: #e13b2b;
+  --color-brand-active: #c0321f;
+  --color-brand-soft: #fcebea;
+  --color-on-brand: #0c0a07;
+  --color-status-success: #16633a;
   --color-status-success-soft: #e7f4eb;
   --color-status-warning: #7a5c00;
-  --color-status-warning-soft: #fbf1cc;
-  --color-logo-background: #20241f;
+  --color-status-warning-soft: #fff2c7;
+  --color-logo-background: #211f1c;
   --color-logo-foreground: #ffffff;
-  --color-logo-accent: #e85b32;
+  --color-logo-accent: #e13b2b;
   --color-fixed-bar: rgba(255, 255, 255, 0.98);
   --color-overlay: rgba(0, 0, 0, 0.72);
-  --color-shadow: rgba(0, 0, 0, 0.1);
-  /* Compatibility aliases: retained for existing components while pages migrate. */
+  --color-shadow: rgba(33, 31, 28, 0.06);
+  /* Semantic aliases retained for existing components during the boiling-point migration. */
   --color-danger: var(--color-text);
   --color-danger-text: var(--color-text);
   --color-danger-soft: var(--color-raised);
@@ -51,33 +51,24 @@ page {
   --color-on-media-gender-female: var(--color-on-media);
   --color-on-media-gender-unknown: var(--color-on-media);
   --shadow-hard: 0 14rpx 36rpx var(--color-shadow);
-  --shadow-card: 0 10rpx 28rpx var(--color-shadow);
+  --shadow-card: 0 12rpx 36rpx var(--color-shadow);
   --radius-sm: 20rpx;
-  --radius-md: 24rpx;
-  --radius-display: 32rpx;
-  --radius-card: 28rpx;
-  --control-height: 88rpx;
-  --segment-height: 88rpx;
-  --page-gutter: 48rpx;
-  --page-gutter-narrow: 32rpx;
-  --card-gap: 32rpx;
+  --radius-md: 26rpx;
+  --radius-display: 40rpx;
+  --radius-card: 36rpx;
+  --control-height: 96rpx;
+  --primary-control-height: 104rpx;
+  --segment-height: 92rpx;
+  --page-gutter: 32rpx;
+  --page-gutter-narrow: 24rpx;
+  --card-gap: 28rpx;
   --tab-bar-height: 112rpx;
   --tab-page-bottom-space: 32rpx;
-  --fixed-action-reserve: 224rpx;
-  --fixed-action-reserve-narrow: 276rpx;
+  --fixed-action-reserve: 240rpx;
+  --fixed-action-reserve-narrow: 292rpx;
   --metric-align: left;
   --page-heading-align: left;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --cili-black: var(--color-bg);
-  --cili-charcoal: var(--color-surface);
-  --cili-panel: var(--color-raised);
-  --cili-border: var(--color-border);
-  --cili-silver: var(--color-muted);
-  --cili-white: var(--color-text);
-  --cili-orange: var(--color-brand);
-  --cili-orange-dark: var(--color-brand-active);
-  --cili-red: var(--color-danger);
-  --cili-success: var(--color-success);
   min-height: 100%;
   background: var(--color-bg);
   color: var(--color-text);
@@ -239,6 +230,9 @@ button::after {
   line-height: 44rpx;
   font-weight: 800;
   text-align: center;
+}
+.btn {
+  min-height: var(--primary-control-height);
 }
 .secondary,
 .button--secondary,
@@ -712,19 +706,23 @@ picker[disabled] {
 }
 
 @media (max-width: 375px) {
+  button.btn {
+    min-height: var(--primary-control-height);
+  }
   button,
-  button.btn,
   button.secondary,
   button.button,
   button.text-button,
   button.image-action,
   button.map-button,
   button.photo-action,
-  button.route-action,
+  button.route-action {
+    min-height: var(--control-height);
+  }
   .timeline-tabs .timeline-tab,
   .status-filters .status-filter,
   .filter-tabs .filter-tab,
   .experience-segment .segment {
-    min-height: 44px;
+    min-height: var(--segment-height);
   }
 }

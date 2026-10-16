@@ -94,7 +94,7 @@ export function drawRouteOutline(
   context.clearRect(0, 0, width, height);
   context.fillStyle = '#ffffff';
   context.fillRect(0, 0, width, height);
-  context.fillStyle = '#10120f';
+  context.fillStyle = '#211f1c';
   context.font = '700 14px sans-serif';
   context.textAlign = 'left';
   context.textBaseline = 'top';
@@ -108,13 +108,13 @@ export function drawRouteOutline(
     context.lineWidth = 6;
     context.lineCap = 'round';
     context.lineJoin = 'round';
-    context.strokeStyle = '#10120f';
+    context.strokeStyle = '#211f1c';
     context.stroke();
 
     const endpoints = [projected[0], projected[projected.length - 1]];
     endpoints.forEach((point, index) => {
       context.beginPath();
-      context.fillStyle = index === 0 ? '#ff5722' : '#10120f';
+      context.fillStyle = index === 0 ? '#e13b2b' : '#211f1c';
       context.arc(point.x, point.y, 8, 0, Math.PI * 2);
       context.fill();
     });

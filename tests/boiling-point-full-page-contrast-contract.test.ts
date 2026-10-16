@@ -37,7 +37,7 @@ function wxmlFiles(directory: string): string[] {
   );
 }
 
-describe('HP-20261010-02 统一明亮 UI 全页对比度契约', () => {
+describe('沸点浅色 UI 全页对比度契约', () => {
   it('语义 token 覆盖正文、占位符、禁用态、状态与性别徽标', () => {
     for (const [foreground, background, minimum] of [
       ['--color-text', '--color-bg', 4.5],

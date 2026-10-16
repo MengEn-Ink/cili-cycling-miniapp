@@ -54,7 +54,7 @@ export function drawElevationProfile(
     y: padding.top + ((maxElevation - point.elevationM) / elevationRange) * chartHeight,
   });
 
-  context.strokeStyle = 'rgba(32,36,31,.14)';
+  context.strokeStyle = 'rgba(33,31,28,.14)';
   context.lineWidth = 1;
   context.beginPath();
   context.moveTo(padding.left, padding.top);
@@ -63,8 +63,8 @@ export function drawElevationProfile(
   context.stroke();
 
   const gradient = context.createLinearGradient(0, padding.top, 0, padding.top + chartHeight);
-  gradient.addColorStop(0, 'rgba(255,87,34,.48)');
-  gradient.addColorStop(1, 'rgba(255,87,34,.03)');
+  gradient.addColorStop(0, 'rgba(192,50,31,.48)');
+  gradient.addColorStop(1, 'rgba(192,50,31,.03)');
   context.beginPath();
   points.forEach((point, index) => {
     const { x, y } = coordinate(point);
@@ -85,13 +85,13 @@ export function drawElevationProfile(
     if (index === 0) context.moveTo(x, y);
     else context.lineTo(x, y);
   });
-  context.strokeStyle = '#ff5722';
+  context.strokeStyle = '#c0321f';
   context.lineWidth = 2;
   context.lineJoin = 'round';
   context.lineCap = 'round';
   context.stroke();
 
-  context.fillStyle = '#8e8e93';
+  context.fillStyle = '#6f675d';
   context.font = '10px sans-serif';
   context.textAlign = 'right';
   context.fillText(`${Math.round(maxElevation)}m`, padding.left - 6, padding.top + 3);
@@ -105,7 +105,7 @@ export function drawElevationProfile(
     points[elevations.indexOf(maxElevation)],
     points[elevations.indexOf(minElevation)],
   ];
-  context.fillStyle = '#ffb199';
+  context.fillStyle = '#e13b2b';
   extrema.forEach((point) => {
     const { x, y } = coordinate(point);
     context.beginPath();

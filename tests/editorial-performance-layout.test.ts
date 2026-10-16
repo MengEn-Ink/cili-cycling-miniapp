@@ -82,7 +82,7 @@ describe('方案 A 编辑式性能布局', () => {
     expect(declaration(fixedAction, 'display')).toBe('flex');
     expect(declaration(fixedAction, 'align-items')).toBe('center');
     expect(declaration(fixedAction, 'justify-content')).toBe('center');
-    expect(declaration(fixedAction, 'min-height')).toBe('var(--control-height)');
+    expect(declaration(fixedAction, 'min-height')).toBe('var(--primary-control-height)');
 
     const closeButton = effectiveBlock(detailStyles, '.rider-card-close');
     expect(declaration(closeButton, 'display')).toBe('flex');

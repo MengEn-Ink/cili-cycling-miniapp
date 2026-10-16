@@ -37,7 +37,7 @@ const oldLogoClass =
   /brand-lockup|brand-bar|cili-symbol|cili-mark|mini-symbol|brand-word|brand-cn|mark-cut|brand-rule|detail-brand|desk-code|profile-code/;
 
 describe('品牌与页面体验静态契约', () => {
-  it('全局默认关闭下拉刷新，仅个人中心开放主动刷新，并统一明亮滚动边界', () => {
+  it('全局默认关闭下拉刷新，仅个人中心开放主动刷新，并统一沸点滚动边界', () => {
     const app = JSON.parse(read('miniprogram/app.json'));
     expect(app.window).toMatchObject({
       enablePullDownRefresh: false,
@@ -130,8 +130,8 @@ describe('品牌与页面体验静态契约', () => {
     const profile = read('miniprogram/pages/profile/index.wxss');
     const tokens = uiTokens(appStyles);
 
-    expect(tokens['--page-gutter']).toBe('48rpx');
-    expect(tokens['--control-height']).toBe('88rpx');
+    expect(tokens['--page-gutter']).toBe('32rpx');
+    expect(tokens['--control-height']).toBe('96rpx');
     expect(declaration(effectiveBlock(activities, '.activity-carousel'), 'height')).toBe('900rpx');
     expect(declaration(effectiveBlock(activityCard, '.activity-card'), 'border-radius')).toBe(
       'var(--radius-display)',
@@ -153,7 +153,7 @@ describe('品牌与页面体验静态契约', () => {
     expect(scopedStyles).not.toMatch(/#39ff14|#00ff00|lime|neon/i);
   });
 
-  it('活动管理标题、筛选器与卡片遵循统一间距和黑白橙主题', () => {
+  it('活动管理标题、筛选器与卡片遵循统一间距与沸点主题', () => {
     const template = read('miniprogram/pages/admin/activity-list/index.wxml');
     const management = read('miniprogram/pages/admin/activity-list/index.wxss');
     const appStyles = read('miniprogram/app.wxss');
@@ -190,7 +190,7 @@ describe('品牌与页面体验静态契约', () => {
     const appStyles = read('miniprogram/app.wxss');
     const statusStyles = read('miniprogram/components/status-pill/index.wxss');
     const tokens = uiTokens(appStyles);
-    expect(tokens['--color-status-success']).toBe('#1d7a3e');
+    expect(tokens['--color-status-success']).toBe('#16633a');
     expect(tokens['--color-status-success-soft']).toBe('#e7f4eb');
     expectSemantic(
       declaration(effectiveBlock(appStyles, '.card'), 'background'),

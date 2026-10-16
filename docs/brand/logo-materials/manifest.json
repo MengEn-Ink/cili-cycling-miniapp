@@ -2,9 +2,9 @@
   "brand": "此里",
   "version": 1,
   "colors": {
-    "background": "#20241F",
+    "background": "#211F1C",
     "foreground": "#FFFFFF",
-    "accent": "#E85B32"
+    "accent": "#E13B2B"
   },
   "assets": [
     {"path": "docs/brand/logo-materials/generated/logo-wechat-144.png", "format": "png", "width": 144, "height": 144, "usage": "微信小程序平台头像与基础 Logo"},

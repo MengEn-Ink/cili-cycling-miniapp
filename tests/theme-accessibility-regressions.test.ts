@@ -22,10 +22,10 @@ function expectUiContrast(foreground: string, background: string, minimum = 4.5)
 
 describe('unified UI accessibility regressions', () => {
   it('uses one bright token set and semantic page surfaces', () => {
-    expect(tokens['--color-bg']).toBe('#f3f3f1');
-    expect(tokens['--color-text']).toBe('#171717');
-    expect(tokens['--color-brand']).toBe('#e85b32');
-    expect(tokens['--color-action']).toBe('#c84320');
+    expect(tokens['--color-bg']).toBe('#fbf5ea');
+    expect(tokens['--color-text']).toBe('#211f1c');
+    expect(tokens['--color-brand']).toBe('#e13b2b');
+    expect(tokens['--color-action']).toBe('#c0321f');
     expect(tokens['--color-on-action']).toBe('#ffffff');
     expectUiContrast('var(--color-text)', 'var(--color-bg)', 7);
     expectUiContrast('var(--color-on-brand)', 'var(--color-brand)', 4.5);
@@ -225,9 +225,9 @@ describe('unified UI accessibility regressions', () => {
   });
 
   it('shares a 44px control height, 40px segments, and stable page gutters', () => {
-    expect(tokens['--control-height']).toBe('88rpx');
-    expect(tokens['--page-gutter']).toBe('48rpx');
-    expect(tokens['--page-gutter-narrow']).toBe('32rpx');
+    expect(tokens['--control-height']).toBe('96rpx');
+    expect(tokens['--page-gutter']).toBe('32rpx');
+    expect(tokens['--page-gutter-narrow']).toBe('24rpx');
 
     const profileEdit = read('miniprogram/pages/profile-edit/index.wxss');
     expect(declaration(effectiveBlock(app, '.input'), 'min-height')).toBe('var(--control-height)');

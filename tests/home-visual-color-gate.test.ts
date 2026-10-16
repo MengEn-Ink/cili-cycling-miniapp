@@ -28,7 +28,7 @@ describe('首页视觉与配色门禁', () => {
     expect(homeStyles).not.toMatch(/\.activity-carousel\s*\{[^}]*padding:/s);
   });
 
-  it('品牌标识固定为深色底牌、暖灰白艺术字与品牌橙终点', () => {
+  it('品牌标识固定为墨黑底牌、白色艺术字与品牌红终点', () => {
     expect(logoTemplate).toContain('aria-label="此里"');
     expect(logoTemplate).toContain('>此</text>');
     expect(logoTemplate).toContain('>里</text>');
