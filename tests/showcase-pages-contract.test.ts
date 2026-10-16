@@ -104,6 +104,13 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(deliveryCenter).toContain('docs/designs/2026-10-16-boiling-point/index.html');
     expect(deliveryCenter).toContain('深行动红白字、48px 主控件');
     expect(deliveryCenter).not.toContain('深橙主操作白字 4.91:1');
+    expect(html).toContain('沸点视觉验收');
+    expect(html).toContain('沸点手稿与全套设计交接成果');
+    expect(html).not.toContain('<h3>截图问题</h3>');
+    expect(html).not.toContain('<h3>改版方案</h3>');
+    expect(script).toContain('沸点设计系统与验收依据');
+    expect(script).not.toContain('历史问题对照表');
+    expect(script).not.toContain('主题橙线条');
     expect(script).toContain('document.getElementById(targetSection)?.scrollIntoView');
     expect(css).toContain('@media (max-width: 560px)');
     expect(css).toMatch(/\.product-card-grid,[^}]*grid-template-columns:\s*1fr/s);

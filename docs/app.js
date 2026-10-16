@@ -91,7 +91,7 @@
     ['警告色 / 页面底', '--color-status-warning', '--color-bg', 4.5, '提醒文字放在页面底时'],
     ['警告色 / 灰底', '--color-status-warning', '--color-raised', 4.5, '提醒文字放在灰底时'],
     ['提醒小标签', '--color-status-warning', '--color-status-warning-soft', 4.5, '“⚠ 即将截止 / 名额紧张 / 可能过期”'],
-    ['主题橙线条', '--color-brand', '--color-surface', 3, '待审核描边、信息条短线（非文字）'],
+    ['品牌红线条', '--color-brand', '--color-surface', 3, '待审核描边、信息条短线（非文字）'],
     ['控件描边', '--color-border-strong', '--color-surface', 3, '卡片 / 输入框 / 按钮 2px 描边'],
   ];
 
@@ -132,12 +132,6 @@
         const pass = value >= min;
         return `<tr><td>${name}</td><td><span class="swatch" style="background:var(${fg})"></span><code>${fg}</code> ${cssVar(fg)}</td><td><span class="swatch" style="background:var(${bg})"></span><code>${bg}</code> ${cssVar(bg)}</td><td><b class="pass ${pass ? '' : 'is-fail'}">${value.toFixed(2)} : 1</b></td><td>${min} : 1 ${pass ? '通过' : '不通过'}</td><td>${usage}</td></tr>`;
       })
-      .join('');
-    const issues = data.issues
-      .map(
-        ([id, page, problem, fix, spec]) =>
-          `<tr><td><b>${id}</b></td><td>${page}</td><td>${problem}</td><td>${fix}</td><td>${spec}</td></tr>`,
-      )
       .join('');
     overview.innerHTML = `
       <section class="product-hero">
@@ -265,7 +259,7 @@
       </section>
 
       <details class="reference-panel">
-        <summary>设计规范与历史问题对照</summary>
+        <summary>沸点设计系统与验收依据</summary>
         <div class="reference-content">
           <h2>公共组件示例</h2>
           <div class="spec-demo">
@@ -275,8 +269,9 @@
           </div>
           <h2>浅色对比度检查表</h2>
           <table class="overview-table"><thead><tr><th>用途</th><th>前景</th><th>背景</th><th>对比度</th><th>门槛</th><th>使用位置</th></tr></thead><tbody>${contrast}</tbody></table>
-          <h2>历史问题对照表（${data.issues.length} 条）</h2>
-          <table class="overview-table"><thead><tr><th>编号</th><th>页面</th><th>问题</th><th>改版方案</th><th>规范</th></tr></thead><tbody>${issues}</tbody></table>
+          <h2>沸点视觉验收</h2>
+          <p>当前 13 页统一使用暖米白画布、白卡、墨黑信息块、品牌红强调与深行动红主行动；历史主题问题已从当前原型说明中移除。</p>
+          <div class="official-links"><a href="./designs/2026-10-16-boiling-point/index.html">查看沸点手稿与全套交接成果</a><a href="./design-contract.json">查看双端设计契约</a></div>
         </div>
       </details>`;
   }
@@ -296,7 +291,6 @@
       .join('');
   }
 
-  const list = (items) => items.map((item) => `<li>${item}</li>`).join('');
 
   function updateChrome(page) {
     const stateLabel = (page.states.find(([id]) => id === currentState) || page.states[0])[1];
@@ -313,9 +307,6 @@
           `<button class="${id === currentState ? 'is-active' : ''}" data-state="${id}" data-route="${page.id}">${label}</button>`,
       )
       .join('');
-    $('#screen-problems').innerHTML = list(page.problems);
-    $('#screen-fixes').innerHTML = list(page.fixes);
-    $('#screen-spec').innerHTML = page.spec.map((item) => `<button data-action="open-overview">${item}</button>`).join('');
     nav.querySelectorAll('[data-route]').forEach((button) => {
       button.classList.toggle('is-active', button.dataset.route === page.id);
     });
