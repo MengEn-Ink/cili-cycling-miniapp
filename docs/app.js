@@ -1,9 +1,14 @@
 (() => {
   const data = window.prototypeData;
   const templates = window.pageTemplates;
+  const deliveryCenter = window.deliveryCenter;
   const pageById = new Map(data.pages.map((page) => [page.id, page]));
   const tabRoutes = ['activities', 'registrations', 'profile'];
-  const overviewSections = new Set(['overview', 'requirements', 'prd', 'guide', 'prototype']);
+  const baseOverviewSections = ['overview', 'delivery', 'requirements', 'prd', 'guide', 'prototype'];
+  const overviewSections = new Set([
+    ...baseOverviewSections,
+    ...((deliveryCenter && deliveryCenter.extraOverviewAnchors) || []),
+  ]);
   const setupSteps = [
     ['01', '先定目标与主体', '确认核心用户、服务范围、是否商用，再选择个人或企业主体；名称、简介、类目和实际功能保持一致。'],
     ['02', '注册并取得 AppID', '在微信公众平台注册小程序；AppID 位于“开发—开发设置”，它是项目标识，不是服务端密钥。'],
@@ -135,11 +140,13 @@
       .join('');
     overview.innerHTML = `
       <section class="product-hero">
-        <p class="eyebrow">产品中心 · 当前基线同步至 main</p>
-        <h2>让骑行俱乐部从发布活动到签到出发，都在一个小程序里完成</h2>
-        <p class="lead">“此里”面向单个骑行俱乐部，把活动发布、官方路线与 GPX、骑手资料、报名审批、行程凭证和签到收口到同一条可信旅程，减少微信群接龙和人工核对。</p>
-        <div class="product-actions"><a class="btn" href="#activities">体验骑手旅程</a><a class="btn-secondary" href="#admin-activity-list">体验管理员旅程</a></div>
+        <p class="eyebrow">研发交付中心 · 当前基线同步至 main</p>
+        <h2>让骑行俱乐部的研发交付——从需求到发布，都收口到一个可维护的 Pages</h2>
+        <p class="lead">“此里”面向单个骑行俱乐部的微信小程序。本页把 README、需求、设计、架构、规范、测试、发布、复盘按 SDLC 八大类聚合，并给每份文档打上成熟度标签，方便产品、设计、研发、测试与运营共享同一事实。</p>
+        <div class="product-actions"><a class="btn" href="#delivery">进入研发交付中心</a><a class="btn-secondary" href="#activities">体验 13 个交互原型</a></div>
       </section>
+
+      ${deliveryCenter ? deliveryCenter.render() : ''}
 
       <section class="product-section" id="requirements">
         <p class="eyebrow">01 · 需求概览</p>
