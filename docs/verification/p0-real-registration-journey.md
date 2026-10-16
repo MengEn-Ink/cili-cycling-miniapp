@@ -10,6 +10,41 @@
 - 活动使用唯一 `E2E_RESULT:` 标记，至少留两名额。受控目录保留真实 ID 映射；公开证据仅使用别名、状态、数量和审计动作。
 - 条件不足记录 `not_executed`、缺失条件及负责人；不得修改快照把未执行变为通过。
 
+## v2 当前旅程预检
+
+当前预检使用 `schemaVersion: 2`，不再要求 Strava OAuth、同步状态或路线归属于报名成员。公开 Strava 路线与 GPX 是两套独立输入；完整 P0 同时要求 iOS、Android 设备就绪。预检文件只能放在受控临时目录，不得加入仓库：
+
+```json
+{
+  "schemaVersion": 2,
+  "environment": { "kind": "test", "deployed": true },
+  "member": {
+    "available": true,
+    "role": "member",
+    "profileReady": true
+  },
+  "routeFixture": {
+    "publicRouteReady": true,
+    "publicRoutePreviewReady": true,
+    "gpxReady": true,
+    "gpxPreviewReady": true,
+    "gpxDownloadReady": true
+  },
+  "devices": {
+    "iosReady": true,
+    "androidReady": true
+  }
+}
+```
+
+执行：
+
+```bash
+npm run check:journey-preflight -- --input /absolute/path/to/current-preflight.json
+```
+
+退出码 `0` 为就绪，`2` 为 `not_executed`，`1` 为输入错误。固定 blocker 包含普通成员、公开路线、GPX 和设备前置，例如 `MEMBER_UNAVAILABLE`、`PUBLIC_ROUTE_PREVIEW_NOT_READY`、`ROUTE_GPX_DOWNLOAD_NOT_READY`、`IOS_DEVICE_NOT_READY`、`ANDROID_DEVICE_NOT_READY`。任何 blocker 存在时都不得签发完整通过。
+
 ## 从部署到回收
 
 | 顺序 | 实操 | 必须回读的事实 |
@@ -30,7 +65,7 @@
 
 ## 写操作与失败补偿
 
-写入超时后先只读对账，确认结果再决定下一步；禁止盲目重试发布、提交、审批或取消。可复用 `scripts/p0-journey-driver.mjs` 中不依赖 OAuth 的 `waitForPageReady`、`runReconciledWrite`、`compensateJourney`。
+写入超时后先只读对账，确认结果再决定下一步；禁止盲目重试发布、提交、审批或取消。可复用 `scripts/p0-journey-driver.mjs` 中不依赖 OAuth 的 `waitForPageReady`、`runReconciledWrite`、`sanitizeJourneyAudits`、`compensateJourney`。
 
 补偿使用正常业务取消与结束活动能力，不直接删除数据库。未知结果、连接中断、断言失败后仍执行补偿并保存报告。无法补偿时记录残留资源别名、最终状态、失败原因及下一步，完整旅程不得标记通过。
 
@@ -40,6 +75,13 @@
 
 公开证据不包含真实姓名、电话、openid、身份证、二维码、临时媒体 URL、凭据或密文。本人/管理员界面完整展示是产品规则，公开证据脱敏是交付规则，两者分别验收。
 
-`scripts/verify-journey-evidence.mjs`、`issue-journey-run.mjs`、`evaluateJourneyPreflight` 和 `sanitizeJourneyAudits` 当前保留历史 v1 OAuth 证据兼容，**不得用于签发当前完整旅程通过**。历史格式与命令见 [40324f1 版手册](https://github.com/MengEn-Ink/cili-cycling-miniapp/blob/40324f1b10304b52895d182e1e3a66a0d44b4625/docs/verification/p0-real-registration-journey.md)。当前写链路以本表逐项人工回读验收；v2 离线签发器迁移在高优清单跟进。
+当前离线签发器输出 `schemaVersion: 2`，签名域为 `ride-event:p0-journey-run:v2`。模板固定声明 `public_strava`、`gpx`、`ios`、`android`，并要求普通成员写入、管理员审核、自动通过、快速双击、跨角色隐私、受保护媒体、Canvas、分享和网络重试九类 UAT 均已执行。填入状态、人数和脱敏审计后再校验：
+
+```bash
+npm run issue:journey-run -- --key-file /secure/path/journey.key > /secure/path/run.json
+npm run verify:journey-evidence -- --key-file /secure/path/journey.key /secure/path/evidence.json
+```
+
+历史 v1 OAuth 预检、签名域和 `strava.sync.succeeded` 要求仅用于验证历史证据，不能作为当前旅程模板。v2 当前证据只要求报名审计链：`registration.submitted`、`registration.approved`、首次 `registration.cancelled`、`registration.resubmitted`；收尾再次取消可作为同动作的第二条记录保留，时间必须有序。历史格式见 [40324f1 版手册](https://github.com/MengEn-Ink/cili-cycling-miniapp/blob/40324f1b10304b52895d182e1e3a66a0d44b4625/docs/verification/p0-real-registration-journey.md)。
 
 总结果只有在真实普通成员、双平台设备、回读与补偿均满足后才能标为完整通过。模拟器结果单独引用 [只读 E2E 手册](wechat-devtools-e2e.md)，不得关闭物理真机 P0。

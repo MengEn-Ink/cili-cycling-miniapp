@@ -7,7 +7,7 @@ import { JourneyEvidenceKeyError, readJourneyEvidenceKey } from './journey-evide
 
 const SUCCESS_MESSAGE = 'P0 真实旅程证据校验通过';
 const FAILURE_PREFIX = 'P0 真实旅程证据校验失败';
-const ROOT_KEYS = new Set([
+const LEGACY_ROOT_KEYS = new Set([
   'marker',
   'issuedAt',
   'subjectAlias',
@@ -16,6 +16,13 @@ const ROOT_KEYS = new Set([
   'statuses',
   'occupiedCounts',
   'audits',
+]);
+const CURRENT_ROOT_KEYS = new Set([
+  'schemaVersion',
+  ...LEGACY_ROOT_KEYS,
+  'routeModes',
+  'devicePlatforms',
+  'uatChecks',
 ]);
 const AUDIT_KEYS = new Set(['action', 'target_id', 'created_at']);
 const FORBIDDEN_NORMALIZED_KEYS = new Set([
@@ -31,14 +38,29 @@ const FORBIDDEN_NORMALIZED_KEYS = new Set([
 const MARKER_PREFIX = 'E2E_RESULT:';
 const RUN_ID_PATTERN = /^P0_\d{8}_[A-F0-9]{32}$/;
 const SIGNATURE_PATTERN = /^[A-F0-9]{64}$/;
-const SIGNATURE_DOMAIN = 'ride-event:p0-journey-run:v1';
+const SIGNATURE_DOMAINS = Object.freeze({
+  1: 'ride-event:p0-journey-run:v1',
+  2: 'ride-event:p0-journey-run:v2',
+});
 const EXPECTED_STATUSES = ['pending', 'approved', 'cancelled', 'pending'];
-const REQUIRED_AUDIT_ACTIONS = [
-  'strava.sync.succeeded',
+const REQUIRED_REGISTRATION_AUDIT_ACTIONS = [
   'registration.submitted',
   'registration.approved',
   'registration.cancelled',
   'registration.resubmitted',
+];
+const EXPECTED_ROUTE_MODES = ['public_strava', 'gpx'];
+const EXPECTED_DEVICE_PLATFORMS = ['ios', 'android'];
+const EXPECTED_UAT_CHECKS = [
+  'ordinary_member_write',
+  'admin_review',
+  'automatic_approval',
+  'duplicate_submit',
+  'privacy_roles',
+  'protected_media',
+  'canvas',
+  'share',
+  'network_retry',
 ];
 
 class EvidenceError extends Error {}
@@ -246,9 +268,9 @@ function shanghaiDateSegment(issuedAt) {
   return `${values.year}${values.month}${values.day}`;
 }
 
-function expectedRunSignature(key, runId, issuedAt) {
+function expectedRunSignature(key, runId, issuedAt, schemaVersion) {
   return createHmac('sha256', key)
-    .update(SIGNATURE_DOMAIN)
+    .update(SIGNATURE_DOMAINS[schemaVersion])
     .update('\0')
     .update(runId)
     .update('\0')
@@ -268,8 +290,17 @@ function validateEvidenceSchema(evidence) {
     fail('根节点必须是对象');
   }
 
-  if (!hasExactKeys(evidence, ROOT_KEYS)) {
+  const schemaVersion = evidence.schemaVersion === 2 ? 2 : 1;
+  if (!hasExactKeys(evidence, schemaVersion === 2 ? CURRENT_ROOT_KEYS : LEGACY_ROOT_KEYS)) {
     fail('根节点字段不符合证据结构');
+  }
+  if (
+    schemaVersion === 2 &&
+    (!arraysEqual(evidence.routeModes, EXPECTED_ROUTE_MODES) ||
+      !arraysEqual(evidence.devicePlatforms, EXPECTED_DEVICE_PLATFORMS) ||
+      !arraysEqual(evidence.uatChecks, EXPECTED_UAT_CHECKS))
+  ) {
+    fail('当前旅程范围不完整');
   }
 
   if (typeof evidence.marker !== 'string') {
@@ -374,8 +405,9 @@ function validateSyntheticAliases(evidence, runId) {
 }
 
 function verifyRunSignature(evidence, key, runId) {
+  const schemaVersion = evidence.schemaVersion === 2 ? 2 : 1;
   const suppliedSignature = Buffer.from(evidence.runSignature, 'hex');
-  const expectedSignature = expectedRunSignature(key, runId, evidence.issuedAt);
+  const expectedSignature = expectedRunSignature(key, runId, evidence.issuedAt, schemaVersion);
   if (!timingSafeEqual(suppliedSignature, expectedSignature)) {
     fail('运行签名无效');
   }
@@ -409,14 +441,18 @@ function validateEvidence(evidence, key) {
     fail('名额变化不符合提交、幂等、取消、重报流程');
   }
 
-  const requiredAudits = REQUIRED_AUDIT_ACTIONS.map((action) =>
+  const requiredAuditActions =
+    evidence.schemaVersion === 2
+      ? REQUIRED_REGISTRATION_AUDIT_ACTIONS
+      : ['strava.sync.succeeded', ...REQUIRED_REGISTRATION_AUDIT_ACTIONS];
+  const requiredAudits = requiredAuditActions.map((action) =>
     evidence.audits.find((audit) => audit?.action === action),
   );
   if (requiredAudits.some((audit) => audit === undefined)) {
     fail('缺少必要审计动作');
   }
 
-  const actionPositions = REQUIRED_AUDIT_ACTIONS.map((action) =>
+  const actionPositions = requiredAuditActions.map((action) =>
     evidence.audits.findIndex((audit) => audit?.action === action),
   );
   if (

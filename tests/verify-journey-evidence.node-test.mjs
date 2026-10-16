@@ -211,6 +211,44 @@ test('issuer creates a signed 128-bit run template without printing the key', ()
   assert.match(template.runSignature, /^[A-F0-9]{64}$/);
 });
 
+test('issuer creates a current v2 template that verifies without legacy Strava sync', async () => {
+  const issued = runIssuer();
+  assert.equal(issued.status, 0, issued.stderr);
+
+  const evidence = JSON.parse(issued.stdout);
+  assert.equal(evidence.schemaVersion, 2);
+  assert.deepEqual(evidence.routeModes, ['public_strava', 'gpx']);
+  assert.deepEqual(evidence.devicePlatforms, ['ios', 'android']);
+  assert.deepEqual(evidence.uatChecks, [
+    'ordinary_member_write',
+    'admin_review',
+    'automatic_approval',
+    'duplicate_submit',
+    'privacy_roles',
+    'protected_media',
+    'canvas',
+    'share',
+    'network_retry',
+  ]);
+
+  evidence.statuses = ['pending', 'approved', 'cancelled', 'pending'];
+  evidence.occupiedCounts = [0, 1, 1, 0, 1];
+  evidence.audits = [
+    'registration.submitted',
+    'registration.approved',
+    'registration.cancelled',
+    'registration.resubmitted',
+  ].map((action, index) => ({
+    action,
+    target_id: evidence.registrationId,
+    created_at: new Date(Date.parse(evidence.issuedAt) + (index + 1) * 1000).toISOString(),
+  }));
+
+  const verified = await runVerifier(evidence);
+  assert.equal(verified.status, 0, verified.stderr);
+  assert.equal(verified.stdout, 'P0 真实旅程证据校验通过\n');
+});
+
 test('issuer requires --key-file', () => {
   const result = runIssuer([]);
 

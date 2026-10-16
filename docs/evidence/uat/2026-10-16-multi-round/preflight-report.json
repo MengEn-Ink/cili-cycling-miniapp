@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-16T06:55:00.000Z",
+  "baseline": {
+    "git": "ce79517239e78fe400a4b46cd918e02cc45a2c0b",
+    "clientVersion": "2026.10.16.69",
+    "developmentUploadVersion": "0.0.238.1"
+  },
+  "environment": {
+    "kind": "test",
+    "deployed": true,
+    "wechatDevtoolsLoggedIn": true,
+    "configuredTestAccountCount": 0,
+    "usbMobileDeviceCount": 0,
+    "androidAdbAvailable": false,
+    "fullXcodeAvailable": false
+  },
+  "outcomes": {
+    "ordinaryMemberWrite": "not_executed",
+    "iosPhysicalDevice": "not_executed",
+    "androidPhysicalDevice": "not_executed",
+    "experienceUat": "not_executed"
+  },
+  "blockers": [
+    "MEMBER_UNAVAILABLE",
+    "MEMBER_ROLE_INVALID",
+    "ROUTE_GPX_NOT_READY",
+    "ROUTE_GPX_PREVIEW_NOT_READY",
+    "ROUTE_GPX_DOWNLOAD_NOT_READY",
+    "IOS_DEVICE_NOT_READY",
+    "ANDROID_DEVICE_NOT_READY"
+  ],
+  "writeSafety": {
+    "adminSelfWriteAttempts": 2,
+    "businessChecksExecuted": 0,
+    "activitiesCreated": 0,
+    "registrationsCreated": 0,
+    "cleanupRequired": false,
+    "stopReason": "微信开发者工具在创建活动页业务检查前连续丢失页面上下文"
+  },
+  "retestConditions": [
+    "配置一个资料完整、非管理员的微信开发者工具 test ticket",
+    "连接一台 iOS 和一台 Android 物理设备",
+    "准备公开 Strava 路线与可下载 GPX 夹具",
+    "从已核验开发版生成体验版候选，并在微信后台完成体验版选择"
+  ]
+}

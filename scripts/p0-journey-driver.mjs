@@ -9,9 +9,16 @@ const ERROR_MESSAGES = Object.freeze({
   COMPENSATION_INCOMPLETE: '失败补偿未完成',
 });
 
-const ROOT_KEYS = new Set(['schemaVersion', 'environment', 'member', 'routeFixture']);
+const LEGACY_ROOT_KEYS = new Set(['schemaVersion', 'environment', 'member', 'routeFixture']);
+const CURRENT_ROOT_KEYS = new Set([
+  'schemaVersion',
+  'environment',
+  'member',
+  'routeFixture',
+  'devices',
+]);
 const ENVIRONMENT_KEYS = new Set(['kind', 'deployed']);
-const MEMBER_KEYS = new Set([
+const LEGACY_MEMBER_KEYS = new Set([
   'available',
   'role',
   'profileReady',
@@ -19,7 +26,21 @@ const MEMBER_KEYS = new Set([
   'stravaReady',
   'oauthFresh',
 ]);
-const ROUTE_FIXTURE_KEYS = new Set(['available', 'ownedByMember', 'previewReady', 'gpxReady']);
+const CURRENT_MEMBER_KEYS = new Set(['available', 'role', 'profileReady']);
+const LEGACY_ROUTE_FIXTURE_KEYS = new Set([
+  'available',
+  'ownedByMember',
+  'previewReady',
+  'gpxReady',
+]);
+const CURRENT_ROUTE_FIXTURE_KEYS = new Set([
+  'publicRouteReady',
+  'publicRoutePreviewReady',
+  'gpxReady',
+  'gpxPreviewReady',
+  'gpxDownloadReady',
+]);
+const DEVICE_KEYS = new Set(['iosReady', 'androidReady']);
 const AUDIT_KEYS = new Set(['action', 'target_id', 'created_at']);
 const SUBJECT_ALIAS_PATTERN = /^user_test_(P0_\d{8}_[A-F0-9]{32})$/;
 const REGISTRATION_ALIAS_PATTERN = /^reg_test_(P0_\d{8}_[A-F0-9]{32})$/;
@@ -63,7 +84,11 @@ function hasBooleanFields(value, keys) {
 }
 
 function validatePreflightSchema(value) {
-  if (!hasExactKeys(value, ROOT_KEYS) || value.schemaVersion !== 1) {
+  if (!isRecord(value) || ![1, 2].includes(value.schemaVersion)) {
+    fail('PREFLIGHT_SCHEMA_INVALID');
+  }
+  const current = value.schemaVersion === 2;
+  if (!hasExactKeys(value, current ? CURRENT_ROOT_KEYS : LEGACY_ROOT_KEYS)) {
     fail('PREFLIGHT_SCHEMA_INVALID');
   }
   if (
@@ -74,18 +99,32 @@ function validatePreflightSchema(value) {
     fail('PREFLIGHT_SCHEMA_INVALID');
   }
   if (
-    !hasExactKeys(value.member, MEMBER_KEYS) ||
+    !hasExactKeys(value.member, current ? CURRENT_MEMBER_KEYS : LEGACY_MEMBER_KEYS) ||
     typeof value.member.role !== 'string' ||
     !hasBooleanFields(
       value.member,
-      new Set(['available', 'profileReady', 'stravaConnected', 'stravaReady', 'oauthFresh']),
+      current
+        ? new Set(['available', 'profileReady'])
+        : new Set(['available', 'profileReady', 'stravaConnected', 'stravaReady', 'oauthFresh']),
     )
   ) {
     fail('PREFLIGHT_SCHEMA_INVALID');
   }
   if (
-    !hasExactKeys(value.routeFixture, ROUTE_FIXTURE_KEYS) ||
-    !hasBooleanFields(value.routeFixture, ROUTE_FIXTURE_KEYS)
+    !hasExactKeys(
+      value.routeFixture,
+      current ? CURRENT_ROUTE_FIXTURE_KEYS : LEGACY_ROUTE_FIXTURE_KEYS,
+    ) ||
+    !hasBooleanFields(
+      value.routeFixture,
+      current ? CURRENT_ROUTE_FIXTURE_KEYS : LEGACY_ROUTE_FIXTURE_KEYS,
+    )
+  ) {
+    fail('PREFLIGHT_SCHEMA_INVALID');
+  }
+  if (
+    current &&
+    (!hasExactKeys(value.devices, DEVICE_KEYS) || !hasBooleanFields(value.devices, DEVICE_KEYS))
   ) {
     fail('PREFLIGHT_SCHEMA_INVALID');
   }
@@ -104,13 +143,24 @@ export function evaluateJourneyPreflight(value) {
   if (!value.member.available) blockers.push('MEMBER_UNAVAILABLE');
   if (value.member.role !== 'member') blockers.push('MEMBER_ROLE_INVALID');
   if (!value.member.profileReady) blockers.push('MEMBER_PROFILE_NOT_READY');
-  if (!value.member.stravaConnected) blockers.push('STRAVA_NOT_CONNECTED');
-  if (!value.member.stravaReady) blockers.push('STRAVA_NOT_READY');
-  if (!value.member.oauthFresh) blockers.push('OAUTH_NOT_FRESH');
-  if (!value.routeFixture.available) blockers.push('ROUTE_FIXTURE_UNAVAILABLE');
-  if (!value.routeFixture.ownedByMember) blockers.push('ROUTE_FIXTURE_OWNER_MISMATCH');
-  if (!value.routeFixture.previewReady) blockers.push('ROUTE_PREVIEW_NOT_READY');
-  if (!value.routeFixture.gpxReady) blockers.push('ROUTE_GPX_NOT_READY');
+  if (value.schemaVersion === 1) {
+    if (!value.member.stravaConnected) blockers.push('STRAVA_NOT_CONNECTED');
+    if (!value.member.stravaReady) blockers.push('STRAVA_NOT_READY');
+    if (!value.member.oauthFresh) blockers.push('OAUTH_NOT_FRESH');
+    if (!value.routeFixture.available) blockers.push('ROUTE_FIXTURE_UNAVAILABLE');
+    if (!value.routeFixture.ownedByMember) blockers.push('ROUTE_FIXTURE_OWNER_MISMATCH');
+    if (!value.routeFixture.previewReady) blockers.push('ROUTE_PREVIEW_NOT_READY');
+    if (!value.routeFixture.gpxReady) blockers.push('ROUTE_GPX_NOT_READY');
+  } else {
+    if (!value.routeFixture.publicRouteReady) blockers.push('PUBLIC_ROUTE_NOT_READY');
+    if (!value.routeFixture.publicRoutePreviewReady)
+      blockers.push('PUBLIC_ROUTE_PREVIEW_NOT_READY');
+    if (!value.routeFixture.gpxReady) blockers.push('ROUTE_GPX_NOT_READY');
+    if (!value.routeFixture.gpxPreviewReady) blockers.push('ROUTE_GPX_PREVIEW_NOT_READY');
+    if (!value.routeFixture.gpxDownloadReady) blockers.push('ROUTE_GPX_DOWNLOAD_NOT_READY');
+    if (!value.devices.iosReady) blockers.push('IOS_DEVICE_NOT_READY');
+    if (!value.devices.androidReady) blockers.push('ANDROID_DEVICE_NOT_READY');
+  }
 
   return {
     outcome: blockers.length === 0 ? 'ready' : 'not_executed',
@@ -254,12 +304,13 @@ export function sanitizeJourneyAudits({
     fail('AUDIT_SCHEMA_INVALID');
   }
 
-  const actions = new Set();
+  const records = new Set();
   for (const audit of audits) {
+    const recordKey = `${audit?.action}\0${audit?.target_id}\0${audit?.created_at}`;
     if (
       !hasExactKeys(audit, AUDIT_KEYS) ||
       !JOURNEY_AUDIT_TARGETS.has(audit.action) ||
-      actions.has(audit.action) ||
+      records.has(recordKey) ||
       !isCanonicalTimestamp(audit.created_at)
     ) {
       fail('AUDIT_SCHEMA_INVALID');
@@ -267,7 +318,7 @@ export function sanitizeJourneyAudits({
     const targetType = JOURNEY_AUDIT_TARGETS.get(audit.action);
     const expectedTarget = targetType === 'subject' ? subjectId : registrationId;
     if (audit.target_id !== expectedTarget) fail('AUDIT_SCHEMA_INVALID');
-    actions.add(audit.action);
+    records.add(recordKey);
   }
 
   return audits
