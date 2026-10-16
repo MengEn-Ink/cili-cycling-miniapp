@@ -1,0 +1,324 @@
+{
+  "schemaVersion": 3,
+  "releaseVersion": "2026.10.16.69",
+  "startedAt": "2026-10-16T05:48:01.970Z",
+  "finishedAt": "2026-10-16T05:49:26.143Z",
+  "git": "0f0a39c407d16bbf152d78c06429f4d6129175c0",
+  "dirty": false,
+  "uiDigest": "sha256:d288df5e7ab3a0002ca7a4aaf832ad686db4f5990cc0922b2bd2911a80182dbd",
+  "mode": "real-cloud-readonly",
+  "device": {
+    "model": "iPhone X",
+    "platform": "devtools",
+    "system": "iOS 10.0.1",
+    "SDKVersion": "3.17.4",
+    "windowWidth": 375,
+    "windowHeight": 642,
+    "screenWidth": 375,
+    "screenHeight": 812,
+    "pixelRatio": 3
+  },
+  "blockers": [],
+  "notCovered": [
+    "ordinary-member-write-journey",
+    "ios-physical-device",
+    "android-physical-device"
+  ],
+  "checks": [
+    {
+      "name": "活动首页加载",
+      "ok": true,
+      "detail": {
+        "error": null,
+        "count": 2
+      }
+    },
+    {
+      "name": "存在带图片的活动编辑验收样本",
+      "ok": true,
+      "detail": {
+        "count": 2
+      }
+    },
+    {
+      "name": "活动卡集合时间为自然表达",
+      "ok": true,
+      "detail": {
+        "displayTimeLabel": "早上 8 点整"
+      }
+    },
+    {
+      "name": "活动轮播日期与集合时间拆分",
+      "ok": true,
+      "detail": {
+        "displayDateLabel": "10月17日 周六",
+        "displayTimeLabel": "早上 8 点整"
+      }
+    },
+    {
+      "name": "活动编辑页图片由管理云函数回显",
+      "ok": true,
+      "detail": {
+        "error": null,
+        "images": 1,
+        "imageHttps": 1,
+        "groupQrHttps": true,
+        "routePreviewHttps": true
+      }
+    },
+    {
+      "name": "图片删除按钮具有明确深色背景与白字",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "我的行程加载",
+      "ok": true,
+      "detail": {
+        "error": null,
+        "count": 2
+      }
+    },
+    {
+      "name": "行程日期与集合时间拆分",
+      "ok": true,
+      "detail": {
+        "displayDate": "10月17日 周六",
+        "meetingTime": "早上 8 点整"
+      }
+    },
+    {
+      "name": "活动详情日期与集合时间拆分",
+      "ok": true,
+      "detail": {
+        "displayDate": "10月17日 周六",
+        "startTime": "早上 8 点整"
+      }
+    },
+    {
+      "name": "报名人员头像与骑行名片背景均为服务端 HTTPS 地址",
+      "ok": true,
+      "detail": {
+        "count": 2,
+        "avatarHttps": 2,
+        "backgroundHttps": 2
+      }
+    },
+    {
+      "name": "报名人员骑行名片弹层打开且图片地址有效",
+      "ok": true,
+      "detail": {
+        "selected": true,
+        "avatarHttps": true,
+        "backgroundHttps": true
+      }
+    },
+    {
+      "name": "名片背景可下载并解码",
+      "ok": true,
+      "detail": {
+        "width": 1280,
+        "height": 1920
+      }
+    },
+    {
+      "name": "报名凭证日期与集合时间拆分",
+      "ok": true,
+      "detail": {
+        "error": null,
+        "displayDate": "10月17日 周六",
+        "meetingTime": "早上 8 点整"
+      }
+    },
+    {
+      "name": "个人中心图片回显",
+      "ok": true,
+      "detail": {
+        "error": null,
+        "backgrounds": 2,
+        "renderableBackgrounds": 2,
+        "profileUrls": 2,
+        "renderableProfileUrls": 2
+      }
+    },
+    {
+      "name": "资料编辑页头像与照片回显",
+      "ok": true,
+      "detail": {
+        "error": null,
+        "photos": 1,
+        "readyHttps": 1,
+        "failed": 0,
+        "avatarHttps": true
+      }
+    },
+    {
+      "name": "骑行名片背景图回显",
+      "ok": true,
+      "detail": {
+        "error": null,
+        "backgrounds": 2,
+        "httpsBackgrounds": 2,
+        "needsProfilePhoto": false
+      }
+    },
+    {
+      "name": "设置页版本与运行时一致",
+      "ok": true,
+      "detail": {
+        "expected": "2026.10.16.69",
+        "actual": "2026.10.16.69"
+      }
+    },
+    {
+      "name": "报名表加载活动与本人资料",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "活动管理列表可读",
+      "ok": true,
+      "detail": {
+        "count": 4,
+        "isAdmin": true
+      }
+    },
+    {
+      "name": "审核列表可读",
+      "ok": true,
+      "detail": {
+        "count": 2
+      }
+    },
+    {
+      "name": "审核详情可读",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "长报名编号与状态标签保持在卡片内",
+      "ok": true,
+      "detail": {
+        "headWidth": 289,
+        "idWidth": 225,
+        "tagWidth": 56
+      }
+    },
+    {
+      "name": "空白发布表单显示标题错误且未创建活动",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "全部 app.json 路由已采集运行截图",
+      "ok": true,
+      "detail": {
+        "expected": 13,
+        "visited": 13
+      }
+    }
+  ],
+  "exceptions": [],
+  "passed": 24,
+  "failed": 0,
+  "outcome": "passed",
+  "evidenceNote": "Post-deployment run of local source matching the upload receipt SHA; not a download or physical-device run of the uploaded package. Raw screenshots remain local and are not published. Git dirty state was captured at launch.",
+  "rawScreenshots": [
+    {
+      "path": "pages/activities/index",
+      "file": "01-activities.png",
+      "storage": "local-only",
+      "sha256": "3dd839e3fc0c3604dc9caebda627d1b14dcd8c876fda7e5be6c5ef614cf11e16"
+    },
+    {
+      "path": "pages/admin/activity-edit/index",
+      "file": "01b-activity-edit.png",
+      "storage": "local-only",
+      "sha256": "f924dd055c6be3907dfc139ce5eb2c0a6b463f9045a52808bf8e4679882bcb00"
+    },
+    {
+      "path": "pages/registrations/index",
+      "file": "02-trips.png",
+      "storage": "local-only",
+      "sha256": "b3e8d83bc954833763b4fdf3934801b0aeb9a096bef38d6a4c1363570c4f69ec"
+    },
+    {
+      "path": "pages/activity-detail/index",
+      "file": "03-detail.png",
+      "storage": "local-only",
+      "sha256": "fafd91cafe3f9a5171a507034b8e8d8cb8a74c92fbcdfa7e5b5a16eaf468acf9"
+    },
+    {
+      "path": "pages/activity-detail/index",
+      "file": "03-detail-attendee-card.png",
+      "storage": "local-only",
+      "sha256": "26e536cb4d8a9b9ef22756860c080d8dfd17b3776d4aa414b667b7a0596bc98f"
+    },
+    {
+      "path": "pages/credential/index",
+      "file": "04-credential.png",
+      "storage": "local-only",
+      "sha256": "cccd76dd6fb0364f2d6fa2bf18f130752bc3c4edf21c332e5bf88a7ff6e9857a"
+    },
+    {
+      "path": "pages/profile/index",
+      "file": "05-profile.png",
+      "storage": "local-only",
+      "sha256": "12a9484fa3bd9ccf91ea1454c2c329989fde607e75b7809b561301e65b53f080"
+    },
+    {
+      "path": "pages/profile-edit/index",
+      "file": "06-profile-edit.png",
+      "storage": "local-only",
+      "sha256": "cfdc7dd4f82295e50d07287be8b8c8e9b36365bb030b26a7d73c37cd20b5476e"
+    },
+    {
+      "path": "pages/capability-card/index",
+      "file": "07-capability-card.png",
+      "storage": "local-only",
+      "sha256": "922d442cadfae125b63de3600e97e32e567fe2004a2066c928dcbd9f309aac99"
+    },
+    {
+      "path": "pages/settings/index",
+      "file": "08-settings.png",
+      "storage": "local-only",
+      "sha256": "8002d4cf8156f22bc8aab3971af7b1ae635e7f9c680e8615fc9a22711062dfd9"
+    },
+    {
+      "path": "pages/registration-form/index",
+      "file": "09-registration-form.png",
+      "storage": "local-only",
+      "sha256": "37e804b3099f28440a8e12973701314c119351e9dcf0197232c316b7a21880dd"
+    },
+    {
+      "path": "pages/admin/activity-list/index",
+      "file": "10-admin-activity-list.png",
+      "storage": "local-only",
+      "sha256": "69d2a7c811654f4fe871e4f0c3ed0f71efdeeb088e7b8861991009d3178eeba4"
+    },
+    {
+      "path": "pages/admin/reviews/index",
+      "file": "11-admin-reviews.png",
+      "storage": "local-only",
+      "sha256": "6f1390d9f3f43ec4b22ab4eb67a7513be03fdd5d7f0c514c485c873a514cd1f0"
+    },
+    {
+      "path": "pages/admin/review-detail/index",
+      "file": "12-admin-review-detail.png",
+      "storage": "local-only",
+      "sha256": "463e21f78b1c6c0af8b1738d0a10032923155ccb414f96479bff74a2d549321c"
+    },
+    {
+      "path": "pages/admin/activity-edit/index",
+      "file": "13-create-activity.png",
+      "storage": "local-only",
+      "sha256": "269a988774ea429c0169e9ed341ec52cfd34ca99668d0a1fe288423af20242c5"
+    },
+    {
+      "path": "pages/admin/activity-edit/index",
+      "file": "14-create-validation.png",
+      "storage": "local-only",
+      "sha256": "a9a60135f8641fcafc4ebc5650729880e5d365c9aad14984dd0d68baf46c7bf1"
+    }
+  ]
+}

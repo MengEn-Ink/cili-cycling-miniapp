@@ -1,0 +1,236 @@
+{
+  "checkedAt": "2026-10-16T05:48:22.822213+00:00",
+  "mainSha": "0f0a39c407d16bbf152d78c06429f4d6129175c0",
+  "pagesRunId": "38857485818",
+  "baseUrl": "https://mengen-ink.github.io/cili-cycling-miniapp/",
+  "files": [
+    {
+      "path": "index.html",
+      "httpStatus": 200,
+      "sha256": "345f18373437875175e518cc201fd4dd6ac1ff00708669d7669d2516e3506a88",
+      "matchesLocal": true
+    },
+    {
+      "path": "app.js",
+      "httpStatus": 200,
+      "sha256": "98e3ab0affdf06950bb71a492c49bc51006f246c1edc6b16ebc3d0c1c9a84ba1",
+      "matchesLocal": true
+    },
+    {
+      "path": "styles.css",
+      "httpStatus": 200,
+      "sha256": "87395def818ff98583758f9a442381c2d81f044eb62310d1d8492096b59f8717",
+      "matchesLocal": true
+    },
+    {
+      "path": "schema.js",
+      "httpStatus": 200,
+      "sha256": "f417a9ee4f5943307eb112fb5b155e6ef80f10940421320bbb5038bf1deb778b",
+      "matchesLocal": true
+    },
+    {
+      "path": "delivery-center.js",
+      "httpStatus": 200,
+      "sha256": "8f16ccdd8e6b99f6dc37f2169d5b0628b601ad499ea400390a801cbc21ffa3c1",
+      "matchesLocal": true
+    },
+    {
+      "path": "design-contract.json",
+      "httpStatus": 200,
+      "sha256": "ef54b8351462422de5ce81aa00c70eb807f71c3d0a13e99737c91623441c8663",
+      "matchesLocal": true
+    },
+    {
+      "path": "design-system.md",
+      "httpStatus": 200,
+      "sha256": "a0410cdcd3277a831bd4511e5ae31e28b46373501f7b8e2cf40ed9df9d9f7f3e",
+      "matchesLocal": true
+    },
+    {
+      "path": "ui-sync-manifest.json",
+      "httpStatus": 200,
+      "sha256": "5065ee0ea490e05e49fb38708a5d4d1f3644a948330fca84e291ad126073e0b1",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/activities-devtools.png",
+      "httpStatus": 200,
+      "sha256": "78aca3ab1c4baa0a3b2d138d39e7d6468b80d5af10c323a089b989466a70699d",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/activities-pages.png",
+      "httpStatus": 200,
+      "sha256": "d59320656c35092390a3a29b2fb547b1d636b38bd4e29b6681f5ad3bfe629fef",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/activity-detail-devtools.png",
+      "httpStatus": 200,
+      "sha256": "137151d1c1ff55f51964e0b2ce7b56e50cb3def01576e82c82037bc9b73bc79e",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/activity-detail-pages.png",
+      "httpStatus": 200,
+      "sha256": "8003281b13b92f7f47325286921e3a5c406b73643ba0148ce1b729821545197c",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/admin-activity-edit-devtools.png",
+      "httpStatus": 200,
+      "sha256": "9cbd1d2c683fa836ce04f4f7820f0046270074cc2fcdcdbd35b55a605cb7af74",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/admin-activity-edit-pages.png",
+      "httpStatus": 200,
+      "sha256": "0ee58f9b451f453bd29c14218dd1619be97cc5e6459273e71f3a09a51ffa0a89",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/admin-activity-list-devtools.png",
+      "httpStatus": 200,
+      "sha256": "32da03bd0d2995ea31c05f2d016559dc5be6f0a77635a57e6c2257a751743525",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/admin-activity-list-pages.png",
+      "httpStatus": 200,
+      "sha256": "9e90a1a61abac4772a81f996cc26c20dc7f5bdcebb122d535d82826a5a9a2a43",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/admin-review-detail-devtools.png",
+      "httpStatus": 200,
+      "sha256": "263dd15a890441b0921d980a93a77feb87df4750ed03efb0ed2fce3302f51899",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/admin-review-detail-pages.png",
+      "httpStatus": 200,
+      "sha256": "8823ae19f785e2ba53a2d8601c5c5a5f83d0572d1ae13e47ea6ca86745f95281",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/admin-reviews-devtools.png",
+      "httpStatus": 200,
+      "sha256": "7ca1ffe1650e102c90d274a48c3afeb0f7b377e3935fa4b656eede09abafc7e9",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/admin-reviews-pages.png",
+      "httpStatus": 200,
+      "sha256": "4af5986029efc6a6f6fe8d73ade81ef4322be441febf2851a404136aa3f45b9c",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/capability-card-devtools.png",
+      "httpStatus": 200,
+      "sha256": "34f68647a27035fe149a881580195bf9013b3976c5a599bc83b5bd7408947a77",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/capability-card-pages.png",
+      "httpStatus": 200,
+      "sha256": "021efd201b302034c71655cd7a148f6435770a8e4a6be588b3bc8ae15148952e",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/credential-devtools.png",
+      "httpStatus": 200,
+      "sha256": "8079dd72bdbf7108a167161d68a8d48b11047c3e2746afd07b57730e3178a6a6",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/credential-pages.png",
+      "httpStatus": 200,
+      "sha256": "153a4b01db205d76ebe6292332fd428d88db28d8f0e52e5e27a6170f63c2e76d",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/index.html",
+      "httpStatus": 200,
+      "sha256": "378b26bb029b70b19d11f16a72212903515c85fd5280dfb96ad8a183535f286b",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/profile-devtools.png",
+      "httpStatus": 200,
+      "sha256": "ebf569203fbdef71dd731b25aa3d92f274e7ab8dad2971498f390c4db08cc971",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/profile-edit-devtools.png",
+      "httpStatus": 200,
+      "sha256": "70b81fc800098df76bd6a1c7f2854671392a901a3ffc5667b6ef906d7df79c5d",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/profile-edit-pages.png",
+      "httpStatus": 200,
+      "sha256": "f4741148fa0822bf92747c8c019d9c9b25812d580084772320ddac6ce6c42d2e",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/profile-pages.png",
+      "httpStatus": 200,
+      "sha256": "6d0c973ac1c8e288d94b8b1498f068fb93a992e06a2058fcd87ef3519b77d4f3",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/redactions.json",
+      "httpStatus": 200,
+      "sha256": "cc996a63f0fc5e60e0e3d6c2681199ca159031d4cd2696dee3d781ff411bc210",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/registration-form-devtools.png",
+      "httpStatus": 200,
+      "sha256": "7d0d288f6b13f143eb505f8038865aef3c2229415af8d17c5292bb88f33fc6d0",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/registration-form-pages.png",
+      "httpStatus": 200,
+      "sha256": "56699279dc7dda9e013f6c142a773356fb4fcad33a6b92c8c3ecf29075488f50",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/registrations-devtools.png",
+      "httpStatus": 200,
+      "sha256": "020f7a0dba7e4e797142764683a00bf450f63d728a20b323f7d21040e9e7d32b",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/registrations-pages.png",
+      "httpStatus": 200,
+      "sha256": "0af09132cff901573a62f3c0a738e0fa713564276344d7607785120e4e6674c3",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/runtime-report.json",
+      "httpStatus": 200,
+      "sha256": "8faebd84e549b6de0dcfcce281d1beb2c50ff470eb96fb5c715911e53c1c463e",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/settings-devtools.png",
+      "httpStatus": 200,
+      "sha256": "b5a870b9ac73f8b9bf18664edede148e10ffea3f4015236f901e68526c4d1676",
+      "matchesLocal": true
+    },
+    {
+      "path": "evidence/ui-sync/2026-10-16-design-acceptance/settings-pages.png",
+      "httpStatus": 200,
+      "sha256": "731d6b32495f263a4d4933508e68ca3817ee92a4babd953129f678443eac921b",
+      "matchesLocal": true
+    },
+    {
+      "path": "templates.js",
+      "httpStatus": 200,
+      "sha256": "428a778e89832e4771d1596d6207ab32a4ddf82a5920037c5865fcb746feb85e",
+      "matchesLocal": true
+    }
+  ]
+}
