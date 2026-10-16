@@ -103,7 +103,7 @@ npm run check:ui-sync -- --strict # 13 页双端截图与内容摘要
 
 ## 协作与发布规则
 
-所有变更都必须遵循 [贡献与发布规则](CONTRIBUTING.md)：基于最新 `main` 开发，本地门禁与 PR CI 通过后合入，并在 `main` CI 成功后完成自动部署验收。自动上传的设计、安全边界、首轮验证证据和故障处理见 [微信开发版 CI 自动部署方案](docs/miniprogram-ci-deployment.md)。安全问题请按 [安全政策](SECURITY.md) 私密报告；本仓库未授予开源许可，使用与再分发边界见 [LICENSE](LICENSE)。
+所有变更都必须遵循 [贡献与发布规则](CONTRIBUTING.md)：基于最新 `main` 开发，本地门禁与 PR CI 通过后合入，并在 `main` CI 成功后完成自动部署验收。自动上传的设计、安全边界、首轮验证证据和故障处理见 [微信开发版 CI 自动部署方案](docs/miniprogram-ci-deployment.md)。Issue 使用结构化表单收集环境与复现信息，Dependabot 和 CodeQL 分别负责依赖更新与代码安全扫描；仓库侧完整治理基线见 [GitHub 仓库治理与发布自动化](docs/github-governance.md)。安全问题请按 [安全政策](SECURITY.md) 私密报告；本仓库未授予开源许可，使用与再分发边界见 [LICENSE](LICENSE)。
 
 ## GitHub Actions 自动上传微信开发版
 
@@ -178,6 +178,7 @@ bootstrap 当前管理 9 个集合、29 个业务索引和全拒绝客户端数�
 
 ## 文档导航
 
+- [GitHub 仓库治理与发布自动化](docs/github-governance.md)：Ruleset、安全扫描、依赖更新、Issue、Release 和部署环境的职责边界。
 - [沙箱环境、测试、部署与代码交付配置指南](docs/sandbox-environment-configuration.md)：统一说明所需 Secret、环境变量、配置方式、测试门禁和部署验收。
 - [产品需求与当前能力](docs/requirements-design.md)：用户、流程、已实现范围和后续边界。
 - [产品待办澄清与历史方案（2026-10-13）](docs/product-backlog-clarification-2026-10-13.md)：通知、发起人权限、活动模板、凭证与图片语义，以及已被后续单一明亮主题方案取代的历史讨论。

@@ -9,6 +9,11 @@ on:
 permissions:
   contents: read
 
+# 同一 PR 的旧检查不再影响交付反馈；main 的发布链仍由独立工作流串行执行，不能被取消。
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   validate:
     runs-on: ubuntu-latest
