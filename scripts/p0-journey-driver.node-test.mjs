@@ -300,6 +300,70 @@ test('重启路由后重新读取 currentPage，拒绝 automator 返回的旧页
   assert.equal(index, 3);
 });
 
+test('首次路由命令丢失时在总时限内重发一次', async () => {
+  const stalePage = {
+    path: 'pages/registrations/index',
+    data: async () => ({ loading: false }),
+  };
+  const readyPage = {
+    path: 'pages/activities/index',
+    data: async () => ({ loading: false }),
+  };
+  let launches = 0;
+  let time = 0;
+  const page = await relaunchWhenReady({
+    miniProgram: {
+      reLaunch: async () => {
+        launches += 1;
+        return stalePage;
+      },
+      currentPage: async () => (launches === 1 ? stalePage : readyPage),
+    },
+    url: '/pages/activities/index',
+    isDataReady: (data) => !data.loading,
+    timeoutMs: 20,
+    intervalMs: 10,
+    maxAttempts: 2,
+    now: () => time,
+    wait: async (milliseconds) => {
+      time += milliseconds;
+    },
+  });
+
+  assert.equal(launches, 2);
+  assert.equal(page, readyPage);
+  assert.equal(time, 10);
+});
+
+test('tabBar 路由使用 switchTab，不调用 reLaunch', async () => {
+  const readyPage = {
+    path: 'pages/activities/index',
+    data: async () => ({ loading: false }),
+  };
+  let switchCalls = 0;
+  let relaunchCalls = 0;
+  const page = await relaunchWhenReady({
+    miniProgram: {
+      reLaunch: async () => {
+        relaunchCalls += 1;
+      },
+      switchTab: async () => {
+        switchCalls += 1;
+      },
+      currentPage: async () => readyPage,
+    },
+    url: '/pages/activities/index',
+    navigationMethod: 'switchTab',
+    isDataReady: (data) => !data.loading,
+    timeoutMs: 20,
+    intervalMs: 10,
+  });
+
+  assert.equal(page, readyPage);
+  assert.equal(switchCalls, 1);
+  assert.equal(relaunchCalls, 0);
+});
+
 test('写调用成功后仍以只读回读确认提交', async () => {
   let writes = 0;
   let reconciliations = 0;

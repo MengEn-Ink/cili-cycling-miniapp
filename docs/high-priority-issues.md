@@ -6,9 +6,9 @@
 
 ## 当前基线
 
-- 代码基线：`main` 最新提交 `459b7404`（PR #237）；旅程 v2 功能提交为 `ce94914c`（PR #238），当前分支 `fix/e2e-route-readiness-20261016` 修复部署后复测发现的旧页面句柄误验收。客户端仍为 `2026.10.16.69`。
-- PR #238 main CI：run [38865578645](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38865578645) 成功；Pages：run [38865578539](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38865578539) 成功，本轮新增四个公开文档/证据文件与线上内容匹配。
-- 最近一次已核验微信开发版：run [38865736980](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38865736980) 实际上传成功，版本 `0.0.241.1`，回执 SHA 为 `ce94914c`。是否存在更新版本以微信后台和最新 workflow 为准。
+- 代码基线：`main` 最新提交 `8d408852`（PR #241）；旅程 v2 功能提交为 `ce94914c`（PR #238），当前分支 `fix/e2e-relaunch-retry-20261016` 修正 tabBar 导航方法、首次丢失的只读路由命令有界重发，并同步客户端 `.70` 的 Pages 设置页证据。客户端为 `2026.10.16.70`。
+- PR #241 main CI：run [38870368656](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38870368656) 成功；Pages：run [38870369347](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38870369347) 成功；CodeQL：run [38870368600](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38870368600) 成功。
+- 最近一次已核验微信开发版：run [38870500651](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/38870500651) 实际上传成功，版本 `0.0.244.1`，回执 SHA 为 `8d408852`。是否存在更新版本以微信后台和最新 workflow 为准。
 - 云函数：`profile`、`registration`、`activity-read`、`activity-admin`、`admin-review` 已按对应功能 PR 部署；`route-web` 与 `/route/embed` 已确认下线。纯文档、测试和未引用资源清理不触发云函数部署。
 - GitHub 实时状态是 PR、分支与 workflow 的唯一事实源；本文件不维护已完成分支清单。
 
@@ -21,7 +21,7 @@
 | P0 | Strava / GPX 路线双模式验收 | Strava 公开路线免授权解析、规范化链接复制、GPX 解析与下载已实现；旧 OAuth、`route-web` 和内嵌路线页已退役 | 使用当前开发版完成 iOS/Android 的公开路线解析、GPX 文件选择、Canvas 和下载验收；确认历史 OAuth 数据 dry-run 与备份后再决定是否执行 purge |
 | P0 | 云端密钥与媒体链路就绪性 | 媒体 owner/canonical、`PROFILE_MEDIA_PATH_SECRET`、加密与服务端临时地址签发均有测试和部署记录 | 在目标环境回读受影响函数配置并完成真实头像、背景图、活动图、群二维码和路线图 smoke；缺证据时不得宣称线上就绪 |
 | P1 | 体验版晋级与 UAT | 开发版自动上传和候选/验证两阶段晋级工作流已具备；本轮前置探测和 `not_executed` 证据已归档 | 配置普通成员 test ticket、连接双真机并完成写链路后，选择已核验开发版晋级体验版，留存版本、时间、验收人和结果 |
-| P1 | Pages / 微信统一设计与运行证据 | 统一规范、32 个变量与 15 组对比度；13 对脱敏截图和逐页差异；PR #233、Pages 与开发版回执已核验；三次真实云只读回归 UI 摘要一致；旧页面句柄问题已由失败实跑捕获并在当前分支修复，修复后 24/24 | 完成路由门禁修复 PR 与部署后干净主干复测；继续收敛结构差异，普通成员写链路与物理真机独立验收 |
+| P1 | Pages / 微信统一设计与运行证据 | 统一规范、32 个变量与 15 组对比度；13 对脱敏截图和逐页差异；PR #233、Pages 与开发版回执已核验；旧页面句柄误验收已由 PR #240 修复；当前分支在客户端 `.69`、`.70` 各完成 24/24，并把 `.70` 设置页同步至 Pages 后通过严格 UI 门禁 | 合入当前修复并从干净主干再跑 24/24；继续收敛结构差异，普通成员写链路与物理真机独立验收 |
 | P1 | 当前旅程离线签发器迁移 | PR #238 已合入并上传开发版 `0.0.241.1`；v2 公开路线/GPX、双平台和九类 UAT 契约上线，v1 仅作历史兼容 | 以真实普通成员和双真机数据生成一份 v2 证据并校验通过后移除 |
 
 ## 分支与交付约束

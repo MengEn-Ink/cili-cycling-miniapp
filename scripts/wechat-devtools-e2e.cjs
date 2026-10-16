@@ -68,6 +68,10 @@ async function main() {
 
   const automator = loadAutomator();
   const version = releaseVersion();
+  const appConfig = JSON.parse(
+    fs.readFileSync(path.join(projectPath, 'miniprogram/app.json'), 'utf8'),
+  );
+  const tabPaths = new Set((appConfig.tabBar?.list || []).map((item) => item.pagePath));
   const uiFiles = execFileSync(
     'git',
     ['-C', projectPath, 'ls-files', '--cached', '--others', '--exclude-standard'],
@@ -124,14 +128,17 @@ async function main() {
     });
     return currentPage;
   };
-  const relaunchLoaded = (url, predicate = () => true) =>
-    relaunchWhenReady({
+  const relaunchLoaded = (url, predicate = () => true) => {
+    const expectedPath = url.split(/[?#]/, 1)[0].replace(/^\/+/, '');
+    return relaunchWhenReady({
       miniProgram,
       url,
       timeoutMs: 30000,
       intervalMs: 250,
+      navigationMethod: tabPaths.has(expectedPath) ? 'switchTab' : 'reLaunch',
       isDataReady: (data) => !data.loading && !data.refreshing && predicate(data),
     });
+  };
   let miniProgram;
   await runWithReport({
     report: result,
@@ -441,9 +448,7 @@ async function main() {
       } else {
         check('空白发布表单主操作存在', false);
       }
-      const expected = JSON.parse(
-        fs.readFileSync(path.join(projectPath, 'miniprogram/app.json'), 'utf8'),
-      ).pages;
+      const expected = appConfig.pages;
       const visited = new Set(result.routes.map((route) => route.path));
       check(
         '全部 app.json 路由已采集运行截图',
