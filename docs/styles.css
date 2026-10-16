@@ -696,7 +696,7 @@ code {
   color: var(--color-on-brand);
 }
 
-/* 关键信息条：浅色卡片承载内容，左侧品牌橙标识业务上下文。 */
+/* 关键信息条：浅色卡片承载内容，左侧品牌红标识业务上下文。 */
 .info-bar {
   position: relative;
   margin-top: 16px;
@@ -3755,7 +3755,7 @@ body.capture-viewport .screen-notes {
 
 /* =============================================================
  * 研发交付中心（Delivery Center）
- * 沿用黑白灰 + 品牌橙；不引入新色号。
+ * 沿用暖米白、墨黑、品牌红与深行动红；不引入新色号。
  * ============================================================= */
 
 .dc-hero {
@@ -3863,7 +3863,7 @@ body.capture-viewport .screen-notes {
   line-height: 18px;
 }
 
-/* ---------- 成熟度 pill（三档，黑白灰 + 橙描边） ---------- */
+/* ---------- 成熟度 pill（三档，沸点中性色 + 品牌红描边） ---------- */
 .dc-pill {
   display: inline-flex;
   align-items: center;

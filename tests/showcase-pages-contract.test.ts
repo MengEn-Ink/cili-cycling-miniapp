@@ -111,6 +111,9 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain('沸点设计系统与验收依据');
     expect(script).not.toContain('历史问题对照表');
     expect(script).not.toContain('主题橙线条');
+    expect(script).not.toContain('橙底');
+    expect(script).not.toContain('深橙');
+    expect(css).not.toContain('品牌橙');
     expect(script).toContain('document.getElementById(targetSection)?.scrollIntoView');
     expect(css).toContain('@media (max-width: 560px)');
     expect(css).toMatch(/\.product-card-grid,[^}]*grid-template-columns:\s*1fr/s);
