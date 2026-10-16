@@ -22,11 +22,11 @@ describe('设置页', () => {
   });
 
   it('只加载当前版本日志，不注册第三方账号生命周期或入口', () => {
-    expect(page.data.releaseNotes).toHaveLength(18);
+    expect(page.data.releaseNotes).toHaveLength(19);
     expect(page.data.releaseNotes[0]).toMatchObject({
       version: CLIENT_RELEASE_VERSION,
       latest: true,
-      title: '活动编辑图片由云函数可靠回显',
+      title: '清理失效资源并加固图片完整性',
     });
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(
       1,
@@ -37,6 +37,7 @@ describe('设置页', () => {
     const versions = page.data.releaseNotes.map((note: { version: string }) => note.version);
     expect(versions).toEqual([
       CLIENT_RELEASE_VERSION,
+      '2026.10.15.67',
       '2026.10.15.66',
       '2026.10.15.65',
       '2026.10.15.64',

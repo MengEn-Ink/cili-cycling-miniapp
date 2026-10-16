@@ -1,6 +1,8 @@
 # Personal Profile Refresh And Attendee Avatar Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+>
+> **Historical archive note:** This plan preserves an earlier avatar fallback experiment. The packaged `cili-orange.png` fallback referenced below has been removed from the current codebase; current runtime defaults use the brand logo asset instead.
 
 **Goal:** Simplify the personal center, expose refresh feedback only during pull-to-refresh, and always render attendee avatars as images without weakening public-avatar privacy checks.
 

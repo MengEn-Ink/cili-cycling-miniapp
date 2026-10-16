@@ -1,6 +1,8 @@
 # Strava Official Embed + GPX Route Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+>
+> **历史归档说明：** 本文记录的是已被后续产品口径替代的旧方案。当前主线已删除 `route-web`、`pages/route-view` 与 `/route/embed`，活动详情页以“复制 Strava 路线链接、不跳转第三方页面”为准；不要把本文中的 Embed / `web-view` 设计当作现行实现。
 
 **Goal:** Remove Strava account authorization and replace it with a validated official-route embed plus organizer-uploaded GPX details, elevation, outline, background, and download.
 

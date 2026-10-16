@@ -1,5 +1,7 @@
 # UI Sync Evidence: Official Route + GPX
 
+> Historical archive: this directory was captured when `route-web` and `pages/route-view` still existed. It is kept only for audit traceability and does not describe the current mini program, which now removes the dedicated route page and only allows copying the Strava route link.
+
 - Source baseline: `54ac489933fd0cf4ac8d7170272b88e601d92634`
 - Capture date: 2026-10-13
 - WeChat DevTools screenshots: `726 x 1570` pixels

@@ -3,10 +3,24 @@ import { CLIENT_RELEASE_VERSION } from '../../config/release';
 const RELEASE_NOTES = [
   {
     version: CLIENT_RELEASE_VERSION,
+    date: '2026-10-16',
+    title: '清理失效资源并加固图片完整性',
+    summary:
+      '移除未接入组件和未引用图片，补充自动校验，避免无效资源进入小程序包或文档出现失效图片。',
+    latest: true,
+    features: [
+      '删除未接入的占位组件、退役头像和未使用的旧版 TabBar 图片',
+      '新增小程序、README 与 Pages 图片引用完整性测试，阻断不存在的本地图片路径',
+      '校准 README、环境变量清单和高优问题基线，归档已退役路线方案与孤立证据',
+      '收拢分支与交付规则，合并后清理已完成工作分支',
+    ],
+  },
+  {
+    version: '2026.10.15.67',
     date: '2026-10-15',
     title: '活动编辑图片由云函数可靠回显',
     summary: '修复受保护云存储下活动编辑页图片、群二维码和路线图无法回显，并支持失效后重新签发。',
-    latest: true,
+    latest: false,
     features: [
       '管理云函数统一签发活动图片、群二维码和路线图的 HTTPS 临时地址',
       '活动编辑页优先使用服务端地址，客户端解析仅作为旧版本兼容兜底',
