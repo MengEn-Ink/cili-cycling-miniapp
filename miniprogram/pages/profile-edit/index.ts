@@ -16,6 +16,8 @@ const ORPHAN_LEDGER_KEY = 'profile-media-orphans-v1';
 const AVATAR_PREVIEW_DEADLINE_MS = 8_000;
 const MAX_LOCAL_IMAGE_BYTES = 5 * 1024 * 1024;
 const PROFILE_BACKGROUND_CATEGORY = 'ride' as const;
+const PROFILE_UPLOAD_MAX_ATTEMPTS = 3;
+const PROFILE_UPLOAD_RETRY_BASE_MS = 250;
 type MediaStage = 'selection' | 'uploadPath' | 'upload' | 'register' | 'setAvatar' | 'preview';
 type SelectedImage = { path: string; size?: number };
 type PhotoItem = {
@@ -255,6 +257,61 @@ async function chooseSingleImage(): Promise<SelectedImage | null> {
   );
 }
 
+async function cropBackgroundImage(image: SelectedImage): Promise<SelectedImage> {
+  if (typeof wx.cropImage !== 'function') return image;
+  try {
+    const result = await new Promise<{ tempFilePath?: string }>((resolve, reject) => {
+      wx.cropImage({
+        src: image.path,
+        cropScale: '16:9',
+        success: resolve,
+        fail: reject,
+      });
+    });
+    const path = result?.tempFilePath;
+    return typeof path === 'string' && path ? { path } : image;
+  } catch (error) {
+    if (isUserCancellation(error)) throw error;
+    // 部分旧基础库虽暴露方法但运行时仍会报告不支持，此时保留原图继续上传。
+    if (isUnsupportedApi(error)) return image;
+    throw mediaStageError(error, 'selection', 'MEDIA_SELECTION_FAILED');
+  }
+}
+
+function retryableUploadError(error: unknown): boolean {
+  if (!error || typeof error !== 'object' || isUserCancellation(error)) return false;
+  const value = error as { errMsg?: unknown; message?: unknown; code?: unknown };
+  const detail = `${String(value.code || '')} ${String(value.errMsg || '')} ${String(
+    value.message || '',
+  )}`;
+  return /(?:network|timeout|timed\s*out|connection|socket|econn(?:reset|refused|aborted)|enet(?:down|unreach)|eai_again|request:\s*fail)/i.test(
+    detail,
+  );
+}
+
+function waitForUploadRetry(attempt: number): Promise<void> {
+  return new Promise((resolve) =>
+    setTimeout(resolve, PROFILE_UPLOAD_RETRY_BASE_MS * 2 ** Math.max(0, attempt - 1)),
+  );
+}
+
+async function uploadProfileMedia(
+  cloud: WxCloudApi,
+  input: { cloudPath: string; filePath: string },
+  onAttempt?: (attempt: number, maxAttempts: number) => void,
+): Promise<{ fileID: string }> {
+  for (let attempt = 1; attempt <= PROFILE_UPLOAD_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      return await cloud.uploadFile(input);
+    } catch (error) {
+      if (attempt >= PROFILE_UPLOAD_MAX_ATTEMPTS || !retryableUploadError(error)) throw error;
+      onAttempt?.(attempt + 1, PROFILE_UPLOAD_MAX_ATTEMPTS);
+      await waitForUploadRetry(attempt);
+    }
+  }
+  throw new Error('upload attempts exhausted');
+}
+
 function mergeAvatarFields(current: Profile | null, authoritative: Profile): Profile {
   if (!current) return authoritative;
   const merged = {
@@ -436,6 +493,7 @@ Page({
     saving: false,
     avatarBusy: false,
     photoBusy: false,
+    mediaProgress: '',
     mediaError: '',
     avatarPreviewUrl: '',
     canEditDetails: false,
@@ -656,7 +714,7 @@ Page({
     if (this.data.avatarBusy || this.data.photoBusy || this.data.saving) return;
     this.mediaErrorRevision += 1;
     this.mediaErrorStage = '';
-    this.setData({ avatarBusy: true, mediaError: '' });
+    this.setData({ avatarBusy: true, mediaProgress: '正在上传头像…', mediaError: '' });
     try {
       await action();
     } catch (error) {
@@ -673,7 +731,7 @@ Page({
         wx.showToast({ title: detail, icon: 'none' });
       }
     } finally {
-      this.setData({ avatarBusy: false });
+      this.setData({ avatarBusy: false, mediaProgress: '' });
     }
   },
   async uploadAndSetAvatar(image: SelectedImage) {
@@ -700,8 +758,16 @@ Page({
         rideService.getProfileMediaUploadPath(),
       );
       const uploaded = await atMediaStage('upload', 'MEDIA_UPLOAD_FAILED', () =>
-        cloud.uploadFile({ cloudPath, filePath: verifiedImage.path }),
+        uploadProfileMedia(
+          cloud,
+          { cloudPath, filePath: verifiedImage.path },
+          (attempt, maxAttempts) =>
+            this.setData({
+              mediaProgress: `网络有些慢，正在重新上传（${attempt}/${maxAttempts}）…`,
+            }),
+        ),
       );
+      this.setData({ mediaProgress: '正在确认头像…' });
       uploadedFileId = uploaded.fileID;
       await atMediaStage('register', 'MEDIA_REGISTER_FAILED', () =>
         rideService.registerProfileMedia(uploadedFileId, 'other', origin),
@@ -753,14 +819,16 @@ Page({
     if (this.data.photoBusy || this.data.saving || this.data.avatarBusy) return;
     this.mediaErrorRevision += 1;
     this.mediaErrorStage = '';
-    this.setData({ photoBusy: true, mediaError: '' });
+    this.setData({ photoBusy: true, mediaProgress: '请选择并调整背景图…', mediaError: '' });
     let uploadedFileId = '';
     try {
       const cloud = wx.cloud;
       if (!cloud) throw mediaCloudUnavailableError();
       const image = await chooseSingleImage();
       if (!image) return;
-      const verifiedImage = await ensureLocalImageSize(image);
+      const croppedImage = await cropBackgroundImage(image);
+      this.setData({ mediaProgress: '正在上传背景图…' });
+      const verifiedImage = await ensureLocalImageSize(croppedImage);
       const photoDigest = await contentDigest(verifiedImage.path);
       const reusedPhotoId = photoDigest ? this.uploadedMediaDigests.get(photoDigest) : '';
       if (reusedPhotoId) {
@@ -778,8 +846,16 @@ Page({
         rideService.getProfileMediaUploadPath(),
       );
       const uploaded = await atMediaStage('upload', 'MEDIA_UPLOAD_FAILED', () =>
-        cloud.uploadFile({ cloudPath, filePath: verifiedImage.path }),
+        uploadProfileMedia(
+          cloud,
+          { cloudPath, filePath: verifiedImage.path },
+          (attempt, maxAttempts) =>
+            this.setData({
+              mediaProgress: `网络有些慢，正在重新上传（${attempt}/${maxAttempts}）…`,
+            }),
+        ),
       );
+      this.setData({ mediaProgress: '正在确认背景图…' });
       uploadedFileId = uploaded.fileID;
       await atMediaStage('register', 'MEDIA_REGISTER_FAILED', () =>
         rideService.registerProfileMedia(uploadedFileId, PROFILE_BACKGROUND_CATEGORY),
@@ -816,7 +892,7 @@ Page({
       this.setData({ mediaError: detail });
       wx.showToast({ title: detail, icon: 'none' });
     } finally {
-      this.setData({ photoBusy: false });
+      this.setData({ photoBusy: false, mediaProgress: '' });
     }
   },
   removeBackgroundPhoto() {

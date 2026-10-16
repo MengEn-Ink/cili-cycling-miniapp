@@ -21,7 +21,17 @@
   <view class="list-count" wx:if="{{items.length}}"><view class="list-count__main"><text>{{activeView === 'history' ? '历史活动' : '近期活动'}}</text><text class="list-count__current">当前第 {{currentCardIndex + 1}} 场</text></view><text class="list-count__total">共 {{items.length}} 场</text></view>
   <view class="refresh-note" wx:if="{{refreshing}}" aria-hidden="true">正在刷新活动…</view>
   <view class="refresh-note refresh-error" wx:if="{{refreshError}}" aria-hidden="true">{{refreshError}}</view>
-  <state-view loading="{{loading}}" error="{{error}}" empty="{{!items.length}}" empty-title="{{emptyTitle}}" empty-copy="{{emptyCopy}}" retryable="{{true}}" bind:retry="load">
+  <view class="activity-card-skeleton" wx:if="{{loading}}" role="status" aria-label="正在加载活动">
+    <view class="activity-card-skeleton__media skeleton"></view>
+    <view class="activity-card-skeleton__body">
+      <view class="activity-card-skeleton__meta skeleton"></view>
+      <view class="activity-card-skeleton__title skeleton"></view>
+      <view class="activity-card-skeleton__route skeleton"></view>
+      <view class="activity-card-skeleton__metrics skeleton"></view>
+      <view class="activity-card-skeleton__actions"><view class="skeleton"></view><view class="skeleton"></view></view>
+    </view>
+  </view>
+  <state-view wx:else loading="{{loading}}" error="{{error}}" empty="{{!items.length}}" empty-title="{{emptyTitle}}" empty-copy="{{emptyCopy}}" retryable="{{true}}" bind:retry="load">
     <swiper class="activity-carousel" id="activity-list-panel" current="{{currentCardIndex}}" duration="260" circular="{{false}}" next-margin="{{items.length > 1 ? '32rpx' : '0rpx'}}" bindchange="cardChange" role="tabpanel" aria-label="活动卡片，左右滑动切换">
       <swiper-item wx:for="{{items}}" wx:key="id">
         <view class="activity-slide"><activity-card item="{{item}}" data-id="{{item.id}}" bind:open="open" /></view>

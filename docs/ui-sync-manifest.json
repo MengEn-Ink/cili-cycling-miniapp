@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "3a7f69828b41116950cfc9e308b700a48e6eb025",
-  "syncedAt": "2026-10-16T17:00:00.000Z",
+  "syncedThrough": "731489ac047d04fc2f06ab8f0f73bfca474fd90b",
+  "syncedAt": "2026-10-16T17:45:00.000Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:4c13cf2abd21a10d319dd58d1650f41a9966888f5bdec90ee05239751469b44b"
+    "digest": "sha256:0113409eed65004ed654aa1b6dbefafd36cc64abfc50ac660fcc22d7c27cc2d2"
   },
   "prototype": {
-    "digest": "sha256:a79f7ce247c2c365b2f4cf60041d8bbc50d4901cd8270d8ae258dc4f8f9a80f2"
+    "digest": "sha256:d95a81a3b421bc1b60e67fbec9b21a42aae583cc525ab19ab3ffdbc66cecc7f1"
   },
   "routes": [
     {
@@ -80,7 +80,7 @@
         "state": "有活动",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "代码与 Pages 原型已同步到 2026.10.17.74 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+        "note": "代码与 Pages 原型已同步到 2026.10.17.76 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
       },
       {
         "id": "activity-detail",
@@ -89,7 +89,7 @@
         "state": "管理员 / Pages 已通过",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "代码与 Pages 原型已同步到 2026.10.17.74 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+        "note": "代码与 Pages 原型已同步到 2026.10.17.76 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
       },
       {
         "id": "registration-form",
@@ -98,7 +98,7 @@
         "state": "未选骑行经验，提交禁用",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "代码与 Pages 原型已同步到 2026.10.17.74 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+        "note": "代码与 Pages 原型已同步到 2026.10.17.76 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
       },
       {
         "id": "registrations",
@@ -116,7 +116,7 @@
         "state": "已通过凭证",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "代码与 Pages 原型已同步到 2026.10.17.74 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+        "note": "代码与 Pages 原型已同步到 2026.10.17.76 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
       },
       {
         "id": "profile",
@@ -125,16 +125,16 @@
         "state": "管理员",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "代码与 Pages 原型已同步到 2026.10.17.74 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+        "note": "代码与 Pages 原型已同步到 2026.10.17.76 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
       },
       {
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "默认，客户端 2026.10.17.74",
+        "state": "默认，客户端 2026.10.17.76",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "代码与 Pages 原型已同步到 2026.10.17.74 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+        "note": "Pages 375×812 设置页截图已按 2026.10.17.76 重新采集；微信端截图沿用既有布局基线，开发版上传后补做 iOS / Android 双端版本文案确认。"
       },
       {
         "id": "capability-card",
@@ -143,7 +143,7 @@
         "state": "有背景图",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "代码与 Pages 原型已同步到 2026.10.17.74 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+        "note": "代码与 Pages 原型已同步到 2026.10.17.76 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
       },
       {
         "id": "profile-edit",
@@ -152,7 +152,7 @@
         "state": "本人已有资料",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "代码与 Pages 原型已同步到 2026.10.17.74 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+        "note": "Pages 375×812 资料编辑截图已按 16:9 裁剪说明重新采集；微信端截图沿用既有布局基线，开发版上传后补做 iOS / Android 双端裁剪手势确认。"
       },
       {
         "id": "admin-activity-list",
@@ -161,7 +161,7 @@
         "state": "有活动",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "代码与 Pages 原型已同步到 2026.10.17.74 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+        "note": "代码与 Pages 原型已同步到 2026.10.17.76 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
       },
       {
         "id": "admin-activity-edit",
@@ -170,7 +170,7 @@
         "state": "空白创建",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "代码与 Pages 原型已同步到 2026.10.17.74 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+        "note": "代码与 Pages 原型已同步到 2026.10.17.76 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
       },
       {
         "id": "admin-reviews",
@@ -179,7 +179,7 @@
         "state": "待审核筛选为空",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "代码与 Pages 原型已同步到 2026.10.17.74 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+        "note": "代码与 Pages 原型已同步到 2026.10.17.76 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
       },
       {
         "id": "admin-review-detail",
@@ -188,7 +188,7 @@
         "state": "已通过，可签到",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "代码与 Pages 原型已同步到 2026.10.17.74 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+        "note": "代码与 Pages 原型已同步到 2026.10.17.76 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
       }
     ]
   }
