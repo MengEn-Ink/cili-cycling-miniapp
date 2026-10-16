@@ -13,17 +13,33 @@ describe('沸点首批六页尺寸契约', () => {
     expect(declaration(effectiveBlock(app, '.page-title'), 'font-size')).toBe('48rpx');
   });
 
-  it('我的行程使用白底 1px 描边卡片和可读序号', () => {
-    const app = read('miniprogram/app.wxss');
+  it('我的行程逐项还原独立统计卡、深色票据头和暖米白集合信息', () => {
+    const template = read('miniprogram/pages/registrations/index.wxml');
     const styles = read('miniprogram/pages/registrations/index.wxss');
     const list = effectiveBlock(styles, '.registration-list');
-    const card = effectiveBlock(app, '.registration-card');
+    const ready = effectiveBlock(styles, '.trip-stat--ready');
+    const card = effectiveBlock(styles, '.registration-card');
     expect(declaration(list, 'gap')).toBe('var(--card-gap)');
-    expect(declaration(card, 'padding')).toBe('32rpx');
-    expect(declaration(card, 'border')).toBe('2rpx solid var(--color-card-border)');
-    expectSemantic(declaration(card, 'border-radius'), '--radius-card');
-    expect(declaration(card, 'box-shadow')).toBe('none');
-    expectSemantic(declaration(effectiveBlock(styles, '.card-index'), 'color'), '--color-muted');
+    expect(styles).toMatch(/\.trip-stats\s*\{[^}]*gap:\s*20rpx[^}]*margin-top:\s*30rpx/s);
+    expectSemantic(declaration(ready, 'background'), '--color-media-card-bg');
+    expect(declaration(card, 'padding')).toBe('0');
+    expect(declaration(card, 'border')).toBe('0');
+    expectSemantic(declaration(card, 'border-radius'), '--radius-display');
+    expectSemantic(
+      declaration(effectiveBlock(styles, '.ticket-head'), 'background'),
+      '--color-media-card-bg',
+    );
+    expectSemantic(
+      declaration(effectiveBlock(styles, '.meeting-panel'), 'background'),
+      '--color-bg',
+    );
+    expect(declaration(effectiveBlock(styles, '.meeting-panel'), 'border-radius')).toBe('28rpx');
+    expectSemantic(
+      declaration(effectiveBlock(styles, '.trip-action--primary'), 'background'),
+      '--color-action',
+    );
+    expect(template).toContain('<view class="ticket-body">');
+    expect(template).toContain('status-pill ticket="{{true}}"');
   });
 
   it('活动详情使用统一同级分区、紧凑路线操作和安全区 CTA', () => {

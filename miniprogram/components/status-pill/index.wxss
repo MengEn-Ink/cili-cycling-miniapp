@@ -41,3 +41,8 @@
   background: var(--color-surface);
   color: var(--color-brand-active);
 }
+.pill--ticket.pill--danger {
+  border-color: transparent;
+  background: var(--color-raised);
+  color: var(--color-muted);
+}

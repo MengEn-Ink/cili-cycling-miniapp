@@ -40,11 +40,11 @@ describe('activity journey visual contract', () => {
   it('行程卡使用清晰次按钮，且审核橙点只由正数状态控制', () => {
     expect(registrations).toContain('wx:if="{{statusCounts.review > 0}}"');
     expect(registrations).toContain('wx:else class="trip-stat"');
-    expect(registrations).toContain('class="secondary trip-action"');
+    expect(registrations).toContain("'trip-action--primary' : ''");
     expect(registrations).not.toContain('class="open-link"');
     expect(registrationStyles).toContain('.trip-stat--review .trip-stat__value:not(:empty)::after');
     expect(registrationStyles).toMatch(
-      /\.trip-action\s*\{[^}]*min-height:\s*var\(--control-height\)/s,
+      /\.trip-action,\s*\.delete-record-button\s*\{[^}]*min-height:\s*var\(--control-height\)/s,
     );
   });
 

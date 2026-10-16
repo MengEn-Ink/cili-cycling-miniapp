@@ -37,35 +37,40 @@
 .trip-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0;
-  padding: 24rpx 0;
-  border: 2rpx solid var(--color-border);
-  border-radius: var(--radius-display);
-  background: var(--color-surface);
+  gap: 20rpx;
+  margin-top: 30rpx;
   color: var(--color-text);
 }
 .trip-stat {
   display: flex;
   align-items: center;
   flex-direction: column;
+  justify-content: center;
   min-width: 0;
-  padding: 0 32rpx;
+  min-height: 124rpx;
+  padding: 20rpx 12rpx;
+  border-radius: 32rpx;
+  background: var(--color-surface);
   text-align: center;
 }
-.trip-stat + .trip-stat {
-  border-left: 2rpx solid var(--color-border);
+.trip-stat--ready {
+  background: var(--color-media-card-bg);
+  color: var(--color-on-media);
 }
 .trip-stat__label {
+  margin-top: 8rpx;
   color: var(--color-muted);
   font-size: 24rpx;
   line-height: 32rpx;
 }
+.trip-stat--ready .trip-stat__label {
+  color: var(--color-media-muted);
+}
 .trip-stat__value {
   position: relative;
-  margin-top: 4rpx;
-  color: var(--color-text);
-  font-size: 48rpx;
-  line-height: 64rpx;
+  color: currentColor;
+  font-size: 44rpx;
+  line-height: 56rpx;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
 }
@@ -108,63 +113,83 @@
   position: relative;
   z-index: 1;
   margin-top: 0;
-  border: 2rpx solid var(--color-border);
+  padding: 0;
+  overflow: hidden;
+  border: 0;
   border-radius: var(--radius-display);
   transition: transform 0.2s ease-out;
 }
 .registration-card--pressed {
-  background: var(--color-raised);
+  opacity: 0.92;
+}
+.status-cancelled {
+  opacity: 0.92;
 }
 .ticket-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
   gap: 16rpx;
+  min-height: 112rpx;
+  padding: 24rpx 32rpx;
+  background: var(--color-media-card-bg);
+  color: var(--color-on-media);
 }
-.ticket-date {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
+.status-cancelled .ticket-head {
+  background: var(--color-muted);
+}
+.ticket-body {
+  padding: 24rpx 32rpx 32rpx;
 }
 .ticket-label {
-  color: var(--color-text);
-  font-size: 24rpx;
-  line-height: 36rpx;
+  color: currentColor;
+  font-size: 28rpx;
+  line-height: 40rpx;
   font-weight: 900;
+  letter-spacing: 2rpx;
 }
 .card-index {
-  color: var(--color-muted);
+  color: var(--color-media-muted);
   font-size: 24rpx;
   line-height: 36rpx;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .registration-title {
   display: -webkit-box;
-  margin-top: 12rpx;
   overflow: hidden;
   color: var(--color-text);
-  font-size: 36rpx;
-  line-height: 52rpx;
+  font-size: 34rpx;
+  line-height: 48rpx;
   font-weight: 900;
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 .meeting-panel {
-  margin: 24rpx -32rpx 0;
-  border-radius: 0;
+  margin: 24rpx 0 0;
+  padding: 20rpx 28rpx;
+  border: 0;
+  border-radius: 28rpx;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 .meeting-row {
   align-items: flex-start;
-  border-color: var(--color-subtle);
+  padding: 0;
+  border: 0;
+}
+.meeting-row + .meeting-row {
+  margin-top: 8rpx;
 }
 .meeting-label {
   flex: 0 0 auto;
-  color: var(--color-media-muted);
+  color: var(--color-muted);
 }
 .meeting-value {
   min-width: 0;
-  color: var(--color-on-media);
+  color: var(--color-text);
   font-weight: 800;
   text-align: right;
   overflow-wrap: anywhere;
@@ -178,8 +203,8 @@
 .ticket-meta {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16rpx;
+  justify-content: flex-start;
+  gap: 20rpx;
   min-height: 64rpx;
   margin-top: 16rpx;
 }
@@ -190,12 +215,8 @@
 }
 .gathering-mode {
   min-width: 0;
-  padding: 4rpx 12rpx;
-  border-radius: 8rpx;
-  background: var(--color-raised);
   font-size: 24rpx;
   font-weight: 800;
-  text-align: right;
   overflow-wrap: anywhere;
 }
 .status-guidance {
@@ -208,18 +229,17 @@
   line-height: 36rpx;
 }
 .status-dot {
-  flex: 0 0 12rpx;
-  width: 12rpx;
-  height: 12rpx;
-  background: var(--color-brand);
+  flex: 0 0 14rpx;
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+  background: var(--color-brand-active);
 }
 .card-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16rpx;
-  margin-top: 16rpx;
-  padding-top: 16rpx;
-  border-top: 2rpx solid var(--color-border);
+  gap: 20rpx;
+  margin-top: 24rpx;
 }
 .card-actions > button:only-child {
   grid-column: 1 / -1;
@@ -232,19 +252,21 @@
   min-height: var(--control-height);
   margin: 0;
   padding: 0 16rpx;
-  border: 4rpx solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
+  border: 3rpx solid var(--color-text);
+  border-radius: 999rpx;
   background: var(--color-surface);
   color: var(--color-text);
   font-size: 28rpx;
   font-weight: 800;
 }
-.trip-action {
-  min-height: var(--control-height);
+.delete-record-button {
+  border-color: var(--color-brand-active);
+  color: var(--color-brand-active);
 }
-.trip-action__label--primary {
-  color: var(--color-text);
-  font-weight: 900;
+.trip-action--primary {
+  border-color: var(--color-action);
+  background: var(--color-action);
+  color: var(--color-on-action);
 }
 .trip-skeleton {
   display: flex;
@@ -300,27 +322,34 @@
     font-size: 40rpx;
     line-height: 56rpx;
   }
+  .trip-stats {
+    gap: 12rpx;
+  }
   .trip-stat {
-    padding: 0 16rpx;
+    min-height: 116rpx;
+    padding: 16rpx 8rpx;
   }
   .trip-stat__value {
     font-size: 40rpx;
-    line-height: 56rpx;
+    line-height: 52rpx;
+  }
+  .ticket-head {
+    gap: 10rpx;
+    padding: 22rpx 24rpx;
+  }
+  .ticket-body {
+    padding: 24rpx;
   }
   .meeting-row {
-    flex-wrap: wrap;
-    gap: 4rpx;
-    padding: 16rpx 0;
-  }
-  .meeting-value {
-    flex-basis: 100%;
-    text-align: left;
+    gap: 8rpx;
   }
   .card-actions {
-    grid-template-columns: 1fr;
+    gap: 12rpx;
   }
-  .card-actions > button:only-child {
-    grid-column: auto;
+  .trip-action,
+  .delete-record-button {
+    padding: 0 8rpx;
+    font-size: 26rpx;
   }
 }
 @media (prefers-reduced-motion: reduce) {

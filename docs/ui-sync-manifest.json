@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
   "syncedThrough": "3a7f69828b41116950cfc9e308b700a48e6eb025",
-  "syncedAt": "2026-10-16T10:00:00.000Z",
+  "syncedAt": "2026-10-16T14:45:21.000Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:303f6a728e284b8564df040799580bedf62b975602c846ab4550dcc72c1348cd"
+    "digest": "sha256:b49a9f02c7f6ba6e4f3a2716fa65884f91093768449e9dd65b8b1b93f90662d6"
   },
   "prototype": {
-    "digest": "sha256:5b75a2d83b2b1852ff4cf8d82df7ab3414c31ddfaeab61f0fede07c086ac404f"
+    "digest": "sha256:e95e743a38f5f4d1ce772f79e0fdcd16074fcfa316e8ccb83fb7c29745400bae"
   },
   "routes": [
     {
@@ -80,7 +80,7 @@
         "state": "有活动",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "沸点风格令牌已在代码级切换为 2026.10.16.71；当前证据 PNG 为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
+        "note": "沸点风格令牌已切换，行程页已按 03-registrations.png 在代码级逐项对齐为 2026.10.16.72；当前非行程页证据 PNG 仍为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
       },
       {
         "id": "activity-detail",
@@ -89,7 +89,7 @@
         "state": "管理员 / Pages 已通过",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "沸点风格令牌已在代码级切换为 2026.10.16.71；当前证据 PNG 为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
+        "note": "沸点风格令牌已切换，行程页已按 03-registrations.png 在代码级逐项对齐为 2026.10.16.72；当前非行程页证据 PNG 仍为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
       },
       {
         "id": "registration-form",
@@ -98,16 +98,16 @@
         "state": "未选骑行经验，提交禁用",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "沸点风格令牌已在代码级切换为 2026.10.16.71；当前证据 PNG 为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
+        "note": "沸点风格令牌已切换，行程页已按 03-registrations.png 在代码级逐项对齐为 2026.10.16.72；当前非行程页证据 PNG 仍为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
       },
       {
         "id": "registrations",
         "devtools": "registrations-devtools.png",
         "pages": "registrations-pages.png",
-        "state": "已通过行程",
-        "data": "real-runtime",
+        "state": "1 场可出发 / 1 场已取消",
+        "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "沸点风格令牌已在代码级切换为 2026.10.16.71；当前证据 PNG 为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
+        "note": "Pages 已按 03-registrations.png 重新采集 375×812 截图；微信开发者工具证据仍为旧主题，待部署后用真实运行态补采并完成双端 aligned 复核。"
       },
       {
         "id": "credential",
@@ -116,7 +116,7 @@
         "state": "已通过凭证",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "沸点风格令牌已在代码级切换为 2026.10.16.71；当前证据 PNG 为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
+        "note": "沸点风格令牌已切换，行程页已按 03-registrations.png 在代码级逐项对齐为 2026.10.16.72；当前非行程页证据 PNG 仍为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
       },
       {
         "id": "profile",
@@ -125,16 +125,16 @@
         "state": "管理员",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "沸点风格令牌已在代码级切换为 2026.10.16.71；当前证据 PNG 为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
+        "note": "沸点风格令牌已切换，行程页已按 03-registrations.png 在代码级逐项对齐为 2026.10.16.72；当前非行程页证据 PNG 仍为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
       },
       {
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "默认，客户端 2026.10.16.70",
+        "state": "默认，客户端 2026.10.16.72",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "沸点风格令牌已在代码级切换为 2026.10.16.71；当前证据 PNG 为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
+        "note": "沸点风格令牌已切换，行程页已按 03-registrations.png 在代码级逐项对齐为 2026.10.16.72；当前非行程页证据 PNG 仍为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
       },
       {
         "id": "capability-card",
@@ -143,7 +143,7 @@
         "state": "有背景图",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "沸点风格令牌已在代码级切换为 2026.10.16.71；当前证据 PNG 为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
+        "note": "沸点风格令牌已切换，行程页已按 03-registrations.png 在代码级逐项对齐为 2026.10.16.72；当前非行程页证据 PNG 仍为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
       },
       {
         "id": "profile-edit",
@@ -152,7 +152,7 @@
         "state": "本人已有资料",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "沸点风格令牌已在代码级切换为 2026.10.16.71；当前证据 PNG 为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
+        "note": "沸点风格令牌已切换，行程页已按 03-registrations.png 在代码级逐项对齐为 2026.10.16.72；当前非行程页证据 PNG 仍为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
       },
       {
         "id": "admin-activity-list",
@@ -161,7 +161,7 @@
         "state": "有活动",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "沸点风格令牌已在代码级切换为 2026.10.16.71；当前证据 PNG 为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
+        "note": "沸点风格令牌已切换，行程页已按 03-registrations.png 在代码级逐项对齐为 2026.10.16.72；当前非行程页证据 PNG 仍为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
       },
       {
         "id": "admin-activity-edit",
@@ -170,7 +170,7 @@
         "state": "空白创建",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "沸点风格令牌已在代码级切换为 2026.10.16.71；当前证据 PNG 为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
+        "note": "沸点风格令牌已切换，行程页已按 03-registrations.png 在代码级逐项对齐为 2026.10.16.72；当前非行程页证据 PNG 仍为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
       },
       {
         "id": "admin-reviews",
@@ -179,7 +179,7 @@
         "state": "待审核筛选为空",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "沸点风格令牌已在代码级切换为 2026.10.16.71；当前证据 PNG 为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
+        "note": "沸点风格令牌已切换，行程页已按 03-registrations.png 在代码级逐项对齐为 2026.10.16.72；当前非行程页证据 PNG 仍为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
       },
       {
         "id": "admin-review-detail",
@@ -188,7 +188,7 @@
         "state": "已通过，可签到",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "沸点风格令牌已在代码级切换为 2026.10.16.71；当前证据 PNG 为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
+        "note": "沸点风格令牌已切换，行程页已按 03-registrations.png 在代码级逐项对齐为 2026.10.16.72；当前非行程页证据 PNG 仍为切换前橙黑/暖灰主题，不代表新主题。部署与真机验收后将在 docs/evidence/ 下重新采集 375×812 同视口双端截图并恢复 differences / aligned 口径。"
       }
     ]
   }
