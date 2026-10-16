@@ -14,21 +14,21 @@ const app = read('miniprogram/app.wxss');
 const tokens = uiTokens(app);
 
 describe('approved unified high-contrast UI', () => {
-  it('uses the approved warm gray, charcoal, orange, green and warning palette', () => {
-    expect(tokens['--color-bg']).toBe('#f3f3f1');
+  it('uses the approved boiling-point cream, ink, red, green and warning palette', () => {
+    expect(tokens['--color-bg']).toBe('#fbf5ea');
     expect(tokens['--color-surface']).toBe('#ffffff');
-    expect(tokens['--color-raised']).toBe('#ececea');
-    expect(tokens['--color-text']).toBe('#171717');
-    expect(tokens['--color-muted']).toBe('#666666');
-    expect(tokens['--color-border']).toBe('#d6d6d2');
-    expect(tokens['--color-border-strong']).toBe('#171717');
-    expect(tokens['--color-brand']).toBe('#e85b32');
-    expect(tokens['--color-brand-active']).toBe('#c84320');
-    expect(tokens['--color-status-success']).toBe('#1d7a3e');
+    expect(tokens['--color-raised']).toBe('#f3e6d0');
+    expect(tokens['--color-text']).toBe('#211f1c');
+    expect(tokens['--color-muted']).toBe('#6f675d');
+    expect(tokens['--color-border']).toBe('#ededed');
+    expect(tokens['--color-border-strong']).toBe('#9a9186');
+    expect(tokens['--color-brand']).toBe('#e13b2b');
+    expect(tokens['--color-brand-active']).toBe('#c0321f');
+    expect(tokens['--color-status-success']).toBe('#16633a');
     expect(tokens['--color-status-warning']).toBe('#7a5c00');
     expect(tokens['--metric-align']).toBe('left');
     expect(tokens['--page-heading-align']).toBe('left');
-    expect(tokens['--radius-display']).toBe('32rpx');
+    expect(tokens['--radius-display']).toBe('40rpx');
   });
 
   it('keeps body, secondary and primary action text above WCAG AA', () => {
@@ -47,7 +47,7 @@ describe('approved unified high-contrast UI', () => {
     expect(declaration(button, 'display')).toBe('flex');
     expect(declaration(button, 'align-items')).toBe('center');
     expect(declaration(button, 'justify-content')).toBe('center');
-    expect(declaration(button, 'min-height')).toBe('var(--control-height)');
+    expect(declaration(button, 'min-height')).toBe('var(--primary-control-height)');
     expect(declaration(button, 'background')).toBe('var(--color-action) !important');
     expect(declaration(button, 'color')).toBe('var(--color-on-action) !important');
     expect(button).not.toMatch(/gradient/i);
@@ -98,8 +98,8 @@ describe('approved unified high-contrast UI', () => {
   });
 
   it('keeps the fixed action reserve explicit across standard and narrow screens', () => {
-    expect(tokens['--fixed-action-reserve']).toBe('224rpx');
-    expect(tokens['--fixed-action-reserve-narrow']).toBe('276rpx');
+    expect(tokens['--fixed-action-reserve']).toBe('240rpx');
+    expect(tokens['--fixed-action-reserve-narrow']).toBe('292rpx');
     expect(app).toMatch(
       /@media \(max-width: 340px\)[\s\S]*?\.action-bar\s*\{[^}]*grid-template-columns:\s*1fr/s,
     );

@@ -19,8 +19,8 @@ describe('native tabbar safe-area contract', () => {
     expect(app.tabBar.custom).not.toBe(true);
     expect(existsSync('miniprogram/custom-tab-bar')).toBe(false);
     expect(String(app.tabBar.backgroundColor || '').toLowerCase()).toBe('#ffffff');
-    expect(String(app.tabBar.color || '').toLowerCase()).toBe('#5b6258');
-    expect(String(app.tabBar.selectedColor || '').toLowerCase()).toBe('#10120f');
+    expect(String(app.tabBar.color || '').toLowerCase()).toBe('#6f675d');
+    expect(String(app.tabBar.selectedColor || '').toLowerCase()).toBe('#211f1c');
     expect(app.tabBar.borderStyle).toBe('white');
     expect(app.tabBar.list.map((item: { pagePath: string }) => item.pagePath)).toEqual([
       'pages/activities/index',
@@ -51,8 +51,8 @@ describe('native tabbar safe-area contract', () => {
     expect(appStyles).toMatch(/^page\s*\{[\s\S]*?min-height:\s*100%;/);
     expect(appStyles).toContain('background: var(--color-bg);');
     expect(appStyles).toContain('color: var(--color-text);');
-    expect(tokens['--color-bg']).toBe('#f3f3f1');
-    expect(tokens['--color-text']).toBe('#171717');
+    expect(tokens['--color-bg']).toBe('#fbf5ea');
+    expect(tokens['--color-text']).toBe('#211f1c');
   });
 
   it('gives all tab roots one shared safe-area bottom spacing contract', () => {

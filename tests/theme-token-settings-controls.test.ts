@@ -20,8 +20,13 @@ describe('主题 token 与控件契约', () => {
   });
 
   it('统一按钮触控高度与按钮、输入控件禁用态', () => {
-    expect(declaration(effectiveBlock(app, 'button'), 'min-height')).toBe('44px');
-    expect(tokens['--control-height']).toBe('88rpx');
+    expect(app).toMatch(/button\s*\{[^}]*min-height:\s*var\(--control-height\)/s);
+    expect(tokens['--control-height']).toBe('96rpx');
+    expect(tokens['--primary-control-height']).toBe('104rpx');
+    expect(declaration(effectiveBlock(app, '.btn'), 'min-height')).toBe(
+      'var(--primary-control-height)',
+    );
+    expect(app).not.toContain('min-height: 44px;');
 
     for (const selector of ['button[disabled]', 'input[disabled]', 'textarea[disabled]']) {
       const disabled = effectiveBlock(app, selector);

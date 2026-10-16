@@ -12,7 +12,7 @@ import {
 
 const read = (file: string) => readFileSync(file, 'utf8');
 
-describe('核心页面统一明亮主题配色', () => {
+describe('核心页面沸点浅色主题配色', () => {
   const appStyles = read('miniprogram/app.wxss');
   const brandStyles = read('miniprogram/components/brand-logo/index.wxss');
   const detailStyles = read('miniprogram/pages/activity-detail/index.wxss');
@@ -35,7 +35,7 @@ describe('核心页面统一明亮主题配色', () => {
     ).toBeGreaterThanOrEqual(4.5);
   });
 
-  it.each(['已驳回', '已取消'])('%s 使用品牌橙危险语义而不回退红色', (status) => {
+  it.each(['已驳回', '已取消'])('%s 使用品牌红危险语义而不回退旧状态色', (status) => {
     const template = read('miniprogram/components/status-pill/index.wxml');
     const block = effectiveBlock(pillStyles, '.pill--danger');
     expect(template).toContain(`status === '${status}'`);
@@ -61,7 +61,7 @@ describe('核心页面统一明亮主题配色', () => {
   });
 
   it('品牌软底只承载品牌语义且正文保持可读', () => {
-    expect(tokens['--color-brand-soft']).toBe('#fff0e9');
+    expect(tokens['--color-brand-soft']).toBe('#fcebea');
     expect(contrast(tokens['--color-text'], tokens['--color-brand-soft'])).toBeGreaterThanOrEqual(
       7,
     );
@@ -69,7 +69,7 @@ describe('核心页面统一明亮主题配色', () => {
     expect(tokens['--color-brand']).not.toBe(tokens['--color-status-warning']);
   });
 
-  it('个人中心品牌标识使用石墨黑底牌、白色文字和橙色终点', () => {
+  it('个人中心品牌标识使用墨黑底牌、白色文字和品牌红终点', () => {
     expect(read('miniprogram/pages/profile/index.wxml')).toContain(
       '<brand-logo compact="{{true}}"',
     );

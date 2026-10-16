@@ -25,24 +25,39 @@ describe('统一 Logo 物料与页面接入契约', () => {
       ).toBe(true);
     }
     expect(manifest.colors).toEqual({
-      background: '#20241F',
+      background: '#211F1C',
       foreground: '#FFFFFF',
-      accent: '#E85B32',
+      accent: '#E13B2B',
     });
     expect(existsSync('miniprogram/assets/brand/logo-circle-144.png')).toBe(true);
     expect(existsSync('miniprogram/assets/brand/logo-share-500x400.png')).toBe(true);
   });
 
-  it('品牌组件与导出物料共享黑白橙品牌色', () => {
+  it('品牌组件与导出物料共享墨黑白沸点红品牌色', () => {
     const appStyles = read('miniprogram/app.wxss');
     const logoStyles = read('miniprogram/components/brand-logo/index.wxss');
 
-    expect(appStyles).toContain('--color-logo-background: #20241f;');
+    expect(appStyles).toContain('--color-logo-background: #211f1c;');
     expect(appStyles).toContain('--color-logo-foreground: #ffffff;');
-    expect(appStyles).toContain('--color-logo-accent: #e85b32;');
+    expect(appStyles).toContain('--color-logo-accent: #e13b2b;');
     expect(logoStyles).toContain('background: var(--color-logo-background);');
     expect(logoStyles).toContain('color: var(--color-logo-foreground);');
     expect(logoStyles).toContain('border: 4rpx solid var(--color-logo-accent);');
+  });
+
+  it('Logo 源稿统一使用沸点墨黑与品牌红，不再保留旧橙黑色值', () => {
+    for (const file of [
+      'logo-square.svg',
+      'logo-circle.svg',
+      'logo-watermark.svg',
+      'logo-share.svg',
+      ...Array.from({ length: 8 }, (_, index) => `loading-${String(index).padStart(2, '0')}.svg`),
+    ]) {
+      const source = read(`docs/brand/logo-materials/source/${file}`);
+      expect(source).toContain('#211f1c');
+      expect(source).toContain('#e13b2b');
+      expect(source).not.toMatch(/#20241f|#e85b32/i);
+    }
   });
 
   it('活动空态与核心名片页面统一复用 brand-logo，不再展示旧 CILI 字标', () => {

@@ -4,13 +4,13 @@ import { describe, expect, it } from 'vitest';
 
 const read = (file: string) => readFileSync(file, 'utf8');
 
-describe('fixed action layout contract', () => {
-  it('uses one reserve variable for the form content and fixed action bar', () => {
+describe('沸点固定操作区布局契约', () => {
+  it('使用统一预留变量适配 96rpx 控件与固定操作栏', () => {
     const appStyles = read('miniprogram/app.wxss');
     const styles = read('miniprogram/pages/registration-form/index.wxss');
 
-    expect(appStyles).toMatch(/--fixed-action-reserve:\s*224rpx;/);
-    expect(appStyles).toMatch(/--fixed-action-reserve-narrow:\s*276rpx;/);
+    expect(appStyles).toMatch(/--fixed-action-reserve:\s*240rpx;/);
+    expect(appStyles).toMatch(/--fixed-action-reserve-narrow:\s*292rpx;/);
     expect(appStyles).toMatch(
       /\.detail-page,[\s\S]*?\.form-page,[\s\S]*?padding-bottom:\s*calc\(var\(--fixed-action-reserve\) \+ env\(safe-area-inset-bottom\)\);/,
     );

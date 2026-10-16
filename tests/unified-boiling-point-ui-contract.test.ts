@@ -30,8 +30,8 @@ describe('HP-20261010-02 单一明亮 UI 底座', () => {
     expect(appConfig.tabBar).toMatchObject({
       backgroundColor: '#ffffff',
       borderStyle: 'white',
-      color: '#5b6258',
-      selectedColor: '#10120f',
+      color: '#6f675d',
+      selectedColor: '#211f1c',
     });
     expect(appConfig.tabBar.list.map((item) => item.iconPath)).toEqual([
       'assets/tabbar/activities-light.png',
@@ -89,20 +89,20 @@ describe('HP-20261010-02 单一明亮 UI 底座', () => {
     const styles = read('miniprogram/app.wxss');
 
     expect(styles).not.toMatch(/\.theme-light|\.theme-dark/);
-    expect(styles).toContain('--color-bg: #f3f3f1;');
+    expect(styles).toContain('--color-bg: #fbf5ea;');
     expect(styles).toContain('--color-surface: #ffffff;');
-    expect(styles).toContain('--color-raised: #ececea;');
-    expect(styles).toContain('--color-text: #171717;');
-    expect(styles).toContain('--color-muted: #666666;');
-    expect(styles).toContain('--color-brand: #e85b32;');
-    expect(styles).toContain('--color-on-brand: #171717;');
-    expect(styles).toContain('--color-action: #c84320;');
+    expect(styles).toContain('--color-raised: #f3e6d0;');
+    expect(styles).toContain('--color-text: #211f1c;');
+    expect(styles).toContain('--color-muted: #6f675d;');
+    expect(styles).toContain('--color-brand: #e13b2b;');
+    expect(styles).toContain('--color-on-brand: #0c0a07;');
+    expect(styles).toContain('--color-action: #c0321f;');
     expect(styles).toContain('--color-on-action: #ffffff;');
-    expect(styles).toContain('--control-height: 88rpx;');
-    expect(styles).toContain('--segment-height: 88rpx;');
-    expect(styles).toContain('--page-gutter: 48rpx;');
-    expect(styles).toContain('--page-gutter-narrow: 32rpx;');
-    expect(styles).toContain('--radius-card: 28rpx;');
-    expect(styles).toContain('--card-gap: 32rpx;');
+    expect(styles).toContain('--control-height: 96rpx;');
+    expect(styles).toContain('--segment-height: 92rpx;');
+    expect(styles).toContain('--page-gutter: 32rpx;');
+    expect(styles).toContain('--page-gutter-narrow: 24rpx;');
+    expect(styles).toContain('--radius-card: 36rpx;');
+    expect(styles).toContain('--card-gap: 28rpx;');
   });
 });

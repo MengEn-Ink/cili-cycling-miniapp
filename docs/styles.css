@@ -1,55 +1,55 @@
 /*
- * 此里 · 全套 UI 改版高保真原型（2026-10-14）
+ * 此里 · 全套 UI 改版高保真原型（沸点风格 · 2026-10-16）
  * 颜色变量与 miniprogram/app.wxss 一一对应（同名、同值）；1rpx = 0.5px。
- * 只有明亮主题；暖灰背景与浅边框承载内容，主题橙用于主操作、当前步骤和待处理状态。
+ * 只有明亮主题：暖米白画布、墨黑信息块、深行动红承载主行动；暖黄短标签搭配墨黑字。
  * 正式变量与可计算门槛见 design-contract.json；使用规则见 design-system.md。
  * --color-status-* 两端共用，只用于状态小标签、行内提示和图标。
  */
 :root {
-  --color-bg: #f3f3f1;
+  --color-bg: #fbf5ea;
   --color-surface: #ffffff;
-  --color-raised: #ececea;
-  --color-text: #171717;
-  --color-muted: #666666;
-  --color-subtle: #737373;
-  --color-placeholder: #737373;
-  --color-disabled-text: #666666;
+  --color-raised: #f3e6d0;
+  --color-text: #211f1c;
+  --color-muted: #6f675d;
+  --color-subtle: #6f675d;
+  --color-placeholder: #6f675d;
+  --color-disabled-text: #6f675d;
   --color-on-media: #ffffff;
   --color-media-muted: #d4d4d4;
-  --color-media-card-bg: #171717;
-  --color-border: #d6d6d2;
-  --color-card-border: #d6d6d2;
-  --color-border-strong: #171717;
+  --color-media-card-bg: #211f1c;
+  --color-border: #ededed;
+  --color-card-border: #ededed;
+  --color-border-strong: #9a9186;
   --color-input-bg: #ffffff;
   --color-fixed-bar: rgba(255, 255, 255, 0.98);
   --color-overlay: rgba(0, 0, 0, 0.72);
-  --color-shadow: rgba(0, 0, 0, 0.1);
-  --color-brand: #e85b32;
-  --color-brand-active: #c84320;
-  --color-brand-soft: #fff0e9;
-  --color-logo-background: #20241f;
-  --color-on-brand: #171717;
-  --color-action: #c84320;
-  --color-action-active: #a93619;
+  --color-shadow: rgba(33, 31, 28, 0.06);
+  --color-brand: #e13b2b;
+  --color-brand-active: #c0321f;
+  --color-brand-soft: #fcebea;
+  --color-logo-background: #211f1c;
+  --color-on-brand: #0c0a07;
+  --color-action: #c0321f;
+  --color-action-active: #a52a1c;
   --color-on-action: #ffffff;
-  --color-status-success: #1d7a3e;
+  --color-status-success: #16633a;
   --color-status-success-soft: #e7f4eb;
   --color-status-warning: #7a5c00;
-  --color-status-warning-soft: #fbf1cc;
+  --color-status-warning-soft: #fff2c7;
   --radius-xs: 4px;
   --radius-sm: 10px;
-  --radius-md: 12px;
-  --radius-card: 14px;
+  --radius-md: 13px;
+  --radius-card: 18px;
   --radius-full: 9999px;
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 12px;
   --spacing-lg: 16px;
-  --control-height: 44px;
-  --segment-height: 44px;
-  --page-gutter: 24px;
-  --card-gap: 16px;
-  --font: -apple-system, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  --control-height: 48px;
+  --segment-height: 46px;
+  --page-gutter: 16px;
+  --card-gap: 14px;
+  --font: Inter, 'Noto Sans SC', 'PingFang SC', system-ui, -apple-system, sans-serif;
 }
 
 * {
@@ -3412,6 +3412,12 @@ body.capture .screen-notes {
 }
 
 /* 340px 内容宽度：不缩放组件，按信息层级重排。 */
+body.is-narrow .showcase {
+  width: 340px;
+  max-width: 100%;
+  padding: 0;
+}
+
 body.is-narrow .phone-shell {
   width: 340px;
 }
@@ -3421,6 +3427,33 @@ body.is-narrow .phone-inner {
 }
 
 @media (max-width: 900px) {
+  .showcase {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px;
+  }
+
+  .phone-stage {
+    order: 1;
+    min-width: 0;
+  }
+
+  .phone-shell {
+    width: min(395px, 100%);
+    margin: 0 auto;
+  }
+
+  .screen-nav-panel {
+    position: static;
+    order: 2;
+    max-height: none;
+  }
+
+  .screen-notes {
+    position: static;
+    order: 3;
+    max-height: none;
+  }
+
   .site-header {
     flex-wrap: wrap;
     padding: 16px;
@@ -3475,6 +3508,10 @@ body.is-narrow .phone-inner {
 }
 
 @media (max-width: 560px) {
+  .showcase {
+    padding: 0;
+  }
+
   .site-header h1 {
     font-size: 20px;
     line-height: 28px;
