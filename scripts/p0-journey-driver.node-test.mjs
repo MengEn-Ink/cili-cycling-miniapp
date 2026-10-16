@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import {
   compensateJourney,
   evaluateJourneyPreflight,
+  relaunchWhenReady,
   runReconciledWrite,
   sanitizeJourneyAudits,
   waitForPageReady,
@@ -255,6 +256,48 @@ test('页面等待超时使用固定错误且不泄露页面数据', async () =>
       !error.message.includes('PAGE_DATA_SENTINEL'),
   );
   assert.equal(reads, 3);
+});
+
+test('重启路由后重新读取 currentPage，拒绝 automator 返回的旧页面句柄', async () => {
+  const stalePage = {
+    path: 'pages/registrations/index',
+    data: async () => ({ loading: false, marker: 'stale' }),
+  };
+  const loadingPage = {
+    path: 'pages/activities/index',
+    data: async () => ({ loading: true }),
+  };
+  const readyPage = {
+    path: 'pages/activities/index',
+    data: async () => ({ loading: false, marker: 'ready' }),
+  };
+  const currentPages = [stalePage, loadingPage, readyPage, readyPage];
+  let index = 0;
+  let time = 0;
+  let relaunchedUrl = '';
+  const miniProgram = {
+    reLaunch: async (url) => {
+      relaunchedUrl = url;
+      return stalePage;
+    },
+    currentPage: async () => currentPages[Math.min(index++, currentPages.length - 1)],
+  };
+
+  const page = await relaunchWhenReady({
+    miniProgram,
+    url: '/pages/activities/index?source=e2e',
+    isDataReady: (data) => !data.loading && data.marker === 'ready',
+    timeoutMs: 100,
+    intervalMs: 10,
+    now: () => time,
+    wait: async (milliseconds) => {
+      time += milliseconds;
+    },
+  });
+
+  assert.equal(relaunchedUrl, '/pages/activities/index?source=e2e');
+  assert.equal(page, readyPage);
+  assert.equal(index, 3);
 });
 
 test('写调用成功后仍以只读回读确认提交', async () => {

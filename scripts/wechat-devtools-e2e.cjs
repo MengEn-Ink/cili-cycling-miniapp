@@ -57,7 +57,7 @@ function releaseVersion() {
 
 async function main() {
   const { runWithReport } = await import('./e2e-report.mjs');
-  const { waitForPageReady } = await import('./p0-journey-driver.mjs');
+  const { relaunchWhenReady, waitForPageReady } = await import('./p0-journey-driver.mjs');
   const { classifyUiPath, digestFiles } = await import('./ui-sync-policy.mjs');
   if (process.platform !== 'darwin') throw new Error('微信开发者工具 E2E 目前仅支持 macOS。');
   if (!fs.existsSync(cliPath)) throw new Error(`未找到微信开发者工具 CLI：${cliPath}`);
@@ -107,15 +107,29 @@ async function main() {
     await miniProgram.screenshot({ path: path.join(outputPath, file) });
     result.routes.push({ path: current.path, screenshot: file });
   };
-  const waitLoaded = async (page, predicate = () => true) =>
-    waitForPageReady({
-      expectedPath: page.path,
+  const waitLoaded = async (expectedPath, predicate = () => true) => {
+    let currentPage;
+    await waitForPageReady({
+      expectedPath,
       timeoutMs: 30000,
       intervalMs: 250,
-      readPage: async () => ({
-        path: (await miniProgram.currentPage()).path,
-        data: await page.data(),
-      }),
+      readPage: async () => {
+        currentPage = await miniProgram.currentPage();
+        return {
+          path: currentPage.path,
+          data: await currentPage.data(),
+        };
+      },
+      isDataReady: (data) => !data.loading && !data.refreshing && predicate(data),
+    });
+    return currentPage;
+  };
+  const relaunchLoaded = (url, predicate = () => true) =>
+    relaunchWhenReady({
+      miniProgram,
+      url,
+      timeoutMs: 30000,
+      intervalMs: 250,
       isDataReady: (data) => !data.loading && !data.refreshing && predicate(data),
     });
   let miniProgram;
@@ -144,8 +158,7 @@ async function main() {
         ].map((key) => [key, device[key]]),
       );
 
-      let page = await miniProgram.reLaunch('/pages/activities/index');
-      await waitLoaded(page);
+      let page = await relaunchLoaded('/pages/activities/index');
       let data = await page.data();
       const activities = data.items || [];
       const activity = activities[0];
@@ -171,10 +184,9 @@ async function main() {
       await screenshot(miniProgram, '01-activities.png');
 
       if (editableActivity?.id) {
-        page = await miniProgram.reLaunch(
+        page = await relaunchLoaded(
           `/pages/admin/activity-edit/index?id=${encodeURIComponent(editableActivity.id)}`,
         );
-        await waitLoaded(page);
         data = await page.data();
         const editImages = data.images || [];
         const editImagePreviewUrls = data.imagePreviewUrls || [];
@@ -211,8 +223,7 @@ async function main() {
         }
       }
 
-      page = await miniProgram.reLaunch('/pages/registrations/index');
-      await waitLoaded(page);
+      page = await relaunchLoaded('/pages/registrations/index');
       data = await page.data();
       const trips = data.items || [];
       const trip = trips[0];
@@ -230,10 +241,9 @@ async function main() {
       if (activity?.id) {
         let attendeeActivity = null;
         for (const candidate of activities.slice(0, 5)) {
-          page = await miniProgram.reLaunch(
+          page = await relaunchLoaded(
             `/pages/activity-detail/index?id=${encodeURIComponent(candidate.id)}`,
           );
-          await waitLoaded(page);
           data = await page.data();
           if (!attendeeActivity) attendeeActivity = { candidate, data };
           if ((data.attendees || []).length > 0) {
@@ -261,7 +271,7 @@ async function main() {
         const attendeeButton = await page.$('.attendee-mini-card');
         if (attendeeButton) {
           await attendeeButton.tap();
-          await waitLoaded(page, (value) => Boolean(value.selectedAttendee));
+          page = await waitLoaded(page.path, (value) => Boolean(value.selectedAttendee));
           data = await page.data();
         }
         check(
@@ -290,10 +300,9 @@ async function main() {
       const credentialTrip =
         trips.find((item) => item.status === 'approved' || item.status === 'checked_in') || trip;
       if (credentialTrip?.id) {
-        page = await miniProgram.reLaunch(
+        page = await relaunchLoaded(
           `/pages/credential/index?id=${encodeURIComponent(credentialTrip.id)}`,
         );
-        await waitLoaded(page);
         data = await page.data();
         check(
           '报名凭证日期与集合时间拆分',
@@ -309,8 +318,7 @@ async function main() {
         check('报名凭证存在可验证记录', false, { reason: '当前账号没有行程记录' });
       }
 
-      page = await miniProgram.reLaunch('/pages/profile/index');
-      await waitLoaded(page);
+      page = await relaunchLoaded('/pages/profile/index');
       data = await page.data();
       const profileUrls = [data.heroAvatarUrl, data.heroBackgroundAvatarUrl].filter(Boolean);
       check(
@@ -330,9 +338,8 @@ async function main() {
       );
       await screenshot(miniProgram, '05-profile.png');
 
-      page = await miniProgram.reLaunch('/pages/profile-edit/index');
-      await waitLoaded(
-        page,
+      page = await relaunchLoaded(
+        '/pages/profile-edit/index',
         (value) =>
           value.error || (value.photoItems || []).every((item) => item.previewState !== 'loading'),
       );
@@ -356,8 +363,7 @@ async function main() {
       );
       await screenshot(miniProgram, '06-profile-edit.png');
 
-      page = await miniProgram.reLaunch('/pages/capability-card/index');
-      await waitLoaded(page);
+      page = await relaunchLoaded('/pages/capability-card/index');
       data = await page.data();
       const backgrounds = data.card?.backgrounds || [];
       check(
@@ -372,8 +378,7 @@ async function main() {
       );
       await screenshot(miniProgram, '07-capability-card.png');
 
-      page = await miniProgram.reLaunch('/pages/settings/index');
-      await waitLoaded(page);
+      page = await relaunchLoaded('/pages/settings/index');
       data = await page.data();
       const currentVersion = data.releaseNotes?.[0]?.version;
       check('设置页版本与运行时一致', currentVersion === version, {
@@ -382,16 +387,14 @@ async function main() {
       });
       await screenshot(miniProgram, '08-settings.png');
 
-      page = await miniProgram.reLaunch(
+      page = await relaunchLoaded(
         `/pages/registration-form/index?id=${encodeURIComponent(activity?.id || '')}`,
       );
-      await waitLoaded(page);
       data = await page.data();
       check('报名表加载活动与本人资料', !data.error && Boolean(data.activity));
       await screenshot(miniProgram, '09-registration-form.png');
 
-      page = await miniProgram.reLaunch('/pages/admin/activity-list/index');
-      await waitLoaded(page);
+      page = await relaunchLoaded('/pages/admin/activity-list/index');
       data = await page.data();
       check('活动管理列表可读', !data.error && Boolean(data.isAdmin), {
         count: data.items?.length || 0,
@@ -399,18 +402,16 @@ async function main() {
       });
       await screenshot(miniProgram, '10-admin-activity-list.png');
 
-      page = await miniProgram.reLaunch('/pages/admin/reviews/index');
-      await waitLoaded(page);
+      page = await relaunchLoaded('/pages/admin/reviews/index');
       data = await page.data();
       check('审核列表可读', !data.error, { count: data.all?.length || 0 });
       const review = (data.all || [])[0] || trip;
       await screenshot(miniProgram, '11-admin-reviews.png');
 
       if (review?.id) {
-        page = await miniProgram.reLaunch(
+        page = await relaunchLoaded(
           `/pages/admin/review-detail/index?id=${encodeURIComponent(review.id)}`,
         );
-        await waitLoaded(page);
         data = await page.data();
         check('审核详情可读', !data.error);
         const headSize = await (await page.$('.info-head')).size();
@@ -425,13 +426,12 @@ async function main() {
       } else {
         result.blockers.push('缺少可访问审核记录');
       }
-      page = await miniProgram.reLaunch('/pages/admin/activity-edit/index');
-      await waitLoaded(page);
+      page = await relaunchLoaded('/pages/admin/activity-edit/index');
       await screenshot(miniProgram, '13-create-activity.png');
       const publish = await page.$('.button--primary');
       if (publish) {
         await publish.tap();
-        await waitLoaded(page, (value) => Boolean(value.formErrors?.title));
+        page = await waitLoaded(page.path, (value) => Boolean(value.formErrors?.title));
         data = await page.data();
         check(
           '空白发布表单显示标题错误且未创建活动',

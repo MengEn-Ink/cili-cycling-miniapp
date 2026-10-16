@@ -212,6 +212,52 @@ export async function waitForPageReady({
   }
 }
 
+export async function relaunchWhenReady({
+  miniProgram,
+  url,
+  isDataReady,
+  timeoutMs = 30_000,
+  intervalMs = 250,
+  now = Date.now,
+  wait = defaultWait,
+}) {
+  const expectedPath = typeof url === 'string' ? url.split(/[?#]/, 1)[0].replace(/^\/+/, '') : '';
+  if (
+    !miniProgram ||
+    typeof miniProgram.reLaunch !== 'function' ||
+    typeof miniProgram.currentPage !== 'function' ||
+    !expectedPath ||
+    typeof isDataReady !== 'function'
+  ) {
+    fail('PAGE_NOT_READY');
+  }
+
+  try {
+    await miniProgram.reLaunch(url);
+  } catch {
+    fail('PAGE_NOT_READY');
+  }
+
+  let readyPage;
+  await waitForPageReady({
+    expectedPath,
+    timeoutMs,
+    intervalMs,
+    now,
+    wait,
+    readPage: async () => {
+      const page = await miniProgram.currentPage();
+      readyPage = page;
+      return {
+        path: page?.path,
+        data: await page?.data(),
+      };
+    },
+    isDataReady,
+  });
+  return readyPage;
+}
+
 export async function runReconciledWrite({
   execute,
   reconcile,
