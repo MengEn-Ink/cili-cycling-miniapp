@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "syncedThrough": "4dbdd507d2098dcb537680d725894079dcf9d306",
-  "syncedAt": "2026-10-15T01:30:00Z",
+  "syncedThrough": "3ced77dc07cc39091dbd05c00872a63af30d50f6",
+  "syncedAt": "2026-10-16T04:09:51Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:51b15a143fdba0c5631faa839fb964e62965abf7346ecebd889261579f9534a3"
+    "digest": "sha256:939b331625bf639dc0860092395b3e0f7f334a97f2cd18c3c84203f18a2c726b"
   },
   "prototype": {
     "digest": "sha256:0b54882d48b6b3cbf5f3f465ec592226926cb617fca5d6d27e7f2de03a4c3920"
@@ -67,7 +67,7 @@
     }
   ],
   "evidence": {
-    "directory": "docs/evidence/ui-sync/2026-10-13-gpx-privacy-a551a3a",
+    "directory": "docs/evidence/ui-sync/2026-10-16-main-3ced77d",
     "routes": [
       {
         "id": "activities",

@@ -302,7 +302,7 @@ test('体验版工作流只生成证据，不自动上传或覆盖体验基线',
   const workflow = await readFile('.github/workflows/promote-miniprogram-experience.yml', 'utf8');
   const developmentWorkflow = await readFile('.github/workflows/deploy-miniprogram.yml', 'utf8');
   const rollbackGate = workflow.match(
-    /- name: Verify rollback target is a recorded stable release[\s\S]*?(?=\n      - name:)/,
+    /- name: Verify rollback target is a recorded stable release[\s\S]*?(?=\n {6}- name:)/,
   )?.[0];
   assert.ok(rollbackGate);
   assert.match(workflow, /workflow_dispatch:/);

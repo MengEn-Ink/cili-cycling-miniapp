@@ -1,0 +1,15 @@
+# 所有变更默认由仓库所有者审阅。
+* @MengEn-Ink
+
+# 治理、自动化和发布链路必须由仓库所有者审阅。
+/.github/ @MengEn-Ink
+/scripts/ @MengEn-Ink
+/tools/ @MengEn-Ink
+/package.json @MengEn-Ink
+/package-lock.json @MengEn-Ink
+
+# 小程序与云函数运行时代码必须由仓库所有者审阅。
+/miniprogram/ @MengEn-Ink
+/cloudfunctions/ @MengEn-Ink
+/project.config.json @MengEn-Ink
+/cloudbaserc.json @MengEn-Ink

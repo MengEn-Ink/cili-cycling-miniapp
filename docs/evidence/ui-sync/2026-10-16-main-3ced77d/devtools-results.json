@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 2,
+  "releaseVersion": "2026.10.16.68",
+  "startedAt": "2026-10-16T04:07:27.817Z",
+  "git": "3ced77dc07cc39091dbd05c00872a63af30d50f6",
+  "projectPath": "<temporary-clone>",
+  "checks": [
+    {
+      "name": "活动首页加载",
+      "ok": true,
+      "detail": {
+        "error": null,
+        "count": 2
+      }
+    },
+    {
+      "name": "存在带图片的活动编辑验收样本",
+      "ok": true,
+      "detail": {
+        "count": 2
+      }
+    },
+    {
+      "name": "活动卡集合时间为自然表达",
+      "ok": true,
+      "detail": {
+        "displayTimeLabel": "早上 8 点整"
+      }
+    },
+    {
+      "name": "活动轮播日期与集合时间拆分",
+      "ok": true,
+      "detail": {
+        "displayDateLabel": "10月17日 周六",
+        "displayTimeLabel": "早上 8 点整"
+      }
+    },
+    {
+      "name": "活动编辑页图片由管理云函数回显",
+      "ok": true,
+      "detail": {
+        "error": null,
+        "images": 1,
+        "imageHttps": 1,
+        "groupQrHttps": true,
+        "routePreviewHttps": true
+      }
+    },
+    {
+      "name": "我的行程加载",
+      "ok": true,
+      "detail": {
+        "error": null,
+        "count": 2
+      }
+    },
+    {
+      "name": "行程日期与集合时间拆分",
+      "ok": true,
+      "detail": {
+        "displayDate": "10月17日 周六",
+        "meetingTime": "早上 8 点整"
+      }
+    },
+    {
+      "name": "活动详情日期与集合时间拆分",
+      "ok": true,
+      "detail": {
+        "displayDate": "10月17日 周六",
+        "startTime": "早上 8 点整"
+      }
+    },
+    {
+      "name": "报名人员头像与骑行名片背景均为服务端 HTTPS 地址",
+      "ok": true,
+      "detail": {
+        "count": 2,
+        "avatarHttps": 2,
+        "backgroundHttps": 2
+      }
+    },
+    {
+      "name": "报名人员骑行名片弹层图片回显",
+      "ok": true,
+      "detail": {
+        "selected": true,
+        "avatarHttps": true,
+        "backgroundHttps": true
+      }
+    },
+    {
+      "name": "报名凭证日期与集合时间拆分",
+      "ok": true,
+      "detail": {
+        "error": null,
+        "displayDate": "10月17日 周六",
+        "meetingTime": "早上 8 点整"
+      }
+    },
+    {
+      "name": "个人中心图片回显",
+      "ok": true,
+      "detail": {
+        "error": null,
+        "backgrounds": 2,
+        "renderableBackgrounds": 2,
+        "profileUrls": 2,
+        "renderableProfileUrls": 2
+      }
+    },
+    {
+      "name": "资料编辑页头像与照片回显",
+      "ok": true,
+      "detail": {
+        "error": null,
+        "photos": 1,
+        "readyHttps": 1,
+        "failed": 0,
+        "avatarHttps": true
+      }
+    },
+    {
+      "name": "骑行名片背景图回显",
+      "ok": true,
+      "detail": {
+        "error": null,
+        "backgrounds": 2,
+        "httpsBackgrounds": 2,
+        "needsProfilePhoto": false
+      }
+    },
+    {
+      "name": "设置页版本与运行时一致",
+      "ok": true,
+      "detail": {
+        "expected": "2026.10.16.68",
+        "actual": "2026.10.16.68"
+      }
+    }
+  ],
+  "exceptions": [],
+  "finishedAt": "2026-10-16T04:09:22.427Z",
+  "passed": 15,
+  "failed": 0
+}

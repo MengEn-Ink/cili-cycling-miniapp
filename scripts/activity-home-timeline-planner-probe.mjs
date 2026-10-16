@@ -8,7 +8,6 @@ import { CloudBaseCliRunner } from './bootstrap-cloudbase.mjs';
 export const PROBE_AS_OF = new Date('2026-10-09T08:00:00.000Z');
 export const PROBE_COLLECTION = 'tmp_activity_home_timeline_f8d1d2e2';
 const REGION = 'ap-shanghai';
-const API_VERSION = '2018-06-08';
 const PAGE_SIZE = 20;
 const READ_LIMIT = PAGE_SIZE + 1;
 const RELAXED_DATE_MIN_MS = 0;
@@ -793,6 +792,7 @@ export async function runProbe({ envId, collection, execute }) {
   if (typeof execute !== 'function') throw new Error('execute 非法');
   let created = false;
   let primaryError;
+  let cleanupError;
   const summary = {
     envId,
     collection,
@@ -869,34 +869,36 @@ export async function runProbe({ envId, collection, execute }) {
   } catch (error) {
     primaryError = error;
   } finally {
-    let cleanupError;
     if (created) {
       try {
         const dropped = await execute({ kind: 'drop', collection });
         const listed = await execute({ kind: 'list-collections', collection });
         const remaining = (listed.collections ?? []).filter((item) => item.name === collection);
-        if (remaining.length !== 0) throw new Error('临时集合清理未收敛');
-        summary.cleanup = {
-          dropRequestId: evidenceRequestId(dropped.requestId, 'Cleanup drop'),
-          verifyRequestId: evidenceRequestId(listed.requestId, 'Cleanup verify'),
-          remaining: 0,
-        };
+        if (remaining.length !== 0) {
+          cleanupError = new Error('临时集合清理未收敛');
+        } else {
+          summary.cleanup = {
+            dropRequestId: evidenceRequestId(dropped.requestId, 'Cleanup drop'),
+            verifyRequestId: evidenceRequestId(listed.requestId, 'Cleanup verify'),
+            remaining: 0,
+          };
+        }
       } catch (error) {
         cleanupError = error;
       }
     }
-    if (primaryError && cleanupError) {
-      const aggregate = new AggregateError(
-        [primaryError, cleanupError],
-        `${primaryError.message}；同时清理失败：${cleanupError.message}`,
-      );
-      aggregate.probeSummary = summary;
-      throw aggregate;
-    }
-    if (cleanupError) {
-      cleanupError.probeSummary = summary;
-      throw cleanupError;
-    }
+  }
+  if (primaryError && cleanupError) {
+    const aggregate = new AggregateError(
+      [primaryError, cleanupError],
+      `${primaryError.message}；同时清理失败：${cleanupError.message}`,
+    );
+    aggregate.probeSummary = summary;
+    throw aggregate;
+  }
+  if (cleanupError) {
+    cleanupError.probeSummary = summary;
+    throw cleanupError;
   }
   if (primaryError) {
     primaryError.probeSummary = summary;
