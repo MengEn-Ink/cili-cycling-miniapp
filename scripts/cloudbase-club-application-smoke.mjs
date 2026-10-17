@@ -76,7 +76,7 @@ export function nosqlCommandArgs(envId, commands) {
   ];
 }
 
-export function handlerProbeArgs(envId) {
+export function functionDetailProbeArgs(envId) {
   return [
     '--yes',
     '--package',
@@ -85,18 +85,23 @@ export function handlerProbeArgs(envId) {
     '-e',
     envId,
     'fn',
-    'invoke',
+    'detail',
     'club-application',
-    '--params',
-    JSON.stringify({ action: 'mine' }),
     '--json',
   ];
 }
 
-function collectBusinessEnvelopes(value, results = [], seen = new Set()) {
+const firstOwnValue = (value, keys) => {
+  for (const key of keys) {
+    if (Object.hasOwn(value, key)) return value[key];
+  }
+  return undefined;
+};
+
+function collectFunctionDetails(value, results = [], seen = new Set()) {
   if (typeof value === 'string') {
     try {
-      collectBusinessEnvelopes(JSON.parse(value), results, seen);
+      collectFunctionDetails(JSON.parse(value), results, seen);
     } catch {
       // 普通字段不是嵌套 JSON。
     }
@@ -104,70 +109,72 @@ function collectBusinessEnvelopes(value, results = [], seen = new Set()) {
   }
   if (!value || typeof value !== 'object' || seen.has(value)) return results;
   seen.add(value);
-  if (
-    value.ok === false &&
-    value.error &&
-    typeof value.error === 'object' &&
-    typeof value.error.code === 'string'
-  )
-    results.push(value);
-  for (const nested of Object.values(value)) collectBusinessEnvelopes(nested, results, seen);
+  const name = firstOwnValue(value, ['FunctionName', 'functionName', 'name']);
+  const status = firstOwnValue(value, ['Status', 'status']);
+  if (name !== undefined) {
+    results.push({
+      name,
+      status,
+    });
+  }
+  for (const nested of Object.values(value)) collectFunctionDetails(nested, results, seen);
   return results;
 }
 
-function parseBusinessEnvelopes(output) {
-  try {
-    return collectBusinessEnvelopes(parseJson(output));
-  } catch {
-    return [];
+function collectEnvironmentIds(value, results = [], seen = new Set()) {
+  if (typeof value === 'string') {
+    try {
+      collectEnvironmentIds(JSON.parse(value), results, seen);
+    } catch {
+      // 普通字段不是嵌套 JSON。
+    }
+    return results;
   }
+  if (!value || typeof value !== 'object' || seen.has(value)) return results;
+  seen.add(value);
+  const envId = firstOwnValue(value, ['EnvironmentId', 'environmentId', 'EnvId', 'envId']);
+  if (envId !== undefined) results.push(envId);
+  for (const nested of Object.values(value)) collectEnvironmentIds(nested, results, seen);
+  return results;
 }
 
-function assertExpectedProbeEnvelopes(envelopes) {
-  if (envelopes.length !== 1) throw new Error('已部署 club-application 未返回唯一可识别的业务信封');
-  if (envelopes[0].error.code !== 'UNAUTHENTICATED')
-    throw new Error('已部署 club-application 未保持无微信上下文鉴权边界');
-  return { ok: false, error: { code: 'UNAUTHENTICATED' } };
+export function parseFunctionDetailOutput(output, expectedEnvId) {
+  const parsed = parseJson(output);
+  const candidates = collectFunctionDetails(parsed);
+  if (candidates.length !== 1) throw new Error('club-application detail 未返回唯一函数详情');
+  const [detail] = candidates;
+  if (
+    typeof detail.name !== 'string' ||
+    detail.name.length === 0 ||
+    typeof detail.status !== 'string' ||
+    detail.status.length === 0
+  )
+    throw new Error('club-application detail 缺少函数名或状态');
+  if (detail.name !== 'club-application') throw new Error('club-application detail 函数名不匹配');
+  if (detail.status.toLowerCase() !== 'active')
+    throw new Error('club-application detail 状态不是可服务终态 Active');
+  const providedEnvIds = collectEnvironmentIds(parsed);
+  if (providedEnvIds.some((envId) => envId !== expectedEnvId))
+    throw new Error('club-application detail 环境不匹配');
+  return { name: detail.name, status: detail.status };
 }
 
-export function parseHandlerProbeOutput(output) {
-  return assertExpectedProbeEnvelopes(parseBusinessEnvelopes(output));
-}
-
-export function probeClubApplicationHandler({
+export function probeClubApplicationDeployment({
   envId,
   cwd = process.cwd(),
   execute = execFileSync,
 }) {
   let output;
   try {
-    output = execute('npx', handlerProbeArgs(envId), {
+    output = execute('npx', functionDetailProbeArgs(envId), {
       cwd,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     });
-  } catch (error) {
-    const isExpectedBusinessExit =
-      error?.status === 1 && error?.signal == null && error?.code == null;
-    if (!isExpectedBusinessExit) {
-      // 原始 CLI 异常可能含凭证或响应正文，安全边界要求不挂载为 cause。
-      // eslint-disable-next-line preserve-caught-error
-      throw new Error('已部署 club-application 探针命令发生非业务执行失败');
-    }
-
-    const outputs = [error.stdout, error.stderr].filter(
-      (output) =>
-        (typeof output === 'string' || Buffer.isBuffer(output)) && String(output).trim().length > 0,
-    );
-    const envelopes = outputs.flatMap((output) => parseBusinessEnvelopes(output));
-    try {
-      return assertExpectedProbeEnvelopes(envelopes);
-    } catch {
-      // 不回显可能含凭证的原始 stdout、stderr 或系统错误内容。
-      throw new Error('已部署 club-application 探针命令失败且未返回唯一预期鉴权业务信封');
-    }
+  } catch {
+    throw new Error('club-application detail 命令执行失败');
   }
-  return parseHandlerProbeOutput(output);
+  return parseFunctionDetailOutput(output, envId);
 }
 
 function command(table, type, value) {
@@ -429,7 +436,7 @@ export async function run(argv = process.argv.slice(2), cwd = process.cwd()) {
   const options = parseArgs(argv);
   const configuredEnvId = require(resolve(cwd, 'cloudbaserc.json')).envId;
   assertWriteGate({ ...options, configuredEnvId });
-  probeClubApplicationHandler({ envId: options.envId, cwd });
+  probeClubApplicationDeployment({ envId: options.envId, cwd });
   const result = await runClubApplicationSmoke({
     store: createCliStore({ envId: options.envId, cwd }),
     runId: options.runId,

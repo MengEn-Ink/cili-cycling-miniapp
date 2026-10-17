@@ -173,8 +173,8 @@ npm ci --ignore-scripts --prefix tools/miniprogram-ci
 2. 使用 `CLOUDBASE_API_KEY` 完成无头登录，并先执行 `fn list` 验证连通性。
 3. 基础设施发生变更或强制 reconcile 时，依次执行数据库 plan/apply/verify，再以 `CUSTOM` ACL 应用 `cloudstorage.rules.json` 并通过 `storage rules get --json` 比较完整 `read` / `write`；漂移立即阻断。
 4. 以上次成功的 CloudBase workflow SHA 为基线，累计识别新增、修改、重命名和删除，只重新部署受影响的云函数；共享领域代码展开到实际消费者。
-5. 部署后再次执行 `fn list`，确认目标函数可查询。
-6. 复用俱乐部申请状态机执行生产数据库真实写入 smoke，并在成功或失败时清理全部隔离记录。
+5. 部署后通过 `fn detail club-application --json` 严格确认目标环境中的部署对象、函数名，且状态为 CLI 3.8.4 的可服务终态 `Active`（比较时忽略大小写）；Creating、Updating、Inactive 和未知状态均阻断。
+6. 复用俱乐部申请本地 core 驱动生产数据库完整状态链，并在成功或失败时清理全部隔离记录；该门禁不调用云函数、不模拟微信 `OPENID`，鉴权由云函数单元测试和客户端 E2E 覆盖。
 
 工作流也支持手动恢复：可选择全量重新部署函数或重新应用数据库基线，但仍受 production Environment 审批与 Secret 边界保护。
 
