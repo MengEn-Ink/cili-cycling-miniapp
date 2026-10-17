@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="此里骑行小程序完整 UI 设计规范：沸点主题、双端 Token、页面 Overrides、组件状态、平台边界和交付门禁。"
+    />
+    <title>此里 UI 设计规范 · 研发交付中心</title>
+    <style>
+      :root {
+        --paper: #fbf5ea;
+        --surface: #ffffff;
+        --raised: #f3e6d0;
+        --ink: #211f1c;
+        --muted: #6f675d;
+        --action: #c0321f;
+        --brand: #e13b2b;
+        --success: #16633a;
+        --warning: #7a5c00;
+        --line: rgba(33, 31, 28, 0.16);
+        --line-strong: rgba(33, 31, 28, 0.34);
+        --shadow: 0 18px 50px rgba(33, 31, 28, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 84% 8%, rgba(225, 59, 43, 0.1), transparent 30rem),
+          var(--paper);
+        font-family:
+          Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Microsoft YaHei", sans-serif;
+        line-height: 1.65;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      a:focus-visible {
+        outline: 3px solid var(--action);
+        outline-offset: 4px;
+      }
+
+      .topbar {
+        position: sticky;
+        z-index: 10;
+        top: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 64px;
+        padding: 0 5vw;
+        border-bottom: 1px solid var(--line);
+        background: rgba(251, 245, 234, 0.94);
+        backdrop-filter: blur(16px);
+      }
+
+      .topbar a {
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      .topbar span {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+        gap: 56px;
+        align-items: end;
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 96px 5vw 72px;
+      }
+
+      .eyebrow,
+      .section-kicker {
+        margin: 0 0 12px;
+        color: var(--action);
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        max-width: 850px;
+        margin-bottom: 24px;
+        font-size: clamp(48px, 7vw, 96px);
+        line-height: 0.96;
+        letter-spacing: -0.055em;
+      }
+
+      .hero-copy {
+        max-width: 780px;
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: clamp(18px, 2vw, 24px);
+      }
+
+      .hero-panel {
+        padding: 28px;
+        border: 1px solid var(--line-strong);
+        border-radius: 28px;
+        background: var(--ink);
+        color: #ffffff;
+        box-shadow: var(--shadow);
+      }
+
+      .hero-panel strong {
+        display: block;
+        margin-bottom: 20px;
+        font-size: 22px;
+      }
+
+      .hero-panel ol {
+        display: grid;
+        gap: 14px;
+        margin: 0;
+        padding-left: 22px;
+      }
+
+      .hero-panel li::marker {
+        color: #ff7a68;
+        font-weight: 900;
+      }
+
+      main {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 0 5vw 120px;
+      }
+
+      section {
+        padding: 72px 0;
+        border-top: 1px solid var(--line);
+        scroll-margin-top: 84px;
+      }
+
+      .section-head {
+        display: grid;
+        grid-template-columns: 104px minmax(0, 1fr);
+        gap: 28px;
+        align-items: start;
+        margin-bottom: 42px;
+      }
+
+      .section-number {
+        color: var(--brand);
+        font-size: 18px;
+        font-weight: 900;
+      }
+
+      h2 {
+        max-width: 820px;
+        margin-bottom: 12px;
+        font-size: clamp(34px, 5vw, 64px);
+        line-height: 1.04;
+        letter-spacing: -0.045em;
+      }
+
+      .section-intro {
+        max-width: 760px;
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: 18px;
+      }
+
+      .token-grid,
+      .principle-grid,
+      .override-grid,
+      .gate-grid {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .token-card,
+      .principle-card,
+      .override-card,
+      .gate-card {
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: var(--surface);
+      }
+
+      .token-card {
+        grid-column: span 3;
+        overflow: hidden;
+      }
+
+      .swatch {
+        min-height: 118px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .token-card div:last-child {
+        padding: 18px;
+      }
+
+      .token-card strong,
+      .token-card code {
+        display: block;
+      }
+
+      .token-card code {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .principle-card {
+        grid-column: span 4;
+        min-height: 220px;
+        padding: 26px;
+      }
+
+      .principle-card b {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        margin-bottom: 48px;
+        border-radius: 50%;
+        background: var(--brand);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .principle-card h3,
+      .override-card h3,
+      .gate-card h3 {
+        margin-bottom: 8px;
+        font-size: 21px;
+      }
+
+      .principle-card p,
+      .override-card p,
+      .gate-card p {
+        margin-bottom: 0;
+        color: var(--muted);
+      }
+
+      .override-card {
+        grid-column: span 6;
+        padding: 28px;
+      }
+
+      .override-card.route {
+        border-color: var(--ink);
+        background: var(--ink);
+        color: #ffffff;
+      }
+
+      .override-card.route p {
+        color: #d4d4d4;
+      }
+
+      .override-card .tag {
+        display: inline-flex;
+        margin-bottom: 34px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: var(--raised);
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .anti-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px 28px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .anti-list li {
+        position: relative;
+        padding: 18px 18px 18px 48px;
+        border-top: 1px solid var(--line);
+        font-weight: 700;
+      }
+
+      .anti-list li::before {
+        position: absolute;
+        top: 18px;
+        left: 10px;
+        content: "×";
+        color: var(--brand);
+        font-size: 22px;
+        font-weight: 900;
+      }
+
+      .gate-card {
+        grid-column: span 3;
+        padding: 24px;
+      }
+
+      .gate-card .signal {
+        display: inline-flex;
+        margin-bottom: 38px;
+        padding: 5px 9px;
+        border-radius: 8px;
+        background: #e7f4eb;
+        color: var(--success);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .decision-flow {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 10px;
+        margin-top: 36px;
+      }
+
+      .decision-flow div {
+        min-height: 132px;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--raised);
+      }
+
+      .decision-flow b,
+      .decision-flow span {
+        display: block;
+      }
+
+      .decision-flow b {
+        margin-bottom: 24px;
+        color: var(--action);
+        font-size: 12px;
+        letter-spacing: 0.06em;
+      }
+
+      .footer-note {
+        padding: 34px;
+        border-radius: 26px;
+        background: var(--action);
+        color: #ffffff;
+      }
+
+      .footer-note h2 {
+        max-width: 900px;
+        margin-bottom: 18px;
+      }
+
+      .footer-note p {
+        max-width: 760px;
+        margin-bottom: 0;
+        font-size: 18px;
+      }
+
+      @media (max-width: 900px) {
+        .hero {
+          grid-template-columns: 1fr;
+          gap: 36px;
+          padding-top: 64px;
+        }
+
+        .token-card,
+        .gate-card {
+          grid-column: span 6;
+        }
+
+        .principle-card {
+          grid-column: span 6;
+        }
+
+        .decision-flow {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+
+      @media (max-width: 620px) {
+        .topbar {
+          min-height: 56px;
+          padding: 0 18px;
+        }
+
+        .topbar span {
+          display: none;
+        }
+
+        .hero,
+        main {
+          padding-right: 20px;
+          padding-left: 20px;
+        }
+
+        h1 {
+          font-size: 49px;
+        }
+
+        section {
+          padding: 56px 0;
+        }
+
+        .section-head {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+
+        .token-card,
+        .principle-card,
+        .override-card,
+        .gate-card {
+          grid-column: 1 / -1;
+        }
+
+        .anti-list,
+        .decision-flow {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="topbar" aria-label="页面导航">
+      <a href="index.html#delivery">← 返回研发交付中心</a>
+      <span>Design System · v1</span>
+    </nav>
+
+    <header class="hero">
+      <div>
+        <p class="eyebrow">CILI PRODUCT DESIGN SYSTEM</p>
+        <h1>让每一屏都能在骑行现场被快速理解</h1>
+        <p class="hero-copy">
+          此里的完整 UI 规范不是一套装饰模板，而是一份可执行契约：统一路线事实、操作优先级、沸点视觉语言和小程序 / Pages 双端门禁。
+        </p>
+      </div>
+      <aside class="hero-panel" aria-label="设计优先级">
+        <strong>做设计时，按这个顺序决定</strong>
+        <ol>
+          <li>任务能否顺利完成</li>
+          <li>数据是否一致可信</li>
+          <li>移动与户外场景是否可读</li>
+          <li>品牌是否保持统一</li>
+          <li>双端是否可以验证</li>
+        </ol>
+      </aside>
+    </header>
+
+    <main>
+      <section id="tokens">
+        <div class="section-head">
+          <span class="section-number">01</span>
+          <div>
+            <p class="section-kicker">MASTER SYSTEM</p>
+            <h2>颜色各司其职，不让视觉噪声冒充层级</h2>
+            <p class="section-intro">
+              暖米白承载长屏，墨黑建立信息重心，深行动红负责真正的主要操作，路线红只做品牌与轨迹强调。
+            </p>
+          </div>
+        </div>
+        <div class="token-grid">
+          <article class="token-card">
+            <div class="swatch" style="background: #fbf5ea"></div>
+            <div><strong>暖米白画布</strong><code>--color-bg · #fbf5ea</code></div>
+          </article>
+          <article class="token-card">
+            <div class="swatch" style="background: #211f1c"></div>
+            <div><strong>墨黑信息块</strong><code>--color-text · #211f1c</code></div>
+          </article>
+          <article class="token-card">
+            <div class="swatch" style="background: #c0321f"></div>
+            <div><strong>深行动红</strong><code>--color-action · #c0321f</code></div>
+          </article>
+          <article class="token-card">
+            <div class="swatch" style="background: #e13b2b"></div>
+            <div><strong>品牌与路线红</strong><code>--color-brand · #e13b2b</code></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="principles">
+        <div class="section-head">
+          <span class="section-number">02</span>
+          <div>
+            <p class="section-kicker">PRODUCT PRINCIPLES</p>
+            <h2>信息密度来自组织，不来自更小的字</h2>
+            <p class="section-intro">
+              骑行场景强调移动、阳光、弱网和单手操作。每条规则都服务于快速判断和可靠恢复。
+            </p>
+          </div>
+        </div>
+        <div class="principle-grid">
+          <article class="principle-card">
+            <b>01</b>
+            <h3>唯一主行动</h3>
+            <p>每个视口只保留一个真正的主要操作，次要操作可发现但不争夺注意力。</p>
+          </article>
+          <article class="principle-card">
+            <b>02</b>
+            <h3>路线事实一致</h3>
+            <p>地图、海拔、海报和详情读取同一份路线事实，里程与地名不在页面中重复计算。</p>
+          </article>
+          <article class="principle-card">
+            <b>03</b>
+            <h3>失败可以恢复</h3>
+            <p>图片失败不留空白，表单失败不清空输入，错误文案直接说明下一步。</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="overrides">
+        <div class="section-head">
+          <span class="section-number">03</span>
+          <div>
+            <p class="section-kicker">PAGE OVERRIDES</p>
+            <h2>统一品牌，不统一成同一种页面</h2>
+            <p class="section-intro">
+              Master System 定义品牌和组件不变量；页面 Overrides 只调整内容顺序、密度和局部表现。
+            </p>
+          </div>
+        </div>
+        <div class="override-grid">
+          <article class="override-card">
+            <span class="tag">活动详情</span>
+            <h3>先决定是否参加</h3>
+            <p>路线摘要、组织者、报名状态和固定主操作优先；更多分析通过明确入口渐进展开。</p>
+          </article>
+          <article class="override-card route">
+            <span class="tag">完整路线分析</span>
+            <h3>允许高密度，但不允许失去路线</h3>
+            <p>地图和海拔联动，坡顶、补给、卫生间与天气分层显示；不强行套普通详情卡片密度。</p>
+          </article>
+          <article class="override-card">
+            <span class="tag">报名与资料编辑</span>
+            <h3>输入不丢，错误可继续</h3>
+            <p>单列字段、标签常驻、图片上传进度可见；失败后保留已有内容并给重试路径。</p>
+          </article>
+          <article class="override-card">
+            <span class="tag">骑行名片</span>
+            <h3>人物优先，数据有节奏</h3>
+            <p>头像、姓名和骑行身份形成第一层，里程、爬升与活动数据放大，单位降低一级。</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="anti-patterns">
+        <div class="section-head">
+          <span class="section-number">04</span>
+          <div>
+            <p class="section-kicker">ANTI-PATTERNS</p>
+            <h2>这些不是“个人喜好”，而是交付阻断项</h2>
+          </div>
+        </div>
+        <ul class="anti-list">
+          <li>蓝紫 SaaS 渐变、玻璃拟态覆盖沸点主题</li>
+          <li>通过缩小文字和触控区解决高密度</li>
+          <li>图片、地图或弹层遮挡固定主操作</li>
+          <li>只用颜色表达报名、审核和异常状态</li>
+          <li>活动详情与完整分析给出不同路线事实</li>
+          <li>失败后留下空白图片或清空表单</li>
+          <li>把第三方 Web 组件直接翻译进小程序</li>
+          <li>展示未接入能力、接口名或调试技术词</li>
+        </ul>
+      </section>
+
+      <section id="workflow">
+        <div class="section-head">
+          <span class="section-number">05</span>
+          <div>
+            <p class="section-kicker">DESIGN INTELLIGENCE</p>
+            <h2>先推理，再画页面；先做切片，再扩展全页</h2>
+            <p class="section-intro">
+              外部设计资料只参与推理，此里 Master System 决定最终答案。每次设计必须留下可复查的决策和证据。
+            </p>
+          </div>
+        </div>
+        <div class="decision-flow" aria-label="设计决策流程">
+          <div><b>01 INTENT</b><span>用户与唯一任务</span></div>
+          <div><b>02 CONTENT</b><span>事实、状态与动作</span></div>
+          <div><b>03 MAPPING</b><span>Token 与组件复用</span></div>
+          <div><b>04 OVERRIDE</b><span>允许偏离的维度</span></div>
+          <div><b>05 RISKS</b><span>反模式与边界</span></div>
+          <div><b>06 EVIDENCE</b><span>截图、测试与回读</span></div>
+        </div>
+      </section>
+
+      <section id="gates">
+        <div class="section-head">
+          <span class="section-number">06</span>
+          <div>
+            <p class="section-kicker">QUALITY GATES</p>
+            <h2>设计必须能被代码和证据共同验证</h2>
+          </div>
+        </div>
+        <div class="gate-grid">
+          <article class="gate-card">
+            <span class="signal">CONTRACT</span>
+            <h3>Token 与对比度</h3>
+            <p>双端变量同名同值，文字、按钮和状态满足机器可算门槛。</p>
+          </article>
+          <article class="gate-card">
+            <span class="signal">STATES</span>
+            <h3>完整状态矩阵</h3>
+            <p>正常、空、加载、失败、禁用、长文案和窄屏均有证据。</p>
+          </article>
+          <article class="gate-card">
+            <span class="signal">JOURNEY</span>
+            <h3>真实任务旅程</h3>
+            <p>以报名、审核、路线确认和资料保存为验收路径，不只看静态首屏。</p>
+          </article>
+          <article class="gate-card">
+            <span class="signal">DEPLOY</span>
+            <h3>双端部署回读</h3>
+            <p>PR checks、Pages、CloudBase 和微信开发版按真实变更范围验证。</p>
+          </article>
+        </div>
+      </section>
+
+      <section>
+        <div class="footer-note">
+          <p class="section-kicker" style="color: #ffffff">THE RULE OF CILI</p>
+          <h2>外部方法提供设计推理，此里设计系统决定最终答案。</h2>
+          <p>
+            完整可执行规则见仓库根目录 DESIGN.md；数值事实见 design-contract.json；每次 UI 交付按 ui-design-checklist.md 逐项验收。
+          </p>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
