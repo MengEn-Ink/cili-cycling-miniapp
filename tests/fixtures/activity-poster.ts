@@ -1,4 +1,4 @@
-import type { Activity } from '../../models';
+import type { Activity } from '../../miniprogram/models';
 
 export interface ActivityPosterOptions {
   displayTime: string;
