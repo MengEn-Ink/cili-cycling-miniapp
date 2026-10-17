@@ -61,6 +61,24 @@ test('bootstrap 变更执行基础设施 apply 但不扩大函数范围', () => 
   });
 });
 
+test('存储规则、部署工作流和验证脚本均触发基础设施对账', () => {
+  for (const path of [
+    'cloudstorage.rules.json',
+    '.github/workflows/deploy-cloudbase.yml',
+    'scripts/cloudbase-deploy-decision.mjs',
+    'scripts/cloudbase-storage-rules.mjs',
+    'scripts/cloudbase-storage-rules.node-test.mjs',
+    'scripts/cloudbase-club-application-smoke.mjs',
+    'scripts/cloudbase-club-application-smoke.node-test.mjs',
+  ]) {
+    assert.deepEqual(createCloudBaseDeployDecision([path], config), {
+      shouldDeploy: true,
+      applyInfrastructure: true,
+      functions: [],
+    });
+  }
+});
+
 test('cloudbaserc 变更部署配置中的全部函数', () => {
   assert.deepEqual(createCloudBaseDeployDecision(['cloudbaserc.json'], config), {
     shouldDeploy: true,
@@ -97,6 +115,15 @@ test('GitHub 工作流仅在 main CI 成功后部署并使用环境级密钥', (
   assert.match(workflow, /actions\/workflows\/deploy-cloudbase\.yml\/runs/);
   assert.match(workflow, /merge-base --is-ancestor/);
   assert.match(workflow, /login --cloudbase-api-key/);
+  assert.match(workflow, /cloudbase:storage:reconcile/);
+  assert.match(workflow, /cloudbase:smoke:club-application/);
+  assert.ok(
+    workflow.indexOf('name: Deploy affected cloud functions') <
+      workflow.indexOf('name: Run production club application write smoke'),
+  );
+  assert.match(workflow, /CILI_ALLOW_PRODUCTION_SMOKE: club-application-write/);
+  assert.match(workflow, /decision\.applyInfrastructure = true/);
+  assert.match(workflow, /@cloudbase\/cli@3\.8\.4/);
   assert.match(workflow, /cancel-in-progress: false/);
   assert.match(decisionScript, /--diff-filter=ACMRD/);
   assert.doesNotMatch(workflow, /TENCENTCLOUD_SECRET(?:ID|KEY)/);

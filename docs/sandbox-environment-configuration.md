@@ -171,9 +171,10 @@ npm ci --ignore-scripts --prefix tools/miniprogram-ci
 
 1. 比较 GitHub Variable 与 `cloudbaserc.json`，环境 ID 不一致时立即停止。
 2. 使用 `CLOUDBASE_API_KEY` 完成无头登录，并先执行 `fn list` 验证连通性。
-3. `scripts/bootstrap-cloudbase.mjs` 变更时依次执行 plan、apply、verify。
+3. 基础设施发生变更或强制 reconcile 时，依次执行数据库 plan/apply/verify，再以 `CUSTOM` ACL 应用 `cloudstorage.rules.json` 并通过 `storage rules get --json` 比较完整 `read` / `write`；漂移立即阻断。
 4. 以上次成功的 CloudBase workflow SHA 为基线，累计识别新增、修改、重命名和删除，只重新部署受影响的云函数；共享领域代码展开到实际消费者。
 5. 部署后再次执行 `fn list`，确认目标函数可查询。
+6. 复用俱乐部申请状态机执行生产数据库真实写入 smoke，并在成功或失败时清理全部隔离记录。
 
 工作流也支持手动恢复：可选择全量重新部署函数或重新应用数据库基线，但仍受 production Environment 审批与 Secret 边界保护。
 
@@ -291,7 +292,7 @@ node scripts/bootstrap-cloudbase.mjs \
 
 不要把环境 ID 隐藏在额外环境变量里。目标环境必须在命令中清晰可审计；`apply` 没有明确写入授权时禁止执行。
 
-`cloudbase:verify` 不验证 `cloudstorage.rules.json`、云函数版本和网关路由。它们必须分别应用并回读。
+`cloudbase:verify` 只验证数据库集合、索引与数据库规则。存储规则由生产工作流单独执行 `npm run cloudbase:storage:reconcile -- --env-id <id>` 应用并回读；该命令会真实修改环境，禁止在本地无授权执行。
 
 ### 4.5 P0 真实旅程验证
 
@@ -444,7 +445,7 @@ npm run deploy:miniprogram
 | 仅 `tests/**`、文档或 CI | 不部署云函数；自动上传可安全跳过 |
 | `cloudfunctions/<name>/**` | 部署受影响函数并执行对应 smoke |
 | `scripts/bootstrap-cloudbase.mjs`、集合、索引或数据库规则 | 先 plan，经授权 apply，再 verify |
-| `cloudstorage.rules.json` | 单独应用并回读存储规则 |
+| `cloudstorage.rules.json`、CloudBase 部署 workflow 或相关验证脚本 | 自动触发基础设施对账；应用 `CUSTOM` 存储规则并严格回读 `read` / `write` |
 | `cloudbaserc.json` 网关路由 | 单独应用并回读 HTTPS 网关 |
 
 完整初始化时，先 `npm run cloud:install`，再按 README 规定顺序部署函数。部署后至少核对：
@@ -455,6 +456,14 @@ npm run deploy:miniprogram
 - `route-maintenance` 已部署，运行时验收前 purge 开关保持关闭（官方路线页已下线，`route-web` 不再部署）；
 - timer 和数据库/存储安全规则已回读；
 - 对应业务 smoke 或 P0 旅程已执行；无法执行的项目明确记为“未执行”。
+
+### 7.1 俱乐部申请生产写入 smoke
+
+CloudBase 部署完成后，工作流先以锁定版本 CLI 调用已部署的 `club-application`，要求无微信上下文时返回 `UNAUTHENTICATED` 业务信封，以验证线上入口和鉴权边界；随后以唯一 GitHub run id 派生隔离申请人和管理员标识，直接复用 `cloudfunctions/club-application/core.js`，通过 `tcb db nosql execute --json` 逐步执行草稿、提交、驳回、修改重提和批准，并回读 `club_applications`、`clubs`、OWNER `club_memberships` 与四条 `audit_logs`。脚本不输出派生 openid、CLI 原始响应或凭证。`finally` 清理逐集合独立 best-effort，即使单项删除失败也继续其余项目，随后回读五个集合；任何残留或无法回读都会只按集合名阻断部署。
+
+CLI 当前没有暴露与生产云函数 `db.runTransaction` 回调等价的事务接口，因此该 smoke 验证的是逐步真实读写与持久化，不声称覆盖事务原子性；生产云函数路径仍由状态机单测和 `db.runTransaction` 实现约束。不得为 smoke 在生产云函数增加测试 action。
+
+本地默认拒绝执行。只有明确授权时，才可同时提供固定 gate、`--env-id`、同值 `--confirm-env-id` 和同值 `CILI_SMOKE_ENV_ID`；脚本还会核对 `cloudbaserc.json`。日常本地门禁只运行 `npm run test:bootstrap`，使用内存 store 与命令桩，不访问真实环境。
 
 ### 7.6 资料页提示“服务暂时不可用”
 

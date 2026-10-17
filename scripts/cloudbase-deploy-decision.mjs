@@ -6,7 +6,16 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const SHARED_CONSUMERS = Object.freeze(['activity-read', 'registration', 'admin-review']);
-const INFRASTRUCTURE_PATHS = new Set(['scripts/bootstrap-cloudbase.mjs']);
+const INFRASTRUCTURE_PATHS = new Set([
+  'cloudstorage.rules.json',
+  '.github/workflows/deploy-cloudbase.yml',
+  'scripts/bootstrap-cloudbase.mjs',
+  'scripts/cloudbase-deploy-decision.mjs',
+  'scripts/cloudbase-storage-rules.mjs',
+  'scripts/cloudbase-storage-rules.node-test.mjs',
+  'scripts/cloudbase-club-application-smoke.mjs',
+  'scripts/cloudbase-club-application-smoke.node-test.mjs',
+]);
 
 function normalizePath(value) {
   return String(value || '')

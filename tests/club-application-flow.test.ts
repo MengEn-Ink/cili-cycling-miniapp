@@ -108,7 +108,9 @@ describe('俱乐部创建申请生产闭环', () => {
     expect(cloudFunction).toMatch(
       /action === 'adminDetail'[\s\S]*resolveApplicationCover\(cloud, project\(value, true\)\)/,
     );
-    expect(center).toContain('重试提交');
+    expect(center).toContain('actionError');
+    expect(center).toContain('loadError');
+    expect(center).not.toMatch(/loadError[^\n]*actionError/);
     expect(admin).toContain('通过后将立即创建俱乐部');
   });
 });

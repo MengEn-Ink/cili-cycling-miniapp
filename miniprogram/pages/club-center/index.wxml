@@ -2,7 +2,7 @@
   <brand-logo compact="{{true}}" meta="俱乐部中心" />
   <view class="a11y-live-region" role="status" aria-live="polite">{{loading ? '正在读取俱乐部申请' : (application ? '申请状态已更新' : '可以开始创建俱乐部申请')}}</view>
   <view class="state-card" wx:if="{{loading}}"><view class="title">正在读取申请</view><view class="muted">请稍候。</view></view>
-  <view class="state-card" wx:elif="{{error && !application && !form.clubName}}" role="alert"><view class="title">暂时无法读取</view><view class="muted">{{error}}</view><button class="btn" bindtap="load">重新加载</button></view>
+  <view class="state-card" wx:elif="{{loadError}}" role="alert"><view class="title">暂时无法读取</view><view class="muted">{{loadError}}</view><button class="btn" bindtap="load">重新加载</button></view>
 
   <block wx:else>
     <view class="status-card status-{{application.status}}" wx:if="{{application}}">
@@ -59,7 +59,7 @@
         <label class="field"><text>微信号或手机号</text><input value="{{form.applicantContact}}" data-field="applicantContact" bindinput="input" maxlength="50" placeholder="仅用于本次审核联络" placeholder-class="input-placeholder" /></label>
         <view class="privacy-note"><view class="privacy-note-title">隐私说明</view><view>申请资料仅你本人和平台管理员可见；联系方式只用于俱乐部创建审核，不向其他骑友公开。提交即表示你确认资料真实并同意用于本次审批。</view></view>
       </view>
-      <view class="card danger" wx:if="{{error}}" role="alert">{{error}}<button class="text-retry" bindtap="submit" wx:if="{{!submitting}}">重试提交</button></view>
+      <view class="card danger" wx:if="{{actionError}}" role="alert">{{actionError}}</view>
       <view class="actions-space"></view>
       <view class="fixed actions"><button class="secondary" bindtap="saveDraft" disabled="{{saving || submitting || uploading}}" loading="{{saving}}">保存草稿</button><button class="btn" bindtap="submit" disabled="{{saving || submitting || uploading}}" loading="{{submitting}}">{{submitting ? '正在提交' : (application.status === 'rejected' ? '修改并重新提交' : '提交审核')}}</button></view>
     </form>

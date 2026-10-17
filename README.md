@@ -2,7 +2,7 @@
 
 “骑有此里”是面向骑行俱乐部的原生微信小程序，覆盖活动发布、公开 Strava 路线与 GPX 详情、实名资料、报名审批、签到和个人骑行名片。小程序内使用简称“此里”。
 
-项目基于微信云开发（CloudBase）。业务数据库集合只允许云函数访问；客户端仅可按存储规则写入与本人绑定的 `profiles/` 和 `activity-routes/` staging 路径。本地构建或测试通过不代表云端资源已经部署，也不代表真实报名旅程已经验证。
+项目基于微信云开发（CloudBase）。业务数据库集合只允许云函数访问；客户端仅可按存储规则写入与本人绑定的 `profiles/`、`activity-routes/` 和 `club-applications/` staging 路径，客户端读取仍全部拒绝。本地构建或测试通过不代表云端资源已经部署，也不代表真实报名旅程已经验证。
 
 ## 产品预览
 
@@ -99,7 +99,7 @@ npm run check:governance     # 文档口径、源码卫生与 Actions 安全基�
 2. **安装与配置**：运行 `npm ci`、`npm run cloud:install`；按需创建未跟踪的 `project.private.config.json`，并通过安全入口注入变量。
 3. **开发与自测**：在微信开发者工具完成页面调试；提交前运行 `npm run validate`、`npm run coverage`、`npm run audit:all` 和 `git diff --check`。`validate` 已包含项目治理、文档口径、源码卫生、设计与截图一致性检查；产品代码变化需同步设置页 `RELEASE_NOTES`。
 4. **提交与评审**：保持相对 `main` 的单个语义提交，推送工作分支并创建 PR；PR checks 全绿后才能合入。
-5. **CloudBase 变更**：沙箱只生成和验证 plan，不登录或修改生产 CloudBase。部署统一由 GitHub Actions 执行：`main` CI 成功后按累计 diff 部署受影响云函数；集合、索引或规则变更通过受保护 Environment 执行并回读。
+5. **CloudBase 变更**：沙箱只生成和验证 plan，不登录或修改生产 CloudBase；涉及集合、索引、数据库规则、存储规则或相关部署脚本时先运行本地无凭证门禁。部署统一由 GitHub Actions 执行：`main` CI 成功后按累计 diff 部署受影响云函数；集合、索引或规则变更通过受保护 Environment 应用，其中 `cloudstorage.rules.json` 必须回读并拒绝漂移，随后执行可清理的俱乐部申请真实写入 smoke。
 6. **微信开发版**：PR 合入后等待 `main` CI；若变更影响小程序产物，CI 成功会触发微信开发版自动上传，纯文档/测试变更会安全跳过。
 7. **体验版晋级**：开发版上传成功后，再通过 `promote-miniprogram-experience.yml` 的 `candidate -> verified` 两阶段流程人工晋级；自动上传不会覆盖体验版基线。
 8. **验收与收尾**：核对 main CI、部署或安全跳过结论、必要的真机/P0 旅程证据，再删除已合并工作分支；无法执行的线上验证必须明确记录为“未执行”。
@@ -170,16 +170,18 @@ npm run cloudbase:apply
 npm run cloudbase:verify
 ```
 
-bootstrap 当前管理 12 个集合、33 个业务索引和全拒绝客户端数据库规则；受管定义包含活动首页与管理分页、我的行程、通知 Outbox、媒体清理、俱乐部创建申请以及 GPX 可信预览集合 `route_previews`。bootstrap 不创建业务活动，也不会自动应用 `cloudstorage.rules.json`。完整顺序：
+bootstrap 当前管理 12 个集合、33 个业务索引和全拒绝客户端数据库规则；受管定义包含活动首页与管理分页、我的行程、通知 Outbox、媒体清理、俱乐部创建申请以及 GPX 可信预览集合 `route_previews`。bootstrap 本身不创建业务活动，也不应用存储规则；生产 GitHub Actions 在基础设施对账阶段单独使用锁定的 CloudBase CLI 应用并回读 `cloudstorage.rules.json`。完整顺序：
 
 1. 审阅并执行 CloudBase plan/apply/verify。
-2. 按 [CloudBase 数据契约](docs/cloudbase-schema.md) 配置云函数环境变量和 `cloudstorage.rules.json`，并回读确认客户端只能写本人资料、路线与俱乐部申请 staging，canonical 媒体路径不可由客户端写入。
+2. 生产工作流以 `CUSTOM` ACL 应用 `cloudstorage.rules.json`，随后执行 `storage rules get --json`；云端 `read` / `write` 任一项与仓库不完全一致都会阻断。`read: false` 保持不变，私有文件只由服务端签发临时 URL。
 3. 运行 `npm run cloud:install`，再依次部署 `auth`、`profile-media-cleanup`、`admin-review`、`club-application`、`profile`、`activity-read`、`activity-admin`、`registration`、`notification-send` 和 `route-maintenance`。
 4. 应用并回读 `cloudbaserc.json` 中的云函数触发器（小程序已不再内嵌 `web-view`，`pages/route-view` 与 `cloudfunctions/route-web` 已删除，无需配置 `/route/embed` 网关或 Embed 业务域名）。
 5. 在开发者工具和真机完成官方路线、GPX 上传/保存/下载及失败回退验收；此前 `OAUTH_RETIREMENT_PURGE_ENABLED` 必须保持关闭。
 6. 验收通过后临时开启 purge，等待旧账号数据与预览清空并回读，再移除该开关和线上旧资源。
 7. 按 [安全初始化说明](scripts/seed-cloudbase/README.md) 创建首个管理员；活动只能通过已部署的活动管理业务流程创建。
 8. 在隔离测试环境按 [P0 真实报名旅程手册](docs/verification/p0-real-registration-journey.md) 验证。缺少真实环境证据时结论只能是“未执行”，不能写成通过。
+
+部署工作流还会先调用已部署的 `club-application`，确认无微信上下文时返回 `UNAUTHENTICATED` 业务信封，再运行真实数据库写入 smoke：使用 GitHub run id 派生隔离标识，复用 `cloudfunctions/club-application/core.js`，依次验证草稿、提交、管理员驳回、修改重提、批准，以及 `clubs`、OWNER `club_memberships` 和 `audit_logs` 持久化。清理会逐集合独立尝试，并回读确认申请、俱乐部、会员、审计和临时管理员全部消失；任何残留都会按集合名阻断且不输出标识。CloudBase CLI 的 `db nosql execute` 未提供与 `wx-server-sdk` 回调事务等价的接口，因此 smoke 采用逐步真实读写；生产云函数仍使用 `db.runTransaction`。本地执行默认拒绝，只有 gate、命令环境 ID、确认环境 ID、`CILI_SMOKE_ENV_ID` 和 `cloudbaserc.json` 五项一致才允许写入。
 
 ## 文档导航
 
