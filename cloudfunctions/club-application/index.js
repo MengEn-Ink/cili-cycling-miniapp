@@ -7,6 +7,8 @@ const {
   project,
   listJoinableClubs,
   joinPublicClub,
+  getManagedClub,
+  updateManagedClub,
   saveDraft,
   submitApplication,
   reviewApplication,
@@ -51,6 +53,7 @@ function transactionStore() {
           getApplication: (id) => maybeGet(transaction.collection('club_applications'), id),
           getClub: (id) => maybeGet(transaction.collection('clubs'), id),
           getMembership: (id) => maybeGet(transaction.collection('club_memberships'), id),
+          getAudit: (id) => maybeGet(transaction.collection('audit_logs'), id),
           putApplication: async (id, value) => {
             const { _id, ...data } = value;
             await transaction.collection('club_applications').doc(id).set({ data });
@@ -62,6 +65,10 @@ function transactionStore() {
           putMembership: async (id, value) => {
             const { _id, ...data } = value;
             await transaction.collection('club_memberships').doc(id).set({ data });
+          },
+          putAudit: async (id, value) => {
+            const { _id, ...data } = value;
+            await transaction.collection('audit_logs').doc(id).set({ data });
           },
           addAudit: (value) => transaction.collection('audit_logs').add({ data: value }),
         }),
@@ -99,6 +106,33 @@ exports.main = async (event = {}) => {
       );
       const [club] = await resolveJoinableClubAvatars(cloud, [joined.club]);
       return ok({ ...joined, club });
+    }
+    if (event.action === 'getManagedClub') {
+      const value = await getManagedClub(transactionStore(), {
+        openid,
+        clubId: event.clubId,
+      });
+      const [resolved] = await resolveJoinableClubAvatars(cloud, [
+        { ...value, avatar_url: value.avatar_file_id },
+      ]);
+      return ok({ ...value, avatar_url: resolved.avatar_url });
+    }
+    if (event.action === 'updateManagedClub') {
+      const value = await updateManagedClub(
+        transactionStore(),
+        {
+          openid,
+          clubId: event.clubId,
+          requestId: event.requestId,
+          expectedUpdatedAt: event.expectedUpdatedAt,
+          input: event.club,
+        },
+        new Date(),
+      );
+      const [resolved] = await resolveJoinableClubAvatars(cloud, [
+        { ...value, avatar_url: value.avatar_file_id },
+      ]);
+      return ok({ ...value, avatar_url: resolved.avatar_url });
     }
     if (event.action === 'saveDraft') {
       const value = await saveDraft(

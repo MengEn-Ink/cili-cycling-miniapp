@@ -419,6 +419,21 @@ export class CachingRepository implements RideRepository {
     return result;
   }
 
+  getManagedClub(clubId: string) {
+    return this.inner.getManagedClub(clubId);
+  }
+
+  async updateManagedClub(
+    clubId: string,
+    value: Parameters<RideRepository['updateManagedClub']>[1],
+    requestId: string,
+    expectedUpdatedAt: string,
+  ) {
+    const result = await this.inner.updateManagedClub(clubId, value, requestId, expectedUpdatedAt);
+    this.invalidatePrefix(PROFILE_PREFIX);
+    return result;
+  }
+
   saveClubApplicationDraft(value: Parameters<RideRepository['saveClubApplicationDraft']>[0]) {
     return this.inner.saveClubApplicationDraft(value);
   }

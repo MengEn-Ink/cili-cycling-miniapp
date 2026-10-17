@@ -5,6 +5,8 @@ const rideService = vi.hoisted(() => ({
   getMyClubApplication: vi.fn(),
   listJoinableClubs: vi.fn(),
   joinPublicClub: vi.fn(),
+  getManagedClub: vi.fn(),
+  updateManagedClub: vi.fn(),
   saveClubApplicationDraft: vi.fn(),
   submitClubApplication: vi.fn(),
 }));
@@ -59,6 +61,7 @@ describe('俱乐部申请页运行时错误恢复', () => {
       page.data = {
         ...definition.data,
         form: { ...definition.data.form },
+        managedForm: { ...definition.data.managedForm },
         joinModes: [...definition.data.joinModes],
       };
       page.setData = vi.fn((patch: Record<string, unknown>) => applyPatch(page.data, patch));
@@ -288,5 +291,104 @@ describe('俱乐部申请页运行时错误恢复', () => {
     expect(page.data.joinableClubs).toEqual([club]);
     expect(page.data.discoverMode).toBe(true);
     expect(page.data.joiningClubId).toBe('');
+  });
+
+  it('OWNER 与 ADMIN 进入俱乐部中心时读取管理资料并展示修改入口', async () => {
+    const clubId = `club_${'a'.repeat(64)}`;
+    const managedClub = {
+      id: clubId,
+      name: '山海骑行会',
+      city: '深圳',
+      introduction: '我们每周组织安全友好的公路骑行训练活动。',
+      joinMode: 'public_apply',
+      avatarFileId: 'cloud://env/club-applications/test-openid/cover.jpg',
+      avatarUrl: 'https://temporary.example/cover.jpg',
+      updatedAt: '2026-10-18T00:00:00.000Z',
+    };
+    const secondClub = { ...managedClub, id: `club_${'c'.repeat(64)}`, name: '城市骑行会' };
+    rideService.getProfile.mockResolvedValue({
+      clubs: [
+        { clubId, name: managedClub.name, role: 'ADMIN' },
+        { clubId: secondClub.id, name: secondClub.name, role: 'OWNER' },
+      ],
+    });
+    rideService.getManagedClub.mockResolvedValueOnce(managedClub).mockResolvedValueOnce(secondClub);
+
+    await page.load();
+
+    expect(rideService.getManagedClub).toHaveBeenNthCalledWith(1, clubId);
+    expect(rideService.getManagedClub).toHaveBeenNthCalledWith(2, secondClub.id);
+    expect(page.data.canManageClub).toBe(true);
+    expect(page.data.managedClubs).toEqual([managedClub, secondClub]);
+    expect(page.data.managedClub).toEqual(managedClub);
+    page.selectManagedClub({ detail: { value: 1 } });
+    expect(page.data.managedClub).toEqual(secondClub);
+    page.showManageForm();
+    expect(page.data.manageMode).toBe(true);
+    expect(page.data.managedForm.name).toBe('城市骑行会');
+  });
+
+  it('单个管理资料读取失败不阻断俱乐部中心其余内容', async () => {
+    const clubId = `club_${'e'.repeat(64)}`;
+    rideService.getProfile.mockResolvedValue({
+      clubs: [{ clubId, name: '山海骑行会', role: 'OWNER' }],
+    });
+    rideService.getManagedClub.mockRejectedValue(new Error('管理资料读取失败'));
+
+    await page.load();
+
+    expect(page.data.loading).toBe(false);
+    expect(page.data.loadError).toBe('');
+    expect(page.data.canManageClub).toBe(true);
+    expect(page.data.managedClub).toBeNull();
+    expect(page.data.manageLoadError).toContain('暂时无法读取');
+  });
+
+  it('普通成员不请求管理接口，管理员确认后保存并退出编辑态', async () => {
+    const clubId = `club_${'b'.repeat(64)}`;
+    rideService.getProfile.mockResolvedValue({
+      clubs: [{ clubId, name: '山海骑行会', role: 'MEMBER' }],
+    });
+    await page.load();
+    expect(rideService.getManagedClub).not.toHaveBeenCalled();
+    expect(page.data.canManageClub).toBe(false);
+
+    const managedClub = {
+      id: clubId,
+      name: '山海骑行会',
+      city: '深圳',
+      introduction: '我们每周组织安全友好的公路骑行训练活动。',
+      joinMode: 'public_apply',
+      avatarFileId: 'cloud://env/club-applications/test-openid/cover.jpg',
+      avatarUrl: 'https://temporary.example/cover.jpg',
+      updatedAt: '2026-10-18T00:00:00.000Z',
+    };
+    rideService.getProfile.mockResolvedValue({
+      clubs: [{ clubId, name: managedClub.name, role: 'OWNER' }],
+    });
+    rideService.getManagedClub.mockResolvedValue(managedClub);
+    rideService.updateManagedClub.mockResolvedValue({ ...managedClub, name: '山海骑行俱乐部' });
+    await page.load();
+    page.showManageForm();
+    page.manageRequestId = 'stale-request-id';
+    page.managedInput({
+      currentTarget: { dataset: { field: 'name' } },
+      detail: { value: '山海骑行俱乐部' },
+    });
+    expect(page.manageRequestId).toBe('');
+    wxApi.showModal.mockImplementation(({ success }: any) => success({ confirm: true }));
+
+    await page.saveManagedClub();
+
+    expect(rideService.updateManagedClub).toHaveBeenCalledWith(
+      clubId,
+      expect.objectContaining({ name: '山海骑行俱乐部' }),
+      expect.stringMatching(/^club_update_/),
+      managedClub.updatedAt,
+    );
+    expect(page.data.managedClubs[0]?.name).toBe('山海骑行俱乐部');
+    expect(page.data.manageMode).toBe(false);
+    expect(page.data.managing).toBe(false);
+    expect(wxApi.showToast).toHaveBeenCalledWith({ title: '俱乐部资料已更新' });
   });
 });

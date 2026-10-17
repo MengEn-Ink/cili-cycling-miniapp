@@ -243,3 +243,71 @@
   width: 100%;
   margin-top: 28rpx;
 }
+
+.manage-card,
+.manage-form {
+  margin-top: var(--card-gap);
+}
+.manage-card {
+  padding: 32rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-display);
+  background: var(--color-surface);
+}
+.managed-profile {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  margin-top: 28rpx;
+}
+.managed-avatar {
+  flex: none;
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 32rpx;
+  background: var(--color-bg-soft);
+}
+.managed-avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-action);
+  font-size: 40rpx;
+  font-weight: 900;
+}
+.managed-profile-copy {
+  min-width: 0;
+}
+.managed-introduction {
+  margin-top: 20rpx;
+  -webkit-line-clamp: 3;
+}
+.manage-entry,
+.create-club-button {
+  margin-top: 28rpx;
+}
+.managed-cover-picker {
+  margin-top: 28rpx;
+}
+
+.managed-club-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24rpx;
+  padding: 18rpx 22rpx;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-soft);
+  color: var(--color-text);
+  font-weight: 800;
+}
+.managed-club-switch text {
+  color: var(--color-action);
+}
+.managed-inline-error {
+  margin-top: 20rpx;
+  padding: 18rpx 20rpx;
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-soft);
+  color: var(--color-action);
+}

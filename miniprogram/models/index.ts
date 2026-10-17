@@ -28,6 +28,23 @@ export interface JoinedClubSummary {
   role: string;
   status: 'active';
 }
+export interface ManagedClubProfile {
+  id: string;
+  name: string;
+  city: string;
+  introduction: string;
+  joinMode: ClubJoinMode;
+  avatarFileId: string;
+  avatarUrl: string;
+  updatedAt: string;
+}
+export interface ManagedClubProfileInput {
+  name: string;
+  city: string;
+  introduction: string;
+  joinMode: ClubJoinMode;
+  avatarFileId: string;
+}
 export type ClubApplicationStatus = 'draft' | 'pending_review' | 'rejected' | 'approved';
 export type ClubJoinMode = 'public_apply' | 'invite_code' | 'admin_invite';
 export interface ClubApplicationInput {

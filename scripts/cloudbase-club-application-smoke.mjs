@@ -13,6 +13,8 @@ const {
   submitApplication,
   reviewApplication,
   joinPublicClub,
+  getManagedClub,
+  updateManagedClub,
 } = require('../cloudfunctions/club-application/core.js');
 const CLI_PACKAGE = '@cloudbase/cli@3.8.4';
 const GATE_VALUE = 'club-application-write';
@@ -284,9 +286,11 @@ export function createCliStore({ envId, cwd = process.cwd(), execute = execFileS
         getApplication: (id) => txGet('club_applications', id),
         getClub: (id) => txGet('clubs', id),
         getMembership: (id) => txGet('club_memberships', id),
+        getAudit: (id) => txGet('audit_logs', id),
         putApplication: (id, value) => txPut('club_applications', id, value),
         putClub: (id, value) => txPut('clubs', id, value),
         putMembership: (id, value) => txPut('club_memberships', id, value),
+        putAudit: (id, value) => txPut('audit_logs', id, { ...value, _id: id, smoke_test: true }),
         addAudit: (value) => {
           auditSequence += 1;
           const id = `smoke_audit_${hash(`${value.target_id}:${value.action}:${auditSequence}`).slice(0, 40)}`;
@@ -570,6 +574,52 @@ export async function runClubApplicationSmoke({ store, runId, now = () => new Da
     ])
       assert(actions.has(action), `audit ${action}`);
 
+    const managedBefore = await getManagedClub(store, {
+      openid: applicantOpenid,
+      clubId,
+    });
+    assert(managedBefore.name === input.club_name, '管理员读取俱乐部资料');
+    const profileUpdateRequestId = `profile_update_${suffix}`;
+    const managedAfter = await updateManagedClub(
+      store,
+      {
+        openid: applicantOpenid,
+        clubId,
+        requestId: profileUpdateRequestId,
+        expectedUpdatedAt: managedBefore.updated_at,
+        input: {
+          name: input.club_name,
+          city: input.city,
+          introduction: `${revisedInput.introduction} 资料管理已验证。`,
+          join_mode: 'public_apply',
+          avatar_file_id: input.cover_file_id,
+        },
+      },
+      now(),
+    );
+    const repeatedManagedUpdate = await updateManagedClub(
+      store,
+      {
+        openid: applicantOpenid,
+        clubId,
+        requestId: profileUpdateRequestId,
+        expectedUpdatedAt: managedBefore.updated_at,
+        input: {
+          name: input.club_name,
+          city: input.city,
+          introduction: `${revisedInput.introduction} 资料管理已验证。`,
+          join_mode: 'public_apply',
+          avatar_file_id: input.cover_file_id,
+        },
+      },
+      now(),
+    );
+    assert(
+      managedAfter.introduction === repeatedManagedUpdate.introduction &&
+        managedAfter.introduction.endsWith('资料管理已验证。'),
+      '管理员修改资料与重复请求幂等',
+    );
+
     const joinRequestId = `join_public_${suffix}`;
     const firstJoin = await joinPublicClub(
       store,
@@ -600,10 +650,12 @@ export async function runClubApplicationSmoke({ store, runId, now = () => new Da
       '第二用户 MEMBER membership 持久化',
     );
     assert(
-      joinAudits.length === 1 && joinAudits[0]?.action === 'public_club_joined',
-      '公开加入 audit',
+      joinAudits.length === 2 &&
+        joinAudits.some((item) => item.action === 'club_profile_updated') &&
+        joinAudits.some((item) => item.action === 'public_club_joined'),
+      '俱乐部资料更新与公开加入 audit',
     );
-    return { stages: 7, auditCount: audits.length + joinAudits.length };
+    return { stages: 8, auditCount: audits.length + joinAudits.length };
   } finally {
     await cleanupSmokeData(store, ids);
   }
