@@ -31,17 +31,43 @@ function parseJson(output) {
 
 function collectParsed(value, results = [], seen = new Set()) {
   if (typeof value === 'string') {
+    let parsed;
     try {
-      collectParsed(JSON.parse(value), results, seen);
+      parsed = JSON.parse(value);
     } catch {
       // 普通字段不是嵌套 JSON。
+      return results;
     }
-    return results;
+    return collectParsed(parsed, results, seen);
   }
   if (!value || typeof value !== 'object' || seen.has(value)) return results;
   seen.add(value);
   if (Array.isArray(value)) {
-    if (value.every((entry) => entry && typeof entry === 'object' && !Array.isArray(entry)))
+    const isMgoResultWrapper =
+      value.length > 0 &&
+      value.every(
+        (entry) =>
+          entry &&
+          typeof entry === 'object' &&
+          !Array.isArray(entry) &&
+          (Object.hasOwn(entry, 'Result') || Object.hasOwn(entry, 'result')),
+      );
+    if (isMgoResultWrapper) {
+      try {
+        const documents = value.map((entry) => {
+          const nested = entry.Result ?? entry.result;
+          return typeof nested === 'string' ? JSON.parse(nested) : nested;
+        });
+        if (documents.every((entry) => entry && typeof entry === 'object' && !Array.isArray(entry)))
+          results.unshift(documents);
+      } catch {
+        throw new Error('CloudBase QUERY 的 Mgo Result 包含无效 JSON');
+      }
+    }
+    if (
+      !isMgoResultWrapper &&
+      value.every((entry) => entry && typeof entry === 'object' && !Array.isArray(entry))
+    )
       results.push(value);
     value.forEach((entry) => collectParsed(entry, results, seen));
     return results;
@@ -54,9 +80,36 @@ function collectParsed(value, results = [], seen = new Set()) {
   return results;
 }
 
+function normalizeExtendedJson(value) {
+  if (Array.isArray(value)) return value.map(normalizeExtendedJson);
+  if (!value || typeof value !== 'object') return value;
+  const keys = Object.keys(value);
+  if (keys.length === 1) {
+    const numberKey = ['$numberInt', '$numberLong', '$numberDouble', '$numberDecimal'].find((key) =>
+      Object.hasOwn(value, key),
+    );
+    if (numberKey) {
+      if (numberKey === '$numberDecimal') return String(value[numberKey]);
+      const normalized = Number(value[numberKey]);
+      const requiresSafeInteger = numberKey === '$numberInt' || numberKey === '$numberLong';
+      if (
+        !Number.isFinite(normalized) ||
+        (requiresSafeInteger && !Number.isSafeInteger(normalized))
+      )
+        throw new Error('CloudBase QUERY 返回无法安全归一的 Extended JSON 数字');
+      return normalized;
+    }
+  }
+  return Object.fromEntries(
+    Object.entries(value).map(([key, nested]) => [key, normalizeExtendedJson(nested)]),
+  );
+}
+
 export function parseNosqlDocuments(output) {
   const candidates = collectParsed(parseJson(output));
-  return candidates.find((items) => items.every((item) => item && typeof item === 'object')) || [];
+  const documents =
+    candidates.find((items) => items.every((item) => item && typeof item === 'object')) || [];
+  return normalizeExtendedJson(documents);
 }
 
 export function nosqlCommandArgs(envId, commands) {
@@ -213,20 +266,31 @@ export function createCliStore({ envId, cwd = process.cwd(), execute = execFileS
   };
   let auditSequence = 0;
   return {
-    // db nosql execute 没有暴露与 wx-server-sdk runTransaction 等价的回调事务；这里逐步真实写入。
-    transaction: async (work) =>
-      work({
-        getAdmin: (id) => get('admins', id),
-        getApplication: (id) => get('club_applications', id),
-        putApplication: (id, value) => put('club_applications', id, value),
-        putClub: (id, value) => put('clubs', id, value),
-        putMembership: (id, value) => put('club_memberships', id, value),
+    // CLI 不提供回调事务：每次 put 先写真实数据库，并用事务内 overlay 保证读己之写；overlay 不跨事务。
+    transaction: async (work) => {
+      const overlay = new Map();
+      const keyFor = (collection, id) => `${collection}\0${id}`;
+      const txGet = async (collection, id) => {
+        const key = keyFor(collection, id);
+        return overlay.has(key) ? overlay.get(key) : get(collection, id);
+      };
+      const txPut = async (collection, id, value) => {
+        await put(collection, id, value);
+        overlay.set(keyFor(collection, id), structuredClone(value));
+      };
+      return work({
+        getAdmin: (id) => txGet('admins', id),
+        getApplication: (id) => txGet('club_applications', id),
+        putApplication: (id, value) => txPut('club_applications', id, value),
+        putClub: (id, value) => txPut('clubs', id, value),
+        putMembership: (id, value) => txPut('club_memberships', id, value),
         addAudit: (value) => {
           auditSequence += 1;
           const id = `smoke_audit_${hash(`${value.target_id}:${value.action}:${auditSequence}`).slice(0, 40)}`;
-          return put('audit_logs', id, { _id: id, ...value, smoke_test: true });
+          return txPut('audit_logs', id, { _id: id, ...value, smoke_test: true });
         },
-      }),
+      });
+    },
     get,
     put,
     query: async (collection, filter, limit = 100) => {
@@ -239,6 +303,19 @@ export function createCliStore({ envId, cwd = process.cwd(), execute = execFileS
 
 function assert(condition, message) {
   if (!condition) throw new Error(`真实写入 smoke 断言失败：${message}`);
+}
+
+function assertPersistedStage(record, { stage, status, reviewVersion, requestField, requestId }) {
+  const actualStatus = typeof record?.status === 'string' ? record.status : typeof record?.status;
+  const actualVersion = record?.review_version;
+  const statusMatches = actualStatus === status;
+  const versionMatches = actualVersion === reviewVersion;
+  const requestMatches = !requestField || record?.[requestField] === requestId;
+  if (!statusMatches || !versionMatches || !requestMatches) {
+    throw new Error(
+      `真实写入 smoke 断言失败：stage=${stage} status=${actualStatus} review_version=${String(actualVersion)} request_id_type=${typeof (requestField ? record?.[requestField] : undefined)}`,
+    );
+  }
 }
 
 export function assertWriteGate({ env = process.env, envId, confirmEnvId, configuredEnvId }) {
@@ -335,16 +412,33 @@ export async function runClubApplicationSmoke({ store, runId, now = () => new Da
     });
 
     const draft = await saveDraft(store, { openid: applicantOpenid, input }, now());
-    assert(draft.status === 'draft', '草稿状态');
-    assert((await store.get('club_applications', appId))?.status === 'draft', '草稿持久化');
+    assert(draft.status === 'draft' && draft.review_version === 0, '草稿返回值');
+    assertPersistedStage(await store.get('club_applications', appId), {
+      stage: 'draft',
+      status: 'draft',
+      reviewVersion: 0,
+    });
 
+    const firstSubmitRequestId = `submit_1_${suffix}`;
     const firstSubmit = await submitApplication(
       store,
-      { openid: applicantOpenid, input, requestId: `submit_1_${suffix}` },
+      { openid: applicantOpenid, input, requestId: firstSubmitRequestId },
       now(),
     );
-    assert(firstSubmit.status === 'pending_review' && firstSubmit.review_version === 1, '首次提交');
+    assertPersistedStage(firstSubmit, {
+      stage: 'first_submit_return',
+      status: 'pending_review',
+      reviewVersion: 1,
+    });
+    assertPersistedStage(await store.get('club_applications', appId), {
+      stage: 'first_submit',
+      status: 'pending_review',
+      reviewVersion: 1,
+      requestField: 'last_submit_request_id',
+      requestId: firstSubmitRequestId,
+    });
 
+    const firstReviewRequestId = `reject_1_${suffix}`;
     const rejected = await reviewApplication(
       store,
       {
@@ -352,24 +446,53 @@ export async function runClubApplicationSmoke({ store, runId, now = () => new Da
         applicationId: appId,
         decision: 'rejected',
         reason: '自动化驳回后重提验证',
-        requestId: `reject_1_${suffix}`,
+        requestId: firstReviewRequestId,
       },
       now(),
     );
-    assert(rejected.status === 'rejected', '管理员驳回');
+    assert(rejected.status === 'rejected' && rejected.review_version === 1, '管理员驳回返回值');
+    assertPersistedStage(await store.get('club_applications', appId), {
+      stage: 'rejected',
+      status: 'rejected',
+      reviewVersion: 1,
+      requestField: 'last_review_request_id',
+      requestId: firstReviewRequestId,
+    });
 
     const revisedInput = { ...input, introduction: `${input.introduction} 已按驳回意见完成修改。` };
-    await saveDraft(store, { openid: applicantOpenid, input: revisedInput }, now());
+    const revisedDraft = await saveDraft(
+      store,
+      { openid: applicantOpenid, input: revisedInput },
+      now(),
+    );
+    assert(revisedDraft.status === 'draft' && revisedDraft.review_version === 1, '修改草稿返回值');
+    assertPersistedStage(await store.get('club_applications', appId), {
+      stage: 'revised_draft',
+      status: 'draft',
+      reviewVersion: 1,
+      requestField: 'last_review_request_id',
+      requestId: firstReviewRequestId,
+    });
+
+    const secondSubmitRequestId = `submit_2_${suffix}`;
     const secondSubmit = await submitApplication(
       store,
-      { openid: applicantOpenid, input: revisedInput, requestId: `submit_2_${suffix}` },
+      { openid: applicantOpenid, input: revisedInput, requestId: secondSubmitRequestId },
       now(),
     );
     assert(
       secondSubmit.status === 'pending_review' && secondSubmit.review_version === 2,
-      '修改重提',
+      '修改重提返回值',
     );
+    assertPersistedStage(await store.get('club_applications', appId), {
+      stage: 'second_submit',
+      status: 'pending_review',
+      reviewVersion: 2,
+      requestField: 'last_submit_request_id',
+      requestId: secondSubmitRequestId,
+    });
 
+    const secondReviewRequestId = `approve_2_${suffix}`;
     const approved = await reviewApplication(
       store,
       {
@@ -377,11 +500,23 @@ export async function runClubApplicationSmoke({ store, runId, now = () => new Da
         applicationId: appId,
         decision: 'approved',
         reason: '',
-        requestId: `approve_2_${suffix}`,
+        requestId: secondReviewRequestId,
       },
       now(),
     );
-    assert(approved.status === 'approved' && approved.club_id === clubId, '管理员批准');
+    assert(
+      approved.status === 'approved' &&
+        approved.review_version === 2 &&
+        approved.club_id === clubId,
+      '管理员批准返回值',
+    );
+    assertPersistedStage(await store.get('club_applications', appId), {
+      stage: 'approved',
+      status: 'approved',
+      reviewVersion: 2,
+      requestField: 'last_review_request_id',
+      requestId: secondReviewRequestId,
+    });
 
     const [persistedApplication, persistedClub, persistedMembership, audits] = await Promise.all([
       store.get('club_applications', appId),
