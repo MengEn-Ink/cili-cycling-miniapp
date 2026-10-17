@@ -44,7 +44,7 @@ describe('单一明亮外观接线', () => {
     expect(template).not.toContain('wx:for="{{releaseNotes}}"');
     expect(script).toContain("date: '2026-10-18'");
     expect(script).toContain('version: CLIENT_RELEASE_VERSION');
-    expect(script).toContain("title: '俱乐部资料管理上线'");
+    expect(script).toContain("title: '俱乐部资料保存稳定性修复'");
     const latestMatches = script.match(/latest:\s*true/g) || [];
     expect(latestMatches).toHaveLength(1);
   });

@@ -388,7 +388,7 @@ test('管理员更新资料时服务端只写允许字段并记录审计', async
     approval_status: 'approved',
     status: 'active',
     created_at: '2026-01-01T00:00:00.000Z',
-    updated_at: '2026-01-01T00:00:00.000Z',
+    updated_at: new Date('2026-01-01T00:00:00.000Z'),
   });
   store.state.memberships.set(membershipId(id, 'user-2'), {
     club_id: id,

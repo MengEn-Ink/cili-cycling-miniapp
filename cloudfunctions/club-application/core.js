@@ -214,6 +214,16 @@ async function joinPublicClub(store, { openid, clubId: requestedClubId, requestI
 const profileRequestId = (clubId, requestId) =>
   `clubprofile_${crypto.createHash('sha256').update(`${clubId}\0${requestId}`).digest('hex')}`;
 
+function managedUpdatedAt(value) {
+  if (typeof value === 'string') return value;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString();
+  if (value && typeof value.toDate === 'function') {
+    const date = value.toDate();
+    if (date instanceof Date && !Number.isNaN(date.getTime())) return date.toISOString();
+  }
+  return '';
+}
+
 function projectManagedClub(club) {
   if (!club) return null;
   const avatar = Object.prototype.hasOwnProperty.call(club, 'avatar_url')
@@ -228,7 +238,7 @@ function projectManagedClub(club) {
       ? club.join_mode
       : 'public_apply',
     avatar_file_id: typeof avatar === 'string' ? avatar : '',
-    updated_at: club.updated_at || '',
+    updated_at: managedUpdatedAt(club.updated_at),
   };
 }
 
@@ -305,7 +315,7 @@ async function updateManagedClub(
       previousOperation?.result
     )
       return previousOperation.result;
-    if (String(club.updated_at || '') !== expectedUpdatedAt)
+    if (projectManagedClub(club).updated_at !== expectedUpdatedAt)
       fail('CLUB_PROFILE_CONFLICT', '俱乐部资料已被其他管理员更新，请重新加载后再修改');
     const currentAvatar = projectManagedClub(club).avatar_file_id;
     // 管理员可以保留负责人此前上传的头像；替换头像时只能使用本人目录，避免引用他人私有文件。

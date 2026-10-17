@@ -28,7 +28,7 @@ describe('设置页', () => {
       version: CLIENT_RELEASE_VERSION,
       date: '2026-10-18',
       latest: true,
-      title: '俱乐部资料管理上线',
+      title: '俱乐部资料保存稳定性修复',
     });
     expect(page.data.currentRelease).toBe(page.data.releaseNotes[0]);
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(
@@ -40,9 +40,9 @@ describe('设置页', () => {
     expect(readiness).not.toHaveBeenCalled();
   });
 
-  it('版本号与日期对齐 2026.10.18.2', () => {
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.18.2');
-    expect(page.data.currentRelease.version).toBe('2026.10.18.2');
+  it('版本号与日期对齐 2026.10.18.3', () => {
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.18.3');
+    expect(page.data.currentRelease.version).toBe('2026.10.18.3');
     expect(page.data.currentRelease.date).toBe('2026-10-18');
   });
 
