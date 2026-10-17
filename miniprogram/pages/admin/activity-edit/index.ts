@@ -19,6 +19,18 @@ import {
 } from '../../../utils/route';
 import { drawElevationProfile } from '../../activity-detail/format';
 
+type ClubOption = {
+  clubId: string;
+  name: string;
+  avatarUrl: string;
+  isReadOnly?: boolean;
+};
+const PUBLIC_CLUB_OPTION: ClubOption = {
+  clubId: '',
+  name: '此里公开活动',
+  avatarUrl: '',
+};
+
 type Form = {
   title: string;
   startDate: string;
@@ -122,6 +134,7 @@ const activityContentProjection = (activity: EditableActivity | ActivityInput) =
         }
       : undefined;
   return {
+    clubId: activity.clubId || undefined,
     title: protocolText(activity.title),
     description: protocolText(activity.description),
     images,
@@ -383,6 +396,9 @@ Page({
     id: '',
     version: 0,
     status: 'draft',
+    clubOptions: [PUBLIC_CLUB_OPTION] as ClubOption[],
+    clubOptionsLoadFailed: false,
+    clubOptionIndex: 0,
     originalActivity: undefined as EditableActivity | undefined,
     images: [] as string[],
     imagePreviewUrls: [] as string[],
@@ -407,6 +423,30 @@ Page({
     routeTimeLabel: '',
     form: emptyForm(),
   },
+  async loadClubOptions() {
+    try {
+      const profile = await rideService.getProfile();
+      const clubOptions: ClubOption[] = [
+        PUBLIC_CLUB_OPTION,
+        ...(profile.clubs || [])
+          .filter((club) => ['OWNER', 'ADMIN', 'ORGANIZER'].includes(club.role.toUpperCase()))
+          .map((club) => ({
+            clubId: club.clubId,
+            name: club.name,
+            avatarUrl: club.avatarUrl,
+          })),
+      ];
+      this.setData({ clubOptions, clubOptionsLoadFailed: false });
+    } catch {
+      // 俱乐部列表是活动归属的增强信息，读取失败不能阻断原有的公开活动编辑流程。
+      this.setData({ clubOptions: [PUBLIC_CLUB_OPTION], clubOptionsLoadFailed: true });
+    }
+  },
+  clubOptionChange(event: any) {
+    const index = Number(event.detail.value);
+    if (!Number.isInteger(index) || index < 0 || index >= this.data.clubOptions.length) return;
+    this.setData({ clubOptionIndex: index });
+  },
   async onLoad(options: Record<string, string>) {
     this.unloaded = false;
     await appStore.ensureIdentity(wx.cloud);
@@ -421,6 +461,15 @@ Page({
     this.createRequestId = id ? '' : newCreateRequestId();
     this.routeRequestId = newRouteRequestId();
     this.setData({ allowed: true, isAdmin: appStore.role === 'admin', id });
+    try {
+      await this.loadClubOptions();
+    } catch (error) {
+      this.setData({
+        loading: false,
+        error: error instanceof Error ? error.message : '活动归属加载失败',
+      });
+      return;
+    }
     if (!id) {
       this.setData({ loading: false });
       return;
@@ -437,8 +486,25 @@ Page({
       const officialRoute = activityOfficialRoute(activity);
       const publicRoutePreview = activityPublicRoutePreview(activity);
       const routePreview = activityRoutePreview(activity);
+      let clubOptions = this.data.clubOptions as ClubOption[];
+      let clubOptionIndex = clubOptions.findIndex(
+        (option: ClubOption) => option.clubId === (activity.clubId || ''),
+      );
+      if (activity.clubId && clubOptionIndex < 0) {
+        const retainedClubOption: ClubOption = {
+          clubId: activity.clubId,
+          name: activity.clubIdentity?.name || '当前活动所属俱乐部',
+          avatarUrl: activity.clubIdentity?.avatarUrl || '',
+          isReadOnly: true,
+        };
+        clubOptions = [PUBLIC_CLUB_OPTION, retainedClubOption, ...clubOptions.slice(1)];
+        clubOptionIndex = 1;
+      }
+      if (clubOptionIndex < 0) clubOptionIndex = 0;
       this.setData({
         loading: false,
+        clubOptions,
+        clubOptionIndex,
         status: activity.status,
         version: activity.version,
         originalActivity: activity,
@@ -1414,6 +1480,7 @@ Page({
         : {}),
     };
     const activity: ActivityInput = {
+      clubId: this.data.clubOptions[this.data.clubOptionIndex]?.clubId || undefined,
       title,
       description: form.description,
       images,

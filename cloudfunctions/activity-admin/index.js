@@ -46,6 +46,15 @@ function transactionStore() {
         work({
           getAdmin: (id) => maybeGet(transaction.collection('admins'), id),
           getActivity: (id) => maybeGet(transaction.collection('activities'), id),
+          getClub: (id) => maybeGet(transaction.collection('clubs'), id),
+          getActiveClubMembership: async (clubId, memberOpenid) => {
+            const result = await transaction
+              .collection('club_memberships')
+              .where({ club_id: clubId, openid: memberOpenid, status: 'active' })
+              .limit(1)
+              .get();
+            return Array.isArray(result?.data) ? result.data[0] : undefined;
+          },
           listActiveRegistrations: async (activityId) => {
             const registrations = [];
             for (const status of ['pending', 'approved', 'checked_in', 'waiting']) {

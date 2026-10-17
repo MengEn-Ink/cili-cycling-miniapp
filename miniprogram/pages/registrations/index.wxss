@@ -163,6 +163,13 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+.club-identity {
+  margin-bottom: 12rpx;
+}
+.club-avatar {
+  width: 40rpx;
+  height: 40rpx;
+}
 .registration-title {
   display: -webkit-box;
   overflow: hidden;

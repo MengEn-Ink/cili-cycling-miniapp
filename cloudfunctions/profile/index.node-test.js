@@ -10,6 +10,15 @@ function statefulDatabase({ throwRuntimeMissing = false } = {}) {
   const state = {};
   const ensure = (name) => (state[name] ||= new Map());
   const collection = (name) => ({
+    where: (conditions) => ({
+      limit: () => ({
+        get: async () => ({
+          data: [...ensure(name).values()].filter((item) =>
+            Object.entries(conditions).every(([key, value]) => item[key] === value),
+          ),
+        }),
+      }),
+    }),
     doc: (id) => ({
       get: async () => {
         const data = ensure(name).get(id);
@@ -42,6 +51,7 @@ test('profile 入口把运行时 -1 的精确缺文档语义用于首次资料�
   const uploadPath = await main({ action: 'mediaUploadPath' });
 
   assert.equal(profile.ok, true);
+  assert.deepEqual(profile.data.club_memberships, []);
   assert.equal(uploadPath.ok, true);
   assert.match(uploadPath.data.cloud_path, /^profiles\/[a-f0-9]{32}\//);
   assert.equal((fixture.state.profile_media_imports || new Map()).size, 1);

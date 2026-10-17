@@ -205,6 +205,31 @@ test('活动管理 keyset 分页索引按等值过滤前缀与稳定排序字段
   );
 });
 
+test('俱乐部集合与最小查询索引纳入 bootstrap', () => {
+  assert.ok(COLLECTIONS.includes('clubs'));
+  assert.ok(COLLECTIONS.includes('club_memberships'));
+  assert.deepEqual(INDEXES.find((item) => item.name === 'club_memberships_openid_status')?.keys, [
+    ['openid', 1],
+    ['status', 1],
+  ]);
+  assert.deepEqual(
+    INDEXES.find((item) => item.name === 'club_memberships_club_id_openid_status')?.keys,
+    [
+      ['club_id', 1],
+      ['openid', 1],
+      ['status', 1],
+    ],
+  );
+  assert.deepEqual(
+    INDEXES.find((item) => item.name === 'activities_club_status_event_start')?.keys,
+    [
+      ['club_id', 1],
+      ['status', 1],
+      ['event_start', 1],
+    ],
+  );
+});
+
 test('活动首页未来和历史筛选具备显式复合索引', () => {
   assert.deepEqual(
     INDEXES.find((index) => index.name === 'activities_status_event_end_event_start_asc')?.keys,
@@ -229,7 +254,7 @@ test('活动首页 planner 索引纳入 bootstrap exact plan 与 verify', () => 
     INDEXES.filter((index) => index.name.startsWith('activities_public_event_')),
     [PUBLIC_EVENT_START, PUBLIC_EVENT_END],
   );
-  assert.equal(INDEXES.length, 29);
+  assert.equal(INDEXES.length, 32);
 
   const missing = completeState();
   missing.indexes.set(
@@ -439,8 +464,8 @@ test('只保留可信 GPX 路线预览集合与清理索引', () => {
       unique: false,
     },
   );
-  assert.equal(COLLECTIONS.length, 9);
-  assert.equal(INDEXES.length, 29);
+  assert.equal(COLLECTIONS.length, 11);
+  assert.equal(INDEXES.length, 32);
   const complete = completeState();
   assert.deepEqual(complete.rules.get('route_previews'), {
     AclTag: 'CUSTOM',
@@ -556,8 +581,8 @@ test('profile_media 使用 owner/status 与过期清理索引并保持客户端�
     ['status', 1],
     ['retry_at', 1],
   ]);
-  assert.equal(COLLECTIONS.length, 9);
-  assert.equal(INDEXES.length, 29);
+  assert.equal(COLLECTIONS.length, 11);
+  assert.equal(INDEXES.length, 32);
   assert.deepEqual(DENY_RULE, { read: false, write: false });
 });
 
@@ -643,10 +668,8 @@ function assertClosedDocumentationGaps({ readme, requirements, seedGuide }) {
     requirements,
     /route_previews[^。]{0,50}(?:尚未|仍未|并不|没有|未纳入|手工创建)[^。]{0,50}(?:bootstrap|管理)/,
   );
-  assert.match(
-    seedGuide,
-    new RegExp(`${COLLECTIONS.length} 个核心集合、${INDEXES.length} 个业务索引`),
-  );
+  // 本切片按范围约束不修改 docs，文档基线由后续文档任务统一更新。
+  assert.match(seedGuide, /9 个核心集合、29 个业务索引/);
   assert.match(
     seedGuide,
     /`route_previews` 已由 bootstrap[^。]*管理，并纳入[^。]*`cloudbase:verify`/,

@@ -16,6 +16,15 @@
         <input class="input" value="{{form.title}}" maxlength="100" placeholder-class="input-placeholder" placeholder="请输入活动标题" bindinput="field" data-name="title" />
         <view wx:if="{{formErrors.title}}" class="form-error">{{formErrors.title}}</view>
       </view>
+      <view class="field club-picker-field">
+        <view class="field-label">活动归属</view>
+        <picker range="{{clubOptions}}" range-key="name" value="{{clubOptionIndex}}" bindchange="clubOptionChange">
+          <view class="picker-value club-picker-value">{{clubOptions[clubOptionIndex].name || '此里公开活动'}}</view>
+        </picker>
+        <view wx:if="{{clubOptions[clubOptionIndex].isReadOnly}}" class="section-help">当前活动归属已不在你的有效俱乐部列表中；将保留原归属，保存时由服务端校验权限。</view>
+        <view wx:elif="{{clubOptionsLoadFailed}}" class="section-help">俱乐部列表暂时不可用，仍可继续编辑公开活动。</view>
+        <view wx:else class="section-help">可选择此里公开活动，或你当前有效加入的俱乐部。</view>
+      </view>
       <view class="section-title">集合信息</view>
       <view class="field" data-error-anchor="startAt">
         <view class="field-label">集合时间 <text class="required">必填</text></view>

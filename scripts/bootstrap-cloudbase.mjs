@@ -18,6 +18,8 @@ export const COLLECTIONS = Object.freeze([
   'profile_media',
   'profile_media_imports',
   'route_previews',
+  'clubs',
+  'club_memberships',
 ]);
 
 export const INDEXES = Object.freeze([
@@ -101,6 +103,35 @@ export const INDEXES = Object.freeze([
       ['is_deleted', 1],
       ['event_start', -1],
       ['_id', -1],
+    ],
+    unique: false,
+  },
+  {
+    collection: 'activities',
+    name: 'activities_club_status_event_start',
+    keys: [
+      ['club_id', 1],
+      ['status', 1],
+      ['event_start', 1],
+    ],
+    unique: false,
+  },
+  {
+    collection: 'club_memberships',
+    name: 'club_memberships_openid_status',
+    keys: [
+      ['openid', 1],
+      ['status', 1],
+    ],
+    unique: false,
+  },
+  {
+    collection: 'club_memberships',
+    name: 'club_memberships_club_id_openid_status',
+    keys: [
+      ['club_id', 1],
+      ['openid', 1],
+      ['status', 1],
     ],
     unique: false,
   },

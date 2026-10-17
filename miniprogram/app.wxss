@@ -81,6 +81,27 @@ button {
 button::after {
   border: 0;
 }
+.club-identity {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 16rpx;
+  color: var(--color-muted);
+  font-size: 24rpx;
+  font-weight: 800;
+}
+.club-avatar {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+}
+.club-avatar--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-brand);
+  color: var(--color-on-brand);
+}
 .a11y-live-region {
   position: absolute;
   width: 1px;

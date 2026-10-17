@@ -3,6 +3,7 @@ import type { PersonalCapabilityCard, Profile } from '../miniprogram/models';
 
 const profile: Profile = {
   avatarRevision: 1,
+  clubs: [],
   nickname: '缓存骑手',
   title: '',
   realName: '',
@@ -155,6 +156,31 @@ describe('个人中心缓存', () => {
 
     expect(readProfilePageCache()).toMatchObject({ cachedAt: 0 });
     expect(wx.removeSavedFile).not.toHaveBeenCalled();
+  });
+
+  it('缺少俱乐部字段的 v2 缓存不会进入新的资料卡缓存', async () => {
+    const { readProfilePageCache, writeProfilePageCache } =
+      await import('../miniprogram/utils/profile-page-cache');
+    storage['cili-profile-page-cache-v2'] = {
+      version: 2,
+      ownerOpenid: 'openid-a',
+      cachedAt: Date.now(),
+      profile: {
+        nickname: '旧缓存骑手',
+        hasCompletedGuidance: true,
+        completeness: 80,
+        missing: [],
+      },
+      card,
+      images: {},
+    };
+
+    expect(readProfilePageCache()).toBeNull();
+    writeProfilePageCache('openid-a', profile, card);
+    expect(storage['cili-profile-page-cache-v3']).toMatchObject({
+      version: 3,
+      profile: { clubs: [] },
+    });
   });
 
   it('账号指标旧版本缓存不会进入新的资料卡缓存', async () => {

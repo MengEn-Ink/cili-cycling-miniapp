@@ -38,6 +38,28 @@
     </view>
   </view>
 
+  <view class="club-membership-card" wx:if="{{profile}}" aria-label="我的俱乐部">
+    <view wx:if="{{!profile.clubs.length}}" class="club-membership-empty">
+      <view class="club-membership-avatar club-membership-avatar--placeholder">俱</view>
+      <view class="club-membership-copy"><text class="club-membership-name">我的俱乐部</text><text class="club-membership-role">暂未加入俱乐部，仍可参加此里公开活动</text></view>
+    </view>
+    <view wx:elif="{{profile.clubs.length === 1}}" class="club-membership-single">
+      <image wx:if="{{profile.clubs[0].avatarUrl}}" class="club-membership-avatar" src="{{profile.clubs[0].avatarUrl}}" mode="aspectFill" />
+      <view wx:else class="club-membership-avatar club-membership-avatar--placeholder">俱</view>
+      <view class="club-membership-copy"><text class="club-membership-name">{{profile.clubs[0].name}}</text><text class="club-membership-role">{{profile.clubs[0].roleLabel}}</text></view>
+    </view>
+    <view wx:else class="club-membership-multiple">
+      <view class="club-avatar-stack" aria-label="已加入 {{profile.clubs.length}} 个俱乐部">
+        <view class="club-avatar-stack__item" wx:for="{{clubAvatarStack}}" wx:key="clubId">
+          <image wx:if="{{item.avatarUrl}}" class="club-membership-avatar" src="{{item.avatarUrl}}" mode="aspectFill" />
+          <view wx:else class="club-membership-avatar club-membership-avatar--placeholder">俱</view>
+        </view>
+        <view wx:if="{{clubOverflowCount > 0}}" class="club-avatar-stack__more">+{{clubOverflowCount}}</view>
+      </view>
+      <view class="club-membership-copy"><text class="club-membership-name">我的俱乐部</text><text class="club-membership-role">共 {{profile.clubs.length}} 个有效身份</text></view>
+    </view>
+  </view>
+
   <view class="hero-profile-progress" wx:if="{{profile && profile.completeness < 100}}">
     <view class="hero-progress-head"><text>资料完整度</text><text>{{profile.completeness}}%</text></view>
     <view class="hero-progress-track"><view class="hero-progress-value" style="width: {{profile.completeness}}%"></view></view>

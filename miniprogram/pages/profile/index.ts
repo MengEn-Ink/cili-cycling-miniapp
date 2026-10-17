@@ -97,6 +97,17 @@ function formatRetainedContent(updatedAtText: string) {
   return `继续展示${updatedAtText.replace(/^缓存于/, '于')}的内容`;
 }
 
+function clubViewData(profile: unknown) {
+  const clubs =
+    profile && typeof profile === 'object' && Array.isArray((profile as { clubs?: unknown }).clubs)
+      ? (profile as { clubs: Profile['clubs'] }).clubs || []
+      : [];
+  return {
+    clubAvatarStack: clubs.slice(0, 4),
+    clubOverflowCount: Math.max(0, clubs.length - 4),
+  };
+}
+
 function cardView(card: PersonalCapabilityCard, images: Record<string, string> = {}) {
   const view = personalCardViewModel(applyCachedImages(card, images));
   const avatarBackground =
@@ -131,6 +142,8 @@ Page({
   data: {
     navigationTopPx: customNavigationTopPx(),
     profile: null as Profile | null,
+    clubAvatarStack: [] as Profile['clubs'],
+    clubOverflowCount: 0,
     loading: true,
     refreshing: false,
     error: '',
@@ -166,6 +179,7 @@ Page({
   applyHydratedCache(cache: ProfilePageCache) {
     this.setData({
       profile: cache.profile,
+      ...clubViewData(cache.profile),
       loading: false,
       usingCache: true,
       updatedAtText: formatUpdatedAt(cache.cachedAt),
@@ -397,6 +411,7 @@ Page({
     const profile = profileState.data || null;
     this.setData({
       profile,
+      ...clubViewData(profile),
       loading: false,
       error: '',
       hasGuidance: profile ? !profile.hasCompletedGuidance : false,
@@ -521,7 +536,7 @@ Page({
     if (!this.data.profile) return;
     try {
       const profile = await rideService.updateProfile({ hasCompletedGuidance: true });
-      this.setData({ hasGuidance: false, profile });
+      this.setData({ hasGuidance: false, profile, ...clubViewData(profile) });
       clearProfilePageCache();
       this.hydratedCache = null;
     } catch {

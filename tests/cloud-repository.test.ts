@@ -121,6 +121,7 @@ describe('CloudRepository 活动读取适配', () => {
       {
         id: 'a1',
         version: 7,
+        clubIdentity: { name: '此里公开活动', avatarUrl: '' },
         title: '环湖骑行',
         date: '2026-10-18T00:00:00.000Z',
         startAt: '2026-10-18T00:00:00.000Z',
@@ -150,6 +151,27 @@ describe('CloudRepository 活动读取适配', () => {
         serverNow: '2026-09-29T04:00:00.000Z',
       },
     ]);
+  });
+
+  it('俱乐部身份保留 CloudBase 文件头像地址', async () => {
+    const withClub = {
+      ...activity,
+      club_id: 'club-1',
+      club_identity: {
+        club_id: 'club-1',
+        name: '辛庄桥小火车',
+        avatar_url: 'cloud://prod-env/clubs/club-1/avatar.png',
+      },
+    };
+    const { cloud } = cloudWith(success([withClub]));
+
+    const [result] = await new CloudRepository(cloud).listActivities();
+
+    expect(result.clubIdentity).toEqual({
+      clubId: 'club-1',
+      name: '辛庄桥小火车',
+      avatarUrl: 'cloud://prod-env/clubs/club-1/avatar.png',
+    });
   });
 
   it('活动发布人映射为昵称与头像地址，头像缺失时为空字符串', async () => {
@@ -1785,6 +1807,7 @@ describe('CloudRepository 管理员活动写入契约', () => {
       action: 'save',
       createRequestId: 'create-request-0001',
       activity: {
+        club_id: null,
         title: '环湖骑行',
         cover_image: '',
         description: '说明',

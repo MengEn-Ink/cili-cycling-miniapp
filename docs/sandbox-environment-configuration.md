@@ -1,6 +1,6 @@
-# 沙箱环境、测试、部署与代码交付配置指南
+# GitHub 托管的测试、部署与代码交付配置指南
 
-本文统一说明“此里”小程序在 Aime 沙箱中完成代码修改、自动化测试、CloudBase 操作、GitHub 提交/PR、微信开发版上传和真实环境验证所需的配置。目标是让配置只注入一次、按用途隔离，并且不在仓库、命令日志或聊天中暴露任何凭据。
+本文统一说明“此里”小程序如何完成代码修改、自动化测试、CloudBase 部署、GitHub PR、微信开发版上传和真实环境验证。生产部署凭证统一托管在 GitHub Actions Environment 中；Aime 只需要仓库写权限，不再持有 CloudBase 或微信上传密钥。
 
 > 本文以仓库当前 `main` 的脚本与工作流为准。测试通过不等于云函数已部署，微信开发版上传成功也不等于 CloudBase 已更新。
 
@@ -8,7 +8,8 @@
 
 | 层级 | 用途 | 配置位置 | 是否允许进入仓库 |
 | --- | --- | --- | --- |
-| Aime 沙箱 Secret | GitHub 推送/PR、CloudBase 自动化认证 | Aime 空间的 Secret/环境变量管理 | 否 |
+| Aime 沙箱 Secret | GitHub fetch/push、查询和创建 PR | Aime 空间的 Secret 管理 | 否 |
+| GitHub Actions Environment | CloudBase 自动部署与目标环境配置 | GitHub `cloudbase-production` Environment | 否 |
 | GitHub Actions Secret | 合并后上传微信开发版 | GitHub 仓库 Settings → Secrets and variables → Actions | 否 |
 | CloudBase 云函数环境变量 | 运行时加密、路线退休清理、订阅消息 | CloudBase 控制台中对应云函数的环境变量 | 否 |
 | 仓库固定配置 | AppID、CloudBase EnvID、函数清单、网关路由 | `project.config.json`、`cloudbaserc.json` | 是 |
@@ -38,9 +39,6 @@
 | 变量 | 必需场景 | 是否敏感 | 要求 |
 | --- | --- | --- | --- |
 | `GITHUB_TOKEN` | fetch/push、查询和创建 PR、读取 Actions | 是 | 推荐 fine-grained token，仅授权本仓库 |
-| `TENCENTCLOUD_SECRETID` | 沙箱内 CloudBase plan/apply/verify、函数部署 | 是 | 腾讯云 API 密钥 ID |
-| `TENCENTCLOUD_SECRETKEY` | 同上 | 是 | 与 SecretId 成对 |
-| `TENCENTCLOUD_SESSIONTOKEN` | 使用 STS 临时密钥时 | 是 | 永久密钥不需要 |
 
 `GH_TOKEN` 只作为 `GITHUB_TOKEN` 的兼容别名；统一提供 `GITHUB_TOKEN` 即可。脚本或命令需要 GitHub CLI 时，可在**单条命令作用域**内映射：
 
@@ -59,13 +57,18 @@ GitHub fine-grained token 的最小仓库权限：
 
 只有自动化需要修改 `.github/workflows/**` 时，才增加 Workflows/Actions 写权限。不要使用包含无关仓库或组织管理权限的宽权限 token。
 
-CloudBase CLI v3 支持浏览器登录、API 密钥登录和 CI 无头登录；沙箱使用 API 密钥或临时密钥，不依赖个人浏览器登录态。官方登录方式见 [CloudBase CLI 使用指南](https://cloud.tencent.com/document/product/876/41539)::cite[2569]。
+Aime 不再执行 CloudBase 生产部署，也不需要腾讯云永久密钥或 CloudBase API Key。CloudBase CLI 的无头认证只在 GitHub 托管 Runner 中进行，官方登录方式见 [CloudBase CLI 使用指南](https://docs.cloudbase.net/cli-v1/install)。
 
-### 2.2 GitHub Actions Secret
+### 2.2 GitHub Actions Secrets 与 Variables
 
-| Secret | 必需场景 | 值的来源 | 配置要求 |
+建议创建名为 `cloudbase-production` 的 GitHub Environment，并按下表配置：
+
+| 名称 | 类型 | 必需场景 | 配置要求 |
 | --- | --- | --- | --- |
-| `WECHAT_MINIPROGRAM_PRIVATE_KEY` | `main` CI 成功后自动上传微信开发版 | 微信公众平台生成的代码上传密钥文件完整正文 | 只放 GitHub Actions Secret，不能放普通 Variable |
+| `CLOUDBASE_API_KEY` | Environment Secret | CloudBase 集合、索引和云函数部署 | 目标环境的环境级 API Key；敏感、不可回读、按有效期轮换 |
+| `CLOUDBASE_ENV_ID` | Environment Variable | CloudBase 防串环境校验 | 必须与 `cloudbaserc.json` 的 `envId` 完全一致 |
+| `CLOUDBASE_REGION` | Environment Variable | CloudBase 数据库 API 地域 | 当前目标为 `ap-shanghai` |
+| `WECHAT_MINIPROGRAM_PRIVATE_KEY` | Repository 或 Environment Secret | 微信开发版自动上传 | 微信公众平台代码上传密钥文件完整正文 |
 
 仓库工作流中的 `secrets.GITHUB_TOKEN` 由 GitHub Actions 自动提供，不需要人工创建，也不要与 Aime 沙箱的 `GITHUB_TOKEN` 混为一谈。
 
@@ -136,7 +139,7 @@ command -v gh
 node --version
 npm --version
 
-for name in GITHUB_TOKEN TENCENTCLOUD_SECRETID TENCENTCLOUD_SECRETKEY; do
+for name in GITHUB_TOKEN; do
   if [ -n "$(printenv "$name")" ]; then
     printf '%s=present\n' "$name"
   else
@@ -162,21 +165,17 @@ npm run cloud:install
 npm ci --ignore-scripts --prefix tools/miniprogram-ci
 ```
 
-### 3.3 CloudBase CLI 认证与只读连通性
+### 3.3 CloudBase 连通性与部署归 GitHub Actions
 
-仓库把 CLI 锁定为 `@cloudbase/cli@3.8.4`。沙箱凭据注入后，先建立无头认证，再只运行 plan：
+仓库把 CLI 锁定为 `@cloudbase/cli@3.8.4`。Aime 沙箱只运行不需要生产 Secret 的测试与 plan 生成逻辑，不登录或修改 CloudBase。PR 合入 `main` 且 CI 成功后，`.github/workflows/deploy-cloudbase.yml` 会在 `cloudbase-production` Environment 中完成：
 
-```bash
-npx --yes --package @cloudbase/cli@3.8.4 tcb login \
-  --apiKeyId "$TENCENTCLOUD_SECRETID" \
-  --apiKey "$TENCENTCLOUD_SECRETKEY"
+1. 比较 GitHub Variable 与 `cloudbaserc.json`，环境 ID 不一致时立即停止。
+2. 使用 `CLOUDBASE_API_KEY` 完成无头登录，并先执行 `fn list` 验证连通性。
+3. `scripts/bootstrap-cloudbase.mjs` 变更时依次执行 plan、apply、verify。
+4. 以上次成功的 CloudBase workflow SHA 为基线，累计识别新增、修改、重命名和删除，只重新部署受影响的云函数；共享领域代码展开到实际消费者。
+5. 部署后再次执行 `fn list`，确认目标函数可查询。
 
-npm run cloudbase:plan
-```
-
-使用 STS 时还需要 `TENCENTCLOUD_SESSIONTOKEN`，并按当期 CLI 支持的临时密钥登录方式传入。认证命令只能在不回显参数的受控执行器中运行；失败时不要把完整命令、凭据或认证文件贴到日志。
-
-`cloudbase:plan` 虽然不写资源，但会读取目标环境。只有 plan 输出的环境与 `cloudbaserc.json` 一致、冲突为 0，才可以讨论 apply。
+工作流也支持手动恢复：可选择全量重新部署函数或重新应用数据库基线，但仍受 production Environment 审批与 Secret 边界保护。
 
 ## 4. 开发、测试与本地验证
 
@@ -495,10 +494,15 @@ npm run deploy:miniprogram
 ### Aime 沙箱
 
 ```text
-GITHUB_TOKEN=<required>
-TENCENTCLOUD_SECRETID=<required for CloudBase operations>
-TENCENTCLOUD_SECRETKEY=<required for CloudBase operations>
-TENCENTCLOUD_SESSIONTOKEN=<only for temporary STS credentials>
+GITHUB_TOKEN=<required for repository delivery>
+```
+
+### GitHub `cloudbase-production` Environment
+
+```text
+Secret: CLOUDBASE_API_KEY=<required for CloudBase deployment>
+Variable: CLOUDBASE_ENV_ID=<must match cloudbaserc.json>
+Variable: CLOUDBASE_REGION=ap-shanghai
 ```
 
 ### GitHub Actions

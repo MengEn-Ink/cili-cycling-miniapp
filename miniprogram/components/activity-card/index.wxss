@@ -27,6 +27,34 @@
 .card-info {
   padding: 24rpx 32rpx 32rpx;
 }
+.club-identity {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  min-width: 0;
+  margin-bottom: 12rpx;
+  color: var(--color-muted);
+  font-size: 24rpx;
+  font-weight: 800;
+}
+.club-avatar {
+  width: 40rpx;
+  height: 40rpx;
+  flex: 0 0 40rpx;
+  border-radius: 50%;
+}
+.club-avatar--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-brand);
+  color: var(--color-on-brand);
+}
+.club-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .card-meta {
   display: flex;
   justify-content: space-between;

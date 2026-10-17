@@ -74,7 +74,11 @@ Page({
       const items = registrations
         .filter((item) => !isTripArchived(item.activity?.endAt))
         .map((item) => {
-          const activity = item.activity || { title: '历史活动', date: item.updatedAt };
+          const activity = item.activity || {
+            title: '历史活动',
+            date: item.updatedAt,
+            clubIdentity: { name: '此里公开活动', avatarUrl: '' },
+          };
           const meeting = buildTripMeetingInfo(activity);
           const statusText = {
             waiting: '候补中',

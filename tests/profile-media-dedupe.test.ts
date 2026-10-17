@@ -19,6 +19,7 @@ const profile: Profile = {
   avatarId: 'cloud://env/profiles/owner/old.jpg',
   avatarSource: 'custom',
   avatarRevision: 4,
+  clubs: [],
   realName: '曹蒙恩',
   phone: '13812345678',
   gender: '',
