@@ -1,4 +1,9 @@
 import type { Activity, RouteCoordinate, RouteElevationPoint } from '../../../models/index';
+import {
+  cleanElevationProfile,
+  cleanRouteOutline,
+  sampleRouteOutline,
+} from '../../../utils/route-visual';
 import { deriveRouteSegments, formatRouteDuration } from './route-analysis-segments';
 import type { KeyPointType, RouteAnalysis, RouteKeyPoint } from './route-analysis-types';
 export type {
@@ -18,113 +23,18 @@ const validCoordinate = (latitude: unknown, longitude: unknown) =>
   finite(latitude) && finite(longitude) && Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180;
 
 function cleanProfile(route: Route, distanceKm: number): RouteElevationPoint[] {
-  const byDistance = new Map<number, number>();
-  for (const point of route.elevationProfile || []) {
-    if (!finite(point?.distanceKm) || !finite(point?.elevationM) || point.distanceKm < 0) continue;
-    const distance = distanceKm > 0 ? clamp(point.distanceKm, 0, distanceKm) : point.distanceKm;
-    byDistance.set(round(distance, 4), point.elevationM);
-  }
-  const profile = [...byDistance.entries()]
-    .map(([distanceKm, elevationM]) => ({ distanceKm, elevationM }))
-    .sort((a, b) => a.distanceKm - b.distanceKm);
-  const alignExtreme = (value: unknown, findIndex: (point: RouteElevationPoint) => boolean) => {
-    if (!finite(value) || !profile.length) return;
-    const index = profile.findIndex(findIndex);
-    if (index >= 0) profile[index] = { ...profile[index], elevationM: value };
-  };
-  if (finite(route.elevationMaxM)) {
-    const current = Math.max(...profile.map((point) => point.elevationM));
-    if (route.elevationMaxM > current)
-      alignExtreme(route.elevationMaxM, (point) => point.elevationM === current);
-  }
-  if (finite(route.elevationMinM)) {
-    const current = Math.min(...profile.map((point) => point.elevationM));
-    if (route.elevationMinM < current)
-      alignExtreme(route.elevationMinM, (point) => point.elevationM === current);
-  }
-  return profile;
-}
-
-const MAX_MAP_OUTLINE_POINTS = 420;
-
-function pointSegmentDeviation(
-  point: RouteCoordinate,
-  start: RouteCoordinate,
-  end: RouteCoordinate,
-): number {
-  const latitudeScale = Math.cos((((start.latitude + end.latitude) / 2) * Math.PI) / 180);
-  const x = (point.longitude - start.longitude) * latitudeScale;
-  const y = point.latitude - start.latitude;
-  const endX = (end.longitude - start.longitude) * latitudeScale;
-  const endY = end.latitude - start.latitude;
-  const lengthSquared = endX * endX + endY * endY;
-  if (lengthSquared === 0) return x * x + y * y;
-  const ratio = clamp((x * endX + y * endY) / lengthSquared, 0, 1);
-  const offsetX = x - ratio * endX;
-  const offsetY = y - ratio * endY;
-  return offsetX * offsetX + offsetY * offsetY;
-}
-
-function turnStrength(points: RouteCoordinate[], index: number): number {
-  const previous = points[index - 1];
-  const point = points[index];
-  const next = points[index + 1];
-  if (!previous || !next) return 0;
-  const latitudeScale = Math.cos((point.latitude * Math.PI) / 180);
-  const incomingX = (point.longitude - previous.longitude) * latitudeScale;
-  const incomingY = point.latitude - previous.latitude;
-  const outgoingX = (next.longitude - point.longitude) * latitudeScale;
-  const outgoingY = next.latitude - point.latitude;
-  const incomingLength = Math.hypot(incomingX, incomingY);
-  const outgoingLength = Math.hypot(outgoingX, outgoingY);
-  if (!incomingLength || !outgoingLength) return 0;
-  const cosine = clamp(
-    (incomingX * outgoingX + incomingY * outgoingY) / (incomingLength * outgoingLength),
-    -1,
-    1,
+  return cleanElevationProfile(
+    route.elevationProfile,
+    distanceKm,
+    route.elevationMinM,
+    route.elevationMaxM,
   );
-  return 1 - cosine;
 }
 
-export function sampleRouteOutline(points: RouteCoordinate[], limit = MAX_MAP_OUTLINE_POINTS) {
-  if (points.length <= limit) return points;
-  if (limit <= 1) return [points[0]];
-  const retained = new Set([0, points.length - 1]);
-  const segments = [{ start: 0, end: points.length - 1, index: -1, deviation: -1 }];
-
-  const measure = (segment: (typeof segments)[number]) => {
-    segment.index = -1;
-    segment.deviation = -1;
-    for (let index = segment.start + 1; index < segment.end; index += 1) {
-      const deviation =
-        pointSegmentDeviation(points[index], points[segment.start], points[segment.end]) +
-        turnStrength(points, index) * 1e-10;
-      if (deviation > segment.deviation) {
-        segment.index = index;
-        segment.deviation = deviation;
-      }
-    }
-  };
-  measure(segments[0]);
-  while (retained.size < limit) {
-    segments.sort((a, b) => b.deviation - a.deviation);
-    const segment = segments.shift();
-    if (!segment || segment.index < 0 || segment.deviation <= 0) break;
-    retained.add(segment.index);
-    const left = { start: segment.start, end: segment.index, index: -1, deviation: -1 };
-    const right = { start: segment.index, end: segment.end, index: -1, deviation: -1 };
-    measure(left);
-    measure(right);
-    segments.push(left, right);
-  }
-  return [...retained].sort((a, b) => a - b).map((index) => points[index]);
-}
+export { sampleRouteOutline };
 
 function cleanOutline(route: Route): RouteCoordinate[] {
-  const valid = (route.routeOutline || []).filter((point) =>
-    validCoordinate(point?.latitude, point?.longitude),
-  );
-  return sampleRouteOutline(valid);
+  return cleanRouteOutline(route.routeOutline);
 }
 
 function coordinateAt(

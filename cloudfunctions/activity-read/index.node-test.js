@@ -495,69 +495,157 @@ test('详情将已绑定的生成路线图解析为临时地址', async () => {
   ]);
 });
 
-test('downloadRouteGpx 返回已发布活动绑定的原始文件并复核摘要', async () => {
-  const source = Buffer.from(
-    '<gpx><rte><rtept lat="22" lon="114"><ele>10</ele></rtept></rte></gpx>',
-  );
-  const digest = crypto.createHash('sha256').update(source).digest('hex');
+test('downloadRouteGpx 在服务端校验摘要后签发 HTTPS 临时地址且响应不含文件内容', async () => {
+  const fileContent = Buffer.alloc(2 * 1024 * 1024);
+  const digest = crypto.createHash('sha256').update(fileContent).digest('hex');
   const fileId = `cloud://env/activity-routes/owner/${digest}.gpx`;
   const activity = {
     _id: 'a-download',
     title: '路线活动',
     status: 'published',
     route: {
-      route_name: '周末环湖',
+      route_name: '周末 环湖.v2',
       gpx_file_id: fileId,
       gpx_sha256: digest,
     },
   };
   const { main, calls } = loadMain(activity, [], {
-    downloadFile: async ({ fileID }) => {
-      assert.equal(fileID, fileId);
-      return { fileContent: source };
-    },
+    downloadFile: async () => ({ fileContent }),
+    getTempFileURL: async ({ fileList }) => ({
+      fileList: [
+        {
+          fileID: fileList[0],
+          status: 0,
+          tempFileURL: 'https://temp.example/large-route.gpx?token=signed',
+        },
+      ],
+    }),
   });
 
   const result = await main({ action: 'downloadRouteGpx', activityId: activity._id });
 
   assert.equal(result.ok, true);
-  assert.equal(result.data.content_type, 'application/gpx+xml');
-  assert.equal(Buffer.from(result.data.base64, 'base64').equals(source), true);
-  assert.match(result.data.filename, /^[A-Za-z0-9_-]+\.gpx$/);
+  assert.deepEqual(result.data, {
+    temp_file_url: 'https://temp.example/large-route.gpx?token=signed',
+    filename: '周末 环湖.v2.gpx',
+    content_type: 'application/gpx+xml',
+    gpx_md5: crypto.createHash('md5').update(fileContent).digest('hex'),
+  });
   assert.deepEqual(calls.find((call) => call.type === 'downloadFile').payload, {
     fileID: fileId,
   });
+  assert.deepEqual(calls.find((call) => call.type === 'getTempFileURL').payload, {
+    fileList: [fileId],
+  });
+  assert.equal(Object.hasOwn(result.data, 'base64'), false);
+  assert.equal(Object.hasOwn(result.data, 'gpx_sha256'), false);
 });
 
-test('downloadRouteGpx 拒绝草稿、删除活动、超限文件和摘要不匹配', async () => {
-  const source = Buffer.from('<gpx/>');
-  const digest = crypto.createHash('sha256').update(source).digest('hex');
+test('downloadRouteGpx 为无 SHA-256 的历史 GPX 做大小门禁并返回实际内容 MD5', async () => {
+  const fileContent = Buffer.from('<gpx>legacy</gpx>');
+  const fileId = 'cloud://env/activity-routes/owner/legacy.gpx';
+  const activity = {
+    _id: 'legacy-download',
+    status: 'published',
+    route: { route_name: '历史路线', gpx_file_id: fileId },
+  };
+  const { main } = loadMain(activity, [], {
+    downloadFile: async () => ({ fileContent }),
+    getTempFileURL: async () => ({
+      fileList: [{ fileID: fileId, status: 0, tempFileURL: 'https://temp.example/legacy.gpx' }],
+    }),
+  });
+
+  const result = await main({ action: 'downloadRouteGpx', activityId: activity._id });
+  assert.equal(result.ok, true);
+  assert.equal(result.data.gpx_md5, crypto.createHash('md5').update(fileContent).digest('hex'));
+});
+
+test('downloadRouteGpx 拒绝摘要不一致并且不签发临时地址', async () => {
+  const expectedDigest = crypto.createHash('sha256').update('expected').digest('hex');
+  const fileId = `cloud://env/activity-routes/owner/${expectedDigest}.gpx`;
+  const route = { gpx_file_id: fileId, gpx_sha256: expectedDigest };
+  const { main, calls } = loadMain({ _id: 'mismatch', status: 'published', route }, [], {
+    downloadFile: async () => ({ fileContent: Buffer.from('tampered') }),
+  });
+
+  const result = await main({ action: 'downloadRouteGpx', activityId: 'mismatch' });
+  assert.equal(result.ok, false);
+  assert.equal(result.error.code, 'GPX_DIGEST_MISMATCH');
+  assert.equal(
+    calls.some((call) => call.type === 'getTempFileURL'),
+    false,
+  );
+});
+
+test('downloadRouteGpx 对无摘要历史文件仍拒绝超过 4MB 且不签发临时地址', async () => {
+  const fileContent = Buffer.alloc(4 * 1024 * 1024 + 1);
+  const fileId = 'cloud://env/activity-routes/owner/legacy-large.gpx';
+  const route = { gpx_file_id: fileId };
+  const { main, calls } = loadMain({ _id: 'too-large', status: 'published', route }, [], {
+    downloadFile: async () => ({ fileContent }),
+  });
+
+  const result = await main({ action: 'downloadRouteGpx', activityId: 'too-large' });
+  assert.equal(result.ok, false);
+  assert.equal(result.error.code, 'GPX_TOO_LARGE');
+  assert.equal(
+    calls.some((call) => call.type === 'getTempFileURL'),
+    false,
+  );
+});
+
+test('downloadRouteGpx 明确处理云存储读取失败', async () => {
+  const digest = crypto.createHash('sha256').update('route').digest('hex');
   const fileId = `cloud://env/activity-routes/owner/${digest}.gpx`;
   const route = { gpx_file_id: fileId, gpx_sha256: digest };
-  const cases = [
-    [{ _id: 'draft', status: 'draft', route }, source, 'ACTIVITY_NOT_FOUND'],
-    [
-      { _id: 'deleted', status: 'published', is_deleted: true, route },
-      source,
-      'ACTIVITY_NOT_FOUND',
-    ],
-    [
-      { _id: 'oversize', status: 'published', route },
-      Buffer.alloc(4 * 1024 * 1024 + 1),
-      'GPX_TOO_LARGE',
-    ],
-    [
-      { _id: 'tampered', status: 'published', route },
-      Buffer.from('<gpx>changed</gpx>'),
-      'GPX_DIGEST_MISMATCH',
-    ],
-  ];
+  const { main, calls } = loadMain({ _id: 'read-failed', status: 'published', route }, [], {
+    downloadFile: async () => {
+      throw new Error('storage unavailable');
+    },
+  });
 
-  for (const [activity, bytes, code] of cases) {
-    const { main } = loadMain(activity, [], {
-      downloadFile: async () => ({ fileContent: bytes }),
-    });
+  const result = await main({ action: 'downloadRouteGpx', activityId: 'read-failed' });
+  assert.equal(result.ok, false);
+  assert.equal(result.error.code, 'GPX_DOWNLOAD_FAILED');
+  assert.equal(
+    calls.some((call) => call.type === 'getTempFileURL'),
+    false,
+  );
+});
+
+test('downloadRouteGpx 拒绝不可见活动，并明确区分临时地址状态与 URL 缺失', async () => {
+  const digest = crypto.createHash('sha256').update('<gpx/>').digest('hex');
+  const fileId = `cloud://env/activity-routes/owner/${digest}.gpx`;
+  const route = { gpx_file_id: fileId, gpx_sha256: digest };
+  for (const activity of [
+    { _id: 'draft', status: 'draft', route },
+    { _id: 'deleted', status: 'published', is_deleted: true, route },
+  ]) {
+    const { main } = loadMain(activity);
     const result = await main({ action: 'downloadRouteGpx', activityId: activity._id });
+    assert.equal(result.ok, false);
+    assert.equal(result.error.code, 'ACTIVITY_NOT_FOUND');
+  }
+
+  for (const [getTempFileURL, code] of [
+    [
+      async () => {
+        throw new Error('storage unavailable');
+      },
+      'GPX_TEMP_URL_FAILED',
+    ],
+    [
+      async () => ({ fileList: [{ fileID: fileId, status: -1, errMsg: 'denied' }] }),
+      'GPX_TEMP_URL_FAILED',
+    ],
+    [async () => ({ fileList: [{ fileID: fileId, status: 0 }] }), 'GPX_TEMP_URL_MISSING'],
+  ]) {
+    const { main } = loadMain({ _id: 'published', status: 'published', route }, [], {
+      downloadFile: async () => ({ fileContent: Buffer.from('<gpx/>') }),
+      getTempFileURL,
+    });
+    const result = await main({ action: 'downloadRouteGpx', activityId: 'published' });
     assert.equal(result.ok, false);
     assert.equal(result.error.code, code);
   }

@@ -15,6 +15,7 @@ const {
 const appConfig = JSON.parse(readFileSync('miniprogram/app.json', 'utf8')) as MiniProgramAppConfig;
 
 const expectedPackages = [
+  { root: 'pages/activity-detail', pages: ['index'] },
   { root: 'pages/route-analysis', pages: ['index'] },
   { root: 'pages/profile-edit', pages: ['index'] },
   {
@@ -24,7 +25,7 @@ const expectedPackages = [
 ];
 
 describe('按需分包与主包字节契约', () => {
-  it('三个低频功能均按需加载且完整路由仍为 14 个', () => {
+  it('四个低频功能均按需加载且完整路由仍为 14 个', () => {
     expect(appConfig.subpackages).toEqual(expectedPackages);
     const routes = expandAppRoutes(appConfig);
     expect(routes).toHaveLength(14);

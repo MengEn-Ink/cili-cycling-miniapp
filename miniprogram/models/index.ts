@@ -78,8 +78,10 @@ export interface RouteGpxPreview {
   expiresAt: string;
 }
 export interface RouteGpxDownload {
-  base64: string;
+  tempFileURL: string;
   fileName: string;
+  contentType: 'application/gpx+xml';
+  gpxMd5: string;
 }
 export interface ActivityAttendee {
   id: string;

@@ -96,6 +96,7 @@ describe('路线轮廓 Canvas', () => {
     expect(context.lineTo).toHaveBeenCalledOnce();
     expect(context.stroke).toHaveBeenCalledOnce();
     expect(context.lineWidth).toBe(6);
+    expect(context.strokeStyle).toBe('#c0321f');
     expect(context.arc).toHaveBeenCalledTimes(2);
     expect(context.arc).toHaveBeenNthCalledWith(
       1,
@@ -105,6 +106,6 @@ describe('路线轮廓 Canvas', () => {
       0,
       Math.PI * 2,
     );
-    expect(context.fillText).toHaveBeenCalledWith('周末环湖', 24, 24);
+    expect(context.fillText).not.toHaveBeenCalled();
   });
 });

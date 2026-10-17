@@ -40,7 +40,11 @@ describe('路线反馈修复合同', () => {
 
   it('只转换明确 GPX 来源，轮廓与 GPX 派生 marker 坐标使用同一转换函数', () => {
     const analysis = deriveRouteAnalysis(route);
-    expect(routeAnalysisForMap(analysis, false)).toBe(analysis);
+    const plain = routeAnalysisForMap(analysis, false);
+    expect(plain.outline[0]).toEqual({
+      latitude: BEIJING.latitude,
+      longitude: BEIJING.longitude,
+    });
     const mapped = routeAnalysisForMap(analysis, true);
     expect(mapped.outline[0]).toEqual(wgs84ToGcj02(BEIJING.latitude, BEIJING.longitude));
     const start = mapped.keyPoints.find((point) => point.id === 'start')!;

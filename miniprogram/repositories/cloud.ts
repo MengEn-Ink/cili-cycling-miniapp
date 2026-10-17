@@ -516,16 +516,22 @@ function mapRouteGpxPreview(raw: unknown): RouteGpxPreview {
 }
 function mapRouteGpx(raw: unknown) {
   const value = expectRecord(raw);
+  const tempFileURL = httpsUrl(value.temp_file_url);
   if (
-    typeof value.base64 !== 'string' ||
-    value.base64.length > Math.ceil((4 * 1024 * 1024) / 3) * 4 ||
-    !/^[A-Za-z0-9+/]*={0,2}$/.test(value.base64) ||
+    !tempFileURL ||
     typeof value.filename !== 'string' ||
     !isSafeGpxFileName(value.filename) ||
-    value.content_type !== 'application/gpx+xml'
+    value.content_type !== 'application/gpx+xml' ||
+    typeof value.gpx_md5 !== 'string' ||
+    !/^[a-f0-9]{32}$/.test(value.gpx_md5)
   )
     return invalidResponse();
-  return { base64: value.base64, filename: value.filename, contentType: value.content_type };
+  return {
+    tempFileURL,
+    fileName: value.filename,
+    contentType: value.content_type as 'application/gpx+xml',
+    gpxMd5: value.gpx_md5,
+  };
 }
 function mapClubIdentity(raw: unknown): ClubIdentity {
   if (!isRecord(raw) || typeof raw.name !== 'string' || !raw.name.trim()) {
@@ -1610,12 +1616,11 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     );
   }
   async downloadRouteGpx(activityId: string): Promise<RouteGpxDownload> {
-    const value = mapRouteGpx(
+    return mapRouteGpx(
       await this.call('activity-read', {
         action: 'downloadRouteGpx',
         activityId: boundedId(activityId, '活动 ID', 1, 128),
       }),
     );
-    return { base64: value.base64, fileName: value.filename };
   }
 }

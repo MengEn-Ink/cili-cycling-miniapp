@@ -1,4 +1,5 @@
 import type { Activity, RouteCoordinate } from '../models';
+import { ROUTE_VISUAL_STYLE } from './route-visual';
 
 type Route = Activity['route'];
 const finite = (value: unknown): value is number =>
@@ -113,7 +114,7 @@ export function drawRouteOutline(
   height: number,
   points: RouteCoordinate[],
   pixelRatio = 1,
-  routeName = '路线详情',
+  _routeName = '路线详情',
   reveal = 1,
 ): void {
   const ratio = Number.isFinite(pixelRatio) && pixelRatio > 0 ? pixelRatio : 1;
@@ -122,23 +123,18 @@ export function drawRouteOutline(
   context.clearRect(0, 0, width, height);
   context.fillStyle = '#ffffff';
   context.fillRect(0, 0, width, height);
-  context.fillStyle = '#211f1c';
-  context.font = '700 14px sans-serif';
-  context.textAlign = 'left';
-  context.textBaseline = 'top';
-  context.fillText(routeName || '路线详情', 24, 24);
 
-  const projected = projectRouteOutline(points, width, height, 16);
+  const projected = projectRouteOutline(points, width, height, ROUTE_VISUAL_STYLE.routePadding);
   const progress = Math.max(0, Math.min(1, Number.isFinite(reveal) ? reveal : 1));
   const visible = projected.slice(0, Math.max(2, Math.ceil((projected.length - 1) * progress) + 1));
   if (visible.length >= 2) {
     context.beginPath();
     context.moveTo(visible[0].x, visible[0].y);
     for (const point of visible.slice(1)) context.lineTo(point.x, point.y);
-    context.lineWidth = 6;
+    context.lineWidth = ROUTE_VISUAL_STYLE.routeWidth;
     context.lineCap = 'round';
     context.lineJoin = 'round';
-    context.strokeStyle = '#211f1c';
+    context.strokeStyle = ROUTE_VISUAL_STYLE.routeColor;
     context.stroke();
 
     const endpoints =

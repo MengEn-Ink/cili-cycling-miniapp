@@ -1,5 +1,6 @@
 import { rideService } from '../../services/ride-service';
 import { hasAnalyzableRoute } from '../../utils/route-outline';
+import { ROUTE_VISUAL_STYLE } from '../../utils/route-visual';
 import {
   deriveRouteAnalysis,
   type RouteAnalysis,
@@ -9,7 +10,6 @@ import {
 import { drawRouteAnalysisElevation } from './utils/route-analysis-chart';
 import { routeAnalysisForMap } from './utils/gcj02';
 
-const ROUTE_COLOR = '#c0321f';
 const SELECTED_COLOR = '#211f1c';
 const POINT_LABELS = {
   start: { type: '起点', purpose: '路线出发位置', marker: '起', color: '#16633a', size: 30 },
@@ -63,8 +63,8 @@ function mapState(analysis: RouteAnalysis, selectedSegment?: RouteSegment | null
     polylines: [
       {
         points: base,
-        color: ROUTE_COLOR,
-        width: 6,
+        color: ROUTE_VISUAL_STYLE.routeColor,
+        width: ROUTE_VISUAL_STYLE.routeWidth,
         arrowLine: true,
         borderColor: '#ffffff',
         borderWidth: 2,
