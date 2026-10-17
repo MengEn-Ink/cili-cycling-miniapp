@@ -1,1 +1,1 @@
-export const CLIENT_RELEASE_VERSION = '2026.10.18.1';
+export const CLIENT_RELEASE_VERSION = '2026.10.18.2';

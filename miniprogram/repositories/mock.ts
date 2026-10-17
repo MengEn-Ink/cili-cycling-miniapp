@@ -2,6 +2,8 @@ import type {
   Activity,
   ClubApplication,
   ClubApplicationInput,
+  ManagedClubProfile,
+  ManagedClubProfileInput,
   EditableActivity,
   PersonalCapabilityCard,
   Profile,
@@ -225,6 +227,16 @@ function displayGatheringMode(
 export class MockRepository implements RideRepository {
   private readonly activityCreateRequests = new Map<string, string>();
   private clubApplication: ClubApplication | null = null;
+  private managedClub: ManagedClubProfile = {
+    id: `club_${'0'.repeat(64)}`,
+    name: '示例骑行俱乐部',
+    city: '深圳',
+    introduction: '面向骑友开放加入的示例俱乐部，定期组织安全友好的骑行活动。',
+    joinMode: 'public_apply',
+    avatarFileId: 'cloud://mock/club-applications/mock-user/cover.jpg',
+    avatarUrl: '',
+    updatedAt: new Date().toISOString(),
+  };
   read(): S {
     return wx.getStorageSync(KEY) || init();
   }
@@ -445,6 +457,25 @@ export class MockRepository implements RideRepository {
       role: 'MEMBER',
       status: 'active' as const,
     };
+  }
+  async getManagedClub(clubId: string) {
+    if (clubId !== this.managedClub.id) return { ...this.managedClub, id: clubId };
+    return this.managedClub;
+  }
+  async updateManagedClub(
+    clubId: string,
+    value: ManagedClubProfileInput,
+    _requestId: string,
+    _expectedUpdatedAt: string,
+  ) {
+    this.managedClub = {
+      ...this.managedClub,
+      ...value,
+      id: clubId,
+      avatarUrl: '',
+      updatedAt: new Date().toISOString(),
+    };
+    return this.managedClub;
   }
   async saveClubApplicationDraft(value: ClubApplicationInput) {
     this.clubApplication = {

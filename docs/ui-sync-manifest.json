@@ -156,10 +156,10 @@
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "默认，客户端 2026.10.18.1",
+        "state": "默认，客户端 2026.10.18.2",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "Pages 375×812 设置页已同步 2026.10.18.1 更新说明；微信端沿用布局基线，开发版上传后核对当前版本唯一展示。"
+        "note": "Pages 375×812 设置页已同步 2026.10.18.2 更新说明；微信端沿用布局基线，开发版上传后核对当前版本唯一展示。"
       },
       {
         "id": "capability-card",
@@ -219,10 +219,10 @@
         "id": "club-center",
         "devtools": "club-center-devtools.png",
         "pages": "club-center-pages.png",
-        "state": "未加入俱乐部，可申请创建",
+        "state": "已加入俱乐部，负责人或管理员可修改资料",
         "data": "fixture",
         "review": "blocked",
-        "note": "Pages 375×812 高保真夹具已采集作为新增路由结构基线；DevTools 文件为明确标注的待采集占位图，并非双端验收证据，开发版上传后替换。"
+        "note": "Pages 375×812 高保真夹具已覆盖俱乐部资料管理入口与编辑态；微信端开发版上传后补充真实权限与保存链路验收。"
       },
       {
         "id": "admin-club-applications",

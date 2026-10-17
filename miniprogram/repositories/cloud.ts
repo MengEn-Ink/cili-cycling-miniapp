@@ -8,6 +8,8 @@ import type {
   ClubIdentity,
   JoinableClub,
   JoinedClubSummary,
+  ManagedClubProfile,
+  ManagedClubProfileInput,
   EditableActivity,
   PersonalCapabilityCard,
   PublicRoutePreview,
@@ -1228,6 +1230,42 @@ function mapJoinedClubSummary(raw: unknown): JoinedClubSummary {
   return { club: mapJoinableClub(value.club), role: value.role, status: 'active' };
 }
 
+function mapManagedClub(raw: unknown): ManagedClubProfile {
+  const value = expectRecord(raw);
+  if (
+    typeof value.id !== 'string' ||
+    !/^club_[a-f0-9]{64}$/.test(value.id) ||
+    typeof value.name !== 'string' ||
+    typeof value.city !== 'string' ||
+    typeof value.introduction !== 'string' ||
+    !['public_apply', 'invite_code', 'admin_invite'].includes(value.join_mode) ||
+    typeof value.avatar_file_id !== 'string' ||
+    typeof value.avatar_url !== 'string' ||
+    (value.avatar_url !== '' && !/^https:\/\//i.test(value.avatar_url))
+  )
+    return invalidResponse();
+  return {
+    id: value.id,
+    name: value.name,
+    city: value.city,
+    introduction: value.introduction,
+    joinMode: value.join_mode,
+    avatarFileId: value.avatar_file_id,
+    avatarUrl: value.avatar_url,
+    updatedAt: dateText(value.updated_at),
+  };
+}
+
+function managedClubPayload(value: ManagedClubProfileInput) {
+  return {
+    name: value.name,
+    city: value.city,
+    introduction: value.introduction,
+    join_mode: value.joinMode,
+    avatar_file_id: value.avatarFileId,
+  };
+}
+
 function mapClubApplication(raw: unknown): ClubApplication {
   const value = expectRecord(raw);
   const status = value.status;
@@ -1571,6 +1609,30 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
         action: 'joinPublicClub',
         clubId: requiredId(clubId, '俱乐部 ID'),
         requestId: boundedId(requestId, '加入请求 ID', 8, 128),
+      }),
+    );
+  }
+  async getManagedClub(clubId: string) {
+    return mapManagedClub(
+      await this.call('club-application', {
+        action: 'getManagedClub',
+        clubId: requiredId(clubId, '俱乐部 ID'),
+      }),
+    );
+  }
+  async updateManagedClub(
+    clubId: string,
+    value: ManagedClubProfileInput,
+    requestId: string,
+    expectedUpdatedAt: string,
+  ) {
+    return mapManagedClub(
+      await this.call('club-application', {
+        action: 'updateManagedClub',
+        clubId: requiredId(clubId, '俱乐部 ID'),
+        club: managedClubPayload(value),
+        requestId: boundedId(requestId, '保存请求 ID', 8, 128),
+        expectedUpdatedAt,
       }),
     );
   }

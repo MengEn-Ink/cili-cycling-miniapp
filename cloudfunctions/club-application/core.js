@@ -211,6 +211,127 @@ async function joinPublicClub(store, { openid, clubId: requestedClubId, requestI
   });
 }
 
+const profileRequestId = (clubId, requestId) =>
+  `clubprofile_${crypto.createHash('sha256').update(`${clubId}\0${requestId}`).digest('hex')}`;
+
+function projectManagedClub(club) {
+  if (!club) return null;
+  const avatar = Object.prototype.hasOwnProperty.call(club, 'avatar_url')
+    ? club.avatar_url
+    : club.cover_file_id;
+  return {
+    id: typeof club._id === 'string' ? club._id : '',
+    name: typeof club.name === 'string' ? club.name : '',
+    city: typeof club.city === 'string' ? club.city : '',
+    introduction: typeof club.introduction === 'string' ? club.introduction : '',
+    join_mode: ['public_apply', 'invite_code', 'admin_invite'].includes(club.join_mode)
+      ? club.join_mode
+      : 'public_apply',
+    avatar_file_id: typeof avatar === 'string' ? avatar : '',
+    updated_at: club.updated_at || '',
+  };
+}
+
+function managedAvatarOwner(fileId) {
+  const match = /^cloud:\/\/[^/]+\/club-applications\/([^/]+)\/.+/.exec(fileId);
+  return match ? match[1] : '';
+}
+
+function normalizeManagedClubInput(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw))
+    fail('VALIDATION_FAILED', '俱乐部资料格式错误');
+  const allowed = new Set(['name', 'city', 'introduction', 'join_mode', 'avatar_file_id']);
+  for (const key of Object.keys(raw))
+    if (!allowed.has(key)) fail('FORBIDDEN_FIELD', '客户端不得修改受保护字段');
+  if (!['public_apply', 'invite_code', 'admin_invite'].includes(raw.join_mode))
+    fail('VALIDATION_FAILED', '请选择加入方式');
+  const avatarFileId = text(raw.avatar_file_id, '俱乐部头像', 10, 512);
+  if (!/^cloud:\/\/[^/]+\/club-applications\/[^/]+\/.+/.test(avatarFileId))
+    fail('VALIDATION_FAILED', '请重新上传俱乐部头像');
+  return {
+    name: text(raw.name, '俱乐部名称', 2, 30),
+    city: text(raw.city, '所在城市', 2, 20),
+    introduction: text(raw.introduction, '俱乐部简介', 20, 500),
+    join_mode: raw.join_mode,
+    avatar_url: avatarFileId,
+  };
+}
+
+async function requireClubManager(tx, clubId, openid) {
+  const membership = await tx.getMembership(membershipId(clubId, openid));
+  if (
+    !membership ||
+    membership.status !== 'active' ||
+    !['OWNER', 'ADMIN'].includes(String(membership.role || '').toUpperCase())
+  )
+    fail('CLUB_ADMIN_REQUIRED', '仅俱乐部负责人或管理员可以修改资料');
+  return membership;
+}
+
+async function getManagedClub(store, { openid, clubId: requestedClubId }) {
+  const safeClubId = text(requestedClubId, '俱乐部 ID', 1, 128);
+  if (!/^club_[a-f0-9]{64}$/.test(safeClubId)) fail('VALIDATION_FAILED', '俱乐部 ID 无效');
+  return store.transaction(async (tx) => {
+    await requireClubManager(tx, safeClubId, openid);
+    const club = await tx.getClub(safeClubId);
+    if (!club || club.approval_status !== 'approved' || club.status !== 'active')
+      fail('CLUB_UNAVAILABLE', '俱乐部暂不可管理');
+    return projectManagedClub(club);
+  });
+}
+
+async function updateManagedClub(
+  store,
+  { openid, clubId: requestedClubId, requestId, expectedUpdatedAt, input },
+  now,
+) {
+  const safeClubId = text(requestedClubId, '俱乐部 ID', 1, 128);
+  if (!/^club_[a-f0-9]{64}$/.test(safeClubId)) fail('VALIDATION_FAILED', '俱乐部 ID 无效');
+  const safeRequestId = text(requestId, '保存请求 ID', 8, 128);
+  if (typeof expectedUpdatedAt !== 'string' || expectedUpdatedAt.length > 64)
+    fail('VALIDATION_FAILED', '俱乐部资料版本无效');
+  const value = normalizeManagedClubInput(input);
+  return store.transaction(async (tx) => {
+    await requireClubManager(tx, safeClubId, openid);
+    const club = await tx.getClub(safeClubId);
+    if (!club || club.approval_status !== 'approved' || club.status !== 'active')
+      fail('CLUB_UNAVAILABLE', '俱乐部暂不可管理');
+    const operationId = profileRequestId(safeClubId, safeRequestId);
+    const previousOperation = await tx.getAudit(operationId);
+    if (
+      previousOperation?.action === 'club_profile_updated' &&
+      previousOperation?.target_id === safeClubId &&
+      previousOperation?.request_id === safeRequestId &&
+      previousOperation?.result
+    )
+      return previousOperation.result;
+    if (String(club.updated_at || '') !== expectedUpdatedAt)
+      fail('CLUB_PROFILE_CONFLICT', '俱乐部资料已被其他管理员更新，请重新加载后再修改');
+    const currentAvatar = projectManagedClub(club).avatar_file_id;
+    // 管理员可以保留负责人此前上传的头像；替换头像时只能使用本人目录，避免引用他人私有文件。
+    if (value.avatar_url !== currentAvatar && managedAvatarOwner(value.avatar_url) !== openid)
+      fail('VALIDATION_FAILED', '请重新上传俱乐部头像');
+    const next = {
+      ...club,
+      ...value,
+      updated_at: now.toISOString(),
+    };
+    const result = projectManagedClub(next);
+    await tx.putClub(safeClubId, next);
+    await tx.putAudit(operationId, {
+      _id: operationId,
+      actor_openid: openid,
+      action: 'club_profile_updated',
+      target_type: 'club',
+      target_id: safeClubId,
+      request_id: safeRequestId,
+      result,
+      created_at: now.toISOString(),
+    });
+    return result;
+  });
+}
+
 async function reviewApplication(
   store,
   { adminOpenid, applicationId: id, decision, reason, requestId },
@@ -288,11 +409,16 @@ async function reviewApplication(
 module.exports = {
   ClubApplicationError,
   applicationId,
+  membershipId,
   normalizeInput,
+  normalizeManagedClubInput,
   project,
   projectJoinableClub,
+  projectManagedClub,
   listJoinableClubs,
   joinPublicClub,
+  getManagedClub,
+  updateManagedClub,
   saveDraft,
   submitApplication,
   reviewApplication,

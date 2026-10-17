@@ -2775,3 +2775,76 @@ describe('CloudRepository 公开俱乐部适配', () => {
     });
   }
 });
+
+describe('俱乐部资料管理仓储契约', () => {
+  const clubId = `club_${'d'.repeat(64)}`;
+  const dto = {
+    id: clubId,
+    name: '山海骑行会',
+    city: '深圳',
+    introduction: '我们每周组织安全友好的公路骑行训练活动。',
+    join_mode: 'public_apply',
+    avatar_file_id: 'cloud://env/club-applications/test-openid/cover.jpg',
+    avatar_url: 'https://temporary.example/cover.jpg',
+    updated_at: '2026-10-18T00:00:00.000Z',
+  };
+
+  it('读取和更新只发送允许字段并严格映射响应', async () => {
+    const { cloud, callFunction } = cloudWith(
+      success(dto),
+      success({ ...dto, name: '新名称骑行会' }),
+    );
+    const repository = new CloudRepository(cloud);
+
+    await expect(repository.getManagedClub(clubId)).resolves.toMatchObject({
+      id: clubId,
+      name: '山海骑行会',
+      joinMode: 'public_apply',
+      avatarFileId: dto.avatar_file_id,
+    });
+    await expect(
+      repository.updateManagedClub(
+        clubId,
+        {
+          name: '新名称骑行会',
+          city: '广州',
+          introduction: '这是修改后的俱乐部介绍，清晰说明定位和日常活动安排。',
+          joinMode: 'admin_invite',
+          avatarFileId: dto.avatar_file_id,
+        },
+        'club-update-0001',
+        dto.updated_at,
+      ),
+    ).resolves.toMatchObject({ name: '新名称骑行会' });
+
+    expect(callFunction).toHaveBeenNthCalledWith(1, {
+      name: 'club-application',
+      data: { action: 'getManagedClub', clubId },
+    });
+    expect(callFunction).toHaveBeenNthCalledWith(2, {
+      name: 'club-application',
+      data: {
+        action: 'updateManagedClub',
+        clubId,
+        requestId: 'club-update-0001',
+        expectedUpdatedAt: dto.updated_at,
+        club: {
+          name: '新名称骑行会',
+          city: '广州',
+          introduction: '这是修改后的俱乐部介绍，清晰说明定位和日常活动安排。',
+          join_mode: 'admin_invite',
+          avatar_file_id: dto.avatar_file_id,
+        },
+      },
+    });
+    const sent = callFunction.mock.calls[1][0].data as Record<string, any>;
+    expect(sent).not.toHaveProperty('openid');
+    expect(sent.club).not.toHaveProperty('role');
+    expect(sent.club).not.toHaveProperty('status');
+  });
+
+  it('拒绝云文件标识作为可展示头像返回', async () => {
+    const { cloud } = cloudWith(success({ ...dto, avatar_url: dto.avatar_file_id }));
+    await expectCode(new CloudRepository(cloud).getManagedClub(clubId), 'INVALID_RESPONSE');
+  });
+});

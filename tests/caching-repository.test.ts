@@ -17,6 +17,7 @@ function makeInner() {
     getPersonalCapabilityCard: vi.fn(),
     getPhoneNumber: vi.fn(),
     joinPublicClub: vi.fn(),
+    updateManagedClub: vi.fn(),
     saveActivity: vi.fn(),
     cloneActivity: vi.fn(),
     deleteActivity: vi.fn(),
@@ -367,6 +368,45 @@ describe('CachingRepository 写后失效', () => {
     await expect(repo.getProfile()).resolves.toBe(cachedProfile);
 
     expect(inner.getProfile).toHaveBeenCalledOnce();
+  });
+
+  it('俱乐部资料更新成功后失效 profile 缓存', async () => {
+    vi.mocked(inner.getProfile)
+      .mockResolvedValueOnce({ nickname: '骑手', clubs: [{ name: '旧名称' }] } as Awaited<
+        ReturnType<RideRepository['getProfile']>
+      >)
+      .mockResolvedValueOnce({ nickname: '骑手', clubs: [{ name: '新名称' }] } as Awaited<
+        ReturnType<RideRepository['getProfile']>
+      >);
+    vi.mocked(inner.updateManagedClub).mockResolvedValue({
+      id: 'club-1',
+      name: '新名称',
+      city: '深圳',
+      introduction: '这是修改后的俱乐部介绍，清晰说明定位和日常活动安排。',
+      joinMode: 'public_apply',
+      avatarFileId: 'cloud://env/club-applications/user/cover.jpg',
+      avatarUrl: '',
+      updatedAt: '2026-10-18T00:00:00.000Z',
+    });
+
+    await repo.getProfile();
+    await repo.getProfile();
+    await repo.updateManagedClub(
+      'club-1',
+      {
+        name: '新名称',
+        city: '深圳',
+        introduction: '这是修改后的俱乐部介绍，清晰说明定位和日常活动安排。',
+        joinMode: 'public_apply',
+        avatarFileId: 'cloud://env/club-applications/user/cover.jpg',
+      },
+      'club-update-0001',
+      '2026-10-17T00:00:00.000Z',
+    );
+    const fresh = await repo.getProfile();
+
+    expect(inner.getProfile).toHaveBeenCalledTimes(2);
+    expect(fresh.clubs[0]?.name).toBe('新名称');
   });
 
   it('写入失效后晚到的旧读取不会重新污染资料缓存', async () => {

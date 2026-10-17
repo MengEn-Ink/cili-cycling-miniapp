@@ -64,9 +64,11 @@ function createMemoryStore({
         getApplication: (id) => get('club_applications', id),
         getClub: (id) => get('clubs', id),
         getMembership: (id) => get('club_memberships', id),
+        getAudit: (id) => get('audit_logs', id),
         putApplication: (id, value) => put('club_applications', id, value),
         putClub: (id, value) => put('clubs', id, value),
         putMembership: (id, value) => put('club_memberships', id, value),
+        putAudit: (id, value) => put('audit_logs', id, value),
         addAudit: (value) => {
           audit += 1;
           return put('audit_logs', `audit-${audit}`, { _id: `audit-${audit}`, ...value });
@@ -442,7 +444,7 @@ test('完整状态机回读确认俱乐部头像传播后清理全部测试记�
     runId: 'github-12345-attempt-1',
     now: () => new Date('2026-10-17T12:00:00.000Z'),
   });
-  assert.deepEqual(result, { stages: 7, auditCount: 5 });
+  assert.deepEqual(result, { stages: 8, auditCount: 6 });
   assertEmpty(store);
 });
 

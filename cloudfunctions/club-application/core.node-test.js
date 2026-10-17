@@ -7,6 +7,9 @@ const {
   reviewApplication,
   listJoinableClubs,
   joinPublicClub,
+  getManagedClub,
+  updateManagedClub,
+  membershipId,
 } = require('./core');
 const { activeApprovedClub } = require('../profile/club-memberships');
 const { resolveTrustedClubIdentity } = require('../activity-admin/use-cases');
@@ -38,9 +41,15 @@ function memoryStore() {
         getApplication: (id) => state.applications.get(id),
         getClub: (id) => state.clubs.get(id),
         getMembership: (id) => state.memberships.get(id),
+        getAudit: (id) => state.audits.find((item) => item._id === id),
         putApplication: (id, value) => state.applications.set(id, { ...value }),
         putClub: (id, value) => state.clubs.set(id, { ...value }),
         putMembership: (id, value) => state.memberships.set(id, { ...value }),
+        putAudit: (id, value) => {
+          const index = state.audits.findIndex((item) => item._id === id);
+          if (index >= 0) state.audits[index] = { ...value };
+          else state.audits.push({ ...value });
+        },
         addAudit: (value) => state.audits.push(value),
       }),
   };
@@ -321,5 +330,246 @@ test('公开加入拒绝非法 ID、不可用与非公开俱乐部', async () =>
         now,
       ),
     /不支持公开加入/,
+  );
+});
+
+test('OWNER 与 ADMIN 可读取俱乐部资料，普通成员不可读取', async () => {
+  const store = memoryStore();
+  const id = `club_${'a'.repeat(64)}`;
+  store.state.clubs.set(id, {
+    _id: id,
+    name: '山海骑行会',
+    city: '深圳',
+    introduction: '我们每周组织安全、友好的公路骑行训练活动。',
+    join_mode: 'public_apply',
+    avatar_url: 'cloud://env/club-applications/user-1/cover.jpg',
+    approval_status: 'approved',
+    status: 'active',
+    updated_at: now.toISOString(),
+  });
+  store.state.memberships.set(membershipId(id, 'user-1'), {
+    club_id: id,
+    openid: 'user-1',
+    role: 'OWNER',
+    status: 'active',
+  });
+  store.state.memberships.set(membershipId(id, 'user-2'), {
+    club_id: id,
+    openid: 'user-2',
+    role: 'ADMIN',
+    status: 'active',
+  });
+  store.state.memberships.set(membershipId(id, 'user-3'), {
+    club_id: id,
+    openid: 'user-3',
+    role: 'MEMBER',
+    status: 'active',
+  });
+
+  await assert.doesNotReject(() => getManagedClub(store, { openid: 'user-1', clubId: id }));
+  await assert.doesNotReject(() => getManagedClub(store, { openid: 'user-2', clubId: id }));
+  await assert.rejects(
+    () => getManagedClub(store, { openid: 'user-3', clubId: id }),
+    (error) => error.code === 'CLUB_ADMIN_REQUIRED',
+  );
+});
+
+test('管理员更新资料时服务端只写允许字段并记录审计', async () => {
+  const store = memoryStore();
+  const id = `club_${'b'.repeat(64)}`;
+  store.state.clubs.set(id, {
+    _id: id,
+    name: '旧名称',
+    city: '深圳',
+    introduction: '这是修改之前的俱乐部介绍，长度满足服务端校验。',
+    join_mode: 'public_apply',
+    avatar_url: 'cloud://env/club-applications/user-1/old.jpg',
+    owner_openid: 'user-1',
+    approval_status: 'approved',
+    status: 'active',
+    created_at: '2026-01-01T00:00:00.000Z',
+    updated_at: '2026-01-01T00:00:00.000Z',
+  });
+  store.state.memberships.set(membershipId(id, 'user-2'), {
+    club_id: id,
+    openid: 'user-2',
+    role: 'ADMIN',
+    status: 'active',
+  });
+
+  const updated = await updateManagedClub(
+    store,
+    {
+      openid: 'user-2',
+      clubId: id,
+      requestId: 'club-update-0001',
+      expectedUpdatedAt: '2026-01-01T00:00:00.000Z',
+      input: {
+        name: '新名称骑行会',
+        city: '广州',
+        introduction: '这是修改后的俱乐部介绍，清晰说明定位和日常活动安排。',
+        join_mode: 'admin_invite',
+        avatar_file_id: 'cloud://env/club-applications/user-2/new.jpg',
+      },
+    },
+    now,
+  );
+
+  assert.equal(updated.name, '新名称骑行会');
+  assert.equal(updated.avatar_file_id, 'cloud://env/club-applications/user-2/new.jpg');
+  const stored = store.state.clubs.get(id);
+  assert.equal(stored.owner_openid, 'user-1');
+  assert.equal(stored.status, 'active');
+  assert.equal(stored.approval_status, 'approved');
+  assert.equal(stored.avatar_url, 'cloud://env/club-applications/user-2/new.jpg');
+  assert.equal(store.state.audits.at(-1).action, 'club_profile_updated');
+  assert.equal(store.state.audits.at(-1).request_id, 'club-update-0001');
+});
+
+test('资料更新要求 active 管理身份、合法图片归属并支持同请求幂等', async () => {
+  const store = memoryStore();
+  const id = `club_${'c'.repeat(64)}`;
+  store.state.clubs.set(id, {
+    _id: id,
+    name: '山海骑行会',
+    city: '深圳',
+    introduction: '我们每周组织安全、友好的公路骑行训练活动。',
+    join_mode: 'public_apply',
+    avatar_url: 'cloud://env/club-applications/user-1/old.jpg',
+    approval_status: 'approved',
+    status: 'active',
+  });
+  store.state.memberships.set(membershipId(id, 'user-1'), {
+    club_id: id,
+    openid: 'user-1',
+    role: 'OWNER',
+    status: 'active',
+  });
+  const input = {
+    name: '山海骑行会',
+    city: '深圳',
+    introduction: '我们每周组织安全、友好的公路骑行训练活动。',
+    join_mode: 'public_apply',
+    avatar_file_id: 'cloud://env/club-applications/user-1/new.jpg',
+  };
+
+  const first = await updateManagedClub(
+    store,
+    {
+      openid: 'user-1',
+      clubId: id,
+      requestId: 'club-update-0001',
+      expectedUpdatedAt: '',
+      input,
+    },
+    now,
+  );
+  const second = await updateManagedClub(
+    store,
+    {
+      openid: 'user-1',
+      clubId: id,
+      requestId: 'club-update-0001',
+      expectedUpdatedAt: '',
+      input: {
+        ...input,
+        name: '响应丢失后误改名称',
+        avatar_file_id: 'cloud://env/club-applications/other-user/new.jpg',
+      },
+    },
+    now,
+  );
+  assert.deepEqual(first, second);
+  assert.equal(store.state.audits.length, 1);
+
+  store.state.memberships.set(membershipId(id, 'user-2'), {
+    club_id: id,
+    openid: 'user-2',
+    role: 'ADMIN',
+    status: 'active',
+  });
+  const adminNow = new Date('2026-10-17T12:01:00.000Z');
+  await updateManagedClub(
+    store,
+    {
+      openid: 'user-2',
+      clubId: id,
+      requestId: 'club-update-admin',
+      expectedUpdatedAt: first.updated_at,
+      input: { ...input, name: '管理员更新名称' },
+    },
+    adminNow,
+  );
+  const delayedReplay = await updateManagedClub(
+    store,
+    {
+      openid: 'user-1',
+      clubId: id,
+      requestId: 'club-update-0001',
+      expectedUpdatedAt: '',
+      input,
+    },
+    now,
+  );
+  assert.equal(delayedReplay.name, first.name);
+  assert.equal(store.state.clubs.get(id).name, '管理员更新名称');
+  assert.equal(store.state.audits.length, 2);
+
+  await assert.rejects(
+    () =>
+      updateManagedClub(
+        store,
+        {
+          openid: 'user-1',
+          clubId: id,
+          requestId: 'club-update-stale',
+          expectedUpdatedAt: first.updated_at,
+          input: { ...input, city: '广州' },
+        },
+        new Date('2026-10-17T12:02:00.000Z'),
+      ),
+    (error) => error.code === 'CLUB_PROFILE_CONFLICT',
+  );
+  assert.equal(store.state.clubs.get(id).name, '管理员更新名称');
+
+  await assert.rejects(
+    () =>
+      updateManagedClub(
+        store,
+        {
+          openid: 'user-1',
+          clubId: id,
+          requestId: 'club-update-0002',
+          expectedUpdatedAt: adminNow.toISOString(),
+          input: { ...input, owner_openid: 'attacker' },
+        },
+        now,
+      ),
+    (error) => error.code === 'FORBIDDEN_FIELD',
+  );
+  await assert.rejects(
+    () =>
+      updateManagedClub(
+        store,
+        {
+          openid: 'user-1',
+          clubId: id,
+          requestId: 'club-update-0003',
+          expectedUpdatedAt: adminNow.toISOString(),
+          input: { ...input, avatar_file_id: 'cloud://env/club-applications/other-user/new.jpg' },
+        },
+        now,
+      ),
+    (error) => error.code === 'VALIDATION_FAILED',
+  );
+  store.state.memberships.set(membershipId(id, 'user-1'), {
+    club_id: id,
+    openid: 'user-1',
+    role: 'OWNER',
+    status: 'inactive',
+  });
+  await assert.rejects(
+    () => getManagedClub(store, { openid: 'user-1', clubId: id }),
+    (error) => error.code === 'CLUB_ADMIN_REQUIRED',
   );
 });
