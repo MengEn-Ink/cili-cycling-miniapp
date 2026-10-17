@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
+import appRoutes from './app-routes.cjs';
 import {
   classifyUiPath,
   digestFiles,
@@ -172,7 +173,7 @@ export function run({ strict = process.argv.includes('--strict') } = {}) {
   const appConfig = JSON.parse(readFileSync('miniprogram/app.json', 'utf8'));
   const result = assessUiSyncState({
     manifest,
-    appPages: appConfig.pages,
+    appPages: appRoutes.expandAppRoutes(appConfig),
     baselineUiDigest:
       manifest.schemaVersion === 1 ? baselineUiDigest(manifest.syncedThrough) : undefined,
     currentUiDigest: currentUiDigest(),

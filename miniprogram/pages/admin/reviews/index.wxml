@@ -17,7 +17,7 @@
     <view class="review-card" wx:for="{{items}}" wx:key="id" role="listitem">
       <view class="review-identity">
         <view class="review-avatar" aria-label="{{item.profile.nickname || '骑友'}}头像">
-          <image wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" mode="aspectFill" data-id="{{item.id}}" binderror="avatarError" />
+          <image wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" mode="aspectFill" lazy-load="{{true}}" data-id="{{item.id}}" binderror="avatarError" />
           <text wx:else>{{item.avatarInitial}}</text>
         </view>
         <view class="rider-copy"><view class="applicant-name">{{item.profile.realName || item.profile.nickname || '未填写姓名'}}</view><view class="rider-account">骑友 · {{item.profile.nickname || '未设置昵称'}}</view></view>

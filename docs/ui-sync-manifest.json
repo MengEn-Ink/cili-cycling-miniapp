@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "047d7693b79c8b79c039682d533140ab57990c91",
-  "syncedAt": "2026-10-17T02:55:00.000Z",
+  "syncedThrough": "e1ff87bcb4d46f1935ed56bf6f6b5f7666bcae13",
+  "syncedAt": "2026-10-17T00:55:00.000Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:c5af83a75fde27d100680496a03f9ec594ddf125fc12e59c9c8ca6e0b738c18e"
+    "digest": "sha256:5fc79b2e2d050bd99867c28c7bdbccc861ac21d937089228ce311e6470feeafb"
   },
   "prototype": {
-    "digest": "sha256:98f30100758068a3c2d9681c07876c679f66e89431aea564fcda7946134b8019"
+    "digest": "sha256:4d7ad23e71f125be62e769866d995d5ec89e73ef861e237f30bc861feab11a9c"
   },
   "routes": [
     {
@@ -144,10 +144,10 @@
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "默认，客户端 2026.10.17.77",
+        "state": "默认，客户端 2026.10.17.78",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "Pages 已同步到 2026.10.17.77 路线分析版本并重新采集 375×812 截图；微信 DevTools 仍以独立真机验收为准。"
+        "note": "Pages 375×812 设置页截图已按 2026.10.17.78 重新采集；微信端截图沿用既有布局基线，开发版上传后补做 iOS / Android 双端版本文案确认。"
       },
       {
         "id": "capability-card",
@@ -165,7 +165,7 @@
         "state": "本人已有资料",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "Pages 375×812 资料编辑截图已按 16:9 裁剪说明重新采集；微信端截图沿用既有布局基线，开发版上传后补做 iOS / Android 双端裁剪手势确认。"
+        "note": "Pages 375×812 资料编辑截图已按压缩、上传百分比与弱网重试文案重新采集；微信端截图沿用既有布局基线，开发版上传后补做 iOS / Android 双端上传确认。"
       },
       {
         "id": "admin-activity-list",

@@ -28,7 +28,7 @@ describe('设置页', () => {
       version: CLIENT_RELEASE_VERSION,
       date: '2026-10-17',
       latest: true,
-      title: '完整路线分析已上线',
+      title: '背景图上传更稳更快',
     });
     expect(page.data.currentRelease).toBe(page.data.releaseNotes[0]);
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(
@@ -40,9 +40,9 @@ describe('设置页', () => {
     expect(readiness).not.toHaveBeenCalled();
   });
 
-  it('版本号与日期对齐 2026.10.17.77', () => {
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.17.77');
-    expect(page.data.currentRelease.version).toBe('2026.10.17.77');
+  it('版本号与日期对齐 2026.10.17.78', () => {
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.17.78');
+    expect(page.data.currentRelease.version).toBe('2026.10.17.78');
     expect(page.data.currentRelease.date).toBe('2026-10-17');
   });
 

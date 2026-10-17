@@ -1,9 +1,11 @@
 // @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { expandAppRoutes, type MiniProgramAppConfig } from './helpers/app-routes';
 
 const read = (path: string) => readFileSync(path, 'utf8');
-const appConfig = JSON.parse(read('miniprogram/app.json')) as { pages: string[] };
+const appConfig = JSON.parse(read('miniprogram/app.json')) as MiniProgramAppConfig;
+const appRoutes = expandAppRoutes(appConfig);
 const html = read('docs/index.html');
 const css = read('docs/styles.css');
 const script = read('docs/app.js');
@@ -38,7 +40,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(prototypeRoutes).toHaveLength(14);
     // route-view 由 #210 从 app.json 删除；新增完整路线分析页同步进入原型。
     expect(prototypeRoutes.map(routeToPagePath)).toEqual(
-      appConfig.pages.filter((page) => page !== 'pages/route-view/index'),
+      appRoutes.filter((page) => page !== 'pages/route-view/index'),
     );
     for (const route of prototypeRoutes) {
       expect(schema).toContain(`id: '${route}'`);
@@ -169,9 +171,9 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   });
 
   it('设置页原型同步当前客户端版本与当前 App 更新', () => {
-    expect(schema).toContain("state: 'V2026.10.17.77'");
+    expect(schema).toContain("state: 'V2026.10.17.78'");
     expect(schema).toContain(
-      "['2026.10.17.77', '完整路线分析已上线', '活动路线新增关键公里点、坡段策略、海拔与地图联动分析，并明确展示天气和交通数据边界。']",
+      "['2026.10.17.78', '背景图上传更稳更快', '个人背景图会在裁剪后自适应压缩，并显示上传进度；网络波动时会自动重试。']",
     );
     expect(templates).toContain('App 更新');
     expect(templates).not.toContain('最近五次');

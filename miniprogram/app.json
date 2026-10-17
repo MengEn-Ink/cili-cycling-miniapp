@@ -9,11 +9,18 @@
     "pages/profile/index",
     "pages/settings/index",
     "pages/capability-card/index",
-    "pages/profile-edit/index",
-    "pages/admin/activity-list/index",
-    "pages/admin/activity-edit/index",
-    "pages/admin/reviews/index",
-    "pages/admin/review-detail/index"
+    "pages/profile-edit/index"
+  ],
+  "subpackages": [
+    {
+      "root": "pages/admin",
+      "pages": [
+        "activity-list/index",
+        "activity-edit/index",
+        "reviews/index",
+        "review-detail/index"
+      ]
+    }
   ],
   "requiredPrivateInfos": ["chooseLocation"],
   "window": {

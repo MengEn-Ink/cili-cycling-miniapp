@@ -81,13 +81,13 @@ describe('完整路线分析页合同', () => {
     expect(prd).toContain('开放 PR #251');
   });
 
-  it('发布说明使用当日递增版本并描述路线分析', () => {
+  it('发布说明使用当日递增版本并保留唯一当前记录', () => {
     const release = read('miniprogram/config/release.ts');
     const notes = read('miniprogram/pages/settings/index.ts');
-    expect(release).toContain('2026.10.17.77');
+    expect(release).toContain('2026.10.17.78');
     expect(notes).toContain("date: '2026-10-17'");
-    expect(notes).toContain("title: '完整路线分析已上线'");
+    expect(notes).toContain("title: '背景图上传更稳更快'");
     expect(notes.match(/latest: true/g)).toHaveLength(1);
-    expect(notes).toContain('不含实时天气与交通事件判断');
+    expect(notes).toContain('上传过程显示实时百分比');
   });
 });

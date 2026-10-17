@@ -101,6 +101,7 @@ describe('资料编辑头像交互', () => {
       getStorageSync: vi.fn(() => []),
       setStorageSync: vi.fn(),
       removeStorageSync: vi.fn(),
+      getFileInfo: vi.fn().mockResolvedValue({ size: 1024 }),
     });
     vi.stubGlobal('Page', (definition: any) => {
       page = definition;
@@ -428,11 +429,13 @@ describe('资料编辑头像交互', () => {
 
     await page.chooseWechatAvatar({ detail: { avatarUrl: '/private/tmp/wechat-avatar.jpg' } });
 
-    expect(uploadFile).toHaveBeenCalledWith({
-      cloudPath:
-        'profiles/0123456789abcdef0123456789abcdef/123e4567-e89b-42d3-a456-426614174000.jpg',
-      filePath: '/private/tmp/wechat-avatar.jpg',
-    });
+    expect(uploadFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cloudPath:
+          'profiles/0123456789abcdef0123456789abcdef/123e4567-e89b-42d3-a456-426614174000.jpg',
+        filePath: '/private/tmp/wechat-avatar.jpg',
+      }),
+    );
     expect(rideService.registerProfileMedia).toHaveBeenCalledWith(
       uploadedFileId,
       'other',
@@ -1261,6 +1264,351 @@ describe('资料编辑头像交互', () => {
 
     expect(uploadFile).toHaveBeenCalledOnce();
     expect(rideService.registerProfileMedia).not.toHaveBeenCalled();
+  });
+
+  it('背景图裁剪后使用原生回调压缩参数并上传压缩结果', async () => {
+    const compressImage = vi.fn((options: { success: (value: unknown) => void }) =>
+      options.success({ tempFilePath: '/private/tmp/compressed.jpg' }),
+    );
+    const uploadFile = vi
+      .fn()
+      .mockResolvedValue({ fileID: 'cloud://env/profiles/owner/compressed.jpg' });
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [{ tempFilePath: '/private/tmp/original.jpg', size: 6 * 1024 * 1024 }],
+      }),
+      cropImage: vi.fn((options: { success: (value: unknown) => void }) =>
+        options.success({ tempFilePath: '/private/tmp/cropped.jpg' }),
+      ),
+      compressImage,
+      getFileInfo: vi.fn().mockResolvedValue({ size: 1024 }),
+      cloud: { uploadFile, deleteFile: vi.fn() },
+    });
+
+    await page.addPhoto();
+
+    expect(compressImage).toHaveBeenCalledWith({
+      src: '/private/tmp/cropped.jpg',
+      quality: 82,
+      compressedWidth: 1600,
+      compressedHeight: 900,
+      success: expect.any(Function),
+      fail: expect.any(Function),
+    });
+    expect(uploadFile).toHaveBeenCalledWith(
+      expect.objectContaining({ filePath: '/private/tmp/compressed.jpg' }),
+    );
+  });
+
+  it.each([
+    ['无压缩 API', undefined, 'api-unavailable'],
+    [
+      '压缩运行失败',
+      (options: { fail: (error: unknown) => void }) =>
+        options.fail({ errMsg: 'compressImage:fail encoder busy /private/private.jpg' }),
+      'compress-failed',
+    ],
+  ])('%s 时降级上传裁剪图并记录脱敏原因', async (_label, compressImage, reason) => {
+    const diagnostic = vi.spyOn(console, 'info').mockImplementation(() => undefined);
+    const uploadFile = vi
+      .fn()
+      .mockResolvedValue({ fileID: 'cloud://env/profiles/owner/fallback.jpg' });
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [{ tempFilePath: '/private/tmp/original.jpg', size: 1024 }],
+      }),
+      cropImage: vi.fn((options: { success: (value: unknown) => void }) =>
+        options.success({ tempFilePath: '/private/tmp/cropped.jpg' }),
+      ),
+      compressImage,
+      cloud: { uploadFile, deleteFile: vi.fn() },
+    });
+
+    await page.addPhoto();
+
+    expect(uploadFile).toHaveBeenCalledWith(
+      expect.objectContaining({ filePath: '/private/tmp/cropped.jpg' }),
+    );
+    const fallback = diagnostic.mock.calls.find((call) =>
+      call.some((value) =>
+        Boolean(
+          value &&
+          typeof value === 'object' &&
+          (value as { event?: string }).event === 'compress-fallback',
+        ),
+      ),
+    );
+    expect(fallback?.[1]).toMatchObject({ event: 'compress-fallback', reason });
+    expect(JSON.stringify(fallback)).not.toContain('/private/tmp');
+  });
+
+  it('压缩结果仍超过 5MiB 时提示并阻止上传', async () => {
+    const uploadFile = vi.fn();
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [{ tempFilePath: '/private/tmp/original.jpg', size: 8 * 1024 * 1024 }],
+      }),
+      compressImage: vi.fn((options: { success: (value: unknown) => void }) =>
+        options.success({ tempFilePath: '/private/tmp/still-large.jpg' }),
+      ),
+      getFileInfo: vi.fn().mockResolvedValue({ size: 6 * 1024 * 1024 }),
+      cloud: { uploadFile, deleteFile: vi.fn() },
+    });
+
+    await page.addPhoto();
+
+    expect(uploadFile).not.toHaveBeenCalled();
+    expect(page.data.mediaError).toBe('图片超过 5MB，请压缩或更换图片后重试');
+  });
+
+  it('大于 5MiB 的源图可在压缩到限制内后上传', async () => {
+    const uploadFile = vi
+      .fn()
+      .mockResolvedValue({ fileID: 'cloud://env/profiles/owner/smaller.jpg' });
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [{ tempFilePath: '/private/tmp/large-source.jpg', size: 9 * 1024 * 1024 }],
+      }),
+      compressImage: vi.fn((options: { success: (value: unknown) => void }) =>
+        options.success({ tempFilePath: '/private/tmp/smaller.jpg' }),
+      ),
+      getFileInfo: vi.fn().mockResolvedValue({ size: 2 * 1024 * 1024 }),
+      cloud: { uploadFile, deleteFile: vi.fn() },
+    });
+
+    await page.addPhoto();
+
+    expect(uploadFile).toHaveBeenCalledWith(
+      expect.objectContaining({ filePath: '/private/tmp/smaller.jpg' }),
+    );
+  });
+
+  it('callback UploadTask 订阅进度并显示百分比', async () => {
+    const uploadFile = vi.fn((options: { success: (value: unknown) => void }) => ({
+      onProgressUpdate(callback: (event: { progress: number }) => void) {
+        callback({ progress: 42 });
+        queueMicrotask(() =>
+          options.success({ fileID: 'cloud://env/profiles/owner/progress.jpg' }),
+        );
+      },
+    }));
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [{ tempFilePath: '/private/tmp/progress.jpg', size: 1024 }],
+      }),
+      cloud: { uploadFile, deleteFile: vi.fn() },
+    });
+
+    await page.addPhoto();
+
+    expect(page.setData).toHaveBeenCalledWith({ mediaProgress: '正在上传 42%' }, undefined);
+    expect(page.data.mediaProgress).toBe('');
+  });
+
+  it('UploadTask 没有进度句柄时 callback 上传仍成功', async () => {
+    const uploadFile = vi.fn((options: { success: (value: unknown) => void }) => {
+      queueMicrotask(() =>
+        options.success({ fileID: 'cloud://env/profiles/owner/no-progress.jpg' }),
+      );
+      return {};
+    });
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [{ tempFilePath: '/private/tmp/no-progress.jpg', size: 1024 }],
+      }),
+      cloud: { uploadFile, deleteFile: vi.fn() },
+    });
+
+    await page.addPhoto();
+
+    expect(page.data.p.photos[0].id).toBe('cloud://env/profiles/owner/no-progress.jpg');
+    expect(page.data.mediaProgress).toBe('');
+  });
+
+  it('重试复用 cloudPath，诊断只包含次数与原因分类', async () => {
+    const diagnostic = vi.spyOn(console, 'info').mockImplementation(() => undefined);
+    const uploadFile = vi
+      .fn()
+      .mockRejectedValueOnce({ errMsg: 'uploadFile:fail network timeout /private/tmp/secret.jpg' })
+      .mockResolvedValueOnce({ fileID: 'cloud://env/private-file-id' });
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [{ tempFilePath: '/private/tmp/secret.jpg', size: 1024 }],
+      }),
+      cloud: { uploadFile, deleteFile: vi.fn() },
+    });
+
+    await page.addPhoto();
+
+    expect(uploadFile.mock.calls[0][0].cloudPath).toBe(uploadFile.mock.calls[1][0].cloudPath);
+    const events = diagnostic.mock.calls
+      .map((call) => call[1])
+      .filter((value) => value && typeof value === 'object') as Array<Record<string, unknown>>;
+    expect(events).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ event: 'upload-retry', attempt: 2, total: 3, reason: 'timeout' }),
+        expect.objectContaining({ event: 'upload-success', attempt: 2, total: 3 }),
+      ]),
+    );
+    const serialized = JSON.stringify(events);
+    expect(serialized).not.toMatch(/private-file-id|\/private\/tmp|openid|nickname|phone/i);
+  });
+
+  it('页面卸载会 abort 当前头像 UploadTask，且不继续登记或设置头像', async () => {
+    let failUpload!: (error: unknown) => void;
+    const abort = vi.fn(() => failUpload({ errMsg: 'uploadFile:fail abort' }));
+    const uploadFile = vi.fn((options: { fail: (error: unknown) => void }) => {
+      failUpload = options.fail;
+      return { abort };
+    });
+    Object.assign(wx, {
+      cloud: { uploadFile, deleteFile: vi.fn() },
+    });
+
+    const action = page.chooseWechatAvatar({
+      detail: { avatarUrl: '/private/tmp/unload-avatar.jpg' },
+    });
+    await vi.waitFor(() => expect(uploadFile).toHaveBeenCalledOnce());
+    page.onUnload();
+    await action;
+
+    expect(abort).toHaveBeenCalledOnce();
+    expect(rideService.registerProfileMedia).not.toHaveBeenCalled();
+    expect(rideService.setAvatar).not.toHaveBeenCalled();
+    expect(wx.showToast).not.toHaveBeenCalled();
+  });
+
+  it('背景上传完成后页面卸载会补偿文件且不继续 register', async () => {
+    const uploadedFileId = 'cloud://env/profiles/owner/unloaded-background.jpg';
+    const deleteFile = vi.fn().mockResolvedValue({
+      fileList: [{ fileID: uploadedFileId, status: 0 }],
+    });
+    const uploadFile = vi.fn((options: { success: (value: unknown) => void }) => {
+      queueMicrotask(() => {
+        options.success({ fileID: uploadedFileId });
+        page.onUnload();
+      });
+      return { abort: vi.fn() };
+    });
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [{ tempFilePath: '/private/tmp/unloaded-background.jpg', size: 1024 }],
+      }),
+      cloud: { uploadFile, deleteFile },
+    });
+
+    await page.addPhoto();
+
+    expect(rideService.registerProfileMedia).not.toHaveBeenCalled();
+    expect(deleteFile).toHaveBeenCalledWith({ fileList: [uploadedFileId] });
+    expect(wx.showToast).not.toHaveBeenCalled();
+  });
+
+  it('UploadTask 结算后注销监听并忽略迟到 progress', async () => {
+    let progressCallback!: (event: { progress: number }) => void;
+    const offProgressUpdate = vi.fn();
+    const uploadFile = vi.fn((options: { success: (value: unknown) => void }) => ({
+      onProgressUpdate(callback: (event: { progress: number }) => void) {
+        progressCallback = callback;
+        queueMicrotask(() => options.success({ fileID: 'cloud://env/profiles/owner/settled.jpg' }));
+      },
+      offProgressUpdate,
+    }));
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [{ tempFilePath: '/private/tmp/settled.jpg', size: 1024 }],
+      }),
+      cloud: { uploadFile, deleteFile: vi.fn() },
+    });
+
+    await page.addPhoto();
+    page.setData.mockClear();
+    progressCallback({ progress: 91 });
+
+    expect(offProgressUpdate).toHaveBeenCalledWith(progressCallback);
+    expect(page.setData).not.toHaveBeenCalled();
+  });
+
+  it('getFileInfo 不可用时使用文件系统 stat 校验大小', async () => {
+    const stat = vi.fn((options: { success: (value: unknown) => void }) =>
+      options.success({ stats: { size: 1024 } }),
+    );
+    const uploadFile = vi.fn().mockResolvedValue({
+      fileID: 'cloud://env/profiles/owner/fs-stat-avatar.jpg',
+    });
+    Object.assign(wx, {
+      getFileInfo: undefined,
+      getFileSystemManager: vi.fn(() => ({ stat })),
+      cloud: { uploadFile, deleteFile: vi.fn() },
+    });
+
+    await page.chooseWechatAvatar({ detail: { avatarUrl: '/private/tmp/fs-stat-avatar.jpg' } });
+
+    expect(stat).toHaveBeenCalledWith(
+      expect.objectContaining({ path: '/private/tmp/fs-stat-avatar.jpg' }),
+    );
+    expect(uploadFile).toHaveBeenCalledOnce();
+  });
+
+  it('所有方式都无法读取大小时 fail-closed 且不上传', async () => {
+    const uploadFile = vi.fn();
+    Object.assign(wx, {
+      getFileInfo: undefined,
+      getFileSystemManager: vi.fn(() => ({
+        stat: (options: { fail: (error: unknown) => void }) =>
+          options.fail(new Error('stat unavailable')),
+      })),
+      cloud: { uploadFile, deleteFile: vi.fn() },
+    });
+
+    await page.chooseWechatAvatar({ detail: { avatarUrl: '/private/tmp/unknown-size.jpg' } });
+
+    expect(uploadFile).not.toHaveBeenCalled();
+    expect(page.data.mediaError).toBe('无法确认图片大小，请重新选择图片或升级微信后重试');
+    expect(wx.showToast).toHaveBeenCalledWith({ title: page.data.mediaError, icon: 'none' });
+  });
+
+  it('源图 20MiB 与成品 5MiB 边界允许上传', async () => {
+    const uploadFile = vi.fn().mockResolvedValue({
+      fileID: 'cloud://env/profiles/owner/exact-boundary.jpg',
+    });
+    const getFileInfo = vi.fn().mockResolvedValue({ size: 5 * 1024 * 1024 });
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [{ tempFilePath: '/private/tmp/source-20m.jpg', size: 20 * 1024 * 1024 }],
+      }),
+      compressImage: vi.fn((options: { success: (value: unknown) => void }) =>
+        options.success({ tempFilePath: '/private/tmp/product-5m.jpg' }),
+      ),
+      getFileInfo,
+      cloud: { uploadFile, deleteFile: vi.fn() },
+    });
+
+    await page.addPhoto();
+
+    expect(uploadFile).toHaveBeenCalledWith(
+      expect.objectContaining({ filePath: '/private/tmp/product-5m.jpg' }),
+    );
+  });
+
+  it('源图超过 20MiB 时在裁剪压缩前停止', async () => {
+    const uploadFile = vi.fn();
+    const compressImage = vi.fn();
+    Object.assign(wx, {
+      chooseMedia: vi.fn().mockResolvedValue({
+        tempFiles: [
+          { tempFilePath: '/private/tmp/source-too-large.jpg', size: 20 * 1024 * 1024 + 1 },
+        ],
+      }),
+      compressImage,
+      cloud: { uploadFile, deleteFile: vi.fn() },
+    });
+
+    await page.addPhoto();
+
+    expect(compressImage).not.toHaveBeenCalled();
+    expect(uploadFile).not.toHaveBeenCalled();
+    expect(page.data.mediaError).toBe('原图超过 20MB，请选择更小的图片后重试');
   });
 });
 
