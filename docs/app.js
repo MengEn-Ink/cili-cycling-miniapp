@@ -6,6 +6,14 @@
   const tabRoutes = ['activities', 'registrations', 'profile'];
   const baseOverviewSections = [
     'overview',
+    'story-hook',
+    'audience',
+    'product',
+    'journey-rider',
+    'journey-organizer',
+    'privacy',
+    'pipeline',
+    'roadmap',
     'delivery',
     'requirements',
     'prd',
@@ -169,11 +177,399 @@
       })
       .join('');
     overview.innerHTML = `
-      <section class="product-hero">
+      <article class="story" aria-label="此里研发交付中心技术长读">
+
+      <section class="story-hook" id="story-hook">
+        <p class="story-eyebrow">研发交付中心 · 技术长读 · 当前基线同步 main</p>
+        <h2 class="story-headline">一次骑行从被想到<br/>到真的发车，中间要过几道关？</h2>
+        <div class="story-hook-questions" role="list" aria-label="开篇三个问题">
+          <article role="listitem">
+            <span class="story-q">Q1</span>
+            <h3>骑友周末想找条路，为什么不是直接扫个群接龙？</h3>
+            <p>微信群接龙没有权限、没有凭证、没有审批、没有照片担保；一旦有人没来、有人没名额，组织者就得人肉对账。本页第 3 章用一张动态图回答。</p>
+          </article>
+          <article role="listitem">
+            <span class="story-q">Q2</span>
+            <h3>把一次活动交给代码，要不要做成互联网产品那套？</h3>
+            <p>一个俱乐部的小圈子不需要租户、不需要支付、不需要内嵌第三方页。看第 2 章产品边界与第 5 章隐私边界，答案是「做减法 + 服务端判权」。</p>
+          </article>
+          <article role="listitem">
+            <span class="story-q">Q3</span>
+            <h3>只有一个人维护，怎么保证代码上线不翻车？</h3>
+            <p>答案是把部署凭证留在 GitHub、三端并行发布、每一步都留回读证据。第 6 章把 PR → CloudBase / 微信 / Pages 的七步拆开。</p>
+          </article>
+        </div>
+
+        <nav class="story-map" aria-label="阅读地图">
+          <p class="story-eyebrow">阅读地图 · 本页 7 章 · 每章先给结论再讲机制</p>
+          <ol class="story-map-list">
+            <li><a href="#audience"><b>01</b><span>你是哪一类读者？</span><em>骑友 / 组织者 / 开发者 三入口</em></a></li>
+            <li><a href="#product"><b>02</b><span>产品全貌</span><em>做什么 / 不做什么 / 活动状态机</em></a></li>
+            <li><a href="#journey-rider"><b>03</b><span>骑手旅程</span><em>发现 → 判断 → 报名 → 凭证 → 签到</em></a></li>
+            <li><a href="#journey-organizer"><b>04</b><span>组织者旅程</span><em>创建 → 路线 → 审批 → 现场</em></a></li>
+            <li><a href="#privacy"><b>05</b><span>隐私与产品边界</span><em>公开卡片字段 · Strava OAuth 退役</em></a></li>
+            <li><a href="#pipeline"><b>06</b><span>七步交付链路</span><em>PR → CloudBase / 微信 / Pages</em></a></li>
+            <li><a href="#prototype"><b>07</b><span>原型与证据</span><em>14 个真实路由 + 8 页 M0 原型 + 对比截图</em></a></li>
+          </ol>
+          <p class="story-map-foot">八大类文档索引保留在页面末尾的 <a href="#delivery">研发交付中心</a>；仓库里的所有事实、源码与证据可以从那里收口。</p>
+        </nav>
+      </section>
+
+      <section class="story-section" id="audience">
+        <p class="story-eyebrow">01 · 你是哪一类读者</p>
+        <h2 class="story-h2">先给结论：三种人进来，走三条路</h2>
+        <p class="story-lead">产品、工程、组织协作的事实都在同一个 Pages。但不同角色关心的是不同切片：骑友想知道「我报名能靠谱吗」，组织者想知道「我创建的活动能被看见和被审」，开发者想知道「我提交代码之后发生了什么」。</p>
+        <div class="audience-grid">
+          <article class="audience-card audience-rider">
+            <span class="audience-tag">骑友</span>
+            <h3>我周末骑一次，中间会被怎样处理？</h3>
+            <ul class="audience-steps">
+              <li><a href="#journey-rider">看第 3 章：骑手完整旅程动图</a></li>
+              <li><a href="#activities">体验原型：活动列表 → 详情 → 报名</a></li>
+              <li><a href="#privacy">看第 5 章：我被看到的只有昵称、头像、照片</a></li>
+            </ul>
+            <p class="audience-hint">本人与审核管理员才看得到完整实名和电话；其他骑友只看到昵称和公开照片。</p>
+          </article>
+          <article class="audience-card audience-organizer">
+            <span class="audience-tag">组织者</span>
+            <h3>我要发车，怎么把路线、名额和审批放上来？</h3>
+            <ul class="audience-steps">
+              <li><a href="#journey-organizer">看第 4 章：创建 → 路线 → 审批 → 现场</a></li>
+              <li><a href="#admin-activity-list">体验原型：我的活动管理与审批</a></li>
+              <li><a href="#roadmap">看路线图：组织地基与审批（M0 待实施，原型已交付）</a></li>
+            </ul>
+            <p class="audience-hint">Strava 公开链接或 GPX 二选一都能用；小程序只复制规范化链接，不跳转第三方页面。</p>
+          </article>
+          <article class="audience-card audience-dev">
+            <span class="audience-tag">开发者</span>
+            <h3>我提交一行代码，要走哪些门禁才能上线？</h3>
+            <ul class="audience-steps">
+              <li><a href="#pipeline">看第 6 章：七步交付链路</a></li>
+              <li><a href="#delivery">查全部文档索引 · 8 大类 · 需求 / 设计 / 契约 / 发布</a></li>
+              <li><a href="#guide">查搭建指南：九步交付、技术选型、合规清单</a></li>
+            </ul>
+            <p class="audience-hint">生产 Secret 只能在 cloudbase-production Environment 的 Runner 作业中使用；Secret 无法通过 Pages 或 Aime 反向读取。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="story-section" id="product">
+        <p class="story-eyebrow">02 · 产品全貌</p>
+        <h2 class="story-h2">先给结论：此里是单俱乐部的活动小程序，<br/>核心是「把骑行一次办完」。</h2>
+        <p class="story-lead">产品边界是一句话：面向一个骑行俱乐部、不多租户、不做支付、不内嵌第三方页。换来的是一张非常短的状态图和一组非常明确的能做与不做清单。</p>
+
+        <div class="product-overview">
+          <div class="product-overview-main">
+            <h3 class="story-h3">做什么 · 做到什么程度</h3>
+            <ul class="story-bullets">
+              <li><b>活动</b>：发起人创建草稿、配置路线和分组容量、发布或下架；骑手在首页按时间正序看未来活动、在历史分页看结束活动。</li>
+              <li><b>报名</b>：服务端复核资料、名额、截止时间、活动状态；重复提交幂等，审批与容量在事务内一致。</li>
+              <li><b>凭证</b>：审核通过后展示活动、集合、路线与报名状态；管理员在审核详情中二次确认签到，不提供扫码核销入口。</li>
+              <li><b>资料</b>：昵称、实名、电话、紧急联系人、头像、骑行照片在本人页维护；敏感字段 AES-256-GCM 加密。</li>
+              <li><b>名片</b>：公开骑行名片只展示本人维护的昵称、性别、头像和照片，不读取第三方账号指标。</li>
+            </ul>
+          </div>
+          <aside class="product-overview-side">
+            <h3 class="story-h3">不做什么 · 边界检查</h3>
+            <ul class="story-bullets-x">
+              <li>不做多俱乐部 / 多租户 / 独立 Web 后台（M0 原型已画出，服务端未实现）</li>
+              <li>不做在线支付、退款、押金</li>
+              <li>不做名单 Excel / CSV 导出</li>
+              <li>不嵌 web-view 跳转第三方；Strava 路线只复制规范化链接</li>
+              <li>不采集证件号、access/refresh token 等三方凭据</li>
+            </ul>
+          </aside>
+        </div>
+
+        <figure class="state-diagram state-diagram-activity" aria-label="活动状态机图解：草稿 ↔ 已发布 → 已结束，发布 ≠ 允许报名">
+          <figcaption>
+            <span class="story-eyebrow">图 2.1 · 活动状态机</span>
+            <strong>一张图回答一个问题：发布就等于允许报名吗？不等于。</strong>
+            <p>服务端根据活动时间、截止时间、总 / 分仓容量、费用、必要司机信息计算 <code>registration_state</code>；配置不完整时客户端看到「报名待开放」而不是「可报名」。</p>
+          </figcaption>
+          <div class="state-canvas state-canvas-activity">
+            <div class="state-node state-node-draft"><span>s1</span><b>draft</b><em>草稿</em></div>
+            <div class="state-edge state-edge-h state-edge-draft-published" aria-hidden="true"></div>
+            <div class="state-node state-node-published"><span>s2</span><b>published</b><em>已发布</em><p class="state-sub">= 公开展示<br/>≠ 可报名</p></div>
+            <div class="state-edge state-edge-h state-edge-published-finished" aria-hidden="true"></div>
+            <div class="state-node state-node-finished"><span>s3</span><b>finished</b><em>已结束（终态）</em></div>
+            <div class="state-side-note">
+              <p><b>服务端另算</b>：<code>registration_state</code>（open · closed · setup_pending）由活动配置动态计算，不是另一个活动状态。</p>
+            </div>
+          </div>
+        </figure>
+      </section>
+
+      <section class="story-section" id="journey-rider">
+        <p class="story-eyebrow">03 · 骑手旅程</p>
+        <h2 class="story-h2">先给结论：一次报名要经过五个可观察实体，<br/>每一步都在某个真实页面上。</h2>
+        <p class="story-lead">这一节把骑手视角做成可切换的动态图：选择「发现 → 判断 → 报名 → 凭证 → 签到」中的任何一步，图里对应的节点亮起，右侧列出对应的真实原型页面和检查点。</p>
+
+        <div class="journey-interactive" data-journey-canvas>
+          <ol class="journey-steps" role="tablist" aria-label="骑手旅程步骤">
+            <li role="presentation"><button role="tab" class="journey-step is-active" data-step="discover" aria-selected="true"><span>01</span><b>发现</b><em>活动列表</em></button></li>
+            <li role="presentation"><button role="tab" class="journey-step" data-step="judge" aria-selected="false"><span>02</span><b>判断</b><em>活动详情 · 路线分析</em></button></li>
+            <li role="presentation"><button role="tab" class="journey-step" data-step="apply" aria-selected="false"><span>03</span><b>报名</b><em>报名表 · 等待审核</em></button></li>
+            <li role="presentation"><button role="tab" class="journey-step" data-step="credential" aria-selected="false"><span>04</span><b>凭证</b><em>活动信息 · 审核状态</em></button></li>
+            <li role="presentation"><button role="tab" class="journey-step" data-step="checkin" aria-selected="false"><span>05</span><b>签到</b><em>管理员二次确认</em></button></li>
+          </ol>
+
+          <div class="journey-stage" role="tabpanel" aria-live="polite">
+            <svg class="journey-flow" viewBox="0 0 1000 220" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="journey-flow-title">
+              <title id="journey-flow-title">骑手旅程流程图</title>
+              <defs>
+                <marker id="journey-arrow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+                </marker>
+              </defs>
+              <g class="journey-flow-track" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 6">
+                <path d="M80,110 L250,110"/>
+                <path d="M330,110 L490,110"/>
+                <path d="M570,110 L720,110"/>
+                <path d="M800,110 L870,110"/>
+              </g>
+              <g class="journey-flow-node" data-node="discover">
+                <circle cx="60" cy="110" r="30"/>
+                <text x="60" y="106" text-anchor="middle">01</text>
+                <text x="60" y="124" text-anchor="middle" class="journey-flow-label">发现</text>
+                <text x="60" y="172" text-anchor="middle" class="journey-flow-sub">pages/activities</text>
+              </g>
+              <g class="journey-flow-node" data-node="judge">
+                <circle cx="290" cy="110" r="30"/>
+                <text x="290" y="106" text-anchor="middle">02</text>
+                <text x="290" y="124" text-anchor="middle" class="journey-flow-label">判断</text>
+                <text x="290" y="172" text-anchor="middle" class="journey-flow-sub">activity-detail · route-analysis</text>
+              </g>
+              <g class="journey-flow-node" data-node="apply">
+                <circle cx="530" cy="110" r="30"/>
+                <text x="530" y="106" text-anchor="middle">03</text>
+                <text x="530" y="124" text-anchor="middle" class="journey-flow-label">报名</text>
+                <text x="530" y="172" text-anchor="middle" class="journey-flow-sub">registration-form · pending</text>
+              </g>
+              <g class="journey-flow-node" data-node="credential">
+                <circle cx="760" cy="110" r="30"/>
+                <text x="760" y="106" text-anchor="middle">04</text>
+                <text x="760" y="124" text-anchor="middle" class="journey-flow-label">凭证</text>
+                <text x="760" y="172" text-anchor="middle" class="journey-flow-sub">credential · 审核状态</text>
+              </g>
+              <g class="journey-flow-node" data-node="checkin">
+                <circle cx="880" cy="110" r="26"/>
+                <text x="880" y="106" text-anchor="middle">05</text>
+                <text x="880" y="124" text-anchor="middle" class="journey-flow-label">签到</text>
+                <text x="880" y="168" text-anchor="middle" class="journey-flow-sub">approved → checked_in</text>
+              </g>
+            </svg>
+
+            <div class="journey-detail" data-step-detail>
+              <div class="journey-detail-pane" data-pane="discover">
+                <h4>先给结论：进来默认看未来活动，历史活动倒序分页。</h4>
+                <p>两份视图分别缓存，切换、刷新、加载更多的迟到响应不能覆盖当前列表（这是一个真实的 bug 过滤器）。</p>
+                <ul>
+                  <li><b>原型</b>：<a href="#activities">pages/activities/index</a></li>
+                  <li><b>关键状态</b>：有活动 · 空 · 加载失败</li>
+                  <li><b>检查点</b>：340px 窄屏无横向溢出；活动卡片含俱乐部快照</li>
+                </ul>
+              </div>
+              <div class="journey-detail-pane" data-pane="judge" hidden>
+                <h4>先给结论：详情页只回答「这次活动能不能去、我要怎么准备」。</h4>
+                <p>路线概览固定在详情卡里；完整路线分析是独立页，提供走向、爬升、关键公里点、补给、WC POI；GPX 原生详情由管理员编辑页承载。</p>
+                <ul>
+                  <li><b>原型</b>：<a href="#activity-detail">activity-detail</a> → <a href="#route-analysis">route-analysis</a></li>
+                  <li><b>边界</b>：不跳转第三方；Strava 只复制规范化链接</li>
+                  <li><b>检查点</b>：路线概览与完整分析之间无数据漂移</li>
+                </ul>
+              </div>
+              <div class="journey-detail-pane" data-pane="apply" hidden>
+                <h4>先给结论：报名表只允许在服务端复核通过的字段。</h4>
+                <p>资料、活动状态、截止时间、分类名额都由服务端复核；拒绝订阅通知不阻断报名；提交后进入 pending，占用名额。</p>
+                <ul>
+                  <li><b>原型</b>：<a href="#registration-form">registration-form</a> → <a href="#registrations">registrations</a></li>
+                  <li><b>关键状态</b>：pending · approved · rejected · cancelled</li>
+                  <li><b>检查点</b>：rejected/cancelled 可沿用同一记录重报</li>
+                </ul>
+              </div>
+              <div class="journey-detail-pane" data-pane="credential" hidden>
+                <h4>先给结论：凭证是一张可核对的行程卡，不是扫码通行证。</h4>
+                <p>它集中展示活动、集合、路线与审核状态；签到由管理员在审核详情中二次确认，当前没有扫码核销入口。</p>
+                <ul>
+                  <li><b>原型</b>：<a href="#credential">credential</a>（with-photo / no-photo 状态）</li>
+                  <li><b>边界</b>：历史行程保留发布 / 成行时的俱乐部归属快照</li>
+                  <li><b>检查点</b>：取消后的凭证不再展示集合信息</li>
+                </ul>
+              </div>
+              <div class="journey-detail-pane" data-pane="checkin" hidden>
+                <h4>先给结论：签到是幂等的 approved → checked_in。</h4>
+                <p>管理员在审批详情完成二次确认；重复签到不会报错也不会重复占用名额；离线核销和批量签到不在本期范围。</p>
+                <ul>
+                  <li><b>原型</b>：<a href="#admin-review-detail">admin-review-detail</a></li>
+                  <li><b>边界</b>：驳回必须填写理由（textarea 非空）</li>
+                  <li><b>检查点</b>：approved → cancelled 可以释放名额</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <figure class="state-diagram state-diagram-registration" aria-label="报名状态机图解：pending → approved → checked_in；pending → rejected；可沿用同一记录重报">
+          <figcaption>
+            <span class="story-eyebrow">图 3.1 · 报名状态机</span>
+            <strong>一张图回答一个问题：被驳回了还能再报吗？能，沿用同一条记录。</strong>
+          </figcaption>
+          <div class="state-canvas state-canvas-registration">
+            <div class="state-node state-node-pending" style="--c-row:1;--c-col:1"><span>r1</span><b>pending</b><em>待审核</em></div>
+            <div class="state-node state-node-approved" style="--c-row:1;--c-col:2"><span>r2</span><b>approved</b><em>已通过（占名额）</em></div>
+            <div class="state-node state-node-checkedin" style="--c-row:1;--c-col:3"><span>r3</span><b>checked_in</b><em>已签到</em></div>
+            <div class="state-node state-node-rejected" style="--c-row:2;--c-col:2"><span>r4</span><b>rejected</b><em>已驳回（释放名额）</em></div>
+            <div class="state-node state-node-cancelled" style="--c-row:2;--c-col:3"><span>r5</span><b>cancelled</b><em>已取消（释放名额）</em></div>
+            <svg class="state-edges" viewBox="0 0 600 220" aria-hidden="true">
+              <defs>
+                <marker id="reg-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+                </marker>
+              </defs>
+              <g fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#reg-arrow)">
+                <path d="M165,55 L235,55"/>
+                <path d="M365,55 L435,55"/>
+                <path d="M100,100 Q100,165 230,165"/>
+                <path d="M300,100 Q300,165 430,165"/>
+                <path d="M300,195 Q180,195 100,100" stroke-dasharray="5 5"/>
+                <path d="M495,195 Q580,195 500,100" stroke-dasharray="5 5"/>
+              </g>
+            </svg>
+            <p class="state-legend"><span class="state-legend-item state-legend-solid">实线</span> 正向流转 · <span class="state-legend-item state-legend-dashed">虚线</span> rejected / cancelled 沿用同一记录重新进入 pending</p>
+          </div>
+        </figure>
+      </section>
+
+      <section class="story-section" id="journey-organizer">
+        <p class="story-eyebrow">04 · 组织者旅程</p>
+        <h2 class="story-h2">先给结论：组织者的职责是「活动可被看见」和「现场可被审」。</h2>
+        <p class="story-lead">对单俱乐部而言，组织者和管理员往往是同一人；对 M0 组织地基与审批而言，他们会被显式区分成 OWNER / ADMIN / MEMBER。两套事实都在原型里，但只有前者进入了 miniprogram 的 app.json 路由。</p>
+
+        <div class="organizer-flow">
+          <article class="organizer-step">
+            <span class="organizer-no">01</span>
+            <h3>创建草稿</h3>
+            <p>我的 → 我的活动 → 新建；填标题、图集、时间、集合地点、费用、装备、容量、分仓。</p>
+            <p class="organizer-ev"><a href="#admin-activity-edit">admin-activity-edit · create 状态</a></p>
+          </article>
+          <article class="organizer-step">
+            <span class="organizer-no">02</span>
+            <h3>导入路线</h3>
+            <p>粘贴 Strava 公开链接，由服务端免授权解析（无需用户授权）；或上传 GPX 由服务端解析里程、海拔、轮廓。两种可并存。</p>
+            <p class="organizer-ev"><a href="#admin-activity-edit">admin-activity-edit · GPX 路线详情</a> · <a href="#privacy">边界见第 5 章</a></p>
+          </article>
+          <article class="organizer-step">
+            <span class="organizer-no">03</span>
+            <h3>发布 ≠ 可报名</h3>
+            <p>服务端校验标题、起止时间、路线起终点；容量 / 分仓 / 司机 / 截止 / 费用未补齐时，活动可预告但报名保持关闭（<code>registration_setup_pending</code>）。</p>
+            <p class="organizer-ev"><a href="#admin-activity-list">admin-activity-list · 四态筛选</a></p>
+          </article>
+          <article class="organizer-step">
+            <span class="organizer-no">04</span>
+            <h3>审批与现场</h3>
+            <p>审批详情查看脱敏资料、手机号来源、骑行照片；通过 / 驳回（必须填理由）；approved → checked_in 幂等；驳回或取消释放名额。</p>
+            <p class="organizer-ev"><a href="#admin-reviews">admin-reviews</a> · <a href="#admin-review-detail">admin-review-detail</a></p>
+          </article>
+        </div>
+
+        <div class="organizer-note">
+          <p><b>M0 组织地基与审批（路线图待实施，原型已交付）</b>：俱乐部申请统一进入平台所有者待办；俱乐部活动由 OWNER / ADMIN 审批，管理员本人活动默认发布并记录 <code>role_auto_publish</code> 审计；公开活动由平台所有者审批。生产 miniprogram 尚未实现；点击 <a href="#org-overview">M0 原型入口</a> 可完整体验 8 页审批流。</p>
+        </div>
+      </section>
+
+      <section class="story-section" id="privacy">
+        <p class="story-eyebrow">05 · 隐私与产品边界</p>
+        <h2 class="story-h2">先给结论：公开骑手卡片只有四个字段，<br/>其他都看不到。</h2>
+        <p class="story-lead">这不是一句话承诺，而是服务端 DTO 的直接约束：公开 DTO 只允许昵称、性别、头像、本人维护的照片，并且媒体必须经过 owner / status / canonical 校验，才签发临时 URL。违反契约的字段直接从返回里消失。</p>
+
+        <div class="privacy-grid">
+          <article class="privacy-allow">
+            <h3>✓ 公开可见</h3>
+            <ul>
+              <li>昵称</li>
+              <li>性别</li>
+              <li>头像（canonical 媒体 · 临时 URL）</li>
+              <li>本人维护的骑行照片</li>
+              <li>后援车司机电话（功能必要，公开完整）</li>
+            </ul>
+          </article>
+          <article class="privacy-deny">
+            <h3>✗ 公开不可见</h3>
+            <ul>
+              <li>真实姓名 · 手机号 · 紧急联系人（本人与审核管理员才看完整）</li>
+              <li>报名备注 · openid · 原始文件 ID · 审计数据</li>
+              <li>证件类型 / 证件号（根本不采集）</li>
+              <li>第三方账号 access / refresh token（Strava OAuth 已退役，不采集任何三方凭据）</li>
+              <li>骑行指标（90 天次数、加权均速、累计爬升 — 全部不展示）</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="privacy-callout">
+          <b>Strava OAuth 已退役 · 无需 Strava 授权即可解析公开路线</b>
+          <p>仓库仅使用 Strava <strong>公开路线</strong>的链接：粘贴 URL → 服务端免授权解析 → 规范化复制。小程序不读写 Strava 私有数据，也不保存任何 Strava access/refresh token；历史凭证由迁移清理任务删除。活动详情页只允许复制规范化链接，不跳转第三方。</p>
+        </div>
+      </section>
+
+      <section class="story-section" id="pipeline">
+        <p class="story-eyebrow">06 · 七步交付链路</p>
+        <h2 class="story-h2">先给结论：PR 一旦合入 main，<br/>三条独立管线并行发布，每一步都有回读。</h2>
+        <p class="story-lead">这张图把 <code>.github/workflows/</code> 里的三份 YAML 合并成一个可读的交付链路。CloudBase 只部署受影响的函数；微信开发版只在小程序变更时触发；GitHub Pages 由 docs 变更独立发布——三端最终都要指向当前 main。</p>
+
+        <div class="pipeline-flow" aria-label="从 Pull Request 到三端验收的七步交付链路（契约验证视图）">
+          <div class="pipeline-rail pipeline-rail-top" aria-hidden="true"></div>
+          <article class="pipeline-step" style="--p-order:1" data-lane="gate"><span>01</span><b>PR 门禁</b><p>格式 / 类型 / 测试 / 覆盖率 / 依赖审计全部通过才允许合入；受保护分支拒绝直接推送与强推。</p></article>
+          <article class="pipeline-step" style="--p-order:2" data-lane="gate"><span>02</span><b>合入 main</b><p>合并后分支必须删除；GitHub 实时状态是开放 PR 的唯一判断依据。</p></article>
+          <article class="pipeline-step" style="--p-order:3" data-lane="gate"><span>03</span><b>main CI 复验</b><p>用合并后的真实提交再次运行完整门禁，并生成变更范围判定（CloudBase / 微信 / Pages）。</p></article>
+          <div class="pipeline-split" aria-hidden="true"><span>三路并行</span></div>
+          <article class="pipeline-step" style="--p-order:4" data-lane="cloud"><span>04</span><b>CloudBase</b><p>只部署受影响的基线与云函数（CLOUDBASE_ENV_ID 双重校验），完成后回读 fn list。</p></article>
+          <article class="pipeline-step" style="--p-order:5" data-lane="wechat"><span>05</span><b>微信开发版</b><p>仅小程序变更触发上传，使用临时私钥（WECHAT_MINIPROGRAM_PRIVATE_KEY），结束时清理。</p></article>
+          <article class="pipeline-step" style="--p-order:6" data-lane="pages"><span>06</span><b>GitHub Pages</b><p>docs 变更由 Pages 独立发布，交付中心与代码事实保持同一提交。</p></article>
+          <article class="pipeline-step pipeline-step-verify" style="--p-order:7" data-lane="verify"><span>07</span><b>三端验收</b><p>核对 CI、CloudBase、微信开发版与 Pages 均指向当前 main；任一失败都保留日志与可重跑入口。</p></article>
+          <div class="pipeline-rail pipeline-rail-bot" aria-hidden="true"></div>
+        </div>
+        <p class="pipeline-note"><b>并行点：</b>main CI 复验完成后，CloudBase、微信开发版和 GitHub Pages 按变更范围独立执行；任何一路失败都保留日志与可重跑入口，不用重新合并代码。详细 Secret 清单与手动恢复见 <a href="#deploy">「04 · 自动化部署链路」深潜</a>。</p>
+      </section>
+
+      <section class="story-section" id="roadmap">
+        <p class="story-eyebrow">当前已实现 vs 路线图待实施</p>
+        <h2 class="story-h2">把「已经能用」和「还只是设计」分清楚</h2>
+        <div class="roadmap-grid">
+          <article class="roadmap-done">
+            <h3>✓ 当前已实现（14 个真实路由）</h3>
+            <ul>
+              <li>骑友端：活动列表、活动详情、路线分析、报名表、行程、凭证、我的、设置、名片、资料编辑</li>
+              <li>管理端：我的活动、活动编辑、审批列表、审批详情（含驳回理由非空门禁）</li>
+              <li>公共：Strava 公开路线链接解析（无 OAuth）、GPX 上传与预览、报名凭证、公开骑手卡片四字段契约</li>
+              <li>交付：PR / main CI、CloudBase 自动部署、微信开发版自动上传、体验版两阶段晋级、GitHub Pages 发布</li>
+            </ul>
+          </article>
+          <article class="roadmap-todo">
+            <h3>⌛ 路线图待实施（8 页 M0 原型 + 其他）</h3>
+            <ul>
+              <li>组织地基与审批（M0 原型已交付）：俱乐部申请、俱乐部 / 公开活动审批、角色视角、异常</li>
+              <li>多俱乐部 / 多组织租户、独立 Web 后台 — 未来需求</li>
+              <li>报名信息同步腾讯文档 — 需求阶段，等官方接入与权限验证</li>
+              <li>发起人申请、完整通知闭环、凭证前缀、活动标签 / 模板、双主题、一句话更新日志</li>
+              <li>UGC 内容安全闭环（msgSecCheck / mediaCheckAsync）统一入口 — P0 待办</li>
+              <li>多环境映射（开发 / 测试 / 生产）与合规检查发布门禁 — P1 待办</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      </article>
+
+      <section class="story-divider" aria-hidden="true">
+        <span>— 以下是深潜资料 · 深度阅读按原顺序保留 —</span>
+      </section>
+
+      <section class="product-hero" id="overview">
         <p class="eyebrow">研发交付中心 · 当前基线同步至 main</p>
         <h2>让骑行俱乐部的研发交付——从需求到发布，都收口到一个可维护的 Pages</h2>
         <p class="lead">“此里”面向单个骑行俱乐部的微信小程序。本页把 README、需求、设计、架构、规范、测试、发布、复盘按 SDLC 八大类聚合，并给每份文档打上成熟度标签，方便产品、设计、研发、测试与运营共享同一事实。</p>
-        <div class="product-actions"><a class="btn" href="#delivery">进入研发交付中心</a><a class="btn-secondary" href="#activities">体验 13 个交互原型</a></div>
+        <div class="product-actions"><a class="btn" href="#delivery">进入研发交付中心</a><a class="btn-secondary" href="#activities">体验 14 个交互原型</a></div>
       </section>
 
       ${deliveryCenter ? deliveryCenter.render() : ''}
@@ -328,8 +724,8 @@
 
       <section class="product-section" id="prototype">
         <p class="eyebrow">05 · 交互原型</p>
-        <h2>13 个真实页面 + 8 页 M0 组织地基与审批原型</h2>
-        <p class="card-hint">13 个页面与 app.json 路由一一对应；另 8 页 M0 原型（组织地基与审批）仅为设计表达，服务端尚未实现。官方路线独立页已从产品路由删除；活动详情直接承载路线事实与 GPX 能力，Strava 路线只提供规范化链接复制。</p>
+        <h2>14 个真实页面 + 8 页 M0 组织地基与审批原型</h2>
+        <p class="card-hint">14 个页面与 app.json 路由一一对应；另 8 页 M0 原型（组织地基与审批）仅为设计表达，服务端尚未实现。官方路线独立页已从产品路由删除；活动详情直接承载路线事实与 GPX 能力，Strava 路线只提供规范化链接复制（Strava OAuth 已退役，无需 Strava 授权）。</p>
         <div class="overview-grid">${pageCards}</div>
       </section>
 
@@ -345,7 +741,7 @@
           <h2>浅色对比度检查表</h2>
           <table class="overview-table"><thead><tr><th>用途</th><th>前景</th><th>背景</th><th>对比度</th><th>门槛</th><th>使用位置</th></tr></thead><tbody>${contrast}</tbody></table>
           <h2>沸点视觉验收</h2>
-          <p>当前 13 页统一使用暖米白画布、白卡、墨黑信息块、品牌红强调与深行动红主行动；历史主题问题已从当前原型说明中移除。</p>
+          <p>当前 14 页统一使用暖米白画布、白卡、墨黑信息块、品牌红强调与深行动红主行动；历史主题问题已从当前原型说明中移除。</p>
           <div class="official-links"><a href="./designs/2026-10-16-boiling-point/index.html">查看沸点手稿与全套交接成果</a><a href="./design-contract.json">查看双端设计契约</a></div>
         </div>
       </details>`;
@@ -397,7 +793,10 @@
     const targetSection = overviewSections.has(section) ? section : 'overview';
     demo.hidden = true;
     overview.hidden = false;
-    if (!overview.innerHTML) renderOverview();
+    if (!overview.innerHTML) {
+      renderOverview();
+      bindJourneyInteractive();
+    }
     if (window.location.hash !== `#${targetSection}`) {
       window.history.replaceState(null, '', `#${targetSection}`);
     }
@@ -406,6 +805,30 @@
         document.getElementById(targetSection)?.scrollIntoView({ block: 'start' });
       });
     }
+  }
+
+  // 03 骑手旅程动态图：点击 tab 切换右侧 pane，并高亮 SVG 中对应节点
+  function bindJourneyInteractive() {
+    const canvas = document.querySelector('[data-journey-canvas]');
+    if (!canvas) return;
+    const tabs = canvas.querySelectorAll('.journey-step');
+    const panes = canvas.querySelectorAll('.journey-detail-pane');
+    const nodes = canvas.querySelectorAll('.journey-flow-node');
+    const activate = (step) => {
+      tabs.forEach((tab) => {
+        const match = tab.dataset.step === step;
+        tab.classList.toggle('is-active', match);
+        tab.setAttribute('aria-selected', match ? 'true' : 'false');
+      });
+      panes.forEach((pane) => {
+        pane.hidden = pane.dataset.pane !== step;
+      });
+      nodes.forEach((node) => {
+        node.classList.toggle('is-active', node.dataset.node === step);
+      });
+    };
+    tabs.forEach((tab) => tab.addEventListener('click', () => activate(tab.dataset.step)));
+    activate('discover');
   }
 
   function normalizePrototypeState(stateIds, requestedState) {

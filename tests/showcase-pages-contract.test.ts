@@ -905,4 +905,149 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
       expect(raSlice).not.toContain(forbidden);
     }
   });
+
+  it('技术长读首屏按「问题钩子 → 阅读地图 → 三类读者」展开，不以 SDLC 八大类自说自话开场', () => {
+    // header meta / title 与导航反映技术长读定位
+    expect(html).toContain('一次骑行是如何被设计、报名、审批、交付的 · 研发交付中心');
+    expect(html).toContain('技术长读');
+    expect(html).toContain('骑友 / 组织者 / 开发者三视角');
+    expect(html).toContain('href="#story-hook"');
+    expect(html).toContain('href="#audience"');
+    expect(html).toContain('href="#journey-rider"');
+    expect(html).toContain('href="#pipeline"');
+    // 首屏不再以「8 / 8 SDLC 类目」开场
+    expect(html).not.toContain('<b>8 / 8</b><span>SDLC 类目</span>');
+    // 开篇三个问题钩子
+    expect(script).toContain('id="story-hook"');
+    expect(script).toContain('一次骑行从被想到');
+    expect(script).toContain('为什么不是直接扫个群接龙');
+    expect(script).toContain('要不要做成互联网产品那套');
+    expect(script).toContain('怎么保证代码上线不翻车');
+    // 阅读地图直达 7 章
+    expect(script).toContain('story-map');
+    for (const anchor of [
+      '#audience',
+      '#product',
+      '#journey-rider',
+      '#journey-organizer',
+      '#privacy',
+      '#pipeline',
+      '#prototype',
+    ]) {
+      expect(script).toContain(`href="${anchor}"`);
+    }
+    // overview 哈希路由认得新章节
+    expect(script).toContain("'story-hook'");
+    expect(script).toContain("'audience'");
+    expect(script).toContain("'journey-rider'");
+    expect(script).toContain("'journey-organizer'");
+    expect(script).toContain("'pipeline'");
+    expect(script).toContain("'roadmap'");
+  });
+
+  it('三类读者（骑友 / 组织者 / 开发者）都有明确视角入口和完整内容路径', () => {
+    expect(script).toContain('audience-rider');
+    expect(script).toContain('audience-organizer');
+    expect(script).toContain('audience-dev');
+    expect(script).toContain('我周末骑一次，中间会被怎样处理？');
+    expect(script).toContain('我要发车，怎么把路线、名额和审批放上来？');
+    expect(script).toContain('我提交一行代码，要走哪些门禁才能上线？');
+    // 每个读者入口都给出至少 3 条下一步
+    expect(script.match(/class="audience-steps"/g)?.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('产品全貌、骑手旅程、组织者旅程、隐私边界章节按「结论→机制→证据→边界→检查点」组织', () => {
+    // 02 产品全貌 · 做什么 / 不做什么 / 活动状态机
+    expect(script).toContain('做什么 · 做到什么程度');
+    expect(script).toContain('不做什么 · 边界检查');
+    expect(script).toContain('图 2.1 · 活动状态机');
+    expect(script).toContain('发布就等于允许报名吗？不等于');
+    expect(script).toContain('state-canvas-activity');
+    // 03 骑手旅程 · 五步 + 报名状态机
+    expect(script).toContain('data-journey-canvas');
+    for (const step of ['discover', 'judge', 'apply', 'credential', 'checkin']) {
+      expect(script).toContain(`data-step="${step}"`);
+      expect(script).toContain(`data-pane="${step}"`);
+      expect(script).toContain(`data-node="${step}"`);
+    }
+    expect(script).toContain('图 3.1 · 报名状态机');
+    expect(script).toContain('被驳回了还能再报吗？能，沿用同一条记录');
+    // 04 组织者旅程 · 创建 → 导入路线 → 发布 ≠ 可报名 → 审批与现场
+    expect(script).toContain('organizer-flow');
+    expect(script).toContain('发布 ≠ 可报名');
+    expect(script).toContain('registration_setup_pending');
+    expect(script).toContain('role_auto_publish');
+    // 05 隐私与产品边界 · 可见 / 不可见 / Strava OAuth 退役
+    expect(script).toContain('✓ 公开可见');
+    expect(script).toContain('✗ 公开不可见');
+    expect(script).toContain('Strava OAuth 已退役');
+    expect(script).toContain('无需 Strava 授权');
+    // 开发态话术也不出现在产品边界描述中
+    expect(script).not.toMatch(/Strava 账号授权 ·|重新授权 Strava/);
+  });
+
+  it('七步交付链路从 PR 到三端验收，并把三路部署标注为契约验证视图', () => {
+    expect(script).toContain('id="pipeline"');
+    expect(script).toContain('pipeline-flow');
+    expect(script).toContain('契约验证视图');
+    expect(script).toContain('data-lane="cloud"');
+    expect(script).toContain('data-lane="wechat"');
+    expect(script).toContain('data-lane="pages"');
+    expect(script).toContain('pipeline-step-verify');
+    expect(script).toContain('三路并行');
+    // 7 步编号 01..07 齐备
+    for (const no of ['01', '02', '03', '04', '05', '06', '07']) {
+      expect(script).toContain(`<span>${no}</span>`);
+    }
+  });
+
+  it('动画默认开启，支持 prefers-reduced-motion 关闭', () => {
+    expect(css).toContain('@keyframes pipeline-pulse');
+    expect(css).toContain('@keyframes journey-pulse');
+    expect(css).toContain('@keyframes state-pulse');
+    expect(css).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*state-node-published[\s\S]*animation: none/,
+    );
+    expect(css).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*pipeline-step[\s\S]*animation: none/,
+    );
+    expect(css).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*journey-flow-node\.is-active circle[\s\S]*animation: none/,
+    );
+  });
+
+  it('路线图把「当前已实现」与「待实施」显式分开', () => {
+    expect(script).toContain('id="roadmap"');
+    expect(script).toContain('✓ 当前已实现（14 个真实路由）');
+    expect(script).toContain('⌛ 路线图待实施');
+    // 把 M0 原型 / 多租户 / 腾讯文档等显式归入待实施，而不是写成已上线
+    expect(script).toContain('组织地基与审批（M0 原型已交付）');
+    expect(script).toContain('多俱乐部 / 多组织租户、独立 Web 后台 — 未来需求');
+    expect(script).toContain('报名信息同步腾讯文档 — 需求阶段');
+  });
+
+  it('事实边界：无强制 Strava 授权；GPX 可下载预览；CloudBase 仅变更时部署；Routes/M0 不写成已上线', () => {
+    const page = [html, script, deliveryCenter].join('\n');
+    // 不得出现"必须授权 Strava"或"CloudBase 全量部署"等反事实
+    expect(page).not.toMatch(/必须.{0,4}授权.{0,4}Strava|强制.{0,4}Strava.{0,4}授权/);
+    expect(page).toContain('无需 Strava 授权');
+    expect(page).toMatch(/只部署受影响|仅.{0,2}变更/);
+    expect(page).toContain('GPX');
+    // 退役文档不再被当作 external-apis 的 source 链接
+    expect(deliveryCenter).not.toContain('docs/strava-athlete-capacity.md');
+    // M0 组织地基仍是 roadmap 项，不能被描述成生产已实现
+    expect(script).toContain('组织地基与审批（M0 原型已交付）');
+    expect(deliveryCenter).toContain('M0 待实施');
+    // 扫码核销入口已退役：凭证只展示活动与审核状态，签到由管理员二次确认。
+    expect(script).toContain('当前没有扫码核销入口');
+    expect(script).not.toMatch(/Code 128|wx\.scanCode/);
+  });
+
+  it('header / footer / meta 的叙事与新章节一致', () => {
+    expect(html).toContain('<title>此里 · 一次骑行是如何被设计、报名、审批、交付的');
+    expect(html).toContain('content="此里骑行活动小程序研发交付中心 · 技术长读');
+    expect(html).toContain('<b>7 章</b><span>技术长读</span>');
+    expect(html).toContain('此里 CILI · 一次骑行是如何被设计、报名、审批、交付的 · 研发交付中心');
+    expect(html).toContain('Strava OAuth 已退役，无需 Strava 授权即可解析公开路线');
+  });
 });

@@ -187,7 +187,7 @@
         },
         {
           id: 'prototype-entry',
-          title: '13 个交互原型',
+          title: '14 个交互原型',
           summary: '与 app.json 路由一一对应，可键盘导航、带状态的 hash 深链；本中心保留此入口不改动。',
           maturity: 'baseline',
           sources: [
@@ -265,16 +265,15 @@
           id: 'external-apis',
           title: '外部接口（第三方集成）',
           summary:
-            '仓库仅使用 Strava 公开路线链接（粘贴 + 规范化复制，不走 OAuth）与微信开放能力；其他外部接口无仓库证据。',
+            '仓库仅使用 Strava 公开路线链接（粘贴 + 规范化复制，不走 OAuth）与微信开放能力；其他外部接口无仓库证据。Strava OAuth 已退役，无需 Strava 授权即可解析公开路线。',
           maturity: 'template',
           templateFields: [
-            'Strava 公开路线：粘贴 URL → 规范化复制，不读写私有数据',
+            'Strava 公开路线：粘贴 URL → 规范化复制，不读写私有数据，无 OAuth',
             '微信能力：登录、动态手机号、订阅消息、`wx.scanCode`、`chooseLocation`、`writePhotosAlbum`',
             '若未来接入支付 / 短信 / 推送：按契约在此补齐 provider、鉴权方式、调用点、失败降级',
           ],
           sources: [
             { label: 'miniprogram/app.json', href: BASE + 'miniprogram/app.json' },
-            { label: 'docs/strava-athlete-capacity.md', href: BASE + 'docs/strava-athlete-capacity.md' },
           ],
         },
       ],
@@ -670,7 +669,7 @@
     'module-map': () => `
       <div class="dc-grid-2">
         <article class="dc-sub"><h4>miniprogram/</h4>${ul([
-          'pages/ — 13 个 app.json 路由',
+          'pages/ — 14 个 app.json 路由',
           'components/ — 复用组件（活动卡、报名表单段、骑手卡）',
           'repositories/ — 封装对云函数的调用',
           'services/ — 领域服务（身份、报名、路线）',
@@ -843,7 +842,7 @@
           <p class="lead">把 README、需求、设计、数据契约、工作流、发布记录、运维约定收口到一个可维护目录，并明确每份文档是正式基线、事实索引还是模板待补。</p>
           <div class="dc-hero-actions">
             <a class="btn" href="#overview-ia">从 01 项目总览开始</a>
-            <a class="btn-secondary" href="#prototype">查看 13 个交互原型</a>
+            <a class="btn-secondary" href="#prototype">查看 14 个交互原型</a>
           </div>
         </div>
         <aside class="dc-hero-right">

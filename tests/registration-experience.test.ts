@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { validateRegistration } from '../miniprogram/utils/validation';
-import { drawActivityPoster } from '../miniprogram/pages/activity-detail/poster';
+import { drawActivityPoster } from './fixtures/activity-poster';
 
 afterEach(() => vi.unstubAllGlobals());
 

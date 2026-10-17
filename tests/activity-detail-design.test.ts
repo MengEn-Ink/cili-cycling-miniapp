@@ -7,7 +7,7 @@ import {
   formatChinaDateTimeSeconds,
   validElevationProfile,
 } from '../miniprogram/pages/activity-detail/format';
-import { drawActivityPoster } from '../miniprogram/pages/activity-detail/poster';
+import { drawActivityPoster } from './fixtures/activity-poster';
 
 const read = (file: string) => readFileSync(file, 'utf8');
 

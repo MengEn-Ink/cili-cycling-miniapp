@@ -51,7 +51,7 @@ describe('沸点红白墨黑全局主题契约', () => {
       readFileSync('miniprogram/utils/route-outline.ts', 'utf8'),
       readFileSync('miniprogram/utils/route-visual.ts', 'utf8'),
       readFileSync('miniprogram/pages/activity-detail/format.ts', 'utf8'),
-      readFileSync('miniprogram/pages/activity-detail/poster.ts', 'utf8'),
+      readFileSync('tests/fixtures/activity-poster.ts', 'utf8'),
     ].join('\n');
 
     expect(canvasSources).toContain('#211f1c');
