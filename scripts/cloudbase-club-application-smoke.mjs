@@ -102,6 +102,13 @@ function normalizeExtendedJson(value) {
         throw new Error('CloudBase QUERY 返回无法安全归一的 Extended JSON 数字');
       return normalized;
     }
+    if (Object.hasOwn(value, '$date')) {
+      const rawDate = normalizeExtendedJson(value.$date);
+      const date = new Date(rawDate);
+      if (Number.isNaN(date.getTime()))
+        throw new Error('CloudBase QUERY 返回无效的 Extended JSON 日期');
+      return date.toISOString();
+    }
   }
   return Object.fromEntries(
     Object.entries(value).map(([key, nested]) => [key, normalizeExtendedJson(nested)]),
@@ -310,6 +317,16 @@ export function createCliStore({ envId, cwd = process.cwd(), execute = execFileS
 
 function assert(condition, message) {
   if (!condition) throw new Error(`真实写入 smoke 断言失败：${message}`);
+}
+
+async function waitForProfileAudit(store, filter, { attempts = 12, delayMs = 1000 } = {}) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const records = await store.query('audit_logs', filter, 10);
+    if (records.length > 0) return records[0];
+    if (attempt + 1 < attempts)
+      await new Promise((resolveDelay) => setTimeout(resolveDelay, delayMs));
+  }
+  throw new Error('俱乐部资料更新审计在重试窗口内未可见');
 }
 
 function assertPersistedStage(record, { stage, status, reviewVersion, requestField, requestId }) {
@@ -597,6 +614,11 @@ export async function runClubApplicationSmoke({ store, runId, now = () => new Da
       },
       now(),
     );
+    await waitForProfileAudit(store, {
+      action: 'club_profile_updated',
+      target_id: clubId,
+      request_id: profileUpdateRequestId,
+    });
     const repeatedManagedUpdate = await updateManagedClub(
       store,
       {

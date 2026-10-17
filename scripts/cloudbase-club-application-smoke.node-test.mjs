@@ -264,6 +264,7 @@ test('解析 cursor firstBatch 并递归归一 Extended JSON 数字', () => {
                 {
                   _id: 'one',
                   review_version: { $numberInt: '1' },
+                  updated_at: { $date: '2026-10-18T00:00:00.000Z' },
                   nested: { count: { $numberLong: '2' }, ratio: { $numberDouble: '1.5' } },
                 },
               ],
@@ -274,7 +275,12 @@ test('解析 cursor firstBatch 并递归归一 Extended JSON 数字', () => {
     },
   });
   assert.deepEqual(parseNosqlDocuments(output), [
-    { _id: 'one', review_version: 1, nested: { count: 2, ratio: 1.5 } },
+    {
+      _id: 'one',
+      review_version: 1,
+      updated_at: '2026-10-18T00:00:00.000Z',
+      nested: { count: 2, ratio: 1.5 },
+    },
   ]);
 });
 
