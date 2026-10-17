@@ -14,17 +14,10 @@ const adminRoutes = [
 describe('管理员页面分包契约', () => {
   it('管理员页面只在 pages/admin 分包中以相对路径声明', () => {
     expect(appConfig.pages).not.toEqual(expect.arrayContaining(adminRoutes));
-    expect(appConfig.subpackages).toEqual([
-      {
-        root: 'pages/admin',
-        pages: [
-          'activity-list/index',
-          'activity-edit/index',
-          'reviews/index',
-          'review-detail/index',
-        ],
-      },
-    ]);
+    expect(appConfig.subpackages).toContainEqual({
+      root: 'pages/admin',
+      pages: ['activity-list/index', 'activity-edit/index', 'reviews/index', 'review-detail/index'],
+    });
   });
 
   it('展开分包后仍保留全部 14 个真实跳转路径', () => {

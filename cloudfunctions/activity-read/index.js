@@ -179,40 +179,44 @@ function publicAttendee(registration, profile, media = {}) {
 }
 
 async function countApprovedRegistrations(activityId) {
-  let total = 0;
-  for (const status of ['approved', 'checked_in']) {
+  const results = await Promise.all(
+    ['approved', 'checked_in'].map((status) =>
+      db.collection('registrations').where({ activity_id: activityId, status }).count(),
+    ),
+  );
+  return results.reduce((total, result) => {
+    if (!result || !Number.isInteger(result.total) || result.total < 0)
+      throw new Error('invalid registration count');
+    return total + result.total;
+  }, 0);
+}
+
+async function loadRegistrationStatusPages(activityId, status) {
+  const registrations = [];
+  let offset = 0;
+  while (registrations.length < MAX_ACTIVITY_CAPACITY) {
+    const limit = Math.min(ATTENDEE_PAGE_SIZE, MAX_ACTIVITY_CAPACITY - registrations.length);
     const result = await db
       .collection('registrations')
       .where({ activity_id: activityId, status })
-      .count();
-    if (!result || !Number.isInteger(result.total) || result.total < 0)
-      throw new Error('invalid registration count');
-    total += result.total;
+      .orderBy('created_at', 'desc')
+      .skip(offset)
+      .limit(limit)
+      .get();
+    if (!result || !Array.isArray(result.data)) throw new Error('invalid registration page');
+    registrations.push(...result.data.filter((item) => item && item.status === status));
+    if (result.data.length < limit) break;
+    offset += result.data.length;
   }
-  return total;
+  return registrations;
 }
 
 async function loadAttendeeRegistrations(activityId) {
-  const registrations = [];
-  // 复用现有 activity_id + status + created_at 索引，完整读取候选后再按审批时间统一稳定排序。
-  for (const status of ['approved', 'checked_in']) {
-    let offset = 0;
-    while (registrations.length < MAX_ACTIVITY_CAPACITY) {
-      const limit = Math.min(ATTENDEE_PAGE_SIZE, MAX_ACTIVITY_CAPACITY - registrations.length);
-      const result = await db
-        .collection('registrations')
-        .where({ activity_id: activityId, status })
-        .orderBy('created_at', 'desc')
-        .skip(offset)
-        .limit(limit)
-        .get();
-      if (!result || !Array.isArray(result.data)) throw new Error('invalid registration page');
-      registrations.push(...result.data.filter((item) => item && item.status === status));
-      if (result.data.length < limit) break;
-      offset += result.data.length;
-    }
-  }
-  return registrations;
+  // 每个状态内部保持顺序分页；两个独立状态并行读取后仍按既有状态顺序合并。
+  const pages = await Promise.all(
+    ['approved', 'checked_in'].map((status) => loadRegistrationStatusPages(activityId, status)),
+  );
+  return pages.flat().slice(0, MAX_ACTIVITY_CAPACITY);
 }
 
 // 批量按 openid 读取资料，供“活动参与人”和“发布人”信息解析复用。
@@ -443,11 +447,13 @@ exports.main = async (event = {}) => {
     }
     if (event.action === 'detail') {
       const activity = await visibleActivity(event.activityId);
-      const publisherByOpenid = await loadPublishers([activity]);
+      const [publisherByOpenid, attendance] = await Promise.all([
+        loadPublishers([activity]),
+        loadAttendance(event.activityId),
+      ]);
       const [resolvedActivity] = await resolveActivityMedia([
         attachPublisher(publicActivity(activity, now), publisherByOpenid.get(activity.created_by)),
       ]);
-      const attendance = await loadAttendance(event.activityId);
       return ok({
         ...resolvedActivity,
         attendees: attendance.attendees,

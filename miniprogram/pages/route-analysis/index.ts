@@ -1,12 +1,12 @@
 import { rideService } from '../../services/ride-service';
+import { hasAnalyzableRoute } from '../../utils/route-outline';
 import {
   deriveRouteAnalysis,
-  hasAnalyzableRoute,
   type RouteAnalysis,
   type RouteKeyPoint,
   type RouteSegment,
-} from '../../utils/route-analysis';
-import { drawRouteAnalysisElevation } from '../../utils/route-analysis-chart';
+} from './utils/route-analysis';
+import { drawRouteAnalysisElevation } from './utils/route-analysis-chart';
 
 const ROUTE_COLOR = '#c0321f';
 const SELECTED_COLOR = '#211f1c';
@@ -66,6 +66,9 @@ Page({
   activityId: '',
   analysis: null as RouteAnalysis | null,
   unloaded: false,
+  inactive: false,
+  loadRequestId: 0,
+  loadPromise: null as Promise<void> | null,
   data: {
     loading: true,
     error: '',
@@ -86,28 +89,61 @@ Page({
     mapPoints: [] as any[],
     polylines: [] as any[],
     mapAvailable: false,
+    mapFailed: false,
+    mapRenderKey: 0,
     mapLatitude: 39.9,
     mapLongitude: 116.4,
   },
   onLoad(query: { id?: string }) {
     this.unloaded = false;
+    this.inactive = false;
     this.activityId = typeof query.id === 'string' ? query.id : '';
     void this.load();
+  },
+  onShow() {
+    this.inactive = false;
+    if (!this.analysis && this.activityId) void this.load();
+    else this.drawElevation();
   },
   onReady() {
     this.drawElevation();
   },
+  onHide() {
+    this.inactive = true;
+    this.loadRequestId += 1;
+    this.loadPromise = null;
+  },
   onUnload() {
     this.unloaded = true;
+    this.inactive = true;
+    this.loadRequestId += 1;
+    this.loadPromise = null;
+    this.analysis = null;
   },
-  async load() {
-    this.setData({ loading: true, error: '', empty: false });
+  safeSetData(value: Record<string, unknown>, callback?: () => void) {
+    if (!this.unloaded && !this.inactive) this.setData(value, callback);
+  },
+  load() {
+    if (this.loadPromise) return this.loadPromise;
+    const requestId = ++this.loadRequestId;
+    const request = this.performLoad(requestId).finally(() => {
+      if (this.loadPromise === request) this.loadPromise = null;
+    });
+    this.loadPromise = request;
+    return request;
+  },
+  isCurrentRequest(requestId: number) {
+    return !this.unloaded && !this.inactive && requestId === this.loadRequestId;
+  },
+  async performLoad(requestId: number) {
+    this.safeSetData({ loading: true, error: '', empty: false });
     try {
       if (!this.activityId) throw new Error('缺少活动 ID');
       const activity = await rideService.getActivity(this.activityId);
+      if (!this.isCurrentRequest(requestId)) return;
       if (!activity) throw new Error('活动不存在或暂不可见');
       if (!hasAnalyzableRoute(activity.route)) {
-        this.setData({ empty: true, activityTitle: activity.title });
+        this.safeSetData({ empty: true, activityTitle: activity.title });
         return;
       }
       const analysis = deriveRouteAnalysis(activity.route);
@@ -135,7 +171,7 @@ Page({
           },
         }));
       const firstCoordinate = keyPoints.find((point) => point.hasCoordinate);
-      this.setData(
+      this.safeSetData(
         {
           activityTitle: activity.title,
           routeTitle:
@@ -165,13 +201,26 @@ Page({
         () => this.drawElevation(),
       );
     } catch (error) {
-      this.setData({ error: error instanceof Error ? error.message : '路线分析加载失败' });
+      if (!this.isCurrentRequest(requestId)) return;
+      this.safeSetData({ error: error instanceof Error ? error.message : '路线分析加载失败' });
     } finally {
-      this.setData({ loading: false });
+      if (this.isCurrentRequest(requestId)) this.safeSetData({ loading: false });
     }
   },
   retry() {
     void this.load();
+  },
+  mapError() {
+    if (!this.data.mapAvailable) return;
+    this.safeSetData({ mapAvailable: false, mapFailed: true });
+  },
+  retryMap() {
+    if (!this.analysis || this.analysis.outline.length < 2) return;
+    this.safeSetData({
+      mapFailed: false,
+      mapAvailable: true,
+      mapRenderKey: this.data.mapRenderKey + 1,
+    });
   },
   selectPoint(event: any) {
     this.applyPoint(String(event.currentTarget.dataset.id || ''));
@@ -195,7 +244,7 @@ Page({
         display: marker.id === point.markerId ? 'ALWAYS' : 'BYCLICK',
       },
     }));
-    this.setData(
+    this.safeSetData(
       {
         selectedPoint: point,
         selectedPointId: point.id,
@@ -225,7 +274,7 @@ Page({
         display: marker.id === nearest.markerId ? 'ALWAYS' : 'BYCLICK',
       },
     }));
-    this.setData(
+    this.safeSetData(
       {
         selectedSegmentId: segment.id,
         selectedPoint: nearest,
@@ -246,12 +295,12 @@ Page({
     });
   },
   drawElevation() {
-    if (!this.analysis || !this.data.profileAvailable) return;
+    if (this.unloaded || this.inactive || !this.analysis || !this.data.profileAvailable) return;
     wx.createSelectorQuery()
       .select('#route-analysis-elevation')
       .fields({ node: true, size: true })
       .exec((result: any[]) => {
-        if (this.unloaded) return;
+        if (this.unloaded || this.inactive) return;
         const target = result?.[0];
         if (!target?.node || !target.width || !target.height || !this.analysis) return;
         const deviceRatio =

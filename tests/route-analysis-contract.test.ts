@@ -9,7 +9,8 @@ describe('完整路线分析页合同', () => {
     const app = JSON.parse(read('miniprogram/app.json'));
     const page = read('miniprogram/pages/route-analysis/index.ts');
     const config = JSON.parse(read('miniprogram/pages/route-analysis/index.json'));
-    expect(app.pages).toContain('pages/route-analysis/index');
+    expect(app.pages).not.toContain('pages/route-analysis/index');
+    expect(app.subpackages).toContainEqual({ root: 'pages/route-analysis', pages: ['index'] });
     expect(page).toContain('rideService.getActivity(this.activityId)');
     expect(page).toContain("typeof query.id === 'string'");
     expect(config.usingComponents['state-view']).toBe('/components/state-view/index');
@@ -56,7 +57,9 @@ describe('完整路线分析页合同', () => {
     const credentialPage = read('miniprogram/pages/credential/index.ts');
     const credentialTemplate = read('miniprogram/pages/credential/index.wxml');
     expect(detailPage).toContain('canAnalyzeRoute: hasAnalyzableRoute(detail.route)');
-    expect(detailPage).toContain('url: `/pages/route-analysis/index?id=${encodeURIComponent(id)}`');
+    expect(detailPage).toContain(
+      'this.navigation.run(`/pages/route-analysis/index?id=${encodeURIComponent(id)}`)',
+    );
     expect(detailTemplate).toContain('wx:if="{{canAnalyzeRoute}}"');
     expect(detailTemplate).toContain('查看完整路线分析');
     expect(credentialPage).toContain('canAnalyzeRoute: hasAnalyzableRoute(activity.route)');
@@ -84,10 +87,10 @@ describe('完整路线分析页合同', () => {
   it('发布说明使用当日递增版本并保留唯一当前记录', () => {
     const release = read('miniprogram/config/release.ts');
     const notes = read('miniprogram/pages/settings/index.ts');
-    expect(release).toContain('2026.10.17.78');
+    expect(release).toContain('2026.10.17.79');
     expect(notes).toContain("date: '2026-10-17'");
-    expect(notes).toContain("title: '背景图上传更稳更快'");
+    expect(notes).toContain("title: '打开更快，路线查看更稳'");
     expect(notes.match(/latest: true/g)).toHaveLength(1);
-    expect(notes).toContain('上传过程显示实时百分比');
+    expect(notes).toContain('地图显示失败时保留核心路线数据');
   });
 });

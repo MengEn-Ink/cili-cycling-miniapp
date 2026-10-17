@@ -1,4 +1,4 @@
-import type { RouteElevationPoint } from '../models/index';
+import type { RouteElevationPoint } from '../../../models/index';
 import type { RouteKeyPoint, RouteSegment } from './route-analysis';
 
 export interface ElevationChartSelection {

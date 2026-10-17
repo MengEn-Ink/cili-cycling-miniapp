@@ -2,16 +2,22 @@
   "pages": [
     "pages/activities/index",
     "pages/activity-detail/index",
-    "pages/route-analysis/index",
     "pages/registration-form/index",
     "pages/registrations/index",
     "pages/credential/index",
     "pages/profile/index",
     "pages/settings/index",
-    "pages/capability-card/index",
-    "pages/profile-edit/index"
+    "pages/capability-card/index"
   ],
   "subpackages": [
+    {
+      "root": "pages/route-analysis",
+      "pages": ["index"]
+    },
+    {
+      "root": "pages/profile-edit",
+      "pages": ["index"]
+    },
     {
       "root": "pages/admin",
       "pages": [

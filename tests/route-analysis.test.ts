@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Activity } from '../miniprogram/models/index';
-import { deriveRouteAnalysis, hasAnalyzableRoute } from '../miniprogram/utils/route-analysis';
+import { hasAnalyzableRoute } from '../miniprogram/utils/route-outline';
+import { deriveRouteAnalysis } from '../miniprogram/pages/route-analysis/utils/route-analysis';
 
 function route(overrides: Partial<Activity['route']> = {}): Activity['route'] {
   return {

@@ -74,7 +74,11 @@ function loadMain(activity, list = [], options = {}) {
             data = data.filter((item) => condition._id.$in.includes(item._id));
           let offset = 0;
           const query = {
-            count: async () => ({ total: data.length }),
+            count: async () => {
+              if (name === 'registrations' && options.beforeRegistrationQuery)
+                await options.beforeRegistrationQuery({ type: 'count', status: condition.status });
+              return { total: data.length };
+            },
             orderBy(field, direction) {
               queryCalls.push({ type: 'orderBy', name, field, direction });
               return query;
@@ -85,7 +89,13 @@ function loadMain(activity, list = [], options = {}) {
             },
             limit(value) {
               queryCalls.push({ type: 'limit', name, value });
-              return { get: async () => ({ data: data.slice(offset, offset + value) }) };
+              return {
+                get: async () => {
+                  if (options.beforeQueryGet)
+                    await options.beforeQueryGet({ name, condition, offset, limit: value });
+                  return { data: data.slice(offset, offset + value) };
+                },
+              };
             },
           };
           return query;
@@ -632,7 +642,7 @@ test('详情成员执行状态、上限、稳定排序和隐私白名单', async
   );
   assert.deepEqual(
     calls.filter((call) => call.name === 'registrations').map((call) => call.condition.status),
-    ['approved', 'approved', 'checked_in', 'checked_in'],
+    ['approved', 'checked_in', 'approved', 'checked_in'],
   );
 });
 
@@ -1122,4 +1132,71 @@ test('不限人数活动超过一千名通过者时人数使用数据库计数�
   assert.equal(result.ok, true);
   assert.equal(result.data.approved_registration_count, 1005);
   assert.equal(result.data.attendees.length, 24);
+});
+
+test('详情并行读取发布人、人数计数和两种参与状态且保持稳定结果', async () => {
+  const started = [];
+  let release;
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
+  const registrations = [
+    {
+      _id: 'checked-late',
+      activity_id: 'parallel',
+      openid: 'checked',
+      status: 'checked_in',
+      approved_at: '2026-09-02T00:00:00.000Z',
+    },
+    {
+      _id: 'approved-early',
+      activity_id: 'parallel',
+      openid: 'approved',
+      status: 'approved',
+      approved_at: '2026-09-01T00:00:00.000Z',
+    },
+  ];
+  const { main } = loadMain(
+    { _id: 'parallel', title: '并行活动', status: 'published', created_by: 'owner' },
+    [],
+    {
+      registrations,
+      profiles: [
+        { _id: 'owner', nickname: '组织者' },
+        { _id: 'checked', nickname: '后签到' },
+        { _id: 'approved', nickname: '先通过' },
+      ],
+      beforeRegistrationQuery: async ({ type, status }) => {
+        started.push(`${type}:${status}`);
+        await gate;
+      },
+      beforeQueryGet: async ({ name, condition }) => {
+        started.push(`get:${name}:${condition.status || 'profile'}`);
+        await gate;
+      },
+    },
+  );
+
+  const pending = main({ action: 'detail', activityId: 'parallel' });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(
+    new Set(started),
+    new Set([
+      'get:profiles:profile',
+      'count:approved',
+      'count:checked_in',
+      'get:registrations:approved',
+      'get:registrations:checked_in',
+    ]),
+  );
+  release();
+  const result = await pending;
+
+  assert.equal(result.ok, true);
+  assert.equal(result.data.approved_registration_count, 2);
+  assert.deepEqual(
+    result.data.attendees.map((item) => item.id),
+    ['approved-early', 'checked-late'],
+  );
+  assert.deepEqual(result.data.publisher, { nickname: '组织者', avatar_url: '' });
 });
