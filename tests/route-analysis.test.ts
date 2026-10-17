@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { Activity } from '../miniprogram/models/index';
 import { hasAnalyzableRoute } from '../miniprogram/utils/route-outline';
-import { deriveRouteAnalysis } from '../miniprogram/pages/route-analysis/utils/route-analysis';
+import {
+  deriveRouteAnalysis,
+  sampleRouteOutline,
+} from '../miniprogram/pages/route-analysis/utils/route-analysis';
 
 function route(overrides: Partial<Activity['route']> = {}): Activity['route'] {
   return {
@@ -70,7 +73,8 @@ describe('路线分析派生', () => {
     expect(analysis.keyPoints.some((point) => point.type === 'descent')).toBe(true);
     expect(analysis.segments.length).toBeLessThanOrEqual(6);
     expect(analysis.strategySummary.join('')).toContain('累计爬升较高');
-    expect(analysis.equipment[analysis.equipment.length - 1]).toContain('不含实时天气');
+    expect(analysis.risks.join('')).toContain('控制速度');
+    expect(analysis.equipment.join('')).toContain('检查刹车');
   });
 
   it('最高点按公里比例映射轮廓且不伪造地点名称', () => {
@@ -83,8 +87,18 @@ describe('路线分析派生', () => {
       elevation: 410,
       lat: 30.1,
       lng: 120.1,
-      note: '地点名称待接入逆地理编码',
+      note: '路线海拔最高位置',
+      gradePercent: -0.3,
     });
+  });
+
+  it('缺失或非法累计爬升保持为空，显式 0 仍作为真实值保留', () => {
+    expect(
+      deriveRouteAnalysis(route({ elevationM: undefined as unknown as number })).overview.ascentM,
+    ).toBeNull();
+    expect(deriveRouteAnalysis(route({ elevationM: Number.NaN })).overview.ascentM).toBeNull();
+    expect(deriveRouteAnalysis(route({ elevationM: -10 })).overview.ascentM).toBeNull();
+    expect(deriveRouteAnalysis(route({ elevationM: 0 })).overview.ascentM).toBe(0);
   });
 
   it('缺少路线轮廓时保留公里与海拔但不伪造坐标', () => {
@@ -93,7 +107,7 @@ describe('路线分析派生', () => {
       lat: null,
       lng: null,
     });
-    expect(analysis.quality.join('')).toContain('缺少有效路线轮廓');
+    expect(analysis.outline).toHaveLength(0);
   });
 
   it('缺少海拔剖面时仅生成可解释距离分段和指标级最高值', () => {
@@ -102,7 +116,7 @@ describe('路线分析派生', () => {
     expect(analysis.overview.highestM).toBe(410);
     expect(analysis.segments).toHaveLength(3);
     expect(analysis.segments.every((segment) => segment.gradePercent === null)).toBe(true);
-    expect(analysis.quality.join('')).toContain('缺少有效海拔剖面');
+    expect(analysis.profile).toHaveLength(0);
   });
 
   it('短路线不强制休息点并只输出有限分段', () => {
@@ -192,6 +206,50 @@ describe('路线分析派生', () => {
       ),
     ).toBe(false);
     expect(hasAnalyzableRoute(null)).toBe(false);
+  });
+
+  it('大量路线点按几何偏差简化并保留首尾、急弯和折返点', () => {
+    const straight = Array.from({ length: 5000 }, (_, index) => ({
+      latitude: 30 + index / 100000,
+      longitude: 120 + index / 100000,
+    }));
+    const straightSampled = sampleRouteOutline(straight, 420);
+    expect(straightSampled.length).toBeLessThanOrEqual(420);
+    expect(straightSampled[0]).toEqual(straight[0]);
+    expect(straightSampled[straightSampled.length - 1]).toEqual(straight[straight.length - 1]);
+
+    const hairpin = [
+      ...Array.from({ length: 500 }, (_, index) => ({
+        latitude: 30,
+        longitude: 120 + index / 10000,
+      })),
+      { latitude: 30.01, longitude: 120.05 },
+      ...Array.from({ length: 500 }, (_, index) => ({
+        latitude: 30.01,
+        longitude: 120.05 - index / 10000,
+      })),
+    ];
+    const hairpinSampled = sampleRouteOutline(hairpin, 24);
+    expect(hairpinSampled.length).toBeLessThanOrEqual(24);
+    expect(hairpinSampled).toContainEqual(hairpin[500]);
+    expect(hairpinSampled[0]).toEqual(hairpin[0]);
+    expect(hairpinSampled[hairpinSampled.length - 1]).toEqual(hairpin[hairpin.length - 1]);
+
+    const foldback = [
+      ...Array.from({ length: 500 }, (_, index) => ({
+        latitude: 31,
+        longitude: 121 + index / 10000,
+      })),
+      { latitude: 31, longitude: 121.05 },
+      ...Array.from({ length: 500 }, (_, index) => ({
+        latitude: 31,
+        longitude: 121.05 - (index + 1) / 10000,
+      })),
+    ];
+    expect(sampleRouteOutline(foldback, 12)).toContainEqual(foldback[500]);
+    expect(
+      deriveRouteAnalysis(route({ routeOutline: hairpin })).outline.length,
+    ).toBeLessThanOrEqual(420);
   });
 
   it('越界起终点坐标不会进入地图关键点', () => {

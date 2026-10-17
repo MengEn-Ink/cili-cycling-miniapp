@@ -10,6 +10,38 @@ import { drawRouteAnalysisElevation } from './utils/route-analysis-chart';
 
 const ROUTE_COLOR = '#c0321f';
 const SELECTED_COLOR = '#211f1c';
+const POINT_LABELS = {
+  start: { type: '起点', purpose: '路线出发位置', marker: '起', color: '#16633a', size: 30 },
+  end: { type: '终点', purpose: '路线完成位置', marker: '终', color: '#c0321f', size: 30 },
+  highest: {
+    type: '最高点',
+    purpose: '全程海拔最高位置',
+    marker: '高',
+    color: '#7a5c00',
+    size: 28,
+  },
+  climb: {
+    type: '主爬坡',
+    purpose: '连续爬升的节奏切换位置',
+    marker: '爬',
+    color: '#c0321f',
+    size: 25,
+  },
+  descent: {
+    type: '长下坡',
+    purpose: '连续下降的控速起始位置',
+    marker: '下',
+    color: '#315d78',
+    size: 25,
+  },
+  rest: {
+    type: '节奏点',
+    purpose: '按里程安排的状态检查位置',
+    marker: '休',
+    color: '#6f675d',
+    size: 22,
+  },
+} as const;
 
 function segmentOutline(analysis: RouteAnalysis, segment?: RouteSegment | null) {
   if (!segment || analysis.outline.length < 2 || analysis.overview.distanceKm <= 0) return [];
@@ -28,9 +60,16 @@ function mapState(analysis: RouteAnalysis, selectedSegment?: RouteSegment | null
   return {
     mapPoints: base,
     polylines: [
-      { points: base, color: ROUTE_COLOR, width: 5, arrowLine: true },
+      {
+        points: base,
+        color: ROUTE_COLOR,
+        width: 6,
+        arrowLine: true,
+        borderColor: '#ffffff',
+        borderWidth: 2,
+      },
       ...(selected.length > 1
-        ? [{ points: selected, color: SELECTED_COLOR, width: 8, arrowLine: true }]
+        ? [{ points: selected, color: SELECTED_COLOR, width: 9, arrowLine: true }]
         : []),
     ],
   };
@@ -38,14 +77,25 @@ function mapState(analysis: RouteAnalysis, selectedSegment?: RouteSegment | null
 
 function viewPoint(point: RouteKeyPoint, index: number) {
   const hasCoordinate = point.lat !== null && point.lng !== null;
+  const labels = POINT_LABELS[point.type];
   return {
     ...point,
     markerId: index + 1,
-    kmText: `km ${point.km.toFixed(1)}`,
-    elevationText: point.elevation === null ? '海拔待补充' : `${Math.round(point.elevation)} m`,
-    coordinateText: hasCoordinate
-      ? `${point.lat!.toFixed(6)}, ${point.lng!.toFixed(6)}`
-      : '坐标不可用',
+    typeLabel: labels.type,
+    shortType: labels.type.slice(0, 1),
+    markerLabel: labels.marker,
+    markerColor: labels.color,
+    markerSize: labels.size,
+    purpose: labels.purpose,
+    kmText: `${point.km.toFixed(1)} km`,
+    hasElevation: point.elevation !== null,
+    elevationText: point.elevation === null ? '' : `${Math.round(point.elevation)} m`,
+    hasGrade: point.gradePercent !== null,
+    gradeText:
+      point.gradePercent === null
+        ? ''
+        : `${point.gradePercent > 0 ? '+' : ''}${point.gradePercent.toFixed(1)}%`,
+    coordinateText: hasCoordinate ? `${point.lat!.toFixed(6)}, ${point.lng!.toFixed(6)}` : '',
     hasCoordinate,
   };
 }
@@ -54,11 +104,49 @@ function viewSegment(segment: RouteSegment) {
   return {
     ...segment,
     rangeText: `${segment.startKm.toFixed(1)}–${segment.endKm.toFixed(1)} km`,
+    hasChange: segment.ascentM !== null,
     changeText:
-      segment.ascentM === null
-        ? '升降数据不可用'
-        : `爬升 ${segment.ascentM} m · 下降 ${segment.descentM} m`,
-    gradeText: segment.gradePercent === null ? '坡度不可用' : `平均坡度 ${segment.gradePercent}%`,
+      segment.ascentM === null ? '' : `爬升 ${segment.ascentM} m · 下降 ${segment.descentM} m`,
+    hasGrade: segment.gradePercent !== null,
+    gradeText:
+      segment.gradePercent === null
+        ? ''
+        : `${segment.gradePercent > 0 ? '+' : ''}${segment.gradePercent.toFixed(1)}%`,
+  };
+}
+
+function markerFor(point: ReturnType<typeof viewPoint>, selectedId: string) {
+  const selected = point.id === selectedId;
+  const size = selected ? point.markerSize + 8 : point.markerSize;
+  return {
+    id: point.markerId,
+    latitude: point.lat,
+    longitude: point.lng,
+    width: size,
+    height: size,
+    zIndex: selected ? 99 : point.markerSize,
+    iconPath: '/assets/brand/logo-circle-144.png',
+    label: {
+      content: point.markerLabel,
+      color: '#ffffff',
+      fontSize: selected ? 12 : 10,
+      anchorX: selected ? -7 : -6,
+      anchorY: selected ? -25 : -21,
+      bgColor: point.markerColor,
+      borderRadius: 8,
+      padding: 3,
+    },
+    callout: {
+      content: `${point.name}\n${point.kmText}`,
+      color: selected ? '#ffffff' : '#211f1c',
+      bgColor: selected ? SELECTED_COLOR : '#ffffff',
+      borderColor: selected ? SELECTED_COLOR : '#9a9186',
+      borderWidth: 1,
+      borderRadius: 8,
+      padding: 7,
+      fontSize: 11,
+      display: selected ? 'ALWAYS' : 'BYCLICK',
+    },
   };
 }
 
@@ -75,13 +163,14 @@ Page({
     empty: false,
     activityTitle: '',
     routeTitle: '',
+    routeSummary: '',
     overviewItems: [] as any[],
     strategySummary: [] as string[],
+    risks: [] as string[],
     profileAvailable: false,
     keyPoints: [] as ReturnType<typeof viewPoint>[],
     segments: [] as ReturnType<typeof viewSegment>[],
     equipment: [] as string[],
-    quality: [] as string[],
     selectedPoint: null as ReturnType<typeof viewPoint> | null,
     selectedPointId: '',
     selectedSegmentId: '',
@@ -91,6 +180,8 @@ Page({
     mapAvailable: false,
     mapFailed: false,
     mapRenderKey: 0,
+    mapFocused: false,
+    mapScale: 12,
     mapLatitude: 39.9,
     mapLongitude: 116.4,
   },
@@ -149,27 +240,21 @@ Page({
       const analysis = deriveRouteAnalysis(activity.route);
       this.analysis = analysis;
       const keyPoints = analysis.keyPoints.map(viewPoint);
-      const selectedPoint = keyPoints[0] || null;
-      const markers = keyPoints
-        .filter((point) => point.hasCoordinate)
-        .map((point) => ({
-          id: point.markerId,
-          latitude: point.lat,
-          longitude: point.lng,
-          width: point.id === selectedPoint?.id ? 32 : 24,
-          height: point.id === selectedPoint?.id ? 32 : 24,
-          iconPath: '/assets/brand/logo-circle-144.png',
-          callout: {
-            content: `${point.name}\n${point.kmText}`,
-            color: '#211f1c',
-            bgColor: '#ffffff',
-            borderColor: '#9a9186',
-            borderWidth: 1,
-            borderRadius: 8,
-            padding: 6,
-            display: point.id === selectedPoint?.id ? 'ALWAYS' : 'BYCLICK',
-          },
-        }));
+      const selectedPoint = keyPoints.find((point) => point.hasCoordinate) || keyPoints[0] || null;
+      const overviewItems = [
+        ...(analysis.overview.distanceKm > 0
+          ? [{ value: analysis.overview.distanceKm, unit: 'km', label: '总距离' }]
+          : []),
+        ...(analysis.overview.ascentM !== null
+          ? [{ value: analysis.overview.ascentM, unit: 'm', label: '累计爬升' }]
+          : []),
+        ...(analysis.overview.highestM !== null
+          ? [{ value: analysis.overview.highestM, unit: 'm', label: '最高点' }]
+          : []),
+        ...(analysis.overview.durationText
+          ? [{ value: analysis.overview.durationText, unit: '', label: '预计骑行' }]
+          : []),
+      ];
       const firstCoordinate = keyPoints.find((point) => point.hasCoordinate);
       this.safeSetData(
         {
@@ -178,22 +263,23 @@ Page({
             activity.route.routeName ||
             [activity.route.start, activity.route.end].filter(Boolean).join(' → ') ||
             '活动路线',
-          overviewItems: [
-            { value: analysis.overview.distanceKm || '--', unit: 'km', label: '距离' },
-            { value: analysis.overview.ascentM || '--', unit: 'm', label: '累计爬升' },
-            { value: analysis.overview.highestM ?? '--', unit: 'm', label: '最高海拔' },
-            { value: analysis.overview.durationText, unit: '', label: '预计骑行' },
-          ],
+          routeSummary: [activity.route.start, activity.route.end].filter(Boolean).join(' → '),
+          overviewItems,
           strategySummary: analysis.strategySummary,
+          risks: analysis.risks,
           profileAvailable: analysis.profile.length > 1,
           keyPoints,
           segments: analysis.segments.map(viewSegment),
           equipment: analysis.equipment,
-          quality: analysis.quality,
           selectedPoint,
           selectedPointId: selectedPoint?.id || '',
-          markers,
+          markers: keyPoints
+            .filter((point) => point.hasCoordinate)
+            .map((point) => markerFor(point, selectedPoint?.id || '')),
           mapAvailable: analysis.outline.length > 1,
+          mapFailed: false,
+          mapFocused: false,
+          mapScale: 12,
           mapLatitude: firstCoordinate?.lat || analysis.outline[0]?.latitude || 39.9,
           mapLongitude: firstCoordinate?.lng || analysis.outline[0]?.longitude || 116.4,
           ...mapState(analysis),
@@ -234,21 +320,19 @@ Page({
   },
   applyPoint(id: string) {
     const point = this.data.keyPoints.find((item: ReturnType<typeof viewPoint>) => item.id === id);
-    if (!point) return;
-    const markers = this.data.markers.map((marker: any) => ({
-      ...marker,
-      width: marker.id === point.markerId ? 32 : 24,
-      height: marker.id === point.markerId ? 32 : 24,
-      callout: {
-        ...marker.callout,
-        display: marker.id === point.markerId ? 'ALWAYS' : 'BYCLICK',
-      },
-    }));
+    if (!point || !this.analysis) return;
     this.safeSetData(
       {
         selectedPoint: point,
         selectedPointId: point.id,
-        markers,
+        selectedSegmentId: '',
+        markers: this.data.keyPoints
+          .filter((item: ReturnType<typeof viewPoint>) => item.hasCoordinate)
+          .map((item: ReturnType<typeof viewPoint>) => markerFor(item, point.id)),
+        ...mapState(this.analysis),
+        mapFocused: point.hasCoordinate,
+        mapScale: point.hasCoordinate ? 15 : 12,
+        mapPoints: point.hasCoordinate ? [] : this.data.mapPoints,
         ...(point.hasCoordinate ? { mapLatitude: point.lat, mapLongitude: point.lng } : {}),
       },
       () => this.drawElevation(),
@@ -259,32 +343,44 @@ Page({
       (item: ReturnType<typeof viewSegment>) =>
         item.id === String(event.currentTarget.dataset.id || ''),
     );
-    if (!segment || !this.analysis) return;
+    if (!segment || !this.analysis || !this.data.keyPoints.length) return;
     const middle = (segment.startKm + segment.endKm) / 2;
     const nearest = this.data.keyPoints.reduce(
       (best: ReturnType<typeof viewPoint>, point: ReturnType<typeof viewPoint>) =>
         Math.abs(point.km - middle) < Math.abs(best.km - middle) ? point : best,
     );
-    const markers = this.data.markers.map((marker: any) => ({
-      ...marker,
-      width: marker.id === nearest.markerId ? 32 : 24,
-      height: marker.id === nearest.markerId ? 32 : 24,
-      callout: {
-        ...marker.callout,
-        display: marker.id === nearest.markerId ? 'ALWAYS' : 'BYCLICK',
-      },
+    const selectedOutline = segmentOutline(this.analysis, segment).map((point) => ({
+      latitude: point.latitude,
+      longitude: point.longitude,
     }));
     this.safeSetData(
       {
         selectedSegmentId: segment.id,
         selectedPoint: nearest,
         selectedPointId: nearest.id,
-        markers,
-        ...(nearest.hasCoordinate ? { mapLatitude: nearest.lat, mapLongitude: nearest.lng } : {}),
+        markers: this.data.keyPoints
+          .filter((item: ReturnType<typeof viewPoint>) => item.hasCoordinate)
+          .map((item: ReturnType<typeof viewPoint>) => markerFor(item, nearest.id)),
         ...mapState(this.analysis, segment),
+        mapFocused: selectedOutline.length > 1,
+        mapScale: selectedOutline.length > 1 ? 13 : 12,
+        mapPoints: selectedOutline,
+        ...(nearest.hasCoordinate ? { mapLatitude: nearest.lat, mapLongitude: nearest.lng } : {}),
       },
       () => this.drawElevation(),
     );
+  },
+  showFullRoute() {
+    if (!this.analysis || this.analysis.outline.length < 2) return;
+    const middle = this.analysis.outline[Math.floor(this.analysis.outline.length / 2)];
+    this.safeSetData({
+      selectedSegmentId: '',
+      mapFocused: false,
+      mapScale: 12,
+      mapLatitude: middle.latitude,
+      mapLongitude: middle.longitude,
+      ...mapState(this.analysis),
+    });
   },
   copyCoordinate() {
     const point = this.data.selectedPoint;
@@ -305,7 +401,6 @@ Page({
         if (!target?.node || !target.width || !target.height || !this.analysis) return;
         const deviceRatio =
           wx.getWindowInfo?.().pixelRatio || wx.getSystemInfoSync?.().pixelRatio || 1;
-        // Canvas 物理尺寸保持有界时，绘制缩放必须使用同一个有效倍率，否则高分屏会被裁切。
         const ratio = Math.max(
           0.1,
           Math.min(deviceRatio, 1600 / target.width, 800 / target.height),

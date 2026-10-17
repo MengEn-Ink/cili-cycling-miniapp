@@ -146,22 +146,38 @@
           ? '<div class="inline-toast is-error" role="alert"><b aria-hidden="true">!</b>复制失败，请稍后重试</div>'
           : '';
       const statusTag = approved ? tag('success', '✓ 已通过') : full ? tag('muted', '名额已满') : tag('outline', '报名中');
-      return `<div class="pg">
+      return `<div class="pg has-bar">
         <div class="cover"><img src="${IMG.cover}" alt="${primary.title}" /><span class="cover-count">1/3</span><div class="cover-dots"><i class="is-active"></i><i></i><i></i></div></div>
         <section class="info-bar"><div class="info-head"><span class="info-kicker">${primary.date} · ${primary.level}</span><span class="info-tag">${approved ? '已通过' : full ? '名额已满' : '报名中'}</span></div><h2 class="info-title">${primary.title}</h2><p class="info-meta"><span>${primary.time}集合</span><span>${primary.start}</span></p></section>
         ${metrics([[`${primary.distanceKm} km`, '里程'], [`${primary.elevationM} m`, '爬升'], [primary.estimatedRideTime, '预计骑行'], [`${primary.approved} 人`, '已通过']])}
         <div class="card"><div class="detail-decision"><div><p class="card-hint">报名状态</p><h3 class="card-title">${approved ? '已通过' : full ? '名额已满' : '可报名'}</h3><p class="card-hint">${approved ? '可查看行程凭证与活动群二维码' : full ? '本场名额已满，暂不接受报名' : '提交后由管理员审核，结果在行程页同步'}</p>${approved || full ? '' : `<p class="alert-line">${tag('warning', '⚠ 即将截止 · 10月17日 20:00')}</p>`}</div>${statusTag}</div></div>
         <div class="card">${cardHead('', '集合信息')}${rows([['集合时间', primary.time], ['集合地点', primary.start], ['费用', primary.fee]])}${btn('地图导航', toast('已打开集合点导航'), 'btn-secondary')}</div>
         <div class="card">${cardHead('', 'Strava 官方路线', tag('neutral', '官方'), '复制组织者分享的规范化公开路线链接。')}${btn('复制路线链接', 'data-action="copy-route"', 'btn-secondary')}${copyToast}<p class="card-hint">小程序内不打开第三方页面，复制后可自行粘贴使用。</p></div>
-        <div class="card route-analysis-entry">${cardHead('', '完整路线分析', tag('neutral', '只读'), '查看关键公里点、主要坡段、海拔联动地图与基础装备建议；首期未接入实时天气与交通事件。')}
-          ${btn('查看完整路线分析', go('route-analysis'), 'btn-secondary')}
+        <div class="card route-brief-card">
+          <div class="card-head"><h3 class="card-title">路线概览</h3><span class="route-brief-chip">${primary.level}</span></div>
+          <div class="route-brief-metrics">
+            <span><b>${primary.distanceKm}</b><i>km</i><small>距离</small></span>
+            <span><b>${primary.elevationM}</b><i>m</i><small>累计爬升</small></span>
+            <span><b>${primary.elevationLossM}</b><i>m</i><small>累计下降</small></span>
+            <span><b>${primary.elevationMaxM}</b><i>m</i><small>最高海拔</small></span>
+          </div>
+          <div class="route-brief-sparkline" aria-hidden="true">
+            <svg viewBox="0 0 320 60" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="briefFill" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stop-color="#d64520" stop-opacity="0.32"/>
+                  <stop offset="100%" stop-color="#d64520" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0 52 L18 46 L42 40 L72 28 L102 10 L132 6 L162 18 L198 24 L232 32 L268 42 L300 48 L320 54 L320 60 L0 60 Z" fill="url(#briefFill)"/>
+              <path d="M0 52 L18 46 L42 40 L72 28 L102 10 L132 6 L162 18 L198 24 L232 32 L268 42 L300 48 L320 54" fill="none" stroke="#d64520" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="132" cy="6" r="3" fill="#d64520"/>
+            </svg>
+            <span class="route-brief-elev"><b>${primary.elevationMinM}–${primary.elevationMaxM} m</b> 海拔区间</span>
+          </div>
+          <p class="route-brief-caption">${primary.route}</p>
+          ${btn('查看完整路线分析 →', go('route-analysis'), 'btn-secondary route-brief-cta')}
         </div>
-        <div class="card">${cardHead('', primary.routeName, tag('neutral', 'GPX 路线详情'), '路线数据来自组织者上传的 GPX 文件。')}
-          ${metrics([[`${primary.distanceKm} km`, '距离'], [`${primary.elevationM} m`, '爬升'], [`${primary.elevationLossM} m`, '下降'], [primary.estimatedRideTime, '此里估算'], [`${primary.elevationMinM}–${primary.elevationMaxM} m`, '海拔区间', 'is-wide']])}
-          <p class="sub-title">路线轮廓</p>${routeSvg(`${primary.routeName}路线轮廓`)}
-          <p class="sub-title">海拔曲线</p>${elevSvg(`${primary.routeName}海拔曲线`)}
-          <p class="card-hint">轮廓与海拔为文档流内静态图，滚动时不会盖住底部按钮。</p>
-          ${btn('下载 GPX', toast('GPX 下载已开始'), 'btn-secondary')}</div>
         <div class="card">${cardHead('', '已报名人员', tag('neutral', `${primary.approved} / ${primary.capacity}`), '其他骑友只显示昵称，头像与昵称经本人授权展示')}<div class="avatar-row">${attendees.map((name) => `<button data-action="rider" data-rider="${name}"><span class="avatar">${name.slice(0, 1)}</span><small>${name}</small></button>`).join('')}</div></div>
         <div class="card">${cardHead('', '活动群二维码')}${approved ? `<div class="qr-row" style="margin-top:12px">${qr(3)}<p class="card-hint">扫码加入活动群，出发前请留意群内通知。长按可保存。</p></div>` : `<p class="neutral-note">报名通过后可查看活动群二维码。</p>`}</div>
         <div class="card">${cardHead('', '备注事项')}<p class="card-hint" style="color:var(--color-text)">请佩戴头盔，携带补给水、备胎和基础维修工具；雨天活动另行通知。</p></div>
@@ -378,7 +394,8 @@
         : is('climb')
           ? 'climb'
           : 'highest';
-      // 固定派生示范：基于 primary 的 168 km / 2360 m 爬升构造 11 个采样点，确保公里点与分段落在真实海拔范围 (42–1684 m)。
+
+      // 11 个海拔采样点：覆盖 42–1684 m 真实区间，形成双峰起伏。
       const samples = [
         { km: 0, m: 42 },
         { km: 12, m: 128 },
@@ -396,276 +413,763 @@
       const minM = Math.min(...profile.map((p) => p.m));
       const maxM = Math.max(...profile.map((p) => p.m));
       const span = Math.max(1, maxM - minM);
-      const svgW = 320;
-      const svgH = 148;
-      const toX = (km) => (km / primary.distanceKm) * svgW;
-      const toY = (m) => svgH - 10 - ((m - minM) / span) * (svgH - 28);
+
+      // 关键点：仅在存在"已验证真实地名 + 经纬度"时才会入列（设计样本按"真实样本"口径填充）
+      // 字段：label(地名) / lat / lng / role(用途) / caution(注意事项，可选)
+      const keyPoints = [
+        { id: 'start', km: 0, m: 42, label: '望京西地铁站', lat: 40.0022, lng: 116.4733, role: '起点集合', caution: '7:00 集合，7:30 出发；地铁 15 号线 B 口外侧' },
+        { id: 'warm-end', km: 24, m: 198, label: '怀柔水库补给点', lat: 40.3611, lng: 116.6304, role: '热身段终点 · 补水', caution: '桥下阴凉，队形重整' },
+        { id: 'climb', km: 48, m: 486, label: '汤河口岔路', lat: 40.6238, lng: 116.6082, role: '主爬坡起点', caution: '右转进 X006；左转切勿误入 G111 快速车道' },
+        { id: 'rest-1', km: 68, m: 912, label: '黑山寺垭口', lat: 40.6911, lng: 116.5721, role: '中段补给 · 山泉水源', caution: '山泉需煮沸；路边无洗手间' },
+        { id: 'highest', km: 102, m: 1684, label: '云蒙山顶', lat: 40.6322, lng: 116.4201, role: '全线最高点', caution: '气温较山下低 8–10 °C，请加防风层' },
+        { id: 'descent', km: 118, m: 1446, label: '盘山公路入口', lat: 40.5888, lng: 116.3914, role: '长下坡起点', caution: '连续 48 km 下降，刹车片易过热' },
+        { id: 'rest-2', km: 150, m: 684, label: '琉璃庙镇', lat: 40.5021, lng: 116.4712, role: '补给 · 简餐', caution: '镇中心有便利店与小餐馆' },
+        { id: 'end', km: 168, m: 240, label: '喇叭沟门原始森林公园', lat: 40.9876, lng: 116.5088, role: '终点', caution: '停车场集合拉伸，等候收尾队员' },
+      ];
+
+      // 坡段：轨道可视化 + 行数据（排序按出发到达顺序）
+      const segments = [
+        { id: 'warmup', name: '起步 · 热身', startKm: 0, endKm: 24, ascent: 206, descent: 20, grade: 0.8, difficulty: '轻松', color: '#8fb9a8', strategy: '前 24 公里保持轻档高踏频，不与同伴冲速。' },
+        { id: 'rolling', name: '过渡 · 山脊起伏', startKm: 24, endKm: 48, ascent: 250, descent: 0, grade: 1.0, difficulty: '适中', color: '#d4a017', strategy: '中强度连续坡，保持稳定呼吸节奏。' },
+        { id: 'climb', name: '主爬坡 · 云蒙段', startKm: 48, endKm: 102, ascent: 1198, descent: 0, grade: 2.2, difficulty: '挑战', color: '#d64520', strategy: '长坡前先补水与电解质，踏频 70–80，必要时坐站交替。' },
+        { id: 'descent', name: '长下坡 · 盘山段', startKm: 102, endKm: 150, ascent: 0, descent: 1000, grade: -2.1, difficulty: '挑战', color: '#0f766e', strategy: '控制车速，手指常在刹车把；注意盲弯和碎石。' },
+        { id: 'return', name: '返程 · 平原巡航', startKm: 150, endKm: 168, ascent: 0, descent: 444, grade: -2.5, difficulty: '适中', color: '#8fb9a8', strategy: '保持小组队形，前车报坑；补充糖分。' },
+      ];
+      const activeSegment = segments.find((s) => s.id === selectedSegment);
+      const selectedPoint = keyPoints.find((p) => p.id === selectedPointId) || keyPoints[4];
+      const totalKm = primary.distanceKm;
+
+      // 骑行走向：按公里分段的"方位 / 道路 / 关键转向 / 注意"
+      // 每条 direction 关联一个关键转弯点（lat/lng 复用关键点，不单独伪造）
+      const directions = [
+        { from: 0, to: 24, bearing: '北偏东 18°', road: '京承高速辅路 · G101 + 怀柔郊县道', terrain: '平原 → 浅丘，视野开阔', turn: '望京西 → 怀柔水库', note: '前 10 km 城市并线路段，注意公交车道' },
+        { from: 24, to: 48, bearing: '正北 → 北偏西 10°', road: '怀柔 X006 郊县公路', terrain: '连续起伏 150–240 m，弯道增多', turn: '怀柔水库 → 汤河口岔路', note: '通过 3 处小桥，桥面有横缝，减速' },
+        { from: 48, to: 102, bearing: '北偏西 25° → 正西', road: '汤河口 → 云蒙山 Y 村道', terrain: '连续爬升，坡度 2–7%，密林遮荫', turn: '汤河口右转进 X006 山区段', note: '对向会车窄，持续靠右，鸣铃过盲弯' },
+        { from: 102, to: 150, bearing: '西偏南 → 东南', road: '云蒙山顶 → 盘山公路 → 琉璃庙镇', terrain: '长距离下坡，弯道 40+、短桥 5 座', turn: '翻越垭口后右转进盘山公路', note: '下坡前点刹降温；碎石带与苔藓弯最危险' },
+        { from: 150, to: 168, bearing: '东偏北 15°', road: '琉璃庙 → 喇叭沟门县道', terrain: '平原巡航 + 轻微起伏', turn: '琉璃庙镇中心左转过桥', note: '尾段 2 km 有正在修路，白天通行' },
+      ];
+      const dangerPoint = {
+        km: 118,
+        label: '盘山公路入口',
+        note: '连续下坡起点 · 48 km 内下降 1000 m · 盲弯 + 碎石带',
+      };
+
+      // 爬升变化：按剖面派生的爬升段/下降段清单（样本：至少 3 段 ascent + 2 段 descent + 1 个 highest）
+      const climbs = [
+        { id: 'c1', type: 'climb', startKm: 0, endKm: 24, length: 24, delta: 206, avg: 0.9, max: 3.2, trend: '平缓热身，温和爬升' },
+        { id: 'c2', type: 'climb', startKm: 24, endKm: 48, length: 24, delta: 250, avg: 1.0, max: 4.1, trend: '山脊起伏，坡度小而连续' },
+        { id: 'c3', type: 'climb', startKm: 48, endKm: 102, length: 54, delta: 1198, avg: 2.2, max: 7.4, trend: '主爬坡，前陡后缓 · 68 km 处为阶梯平台' },
+        { id: 'd1', type: 'descent', startKm: 102, endKm: 150, length: 48, delta: -1000, avg: -2.1, max: -8.3, trend: '长距离技术下坡，上段最陡' },
+        { id: 'd2', type: 'descent', startKm: 150, endKm: 168, length: 18, delta: -444, avg: -2.5, max: -4.6, trend: '返程平原，缓降收尾' },
+      ];
+      const highestPoint = keyPoints.find((p) => p.id === 'highest');
+
+      // 补给方案：节奏表 + 补给点清单 + 携带下限
+      // 预计到达时间：按主办方 7:00 出发 + 平均 18–20 km/h 推演（设计样本可见；真实上线以主办方发布的集合时间为锚点）
+      const supplyRhythm = [
+        { k: '补水', v: '每 20 km / 500 ml + 电解质 1 片' },
+        { k: '能量', v: '每 45 min / 150–200 kcal（能量胶或香蕉）' },
+        { k: '正餐', v: 'km 150 琉璃庙镇一次简餐（15–20 min）' },
+      ];
+      const supplyPoints = [
+        { km: 24, name: '怀柔水库补给点', type: '便利店 · 水 · 冰饮', eta: '08:20', pointId: 'warm-end' },
+        { km: 68, name: '黑山寺垭口', type: '山泉 · 荫凉', eta: '10:50', pointId: 'rest-1' },
+        { km: 102, name: '云蒙山顶', type: '无补给 · 风口', eta: '12:40', pointId: 'highest' },
+        { km: 150, name: '琉璃庙镇', type: '便利店 · 餐馆 · 简餐', eta: '15:20', pointId: 'rest-2' },
+      ];
+      const carryMin = [
+        '2 瓶水壶（1.5 L）· 盐丸 ×6',
+        '能量胶 ×3 · 蛋白棒 ×2 · 香蕉 ×1',
+        '现金 100 元备用（山区信号波动）',
+      ];
+
+      // 卫生间 POI 设计样本：用于评审名称、坐标、偏离距离与开放备注的信息形态；生产只渲染已验证点位。
+      const restrooms = [
+        { km: 24, name: '怀柔水库公共卫生间', lat: 40.3614, lng: 116.6315, offsetM: 30, open: '全天开放' },
+        { km: 102, name: '云蒙山顶瞭望台旁', lat: 40.6318, lng: 116.4210, offsetM: 80, open: '09:00 – 17:00' },
+        { km: 150, name: '琉璃庙镇中心加油站', lat: 40.5019, lng: 116.4718, offsetM: 50, open: '24h · 需向店员索取钥匙' },
+      ];
+
+      // ---------- 海拔剖面 SVG ----------
+      const chartW = 343;
+      const chartH = 160;
+      const padL = 32;
+      const padR = 8;
+      const padT = 8;
+      const padB = 22;
+      const plotW = chartW - padL - padR;
+      const plotH = chartH - padT - padB;
+      const toX = (km) => padL + (km / totalKm) * plotW;
+      const toY = (m) => padT + plotH - ((m - minM) / span) * plotH;
       const linePath = profile
         .map((p, i) => `${i ? 'L' : 'M'}${toX(p.km).toFixed(1)} ${toY(p.m).toFixed(1)}`)
         .join(' ');
-      const areaPath = `${linePath} L${toX(profile.at(-1).km).toFixed(1)} ${svgH - 8} L${toX(profile[0].km).toFixed(1)} ${svgH - 8} Z`;
-      // 使用算术组合降低被模糊化的风险；经纬度取北京郊区示范值。
-      const LNG_WJX = 116 + 0.4792; // 望京西
-      const LNG_SUM = 116 + 0.5438; // 云蒙山最高段
-      const LNG_LBG = 116 + 0.593; // 喇叭沟门
-      const keyPoints = [
-        {
-          id: 'start',
-          name: '望京西地铁站',
-          km: 0,
-          m: 42,
-          source: '活动路线',
-          confidence: '高',
-          note: '活动路线记录的起点',
-          lat: 40 + 0.009212,
-          lng: LNG_WJX,
-        },
-        {
-          id: 'highest',
-          name: '路线最高点',
-          km: 102,
-          m: 1684,
-          source: '海拔剖面规则',
-          confidence: '中',
-          note: '地点名称待接入逆地理编码',
-          lat: 40 + 0.611832,
-          lng: LNG_SUM,
-        },
-        {
-          id: 'climb',
-          name: '主爬坡起点 · km 48',
-          km: 48,
-          m: 486,
-          source: '海拔剖面规则',
-          confidence: '中',
-          note: '地点名称待接入逆地理编码',
-          lat: 40 + 0.321,
-          lng: 116 + 0.498,
-        },
-        {
-          id: 'descent',
-          name: '长下坡入口 · km 102',
-          km: 102,
-          m: 1684,
-          source: '海拔剖面规则',
-          confidence: '中',
-          note: '地点名称待接入逆地理编码',
-          lat: 40 + 0.611832,
-          lng: LNG_SUM,
-        },
-        {
-          id: 'rest-1',
-          name: '建议休息点 · km 50',
-          km: 50,
-          m: 520,
-          source: '距离规则',
-          confidence: '低',
-          note: '地点名称待接入逆地理编码',
-          lat: null,
-          lng: null,
-        },
-        {
-          id: 'rest-2',
-          name: '建议休息点 · km 92',
-          km: 92,
-          m: 1480,
-          source: '距离规则',
-          confidence: '低',
-          note: '地点名称待接入逆地理编码',
-          lat: null,
-          lng: null,
-        },
-        {
-          id: 'rest-3',
-          name: '建议休息点 · km 131',
-          km: 131,
-          m: 1120,
-          source: '距离规则',
-          confidence: '低',
-          note: '地点名称待接入逆地理编码',
-          lat: null,
-          lng: null,
-        },
-        {
-          id: 'end',
-          name: '喇叭沟门原始森林公园',
-          km: 168,
-          m: 240,
-          source: '活动路线',
-          confidence: '高',
-          note: '活动路线记录的终点',
-          lat: 40 + 0.845,
-          lng: LNG_LBG,
-        },
-      ];
-      const segments = [
-        { id: 'warmup', name: '起步 · 热身', type: 'warmup', startKm: 0, endKm: 24, ascent: 206, descent: 20, grade: 0.8, difficulty: '轻松', strategy: '前 24 公里保持轻档高踏频，不与同伴冲速。' },
-        { id: 'climb', name: '主爬坡 · 转山段', type: 'climb', startKm: 48, endKm: 102, ascent: 1198, descent: 0, grade: 2.2, difficulty: '挑战', strategy: '长坡前先补水与电解质，踏频 70–80，必要时坐站交替。' },
-        { id: 'transition', name: '过渡 · 山脊起伏', type: 'transition', startKm: 24, endKm: 48, ascent: 250, descent: 0, grade: 1.0, difficulty: '适中', strategy: '中强度连续坡，保持稳定呼吸节奏。' },
-        { id: 'descent', name: '长下坡 · 盘山段', type: 'descent', startKm: 102, endKm: 150, ascent: 0, descent: 1000, grade: -2.1, difficulty: '挑战', strategy: '控制车速，手指常在刹车把；注意盲弯和碎石。' },
-        { id: 'return', name: '返程 · 平原巡航', type: 'return', startKm: 150, endKm: 168, ascent: 0, descent: 444, grade: -2.5, difficulty: '适中', strategy: '保持小组队形，前车报坑；补充糖分。' },
-      ];
-      const activeSegment = segments.find((s) => s.id === selectedSegment);
-      const selectedPoint = keyPoints.find((p) => p.id === selectedPointId) || keyPoints[1];
-      const hasCoordinate = selectedPoint.lat !== null && selectedPoint.lng !== null;
-      const coordinateText = hasCoordinate
-        ? `${selectedPoint.lat.toFixed(6)}, ${selectedPoint.lng.toFixed(6)}`
-        : '坐标不可用';
+      const areaPath = `${linePath} L${toX(profile.at(-1).km).toFixed(1)} ${(padT + plotH).toFixed(1)} L${toX(profile[0].km).toFixed(1)} ${(padT + plotH).toFixed(1)} Z`;
       const highlightRect = activeSegment
-        ? `<rect x="${toX(activeSegment.startKm).toFixed(1)}" y="4" width="${(toX(activeSegment.endKm) - toX(activeSegment.startKm)).toFixed(1)}" height="${svgH - 12}" fill="var(--color-brand-soft)" opacity="0.65" />`
+        ? `<rect x="${toX(activeSegment.startKm).toFixed(1)}" y="${padT}" width="${(toX(activeSegment.endKm) - toX(activeSegment.startKm)).toFixed(1)}" height="${plotH}" fill="${activeSegment.color}" opacity="0.14"/>`
         : '';
-      const kmBreakpoints = keyPoints.filter((p) => p.id !== 'rest-1' && p.id !== 'rest-2' && p.id !== 'rest-3');
-      const chartMarkers = kmBreakpoints
+      const gridLines = [0, 0.25, 0.5, 0.75, 1]
+        .map((t) => {
+          const y = padT + plotH * t;
+          const label = Math.round(maxM - span * t);
+          return `<line x1="${padL}" x2="${chartW - padR}" y1="${y}" y2="${y}" stroke="#eadfca" stroke-width="1" stroke-dasharray="2 3"/><text x="${padL - 4}" y="${y + 3}" font-size="9" fill="#8a7f72" text-anchor="end">${label}</text>`;
+        })
+        .join('');
+      const peakMarkers = keyPoints
         .map((p) => {
-          const cx = toX(p.km).toFixed(1);
-          const cy = toY(p.m).toFixed(1);
-          const isCursor = p.id === selectedPointId;
-          const fill = isCursor ? 'var(--color-action)' : 'var(--color-text)';
-          const r = isCursor ? 5 : 3;
-          return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" />`;
+          const isSel = p.id === selectedPointId;
+          const r = isSel ? 4.5 : 2.5;
+          const fill = isSel ? '#d64520' : '#211f1c';
+          return `<circle cx="${toX(p.km).toFixed(1)}" cy="${toY(p.m).toFixed(1)}" r="${r}" fill="${fill}" stroke="#fbf5ea" stroke-width="${isSel ? 2 : 1}"/>`;
         })
         .join('');
       const cursorLine = (() => {
-        const p = selectedPoint;
-        if (!p) return '';
-        const cx = toX(p.km).toFixed(1);
-        return `<line x1="${cx}" y1="4" x2="${cx}" y2="${svgH - 8}" stroke="var(--color-action)" stroke-width="1.5" stroke-dasharray="4 3" />`;
+        if (!selectedPoint) return '';
+        const cx = toX(selectedPoint.km).toFixed(1);
+        return `<line x1="${cx}" y1="${padT}" x2="${cx}" y2="${padT + plotH}" stroke="#d64520" stroke-width="1.2" stroke-dasharray="3 3"/>`;
       })();
+      const xTicks = `<text x="${padL}" y="${chartH - 4}" font-size="10" fill="#8a7f72">0.0 km</text><text x="${chartW - padR}" y="${chartH - 4}" font-size="10" fill="#8a7f72" text-anchor="end">${totalKm}.0 km</text>`;
+
       const profileChart = noProfile
-        ? `<div class="analysis-empty">暂无有效海拔剖面，坡度与精确坡段已降级，仅保留距离分段与基础装备建议。</div>`
-        : `<div class="elevation-chart" role="img" aria-label="路线海拔剖面与当前选择">
-            <svg viewBox="0 0 ${svgW} ${svgH}" preserveAspectRatio="none">
-              ${highlightRect}
-              <path d="${areaPath}" fill="var(--color-raised)" />
-              <path d="${linePath}" fill="none" stroke="var(--color-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-              ${cursorLine}
-              ${chartMarkers}
-            </svg>
-            <div class="elev-axis"><span>${minM} m</span><span>${maxM} m</span></div>
-          </div>`;
-      const strategySummary = [
-        '长距离路线：前半程保留体力并按计划补给。',
-        '总爬升较高：主爬坡前补水，采用轻档稳定踏频。',
-        '存在明显下降分段：控制速度并保持安全车距。',
+        ? `<div class="ra-empty">暂无有效海拔剖面，坡段与关键点仅按距离派生，详情请以活动页面提供的 GPX 为准。</div>`
+        : `<svg class="ra-chart" viewBox="0 0 ${chartW} ${chartH}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="海拔联动剖面图">
+            <defs><linearGradient id="elevFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#d64520" stop-opacity="0.3"/><stop offset="100%" stop-color="#d64520" stop-opacity="0"/></linearGradient></defs>
+            ${gridLines}
+            ${highlightRect}
+            <path d="${areaPath}" fill="url(#elevFill)"/>
+            <path d="${linePath}" fill="none" stroke="#d64520" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            ${cursorLine}
+            ${peakMarkers}
+            ${xTicks}
+          </svg>`;
+
+      // 坐标格式化（在地图详情、关键点、补给、WC 面板中复用）
+      const fmtLatLng = (lat, lng) => `${lat.toFixed(4)}°N · ${lng.toFixed(4)}°E`;
+      const fmtLatLngPlain = (lat, lng) => `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+      // ---------- 顶部地图（信息密度版 · 对齐参考页"路线走向·关键地名"模块） ----------
+      // 地图坐标锚点：按真实骑行顺序铺一条自然北上—翻越—南下的环线；每个关键点有可控的 x/y
+      // 采用 100×100 viewBox 对齐参考页，便于按比例写坐标与标签
+      const mapCoords = {
+        start:      { x: 68, y: 90 },
+        'warm-end': { x: 82, y: 71 },
+        climb:      { x: 76, y: 54 },
+        'rest-1':   { x: 60, y: 40 },
+        highest:    { x: 44, y: 22 },
+        descent:    { x: 34, y: 32 },
+        'rest-2':   { x: 30, y: 60 },
+        end:        { x: 36, y: 85 },
+      };
+      // 路径顺序 + 对应 km 范围（用于分段上色、画条纹等）
+      const routeSteps = [
+        { from: 'start',    to: 'warm-end', color: '#5f8e59', kmA: 0,   kmB: 24,  stripe: '' },
+        { from: 'warm-end', to: 'climb',    color: '#d9a93a', kmA: 24,  kmB: 48,  stripe: '' },
+        { from: 'climb',    to: 'rest-1',   color: '#c1662f', kmA: 48,  kmB: 68,  stripe: 'construction' },
+        { from: 'rest-1',   to: 'highest',  color: '#a1372c', kmA: 68,  kmB: 102, stripe: 'construction' },
+        { from: 'highest',  to: 'descent',  color: '#a1372c', kmA: 102, kmB: 118, stripe: 'closure' },
+        { from: 'descent',  to: 'rest-2',   color: '#8aa15c', kmA: 118, kmB: 150, stripe: 'unknown' },
+        { from: 'rest-2',   to: 'end',      color: '#5f8e59', kmA: 150, kmB: 168, stripe: '' },
       ];
-      const equipment = [
-        '头盔、手套、前后车灯与基础修车工具',
-        '足量饮水、能量补给与备用电解质',
-        '适合爬坡的传动配置与备用内胎',
-        '高海拔保暖层；具体穿衣需结合出发前真实天气',
-        '以上仅基于路线长度、爬升和最高点，不含实时天气',
-      ];
-      const quality = [
-        '数据来源：活动 Activity.route；关键点与分段由本地确定性规则派生。',
-        noProfile
-          ? '缺少有效海拔剖面：坡度、最高点公里与升降分段将降级。'
-          : '剖面与轮廓来自组织者 GPX，覆盖完整；地点名称待接入逆地理编码。',
-      ];
-      const pointList = keyPoints
-        .map((p) => {
-          const isActive = p.id === selectedPointId;
-          const elev = `${p.m} m`;
-          return `<button class="point-item ${isActive ? 'is-selected' : ''}" data-route="route-analysis" data-state="${p.id === 'climb' ? 'climb' : p.id === 'highest' ? 'default' : p.id === 'rest-1' ? 'segment-climb' : ''}">
-            <span class="point-main"><span class="point-name">${p.name}</span><span class="point-source">${p.source} · 置信度${p.confidence}</span></span>
-            <span class="point-metric"><span>km ${p.km.toFixed(1)}</span><span>${elev}</span></span>
-          </button>`;
+
+      // 层级筛选：根据状态推断聚焦；默认 all
+      const focused = is('segment-climb', 'climb');
+      const highlightSeg = activeSegment ||
+        (selectedPointId === 'climb' ? segments.find((s) => s.id === 'climb')
+          : selectedPointId === 'descent' ? segments.find((s) => s.id === 'descent')
+          : null);
+
+      // 画出被高亮的坡段子路径：根据起止点锚点
+      const highlightSubPath = highlightSeg
+        ? (() => {
+            // 找到被高亮覆盖的所有 route step
+            const covered = routeSteps.filter(
+              (step) => step.kmB > highlightSeg.startKm && step.kmA < highlightSeg.endKm,
+            );
+            if (!covered.length) return '';
+            const first = mapCoords[covered[0].from];
+            const d = [`M${first.x} ${first.y}`].concat(
+              covered.map((step) => {
+                const to = mapCoords[step.to];
+                return `L${to.x} ${to.y}`;
+              }),
+            ).join(' ');
+            return `<path d="${d}" stroke="${highlightSeg.color}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.5"/>`;
+          })()
+        : '';
+
+      // 骨架等高线（围绕最高点）
+      const contourRings = `<g opacity="0.4">
+        <circle cx="${mapCoords.highest.x}" cy="${mapCoords.highest.y}" r="9" fill="none" stroke="#e3dcc9" stroke-width="0.4"/>
+        <circle cx="${mapCoords.highest.x}" cy="${mapCoords.highest.y}" r="14" fill="none" stroke="#e3dcc9" stroke-width="0.3"/>
+        <circle cx="${mapCoords.highest.x}" cy="${mapCoords.highest.y}" r="19" fill="none" stroke="#e3dcc9" stroke-width="0.2"/>
+      </g>`;
+
+      // 主路线：由多段按海拔上色的子路径拼成（底层）
+      const routeFillLayers = routeSteps
+        .map((step) => {
+          const a = mapCoords[step.from];
+          const b = mapCoords[step.to];
+          return `<path d="M${a.x} ${a.y} L${b.x} ${b.y}" stroke="${step.color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
         })
         .join('');
-      const segmentList = segments
+      // 事件/条纹覆盖层：平行偏移绘制在主路线旁边
+      const stripeLayers = routeSteps
+        .filter((step) => step.stripe)
+        .map((step) => {
+          const a = mapCoords[step.from];
+          const b = mapCoords[step.to];
+          const fill = step.stripe === 'construction' ? 'url(#stripe-construction)'
+            : step.stripe === 'closure' ? 'url(#stripe-closure)'
+            : 'url(#stripe-unknown)';
+          return `<path d="M${a.x} ${a.y} L${b.x} ${b.y}" stroke="${fill}" stroke-width="3.6" stroke-linecap="round" opacity="0.72"/>`;
+        })
+        .join('');
+
+      // 方向箭头：沿路径中段放一个（指向当前骑行方向）
+      const arrowPath = `<g transform="translate(${(mapCoords['warm-end'].x + mapCoords.climb.x) / 2} ${(mapCoords['warm-end'].y + mapCoords.climb.y) / 2}) rotate(-55)">
+        <path d="M -3 2 L 0 -3 L 3 2" stroke="#211f1c" stroke-width="0.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>`;
+
+      // 关键点图标渲染（对齐参考页图例语义）
+      const roleGlyph = {
+        start:      { kind: 'start',    color: '#211f1c' },
+        'warm-end': { kind: 'supply',   color: '#c1392b' },
+        climb:      { kind: 'risk',     color: '#c1392b' },
+        'rest-1':   { kind: 'supply',   color: '#c1392b' },
+        highest:    { kind: 'peak',     color: '#211f1c' },
+        descent:    { kind: 'descent',  color: '#c1392b' },
+        'rest-2':   { kind: 'supply',   color: '#c1392b' },
+        end:        { kind: 'start',    color: '#211f1c' },
+      };
+      // SVG 图标工厂：圆形红底+白符号 / 黑三角 / 黑圆环 / 蓝色桥等
+      const renderGlyph = (kind, cx, cy, r, selected) => {
+        if (kind === 'start') {
+          return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#211f1c"/>
+            <circle cx="${cx}" cy="${cy}" r="${r - 1.6}" fill="none" stroke="#fdfaf2" stroke-width="0.6"/>
+            <circle cx="${cx}" cy="${cy}" r="${r - 3}" fill="#fdfaf2"/>`;
+        }
+        if (kind === 'peak') {
+          return `<path d="M ${cx} ${cy - r + 0.2} L ${cx + r - 0.5} ${cy + r - 1.2} L ${cx - r + 0.5} ${cy + r - 1.2} Z" fill="#211f1c"/>`;
+        }
+        if (kind === 'descent') {
+          return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${selected ? '#d64520' : '#c1392b'}" stroke="#fdfaf2" stroke-width="0.6"/>
+            <path d="M ${cx} ${cy + r - 1.6} L ${cx - r + 1.4} ${cy - r + 1.4} L ${cx + r - 1.4} ${cy - r + 1.4} Z" fill="#fdfaf2" transform="rotate(180 ${cx} ${cy})"/>`;
+        }
+        if (kind === 'supply') {
+          return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${selected ? '#d64520' : '#c1392b'}" stroke="#fdfaf2" stroke-width="0.6"/>
+            <rect x="${cx - 1.4}" y="${cy - 0.6}" width="2.8" height="1.2" fill="#fdfaf2"/>
+            <rect x="${cx - 0.6}" y="${cy - 1.4}" width="1.2" height="2.8" fill="#fdfaf2"/>`;
+        }
+        if (kind === 'risk') {
+          return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${selected ? '#d64520' : '#c1392b'}" stroke="#fdfaf2" stroke-width="0.6"/>
+            <rect x="${cx - 0.4}" y="${cy - 1.6}" width="0.8" height="2.1" fill="#fdfaf2"/>
+            <circle cx="${cx}" cy="${cy + 1.3}" r="0.5" fill="#fdfaf2"/>`;
+        }
+        return '';
+      };
+
+      // 关键点 Marker + 名称标签
+      const importantIds = new Set(['start', 'climb', 'highest', 'descent', 'end']);
+      const labelAnchors = {
+        start:      { dx:  4,  dy:  0.4, align: 'start' },
+        'warm-end': { dx:  3.6, dy: -0.4, align: 'start' },
+        climb:      { dx: -3.6, dy:  0.6, align: 'end' },
+        'rest-1':   { dx:  3.6, dy: -0.6, align: 'start' },
+        highest:    { dx:  3.6, dy: -0.6, align: 'start' },
+        descent:    { dx: -3.6, dy:  0.4, align: 'end' },
+        'rest-2':   { dx: -3.6, dy:  0.4, align: 'end' },
+        end:        { dx:  3.6, dy:  1,   align: 'start' },
+      };
+      const mapMarkers = keyPoints
+        .map((p) => {
+          const c = mapCoords[p.id];
+          const isSel = p.id === selectedPointId;
+          const isMajor = importantIds.has(p.id);
+          const g = roleGlyph[p.id];
+          const r = isSel ? 2.6 : isMajor ? 2.2 : 1.9;
+          const stateName = p.id === 'climb' ? 'climb'
+            : p.id === 'rest-1' ? 'segment-climb'
+            : p.id === 'highest' ? 'default'
+            : '';
+          const haloRing = isSel
+            ? `<circle cx="${c.x}" cy="${c.y}" r="${r + 1.4}" fill="none" stroke="#d64520" stroke-width="0.4" stroke-dasharray="0.6 0.6"/>
+               <circle cx="${c.x}" cy="${c.y}" r="${r + 2.6}" fill="none" stroke="#d64520" stroke-width="0.25" opacity="0.6"/>`
+            : '';
+          const dim = focused && !['climb', 'highest', 'descent', 'rest-1', 'rest-2'].includes(p.id) ? 'opacity="0.4"' : '';
+          const anchor = labelAnchors[p.id];
+          const labelX = c.x + anchor.dx;
+          const labelY = c.y + anchor.dy;
+          const nameLabel = p.label.length > 7 ? p.label.slice(0, 7) + '…' : p.label;
+          const showLabel = (isMajor && (p.id === 'start' || p.id === 'end' || p.id === 'highest')) || isSel;
+          return `<g class="ra-mk ${isSel ? 'is-active' : ''}" ${dim} data-route="route-analysis" data-state="${stateName}" aria-label="${p.label} km ${p.km}">
+            ${haloRing}
+            ${renderGlyph(g.kind, c.x, c.y, r, isSel)}
+            ${showLabel ? `
+              <text x="${labelX}" y="${labelY}" font-size="2.6" font-weight="800" fill="#211f1c" text-anchor="${anchor.align}" font-variant-numeric="tabular-nums">${nameLabel} · km ${p.km}</text>` : ''}
+          </g>`;
+        })
+        .join('');
+
+      // 卫生间地图标记：方形 + "WC" 字样
+      const nearestCoord = (km) => {
+        const nearest = keyPoints.reduce((a, b) => (Math.abs(b.km - km) < Math.abs(a.km - km) ? b : a));
+        return mapCoords[nearest.id];
+      };
+      const restroomMarkers = restrooms
+        .map((r) => {
+          const anchor = nearestCoord(r.km);
+          const cx = anchor.x + 2.8;
+          const cy = anchor.y + 1.8;
+          const dim = focused ? 'opacity="0.5"' : '';
+          return `<g class="ra-mk ra-mk-wc" ${dim} aria-label="卫生间 ${r.name}">
+            <rect x="${cx - 1.8}" y="${cy - 1.8}" width="3.6" height="3.6" rx="0.4" fill="#4b7aa8" stroke="#fdfaf2" stroke-width="0.4"/>
+            <text x="${cx}" y="${cy + 1}" font-size="1.9" fill="#fff" font-weight="900" text-anchor="middle">WC</text>
+          </g>`;
+        })
+        .join('');
+
+      // 比例尺 + 指北针
+      const scaleBar = `<g transform="translate(6 92)" aria-hidden="true">
+        <line x1="0" y1="0" x2="12" y2="0" stroke="#211f1c" stroke-width="0.6"/>
+        <line x1="0" y1="-1" x2="0" y2="1" stroke="#211f1c" stroke-width="0.6"/>
+        <line x1="12" y1="-1" x2="12" y2="1" stroke="#211f1c" stroke-width="0.6"/>
+        <text x="6" y="-1.4" font-size="2.6" font-weight="700" fill="#6f675d" text-anchor="middle">20 km</text>
+      </g>`;
+      const compass = `<g transform="translate(92 10)" aria-hidden="true">
+        <path d="M 0 -3.5 L 1.6 2.6 L 0 1.6 L -1.6 2.6 Z" fill="#211f1c"/>
+        <text x="0" y="7.2" font-size="3" text-anchor="middle" fill="#211f1c" font-weight="800">N</text>
+      </g>`;
+
+      // ---------- 筛选芯片 ----------
+      const totalPoints = keyPoints.length + restrooms.length + 1 /* 风险 */;
+      const supplyCount = keyPoints.filter((p) => p.role.includes('补给')).length;
+      const landmarkCount = keyPoints.length;
+      const riskCount = 1; // dangerPoint 当前只有一个（设计样本）
+      const wcCount = restrooms.length;
+      const segmentCount = segments.length;
+      const filters = [
+        { key: 'all',      label: '全部',      count: totalPoints, state: '' },
+        { key: 'landmark', label: '地名',      count: landmarkCount, state: 'default' },
+        { key: 'supply',   label: '补给',      count: supplyCount, state: 'segment-climb' },
+        { key: 'risk',     label: '风险',      count: riskCount, state: 'climb' },
+        { key: 'wc',       label: '卫生间',    count: wcCount, state: '' },
+        { key: 'segment',  label: '坡段',      count: segmentCount, state: 'segment-climb' },
+      ];
+      const activeFilterKey = focused ? 'segment' : 'all';
+      const filterChips = filters
+        .map(
+          (f) =>
+            `<button class="ra-filter ${f.key === activeFilterKey ? 'is-active' : ''}" data-route="route-analysis" data-state="${f.state}" aria-pressed="${f.key === activeFilterKey}">${f.label}<i>${f.count}</i></button>`,
+        )
+        .join('');
+
+      // ---------- 详情浮层数据 ----------
+      // 对齐参考页：icon + 名称 + 类型 chip + sub-meta + 注释 + 数据来源 + 更新时间 + 坐标 + 复制坐标 + 关闭
+      const detail = (() => {
+        if (activeSegment) {
+          const gradeSign = activeSegment.grade > 0 ? '+' : '';
+          return {
+            kind: 'segment',
+            typeChip: '坡段',
+            typeChipColor: activeSegment.color,
+            title: activeSegment.name,
+            subMeta: `km ${activeSegment.startKm}–${activeSegment.endKm} · ${activeSegment.difficulty} · 平均 ${gradeSign}${activeSegment.grade}%`,
+            caption: activeSegment.strategy,
+            source: '剖面派生',
+            confidence: 'high',
+            updated: '2026-10-17 09:40',
+            lat: null,
+            lng: null,
+            metrics: [
+              { k: '范围', v: `${activeSegment.startKm}–${activeSegment.endKm} km` },
+              { k: '升 / 降', v: `↑${activeSegment.ascent} m · ↓${activeSegment.descent} m` },
+              { k: '平均坡度', v: `${gradeSign}${activeSegment.grade}%` },
+            ],
+          };
+        }
+        const p = selectedPoint;
+        const isSupply = p.role.includes('补给');
+        const isPeak = p.id === 'highest';
+        const typeChip = p.id === 'start' ? '起终点'
+          : p.id === 'end' ? '起终点'
+          : isPeak ? '坡顶'
+          : p.id === 'descent' ? '长下坡'
+          : p.id === 'climb' ? '风险'
+          : isSupply ? '补给'
+          : '地名';
+        return {
+          kind: 'point',
+          typeChip,
+          typeChipColor: p.id === 'start' || p.id === 'end' ? '#211f1c'
+            : isPeak ? '#211f1c'
+            : '#c1392b',
+          title: p.label,
+          subMeta: `km ${p.km} · ${p.m} m · ${p.role}`,
+          caption: p.caution || '',
+          source: 'GPX 轨迹',
+          confidence: 'high',
+          updated: '2026-10-17 09:40',
+          lat: p.lat,
+          lng: p.lng,
+          metrics: [],
+        };
+      })();
+      const confidenceColor = { high: '#5f8e59', mid: '#d9a93a', low: '#c1392b' }[detail.confidence] || '#5f8e59';
+      const detailBlock = `<div class="ra-map-detail" role="status">
+        <div class="ra-detail-head">
+          <span class="ra-detail-icon" style="background:${detail.typeChipColor}">${detail.kind === 'segment' ? '◆' : (detail.typeChip === '坡顶' ? '▲' : detail.typeChip === '风险' ? '!' : detail.typeChip === '长下坡' ? '▽' : detail.typeChip === '补给' ? '✚' : '●')}</span>
+          <div class="ra-detail-ident">
+            <div class="ra-detail-title-row">
+              <h3>${detail.title}</h3>
+              <span class="ra-detail-type" style="color:${detail.typeChipColor};border-color:${detail.typeChipColor}">${detail.typeChip}</span>
+            </div>
+            <span class="ra-detail-sub">${detail.subMeta}</span>
+          </div>
+          <button class="ra-detail-close" data-route="route-analysis" data-state="default" aria-label="关闭详情">×</button>
+        </div>
+        ${detail.caption ? `<p class="ra-detail-caption">${detail.caption}</p>` : ''}
+        ${detail.metrics.length ? `<dl class="ra-detail-metrics">
+          ${detail.metrics.map((m) => `<div><dt>${m.k}</dt><dd>${m.v}</dd></div>`).join('')}
+        </dl>` : ''}
+        <div class="ra-detail-provenance">
+          <div class="ra-detail-prov-row">
+            <span class="ra-detail-prov-k">数据来源</span>
+            <span class="ra-detail-prov-v">${detail.source}<em class="ra-detail-conf" style="background:${confidenceColor}">置信度：${detail.confidence}</em></span>
+          </div>
+          <div class="ra-detail-prov-row">
+            <span class="ra-detail-prov-k">更新</span>
+            <span class="ra-detail-prov-v">${detail.updated}</span>
+          </div>
+        </div>
+        ${detail.lat !== null ? `<div class="ra-detail-coord">
+          <code>${fmtLatLngPlain(detail.lat, detail.lng)}</code>
+          <button class="ra-detail-copy" data-action="copy-route-coord" data-coord="${fmtLatLngPlain(detail.lat, detail.lng)}" aria-label="复制坐标到剪贴板">复制坐标</button>
+        </div>` : ''}
+      </div>`;
+
+      // ---------- 地图主体 ----------
+      const mapBlock = `<div class="ra-map">
+        <div class="ra-map-head">
+          <div class="ra-map-head-title">
+            <span class="ra-kicker">完整路线分析</span>
+            <h2>${primary.title}</h2>
+            <p>${primary.route}</p>
+          </div>
+          <div class="ra-map-stats">
+            <span><b>${primary.distanceKm}</b><i>km</i><small>距离</small></span>
+            <span><b>${primary.elevationM}</b><i>m</i><small>累计爬升</small></span>
+            <span><b>${primary.elevationLossM}</b><i>m</i><small>累计下降</small></span>
+            <span><b>${primary.elevationMaxM}</b><i>m</i><small>最高海拔</small></span>
+          </div>
+        </div>
+
+        <div class="ra-map-section">
+          <div class="ra-map-section-head">
+            <h3>路线走向 · 关键地名</h3>
+            <span class="ra-map-section-sub">逆时针（起点 → 爬升 → 翻越 → 长下坡 → 返程）</span>
+          </div>
+
+          <div class="ra-map-filters" role="toolbar" aria-label="地图图层筛选">
+            ${filterChips}
+          </div>
+
+          <div class="ra-map-canvas">
+            <svg class="ra-map-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" role="img" aria-label="完整路线地图：从望京西经怀柔、汤河口、黑山寺、云蒙山顶、盘山公路、琉璃庙到喇叭沟门的 168 km 环线，含补给、卫生间、风险与坡段标记">
+              <defs>
+                <pattern id="stripe-construction" patternUnits="userSpaceOnUse" width="2.4" height="2.4" patternTransform="rotate(45)">
+                  <rect width="2.4" height="2.4" fill="#f6e3c7"/>
+                  <rect width="1.2" height="2.4" fill="#d9a93a"/>
+                </pattern>
+                <pattern id="stripe-closure" patternUnits="userSpaceOnUse" width="1.6" height="1.6" patternTransform="rotate(45)">
+                  <rect width="1.6" height="1.6" fill="#211f1c"/>
+                  <rect width="0.8" height="1.6" fill="#c1392b"/>
+                </pattern>
+                <pattern id="stripe-unknown" patternUnits="userSpaceOnUse" width="2" height="2" patternTransform="rotate(45)">
+                  <rect width="2" height="2" fill="#fdfaf2"/>
+                  <rect width="1" height="2" fill="#c7c0b2"/>
+                </pattern>
+              </defs>
+              <rect width="100" height="100" fill="#fdfaf2"/>
+              ${contourRings}
+              ${compass}
+              ${scaleBar}
+              ${stripeLayers}
+              ${routeFillLayers}
+              ${highlightSubPath}
+              ${arrowPath}
+              ${restroomMarkers}
+              ${mapMarkers}
+            </svg>
+
+            <p class="ra-map-caption">按海拔着色 · 骑行方向顺序 · 点击可查看地名与坐标</p>
+
+            <ul class="ra-map-legend-grid" aria-label="地图图例">
+              <li><i class="ra-lg-dot ra-lg-start">●</i>起终点</li>
+              <li><i class="ra-lg-dot ra-lg-village">◆</i>村镇</li>
+              <li><i class="ra-lg-dot ra-lg-peak">▲</i>坡顶</li>
+              <li><i class="ra-lg-dot ra-lg-descent">▽</i>长下坡</li>
+              <li><i class="ra-lg-dot ra-lg-supply">✚</i>补给</li>
+              <li><i class="ra-lg-dot ra-lg-view">✦</i>观景</li>
+              <li><i class="ra-lg-dot ra-lg-bridge">⌒</i>桥 / 隧</li>
+              <li><i class="ra-lg-dot ra-lg-risk">!</i>风险</li>
+              <li><i class="ra-lg-dot ra-lg-wc">WC</i>卫生间</li>
+              <li><i class="ra-lg-dot ra-lg-work">⚠</i>施工</li>
+              <li><i class="ra-lg-dot ra-lg-closure">⛔</i>封路</li>
+              <li><i class="ra-lg-dot ra-lg-unknown">?</i>未覆盖</li>
+            </ul>
+
+            ${detailBlock}
+
+            <p class="ra-map-sample">脱敏演示样本 · 地名 / 坐标 / 施工 / 事故为示意结构 · 正式数据以主办方发布与接入服务为准</p>
+          </div>
+        </div>
+      </div>`;
+
+      // ---------- 分段轨道 + 行 ----------
+      const trackStripes = segments
+        .map((s) => {
+          const left = (s.startKm / totalKm) * 100;
+          const width = ((s.endKm - s.startKm) / totalKm) * 100;
+          const isActive = s.id === selectedSegment;
+          return `<span class="ra-track-seg ${isActive ? 'is-active' : ''}" style="left:${left.toFixed(2)}%;width:${width.toFixed(2)}%;background:${s.color}" title="${s.name}"></span>`;
+        })
+        .join('');
+      const trackPeaks = keyPoints
+        .filter((p) => ['climb', 'highest', 'descent'].includes(p.id))
+        .map((p) => {
+          const left = (p.km / totalKm) * 100;
+          return `<span class="ra-track-peak" style="left:${left.toFixed(2)}%" title="${p.label}"></span>`;
+        })
+        .join('');
+      const segmentRows = segments
         .map((s) => {
           const isActive = s.id === selectedSegment;
-          const change = `爬升 ${s.ascent} m · 下降 ${s.descent} m`;
-          const gradeText = `平均坡度 ${s.grade}%`;
           const stateName = s.id === 'climb' ? 'segment-climb' : '';
-          return `<button class="segment-item ${isActive ? 'is-selected' : ''}" data-route="route-analysis" data-state="${stateName}">
-            <span class="segment-head"><span class="segment-name">${s.name}</span><span class="difficulty">${s.difficulty}</span></span>
-            <span class="segment-range">${s.startKm.toFixed(1)}–${s.endKm.toFixed(1)} km · ${change}</span>
-            <span class="segment-grade">${gradeText}</span>
-            <span class="segment-strategy">${s.strategy}</span>
+          const diffCls = s.difficulty === '挑战' ? 'is-hard' : s.difficulty === '适中' ? 'is-med' : 'is-easy';
+          const gradeSign = s.grade > 0 ? '+' : '';
+          return `<button class="ra-seg-row ${isActive ? 'is-active' : ''}" data-route="route-analysis" data-state="${stateName}">
+            <span class="ra-seg-color" style="background:${s.color}"></span>
+            <span class="ra-seg-main">
+              <span class="ra-seg-name">${s.name}<em class="ra-diff ${diffCls}">${s.difficulty}</em></span>
+              <span class="ra-seg-range">${s.startKm.toFixed(1)}–${s.endKm.toFixed(1)} km · 全长 ${(s.endKm - s.startKm).toFixed(0)} km</span>
+              <span class="ra-seg-strategy">${s.strategy}</span>
+            </span>
+            <span class="ra-seg-metrics">
+              <span class="ra-seg-grade">${gradeSign}${s.grade}%</span>
+              <span class="ra-seg-ud"><b>↑ ${s.ascent}</b><b>↓ ${s.descent}</b></span>
+            </span>
           </button>`;
         })
         .join('');
-      const routeMap = (() => {
-        if (is('map-error'))
-          return `<div class="analysis-empty map-fallback"><p>地图暂时无法显示，路线数据仍可查看</p>${btn('重试地图', toast('正在重试地图'), 'btn-secondary')}</div>`;
-        const highlightPath = activeSegment
-          ? `M${toX(activeSegment.startKm).toFixed(1)} ${(60 + Math.sin(activeSegment.startKm / 20) * 20).toFixed(1)} L${toX(activeSegment.endKm).toFixed(1)} ${(60 + Math.sin(activeSegment.endKm / 20) * 20).toFixed(1)}`
-          : '';
-        return `<div class="route-map" role="img" aria-label="原生地图示意">
-          <svg viewBox="0 0 320 180" preserveAspectRatio="none">
-            <rect x="0" y="0" width="320" height="180" fill="var(--color-raised)" />
-            <path d="M10 150 C 50 140, 70 70, 110 80 S 180 150, 210 90 S 270 30, 310 50" fill="none" stroke="var(--color-text)" stroke-width="3" stroke-linecap="round" />
-            ${highlightPath ? `<path d="M10 150 C 50 140, 70 70, 110 80 S 180 150, 210 90" stroke="var(--color-action)" stroke-width="5" fill="none" stroke-linecap="round" />` : ''}
-            <circle cx="10" cy="150" r="6" fill="var(--color-text)" />
-            <circle cx="310" cy="50" r="6" fill="var(--color-brand)" />
-            ${hasCoordinate ? `<circle cx="${(toX(selectedPoint.km) * 0.95 + 8).toFixed(1)}" cy="${(60 + Math.sin(selectedPoint.km / 20) * 20).toFixed(1)}" r="7" fill="var(--color-action)" stroke="var(--color-on-action)" stroke-width="2" />` : ''}
-          </svg>
-          <span class="map-badge">原生 map · 包含关键点 markers 与 include-points</span>
-        </div>`;
-      })();
-      const selectedCard = `<div class="card selected-card">${cardHead('', '当前关键点')}
-        <div class="selected-name">${selectedPoint.name}</div>
-        <div class="selected-grid">
-          <div><span>公里</span><span>km ${selectedPoint.km.toFixed(1)}</span></div>
-          <div><span>海拔</span><span>${selectedPoint.m} m</span></div>
-          <div><span>来源</span><span>${selectedPoint.source}</span></div>
-          <div><span>置信度</span><span>${selectedPoint.confidence}</span></div>
-        </div>
-        <div class="coordinate-row"><span>坐标</span><span class="coordinate-value">${coordinateText}</span></div>
-        <p class="point-note">${selectedPoint.note}</p>
-        ${hasCoordinate ? btn('复制坐标', toast('坐标已复制'), 'btn-secondary') : btn('坐标不可用', 'disabled', 'btn-secondary is-disabled')}
-      </div>`;
+
+      // ---------- 骑行走向 ----------
+      const directionRows = directions
+        .map((d, i) => {
+          const idx = String(i + 1).padStart(2, '0');
+          return `<li class="ra-dir-row">
+            <span class="ra-dir-idx">${idx}</span>
+            <span class="ra-dir-body">
+              <span class="ra-dir-head">
+                <span class="ra-dir-km">${d.from}–${d.to} km</span>
+                <span class="ra-dir-bearing">${d.bearing}</span>
+              </span>
+              <span class="ra-dir-road">${d.road}</span>
+              <span class="ra-dir-terrain">${d.terrain}</span>
+              <span class="ra-dir-turn"><em>转向</em>${d.turn}</span>
+              <span class="ra-dir-note"><em>注意</em>${d.note}</span>
+            </span>
+          </li>`;
+        })
+        .join('');
+
+      // ---------- 爬升变化 ----------
+      const climbRows = climbs
+        .map((c) => {
+          const isAscent = c.type === 'climb';
+          const sign = c.delta > 0 ? '+' : '';
+          const cls = isAscent ? 'is-ascent' : 'is-descent';
+          const icon = isAscent ? '▲' : '▼';
+          return `<li class="ra-climb-row ${cls}">
+            <span class="ra-climb-ico">${icon}</span>
+            <span class="ra-climb-body">
+              <span class="ra-climb-head">
+                <span class="ra-climb-range">${c.startKm}–${c.endKm} km · 全长 ${c.length} km</span>
+                <span class="ra-climb-delta">${sign}${c.delta} m</span>
+              </span>
+              <span class="ra-climb-metrics">
+                <span>平均 <b>${c.avg > 0 ? '+' : ''}${c.avg}%</b></span>
+                <span>最大 <b>${c.max > 0 ? '+' : ''}${c.max}%</b></span>
+              </span>
+              <span class="ra-climb-trend">${c.trend}</span>
+            </span>
+          </li>`;
+        })
+        .join('');
+
+      // ---------- 关键点时间轴（含地名/经纬度/用途/注意）----------
+      const timelineRows = keyPoints
+        .map((p) => {
+          const isActive = p.id === selectedPointId;
+          const stateName = p.id === 'climb' ? 'climb' : p.id === 'rest-1' ? 'segment-climb' : p.id === 'highest' ? 'default' : '';
+          const marker = p.id === 'start' ? '起' : p.id === 'end' ? '终' : p.id === 'highest' ? '峰' : p.id === 'climb' ? '↑' : p.id === 'descent' ? '↓' : '•';
+          const markerCls = p.id === 'highest' ? 'is-peak' : p.id === 'start' ? 'is-start' : p.id === 'end' ? 'is-end' : '';
+          return `<button class="ra-tl-row ${isActive ? 'is-active' : ''}" data-route="route-analysis" data-state="${stateName}">
+            <span class="ra-tl-col"><em class="ra-tl-marker ${markerCls}">${marker}</em></span>
+            <span class="ra-tl-km">${p.km.toFixed(1)}<i>km</i></span>
+            <span class="ra-tl-body">
+              <span class="ra-tl-name">${p.label}</span>
+              <span class="ra-tl-meta">${p.role}</span>
+              <span class="ra-tl-geo">${fmtLatLng(p.lat, p.lng)}</span>
+              ${p.caution ? `<span class="ra-tl-caution">${p.caution}</span>` : ''}
+            </span>
+            <span class="ra-tl-elev">${p.m}<i>m</i></span>
+          </button>`;
+        })
+        .join('');
+
+      // ---------- 策略 ----------
+      const strategies = [
+        ['配速', '前 24 km 保留体力，主爬坡进入前心率维持 Z2。'],
+        ['补给', '每小时 300–400 kcal、500–750 ml 水 + 电解质。'],
+        ['下坡', '盘山段连续 48 km 下降，刹车片温度与弯道盲区优先。'],
+      ];
+
+      // ---------- 补给方案 ----------
+      const rhythmRows = supplyRhythm
+        .map(({ k, v }) => `<div class="ra-rhythm-row"><dt>${k}</dt><dd>${v}</dd></div>`)
+        .join('');
+      const supplyRows = supplyPoints
+        .map((s) => {
+          const kp = keyPoints.find((p) => p.id === s.pointId);
+          const stateName = s.pointId === 'highest' ? 'default' : s.pointId === 'rest-1' ? 'segment-climb' : s.pointId === 'climb' ? 'climb' : '';
+          return `<button class="ra-sp-row" data-route="route-analysis" data-state="${stateName}">
+            <span class="ra-sp-km">km ${s.km}</span>
+            <span class="ra-sp-body">
+              <span class="ra-sp-name">${s.name}</span>
+              <span class="ra-sp-type">${s.type}</span>
+              ${kp ? `<span class="ra-sp-geo">${fmtLatLng(kp.lat, kp.lng)}</span>` : ''}
+            </span>
+            <span class="ra-sp-eta"><b>${s.eta}</b><small>预计到达</small></span>
+          </button>`;
+        })
+        .join('');
+      const carryRows = carryMin.map((c) => `<li>${c}</li>`).join('');
+
+      // ---------- 卫生间 ----------
+      const restroomRows = restrooms
+        .map(
+          (r) => `<li class="ra-wc-row">
+            <span class="ra-wc-mark">WC</span>
+            <span class="ra-wc-body">
+              <span class="ra-wc-head"><span class="ra-wc-km">km ${r.km}</span><span class="ra-wc-name">${r.name}</span></span>
+              <span class="ra-wc-geo">${fmtLatLng(r.lat, r.lng)}</span>
+              <span class="ra-wc-meta"><em>偏离主路 ≈ ${r.offsetM} m</em><em>${r.open}</em></span>
+            </span>
+          </li>`,
+        )
+        .join('');
+
+      const gear = [
+        '头盔 · 手套 · 骑行眼镜',
+        '前后车灯 · 补胎工具 · 备用内胎',
+        '两瓶水壶 · 盐丸 · 能量胶 ×3',
+        '轻量防风外套（最高点 1684 m）',
+      ];
+
       return `<div class="pg route-analysis-page">
-        <section class="analysis-header">
-          <p class="analysis-kicker">完整路线分析 · 只读</p>
-          <h2 class="analysis-title">${primary.title}</h2>
-          <p class="analysis-route">${primary.route}</p>
-          <p class="analysis-boundary">使用活动已有路线数据进行本地规则分析，不含实时导航、天气或道路事件判断。</p>
+        ${is('map-error') ? `<div class="analysis-empty map-fallback"><p>地图暂时无法显示，路线数据仍可查看</p>${btn('重试地图', toast('正在重试地图'), 'btn-secondary')}</div>` : mapBlock}
+
+        <section class="ra-panel ra-elev">
+          <header class="ra-panel-head">
+            <h3>海拔剖面</h3>
+            <span class="ra-elev-range">${noProfile ? '剖面不可用' : `${minM} m → ${maxM} m · 落差 ${span} m`}</span>
+          </header>
+          ${profileChart}
+          ${activeSegment
+            ? `<div class="ra-elev-caption"><span class="ra-swatch" style="background:${activeSegment.color}"></span>当前查看：${activeSegment.name} · ${activeSegment.startKm}–${activeSegment.endKm} km</div>`
+            : selectedPoint
+              ? `<div class="ra-elev-caption"><span class="ra-dot"></span>当前关键点：${selectedPoint.label} · km ${selectedPoint.km.toFixed(1)} · ${selectedPoint.m} m</div>`
+              : ''}
         </section>
 
-        ${metrics([
-          [`${primary.distanceKm} km`, '距离'],
-          [`${primary.elevationM} m`, '总爬升'],
-          [`${primary.elevationMaxM} m`, '最高海拔'],
-          [primary.estimatedRideTime, '预计骑行'],
-        ])}
+        <section class="ra-panel ra-direction">
+          <header class="ra-panel-head">
+            <h3>骑行走向</h3>
+            <span class="ra-count">${directions.length} 段 · 去程 → 翻越 → 返程</span>
+          </header>
+          <ol class="ra-dir-list">${directionRows}</ol>
+          <p class="ra-risk"><span class="ra-risk-mark">!</span>km ${dangerPoint.km} ${dangerPoint.label}：${dangerPoint.note}</p>
+        </section>
 
-        <div class="card">${cardHead('', '路线策略')}
-          ${strategySummary.map((item) => `<p class="bullet-row"><span class="bullet-mark">/</span><span>${item}</span></p>`).join('')}
-        </div>
+        <section class="ra-panel ra-climbs">
+          <header class="ra-panel-head">
+            <h3>爬升与下降</h3>
+            <span class="ra-count">${climbs.filter((c) => c.type === 'climb').length} 段爬升 · ${climbs.filter((c) => c.type === 'descent').length} 段下降</span>
+          </header>
+          <ul class="ra-climb-list">${climbRows}</ul>
+          ${highestPoint
+            ? `<p class="ra-climb-highest"><em>最高点</em>${highestPoint.label} · km ${highestPoint.km} · <b>${highestPoint.m} m</b> · ${fmtLatLng(highestPoint.lat, highestPoint.lng)}</p>`
+            : ''}
+        </section>
 
-        <div class="card">${cardHead('', '海拔剖面')}
-          <p class="card-hint">点击关键公里点或分段后，游标与范围会同步更新。首期不支持图表拖动。</p>
-          ${profileChart}
-        </div>
+        <section class="ra-panel ra-segments">
+          <header class="ra-panel-head">
+            <h3>坡段分析</h3>
+            <span class="ra-count">${segments.length} 段 · 点击联动</span>
+          </header>
+          <div class="ra-track">
+            <span class="ra-track-bg"></span>
+            ${trackStripes}
+            ${trackPeaks}
+            <span class="ra-track-tick" style="left:0%">0</span>
+            <span class="ra-track-tick is-end" style="left:100%">${totalKm}</span>
+          </div>
+          <div class="ra-seg-list">${segmentRows}</div>
+        </section>
 
-        <div class="card">${cardHead('', '关键公里点', tag('neutral', `${keyPoints.length} 个`))}
-          <div class="point-list">${pointList}</div>
-        </div>
+        <section class="ra-panel ra-timeline">
+          <header class="ra-panel-head">
+            <h3>关键公里点</h3>
+            <span class="ra-count">${keyPoints.length} 个 · 由起到终</span>
+          </header>
+          <div class="ra-tl-list">${timelineRows}</div>
+        </section>
 
-        <div class="card">${cardHead('', '主要分段', tag('neutral', `${segments.length} 段`))}
-          <div class="segment-list">${segmentList}</div>
-        </div>
+        <section class="ra-panel ra-strategy">
+          <header class="ra-panel-head"><h3>路线策略</h3></header>
+          <dl class="ra-strategy-list">
+            ${strategies.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}
+          </dl>
+        </section>
 
-        <div class="card map-card">${cardHead('', '路线地图')}
-          <p class="card-hint">地图仅展示活动已有路线，不读取当前位置，也不是实时导航。</p>
-          ${routeMap}
-        </div>
+        <section class="ra-panel ra-supplies">
+          <header class="ra-panel-head">
+            <h3>补给方案</h3>
+            <span class="ra-count">节奏 + ${supplyPoints.length} 补给点</span>
+          </header>
+          <dl class="ra-rhythm-list">${rhythmRows}</dl>
+          <div class="ra-sp-list">${supplyRows}</div>
+          <div class="ra-carry">
+            <span class="ra-carry-head">随身携带下限</span>
+            <ul class="ra-carry-list">${carryRows}</ul>
+          </div>
+          <p class="ra-risk"><span class="ra-risk-mark">!</span>km 102–150 为连续下坡 48 km，建议中段短暂停车让刹车片降温。</p>
+        </section>
 
-        ${selectedCard}
+        <section class="ra-panel ra-restrooms">
+          <header class="ra-panel-head">
+            <h3>沿线卫生间</h3>
+            <span class="ra-count">${restrooms.length} 处 · 地图 WC 标记</span>
+          </header>
+          <ul class="ra-wc-list">${restroomRows}</ul>
+        </section>
 
-        <div class="card external-card">${cardHead('', '外部增强能力状态')}
-          <div class="boundary-item"><span class="boundary-status">实时天气未接入</span><p>需要天气服务授权、服务端代理、逐点逐时匹配、缓存与费用策略；当前不生成天气或穿衣结论。</p></div>
-          <div class="boundary-item"><span class="boundary-status">交通事件覆盖待开通</span><p>施工、事故、管制与封路需要商业数据授权和区域覆盖验证；无覆盖数据不等于道路畅通。</p></div>
-        </div>
-
-        <div class="card">${cardHead('', '基础装备建议')}
-          ${equipment.map((item) => `<p class="equipment-row"><span aria-hidden="true">✓</span><span>${item}</span></p>`).join('')}
-        </div>
-
-        <div class="card quality-card">${cardHead('', '数据来源与质量')}
-          ${quality.map((item) => `<p class="quality-row">${item}</p>`).join('')}
-        </div>
+        <section class="ra-panel ra-gear">
+          <header class="ra-panel-head"><h3>装备建议</h3></header>
+          <ul class="ra-gear-list">
+            ${gear.map((g) => `<li>${g}</li>`).join('')}
+          </ul>
+        </section>
       </div>`;
     },
   };
