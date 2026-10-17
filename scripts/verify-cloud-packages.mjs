@@ -12,6 +12,11 @@ function assertRegistryDependencies(name) {
       throw new Error(`${name} 包含不可远端安装的本地依赖：${dependency}`);
   const lock = readFileSync(resolve(directory, 'package-lock.json'), 'utf8');
   if (lock.includes('file:')) throw new Error(`${name} package-lock 包含 file: 依赖`);
+  const nonPublicRegistry = [...lock.matchAll(/"resolved": "(https?:\/\/[^/]+)\//g)].find(
+    ([, origin]) => origin !== 'https://registry.npmjs.org',
+  );
+  if (nonPublicRegistry)
+    throw new Error(`${name} package-lock 包含 CI 不可访问的依赖源：${nonPublicRegistry[1]}`);
   return directory;
 }
 function pack(name, required) {
