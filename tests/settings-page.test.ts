@@ -28,7 +28,7 @@ describe('设置页', () => {
       version: CLIENT_RELEASE_VERSION,
       date: '2026-10-17',
       latest: true,
-      title: '俱乐部创建申请已可稳定使用',
+      title: '主题体验与路线分析焕新',
     });
     expect(page.data.currentRelease).toBe(page.data.releaseNotes[0]);
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(

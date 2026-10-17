@@ -2,16 +2,18 @@
   min-height: 100vh;
   padding: 20rpx var(--page-gutter) calc(48rpx + env(safe-area-inset-bottom));
   overflow-x: hidden;
-  background: #efe6d4;
+  background: var(--color-bg);
   color: var(--color-text);
 }
 
 .analysis-header,
 .analysis-card,
 .conclusion-panel {
-  border: 2rpx solid rgba(33, 31, 28, 0.14);
-  background: #fffaf0;
-  box-shadow: 0 8rpx 0 rgba(33, 31, 28, 0.05);
+  overflow: hidden;
+  border: 2rpx solid var(--color-card-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: none;
 }
 
 .analysis-header {
@@ -34,7 +36,7 @@
   gap: 12rpx;
   color: var(--color-action);
   font-family: var(--font-mono);
-  font-size: 20rpx;
+  font-size: 22rpx;
   font-weight: 900;
   letter-spacing: 2rpx;
 }
@@ -92,7 +94,7 @@
 .conclusion-label,
 .section-eyebrow {
   font-family: var(--font-mono);
-  font-size: 20rpx;
+  font-size: 22rpx;
   font-weight: 900;
   letter-spacing: 2rpx;
 }
@@ -123,10 +125,11 @@
 }
 
 .strategy-tags text {
-  padding: 7rpx 12rpx;
-  border: 2rpx solid #766f66;
-  font-size: 19rpx;
-  line-height: 28rpx;
+  padding: 8rpx 14rpx;
+  border: 2rpx solid var(--color-border-strong);
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  line-height: 32rpx;
 }
 
 .analysis-card {
@@ -178,23 +181,25 @@
 
 .map-reset {
   flex: 0 0 auto;
-  min-height: 48rpx;
+  min-height: 44px;
   margin: 0;
-  padding: 0 16rpx;
+  padding: 0 20rpx;
   border: 2rpx solid var(--color-text);
-  border-radius: 0;
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text);
-  font-size: 20rpx;
+  font-size: 24rpx;
   font-weight: 900;
-  line-height: 44rpx;
+  line-height: 40rpx;
 }
 
 .route-map {
   width: 100%;
   height: 650rpx;
   margin-top: 16rpx;
+  overflow: hidden;
   border: 2rpx solid var(--color-text);
+  border-radius: var(--radius-md);
 }
 
 .map-legend {
@@ -203,7 +208,7 @@
   gap: 10rpx 18rpx;
   padding: 15rpx 4rpx;
   border-bottom: 2rpx dashed var(--color-border-strong);
-  font-size: 20rpx;
+  font-size: 22rpx;
 }
 
 .map-legend > text {
@@ -214,15 +219,15 @@
 
 .legend-dot {
   display: inline-flex;
-  min-width: 28rpx;
-  height: 28rpx;
+  min-width: 32rpx;
+  height: 32rpx;
   align-items: center;
   justify-content: center;
   border-radius: 999rpx;
   color: #ffffff;
-  font-size: 16rpx;
+  font-size: 18rpx;
   font-weight: 900;
-  line-height: 28rpx;
+  line-height: 32rpx;
   text-align: center;
 }
 
@@ -251,6 +256,7 @@
   margin-top: 14rpx;
   padding: 22rpx;
   border: 2rpx solid var(--color-text);
+  border-radius: var(--radius-md);
   background: var(--color-surface);
 }
 
@@ -264,9 +270,10 @@
 .difficulty {
   display: inline-block;
   padding: 4rpx 10rpx;
+  border-radius: 999rpx;
   background: var(--color-brand-soft);
   color: var(--color-action);
-  font-size: 20rpx;
+  font-size: 22rpx;
   font-weight: 900;
 }
 
@@ -295,7 +302,9 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 2rpx;
+  overflow: hidden;
   margin-top: 16rpx;
+  border-radius: var(--radius-sm);
   background: var(--color-border-strong);
 }
 
@@ -309,7 +318,7 @@
 
 .selected-grid > view > text:first-child {
   color: var(--color-muted);
-  font-size: 20rpx;
+  font-size: 22rpx;
 }
 
 .coordinate-cell {
@@ -324,13 +333,13 @@
 }
 
 .copy-button {
-  min-height: 70rpx;
+  min-height: 44px;
   margin-top: 16rpx;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--radius-sm);
   background: var(--color-action);
   color: var(--color-on-action);
-  font-size: 23rpx;
+  font-size: 24rpx;
   font-weight: 900;
 }
 
@@ -339,6 +348,7 @@
   height: 330rpx;
   margin-top: 20rpx;
   border: 2rpx solid rgba(33, 31, 28, 0.16);
+  border-radius: var(--radius-md);
   background: var(--color-raised);
 }
 
@@ -356,16 +366,16 @@
 
 .anchor-item {
   display: inline-flex;
-  min-height: 72rpx;
+  min-height: 44px;
   flex-direction: column;
   justify-content: center;
-  padding: 8rpx 18rpx;
+  padding: 10rpx 20rpx;
   border: 2rpx solid var(--color-border-strong);
-  border-radius: 0;
+  border-radius: 999rpx;
   background: var(--color-surface);
   color: var(--color-text);
-  font-size: 21rpx;
-  line-height: 28rpx;
+  font-size: 22rpx;
+  line-height: 30rpx;
 }
 
 .anchor-item text:last-child {
@@ -450,10 +460,10 @@
 }
 
 .map-retry-button {
-  min-height: 72rpx;
+  min-height: 44px;
   margin-top: 20rpx;
   border: 2rpx solid var(--color-action);
-  border-radius: 0;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-action);
   font-weight: 800;
@@ -487,8 +497,8 @@
 
 .point-purpose {
   margin-top: 3rpx;
-  font-size: 20rpx;
-  line-height: 30rpx;
+  font-size: 22rpx;
+  line-height: 32rpx;
 }
 
 .point-metric {

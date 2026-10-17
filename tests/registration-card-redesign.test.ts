@@ -40,7 +40,7 @@ describe('行程状态卡与报名凭证重设计契约', () => {
     expect(credential).toContain('你的公开资料与照片已随报名提交');
     expect(credential).not.toContain('cardMetrics');
     expect(credential).toContain('{{statusText}}');
-    expect(credential).toContain('以品牌底图展示');
+    expect(credential).toContain('暂无骑行照片，先使用此里品牌封面');
     expect(credential).toContain('avatar-missing');
     expect(credentialStyles).toContain('.compact-rider-card');
     expect(credentialStyles).toContain('.compact-rider-avatar');

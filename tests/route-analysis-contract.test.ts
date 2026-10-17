@@ -36,7 +36,8 @@ describe('完整路线分析页合同', () => {
       template.indexOf('海拔剖面与锚点'),
     );
     expect(template.indexOf('海拔剖面与锚点')).toBeLessThan(template.indexOf('路线分段'));
-    expect(styles).toContain('background: #efe6d4');
+    expect(styles).toContain('background: var(--color-bg)');
+    expect(styles).toContain('border-radius: var(--radius-md)');
     expect(styles).toContain('font-family: var(--font-mono)');
   });
 
@@ -56,6 +57,10 @@ describe('完整路线分析页合同', () => {
       '{{selectedPoint.note}}',
     ])
       expect(template).toContain(detail);
+    expect(styles).toContain('min-height: 44px');
+    expect(styles).toContain('border-radius: 999rpx');
+    expect(template).toContain('aria-pressed="{{selectedPointId === point.id}}"');
+    expect(template).toContain('aria-label="路线走向地图，可点击标记查看关键点"');
     expect(page).toContain('arrowLine: true');
     expect(page).toContain("display: selected ? 'ALWAYS' : 'BYCLICK'");
     expect(page).toContain('label: {');
@@ -92,7 +97,7 @@ describe('完整路线分析页合同', () => {
     expect(page).toContain('mapPoints: selectedOutline');
     expect(page).toContain('showFullRoute()');
     expect(template).toContain('scale="{{mapScale}}"');
-    expect(template).toContain('bindtap="showFullRoute">查看全线');
+    expect(template).toContain('bindtap="showFullRoute" aria-label="查看完整路线">查看全线');
     expect(page).not.toContain('copyCoordinate');
     expect(page).not.toContain('wx.setClipboardData');
     expect(template).not.toContain('复制坐标');

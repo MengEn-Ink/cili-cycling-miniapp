@@ -53,6 +53,7 @@ describe('管理端与个人资料视觉契约', () => {
     expect(source).toContain("avatarInitial: nickname.slice(0, 1) || '骑'");
     expect(template).toContain('class="review-avatar"');
     expect(template).toContain('wx:if="{{item.avatarUrl}}"');
+    expect(template).toContain('aria-label="{{item.profile.nickname || \'骑友\'}}的头像"');
     expect(template).toContain('<text wx:else>{{item.avatarInitial}}</text>');
     expect(styles).toMatch(/\.review-avatar\s*\{[^}]*width:\s*88rpx;[^}]*height:\s*88rpx/s);
     expect(source).not.toContain('已入队');

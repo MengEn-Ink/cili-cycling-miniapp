@@ -109,7 +109,7 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     expect(profile).not.toContain('正在读取资料。正在同步最新资料');
 
     const profileEdit = read('miniprogram/pages/profile-edit/index.wxml');
-    expect(profileEdit).toContain('手机号仅本人和审核管理员可完整查看');
+    expect(profileEdit).toContain('手机号仅本人和报名审核员可完整查看');
     expect(profileEdit).not.toContain('脱敏值');
 
     const detail = read('miniprogram/pages/activity-detail/index.wxml');
@@ -133,6 +133,12 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     expect(appStyles).toContain('--page-gutter-narrow: 24rpx;');
     expect(appStyles).toContain('@media (max-width: 340px)');
     expect(registrationStyles).toContain('-webkit-line-clamp: 2');
+    const activityCardStyles = read('miniprogram/components/activity-card/index.wxss');
+    expect(activityCardStyles).toContain('.card-action');
+    expect(activityCardStyles).toContain('border-radius: 999rpx !important');
     expect(credentialStyles).toContain('overflow-wrap: anywhere');
+    expect(credentialStyles).toContain('padding-bottom: env(safe-area-inset-bottom)');
+    expect(credential).toContain('aria-label="公开骑行名片背景照片"');
+    expect(credential).toContain('aria-label="{{riderName}}的骑手头像"');
   });
 });
