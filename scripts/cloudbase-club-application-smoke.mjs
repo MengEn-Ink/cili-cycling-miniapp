@@ -93,15 +93,16 @@ export function handlerProbeArgs(envId) {
   ];
 }
 
-function findBusinessEnvelope(value, seen = new Set()) {
+function collectBusinessEnvelopes(value, results = [], seen = new Set()) {
   if (typeof value === 'string') {
     try {
-      return findBusinessEnvelope(JSON.parse(value), seen);
+      collectBusinessEnvelopes(JSON.parse(value), results, seen);
     } catch {
-      return null;
+      // 普通字段不是嵌套 JSON。
     }
+    return results;
   }
-  if (!value || typeof value !== 'object' || seen.has(value)) return null;
+  if (!value || typeof value !== 'object' || seen.has(value)) return results;
   seen.add(value);
   if (
     value.ok === false &&
@@ -109,20 +110,28 @@ function findBusinessEnvelope(value, seen = new Set()) {
     typeof value.error === 'object' &&
     typeof value.error.code === 'string'
   )
-    return value;
-  for (const nested of Object.values(value)) {
-    const found = findBusinessEnvelope(nested, seen);
-    if (found) return found;
+    results.push(value);
+  for (const nested of Object.values(value)) collectBusinessEnvelopes(nested, results, seen);
+  return results;
+}
+
+function parseBusinessEnvelopes(output) {
+  try {
+    return collectBusinessEnvelopes(parseJson(output));
+  } catch {
+    return [];
   }
-  return null;
+}
+
+function assertExpectedProbeEnvelopes(envelopes) {
+  if (envelopes.length !== 1) throw new Error('已部署 club-application 未返回唯一可识别的业务信封');
+  if (envelopes[0].error.code !== 'UNAUTHENTICATED')
+    throw new Error('已部署 club-application 未保持无微信上下文鉴权边界');
+  return { ok: false, error: { code: 'UNAUTHENTICATED' } };
 }
 
 export function parseHandlerProbeOutput(output) {
-  const envelope = findBusinessEnvelope(parseJson(output));
-  if (!envelope) throw new Error('已部署 club-application 未返回可识别的业务信封');
-  if (envelope.error.code !== 'UNAUTHENTICATED')
-    throw new Error('已部署 club-application 未保持无微信上下文鉴权边界');
-  return { ok: false, error: { code: 'UNAUTHENTICATED' } };
+  return assertExpectedProbeEnvelopes(parseBusinessEnvelopes(output));
 }
 
 export function probeClubApplicationHandler({
@@ -130,11 +139,34 @@ export function probeClubApplicationHandler({
   cwd = process.cwd(),
   execute = execFileSync,
 }) {
-  const output = execute('npx', handlerProbeArgs(envId), {
-    cwd,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  let output;
+  try {
+    output = execute('npx', handlerProbeArgs(envId), {
+      cwd,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+  } catch (error) {
+    const isExpectedBusinessExit =
+      error?.status === 1 && error?.signal == null && error?.code == null;
+    if (!isExpectedBusinessExit) {
+      // 原始 CLI 异常可能含凭证或响应正文，安全边界要求不挂载为 cause。
+      // eslint-disable-next-line preserve-caught-error
+      throw new Error('已部署 club-application 探针命令发生非业务执行失败');
+    }
+
+    const outputs = [error.stdout, error.stderr].filter(
+      (output) =>
+        (typeof output === 'string' || Buffer.isBuffer(output)) && String(output).trim().length > 0,
+    );
+    const envelopes = outputs.flatMap((output) => parseBusinessEnvelopes(output));
+    try {
+      return assertExpectedProbeEnvelopes(envelopes);
+    } catch {
+      // 不回显可能含凭证的原始 stdout、stderr 或系统错误内容。
+      throw new Error('已部署 club-application 探针命令失败且未返回唯一预期鉴权业务信封');
+    }
+  }
   return parseHandlerProbeOutput(output);
 }
 
