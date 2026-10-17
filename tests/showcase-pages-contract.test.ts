@@ -584,9 +584,9 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   });
 
   it('设置页原型同步当前客户端版本与当前 App 更新', () => {
-    expect(schema).toContain("state: 'V2026.10.17.86'");
+    expect(schema).toContain("state: 'V2026.10.17.87'");
     expect(schema).toContain(
-      "['2026.10.17.86', '主题体验与路线分析焕新', '路线分析保留完整数据密度并融入沸点主题，关键操作尺寸、凭证安全区与隐私说明同步优化。']",
+      "['2026.10.17.87', '活动浏览与发布保障优化', '活动图片轮播会准确显示当前位置，发布前的一致性与安全检查也进一步完善。']",
     );
     expect(templates).toContain('App 更新');
     expect(templates).not.toContain('最近五次');

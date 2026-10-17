@@ -594,7 +594,7 @@
       <ol class="dc-pipeline">
         <li><b>固定基线</b><p>记录 main SHA、客户端版本、云环境、账号角色；检查 CI 与 Pages 部署状态。</p></li>
         <li><b>运行与校准</b><p><code>npm run test:devtools:e2e</code> 读取真实云数据并保存失败报告；使用 <code>?capture=viewport#activities</code> 采集同视口设计。</p></li>
-        <li><b>约束门禁</b><p><code>npm run check:design</code> 校验变量与对比度；<code>npm run check:ui-sync -- --strict</code> 校验 13 页截图和内容摘要。</p></li>
+        <li><b>约束门禁</b><p><code>npm run check:design</code> 校验变量与对比度；<code>npm run check:ui-sync -- --strict</code> 校验 17 路由截图和内容摘要。</p></li>
         <li><b>部署后复验</b><p>PR / main CI → Pages → 微信开发版上传 → 设置页版本回读 → 同版本模拟器复测；普通成员写链路与 iOS/Android 真机单独记录。</p></li>
       </ol>`,
     'sdlc-matrix': () => `
@@ -731,7 +731,7 @@
         ['发布记录', '<code>npm run check:experience-releases</code> · <code>npm run check:release-notes</code>'],
         ['UI 同步', '<code>npm run check:ui-sync</code>'],
         ['设计约束', '<code>npm run test:design</code> · <code>npm run check:design</code>'],
-        ['模拟器实操', '<code>npm run test:devtools:e2e</code> · 真实云端只读，13 页截图'],
+        ['模拟器实操', '<code>npm run test:devtools:e2e</code> · 真实云端只读，17 路由截图'],
         ['CloudBase 规划 / 校验', '<code>npm run cloudbase:plan</code> → 人工审核 → <code>cloudbase:apply</code> → <code>cloudbase:verify</code>'],
         ['真机验证', '按 <code>docs/verification/p0-real-registration-journey.md</code> 现场执行'],
       ]),

@@ -306,6 +306,26 @@ describe('活动详情 CTA 接线', () => {
     expect(page.data.coverFailed).toBe(false);
   });
 
+  it('轮播切换时同步当前图片计数，图片移除后收敛索引', () => {
+    page.data.galleryImages = ['cloud://a.jpg', 'cloud://b.jpg', 'cloud://broken.jpg'];
+
+    page.galleryChange({ detail: { current: 2 } });
+    expect(page.data.currentGalleryIndex).toBe(2);
+
+    page.galleryImageError({ currentTarget: { dataset: { index: 2 } } });
+    expect(page.data.galleryImages).toEqual(['cloud://a.jpg', 'cloud://b.jpg']);
+    expect(page.data.currentGalleryIndex).toBe(1);
+
+    page.data.galleryImages = ['cloud://broken-before.jpg', 'cloud://b.jpg'];
+    page.data.currentGalleryIndex = 1;
+    page.galleryImageError({ currentTarget: { dataset: { index: 0 } } });
+    expect(page.data.currentGalleryIndex).toBe(0);
+
+    const template = readFileSync('miniprogram/pages/activity-detail/index.wxml', 'utf8');
+    expect(template).toContain('bindchange="galleryChange"');
+    expect(template).toContain('{{currentGalleryIndex + 1}} / {{galleryImages.length}}');
+  });
+
   it('轮播单图失败时只移除失败项，仍保留其他有效活动图片', () => {
     page.data.galleryImages = ['cloud://a.jpg', 'cloud://broken.jpg', 'cloud://c.jpg'];
 

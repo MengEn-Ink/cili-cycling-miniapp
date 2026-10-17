@@ -1,6 +1,6 @@
 # Pages 与微信端到端验收流程
 
-统一入口：[设计规范](../design-system.md)、[13 页交互设计](../index.html#prototype)、[P0 写链路与真机手册](p0-real-registration-journey.md)、[高优清单](../high-priority-issues.md)。本手册更新于 2026-10-16。
+统一入口：[设计规范](../design-system.md)、[17 路由交互原型](../index.html#prototype)、[P0 写链路与真机手册](p0-real-registration-journey.md)、[高优清单](../high-priority-issues.md)。本手册更新于 2026-10-17。
 
 ## 验收分层
 

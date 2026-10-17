@@ -7,7 +7,7 @@
 ## 产品预览
 
 - **GitHub Pages 研发交付中心**：[https://mengen-ink.github.io/cili-cycling-miniapp/](https://mengen-ink.github.io/cili-cycling-miniapp/)
-- **页面范围**：项目总览、产品与需求、设计与体验、技术与架构、开发规范、测试与验收、发布与运维、版本与复盘，以及 13 个核心页面原型。
+- **页面范围**：项目总览、产品与需求、设计与体验、技术与架构、开发规范、测试与验收、发布与运维、版本与复盘，以及 17 个核心页面原型。
 - **图片说明**：以下图片直接引用当前 UI 同步清单绑定的 Pages 效果图，不再使用历史真机或开发者工具截图。图中姓名、电话、路线编号和车辆信息均为脱敏演示数据，人物与骑行素材为 AI 生成示意图。
 
 | 活动首页                                                                                                                           | 活动创建                                                                                                                            | 设置与版本说明                                                                                                   |
@@ -17,9 +17,9 @@
 
 预览图遵循三条维护规则：仅使用 `docs/ui-sync-manifest.json` 当前清单登记的 Pages 截图；不展示真实用户资料、凭证或受保护媒体；界面基线更新时同步更新清单、截图和本节引用。
 
-统一口径见 [设计规范](docs/design-system.md) 和 [E2E 验收流程](docs/verification/wechat-devtools-e2e.md)；[双端截图对照](https://mengen-ink.github.io/cili-cycling-miniapp/evidence/ui-sync/2026-10-16-design-acceptance/) 记录本轮 13 页真实运行、脱敏范围与剩余差异。
+统一口径见 [设计规范](docs/design-system.md) 和 [E2E 验收流程](docs/verification/wechat-devtools-e2e.md)；[双端截图对照](https://mengen-ink.github.io/cili-cycling-miniapp/evidence/ui-sync/2026-10-16-design-acceptance/) 当前覆盖 17 条运行路由，并逐页标注数据类型、脱敏范围、差异与待复验状态。
 
-下一轮首要可执行 P0 的[沸点设计成果交接](https://mengen-ink.github.io/cili-cycling-miniapp/designs/2026-10-16-boiling-point/)已归档最终手稿、13 页高清长图、五类状态板与令牌规格；[离线交接说明](docs/designs/2026-10-16-boiling-point/README.md)提供文件索引与实施边界。该主题的双端实施、部署和真机验收待完成。
+[沸点设计成果交接](https://mengen-ink.github.io/cili-cycling-miniapp/designs/2026-10-16-boiling-point/)归档了最初 13 页手稿、五类状态板与令牌规格；[离线交接说明](docs/designs/2026-10-16-boiling-point/README.md)保留原始设计边界。当前运行基线已扩展到 17 条路由，实施与证据状态以 UI 同步清单为准。
 
 ## 已实现能力
 
@@ -49,7 +49,9 @@ miniprogram/                 小程序页面、组件、仓库层和领域视图
 cloudfunctions/              可独立部署的 CloudBase 云函数
 cloudfunctions/shared/       报名领域的共享源码
 cloudfunctions/route-maintenance/ 路线文件回收与历史数据迁移定时函数
-scripts/                     部署准备、CloudBase bootstrap 和证据校验
+scripts/                     部署准备、项目治理、CloudBase bootstrap 和证据校验
+.github/workflows/           CI、代码安全、Pages 与部署工作流
+AGENTS.md                    仓库级执行约束与高优问题入口
 tools/miniprogram-ci/        锁定版本的微信代码上传依赖
 tests/                       小程序与跨模块回归测试
 docs/                        产品文档、GitHub Pages 原型、部署说明与真实环境验证记录
@@ -83,7 +85,8 @@ npm run test:cloud       # 各云函数与路线函数测试
 npm run coverage         # 覆盖率门禁
 npm run audit:all        # 根项目和云函数依赖审计
 npm run check:design     # 双端设计变量与浅色对比度
-npm run check:ui-sync -- --strict # 13 页双端截图与内容摘要
+npm run check:ui-sync -- --strict # 17 路由双端截图与内容摘要
+npm run check:governance     # 文档口径、源码卫生与 Actions 安全基线
 ```
 
 `npm run validate` 会串行执行格式、Lint、类型、测试、证据工具、bootstrap、部署脚本单测、云函数包和构建检查。它不连接或修改 CloudBase。
@@ -94,9 +97,9 @@ npm run check:ui-sync -- --strict # 13 页双端截图与内容摘要
 
 1. **同步与建分支**：检查未提交改动和 open PR，拉取最新 `origin/main`，再创建 `feat/*`、`fix/*`、`docs/*` 或 `chore/*` 分支。
 2. **安装与配置**：运行 `npm ci`、`npm run cloud:install`；按需创建未跟踪的 `project.private.config.json`，并通过安全入口注入变量。
-3. **开发与自测**：在微信开发者工具完成页面调试；提交前运行 `npm run validate`、`npm run coverage`、`npm run audit:all` 和 `git diff --check`。产品代码变化需同步设置页 `RELEASE_NOTES`。
+3. **开发与自测**：在微信开发者工具完成页面调试；提交前运行 `npm run validate`、`npm run coverage`、`npm run audit:all` 和 `git diff --check`。`validate` 已包含项目治理、文档口径、源码卫生、设计与截图一致性检查；产品代码变化需同步设置页 `RELEASE_NOTES`。
 4. **提交与评审**：保持相对 `main` 的单个语义提交，推送工作分支并创建 PR；PR checks 全绿后才能合入。
-5. **CloudBase 变更**：涉及集合、索引或数据库规则时先运行 `npm run cloudbase:plan`，经环境负责人明确授权后再 `apply`，最后 `verify`；涉及云函数时仅部署受影响函数并执行对应 smoke。
+5. **CloudBase 变更**：沙箱只生成和验证 plan，不登录或修改生产 CloudBase。部署统一由 GitHub Actions 执行：`main` CI 成功后按累计 diff 部署受影响云函数；集合、索引或规则变更通过受保护 Environment 执行并回读。
 6. **微信开发版**：PR 合入后等待 `main` CI；若变更影响小程序产物，CI 成功会触发微信开发版自动上传，纯文档/测试变更会安全跳过。
 7. **体验版晋级**：开发版上传成功后，再通过 `promote-miniprogram-experience.yml` 的 `candidate -> verified` 两阶段流程人工晋级；自动上传不会覆盖体验版基线。
 8. **验收与收尾**：核对 main CI、部署或安全跳过结论、必要的真机/P0 旅程证据，再删除已合并工作分支；无法执行的线上验证必须明确记录为“未执行”。
