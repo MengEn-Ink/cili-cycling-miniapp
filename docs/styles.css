@@ -6906,10 +6906,10 @@ body.capture-viewport .screen-notes {
   font-size: 12px;
 }
 
-/* GitHub 托管的 CloudBase 自动部署链路 */
+/* 从 PR 门禁到 CloudBase、微信开发版和 Pages 的可审计交付链路 */
 .deploy-flow {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 1px;
   overflow: hidden;
   margin-top: 28px;
@@ -6919,9 +6919,43 @@ body.capture-viewport .screen-notes {
 }
 
 .deploy-flow article {
-  min-height: 176px;
-  padding: 22px;
+  min-height: 196px;
+  padding: 20px 16px;
   background: var(--color-surface);
+  box-shadow: inset 0 3px 0 transparent;
+  animation: deploy-step-pulse 7s ease-in-out infinite;
+  animation-delay: calc((var(--deploy-order) - 1) * 0.55s);
+}
+
+.deploy-flow .deploy-step-cloud,
+.deploy-flow .deploy-step-wechat,
+.deploy-flow .deploy-step-pages {
+  box-shadow: inset 0 3px 0 var(--color-brand);
+}
+
+.deploy-flow .deploy-step-verify {
+  background: var(--color-media-card-bg);
+  color: var(--color-on-media);
+}
+
+.deploy-flow .deploy-step-verify p {
+  color: var(--color-media-muted);
+}
+
+.deploy-flow-note {
+  margin: 12px 0 0;
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+@keyframes deploy-step-pulse {
+  0%, 72%, 100% { background-color: var(--color-surface); }
+  8%, 20% { background-color: var(--color-raised); }
+}
+
+.deploy-flow .deploy-step-verify {
+  animation-name: none;
 }
 
 .deploy-flow span,
@@ -6978,6 +7012,12 @@ body.capture-viewport .screen-notes {
   font-weight: 800;
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deploy-flow article {
+    animation: none;
+  }
 }
 
 @media (max-width: 1024px) {

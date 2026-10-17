@@ -23,7 +23,7 @@
 | 自动上传工作流 | `.github/workflows/deploy-miniprogram.yml` | 在 `main` CI 成功后上传开发版，并支持受控手动触发 |
 | 上传入口 | `scripts/upload-miniprogram-ci.mjs` | 读取 AppID、校验输入、收紧密钥权限并调用微信上传接口 |
 | 契约测试 | `scripts/upload-miniprogram-ci.node-test.mjs` | 锁定参数、密钥、防回退和工作流安全不变量 |
-| 上传工具依赖 | `tools/miniprogram-ci/package*.json` | 独立锁定 `miniprogram-ci@2.1.31` 及传递依赖 |
+| 上传工具依赖 | `tools/miniprogram-ci/package*.json` | 独立锁定 `miniprogram-ci@2.1.48`，并对存在已知漏洞的传递依赖做兼容版本收口 |
 | 仓库脚本 | `package.json` | 提供 `test:deploy` 和 `deploy:miniprogram` 命令，并把部署测试接入 `validate` |
 
 ## 3. 触发与版本策略
@@ -65,7 +65,8 @@
 - 上传脚本只接收密钥路径，不读取或输出密钥正文；
 - `always()` 清理步骤保证成功、失败和取消路径都尝试删除临时文件；
 - 上传工具使用独立 lockfile，避免污染业务依赖；
-- CI 使用 `npm ci --ignore-scripts --prefix tools/miniprogram-ci`，降低传递依赖生命周期脚本风险。
+- CI 使用固定 npm 11 执行 `ci --ignore-scripts --prefix tools/miniprogram-ci`，并强制公共 npm registry，降低生命周期脚本与私有镜像漂移风险；
+- `npm run audit:all` 单独审计该 lockfile：可升级漏洞必须修复；上游无修复的告警只按 `audit-allowlist.json` 中逐条评估、限时到期的精确集合放行；上传契约测试还会真实加载 `miniprogram-ci`，防止“告警减少但运行时 API 已被不兼容覆盖”。
 
 微信上传 IP 白名单与 GitHub 托管 Runner 的动态出口 IP 不兼容。若业务必须开启白名单，应切换为固定出口的受控 self-hosted runner；否则保持上传白名单关闭，并通过主分支保护、最小 Actions 权限和密钥轮换降低风险。
 

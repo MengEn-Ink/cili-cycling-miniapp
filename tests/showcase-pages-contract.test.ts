@@ -518,7 +518,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(css).toContain('.audit-list');
   });
 
-  it('Pages 说明 GitHub 托管凭证的 CloudBase 自动部署闭环', () => {
+  it('Pages 说明 GitHub 托管凭证和三端并行发布的完整交付闭环', () => {
     for (const content of [
       '自动化部署链路',
       'cloudbase-production',
@@ -529,13 +529,22 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
       '以上次成功部署为基线',
       'EnvID 双重校验',
       '手动恢复',
-      '部署并回读验收',
+      'PR 门禁',
+      'main CI 复验',
+      'CloudBase',
+      '微信开发版',
+      'GitHub Pages',
+      '三端验收',
+      '并行点',
     ]) {
       expect(script).toContain(content);
     }
+    expect(script).toContain('从 Pull Request 到三端验收的七步交付链路');
     expect(script).toContain('https://docs.cloudbase.net/cli-v1/install');
     expect(script).not.toContain('TENCENTCLOUD_SECRETKEY');
     expect(css).toContain('.deploy-flow');
+    expect(css).toContain('@keyframes deploy-step-pulse');
+    expect(css).toContain('@media (prefers-reduced-motion: reduce)');
     expect(css).toContain('.deploy-security-grid');
   });
 

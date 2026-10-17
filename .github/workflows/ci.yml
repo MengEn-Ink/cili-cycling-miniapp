@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
 
 permissions:
   contents: read
@@ -46,6 +47,7 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
+            tools/miniprogram-ci/package-lock.json
             cloudfunctions/shared/package-lock.json
             cloudfunctions/auth/package-lock.json
             cloudfunctions/activity-read/package-lock.json

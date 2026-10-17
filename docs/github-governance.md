@@ -42,7 +42,9 @@
 - 每周错峰检查，避免与日常开发高峰重叠；
 - npm minor/patch 合并为一组，限制同时打开的 PR；
 - major 更新不自动提出，必须结合 Node 24 CI、Node 20.19 云函数运行时和微信工具链单独评估；
-- Dependabot PR 不自动合并，仍执行 `npm run validate`、覆盖率和安全审计。
+- `.github/workflows/dependabot-auto-merge.yml` 只为 Dependabot 的 patch 更新、以及仍关联开放安全告警的 minor 更新开启 GitHub 原生 auto-merge；不检出也不执行 PR 分支代码；
+- 真正合并仍由 `validate` required check 决定，格式、测试、覆盖率、上传客户端运行时加载或任一未评估依赖告警都会阻断；major、普通 minor 和非 Dependabot PR 保持人工评审；
+- 上游无修复且只存在于微信上传短进程的告警，必须在 `tools/miniprogram-ci/audit-allowlist.json` 逐条记录缓解措施和到期日；新增、可修复、过期或已经消失却未清理的例外都会阻断。
 
 ## 5. Issue、版本与发布记录
 
@@ -55,7 +57,8 @@
 
 | 能力 | 当前职责 |
 | --- | --- |
-| `CI / validate` | 格式、静态检查、测试、覆盖率、CloudBase 只读校验和安全审计 |
+| `CI / validate` | 格式、静态检查、测试、覆盖率、微信上传工具运行时、CloudBase 只读校验和全部 npm 工作区安全审计 |
+| Dependabot 安全更新自动合并 | 仅对低风险更新开启 auto-merge；最终仍等待 Ruleset 与 `validate` 全绿 |
 | 微信开发版自动上传 | `main` CI 成功后按变更判定上传；串行执行并生成 90 天 receipt |
 | 微信体验版晋级证据门禁 | 使用 `wechat-experience` Environment，绑定候选、平台回读和不可变 manifest |
 | GitHub Pages | 由 GitHub Pages 的 `github-pages` Environment 记录部署 |

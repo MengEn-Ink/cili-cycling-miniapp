@@ -1,0 +1,90 @@
+import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+
+const ALLOWLIST_URL = new URL('../tools/miniprogram-ci/audit-allowlist.json', import.meta.url);
+
+function advisoryId(url) {
+  const match = String(url || '').match(/GHSA-[0-9a-z-]+$/i);
+  return match ? match[0].toUpperCase() : '';
+}
+
+export function assessAuditReport(report, allowlist, now = new Date()) {
+  if (!report || typeof report.vulnerabilities !== 'object') {
+    throw new Error('微信上传工具审计结果缺少 vulnerabilities');
+  }
+  const expiresAt = new Date(`${allowlist.expiresAt}T23:59:59+08:00`);
+  if (!Number.isFinite(expiresAt.getTime()) || now > expiresAt) {
+    throw new Error(`微信上传工具风险例外已过期：${allowlist.expiresAt}`);
+  }
+
+  const found = new Set();
+  const fixable = new Set();
+  for (const vulnerability of Object.values(report.vulnerabilities)) {
+    if (vulnerability?.fixAvailable) fixable.add(vulnerability.name);
+    for (const via of vulnerability?.via || []) {
+      if (typeof via !== 'object') continue;
+      const id = advisoryId(via.url);
+      if (id) found.add(id);
+    }
+  }
+
+  const allowed = new Set(Object.keys(allowlist.advisories || {}).map((id) => id.toUpperCase()));
+  const unexpected = [...found].filter((id) => !allowed.has(id));
+  const stale = [...allowed].filter((id) => !found.has(id));
+  if (fixable.size) {
+    throw new Error(`微信上传工具仍有可升级修复的依赖：${[...fixable].sort().join(', ')}`);
+  }
+  if (unexpected.length) {
+    throw new Error(`微信上传工具出现未评估安全告警：${unexpected.sort().join(', ')}`);
+  }
+  if (stale.length) {
+    throw new Error(`微信上传工具风险例外已失效，请删除后重审：${stale.sort().join(', ')}`);
+  }
+
+  return {
+    advisories: [...found].sort(),
+    expiresAt: allowlist.expiresAt,
+    vulnerabilities: report.metadata?.vulnerabilities || {},
+  };
+}
+
+export function runAudit() {
+  const result = spawnSync(
+    'npx',
+    [
+      '--yes',
+      'npm@11',
+      'audit',
+      '--prefix',
+      'tools/miniprogram-ci',
+      '--json',
+      '--registry=https://registry.npmjs.org',
+    ],
+    { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 },
+  );
+  if (!result.stdout) {
+    throw new Error(`微信上传工具审计没有返回 JSON：${result.stderr.trim()}`);
+  }
+  let report;
+  try {
+    report = JSON.parse(result.stdout);
+  } catch {
+    throw new Error('微信上传工具审计返回了无效 JSON');
+  }
+  const allowlist = JSON.parse(readFileSync(ALLOWLIST_URL, 'utf8'));
+  const assessment = assessAuditReport(report, allowlist);
+  console.log(
+    `微信上传工具安全审计通过：${assessment.advisories.length} 个无上游修复的已评估告警，例外到期 ${assessment.expiresAt}`,
+  );
+  return assessment;
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  try {
+    runAudit();
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  }
+}
