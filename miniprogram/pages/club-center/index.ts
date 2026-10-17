@@ -74,7 +74,8 @@ Page({
     saving: false,
     submitting: false,
     uploading: false,
-    error: '',
+    loadError: '',
+    actionError: '',
     fieldError: '',
     fieldErrorKey: '',
   },
@@ -82,13 +83,13 @@ Page({
     void this.load();
   },
   async load() {
-    this.setData({ loading: true, error: '' });
-    await appStore.ensureIdentity(wx.cloud);
-    if (appStore.authStatus !== 'authenticated') {
-      this.setData({ loading: false, error: '请先完成微信登录后再申请创建俱乐部' });
-      return;
-    }
+    this.setData({ loading: true, loadError: '' });
     try {
+      await appStore.ensureIdentity(wx.cloud);
+      if (appStore.authStatus !== 'authenticated') {
+        this.setData({ loading: false, loadError: '请先完成微信登录后再申请创建俱乐部' });
+        return;
+      }
       const application = await rideService.getMyClubApplication();
       const form = application ? toForm(application) : { ...EMPTY_FORM };
       this.setData({
@@ -104,7 +105,7 @@ Page({
     } catch (error) {
       this.setData({
         loading: false,
-        error: error instanceof Error ? error.message : '申请读取失败',
+        loadError: error instanceof Error ? error.message : '申请读取失败',
       });
     }
   },
@@ -130,7 +131,7 @@ Page({
       if (!file?.tempFilePath) return;
       if (typeof file.size === 'number' && file.size > 5 * 1024 * 1024)
         throw new Error('封面图片不能超过 5MB');
-      this.setData({ uploading: true, error: '' });
+      this.setData({ uploading: true, actionError: '' });
       const uploaded = await wx.cloud.uploadFile({
         cloudPath: `club-applications/${appStore.openid}/${requestId('cover')}.jpg`,
         filePath: file.tempFilePath,
@@ -145,7 +146,7 @@ Page({
     } catch (error) {
       this.setData({
         uploading: false,
-        error: error instanceof Error ? error.message : '封面上传失败，请重试',
+        actionError: error instanceof Error ? error.message : '封面上传失败，请重试',
       });
     }
   },
@@ -158,7 +159,7 @@ Page({
   },
   async saveDraft() {
     if (this.data.saving || this.data.submitting || !this.ensureValid()) return;
-    this.setData({ saving: true, error: '' });
+    this.setData({ saving: true, actionError: '' });
     try {
       const application = await rideService.saveClubApplicationDraft(this.data.form);
       this.setData({
@@ -170,7 +171,7 @@ Page({
     } catch (error) {
       this.setData({
         saving: false,
-        error: error instanceof Error ? error.message : '草稿保存失败，请重试',
+        actionError: error instanceof Error ? error.message : '草稿保存失败，请重试',
       });
     }
   },
@@ -187,7 +188,7 @@ Page({
     );
     if (!confirmed) return;
     this.submitRequestId ||= requestId('club_submit');
-    this.setData({ submitting: true, error: '' });
+    this.setData({ submitting: true, actionError: '' });
     try {
       const application = await rideService.submitClubApplication(
         this.data.form,
@@ -204,7 +205,7 @@ Page({
     } catch (error) {
       this.setData({
         submitting: false,
-        error: error instanceof Error ? error.message : '提交失败，请重试',
+        actionError: error instanceof Error ? error.message : '提交失败，请重试',
       });
     }
   },
