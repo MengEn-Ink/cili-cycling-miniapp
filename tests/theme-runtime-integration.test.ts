@@ -6,9 +6,9 @@ import { expandAppRoutes, type MiniProgramAppConfig } from './helpers/app-routes
 const appConfig = JSON.parse(readFileSync('miniprogram/app.json', 'utf8')) as MiniProgramAppConfig;
 
 describe('单一明亮外观接线', () => {
-  it('14 个页面不再保存或同步运行时主题', () => {
+  it('17 个页面不再保存或同步运行时主题', () => {
     const appRoutes = expandAppRoutes(appConfig);
-    expect(appRoutes).toHaveLength(14);
+    expect(appRoutes).toHaveLength(17);
 
     for (const pagePath of appRoutes) {
       const script = readFileSync(`miniprogram/${pagePath}.ts`, 'utf8');
@@ -44,7 +44,7 @@ describe('单一明亮外观接线', () => {
     expect(template).not.toContain('wx:for="{{releaseNotes}}"');
     expect(script).toContain("date: '2026-10-17'");
     expect(script).toContain('version: CLIENT_RELEASE_VERSION');
-    expect(script).toContain("title: '项目说明更完整，运行包更轻'");
+    expect(script).toContain("title: '俱乐部创建申请正式上线'");
     const latestMatches = script.match(/latest:\s*true/g) || [];
     expect(latestMatches).toHaveLength(1);
   });

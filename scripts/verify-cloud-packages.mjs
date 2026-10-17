@@ -42,6 +42,7 @@ for (const name of ['activity-read', 'registration', 'admin-review']) {
   ]);
 }
 pack('notification-send', ['index.js', 'core.js', 'store.js', 'access.js', 'package.json']);
+pack('club-application', ['index.js', 'core.js', 'media.js', 'package.json']);
 const cloudbaseConfig = JSON.parse(readFileSync(resolve(root, 'cloudbaserc.json'), 'utf8'));
 const notificationFunction = cloudbaseConfig.functions.find(
   (item) => item.name === 'notification-send',

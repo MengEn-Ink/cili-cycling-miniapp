@@ -15,6 +15,32 @@ export interface ClubMembershipSummary {
   role: string;
   roleLabel: string;
 }
+export type ClubApplicationStatus = 'draft' | 'pending_review' | 'rejected' | 'approved';
+export type ClubJoinMode = 'public_apply' | 'invite_code' | 'admin_invite';
+export interface ClubApplicationInput {
+  clubName: string;
+  city: string;
+  introduction: string;
+  applicantContact: string;
+  joinMode: ClubJoinMode;
+  expectedSize: number;
+  activityTypes: string;
+  rulesSummary: string;
+  coverFileId: string;
+}
+export interface ClubApplication extends ClubApplicationInput {
+  id: string;
+  coverUrl: string;
+  status: ClubApplicationStatus;
+  reviewVersion: number;
+  rejectionReason: string;
+  clubId: string;
+  applicantOpenid?: string;
+  createdAt: string;
+  updatedAt: string;
+  submittedAt: string;
+  reviewedAt: string;
+}
 export interface ActivityLocation {
   name: string;
   address: string;

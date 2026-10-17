@@ -167,11 +167,11 @@ npm run cloudbase:apply
 npm run cloudbase:verify
 ```
 
-bootstrap 当前管理 9 个集合、29 个业务索引和全拒绝客户端数据库规则；受管定义包含活动首页与管理分页、我的行程、通知 Outbox、媒体清理以及 GPX 可信预览集合 `route_previews`。bootstrap 不创建业务活动，也不会自动应用 `cloudstorage.rules.json`。完整顺序：
+bootstrap 当前管理 12 个集合、33 个业务索引和全拒绝客户端数据库规则；受管定义包含活动首页与管理分页、我的行程、通知 Outbox、媒体清理、俱乐部创建申请以及 GPX 可信预览集合 `route_previews`。bootstrap 不创建业务活动，也不会自动应用 `cloudstorage.rules.json`。完整顺序：
 
 1. 审阅并执行 CloudBase plan/apply/verify。
-2. 按 [CloudBase 数据契约](docs/cloudbase-schema.md) 配置云函数环境变量和 `cloudstorage.rules.json`，并回读确认客户端只能写本人资料与路线 staging，canonical 媒体路径不可由客户端写入。
-3. 运行 `npm run cloud:install`，再依次部署 `auth`、`profile-media-cleanup`、`admin-review`、`profile`、`activity-read`、`activity-admin`、`registration`、`notification-send` 和 `route-maintenance`。
+2. 按 [CloudBase 数据契约](docs/cloudbase-schema.md) 配置云函数环境变量和 `cloudstorage.rules.json`，并回读确认客户端只能写本人资料、路线与俱乐部申请 staging，canonical 媒体路径不可由客户端写入。
+3. 运行 `npm run cloud:install`，再依次部署 `auth`、`profile-media-cleanup`、`admin-review`、`club-application`、`profile`、`activity-read`、`activity-admin`、`registration`、`notification-send` 和 `route-maintenance`。
 4. 应用并回读 `cloudbaserc.json` 中的云函数触发器（小程序已不再内嵌 `web-view`，`pages/route-view` 与 `cloudfunctions/route-web` 已删除，无需配置 `/route/embed` 网关或 Embed 业务域名）。
 5. 在开发者工具和真机完成官方路线、GPX 上传/保存/下载及失败回退验收；此前 `OAUTH_RETIREMENT_PURGE_ENABLED` 必须保持关闭。
 6. 验收通过后临时开启 purge，等待旧账号数据与预览清空并回读，再移除该开关和线上旧资源。

@@ -43,6 +43,14 @@
       "installDependency": true
     },
     {
+      "name": "club-application",
+      "handler": "index.main",
+      "runtime": "Nodejs20.19",
+      "timeout": 10,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
       "name": "notification-send",
       "handler": "index.main",
       "runtime": "Nodejs20.19",

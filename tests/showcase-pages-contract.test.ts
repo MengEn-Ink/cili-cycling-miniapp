@@ -48,6 +48,7 @@ const prototypeRoutes = [
   'registrations',
   'credential',
   'profile',
+  'club-center',
   'settings',
   'capability-card',
   'profile-edit',
@@ -55,6 +56,8 @@ const prototypeRoutes = [
   'admin-activity-edit',
   'admin-reviews',
   'admin-review-detail',
+  'admin-club-applications',
+  'admin-club-application-detail',
 ];
 
 // M0 组织地基与审批 prototype-only 页面：
@@ -76,8 +79,8 @@ const routeToPagePath = (route: string) =>
     : `pages/${route}/index`;
 
 describe('GitHub Pages 全页面高保真原型门禁', () => {
-  it('与 app.json 的 14 个可达页面逐一对应，官方路线页 route-view 不进入原型', () => {
-    expect(prototypeRoutes).toHaveLength(14);
+  it('与 app.json 的 17 个可达页面逐一对应，官方路线页 route-view 不进入原型', () => {
+    expect(prototypeRoutes).toHaveLength(17);
     // route-view 由 #210 从 app.json 删除；新增完整路线分析页同步进入原型。
     expect(prototypeRoutes.map(routeToPagePath)).toEqual(
       expect.arrayContaining(appRoutes.filter((page) => page !== 'pages/route-view/index')),
@@ -89,7 +92,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     }
     expect(schema).not.toContain("id: 'route-view'");
     expect(templates).not.toMatch(/['"]?route-view['"]?: \(\) =>/);
-    expect(html).toContain('14 个真实页面原型 + 8 页 M0 组织地基与审批原型');
+    expect(html).toContain('17 个真实页面原型 + 8 页组织地基与审批演进原型');
   });
 
   it('M0 组织地基与审批原型以 prototype-only 页面接入，不污染 app.json 真实路由', () => {
@@ -139,7 +142,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
       expect([schema, templates, script].join('\n')).toContain(copy);
     }
     // 交付中心入口直达 M0 原型
-    expect(deliveryCenter).toContain('组织地基与发布审批（M0 待实施 · 原型已交付）');
+    expect(deliveryCenter).toContain('组织地基与发布审批（俱乐部创建已实现 · 活动审批仍为原型）');
     expect(deliveryCenter).toContain("href: '#org-overview'");
   });
 
@@ -423,10 +426,10 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   });
 
   it('真实页面与 M0 原型页面都带浅色关键状态与“问题 → 改法 → 规范”设计说明，并提供总览页', () => {
-    expect(schema.match(/\n {6}states: \[/g)).toHaveLength(22);
-    expect(schema.match(/\n {6}problems: \[/g)).toHaveLength(22);
-    expect(schema.match(/\n {6}fixes: \[/g)).toHaveLength(22);
-    expect(schema.match(/\n {6}spec: \[/g)).toHaveLength(22);
+    expect(schema.match(/\n {6}states: \[/g)).toHaveLength(25);
+    expect(schema.match(/\n {6}problems: \[/g)).toHaveLength(25);
+    expect(schema.match(/\n {6}fixes: \[/g)).toHaveLength(25);
+    expect(schema.match(/\n {6}spec: \[/g)).toHaveLength(25);
     for (const state of [
       "'empty'",
       "'loading'",
@@ -463,7 +466,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain('deliveryCenter.extraOverviewAnchors');
     expect(deliveryCenter).toContain('沸点手稿与全套设计交接成果');
     expect(deliveryCenter).toContain('docs/designs/2026-10-16-boiling-point/index.html');
-    expect(deliveryCenter).toContain('组织地基与发布审批（M0 待实施 · 原型已交付）');
+    expect(deliveryCenter).toContain('组织地基与发布审批（俱乐部创建已实现 · 活动审批仍为原型）');
     expect(deliveryCenter).toContain(
       'docs/superpowers/plans/2026-10-17-org-foundation-approval.md',
     );
@@ -976,7 +979,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain('organizer-flow');
     expect(script).toContain('发布 ≠ 可报名');
     expect(script).toContain('registration_setup_pending');
-    expect(script).toContain('role_auto_publish');
+    expect(script).toContain('俱乐部创建申请已统一进入平台管理员待办');
     // 05 隐私与产品边界 · 可见 / 不可见 / Strava OAuth 退役
     expect(script).toContain('✓ 公开可见');
     expect(script).toContain('✗ 公开不可见');
@@ -1018,10 +1021,10 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
 
   it('路线图把「当前已实现」与「待实施」显式分开', () => {
     expect(script).toContain('id="roadmap"');
-    expect(script).toContain('✓ 当前已实现（14 个真实路由）');
-    expect(script).toContain('⌛ 路线图待实施');
-    // 把 M0 原型 / 多租户 / 腾讯文档等显式归入待实施，而不是写成已上线
-    expect(script).toContain('组织地基与审批（M0 原型已交付）');
+    expect(script).toContain('✓ 当前已实现（17 个真实路由）');
+    expect(script).toContain('⌛ 后续演进');
+    // 俱乐部创建申请已上线；俱乐部活动 / 公开活动审批、多租户和腾讯文档仍归入后续演进
+    expect(script).toContain('组织地基与审批演进原型：俱乐部创建申请已生产落地');
     expect(script).toContain('多俱乐部 / 多组织租户、独立 Web 后台 — 未来需求');
     expect(script).toContain('报名信息同步腾讯文档 — 需求阶段');
   });
@@ -1035,9 +1038,10 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(page).toContain('GPX');
     // 退役文档不再被当作 external-apis 的 source 链接
     expect(deliveryCenter).not.toContain('docs/strava-athlete-capacity.md');
-    // M0 组织地基仍是 roadmap 项，不能被描述成生产已实现
-    expect(script).toContain('组织地基与审批（M0 原型已交付）');
-    expect(deliveryCenter).toContain('M0 待实施');
+    // 俱乐部创建申请已经生产实现，俱乐部活动与公开活动审批仍是后续目标
+    expect(script).toContain('俱乐部创建申请已生产落地');
+    expect(deliveryCenter).toContain('俱乐部活动与公开活动发布审批');
+    expect(deliveryCenter).toContain('尚未进入生产');
     // 扫码核销入口已退役：凭证只展示活动与审核状态，签到由管理员二次确认。
     expect(script).toContain('当前没有扫码核销入口');
     expect(script).not.toMatch(/Code 128|wx\.scanCode/);

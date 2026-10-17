@@ -405,6 +405,38 @@ export class CachingRepository implements RideRepository {
     return this.inner.enqueueActivityReminders(activityId);
   }
 
+  getMyClubApplication() {
+    return this.inner.getMyClubApplication();
+  }
+
+  saveClubApplicationDraft(value: Parameters<RideRepository['saveClubApplicationDraft']>[0]) {
+    return this.inner.saveClubApplicationDraft(value);
+  }
+
+  submitClubApplication(
+    value: Parameters<RideRepository['submitClubApplication']>[0],
+    requestId: string,
+  ) {
+    return this.inner.submitClubApplication(value, requestId);
+  }
+
+  listClubApplications(status?: Parameters<RideRepository['listClubApplications']>[0]) {
+    return this.inner.listClubApplications(status);
+  }
+
+  getClubApplication(id: string) {
+    return this.inner.getClubApplication(id);
+  }
+
+  reviewClubApplication(
+    id: string,
+    decision: 'approved' | 'rejected',
+    reason: string,
+    requestId: string,
+  ) {
+    return this.inner.reviewClubApplication(id, decision, reason, requestId);
+  }
+
   getProfile() {
     return this.readThrough(`${PROFILE_PREFIX}self`, () => this.inner.getProfile());
   }

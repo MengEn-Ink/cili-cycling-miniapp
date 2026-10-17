@@ -254,7 +254,7 @@ test('活动首页 planner 索引纳入 bootstrap exact plan 与 verify', () => 
     INDEXES.filter((index) => index.name.startsWith('activities_public_event_')),
     [PUBLIC_EVENT_START, PUBLIC_EVENT_END],
   );
-  assert.equal(INDEXES.length, 32);
+  assert.equal(INDEXES.length, 33);
 
   const missing = completeState();
   missing.indexes.set(
@@ -464,8 +464,8 @@ test('只保留可信 GPX 路线预览集合与清理索引', () => {
       unique: false,
     },
   );
-  assert.equal(COLLECTIONS.length, 11);
-  assert.equal(INDEXES.length, 32);
+  assert.equal(COLLECTIONS.length, 12);
+  assert.equal(INDEXES.length, 33);
   const complete = completeState();
   assert.deepEqual(complete.rules.get('route_previews'), {
     AclTag: 'CUSTOM',
@@ -534,14 +534,14 @@ test('notification_outbox 使用租约扫描索引并保持客户端全拒绝', 
   );
 });
 
-test('CloudBase schema 文档列出 notification_outbox 和活动时间线索引并与 29 条总数一致', () => {
+test('CloudBase schema 文档列出 notification_outbox 和活动时间线索引并与 33 条总数一致', () => {
   const schema = readFileSync(new URL('../docs/cloudbase-schema.md', import.meta.url), 'utf8');
   assert.match(schema, /notification_outbox \| status ASC, attempts ASC, lease_expires_at ASC/);
   assert.match(schema, /notification_outbox \| target_openid ASC, created_at DESC/);
   assert.match(schema, /notification_outbox \| status ASC, attempts ASC, next_retry_at ASC/);
   assert.match(schema, /activities \| status ASC, event_start ASC, _id ASC, event_end ASC/);
   assert.match(schema, /activities \| status ASC, event_end DESC, _id DESC, event_start DESC/);
-  assert.match(schema, /全拒绝规则与 29 索引/);
+  assert.match(schema, /全拒绝规则与 33 索引/);
 });
 
 test('profile_media 使用 owner/status 与过期清理索引并保持客户端全拒绝', () => {
@@ -581,8 +581,8 @@ test('profile_media 使用 owner/status 与过期清理索引并保持客户端�
     ['status', 1],
     ['retry_at', 1],
   ]);
-  assert.equal(COLLECTIONS.length, 11);
-  assert.equal(INDEXES.length, 32);
+  assert.equal(COLLECTIONS.length, 12);
+  assert.equal(INDEXES.length, 33);
   assert.deepEqual(DENY_RULE, { read: false, write: false });
 });
 
@@ -616,7 +616,7 @@ test('profile_media_imports 使用全拒绝 ACL 与完整 cleanup 扫描索引',
   assert.match(schema, /profile_media_imports \| status ASC, cleanup_after ASC/);
   assert.match(schema, /profile_media_imports \| status ASC, delete_lease_expires_at ASC/);
   assert.match(schema, /profile_media_imports \| status ASC, retry_at ASC/);
-  assert.match(schema, /9 集合、全拒绝规则与 29 索引/);
+  assert.match(schema, /12 集合、全拒绝规则与 33 索引/);
   assert.match(schema, /avatar_revision/);
   assert.match(schema, /origin: wechat\|custom/);
   assert.doesNotMatch(schema, /avatar_url_fingerprint|avatar_import_lease_expires_at/);
@@ -639,14 +639,14 @@ test('profile_media cleanup 配置真实且有界的定时执行器', () => {
   assert.ok(RECOVERY_CONFIRMATION_MS > runtimeUpperBoundMs);
 });
 
-test('云存储规则只允许 owner 写资料与路线 staging，canonical 前缀保持 server-only', () => {
+test('云存储规则只允许 owner 写资料、路线与俱乐部申请 staging，canonical 前缀保持 server-only', () => {
   const rules = JSON.parse(
     readFileSync(new URL('../cloudstorage.rules.json', import.meta.url), 'utf8'),
   );
   assert.equal(rules.read, false);
   assert.equal(
     rules.write,
-    'auth != null && (/^profiles\\//.test(resource.path) || /^activity-routes\\//.test(resource.path)) && resource.openid == auth.openid',
+    'auth != null && (/^profiles\\//.test(resource.path) || /^activity-routes\\//.test(resource.path) || /^club-applications\\//.test(resource.path)) && resource.openid == auth.openid',
   );
   assert.equal(rules.write.includes('profile-canonical'), false);
 });
@@ -654,7 +654,7 @@ test('云存储规则只允许 owner 写资料与路线 staging，canonical 前�
 test('README 与部署包断言包含 profile_media_imports 且不再包含第三方头像导入', () => {
   const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
   const verifier = readFileSync(new URL('./verify-cloud-packages.mjs', import.meta.url), 'utf8');
-  assert.match(readme, /9 个集合、29 个业务索引/);
+  assert.match(readme, /12 个集合、33 个业务索引/);
   assert.doesNotMatch(verifier, /avatar-import\.js/);
 });
 
@@ -669,7 +669,7 @@ function assertClosedDocumentationGaps({ readme, requirements, seedGuide }) {
     /route_previews[^。]{0,50}(?:尚未|仍未|并不|没有|未纳入|手工创建)[^。]{0,50}(?:bootstrap|管理)/,
   );
   // 本切片按范围约束不修改 docs，文档基线由后续文档任务统一更新。
-  assert.match(seedGuide, /9 个核心集合、29 个业务索引/);
+  assert.match(seedGuide, /12 个核心集合、33 个业务索引/);
   assert.match(
     seedGuide,
     /`route_previews` 已由 bootstrap[^。]*管理，并纳入[^。]*`cloudbase:verify`/,

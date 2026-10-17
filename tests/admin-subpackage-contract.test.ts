@@ -9,6 +9,8 @@ const adminRoutes = [
   'pages/admin/activity-edit/index',
   'pages/admin/reviews/index',
   'pages/admin/review-detail/index',
+  'pages/admin/club-applications/index',
+  'pages/admin/club-application-detail/index',
 ];
 
 describe('管理员页面分包契约', () => {
@@ -16,13 +18,20 @@ describe('管理员页面分包契约', () => {
     expect(appConfig.pages).not.toEqual(expect.arrayContaining(adminRoutes));
     expect(appConfig.subpackages).toContainEqual({
       root: 'pages/admin',
-      pages: ['activity-list/index', 'activity-edit/index', 'reviews/index', 'review-detail/index'],
+      pages: [
+        'activity-list/index',
+        'activity-edit/index',
+        'reviews/index',
+        'review-detail/index',
+        'club-applications/index',
+        'club-application-detail/index',
+      ],
     });
   });
 
-  it('展开分包后仍保留全部 14 个真实跳转路径', () => {
+  it('展开分包后仍保留全部 17 个真实跳转路径', () => {
     const routes = expandAppRoutes(appConfig);
-    expect(routes).toHaveLength(14);
+    expect(routes).toHaveLength(17);
     expect(routes).toEqual(expect.arrayContaining(adminRoutes));
     expect(new Set(routes).size).toBe(routes.length);
   });

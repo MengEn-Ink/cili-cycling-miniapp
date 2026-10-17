@@ -77,11 +77,27 @@
   background: var(--color-status-success);
 }
 .club-membership-card {
+  position: relative;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
   margin-top: var(--card-gap);
   padding: 24rpx 32rpx;
   border: 2rpx solid var(--color-border);
   border-radius: var(--radius-display);
   background: var(--color-surface);
+  color: var(--color-text);
+  text-align: left;
+}
+.club-membership-chevron {
+  position: absolute;
+  top: 50%;
+  right: 28rpx;
+  flex: 0 0 auto;
+  color: var(--color-text);
+  font-size: 40rpx;
+  font-weight: 900;
+  transform: translateY(-50%);
 }
 .club-membership-empty,
 .club-membership-single,

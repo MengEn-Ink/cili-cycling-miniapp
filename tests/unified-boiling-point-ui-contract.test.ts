@@ -42,7 +42,7 @@ describe('HP-20261010-02 单一明亮 UI 底座', () => {
 
   it('全部页面固定明亮系统外观且不再同步运行时主题', () => {
     const appRoutes = expandAppRoutes(appConfig);
-    expect(appRoutes).toHaveLength(14);
+    expect(appRoutes).toHaveLength(17);
 
     for (const pagePath of appRoutes) {
       const root = `miniprogram/${pagePath}`;

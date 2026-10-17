@@ -5,6 +5,7 @@
     "pages/registrations/index",
     "pages/credential/index",
     "pages/profile/index",
+    "pages/club-center/index",
     "pages/settings/index",
     "pages/capability-card/index"
   ],
@@ -27,7 +28,9 @@
         "activity-list/index",
         "activity-edit/index",
         "reviews/index",
-        "review-detail/index"
+        "review-detail/index",
+        "club-applications/index",
+        "club-application-detail/index"
       ]
     }
   ],

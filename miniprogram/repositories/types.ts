@@ -1,6 +1,9 @@
 import type {
   Activity,
   ClientAvatarSource,
+  ClubApplication,
+  ClubApplicationInput,
+  ClubApplicationStatus,
   EditableActivity,
   PersonalCapabilityCard,
   PublicRoutePreview,
@@ -76,7 +79,21 @@ export interface AdminReviewRepository {
     total: number;
   }>;
 }
-export interface RideRepository extends AdminReviewRepository, ActivityAdminRepository {
+export interface ClubApplicationRepository {
+  getMyClubApplication(): Promise<ClubApplication | null>;
+  saveClubApplicationDraft(value: ClubApplicationInput): Promise<ClubApplication>;
+  submitClubApplication(value: ClubApplicationInput, requestId: string): Promise<ClubApplication>;
+  listClubApplications(status?: ClubApplicationStatus): Promise<ClubApplication[]>;
+  getClubApplication(id: string): Promise<ClubApplication>;
+  reviewClubApplication(
+    id: string,
+    decision: 'approved' | 'rejected',
+    reason: string,
+    requestId: string,
+  ): Promise<ClubApplication>;
+}
+export interface RideRepository
+  extends AdminReviewRepository, ActivityAdminRepository, ClubApplicationRepository {
   listActivities(filter?: ActivityListFilter): Promise<Activity[]>;
   listActivityPage(view: PublicActivityView, cursor?: string): Promise<PublicActivityPage>;
   getActivity(id: string): Promise<Activity | undefined>;

@@ -146,7 +146,7 @@ describe('M0 俱乐部前端映射与交互契约', () => {
     expect(profileView).toContain('clubOverflowCount');
     expect(profileView).toContain('club-membership-avatar--placeholder');
     expect(profileView).toContain('club-membership-empty');
-    expect(profileView).toContain('暂未加入俱乐部，仍可参加此里公开活动');
+    expect(profileView).toContain('可申请创建或查看申请进度');
     expect(editorLogic).toContain('clubOptionChange');
     expect(editorLogic).toContain(
       'clubId: this.data.clubOptions[this.data.clubOptionIndex]?.clubId',
