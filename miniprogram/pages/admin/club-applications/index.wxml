@@ -1,0 +1,13 @@
+<view class="page club-review-page">
+  <brand-logo compact="{{true}}" meta="俱乐部创建审批" />
+  <view class="filter-tabs" role="tablist"><button wx:for="{{filters}}" wx:key="value" class="filter-tab {{status === item.value ? 'is-active' : ''}}" data-status="{{item.value}}" bindtap="filter">{{item.label}}</button></view>
+  <view class="state-card" wx:if="{{loading}}"><view class="title">正在读取申请</view><view class="muted">请稍候。</view></view>
+  <view class="state-card" wx:elif="{{error}}" role="alert"><view class="title">加载失败</view><view class="muted">{{error}}</view><button class="btn" bindtap="load">重新加载</button></view>
+  <view class="state-card" wx:elif="{{!items.length}}"><view class="title">当前暂无申请</view><view class="muted">新申请提交后会显示在这里。</view></view>
+  <view class="review-list" wx:else>
+    <button class="review-card" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="open">
+      <image class="cover" src="{{item.coverUrl}}" mode="aspectFill" />
+      <view class="review-copy"><view class="review-name">{{item.clubName}}</view><view class="muted">{{item.city}} · 预计 {{item.expectedSize}} 人</view><view class="summary">{{item.introduction}}</view></view><text class="chevron">›</text>
+    </button>
+  </view>
+</view>

@@ -214,6 +214,9 @@
     </article>`;
 
   const templates = {
+    'club-center': () => templates['club-applications'](),
+    'admin-club-applications': () => templates['admin-approval-inbox'](),
+    'admin-club-application-detail': () => templates['approval-detail'](),
     activities: () => {
       if (is('loading')) return `<div class="pg">${brandLogo('此里骑行活动')}<h2 class="page-title">选一场骑行，一起出发</h2>${skeletons(2, true)}</div>`;
       const head = `${brandLogo('此里骑行活动')}<h2 class="page-title">选一场骑行，一起出发</h2><p class="page-sub long-copy">路线、时间、集合点，一眼看清；先看状态与路线强度，再决定是否出发</p>

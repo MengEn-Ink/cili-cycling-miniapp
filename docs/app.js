@@ -209,7 +209,7 @@
             <li><a href="#journey-organizer"><b>04</b><span>组织者旅程</span><em>创建 → 路线 → 审批 → 现场</em></a></li>
             <li><a href="#privacy"><b>05</b><span>隐私与产品边界</span><em>公开卡片字段 · Strava OAuth 退役</em></a></li>
             <li><a href="#pipeline"><b>06</b><span>七步交付链路</span><em>PR → CloudBase / 微信 / Pages</em></a></li>
-            <li><a href="#prototype"><b>07</b><span>原型与证据</span><em>14 个真实路由 + 8 页 M0 原型 + 对比截图</em></a></li>
+            <li><a href="#prototype"><b>07</b><span>原型与证据</span><em>17 个真实路由 + 8 页组织审批演进原型 + 对比截图</em></a></li>
           </ol>
           <p class="story-map-foot">八大类文档索引保留在页面末尾的 <a href="#delivery">研发交付中心</a>；仓库里的所有事实、源码与证据可以从那里收口。</p>
         </nav>
@@ -444,7 +444,7 @@
       <section class="story-section" id="journey-organizer">
         <p class="story-eyebrow">04 · 组织者旅程</p>
         <h2 class="story-h2">先给结论：组织者的职责是「活动可被看见」和「现场可被审」。</h2>
-        <p class="story-lead">对单俱乐部而言，组织者和管理员往往是同一人；对 M0 组织地基与审批而言，他们会被显式区分成 OWNER / ADMIN / MEMBER。两套事实都在原型里，但只有前者进入了 miniprogram 的 app.json 路由。</p>
+        <p class="story-lead">对单俱乐部而言，组织者和管理员往往是同一人；对组织地基与审批而言，OWNER / ADMIN / MEMBER 已作为目标角色显式区分；俱乐部创建申请与平台审批已进入生产路由，俱乐部活动和公开活动审批仍保留为演进原型。</p>
 
         <div class="organizer-flow">
           <article class="organizer-step">
@@ -474,7 +474,7 @@
         </div>
 
         <div class="organizer-note">
-          <p><b>M0 组织地基与审批（路线图待实施，原型已交付）</b>：俱乐部申请统一进入平台所有者待办；俱乐部活动由 OWNER / ADMIN 审批，管理员本人活动默认发布并记录 <code>role_auto_publish</code> 审计；公开活动由平台所有者审批。生产 miniprogram 尚未实现；点击 <a href="#org-overview">M0 原型入口</a> 可完整体验 8 页审批流。</p>
+          <p><b>组织地基与审批（俱乐部创建已实现，活动审批继续演进）</b>：俱乐部创建申请已统一进入平台管理员待办，通过后由服务端创建正式俱乐部并授予申请人 OWNER；俱乐部活动由 OWNER / ADMIN 审批、公开活动由平台所有者审批仍是后续目标。点击 <a href="#org-overview">组织审批演进原型入口</a> 可体验 8 页完整设计表达。</p>
         </div>
       </section>
 
@@ -537,18 +537,18 @@
         <h2 class="story-h2">把「已经能用」和「还只是设计」分清楚</h2>
         <div class="roadmap-grid">
           <article class="roadmap-done">
-            <h3>✓ 当前已实现（14 个真实路由）</h3>
+            <h3>✓ 当前已实现（17 个真实路由）</h3>
             <ul>
-              <li>骑友端：活动列表、活动详情、路线分析、报名表、行程、凭证、我的、设置、名片、资料编辑</li>
-              <li>管理端：我的活动、活动编辑、审批列表、审批详情（含驳回理由非空门禁）</li>
+              <li>骑友端：活动列表、活动详情、路线分析、报名表、行程、凭证、我的、俱乐部中心、设置、名片、资料编辑</li>
+              <li>管理端：我的活动、活动编辑、报名审批列表 / 详情、俱乐部创建审批列表 / 详情</li>
               <li>公共：Strava 公开路线链接解析（无 OAuth）、GPX 上传与预览、报名凭证、公开骑手卡片四字段契约</li>
               <li>交付：PR / main CI、CloudBase 自动部署、微信开发版自动上传、体验版两阶段晋级、GitHub Pages 发布</li>
             </ul>
           </article>
           <article class="roadmap-todo">
-            <h3>⌛ 路线图待实施（8 页 M0 原型 + 其他）</h3>
+            <h3>⌛ 后续演进（8 页组织审批原型 + 其他）</h3>
             <ul>
-              <li>组织地基与审批（M0 原型已交付）：俱乐部申请、俱乐部 / 公开活动审批、角色视角、异常</li>
+              <li>组织地基与审批演进原型：俱乐部创建申请已生产落地；俱乐部 / 公开活动审批、角色视角与异常仍为后续目标</li>
               <li>多俱乐部 / 多组织租户、独立 Web 后台 — 未来需求</li>
               <li>报名信息同步腾讯文档 — 需求阶段，等官方接入与权限验证</li>
               <li>发起人申请、完整通知闭环、凭证前缀、活动标签 / 模板、双主题、一句话更新日志</li>
@@ -569,7 +569,7 @@
         <p class="eyebrow">研发交付中心 · 当前基线同步至 main</p>
         <h2>让骑行俱乐部的研发交付——从需求到发布，都收口到一个可维护的 Pages</h2>
         <p class="lead">“此里”面向单个骑行俱乐部的微信小程序。本页把 README、需求、设计、架构、规范、测试、发布、复盘按 SDLC 八大类聚合，并给每份文档打上成熟度标签，方便产品、设计、研发、测试与运营共享同一事实。</p>
-        <div class="product-actions"><a class="btn" href="#delivery">进入研发交付中心</a><a class="btn-secondary" href="#activities">体验 14 个交互原型</a></div>
+        <div class="product-actions"><a class="btn" href="#delivery">进入研发交付中心</a><a class="btn-secondary" href="#activities">体验 17 个交互原型</a></div>
       </section>
 
       ${deliveryCenter ? deliveryCenter.render() : ''}
@@ -724,8 +724,8 @@
 
       <section class="product-section" id="prototype">
         <p class="eyebrow">05 · 交互原型</p>
-        <h2>14 个真实页面 + 8 页 M0 组织地基与审批原型</h2>
-        <p class="card-hint">14 个页面与 app.json 路由一一对应；另 8 页 M0 原型（组织地基与审批）仅为设计表达，服务端尚未实现。官方路线独立页已从产品路由删除；活动详情直接承载路线事实与 GPX 能力，Strava 路线只提供规范化链接复制（Strava OAuth 已退役，无需 Strava 授权）。</p>
+        <h2>17 个真实页面 + 8 页组织地基与审批演进原型</h2>
+        <p class="card-hint">17 个页面与 app.json 路由一一对应；另 8 页组织审批演进原型延伸生产闭环：俱乐部创建申请、平台审批、正式俱乐部创建与 OWNER 授予已经落地，俱乐部活动和公开活动审批仍仅为设计表达。官方路线独立页已从产品路由删除；活动详情直接承载路线事实与 GPX 能力，Strava 路线只提供规范化链接复制（Strava OAuth 已退役，无需 Strava 授权）。</p>
         <div class="overview-grid">${pageCards}</div>
       </section>
 

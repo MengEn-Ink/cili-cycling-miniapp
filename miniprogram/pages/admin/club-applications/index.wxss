@@ -1,0 +1,72 @@
+.club-review-page {
+  background: var(--color-bg);
+}
+.filter-tabs {
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 28rpx;
+}
+.filter-tab.is-active {
+  border-color: var(--color-action);
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+.review-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+  margin-top: var(--card-gap);
+}
+.review-card {
+  display: grid;
+  grid-template-columns: 132rpx minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20rpx;
+  width: 100%;
+  padding: 24rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-display);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: left;
+}
+.cover {
+  width: 132rpx;
+  height: 112rpx;
+  border-radius: var(--radius-sm);
+  background: var(--color-raised);
+}
+.review-copy {
+  min-width: 0;
+}
+.review-name {
+  overflow: hidden;
+  font-size: 32rpx;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.summary {
+  display: -webkit-box;
+  margin-top: 8rpx;
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 24rpx;
+  line-height: 36rpx;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.state-card {
+  margin-top: var(--card-gap);
+}
+.state-card .btn {
+  margin-top: 24rpx;
+}
+@media (max-width: 340px) {
+  .review-card {
+    grid-template-columns: 104rpx minmax(0, 1fr) auto;
+  }
+  .cover {
+    width: 104rpx;
+    height: 104rpx;
+  }
+}

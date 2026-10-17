@@ -2,6 +2,9 @@ import type {
   Activity,
   AvatarSource,
   ClientAvatarSource,
+  ClubApplication,
+  ClubApplicationInput,
+  ClubApplicationStatus,
   ClubIdentity,
   EditableActivity,
   PersonalCapabilityCard,
@@ -1193,6 +1196,57 @@ function activityPayload(value: ActivityInput) {
     status: value.status,
   };
 }
+function mapClubApplication(raw: unknown): ClubApplication {
+  const value = expectRecord(raw);
+  const status = value.status;
+  const joinMode = value.join_mode;
+  if (
+    typeof value.id !== 'string' ||
+    !['draft', 'pending_review', 'rejected', 'approved'].includes(status) ||
+    !['public_apply', 'invite_code', 'admin_invite'].includes(joinMode) ||
+    !Number.isInteger(value.review_version) ||
+    !Number.isInteger(value.expected_size)
+  )
+    return invalidResponse();
+  return {
+    id: value.id,
+    status,
+    reviewVersion: value.review_version,
+    clubName: typeof value.club_name === 'string' ? value.club_name : '',
+    city: typeof value.city === 'string' ? value.city : '',
+    introduction: typeof value.introduction === 'string' ? value.introduction : '',
+    applicantContact: typeof value.applicant_contact === 'string' ? value.applicant_contact : '',
+    joinMode,
+    expectedSize: value.expected_size,
+    activityTypes: typeof value.activity_types === 'string' ? value.activity_types : '',
+    rulesSummary: typeof value.rules_summary === 'string' ? value.rules_summary : '',
+    coverFileId: typeof value.cover_file_id === 'string' ? value.cover_file_id : '',
+    coverUrl: typeof value.cover_url === 'string' ? value.cover_url : '',
+    rejectionReason: typeof value.rejection_reason === 'string' ? value.rejection_reason : '',
+    clubId: typeof value.club_id === 'string' ? value.club_id : '',
+    ...(typeof value.applicant_openid === 'string'
+      ? { applicantOpenid: value.applicant_openid }
+      : {}),
+    createdAt: dateText(value.created_at),
+    updatedAt: dateText(value.updated_at),
+    submittedAt: dateText(value.submitted_at),
+    reviewedAt: dateText(value.reviewed_at),
+  };
+}
+function clubApplicationPayload(value: ClubApplicationInput) {
+  return {
+    club_name: value.clubName,
+    city: value.city,
+    introduction: value.introduction,
+    applicant_contact: value.applicantContact,
+    join_mode: value.joinMode,
+    expected_size: value.expectedSize,
+    activity_types: value.activityTypes,
+    rules_summary: value.rulesSummary,
+    cover_file_id: value.coverFileId,
+  };
+}
+
 export class CloudRepository implements RideRepository, AdminReviewRepository {
   constructor(private readonly injectedCloud?: CloudApi) {}
   private async call<T>(name: string, data: unknown): Promise<T> {
@@ -1467,6 +1521,60 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
       await this.call('admin-review', {
         action: 'detail',
         registrationId: requiredId(id, '报名 ID'),
+      }),
+    );
+  }
+  async getMyClubApplication() {
+    const value = await this.call<unknown>('club-application', { action: 'mine' });
+    return value === null ? null : mapClubApplication(value);
+  }
+  async saveClubApplicationDraft(value: ClubApplicationInput) {
+    return mapClubApplication(
+      await this.call('club-application', {
+        action: 'saveDraft',
+        application: clubApplicationPayload(value),
+      }),
+    );
+  }
+  async submitClubApplication(value: ClubApplicationInput, requestId: string) {
+    return mapClubApplication(
+      await this.call('club-application', {
+        action: 'submit',
+        application: clubApplicationPayload(value),
+        requestId: boundedId(requestId, '提交请求 ID', 8, 128),
+      }),
+    );
+  }
+  async listClubApplications(status: ClubApplicationStatus = 'pending_review') {
+    if (!['pending_review', 'approved', 'rejected'].includes(status))
+      throw new CloudRepositoryError('VALIDATION_FAILED', '申请状态筛选无效');
+    return expectRecordArray(
+      await this.call('club-application', { action: 'adminList', status }),
+    ).map(mapClubApplication);
+  }
+  async getClubApplication(id: string) {
+    return mapClubApplication(
+      await this.call('club-application', {
+        action: 'adminDetail',
+        applicationId: requiredId(id, '申请 ID'),
+      }),
+    );
+  }
+  async reviewClubApplication(
+    id: string,
+    decision: 'approved' | 'rejected',
+    reason: string,
+    requestId: string,
+  ) {
+    if (decision !== 'approved' && decision !== 'rejected')
+      throw new CloudRepositoryError('VALIDATION_FAILED', '审批操作无效');
+    return mapClubApplication(
+      await this.call('club-application', {
+        action: 'review',
+        applicationId: requiredId(id, '申请 ID'),
+        decision,
+        reason,
+        requestId: boundedId(requestId, '审批请求 ID', 8, 128),
       }),
     );
   }

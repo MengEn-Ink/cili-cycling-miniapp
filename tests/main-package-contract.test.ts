@@ -20,15 +20,22 @@ const expectedPackages = [
   { root: 'pages/profile-edit', pages: ['index'] },
   {
     root: 'pages/admin',
-    pages: ['activity-list/index', 'activity-edit/index', 'reviews/index', 'review-detail/index'],
+    pages: [
+      'activity-list/index',
+      'activity-edit/index',
+      'reviews/index',
+      'review-detail/index',
+      'club-applications/index',
+      'club-application-detail/index',
+    ],
   },
 ];
 
 describe('按需分包与主包字节契约', () => {
-  it('四个低频功能均按需加载且完整路由仍为 14 个', () => {
+  it('四个低频功能均按需加载且完整路由仍为 17 个', () => {
     expect(appConfig.subpackages).toEqual(expectedPackages);
     const routes = expandAppRoutes(appConfig);
-    expect(routes).toHaveLength(14);
+    expect(routes).toHaveLength(17);
     expect(routes).toEqual(
       expect.arrayContaining([
         'pages/route-analysis/index',

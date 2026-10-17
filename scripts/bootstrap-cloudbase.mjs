@@ -20,6 +20,7 @@ export const COLLECTIONS = Object.freeze([
   'route_previews',
   'clubs',
   'club_memberships',
+  'club_applications',
 ]);
 
 export const INDEXES = Object.freeze([
@@ -113,6 +114,15 @@ export const INDEXES = Object.freeze([
       ['club_id', 1],
       ['status', 1],
       ['event_start', 1],
+    ],
+    unique: false,
+  },
+  {
+    collection: 'club_applications',
+    name: 'club_applications_status_updated_at',
+    keys: [
+      ['status', 1],
+      ['updated_at', -1],
     ],
     unique: false,
   },

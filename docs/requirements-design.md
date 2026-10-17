@@ -115,7 +115,7 @@ rejected|cancelled -> pending
 - 在线支付、退款或押金。
 - 报名名单 Excel/CSV 导出。
 - 报名信息同步腾讯文档；该能力仍处于未来需求阶段，必须先完成官方接入与权限验证，详见 [报名信息同步腾讯文档需求](superpowers/plans/2026-10-17-tencent-docs-registration-sync.md)。
-- 多俱乐部、多组织租户与独立 Web 管理后台；俱乐部创建、俱乐部活动和公开活动的目标审批规则尚未实现。
+- 多组织租户与独立 Web 管理后台；俱乐部创建申请、本人进度查询、管理员审批以及通过后创建俱乐部并授予 `OWNER` 已实现，俱乐部活动和公开活动的目标审批规则仍未实现。
 - 独立活动模板/线路/素材库、精品局结构化保障计划，以及个人体重、FTP、功体比能力档案。
 
 上述候选能力的整体分期见 [未来产品能力路线图](superpowers/plans/2026-10-16-future-product-capability-roadmap.md)；组织申请、发布审批、权限矩阵和边界规则见 [组织地基与审批权限需求](superpowers/plans/2026-10-17-org-foundation-approval.md)。

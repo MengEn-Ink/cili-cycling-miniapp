@@ -546,6 +546,12 @@ Page({
   edit() {
     wx.navigateTo({ url: '/pages/profile-edit/index' });
   },
+  openClubCenter() {
+    wx.navigateTo({ url: '/pages/club-center/index' });
+  },
+  clubApplications() {
+    if (this.data.isAdmin) wx.navigateTo({ url: '/pages/admin/club-applications/index' });
+  },
   activities() {
     if (this.data.isAdmin) wx.navigateTo({ url: '/pages/admin/activity-list/index' });
   },

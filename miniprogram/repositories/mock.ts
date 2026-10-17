@@ -1,5 +1,7 @@
 import type {
   Activity,
+  ClubApplication,
+  ClubApplicationInput,
   EditableActivity,
   PersonalCapabilityCard,
   Profile,
@@ -222,6 +224,7 @@ function displayGatheringMode(
 }
 export class MockRepository implements RideRepository {
   private readonly activityCreateRequests = new Map<string, string>();
+  private clubApplication: ClubApplication | null = null;
   read(): S {
     return wx.getStorageSync(KEY) || init();
   }
@@ -422,6 +425,58 @@ export class MockRepository implements RideRepository {
     if (status === 'approved') x.serialNo = 'RE-MOCK-' + Date.now().toString().slice(-6);
     this.write(s);
     return x;
+  }
+  async getMyClubApplication() {
+    return this.clubApplication;
+  }
+  async saveClubApplicationDraft(value: ClubApplicationInput) {
+    this.clubApplication = {
+      ...value,
+      id: 'clubapp-mock',
+      status: 'draft',
+      coverUrl: value.coverFileId,
+      reviewVersion: this.clubApplication?.reviewVersion || 0,
+      rejectionReason: this.clubApplication?.rejectionReason || '',
+      clubId: '',
+      createdAt: this.clubApplication?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      submittedAt: '',
+      reviewedAt: '',
+    };
+    return this.clubApplication;
+  }
+  async submitClubApplication(value: ClubApplicationInput, _requestId: string) {
+    const draft = await this.saveClubApplicationDraft(value);
+    this.clubApplication = {
+      ...draft,
+      status: 'pending_review',
+      reviewVersion: draft.reviewVersion + 1,
+      submittedAt: new Date().toISOString(),
+    };
+    return this.clubApplication;
+  }
+  async listClubApplications(status: ClubApplication['status'] = 'pending_review') {
+    return this.clubApplication?.status === status ? [this.clubApplication] : [];
+  }
+  async getClubApplication(id: string) {
+    if (!this.clubApplication || this.clubApplication.id !== id) throw new Error('申请不存在');
+    return this.clubApplication;
+  }
+  async reviewClubApplication(
+    id: string,
+    decision: 'approved' | 'rejected',
+    reason: string,
+    _requestId: string,
+  ) {
+    const application = await this.getClubApplication(id);
+    this.clubApplication = {
+      ...application,
+      status: decision,
+      rejectionReason: decision === 'rejected' ? reason : '',
+      clubId: decision === 'approved' ? 'club-mock' : '',
+      reviewedAt: new Date().toISOString(),
+    };
+    return this.clubApplication;
   }
   async getProfile() {
     return this.read().profile;

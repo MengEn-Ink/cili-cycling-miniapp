@@ -62,6 +62,24 @@ created_at, updated_at
 
 个人名片只返回 `generated_at`、`profile` 和 `backgrounds`。资料、报名和审核响应均不包含第三方账号指标。
 
+### `club_applications`
+
+俱乐部创建申请与正式 `clubs` 分离。`_id` 是申请人可信 `openid` 的确定性摘要；一个申请人在 MVP 中只有一条当前申请链。
+
+```text
+applicant_openid
+status: draft|pending_review|rejected|approved
+review_version, last_submit_request_id, last_review_request_id
+club_name, city, introduction, applicant_contact
+join_mode: public_apply|invite_code|admin_invite
+expected_size, activity_types, rules_summary, cover_file_id
+rejection_reason, reviewed_by, submitted_at, reviewed_at
+club_id（仅审批通过后写入）
+created_at, updated_at
+```
+
+客户端数据库读写全拒绝，仅 `club-application` 云函数按 WXContext 读取本人申请。管理员列表、详情和审批均由服务端实时查询 `admins`。通过审批时在事务中以确定性 ID 创建 `clubs`、`OWNER` 的 `club_memberships` 和审计记录；重复审批返回同一结果，不重复创建资源。驳回原因必填，修改重提递增 `review_version`。
+
 ### `admins`
 
 `_id: openid`，并包含 `display_name/is_super/enabled`。管理员身份由服务端按 WXContext 查询。
@@ -132,6 +150,10 @@ cleanup_after, delete_lease_expires_at, retry_at
 | activities | created_by ASC, event_start DESC |
 | activities | status ASC, is_deleted ASC, event_start DESC, _id DESC |
 | activities | created_by ASC, status ASC, is_deleted ASC, event_start DESC, _id DESC |
+| activities | club_id ASC, status ASC, event_start ASC |
+| club_applications | status ASC, updated_at DESC |
+| club_memberships | openid ASC, status ASC |
+| club_memberships | club_id ASC, openid ASC, status ASC |
 | registrations | activity_id ASC, openid ASC |
 | registrations | activity_id ASC, status ASC, created_at DESC |
 | registrations | activity_id ASC, status ASC, _id ASC |
@@ -154,12 +176,12 @@ cleanup_after, delete_lease_expires_at, retry_at
 | route_previews | owner_openid ASC, expires_at ASC |
 | audit_logs | actor_openid ASC, created_at DESC |
 
-bootstrap 当前管理 9 集合、全拒绝规则与 29 索引。`route_previews` 使用客户端全拒绝 ACL。
+bootstrap 当前管理 12 集合、全拒绝规则与 33 索引。`route_previews` 与 `club_applications` 使用客户端全拒绝 ACL。
 
 ## 部署后验证
 
 1. 执行 `npm run cloudbase:plan`，审核后运行 apply 与 verify。
-2. 应用并回读 `cloudstorage.rules.json`，确认客户端只能写本人 `profiles/` 与 `activity-routes/<openid>/` staging 路径。
+2. 应用并回读 `cloudstorage.rules.json`，确认客户端只能写本人 `profiles/`、`activity-routes/<openid>/` 与 `club-applications/<openid>/` staging 路径。
 3. 部署 `route-maintenance`，回读维护定时器；官方路线页已下线，不再部署 `route-web` 或配置 `/route/embed` 网关。
 4. 核对资料、报名和审核响应不含历史账号字段；保持 purge 关闭并完成官方路线查看、GPX 上传/保存/下载及失败回退验收。
 5. 验收通过后临时开启 purge，等待旧集合、兼容字段和旧预览清空并回读，再移除开关和线上旧资源。

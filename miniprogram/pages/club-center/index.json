@@ -1,0 +1,10 @@
+{
+  "navigationBarTitleText": "俱乐部中心",
+  "navigationBarBackgroundColor": "#fbf5ea",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#fbf5ea",
+  "backgroundColorTop": "#fbf5ea",
+  "backgroundColorBottom": "#fbf5ea",
+  "backgroundTextStyle": "dark",
+  "usingComponents": { "brand-logo": "/components/brand-logo/index" }
+}
