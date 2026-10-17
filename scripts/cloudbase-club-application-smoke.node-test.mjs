@@ -13,7 +13,10 @@ import {
   runClubApplicationSmoke,
 } from './cloudbase-club-application-smoke.mjs';
 
-function createMemoryStore({ failOnApprovedApplication = false } = {}) {
+function createMemoryStore({
+  failOnApprovedApplication = false,
+  corruptFirstSubmitReadback = false,
+} = {}) {
   const collections = Object.fromEntries(
     ['admins', 'club_applications', 'clubs', 'club_memberships', 'audit_logs'].map((name) => [
       name,
@@ -25,7 +28,14 @@ function createMemoryStore({ failOnApprovedApplication = false } = {}) {
   const put = async (name, id, value) => {
     if (failOnApprovedApplication && name === 'club_applications' && value.status === 'approved')
       throw new Error('injected write failure');
-    collections[name].set(id, structuredClone(value));
+    const persisted =
+      corruptFirstSubmitReadback &&
+      name === 'club_applications' &&
+      value.status === 'pending_review' &&
+      value.review_version === 1
+        ? { ...value, review_version: 0 }
+        : value;
+    collections[name].set(id, structuredClone(persisted));
   };
   const store = {
     collections,
@@ -206,11 +216,81 @@ test('部署探针缺少函数名或状态时阻断', () => {
   );
 });
 
-test('解析 nosql execute 嵌套查询文档', () => {
+test('解析 TCB Mgo Data/Result 字符串数组真实响应形态', () => {
   const output = JSON.stringify({
-    Response: { Data: JSON.stringify([{ Result: { cursor: { firstBatch: [{ _id: 'one' }] } } }]) },
+    Response: {
+      Data: JSON.stringify([
+        {
+          Result: JSON.stringify({
+            _id: 'one',
+            status: 'pending_review',
+            review_version: { $numberInt: '1' },
+          }),
+        },
+        {
+          Result: JSON.stringify({
+            _id: 'two',
+            review_version: { $numberLong: '2' },
+          }),
+        },
+      ]),
+    },
   });
-  assert.deepEqual(parseNosqlDocuments(output), [{ _id: 'one' }]);
+  assert.deepEqual(parseNosqlDocuments(output), [
+    { _id: 'one', status: 'pending_review', review_version: 1 },
+    { _id: 'two', review_version: 2 },
+  ]);
+});
+
+test('解析 cursor firstBatch 并递归归一 Extended JSON 数字', () => {
+  const output = JSON.stringify({
+    Response: {
+      Data: JSON.stringify([
+        {
+          Result: {
+            cursor: {
+              firstBatch: [
+                {
+                  _id: 'one',
+                  review_version: { $numberInt: '1' },
+                  nested: { count: { $numberLong: '2' }, ratio: { $numberDouble: '1.5' } },
+                },
+              ],
+            },
+          },
+        },
+      ]),
+    },
+  });
+  assert.deepEqual(parseNosqlDocuments(output), [
+    { _id: 'one', review_version: 1, nested: { count: 2, ratio: 1.5 } },
+  ]);
+});
+
+test('损坏的 Mgo Result JSON 显式阻断而不是降级为空文档', () => {
+  const output = JSON.stringify({
+    Response: {
+      Data: JSON.stringify([{ Result: '{"_id":' }]),
+    },
+  });
+  assert.throws(() => parseNosqlDocuments(output), /Mgo Result 包含无效 JSON/);
+});
+
+test('高精度 Extended JSON Decimal 保留原始字符串而不经 Number 舍入', () => {
+  const decimal = '12345678901234567890.12345678901234567890';
+  const output = JSON.stringify({
+    Response: {
+      Data: JSON.stringify([
+        {
+          Result: JSON.stringify({
+            _id: 'one',
+            precise_value: { $numberDecimal: decimal },
+          }),
+        },
+      ]),
+    },
+  });
+  assert.deepEqual(parseNosqlDocuments(output), [{ _id: 'one', precise_value: decimal }]);
 });
 
 test('CLI store 编排 QUERY/UPDATE/DELETE 且不经 shell', async () => {
@@ -230,6 +310,42 @@ test('CLI store 编排 QUERY/UPDATE/DELETE 且不经 shell', async () => {
   assert.ok(calls.every(({ file }) => file === 'npx'));
   assert.equal(JSON.parse(calls[1].commands[0].Command).updates[0].upsert, true);
   assert.equal(JSON.parse(calls[2].commands[0].Command).deletes[0].limit, 0);
+});
+
+test('CLI transaction 写穿真实存储、事务内读己之写且 overlay 不跨事务', async () => {
+  const database = new Map();
+  let queryCount = 0;
+  const execute = (_file, args) => {
+    const [{ CommandType, Command }] = JSON.parse(args.at(-2));
+    const payload = JSON.parse(Command);
+    if (CommandType === 'UPDATE') {
+      const update = payload.updates[0];
+      const id = update.q._id;
+      database.set(id, { ...(database.get(id) || { _id: id }), ...update.u.$set });
+      return JSON.stringify({ Response: { Data: '[]' } });
+    }
+    if (CommandType === 'QUERY') {
+      queryCount += 1;
+      const document = database.get(payload.filter._id);
+      const data = document ? [{ Result: JSON.stringify(document) }] : [];
+      return JSON.stringify({ Response: { Data: JSON.stringify(data) } });
+    }
+    throw new Error(`unexpected command ${CommandType}`);
+  };
+  const store = createCliStore({ envId: 'env-production', execute });
+  const value = { _id: 'application-one', status: 'draft', review_version: 0 };
+
+  await store.transaction(async (tx) => {
+    await tx.putApplication(value._id, value);
+    assert.deepEqual(await tx.getApplication(value._id), value);
+    assert.equal(queryCount, 0);
+  });
+  assert.deepEqual(database.get(value._id), value);
+
+  await store.transaction(async (tx) => {
+    assert.deepEqual(await tx.getApplication(value._id), value);
+  });
+  assert.equal(queryCount, 1);
 });
 
 const cleanupIds = {
@@ -308,6 +424,20 @@ test('完整状态机持久化验证成功后回读清理全部测试记录', as
     now: () => new Date('2026-10-17T12:00:00.000Z'),
   });
   assert.deepEqual(result, { stages: 6, auditCount: 4 });
+  assertEmpty(store);
+});
+
+test('首次提交后必须以真实回读校验状态、版本和 request id', async () => {
+  const store = createMemoryStore({ corruptFirstSubmitReadback: true });
+  await assert.rejects(
+    runClubApplicationSmoke({ store, runId: 'github-12345-readback' }),
+    (error) => {
+      assert.match(error.message, /stage=first_submit/);
+      assert.match(error.message, /status=pending_review/);
+      assert.doesNotMatch(error.message, /smoke_applicant|clubapp_|submit_1_|ci-/);
+      return true;
+    },
+  );
   assertEmpty(store);
 });
 
