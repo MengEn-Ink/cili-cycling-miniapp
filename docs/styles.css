@@ -8078,3 +8078,52 @@ body.capture-viewport .screen-notes {
   .story-hook-questions .story-q { top: 20px; left: 16px; }
   .story-map { padding: 20px; }
 }
+
+/* 2026-10-17 · 路线高密度界面与沸点主题桥接 */
+.route-analysis-page {
+  background: var(--color-bg);
+}
+.route-analysis-page .ra-map,
+.route-analysis-page .ra-map-head,
+.route-analysis-page .ra-map-section,
+.route-analysis-page .ra-map-canvas > .ra-map-svg {
+  background: var(--color-bg);
+}
+.route-analysis-page .ra-map-head-title,
+.route-analysis-page .ra-map-stats > span,
+.route-analysis-page .ra-map-detail,
+.route-analysis-page .ra-panel {
+  background: var(--color-surface);
+}
+.route-analysis-page .ra-map-head-title {
+  border-left-color: var(--color-action);
+}
+.route-analysis-page .ra-map-section,
+.route-analysis-page .ra-map-detail,
+.route-analysis-page .ra-panel {
+  border-color: var(--color-border);
+  border-radius: var(--radius-md);
+}
+.route-analysis-page .ra-filter,
+.route-analysis-page .ra-detail-close,
+.route-analysis-page .ra-detail-copy {
+  min-height: 44px;
+}
+.route-analysis-page .ra-filter {
+  padding: 0 14px;
+}
+.route-analysis-page .ra-filter.is-active,
+.route-analysis-page .ra-kicker {
+  border-color: var(--color-text);
+  background: var(--color-text);
+  color: var(--color-on-media);
+}
+.route-analysis-page .ra-detail-caption,
+.route-analysis-page .ra-map-sample {
+  border-color: var(--color-brand-soft);
+  border-left-color: var(--color-action);
+  background: var(--color-brand-soft);
+}
+.route-analysis-page .ra-detail-conf {
+  background: var(--color-text);
+}

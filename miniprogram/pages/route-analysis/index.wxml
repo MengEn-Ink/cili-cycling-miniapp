@@ -1,7 +1,7 @@
 <view class="route-analysis-page">
   <state-view loading="{{loading}}" error="{{error}}" empty="{{empty}}" retryable="{{true}}" bindretry="retry" loading-title="正在分析路线" loading-copy="正在整理路线走向与坡段" empty-title="暂无路线分析" empty-copy="活动尚未提供可展示的路线信息">
     <view class="analysis-header">
-      <view class="brand-line"><image src="/assets/brand/logo-circle-144.png" mode="aspectFit" /><text>CILI · ROUTE ANALYSIS</text></view>
+      <view class="brand-line"><image src="/assets/brand/logo-circle-144.png" mode="aspectFit" aria-label="此里品牌标志" /><text>CILI · ROUTE ANALYSIS</text></view>
       <view class="analysis-title">{{routeTitle}}</view>
       <view class="analysis-route">{{activityTitle}}</view>
       <view class="analysis-summary" wx:if="{{routeSummary}}">{{routeSummary}}</view>
@@ -18,8 +18,8 @@
 
     <view class="analysis-card map-card" wx:if="{{mapAvailable || mapFailed}}">
       <view class="section-head"><view><view class="section-eyebrow">ROUTE / MAP</view><view class="section-title">路线走向 · 关键地名</view></view><view class="section-count">{{keyPoints.length}} 点</view></view>
-      <view class="map-direction"><text>沿红色箭头查看骑行顺序 · 点击地图标记查看详情</text><button wx:if="{{mapFocused}}" class="map-reset" bindtap="showFullRoute">查看全线</button></view>
-      <map id="route-analysis-map" wx:if="{{mapAvailable}}" wx:key="{{mapRenderKey}}" class="route-map" latitude="{{mapLatitude}}" longitude="{{mapLongitude}}" scale="{{mapScale}}" markers="{{markers}}" polyline="{{polylines}}" include-points="{{mapPoints}}" bindmarkertap="markerTap" binderror="mapError" show-location="{{false}}"></map>
+      <view class="map-direction"><text>沿红色箭头查看骑行顺序 · 点击地图标记查看详情</text><button wx:if="{{mapFocused}}" class="map-reset" bindtap="showFullRoute" aria-label="查看完整路线">查看全线</button></view>
+      <map id="route-analysis-map" wx:if="{{mapAvailable}}" wx:key="{{mapRenderKey}}" class="route-map" latitude="{{mapLatitude}}" longitude="{{mapLongitude}}" scale="{{mapScale}}" markers="{{markers}}" polyline="{{polylines}}" include-points="{{mapPoints}}" bindmarkertap="markerTap" binderror="mapError" show-location="{{false}}" aria-label="路线走向地图，可点击标记查看关键点"></map>
       <view wx:elif="{{mapFailed}}" class="analysis-empty map-fallback">
         <view>地图暂时无法显示，路线数据仍可查看</view>
         <button class="map-retry-button" bindtap="retryMap">重试地图</button>
@@ -42,7 +42,7 @@
       <canvas id="route-analysis-elevation" type="2d" class="elevation-chart" aria-label="路线海拔剖面与当前选择"></canvas>
       <scroll-view class="anchor-strip" scroll-x enhanced show-scrollbar="{{false}}" aria-label="海拔关键锚点">
         <view class="anchor-strip-inner">
-          <button class="anchor-item {{selectedPointId === point.id ? 'is-selected' : ''}}" wx:for="{{keyPoints}}" wx:for-item="point" wx:key="id" data-id="{{point.id}}" bindtap="selectPoint"><text>{{point.typeLabel}}</text><text>{{point.kmText}}</text></button>
+          <button class="anchor-item {{selectedPointId === point.id ? 'is-selected' : ''}}" wx:for="{{keyPoints}}" wx:for-item="point" wx:key="id" data-id="{{point.id}}" bindtap="selectPoint" aria-label="选择{{point.name}}，{{point.kmText}}" aria-pressed="{{selectedPointId === point.id}}"><text>{{point.typeLabel}}</text><text>{{point.kmText}}</text></button>
         </view>
       </scroll-view>
     </view>

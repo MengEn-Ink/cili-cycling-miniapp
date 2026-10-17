@@ -17,7 +17,7 @@
     </view>
 
     <view class="form-section form-card identity-card" role="group" aria-label="报名资料">
-      <view class="section-label"><text aria-hidden="true">01</text><view><view>报名资料</view><view class="section-hint">用于审核与活动安全联络，仅你本人与审核管理员可见</view></view></view>
+      <view class="section-label"><text aria-hidden="true">01</text><view><view>报名资料</view><view class="section-hint">用于审核与活动安全联络，仅你本人与报名审核员可见</view></view></view>
       <view class="identity-list">
         <view class="identity-row"><view class="identity-label">真实姓名</view><view class="identity-value">{{profile.realName || '未填写'}}</view></view>
         <view class="identity-row"><view class="identity-label">微信昵称</view><view class="identity-value">{{profile.nickname || '未授权昵称'}}</view></view>
@@ -71,7 +71,7 @@
       <textarea class="textarea remark" placeholder-class="input-placeholder" placeholder="饮食、集合或其他备注" value="{{remark}}" data-key="remark" bindinput="set" disabled="{{submitting}}" maxlength="500" aria-label="报名备注，选填，最多500字"/>
       <view class="remark-count" aria-live="polite">{{remark.length}}/500</view>
       <view class="safety-box"><view class="info-label">紧急联系人</view><view class="info-value">{{profile.emergencyName || '未填写'}} {{profile.emergencyPhone}}</view></view>
-      <view class="privacy-note">资料仅用于活动组织和安全联络；姓名与电话仅本人及审核管理员可见，不向其他骑友展示。</view>
+      <view class="privacy-note">资料仅用于活动组织和安全联络；姓名与电话仅本人及报名审核员可见，不向其他骑友展示。</view>
     </view>
   </block>
 

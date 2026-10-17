@@ -139,7 +139,7 @@
   margin: 0;
   padding: 0 16rpx;
   border: 2rpx solid var(--color-border);
-  border-radius: 999rpx;
+  border-radius: 999rpx !important;
   font-size: 28rpx;
   line-height: 44rpx;
   font-weight: 800;

@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
   "syncedThrough": "c6319040e4b954d6707b3dadd834d5b1d1e435a6",
-  "syncedAt": "2026-10-17T02:35:00.000Z",
+  "syncedAt": "2026-10-17T12:28:00.000Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:c7d6122f6ad73aee7fc9727d02daa2e10dc35900ae57858af034d3fab6bce82d"
+    "digest": "sha256:7ad4ba6fbcbcd47224e812bd98d9856f449136bf88b925d929aef665102d959a"
   },
   "prototype": {
-    "digest": "sha256:4e34e767dec618c85ae7cf3d87fb8f075fc270f7c41f6bacc32c4dea41159757"
+    "digest": "sha256:b041a2941055728daa1440a61eb0764258da45d45e54d5184e4177ee13253348"
   },
   "routes": [
     {
@@ -68,6 +68,18 @@
     {
       "id": "admin-review-detail",
       "pagePath": "pages/admin/review-detail/index"
+    },
+    {
+      "id": "club-center",
+      "pagePath": "pages/club-center/index"
+    },
+    {
+      "id": "admin-club-applications",
+      "pagePath": "pages/admin/club-applications/index"
+    },
+    {
+      "id": "admin-club-application-detail",
+      "pagePath": "pages/admin/club-application-detail/index"
     }
   ],
   "evidence": {
@@ -99,10 +111,10 @@
         "id": "route-analysis",
         "devtools": "route-analysis-devtools.png",
         "pages": "route-analysis-pages.png",
-        "state": "地图暂不可用降级 / 核心分析仍可查看",
+        "state": "高密度路线分析已融合沸点主题",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "完整分析页与活动详情页现共用同一绘图参数和纯函数，路线与海拔终态路径由自动化视觉合同逐点比对；腾讯地图仍按 GPX 来源执行 WGS84→GCJ-02，开发版上传后复验地图贴路与两页一致性。"
+        "note": "路线分析保留地图、海拔、关键点和分段完整密度，同时接入沸点主题表面、圆角与 44px 触控下限；Pages 已同步，开发版上传后复验地图贴路与真机可读性。"
       },
       {
         "id": "registration-form",
@@ -144,10 +156,10 @@
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "默认，客户端 2026.10.17.81",
+        "state": "默认，客户端 2026.10.17.86",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "Pages 375×812 设置页截图沿用布局基线；版本已更新为 2026.10.17.81，开发版上传后核对路线视觉与 GPX 下载发布说明。"
+        "note": "Pages 375×812 设置页沿用布局基线并同步 2026.10.17.86 更新说明；开发版上传后核对当前版本唯一展示。"
       },
       {
         "id": "capability-card",
@@ -202,6 +214,33 @@
         "data": "sanitized-runtime",
         "review": "blocked",
         "note": "代码与 Pages 原型已同步到 2026.10.17.76 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+      },
+      {
+        "id": "club-center",
+        "devtools": "club-center-devtools.png",
+        "pages": "club-center-pages.png",
+        "state": "未加入俱乐部，可申请创建",
+        "data": "fixture",
+        "review": "blocked",
+        "note": "Pages 375×812 高保真夹具已采集作为新增路由结构基线；DevTools 文件为明确标注的待采集占位图，并非双端验收证据，开发版上传后替换。"
+      },
+      {
+        "id": "admin-club-applications",
+        "devtools": "admin-club-applications-devtools.png",
+        "pages": "admin-club-applications-pages.png",
+        "state": "待审核列表",
+        "data": "fixture",
+        "review": "blocked",
+        "note": "Pages 375×812 高保真夹具已采集作为新增路由结构基线；DevTools 文件为明确标注的待采集占位图，并非双端验收证据，开发版上传后替换。"
+      },
+      {
+        "id": "admin-club-application-detail",
+        "devtools": "admin-club-application-detail-devtools.png",
+        "pages": "admin-club-application-detail-pages.png",
+        "state": "申请详情待审核",
+        "data": "fixture",
+        "review": "blocked",
+        "note": "Pages 375×812 高保真夹具已采集作为新增路由结构基线；DevTools 文件为明确标注的待采集占位图，并非双端验收证据，开发版上传后替换。"
       }
     ]
   }

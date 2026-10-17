@@ -24,7 +24,7 @@
       <view class="card form-card">
         <view class="title">基础资料</view>
         <view class="muted form-tip">请填写真实、常用的信息，便于活动报名、现场联络与安全保障。</view>
-        <view class="privacy-note">敏感信息将安全保存；手机号仅本人和审核管理员可完整查看。</view>
+        <view class="privacy-note">敏感信息将安全保存；手机号仅本人和报名审核员可完整查看。</view>
         <view class="field">
           <view class="label">昵称</view>
           <input class="input" type="nickname" value="{{p.nickname}}" data-k="nickname" bindinput="set" bindblur="set" placeholder-class="input-placeholder" placeholder="点击使用微信昵称或自定义" />
