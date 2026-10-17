@@ -5,7 +5,8 @@
 ## 1. 变更入口
 
 - 功能和缺陷使用 `.github/ISSUE_TEMPLATE/` 下的结构化表单，禁止在公开 Issue 中提交凭证、真实用户资料或漏洞细节。
-- 所有代码变更通过 Pull Request 合入 `main`，PR 描述必须覆盖需求上下文、方案、验证、影响面和部署结果。
+- 所有代码变更通过 Pull Request 合入 `main`，PR 必须按八段模板填写需求上下文、背景、方案、复现/验证、改动、影响面、测试与端到端验收、改动文件，并附 `docs/verification/` 下的本次验收报告。
+- `CI / validate` 在安装依赖前执行 `check:pr-description`，自动阻断模板占位、未完成清单、缺少完整门禁结果、验收报告缺失和最终 diff 统计漂移；测试绿不能替代描述与证据完整。
 - `main` 应由单一 Repository Ruleset 保护，不再叠加一套含义相同的传统 Branch protection，避免规则来源漂移。
 
 ## 2. `main` Ruleset 基线

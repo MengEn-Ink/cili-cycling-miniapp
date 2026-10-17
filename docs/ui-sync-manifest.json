@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "c6319040e4b954d6707b3dadd834d5b1d1e435a6",
-  "syncedAt": "2026-10-17T12:28:00.000Z",
+  "syncedThrough": "7b174a33992a8a7a78aa5d8fc2ef703e3cbf3554",
+  "syncedAt": "2026-10-17T14:25:22.000Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:2f5611014a39499113dccc9d4bf552ca5d7001f1c736c0d487162bb20a584d35"
+    "digest": "sha256:88db2490fea7a0be7a90041b7372f68b2bfabf36a3dfa0a9b94826e778d04494"
   },
   "prototype": {
-    "digest": "sha256:0048ca1fc14d0a03736c8eea08e5396e05acfb5ac7c2c164b014ec0519d3b004"
+    "digest": "sha256:14f3571245bb2d0c9a6169c9426e3bdd9b6bb199b37f6ece89c0cd4a6906f928"
   },
   "routes": [
     {
@@ -156,10 +156,10 @@
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "默认，客户端 2026.10.17.87",
+        "state": "默认，客户端 2026.10.17.88",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "Pages 375×812 设置页已同步 2026.10.17.87 更新说明；微信端沿用布局基线，开发版上传后核对当前版本唯一展示。"
+        "note": "Pages 375×812 设置页已同步 2026.10.17.88 更新说明；微信端沿用布局基线，开发版上传后核对当前版本唯一展示。"
       },
       {
         "id": "capability-card",

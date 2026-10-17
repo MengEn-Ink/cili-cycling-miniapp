@@ -28,10 +28,14 @@ npm run audit:all
 
 ## 3. Pull Request 与 CI 门禁
 
-1. PR 必须以最新 `main` 为基线，描述需求背景、改动、影响、测试、回滚和文件统计。
-2. PR 的 `CI / validate` 必须完成且结论为 `success`，才能合入 `main`。
-3. CI 至少覆盖依赖安装、共享云函数包准备、`npm run validate`（含 `check:governance` 的文档口径、源码卫生与 Actions 安全基线）、覆盖率、只读 bootstrap 校验和高危依赖审计。
-4. 合并后必须再次确认 `main` push 触发的 CI 通过；PR 分支上的成功不能替代主分支最终验证。
+1. PR 必须以最新 `main` 为基线，并按 `.github/PULL_REQUEST_TEMPLATE.md` 完整填写八段：需求上下文、背景、修改方案、复现或验证路径、改动、影响面、测试与端到端验收、改动文件。
+2. 每个 PR 都必须提供完整测试用例矩阵和一份 `docs/verification/` 下的端到端验收报告；纯文档、CI 或流程变更也需说明 `N/A` 的依据和替代验证，不得删除章节或把未执行写成通过。
+3. 影响面必须覆盖行为、存量数据/兼容性、安全/隐私、部署、回滚和未处理同类项；文件数与增删行必须取自最终 `base...head` diff。
+4. PR CI 会先执行 `check:pr-description`；空章节、模板占位、未勾选项目、缺少固定门禁结果、验收报告不存在或 diff 统计漂移都会阻断合并。
+5. PR 的 `CI / validate` 必须完成且结论为 `success`，才能合入 `main`。
+6. CI 至少覆盖依赖安装、共享云函数包准备、`npm run validate`（含 `check:governance` 的文档口径、源码卫生与 Actions 安全基线）、覆盖率、只读 bootstrap 校验和高危依赖审计。
+7. 每次提交、变基或压缩后都要重新核对标题和八段描述，确保需求、测试、影响、状态及最终 diff 数字没有漂移。
+8. 合并后必须再次确认 `main` push 触发的 CI 通过；PR 分支上的成功不能替代主分支最终验证。
 
 ## 4. 自动部署规则
 
@@ -72,8 +76,9 @@ npm run audit:all
 ## 7. 交付清单
 
 - [ ] 分支基于最新 `origin/main`
-- [ ] 本地验证全部通过
-- [ ] PR 描述与最终 diff 一致
+- [ ] 完整测试用例矩阵已覆盖正常、异常、边界与回归
+- [ ] 端到端验收报告已放入 `docs/verification/`，未执行项如实标记
+- [ ] PR 八段描述、影响范围和最终 diff 统计一致
 - [ ] PR CI 通过
 - [ ] 变更已合入 `main`
 - [ ] `main` CI 通过

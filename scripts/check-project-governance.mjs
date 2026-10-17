@@ -17,7 +17,9 @@ const requiredFiles = [
   'docs/github-governance.md',
   'docs/high-priority-issues.md',
   'docs/ui-sync-manifest.json',
+  'docs/verification/pr-acceptance-report-template.md',
   'docs/verification/wechat-devtools-e2e.md',
+  '.github/PULL_REQUEST_TEMPLATE.md',
   '.github/workflows/ci.yml',
   '.github/workflows/codeql.yml',
   '.github/workflows/deploy-cloudbase.yml',
@@ -90,5 +92,28 @@ if (!packageJson.scripts?.validate?.includes('check:governance')) {
 }
 const ci = read('.github/workflows/ci.yml');
 if (!ci.includes('run: npm run validate')) throw new Error('CI 必须执行 npm run validate');
+if (!ci.includes('run: npm run check:pr-description'))
+  throw new Error('PR CI 必须执行 npm run check:pr-description');
+if (!/types:\s*\[[^\]]*\bedited\b[^\]]*\]/.test(ci)) {
+  throw new Error('PR CI 必须监听 edited，确保标题或描述修改后重新执行提交规范门禁');
+}
+
+const prTemplate = read('.github/PULL_REQUEST_TEMPLATE.md');
+for (const heading of [
+  '需求上下文',
+  '背景',
+  '修改方案',
+  '复现或验证路径',
+  '改动',
+  '影响面',
+  '测试与端到端验收',
+  '改动文件',
+])
+  requireText(prTemplate, `## ${heading}`, '.github/PULL_REQUEST_TEMPLATE.md');
+requireText(
+  prTemplate,
+  'docs/verification/pr-acceptance-report-template.md',
+  '.github/PULL_REQUEST_TEMPLATE.md',
+);
 
 console.log(`项目治理校验通过：${pageCount} 个页面、README 引用、源码卫生与 Actions 安全基线一致`);
