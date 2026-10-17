@@ -114,6 +114,7 @@ export function drawRouteOutline(
   points: RouteCoordinate[],
   pixelRatio = 1,
   routeName = '路线详情',
+  reveal = 1,
 ): void {
   const ratio = Number.isFinite(pixelRatio) && pixelRatio > 0 ? pixelRatio : 1;
   context.save();
@@ -128,17 +129,20 @@ export function drawRouteOutline(
   context.fillText(routeName || '路线详情', 24, 24);
 
   const projected = projectRouteOutline(points, width, height, 16);
-  if (projected.length >= 2) {
+  const progress = Math.max(0, Math.min(1, Number.isFinite(reveal) ? reveal : 1));
+  const visible = projected.slice(0, Math.max(2, Math.ceil((projected.length - 1) * progress) + 1));
+  if (visible.length >= 2) {
     context.beginPath();
-    context.moveTo(projected[0].x, projected[0].y);
-    for (const point of projected.slice(1)) context.lineTo(point.x, point.y);
+    context.moveTo(visible[0].x, visible[0].y);
+    for (const point of visible.slice(1)) context.lineTo(point.x, point.y);
     context.lineWidth = 6;
     context.lineCap = 'round';
     context.lineJoin = 'round';
     context.strokeStyle = '#211f1c';
     context.stroke();
 
-    const endpoints = [projected[0], projected[projected.length - 1]];
+    const endpoints =
+      progress < 1 ? [visible[visible.length - 1]] : [visible[0], visible[visible.length - 1]];
     endpoints.forEach((point, index) => {
       context.beginPath();
       context.fillStyle = index === 0 ? '#e13b2b' : '#211f1c';

@@ -11,20 +11,50 @@ export interface ElevationPoint {
   elevationM: number;
 }
 
-export function validElevationProfile(value: unknown): ElevationPoint[] {
+export function validElevationProfile(
+  value: unknown,
+  distanceKm = 0,
+  minimum?: number,
+  maximum?: number,
+): ElevationPoint[] {
   if (!Array.isArray(value)) return [];
-  return value
-    .filter(
-      (point): point is ElevationPoint =>
-        !!point &&
-        typeof point === 'object' &&
-        typeof (point as ElevationPoint).distanceKm === 'number' &&
-        Number.isFinite((point as ElevationPoint).distanceKm) &&
-        (point as ElevationPoint).distanceKm >= 0 &&
-        typeof (point as ElevationPoint).elevationM === 'number' &&
-        Number.isFinite((point as ElevationPoint).elevationM),
+  const byDistance = new Map<number, number>();
+  for (const point of value) {
+    if (
+      !point ||
+      typeof point !== 'object' ||
+      typeof (point as ElevationPoint).distanceKm !== 'number' ||
+      !Number.isFinite((point as ElevationPoint).distanceKm) ||
+      (point as ElevationPoint).distanceKm < 0 ||
+      typeof (point as ElevationPoint).elevationM !== 'number' ||
+      !Number.isFinite((point as ElevationPoint).elevationM)
     )
+      continue;
+    const rawDistance = (point as ElevationPoint).distanceKm;
+    const distance = distanceKm > 0 ? Math.min(distanceKm, rawDistance) : rawDistance;
+    byDistance.set(Number(distance.toFixed(4)), (point as ElevationPoint).elevationM);
+  }
+  const profile = [...byDistance.entries()]
+    .map(([distanceKm, elevationM]) => ({ distanceKm, elevationM }))
     .sort((left, right) => left.distanceKm - right.distanceKm);
+  if (profile.length && Number.isFinite(maximum)) {
+    const peak = Math.max(...profile.map((point) => point.elevationM));
+    if (maximum! > peak) profile.find((point) => point.elevationM === peak)!.elevationM = maximum!;
+  }
+  if (profile.length && Number.isFinite(minimum)) {
+    const low = Math.min(...profile.map((point) => point.elevationM));
+    if (minimum! < low) profile.find((point) => point.elevationM === low)!.elevationM = minimum!;
+  }
+  return profile;
+}
+
+export function activityElevationProfile(route: any): ElevationPoint[] {
+  return validElevationProfile(
+    route?.elevationProfile,
+    Number.isFinite(route?.distanceKm) && route.distanceKm > 0 ? route.distanceKm : 0,
+    route?.elevationMinM,
+    route?.elevationMaxM,
+  );
 }
 
 export function drawElevationProfile(
@@ -33,6 +63,7 @@ export function drawElevationProfile(
   height: number,
   value: unknown,
   pixelRatio = 1,
+  reveal = 1,
 ): boolean {
   const points = validElevationProfile(value);
   if (!context || points.length < 2 || width <= 0 || height <= 0) return false;
@@ -49,6 +80,8 @@ export function drawElevationProfile(
   const minElevation = Math.min(...elevations);
   const maxElevation = Math.max(...elevations);
   const elevationRange = Math.max(1, maxElevation - minElevation);
+  const progress = Math.max(0, Math.min(1, Number.isFinite(reveal) ? reveal : 1));
+  const visiblePoints = points.slice(0, Math.max(2, Math.ceil((points.length - 1) * progress) + 1));
   const coordinate = (point: ElevationPoint) => ({
     x: padding.left + ((point.distanceKm - minDistance) / (maxDistance - minDistance)) * chartWidth,
     y: padding.top + ((maxElevation - point.elevationM) / elevationRange) * chartHeight,
@@ -66,13 +99,13 @@ export function drawElevationProfile(
   gradient.addColorStop(0, 'rgba(192,50,31,.48)');
   gradient.addColorStop(1, 'rgba(192,50,31,.03)');
   context.beginPath();
-  points.forEach((point, index) => {
+  visiblePoints.forEach((point, index) => {
     const { x, y } = coordinate(point);
     if (index === 0) context.moveTo(x, y);
     else context.lineTo(x, y);
   });
-  const last = coordinate(points[points.length - 1]);
-  const first = coordinate(points[0]);
+  const last = coordinate(visiblePoints[visiblePoints.length - 1]);
+  const first = coordinate(visiblePoints[0]);
   context.lineTo(last.x, padding.top + chartHeight);
   context.lineTo(first.x, padding.top + chartHeight);
   context.closePath();
@@ -80,7 +113,7 @@ export function drawElevationProfile(
   context.fill();
 
   context.beginPath();
-  points.forEach((point, index) => {
+  visiblePoints.forEach((point, index) => {
     const { x, y } = coordinate(point);
     if (index === 0) context.moveTo(x, y);
     else context.lineTo(x, y);
@@ -101,16 +134,51 @@ export function drawElevationProfile(
   context.textAlign = 'right';
   context.fillText(`${maxDistance.toFixed(1)}km`, width - padding.right, height - 7);
 
-  const extrema = [
-    points[elevations.indexOf(maxElevation)],
-    points[elevations.indexOf(minElevation)],
-  ];
+  const markers =
+    progress < 1
+      ? [visiblePoints[visiblePoints.length - 1]]
+      : [points[elevations.indexOf(maxElevation)], points[elevations.indexOf(minElevation)]];
   context.fillStyle = '#e13b2b';
-  extrema.forEach((point) => {
+  markers.forEach((point) => {
     const { x, y } = coordinate(point);
     context.beginPath();
     context.arc(x, y, 3, 0, Math.PI * 2);
     context.fill();
   });
   return true;
+}
+
+export function runCanvasReveal(
+  canvas: any,
+  draw: (progress: number) => void,
+  complete: () => void,
+  duration = 650,
+): () => void {
+  const request = canvas?.requestAnimationFrame;
+  const cancel = canvas?.cancelAnimationFrame;
+  if (typeof request !== 'function' || typeof cancel !== 'function') {
+    draw(1);
+    complete();
+    return () => {};
+  }
+  let frame: number | undefined;
+  let stopped = false;
+  let startedAt: number | undefined;
+  const step = (timestamp: number) => {
+    if (stopped) return;
+    const now = Number.isFinite(timestamp) ? timestamp : Date.now();
+    startedAt ??= now;
+    const progress = Math.min(1, Math.max(0, (now - startedAt) / duration));
+    draw(progress);
+    if (progress >= 1) {
+      frame = undefined;
+      complete();
+    } else frame = request.call(canvas, step);
+  };
+  frame = request.call(canvas, step);
+  return () => {
+    stopped = true;
+    if (frame !== undefined) cancel.call(canvas, frame);
+    frame = undefined;
+  };
 }

@@ -849,6 +849,20 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
     expect(downloader).toHaveBeenCalledTimes(1);
   });
 
+  it.each(['Sunday.Route.gpx', 'route v2.gpx', '周日 环湖.v2.gpx'])(
+    '复杂文件名 %s 可安全落盘并分享',
+    async (fileName) => {
+      const loaded = await loadPage(async () => ({ base64: 'eA==', fileName }));
+      await loaded.definition.downloadGpx.call(loaded.context);
+      expect(wx.getFileSystemManager().writeFile).toHaveBeenCalledWith(
+        expect.objectContaining({ filePath: `/tmp/user/${fileName}` }),
+      );
+      expect(wx.shareFileMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ fileName, filePath: `/tmp/user/${fileName}` }),
+      );
+    },
+  );
+
   it('不支持分享文件时保存 GPX 并明确提示', async () => {
     const loaded = await loadPage(async () => ({ base64: 'eA==', fileName: 'route.gpx' }));
     (wx as any).shareFileMessage = undefined;
@@ -857,6 +871,23 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
       expect.objectContaining({ tempFilePath: '/tmp/user/route.gpx' }),
     );
     expect(wx.showToast).toHaveBeenCalledWith({ title: 'GPX 已保存', icon: 'success' });
+  });
+
+  it('分享或旧客户端保存失败时不误报成功', async () => {
+    const shared = await loadPage(async () => ({ base64: 'eA==', fileName: 'route.gpx' }));
+    vi.mocked(wx.shareFileMessage).mockImplementationOnce(({ fail }: any) =>
+      fail(new Error('分享失败')),
+    );
+    await shared.definition.downloadGpx.call(shared.context);
+    expect(wx.showToast).toHaveBeenCalledWith(expect.objectContaining({ title: '分享失败' }));
+    expect(wx.showToast).not.toHaveBeenCalledWith({ title: 'GPX 已保存', icon: 'success' });
+
+    const saved = await loadPage(async () => ({ base64: 'eA==', fileName: 'route.gpx' }));
+    (wx as any).shareFileMessage = undefined;
+    vi.mocked(wx.saveFile).mockImplementationOnce(({ fail }: any) => fail(new Error('保存失败')));
+    await saved.definition.downloadGpx.call(saved.context);
+    expect(wx.showToast).toHaveBeenCalledWith(expect.objectContaining({ title: '保存失败' }));
+    expect(wx.showToast).not.toHaveBeenCalledWith({ title: 'GPX 已保存', icon: 'success' });
   });
 
   it('GPX 超过 4MB 或服务失败时提示且不写文件', async () => {

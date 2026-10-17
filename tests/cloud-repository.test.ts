@@ -2645,3 +2645,27 @@ describe('CloudRepository GPX 路线契约', () => {
     }
   });
 });
+
+describe('CloudRepository GPX 文件名兼容', () => {
+  it.each(['Sunday.Route.gpx', 'route v2.gpx', '周日 环湖.v2.gpx'])(
+    '接受安全复杂文件名 %s',
+    async (filename) => {
+      const { cloud } = cloudWith(
+        success({ base64: 'eA==', filename, content_type: 'application/gpx+xml' }),
+      );
+      await expect(new CloudRepository(cloud).downloadRouteGpx('a1')).resolves.toMatchObject({
+        fileName: filename,
+      });
+    },
+  );
+
+  it.each(['../route.gpx', '..\\route.gpx', 'folder/route.gpx'])(
+    '拒绝路径穿越文件名 %s',
+    async (filename) => {
+      const { cloud } = cloudWith(
+        success({ base64: 'eA==', filename, content_type: 'application/gpx+xml' }),
+      );
+      await expectCode(new CloudRepository(cloud).downloadRouteGpx('a1'), 'INVALID_RESPONSE');
+    },
+  );
+});

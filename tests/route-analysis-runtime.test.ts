@@ -81,6 +81,37 @@ describe('路线分析页运行时可靠性', () => {
     expect(page.analysis).not.toBeNull();
   });
 
+  it('GPX 轮廓统一纠偏，同时保留微信选点生成的起点 marker 与地图中心', async () => {
+    const latitude = 39 + 0.908823;
+    const longitude = 116 + 0.39747;
+    mocks.getActivity.mockResolvedValue({
+      ...activity('GPX 活动'),
+      route: {
+        start: '起点',
+        end: '终点',
+        distanceKm: 10,
+        gpxFileId: 'cloud://env/activity-routes/owner/source.gpx',
+        startLocation: { name: '起点', address: '', latitude, longitude },
+        routeOutline: [
+          { latitude, longitude },
+          { latitude: 39.91, longitude: 116.4 },
+        ],
+      },
+    });
+    const page = await pageInstance();
+    page.activityId = 'gpx-1';
+    await page.load();
+
+    const firstLinePoint = page.data.polylines[0].points[0];
+    expect(firstLinePoint).toEqual(page.data.mapPoints[0]);
+    expect(firstLinePoint).not.toEqual({ latitude, longitude });
+    expect(page.data.markers[0]).toMatchObject({ latitude, longitude });
+    expect(page.data).toMatchObject({
+      mapLatitude: latitude,
+      mapLongitude: longitude,
+    });
+  });
+
   it('地图失败只降级地图并可轻量恢复', async () => {
     const page = await pageInstance();
     page.analysis = { outline: [{}, {}] };

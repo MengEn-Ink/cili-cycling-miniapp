@@ -59,8 +59,8 @@
 
           <view class="route-visual-heading">路线轮廓</view>
           <image wx:if="{{routeOutlineImage}}" class="route-outline-image" src="{{routeOutlineImage}}" mode="aspectFit" bindtap="previewRouteImage" aria-label="点击查看{{item.route.routeName || 'GPX 路线'}}完整路线图" />
-          <image wx:elif="{{item.route.generatedPreviewUrl}}" class="route-outline-image" src="{{item.route.generatedPreviewUrl}}" mode="aspectFit" bindtap="previewRouteImage" aria-label="点击查看{{item.route.routeName || 'GPX 路线'}}完整路线图" />
           <canvas wx:elif="{{hasRouteOutline}}" id="route-outline-canvas" type="2d" class="route-outline-canvas" aria-label="{{item.route.routeName || 'GPX 路线'}}路线轮廓"></canvas>
+          <image wx:elif="{{item.route.generatedPreviewUrl}}" class="route-outline-image" src="{{item.route.generatedPreviewUrl}}" mode="aspectFit" bindtap="previewRouteImage" aria-label="点击查看{{item.route.routeName || 'GPX 路线'}}完整路线图" />
           <view wx:else class="route-empty">暂无有效路线轮廓</view>
 
           <view class="route-visual-heading">海拔曲线</view>
