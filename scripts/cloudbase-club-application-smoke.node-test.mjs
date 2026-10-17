@@ -144,6 +144,127 @@ test('已部署 handler probe 使用锁定 CLI 并解析真实嵌套业务信封
   assert.ok(calls[0][1].includes('@cloudbase/cli@3.8.4'));
 });
 
+test('handler probe 接受 exit 1 stdout 中的预期鉴权业务信封', () => {
+  const execute = () => {
+    const error = new Error('Command failed');
+    error.status = 1;
+    error.stdout = JSON.stringify({
+      Response: {
+        Result: JSON.stringify({
+          response: JSON.stringify({
+            ok: false,
+            error: { code: 'UNAUTHENTICATED', message: '请先完成微信登录' },
+          }),
+        }),
+      },
+    });
+    error.stderr = '';
+    throw error;
+  };
+
+  assert.deepEqual(probeClubApplicationHandler({ envId: 'env-production', execute }), {
+    ok: false,
+    error: { code: 'UNAUTHENTICATED' },
+  });
+});
+
+test('handler probe 在 exit 1 无结构化输出时阻断', () => {
+  const execute = () => {
+    const error = new Error('Command failed with credential=secret');
+    error.status = 1;
+    error.stdout = '';
+    error.stderr = '';
+    throw error;
+  };
+
+  assert.throws(
+    () => probeClubApplicationHandler({ envId: 'env-production', execute }),
+    (error) => {
+      assert.match(error.message, /探针命令失败/);
+      assert.doesNotMatch(error.message, /credential|secret/);
+      return true;
+    },
+  );
+});
+
+test('handler probe 在 exit 1 返回其他业务错误码时阻断', () => {
+  const execute = () => {
+    const error = new Error('Command failed');
+    error.status = 1;
+    error.stdout = JSON.stringify({ ok: false, error: { code: 'INTERNAL_ERROR' } });
+    error.stderr = '';
+    throw error;
+  };
+
+  assert.throws(
+    () => probeClubApplicationHandler({ envId: 'env-production', execute }),
+    /探针命令失败/,
+  );
+});
+
+test('handler probe 拒绝 status 2，即使输出预期业务信封', () => {
+  const execute = () => {
+    const error = new Error('Command failed');
+    error.status = 2;
+    error.stdout = JSON.stringify({ ok: false, error: { code: 'UNAUTHENTICATED' } });
+    throw error;
+  };
+
+  assert.throws(
+    () => probeClubApplicationHandler({ envId: 'env-production', execute }),
+    /非业务执行失败/,
+  );
+});
+
+test('handler probe 拒绝 signal 终止，即使输出预期业务信封', () => {
+  const execute = () => {
+    const error = new Error('Command terminated');
+    error.status = 1;
+    error.signal = 'SIGTERM';
+    error.stdout = JSON.stringify({ ok: false, error: { code: 'UNAUTHENTICATED' } });
+    throw error;
+  };
+
+  assert.throws(
+    () => probeClubApplicationHandler({ envId: 'env-production', execute }),
+    /非业务执行失败/,
+  );
+});
+
+test('handler probe 拒绝 ENOENT 系统错误且不回显原始内容', () => {
+  const execute = () => {
+    const error = new Error('spawn npx ENOENT credential=secret');
+    error.status = 1;
+    error.code = 'ENOENT';
+    error.stdout = JSON.stringify({ ok: false, error: { code: 'UNAUTHENTICATED' } });
+    throw error;
+  };
+
+  assert.throws(
+    () => probeClubApplicationHandler({ envId: 'env-production', execute }),
+    (error) => {
+      assert.match(error.message, /非业务执行失败/);
+      assert.doesNotMatch(error.message, /ENOENT|credential|secret/);
+      return true;
+    },
+  );
+});
+
+test('handler probe 在 stdout 预期但 stderr 含冲突业务信封时阻断', () => {
+  const execute = () => {
+    const error = new Error('Command failed');
+    error.status = 1;
+    error.stdout = JSON.stringify({ ok: false, error: { code: 'UNAUTHENTICATED' } });
+    error.stderr = JSON.stringify({ ok: false, error: { code: 'INTERNAL_ERROR' } });
+    throw error;
+  };
+
+  assert.throws(
+    () => probeClubApplicationHandler({ envId: 'env-production', execute }),
+    /未返回唯一预期鉴权业务信封/,
+  );
+});
+
 test('已部署 handler 缺少业务信封或未返回 UNAUTHENTICATED 时阻断', () => {
   assert.throws(() => parseHandlerProbeOutput('{}'), /业务信封/);
   assert.throws(
