@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="从地图漂移、海拔一致性、关键地名和动态数据有效期出发，解释此里为什么先统一路线事实。"
+    />
+    <title>一条 GPX 不等于路线分析｜此里骑行</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --paper: #f4efe6;
+        --ink: #161616;
+        --muted: #68635c;
+        --line: #c9c0b3;
+        --card: #fffaf2;
+        --accent: #c83b32;
+        --accent-soft: #f0d3cc;
+        --green: #234d40;
+        --shadow: 0 18px 48px rgba(38, 31, 24, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 8% 4%, rgba(200, 59, 50, 0.09), transparent 24rem),
+          linear-gradient(180deg, #f9f5ed 0%, var(--paper) 100%);
+        font-family:
+          Inter, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+        line-height: 1.78;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .shell {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+      }
+
+      .topbar {
+        position: sticky;
+        z-index: 20;
+        top: 0;
+        border-bottom: 1px solid rgba(22, 22, 22, 0.12);
+        background: rgba(244, 239, 230, 0.9);
+        backdrop-filter: blur(16px);
+      }
+
+      .topbar-inner {
+        display: flex;
+        min-height: 64px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        text-decoration: none;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border-radius: 50%;
+        color: #fff;
+        background: var(--accent);
+        font-size: 13px;
+      }
+
+      .back-link {
+        color: var(--muted);
+        font-size: 14px;
+        text-decoration: none;
+      }
+
+      .back-link:hover {
+        color: var(--accent);
+      }
+
+      .hero {
+        padding: 76px 0 54px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .eyebrow {
+        margin: 0 0 18px;
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        max-width: 900px;
+        margin: 0;
+        font-family: "Noto Serif SC", "Songti SC", serif;
+        font-size: clamp(42px, 7vw, 82px);
+        font-weight: 800;
+        letter-spacing: -0.055em;
+        line-height: 1.06;
+      }
+
+      .dek {
+        max-width: 790px;
+        margin: 28px 0 0;
+        color: #38342f;
+        font-size: clamp(18px, 2.2vw, 24px);
+        line-height: 1.62;
+      }
+
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 22px;
+        margin-top: 28px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .figure {
+        margin: 30px 0;
+      }
+
+      .figure img {
+        display: block;
+        width: 100%;
+        height: auto;
+        border: 1px solid rgba(22, 22, 22, 0.18);
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+      }
+
+      .figure figcaption {
+        margin-top: 11px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .hero-figure {
+        margin-top: 38px;
+      }
+
+      .hero-figure img {
+        max-height: 570px;
+        object-fit: cover;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 250px;
+        gap: 68px;
+        padding: 56px 0 84px;
+      }
+
+      .summary {
+        margin-bottom: 50px;
+        padding: 28px;
+        border: 1px solid var(--ink);
+        border-radius: 20px;
+        background: var(--card);
+        box-shadow: var(--shadow);
+      }
+
+      .summary h2 {
+        margin-top: 0;
+      }
+
+      .summary ul {
+        margin-bottom: 0;
+      }
+
+      article {
+        min-width: 0;
+      }
+
+      article section {
+        scroll-margin-top: 92px;
+        padding: 42px 0;
+        border-top: 1px solid var(--line);
+      }
+
+      article section:first-of-type {
+        border-top: 0;
+      }
+
+      h2 {
+        display: grid;
+        grid-template-columns: 36px minmax(0, 1fr);
+        align-items: start;
+        gap: 14px;
+        margin: 0 0 18px;
+        font-family: Inter, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+        font-size: clamp(28px, 3.4vw, 42px);
+        font-weight: 800;
+        letter-spacing: 0;
+        line-height: 1.28;
+      }
+
+      .summary h2,
+      .sources h2 {
+        display: block;
+      }
+
+      p {
+        margin: 0 0 18px;
+        font-size: 17px;
+      }
+
+      strong {
+        font-weight: 800;
+      }
+
+      .number {
+        display: inline-flex;
+        flex: 0 0 auto;
+        width: 36px;
+        height: 36px;
+        align-items: center;
+        justify-content: center;
+        margin-top: 5px;
+        border-radius: 50%;
+        color: #fff;
+        background: var(--ink);
+        font-family: Inter, sans-serif;
+        font-size: 13px;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        margin: 28px 0;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--card);
+      }
+
+      table {
+        width: 100%;
+        min-width: 640px;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+
+      th,
+      td {
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        color: #fff;
+        background: var(--ink);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+      }
+
+      tbody tr:last-child td {
+        border-bottom: 0;
+      }
+
+      tbody tr:hover {
+        background: #fff;
+      }
+
+      .warning {
+        margin: 28px 0;
+        padding: 22px 24px;
+        border-left: 5px solid var(--accent);
+        border-radius: 4px 14px 14px 4px;
+        background: var(--accent-soft);
+      }
+
+      .warning p {
+        margin: 0;
+      }
+
+      .pullquote {
+        margin: 32px 0;
+        padding: 8px 0 8px 24px;
+        border-left: 2px solid var(--accent);
+        font-family: "Noto Serif SC", "Songti SC", serif;
+        font-size: clamp(24px, 3vw, 34px);
+        font-weight: 700;
+        line-height: 1.4;
+      }
+
+      aside {
+        position: sticky;
+        top: 90px;
+        align-self: start;
+      }
+
+      .toc {
+        padding: 22px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: rgba(255, 250, 242, 0.8);
+      }
+
+      .toc-title {
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+      }
+
+      .toc a {
+        display: block;
+        padding: 7px 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.4;
+        text-decoration: none;
+      }
+
+      .toc a:hover {
+        color: var(--accent);
+      }
+
+      .sources {
+        padding-top: 44px;
+        border-top: 1px solid var(--line);
+      }
+
+      .sources a {
+        color: var(--green);
+        text-underline-offset: 4px;
+      }
+
+      footer {
+        padding: 28px 0 48px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      @media (max-width: 860px) {
+        .layout {
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+
+        aside {
+          position: static;
+          order: -1;
+        }
+
+        .toc {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0 18px;
+        }
+
+        .toc-title {
+          grid-column: 1 / -1;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .shell {
+          width: min(100% - 22px, 1180px);
+        }
+
+        .hero {
+          padding-top: 52px;
+        }
+
+        .layout {
+          padding-top: 30px;
+        }
+
+        .summary {
+          padding: 22px;
+        }
+
+        .toc {
+          grid-template-columns: 1fr;
+        }
+
+        p {
+          font-size: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="shell topbar-inner">
+        <a class="brand" href="../index.html#delivery">
+          <span class="brand-mark">此里</span>
+          <span>研发交付中心</span>
+        </a>
+        <a class="back-link" href="../index.html#delivery">返回技术与架构</a>
+      </div>
+    </header>
+
+    <main>
+      <div class="shell hero">
+        <p class="eyebrow">Route Intelligence · Engineering Note</p>
+        <h1>一条 GPX<br />不等于路线分析</h1>
+        <p class="dek">
+          地图、海拔图、路线海报和骑行建议要长期一致，靠的不是页面继续堆信息，而是一份所有页面共同信任的路线事实。
+        </p>
+        <div class="meta">
+          <span>更新日期：2026-10-17</span>
+          <span>文档类型：项目技术文章</span>
+          <span>适用范围：Strava 公开路线与 GPX</span>
+        </div>
+        <figure class="figure hero-figure">
+          <img
+            src="../assets/articles/route-data-foundation/hero-route-foundation.webp"
+            alt="山地公路、路线轨迹与海拔曲线融合的路线数据底座概念图"
+            width="2048"
+            height="1152"
+          />
+          <figcaption>路线分析的表达可以很多，但底层必须指向同一条可信路线。</figcaption>
+        </figure>
+      </div>
+
+      <div class="shell layout">
+        <article>
+          <div class="summary">
+            <h2>先给判断</h2>
+            <ul>
+              <li>路线分析的难点不是多画几张图，而是建立统一的数据事实。</li>
+              <li>先做静态路线可信度，再接天气、路况等动态能力。</li>
+              <li>WGS84 保存事实坐标，GCJ-02 只负责国内地图展示。</li>
+              <li>云端预计算，小程序读取稳定结果并轻量渲染。</li>
+            </ul>
+          </div>
+
+          <p>
+            同一条骑行路线，在活动详情页像一张海报，在完整分析页却像另一条路：轮廓不同、海拔节点不一致，地图上的轨迹还可能偏到道路外。用户看到的是视觉问题，工程上暴露的却是同一个根因——项目里没有一份被所有页面共同信任的路线事实。
+          </p>
+          <p>
+            <strong>此里的路线能力不该从“增加信息卡片”开始，而要从统一数据底座开始。</strong>
+            GPX 提供了轨迹，但它没有自动解决坐标、抽稀、海拔噪声、关键地点、缓存版本和动态数据有效期。
+          </p>
+
+          <section id="raw-material">
+            <h2><span class="number">01</span>GPX 只是原料</h2>
+            <p>GPX 能给出经纬度、海拔和时间等基础点位。它适合做路线事实的起点，却不是可以直接交给每个页面自由解释的最终结果。</p>
+            <p>如果活动详情页自己抽稀一次，完整分析页再计算一次，两个页面即使读取同一个文件，也可能得到不同的路线轮廓。异常点过滤、平滑窗口和累计爬升算法只要有一处不同，坡顶公里数就会漂移。</p>
+            <p>可靠做法是把原始 GPX 与分析结果分开。原始文件保留用于追溯，云端生成带版本号的标准结果；活动详情、完整分析和骑行凭证读取同一版本，不再各算一遍。</p>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>数据层</th><th>保存内容</th><th>主要用途</th></tr></thead>
+                <tbody>
+                  <tr><td>原始层</td><td>GPX 文件、导入时间、来源信息</td><td>追溯、重算、异常排查</td></tr>
+                  <tr><td>标准层</td><td>清洗后的 WGS84 轨迹与里程海拔序列</td><td>统一计算事实</td></tr>
+                  <tr><td>展示层</td><td>GCJ-02 轨迹、抽稀点、关键地名与图表节点</td><td>地图、海拔图和路线海报</td></tr>
+                  <tr><td>动态层</td><td>天气、风场、路况快照及有效期</td><td>出发前建议与风险提示</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <figure class="figure">
+              <img
+                src="../assets/articles/route-data-foundation/gpx-to-route-fact.webp"
+                alt="原始轨迹经过坐标与地形校准后贴合真实山路的路线事实概念图"
+                width="1536"
+                height="1024"
+                loading="lazy"
+              />
+              <figcaption>原始轨迹是输入；经过清洗、坐标统一与版本化后，才成为跨页面复用的路线事实。</figcaption>
+            </figure>
+          </section>
+
+          <section id="coordinate">
+            <h2><span class="number">02</span>地图漂移不是一个偏移量</h2>
+            <p>GPX、OpenStreetMap、高程数据和多数天气接口通常使用 WGS84；腾讯地图、高德地图在中国大陆的展示使用 GCJ-02。把 WGS84 轨迹直接画到国内商业地图上，轨迹就会与道路错位。</p>
+            <p>最危险的修法是“看起来差多少，就整体平移多少”。这种偏移不是固定常量，同一个补偿值换到另一座城市或另一段路线就可能失效。</p>
+            <div class="pullquote">WGS84 保存事实，GCJ-02 生成展示结果。</div>
+            <p>天气、高程、开放 POI 与 GPX 在 WGS84 空间关联；腾讯或高德的地点和地图覆盖物在展示层使用 GCJ-02。系统需要记录每个字段的坐标系，而不是依赖调用方猜测。</p>
+            <div class="warning"><p><strong>禁止做法：</strong>不覆盖原始坐标，不做多次往返转换，也不用人工固定偏移量修地图。</p></div>
+          </section>
+
+          <section id="semantics">
+            <h2><span class="number">03</span>关键地名来自路线语义</h2>
+            <p>骑行者很少用“第 742 个轨迹点”理解路线。他们关心的是“出发后 18 公里到坡脚”“补给点之后连续爬升 6 公里”“坡顶附近可以休息”。路线分析要把几何点转换成可行动的路线语义。</p>
+            <p>关键节点可以先从确定性规则产生：起终点、海拔局部峰值、长坡起止、方向明显变化、累计里程节点。再用地点服务补充地名，必要时从开放数据离线补充卫生间、便利店和自行车服务点。匹配失败时保留公里数与坐标，不编造地点。</p>
+            <p>同一组关键节点必须同时服务地图、海拔图和文字说明。用户点击海拔图上的坡顶，地图应定位到同一处；活动详情展示的最高点，也应与完整分析页一致。</p>
+          </section>
+
+          <section id="freshness">
+            <h2><span class="number">04</span>动态信息必须承认会过期</h2>
+            <p>天气、风向、降水和道路事件与路线几何不同。路线可以数月不变，天气预报每隔数小时就会更新，道路事件还可能缺失或延迟。把它们写进同一份永久分析结果，会让用户在出发前看到过期判断。</p>
+                        <p>
+                          动态能力应保存为独立快照，每份数据至少带采集时间、目标时间窗、来源、有效期和状态。超过有效期后，界面显示“数据已过期”或停止给出结论；第三方请求失败时，静态路线分析仍然可用。
+                        </p>
+                        <figure class="figure">
+                          <img
+                            src="../assets/articles/route-data-foundation/route-semantics-weather.webp"
+                            alt="骑行路线沿途的坡顶、补给、卫生间、风向和天气场景插图"
+                            width="1536"
+                            height="1024"
+                            loading="lazy"
+                          />
+                          <figcaption>地名与补给描述路线“经过哪里”，天气与风场说明“此刻是否适合出发”；两类信息不能使用同一有效期。</figcaption>
+                        </figure>
+                        <div class="table-wrap">
+              <table>
+                <thead><tr><th>能力</th><th>变化速度</th><th>失效处理</th><th>推荐阶段</th></tr></thead>
+                <tbody>
+                  <tr><td>路线几何</td><td>低</td><td>版本变更后重算</td><td>M0：先稳定</td></tr>
+                  <tr><td>海拔与坡度</td><td>低</td><td>算法升级后重算</td><td>M0：先稳定</td></tr>
+                  <tr><td>地点与补给</td><td>中</td><td>缓存过期后刷新</td><td>M1：逐步补充</td></tr>
+                  <tr><td>天气与风场</td><td>高</td><td>过期即降级</td><td>M1：快照接入</td></tr>
+                  <tr><td>事故与封路</td><td>很高</td><td>来源不足时明确不可用</td><td>M2：验证后开放</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="cloud">
+            <h2><span class="number">05</span>为什么不把计算都放在小程序</h2>
+            <p>一种看似更快的方案是：小程序下载 GPX，然后在端内完成解析、平滑、海拔和关键点计算。它省掉了早期后端工作，也方便页面快速试验。</p>
+            <p>这个方案在原型阶段成立。进入真实活动后，GPX 文件大小、设备性能、网络状况和微信运行限制都会放大差异。算法升级后，旧页面和新页面还可能得到不同结果。</p>
+            <p>云端预计算增加了任务状态、结果版本和存储管理，换来的是可重复、可缓存、可观测。即使动态 Provider 暂时关闭，基础路线、海拔和关键节点仍能稳定打开。</p>
+            <div class="pullquote">端内计算适合交互，云端计算负责事实。</div>
+          </section>
+
+          <section id="counterpoint">
+            <h2><span class="number">06</span>真正的反对意见</h2>
+            <p>反对这套方案的最好理由不是“架构太复杂”，而是项目当前规模可能不需要完整数据平台。只有少量活动、路线更新不频繁时，一套本地解析函数加缓存就能满足使用，过早建设 Provider 抽象、任务队列和版本迁移会增加维护负担。</p>
+            <p>这个判断成立一半。此里现在不需要一次建成通用 GIS 平台，但已经需要统一路线事实。活动详情、完整分析、海报和骑行凭证正在共享同一批数据；地图漂移与 GPX 下载问题也说明，页面级修补的成本开始超过契约化处理。</p>
+            <p>首期不做“大平台”，只做最小底座：标准坐标、统一解析、版本化结果、跨页面复用和可验证下载。天气、POI、路况与开源路由引擎放在可关闭 Provider 后面，完成授权、配额、缓存、隐私和稳定性评审后再逐项开放。</p>
+          </section>
+
+          <section id="trust">
+            <h2><span class="number">07</span>先让路线可信</h2>
+            <p>路线分析页可以很丰富，但丰富不是第一目标。用户先要相信轨迹走在正确道路上，相信活动详情与完整分析说的是同一条路线，相信坡顶公里数不会因为换了页面而变化。</p>
+            <p>这改变了开发顺序：先完成 GPX 下载、坐标转换、统一分析结果和缓存版本，再接地点、高程补全、天气与风场。施工、事故和封路信息最后进入验证，因为这类数据最容易让“有展示”被误解为“可信覆盖”。</p>
+            <p>当数据事实稳定后，地图、海拔图、动态海报和骑行人物建议都只是不同的表达层。此里真正需要建设的，不是一张更满的页面，而是一条从 GPX 到用户判断都能被追溯的路线链路。</p>
+          </section>
+
+          <div class="sources">
+            <h2>相关资料</h2>
+            <ul>
+              <li><a href="../route-analysis-data-platform-plan.md">路线分析数据平台与开源方案</a></li>
+              <li><a href="https://lbs.qq.com/">腾讯位置服务</a></li>
+              <li><a href="https://www.openstreetmap.org/copyright">OpenStreetMap Copyright and License</a></li>
+              <li><a href="https://registry.opendata.aws/copernicus-dem/">Copernicus DEM</a></li>
+            </ul>
+          </div>
+        </article>
+
+        <aside aria-label="文章目录">
+          <nav class="toc">
+            <p class="toc-title">文章目录</p>
+            <a href="#raw-material">01 · GPX 只是原料</a>
+            <a href="#coordinate">02 · 坐标与地图漂移</a>
+            <a href="#semantics">03 · 关键地名</a>
+            <a href="#freshness">04 · 动态数据时效</a>
+            <a href="#cloud">05 · 端云分工</a>
+            <a href="#counterpoint">06 · 反对意见</a>
+            <a href="#trust">07 · 先让路线可信</a>
+          </nav>
+        </aside>
+      </div>
+    </main>
+
+    <footer>
+      <div class="shell">此里骑行 · 研发交付中心 · 技术与架构</div>
+    </footer>
+  </body>
+</html>

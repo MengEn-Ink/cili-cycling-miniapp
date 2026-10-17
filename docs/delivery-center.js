@@ -275,6 +275,19 @@
           ],
         },
         {
+          id: 'route-analysis-data-foundation-article',
+          title: '一条 GPX 不等于路线分析',
+          summary:
+            '从地图漂移、海拔一致性、关键地名和动态数据有效期出发，解释此里为什么先统一路线事实，再逐步接入天气、POI 与道路事件。',
+          maturity: 'baseline',
+          sources: [
+            {
+              label: '阅读 Pages 网页文章',
+              href: 'articles/route-analysis-data-foundation.html',
+            },
+          ],
+        },
+        {
           id: 'external-apis',
           title: '外部接口（第三方集成）',
           summary:

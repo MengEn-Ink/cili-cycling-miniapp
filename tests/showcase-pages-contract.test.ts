@@ -12,6 +12,9 @@ const script = read('docs/app.js');
 const schema = read('docs/schema.js');
 const deliveryCenter = read('docs/delivery-center.js');
 const routeAnalysisDataPlatformPlan = read('docs/route-analysis-data-platform-plan.md');
+const routeAnalysisDataFoundationArticle = read(
+  'docs/articles/route-analysis-data-foundation.html',
+);
 const templates = read('docs/templates.js');
 
 type PrototypeRuntime = {
@@ -479,6 +482,16 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(routeAnalysisDataPlatformPlan).toContain('国内商业地图与开放数据应组合使用');
     expect(routeAnalysisDataPlatformPlan).toContain('云端预计算支撑小程序轻量展示');
     expect(routeAnalysisDataPlatformPlan).toContain('先补确定性能力再接动态数据');
+    expect(deliveryCenter).toContain('一条 GPX 不等于路线分析');
+    expect(deliveryCenter).toContain('articles/route-analysis-data-foundation.html');
+    expect(renderedDeliveryCenter).toContain('href="articles/route-analysis-data-foundation.html"');
+    expect(routeAnalysisDataFoundationArticle).toContain('GPX 只是原料');
+    expect(routeAnalysisDataFoundationArticle).toContain('WGS84 保存事实，GCJ-02 生成展示结果');
+    expect(routeAnalysisDataFoundationArticle).toContain('真正的反对意见');
+    expect(routeAnalysisDataFoundationArticle).toContain('hero-route-foundation.webp');
+    expect(routeAnalysisDataFoundationArticle).toContain('gpx-to-route-fact.webp');
+    expect(routeAnalysisDataFoundationArticle).toContain('route-semantics-weather.webp');
+    expect(routeAnalysisDataFoundationArticle).toContain('loading="lazy"');
     expect(deliveryCenter).toContain('沸点手稿与全套设计交接成果');
     expect(deliveryCenter).toContain('docs/designs/2026-10-16-boiling-point/index.html');
     expect(deliveryCenter).toContain('组织地基与发布审批（俱乐部创建已实现 · 活动审批仍为原型）');
