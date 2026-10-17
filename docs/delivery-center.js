@@ -176,13 +176,24 @@
         {
           id: 'theme-constraints',
           title: '沸点设计规范与约束门禁',
-          summary: '32 个双端变量、15 组对比度；暖米白画布、墨黑信息块、深行动红白字、48px 主控件与 13 页长屏呼吸布局。',
+          summary: '32 个双端变量、15 组对比度；暖米白画布、墨黑信息块、深行动红白字、48px 主控件与统一长屏布局规范。',
           maturity: 'baseline',
           sources: [
             { label: '统一设计规范', href: BASE + 'docs/design-system.md' },
             { label: '设计契约 JSON', href: BASE + 'docs/design-contract.json' },
             { label: '沸点实施规格', href: BASE + 'docs/superpowers/specs/2026-10-16-boiling-point-design-tokens.md' },
             { label: '门禁脚本', href: BASE + 'scripts/check-design-contract.mjs' },
+          ],
+        },
+        {
+          id: 'ui-design-system',
+          title: '完整 UI 设计规范',
+          summary: '从 Master System、页面 Overrides、小程序平台边界到反模式和交付门禁，统一产品、设计、研发与验收口径。',
+          maturity: 'baseline',
+          sources: [
+            { label: '阅读 Pages 规范', href: 'ui-design-system.html' },
+            { label: '执行规范 DESIGN.md', href: BASE + 'DESIGN.md' },
+            { label: 'UI 验收清单', href: BASE + 'docs/ui-design-checklist.md' },
           ],
         },
         {

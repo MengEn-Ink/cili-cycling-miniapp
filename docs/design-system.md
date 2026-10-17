@@ -1,46 +1,22 @@
-# 此里统一设计规范
+# 此里统一设计规范索引
 
-状态：沸点风格令牌已在双端实施，等待部署与真机验收后将基线锁定为正式。基线日期 2026-10-16。适用于 `app.json` 注册页面、共享组件和 Pages；新增路线分析页的 Pages 原型、截图与严格 UI 同步由后续全量门禁补齐。结构与交互以当前 Pages 为参照，变量与可读性以 [design-contract.json](design-contract.json) 为机器可校验标准；[沸点手稿与全套设计交接成果](designs/2026-10-16-boiling-point/index.html)负责视觉验收，[沸点风格设计令牌方案](superpowers/specs/2026-10-16-boiling-point-design-tokens.md)负责实施规则。历史橙黑/暖灰主题文档仅保留决策背景。
+当前正式 UI 规范以仓库根目录 [`DESIGN.md`](../DESIGN.md) 为唯一执行入口，适用于微信小程序 17 个注册页面、共享组件、GitHub Pages 原型和技术文章。
 
-## 色彩与可读性
+## 正式基线
 
-| 用途 | 变量 / 色值 | 约束 |
-| --- | --- | --- |
-| 页面画布 / 卡片 | `--color-bg` `#fbf5ea` / `--color-surface` 白 | 暖米白承载内容，白卡承托正文 |
-| 分段底 / 禁用底 / 隐私提示 | `--color-raised` `#f3e6d0` | 米杏底，叠加 `--color-muted` 字时对比度至少 4.5:1 |
-| 正文 / 辅助 / 占位 | `#211f1c` / `#6f675d` / `#6f675d` | 正文与实际背景至少 4.5:1；占位与禁用也用 `#6f675d`，不作灰层 |
-| 主行动 | `--color-action` `#c0321f`，白字 | 对比度 5.65:1；按压态 `#a52a1c`（7.12:1） |
-| 品牌强调 | `--color-brand` `#e13b2b` | 品牌点、短线、轻量装饰；上面文字采用近黑 `--color-on-brand` `#0c0a07` |
-| 媒体承载区 | `#211f1c`，白字 / `#d4d4d4` 辅助字 | 照片上文字必须有深色承载层 |
-| 成功 / 提醒 | 深绿 `#16633a` 配 `#e7f4eb`；深琥珀 `#7a5c00` 配 `#fff2c7` | 同时出现图标或文案，不只依赖颜色 |
-| 卡片 / 控件边界 | `--color-border` `#ededed` / `--color-border-strong` `#9a9186` | 卡片线作分组装饰；交互控件边界在白底上保持至少 3:1 |
+- **完整设计规范**：[`DESIGN.md`](../DESIGN.md)——设计目标、Master System、页面 Overrides、平台边界、反模式与交付门禁。
+- **机器设计契约**：[`design-contract.json`](design-contract.json)——双端 Token 与 WCAG 对比度门槛。
+- **执行清单**：[`ui-design-checklist.md`](ui-design-checklist.md)——设计输入、状态矩阵、平台验收和部署核对。
+- **可视化规范页**：[`ui-design-system.html`](ui-design-system.html)——面向设计、产品和研发共同阅读的 Pages 入口。
+- **沸点设计交接**：[`designs/2026-10-16-boiling-point/`](designs/2026-10-16-boiling-point/)——原始视觉基线、页面手稿与 Token 清单。
+- **设计令牌方案**：[`superpowers/specs/2026-10-16-boiling-point-design-tokens.md`](superpowers/specs/2026-10-16-boiling-point-design-tokens.md)——沸点主题的历史决策与实施依据。
 
-主行动统一为深行动红白字 `#c0321f/#ffffff`，按压态 `#a52a1c`。品牌红 `#e13b2b` 只作品牌点、短线、分段装饰，上面搭配近黑文字 `#0c0a07`。错误文字沿用 `--color-brand-active`。暖黄短标签 `#f5b83f` 与墨黑字组合用于短标签场景。不得以视觉“更顺眼”为由退回旧橙黑或暖灰配色。
+## 维护口径
 
-## 控件与布局
+1. 数值调整先修改沸点交接 Token 与 `design-contract.json`，再同步 `miniprogram/app.wxss` 和 `docs/styles.css`。
+2. 页面差异写入 `DESIGN.md` 的页面 Overrides，不在局部页面创建第二套品牌规范。
+3. 新增页面必须说明 Intent、Master Mapping、Override、反模式和证据计划。
+4. UI 改动同步设置页版本说明、`docs/ui-sync-manifest.json`、双端截图、契约测试和验收报告。
+5. 第三方设计 Skill 或品牌规范只能参与推理；业务可用性、此里契约和小程序平台边界优先。
 
-- 主按钮 52 CSS px / 104rpx，次按钮 48 / 96rpx；均垂直居中、禁用态灰底深字，不使用整体透明度。
-- 文字按钮、删除、缩略图操作显式指定背景与前景；原生微信 `button` 默认背景不可假定为透明。
-- 分段控件 46 / 92rpx，内间隙 4rpx；选中墨黑白字；业务状态筛选可使用深行动红。
-- 375 CSS px 设计宽度下 `2rpx = 1px`。卡片半径 18 / 36rpx，控件半径 10–13 / 20–26rpx，页面边距 16 / 32rpx，卡片间距 14 / 28rpx。340 CSS px 下页面边距缩至 24rpx，固定按钮退化为单列。
-- 输入框显式使用正文色、白色背景、`--color-border-strong` 可见边线与 `input-placeholder`；错误信息就近展示，使用 `--color-brand-active` 文字。
-- 固定操作栏预留正文底部空间并加 `env(safe-area-inset-bottom)`；最后一个可交互元素必须可滚动到操作栏上方。
-- 大标题、长标题、集合时间允许换行；数字保持等宽排列；电话、编号完整显示。
-- 照片、路线 Canvas、空图提示与错误重试都需核验；缺图不等于视觉通过。
-
-## 数据与状态
-
-每页至少核对正常态及一项关键状态（空、失败、禁用、已报名、审核状态或表单错误）。普通骑友只见昵称；本人和审核管理员完整显示实名和电话；后援车司机电话公开完整显示。公开证据须移除真实资料与二维码。
-
-Pages 使用演示样本，模拟器使用云端数据；允许不同的标题、人数和图片，但须在截图清单记录差异。注入合成数据的截图标为 `fixture`，脱敏后的真实截图标为 `sanitized-runtime`，均不得冒充真实写链路或权限验证。
-
-## 门禁与变更流程
-
-1. 修改设计前核对本文与 Pages 对应路由和状态；变更变量时同步契约、WXSS、CSS 及关联测试。
-2. `npm run check:design` 校验 32 个双端变量与 15 组对比度；通过 `validate` 进入 CI。
-3. `npm run test:devtools:e2e` 验证真实云端只读数据、页面和媒体，失败也保存报告；结果明确包含未覆盖范围。
-4. `npm run check:ui-sync -- --strict` 校验全路由双端 PNG、同视口、状态说明及内容摘要。v2 摘要绑定被截图的内容，不要求在截图中预知最终 squash SHA；本轮沸点令牌切换后，截图证据以当前主题下的采集结果为准。
-5. 人工按同视口截图核验层级、文本、控件、触控、安全区。清单中 `differences` 或 `blocked` 须在验收记录解释，不等于视觉全量通过。
-6. 合并后核对 main CI、Pages、开发版上传，再运行同版本模拟器。iOS / Android 物理真机完整 UAT 独立记录；只有部署与验收都完成才能关闭高优清单。
-
-静态对比度门禁不模拟所有 CSS 层叠和照片亮度，PNG 存在也不证明截图正确。运行截图和真机核对是必要补充。完整操作见 [E2E 手册](verification/wechat-devtools-e2e.md)。
+历史橙黑、暖灰主题和早期 13 页说明仅作决策背景，不再覆盖当前 17 页运行基线。

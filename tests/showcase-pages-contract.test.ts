@@ -15,6 +15,10 @@ const routeAnalysisDataPlatformPlan = read('docs/route-analysis-data-platform-pl
 const routeAnalysisDataFoundationArticle = read(
   'docs/articles/route-analysis-data-foundation.html',
 );
+const uiDesignSystem = read('docs/ui-design-system.html');
+const designSystemIndex = read('docs/design-system.md');
+const designChecklist = read('docs/ui-design-checklist.md');
+const executableDesignSpec = read('DESIGN.md');
 const templates = read('docs/templates.js');
 
 type PrototypeRuntime = {
@@ -516,6 +520,49 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain('document.getElementById(targetSection)?.scrollIntoView');
     expect(css).toContain('@media (max-width: 560px)');
     expect(css).toMatch(/\.product-card-grid,[^}]*grid-template-columns:\s*1fr/s);
+  });
+
+  it('完整 UI 规范接入交付中心，并同时约束主系统、页面差异和反模式', () => {
+    const deliveryRuntime: {
+      deliveryCenter?: { render: () => string };
+    } = {};
+    new Function('window', deliveryCenter)(deliveryRuntime);
+    const renderedDeliveryCenter = deliveryRuntime.deliveryCenter?.render() ?? '';
+
+    expect(deliveryCenter).toContain("id: 'ui-design-system'");
+    expect(deliveryCenter).toContain("href: 'ui-design-system.html'");
+    expect(deliveryCenter).toContain("href: BASE + 'DESIGN.md'");
+    expect(deliveryCenter).toContain("href: BASE + 'docs/ui-design-checklist.md'");
+    expect(renderedDeliveryCenter).toContain('完整 UI 设计规范');
+    expect(renderedDeliveryCenter).toContain('href="ui-design-system.html"');
+
+    for (const content of [
+      'Master Design System',
+      '页面 Overrides',
+      '跨平台实现规则',
+      '设计推理流程',
+      '反模式',
+      '交付门禁',
+    ]) {
+      expect(executableDesignSpec).toContain(content);
+    }
+    expect(designChecklist).toContain('UI 设计与验收清单');
+    expect(designChecklist).toContain('小程序平台');
+    expect(designChecklist).toContain('Pages 平台');
+    expect(designSystemIndex).toContain('../DESIGN.md');
+    expect(designSystemIndex).toContain('ui-design-system.html');
+
+    for (const content of [
+      'MASTER SYSTEM',
+      'PRODUCT PRINCIPLES',
+      'PAGE OVERRIDES',
+      'ANTI-PATTERNS',
+      'DESIGN INTELLIGENCE',
+      'QUALITY GATES',
+      'prefers-reduced-motion',
+    ]) {
+      expect(uiDesignSystem).toContain(content);
+    }
   });
 
   it('搭建指南覆盖九步交付、技术选型、核心变量、合规清单与项目审计', () => {

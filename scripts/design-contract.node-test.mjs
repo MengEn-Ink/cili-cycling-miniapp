@@ -71,3 +71,27 @@ test('正式设计契约逐项继承沸点手稿交接令牌', () => {
   assert.deepEqual(runtime.tokens, handoff.tokens);
   assert.deepEqual(runtime.contrast, handoff.contrast);
 });
+
+test('UI 规范以 DESIGN.md 为执行入口，并链接机器契约、页面差异和验收清单', () => {
+  const spec = readFileSync('DESIGN.md', 'utf8');
+  const index = readFileSync('docs/design-system.md', 'utf8');
+  const checklist = readFileSync('docs/ui-design-checklist.md', 'utf8');
+
+  for (const heading of [
+    'Master Design System',
+    '页面 Overrides',
+    '跨平台实现规则',
+    '设计推理流程',
+    '反模式',
+    '交付门禁',
+  ]) {
+    assert.match(spec, new RegExp(heading));
+  }
+  assert.match(spec, /docs\/design-contract\.json/);
+  assert.match(spec, /docs\/ui-design-checklist\.md/);
+  assert.match(index, /\.\.\/DESIGN\.md/);
+  assert.match(index, /ui-design-system\.html/);
+  assert.match(checklist, /小程序平台/);
+  assert.match(checklist, /Pages 平台/);
+  assert.match(checklist, /可访问性与隐私/);
+});
