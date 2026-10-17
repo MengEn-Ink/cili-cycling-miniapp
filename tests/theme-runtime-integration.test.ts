@@ -42,9 +42,9 @@ describe('单一明亮外观接线', () => {
     expect(template).toContain('App 更新');
     expect(template).toContain('wx:if="{{currentRelease}}"');
     expect(template).not.toContain('wx:for="{{releaseNotes}}"');
-    expect(script).toContain("date: '2026-10-17'");
+    expect(script).toContain("date: '2026-10-18'");
     expect(script).toContain('version: CLIENT_RELEASE_VERSION');
-    expect(script).toContain("title: '俱乐部封面上传与申请体验优化'");
+    expect(script).toContain("title: '俱乐部加入与活动页面修复'");
     const latestMatches = script.match(/latest:\s*true/g) || [];
     expect(latestMatches).toHaveLength(1);
   });

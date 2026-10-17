@@ -377,6 +377,8 @@ const formatRouteDuration = (seconds?: number) => {
 
 Page({
   unloaded: false,
+  loadRevision: 0,
+  loadOptions: {} as Record<string, string>,
   saveInFlight: false,
   createRequestId: '',
   routeRequestId: '',
@@ -423,9 +425,12 @@ Page({
     routeTimeLabel: '',
     form: emptyForm(),
   },
-  async loadClubOptions() {
+  async loadClubOptions(revision?: number) {
+    const isCurrent = () =>
+      revision === undefined || (!this.unloaded && revision === this.loadRevision);
     try {
       const profile = await rideService.getProfile();
+      if (!isCurrent()) return;
       const clubOptions: ClubOption[] = [
         PUBLIC_CLUB_OPTION,
         ...(profile.clubs || [])
@@ -438,6 +443,7 @@ Page({
       ];
       this.setData({ clubOptions, clubOptionsLoadFailed: false });
     } catch {
+      if (!isCurrent()) return;
       // 俱乐部列表是活动归属的增强信息，读取失败不能阻断原有的公开活动编辑流程。
       this.setData({ clubOptions: [PUBLIC_CLUB_OPTION], clubOptionsLoadFailed: true });
     }
@@ -449,33 +455,42 @@ Page({
   },
   async onLoad(options: Record<string, string>) {
     this.unloaded = false;
-    await appStore.ensureIdentity(wx.cloud);
-    if (appStore.authStatus !== 'authenticated') {
-      this.setData({ loading: false, error: '请先完成微信身份验证' });
-      return;
-    }
+    this.loadOptions = { ...options };
+    return this.loadActivity();
+  },
+  retryLoad() {
+    if (this.unloaded) return Promise.resolve();
+    return this.loadActivity();
+  },
+  async loadActivity() {
+    const revision = ++this.loadRevision;
+    const options = { ...this.loadOptions };
     const id = typeof options.id === 'string' ? options.id : '';
+    const isCurrent = () => !this.unloaded && revision === this.loadRevision;
+    this.setData({ loading: true, allowed: false, error: '', id });
     if (typeof wx.setNavigationBarTitle === 'function') {
       wx.setNavigationBarTitle({ title: id ? '编辑活动' : '创建活动' });
     }
-    this.createRequestId = id ? '' : newCreateRequestId();
-    this.routeRequestId = newRouteRequestId();
-    this.setData({ allowed: true, isAdmin: appStore.role === 'admin', id });
+    let identityReady = false;
     try {
-      await this.loadClubOptions();
-    } catch (error) {
-      this.setData({
-        loading: false,
-        error: error instanceof Error ? error.message : '活动归属加载失败',
-      });
-      return;
-    }
-    if (!id) {
-      this.setData({ loading: false });
-      return;
-    }
-    try {
+      await appStore.ensureIdentity(wx.cloud);
+      identityReady = true;
+      if (!isCurrent()) return;
+      if (appStore.authStatus !== 'authenticated') {
+        this.setData({ loading: false, error: '请先完成微信身份验证' });
+        return;
+      }
+      this.createRequestId = id ? '' : newCreateRequestId();
+      this.routeRequestId = newRouteRequestId();
+      this.setData({ allowed: true, isAdmin: appStore.role === 'admin' });
+      await this.loadClubOptions(revision);
+      if (!isCurrent()) return;
+      if (!id) {
+        this.setData({ loading: false });
+        return;
+      }
       const activity = await rideService.getAdminActivity(id);
+      if (!isCurrent()) return;
       if (!activity) throw new Error('活动不存在');
       const images = activity.images?.length
         ? activity.images.slice(0, MAX_IMAGES)
@@ -547,9 +562,16 @@ Page({
       });
       void this.refreshMediaPreviews(activity);
     } catch (error) {
+      if (!isCurrent()) return;
+      const identityFailed = !identityReady;
       this.setData({
         loading: false,
-        error: error instanceof Error ? error.message : '活动加载失败',
+        allowed: false,
+        error: identityFailed
+          ? '身份初始化失败，请检查网络后重试'
+          : error instanceof Error
+            ? error.message
+            : '活动加载失败，请重试',
       });
     }
   },
@@ -743,6 +765,7 @@ Page({
   },
   onUnload() {
     this.unloaded = true;
+    this.loadRevision += 1;
     this.mediaPreviewRequestId += 1;
     if (!this.saveInFlight) this.cleanupSessionUploads();
   },

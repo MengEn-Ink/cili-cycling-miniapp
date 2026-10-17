@@ -1,5 +1,8 @@
 <view class="page activity-list-page">
-  <block wx:if="{{allowed}}">
+  <view class="skeleton" wx:if="{{loading}}"><view></view><view></view><view></view></view>
+  <view class="state-card" wx:elif="{{loadError}}" role="alert"><view class="title">加载失败</view><view>{{loadError}}</view><button class="btn" bindtap="retryLoad">重试</button></view>
+  <view class="state-card" wx:elif="{{!allowed}}"><view class="title">暂时无法访问活动管理</view><view class="muted">请先完成微信身份验证后重试。</view><button class="btn" bindtap="retryLoad">重试</button></view>
+  <block wx:else>
     <view class="page-title">我的活动</view>
     <view class="hero-subtitle">{{isAdmin ? '管理全部活动与发布状态' : '创建、编辑并上下架你的活动'}}</view>
     <view class="status-filters" role="tablist" aria-label="活动状态筛选">
@@ -9,8 +12,7 @@
       <button class="status-filter {{statusFilter === 'finished' ? 'active' : ''}}" role="tab" aria-selected="{{statusFilter === 'finished'}}" data-status="finished" bindtap="selectStatusFilter">已结束</button>
     </view>
     <view class="list-count" wx:if="{{items.length}}"><text>活动列表</text><text>共 {{items.length}} 场</text></view>
-    <view class="skeleton" wx:if="{{loading}}"><view></view><view></view><view></view></view>
-    <view class="state-card" wx:elif="{{!items.length && !error}}"><view class="title">还没有活动</view><view class="muted">创建第一场骑行活动草稿，发布后骑友即可报名。</view><button class="btn" bindtap="create">创建活动草稿</button></view>
+    <view class="state-card" wx:if="{{!items.length && !error}}"><view class="title">还没有活动</view><view class="muted">创建第一场骑行活动草稿，发布后骑友即可报名。</view><button class="btn" bindtap="create">创建活动草稿</button></view>
     <view class="card danger" wx:if="{{error}}" role="alert"><view class="title">加载失败</view><view>{{error}}</view></view>
     <view class="swipe-delete {{item.swipeOpen ? 'swipe-delete-active' : ''}}" wx:for="{{items}}" wx:key="id">
       <button class="secondary delete-button" catchtap="confirmDelete" data-id="{{item.id}}">删除</button>

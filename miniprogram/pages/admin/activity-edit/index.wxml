@@ -1,6 +1,9 @@
 <view class="page-shell activity-editor activity-form-page">
   <view wx:if="{{loading}}" class="state-card">正在加载活动…</view>
-  <view wx:elif="{{!allowed}}" class="state-card state-card--error">{{error || '无权访问活动管理'}}</view>
+  <view wx:elif="{{!allowed}}" class="state-card state-card--error">
+    <view>{{error || '无权访问活动管理'}}</view>
+    <button wx:if="{{error}}" class="button button--secondary" bindtap="retryLoad">重试</button>
+  </view>
   <block wx:else>
     <view class="editor-hero">
       <view class="editor-title">{{id ? '编辑活动' : '创建活动'}}</view>

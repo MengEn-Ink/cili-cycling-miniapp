@@ -21,7 +21,7 @@ const {
 const { buildCapabilityCard } = require('./capability-card');
 const { createProfileStore, missing: isNotFound } = require('./store');
 const { canonicalizeClientMedia } = require('./media-upload');
-const { loadClubMembershipSummaries } = require('./club-memberships');
+const { loadClubMembershipSummaries, resolveClubMembershipAvatars } = require('./club-memberships');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const profileStore = createProfileStore(db);
@@ -125,7 +125,9 @@ exports.main = async (event = {}) => {
       ]);
       return ok({
         ...response(profile, process.env.PII_ENCRYPTION_KEY),
-        club_memberships: clubMemberships,
+        club_memberships: await resolveClubMembershipAvatars(clubMemberships, (input) =>
+          cloud.getTempFileURL(input),
+        ),
       });
     }
     if (event.action === 'capabilityCard') {

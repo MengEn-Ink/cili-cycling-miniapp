@@ -6,6 +6,8 @@ import type {
   ClubApplicationInput,
   ClubApplicationStatus,
   ClubIdentity,
+  JoinableClub,
+  JoinedClubSummary,
   EditableActivity,
   PersonalCapabilityCard,
   PublicRoutePreview,
@@ -1196,6 +1198,36 @@ function activityPayload(value: ActivityInput) {
     status: value.status,
   };
 }
+function mapJoinableClub(raw: unknown): JoinableClub {
+  const value = expectRecord(raw);
+  if (
+    typeof value.id !== 'string' ||
+    !/^club_[a-f0-9]{64}$/.test(value.id) ||
+    typeof value.name !== 'string' ||
+    !value.name.trim() ||
+    typeof value.city !== 'string' ||
+    typeof value.introduction !== 'string' ||
+    typeof value.avatar_url !== 'string' ||
+    (value.avatar_url !== '' && !/^https:\/\//i.test(value.avatar_url))
+  )
+    return invalidResponse();
+  return {
+    id: value.id,
+    name: value.name,
+    city: value.city,
+    introduction: value.introduction,
+    avatarUrl: value.avatar_url,
+    avatarInitial: Array.from(value.name.trim())[0] || '俱',
+  };
+}
+
+function mapJoinedClubSummary(raw: unknown): JoinedClubSummary {
+  const value = expectRecord(raw);
+  if (typeof value.role !== 'string' || !value.role || value.status !== 'active')
+    return invalidResponse();
+  return { club: mapJoinableClub(value.club), role: value.role, status: 'active' };
+}
+
 function mapClubApplication(raw: unknown): ClubApplication {
   const value = expectRecord(raw);
   const status = value.status;
@@ -1527,6 +1559,20 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
   async getMyClubApplication() {
     const value = await this.call<unknown>('club-application', { action: 'mine' });
     return value === null ? null : mapClubApplication(value);
+  }
+  async listJoinableClubs() {
+    return expectRecordArray(await this.call('club-application', { action: 'listJoinable' })).map(
+      mapJoinableClub,
+    );
+  }
+  async joinPublicClub(clubId: string, requestId: string) {
+    return mapJoinedClubSummary(
+      await this.call('club-application', {
+        action: 'joinPublicClub',
+        clubId: requiredId(clubId, '俱乐部 ID'),
+        requestId: boundedId(requestId, '加入请求 ID', 8, 128),
+      }),
+    );
   }
   async saveClubApplicationDraft(value: ClubApplicationInput) {
     return mapClubApplication(

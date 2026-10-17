@@ -156,10 +156,10 @@
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "默认，客户端 2026.10.17.88",
+        "state": "默认，客户端 2026.10.18.1",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "Pages 375×812 设置页已同步 2026.10.17.88 更新说明；微信端沿用布局基线，开发版上传后核对当前版本唯一展示。"
+        "note": "Pages 375×812 设置页已同步 2026.10.18.1 更新说明；微信端沿用布局基线，开发版上传后核对当前版本唯一展示。"
       },
       {
         "id": "capability-card",

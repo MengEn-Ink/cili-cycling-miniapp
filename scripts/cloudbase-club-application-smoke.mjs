@@ -12,6 +12,7 @@ const {
   saveDraft,
   submitApplication,
   reviewApplication,
+  joinPublicClub,
 } = require('../cloudfunctions/club-application/core.js');
 const CLI_PACKAGE = '@cloudbase/cli@3.8.4';
 const GATE_VALUE = 'club-application-write';
@@ -281,6 +282,8 @@ export function createCliStore({ envId, cwd = process.cwd(), execute = execFileS
       return work({
         getAdmin: (id) => txGet('admins', id),
         getApplication: (id) => txGet('club_applications', id),
+        getClub: (id) => txGet('clubs', id),
+        getMembership: (id) => txGet('club_memberships', id),
         putApplication: (id, value) => txPut('club_applications', id, value),
         putClub: (id, value) => txPut('clubs', id, value),
         putMembership: (id, value) => txPut('club_memberships', id, value),
@@ -340,6 +343,17 @@ export async function cleanupSmokeData(store, ids) {
       verify: () => store.query('audit_logs', { target_id: ids.applicationId }),
     },
     {
+      collection: 'audit_logs',
+      filter: { target_id: ids.clubId },
+      verify: () => store.query('audit_logs', { target_id: ids.clubId }),
+    },
+    {
+      collection: 'club_memberships',
+      filter: { _id: ids.joinerMembershipId },
+      verify: async () =>
+        (await store.get('club_memberships', ids.joinerMembershipId)) ? [{}] : [],
+    },
+    {
       collection: 'club_memberships',
       filter: { _id: ids.membershipId },
       verify: async () => ((await store.get('club_memberships', ids.membershipId)) ? [{}] : []),
@@ -385,17 +399,27 @@ export async function cleanupSmokeData(store, ids) {
 export async function runClubApplicationSmoke({ store, runId, now = () => new Date() }) {
   const suffix = hash(runId).slice(0, 24);
   const applicantOpenid = `smoke_applicant_${suffix}`;
+  const joinerOpenid = `smoke_joiner_${suffix}`;
   const adminOpenid = `smoke_admin_${suffix}`;
   const appId = applicationId(applicantOpenid);
   const clubId = clubIdFor(appId);
   const membershipId = membershipIdFor(clubId, applicantOpenid);
-  const ids = { applicantOpenid, adminOpenid, applicationId: appId, clubId, membershipId };
+  const joinerMembershipId = membershipIdFor(clubId, joinerOpenid);
+  const ids = {
+    applicantOpenid,
+    joinerOpenid,
+    adminOpenid,
+    applicationId: appId,
+    clubId,
+    membershipId,
+    joinerMembershipId,
+  };
   const input = {
     club_name: `CI 骑行测试 ${suffix.slice(0, 6)}`,
     city: '测试城市',
     introduction: '这是由部署后真实写入冒烟测试创建的隔离俱乐部申请资料，仅用于校验持久化闭环。',
     applicant_contact: `ci-${suffix}`,
-    join_mode: 'admin_invite',
+    join_mode: 'public_apply',
     expected_size: 2,
     activity_types: '自动化骑行测试',
     rules_summary: '仅用于自动化验证，执行完成后必须清理全部记录。',
@@ -529,6 +553,7 @@ export async function runClubApplicationSmoke({ store, runId, now = () => new Da
       persistedClub?.source_application_id === appId && persistedClub?.status === 'active',
       'clubs 持久化',
     );
+    assert(persistedClub?.avatar_url === input.cover_file_id, 'clubs 头像传播');
     assert(
       persistedMembership?.club_id === clubId &&
         persistedMembership?.openid === applicantOpenid &&
@@ -544,7 +569,41 @@ export async function runClubApplicationSmoke({ store, runId, now = () => new Da
       'club_application_approved',
     ])
       assert(actions.has(action), `audit ${action}`);
-    return { stages: 6, auditCount: audits.length };
+
+    const joinRequestId = `join_public_${suffix}`;
+    const firstJoin = await joinPublicClub(
+      store,
+      { openid: joinerOpenid, clubId, requestId: joinRequestId },
+      now(),
+    );
+    const repeatedJoin = await joinPublicClub(
+      store,
+      { openid: joinerOpenid, clubId, requestId: joinRequestId },
+      now(),
+    );
+    const [persistedJoinerMembership, joinAudits] = await Promise.all([
+      store.get('club_memberships', joinerMembershipId),
+      store.query('audit_logs', { target_id: clubId }),
+    ]);
+    assert(
+      firstJoin.role === 'MEMBER' &&
+        repeatedJoin.role === 'MEMBER' &&
+        firstJoin.status === 'active' &&
+        repeatedJoin.status === 'active',
+      '公开加入返回值与重复请求幂等',
+    );
+    assert(
+      persistedJoinerMembership?.club_id === clubId &&
+        persistedJoinerMembership?.openid === joinerOpenid &&
+        persistedJoinerMembership?.role === 'MEMBER' &&
+        persistedJoinerMembership?.status === 'active',
+      '第二用户 MEMBER membership 持久化',
+    );
+    assert(
+      joinAudits.length === 1 && joinAudits[0]?.action === 'public_club_joined',
+      '公开加入 audit',
+    );
+    return { stages: 7, auditCount: audits.length + joinAudits.length };
   } finally {
     await cleanupSmokeData(store, ids);
   }

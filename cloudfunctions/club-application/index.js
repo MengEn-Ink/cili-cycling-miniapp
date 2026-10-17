@@ -5,11 +5,17 @@ const {
   ClubApplicationError,
   applicationId,
   project,
+  listJoinableClubs,
+  joinPublicClub,
   saveDraft,
   submitApplication,
   reviewApplication,
 } = require('./core');
-const { resolveApplicationCover, resolveApplicationCovers } = require('./media');
+const {
+  resolveApplicationCover,
+  resolveApplicationCovers,
+  resolveJoinableClubAvatars,
+} = require('./media');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
@@ -43,6 +49,8 @@ function transactionStore() {
         work({
           getAdmin: (id) => maybeGet(transaction.collection('admins'), id),
           getApplication: (id) => maybeGet(transaction.collection('club_applications'), id),
+          getClub: (id) => maybeGet(transaction.collection('clubs'), id),
+          getMembership: (id) => maybeGet(transaction.collection('club_memberships'), id),
           putApplication: async (id, value) => {
             const { _id, ...data } = value;
             await transaction.collection('club_applications').doc(id).set({ data });
@@ -74,6 +82,23 @@ exports.main = async (event = {}) => {
     if (event.action === 'mine') {
       const value = await maybeGet(db.collection('club_applications'), applicationId(openid));
       return ok(await resolveApplicationCover(cloud, project(value), openid));
+    }
+    if (event.action === 'listJoinable') {
+      const result = await db
+        .collection('clubs')
+        .where({ approval_status: 'approved', status: 'active', join_mode: 'public_apply' })
+        .limit(100)
+        .get();
+      return ok(await resolveJoinableClubAvatars(cloud, listJoinableClubs(result.data)));
+    }
+    if (event.action === 'joinPublicClub') {
+      const joined = await joinPublicClub(
+        transactionStore(),
+        { openid, clubId: event.clubId, requestId: event.requestId },
+        new Date(),
+      );
+      const [club] = await resolveJoinableClubAvatars(cloud, [joined.club]);
+      return ok({ ...joined, club });
     }
     if (event.action === 'saveDraft') {
       const value = await saveDraft(

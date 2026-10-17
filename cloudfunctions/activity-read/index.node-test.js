@@ -1288,3 +1288,55 @@ test('详情并行读取发布人、人数计数和两种参与状态且保持�
   );
   assert.deepEqual(result.data.publisher, { nickname: '组织者', avatar_url: '' });
 });
+
+test('activity-read 批量签名嵌套俱乐部头像且失败项返回空', async () => {
+  const future = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  const list = [
+    {
+      _id: 'club-avatar-success',
+      title: '签名成功',
+      status: 'published',
+      event_end: future,
+      club_id: 'club-success',
+      club_identity: {
+        id: 'club-success',
+        name: '成功俱乐部',
+        avatar_url: 'cloud://env/clubs/success.jpg',
+      },
+    },
+    {
+      _id: 'club-avatar-failed',
+      title: '签名失败',
+      status: 'published',
+      event_end: future,
+      club_id: 'club-failed',
+      club_identity: {
+        id: 'club-failed',
+        name: '失败俱乐部',
+        avatar_url: 'cloud://env/clubs/failed.jpg',
+      },
+    },
+  ];
+  const { main } = loadMain(undefined, list, {
+    getTempFileURL: async () => ({
+      fileList: [
+        {
+          fileID: 'cloud://env/clubs/success.jpg',
+          status: 0,
+          tempFileURL: 'https://temporary.example/club-success.jpg',
+        },
+        { fileID: 'cloud://env/clubs/failed.jpg', status: -1 },
+      ],
+    }),
+  });
+
+  const result = await main({ action: 'list', filter: 'upcoming' });
+  const byId = new Map(result.data.map((activity) => [activity._id, activity]));
+
+  assert.equal(
+    byId.get('club-avatar-success').club_identity.avatar_url,
+    'https://temporary.example/club-success.jpg',
+  );
+  assert.equal(byId.get('club-avatar-failed').club_identity.avatar_url, '');
+  assert.equal(JSON.stringify(result.data).includes('cloud://env/clubs/'), false);
+});

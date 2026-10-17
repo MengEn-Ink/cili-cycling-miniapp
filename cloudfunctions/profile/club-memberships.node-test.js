@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { loadClubMembershipSummaries } = require('./club-memberships');
+const { loadClubMembershipSummaries, resolveClubMembershipAvatars } = require('./club-memberships');
 
 function database({ memberships, clubs }) {
   return {
@@ -108,4 +108,76 @@ test('profile 过滤未审批、缺失和重复俱乐部关系', async () => {
   const summaries = await loadClubMembershipSummaries(database({ memberships, clubs }), 'owner');
   assert.equal(summaries.length, 1);
   assert.equal(summaries[0].club_id, 'club-ok');
+});
+
+test('profile 对旧俱乐部仅在 avatar_url 缺失时回退 cover_file_id', async () => {
+  const memberships = [
+    { club_id: 'legacy', openid: 'owner', role: 'OWNER', status: 'active' },
+    { club_id: 'empty', openid: 'owner', role: 'ADMIN', status: 'active' },
+  ];
+  const clubs = new Map([
+    [
+      'legacy',
+      {
+        name: '旧俱乐部',
+        cover_file_id: 'cloud://env/clubs/legacy.jpg',
+        approval_status: 'approved',
+        status: 'active',
+      },
+    ],
+    [
+      'empty',
+      {
+        name: '空头像俱乐部',
+        avatar_url: '',
+        cover_file_id: 'cloud://env/clubs/must-not-fallback.jpg',
+        approval_status: 'approved',
+        status: 'active',
+      },
+    ],
+  ]);
+
+  const summaries = await loadClubMembershipSummaries(database({ memberships, clubs }), 'owner');
+  const byId = new Map(summaries.map((summary) => [summary.club_id, summary]));
+
+  assert.equal(byId.get('legacy').club_identity.avatar_url, 'cloud://env/clubs/legacy.jpg');
+  assert.equal(byId.get('empty').club_identity.avatar_url, '');
+});
+
+test('profile 将 cloud 俱乐部头像签成安全 https，签名失败时不泄露 file id', async () => {
+  const summaries = [
+    {
+      club_id: 'success',
+      role: 'OWNER',
+      club_identity: { id: 'success', name: '成功', avatar_url: 'cloud://env/clubs/success.jpg' },
+    },
+    {
+      club_id: 'failed',
+      role: 'ADMIN',
+      club_identity: { id: 'failed', name: '失败', avatar_url: 'cloud://env/clubs/failed.jpg' },
+    },
+  ];
+  const resolved = await resolveClubMembershipAvatars(summaries, async () => ({
+    fileList: [
+      {
+        fileID: 'cloud://env/clubs/success.jpg',
+        status: 0,
+        tempFileURL: 'https://temporary.example/success.jpg',
+      },
+      {
+        fileID: 'cloud://env/clubs/failed.jpg',
+        status: -1,
+        tempFileURL: 'cloud://env/clubs/failed.jpg',
+      },
+    ],
+  }));
+
+  assert.equal(resolved[0].club_identity.avatar_url, 'https://temporary.example/success.jpg');
+  assert.equal(resolved[1].club_identity.avatar_url, '');
+  assert.equal(JSON.stringify(resolved).includes('cloud://'), false);
+
+  const rejected = await resolveClubMembershipAvatars([summaries[0]], async () => {
+    throw new Error('sign failed');
+  });
+  assert.equal(rejected[0].club_identity.avatar_url, '');
 });

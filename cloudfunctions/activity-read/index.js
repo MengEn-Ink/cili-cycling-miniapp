@@ -58,6 +58,7 @@ async function resolveActivityMedia(activities) {
           activity.cover_image,
           activity.group_qr_code,
           activity.route && activity.route.generated_preview_file_id,
+          activity.club_identity && activity.club_identity.avatar_url,
           ...(Array.isArray(activity.images) ? activity.images : []),
         ].filter((value) => typeof value === 'string' && value.startsWith('cloud://')),
       ),
@@ -68,7 +69,8 @@ async function resolveActivityMedia(activities) {
   try {
     response = await cloud.getTempFileURL({ fileList: fileIds });
   } catch {
-    return activities;
+    // 常规活动媒体沿用原 file id 降级；俱乐部私有头像在下方单独 fail closed。
+    response = undefined;
   }
   const resolved = new Map();
   for (const item of Array.isArray(response && response.fileList) ? response.fileList : []) {
@@ -82,6 +84,18 @@ async function resolveActivityMedia(activities) {
     cover_image: resolve(activity.cover_image),
     images: Array.isArray(activity.images) ? activity.images.map(resolve) : activity.images,
     group_qr_code: resolve(activity.group_qr_code),
+    ...(activity.club_identity && typeof activity.club_identity === 'object'
+      ? {
+          club_identity: {
+            ...activity.club_identity,
+            avatar_url:
+              typeof activity.club_identity.avatar_url === 'string' &&
+              activity.club_identity.avatar_url.startsWith('cloud://')
+                ? resolved.get(activity.club_identity.avatar_url) || ''
+                : safeHttpsUrl(activity.club_identity.avatar_url),
+          },
+        }
+      : {}),
     ...(activity.route && typeof activity.route === 'object'
       ? {
           route: {

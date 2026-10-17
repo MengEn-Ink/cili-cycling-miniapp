@@ -75,6 +75,13 @@ function clubIsSelectable(club) {
   return Boolean(club && club.approval_status === 'approved' && club.status === 'active');
 }
 
+function clubAvatarUrl(club) {
+  const value = Object.prototype.hasOwnProperty.call(club, 'avatar_url')
+    ? club.avatar_url
+    : club.cover_file_id;
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 async function resolveTrustedClubIdentity(tx, { clubId, openid, isAdmin }) {
   if (!clubId) return { clubId: null, clubIdentity: null };
   if (typeof clubId !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(clubId))
@@ -99,7 +106,7 @@ async function resolveTrustedClubIdentity(tx, { clubId, openid, isAdmin }) {
     clubIdentity: {
       id: clubId,
       name: club.name.trim(),
-      avatar_url: typeof club.avatar_url === 'string' ? club.avatar_url.trim() : '',
+      avatar_url: clubAvatarUrl(club),
     },
   };
 }

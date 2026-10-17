@@ -86,6 +86,7 @@ function appendUnique(current: any[], incoming: any[]) {
 }
 
 Page({
+  _unloaded: false,
   _listRevision: 0,
   _loadMorePromise: undefined as Promise<void> | undefined,
   _loadMoreCursor: '',
@@ -102,6 +103,7 @@ Page({
   data: {
     items: [] as any[],
     error: '',
+    loadError: '',
     allowed: false,
     isAdmin: false,
     cloneSourceId: '',
@@ -115,44 +117,62 @@ Page({
     statusFilter: 'all' as StatusFilter,
   },
   async onShow() {
+    this._unloaded = false;
     const revision = this._listRevision + 1;
     this._listRevision = revision;
+    const isCurrent = () => !this._unloaded && revision === this._listRevision;
     this._loadMorePromise = undefined;
     this._loadMoreCursor = '';
     this._loadMoreRevision = revision;
-    // 新一轮刷新已经使旧分页请求失效，先收敛其视觉状态，避免身份检查失败后一直显示加载中。
-    this.setData({ loadingMore: false });
-    await appStore.ensureIdentity(wx.cloud);
-    if (revision !== this._listRevision) return;
-    if (appStore.authStatus !== 'authenticated') {
-      this.setData({
-        error: '请先完成微信身份验证',
-        allowed: false,
-        loading: false,
-        loadingMore: false,
-      });
-      return;
-    }
-    this.setData({ loading: true, loadingMore: false, error: '' });
+    // 身份和列表读取都属于本轮加载；先展示加载态，不能把身份尚未完成误判为无权限。
+    this.setData({ loading: true, loadingMore: false, error: '', loadError: '' });
+    let identityReady = false;
     try {
+      await appStore.ensureIdentity(wx.cloud);
+      identityReady = true;
+      if (!isCurrent()) return;
+      if (appStore.authStatus !== 'authenticated') {
+        this.setData({
+          error: '',
+          loadError: '',
+          allowed: false,
+          loading: false,
+          loadingMore: false,
+        });
+        return;
+      }
+      this.setData({ allowed: true, isAdmin: appStore.role === 'admin' });
       const page = await rideService.listAdminActivitiesPage(
         pageInput(this.data.statusFilter as StatusFilter),
       );
-      if (revision !== this._listRevision) return;
+      if (!isCurrent()) return;
       this.setData({
         items: page.items.map(displayItem),
         nextCursor: page.nextCursor,
         hasMore: page.nextCursor !== null,
-        allowed: true,
-        isAdmin: appStore.role === 'admin',
         error: '',
       });
     } catch (error) {
-      if (revision !== this._listRevision) return;
-      this.setData({ error: error instanceof Error ? error.message : '加载失败' });
+      if (!isCurrent()) return;
+      this.setData({
+        loadError: !identityReady
+          ? '身份初始化失败，请检查网络后重试'
+          : error instanceof Error
+            ? error.message
+            : '活动列表加载失败，请重试',
+      });
     } finally {
-      if (revision === this._listRevision) this.setData({ loading: false });
+      if (isCurrent()) this.setData({ loading: false, loadingMore: false });
     }
+  },
+  retryLoad() {
+    return this.onShow();
+  },
+  onUnload() {
+    this._unloaded = true;
+    this._listRevision += 1;
+    this._loadMorePromise = undefined;
+    this._loadMoreCursor = '';
   },
   loadMore() {
     const revision = this._listRevision;
