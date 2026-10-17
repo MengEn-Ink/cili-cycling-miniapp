@@ -12,6 +12,58 @@ function compareSummary(left, right) {
   return left.club_id < right.club_id ? -1 : left.club_id > right.club_id ? 1 : 0;
 }
 
+function clubAvatarUrl(club) {
+  const value = Object.prototype.hasOwnProperty.call(club, 'avatar_url')
+    ? club.avatar_url
+    : club.cover_file_id;
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function safeHttpsUrl(value) {
+  if (typeof value !== 'string' || value.length > 2048) return '';
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' ? url.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
+async function resolveClubMembershipAvatars(summaries, getTempFileURL) {
+  const fileIds = [
+    ...new Set(
+      summaries
+        .map((summary) => summary?.club_identity?.avatar_url)
+        .filter((value) => typeof value === 'string' && value.startsWith('cloud://')),
+    ),
+  ];
+  const resolved = new Map();
+  if (fileIds.length && typeof getTempFileURL === 'function') {
+    try {
+      const response = await getTempFileURL({ fileList: fileIds });
+      for (const item of Array.isArray(response?.fileList) ? response.fileList : []) {
+        const url = item && Number(item.status) === 0 ? safeHttpsUrl(item.tempFileURL) : '';
+        if (fileIds.includes(item?.fileID) && url && !resolved.has(item.fileID))
+          resolved.set(item.fileID, url);
+      }
+    } catch {
+      // 私有头像签名失败时 fail closed，不能把 cloud file id 返回客户端。
+    }
+  }
+  return summaries.map((summary) => {
+    const avatar = summary.club_identity.avatar_url;
+    return {
+      ...summary,
+      club_identity: {
+        ...summary.club_identity,
+        avatar_url: avatar.startsWith('cloud://')
+          ? resolved.get(avatar) || ''
+          : safeHttpsUrl(avatar),
+      },
+    };
+  });
+}
+
 async function loadClubMembershipSummaries(db, openid) {
   const result = await db
     .collection('club_memberships')
@@ -50,7 +102,7 @@ async function loadClubMembershipSummaries(db, openid) {
         club_identity: {
           id: membership.club_id,
           name: club.name.trim(),
-          avatar_url: typeof club.avatar_url === 'string' ? club.avatar_url.trim() : '',
+          avatar_url: clubAvatarUrl(club),
         },
       };
     }),
@@ -58,4 +110,9 @@ async function loadClubMembershipSummaries(db, openid) {
   return summaries.filter(Boolean).sort(compareSummary);
 }
 
-module.exports = { activeApprovedClub, loadClubMembershipSummaries };
+module.exports = {
+  activeApprovedClub,
+  clubAvatarUrl,
+  resolveClubMembershipAvatars,
+  loadClubMembershipSummaries,
+};

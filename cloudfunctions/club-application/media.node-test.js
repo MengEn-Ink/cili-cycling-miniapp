@@ -1,7 +1,11 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { resolveApplicationCover, resolveApplicationCovers } = require('./media');
+const {
+  resolveApplicationCover,
+  resolveApplicationCovers,
+  resolveJoinableClubAvatars,
+} = require('./media');
 
 const application = (owner, suffix = 'cover.jpg') => ({
   id: `application-${owner}`,
@@ -116,4 +120,26 @@ test('单批解析失败只降级该批且后续批次继续解析', async () =>
   assert.ok(result.slice(0, 50).every((item) => item.cover_url.startsWith('https://')));
   assert.ok(result.slice(50, 100).every((item) => item.cover_url === ''));
   assert.match(result[100].cover_url, /^https:\/\//);
+});
+
+test('可加入俱乐部头像只返回 HTTPS，签名失败时 fail closed', async () => {
+  const cloudId = 'cloud://env/clubs/private-avatar.jpg';
+  const originalWarn = console.warn;
+  console.warn = () => undefined;
+  try {
+    const failed = await resolveJoinableClubAvatars(
+      { getTempFileURL: async () => Promise.reject(new Error(`secret ${cloudId}`)) },
+      [
+        { id: 'club-1', avatar_url: cloudId },
+        { id: 'club-2', avatar_url: 'http://unsafe.example/avatar.jpg' },
+        { id: 'club-3', avatar_url: 'https://safe.example/avatar.jpg' },
+      ],
+    );
+    assert.deepEqual(
+      failed.map((item) => item.avatar_url),
+      ['', '', 'https://safe.example/avatar.jpg'],
+    );
+  } finally {
+    console.warn = originalWarn;
+  }
 });

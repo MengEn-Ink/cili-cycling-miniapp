@@ -16,6 +16,7 @@ function makeInner() {
     getProfile: vi.fn(),
     getPersonalCapabilityCard: vi.fn(),
     getPhoneNumber: vi.fn(),
+    joinPublicClub: vi.fn(),
     saveActivity: vi.fn(),
     cloneActivity: vi.fn(),
     deleteActivity: vi.fn(),
@@ -320,6 +321,52 @@ describe('CachingRepository 写后失效', () => {
     expect(inner.getProfile).toHaveBeenCalledTimes(2);
     expect(inner.listRegistrations).toHaveBeenCalledTimes(2);
     expect(inner.getActivity).toHaveBeenCalledTimes(2);
+  });
+
+  it('公开加入成功后失效 profile 缓存并立即回源新 membership', async () => {
+    vi.mocked(inner.getProfile)
+      .mockResolvedValueOnce({ nickname: '骑手', clubs: [] } as unknown as Awaited<
+        ReturnType<RideRepository['getProfile']>
+      >)
+      .mockResolvedValueOnce({ nickname: '骑手', clubs: [{ clubId: 'club-1' }] } as Awaited<
+        ReturnType<RideRepository['getProfile']>
+      >);
+    vi.mocked(inner.joinPublicClub).mockResolvedValue({
+      club: {
+        id: 'club-1',
+        name: '山海骑行会',
+        city: '深圳',
+        introduction: '每周组织安全友好的骑行活动',
+        avatarUrl: '',
+        avatarInitial: '山',
+      },
+      role: 'MEMBER',
+      status: 'active',
+    });
+
+    await repo.getProfile();
+    await repo.getProfile();
+    expect(inner.getProfile).toHaveBeenCalledOnce();
+
+    await repo.joinPublicClub('club-1', 'join-request-0001');
+    const fresh = await repo.getProfile();
+
+    expect(inner.getProfile).toHaveBeenCalledTimes(2);
+    expect(fresh.clubs).toHaveLength(1);
+  });
+
+  it('公开加入失败时不清理 profile 缓存', async () => {
+    const cachedProfile = { nickname: '骑手', clubs: [] } as unknown as Awaited<
+      ReturnType<RideRepository['getProfile']>
+    >;
+    vi.mocked(inner.getProfile).mockResolvedValue(cachedProfile);
+    vi.mocked(inner.joinPublicClub).mockRejectedValue(new Error('加入失败'));
+
+    await repo.getProfile();
+    await expect(repo.joinPublicClub('club-1', 'join-request-0001')).rejects.toThrow('加入失败');
+    await expect(repo.getProfile()).resolves.toBe(cachedProfile);
+
+    expect(inner.getProfile).toHaveBeenCalledOnce();
   });
 
   it('写入失效后晚到的旧读取不会重新污染资料缓存', async () => {

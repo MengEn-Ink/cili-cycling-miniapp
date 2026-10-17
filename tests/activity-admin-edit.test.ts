@@ -155,6 +155,46 @@ describe('日常活动极简创建与编辑', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
+  it('创建页身份初始化失败后结束加载，并可携带原始 options 重试成功', async () => {
+    appStore.ensureIdentity
+      .mockRejectedValueOnce(new Error('identity detail'))
+      .mockResolvedValueOnce(undefined);
+
+    await page.onLoad({ source: 'create-entry' });
+
+    expect(page.data).toEqual(
+      expect.objectContaining({
+        loading: false,
+        allowed: false,
+        error: '身份初始化失败，请检查网络后重试',
+      }),
+    );
+    expect(page.loadOptions).toEqual({ source: 'create-entry' });
+
+    await page.retryLoad();
+
+    expect(appStore.ensureIdentity).toHaveBeenCalledTimes(2);
+    expect(page.data).toEqual(expect.objectContaining({ loading: false, allowed: true, id: '' }));
+  });
+
+  it('历史活动身份初始化失败后重试仍携带原始 id 并加载活动', async () => {
+    appStore.ensureIdentity
+      .mockRejectedValueOnce(new Error('identity detail'))
+      .mockResolvedValueOnce(undefined);
+
+    await page.onLoad({ id: 'history-activity', from: 'history' });
+    expect(page.data.loading).toBe(false);
+    expect(rideService.getAdminActivity).not.toHaveBeenCalled();
+
+    await page.retryLoad();
+
+    expect(page.loadOptions).toEqual({ id: 'history-activity', from: 'history' });
+    expect(rideService.getAdminActivity).toHaveBeenCalledWith('history-activity');
+    expect(page.data).toEqual(
+      expect.objectContaining({ loading: false, allowed: true, id: 'history-activity' }),
+    );
+  });
+
   it('保留不在当前会员关系列表中的活动俱乐部快照与归属', async () => {
     const retainedActivity: Activity = {
       ...activity,

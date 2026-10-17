@@ -4,6 +4,8 @@ import type {
   ClubApplication,
   ClubApplicationInput,
   ClubApplicationStatus,
+  JoinableClub,
+  JoinedClubSummary,
   EditableActivity,
   PersonalCapabilityCard,
   PublicRoutePreview,
@@ -81,6 +83,8 @@ export interface AdminReviewRepository {
 }
 export interface ClubApplicationRepository {
   getMyClubApplication(): Promise<ClubApplication | null>;
+  listJoinableClubs(): Promise<JoinableClub[]>;
+  joinPublicClub(clubId: string, requestId: string): Promise<JoinedClubSummary>;
   saveClubApplicationDraft(value: ClubApplicationInput): Promise<ClubApplication>;
   submitClubApplication(value: ClubApplicationInput, requestId: string): Promise<ClubApplication>;
   listClubApplications(status?: ClubApplicationStatus): Promise<ClubApplication[]>;

@@ -69,7 +69,7 @@ describe('2026-10-17 UX 复查：按钮居中、profile 大图、设置简化、
     expect(SETTINGS_TS).toMatch(/latest:\s*true/);
     const latestMatches = SETTINGS_TS.match(/latest:\s*true/g) || [];
     expect(latestMatches).toHaveLength(1);
-    expect(SETTINGS_TS).toContain("date: '2026-10-17'");
+    expect(SETTINGS_TS).toContain("date: '2026-10-18'");
     // 技术词检查仅针对面向用户的 RELEASE_NOTES 字段内容，不包含源码注释。
     const releaseNotesBlock =
       SETTINGS_TS.match(/const RELEASE_NOTES[\s\S]*?\]\s*as const;/)?.[0] || '';

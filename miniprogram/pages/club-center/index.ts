@@ -1,4 +1,10 @@
-import type { ClubApplication, ClubApplicationInput, ClubJoinMode } from '../../models';
+import type {
+  ClubApplication,
+  ClubApplicationInput,
+  ClubJoinMode,
+  JoinableClub,
+  JoinedClubSummary,
+} from '../../models';
 import { rideService } from '../../services/ride-service';
 import { appStore } from '../../store/app-store';
 
@@ -14,7 +20,7 @@ const EMPTY_FORM: ClubApplicationInput = {
   coverFileId: '',
 };
 const JOIN_MODES: { value: ClubJoinMode; label: string }[] = [
-  { value: 'public_apply', label: '公开申请' },
+  { value: 'public_apply', label: '公开加入' },
   { value: 'invite_code', label: '邀请码加入' },
   { value: 'admin_invite', label: '管理员邀请' },
 ];
@@ -64,8 +70,21 @@ function toForm(value: ClubApplication): ClubApplicationInput {
 
 Page({
   submitRequestId: '',
+  joinRequestIds: {} as Record<string, string>,
+  loadRevision: 0,
+  unloaded: false,
+  isCurrent(revision: number) {
+    return !this.unloaded && this.loadRevision === revision;
+  },
   data: {
     application: null as ClubApplication | null,
+    joinableClubs: [] as JoinableClub[],
+    joinedClub: null as JoinedClubSummary | null,
+    joinedClubName: '',
+    discoverMode: false,
+    createMode: false,
+    joiningClubId: '',
+    joinError: '',
     form: { ...EMPTY_FORM },
     coverPreviewUrl: '',
     joinModes: JOIN_MODES,
@@ -80,20 +99,38 @@ Page({
     fieldErrorKey: '',
   },
   onShow() {
+    this.unloaded = false;
     void this.load();
   },
+  onUnload() {
+    this.unloaded = true;
+    this.loadRevision += 1;
+  },
   async load() {
+    const revision = ++this.loadRevision;
     this.setData({ loading: true, loadError: '' });
     try {
       await appStore.ensureIdentity(wx.cloud);
+      if (!this.isCurrent(revision)) return;
       if (appStore.authStatus !== 'authenticated') {
         this.setData({ loading: false, loadError: '请先完成微信登录后再申请创建俱乐部' });
         return;
       }
-      const application = await rideService.getMyClubApplication();
+      const [profile, application, joinableClubs] = await Promise.all([
+        rideService.getProfile(),
+        rideService.getMyClubApplication(),
+        rideService.listJoinableClubs(),
+      ]);
+      if (!this.isCurrent(revision)) return;
       const form = application ? toForm(application) : { ...EMPTY_FORM };
+      const hasClub = profile.clubs.length > 0;
+      const discoverMode = !hasClub && !application && !this.data.joinedClub;
       this.setData({
         application,
+        joinableClubs,
+        discoverMode,
+        joinedClubName: this.data.joinedClub?.club.name || profile.clubs[0]?.name || '',
+        createMode: application ? ['draft', 'rejected'].includes(application.status) : false,
         form,
         coverPreviewUrl: application?.coverUrl || '',
         joinModeIndex: Math.max(
@@ -103,9 +140,32 @@ Page({
         loading: false,
       });
     } catch (error) {
+      if (!this.isCurrent(revision)) return;
       this.setData({
         loading: false,
         loadError: error instanceof Error ? error.message : '申请读取失败',
+      });
+    }
+  },
+  showCreateForm() {
+    this.setData({ createMode: true, discoverMode: false, joinError: '' });
+  },
+  async joinClub(e: any) {
+    if (this.data.joiningClubId) return;
+    const clubId = String(e.currentTarget.dataset.id || '');
+    if (!clubId) return;
+    const joinRequestId =
+      this.joinRequestIds[clubId] || (this.joinRequestIds[clubId] = requestId('club_join'));
+    this.setData({ joiningClubId: clubId, joinError: '' });
+    try {
+      const joinedClub = await rideService.joinPublicClub(clubId, joinRequestId);
+      delete this.joinRequestIds[clubId];
+      this.setData({ joinedClub, joinedClubName: joinedClub.club.name, joiningClubId: '' });
+      await this.load();
+    } catch (error) {
+      this.setData({
+        joiningClubId: '',
+        joinError: error instanceof Error ? error.message : '加入失败，请重试',
       });
     }
   },

@@ -16,6 +16,7 @@ import {
 function createMemoryStore({
   failOnApprovedApplication = false,
   corruptFirstSubmitReadback = false,
+  persistedClubAvatar = 'expected',
 } = {}) {
   const collections = Object.fromEntries(
     ['admins', 'club_applications', 'clubs', 'club_memberships', 'audit_logs'].map((name) => [
@@ -28,13 +29,19 @@ function createMemoryStore({
   const put = async (name, id, value) => {
     if (failOnApprovedApplication && name === 'club_applications' && value.status === 'approved')
       throw new Error('injected write failure');
-    const persisted =
+    let persisted =
       corruptFirstSubmitReadback &&
       name === 'club_applications' &&
       value.status === 'pending_review' &&
       value.review_version === 1
         ? { ...value, review_version: 0 }
         : value;
+    if (name === 'clubs' && persistedClubAvatar !== 'expected') {
+      persisted = { ...persisted };
+      if (persistedClubAvatar === 'missing') delete persisted.avatar_url;
+      else if (persistedClubAvatar === 'drifted')
+        persisted.avatar_url = 'cloud://private/club-avatar-drift.jpg';
+    }
     collections[name].set(id, structuredClone(persisted));
   };
   const store = {
@@ -55,6 +62,8 @@ function createMemoryStore({
       work({
         getAdmin: (id) => get('admins', id),
         getApplication: (id) => get('club_applications', id),
+        getClub: (id) => get('clubs', id),
+        getMembership: (id) => get('club_memberships', id),
         putApplication: (id, value) => put('club_applications', id, value),
         putClub: (id, value) => put('clubs', id, value),
         putMembership: (id, value) => put('club_memberships', id, value),
@@ -351,6 +360,7 @@ test('CLI transaction 写穿真实存储、事务内读己之写且 overlay 不�
 const cleanupIds = {
   applicationId: 'application-secret-id',
   membershipId: 'membership-secret-id',
+  joinerMembershipId: 'joiner-membership-secret-id',
   clubId: 'club-secret-id',
   adminOpenid: 'admin-secret-openid',
 };
@@ -359,6 +369,13 @@ function seedCleanupData(store) {
   store.collections.audit_logs.set('audit-secret-id', {
     _id: 'audit-secret-id',
     target_id: cleanupIds.applicationId,
+  });
+  store.collections.audit_logs.set('audit-club-secret-id', {
+    _id: 'audit-club-secret-id',
+    target_id: cleanupIds.clubId,
+  });
+  store.collections.club_memberships.set(cleanupIds.joinerMembershipId, {
+    _id: cleanupIds.joinerMembershipId,
   });
   store.collections.club_memberships.set(cleanupIds.membershipId, {
     _id: cleanupIds.membershipId,
@@ -390,6 +407,8 @@ test('单项删除失败仍继续清理并只按集合名报告残留', async ()
   });
   assert.deepEqual(attempted, [
     'audit_logs',
+    'audit_logs',
+    'club_memberships',
     'club_memberships',
     'clubs',
     'club_applications',
@@ -416,16 +435,31 @@ test('删除静默成功但回读仍有残留时阻断', async () => {
   });
 });
 
-test('完整状态机持久化验证成功后回读清理全部测试记录', async () => {
+test('完整状态机回读确认俱乐部头像传播后清理全部测试记录', async () => {
   const store = createMemoryStore();
   const result = await runClubApplicationSmoke({
     store,
     runId: 'github-12345-attempt-1',
     now: () => new Date('2026-10-17T12:00:00.000Z'),
   });
-  assert.deepEqual(result, { stages: 6, auditCount: 4 });
+  assert.deepEqual(result, { stages: 7, auditCount: 5 });
   assertEmpty(store);
 });
+
+for (const persistedClubAvatar of ['missing', 'drifted']) {
+  test(`俱乐部头像${persistedClubAvatar === 'missing' ? '缺失' : '漂移'}时真实回读阻断且不泄露 file id`, async () => {
+    const store = createMemoryStore({ persistedClubAvatar });
+    await assert.rejects(
+      runClubApplicationSmoke({ store, runId: `github-12345-avatar-${persistedClubAvatar}` }),
+      (error) => {
+        assert.match(error.message, /clubs 头像传播/);
+        assert.doesNotMatch(error.message, /cloud:\/\/|cover\.jpg|club-avatar-drift/);
+        return true;
+      },
+    );
+    assertEmpty(store);
+  });
+}
 
 test('首次提交后必须以真实回读校验状态、版本和 request id', async () => {
   const store = createMemoryStore({ corruptFirstSubmitReadback: true });

@@ -84,6 +84,53 @@ describe('活动管理页分页状态机', () => {
     expect(page.data.hasMore).toBe(true);
   });
 
+  it('身份初始化失败进入可见错误态，重试后成功加载列表', async () => {
+    appStore.ensureIdentity
+      .mockRejectedValueOnce(new Error('identity detail'))
+      .mockResolvedValueOnce(undefined);
+    rideService.listAdminActivitiesPage.mockResolvedValue({
+      items: [item('retry-success')],
+      nextCursor: null,
+    });
+    const page = await loadPage();
+
+    await page.onShow();
+
+    expect(page.data).toEqual(
+      expect.objectContaining({
+        loading: false,
+        allowed: false,
+        loadError: '身份初始化失败，请检查网络后重试',
+      }),
+    );
+    expect(rideService.listAdminActivitiesPage).not.toHaveBeenCalled();
+
+    await page.retryLoad();
+
+    expect(page.data.loadError).toBe('');
+    expect(page.data.allowed).toBe(true);
+    expect(page.data.items.map((value: { id: string }) => value.id)).toEqual(['retry-success']);
+  });
+
+  it('列表服务失败时结束加载并展示带重试入口的错误态', async () => {
+    rideService.listAdminActivitiesPage.mockRejectedValueOnce(new Error('列表服务暂不可用'));
+    const page = await loadPage();
+
+    await page.onShow();
+
+    expect(page.data).toEqual(
+      expect.objectContaining({
+        loading: false,
+        allowed: true,
+        loadError: '列表服务暂不可用',
+      }),
+    );
+    const template = readFileSync('miniprogram/pages/admin/activity-list/index.wxml', 'utf8');
+    expect(template).toContain('wx:elif="{{loadError}}"');
+    expect(template).toContain('bindtap="retryLoad"');
+    expect(template).toContain('{{loadError}}');
+  });
+
   it('加载更多使用原 cursor，按 id 去重并按服务端顺序追加', async () => {
     rideService.listAdminActivitiesPage
       .mockResolvedValueOnce({

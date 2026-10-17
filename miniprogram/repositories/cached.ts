@@ -409,6 +409,16 @@ export class CachingRepository implements RideRepository {
     return this.inner.getMyClubApplication();
   }
 
+  listJoinableClubs() {
+    return this.inner.listJoinableClubs();
+  }
+
+  async joinPublicClub(clubId: string, requestId: string) {
+    const result = await this.inner.joinPublicClub(clubId, requestId);
+    this.invalidatePrefix(PROFILE_PREFIX);
+    return result;
+  }
+
   saveClubApplicationDraft(value: Parameters<RideRepository['saveClubApplicationDraft']>[0]) {
     return this.inner.saveClubApplicationDraft(value);
   }

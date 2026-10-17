@@ -429,6 +429,23 @@ export class MockRepository implements RideRepository {
   async getMyClubApplication() {
     return this.clubApplication;
   }
+  async listJoinableClubs() {
+    return [];
+  }
+  async joinPublicClub(clubId: string, _requestId: string) {
+    return {
+      club: {
+        id: clubId,
+        name: '示例骑行俱乐部',
+        city: '深圳',
+        introduction: '面向骑友开放加入的示例俱乐部',
+        avatarUrl: '',
+        avatarInitial: '示',
+      },
+      role: 'MEMBER',
+      status: 'active' as const,
+    };
+  }
   async saveClubApplicationDraft(value: ClubApplicationInput) {
     this.clubApplication = {
       ...value,

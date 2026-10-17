@@ -55,4 +55,42 @@ async function resolveApplicationCover(cloud, application, applicantOpenid = '')
   return (await resolveApplicationCovers(cloud, [application], applicantOpenid))[0];
 }
 
-module.exports = { resolveApplicationCover, resolveApplicationCovers, trustedCover };
+async function resolveJoinableClubAvatars(cloud, clubs) {
+  const values = Array.isArray(clubs) ? clubs : [];
+  const cloudIds = Array.from(
+    new Set(
+      values
+        .map((club) => safeText(club?.avatar_url))
+        .filter((value) => /^cloud:\/\/[^/]+\/.+/.test(value)),
+    ),
+  );
+  const urls = new Map();
+  for (let offset = 0; offset < cloudIds.length; offset += 50) {
+    const batch = cloudIds.slice(offset, offset + 50);
+    try {
+      const result = await cloud.getTempFileURL({ fileList: batch });
+      for (const item of Array.isArray(result?.fileList) ? result.fileList : []) {
+        const fileId = safeText(item?.fileID);
+        const url = safeText(item?.tempFileURL);
+        if (batch.includes(fileId) && /^https:\/\//i.test(url)) urls.set(fileId, url);
+      }
+    } catch {
+      // 头像签名失败时关闭该批次头像，不泄露 cloud file id，也不阻断列表。
+      console.warn('[club-application] resolve joinable club avatars failed');
+    }
+  }
+  return values.map((club) => {
+    const avatar = safeText(club?.avatar_url);
+    return {
+      ...club,
+      avatar_url: /^https:\/\//i.test(avatar) ? avatar : urls.get(avatar) || '',
+    };
+  });
+}
+
+module.exports = {
+  resolveApplicationCover,
+  resolveApplicationCovers,
+  resolveJoinableClubAvatars,
+  trustedCover,
+};

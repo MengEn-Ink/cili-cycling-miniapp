@@ -2720,3 +2720,58 @@ describe('CloudRepository GPX 文件名兼容', () => {
     },
   );
 });
+
+describe('CloudRepository 公开俱乐部适配', () => {
+  const clubId = `club_${'a'.repeat(64)}`;
+  const dto = {
+    id: clubId,
+    name: '山海骑行会',
+    city: '深圳',
+    introduction: '每周组织安全友好的骑行活动',
+    avatar_url: 'https://temporary.example/club.jpg',
+  };
+
+  it('严格映射列表并且加入请求不发送 openid、role、status', async () => {
+    const { cloud, callFunction } = cloudWith(
+      success([dto]),
+      success({ club: dto, role: 'MEMBER', status: 'active' }),
+    );
+    const repository = new CloudRepository(cloud);
+
+    await expect(repository.listJoinableClubs()).resolves.toEqual([
+      {
+        id: clubId,
+        name: '山海骑行会',
+        city: '深圳',
+        introduction: '每周组织安全友好的骑行活动',
+        avatarUrl: 'https://temporary.example/club.jpg',
+        avatarInitial: '山',
+      },
+    ]);
+    await expect(repository.joinPublicClub(clubId, 'join-request-0001')).resolves.toMatchObject({
+      role: 'MEMBER',
+      status: 'active',
+    });
+    expect(callFunction).toHaveBeenNthCalledWith(1, {
+      name: 'club-application',
+      data: { action: 'listJoinable' },
+    });
+    expect(callFunction).toHaveBeenNthCalledWith(2, {
+      name: 'club-application',
+      data: { action: 'joinPublicClub', clubId, requestId: 'join-request-0001' },
+    });
+    expect(JSON.stringify(callFunction.mock.calls[1][0])).not.toMatch(/openid|role|status/);
+  });
+
+  for (const invalid of [
+    { ...dto, avatar_url: 'cloud://env/private.jpg' },
+    { ...dto, id: 'club-invalid' },
+    { ...dto, name: 123 },
+    { ...dto, city: null },
+  ]) {
+    it('拒绝不安全或缺失字段的列表投影', async () => {
+      const { cloud } = cloudWith(success([invalid]));
+      await expectCode(new CloudRepository(cloud).listJoinableClubs(), 'INVALID_RESPONSE');
+    });
+  }
+});

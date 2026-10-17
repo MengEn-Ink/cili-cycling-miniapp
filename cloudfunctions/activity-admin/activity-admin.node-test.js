@@ -11,6 +11,7 @@ const {
   cloneActivity,
   saveActivity,
   deleteActivity,
+  resolveTrustedClubIdentity,
 } = require('./domain-index');
 const now = new Date('2026-09-29T04:00:00.000Z');
 const input = {
@@ -1630,4 +1631,32 @@ test('失效报名不拦截草稿删除，已上线活动与空理由删除被�
     }),
     { code: 'VALIDATION_FAILED' },
   );
+});
+
+test('可信俱乐部快照兼容旧 cover 字段但尊重显式空头像', async () => {
+  const baseClub = {
+    _id: 'club-legacy-avatar',
+    name: '旧俱乐部',
+    cover_file_id: 'cloud://clubs/legacy.jpg',
+    approval_status: 'approved',
+    status: 'active',
+  };
+  const tx = (club) => ({
+    getClub: async () => club,
+    getActiveClubMembership: async () => ({ role: 'OWNER', status: 'active' }),
+  });
+
+  const legacy = await resolveTrustedClubIdentity(tx(baseClub), {
+    clubId: baseClub._id,
+    openid: 'owner',
+    isAdmin: false,
+  });
+  assert.equal(legacy.clubIdentity.avatar_url, baseClub.cover_file_id);
+
+  const explicitEmpty = await resolveTrustedClubIdentity(tx({ ...baseClub, avatar_url: '' }), {
+    clubId: baseClub._id,
+    openid: 'owner',
+    isAdmin: false,
+  });
+  assert.equal(explicitEmpty.clubIdentity.avatar_url, '');
 });

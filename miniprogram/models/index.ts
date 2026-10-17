@@ -15,6 +15,19 @@ export interface ClubMembershipSummary {
   role: string;
   roleLabel: string;
 }
+export interface JoinableClub {
+  id: string;
+  name: string;
+  city: string;
+  introduction: string;
+  avatarUrl: string;
+  avatarInitial: string;
+}
+export interface JoinedClubSummary {
+  club: JoinableClub;
+  role: string;
+  status: 'active';
+}
 export type ClubApplicationStatus = 'draft' | 'pending_review' | 'rejected' | 'approved';
 export type ClubJoinMode = 'public_apply' | 'invite_code' | 'admin_invite';
 export interface ClubApplicationInput {

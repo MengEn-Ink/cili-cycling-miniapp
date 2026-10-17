@@ -141,6 +141,76 @@ async function submitApplication(store, { openid, input, requestId }, now) {
   });
 }
 
+function projectJoinableClub(club) {
+  const avatar = Object.hasOwn(club || {}, 'avatar_url') ? club?.avatar_url : club?.cover_file_id;
+  return {
+    id: typeof club?._id === 'string' ? club._id : '',
+    name: typeof club?.name === 'string' ? club.name : '',
+    city: typeof club?.city === 'string' ? club.city : '',
+    introduction: typeof club?.introduction === 'string' ? club.introduction : '',
+    avatar_url: typeof avatar === 'string' ? avatar : '',
+  };
+}
+
+function listJoinableClubs(clubs) {
+  if (!Array.isArray(clubs)) return [];
+  return clubs
+    .filter(
+      (club) =>
+        club &&
+        club.approval_status === 'approved' &&
+        club.status === 'active' &&
+        club.join_mode === 'public_apply',
+    )
+    .slice(0, 100)
+    .map(projectJoinableClub);
+}
+
+async function joinPublicClub(store, { openid, clubId: requestedClubId, requestId }, now) {
+  const safeClubId = text(requestedClubId, '俱乐部 ID', 1, 128);
+  if (!/^club_[a-f0-9]{64}$/.test(safeClubId)) fail('VALIDATION_FAILED', '俱乐部 ID 无效');
+  const safeRequestId = text(requestId, '加入请求 ID', 8, 128);
+  return store.transaction(async (tx) => {
+    // 必须在事务内重读俱乐部，避免列表展示后俱乐部状态或加入方式已经变化。
+    const club = await tx.getClub(safeClubId);
+    if (!club) fail('NOT_FOUND', '俱乐部不存在');
+    if (club.approval_status !== 'approved' || club.status !== 'active')
+      fail('CLUB_UNAVAILABLE', '该俱乐部暂不可加入');
+    if (club.join_mode !== 'public_apply') fail('JOIN_NOT_ALLOWED', '该俱乐部不支持公开加入');
+
+    const id = membershipId(safeClubId, openid);
+    const existing = await tx.getMembership(id);
+    if (existing?.status === 'active') {
+      return { club: projectJoinableClub(club), role: existing.role, status: existing.status };
+    }
+    // 非 active 关系只代表历史记录；管理角色恢复必须走授权流程，公开重加入一律降为 MEMBER。
+    const role = 'MEMBER';
+    const membership = {
+      ...(existing || {}),
+      _id: id,
+      club_id: safeClubId,
+      openid,
+      role,
+      status: 'active',
+      created_at: existing?.created_at || now.toISOString(),
+      updated_at: now.toISOString(),
+      last_join_request_id: safeRequestId,
+    };
+    await tx.putMembership(id, membership);
+    await tx.addAudit({
+      actor_openid: openid,
+      action: 'public_club_joined',
+      target_type: 'club',
+      target_id: safeClubId,
+      before_status: existing?.status || 'none',
+      after_status: 'active',
+      request_id: safeRequestId,
+      created_at: now.toISOString(),
+    });
+    return { club: projectJoinableClub(club), role, status: 'active' };
+  });
+}
+
 async function reviewApplication(
   store,
   { adminOpenid, applicationId: id, decision, reason, requestId },
@@ -178,6 +248,7 @@ async function reviewApplication(
         city: application.city,
         introduction: application.introduction,
         cover_file_id: application.cover_file_id,
+        avatar_url: application.cover_file_id,
         join_mode: application.join_mode,
         owner_openid: application.applicant_openid,
         approval_status: 'approved',
@@ -219,6 +290,9 @@ module.exports = {
   applicationId,
   normalizeInput,
   project,
+  projectJoinableClub,
+  listJoinableClubs,
+  joinPublicClub,
   saveDraft,
   submitApplication,
   reviewApplication,

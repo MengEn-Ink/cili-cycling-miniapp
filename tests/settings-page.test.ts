@@ -26,9 +26,9 @@ describe('设置页', () => {
     expect(page.data.releaseNotes).toHaveLength(1);
     expect(page.data.releaseNotes[0]).toMatchObject({
       version: CLIENT_RELEASE_VERSION,
-      date: '2026-10-17',
+      date: '2026-10-18',
       latest: true,
-      title: '俱乐部封面上传与申请体验优化',
+      title: '俱乐部加入与活动页面修复',
     });
     expect(page.data.currentRelease).toBe(page.data.releaseNotes[0]);
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(
@@ -40,10 +40,10 @@ describe('设置页', () => {
     expect(readiness).not.toHaveBeenCalled();
   });
 
-  it('版本号与日期对齐 2026.10.17.88', () => {
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.17.88');
-    expect(page.data.currentRelease.version).toBe('2026.10.17.88');
-    expect(page.data.currentRelease.date).toBe('2026-10-17');
+  it('版本号与日期对齐 2026.10.18.1', () => {
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.18.1');
+    expect(page.data.currentRelease.version).toBe('2026.10.18.1');
+    expect(page.data.currentRelease.date).toBe('2026-10-18');
   });
 
   it('设置页模板只渲染当前版本卡片，不出现历史时间线容器', () => {
