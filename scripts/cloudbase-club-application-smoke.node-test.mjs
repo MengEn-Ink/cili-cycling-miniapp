@@ -365,6 +365,33 @@ test('CLI transaction 写穿真实存储、事务内读己之写且 overlay 不�
   assert.equal(queryCount, 1);
 });
 
+test('CLI store 跨模拟事务保留本进程写入的确定性幂等审计', async () => {
+  let queryCount = 0;
+  const execute = (_file, args) => {
+    const [{ CommandType }] = JSON.parse(args.at(-2));
+    if (CommandType === 'UPDATE') return JSON.stringify({ Response: { Data: '[]' } });
+    if (CommandType === 'QUERY') {
+      queryCount += 1;
+      return JSON.stringify({ Response: { Data: '[]' } });
+    }
+    throw new Error(`unexpected command ${CommandType}`);
+  };
+  const store = createCliStore({ envId: 'env-production', execute });
+  const audit = {
+    _id: 'clubprofile-audit-one',
+    action: 'club_profile_updated',
+    target_id: 'club-one',
+    request_id: 'request-one',
+    result: { id: 'club-one', name: '此里骑行会' },
+  };
+
+  await store.transaction((tx) => tx.putAudit(audit._id, audit));
+  await store.transaction(async (tx) => {
+    assert.deepEqual(await tx.getAudit(audit._id), { ...audit, smoke_test: true });
+  });
+  assert.equal(queryCount, 0);
+});
+
 const cleanupIds = {
   applicationId: 'application-secret-id',
   membershipId: 'membership-secret-id',
