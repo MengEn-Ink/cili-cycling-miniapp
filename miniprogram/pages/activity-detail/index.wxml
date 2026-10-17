@@ -135,7 +135,7 @@
     <swiper class="rider-card-swiper" current="{{selectedAttendeeIndex}}" circular="{{attendees.length > 1}}" previous-margin="{{attendees.length > 1 ? '28rpx' : '0'}}" next-margin="{{attendees.length > 1 ? '28rpx' : '0'}}" bindchange="attendeeCardChange">
       <swiper-item wx:for="{{attendees}}" wx:for-item="rider" wx:key="id">
         <view class="rider-card-photo" aria-label="{{rider.displayName}} 的完整公开骑行名片">
-          <image wx:if="{{rider.backgroundUrl}}" class="rider-card-photo__image" src="{{rider.backgroundUrl}}" mode="aspectFill" data-index="{{index}}" data-url="{{rider.backgroundUrl}}" bindload="selectedAttendeeBackgroundLoad" binderror="selectedAttendeeBackgroundError" />
+          <image wx:if="{{rider.backgroundUrl}}" class="rider-card-photo__image" src="{{rider.backgroundUrl}}" mode="aspectFill" lazy-load="{{true}}" data-index="{{index}}" data-url="{{rider.backgroundUrl}}" bindload="selectedAttendeeBackgroundLoad" binderror="selectedAttendeeBackgroundError" />
           <image wx:else class="rider-card-photo__image rider-card-photo__placeholder" src="/assets/brand/logo-share-500x400.png" mode="aspectFill" aria-label="此里默认骑行名片背景" />
           <view class="rider-card-photo__scrim"></view>
           <view class="rider-card-photo__identity">

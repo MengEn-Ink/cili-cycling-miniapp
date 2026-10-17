@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
+const { expandAppRoutes } = require('./app-routes.cjs');
 
 const projectPath = path.resolve(process.env.CILI_PROJECT_PATH || process.cwd());
 const cliPath =
@@ -448,7 +449,7 @@ async function main() {
       } else {
         check('空白发布表单主操作存在', false);
       }
-      const expected = appConfig.pages;
+      const expected = expandAppRoutes(appConfig);
       const visited = new Set(result.routes.map((route) => route.path));
       check(
         '全部 app.json 路由已采集运行截图',

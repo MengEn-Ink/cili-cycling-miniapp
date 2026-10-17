@@ -1,10 +1,10 @@
 // @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { expandAppRoutes, type MiniProgramAppConfig } from './helpers/app-routes';
 
 const read = (path: string) => readFileSync(path, 'utf8');
-const appConfig = JSON.parse(read('miniprogram/app.json')) as {
-  pages: string[];
+const appConfig = JSON.parse(read('miniprogram/app.json')) as MiniProgramAppConfig & {
   window: Record<string, unknown>;
   tabBar: {
     backgroundColor: string;
@@ -41,9 +41,10 @@ describe('HP-20261010-02 单一明亮 UI 底座', () => {
   });
 
   it('全部页面固定明亮系统外观且不再同步运行时主题', () => {
-    expect(appConfig.pages).toHaveLength(14);
+    const appRoutes = expandAppRoutes(appConfig);
+    expect(appRoutes).toHaveLength(14);
 
-    for (const pagePath of appConfig.pages) {
+    for (const pagePath of appRoutes) {
       const root = `miniprogram/${pagePath}`;
       const config = JSON.parse(read(`${root}.json`)) as Record<string, unknown>;
       const script = read(`${root}.ts`);
