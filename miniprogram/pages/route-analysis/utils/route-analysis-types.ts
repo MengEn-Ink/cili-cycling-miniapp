@@ -9,6 +9,7 @@ export interface RouteKeyPoint {
   name: string;
   km: number;
   elevation: number | null;
+  gradePercent: number | null;
   lat: number | null;
   lng: number | null;
   source: '活动路线' | '海拔剖面规则' | '距离规则';
@@ -30,12 +31,17 @@ export interface RouteSegment {
 }
 
 export interface RouteAnalysis {
-  overview: { distanceKm: number; ascentM: number; highestM: number | null; durationText: string };
+  overview: {
+    distanceKm: number;
+    ascentM: number | null;
+    highestM: number | null;
+    durationText: string;
+  };
   profile: RouteElevationPoint[];
   outline: RouteCoordinate[];
   keyPoints: RouteKeyPoint[];
   segments: RouteSegment[];
   strategySummary: string[];
+  risks: string[];
   equipment: string[];
-  quality: string[];
 }

@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
   "syncedThrough": "c6319040e4b954d6707b3dadd834d5b1d1e435a6",
-  "syncedAt": "2026-10-17T01:51:00.000Z",
+  "syncedAt": "2026-10-17T02:35:00.000Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:579661ec73ac31f04083b3309ff6d448f2ab97735894a7fb76e60ce0460c5acc"
+    "digest": "sha256:51121d6f95ec3e8815bdb4f66620e36616eb558724b9875a200284b2b38e22a5"
   },
   "prototype": {
-    "digest": "sha256:f34a5b3ba2139bdf96c56be7b78e10d87fdb108663f21e4bc1e42734b488cc36"
+    "digest": "sha256:4e34e767dec618c85ae7cf3d87fb8f075fc270f7c41f6bacc32c4dea41159757"
   },
   "routes": [
     {
@@ -102,7 +102,7 @@
         "state": "地图暂不可用降级 / 核心分析仍可查看",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "Pages 原型已同步地图失败提示与轻量重试状态；未伪造新的微信 DevTools 截图，开发版上传后补做 iOS / Android 地图降级验收。"
+        "note": "Pages 已按路线分析 V2 重新采集 375×812 浏览器验收图，并同步地图失败提示与重试状态；未伪造新的微信 DevTools 截图，开发版上传后补做 iOS / Android 地图验收。"
       },
       {
         "id": "registration-form",

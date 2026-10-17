@@ -29,10 +29,86 @@ function cleanProfile(route: Route, distanceKm: number): RouteElevationPoint[] {
     .sort((a, b) => a.distanceKm - b.distanceKm);
 }
 
+const MAX_MAP_OUTLINE_POINTS = 420;
+
+function pointSegmentDeviation(
+  point: RouteCoordinate,
+  start: RouteCoordinate,
+  end: RouteCoordinate,
+): number {
+  const latitudeScale = Math.cos((((start.latitude + end.latitude) / 2) * Math.PI) / 180);
+  const x = (point.longitude - start.longitude) * latitudeScale;
+  const y = point.latitude - start.latitude;
+  const endX = (end.longitude - start.longitude) * latitudeScale;
+  const endY = end.latitude - start.latitude;
+  const lengthSquared = endX * endX + endY * endY;
+  if (lengthSquared === 0) return x * x + y * y;
+  const ratio = clamp((x * endX + y * endY) / lengthSquared, 0, 1);
+  const offsetX = x - ratio * endX;
+  const offsetY = y - ratio * endY;
+  return offsetX * offsetX + offsetY * offsetY;
+}
+
+function turnStrength(points: RouteCoordinate[], index: number): number {
+  const previous = points[index - 1];
+  const point = points[index];
+  const next = points[index + 1];
+  if (!previous || !next) return 0;
+  const latitudeScale = Math.cos((point.latitude * Math.PI) / 180);
+  const incomingX = (point.longitude - previous.longitude) * latitudeScale;
+  const incomingY = point.latitude - previous.latitude;
+  const outgoingX = (next.longitude - point.longitude) * latitudeScale;
+  const outgoingY = next.latitude - point.latitude;
+  const incomingLength = Math.hypot(incomingX, incomingY);
+  const outgoingLength = Math.hypot(outgoingX, outgoingY);
+  if (!incomingLength || !outgoingLength) return 0;
+  const cosine = clamp(
+    (incomingX * outgoingX + incomingY * outgoingY) / (incomingLength * outgoingLength),
+    -1,
+    1,
+  );
+  return 1 - cosine;
+}
+
+export function sampleRouteOutline(points: RouteCoordinate[], limit = MAX_MAP_OUTLINE_POINTS) {
+  if (points.length <= limit) return points;
+  if (limit <= 1) return [points[0]];
+  const retained = new Set([0, points.length - 1]);
+  const segments = [{ start: 0, end: points.length - 1, index: -1, deviation: -1 }];
+
+  const measure = (segment: (typeof segments)[number]) => {
+    segment.index = -1;
+    segment.deviation = -1;
+    for (let index = segment.start + 1; index < segment.end; index += 1) {
+      const deviation =
+        pointSegmentDeviation(points[index], points[segment.start], points[segment.end]) +
+        turnStrength(points, index) * 1e-10;
+      if (deviation > segment.deviation) {
+        segment.index = index;
+        segment.deviation = deviation;
+      }
+    }
+  };
+  measure(segments[0]);
+  while (retained.size < limit) {
+    segments.sort((a, b) => b.deviation - a.deviation);
+    const segment = segments.shift();
+    if (!segment || segment.index < 0 || segment.deviation <= 0) break;
+    retained.add(segment.index);
+    const left = { start: segment.start, end: segment.index, index: -1, deviation: -1 };
+    const right = { start: segment.index, end: segment.end, index: -1, deviation: -1 };
+    measure(left);
+    measure(right);
+    segments.push(left, right);
+  }
+  return [...retained].sort((a, b) => a - b).map((index) => points[index]);
+}
+
 function cleanOutline(route: Route): RouteCoordinate[] {
-  return (route.routeOutline || []).filter((point) =>
+  const valid = (route.routeOutline || []).filter((point) =>
     validCoordinate(point?.latitude, point?.longitude),
   );
+  return sampleRouteOutline(valid);
 }
 
 function coordinateAt(
@@ -50,6 +126,20 @@ function elevationAt(profile: RouteElevationPoint[], km: number): number | null 
   return profile.reduce((best, point) =>
     Math.abs(point.distanceKm - km) < Math.abs(best.distanceKm - km) ? point : best,
   ).elevationM;
+}
+
+function gradeAt(profile: RouteElevationPoint[], km: number): number | null {
+  if (profile.length < 2) return null;
+  const nearestIndex = profile.reduce(
+    (best, point, index) =>
+      Math.abs(point.distanceKm - km) < Math.abs(profile[best].distanceKm - km) ? index : best,
+    0,
+  );
+  const start = profile[Math.max(0, nearestIndex - 1)];
+  const end = profile[Math.min(profile.length - 1, nearestIndex + 1)];
+  const distanceM = (end.distanceKm - start.distanceKm) * 1000;
+  if (distanceM <= 0) return null;
+  return round(clamp(((end.elevationM - start.elevationM) / distanceM) * 100, -40, 40));
 }
 
 function trendWindow(profile: RouteElevationPoint[], direction: 1 | -1) {
@@ -89,6 +179,7 @@ function makePoint(
     name,
     km: round(km),
     elevation: elevationAt(profile, km),
+    gradePercent: gradeAt(profile, km),
     lat: finite(coordinate.lat) ? coordinate.lat : null,
     lng: finite(coordinate.lng) ? coordinate.lng : null,
     source,
@@ -135,7 +226,7 @@ function deriveKeyPoints(
         outline,
         distanceKm,
         '海拔剖面规则',
-        '地点名称待接入逆地理编码',
+        '路线海拔最高位置',
       ),
     );
     const climb = trendWindow(profile, 1);
@@ -150,7 +241,7 @@ function deriveKeyPoints(
           outline,
           distanceKm,
           '海拔剖面规则',
-          '地点名称待接入逆地理编码',
+          '主爬坡由连续爬升变化识别，建议提前调整档位与节奏',
         ),
       );
     const descent = trendWindow(profile, -1);
@@ -165,7 +256,7 @@ function deriveKeyPoints(
           outline,
           distanceKm,
           '海拔剖面规则',
-          '地点名称待接入逆地理编码',
+          '长下坡由连续下降变化识别，入坡前检查制动并控制车距',
         ),
       );
   }
@@ -190,7 +281,7 @@ function deriveKeyPoints(
         outline,
         distanceKm,
         '距离规则',
-        '地点名称待接入逆地理编码',
+        '按路线长度设置的节奏检查位置，可结合实际体感决定是否停留',
       ),
     );
   });
@@ -223,13 +314,13 @@ export function deriveRouteAnalysis(route: Route): RouteAnalysis {
     : profile.length
       ? Math.max(...profile.map((point) => point.elevationM))
       : null;
-  const ascent = finite(route.elevationM) && route.elevationM > 0 ? route.elevationM : 0;
+  const ascent = finite(route.elevationM) && route.elevationM >= 0 ? route.elevationM : null;
   const segments = deriveRouteSegments(profile, effectiveDistance);
   const strategySummary = [
     effectiveDistance >= 80
       ? '长距离路线：前半程保留体力并按计划补给。'
       : '按路线长度分配体力，起步阶段避免过快。',
-    ascent >= 1000
+    ascent !== null && ascent >= 1000
       ? '累计爬升较高：主爬坡前补水，采用轻档稳定踏频。'
       : '爬升压力以分段数据为准，坡前预留恢复时间。',
   ];
@@ -237,17 +328,28 @@ export function deriveRouteAnalysis(route: Route): RouteAnalysis {
     strategySummary.push('存在明显下降分段：控制速度并保持安全车距。');
   const equipment = ['头盔、手套、前后车灯与基础修车工具'];
   if (effectiveDistance >= 40) equipment.push('足量饮水、能量补给与备用电解质');
-  if (ascent >= 700) equipment.push('适合爬坡的传动配置与备用内胎');
-  if (highest !== null && highest >= 1500)
-    equipment.push('高海拔保暖层；具体穿衣需结合出发前真实天气');
-  equipment.push('以上仅基于路线长度、爬升和最高点，不含实时天气');
-  const quality = ['数据来源：活动 Activity.route；关键点与分段由本地确定性规则派生。'];
-  if (profile.length < 2) quality.push('缺少有效海拔剖面：坡度、最高点公里与升降分段将降级。');
-  if (outline.length < 2) quality.push('缺少有效路线轮廓：地图与关键点坐标将降级。');
+  if (ascent !== null && ascent >= 700) equipment.push('适合爬坡的传动配置与备用内胎');
+  if (segments.some((segment) => segment.type === 'descent'))
+    equipment.push('下坡前检查刹车、胎压与尾灯电量');
+  const risks: string[] = [];
+  const hardestClimb = segments
+    .filter((segment) => segment.type === 'climb')
+    .sort((a, b) => (b.gradePercent || 0) - (a.gradePercent || 0))[0];
+  if (hardestClimb)
+    risks.push(
+      `${hardestClimb.name} ${hardestClimb.startKm.toFixed(1)}–${hardestClimb.endKm.toFixed(1)} km：${hardestClimb.strategy}`,
+    );
+  const longestDescent = segments
+    .filter((segment) => segment.type === 'descent')
+    .sort((a, b) => b.endKm - b.startKm - (a.endKm - a.startKm))[0];
+  if (longestDescent)
+    risks.push(
+      `${longestDescent.name} ${longestDescent.startKm.toFixed(1)}–${longestDescent.endKm.toFixed(1)} km：${longestDescent.strategy}`,
+    );
   return {
     overview: {
       distanceKm: round(effectiveDistance),
-      ascentM: Math.round(ascent),
+      ascentM: ascent === null ? null : Math.round(ascent),
       highestM: highest === null ? null : round(highest),
       durationText: formatRouteDuration(route.estimatedMovingTimeSeconds),
     },
@@ -256,7 +358,7 @@ export function deriveRouteAnalysis(route: Route): RouteAnalysis {
     keyPoints: deriveKeyPoints(route, effectiveDistance, profile, outline),
     segments,
     strategySummary,
+    risks,
     equipment,
-    quality,
   };
 }

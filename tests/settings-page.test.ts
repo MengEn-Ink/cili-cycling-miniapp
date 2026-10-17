@@ -28,7 +28,7 @@ describe('设置页', () => {
       version: CLIENT_RELEASE_VERSION,
       date: '2026-10-17',
       latest: true,
-      title: '打开更快，路线查看更稳',
+      title: '完整路线分析更快更稳',
     });
     expect(page.data.currentRelease).toBe(page.data.releaseNotes[0]);
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(

@@ -105,7 +105,7 @@ export function deriveRouteSegments(
 }
 
 export function formatRouteDuration(seconds?: number): string {
-  if (!Number.isFinite(seconds) || !seconds || seconds <= 0) return '待补充';
+  if (!Number.isFinite(seconds) || !seconds || seconds <= 0) return '';
   const minutes = Math.round(seconds / 60);
   return `${Math.floor(minutes / 60)} 小时 ${minutes % 60} 分`.replace('0 小时 ', '');
 }

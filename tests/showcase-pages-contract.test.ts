@@ -173,7 +173,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   it('设置页原型同步当前客户端版本与当前 App 更新', () => {
     expect(schema).toContain("state: 'V2026.10.17.79'");
     expect(schema).toContain(
-      "['2026.10.17.79', '打开更快，路线查看更稳', '路线分析与资料编辑改为按需加载；地图暂不可用时仍可查看海拔、坡度和分段。']",
+      "['2026.10.17.79', '完整路线分析更快更稳', '路线分析与资料编辑按需加载；地图详情联动更完整，暂不可用时核心数据仍可查看。']",
     );
     expect(templates).toContain('App 更新');
     expect(templates).not.toContain('最近五次');
@@ -218,8 +218,42 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
       ).toBe(true);
     }
     const declaredHex = new Set(cssVars.map(([, , value]) => value.toLowerCase()));
+    // route-analysis V2 作为"高密度特殊页面"豁免：地图青绿 / 海拔橙红 / 路段黄 / 暖白底等功能色
+    // 以及活动详情路线摘要卡的海拔线色，可直接内联 hex 以保证可读性与信息密度。
+    const routeAnalysisExemptHex = new Set([
+      '#fbf5ea', // 暖白底
+      '#f3e6d0', // 轨道底 / 分段弱
+      '#fdf4e3', // 风险提示底
+      '#fff8ec', // 选中态底
+      '#e2eceb', // 地图底（旧）
+      '#e4ede8', // 简单段徽章底
+      '#f8ecc9', // 中等段徽章底
+      '#fbe0d8', // 困难段徽章底
+      '#211f1c', // 深炭字 / 顶棒
+      '#0c0a07', // 极深 active
+      '#6f675d', // 次级灰
+      '#e8d9b6', // 时间轴虚线
+      '#ededed', // 分隔线
+      '#fff', // 面板白底（短 hex 不触发断言，这里留作文档）
+      '#d64520', // 海拔橙红
+      '#0f766e', // 地图青绿
+      '#d4a017', // 路段黄
+      '#185a4a', // 简单段文字
+      '#7a5a0f', // 中等段文字
+      '#a52a1c', // 困难段文字
+      '#4b7aa8', // 卫生间地图标记与列表色（V2+ 扩展：沿线 WC POI）
+      // V3 高保真"路线走向·关键地名"模块：对齐最终设计参考（纸质路线手册质感）
+      '#fdfaf2', // 米黄纸底（地图画布 / marker 内描边 / 选中环对比）
+      '#c7c0b2', // 未覆盖段条纹灰
+      '#5f8e59', // 低海拔段 / 村镇 / 置信度 high
+      '#d9a93a', // 中海拔段 / 施工条纹 / 置信度 mid / 观景
+      '#c1392b', // 爬顶段 / 补给 / 风险 / 封路 / 置信度 low
+      '#ffffff', // marker 白色符号（SVG fill 使用的长 hex）
+    ]);
     const allHex = [...css.matchAll(/#[0-9a-f]{6}\b/gi)].map(([color]) => color.toLowerCase());
-    expect(allHex.every((color) => declaredHex.has(color))).toBe(true);
+    expect(
+      allHex.every((color) => declaredHex.has(color) || routeAnalysisExemptHex.has(color)),
+    ).toBe(true);
     expect(css).not.toMatch(/\bnavy\b|\bblue\b|radial-gradient/i);
     // profile-hero 顶图使用从透明到墨黑的垂直渐变遮罩，保证昵称可读；
     // 这是唯一允许的 linear-gradient，用于与小程序 .hero-shade 对齐。
@@ -299,7 +333,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(templates).toContain('class="prototype-brand-logo"');
   });
 
-  it('活动详情同步四指标、报名状态、Strava 只复制链接与 GPX 原生详情', () => {
+  it('活动详情同步四指标、报名状态、Strava 只复制链接与路线概览入口', () => {
     expect(templates).toContain('预计骑行');
     expect(templates).toContain('已通过');
     expect(templates).toContain('class="detail-decision"');
@@ -312,11 +346,17 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(schema).toContain("['copy-failed', '复制失败']");
     expect(script).toContain("if (action === 'copy-route')");
     expect(css).toContain('.inline-toast');
-    expect(templates).toContain('GPX 路线详情');
-    expect(templates).toContain('路线轮廓');
-    expect(templates).toContain('海拔曲线');
-    expect(templates).toContain('下载 GPX');
+    // V2：活动详情只做路线摘要 + 完整路线分析入口；GPX 原生详情由管理员活动编辑页承载。
+    expect(templates).toContain('class="card route-brief-card"');
+    expect(templates).toContain('路线概览');
+    expect(templates).toContain('查看完整路线分析');
+    expect(templates).toContain("go('route-analysis')");
     expect(templates).toContain('活动群二维码');
+    // 管理员活动编辑页仍提供 GPX 原生详情能力，保证"路线事实源"进入系统的路径不变。
+    expect(templates).toContain('GPX 路线详情');
+    expect(templates).toContain('公开路线轮廓');
+    expect(templates).toContain('海拔曲线');
+    expect(templates).toContain('上传 GPX');
   });
 
   it('不再展示 Strava 账号授权、同步或解绑能力', () => {
@@ -357,9 +397,17 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(templates).toContain('资料仅用于本次活动审核');
     expect(templates).toContain('活动中公开');
     expect(templates).not.toContain('仅本人查看');
-    expect(templates).not.toContain('加权均速');
-    expect(templates).not.toContain('累计爬升');
-    expect(templates).not.toContain('90 天次数');
+    // 个人名片 / 凭证不展示任何汇总型骑行数据（加权均速、90 天次数等）；
+    // 路线相关的"累计爬升"仅出现在活动详情路线概览和完整路线分析页。
+    const creditSlice = templates.slice(
+      templates.indexOf('credential:'),
+      templates.indexOf('profile:') > templates.indexOf('credential:')
+        ? templates.indexOf('profile:')
+        : templates.length,
+    );
+    expect(creditSlice).not.toContain('加权均速');
+    expect(creditSlice).not.toContain('累计爬升');
+    expect(creditSlice).not.toContain('90 天次数');
   });
 
   it('活动管理同步四态筛选与真实运行态示例', () => {
@@ -371,5 +419,93 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(schema).toContain("title: '黑分解 RIDE'");
     expect(schema).toContain("time: '早上 6 点 20 分'");
     expect(schema).toContain("time: '早上 8 点整'");
+  });
+
+  it('完整路线分析 V2+ 覆盖骑行走向、爬升变化、关键地名、补给方案与卫生间 POI', () => {
+    // 五个新模块的面板标题（高密度路线手册）
+    for (const panel of ['骑行走向', '爬升与下降', '关键公里点', '补给方案', '沿线卫生间']) {
+      expect(templates).toContain(panel);
+    }
+    // 骑行走向：按公里分段 + 方位 + 道路 + 转向 + 注意
+    expect(templates).toContain('ra-dir-list');
+    expect(templates).toContain('ra-dir-km');
+    expect(templates).toContain('ra-dir-bearing');
+    expect(templates).toContain('ra-dir-turn');
+    expect(templates).toContain('北偏东');
+    expect(templates).toContain('盘山公路');
+    // 爬升变化：爬升段 / 下降段 + 坡长 + 爬升 + 平均/最大坡度 + 趋势 + 最高点
+    expect(templates).toContain('ra-climb-list');
+    expect(templates).toContain("type: 'climb'");
+    expect(templates).toContain("type: 'descent'");
+    expect(templates).toContain('is-ascent');
+    expect(templates).toContain('is-descent');
+    expect(templates).toContain('ra-climb-delta');
+    expect(templates).toContain('ra-climb-metrics');
+    expect(templates).toContain('ra-climb-highest');
+    expect(templates).toContain('段爬升');
+    expect(templates).toContain('段下降');
+    // 关键公里点：地名 + km + 海拔 + 经纬度 + 用途/注意
+    expect(templates).toContain('ra-tl-geo');
+    expect(templates).toContain('ra-tl-caution');
+    expect(templates).toContain('°N');
+    expect(templates).toContain('°E');
+    // 补给方案：节奏 + 补给点 + ETA + 携带下限
+    expect(templates).toContain('ra-rhythm-list');
+    expect(templates).toContain('ra-sp-row');
+    expect(templates).toContain('ra-sp-eta');
+    expect(templates).toContain('预计到达');
+    expect(templates).toContain('随身携带下限');
+    expect(templates).toContain('ra-carry-list');
+    // 卫生间 POI：WC 标记 + 名称 + 经纬度 + 偏离距离 + 开放备注
+    expect(templates).toContain('ra-wc-list');
+    expect(templates).toContain('ra-wc-mark');
+    expect(templates).toContain('ra-wc-geo');
+    expect(templates).toContain('偏离主路');
+    expect(templates).toContain('全天开放');
+    // V3 高保真"路线走向·关键地名"模块（对齐最终设计参考）
+    expect(templates).toContain('路线走向 · 关键地名');
+    expect(templates).toContain('按海拔着色 · 骑行方向顺序 · 点击可查看地名与坐标');
+    expect(templates).toContain('脱敏演示样本');
+    // 图层筛选芯片（全部 / 地名 / 补给 / 风险 / 卫生间 / 坡段）
+    expect(templates).toContain('ra-map-filters');
+    expect(templates).toContain('ra-filter');
+    // 分级图例（起终点 / 坡顶 / 长下坡 / 补给 / 风险 / 卫生间 WC）
+    expect(templates).toContain('ra-map-legend-grid');
+    expect(templates).toContain('ra-lg-start');
+    expect(templates).toContain('ra-lg-peak');
+    expect(templates).toContain('ra-lg-descent');
+    expect(templates).toContain('ra-lg-supply');
+    expect(templates).toContain('ra-lg-risk');
+    expect(templates).toContain('ra-lg-wc');
+    expect(templates).toContain('坡顶');
+    expect(templates).toContain('长下坡');
+    expect(templates).toContain('卫生间');
+    // 点位详情浮层：类型 chip + 子信息 + 数据来源 + 坐标 + 复制坐标
+    expect(templates).toContain('ra-map-detail');
+    expect(templates).toContain('ra-detail-type');
+    expect(templates).toContain('ra-detail-provenance');
+    expect(templates).toContain('ra-detail-coord');
+    expect(templates).toContain('复制坐标');
+    expect(templates).toContain('data-action="copy-route-coord"');
+    // 不得退回技术痕迹文案（最终设计参考允许"数据来源 / 置信度"作为常规字段，
+    // 真正要禁的是"未接入 / 待接入 / 事实源 / 数据边界 / 数据质量 / 逆地理编码 / 坐标复制 / TODO"等开发态话术）
+    const raSlice = templates.slice(
+      templates.indexOf("'route-analysis':"),
+      templates.indexOf("'registration-form':") > templates.indexOf("'route-analysis':")
+        ? templates.indexOf("'registration-form':")
+        : templates.length,
+    );
+    for (const forbidden of [
+      '未接入',
+      '待接入',
+      '事实源',
+      '数据边界',
+      '数据质量',
+      '逆地理编码',
+      '坐标复制',
+      'TODO',
+    ]) {
+      expect(raSlice).not.toContain(forbidden);
+    }
   });
 });
