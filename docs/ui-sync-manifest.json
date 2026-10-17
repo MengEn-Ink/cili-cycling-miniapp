@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "e1ff87bcb4d46f1935ed56bf6f6b5f7666bcae13",
-  "syncedAt": "2026-10-17T00:55:00.000Z",
+  "syncedThrough": "c6319040e4b954d6707b3dadd834d5b1d1e435a6",
+  "syncedAt": "2026-10-17T01:51:00.000Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:5fc79b2e2d050bd99867c28c7bdbccc861ac21d937089228ce311e6470feeafb"
+    "digest": "sha256:579661ec73ac31f04083b3309ff6d448f2ab97735894a7fb76e60ce0460c5acc"
   },
   "prototype": {
-    "digest": "sha256:4d7ad23e71f125be62e769866d995d5ec89e73ef861e237f30bc861feab11a9c"
+    "digest": "sha256:f34a5b3ba2139bdf96c56be7b78e10d87fdb108663f21e4bc1e42734b488cc36"
   },
   "routes": [
     {
@@ -99,10 +99,10 @@
         "id": "route-analysis",
         "devtools": "route-analysis-devtools.png",
         "pages": "route-analysis-pages.png",
-        "state": "完整路线分析 / 关键点选中",
+        "state": "地图暂不可用降级 / 核心分析仍可查看",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "Pages 已完成 375×812 浏览器验收；沙箱没有微信开发者工具，DevTools 证据为明确标记的阻塞占位图，不能替代合并后微信开发版真机验收。"
+        "note": "Pages 原型已同步地图失败提示与轻量重试状态；未伪造新的微信 DevTools 截图，开发版上传后补做 iOS / Android 地图降级验收。"
       },
       {
         "id": "registration-form",
@@ -144,10 +144,10 @@
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "默认，客户端 2026.10.17.78",
+        "state": "默认，客户端 2026.10.17.79",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "Pages 375×812 设置页截图已按 2026.10.17.78 重新采集；微信端截图沿用既有布局基线，开发版上传后补做 iOS / Android 双端版本文案确认。"
+        "note": "Pages 375×812 设置页截图已按 2026.10.17.79 重新采集；微信端截图沿用既有布局基线，开发版上传后补做 iOS / Android 版本文案确认。"
       },
       {
         "id": "capability-card",

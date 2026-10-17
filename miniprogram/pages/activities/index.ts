@@ -4,6 +4,7 @@ import type { PublicActivityView } from '../../repositories/types';
 import { rideService } from '../../services/ride-service';
 import { activityDisplayStatus } from '../../utils/activity';
 import { customNavigationTopPx } from '../../utils/custom-navigation';
+import { createNavigationSingleFlight } from '../../utils/navigation-single-flight';
 import {
   formatActivityDate,
   formatActivityDateTime,
@@ -55,6 +56,7 @@ function displayActivity(item: Activity) {
 }
 
 Page({
+  navigation: createNavigationSingleFlight((options) => wx.navigateTo(options)),
   viewStates: {
     future: createTimelineViewState(),
     history: createTimelineViewState(),
@@ -94,9 +96,11 @@ Page({
     void this.load();
   },
   onHide() {
+    this.navigation.release();
     this.invalidateAllViews();
   },
   onUnload() {
+    this.navigation.release();
     this.invalidateAllViews();
   },
   invalidateAllViews() {
@@ -266,6 +270,6 @@ Page({
     this.setData({ currentCardIndex: index, selectedDayKey });
   },
   open(event: { currentTarget: { dataset: { id: string } } }) {
-    wx.navigateTo({ url: '/pages/activity-detail/index?id=' + event.currentTarget.dataset.id });
+    this.navigation.run('/pages/activity-detail/index?id=' + event.currentTarget.dataset.id);
   },
 });

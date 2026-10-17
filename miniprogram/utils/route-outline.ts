@@ -1,4 +1,31 @@
-import type { RouteCoordinate } from '../models';
+import type { Activity, RouteCoordinate } from '../models';
+
+type Route = Activity['route'];
+const finite = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value);
+
+export function hasAnalyzableRoute(route?: Partial<Route> | null): boolean {
+  if (!route) return false;
+  const profileDistances = new Set(
+    (route.elevationProfile || [])
+      .filter(
+        (point) => finite(point?.distanceKm) && finite(point?.elevationM) && point.distanceKm >= 0,
+      )
+      .map((point) => Number(point.distanceKm.toFixed(4))),
+  );
+  const validOutlineCount = (route.routeOutline || []).filter(
+    (point) =>
+      finite(point?.latitude) &&
+      finite(point?.longitude) &&
+      Math.abs(point.latitude) <= 90 &&
+      Math.abs(point.longitude) <= 180,
+  ).length;
+  return (
+    (finite(route.distanceKm) && route.distanceKm > 0) ||
+    (profileDistances.size > 1 && Math.max(...profileDistances) > 0) ||
+    validOutlineCount > 1
+  );
+}
 
 export interface ProjectedRoutePoint {
   x: number;

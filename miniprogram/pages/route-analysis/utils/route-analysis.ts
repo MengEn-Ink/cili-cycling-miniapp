@@ -1,4 +1,4 @@
-import type { Activity, RouteCoordinate, RouteElevationPoint } from '../models/index';
+import type { Activity, RouteCoordinate, RouteElevationPoint } from '../../../models/index';
 import { deriveRouteSegments, formatRouteDuration } from './route-analysis-segments';
 import type { KeyPointType, RouteAnalysis, RouteKeyPoint } from './route-analysis-types';
 export type {
@@ -16,25 +16,6 @@ const round = (value: number, digits = 1) => Number(value.toFixed(digits));
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const validCoordinate = (latitude: unknown, longitude: unknown) =>
   finite(latitude) && finite(longitude) && Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180;
-
-export function hasAnalyzableRoute(route?: Partial<Route> | null): boolean {
-  if (!route) return false;
-  const profileDistances = new Set(
-    (route.elevationProfile || [])
-      .filter(
-        (point) => finite(point?.distanceKm) && finite(point?.elevationM) && point.distanceKm >= 0,
-      )
-      .map((point) => round(point.distanceKm, 4)),
-  );
-  const validOutlineCount = (route.routeOutline || []).filter((point) =>
-    validCoordinate(point?.latitude, point?.longitude),
-  ).length;
-  return (
-    (finite(route.distanceKm) && route.distanceKm > 0) ||
-    (profileDistances.size > 1 && Math.max(...profileDistances) > 0) ||
-    validOutlineCount > 1
-  );
-}
 
 function cleanProfile(route: Route, distanceKm: number): RouteElevationPoint[] {
   const byDistance = new Map<number, number>();

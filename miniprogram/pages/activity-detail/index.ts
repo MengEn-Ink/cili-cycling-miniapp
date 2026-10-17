@@ -5,9 +5,12 @@ import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
 import { genderView } from '../../utils/gender';
 import { mediaSourceKind, reportMediaDiagnostic } from '../../utils/media-diagnostic';
+import { createNavigationSingleFlight } from '../../utils/navigation-single-flight';
 import { validateRegistrationProfile } from '../../utils/validation';
-import { drawRouteOutline as renderRouteOutline } from '../../utils/route-outline';
-import { hasAnalyzableRoute } from '../../utils/route-analysis';
+import {
+  drawRouteOutline as renderRouteOutline,
+  hasAnalyzableRoute,
+} from '../../utils/route-outline';
 import {
   drawElevationProfile,
   formatActivityDate,
@@ -160,6 +163,7 @@ function attachedGpx(route: any): boolean {
 }
 
 Page({
+  navigation: createNavigationSingleFlight((options) => wx.navigateTo(options)),
   loadRequestId: 0,
   initialShowPending: false,
   loadPromise: null as { id: string; promise: Promise<void> } | null,
@@ -228,10 +232,14 @@ Page({
     this.drawElevation();
     this.drawRouteOutline();
   },
+  onHide() {
+    this.navigation.release();
+  },
   onUnload() {
     this.unloaded = true;
     this.loadRequestId += 1;
     this.loadPromise = null;
+    this.navigation.release();
   },
   safeSetData(value: Record<string, unknown>, callback?: () => void) {
     if (!this.unloaded) this.setData(value, callback);
@@ -568,7 +576,7 @@ Page({
   },
   editActivity() {
     if (!this.data.item?.id) return;
-    wx.navigateTo({ url: '/pages/admin/activity-edit/index?id=' + this.data.item.id });
+    this.navigation.run('/pages/admin/activity-edit/index?id=' + this.data.item.id);
   },
   adminRegistration() {
     if (!this.data.item?.id) return;
@@ -577,18 +585,16 @@ Page({
       registration?.id &&
       ['waiting', 'pending', 'approved', 'checked_in'].includes(registration.status || '')
     ) {
-      wx.navigateTo({ url: '/pages/credential/index?id=' + registration.id });
+      this.navigation.run('/pages/credential/index?id=' + registration.id);
       return;
     }
     const teamQuery = this.data.teamId ? '&team_id=' + encodeURIComponent(this.data.teamId) : '';
-    wx.navigateTo({
-      url: '/pages/registration-form/index?id=' + this.data.item.id + teamQuery,
-    });
+    this.navigation.run('/pages/registration-form/index?id=' + this.data.item.id + teamQuery);
   },
   openRouteAnalysis() {
     const id = this.data.item?.id;
     if (!id || !this.data.canAnalyzeRoute) return;
-    wx.navigateTo({ url: `/pages/route-analysis/index?id=${encodeURIComponent(id)}` });
+    this.navigation.run(`/pages/route-analysis/index?id=${encodeURIComponent(id)}`);
   },
   previewGroupQr() {
     const source =
@@ -703,14 +709,12 @@ Page({
     }
     if (action.kind === 'view-registration' || action.kind === 'view-history') {
       if (action.registrationId)
-        wx.navigateTo({ url: '/pages/credential/index?id=' + action.registrationId });
+        this.navigation.run('/pages/credential/index?id=' + action.registrationId);
       return;
     }
     const teamQuery = this.data.teamId ? '&team_id=' + encodeURIComponent(this.data.teamId) : '';
     if (!(await this.ensureProfileReadyForRegistration())) return;
-    wx.navigateTo({
-      url: '/pages/registration-form/index?id=' + this.data.item.id + teamQuery,
-    });
+    this.navigation.run('/pages/registration-form/index?id=' + this.data.item.id + teamQuery);
   },
   async ensureProfileReadyForRegistration(): Promise<boolean> {
     // 报名入口前置校验：资料未完整时引导去补全，避免进入表单后才发现按钮被禁用而无反馈。
@@ -733,7 +737,7 @@ Page({
         fail: () => resolve(false),
       });
     });
-    if (confirm) wx.navigateTo({ url: '/pages/profile-edit/index' });
+    if (confirm) this.navigation.run('/pages/profile-edit/index');
     return false;
   },
 });

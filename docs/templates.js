@@ -586,6 +586,8 @@
         })
         .join('');
       const routeMap = (() => {
+        if (is('map-error'))
+          return `<div class="analysis-empty map-fallback"><p>地图暂时无法显示，路线数据仍可查看</p>${btn('重试地图', toast('正在重试地图'), 'btn-secondary')}</div>`;
         const highlightPath = activeSegment
           ? `M${toX(activeSegment.startKm).toFixed(1)} ${(60 + Math.sin(activeSegment.startKm / 20) * 20).toFixed(1)} L${toX(activeSegment.endKm).toFixed(1)} ${(60 + Math.sin(activeSegment.endKm / 20) * 20).toFixed(1)}`
           : '';

@@ -1,4 +1,4 @@
-import type { RouteElevationPoint } from '../models/index';
+import type { RouteElevationPoint } from '../../../models/index';
 import type { RouteSegment, SegmentType } from './route-analysis-types';
 
 const round = (value: number, digits = 1) => Number(value.toFixed(digits));

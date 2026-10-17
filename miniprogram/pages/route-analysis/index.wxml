@@ -44,7 +44,11 @@
     <view class="analysis-card map-card">
       <view class="section-title">路线地图</view>
       <view class="section-hint">地图仅展示活动已有路线，不读取当前位置，也不是实时导航。</view>
-      <map wx:if="{{mapAvailable}}" id="route-analysis-map" class="route-map" latitude="{{mapLatitude}}" longitude="{{mapLongitude}}" scale="12" markers="{{markers}}" polyline="{{polylines}}" include-points="{{mapPoints}}" bindmarkertap="markerTap" show-location="{{false}}"></map>
+      <map wx:if="{{mapAvailable}}" wx:key="{{mapRenderKey}}" id="route-analysis-map" class="route-map" latitude="{{mapLatitude}}" longitude="{{mapLongitude}}" scale="12" markers="{{markers}}" polyline="{{polylines}}" include-points="{{mapPoints}}" bindmarkertap="markerTap" binderror="mapError" show-location="{{false}}"></map>
+      <view wx:elif="{{mapFailed}}" class="analysis-empty map-fallback">
+        <view>地图暂时无法显示，路线数据仍可查看</view>
+        <button class="map-retry-button" bindtap="retryMap">重试地图</button>
+      </view>
       <view wx:else class="analysis-empty">暂无有效路线轮廓，地图已降级；仍可查看已有指标与关键公里数。</view>
     </view>
 

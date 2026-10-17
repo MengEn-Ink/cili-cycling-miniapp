@@ -2,7 +2,7 @@ import { rideService } from '../../services/ride-service';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
 import { formatActivityDate, formatActivityTime, formatChinaDateTime } from '../../utils/date-time';
-import { hasAnalyzableRoute } from '../../utils/route-analysis';
+import { hasAnalyzableRoute } from '../../utils/route-outline';
 
 function optionalBeforeDeadline<T>(load: () => Promise<T>, timeoutMs = 1_800): Promise<T | null> {
   return new Promise((resolve) => {

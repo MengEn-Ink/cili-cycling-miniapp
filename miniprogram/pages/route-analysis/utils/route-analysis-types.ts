@@ -1,4 +1,4 @@
-import type { RouteCoordinate, RouteElevationPoint } from '../models/index';
+import type { RouteCoordinate, RouteElevationPoint } from '../../../models/index';
 
 export type KeyPointType = 'start' | 'end' | 'highest' | 'climb' | 'descent' | 'rest';
 export type SegmentType = 'start' | 'climb' | 'transition' | 'descent' | 'return';

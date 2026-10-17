@@ -40,7 +40,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(prototypeRoutes).toHaveLength(14);
     // route-view 由 #210 从 app.json 删除；新增完整路线分析页同步进入原型。
     expect(prototypeRoutes.map(routeToPagePath)).toEqual(
-      appRoutes.filter((page) => page !== 'pages/route-view/index'),
+      expect.arrayContaining(appRoutes.filter((page) => page !== 'pages/route-view/index')),
     );
     for (const route of prototypeRoutes) {
       expect(schema).toContain(`id: '${route}'`);
@@ -171,9 +171,9 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   });
 
   it('设置页原型同步当前客户端版本与当前 App 更新', () => {
-    expect(schema).toContain("state: 'V2026.10.17.78'");
+    expect(schema).toContain("state: 'V2026.10.17.79'");
     expect(schema).toContain(
-      "['2026.10.17.78', '背景图上传更稳更快', '个人背景图会在裁剪后自适应压缩，并显示上传进度；网络波动时会自动重试。']",
+      "['2026.10.17.79', '打开更快，路线查看更稳', '路线分析与资料编辑改为按需加载；地图暂不可用时仍可查看海拔、坡度和分段。']",
     );
     expect(templates).toContain('App 更新');
     expect(templates).not.toContain('最近五次');

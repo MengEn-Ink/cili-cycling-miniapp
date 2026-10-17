@@ -188,6 +188,20 @@
   overflow: hidden;
 }
 
+.map-fallback {
+  line-height: 42rpx;
+}
+
+.map-retry-button {
+  min-height: 72rpx;
+  margin-top: 20rpx;
+  border: 2rpx solid var(--color-action);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-action);
+  font-weight: 800;
+}
+
 .selected-card {
   position: relative;
   z-index: 0;
