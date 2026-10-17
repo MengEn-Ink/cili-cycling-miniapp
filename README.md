@@ -86,6 +86,7 @@ npm run coverage         # 覆盖率门禁
 npm run audit:all        # 根项目和云函数依赖审计
 npm run check:design     # 双端设计变量与浅色对比度
 npm run check:ui-sync -- --strict # 17 路由双端截图与内容摘要
+npm run check:pr-description # PR 八段描述、测试/E2E 报告与 diff 统计（由 PR CI 注入上下文）
 npm run check:governance     # 文档口径、源码卫生与 Actions 安全基线
 ```
 

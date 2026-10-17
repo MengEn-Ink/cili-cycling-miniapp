@@ -359,7 +359,7 @@ Co-Authored-By: Aime <...>
 
 ### 5.2 推送与 PR
 
-推送和创建 PR 只在用户明确要求后执行。PR 描述包含八段：需求上下文、背景、修改方案、复现/验证路径、改动、影响面、测试、改动文件。
+推送和创建 PR 只在用户明确要求后执行。PR 必须使用 `.github/PULL_REQUEST_TEMPLATE.md` 的八段结构：需求上下文、背景、修改方案、复现或验证路径、改动、影响面、测试与端到端验收、改动文件；同时按 `docs/verification/pr-acceptance-report-template.md` 提交本次验收报告。CI 会校验章节完整性、固定门禁结果、报告文件和最终 diff 统计。
 
 ```bash
 # 推送时通过受控 GIT_ASKPASS 注入 token，不把 token 写入命令或 remote

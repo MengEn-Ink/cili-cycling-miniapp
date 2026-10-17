@@ -34,6 +34,7 @@
     "check:design": "node scripts/check-design-contract.mjs",
     "deploy:miniprogram": "node scripts/upload-miniprogram-ci.mjs",
     "check:ui-sync": "node scripts/check-ui-sync.mjs",
+    "check:pr-description": "node scripts/check-pr-description.mjs",
     "check:governance": "node scripts/check-project-governance.mjs",
     "build": "rm -rf dist && tsc -p tsconfig.build.json && node scripts/validate.mjs",
     "validate": "npm run tool:install && npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:journey-evidence && npm run test:bootstrap && npm run test:deploy && npm run check:experience-releases && npm run test:release-notes && npm run test:ui-sync && npm run test:design && npm run check:design && npm run check:release-notes && npm run check:main-package && npm run check:ui-sync && npm run check:governance && npm run test:cloud && npm run verify:cloud-packages && npm run build",
