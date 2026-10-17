@@ -5,11 +5,11 @@ import {
   assertWriteGate,
   cleanupSmokeData,
   createCliStore,
-  handlerProbeArgs,
+  functionDetailProbeArgs,
   nosqlCommandArgs,
-  parseHandlerProbeOutput,
+  parseFunctionDetailOutput,
   parseNosqlDocuments,
-  probeClubApplicationHandler,
+  probeClubApplicationDeployment,
   runClubApplicationSmoke,
 } from './cloudbase-club-application-smoke.mjs';
 
@@ -106,173 +106,103 @@ test('nosql execute 命令锁定 CLI、环境与 JSON 参数', () => {
   assert.equal(args.at(-1), '--json');
 });
 
-test('已部署 handler probe 使用锁定 CLI 并解析真实嵌套业务信封', () => {
+test('部署探针使用 fn detail 并解析真实嵌套函数详情', () => {
   const response = JSON.stringify({
     Response: {
-      Result: JSON.stringify({
-        ret: 0,
-        response: JSON.stringify({
-          ok: false,
-          error: { code: 'UNAUTHENTICATED', message: '请先完成微信登录' },
-        }),
+      Data: JSON.stringify({
+        FunctionName: 'club-application',
+        Status: 'Active',
+        EnvironmentId: 'env-production',
       }),
     },
   });
-  assert.deepEqual(parseHandlerProbeOutput(response), {
-    ok: false,
-    error: { code: 'UNAUTHENTICATED' },
+  assert.deepEqual(parseFunctionDetailOutput(response, 'env-production'), {
+    name: 'club-application',
+    status: 'Active',
   });
+
   const calls = [];
   assert.deepEqual(
-    probeClubApplicationHandler({
+    probeClubApplicationDeployment({
       envId: 'env-production',
       execute: (file, args) => {
         calls.push([file, args]);
         return response;
       },
     }),
-    { ok: false, error: { code: 'UNAUTHENTICATED' } },
+    { name: 'club-application', status: 'Active' },
   );
   assert.equal(calls[0][0], 'npx');
-  assert.deepEqual(calls[0][1], handlerProbeArgs('env-production'));
-  assert.deepEqual(calls[0][1].slice(-4), [
-    'club-application',
-    '--params',
-    JSON.stringify({ action: 'mine' }),
-    '--json',
-  ]);
-  assert.ok(calls[0][1].includes('@cloudbase/cli@3.8.4'));
+  assert.deepEqual(calls[0][1], functionDetailProbeArgs('env-production'));
+  assert.deepEqual(calls[0][1].slice(-4), ['fn', 'detail', 'club-application', '--json']);
+  assert.ok(!calls[0][1].includes('invoke'));
 });
 
-test('handler probe 接受 exit 1 stdout 中的预期鉴权业务信封', () => {
-  const execute = () => {
-    const error = new Error('Command failed');
-    error.status = 1;
-    error.stdout = JSON.stringify({
-      Response: {
-        Result: JSON.stringify({
-          response: JSON.stringify({
-            ok: false,
-            error: { code: 'UNAUTHENTICATED', message: '请先完成微信登录' },
-          }),
-        }),
-      },
-    });
-    error.stderr = '';
-    throw error;
-  };
-
-  assert.deepEqual(probeClubApplicationHandler({ envId: 'env-production', execute }), {
-    ok: false,
-    error: { code: 'UNAUTHENTICATED' },
-  });
-});
-
-test('handler probe 在 exit 1 无结构化输出时阻断', () => {
-  const execute = () => {
-    const error = new Error('Command failed with credential=secret');
-    error.status = 1;
-    error.stdout = '';
-    error.stderr = '';
-    throw error;
-  };
-
-  assert.throws(
-    () => probeClubApplicationHandler({ envId: 'env-production', execute }),
-    (error) => {
-      assert.match(error.message, /探针命令失败/);
-      assert.doesNotMatch(error.message, /credential|secret/);
-      return true;
-    },
-  );
-});
-
-test('handler probe 在 exit 1 返回其他业务错误码时阻断', () => {
-  const execute = () => {
-    const error = new Error('Command failed');
-    error.status = 1;
-    error.stdout = JSON.stringify({ ok: false, error: { code: 'INTERNAL_ERROR' } });
-    error.stderr = '';
-    throw error;
-  };
-
-  assert.throws(
-    () => probeClubApplicationHandler({ envId: 'env-production', execute }),
-    /探针命令失败/,
-  );
-});
-
-test('handler probe 拒绝 status 2，即使输出预期业务信封', () => {
-  const execute = () => {
-    const error = new Error('Command failed');
-    error.status = 2;
-    error.stdout = JSON.stringify({ ok: false, error: { code: 'UNAUTHENTICATED' } });
-    throw error;
-  };
-
-  assert.throws(
-    () => probeClubApplicationHandler({ envId: 'env-production', execute }),
-    /非业务执行失败/,
-  );
-});
-
-test('handler probe 拒绝 signal 终止，即使输出预期业务信封', () => {
-  const execute = () => {
-    const error = new Error('Command terminated');
-    error.status = 1;
-    error.signal = 'SIGTERM';
-    error.stdout = JSON.stringify({ ok: false, error: { code: 'UNAUTHENTICATED' } });
-    throw error;
-  };
-
-  assert.throws(
-    () => probeClubApplicationHandler({ envId: 'env-production', execute }),
-    /非业务执行失败/,
-  );
-});
-
-test('handler probe 拒绝 ENOENT 系统错误且不回显原始内容', () => {
-  const execute = () => {
-    const error = new Error('spawn npx ENOENT credential=secret');
-    error.status = 1;
-    error.code = 'ENOENT';
-    error.stdout = JSON.stringify({ ok: false, error: { code: 'UNAUTHENTICATED' } });
-    throw error;
-  };
-
-  assert.throws(
-    () => probeClubApplicationHandler({ envId: 'env-production', execute }),
-    (error) => {
-      assert.match(error.message, /非业务执行失败/);
-      assert.doesNotMatch(error.message, /ENOENT|credential|secret/);
-      return true;
-    },
-  );
-});
-
-test('handler probe 在 stdout 预期但 stderr 含冲突业务信封时阻断', () => {
-  const execute = () => {
-    const error = new Error('Command failed');
-    error.status = 1;
-    error.stdout = JSON.stringify({ ok: false, error: { code: 'UNAUTHENTICATED' } });
-    error.stderr = JSON.stringify({ ok: false, error: { code: 'INTERNAL_ERROR' } });
-    throw error;
-  };
-
-  assert.throws(
-    () => probeClubApplicationHandler({ envId: 'env-production', execute }),
-    /未返回唯一预期鉴权业务信封/,
-  );
-});
-
-test('已部署 handler 缺少业务信封或未返回 UNAUTHENTICATED 时阻断', () => {
-  assert.throws(() => parseHandlerProbeOutput('{}'), /业务信封/);
+test('部署探针在函数名称错误时阻断', () => {
   assert.throws(
     () =>
-      parseHandlerProbeOutput(
-        JSON.stringify({ response: { ok: false, error: { code: 'INTERNAL_ERROR' } } }),
+      parseFunctionDetailOutput(
+        JSON.stringify({ FunctionName: 'other-function', Status: 'Active' }),
+        'env-production',
       ),
-    /鉴权边界/,
+    /函数名不匹配/,
+  );
+});
+
+test('部署探针仅接受大小写归一后的 Active 可服务终态', () => {
+  assert.deepEqual(
+    parseFunctionDetailOutput(
+      JSON.stringify({ FunctionName: 'club-application', Status: 'ACTIVE' }),
+      'env-production',
+    ),
+    { name: 'club-application', status: 'ACTIVE' },
+  );
+
+  for (const status of [
+    'Creating',
+    'Updating',
+    'Inactive',
+    'UnknownFutureStatus',
+    'Failed',
+    'Deleting',
+  ]) {
+    assert.throws(
+      () =>
+        parseFunctionDetailOutput(
+          JSON.stringify({ FunctionName: 'club-application', Status: status }),
+          'env-production',
+        ),
+      /可服务终态 Active/,
+    );
+  }
+});
+
+test('部署探针在响应环境漂移时阻断', () => {
+  assert.throws(
+    () =>
+      parseFunctionDetailOutput(
+        JSON.stringify({
+          envId: 'other-env',
+          Response: {
+            FunctionName: 'club-application',
+            Status: 'Active',
+          },
+        }),
+        'env-production',
+      ),
+    /环境不匹配/,
+  );
+});
+
+test('部署探针缺少函数名或状态时阻断', () => {
+  assert.throws(() => parseFunctionDetailOutput('{}', 'env-production'), /函数详情/);
+  assert.throws(
+    () =>
+      parseFunctionDetailOutput(
+        JSON.stringify({ FunctionName: 'club-application' }),
+        'env-production',
+      ),
+    /缺少函数名或状态/,
   );
 });
 
