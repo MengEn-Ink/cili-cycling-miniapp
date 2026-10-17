@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -24,6 +25,15 @@ async function fixture() {
   await writeFile(keyPath, 'test-private-key', { mode: 0o644 });
   return { root, keyPath };
 }
+
+test('锁定后的上传客户端可以被真实 Node 运行时加载', () => {
+  const requireUploadTool = createRequire(
+    new URL('../tools/miniprogram-ci/package.json', import.meta.url),
+  );
+  const ci = requireUploadTool('miniprogram-ci');
+  assert.equal(typeof ci.Project, 'function');
+  assert.equal(typeof ci.upload, 'function');
+});
 
 test('上传配置从 project.config.json 读取 appid 并收紧密钥权限', async () => {
   const { root, keyPath } = await fixture();
@@ -204,6 +214,20 @@ test('部署门禁同时运行上传判定和上传客户端测试', async () =>
     packageJson.scripts['test:deploy'],
     /scripts\/upload-miniprogram-ci\.node-test\.mjs/,
   );
+});
+
+test('Dependabot 只为低风险更新开启 GitHub 原生自动合并', async () => {
+  const workflow = await readFile(
+    new URL('../.github/workflows/dependabot-auto-merge.yml', import.meta.url),
+    'utf8',
+  );
+  assert.match(workflow, /github\.actor == 'dependabot\[bot\]'/);
+  assert.match(workflow, /dependabot\/fetch-metadata@v2\.4\.0/);
+  assert.match(workflow, /version-update:semver-patch/);
+  assert.match(workflow, /version-update:semver-minor/);
+  assert.match(workflow, /alert-state == 'OPEN'/);
+  assert.match(workflow, /gh pr merge --auto --squash/);
+  assert.doesNotMatch(workflow, /actions\/checkout/);
 });
 
 test('上传脚本不会读取或打印密钥正文', async () => {

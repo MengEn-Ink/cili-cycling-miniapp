@@ -41,11 +41,13 @@
     ['CloudBase API Key', 'GitHub Environment Secret：CLOUDBASE_API_KEY', '环境级部署凭证；不进入 Aime、仓库、Artifact 或日志'],
   ];
   const deploySteps = [
-    [1, 'PR 合入 main', '源码只通过受保护分支进入发布链路。'],
-    [2, 'main CI 全绿', '测试、覆盖率、安全审计和构建失败时不会触发部署。'],
-    [3, '判定变更范围', '仅数据库基线或受影响云函数进入 CloudBase 部署。'],
-    [4, 'GitHub 注入 Secret', 'Runner 只在当前作业中获得环境级 API Key 和目标环境变量。'],
-    [5, '部署并回读验收', '依次执行基础设施 plan/apply/verify、函数部署和 fn list 复查。'],
+    [1, 'PR 门禁', '格式、类型、测试、覆盖率与依赖审计全部通过后才允许合入。', 'gate'],
+    [2, '合入 main', '受保护分支拒绝直接推送、强推和未通过检查的变更。', 'gate'],
+    [3, 'main CI 复验', '用合并后的真实提交再次运行完整门禁，并生成变更范围判定。', 'gate'],
+    [4, 'CloudBase', '只部署受影响的基线与云函数，完成后回读函数和基础设施状态。', 'cloud'],
+    [5, '微信开发版', '仅小程序变更触发上传，使用临时私钥并留下版本与 receipt。', 'wechat'],
+    [6, 'GitHub Pages', 'docs 变更由 Pages 独立发布，交付中心与代码事实保持同一提交。', 'pages'],
+    [7, '三端验收', '核对 CI、CloudBase、微信开发版与 Pages 均指向当前 main。', 'verify'],
   ];
   const githubDeployConfig = [
     ['CLOUDBASE_API_KEY', 'Environment Secret', 'CloudBase 环境级 API Key；敏感、不可回读'],
@@ -149,8 +151,8 @@
       .join('');
     const deployFlow = deploySteps
       .map(
-        ([number, title, description]) =>
-          `<article><span>${String(number).padStart(2, '0')}</span><b>${title}</b><p>${description}</p></article>`,
+        ([number, title, description, lane]) =>
+          `<article class="deploy-step deploy-step-${lane}" style="--deploy-order:${number}"><span>${String(number).padStart(2, '0')}</span><b>${title}</b><p>${description}</p></article>`,
       )
       .join('');
     const deployConfigRows = githubDeployConfig
@@ -293,7 +295,8 @@
           <p>生产 Secret 由 <code>cloudbase-production</code> Environment 托管，只有 main CI 成功后的 Runner 能在当前作业中使用；Secret 不能通过 GitHub API、Pages 或 Aime 反向读取。</p>
         </div>
 
-        <div class="deploy-flow" aria-label="GitHub 到 CloudBase 自动部署五步">${deployFlow}</div>
+        <div class="deploy-flow" aria-label="从 Pull Request 到三端验收的七步交付链路">${deployFlow}</div>
+        <p class="deploy-flow-note"><b>并行点：</b>main CI 复验完成后，CloudBase、微信开发版和 GitHub Pages 按变更范围独立执行；任何一路失败都保留日志与可重跑入口，不用重新合并代码。</p>
 
         <div class="guide-subsection">
           <p class="section-label">一次性配置</p>

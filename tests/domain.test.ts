@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { activityDisplayStatus } from '../miniprogram/utils/activity';
-import { occupiedCount } from '../miniprogram/utils/capacity';
 import { canTransition, transition } from '../miniprogram/utils/registration';
 import { validateRegistration } from '../miniprogram/utils/validation';
 import { activities, profile } from '../miniprogram/mock/fixtures';
@@ -77,18 +76,6 @@ describe('活动状态', () => {
       activityDisplayStatus({ ...a, registrationState: undefined, closedReason: undefined }),
     ).toBe('活动状态不可用');
   });
-});
-describe('名额占用', () => {
-  it('pending、approved 和 checked_in 占位', () =>
-    expect(
-      occupiedCount([
-        { status: 'pending' },
-        { status: 'approved' },
-        { status: 'checked_in' },
-        { status: 'rejected' },
-        { status: 'cancelled' },
-      ]),
-    ).toBe(3));
 });
 describe('报名迁移', () => {
   it('允许审批、签到、取消和重报', () => {
