@@ -1,7 +1,6 @@
 {
   "pages": [
     "pages/activities/index",
-    "pages/activity-detail/index",
     "pages/registration-form/index",
     "pages/registrations/index",
     "pages/credential/index",
@@ -10,6 +9,10 @@
     "pages/capability-card/index"
   ],
   "subpackages": [
+    {
+      "root": "pages/activity-detail",
+      "pages": ["index"]
+    },
     {
       "root": "pages/route-analysis",
       "pages": ["index"]

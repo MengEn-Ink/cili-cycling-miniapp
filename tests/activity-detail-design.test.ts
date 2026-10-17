@@ -150,7 +150,7 @@ describe('活动详情设计与日期契约', () => {
     expect(page).toContain('deadlineTime: formatChinaDateTimeSeconds(item.deadline)');
   });
 
-  it('canvas 绘制橙色曲线、渐变、坐标文字和最高最低点，无有效数据时不绘制', () => {
+  it('canvas 使用共享参数绘制品牌红描边、坐标文字与起终极值，无面积渐变', () => {
     const gradient = { addColorStop: vi.fn() };
     const context: any = {
       setTransform: vi.fn(),
@@ -180,10 +180,10 @@ describe('活动详情设计与日期契约', () => {
         2,
       ),
     ).toBe(true);
-    expect(context.createLinearGradient).toHaveBeenCalled();
-    expect(gradient.addColorStop).toHaveBeenCalledTimes(2);
+    expect(context.createLinearGradient).not.toHaveBeenCalled();
+    expect(gradient.addColorStop).not.toHaveBeenCalled();
     expect(context.fillText).toHaveBeenCalledTimes(4);
-    expect(context.arc).toHaveBeenCalledTimes(2);
+    expect(context.arc).toHaveBeenCalledTimes(3);
     expect(context.strokeStyle).toBe('#c0321f');
   });
 
@@ -452,7 +452,6 @@ describe('活动详情设计与日期契约', () => {
 describe('活动详情官方路线、分享与 GPX 下载', () => {
   async function loadPage(downloader: (id: string) => Promise<any>) {
     let definition: any;
-    const fileSystem = { writeFile: vi.fn(({ success }) => success()) };
     vi.stubGlobal('wx', {
       env: { USER_DATA_PATH: '/tmp/user' },
       showShareMenu: vi.fn(),
@@ -466,7 +465,13 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
         }
         success();
       }),
-      getFileSystemManager: vi.fn(() => fileSystem),
+      getFileSystemManager: vi.fn(() => ({
+        getFileInfo: vi.fn(({ success }) => success({ digest: 'a'.repeat(32) })),
+        unlink: vi.fn(({ success }) => success()),
+      })),
+      downloadFile: vi.fn(({ success }) =>
+        success({ statusCode: 200, tempFilePath: '/tmp/downloaded-route.gpx' }),
+      ),
       shareFileMessage: vi.fn(({ success }) => success()),
       saveFile: vi.fn(({ success }) => success()),
       navigateTo: vi.fn(),
@@ -835,77 +840,167 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
     expect(share).not.toHaveProperty('imageUrl');
   });
 
-  it('下载活动上传的原始 GPX 并优先分享，busy 时不重复调用', async () => {
-    const downloader = vi.fn(async () => ({ base64: 'eA==', fileName: 'route.gpx' }));
+  it('通过临时 HTTPS 地址下载 GPX 200 响应并优先分享，busy 时不重复调用', async () => {
+    const downloader = vi.fn(async () => ({
+      tempFileURL: 'https://temp.example/route.gpx',
+      fileName: 'route.gpx',
+      contentType: 'application/gpx+xml',
+      gpxMd5: 'a'.repeat(32),
+    }));
     const { definition, context } = await loadPage(downloader);
     await definition.downloadGpx.call(context);
     expect(downloader).toHaveBeenCalledWith('a/1');
-    expect(wx.getFileSystemManager().writeFile).toHaveBeenCalledWith(
-      expect.objectContaining({ encoding: 'base64' }),
+    expect(wx.downloadFile).toHaveBeenCalledWith(
+      expect.objectContaining({ url: 'https://temp.example/route.gpx' }),
     );
-    expect(wx.shareFileMessage).toHaveBeenCalled();
+    const fileSystem = (wx as any).getFileSystemManager.mock.results[0].value;
+    expect(fileSystem.getFileInfo).toHaveBeenCalledWith(
+      expect.objectContaining({ filePath: '/tmp/downloaded-route.gpx', digestAlgorithm: 'md5' }),
+    );
+    expect(wx.shareFileMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ filePath: '/tmp/downloaded-route.gpx', fileName: 'route.gpx' }),
+    );
     context.downloadBusy = true;
     await definition.downloadGpx.call(context);
     expect(downloader).toHaveBeenCalledTimes(1);
   });
 
+  it('URL 下载后对象内容变化时 MD5 不一致，清理临时文件并阻断分享保存', async () => {
+    const loaded = await loadPage(async () => ({
+      tempFileURL: 'https://temp.example/route.gpx',
+      fileName: 'route.gpx',
+      contentType: 'application/gpx+xml',
+      gpxMd5: 'a'.repeat(32),
+    }));
+    const unlink = vi.fn(({ success }) => success());
+    (wx as any).getFileSystemManager.mockReturnValueOnce({
+      getFileInfo: ({ success }: any) => success({ digest: 'b'.repeat(32) }),
+      unlink,
+    });
+
+    await loaded.definition.downloadGpx.call(loaded.context);
+
+    expect(unlink).toHaveBeenCalledWith(
+      expect.objectContaining({ filePath: '/tmp/downloaded-route.gpx' }),
+    );
+    expect(wx.showToast).toHaveBeenCalledWith(
+      expect.objectContaining({ title: '路线文件完整性校验失败，请重新下载' }),
+    );
+    expect(wx.shareFileMessage).not.toHaveBeenCalled();
+    expect(wx.saveFile).not.toHaveBeenCalled();
+  });
+
+  it('MD5 文件读取失败时即使清理也失败，仍保留读取主错误并阻断后续操作', async () => {
+    const loaded = await loadPage(async () => ({
+      tempFileURL: 'https://temp.example/route.gpx',
+      fileName: 'route.gpx',
+      contentType: 'application/gpx+xml',
+      gpxMd5: 'a'.repeat(32),
+    }));
+    const unlink = vi.fn(({ fail }) => fail(new Error('unlink failed')));
+    (wx as any).getFileSystemManager.mockReturnValueOnce({
+      getFileInfo: ({ fail }: any) => fail(new Error('getFileInfo failed')),
+      unlink,
+    });
+
+    await loaded.definition.downloadGpx.call(loaded.context);
+
+    expect(unlink).toHaveBeenCalled();
+    expect(wx.showToast).toHaveBeenCalledWith(
+      expect.objectContaining({ title: '路线临时文件读取失败，请重新下载' }),
+    );
+    expect(wx.shareFileMessage).not.toHaveBeenCalled();
+    expect(wx.saveFile).not.toHaveBeenCalled();
+  });
+
   it.each(['Sunday.Route.gpx', 'route v2.gpx', '周日 环湖.v2.gpx'])(
-    '复杂文件名 %s 可安全落盘并分享',
+    '复杂文件名 %s 可安全下载并分享',
     async (fileName) => {
-      const loaded = await loadPage(async () => ({ base64: 'eA==', fileName }));
+      const loaded = await loadPage(async () => ({
+        tempFileURL: 'https://temp.example/route.gpx',
+        fileName,
+        contentType: 'application/gpx+xml',
+        gpxMd5: 'a'.repeat(32),
+      }));
       await loaded.definition.downloadGpx.call(loaded.context);
-      expect(wx.getFileSystemManager().writeFile).toHaveBeenCalledWith(
-        expect.objectContaining({ filePath: `/tmp/user/${fileName}` }),
-      );
       expect(wx.shareFileMessage).toHaveBeenCalledWith(
-        expect.objectContaining({ fileName, filePath: `/tmp/user/${fileName}` }),
+        expect.objectContaining({ fileName, filePath: '/tmp/downloaded-route.gpx' }),
       );
     },
   );
 
-  it('不支持分享文件时保存 GPX 并明确提示', async () => {
-    const loaded = await loadPage(async () => ({ base64: 'eA==', fileName: 'route.gpx' }));
+  it('分享不可用或失败时保存微信文件，并且只有保存成功才明确提示', async () => {
+    const response = {
+      tempFileURL: 'https://temp.example/route.gpx',
+      fileName: 'route.gpx',
+      contentType: 'application/gpx+xml',
+      gpxMd5: 'a'.repeat(32),
+    };
+    const unsupported = await loadPage(async () => response);
     (wx as any).shareFileMessage = undefined;
-    await loaded.definition.downloadGpx.call(loaded.context);
+    await unsupported.definition.downloadGpx.call(unsupported.context);
     expect(wx.saveFile).toHaveBeenCalledWith(
-      expect.objectContaining({ tempFilePath: '/tmp/user/route.gpx' }),
+      expect.objectContaining({ tempFilePath: '/tmp/downloaded-route.gpx' }),
     );
-    expect(wx.showToast).toHaveBeenCalledWith({ title: 'GPX 已保存', icon: 'success' });
-  });
+    expect(wx.showModal).toHaveBeenCalledWith({
+      title: 'GPX 已保存',
+      content: '已保存到微信文件，可从文件菜单继续分享',
+      showCancel: false,
+    });
 
-  it('分享或旧客户端保存失败时不误报成功', async () => {
-    const shared = await loadPage(async () => ({ base64: 'eA==', fileName: 'route.gpx' }));
+    const fallback = await loadPage(async () => response);
     vi.mocked(wx.shareFileMessage).mockImplementationOnce(({ fail }: any) =>
       fail(new Error('分享失败')),
     );
-    await shared.definition.downloadGpx.call(shared.context);
-    expect(wx.showToast).toHaveBeenCalledWith(expect.objectContaining({ title: '分享失败' }));
-    expect(wx.showToast).not.toHaveBeenCalledWith({ title: 'GPX 已保存', icon: 'success' });
+    await fallback.definition.downloadGpx.call(fallback.context);
+    expect(wx.saveFile).toHaveBeenCalled();
+    expect(wx.showModal).toHaveBeenCalled();
 
-    const saved = await loadPage(async () => ({ base64: 'eA==', fileName: 'route.gpx' }));
-    (wx as any).shareFileMessage = undefined;
+    const failed = await loadPage(async () => response);
+    vi.mocked(wx.shareFileMessage).mockImplementationOnce(({ fail }: any) =>
+      fail(new Error('分享失败')),
+    );
     vi.mocked(wx.saveFile).mockImplementationOnce(({ fail }: any) => fail(new Error('保存失败')));
-    await saved.definition.downloadGpx.call(saved.context);
-    expect(wx.showToast).toHaveBeenCalledWith(expect.objectContaining({ title: '保存失败' }));
-    expect(wx.showToast).not.toHaveBeenCalledWith({ title: 'GPX 已保存', icon: 'success' });
+    await failed.definition.downloadGpx.call(failed.context);
+    expect(wx.showToast).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'GPX 分享失败，保存到微信文件也失败，请稍后重试' }),
+    );
+    expect(wx.showModal).not.toHaveBeenCalled();
   });
 
-  it('GPX 超过 4MB 或服务失败时提示且不写文件', async () => {
-    const oversized = await loadPage(async () => ({
-      base64: 'A'.repeat(5_592_408),
-      fileName: 'large.gpx',
+  it.each([
+    [
+      '非 200 响应',
+      ({ success }: any) => success({ statusCode: 403, tempFilePath: '/tmp/x' }),
+      'HTTP 403',
+    ],
+    ['缺少临时路径', ({ success }: any) => success({ statusCode: 200 }), '未生成临时文件'],
+    ['网络失败', ({ fail }: any) => fail(new Error('offline')), '网络下载失败'],
+  ])('%s 时给出可理解提示且不分享', async (_name, downloadFile, message) => {
+    const loaded = await loadPage(async () => ({
+      tempFileURL: 'https://temp.example/route.gpx',
+      fileName: 'route.gpx',
+      contentType: 'application/gpx+xml',
+      gpxMd5: 'a'.repeat(32),
     }));
-    await oversized.definition.downloadGpx.call(oversized.context);
-    expect(wx.getFileSystemManager().writeFile).not.toHaveBeenCalled();
+    vi.mocked(wx.downloadFile).mockImplementationOnce(downloadFile);
+    await loaded.definition.downloadGpx.call(loaded.context);
     expect(wx.showToast).toHaveBeenCalledWith(
-      expect.objectContaining({ title: expect.stringContaining('4MB') }),
+      expect.objectContaining({ title: expect.stringContaining(message) }),
     );
+    expect(wx.shareFileMessage).not.toHaveBeenCalled();
+    expect(wx.saveFile).not.toHaveBeenCalled();
+  });
 
+  it('临时地址服务失败时原样展示稳定业务提示且不发起平台下载', async () => {
     const failed = await loadPage(async () => {
-      throw new Error('下载服务不可用');
+      throw new Error('路线文件下载地址生成失败，请稍后重试');
     });
     await failed.definition.downloadGpx.call(failed.context);
-    expect(wx.showToast).toHaveBeenCalledWith(expect.objectContaining({ title: '下载服务不可用' }));
+    expect(wx.showToast).toHaveBeenCalledWith(
+      expect.objectContaining({ title: '路线文件下载地址生成失败，请稍后重试' }),
+    );
+    expect(wx.downloadFile).not.toHaveBeenCalled();
   });
 });
 

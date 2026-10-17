@@ -2531,19 +2531,22 @@ describe('CloudRepository GPX 路线契约', () => {
     });
   });
 
-  it('downloadRouteGpx 只调用 activity-read 并映射原始文件', async () => {
+  it('downloadRouteGpx 只调用 activity-read 并映射 HTTPS 临时地址', async () => {
     const { cloud, callFunction } = cloudWith(
       success({
-        base64: 'PD94bWwgdmVyc2lvbj0iMS4wIj8+PGdweC8+',
+        temp_file_url: 'https://temp.example/activity-a1.gpx?token=signed',
         filename: 'activity-a1.gpx',
         content_type: 'application/gpx+xml',
+        gpx_md5: 'a'.repeat(32),
       }),
     );
     const repository = new CloudRepository(cloud);
 
     await expect(repository.downloadRouteGpx('a1')).resolves.toEqual({
-      base64: 'PD94bWwgdmVyc2lvbj0iMS4wIj8+PGdweC8+',
+      tempFileURL: 'https://temp.example/activity-a1.gpx?token=signed',
       fileName: 'activity-a1.gpx',
+      contentType: 'application/gpx+xml',
+      gpxMd5: 'a'.repeat(32),
     });
     expectCall(callFunction, 'activity-read', {
       action: 'downloadRouteGpx',
@@ -2674,7 +2677,12 @@ describe('CloudRepository GPX 文件名兼容', () => {
     '接受安全复杂文件名 %s',
     async (filename) => {
       const { cloud } = cloudWith(
-        success({ base64: 'eA==', filename, content_type: 'application/gpx+xml' }),
+        success({
+          temp_file_url: 'https://temp.example/route.gpx',
+          filename,
+          content_type: 'application/gpx+xml',
+          gpx_md5: 'a'.repeat(32),
+        }),
       );
       await expect(new CloudRepository(cloud).downloadRouteGpx('a1')).resolves.toMatchObject({
         fileName: filename,
@@ -2682,11 +2690,31 @@ describe('CloudRepository GPX 文件名兼容', () => {
     },
   );
 
+  it.each(['A'.repeat(32), 'a'.repeat(31), 'g'.repeat(32), undefined])(
+    '拒绝非法服务端 GPX MD5 %#',
+    async (gpx_md5) => {
+      const { cloud } = cloudWith(
+        success({
+          temp_file_url: 'https://temp.example/route.gpx',
+          filename: 'route.gpx',
+          content_type: 'application/gpx+xml',
+          gpx_md5,
+        }),
+      );
+      await expectCode(new CloudRepository(cloud).downloadRouteGpx('a1'), 'INVALID_RESPONSE');
+    },
+  );
+
   it.each(['../route.gpx', '..\\route.gpx', 'folder/route.gpx'])(
     '拒绝路径穿越文件名 %s',
     async (filename) => {
       const { cloud } = cloudWith(
-        success({ base64: 'eA==', filename, content_type: 'application/gpx+xml' }),
+        success({
+          temp_file_url: 'https://temp.example/route.gpx',
+          filename,
+          content_type: 'application/gpx+xml',
+          gpx_md5: 'a'.repeat(32),
+        }),
       );
       await expectCode(new CloudRepository(cloud).downloadRouteGpx('a1'), 'INVALID_RESPONSE');
     },

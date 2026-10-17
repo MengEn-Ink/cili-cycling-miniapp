@@ -49,6 +49,7 @@ describe('沸点红白墨黑全局主题契约', () => {
   it('Canvas 路线、海拔和分享海报清除旧橙黑并使用沸点色板', () => {
     const canvasSources = [
       readFileSync('miniprogram/utils/route-outline.ts', 'utf8'),
+      readFileSync('miniprogram/utils/route-visual.ts', 'utf8'),
       readFileSync('miniprogram/pages/activity-detail/format.ts', 'utf8'),
       readFileSync('miniprogram/pages/activity-detail/poster.ts', 'utf8'),
     ].join('\n');

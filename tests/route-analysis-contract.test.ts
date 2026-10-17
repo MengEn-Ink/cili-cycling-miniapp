@@ -162,10 +162,12 @@ describe('完整路线分析页合同', () => {
   it('发布说明使用当日递增版本并保留唯一 latest', () => {
     const release = read('miniprogram/config/release.ts');
     const notes = read('miniprogram/pages/settings/index.ts');
-    expect(release).toContain('2026.10.17.81');
+    expect(release).toContain('2026.10.17.82');
     expect(notes).toContain("date: '2026-10-17'");
-    expect(notes).toContain("title: '活动归属俱乐部更清楚'");
+    expect(notes).toContain("title: '俱乐部归属更清楚，路线分享更可靠'");
     expect(notes.match(/latest: true/g)).toHaveLength(1);
-    expect(notes).toContain('行程与骑行凭证保留活动发布时的俱乐部身份');
+    expect(notes).toContain('活动、行程、凭证和个人中心统一展示俱乐部身份');
+    expect(notes).toContain('活动详情与完整路线分析统一路线颜色、坐标、采样和海拔图样式');
+    expect(notes).toContain('GPX 大文件改为直接下载');
   });
 });

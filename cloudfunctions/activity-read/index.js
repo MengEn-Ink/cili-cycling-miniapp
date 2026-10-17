@@ -124,29 +124,35 @@ function attachedGpxFile(activity) {
   const route = activity && activity.route;
   const digest = route && route.gpx_sha256;
   const fileId = route && route.gpx_file_id;
-  if (
-    typeof digest !== 'string' ||
-    !/^[a-f0-9]{64}$/.test(digest) ||
-    typeof fileId !== 'string' ||
-    fileId.length > 512 ||
-    !new RegExp(`^cloud://[^/]+/activity-routes/[^/]+/${digest}\\.gpx$`).test(fileId)
-  )
-    fail('GPX_NOT_AVAILABLE', '这个活动暂未提供 GPX');
+  const validFile =
+    typeof fileId === 'string' &&
+    fileId.length <= 512 &&
+    /^cloud:\/\/[^/]+\/activity-routes\/[^/]+\/[^/]+\.gpx$/.test(fileId);
+  const validDigest = digest === undefined || /^[a-f0-9]{64}$/.test(digest);
+  const digestBound =
+    digest === undefined ||
+    new RegExp(`^cloud://[^/]+/activity-routes/[^/]+/${digest}\\.gpx$`).test(fileId);
+  if (!validFile || !validDigest || !digestBound) fail('GPX_NOT_AVAILABLE', '这个活动暂未提供 GPX');
   return { digest, fileId };
 }
 
 function routeDownloadName(activity) {
   const routeName = typeof activity.route?.route_name === 'string' ? activity.route.route_name : '';
-  const asciiName = routeName
-    .normalize('NFKD')
-    .replace(/[^\x20-\x7E]/g, '')
-    .replace(/[^A-Za-z0-9_-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 100);
+  const safeName = Array.from(routeName.normalize('NFC').trim())
+    .map((character) => {
+      const code = character.charCodeAt(0);
+      return code <= 31 || code === 127 || /[\\/:*?"<>|]/.test(character) ? '-' : character;
+    })
+    .join('')
+    .replace(/\s+/g, ' ')
+    .replace(/\.gpx$/i, '')
+    .replace(/[. ]+$/g, '')
+    .slice(0, 120)
+    .trim();
   const activityId = String(activity._id || 'activity')
     .replace(/[^A-Za-z0-9_-]/g, '')
     .slice(0, 80);
-  return `${asciiName || `activity-${activityId || 'route'}`}.gpx`;
+  return `${safeName && safeName !== '.' && safeName !== '..' ? safeName : `activity-${activityId || 'route'}`}.gpx`;
 }
 
 function timestamp(value) {
@@ -463,17 +469,39 @@ exports.main = async (event = {}) => {
     if (event.action === 'downloadRouteGpx') {
       const activity = await visibleActivity(event.activityId);
       const source = attachedGpxFile(activity);
-      const downloaded = await cloud.downloadFile({ fileID: source.fileId });
-      const bytes = Buffer.from(downloaded?.fileContent || []);
-      if (bytes.length === 0) fail('GPX_NOT_AVAILABLE', '这个活动暂未提供 GPX');
-      if (bytes.length > MAX_GPX_BYTES) fail('GPX_TOO_LARGE', '路线文件超过 4 MB，暂时无法下载');
-      const actualDigest = crypto.createHash('sha256').update(bytes).digest('hex');
-      if (actualDigest !== source.digest)
+      let gpxBytes;
+      try {
+        const downloaded = await cloud.downloadFile({ fileID: source.fileId });
+        gpxBytes = Buffer.from(downloaded && downloaded.fileContent ? downloaded.fileContent : []);
+      } catch {
+        fail('GPX_DOWNLOAD_FAILED', '路线文件读取失败，请稍后重试');
+      }
+      if (gpxBytes.length === 0) fail('GPX_NOT_AVAILABLE', '这个活动暂未提供 GPX');
+      if (gpxBytes.length > MAX_GPX_BYTES) fail('GPX_TOO_LARGE', '路线文件超过 4 MB，暂时无法下载');
+      if (
+        source.digest &&
+        crypto.createHash('sha256').update(gpxBytes).digest('hex') !== source.digest
+      )
         fail('GPX_DIGEST_MISMATCH', '路线文件校验失败，请稍后重试');
+      const gpxMd5 = crypto.createHash('md5').update(gpxBytes).digest('hex');
+
+      let response;
+      try {
+        response = await cloud.getTempFileURL({ fileList: [source.fileId] });
+      } catch {
+        fail('GPX_TEMP_URL_FAILED', '路线文件下载地址生成失败，请稍后重试');
+      }
+      const items = Array.isArray(response && response.fileList) ? response.fileList : [];
+      const file = items.find((item) => item && item.fileID === source.fileId);
+      if (!file || Number(file.status) !== 0)
+        fail('GPX_TEMP_URL_FAILED', '路线文件暂时无法下载，请稍后重试');
+      const tempFileUrl = safeHttpsUrl(file.tempFileURL);
+      if (!tempFileUrl) fail('GPX_TEMP_URL_MISSING', '路线文件下载地址缺失，请稍后重试');
       return ok({
-        base64: bytes.toString('base64'),
+        temp_file_url: tempFileUrl,
         filename: routeDownloadName(activity),
         content_type: 'application/gpx+xml',
+        gpx_md5: gpxMd5,
       });
     }
     fail('UNKNOWN_ACTION', '未知操作');

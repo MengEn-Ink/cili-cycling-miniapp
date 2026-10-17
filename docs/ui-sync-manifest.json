@@ -7,7 +7,7 @@
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:95814cd0bf766ee21c11f7644fdfef7dcf4703fcf09fc52002fc776dbb761383"
+    "digest": "sha256:c7d6122f6ad73aee7fc9727d02daa2e10dc35900ae57858af034d3fab6bce82d"
   },
   "prototype": {
     "digest": "sha256:4e34e767dec618c85ae7cf3d87fb8f075fc270f7c41f6bacc32c4dea41159757"
@@ -93,7 +93,7 @@
         "state": "管理员 / Pages 已通过",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "活动详情路线轮廓与海拔图已统一完整路线分析口径并加入一次性渐进绘制；布局尺寸未变，既有 375×812 截图继续作为静态终态基线，开发版上传后补做真机动画验收。"
+        "note": "依据开发版 0.0.261.1 的 IMG_3012 真机反馈完成二次对齐：活动详情与完整分析共享同一轮廓投影、保形抽稀、品牌红描边和海拔图参数，去除路线名叠字与面积渐变；既有截图仅保留布局基线，本次以共享绘图合同和新开发版真机复验为准。"
       },
       {
         "id": "route-analysis",
@@ -102,7 +102,7 @@
         "state": "地图暂不可用降级 / 核心分析仍可查看",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "完整路线分析移除复制坐标入口，GPX 地图展示统一执行 WGS84→GCJ-02 纠偏；页面布局未变，既有 375×812 截图继续作为静态基线，开发版上传后补做腾讯地图贴路验收。"
+        "note": "完整分析页与活动详情页现共用同一绘图参数和纯函数，路线与海拔终态路径由自动化视觉合同逐点比对；腾讯地图仍按 GPX 来源执行 WGS84→GCJ-02，开发版上传后复验地图贴路与两页一致性。"
       },
       {
         "id": "registration-form",
@@ -144,10 +144,10 @@
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "默认，客户端 2026.10.17.80",
+        "state": "默认，客户端 2026.10.17.81",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "Pages 375×812 设置页截图沿用既有布局基线；版本已更新为 2026.10.17.80，开发版上传后补做 iOS / Android 版本文案确认。"
+        "note": "Pages 375×812 设置页截图沿用布局基线；版本已更新为 2026.10.17.81，开发版上传后核对路线视觉与 GPX 下载发布说明。"
       },
       {
         "id": "capability-card",

@@ -6,6 +6,7 @@ import { resolveActivityAction } from '../../utils/activity';
 import { genderView } from '../../utils/gender';
 import { mediaSourceKind, reportMediaDiagnostic } from '../../utils/media-diagnostic';
 import { sanitizeGpxFileName } from '../../utils/gpx-file';
+import { prepareRouteVisualModel } from '../../utils/route-visual';
 import { createNavigationSingleFlight } from '../../utils/navigation-single-flight';
 import { validateRegistrationProfile } from '../../utils/validation';
 import {
@@ -21,7 +22,6 @@ import {
   runCanvasReveal,
 } from './format';
 
-const MAX_GPX_BYTES = 4 * 1024 * 1024;
 const GROUP_QR_EXPIRE_MS = 7 * 24 * 60 * 60 * 1000;
 
 function groupQrExpired(uploadedAt?: string) {
@@ -82,24 +82,38 @@ function unavailableAction(): ActivityAction {
   return { kind: 'closed', label: '活动状态不可用', enabled: false };
 }
 
-function base64Bytes(value: unknown): number {
-  if (typeof value !== 'string') return -1;
-  const normalized = value.replace(/\s/g, '');
-  if (!normalized || normalized.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(normalized))
-    return -1;
-  const padding = normalized.endsWith('==') ? 2 : normalized.endsWith('=') ? 1 : 0;
-  return Math.floor((normalized.length * 3) / 4) - padding;
-}
-
 function safeGpxName(value: unknown): string {
   return sanitizeGpxFileName(value, `activity-route-${Date.now()}`);
 }
 
-function platformCall(
+function platformCall<T = void>(
   method: (options: Record<string, unknown>) => unknown,
   options: Record<string, unknown>,
-): Promise<void> {
-  return new Promise((resolve, reject) => method({ ...options, success: resolve, fail: reject }));
+): Promise<T> {
+  return new Promise((resolve, reject) =>
+    method({ ...options, success: (result: T) => resolve(result), fail: reject }),
+  );
+}
+
+function verifyGpxMd5(filePath: string, expected: string): Promise<void> {
+  const fs = wx.getFileSystemManager();
+  return platformCall<{ digest?: string }>(fs.getFileInfo.bind(fs), {
+    filePath,
+    digestAlgorithm: 'md5',
+  })
+    .then((info) => {
+      if (info.digest !== expected) throw new Error('路线文件完整性校验失败，请重新下载');
+    })
+    .catch(async (error) => {
+      try {
+        await platformCall(fs.unlink.bind(fs), { filePath });
+      } catch {
+        // 清理失败不能覆盖真实的读取或完整性错误。
+      }
+      throw error instanceof Error && error.message.startsWith('路线文件完整性校验失败')
+        ? error
+        : new Error('路线临时文件读取失败，请重新下载');
+    });
 }
 
 function shareCoverImage(item: any): string {
@@ -155,12 +169,12 @@ function officialRouteUrl(route: any): string {
 }
 
 function attachedGpx(route: any): boolean {
-  return (
-    typeof route?.gpxFileId === 'string' &&
-    route.gpxFileId.startsWith('cloud://') &&
-    typeof route?.gpxSha256 === 'string' &&
-    /^[a-f0-9]{64}$/.test(route.gpxSha256)
-  );
+  if (
+    typeof route?.gpxFileId !== 'string' ||
+    !/^cloud:\/\/[^/]+\/activity-routes\/[^/]+\/[^/]+\.gpx$/.test(route.gpxFileId)
+  )
+    return false;
+  return route.gpxSha256 === undefined || /^[a-f0-9]{64}$/.test(route.gpxSha256);
 }
 
 Page({
@@ -184,6 +198,7 @@ Page({
     selectedAttendeeIndex: 0,
     galleryImages: [] as string[],
     routeOutlineImage: '',
+    routeOutline: [] as any[],
     elevationImage: '',
     colorMediaMuted: '#d4d4d4',
     colorOnMedia: '#ffffff',
@@ -325,10 +340,9 @@ Page({
         /^[a-f0-9]{64}$/.test(detail.route.publicRoutePreviewId);
       const hasRouteDetails = hasGpxRoute || hasPublicRouteDetails;
       const elevationProfile = hasRouteDetails ? activityElevationProfile(detail.route) : [];
-      const routeOutline =
-        hasRouteDetails && Array.isArray(detail.route?.routeOutline)
-          ? detail.route.routeOutline
-          : [];
+      const routeOutline = hasRouteDetails
+        ? prepareRouteVisualModel(detail.route?.routeOutline, [], hasGpxRoute).outline
+        : [];
       // 在数据进入视图时统一补齐性别展示信息，列表头像和滑动名片共用同一语义。
       const attendees =
         canSeeAttendees && Array.isArray(detail.attendees)
@@ -356,6 +370,7 @@ Page({
                 : '报名审核通过后可查看活动群二维码',
           galleryImages: [...new Set([item.coverImage, ...(item.images || [])].filter(Boolean))],
           routeOutlineImage: '',
+          routeOutline,
           elevationImage: '',
           displayDate: formatActivityDate(item.startAt || item.date),
           startTime: formatActivityTime(item.startAt),
@@ -451,7 +466,7 @@ Page({
       });
   },
   drawRouteOutline() {
-    const outline = this.data.item?.route?.routeOutline;
+    const outline = this.data.routeOutline;
     if (!this.data.hasRouteDetails || !this.data.hasRouteOutline || this.unloaded) return;
     wx.createSelectorQuery()
       .select('#route-outline-canvas')
@@ -705,23 +720,40 @@ Page({
     this.safeSetData({ downloadingGpx: true });
     try {
       const result = await rideService.downloadRouteGpx(activityId);
-      const bytes = base64Bytes(result?.base64);
-      if (bytes < 0) throw new Error('路线文件格式错误');
-      if (bytes > MAX_GPX_BYTES) throw new Error('路线文件超过 4MB，请联系活动组织者更新');
       const fileName = safeGpxName(result?.fileName);
-      const filePath = `${wx.env.USER_DATA_PATH}/${fileName}`;
-      const fileSystem = wx.getFileSystemManager();
-      await platformCall(fileSystem.writeFile.bind(fileSystem), {
-        filePath,
-        data: result.base64,
-        encoding: 'base64',
-      });
-      if (typeof wx.shareFileMessage === 'function') {
-        await platformCall(wx.shareFileMessage, { filePath, fileName });
-      } else {
-        await platformCall(wx.saveFile, { tempFilePath: filePath });
-        wx.showToast({ title: 'GPX 已保存', icon: 'success' });
+      let downloaded: { statusCode?: number; tempFilePath?: string };
+      try {
+        downloaded = await platformCall(wx.downloadFile, { url: result.tempFileURL });
+      } catch {
+        throw new Error('路线文件网络下载失败，请检查网络后重试');
       }
+      if (downloaded.statusCode !== 200)
+        throw new Error(`路线文件下载失败（HTTP ${downloaded.statusCode || '未知'}）`);
+      if (!downloaded.tempFilePath) throw new Error('路线文件下载完成但未生成临时文件，请重试');
+      await verifyGpxMd5(downloaded.tempFilePath, result.gpxMd5);
+      if (typeof wx.shareFileMessage === 'function') {
+        try {
+          await platformCall(wx.shareFileMessage, {
+            filePath: downloaded.tempFilePath,
+            fileName,
+          });
+          return;
+        } catch {
+          // 真机分享面板不可用或被用户关闭时，继续走微信文件保存兜底。
+        }
+      }
+      if (typeof wx.saveFile !== 'function')
+        throw new Error('当前微信版本不支持文件分享或保存，请升级微信后重试');
+      try {
+        await platformCall(wx.saveFile, { tempFilePath: downloaded.tempFilePath });
+      } catch {
+        throw new Error('GPX 分享失败，保存到微信文件也失败，请稍后重试');
+      }
+      wx.showModal({
+        title: 'GPX 已保存',
+        content: '已保存到微信文件，可从文件菜单继续分享',
+        showCancel: false,
+      });
     } catch (error) {
       wx.showToast({
         title: error instanceof Error ? error.message : 'GPX 下载失败，请稍后重试',

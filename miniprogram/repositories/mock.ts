@@ -543,8 +543,10 @@ export class MockRepository implements RideRepository {
   }
   async downloadRouteGpx(activityId: string) {
     return {
-      base64: 'PD94bWwgdmVyc2lvbj0iMS4wIj8+PGdweC8+',
+      tempFileURL: `https://example.test/${encodeURIComponent(activityId)}-route.gpx`,
       fileName: `${activityId}-route.gpx`,
+      contentType: 'application/gpx+xml' as const,
+      gpxMd5: 'd41d8cd98f00b204e9800998ecf8427e',
     };
   }
   async saveActivity(
