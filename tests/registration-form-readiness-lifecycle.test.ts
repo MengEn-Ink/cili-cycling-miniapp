@@ -14,6 +14,7 @@ vi.mock('../miniprogram/services/ride-service', () => ({ rideService }));
 
 const profile: Profile = {
   avatarRevision: 0,
+  clubs: [],
   nickname: 'Rider',
   title: 'Rider',
   realName: '骑手',

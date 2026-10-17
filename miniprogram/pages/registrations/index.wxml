@@ -23,6 +23,7 @@
         <view class="registration-card status-{{item.status}}" style="transform: translateX({{item.swipeX}}px)" data-id="{{item.id}}" bindtap="open" bindtouchstart="onRowTouchStart" bindtouchmove="onRowTouchMove" bindtouchend="onRowTouchEnd" bindtouchcancel="onRowTouchCancel" hover-class="registration-card--pressed" role="button" aria-label="{{item.activity.title}}，票据状态{{item.displayStatusText}}，{{item.destinationLabel}}">
           <view class="ticket-head"><text class="ticket-label">骑行票据</text><text class="card-index">{{item.activity.displayDate}}</text><status-pill ticket="{{true}}" status="{{item.displayStatusText}}"/></view>
           <view class="ticket-body">
+            <view class="club-identity" aria-label="活动归属：{{item.activity.clubIdentity.name}}"><image wx:if="{{item.activity.clubIdentity.avatarUrl}}" class="club-avatar" src="{{item.activity.clubIdentity.avatarUrl}}" mode="aspectFill" /><view wx:else class="club-avatar club-avatar--placeholder">此</view><text>{{item.activity.clubIdentity.name}}</text></view>
             <view class="registration-title">{{item.activity.title}}</view>
             <view class="meeting-panel" aria-label="集合信息">
               <view class="meeting-row"><text class="meeting-label">集合时间</text><text class="meeting-value">{{item.meetingTime}}</text></view>

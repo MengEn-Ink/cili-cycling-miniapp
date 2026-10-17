@@ -4,6 +4,7 @@ import { capabilityCard, selectCapabilityImages } from '../miniprogram/utils/cap
 
 const profile: Profile = {
   avatarRevision: 1,
+  clubs: [],
   nickname: '山野骑手',
   title: '',
   realName: '曹蒙恩',

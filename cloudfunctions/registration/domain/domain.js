@@ -255,6 +255,8 @@ const ACTIVITY_FIELDS = [
   'event_start',
   'event_end',
   'status',
+  'club_id',
+  'club_identity',
 ];
 function registrationDecision(activity, now) {
   const end = dateOrNull(activity && activity.event_end);
@@ -279,6 +281,10 @@ function registrationDecision(activity, now) {
 }
 function publicActivity(activity, now = new Date()) {
   const output = pick(activity, ACTIVITY_FIELDS);
+  if (typeof output.club_id !== 'string' || !output.club_id) {
+    output.club_id = null;
+    output.club_identity = null;
+  }
   if (!Number.isInteger(output.capacity)) output.capacity = 0;
   // 后援车司机电话面向全部骑友公开，完整返回，便于集合当天直接拨打；非字符串值不透传。
   if (output.support_vehicle_driver) {

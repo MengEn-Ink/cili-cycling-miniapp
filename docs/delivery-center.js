@@ -99,9 +99,31 @@
           id: 'prd-roles',
           title: '角色与权限模型',
           summary:
-            '骑手、活动发起人、管理员；身份来源与权限边界。客户端传入的 openid、角色或本地缓存均不授予权限。',
+            '当前已实现基线：骑手、活动发起人、管理员；客户端传入的 openid、角色或本地缓存均不授予权限。',
           maturity: 'baseline',
           inline: 'roles',
+        },
+        {
+          id: 'org-foundation-approval',
+          title: '组织地基与发布审批（M0 待实施 · 原型已交付）',
+          summary:
+            '小圈子阶段的收紧方案：俱乐部创建、活动发布与审批规则已收口；俱乐部身份已融入活动列表、活动详情、我的行程、报名凭证、个人中心五个 Pages 原型页面，覆盖公开活动、历史快照及单/多/无俱乐部状态。以上仍是 M0 原型交付，生产 miniprogram 尚未实现。可点击「打开 M0 组织地基与审批原型」继续体验审批路由。',
+          maturity: 'baseline',
+          inline: 'org-foundation-approval',
+          sources: [
+            {
+              label: '打开 M0 组织地基与审批原型',
+              href: '#org-overview',
+            },
+            {
+              label: '完整需求与待讨论决策',
+              href: BASE + 'docs/superpowers/plans/2026-10-17-org-foundation-approval.md',
+            },
+            {
+              label: '未来产品能力路线图',
+              href: BASE + 'docs/superpowers/plans/2026-10-16-future-product-capability-roadmap.md',
+            },
+          ],
         },
         {
           id: 'backlog',
@@ -586,6 +608,41 @@
         ['活动发起人', '任意已登录用户；活动 created_by 由服务端写入。权限：创建和编辑本人草稿、发布 / 下架、从本人历史活动复制草稿。'],
         ['管理员', '来源：admins 白名单（CloudBase 控制台维护，无管理界面）。权限：管理并结束全部活动、查看报名、通过 / 驳回、签到。'],
       ]),
+    'org-foundation-approval': () => `
+      <div class="dc-grid-2">
+        <article class="dc-sub">
+          <h4>已确定的审批原则</h4>
+          ${ul([
+            '<b>俱乐部创建</b>：所有申请统一进入平台所有者待办，审批通过后才建立正式俱乐部与 OWNER 关系。',
+            '<b>俱乐部活动</b>：仅有效成员可发起；普通成员活动由所属俱乐部 OWNER / ADMIN 审批，管理员本人活动默认发布并留审计。',
+            '<b>公开活动</b>：不关联 club_id，统一由平台所有者审批，通过前不得进入公开活动池。',
+            '<b>五页身份原型</b>：活动列表、活动详情、我的行程、报名凭证、个人中心已接入俱乐部头像与名称、公开活动兜底、历史归属快照及单/多/无俱乐部状态；仍待生产 miniprogram 实现。',
+            '<b>服务端判权</b>：角色、组织归属和审批路由均从可信身份与数据库关系计算，客户端声明不授予权限。',
+          ])}
+        </article>
+        <article class="dc-sub">
+          <h4>推荐的小圈子默认规则</h4>
+          ${ul([
+            '普通成员活动由一名有效管理员审批即可，不建设多人会签或可视化工作流编排。',
+            '俱乐部 OWNER / ADMIN 发布本人在所属俱乐部的活动时默认上线，不生成自审待办，服务端记录 role_auto_publish 审计。',
+            '平台所有者自己发起公开活动时显式确认并留审计，不制造自己审批自己的待办。',
+            '审批不超时自动通过或驳回，只提醒待办时长。',
+          ])}
+        </article>
+      </div>
+      <div class="dc-matrix-scroll">
+        <table class="dc-matrix">
+          <thead><tr><th>对象</th><th>提交人</th><th>审批人</th><th>通过前</th></tr></thead>
+          <tbody>
+            <tr><td>俱乐部申请</td><td>已登录用户</td><td>平台所有者</td><td>不创建正式俱乐部</td></tr>
+            <tr><td>普通成员的俱乐部活动</td><td>该俱乐部有效成员</td><td>所属俱乐部 OWNER / ADMIN</td><td>不向成员或公开列表展示</td></tr>
+            <tr><td>管理员本人的俱乐部活动</td><td>所属俱乐部 OWNER / ADMIN</td><td>服务端实时验权后默认发布</td><td>直接上线并记录 role_auto_publish 审计</td></tr>
+            <tr><td>公开活动</td><td>已登录用户</td><td>平台所有者</td><td>不进入公开活动池</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><b>已确认：</b>俱乐部管理员本人活动在所属有效俱乐部默认发布并完整留审计。<b>待讨论：</b>非成员投稿、普通成员活动是否多人会签、审批超时策略，以及俱乐部停用时未来活动的处置方式。完整状态机、边界与验收标准见需求原文。</p>
+    `,
     'biz-rules': () =>
       ul([
         '活动状态：draft ↔ published → finished；finished 为终态。',

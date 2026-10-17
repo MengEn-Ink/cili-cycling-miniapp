@@ -19,11 +19,13 @@ vi.mock('../miniprogram/store/app-store', () => ({ appStore }));
 
 const cachedProfile = {
   nickname: '缓存骑手',
+  clubs: [],
   hasCompletedGuidance: true,
   completeness: 88,
 };
 const fullProfile = {
   avatarRevision: 1,
+  clubs: [],
   nickname: '最新骑手',
   title: '',
   realName: '',
@@ -59,7 +61,7 @@ async function mountPage(
 ) {
   let page: any;
   const cache = {
-    version: 2,
+    version: 3,
     ownerOpenid,
     cachedAt,
     profile: cachedProfile,

@@ -4,7 +4,15 @@
   const deliveryCenter = window.deliveryCenter;
   const pageById = new Map(data.pages.map((page) => [page.id, page]));
   const tabRoutes = ['activities', 'registrations', 'profile'];
-  const baseOverviewSections = ['overview', 'delivery', 'requirements', 'prd', 'guide', 'prototype'];
+  const baseOverviewSections = [
+    'overview',
+    'delivery',
+    'requirements',
+    'prd',
+    'guide',
+    'deploy',
+    'prototype',
+  ];
   const overviewSections = new Set([
     ...baseOverviewSections,
     ...((deliveryCenter && deliveryCenter.extraOverviewAnchors) || []),
@@ -28,9 +36,22 @@
   ];
   const coreVariables = [
     ['AppID', '微信公众平台 → 开发 → 开发设置', '项目标识；可进入 project.config.json'],
-    ['CloudBase EnvID', '开发者工具 → 云开发 → 环境设置', '环境标识；开发、测试、生产应明确归属'],
-    ['小程序 CI 私钥', '公众平台 → 开发管理 → 开发设置 → 小程序代码上传', 'Secret；仅放 CI/Aime Secret，不进仓库'],
-    ['CloudBase API Key', 'CloudBase 控制台 → API Key / 访问密钥（以当前入口为准）', 'Secret；仅部署环境需要，按有效期轮换'],
+    ['CloudBase EnvID', 'GitHub Environment Variable：CLOUDBASE_ENV_ID', '非敏感环境标识；必须与 cloudbaserc.json 一致'],
+    ['小程序 CI 私钥', 'GitHub Secret：WECHAT_MINIPROGRAM_PRIVATE_KEY', '只在微信上传工作流中写入临时文件，结束时清理'],
+    ['CloudBase API Key', 'GitHub Environment Secret：CLOUDBASE_API_KEY', '环境级部署凭证；不进入 Aime、仓库、Artifact 或日志'],
+  ];
+  const deploySteps = [
+    [1, 'PR 合入 main', '源码只通过受保护分支进入发布链路。'],
+    [2, 'main CI 全绿', '测试、覆盖率、安全审计和构建失败时不会触发部署。'],
+    [3, '判定变更范围', '仅数据库基线或受影响云函数进入 CloudBase 部署。'],
+    [4, 'GitHub 注入 Secret', 'Runner 只在当前作业中获得环境级 API Key 和目标环境变量。'],
+    [5, '部署并回读验收', '依次执行基础设施 plan/apply/verify、函数部署和 fn list 复查。'],
+  ];
+  const githubDeployConfig = [
+    ['CLOUDBASE_API_KEY', 'Environment Secret', 'CloudBase 环境级 API Key；敏感、不可回读'],
+    ['CLOUDBASE_ENV_ID', 'Environment Variable', '目标环境 ID；必须匹配 cloudbaserc.json'],
+    ['CLOUDBASE_REGION', 'Environment Variable', '目标地域，例如 ap-shanghai'],
+    ['WECHAT_MINIPROGRAM_PRIVATE_KEY', 'Repository / Environment Secret', '微信开发版上传私钥；保持完整多行内容'],
   ];
   const projectAudit = [
     ['P0', '补齐 UGC 内容安全闭环', '活动标题、说明、昵称和图片目前未见统一安全检查入口；建议在云函数写入前集中接入 msgSecCheck / mediaCheckAsync，并保留审核结果与失败策略。'],
@@ -124,6 +145,18 @@
       .map(
         ([priority, title, description]) =>
           `<article class="audit-item"><span class="audit-priority audit-${priority.toLowerCase()}">${priority}</span><div><h3>${title}</h3><p>${description}</p></div></article>`,
+      )
+      .join('');
+    const deployFlow = deploySteps
+      .map(
+        ([number, title, description]) =>
+          `<article><span>${String(number).padStart(2, '0')}</span><b>${title}</b><p>${description}</p></article>`,
+      )
+      .join('');
+    const deployConfigRows = githubDeployConfig
+      .map(
+        ([name, type, purpose]) =>
+          `<tr><th scope="row"><code>${name}</code></th><td>${type}</td><td>${purpose}</td></tr>`,
       )
       .join('');
     const contrast = contrastRows
@@ -251,10 +284,49 @@
         </div>
       </section>
 
+      <section class="product-section deploy-section" id="deploy">
+        <div class="guide-heading">
+          <div>
+            <p class="eyebrow">04 · 自动化部署链路</p>
+            <h2>部署凭证留在 GitHub，Aime 只交付代码和 PR</h2>
+          </div>
+          <p>生产 Secret 由 <code>cloudbase-production</code> Environment 托管，只有 main CI 成功后的 Runner 能在当前作业中使用；Secret 不能通过 GitHub API、Pages 或 Aime 反向读取。</p>
+        </div>
+
+        <div class="deploy-flow" aria-label="GitHub 到 CloudBase 自动部署五步">${deployFlow}</div>
+
+        <div class="guide-subsection">
+          <p class="section-label">一次性配置</p>
+          <h2>在 Settings → Secrets and variables → Actions 中录入</h2>
+          <div class="guide-table-wrap">
+            <table class="guide-table deploy-config-table">
+              <thead><tr><th>名称</th><th>类型</th><th>用途与边界</th></tr></thead>
+              <tbody>${deployConfigRows}</tbody>
+            </table>
+          </div>
+          <div class="deploy-security-grid">
+            <article><span>最小权限</span><b>环境级 API Key</b><p>只授权目标 CloudBase 环境所需的集合、索引和云函数部署能力，按有效期轮换。</p></article>
+            <article><span>防串环境</span><b>EnvID 双重校验</b><p>工作流会比较 GitHub Variable 与 <code>cloudbaserc.json</code>；不一致时在认证前立即终止。</p></article>
+            <article><span>精确发布</span><b>以上次成功部署为基线</b><p>跨多个 main 提交累计识别新增、修改、重命名和删除；普通函数按目录部署，共享代码只展开到实际消费者。</p></article>
+            <article><span>闭环验收</span><b>先读、再写、再回读</b><p>部署前执行 <code>fn list</code>；数据库走 plan/apply/verify；部署后再次查询并核对函数名称。</p></article>
+          </div>
+        </div>
+
+        <div class="guide-subsection">
+          <p class="section-label">触发与恢复</p>
+          <div class="guide-columns">
+            <article><h3>自动触发</h3><p>PR 合入 main 后，只有名为 CI 的工作流成功才会启动 CloudBase 部署。若排队期间 main 再次推进，作业会切换到最新 main 并执行完整对账，避免漏部署。</p></article>
+            <article><h3>手动恢复</h3><p>在 Actions 中运行“CloudBase 自动部署”，可选择重新部署全部函数或重新执行基础设施 apply；仍受 production Environment 保护。</p></article>
+            <article><h3>失败处理</h3><p>缺少 Secret、环境不一致、测试失败、API Key 登录失败、apply/verify 失败或部署后回读缺函数都会让工作流失败，不会静默标记成功。</p></article>
+          </div>
+          <div class="guide-callout deploy-callout"><b>交付完成标准</b><p>PR checks、main CI、CloudBase 自动部署、微信开发版上传全部成功，且日志能够确认目标环境、函数范围、版本号和部署后回读结果。配置方法以 <a href="https://docs.cloudbase.net/cli-v1/install" target="_blank" rel="noreferrer">CloudBase CLI 官方文档</a>为准。</p></div>
+        </div>
+      </section>
+
       <section class="product-section" id="prototype">
-        <p class="eyebrow">04 · 交互原型</p>
-        <h2>13 个真实页面，与 app.json 路由一一对应</h2>
-        <p class="card-hint">官方路线独立页已从产品路由删除；活动详情直接承载路线事实与 GPX 能力，Strava 路线只提供规范化链接复制。</p>
+        <p class="eyebrow">05 · 交互原型</p>
+        <h2>13 个真实页面 + 8 页 M0 组织地基与审批原型</h2>
+        <p class="card-hint">13 个页面与 app.json 路由一一对应；另 8 页 M0 原型（组织地基与审批）仅为设计表达，服务端尚未实现。官方路线独立页已从产品路由删除；活动详情直接承载路线事实与 GPX 能力，Strava 路线只提供规范化链接复制。</p>
         <div class="overview-grid">${pageCards}</div>
       </section>
 
@@ -293,7 +365,8 @@
 
 
   function updateChrome(page) {
-    const stateLabel = (page.states.find(([id]) => id === currentState) || page.states[0])[1];
+    const baseState = currentState.split('--')[0];
+    const stateLabel = (page.states.find(([id]) => id === baseState) || page.states[0])[1];
     $('.phone-inner').classList.toggle('custom-tab-navigation', tabRoutes.includes(page.id));
     $('#mini-title').textContent =
       page.id === 'admin-activity-edit' && currentState === 'create' ? '创建活动' : page.navTitle;
@@ -305,7 +378,7 @@
     $('#state-switch').innerHTML = page.states
       .map(
         ([id, label]) =>
-          `<button class="${id === currentState ? 'is-active' : ''}" data-state="${id}" data-route="${page.id}">${label}</button>`,
+          `<button class="${id === baseState ? 'is-active' : ''}" data-state="${id}" data-route="${page.id}">${label}</button>`,
       )
       .join('');
     nav.querySelectorAll('[data-route]').forEach((button) => {
@@ -332,6 +405,14 @@
     }
   }
 
+  function normalizePrototypeState(stateIds, requestedState) {
+    const requested = requestedState || '';
+    const baseState = requested.split('--')[0];
+    return stateIds.includes(baseState) ? requested : stateIds[0];
+  }
+
+  window.normalizePrototypeState = normalizePrototypeState;
+
   function showPage(route, options = {}) {
     if (route === 'overview') {
       showOverview();
@@ -343,7 +424,7 @@
     if (!options.replace && currentRoute !== page.id) routeHistory.push(currentRoute);
     currentRoute = page.id;
     const stateIds = page.states.map(([id]) => id);
-    currentState = stateIds.includes(options.state) ? options.state : page.states[0][0];
+    currentState = normalizePrototypeState(stateIds, options.state);
     window.prototypeState = currentState;
     container.innerHTML = templates[page.id]();
     container.scrollTop = 0;
@@ -401,6 +482,7 @@
       credential: 'registrations',
       profile: 'profile',
       admin: 'admin-activity-list',
+      'org-approval': 'org-overview',
     };
     showPage(starts[name]);
     showToast('旅程入口已切换，可在手机原型内继续操作', 'info');
@@ -464,13 +546,51 @@
       showToast('活动已发布，骑友端现在可见');
     }
     if (action === 'approve-review' || action === 'reject-review') {
-      if (action === 'reject-review' && currentState !== 'reject-error') {
+      const rejectReason = document.getElementById('registration-reject-reason')?.value.trim();
+      if (action === 'reject-review' && !rejectReason) {
         showPage('admin-review-detail', { state: 'reject-error', replace: true });
         showToast('驳回时请填写理由', 'error');
         return;
       }
       showToast(action === 'approve-review' ? '报名已通过' : '报名已驳回');
       window.setTimeout(() => showPage('admin-reviews'), 500);
+    }
+    if (action === 'confirm-club-application') {
+      showPage('club-application-edit', { state: 'submit-confirm', replace: true });
+    }
+    if (action === 'submit-club-application') {
+      showToast('申请已提交，等待平台所有者审批');
+      window.setTimeout(() => showPage('club-applications', { state: 'pending_review' }), 500);
+    }
+    if (action === 'publish-target-admin') {
+      showPage('approval-outcome', { state: 'role-auto' });
+      showToast('已以俱乐部管理员身份发布');
+    }
+    if (action === 'publish-target-submit') {
+      const pendingState = target.dataset.pendingState;
+      showPage('approval-outcome', { state: pendingState });
+      showToast(`已提交审核，${pendingState.startsWith('pending-club') ? '等待俱乐部管理员处理' : '等待平台所有者处理'}`);
+    }
+    if (action === 'publish-target-platform') {
+      showPage('approval-outcome', { state: 'platform-owner-public' });
+      showToast('已显式确认并发布');
+    }
+    if (action === 'org-approve') {
+      const outcomeContext = target.dataset.outcomeContext;
+      showPage('approval-outcome', { state: `manual--${outcomeContext}` });
+      showToast(outcomeContext.startsWith('club-application') ? '申请已通过并创建俱乐部' : outcomeContext.startsWith('public-activity') ? '公开活动已通过并发布' : '俱乐部活动已通过并发布');
+    }
+    if (action === 'org-reject') {
+      const rejectReason = document.getElementById('org-reject-reason')?.value.trim();
+      if (!rejectReason) {
+        const errorState = currentState.includes('--') ? `${currentState}--reject-error` : 'reject-error';
+        showPage('approval-detail', { state: errorState, replace: true });
+        showToast('驳回时请填写理由', 'error');
+        return;
+      }
+      const outcomeContext = target.dataset.outcomeContext;
+      showPage('approval-outcome', { state: `rejected--${outcomeContext}` });
+      showToast(outcomeContext.startsWith('club-application') ? '俱乐部申请已驳回' : outcomeContext.startsWith('public-activity') ? '公开活动已驳回' : '俱乐部活动已驳回');
     }
   });
 
@@ -479,7 +599,8 @@
     if (!demo.hidden && ['ArrowUp', 'ArrowDown'].includes(event.key)) {
       event.preventDefault();
       const page = pageById.get(currentRoute);
-      const index = page.states.findIndex(([id]) => id === currentState);
+      const baseState = currentState.split('--')[0];
+      const index = page.states.findIndex(([id]) => id === baseState);
       const delta = event.key === 'ArrowDown' ? 1 : -1;
       const next = page.states[(index + delta + page.states.length) % page.states.length][0];
       showPage(currentRoute, { state: next, replace: true });

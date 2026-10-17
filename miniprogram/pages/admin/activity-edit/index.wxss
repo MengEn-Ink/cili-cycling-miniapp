@@ -42,6 +42,14 @@
 .field-label .required {
   margin-left: auto;
 }
+.club-picker-field {
+  margin-top: 24rpx;
+}
+.club-picker-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .date-time-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

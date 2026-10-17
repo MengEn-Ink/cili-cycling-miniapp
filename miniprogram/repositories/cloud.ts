@@ -2,6 +2,7 @@ import type {
   Activity,
   AvatarSource,
   ClientAvatarSource,
+  ClubIdentity,
   EditableActivity,
   PersonalCapabilityCard,
   PublicRoutePreview,
@@ -78,6 +79,10 @@ function dateText(value: unknown): string {
 }
 function httpsUrl(value: unknown): string {
   return typeof value === 'string' && /^https:\/\/[^\s/]+(?:\/[^\s]*)?$/i.test(value) ? value : '';
+}
+function clubAvatarUrl(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  return httpsUrl(value) || (/^cloud:\/\/[^\s]+$/i.test(value) ? value : '');
 }
 function requiredId(value: unknown, label: string): string {
   if (typeof value !== 'string' || !value)
@@ -522,6 +527,62 @@ function mapRouteGpx(raw: unknown) {
     return invalidResponse();
   return { base64: value.base64, filename: value.filename, contentType: value.content_type };
 }
+function mapClubIdentity(raw: unknown): ClubIdentity {
+  if (!isRecord(raw) || typeof raw.name !== 'string' || !raw.name.trim()) {
+    return { name: '此里公开活动', avatarUrl: '' };
+  }
+  const clubId =
+    typeof raw.club_id === 'string' && raw.club_id
+      ? raw.club_id
+      : typeof raw.id === 'string' && raw.id
+        ? raw.id
+        : typeof raw._id === 'string' && raw._id
+          ? raw._id
+          : undefined;
+  return {
+    ...(clubId ? { clubId } : {}),
+    name: raw.name.trim(),
+    avatarUrl: clubAvatarUrl(raw.avatar_url),
+  };
+}
+function mapClubMemberships(raw: unknown) {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter(isRecord)
+    .map((membership) => {
+      const rawIdentity = isRecord(membership.club_identity)
+        ? {
+            ...membership.club_identity,
+            ...(typeof membership.club_id === 'string' ? { club_id: membership.club_id } : {}),
+          }
+        : {
+            club_id: membership.club_id,
+            name: membership.club_name,
+            avatar_url: membership.club_avatar_url,
+          };
+      const identity = mapClubIdentity(rawIdentity);
+      if (!identity.clubId || identity.name === '此里公开活动') return null;
+      const role = typeof membership.role === 'string' ? membership.role : 'member';
+      return {
+        clubId: identity.clubId,
+        name: identity.name,
+        avatarUrl: identity.avatarUrl,
+        role,
+        roleLabel:
+          typeof membership.role_label === 'string' && membership.role_label.trim()
+            ? membership.role_label.trim()
+            : (
+                {
+                  OWNER: '负责人',
+                  ADMIN: '管理员',
+                  ORGANIZER: '组织者',
+                  MEMBER: '成员',
+                } as Record<string, string>
+              )[role.toUpperCase()] || '成员',
+      };
+    })
+    .filter((membership): membership is NonNullable<typeof membership> => membership !== null);
+}
 function mapActivity(raw: unknown, requireRegistrationDecision = false): Activity {
   const value = expectRecord(raw);
   if (
@@ -537,6 +598,8 @@ function mapActivity(raw: unknown, requireRegistrationDecision = false): Activit
   const mapped = {
     id: value._id,
     version: Number.isInteger(value.version) && value.version >= 1 ? value.version : 0,
+    ...(typeof value.club_id === 'string' && value.club_id ? { clubId: value.club_id } : {}),
+    clubIdentity: mapClubIdentity(value.club_identity),
     title: value.title,
     date: dateText(value.event_start),
     startAt: dateText(value.event_start),
@@ -757,6 +820,7 @@ function mapProfile(raw: unknown): Profile {
     return invalidResponse();
   return {
     avatarRevision: Number.isInteger(value.avatar_revision) ? value.avatar_revision : 0,
+    clubs: mapClubMemberships(value.club_memberships),
     avatarVisibility: value.avatar_visibility === 'public' ? 'public' : 'private',
     avatarVisibilityRevision: Number.isInteger(value.avatar_visibility_revision)
       ? Number(value.avatar_visibility_revision)
@@ -879,6 +943,7 @@ function mapRegistration(raw: unknown): Registration {
     status: value.status,
     profile: {
       avatarRevision: 0,
+      clubs: [],
       nickname:
         typeof capability.nickname === 'string'
           ? capability.nickname
@@ -955,6 +1020,7 @@ function submissionOptions(value: RegistrationSubmission) {
   };
 }
 function activityPayload(value: ActivityInput) {
+  const activity = value;
   const images = Array.isArray(value.images)
     ? value.images.filter((item) => typeof item === 'string').slice(0, 9)
     : [];
@@ -974,6 +1040,7 @@ function activityPayload(value: ActivityInput) {
         }
       : undefined;
   return {
+    club_id: activity.clubId || null,
     title: typeof value.title === 'string' ? value.title : '',
     ...(Array.isArray(value.images) ? { images } : {}),
     cover_image: (typeof value.coverImage === 'string' ? value.coverImage : '') || images[0] || '',

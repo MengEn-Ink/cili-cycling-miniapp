@@ -83,6 +83,7 @@ Page({
       if (!activity) throw new Error('活动不存在');
       let profile = item.profile || {
         avatarRevision: 0,
+        clubs: [],
         nickname: '',
         title: '',
         realName: '',

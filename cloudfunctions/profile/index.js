@@ -21,6 +21,7 @@ const {
 const { buildCapabilityCard } = require('./capability-card');
 const { createProfileStore, missing: isNotFound } = require('./store');
 const { canonicalizeClientMedia } = require('./media-upload');
+const { loadClubMembershipSummaries } = require('./club-memberships');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const profileStore = createProfileStore(db);
@@ -117,8 +118,16 @@ exports.main = async (event = {}) => {
     keyFrom(process.env.PII_ENCRYPTION_KEY);
     const { OPENID } = cloud.getWXContext();
     if (!OPENID) throw Object.assign(new Error('无法取得微信身份'), { code: 'UNAUTHENTICATED' });
-    if (event.action === 'get')
-      return ok(response(await getDoc(OPENID), process.env.PII_ENCRYPTION_KEY));
+    if (event.action === 'get') {
+      const [profile, clubMemberships] = await Promise.all([
+        getDoc(OPENID),
+        loadClubMembershipSummaries(db, OPENID),
+      ]);
+      return ok({
+        ...response(profile, process.env.PII_ENCRYPTION_KEY),
+        club_memberships: clubMemberships,
+      });
+    }
     if (event.action === 'capabilityCard') {
       if (Object.prototype.hasOwnProperty.call(event, 'openid'))
         throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });

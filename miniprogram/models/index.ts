@@ -3,6 +3,18 @@ export type RegistrationStatus =
   'waiting' | 'pending' | 'approved' | 'checked_in' | 'rejected' | 'cancelled';
 export type ActivityRegistrationState = 'open' | 'closed';
 export type ActivityClosedReason = 'finished' | 'deadline' | 'full' | 'incomplete' | 'unavailable';
+export interface ClubIdentity {
+  clubId?: string;
+  name: string;
+  avatarUrl: string;
+}
+export interface ClubMembershipSummary {
+  clubId: string;
+  name: string;
+  avatarUrl: string;
+  role: string;
+  roleLabel: string;
+}
 export interface ActivityLocation {
   name: string;
   address: string;
@@ -84,6 +96,8 @@ export interface ActivityPublisher {
 export interface Activity {
   id: string;
   version: number;
+  clubId?: string;
+  clubIdentity?: ClubIdentity;
   title: string;
   date: string;
   startAt: string;
@@ -174,6 +188,7 @@ export interface ProfilePhoto {
 }
 export interface Profile {
   avatarRevision: number;
+  clubs: ClubMembershipSummary[];
   avatarVisibility?: AvatarVisibility;
   avatarVisibilityRevision?: number | null;
   nickname: string;

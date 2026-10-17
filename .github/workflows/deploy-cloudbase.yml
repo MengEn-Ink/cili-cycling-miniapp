@@ -1,0 +1,223 @@
+name: CloudBase 自动部署
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy_all_functions:
+        description: 重新部署 cloudbaserc.json 中的全部云函数
+        required: false
+        default: false
+        type: boolean
+      apply_infrastructure:
+        description: 执行数据库集合、索引和安全规则 apply / verify
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: cloudbase-production-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: cloudbase-production
+    env:
+      TARGET_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+      CLOUDBASE_ENV_ID: ${{ vars.CLOUDBASE_ENV_ID }}
+      CLOUDBASE_REGION: ${{ vars.CLOUDBASE_REGION }}
+      CLOUDBASE_API_KEY: ${{ secrets.CLOUDBASE_API_KEY }}
+      TCB_NO_BROWSER: 'true'
+    steps:
+      - name: Checkout current main source
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TARGET_SHA }}
+          fetch-depth: 2
+
+      - name: Resolve deployment scope
+        id: scope
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          FORCE_ALL: ${{ inputs.deploy_all_functions }}
+          FORCE_INFRASTRUCTURE: ${{ inputs.apply_infrastructure }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$(git rev-parse --is-shallow-repository)" == "true" ]]; then
+            git fetch --no-tags --unshallow origin main
+          else
+            git fetch --no-tags origin main
+          fi
+          current_main="$(git rev-parse origin/main)"
+          deployment_head="${TARGET_SHA}"
+          export FORCE_RECONCILE=false
+          if [[ "${TARGET_SHA}" != "${current_main}" ]]; then
+            deployment_head="${current_main}"
+            git checkout --detach "${deployment_head}"
+            base_sha="$(git rev-parse "${deployment_head}^")"
+            export FORCE_RECONCILE=true
+            echo "检测到排队期间 main 已推进，改为完整对账并部署最新 main：${deployment_head}"
+          else
+            mapfile -t successful_runs < <(gh api \
+              "repos/${GITHUB_REPOSITORY}/actions/workflows/deploy-cloudbase.yml/runs?branch=main&status=success&per_page=100" \
+              --jq '.workflow_runs[].head_sha')
+            base_sha=""
+            for successful_sha in "${successful_runs[@]}"; do
+              if [[ "${successful_sha}" != "${TARGET_SHA}" ]]; then
+                base_sha="${successful_sha}"
+                break
+              fi
+            done
+            if [[ -z "${base_sha}" ]] || ! git merge-base --is-ancestor "${base_sha}" "${deployment_head}"; then
+              base_sha="$(git rev-parse "${deployment_head}^")"
+              export FORCE_RECONCILE=true
+              echo "没有可用的上次成功部署基线，执行完整对账"
+            else
+              echo "按上次成功部署基线计算范围：${base_sha}..${deployment_head}"
+            fi
+          fi
+          node scripts/cloudbase-deploy-decision.mjs \
+            --base "${base_sha}" \
+            --head "${deployment_head}" \
+            --output "${RUNNER_TEMP}/cloudbase-deploy-decision.json"
+          node -e '
+            const fs = require("node:fs");
+            const decision = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+            const config = JSON.parse(fs.readFileSync("cloudbaserc.json", "utf8"));
+            if (process.env.FORCE_RECONCILE === "true") {
+              decision.shouldDeploy = true;
+              decision.applyInfrastructure = true;
+              decision.functions = config.functions.map(({ name }) => name);
+            }
+            if (process.env.FORCE_ALL === "true") {
+              decision.shouldDeploy = true;
+              decision.functions = config.functions.map(({ name }) => name);
+            }
+            if (process.env.FORCE_INFRASTRUCTURE === "true") {
+              decision.shouldDeploy = true;
+              decision.applyInfrastructure = true;
+            }
+            fs.writeFileSync(process.argv[1], `${JSON.stringify(decision, null, 2)}\n`);
+          ' "${RUNNER_TEMP}/cloudbase-deploy-decision.json"
+          jq -e '.shouldDeploy | type == "boolean"' "${RUNNER_TEMP}/cloudbase-deploy-decision.json" >/dev/null
+          echo "should_deploy=$(jq -r '.shouldDeploy' "${RUNNER_TEMP}/cloudbase-deploy-decision.json")" >> "${GITHUB_OUTPUT}"
+          echo "apply_infrastructure=$(jq -r '.applyInfrastructure' "${RUNNER_TEMP}/cloudbase-deploy-decision.json")" >> "${GITHUB_OUTPUT}"
+          echo "functions=$(jq -c '.functions' "${RUNNER_TEMP}/cloudbase-deploy-decision.json")" >> "${GITHUB_OUTPUT}"
+
+      - name: Report skipped deployment
+        if: steps.scope.outputs.should_deploy != 'true'
+        run: echo "本次提交不影响 CloudBase 资源，跳过部署"
+
+      - name: Validate GitHub deployment configuration
+        if: steps.scope.outputs.should_deploy == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ -n "${CLOUDBASE_API_KEY}" ]] || { echo "缺少 GitHub Environment Secret：CLOUDBASE_API_KEY" >&2; exit 1; }
+          [[ -n "${CLOUDBASE_ENV_ID}" ]] || { echo "缺少 GitHub Environment Variable：CLOUDBASE_ENV_ID" >&2; exit 1; }
+          [[ -n "${CLOUDBASE_REGION}" ]] || { echo "缺少 GitHub Environment Variable：CLOUDBASE_REGION" >&2; exit 1; }
+          configured_env="$(node -p "require('./cloudbaserc.json').envId")"
+          [[ "${CLOUDBASE_ENV_ID}" == "${configured_env}" ]] || {
+            echo "GitHub Environment 与 cloudbaserc.json 的环境 ID 不一致，拒绝部署" >&2
+            exit 1
+          }
+
+      - name: Setup Node.js
+        if: steps.scope.outputs.should_deploy == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install and verify cloud packages
+        if: steps.scope.outputs.should_deploy == 'true'
+        run: |
+          npm ci
+          npm run cloud:install
+          npm run test:cloud
+          npm run verify:cloud-packages
+
+      - name: Authenticate with environment API Key
+        if: steps.scope.outputs.should_deploy == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes --package @cloudbase/cli@3.8.4 tcb \
+            -e "${CLOUDBASE_ENV_ID}" \
+            login --cloudbase-api-key "${CLOUDBASE_API_KEY}" --json
+          npx --yes --package @cloudbase/cli@3.8.4 tcb \
+            -e "${CLOUDBASE_ENV_ID}" \
+            fn list --json > "${RUNNER_TEMP}/cloudbase-functions-before.json"
+
+      - name: Plan and apply database baseline
+        if: steps.scope.outputs.should_deploy == 'true' && steps.scope.outputs.apply_infrastructure == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/bootstrap-cloudbase.mjs \
+            --env-id "${CLOUDBASE_ENV_ID}" \
+            --region "${CLOUDBASE_REGION}"
+          node scripts/bootstrap-cloudbase.mjs \
+            --apply \
+            --env-id "${CLOUDBASE_ENV_ID}" \
+            --region "${CLOUDBASE_REGION}"
+          node scripts/bootstrap-cloudbase.mjs \
+            --verify \
+            --env-id "${CLOUDBASE_ENV_ID}" \
+            --region "${CLOUDBASE_REGION}"
+
+      - name: Deploy affected cloud functions
+        if: steps.scope.outputs.should_deploy == 'true'
+        env:
+          FUNCTIONS_JSON: ${{ steps.scope.outputs.functions }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r function_name; do
+            [[ "${function_name}" =~ ^[a-z][a-z0-9-]*$ ]] || { echo "非法函数名" >&2; exit 1; }
+            echo "部署云函数：${function_name}"
+            npx --yes --package @cloudbase/cli@3.8.4 tcb \
+              -e "${CLOUDBASE_ENV_ID}" \
+              fn deploy "${function_name}" --force --json
+          done < <(jq -r '.[]' <<< "${FUNCTIONS_JSON}")
+
+      - name: Verify deployed environment
+        if: steps.scope.outputs.should_deploy == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes --package @cloudbase/cli@3.8.4 tcb \
+            -e "${CLOUDBASE_ENV_ID}" \
+            fn list --json > "${RUNNER_TEMP}/cloudbase-functions-after.json"
+          jq -r '.. | objects | (.FunctionName? // .name? // empty)' \
+            "${RUNNER_TEMP}/cloudbase-functions-after.json" | sort -u > "${RUNNER_TEMP}/cloudbase-function-names.txt"
+          while IFS= read -r function_name; do
+            if ! grep -Fxq "${function_name}" "${RUNNER_TEMP}/cloudbase-function-names.txt"; then
+              echo "部署后未查询到函数：${function_name}" >&2
+              exit 1
+            fi
+          done < <(jq -r '.[]' <<< "${FUNCTIONS_JSON}")
+          echo "CloudBase 部署验证通过：环境 ${CLOUDBASE_ENV_ID}"
+        env:
+          FUNCTIONS_JSON: ${{ steps.scope.outputs.functions }}
+
+      - name: Clear temporary login state
+        if: always() && steps.scope.outputs.should_deploy == 'true'
+        continue-on-error: true
+        run: npx --yes --package @cloudbase/cli@3.8.4 tcb logout --json

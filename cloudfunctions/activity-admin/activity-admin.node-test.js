@@ -38,7 +38,12 @@ const input = {
 function expectCode(fn, code) {
   assert.throws(fn, (error) => error instanceof DomainError && error.code === code);
 }
-function store(current, admin = { _id: 'admin', enabled: true }, registrations = []) {
+function store(
+  current,
+  admin = { _id: 'admin', enabled: true },
+  registrations = [],
+  { club, membership } = {},
+) {
   const state = { current, registrations, backfillReads: 0, saved: undefined, audits: [] };
   return {
     state,
@@ -46,6 +51,8 @@ function store(current, admin = { _id: 'admin', enabled: true }, registrations =
       work({
         getAdmin: async () => admin,
         getActivity: async () => state.current,
+        getClub: async () => club,
+        getActiveClubMembership: async () => membership,
         listActiveRegistrations: async () => state.registrations,
         getOccupyingRegistrations: async () => {
           state.backfillReads += 1;
@@ -380,6 +387,128 @@ test('状态机支持活动手动上线、下架和重新上线，同状态可�
   assert.doesNotThrow(() => assertStatusTransition('published', 'finished'));
   expectCode(() => assertStatusTransition('finished', 'published'), 'INVALID_TRANSITION');
 });
+test('俱乐部活动只持久化服务端可信快照，普通角色必须具备有效管理权限', async () => {
+  const club = {
+    _id: 'club-1',
+    name: ' 此里骑行社 ',
+    avatar_url: ' cloud://clubs/club-1.jpg ',
+    approval_status: 'approved',
+    status: 'active',
+  };
+  const membership = { club_id: club._id, openid: 'member-1', role: 'ORGANIZER', status: 'active' };
+  const memory = store(undefined, null, [], { club, membership });
+  const saved = await saveActivity(
+    memory,
+    { openid: 'member-1', activity: { ...input, club_id: club._id } },
+    now,
+  );
+
+  assert.equal(saved.club_id, club._id);
+  assert.deepEqual(saved.club_identity, {
+    id: club._id,
+    name: '此里骑行社',
+    avatar_url: 'cloud://clubs/club-1.jpg',
+  });
+  assert.deepEqual(memory.state.saved.club_identity, saved.club_identity);
+
+  for (const role of ['MEMBER', '', undefined]) {
+    await assert.rejects(
+      saveActivity(store(undefined, null, [], { club, membership: { ...membership, role } }), {
+        openid: 'member-1',
+        activity: { ...input, club_id: club._id },
+      }),
+      { code: 'CLUB_FORBIDDEN' },
+    );
+  }
+});
+
+test('平台管理员可选择任意有效已审批俱乐部，公开活动归属显式为空', async () => {
+  const club = {
+    _id: 'club-admin',
+    name: '平台精选俱乐部',
+    avatar_url: '',
+    approval_status: 'approved',
+    status: 'active',
+  };
+  const managed = await saveActivity(
+    store(undefined, { _id: 'admin', enabled: true }, [], { club }),
+    { openid: 'admin', activity: { ...input, club_id: club._id } },
+    now,
+  );
+  assert.equal(managed.club_identity.name, club.name);
+
+  const publicStore = store(undefined, null);
+  const publicSaved = await saveActivity(publicStore, { openid: 'member-1', activity: input }, now);
+  assert.equal(publicSaved.club_id, null);
+  assert.equal(publicSaved.club_identity, null);
+  assert.equal(publicStore.state.saved.club_id, null);
+});
+
+test('失效或未审批俱乐部不可选择，客户端伪造快照在事务前被拒绝', async () => {
+  const membership = { role: 'OWNER', status: 'active' };
+  for (const club of [
+    { _id: 'disabled', name: '停用', approval_status: 'approved', status: 'disabled' },
+    { _id: 'pending', name: '待审', approval_status: 'pending', status: 'active' },
+  ]) {
+    await assert.rejects(
+      saveActivity(store(undefined, null, [], { club, membership }), {
+        openid: 'member-1',
+        activity: { ...input, club_id: club._id },
+      }),
+      { code: 'CLUB_UNAVAILABLE' },
+    );
+  }
+
+  let transactionCalls = 0;
+  await assert.rejects(
+    saveActivity(
+      {
+        transaction: async () => {
+          transactionCalls += 1;
+        },
+      },
+      {
+        openid: 'member-1',
+        activity: { ...input, club_identity: { id: 'forged', name: '伪造' } },
+      },
+    ),
+    { code: 'FORBIDDEN_FIELD' },
+  );
+  assert.equal(transactionCalls, 0);
+});
+
+test('更新同一归属时刷新可信快照，历史无归属活动保持兼容', async () => {
+  const club = {
+    _id: 'club-refresh',
+    name: '新名称',
+    avatar_url: 'cloud://clubs/new.jpg',
+    approval_status: 'approved',
+    status: 'active',
+  };
+  const current = {
+    _id: 'activity-club-refresh',
+    ...validateDraftInput({ ...input, club_id: club._id }),
+    club_identity: { id: club._id, name: '旧名称', avatar_url: 'cloud://clubs/old.jpg' },
+    occupied_count: 0,
+    version: 1,
+    created_by: 'member-1',
+  };
+  const refreshed = await saveActivity(
+    store(current, null, [], {
+      club,
+      membership: { club_id: club._id, openid: 'member-1', role: 'ADMIN', status: 'active' },
+    }),
+    { openid: 'member-1', activityId: current._id, expectedVersion: 1, activity: input },
+    now,
+  );
+  assert.equal(refreshed.club_id, club._id);
+  assert.equal(refreshed.club_identity.name, '新名称');
+
+  const legacy = publicActivity({ _id: 'legacy', title: '历史活动' });
+  assert.equal(legacy.club_id, null);
+  assert.equal(legacy.club_identity, null);
+});
+
 test('创建必须是草稿并写入服务端控制字段与审计', async () => {
   const memory = store(undefined);
   const result = await saveActivity(memory, { openid: 'admin', activity: input }, now);

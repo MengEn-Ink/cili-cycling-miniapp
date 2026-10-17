@@ -59,6 +59,8 @@ const ACTIVITY_FIELDS = [
   'event_start',
   'event_end',
   'status',
+  'club_id',
+  'club_identity',
 ];
 function pick(object, keys) {
   return keys.reduce((out, key) => {
@@ -68,7 +70,13 @@ function pick(object, keys) {
 }
 // 后援车司机电话面向全部骑友公开，管理端与骑友端一致返回完整号码。
 function publicActivity(activity) {
-  return pick(activity, ACTIVITY_FIELDS);
+  const output = pick(activity, ACTIVITY_FIELDS);
+  // 历史活动没有归属字段；对外统一为空值，避免客户端区分缺字段与公开活动。
+  if (typeof output.club_id !== 'string' || !output.club_id) {
+    output.club_id = null;
+    output.club_identity = null;
+  }
+  return output;
 }
 function cleanText(value, field, max, required = false) {
   if (typeof value !== 'string') fail('VALIDATION_FAILED', `${field}格式错误`);
@@ -576,6 +584,7 @@ const ACTIVITY_INPUT_FIELDS = new Set([
   'event_start',
   'event_end',
   'status',
+  'club_id',
 ]);
 function effectiveActivityInput(current, input) {
   const effective = { ...input };
@@ -616,6 +625,11 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses, option
     if (!ACTIVITY_INPUT_FIELDS.has(key))
       fail('FORBIDDEN_FIELD', '客户端不得传入服务端控制字段', { field: key });
   if (!allowedStatuses.includes(input.status)) fail('VALIDATION_FAILED', '活动状态无效');
+  let clubId = null;
+  if (input.club_id !== undefined && input.club_id !== null && input.club_id !== '') {
+    clubId = cleanText(input.club_id, '俱乐部 ID', 128, true);
+    if (!/^[A-Za-z0-9_-]+$/.test(clubId)) fail('VALIDATION_FAILED', '俱乐部 ID 格式错误');
+  }
 
   const registrationUnlimited = input.registration_unlimited === true;
   if (
@@ -770,6 +784,7 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses, option
     ...(start === undefined ? {} : { event_start: start }),
     ...(end === undefined ? {} : { event_end: end }),
     status: input.status,
+    club_id: clubId,
   };
 }
 function validateDraftInput(input, occupiedCount = 0, options = {}) {

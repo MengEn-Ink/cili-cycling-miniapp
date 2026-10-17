@@ -11,6 +11,7 @@
         <view class="cover-count" wx:if="{{galleryImages.length}}">1 / {{galleryImages.length}}</view>
       </view>
       <view class="info-bar">
+        <view class="club-identity" aria-label="活动归属：{{item.clubIdentity.name}}"><image wx:if="{{item.clubIdentity.avatarUrl}}" class="club-avatar" src="{{item.clubIdentity.avatarUrl}}" mode="aspectFill" /><view wx:else class="club-avatar club-avatar--placeholder">此</view><text>{{item.clubIdentity.name}}</text></view>
         <view class="info-head"><text class="info-kicker">{{displayDate}}{{item.route.level ? ' · ' + item.route.level : ''}}</text><text class="info-tag">{{viewerStatus.label}}</text></view>
         <view class="info-title">{{item.title}}</view>
         <view class="info-meta"><text>{{startTime || '集合时间待公布'}}</text><text>{{item.route.start || '集合地点待公布'}}</text></view>

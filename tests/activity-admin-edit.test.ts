@@ -11,6 +11,7 @@ const rideService = vi.hoisted(() => ({
   previewPublicStravaRoute: vi.fn(),
   previewStravaRoute: vi.fn(),
   getStravaReadiness: vi.fn(),
+  getProfile: vi.fn(),
   getAdminActivity: vi.fn(),
   saveActivity: vi.fn(),
 }));
@@ -128,6 +129,7 @@ describe('日常活动极简创建与编辑', () => {
       .mockImplementation(async (url: string) => publicPreviewFor(url.split('/').pop() || '42'));
     rideService.previewStravaRoute.mockReset();
     rideService.getStravaReadiness.mockReset().mockResolvedValue({ state: 'ready' });
+    rideService.getProfile.mockReset().mockResolvedValue({ clubs: [] });
     rideService.getAdminActivity.mockReset().mockResolvedValue(activity);
     rideService.saveActivity.mockReset().mockResolvedValue({ ...activity, version: 8 });
     appStore.ensureIdentity.mockReset().mockResolvedValue(undefined);
@@ -152,6 +154,99 @@ describe('日常活动极简创建与编辑', () => {
   });
 
   afterEach(() => vi.unstubAllGlobals());
+
+  it('保留不在当前会员关系列表中的活动俱乐部快照与归属', async () => {
+    const retainedActivity: Activity = {
+      ...activity,
+      clubId: 'club-retained',
+      clubIdentity: {
+        clubId: 'club-retained',
+        name: '原活动俱乐部',
+        avatarUrl: 'https://img.example/retained.jpg',
+      },
+    };
+    rideService.getProfile.mockResolvedValueOnce({
+      clubs: [
+        {
+          clubId: 'club-current',
+          name: '当前俱乐部',
+          avatarUrl: '',
+          role: 'member',
+          roleLabel: '成员',
+        },
+      ],
+    });
+    rideService.getAdminActivity.mockResolvedValueOnce(retainedActivity);
+
+    await page.onLoad({ id: retainedActivity.id });
+
+    expect(page.data.clubOptions[page.data.clubOptionIndex]).toEqual({
+      clubId: 'club-retained',
+      name: '原活动俱乐部',
+      avatarUrl: 'https://img.example/retained.jpg',
+      isReadOnly: true,
+    });
+    expect(page.data.clubOptionIndex).not.toBe(0);
+
+    await page.save({ currentTarget: { dataset: { status: 'draft' } } });
+    expect(rideService.saveActivity.mock.calls[0][0].clubId).toBe('club-retained');
+  });
+
+  it('活动归属只展示具备发起权限的俱乐部', async () => {
+    rideService.getProfile.mockResolvedValueOnce({
+      clubs: [
+        {
+          clubId: 'club-owner',
+          name: '负责人俱乐部',
+          avatarUrl: '',
+          role: 'OWNER',
+          roleLabel: '负责人',
+        },
+        {
+          clubId: 'club-admin',
+          name: '管理员俱乐部',
+          avatarUrl: '',
+          role: 'admin',
+          roleLabel: '管理员',
+        },
+        {
+          clubId: 'club-organizer',
+          name: '组织者俱乐部',
+          avatarUrl: '',
+          role: 'ORGANIZER',
+          roleLabel: '组织者',
+        },
+        {
+          clubId: 'club-member',
+          name: '普通成员俱乐部',
+          avatarUrl: '',
+          role: 'MEMBER',
+          roleLabel: '成员',
+        },
+      ],
+    });
+
+    await page.loadClubOptions();
+
+    expect(page.data.clubOptions.map((option: any) => option.clubId)).toEqual([
+      '',
+      'club-owner',
+      'club-admin',
+      'club-organizer',
+    ]);
+  });
+
+  it('俱乐部列表查询失败时仍可继续编辑公开活动', async () => {
+    rideService.getProfile.mockRejectedValueOnce(new Error('俱乐部身份加载失败'));
+
+    await page.onLoad({ id: activity.id });
+
+    expect(page.data.loading).toBe(false);
+    expect(page.data.error).toBe('');
+    expect(page.data.clubOptionsLoadFailed).toBe(true);
+    expect(page.data.clubOptions).toEqual([{ clubId: '', name: '此里公开活动', avatarUrl: '' }]);
+    expect(rideService.getAdminActivity).toHaveBeenCalledWith(activity.id);
+  });
 
   it('加载时只回填最小字段并把历史图片收敛为三张', async () => {
     await page.onLoad({ id: activity.id });

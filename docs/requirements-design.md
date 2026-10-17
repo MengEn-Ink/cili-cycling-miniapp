@@ -114,7 +114,11 @@ rejected|cancelled -> pending
 - 管理员白名单的超管维护界面。
 - 在线支付、退款或押金。
 - 报名名单 Excel/CSV 导出。
-- 多俱乐部、多组织租户与独立 Web 管理后台。
+- 报名信息同步腾讯文档；该能力仍处于未来需求阶段，必须先完成官方接入与权限验证，详见 [报名信息同步腾讯文档需求](superpowers/plans/2026-10-17-tencent-docs-registration-sync.md)。
+- 多俱乐部、多组织租户与独立 Web 管理后台；俱乐部创建、俱乐部活动和公开活动的目标审批规则尚未实现。
+- 独立活动模板/线路/素材库、精品局结构化保障计划，以及个人体重、FTP、功体比能力档案。
+
+上述候选能力的整体分期见 [未来产品能力路线图](superpowers/plans/2026-10-16-future-product-capability-roadmap.md)；组织申请、发布审批、权限矩阵和边界规则见 [组织地基与审批权限需求](superpowers/plans/2026-10-17-org-foundation-approval.md)。
 
 现场签到复用管理员对已通过报名的 `approved -> checked_in` 确认操作。参与者凭证页绘制真实 Code 128 可扫描条码（只承载报名 ID），管理员使用 `wx.scanCode` 解析后进入既有审核详情完成二次确认；不伪装普通文本为二维码。离线核销和批量签到不在本期范围。
 

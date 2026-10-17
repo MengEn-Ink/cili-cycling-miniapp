@@ -69,6 +69,41 @@ const TRUSTED_PUBLIC_ROUTE_FIELDS = [
   'strava_gpx_available',
 ];
 
+const CLUB_ACTIVITY_ROLES = new Set(['OWNER', 'ADMIN', 'ORGANIZER']);
+
+function clubIsSelectable(club) {
+  return Boolean(club && club.approval_status === 'approved' && club.status === 'active');
+}
+
+async function resolveTrustedClubIdentity(tx, { clubId, openid, isAdmin }) {
+  if (!clubId) return { clubId: null, clubIdentity: null };
+  if (typeof clubId !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(clubId))
+    fail('VALIDATION_FAILED', '俱乐部 ID 格式错误');
+  const club = await tx.getClub(clubId);
+  if (!clubIsSelectable(club)) fail('CLUB_UNAVAILABLE', '俱乐部不存在或当前不可用');
+  if (!isAdmin) {
+    const membership = await tx.getActiveClubMembership(clubId, openid);
+    if (!membership || !CLUB_ACTIVITY_ROLES.has(String(membership.role || '').toUpperCase()))
+      fail('CLUB_FORBIDDEN', '无权以该俱乐部身份发布活动');
+  }
+  if (typeof club.name !== 'string' || !club.name.trim())
+    fail('CLUB_SCHEMA_INVALID', '俱乐部资料异常');
+  if (
+    club.avatar_url !== undefined &&
+    club.avatar_url !== null &&
+    typeof club.avatar_url !== 'string'
+  )
+    fail('CLUB_SCHEMA_INVALID', '俱乐部资料异常');
+  return {
+    clubId,
+    clubIdentity: {
+      id: clubId,
+      name: club.name.trim(),
+      avatar_url: typeof club.avatar_url === 'string' ? club.avatar_url.trim() : '',
+    },
+  };
+}
+
 function sameGpxAttachment(requested, current) {
   return Boolean(
     current &&
@@ -357,6 +392,8 @@ async function saveActivity(
 ) {
   if (!activity || typeof activity !== 'object' || Array.isArray(activity))
     fail('VALIDATION_FAILED', '活动参数格式错误');
+  if (Object.prototype.hasOwnProperty.call(activity, 'club_identity'))
+    fail('FORBIDDEN_FIELD', '客户端不得传入服务端控制字段', { field: 'club_identity' });
   if (
     createRequestId !== undefined &&
     (typeof createRequestId !== 'string' || !/^[A-Za-z0-9_-]{8,128}$/.test(createRequestId))
@@ -483,6 +520,11 @@ async function saveActivity(
       fail('FORBIDDEN', '普通成员只能编辑自己的草稿或下架已上线活动');
     if (!isAdmin && effectiveActivity.status === 'finished')
       fail('ADMIN_REQUIRED', '仅管理员可以结束活动');
+    const trustedClub = await resolveTrustedClubIdentity(tx, {
+      clubId: effectiveActivity.club_id || null,
+      openid,
+      isAdmin,
+    });
     let currentVersion = 0;
     if (current && current.version !== undefined) {
       if (!Number.isInteger(current.version) || current.version < 1)
@@ -570,6 +612,8 @@ async function saveActivity(
       ...(current || {}),
       ...safe,
       _id: id,
+      club_id: trustedClub.clubId,
+      club_identity: trustedClub.clubIdentity,
       occupied_count: occupiedCount,
       version: currentVersion + 1,
       occupancy_partition_ready: occupancyPartitionReady,
@@ -645,5 +689,6 @@ module.exports = {
   cloneRequestFingerprint,
   cloneActivity,
   deleteActivity,
+  resolveTrustedClubIdentity,
   saveActivity,
 };
