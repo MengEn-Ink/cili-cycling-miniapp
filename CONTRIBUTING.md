@@ -30,7 +30,7 @@ npm run audit:all
 
 1. PR 必须以最新 `main` 为基线，描述需求背景、改动、影响、测试、回滚和文件统计。
 2. PR 的 `CI / validate` 必须完成且结论为 `success`，才能合入 `main`。
-3. CI 至少覆盖依赖安装、共享云函数包准备、`npm run validate`、覆盖率、只读 bootstrap 校验和高危依赖审计。
+3. CI 至少覆盖依赖安装、共享云函数包准备、`npm run validate`（含 `check:governance` 的文档口径、源码卫生与 Actions 安全基线）、覆盖率、只读 bootstrap 校验和高危依赖审计。
 4. 合并后必须再次确认 `main` push 触发的 CI 通过；PR 分支上的成功不能替代主分支最终验证。
 
 ## 4. 自动部署规则
@@ -40,7 +40,7 @@ npm run audit:all
 3. 工作流必须在准备阶段和真正上传前分别核对目标 SHA 仍等于远端 `main`，避免旧流水线重跑覆盖新开发版。
 4. 自动版本使用 `0.0.<run_number>.<attempt>`；需要稳定、可识别版本时，从 `main` 手动触发工作流并显式填写版本和说明。
 5. 不得绕过 CI 直接上传未进入 `main` 的代码。紧急手动上传也必须使用同一上传脚本，并记录目标 `main` SHA、版本和 Actions/操作证据。
-6. 自动上传只覆盖小程序代码。涉及 `cloudfunctions/**` 的变更，还必须按 README 部署对应 CloudBase 云函数并核验状态，不能把小程序上传成功等同于云函数已部署。
+6. 自动上传只覆盖小程序代码。涉及 `cloudfunctions/**`、集合、索引或规则的变更，由 `main` CI 成功后的 CloudBase 工作流按累计 diff 自动部署或应用，并以受保护 Environment 的日志和回读结果验收；沙箱不得直接部署生产资源。
 
 ## 5. 密钥与供应链规则
 

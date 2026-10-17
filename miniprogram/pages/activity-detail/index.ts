@@ -197,6 +197,7 @@ Page({
     selectedAttendee: null as any,
     selectedAttendeeIndex: 0,
     galleryImages: [] as string[],
+    currentGalleryIndex: 0,
     routeOutlineImage: '',
     routeOutline: [] as any[],
     elevationImage: '',
@@ -286,6 +287,7 @@ Page({
       loading: true,
       error: '',
       coverFailed: false,
+      currentGalleryIndex: 0,
       selectedAttendee: null,
       activityAction: unavailableAction(),
     });
@@ -557,7 +559,13 @@ Page({
     });
   },
   coverImageError() {
-    this.safeSetData({ coverFailed: true, galleryImages: [] });
+    this.safeSetData({ coverFailed: true, galleryImages: [], currentGalleryIndex: 0 });
+  },
+  galleryChange(event: any) {
+    const current = Number(event.detail?.current);
+    if (!Number.isInteger(current) || current < 0 || current >= this.data.galleryImages.length)
+      return;
+    this.safeSetData({ currentGalleryIndex: current });
   },
   galleryImageError(event: any) {
     const index = Number(event.currentTarget.dataset.index);
@@ -565,7 +573,18 @@ Page({
     const galleryImages = this.data.galleryImages.filter(
       (_: string, imageIndex: number) => imageIndex !== index,
     );
-    this.safeSetData({ galleryImages, coverFailed: galleryImages.length === 0 });
+    const previousIndex = this.data.currentGalleryIndex;
+    const currentGalleryIndex =
+      galleryImages.length === 0
+        ? 0
+        : index < previousIndex
+          ? previousIndex - 1
+          : Math.min(previousIndex, galleryImages.length - 1);
+    this.safeSetData({
+      galleryImages,
+      currentGalleryIndex,
+      coverFailed: galleryImages.length === 0,
+    });
   },
   attendeeAvatarLoad(event: any) {
     const index = Number(event.currentTarget.dataset.index);

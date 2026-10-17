@@ -7,10 +7,10 @@
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:7ad4ba6fbcbcd47224e812bd98d9856f449136bf88b925d929aef665102d959a"
+    "digest": "sha256:2f5611014a39499113dccc9d4bf552ca5d7001f1c736c0d487162bb20a584d35"
   },
   "prototype": {
-    "digest": "sha256:b041a2941055728daa1440a61eb0764258da45d45e54d5184e4177ee13253348"
+    "digest": "sha256:0048ca1fc14d0a03736c8eea08e5396e05acfb5ac7c2c164b014ec0519d3b004"
   },
   "routes": [
     {
@@ -156,10 +156,10 @@
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "默认，客户端 2026.10.17.86",
+        "state": "默认，客户端 2026.10.17.87",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "Pages 375×812 设置页沿用布局基线并同步 2026.10.17.86 更新说明；开发版上传后核对当前版本唯一展示。"
+        "note": "Pages 375×812 设置页已同步 2026.10.17.87 更新说明；微信端沿用布局基线，开发版上传后核对当前版本唯一展示。"
       },
       {
         "id": "capability-card",

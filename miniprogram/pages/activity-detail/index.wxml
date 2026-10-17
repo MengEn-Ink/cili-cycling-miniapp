@@ -3,12 +3,12 @@
     <view wx:if="{{item}}" class="detail-unified-card">
       <brand-logo compact="{{true}}" meta="活动详情" />
       <view class="detail-hero">
-        <swiper wx:if="{{galleryImages.length > 1 && !coverFailed}}" class="hero-gallery" indicator-dots="{{true}}" indicator-color="{{colorMediaMuted}}" indicator-active-color="{{colorOnMedia}}" circular="{{true}}">
+        <swiper wx:if="{{galleryImages.length > 1 && !coverFailed}}" class="hero-gallery" indicator-dots="{{true}}" indicator-color="{{colorMediaMuted}}" indicator-active-color="{{colorOnMedia}}" circular="{{true}}" bindchange="galleryChange">
           <swiper-item wx:for="{{galleryImages}}" wx:for-item="media" wx:key="*this"><image class="hero-media" src="{{media}}" mode="aspectFill" data-index="{{index}}" binderror="galleryImageError" aria-label="活动图片 {{index + 1}}" /></swiper-item>
         </swiper>
         <image wx:elif="{{galleryImages.length === 1 && !coverFailed}}" class="hero-media" src="{{galleryImages[0]}}" mode="aspectFill" binderror="coverImageError" aria-label="{{item.title}}活动封面" />
         <generated-activity-cover wx:else item="{{item}}" variant="detail" />
-        <view class="cover-count" wx:if="{{galleryImages.length}}">1 / {{galleryImages.length}}</view>
+        <view class="cover-count" wx:if="{{galleryImages.length}}">{{currentGalleryIndex + 1}} / {{galleryImages.length}}</view>
       </view>
       <view class="info-bar">
         <view class="club-identity" aria-label="活动归属：{{item.clubIdentity.name}}"><image wx:if="{{item.clubIdentity.avatarUrl}}" class="club-avatar" src="{{item.clubIdentity.avatarUrl}}" mode="aspectFill" /><view wx:else class="club-avatar club-avatar--placeholder">此</view><text>{{item.clubIdentity.name}}</text></view>
