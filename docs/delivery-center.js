@@ -262,6 +262,19 @@
           inline: 'module-map',
         },
         {
+          id: 'route-analysis-data-platform',
+          title: '路线分析数据平台与开源方案',
+          summary:
+            '面向 Strava 公开路线与 GPX，给出地图、POI、天气、风场、高程、道路事件与开源路由引擎的选型矩阵、目标架构和 M0–M2 实施路径。',
+          maturity: 'baseline',
+          sources: [
+            {
+              label: 'docs/route-analysis-data-platform-plan.md',
+              href: BASE + 'docs/route-analysis-data-platform-plan.md',
+            },
+          ],
+        },
+        {
           id: 'external-apis',
           title: '外部接口（第三方集成）',
           summary:

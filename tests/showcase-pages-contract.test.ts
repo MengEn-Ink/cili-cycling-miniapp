@@ -11,6 +11,7 @@ const css = read('docs/styles.css');
 const script = read('docs/app.js');
 const schema = read('docs/schema.js');
 const deliveryCenter = read('docs/delivery-center.js');
+const routeAnalysisDataPlatformPlan = read('docs/route-analysis-data-platform-plan.md');
 const templates = read('docs/templates.js');
 
 type PrototypeRuntime = {
@@ -449,6 +450,12 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   });
 
   it('总览整理为研发交付中心、需求、搭建指南、原型和验收资料入口，并支持章节直达', () => {
+    const deliveryRuntime: {
+      deliveryCenter?: { render: () => string };
+    } = {};
+    new Function('window', deliveryCenter)(deliveryRuntime);
+    const renderedDeliveryCenter = deliveryRuntime.deliveryCenter?.render() ?? '';
+
     expect(html).toContain('此里骑行活动小程序 · 研发交付中心');
     expect(html).toContain('href="#delivery"');
     expect(html).toContain('href="#requirements"');
@@ -464,6 +471,14 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain('P0 真实报名旅程');
     expect(script).toContain("'delivery'");
     expect(script).toContain('deliveryCenter.extraOverviewAnchors');
+    expect(deliveryCenter).toContain('路线分析数据平台与开源方案');
+    expect(deliveryCenter).toContain('docs/route-analysis-data-platform-plan.md');
+    expect(renderedDeliveryCenter).toContain(
+      'href="https://github.com/MengEn-Ink/cili-cycling-miniapp/blob/main/docs/route-analysis-data-platform-plan.md"',
+    );
+    expect(routeAnalysisDataPlatformPlan).toContain('国内商业地图与开放数据应组合使用');
+    expect(routeAnalysisDataPlatformPlan).toContain('云端预计算支撑小程序轻量展示');
+    expect(routeAnalysisDataPlatformPlan).toContain('先补确定性能力再接动态数据');
     expect(deliveryCenter).toContain('沸点手稿与全套设计交接成果');
     expect(deliveryCenter).toContain('docs/designs/2026-10-16-boiling-point/index.html');
     expect(deliveryCenter).toContain('组织地基与发布审批（俱乐部创建已实现 · 活动审批仍为原型）');
