@@ -93,7 +93,9 @@ describe('完整路线分析页合同', () => {
     expect(page).toContain('showFullRoute()');
     expect(template).toContain('scale="{{mapScale}}"');
     expect(template).toContain('bindtap="showFullRoute">查看全线');
-    expect(page).toContain('wx.setClipboardData');
+    expect(page).not.toContain('copyCoordinate');
+    expect(page).not.toContain('wx.setClipboardData');
+    expect(template).not.toContain('复制坐标');
   });
 
   it('用户页面移除技术状态痕迹且不伪造外部信息', () => {
@@ -160,11 +162,11 @@ describe('完整路线分析页合同', () => {
   it('发布说明使用当日递增版本并保留唯一 latest', () => {
     const release = read('miniprogram/config/release.ts');
     const notes = read('miniprogram/pages/settings/index.ts');
-    expect(release).toContain('2026.10.17.79');
+    expect(release).toContain('2026.10.17.80');
     expect(notes).toContain("date: '2026-10-17'");
-    expect(notes).toContain("title: '完整路线分析更快更稳'");
+    expect(notes).toContain("title: '路线地图与 GPX 使用更顺畅'");
     expect(notes.match(/latest: true/g)).toHaveLength(1);
-    expect(notes).toContain('地图显示失败时保留核心路线数据并支持重试');
-    expect(notes).toContain('标记、海拔锚点、关键点和分段可同步联动');
+    expect(notes).toContain('GPX 路线地图完成坐标纠偏');
+    expect(notes).toContain('路线轮廓与海拔图渐进绘制');
   });
 });

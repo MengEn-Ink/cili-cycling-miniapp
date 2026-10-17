@@ -7,7 +7,7 @@
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:51121d6f95ec3e8815bdb4f66620e36616eb558724b9875a200284b2b38e22a5"
+    "digest": "sha256:95814cd0bf766ee21c11f7644fdfef7dcf4703fcf09fc52002fc776dbb761383"
   },
   "prototype": {
     "digest": "sha256:4e34e767dec618c85ae7cf3d87fb8f075fc270f7c41f6bacc32c4dea41159757"
@@ -93,7 +93,7 @@
         "state": "管理员 / Pages 已通过",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "代码与 Pages 原型已同步到 2026.10.17.76 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+        "note": "活动详情路线轮廓与海拔图已统一完整路线分析口径并加入一次性渐进绘制；布局尺寸未变，既有 375×812 截图继续作为静态终态基线，开发版上传后补做真机动画验收。"
       },
       {
         "id": "route-analysis",
@@ -102,7 +102,7 @@
         "state": "地图暂不可用降级 / 核心分析仍可查看",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "Pages 已按路线分析 V2 重新采集 375×812 浏览器验收图，并同步地图失败提示与重试状态；未伪造新的微信 DevTools 截图，开发版上传后补做 iOS / Android 地图验收。"
+        "note": "完整路线分析移除复制坐标入口，GPX 地图展示统一执行 WGS84→GCJ-02 纠偏；页面布局未变，既有 375×812 截图继续作为静态基线，开发版上传后补做腾讯地图贴路验收。"
       },
       {
         "id": "registration-form",
@@ -144,10 +144,10 @@
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "默认，客户端 2026.10.17.79",
+        "state": "默认，客户端 2026.10.17.80",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "Pages 375×812 设置页截图已按 2026.10.17.79 重新采集；微信端截图沿用既有布局基线，开发版上传后补做 iOS / Android 版本文案确认。"
+        "note": "Pages 375×812 设置页截图沿用既有布局基线；版本已更新为 2026.10.17.80，开发版上传后补做 iOS / Android 版本文案确认。"
       },
       {
         "id": "capability-card",

@@ -5,6 +5,7 @@ import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
 import { genderView } from '../../utils/gender';
 import { mediaSourceKind, reportMediaDiagnostic } from '../../utils/media-diagnostic';
+import { sanitizeGpxFileName } from '../../utils/gpx-file';
 import { createNavigationSingleFlight } from '../../utils/navigation-single-flight';
 import { validateRegistrationProfile } from '../../utils/validation';
 import {
@@ -12,11 +13,12 @@ import {
   hasAnalyzableRoute,
 } from '../../utils/route-outline';
 import {
+  activityElevationProfile,
   drawElevationProfile,
   formatActivityDate,
   formatActivityTime,
   formatChinaDateTimeSeconds,
-  validElevationProfile,
+  runCanvasReveal,
 } from './format';
 
 const MAX_GPX_BYTES = 4 * 1024 * 1024;
@@ -90,8 +92,7 @@ function base64Bytes(value: unknown): number {
 }
 
 function safeGpxName(value: unknown): string {
-  const name = typeof value === 'string' ? value.split(/[\\/]/).pop() || '' : '';
-  return /^[\w.-]{1,120}\.gpx$/i.test(name) ? name : `activity-route-${Date.now()}.gpx`;
+  return sanitizeGpxFileName(value, `activity-route-${Date.now()}`);
 }
 
 function platformCall(
@@ -169,6 +170,8 @@ Page({
   loadPromise: null as { id: string; promise: Promise<void> } | null,
   unloaded: false,
   downloadBusy: false,
+  elevationAnimationCancel: null as (() => void) | null,
+  outlineAnimationCancel: null as (() => void) | null,
   attendeeMediaRetryKeys: new Set<string>(),
   data: {
     loading: true,
@@ -233,9 +236,11 @@ Page({
     this.drawRouteOutline();
   },
   onHide() {
+    this.cancelVisualAnimations();
     this.navigation.release();
   },
   onUnload() {
+    this.cancelVisualAnimations();
     this.unloaded = true;
     this.loadRequestId += 1;
     this.loadPromise = null;
@@ -243,6 +248,12 @@ Page({
   },
   safeSetData(value: Record<string, unknown>, callback?: () => void) {
     if (!this.unloaded) this.setData(value, callback);
+  },
+  cancelVisualAnimations() {
+    this.elevationAnimationCancel?.();
+    this.outlineAnimationCancel?.();
+    this.elevationAnimationCancel = null;
+    this.outlineAnimationCancel = null;
   },
   load(id: string) {
     const current = this.loadPromise;
@@ -313,9 +324,7 @@ Page({
         typeof detail.route?.publicRoutePreviewId === 'string' &&
         /^[a-f0-9]{64}$/.test(detail.route.publicRoutePreviewId);
       const hasRouteDetails = hasGpxRoute || hasPublicRouteDetails;
-      const elevationProfile = hasRouteDetails
-        ? validElevationProfile(detail.route?.elevationProfile)
-        : [];
+      const elevationProfile = hasRouteDetails ? activityElevationProfile(detail.route) : [];
       const routeOutline =
         hasRouteDetails && Array.isArray(detail.route?.routeOutline)
           ? detail.route.routeOutline
@@ -407,7 +416,6 @@ Page({
     );
   },
   drawElevation() {
-    const profile = this.data.item?.route?.elevationProfile;
     if (!this.data.hasElevationProfile || this.unloaded) return;
     wx.createSelectorQuery()
       .select('#elevation-canvas')
@@ -420,9 +428,26 @@ Page({
         const ratio = wx.getWindowInfo?.().pixelRatio || wx.getSystemInfoSync?.().pixelRatio || 1;
         canvas.width = target.width * ratio;
         canvas.height = target.height * ratio;
-        drawElevationProfile(canvas.getContext('2d'), target.width, target.height, profile, ratio);
-        // 2D canvas 在部分真机仍会盖住 fixed 按钮，绘制后转成图片并移除原生层。
-        this.snapshotCanvas(canvas, target.width, target.height, 'elevationImage');
+        const context = canvas.getContext('2d');
+        const normalized = activityElevationProfile(this.data.item?.route);
+        const draw = (progress: number) =>
+          drawElevationProfile(context, target.width, target.height, normalized, ratio, progress);
+        const finish = () => {
+          this.elevationAnimationCancel = null;
+          // 最终帧转成图片，避免原生 canvas 穿透并遮挡底部操作栏。
+          this.snapshotCanvas(canvas, target.width, target.height, 'elevationImage');
+        };
+        this.elevationAnimationCancel?.();
+        if (
+          typeof canvas.requestAnimationFrame === 'function' &&
+          typeof canvas.cancelAnimationFrame === 'function' &&
+          (wx.getDeviceInfo?.().benchmarkLevel || 20) > 10
+        )
+          this.elevationAnimationCancel = runCanvasReveal(canvas, draw, finish);
+        else {
+          draw(1);
+          finish();
+        }
       });
   },
   drawRouteOutline() {
@@ -439,16 +464,33 @@ Page({
         const ratio = wx.getWindowInfo?.().pixelRatio || wx.getSystemInfoSync?.().pixelRatio || 1;
         canvas.width = target.width * ratio;
         canvas.height = target.height * ratio;
-        renderRouteOutline(
-          canvas.getContext('2d'),
-          target.width,
-          target.height,
-          outline,
-          ratio,
-          this.data.item?.route?.routeName || 'GPX 路线详情',
-        );
-        // 路线轮廓导出为普通图片，避免原生 canvas 穿透并遮挡底部操作栏。
-        this.snapshotCanvas(canvas, target.width, target.height, 'routeOutlineImage');
+        const context = canvas.getContext('2d');
+        const draw = (progress: number) =>
+          renderRouteOutline(
+            context,
+            target.width,
+            target.height,
+            outline,
+            ratio,
+            this.data.item?.route?.routeName || 'GPX 路线详情',
+            progress,
+          );
+        const finish = () => {
+          this.outlineAnimationCancel = null;
+          // 路线轮廓导出为普通图片，避免原生 canvas 穿透并遮挡底部操作栏。
+          this.snapshotCanvas(canvas, target.width, target.height, 'routeOutlineImage');
+        };
+        this.outlineAnimationCancel?.();
+        if (
+          typeof canvas.requestAnimationFrame === 'function' &&
+          typeof canvas.cancelAnimationFrame === 'function' &&
+          (wx.getDeviceInfo?.().benchmarkLevel || 20) > 10
+        )
+          this.outlineAnimationCancel = runCanvasReveal(canvas, draw, finish);
+        else {
+          draw(1);
+          finish();
+        }
       });
   },
   async retryAttendeeMedia(attendeeId: string, kind: 'avatar' | 'background', failedUrl: string) {

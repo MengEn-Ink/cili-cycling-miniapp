@@ -24,9 +24,25 @@ function cleanProfile(route: Route, distanceKm: number): RouteElevationPoint[] {
     const distance = distanceKm > 0 ? clamp(point.distanceKm, 0, distanceKm) : point.distanceKm;
     byDistance.set(round(distance, 4), point.elevationM);
   }
-  return [...byDistance.entries()]
+  const profile = [...byDistance.entries()]
     .map(([distanceKm, elevationM]) => ({ distanceKm, elevationM }))
     .sort((a, b) => a.distanceKm - b.distanceKm);
+  const alignExtreme = (value: unknown, findIndex: (point: RouteElevationPoint) => boolean) => {
+    if (!finite(value) || !profile.length) return;
+    const index = profile.findIndex(findIndex);
+    if (index >= 0) profile[index] = { ...profile[index], elevationM: value };
+  };
+  if (finite(route.elevationMaxM)) {
+    const current = Math.max(...profile.map((point) => point.elevationM));
+    if (route.elevationMaxM > current)
+      alignExtreme(route.elevationMaxM, (point) => point.elevationM === current);
+  }
+  if (finite(route.elevationMinM)) {
+    const current = Math.min(...profile.map((point) => point.elevationM));
+    if (route.elevationMinM < current)
+      alignExtreme(route.elevationMinM, (point) => point.elevationM === current);
+  }
+  return profile;
 }
 
 const MAX_MAP_OUTLINE_POINTS = 420;

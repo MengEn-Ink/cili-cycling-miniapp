@@ -34,7 +34,6 @@
           <view wx:if="{{selectedPoint.hasCoordinate}}" class="coordinate-cell"><text>坐标</text><text class="coordinate-value">{{selectedPoint.coordinateText}}</text></view>
         </view>
         <view class="point-note" wx:if="{{selectedPoint.note}}">{{selectedPoint.note}}</view>
-        <button wx:if="{{selectedPoint.hasCoordinate}}" class="copy-button" bindtap="copyCoordinate">复制坐标</button>
       </view>
     </view>
 

@@ -7,6 +7,7 @@ import {
   type RouteSegment,
 } from './utils/route-analysis';
 import { drawRouteAnalysisElevation } from './utils/route-analysis-chart';
+import { routeAnalysisForMap } from './utils/gcj02';
 
 const ROUTE_COLOR = '#c0321f';
 const SELECTED_COLOR = '#211f1c';
@@ -237,7 +238,22 @@ Page({
         this.safeSetData({ empty: true, activityTitle: activity.title });
         return;
       }
-      const analysis = deriveRouteAnalysis(activity.route);
+      const sourceAnalysis = deriveRouteAnalysis(activity.route);
+      const preserveKeyPointIds = [
+        ...(Number.isFinite(activity.route.startLocation?.latitude) &&
+        Number.isFinite(activity.route.startLocation?.longitude)
+          ? ['start']
+          : []),
+        ...(Number.isFinite(activity.route.endLocation?.latitude) &&
+        Number.isFinite(activity.route.endLocation?.longitude)
+          ? ['end']
+          : []),
+      ];
+      const analysis = routeAnalysisForMap(
+        sourceAnalysis,
+        Boolean(activity.route.gpxFileId),
+        preserveKeyPointIds,
+      );
       this.analysis = analysis;
       const keyPoints = analysis.keyPoints.map(viewPoint);
       const selectedPoint = keyPoints.find((point) => point.hasCoordinate) || keyPoints[0] || null;
@@ -380,14 +396,6 @@ Page({
       mapLatitude: middle.latitude,
       mapLongitude: middle.longitude,
       ...mapState(this.analysis),
-    });
-  },
-  copyCoordinate() {
-    const point = this.data.selectedPoint;
-    if (!point?.hasCoordinate) return;
-    wx.setClipboardData({
-      data: `${point.lat!.toFixed(6)},${point.lng!.toFixed(6)}`,
-      fail: () => wx.showToast({ title: '复制失败，请稍后重试', icon: 'none' }),
     });
   },
   drawElevation() {

@@ -155,7 +155,7 @@ describe('路线分析派生', () => {
     );
     expect(analysis.profile).toEqual([
       { distanceKm: 0, elevationM: 10 },
-      { distanceKm: 5, elevationM: 40 },
+      { distanceKm: 5, elevationM: 410 },
       { distanceKm: 20, elevationM: 20 },
     ]);
     expect(analysis.outline).toHaveLength(2);

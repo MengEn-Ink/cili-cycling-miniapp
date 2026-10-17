@@ -15,6 +15,7 @@ import type {
   RouteGpxPreviewInput,
 } from '../models';
 import { normalizeGender } from '../utils/gender';
+import { isSafeGpxFileName } from '../utils/gpx-file';
 import type {
   ActivityListFilter,
   ActivityInput,
@@ -515,8 +516,7 @@ function mapRouteGpx(raw: unknown) {
     value.base64.length > Math.ceil((4 * 1024 * 1024) / 3) * 4 ||
     !/^[A-Za-z0-9+/]*={0,2}$/.test(value.base64) ||
     typeof value.filename !== 'string' ||
-    value.filename.length > 160 ||
-    !/^[A-Za-z0-9_-]+\.gpx$/.test(value.filename) ||
+    !isSafeGpxFileName(value.filename) ||
     value.content_type !== 'application/gpx+xml'
   )
     return invalidResponse();
