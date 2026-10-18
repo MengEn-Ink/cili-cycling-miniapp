@@ -56,7 +56,7 @@ const prototypeRoutes = [
   'registrations',
   'credential',
   'profile',
-  'club-center',
+  'club/center',
   'settings',
   'capability-card',
   'profile-edit',
@@ -82,7 +82,7 @@ const orgApprovalPrototypeRoutes = [
 ];
 
 const routeToPagePath = (route: string) =>
-  route === 'club-center'
+  route === 'club/center'
     ? 'pages/club/center/index'
     : route.startsWith('admin-')
       ? `pages/admin/${route.replace('admin-', '')}/index`
@@ -102,7 +102,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     }
     expect(schema).not.toContain("id: 'route-view'");
     expect(templates).not.toMatch(/['"]?route-view['"]?: \(\) =>/);
-    expect(html).toContain('17 个真实页面原型 + 8 页组织地基与审批演进原型');
+    expect(html).toContain('17 个正式路由 + 23 个原型 / 40 个画面');
   });
 
   it('M0 组织地基与审批原型以 prototype-only 页面接入，不污染 app.json 真实路由', () => {
@@ -1133,332 +1133,150 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   });
 });
 
-describe('俱乐部中心（club-center）交互原型契约', () => {
-  it('schema 中的 club-center 覆盖主页结构：三页签、容量字段、禁用话术', () => {
-    // 入口在 prototypeRoutes 名单中；交付中心侧栏按 pages 顺序渲染
-    expect(prototypeRoutes).toContain('club-center');
-    expect(schema).toContain("id: 'club-center'");
+describe('路线分析 Pages 降级状态契约', () => {
+  it('no-waypoint 仍渲染真实剖面 DOM，parse-fail 重试进入 loading', () => {
+    const noWaypoint = renderPrototypeState('route-analysis', 'no-waypoint');
+    expect(noWaypoint).toContain('class="ra-chart"');
+    expect(noWaypoint).toContain('data-profile-chart="no-waypoint"');
+    expect(noWaypoint).toContain('按剖面曲线自行判断强度');
+
+    const parseFail = renderPrototypeState('route-analysis', 'parse-fail');
+    expect(parseFail).toContain('重试解析');
+    expect(parseFail).toContain('data-route="route-analysis" data-state="loading"');
+    expect(parseFail).not.toContain('正在重新解析 GPX');
+  });
+});
+
+describe('俱乐部中心（club/center）mode-based 原型契约', () => {
+  it('schema 与正式路由统一，并声明五种生产 mode', () => {
+    expect(prototypeRoutes).toContain('club/center');
+    expect(schema).toContain("id: 'club/center'");
+    expect(schema).toContain("path: 'pages/club/center/index'");
     expect(schema).toContain("title: '俱乐部中心'");
-    expect(schema).toContain("navTitle: '俱乐部中心'");
-    expect(schema).toContain("group: '真实运行页 · 俱乐部主页'");
-    // 核心状态：三页签 + 加载 / 错误 / 背景降级 / 更多菜单
     for (const state of [
-      "['default', '活动 · 有报名']",
-      "['activities-empty', '活动 · 暂无']",
-      "['members', '成员 · 查看列表']",
-      "['profile', '资料 · 查看']",
+      "['discovery', '发现 · 推荐列表']",
+      "['detail', '详情 · 本人俱乐部']",
+      "['manage', '管理 · 编辑资料']",
       "['loading', '加载中']",
-      "['error', '网络失败']",
-      "['bg-fallback', '背景加载失败']",
-      "['more-open', '更多菜单（负责人）']",
+      "['error', '加载失败']",
     ]) {
       expect(schema).toContain(state);
     }
-    // Mock 数据声明：严格对应用户确认过的字段
     expect(schema).toContain('clubCenterPrototype:');
     expect(schema).toContain("name: '辛庄桥小火车'");
     expect(schema).toContain('memberCount: 2');
     expect(schema).toContain('capacity: 50');
-    // 禁止话术：没有“成立 N 个月”、“邀请成员”、“搜索成员”、
-    // 以及“还可加入 N 名 / 位骑友”这种暗示容量招募的话术（“已加入 N 个俱乐部”属于用户视角文案，豁免）
-    expect(schema).not.toMatch(/成立\s*\d+\s*个月/);
-    expect(schema).not.toContain('邀请成员');
-    expect(schema).not.toContain('搜索成员');
-    expect(schema).not.toMatch(/还可加入\s*\d*\s*(?:名|位)?\s*骑友/);
   });
 
-  it('club-center 模板在默认态渲染容量区（无白卡）、三页签与 Mock 数据标识', () => {
-    const output = renderPrototypeState('club-center', 'default');
-    expect(output).toContain('设计原型 · Mock 数据');
-    expect(output).toContain('class="club-center-hero"');
-    expect(output).toContain('class="club-center-cover"');
-    // 容量区：显示“2 人 / 50 人”，不出现白色卡片类名或禁用话术
-    expect(output).toContain('class="club-center-capacity"');
-    expect(output).toContain('用户数');
-    expect(output).toContain('<em>2</em>人');
-    expect(output).toContain('容量');
-    expect(output).toContain('<em>50</em>人');
-    expect(output).not.toMatch(/class="[^"]*capacity-card[^"]*"/);
-    expect(output).not.toMatch(/还可加入\s*\d*\s*(?:名|位)?\s*骑友/);
-    expect(output).not.toContain('邀请骑友');
-    expect(output).not.toMatch(/成立\s*\d+\s*个月/);
-    // ARIA tablist 三页签
-    expect(output).toContain('role="tablist"');
-    expect(output).toContain('id="club-center-tab-activities"');
-    expect(output).toContain('id="club-center-tab-members"');
-    expect(output).toContain('id="club-center-tab-profile"');
-    expect(output).toContain('role="tab"');
-    expect(output).toContain('role="tabpanel"');
-    // 默认活动态可见活动卡与报名 toast
-    expect(output).toContain('class="club-center-activity"');
-    expect(output).toContain('立即报名');
-    expect(output).toContain('data-message="报名已提交，等待负责人确认（原型示意）"');
-    // 成员区“查看全部”入口，不出现邀请 CTA
-    expect(output).toContain('查看全部');
-    expect(output).toContain('aria-label="查看全部成员"');
-    expect(output).not.toMatch(/邀请成员|邀请骑友|分享邀请码/);
+  it('discovery 过滤已加入俱乐部，推荐详情保持 disabled 边界', () => {
+    const output = renderPrototypeState('club/center', 'discovery');
+    expect(output).toContain('data-mode="discovery"');
+    expect(output).toContain('已过滤已加入俱乐部');
+    expect(output).toContain('我的俱乐部');
+    expect(output).toContain('推荐俱乐部 · 未加入');
+    expect(output).toContain('查看本人俱乐部详情');
+    expect(output).toContain('申请加入');
+    expect(output).toContain('原型示意，尚未提交或写入');
+    expect(output).toMatch(/disabled[^>]*aria-disabled="true"|aria-disabled="true"[^>]*disabled/);
+    expect(output).toContain('查看详情 · 暂不可用');
+    expect(output).toContain('非本人 / 未加入俱乐部的详情按钮在生产仍为 disabled');
   });
 
-  it('更多菜单（负责人）折叠编辑资料入口，普通成员视角不可见', () => {
-    const admin = renderPrototypeState('club-center', 'more-open');
-    expect(admin).toContain('role="menu"');
-    expect(admin).toContain('编辑俱乐部资料');
-    expect(admin).toContain('仅负责人可见');
-    expect(admin).toContain('aria-expanded="true"');
-    // 默认页右上角仅有分享与更多按钮，没有常显的“编辑资料”字样
-    const defaultOutput = renderPrototypeState('club-center', 'default');
-    expect(defaultOutput).toContain('aria-label="更多操作"');
-    expect(defaultOutput).toContain('aria-label="分享俱乐部"');
-    expect(defaultOutput.indexOf('编辑俱乐部资料')).toBe(-1);
+  it('detail 只展示本人俱乐部事实，不冒充成员名录或活动页', () => {
+    const output = renderPrototypeState('club/center', 'detail');
+    expect(output).toContain('data-mode="detail"');
+    expect(output).toContain('辛庄桥小火车');
+    expect(output).toContain('当前成员');
+    expect(output).toContain('容量上限');
+    expect(output).toContain('编辑俱乐部资料');
+    expect(output).toContain('生产尚无独立成员名录');
+    expect(output).not.toContain('role="tablist"');
+    expect(output).not.toContain('role="tabpanel"');
+    expect(output).not.toContain('class="club-center-members-list"');
   });
 
-  it('背景或网络失败态保留占位 + 重试表达，不留空白容器', () => {
-    const bgError = renderPrototypeState('club-center', 'bg-fallback');
-    expect(bgError).toContain('is-fallback');
-    expect(bgError).toContain('CILI CLUB');
-    expect(bgError).toContain('重新加载');
-    expect(bgError).toContain('data-action="club-center-retry-cover"');
-
-    const network = renderPrototypeState('club-center', 'error');
-    expect(network).toContain('活动加载失败');
-    expect(network).toContain('重新加载');
-    expect(network).toContain('data-route="club-center"');
-
-    const loading = renderPrototypeState('club-center', 'loading');
-    expect(loading).toContain('class="club-center-skeleton"');
+  it('detail 对管理角色开放入口，普通 MEMBER 只读', () => {
+    for (const roleToken of ['OWNER', 'CLUB_ADMIN']) {
+      const runtime = createPrototypeRuntime((data) => {
+        data.clubCenterPrototype.viewer.roleToken = roleToken;
+      });
+      expect(renderFromRuntime(runtime, 'club/center', 'detail')).toContain('data-state="manage"');
+    }
+    const memberRuntime = createPrototypeRuntime((data) => {
+      data.clubCenterPrototype.viewer.roleToken = 'MEMBER';
+      data.clubCenterPrototype.viewer.roleLabel = '普通成员';
+    });
+    const member = renderFromRuntime(memberRuntime, 'club/center', 'detail');
+    expect(member).toContain('普通 MEMBER 仅可查看');
+    expect(member).not.toContain('data-state="manage"');
+    expect(member).not.toContain('编辑俱乐部资料');
   });
 
-  it('成员列表态仅做查看，不包含邀请 / 剔除等运营动作', () => {
-    const members = renderPrototypeState('club-center', 'members');
-    expect(members).toContain('class="club-center-members-list"');
-    expect(members).toContain('全部成员');
-    expect(members).toContain('仅查看');
-    expect(members).toContain('不包含邀请、剔除等运营动作');
-    // 去掉说明条中的“不包含邀请、剔除”再做反面检查，确保没有可点击的运营 CTA
-    const withoutDisclaimer = members.replace(/不包含邀请[^<]*运营动作/g, '');
-    expect(withoutDisclaimer).not.toMatch(/>\s*(?:邀请|剔除|踢出|移除成员)\s*(?:[→›>]|<\/)/);
-    // 真正敏感的 action 名称也不应出现在模板中
-    expect(members).not.toContain('data-action="invite-member"');
-    expect(members).not.toContain('data-action="kick-member"');
+  it('manage 覆盖基础资料、加入方式、容量扩容和分离媒体裁剪', () => {
+    const output = renderPrototypeState('club/center', 'manage');
+    expect(output).toContain('data-mode="manage"');
+    for (const text of [
+      '俱乐部名称',
+      '所在城市',
+      '俱乐部简介',
+      '加入方式',
+      '当前容量',
+      '+50',
+      '+100',
+      '+500',
+    ]) {
+      expect(output).toContain(text);
+    }
+    expect(output).toContain('俱乐部头像 · 1:1');
+    expect(output).toContain('俱乐部封面 · 16:9');
+    expect(output).toContain('更换头像');
+    expect(output).toContain('更换封面');
   });
 
-  it('资料页签展示俱乐部基础事实，不展示未确认字段（如成立月数、搜索）', () => {
-    const profile = renderPrototypeState('club-center', 'profile');
-    expect(profile).toContain('class="club-center-profile"');
-    expect(profile).toContain('俱乐部名称');
-    expect(profile).toContain('辛庄桥小火车');
-    expect(profile).toContain('容量上限');
-    expect(profile).toContain('50 人');
-    expect(profile).not.toMatch(/成立\s*\d+\s*个月/);
-    expect(profile).not.toContain('搜索');
+  it('loading / error 有独立反馈与恢复路径，所有 mode 均无旧 tablist', () => {
+    const loading = renderPrototypeState('club/center', 'loading');
+    expect(loading).toContain('data-mode="loading"');
+    expect(loading).toContain('正在加载俱乐部中心');
+    const error = renderPrototypeState('club/center', 'error');
+    expect(error).toContain('data-mode="error"');
+    expect(error).toContain('俱乐部中心加载失败');
+    expect(error).toContain('重新加载');
+    expect(error).toContain('data-route="club/center"');
+    for (const mode of ['discovery', 'detail', 'manage', 'loading', 'error']) {
+      const output = renderPrototypeState('club/center', mode);
+      expect(output).not.toContain('role="tablist"');
+      expect(output).not.toContain('role="tab"');
+      expect(output).not.toContain('role="tabpanel"');
+    }
   });
 
-  it('button 与菜单项带 focus-visible / aria 属性，并复用现有 token 样式', () => {
-    expect(css).toContain('.club-center-tab:focus-visible');
-    expect(css).toContain('.club-center-icon-btn:focus-visible');
-    expect(css).toContain('.club-center-cover-retry:focus-visible');
-    expect(css).toContain('.club-center-more-item:focus-visible');
-    // 容量区使用边框分隔，而不是白色卡片
-    expect(css).toMatch(
-      /\.club-center-capacity-cell\s*\{[^}]*border-right:\s*1px solid var\(--color-border\)/s,
-    );
-    expect(css).toMatch(
-      /\.club-center-capacity\s*\{[^}]*background:\s*transparent|\.club-center-capacity\s*\{[^}]*padding:/s,
-    );
-    // 不使用蓝紫 / 玻璃拟态
-    expect(css).not.toMatch(/\.club-center-[a-z-]+\s*\{[^}]*backdrop-filter/s);
-    expect(css).not.toMatch(/\.club-center-[a-z-]+\s*\{[^}]*color:\s*#\d*(?:0f|1[0-9a-f])/i);
+  it('模板与 app.js 不再保留旧 tab 状态机、cover retry 或旧 route id 接线', () => {
+    expect(templates).toContain("'club/center': () =>");
+    expect(templates).not.toContain('window.clubCenterStateMachine');
+    expect(templates).not.toContain('data-club-center-tabs');
+    expect(templates).not.toContain('club-center-retry-cover');
+    expect(script).not.toContain('clubCenterStateMachine');
+    expect(script).not.toContain('data-club-center-tabs');
+    expect(script).not.toContain('club-center-retry-cover');
+    expect(script).toContain('payload.startsWith(`${id}/`)');
   });
 
-  it('clubCenter 入口写入导航组，交付中心侧栏按分组渲染，可从研发交付中心进入', () => {
-    // 侧栏按 schema.pages[].group 分组；此里只需保证 group 文案中含“俱乐部主页”
-    expect(script).toContain('.filter((page) => page.group === group)');
-    expect(schema).toContain("group: '真实运行页 · 俱乐部主页'");
-  });
-
-  it('activity 卡与成员 CTA 都带可读 aria，支持 prefers-reduced-motion', () => {
-    const output = renderPrototypeState('club-center', 'default');
-    expect(output).toContain('aria-labelledby="club-center-activity-title"');
-    expect(output).toContain('aria-label="查看全部成员"');
-    const bgError = renderPrototypeState('club-center', 'bg-fallback');
-    expect(bgError).toContain('aria-label="重新加载背景图"');
+  it('样式继续复用 club-center 视觉 class 与全局动效降级', () => {
+    expect(css).toContain('.club-center-discovery-row');
+    expect(css).toContain('.club-center-media-grid');
+    expect(css).toContain('aspect-ratio: 1');
+    expect(css).toContain('aspect-ratio: 16 / 9');
     expect(css).toContain('@media (prefers-reduced-motion: reduce)');
-    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*club-center-avatar/);
-  });
-});
-
-/* ------------------------------------------------------------------ *
- * 俱乐部中心运行时契约                                                 *
- *                                                                      *
- * 直接执行 schema.js / templates.js 暴露 window.clubCenterStateMachine  *
- * 纯函数，覆盖 tab 切换、键盘导航、overlay 保留 activeTab、cover         *
- * error / retry 的状态转换；再对 app.js 做静态接线断言，确保 handler、    *
- * ARIA / hidden / 原型标识都已挂上。不引入 DOM 依赖。                     *
- * ------------------------------------------------------------------ */
-
-type ClubCenterMachine = {
-  parseState: (s: string) => { tab: string; overlays: string[] };
-  composeState: (tab: string, overlays: string[]) => string;
-  nextTab: (s: string, k: string) => { tab: string; state: string; tabId: string } | null;
-  toggleMore: (s: string) => string;
-  coverError: (s: string) => string;
-  retryCover: (s: string) => string;
-};
-const clubRuntime = createPrototypeRuntime();
-const machine = (clubRuntime as unknown as { clubCenterStateMachine: ClubCenterMachine })
-  .clubCenterStateMachine;
-const renderCC = (state: string) =>
-  renderFromRuntime(clubRuntime as PrototypeRuntime, 'club-center', state);
-const panelAttrs = (html: string, name: string) =>
-  html.match(new RegExp(`<section([^>]*id="club-center-panel-${name}"[^>]*)>`))?.[1] ?? '';
-const tabAttrs = (html: string, name: string) =>
-  html.match(new RegExp(`<button([^>]*id="club-center-tab-${name}"[^>]*)>`))?.[1] ?? '';
-
-describe('俱乐部中心状态机（纯函数运行时）', () => {
-  it('暴露 parseState / composeState / nextTab / toggleMore / coverError / retryCover', () => {
-    expect(machine).toBeTruthy();
-    for (const k of [
-      'parseState',
-      'composeState',
-      'nextTab',
-      'toggleMore',
-      'coverError',
-      'retryCover',
-    ] as const) {
-      expect(typeof machine[k]).toBe('function');
+    for (const legacySelector of [
+      '.club-center-tabs',
+      '.club-center-tab',
+      '.club-center-activity',
+      '.club-center-members',
+      '.club-center-cover-retry',
+      '.club-center-more-menu',
+    ]) {
+      expect(css).not.toContain(legacySelector);
     }
-  });
-
-  it('nextTab：Arrow/Home/End 在三 tab 间循环，more-open 浮层被清掉，bg-fallback 保留', () => {
-    const r1 = machine.nextTab('default', 'ArrowRight')!;
-    expect(r1.tab).toBe('members');
-    expect(r1.state).toBe('members');
-    expect(r1.tabId).toBe('club-center-tab-members');
-    expect(machine.nextTab('members', 'ArrowRight')!.tab).toBe('profile');
-    expect(machine.nextTab('profile', 'ArrowRight')!.tab).toBe('activities');
-    expect(machine.nextTab('default', 'ArrowLeft')!.tab).toBe('profile');
-    expect(machine.nextTab('profile', 'Home')!.tab).toBe('activities');
-    expect(machine.nextTab('default', 'End')!.tab).toBe('profile');
-    // 不支持的键交回全局
-    expect(machine.nextTab('default', 'ArrowUp')).toBeNull();
-    expect(machine.nextTab('default', 'Enter')).toBeNull();
-    // more-open 清掉，bg-fallback 保留
-    const r2 = machine.nextTab('more-open', 'ArrowRight')!;
-    expect(machine.parseState(r2.state).overlays).not.toContain('more-open');
-    const r3 = machine.nextTab('members--bg-fallback', 'ArrowRight')!;
-    expect(machine.parseState(r3.state).tab).toBe('profile');
-    expect(machine.parseState(r3.state).overlays).toContain('bg-fallback');
-  });
-
-  it('toggleMore：在 members / profile 上打开 / 关闭菜单保留 activeTab', () => {
-    expect(machine.toggleMore('members')).toBe('members--more-open');
-    expect(machine.toggleMore('members--more-open')).toBe('members');
-    expect(machine.toggleMore('profile')).toBe('profile--more-open');
-    expect(machine.toggleMore('profile--more-open')).toBe('profile');
-    expect(machine.toggleMore('default')).toBe('more-open');
-    expect(machine.toggleMore('more-open')).toBe('default');
-  });
-
-  it('coverError / retryCover：overlay 与 activeTab 正交，重试只去 bg-fallback', () => {
-    expect(machine.coverError('default')).toBe('bg-fallback');
-    expect(machine.retryCover('bg-fallback')).toBe('default');
-    const e2 = machine.coverError('members');
-    expect(machine.parseState(e2).tab).toBe('members');
-    expect(machine.parseState(e2).overlays).toContain('bg-fallback');
-    expect(machine.retryCover(e2)).toBe('members');
-    // more-open + bg-fallback：retry 只去 bg-fallback
-    const after = machine.retryCover('members--more-open--bg-fallback');
-    expect(machine.parseState(after).overlays).toContain('more-open');
-    expect(machine.parseState(after).overlays).not.toContain('bg-fallback');
-    expect(machine.parseState(after).tab).toBe('members');
-  });
-});
-
-describe('俱乐部中心模板渲染（状态机驱动）', () => {
-  it('默认态：activities panel 可见，其它 panel hidden，aria-selected / tabindex 一致', () => {
-    const html = renderCC('default');
-    expect(panelAttrs(html, 'activities')).not.toMatch(/\bhidden\b/);
-    expect(panelAttrs(html, 'members')).toMatch(/\bhidden\b/);
-    expect(panelAttrs(html, 'profile')).toMatch(/\bhidden\b/);
-    expect(tabAttrs(html, 'activities')).toContain('aria-selected="true"');
-    expect(tabAttrs(html, 'members')).toContain('aria-selected="false"');
-    expect(tabAttrs(html, 'activities')).toContain('tabindex="0"');
-    expect(tabAttrs(html, 'members')).toContain('tabindex="-1"');
-    // 原型标识 + Mock 数据声明
-    expect(html).toContain('设计原型 · Mock 数据');
-  });
-
-  it('ArrowRight 后：成员 panel 可见，activity / profile 带 hidden，aria 同步切换', () => {
-    const next = machine.nextTab('default', 'ArrowRight')!;
-    const html = renderCC(next.state);
-    expect(panelAttrs(html, 'members')).not.toMatch(/\bhidden\b/);
-    expect(panelAttrs(html, 'activities')).toMatch(/\bhidden\b/);
-    expect(panelAttrs(html, 'profile')).toMatch(/\bhidden\b/);
-    expect(tabAttrs(html, 'members')).toContain('aria-selected="true"');
-    expect(tabAttrs(html, 'members')).toContain('tabindex="0"');
-    expect(html).toContain('class="club-center-members-list"');
-  });
-
-  it('toggleMore 在 members / profile 上保留 activeTab，菜单 aria-expanded="true"', () => {
-    for (const tab of ['members', 'profile'] as const) {
-      const html = renderCC(machine.toggleMore(tab));
-      expect(panelAttrs(html, tab)).not.toMatch(/\bhidden\b/);
-      expect(tabAttrs(html, tab)).toContain('aria-selected="true"');
-      expect(html).toContain('id="club-center-more-menu"');
-      expect(html).toContain('role="menu"');
-      expect(html).toContain('aria-expanded="true"');
-      expect(html).toContain('aria-controls="club-center-more-menu"');
-      // 关闭菜单按钮 / 更多按钮都带 data-state="<tab>" 保证不丢 tab
-      expect(html).toMatch(new RegExp(`class="club-center-more-close"[^>]*data-state="${tab}"`));
-      expect(html).toMatch(new RegExp(`data-state="${tab}"[^>]*aria-label="更多操作"`));
-    }
-  });
-
-  it('coverError + retryCover：bg-fallback 显示重试入口，retry 后恢复封面与 activeTab', () => {
-    const html = renderCC(machine.coverError('members'));
-    expect(html).toContain('is-fallback');
-    expect(html).toContain('data-action="club-center-retry-cover"');
-    expect(html).toContain('aria-label="重新加载背景图"');
-    expect(tabAttrs(html, 'members')).toContain('aria-selected="true"');
-    const html2 = renderCC(machine.retryCover(machine.coverError('members')));
-    expect(html2).not.toContain('class="club-center-cover is-fallback"');
-    expect(html2).toContain('data-club-center-cover');
-    expect(tabAttrs(html2, 'members')).toContain('aria-selected="true"');
-  });
-});
-
-describe('俱乐部中心 app.js 关键代码接线（静态契约）', () => {
-  it('文档级 keydown 捕获阶段 + stopPropagation 阻止全局箭头导航劫持', () => {
-    expect(script).toMatch(/document\.addEventListener\(\s*['"]keydown['"]/);
-    expect(script).toMatch(/data-club-center-tabs/);
-    expect(script).toMatch(/event\.stopPropagation\(\)/);
-    expect(script).toMatch(/event\.preventDefault\(\)/);
-    expect(script).toMatch(/clubCenterStateMachine/);
-    // 结尾用了 true 启用捕获阶段
-    expect(script).toMatch(/document\.addEventListener\(\s*[\s\S]*?,\s*true,?\s*\)/);
-  });
-
-  it('showPage 支持 focusTargetId，rAF 回调里真实调用 .focus()，tab click 带 focusTargetId', () => {
-    expect(script).toContain('focusTargetId');
-    expect(script).toMatch(
-      /focusTargetId[\s\S]*requestAnimationFrame[\s\S]*getElementById[\s\S]*\.focus\(\)/,
-    );
-    expect(script).toMatch(/clubCenterTab[\s\S]*focusTargetId/);
-  });
-
-  it('封面 img 错误 + 重试：window.clubCenterOnCoverError 与 club-center-retry-cover 都已挂载', () => {
-    expect(script).toContain('window.clubCenterOnCoverError');
-    expect(script).toMatch(/clubCenterOnCoverError[\s\S]*coverError/);
-    expect(script).toMatch(/club-center-retry-cover[\s\S]*retryCover/);
-    expect(templates).toContain(
-      'window.clubCenterOnCoverError && window.clubCenterOnCoverError(event)',
-    );
-    expect(script).toMatch(/club-center-retry-cover[\s\S]*正在重新加载背景图/);
-  });
-
-  it('ui-sync-manifest.json 未被本次改动修改（避免旧截图冒充新原型证据）', () => {
-    const manifest = read('docs/ui-sync-manifest.json');
-    expect(manifest).not.toContain('设计原型 · Mock 数据');
-    expect(manifest).not.toContain('clubCenterPrototype');
+    expect(css).not.toMatch(/\.club-center-[a-z-]+\s*\{[^}]*backdrop-filter/s);
   });
 });
