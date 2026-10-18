@@ -215,265 +215,103 @@
     </article>`;
 
   const templates = {
-    'club-center': () => {
-      // 俱乐部中心：顶部大背景 + 叠压头像；容量区无白卡；活动 / 成员 / 俱乐部资料三页签。
-      // Mock 数据来自 schema.js 中的 clubCenterPrototype；真实业务由服务端返回。
-      const fallbackData = {
-        club: {
-          name: '示例俱乐部',
-          monogram: '示',
-          regionLabel: 'BJ',
-          locationLabel: '北京',
-          verified: false,
-          coverImage: '',
-          coverAlt: '俱乐部封面',
-        },
-        viewer: { roleLabel: '成员', memberCount: 0, capacity: 0 },
-        activity: null,
-        members: [],
-        moreMenuForAdmin: [],
-        moreMenuForMember: [],
-      };
-      const data = clubCenterPrototype || fallbackData;
-      const club = data.club || fallbackData.club;
-      const viewer = data.viewer || fallbackData.viewer;
-      const activity = data.activity;
-      const members = Array.isArray(data.members) ? data.members : [];
-      // 状态允许用 "<tab>--<overlay>" 结构叠加：切换 tab 时保留 overlay（more-open / bg-fallback）；
-      // 重试或关闭菜单只去掉 overlay，不丢失当前 tab。
-      const rawState = st();
-      const stateSegments = rawState ? rawState.split('--') : [];
-      const hasSegment = (name) => stateSegments.includes(name);
-      const baseSegment = stateSegments[0] || 'default';
-      const loading = hasSegment('loading');
-      const errorState = hasSegment('error');
-      const bgFallback = hasSegment('bg-fallback');
-      const moreOpen = hasSegment('more-open');
-      const activitiesEmpty = hasSegment('activities-empty');
-      const activeTab = hasSegment('members')
-        ? 'members'
-        : hasSegment('profile')
-          ? 'profile'
-          : 'activities';
-      const canEditProfile = viewer.roleToken === 'OWNER' || viewer.roleToken === 'ADMIN';
-      const moreMenuItems = canEditProfile
-        ? data.moreMenuForAdmin || []
-        : data.moreMenuForMember || [];
-      // more 按钮点击要在当前 activeTab 上叠加 / 去除 "--more-open"
-      const moreToggleState = moreOpen
-        ? activeTab === 'activities'
-          ? 'default'
-          : activeTab
-        : activeTab === 'activities'
-          ? 'more-open'
-          : `${activeTab}--more-open`;
-      // 关闭 / 重试回到当前 activeTab 的裸状态
-      const activeTabBaseState = activeTab === 'activities' ? 'default' : activeTab;
-      void baseSegment;
+    'club/center': () => {
+      // 正式路由与生产保持一致：单路由按 discovery / detail / manage 三种 mode 切换。
+      const centerData = clubCenterPrototype || {};
+      const club = centerData.club || {};
+      const viewer = centerData.viewer || {};
+      const recommended = Array.isArray(centerData.recommended) ? centerData.recommended : [];
+      const mode = st() || 'discovery';
+      const route = 'club/center';
+      const canManage = ['OWNER', 'CLUB_ADMIN'].includes(viewer.roleToken);
+      const modeLink = (label, nextMode, kind = 'btn-secondary') =>
+        btn(label, `data-action="route" data-route="${route}" data-state="${nextMode}"`, kind);
 
-      // 顶部大背景：加载失败时降级为墨黑画布 + 路线线稿
-      const bgContent = bgFallback || errorState
-        ? `<div class="club-center-cover is-fallback" role="img" aria-label="背景图加载失败，已切换为墨黑占位">
-            <svg viewBox="0 0 360 220" preserveAspectRatio="none" aria-hidden="true"><path d="M-10 180 C 60 160, 100 100, 170 112 S 260 190, 380 140" style="fill:none;stroke:var(--color-media-muted);stroke-width:2"/><path d="M-10 200 C 70 180, 110 136, 170 144 S 260 200, 380 170" style="fill:none;stroke:var(--color-media-muted);stroke-width:1.5"/><path d="M20 168 C 80 152, 104 110, 150 118" style="fill:none;stroke:var(--color-brand);stroke-width:3;stroke-linecap:round"/></svg>
-            <span class="club-center-cover-brand">CILI CLUB</span>
-            <button class="club-center-cover-retry" data-action="club-center-retry-cover" data-restore-state="${activeTabBaseState}" type="button" aria-label="重新加载背景图">重新加载</button>
-          </div>`
-        : `<div class="club-center-cover" role="img" aria-label="${club.coverAlt || club.name + '封面'}">
-            <img src="${club.coverImage}" alt="${club.coverAlt || club.name + '封面'}" data-club-center-cover onerror="window.clubCenterOnCoverError && window.clubCenterOnCoverError(event)" />
-            <span class="club-center-cover-chip" aria-hidden="true">CLUB</span>
-            <span class="club-center-cover-loc"><i aria-hidden="true"></i>${club.locationLabel}</span>
-          </div>`;
-
-      const header = `
-        <header class="club-center-hero">
-          ${bgContent}
-          <div class="club-center-topbar">
-            <button class="club-center-icon-btn" data-action="back" aria-label="返回上一页">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-            <div class="club-center-topbar-actions">
-              <button class="club-center-icon-btn" data-action="toast" data-message="分享菜单仅为原型示意" aria-label="分享俱乐部">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a3 3 0 1 0-2.83-4H15a3 3 0 0 0-.17 1l-6 3.5a3 3 0 1 0 0 7l6 3.5a3 3 0 1 0 .17-1l-6-3.5a3 3 0 0 0 0-2l6-3.5a3 3 0 0 0 3 0z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </button>
-              <button class="club-center-icon-btn" data-action="route" data-route="club-center" data-state="${moreToggleState}" aria-haspopup="menu" aria-expanded="${moreOpen ? 'true' : 'false'}" aria-controls="club-center-more-menu" aria-label="更多操作">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="18" cy="12" r="1.6" fill="currentColor"/></svg>
-              </button>
-            </div>
-          </div>
-          <div class="club-center-identity">
-            <span class="club-center-avatar club-avatar-ink" aria-hidden="true">
-              <b>${club.monogram}</b>
-              <span class="club-center-avatar-region">${club.regionLabel}</span>
-            </span>
-            <div class="club-center-identity-text">
-              <h2 class="club-center-name">
-                <span>${club.name}</span>
-                ${club.verified ? `<span class="club-center-verified" aria-label="已认证俱乐部" role="img"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 14.4 4.6 18 4.2 18.6 7.8 22 9.2 20.6 12 22 14.8 18.6 16.2 18 19.8 14.4 19.4 12 22 9.6 19.4 6 19.8 5.4 16.2 2 14.8 3.4 12 2 9.2 5.4 7.8 6 4.2 9.6 4.6Z" fill="var(--color-brand)"/><path d="M8.5 12.5 11 15 15.5 10" fill="none" stroke="var(--color-on-brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>` : ''}
-              </h2>
-              <p class="club-center-location"><svg viewBox="0 0 16 16" aria-hidden="true" class="club-center-pin"><path d="M8 2a4 4 0 0 1 4 4c0 3-4 8-4 8s-4-5-4-8a4 4 0 0 1 4-4z" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="6" r="1.3" fill="currentColor"/></svg>${club.locationLabel}</p>
-            </div>
-          </div>
-          <div class="club-center-capacity" role="group" aria-label="俱乐部容量总览">
-            <div class="club-center-capacity-cell is-role">
-              <span class="club-center-capacity-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M10 2l2.4 5 5.6.5-4.3 3.8 1.4 5.6L10 14l-5.1 2.9 1.4-5.6L2 7.5 7.6 7Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span>
-              <span class="club-center-capacity-text"><small>身份</small><b>${viewer.roleLabel}</b></span>
-            </div>
-            <div class="club-center-capacity-cell">
-              <span class="club-center-capacity-text"><small>用户数</small><b><em>${viewer.memberCount}</em>人</b></span>
-            </div>
-            <div class="club-center-capacity-cell is-end">
-              <span class="club-center-capacity-text"><small>容量</small><b><em>${viewer.capacity}</em>人</b></span>
-            </div>
-          </div>
-        </header>`;
-
-      const activityPanel = loading
-        ? `<div class="club-center-skeleton" aria-live="polite">${skeletons(2, true)}</div>`
-        : errorState
-          ? stateView('!', '活动加载失败', '网络不稳定，请稍后重试；可切换到成员或俱乐部资料页签。', btn('重新加载', 'data-action="route" data-route="club-center" data-state="default"'), true)
-          : activitiesEmpty || !activity
-            ? stateView('0', '暂无即将开始的活动', '当前俱乐部还没有发布活动。完成首次骑行后将在此沉淀。', btn('查看历史活动', toast('已切换至历史活动（原型示意）'), 'btn-secondary'))
-            : `
-              <article class="club-center-activity" aria-labelledby="club-center-activity-title">
-                <div class="club-center-activity-date" aria-hidden="true">
-                  <span class="club-center-activity-month">${activity.month}</span>
-                  <strong class="club-center-activity-day">${activity.day}</strong>
-                  <span class="club-center-activity-weekday">${activity.weekday} · ${activity.time}</span>
-                </div>
-                <div class="club-center-activity-body">
-                  <div class="club-center-activity-tags">
-                    ${tag('success', '○ ' + activity.status)}
-                    <span class="club-center-activity-intensity">${activity.difficulty}</span>
-                  </div>
-                  <h3 class="club-center-activity-title" id="club-center-activity-title">${activity.title}</h3>
-                  <p class="club-center-activity-meta"><svg viewBox="0 0 16 16" class="club-center-pin" aria-hidden="true"><path d="M8 2a4 4 0 0 1 4 4c0 3-4 8-4 8s-4-5-4-8a4 4 0 0 1 4-4z" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>${activity.meetPoint}</p>
-                  <div class="club-center-activity-metrics">
-                    <span><b>${activity.distanceKm}</b><i>km</i></span>
-                    <span class="club-center-activity-sep" aria-hidden="true"></span>
-                    <span><b>${activity.elevationM.toLocaleString('en-US')}</b><i>m↑</i></span>
-                    <span class="club-center-activity-sep" aria-hidden="true"></span>
-                    <span><svg viewBox="0 0 16 16" class="club-center-person" aria-hidden="true"><circle cx="8" cy="5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M3 13c0-2.4 2.2-4 5-4s5 1.6 5 4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><b>${activity.signupCount}</b> 人</span>
-                  </div>
-                </div>
-                <div class="club-center-activity-footer">
-                  <span class="club-center-activity-note"><span class="club-center-activity-badge" aria-hidden="true">辛</span>${activity.note}</span>
-                  <button class="btn club-center-signup" data-action="toast" data-message="报名已提交，等待负责人确认（原型示意）">立即报名 →</button>
-                </div>
-              </article>
-              <button class="club-center-history" type="button" data-action="toast" data-message="历史活动将在真实上线后呈现（原型示意）" aria-label="查看历史活动">
-                <span class="club-center-history-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v5l3.2 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
-                <span class="club-center-history-text"><b>暂无历史活动</b><small>完成首次骑行后将在此沉淀</small></span>
-                <span class="chev" aria-hidden="true">›</span>
-              </button>`;
-
-      const membersPanel = `
-        <section class="club-center-members" aria-label="俱乐部成员">
-          <header class="club-center-members-head">
-            <div><h3>成员</h3><span class="club-center-members-count">${members.length} 位</span></div>
-            <button class="club-center-members-all" type="button" data-action="route" data-route="club-center" data-state="members" aria-label="查看全部成员">
-              查看全部 ${members.length} 位 <span class="chev" aria-hidden="true">›</span>
-            </button>
-          </header>
-          <div class="club-center-members-body">
-            <span class="club-center-members-avatars" aria-hidden="true">${members
-              .slice(0, 4)
-              .map((m) => `<span class="club-avatar club-avatar-sm club-avatar-${m.tone || 'ink'}"><b>${m.monogram}</b></span>`)
-              .join('')}</span>
-            <p class="club-center-members-hint"><b>当前 ${members.length} 位成员</b><small>点击"查看全部"查看成员信息</small></p>
-            <button class="btn-secondary club-center-members-view" type="button" data-action="route" data-route="club-center" data-state="members">
-              <svg viewBox="0 0 16 16" aria-hidden="true" class="club-center-person"><circle cx="8" cy="5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M3 13c0-2.4 2.2-4 5-4s5 1.6 5 4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
-              成员
-            </button>
-          </div>
-        </section>`;
-
-      const membersListPanel = `
-        <section class="club-center-members-list" aria-label="全部成员">
-          <h3 class="section-label">全部成员 · ${members.length} 位</h3>
-          <ul class="club-center-members-ul">
-            ${members
-              .map(
-                (m) => `<li class="club-center-member-row">
-                  <span class="club-avatar club-avatar-md club-avatar-${m.tone || 'ink'}"><b>${m.monogram}</b></span>
-                  <div class="club-center-member-info"><b>${m.nickname}</b><small>${m.roleLabel}</small></div>
-                  <span class="tag tag-neutral">仅查看</span>
-                </li>`,
-              )
-              .join('')}
-          </ul>
-          <p class="neutral-note">本页仅提供成员查看入口，不包含邀请、剔除等运营动作；相关能力由管理页承载。</p>
-        </section>`;
-
-      const profilePanel = `
-        <section class="club-center-profile" aria-label="俱乐部资料">
-          <h3 class="section-label">俱乐部资料</h3>
-          ${rows([
-            ['俱乐部名称', club.name],
-            ['所在城市', club.locationLabel],
-            ['认证状态', club.verified ? '已认证' : '未认证'],
-            ['当前成员', `${viewer.memberCount} 人`],
-            ['容量上限', `${viewer.capacity} 人`],
-            ['我的身份', viewer.roleLabel],
-          ])}
-          ${canEditProfile
-            ? `<p class="neutral-note">负责人可在右上角「更多」菜单中编辑俱乐部资料；本页只做查看。</p>`
-            : `<p class="neutral-note">普通成员仅可查看俱乐部资料，无编辑入口。</p>`}
-        </section>`;
-
-      const activePanel =
-        activeTab === 'members'
-          ? members.length === 0
-            ? stateView('0', '暂无成员', '当前俱乐部还没有成员加入；成员列表将在此展示。')
-            : membersListPanel
-          : activeTab === 'profile'
-            ? profilePanel
-            : activityPanel;
-
-      const panelHiddenAttr = (name) => (activeTab === name ? '' : 'hidden');
-
-      const tabs = `
-        <div class="club-center-tabs" role="tablist" aria-label="俱乐部内容切换" data-active-tab="${activeTab}" data-club-center-tabs>
-          <button class="club-center-tab ${activeTab === 'activities' ? 'is-active' : ''}" role="tab" aria-selected="${activeTab === 'activities'}" aria-controls="club-center-panel-activities" id="club-center-tab-activities" tabindex="${activeTab === 'activities' ? 0 : -1}" data-action="route" data-route="club-center" data-state="default" data-tab="activities" data-club-center-tab>
-            活动${activity && !activitiesEmpty && !loading && !errorState ? '<small class="club-center-tab-badge" aria-label="当前有一场活动">·1</small>' : ''}
-          </button>
-          <button class="club-center-tab ${activeTab === 'members' ? 'is-active' : ''}" role="tab" aria-selected="${activeTab === 'members'}" aria-controls="club-center-panel-members" id="club-center-tab-members" tabindex="${activeTab === 'members' ? 0 : -1}" data-action="route" data-route="club-center" data-state="members" data-tab="members" data-club-center-tab>
-            成员 <small>${members.length}</small>
-          </button>
-          <button class="club-center-tab ${activeTab === 'profile' ? 'is-active' : ''}" role="tab" aria-selected="${activeTab === 'profile'}" aria-controls="club-center-panel-profile" id="club-center-tab-profile" tabindex="${activeTab === 'profile' ? 0 : -1}" data-action="route" data-route="club-center" data-state="profile" data-tab="profile" data-club-center-tab>
-            俱乐部资料
-          </button>
-          <span class="club-center-tabs-tail" aria-hidden="true">
-            <svg viewBox="0 0 20 20"><circle cx="9" cy="9" r="5.4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M13.4 13.4L17 17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-          </span>
+      if (mode === 'loading') {
+        return `<div class="pg club-center-page" data-club-center data-mode="loading">
+          <p class="prototype-mock-badge">生产结构对齐 · loading</p>
+          <p class="page-sub" aria-live="polite">正在加载俱乐部中心</p>
+          <div class="club-center-skeleton" aria-live="polite">${skeletons(3, true)}</div>
         </div>`;
+      }
+      if (mode === 'error') {
+        return `<div class="pg club-center-page" data-club-center data-mode="error">
+          <p class="prototype-mock-badge">生产结构对齐 · error</p>
+          ${stateView('!', '俱乐部中心加载失败', '网络不稳定，请重试；也可以先返回发现列表。', `<div class="btn-row">${modeLink('返回发现', 'discovery', 'btn-secondary')}${modeLink('重新加载', 'discovery', 'btn')}</div>`, true)}
+        </div>`;
+      }
 
-      const moreMenu = moreOpen
-        ? `<div class="club-center-more-menu" id="club-center-more-menu" role="menu" aria-label="俱乐部更多操作">
-            ${moreMenuItems
-              .map((item) => {
-                const action = item.key === 'edit-profile'
-                  ? 'data-action="toast" data-message="已进入俱乐部资料编辑（原型示意）"'
-                  : item.key === 'manage-capacity'
-                    ? 'data-action="toast" data-message="容量上限编辑（原型示意）"'
-                    : 'data-action="toast" data-message="已记录反馈（原型示意）"';
-                return `<button type="button" class="club-center-more-item" role="menuitem" ${action}>
-                  <b>${item.label}</b><small>${item.hint}</small>
-                </button>`;
-              })
-              .join('')}
-            <button type="button" class="club-center-more-close" role="menuitem" data-action="route" data-route="club-center" data-state="${activeTabBaseState}">关闭菜单</button>
-          </div>`
-        : '';
+      const cover = `<div class="club-center-cover" role="img" aria-label="${club.coverAlt || '俱乐部封面'}">
+        <img src="${club.coverImage || IMG.cover}" alt="${club.coverAlt || '俱乐部封面'}" />
+        <span class="club-center-cover-chip">CLUB</span>
+        <span class="club-center-cover-loc">${club.locationLabel || club.city || '城市未填写'}</span>
+      </div>`;
+      const identity = `<div class="club-center-identity">
+        <span class="club-center-avatar club-avatar-ink" aria-hidden="true"><b>${club.monogram || '此'}</b></span>
+        <div class="club-center-identity-text"><h2 class="club-center-name"><span>${club.name || '我的俱乐部'}</span></h2><p class="club-center-location">${club.locationLabel || club.city || '城市未填写'}</p></div>
+      </div>`;
+      const capacity = `<div class="club-center-capacity" role="group" aria-label="俱乐部人数与容量">
+        <div class="club-center-capacity-cell"><span class="club-center-capacity-text"><small>我的身份</small><b>${viewer.roleLabel || '成员'}</b></span></div>
+        <div class="club-center-capacity-cell"><span class="club-center-capacity-text"><small>当前成员数</small><b><em>${viewer.memberCount ?? 0}</em>人</b></span></div>
+        <div class="club-center-capacity-cell is-end"><span class="club-center-capacity-text"><small>容量上限</small><b><em>${viewer.capacity ?? 0}</em>人</b></span></div>
+      </div>`;
 
-      return `<div class="pg club-center-page" data-club-center>
-        <p class="prototype-mock-badge" aria-label="原型 Mock 数据标识">设计原型 · Mock 数据</p>
-        ${header}
-        ${tabs}
-        <section id="club-center-panel-activities" role="tabpanel" aria-labelledby="club-center-tab-activities" class="club-center-panel" ${panelHiddenAttr('activities')}>${activeTab === 'activities' ? activePanel : ''}</section>
-        <section id="club-center-panel-members" role="tabpanel" aria-labelledby="club-center-tab-members" class="club-center-panel" ${panelHiddenAttr('members')}>${activeTab === 'members' ? activePanel : ''}</section>
-        <section id="club-center-panel-profile" role="tabpanel" aria-labelledby="club-center-tab-profile" class="club-center-panel" ${panelHiddenAttr('profile')}>${activeTab === 'profile' ? activePanel : ''}</section>
-        ${activeTab === 'activities' && !loading && !errorState && activity ? membersPanel : ''}
-        ${moreMenu}
+      if (mode === 'detail') {
+        return `<div class="pg club-center-page" data-club-center data-mode="detail">
+          <p class="prototype-mock-badge">本人 / 已加入俱乐部详情</p>
+          <header class="club-center-hero">${cover}${identity}${capacity}</header>
+          <section class="card club-center-profile" aria-label="俱乐部详情">
+            ${cardHead('01', '俱乐部资料', tag('success', '已加入'))}
+            ${rows([['名称', club.name], ['城市', club.city], ['简介', club.intro], ['加入方式', club.joinMode]])}
+          </section>
+          <p class="neutral-note">当前详情只展示本人或已加入俱乐部资料与人数容量；生产尚无独立成员名录，也不在此提供活动页。</p>
+          ${canManage ? `<p class="neutral-note">权限：${viewer.roleToken} 可维护俱乐部基础资料、容量与媒体。</p>` : '<p class="neutral-note">权限：普通 MEMBER 仅可查看已加入俱乐部资料，管理入口仅对 OWNER / CLUB_ADMIN 开放。</p>'}
+          <div class="btn-row">${modeLink('返回发现', 'discovery', 'btn-secondary')}${canManage ? modeLink('编辑俱乐部资料', 'manage', 'btn') : ''}</div>
+        </div>`;
+      }
+
+      if (mode === 'manage') {
+        return `<div class="pg club-center-page club-center-manage" data-club-center data-mode="manage">
+          <p class="prototype-mock-badge">负责人管理模式</p>
+          <h2 class="page-title">编辑俱乐部资料</h2>
+          <section class="card">
+            ${cardHead('01', '基础资料')}
+            ${field('俱乐部名称', input(club.name))}
+            ${field('所在城市', input(club.city))}
+            ${field('俱乐部简介', input(club.intro, { cls: 'textarea', count: `${(club.intro || '').length}/200` }))}
+            ${field('joinMode · 加入方式', choices(['申请加入', '仅邀请'], club.joinMode))}
+          </section>
+          <section class="card club-center-capacity-manage">
+            ${cardHead('02', '容量扩容', tag('neutral', `当前容量 ${viewer.capacity ?? 0} 人`), '按生产能力提供固定增量')}
+            <div class="btn-row three">
+              ${btn('+50', toast('容量将增加 50 人'), 'btn-secondary')}
+              ${btn('+100', toast('容量将增加 100 人'), 'btn-secondary')}
+              ${btn('+500', toast('容量将增加 500 人'), 'btn-secondary')}
+            </div>
+          </section>
+          <section class="card club-center-media-manage">
+            ${cardHead('03', '媒体资料', '', '头像与封面分别选择、分别裁剪、分别上传')}
+            <div class="club-center-media-grid">
+              <article><div class="club-center-avatar-crop"><img src="${club.avatarImage || IMG.avatar}" alt="当前俱乐部头像" /></div><b>俱乐部头像 · 1:1</b><p>移动与缩放后按正方形裁剪。</p>${btn('更换头像', toast('打开头像 1:1 裁剪上传'), 'btn-secondary')}</article>
+              <article><div class="club-center-cover-crop"><img src="${club.coverImage || IMG.cover}" alt="当前俱乐部封面" /></div><b>俱乐部封面 · 16:9</b><p>移动与缩放后按横向画幅裁剪。</p>${btn('更换封面', toast('打开封面 16:9 裁剪上传'), 'btn-secondary')}</article>
+            </div>
+          </section>
+          <div class="btn-row">${modeLink('取消', 'detail', 'btn-secondary')}${btn('保存资料', 'data-action="route" data-route="club/center" data-state="detail"', 'btn')}</div>
+        </div>`;
+      }
+
+      return `<div class="pg club-center-page" data-club-center data-mode="discovery">
+        <p class="prototype-mock-badge">发现模式 · 已过滤已加入俱乐部</p>
+        <h2 class="page-title">俱乐部中心</h2>
+        <p class="page-sub">先进入本人已加入的俱乐部，或浏览推荐；推荐俱乐部详情入口当前暂不可用。</p>
+        <section class="card club-center-my-club">
+          ${cardHead('01', '我的俱乐部', tag('success', '已加入'))}
+          <div class="club-center-discovery-row"><span class="club-avatar club-avatar-md club-avatar-ink"><b>${club.monogram || '此'}</b></span><div><b>${club.name}</b><small>${club.locationLabel} · ${viewer.memberCount}/${viewer.capacity} 人</small></div></div>
+          ${modeLink('查看本人俱乐部详情', 'detail', 'btn')}
+        </section>
+        <p class="section-label">推荐俱乐部 · 未加入</p>
+        <div class="club-center-recommended">${recommended.map((item) => `<article class="card club-center-recommended-card"><div class="club-center-discovery-row"><span class="club-avatar club-avatar-md club-avatar-muted"><b>${item.monogram}</b></span><div><b>${item.name}</b><small>${item.city} · ${item.memberCount}/${item.capacity} 人</small></div></div><div class="btn-row"><button class="btn-secondary" data-action="toast" data-message="申请加入流程已打开（原型示意，尚未提交或写入）">申请加入</button><button class="btn-secondary is-disabled" disabled aria-disabled="true">查看详情 · 暂不可用</button></div></article>`).join('')}</div>
+        <p class="neutral-note">边界：推荐列表与申请加入入口已实现；本页申请动作只演示流程入口，不代表已经提交或完成服务端写入。非本人 / 未加入俱乐部的详情按钮在生产仍为 disabled。</p>
       </div>`;
     },
     'admin-club-applications': () => templates['admin-approval-inbox'](),
@@ -493,9 +331,12 @@
         ['10.24', '周六'],
         ['10.25', '周日'],
       ];
-      return `<div class="pg">${head}
+      // v2：86% 主卡 + peek 露出 + 单 CTA；主 CTA 整卡点击进入活动详情，
+      // 已报名态把 CTA 换成"查看我的行程"；移除独立"查看详情"按钮。
+      return `<div class="pg activities-v2">${head}
         <div class="chips">${chips.map(([a, b], i) => `<button class="chip ${i ? '' : 'is-active'}" data-action="choice">${a}<small>${b}</small></button>`).join('')}</div>
         <div class="list-count"><span>近期活动 <em>当前第 1 场</em></span><b>共 2 场</b></div>
+        <div class="activity-carousel" role="list">
         ${activities
           .map((a, i) => {
             const host = activityHost(a);
@@ -507,14 +348,38 @@
                     host.historical,
                   )
                 : publicActivityLine(host.label, '平台公开');
-            return `<article class="activity-card">
-            <div class="cover">${i ? emptyMedia().replace('rider-card-media is-empty', 'cover-empty') : `<img src="${IMG.cover}" alt="${a.title}" />`}${i ? tag('pending', '我已报名 · 待审核') : tag('solid', '报名中')}</div>
-            <div class="activity-card-body"><p class="meta-line">${a.date} · ${a.time}</p><h3>${a.title}</h3><p class="meta-line activity-host-line">${hostLine}</p><p class="meta-line">${a.start}集合 · ${a.level}</p>${i ? '' : `<p class="alert-line">${tag('warning', '⚠ 名额紧张')}</p>`}
-            ${metrics([[`${a.distanceKm} km`, '里程'], [`${a.elevationM} m`, '爬升'], [`${a.approved}/${a.capacity}`, '名额']], 'three')}
-            <div class="btn-row">${btn('查看详情', go('activity-detail'), 'btn-secondary')}${i ? btn('查看行程', go('registrations')) : btn('报名活动', 'data-route="registration-form"')}</div></div>
-          </article>`;
+            const joined = i !== 0; // 示意：第二张是已报名态
+            const cover = i === 0
+              ? `<img src="${IMG.cover}" alt="${a.title}" />`
+              : emptyMedia().replace('rider-card-media is-empty', 'cover-empty');
+            const stateTag = joined
+              ? tag('pending', '我已报名 · 待审核')
+              : tag('solid', '报名中');
+            const alert = !joined
+              ? `<p class="alert-line">${tag('warning', '⚠ 名额紧张')}</p>`
+              : '';
+            const cta = joined
+              ? btn('查看我的行程', go('registrations'))
+              : btn('报名活动', 'data-route="registration-form"');
+            return `<article class="activity-card activity-card-v2" role="listitem">
+              <button class="activity-card-tap" ${go('activity-detail')} aria-label="查看 ${a.title} 的活动详情">
+                <div class="cover">${cover}${stateTag}</div>
+                <div class="activity-card-body">
+                  <p class="meta-line">${a.date} · ${a.time}</p>
+                  <h3>${a.title}</h3>
+                  <p class="meta-line activity-host-line">${hostLine}</p>
+                  <p class="meta-line">${a.start}集合 · ${a.level}</p>
+                  ${alert}
+                  ${metrics([[`${a.distanceKm} km`, '里程'], [`${a.elevationM} m`, '爬升'], [`${a.approved}/${a.capacity}`, '名额']], 'three')}
+                </div>
+              </button>
+              <div class="activity-card-cta">${cta}</div>
+            </article>`;
           })
-          .join('')}</div>`;
+          .join('')}
+        </div>
+        <p class="carousel-hint">左右滑动查看更多活动 · 共 2 场</p>
+      </div>`;
     },
 
     'activity-detail': () => {
@@ -851,6 +716,74 @@
       if (is('loading')) {
         return `<div class="pg route-analysis-page">${skeletons(3)}</div>`;
       }
+      // no-waypoint：GPX 文件已解析但缺乏可信地名/经纬度，必须给出"仅剖面可用"的最小 DOM。
+      if (is('no-waypoint')) {
+        return `<div class="pg route-analysis-page ra-fallback ra-no-waypoint">
+          <section class="ra-panel ra-fallback-head">
+            <span class="ra-fallback-badge" aria-hidden="true">!</span>
+            <h2>GPX 无关键点标注</h2>
+            <p>这条路线只有轨迹，没有可信的地名或经纬度；无法生成地图标记与坡段分析。</p>
+          </section>
+          <section class="ra-panel ra-fallback-metrics">
+            <h3>仍可查看</h3>
+            <div class="ra-fb-metric-row">
+              <div><b>168</b><i>km</i><small>总里程</small></div>
+              <div><b>2360</b><i>m</i><small>累计爬升</small></div>
+              <div><b>1684</b><i>m</i><small>最高海拔</small></div>
+            </div>
+            <p class="ra-fb-note">组织者补充关键点后，地图与坡段将自动可用。</p>
+          </section>
+          <section class="ra-panel ra-fallback-profile" aria-label="仅剖面可用">
+            <h3>海拔剖面</h3>
+            <svg class="ra-chart" data-profile-chart="no-waypoint" viewBox="0 0 343 160" preserveAspectRatio="xMidYMid meet" role="img" aria-label="无关键点路线海拔剖面图">
+              <path d="M32 136 L66 128 L100 110 L134 86 L168 102 L202 62 L236 38 L270 76 L304 54 L335 118" fill="none" stroke="#d64520" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+              <text x="32" y="154" font-size="10" fill="#8a7f72">0 km</text><text x="335" y="154" font-size="10" fill="#8a7f72" text-anchor="end">168 km</text>
+            </svg>
+            <p class="ra-fb-note">缺少可信关键点标注，仍可按剖面曲线自行判断强度。</p>
+          </section>
+          <section class="ra-panel ra-fallback-cta">
+            <h3>你可以</h3>
+            <ul class="ra-fb-list">
+              <li>复制路线链接发给组织者，请他补充集合点与补给</li>
+              <li>按剖面曲线自行判断强度</li>
+            </ul>
+            <div class="btn-row ra-fb-btns">
+              ${btn('复制路线链接', toast('路线链接已复制'), 'btn-secondary')}
+              ${btn('返回活动详情', go('activity-detail'))}
+            </div>
+          </section>
+        </div>`;
+      }
+      // parse-fail：GPX 文件完全无法解析，必须给出"全量降级 + 重试"
+      if (is('parse-fail')) {
+        return `<div class="pg route-analysis-page ra-fallback ra-parse-fail">
+          <section class="ra-panel ra-fallback-head is-error">
+            <span class="ra-fallback-badge is-error" aria-hidden="true">!</span>
+            <h2>路线解析失败</h2>
+            <p>GPX 文件损坏或未上传成功；地图、剖面、坡段均不可用。</p>
+          </section>
+          <section class="ra-panel ra-fallback-steps">
+            <h3>你可以做</h3>
+            <ol class="ra-fb-steps">
+              <li>检查网络后点击"重试解析"</li>
+              <li>联系组织者重新上传 GPX</li>
+              <li>先返回活动详情，按描述出发</li>
+            </ol>
+            <div class="btn-row ra-fb-btns">
+              ${btn('重试解析', 'data-action="route" data-route="route-analysis" data-state="loading"', 'btn-secondary')}
+              ${btn('返回活动详情', go('activity-detail'))}
+            </div>
+          </section>
+          <section class="ra-panel ra-fallback-meta">
+            <h3>当前可见</h3>
+            <ul class="ra-fb-list">
+              <li>路线名：云蒙山 &amp; 喇叭沟 GPX</li>
+              <li>来源：Strava 官方路线</li>
+              <li>错误码：GPX_PARSE_ERR_42</li>
+            </ul>
+          </section>
+        </div>`;
+      }
       const noProfile = is('no-profile');
       const selectedSegment = is('segment-climb') ? 'climb' : '';
       const selectedPointId = is('segment-climb')
@@ -1106,11 +1039,14 @@
         end:        { kind: 'start',    color: '#211f1c' },
       };
       // SVG 图标工厂：圆形红底+白符号 / 黑三角 / 黑圆环 / 蓝色桥等
+      // 内圆半径使用 Math.max 兜底，避免小半径 marker 产生负值触发 "<circle r='-x'>" 警告。
       const renderGlyph = (kind, cx, cy, r, selected) => {
         if (kind === 'start') {
+          const rMid = Math.max(0.4, r - 1.6);
+          const rCore = Math.max(0.2, r - 3);
           return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#211f1c"/>
-            <circle cx="${cx}" cy="${cy}" r="${r - 1.6}" fill="none" stroke="#fdfaf2" stroke-width="0.6"/>
-            <circle cx="${cx}" cy="${cy}" r="${r - 3}" fill="#fdfaf2"/>`;
+            <circle cx="${cx}" cy="${cy}" r="${rMid}" fill="none" stroke="#fdfaf2" stroke-width="0.6"/>
+            <circle cx="${cx}" cy="${cy}" r="${rCore}" fill="#fdfaf2"/>`;
         }
         if (kind === 'peak') {
           return `<path d="M ${cx} ${cy - r + 0.2} L ${cx + r - 0.5} ${cy + r - 1.2} L ${cx - r + 0.5} ${cy + r - 1.2} Z" fill="#211f1c"/>`;
@@ -2316,77 +2252,394 @@
         btn(scene.actions[1][0], toast(scene.actions[1][2]), scene.actions[1][1]),
       ])}`;
     },
+
+    /* ================================================================
+     * 规划能力 · design-only 15 页
+     * 共用 planned-badge 徽标与 planned-head 分区，id 严格对应 schema.js。
+     * 不进入 miniprogram；手机 UI 由 Pages SPA 渲染，仅做评审原型。
+     * ================================================================ */
+    'planned-privacy': () => {
+      return `<div class="pg planned-page planned-privacy">
+        ${brandLogo('隐私与授权')}
+        <div class="planned-badge">P0 规划 · 设计新增 pages/privacy</div>
+        <h2 class="page-title">我们如何使用你的信息</h2>
+        <p class="page-sub long-copy">只采集与骑行活动直接相关的信息；每一项授权都可以单独撤销。</p>
+        <div class="card">${cardHead('01', '定位', tag('neutral', '仅使用中'), '仅用于显示附近俱乐部与活动集合点距离，不做持续位置追踪。')}${rows([['采集范围', '当前粗略位置'], ['保存期限', '不保存'], ['当前状态', '已授权']])}<button class="btn-text" data-action="toast" data-message="已跳转到微信位置权限设置">查看权限设置</button></div>
+        <div class="card">${cardHead('02', '相册', tag('neutral', '按需'), '仅在你主动上传头像、骑行名片背景、活动封面、GPX 文件时使用。')}${rows([['采集范围', '你主动选择的图片'], ['保存期限', '长期（随账户）'], ['当前状态', '未授权']])}<button class="btn-text" data-action="toast" data-message="已跳转到微信相册权限设置">查看权限设置</button></div>
+        <div class="card">${cardHead('03', '通讯录', tag('neutral', '不启用'), '当前此里暂不读取通讯录。')}${rows([['采集范围', '不采集'], ['保存期限', '不保存'], ['当前状态', '未请求']])}</div>
+        <div class="card">${cardHead('04', '手机号', tag('pending', '报名时'), '仅在报名活动时用于紧急联络；由微信一键授权，不保存明文。')}${rows([['采集范围', '报名活动时'], ['保存期限', '活动结束后 30 天'], ['当前状态', '按需请求']])}</div>
+        <p class="neutral-note">任何时候都可以在"个人中心 → 隐私授权"回到这里，撤销单项授权。</p>
+      </div>${fixedBar('同意即视为允许上述范围内的最小必要采集', [btn('仅使用必要项', toast('已选择最小必要项'), 'btn-secondary'), btn('我已阅读并授权', toast('授权完成，欢迎加入此里'))])}`;
+    },
+
+    'planned-notifications': () => {
+      const segs = [
+        ['全部', 7, true],
+        ['报名', 3, false],
+        ['审批', 2, false],
+        ['俱乐部', 1, false],
+        ['系统', 1, false],
+      ];
+      const items = [
+        ['报名', '周日云蒙山 RIDE', '你的报名已通过审核，可以查看出发凭证', '3 分钟前', true],
+        ['审批', '北京胡同骑行局 加入申请', '张岩提交了加入申请，等待你审批', '12 分钟前', true],
+        ['俱乐部', '俱乐部管理员角色生效', '你已被设为"北京胡同骑行局"管理员', '2 小时前', true],
+        ['报名', '奉贤海湾拉练', '活动已取消，报名费将原路返回（本次免费）', '昨天 18:40', false],
+        ['审批', '俱乐部创建申请', '"周日纯化骑行"已被通过，可进入俱乐部管理', '昨天 10:12', false],
+        ['系统', '隐私协议更新', '我们更新了隐私授权说明，请抽空查看', '前天', false],
+      ];
+      return `<div class="pg planned-page planned-notifications">
+        ${brandLogo('通知中心')}
+        <div class="planned-badge">P0 规划 · 设计新增 pages/notifications</div>
+        <div class="seg planned-seg">${segs.map(([t, n, active]) => `<button class="${active ? 'is-active' : ''}" data-action="choice">${t}<i class="planned-seg-count">${n}</i></button>`).join('')}</div>
+        <div class="planned-noti-list">
+          ${items.map(([kind, title, desc, time, unread]) => `
+            <article class="planned-noti-card ${unread ? 'is-unread' : ''}">
+              <span class="planned-noti-dot" aria-hidden="true"></span>
+              <div class="planned-noti-body">
+                <div class="planned-noti-head"><span class="planned-noti-kind">${kind}</span><span class="planned-noti-time">${time}</span></div>
+                <h3>${title}</h3>
+                <p class="meta-line">${desc}</p>
+              </div>
+            </article>`).join('')}
+        </div>
+        <p class="neutral-note">同一事件只提示一次；长按单条可标记为已读。</p>
+      </div>${fixedBar('共 3 条未读', [btn('全部标记已读', toast('已全部标记为已读'), 'btn-secondary'), btn('设置通知偏好', go('settings'))])}`;
+    },
+
+    'planned-offline-error': () => {
+      const server = is('server');
+      return `<div class="pg planned-page planned-offline">
+        ${brandLogo('网络错误')}
+        <div class="planned-badge">P0 规划 · 全局状态模板</div>
+        <section class="planned-offline-hero">
+          <div class="planned-offline-art" aria-hidden="true">
+            <svg viewBox="0 0 320 180" preserveAspectRatio="none">
+              <path d="M0 140 L40 118 L80 128 L120 96 L160 112 L200 72 L240 92 L280 60 L320 86" fill="none" stroke="#fbf5ea" stroke-width="1.4" stroke-dasharray="4 4" opacity="0.55"/>
+            </svg>
+          </div>
+          <h2 class="planned-offline-title">${server ? '服务端错误' : '当前网络不可用'}</h2>
+          <p class="planned-offline-sub">${server ? '我们已经收到异常上报，请稍后重试。' : '活动数据无法加载，检查 Wi-Fi 或移动网络后再试一次。'}</p>
+          <code class="planned-offline-code">${server ? 'HTTP_500 / INTERNAL' : 'NET_UNREACHABLE'}</code>
+        </section>
+        <div class="btn-row planned-offline-btns">
+          ${btn('重试', toast('正在重新加载'))}
+          ${btn('返回首页', go('activities'), 'btn-secondary')}
+        </div>
+        <button class="btn-text planned-offline-diag" data-action="toast" data-message="已复制网络诊断日志，发送给我们">查看网络诊断</button>
+        <div class="seg planned-offline-switch" style="margin-top:16px">
+          <button class="${!server ? 'is-active' : ''}" data-route="planned-offline-error" data-state="default">离线</button>
+          <button class="${server ? 'is-active' : ''}" data-route="planned-offline-error" data-state="server">服务端错误</button>
+        </div>
+      </div>`;
+    },
+
+    'planned-activity-share-poster': () => {
+      return `<div class="pg planned-page planned-poster">
+        ${brandLogo('活动分享海报')}
+        <div class="planned-badge">P1 规划 · 新增分享组件</div>
+        <h2 class="page-title">生成分享海报</h2>
+        <p class="page-sub">基于活动封面与数据生成 9:16 品牌海报，保存到相册或分享到微信。</p>
+        <div class="planned-poster-stage">
+          <div class="planned-poster-canvas" role="img" aria-label="活动海报预览">
+            <div class="planned-poster-cover"><img src="${IMG.cover}" alt="活动封面"/></div>
+            <div class="planned-poster-mask"></div>
+            <div class="planned-poster-head">
+              <span class="planned-poster-brand">CILI RIDE</span>
+              <span class="planned-poster-date">10 月 18 日 · 周日</span>
+            </div>
+            <h3 class="planned-poster-title">云蒙山 &amp; 喇叭沟 RIDE</h3>
+            <p class="planned-poster-sub">望京西 → 云蒙山 → 喇叭沟门 · 高阶</p>
+            <div class="planned-poster-metric-row">
+              <div><b>168</b><i>km</i></div>
+              <div><b>2360</b><i>m</i></div>
+              <div><b>18/24</b><i>人</i></div>
+            </div>
+            <div class="planned-poster-qr" aria-hidden="true">${qr(2.4)}</div>
+          </div>
+        </div>
+        <div class="card planned-poster-options">
+          ${cardHead('选项', '海报选项')}
+          <label class="planned-switch"><span>包含骑行照片</span><input type="checkbox" checked/><i aria-hidden="true"></i></label>
+          <label class="planned-switch"><span>包含路线轮廓</span><input type="checkbox" checked/><i aria-hidden="true"></i></label>
+          <label class="planned-switch"><span>隐去已报名人数</span><input type="checkbox"/><i aria-hidden="true"></i></label>
+        </div>
+      </div>${fixedBar('海报仅本次生成不保留', [btn('保存到相册', toast('海报已保存到相册'), 'btn-secondary'), btn('分享到微信', toast('已拉起微信分享面板'))])}`;
+    },
+
+    'planned-club-discover': () => {
+      const cities = ['上海', '杭州', '北京', '成都', '广州'];
+      const featured = [
+        ['周日纯化骑行', '上海 · 周日稳定出发', '本周 2 场', 'ink'],
+        ['北京胡同骑行局', '北京 · 新手友好 · 50 km 内', '本周 1 场', 'brand'],
+        ['成都盘龙 CLUB', '成都 · 周末山路', '本周 3 场', 'warm'],
+      ];
+      const nearby = [
+        ['静安骑行小队', '上海 · 静安区 · 新手'],
+        ['徐汇滨江车队', '上海 · 徐汇 · 中阶'],
+        ['崇明一日环岛', '上海 · 崇明 · 高阶'],
+      ];
+      return `<div class="pg planned-page planned-club-discover">
+        ${brandLogo('俱乐部发现')}
+        <div class="planned-badge">P0 规划 · 独立发现页与筛选增强</div>
+        <div class="planned-search"><input class="planned-search-input" placeholder="搜索俱乐部名称 / 城市" aria-label="搜索俱乐部"/></div>
+        <div class="chips planned-city-chips">${cities.map((c, i) => `<button class="chip ${i === 0 ? 'is-active' : ''}" data-action="choice">${c}</button>`).join('')}</div>
+        <h3 class="planned-section-title">本周精选</h3>
+        <div class="planned-feature-list">
+          ${featured.map(([name, meta, badge, tone]) => `
+            <article class="planned-feature-card tone-${tone}">
+              <div class="planned-feature-cover" aria-hidden="true"></div>
+              <div class="planned-feature-body">
+                <h4>${name}</h4>
+                <p class="meta-line">${meta}</p>
+                <span class="planned-feature-badge">${badge}</span>
+              </div>
+            </article>`).join('')}
+        </div>
+        <h3 class="planned-section-title">附近俱乐部</h3>
+        <ul class="planned-nearby-list">
+          ${nearby.map(([n, m]) => `<li><span class="planned-nearby-thumb" aria-hidden="true">${n.slice(0, 1)}</span><div><h4>${n}</h4><p class="meta-line">${m}</p></div><span class="planned-nearby-arrow" aria-hidden="true">›</span></li>`).join('')}
+        </ul>
+        <p class="neutral-note">正式 club/center 已有推荐列表；本页规划独立筛选增强。推荐俱乐部详情在生产当前仍为 disabled。</p>
+      </div>`;
+    },
+
+    'planned-club-home': () => {
+      return `<div class="pg planned-page planned-club-home has-bar">
+        <section class="planned-club-hero">
+          <div class="planned-club-cover" aria-hidden="true"></div>
+          <div class="planned-club-head">
+            <span class="club-avatar club-avatar-md" aria-hidden="true"><b>周日</b></span>
+            <div>
+              <h2>周日纯化骑行</h2>
+              <p class="meta-line">上海 · 周日稳定出发 · 已认证</p>
+            </div>
+          </div>
+          ${metrics([['128', '成员'], ['6', '本月活动'], ['上海', '常用城市']], 'three')}
+        </section>
+        <div class="planned-badge">P0 规划 · 非成员完整访客链路增强</div>
+        <div class="card">${cardHead('01', '俱乐部介绍')}<p class="card-hint" style="color:var(--color-text)">以周日固定出发为节奏；主打上海近郊 100–180 km 中阶路线；欢迎每周能稳定出骑 1 次的骑友加入。</p></div>
+        <div class="card">${cardHead('02', '近期活动', tag('neutral', '3 场'))}
+          <ul class="planned-club-act-list">
+            <li><b>10.18 周日</b><span>云蒙山 &amp; 喇叭沟 RIDE</span><em>168 km</em></li>
+            <li><b>10.25 周日</b><span>崇明一日环岛</span><em>120 km</em></li>
+            <li><b>11.01 周日</b><span>佘山夜骑</span><em>65 km</em></li>
+          </ul>
+          <button class="btn-text" ${go('activities')}>查看全部活动 ›</button>
+        </div>
+        <div class="card">${cardHead('03', '加入方式', tag('neutral', '审批制'), '俱乐部管理员会在 24 小时内处理你的加入申请。')}<p class="card-hint">加入后可直接报名所有俱乐部活动，无需逐次审批。</p></div>
+      </div>${fixedBar('访客视角 · 未加入', [btn('查看活动', go('activities'), 'btn-secondary'), btn('申请加入俱乐部', go('planned-club-join-form'))])}`;
+    },
+
+    'planned-club-member-home': () => {
+      return `<div class="pg planned-page planned-club-member-home has-bar">
+        <section class="planned-club-hero is-compact">
+          <div class="planned-club-head">
+            <span class="club-avatar club-avatar-md" aria-hidden="true"><b>周日</b></span>
+            <div>
+              <h2>周日纯化骑行</h2>
+              <p class="meta-line">我的身份 · ${tag('neutral', '俱乐部管理员')}</p>
+            </div>
+          </div>
+        </section>
+        <div class="planned-badge">P1 规划 · 新增 pages/club/[id]（成员视角）</div>
+        <div class="card">${cardHead('公告', '置顶公告', tag('pending', '主理人'))}<p class="card-hint" style="color:var(--color-text)">本周日云蒙山活动开放报名；由于名额紧张，俱乐部管理员将优先通过已完赛 3 场以上的骑友。</p><p class="meta-line">发布：主理人阿强 · 2 天前</p></div>
+        <div class="card">${cardHead('01', '近期活动', tag('neutral', '2 场'))}
+          <ul class="planned-club-act-list">
+            <li><b>10.18 周日</b><span>云蒙山 &amp; 喇叭沟 RIDE</span><em>我已报名</em></li>
+            <li><b>10.25 周日</b><span>崇明一日环岛</span><em>报名中</em></li>
+          </ul>
+        </div>
+        <div class="card">${cardHead('02', '俱乐部管理', tag('neutral', '仅俱乐部管理员可见'))}
+          <ul class="planned-member-admin-list">
+            <li><b>成员名录</b><span>128 人 · 本周 +4</span><button class="btn-text" ${go('planned-club-member-list')}>打开</button></li>
+            <li><b>加入申请</b><span>3 条待审</span><button class="btn-text" ${go('planned-club-join-reviews')}>打开</button></li>
+            <li><b>公告管理</b><span>1 条待发布</span><button class="btn-text" data-action="toast" data-message="公告管理：规划 P1">打开</button></li>
+            <li><b>俱乐部设置</b><span>资料 / 转让 / 解散</span><button class="btn-text" ${go('planned-club-settings-danger')}>打开</button></li>
+          </ul>
+        </div>
+      </div>${fixedBar('成员视角 · 俱乐部管理员', [btn('进入驾驶舱', go('planned-club-cockpit'), 'btn-secondary'), btn('发活动', go('admin-activity-edit'))])}`;
+    },
+
+    'planned-club-join-form': () => {
+      const pending = is('pending');
+      const rejected = is('rejected');
+      if (pending) {
+        return `<div class="pg planned-page planned-join-form">
+          ${brandLogo('加入申请')}
+          <div class="planned-badge">P0 规划 · 状态：待审核</div>
+          ${stateView('…', '已提交 · 等待俱乐部管理员审核', '俱乐部管理员通常在 24 小时内处理；通过后你可直接报名活动。', btn('返回俱乐部主页', go('planned-club-home'), 'btn-secondary'))}
+          <div class="card">${cardHead('提交信息', '你提交的资料')}${rows([['昵称', rider.nickname], ['骑行年限', '2 年'], ['本周可参加次数', '1 次'], ['一句话介绍', '想找周日稳定出骑的队伍']])}</div>
+        </div>`;
+      }
+      if (rejected) {
+        return `<div class="pg planned-page planned-join-form">
+          ${brandLogo('加入申请')}
+          <div class="planned-badge">P0 规划 · 状态：已驳回</div>
+          <div class="card">${cardHead('驳回原因', '俱乐部管理员反馈', tag('pending', '可修改重提'))}<p class="card-hint" style="color:var(--color-text)">当前本周出勤次数不足；建议完成一次 50 km 内试骑后再申请。</p></div>
+          <div class="card">${cardHead('修改信息', '调整后重新提交')}${rows([['昵称', rider.nickname], ['骑行年限', '2 年'], ['本周可参加次数', '1 次'], ['一句话介绍', '想找周日稳定出骑的队伍']])}</div>
+        </div>${fixedBar('驳回后可修改重提，不限次数', [btn('返回俱乐部主页', go('planned-club-home'), 'btn-secondary'), btn('修改并重新提交', go('planned-club-join-form'))])}`;
+      }
+      return `<div class="pg planned-page planned-join-form">
+        ${brandLogo('申请加入')}
+        <div class="planned-badge">P0 规划 · 加入 "周日纯化骑行"</div>
+        <h2 class="page-title">填写申请资料</h2>
+        <p class="page-sub">资料仅俱乐部主理人与俱乐部管理员可见；不会公开展示。</p>
+        <div class="card">${cardHead('01', '基础资料')}${rows([['昵称', rider.nickname], ['骑行年限', '待填写'], ['本周可参加次数', '待填写']])}</div>
+        <div class="card">${cardHead('02', '一句话介绍')}${input('', { cls: 'textarea', ph: '向俱乐部主理人简短介绍自己', count: '0/120' })}</div>
+        <p class="neutral-note">提交后将进入待审核状态；驳回后可修改重提。</p>
+      </div>${fixedBar('还差 2 项：骑行年限、本周可参加次数', [btn('返回俱乐部主页', go('planned-club-home'), 'btn-secondary'), btn('提交申请', go('planned-club-join-form', 'pending'))])}`;
+    },
+
+    'planned-club-cockpit': () => {
+      return `<div class="pg planned-page planned-cockpit">
+        ${brandLogo('俱乐部管理驾驶舱')}
+        <div class="planned-badge">P0 规划 · 新增 pages/admin/club</div>
+        <h2 class="page-title">今日概览</h2>
+        <p class="page-sub">按角色聚合最该先处理的事；避免你在 4 个入口来回找。</p>
+        ${metrics([['128', '成员总数'], ['+4', '本周新加入'], ['3', '待审申请'], ['6', '本月活动']], 'four')}
+        <h3 class="planned-section-title">今日待办</h3>
+        <ul class="planned-todo-list">
+          <li><span class="planned-todo-badge pending">审批</span><div><b>加入申请 3 条</b><p class="meta-line">最早 12 分钟前提交，等待时长 12m</p></div><button class="btn-text" ${go('planned-club-join-reviews')}>去审批</button></li>
+          <li><span class="planned-todo-badge warning">活动</span><div><b>活动待下架 1 条</b><p class="meta-line">奉贤海湾拉练（已取消）</p></div><button class="btn-text" ${go('admin-activity-list')}>打开</button></li>
+          <li><span class="planned-todo-badge neutral">公告</span><div><b>公告草稿 1 条</b><p class="meta-line">本周出骑能力说明</p></div><button class="btn-text" data-action="toast" data-message="公告管理：规划 P1">打开</button></li>
+        </ul>
+        <h3 class="planned-section-title">快捷入口</h3>
+        <div class="planned-quick-grid">
+          <button class="planned-quick-cell" ${go('planned-club-member-list')}><span>👥</span><b>成员名录</b></button>
+          <button class="planned-quick-cell" ${go('planned-club-join-reviews')}><span>✓</span><b>加入审批</b></button>
+          <button class="planned-quick-cell" ${go('admin-activity-list')}><span>🚴</span><b>活动管理</b></button>
+          <button class="planned-quick-cell" ${go('planned-club-profile-edit')}><span>✎</span><b>俱乐部资料</b></button>
+          <button class="planned-quick-cell" ${go('planned-club-invite')}><span>↗</span><b>邀请加入</b></button>
+          <button class="planned-quick-cell" ${go('planned-club-settings-danger')}><span>⚙</span><b>俱乐部设置</b></button>
+        </div>
+      </div>`;
+    },
+
+    'planned-club-member-list': () => {
+      const chips = ['全部 128', '主理人 1', '管理员 3', '组织者 6', '成员 115', '已退出 3'];
+      const members = [
+        ['阿强', '主理人', '2024.03 加入', 'ink'],
+        ['林默', '俱乐部管理员', '2024.05 加入', 'brand'],
+        ['汤圆', '组织者', '2024.08 加入', 'neutral'],
+        ['张岩', '成员', '2 天前加入', 'neutral'],
+        ['小北', '成员', '2024.09 加入', 'neutral'],
+      ];
+      return `<div class="pg planned-page planned-member-list">
+        ${brandLogo('成员名录')}
+        <div class="planned-badge">P0 规划 · 新增成员名录与角色操作</div>
+        <div class="chips planned-member-chips">${chips.map((c, i) => `<button class="chip ${i === 0 ? 'is-active' : ''}" data-action="choice">${c}</button>`).join('')}</div>
+        <ul class="planned-member-rows">
+          ${members.map(([name, role, join, tone]) => `
+            <li>
+              <span class="avatar">${name.slice(0, 1)}</span>
+              <div>
+                <b>${name}</b>
+                <p class="meta-line">${join}</p>
+              </div>
+              <span class="tag tag-${tone === 'ink' ? 'solid' : tone === 'brand' ? 'warning' : 'neutral'}">${role}</span>
+              <button class="planned-member-more" data-action="toast" data-message="成员操作：设为组织者 / 俱乐部管理员 / 移除" aria-label="更多">⋯</button>
+            </li>`).join('')}
+        </ul>
+        <p class="neutral-note">角色调整与移除均需二次确认，并写入俱乐部审计日志。</p>
+      </div>`;
+    },
+
+    'planned-club-invite': () => {
+      return `<div class="pg planned-page planned-invite">
+        ${brandLogo('邀请加入')}
+        <div class="planned-badge">P1 规划 · 新增邀请链接与海报</div>
+        <div class="card">${cardHead('01', '邀请链接')}<div class="planned-invite-link"><code>https://cili.ride/j/zhourichun</code>${btn('复制链接', toast('邀请链接已复制'), 'btn-secondary')}</div><p class="card-hint">链接 7 天有效；可随时在"审计记录"中查看已发出邀请。</p></div>
+        <div class="card">${cardHead('02', '分享海报')}
+          <div class="planned-invite-poster" aria-hidden="true">
+            <div class="planned-invite-mono">周日</div>
+            <h3>周日纯化骑行</h3>
+            <p>上海 · 周日稳定出发 · 中阶</p>
+            <div class="planned-invite-qr">${qr(2.2)}</div>
+          </div>
+        </div>
+      </div>${fixedBar('海报仅本次生成，不保留', [btn('保存海报到相册', toast('海报已保存'), 'btn-secondary'), btn('分享到微信好友', toast('已拉起微信分享'))])}`;
+    },
+
+    'planned-club-join-reviews': () => {
+      const segs = [['待审', 3, true], ['已通过', 12, false], ['已驳回', 1, false], ['全部', 16, false]];
+      const items = [
+        ['张岩', '2 年骑龄 · 本周 1 次', '想找周日稳定出骑的队伍，希望从新手起步', '12 分钟前'],
+        ['糖糖', '0.5 年骑龄 · 本周 2 次', '刚入坑，已完成 2 场 50 km 内体验', '昨天 18:40'],
+        ['Mike', '5 年骑龄 · 本周 1 次', '长居上海，想找稳定周末队伍', '前天'],
+      ];
+      return `<div class="pg planned-page planned-join-reviews">
+        ${brandLogo('加入申请')}
+        <div class="planned-badge">P0 规划 · 新增 admin/club/join-reviews</div>
+        <div class="seg planned-seg">${segs.map(([t, n, a]) => `<button class="${a ? 'is-active' : ''}" data-action="choice">${t}<i class="planned-seg-count">${n}</i></button>`).join('')}</div>
+        <div class="planned-join-cards">
+          ${items.map(([name, meta, intro, time]) => `
+            <article class="planned-join-card">
+              <div class="planned-join-head"><span class="avatar">${name.slice(0, 1)}</span><div><b>${name}</b><p class="meta-line">${meta}</p></div><span class="planned-join-time">${time}</span></div>
+              <p class="planned-join-intro">${intro}</p>
+              <div class="btn-row">
+                ${btn('进入审批', go('planned-club-join-review-detail'), 'btn-secondary')}
+                ${btn('快速通过', toast(`已通过 ${name} 的加入申请`))}
+              </div>
+            </article>`).join('')}
+        </div>
+        <p class="neutral-note">审批不设自动超时；多个管理员并发时，第一个终态生效。</p>
+      </div>`;
+    },
+
+    'planned-club-join-review-detail': () => {
+      return `<div class="pg planned-page planned-join-detail has-bar">
+        <section class="info-bar"><div class="info-head"><span class="info-kicker">加入申请 · v1</span><span class="info-tag">等待 12m</span></div><h2 class="info-title">张岩 申请加入 周日纯化骑行</h2><p class="info-meta"><span>身份 访客</span><span>12 分钟前提交</span></p></section>
+        <div class="planned-badge">P0 规划 · 新增 admin/club/join-review-detail</div>
+        <div class="card">${cardHead('01', '资料核对', tag('neutral', '仅审批可见'))}${rows([['昵称', '张岩'], ['骑行年限', '2 年'], ['本周可参加次数', '1 次'], ['最近完赛', '佘山夜骑 · 65 km']])}</div>
+        <div class="card">${cardHead('02', '一句话介绍')}<p class="card-hint" style="color:var(--color-text)">想找周日稳定出骑的队伍，希望从新手起步；工作在张江，每周可参加一次。</p></div>
+        <div class="card">${cardHead('03', '驳回理由', tag('pending', '驳回时必填'), '驳回理由骑友可见；通过时无需填写。')}${input('', { cls: 'textarea', ph: '例如：本周出勤次数不足；建议完成 1 次试骑后再申请', count: '0/200' })}</div>
+      </div>${fixedBar('审批不设自动超时', [btn('驳回申请', toast('已驳回；骑友可修改重提'), 'btn-secondary'), btn('通过加入', toast('已通过加入；张岩已成为成员'))])}`;
+    },
+
+    'planned-club-profile-edit': () => {
+      return `<div class="pg planned-page planned-profile-edit has-bar">
+        ${brandLogo('俱乐部资料')}
+        <div class="planned-badge">P0 规划 · 独立管理页与高级编辑增强</div>
+        <h2 class="page-title">高级编辑增强</h2>
+        <p class="page-sub">正式 club/center 已可编辑名称、城市、简介、加入方式、容量、头像与封面；本页只表达独立管理与版本留痕增强。</p>
+        <div class="card">${cardHead('01', '封面与标识')}
+          <div class="planned-cover-upload"><div class="planned-cover-slot" aria-hidden="true">封面图</div><button class="btn-text" data-action="toast" data-message="已拉起相册">更换封面</button></div>
+          ${rows([['俱乐部名称', '周日纯化骑行'], ['城市', '上海'], ['标签', '周日 / 中阶 / 100–180 km']])}
+        </div>
+        <div class="card">${cardHead('02', '简介与加入方式')}${input('以周日固定出发为节奏；主打上海近郊 100–180 km 中阶路线', { cls: 'textarea', ph: '俱乐部一句话简介', count: '34/120' })}${choices(['公开申请', '仅邀请', '关闭加入'], '公开申请')}</div>
+        <div class="card">${cardHead('03', '容量上限', tag('warning', '调整需二次确认'))}<div class="field"><div class="field-label">成员上限</div><div class="input"><span>200</span><span class="unit">人</span></div></div><p class="pending-note">当前成员 128；下调容量将无法新增成员，但已有成员保留。</p></div>
+      </div>${fixedBar('更新即刻生效 · 保留版本号', [btn('保存草稿', toast('已保存草稿'), 'btn-secondary'), btn('发布更新', toast('俱乐部资料已更新'))])}`;
+    },
+
+    'planned-club-settings-danger': () => {
+      return `<div class="pg planned-page planned-settings-danger">
+        ${brandLogo('俱乐部设置')}
+        <div class="planned-badge">P1 规划 · 新增 admin/club/settings</div>
+        <div class="card">${cardHead('01', '通用设置')}
+          <label class="planned-switch"><span>加入申请通知</span><input type="checkbox" checked/><i aria-hidden="true"></i></label>
+          <label class="planned-switch"><span>活动审批通知</span><input type="checkbox" checked/><i aria-hidden="true"></i></label>
+          <label class="planned-switch"><span>新成员欢迎公告</span><input type="checkbox"/><i aria-hidden="true"></i></label>
+        </div>
+        <section class="planned-danger-zone" aria-label="危险操作">
+          <h3 class="planned-danger-title">危险操作</h3>
+          <article class="planned-danger-card">
+            <div><b>转让主理人身份</b><p class="meta-line">当前主理人：阿强。转让后不可撤销。</p></div>
+            ${btn('申请转让', toast('已进入二次确认表单'), 'btn-secondary')}
+          </article>
+          <article class="planned-danger-card">
+            <div><b>解散俱乐部</b><p class="meta-line">所有活动将下架，成员将被移除；审计记录永久保留。</p></div>
+            ${btn('解散俱乐部', toast('需 textarea 二次确认'), 'btn-secondary')}
+          </article>
+          <article class="planned-danger-card">
+            <div><b>退出俱乐部</b><p class="meta-line">仅适用于成员本人；主理人不可直接退出。</p></div>
+            ${btn('退出俱乐部', toast('退出前请阅读提示'), 'btn-secondary')}
+          </article>
+        </section>
+        <p class="neutral-note">以上危险操作均需 textarea 二次确认 + 完整审计。</p>
+      </div>`;
+    },
   };
 
   window.pageTemplates = templates;
-
-  // 导出 club-center 的运行时状态变换，供 app.js 与运行时测试复用。
-  // 原则：overlay（more-open / bg-fallback）与 activeTab 正交，切换 overlay 不动 tab；切换 tab 可选择保留 overlay。
-  const CLUB_CENTER_TABS = ['activities', 'members', 'profile'];
-  const CLUB_CENTER_OVERLAYS = ['more-open', 'bg-fallback', 'loading', 'error', 'activities-empty'];
-  const clubCenterParseState = (state) => {
-    const segments = (state || '').split('--').filter(Boolean);
-    let tab = 'activities';
-    const overlays = [];
-    for (const segment of segments) {
-      if (segment === 'default') continue;
-      if (CLUB_CENTER_TABS.includes(segment)) tab = segment;
-      else overlays.push(segment);
-    }
-    return { tab, overlays };
-  };
-  const clubCenterComposeState = (tab, overlays) => {
-    const base = tab === 'activities' ? 'default' : tab;
-    const ordered = CLUB_CENTER_OVERLAYS.filter((o) => overlays.includes(o));
-    if (ordered.length === 0) return base;
-    if (tab === 'activities' && ordered.length === 1) return ordered[0];
-    return [base, ...ordered].join('--');
-  };
-  const clubCenterNextTab = (state, key) => {
-    const { tab, overlays } = clubCenterParseState(state);
-    const index = CLUB_CENTER_TABS.indexOf(tab);
-    let next = tab;
-    if (key === 'ArrowRight') next = CLUB_CENTER_TABS[(index + 1) % CLUB_CENTER_TABS.length];
-    else if (key === 'ArrowLeft')
-      next = CLUB_CENTER_TABS[(index - 1 + CLUB_CENTER_TABS.length) % CLUB_CENTER_TABS.length];
-    else if (key === 'Home') next = CLUB_CENTER_TABS[0];
-    else if (key === 'End') next = CLUB_CENTER_TABS[CLUB_CENTER_TABS.length - 1];
-    else return null;
-    // 切换 tab 时清掉 more-open 浮层（符合"点击 tab 关闭菜单"），保留 bg-fallback / loading / error / activities-empty。
-    const keepOverlays = overlays.filter((o) => o !== 'more-open');
-    return {
-      tab: next,
-      state: clubCenterComposeState(next, keepOverlays),
-      tabId: `club-center-tab-${next}`,
-    };
-  };
-  const clubCenterToggleMore = (state) => {
-    const { tab, overlays } = clubCenterParseState(state);
-    const nextOverlays = overlays.includes('more-open')
-      ? overlays.filter((o) => o !== 'more-open')
-      : [...overlays.filter((o) => o !== 'more-open'), 'more-open'];
-    return clubCenterComposeState(tab, nextOverlays);
-  };
-  const clubCenterCoverError = (state) => {
-    const { tab, overlays } = clubCenterParseState(state);
-    if (overlays.includes('bg-fallback')) return clubCenterComposeState(tab, overlays);
-    return clubCenterComposeState(tab, [...overlays, 'bg-fallback']);
-  };
-  const clubCenterRetryCover = (state) => {
-    const { tab, overlays } = clubCenterParseState(state);
-    return clubCenterComposeState(
-      tab,
-      overlays.filter((o) => o !== 'bg-fallback'),
-    );
-  };
-  window.clubCenterStateMachine = {
-    parseState: clubCenterParseState,
-    composeState: clubCenterComposeState,
-    nextTab: clubCenterNextTab,
-    toggleMore: clubCenterToggleMore,
-    coverError: clubCenterCoverError,
-    retryCover: clubCenterRetryCover,
-    TABS: CLUB_CENTER_TABS,
-    OVERLAYS: CLUB_CENTER_OVERLAYS,
-  };
 })();

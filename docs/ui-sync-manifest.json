@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "7b174a33992a8a7a78aa5d8fc2ef703e3cbf3554",
-  "syncedAt": "2026-10-17T14:25:22.000Z",
+  "syncedThrough": "07000dab587d521ea08774c98a2470069b8e1dd4",
+  "syncedAt": "2026-10-18T15:07:00.000Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:88db2490fea7a0be7a90041b7372f68b2bfabf36a3dfa0a9b94826e778d04494"
+    "digest": "sha256:dc2944b8b9899a7a6d0a5c4050997b84a34141c07e405109af29950aa6990dff"
   },
   "prototype": {
-    "digest": "sha256:0df0d4cf251ddbb07debcf01188917c005a6d5edf3a78ef7182994539cc2d195"
+    "digest": "sha256:b8b27ba3b4f99604a87764de16c7cd2a093405837e966d4219425e964912ae82"
   },
   "routes": [
     {
@@ -70,7 +70,7 @@
       "pagePath": "pages/admin/review-detail/index"
     },
     {
-      "id": "club-center",
+      "id": "club/center",
       "pagePath": "pages/club/center/index"
     },
     {
@@ -96,7 +96,7 @@
         "state": "有活动",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "代码与 Pages 原型已同步到 2026.10.17.76 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+        "note": "Pages 完整交互原型已在 2026-10-18 使用本地浏览器重新采集 375×812 截图；DevTools 证据仍保持 blocked，待新开发版逐页复验。"
       },
       {
         "id": "activity-detail",
@@ -123,7 +123,7 @@
         "state": "未选骑行经验，提交禁用",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "代码与 Pages 原型已同步到 2026.10.17.76 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+        "note": "Pages 完整交互原型已在 2026-10-18 使用本地浏览器重新采集 375×812 截图；DevTools 证据仍保持 blocked，待新开发版逐页复验。"
       },
       {
         "id": "registrations",
@@ -141,7 +141,7 @@
         "state": "已通过凭证",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "代码与 Pages 原型已同步到 2026.10.17.76 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+        "note": "Pages 完整交互原型已在 2026-10-18 使用本地浏览器重新采集 375×812 截图；DevTools 证据仍保持 blocked，待新开发版逐页复验。"
       },
       {
         "id": "profile",
@@ -150,7 +150,7 @@
         "state": "管理员",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "代码与 Pages 原型已同步到 2026.10.17.76 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+        "note": "Pages 完整交互原型已在 2026-10-18 使用本地浏览器重新采集 375×812 截图；DevTools 证据仍保持 blocked，待新开发版逐页复验。"
       },
       {
         "id": "settings",
@@ -168,7 +168,7 @@
         "state": "有背景图",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "代码与 Pages 原型已同步到 2026.10.17.76 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+        "note": "Pages 完整交互原型已在 2026-10-18 使用本地浏览器重新采集 375×812 截图；DevTools 证据仍保持 blocked，待新开发版逐页复验。"
       },
       {
         "id": "profile-edit",
@@ -186,7 +186,7 @@
         "state": "有活动",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "代码与 Pages 原型已同步到 2026.10.17.76 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+        "note": "Pages 完整交互原型已在 2026-10-18 使用本地浏览器重新采集 375×812 截图；DevTools 证据仍保持 blocked，待新开发版逐页复验。"
       },
       {
         "id": "admin-activity-edit",
@@ -195,7 +195,7 @@
         "state": "空白创建",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "代码与 Pages 原型已同步到 2026.10.17.76 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+        "note": "Pages 完整交互原型已在 2026-10-18 使用本地浏览器重新采集 375×812 截图；DevTools 证据仍保持 blocked，待新开发版逐页复验。"
       },
       {
         "id": "admin-reviews",
@@ -204,7 +204,7 @@
         "state": "待审核筛选为空",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "代码与 Pages 原型已同步到 2026.10.17.76 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+        "note": "Pages 完整交互原型已在 2026-10-18 使用本地浏览器重新采集 375×812 截图；DevTools 证据仍保持 blocked，待新开发版逐页复验。"
       },
       {
         "id": "admin-review-detail",
@@ -213,16 +213,16 @@
         "state": "已通过，可签到",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "代码与 Pages 原型已同步到 2026.10.17.76 UX 复查版本；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+        "note": "Pages 完整交互原型已在 2026-10-18 使用本地浏览器重新采集 375×812 截图；DevTools 证据仍保持 blocked，待新开发版逐页复验。"
       },
       {
-        "id": "club-center",
+        "id": "club/center",
         "devtools": "club-center-devtools.png",
         "pages": "club-center-pages.png",
         "state": "已加入俱乐部，负责人或管理员可修改资料",
         "data": "fixture",
         "review": "blocked",
-        "note": "Pages 375×812 高保真夹具已覆盖俱乐部资料管理入口与编辑态；微信端开发版上传后补充真实权限与保存链路验收。"
+        "note": "Pages 375×812 原型已按生产单路由 discovery / detail / manage 能力边界重新采集；推荐俱乐部详情保持不可用，DevTools 真实权限与保存链路仍待新开发版复验。"
       },
       {
         "id": "admin-club-applications",

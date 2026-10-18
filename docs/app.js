@@ -20,6 +20,7 @@
     'guide',
     'deploy',
     'prototype',
+    'planned',
   ];
   const overviewSections = new Set([
     ...baseOverviewSections,
@@ -176,6 +177,32 @@
         return `<tr><td>${name}</td><td><span class="swatch" style="background:var(${fg})"></span><code>${fg}</code> ${cssVar(fg)}</td><td><span class="swatch" style="background:var(${bg})"></span><code>${bg}</code> ${cssVar(bg)}</td><td><b class="pass ${pass ? '' : 'is-fail'}">${value.toFixed(2)} : 1</b></td><td>${min} : 1 ${pass ? '通过' : '不通过'}</td><td>${usage}</td></tr>`;
       })
       .join('');
+    const roleScopeLabel = (scope) =>
+      scope === '平台后台' ? '平台后台' : scope === '非会员' ? '非会员' : '俱乐部内部';
+    const roleCanPublishLabel = (value) =>
+      value === 'platform'
+        ? '跨俱乐部发布 / 审核'
+        : value === 'club'
+          ? '可代俱乐部发布'
+          : '不能发布';
+    const rolesRows = (data.rolesMatrix || [])
+      .map(
+        (role) =>
+          `<tr><th scope="row"><code>${role.key}</code><br/><span>${role.cn}</span></th><td>${roleScopeLabel(role.scope)}</td><td>${roleCanPublishLabel(role.canPublish)}</td><td>${role.note}</td></tr>`,
+      )
+      .join('');
+    const plannedScreens = Array.isArray(data.plannedScreens) ? data.plannedScreens : [];
+    const plannedByPriority = (level) =>
+      plannedScreens
+        .filter((screen) => screen.status === level)
+        .map(
+          (screen) =>
+            `<article class="planned-card planned-${screen.status}"><header><span class="planned-priority">${screen.status.toUpperCase()}</span><span class="planned-group">${screen.group}</span></header><h3>${screen.title}</h3><p>${screen.note}</p><footer><span class="planned-role">${screen.role.join(' · ')}</span><code>${screen.code}</code></footer></article>`,
+        )
+        .join('');
+    const plannedP0Cards = plannedByPriority('p0');
+    const plannedP1Cards = plannedByPriority('p1');
+    const stats = data.experienceStats || {};
     overview.innerHTML = `
       <article class="story" aria-label="此里研发交付中心技术长读">
 
@@ -209,7 +236,8 @@
             <li><a href="#journey-organizer"><b>04</b><span>组织者旅程</span><em>创建 → 路线 → 审批 → 现场</em></a></li>
             <li><a href="#privacy"><b>05</b><span>隐私与产品边界</span><em>公开卡片字段 · Strava OAuth 退役</em></a></li>
             <li><a href="#pipeline"><b>06</b><span>七步交付链路</span><em>PR → CloudBase / 微信 / Pages</em></a></li>
-            <li><a href="#prototype"><b>07</b><span>原型与证据</span><em>17 个真实路由 + 8 页组织审批演进原型 + 对比截图</em></a></li>
+            <li><a href="#prototype"><b>07</b><span>原型与证据</span><em>17 个正式路由 + 23 个原型 / 40 个画面 + 对比截图</em></a></li>
+            <li><a href="#planned"><b>08</b><span>规划能力地图</span><em>6 角色矩阵 + 15 页 design-only</em></a></li>
           </ol>
           <p class="story-map-foot">八大类文档索引保留在页面末尾的 <a href="#delivery">研发交付中心</a>；仓库里的所有事实、源码与证据可以从那里收口。</p>
         </nav>
@@ -546,7 +574,7 @@
             </ul>
           </article>
           <article class="roadmap-todo">
-            <h3>⌛ 后续演进（8 页组织审批原型 + 其他）</h3>
+            <h3>⌛ 后续演进（23 个原型画面）</h3>
             <ul>
               <li>组织地基与审批演进原型：俱乐部创建申请已生产落地；俱乐部 / 公开活动审批、角色视角与异常仍为后续目标</li>
               <li>多俱乐部 / 多组织租户、独立 Web 后台 — 未来需求</li>
@@ -724,9 +752,22 @@
 
       <section class="product-section" id="prototype">
         <p class="eyebrow">05 · 交互原型</p>
-        <h2>17 个真实页面 + 8 页组织地基与审批演进原型</h2>
-        <p class="card-hint">17 个页面与 app.json 路由一一对应；另 8 页组织审批演进原型延伸生产闭环：俱乐部创建申请、平台审批、正式俱乐部创建与 OWNER 授予已经落地，俱乐部活动和公开活动审批仍仅为设计表达。官方路线独立页已从产品路由删除；活动详情直接承载路线事实与 GPX 能力，Strava 路线只提供规范化链接复制（Strava OAuth 已退役，无需 Strava 授权）。</p>
+        <h2>17 个正式路由 + 23 个原型 / 40 个画面</h2>
+        <p class="card-hint">17 个正式页面与 app.json 路由一一对应；23 个原型画面由 8 页 M0 组织审批原型和 15 页 planned design-only 组成，均可进入 Pages 原型导航，但不计入正式路由。俱乐部创建申请、平台审批、正式俱乐部创建与 OWNER 授予已经落地，俱乐部活动和公开活动审批仍仅为设计表达。官方路线独立页已从产品路由删除；活动详情直接承载路线事实与 GPX 能力，Strava 路线只提供规范化链接复制（Strava OAuth 已退役，无需 Strava 授权）。</p>
         <div class="overview-grid">${pageCards}</div>
+      </section>
+
+      <section class="product-section planned-section" id="planned">
+        <p class="eyebrow">06 · 规划能力地图 · design-only</p>
+        <h2>v2 评审确认的角色矩阵与 15 页规划能力补齐</h2>
+        <p class="card-hint">本节是 v2 全套 App 评审工作台中确认但尚未进入 miniprogram 的能力清单：仅在 Pages 原型里以设计表达呈现，不写入 <code>miniprogram/app.json</code>，也不进入 <code>docs/ui-sync-manifest.json</code> 的正式路由对账。真实运行以 17 条路由为准：${stats.canonicalRoutes || 17} 条正式运行路由 · P0 规划 ${stats.plannedP0 || 11} 页 · P1 规划 ${stats.plannedP1 || 4} 页。</p>
+        <h3 class="planned-subhead">6 种角色颗粒 · 俱乐部角色 ≠ 平台管理员</h3>
+        <table class="overview-table planned-roles-table"><thead><tr><th>角色</th><th>所属范围</th><th>发布能力</th><th>说明</th></tr></thead><tbody>${rolesRows}</tbody></table>
+        <h3 class="planned-subhead">P0 规划能力 · ${stats.plannedP0 || 11} 页</h3>
+        <div class="planned-grid">${plannedP0Cards}</div>
+        <h3 class="planned-subhead">P1 规划能力 · ${stats.plannedP1 || 4} 页</h3>
+        <div class="planned-grid">${plannedP1Cards}</div>
+        <p class="planned-foot">${(stats && stats.note) || '现有 17 条正式路由见 ui-sync-manifest.routes；规划页仅在 Pages 原型中作为 design-only 呈现，不进 miniprogram/app.json，也不进入 ui-sync 对账。'}</p>
       </section>
 
       <details class="reference-panel">
@@ -858,17 +899,14 @@
     modal.hidden = true;
     const hash = currentState === page.states[0][0] ? `#${page.id}` : `#${page.id}/${currentState}`;
     if (window.location.hash !== hash) window.history.replaceState(null, '', hash);
-    // 俱乐部中心：切换 tab / 关闭菜单后，优先把焦点交还到目标 tab 按钮，保持键盘可达性。
-    if (page.id === 'club-center' && options.focusTargetId) {
-      window.requestAnimationFrame(() => {
-        const target = document.getElementById(options.focusTargetId);
-        if (target && typeof target.focus === 'function') target.focus();
-      });
-    }
   }
 
   function parseHash() {
-    const [route, state] = window.location.hash.slice(1).split('/');
+    const payload = window.location.hash.slice(1);
+    const route = [...pageById.keys()]
+      .sort((a, b) => b.length - a.length)
+      .find((id) => payload === id || payload.startsWith(`${id}/`)) || payload.split('/')[0];
+    const state = route && payload.startsWith(`${route}/`) ? payload.slice(route.length + 1) : '';
     const query = new URLSearchParams(window.location.search).get('state');
     return { route, state: state || query || '' };
   }
@@ -931,11 +969,9 @@
     const action = target.dataset.action || (target.dataset.route ? 'route' : '');
     if (action === 'route') {
       const sameRoute = target.dataset.route === currentRoute;
-      const focusTargetId = target.dataset.clubCenterTab != null ? target.id || null : null;
       showPage(target.dataset.route, {
         state: target.dataset.state,
         replace: sameRoute,
-        focusTargetId,
       });
     }
     if (action === 'back') goBack();
@@ -1030,51 +1066,7 @@
       showPage('approval-outcome', { state: `rejected--${outcomeContext}` });
       showToast(outcomeContext.startsWith('club-application') ? '俱乐部申请已驳回' : outcomeContext.startsWith('public-activity') ? '公开活动已驳回' : '俱乐部活动已驳回');
     }
-    // 俱乐部中心：封面图加载失败时切换到可见的 bg-fallback；重试按钮回到当前 activeTab 的裸状态。
-    if (action === 'club-center-retry-cover') {
-      const machine = window.clubCenterStateMachine;
-      const nextState = machine
-        ? machine.retryCover(currentState)
-        : target.dataset.restoreState || 'default';
-      showPage('club-center', { state: nextState, replace: true });
-      showToast('正在重新加载背景图');
-    }
   });
-
-  // 俱乐部中心封面 img.onerror：模板已通过 onerror 回调调用；在这里只做状态切换，确保 fallback 可见且带重试入口。
-  window.clubCenterOnCoverError = (event) => {
-    if (currentRoute !== 'club-center') return;
-    const machine = window.clubCenterStateMachine;
-    const nextState = machine ? machine.coverError(currentState) : 'bg-fallback';
-    if (nextState === currentState) return;
-    // 避免重复触发（重复 render 会再次挂载 img，可能再次抛 error）
-    if (event && event.target && event.target.setAttribute) {
-      event.target.setAttribute('data-club-center-cover-errored', 'true');
-    }
-    showPage('club-center', { state: nextState, replace: true });
-  };
-
-  // 俱乐部中心：tab 内的 ArrowLeft / ArrowRight / Home / End 走局部语义化切换，并阻止冒泡，防止被全局原型页导航劫持。
-  // 使用捕获阶段，确保在 window 的全局 keydown 之前先处理。
-  document.addEventListener(
-    'keydown',
-    (event) => {
-      if (currentRoute !== 'club-center') return;
-      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-      const target = event.target;
-      if (!target || typeof target.closest !== 'function') return;
-      const tablist = target.closest('[data-club-center-tabs]');
-      if (!tablist) return;
-      const machine = window.clubCenterStateMachine;
-      if (!machine) return;
-      const next = machine.nextTab(currentState, event.key);
-      if (!next) return;
-      event.preventDefault();
-      event.stopPropagation();
-      showPage('club-center', { state: next.state, replace: true, focusTargetId: next.tabId });
-    },
-    true,
-  );
 
   window.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') modal.hidden = true;
