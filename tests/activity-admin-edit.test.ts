@@ -243,7 +243,7 @@ describe('日常活动极简创建与编辑', () => {
     expect(rideService.saveActivity.mock.calls[0][0].clubId).toBe('club-retained');
   });
 
-  it('活动归属只展示具备发起权限的俱乐部', async () => {
+  it('活动归属展示全部有效成员俱乐部以支持普通成员投稿', async () => {
     rideService.getProfile.mockResolvedValueOnce({
       clubs: [
         {
@@ -284,6 +284,7 @@ describe('日常活动极简创建与编辑', () => {
       'club-owner',
       'club-admin',
       'club-organizer',
+      'club-member',
     ]);
   });
 
@@ -787,6 +788,30 @@ describe('日常活动极简创建与编辑', () => {
     expect(createRequestIds[1]).toBe(createRequestIds[0]);
     expect(createWrites).toBe(1);
     expect(page.data).toMatchObject({ id: 'same-draft', version: 2, status: 'published' });
+  });
+
+  it('已驳回活动重投响应丢失且回读仍为原快照时有界重试', async () => {
+    const rejected = {
+      ...activity,
+      id: 'rejected-resubmit',
+      version: 4,
+      status: 'rejected' as const,
+    };
+    rideService.getAdminActivity.mockResolvedValue(rejected);
+    rideService.saveActivity
+      .mockRejectedValueOnce(callFailed('重投结果不确定'))
+      .mockResolvedValueOnce({ ...rejected, status: 'pending_review', version: 5 });
+
+    const saved = await page.publishDraft(rejected, rejected, 'pending_review');
+
+    expect(saved).toMatchObject({ id: 'rejected-resubmit', status: 'pending_review', version: 5 });
+    expect(rideService.saveActivity).toHaveBeenCalledTimes(2);
+    expect(rideService.saveActivity).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ status: 'pending_review' }),
+      'rejected-resubmit',
+      4,
+    );
   });
 
   it('发布已提交但响应丢失时按草稿 id 回读 published 新版本并收敛成功', async () => {

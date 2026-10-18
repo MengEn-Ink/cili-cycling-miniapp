@@ -1663,6 +1663,38 @@ describe('MockRepository readiness 与显式报名命令', () => {
     expect(result).not.toHaveProperty('internalOnly');
   });
 
+  it('MockRepository 活动审批按 requestId 与意图指纹幂等', async () => {
+    installStorage();
+    const repository = new MockRepository();
+    const state = JSON.parse(JSON.stringify(repository.read()));
+    state.activities[0] = {
+      ...state.activities[0],
+      id: 'mock-pending-review',
+      status: 'pending_review',
+      version: 2,
+      reviewVersion: 5,
+    };
+    stored = state;
+
+    const first = await repository.reviewActivity(
+      'mock-pending-review',
+      'approve',
+      5,
+      'review_mock_1',
+    );
+    const retry = await repository.reviewActivity(
+      'mock-pending-review',
+      'approve',
+      5,
+      'review_mock_1',
+    );
+    expect(retry).toEqual(first);
+    expect(repository.read().activities[0]).toMatchObject({ status: 'published', version: 3 });
+    await expect(
+      repository.reviewActivity('mock-pending-review', 'reject', 5, 'review_mock_1', '改期后重投'),
+    ).rejects.toMatchObject({ code: 'REVIEW_REQUEST_CONFLICT' });
+  });
+
   it('显式取消与审批命令复用确定的状态迁移', async () => {
     installStorage();
     const repository = new MockRepository();
@@ -1922,6 +1954,72 @@ describe('CloudRepository 管理员活动写入契约', () => {
       'VALIDATION_FAILED',
     );
     expect(invalid.callFunction).not.toHaveBeenCalled();
+  });
+
+  it('活动审批发送稳定意图并映射审核字段', async () => {
+    const reviewed = {
+      ...activity,
+      status: 'rejected',
+      version: 8,
+      review_version: 4,
+      approval_mode: 'club_review',
+      approved_role: 'ADMIN',
+      rejection_reason: '路线信息需要补充',
+    };
+    const { cloud, callFunction } = cloudWith(success(reviewed));
+
+    await expect(
+      new CloudRepository(cloud).reviewActivity(
+        'a1',
+        'reject',
+        3,
+        'review-request-0001',
+        '路线信息需要补充',
+      ),
+    ).resolves.toMatchObject({
+      id: 'a1',
+      status: 'rejected',
+      version: 8,
+      reviewVersion: 4,
+      approvalMode: 'club_review',
+      approvedRole: 'ADMIN',
+      rejectionReason: '路线信息需要补充',
+    });
+    expectCall(callFunction, 'activity-admin', {
+      action: 'review',
+      activityId: 'a1',
+      decision: 'reject',
+      expectedReviewVersion: 3,
+      requestId: 'review-request-0001',
+      reason: '路线信息需要补充',
+    });
+  });
+
+  it('活动审批对非法意图 fail closed，云端冲突保持稳定错误', async () => {
+    for (const args of [
+      ['a1', 'invalid', 3, 'review-request-0001'],
+      ['a1', 'approve', 0, 'review-request-0001'],
+      ['', 'approve', 3, 'review-request-0001'],
+      ['a1', 'approve', 3, 'short'],
+    ] as const) {
+      const invalid = cloudWith();
+      await expectCode(
+        new CloudRepository(invalid.cloud).reviewActivity(
+          ...(args as unknown as Parameters<CloudRepository['reviewActivity']>),
+        ),
+        'VALIDATION_FAILED',
+      );
+      expect(invalid.callFunction).not.toHaveBeenCalled();
+    }
+
+    const conflict = cloudWith({
+      ok: false,
+      error: { code: 'REVIEW_CONFLICT', message: '活动审核状态已更新，请刷新后重试' },
+    });
+    await expectCode(
+      new CloudRepository(conflict.cloud).reviewActivity('a1', 'approve', 3, 'review-request-0001'),
+      'REVIEW_CONFLICT',
+    );
   });
 
   it('clone 只发送源 ID、请求 ID 与可选新时间', async () => {

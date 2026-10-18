@@ -10,6 +10,7 @@ const {
   publicActivity,
   cloneActivity,
   saveActivity,
+  reviewActivity,
   deleteActivity,
   resolveTrustedClubIdentity,
 } = require('./domain-index');
@@ -388,7 +389,7 @@ test('状态机支持活动手动上线、下架和重新上线，同状态可�
   assert.doesNotThrow(() => assertStatusTransition('published', 'finished'));
   expectCode(() => assertStatusTransition('finished', 'published'), 'INVALID_TRANSITION');
 });
-test('俱乐部活动只持久化服务端可信快照，普通角色必须具备有效管理权限', async () => {
+test('俱乐部活动只持久化服务端可信快照，成员可投稿且未知角色默认拒绝', async () => {
   const club = {
     _id: 'club-1',
     name: ' 此里骑行社 ',
@@ -412,7 +413,12 @@ test('俱乐部活动只持久化服务端可信快照，普通角色必须具�
   });
   assert.deepEqual(memory.state.saved.club_identity, saved.club_identity);
 
-  for (const role of ['MEMBER', '', undefined]) {
+  const memberSaved = await saveActivity(
+    store(undefined, null, [], { club, membership: { ...membership, role: 'MEMBER' } }),
+    { openid: 'member-1', activity: { ...input, club_id: club._id } },
+  );
+  assert.equal(memberSaved.status, 'draft');
+  for (const role of ['', undefined, 'UNKNOWN']) {
     await assert.rejects(
       saveActivity(store(undefined, null, [], { club, membership: { ...membership, role } }), {
         openid: 'member-1',
@@ -744,24 +750,26 @@ test('draft 首次发布仍拒绝已过报名截止时间', async () => {
   );
 });
 
-test('普通成员可创建并发布自己的草稿，但不能编辑他人或结束活动', async () => {
+test('普通成员可创建草稿但不能直发公开活动，仍不能编辑他人或结束活动', async () => {
   const createdStore = store(undefined, null);
   const created = await saveActivity(createdStore, { openid: 'member-1', activity: input }, now);
   assert.equal(created.status, 'draft');
   assert.equal(createdStore.state.saved.created_by, 'member-1');
 
   const ownDraft = createdStore.state.saved;
-  const published = await saveActivity(
-    store(ownDraft, null),
-    {
-      openid: 'member-1',
-      activityId: ownDraft._id,
-      expectedVersion: 1,
-      activity: { ...input, status: 'published' },
-    },
-    now,
+  await assert.rejects(
+    saveActivity(
+      store(ownDraft, null),
+      {
+        openid: 'member-1',
+        activityId: ownDraft._id,
+        expectedVersion: 1,
+        activity: { ...input, status: 'published' },
+      },
+      now,
+    ),
+    { code: 'ADMIN_REQUIRED' },
   );
-  assert.equal(published.status, 'published');
   const offlineStore = store({ ...ownDraft, status: 'published' }, null);
   const offline = await saveActivity(
     offlineStore,
@@ -792,7 +800,7 @@ test('普通成员可创建并发布自己的草稿，但不能编辑他人或�
       expectedVersion: 1,
       activity: { ...input, status: 'finished' },
     }),
-    (error) => error.code === 'FORBIDDEN',
+    (error) => error.code === 'ADMIN_REQUIRED',
   );
 });
 
@@ -1659,4 +1667,245 @@ test('可信俱乐部快照头像只使用 avatar_url，不回退 cover 字段',
     isAdmin: false,
   });
   assert.equal(explicitEmpty.clubIdentity.avatar_url, '');
+});
+
+test('俱乐部 OWNER/ADMIN 审批活动使用 review_version CAS，重复 requestId 幂等', async () => {
+  const current = {
+    _id: 'activity-review-1',
+    ...input,
+    status: 'pending_review',
+    club_id: 'club-1',
+    review_scope: 'club',
+    review_target_id: 'club-1',
+    review_version: 1,
+    version: 2,
+    created_by: 'member',
+    is_deleted: false,
+  };
+  const state = { current, audits: [] };
+  const reviewStore = {
+    transaction: (work) =>
+      work({
+        getActivity: async () => state.current,
+        getAdmin: async () => null,
+        getClub: async () => ({ approval_status: 'approved', status: 'active' }),
+        getActiveClubMembership: async () => ({ role: 'ADMIN', status: 'active' }),
+        putActivity: async (_id, value) => {
+          state.current = value;
+        },
+        addAudit: async (value) => state.audits.push(value),
+      }),
+  };
+  const request = {
+    openid: 'club-admin',
+    activityId: current._id,
+    decision: 'approve',
+    requestId: 'review_request_1',
+    expectedReviewVersion: 1,
+  };
+  const approved = await reviewActivity(reviewStore, request, now);
+  assert.equal(approved.status, 'published');
+  assert.equal(approved.review_version, 2);
+  assert.equal(approved.approved_role, 'ADMIN');
+  assert.equal(state.audits.length, 1);
+  const retried = await reviewActivity(reviewStore, request, now);
+  assert.equal(retried.status, 'published');
+  assert.equal(state.audits.length, 1);
+  await assert.rejects(
+    reviewActivity(reviewStore, { ...request, requestId: 'review_request_2' }, now),
+    (error) => error instanceof DomainError && error.code === 'REVIEW_ALREADY_RESOLVED',
+  );
+});
+
+test('审批通过前重新校验报名截止时间，过期投稿保持待审且不写审计', async () => {
+  const current = {
+    _id: 'activity-expired-review',
+    ...input,
+    status: 'pending_review',
+    signup_deadline: '2026-09-28T00:00:00.000Z',
+    club_id: 'club-1',
+    review_scope: 'club',
+    review_target_id: 'club-1',
+    review_version: 1,
+    version: 2,
+    created_by: 'member',
+    is_deleted: false,
+  };
+  const reviewStore = store(current, null, [], {
+    club: { approval_status: 'approved', status: 'active' },
+    membership: { role: 'OWNER', status: 'active' },
+  });
+
+  await assert.rejects(
+    reviewActivity(
+      reviewStore,
+      {
+        openid: 'club-owner',
+        activityId: current._id,
+        decision: 'approve',
+        requestId: 'review_expired_1',
+        expectedReviewVersion: 1,
+      },
+      now,
+    ),
+    (error) =>
+      error instanceof DomainError &&
+      error.code === 'INVALID_ACTIVITY_TIME' &&
+      /晚于当前时间/.test(error.message),
+  );
+  assert.equal(reviewStore.state.saved, undefined);
+  assert.equal(reviewStore.state.audits.length, 0);
+});
+
+test('已驳回活动重投开启新审批轮次并清除旧审批幂等结果', async () => {
+  const club = {
+    _id: 'club-resubmit',
+    name: '重投俱乐部',
+    avatar_url: '',
+    approval_status: 'approved',
+    status: 'active',
+  };
+  const current = {
+    _id: 'activity-resubmit',
+    ...input,
+    status: 'rejected',
+    club_id: club._id,
+    review_scope: 'club',
+    review_target_id: club._id,
+    review_version: 4,
+    review_request_id: 'review_old_1',
+    review_request_fingerprint: 'old-fingerprint',
+    review_request_result: { status: 'rejected' },
+    version: 5,
+    created_by: 'member-1',
+    occupied_count: 0,
+    is_deleted: false,
+  };
+  const resubmitStore = store(current, null, [], {
+    club,
+    membership: { role: 'MEMBER', status: 'active' },
+  });
+
+  const saved = await saveActivity(
+    resubmitStore,
+    {
+      openid: 'member-1',
+      activityId: current._id,
+      expectedVersion: 5,
+      activity: { ...input, status: 'pending_review', club_id: club._id },
+    },
+    now,
+  );
+
+  assert.equal(saved.status, 'pending_review');
+  assert.equal(saved.review_version, 5);
+  assert.equal(Object.hasOwn(resubmitStore.state.saved, 'review_request_id'), false);
+  assert.equal(Object.hasOwn(resubmitStore.state.saved, 'review_request_fingerprint'), false);
+  assert.equal(Object.hasOwn(resubmitStore.state.saved, 'review_request_result'), false);
+});
+
+test('活动审批拒绝越权、停用俱乐部、空驳回原因与过期 review_version', async () => {
+  const current = {
+    _id: 'activity-review-2',
+    ...input,
+    status: 'pending_review',
+    club_id: 'club-1',
+    review_scope: 'club',
+    review_target_id: 'club-1',
+    review_version: 3,
+    version: 2,
+    created_by: 'member',
+    is_deleted: false,
+  };
+  const makeStore = ({ role = 'MEMBER', clubStatus = 'active' } = {}) => ({
+    transaction: (work) =>
+      work({
+        getActivity: async () => current,
+        getAdmin: async () => null,
+        getClub: async () => ({ approval_status: 'approved', status: clubStatus }),
+        getActiveClubMembership: async () => ({ role, status: 'active' }),
+      }),
+  });
+  const base = {
+    openid: 'reviewer',
+    activityId: current._id,
+    decision: 'approve',
+    requestId: 'review_request_3',
+    expectedReviewVersion: 3,
+  };
+  await assert.rejects(
+    reviewActivity(makeStore(), base, now),
+    (error) => error instanceof DomainError && error.code === 'FORBIDDEN',
+  );
+  await assert.rejects(
+    reviewActivity(makeStore({ role: 'ADMIN', clubStatus: 'suspended' }), base, now),
+    (error) => error instanceof DomainError && error.code === 'CLUB_UNAVAILABLE',
+  );
+  await assert.rejects(
+    reviewActivity(makeStore({ role: 'ADMIN' }), { ...base, expectedReviewVersion: 2 }, now),
+    (error) => error instanceof DomainError && error.code === 'REVIEW_CONFLICT',
+  );
+  await assert.rejects(
+    reviewActivity(makeStore({ role: 'ADMIN' }), { ...base, decision: 'reject', reason: ' ' }, now),
+    (error) => error instanceof DomainError && error.code === 'VALIDATION_FAILED',
+  );
+});
+
+test('普通成员投稿进入 pending_review，OWNER 以 role_auto_publish 直发', async () => {
+  const club = {
+    _id: 'club-submit',
+    name: '投稿俱乐部',
+    avatar_url: '',
+    approval_status: 'approved',
+    status: 'active',
+  };
+  const draft = {
+    _id: 'activity-submit',
+    ...input,
+    club_id: club._id,
+    club_identity: { id: club._id, name: club.name, avatar_url: '' },
+    version: 1,
+    created_by: 'member-submit',
+    created_at: now,
+    updated_at: now,
+    occupied_count: 0,
+    is_deleted: false,
+  };
+  const memberStore = store(draft, null, [], {
+    club,
+    membership: { club_id: club._id, openid: 'member-submit', role: 'MEMBER', status: 'active' },
+  });
+  const submitted = await saveActivity(
+    memberStore,
+    {
+      openid: 'member-submit',
+      activityId: draft._id,
+      expectedVersion: 1,
+      activity: { ...input, club_id: club._id, status: 'pending_review' },
+    },
+    now,
+  );
+  assert.equal(submitted.status, 'pending_review');
+  assert.equal(submitted.review_version, 1);
+  assert.equal(submitted.approval_mode, 'club_review');
+  assert.equal(memberStore.state.audits[0].action, 'activity.submit_review');
+
+  const ownerDraft = { ...draft, _id: 'activity-owner', created_by: 'club-owner' };
+  const ownerStore = store(ownerDraft, null, [], {
+    club,
+    membership: { club_id: club._id, openid: 'club-owner', role: 'OWNER', status: 'active' },
+  });
+  const published = await saveActivity(
+    ownerStore,
+    {
+      openid: 'club-owner',
+      activityId: ownerDraft._id,
+      expectedVersion: 1,
+      activity: { ...input, club_id: club._id, status: 'published' },
+    },
+    now,
+  );
+  assert.equal(published.status, 'published');
+  assert.equal(published.approval_mode, 'role_auto_publish');
+  assert.equal(published.approved_role, 'OWNER');
 });

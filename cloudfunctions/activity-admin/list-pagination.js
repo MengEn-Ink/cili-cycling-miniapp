@@ -5,7 +5,7 @@ const { fail, publicActivity } = require('./domain-index');
 const CURSOR_VERSION = 1;
 const MAX_CURSOR_LENGTH = 512;
 const MAX_PAGE_SIZE = 50;
-const VALID_STATUSES = ['draft', 'published', 'finished'];
+const VALID_STATUSES = ['draft', 'pending_review', 'rejected', 'published', 'finished'];
 const STATUS_FILTERS = new Set(['all', ...VALID_STATUSES]);
 const PHASES = ['dated', 'legacy', 'undated'];
 const MIN_ACTIVITY_DATE = new Date(0);
@@ -113,11 +113,15 @@ function eventStartIso(value) {
   fail('INTERNAL_ERROR', '活动开始时间格式错误');
 }
 
-function phaseBase(command, { openid, isAdmin, phase, statusFilter }) {
-  return {
-    ...(isAdmin ? {} : { created_by: openid }),
+function phaseBase(command, { openid, isAdmin, managedClubIds = [], phase, statusFilter }) {
+  const visibility = isAdmin
+    ? null
+    : managedClubIds.length
+      ? command.or({ created_by: openid }, { club_id: command.in(managedClubIds) })
+      : { created_by: openid };
+  const base = {
     status:
-      phase === 'undated'
+      phase === 'undated' && statusFilter === 'all'
         ? 'draft'
         : statusFilter === 'all'
           ? command.in(VALID_STATUSES)
@@ -130,6 +134,10 @@ function phaseBase(command, { openid, isAdmin, phase, statusFilter }) {
           ? command.gte('').and(command.lt({}))
           : command.exists(false),
   };
+  // 非平台管理员只能看本人活动和自己管理俱乐部的活动，待审列表不会跨组织泄露。
+  if (!visibility) return base;
+  if (!managedClubIds.length) return { ...base, ...visibility };
+  return command.and(base, visibility);
 }
 
 function listCondition(command, options) {
@@ -150,8 +158,7 @@ function listCondition(command, options) {
 async function readPhase(db, options) {
   if (
     options.phase === 'undated' &&
-    options.statusFilter !== 'all' &&
-    options.statusFilter !== 'draft'
+    !['all', 'draft', 'pending_review', 'rejected'].includes(options.statusFilter)
   )
     return [];
   let query = db.collection('activities').where(listCondition(db.command, options));
@@ -206,7 +213,12 @@ async function firstNonEmptyPhase(db, common, startIndex) {
 
 async function listActivitiesPage(db, identity, event) {
   const { pageSize, cursor, statusFilter } = parsePageRequest(event);
-  const common = { openid: identity.openid, isAdmin: identity.isAdmin, statusFilter };
+  const common = {
+    openid: identity.openid,
+    isAdmin: identity.isAdmin,
+    managedClubIds: identity.managedClubIds || [],
+    statusFilter,
+  };
   const items = [];
   const startIndex = PHASES.indexOf(cursor.phase);
 

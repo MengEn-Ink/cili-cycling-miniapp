@@ -226,6 +226,10 @@ function displayGatheringMode(
 }
 export class MockRepository implements RideRepository {
   private readonly activityCreateRequests = new Map<string, string>();
+  private readonly activityReviewRequests = new Map<
+    string,
+    { fingerprint: string; result: EditableActivity }
+  >();
   private clubApplication: ClubApplication | null = null;
   private managedClub: ManagedClubProfile = {
     id: `club_${'0'.repeat(64)}`,
@@ -758,6 +762,45 @@ export class MockRepository implements RideRepository {
     s.activities.unshift(draft);
     this.write(s);
     return draft;
+  }
+  async reviewActivity(
+    id: string,
+    decision: 'approve' | 'reject',
+    expectedReviewVersion: number,
+    requestId: string,
+    reason?: string,
+  ) {
+    const rejectionReason = decision === 'reject' ? String(reason || '').trim() : '';
+    if (!/^[A-Za-z0-9_-]{8,128}$/.test(requestId)) throw new Error('请求 ID 格式错误');
+    if (decision === 'reject' && !rejectionReason) throw new Error('驳回活动必须提供理由');
+    const fingerprint = JSON.stringify([id, decision, rejectionReason, expectedReviewVersion]);
+    const handled = this.activityReviewRequests.get(requestId);
+    if (handled) {
+      if (handled.fingerprint !== fingerprint) {
+        throw Object.assign(new Error('审批请求与已有处理结果冲突'), {
+          code: 'REVIEW_REQUEST_CONFLICT',
+        });
+      }
+      return handled.result;
+    }
+
+    const s = this.read();
+    const index = s.activities.findIndex((item) => item.id === id);
+    const current = s.activities[index];
+    if (!current || current.status !== 'pending_review') throw new Error('活动已被处理');
+    if (current.reviewVersion !== expectedReviewVersion) throw new Error('活动审批版本已变化');
+    const updated = {
+      ...current,
+      status: decision === 'approve' ? ('published' as const) : ('rejected' as const),
+      version: current.version + 1,
+      reviewVersion: expectedReviewVersion + 1,
+      rejectionReason,
+    };
+    s.activities.splice(index, 1, updated);
+    this.write(s);
+    // 与云端一致：先记住首次完成结果，再让相同 requestId 的网络重试直接返回该结果。
+    this.activityReviewRequests.set(requestId, { fingerprint, result: updated });
+    return updated;
   }
   async deleteActivity(id: string, _reason: string) {
     void _reason;

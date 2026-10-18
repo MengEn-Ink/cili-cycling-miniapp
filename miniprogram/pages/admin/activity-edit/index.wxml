@@ -167,7 +167,7 @@
 
     <view class="action-bar actions">
       <button class="button button--secondary secondary" loading="{{saving}}" data-status="draft" bindtap="save">保存草稿</button>
-      <button class="button button--primary" loading="{{saving}}" data-status="published" bindtap="save">{{status === 'published' ? '保存修改' : '发布活动'}}</button>
+      <button class="button button--primary" loading="{{saving}}" data-status="published" bindtap="save">{{status === 'published' ? '保存修改' : (!isAdmin && clubOptions[clubOptionIndex].clubId && clubOptions[clubOptionIndex].role !== 'OWNER' && clubOptions[clubOptionIndex].role !== 'ADMIN' ? '提交俱乐部审核' : '发布活动')}}</button>
     </view>
   </block>
 </view>

@@ -114,3 +114,15 @@ test('PR 只跑影响面，main 与夜间任务保留全量门禁', () => {
   assert.match(nightly, /CAN_TRIGGER_PR_CI/);
   assert.match(nightly, /gh pr merge --auto --squash/);
 });
+
+test('部署影响面测试先安装独立上传工具依赖', () => {
+  const source = readFileSync('scripts/affected-ci.mjs', 'utf8');
+  const deploymentBlock = source.match(/if \(plan\.deployment\) \{([\s\S]*?)\n[ ]{2}\}/)?.[1] ?? '';
+
+  assert.match(deploymentBlock, /runNpm\('tool:install'\)/);
+  assert.match(deploymentBlock, /runNpm\('test:deploy'\)/);
+  assert.ok(
+    deploymentBlock.indexOf("runNpm('tool:install')") <
+      deploymentBlock.indexOf("runNpm('test:deploy')"),
+  );
+});

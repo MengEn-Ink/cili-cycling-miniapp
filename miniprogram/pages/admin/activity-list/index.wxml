@@ -8,6 +8,8 @@
     <view class="status-filters" role="tablist" aria-label="活动状态筛选">
       <button class="status-filter {{statusFilter === 'all' ? 'active' : ''}}" role="tab" aria-selected="{{statusFilter === 'all'}}" data-status="all" bindtap="selectStatusFilter">全部</button>
       <button class="status-filter {{statusFilter === 'draft' ? 'active' : ''}}" role="tab" aria-selected="{{statusFilter === 'draft'}}" data-status="draft" bindtap="selectStatusFilter">已下架</button>
+      <button class="status-filter {{statusFilter === 'pending_review' ? 'active' : ''}}" role="tab" aria-selected="{{statusFilter === 'pending_review'}}" data-status="pending_review" bindtap="selectStatusFilter">待审核</button>
+      <button class="status-filter {{statusFilter === 'rejected' ? 'active' : ''}}" role="tab" aria-selected="{{statusFilter === 'rejected'}}" data-status="rejected" bindtap="selectStatusFilter">已驳回</button>
       <button class="status-filter {{statusFilter === 'published' ? 'active' : ''}}" role="tab" aria-selected="{{statusFilter === 'published'}}" data-status="published" bindtap="selectStatusFilter">已上线</button>
       <button class="status-filter {{statusFilter === 'finished' ? 'active' : ''}}" role="tab" aria-selected="{{statusFilter === 'finished'}}" data-status="finished" bindtap="selectStatusFilter">已结束</button>
     </view>
@@ -34,7 +36,9 @@
           <view><text>{{item.approvedMetric}}</text><text>已通过</text></view>
         </view>
         <view class="activity-actions">
-          <button class="secondary" catchtap="edit" data-id="{{item.id}}">编辑</button>
+          <button wx:if="{{item.canEdit}}" class="secondary" catchtap="edit" data-id="{{item.id}}">编辑</button>
+          <button wx:if="{{item.canReview}}" catchtap="reviewActivity" data-id="{{item.id}}" data-decision="approve" class="secondary">通过</button>
+          <button wx:if="{{item.canReview}}" catchtap="reviewActivity" data-id="{{item.id}}" data-decision="reject" class="secondary">驳回</button>
           <button wx:if="{{item.canToggleOnline}}" catchtap="toggleOnline" data-id="{{item.id}}" class="secondary">{{item.toggleLabel}}</button>
         </view>
         <view class="low-actions"><button wx:if="{{item.status === 'draft'}}" catchtap="confirmDelete" data-id="{{item.id}}" class="text-button">删除（仅草稿）</button><button wx:if="{{item.canClone}}" catchtap="startClone" data-id="{{item.id}}" class="text-button">从此活动创建</button></view>

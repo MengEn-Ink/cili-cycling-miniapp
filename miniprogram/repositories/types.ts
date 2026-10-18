@@ -38,7 +38,8 @@ export interface PublicActivityPage {
   asOf: string;
 }
 export type ActivityInput = Omit<EditableActivity, 'id' | 'date' | 'occupiedCount' | 'version'>;
-export type ActivityAdminStatusFilter = 'all' | 'draft' | 'published' | 'finished';
+export type ActivityAdminStatusFilter =
+  'all' | 'draft' | 'pending_review' | 'rejected' | 'published' | 'finished';
 export interface ActivityAdminPageInput {
   pageSize: number;
   cursor?: string;
@@ -67,6 +68,13 @@ export interface ActivityAdminRepository {
     operationReason?: string,
   ): Promise<EditableActivity>;
   cloneActivity(input: CloneActivityInput): Promise<EditableActivity>;
+  reviewActivity(
+    id: string,
+    decision: 'approve' | 'reject',
+    expectedReviewVersion: number,
+    requestId: string,
+    reason?: string,
+  ): Promise<EditableActivity>;
   deleteActivity(id: string, reason: string): Promise<void>;
 }
 export type GatheringMode = 'self_drive' | 'support_vehicle';

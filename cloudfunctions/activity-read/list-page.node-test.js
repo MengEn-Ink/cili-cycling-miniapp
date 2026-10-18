@@ -433,6 +433,8 @@ test('deleted、draft、未知状态、缺失或非法时间不占窗口', async
   const invalid = [
     activity('deleted', { is_deleted: true }),
     activity('draft', { status: 'draft' }),
+    activity('pending-review', { status: 'pending_review' }),
+    activity('rejected', { status: 'rejected' }),
     activity('unknown', { status: 'archived' }),
     activity('missing-end', { event_end: undefined }),
     activity('invalid-end', { event_end: 'invalid-time' }),

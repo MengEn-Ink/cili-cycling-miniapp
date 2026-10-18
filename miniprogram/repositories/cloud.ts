@@ -609,7 +609,7 @@ function mapActivity(raw: unknown, requireRegistrationDecision = false): Activit
   if (
     typeof value._id !== 'string' ||
     typeof value.title !== 'string' ||
-    !['draft', 'published', 'finished'].includes(value.status)
+    !['draft', 'pending_review', 'rejected', 'published', 'finished'].includes(value.status)
   )
     return invalidResponse();
   const fee = value.fee;
@@ -627,6 +627,14 @@ function mapActivity(raw: unknown, requireRegistrationDecision = false): Activit
     endAt: dateText(value.event_end),
     deadline: dateText(value.signup_deadline),
     status: value.status,
+    ...(Number.isInteger(value.review_version) ? { reviewVersion: value.review_version } : {}),
+    ...(['club_review', 'role_auto_publish'].includes(value.approval_mode)
+      ? { approvalMode: value.approval_mode }
+      : {}),
+    ...(typeof value.approved_role === 'string' ? { approvedRole: value.approved_role } : {}),
+    ...(typeof value.rejection_reason === 'string'
+      ? { rejectionReason: value.rejection_reason }
+      : {}),
     capacity: Number.isInteger(value.capacity) ? value.capacity : 0,
     ...(value.registration_unlimited === true ? { registrationUnlimited: true } : {}),
     ...(Number.isInteger(value.support_vehicle_capacity)
@@ -761,7 +769,7 @@ function mapEditableActivity(raw: unknown, requireCloneDraft = false): EditableA
     !value._id ||
     (value.version !== undefined && (!Number.isInteger(value.version) || value.version < 1)) ||
     typeof value.title !== 'string' ||
-    !['draft', 'published', 'finished'].includes(value.status) ||
+    !['draft', 'pending_review', 'rejected', 'published', 'finished'].includes(value.status) ||
     (value.capacity !== undefined && !Number.isInteger(value.capacity)) ||
     (requireCloneDraft && value.status !== 'draft')
   )
@@ -1399,7 +1407,11 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     )
       throw new CloudRepositoryError('VALIDATION_FAILED', '分页游标格式错误');
     const statusFilter = input.statusFilter || 'all';
-    if (!['all', 'draft', 'published', 'finished'].includes(statusFilter))
+    if (
+      !['all', 'draft', 'pending_review', 'rejected', 'published', 'finished'].includes(
+        statusFilter,
+      )
+    )
       throw new CloudRepositoryError('VALIDATION_FAILED', '活动状态筛选格式错误');
     const value = expectRecord(
       await this.call('activity-admin', {
@@ -1470,6 +1482,28 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
       }
     }
     return mapEditableActivity(await this.call('activity-admin', data), true);
+  }
+  async reviewActivity(
+    id: string,
+    decision: 'approve' | 'reject',
+    expectedReviewVersion: number,
+    requestId: string,
+    reason?: string,
+  ) {
+    if (!['approve', 'reject'].includes(decision))
+      throw new CloudRepositoryError('VALIDATION_FAILED', '审批决定无效');
+    if (!Number.isInteger(expectedReviewVersion) || expectedReviewVersion < 1)
+      throw new CloudRepositoryError('VALIDATION_FAILED', '审批版本格式错误');
+    return mapEditableActivity(
+      await this.call('activity-admin', {
+        action: 'review',
+        activityId: requiredId(id, '活动 ID'),
+        decision,
+        expectedReviewVersion,
+        requestId: boundedId(requestId, '请求 ID', 8, 128),
+        ...(reason === undefined ? {} : { reason }),
+      }),
+    );
   }
   async deleteActivity(id: string, reason: string) {
     // 服务端 delete 契约只信任调用者 OPENID 做权限校验，删除理由由页面显式采集。

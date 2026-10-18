@@ -8,6 +8,7 @@ const rideService = vi.hoisted(() => ({
   saveActivity: vi.fn(),
   deleteActivity: vi.fn(),
   cloneActivity: vi.fn(),
+  reviewActivity: vi.fn(),
 }));
 const appStore = vi.hoisted(() => ({
   authStatus: 'authenticated',
@@ -60,6 +61,7 @@ describe('活动管理页分页状态机', () => {
     rideService.saveActivity.mockReset();
     rideService.deleteActivity.mockReset();
     rideService.cloneActivity.mockReset();
+    rideService.reviewActivity.mockReset();
     appStore.authStatus = 'authenticated';
     appStore.role = 'member';
     appStore.ensureIdentity.mockReset().mockResolvedValue(undefined);
@@ -349,6 +351,57 @@ describe('活动管理页分页状态机', () => {
 
     await page.confirmDelete({ currentTarget: { dataset: { id: 'published' } } });
     expect(rideService.deleteActivity).toHaveBeenCalledWith('published', '路线临时封闭');
+  });
+
+  it('审批模糊失败与重复点击复用同一 requestId，并按活动互斥', async () => {
+    const first = deferred<void>();
+    rideService.reviewActivity
+      .mockImplementationOnce(() => first.promise)
+      .mockResolvedValueOnce(undefined);
+    const page = await loadPage();
+    page.data.items = [
+      { id: 'pending-1', status: 'pending_review', reviewVersion: 7, canReview: true },
+    ];
+    const event = { currentTarget: { dataset: { id: 'pending-1', decision: 'approve' } } };
+
+    const click1 = page.reviewActivity(event);
+    const click2 = page.reviewActivity({
+      currentTarget: { dataset: { id: 'pending-1', decision: 'reject' } },
+    });
+    expect(click2).toBe(click1);
+    expect(rideService.reviewActivity).toHaveBeenCalledTimes(1);
+    const requestId = rideService.reviewActivity.mock.calls[0][3];
+    first.reject(Object.assign(new Error('响应丢失'), { code: 'CALL_FAILED' }));
+    await click1;
+
+    await page.reviewActivity(event);
+    expect(rideService.reviewActivity).toHaveBeenCalledTimes(2);
+    expect(rideService.reviewActivity.mock.calls[1][3]).toBe(requestId);
+  });
+
+  it('审批成功或版本冲突后清理意图，新轮次与不同决定使用新 requestId', async () => {
+    rideService.reviewActivity
+      .mockRejectedValueOnce(Object.assign(new Error('版本冲突'), { code: 'REVIEW_CONFLICT' }))
+      .mockResolvedValue(undefined);
+    const page = await loadPage();
+    page.onShow = vi.fn().mockResolvedValue(undefined);
+    page.data.items = [
+      { id: 'pending-2', status: 'pending_review', reviewVersion: 3, canReview: true },
+    ];
+    const approve = { currentTarget: { dataset: { id: 'pending-2', decision: 'approve' } } };
+
+    await page.reviewActivity(approve);
+    const conflictedId = rideService.reviewActivity.mock.calls[0][3];
+    await page.reviewActivity(approve);
+    const retriedId = rideService.reviewActivity.mock.calls[1][3];
+    expect(retriedId).not.toBe(conflictedId);
+
+    page.data.items[0].reviewVersion = 4;
+    await page.reviewActivity({
+      currentTarget: { dataset: { id: 'pending-2', decision: 'reject' } },
+    });
+    expect(rideService.reviewActivity.mock.calls[2][3]).not.toBe(retriedId);
+    expect(rideService.reviewActivity.mock.calls[2][4]).toBe('路线临时封闭');
   });
 
   it('模板提供显式加载更多入口并反映加载状态', () => {

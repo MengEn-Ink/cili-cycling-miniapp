@@ -231,7 +231,11 @@ export function runAffectedPlan(plan) {
     runNpm('check:design');
     runNpm('check:ui-sync');
   }
-  if (plan.deployment) runNpm('test:deploy');
+  if (plan.deployment) {
+    // 部署测试会直接调用 tools/miniprogram-ci；目标检查必须先准备独立工具依赖，不能依赖全量门禁的前置步骤。
+    runNpm('tool:install');
+    runNpm('test:deploy');
+  }
   if (plan.bootstrap) runNpm('test:bootstrap');
 
   if (plan.cloudFunctions.length > 0) {

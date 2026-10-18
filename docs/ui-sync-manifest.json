@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "9a83ec94f4bb9b43fe8d4a6cb79e4ba12d6c014b",
+  "syncedThrough": "6676faa5ed9bd90affa4dcb50152f857a414cf50",
   "syncedAt": "2026-10-18T16:10:00.000Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:31e71a404299fc87180d0b78d99416bb4a103d50c1bc0e8670e4f1e78a1bb2fa"
+    "digest": "sha256:75129953062b829af23cbd1fc1bd593830e53bb74e2320cc1b20dcb584941037"
   },
   "prototype": {
-    "digest": "sha256:75988e90ec7c34ee00ecf405f8ecc35310f67496e08428e03448de826948d3fe"
+    "digest": "sha256:23ab5ace7b43efbbafeeb6f0d51ab3c724dc552cfea8da29c2c0aba59c13449c"
   },
   "routes": [
     {
@@ -183,19 +183,19 @@
         "id": "admin-activity-list",
         "devtools": "admin-activity-list-devtools.png",
         "pages": "admin-activity-list-pages.png",
-        "state": "有活动",
+        "state": "待审核俱乐部活动",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "Pages 完整交互原型已在 2026-10-18 使用本地浏览器重新采集 375×812 截图；DevTools 证据仍保持 blocked，待新开发版逐页复验。"
+        "note": "Pages 原型已同步待审核 / 已驳回筛选及通过 / 驳回操作，并使用本地 Aime 浏览器重采 375×812 证据；DevTools 仍保持 blocked，需在新开发版中复验，未声明 aligned。"
       },
       {
         "id": "admin-activity-edit",
         "devtools": "admin-activity-edit-devtools.png",
         "pages": "admin-activity-edit-pages.png",
-        "state": "空白创建",
+        "state": "成员向俱乐部投稿",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "Pages 完整交互原型已在 2026-10-18 使用本地浏览器重新采集 375×812 截图；DevTools 证据仍保持 blocked，待新开发版逐页复验。"
+        "note": "Pages 原型已同步成员提交俱乐部审核、负责人 / 管理员直发及驳回后重投文案，并使用本地 Aime 浏览器重采 375×812 证据；DevTools 仍保持 blocked，需在新开发版中复验，未声明 aligned。"
       },
       {
         "id": "admin-reviews",
