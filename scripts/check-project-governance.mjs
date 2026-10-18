@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
 import appRoutes from './app-routes.cjs';
+import { assertUnifiedMediaUpload } from './media-upload-governance.mjs';
 
 const read = (file) => readFileSync(file, 'utf8');
 const requireText = (content, expected, source) => {
@@ -116,4 +117,8 @@ requireText(
   '.github/PULL_REQUEST_TEMPLATE.md',
 );
 
-console.log(`项目治理校验通过：${pageCount} 个页面、README 引用、源码卫生与 Actions 安全基线一致`);
+assertUnifiedMediaUpload();
+
+console.log(
+  `项目治理校验通过：${pageCount} 个页面、README 引用、统一媒体上传、源码卫生与 Actions 安全基线一致`,
+);

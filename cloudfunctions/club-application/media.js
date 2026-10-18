@@ -1,5 +1,7 @@
 'use strict';
 
+const crypto = require('node:crypto');
+
 const safeText = (value) => (typeof value === 'string' ? value.trim() : '');
 
 function cloudPath(fileId) {
@@ -7,9 +9,42 @@ function cloudPath(fileId) {
   return match ? match[1] : '';
 }
 
-function trustedCover(fileId, applicantOpenid) {
+function trustedCover(fileId, applicantOpenid, category = '') {
   const owner = safeText(applicantOpenid);
-  return Boolean(owner && cloudPath(fileId).startsWith(`club-applications/${owner}/`));
+  const path = cloudPath(fileId);
+  if (owner && path.startsWith(`club-applications/${owner}/`)) return true;
+  const secret = safeText(process.env.PROFILE_MEDIA_PATH_SECRET);
+  if (!owner || secret.length < 32) return false;
+  const alias = crypto.createHmac('sha256', secret).update(owner).digest('hex').slice(0, 32);
+  return new RegExp(
+    `^profile-canonical/${alias}/${category || '(?:club-avatar|club-cover)'}/[a-f0-9]{64}/[a-f0-9]{64}\\.(?:jpg|png|webp)$`,
+    'i',
+  ).test(path);
+}
+
+async function activateClubMediaReferences(tx, owner, value, now) {
+  if (typeof tx?.getProfileMediaByCanonical !== 'function') return;
+  const references = [
+    [value?.avatar_file_id || value?.avatar_url, 'club-avatar'],
+    [value?.cover_file_id, 'club-cover'],
+  ];
+  for (const [rawFileId, category] of references) {
+    const fileId = safeText(rawFileId);
+    if (!fileId || !trustedCover(fileId, owner, category)) continue;
+    if (!cloudPath(fileId).startsWith('profile-canonical/')) continue;
+    const record = await tx.getProfileMediaByCanonical(fileId, owner, category);
+    if (
+      !record ||
+      record.canonical_file_id !== fileId ||
+      record.owner_openid !== owner ||
+      record.category !== category ||
+      !['unreferenced', 'active'].includes(record.status)
+    )
+      throw Object.assign(new Error('俱乐部媒体登记不可用'), {
+        code: 'MEDIA_REGISTRATION_INVALID',
+      });
+    if (record.status !== 'active') await tx.activateProfileMedia(record._id, now);
+  }
 }
 
 async function resolveFileIds(cloud, fileIds, warning) {
@@ -35,9 +70,15 @@ async function resolveApplicationCovers(cloud, applications, applicantOpenid = '
   const values = Array.isArray(applications) ? applications : [];
   const trustedIds = values.flatMap((application) => {
     const owner = safeText(applicantOpenid || application?.applicant_openid);
-    return ['avatar_file_id', 'cover_file_id']
-      .map((field) => safeText(application?.[field]))
-      .filter((fileId) => trustedCover(fileId, owner));
+    return [
+      ['avatar_file_id', 'club-avatar'],
+      ['cover_file_id', 'club-cover'],
+    ]
+      .map(([field, category]) => {
+        const fileId = safeText(application?.[field]);
+        return trustedCover(fileId, owner, category) ? fileId : '';
+      })
+      .filter(Boolean);
   });
   const urls = await resolveFileIds(
     cloud,
@@ -50,8 +91,8 @@ async function resolveApplicationCovers(cloud, applications, applicantOpenid = '
     const coverId = safeText(application?.cover_file_id);
     return {
       ...application,
-      avatar_url: trustedCover(avatarId, owner) ? urls.get(avatarId) || '' : '',
-      cover_url: trustedCover(coverId, owner) ? urls.get(coverId) || '' : '',
+      avatar_url: trustedCover(avatarId, owner, 'club-avatar') ? urls.get(avatarId) || '' : '',
+      cover_url: trustedCover(coverId, owner, 'club-cover') ? urls.get(coverId) || '' : '',
     };
   });
 }
@@ -80,6 +121,7 @@ async function resolveJoinableClubAvatars(cloud, clubs) {
 }
 
 module.exports = {
+  activateClubMediaReferences,
   resolveApplicationCover,
   resolveApplicationCovers,
   resolveJoinableClubAvatars,

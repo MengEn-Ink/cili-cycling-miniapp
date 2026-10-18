@@ -24,7 +24,7 @@
     "cloudbase:smoke:club-application": "node scripts/cloudbase-club-application-smoke.mjs",
     "verify:cloud-packages": "node scripts/verify-cloud-packages.mjs",
     "coverage": "vitest run --coverage && node --experimental-test-coverage --test scripts/bootstrap-cloudbase.node-test.mjs && node scripts/check-cloud-coverage.mjs",
-    "test:deploy": "node --test scripts/miniprogram-upload-decision.node-test.mjs scripts/upload-miniprogram-ci.node-test.mjs scripts/miniprogram-experience-release.node-test.mjs scripts/audit-miniprogram-ci.node-test.mjs",
+    "test:deploy": "node --test scripts/miniprogram-upload-decision.node-test.mjs scripts/upload-miniprogram-ci.node-test.mjs scripts/miniprogram-experience-release.node-test.mjs scripts/audit-miniprogram-ci.node-test.mjs scripts/media-upload-governance.node-test.mjs",
     "check:experience-releases": "node scripts/miniprogram-experience-release.mjs verify-repository --directory docs/releases/experience --base \"${RELEASE_NOTES_BASE:-}\"",
     "check:release-notes": "node scripts/check-release-notes.mjs",
     "check:main-package": "node scripts/check-main-package-size.mjs",

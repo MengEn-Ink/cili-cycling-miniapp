@@ -17,7 +17,7 @@ const {
 } = require('./domain');
 const { assertUsableRoutePreview, mergeTrustedPreviewRoute } = require('./route-preview');
 const { assertUsablePublicRoutePreview } = require('./public-route-preview');
-const { validateActivityMediaOwnership } = require('./media');
+const { activateActivityMediaReferences, validateActivityMediaOwnership } = require('./media');
 
 const CLONE_REQUEST_FIELDS = new Set([
   'action',
@@ -669,6 +669,7 @@ async function saveActivity(
       }
     }
     await tx.putActivity(id, value);
+    await activateActivityMediaReferences(tx, openid, value, now);
     for (const preview of routePreviewsToConsume)
       await tx.consumeRoutePreview(preview._id, id, now);
     const audit = buildActivityAudit(

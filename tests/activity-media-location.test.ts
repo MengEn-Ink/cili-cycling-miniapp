@@ -7,6 +7,8 @@ import { formatActivityDate, formatChinaDateTime } from '../miniprogram/utils/da
 const rideService = vi.hoisted(() => ({
   getAdminActivity: vi.fn(),
   saveActivity: vi.fn(),
+  issueMediaUploadPath: vi.fn(),
+  finalizeMediaUpload: vi.fn(),
 }));
 const appStore = vi.hoisted(() => ({
   role: 'admin',
@@ -60,6 +62,15 @@ describe('日常活动封面、说明与地图', () => {
     vi.resetModules();
     rideService.getAdminActivity.mockReset().mockResolvedValue(activity);
     rideService.saveActivity.mockReset().mockResolvedValue(activity);
+    rideService.issueMediaUploadPath
+      .mockReset()
+      .mockImplementation(
+        async (_category: string, requestId: string) =>
+          `profiles/activity-media/owner/${requestId}.jpg`,
+      );
+    rideService.finalizeMediaUpload
+      .mockReset()
+      .mockImplementation(async (fileId: string) => ({ canonicalFileId: fileId }));
     appStore.ensureIdentity.mockReset().mockResolvedValue(undefined);
     chooseMedia = vi.fn();
     chooseLocation = vi.fn();

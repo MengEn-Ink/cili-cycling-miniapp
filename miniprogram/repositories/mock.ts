@@ -560,6 +560,12 @@ export class MockRepository implements RideRepository {
   async getProfileMediaUploadPath() {
     return 'profiles/00000000000000000000000000000000/00000000-0000-4000-8000-000000000000.jpg';
   }
+  async issueMediaUploadPath(category: string) {
+    return `profiles/00000000000000000000000000000000/${category}/00000000-0000-4000-8000-000000000000.jpg`;
+  }
+  async finalizeMediaUpload(fileId: string) {
+    return { canonicalFileId: fileId };
+  }
   async getPersonalCapabilityCard(): Promise<PersonalCapabilityCard> {
     const currentProfile = this.read().profile;
     return {

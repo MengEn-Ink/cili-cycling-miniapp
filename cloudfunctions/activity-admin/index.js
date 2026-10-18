@@ -129,6 +129,29 @@ function transactionStore() {
             }
             return registrations;
           },
+          getProfileMediaByCanonical: async (fileId, ownerOpenid, category) => {
+            const result = await transaction
+              .collection('profile_media')
+              .where({ canonical_file_id: fileId, owner_openid: ownerOpenid, category })
+              .limit(2)
+              .get();
+            return Array.isArray(result?.data) && result.data.length === 1
+              ? result.data[0]
+              : undefined;
+          },
+          activateProfileMedia: (id, referencedAt) =>
+            transaction
+              .collection('profile_media')
+              .doc(id)
+              .update({
+                data: {
+                  status: 'active',
+                  referenced_at: referencedAt,
+                  cleanup_after: null,
+                  delete_lease_id: '',
+                  updated_at: referencedAt,
+                },
+              }),
           createActivityId: async () => `activity_${crypto.randomUUID()}`,
           putActivity: async (id, value) => {
             const { _id, ...data } = value;

@@ -14,6 +14,8 @@ const rideService = vi.hoisted(() => ({
   getProfile: vi.fn(),
   getAdminActivity: vi.fn(),
   saveActivity: vi.fn(),
+  issueMediaUploadPath: vi.fn(),
+  finalizeMediaUpload: vi.fn(),
 }));
 const appStore = vi.hoisted(() => ({
   openid: 'owner-openid',
@@ -132,6 +134,15 @@ describe('日常活动极简创建与编辑', () => {
     rideService.getProfile.mockReset().mockResolvedValue({ clubs: [] });
     rideService.getAdminActivity.mockReset().mockResolvedValue(activity);
     rideService.saveActivity.mockReset().mockResolvedValue({ ...activity, version: 8 });
+    rideService.issueMediaUploadPath
+      .mockReset()
+      .mockImplementation(
+        async (category: string, requestId: string, extension = 'jpg') =>
+          `profiles/${category}/owner-openid/${requestId}.${extension}`,
+      );
+    rideService.finalizeMediaUpload
+      .mockReset()
+      .mockImplementation(async (fileId: string) => ({ canonicalFileId: fileId }));
     appStore.ensureIdentity.mockReset().mockResolvedValue(undefined);
     vi.stubGlobal('wx', {
       cloud: {},
@@ -1206,7 +1217,7 @@ describe('日常活动极简创建与编辑', () => {
     const uploadFile = vi
       .fn()
       .mockResolvedValueOnce({ fileID: 'cloud://success.jpg' })
-      .mockRejectedValueOnce(new Error('network'))
+      .mockRejectedValueOnce(new Error('permission denied'))
       .mockResolvedValueOnce({ fileID: 'cloud://retry.jpg' });
     let saved: Activity | undefined;
     rideService.saveActivity.mockImplementation(async (payload: any) => {
@@ -1246,7 +1257,7 @@ describe('日常活动极简创建与编辑', () => {
     const uploadFile = vi
       .fn()
       .mockResolvedValueOnce({ fileID: 'cloud://success.jpg' })
-      .mockRejectedValueOnce(new Error('network'))
+      .mockRejectedValueOnce(new Error('permission denied'))
       .mockResolvedValueOnce({ fileID: 'cloud://retry.jpg' });
     Object.assign(wx, {
       chooseMedia: vi.fn().mockResolvedValue({
@@ -1420,10 +1431,12 @@ describe('日常活动极简创建与编辑', () => {
 
     await page.chooseRouteGpx();
 
-    expect(uploadFile).toHaveBeenCalledWith({
-      cloudPath: `activity-routes/${appStore.openid}/${digest}.gpx`,
-      filePath: '/tmp/weekend.gpx',
-    });
+    expect(uploadFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cloudPath: `activity-routes/${appStore.openid}/${digest}.gpx`,
+        filePath: '/tmp/weekend.gpx',
+      }),
+    );
     expect(rideService.previewRouteGpx).toHaveBeenCalledWith({
       gpxFileId: fileId,
       gpxSha256: digest,
@@ -1597,10 +1610,12 @@ describe('日常活动极简创建与编辑', () => {
 
     await page.renderRouteVisuals();
 
-    expect(uploadFile).toHaveBeenCalledWith({
-      cloudPath: `activity-routes/${appStore.openid}/${digest}.png`,
-      filePath: '/tmp/route.png',
-    });
+    expect(uploadFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cloudPath: `activity-routes/${appStore.openid}/${digest}.png`,
+        filePath: '/tmp/route.png',
+      }),
+    );
     expect(rideService.bindRoutePreviewImage).toHaveBeenCalledWith(
       preview.previewId,
       generatedFileId,

@@ -9,6 +9,14 @@ const RECOVERY_LEASE_MS = 5 * 60 * 1000;
 const RECOVERY_CONFIRMATION_MS = RECOVERY_LEASE_MS;
 const MAX_DELETE_ATTEMPTS = 3;
 const RETRY_BASE_MS = 5 * 60 * 1000;
+const MEDIA_CATEGORIES = [
+  'profile-avatar',
+  'profile-background',
+  'activity-image',
+  'activity-group-qr',
+  'club-avatar',
+  'club-cover',
+];
 
 function coded(code, message) {
   const error = new Error(message);
@@ -22,12 +30,13 @@ function authorizeCleanup(event, openid) {
   return 'timer-worker';
 }
 
-function profileReferences(profile, fileId) {
+function profileReferences(profile, ...fileIds) {
   if (!profile || typeof profile !== 'object') return false;
-  if (profile.avatar_file_id === fileId) return true;
-  if (profile.background_photo && profile.background_photo.file_id === fileId) return true;
+  const candidates = new Set(fileIds.filter((fileId) => typeof fileId === 'string' && fileId));
+  if (candidates.has(profile.avatar_file_id)) return true;
+  if (profile.background_photo && candidates.has(profile.background_photo.file_id)) return true;
   return (Array.isArray(profile.photos) ? profile.photos : []).some(
-    (item) => item && item.file_id === fileId,
+    (item) => item && candidates.has(item.file_id),
   );
 }
 
@@ -43,11 +52,13 @@ function validImportCloudPath(record, secretValue) {
   if (!record || typeof record.cloud_path !== 'string') return false;
   const prefix = mediaOwnerPrefix(record.owner_openid, secretValue);
   const filename = record.cloud_path.slice(prefix.length);
+  const categoryPattern = MEDIA_CATEGORIES.join('|');
   return (
     record.cloud_path.startsWith(prefix) &&
-    /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\.(?:jpg|png|webp)$/i.test(
-      filename,
-    )
+    new RegExp(
+      `^(?:(?:${categoryPattern})/)?[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\\.(?:jpg|png|webp)$`,
+      'i',
+    ).test(filename)
   );
 }
 
@@ -79,9 +90,11 @@ function validCanonicalIntentPath(record, secretValue) {
   const ownerAlias = mediaOwnerPrefix(record.owner_openid, secretValue).split('/')[1];
   const sourceDigest = crypto.createHash('sha256').update(record.source_file_id).digest('hex');
   const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[record.mime];
+  const categoryPath = record.category ? `${record.category}/` : '';
+  if (record.category && !MEDIA_CATEGORIES.includes(record.category)) return false;
   return (
     record.cloud_path ===
-    `profile-canonical/${ownerAlias}/${sourceDigest}/${record.sha256}.${extension}`
+    `profile-canonical/${ownerAlias}/${categoryPath}${sourceDigest}/${record.sha256}.${extension}`
   );
 }
 
@@ -101,7 +114,10 @@ function validCanonicalMedia(record, secretValue) {
   const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[record.mime];
   const ownerAlias = mediaOwnerPrefix(record.owner_openid, secretValue).split('/')[1];
   const sourceDigest = crypto.createHash('sha256').update(record.file_id).digest('hex');
-  const expectedPath = `profile-canonical/${ownerAlias}/${sourceDigest}/${record.sha256}.${extension}`;
+  const categoryPath = record.canonical_category ? `${record.canonical_category}/` : '';
+  if (record.canonical_category && !MEDIA_CATEGORIES.includes(record.canonical_category))
+    return false;
+  const expectedPath = `profile-canonical/${ownerAlias}/${categoryPath}${sourceDigest}/${record.sha256}.${extension}`;
   const slash = record.canonical_file_id.indexOf('/', 'cloud://'.length);
   const actualPath =
     record.canonical_file_id.startsWith('cloud://') && slash >= 0
@@ -150,7 +166,7 @@ function claimDecision(record, profile, now, leaseId, mediaSecret) {
     };
   }
   if (profile && profile._id !== record.owner_openid) return null;
-  if (profileReferences(profile, record.file_id)) {
+  if (profileReferences(profile, record.file_id, record.canonical_file_id)) {
     return {
       kind: 'referenced',
       update: {

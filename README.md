@@ -150,14 +150,14 @@ npm run deploy:miniprogram
 
 以 `cloudfunctions/.env.example` 为键名清单，只在 CloudBase 控制台配置真实值：
 
-| 变量                                                             | 使用方                                                              | 说明                                                               |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `PII_ENCRYPTION_KEY`                                             | `profile`、`admin-review`                                           | base64 编码的 32 字节密钥；两者必须完全一致                        |
-| `PROFILE_MEDIA_PATH_SECRET`                                      | `profile`、`profile-media-cleanup`、`admin-review`、`activity-read` | 至少 32 字符，四者必须一致；`activity-read` 缺失时头像 fail closed |
-| `REVIEW_APPROVED_TEMPLATE_ID` / `REVIEW_REJECTED_TEMPLATE_ID`    | `notification-send`                                                 | 审批订阅消息模板                                                   |
-| `WAITLIST_ENTERED_TEMPLATE_ID` / `WAITLIST_PROMOTED_TEMPLATE_ID` | `notification-send`                                                 | 候补进入与候补转正消息模板                                         |
-| `ACTIVITY_REMINDER_TEMPLATE_ID`                                  | `notification-send`                                                 | 活动提醒消息模板                                                   |
-| `OAUTH_RETIREMENT_PURGE_ENABLED`                                 | `route-maintenance`                                                 | 默认 `0`；仅在新链路验收、dry-run 与备份核对后临时设为 `1`         |
+| 变量                                                             | 使用方                                                                                                    | 说明                                                                    |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `PII_ENCRYPTION_KEY`                                             | `profile`、`admin-review`                                                                                 | base64 编码的 32 字节密钥；两者必须完全一致                             |
+| `PROFILE_MEDIA_PATH_SECRET`                                      | `profile`、`profile-media-cleanup`、`admin-review`、`activity-read`、`activity-admin`、`club-application` | 至少 32 字符，六者必须一致；读取或业务媒体 owner 校验缺失时 fail closed |
+| `REVIEW_APPROVED_TEMPLATE_ID` / `REVIEW_REJECTED_TEMPLATE_ID`    | `notification-send`                                                                                       | 审批订阅消息模板                                                        |
+| `WAITLIST_ENTERED_TEMPLATE_ID` / `WAITLIST_PROMOTED_TEMPLATE_ID` | `notification-send`                                                                                       | 候补进入与候补转正消息模板                                              |
+| `ACTIVITY_REMINDER_TEMPLATE_ID`                                  | `notification-send`                                                                                       | 活动提醒消息模板                                                        |
+| `OAUTH_RETIREMENT_PURGE_ENABLED`                                 | `route-maintenance`                                                                                       | 默认 `0`；仅在新链路验收、dry-run 与备份核对后临时设为 `1`              |
 
 仓库禁止保存 secret、token、真实 `openid`、手机号、OAuth code/state、密文或真实旅程原始证据。
 

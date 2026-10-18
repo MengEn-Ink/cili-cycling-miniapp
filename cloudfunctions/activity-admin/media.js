@@ -1,3 +1,5 @@
+const crypto = require('node:crypto');
+
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
 
 const safeText = (value) => (typeof value === 'string' ? value.trim() : '');
@@ -40,16 +42,31 @@ const cloudPath = (fileId) => {
   return match ? match[1] : '';
 };
 
-const trustedOwnerPath = (fileId, openid) => {
+const canonicalOwnerAlias = (openid, secret = process.env.PROFILE_MEDIA_PATH_SECRET) => {
+  const owner = safeText(openid);
+  const key = safeText(secret);
+  if (!owner || key.length < 32) return '';
+  return crypto.createHmac('sha256', key).update(owner).digest('hex').slice(0, 32);
+};
+
+const trustedOwnerPath = (fileId, openid, category = '') => {
   const path = cloudPath(fileId);
   const owner = safeText(openid);
+  const alias = canonicalOwnerAlias(owner);
   return (
     owner &&
-    [
+    ([
       `profiles/activity-media/${owner}/`,
       `profiles/activity-group-qr/${owner}/`,
       `activity-routes/${owner}/`,
-    ].some((prefix) => path.startsWith(prefix))
+    ].some((prefix) => path.startsWith(prefix)) ||
+      Boolean(
+        alias &&
+        new RegExp(
+          `^profile-canonical/${alias}/${category || '(?:activity-image|activity-group-qr)'}/[a-f0-9]{64}/[a-f0-9]{64}\\.(?:jpg|png|webp)$`,
+          'i',
+        ).test(path),
+      ))
   );
 };
 
@@ -59,11 +76,50 @@ const validateActivityMediaOwnership = (openid, nextActivity, currentActivity) =
   const existing = new Set(activityMediaFileIds(currentActivity));
   const nextPublic = ['published', 'finished'].includes(nextActivity?.status);
   const currentPublic = ['published', 'finished'].includes(currentActivity?.status);
-  return activityMediaFileIds(nextActivity).every((fileId) => {
+  const checks = [
+    ...(Array.isArray(nextActivity?.images)
+      ? nextActivity.images.map((fileId) => [fileId, 'activity-image'])
+      : []),
+    [nextActivity?.cover_image, 'activity-image'],
+    [nextActivity?.group_qr_code, 'activity-group-qr'],
+    [nextActivity?.route?.gpx_file_id, ''],
+    [nextActivity?.route?.generated_preview_file_id, ''],
+  ].filter(([fileId]) => safeText(fileId));
+  return checks.every(([rawFileId, category]) => {
+    const fileId = safeText(rawFileId);
     if (!fileId.startsWith('cloud://')) return true;
     if (existing.has(fileId) && (!nextPublic || currentPublic)) return true;
-    return trustedOwnerPath(fileId, owner);
+    return trustedOwnerPath(fileId, owner, category);
   });
+};
+
+const activateActivityMediaReferences = async (tx, openid, activity, now) => {
+  if (typeof tx?.getProfileMediaByCanonical !== 'function') return;
+  const references = [
+    ...(Array.isArray(activity?.images)
+      ? activity.images.map((fileId) => [fileId, 'activity-image'])
+      : []),
+    [activity?.cover_image, 'activity-image'],
+    [activity?.group_qr_code, 'activity-group-qr'],
+  ];
+  const seen = new Set();
+  for (const [rawFileId, category] of references) {
+    const fileId = safeText(rawFileId);
+    const key = `${category}:${fileId}`;
+    if (!fileId || seen.has(key) || !trustedOwnerPath(fileId, openid, category)) continue;
+    seen.add(key);
+    if (!cloudPath(fileId).startsWith('profile-canonical/')) continue;
+    const record = await tx.getProfileMediaByCanonical(fileId, openid, category);
+    if (
+      !record ||
+      record.canonical_file_id !== fileId ||
+      record.owner_openid !== openid ||
+      record.category !== category ||
+      !['unreferenced', 'active'].includes(record.status)
+    )
+      throw Object.assign(new Error('活动媒体登记不可用'), { code: 'MEDIA_REGISTRATION_INVALID' });
+    if (record.status !== 'active') await tx.activateProfileMedia(record._id, now);
+  }
 };
 
 const resolveActivityMedia = async (cloud, activity, openid) => {
@@ -105,6 +161,7 @@ const resolveActivityMedia = async (cloud, activity, openid) => {
 };
 
 module.exports = {
+  activateActivityMediaReferences,
   resolveActivityMedia,
   validateActivityMediaOwnership,
 };

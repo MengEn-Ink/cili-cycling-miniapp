@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('node:crypto');
+const { activateClubMediaReferences } = require('./media');
 
 class ClubApplicationError extends Error {
   constructor(code, message) {
@@ -22,6 +23,25 @@ const text = (value, label, min, max) => {
   return normalized;
 };
 
+function canonicalOwnerAlias(openid, secret = process.env.PROFILE_MEDIA_PATH_SECRET) {
+  const key = typeof secret === 'string' ? secret.trim() : '';
+  if (!openid || key.length < 32) return '';
+  return crypto.createHmac('sha256', key).update(openid).digest('hex').slice(0, 32);
+}
+
+function ownedClubMedia(fileId, openid, category) {
+  const legacy = new RegExp(`^cloud://[^/]+/club-applications/${openid}/.+`).test(fileId);
+  if (legacy) return true;
+  const alias = canonicalOwnerAlias(openid);
+  return Boolean(
+    alias &&
+    new RegExp(
+      `^cloud://[^/]+/profile-canonical/${alias}/${category}/[a-f0-9]{64}/[a-f0-9]{64}\\.(?:jpg|png|webp)$`,
+      'i',
+    ).test(fileId),
+  );
+}
+
 function normalizeInput(raw, openid) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw))
     fail('VALIDATION_FAILED', '申请资料格式错误');
@@ -32,14 +52,14 @@ function normalizeInput(raw, openid) {
   if (!Number.isInteger(expectedSize) || expectedSize < 2 || expectedSize > 10000)
     fail('VALIDATION_FAILED', '预计成员规模需为 2-10000 人');
   const avatarFileId = text(raw.avatar_file_id, '俱乐部头像', 10, 512);
-  if (!avatarFileId.includes(`/club-applications/${openid}/`))
+  if (!ownedClubMedia(avatarFileId, openid, 'club-avatar'))
     fail('VALIDATION_FAILED', '请重新上传俱乐部头像');
   if (raw.cover_file_id !== undefined && typeof raw.cover_file_id !== 'string')
     fail('VALIDATION_FAILED', '俱乐部背景照片格式错误');
   const coverFileId = typeof raw.cover_file_id === 'string' ? raw.cover_file_id.trim() : '';
   if (
     coverFileId &&
-    (coverFileId.length > 512 || !coverFileId.includes(`/club-applications/${openid}/`))
+    (coverFileId.length > 512 || !ownedClubMedia(coverFileId, openid, 'club-cover'))
   )
     fail('VALIDATION_FAILED', '请重新上传俱乐部背景照片');
   return {
@@ -108,6 +128,7 @@ async function saveDraft(store, { openid, input }, now) {
       updated_at: now.toISOString(),
     };
     await tx.putApplication(id, next);
+    await activateClubMediaReferences(tx, openid, next, now);
     return project(next);
   });
 }
@@ -136,6 +157,7 @@ async function submitApplication(store, { openid, input, requestId }, now) {
       updated_at: now.toISOString(),
     };
     await tx.putApplication(id, next);
+    await activateClubMediaReferences(tx, openid, next, now);
     await tx.addAudit({
       actor_openid: openid,
       action: 'club_application_submitted',
@@ -301,11 +323,6 @@ function projectManagedClub(club) {
   };
 }
 
-function managedAvatarOwner(fileId) {
-  const match = /^cloud:\/\/[^/]+\/club-applications\/([^/]+)\/.+/.exec(fileId);
-  return match ? match[1] : '';
-}
-
 function normalizeManagedClubInput(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw))
     fail('VALIDATION_FAILED', '俱乐部资料格式错误');
@@ -323,7 +340,11 @@ function normalizeManagedClubInput(raw) {
   if (!['public_apply', 'invite_code', 'admin_invite'].includes(raw.join_mode))
     fail('VALIDATION_FAILED', '请选择加入方式');
   const avatarFileId = text(raw.avatar_file_id, '俱乐部头像', 10, 512);
-  if (!/^cloud:\/\/[^/]+\/club-applications\/[^/]+\/.+/.test(avatarFileId))
+  if (
+    !/^cloud:\/\/[^/]+\/(?:club-applications\/[^/]+\/.+|profile-canonical\/[a-f0-9]{32}\/club-avatar\/[a-f0-9]{64}\/[a-f0-9]{64}\.(?:jpg|png|webp))$/i.test(
+      avatarFileId,
+    )
+  )
     fail('VALIDATION_FAILED', '请重新上传俱乐部头像');
   const hasCover = Object.prototype.hasOwnProperty.call(raw, 'cover_file_id');
   if (hasCover && typeof raw.cover_file_id !== 'string')
@@ -333,7 +354,9 @@ function normalizeManagedClubInput(raw) {
     hasCover &&
     coverFileId &&
     (coverFileId.length > 512 ||
-      !/^cloud:\/\/[^/]+\/club-applications\/[^/]+\/.+/.test(coverFileId))
+      !/^cloud:\/\/[^/]+\/(?:club-applications\/[^/]+\/.+|profile-canonical\/[a-f0-9]{32}\/club-cover\/[a-f0-9]{64}\/[a-f0-9]{64}\.(?:jpg|png|webp))$/i.test(
+        coverFileId,
+      ))
   )
     fail('VALIDATION_FAILED', '请重新上传俱乐部背景照片');
   return {
@@ -427,13 +450,13 @@ async function updateManagedClub(
     // 管理员可以保留负责人此前上传的媒体；替换时只能使用本人目录，避免引用他人私有文件。
     if (
       value.avatar_url !== currentProfile.avatar_file_id &&
-      managedAvatarOwner(value.avatar_url) !== openid
+      !ownedClubMedia(value.avatar_url, openid, 'club-avatar')
     )
       fail('VALIDATION_FAILED', '请重新上传俱乐部头像');
     if (
       value.cover_file_id !== currentProfile.cover_file_id &&
       value.cover_file_id &&
-      managedAvatarOwner(value.cover_file_id) !== openid
+      !ownedClubMedia(value.cover_file_id, openid, 'club-cover')
     )
       fail('VALIDATION_FAILED', '请重新上传俱乐部背景照片');
     const next = {
@@ -443,6 +466,7 @@ async function updateManagedClub(
     };
     const result = projectManagedClub(next);
     await tx.putClub(safeClubId, next);
+    await activateClubMediaReferences(tx, openid, next, now);
     await tx.putAudit(operationId, {
       _id: operationId,
       actor_openid: openid,

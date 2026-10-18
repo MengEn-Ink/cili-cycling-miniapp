@@ -16,6 +16,8 @@ const importClaimDecision = subject.importClaimDecision || (() => ({ kind: 'miss
 const failureDecision = subject.failureDecision || (() => ({ status: 'missing' }));
 const drainMediaCleanup = subject.drainMediaCleanup || (async () => ({ deleted: -1 }));
 const cleanupBatchSummary = subject.cleanupBatchSummary || (() => ({}));
+const validCanonicalIntentPath = subject.validCanonicalIntentPath || (() => false);
+const validCanonicalMedia = subject.validCanonicalMedia || (() => false);
 
 const now = new Date('2026-09-29T12:00:00.000Z');
 const mediaSecret = 'profile-media-secret-for-tests-32-bytes';
@@ -1109,4 +1111,88 @@ test('批次汇总结构化统计处理、删除、引用跳过、失败与其�
       claimed: 4,
     },
   );
+});
+
+test('清理校验同时兼容带 category 与旧格式 canonical 路径', () => {
+  const sourceFileId = `cloud://env/profiles/${ownerAlias}/activity-image/123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const sourceDigest = crypto.createHash('sha256').update(sourceFileId).digest('hex');
+  const sha256 = 'a'.repeat(64);
+  const base = {
+    kind: 'canonical_upload',
+    owner_openid: 'owner',
+    source_file_id: sourceFileId,
+    sha256,
+    size: 128,
+    mime: 'image/jpeg',
+  };
+  assert.equal(
+    validCanonicalIntentPath(
+      {
+        ...base,
+        category: 'activity-image',
+        cloud_path: `profile-canonical/${ownerAlias}/activity-image/${sourceDigest}/${sha256}.jpg`,
+      },
+      mediaSecret,
+    ),
+    true,
+  );
+  const legacySource = `cloud://env/${importCloudPath}`;
+  const legacyDigest = crypto.createHash('sha256').update(legacySource).digest('hex');
+  assert.equal(
+    validCanonicalMedia(
+      {
+        file_id: legacySource,
+        canonical_file_id: `cloud://env/profile-canonical/${ownerAlias}/${legacyDigest}/${sha256}.jpg`,
+        owner_openid: 'owner',
+        sha256,
+        size: 128,
+        mime: 'image/jpeg',
+      },
+      mediaSecret,
+    ),
+    true,
+  );
+});
+
+test('profile 引用 canonical 时 registry 保持 active，而 source import 仍可独立回收', () => {
+  const sourceFileId = `cloud://env/${importCloudPath}`;
+  const sourceDigest = crypto.createHash('sha256').update(sourceFileId).digest('hex');
+  const canonicalFileId = `cloud://env/profile-canonical/${ownerAlias}/${sourceDigest}/${'a'.repeat(64)}.jpg`;
+  const profile = { _id: 'owner', avatar_file_id: canonicalFileId, avatar_source: 'wechat' };
+  const mediaDecision = claimDecision(
+    {
+      _id: 'media-canonical-reference',
+      file_id: sourceFileId,
+      canonical_file_id: canonicalFileId,
+      owner_openid: 'owner',
+      category: 'other',
+      status: 'unreferenced',
+      cleanup_after: new Date('2026-09-29T11:59:59.000Z'),
+      sha256: 'a'.repeat(64),
+      size: 5,
+      mime: 'image/jpeg',
+    },
+    profile,
+    now,
+    'lease-canonical-reference',
+    mediaSecret,
+  );
+  assert.equal(mediaDecision.kind, 'referenced');
+
+  const sourceDecision = importClaimDecision(
+    {
+      kind: 'client_upload',
+      owner_openid: 'owner',
+      cloud_path: importCloudPath,
+      file_id: sourceFileId,
+      canonical_file_id: canonicalFileId,
+      status: 'uploaded',
+      cleanup_after: new Date('2026-09-29T11:59:59.000Z'),
+    },
+    profile,
+    now,
+    'lease-source-cleanup',
+    mediaSecret,
+  );
+  assert.equal(sourceDecision.kind, 'claimed');
 });

@@ -6,6 +6,8 @@ import type { Profile } from '../miniprogram/models';
 const rideService = vi.hoisted(() => ({
   getProfile: vi.fn(),
   getProfileMediaUploadPath: vi.fn(),
+  issueMediaUploadPath: vi.fn(),
+  finalizeMediaUpload: vi.fn(),
   getPersonalCapabilityCard: vi.fn(),
   registerProfileMedia: vi.fn(),
   reportProfileMediaOrphan: vi.fn(),
@@ -64,6 +66,10 @@ const capabilityCard = (avatarUrl = 'https://temporary.example/old-avatar.jpg') 
   syncedAt: null,
 });
 
+function canonicalFileId(sourceFileId: string) {
+  return `cloud://env/canonical/${encodeURIComponent(sourceFileId)}`;
+}
+
 function deferred<T>() {
   let resolve!: (value: T) => void;
   let reject!: (reason?: unknown) => void;
@@ -83,6 +89,17 @@ describe('资料编辑头像交互', () => {
     rideService.getProfile.mockResolvedValue(profile);
     rideService.getProfileMediaUploadPath.mockResolvedValue(
       'profiles/0123456789abcdef0123456789abcdef/123e4567-e89b-42d3-a456-426614174000.jpg',
+    );
+    rideService.issueMediaUploadPath.mockImplementation(() =>
+      rideService.getProfileMediaUploadPath(),
+    );
+    rideService.finalizeMediaUpload.mockImplementation(
+      async (fileId: string, category: string, _requestId: string, origin = 'custom') => {
+        if (category === 'profile-background')
+          await rideService.registerProfileMedia(fileId, 'ride');
+        else await rideService.registerProfileMedia(fileId, 'other', origin);
+        return { canonicalFileId: `cloud://env/canonical/${encodeURIComponent(fileId)}` };
+      },
     );
     rideService.getPersonalCapabilityCard.mockResolvedValue(capabilityCard());
     rideService.registerProfileMedia.mockResolvedValue(undefined);
@@ -443,7 +460,9 @@ describe('资料编辑头像交互', () => {
       'other',
       'wechat',
     );
-    expect(rideService.setAvatar).toHaveBeenCalledWith('wechat', uploadedFileId);
+    const canonicalId = canonicalFileId(uploadedFileId);
+    expect(rideService.setAvatar).toHaveBeenCalledWith('wechat', canonicalId);
+    expect(rideService.setAvatar).not.toHaveBeenCalledWith('wechat', uploadedFileId);
     expect(rideService.getProfileMediaUploadPath.mock.invocationCallOrder[0]).toBeLessThan(
       uploadFile.mock.invocationCallOrder[0],
     );
@@ -453,7 +472,7 @@ describe('资料编辑头像交互', () => {
     expect(rideService.registerProfileMedia.mock.invocationCallOrder[0]).toBeLessThan(
       rideService.setAvatar.mock.invocationCallOrder[0],
     );
-    expect(page.data.p).toMatchObject({ avatarId: uploadedFileId, avatarSource: 'wechat' });
+    expect(page.data.p).toMatchObject({ avatarId: canonicalId, avatarSource: 'wechat' });
     expect(page.data.avatarPreviewUrl).toBe('https://temporary.example/wechat-avatar.jpg');
   });
 
@@ -496,12 +515,14 @@ describe('资料编辑头像交互', () => {
       'other',
       'wechat',
     );
-    expect(rideService.setAvatar).toHaveBeenCalledWith('wechat', uploadedFileId);
+    const canonicalId = canonicalFileId(uploadedFileId);
+    expect(rideService.setAvatar).toHaveBeenCalledWith('wechat', canonicalId);
+    expect(rideService.setAvatar).not.toHaveBeenCalledWith('wechat', uploadedFileId);
     expect(page.data.p).toMatchObject({
       nickname: '尚未保存的昵称',
       phone: '13900001111',
       photos: [{ id: 'cloud://draft/photo.jpg', category: 'ride' }],
-      avatarId: uploadedFileId,
+      avatarId: canonicalId,
       avatarSource: 'wechat',
     });
   });
@@ -590,6 +611,7 @@ describe('资料编辑头像交互', () => {
 
   it('setAvatar CALL_FAILED 后权威头像匹配则收敛成功且不清理对象', async () => {
     const uploadedFileId = 'cloud://env/profiles/owner/delivery-unknown.jpg';
+    const canonicalId = canonicalFileId(uploadedFileId);
     const deleteFile = vi.fn();
     Object.assign(wx, {
       chooseMedia: vi.fn().mockResolvedValue({
@@ -608,7 +630,7 @@ describe('资料编辑头像交互', () => {
       ...profile,
       nickname: '服务端旧昵称',
       phone: '13812345678',
-      avatarId: uploadedFileId,
+      avatarId: canonicalId,
       avatarSource: 'wechat',
     });
 
@@ -620,7 +642,7 @@ describe('资料编辑头像交互', () => {
     expect(page.data.p).toMatchObject({
       nickname: '本地草稿昵称',
       phone: '13900001111',
-      avatarId: uploadedFileId,
+      avatarId: canonicalId,
       avatarSource: 'wechat',
     });
     expect(wx.showToast).toHaveBeenCalledWith({ title: '头像已更新' });
@@ -954,7 +976,7 @@ describe('资料编辑头像交互', () => {
       'ride',
     );
     expect(page.data.p.photos).toEqual([
-      { id: 'cloud://env/profiles/owner/photo.jpg', category: 'ride' },
+      { id: canonicalFileId('cloud://env/profiles/owner/photo.jpg'), category: 'ride' },
     ]);
   });
 
@@ -974,7 +996,7 @@ describe('资料编辑头像交互', () => {
     expect(uploadFile).toHaveBeenCalledWith(
       expect.objectContaining({ filePath: '/private/tmp/photo-fallback.jpg' }),
     );
-    expect(page.data.p.photos).toEqual([{ id: uploadedFileId, category: 'ride' }]);
+    expect(page.data.p.photos).toEqual([{ id: canonicalFileId(uploadedFileId), category: 'ride' }]);
   });
 
   it('个人相册 owner-bound path 请求失败时不上传也不写 photos', async () => {
@@ -1133,6 +1155,7 @@ describe('资料编辑头像交互', () => {
 
   it('新增背景图替换旧图，立即本地预览并以 ride 分类保存', async () => {
     const uploadedFileId = 'cloud://env/profiles/owner/new-photo.jpg';
+    const canonicalId = canonicalFileId(uploadedFileId);
     Object.assign(wx, {
       chooseMedia: vi.fn().mockResolvedValue({
         tempFiles: [{ tempFilePath: '/private/tmp/new-photo.jpg', size: 1024 }],
@@ -1148,7 +1171,7 @@ describe('资料编辑头像交互', () => {
 
     expect(page.data.photoItems).toEqual([
       {
-        id: uploadedFileId,
+        id: canonicalId,
         category: 'ride',
         previewUrl: '/private/tmp/new-photo.jpg',
         previewState: 'ready',
@@ -1161,9 +1184,10 @@ describe('资料编辑头像交互', () => {
 
     await page.save();
     expect(rideService.updateProfile.mock.calls[0][0].backgroundPhoto).toEqual({
-      id: uploadedFileId,
+      id: canonicalId,
       category: 'ride',
     });
+    expect(rideService.updateProfile.mock.calls[0][0].backgroundPhoto.id).not.toBe(uploadedFileId);
     expect(rideService.updateProfile.mock.calls[0][0]).not.toHaveProperty('photos');
   });
   it('背景图裁剪固定使用 cropScale 16:9，并上传裁剪后的路径', async () => {
@@ -1250,7 +1274,9 @@ describe('资料编辑头像交互', () => {
 
     expect(uploadFile).toHaveBeenCalledTimes(2);
     expect(uploadFile.mock.calls[0][0].cloudPath).toBe(uploadFile.mock.calls[1][0].cloudPath);
-    expect(page.data.p.photos[0].id).toBe('cloud://env/profiles/owner/retried.jpg');
+    expect(page.data.p.photos[0].id).toBe(
+      canonicalFileId('cloud://env/profiles/owner/retried.jpg'),
+    );
   });
 
   it('文件类上传错误不可重试', async () => {
@@ -1423,7 +1449,9 @@ describe('资料编辑头像交互', () => {
 
     await page.addPhoto();
 
-    expect(page.data.p.photos[0].id).toBe('cloud://env/profiles/owner/no-progress.jpg');
+    expect(page.data.p.photos[0].id).toBe(
+      canonicalFileId('cloud://env/profiles/owner/no-progress.jpg'),
+    );
     expect(page.data.mediaProgress).toBe('');
   });
 

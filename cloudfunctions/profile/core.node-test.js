@@ -1328,3 +1328,109 @@ test('媒体在所有重试后仍不可见则抛最后错误并按递增延迟�
   assert.equal(calls, MEDIA_VERIFY_ATTEMPTS);
   assert.deepEqual(waits, [100, 200, 300]);
 });
+
+test('通用媒体授权按 category 隔离且拒绝用途互串', () => {
+  const uuid = () => '123e4567-e89b-42d3-a456-426614174000';
+  const issued = issueMediaUploadPath('owner-category', mediaSecret, uuid, 'webp', 'club-avatar');
+  assert.match(
+    issued.cloud_path,
+    /^profiles\/[a-f0-9]{32}\/club-avatar\/123e4567-e89b-42d3-a456-426614174000\.webp$/,
+  );
+  const fileId = `cloud://env/${issued.cloud_path}`;
+  assert.equal(
+    mediaRegistration(fileId, 'club-avatar', 'custom', 'owner-category', mediaSecret).category,
+    'club-avatar',
+  );
+  assert.throws(
+    () => mediaRegistration(fileId, 'club-cover', 'custom', 'owner-category', mediaSecret),
+    { code: 'MEDIA_CATEGORY_MISMATCH' },
+  );
+  assert.throws(
+    () => mediaRegistration(fileId, 'club-avatar', 'custom', 'other-owner', mediaSecret),
+    { code: 'MEDIA_NOT_OWNED' },
+  );
+});
+
+test('canonical 路径携带业务用途并保持旧格式可验证', () => {
+  const source = `cloud://env/${
+    issueMediaUploadPath(
+      'canonical-owner',
+      mediaSecret,
+      () => '123e4567-e89b-42d3-a456-426614174000',
+      'jpg',
+      'activity-image',
+    ).cloud_path
+  }`;
+  const digest = 'a'.repeat(64);
+  const categorized = canonicalMediaPath(
+    'canonical-owner',
+    source,
+    digest,
+    'jpg',
+    mediaSecret,
+    'activity-image',
+  );
+  assert.match(categorized, /\/activity-image\/[a-f0-9]{64}\/a{64}\.jpg$/);
+  assert.equal(
+    isOwnerCanonicalMedia(
+      `cloud://env/${categorized}`,
+      'canonical-owner',
+      mediaSecret,
+      'activity-image',
+    ),
+    true,
+  );
+  const legacy = canonicalMediaPath('canonical-owner', source, digest, 'jpg', mediaSecret);
+  assert.equal(
+    isOwnerCanonicalMedia(`cloud://env/${legacy}`, 'canonical-owner', mediaSecret),
+    true,
+  );
+});
+
+test('资料背景新写入 canonical 并激活 source registry，移除后仍按同一 registry 降级', () => {
+  const openid = 'openid-owner-a';
+  const sourceFileId = `cloud://env/${mediaOwnerPrefix(openid, mediaSecret)}profile-background/123e4567-e89b-42d3-a456-426614174001.jpg`;
+  const sha256 = 'f'.repeat(64);
+  const canonicalFileId = `cloud://env/${canonicalMediaPath(
+    openid,
+    sourceFileId,
+    sha256,
+    'jpg',
+    mediaSecret,
+    'profile-background',
+  )}`;
+  const record = {
+    _id: mediaDocumentId(sourceFileId),
+    file_id: sourceFileId,
+    source_file_id: sourceFileId,
+    canonical_file_id: canonicalFileId,
+    canonical_category: 'profile-background',
+    sha256,
+    size: 5,
+    mime: 'image/jpeg',
+    owner_openid: openid,
+    category: 'profile-background',
+    origin: 'custom',
+    status: 'unreferenced',
+  };
+  const background = { file_id: canonicalFileId, category: 'ride' };
+  const activation = validateMediaUpdate(
+    { avatar_file_id: 'https://images.example/legacy-avatar.jpg' },
+    { photos: [background], background_photo: background },
+    openid,
+    mediaSecret,
+    [record],
+  );
+  assert.deepEqual(activation.activate_ids, [record._id]);
+  assert.equal(activation.data.background_photo.file_id, canonicalFileId);
+  assert.notEqual(activation.data.background_photo.file_id, sourceFileId);
+
+  const removal = validateMediaUpdate(
+    { photos: [background], background_photo: background },
+    { photos: [], background_photo: null },
+    openid,
+    mediaSecret,
+    [{ ...record, status: 'active' }],
+  );
+  assert.deepEqual(removal.demote_ids, [record._id]);
+});

@@ -182,3 +182,34 @@ test('历史草稿发布前必须重新验证媒体归属', () => {
     true,
   );
 });
+
+test('活动保存激活 owner/category 匹配的 staged canonical 媒体', async () => {
+  process.env.PROFILE_MEDIA_PATH_SECRET = 'profile-media-secret-for-tests-32-bytes';
+  const crypto = require('node:crypto');
+  const { activateActivityMediaReferences } = require('./media');
+  const owner = 'activity-owner';
+  const alias = crypto
+    .createHmac('sha256', process.env.PROFILE_MEDIA_PATH_SECRET)
+    .update(owner)
+    .digest('hex')
+    .slice(0, 32);
+  const fileId = `cloud://env/profile-canonical/${alias}/activity-image/${'a'.repeat(64)}/${'b'.repeat(64)}.jpg`;
+  const activated = [];
+  await activateActivityMediaReferences(
+    {
+      getProfileMediaByCanonical: async () => ({
+        _id: 'media-1',
+        canonical_file_id: fileId,
+        owner_openid: owner,
+        category: 'activity-image',
+        status: 'unreferenced',
+      }),
+      activateProfileMedia: async (id, at) => activated.push([id, at]),
+    },
+    owner,
+    { images: [fileId], cover_image: fileId },
+    new Date('2026-10-18T00:00:00.000Z'),
+  );
+  assert.equal(activated.length, 1);
+  assert.equal(activated[0][0], 'media-1');
+});
