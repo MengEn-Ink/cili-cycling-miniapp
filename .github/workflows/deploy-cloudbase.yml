@@ -41,7 +41,6 @@ jobs:
       CLOUDBASE_ENV_ID: ${{ vars.CLOUDBASE_ENV_ID }}
       CLOUDBASE_REGION: ${{ vars.CLOUDBASE_REGION }}
       CLOUDBASE_API_KEY: ${{ secrets.CLOUDBASE_API_KEY }}
-      PROFILE_MEDIA_PATH_SECRET: ${{ secrets.PROFILE_MEDIA_PATH_SECRET }}
       TCB_NO_BROWSER: 'true'
     steps:
       - name: Checkout current main source
@@ -162,9 +161,42 @@ jobs:
           npx --yes --package @cloudbase/cli@3.8.4 tcb \
             -e "${CLOUDBASE_ENV_ID}" \
             login --cloudbase-api-key "${CLOUDBASE_API_KEY}" --json
+
+      - name: Resolve, mask, and prepare runtime function config
+        if: steps.scope.outputs.should_deploy == 'true'
+        env:
+          PROFILE_MEDIA_PATH_SECRET_SOURCE: ${{ secrets.PROFILE_MEDIA_PATH_SECRET }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          details_dir="${RUNNER_TEMP}/cloudbase-function-details-before"
+          functions_list="${RUNNER_TEMP}/cloudbase-functions-before.json"
+          functions_inventory="${RUNNER_TEMP}/cloudbase-functions-inventory.json"
+          runtime_config="${RUNNER_TEMP}/cloudbaserc.runtime.json"
+          mkdir -p "${details_dir}"
           npx --yes --package @cloudbase/cli@3.8.4 tcb \
             -e "${CLOUDBASE_ENV_ID}" \
-            fn list --json > "${RUNNER_TEMP}/cloudbase-functions-before.json"
+            fn list --json > "${functions_list}"
+          node scripts/cloudbase-function-env.mjs inventory \
+            --config cloudbaserc.json \
+            --list "${functions_list}" \
+            --output "${functions_inventory}"
+          while IFS= read -r function_name; do
+            [[ "${function_name}" =~ ^[a-z][a-z0-9-]*$ ]] || { echo "非法函数名" >&2; exit 1; }
+            npx --yes --package @cloudbase/cli@3.8.4 tcb \
+              -e "${CLOUDBASE_ENV_ID}" \
+              fn detail "${function_name}" --json > "${details_dir}/${function_name}.json"
+          done < <(jq -r '.existing[]' "${functions_inventory}")
+          node scripts/cloudbase-function-env.mjs prepare \
+            --config cloudbaserc.json \
+            --decision "${RUNNER_TEMP}/cloudbase-deploy-decision.json" \
+            --inventory "${functions_inventory}" \
+            --details-dir "${details_dir}" \
+            --output "${runtime_config}"
+          cp cloudbaserc.json "${RUNNER_TEMP}/cloudbaserc.repository.json"
+          cp "${runtime_config}" cloudbaserc.json
+          rm -f "${runtime_config}"
 
       - name: Plan and apply database baseline
         if: steps.scope.outputs.should_deploy == 'true' && steps.scope.outputs.apply_infrastructure == 'true'
@@ -190,18 +222,6 @@ jobs:
           set -euo pipefail
           npm run cloudbase:storage:reconcile -- --env-id "${CLOUDBASE_ENV_ID}"
 
-      - name: Prepare production media secret configuration
-        if: steps.scope.outputs.should_deploy == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          printf '::%s::%s\n' 'add-mask' "${PROFILE_MEDIA_PATH_SECRET}"
-          deploy_config="${RUNNER_TEMP}/cloudbaserc.deploy.json"
-          node scripts/cloudbase-media-secret-config.mjs prepare \
-            --source cloudbaserc.json \
-            --target "${deploy_config}"
-          printf 'DEPLOY_CONFIG_FILE=%s\n' "${deploy_config}" >> "${GITHUB_ENV}"
-
       - name: Deploy affected cloud functions
         if: steps.scope.outputs.should_deploy == 'true'
         env:
@@ -209,77 +229,71 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          while IFS= read -r function_name; do
-            [[ "${function_name}" =~ ^[a-z][a-z0-9-]*$ ]] || { echo "非法函数名" >&2; exit 1; }
-            echo "部署云函数：${function_name}"
+          echo "部署命令使用已安装到工作区的 runner 临时运行时配置"
+          mapfile -t planned_functions < <(jq -r '.[]' <<< "${FUNCTIONS_JSON}")
+          completed_functions=()
+          current_index=0
+          report_partial_deployment() {
+            exit_code=$?
+            echo "云函数部署未全部完成；已完成并验证：${completed_functions[*]:-无}" >&2
+            echo "尚未完成（含当前失败项）：${planned_functions[*]:${current_index}}" >&2
+            exit "${exit_code}"
+          }
+          trap report_partial_deployment ERR
+          for function_name in "${planned_functions[@]}"; do
+            [[ "${function_name}" =~ ^[a-z][a-z0-9-]*$ ]] || { echo "非法函数名" >&2; false; }
+            echo "部署并逐项验证云函数：${function_name}"
             npx --yes --package @cloudbase/cli@3.8.4 tcb \
-              --config-file "${DEPLOY_CONFIG_FILE}" \
               -e "${CLOUDBASE_ENV_ID}" \
               fn deploy "${function_name}" --force --json
-          done < <(jq -r '.[]' <<< "${FUNCTIONS_JSON}")
-
-      - name: Reconcile production media secret configuration
-        if: steps.scope.outputs.should_deploy == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          for function_name in \
-            profile profile-media-cleanup admin-review activity-read activity-admin club-application; do
-            function_detail="$(npx --yes --package @cloudbase/cli@3.8.4 tcb \
-              -e "${CLOUDBASE_ENV_ID}" \
-              fn detail "${function_name}" --json)"
-            if printf '%s' "${function_detail}" | \
-              node scripts/cloudbase-media-secret-config.mjs verify \
-                --function "${function_name}" 2>/dev/null; then
-              continue
-            fi
-            echo "同步统一媒体密钥并部署云函数：${function_name}"
-            npx --yes --package @cloudbase/cli@3.8.4 tcb \
-              --config-file "${DEPLOY_CONFIG_FILE}" \
-              -e "${CLOUDBASE_ENV_ID}" \
-              fn deploy "${function_name}" --force --json
-          done
-
-      - name: Verify deployed environment
-        if: steps.scope.outputs.should_deploy == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          npx --yes --package @cloudbase/cli@3.8.4 tcb \
-            -e "${CLOUDBASE_ENV_ID}" \
-            fn list --json > "${RUNNER_TEMP}/cloudbase-functions-after.json"
-          jq -r '.. | objects | (.FunctionName? // .name? // empty)' \
-            "${RUNNER_TEMP}/cloudbase-functions-after.json" | sort -u > "${RUNNER_TEMP}/cloudbase-function-names.txt"
-          while IFS= read -r function_name; do
-            if ! grep -Fxq "${function_name}" "${RUNNER_TEMP}/cloudbase-function-names.txt"; then
-              echo "部署后未查询到函数：${function_name}" >&2
-              exit 1
-            fi
-          done < <(jq -r '.[]' <<< "${FUNCTIONS_JSON}")
-          for function_name in \
-            profile profile-media-cleanup admin-review activity-read activity-admin club-application; do
+            detail_file="${RUNNER_TEMP}/cloudbase-deployed-${function_name}.json"
             verified=false
             for attempt in $(seq 1 12); do
-              function_detail="$(npx --yes --package @cloudbase/cli@3.8.4 tcb \
+              npx --yes --package @cloudbase/cli@3.8.4 tcb \
                 -e "${CLOUDBASE_ENV_ID}" \
-                fn detail "${function_name}" --json)"
-              if printf '%s' "${function_detail}" | \
-                node scripts/cloudbase-media-secret-config.mjs verify \
-                  --function "${function_name}" 2>/dev/null; then
+                fn detail "${function_name}" --json > "${detail_file}"
+              if node scripts/cloudbase-function-env.mjs verify-one \
+                --detail "${detail_file}" \
+                --name "${function_name}" 2>/dev/null; then
                 verified=true
                 break
               fi
               [[ "${attempt}" -eq 12 ]] || sleep 5
             done
             if [[ "${verified}" != 'true' ]]; then
-              printf '%s' "${function_detail}" | \
-                node scripts/cloudbase-media-secret-config.mjs verify \
-                  --function "${function_name}"
+              node scripts/cloudbase-function-env.mjs verify-one \
+                --detail "${detail_file}" \
+                --name "${function_name}"
             fi
+            rm -f "${detail_file}"
+            completed_functions+=("${function_name}")
+            current_index=$((current_index + 1))
           done
+          trap - ERR
+
+      - name: Verify deployed environment and media secret consistency
+        if: steps.scope.outputs.should_deploy == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          details_dir="${RUNNER_TEMP}/cloudbase-function-details-after"
+          mkdir -p "${details_dir}"
+          while IFS= read -r function_name; do
+            [[ "${function_name}" =~ ^[a-z][a-z0-9-]*$ ]] || { echo "非法函数名" >&2; exit 1; }
+            npx --yes --package @cloudbase/cli@3.8.4 tcb \
+              -e "${CLOUDBASE_ENV_ID}" \
+              fn detail "${function_name}" --json > "${details_dir}/${function_name}.json"
+          done < <(printf '%s\n' \
+            profile \
+            profile-media-cleanup \
+            admin-review \
+            activity-read \
+            activity-admin \
+            club-application)
+          node scripts/cloudbase-function-env.mjs verify \
+            --config "${RUNNER_TEMP}/cloudbaserc.repository.json" \
+            --details-dir "${details_dir}"
           echo "CloudBase 部署验证通过：环境 ${CLOUDBASE_ENV_ID}"
-        env:
-          FUNCTIONS_JSON: ${{ steps.scope.outputs.functions }}
 
       - name: Run production club application write smoke
         if: steps.scope.outputs.should_deploy == 'true'
@@ -293,6 +307,25 @@ jobs:
             --env-id "${CLOUDBASE_ENV_ID}" \
             --confirm-env-id "${CLOUDBASE_ENV_ID}" \
             --run-id "github-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+
+      - name: Restore repository config and clear runtime secret files
+        if: always() && steps.scope.outputs.should_deploy == 'true'
+        shell: bash
+        run: |
+          set -uo pipefail
+          cleanup_status=0
+          if [[ -f "${RUNNER_TEMP}/cloudbaserc.repository.json" ]]; then
+            cp "${RUNNER_TEMP}/cloudbaserc.repository.json" cloudbaserc.json || cleanup_status=$?
+          fi
+          rm -rf \
+            "${RUNNER_TEMP}/cloudbaserc.runtime.json" \
+            "${RUNNER_TEMP}/cloudbaserc.repository.json" \
+            "${RUNNER_TEMP}/cloudbase-functions-before.json" \
+            "${RUNNER_TEMP}/cloudbase-functions-inventory.json" \
+            "${RUNNER_TEMP}/cloudbase-function-details-before" \
+            "${RUNNER_TEMP}/cloudbase-function-details-after" \
+            "${RUNNER_TEMP}"/cloudbase-deployed-*.json || cleanup_status=$?
+          exit "${cleanup_status}"
 
       - name: Clear temporary login state
         if: always() && steps.scope.outputs.should_deploy == 'true'
