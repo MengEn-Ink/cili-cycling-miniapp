@@ -9,6 +9,7 @@
     clubIdentity,
     clubMembership,
     tripClubSnapshots,
+    clubCenterPrototype,
   } = window.prototypeData;
   const primary = activities[0];
   const identityData = clubIdentity || {};
@@ -214,7 +215,267 @@
     </article>`;
 
   const templates = {
-    'club-center': () => templates['club-applications'](),
+    'club-center': () => {
+      // 俱乐部中心：顶部大背景 + 叠压头像；容量区无白卡；活动 / 成员 / 俱乐部资料三页签。
+      // Mock 数据来自 schema.js 中的 clubCenterPrototype；真实业务由服务端返回。
+      const fallbackData = {
+        club: {
+          name: '示例俱乐部',
+          monogram: '示',
+          regionLabel: 'BJ',
+          locationLabel: '北京',
+          verified: false,
+          coverImage: '',
+          coverAlt: '俱乐部封面',
+        },
+        viewer: { roleLabel: '成员', memberCount: 0, capacity: 0 },
+        activity: null,
+        members: [],
+        moreMenuForAdmin: [],
+        moreMenuForMember: [],
+      };
+      const data = clubCenterPrototype || fallbackData;
+      const club = data.club || fallbackData.club;
+      const viewer = data.viewer || fallbackData.viewer;
+      const activity = data.activity;
+      const members = Array.isArray(data.members) ? data.members : [];
+      // 状态允许用 "<tab>--<overlay>" 结构叠加：切换 tab 时保留 overlay（more-open / bg-fallback）；
+      // 重试或关闭菜单只去掉 overlay，不丢失当前 tab。
+      const rawState = st();
+      const stateSegments = rawState ? rawState.split('--') : [];
+      const hasSegment = (name) => stateSegments.includes(name);
+      const baseSegment = stateSegments[0] || 'default';
+      const loading = hasSegment('loading');
+      const errorState = hasSegment('error');
+      const bgFallback = hasSegment('bg-fallback');
+      const moreOpen = hasSegment('more-open');
+      const activitiesEmpty = hasSegment('activities-empty');
+      const activeTab = hasSegment('members')
+        ? 'members'
+        : hasSegment('profile')
+          ? 'profile'
+          : 'activities';
+      const canEditProfile = viewer.roleToken === 'OWNER' || viewer.roleToken === 'ADMIN';
+      const moreMenuItems = canEditProfile
+        ? data.moreMenuForAdmin || []
+        : data.moreMenuForMember || [];
+      // more 按钮点击要在当前 activeTab 上叠加 / 去除 "--more-open"
+      const moreToggleState = moreOpen
+        ? activeTab === 'activities'
+          ? 'default'
+          : activeTab
+        : activeTab === 'activities'
+          ? 'more-open'
+          : `${activeTab}--more-open`;
+      // 关闭 / 重试回到当前 activeTab 的裸状态
+      const activeTabBaseState = activeTab === 'activities' ? 'default' : activeTab;
+      void baseSegment;
+
+      // 顶部大背景：加载失败时降级为墨黑画布 + 路线线稿
+      const bgContent = bgFallback || errorState
+        ? `<div class="club-center-cover is-fallback" role="img" aria-label="背景图加载失败，已切换为墨黑占位">
+            <svg viewBox="0 0 360 220" preserveAspectRatio="none" aria-hidden="true"><path d="M-10 180 C 60 160, 100 100, 170 112 S 260 190, 380 140" style="fill:none;stroke:var(--color-media-muted);stroke-width:2"/><path d="M-10 200 C 70 180, 110 136, 170 144 S 260 200, 380 170" style="fill:none;stroke:var(--color-media-muted);stroke-width:1.5"/><path d="M20 168 C 80 152, 104 110, 150 118" style="fill:none;stroke:var(--color-brand);stroke-width:3;stroke-linecap:round"/></svg>
+            <span class="club-center-cover-brand">CILI CLUB</span>
+            <button class="club-center-cover-retry" data-action="club-center-retry-cover" data-restore-state="${activeTabBaseState}" type="button" aria-label="重新加载背景图">重新加载</button>
+          </div>`
+        : `<div class="club-center-cover" role="img" aria-label="${club.coverAlt || club.name + '封面'}">
+            <img src="${club.coverImage}" alt="${club.coverAlt || club.name + '封面'}" data-club-center-cover onerror="window.clubCenterOnCoverError && window.clubCenterOnCoverError(event)" />
+            <span class="club-center-cover-chip" aria-hidden="true">CLUB</span>
+            <span class="club-center-cover-loc"><i aria-hidden="true"></i>${club.locationLabel}</span>
+          </div>`;
+
+      const header = `
+        <header class="club-center-hero">
+          ${bgContent}
+          <div class="club-center-topbar">
+            <button class="club-center-icon-btn" data-action="back" aria-label="返回上一页">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="club-center-topbar-actions">
+              <button class="club-center-icon-btn" data-action="toast" data-message="分享菜单仅为原型示意" aria-label="分享俱乐部">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a3 3 0 1 0-2.83-4H15a3 3 0 0 0-.17 1l-6 3.5a3 3 0 1 0 0 7l6 3.5a3 3 0 1 0 .17-1l-6-3.5a3 3 0 0 0 0-2l6-3.5a3 3 0 0 0 3 0z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <button class="club-center-icon-btn" data-action="route" data-route="club-center" data-state="${moreToggleState}" aria-haspopup="menu" aria-expanded="${moreOpen ? 'true' : 'false'}" aria-controls="club-center-more-menu" aria-label="更多操作">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="18" cy="12" r="1.6" fill="currentColor"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="club-center-identity">
+            <span class="club-center-avatar club-avatar-ink" aria-hidden="true">
+              <b>${club.monogram}</b>
+              <span class="club-center-avatar-region">${club.regionLabel}</span>
+            </span>
+            <div class="club-center-identity-text">
+              <h2 class="club-center-name">
+                <span>${club.name}</span>
+                ${club.verified ? `<span class="club-center-verified" aria-label="已认证俱乐部" role="img"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 14.4 4.6 18 4.2 18.6 7.8 22 9.2 20.6 12 22 14.8 18.6 16.2 18 19.8 14.4 19.4 12 22 9.6 19.4 6 19.8 5.4 16.2 2 14.8 3.4 12 2 9.2 5.4 7.8 6 4.2 9.6 4.6Z" fill="var(--color-brand)"/><path d="M8.5 12.5 11 15 15.5 10" fill="none" stroke="var(--color-on-brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>` : ''}
+              </h2>
+              <p class="club-center-location"><svg viewBox="0 0 16 16" aria-hidden="true" class="club-center-pin"><path d="M8 2a4 4 0 0 1 4 4c0 3-4 8-4 8s-4-5-4-8a4 4 0 0 1 4-4z" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="6" r="1.3" fill="currentColor"/></svg>${club.locationLabel}</p>
+            </div>
+          </div>
+          <div class="club-center-capacity" role="group" aria-label="俱乐部容量总览">
+            <div class="club-center-capacity-cell is-role">
+              <span class="club-center-capacity-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M10 2l2.4 5 5.6.5-4.3 3.8 1.4 5.6L10 14l-5.1 2.9 1.4-5.6L2 7.5 7.6 7Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span>
+              <span class="club-center-capacity-text"><small>身份</small><b>${viewer.roleLabel}</b></span>
+            </div>
+            <div class="club-center-capacity-cell">
+              <span class="club-center-capacity-text"><small>用户数</small><b><em>${viewer.memberCount}</em>人</b></span>
+            </div>
+            <div class="club-center-capacity-cell is-end">
+              <span class="club-center-capacity-text"><small>容量</small><b><em>${viewer.capacity}</em>人</b></span>
+            </div>
+          </div>
+        </header>`;
+
+      const activityPanel = loading
+        ? `<div class="club-center-skeleton" aria-live="polite">${skeletons(2, true)}</div>`
+        : errorState
+          ? stateView('!', '活动加载失败', '网络不稳定，请稍后重试；可切换到成员或俱乐部资料页签。', btn('重新加载', 'data-action="route" data-route="club-center" data-state="default"'), true)
+          : activitiesEmpty || !activity
+            ? stateView('0', '暂无即将开始的活动', '当前俱乐部还没有发布活动。完成首次骑行后将在此沉淀。', btn('查看历史活动', toast('已切换至历史活动（原型示意）'), 'btn-secondary'))
+            : `
+              <article class="club-center-activity" aria-labelledby="club-center-activity-title">
+                <div class="club-center-activity-date" aria-hidden="true">
+                  <span class="club-center-activity-month">${activity.month}</span>
+                  <strong class="club-center-activity-day">${activity.day}</strong>
+                  <span class="club-center-activity-weekday">${activity.weekday} · ${activity.time}</span>
+                </div>
+                <div class="club-center-activity-body">
+                  <div class="club-center-activity-tags">
+                    ${tag('success', '○ ' + activity.status)}
+                    <span class="club-center-activity-intensity">${activity.difficulty}</span>
+                  </div>
+                  <h3 class="club-center-activity-title" id="club-center-activity-title">${activity.title}</h3>
+                  <p class="club-center-activity-meta"><svg viewBox="0 0 16 16" class="club-center-pin" aria-hidden="true"><path d="M8 2a4 4 0 0 1 4 4c0 3-4 8-4 8s-4-5-4-8a4 4 0 0 1 4-4z" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>${activity.meetPoint}</p>
+                  <div class="club-center-activity-metrics">
+                    <span><b>${activity.distanceKm}</b><i>km</i></span>
+                    <span class="club-center-activity-sep" aria-hidden="true"></span>
+                    <span><b>${activity.elevationM.toLocaleString('en-US')}</b><i>m↑</i></span>
+                    <span class="club-center-activity-sep" aria-hidden="true"></span>
+                    <span><svg viewBox="0 0 16 16" class="club-center-person" aria-hidden="true"><circle cx="8" cy="5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M3 13c0-2.4 2.2-4 5-4s5 1.6 5 4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><b>${activity.signupCount}</b> 人</span>
+                  </div>
+                </div>
+                <div class="club-center-activity-footer">
+                  <span class="club-center-activity-note"><span class="club-center-activity-badge" aria-hidden="true">辛</span>${activity.note}</span>
+                  <button class="btn club-center-signup" data-action="toast" data-message="报名已提交，等待负责人确认（原型示意）">立即报名 →</button>
+                </div>
+              </article>
+              <button class="club-center-history" type="button" data-action="toast" data-message="历史活动将在真实上线后呈现（原型示意）" aria-label="查看历史活动">
+                <span class="club-center-history-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v5l3.2 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+                <span class="club-center-history-text"><b>暂无历史活动</b><small>完成首次骑行后将在此沉淀</small></span>
+                <span class="chev" aria-hidden="true">›</span>
+              </button>`;
+
+      const membersPanel = `
+        <section class="club-center-members" aria-label="俱乐部成员">
+          <header class="club-center-members-head">
+            <div><h3>成员</h3><span class="club-center-members-count">${members.length} 位</span></div>
+            <button class="club-center-members-all" type="button" data-action="route" data-route="club-center" data-state="members" aria-label="查看全部成员">
+              查看全部 ${members.length} 位 <span class="chev" aria-hidden="true">›</span>
+            </button>
+          </header>
+          <div class="club-center-members-body">
+            <span class="club-center-members-avatars" aria-hidden="true">${members
+              .slice(0, 4)
+              .map((m) => `<span class="club-avatar club-avatar-sm club-avatar-${m.tone || 'ink'}"><b>${m.monogram}</b></span>`)
+              .join('')}</span>
+            <p class="club-center-members-hint"><b>当前 ${members.length} 位成员</b><small>点击"查看全部"查看成员信息</small></p>
+            <button class="btn-secondary club-center-members-view" type="button" data-action="route" data-route="club-center" data-state="members">
+              <svg viewBox="0 0 16 16" aria-hidden="true" class="club-center-person"><circle cx="8" cy="5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M3 13c0-2.4 2.2-4 5-4s5 1.6 5 4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+              成员
+            </button>
+          </div>
+        </section>`;
+
+      const membersListPanel = `
+        <section class="club-center-members-list" aria-label="全部成员">
+          <h3 class="section-label">全部成员 · ${members.length} 位</h3>
+          <ul class="club-center-members-ul">
+            ${members
+              .map(
+                (m) => `<li class="club-center-member-row">
+                  <span class="club-avatar club-avatar-md club-avatar-${m.tone || 'ink'}"><b>${m.monogram}</b></span>
+                  <div class="club-center-member-info"><b>${m.nickname}</b><small>${m.roleLabel}</small></div>
+                  <span class="tag tag-neutral">仅查看</span>
+                </li>`,
+              )
+              .join('')}
+          </ul>
+          <p class="neutral-note">本页仅提供成员查看入口，不包含邀请、剔除等运营动作；相关能力由管理页承载。</p>
+        </section>`;
+
+      const profilePanel = `
+        <section class="club-center-profile" aria-label="俱乐部资料">
+          <h3 class="section-label">俱乐部资料</h3>
+          ${rows([
+            ['俱乐部名称', club.name],
+            ['所在城市', club.locationLabel],
+            ['认证状态', club.verified ? '已认证' : '未认证'],
+            ['当前成员', `${viewer.memberCount} 人`],
+            ['容量上限', `${viewer.capacity} 人`],
+            ['我的身份', viewer.roleLabel],
+          ])}
+          ${canEditProfile
+            ? `<p class="neutral-note">负责人可在右上角「更多」菜单中编辑俱乐部资料；本页只做查看。</p>`
+            : `<p class="neutral-note">普通成员仅可查看俱乐部资料，无编辑入口。</p>`}
+        </section>`;
+
+      const activePanel =
+        activeTab === 'members'
+          ? members.length === 0
+            ? stateView('0', '暂无成员', '当前俱乐部还没有成员加入；成员列表将在此展示。')
+            : membersListPanel
+          : activeTab === 'profile'
+            ? profilePanel
+            : activityPanel;
+
+      const panelHiddenAttr = (name) => (activeTab === name ? '' : 'hidden');
+
+      const tabs = `
+        <div class="club-center-tabs" role="tablist" aria-label="俱乐部内容切换" data-active-tab="${activeTab}" data-club-center-tabs>
+          <button class="club-center-tab ${activeTab === 'activities' ? 'is-active' : ''}" role="tab" aria-selected="${activeTab === 'activities'}" aria-controls="club-center-panel-activities" id="club-center-tab-activities" tabindex="${activeTab === 'activities' ? 0 : -1}" data-action="route" data-route="club-center" data-state="default" data-tab="activities" data-club-center-tab>
+            活动${activity && !activitiesEmpty && !loading && !errorState ? '<small class="club-center-tab-badge" aria-label="当前有一场活动">·1</small>' : ''}
+          </button>
+          <button class="club-center-tab ${activeTab === 'members' ? 'is-active' : ''}" role="tab" aria-selected="${activeTab === 'members'}" aria-controls="club-center-panel-members" id="club-center-tab-members" tabindex="${activeTab === 'members' ? 0 : -1}" data-action="route" data-route="club-center" data-state="members" data-tab="members" data-club-center-tab>
+            成员 <small>${members.length}</small>
+          </button>
+          <button class="club-center-tab ${activeTab === 'profile' ? 'is-active' : ''}" role="tab" aria-selected="${activeTab === 'profile'}" aria-controls="club-center-panel-profile" id="club-center-tab-profile" tabindex="${activeTab === 'profile' ? 0 : -1}" data-action="route" data-route="club-center" data-state="profile" data-tab="profile" data-club-center-tab>
+            俱乐部资料
+          </button>
+          <span class="club-center-tabs-tail" aria-hidden="true">
+            <svg viewBox="0 0 20 20"><circle cx="9" cy="9" r="5.4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M13.4 13.4L17 17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </span>
+        </div>`;
+
+      const moreMenu = moreOpen
+        ? `<div class="club-center-more-menu" id="club-center-more-menu" role="menu" aria-label="俱乐部更多操作">
+            ${moreMenuItems
+              .map((item) => {
+                const action = item.key === 'edit-profile'
+                  ? 'data-action="toast" data-message="已进入俱乐部资料编辑（原型示意）"'
+                  : item.key === 'manage-capacity'
+                    ? 'data-action="toast" data-message="容量上限编辑（原型示意）"'
+                    : 'data-action="toast" data-message="已记录反馈（原型示意）"';
+                return `<button type="button" class="club-center-more-item" role="menuitem" ${action}>
+                  <b>${item.label}</b><small>${item.hint}</small>
+                </button>`;
+              })
+              .join('')}
+            <button type="button" class="club-center-more-close" role="menuitem" data-action="route" data-route="club-center" data-state="${activeTabBaseState}">关闭菜单</button>
+          </div>`
+        : '';
+
+      return `<div class="pg club-center-page" data-club-center>
+        <p class="prototype-mock-badge" aria-label="原型 Mock 数据标识">设计原型 · Mock 数据</p>
+        ${header}
+        ${tabs}
+        <section id="club-center-panel-activities" role="tabpanel" aria-labelledby="club-center-tab-activities" class="club-center-panel" ${panelHiddenAttr('activities')}>${activeTab === 'activities' ? activePanel : ''}</section>
+        <section id="club-center-panel-members" role="tabpanel" aria-labelledby="club-center-tab-members" class="club-center-panel" ${panelHiddenAttr('members')}>${activeTab === 'members' ? activePanel : ''}</section>
+        <section id="club-center-panel-profile" role="tabpanel" aria-labelledby="club-center-tab-profile" class="club-center-panel" ${panelHiddenAttr('profile')}>${activeTab === 'profile' ? activePanel : ''}</section>
+        ${activeTab === 'activities' && !loading && !errorState && activity ? membersPanel : ''}
+        ${moreMenu}
+      </div>`;
+    },
     'admin-club-applications': () => templates['admin-approval-inbox'](),
     'admin-club-application-detail': () => templates['approval-detail'](),
     activities: () => {
@@ -2058,4 +2319,74 @@
   };
 
   window.pageTemplates = templates;
+
+  // 导出 club-center 的运行时状态变换，供 app.js 与运行时测试复用。
+  // 原则：overlay（more-open / bg-fallback）与 activeTab 正交，切换 overlay 不动 tab；切换 tab 可选择保留 overlay。
+  const CLUB_CENTER_TABS = ['activities', 'members', 'profile'];
+  const CLUB_CENTER_OVERLAYS = ['more-open', 'bg-fallback', 'loading', 'error', 'activities-empty'];
+  const clubCenterParseState = (state) => {
+    const segments = (state || '').split('--').filter(Boolean);
+    let tab = 'activities';
+    const overlays = [];
+    for (const segment of segments) {
+      if (segment === 'default') continue;
+      if (CLUB_CENTER_TABS.includes(segment)) tab = segment;
+      else overlays.push(segment);
+    }
+    return { tab, overlays };
+  };
+  const clubCenterComposeState = (tab, overlays) => {
+    const base = tab === 'activities' ? 'default' : tab;
+    const ordered = CLUB_CENTER_OVERLAYS.filter((o) => overlays.includes(o));
+    if (ordered.length === 0) return base;
+    if (tab === 'activities' && ordered.length === 1) return ordered[0];
+    return [base, ...ordered].join('--');
+  };
+  const clubCenterNextTab = (state, key) => {
+    const { tab, overlays } = clubCenterParseState(state);
+    const index = CLUB_CENTER_TABS.indexOf(tab);
+    let next = tab;
+    if (key === 'ArrowRight') next = CLUB_CENTER_TABS[(index + 1) % CLUB_CENTER_TABS.length];
+    else if (key === 'ArrowLeft')
+      next = CLUB_CENTER_TABS[(index - 1 + CLUB_CENTER_TABS.length) % CLUB_CENTER_TABS.length];
+    else if (key === 'Home') next = CLUB_CENTER_TABS[0];
+    else if (key === 'End') next = CLUB_CENTER_TABS[CLUB_CENTER_TABS.length - 1];
+    else return null;
+    // 切换 tab 时清掉 more-open 浮层（符合"点击 tab 关闭菜单"），保留 bg-fallback / loading / error / activities-empty。
+    const keepOverlays = overlays.filter((o) => o !== 'more-open');
+    return {
+      tab: next,
+      state: clubCenterComposeState(next, keepOverlays),
+      tabId: `club-center-tab-${next}`,
+    };
+  };
+  const clubCenterToggleMore = (state) => {
+    const { tab, overlays } = clubCenterParseState(state);
+    const nextOverlays = overlays.includes('more-open')
+      ? overlays.filter((o) => o !== 'more-open')
+      : [...overlays.filter((o) => o !== 'more-open'), 'more-open'];
+    return clubCenterComposeState(tab, nextOverlays);
+  };
+  const clubCenterCoverError = (state) => {
+    const { tab, overlays } = clubCenterParseState(state);
+    if (overlays.includes('bg-fallback')) return clubCenterComposeState(tab, overlays);
+    return clubCenterComposeState(tab, [...overlays, 'bg-fallback']);
+  };
+  const clubCenterRetryCover = (state) => {
+    const { tab, overlays } = clubCenterParseState(state);
+    return clubCenterComposeState(
+      tab,
+      overlays.filter((o) => o !== 'bg-fallback'),
+    );
+  };
+  window.clubCenterStateMachine = {
+    parseState: clubCenterParseState,
+    composeState: clubCenterComposeState,
+    nextTab: clubCenterNextTab,
+    toggleMore: clubCenterToggleMore,
+    coverError: clubCenterCoverError,
+    retryCover: clubCenterRetryCover,
+    TABS: CLUB_CENTER_TABS,
+    OVERLAYS: CLUB_CENTER_OVERLAYS,
+  };
 })();
