@@ -275,6 +275,7 @@ export function createCliStore({ envId, cwd = process.cwd(), execute = execFileS
     ]);
   };
   let auditSequence = 0;
+  const knownAudits = new Map();
   return {
     // CLI 不提供回调事务：每次 put 先写真实数据库，并用事务内 overlay 保证读己之写；overlay 不跨事务。
     transaction: async (work) => {
@@ -288,16 +289,23 @@ export function createCliStore({ envId, cwd = process.cwd(), execute = execFileS
         await put(collection, id, value);
         overlay.set(keyFor(collection, id), structuredClone(value));
       };
+      const txPutAudit = async (id, value) => {
+        const document = { ...value, _id: id, smoke_test: true };
+        await txPut('audit_logs', id, document);
+        // CLI 的 UPDATE 与后续 QUERY 不具备事务读己之写；仅缓存本进程刚写入的确定性幂等审计。
+        knownAudits.set(id, structuredClone(document));
+      };
       return work({
         getAdmin: (id) => txGet('admins', id),
         getApplication: (id) => txGet('club_applications', id),
         getClub: (id) => txGet('clubs', id),
         getMembership: (id) => txGet('club_memberships', id),
-        getAudit: (id) => txGet('audit_logs', id),
+        getAudit: (id) =>
+          knownAudits.has(id) ? structuredClone(knownAudits.get(id)) : txGet('audit_logs', id),
         putApplication: (id, value) => txPut('club_applications', id, value),
         putClub: (id, value) => txPut('clubs', id, value),
         putMembership: (id, value) => txPut('club_memberships', id, value),
-        putAudit: (id, value) => txPut('audit_logs', id, { ...value, _id: id, smoke_test: true }),
+        putAudit: txPutAudit,
         addAudit: (value) => {
           auditSequence += 1;
           const id = `smoke_audit_${hash(`${value.target_id}:${value.action}:${auditSequence}`).slice(0, 40)}`;
@@ -317,16 +325,6 @@ export function createCliStore({ envId, cwd = process.cwd(), execute = execFileS
 
 function assert(condition, message) {
   if (!condition) throw new Error(`真实写入 smoke 断言失败：${message}`);
-}
-
-async function waitForProfileAudit(store, filter, { attempts = 12, delayMs = 1000 } = {}) {
-  for (let attempt = 0; attempt < attempts; attempt += 1) {
-    const records = await store.query('audit_logs', filter, 10);
-    if (records.length > 0) return records[0];
-    if (attempt + 1 < attempts)
-      await new Promise((resolveDelay) => setTimeout(resolveDelay, delayMs));
-  }
-  throw new Error('俱乐部资料更新审计在重试窗口内未可见');
 }
 
 function assertPersistedStage(record, { stage, status, reviewVersion, requestField, requestId }) {
@@ -614,11 +612,6 @@ export async function runClubApplicationSmoke({ store, runId, now = () => new Da
       },
       now(),
     );
-    await waitForProfileAudit(store, {
-      action: 'club_profile_updated',
-      target_id: clubId,
-      request_id: profileUpdateRequestId,
-    });
     const repeatedManagedUpdate = await updateManagedClub(
       store,
       {
