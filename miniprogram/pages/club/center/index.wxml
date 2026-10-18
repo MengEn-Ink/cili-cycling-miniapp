@@ -1,4 +1,5 @@
 <view class="page club-center-page">
+  <canvas canvas-id="clubMediaCanvas" class="club-media-canvas" aria-hidden="true" />
   <view class="club-page-head">
     <brand-logo compact="{{true}}" meta="俱乐部中心" />
     <button class="create-mini" wx:if="{{joinedClubs.length && !createMode && !manageMode && !detailMode}}" bindtap="showCreateForm">＋ 新建</button>
@@ -13,6 +14,10 @@
       <view class="state-card" wx:if="{{detailLoading}}"><view class="title">正在读取俱乐部详情</view></view>
       <view class="state-card" wx:elif="{{detailError}}" role="alert"><view class="title">暂时无法读取</view><view class="muted">{{detailError}}</view><button class="btn" data-id="{{selectedClubId}}" bindtap="openClubDetail">重试</button></view>
       <view class="club-detail-card" wx:elif="{{selectedClub}}">
+        <view class="detail-cover">
+          <image wx:if="{{selectedClub.coverUrl}}" src="{{selectedClub.coverUrl}}" mode="aspectFill" />
+          <view wx:else class="detail-cover-placeholder">此里骑行俱乐部</view>
+        </view>
         <view class="managed-profile">
           <image wx:if="{{selectedClub.avatarUrl}}" class="managed-avatar" src="{{selectedClub.avatarUrl}}" mode="aspectFill" />
           <view wx:else class="managed-avatar managed-avatar-placeholder">{{selectedClub.avatarInitial}}</view>
@@ -28,10 +33,16 @@
     <form class="manage-form" wx:elif="{{canManageClub && managedClub && manageMode}}">
       <view class="form-card">
         <view class="card-head"><text class="section-no">编辑</text><view><view class="title">修改俱乐部资料</view><view class="muted">保存后，个人资料与后续活动会使用新信息</view></view></view>
-        <button class="cover-picker managed-cover-picker" bindtap="chooseCover" loading="{{uploading}}" disabled="{{uploading || managing}}">
-          <image wx:if="{{managedAvatarPreviewUrl}}" src="{{managedAvatarPreviewUrl}}" mode="aspectFill" />
-          <view wx:else><strong>{{uploading ? '正在上传…' : '上传俱乐部头像'}}</strong><text>必填，支持相册或拍照，最大 5MB</text></view>
-        </button>
+        <view class="media-pickers">
+          <button class="avatar-picker" bindtap="chooseAvatar" loading="{{uploading}}" disabled="{{uploading || managing}}">
+            <image wx:if="{{managedAvatarPreviewUrl}}" src="{{managedAvatarPreviewUrl}}" mode="aspectFill" />
+            <view class="media-picker-label"><strong>{{managedAvatarPreviewUrl ? '更换头像' : '选择头像'}}</strong><text>俱乐部头像（必填）· 1:1</text></view>
+          </button>
+          <button class="cover-picker managed-cover-picker" bindtap="chooseCover" loading="{{uploading}}" disabled="{{uploading || managing}}">
+            <image wx:if="{{managedCoverPreviewUrl}}" src="{{managedCoverPreviewUrl}}" mode="aspectFill" />
+            <view class="media-picker-label"><strong>{{managedCoverPreviewUrl ? '更换背景' : '选择背景'}}</strong><text>背景照片（可选）· 16:9</text></view>
+          </button>
+        </view>
         <view class="field-error" wx:if="{{fieldErrorKey === 'avatarFileId'}}">{{fieldError}}</view>
         <label class="field"><text>俱乐部名称</text><input value="{{managedForm.name}}" data-field="name" bindinput="managedInput" maxlength="30" placeholder="例如：山海骑行会" placeholder-class="input-placeholder" /></label>
         <view class="field-error" wx:if="{{fieldErrorKey === 'name'}}">{{fieldError}}</view>
@@ -87,7 +98,7 @@
     <block wx:elif="{{createMode}}">
       <view class="intro-card"><view class="section-no">新建俱乐部</view><view class="title">申请创建</view><view class="muted">填写必要资料并提交，经平台管理员审批通过后创建。</view></view>
       <form class="application-form">
-        <view class="form-card"><view class="card-head"><text class="section-no">01</text><view><view class="title">基本资料</view><view class="muted">用于管理员判断俱乐部定位与真实性</view></view></view><button class="cover-picker" bindtap="chooseCover" loading="{{uploading}}" disabled="{{uploading}}"><image wx:if="{{coverPreviewUrl}}" src="{{coverPreviewUrl}}" mode="aspectFill" /><view wx:else><strong>{{uploading ? '正在上传…' : '上传俱乐部头像'}}</strong><text>必填，支持相册或拍照，最大 5MB</text></view></button><view class="field-error" wx:if="{{fieldErrorKey === 'coverFileId'}}">{{fieldError}}</view><label class="field"><text>俱乐部名称</text><input value="{{form.clubName}}" data-field="clubName" bindinput="input" maxlength="30" placeholder="例如：山海骑行会" placeholder-class="input-placeholder" /></label><label class="field"><text>所在城市</text><input value="{{form.city}}" data-field="city" bindinput="input" maxlength="20" placeholder="例如：深圳" placeholder-class="input-placeholder" /></label><label class="field"><text>俱乐部简介</text><textarea value="{{form.introduction}}" data-field="introduction" bindinput="input" maxlength="500" placeholder="至少 20 字，介绍定位、骑行氛围与组织经验" placeholder-class="input-placeholder" /></label></view>
+        <view class="form-card"><view class="card-head"><text class="section-no">01</text><view><view class="title">基本资料</view><view class="muted">用于管理员判断俱乐部定位与真实性</view></view></view><view class="media-pickers"><button class="avatar-picker" bindtap="chooseAvatar" loading="{{uploading}}" disabled="{{uploading}}"><image wx:if="{{avatarPreviewUrl}}" src="{{avatarPreviewUrl}}" mode="aspectFill" /><view class="media-picker-label"><strong>{{avatarPreviewUrl ? '更换头像' : '选择头像'}}</strong><text>俱乐部头像（必填）· 1:1</text></view></button><button class="cover-picker" bindtap="chooseCover" loading="{{uploading}}" disabled="{{uploading}}"><image wx:if="{{coverPreviewUrl}}" src="{{coverPreviewUrl}}" mode="aspectFill" /><view class="media-picker-label"><strong>{{coverPreviewUrl ? '更换背景' : '选择背景'}}</strong><text>背景照片（可选）· 16:9</text></view></button></view><view class="field-error" wx:if="{{fieldErrorKey === 'avatarFileId'}}">{{fieldError}}</view><label class="field"><text>俱乐部名称</text><input value="{{form.clubName}}" data-field="clubName" bindinput="input" maxlength="30" placeholder="例如：山海骑行会" placeholder-class="input-placeholder" /></label><label class="field"><text>所在城市</text><input value="{{form.city}}" data-field="city" bindinput="input" maxlength="20" placeholder="例如：深圳" placeholder-class="input-placeholder" /></label><label class="field"><text>俱乐部简介</text><textarea value="{{form.introduction}}" data-field="introduction" bindinput="input" maxlength="500" placeholder="至少 20 字，介绍定位、骑行氛围与组织经验" placeholder-class="input-placeholder" /></label></view>
         <view class="form-card"><view class="card-head"><text class="section-no">02</text><view class="title">运营方式</view></view><label class="field"><text>加入方式</text><picker range="{{joinModes}}" range-key="label" value="{{joinModeIndex}}" bindchange="joinModeChange"><view class="picker-value">{{joinModes[joinModeIndex].label}} <text>›</text></view></picker></label><label class="field"><text>人数上限</text><input type="number" value="{{form.expectedSize}}" data-field="expectedSize" bindinput="input" placeholder="2-10000" placeholder-class="input-placeholder" /></label><label class="field"><text>主要活动类型</text><input value="{{form.activityTypes}}" data-field="activityTypes" bindinput="input" maxlength="100" placeholder="例如：公路骑行、爬坡训练" placeholder-class="input-placeholder" /></label><label class="field"><text>俱乐部规则</text><textarea value="{{form.rulesSummary}}" data-field="rulesSummary" bindinput="input" maxlength="500" placeholder="至少 10 字，说明安全要求和群规" placeholder-class="input-placeholder" /></label></view>
         <view class="form-card"><view class="card-head"><text class="section-no">03</text><view class="title">申请人联络</view></view><label class="field"><text>微信号或手机号</text><input value="{{form.applicantContact}}" data-field="applicantContact" bindinput="input" maxlength="50" placeholder="仅用于本次审核联络" placeholder-class="input-placeholder" /></label><view class="privacy-note"><view class="privacy-note-title">隐私说明</view><view>申请资料仅你本人和平台管理员可见；联系方式只用于俱乐部创建审核，不向其他骑友公开。</view></view></view>
         <view class="card danger" wx:if="{{actionError}}" role="alert">{{actionError}}</view><view class="actions-space"></view><view class="fixed actions"><button class="secondary" bindtap="saveDraft" disabled="{{saving || submitting || uploading}}" loading="{{saving}}">保存草稿</button><button class="btn" bindtap="submit" disabled="{{saving || submitting || uploading}}" loading="{{submitting}}">{{submitting ? '正在提交' : (application && application.status === 'rejected' ? '修改并重新提交' : '提交审核')}}</button></view>

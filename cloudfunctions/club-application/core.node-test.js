@@ -23,6 +23,7 @@ const valid = (openid = 'user-1') => ({
   expected_size: 30,
   activity_types: '公路骑行、爬坡训练',
   rules_summary: '遵守交通规则，佩戴头盔，服从领队安排。',
+  avatar_file_id: `cloud://env/club-applications/${openid}/avatar.jpg`,
   cover_file_id: `cloud://env/club-applications/${openid}/cover.jpg`,
 });
 function memoryStore() {
@@ -130,7 +131,8 @@ test('审批通过原子创建俱乐部与 OWNER，重复审批幂等', async ()
   assert.equal(store.state.clubs.size, 1);
   const club = [...store.state.clubs.values()][0];
   assert.equal(club.approval_status, 'approved');
-  assert.equal(club.avatar_url, valid().cover_file_id);
+  assert.equal(club.avatar_url, valid().avatar_file_id);
+  assert.equal(club.cover_file_id, valid().cover_file_id);
   assert.equal(activeApprovedClub(club), true);
   await assert.doesNotReject(() =>
     resolveTrustedClubIdentity(
@@ -143,6 +145,37 @@ test('审批通过原子创建俱乐部与 OWNER，重复审批幂等', async ()
   );
   assert.equal(store.state.memberships.size, 1);
   assert.equal([...store.state.memberships.values()][0].role, 'OWNER');
+});
+
+test('存量申请缺少头像时审批保留空头像，绝不使用背景兜底', async () => {
+  const store = memoryStore();
+  const id = 'legacy-application';
+  store.state.applications.set(id, {
+    _id: id,
+    applicant_openid: 'legacy-owner',
+    club_name: '存量骑行会',
+    city: '深圳',
+    introduction: '这是一个历史申请，只有背景照片但没有独立头像字段。',
+    join_mode: 'public_apply',
+    expected_size: 30,
+    cover_file_id: 'cloud://env/club-applications/legacy-owner/cover.jpg',
+    status: 'pending_review',
+    review_version: 1,
+  });
+
+  const approved = await reviewApplication(
+    store,
+    {
+      adminOpenid: 'admin-1',
+      applicationId: id,
+      decision: 'approved',
+      requestId: 'legacy-review-1',
+    },
+    now,
+  );
+  const club = store.state.clubs.get(approved.club_id);
+  assert.equal(club.avatar_url, '');
+  assert.equal(club.cover_file_id, 'cloud://env/club-applications/legacy-owner/cover.jpg');
 });
 
 test('非管理员不可审批且驳回原因必填', async () => {
@@ -211,6 +244,7 @@ test('可加入列表只保留可用公开俱乐部并返回安全投影', () =>
       city: '深圳',
       introduction: '每周组织安全友好的骑行活动',
       avatar_url: 'cloud://env/clubs/avatar.jpg',
+      cover_file_id: '',
       capacity_initialized: false,
       member_count: 0,
       max_members: 50,
@@ -232,16 +266,22 @@ test('可加入列表只保留可用公开俱乐部并返回安全投影', () =>
   );
 });
 
-test('列表投影仅在 avatar_url 缺失时回退存量 cover_file_id', () => {
+test('列表与详情头像不再回退背景，背景保持独立投影', () => {
   const legacy = joinableClub({ cover_file_id: 'cloud://env/legacy/cover.jpg' });
   delete legacy.avatar_url;
-  assert.equal(listJoinableClubs([legacy])[0].avatar_url, 'cloud://env/legacy/cover.jpg');
-  assert.equal(
-    listJoinableClubs([
-      joinableClub({ avatar_url: '', cover_file_id: 'cloud://env/legacy/cover.jpg' }),
-    ])[0].avatar_url,
-    '',
+  const projected = listJoinableClubs([legacy])[0];
+  assert.equal(projected.avatar_url, '');
+  assert.equal(projected.cover_file_id, 'cloud://env/legacy/cover.jpg');
+});
+
+test('推荐按 active membership 排除，inactive 与新用户仍可见', () => {
+  const secondId = `club_${'b'.repeat(64)}`;
+  const clubs = [joinableClub(), joinableClub({ _id: secondId })];
+  assert.deepEqual(
+    listJoinableClubs(clubs, [publicClubId]).map((item) => item.id),
+    [secondId],
   );
+  assert.equal(listJoinableClubs(clubs, []).length, 2);
 });
 
 test('公开加入创建 MEMBER active 并写审计，重复加入幂等', async () => {
@@ -395,7 +435,8 @@ test('管理员更新资料时服务端只写允许字段并记录审计', async
     city: '深圳',
     introduction: '这是修改之前的俱乐部介绍，长度满足服务端校验。',
     join_mode: 'public_apply',
-    avatar_url: 'cloud://env/club-applications/user-1/old.jpg',
+    avatar_url: 'cloud://env/club-applications/user-1/old-avatar.jpg',
+    cover_file_id: 'cloud://env/club-applications/user-1/old-cover.jpg',
     owner_openid: 'user-1',
     approval_status: 'approved',
     status: 'active',
@@ -421,7 +462,8 @@ test('管理员更新资料时服务端只写允许字段并记录审计', async
         city: '广州',
         introduction: '这是修改后的俱乐部介绍，清晰说明定位和日常活动安排。',
         join_mode: 'admin_invite',
-        avatar_file_id: 'cloud://env/club-applications/user-2/new.jpg',
+        avatar_file_id: 'cloud://env/club-applications/user-2/new-avatar.jpg',
+        cover_file_id: 'cloud://env/club-applications/user-2/new-cover.jpg',
         max_members: 120,
       },
     },
@@ -429,12 +471,14 @@ test('管理员更新资料时服务端只写允许字段并记录审计', async
   );
 
   assert.equal(updated.name, '新名称骑行会');
-  assert.equal(updated.avatar_file_id, 'cloud://env/club-applications/user-2/new.jpg');
+  assert.equal(updated.avatar_file_id, 'cloud://env/club-applications/user-2/new-avatar.jpg');
+  assert.equal(updated.cover_file_id, 'cloud://env/club-applications/user-2/new-cover.jpg');
   const stored = store.state.clubs.get(id);
   assert.equal(stored.owner_openid, 'user-1');
   assert.equal(stored.status, 'active');
   assert.equal(stored.approval_status, 'approved');
-  assert.equal(stored.avatar_url, 'cloud://env/club-applications/user-2/new.jpg');
+  assert.equal(stored.avatar_url, 'cloud://env/club-applications/user-2/new-avatar.jpg');
+  assert.equal(stored.cover_file_id, 'cloud://env/club-applications/user-2/new-cover.jpg');
   assert.equal(store.state.audits.at(-1).action, 'club_profile_updated');
   assert.equal(store.state.audits.at(-1).request_id, 'club-update-0001');
 });
@@ -571,6 +615,24 @@ test('资料更新要求 active 管理身份、合法图片归属并支持同请
           requestId: 'club-update-0003',
           expectedUpdatedAt: adminNow.toISOString(),
           input: { ...input, avatar_file_id: 'cloud://env/club-applications/other-user/new.jpg' },
+        },
+        now,
+      ),
+    (error) => error.code === 'VALIDATION_FAILED',
+  );
+  await assert.rejects(
+    () =>
+      updateManagedClub(
+        store,
+        {
+          openid: 'user-1',
+          clubId: id,
+          requestId: 'club-update-0004',
+          expectedUpdatedAt: adminNow.toISOString(),
+          input: {
+            ...input,
+            cover_file_id: 'cloud://env/club-applications/other-user/private-cover.jpg',
+          },
         },
         now,
       ),

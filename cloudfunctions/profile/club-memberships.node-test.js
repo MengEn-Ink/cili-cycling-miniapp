@@ -110,7 +110,7 @@ test('profile 过滤未审批、缺失和重复俱乐部关系', async () => {
   assert.equal(summaries[0].club_id, 'club-ok');
 });
 
-test('profile 对旧俱乐部仅在 avatar_url 缺失时回退 cover_file_id', async () => {
+test('profile 头像只使用 avatar_url，不再回退 cover_file_id', async () => {
   const memberships = [
     { club_id: 'legacy', openid: 'owner', role: 'OWNER', status: 'active' },
     { club_id: 'empty', openid: 'owner', role: 'ADMIN', status: 'active' },
@@ -140,7 +140,7 @@ test('profile 对旧俱乐部仅在 avatar_url 缺失时回退 cover_file_id', a
   const summaries = await loadClubMembershipSummaries(database({ memberships, clubs }), 'owner');
   const byId = new Map(summaries.map((summary) => [summary.club_id, summary]));
 
-  assert.equal(byId.get('legacy').club_identity.avatar_url, 'cloud://env/clubs/legacy.jpg');
+  assert.equal(byId.get('legacy').club_identity.avatar_url, '');
   assert.equal(byId.get('empty').club_identity.avatar_url, '');
 });
 

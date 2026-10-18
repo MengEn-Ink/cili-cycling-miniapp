@@ -12,40 +12,46 @@ function trustedCover(fileId, applicantOpenid) {
   return Boolean(owner && cloudPath(fileId).startsWith(`club-applications/${owner}/`));
 }
 
-async function resolveApplicationCovers(cloud, applications, applicantOpenid = '') {
-  const values = Array.isArray(applications) ? applications : [];
-  const trustedIds = Array.from(
-    new Set(
-      values
-        .map((application) => {
-          const fileId = safeText(application?.cover_file_id);
-          const owner = safeText(applicantOpenid || application?.applicant_openid);
-          return trustedCover(fileId, owner) ? fileId : '';
-        })
-        .filter(Boolean),
-    ),
-  );
+async function resolveFileIds(cloud, fileIds, warning) {
+  const ids = Array.from(new Set(fileIds.filter((value) => /^cloud:\/\/[^/]+\/.+/.test(value))));
   const urls = new Map();
-  for (let offset = 0; offset < trustedIds.length; offset += 50) {
-    const batch = trustedIds.slice(offset, offset + 50);
+  for (let offset = 0; offset < ids.length; offset += 50) {
+    const batch = ids.slice(offset, offset + 50);
     try {
       const result = await cloud.getTempFileURL({ fileList: batch });
-      const entries = Array.isArray(result?.fileList) ? result.fileList : [];
-      entries.forEach((item) => {
+      for (const item of Array.isArray(result?.fileList) ? result.fileList : []) {
         const fileId = safeText(item?.fileID);
         const url = safeText(item?.tempFileURL);
         if (batch.includes(fileId) && /^https:\/\//i.test(url)) urls.set(fileId, url);
-      });
+      }
     } catch (error) {
-      console.warn('[club-application] resolve cover batch failed', error?.message || error);
+      console.warn(warning, error?.message || error);
     }
   }
-  return values.map((application) => {
-    const fileId = safeText(application?.cover_file_id);
+  return urls;
+}
+
+async function resolveApplicationCovers(cloud, applications, applicantOpenid = '') {
+  const values = Array.isArray(applications) ? applications : [];
+  const trustedIds = values.flatMap((application) => {
     const owner = safeText(applicantOpenid || application?.applicant_openid);
+    return ['avatar_file_id', 'cover_file_id']
+      .map((field) => safeText(application?.[field]))
+      .filter((fileId) => trustedCover(fileId, owner));
+  });
+  const urls = await resolveFileIds(
+    cloud,
+    trustedIds,
+    '[club-application] resolve application media batch failed',
+  );
+  return values.map((application) => {
+    const owner = safeText(applicantOpenid || application?.applicant_openid);
+    const avatarId = safeText(application?.avatar_file_id);
+    const coverId = safeText(application?.cover_file_id);
     return {
       ...application,
-      cover_url: trustedCover(fileId, owner) ? urls.get(fileId) || '' : '',
+      avatar_url: trustedCover(avatarId, owner) ? urls.get(avatarId) || '' : '',
+      cover_url: trustedCover(coverId, owner) ? urls.get(coverId) || '' : '',
     };
   });
 }
@@ -57,35 +63,20 @@ async function resolveApplicationCover(cloud, application, applicantOpenid = '')
 
 async function resolveJoinableClubAvatars(cloud, clubs) {
   const values = Array.isArray(clubs) ? clubs : [];
-  const cloudIds = Array.from(
-    new Set(
-      values
-        .map((club) => safeText(club?.avatar_url))
-        .filter((value) => /^cloud:\/\/[^/]+\/.+/.test(value)),
-    ),
-  );
-  const urls = new Map();
-  for (let offset = 0; offset < cloudIds.length; offset += 50) {
-    const batch = cloudIds.slice(offset, offset + 50);
-    try {
-      const result = await cloud.getTempFileURL({ fileList: batch });
-      for (const item of Array.isArray(result?.fileList) ? result.fileList : []) {
-        const fileId = safeText(item?.fileID);
-        const url = safeText(item?.tempFileURL);
-        if (batch.includes(fileId) && /^https:\/\//i.test(url)) urls.set(fileId, url);
-      }
-    } catch {
-      // 头像签名失败时关闭该批次头像，不泄露 cloud file id，也不阻断列表。
-      console.warn('[club-application] resolve joinable club avatars failed');
-    }
-  }
-  return values.map((club) => {
-    const avatar = safeText(club?.avatar_url);
-    return {
-      ...club,
-      avatar_url: /^https:\/\//i.test(avatar) ? avatar : urls.get(avatar) || '',
-    };
-  });
+  const fileIds = values.flatMap((club) => [
+    safeText(club?.avatar_url),
+    safeText(club?.cover_file_id),
+  ]);
+  const urls = await resolveFileIds(cloud, fileIds, '[club-application] resolve club media failed');
+  const publicUrl = (value) => {
+    const fileId = safeText(value);
+    return /^https:\/\//i.test(fileId) ? fileId : urls.get(fileId) || '';
+  };
+  return values.map((club) => ({
+    ...club,
+    avatar_url: publicUrl(club?.avatar_url),
+    cover_url: publicUrl(club?.cover_file_id),
+  }));
 }
 
 module.exports = {

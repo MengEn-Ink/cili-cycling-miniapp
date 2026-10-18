@@ -76,10 +76,7 @@ function clubIsSelectable(club) {
 }
 
 function clubAvatarUrl(club) {
-  const value = Object.prototype.hasOwnProperty.call(club, 'avatar_url')
-    ? club.avatar_url
-    : club.cover_file_id;
-  return typeof value === 'string' ? value.trim() : '';
+  return typeof club?.avatar_url === 'string' ? club.avatar_url.trim() : '';
 }
 
 async function resolveTrustedClubIdentity(tx, { clubId, openid, isAdmin }) {

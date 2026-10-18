@@ -21,6 +21,7 @@ const EMPTY_FORM: ClubApplicationInput = {
   expectedSize: 10,
   activityTypes: '',
   rulesSummary: '',
+  avatarFileId: '',
   coverFileId: '',
 };
 const EMPTY_MANAGED_FORM: ManagedClubProfileInput = {
@@ -29,6 +30,7 @@ const EMPTY_MANAGED_FORM: ManagedClubProfileInput = {
   introduction: '',
   joinMode: 'public_apply',
   avatarFileId: '',
+  coverFileId: '',
   maxMembers: 50,
 };
 const JOIN_MODES: { value: ClubJoinMode; label: string }[] = [
@@ -40,7 +42,7 @@ const requestId = (prefix: string) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 function validate(form: ClubApplicationInput) {
   const checks: [keyof ClubApplicationInput, boolean, string][] = [
-    ['coverFileId', !!form.coverFileId, '请上传俱乐部封面'],
+    ['avatarFileId', !!form.avatarFileId, '请上传俱乐部头像'],
     [
       'clubName',
       form.clubName.trim().length >= 2 && form.clubName.trim().length <= 30,
@@ -100,6 +102,7 @@ function toForm(value: ClubApplication): ClubApplicationInput {
     expectedSize: value.expectedSize,
     activityTypes: value.activityTypes,
     rulesSummary: value.rulesSummary,
+    avatarFileId: value.avatarFileId,
     coverFileId: value.coverFileId,
   };
 }
@@ -110,8 +113,143 @@ function toManagedForm(value: ManagedClubProfile): ManagedClubProfileInput {
     introduction: value.introduction,
     joinMode: value.joinMode,
     avatarFileId: value.avatarFileId,
+    coverFileId: value.coverFileId,
     maxMembers: value.maxMembers,
   };
+}
+
+type ClubMediaKind = 'avatar' | 'cover';
+const MEDIA_SPEC = {
+  avatar: { cropScale: '1:1', width: 512, height: 512 },
+  cover: { cropScale: '16:9', width: 1280, height: 720 },
+} as const;
+function mediaCancelled(error: unknown) {
+  return /cancel/i.test(String((error as { errMsg?: string })?.errMsg || ''));
+}
+function fixedSizeUnsupported(error: unknown) {
+  return /not support|unsupported|compressedWidth|compressedHeight|invalid.*(width|height)/i.test(
+    String((error as { errMsg?: string })?.errMsg || ''),
+  );
+}
+type ClubMediaCanvasScope = NonNullable<Parameters<typeof wx.createCanvasContext>[1]>;
+const CLUB_MEDIA_CANVAS_ID = 'clubMediaCanvas';
+function mediaError(message: string, cause: unknown) {
+  return Object.assign(new Error(message), { cause });
+}
+async function hasExactClubMediaSize(src: string, spec: (typeof MEDIA_SPEC)[ClubMediaKind]) {
+  if (typeof wx.getImageInfo !== 'function') return false;
+  try {
+    const info = await new Promise<{ width?: number; height?: number }>((resolve, reject) =>
+      wx.getImageInfo({ src, success: resolve, fail: reject }),
+    );
+    return info.width === spec.width && info.height === spec.height;
+  } catch {
+    return false;
+  }
+}
+async function exportFixedClubMedia(
+  src: string,
+  spec: (typeof MEDIA_SPEC)[ClubMediaKind],
+  scope: ClubMediaCanvasScope,
+) {
+  try {
+    if (
+      typeof wx.createCanvasContext !== 'function' ||
+      typeof wx.canvasToTempFilePath !== 'function'
+    )
+      throw new Error('canvas unavailable');
+    const context = wx.createCanvasContext(CLUB_MEDIA_CANVAS_ID, scope);
+    context.clearRect(0, 0, spec.width, spec.height);
+    context.drawImage(src, 0, 0, spec.width, spec.height);
+    await new Promise<void>((resolve) => context.draw(false, resolve));
+    const exported = await new Promise<{ tempFilePath?: string }>((resolve, reject) =>
+      wx.canvasToTempFilePath(
+        {
+          canvasId: CLUB_MEDIA_CANVAS_ID,
+          x: 0,
+          y: 0,
+          width: spec.width,
+          height: spec.height,
+          destWidth: spec.width,
+          destHeight: spec.height,
+          fileType: 'jpg',
+          quality: 0.9,
+          success: resolve,
+          fail: reject,
+        },
+        scope,
+      ),
+    );
+    if (!exported.tempFilePath) throw new Error('empty canvas result');
+    return exported.tempFilePath;
+  } catch (error) {
+    throw mediaError('图片处理失败，请重新选择', error);
+  }
+}
+async function chooseAndUploadClubMedia(
+  kind: ClubMediaKind,
+  openid: string,
+  scope: ClubMediaCanvasScope,
+) {
+  const selected = await wx.chooseMedia({
+    count: 1,
+    mediaType: ['image'],
+    sourceType: ['album', 'camera'],
+  });
+  const file = selected.tempFiles[0];
+  if (!file?.tempFilePath) return null;
+  if (typeof file.size === 'number' && file.size > 5 * 1024 * 1024)
+    throw new Error('图片不能超过 5MB');
+  const spec = MEDIA_SPEC[kind];
+  let croppedPath: string;
+  try {
+    const cropped = await new Promise<{ tempFilePath?: string }>((resolve, reject) =>
+      wx.cropImage({
+        src: file.tempFilePath,
+        cropScale: spec.cropScale,
+        success: resolve,
+        fail: reject,
+      }),
+    );
+    if (!cropped.tempFilePath) throw new Error('empty crop result');
+    croppedPath = cropped.tempFilePath;
+  } catch (error) {
+    if (mediaCancelled(error)) return null;
+    throw mediaError('图片裁剪失败，请重新选择', error);
+  }
+  let uploadPath = croppedPath;
+  let needsCanvasFallback = typeof wx.compressImage !== 'function';
+  if (typeof wx.compressImage === 'function') {
+    try {
+      const compressed = await new Promise<{ tempFilePath?: string }>((resolve, reject) =>
+        wx.compressImage({
+          src: croppedPath,
+          quality: 90,
+          compressedWidth: spec.width,
+          compressedHeight: spec.height,
+          success: resolve,
+          fail: reject,
+        }),
+      );
+      if (!compressed.tempFilePath) throw new Error('empty compress result');
+      if (await hasExactClubMediaSize(compressed.tempFilePath, spec)) {
+        uploadPath = compressed.tempFilePath;
+      } else {
+        // 部分基础库会返回 success 但忽略目标尺寸；未验证尺寸时必须固定像素重导出。
+        needsCanvasFallback = true;
+      }
+    } catch (error) {
+      if (!fixedSizeUnsupported(error)) throw mediaError('图片压缩失败，请重新选择', error);
+      // 旧基础库不识别固定尺寸参数时，必须经 legacy canvas 导出固定像素，不能上传原裁剪图。
+      needsCanvasFallback = true;
+    }
+  }
+  if (needsCanvasFallback) uploadPath = await exportFixedClubMedia(croppedPath, spec, scope);
+  const uploaded = await wx.cloud!.uploadFile({
+    cloudPath: `club-applications/${openid}/${requestId(kind)}.jpg`,
+    filePath: uploadPath,
+  });
+  return { fileId: uploaded.fileID, previewUrl: uploadPath };
 }
 
 Page({
@@ -146,10 +284,12 @@ Page({
     manageMode: false,
     managedForm: { ...EMPTY_MANAGED_FORM },
     managedJoinModeIndex: 0,
-    form: { ...EMPTY_FORM },
-    coverPreviewUrl: '',
     managedAvatarPreviewUrl: '',
+    managedCoverPreviewUrl: '',
     managedAvatarInitial: '俱',
+    form: { ...EMPTY_FORM },
+    avatarPreviewUrl: '',
+    coverPreviewUrl: '',
     joinModes: JOIN_MODES,
     joinModeIndex: 0,
     loading: true,
@@ -221,12 +361,14 @@ Page({
         manageMode: false,
         managedForm,
         managedAvatarPreviewUrl: managedClub?.avatarUrl || '',
+        managedCoverPreviewUrl: managedClub?.coverUrl || '',
         managedAvatarInitial: Array.from(managedClub?.name || '俱')[0] || '俱',
         managedJoinModeIndex: Math.max(
           0,
           JOIN_MODES.findIndex((item) => item.value === managedForm.joinMode),
         ),
         form,
+        avatarPreviewUrl: application?.avatarUrl || '',
         coverPreviewUrl: application?.coverUrl || '',
         joinModeIndex: Math.max(
           0,
@@ -301,6 +443,7 @@ Page({
       managedClubId: managedClub.id,
       managedForm,
       managedAvatarPreviewUrl: managedClub.avatarUrl,
+      managedCoverPreviewUrl: managedClub.coverUrl,
       managedAvatarInitial: Array.from(managedClub.name)[0] || '俱',
       managedJoinModeIndex: Math.max(
         0,
@@ -318,6 +461,7 @@ Page({
       manageMode: true,
       managedForm: toManagedForm(this.data.managedClub),
       managedAvatarPreviewUrl: this.data.managedClub.avatarUrl,
+      managedCoverPreviewUrl: this.data.managedClub.coverUrl,
       managedJoinModeIndex: Math.max(
         0,
         JOIN_MODES.findIndex((item) => item.value === this.data.managedClub?.joinMode),
@@ -334,6 +478,7 @@ Page({
       manageMode: false,
       managedForm: toManagedForm(this.data.managedClub),
       managedAvatarPreviewUrl: this.data.managedClub.avatarUrl,
+      managedCoverPreviewUrl: this.data.managedClub.coverUrl,
       actionError: '',
       fieldError: '',
       fieldErrorKey: '',
@@ -393,46 +538,59 @@ Page({
     this.manageRequestId = '';
     this.setData({ managedJoinModeIndex: index, 'managedForm.joinMode': selected.value });
   },
-  async chooseCover() {
+  chooseAvatar() {
+    return this.chooseClubMedia('avatar');
+  },
+  chooseCover() {
+    return this.chooseClubMedia('cover');
+  },
+  async chooseClubMedia(kind: ClubMediaKind) {
     if (this.data.uploading || !appStore.openid || !wx.cloud) return;
+    this.setData({ uploading: true, actionError: '' });
     try {
-      const selected = await wx.chooseMedia({
-        count: 1,
-        mediaType: ['image'],
-        sourceType: ['album', 'camera'],
-      });
-      const file = selected.tempFiles[0];
-      if (!file?.tempFilePath) return;
-      if (typeof file.size === 'number' && file.size > 5 * 1024 * 1024)
-        throw new Error('图片不能超过 5MB');
-      this.setData({ uploading: true, actionError: '' });
-      const uploaded = await wx.cloud.uploadFile({
-        cloudPath: `club-applications/${appStore.openid}/${requestId('cover')}.jpg`,
-        filePath: file.tempFilePath,
-      });
+      const uploaded = await chooseAndUploadClubMedia(kind, appStore.openid, this);
+      if (!uploaded) return;
       if (this.data.manageMode) this.manageRequestId = '';
-      this.setData(
-        this.data.manageMode
-          ? {
-              'managedForm.avatarFileId': uploaded.fileID,
-              managedAvatarPreviewUrl: file.tempFilePath,
-              uploading: false,
-              fieldError: '',
-              fieldErrorKey: '',
-            }
-          : {
-              'form.coverFileId': uploaded.fileID,
-              coverPreviewUrl: file.tempFilePath,
-              uploading: false,
-              fieldError: '',
-              fieldErrorKey: '',
-            },
-      );
+      if (kind === 'avatar') {
+        this.setData(
+          this.data.manageMode
+            ? {
+                'managedForm.avatarFileId': uploaded.fileId,
+                managedAvatarPreviewUrl: uploaded.previewUrl,
+                fieldError: '',
+                fieldErrorKey: '',
+              }
+            : {
+                'form.avatarFileId': uploaded.fileId,
+                avatarPreviewUrl: uploaded.previewUrl,
+                fieldError: '',
+                fieldErrorKey: '',
+              },
+        );
+      } else {
+        this.setData(
+          this.data.manageMode
+            ? {
+                'managedForm.coverFileId': uploaded.fileId,
+                managedCoverPreviewUrl: uploaded.previewUrl,
+                fieldError: '',
+                fieldErrorKey: '',
+              }
+            : {
+                'form.coverFileId': uploaded.fileId,
+                coverPreviewUrl: uploaded.previewUrl,
+                fieldError: '',
+                fieldErrorKey: '',
+              },
+        );
+      }
     } catch (error) {
-      this.setData({
-        uploading: false,
-        actionError: error instanceof Error ? error.message : '图片上传失败，请重试',
-      });
+      if (!mediaCancelled(error))
+        this.setData({
+          actionError: error instanceof Error ? error.message : '图片处理失败，请重新选择',
+        });
+    } finally {
+      this.setData({ uploading: false });
     }
   },
   ensureValid() {
@@ -487,6 +645,7 @@ Page({
         ),
         managedForm: toManagedForm(managedClub),
         managedAvatarPreviewUrl: managedClub.avatarUrl || this.data.managedAvatarPreviewUrl,
+        managedCoverPreviewUrl: managedClub.coverUrl || this.data.managedCoverPreviewUrl,
         joinedClubName: managedClub.name,
         managedAvatarInitial: Array.from(managedClub.name)[0] || '俱',
         manageMode: false,
@@ -507,6 +666,7 @@ Page({
       const application = await rideService.saveClubApplicationDraft(this.data.form);
       this.setData({
         application,
+        avatarPreviewUrl: application.avatarUrl || this.data.avatarPreviewUrl,
         coverPreviewUrl: application.coverUrl || this.data.coverPreviewUrl,
         saving: false,
       });
@@ -541,6 +701,7 @@ Page({
       this.setData({
         application,
         form: toForm(application),
+        avatarPreviewUrl: application.avatarUrl || this.data.avatarPreviewUrl,
         coverPreviewUrl: application.coverUrl || this.data.coverPreviewUrl,
         submitting: false,
       });

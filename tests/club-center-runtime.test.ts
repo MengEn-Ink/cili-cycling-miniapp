@@ -37,9 +37,31 @@ function applyPatch(target: Record<string, any>, patch: Record<string, unknown>)
   }
 }
 
+const clubMediaCases = [
+  {
+    label: '头像',
+    kind: 'avatar',
+    method: 'chooseAvatar',
+    fileIdField: 'avatarFileId',
+    previewField: 'avatarPreviewUrl',
+    width: 512,
+    height: 512,
+  },
+  {
+    label: '背景',
+    kind: 'cover',
+    method: 'chooseCover',
+    fileIdField: 'coverFileId',
+    previewField: 'coverPreviewUrl',
+    width: 1280,
+    height: 720,
+  },
+] as const;
+
 describe('俱乐部申请页运行时错误恢复', () => {
   let page: any;
   let wxApi: any;
+  let canvasContext: any;
 
   beforeEach(async () => {
     vi.resetModules();
@@ -50,9 +72,27 @@ describe('俱乐部申请页运行时错误恢复', () => {
     rideService.getProfile.mockResolvedValue({ clubs: [] });
     rideService.getMyClubApplication.mockResolvedValue(null);
     rideService.listJoinableClubs.mockResolvedValue([]);
+    canvasContext = {
+      clearRect: vi.fn(),
+      drawImage: vi.fn(),
+      draw: vi.fn((_reserve, callback) => callback()),
+    };
     wxApi = {
       cloud: { uploadFile: vi.fn() },
       chooseMedia: vi.fn(),
+      cropImage: vi.fn(({ src, success }) => success({ tempFilePath: `${src}.cropped` })),
+      compressImage: vi.fn(({ src, success }) => success({ tempFilePath: `${src}.compressed` })),
+      getImageInfo: vi.fn(({ src, success }) =>
+        success(
+          String(src).includes('cover')
+            ? { width: 1280, height: 720 }
+            : { width: 512, height: 512 },
+        ),
+      ),
+      createCanvasContext: vi.fn(() => canvasContext),
+      canvasToTempFilePath: vi.fn(({ success }) =>
+        success({ tempFilePath: 'wxfile://canvas-export.jpg' }),
+      ),
       showToast: vi.fn(),
       showModal: vi.fn(),
     };
@@ -144,7 +184,7 @@ describe('俱乐部申请页运行时错误恢复', () => {
       ...originalForm,
       coverFileId: 'cloud://env/club-applications/test-openid/cover.jpg',
     });
-    expect(page.data.coverPreviewUrl).toBe('wxfile://club-cover.jpg');
+    expect(page.data.coverPreviewUrl).toBe('wxfile://club-cover.jpg.cropped.compressed');
   });
 
   it('无俱乐部无申请时默认发现，并可展开创建表单', async () => {
@@ -183,7 +223,7 @@ describe('俱乐部申请页运行时错误恢复', () => {
       avatarUrl: '',
       avatarInitial: '山',
     };
-    rideService.listJoinableClubs.mockResolvedValue([club]);
+    rideService.listJoinableClubs.mockResolvedValueOnce([club]).mockResolvedValueOnce([]);
     rideService.joinPublicClub.mockResolvedValue({ club, role: 'MEMBER', status: 'active' });
     await page.load();
 
@@ -195,6 +235,7 @@ describe('俱乐部申请页运行时错误恢复', () => {
     );
     expect(rideService.getProfile).toHaveBeenCalledTimes(2);
     expect(page.data.joinedClubName).toBe('山海骑行会');
+    expect(page.data.joinableClubs).toEqual([]);
     expect(page.data.discoverMode).toBe(false);
     expect(page.data.joiningClubId).toBe('');
   });
@@ -453,5 +494,259 @@ describe('俱乐部申请页运行时错误恢复', () => {
     expect(page.data.manageMode).toBe(false);
     expect(page.data.managing).toBe(false);
     expect(wxApi.showToast).toHaveBeenCalledWith({ title: '俱乐部资料已更新' });
+  });
+
+  it('头像与背景共用选择裁剪压缩 helper，但使用独立比例、尺寸和上传文件名', async () => {
+    wxApi.chooseMedia
+      .mockResolvedValueOnce({ tempFiles: [{ tempFilePath: 'wxfile://avatar.jpg', size: 1024 }] })
+      .mockResolvedValueOnce({ tempFiles: [{ tempFilePath: 'wxfile://cover.jpg', size: 2048 }] });
+    wxApi.cloud.uploadFile
+      .mockResolvedValueOnce({ fileID: 'cloud://env/club-applications/test-openid/avatar.jpg' })
+      .mockResolvedValueOnce({ fileID: 'cloud://env/club-applications/test-openid/cover.jpg' });
+
+    await page.chooseAvatar();
+    await page.chooseCover();
+
+    expect(wxApi.chooseMedia).toHaveBeenCalledWith({
+      count: 1,
+      mediaType: ['image'],
+      sourceType: ['album', 'camera'],
+    });
+    expect(wxApi.cropImage.mock.calls.map(([options]: any[]) => options.cropScale)).toEqual([
+      '1:1',
+      '16:9',
+    ]);
+    expect(
+      wxApi.compressImage.mock.calls.map(([options]: any[]) => ({
+        quality: options.quality,
+        width: options.compressedWidth,
+        height: options.compressedHeight,
+      })),
+    ).toEqual([
+      { quality: 90, width: 512, height: 512 },
+      { quality: 90, width: 1280, height: 720 },
+    ]);
+    expect(wxApi.cloud.uploadFile.mock.calls[0][0]).toMatchObject({
+      cloudPath: expect.stringMatching(/\/avatar_/),
+      filePath: 'wxfile://avatar.jpg.cropped.compressed',
+    });
+    expect(wxApi.cloud.uploadFile.mock.calls[1][0]).toMatchObject({
+      cloudPath: expect.stringMatching(/\/cover_/),
+      filePath: 'wxfile://cover.jpg.cropped.compressed',
+    });
+    expect(page.data.form.avatarFileId).toContain('/avatar.jpg');
+    expect(page.data.form.coverFileId).toContain('/cover.jpg');
+  });
+
+  it.each(clubMediaCases)('$label压缩结果尺寸精确匹配时直接上传', async (media) => {
+    const selectedPath = `wxfile://${media.kind}-exact.jpg`;
+    const compressedPath = `${selectedPath}.cropped.compressed`;
+    wxApi.chooseMedia.mockResolvedValue({
+      tempFiles: [{ tempFilePath: selectedPath, size: 1024 }],
+    });
+    wxApi.getImageInfo.mockImplementation(({ success }: any) =>
+      success({ width: media.width, height: media.height }),
+    );
+    wxApi.cloud.uploadFile.mockResolvedValue({
+      fileID: `cloud://env/club-applications/test-openid/${media.kind}-exact.jpg`,
+    });
+
+    await page[media.method]();
+
+    expect(wxApi.getImageInfo).toHaveBeenCalledWith(
+      expect.objectContaining({ src: compressedPath }),
+    );
+    expect(wxApi.createCanvasContext).not.toHaveBeenCalled();
+    expect(wxApi.cloud.uploadFile).toHaveBeenCalledWith(
+      expect.objectContaining({ filePath: compressedPath }),
+    );
+  });
+
+  it.each(clubMediaCases)(
+    '$label压缩 API 成功但输出尺寸不匹配时经 canvas 固定尺寸后上传',
+    async (media) => {
+      const selectedPath = `wxfile://${media.kind}-mismatch.jpg`;
+      wxApi.chooseMedia.mockResolvedValue({
+        tempFiles: [{ tempFilePath: selectedPath, size: 1024 }],
+      });
+      wxApi.getImageInfo.mockImplementation(({ success }: any) =>
+        success({ width: media.width - 1, height: media.height }),
+      );
+      wxApi.cloud.uploadFile.mockResolvedValue({
+        fileID: `cloud://env/club-applications/test-openid/${media.kind}-canvas.jpg`,
+      });
+
+      await page[media.method]();
+
+      expect(canvasContext.drawImage).toHaveBeenCalledWith(
+        `${selectedPath}.cropped`,
+        0,
+        0,
+        media.width,
+        media.height,
+      );
+      expect(wxApi.canvasToTempFilePath).toHaveBeenCalledWith(
+        expect.objectContaining({
+          width: media.width,
+          height: media.height,
+          destWidth: media.width,
+          destHeight: media.height,
+        }),
+        page,
+      );
+      expect(wxApi.cloud.uploadFile).toHaveBeenCalledWith(
+        expect.objectContaining({ filePath: 'wxfile://canvas-export.jpg' }),
+      );
+    },
+  );
+
+  it.each(clubMediaCases)('$label尺寸读取失败时经 canvas 固定尺寸后上传', async (media) => {
+    const selectedPath = `wxfile://${media.kind}-info-failed.jpg`;
+    wxApi.chooseMedia.mockResolvedValue({
+      tempFiles: [{ tempFilePath: selectedPath, size: 1024 }],
+    });
+    wxApi.getImageInfo.mockImplementation(({ fail }: any) =>
+      fail({ errMsg: 'getImageInfo:fail decode failed' }),
+    );
+    wxApi.cloud.uploadFile.mockResolvedValue({
+      fileID: `cloud://env/club-applications/test-openid/${media.kind}-canvas.jpg`,
+    });
+
+    await page[media.method]();
+
+    expect(canvasContext.drawImage).toHaveBeenCalledWith(
+      `${selectedPath}.cropped`,
+      0,
+      0,
+      media.width,
+      media.height,
+    );
+    expect(wxApi.cloud.uploadFile).toHaveBeenCalledWith(
+      expect.objectContaining({ filePath: 'wxfile://canvas-export.jpg' }),
+    );
+  });
+
+  it.each(clubMediaCases)(
+    '$label尺寸未验证且 canvas 最终失败时不上传并保留旧媒体',
+    async (media) => {
+      const oldFileId = `cloud://env/club-applications/test-openid/old-${media.kind}.jpg`;
+      const oldPreview = `https://temporary.example/old-${media.kind}.jpg`;
+      page.data.form[media.fileIdField] = oldFileId;
+      page.data[media.previewField] = oldPreview;
+      wxApi.chooseMedia.mockResolvedValue({
+        tempFiles: [{ tempFilePath: `wxfile://${media.kind}-failed.jpg`, size: 1024 }],
+      });
+      wxApi.getImageInfo.mockImplementation(({ fail }: any) =>
+        fail({ errMsg: 'getImageInfo:fail unavailable' }),
+      );
+      wxApi.canvasToTempFilePath.mockImplementation(({ fail }: any) =>
+        fail({ errMsg: 'canvasToTempFilePath:fail export failed' }),
+      );
+
+      await page[media.method]();
+
+      expect(wxApi.cloud.uploadFile).not.toHaveBeenCalled();
+      expect(page.data.form[media.fileIdField]).toBe(oldFileId);
+      expect(page.data[media.previewField]).toBe(oldPreview);
+      expect(page.data.actionError).toBe('图片处理失败，请重新选择');
+    },
+  );
+
+  it('旧基础库不支持压缩尺寸时经 legacy canvas 固定像素后上传', async () => {
+    wxApi.chooseMedia.mockResolvedValue({
+      tempFiles: [{ tempFilePath: 'wxfile://legacy.jpg', size: 1024 }],
+    });
+    wxApi.compressImage.mockImplementation(({ fail }: any) =>
+      fail({ errMsg: 'compressImage:fail compressedWidth is not supported' }),
+    );
+    wxApi.cloud.uploadFile.mockResolvedValue({
+      fileID: 'cloud://env/club-applications/test-openid/avatar-legacy.jpg',
+    });
+
+    await page.chooseAvatar();
+
+    expect(wxApi.createCanvasContext).toHaveBeenCalledWith('clubMediaCanvas', page);
+    expect(canvasContext.clearRect).toHaveBeenCalledWith(0, 0, 512, 512);
+    expect(canvasContext.drawImage).toHaveBeenCalledWith(
+      'wxfile://legacy.jpg.cropped',
+      0,
+      0,
+      512,
+      512,
+    );
+    expect(canvasContext.draw).toHaveBeenCalledWith(false, expect.any(Function));
+    expect(wxApi.canvasToTempFilePath).toHaveBeenCalledWith(
+      expect.objectContaining({
+        canvasId: 'clubMediaCanvas',
+        width: 512,
+        height: 512,
+        destWidth: 512,
+        destHeight: 512,
+        fileType: 'jpg',
+        quality: 0.9,
+      }),
+      page,
+    );
+    expect(wxApi.cloud.uploadFile).toHaveBeenCalledWith(
+      expect.objectContaining({ filePath: 'wxfile://canvas-export.jpg' }),
+    );
+    expect(page.data.form.avatarFileId).toContain('avatar-legacy.jpg');
+    expect(page.data.actionError).toBe('');
+  });
+
+  it('legacy canvas 导出失败时不上传且保留旧头像', async () => {
+    page.data.form.avatarFileId = 'cloud://env/club-applications/test-openid/old-avatar.jpg';
+    page.data.avatarPreviewUrl = 'https://temporary.example/old-avatar.jpg';
+    wxApi.chooseMedia.mockResolvedValue({
+      tempFiles: [{ tempFilePath: 'wxfile://legacy-failed.jpg', size: 1024 }],
+    });
+    wxApi.compressImage.mockImplementation(({ fail }: any) =>
+      fail({ errMsg: 'compressImage:fail compressedHeight is not supported' }),
+    );
+    wxApi.canvasToTempFilePath.mockImplementation(({ fail }: any) =>
+      fail({ errMsg: 'canvasToTempFilePath:fail export failed' }),
+    );
+
+    await page.chooseAvatar();
+
+    expect(wxApi.cloud.uploadFile).not.toHaveBeenCalled();
+    expect(page.data.form.avatarFileId).toContain('old-avatar.jpg');
+    expect(page.data.avatarPreviewUrl).toContain('old-avatar.jpg');
+    expect(page.data.actionError).toBe('图片处理失败，请重新选择');
+  });
+
+  it('裁剪取消或处理失败均不覆盖旧媒体，busy 锁阻止重复选择', async () => {
+    page.data.form.avatarFileId = 'cloud://env/club-applications/test-openid/old-avatar.jpg';
+    page.data.avatarPreviewUrl = 'https://temporary.example/old-avatar.jpg';
+    wxApi.chooseMedia.mockResolvedValue({
+      tempFiles: [{ tempFilePath: 'wxfile://new.jpg', size: 1024 }],
+    });
+    wxApi.cropImage.mockImplementationOnce(({ fail }: any) =>
+      fail({ errMsg: 'cropImage:fail cancel' }),
+    );
+
+    await page.chooseAvatar();
+    expect(page.data.form.avatarFileId).toContain('old-avatar.jpg');
+    expect(page.data.avatarPreviewUrl).toContain('old-avatar.jpg');
+    expect(wxApi.cloud.uploadFile).not.toHaveBeenCalled();
+
+    wxApi.cropImage.mockImplementation(({ src, success }: any) =>
+      success({ tempFilePath: `${src}.cropped` }),
+    );
+    wxApi.compressImage.mockImplementation(({ fail }: any) =>
+      fail({ errMsg: 'compressImage:fail decode error' }),
+    );
+    await page.chooseAvatar();
+    expect(page.data.form.avatarFileId).toContain('old-avatar.jpg');
+    expect(page.data.actionError).toBe('图片压缩失败，请重新选择');
+
+    const selection = deferred<any>();
+    wxApi.chooseMedia.mockImplementation(() => selection.promise);
+    const first = page.chooseCover();
+    await Promise.resolve();
+    await page.chooseCover();
+    expect(wxApi.chooseMedia).toHaveBeenCalledTimes(3);
+    selection.resolve({ tempFiles: [] });
+    await first;
   });
 });

@@ -1633,7 +1633,7 @@ test('失效报名不拦截草稿删除，已上线活动与空理由删除被�
   );
 });
 
-test('可信俱乐部快照兼容旧 cover 字段但尊重显式空头像', async () => {
+test('可信俱乐部快照头像只使用 avatar_url，不回退 cover 字段', async () => {
   const baseClub = {
     _id: 'club-legacy-avatar',
     name: '旧俱乐部',
@@ -1651,7 +1651,7 @@ test('可信俱乐部快照兼容旧 cover 字段但尊重显式空头像', asyn
     openid: 'owner',
     isAdmin: false,
   });
-  assert.equal(legacy.clubIdentity.avatar_url, baseClub.cover_file_id);
+  assert.equal(legacy.clubIdentity.avatar_url, '');
 
   const explicitEmpty = await resolveTrustedClubIdentity(tx({ ...baseClub, avatar_url: '' }), {
     clubId: baseClub._id,
