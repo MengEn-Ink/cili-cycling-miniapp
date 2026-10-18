@@ -41,6 +41,7 @@ jobs:
       CLOUDBASE_ENV_ID: ${{ vars.CLOUDBASE_ENV_ID }}
       CLOUDBASE_REGION: ${{ vars.CLOUDBASE_REGION }}
       CLOUDBASE_API_KEY: ${{ secrets.CLOUDBASE_API_KEY }}
+      PROFILE_MEDIA_PATH_SECRET: ${{ secrets.PROFILE_MEDIA_PATH_SECRET }}
       TCB_NO_BROWSER: 'true'
     steps:
       - name: Checkout current main source
@@ -189,6 +190,18 @@ jobs:
           set -euo pipefail
           npm run cloudbase:storage:reconcile -- --env-id "${CLOUDBASE_ENV_ID}"
 
+      - name: Prepare production media secret configuration
+        if: steps.scope.outputs.should_deploy == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '::%s::%s\n' 'add-mask' "${PROFILE_MEDIA_PATH_SECRET}"
+          deploy_config="${RUNNER_TEMP}/cloudbaserc.deploy.json"
+          node scripts/cloudbase-media-secret-config.mjs prepare \
+            --source cloudbaserc.json \
+            --target "${deploy_config}"
+          printf 'DEPLOY_CONFIG_FILE=%s\n' "${deploy_config}" >> "${GITHUB_ENV}"
+
       - name: Deploy affected cloud functions
         if: steps.scope.outputs.should_deploy == 'true'
         env:
@@ -200,9 +213,23 @@ jobs:
             [[ "${function_name}" =~ ^[a-z][a-z0-9-]*$ ]] || { echo "非法函数名" >&2; exit 1; }
             echo "部署云函数：${function_name}"
             npx --yes --package @cloudbase/cli@3.8.4 tcb \
+              --config-file "${DEPLOY_CONFIG_FILE}" \
               -e "${CLOUDBASE_ENV_ID}" \
               fn deploy "${function_name}" --force --json
           done < <(jq -r '.[]' <<< "${FUNCTIONS_JSON}")
+
+      - name: Reconcile production media secret configuration
+        if: steps.scope.outputs.should_deploy == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          for function_name in \
+            profile profile-media-cleanup admin-review activity-read activity-admin club-application; do
+            npx --yes --package @cloudbase/cli@3.8.4 tcb \
+              --config-file "${DEPLOY_CONFIG_FILE}" \
+              -e "${CLOUDBASE_ENV_ID}" \
+              config update fn "${function_name}" --all --json >/dev/null
+          done
 
       - name: Verify deployed environment
         if: steps.scope.outputs.should_deploy == 'true'
@@ -220,32 +247,18 @@ jobs:
               exit 1
             fi
           done < <(jq -r '.[]' <<< "${FUNCTIONS_JSON}")
+          for function_name in \
+            profile profile-media-cleanup admin-review activity-read activity-admin club-application; do
+            function_detail="$(npx --yes --package @cloudbase/cli@3.8.4 tcb \
+              -e "${CLOUDBASE_ENV_ID}" \
+              fn detail "${function_name}" --json)"
+            printf '%s' "${function_detail}" | \
+              node scripts/cloudbase-media-secret-config.mjs verify \
+                --function "${function_name}"
+          done
           echo "CloudBase 部署验证通过：环境 ${CLOUDBASE_ENV_ID}"
         env:
           FUNCTIONS_JSON: ${{ steps.scope.outputs.functions }}
-
-      - name: Resolve production media path secret
-        if: steps.scope.outputs.should_deploy == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          function_detail="$(npx --yes --package @cloudbase/cli@3.8.4 tcb \
-            -e "${CLOUDBASE_ENV_ID}" \
-            fn detail club-application --json)"
-          profile_media_path_secret="$(jq -er '
-            [
-              .. | objects |
-              if .Key? == "PROFILE_MEDIA_PATH_SECRET" then .Value
-              elif has("PROFILE_MEDIA_PATH_SECRET") then .PROFILE_MEDIA_PATH_SECRET
-              else empty end |
-              select(type == "string" and length >= 32)
-            ] | unique |
-            if length == 1 then .[0]
-            else error("club-application 的 PROFILE_MEDIA_PATH_SECRET 缺失或不唯一")
-            end
-          ' <<< "${function_detail}")"
-          printf '::%s::%s\n' 'add-mask' "${profile_media_path_secret}"
-          printf 'PROFILE_MEDIA_PATH_SECRET=%s\n' "${profile_media_path_secret}" >> "${GITHUB_ENV}"
 
       - name: Run production club application write smoke
         if: steps.scope.outputs.should_deploy == 'true'

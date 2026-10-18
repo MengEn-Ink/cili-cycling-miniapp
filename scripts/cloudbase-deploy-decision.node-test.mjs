@@ -105,11 +105,13 @@ test('删除函数目录中的文件仍会触发对应函数重新部署', () =>
 test('GitHub 工作流仅在 main CI 成功后部署并使用环境级密钥', () => {
   const workflow = readFileSync('.github/workflows/deploy-cloudbase.yml', 'utf8');
   const decisionScript = readFileSync('scripts/cloudbase-deploy-decision.mjs', 'utf8');
+  const mediaSecretConfig = readFileSync('scripts/cloudbase-media-secret-config.mjs', 'utf8');
   assert.match(workflow, /workflow_run:/);
   assert.match(workflow, /workflows: \[CI\]/);
   assert.match(workflow, /github\.event\.workflow_run\.conclusion == 'success'/);
   assert.match(workflow, /environment: cloudbase-production/);
   assert.match(workflow, /secrets\.CLOUDBASE_API_KEY/);
+  assert.match(workflow, /secrets\.PROFILE_MEDIA_PATH_SECRET/);
   assert.match(workflow, /vars\.CLOUDBASE_ENV_ID/);
   assert.match(workflow, /vars\.CLOUDBASE_REGION/);
   assert.match(workflow, /actions\/workflows\/deploy-cloudbase\.yml\/runs/);
@@ -122,10 +124,14 @@ test('GitHub 工作流仅在 main CI 成功后部署并使用环境级密钥', (
       workflow.indexOf('name: Run production club application write smoke'),
   );
   assert.match(workflow, /CILI_ALLOW_PRODUCTION_SMOKE: club-application-write/);
-  assert.match(workflow, /name: Resolve production media path secret/);
-  assert.match(workflow, /fn detail club-application --json/);
-  assert.match(workflow, /club-application 的 PROFILE_MEDIA_PATH_SECRET 缺失或不唯一/);
-  assert.match(workflow, /PROFILE_MEDIA_PATH_SECRET=%s\\n/);
+  assert.match(workflow, /name: Prepare production media secret configuration/);
+  assert.match(mediaSecretConfig, /cloudbase-production 缺少有效的 PROFILE_MEDIA_PATH_SECRET/);
+  assert.match(workflow, /cloudbaserc\.deploy\.json/);
+  assert.match(workflow, /cloudbase-media-secret-config\.mjs prepare/);
+  assert.match(workflow, /config update fn "\$\{function_name\}" --all --json/);
+  assert.match(workflow, /fn detail "\$\{function_name\}" --json/);
+  assert.match(workflow, /cloudbase-media-secret-config\.mjs verify/);
+  assert.match(mediaSecretConfig, /部署后函数缺少统一媒体密钥/);
   assert.match(workflow, /GITHUB_ENV/);
   assert.match(workflow, /decision\.applyInfrastructure = true/);
   assert.match(workflow, /@cloudbase\/cli@3\.8\.4/);
