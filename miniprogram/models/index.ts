@@ -21,6 +21,7 @@ export interface JoinableClub {
   city: string;
   introduction: string;
   avatarUrl: string;
+  coverUrl: string;
   avatarInitial: string;
   capacityInitialized: boolean;
   memberCount: number;
@@ -45,6 +46,8 @@ export interface ManagedClubProfile {
   joinMode: ClubJoinMode;
   avatarFileId: string;
   avatarUrl: string;
+  coverFileId: string;
+  coverUrl: string;
   memberCount: number;
   maxMembers: number;
   updatedAt: string;
@@ -55,6 +58,7 @@ export interface ManagedClubProfileInput {
   introduction: string;
   joinMode: ClubJoinMode;
   avatarFileId: string;
+  coverFileId: string;
   maxMembers: number;
 }
 export type ClubApplicationStatus = 'draft' | 'pending_review' | 'rejected' | 'approved';
@@ -68,10 +72,12 @@ export interface ClubApplicationInput {
   expectedSize: number;
   activityTypes: string;
   rulesSummary: string;
+  avatarFileId: string;
   coverFileId: string;
 }
 export interface ClubApplication extends ClubApplicationInput {
   id: string;
+  avatarUrl: string;
   coverUrl: string;
   status: ClubApplicationStatus;
   reviewVersion: number;

@@ -1211,13 +1211,15 @@ function mapJoinableClub(raw: unknown): JoinableClub {
     typeof value.city !== 'string' ||
     typeof value.introduction !== 'string' ||
     typeof value.avatar_url !== 'string' ||
+    typeof value.cover_url !== 'string' ||
     typeof value.capacity_initialized !== 'boolean' ||
     !Number.isInteger(value.member_count) ||
     value.member_count < 0 ||
     !Number.isInteger(value.max_members) ||
     value.max_members < Math.max(2, value.member_count) ||
     value.max_members > 10000 ||
-    (value.avatar_url !== '' && !/^https:\/\//i.test(value.avatar_url))
+    (value.avatar_url !== '' && !/^https:\/\//i.test(value.avatar_url)) ||
+    (value.cover_url !== '' && !/^https:\/\//i.test(value.cover_url))
   )
     return invalidResponse();
   return {
@@ -1226,6 +1228,7 @@ function mapJoinableClub(raw: unknown): JoinableClub {
     city: value.city,
     introduction: value.introduction,
     avatarUrl: value.avatar_url,
+    coverUrl: value.cover_url,
     avatarInitial: Array.from(value.name.trim())[0] || '俱',
     capacityInitialized: value.capacity_initialized,
     memberCount: value.member_count,
@@ -1269,13 +1272,16 @@ function mapManagedClub(raw: unknown): ManagedClubProfile {
     typeof value.introduction !== 'string' ||
     !['public_apply', 'invite_code', 'admin_invite'].includes(value.join_mode) ||
     typeof value.avatar_file_id !== 'string' ||
+    typeof value.cover_file_id !== 'string' ||
     !Number.isInteger(value.member_count) ||
     value.member_count < 0 ||
     !Number.isInteger(value.max_members) ||
     value.max_members < Math.max(2, value.member_count) ||
     value.max_members > 10000 ||
     typeof value.avatar_url !== 'string' ||
-    (value.avatar_url !== '' && !/^https:\/\//i.test(value.avatar_url))
+    (value.avatar_url !== '' && !/^https:\/\//i.test(value.avatar_url)) ||
+    typeof value.cover_url !== 'string' ||
+    (value.cover_url !== '' && !/^https:\/\//i.test(value.cover_url))
   )
     return invalidResponse();
   return {
@@ -1286,6 +1292,8 @@ function mapManagedClub(raw: unknown): ManagedClubProfile {
     joinMode: value.join_mode,
     avatarFileId: value.avatar_file_id,
     avatarUrl: value.avatar_url,
+    coverFileId: value.cover_file_id,
+    coverUrl: value.cover_url,
     memberCount: value.member_count,
     maxMembers: value.max_members,
     updatedAt: dateText(value.updated_at),
@@ -1299,6 +1307,7 @@ function managedClubPayload(value: ManagedClubProfileInput) {
     introduction: value.introduction,
     join_mode: value.joinMode,
     avatar_file_id: value.avatarFileId,
+    cover_file_id: value.coverFileId,
     max_members: value.maxMembers,
   };
 }
@@ -1327,6 +1336,8 @@ function mapClubApplication(raw: unknown): ClubApplication {
     expectedSize: value.expected_size,
     activityTypes: typeof value.activity_types === 'string' ? value.activity_types : '',
     rulesSummary: typeof value.rules_summary === 'string' ? value.rules_summary : '',
+    avatarFileId: typeof value.avatar_file_id === 'string' ? value.avatar_file_id : '',
+    avatarUrl: typeof value.avatar_url === 'string' ? value.avatar_url : '',
     coverFileId: typeof value.cover_file_id === 'string' ? value.cover_file_id : '',
     coverUrl: typeof value.cover_url === 'string' ? value.cover_url : '',
     rejectionReason: typeof value.rejection_reason === 'string' ? value.rejection_reason : '',
@@ -1350,6 +1361,7 @@ function clubApplicationPayload(value: ClubApplicationInput) {
     expected_size: value.expectedSize,
     activity_types: value.activityTypes,
     rules_summary: value.rulesSummary,
+    avatar_file_id: value.avatarFileId,
     cover_file_id: value.coverFileId,
   };
 }

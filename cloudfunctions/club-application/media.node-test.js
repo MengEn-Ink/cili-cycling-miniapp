@@ -39,6 +39,29 @@ test('本人状态、管理员列表与详情只为申请人目录签发 HTTPS �
   assert.equal(calls[1].length, 2);
 });
 
+test('申请头像与背景分别签名并保持独立地址', async () => {
+  const value = {
+    ...application('user-1'),
+    avatar_file_id: 'cloud://env/club-applications/user-1/avatar.jpg',
+  };
+  const result = await resolveApplicationCover(
+    {
+      getTempFileURL: async ({ fileList }) => ({
+        fileList: fileList.map((fileID) => ({
+          fileID,
+          tempFileURL: fileID.includes('avatar')
+            ? 'https://temporary.example/avatar.jpg'
+            : 'https://temporary.example/cover.jpg',
+        })),
+      }),
+    },
+    value,
+    'user-1',
+  );
+  assert.equal(result.avatar_url, 'https://temporary.example/avatar.jpg');
+  assert.equal(result.cover_url, 'https://temporary.example/cover.jpg');
+});
+
 test('路径所有者不匹配时不签发且不会向存储 API 泄露资源 ID', async () => {
   let called = false;
   const cloud = {

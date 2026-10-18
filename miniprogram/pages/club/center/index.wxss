@@ -1,3 +1,12 @@
+.club-media-canvas {
+  position: fixed;
+  left: -2000px;
+  top: 0;
+  width: 1280px;
+  height: 720px;
+  opacity: 0;
+  pointer-events: none;
+}
 .club-center-page {
   padding-bottom: 160rpx;
   background: var(--color-bg);
@@ -71,11 +80,18 @@
 .form-card {
   margin-top: 28rpx;
 }
+.media-pickers {
+  display: grid;
+  grid-template-columns: 180rpx 1fr;
+  gap: 20rpx;
+  margin-top: 28rpx;
+  align-items: stretch;
+}
+.avatar-picker,
 .cover-picker {
   display: flex;
-  width: 100%;
-  height: 280rpx;
-  margin-top: 28rpx;
+  position: relative;
+  margin-top: 0;
   padding: 0;
   align-items: center;
   justify-content: center;
@@ -85,14 +101,35 @@
   background: var(--color-raised);
   color: var(--color-text);
 }
+.avatar-picker {
+  width: 180rpx;
+  height: 180rpx;
+}
+.cover-picker {
+  width: 100%;
+  height: 180rpx;
+}
+.avatar-picker image,
 .cover-picker image {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
 }
+.media-picker-label {
+  position: relative;
+  z-index: 1;
+  padding: 12rpx;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+.avatar-picker strong,
+.avatar-picker text,
 .cover-picker strong,
 .cover-picker text {
   display: block;
 }
+.avatar-picker text,
 .cover-picker text {
   margin-top: 8rpx;
   color: var(--color-muted);
@@ -287,7 +324,7 @@
   margin-top: 28rpx;
 }
 .managed-cover-picker {
-  margin-top: 28rpx;
+  margin-top: 0;
 }
 
 .managed-club-switch {
@@ -410,6 +447,25 @@
 }
 .club-detail-card {
   margin-top: 20rpx;
+}
+.detail-cover {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--color-action), var(--color-border-strong));
+}
+.detail-cover image,
+.detail-cover-placeholder {
+  width: 100%;
+  height: 100%;
+}
+.detail-cover-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-surface);
+  font-weight: 900;
 }
 .capacity-strip {
   display: grid;

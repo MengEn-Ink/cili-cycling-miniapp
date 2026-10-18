@@ -19,6 +19,7 @@ const {
   resolveApplicationCovers,
   resolveJoinableClubAvatars,
 } = require('./media');
+const { readJoinableClubDocuments } = require('./query-pages');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
@@ -99,12 +100,14 @@ exports.main = async (event = {}) => {
       return ok(await resolveApplicationCover(cloud, project(value), openid));
     }
     if (event.action === 'listJoinable') {
-      const result = await db
-        .collection('clubs')
-        .where({ approval_status: 'approved', status: 'active', join_mode: 'public_apply' })
-        .limit(100)
-        .get();
-      return ok(await resolveJoinableClubAvatars(cloud, listJoinableClubs(result.data)));
+      // 沿用仓库分页范式，以 _id 升序完整读取两侧集合；过滤后才保留最终 100 条。
+      const clubs = await readJoinableClubDocuments(
+        db.collection('club_memberships').where({ openid, status: 'active' }),
+        db
+          .collection('clubs')
+          .where({ approval_status: 'approved', status: 'active', join_mode: 'public_apply' }),
+      );
+      return ok(await resolveJoinableClubAvatars(cloud, listJoinableClubs(clubs)));
     }
     if (event.action === 'joinPublicClub') {
       const joined = await joinPublicClub(
@@ -131,7 +134,11 @@ exports.main = async (event = {}) => {
       const [resolved] = await resolveJoinableClubAvatars(cloud, [
         { ...value, avatar_url: value.avatar_file_id },
       ]);
-      return ok({ ...value, avatar_url: resolved.avatar_url });
+      return ok({
+        ...value,
+        avatar_url: resolved.avatar_url,
+        cover_url: resolved.cover_url,
+      });
     }
     if (event.action === 'updateManagedClub') {
       const value = await updateManagedClub(
@@ -148,7 +155,11 @@ exports.main = async (event = {}) => {
       const [resolved] = await resolveJoinableClubAvatars(cloud, [
         { ...value, avatar_url: value.avatar_file_id },
       ]);
-      return ok({ ...value, avatar_url: resolved.avatar_url });
+      return ok({
+        ...value,
+        avatar_url: resolved.avatar_url,
+        cover_url: resolved.cover_url,
+      });
     }
     if (event.action === 'saveDraft') {
       const value = await saveDraft(

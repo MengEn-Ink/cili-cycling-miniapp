@@ -31,9 +31,17 @@ function normalizeInput(raw, openid) {
   const expectedSize = Number(raw.expected_size);
   if (!Number.isInteger(expectedSize) || expectedSize < 2 || expectedSize > 10000)
     fail('VALIDATION_FAILED', '预计成员规模需为 2-10000 人');
-  const coverFileId = text(raw.cover_file_id, '俱乐部封面', 10, 512);
-  if (!coverFileId.includes(`/club-applications/${openid}/`))
-    fail('VALIDATION_FAILED', '请重新上传俱乐部封面');
+  const avatarFileId = text(raw.avatar_file_id, '俱乐部头像', 10, 512);
+  if (!avatarFileId.includes(`/club-applications/${openid}/`))
+    fail('VALIDATION_FAILED', '请重新上传俱乐部头像');
+  if (raw.cover_file_id !== undefined && typeof raw.cover_file_id !== 'string')
+    fail('VALIDATION_FAILED', '俱乐部背景照片格式错误');
+  const coverFileId = typeof raw.cover_file_id === 'string' ? raw.cover_file_id.trim() : '';
+  if (
+    coverFileId &&
+    (coverFileId.length > 512 || !coverFileId.includes(`/club-applications/${openid}/`))
+  )
+    fail('VALIDATION_FAILED', '请重新上传俱乐部背景照片');
   return {
     club_name: text(raw.club_name, '俱乐部名称', 2, 30),
     city: text(raw.city, '所在城市', 2, 20),
@@ -43,6 +51,7 @@ function normalizeInput(raw, openid) {
     expected_size: expectedSize,
     activity_types: text(raw.activity_types, '主要活动类型', 2, 100),
     rules_summary: text(raw.rules_summary, '俱乐部规则', 10, 500),
+    avatar_file_id: avatarFileId,
     cover_file_id: coverFileId,
   };
 }
@@ -67,6 +76,7 @@ function project(application, admin = false) {
     expected_size: application.expected_size || 0,
     activity_types: application.activity_types || '',
     rules_summary: application.rules_summary || '',
+    avatar_file_id: application.avatar_file_id || '',
     cover_file_id: application.cover_file_id || '',
     rejection_reason: application.rejection_reason || '',
     club_id: application.club_id || '',
@@ -164,7 +174,6 @@ async function ensureClubCapacity(tx, clubId, club) {
 }
 
 function projectJoinableClub(club) {
-  const avatar = Object.hasOwn(club || {}, 'avatar_url') ? club?.avatar_url : club?.cover_file_id;
   const capacityInitialized =
     Number.isInteger(club?.member_count) && Number.isInteger(club?.max_members);
   const memberCount = Number.isInteger(club?.member_count) ? club.member_count : 0;
@@ -176,19 +185,22 @@ function projectJoinableClub(club) {
     name: typeof club?.name === 'string' ? club.name : '',
     city: typeof club?.city === 'string' ? club.city : '',
     introduction: typeof club?.introduction === 'string' ? club.introduction : '',
-    avatar_url: typeof avatar === 'string' ? avatar : '',
+    avatar_url: typeof club?.avatar_url === 'string' ? club.avatar_url : '',
+    cover_file_id: typeof club?.cover_file_id === 'string' ? club.cover_file_id : '',
     capacity_initialized: capacityInitialized,
     member_count: memberCount,
     max_members: maxMembers,
   };
 }
 
-function listJoinableClubs(clubs) {
+function listJoinableClubs(clubs, activeClubIds = []) {
   if (!Array.isArray(clubs)) return [];
+  const excluded = new Set(Array.isArray(activeClubIds) ? activeClubIds : []);
   return clubs
     .filter(
       (club) =>
         club &&
+        !excluded.has(club._id) &&
         club.approval_status === 'approved' &&
         club.status === 'active' &&
         club.join_mode === 'public_apply',
@@ -271,9 +283,6 @@ function managedUpdatedAt(value) {
 
 function projectManagedClub(club) {
   if (!club) return null;
-  const avatar = Object.prototype.hasOwnProperty.call(club, 'avatar_url')
-    ? club.avatar_url
-    : club.cover_file_id;
   return {
     id: typeof club._id === 'string' ? club._id : '',
     name: typeof club.name === 'string' ? club.name : '',
@@ -282,7 +291,8 @@ function projectManagedClub(club) {
     join_mode: ['public_apply', 'invite_code', 'admin_invite'].includes(club.join_mode)
       ? club.join_mode
       : 'public_apply',
-    avatar_file_id: typeof avatar === 'string' ? avatar : '',
+    avatar_file_id: typeof club.avatar_url === 'string' ? club.avatar_url : '',
+    cover_file_id: typeof club.cover_file_id === 'string' ? club.cover_file_id : '',
     member_count: Number.isInteger(club.member_count) ? club.member_count : 0,
     max_members: Number.isInteger(club.max_members)
       ? Math.max(club.max_members, Number.isInteger(club.member_count) ? club.member_count : 0)
@@ -305,6 +315,7 @@ function normalizeManagedClubInput(raw) {
     'introduction',
     'join_mode',
     'avatar_file_id',
+    'cover_file_id',
     'max_members',
   ]);
   for (const key of Object.keys(raw))
@@ -314,12 +325,24 @@ function normalizeManagedClubInput(raw) {
   const avatarFileId = text(raw.avatar_file_id, '俱乐部头像', 10, 512);
   if (!/^cloud:\/\/[^/]+\/club-applications\/[^/]+\/.+/.test(avatarFileId))
     fail('VALIDATION_FAILED', '请重新上传俱乐部头像');
+  const hasCover = Object.prototype.hasOwnProperty.call(raw, 'cover_file_id');
+  if (hasCover && typeof raw.cover_file_id !== 'string')
+    fail('VALIDATION_FAILED', '俱乐部背景照片格式错误');
+  const coverFileId = typeof raw.cover_file_id === 'string' ? raw.cover_file_id.trim() : '';
+  if (
+    hasCover &&
+    coverFileId &&
+    (coverFileId.length > 512 ||
+      !/^cloud:\/\/[^/]+\/club-applications\/[^/]+\/.+/.test(coverFileId))
+  )
+    fail('VALIDATION_FAILED', '请重新上传俱乐部背景照片');
   return {
     name: text(raw.name, '俱乐部名称', 2, 30),
     city: text(raw.city, '所在城市', 2, 20),
     introduction: text(raw.introduction, '俱乐部简介', 20, 500),
     join_mode: raw.join_mode,
     avatar_url: avatarFileId,
+    ...(hasCover ? { cover_file_id: coverFileId } : {}),
     max_members: capacityValue(raw.max_members),
   };
 }
@@ -400,10 +423,19 @@ async function updateManagedClub(
       fail('MAX_MEMBERS_BELOW_CURRENT', '人数上限不能低于当前成员数');
     if (projectManagedClub(capacityClub).updated_at !== expectedUpdatedAt)
       fail('CLUB_PROFILE_CONFLICT', '俱乐部资料已被其他管理员更新，请重新加载后再修改');
-    const currentAvatar = projectManagedClub(capacityClub).avatar_file_id;
-    // 管理员可以保留负责人此前上传的头像；替换头像时只能使用本人目录，避免引用他人私有文件。
-    if (value.avatar_url !== currentAvatar && managedAvatarOwner(value.avatar_url) !== openid)
+    const currentProfile = projectManagedClub(capacityClub);
+    // 管理员可以保留负责人此前上传的媒体；替换时只能使用本人目录，避免引用他人私有文件。
+    if (
+      value.avatar_url !== currentProfile.avatar_file_id &&
+      managedAvatarOwner(value.avatar_url) !== openid
+    )
       fail('VALIDATION_FAILED', '请重新上传俱乐部头像');
+    if (
+      value.cover_file_id !== currentProfile.cover_file_id &&
+      value.cover_file_id &&
+      managedAvatarOwner(value.cover_file_id) !== openid
+    )
+      fail('VALIDATION_FAILED', '请重新上传俱乐部背景照片');
     const next = {
       ...capacityClub,
       ...value,
@@ -461,8 +493,11 @@ async function reviewApplication(
         name: application.club_name,
         city: application.city,
         introduction: application.introduction,
-        cover_file_id: application.cover_file_id,
-        avatar_url: application.cover_file_id,
+        // 存量申请可能没有 avatar_file_id；不得拿背景照片冒充头像，保留空值等待管理员补齐。
+        avatar_url:
+          typeof application.avatar_file_id === 'string' ? application.avatar_file_id : '',
+        cover_file_id:
+          typeof application.cover_file_id === 'string' ? application.cover_file_id : '',
         join_mode: application.join_mode,
         max_members: capacityValue(application.expected_size),
         member_count: 1,

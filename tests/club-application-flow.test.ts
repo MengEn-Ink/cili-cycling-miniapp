@@ -16,6 +16,8 @@ const dto = {
   expected_size: 30,
   activity_types: '公路骑行',
   rules_summary: '遵守交通规则并全程佩戴头盔。',
+  avatar_file_id: 'cloud://env/club-applications/user/avatar.jpg',
+  avatar_url: 'https://temporary.example/club-avatar.jpg',
   cover_file_id: 'cloud://env/club-applications/user/cover.jpg',
   cover_url: 'https://temporary.example/club-cover.jpg',
   rejection_reason: '',
@@ -34,6 +36,7 @@ const form = {
   expectedSize: 30,
   activityTypes: '公路骑行',
   rulesSummary: '遵守交通规则并全程佩戴头盔。',
+  avatarFileId: 'cloud://env/club-applications/user/avatar.jpg',
   coverFileId: 'cloud://env/club-applications/user/cover.jpg',
 };
 
@@ -102,7 +105,12 @@ describe('俱乐部创建申请生产闭环', () => {
     expect(center).toContain('人数待同步');
     expect(center).toContain('item.capacityInitialized && item.memberCount >= item.maxMembers');
     expect(center).toContain('待补俱乐部头像');
-    expect(center).toContain('必填，支持相册或拍照');
+    expect(center).toContain('俱乐部头像（必填）· 1:1');
+    expect(center).toContain('背景照片（可选）· 16:9');
+    expect(center.match(/bindtap="chooseAvatar"/g)).toHaveLength(2);
+    expect(center.match(/bindtap="chooseCover"/g)).toHaveLength(2);
+    expect(center).toContain('src="{{selectedClub.coverUrl}}"');
+    expect(center).not.toContain('src="{{selectedClub.avatarUrl}}" class="detail-cover');
     expect(center).toContain('data-field="maxMembers"');
     expect(center).toContain('data-value="500"');
     for (const view of [center, adminList, adminDetailView]) {

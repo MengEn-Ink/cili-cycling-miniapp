@@ -452,6 +452,7 @@ export async function runClubApplicationSmoke({ store, runId, now = () => new Da
     expected_size: 2,
     activity_types: '自动化骑行测试',
     rules_summary: '仅用于自动化验证，执行完成后必须清理全部记录。',
+    avatar_file_id: `cloud://smoke/club-applications/${applicantOpenid}/avatar.jpg`,
     cover_file_id: `cloud://smoke/club-applications/${applicantOpenid}/cover.jpg`,
   };
 
@@ -582,7 +583,8 @@ export async function runClubApplicationSmoke({ store, runId, now = () => new Da
       persistedClub?.source_application_id === appId && persistedClub?.status === 'active',
       'clubs 持久化',
     );
-    assert(persistedClub?.avatar_url === input.cover_file_id, 'clubs 头像传播');
+    assert(persistedClub?.avatar_url === input.avatar_file_id, 'clubs 头像传播');
+    assert(persistedClub?.cover_file_id === input.cover_file_id, 'clubs 背景传播');
     assert(
       persistedClub?.member_count === 1 && persistedClub?.max_members === input.expected_size,
       'clubs 容量初始化',
@@ -621,7 +623,8 @@ export async function runClubApplicationSmoke({ store, runId, now = () => new Da
           city: input.city,
           introduction: `${revisedInput.introduction} 资料管理已验证。`,
           join_mode: 'public_apply',
-          avatar_file_id: input.cover_file_id,
+          avatar_file_id: input.avatar_file_id,
+          cover_file_id: input.cover_file_id,
           max_members: input.expected_size,
         },
       },
@@ -639,7 +642,8 @@ export async function runClubApplicationSmoke({ store, runId, now = () => new Da
           city: input.city,
           introduction: `${revisedInput.introduction} 资料管理已验证。`,
           join_mode: 'public_apply',
-          avatar_file_id: input.cover_file_id,
+          avatar_file_id: input.avatar_file_id,
+          cover_file_id: input.cover_file_id,
           max_members: input.expected_size,
         },
       },
