@@ -45,10 +45,7 @@ describe('其余页面 CILI 沸点浅色 UI 静态契约', () => {
       declaration(effectiveBlock(styles, '.compact-rider-media'), 'background'),
       '--color-media-card-bg',
     );
-    expectSemantic(
-      declaration(effectiveBlock(app, '.credential-card'), 'background'),
-      '--color-surface',
-    );
+    expectSemantic(declaration(effectiveBlock(app, '.credential-card'), 'background'), '--card-bg');
     expectSemantic(
       declaration(effectiveBlock(app, '.meeting-spotlight'), 'background'),
       '--color-media-card-bg',
@@ -60,13 +57,10 @@ describe('其余页面 CILI 沸点浅色 UI 静态契约', () => {
 
   it('活动管理页卡片、筛选、克隆输入与次按钮接入统一语义色', () => {
     const styles = read('miniprogram/pages/admin/activity-list/index.wxss');
-    expectSemantic(declaration(effectiveBlock(app, '.card'), 'background'), '--color-surface');
+    expectSemantic(declaration(effectiveBlock(app, '.card'), 'background'), '--card-bg');
     expect(styles).toMatch(/\.status-filters\s*\{[^}]*grid-template-columns:\s*repeat\(4, 1fr\)/s);
-    expectSemantic(
-      declaration(effectiveBlock(app, '.field input'), 'background'),
-      '--color-input-bg',
-    );
-    expectSemantic(declaration(effectiveBlock(app, '.field input'), 'color'), '--color-text');
+    expectSemantic(declaration(effectiveBlock(app, '.field input'), 'background'), '--input-bg');
+    expectSemantic(declaration(effectiveBlock(app, '.field input'), 'color'), '--input-text');
     expect(declaration(effectiveBlock(app, '.secondary'), 'background')).toContain(
       'var(--color-surface)',
     );

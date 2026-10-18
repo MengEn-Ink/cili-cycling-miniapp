@@ -89,8 +89,8 @@ describe('沸点浅色 UI 全页对比度契约', () => {
 
     const form = read('miniprogram/pages/profile-edit/index.wxss');
     const formCard = effectiveBlock(app, '.form-card');
-    expectSemantic(declaration(formCard, 'color'), '--color-text');
-    expectSemantic(declaration(formCard, 'background'), '--color-surface');
+    expectSemantic(declaration(formCard, 'color'), '--card-text');
+    expectSemantic(declaration(formCard, 'background'), '--card-bg');
     expectSemantic(
       declaration(effectiveBlock(form, '.form-error'), 'color'),
       '--color-brand-active',

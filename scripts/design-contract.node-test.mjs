@@ -61,15 +61,21 @@ test('局部页面覆写为品牌红白字也必须阻断，不能只检查 root
   );
 });
 
-test('正式设计契约逐项继承沸点手稿交接令牌', () => {
+test('正式设计契约继承沸点手稿色彩与对比度，并允许令牌体系向前演进', () => {
   const handoff = JSON.parse(
     readFileSync('docs/designs/2026-10-16-boiling-point/tokens.json', 'utf8'),
   );
   const runtime = JSON.parse(readFileSync('docs/design-contract.json', 'utf8'));
 
   assert.equal(runtime.schemaVersion, handoff.schemaVersion);
-  assert.deepEqual(runtime.tokens, handoff.tokens);
+  for (const [name, expected] of Object.entries(handoff.tokens)) {
+    if (name.startsWith('--radius-')) continue;
+    assert.deepEqual(runtime.tokens[name], expected, `${name} 应继承手稿基线`);
+  }
   assert.deepEqual(runtime.contrast, handoff.contrast);
+  assert.deepEqual(runtime.tokens['--radius-xs'], { miniapp: '8rpx', pages: '4px' });
+  assert.deepEqual(runtime.tokens['--radius-card'], { miniapp: '28rpx', pages: '14px' });
+  assert.equal(runtime.tokens['--button-radius'], 'var(--radius-sm)');
 });
 
 test('UI 规范以 DESIGN.md 为执行入口，并链接机器契约、页面差异和验收清单', () => {

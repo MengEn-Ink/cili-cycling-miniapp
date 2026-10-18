@@ -48,10 +48,10 @@ describe('沸点首批六页尺寸契约', () => {
     const metrics = effectiveBlock(app, '.metric-panel');
     const card = effectiveBlock(app, '.card');
     expect(declaration(metrics, 'border')).toBe('2rpx solid var(--color-border)');
-    expect(declaration(metrics, 'border-radius')).toBe('var(--radius-card)');
-    expect(declaration(card, 'padding')).toBe('32rpx');
-    expect(declaration(card, 'border')).toBe('2rpx solid var(--color-card-border)');
-    expect(declaration(card, 'border-radius')).toBe('var(--radius-card)');
+    expect(declaration(metrics, 'border-radius')).toBe('var(--card-radius)');
+    expect(declaration(card, 'padding')).toBe('var(--card-padding)');
+    expect(declaration(card, 'border')).toBe('var(--card-border-width) solid var(--card-border)');
+    expect(declaration(card, 'border-radius')).toBe('var(--card-radius)');
     expect(declaration(effectiveBlock(styles, '.route-location-row button'), 'min-height')).toBe(
       'var(--control-height)',
     );
@@ -59,7 +59,7 @@ describe('沸点首批六页尺寸契约', () => {
     expect(app).toContain('calc(16rpx + env(safe-area-inset-bottom))');
   });
 
-  it('创建活动使用统一页边距、18px 卡片和 48px 控件', () => {
+  it('创建活动使用统一页边距、14px 卡片和 48px 控件', () => {
     const app = read('miniprogram/app.wxss');
     const styles = read('miniprogram/pages/admin/activity-edit/index.wxss');
     const card = effectiveBlock(app, '.form-card');
@@ -68,9 +68,9 @@ describe('沸点首批六页尺寸契约', () => {
     expect(declaration(effectiveBlock(styles, '.date-time-row'), 'grid-template-columns')).toBe(
       '1fr',
     );
-    expect(declaration(card, 'padding')).toBe('32rpx');
-    expect(declaration(card, 'border')).toBe('2rpx solid var(--color-card-border)');
-    expectSemantic(declaration(card, 'border-radius'), '--radius-card');
+    expect(declaration(card, 'padding')).toBe('var(--card-padding)');
+    expect(declaration(card, 'border')).toBe('var(--card-border-width) solid var(--card-border)');
+    expectSemantic(declaration(card, 'border-radius'), '--card-radius');
     expect(declaration(effectiveBlock(app, '.field input'), 'min-height')).toBe(
       'var(--control-height)',
     );
@@ -91,7 +91,7 @@ describe('沸点首批六页尺寸契约', () => {
     expect(declaration(effectiveBlock(styles, '.menu-card'), 'min-height')).toBe('120rpx');
   });
 
-  it('设置页使用统一边距、四级标题和 18px 卡片', () => {
+  it('设置页使用统一边距、四级标题和 14px 卡片', () => {
     const app = read('miniprogram/app.wxss');
     const styles = read('miniprogram/pages/settings/index.wxss');
     const release = effectiveBlock(styles, '.release-content');
@@ -131,10 +131,7 @@ describe('沸点首批六页尺寸契约', () => {
       declaration(effectiveBlock(styles, '.credential-page'), 'background'),
       '--color-bg',
     );
-    expectSemantic(
-      declaration(effectiveBlock(app, '.credential-card'), 'background'),
-      '--color-surface',
-    );
+    expectSemantic(declaration(effectiveBlock(app, '.credential-card'), 'background'), '--card-bg');
     expectSemantic(declaration(effectiveBlock(styles, '.serial'), 'color'), '--color-muted');
     expectSemantic(
       declaration(effectiveBlock(app, '.approved-mark'), 'color'),

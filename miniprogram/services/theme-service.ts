@@ -1,17 +1,4 @@
-const APPEARANCE = {
-  navigation: { backgroundColor: '#fbf5ea', frontColor: '#000000' },
-  tabBar: {
-    backgroundColor: '#ffffff',
-    borderStyle: 'white',
-    color: '#6f675d',
-    selectedColor: '#211f1c',
-  },
-  background: {
-    backgroundColor: '#fbf5ea',
-    backgroundColorTop: '#fbf5ea',
-    backgroundColorBottom: '#fbf5ea',
-  },
-} as const;
+import { APP_APPEARANCE } from '../config/theme';
 
 const tabs = ['activities', 'registrations', 'profile'] as const;
 
@@ -67,8 +54,8 @@ export function applyAppAppearance(): void {
     if (shouldRetry) applyAppAppearance();
   };
 
-  safePlatformCall('setNavigationBarColor', APPEARANCE.navigation, onSettled);
-  safePlatformCall('setTabBarStyle', APPEARANCE.tabBar, onSettled);
+  safePlatformCall('setNavigationBarColor', APP_APPEARANCE.navigation, onSettled);
+  safePlatformCall('setTabBarStyle', APP_APPEARANCE.tabBar, onSettled);
   tabs.forEach((name, index) => {
     safePlatformCall(
       'setTabBarItem',
@@ -80,5 +67,5 @@ export function applyAppAppearance(): void {
       onSettled,
     );
   });
-  safePlatformCall('setBackgroundColor', APPEARANCE.background, onSettled);
+  safePlatformCall('setBackgroundColor', APP_APPEARANCE.background, onSettled);
 }

@@ -103,7 +103,7 @@ describe('HP-20261010-02 单一明亮 UI 底座', () => {
     expect(styles).toContain('--segment-height: 92rpx;');
     expect(styles).toContain('--page-gutter: 32rpx;');
     expect(styles).toContain('--page-gutter-narrow: 24rpx;');
-    expect(styles).toContain('--radius-card: 36rpx;');
+    expect(styles).toContain('--radius-card: 28rpx;');
     expect(styles).toContain('--card-gap: 28rpx;');
   });
 });

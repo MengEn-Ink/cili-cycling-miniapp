@@ -53,8 +53,8 @@ describe('unified UI accessibility regressions', () => {
   it('keeps shared cards and muted copy readable', () => {
     const card = effectiveBlock(app, '.card');
     const muted = effectiveBlock(app, '.muted');
-    expectSemantic(declaration(card, 'background'), '--color-surface');
-    expectSemantic(declaration(card, 'color'), '--color-text');
+    expectSemantic(declaration(card, 'background'), '--card-bg');
+    expectSemantic(declaration(card, 'color'), '--card-text');
     expectSemantic(declaration(muted, 'color'), '--color-muted');
     expectUiContrast('var(--color-text)', 'var(--color-surface)');
     expectUiContrast('var(--color-muted)', 'var(--color-bg)');
@@ -70,12 +70,12 @@ describe('unified UI accessibility regressions', () => {
     }
 
     const detailCard = effectiveBlock(app, '.card');
-    expectSemantic(declaration(detailCard, 'background'), '--color-surface');
-    expectSemantic(declaration(detailCard, 'color'), '--color-text');
+    expectSemantic(declaration(detailCard, 'background'), '--card-bg');
+    expectSemantic(declaration(detailCard, 'color'), '--card-text');
     expectSemantic(declaration(effectiveBlock(app, '.muted'), 'color'), '--color-muted');
     const formCard = effectiveBlock(app, '.form-card');
-    expectSemantic(declaration(formCard, 'background'), '--color-surface');
-    expectSemantic(declaration(formCard, 'color'), '--color-text');
+    expectSemantic(declaration(formCard, 'background'), '--card-bg');
+    expectSemantic(declaration(formCard, 'color'), '--card-text');
   });
 
   it('keeps shared form and status primitives semantic and readable', () => {
@@ -97,8 +97,8 @@ describe('unified UI accessibility regressions', () => {
     }
 
     const controls = effectiveBlock(app, '.input');
-    expectSemantic(declaration(controls, 'background'), '--color-input-bg');
-    expectSemantic(declaration(controls, 'color'), '--color-text');
+    expectSemantic(declaration(controls, 'background'), '--input-bg');
+    expectSemantic(declaration(controls, 'color'), '--input-text');
     expectUiContrast('var(--color-text)', 'var(--color-input-bg)');
 
     const secondary = effectiveBlock(app, '.secondary');
@@ -161,8 +161,8 @@ describe('unified UI accessibility regressions', () => {
 
   it('keeps primary CTA text distinguishable on normal and active action fills', () => {
     const button = effectiveBlock(app, '.btn');
-    expect(declaration(button, 'background')).toBe('var(--color-action) !important');
-    expectSemantic(declaration(button, 'color'), '--color-on-action');
+    expect(declaration(button, 'background')).toBe('var(--button-bg) !important');
+    expectSemantic(declaration(button, 'color'), '--button-text');
     const foreground = resolvedHex('var(--color-on-action)', tokens);
     expect(contrast(foreground, resolvedHex('var(--color-action)', tokens))).toBeGreaterThanOrEqual(
       4.5,

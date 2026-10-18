@@ -26,7 +26,7 @@ describe('approved unified high-contrast UI', () => {
     expect(tokens['--color-brand-active']).toBe('#c0321f');
     expect(tokens['--color-status-success']).toBe('#16633a');
     expect(tokens['--color-status-warning']).toBe('#7a5c00');
-    expect(tokens['--radius-display']).toBe('40rpx');
+    expect(tokens['--radius-display']).toBe('32rpx');
   });
 
   it('keeps body, secondary and primary action text above WCAG AA', () => {
@@ -46,8 +46,8 @@ describe('approved unified high-contrast UI', () => {
     expect(declaration(button, 'align-items')).toBe('center');
     expect(declaration(button, 'justify-content')).toBe('center');
     expect(declaration(button, 'min-height')).toBe('var(--control-height)');
-    expect(declaration(button, 'background')).toBe('var(--color-action) !important');
-    expect(declaration(button, 'color')).toBe('var(--color-on-action) !important');
+    expect(declaration(button, 'background')).toBe('var(--button-bg) !important');
+    expect(declaration(button, 'color')).toBe('var(--button-text) !important');
     expect(button).not.toMatch(/gradient/i);
   });
 

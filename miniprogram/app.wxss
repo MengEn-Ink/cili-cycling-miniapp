@@ -1,4 +1,42 @@
 page {
+  /* Primitive tokens: raw values only. */
+  --primitive-color-vermilion: #e13b2b;
+  --primitive-color-rice: #fbf5ea;
+  --primitive-color-ink: #211f1c;
+  --primitive-color-white: #ffffff;
+  --primitive-color-sand: #f3e6d0;
+  --primitive-color-stone: #6f675d;
+  --primitive-color-line: #ededed;
+  --primitive-color-line-strong: #9a9186;
+  --space-1: 8rpx;
+  --space-2: 12rpx;
+  --space-3: 16rpx;
+  --space-4: 24rpx;
+  --space-5: 32rpx;
+  --space-6: 48rpx;
+  --border-width-hairline: 2rpx;
+  --border-width-strong: 4rpx;
+  --radius-xs: 8rpx;
+  --radius-sm: 12rpx;
+  --radius-md: 20rpx;
+  --radius-card: 28rpx;
+  --radius-display: 32rpx;
+  --font-size-label: 24rpx;
+  --font-size-body: 28rpx;
+  --font-size-title: 36rpx;
+  --font-size-display: 48rpx;
+  --line-height-label: 36rpx;
+  --line-height-body: 44rpx;
+  --line-height-title: 52rpx;
+  --line-height-display: 64rpx;
+  --font-weight-body: 600;
+  --font-weight-strong: 800;
+  --font-weight-display: 900;
+  --motion-duration-fast: 120ms;
+  --motion-duration-base: 180ms;
+  --motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Semantic tokens: preserve established names for existing consumers. */
   --color-bg: #fbf5ea;
   --color-surface: #ffffff;
   --color-raised: #f3e6d0;
@@ -37,12 +75,10 @@ page {
   --color-danger: var(--color-text);
   --color-danger-text: var(--color-text);
   --color-danger-soft: var(--color-raised);
-  --shadow-hard: 0 14rpx 36rpx var(--color-shadow);
-  --shadow-card: 0 12rpx 36rpx var(--color-shadow);
-  --radius-sm: 20rpx;
-  --radius-md: 26rpx;
-  --radius-display: 40rpx;
-  --radius-card: 36rpx;
+  --shadow-hard: 0 10rpx 28rpx var(--color-shadow);
+  --shadow-card: 0 8rpx 24rpx var(--color-shadow);
+  --focus-color: var(--color-brand);
+  --focus-ring: 0 0 0 4rpx var(--color-brand-soft);
   --control-height: 96rpx;
   --segment-height: 92rpx;
   --page-gutter: 32rpx;
@@ -52,6 +88,35 @@ page {
   --fixed-action-reserve: 240rpx;
   --fixed-action-reserve-narrow: 292rpx;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Component tokens: shared controls consume these aliases first. */
+  --button-bg: var(--color-action);
+  --button-bg-active: var(--color-action-active);
+  --button-text: var(--color-on-action);
+  --button-border: var(--color-action);
+  --button-radius: var(--radius-sm);
+  --button-padding-inline: var(--space-4);
+  --card-bg: var(--color-surface);
+  --card-text: var(--color-text);
+  --card-border: var(--color-card-border);
+  --card-border-width: var(--border-width-hairline);
+  --card-radius: var(--radius-card);
+  --card-padding: var(--space-5);
+  --input-bg: var(--color-input-bg);
+  --input-text: var(--color-text);
+  --input-border: var(--color-border-strong);
+  --input-border-width: var(--border-width-strong);
+  --input-radius: var(--radius-sm);
+  --input-focus-border: var(--focus-color);
+  --input-focus-ring: var(--focus-ring);
+  --tag-bg: var(--color-raised);
+  --tag-text: var(--color-text);
+  --tag-radius: var(--radius-xs);
+  --segment-bg: var(--color-surface);
+  --segment-text: var(--color-text);
+  --segment-border: var(--color-border-strong);
+  --segment-border-width: var(--border-width-strong);
+  --segment-radius: var(--radius-sm);
   min-height: 100%;
   background: var(--color-bg);
   color: var(--color-text);
@@ -178,11 +243,11 @@ button::after {
 .metric-panel,
 .state-card {
   margin-top: var(--card-gap);
-  padding: 32rpx;
-  border: 2rpx solid var(--color-card-border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-  color: var(--color-text);
+  padding: var(--card-padding);
+  border: var(--card-border-width) solid var(--card-border);
+  border-radius: var(--card-radius);
+  background: var(--card-bg);
+  color: var(--card-text);
   box-shadow: none;
 }
 .card .card,
@@ -227,14 +292,14 @@ button::after {
   align-items: center;
   justify-content: center;
   min-height: var(--control-height);
-  padding: 0 24rpx;
-  border: 2rpx solid var(--color-border);
-  border-radius: var(--radius-sm) !important;
-  background: var(--color-action) !important;
-  color: var(--color-on-action) !important;
-  font-size: 28rpx;
-  line-height: 44rpx;
-  font-weight: 800;
+  padding: 0 var(--button-padding-inline);
+  border: var(--border-width-hairline) solid var(--button-border);
+  border-radius: var(--button-radius) !important;
+  background: var(--button-bg) !important;
+  color: var(--button-text) !important;
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  font-weight: var(--font-weight-strong);
   text-align: center;
 }
 .btn {
@@ -252,7 +317,7 @@ button::after {
 }
 .btn:active,
 .button--primary:active {
-  background: var(--color-action-active) !important;
+  background: var(--button-bg-active) !important;
 }
 .btn[disabled],
 .secondary[disabled],
@@ -304,10 +369,10 @@ picker[disabled] {
   width: 100%;
   min-height: var(--control-height);
   padding: 20rpx 24rpx;
-  border: 4rpx solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--color-input-bg);
-  color: var(--color-text);
+  border: var(--input-border-width) solid var(--input-border);
+  border-radius: var(--input-radius);
+  background: var(--input-bg);
+  color: var(--input-text);
   font-size: 28rpx;
   line-height: 44rpx;
   font-weight: 700;
@@ -324,8 +389,8 @@ picker[disabled] {
 .textarea:focus,
 .field input:focus,
 .field textarea:focus {
-  border-color: var(--color-brand);
-  box-shadow: 0 0 0 4rpx var(--color-brand-soft);
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-ring);
 }
 .field-error,
 .form-error,
@@ -360,9 +425,9 @@ picker[disabled] {
   align-items: center;
   min-height: 48rpx;
   padding: 0 16rpx;
-  border-radius: 8rpx;
-  background: var(--color-raised);
-  color: var(--color-text);
+  border-radius: var(--tag-radius);
+  background: var(--tag-bg);
+  color: var(--tag-text);
   font-size: 24rpx;
   line-height: 36rpx;
   font-weight: 800;
@@ -525,8 +590,8 @@ picker[disabled] {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   overflow: hidden;
-  border: 4rpx solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
+  border: var(--segment-border-width) solid var(--segment-border);
+  border-radius: var(--segment-radius);
 }
 .step,
 .segment,
@@ -539,9 +604,9 @@ picker[disabled] {
   gap: 8rpx;
   min-height: var(--segment-height);
   padding: 0 8rpx;
-  border-right: 4rpx solid var(--color-border-strong);
-  background: var(--color-surface);
-  color: var(--color-text);
+  border-right: var(--segment-border-width) solid var(--segment-border);
+  background: var(--segment-bg);
+  color: var(--segment-text);
   font-size: 24rpx;
   line-height: 36rpx;
   font-weight: 700;
