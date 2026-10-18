@@ -128,9 +128,12 @@ test('GitHub 工作流仅在 main CI 成功后部署并使用环境级密钥', (
   assert.match(mediaSecretConfig, /cloudbase-production 缺少有效的 PROFILE_MEDIA_PATH_SECRET/);
   assert.match(workflow, /cloudbaserc\.deploy\.json/);
   assert.match(workflow, /cloudbase-media-secret-config\.mjs prepare/);
-  assert.match(workflow, /config update fn "\$\{function_name\}" --all --json/);
+  assert.match(workflow, /同步统一媒体密钥并部署云函数/);
+  assert.match(workflow, /fn deploy "\$\{function_name\}" --force --json/);
   assert.match(workflow, /fn detail "\$\{function_name\}" --json/);
   assert.match(workflow, /cloudbase-media-secret-config\.mjs verify/);
+  assert.match(workflow, /for attempt in \$\(seq 1 12\)/);
+  assert.match(workflow, /\[\[ "\$\{attempt\}" -eq 12 \]\] \|\| sleep 5/);
   assert.match(mediaSecretConfig, /部署后函数缺少统一媒体密钥/);
   assert.match(workflow, /GITHUB_ENV/);
   assert.match(workflow, /decision\.applyInfrastructure = true/);

@@ -225,10 +225,19 @@ jobs:
           set -euo pipefail
           for function_name in \
             profile profile-media-cleanup admin-review activity-read activity-admin club-application; do
+            function_detail="$(npx --yes --package @cloudbase/cli@3.8.4 tcb \
+              -e "${CLOUDBASE_ENV_ID}" \
+              fn detail "${function_name}" --json)"
+            if printf '%s' "${function_detail}" | \
+              node scripts/cloudbase-media-secret-config.mjs verify \
+                --function "${function_name}" 2>/dev/null; then
+              continue
+            fi
+            echo "同步统一媒体密钥并部署云函数：${function_name}"
             npx --yes --package @cloudbase/cli@3.8.4 tcb \
               --config-file "${DEPLOY_CONFIG_FILE}" \
               -e "${CLOUDBASE_ENV_ID}" \
-              config update fn "${function_name}" --all --json >/dev/null
+              fn deploy "${function_name}" --force --json
           done
 
       - name: Verify deployed environment
@@ -249,12 +258,24 @@ jobs:
           done < <(jq -r '.[]' <<< "${FUNCTIONS_JSON}")
           for function_name in \
             profile profile-media-cleanup admin-review activity-read activity-admin club-application; do
-            function_detail="$(npx --yes --package @cloudbase/cli@3.8.4 tcb \
-              -e "${CLOUDBASE_ENV_ID}" \
-              fn detail "${function_name}" --json)"
-            printf '%s' "${function_detail}" | \
-              node scripts/cloudbase-media-secret-config.mjs verify \
-                --function "${function_name}"
+            verified=false
+            for attempt in $(seq 1 12); do
+              function_detail="$(npx --yes --package @cloudbase/cli@3.8.4 tcb \
+                -e "${CLOUDBASE_ENV_ID}" \
+                fn detail "${function_name}" --json)"
+              if printf '%s' "${function_detail}" | \
+                node scripts/cloudbase-media-secret-config.mjs verify \
+                  --function "${function_name}" 2>/dev/null; then
+                verified=true
+                break
+              fi
+              [[ "${attempt}" -eq 12 ]] || sleep 5
+            done
+            if [[ "${verified}" != 'true' ]]; then
+              printf '%s' "${function_detail}" | \
+                node scripts/cloudbase-media-secret-config.mjs verify \
+                  --function "${function_name}"
+            fi
           done
           echo "CloudBase 部署验证通过：环境 ${CLOUDBASE_ENV_ID}"
         env:
