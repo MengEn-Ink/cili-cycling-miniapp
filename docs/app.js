@@ -858,6 +858,13 @@
     modal.hidden = true;
     const hash = currentState === page.states[0][0] ? `#${page.id}` : `#${page.id}/${currentState}`;
     if (window.location.hash !== hash) window.history.replaceState(null, '', hash);
+    // 俱乐部中心：切换 tab / 关闭菜单后，优先把焦点交还到目标 tab 按钮，保持键盘可达性。
+    if (page.id === 'club-center' && options.focusTargetId) {
+      window.requestAnimationFrame(() => {
+        const target = document.getElementById(options.focusTargetId);
+        if (target && typeof target.focus === 'function') target.focus();
+      });
+    }
   }
 
   function parseHash() {
@@ -924,7 +931,12 @@
     const action = target.dataset.action || (target.dataset.route ? 'route' : '');
     if (action === 'route') {
       const sameRoute = target.dataset.route === currentRoute;
-      showPage(target.dataset.route, { state: target.dataset.state, replace: sameRoute });
+      const focusTargetId = target.dataset.clubCenterTab != null ? target.id || null : null;
+      showPage(target.dataset.route, {
+        state: target.dataset.state,
+        replace: sameRoute,
+        focusTargetId,
+      });
     }
     if (action === 'back') goBack();
     if (action === 'open-overview') showOverview();
@@ -1018,7 +1030,51 @@
       showPage('approval-outcome', { state: `rejected--${outcomeContext}` });
       showToast(outcomeContext.startsWith('club-application') ? '俱乐部申请已驳回' : outcomeContext.startsWith('public-activity') ? '公开活动已驳回' : '俱乐部活动已驳回');
     }
+    // 俱乐部中心：封面图加载失败时切换到可见的 bg-fallback；重试按钮回到当前 activeTab 的裸状态。
+    if (action === 'club-center-retry-cover') {
+      const machine = window.clubCenterStateMachine;
+      const nextState = machine
+        ? machine.retryCover(currentState)
+        : target.dataset.restoreState || 'default';
+      showPage('club-center', { state: nextState, replace: true });
+      showToast('正在重新加载背景图');
+    }
   });
+
+  // 俱乐部中心封面 img.onerror：模板已通过 onerror 回调调用；在这里只做状态切换，确保 fallback 可见且带重试入口。
+  window.clubCenterOnCoverError = (event) => {
+    if (currentRoute !== 'club-center') return;
+    const machine = window.clubCenterStateMachine;
+    const nextState = machine ? machine.coverError(currentState) : 'bg-fallback';
+    if (nextState === currentState) return;
+    // 避免重复触发（重复 render 会再次挂载 img，可能再次抛 error）
+    if (event && event.target && event.target.setAttribute) {
+      event.target.setAttribute('data-club-center-cover-errored', 'true');
+    }
+    showPage('club-center', { state: nextState, replace: true });
+  };
+
+  // 俱乐部中心：tab 内的 ArrowLeft / ArrowRight / Home / End 走局部语义化切换，并阻止冒泡，防止被全局原型页导航劫持。
+  // 使用捕获阶段，确保在 window 的全局 keydown 之前先处理。
+  document.addEventListener(
+    'keydown',
+    (event) => {
+      if (currentRoute !== 'club-center') return;
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      const target = event.target;
+      if (!target || typeof target.closest !== 'function') return;
+      const tablist = target.closest('[data-club-center-tabs]');
+      if (!tablist) return;
+      const machine = window.clubCenterStateMachine;
+      if (!machine) return;
+      const next = machine.nextTab(currentState, event.key);
+      if (!next) return;
+      event.preventDefault();
+      event.stopPropagation();
+      showPage('club-center', { state: next.state, replace: true, focusTargetId: next.tabId });
+    },
+    true,
+  );
 
   window.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') modal.hidden = true;
