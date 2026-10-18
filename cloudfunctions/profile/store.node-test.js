@@ -47,6 +47,15 @@ function fakeDb(seed) {
       update: async ({ data }) => updates.push({ name, id, data }),
       set: async ({ data }) => sets.push({ name, id, data }),
     }),
+    where: (query) => ({
+      limit: () => ({
+        get: async () => ({
+          data: Object.values(seed[name] || {}).filter((record) =>
+            Object.entries(query).every(([key, value]) => record[key] === value),
+          ),
+        }),
+      }),
+    }),
   });
   return {
     updates,
@@ -158,12 +167,12 @@ test('客户端上传 intent 先持久化，registerMedia 再原子登记并完�
     sha256,
     size: 5,
     mime: 'image/jpeg',
-    status: 'completed',
+    status: 'uploaded',
     file_id: fileId,
     media_id: mediaDocumentId(fileId),
     canonical_file_id: canonicalFileId,
     completed_at: now,
-    cleanup_after: null,
+    cleanup_after: new Date('2026-10-01T00:00:00.000Z'),
     updated_at: fixture.db.serverDate(),
   });
   assert.equal(fixture.state.profile_media_imports.get(canonicalIntent._id).status, 'completed');
@@ -319,7 +328,7 @@ test('存量 active canonical 响应未知经 cleanup 后可用确定性 intents
   );
 
   assert.equal(fixture.state.profile_media.get(mediaId).canonical_file_id, canonicalFileId);
-  assert.equal(fixture.state.profile_media_imports.get(sourceIntentId).status, 'completed');
+  assert.equal(fixture.state.profile_media_imports.get(sourceIntentId).status, 'uploaded');
   assert.equal(fixture.state.profile_media_imports.get(retryCanonical._id).status, 'completed');
 });
 
@@ -548,4 +557,48 @@ test('手机号合并在事务内只 update phone 字段并保留并发 profile/
   });
   assert.deepEqual(db.sets, []);
   assert.deepEqual(result, { ...current, ...fields, updated_at: db.serverDate() });
+});
+
+test('setAvatar 以 canonical fileId 写入业务资料并只激活 source registry', async () => {
+  const { canonicalMediaPath, mediaDocumentId, mediaOwnerPrefix } = require('./core');
+  const secret = 'profile-media-secret-for-tests-32-bytes';
+  const owner = 'owner';
+  const sourceFileId = `cloud://env/${mediaOwnerPrefix(owner, secret)}profile-avatar/123e4567-e89b-42d3-a456-426614174001.jpg`;
+  const sha256 = 'f'.repeat(64);
+  const canonicalFileId = `cloud://env/${canonicalMediaPath(
+    owner,
+    sourceFileId,
+    sha256,
+    'jpg',
+    secret,
+    'profile-avatar',
+  )}`;
+  const mediaId = mediaDocumentId(sourceFileId);
+  const db = fakeDb({
+    profiles: { owner: { _id: owner } },
+    profile_media: {
+      [mediaId]: {
+        _id: mediaId,
+        file_id: sourceFileId,
+        source_file_id: sourceFileId,
+        canonical_file_id: canonicalFileId,
+        canonical_category: 'profile-avatar',
+        sha256,
+        size: 5,
+        mime: 'image/jpeg',
+        owner_openid: owner,
+        category: 'profile-avatar',
+        origin: 'wechat',
+        status: 'unreferenced',
+      },
+    },
+  });
+
+  const result = await createProfileStore(db).setAvatar(owner, 'wechat', canonicalFileId, secret);
+
+  assert.equal(result.avatar_file_id, canonicalFileId);
+  assert.notEqual(result.avatar_file_id, sourceFileId);
+  assert.equal(db.sets[0].data.avatar_file_id, canonicalFileId);
+  assert.equal(db.updates[0].id, mediaId);
+  assert.equal(db.updates[0].data.status, 'active');
 });

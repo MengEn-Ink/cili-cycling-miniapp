@@ -986,6 +986,68 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     expectCall(callFunction, 'profile', { action: 'mediaUploadPath' });
   });
 
+  it('签发统一媒体上传路径并完整传递用途、请求 ID 与扩展名', async () => {
+    const cloudPath =
+      'profiles/0123456789abcdef0123456789abcdef/club-avatar/123e4567-e89b-42d3-a456-426614174000.webp';
+    const { cloud, callFunction } = cloudWith(
+      success({ cloud_path: cloudPath, category: 'club-avatar' }),
+    );
+
+    await expect(
+      new CloudRepository(cloud).issueMediaUploadPath('club-avatar', 'media-request-001', 'webp'),
+    ).resolves.toBe(cloudPath);
+    expectCall(callFunction, 'profile', {
+      action: 'mediaUploadPath',
+      category: 'club-avatar',
+      requestId: 'media-request-001',
+      extension: 'webp',
+    });
+  });
+
+  it('完成统一媒体登记并返回服务端 canonical fileId', async () => {
+    const canonicalFileId = 'cloud://env/profile-canonical/owner/club-avatar/source/content.webp';
+    const { cloud, callFunction } = cloudWith(success({ registered: true, canonicalFileId }));
+
+    await expect(
+      new CloudRepository(cloud).finalizeMediaUpload(
+        'cloud://env/profiles/owner/club-avatar/upload.webp',
+        'club-avatar',
+        'media-request-001',
+      ),
+    ).resolves.toEqual({ canonicalFileId });
+    expectCall(callFunction, 'profile', {
+      action: 'registerMedia',
+      fileId: 'cloud://env/profiles/owner/club-avatar/upload.webp',
+      category: 'club-avatar',
+      requestId: 'media-request-001',
+      origin: 'custom',
+    });
+  });
+
+  it('拒绝用途错配的上传路径与不完整的统一媒体登记响应', async () => {
+    const issued = cloudWith(
+      success({
+        cloud_path:
+          'profiles/0123456789abcdef0123456789abcdef/club-cover/123e4567-e89b-42d3-a456-426614174000.jpg',
+        category: 'club-cover',
+      }),
+    );
+    await expectCode(
+      new CloudRepository(issued.cloud).issueMediaUploadPath('club-avatar', 'media-request-001'),
+      'INVALID_RESPONSE',
+    );
+
+    const finalized = cloudWith(success({ registered: true, canonicalFileId: 'https://invalid' }));
+    await expectCode(
+      new CloudRepository(finalized.cloud).finalizeMediaUpload(
+        'cloud://env/profiles/owner/club-avatar/upload.jpg',
+        'club-avatar',
+        'media-request-001',
+      ),
+      'INVALID_RESPONSE',
+    );
+  });
+
   it('上传完成后仅以 wechat/custom 来源注册媒体且不发送客户端身份', async () => {
     const { cloud, callFunction } = cloudWith(success({ registered: true }));
     await expect(

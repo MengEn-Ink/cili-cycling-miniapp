@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const ALLOWLIST_URL = new URL('../tools/miniprogram-ci/audit-allowlist.json', import.meta.url);
+const TOOL_ROOT = fileURLToPath(new URL('../tools/miniprogram-ci/', import.meta.url));
 
 function advisoryId(url) {
   const match = String(url || '').match(/GHSA-[0-9a-z-]+$/i);
@@ -50,18 +51,18 @@ export function assessAuditReport(report, allowlist, now = new Date()) {
 }
 
 export function runAudit() {
+  const auditEnvironment = { ...process.env };
+  delete auditEnvironment.npm_config_local_prefix;
+  delete auditEnvironment.npm_package_json;
   const result = spawnSync(
     'npx',
-    [
-      '--yes',
-      'npm@11',
-      'audit',
-      '--prefix',
-      'tools/miniprogram-ci',
-      '--json',
-      '--registry=https://registry.npmjs.org',
-    ],
-    { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 },
+    ['--yes', 'npm@11', 'audit', '--json', '--registry=https://registry.npmjs.org'],
+    {
+      cwd: TOOL_ROOT,
+      env: auditEnvironment,
+      encoding: 'utf8',
+      maxBuffer: 10 * 1024 * 1024,
+    },
   );
   if (!result.stdout) {
     throw new Error(`微信上传工具审计没有返回 JSON：${result.stderr.trim()}`);

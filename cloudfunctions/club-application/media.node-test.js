@@ -166,3 +166,36 @@ test('可加入俱乐部头像只返回 HTTPS，签名失败时 fail closed', as
     console.warn = originalWarn;
   }
 });
+
+test('俱乐部保存激活不同用途的 staged canonical 媒体', async () => {
+  process.env.PROFILE_MEDIA_PATH_SECRET = 'profile-media-secret-for-tests-32-bytes';
+  const crypto = require('node:crypto');
+  const { activateClubMediaReferences } = require('./media');
+  const owner = 'club-owner';
+  const alias = crypto
+    .createHmac('sha256', process.env.PROFILE_MEDIA_PATH_SECRET)
+    .update(owner)
+    .digest('hex')
+    .slice(0, 32);
+  const fileId = (category, hash) =>
+    `cloud://env/profile-canonical/${alias}/${category}/${hash.repeat(64)}/${hash.repeat(64)}.jpg`;
+  const avatar = fileId('club-avatar', 'a');
+  const cover = fileId('club-cover', 'b');
+  const activated = [];
+  await activateClubMediaReferences(
+    {
+      getProfileMediaByCanonical: async (canonical, mediaOwner, category) => ({
+        _id: category,
+        canonical_file_id: canonical,
+        owner_openid: mediaOwner,
+        category,
+        status: 'unreferenced',
+      }),
+      activateProfileMedia: async (id) => activated.push(id),
+    },
+    owner,
+    { avatar_file_id: avatar, cover_file_id: cover },
+    new Date('2026-10-18T00:00:00.000Z'),
+  );
+  assert.deepEqual(activated, ['club-avatar', 'club-cover']);
+});

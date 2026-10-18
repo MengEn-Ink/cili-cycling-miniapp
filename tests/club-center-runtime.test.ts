@@ -12,6 +12,8 @@ const rideService = vi.hoisted(() => ({
   updateManagedClub: vi.fn(),
   saveClubApplicationDraft: vi.fn(),
   submitClubApplication: vi.fn(),
+  issueMediaUploadPath: vi.fn(),
+  finalizeMediaUpload: vi.fn(),
 }));
 const appStore = vi.hoisted(() => ({
   authStatus: 'authenticated',
@@ -87,6 +89,13 @@ describe('俱乐部申请页运行时错误恢复', () => {
     rideService.getProfile.mockResolvedValue({ clubs: [] });
     rideService.getMyClubApplication.mockResolvedValue(null);
     rideService.listJoinableClubs.mockResolvedValue([]);
+    rideService.issueMediaUploadPath.mockImplementation(
+      async (category: string) =>
+        `club-applications/test-openid/${category === 'club-avatar' ? 'avatar' : 'cover'}_issued.jpg`,
+    );
+    rideService.finalizeMediaUpload.mockImplementation(async (fileId: string) => ({
+      canonicalFileId: fileId,
+    }));
     canvasContext = {
       clearRect: vi.fn(),
       drawImage: vi.fn(),

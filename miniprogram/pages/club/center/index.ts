@@ -11,6 +11,7 @@ import type {
 } from '../../../models';
 import { rideService } from '../../../services/ride-service';
 import { appStore } from '../../../store/app-store';
+import { uploadMedia } from '../../../utils/media-upload';
 
 const EMPTY_FORM: ClubApplicationInput = {
   clubName: '',
@@ -186,11 +187,7 @@ async function exportFixedClubMedia(
     throw mediaError('图片处理失败，请重新选择', error);
   }
 }
-async function chooseAndUploadClubMedia(
-  kind: ClubMediaKind,
-  openid: string,
-  scope: ClubMediaCanvasScope,
-) {
+async function chooseAndUploadClubMedia(kind: ClubMediaKind, scope: ClubMediaCanvasScope) {
   const selected = await wx.chooseMedia({
     count: 1,
     mediaType: ['image'],
@@ -247,11 +244,18 @@ async function chooseAndUploadClubMedia(
     }
   }
   if (needsCanvasFallback) uploadPath = await exportFixedClubMedia(croppedPath, spec, scope);
-  const uploaded = await wx.cloud!.uploadFile({
-    cloudPath: `club-applications/${openid}/${requestId(kind)}.jpg`,
+  const category = kind === 'avatar' ? 'club-avatar' : 'club-cover';
+  const request = requestId(`club_${kind}`);
+  const uploaded = await uploadMedia({
     filePath: uploadPath,
+    category,
+    requestId: request,
+    authorize: (mediaCategory, mediaRequestId, extension) =>
+      rideService.issueMediaUploadPath(mediaCategory, mediaRequestId, extension as 'jpg'),
+    finalize: (fileId, mediaCategory, mediaRequestId) =>
+      rideService.finalizeMediaUpload(fileId, mediaCategory, mediaRequestId),
   });
-  return { fileId: uploaded.fileID, previewUrl: uploadPath };
+  return { fileId: uploaded.canonicalFileId, previewUrl: uploadPath };
 }
 
 Page({
@@ -550,7 +554,7 @@ Page({
     if (this.data.uploading || !appStore.openid || !wx.cloud) return;
     this.setData({ uploading: true, actionError: '' });
     try {
-      const uploaded = await chooseAndUploadClubMedia(kind, appStore.openid, this);
+      const uploaded = await chooseAndUploadClubMedia(kind, this);
       if (!uploaded) return;
       if (this.data.manageMode) this.manageRequestId = '';
       if (kind === 'avatar') {

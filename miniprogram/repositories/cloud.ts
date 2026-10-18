@@ -36,6 +36,7 @@ import type {
   PublicActivityView,
   RegistrationSubmission,
   RideRepository,
+  UnifiedMediaCategory,
 } from './types';
 
 type CloudApi = {
@@ -1754,6 +1755,52 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     )
       return invalidResponse();
     return value.cloud_path;
+  }
+  async issueMediaUploadPath(
+    category: UnifiedMediaCategory,
+    requestId: string,
+    extension: 'jpg' | 'png' | 'webp' = 'jpg',
+  ) {
+    const value = expectRecord(
+      await this.call('profile', {
+        action: 'mediaUploadPath',
+        category,
+        requestId: boundedId(requestId, '媒体请求 ID', 8, 128),
+        extension,
+      }),
+    );
+    if (
+      typeof value.cloud_path !== 'string' ||
+      !/^profiles\/[a-f0-9]{32}\/[a-z-]+\/[a-f0-9-]{36}\.(?:jpg|png|webp)$/i.test(
+        value.cloud_path,
+      ) ||
+      value.category !== category
+    )
+      return invalidResponse();
+    return value.cloud_path;
+  }
+  async finalizeMediaUpload(
+    fileId: string,
+    category: UnifiedMediaCategory,
+    requestId: string,
+    origin: ClientAvatarSource = 'custom',
+  ) {
+    const value = expectRecord(
+      await this.call('profile', {
+        action: 'registerMedia',
+        fileId: requiredId(fileId, '媒体文件 ID'),
+        category,
+        requestId: boundedId(requestId, '媒体请求 ID', 8, 128),
+        origin: clientMediaOrigin(origin),
+      }),
+    );
+    if (
+      value.registered !== true ||
+      typeof value.canonicalFileId !== 'string' ||
+      !value.canonicalFileId.startsWith('cloud://')
+    )
+      return invalidResponse();
+    return { canonicalFileId: value.canonicalFileId };
   }
   async getPersonalCapabilityCard() {
     return mapPersonalCapabilityCard(await this.call('profile', { action: 'capabilityCard' }));

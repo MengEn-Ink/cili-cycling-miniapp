@@ -98,7 +98,6 @@ test('registerMedia 在任何特权存储读取前拒绝跨 owner fileID', async
   const result = await main({
     action: 'registerMedia',
     fileId,
-    category: 'other',
     origin: 'custom',
   });
 
@@ -178,4 +177,21 @@ test('显式背景更新保留存量多图并只激活新槽位媒体', async ()
   assert.equal(fixture.state.profile_media.get(mediaDocumentId(next.file_id)).status, 'active');
   assert.deepEqual(result.data.photos, photos);
   assert.deepEqual(result.data.background_photo, next);
+});
+
+test('新媒体协议授权与 finalize 都拒绝缺半字段及非法 requestId', async () => {
+  const fixture = statefulDatabase();
+  const main = loadMain('owner-protocol', fixture.db);
+  const actions = ['mediaUploadPath', 'registerMedia'];
+  for (const action of actions) {
+    for (const fields of [{ category: 'club-avatar' }, { requestId: 'request_12345678' }]) {
+      const result = await main({ action, ...fields });
+      assert.equal(result.ok, false);
+      assert.equal(result.error.code, 'MEDIA_PROTOCOL_INCOMPLETE');
+    }
+    const invalid = await main({ action, category: 'club-avatar', requestId: 'short' });
+    assert.equal(invalid.ok, false);
+    assert.equal(invalid.error.code, 'MEDIA_REQUEST_ID_INVALID');
+  }
+  assert.equal((fixture.state.profile_media_imports || new Map()).size, 0);
 });

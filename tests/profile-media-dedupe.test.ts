@@ -4,8 +4,10 @@ import type { Profile } from '../miniprogram/models';
 const rideService = vi.hoisted(() => ({
   getProfile: vi.fn(),
   getProfileMediaUploadPath: vi.fn(),
+  issueMediaUploadPath: vi.fn(),
   getPersonalCapabilityCard: vi.fn(),
   registerProfileMedia: vi.fn(),
+  finalizeMediaUpload: vi.fn(),
   reportProfileMediaOrphan: vi.fn(),
   setAvatar: vi.fn(),
   updateProfile: vi.fn(),
@@ -70,8 +72,17 @@ describe('资料图片内容指纹会话内去重', () => {
     rideService.getProfileMediaUploadPath.mockResolvedValue(
       'profiles/0123456789abcdef0123456789abcdef/123e4567-e89b-42d3-a456-426614174000.jpg',
     );
+    rideService.issueMediaUploadPath.mockImplementation(
+      async (_category: string, _requestId: string) => rideService.getProfileMediaUploadPath(),
+    );
     rideService.getPersonalCapabilityCard.mockResolvedValue(capabilityCard());
     rideService.registerProfileMedia.mockResolvedValue(undefined);
+    rideService.finalizeMediaUpload.mockImplementation(
+      async (fileId: string, category: string, _requestId: string, origin?: string) => {
+        await rideService.registerProfileMedia(fileId, category, origin);
+        return { canonicalFileId: fileId };
+      },
+    );
     rideService.reportProfileMediaOrphan.mockResolvedValue(undefined);
     rideService.setAvatar.mockImplementation(
       async (source: 'wechat' | 'custom', fileId: string) => ({
@@ -182,19 +193,37 @@ describe('资料图片内容指纹会话内去重', () => {
     expect(page.data.p.avatarId).toBe('cloud://env/profiles/owner/face.jpg');
   });
 
-  it('头像与背景照跨槽位共享指纹：背景复用头像已上传的同一文件不再上传', async () => {
+  it('头像与背景照内容相同仍按不同 category 各自上传，禁止跨用途复用', async () => {
     const chooseMedia = vi
       .fn()
       .mockResolvedValueOnce({ tempFiles: [{ tempFilePath: '/private/tmp/shared.jpg' }] });
     Object.assign(wx, { chooseMedia });
+    rideService.issueMediaUploadPath.mockImplementation(
+      async (category: string) => `profiles/owner/${category}/shared.jpg`,
+    );
+    uploadFile.mockImplementation(async ({ cloudPath }: { cloudPath: string }) => ({
+      fileID: `cloud://env/${cloudPath}`,
+    }));
 
     await page.chooseWechatAvatar({ detail: { avatarUrl: '/private/tmp/shared.jpg' } });
     await page.addPhoto();
 
-    expect(uploadFile).toHaveBeenCalledTimes(1);
-    expect(rideService.registerProfileMedia).toHaveBeenCalledTimes(1);
+    expect(uploadFile).toHaveBeenCalledTimes(2);
+    expect(rideService.finalizeMediaUpload).toHaveBeenNthCalledWith(
+      1,
+      'cloud://env/profiles/owner/profile-avatar/shared.jpg',
+      'profile-avatar',
+      expect.any(String),
+      'wechat',
+    );
+    expect(rideService.finalizeMediaUpload).toHaveBeenNthCalledWith(
+      2,
+      'cloud://env/profiles/owner/profile-background/shared.jpg',
+      'profile-background',
+      expect.any(String),
+    );
     expect(page.data.p.photos).toEqual([
-      { id: 'cloud://env/profiles/owner/shared.jpg', category: 'ride' },
+      { id: 'cloud://env/profiles/owner/profile-background/shared.jpg', category: 'ride' },
     ]);
   });
 

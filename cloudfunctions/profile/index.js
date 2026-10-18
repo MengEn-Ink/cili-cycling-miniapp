@@ -49,11 +49,15 @@ function profileMediaIds(...profiles) {
   return [...new Set(ids.filter((id) => typeof id === 'string' && id))];
 }
 async function getMediaRecords(collection, ...profiles) {
-  return (
-    await Promise.all(
-      profileMediaIds(...profiles).map((fileId) => maybeGet(collection, mediaDocumentId(fileId))),
-    )
-  ).filter(Boolean);
+  const records = await Promise.all(
+    profileMediaIds(...profiles).map(async (fileId) => {
+      const direct = await maybeGet(collection, mediaDocumentId(fileId));
+      if (direct) return direct;
+      const result = await collection.where({ canonical_file_id: fileId }).limit(2).get();
+      return Array.isArray(result?.data) && result.data.length === 1 ? result.data[0] : undefined;
+    }),
+  );
+  return [...new Map(records.filter(Boolean).map((record) => [record._id, record])).values()];
 }
 async function updateProfile(openid, event) {
   const result = await db.runTransaction(async (transaction) => {
@@ -100,13 +104,29 @@ async function updateProfile(openid, event) {
   });
   return response(result, process.env.PII_ENCRYPTION_KEY);
 }
+function mediaProtocol(event) {
+  const hasCategory = Object.prototype.hasOwnProperty.call(event, 'category');
+  const hasRequestId = Object.prototype.hasOwnProperty.call(event, 'requestId');
+  if (hasCategory !== hasRequestId)
+    throw Object.assign(new Error('媒体用途与请求标识必须同时提供'), {
+      code: 'MEDIA_PROTOCOL_INCOMPLETE',
+    });
+  if (
+    hasRequestId &&
+    (typeof event.requestId !== 'string' || !/^[A-Za-z0-9_-]{8,128}$/.test(event.requestId))
+  )
+    throw Object.assign(new Error('媒体请求标识无效'), { code: 'MEDIA_REQUEST_ID_INVALID' });
+  return { explicit: hasCategory, category: hasCategory ? event.category : 'other' };
+}
 async function registerMedia(openid, event) {
+  const protocol = mediaProtocol(event);
   const origin = clientMediaOrigin(event.origin);
   return canonicalizeClientMedia({
     openid,
     fileId: event.fileId,
-    category: event.category,
+    category: protocol.category,
     origin,
+    requestId: protocol.explicit ? event.requestId : undefined,
     mediaSecret: process.env.PROFILE_MEDIA_PATH_SECRET,
     getTempFileURL: (input) => cloud.getTempFileURL(input),
     uploadFile: (input) => cloud.uploadFile(input),
@@ -149,11 +169,22 @@ exports.main = async (event = {}) => {
     if (event.action === 'mediaUploadPath') {
       if (Object.prototype.hasOwnProperty.call(event, 'openid'))
         throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });
-      const issued = issueMediaUploadPath(OPENID, process.env.PROFILE_MEDIA_PATH_SECRET);
+      const protocol = mediaProtocol(event);
+      const category = protocol.category;
+      const extension = event.extension || 'jpg';
+      const issued = issueMediaUploadPath(
+        OPENID,
+        process.env.PROFILE_MEDIA_PATH_SECRET,
+        undefined,
+        extension,
+        category,
+      );
       const intent = clientUploadIntent(
         OPENID,
         issued.cloud_path,
         process.env.PROFILE_MEDIA_PATH_SECRET,
+        new Date(),
+        protocol.explicit ? { category, request_id: event.requestId } : {},
       );
       await profileStore.prepareClientUpload(OPENID, intent, process.env.PROFILE_MEDIA_PATH_SECRET);
       return ok(issued);
@@ -161,8 +192,11 @@ exports.main = async (event = {}) => {
     if (event.action === 'registerMedia') {
       if (Object.prototype.hasOwnProperty.call(event, 'openid'))
         throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });
-      await registerMedia(OPENID, event);
-      return ok({ registered: true });
+      const registered = await registerMedia(OPENID, event);
+      return ok({
+        registered: true,
+        canonicalFileId: registered.canonical_file_id || registered.file_id,
+      });
     }
     if (event.action === 'setAvatar') {
       if (Object.prototype.hasOwnProperty.call(event, 'openid'))

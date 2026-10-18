@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const rideService = vi.hoisted(() => ({
   getAdminActivity: vi.fn(),
   saveActivity: vi.fn(),
+  issueMediaUploadPath: vi.fn(),
+  finalizeMediaUpload: vi.fn(),
 }));
 const appStore = vi.hoisted(() => ({
   ensureIdentity: vi.fn(),
@@ -52,6 +54,13 @@ describe('活动图片内容指纹与重复上传治理', () => {
     vi.resetModules();
     rideService.getAdminActivity.mockReset().mockResolvedValue(undefined);
     rideService.saveActivity.mockReset();
+    let issued = 0;
+    rideService.issueMediaUploadPath
+      .mockReset()
+      .mockImplementation(async () => `profiles/alias/activity-image/issued-${++issued}.jpg`);
+    rideService.finalizeMediaUpload
+      .mockReset()
+      .mockImplementation(async (fileId: string) => ({ canonicalFileId: fileId }));
     appStore.ensureIdentity.mockReset().mockResolvedValue(undefined);
   });
 
@@ -82,7 +91,9 @@ describe('活动图片内容指纹与重复上传治理', () => {
 
     await page.chooseImages();
     expect(wx.cloud.uploadFile).toHaveBeenCalledTimes(1);
-    expect(page.data.images).toEqual(['cloud://env-id.appid/profiles/activity-media/digest-a.jpg']);
+    expect(page.data.images).toEqual([
+      'cloud://env-id.appid/profiles/alias/activity-image/issued-1.jpg',
+    ]);
 
     await page.chooseImages();
     expect(wx.cloud.uploadFile).toHaveBeenCalledTimes(1);
@@ -103,7 +114,7 @@ describe('活动图片内容指纹与重复上传治理', () => {
     await page.chooseImages();
     expect(wx.cloud.uploadFile).toHaveBeenCalledTimes(1);
     expect(page.data.images).toEqual([
-      'cloud://env-id.appid/profiles/activity-media/digest-same.jpg',
+      'cloud://env-id.appid/profiles/alias/activity-image/issued-1.jpg',
     ]);
   });
 
@@ -120,8 +131,8 @@ describe('活动图片内容指纹与重复上传治理', () => {
     await page.chooseImages();
     expect(wx.cloud.uploadFile).toHaveBeenCalledTimes(2);
     expect(wx._cloudPathsReceived).toEqual([
-      'profiles/activity-media/digest-a.jpg',
-      'profiles/activity-media/digest-b.jpg',
+      'profiles/alias/activity-image/issued-1.jpg',
+      'profiles/alias/activity-image/issued-2.jpg',
     ]);
   });
 
@@ -132,18 +143,16 @@ describe('活动图片内容指纹与重复上传治理', () => {
     wx.chooseMedia.mockResolvedValue({ tempFiles: [{ tempFilePath: 'http://tmp/a.jpg' }] });
 
     await page.chooseImages();
-    expect(page.data.pendingImages[0].status).toBe('failed');
-    expect(wx._cloudPathsReceived).toEqual(['profiles/activity-media/digest-a.jpg']);
-
-    const pendingId = page.data.pendingImages[0].id;
-    await page.retryImage({ currentTarget: { dataset: { id: pendingId } } });
     expect(wx.cloud.uploadFile).toHaveBeenCalledTimes(2);
-    // 两次上传目标完全一致，即便首次实际成功但响应丢失，重试也只是覆盖同一对象。
+    expect(page.data.pendingImages).toEqual([]);
+    // transport 自动重试复用服务端签发的同一目标，不需要页面再创建待重试对象。
     expect(wx._cloudPathsReceived).toEqual([
-      'profiles/activity-media/digest-a.jpg',
-      'profiles/activity-media/digest-a.jpg',
+      'profiles/alias/activity-image/issued-1.jpg',
+      'profiles/alias/activity-image/issued-1.jpg',
     ]);
-    expect(page.data.images).toEqual(['cloud://env-id.appid/profiles/activity-media/digest-a.jpg']);
+    expect(page.data.images).toEqual([
+      'cloud://env-id.appid/profiles/alias/activity-image/issued-1.jpg',
+    ]);
   });
 
   it('读取不到内容指纹时降级随机路径，上传仍可用', async () => {
@@ -154,6 +163,6 @@ describe('活动图片内容指纹与重复上传治理', () => {
 
     await page.chooseImages();
     expect(wx.cloud.uploadFile).toHaveBeenCalledTimes(1);
-    expect(wx._cloudPathsReceived[0]).toMatch(/^profiles\/activity-media\/\d+-[a-z0-9]+\.jpg$/);
+    expect(wx._cloudPathsReceived[0]).toBe('profiles/alias/activity-image/issued-1.jpg');
   });
 });

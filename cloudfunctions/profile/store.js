@@ -57,6 +57,7 @@ async function get(collection, id) {
 function createProfileStore(db) {
   return {
     getMedia: (id) => get(db.collection('profile_media'), id),
+    getClientUpload: (id) => get(db.collection('profile_media_imports'), id),
     prepareClientUpload: (openid, intent, secretValue) =>
       db.runTransaction(async (tx) => {
         const imports = tx.collection('profile_media_imports');
@@ -102,6 +103,7 @@ function createProfileStore(db) {
           },
           secretValue,
           intent.created_at,
+          intent.category || '',
         );
         if (
           intent._id !== expectedCanonical._id ||
@@ -143,7 +145,7 @@ function createProfileStore(db) {
           const profile = await get(tx.collection('profiles'), openid);
           const hasCanonicalBinding =
             mediaRecord &&
-            ['canonical_file_id', 'sha256', 'size', 'mime'].some((field) =>
+            ['canonical_file_id', 'sha256', 'size', 'mime', 'canonical_category'].some((field) =>
               Object.prototype.hasOwnProperty.call(mediaRecord, field),
             );
           if (
@@ -238,6 +240,7 @@ function createProfileStore(db) {
             ],
           },
           secretValue,
+          binding?.canonical_category || '',
         );
         const expectedSourceIntentId = clientUploadIntentId(mediaPath(fileId));
         const expectedCanonicalIntentId = canonicalUploadIntentId(
@@ -289,7 +292,12 @@ function createProfileStore(db) {
           cleanup_after: null,
           updated_at: db.serverDate(),
         };
-        await imports.doc(sourceIntentId).update({ data: completed });
+        const sourceCleanup = {
+          ...completed,
+          status: 'uploaded',
+          cleanup_after: new Date(new Date(now).getTime() + 24 * 60 * 60 * 1000),
+        };
+        await imports.doc(sourceIntentId).update({ data: sourceCleanup });
         await imports.doc(canonicalIntentId).update({ data: completed });
         return record;
       }),
@@ -298,8 +306,20 @@ function createProfileStore(db) {
         const profiles = tx.collection('profiles');
         const media = tx.collection('profile_media');
         const current = (await get(profiles, openid)) || {};
-        const selectedId = mediaDocumentId(fileId);
-        const selectedRecord = await get(media, selectedId);
+        const findMedia = async (referencedFileId) => {
+          if (!referencedFileId) return undefined;
+          const direct = await get(media, mediaDocumentId(referencedFileId));
+          if (direct) return direct;
+          const result = await media
+            .where({ canonical_file_id: referencedFileId, owner_openid: openid })
+            .limit(2)
+            .get();
+          return Array.isArray(result?.data) && result.data.length === 1
+            ? result.data[0]
+            : undefined;
+        };
+        const selectedRecord = await findMedia(fileId);
+        const selectedId = selectedRecord?._id || '';
         const selected = validateAvatarSelection(
           source,
           fileId,
@@ -322,9 +342,11 @@ function createProfileStore(db) {
         )
           return current;
         const previousFileId = current.avatar_file_id;
-        const previousId = previousFileId ? mediaDocumentId(previousFileId) : '';
         const previous =
-          previousId && previousId !== selectedId ? await get(media, previousId) : undefined;
+          previousFileId && !profileReferencesMedia({ avatar_file_id: fileId }, previousFileId)
+            ? await findMedia(previousFileId)
+            : undefined;
+        const previousId = previous?._id || '';
         const updatedAt = db.serverDate();
         const avatarRevision = nextAvatarRevision(current);
         const next = writableDocument({
@@ -352,6 +374,7 @@ function createProfileStore(db) {
         );
         if (
           previous &&
+          previousId !== selectedId &&
           !retainedByProfile &&
           registeredMedia(
             previous,

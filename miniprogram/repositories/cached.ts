@@ -474,6 +474,23 @@ export class CachingRepository implements RideRepository {
     return this.inner.getProfileMediaUploadPath();
   }
 
+  issueMediaUploadPath(
+    category: Parameters<RideRepository['issueMediaUploadPath']>[0],
+    requestId: string,
+    extension?: Parameters<RideRepository['issueMediaUploadPath']>[2],
+  ) {
+    return this.inner.issueMediaUploadPath(category, requestId, extension);
+  }
+
+  finalizeMediaUpload(
+    fileId: string,
+    category: Parameters<RideRepository['finalizeMediaUpload']>[1],
+    requestId: string,
+    origin?: Parameters<RideRepository['finalizeMediaUpload']>[3],
+  ) {
+    return this.inner.finalizeMediaUpload(fileId, category, requestId, origin);
+  }
+
   getPersonalCapabilityCard() {
     return this.readThrough(`${PROFILE_PREFIX}capability-card`, () =>
       this.inner.getPersonalCapabilityCard(),

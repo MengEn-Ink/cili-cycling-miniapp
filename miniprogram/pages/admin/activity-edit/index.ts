@@ -9,6 +9,7 @@ import { rideService } from '../../../services/ride-service';
 import { appStore } from '../../../store/app-store';
 import { formatLocalDateTime, parseLocalDateTime } from '../../../utils/date-time';
 import { drawRouteOutline } from '../../../utils/route-outline';
+import { uploadMedia, uploadWithRetry } from '../../../utils/media-upload';
 import { getSharedTempFileUrlCache, type TempFileUrlCache } from '../../../utils/temp-file-url';
 import {
   normalizeStravaRouteUrl,
@@ -384,6 +385,7 @@ Page({
   routeRequestId: '',
   mediaPreviewRequestId: 0,
   mediaPreviewRetryIds: new Set<string>(),
+  uploadedImageCloudPaths: new Map<string, string>(),
   data: {
     allowed: false,
     isAdmin: false,
@@ -455,6 +457,7 @@ Page({
   },
   async onLoad(options: Record<string, string>) {
     this.unloaded = false;
+    this.uploadedImageCloudPaths.clear();
     this.loadOptions = { ...options };
     return this.loadActivity();
   },
@@ -802,27 +805,29 @@ Page({
     this.clearFieldError('startAt');
   },
   async uploadPendingImage(pendingImage: PendingImage) {
-    // 复用选择时确定的 cloudPath：重试与“成功但响应丢失”场景均覆盖同一对象，不产生孤立文件。
-    const cloudPath = pendingImage.cloudPath || (await contentCloudPath(pendingImage.previewPath));
     try {
-      const result = await wx.cloud!.uploadFile({
-        cloudPath,
+      const uploaded = await uploadMedia({
         filePath: pendingImage.previewPath,
+        category: 'activity-image',
+        requestId: `activity_${pendingImage.id.replace(/[^A-Za-z0-9_-]/g, '_')}`.slice(0, 128),
+        authorize: (category, requestId, extension) =>
+          rideService.issueMediaUploadPath(category, requestId, extension as 'jpg'),
+        finalize: (fileId, category, requestId) =>
+          rideService.finalizeMediaUpload(fileId, category, requestId),
       });
-      if (!result.fileID) throw new Error('图片上传未完成，请重试');
+      const fileId = uploaded.canonicalFileId;
       if (this.unloaded) {
-        this.cleanupSessionUploads([result.fileID]);
+        this.cleanupSessionUploads([fileId]);
         return false;
       }
+      this.uploadedImageCloudPaths.set(fileId, pendingImage.cloudPath);
       this.setData({
-        sessionUploadedIds: [...this.data.sessionUploadedIds, result.fileID],
+        sessionUploadedIds: [...this.data.sessionUploadedIds, fileId],
         pendingImages: this.data.pendingImages.map((item: PendingImage) =>
-          item.id === pendingImage.id
-            ? { ...item, status: 'uploaded' as const, fileId: result.fileID }
-            : item,
+          item.id === pendingImage.id ? { ...item, status: 'uploaded' as const, fileId } : item,
         ),
       });
-      return result.fileID;
+      return fileId;
     } catch {
       const pendingImages = this.data.pendingImages.map((item: PendingImage) =>
         item.id === pendingImage.id ? { ...item, status: 'failed' as const } : item,
@@ -979,7 +984,7 @@ Page({
             this,
           );
         });
-        const uploaded = await wx.cloud!.uploadFile({
+        const uploaded = await uploadWithRetry({
           cloudPath: routeUploadPath(appStore.openid, preview.gpxSha256, 'png'),
           filePath,
         });
@@ -1039,7 +1044,7 @@ Page({
         throw userError('文件超过 4 MB，请选择更小的 GPX', 'GPX_TOO_LARGE');
       const digest = sha256Hex(bytes);
       if (!appStore.openid) throw userError('请先完成微信身份验证');
-      const upload = await wx.cloud!.uploadFile({
+      const upload = await uploadWithRetry({
         cloudPath: routeUploadPath(appStore.openid, digest, 'gpx'),
         filePath,
       });
@@ -1126,6 +1131,7 @@ Page({
       // 已占用对象路径集合：已提交图片反解路径 + 待处理图片路径，用于拦截重复选择。
       const usedCloudPaths = new Set<string>([
         ...this.data.images.map((fileId: string) => fileIdCloudPath(fileId)).filter(Boolean),
+        ...this.uploadedImageCloudPaths.values(),
         ...this.data.pendingImages
           .map((item: PendingImage) => item.cloudPath || '')
           .filter(Boolean),
@@ -1219,6 +1225,7 @@ Page({
     if (!Number.isInteger(index) || index < 0 || index >= this.data.images.length) return;
     const removedFileId = this.data.images[index];
     const shouldDeleteFile = this.data.sessionUploadedIds.includes(removedFileId);
+    this.uploadedImageCloudPaths.delete(removedFileId);
     const images = this.data.images.filter((_: string, itemIndex: number) => itemIndex !== index);
     const imagePreviewUrls = this.data.imagePreviewUrls.filter(
       (_: string, itemIndex: number) => itemIndex !== index,
@@ -1254,18 +1261,25 @@ Page({
         cloudPath: await contentCloudPath(file.tempFilePath, 'profiles/activity-group-qr'),
       };
       this.setData({ uploading: true, error: '', pendingGroupQrCode });
-      const result = await wx.cloud!.uploadFile({
-        cloudPath: pendingGroupQrCode.cloudPath as string,
+      const uploaded = await uploadMedia({
         filePath: pendingGroupQrCode.previewPath,
+        category: 'activity-group-qr',
+        requestId: `activity_qr_${pendingGroupQrCode.id}`
+          .replace(/[^A-Za-z0-9_-]/g, '_')
+          .slice(0, 128),
+        authorize: (category, requestId, extension) =>
+          rideService.issueMediaUploadPath(category, requestId, extension as 'jpg'),
+        finalize: (fileId, category, requestId) =>
+          rideService.finalizeMediaUpload(fileId, category, requestId),
       });
-      if (!result.fileID) throw new Error('云端未返回群二维码标识');
+      const fileId = uploaded.canonicalFileId;
       if (this.unloaded) {
-        this.cleanupSessionUploads([result.fileID]);
+        this.cleanupSessionUploads([fileId]);
         return;
       }
       this.setData({
-        sessionUploadedIds: [...this.data.sessionUploadedIds, result.fileID],
-        groupQrCode: result.fileID,
+        sessionUploadedIds: [...this.data.sessionUploadedIds, fileId],
+        groupQrCode: fileId,
         groupQrPreviewUrl: pendingGroupQrCode.previewPath,
         groupQrCodeUploadedAt: new Date().toISOString(),
         groupQrCodeExpired: false,

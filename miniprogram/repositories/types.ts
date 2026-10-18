@@ -24,6 +24,13 @@ import type {
 export type AdminRegistrationStatusFilter = RegistrationStatus;
 export type ActivityListFilter = 'upcoming' | 'history';
 export type PublicActivityView = 'future' | 'history';
+export type UnifiedMediaCategory =
+  | 'profile-avatar'
+  | 'profile-background'
+  | 'activity-image'
+  | 'activity-group-qr'
+  | 'club-avatar'
+  | 'club-cover';
 export interface PublicActivityPage {
   items: Activity[];
   nextCursor: string | null;
@@ -131,6 +138,17 @@ export interface RideRepository
   ): Promise<Registration>;
   getProfile(): Promise<Profile>;
   getProfileMediaUploadPath(): Promise<string>;
+  issueMediaUploadPath(
+    category: UnifiedMediaCategory,
+    requestId: string,
+    extension?: 'jpg' | 'png' | 'webp',
+  ): Promise<string>;
+  finalizeMediaUpload(
+    fileId: string,
+    category: UnifiedMediaCategory,
+    requestId: string,
+    origin?: ClientAvatarSource,
+  ): Promise<{ canonicalFileId: string }>;
   getPersonalCapabilityCard(): Promise<PersonalCapabilityCard>;
   registerProfileMedia(
     fileId: string,

@@ -11,6 +11,7 @@ import { mediaSourceKind, reportMediaDiagnostic } from '../../utils/media-diagno
 import { invalidateProfilePageCache } from '../../utils/profile-page-cache';
 import { getSharedTempFileUrlCache, type TempFileUrlCache } from '../../utils/temp-file-url';
 import { validateRegistrationProfile } from '../../utils/validation';
+import { uploadWithRetry } from '../../utils/media-upload';
 
 const ORPHAN_LEDGER_KEY = 'profile-media-orphans-v1';
 const AVATAR_PREVIEW_DEADLINE_MS = 8_000;
@@ -368,95 +369,6 @@ async function compressBackgroundImage(image: SelectedImage): Promise<SelectedIm
   }
 }
 
-function retryableUploadError(error: unknown): boolean {
-  if (!error || typeof error !== 'object' || isUserCancellation(error)) return false;
-  const value = error as { errMsg?: unknown; message?: unknown; code?: unknown };
-  const detail = `${String(value.code || '')} ${String(value.errMsg || '')} ${String(
-    value.message || '',
-  )}`;
-  return /(?:network|timeout|timed\s*out|connection|socket|econn(?:reset|refused|aborted)|enet(?:down|unreach)|eai_again|request:\s*fail)/i.test(
-    detail,
-  );
-}
-
-function waitForUploadRetry(attempt: number): Promise<void> {
-  return new Promise((resolve) =>
-    setTimeout(resolve, PROFILE_UPLOAD_RETRY_BASE_MS * 2 ** Math.max(0, attempt - 1)),
-  );
-}
-
-function uploadFailureReason(error: unknown): 'timeout' | 'connection' | 'network' {
-  const value = error && typeof error === 'object' ? (error as Record<string, unknown>) : {};
-  const detail = `${String(value.code || '')} ${String(value.errMsg || '')} ${String(
-    value.message || '',
-  )}`;
-  if (/timeout|timed\s*out/i.test(detail)) return 'timeout';
-  if (/connection|socket|econn|enet|eai_again/i.test(detail)) return 'connection';
-  return 'network';
-}
-
-function uploadFileWithProgress(
-  cloud: WxCloudApi,
-  input: { cloudPath: string; filePath: string },
-  handlers: {
-    onProgress?: (progress: number) => void;
-    onTask?: (task: ProfileUploadTask | null) => void;
-  } = {},
-): Promise<{ fileID: string }> {
-  return new Promise((resolve, reject) => {
-    let settled = false;
-    let lastProgress = -1;
-    let task: ProfileUploadTask | undefined;
-    const progressCallback = (event: { progress?: unknown }) => {
-      if (settled) return;
-      const progress = Number(event?.progress);
-      if (!Number.isFinite(progress)) return;
-      const normalized = Math.max(0, Math.min(100, Math.round(progress)));
-      if (normalized <= lastProgress) return;
-      lastProgress = normalized;
-      handlers.onProgress?.(normalized);
-    };
-    const finish = (handler: (value: any) => void, value: unknown) => {
-      if (settled) return;
-      settled = true;
-      task?.offProgressUpdate?.(progressCallback);
-      handlers.onTask?.(null);
-      handler(value);
-    };
-    type CallbackUploadOptions = {
-      cloudPath: string;
-      filePath: string;
-      success: (result: { fileID: string }) => void;
-      fail: (error: unknown) => void;
-    };
-    const options: CallbackUploadOptions = {
-      ...input,
-      success: (result) => finish(resolve, result),
-      fail: (error) => finish(reject, error),
-    };
-    try {
-      task = (cloud.uploadFile as unknown as (options: CallbackUploadOptions) => ProfileUploadTask)(
-        options,
-      );
-      if (settled) {
-        task?.offProgressUpdate?.(progressCallback);
-        return;
-      }
-      handlers.onTask?.(task);
-      task?.onProgressUpdate?.(progressCallback);
-      // 测试桩与旧封装可能仍返回 Promise；真实 UploadTask 由 success/fail 回调结算。
-      if (typeof task?.then === 'function') {
-        void Promise.resolve(task).then(
-          (result) => finish(resolve, result),
-          (error) => finish(reject, error),
-        );
-      }
-    } catch (error) {
-      finish(reject, error);
-    }
-  });
-}
-
 async function uploadProfileMedia(
   cloud: WxCloudApi,
   input: { cloudPath: string; filePath: string },
@@ -466,35 +378,15 @@ async function uploadProfileMedia(
     onTask?: (task: ProfileUploadTask | null) => void;
   } = {},
 ): Promise<{ fileID: string }> {
-  let activeAttemptGeneration = 0;
-  for (let attempt = 1; attempt <= PROFILE_UPLOAD_MAX_ATTEMPTS; attempt += 1) {
-    const attemptGeneration = ++activeAttemptGeneration;
-    try {
-      const result = await uploadFileWithProgress(cloud, input, {
-        onTask: handlers.onTask,
-        onProgress: (progress) => {
-          if (attemptGeneration === activeAttemptGeneration) handlers.onProgress?.(progress);
-        },
-      });
-      reportMediaDiagnostic('profile-edit.upload', 'upload-success', {
-        attempt,
-        total: PROFILE_UPLOAD_MAX_ATTEMPTS,
-      });
-      return result;
-    } catch (error) {
-      activeAttemptGeneration += 1;
-      if (attempt >= PROFILE_UPLOAD_MAX_ATTEMPTS || !retryableUploadError(error)) throw error;
-      const nextAttempt = attempt + 1;
-      reportMediaDiagnostic('profile-edit.upload', 'upload-retry', {
-        attempt: nextAttempt,
-        total: PROFILE_UPLOAD_MAX_ATTEMPTS,
-        reason: uploadFailureReason(error),
-      });
-      handlers.onRetry?.(nextAttempt, PROFILE_UPLOAD_MAX_ATTEMPTS);
-      await waitForUploadRetry(attempt);
-    }
-  }
-  throw new Error('upload attempts exhausted');
+  return uploadWithRetry({
+    cloud: cloud as Parameters<typeof uploadWithRetry>[0]['cloud'],
+    ...input,
+    maxAttempts: PROFILE_UPLOAD_MAX_ATTEMPTS,
+    retryBaseMs: PROFILE_UPLOAD_RETRY_BASE_MS,
+    onProgress: handlers.onProgress,
+    onRetry: handlers.onRetry,
+    onTask: handlers.onTask,
+  });
 }
 
 function mergeAvatarFields(current: Profile | null, authoritative: Profile): Profile {
@@ -668,7 +560,7 @@ Page({
   mediaErrorRevision: 0,
   mediaErrorStage: '',
   localPhotoPreviews: {} as Record<string, string>,
-  // 会话内“内容指纹 -> 已登记 fileId”映射：重复选择同一图片直接复用，不再请求上传路径和重复上传。
+  // 会话内“用途 + 内容指纹 -> 已登记 fileId”映射：仅同用途重复选择可复用，避免头像与背景跨 category 串用。
   uploadedMediaDigests: new Map<string, string>(),
   // 跨页面共享 fileID -> 临时地址；相同照片只解析一次，失效时由 binderror 主动淘汰。
   photoPreviewRetryIds: new Set<string>(),
@@ -962,7 +854,8 @@ Page({
     this.assertAvatarMediaCurrent(generation);
     const digest = await contentDigest(verifiedImage.path);
     this.assertAvatarMediaCurrent(generation);
-    const reusedFileId = digest ? this.uploadedMediaDigests.get(digest) : '';
+    const avatarDigestKey = digest ? `profile-avatar:${digest}` : '';
+    const reusedFileId = avatarDigestKey ? this.uploadedMediaDigests.get(avatarDigestKey) : '';
     if (reusedFileId) {
       // 同内容图片本次会话已上传并登记：跳过路径申请、上传与注册，仅把头像指向已有 fileId。
       this.assertAvatarMediaCurrent(generation);
@@ -976,10 +869,12 @@ Page({
       return;
     }
     let uploadedFileId = '';
+    let canonicalFileId = '';
     let selectionDispatched = false;
     try {
+      const mediaRequestId = `profile_avatar_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
       const cloudPath = await atMediaStage('uploadPath', 'MEDIA_UPLOAD_PATH_FAILED', () =>
-        rideService.getProfileMediaUploadPath(),
+        rideService.issueMediaUploadPath('profile-avatar', mediaRequestId),
       );
       this.assertAvatarMediaCurrent(generation);
       const uploaded = await atMediaStage('upload', 'MEDIA_UPLOAD_FAILED', () =>
@@ -1008,16 +903,17 @@ Page({
       this.assertAvatarMediaCurrent(generation);
       this.safeSetData({ mediaProgress: '正在确认头像…' });
       this.assertAvatarMediaCurrent(generation);
-      await atMediaStage('register', 'MEDIA_REGISTER_FAILED', () =>
-        rideService.registerProfileMedia(uploadedFileId, 'other', origin),
+      const finalized = await atMediaStage('register', 'MEDIA_REGISTER_FAILED', () =>
+        rideService.finalizeMediaUpload(uploadedFileId, 'profile-avatar', mediaRequestId, origin),
       );
+      canonicalFileId = finalized.canonicalFileId;
       this.assertAvatarMediaCurrent(generation);
       selectionDispatched = true;
       const authoritative = await atMediaStage('setAvatar', 'AVATAR_SET_FAILED', () =>
-        rideService.setAvatar(origin, uploadedFileId),
+        rideService.setAvatar(origin, canonicalFileId),
       );
       this.assertAvatarMediaCurrent(generation);
-      if (digest) this.uploadedMediaDigests.set(digest, uploadedFileId);
+      if (avatarDigestKey) this.uploadedMediaDigests.set(avatarDigestKey, canonicalFileId);
       this.applyAvatarProfile(authoritative);
       await this.loadAvatarPreview();
       wx.showToast({ title: '头像已更新' });
@@ -1026,7 +922,7 @@ Page({
         if (this.unloaded || generation !== this.avatarMediaGeneration) throw error;
         const confirmed = await this.reloadAvatarProfile({
           source: origin,
-          fileId: uploadedFileId,
+          fileId: canonicalFileId,
         });
         if (confirmed) {
           wx.showToast({ title: '头像已更新' });
@@ -1066,6 +962,7 @@ Page({
     this.mediaErrorStage = '';
     this.safeSetData({ photoBusy: true, mediaProgress: '请选择并调整背景图…', mediaError: '' });
     let uploadedFileId = '';
+    let canonicalFileId = '';
     try {
       const cloud = wx.cloud;
       if (!cloud) throw mediaCloudUnavailableError();
@@ -1084,7 +981,10 @@ Page({
       this.assertBackgroundMediaCurrent(generation);
       const photoDigest = await contentDigest(verifiedImage.path);
       this.assertBackgroundMediaCurrent(generation);
-      const reusedPhotoId = photoDigest ? this.uploadedMediaDigests.get(photoDigest) : '';
+      const backgroundDigestKey = photoDigest ? `profile-background:${photoDigest}` : '';
+      const reusedPhotoId = backgroundDigestKey
+        ? this.uploadedMediaDigests.get(backgroundDigestKey)
+        : '';
       if (reusedPhotoId) {
         // 同内容图片本次会话已上传登记：跳过路径申请、上传与注册，直接把背景槽位指向已有 fileId。
         const current = this.data.p;
@@ -1096,8 +996,9 @@ Page({
         await this.loadPhotoPreviews();
         return;
       }
+      const mediaRequestId = `profile_background_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
       const cloudPath = await atMediaStage('uploadPath', 'MEDIA_UPLOAD_PATH_FAILED', () =>
-        rideService.getProfileMediaUploadPath(),
+        rideService.issueMediaUploadPath('profile-background', mediaRequestId),
       );
       this.assertBackgroundMediaCurrent(generation);
       const uploaded = await atMediaStage('upload', 'MEDIA_UPLOAD_FAILED', () =>
@@ -1126,11 +1027,12 @@ Page({
       this.assertBackgroundMediaCurrent(generation);
       this.safeSetData({ mediaProgress: '正在确认背景图…' });
       this.assertBackgroundMediaCurrent(generation);
-      await atMediaStage('register', 'MEDIA_REGISTER_FAILED', () =>
-        rideService.registerProfileMedia(uploadedFileId, PROFILE_BACKGROUND_CATEGORY),
+      const finalized = await atMediaStage('register', 'MEDIA_REGISTER_FAILED', () =>
+        rideService.finalizeMediaUpload(uploadedFileId, 'profile-background', mediaRequestId),
       );
+      canonicalFileId = finalized.canonicalFileId;
       this.assertBackgroundMediaCurrent(generation);
-      if (photoDigest) this.uploadedMediaDigests.set(photoDigest, uploadedFileId);
+      if (backgroundDigestKey) this.uploadedMediaDigests.set(backgroundDigestKey, canonicalFileId);
       const p = this.data.p;
       if (!p) {
         await compensateUploadedMedia({
@@ -1139,9 +1041,9 @@ Page({
         });
         return;
       }
-      p.photos = [{ id: uploadedFileId, category: PROFILE_BACKGROUND_CATEGORY }];
-      p.backgroundPhoto = { id: uploadedFileId, category: PROFILE_BACKGROUND_CATEGORY };
-      this.localPhotoPreviews = { [uploadedFileId]: verifiedImage.path };
+      p.photos = [{ id: canonicalFileId, category: PROFILE_BACKGROUND_CATEGORY }];
+      p.backgroundPhoto = { id: canonicalFileId, category: PROFILE_BACKGROUND_CATEGORY };
+      this.localPhotoPreviews = { [canonicalFileId]: verifiedImage.path };
       this.safeSetData({ p });
       await this.loadPhotoPreviews();
     } catch (error) {
