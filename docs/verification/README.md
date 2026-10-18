@@ -13,6 +13,7 @@
 ## 当前文档
 
 - [PR 端到端验收报告模板](pr-acceptance-report-template.md)：每个 PR 必填的影响范围、测试用例矩阵、自动化门禁、真实路径验收、部署回读和回滚记录。
+- [2026-10-19 影响面 CI 与每日全量审计](2026-10-19-affected-ci-nightly-audit.md)：记录 PR 影响面选择、夜间全量兜底、自治修复边界、Pages 图文方案与分阶段回读结果。
 - [Pages 与微信端到端验收流程](wechat-devtools-e2e.md)：17 路由只读运行、双端截图校准、部署回读及完整验收分层。
 - [P0 真实报名旅程](p0-real-registration-journey.md)：完整报名、审批、凭证、取消与重报的现场验证手册。
 - [2026-10-16 设计校准与端到端验收](2026-10-16-design-e2e-acceptance.md)：统一设计门禁、13 对脱敏截图、开发版上传回执与部署后同 SHA 模拟器复测。

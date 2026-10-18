@@ -24,7 +24,10 @@ jobs:
         with:
           fetch-depth: 0
       - name: Validate pull request submission
-        if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.actor != 'dependabot[bot]' &&
+          !(github.actor == 'github-actions[bot]' && startsWith(github.head_ref, 'fix/nightly-'))
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
@@ -68,15 +71,24 @@ jobs:
             cloudfunctions/route-maintenance/package-lock.json
       - name: Install root dependencies
         run: npm ci
-      - name: Rebuild shared package and install every cloud function
-        run: npm run cloud:install
-      - name: Validate
+      - name: Run affected pull request checks
+        if: github.event_name == 'pull_request'
         env:
-          RELEASE_NOTES_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          AFFECTED_BASE: ${{ github.event.pull_request.base.sha }}
+          AFFECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+          RELEASE_NOTES_BASE: ${{ github.event.pull_request.base.sha }}
+        run: npm run test:affected
+      - name: Rebuild shared package and install every cloud function
+        if: github.event_name == 'push'
+        run: npm run cloud:install
+      - name: Validate main
+        if: github.event_name == 'push'
+        env:
+          RELEASE_NOTES_BASE: ${{ github.event.before }}
         run: npm run validate
-      - name: Run tests with coverage
+      - name: Run main tests with coverage
+        if: github.event_name == 'push'
         run: npm run coverage
-      - name: Verify CloudBase bootstrap is read-only by default
-        run: npm run test:bootstrap
-      - name: Audit high-severity vulnerabilities
+      - name: Audit main high-severity vulnerabilities
+        if: github.event_name == 'push'
         run: npm run audit:all
