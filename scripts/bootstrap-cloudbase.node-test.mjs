@@ -646,7 +646,7 @@ test('云存储规则只允许 owner 写统一媒体 source 与 GPX，canonical 
   assert.equal(rules.read, false);
   assert.equal(
     rules.write,
-    'auth != null && ((/^profiles\\/[a-f0-9]{32}\\/(profile-avatar|profile-background|activity-image|activity-group-qr|activity-route-preview|club-avatar|club-cover)\\//.test(resource.path) && resource.openid == auth.openid) || (/^activity-routes\\//.test(resource.path) && resource.openid == auth.openid))',
+    'auth != null && resource.openid == auth.openid && (/^profiles\\/[a-f0-9]{32}\\/[a-z-]+\\//.test(resource.path) || /^activity-routes\\//.test(resource.path))',
   );
   assert.equal(rules.write.includes('profile-canonical'), false);
   assert.equal(rules.write.includes('club-applications'), false);
