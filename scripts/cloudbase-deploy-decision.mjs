@@ -6,6 +6,19 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const SHARED_CONSUMERS = Object.freeze(['activity-read', 'registration', 'admin-review']);
+const MEDIA_SECRET_CONSUMERS = Object.freeze([
+  'profile',
+  'profile-media-cleanup',
+  'admin-review',
+  'activity-read',
+  'activity-admin',
+  'club-application',
+]);
+const MEDIA_SECRET_DEPLOYMENT_PATHS = new Set([
+  '.github/workflows/deploy-cloudbase.yml',
+  'scripts/cloudbase-function-env.mjs',
+  'scripts/cloudbase-function-env.node-test.mjs',
+]);
 const INFRASTRUCTURE_PATHS = new Set([
   'cloudstorage.rules.json',
   '.github/workflows/deploy-cloudbase.yml',
@@ -38,6 +51,12 @@ export function createCloudBaseDeployDecision(changedPaths, config) {
     if (!file) continue;
 
     if (INFRASTRUCTURE_PATHS.has(file)) applyInfrastructure = true;
+
+    if (MEDIA_SECRET_DEPLOYMENT_PATHS.has(file)) {
+      MEDIA_SECRET_CONSUMERS.forEach((name) => {
+        if (knownFunctions.has(name)) selected.add(name);
+      });
+    }
 
     if (file === 'cloudbaserc.json') {
       functions.forEach((name) => selected.add(name));
