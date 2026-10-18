@@ -21,10 +21,9 @@ function createMemoryStore({
   persistedClubAvatar = 'expected',
 } = {}) {
   const collections = Object.fromEntries(
-    ['admins', 'club_applications', 'clubs', 'club_memberships', 'audit_logs'].map((name) => [
-      name,
-      new Map(),
-    ]),
+    ['admins', 'club_applications', 'clubs', 'club_memberships', 'audit_logs', 'profile_media'].map(
+      (name) => [name, new Map()],
+    ),
   );
   let audit = 0;
   const get = async (name, id) => collections[name].get(id);
@@ -66,6 +65,25 @@ function createMemoryStore({
         getApplication: (id) => get('club_applications', id),
         getClub: (id) => get('clubs', id),
         getMembership: (id) => get('club_memberships', id),
+        getProfileMediaByCanonical: async (fileId, ownerOpenid, category) => {
+          const records = [...collections.profile_media.values()].filter(
+            (item) =>
+              item.canonical_file_id === fileId &&
+              item.owner_openid === ownerOpenid &&
+              item.category === category,
+          );
+          return records.length === 1 ? records[0] : undefined;
+        },
+        activateProfileMedia: async (id, referencedAt) => {
+          const current = await get('profile_media', id);
+          if (!current) throw new Error('missing profile media');
+          await put('profile_media', id, {
+            ...current,
+            status: 'active',
+            referenced_at: referencedAt,
+            cleanup_after: null,
+          });
+        },
         countActiveMemberships: (clubId) =>
           [...collections.club_memberships.values()].filter(
             (item) => item.club_id === clubId && item.status === 'active',
@@ -371,6 +389,53 @@ test('CLI transaction 写穿真实存储、事务内读己之写且 overlay 不�
   assert.equal(queryCount, 1);
 });
 
+test('CLI transaction 校验并激活 canonical 媒体登记', async () => {
+  const database = new Map();
+  const execute = (_file, args) => {
+    const [{ CommandType, Command }] = JSON.parse(args.at(-2));
+    const payload = JSON.parse(Command);
+    if (CommandType === 'UPDATE') {
+      const update = payload.updates[0];
+      const id = update.q._id;
+      database.set(id, { ...(database.get(id) || { _id: id }), ...update.u.$set });
+      return JSON.stringify({ Response: { Data: '[]' } });
+    }
+    if (CommandType === 'QUERY') {
+      const values = [...database.values()].filter((document) =>
+        Object.entries(payload.filter).every(([key, value]) => document[key] === value),
+      );
+      return JSON.stringify({
+        Response: {
+          Data: JSON.stringify(values.map((document) => ({ Result: JSON.stringify(document) }))),
+        },
+      });
+    }
+    throw new Error(`unexpected command ${CommandType}`);
+  };
+  const store = createCliStore({ envId: 'env-production', execute });
+  const media = {
+    _id: 'media-one',
+    canonical_file_id: 'cloud://env/profile-canonical/alias/club-avatar/a/b.jpg',
+    owner_openid: 'owner-one',
+    category: 'club-avatar',
+    status: 'unreferenced',
+  };
+  await store.put('profile_media', media._id, media);
+
+  await store.transaction(async (tx) => {
+    assert.deepEqual(
+      await tx.getProfileMediaByCanonical(
+        media.canonical_file_id,
+        media.owner_openid,
+        media.category,
+      ),
+      media,
+    );
+    await tx.activateProfileMedia(media._id, '2026-10-18T00:00:00.000Z');
+  });
+  assert.equal((await store.get('profile_media', media._id)).status, 'active');
+});
+
 test('CLI store 跨模拟事务保留本进程写入的确定性幂等审计', async () => {
   let queryCount = 0;
   const execute = (_file, args) => {
@@ -404,6 +469,8 @@ const cleanupIds = {
   joinerMembershipId: 'joiner-membership-secret-id',
   clubId: 'club-secret-id',
   adminOpenid: 'admin-secret-openid',
+  avatarMediaId: 'avatar-media-secret-id',
+  coverMediaId: 'cover-media-secret-id',
 };
 
 function seedCleanupData(store) {
@@ -424,6 +491,12 @@ function seedCleanupData(store) {
   store.collections.clubs.set(cleanupIds.clubId, { _id: cleanupIds.clubId });
   store.collections.club_applications.set(cleanupIds.applicationId, {
     _id: cleanupIds.applicationId,
+  });
+  store.collections.profile_media.set(cleanupIds.avatarMediaId, {
+    _id: cleanupIds.avatarMediaId,
+  });
+  store.collections.profile_media.set(cleanupIds.coverMediaId, {
+    _id: cleanupIds.coverMediaId,
   });
   store.collections.admins.set(cleanupIds.adminOpenid, {
     _id: cleanupIds.adminOpenid,
@@ -453,6 +526,8 @@ test('单项删除失败仍继续清理并只按集合名报告残留', async ()
     'club_memberships',
     'clubs',
     'club_applications',
+    'profile_media',
+    'profile_media',
     'admins',
   ]);
   assert.equal(store.collections.club_memberships.size, 0);
@@ -476,7 +551,27 @@ test('删除静默成功但回读仍有残留时阻断', async () => {
   });
 });
 
-test('完整状态机回读确认俱乐部头像传播后清理全部测试记录', async () => {
+test('缺少媒体路径密钥时在清理前立即阻断', async () => {
+  const store = createMemoryStore();
+  let cleanupCalls = 0;
+  const removeMany = store.removeMany;
+  store.removeMany = (...args) => {
+    cleanupCalls += 1;
+    return removeMany(...args);
+  };
+  await assert.rejects(
+    runClubApplicationSmoke({
+      store,
+      runId: 'github-12345-missing-media-secret',
+      mediaSecret: '',
+    }),
+    /PROFILE_MEDIA_PATH_SECRET/,
+  );
+  assert.equal(cleanupCalls, 0);
+  assertEmpty(store);
+});
+
+test('完整状态机回读确认 canonical 媒体激活及俱乐部头像传播后清理全部测试记录', async () => {
   const store = createMemoryStore();
   const result = await runClubApplicationSmoke({
     store,

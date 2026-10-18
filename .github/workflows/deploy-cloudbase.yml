@@ -224,6 +224,29 @@ jobs:
         env:
           FUNCTIONS_JSON: ${{ steps.scope.outputs.functions }}
 
+      - name: Resolve production media path secret
+        if: steps.scope.outputs.should_deploy == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          function_detail="$(npx --yes --package @cloudbase/cli@3.8.4 tcb \
+            -e "${CLOUDBASE_ENV_ID}" \
+            fn detail club-application --json)"
+          profile_media_path_secret="$(jq -er '
+            [
+              .. | objects |
+              if .Key? == "PROFILE_MEDIA_PATH_SECRET" then .Value
+              elif has("PROFILE_MEDIA_PATH_SECRET") then .PROFILE_MEDIA_PATH_SECRET
+              else empty end |
+              select(type == "string" and length >= 32)
+            ] | unique |
+            if length == 1 then .[0]
+            else error("club-application 的 PROFILE_MEDIA_PATH_SECRET 缺失或不唯一")
+            end
+          ' <<< "${function_detail}")"
+          printf '::%s::%s\n' 'add-mask' "${profile_media_path_secret}"
+          printf 'PROFILE_MEDIA_PATH_SECRET=%s\n' "${profile_media_path_secret}" >> "${GITHUB_ENV}"
+
       - name: Run production club application write smoke
         if: steps.scope.outputs.should_deploy == 'true'
         env:

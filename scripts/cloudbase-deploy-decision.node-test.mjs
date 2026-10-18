@@ -122,6 +122,11 @@ test('GitHub 工作流仅在 main CI 成功后部署并使用环境级密钥', (
       workflow.indexOf('name: Run production club application write smoke'),
   );
   assert.match(workflow, /CILI_ALLOW_PRODUCTION_SMOKE: club-application-write/);
+  assert.match(workflow, /name: Resolve production media path secret/);
+  assert.match(workflow, /fn detail club-application --json/);
+  assert.match(workflow, /club-application 的 PROFILE_MEDIA_PATH_SECRET 缺失或不唯一/);
+  assert.match(workflow, /PROFILE_MEDIA_PATH_SECRET=%s\\n/);
+  assert.match(workflow, /GITHUB_ENV/);
   assert.match(workflow, /decision\.applyInfrastructure = true/);
   assert.match(workflow, /@cloudbase\/cli@3\.8\.4/);
   assert.match(workflow, /cancel-in-progress: false/);

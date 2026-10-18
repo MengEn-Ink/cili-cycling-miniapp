@@ -300,6 +300,33 @@ export function createCliStore({ envId, cwd = process.cwd(), execute = execFileS
         getApplication: (id) => txGet('club_applications', id),
         getClub: (id) => txGet('clubs', id),
         getMembership: (id) => txGet('club_memberships', id),
+        getProfileMediaByCanonical: async (fileId, ownerOpenid, category) => {
+          const output = invoke([
+            command('profile_media', 'QUERY', {
+              find: 'profile_media',
+              filter: {
+                canonical_file_id: fileId,
+                owner_openid: ownerOpenid,
+                category,
+              },
+              limit: 2,
+            }),
+          ]);
+          const records = parseNosqlDocuments(output);
+          return records.length === 1 ? records[0] : undefined;
+        },
+        activateProfileMedia: async (id, referencedAt) => {
+          const current = await txGet('profile_media', id);
+          if (!current) throw new Error('真实写入 smoke 媒体登记不存在');
+          await txPut('profile_media', id, {
+            ...current,
+            status: 'active',
+            referenced_at: referencedAt,
+            cleanup_after: null,
+            delete_lease_id: '',
+            delete_lease_at: null,
+          });
+        },
         countActiveMemberships: async (clubId) => {
           const output = invoke([
             command('club_memberships', 'QUERY', {
@@ -398,6 +425,16 @@ export async function cleanupSmokeData(store, ids) {
       verify: async () => ((await store.get('club_applications', ids.applicationId)) ? [{}] : []),
     },
     {
+      collection: 'profile_media',
+      filter: { _id: ids.avatarMediaId },
+      verify: async () => ((await store.get('profile_media', ids.avatarMediaId)) ? [{}] : []),
+    },
+    {
+      collection: 'profile_media',
+      filter: { _id: ids.coverMediaId },
+      verify: async () => ((await store.get('profile_media', ids.coverMediaId)) ? [{}] : []),
+    },
+    {
       collection: 'admins',
       filter: { _id: ids.adminOpenid, smoke_test: true },
       verify: async () => ((await store.get('admins', ids.adminOpenid)) ? [{}] : []),
@@ -425,7 +462,15 @@ export async function cleanupSmokeData(store, ids) {
   }
 }
 
-export async function runClubApplicationSmoke({ store, runId, now = () => new Date() }) {
+export async function runClubApplicationSmoke({
+  store,
+  runId,
+  now = () => new Date(),
+  mediaSecret = process.env.PROFILE_MEDIA_PATH_SECRET,
+}) {
+  const normalizedMediaSecret = typeof mediaSecret === 'string' ? mediaSecret.trim() : '';
+  if (normalizedMediaSecret.length < 32)
+    throw new Error('真实写入 smoke 缺少有效的 PROFILE_MEDIA_PATH_SECRET');
   const suffix = hash(runId).slice(0, 24);
   const applicantOpenid = `smoke_applicant_${suffix}`;
   const joinerOpenid = `smoke_joiner_${suffix}`;
@@ -443,8 +488,7 @@ export async function runClubApplicationSmoke({ store, runId, now = () => new Da
     membershipId,
     joinerMembershipId,
   };
-  const mediaSecret = process.env.PROFILE_MEDIA_PATH_SECRET || '';
-  const ownerAlias = createHmac('sha256', mediaSecret)
+  const ownerAlias = createHmac('sha256', normalizedMediaSecret)
     .update(applicantOpenid)
     .digest('hex')
     .slice(0, 32);
@@ -460,9 +504,31 @@ export async function runClubApplicationSmoke({ store, runId, now = () => new Da
     avatar_file_id: `cloud://smoke/profile-canonical/${ownerAlias}/club-avatar/${'a'.repeat(64)}/${'b'.repeat(64)}.jpg`,
     cover_file_id: `cloud://smoke/profile-canonical/${ownerAlias}/club-cover/${'c'.repeat(64)}/${'d'.repeat(64)}.jpg`,
   };
+  ids.avatarMediaId = `smoke_media_${hash(input.avatar_file_id).slice(0, 40)}`;
+  ids.coverMediaId = `smoke_media_${hash(input.cover_file_id).slice(0, 40)}`;
 
   await cleanupSmokeData(store, ids);
   try {
+    await store.put('profile_media', ids.avatarMediaId, {
+      _id: ids.avatarMediaId,
+      canonical_file_id: input.avatar_file_id,
+      owner_openid: applicantOpenid,
+      category: 'club-avatar',
+      origin: 'custom',
+      status: 'unreferenced',
+      smoke_test: true,
+      created_at: now().toISOString(),
+    });
+    await store.put('profile_media', ids.coverMediaId, {
+      _id: ids.coverMediaId,
+      canonical_file_id: input.cover_file_id,
+      owner_openid: applicantOpenid,
+      category: 'club-cover',
+      origin: 'custom',
+      status: 'unreferenced',
+      smoke_test: true,
+      created_at: now().toISOString(),
+    });
     await store.put('admins', adminOpenid, {
       _id: adminOpenid,
       enabled: true,
@@ -477,6 +543,14 @@ export async function runClubApplicationSmoke({ store, runId, now = () => new Da
       status: 'draft',
       reviewVersion: 0,
     });
+    const [activeAvatar, activeCover] = await Promise.all([
+      store.get('profile_media', ids.avatarMediaId),
+      store.get('profile_media', ids.coverMediaId),
+    ]);
+    assert(
+      activeAvatar?.status === 'active' && activeCover?.status === 'active',
+      'canonical 媒体登记激活',
+    );
 
     const firstSubmitRequestId = `submit_1_${suffix}`;
     const firstSubmit = await submitApplication(
