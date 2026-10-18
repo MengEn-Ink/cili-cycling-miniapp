@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { CloudRepository } from '../miniprogram/repositories/cloud';
+import { MockRepository } from '../miniprogram/repositories/mock';
 
 const success = (data: unknown) => ({ result: { ok: true, data } });
 const dto = {
@@ -62,6 +63,48 @@ describe('俱乐部创建申请生产闭环', () => {
     expect(callFunction.mock.calls[1][0].data.application).not.toHaveProperty('applicant_openid');
   });
 
+  it('撤回发送稳定请求 ID 与期望审核版本，并映射 draft 响应', async () => {
+    const callFunction = vi.fn().mockResolvedValue(success({ ...dto, status: 'draft' }));
+    const repository = new CloudRepository({ callFunction });
+    await expect(repository.withdrawClubApplication('withdraw_12345678', 1)).resolves.toMatchObject(
+      {
+        status: 'draft',
+        reviewVersion: 1,
+      },
+    );
+    expect(callFunction).toHaveBeenCalledWith({
+      name: 'club-application',
+      data: {
+        action: 'withdraw',
+        requestId: 'withdraw_12345678',
+        expectedReviewVersion: 1,
+      },
+    });
+    await expect(repository.withdrawClubApplication('withdraw_87654321', 0)).rejects.toMatchObject({
+      code: 'VERSION_CONFLICT',
+    });
+  });
+
+  it('MockRepository 与云端保持撤回幂等、版本冲突和重提递增语义', async () => {
+    const repository = new MockRepository();
+    const pending = await repository.submitClubApplication(form, 'mock-submit-0001');
+    await expect(repository.withdrawClubApplication('mock-withdraw-1', 2)).rejects.toMatchObject({
+      code: 'VERSION_CONFLICT',
+    });
+    const draft = await repository.withdrawClubApplication(
+      'mock-withdraw-1',
+      pending.reviewVersion,
+    );
+    await expect(
+      repository.withdrawClubApplication('mock-withdraw-1', pending.reviewVersion),
+    ).resolves.toBe(draft);
+    await expect(
+      repository.withdrawClubApplication('mock-withdraw-2', pending.reviewVersion),
+    ).rejects.toMatchObject({ code: 'INVALID_STATE' });
+    const resubmitted = await repository.submitClubApplication(form, 'mock-submit-0002');
+    expect(resubmitted.reviewVersion).toBe(pending.reviewVersion + 1);
+  });
+
   it('管理员审批只发送决定、原因和幂等请求 ID', async () => {
     const callFunction = vi
       .fn()
@@ -98,6 +141,9 @@ describe('俱乐部创建申请生产闭环', () => {
     for (const copy of ['草稿待提交', '平台审批中', '申请已驳回，可修改重提', '申请已通过'])
       expect(center).toContain(copy);
     expect(center).toContain('申请资料仅你本人和平台管理员可见');
+    expect(center).toContain('bindtap="withdrawApplication"');
+    expect(center).toContain('正在撤回');
+    expect(center).toContain('申请仍在审核中');
     expect(center).toMatch(/club-page-head[\s\S]*create-mini[\s\S]*＋ 新建/);
     expect(center).toContain('class="joined-card"');
     expect(center).toContain('bindtap="openClubDetail"');
@@ -120,6 +166,9 @@ describe('俱乐部创建申请生产闭环', () => {
     expect(center).toContain('coverPreviewUrl');
     expect(cloudFunction).toMatch(
       /action === 'mine'[\s\S]*resolveApplicationCover\(cloud, project\(value\), openid\)/,
+    );
+    expect(cloudFunction).toMatch(
+      /action === 'withdraw'[\s\S]*withdrawApplication[\s\S]*expectedReviewVersion/,
     );
     expect(cloudFunction).toMatch(
       /action === 'adminList'[\s\S]*resolveApplicationCovers\(cloud, projected\)/,

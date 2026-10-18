@@ -256,6 +256,41 @@
         <div class="club-center-capacity-cell is-end"><span class="club-center-capacity-text"><small>容量上限</small><b><em>${viewer.capacity ?? 0}</em>人</b></span></div>
       </div>`;
 
+      if (mode === 'application-edit') {
+        return `<div class="pg club-center-page club-application-edit" data-club-center data-mode="application-edit">
+          <p class="prototype-mock-badge">创建申请 · 草稿编辑</p>
+          <h2 class="page-title">继续编辑创建申请</h2>
+          <section class="card">
+            ${cardHead('01', '申请基本资料', tag('neutral', '草稿'))}
+            ${field('俱乐部名称', input('山海骑行会'))}
+            ${field('所在城市', input('深圳'))}
+            ${field('俱乐部简介', input('每周组织安全友好的公路骑行训练活动。', { cls: 'textarea' }))}
+          </section>
+          <div class="btn-row">${btn('保存草稿', toast('草稿已保存'), 'btn-secondary')}${modeLink('重新提交审核', 'pending-review', 'btn')}</div>
+        </div>`;
+      }
+
+      if (
+        ['pending-review', 'withdraw-confirm', 'withdrawing', 'withdraw-error', 'draft'].includes(mode)
+      ) {
+        const isDraft = mode === 'draft';
+        const isConfirm = mode === 'withdraw-confirm';
+        const isWithdrawing = mode === 'withdrawing';
+        const hasError = mode === 'withdraw-error';
+        return `<div class="pg club-center-page" data-club-center data-mode="${mode}">
+          <p class="prototype-mock-badge">创建申请 · ${isDraft ? '草稿编辑' : '平台审批中'}</p>
+          <h2 class="page-title">${isDraft ? '继续编辑创建申请' : '俱乐部创建申请'}</h2>
+          <section class="card">
+            ${cardHead('申请进度', isDraft ? '已回到草稿' : '平台审批中', tag(isDraft ? 'neutral' : 'warning', isDraft ? '可编辑' : '第 2 版'))}
+            <p>${isDraft ? '资料已完整保留，可修改后沿用原提交入口重新提交。' : '管理员处理后会同步结果；如需修改，可撤回到草稿。'}</p>
+            ${isConfirm ? '<p class="neutral-note">确认撤回？撤回后申请会回到草稿，你可以继续修改并重新提交。</p>' : ''}
+            ${hasError ? '<p class="field-msg is-error" role="alert">撤回失败，申请仍在审核中；请重试。</p>' : ''}
+            ${isDraft ? modeLink('进入草稿继续编辑', 'application-edit', 'btn') : isConfirm ? `<div class="btn-row">${modeLink('取消', 'pending-review', 'btn-secondary')}${modeLink('确认撤回', 'withdrawing', 'btn')}</div>` : btn(isWithdrawing ? '正在撤回' : '撤回申请', isWithdrawing ? 'disabled aria-disabled="true"' : `data-action="route" data-route="${route}" data-state="withdraw-confirm"`, 'btn-secondary')}
+          </section>
+          ${!isDraft && !isWithdrawing && !isConfirm ? '<p class="neutral-note">点击撤回后先二次确认；处理中禁用按钮，失败保留审核中状态并允许重试。</p>' : ''}
+        </div>`;
+      }
+
       if (mode === 'detail') {
         return `<div class="pg club-center-page" data-club-center data-mode="detail">
           <p class="prototype-mock-badge">本人 / 已加入俱乐部详情</p>

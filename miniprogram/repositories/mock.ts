@@ -231,6 +231,8 @@ export class MockRepository implements RideRepository {
     { fingerprint: string; result: EditableActivity }
   >();
   private clubApplication: ClubApplication | null = null;
+  private clubSubmitRequestId = '';
+  private clubWithdrawRequestId = '';
   private managedClub: ManagedClubProfile = {
     id: `club_${'0'.repeat(64)}`,
     name: '示例骑行俱乐部',
@@ -509,6 +511,8 @@ export class MockRepository implements RideRepository {
     return this.managedClub;
   }
   async saveClubApplicationDraft(value: ClubApplicationInput) {
+    if (this.clubApplication && !['draft', 'rejected'].includes(this.clubApplication.status))
+      throw Object.assign(new Error('当前申请不可编辑'), { code: 'INVALID_STATE' });
     this.clubApplication = {
       ...value,
       id: 'clubapp-mock',
@@ -525,14 +529,58 @@ export class MockRepository implements RideRepository {
     };
     return this.clubApplication;
   }
-  async submitClubApplication(value: ClubApplicationInput, _requestId: string) {
-    const draft = await this.saveClubApplicationDraft(value);
+  async submitClubApplication(value: ClubApplicationInput, requestId: string) {
+    if (this.clubApplication?.status === 'pending_review' && this.clubSubmitRequestId === requestId)
+      return this.clubApplication;
+    if (this.clubApplication && !['draft', 'rejected'].includes(this.clubApplication.status))
+      throw Object.assign(new Error('申请已提交，请勿重复操作'), { code: 'INVALID_STATE' });
+    const reviewVersion = (this.clubApplication?.reviewVersion || 0) + 1;
+    const createdAt = this.clubApplication?.createdAt || new Date().toISOString();
     this.clubApplication = {
-      ...draft,
+      ...value,
+      id: 'clubapp-mock',
       status: 'pending_review',
-      reviewVersion: draft.reviewVersion + 1,
+      avatarUrl: value.avatarFileId,
+      coverUrl: value.coverFileId,
+      reviewVersion,
+      rejectionReason: '',
+      clubId: '',
+      createdAt,
+      updatedAt: new Date().toISOString(),
       submittedAt: new Date().toISOString(),
+      reviewedAt: '',
     };
+    this.clubSubmitRequestId = requestId;
+    this.clubWithdrawRequestId = '';
+    return this.clubApplication;
+  }
+  async withdrawClubApplication(requestId: string, expectedReviewVersion: number) {
+    if (
+      typeof requestId !== 'string' ||
+      requestId.trim().length < 8 ||
+      requestId.trim().length > 128
+    )
+      throw Object.assign(new Error('撤回请求 ID 需为 8-128 个字符'), {
+        code: 'VALIDATION_FAILED',
+      });
+    if (!Number.isInteger(expectedReviewVersion) || expectedReviewVersion < 1)
+      throw Object.assign(new Error('申请版本已变化，请刷新后重试'), {
+        code: 'VERSION_CONFLICT',
+      });
+    if (this.clubApplication?.status === 'draft' && this.clubWithdrawRequestId === requestId)
+      return this.clubApplication;
+    if (!this.clubApplication || this.clubApplication.status !== 'pending_review')
+      throw Object.assign(new Error('当前申请不可撤回'), { code: 'INVALID_STATE' });
+    if (this.clubApplication.reviewVersion !== expectedReviewVersion)
+      throw Object.assign(new Error('申请版本已变化，请刷新后重试'), {
+        code: 'VERSION_CONFLICT',
+      });
+    this.clubApplication = {
+      ...this.clubApplication,
+      status: 'draft',
+      updatedAt: new Date().toISOString(),
+    };
+    this.clubWithdrawRequestId = requestId;
     return this.clubApplication;
   }
   async listClubApplications(status: ClubApplication['status'] = 'pending_review') {

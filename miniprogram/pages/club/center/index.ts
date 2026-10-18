@@ -260,6 +260,7 @@ async function chooseAndUploadClubMedia(kind: ClubMediaKind, scope: ClubMediaCan
 
 Page({
   submitRequestId: '',
+  withdrawRequestId: '',
   manageRequestId: '',
   joinRequestIds: {} as Record<string, string>,
   loadRevision: 0,
@@ -301,6 +302,7 @@ Page({
     loading: true,
     saving: false,
     submitting: false,
+    withdrawing: false,
     managing: false,
     uploading: false,
     loadError: '',
@@ -317,6 +319,7 @@ Page({
     this.loadRevision += 1;
   },
   async load() {
+    if (this.data.withdrawing) return;
     const revision = ++this.loadRevision;
     this.setData({ loading: true, loadError: '' });
     try {
@@ -662,6 +665,47 @@ Page({
       this.setData({
         managing: false,
         actionError: error instanceof Error ? error.message : '保存失败，请重试',
+      });
+    }
+  },
+  async withdrawApplication() {
+    const application = this.data.application;
+    if (this.data.withdrawing || application?.status !== 'pending_review') return;
+    const confirmed = await new Promise<boolean>((resolve) =>
+      wx.showModal({
+        title: '撤回创建申请',
+        content: '撤回后申请会回到草稿，你可以继续修改并重新提交。',
+        confirmText: '确认撤回',
+        success: (result: { confirm: boolean }) => resolve(result.confirm),
+        fail: () => resolve(false),
+      }),
+    );
+    if (!confirmed || this.data.withdrawing) return;
+    const withdrawRevision = ++this.loadRevision;
+    this.withdrawRequestId ||= requestId('club_withdraw');
+    this.setData({ withdrawing: true, loading: false, actionError: '' });
+    try {
+      const withdrawn = await rideService.withdrawClubApplication(
+        this.withdrawRequestId,
+        application.reviewVersion,
+      );
+      if (!this.isCurrent(withdrawRevision)) return;
+      this.withdrawRequestId = '';
+      this.setData({
+        application: withdrawn,
+        form: toForm(withdrawn),
+        avatarPreviewUrl: withdrawn.avatarUrl || this.data.avatarPreviewUrl,
+        coverPreviewUrl: withdrawn.coverUrl || this.data.coverPreviewUrl,
+        createMode: true,
+        withdrawing: false,
+        actionError: '',
+      });
+      wx.showToast({ title: '已撤回，可继续编辑', icon: 'success' });
+    } catch (error) {
+      if (!this.isCurrent(withdrawRevision)) return;
+      this.setData({
+        withdrawing: false,
+        actionError: error instanceof Error ? error.message : '撤回失败，请重试',
       });
     }
   },
