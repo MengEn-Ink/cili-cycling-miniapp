@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="此里骑行小程序的双速研发流程：日常 PR 按影响面快速验证，每天凌晨零点执行全量审计，并按风险生成修复 PR。"
+    />
+    <title>把测试放到正确的时间窗口｜此里研发流程</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --paper: #f4efe5;
+        --paper-strong: #fffaf0;
+        --ink: #20211f;
+        --muted: #6f706a;
+        --action: #c0321f;
+        --brand: #e5644a;
+        --forest: #264f3b;
+        --line: rgba(32, 33, 31, 0.18);
+        --shadow: 0 18px 48px rgba(38, 31, 24, 0.1);
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        line-height: 1.72;
+      }
+      a { color: inherit; }
+      a:focus-visible { outline: 3px solid var(--action); outline-offset: 4px; }
+      .topbar {
+        position: sticky; top: 0; z-index: 20;
+        display: flex; justify-content: space-between; gap: 20px; align-items: center;
+        padding: 14px clamp(20px, 5vw, 72px);
+        background: rgba(244, 239, 229, 0.94);
+        border-bottom: 1px solid var(--line);
+        backdrop-filter: blur(12px);
+      }
+      .topbar a { text-decoration: none; font-weight: 750; }
+      .topbar span { color: var(--muted); font-size: 14px; }
+      .hero { max-width: 1320px; margin: 0 auto; padding: 80px 32px 40px; }
+      .eyebrow { color: var(--action); font-size: 14px; font-weight: 850; letter-spacing: .16em; }
+      h1 { max-width: 960px; margin: 18px 0 20px; font-size: clamp(44px, 7vw, 94px); line-height: .98; letter-spacing: -.055em; }
+      .lead { max-width: 760px; margin: 0; color: var(--muted); font-size: clamp(18px, 2.2vw, 25px); }
+      .meta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+      .meta span { padding: 8px 13px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper-strong); font-size: 14px; }
+      .hero-figure, .figure { margin: 42px 0 0; }
+      .hero-figure img, .figure img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 26px; box-shadow: var(--shadow); }
+      figcaption { margin-top: 12px; color: var(--muted); font-size: 14px; }
+      .conclusion { max-width: 1260px; margin: 28px auto 72px; padding: 0 32px; }
+      .conclusion-inner { display: grid; grid-template-columns: .7fr 1.3fr; gap: 36px; padding: 34px; border-radius: 28px; background: var(--ink); color: var(--paper-strong); }
+      .conclusion h2 { margin: 0; font-size: 30px; line-height: 1.15; }
+      .conclusion ol { margin: 0; padding-left: 22px; }
+      .layout { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 64px; max-width: 1260px; margin: 0 auto; padding: 0 32px 100px; }
+      main { min-width: 0; }
+      section { scroll-margin-top: 86px; padding: 58px 0; border-top: 1px solid var(--line); }
+      .section-head { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 24px; align-items: start; }
+      .index { color: var(--action); font-size: 18px; font-weight: 900; letter-spacing: .12em; }
+      h2 { margin: 0 0 22px; font-size: clamp(32px, 4.3vw, 54px); line-height: 1.08; letter-spacing: -.035em; }
+      h3 { margin: 34px 0 12px; font-size: 23px; }
+      p { margin: 0 0 20px; }
+      .note { margin: 26px 0; padding: 22px 24px; border-left: 6px solid var(--action); background: var(--paper-strong); }
+      .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin: 28px 0; }
+      .card { padding: 24px; border: 1px solid var(--line); border-radius: 22px; background: var(--paper-strong); }
+      .card strong { display: block; margin-bottom: 8px; font-size: 20px; }
+      .card em { color: var(--action); font-style: normal; font-weight: 850; }
+      .table-wrap { overflow-x: auto; margin: 28px 0; border: 1px solid var(--line); border-radius: 20px; background: var(--paper-strong); }
+      table { width: 100%; min-width: 720px; border-collapse: collapse; }
+      th, td { padding: 17px 18px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+      th { background: var(--ink); color: var(--paper-strong); font-size: 14px; }
+      tr:last-child td { border-bottom: 0; }
+      code { padding: 2px 7px; border-radius: 6px; background: rgba(32, 33, 31, .08); font-size: .92em; }
+      .risk { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 28px 0; }
+      .risk article { padding: 24px; border-radius: 22px; }
+      .risk .l1 { background: #dce6dc; color: var(--forest); }
+      .risk .l2 { background: var(--paper-strong); border: 2px solid var(--action); }
+      .risk .l3 { background: var(--ink); color: var(--paper-strong); }
+      aside { position: sticky; top: 84px; align-self: start; padding-top: 58px; }
+      aside strong { display: block; margin-bottom: 14px; font-size: 14px; letter-spacing: .12em; color: var(--muted); }
+      aside a { display: block; padding: 8px 0; text-decoration: none; border-bottom: 1px solid transparent; }
+      aside a:hover { color: var(--action); border-color: var(--action); }
+      .sources a { display: block; margin: 10px 0; color: var(--forest); font-weight: 700; }
+      footer { padding: 36px 32px 70px; text-align: center; color: var(--muted); border-top: 1px solid var(--line); }
+      @media (max-width: 900px) {
+        .layout { grid-template-columns: 1fr; }
+        aside { display: none; }
+        .grid, .risk { grid-template-columns: 1fr; }
+        .conclusion-inner { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 560px) {
+        .topbar span { display: none; }
+        .hero, .layout, .conclusion { padding-left: 20px; padding-right: 20px; }
+        .hero { padding-top: 54px; }
+        .section-head { grid-template-columns: 1fr; gap: 8px; }
+        h1 { font-size: 48px; }
+        .conclusion-inner { padding: 26px; }
+      }
+      @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    </style>
+  </head>
+  <body>
+    <nav class="topbar" aria-label="文章导航">
+      <a href="../index.html#delivery">← 返回研发交付中心</a>
+      <span>Engineering · 2026-10-19</span>
+    </nav>
+
+    <header class="hero">
+      <div class="eyebrow">CILI ENGINEERING DELIVERY</div>
+      <h1>把测试放到正确的时间窗口</h1>
+      <p class="lead">日常 PR 只验证可证明的影响面；每天凌晨零点用全量测试、覆盖率和安全审计兜底。速度与质量不再互相挤占。</p>
+      <div class="meta"><span>影响面测试</span><span>Fail-safe 全量回退</span><span>00:00 全量审计</span><span>分级自动修复</span></div>
+      <figure class="hero-figure">
+        <img src="../assets/articles/agile-delivery/dual-speed-delivery.webp" width="1600" height="900" alt="白天 PR 快速验证与凌晨全量审计组成双速交付模型" />
+        <figcaption>双速不是两套质量标准：PR 提供快速证据，Nightly 验证全局不变量。</figcaption>
+      </figure>
+    </header>
+
+    <section class="conclusion" aria-labelledby="conclusion-title">
+      <div class="conclusion-inner">
+        <h2 id="conclusion-title">先给结论</h2>
+        <ol>
+          <li>普通 PR 不再重复覆盖率、安全审计和全部云函数安装，只跑静态检查、影响面测试与构建。</li>
+          <li>公共层、依赖、工作流、未知路径或大范围变更自动升级全量，选择器失效时宁可多测。</li>
+          <li>北京时间每天 00:00 从最新 main 执行完整流程，失败后只对确定性格式差异尝试自动修复。</li>
+          <li>自动合并受 allowlist 和分支保护双重限制；业务、权限、数据、安全问题只建 Issue，不自动改逻辑。</li>
+        </ol>
+      </div>
+    </section>
+
+    <div class="layout">
+      <main>
+        <section id="problem">
+          <div class="section-head"><div class="index">01</div><div><h2>慢，不是因为测试多，而是执行时机不对</h2></div></div>
+          <p>旧流程在每个 PR 上顺序安装所有云函数依赖，随后重复执行全量测试、覆盖率和安全审计。它适合发布前总验收，却让文档、小范围页面和单云函数变更也承担同样成本。</p>
+          <div class="grid">
+            <div class="card"><strong>重复计算</strong><span>覆盖率会再次执行 Vitest，和 <code>validate</code> 内测试重叠。</span></div>
+            <div class="card"><strong>串行安装</strong><span>单云函数改动仍安装所有云函数依赖。</span></div>
+            <div class="card"><strong>文档负担</strong><span>微小改动也需要完整验收材料和全项目测试。</span></div>
+          </div>
+          <div class="note"><strong>本方案不降低 main 标准。</strong>PR 负责阻止局部回归，main push 与 Nightly 继续跑全量；高风险 PR 仍会自动升级全量。</div>
+        </section>
+
+        <section id="model">
+          <div class="section-head"><div class="index">02</div><div><h2>影响面快速通道：先算影响，再扩散依赖</h2></div></div>
+          <p>Nx 的 affected 模型会依据基线与当前提交计算受影响项目，再执行这些项目及其依赖任务；Vitest 的 <code>related</code> 命令则从源码静态导入图找到关联测试。[2][3]</p>
+          <p>此里不引入新的大型构建框架，而是在现有目录和测试体系上实现轻量影响图：Pages、设计契约、脚本、云函数和小程序源码分别映射到已有测试命令。</p>
+          <figure class="figure">
+            <img loading="lazy" src="../assets/articles/agile-delivery/impact-graph-and-safety.webp" width="1600" height="900" alt="Git Diff 经过影响图选择局部或全量验证，并按风险决定夜间修复方式" />
+            <figcaption>关键规则只有一条：能证明影响范围才局部验证，未知路径和公共层一律回退全量。</figcaption>
+          </figure>
+        </section>
+
+        <section id="matrix">
+          <div class="section-head"><div class="index">03</div><div><h2>PR 影响面矩阵</h2></div></div>
+          <div class="table-wrap"><table><thead><tr><th>变更范围</th><th>PR 验证</th><th>升级条件</th></tr></thead><tbody>
+            <tr><td>Pages / 文档</td><td>格式、Pages 契约、设计/UI sync、构建</td><td>触及工作流或全局配置</td></tr>
+            <tr><td>小程序页面与组件</td><td>Vitest related、显式测试、发布日志、包体和构建</td><td>公共 Repository、路由、全局主题</td></tr>
+            <tr><td>单云函数</td><td>prepare、对应函数安装与 Node Test、部署包校验</td><td><code>cloudfunctions/shared</code> 或跨函数契约</td></tr>
+            <tr><td>脚本与治理</td><td>同名 Node Test + 对应设计/部署/基础设施门禁</td><td>选择器自身、CI 和部署工作流</td></tr>
+            <tr><td>依赖、锁文件、未知路径</td><td colspan="2">直接全量：validate + coverage + audit</td></tr>
+          </tbody></table></div>
+          <p>GitHub 官方 <code>setup-node</code> 可以按多个 lockfile 建立 npm 下载缓存，因此仍使用确定性的 <code>npm ci</code>，但避免重复下载相同依赖。[4]</p>
+        </section>
+
+        <section id="nightly">
+          <div class="section-head"><div class="index">04</div><div><h2>凌晨全量审计：验证全局不变量</h2></div></div>
+          <p>GitHub 定时工作流按 UTC 运行并使用默认分支最新提交；北京时间 00:00 对应 <code>0 16 * * *</code>，同时保留人工触发入口用于复跑。[1]</p>
+          <div class="grid">
+            <div class="card"><em>01</em><strong>全量校验</strong><span>格式、Lint、类型、全部单测、契约、构建与云函数包。</span></div>
+            <div class="card"><em>02</em><strong>覆盖率</strong><span>重新检查测试覆盖与关键 CloudBase 脚本覆盖门槛。</span></div>
+            <div class="card"><em>03</em><strong>安全审计</strong><span>根项目、上传工具与所有云函数依赖扫描。</span></div>
+          </div>
+          <p>三个阶段独立记录结果，即使前一阶段失败也继续收集后续信号；最终报告作为 Artifact 保存 30 天，方便判断是单点失败还是系统性退化。</p>
+        </section>
+
+        <section id="repair">
+          <div class="section-head"><div class="index">05</div><div><h2>自治修复有边界，不让机器人猜业务</h2></div></div>
+          <div class="risk">
+            <article class="l1"><h3>L1 · 自动合并</h3><p>仅限格式和确定性生成文件；必须全量重跑通过，并受分支保护约束。</p></article>
+            <article class="l2"><h3>L2 · 修复 PR</h3><p>涉及代码但根因明确时创建 PR，保留人工确认，不自动合并。</p></article>
+            <article class="l3"><h3>L3 · 只报告</h3><p>业务逻辑、数据、权限、安全和依赖升级只创建 Issue，不自动改代码。</p></article>
+          </div>
+          <p>当前第一阶段只开放最窄的 L1：运行格式化后若没有差异，则创建去重 Issue；若产生差异，只有 <code>docs/</code> 下的 Markdown、HTML、CSS、JSON，以及根目录 README、CONTRIBUTING、DESIGN 文档才允许申请自动合并。工作流、依赖、业务代码和其他配置即使只是格式变化也必须人工确认。自动合并还要求仓库配置受限的 <code>NIGHTLY_PR_TOKEN</code>，确保机器人 PR 能触发正常 CI；未配置时只创建 PR，不自动合并。GitHub CLI 提供标准 PR 创建能力，机器人权限同时收敛为内容、PR、Issue 和 Actions 读取。[5]</p>
+        </section>
+
+        <section id="acceptance">
+          <div class="section-head"><div class="index">06</div><div><h2>验收不是“跑得快”，而是“快且不会漏”</h2></div></div>
+          <div class="table-wrap"><table><thead><tr><th>验收维度</th><th>通过信号</th></tr></thead><tbody>
+            <tr><td>选择正确</td><td>纯文档、页面、单云函数、脚本、高风险和未知路径都有自动测试锁定。</td></tr>
+            <tr><td>Fail-safe</td><td>选择器自身、工作流、共享层、依赖和 30 个以上文件变更自动全量。</td></tr>
+            <tr><td>主分支安全</td><td>main push 仍执行完整 validate、coverage 与 audit。</td></tr>
+            <tr><td>夜间可追溯</td><td>报告包含提交、运行链接和三个阶段结果，失败任务最终保持红色。</td></tr>
+            <tr><td>不会自旋</td><td>固定 concurrency、唯一夜间分支、同标题 Issue 去重、Bot 分支识别。</td></tr>
+            <tr><td>发布正确</td><td>Pages 正式 URL 可访问；CI、CodeQL 与范围化部署工作流成功。</td></tr>
+          </tbody></table></div>
+        </section>
+
+        <section id="sources" class="sources">
+          <div class="section-head"><div class="index">07</div><div><h2>落地依据</h2></div></div>
+          <a href="https://docs.github.com/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule">[1] GitHub Actions：Schedule 触发规则</a>
+          <a href="https://vitest.dev/guide/cli#vitest-related">[2] Vitest CLI：related tests</a>
+          <a href="https://nx.dev/docs/features/ci-features/affected">[3] Nx：Run Only Tasks Affected by a PR</a>
+          <a href="https://github.com/actions/setup-node">[4] actions/setup-node：npm dependency caching</a>
+          <a href="https://cli.github.com/manual/gh_pr_create">[5] GitHub CLI：gh pr create</a>
+        </section>
+      </main>
+
+      <aside aria-label="文章目录"><strong>CONTENTS</strong><a href="#problem">01 问题</a><a href="#model">02 成熟模型</a><a href="#matrix">03 影响面矩阵</a><a href="#nightly">04 夜间全量</a><a href="#repair">05 自治边界</a><a href="#acceptance">06 验收标准</a><a href="#sources">07 落地依据</a></aside>
+    </div>
+
+    <footer>此里 CILI · 研发流程与工程质量 · 2026-10-19</footer>
+  </body>
+</html>

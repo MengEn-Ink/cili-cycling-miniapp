@@ -1,0 +1,169 @@
+name: 每日全量审计
+
+on:
+  schedule:
+    # GitHub Actions 使用 UTC；16:00 UTC 对应北京时间次日 00:00。
+    - cron: '0 16 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: read
+
+concurrency:
+  group: daily-full-audit
+  cancel-in-progress: false
+
+env:
+  NIGHTLY_BRANCH: fix/nightly-${{ github.run_id }}
+
+jobs:
+  full-audit:
+    if: github.actor != 'github-actions[bot]' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            tools/miniprogram-ci/package-lock.json
+            cloudfunctions/*/package-lock.json
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm run cloud:install
+      - name: Validate all code and contracts
+        id: validate
+        continue-on-error: true
+        run: npm run validate
+      - name: Run full coverage
+        id: coverage
+        continue-on-error: true
+        run: npm run coverage
+      - name: Audit dependencies
+        id: audit
+        continue-on-error: true
+        run: npm run audit:all
+      - name: Write nightly report
+        if: always()
+        env:
+          VALIDATE_OUTCOME: ${{ steps.validate.outcome }}
+          COVERAGE_OUTCOME: ${{ steps.coverage.outcome }}
+          AUDIT_OUTCOME: ${{ steps.audit.outcome }}
+        run: |
+          report="${RUNNER_TEMP}/daily-full-audit.md"
+          {
+            echo "# 每日全量审计"
+            echo
+            echo "- 提交：${GITHUB_SHA}"
+            echo "- 运行：${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo "- validate：${VALIDATE_OUTCOME}"
+            echo "- coverage：${COVERAGE_OUTCOME}"
+            echo "- audit：${AUDIT_OUTCOME}"
+          } > "${report}"
+      - name: Upload nightly report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: daily-full-audit-${{ github.run_id }}
+          path: ${{ runner.temp }}/daily-full-audit.md
+          retention-days: 30
+      - name: Attempt deterministic repair
+        id: repair
+        continue-on-error: true
+        if: always() && (steps.validate.outcome == 'failure' || steps.coverage.outcome == 'failure' || steps.audit.outcome == 'failure')
+        env:
+          GH_TOKEN: ${{ secrets.NIGHTLY_PR_TOKEN || github.token }}
+          CAN_TRIGGER_PR_CI: ${{ secrets.NIGHTLY_PR_TOKEN != '' }}
+        run: |
+          npm run format
+          if git diff --quiet; then
+            title="夜间全量审计失败：${GITHUB_SHA::7}"
+            body="自动格式化未产生可修复差异。请查看运行日志：${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            existing="$(gh issue list --state open --search "${title} in:title" --json number --jq '.[0].number // empty')"
+            if [ -z "${existing}" ]; then gh issue create --title "${title}" --body "${body}" --label nightly-audit || gh issue create --title "${title}" --body "${body}"; fi
+            echo "repair_created=false" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          changed="$(git diff --name-only)"
+          printf '%s\n' "${changed}"
+          if printf '%s\n' "${changed}" | grep -Ev '^(docs/.*\.(md|html|css|json)|README\.md|CONTRIBUTING\.md|DESIGN\.md)$' >/dev/null; then
+            auto_merge=false
+          else
+            auto_merge=true
+          fi
+
+          npm run validate
+          npm run coverage
+          npm run audit:all
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "${NIGHTLY_BRANCH}"
+          git add -u
+          git commit -m "fix(nightly): 修复每日全量审计发现的确定性格式问题"
+          git push origin "${NIGHTLY_BRANCH}"
+          pr_body="${RUNNER_TEMP}/nightly-repair-pr.md"
+          printf '%s\n' \
+            '## 需求上下文' \
+            '' \
+            '**一句话概要**：每日全量审计发现确定性格式差异，自动生成最小修复并重新完成全量验证。' \
+            '' \
+            '## 背景' \
+            '' \
+            "夜间任务在提交 ${GITHUB_SHA} 上失败，运行记录：${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            '' \
+            '## 修改方案' \
+            '' \
+            '仅提交 npm run format 产生的确定性差异，不修改测试断言或业务语义。' \
+            '' \
+            '## 复现或验证路径' \
+            '' \
+            '重新运行每日全量审计中的 validate、coverage 与 audit。' \
+            '' \
+            '## 改动' \
+            '' \
+            '自动格式化夜间审计发现的差异。' \
+            '' \
+            '## 影响面' \
+            '' \
+            '未引入依赖、配置或数据契约变化；非文档与配置文件不会自动合并。' \
+            '' \
+            '## 测试与端到端验收' \
+            '' \
+            '- npm run validate：通过' \
+            '- npm run coverage：通过' \
+            '- npm run audit:all：通过' \
+            '' \
+            '## 改动文件' \
+            '' \
+            '以本 PR 的最终 Diff 为准。' > "${pr_body}"
+          pr_url="$(gh pr create --base main --head "${NIGHTLY_BRANCH}" --title "fix(nightly): 修复每日全量审计问题" --body-file "${pr_body}")"
+          echo "repair_created=true" >> "${GITHUB_OUTPUT}"
+          echo "pr_url=${pr_url}" >> "${GITHUB_OUTPUT}"
+          if [ "${auto_merge}" = true ] && [ "${CAN_TRIGGER_PR_CI}" = true ]; then
+            gh pr merge --auto --squash "${pr_url}"
+          fi
+      - name: Report repair failure
+        if: always() && steps.repair.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="夜间自动修复失败：${GITHUB_SHA::7}"
+          body="全量审计失败且确定性修复未能通过复验。请查看：${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          existing="$(gh issue list --state open --search "${title} in:title" --json number --jq '.[0].number // empty')"
+          if [ -z "${existing}" ]; then gh issue create --title "${title}" --body "${body}" --label nightly-audit || gh issue create --title "${title}" --body "${body}"; fi
+      - name: Fail original audit when repair is required
+        if: always() && (steps.validate.outcome == 'failure' || steps.coverage.outcome == 'failure' || steps.audit.outcome == 'failure')
+        run: |
+          echo "夜间全量审计存在失败；自动修复或人工跟进信息已创建。"
+          exit 1

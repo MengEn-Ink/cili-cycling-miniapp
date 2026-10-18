@@ -15,6 +15,7 @@ const routeAnalysisDataPlatformPlan = read('docs/route-analysis-data-platform-pl
 const routeAnalysisDataFoundationArticle = read(
   'docs/articles/route-analysis-data-foundation.html',
 );
+const agileDeliveryArticle = read('docs/articles/agile-delivery.html');
 const uiDesignSystem = read('docs/ui-design-system.html');
 const designSystemIndex = read('docs/design-system.md');
 const designChecklist = read('docs/ui-design-checklist.md');
@@ -522,6 +523,45 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain('document.getElementById(targetSection)?.scrollIntoView');
     expect(css).toContain('@media (max-width: 560px)');
     expect(css).toMatch(/\.product-card-grid,[^}]*grid-template-columns:\s*1fr/s);
+  });
+
+  it('敏捷研发流程文章接入交付中心并说明影响面、夜间全量与自治边界', () => {
+    const deliveryRuntime: {
+      deliveryCenter?: { render: () => string };
+    } = {};
+    new Function('window', deliveryCenter)(deliveryRuntime);
+    const renderedDeliveryCenter = deliveryRuntime.deliveryCenter?.render() ?? '';
+
+    expect(deliveryCenter).toContain("id: 'agile-delivery-article'");
+    expect(deliveryCenter).toContain("href: 'articles/agile-delivery.html'");
+    expect(renderedDeliveryCenter).toContain('href="articles/agile-delivery.html"');
+    for (const content of [
+      '把测试放到正确的时间窗口',
+      '影响面快速通道',
+      '凌晨全量审计',
+      'PR 影响面矩阵',
+      '自治修复有边界',
+      '验收不是“跑得快”',
+      'prefers-reduced-motion',
+      '[1] GitHub Actions',
+      '[2] Vitest CLI',
+      '[3] Nx',
+    ]) {
+      expect(agileDeliveryArticle).toContain(content);
+    }
+    for (const asset of [
+      {
+        href: '../assets/articles/agile-delivery/dual-speed-delivery.webp',
+        file: 'docs/assets/articles/agile-delivery/dual-speed-delivery.webp',
+      },
+      {
+        href: '../assets/articles/agile-delivery/impact-graph-and-safety.webp',
+        file: 'docs/assets/articles/agile-delivery/impact-graph-and-safety.webp',
+      },
+    ]) {
+      expect(agileDeliveryArticle).toContain(asset.href);
+      expect(read(asset.file).length).toBeGreaterThan(0);
+    }
   });
 
   it('完整 UI 规范接入交付中心，并同时约束主系统、页面差异和反模式', () => {

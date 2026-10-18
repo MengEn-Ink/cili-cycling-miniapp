@@ -299,6 +299,19 @@
           ],
         },
         {
+          id: 'agile-delivery-article',
+          title: '把测试放到正确的时间窗口',
+          summary:
+            '用影响面测试缩短日常 PR 反馈，以北京时间凌晨零点全量审计兜底，并通过分级自治边界安全生成修复 PR。',
+          maturity: 'baseline',
+          sources: [
+            {
+              label: '阅读研发流程图文方案',
+              href: 'articles/agile-delivery.html',
+            },
+          ],
+        },
+        {
           id: 'external-apis',
           title: '外部接口（第三方集成）',
           summary:
