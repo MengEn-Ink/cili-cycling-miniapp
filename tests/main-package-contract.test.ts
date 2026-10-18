@@ -18,6 +18,7 @@ const expectedPackages = [
   { root: 'pages/activity-detail', pages: ['index'] },
   { root: 'pages/route-analysis', pages: ['index'] },
   { root: 'pages/profile-edit', pages: ['index'] },
+  { root: 'pages/club', pages: ['center/index'] },
   {
     root: 'pages/admin',
     pages: [
@@ -32,7 +33,7 @@ const expectedPackages = [
 ];
 
 describe('按需分包与主包字节契约', () => {
-  it('四个低频功能均按需加载且完整路由仍为 17 个', () => {
+  it('五个低频功能均按需加载且完整路由仍为 17 个', () => {
     expect(appConfig.subpackages).toEqual(expectedPackages);
     const routes = expandAppRoutes(appConfig);
     expect(routes).toHaveLength(17);
@@ -40,6 +41,7 @@ describe('按需分包与主包字节契约', () => {
       expect.arrayContaining([
         'pages/route-analysis/index',
         'pages/profile-edit/index',
+        'pages/club/center/index',
         'pages/admin/activity-list/index',
       ]),
     );
@@ -57,6 +59,9 @@ describe('按需分包与主包字节契约', () => {
     expect(
       mainFiles.some((file: string) => file.startsWith('miniprogram/pages/profile-edit/')),
     ).toBe(false);
+    expect(mainFiles.some((file: string) => file.startsWith('miniprogram/pages/club/'))).toBe(
+      false,
+    );
   });
 
   it('以微信实际上传文件集合锁定主包至少减少 80 KiB', () => {

@@ -300,6 +300,16 @@ export function createCliStore({ envId, cwd = process.cwd(), execute = execFileS
         getApplication: (id) => txGet('club_applications', id),
         getClub: (id) => txGet('clubs', id),
         getMembership: (id) => txGet('club_memberships', id),
+        countActiveMemberships: async (clubId) => {
+          const output = invoke([
+            command('club_memberships', 'QUERY', {
+              find: 'club_memberships',
+              filter: { club_id: clubId, status: 'active' },
+              limit: 10000,
+            }),
+          ]);
+          return parseNosqlDocuments(output).length;
+        },
         getAudit: (id) =>
           knownAudits.has(id) ? structuredClone(knownAudits.get(id)) : txGet('audit_logs', id),
         putApplication: (id, value) => txPut('club_applications', id, value),
@@ -574,6 +584,10 @@ export async function runClubApplicationSmoke({ store, runId, now = () => new Da
     );
     assert(persistedClub?.avatar_url === input.cover_file_id, 'clubs 头像传播');
     assert(
+      persistedClub?.member_count === 1 && persistedClub?.max_members === input.expected_size,
+      'clubs 容量初始化',
+    );
+    assert(
       persistedMembership?.club_id === clubId &&
         persistedMembership?.openid === applicantOpenid &&
         persistedMembership?.role === 'OWNER' &&
@@ -608,6 +622,7 @@ export async function runClubApplicationSmoke({ store, runId, now = () => new Da
           introduction: `${revisedInput.introduction} 资料管理已验证。`,
           join_mode: 'public_apply',
           avatar_file_id: input.cover_file_id,
+          max_members: input.expected_size,
         },
       },
       now(),
@@ -625,6 +640,7 @@ export async function runClubApplicationSmoke({ store, runId, now = () => new Da
           introduction: `${revisedInput.introduction} 资料管理已验证。`,
           join_mode: 'public_apply',
           avatar_file_id: input.cover_file_id,
+          max_members: input.expected_size,
         },
       },
       now(),
@@ -646,8 +662,9 @@ export async function runClubApplicationSmoke({ store, runId, now = () => new Da
       { openid: joinerOpenid, clubId, requestId: joinRequestId },
       now(),
     );
-    const [persistedJoinerMembership, joinAudits] = await Promise.all([
+    const [persistedJoinerMembership, persistedJoinedClub, joinAudits] = await Promise.all([
       store.get('club_memberships', joinerMembershipId),
+      store.get('clubs', clubId),
       store.query('audit_logs', { target_id: clubId }),
     ]);
     assert(
@@ -664,6 +681,7 @@ export async function runClubApplicationSmoke({ store, runId, now = () => new Da
         persistedJoinerMembership?.status === 'active',
       '第二用户 MEMBER membership 持久化',
     );
+    assert(persistedJoinedClub?.member_count === 2, '公开加入只增加一次容量计数');
     assert(
       joinAudits.length === 2 &&
         joinAudits.some((item) => item.action === 'club_profile_updated') &&

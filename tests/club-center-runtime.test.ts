@@ -5,6 +5,7 @@ const rideService = vi.hoisted(() => ({
   getMyClubApplication: vi.fn(),
   listJoinableClubs: vi.fn(),
   joinPublicClub: vi.fn(),
+  getClubDetail: vi.fn(),
   getManagedClub: vi.fn(),
   updateManagedClub: vi.fn(),
   saveClubApplicationDraft: vi.fn(),
@@ -66,7 +67,7 @@ describe('俱乐部申请页运行时错误恢复', () => {
       };
       page.setData = vi.fn((patch: Record<string, unknown>) => applyPatch(page.data, patch));
     });
-    await import('../miniprogram/pages/club-center/index');
+    await import('../miniprogram/pages/club/center/index');
   });
 
   afterEach(() => vi.unstubAllGlobals());
@@ -303,6 +304,8 @@ describe('俱乐部申请页运行时错误恢复', () => {
       joinMode: 'public_apply',
       avatarFileId: 'cloud://env/club-applications/test-openid/cover.jpg',
       avatarUrl: 'https://temporary.example/cover.jpg',
+      memberCount: 12,
+      maxMembers: 50,
       updatedAt: '2026-10-18T00:00:00.000Z',
     };
     const secondClub = { ...managedClub, id: `club_${'c'.repeat(64)}`, name: '城市骑行会' };
@@ -344,6 +347,64 @@ describe('俱乐部申请页运行时错误恢复', () => {
     expect(page.data.manageLoadError).toContain('暂时无法读取');
   });
 
+  it('已加入俱乐部整卡进入详情并可返回，管理员扩容不得低于当前人数', async () => {
+    const clubId = `club_${'9'.repeat(64)}`;
+    rideService.getProfile.mockResolvedValue({
+      clubs: [
+        {
+          clubId,
+          name: '山海骑行会',
+          avatarUrl: '',
+          role: 'OWNER',
+          roleLabel: '负责人',
+        },
+      ],
+    });
+    const detail = {
+      id: clubId,
+      name: '山海骑行会',
+      city: '深圳',
+      introduction: '我们每周组织安全、友好的公路骑行训练活动。',
+      avatarUrl: '',
+      avatarInitial: '山',
+      memberCount: 12,
+      maxMembers: 50,
+      joinMode: 'public_apply',
+      role: 'OWNER',
+      roleLabel: '负责人',
+      canManage: true,
+    };
+    const managed = {
+      ...detail,
+      avatarFileId: 'cloud://env/club-applications/test-openid/cover.jpg',
+      updatedAt: '2026-10-18T00:00:00.000Z',
+    };
+    rideService.getClubDetail.mockResolvedValue(detail);
+    rideService.getManagedClub.mockResolvedValue(managed);
+    await page.load();
+
+    await page.openClubDetail({ currentTarget: { dataset: { id: clubId } } });
+    expect(rideService.getClubDetail).toHaveBeenCalledWith(clubId);
+    expect(page.data.detailMode).toBe(true);
+    expect(page.data.selectedClub).toEqual(detail);
+    page.closeClubDetail();
+    expect(page.data.detailMode).toBe(false);
+
+    page.showManageForm();
+    page.managedInput({
+      currentTarget: { dataset: { field: 'maxMembers' } },
+      detail: { value: '11' },
+    });
+    expect(page.ensureManagedValid()).toBe(false);
+    expect(page.data.fieldError).toContain('不能低于当前 12 名成员');
+    page.managedInput({
+      currentTarget: { dataset: { field: 'maxMembers' } },
+      detail: { value: '50' },
+    });
+    page.expandCapacity({ currentTarget: { dataset: { value: 100 } } });
+    expect(page.data.managedForm.maxMembers).toBe(150);
+  });
+
   it('普通成员不请求管理接口，管理员确认后保存并退出编辑态', async () => {
     const clubId = `club_${'b'.repeat(64)}`;
     rideService.getProfile.mockResolvedValue({
@@ -361,6 +422,8 @@ describe('俱乐部申请页运行时错误恢复', () => {
       joinMode: 'public_apply',
       avatarFileId: 'cloud://env/club-applications/test-openid/cover.jpg',
       avatarUrl: 'https://temporary.example/cover.jpg',
+      memberCount: 12,
+      maxMembers: 50,
       updatedAt: '2026-10-18T00:00:00.000Z',
     };
     rideService.getProfile.mockResolvedValue({

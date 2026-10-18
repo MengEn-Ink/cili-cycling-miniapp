@@ -65,7 +65,7 @@ describe('2026-10-17 UX 复查：按钮居中、profile 大图、设置简化、
     expect(SETTINGS_WXML).not.toContain('最近五次');
   });
 
-  it('设置页 TS 保留一条 RELEASE_NOTES 供发布门禁，面向用户文案不含技术词', () => {
+  it('设置页 TS 保留 RELEASE_NOTES 历史且仅当前版本为 latest，面向用户文案不含技术词', () => {
     expect(SETTINGS_TS).toMatch(/latest:\s*true/);
     const latestMatches = SETTINGS_TS.match(/latest:\s*true/g) || [];
     expect(latestMatches).toHaveLength(1);

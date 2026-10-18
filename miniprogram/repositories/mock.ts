@@ -235,6 +235,8 @@ export class MockRepository implements RideRepository {
     joinMode: 'public_apply',
     avatarFileId: 'cloud://mock/club-applications/mock-user/cover.jpg',
     avatarUrl: '',
+    memberCount: 12,
+    maxMembers: 50,
     updatedAt: new Date().toISOString(),
   };
   read(): S {
@@ -453,9 +455,30 @@ export class MockRepository implements RideRepository {
         introduction: '面向骑友开放加入的示例俱乐部',
         avatarUrl: '',
         avatarInitial: '示',
+        capacityInitialized: true,
+        memberCount: 13,
+        maxMembers: 50,
       },
       role: 'MEMBER',
       status: 'active' as const,
+    };
+  }
+  async getClubDetail(clubId: string) {
+    const club = await this.getManagedClub(clubId);
+    return {
+      id: club.id,
+      name: club.name,
+      city: club.city,
+      introduction: club.introduction,
+      avatarUrl: club.avatarUrl,
+      avatarInitial: Array.from(club.name)[0] || '俱',
+      capacityInitialized: true,
+      memberCount: club.memberCount,
+      maxMembers: club.maxMembers,
+      joinMode: club.joinMode,
+      role: 'OWNER',
+      roleLabel: '负责人',
+      canManage: true,
     };
   }
   async getManagedClub(clubId: string) {

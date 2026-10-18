@@ -7,6 +7,7 @@ const {
   project,
   listJoinableClubs,
   joinPublicClub,
+  getClubDetail,
   getManagedClub,
   updateManagedClub,
   saveDraft,
@@ -53,6 +54,13 @@ function transactionStore() {
           getApplication: (id) => maybeGet(transaction.collection('club_applications'), id),
           getClub: (id) => maybeGet(transaction.collection('clubs'), id),
           getMembership: (id) => maybeGet(transaction.collection('club_memberships'), id),
+          countActiveMemberships: async (clubId) =>
+            (
+              await transaction
+                .collection('club_memberships')
+                .where({ club_id: clubId, status: 'active' })
+                .count()
+            ).total,
           getAudit: (id) => maybeGet(transaction.collection('audit_logs'), id),
           putApplication: async (id, value) => {
             const { _id, ...data } = value;
@@ -106,6 +114,14 @@ exports.main = async (event = {}) => {
       );
       const [club] = await resolveJoinableClubAvatars(cloud, [joined.club]);
       return ok({ ...joined, club });
+    }
+    if (event.action === 'getClubDetail') {
+      const value = await getClubDetail(transactionStore(), {
+        openid,
+        clubId: event.clubId,
+      });
+      const [resolved] = await resolveJoinableClubAvatars(cloud, [value]);
+      return ok(resolved);
     }
     if (event.action === 'getManagedClub') {
       const value = await getManagedClub(transactionStore(), {

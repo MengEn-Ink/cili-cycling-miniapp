@@ -71,7 +71,7 @@
     },
     {
       "id": "club-center",
-      "pagePath": "pages/club-center/index"
+      "pagePath": "pages/club/center/index"
     },
     {
       "id": "admin-club-applications",

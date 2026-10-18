@@ -205,7 +205,7 @@ window.prototypeData = {
       navTitle: '设置',
       group: '个人资料',
       role: '骑友',
-      state: 'V2026.10.18.3',
+      state: 'V2026.10.18.4',
       copy: '查看当前版本信息与本次 App 更新内容，不再堆砌历史时间线。',
       states: [['default', '默认']],
       problems: ['旧版设置页会展示最近五次历史升级，信息密度过高（P1）'],
@@ -377,7 +377,7 @@ window.prototypeData = {
     },
     {
       id: 'club-center',
-      path: 'pages/club-center/index',
+      path: 'pages/club/center/index',
       title: '俱乐部中心',
       navTitle: '俱乐部中心',
       group: '真实运行页 · 俱乐部申请',
@@ -764,6 +764,7 @@ window.prototypeData = {
   driver: { name: '王师傅', phone: '139 0000 1234', car: '京A·S1234 白色金杯' },
   attendees: ['风向骑手', '小北', '麦子', '路飞', '阿洛'],
   releaseNotes: [
+    ['2026.10.18.4', '俱乐部首页与人数上限', '俱乐部首页现在统一展示已加入和推荐俱乐部，并支持管理员设置人数上限。'],
     ['2026.10.18.3', '俱乐部资料保存稳定性修复', '俱乐部负责人和管理员保存资料时，现在能更稳定地识别最新版本。'],
   ],
   clubIdentity: {

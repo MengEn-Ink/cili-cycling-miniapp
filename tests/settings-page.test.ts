@@ -22,15 +22,20 @@ describe('设置页', () => {
   });
 
   it('只展示当前版本的 App 更新卡片，不展示历史日志', () => {
-    // RELEASE_NOTES 仍保留最新一条，供 scripts/check-release-notes.mjs 发布门禁识别。
-    expect(page.data.releaseNotes).toHaveLength(1);
+    // RELEASE_NOTES 顶部为当前版本并保留历史版本，设置页仍只渲染 RELEASE_NOTES[0]。
+    expect(page.data.releaseNotes).toHaveLength(2);
     expect(page.data.releaseNotes[0]).toMatchObject({
       version: CLIENT_RELEASE_VERSION,
       date: '2026-10-18',
       latest: true,
-      title: '俱乐部资料保存稳定性修复',
+      title: '俱乐部首页与人数上限',
     });
     expect(page.data.currentRelease).toBe(page.data.releaseNotes[0]);
+    expect(page.data.releaseNotes[1]).toMatchObject({
+      version: '2026.10.18.3',
+      latest: false,
+      title: '俱乐部资料保存稳定性修复',
+    });
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(
       1,
     );
@@ -40,9 +45,9 @@ describe('设置页', () => {
     expect(readiness).not.toHaveBeenCalled();
   });
 
-  it('版本号与日期对齐 2026.10.18.3', () => {
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.18.3');
-    expect(page.data.currentRelease.version).toBe('2026.10.18.3');
+  it('版本号与日期对齐 2026.10.18.4', () => {
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.18.4');
+    expect(page.data.currentRelease.version).toBe('2026.10.18.4');
     expect(page.data.currentRelease.date).toBe('2026-10-18');
   });
 

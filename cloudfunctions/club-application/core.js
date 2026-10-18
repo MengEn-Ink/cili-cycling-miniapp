@@ -141,14 +141,45 @@ async function submitApplication(store, { openid, input, requestId }, now) {
   });
 }
 
+function capacityValue(value, code = 'INVALID_MAX_MEMBERS') {
+  const normalized = Number(value);
+  if (!Number.isInteger(normalized) || normalized < 2 || normalized > 10000)
+    fail(code, '人数上限需为 2-10000 人');
+  return normalized;
+}
+
+async function ensureClubCapacity(tx, clubId, club) {
+  if (Number.isInteger(club.member_count) && Number.isInteger(club.max_members)) return club;
+  // 存量俱乐部没有容量字段；必须在同一事务按 active 关系实数回填，避免迁移窗口内超卖。
+  const actualCount = await tx.countActiveMemberships(clubId);
+  const next = {
+    ...club,
+    member_count: actualCount,
+    max_members: Number.isInteger(club.max_members)
+      ? Math.max(club.max_members, actualCount, 2)
+      : Math.max(50, actualCount),
+  };
+  await tx.putClub(clubId, next);
+  return next;
+}
+
 function projectJoinableClub(club) {
   const avatar = Object.hasOwn(club || {}, 'avatar_url') ? club?.avatar_url : club?.cover_file_id;
+  const capacityInitialized =
+    Number.isInteger(club?.member_count) && Number.isInteger(club?.max_members);
+  const memberCount = Number.isInteger(club?.member_count) ? club.member_count : 0;
+  const maxMembers = Number.isInteger(club?.max_members)
+    ? Math.max(club.max_members, memberCount)
+    : Math.max(50, memberCount);
   return {
     id: typeof club?._id === 'string' ? club._id : '',
     name: typeof club?.name === 'string' ? club.name : '',
     city: typeof club?.city === 'string' ? club.city : '',
     introduction: typeof club?.introduction === 'string' ? club.introduction : '',
     avatar_url: typeof avatar === 'string' ? avatar : '',
+    capacity_initialized: capacityInitialized,
+    member_count: memberCount,
+    max_members: maxMembers,
   };
 }
 
@@ -180,9 +211,16 @@ async function joinPublicClub(store, { openid, clubId: requestedClubId, requestI
 
     const id = membershipId(safeClubId, openid);
     const existing = await tx.getMembership(id);
+    const capacityClub = await ensureClubCapacity(tx, safeClubId, club);
     if (existing?.status === 'active') {
-      return { club: projectJoinableClub(club), role: existing.role, status: existing.status };
+      return {
+        club: projectJoinableClub(capacityClub),
+        role: existing.role,
+        status: existing.status,
+      };
     }
+    if (capacityClub.member_count >= capacityClub.max_members)
+      fail('CLUB_FULL', '该俱乐部人数已满');
     // 非 active 关系只代表历史记录；管理角色恢复必须走授权流程，公开重加入一律降为 MEMBER。
     const role = 'MEMBER';
     const membership = {
@@ -196,6 +234,13 @@ async function joinPublicClub(store, { openid, clubId: requestedClubId, requestI
       updated_at: now.toISOString(),
       last_join_request_id: safeRequestId,
     };
+    // clubs 文档与 membership 在同一事务写入；并发加入都会竞争同一 club 版本，CloudBase 会重试或冲突而不会超卖。
+    const updatedClub = {
+      ...capacityClub,
+      member_count: capacityClub.member_count + 1,
+      updated_at: now.toISOString(),
+    };
+    await tx.putClub(safeClubId, updatedClub);
     await tx.putMembership(id, membership);
     await tx.addAudit({
       actor_openid: openid,
@@ -207,7 +252,7 @@ async function joinPublicClub(store, { openid, clubId: requestedClubId, requestI
       request_id: safeRequestId,
       created_at: now.toISOString(),
     });
-    return { club: projectJoinableClub(club), role, status: 'active' };
+    return { club: projectJoinableClub(updatedClub), role, status: 'active' };
   });
 }
 
@@ -238,6 +283,10 @@ function projectManagedClub(club) {
       ? club.join_mode
       : 'public_apply',
     avatar_file_id: typeof avatar === 'string' ? avatar : '',
+    member_count: Number.isInteger(club.member_count) ? club.member_count : 0,
+    max_members: Number.isInteger(club.max_members)
+      ? Math.max(club.max_members, Number.isInteger(club.member_count) ? club.member_count : 0)
+      : Math.max(50, Number.isInteger(club.member_count) ? club.member_count : 0),
     updated_at: managedUpdatedAt(club.updated_at),
   };
 }
@@ -250,7 +299,14 @@ function managedAvatarOwner(fileId) {
 function normalizeManagedClubInput(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw))
     fail('VALIDATION_FAILED', '俱乐部资料格式错误');
-  const allowed = new Set(['name', 'city', 'introduction', 'join_mode', 'avatar_file_id']);
+  const allowed = new Set([
+    'name',
+    'city',
+    'introduction',
+    'join_mode',
+    'avatar_file_id',
+    'max_members',
+  ]);
   for (const key of Object.keys(raw))
     if (!allowed.has(key)) fail('FORBIDDEN_FIELD', '客户端不得修改受保护字段');
   if (!['public_apply', 'invite_code', 'admin_invite'].includes(raw.join_mode))
@@ -264,6 +320,7 @@ function normalizeManagedClubInput(raw) {
     introduction: text(raw.introduction, '俱乐部简介', 20, 500),
     join_mode: raw.join_mode,
     avatar_url: avatarFileId,
+    max_members: capacityValue(raw.max_members),
   };
 }
 
@@ -278,6 +335,29 @@ async function requireClubManager(tx, clubId, openid) {
   return membership;
 }
 
+async function getClubDetail(store, { openid, clubId: requestedClubId }) {
+  const safeClubId = text(requestedClubId, '俱乐部 ID', 1, 128);
+  if (!/^club_[a-f0-9]{64}$/.test(safeClubId)) fail('VALIDATION_FAILED', '俱乐部 ID 无效');
+  return store.transaction(async (tx) => {
+    const membership = await tx.getMembership(membershipId(safeClubId, openid));
+    if (!membership || membership.status !== 'active')
+      fail('CLUB_MEMBER_REQUIRED', '仅俱乐部成员可查看详情');
+    const club = await tx.getClub(safeClubId);
+    if (!club || club.approval_status !== 'approved' || club.status !== 'active')
+      fail('CLUB_UNAVAILABLE', '俱乐部暂不可查看');
+    const normalized = await ensureClubCapacity(tx, safeClubId, club);
+    const role = String(membership.role || 'MEMBER').toUpperCase();
+    return {
+      ...projectJoinableClub(normalized),
+      join_mode: normalized.join_mode || 'public_apply',
+      role,
+      role_label:
+        { OWNER: '负责人', ADMIN: '管理员', ORGANIZER: '组织者', MEMBER: '成员' }[role] || '成员',
+      can_manage: ['OWNER', 'ADMIN'].includes(role),
+    };
+  });
+}
+
 async function getManagedClub(store, { openid, clubId: requestedClubId }) {
   const safeClubId = text(requestedClubId, '俱乐部 ID', 1, 128);
   if (!/^club_[a-f0-9]{64}$/.test(safeClubId)) fail('VALIDATION_FAILED', '俱乐部 ID 无效');
@@ -286,7 +366,7 @@ async function getManagedClub(store, { openid, clubId: requestedClubId }) {
     const club = await tx.getClub(safeClubId);
     if (!club || club.approval_status !== 'approved' || club.status !== 'active')
       fail('CLUB_UNAVAILABLE', '俱乐部暂不可管理');
-    return projectManagedClub(club);
+    return projectManagedClub(await ensureClubCapacity(tx, safeClubId, club));
   });
 }
 
@@ -315,14 +395,17 @@ async function updateManagedClub(
       previousOperation?.result
     )
       return previousOperation.result;
-    if (projectManagedClub(club).updated_at !== expectedUpdatedAt)
+    const capacityClub = await ensureClubCapacity(tx, safeClubId, club);
+    if (value.max_members < capacityClub.member_count)
+      fail('MAX_MEMBERS_BELOW_CURRENT', '人数上限不能低于当前成员数');
+    if (projectManagedClub(capacityClub).updated_at !== expectedUpdatedAt)
       fail('CLUB_PROFILE_CONFLICT', '俱乐部资料已被其他管理员更新，请重新加载后再修改');
-    const currentAvatar = projectManagedClub(club).avatar_file_id;
+    const currentAvatar = projectManagedClub(capacityClub).avatar_file_id;
     // 管理员可以保留负责人此前上传的头像；替换头像时只能使用本人目录，避免引用他人私有文件。
     if (value.avatar_url !== currentAvatar && managedAvatarOwner(value.avatar_url) !== openid)
       fail('VALIDATION_FAILED', '请重新上传俱乐部头像');
     const next = {
-      ...club,
+      ...capacityClub,
       ...value,
       updated_at: now.toISOString(),
     };
@@ -381,6 +464,8 @@ async function reviewApplication(
         cover_file_id: application.cover_file_id,
         avatar_url: application.cover_file_id,
         join_mode: application.join_mode,
+        max_members: capacityValue(application.expected_size),
+        member_count: 1,
         owner_openid: application.applicant_openid,
         approval_status: 'approved',
         status: 'active',
@@ -427,6 +512,7 @@ module.exports = {
   projectManagedClub,
   listJoinableClubs,
   joinPublicClub,
+  getClubDetail,
   getManagedClub,
   updateManagedClub,
   saveDraft,

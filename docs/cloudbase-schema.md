@@ -80,6 +80,19 @@ created_at, updated_at
 
 客户端数据库读写全拒绝，仅 `club-application` 云函数按 WXContext 读取本人申请。管理员列表、详情和审批均由服务端实时查询 `admins`。通过审批时在事务中以确定性 ID 创建 `clubs`、`OWNER` 的 `club_memberships` 和审计记录；重复审批返回同一结果，不重复创建资源。驳回原因必填，修改重提递增 `review_version`。
 
+### `clubs` 与 `club_memberships`
+
+`clubs.max_members` 为 `2..10000` 的整数；审批创建时使用申请的 `expected_size`，`member_count` 以 OWNER 为 1 初始化。`member_count` 是容量判断的强一致计数，公开加入必须在同一事务读取俱乐部和确定性 membership，只有新建 active membership 才更新同一俱乐部文档并加一；重复加入不增加。对缺少容量字段的历史俱乐部，事务内按 active memberships 实数回填 `member_count`，并以 `max(50, member_count)` 初始化 `max_members`。管理员修改上限不得低于当前 active 成员数，并继续使用 `expectedUpdatedAt` 乐观锁和 `requestId` 幂等审计。
+
+```text
+clubs: name, city, introduction, avatar_url, join_mode
+clubs: approval_status, status, owner_openid, source_application_id
+clubs: member_count, max_members, created_at, updated_at
+club_memberships: club_id, openid, role, status, created_at, updated_at
+```
+
+公开加入容量已满返回 `CLUB_FULL`；非法上限返回 `INVALID_MAX_MEMBERS`；低于当前人数返回 `MAX_MEMBERS_BELOW_CURRENT`。
+
 ### `admins`
 
 `_id: openid`，并包含 `display_name/is_super/enabled`。管理员身份由服务端按 WXContext 查询。

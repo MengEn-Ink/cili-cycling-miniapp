@@ -340,6 +340,9 @@ describe('CachingRepository 写后失效', () => {
         introduction: '每周组织安全友好的骑行活动',
         avatarUrl: '',
         avatarInitial: '山',
+        capacityInitialized: true,
+        memberCount: 12,
+        maxMembers: 50,
       },
       role: 'MEMBER',
       status: 'active',
@@ -386,6 +389,8 @@ describe('CachingRepository 写后失效', () => {
       joinMode: 'public_apply',
       avatarFileId: 'cloud://env/club-applications/user/cover.jpg',
       avatarUrl: '',
+      memberCount: 12,
+      maxMembers: 80,
       updatedAt: '2026-10-18T00:00:00.000Z',
     });
 
@@ -399,6 +404,7 @@ describe('CachingRepository 写后失效', () => {
         introduction: '这是修改后的俱乐部介绍，清晰说明定位和日常活动安排。',
         joinMode: 'public_apply',
         avatarFileId: 'cloud://env/club-applications/user/cover.jpg',
+        maxMembers: 80,
       },
       'club-update-0001',
       '2026-10-17T00:00:00.000Z',

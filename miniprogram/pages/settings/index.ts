@@ -1,14 +1,26 @@
 import { CLIENT_RELEASE_VERSION } from '../../config/release';
 
-// RELEASE_NOTES 保留一条最新记录，供 scripts/check-release-notes.mjs 门禁识别。
+// RELEASE_NOTES 顶部为当前版本，历史版本保留且仅当前版本标记 latest，供发布门禁核对。
 // 设置页只渲染第一条，不展示历史时间线；文案均面向普通用户，不出现门禁/接口/令牌等技术词。
 const RELEASE_NOTES = [
   {
     version: CLIENT_RELEASE_VERSION,
     date: '2026-10-18',
+    title: '俱乐部首页与人数上限',
+    summary: '俱乐部首页现在统一展示已加入和推荐俱乐部，并支持管理员设置人数上限。',
+    latest: true,
+    features: [
+      '已加入俱乐部可整卡查看详情，管理员可继续修改资料',
+      '新建俱乐部头像改为必填，历史缺头像会温和提醒补充',
+      '创建和管理资料支持人数上限，加入满员俱乐部时会明确提示',
+    ],
+  },
+  {
+    version: '2026.10.18.3',
+    date: '2026-10-18',
     title: '俱乐部资料保存稳定性修复',
     summary: '俱乐部负责人和管理员保存资料时，现在能更稳定地识别最新版本。',
-    latest: true,
+    latest: false,
     features: [
       '修复线上时间格式差异导致资料保存被误判为冲突的问题',
       '保留多管理员并发保护，避免旧页面覆盖他人刚保存的资料',

@@ -80,7 +80,7 @@ describe('俱乐部创建申请生产闭环', () => {
   it('路由、用户状态、管理员入口、隐私和失败恢复均有静态契约', () => {
     const app = readFileSync('miniprogram/app.json', 'utf8');
     const profile = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
-    const center = readFileSync('miniprogram/pages/club-center/index.wxml', 'utf8');
+    const center = readFileSync('miniprogram/pages/club/center/index.wxml', 'utf8');
     const adminList = readFileSync('miniprogram/pages/admin/club-applications/index.wxml', 'utf8');
     const adminDetailView = readFileSync(
       'miniprogram/pages/admin/club-application-detail/index.wxml',
@@ -88,12 +88,23 @@ describe('俱乐部创建申请生产闭环', () => {
     );
     const cloudFunction = readFileSync('cloudfunctions/club-application/index.js', 'utf8');
     const admin = readFileSync('miniprogram/pages/admin/club-application-detail/index.ts', 'utf8');
-    expect(app).toContain('pages/club-center/index');
+    expect(app).toContain('"root": "pages/club"');
+    expect(app).toContain('"center/index"');
     expect(app).toContain('club-applications/index');
     expect(profile).toContain('可申请创建或查看申请进度');
     for (const copy of ['草稿待提交', '平台审批中', '申请已驳回，可修改重提', '申请已通过'])
       expect(center).toContain(copy);
     expect(center).toContain('申请资料仅你本人和平台管理员可见');
+    expect(center).toMatch(/club-page-head[\s\S]*create-mini[\s\S]*＋ 新建/);
+    expect(center).toContain('class="joined-card"');
+    expect(center).toContain('bindtap="openClubDetail"');
+    expect(center).toContain('推荐俱乐部');
+    expect(center).toContain('人数待同步');
+    expect(center).toContain('item.capacityInitialized && item.memberCount >= item.maxMembers');
+    expect(center).toContain('待补俱乐部头像');
+    expect(center).toContain('必填，支持相册或拍照');
+    expect(center).toContain('data-field="maxMembers"');
+    expect(center).toContain('data-value="500"');
     for (const view of [center, adminList, adminDetailView]) {
       expect(view).toContain('coverUrl');
       expect(view).not.toMatch(/src="\{\{(?:application\.|item\.|form\.)?coverFileId\}\}"/);
