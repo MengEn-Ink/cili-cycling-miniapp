@@ -159,7 +159,7 @@ async function exportFixedClubMedia(
     )
       throw new Error('canvas unavailable');
     const context = wx.createCanvasContext(CLUB_MEDIA_CANVAS_ID, scope);
-    context.clearRect(0, 0, spec.width, spec.height);
+    context.clearRect(0, 0, 1280, 720);
     context.drawImage(src, 0, 0, spec.width, spec.height);
     await new Promise<void>((resolve) => context.draw(false, resolve));
     const exported = await new Promise<{ tempFilePath?: string }>((resolve, reject) =>
@@ -201,6 +201,8 @@ async function chooseAndUploadClubMedia(
   if (typeof file.size === 'number' && file.size > 5 * 1024 * 1024)
     throw new Error('图片不能超过 5MB');
   const spec = MEDIA_SPEC[kind];
+  if (typeof wx.cropImage !== 'function')
+    throw new Error('当前微信版本不支持图片裁剪，请升级微信后重试');
   let croppedPath: string;
   try {
     const cropped = await new Promise<{ tempFilePath?: string }>((resolve, reject) =>

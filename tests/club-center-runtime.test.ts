@@ -1,3 +1,5 @@
+// @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
+import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const rideService = vi.hoisted(() => ({
@@ -59,6 +61,19 @@ const clubMediaCases = [
 ] as const;
 
 describe('俱乐部申请页运行时错误恢复', () => {
+  it('legacy canvas 声明足够的实际像素且未使用会阻止真机绘制的隐藏样式', () => {
+    const view = readFileSync('miniprogram/pages/club/center/index.wxml', 'utf8');
+    const style = readFileSync('miniprogram/pages/club/center/index.wxss', 'utf8');
+    const canvas = view.match(/<canvas[^>]*class="club-media-canvas"[^>]*\/>/)?.[0] || '';
+    const canvasStyle = style.match(/\.club-media-canvas\s*\{[^}]*\}/)?.[0] || '';
+
+    expect(canvas).toMatch(/width="1280"/);
+    expect(canvas).toMatch(/height="720"/);
+    expect(canvasStyle).not.toMatch(/opacity\s*:\s*0/);
+    expect(canvasStyle).not.toMatch(/display\s*:\s*none/);
+    expect(canvasStyle).not.toMatch(/visibility\s*:\s*hidden/);
+  });
+
   let page: any;
   let wxApi: any;
   let canvasContext: any;
@@ -578,6 +593,7 @@ describe('俱乐部申请页运行时错误恢复', () => {
 
       await page[media.method]();
 
+      expect(canvasContext.clearRect).toHaveBeenCalledWith(0, 0, 1280, 720);
       expect(canvasContext.drawImage).toHaveBeenCalledWith(
         `${selectedPath}.cropped`,
         0,
@@ -585,8 +601,13 @@ describe('俱乐部申请页运行时错误恢复', () => {
         media.width,
         media.height,
       );
+      expect(canvasContext.clearRect.mock.invocationCallOrder[0]).toBeLessThan(
+        canvasContext.drawImage.mock.invocationCallOrder[0],
+      );
       expect(wxApi.canvasToTempFilePath).toHaveBeenCalledWith(
         expect.objectContaining({
+          x: 0,
+          y: 0,
           width: media.width,
           height: media.height,
           destWidth: media.width,
@@ -666,7 +687,7 @@ describe('俱乐部申请页运行时错误恢复', () => {
     await page.chooseAvatar();
 
     expect(wxApi.createCanvasContext).toHaveBeenCalledWith('clubMediaCanvas', page);
-    expect(canvasContext.clearRect).toHaveBeenCalledWith(0, 0, 512, 512);
+    expect(canvasContext.clearRect).toHaveBeenCalledWith(0, 0, 1280, 720);
     expect(canvasContext.drawImage).toHaveBeenCalledWith(
       'wxfile://legacy.jpg.cropped',
       0,
@@ -713,6 +734,24 @@ describe('俱乐部申请页运行时错误恢复', () => {
     expect(page.data.form.avatarFileId).toContain('old-avatar.jpg');
     expect(page.data.avatarPreviewUrl).toContain('old-avatar.jpg');
     expect(page.data.actionError).toBe('图片处理失败，请重新选择');
+  });
+
+  it.each(clubMediaCases)('cropImage 缺失时提示升级，不上传且保留旧$label', async (media) => {
+    const oldFileId = `cloud://env/club-applications/test-openid/old-${media.kind}.jpg`;
+    const oldPreview = `https://temporary.example/old-${media.kind}.jpg`;
+    page.data.form[media.fileIdField] = oldFileId;
+    page.data[media.previewField] = oldPreview;
+    wxApi.cropImage = undefined;
+    wxApi.chooseMedia.mockResolvedValue({
+      tempFiles: [{ tempFilePath: `wxfile://new-${media.kind}.jpg`, size: 1024 }],
+    });
+
+    await page[media.method]();
+
+    expect(wxApi.cloud.uploadFile).not.toHaveBeenCalled();
+    expect(page.data.form[media.fileIdField]).toBe(oldFileId);
+    expect(page.data[media.previewField]).toBe(oldPreview);
+    expect(page.data.actionError).toBe('当前微信版本不支持图片裁剪，请升级微信后重试');
   });
 
   it('裁剪取消或处理失败均不覆盖旧媒体，busy 锁阻止重复选择', async () => {
