@@ -75,6 +75,27 @@ function assertOwnedRouteFile(fileId, openid, digest, extension, code, message) 
   return fileId;
 }
 
+function assertCanonicalRoutePreview(fileId, openid) {
+  const secret =
+    typeof process.env.PROFILE_MEDIA_PATH_SECRET === 'string'
+      ? process.env.PROFILE_MEDIA_PATH_SECRET.trim()
+      : '';
+  const alias =
+    openid && secret.length >= 32
+      ? crypto.createHmac('sha256', secret).update(openid).digest('hex').slice(0, 32)
+      : '';
+  if (
+    typeof fileId !== 'string' ||
+    !alias ||
+    !new RegExp(
+      `^cloud://[^/]+/profile-canonical/${alias}/activity-route-preview/[a-f0-9]{64}/[a-f0-9]{64}\\.png$`,
+      'i',
+    ).test(fileId)
+  )
+    fail('ROUTE_PREVIEW_IMAGE_INVALID', '路线图校验失败，请重新生成');
+  return fileId;
+}
+
 function previewResponse(preview) {
   return {
     preview_id: preview._id,
@@ -164,14 +185,20 @@ async function bindRoutePreviewImage(deps, request, now = new Date()) {
   if (preview.consumed_at) fail('ROUTE_PREVIEW_CONSUMED', '这份路线已用于其他活动，请重新选择');
   if (validExpiry(preview.expires_at) <= now.getTime())
     fail('ROUTE_PREVIEW_EXPIRED', '路线预览已过期，请重新上传 GPX');
-  const generatedFileId = assertOwnedRouteFile(
-    request.generatedPreviewFileId,
+  const generatedFileId = assertCanonicalRoutePreview(request.generatedPreviewFileId, openid);
+  const media = await deps.getProfileMediaByCanonical(
+    generatedFileId,
     openid,
-    preview.gpx_sha256,
-    '.png',
-    'ROUTE_PREVIEW_IMAGE_INVALID',
-    '路线图校验失败，请重新生成',
+    'activity-route-preview',
   );
+  if (
+    !media ||
+    media.canonical_file_id !== generatedFileId ||
+    media.owner_openid !== openid ||
+    media.category !== 'activity-route-preview' ||
+    !['unreferenced', 'active'].includes(media.status)
+  )
+    fail('MEDIA_REGISTRATION_INVALID', '路线图登记不可用');
   await deps.updatePreview(preview._id, {
     generated_file_id: generatedFileId,
     updated_at: now,

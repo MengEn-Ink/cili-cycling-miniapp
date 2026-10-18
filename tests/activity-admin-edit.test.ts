@@ -1531,7 +1531,8 @@ describe('日常活动极简创建与编辑', () => {
 
   it('路线轮廓 Canvas 生成 PNG 后绑定为同摘要预览图', async () => {
     const digest = 'b'.repeat(64);
-    const generatedFileId = `cloud://env/activity-routes/${appStore.openid}/${digest}.png`;
+    const generatedFileId =
+      'cloud://env/profiles/activity-route-preview/owner-openid/route-preview.png';
     const preview = {
       previewId: 'a'.repeat(64),
       gpxFileId: `cloud://env/activity-routes/${appStore.openid}/${digest}.gpx`,
@@ -1600,6 +1601,9 @@ describe('日常活动极简创建与编辑', () => {
         success({ tempFilePath: '/tmp/route.png' }),
       ),
     });
+    rideService.issueMediaUploadPath.mockResolvedValueOnce(
+      'profiles/activity-route-preview/owner-openid/route-preview.png',
+    );
     const uploadFile = vi.fn().mockResolvedValue({ fileID: generatedFileId });
     Object.assign(wx.cloud!, { uploadFile });
     rideService.bindRoutePreviewImage.mockResolvedValue({
@@ -1612,7 +1616,7 @@ describe('日常活动极简创建与编辑', () => {
 
     expect(uploadFile).toHaveBeenCalledWith(
       expect.objectContaining({
-        cloudPath: `activity-routes/${appStore.openid}/${digest}.png`,
+        cloudPath: 'profiles/activity-route-preview/owner-openid/route-preview.png',
         filePath: '/tmp/route.png',
       }),
     );

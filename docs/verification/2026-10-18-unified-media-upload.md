@@ -20,12 +20,12 @@
      finalize 失败 -> 删除 source；业务页卸载/移除 -> 删除本次 canonical
 ```
 
-选择、裁剪、压缩和俱乐部固定像素 Canvas 仍在业务层。统一模块不理解业务 UI，只负责策略编排。GPX 与路线预览图只复用 `uploadWithRetry`，仍由 `activity-admin` 完成扩展名、4MB、SHA-256、XML 和路线语义校验。
+选择、裁剪、压缩和俱乐部固定像素 Canvas 仍在业务层。统一模块不理解业务 UI，只负责策略编排。GPX 保留 `uploadWithRetry`，仍由 `activity-admin` 完成扩展名、4MB、SHA-256、XML 和路线语义校验；路线预览 PNG 则走完整 orchestrator 与 registry。
 
 ## 核心安全与可靠性约束
 
 - **服务端授权目标**：客户端只提交 category/requestId/extension，不提交 openid；路径由 `profile` 从可信微信上下文生成。
-- **用途 allowlist**：`profile-avatar`、`profile-background`、`activity-image`、`activity-group-qr`、`club-avatar`、`club-cover`；路径带 category，finalize 不匹配即拒绝。
+- **用途 allowlist**：`profile-avatar`、`profile-background`、`activity-image`、`activity-group-qr`、`activity-route-preview`、`club-avatar`、`club-cover`；路径带 category，finalize 不匹配即拒绝。
 - **所有权**：source 必须位于当前用户 HMAC alias 目录；canonical 路径也带同一 alias。`activity-admin` 与 `club-application` 使用同值 `PROFILE_MEDIA_PATH_SECRET` 验证新 canonical owner，缺失密钥时 fail closed。
 - **完整性**：云端从可信临时地址读取对象，限制 5MB，校验 JPEG/PNG/WebP magic，计算 SHA-256 后复制到不可变 canonical 目标。
 - **幂等**：客户端 requestId 与已持久化 intent 绑定；上传重试复用同一个 cloudPath；canonical 路径由 source hash + content hash 决定；重复 finalize 复用登记。
@@ -45,17 +45,25 @@
 | 俱乐部头像 | `club-avatar` | 1:1、512×512 | 完整 orchestrator | canonical fileId |
 | 俱乐部背景 | `club-cover` | 16:9、1280×720 | 完整 orchestrator | canonical fileId |
 | GPX | 不属于图片 category | 4MB、扩展名、SHA-256、XML/路线语义 | 仅复用 `uploadWithRetry` | 原路线 fileId |
-| 路线预览图 | 不属于首期通用资产登记 | Canvas 生成，由路线预览绑定接口校验 | 仅复用 `uploadWithRetry` | 原路线预览绑定字段 |
+| 路线预览图 | `activity-route-preview` | Canvas 生成，由路线预览绑定接口校验 | 完整 orchestrator | canonical fileId；活动保存成功后激活 |
 
-> 所有六类图片的新业务写入都只保存 canonical fileId。`profile_media` 仍以 source fileId 作为 registry 主键并记录 canonical 绑定，但 profile 激活、revision、替换降级与 cleanup 均可通过 canonical 引用回查该 registry；存量 source/HTTPS 仅保持只读兼容，不做数据迁移。finalize 完成后 source intent 保留 24 小时回收窗口，业务表的 canonical 引用不会阻止 source 独立清理。
+> 所有七类图片的新业务写入都只保存 canonical fileId。`profile_media` 仍以 source fileId 作为 registry 主键并记录 canonical 绑定，但 profile 激活、revision、替换降级与 cleanup 均可通过 canonical 引用回查该 registry；存量 source/HTTPS 仅保持只读兼容，不做数据迁移。finalize 完成后 source intent 保留 24 小时回收窗口，业务表的 canonical 引用不会阻止 source 独立清理。
 
 ## 历史兼容边界
 
-- 已有 `club-applications/<openid>/...` 可继续创建/更新、签发预览；新上传不再生成含原始 openid 的路径。
+- 已有 `club-applications/<openid>/...` 仅继续签发和展示；创建、提交与更新只允许原值保持，不允许写入或替换为另一个 legacy 路径。
 - 已有活动 owner 路径、路线文件和已发布历史媒体继续读取；新增图片要求 category canonical owner 匹配。
 - 既有 HTTPS 仅作为历史公开展示 URL 读取，不作为新上传授权结果，也不转换成 fileId。
 - 新 canonical 俱乐部头像与背景分别校验 `club-avatar`/`club-cover`，创建和管理员更新均不能互串；存量 `club-applications/<openid>/...` 路径本身不含用途，无法严格区分头像/背景，仅保留读取与原值更新兼容，不把该兼容能力表述为强隔离。
-- profile 旧 `ride/bike/other` 登记继续支持；新头像/背景 category 映射回既有展示语义。
+- profile 旧 `ride/bike/other` registry 仅用于存量读取和引用兼容；新 issue/finalize/activate 一律拒绝。
+
+## 遗留写协议已删除
+
+- 客户端 repository 已删除旧路径签发、旧媒体登记和孤儿上报协议；资料页只调用 `uploadMedia`，不再维护第二套 requestId、阶段状态或本地孤儿账本。
+- `profile.mediaUploadPath` 与 `profile.registerMedia` 始终要求 `category + requestId`；`ride/bike/other` 不能再用于 issue、finalize 或 activate。
+- 活动路线预览 PNG 已纳入 `activity-route-preview` registry；只有活动保存成功才激活，保存失败由 `unreferenced` cleanup 回收。
+- GPX 继续使用独立摘要与 XML 校验，并作为治理门禁中唯一显式的图片 orchestrator 外底层上传白名单。
+- 旧活动/俱乐部路径仅保留读取展示与原值不变兼容；新建、替换或发布时不能把另一个 legacy fileId 写入业务数据。
 
 ## 成熟案例原则映射
 
@@ -69,7 +77,7 @@
 ### P0（本次完成）
 
 - 禁止 `pages/`、`repositories/` 直接调用原生 `uploadFile`，唯一调用点为 `utils/media-upload.ts`。
-- 六类图片统一授权、重试、进度、超时、登记、canonical 和清理。
+- 七类图片统一授权、重试、进度、超时、登记、canonical 和清理。
 - 修复俱乐部使用原始 openid 路径、头像/背景用途不分和缺少登记的问题。
 - 静态治理接入现有 `check:governance`，并由 `validate` 闭环执行。
 
@@ -109,7 +117,7 @@
 
 ## 回滚
 
-1. 客户端回滚到旧版本后，历史 source/legacy 路径仍可读取；本次没有删除旧 action。
+1. 客户端回滚到旧版本后，历史 source/legacy 路径仍可读取；遗留写 action 已删除，旧客户端不能再创建 legacy 图片。
 2. 云函数先保持新 allowlist 和双读兼容，再回滚客户端，避免新 canonical 在旧云端被拒绝。
 3. 若必须回滚云端，先停止新客户端发布；新活动/俱乐部 canonical 记录不可直接改回 source，需按 `profile_media.canonical_file_id` 回查。
 4. 不删除 `profile_media`、intent 或 canonical 对象；待引用核对后再由 cleanup/人工脚本处理。

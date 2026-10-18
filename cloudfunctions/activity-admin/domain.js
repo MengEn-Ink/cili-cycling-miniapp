@@ -424,7 +424,9 @@ function cleanGpxRoute(route) {
   if (route.generated_preview_file_id !== undefined && route.generated_preview_file_id !== '') {
     generatedPreviewFileId = cleanText(route.generated_preview_file_id, '路线图文件', 500, true);
     if (
-      !/^cloud:\/\/[^/]+\/activity-routes\/[^/]+\/[a-f0-9]{64}\.png$/.test(generatedPreviewFileId)
+      !/^cloud:\/\/[^/]+\/(?:activity-routes\/[^/]+\/[a-f0-9]{64}|profile-canonical\/[a-f0-9]{32}\/activity-route-preview\/[a-f0-9]{64}\/[a-f0-9]{64})\.png$/.test(
+        generatedPreviewFileId,
+      )
     )
       fail('VALIDATION_FAILED', '路线图文件格式错误');
   }

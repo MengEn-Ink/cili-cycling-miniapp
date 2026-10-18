@@ -2,7 +2,18 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
+process.env.PROFILE_MEDIA_PATH_SECRET = 'profile-media-secret-for-tests-32-bytes';
 const { resolveActivityMedia, validateActivityMediaOwnership } = require('./media');
+
+const canonicalMedia = (openid, category, extension = 'jpg') => {
+  const alias = crypto
+    .createHmac('sha256', process.env.PROFILE_MEDIA_PATH_SECRET)
+    .update(openid)
+    .digest('hex')
+    .slice(0, 32);
+  return `cloud://env/profile-canonical/${alias}/${category}/${'a'.repeat(64)}/${'b'.repeat(64)}.${extension}`;
+};
 
 test('管理端详情由云函数签发活动图片、群二维码与路线图地址', async () => {
   const calls = [];
@@ -76,24 +87,78 @@ test('单个文件未签发或签发接口失败时不阻断管理端详情', as
   assert.equal(failed.group_qr_preview_url, '');
 });
 
-test('保存仅接受当前用户目录的新媒体并兼容活动已有历史文件', () => {
+test('活动图片仅接受 canonical 新写，并精确兼容未改动的存量值', () => {
   const openid = 'owner-openid';
+  const legacyImage = 'https://legacy.example/activity.jpg';
+  const legacyImage2 = 'cloud://env/profiles/activity-media/legacy-second.jpg';
+  const legacyCover = 'cloud://env/profiles/activity-media/legacy-cover.jpg';
+  const legacyQr = 'https://legacy.example/group-qr.jpg';
   const current = {
-    images: ['cloud://env/profiles/activity-media/legacy.jpg'],
-    cover_image: 'cloud://env/profiles/activity-media/legacy.jpg',
+    images: [legacyImage, legacyImage2],
+    cover_image: legacyCover,
+    group_qr_code: legacyQr,
   };
+
+  // 更新时允许每个对应字段保持存量 legacy 原值。
+  assert.equal(validateActivityMediaOwnership(openid, { ...current }, current), true);
+  // 新建不得写入任意外链。
+  assert.equal(
+    validateActivityMediaOwnership(openid, { images: ['https://evil.example/new.jpg'] }),
+    false,
+  );
+  // 替换 cover / QR 的外链均不得绕过 canonical registry。
+  assert.equal(
+    validateActivityMediaOwnership(
+      openid,
+      { ...current, cover_image: 'https://evil.example/replacement.jpg' },
+      current,
+    ),
+    false,
+  );
+  assert.equal(
+    validateActivityMediaOwnership(
+      openid,
+      { ...current, group_qr_code: 'https://evil.example/replacement-qr.jpg' },
+      current,
+    ),
+    false,
+  );
+  // legacy 数组中混入新值或换序都不是“原值保持”。
+  assert.equal(
+    validateActivityMediaOwnership(
+      openid,
+      { ...current, images: [legacyImage2, legacyImage] },
+      current,
+    ),
+    false,
+  );
+  assert.equal(
+    validateActivityMediaOwnership(
+      openid,
+      { ...current, images: [legacyImage, 'https://evil.example/injected.jpg'] },
+      current,
+    ),
+    false,
+  );
+  assert.equal(
+    validateActivityMediaOwnership(
+      openid,
+      { ...current, images: [legacyImage, canonicalMedia(openid, 'activity-image')] },
+      current,
+    ),
+    false,
+  );
+  // 全量 canonical 图片及 GPX 独立 owner 路径正常通过。
   assert.equal(
     validateActivityMediaOwnership(
       openid,
       {
-        images: [
-          'cloud://env/profiles/activity-media/legacy.jpg',
-          'cloud://env/profiles/activity-media/owner-openid/new.jpg',
-        ],
-        group_qr_code: 'cloud://env/profiles/activity-group-qr/owner-openid/group.jpg',
+        images: [canonicalMedia(openid, 'activity-image')],
+        cover_image: canonicalMedia(openid, 'activity-image'),
+        group_qr_code: canonicalMedia(openid, 'activity-group-qr'),
         route: {
           gpx_file_id: 'cloud://env/activity-routes/owner-openid/hash.gpx',
-          generated_preview_file_id: 'cloud://env/activity-routes/owner-openid/hash.png',
+          generated_preview_file_id: canonicalMedia(openid, 'activity-route-preview', 'png'),
         },
       },
       current,
@@ -104,14 +169,6 @@ test('保存仅接受当前用户目录的新媒体并兼容活动已有历史�
     validateActivityMediaOwnership(
       openid,
       { images: ['cloud://env/profiles/activity-media/other-openid/private.jpg'] },
-      current,
-    ),
-    false,
-  );
-  assert.equal(
-    validateActivityMediaOwnership(
-      openid,
-      { group_qr_code: 'cloud://env/another-domain/private.jpg' },
       current,
     ),
     false,
@@ -154,7 +211,7 @@ test('草稿详情不签发非当前用户目录的历史 fileId', async () => {
   assert.match(result.group_qr_preview_url, /^https:\/\//);
 });
 
-test('历史草稿发布前必须重新验证媒体归属', () => {
+test('发布入口允许按字段精确保持存量 legacy 媒体', () => {
   const openid = 'owner-openid';
   const foreignFile = 'cloud://env/profiles/activity-media/other-openid/private.jpg';
   assert.equal(
@@ -171,15 +228,15 @@ test('历史草稿发布前必须重新验证媒体归属', () => {
       { status: 'published', images: [foreignFile] },
       { status: 'draft', images: [foreignFile] },
     ),
-    false,
+    true,
   );
   assert.equal(
     validateActivityMediaOwnership(
       openid,
-      { status: 'published', images: [foreignFile] },
-      { status: 'published', images: [foreignFile] },
+      { status: 'published', images: [foreignFile, 'https://evil.example/injected.jpg'] },
+      { status: 'draft', images: [foreignFile] },
     ),
-    true,
+    false,
   );
 });
 

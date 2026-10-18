@@ -237,6 +237,16 @@ exports.main = async (event = {}) => {
             getAdmin: (id) => maybeGet(db.collection('admins'), id),
             getPreview: (id) => maybeGet(db.collection('route_previews'), id),
             updatePreview: (id, data) => db.collection('route_previews').doc(id).update({ data }),
+            getProfileMediaByCanonical: async (fileId, ownerOpenid, category) => {
+              const result = await db
+                .collection('profile_media')
+                .where({ canonical_file_id: fileId, owner_openid: ownerOpenid, category })
+                .limit(2)
+                .get();
+              return Array.isArray(result?.data) && result.data.length === 1
+                ? result.data[0]
+                : undefined;
+            },
           },
           {
             ...Object.fromEntries(

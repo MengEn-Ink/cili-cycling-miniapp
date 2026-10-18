@@ -56,14 +56,13 @@ async function canonicalizeClientMedia({
 
   const tempFileURL = await verifyUploadedMedia(fileId, getTempFileURL);
   const verified = await verifyImage(tempFileURL);
-  const canonicalCategory = ['ride', 'bike', 'other'].includes(category) ? '' : category;
   const canonicalIntent = canonicalUploadIntent(
     openid,
     fileId,
     verified,
     mediaSecret,
     now,
-    canonicalCategory,
+    category,
   );
   await store.prepareCanonicalUpload(openid, sourceIntentId, canonicalIntent, mediaSecret, now);
   const uploaded = await uploadFile({
@@ -76,7 +75,7 @@ async function canonicalizeClientMedia({
     uploaded?.fileID,
     verified,
     mediaSecret,
-    canonicalCategory,
+    category,
   );
   return store.completeClientMedia(
     openid,

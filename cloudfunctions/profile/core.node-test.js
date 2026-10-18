@@ -524,11 +524,11 @@ test('媒体上传路径使用服务端 secret 派生 opaque owner alias', () =>
   const second = issueMediaUploadPath('openid-owner-b', mediaSecret, () => uuid);
   assert.match(
     first.cloud_path,
-    /^profiles\/[a-f0-9]{32}\/123e4567-e89b-42d3-a456-426614174000\.jpg$/,
+    /^profiles\/[a-f0-9]{32}\/profile-avatar\/123e4567-e89b-42d3-a456-426614174000\.jpg$/,
   );
   assert.notEqual(first.cloud_path, second.cloud_path);
   assert.equal(first.cloud_path.includes('openid-owner-a'), false);
-  assert.equal(mediaOwnerPrefix('openid-owner-a', mediaSecret), first.cloud_path.slice(0, -40));
+  assert.equal(first.cloud_path.startsWith(mediaOwnerPrefix('openid-owner-a', mediaSecret)), true);
   assert.throws(() => issueMediaUploadPath('', mediaSecret, () => uuid), {
     code: 'UNAUTHENTICATED',
   });
@@ -537,7 +537,7 @@ test('媒体上传路径使用服务端 secret 派生 opaque owner alias', () =>
   });
   assert.equal(
     issueMediaUploadPath('openid-owner-a', mediaSecret, () => uuid, 'png').cloud_path,
-    `${mediaOwnerPrefix('openid-owner-a', mediaSecret)}${uuid}.png`,
+    `${mediaOwnerPrefix('openid-owner-a', mediaSecret)}profile-avatar/${uuid}.png`,
   );
   assert.throws(() => issueMediaUploadPath('openid-owner-a', mediaSecret, () => uuid, 'svg'), {
     code: 'MEDIA_TYPE_INVALID',
@@ -633,9 +633,17 @@ test('canonical path 同时绑定 owner、source 与已验证内容 hash', () =>
 
 test('media registry 绑定 source 与 canonical 版本且重复登记必须完全一致', () => {
   const openid = 'openid-owner-a';
-  const sourceFileId = `cloud://env/${mediaOwnerPrefix(openid, mediaSecret)}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const category = 'profile-background';
+  const sourceFileId = `cloud://env/${mediaOwnerPrefix(openid, mediaSecret)}${category}/123e4567-e89b-42d3-a456-426614174000.jpg`;
   const sha256 = 'b'.repeat(64);
-  const canonicalPath = canonicalMediaPath(openid, sourceFileId, sha256, 'jpg', mediaSecret);
+  const canonicalPath = canonicalMediaPath(
+    openid,
+    sourceFileId,
+    sha256,
+    'jpg',
+    mediaSecret,
+    category,
+  );
   const canonicalFileId = `cloud://env/${canonicalPath}`;
   const binding = canonicalMediaBinding(
     openid,
@@ -643,11 +651,12 @@ test('media registry 绑定 source 与 canonical 版本且重复登记必须完�
     canonicalFileId,
     { sha256, size: 5, mime: 'image/jpeg', extension: 'jpg' },
     mediaSecret,
+    category,
   );
   const now = new Date('2026-09-30T00:00:00.000Z');
   const record = mediaRegistration(
     sourceFileId,
-    'other',
+    category,
     'custom',
     openid,
     mediaSecret,
@@ -660,7 +669,7 @@ test('media registry 绑定 source 与 canonical 版本且重复登记必须完�
     _id: mediaDocumentId(sourceFileId),
     file_id: sourceFileId,
     owner_openid: openid,
-    category: 'other',
+    category,
     origin: 'custom',
     status: 'unreferenced',
     created_at: now,
@@ -668,7 +677,7 @@ test('media registry 绑定 source 与 canonical 版本且重复登记必须完�
     ...binding,
   });
   assert.deepEqual(
-    mediaRegistration(sourceFileId, 'other', 'custom', openid, mediaSecret, now, record, binding),
+    mediaRegistration(sourceFileId, category, 'custom', openid, mediaSecret, now, record, binding),
     record,
   );
   const otherSha256 = 'c'.repeat(64);
@@ -678,6 +687,7 @@ test('media registry 绑定 source 与 canonical 版本且重复登记必须完�
     otherSha256,
     'jpg',
     mediaSecret,
+    category,
   )}`;
   const otherBinding = canonicalMediaBinding(
     openid,
@@ -685,12 +695,13 @@ test('media registry 绑定 source 与 canonical 版本且重复登记必须完�
     otherCanonicalFileId,
     { sha256: otherSha256, size: 5, mime: 'image/jpeg', extension: 'jpg' },
     mediaSecret,
+    category,
   );
   assert.throws(
     () =>
       mediaRegistration(
         sourceFileId,
-        'other',
+        category,
         'custom',
         openid,
         mediaSecret,
@@ -970,11 +981,12 @@ test('普通保存移除非法头像组合时同步降级不再被 photos 引用
 
 test('registerMedia 记录幂等且在 profile 引用前可清理', () => {
   const ownerPrefix = mediaOwnerPrefix('openid-owner-a', mediaSecret);
-  const fileId = `cloud://env/${ownerPrefix}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const category = 'profile-background';
+  const fileId = `cloud://env/${ownerPrefix}${category}/123e4567-e89b-42d3-a456-426614174000.jpg`;
   const createdAt = new Date('2026-09-29T12:00:00.000Z');
   const record = mediaRegistration(
     fileId,
-    'ride',
+    category,
     'custom',
     'openid-owner-a',
     mediaSecret,
@@ -984,23 +996,31 @@ test('registerMedia 记录幂等且在 profile 引用前可清理', () => {
     _id: mediaDocumentId(fileId),
     file_id: fileId,
     owner_openid: 'openid-owner-a',
-    category: 'ride',
+    category,
     origin: 'custom',
     status: 'unreferenced',
     created_at: createdAt,
     cleanup_after: new Date('2026-09-30T12:00:00.000Z'),
   });
   assert.deepEqual(
-    mediaRegistration(fileId, 'ride', 'custom', 'openid-owner-a', mediaSecret, createdAt, record),
+    mediaRegistration(fileId, category, 'custom', 'openid-owner-a', mediaSecret, createdAt, record),
     record,
   );
   assert.throws(
-    () => mediaRegistration(fileId, 'ride', 'custom', 'openid-owner-b', mediaSecret, createdAt),
+    () => mediaRegistration(fileId, category, 'custom', 'openid-owner-b', mediaSecret, createdAt),
     { code: 'MEDIA_NOT_OWNED' },
   );
   assert.throws(
     () =>
-      mediaRegistration(fileId, 'ride', 'strava', 'openid-owner-a', mediaSecret, createdAt, record),
+      mediaRegistration(
+        fileId,
+        category,
+        'strava',
+        'openid-owner-a',
+        mediaSecret,
+        createdAt,
+        record,
+      ),
     { code: 'MEDIA_ORIGIN_INVALID' },
   );
   const { origin, ...legacyRecord } = record;
@@ -1008,7 +1028,7 @@ test('registerMedia 记录幂等且在 profile 引用前可清理', () => {
   assert.deepEqual(
     mediaRegistration(
       fileId,
-      'ride',
+      category,
       'custom',
       'openid-owner-a',
       mediaSecret,
@@ -1021,7 +1041,7 @@ test('registerMedia 记录幂等且在 profile 引用前可清理', () => {
     () =>
       mediaRegistration(
         fileId,
-        'ride',
+        category,
         'wechat',
         'openid-owner-a',
         mediaSecret,
@@ -1032,7 +1052,7 @@ test('registerMedia 记录幂等且在 profile 引用前可清理', () => {
   );
   assert.throws(
     () =>
-      mediaRegistration(fileId, 'ride', 'custom', 'openid-owner-a', mediaSecret, createdAt, {
+      mediaRegistration(fileId, category, 'custom', 'openid-owner-a', mediaSecret, createdAt, {
         ...record,
         origin: 'legacy',
       }),

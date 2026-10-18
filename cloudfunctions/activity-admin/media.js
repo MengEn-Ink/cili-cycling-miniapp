@@ -52,45 +52,71 @@ const canonicalOwnerAlias = (openid, secret = process.env.PROFILE_MEDIA_PATH_SEC
 const trustedOwnerPath = (fileId, openid, category = '') => {
   const path = cloudPath(fileId);
   const owner = safeText(openid);
+  if (!owner || !path) return false;
+  if (!category) return path.startsWith(`activity-routes/${owner}/`);
   const alias = canonicalOwnerAlias(owner);
+  return Boolean(
+    alias &&
+    new RegExp(
+      `^profile-canonical/${alias}/${category}/[a-f0-9]{64}/[a-f0-9]{64}\\.(?:jpg|png|webp)$`,
+      'i',
+    ).test(path),
+  );
+};
+
+const sameMediaArray = (left, right) =>
+  Array.isArray(left) &&
+  Array.isArray(right) &&
+  left.length === right.length &&
+  left.every((value, index) => value === right[index]);
+
+const canonicalOrUnchanged = (fileId, currentFileId, owner, category) => {
+  const next = safeText(fileId);
+  if (!next) return true;
   return (
-    owner &&
-    ([
-      `profiles/activity-media/${owner}/`,
-      `profiles/activity-group-qr/${owner}/`,
-      `activity-routes/${owner}/`,
-    ].some((prefix) => path.startsWith(prefix)) ||
-      Boolean(
-        alias &&
-        new RegExp(
-          `^profile-canonical/${alias}/${category || '(?:activity-image|activity-group-qr)'}/[a-f0-9]{64}/[a-f0-9]{64}\\.(?:jpg|png|webp)$`,
-          'i',
-        ).test(path),
-      ))
+    trustedOwnerPath(next, owner, category) ||
+    (typeof fileId === 'string' && fileId === currentFileId)
   );
 };
 
 const validateActivityMediaOwnership = (openid, nextActivity, currentActivity) => {
   const owner = safeText(openid);
   if (!owner) return false;
-  const existing = new Set(activityMediaFileIds(currentActivity));
-  const nextPublic = ['published', 'finished'].includes(nextActivity?.status);
-  const currentPublic = ['published', 'finished'].includes(currentActivity?.status);
-  const checks = [
-    ...(Array.isArray(nextActivity?.images)
-      ? nextActivity.images.map((fileId) => [fileId, 'activity-image'])
-      : []),
-    [nextActivity?.cover_image, 'activity-image'],
-    [nextActivity?.group_qr_code, 'activity-group-qr'],
-    [nextActivity?.route?.gpx_file_id, ''],
-    [nextActivity?.route?.generated_preview_file_id, ''],
-  ].filter(([fileId]) => safeText(fileId));
-  return checks.every(([rawFileId, category]) => {
-    const fileId = safeText(rawFileId);
-    if (!fileId.startsWith('cloud://')) return true;
-    if (existing.has(fileId) && (!nextPublic || currentPublic)) return true;
-    return trustedOwnerPath(fileId, owner, category);
-  });
+
+  const nextImages = Array.isArray(nextActivity?.images) ? nextActivity.images : [];
+  const imagesValid = nextImages.every((fileId) =>
+    trustedOwnerPath(safeText(fileId), owner, 'activity-image'),
+  );
+  // 存量 legacy 图片仅允许整个数组按原值、原顺序保持；一旦编辑，所有值都必须是 canonical。
+  if (!imagesValid && !sameMediaArray(nextImages, currentActivity?.images)) return false;
+  if (
+    !canonicalOrUnchanged(
+      nextActivity?.cover_image,
+      currentActivity?.cover_image,
+      owner,
+      'activity-image',
+    ) ||
+    !canonicalOrUnchanged(
+      nextActivity?.group_qr_code,
+      currentActivity?.group_qr_code,
+      owner,
+      'activity-group-qr',
+    ) ||
+    !canonicalOrUnchanged(
+      nextActivity?.route?.generated_preview_file_id,
+      currentActivity?.route?.generated_preview_file_id,
+      owner,
+      'activity-route-preview',
+    )
+  )
+    return false;
+
+  const nextGpx = safeText(nextActivity?.route?.gpx_file_id);
+  return (
+    !nextGpx ||
+    trustedOwnerPath(nextGpx, owner) ||
+    nextGpx === safeText(currentActivity?.route?.gpx_file_id)
+  );
 };
 
 const activateActivityMediaReferences = async (tx, openid, activity, now) => {
@@ -101,6 +127,7 @@ const activateActivityMediaReferences = async (tx, openid, activity, now) => {
       : []),
     [activity?.cover_image, 'activity-image'],
     [activity?.group_qr_code, 'activity-group-qr'],
+    [activity?.route?.generated_preview_file_id, 'activity-route-preview'],
   ];
   const seen = new Set();
   for (const [rawFileId, category] of references) {
@@ -122,13 +149,24 @@ const activateActivityMediaReferences = async (tx, openid, activity, now) => {
   }
 };
 
+const legacyReadableOwnerPath = (fileId, openid) => {
+  const path = cloudPath(fileId);
+  const owner = safeText(openid);
+  return Boolean(
+    owner &&
+    (path.startsWith(`profiles/activity-media/${owner}/`) ||
+      path.startsWith(`profiles/activity-group-qr/${owner}/`)),
+  );
+};
+
 const resolveActivityMedia = async (cloud, activity, openid) => {
   if (!activity || typeof activity !== 'object') return activity;
   const publiclyReadable = ['published', 'finished'].includes(activity.status);
   const canSign = (fileId) =>
     !safeText(fileId).startsWith('cloud://') ||
     publiclyReadable ||
-    trustedOwnerPath(fileId, openid);
+    trustedOwnerPath(fileId, openid) ||
+    legacyReadableOwnerPath(fileId, openid);
   const images = Array.isArray(activity.images) ? activity.images.map(safeText) : [];
   const coverImage = safeText(activity.cover_image);
   const groupQrCode = safeText(activity.group_qr_code);

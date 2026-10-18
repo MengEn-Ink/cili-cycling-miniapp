@@ -29,6 +29,7 @@ export type UnifiedMediaCategory =
   | 'profile-background'
   | 'activity-image'
   | 'activity-group-qr'
+  | 'activity-route-preview'
   | 'club-avatar'
   | 'club-cover';
 export interface PublicActivityPage {
@@ -137,7 +138,6 @@ export interface RideRepository
     reason?: string,
   ): Promise<Registration>;
   getProfile(): Promise<Profile>;
-  getProfileMediaUploadPath(): Promise<string>;
   issueMediaUploadPath(
     category: UnifiedMediaCategory,
     requestId: string,
@@ -150,16 +150,6 @@ export interface RideRepository
     origin?: ClientAvatarSource,
   ): Promise<{ canonicalFileId: string }>;
   getPersonalCapabilityCard(): Promise<PersonalCapabilityCard>;
-  registerProfileMedia(
-    fileId: string,
-    category: 'ride' | 'bike' | 'other',
-    origin?: ClientAvatarSource,
-  ): Promise<void>;
-  reportProfileMediaOrphan(
-    fileId: string,
-    category: 'ride' | 'bike' | 'other',
-    origin?: ClientAvatarSource,
-  ): Promise<void>;
   setAvatar(source: ClientAvatarSource, fileId: string): Promise<Profile>;
   updateProfile(profile: ProfileUpdate): Promise<Profile>;
   getPhoneNumber(code: string): Promise<Profile>;

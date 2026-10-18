@@ -6,11 +6,11 @@ const CLIENT_AVATAR_SOURCES = ['wechat'];
 const CLIENT_MEDIA_ORIGINS = ['wechat', 'custom'];
 const LEGACY_MEDIA_CATEGORIES = ['ride', 'bike', 'other'];
 const MEDIA_CATEGORIES = [
-  ...LEGACY_MEDIA_CATEGORIES,
   'profile-avatar',
   'profile-background',
   'activity-image',
   'activity-group-qr',
+  'activity-route-preview',
   'club-avatar',
   'club-cover',
 ];
@@ -119,7 +119,7 @@ function issueMediaUploadPath(
   secretValue,
   randomUUID = compatibleRandomUUID,
   extension = 'jpg',
-  category = 'other',
+  category = 'profile-avatar',
 ) {
   const filename = randomUUID();
   if (!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(filename))
@@ -128,7 +128,7 @@ function issueMediaUploadPath(
     throw new ProfileError('MEDIA_TYPE_INVALID', '媒体类型无效');
   if (!MEDIA_CATEGORIES.includes(category))
     throw new ProfileError('MEDIA_CATEGORY_INVALID', '媒体用途无效');
-  const categoryPath = LEGACY_MEDIA_CATEGORIES.includes(category) ? '' : `${category}/`;
+  const categoryPath = `${category}/`;
   return {
     cloud_path: `${mediaOwnerPrefix(openid, secretValue)}${categoryPath}${filename}.${extension}`,
     category,
@@ -323,7 +323,7 @@ function mediaRegistration(
     throw new ProfileError('MEDIA_ORIGIN_INVALID', '媒体来源无效');
   if (!isOwnerMedia(fileId, openid, secretValue))
     throw new ProfileError('MEDIA_NOT_OWNED', '媒体文件不属于当前用户');
-  const canonicalCategory = LEGACY_MEDIA_CATEGORIES.includes(category) ? '' : category;
+  const canonicalCategory = category;
   const binding = canonical
     ? canonicalMediaBinding(
         openid,

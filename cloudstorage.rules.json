@@ -1,4 +1,4 @@
 {
   "read": false,
-  "write": "auth != null && (/^profiles\\//.test(resource.path) || /^activity-routes\\//.test(resource.path) || /^club-applications\\//.test(resource.path)) && resource.openid == auth.openid"
+  "write": "auth != null && ((/^profiles\\/[a-f0-9]{32}\\/(profile-avatar|profile-background|activity-image|activity-group-qr|activity-route-preview|club-avatar|club-cover)\\//.test(resource.path) && resource.openid == auth.openid) || (/^activity-routes\\//.test(resource.path) && resource.openid == auth.openid))"
 }

@@ -1,16 +1,42 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
-const DIRECT_UPLOAD = /\b(?:wx\.cloud!?|cloud)\.uploadFile\s*\(/;
-
 const ORCHESTRATOR = 'miniprogram/utils/media-upload.ts';
+const GPX_UPLOADER = 'miniprogram/pages/admin/activity-edit/index.ts';
+const GPX_MARKER = 'MEDIA_UPLOAD_GPX_ONLY';
+const DIRECT_UPLOAD = /\b(?:wx\.cloud!?|cloud)\.uploadFile\s*\(/;
+const LOW_LEVEL_RETRY = /\buploadWithRetry\s*\(/;
+const REMOVED_REPOSITORY_PROTOCOL = new RegExp(
+  `\\b(?:${['getProfileMediaUpload', 'Path'].join('')}|${['registerProfile', 'Media'].join('')}|${['reportProfileMedia', 'Orphan'].join('')})\\b`,
+);
+const LEGACY_WRITE_CATEGORY =
+  /(?:uploadMedia\s*\(\s*\{[\s\S]{0,400}?category\s*:\s*['"](?:ride|bike|other)['"]|(?:issueMediaUploadPath|finalizeMediaUpload)\s*\([^\n]{0,200}['"](?:ride|bike|other)['"])/;
 
-export function directNativeUploadViolations(entries) {
+const isAllowedGpxRetry = (entry) =>
+  entry.file === GPX_UPLOADER &&
+  entry.content.includes(GPX_MARKER) &&
+  /uploadWithRetry\s*\(\s*\{\s*cloudPath:\s*routeUploadPath\([^)]*,\s*digest,\s*['"]gpx['"]\)/s.test(
+    entry.content,
+  );
+
+export function mediaUploadViolations(entries) {
   return entries
-    .filter((entry) => entry.file !== ORCHESTRATOR && DIRECT_UPLOAD.test(entry.content))
+    .filter((entry) => {
+      const isMiniprogram = entry.file.startsWith('miniprogram/');
+      if (entry.file === ORCHESTRATOR) return false;
+      if (isMiniprogram && DIRECT_UPLOAD.test(entry.content)) return true;
+      if (isMiniprogram && LOW_LEVEL_RETRY.test(entry.content) && !isAllowedGpxRetry(entry)) {
+        return true;
+      }
+      return (
+        REMOVED_REPOSITORY_PROTOCOL.test(entry.content) || LEGACY_WRITE_CATEGORY.test(entry.content)
+      );
+    })
     .map((entry) => entry.file)
     .sort();
 }
+
+export const directNativeUploadViolations = mediaUploadViolations;
 
 function sourceEntries(root, directory) {
   const base = join(root, directory);
@@ -28,8 +54,9 @@ function sourceEntries(root, directory) {
 }
 
 export function assertUnifiedMediaUpload(root = process.cwd()) {
-  const violations = directNativeUploadViolations(sourceEntries(root, 'miniprogram'));
+  const entries = [...sourceEntries(root, 'miniprogram'), ...sourceEntries(root, 'cloudfunctions')];
+  const violations = mediaUploadViolations(entries);
   if (violations.length)
-    throw new Error(`禁止绕过统一媒体上传模块直接调用 uploadFile：${violations.join(', ')}`);
+    throw new Error(`检测到遗留或绕过统一媒体上传的实现：${violations.join(', ')}`);
   return true;
 }

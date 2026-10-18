@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const cloud = require('wx-server-sdk');
-const { mediaDocumentId, mediaOwnerPrefix } = require('./core');
+const { clientUploadIntentId, mediaDocumentId, mediaOwnerPrefix } = require('./core');
 
 function statefulDatabase({ throwRuntimeMissing = false } = {}) {
   const state = {};
@@ -48,7 +48,11 @@ test('profile 入口把运行时 -1 的精确缺文档语义用于首次资料�
   const main = loadMain(owner, fixture.db);
 
   const profile = await main({ action: 'get' });
-  const uploadPath = await main({ action: 'mediaUploadPath' });
+  const uploadPath = await main({
+    action: 'mediaUploadPath',
+    category: 'profile-avatar',
+    requestId: 'request_runtime_123',
+  });
 
   assert.equal(profile.ok, true);
   assert.deepEqual(profile.data.club_memberships, []);
@@ -75,6 +79,18 @@ test('registerMedia 在任何特权存储读取前拒绝跨 owner fileID', async
   let downloadCalls = 0;
   let uploadCalls = 0;
   const fixture = statefulDatabase();
+  const cloudPath = fileId.slice(fileId.indexOf('/', 'cloud://'.length) + 1);
+  const intentId = clientUploadIntentId(cloudPath);
+  fixture.state.profile_media_imports = new Map([
+    [
+      intentId,
+      {
+        _id: intentId,
+        category: 'profile-avatar',
+        request_id: 'request_owner_check_123',
+      },
+    ],
+  ]);
   cloud.getTempFileURL = async ({ fileList }) => {
     tempUrlCalls += 1;
     return {
@@ -99,6 +115,8 @@ test('registerMedia 在任何特权存储读取前拒绝跨 owner fileID', async
     action: 'registerMedia',
     fileId,
     origin: 'custom',
+    category: 'profile-avatar',
+    requestId: 'request_owner_check_123',
   });
 
   assert.equal(result.ok, false);
@@ -113,7 +131,11 @@ test('mediaUploadPath 在把 owner-bound path 返回客户端前持久化 cleanu
   const fixture = statefulDatabase();
   const main = loadMain(owner, fixture.db);
 
-  const result = await main({ action: 'mediaUploadPath' });
+  const result = await main({
+    action: 'mediaUploadPath',
+    category: 'profile-avatar',
+    requestId: 'request_cleanup_123',
+  });
 
   assert.equal(result.ok, true);
   const intents = [...(fixture.state.profile_media_imports || new Map()).values()];
@@ -123,6 +145,8 @@ test('mediaUploadPath 在把 owner-bound path 返回客户端前持久化 cleanu
     kind: 'client_upload',
     owner_openid: owner,
     cloud_path: result.data.cloud_path,
+    category: 'profile-avatar',
+    request_id: 'request_cleanup_123',
     status: 'prepared',
     created_at: intents[0].created_at,
     cleanup_after: intents[0].cleanup_after,

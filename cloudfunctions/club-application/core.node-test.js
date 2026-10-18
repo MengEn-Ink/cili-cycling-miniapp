@@ -1,6 +1,8 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
+process.env.PROFILE_MEDIA_PATH_SECRET = 'profile-media-secret-for-tests-32-bytes';
 const {
   saveDraft,
   submitApplication,
@@ -14,6 +16,15 @@ const {
 const { activeApprovedClub } = require('../profile/club-memberships');
 const { resolveTrustedClubIdentity } = require('../activity-admin/use-cases');
 
+const canonicalClubMedia = (openid, category, extension = 'jpg') => {
+  const alias = crypto
+    .createHmac('sha256', process.env.PROFILE_MEDIA_PATH_SECRET)
+    .update(openid)
+    .digest('hex')
+    .slice(0, 32);
+  return `cloud://env/profile-canonical/${alias}/${category}/${'a'.repeat(64)}/${'b'.repeat(64)}.${extension}`;
+};
+
 const valid = (openid = 'user-1') => ({
   club_name: '山海骑行会',
   city: '深圳',
@@ -23,8 +34,8 @@ const valid = (openid = 'user-1') => ({
   expected_size: 30,
   activity_types: '公路骑行、爬坡训练',
   rules_summary: '遵守交通规则，佩戴头盔，服从领队安排。',
-  avatar_file_id: `cloud://env/club-applications/${openid}/avatar.jpg`,
-  cover_file_id: `cloud://env/club-applications/${openid}/cover.jpg`,
+  avatar_file_id: canonicalClubMedia(openid, 'club-avatar'),
+  cover_file_id: canonicalClubMedia(openid, 'club-cover'),
 });
 function memoryStore() {
   const state = {
@@ -462,8 +473,8 @@ test('管理员更新资料时服务端只写允许字段并记录审计', async
         city: '广州',
         introduction: '这是修改后的俱乐部介绍，清晰说明定位和日常活动安排。',
         join_mode: 'admin_invite',
-        avatar_file_id: 'cloud://env/club-applications/user-2/new-avatar.jpg',
-        cover_file_id: 'cloud://env/club-applications/user-2/new-cover.jpg',
+        avatar_file_id: canonicalClubMedia('user-2', 'club-avatar'),
+        cover_file_id: canonicalClubMedia('user-2', 'club-cover'),
         max_members: 120,
       },
     },
@@ -471,14 +482,14 @@ test('管理员更新资料时服务端只写允许字段并记录审计', async
   );
 
   assert.equal(updated.name, '新名称骑行会');
-  assert.equal(updated.avatar_file_id, 'cloud://env/club-applications/user-2/new-avatar.jpg');
-  assert.equal(updated.cover_file_id, 'cloud://env/club-applications/user-2/new-cover.jpg');
+  assert.equal(updated.avatar_file_id, canonicalClubMedia('user-2', 'club-avatar'));
+  assert.equal(updated.cover_file_id, canonicalClubMedia('user-2', 'club-cover'));
   const stored = store.state.clubs.get(id);
   assert.equal(stored.owner_openid, 'user-1');
   assert.equal(stored.status, 'active');
   assert.equal(stored.approval_status, 'approved');
-  assert.equal(stored.avatar_url, 'cloud://env/club-applications/user-2/new-avatar.jpg');
-  assert.equal(stored.cover_file_id, 'cloud://env/club-applications/user-2/new-cover.jpg');
+  assert.equal(stored.avatar_url, canonicalClubMedia('user-2', 'club-avatar'));
+  assert.equal(stored.cover_file_id, canonicalClubMedia('user-2', 'club-cover'));
   assert.equal(store.state.audits.at(-1).action, 'club_profile_updated');
   assert.equal(store.state.audits.at(-1).request_id, 'club-update-0001');
 });
@@ -507,7 +518,7 @@ test('资料更新要求 active 管理身份、合法图片归属并支持同请
     city: '深圳',
     introduction: '我们每周组织安全、友好的公路骑行训练活动。',
     join_mode: 'public_apply',
-    avatar_file_id: 'cloud://env/club-applications/user-1/new.jpg',
+    avatar_file_id: canonicalClubMedia('user-1', 'club-avatar'),
     max_members: 50,
   };
 

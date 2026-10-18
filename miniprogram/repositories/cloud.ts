@@ -240,9 +240,12 @@ function mapActivityRouteExtras(raw: unknown) {
   const generatedPreviewFileId =
     gpxSha256 &&
     typeof raw.generated_preview_file_id === 'string' &&
-    new RegExp(`^cloud://[^/]+/activity-routes/[^/]+/${gpxSha256}\\.png$`).test(
+    (/^cloud:\/\/[^/]+\/profile-canonical\/[a-f0-9]{32}\/activity-route-preview\/[a-f0-9]{64}\/[a-f0-9]{64}\.png$/i.test(
       raw.generated_preview_file_id,
-    )
+    ) ||
+      new RegExp(`^cloud://[^/]+/activity-routes/[^/]+/${gpxSha256}\\.png$`).test(
+        raw.generated_preview_file_id,
+      ))
       ? raw.generated_preview_file_id
       : '';
   const optionalMetric = (value: unknown, minimum: number, maximum: number) =>
@@ -433,9 +436,12 @@ function mapRouteGpxPreview(raw: unknown): RouteGpxPreview {
   if (
     value.generated_preview_file_id !== undefined &&
     (typeof value.generated_preview_file_id !== 'string' ||
-      !new RegExp(`^cloud://[^/]+/activity-routes/[^/]+/${value.gpx_sha256}\\.png$`).test(
+      (!/^cloud:\/\/[^/]+\/profile-canonical\/[a-f0-9]{32}\/activity-route-preview\/[a-f0-9]{64}\/[a-f0-9]{64}\.png$/i.test(
         value.generated_preview_file_id,
-      ))
+      ) &&
+        !new RegExp(`^cloud://[^/]+/activity-routes/[^/]+/${value.gpx_sha256}\\.png$`).test(
+          value.generated_preview_file_id,
+        )))
   )
     return invalidResponse();
   let previousDistance = -1;
@@ -1747,15 +1753,6 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
   async getProfile() {
     return mapProfile(await this.call('profile', { action: 'get' }));
   }
-  async getProfileMediaUploadPath() {
-    const value = expectRecord(await this.call('profile', { action: 'mediaUploadPath' }));
-    if (
-      typeof value.cloud_path !== 'string' ||
-      !/^profiles\/[a-f0-9]{32}\/[a-f0-9-]{36}\.jpg$/i.test(value.cloud_path)
-    )
-      return invalidResponse();
-    return value.cloud_path;
-  }
   async issueMediaUploadPath(
     category: UnifiedMediaCategory,
     requestId: string,
@@ -1804,36 +1801,6 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
   }
   async getPersonalCapabilityCard() {
     return mapPersonalCapabilityCard(await this.call('profile', { action: 'capabilityCard' }));
-  }
-  async registerProfileMedia(
-    fileId: string,
-    category: 'ride' | 'bike' | 'other',
-    origin: ClientAvatarSource = 'custom',
-  ) {
-    const value = expectRecord(
-      await this.call('profile', {
-        action: 'registerMedia',
-        fileId: requiredId(fileId, '媒体文件 ID'),
-        category,
-        origin: clientMediaOrigin(origin),
-      }),
-    );
-    if (value.registered !== true) return invalidResponse();
-  }
-  async reportProfileMediaOrphan(
-    fileId: string,
-    category: 'ride' | 'bike' | 'other',
-    origin: ClientAvatarSource = 'custom',
-  ) {
-    const value = expectRecord(
-      await this.call('profile', {
-        action: 'reportOrphan',
-        fileId: requiredId(fileId, '媒体文件 ID'),
-        category,
-        origin: clientMediaOrigin(origin),
-      }),
-    );
-    if (value.reported !== true) return invalidResponse();
   }
   async setAvatar(source: ClientAvatarSource, fileId: string) {
     return mapProfile(
@@ -1924,7 +1891,9 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
       typeof previewId !== 'string' ||
       !/^[a-f0-9]{64}$/.test(previewId) ||
       typeof generatedPreviewFileId !== 'string' ||
-      !/^cloud:\/\/[^/]+\/activity-routes\/[^/]+\/[a-f0-9]{64}\.png$/.test(generatedPreviewFileId)
+      !/^cloud:\/\/[^/]+\/profile-canonical\/[a-f0-9]{32}\/activity-route-preview\/[a-f0-9]{64}\/[a-f0-9]{64}\.png$/i.test(
+        generatedPreviewFileId,
+      )
     )
       throw new CloudRepositoryError('VALIDATION_FAILED', '路线图参数无效');
     return mapRouteGpxPreview(
