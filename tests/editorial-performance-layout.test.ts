@@ -66,16 +66,16 @@ describe('方案 A 编辑式性能布局', () => {
     expect(cardStyles).toContain('.card-actions');
 
     const appStyles = read('miniprogram/app.wxss');
-    for (const [source, selector] of [
-      [appStyles, '.route-action'],
-      [detailStyles, '.route-location-row button'],
+    for (const [source, selector, lineHeight] of [
+      [appStyles, '.route-action', 'var(--line-height-body)'],
+      [detailStyles, '.route-location-row button', '1.3'],
     ] as const) {
       const button = effectiveBlock(source, selector);
       expect(declaration(button, 'display'), selector).toBe('flex');
       expect(declaration(button, 'align-items'), selector).toBe('center');
       expect(declaration(button, 'justify-content'), selector).toBe('center');
       expect(declaration(button, 'min-height'), selector).toBe('var(--control-height)');
-      expect(declaration(button, 'line-height'), selector).toMatch(/^(?:1\.3|44rpx)$/);
+      expect(declaration(button, 'line-height'), selector).toBe(lineHeight);
     }
 
     const fixedAction = effectiveBlock(appStyles, '.btn');

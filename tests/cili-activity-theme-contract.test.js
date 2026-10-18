@@ -173,9 +173,10 @@ describe('CILI 活动页静态契约', () => {
     const appStyles = read('miniprogram/app.wxss');
     const tokens = uiTokens(appStyles);
     expect(tokens['--color-bg']).toBe('#fbf5ea');
-    expect(tokens['--radius-sm']).toBe('20rpx');
-    expect(tokens['--radius-md']).toBe('26rpx');
-    expect(tokens['--radius-display']).toBe('40rpx');
+    expect(tokens['--radius-sm']).toBe('12rpx');
+    expect(tokens['--radius-md']).toBe('20rpx');
+    expect(tokens['--radius-card']).toBe('28rpx');
+    expect(tokens['--radius-display']).toBe('32rpx');
     const card = effectiveBlock(activityCardStyles, '.activity-card');
     expectSemantic(declaration(card, 'background'), '--color-surface');
     expectSemantic(declaration(card, 'border-radius'), '--radius-display');

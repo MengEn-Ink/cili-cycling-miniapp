@@ -165,7 +165,7 @@ describe('品牌与页面体验静态契约', () => {
     expect(template).toContain('aria-selected="{{statusFilter === \'all\'}}"');
     expect(declaration(filters, 'margin-top')).toBe('32rpx');
     expectSemantic(declaration(activeFilter, 'background'), '--color-action');
-    expect(declaration(card, 'border')).toBe('2rpx solid var(--color-card-border)');
+    expect(declaration(card, 'border')).toBe('var(--card-border-width) solid var(--card-border)');
     expect(declaration(card, 'box-shadow')).toBe('none');
     expect(management).not.toMatch(/#0b0b0c|#242427|#343438|#151517/i);
   });
@@ -191,10 +191,7 @@ describe('品牌与页面体验静态契约', () => {
     const tokens = uiTokens(appStyles);
     expect(tokens['--color-status-success']).toBe('#16633a');
     expect(tokens['--color-status-success-soft']).toBe('#e7f4eb');
-    expectSemantic(
-      declaration(effectiveBlock(appStyles, '.card'), 'background'),
-      '--color-surface',
-    );
+    expectSemantic(declaration(effectiveBlock(appStyles, '.card'), 'background'), '--card-bg');
     expectSemantic(
       declaration(effectiveBlock(appStyles, '.fixed'), 'background'),
       '--color-fixed-bar',

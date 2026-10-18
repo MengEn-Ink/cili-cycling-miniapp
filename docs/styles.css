@@ -6,6 +6,50 @@
  * --color-status-* 两端共用，只用于状态小标签、行内提示和图标。
  */
 :root {
+  /* Primitive tokens: 1rpx = 0.5px against the mini program source. */
+  --primitive-color-vermilion: #e13b2b;
+  --primitive-color-rice: #fbf5ea;
+  --primitive-color-ink: #211f1c;
+  --primitive-color-white: #ffffff;
+  --primitive-color-sand: #f3e6d0;
+  --primitive-color-stone: #6f675d;
+  --primitive-color-line: #ededed;
+  --primitive-color-line-strong: #9a9186;
+  --space-1: 4px;
+  --space-2: 6px;
+  --space-3: 8px;
+  --space-4: 12px;
+  --space-5: 16px;
+  --space-6: 24px;
+  /* Legacy Pages spacing names remain as aliases for existing prototype sections. */
+  --spacing-xs: var(--space-1);
+  --spacing-sm: var(--space-3);
+  --spacing-md: var(--space-4);
+  --spacing-lg: var(--space-5);
+  --border-width-hairline: 1px;
+  --border-width-strong: 2px;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-card: 14px;
+  --radius-display: 16px;
+  --radius-full: 9999px;
+  --font-size-label: 12px;
+  --font-size-body: 14px;
+  --font-size-title: 18px;
+  --font-size-display: 24px;
+  --line-height-label: 18px;
+  --line-height-body: 22px;
+  --line-height-title: 26px;
+  --line-height-display: 32px;
+  --font-weight-body: 600;
+  --font-weight-strong: 800;
+  --font-weight-display: 900;
+  --motion-duration-fast: 120ms;
+  --motion-duration-base: 180ms;
+  --motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Semantic tokens: established names stay stable across both clients. */
   --color-bg: #fbf5ea;
   --color-surface: #ffffff;
   --color-raised: #f3e6d0;
@@ -35,20 +79,44 @@
   --color-status-success-soft: #e7f4eb;
   --color-status-warning: #7a5c00;
   --color-status-warning-soft: #fff2c7;
-  --radius-xs: 4px;
-  --radius-sm: 10px;
-  --radius-md: 13px;
-  --radius-card: 18px;
-  --radius-full: 9999px;
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 12px;
-  --spacing-lg: 16px;
+  --shadow-hard: 0 5px 14px var(--color-shadow);
+  --shadow-card: 0 4px 12px var(--color-shadow);
+  --focus-color: var(--color-brand);
+  --focus-ring: 0 0 0 2px var(--color-brand-soft);
   --control-height: 48px;
   --segment-height: 46px;
   --page-gutter: 16px;
   --card-gap: 14px;
   --font: Inter, 'Noto Sans SC', 'PingFang SC', system-ui, -apple-system, sans-serif;
+
+  /* Component tokens: shared prototype controls consume this layer first. */
+  --button-bg: var(--color-action);
+  --button-bg-active: var(--color-action-active);
+  --button-text: var(--color-on-action);
+  --button-border: var(--color-action);
+  --button-radius: var(--radius-sm);
+  --button-padding-inline: var(--space-4);
+  --card-bg: var(--color-surface);
+  --card-text: var(--color-text);
+  --card-border: var(--color-card-border);
+  --card-border-width: var(--border-width-hairline);
+  --card-radius: var(--radius-card);
+  --card-padding: var(--space-5);
+  --input-bg: var(--color-input-bg);
+  --input-text: var(--color-text);
+  --input-border: var(--color-border-strong);
+  --input-border-width: var(--border-width-strong);
+  --input-radius: var(--radius-sm);
+  --input-focus-border: var(--focus-color);
+  --input-focus-ring: var(--focus-ring);
+  --tag-bg: var(--color-raised);
+  --tag-text: var(--color-text);
+  --tag-radius: var(--radius-xs);
+  --segment-bg: var(--color-surface);
+  --segment-text: var(--color-text);
+  --segment-border: var(--color-border-strong);
+  --segment-border-width: var(--border-width-strong);
+  --segment-radius: var(--radius-sm);
 }
 
 * {
@@ -843,10 +911,11 @@ code {
 /* 分区卡片 */
 .card {
   margin-top: var(--card-gap);
-  padding: 16px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
+  padding: var(--card-padding);
+  border: var(--card-border-width) solid var(--card-border);
+  border-radius: var(--card-radius);
+  background: var(--card-bg);
+  color: var(--card-text);
 }
 
 .card-head {
@@ -954,8 +1023,8 @@ code {
   gap: 6px;
   width: 100%;
   height: var(--control-height);
-  padding: 0 12px;
-  border-radius: var(--radius-full);
+  padding: 0 var(--button-padding-inline);
+  border-radius: var(--button-radius);
   font-size: 16px;
   font-weight: 800;
   text-align: center;
@@ -963,13 +1032,13 @@ code {
 }
 
 .btn {
-  border: 2px solid var(--color-action);
-  background: var(--color-action);
-  color: var(--color-on-action);
+  border: var(--border-width-strong) solid var(--button-border);
+  background: var(--button-bg);
+  color: var(--button-text);
 }
 
 .btn:active {
-  background: var(--color-action-active);
+  background: var(--button-bg-active);
 }
 
 .btn-secondary {
@@ -1056,7 +1125,7 @@ code {
   gap: 4px;
   height: 24px;
   padding: 0 8px;
-  border-radius: 4px;
+  border-radius: var(--tag-radius);
   font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
@@ -1064,8 +1133,8 @@ code {
 }
 
 .tag-neutral {
-  background: var(--color-raised);
-  color: var(--color-text);
+  background: var(--tag-bg);
+  color: var(--tag-text);
 }
 
 .tag-solid {
@@ -1114,8 +1183,8 @@ code {
   grid-auto-flow: column;
   overflow: hidden;
   margin-top: 8px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border: var(--segment-border-width) solid var(--segment-border);
+  border-radius: var(--segment-radius);
 }
 
 .seg button {
@@ -1128,8 +1197,8 @@ code {
   font-size: 14px;
   font-weight: 700;
   white-space: nowrap;
-  background: var(--color-surface);
-  color: var(--color-text);
+  background: var(--segment-bg);
+  color: var(--segment-text);
 }
 
 .seg button + button {
@@ -1214,9 +1283,10 @@ code {
   min-height: var(--control-height);
   margin-top: 8px;
   padding: 0 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-input-bg);
+  border: var(--input-border-width) solid var(--input-border);
+  border-radius: var(--input-radius);
+  background: var(--input-bg);
+  color: var(--input-text);
   font-size: 14px;
   line-height: 22px;
   font-weight: 700;
@@ -1241,8 +1311,8 @@ code {
 }
 
 .input.is-focus {
-  border-color: var(--color-brand);
-  box-shadow: 0 0 0 2px var(--color-brand-soft);
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-ring);
 }
 
 .input.is-error {
