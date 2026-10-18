@@ -308,6 +308,14 @@ export class CachingRepository implements RideRepository {
     return result;
   }
 
+  async reviewActivity(
+    ...args: Parameters<RideRepository['reviewActivity']>
+  ): ReturnType<RideRepository['reviewActivity']> {
+    const result = await this.inner.reviewActivity(...args);
+    this.cacheControl.invalidateActivities();
+    return result;
+  }
+
   async deleteActivity(id: string, reason: string) {
     await this.inner.deleteActivity(id, reason);
     this.cacheControl.invalidateActivities();

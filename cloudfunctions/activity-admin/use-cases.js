@@ -11,6 +11,7 @@ const {
   effectiveActivityInput,
   validateDraftInput,
   validatePublishInput,
+  validateReviewInput,
   assertStatusTransition,
   buildActivityAudit,
   activityAuditAction,
@@ -69,7 +70,9 @@ const TRUSTED_PUBLIC_ROUTE_FIELDS = [
   'strava_gpx_available',
 ];
 
-const CLUB_ACTIVITY_ROLES = new Set(['OWNER', 'ADMIN', 'ORGANIZER']);
+const CLUB_ACTIVITY_ROLES = new Set(['OWNER', 'ADMIN', 'ORGANIZER', 'MEMBER']);
+const CLUB_AUTO_PUBLISH_ROLES = new Set(['OWNER', 'ADMIN']);
+const REVIEW_DECISIONS = new Set(['approve', 'reject']);
 
 function clubIsSelectable(club) {
   return Boolean(club && club.approval_status === 'approved' && club.status === 'active');
@@ -80,14 +83,18 @@ function clubAvatarUrl(club) {
 }
 
 async function resolveTrustedClubIdentity(tx, { clubId, openid, isAdmin }) {
-  if (!clubId) return { clubId: null, clubIdentity: null };
+  if (!clubId) return { clubId: null, clubIdentity: null, membershipRole: null };
   if (typeof clubId !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(clubId))
     fail('VALIDATION_FAILED', '俱乐部 ID 格式错误');
   const club = await tx.getClub(clubId);
+  // 停用俱乐部不能接收新投稿或利用管理员角色直发，避免绕过组织治理状态。
   if (!clubIsSelectable(club)) fail('CLUB_UNAVAILABLE', '俱乐部不存在或当前不可用');
+  let membershipRole = null;
   if (!isAdmin) {
     const membership = await tx.getActiveClubMembership(clubId, openid);
-    if (!membership || !CLUB_ACTIVITY_ROLES.has(String(membership.role || '').toUpperCase()))
+    membershipRole = String(membership?.role || '').toUpperCase();
+    // 角色采用显式白名单；未来出现未知角色时默认拒绝，避免新增角色意外获得发布权。
+    if (!membership || !CLUB_ACTIVITY_ROLES.has(membershipRole))
       fail('CLUB_FORBIDDEN', '无权以该俱乐部身份发布活动');
   }
   if (typeof club.name !== 'string' || !club.name.trim())
@@ -100,6 +107,7 @@ async function resolveTrustedClubIdentity(tx, { clubId, openid, isAdmin }) {
     fail('CLUB_SCHEMA_INVALID', '俱乐部资料异常');
   return {
     clubId,
+    membershipRole,
     clubIdentity: {
       id: clubId,
       name: club.name.trim(),
@@ -511,24 +519,29 @@ async function saveActivity(
       fail('ROUTE_PREVIEW_REQUIRED', '请先上传并读取 GPX 路线');
     }
     if (activityId && !current) fail('ACTIVITY_NOT_FOUND', '活动不存在');
-    // 普通成员的权限严格绑定服务端 OPENID：只能管理自己的草稿，并可下架自己已上线的活动。
+    // 权限严格绑定服务端 OPENID；投稿进入待审后被冻结，避免审批读取与作者修改互相覆盖。
     if (!isAdmin && current && current.created_by !== openid)
       fail('FORBIDDEN', '只能编辑自己的活动');
-    // 创建者可把自己已上线的活动下架；已上线内容的其他编辑仍只允许管理员执行。
-    if (
-      !isAdmin &&
-      current &&
-      current.status !== 'draft' &&
-      !(current.status === 'published' && effectiveActivity.status === 'draft')
-    )
-      fail('FORBIDDEN', '普通成员只能编辑自己的草稿或下架已上线活动');
+    // 待审记录只能走 review action 的 review_version CAS；平台管理员也不能借 save 绕过并发契约。
+    if (current?.status === 'pending_review')
+      fail('REVIEW_ACTION_REQUIRED', '待审核活动只能通过审批操作处理');
+    if (!isAdmin && current?.status === 'finished') fail('FORBIDDEN', '已结束活动不能编辑');
     if (!isAdmin && effectiveActivity.status === 'finished')
-      fail('ADMIN_REQUIRED', '仅管理员可以结束活动');
+      fail('ADMIN_REQUIRED', '仅平台管理员可以结束活动');
     const trustedClub = await resolveTrustedClubIdentity(tx, {
       clubId: effectiveActivity.club_id || null,
       openid,
       isAdmin,
     });
+    const nextStatus = effectiveActivity.status;
+    if (nextStatus === 'rejected') fail('FORBIDDEN', '驳回状态只能由审批操作产生');
+    if (nextStatus === 'pending_review' && !trustedClub.clubId)
+      fail('CLUB_REQUIRED', '俱乐部活动才能提交审核');
+    if (nextStatus === 'published' && !isAdmin) {
+      if (!trustedClub.clubId) fail('ADMIN_REQUIRED', '公开活动仅平台管理员可以发布');
+      if (!CLUB_AUTO_PUBLISH_ROLES.has(trustedClub.membershipRole))
+        fail('REVIEW_REQUIRED', '请先提交所属俱乐部管理员审核');
+    }
     let currentVersion = 0;
     if (current && current.version !== undefined) {
       if (!Number.isInteger(current.version) || current.version < 1)
@@ -562,13 +575,19 @@ async function saveActivity(
     else if (effectiveActivity.status !== 'draft')
       fail('INVALID_TRANSITION', '新活动必须先保存为草稿');
     const safe =
-      effectiveActivity.status === 'draft'
+      effectiveActivity.status === 'draft' || effectiveActivity.status === 'rejected'
         ? validateDraftInput(effectiveActivity, occupiedCount, validationOptions)
-        : validatePublishInput(effectiveActivity, occupiedCount, now, {
-            ...validationOptions,
-            requireFutureDeadline:
-              current?.status === 'draft' && effectiveActivity.status === 'published',
-          });
+        : effectiveActivity.status === 'pending_review'
+          ? validateReviewInput(effectiveActivity, occupiedCount, now, {
+              ...validationOptions,
+              requireFutureDeadline: current?.status !== 'pending_review',
+            })
+          : validatePublishInput(effectiveActivity, occupiedCount, now, {
+              ...validationOptions,
+              requireFutureDeadline:
+                ['draft', 'rejected'].includes(current?.status) &&
+                effectiveActivity.status === 'published',
+            });
     const partitionCapacityReady =
       Number.isInteger(safe.capacity) &&
       safe.capacity > 0 &&
@@ -612,12 +631,62 @@ async function saveActivity(
     )
       fail('CAPACITY_BELOW_OCCUPIED', '分类容量不能低于对应已占用名额');
     const id = targetActivityId;
+    const isReviewSubmission =
+      safe.status === 'pending_review' && ['draft', 'rejected'].includes(current?.status);
+    const isRoleAutoPublish =
+      safe.status === 'published' &&
+      ['draft', 'rejected'].includes(current?.status) &&
+      !isAdmin &&
+      CLUB_AUTO_PUBLISH_ROLES.has(trustedClub.membershipRole);
+    // rejected 重投属于新一轮审批。旧 requestId/fingerprint 只能幂等命中旧轮次，
+    // 因此在生成新 review_version 时一并移除，避免迟到重试误返回上一轮结果。
+    const currentForNextRound = isReviewSubmission
+      ? Object.fromEntries(
+          Object.entries(current || {}).filter(
+            ([key]) =>
+              ![
+                'review_request_id',
+                'review_request_fingerprint',
+                'review_request_result',
+              ].includes(key),
+          ),
+        )
+      : current || {};
     const value = {
-      ...(current || {}),
+      ...currentForNextRound,
       ...safe,
       _id: id,
       club_id: trustedClub.clubId,
       club_identity: trustedClub.clubIdentity,
+      ...(isReviewSubmission
+        ? {
+            review_scope: 'club',
+            review_target_id: trustedClub.clubId,
+            review_version: Number.isInteger(current?.review_version)
+              ? current.review_version + 1
+              : 1,
+            approval_mode: 'club_review',
+            rejection_reason: '',
+            submitted_at: now,
+            // 快照只在每次投稿时生成；审批只读该快照，避免俱乐部资料变化改写当时发布主体。
+            publisher_snapshot: { ...trustedClub.clubIdentity },
+          }
+        : {}),
+      ...(isRoleAutoPublish
+        ? {
+            review_scope: 'club',
+            review_target_id: trustedClub.clubId,
+            review_version: Number.isInteger(current?.review_version)
+              ? current.review_version + 1
+              : 1,
+            approval_mode: 'role_auto_publish',
+            approved_by: openid,
+            approved_role: trustedClub.membershipRole,
+            published_at: now,
+            rejection_reason: '',
+            publisher_snapshot: { ...trustedClub.clubIdentity },
+          }
+        : {}),
       occupied_count: occupiedCount,
       version: currentVersion + 1,
       occupancy_partition_ready: occupancyPartitionReady,
@@ -682,10 +751,112 @@ async function saveActivity(
       backfilledPartition,
     );
     if (transitionReason) audit.detail.reason = transitionReason;
+    if (isReviewSubmission) {
+      audit.detail.review_scope = 'club';
+      audit.detail.review_target_id = trustedClub.clubId;
+      audit.detail.review_version = value.review_version;
+      audit.detail.approval_mode = 'club_review';
+    }
+    if (isRoleAutoPublish) {
+      audit.detail.review_scope = 'club';
+      audit.detail.review_target_id = trustedClub.clubId;
+      audit.detail.review_version = value.review_version;
+      audit.detail.approval_mode = 'role_auto_publish';
+      audit.detail.approved_role = trustedClub.membershipRole;
+    }
     await tx.addAudit(audit);
     return publicActivity(value);
   });
 }
+async function reviewActivity(store, request, now = new Date()) {
+  const { openid, activityId, decision, reason, requestId, expectedReviewVersion } = request || {};
+  assertTrustedOpenid(openid);
+  if (typeof activityId !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(activityId))
+    fail('VALIDATION_FAILED', '活动 ID 格式错误');
+  if (!REVIEW_DECISIONS.has(decision)) fail('VALIDATION_FAILED', '审批决定无效');
+  if (typeof requestId !== 'string' || !/^[A-Za-z0-9_-]{8,128}$/.test(requestId))
+    fail('VALIDATION_FAILED', '请求 ID 格式错误');
+  if (!Number.isInteger(expectedReviewVersion) || expectedReviewVersion < 1)
+    fail('VALIDATION_FAILED', '审批版本格式错误');
+  const rejectionReason = decision === 'reject' ? requiredReason(reason, '驳回活动') : '';
+  const fingerprint = crypto
+    .createHash('sha256')
+    .update(JSON.stringify([openid, activityId, decision, rejectionReason, expectedReviewVersion]))
+    .digest('hex');
+  return store.transaction(async (tx) => {
+    const current = await tx.getActivity(activityId);
+    if (!current || current.is_deleted === true) fail('ACTIVITY_NOT_FOUND', '活动不存在');
+    // 同一 requestId 只允许对应同一审批意图；网络重试直接返回第一次结果，不重复审计。
+    if (current.review_request_id === requestId) {
+      if (current.review_request_fingerprint !== fingerprint)
+        fail('REVIEW_REQUEST_CONFLICT', '审批请求与已有处理结果冲突');
+      return publicActivity(current);
+    }
+    if (current.status !== 'pending_review') fail('REVIEW_ALREADY_RESOLVED', '活动已被处理');
+    if (current.review_version !== expectedReviewVersion)
+      fail('REVIEW_CONFLICT', '活动审批版本已变化，请刷新后重试');
+    if (current.review_scope !== 'club' || !current.review_target_id)
+      fail('SCHEMA_INVALID', '活动审批范围异常');
+
+    const admin = await tx.getAdmin(openid);
+    const isAdmin = isEnabledAdmin(admin, openid);
+    const club = await tx.getClub(current.review_target_id);
+    if (!clubIsSelectable(club)) fail('CLUB_UNAVAILABLE', '俱乐部已停用，不能继续审批');
+    let reviewerRole = 'PLATFORM_ADMIN';
+    if (!isAdmin) {
+      const membership = await tx.getActiveClubMembership(current.review_target_id, openid);
+      reviewerRole = String(membership?.role || '').toUpperCase();
+      // 只有所属俱乐部 OWNER/ADMIN 可审批，ORGANIZER/MEMBER 与未知角色一律拒绝。
+      if (!membership || !CLUB_AUTO_PUBLISH_ROLES.has(reviewerRole))
+        fail('FORBIDDEN', '仅所属俱乐部管理员可以审批活动');
+    }
+
+    if (decision === 'approve') {
+      const publishInput = effectiveActivityInput(current, { status: 'published' });
+      const legacyImages = Array.isArray(current.images) && current.images.length > 3;
+      // 投稿时合规不代表审批时仍可发布（例如报名截止时间已经过去）。审批必须按“现在”
+      // 重新执行发布校验，失败则整个事务不写状态、不写审计。
+      validatePublishInput(publishInput, current.occupied_count ?? 0, now, {
+        ...(legacyImages ? { maxImages: 9 } : {}),
+        requireFutureDeadline: true,
+      });
+    }
+
+    const nextStatus = decision === 'approve' ? 'published' : 'rejected';
+    assertStatusTransition(current.status, nextStatus);
+    const value = {
+      ...current,
+      status: nextStatus,
+      version: Number.isInteger(current.version) ? current.version + 1 : 1,
+      review_version: current.review_version + 1,
+      review_request_id: requestId,
+      review_request_fingerprint: fingerprint,
+      reviewed_at: now,
+      reviewed_by: openid,
+      approved_by: decision === 'approve' ? openid : '',
+      approved_role: decision === 'approve' ? reviewerRole : '',
+      published_at: decision === 'approve' ? now : current.published_at,
+      rejection_reason: rejectionReason,
+      updated_at: now,
+    };
+    await tx.putActivity(activityId, value);
+    const audit = buildActivityAudit(
+      openid,
+      activityAuditAction(current.status, nextStatus),
+      activityId,
+      now,
+      current.status,
+      nextStatus,
+    );
+    audit.detail.review_version = value.review_version;
+    audit.detail.request_id = requestId;
+    audit.detail.reviewer_role = reviewerRole;
+    if (rejectionReason) audit.detail.reason = rejectionReason;
+    await tx.addAudit(audit);
+    return publicActivity(value);
+  });
+}
+
 module.exports = {
   partitionBackfill,
   createActivityId,
@@ -696,4 +867,5 @@ module.exports = {
   deleteActivity,
   resolveTrustedClubIdentity,
   saveActivity,
+  reviewActivity,
 };

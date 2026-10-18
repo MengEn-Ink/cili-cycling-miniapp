@@ -24,6 +24,7 @@ type ClubOption = {
   clubId: string;
   name: string;
   avatarUrl: string;
+  role?: string;
   isReadOnly?: boolean;
 };
 const PUBLIC_CLUB_OPTION: ClubOption = {
@@ -435,13 +436,12 @@ Page({
       if (!isCurrent()) return;
       const clubOptions: ClubOption[] = [
         PUBLIC_CLUB_OPTION,
-        ...(profile.clubs || [])
-          .filter((club) => ['OWNER', 'ADMIN', 'ORGANIZER'].includes(club.role.toUpperCase()))
-          .map((club) => ({
-            clubId: club.clubId,
-            name: club.name,
-            avatarUrl: club.avatarUrl,
-          })),
+        ...(profile.clubs || []).map((club) => ({
+          clubId: club.clubId,
+          name: club.name,
+          avatarUrl: club.avatarUrl,
+          role: club.role.toUpperCase(),
+        })),
       ];
       this.setData({ clubOptions, clubOptionsLoadFailed: false });
     } catch {
@@ -735,8 +735,12 @@ Page({
       );
     }
   },
-  async publishDraft(activity: ActivityInput, draft: EditableActivity) {
-    const published = { ...activity, status: 'published' as const };
+  async publishDraft(
+    activity: ActivityInput,
+    draft: EditableActivity,
+    targetStatus: 'published' | 'pending_review' = 'published',
+  ) {
+    const published = { ...activity, status: targetStatus };
     const attemptPublish = async (canRetry: boolean): Promise<EditableActivity> => {
       try {
         return await rideService.saveActivity(published, draft.id, draft.version);
@@ -750,7 +754,7 @@ Page({
         } catch {
           throw error;
         }
-        if (current.status === 'published') {
+        if (current.status === targetStatus) {
           if (
             current.id !== draft.id ||
             activityContentFingerprint(current) !== activityContentFingerprint(published)
@@ -758,7 +762,10 @@ Page({
             throw activityConflict();
           return current;
         }
-        if (current.status !== 'draft') throw error;
+        // 模糊失败后只有仍停留在本次起始状态（草稿或已驳回）才允许重试；
+        // 再配合版本与内容快照，避免把另一会话的修改误当成本端未提交。
+        if (current.status !== draft.status || !['draft', 'rejected'].includes(current.status))
+          throw error;
         if (!sameDraftSnapshot(draft, current)) throw activityConflict();
         if (!canRetry) throw error;
         return attemptPublish(false);
@@ -1378,7 +1385,7 @@ Page({
     if (!form.title.trim()) return (this.showFormError('请输入活动标题', 'title'), false);
     if (!form.startDate.trim()) return (this.showFormError('请选择集合日期', 'startAt'), false);
     if (!form.startTime.trim()) return (this.showFormError('请选择集合时间', 'startAt'), false);
-    if (nextStatus === 'published' && !form.routeStart.trim())
+    if (['published', 'pending_review'].includes(nextStatus) && !form.routeStart.trim())
       return (this.showFormError('请选择或填写集合地点', 'routeStart'), false);
     return true;
   },
@@ -1399,9 +1406,18 @@ Page({
       this.setData({ error: '路线详情尚未准备好，请重试或移除 GPX' });
       return;
     }
-    const nextStatus = String(
+    const requestedStatus = String(
       event.currentTarget.dataset.status || this.data.status,
     ) as ActivityInput['status'];
+    const selectedClub = this.data.clubOptions[this.data.clubOptionIndex] as ClubOption | undefined;
+    // 普通成员对俱乐部的“发布”实际是投稿；只有 OWNER/ADMIN 或平台管理员可直接上线。
+    const nextStatus: ActivityInput['status'] =
+      requestedStatus === 'published' &&
+      selectedClub?.clubId &&
+      !this.data.isAdmin &&
+      !['OWNER', 'ADMIN'].includes(selectedClub.role || '')
+        ? 'pending_review'
+        : requestedStatus;
     if (!this.validateBeforeSave(nextStatus)) return;
     const form = this.data.form as Form;
     if (form.description.length > 5000) {
@@ -1604,18 +1620,30 @@ Page({
         void this.refreshMediaPreviews(saved);
       };
       let saved: EditableActivity;
-      if (!id && nextStatus === 'published') {
+      if (!id && ['published', 'pending_review'].includes(nextStatus)) {
         const draft = await this.createDraft(activity);
-        // 首次草稿已成为可恢复事实：即使发布失败，也保留其 id/version 供用户原地重试。
+        // 首次草稿已成为可恢复事实：即使发布/投稿失败，也保留其 id/version 供用户原地重试。
         applySaved(draft);
-        saved = await this.publishDraft(activity, draft);
-      } else if (id && this.data.status === 'draft' && nextStatus === 'published') {
-        saved = await this.publishDraft(activity, {
-          ...this.data.originalActivity!,
-          id,
-          version: this.data.version,
-          status: 'draft',
-        });
+        saved = await this.publishDraft(
+          activity,
+          draft,
+          nextStatus as 'published' | 'pending_review',
+        );
+      } else if (
+        id &&
+        ['draft', 'rejected'].includes(this.data.status) &&
+        ['published', 'pending_review'].includes(nextStatus)
+      ) {
+        saved = await this.publishDraft(
+          activity,
+          {
+            ...this.data.originalActivity!,
+            id,
+            version: this.data.version,
+            status: this.data.status,
+          },
+          nextStatus as 'published' | 'pending_review',
+        );
       } else {
         saved = id
           ? await rideService.saveActivity(activity, id, this.data.version)

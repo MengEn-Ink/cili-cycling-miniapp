@@ -12,6 +12,7 @@ const {
   cloneActivity,
   deleteActivity,
   saveActivity,
+  reviewActivity,
   MAX_PARTITION_BACKFILL_RECORDS,
 } = require('./domain-index');
 const { listActivitiesPage } = require('./list-pagination');
@@ -21,6 +22,8 @@ const { resolveActivityMedia } = require('./media');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const OCCUPANCY_BACKFILL_PAGE_SIZE = 100;
+const MANAGED_CLUB_PAGE_SIZE = 100;
+const MAX_MANAGED_CLUB_MEMBERSHIPS = 1000;
 function isNotFound(error) {
   return (
     error &&
@@ -37,7 +40,41 @@ async function maybeGet(collection, id) {
 }
 async function actor(openid) {
   const admin = await maybeGet(db.collection('admins'), openid);
-  return { isAdmin: isEnabledAdmin(admin, openid) };
+  const isAdmin = isEnabledAdmin(admin, openid);
+  if (isAdmin) return { isAdmin, managedClubIds: [] };
+
+  const managedClubIds = new Set();
+  let membershipCount = 0;
+  let cursor = '';
+  for (;;) {
+    const remaining = MAX_MANAGED_CLUB_MEMBERSHIPS + 1 - membershipCount;
+    const result = await db
+      .collection('club_memberships')
+      .where({
+        openid,
+        status: 'active',
+        role: db.command.in(['OWNER', 'ADMIN']),
+        ...(cursor ? { _id: db.command.gt(cursor) } : {}),
+      })
+      .orderBy('_id', 'asc')
+      .limit(Math.min(MANAGED_CLUB_PAGE_SIZE, remaining))
+      .get();
+    if (!result || !Array.isArray(result.data)) throw new Error('invalid membership page');
+    membershipCount += result.data.length;
+    for (const membership of result.data) {
+      if (typeof membership?.club_id === 'string' && membership.club_id)
+        managedClubIds.add(membership.club_id);
+    }
+    if (membershipCount > MAX_MANAGED_CLUB_MEMBERSHIPS)
+      fail('MANAGED_CLUB_LIMIT_EXCEEDED', '管理俱乐部数量超过系统上限，请联系平台管理员');
+    if (result.data.length < Math.min(MANAGED_CLUB_PAGE_SIZE, remaining)) break;
+    const nextCursor = result.data[result.data.length - 1]?._id;
+    // 权限查询不能在分页异常时静默返回半截结果，否则会把真实权限误判为无权限。
+    if (typeof nextCursor !== 'string' || !nextCursor || nextCursor === cursor)
+      throw new Error('invalid membership cursor');
+    cursor = nextCursor;
+  }
+  return { isAdmin, managedClubIds: [...managedClubIds] };
 }
 function transactionStore() {
   return {
@@ -294,6 +331,22 @@ exports.main = async (event = {}) => {
       );
       return ok(await resolveActivityMedia(cloud, saved, openid));
     }
+    if (event.action === 'review') {
+      return ok(
+        await reviewActivity(
+          transactionStore(),
+          {
+            openid,
+            activityId: event.activityId,
+            decision: event.decision,
+            reason: event.reason,
+            requestId: event.requestId,
+            expectedReviewVersion: event.expectedReviewVersion,
+          },
+          new Date(),
+        ),
+      );
+    }
     if (event.action === 'clone') {
       return ok(
         await cloneActivity(
@@ -341,8 +394,10 @@ exports.main = async (event = {}) => {
         fail('VALIDATION_FAILED', '缺少活动 ID');
       const activity = await maybeGet(db.collection('activities'), event.activityId);
       if (!activity || activity.is_deleted === true) fail('ACTIVITY_NOT_FOUND', '活动不存在');
-      if (!identity.isAdmin && activity.created_by !== openid)
-        fail('FORBIDDEN', '只能查看自己的活动');
+      const canManageClub =
+        typeof activity.club_id === 'string' && identity.managedClubIds.includes(activity.club_id);
+      if (!identity.isAdmin && activity.created_by !== openid && !canManageClub)
+        fail('FORBIDDEN', '只能查看自己的活动或所管理俱乐部的活动');
       return ok(await resolveActivityMedia(cloud, publicActivity(activity), openid));
     }
     fail('UNKNOWN_ACTION', '未知操作');

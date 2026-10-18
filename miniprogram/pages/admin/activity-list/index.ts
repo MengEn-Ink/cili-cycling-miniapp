@@ -4,11 +4,21 @@ import { formatActivityDateTime } from '../../../utils/date-time';
 
 const emptyCloneForm = () => ({ deadline: '', startAt: '', endAt: '' });
 const newRequestId = () => `clone_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+const newReviewRequestId = () => `review_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 const PAGE_SIZE = 50;
+const REVIEW_CONFLICT_CODES = new Set([
+  'REVIEW_CONFLICT',
+  'REVIEW_ALREADY_RESOLVED',
+  'REVIEW_REQUEST_CONFLICT',
+]);
+const errorCode = (error: unknown) =>
+  typeof error === 'object' && error !== null && 'code' in error
+    ? String((error as { code?: unknown }).code || '')
+    : '';
 // 删除按钮宽度（px），卡片位移只能在 [-DELETE_ACTION_WIDTH, 0] 之间。
 const DELETE_ACTION_WIDTH = 80;
 const SWIPE_LOCK_PX = 10;
-type StatusFilter = 'all' | 'draft' | 'published' | 'finished';
+type StatusFilter = 'all' | 'draft' | 'pending_review' | 'rejected' | 'published' | 'finished';
 
 function clampSwipeOffset(value: number) {
   return Math.max(-DELETE_ACTION_WIDTH, Math.min(0, value));
@@ -54,7 +64,10 @@ function metricValue(...values: unknown[]) {
   return value === undefined ? '—' : String(value);
 }
 
-function displayItem(item: any) {
+function displayItem(item: any, isAdmin = false, managedClubIds: string[] = []) {
+  const canReview =
+    item.status === 'pending_review' &&
+    (isAdmin || (item.clubId && managedClubIds.includes(item.clubId)));
   return {
     ...item,
     displayDate: formatActivityDateTime(item.startAt || item.date),
@@ -62,9 +75,19 @@ function displayItem(item: any) {
     pendingMetric: metricValue(item.pendingRegistrationCount, item.pendingCount),
     approvedMetric: metricValue(item.approvedRegistrationCount, item.approvedCount),
     canClone: item.status === 'finished',
+    canReview,
+    canEdit: !['pending_review', 'finished'].includes(item.status),
     canToggleOnline: item.status === 'draft' || item.status === 'published',
     statusLabel:
-      item.status === 'published' ? '已上线' : item.status === 'draft' ? '已下架' : '已结束',
+      item.status === 'published'
+        ? '已上线'
+        : item.status === 'draft'
+          ? '已下架'
+          : item.status === 'pending_review'
+            ? '待审核'
+            : item.status === 'rejected'
+              ? '已驳回'
+              : '已结束',
     toggleLabel: item.status === 'published' ? '下架' : '上线',
     // 每张卡片各自维护滑动位移与展开状态，手势期间关闭动画、松手后开启动画吸附。
     swipeOffset: 0,
@@ -91,6 +114,11 @@ Page({
   _loadMorePromise: undefined as Promise<void> | undefined,
   _loadMoreCursor: '',
   _loadMoreRevision: 0,
+  // 审批 requestId 属于“活动 + 审批版本 + 决定”这一业务意图；模糊失败后必须复用，
+  // 否则响应丢失时重新生成 id 会把一次点击变成第二次审批。
+  _reviewIntents: new Map<string, { requestId: string; reason?: string }>(),
+  // 同一活动审批过程中互斥；即使用户交替点击通过/驳回，也只允许一个请求进入服务层。
+  _reviewInFlight: new Map<string, Promise<void>>(),
   // 当前手势状态：锁定方向后只响应水平滑动，避免与页面纵向滚动冲突。
   _touch: {
     id: '',
@@ -106,6 +134,7 @@ Page({
     loadError: '',
     allowed: false,
     isAdmin: false,
+    managedClubIds: [] as string[],
     cloneSourceId: '',
     cloneRequestId: '',
     cloneForm: emptyCloneForm(),
@@ -141,13 +170,23 @@ Page({
         });
         return;
       }
-      this.setData({ allowed: true, isAdmin: appStore.role === 'admin' });
+      const isAdmin = appStore.role === 'admin';
+      let managedClubIds: string[] = [];
+      try {
+        const profile = await rideService.getProfile();
+        managedClubIds = (profile.clubs || [])
+          .filter((club) => ['OWNER', 'ADMIN'].includes(club.role.toUpperCase()))
+          .map((club) => club.clubId);
+      } catch {
+        // 俱乐部身份仅增强审批按钮；读取失败时仍保留原有“我的活动”能力，服务端继续兜底鉴权。
+      }
+      this.setData({ allowed: true, isAdmin, managedClubIds });
       const page = await rideService.listAdminActivitiesPage(
         pageInput(this.data.statusFilter as StatusFilter),
       );
       if (!isCurrent()) return;
       this.setData({
-        items: page.items.map(displayItem),
+        items: page.items.map((item) => displayItem(item, isAdmin, managedClubIds)),
         nextCursor: page.nextCursor,
         hasMore: page.nextCursor !== null,
         error: '',
@@ -194,7 +233,12 @@ Page({
         const page = await rideService.listAdminActivitiesPage(pageInput(statusFilter, cursor));
         if (revision !== this._listRevision || cursor !== this.data.nextCursor) return;
         this.setData({
-          items: appendUnique(this.data.items, page.items.map(displayItem)),
+          items: appendUnique(
+            this.data.items,
+            page.items.map((item) =>
+              displayItem(item, this.data.isAdmin, this.data.managedClubIds),
+            ),
+          ),
           nextCursor: page.nextCursor,
           hasMore: page.nextCursor !== null,
           // error 已在请求开始时清空；此处不再覆盖，保留分页期间产生的更新业务错误。
@@ -219,12 +263,57 @@ Page({
   selectStatusFilter(event: any) {
     const statusFilter = String(event.currentTarget.dataset.status || '') as StatusFilter;
     if (
-      !['all', 'draft', 'published', 'finished'].includes(statusFilter) ||
+      !['all', 'draft', 'pending_review', 'rejected', 'published', 'finished'].includes(
+        statusFilter,
+      ) ||
       statusFilter === this.data.statusFilter
     )
       return Promise.resolve();
     this.setData({ statusFilter });
     return this.onShow();
+  },
+  reviewActivity(event: any) {
+    const id = String(event.currentTarget.dataset.id || '');
+    const decision = event.currentTarget.dataset.decision === 'reject' ? 'reject' : 'approve';
+    const item = this.data.items.find((candidate: { id: string }) => candidate.id === id);
+    if (!item?.canReview || !Number.isInteger(item.reviewVersion)) return Promise.resolve();
+    const inFlight = this._reviewInFlight.get(id);
+    if (inFlight) return inFlight;
+
+    const intentKey = `${id}:${item.reviewVersion}:${decision}`;
+    const intent = this._reviewIntents.get(intentKey) || { requestId: newReviewRequestId() };
+    this._reviewIntents.set(intentKey, intent);
+    const request = (async () => {
+      if (decision === 'reject' && !intent.reason) {
+        intent.reason = await promptOperationReason('驳回活动', '请填写明确的驳回原因');
+        if (!intent.reason) {
+          this._reviewIntents.delete(intentKey);
+          return;
+        }
+      }
+      this.setData({ error: '' });
+      try {
+        await rideService.reviewActivity(
+          id,
+          decision,
+          item.reviewVersion,
+          intent.requestId,
+          intent.reason || '',
+        );
+        // 成功与确定冲突都结束当前意图；只有响应丢失等可重试失败保留 requestId。
+        this._reviewIntents.delete(intentKey);
+        wx.showToast({ title: decision === 'approve' ? '已通过' : '已驳回', icon: 'success' });
+        await this.onShow();
+      } catch (error) {
+        if (REVIEW_CONFLICT_CODES.has(errorCode(error))) this._reviewIntents.delete(intentKey);
+        this.setData({ error: error instanceof Error ? error.message : '审批失败，请刷新后重试' });
+      }
+    })();
+    this._reviewInFlight.set(id, request);
+    void request.finally(() => {
+      if (this._reviewInFlight.get(id) === request) this._reviewInFlight.delete(id);
+    });
+    return request;
   },
   edit(event: any) {
     const id = String(event.currentTarget.dataset.id || '');

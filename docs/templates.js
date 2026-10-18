@@ -623,25 +623,29 @@
     },
 
     'admin-activity-list': () => {
-      const head = `<h2 class="page-title">我的活动</h2><p class="page-sub">管理全部活动与发布状态</p>
-        <div class="seg"><button class="is-active" data-action="choice">全部 <small>3</small></button><button data-action="choice">已下架 <small>1</small></button><button data-action="choice">已上线 <small>1</small></button><button data-action="choice">已结束 <small>1</small></button></div>`;
+      const head = `<h2 class="page-title">我的活动</h2><p class="page-sub">管理本人活动与所管理俱乐部的投稿</p>
+        <div class="seg"><button class="${is('pending-review') || is('rejected') ? '' : 'is-active'}" data-action="choice">全部 <small>5</small></button><button data-action="choice">已下架 <small>1</small></button><button class="${is('pending-review') ? 'is-active' : ''}" data-action="choice">待审核 <small>1</small></button><button class="${is('rejected') ? 'is-active' : ''}" data-action="choice">已驳回 <small>1</small></button><button data-action="choice">已上线 <small>1</small></button><button data-action="choice">已结束 <small>1</small></button></div>`;
       const footer = `<div class="btn-row" style="margin-top:16px">${btn('报名审批', go('admin-reviews'), 'btn-secondary')}${btn('创建活动草稿', go('admin-activity-edit') + ' data-state="create"')}</div>`;
       if (is('loading')) return `<div class="pg">${head}${skeletons(2)}</div>`;
       if (is('empty'))
         return `<div class="pg">${head}${stateView('0', '还没有活动', '创建第一场骑行活动草稿，发布后骑友即可报名。', btn('创建活动草稿', go('admin-activity-edit') + ' data-state="create"'))}</div>`;
-      const list = [
+      const pendingActivity = { title: '周末滨江轻骑', date: '10月25日 周日', time: '早上 8 点整', start: '滨江公园', distanceKm: 42, elevationM: 180, adminStatus: '待审核', approved: 0, pending: 0, signups: 0 };
+      const rejectedActivity = { ...pendingActivity, title: '夜骑安全训练', adminStatus: '已驳回' };
+      const regularActivities = [
         ...activities.map((a) => ({ ...a, signups: a.approved + a.pending })),
         { title: '秋日环湖耐力骑', date: '10月11日 周六', time: '早上 7 点整', start: '奥森南门', distanceKm: 82, elevationM: 680, adminStatus: '已结束', approved: 16, pending: 0, signups: 17 },
       ];
-      return `<div class="pg">${head}<div class="list-count"><span>活动列表</span><b>共 3 场</b></div>
+      const list = is('pending-review') ? [pendingActivity] : is('rejected') ? [rejectedActivity] : [pendingActivity, rejectedActivity, ...regularActivities];
+      return `<div class="pg">${head}<div class="list-count"><span>活动列表</span><b>共 ${list.length} 场</b></div>
         ${list
           .map((a) => {
-            const statusTag = a.adminStatus === '已上线' ? tag('solid', '已上线') : a.adminStatus === '已下架' ? tag('outline', '已下架') : tag('muted', '已结束');
+            const statusTag = a.adminStatus === '已上线' ? tag('solid', '已上线') : a.adminStatus === '待审核' ? tag('pending', '待审核') : a.adminStatus === '已驳回' ? tag('outline', '已驳回') : a.adminStatus === '已下架' ? tag('outline', '已下架') : tag('muted', '已结束');
             const toggle = btn(a.adminStatus === '已上线' ? '下架' : '上架', toast(a.adminStatus === '已上线' ? '活动已下架' : '活动已上架'), 'btn-secondary btn-sm');
+            const actions = a.adminStatus === '待审核' ? `${btn('驳回', toast('请填写驳回原因'), 'btn-secondary btn-sm')}${btn('通过', toast('活动已通过并公开'), 'btn-sm')}` : a.adminStatus === '已驳回' ? btn('查看驳回原因', toast('路线信息需要补充'), 'btn-secondary btn-sm') : `${btn('编辑', go('admin-activity-edit'), 'btn-secondary btn-sm')}${toggle}`;
             return `<article class="admin-card"><div class="admin-card-head">${statusTag}<span class="meta-line">${a.date} · ${a.time}</span></div><h3>${a.title}</h3><p class="meta-line">${a.start}集合 · ${a.distanceKm} km · ${a.elevationM} m</p>
               <div class="metric-grid three"><span><b>${a.signups}</b><small>报名</small></span><span><b class="${a.pending ? 'is-pending' : ''}">${a.pending}</b><small>待审核</small></span><span><b>${a.approved}</b><small>已通过</small></span></div>
-              <div class="btn-row">${btn('编辑', go('admin-activity-edit'), 'btn-secondary btn-sm')}${toggle}</div>
-              <div class="admin-card-more">${a.adminStatus === '已下架' ? `<button class="btn-text" ${toast('草稿已删除')}>删除（仅草稿）</button>` : ''}<button class="btn-text" data-action="copy-activity">从此活动创建</button></div></article>`;
+              <div class="btn-row">${actions}</div>
+              <div class="admin-card-more">${a.adminStatus === '已下架' ? `<button class="btn-text" ${toast('草稿已删除')}>删除（仅草稿）</button>` : ''}${['待审核', '已驳回'].includes(a.adminStatus) ? '' : '<button class="btn-text" data-action="copy-activity">从此活动创建</button>'}</div></article>`;
           })
           .join('')}${footer}</div>`;
     },
@@ -650,10 +654,14 @@
       const create = is('create');
       const error = is('error');
       const uploading = is('uploading');
+      const memberSubmit = is('member-submit') || is('rejected-resubmit');
+      const managerPublish = is('manager-publish');
       const filled = !create && !error;
       const v = (value) => (filled || uploading ? value : '');
       return `<div class="pg">
-        ${create ? '' : `<p class="neutral-note" style="margin-top:0">${error ? '请补全标红的必填项后再发布。' : '草稿已保存 · 10:24'}</p>`}
+        ${create ? '' : `<p class="neutral-note" style="margin-top:0">${is('rejected-resubmit') ? '已驳回 · 路线信息需要补充，修改后可重新提交。' : error ? '请补全标红的必填项后再发布。' : '草稿已保存 · 10:24'}</p>`}
+        <div class="card">${cardHead('00', '发布主体', memberSubmit ? tag('pending', '成员投稿') : managerPublish ? tag('solid', '管理员直发') : tag('neutral', '请选择'))}
+          ${field('活动归属', `<div class="row"><span class="k">辛庄桥小火车</span><span class="v">${managerPublish ? '管理员' : '成员'} ›</span></div><p class="card-hint">${memberSubmit ? '提交后进入俱乐部审核，审核通过前不会出现在公开活动列表。' : managerPublish ? '负责人或管理员发布所属俱乐部活动时可直接上线。' : '普通成员可选择已加入的俱乐部投稿；公开活动仅平台管理员可发布。'}</p>`)}</div>
         <div class="card">${cardHead('01', '基本信息')}
           ${field('活动标题', input(error ? '' : v(primary.title), { ph: '请输入活动标题', cls: error ? 'is-error' : '', error: error ? '请填写活动标题' : '' }), tag('pending', '必填'))}
           <p class="sub-title">集合信息</p>
@@ -677,7 +685,7 @@
           ${uploading ? `<div class="upload-tile is-wide" style="flex-direction:column;height:auto;padding:12px;gap:8px">正在读取路线… 62%<span class="progress on-light"><i style="width:62%"></i></span></div>` : filled ? `<div class="row" style="margin-top:8px"><span class="k">${primary.routeName}</span>${tag('solid', '路线详情已准备好')}</div><div class="btn-row three" style="margin-top:8px">${btn('更换 GPX', toast('已打开文件选择'), 'btn-secondary btn-sm')}${btn('移除路线详情', toast('路线详情已移除'), 'btn-secondary btn-sm')}${btn('设为活动背景', toast('已设为活动背景'), 'btn-secondary btn-sm')}</div>` : `<button class="upload-tile is-wide" ${toast('GPX 已上传并完成解析')}><b>+</b>上传 GPX</button>`}
           <p class="sub-title">活动群二维码</p><p class="card-hint">可选上传 1 张微信群二维码，便于已报名成员进群；上传超过 7 天会提示可能过期。</p>
           ${create || error ? `<button class="upload-tile is-wide" ${toast('已打开图片选择器')}><b>+</b>上传活动群二维码</button>` : `<div class="qr-row" style="margin-top:8px">${qr(3)}<div><p class="card-hint">已上传 · 报名通过后骑友可见</p><p class="alert-line">${tag('warning', '⚠ 已上传 8 天，可能过期')}</p><button class="btn-text" ${toast('二维码已删除')}>删除二维码</button></div></div>`}</div>
-      </div>${fixedBar(error ? '还有 2 项必填未完成' : '', [btn('保存草稿', toast('草稿已保存'), 'btn-secondary'), btn('发布活动', 'data-action="publish-activity"')])}`;
+      </div>${fixedBar(error ? '还有 2 项必填未完成' : memberSubmit ? '提交后由俱乐部负责人或管理员审核' : managerPublish ? '所属俱乐部管理员可直接发布' : '', [btn('保存草稿', toast('草稿已保存'), 'btn-secondary'), btn(memberSubmit ? '提交俱乐部审核' : '发布活动', memberSubmit ? toast('已提交俱乐部审核') : 'data-action="publish-activity"')])}`;
     },
 
     'admin-reviews': () => {

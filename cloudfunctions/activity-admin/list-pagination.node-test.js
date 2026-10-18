@@ -140,7 +140,7 @@ function compareRecords(left, right, orders) {
   return 0;
 }
 
-function loadMain({ records, openid = 'owner-a', admin = true }) {
+function loadMain({ records, openid = 'owner-a', admin = true, memberships = [] }) {
   const state = { reads: [] };
   const command = queryCommand();
 
@@ -179,6 +179,35 @@ function loadMain({ records, openid = 'owner-a', admin = true }) {
     };
   }
 
+  function membershipQuery() {
+    const conditions = [];
+    const orders = [];
+    let pageLimit;
+    return {
+      where(condition) {
+        conditions.push(condition);
+        return this;
+      },
+      orderBy(field, direction) {
+        orders.push({ field, direction });
+        return this;
+      },
+      limit(value) {
+        pageLimit = value;
+        return this;
+      },
+      async get() {
+        const filtered = memberships.filter((record) =>
+          conditions.every((condition) => matchesRecord(record, condition)),
+        );
+        const sorted = orders.length
+          ? [...filtered].sort((left, right) => compareRecords(left, right, orders))
+          : filtered;
+        return { data: sorted.slice(0, pageLimit ?? 100) };
+      },
+    };
+  }
+
   function collection(name) {
     if (name === 'activities') return activitiesQuery();
     if (name === 'admins') {
@@ -188,6 +217,7 @@ function loadMain({ records, openid = 'owner-a', admin = true }) {
         },
       };
     }
+    if (name === 'club_memberships') return membershipQuery();
     throw new Error(`unexpected collection: ${name}`);
   }
 
@@ -454,6 +484,47 @@ test('成员分页每一页仅返回可信 OPENID 对应 owner 的活动', async
 
   assert.equal(items.length, 51);
   assert.ok(items.every((item) => item._id.startsWith('own-')));
+});
+
+test('成员管理俱乐部权限按游标分页读取，不在 100 条处静默截断', async () => {
+  const memberships = Array.from({ length: 101 }, (_, index) => ({
+    _id: `membership-${String(index).padStart(3, '0')}`,
+    openid: 'owner-a',
+    status: 'active',
+    role: 'ADMIN',
+    club_id: `club-${index}`,
+  }));
+  const records = [
+    activity('late-managed-club', timestamp(1), {
+      created_by: 'another-member',
+      club_id: 'club-100',
+    }),
+  ];
+  const { main } = loadMain({ records, admin: false, memberships });
+
+  const response = await main({ action: 'list', page_size: 20 });
+
+  assert.equal(response.ok, true);
+  assert.deepEqual(
+    response.data.items.map((item) => item._id),
+    ['late-managed-club'],
+  );
+});
+
+test('成员管理俱乐部权限超过硬上限时明确失败而非返回部分权限', async () => {
+  const memberships = Array.from({ length: 1001 }, (_, index) => ({
+    _id: `membership-${String(index).padStart(4, '0')}`,
+    openid: 'owner-a',
+    status: 'active',
+    role: 'OWNER',
+    club_id: `club-${index}`,
+  }));
+  const { main } = loadMain({ records: [], admin: false, memberships });
+
+  const response = await main({ action: 'list', page_size: 20 });
+
+  assert.equal(response.ok, false);
+  assert.equal(response.error.code, 'MANAGED_CLUB_LIMIT_EXCEEDED');
 });
 
 test('分页读取不使用 skip，且每次数据库 limit 不超过 page_size+1', async () => {

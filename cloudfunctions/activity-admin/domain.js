@@ -61,6 +61,13 @@ const ACTIVITY_FIELDS = [
   'status',
   'club_id',
   'club_identity',
+  'review_scope',
+  'review_target_id',
+  'review_version',
+  'approval_mode',
+  'approved_role',
+  'published_at',
+  'rejection_reason',
 ];
 function pick(object, keys) {
   return keys.reduce((out, key) => {
@@ -790,10 +797,15 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses, option
   };
 }
 function validateDraftInput(input, occupiedCount = 0, options = {}) {
-  return validateBaseActivityInput(input, occupiedCount, ['draft'], options);
+  return validateBaseActivityInput(
+    input,
+    occupiedCount,
+    ['draft', 'pending_review', 'rejected'],
+    options,
+  );
 }
-function validatePublishInput(input, occupiedCount = 0, now = new Date(), options = {}) {
-  const safe = validateBaseActivityInput(input, occupiedCount, ['published', 'finished'], options);
+function validateReadyActivityInput(input, occupiedCount, now, allowedStatuses, options = {}) {
+  const safe = validateBaseActivityInput(input, occupiedCount, allowedStatuses, options);
   for (const field of ['event_start', 'event_end'])
     if (safe[field] === undefined) fail('VALIDATION_FAILED', '发布前请补全活动时间');
   if (!safe.route.start || (!safe.registration_unlimited && !safe.route.end))
@@ -811,15 +823,24 @@ function validatePublishInput(input, occupiedCount = 0, now = new Date(), option
     safe.support_vehicle_driver = { nickname: '', license_plate: '', contact_phone: '' };
   return safe;
 }
+function validatePublishInput(input, occupiedCount = 0, now = new Date(), options = {}) {
+  return validateReadyActivityInput(input, occupiedCount, now, ['published', 'finished'], options);
+}
+function validateReviewInput(input, occupiedCount = 0, now = new Date(), options = {}) {
+  return validateReadyActivityInput(input, occupiedCount, now, ['pending_review'], options);
+}
 function validateActivityInput(input, occupiedCount = 0, now = new Date()) {
   return input?.status === 'draft'
     ? validateDraftInput(input, occupiedCount)
     : validatePublishInput(input, occupiedCount, now);
 }
 function assertStatusTransition(from, to) {
+  // 发布审批只允许沿显式状态边迁移；禁止任何终态回退，避免旧页面覆盖已经生效的审批结果。
   if (
     from === to ||
-    (from === 'draft' && to === 'published') ||
+    (from === 'draft' && ['pending_review', 'published'].includes(to)) ||
+    (from === 'rejected' && ['draft', 'pending_review'].includes(to)) ||
+    (from === 'pending_review' && ['published', 'rejected'].includes(to)) ||
     (from === 'published' && to === 'draft') ||
     (from === 'published' && to === 'finished')
   )
@@ -849,6 +870,12 @@ function buildActivityAudit(
 }
 function activityAuditAction(currentStatus, nextStatus) {
   if (!currentStatus) return 'activity.create';
+  if (['draft', 'rejected'].includes(currentStatus) && nextStatus === 'pending_review')
+    return 'activity.submit_review';
+  if (currentStatus === 'pending_review' && nextStatus === 'published')
+    return 'activity.review_approve';
+  if (currentStatus === 'pending_review' && nextStatus === 'rejected')
+    return 'activity.review_reject';
   if (currentStatus === 'draft' && nextStatus === 'published') return 'activity.publish';
   if (currentStatus === 'published' && nextStatus === 'draft') return 'activity.unpublish';
   if (currentStatus === 'published' && nextStatus === 'finished') return 'activity.finish';
@@ -867,6 +894,7 @@ module.exports = {
   effectiveActivityInput,
   validateDraftInput,
   validatePublishInput,
+  validateReviewInput,
   validateActivityInput,
   assertStatusTransition,
   buildActivityAudit,

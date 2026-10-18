@@ -169,6 +169,7 @@ export interface ActivityPublisher {
   nickname: string;
   avatarUrl: string;
 }
+export type ActivityStatus = 'draft' | 'pending_review' | 'rejected' | 'published' | 'finished';
 export interface Activity {
   id: string;
   version: number;
@@ -179,7 +180,11 @@ export interface Activity {
   startAt: string;
   endAt: string;
   deadline: string;
-  status: 'draft' | 'published' | 'finished';
+  status: ActivityStatus;
+  reviewVersion?: number;
+  approvalMode?: 'club_review' | 'role_auto_publish';
+  approvedRole?: string;
+  rejectionReason?: string;
   capacity: number;
   registrationUnlimited?: boolean;
   supportVehicleCapacity?: number;
