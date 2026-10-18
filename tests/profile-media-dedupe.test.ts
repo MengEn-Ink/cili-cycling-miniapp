@@ -3,12 +3,12 @@ import type { Profile } from '../miniprogram/models';
 
 const rideService = vi.hoisted(() => ({
   getProfile: vi.fn(),
-  getProfileMediaUploadPath: vi.fn(),
+  legacyPath: vi.fn(),
   issueMediaUploadPath: vi.fn(),
   getPersonalCapabilityCard: vi.fn(),
-  registerProfileMedia: vi.fn(),
+  finalizeSpy: vi.fn(),
   finalizeMediaUpload: vi.fn(),
-  reportProfileMediaOrphan: vi.fn(),
+  cleanupSpy: vi.fn(),
   setAvatar: vi.fn(),
   updateProfile: vi.fn(),
 }));
@@ -69,21 +69,21 @@ describe('资料图片内容指纹会话内去重', () => {
     vi.resetModules();
     Object.values(rideService).forEach((mock) => mock.mockReset());
     rideService.getProfile.mockResolvedValue(profile);
-    rideService.getProfileMediaUploadPath.mockResolvedValue(
+    rideService.legacyPath.mockResolvedValue(
       'profiles/0123456789abcdef0123456789abcdef/123e4567-e89b-42d3-a456-426614174000.jpg',
     );
     rideService.issueMediaUploadPath.mockImplementation(
-      async (_category: string, _requestId: string) => rideService.getProfileMediaUploadPath(),
+      async (_category: string, _requestId: string) => rideService.legacyPath(),
     );
     rideService.getPersonalCapabilityCard.mockResolvedValue(capabilityCard());
-    rideService.registerProfileMedia.mockResolvedValue(undefined);
+    rideService.finalizeSpy.mockResolvedValue(undefined);
     rideService.finalizeMediaUpload.mockImplementation(
       async (fileId: string, category: string, _requestId: string, origin?: string) => {
-        await rideService.registerProfileMedia(fileId, category, origin);
+        await rideService.finalizeSpy(fileId, category, origin);
         return { canonicalFileId: fileId };
       },
     );
-    rideService.reportProfileMediaOrphan.mockResolvedValue(undefined);
+    rideService.cleanupSpy.mockResolvedValue(undefined);
     rideService.setAvatar.mockImplementation(
       async (source: 'wechat' | 'custom', fileId: string) => ({
         ...profile,
@@ -146,12 +146,12 @@ describe('资料图片内容指纹会话内去重', () => {
 
     await page.addPhoto();
     expect(uploadFile).toHaveBeenCalledTimes(1);
-    expect(rideService.registerProfileMedia).toHaveBeenCalledTimes(1);
+    expect(rideService.finalizeSpy).toHaveBeenCalledTimes(1);
 
     await page.addPhoto();
-    expect(rideService.getProfileMediaUploadPath).toHaveBeenCalledTimes(1);
+    expect(rideService.legacyPath).toHaveBeenCalledTimes(1);
     expect(uploadFile).toHaveBeenCalledTimes(1);
-    expect(rideService.registerProfileMedia).toHaveBeenCalledTimes(1);
+    expect(rideService.finalizeSpy).toHaveBeenCalledTimes(1);
     expect(page.data.p.photos).toEqual([
       { id: 'cloud://env/profiles/owner/a.jpg', category: 'ride' },
     ]);
@@ -172,7 +172,7 @@ describe('资料图片内容指纹会话内去重', () => {
     await page.addPhoto();
 
     expect(uploadFile).toHaveBeenCalledTimes(2);
-    expect(rideService.registerProfileMedia).toHaveBeenCalledTimes(2);
+    expect(rideService.finalizeSpy).toHaveBeenCalledTimes(2);
     expect(page.data.p.photos).toEqual([
       { id: 'cloud://env/profiles/owner/b.jpg', category: 'ride' },
     ]);
@@ -182,9 +182,9 @@ describe('资料图片内容指纹会话内去重', () => {
     await page.chooseWechatAvatar({ detail: { avatarUrl: '/private/tmp/face.jpg' } });
     await page.chooseWechatAvatar({ detail: { avatarUrl: '/private/tmp/face.jpg' } });
 
-    expect(rideService.getProfileMediaUploadPath).toHaveBeenCalledTimes(1);
+    expect(rideService.legacyPath).toHaveBeenCalledTimes(1);
     expect(uploadFile).toHaveBeenCalledTimes(1);
-    expect(rideService.registerProfileMedia).toHaveBeenCalledTimes(1);
+    expect(rideService.finalizeSpy).toHaveBeenCalledTimes(1);
     expect(rideService.setAvatar).toHaveBeenCalledTimes(2);
     expect(rideService.setAvatar).toHaveBeenLastCalledWith(
       'wechat',
@@ -239,6 +239,6 @@ describe('资料图片内容指纹会话内去重', () => {
     await page.addPhoto();
 
     expect(uploadFile).toHaveBeenCalledTimes(2);
-    expect(rideService.registerProfileMedia).toHaveBeenCalledTimes(2);
+    expect(rideService.finalizeSpy).toHaveBeenCalledTimes(2);
   });
 });

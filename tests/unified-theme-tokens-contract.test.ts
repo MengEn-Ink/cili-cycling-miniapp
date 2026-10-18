@@ -75,8 +75,11 @@ describe('统一主题设计契约', () => {
 
   it('版本和用户可见更新说明升级且旧版本转为历史项', () => {
     const settings = read('miniprogram/pages/settings/index.ts');
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.18.8');
-    expect(settings).toContain("title: '界面风格统一'");
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.19.1');
+    expect(settings).toContain("title: '图片上传链路全面统一'");
+    expect(settings).toMatch(
+      /version: '2026\.10\.18\.8'[\s\S]*?title: '界面风格统一'[\s\S]*?latest: false/,
+    );
     expect(settings).toMatch(
       /version: '2026\.10\.18\.7'[\s\S]*?title: '图片上传稳定性升级'[\s\S]*?latest: false/,
     );

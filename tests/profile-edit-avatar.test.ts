@@ -5,12 +5,12 @@ import type { Profile } from '../miniprogram/models';
 
 const rideService = vi.hoisted(() => ({
   getProfile: vi.fn(),
-  getProfileMediaUploadPath: vi.fn(),
+  legacyPath: vi.fn(),
   issueMediaUploadPath: vi.fn(),
   finalizeMediaUpload: vi.fn(),
   getPersonalCapabilityCard: vi.fn(),
-  registerProfileMedia: vi.fn(),
-  reportProfileMediaOrphan: vi.fn(),
+  finalizeSpy: vi.fn(),
+  cleanupSpy: vi.fn(),
   setAvatar: vi.fn(),
   updateProfile: vi.fn(),
 }));
@@ -87,23 +87,20 @@ describe('资料编辑头像交互', () => {
     vi.resetModules();
     Object.values(rideService).forEach((mock) => mock.mockReset());
     rideService.getProfile.mockResolvedValue(profile);
-    rideService.getProfileMediaUploadPath.mockResolvedValue(
+    rideService.legacyPath.mockResolvedValue(
       'profiles/0123456789abcdef0123456789abcdef/123e4567-e89b-42d3-a456-426614174000.jpg',
     );
-    rideService.issueMediaUploadPath.mockImplementation(() =>
-      rideService.getProfileMediaUploadPath(),
-    );
+    rideService.issueMediaUploadPath.mockImplementation(() => rideService.legacyPath());
     rideService.finalizeMediaUpload.mockImplementation(
       async (fileId: string, category: string, _requestId: string, origin = 'custom') => {
-        if (category === 'profile-background')
-          await rideService.registerProfileMedia(fileId, 'ride');
-        else await rideService.registerProfileMedia(fileId, 'other', origin);
+        if (category === 'profile-background') await rideService.finalizeSpy(fileId, 'ride');
+        else await rideService.finalizeSpy(fileId, 'other', origin);
         return { canonicalFileId: `cloud://env/canonical/${encodeURIComponent(fileId)}` };
       },
     );
     rideService.getPersonalCapabilityCard.mockResolvedValue(capabilityCard());
-    rideService.registerProfileMedia.mockResolvedValue(undefined);
-    rideService.reportProfileMediaOrphan.mockResolvedValue(undefined);
+    rideService.finalizeSpy.mockResolvedValue(undefined);
+    rideService.cleanupSpy.mockResolvedValue(undefined);
     rideService.setAvatar.mockImplementation(
       async (source: 'wechat' | 'custom', fileId: string) => ({
         ...profile,
@@ -389,53 +386,18 @@ describe('资料编辑头像交互', () => {
     expect(getTempFileURL).toHaveBeenCalledTimes(1);
   });
 
-  it('孤儿媒体补偿在后台执行，不阻塞个人资料首屏', async () => {
-    const orphanRetry = deferred<void>();
+  it('资料首屏不读取或重试已删除的客户端孤儿媒体账本', async () => {
     wx.getStorageSync.mockReturnValueOnce([
       { fileId: 'cloud://env/profiles/owner/orphan.jpg', category: 'other' },
     ]);
-    rideService.reportProfileMediaOrphan.mockReturnValueOnce(orphanRetry.promise);
 
     await page.onLoad();
 
     expect(page.data.loading).toBe(false);
     expect(page.data.p).not.toBeNull();
-    expect(rideService.reportProfileMediaOrphan).toHaveBeenCalled();
-    orphanRetry.resolve();
-    await orphanRetry.promise;
-  });
-
-  it('后台补偿写账本失败也不形成未处理拒绝或阻塞首屏', async () => {
-    wx.getStorageSync.mockReturnValue([
-      { fileId: 'cloud://env/profiles/owner/orphan.jpg', category: 'other' },
-    ]);
-    wx.setStorageSync.mockImplementation(() => {
-      throw new Error('storage unavailable');
-    });
-
-    await page.onLoad();
-    await vi.waitFor(() => expect(rideService.reportProfileMediaOrphan).toHaveBeenCalled());
-
-    expect(page.data.loading).toBe(false);
-    expect(page.data.p).not.toBeNull();
-  });
-
-  it('后台补偿完成时保留并发新增的孤儿媒体记录', async () => {
-    const initial = { fileId: 'cloud://env/profiles/owner/old-orphan.jpg', category: 'other' };
-    const appended = { fileId: 'cloud://env/profiles/owner/new-orphan.jpg', category: 'ride' };
-    let ledger = [initial];
-    const orphanRetry = deferred<void>();
-    wx.getStorageSync.mockImplementation(() => ledger);
-    wx.setStorageSync.mockImplementation((_key: string, value: typeof ledger) => {
-      ledger = value;
-    });
-    rideService.reportProfileMediaOrphan.mockReturnValueOnce(orphanRetry.promise);
-
-    await page.onLoad();
-    ledger = [initial, appended];
-    orphanRetry.resolve();
-    await orphanRetry.promise;
-    await vi.waitFor(() => expect(ledger).toEqual([appended]));
+    expect(wx.getStorageSync).not.toHaveBeenCalled();
+    expect(wx.setStorageSync).not.toHaveBeenCalled();
+    expect(rideService.cleanupSpy).not.toHaveBeenCalled();
   });
 
   it('微信选择入口按 owner path→upload→register(wechat)→setAvatar 顺序执行', async () => {
@@ -455,21 +417,17 @@ describe('资料编辑头像交互', () => {
         filePath: '/private/tmp/wechat-avatar.jpg',
       }),
     );
-    expect(rideService.registerProfileMedia).toHaveBeenCalledWith(
-      uploadedFileId,
-      'other',
-      'wechat',
-    );
+    expect(rideService.finalizeSpy).toHaveBeenCalledWith(uploadedFileId, 'other', 'wechat');
     const canonicalId = canonicalFileId(uploadedFileId);
     expect(rideService.setAvatar).toHaveBeenCalledWith('wechat', canonicalId);
     expect(rideService.setAvatar).not.toHaveBeenCalledWith('wechat', uploadedFileId);
-    expect(rideService.getProfileMediaUploadPath.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(rideService.legacyPath.mock.invocationCallOrder[0]).toBeLessThan(
       uploadFile.mock.invocationCallOrder[0],
     );
     expect(uploadFile.mock.invocationCallOrder[0]).toBeLessThan(
-      rideService.registerProfileMedia.mock.invocationCallOrder[0],
+      rideService.finalizeSpy.mock.invocationCallOrder[0],
     );
-    expect(rideService.registerProfileMedia.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(rideService.finalizeSpy.mock.invocationCallOrder[0]).toBeLessThan(
       rideService.setAvatar.mock.invocationCallOrder[0],
     );
     expect(page.data.p).toMatchObject({ avatarId: canonicalId, avatarSource: 'wechat' });
@@ -485,7 +443,7 @@ describe('资料编辑头像交互', () => {
 
     await page.chooseWechatAvatar({ detail: { avatarUrl: '/private/tmp/too-large.jpg' } });
 
-    expect(rideService.getProfileMediaUploadPath).not.toHaveBeenCalled();
+    expect(rideService.legacyPath).not.toHaveBeenCalled();
     expect(uploadFile).not.toHaveBeenCalled();
     expect(page.data.mediaError).toBe('图片超过 5MB，请压缩或更换图片后重试');
   });
@@ -510,11 +468,7 @@ describe('资料编辑头像交互', () => {
     expect(uploadFile).toHaveBeenCalledWith(
       expect.objectContaining({ filePath: '/private/tmp/avatar.jpg' }),
     );
-    expect(rideService.registerProfileMedia).toHaveBeenCalledWith(
-      uploadedFileId,
-      'other',
-      'wechat',
-    );
+    expect(rideService.finalizeSpy).toHaveBeenCalledWith(uploadedFileId, 'other', 'wechat');
     const canonicalId = canonicalFileId(uploadedFileId);
     expect(rideService.setAvatar).toHaveBeenCalledWith('wechat', canonicalId);
     expect(rideService.setAvatar).not.toHaveBeenCalledWith('wechat', uploadedFileId);
@@ -530,7 +484,7 @@ describe('资料编辑头像交互', () => {
   it('微信头像回调缺少 avatarUrl 时静默结束', async () => {
     await page.chooseWechatAvatar({ detail: {} });
 
-    expect(rideService.getProfileMediaUploadPath).not.toHaveBeenCalled();
+    expect(rideService.legacyPath).not.toHaveBeenCalled();
     expect(wx.showToast).not.toHaveBeenCalled();
     expect(page.data.avatarBusy).toBe(false);
   });
@@ -554,7 +508,7 @@ describe('资料编辑头像交互', () => {
 
   it('微信头像入口共用单一 busy lock 防止重复动作', async () => {
     const uploadPath = deferred<string>();
-    rideService.getProfileMediaUploadPath.mockReturnValueOnce(uploadPath.promise);
+    rideService.legacyPath.mockReturnValueOnce(uploadPath.promise);
     const uploadFile = vi
       .fn()
       .mockResolvedValue({ fileID: 'cloud://env/profiles/owner/wechat.jpg' });
@@ -565,7 +519,7 @@ describe('资料编辑头像交互', () => {
     const second = page.chooseWechatAvatar({ detail: { avatarUrl: '/private/tmp/second.jpg' } });
 
     expect(page.data.avatarBusy).toBe(true);
-    expect(rideService.getProfileMediaUploadPath).toHaveBeenCalledTimes(1);
+    expect(rideService.legacyPath).toHaveBeenCalledTimes(1);
     uploadPath.resolve(
       'profiles/0123456789abcdef0123456789abcdef/123e4567-e89b-42d3-a456-426614174000.jpg',
     );
@@ -573,7 +527,7 @@ describe('资料编辑头像交互', () => {
     expect(page.data.avatarBusy).toBe(false);
   });
 
-  it('setAvatar 派发前失败时保留旧头像并复用删除与 orphan 补偿', async () => {
+  it('finalize 失败时由统一上传删除 source，保留旧头像且不写客户端补偿账本', async () => {
     const uploadedFileId = 'cloud://env/profiles/owner/failed.jpg';
     const deleteFile = vi.fn().mockResolvedValue({
       fileList: [{ fileID: uploadedFileId, status: -1 }],
@@ -587,8 +541,7 @@ describe('资料编辑头像交互', () => {
         deleteFile,
       },
     });
-    rideService.registerProfileMedia.mockRejectedValueOnce(new Error('register failed'));
-    rideService.reportProfileMediaOrphan.mockRejectedValueOnce(new Error('report unavailable'));
+    rideService.finalizeSpy.mockRejectedValueOnce(new Error('register failed'));
 
     await page.chooseWechatAvatar({ detail: { avatarUrl: '/private/tmp/avatar.jpg' } });
 
@@ -599,14 +552,8 @@ describe('资料编辑头像交互', () => {
     expect(page.data.avatarPreviewUrl).toBe('https://temporary.example/old-avatar.jpg');
     expect(rideService.setAvatar).not.toHaveBeenCalled();
     expect(deleteFile).toHaveBeenCalledWith({ fileList: [uploadedFileId] });
-    expect(rideService.reportProfileMediaOrphan).toHaveBeenCalledWith(
-      uploadedFileId,
-      'other',
-      'wechat',
-    );
-    expect(wx.setStorageSync).toHaveBeenCalledWith('profile-media-orphans-v1', [
-      { fileId: uploadedFileId, category: 'other', origin: 'wechat' },
-    ]);
+    expect(rideService.cleanupSpy).not.toHaveBeenCalled();
+    expect(wx.setStorageSync).not.toHaveBeenCalled();
   });
 
   it('setAvatar CALL_FAILED 后权威头像匹配则收敛成功且不清理对象', async () => {
@@ -637,7 +584,7 @@ describe('资料编辑头像交互', () => {
     await page.chooseWechatAvatar({ detail: { avatarUrl: '/private/tmp/avatar.jpg' } });
 
     expect(deleteFile).not.toHaveBeenCalled();
-    expect(rideService.reportProfileMediaOrphan).not.toHaveBeenCalled();
+    expect(rideService.cleanupSpy).not.toHaveBeenCalled();
     expect(rideService.getProfile).toHaveBeenCalledOnce();
     expect(page.data.p).toMatchObject({
       nickname: '本地草稿昵称',
@@ -890,7 +837,7 @@ describe('资料编辑头像交互', () => {
     await page.chooseWechatAvatar({ detail: { errMsg: 'chooseAvatar:fail cancel' } });
 
     expect(wx.showToast).not.toHaveBeenCalled();
-    expect(rideService.getProfileMediaUploadPath).not.toHaveBeenCalled();
+    expect(rideService.legacyPath).not.toHaveBeenCalled();
     expect(page.data.avatarBusy).toBe(false);
   });
 
@@ -917,7 +864,7 @@ describe('资料编辑头像交互', () => {
       }),
       cloud: { uploadFile: vi.fn() },
     });
-    rideService.getProfileMediaUploadPath.mockRejectedValueOnce(new Error('private path detail'));
+    rideService.legacyPath.mockRejectedValueOnce(new Error('private path detail'));
 
     await page.addPhoto();
 
@@ -934,7 +881,7 @@ describe('资料编辑头像交互', () => {
     await page.addPhoto();
 
     expect(wx.showToast).not.toHaveBeenCalled();
-    expect(rideService.getProfileMediaUploadPath).not.toHaveBeenCalled();
+    expect(rideService.legacyPath).not.toHaveBeenCalled();
   });
 
   it('添加照片在途时再次触发被 busy lock 拦截，不重复 chooseMedia', async () => {
@@ -971,7 +918,7 @@ describe('资料编辑头像交互', () => {
 
     await page.addPhoto();
 
-    expect(rideService.registerProfileMedia).toHaveBeenCalledWith(
+    expect(rideService.finalizeSpy).toHaveBeenCalledWith(
       'cloud://env/profiles/owner/photo.jpg',
       'ride',
     );
@@ -1001,7 +948,7 @@ describe('资料编辑头像交互', () => {
 
   it('个人相册 owner-bound path 请求失败时不上传也不写 photos', async () => {
     const uploadFile = vi.fn();
-    rideService.getProfileMediaUploadPath.mockRejectedValueOnce(new Error('path unavailable'));
+    rideService.legacyPath.mockRejectedValueOnce(new Error('path unavailable'));
     Object.assign(wx, {
       chooseMedia: vi.fn().mockResolvedValue({
         tempFiles: [{ tempFilePath: '/private/tmp/photo.jpg' }],
@@ -1027,7 +974,7 @@ describe('资料编辑头像交互', () => {
 
     await page.addPhoto();
 
-    expect(rideService.registerProfileMedia).not.toHaveBeenCalled();
+    expect(rideService.finalizeSpy).not.toHaveBeenCalled();
     expect(page.data.mediaError).toBe('图片上传失败，请重新选择图片后重试');
     expect(page.data.mediaError).not.toContain('private upload detail');
   });
@@ -1049,7 +996,7 @@ describe('资料编辑头像交互', () => {
     expect(wx.showToast).toHaveBeenCalledWith({ title: page.data.mediaError, icon: 'none' });
   });
 
-  it('个人相册 registerMedia 失败时保留 photos 并执行删除与 orphan 补偿', async () => {
+  it('个人相册 finalize 失败时保留 photos 并由统一上传删除 source', async () => {
     const uploadedFileId = 'cloud://env/profiles/owner/photo.jpg';
     const deleteFile = vi.fn().mockResolvedValue({
       fileList: [{ fileID: uploadedFileId, status: -1, errMsg: 'delete failed' }],
@@ -1063,37 +1010,15 @@ describe('资料编辑头像交互', () => {
         deleteFile,
       },
     });
-    rideService.registerProfileMedia.mockRejectedValueOnce(new Error('register failed'));
-    rideService.reportProfileMediaOrphan.mockRejectedValueOnce(new Error('report unavailable'));
+    rideService.finalizeSpy.mockRejectedValueOnce(new Error('register failed'));
 
     await page.addPhoto();
 
     expect(deleteFile).toHaveBeenCalledWith({ fileList: [uploadedFileId] });
-    expect(rideService.reportProfileMediaOrphan).toHaveBeenCalledWith(uploadedFileId, 'ride');
-    expect(wx.setStorageSync).toHaveBeenCalledWith('profile-media-orphans-v1', [
-      { fileId: uploadedFileId, category: 'ride' },
-    ]);
+    expect(rideService.cleanupSpy).not.toHaveBeenCalled();
+    expect(wx.setStorageSync).not.toHaveBeenCalled();
     expect(page.data.p.photos).toEqual([]);
     expect(page.data.mediaError).toBe('图片校验失败，请重新选择图片后重试');
-  });
-
-  it('再次进入资料页会重试 durable orphan ledger 并在成功后清除', async () => {
-    vi.mocked(wx.getStorageSync).mockReturnValue([
-      {
-        fileId: 'cloud://env/profiles/owner/orphan.jpg',
-        category: 'other',
-        origin: 'wechat',
-      },
-    ]);
-
-    await page.onLoad();
-
-    expect(rideService.reportProfileMediaOrphan).toHaveBeenCalledWith(
-      'cloud://env/profiles/owner/orphan.jpg',
-      'other',
-      'wechat',
-    );
-    expect(wx.removeStorageSync).toHaveBeenCalledWith('profile-media-orphans-v1');
   });
 
   it('性别只接受男/女单选事件并写入当前资料', () => {
@@ -1254,7 +1179,7 @@ describe('资料编辑头像交互', () => {
     await page.addPhoto();
 
     expect(uploadFile).not.toHaveBeenCalled();
-    expect(rideService.getProfileMediaUploadPath).not.toHaveBeenCalled();
+    expect(rideService.legacyPath).not.toHaveBeenCalled();
     expect(wx.showToast).not.toHaveBeenCalled();
   });
 
@@ -1291,7 +1216,7 @@ describe('资料编辑头像交互', () => {
     await page.addPhoto();
 
     expect(uploadFile).toHaveBeenCalledOnce();
-    expect(rideService.registerProfileMedia).not.toHaveBeenCalled();
+    expect(rideService.finalizeSpy).not.toHaveBeenCalled();
   });
 
   it('背景图裁剪后使用原生回调压缩参数并上传压缩结果', async () => {
@@ -1503,16 +1428,13 @@ describe('资料编辑头像交互', () => {
     await action;
 
     expect(abort).toHaveBeenCalledOnce();
-    expect(rideService.registerProfileMedia).not.toHaveBeenCalled();
+    expect(rideService.finalizeSpy).not.toHaveBeenCalled();
     expect(rideService.setAvatar).not.toHaveBeenCalled();
     expect(wx.showToast).not.toHaveBeenCalled();
   });
 
-  it('背景上传完成后页面卸载会补偿文件且不继续 register', async () => {
+  it('背景 source 上传完成后页面卸载仍完成 finalize，但不写入已卸载页面', async () => {
     const uploadedFileId = 'cloud://env/profiles/owner/unloaded-background.jpg';
-    const deleteFile = vi.fn().mockResolvedValue({
-      fileList: [{ fileID: uploadedFileId, status: 0 }],
-    });
     const uploadFile = vi.fn((options: { success: (value: unknown) => void }) => {
       queueMicrotask(() => {
         options.success({ fileID: uploadedFileId });
@@ -1524,13 +1446,13 @@ describe('资料编辑头像交互', () => {
       chooseMedia: vi.fn().mockResolvedValue({
         tempFiles: [{ tempFilePath: '/private/tmp/unloaded-background.jpg', size: 1024 }],
       }),
-      cloud: { uploadFile, deleteFile },
+      cloud: { uploadFile, deleteFile: vi.fn() },
     });
 
     await page.addPhoto();
 
-    expect(rideService.registerProfileMedia).not.toHaveBeenCalled();
-    expect(deleteFile).toHaveBeenCalledWith({ fileList: [uploadedFileId] });
+    expect(rideService.finalizeSpy).toHaveBeenCalledOnce();
+    expect(page.data.p.photos).toEqual([]);
     expect(wx.showToast).not.toHaveBeenCalled();
   });
 

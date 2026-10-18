@@ -12,6 +12,22 @@ test('统一上传治理允许业务调用 orchestrator', () => {
   );
 });
 
+test('统一上传治理允许云函数在 canonical 化与清理流程中执行服务端上传', () => {
+  assert.deepEqual(
+    directNativeUploadViolations([
+      {
+        file: 'cloudfunctions/profile/index.js',
+        content: 'uploadFile: (input) => cloud.uploadFile(input)',
+      },
+      {
+        file: 'cloudfunctions/profile-media-cleanup/index.js',
+        content: 'uploadFile: (input) => cloud.uploadFile(input)',
+      },
+    ]),
+    [],
+  );
+});
+
 test('统一上传治理扫描整个 miniprogram 且只允许 orchestrator 原生上传', () => {
   assert.deepEqual(
     directNativeUploadViolations([

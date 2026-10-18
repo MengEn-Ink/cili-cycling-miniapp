@@ -8,10 +8,8 @@ const {
   issueMediaUploadPath,
   clientUploadIntent,
   mediaDocumentId,
-  mediaRegistration,
   clientAvatarSource,
   clientMediaOrigin,
-  inspectMediaObject,
   verifyMediaObject,
   validateMediaUpdate,
   normalizeAvatarProfile,
@@ -105,18 +103,16 @@ async function updateProfile(openid, event) {
   return response(result, process.env.PII_ENCRYPTION_KEY);
 }
 function mediaProtocol(event) {
-  const hasCategory = Object.prototype.hasOwnProperty.call(event, 'category');
-  const hasRequestId = Object.prototype.hasOwnProperty.call(event, 'requestId');
-  if (hasCategory !== hasRequestId)
-    throw Object.assign(new Error('媒体用途与请求标识必须同时提供'), {
+  if (
+    !Object.prototype.hasOwnProperty.call(event, 'category') ||
+    !Object.prototype.hasOwnProperty.call(event, 'requestId')
+  )
+    throw Object.assign(new Error('媒体用途与请求标识为必填项'), {
       code: 'MEDIA_PROTOCOL_INCOMPLETE',
     });
-  if (
-    hasRequestId &&
-    (typeof event.requestId !== 'string' || !/^[A-Za-z0-9_-]{8,128}$/.test(event.requestId))
-  )
+  if (typeof event.requestId !== 'string' || !/^[A-Za-z0-9_-]{8,128}$/.test(event.requestId))
     throw Object.assign(new Error('媒体请求标识无效'), { code: 'MEDIA_REQUEST_ID_INVALID' });
-  return { explicit: hasCategory, category: hasCategory ? event.category : 'other' };
+  return { category: event.category };
 }
 async function registerMedia(openid, event) {
   const protocol = mediaProtocol(event);
@@ -126,7 +122,7 @@ async function registerMedia(openid, event) {
     fileId: event.fileId,
     category: protocol.category,
     origin,
-    requestId: protocol.explicit ? event.requestId : undefined,
+    requestId: event.requestId,
     mediaSecret: process.env.PROFILE_MEDIA_PATH_SECRET,
     getTempFileURL: (input) => cloud.getTempFileURL(input),
     uploadFile: (input) => cloud.uploadFile(input),
@@ -184,7 +180,7 @@ exports.main = async (event = {}) => {
         issued.cloud_path,
         process.env.PROFILE_MEDIA_PATH_SECRET,
         new Date(),
-        protocol.explicit ? { category, request_id: event.requestId } : {},
+        { category, request_id: event.requestId },
       );
       await profileStore.prepareClientUpload(OPENID, intent, process.env.PROFILE_MEDIA_PATH_SECRET);
       return ok(issued);
@@ -213,23 +209,6 @@ exports.main = async (event = {}) => {
           process.env.PII_ENCRYPTION_KEY,
         ),
       );
-    }
-    if (event.action === 'reportOrphan') {
-      if (Object.prototype.hasOwnProperty.call(event, 'openid'))
-        throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });
-      mediaRegistration(
-        event.fileId,
-        event.category,
-        clientMediaOrigin(event.origin),
-        OPENID,
-        process.env.PROFILE_MEDIA_PATH_SECRET,
-      );
-      const objectState = await inspectMediaObject(event.fileId, (input) =>
-        cloud.getTempFileURL(input),
-      );
-      if (objectState === 'missing') return ok({ reported: true, cleaned: true });
-      await registerMedia(OPENID, event);
-      return ok({ reported: true, cleaned: false });
     }
     if (event.action === 'update') {
       return ok(await updateProfile(OPENID, event));

@@ -9,6 +9,12 @@ const { saveActivity } = require('./use-cases');
 
 const now = new Date('2026-10-13T07:30:00.000Z');
 const owner = 'owner-openid';
+process.env.PROFILE_MEDIA_PATH_SECRET = 'profile-media-secret-for-tests-32-bytes';
+const ownerAlias = crypto
+  .createHmac('sha256', process.env.PROFILE_MEDIA_PATH_SECRET)
+  .update(owner)
+  .digest('hex')
+  .slice(0, 32);
 const requestId = 'preview-request-123';
 const gpx = Buffer.from(`<?xml version="1.0"?>
   <gpx>
@@ -21,7 +27,8 @@ const gpx = Buffer.from(`<?xml version="1.0"?>
   </gpx>`);
 const digest = crypto.createHash('sha256').update(gpx).digest('hex');
 const gpxFileId = `cloud://env/activity-routes/${owner}/${digest}.gpx`;
-const generatedFileId = `cloud://env/activity-routes/${owner}/${digest}.png`;
+const generatedFileId = `cloud://env/profile-canonical/${ownerAlias}/activity-route-preview/${digest}/${'c'.repeat(64)}.png`;
+const activityImageFileId = `cloud://env/profile-canonical/${ownerAlias}/activity-image/${'d'.repeat(64)}/${'e'.repeat(64)}.jpg`;
 
 function previewFixture(overrides = {}) {
   return {
@@ -170,6 +177,12 @@ test('生成路线图必须与预览所有者和摘要路径匹配', async () =>
     {
       getAdmin: async () => ({ _id: owner, enabled: true }),
       getPreview: async () => previewFixture({ generated_file_id: '' }),
+      getProfileMediaByCanonical: async () => ({
+        canonical_file_id: generatedFileId,
+        owner_openid: owner,
+        category: 'activity-route-preview',
+        status: 'unreferenced',
+      }),
       updatePreview: async (_id, value) => {
         updated = value;
       },
@@ -229,8 +242,8 @@ test('保存活动只采用匹配可信预览的原生指标并原子消费记�
       openid: owner,
       activity: {
         title: '活动',
-        images: [`cloud://env/profiles/activity-media/${owner}/activity-photo.jpg`],
-        cover_image: generatedFileId,
+        images: [activityImageFileId],
+        cover_image: activityImageFileId,
         description: '',
         schedule: [],
         notices: [],
@@ -266,7 +279,8 @@ test('保存活动只采用匹配可信预览的原生指标并原子消费记�
   assert.deepEqual(result.route.elevation_profile, preview.summary.elevation_profile);
   assert.deepEqual(result.route.route_outline, preview.summary.route_outline);
   assert.equal(result.route.external_provider, 'strava');
-  assert.equal(result.cover_image, generatedFileId);
+  assert.equal(result.cover_image, activityImageFileId);
+  assert.equal(result.route.generated_preview_file_id, generatedFileId);
   assert.equal(written.strava_route_owner_openid, undefined);
   assert.deepEqual(consumed, {
     previewId: preview._id,

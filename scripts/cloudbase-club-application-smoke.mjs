@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
+import { createHash, createHmac } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -443,6 +443,11 @@ export async function runClubApplicationSmoke({ store, runId, now = () => new Da
     membershipId,
     joinerMembershipId,
   };
+  const mediaSecret = process.env.PROFILE_MEDIA_PATH_SECRET || '';
+  const ownerAlias = createHmac('sha256', mediaSecret)
+    .update(applicantOpenid)
+    .digest('hex')
+    .slice(0, 32);
   const input = {
     club_name: `CI 骑行测试 ${suffix.slice(0, 6)}`,
     city: '测试城市',
@@ -452,8 +457,8 @@ export async function runClubApplicationSmoke({ store, runId, now = () => new Da
     expected_size: 2,
     activity_types: '自动化骑行测试',
     rules_summary: '仅用于自动化验证，执行完成后必须清理全部记录。',
-    avatar_file_id: `cloud://smoke/club-applications/${applicantOpenid}/avatar.jpg`,
-    cover_file_id: `cloud://smoke/club-applications/${applicantOpenid}/cover.jpg`,
+    avatar_file_id: `cloud://smoke/profile-canonical/${ownerAlias}/club-avatar/${'a'.repeat(64)}/${'b'.repeat(64)}.jpg`,
+    cover_file_id: `cloud://smoke/profile-canonical/${ownerAlias}/club-cover/${'c'.repeat(64)}/${'d'.repeat(64)}.jpg`,
   };
 
   await cleanupSmokeData(store, ids);

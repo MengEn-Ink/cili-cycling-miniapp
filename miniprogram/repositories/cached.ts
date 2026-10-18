@@ -470,10 +470,6 @@ export class CachingRepository implements RideRepository {
     return this.readThrough(`${PROFILE_PREFIX}self`, () => this.inner.getProfile());
   }
 
-  getProfileMediaUploadPath() {
-    return this.inner.getProfileMediaUploadPath();
-  }
-
   issueMediaUploadPath(
     category: Parameters<RideRepository['issueMediaUploadPath']>[0],
     requestId: string,
@@ -495,23 +491,6 @@ export class CachingRepository implements RideRepository {
     return this.readThrough(`${PROFILE_PREFIX}capability-card`, () =>
       this.inner.getPersonalCapabilityCard(),
     );
-  }
-
-  async registerProfileMedia(
-    fileId: string,
-    category: 'ride' | 'bike' | 'other',
-    origin?: Parameters<RideRepository['registerProfileMedia']>[2],
-  ) {
-    await this.inner.registerProfileMedia(fileId, category, origin);
-    this.invalidatePrefix(PROFILE_PREFIX);
-  }
-
-  reportProfileMediaOrphan(
-    fileId: string,
-    category: 'ride' | 'bike' | 'other',
-    origin?: Parameters<RideRepository['reportProfileMediaOrphan']>[2],
-  ) {
-    return this.inner.reportProfileMediaOrphan(fileId, category, origin);
   }
 
   async setAvatar(source: Parameters<RideRepository['setAvatar']>[0], fileId: string) {

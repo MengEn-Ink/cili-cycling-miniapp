@@ -13,7 +13,8 @@ const {
 
 const owner = 'owner';
 const secret = 'profile-media-secret-for-tests-32-bytes';
-const sourceFileId = `cloud://env/${mediaOwnerPrefix(owner, secret)}123e4567-e89b-42d3-a456-426614174000.jpg`;
+const category = 'profile-avatar';
+const sourceFileId = `cloud://env/${mediaOwnerPrefix(owner, secret)}${category}/123e4567-e89b-42d3-a456-426614174000.jpg`;
 const bytes = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00]);
 const verified = {
   bytes,
@@ -28,9 +29,17 @@ const canonicalPath = canonicalMediaPath(
   verified.sha256,
   verified.extension,
   secret,
+  category,
 );
 const canonicalFileId = `cloud://env/${canonicalPath}`;
-const binding = canonicalMediaBinding(owner, sourceFileId, canonicalFileId, verified, secret);
+const binding = canonicalMediaBinding(
+  owner,
+  sourceFileId,
+  canonicalFileId,
+  verified,
+  secret,
+  category,
+);
 
 test('首次登记先持久化 canonical intent，再上传并原子完成 registry', async () => {
   const calls = [];
@@ -46,7 +55,7 @@ test('首次登记先持久化 canonical intent，再上传并原子完成 regis
   const record = await canonicalizeClientMedia({
     openid: owner,
     fileId: sourceFileId,
-    category: 'other',
+    category,
     origin: 'custom',
     mediaSecret: secret,
     getTempFileURL: async () => ({
@@ -76,7 +85,7 @@ test('canonical upload 响应未知时 intent 已持久化且 registry 不落地
     canonicalizeClientMedia({
       openid: owner,
       fileId: sourceFileId,
-      category: 'other',
+      category,
       origin: 'custom',
       mediaSecret: secret,
       getTempFileURL: async () => ({
@@ -109,7 +118,7 @@ test('重复 register 复用已绑定 canonical，不再读取或复制可覆盖
     _id: mediaDocumentId(sourceFileId),
     file_id: sourceFileId,
     owner_openid: owner,
-    category: 'other',
+    category,
     origin: 'custom',
     status: 'unreferenced',
     ...binding,
@@ -119,7 +128,7 @@ test('重复 register 复用已绑定 canonical，不再读取或复制可覆盖
   const result = await canonicalizeClientMedia({
     openid: owner,
     fileId: sourceFileId,
-    category: 'other',
+    category,
     origin: 'custom',
     mediaSecret: secret,
     getTempFileURL: async () => {

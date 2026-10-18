@@ -5,10 +5,22 @@ import { CLIENT_RELEASE_VERSION } from '../../config/release';
 const RELEASE_NOTES = [
   {
     version: CLIENT_RELEASE_VERSION,
+    date: '2026-10-19',
+    title: '图片上传链路全面统一',
+    summary: '头像、背景、活动照片、群二维码与路线预览图现在使用同一套可靠上传流程。',
+    latest: true,
+    features: [
+      '网络波动时会自动重试，并显示连续的上传进度',
+      '活动路线预览图也会完成安全校验后再保存',
+      '旧图片继续正常显示，替换图片时会自动使用新流程',
+    ],
+  },
+  {
+    version: '2026.10.18.8',
     date: '2026-10-18',
     title: '界面风格统一',
     summary: '按钮、卡片、输入框和标签采用更统一、更利落的骑行海报风格。',
-    latest: true,
+    latest: false,
     features: [
       '统一朱红、米白与墨黑的界面配色，重点信息更容易辨认',
       '收紧卡片与控件圆角，页面层级更清晰',
@@ -23,8 +35,8 @@ const RELEASE_NOTES = [
     latest: false,
     features: [
       '网络波动时会自动重试，并显示连续的上传进度',
-      '俱乐部头像与背景照片分别校验，不会互相串用',
-      '上传失败会自动清理临时文件，原有图片继续正常显示',
+      '活动路线预览图也会完成安全校验后再保存',
+      '旧图片继续正常显示，替换图片时会自动使用新流程',
     ],
   },
   {

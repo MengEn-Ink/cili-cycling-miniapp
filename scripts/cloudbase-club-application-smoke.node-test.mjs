@@ -13,6 +13,8 @@ import {
   runClubApplicationSmoke,
 } from './cloudbase-club-application-smoke.mjs';
 
+process.env.PROFILE_MEDIA_PATH_SECRET = 'profile-media-secret-for-tests-32-bytes';
+
 function createMemoryStore({
   failOnApprovedApplication = false,
   corruptFirstSubmitReadback = false,

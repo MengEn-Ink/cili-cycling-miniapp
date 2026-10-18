@@ -973,17 +973,11 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     expectCall(callFunction, 'profile', { action: 'getPhoneNumber', code: 'dynamic-code' });
   });
 
-  it('请求 owner-bound 媒体上传路径且不发送客户端身份', async () => {
-    const { cloud, callFunction } = cloudWith(
-      success({
-        cloud_path:
-          'profiles/0123456789abcdef0123456789abcdef/123e4567-e89b-42d3-a456-426614174000.jpg',
-      }),
-    );
-    await expect(new CloudRepository(cloud).getProfileMediaUploadPath()).resolves.toBe(
-      'profiles/0123456789abcdef0123456789abcdef/123e4567-e89b-42d3-a456-426614174000.jpg',
-    );
-    expectCall(callFunction, 'profile', { action: 'mediaUploadPath' });
+  it('客户端仓储不再暴露无用途的旧媒体路径协议', () => {
+    const { cloud, callFunction } = cloudWith();
+    const removedMethod = ['getProfileMediaUpload', 'Path'].join('');
+    expect((new CloudRepository(cloud) as any)[removedMethod]).toBeUndefined();
+    expect(callFunction).not.toHaveBeenCalled();
   });
 
   it('签发统一媒体上传路径并完整传递用途、请求 ID 与扩展名', async () => {
@@ -1048,29 +1042,20 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     );
   });
 
-  it('上传完成后仅以 wechat/custom 来源注册媒体且不发送客户端身份', async () => {
-    const { cloud, callFunction } = cloudWith(success({ registered: true }));
-    await expect(
-      new CloudRepository(cloud).registerProfileMedia(
-        'cloud://env/profiles/owner/photo.jpg',
-        'other',
-        'wechat',
-      ),
-    ).resolves.toBeUndefined();
-    expectCall(callFunction, 'profile', {
-      action: 'registerMedia',
-      fileId: 'cloud://env/profiles/owner/photo.jpg',
-      category: 'other',
-      origin: 'wechat',
-    });
+  it('客户端仓储不再暴露无请求 ID 的旧媒体登记协议', () => {
+    const { cloud, callFunction } = cloudWith();
+    const removedMethod = ['registerProfile', 'Media'].join('');
+    expect((new CloudRepository(cloud) as any)[removedMethod]).toBeUndefined();
+    expect(callFunction).not.toHaveBeenCalled();
   });
 
-  it('客户端仓储拒绝伪造 strava 媒体来源', async () => {
+  it('统一登记拒绝伪造媒体来源', async () => {
     const { cloud, callFunction } = cloudWith();
     await expectCode(
-      (new CloudRepository(cloud) as any).registerProfileMedia(
-        'cloud://env/profiles/owner/photo.jpg',
-        'other',
+      (new CloudRepository(cloud) as any).finalizeMediaUpload(
+        'cloud://env/profiles/owner/profile-avatar/photo.jpg',
+        'profile-avatar',
+        'media-request-001',
         'strava',
       ),
       'VALIDATION_FAILED',
@@ -1114,20 +1099,11 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     expect(callFunction).not.toHaveBeenCalled();
   });
 
-  it('删除失败后可上报 orphan 且不发送客户端身份', async () => {
-    const { cloud, callFunction } = cloudWith(success({ reported: true }));
-    await expect(
-      new CloudRepository(cloud).reportProfileMediaOrphan(
-        'cloud://env/profiles/owner/photo.jpg',
-        'other',
-      ),
-    ).resolves.toBeUndefined();
-    expectCall(callFunction, 'profile', {
-      action: 'reportOrphan',
-      fileId: 'cloud://env/profiles/owner/photo.jpg',
-      category: 'other',
-      origin: 'custom',
-    });
+  it('客户端仓储不再暴露旧 orphan 上报协议', () => {
+    const { cloud, callFunction } = cloudWith();
+    const removedMethod = ['reportProfileMedia', 'Orphan'].join('');
+    expect((new CloudRepository(cloud) as any)[removedMethod]).toBeUndefined();
+    expect(callFunction).not.toHaveBeenCalled();
   });
 
   it('Profile 完整可选字段与照片分支均按真实值映射', async () => {
@@ -2511,7 +2487,7 @@ describe('CloudRepository GPX 路线契约', () => {
     preview_id: 'a'.repeat(64),
     gpx_file_id: `cloud://env/activity-routes/owner/${'b'.repeat(64)}.gpx`,
     gpx_sha256: 'b'.repeat(64),
-    generated_preview_file_id: `cloud://env/activity-routes/owner/${'b'.repeat(64)}.png`,
+    generated_preview_file_id: `cloud://env/profile-canonical/${'a'.repeat(32)}/activity-route-preview/${'b'.repeat(64)}/${'c'.repeat(64)}.png`,
     route_name: '周末环湖',
     distance_km: 52.4,
     elevation_m: 680,

@@ -5,6 +5,7 @@ export type MediaCategory =
   | 'profile-background'
   | 'activity-image'
   | 'activity-group-qr'
+  | 'activity-route-preview'
   | 'club-avatar'
   | 'club-cover';
 export type MediaUploadStage = 'authorize' | 'upload' | 'finalize' | 'cleanup';

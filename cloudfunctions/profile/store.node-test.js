@@ -119,13 +119,14 @@ test('客户端上传 intent 先持久化，registerMedia 再原子登记并完�
   const owner = 'owner';
   const secret = 'profile-media-secret-for-tests-32-bytes';
   const now = new Date('2026-09-30T00:00:00.000Z');
-  const cloudPath = `${mediaOwnerPrefix(owner, secret)}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const category = 'profile-avatar';
+  const cloudPath = `${mediaOwnerPrefix(owner, secret)}${category}/123e4567-e89b-42d3-a456-426614174000.jpg`;
   const fileId = `cloud://env/${cloudPath}`;
   const fixture = statefulDb({ profile_media: {}, profile_media_imports: {} });
   const store = createProfileStore(fixture.db);
   const intent = clientUploadIntent(owner, cloudPath, secret, now);
   const sha256 = 'a'.repeat(64);
-  const canonicalPath = canonicalMediaPath(owner, fileId, sha256, 'jpg', secret);
+  const canonicalPath = canonicalMediaPath(owner, fileId, sha256, 'jpg', secret, category);
   const canonicalFileId = `cloud://env/${canonicalPath}`;
   const binding = canonicalMediaBinding(
     owner,
@@ -133,6 +134,7 @@ test('客户端上传 intent 先持久化，registerMedia 再原子登记并完�
     canonicalFileId,
     { sha256, size: 5, mime: 'image/jpeg', extension: 'jpg' },
     secret,
+    category,
   );
   const canonicalIntent = canonicalUploadIntent(
     owner,
@@ -140,6 +142,7 @@ test('客户端上传 intent 先持久化，registerMedia 再原子登记并完�
     { sha256, size: 5, mime: 'image/jpeg', extension: 'jpg' },
     secret,
     now,
+    category,
   );
 
   await store.prepareClientUpload(owner, intent, secret);
@@ -154,7 +157,7 @@ test('客户端上传 intent 先持久化，registerMedia 再原子登记并完�
     binding,
     secret,
     (existing) =>
-      mediaRegistration(fileId, 'other', 'wechat', owner, secret, now, existing, binding),
+      mediaRegistration(fileId, category, 'wechat', owner, secret, now, existing, binding),
     now,
   );
 
@@ -189,16 +192,18 @@ test('存量媒体补 canonical 时 source intent 立即绑定已知对象与 me
   const owner = 'owner';
   const secret = 'profile-media-secret-for-tests-32-bytes';
   const now = new Date('2026-09-30T00:00:00.000Z');
-  const cloudPath = `${mediaOwnerPrefix(owner, secret)}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const category = 'profile-avatar';
+  const cloudPath = `${mediaOwnerPrefix(owner, secret)}${category}/123e4567-e89b-42d3-a456-426614174000.jpg`;
   const fileId = `cloud://env/${cloudPath}`;
   const sha256 = 'b'.repeat(64);
-  const canonicalPath = canonicalMediaPath(owner, fileId, sha256, 'jpg', secret);
+  const canonicalPath = canonicalMediaPath(owner, fileId, sha256, 'jpg', secret, category);
   const canonicalIntent = canonicalUploadIntent(
     owner,
     fileId,
     { sha256, size: 5, mime: 'image/jpeg', extension: 'jpg' },
     secret,
     now,
+    category,
   );
   const fixture = statefulDb({ profile_media_imports: {} });
   const store = createProfileStore(fixture.db);
@@ -233,11 +238,19 @@ test('存量 active canonical 响应未知经 cleanup 后可用确定性 intents
   const cleanupAt = new Date('2026-09-30T00:31:00.000Z');
   const confirmAt = new Date('2026-09-30T00:37:00.000Z');
   const retryAt = new Date('2026-09-30T00:40:00.000Z');
-  const cloudPath = `${mediaOwnerPrefix(owner, secret)}123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const category = 'profile-avatar';
+  const cloudPath = `${mediaOwnerPrefix(owner, secret)}${category}/123e4567-e89b-42d3-a456-426614174000.jpg`;
   const fileId = `cloud://env/${cloudPath}`;
   const mediaId = mediaDocumentId(fileId);
   const verified = { sha256: 'c'.repeat(64), size: 5, mime: 'image/jpeg', extension: 'jpg' };
-  const initialCanonical = canonicalUploadIntent(owner, fileId, verified, secret, createdAt);
+  const initialCanonical = canonicalUploadIntent(
+    owner,
+    fileId,
+    verified,
+    secret,
+    createdAt,
+    category,
+  );
   const sourceIntentId = clientUploadIntentId(cloudPath);
   const fixture = statefulDb({
     profiles: { owner: { _id: owner, avatar_file_id: fileId, avatar_source: 'custom' } },
@@ -246,7 +259,7 @@ test('存量 active canonical 响应未知经 cleanup 后可用确定性 intents
         _id: mediaId,
         file_id: fileId,
         owner_openid: owner,
-        category: 'other',
+        category,
         origin: 'custom',
         status: 'active',
       },
@@ -308,13 +321,13 @@ test('存量 active canonical 响应未知经 cleanup 后可用确定性 intents
   );
   assert.equal(fixture.state.profile_media_imports.get(initialCanonical._id).status, 'deleted');
 
-  const retryCanonical = canonicalUploadIntent(owner, fileId, verified, secret, retryAt);
+  const retryCanonical = canonicalUploadIntent(owner, fileId, verified, secret, retryAt, category);
   await profileStore.prepareCanonicalUpload(owner, sourceIntentId, retryCanonical, secret, retryAt);
 
   assert.equal(fixture.state.profile_media_imports.get(sourceIntentId).status, 'prepared');
   assert.equal(fixture.state.profile_media_imports.get(retryCanonical._id).status, 'prepared');
 
-  const binding = canonicalMediaBinding(owner, fileId, canonicalFileId, verified, secret);
+  const binding = canonicalMediaBinding(owner, fileId, canonicalFileId, verified, secret, category);
   await profileStore.completeClientMedia(
     owner,
     fileId,
@@ -323,7 +336,7 @@ test('存量 active canonical 响应未知经 cleanup 后可用确定性 intents
     binding,
     secret,
     (existing) =>
-      mediaRegistration(fileId, 'other', 'custom', owner, secret, retryAt, existing, binding),
+      mediaRegistration(fileId, category, 'custom', owner, secret, retryAt, existing, binding),
     retryAt,
   );
 

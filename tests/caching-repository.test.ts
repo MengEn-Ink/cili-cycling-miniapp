@@ -26,7 +26,7 @@ function makeInner() {
     cancelRegistration: vi.fn(),
     reviewRegistration: vi.fn(),
     checkInRegistration: vi.fn(),
-    registerProfileMedia: vi.fn(),
+    finalizeMediaUpload: vi.fn(),
     setAvatar: vi.fn(),
     updateProfile: vi.fn(),
   } as unknown as RideRepository;

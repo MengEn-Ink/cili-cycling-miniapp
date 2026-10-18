@@ -984,19 +984,28 @@ Page({
             this,
           );
         });
-        const uploaded = await uploadWithRetry({
-          cloudPath: routeUploadPath(appStore.openid, preview.gpxSha256, 'png'),
+        const uploaded = await uploadMedia({
           filePath,
+          category: 'activity-route-preview',
+          extension: 'png',
+          authorize: (category, requestId, extension) =>
+            rideService.issueMediaUploadPath(category, requestId, extension as 'png'),
+          finalize: (fileId, category, requestId) =>
+            rideService.finalizeMediaUpload(fileId, category, requestId),
         });
-        if (!uploaded.fileID) throw userError('路线图生成失败，请重试');
         if (this.unloaded) {
-          this.cleanupSessionUploads([uploaded.fileID]);
+          this.cleanupSessionUploads([uploaded.canonicalFileId]);
           return;
         }
-        const bound = await rideService.bindRoutePreviewImage(preview.previewId, uploaded.fileID);
+        const bound = await rideService.bindRoutePreviewImage(
+          preview.previewId,
+          uploaded.canonicalFileId,
+        );
         this.setData({
           routePreview: bound,
-          sessionRouteFileIds: [...new Set([...this.data.sessionRouteFileIds, uploaded.fileID])],
+          sessionRouteFileIds: [
+            ...new Set([...this.data.sessionRouteFileIds, uploaded.canonicalFileId]),
+          ],
         });
       }
     }
@@ -1044,6 +1053,7 @@ Page({
         throw userError('文件超过 4 MB，请选择更小的 GPX', 'GPX_TOO_LARGE');
       const digest = sha256Hex(bytes);
       if (!appStore.openid) throw userError('请先完成微信身份验证');
+      // MEDIA_UPLOAD_GPX_ONLY：GPX 不是图片，保留独立摘要校验与可靠底层上传。
       const upload = await uploadWithRetry({
         cloudPath: routeUploadPath(appStore.openid, digest, 'gpx'),
         filePath,

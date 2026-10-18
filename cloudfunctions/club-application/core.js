@@ -30,8 +30,6 @@ function canonicalOwnerAlias(openid, secret = process.env.PROFILE_MEDIA_PATH_SEC
 }
 
 function ownedClubMedia(fileId, openid, category) {
-  const legacy = new RegExp(`^cloud://[^/]+/club-applications/${openid}/.+`).test(fileId);
-  if (legacy) return true;
   const alias = canonicalOwnerAlias(openid);
   return Boolean(
     alias &&
@@ -42,7 +40,7 @@ function ownedClubMedia(fileId, openid, category) {
   );
 }
 
-function normalizeInput(raw, openid) {
+function normalizeInput(raw, openid, existing) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw))
     fail('VALIDATION_FAILED', '申请资料格式错误');
   const joinMode = raw.join_mode;
@@ -52,14 +50,19 @@ function normalizeInput(raw, openid) {
   if (!Number.isInteger(expectedSize) || expectedSize < 2 || expectedSize > 10000)
     fail('VALIDATION_FAILED', '预计成员规模需为 2-10000 人');
   const avatarFileId = text(raw.avatar_file_id, '俱乐部头像', 10, 512);
-  if (!ownedClubMedia(avatarFileId, openid, 'club-avatar'))
+  if (
+    !ownedClubMedia(avatarFileId, openid, 'club-avatar') &&
+    avatarFileId !== existing?.avatar_file_id
+  )
     fail('VALIDATION_FAILED', '请重新上传俱乐部头像');
   if (raw.cover_file_id !== undefined && typeof raw.cover_file_id !== 'string')
     fail('VALIDATION_FAILED', '俱乐部背景照片格式错误');
   const coverFileId = typeof raw.cover_file_id === 'string' ? raw.cover_file_id.trim() : '';
   if (
     coverFileId &&
-    (coverFileId.length > 512 || !ownedClubMedia(coverFileId, openid, 'club-cover'))
+    (coverFileId.length > 512 ||
+      (!ownedClubMedia(coverFileId, openid, 'club-cover') &&
+        coverFileId !== existing?.cover_file_id))
   )
     fail('VALIDATION_FAILED', '请重新上传俱乐部背景照片');
   return {
@@ -111,9 +114,9 @@ function project(application, admin = false) {
 
 async function saveDraft(store, { openid, input }, now) {
   const id = applicationId(openid);
-  const value = normalizeInput(input, openid);
   return store.transaction(async (tx) => {
     const existing = await tx.getApplication(id);
+    const value = normalizeInput(input, openid, existing);
     if (existing && !['draft', 'rejected'].includes(existing.status))
       fail('INVALID_STATE', '当前申请不可编辑');
     const next = {
@@ -136,9 +139,9 @@ async function saveDraft(store, { openid, input }, now) {
 async function submitApplication(store, { openid, input, requestId }, now) {
   const id = applicationId(openid);
   const safeRequestId = text(requestId, '提交请求 ID', 8, 128);
-  const value = normalizeInput(input, openid);
   return store.transaction(async (tx) => {
     const existing = await tx.getApplication(id);
+    const value = normalizeInput(input, openid, existing);
     if (existing?.status === 'pending_review' && existing.last_submit_request_id === safeRequestId)
       return project(existing);
     if (existing && !['draft', 'rejected'].includes(existing.status))
