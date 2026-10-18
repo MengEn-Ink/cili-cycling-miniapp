@@ -4,6 +4,7 @@
 - 目标：生产俱乐部申请写入 smoke 必须使用与已部署云函数一致的媒体路径密钥，并实际经过 canonical registry 校验、激活与清理。
 - 失败基线：[CloudBase run 39151162047](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/39151162047)
 - 配置缺口复现：[CloudBase run 39154165321](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/39154165321)
+- 配置传播延迟复现：[CloudBase run 39156938692](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/39156938692)
 
 ## 现象与根因
 
@@ -16,8 +17,8 @@ PR #291 合并后的 CloudBase 自动部署已成功应用存储规则、部署�
 
 ## 修复与边界
 
-- `cloudbase-production` 环境统一保存媒体路径密钥；部署前生成仅存在于 runner 临时目录的 `cloudbaserc.deploy.json`，把同一密钥同步到 `profile`、`profile-media-cleanup`、`admin-review`、`activity-read`、`activity-admin`、`club-application` 六个函数。
-- 部署后逐个读取函数详情并校验密钥同值，再运行生产 smoke；密钥缺失、长度不足或任一函数配置漂移时 fail closed。
+- `cloudbase-production` 环境统一保存媒体路径密钥；部署前生成仅存在于 runner 临时目录的 `cloudbaserc.deploy.json`，已变更函数按部署范围更新，未变更但缺少密钥的媒体函数补做完整 deploy，确保 `profile`、`profile-media-cleanup`、`admin-review`、`activity-read`、`activity-admin`、`club-application` 六个函数同值。
+- 部署后逐个轮询函数详情并校验密钥同值，最多等待 60 秒吸收 CloudBase 配置传播延迟，再运行生产 smoke；密钥缺失、长度不足或任一函数最终配置漂移时 fail closed。
 - smoke 为俱乐部头像和封面创建 `profile_media` canonical 登记，按 `canonical_file_id + owner_openid + category` 精确匹配，激活后回读状态。
 - 成功或中途失败均清理媒体登记、申请、俱乐部、成员与审计测试记录，并回读确认无残留。
 - 不修改小程序或云函数业务行为，不迁移存量数据，不恢复任何 legacy 图片写协议。
