@@ -35,7 +35,7 @@ describe('单一明亮外观接线', () => {
     expect(template).toContain('App 更新');
   });
 
-  it('设置页只渲染当前版本的 App 更新卡片，RELEASE_NOTES 保留一条供发布门禁', () => {
+  it('设置页只渲染当前版本的 App 更新卡片，RELEASE_NOTES 保留历史且仅一条 latest', () => {
     const template = readFileSync('miniprogram/pages/settings/index.wxml', 'utf8');
     const script = readFileSync('miniprogram/pages/settings/index.ts', 'utf8');
 
@@ -44,7 +44,7 @@ describe('单一明亮外观接线', () => {
     expect(template).not.toContain('wx:for="{{releaseNotes}}"');
     expect(script).toContain("date: '2026-10-18'");
     expect(script).toContain('version: CLIENT_RELEASE_VERSION');
-    expect(script).toContain("title: '俱乐部资料保存稳定性修复'");
+    expect(script).toContain("title: '俱乐部首页与人数上限'");
     const latestMatches = script.match(/latest:\s*true/g) || [];
     expect(latestMatches).toHaveLength(1);
   });

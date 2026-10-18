@@ -64,6 +64,10 @@ function createMemoryStore({
         getApplication: (id) => get('club_applications', id),
         getClub: (id) => get('clubs', id),
         getMembership: (id) => get('club_memberships', id),
+        countActiveMemberships: (clubId) =>
+          [...collections.club_memberships.values()].filter(
+            (item) => item.club_id === clubId && item.status === 'active',
+          ).length,
         getAudit: (id) => get('audit_logs', id),
         putApplication: (id, value) => put('club_applications', id, value),
         putClub: (id, value) => put('clubs', id, value),

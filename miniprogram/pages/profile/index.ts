@@ -547,7 +547,7 @@ Page({
     wx.navigateTo({ url: '/pages/profile-edit/index' });
   },
   openClubCenter() {
-    wx.navigateTo({ url: '/pages/club-center/index' });
+    wx.navigateTo({ url: '/pages/club/center/index' });
   },
   clubApplications() {
     if (this.data.isAdmin) wx.navigateTo({ url: '/pages/admin/club-applications/index' });

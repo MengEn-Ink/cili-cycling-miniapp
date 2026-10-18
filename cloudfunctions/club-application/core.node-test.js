@@ -41,6 +41,10 @@ function memoryStore() {
         getApplication: (id) => state.applications.get(id),
         getClub: (id) => state.clubs.get(id),
         getMembership: (id) => state.memberships.get(id),
+        countActiveMemberships: (clubId) =>
+          [...state.memberships.values()].filter(
+            (item) => item.club_id === clubId && item.status === 'active',
+          ).length,
         getAudit: (id) => state.audits.find((item) => item._id === id),
         putApplication: (id, value) => state.applications.set(id, { ...value }),
         putClub: (id, value) => state.clubs.set(id, { ...value }),
@@ -207,9 +211,17 @@ test('可加入列表只保留可用公开俱乐部并返回安全投影', () =>
       city: '深圳',
       introduction: '每周组织安全友好的骑行活动',
       avatar_url: 'cloud://env/clubs/avatar.jpg',
+      capacity_initialized: false,
+      member_count: 0,
+      max_members: 50,
     },
   ]);
   assert.equal(Object.hasOwn(result[0], 'owner_openid'), false);
+  assert.equal(
+    listJoinableClubs([joinableClub({ member_count: 12, max_members: 50 })])[0]
+      .capacity_initialized,
+    true,
+  );
   assert.equal(
     listJoinableClubs(
       Array.from({ length: 101 }, (_, index) =>
@@ -410,6 +422,7 @@ test('管理员更新资料时服务端只写允许字段并记录审计', async
         introduction: '这是修改后的俱乐部介绍，清晰说明定位和日常活动安排。',
         join_mode: 'admin_invite',
         avatar_file_id: 'cloud://env/club-applications/user-2/new.jpg',
+        max_members: 120,
       },
     },
     now,
@@ -451,6 +464,7 @@ test('资料更新要求 active 管理身份、合法图片归属并支持同请
     introduction: '我们每周组织安全、友好的公路骑行训练活动。',
     join_mode: 'public_apply',
     avatar_file_id: 'cloud://env/club-applications/user-1/new.jpg',
+    max_members: 50,
   };
 
   const first = await updateManagedClub(
@@ -571,5 +585,135 @@ test('资料更新要求 active 管理身份、合法图片归属并支持同请
   await assert.rejects(
     () => getManagedClub(store, { openid: 'user-1', clubId: id }),
     (error) => error.code === 'CLUB_ADMIN_REQUIRED',
+  );
+});
+
+test('审批创建按预计规模初始化容量且 OWNER 计入成员数', async () => {
+  const store = memoryStore();
+  const pending = await submitApplication(
+    store,
+    { openid: 'capacity-owner', input: valid('capacity-owner'), requestId: 'capacity-submit-1' },
+    now,
+  );
+  await reviewApplication(
+    store,
+    {
+      adminOpenid: 'admin-1',
+      applicationId: pending.id,
+      decision: 'approved',
+      requestId: 'capacity-review-1',
+    },
+    now,
+  );
+  const club = [...store.state.clubs.values()][0];
+  assert.equal(club.max_members, 30);
+  assert.equal(club.member_count, 1);
+});
+
+test('历史俱乐部在事务内按 active membership 回填容量字段', async () => {
+  const store = memoryStore();
+  const id = `club_${'e'.repeat(64)}`;
+  store.state.clubs.set(id, joinableClub({ _id: id }));
+  for (const [openid, status] of [
+    ['owner', 'active'],
+    ['member', 'active'],
+    ['left', 'inactive'],
+  ]) {
+    store.state.memberships.set(membershipId(id, openid), {
+      club_id: id,
+      openid,
+      role: openid === 'owner' ? 'OWNER' : 'MEMBER',
+      status,
+    });
+  }
+  const managed = await getManagedClub(store, { openid: 'owner', clubId: id });
+  assert.equal(managed.member_count, 2);
+  assert.equal(managed.max_members, 50);
+  assert.equal(store.state.clubs.get(id).member_count, 2);
+});
+
+test('公开加入严格执行容量边界且重复加入不重复计数', async () => {
+  const store = memoryStore();
+  store.state.clubs.set(publicClubId, joinableClub({ member_count: 1, max_members: 2 }));
+  await joinPublicClub(
+    store,
+    { openid: 'joiner-1', clubId: publicClubId, requestId: 'capacity-join-1' },
+    now,
+  );
+  assert.equal(store.state.clubs.get(publicClubId).member_count, 2);
+  await joinPublicClub(
+    store,
+    { openid: 'joiner-1', clubId: publicClubId, requestId: 'capacity-join-2' },
+    now,
+  );
+  assert.equal(store.state.clubs.get(publicClubId).member_count, 2);
+  await assert.rejects(
+    () =>
+      joinPublicClub(
+        store,
+        { openid: 'joiner-2', clubId: publicClubId, requestId: 'capacity-join-3' },
+        now,
+      ),
+    (error) => error.code === 'CLUB_FULL',
+  );
+});
+
+test('管理员人数上限拒绝非法值和低于当前成员数', async () => {
+  const store = memoryStore();
+  const id = `club_${'f'.repeat(64)}`;
+  store.state.clubs.set(
+    id,
+    joinableClub({
+      _id: id,
+      member_count: 8,
+      max_members: 20,
+      updated_at: now.toISOString(),
+      avatar_url: 'cloud://env/club-applications/owner/old.jpg',
+    }),
+  );
+  store.state.memberships.set(membershipId(id, 'owner'), {
+    club_id: id,
+    openid: 'owner',
+    role: 'OWNER',
+    status: 'active',
+  });
+  const input = {
+    name: '山海骑行会',
+    city: '深圳',
+    introduction: '我们每周组织安全、友好的公路骑行训练活动。',
+    join_mode: 'public_apply',
+    avatar_file_id: 'cloud://env/club-applications/owner/old.jpg',
+  };
+  for (const max_members of [1, 10001, 2.5]) {
+    await assert.rejects(
+      () =>
+        updateManagedClub(
+          store,
+          {
+            openid: 'owner',
+            clubId: id,
+            requestId: `invalid-max-${String(max_members)}`,
+            expectedUpdatedAt: now.toISOString(),
+            input: { ...input, max_members },
+          },
+          now,
+        ),
+      (error) => error.code === 'INVALID_MAX_MEMBERS',
+    );
+  }
+  await assert.rejects(
+    () =>
+      updateManagedClub(
+        store,
+        {
+          openid: 'owner',
+          clubId: id,
+          requestId: 'below-current-1',
+          expectedUpdatedAt: now.toISOString(),
+          input: { ...input, max_members: 7 },
+        },
+        now,
+      ),
+    (error) => error.code === 'MAX_MEMBERS_BELOW_CURRENT',
   );
 });

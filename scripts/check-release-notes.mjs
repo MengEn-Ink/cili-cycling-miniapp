@@ -23,19 +23,18 @@ export function validateReleaseNotes(changedFiles, source) {
     throw new Error('App 更新必须且只能有一条 latest: true');
   }
 
-  const versionMatches = source.match(/\bversion\s*:/g) || [];
-  if (versionMatches.length !== 1) {
-    throw new Error('App 更新只保留当前版本，不得继续展示历史记录');
-  }
   if (!/version:\s*CLIENT_RELEASE_VERSION/.test(source)) {
-    throw new Error('App 更新版本必须使用 CLIENT_RELEASE_VERSION');
+    throw new Error('App 更新首条版本必须使用 CLIENT_RELEASE_VERSION');
   }
   if (!/currentRelease:\s*RELEASE_NOTES\[0\]/.test(source)) {
     throw new Error('设置页必须只展示当前版本的 App 更新');
   }
 
   const firstEntry = source.match(/const RELEASE_NOTES\s*=\s*\[\s*\{([\s\S]*?)\n\s*\},/);
-  if (!firstEntry?.[1].includes('latest: true')) {
+  if (!firstEntry?.[1].includes('version: CLIENT_RELEASE_VERSION')) {
+    throw new Error('App 更新首条版本必须使用 CLIENT_RELEASE_VERSION');
+  }
+  if (!firstEntry[1].includes('latest: true')) {
     throw new Error('App 更新的当前版本必须标记为 latest: true');
   }
 

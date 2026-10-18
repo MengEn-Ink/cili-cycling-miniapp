@@ -4,6 +4,7 @@ import type {
   ClubApplication,
   ClubApplicationInput,
   ClubApplicationStatus,
+  ClubDetail,
   JoinableClub,
   JoinedClubSummary,
   ManagedClubProfile,
@@ -87,6 +88,7 @@ export interface ClubApplicationRepository {
   getMyClubApplication(): Promise<ClubApplication | null>;
   listJoinableClubs(): Promise<JoinableClub[]>;
   joinPublicClub(clubId: string, requestId: string): Promise<JoinedClubSummary>;
+  getClubDetail(clubId: string): Promise<ClubDetail>;
   getManagedClub(clubId: string): Promise<ManagedClubProfile>;
   updateManagedClub(
     clubId: string,

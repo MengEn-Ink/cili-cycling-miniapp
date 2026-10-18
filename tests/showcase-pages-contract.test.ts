@@ -82,9 +82,11 @@ const orgApprovalPrototypeRoutes = [
 ];
 
 const routeToPagePath = (route: string) =>
-  route.startsWith('admin-')
-    ? `pages/admin/${route.replace('admin-', '')}/index`
-    : `pages/${route}/index`;
+  route === 'club-center'
+    ? 'pages/club/center/index'
+    : route.startsWith('admin-')
+      ? `pages/admin/${route.replace('admin-', '')}/index`
+      : `pages/${route}/index`;
 
 describe('GitHub Pages 全页面高保真原型门禁', () => {
   it('与 app.json 的 17 个可达页面逐一对应，官方路线页 route-view 不进入原型', () => {
@@ -644,9 +646,9 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   });
 
   it('设置页原型同步当前客户端版本与当前 App 更新', () => {
-    expect(schema).toContain("state: 'V2026.10.18.3'");
+    expect(schema).toContain("state: 'V2026.10.18.4'");
     expect(schema).toContain(
-      "['2026.10.18.3', '俱乐部资料保存稳定性修复', '俱乐部负责人和管理员保存资料时，现在能更稳定地识别最新版本。']",
+      "['2026.10.18.4', '俱乐部首页与人数上限', '俱乐部首页现在统一展示已加入和推荐俱乐部，并支持管理员设置人数上限。']",
     );
     expect(templates).toContain('App 更新');
     expect(templates).not.toContain('最近五次');

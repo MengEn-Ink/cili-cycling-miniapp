@@ -419,6 +419,10 @@ export class CachingRepository implements RideRepository {
     return result;
   }
 
+  getClubDetail(clubId: string) {
+    return this.inner.getClubDetail(clubId);
+  }
+
   getManagedClub(clubId: string) {
     return this.inner.getManagedClub(clubId);
   }

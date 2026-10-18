@@ -22,6 +22,15 @@ export interface JoinableClub {
   introduction: string;
   avatarUrl: string;
   avatarInitial: string;
+  capacityInitialized: boolean;
+  memberCount: number;
+  maxMembers: number;
+}
+export interface ClubDetail extends JoinableClub {
+  joinMode: ClubJoinMode;
+  role: string;
+  roleLabel: string;
+  canManage: boolean;
 }
 export interface JoinedClubSummary {
   club: JoinableClub;
@@ -36,6 +45,8 @@ export interface ManagedClubProfile {
   joinMode: ClubJoinMode;
   avatarFileId: string;
   avatarUrl: string;
+  memberCount: number;
+  maxMembers: number;
   updatedAt: string;
 }
 export interface ManagedClubProfileInput {
@@ -44,6 +55,7 @@ export interface ManagedClubProfileInput {
   introduction: string;
   joinMode: ClubJoinMode;
   avatarFileId: string;
+  maxMembers: number;
 }
 export type ClubApplicationStatus = 'draft' | 'pending_review' | 'rejected' | 'approved';
 export type ClubJoinMode = 'public_apply' | 'invite_code' | 'admin_invite';

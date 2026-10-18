@@ -1,0 +1,97 @@
+<view class="page club-center-page">
+  <view class="club-page-head">
+    <brand-logo compact="{{true}}" meta="俱乐部中心" />
+    <button class="create-mini" wx:if="{{joinedClubs.length && !createMode && !manageMode && !detailMode}}" bindtap="showCreateForm">＋ 新建</button>
+  </view>
+  <view class="a11y-live-region" role="status" aria-live="polite">{{loading ? '正在读取俱乐部信息' : (managing ? '正在保存俱乐部资料' : '俱乐部信息已更新')}}</view>
+  <view class="state-card" wx:if="{{loading}}"><view class="title">正在读取俱乐部</view><view class="muted">请稍候。</view></view>
+  <view class="state-card" wx:elif="{{loadError}}" role="alert"><view class="title">暂时无法读取</view><view class="muted">{{loadError}}</view><button class="btn" bindtap="load">重新加载</button></view>
+
+  <block wx:else>
+    <view class="detail-page" wx:if="{{detailMode}}">
+      <button class="text-back" bindtap="closeClubDetail">‹ 返回俱乐部首页</button>
+      <view class="state-card" wx:if="{{detailLoading}}"><view class="title">正在读取俱乐部详情</view></view>
+      <view class="state-card" wx:elif="{{detailError}}" role="alert"><view class="title">暂时无法读取</view><view class="muted">{{detailError}}</view><button class="btn" data-id="{{selectedClubId}}" bindtap="openClubDetail">重试</button></view>
+      <view class="club-detail-card" wx:elif="{{selectedClub}}">
+        <view class="managed-profile">
+          <image wx:if="{{selectedClub.avatarUrl}}" class="managed-avatar" src="{{selectedClub.avatarUrl}}" mode="aspectFill" />
+          <view wx:else class="managed-avatar managed-avatar-placeholder">{{selectedClub.avatarInitial}}</view>
+          <view class="managed-profile-copy"><view class="club-name">{{selectedClub.name}}</view><view class="club-city">{{selectedClub.city}} · {{selectedClub.roleLabel}}</view></view>
+        </view>
+        <view class="capacity-strip"><view><strong>{{selectedClub.memberCount}}</strong><text>当前成员</text></view><view><strong>{{selectedClub.maxMembers}}</strong><text>人数上限</text></view></view>
+        <view class="detail-block"><text>俱乐部简介</text><strong>{{selectedClub.introduction || '这个俱乐部暂未填写简介。'}}</strong></view>
+        <view class="avatar-reminder" wx:if="{{!selectedClub.avatarUrl && selectedClub.canManage}}"><view><strong>待补俱乐部头像</strong><text>补充后成员和活动中会展示统一头像。</text></view><button class="text-action" bindtap="manageSelectedClub">去补充</button></view>
+        <button class="secondary manage-entry" wx:if="{{selectedClub.canManage}}" bindtap="manageSelectedClub">修改俱乐部资料</button>
+      </view>
+    </view>
+
+    <form class="manage-form" wx:elif="{{canManageClub && managedClub && manageMode}}">
+      <view class="form-card">
+        <view class="card-head"><text class="section-no">编辑</text><view><view class="title">修改俱乐部资料</view><view class="muted">保存后，个人资料与后续活动会使用新信息</view></view></view>
+        <button class="cover-picker managed-cover-picker" bindtap="chooseCover" loading="{{uploading}}" disabled="{{uploading || managing}}">
+          <image wx:if="{{managedAvatarPreviewUrl}}" src="{{managedAvatarPreviewUrl}}" mode="aspectFill" />
+          <view wx:else><strong>{{uploading ? '正在上传…' : '上传俱乐部头像'}}</strong><text>必填，支持相册或拍照，最大 5MB</text></view>
+        </button>
+        <view class="field-error" wx:if="{{fieldErrorKey === 'avatarFileId'}}">{{fieldError}}</view>
+        <label class="field"><text>俱乐部名称</text><input value="{{managedForm.name}}" data-field="name" bindinput="managedInput" maxlength="30" placeholder="例如：山海骑行会" placeholder-class="input-placeholder" /></label>
+        <view class="field-error" wx:if="{{fieldErrorKey === 'name'}}">{{fieldError}}</view>
+        <label class="field"><text>所在城市</text><input value="{{managedForm.city}}" data-field="city" bindinput="managedInput" maxlength="20" placeholder="例如：深圳" placeholder-class="input-placeholder" /></label>
+        <label class="field"><text>俱乐部简介</text><textarea value="{{managedForm.introduction}}" data-field="introduction" bindinput="managedInput" maxlength="500" placeholder="至少 20 字，介绍定位、骑行氛围与日常活动" placeholder-class="input-placeholder" /></label>
+        <label class="field"><text>加入方式</text><picker range="{{joinModes}}" range-key="label" value="{{managedJoinModeIndex}}" bindchange="managedJoinModeChange"><view class="picker-value">{{joinModes[managedJoinModeIndex].label}} <text>›</text></view></picker></label>
+        <view class="capacity-current">当前成员数 <strong>{{managedClub.memberCount}} 人</strong></view>
+        <label class="field"><text>人数上限</text><input type="number" value="{{managedForm.maxMembers}}" data-field="maxMembers" bindinput="managedInput" placeholder="2-10000" placeholder-class="input-placeholder" /></label>
+        <view class="capacity-help">只能扩容或设置为不低于当前成员数的值</view>
+        <view class="capacity-quick"><button data-value="50" bindtap="expandCapacity">+50</button><button data-value="100" bindtap="expandCapacity">+100</button><button data-value="500" bindtap="expandCapacity">+500</button></view>
+        <view class="field-error" wx:if="{{fieldErrorKey === 'maxMembers'}}">{{fieldError}}</view>
+        <view class="privacy-note"><view class="privacy-note-title">权限说明</view><view>只有俱乐部负责人和管理员可以保存修改；成员身份和审批状态不会在这里改变。</view></view>
+      </view>
+      <view class="card danger" wx:if="{{actionError}}" role="alert">{{actionError}}</view>
+      <view class="actions-space"></view>
+      <view class="fixed actions"><button class="secondary" bindtap="cancelManage" disabled="{{managing || uploading}}">取消</button><button class="btn" bindtap="saveManagedClub" disabled="{{managing || uploading}}" loading="{{managing}}">{{managing ? '正在保存' : '保存修改'}}</button></view>
+    </form>
+
+    <block wx:elif="{{!createMode}}">
+      <view class="section-heading"><view><view class="section-no">我的俱乐部</view><view class="title">已加入</view></view><text class="section-count">{{joinedClubs.length}} 个</text></view>
+      <view class="joined-list" wx:if="{{joinedClubs.length}}">
+        <view class="joined-card" wx:for="{{joinedClubs}}" wx:key="clubId" data-id="{{item.clubId}}" bindtap="openClubDetail" role="button" aria-label="查看 {{item.name}} 详情">
+          <image wx:if="{{item.avatarUrl}}" class="club-avatar" src="{{item.avatarUrl}}" mode="aspectFill" />
+          <view wx:else class="club-avatar club-avatar-placeholder">俱</view>
+          <view class="club-copy"><view class="club-name">{{item.name}}</view><view class="club-city">{{item.roleLabel}}</view><view class="avatar-reminder-inline" wx:if="{{!item.avatarUrl && (item.role === 'OWNER' || item.role === 'ADMIN')}}">待补俱乐部头像 · <text data-id="{{item.clubId}}" catchtap="supplementAvatar">去补充</text></view></view>
+          <text class="club-chevron">›</text>
+        </view>
+      </view>
+      <view class="empty-club-card" wx:else>
+        <view class="title">还没有加入俱乐部</view><view class="muted">可以先浏览推荐，也可以创建自己的骑行俱乐部。</view>
+        <view class="empty-actions"><button class="btn" bindtap="showCreateForm">新建俱乐部</button><button class="secondary" bindtap="browseRecommendations">浏览推荐</button></view>
+      </view>
+
+      <view class="section-heading recommendation-heading"><view><view class="section-no">发现</view><view class="title">推荐俱乐部</view></view></view>
+      <view class="club-list" wx:if="{{joinableClubs.length}}">
+        <view class="join-club-card" wx:for="{{joinableClubs}}" wx:key="id">
+          <image wx:if="{{item.avatarUrl}}" class="club-avatar" src="{{item.avatarUrl}}" mode="aspectFill" />
+          <view wx:else class="club-avatar club-avatar-placeholder">{{item.avatarInitial}}</view>
+          <view class="club-copy"><view class="club-name">{{item.name}}</view><view class="club-city" wx:if="{{item.capacityInitialized}}">{{item.city}} · {{item.memberCount}} / {{item.maxMembers}} 人</view><view class="club-city" wx:else>{{item.city}} · 人数待同步</view><view class="club-introduction">{{item.introduction || '这个俱乐部暂未填写简介。'}}</view><view class="recommend-actions"><button class="secondary" disabled="{{true}}">查看详情</button><button class="btn" data-id="{{item.id}}" bindtap="joinClub" loading="{{joiningClubId === item.id}}" disabled="{{joiningClubId === item.id || (item.capacityInitialized && item.memberCount >= item.maxMembers)}}">{{item.capacityInitialized && item.memberCount >= item.maxMembers ? '人数已满' : (joiningClubId === item.id ? '正在加入' : '申请加入')}}</button></view></view>
+        </view>
+      </view>
+      <view class="state-card" wx:else><view class="title">暂时没有推荐俱乐部</view><view class="muted">你可以稍后再来，或申请创建一个新俱乐部。</view></view>
+      <view class="card danger" wx:if="{{joinError}}" role="alert"><view>{{joinError}}</view><view class="muted">列表已保留，请再次点击申请加入重试。</view></view>
+
+      <view class="status-card status-{{application.status}}" wx:if="{{application}}">
+        <view class="status-kicker">申请进度 · 第 {{application.reviewVersion}} 版</view>
+        <view class="status-title" wx:if="{{application.status === 'draft'}}">草稿待提交</view><view class="status-title" wx:elif="{{application.status === 'pending_review'}}">平台审批中</view><view class="status-title" wx:elif="{{application.status === 'rejected'}}">申请已驳回，可修改重提</view><view class="status-title" wx:else>申请已通过</view>
+        <view class="status-copy" wx:if="{{application.status === 'pending_review'}}">管理员处理后，这里会同步显示结果。请勿重复提交。</view><view class="rejection" wx:if="{{application.status === 'rejected'}}"><text>驳回原因</text><strong>{{application.rejectionReason}}</strong></view><view class="status-copy" wx:if="{{application.status === 'approved'}}">“{{application.clubName}}”已创建，你已成为俱乐部 OWNER。</view>
+      </view>
+      <view class="read-card" wx:if="{{application && (application.status === 'pending_review' || application.status === 'approved')}}"><image wx:if="{{application.coverUrl}}" class="cover-preview" src="{{application.coverUrl}}" mode="aspectFill" /><view class="detail-line"><text>俱乐部名称</text><strong>{{application.clubName}}</strong></view><view class="detail-line"><text>所在城市</text><strong>{{application.city}}</strong></view><view class="detail-line"><text>人数上限</text><strong>{{application.expectedSize}} 人</strong></view><view class="detail-block"><text>俱乐部简介</text><strong>{{application.introduction}}</strong></view><view class="detail-block"><text>主要活动</text><strong>{{application.activityTypes}}</strong></view></view>
+    </block>
+
+    <block wx:elif="{{createMode}}">
+      <view class="intro-card"><view class="section-no">新建俱乐部</view><view class="title">申请创建</view><view class="muted">填写必要资料并提交，经平台管理员审批通过后创建。</view></view>
+      <form class="application-form">
+        <view class="form-card"><view class="card-head"><text class="section-no">01</text><view><view class="title">基本资料</view><view class="muted">用于管理员判断俱乐部定位与真实性</view></view></view><button class="cover-picker" bindtap="chooseCover" loading="{{uploading}}" disabled="{{uploading}}"><image wx:if="{{coverPreviewUrl}}" src="{{coverPreviewUrl}}" mode="aspectFill" /><view wx:else><strong>{{uploading ? '正在上传…' : '上传俱乐部头像'}}</strong><text>必填，支持相册或拍照，最大 5MB</text></view></button><view class="field-error" wx:if="{{fieldErrorKey === 'coverFileId'}}">{{fieldError}}</view><label class="field"><text>俱乐部名称</text><input value="{{form.clubName}}" data-field="clubName" bindinput="input" maxlength="30" placeholder="例如：山海骑行会" placeholder-class="input-placeholder" /></label><label class="field"><text>所在城市</text><input value="{{form.city}}" data-field="city" bindinput="input" maxlength="20" placeholder="例如：深圳" placeholder-class="input-placeholder" /></label><label class="field"><text>俱乐部简介</text><textarea value="{{form.introduction}}" data-field="introduction" bindinput="input" maxlength="500" placeholder="至少 20 字，介绍定位、骑行氛围与组织经验" placeholder-class="input-placeholder" /></label></view>
+        <view class="form-card"><view class="card-head"><text class="section-no">02</text><view class="title">运营方式</view></view><label class="field"><text>加入方式</text><picker range="{{joinModes}}" range-key="label" value="{{joinModeIndex}}" bindchange="joinModeChange"><view class="picker-value">{{joinModes[joinModeIndex].label}} <text>›</text></view></picker></label><label class="field"><text>人数上限</text><input type="number" value="{{form.expectedSize}}" data-field="expectedSize" bindinput="input" placeholder="2-10000" placeholder-class="input-placeholder" /></label><label class="field"><text>主要活动类型</text><input value="{{form.activityTypes}}" data-field="activityTypes" bindinput="input" maxlength="100" placeholder="例如：公路骑行、爬坡训练" placeholder-class="input-placeholder" /></label><label class="field"><text>俱乐部规则</text><textarea value="{{form.rulesSummary}}" data-field="rulesSummary" bindinput="input" maxlength="500" placeholder="至少 10 字，说明安全要求和群规" placeholder-class="input-placeholder" /></label></view>
+        <view class="form-card"><view class="card-head"><text class="section-no">03</text><view class="title">申请人联络</view></view><label class="field"><text>微信号或手机号</text><input value="{{form.applicantContact}}" data-field="applicantContact" bindinput="input" maxlength="50" placeholder="仅用于本次审核联络" placeholder-class="input-placeholder" /></label><view class="privacy-note"><view class="privacy-note-title">隐私说明</view><view>申请资料仅你本人和平台管理员可见；联系方式只用于俱乐部创建审核，不向其他骑友公开。</view></view></view>
+        <view class="card danger" wx:if="{{actionError}}" role="alert">{{actionError}}</view><view class="actions-space"></view><view class="fixed actions"><button class="secondary" bindtap="saveDraft" disabled="{{saving || submitting || uploading}}" loading="{{saving}}">保存草稿</button><button class="btn" bindtap="submit" disabled="{{saving || submitting || uploading}}" loading="{{submitting}}">{{submitting ? '正在提交' : (application && application.status === 'rejected' ? '修改并重新提交' : '提交审核')}}</button></view>
+      </form>
+    </block>
+  </block>
+</view>

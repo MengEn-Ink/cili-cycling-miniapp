@@ -5,6 +5,7 @@ import type {
   ClubApplication,
   ClubApplicationInput,
   ClubApplicationStatus,
+  ClubDetail,
   ClubIdentity,
   JoinableClub,
   JoinedClubSummary,
@@ -1210,6 +1211,12 @@ function mapJoinableClub(raw: unknown): JoinableClub {
     typeof value.city !== 'string' ||
     typeof value.introduction !== 'string' ||
     typeof value.avatar_url !== 'string' ||
+    typeof value.capacity_initialized !== 'boolean' ||
+    !Number.isInteger(value.member_count) ||
+    value.member_count < 0 ||
+    !Number.isInteger(value.max_members) ||
+    value.max_members < Math.max(2, value.member_count) ||
+    value.max_members > 10000 ||
     (value.avatar_url !== '' && !/^https:\/\//i.test(value.avatar_url))
   )
     return invalidResponse();
@@ -1220,6 +1227,28 @@ function mapJoinableClub(raw: unknown): JoinableClub {
     introduction: value.introduction,
     avatarUrl: value.avatar_url,
     avatarInitial: Array.from(value.name.trim())[0] || '俱',
+    capacityInitialized: value.capacity_initialized,
+    memberCount: value.member_count,
+    maxMembers: value.max_members,
+  };
+}
+
+function mapClubDetail(raw: unknown): ClubDetail {
+  const value = expectRecord(raw);
+  const base = mapJoinableClub(value);
+  if (
+    !['public_apply', 'invite_code', 'admin_invite'].includes(value.join_mode) ||
+    typeof value.role !== 'string' ||
+    typeof value.role_label !== 'string' ||
+    typeof value.can_manage !== 'boolean'
+  )
+    return invalidResponse();
+  return {
+    ...base,
+    joinMode: value.join_mode,
+    role: value.role,
+    roleLabel: value.role_label,
+    canManage: value.can_manage,
   };
 }
 
@@ -1240,6 +1269,11 @@ function mapManagedClub(raw: unknown): ManagedClubProfile {
     typeof value.introduction !== 'string' ||
     !['public_apply', 'invite_code', 'admin_invite'].includes(value.join_mode) ||
     typeof value.avatar_file_id !== 'string' ||
+    !Number.isInteger(value.member_count) ||
+    value.member_count < 0 ||
+    !Number.isInteger(value.max_members) ||
+    value.max_members < Math.max(2, value.member_count) ||
+    value.max_members > 10000 ||
     typeof value.avatar_url !== 'string' ||
     (value.avatar_url !== '' && !/^https:\/\//i.test(value.avatar_url))
   )
@@ -1252,6 +1286,8 @@ function mapManagedClub(raw: unknown): ManagedClubProfile {
     joinMode: value.join_mode,
     avatarFileId: value.avatar_file_id,
     avatarUrl: value.avatar_url,
+    memberCount: value.member_count,
+    maxMembers: value.max_members,
     updatedAt: dateText(value.updated_at),
   };
 }
@@ -1263,6 +1299,7 @@ function managedClubPayload(value: ManagedClubProfileInput) {
     introduction: value.introduction,
     join_mode: value.joinMode,
     avatar_file_id: value.avatarFileId,
+    max_members: value.maxMembers,
   };
 }
 
@@ -1609,6 +1646,14 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
         action: 'joinPublicClub',
         clubId: requiredId(clubId, '俱乐部 ID'),
         requestId: boundedId(requestId, '加入请求 ID', 8, 128),
+      }),
+    );
+  }
+  async getClubDetail(clubId: string) {
+    return mapClubDetail(
+      await this.call('club-application', {
+        action: 'getClubDetail',
+        clubId: requiredId(clubId, '俱乐部 ID'),
       }),
     );
   }

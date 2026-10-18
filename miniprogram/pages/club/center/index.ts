@@ -1,14 +1,16 @@
 import type {
   ClubApplication,
   ClubApplicationInput,
+  ClubDetail,
   ClubJoinMode,
+  ClubMembershipSummary,
   JoinableClub,
   JoinedClubSummary,
   ManagedClubProfile,
   ManagedClubProfileInput,
-} from '../../models';
-import { rideService } from '../../services/ride-service';
-import { appStore } from '../../store/app-store';
+} from '../../../models';
+import { rideService } from '../../../services/ride-service';
+import { appStore } from '../../../store/app-store';
 
 const EMPTY_FORM: ClubApplicationInput = {
   clubName: '',
@@ -27,6 +29,7 @@ const EMPTY_MANAGED_FORM: ManagedClubProfileInput = {
   introduction: '',
   joinMode: 'public_apply',
   avatarFileId: '',
+  maxMembers: 50,
 };
 const JOIN_MODES: { value: ClubJoinMode; label: string }[] = [
   { value: 'public_apply', label: '公开加入' },
@@ -63,7 +66,7 @@ function validate(form: ClubApplicationInput) {
   const failed = checks.find((item) => !item[1]);
   return failed ? { field: failed[0], message: failed[2] } : null;
 }
-function validateManagedClub(form: ManagedClubProfileInput) {
+function validateManagedClub(form: ManagedClubProfileInput, memberCount = 0) {
   const checks: [keyof ManagedClubProfileInput, boolean, string][] = [
     ['avatarFileId', !!form.avatarFileId, '请上传俱乐部头像'],
     [
@@ -73,6 +76,16 @@ function validateManagedClub(form: ManagedClubProfileInput) {
     ],
     ['city', form.city.trim().length >= 2 && form.city.trim().length <= 20, '请填写所在城市'],
     ['introduction', form.introduction.trim().length >= 20, '俱乐部简介至少 20 个字符'],
+    [
+      'maxMembers',
+      Number.isInteger(Number(form.maxMembers)) &&
+        Number(form.maxMembers) >= 2 &&
+        Number(form.maxMembers) <= 10000 &&
+        Number(form.maxMembers) >= memberCount,
+      Number(form.maxMembers) < memberCount
+        ? `人数上限不能低于当前 ${memberCount} 名成员`
+        : '人数上限需为 2-10000 人',
+    ],
   ];
   const failed = checks.find((item) => !item[1]);
   return failed ? { field: failed[0], message: failed[2] } : null;
@@ -97,6 +110,7 @@ function toManagedForm(value: ManagedClubProfile): ManagedClubProfileInput {
     introduction: value.introduction,
     joinMode: value.joinMode,
     avatarFileId: value.avatarFileId,
+    maxMembers: value.maxMembers,
   };
 }
 
@@ -113,6 +127,12 @@ Page({
     application: null as ClubApplication | null,
     joinableClubs: [] as JoinableClub[],
     joinedClub: null as JoinedClubSummary | null,
+    joinedClubs: [] as ClubMembershipSummary[],
+    selectedClub: null as ClubDetail | null,
+    selectedClubId: '',
+    detailMode: false,
+    detailLoading: false,
+    detailError: '',
     joinedClubName: '',
     discoverMode: false,
     createMode: false,
@@ -189,6 +209,7 @@ Page({
       this.setData({
         application,
         joinableClubs,
+        joinedClubs: profile.clubs,
         discoverMode,
         joinedClubName: this.data.joinedClub?.club.name || profile.clubs[0]?.name || '',
         createMode: application ? ['draft', 'rejected'].includes(application.status) : false,
@@ -222,7 +243,53 @@ Page({
     }
   },
   showCreateForm() {
-    this.setData({ createMode: true, discoverMode: false, joinError: '' });
+    this.setData({ createMode: true, detailMode: false, discoverMode: false, joinError: '' });
+  },
+  async openClubDetail(e: any) {
+    const clubId = String(e.currentTarget.dataset.id || '');
+    if (!clubId || this.data.detailLoading) return;
+    this.setData({
+      detailMode: true,
+      createMode: false,
+      selectedClubId: clubId,
+      detailLoading: true,
+      detailError: '',
+    });
+    try {
+      const selectedClub = await rideService.getClubDetail(clubId);
+      this.setData({ selectedClub, detailLoading: false });
+    } catch (error) {
+      this.setData({
+        detailLoading: false,
+        detailError: error instanceof Error ? error.message : '俱乐部详情读取失败',
+      });
+    }
+  },
+  closeClubDetail() {
+    if (this.data.detailLoading) return;
+    this.setData({ detailMode: false, selectedClub: null, detailError: '' });
+  },
+  manageSelectedClub() {
+    const selected = this.data.selectedClub;
+    if (!selected?.canManage) return;
+    const index = this.data.managedClubs.findIndex(
+      (club: ManagedClubProfile) => club.id === selected.id,
+    );
+    if (index >= 0) this.selectManagedClub({ detail: { value: index } });
+    this.setData({ detailMode: false });
+    this.showManageForm();
+  },
+  browseRecommendations() {
+    this.setData({ detailMode: false, createMode: false, discoverMode: true });
+  },
+  supplementAvatar(e: any) {
+    const clubId = String(e.currentTarget.dataset.id || '');
+    const index = this.data.managedClubs.findIndex(
+      (club: ManagedClubProfile) => club.id === clubId,
+    );
+    if (index < 0) return;
+    this.selectManagedClub({ detail: { value: index } });
+    this.showManageForm();
   },
   selectManagedClub(e: any) {
     const managedClub = this.data.managedClubs[Number(e.detail.value)];
@@ -298,8 +365,22 @@ Page({
   },
   managedInput(e: any) {
     const field = e.currentTarget.dataset.field as keyof ManagedClubProfileInput;
+    const value = field === 'maxMembers' ? Number(e.detail.value) : e.detail.value;
     this.manageRequestId = '';
-    this.setData({ [`managedForm.${field}`]: e.detail.value, fieldError: '', fieldErrorKey: '' });
+    this.setData({ [`managedForm.${field}`]: value, fieldError: '', fieldErrorKey: '' });
+  },
+  expandCapacity(e: any) {
+    const increment = Number(e.currentTarget.dataset.value);
+    if (![50, 100, 500].includes(increment)) return;
+    this.manageRequestId = '';
+    this.setData({
+      'managedForm.maxMembers': Math.min(
+        10000,
+        Number(this.data.managedForm.maxMembers) + increment,
+      ),
+      fieldError: '',
+      fieldErrorKey: '',
+    });
   },
   joinModeChange(e: any) {
     const index = Number(e.detail.value);
@@ -362,7 +443,10 @@ Page({
     return false;
   },
   ensureManagedValid() {
-    const failure = validateManagedClub(this.data.managedForm);
+    const failure = validateManagedClub(
+      this.data.managedForm,
+      this.data.managedClub?.memberCount || 0,
+    );
     if (!failure) return true;
     this.setData({ fieldErrorKey: failure.field, fieldError: failure.message });
     wx.showToast({ title: failure.message, icon: 'none' });

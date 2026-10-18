@@ -2729,6 +2729,9 @@ describe('CloudRepository 公开俱乐部适配', () => {
     city: '深圳',
     introduction: '每周组织安全友好的骑行活动',
     avatar_url: 'https://temporary.example/club.jpg',
+    capacity_initialized: true,
+    member_count: 18,
+    max_members: 50,
   };
 
   it('严格映射列表并且加入请求不发送 openid、role、status', async () => {
@@ -2746,6 +2749,9 @@ describe('CloudRepository 公开俱乐部适配', () => {
         introduction: '每周组织安全友好的骑行活动',
         avatarUrl: 'https://temporary.example/club.jpg',
         avatarInitial: '山',
+        capacityInitialized: true,
+        memberCount: 18,
+        maxMembers: 50,
       },
     ]);
     await expect(repository.joinPublicClub(clubId, 'join-request-0001')).resolves.toMatchObject({
@@ -2774,6 +2780,49 @@ describe('CloudRepository 公开俱乐部适配', () => {
       await expectCode(new CloudRepository(cloud).listJoinableClubs(), 'INVALID_RESPONSE');
     });
   }
+
+  it('读取成员可见详情并只发送俱乐部 ID', async () => {
+    const detail = {
+      ...dto,
+      join_mode: 'public_apply',
+      role: 'ADMIN',
+      role_label: '管理员',
+      can_manage: true,
+    };
+    const { cloud, callFunction } = cloudWith(success(detail));
+
+    await expect(new CloudRepository(cloud).getClubDetail(clubId)).resolves.toEqual({
+      id: clubId,
+      name: dto.name,
+      city: dto.city,
+      introduction: dto.introduction,
+      avatarUrl: dto.avatar_url,
+      avatarInitial: '山',
+      capacityInitialized: true,
+      memberCount: 18,
+      maxMembers: 50,
+      joinMode: 'public_apply',
+      role: 'ADMIN',
+      roleLabel: '管理员',
+      canManage: true,
+    });
+    expect(callFunction).toHaveBeenCalledWith({
+      name: 'club-application',
+      data: { action: 'getClubDetail', clubId },
+    });
+  });
+
+  for (const invalidDetail of [
+    { ...dto, join_mode: 'unknown', role: 'MEMBER', role_label: '成员', can_manage: false },
+    { ...dto, join_mode: 'public_apply', role: 1, role_label: '成员', can_manage: false },
+    { ...dto, join_mode: 'public_apply', role: 'MEMBER', role_label: null, can_manage: false },
+    { ...dto, join_mode: 'public_apply', role: 'MEMBER', role_label: '成员', can_manage: 'no' },
+  ]) {
+    it('拒绝详情中的未知加入方式或权限字段', async () => {
+      const { cloud } = cloudWith(success(invalidDetail));
+      await expectCode(new CloudRepository(cloud).getClubDetail(clubId), 'INVALID_RESPONSE');
+    });
+  }
 });
 
 describe('俱乐部资料管理仓储契约', () => {
@@ -2786,6 +2835,8 @@ describe('俱乐部资料管理仓储契约', () => {
     join_mode: 'public_apply',
     avatar_file_id: 'cloud://env/club-applications/test-openid/cover.jpg',
     avatar_url: 'https://temporary.example/cover.jpg',
+    member_count: 18,
+    max_members: 50,
     updated_at: '2026-10-18T00:00:00.000Z',
   };
 
@@ -2811,6 +2862,7 @@ describe('俱乐部资料管理仓储契约', () => {
           introduction: '这是修改后的俱乐部介绍，清晰说明定位和日常活动安排。',
           joinMode: 'admin_invite',
           avatarFileId: dto.avatar_file_id,
+          maxMembers: 80,
         },
         'club-update-0001',
         dto.updated_at,
@@ -2834,6 +2886,7 @@ describe('俱乐部资料管理仓储契约', () => {
           introduction: '这是修改后的俱乐部介绍，清晰说明定位和日常活动安排。',
           join_mode: 'admin_invite',
           avatar_file_id: dto.avatar_file_id,
+          max_members: 80,
         },
       },
     });

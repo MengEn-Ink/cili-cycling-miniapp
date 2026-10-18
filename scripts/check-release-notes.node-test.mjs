@@ -49,19 +49,22 @@ test('纯测试、文档和交付脚本改动无需新增 App 更新', () => {
   );
 });
 
-test('App 更新必须只保留当前版本并使用统一版本号', () => {
+test('App 更新保留历史版本且首条使用统一版本号', () => {
   const withHistory = validSource.replace(
     '];',
     "  { version: '2026.10.16.73', latest: false },\n];",
   );
-  assert.throws(() => validateReleaseNotes(changedProductFiles, withHistory), /只保留当前版本/);
+  assert.deepEqual(validateReleaseNotes(changedProductFiles, withHistory), {
+    required: true,
+    productFiles: ['miniprogram/pages/profile/index.ts'],
+  });
   assert.throws(
     () =>
       validateReleaseNotes(
         changedProductFiles,
         validSource.replace('CLIENT_RELEASE_VERSION', "'2026.10.16.73'"),
       ),
-    /必须使用 CLIENT_RELEASE_VERSION/,
+    /首条版本必须使用 CLIENT_RELEASE_VERSION/,
   );
 });
 

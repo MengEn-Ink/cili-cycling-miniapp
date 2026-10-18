@@ -5,7 +5,6 @@
     "pages/registrations/index",
     "pages/credential/index",
     "pages/profile/index",
-    "pages/club-center/index",
     "pages/settings/index",
     "pages/capability-card/index"
   ],
@@ -21,6 +20,10 @@
     {
       "root": "pages/profile-edit",
       "pages": ["index"]
+    },
+    {
+      "root": "pages/club",
+      "pages": ["center/index"]
     },
     {
       "root": "pages/admin",
