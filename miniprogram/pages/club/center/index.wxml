@@ -1,5 +1,5 @@
 <view class="page club-center-page">
-  <canvas canvas-id="clubMediaCanvas" class="club-media-canvas" aria-hidden="true" />
+  <canvas canvas-id="clubMediaCanvas" class="club-media-canvas" width="1280" height="720" aria-hidden="true" />
   <view class="club-page-head">
     <brand-logo compact="{{true}}" meta="俱乐部中心" />
     <button class="create-mini" wx:if="{{joinedClubs.length && !createMode && !manageMode && !detailMode}}" bindtap="showCreateForm">＋ 新建</button>
