@@ -65,6 +65,12 @@
 
 横向核对仓库内已在生产使用的 RunCommands 构造方式后确认：MongoDB Date 必须使用 canonical Extended JSON `{"$date":{"$numberLong":"<毫秒时间戳>"}}`；清理脚本此前传入 relaxed Extended JSON `{"$date":"<ISO 时间>"}`，服务端会拒绝 UPDATE。脚本现统一把清理时间转换为 canonical BSON Date，非法日期在生成任何命令前 fail closed；测试直接断言 `cleanup_after` 与 `retry_at` 的毫秒结构，避免再次用本地宽松 fixture 掩盖生产协议错误。
 
+## 第八次生产失败回溯（run 39210766413）
+
+第八次人工清理已用 canonical BSON Date 成功更新并回读前 5 条 `profile_media`；第 6 条 mutation 后精确目标态回读为空，报 `command 6 ... document=6`。单次文档更新和回读约需数秒，而记录一写入到期 `unreferenced` 就会被定时 cleanup worker 并发领取；因此记录可能在回读前从 `unreferenced` 推进为 `deleting`、失败终态或直接删除。旧回读只接受瞬时准备态，把正常清理进展误报为失败。
+
+脚本现仍优先执行严格目标态回读；仅当 `profile_media` / `profile_media_imports` 的严格回读失败时，追加一次按 `_id` 的状态回读。只有记录已不存在，或状态位于 cleanup worker 真实状态机允许的后续状态集合时才视为成功；仍停留在 `referenced`、`prepared` 等旧状态继续 fail closed。clubs、applications、activities 等非 cleanup 管理集合不放宽，DELETE 也仍必须回读为空。测试覆盖第 6 条转为 `deleting`、后续记录已删除、import 转为 `completed`，并单独证明旧状态不会被误放行。
+
 ## 破坏性操作门禁
 
 `scripts/cloudbase-prelaunch-media-purge.mjs` 默认 dry-run，只输出集合计数和两个固定存储 glob 的删除预览计数，不输出文档、openid、个人字段或密钥。`--apply` 必须同时满足：
