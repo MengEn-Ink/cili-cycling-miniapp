@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "6676faa5ed9bd90affa4dcb50152f857a414cf50",
-  "syncedAt": "2026-10-19T12:48:55.000Z",
+  "syncedThrough": "138cc83f3d7eac089c64f4c7fe4f620c240dbacc",
+  "syncedAt": "2026-10-20T00:42:00.000+08:00",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
@@ -10,7 +10,7 @@
     "digest": "sha256:f057df462364d3012dc87bf6c50ce36716e3d86afa999773428b5c11792723b2"
   },
   "prototype": {
-    "digest": "sha256:140a40fae93e37a59f7f5115f39c18630ea80de313aebe816810d031dd96d5d7"
+    "digest": "sha256:7568c166ac2d17a8e3d92283631cd8ac081ddb810cef1b3031b36b1f0efc80df"
   },
   "routes": [
     {
@@ -147,10 +147,10 @@
         "id": "profile",
         "devtools": "profile-devtools.png",
         "pages": "profile-pages.png",
-        "state": "管理员 · 单俱乐部",
+        "state": "管理员 · 单俱乐部直达",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "Pages 于 2026-10-19 重新采集 375×812：管理员个人中心展示“活动管理”和“俱乐部管理”，普通成员状态两入口均不可见；照片与昵称均为演示数据，DevTools 证据仍保持 blocked。"
+        "note": "Pages 于 2026-10-19 单俱乐部化：管理员额外展示“管理俱乐部资料”行，普通骑友仅看到“进入俱乐部主页”直达唯一俱乐部，不再出现“俱乐部管理”入口或多俱乐部选择；DevTools 证据仍保持 blocked。"
       },
       {
         "id": "settings",
@@ -183,19 +183,19 @@
         "id": "admin-activity-list",
         "devtools": "admin-activity-list-devtools.png",
         "pages": "admin-activity-list-pages.png",
-        "state": "待审核俱乐部活动",
+        "state": "待处理活动",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "Pages 原型已同步待审核 / 已驳回筛选及通过 / 驳回操作，并使用本地 Aime 浏览器重采 375×812 证据；DevTools 仍保持 blocked，需在新开发版中复验，未声明 aligned。"
+        "note": "Pages 原型已下线活动投稿—审批两段式，默认展示唯一俱乐部的全部活动与「已驳回」筛选；活动统一由平台管理员发布，所有用户可见。DevTools 仍保持 blocked，需在新开发版中复验，未声明 aligned。"
       },
       {
         "id": "admin-activity-edit",
         "devtools": "admin-activity-edit-devtools.png",
         "pages": "admin-activity-edit-pages.png",
-        "state": "成员向俱乐部投稿",
+        "state": "活动编辑 · 唯一俱乐部归属",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "Pages 原型已同步成员提交俱乐部审核、负责人 / 管理员直发及驳回后重投文案，并使用本地 Aime 浏览器重采 375×812 证据；DevTools 仍保持 blocked，需在新开发版中复验，未声明 aligned。"
+        "note": "Pages 原型将活动归属固定为平台唯一俱乐部，并由平台管理员直接编辑与发布；本地 Aime 浏览器重采 375×812 证据；DevTools 仍保持 blocked，需在新开发版中复验，未声明 aligned。"
       },
       {
         "id": "admin-reviews",
@@ -219,28 +219,28 @@
         "id": "club/center",
         "devtools": "club-center-devtools.png",
         "pages": "club-center-pages.png",
-        "state": "发现模式 · 已过滤已加入俱乐部",
+        "state": "唯一俱乐部主页 · home",
         "data": "fixture",
         "review": "blocked",
-        "note": "Pages 于 2026-10-19 重新采集 375×812：发现页只保留本人俱乐部、推荐俱乐部与申请加入入口，旧创建申请状态统一回落；页头徽标与标题不再重叠，DevTools 证据仍保持 blocked。"
+        "note": "Pages 于 2026-10-19 单俱乐部化：home 直达唯一俱乐部主页（辛庄桥小火车），不再出现发现 / 推荐 / 申请加入 / 退出 / 成员名录 / 容量上限；仅管理角色展示“编辑俱乐部资料”进入 manage，普通 MEMBER 只读；loading / error 独立反馈并恢复到 home。"
       },
       {
         "id": "admin-club-applications",
         "devtools": "admin-club-applications-devtools.png",
         "pages": "admin-club-applications-pages.png",
-        "state": "正式俱乐部列表 · 3 个",
+        "state": "唯一俱乐部资料概览 · default",
         "data": "fixture",
         "review": "blocked",
-        "note": "Pages 于 2026-10-19 重新采集 375×812：平台管理员查看 3 个 active 正式俱乐部并使用 44px 创建按钮；页面不再展示待审核、驳回或申请操作，DevTools 证据仍保持 blocked。"
+        "note": "Pages 于 2026-10-19 单俱乐部化：默认态仅展示唯一俱乐部资料概览与“编辑俱乐部资料”入口，不再出现正式俱乐部列表或新建按钮；bootstrap 态仅在空库首次创建时出现，仅平台管理员可见。"
       },
       {
         "id": "admin-club-application-detail",
         "devtools": "admin-club-application-detail-devtools.png",
         "pages": "admin-club-application-detail-pages.png",
-        "state": "创建俱乐部 · 媒体优先",
+        "state": "编辑唯一俱乐部 · edit / bootstrap",
         "data": "fixture",
         "review": "blocked",
-        "note": "Pages 于 2026-10-19 重新采集 375×812：01 头像、02 背景图、03 基本资料、04 加入设置；背景删除/恢复与创建成功状态已交互验证，唯一主操作为“创建并立即生效”，DevTools 证据仍保持 blocked。"
+        "note": "Pages 于 2026-10-19 单俱乐部化：固定三段（01 头像 1:1 / 02 背景图 16:9 / 03 基本资料），移除加入设置与人数上限；已存在俱乐部时主按钮为“保存资料”，仅在 bootstrap 空库首次创建态保留“创建并立即生效”。"
       }
     ]
   }

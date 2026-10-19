@@ -4,10 +4,11 @@ import { describe, expect, it } from 'vitest';
 import { expandAppRoutes, type MiniProgramAppConfig } from './helpers/app-routes';
 
 /**
- * 2026-10-18 · Pages 全套 App 原型契约
+ * 2026-10-19 · Pages 全套 App 原型契约（单俱乐部收敛）
  *
- * 规划页面不得污染 17 条正式路由；正式俱乐部中心必须使用标准 id
- * club/center，并与生产保持单路由 mode-based 能力边界。
+ * - 规划页面不得污染 17 条正式路由。
+ * - 正式俱乐部中心使用标准 id `club/center`，并以单俱乐部主页为默认 mode。
+ * - 全平台只有一个俱乐部；原型不得保留多俱乐部发现 / 推荐 / 申请加入 / 容量上限等入口。
  */
 const read = (path: string) => readFileSync(path, 'utf8');
 const appConfig = JSON.parse(read('miniprogram/app.json')) as MiniProgramAppConfig;
@@ -63,13 +64,15 @@ new Function('window', templatesSource)(runtime);
 const data = runtime.prototypeData;
 if (!data) throw new Error('schema.js runtime missing prototypeData');
 
-const renderClubCenter = (state: string, roleToken = 'OWNER') => {
+const renderClubCenter = (state: string, roleToken = 'ADMIN') => {
   runtime.prototypeState = state;
   const viewer = data.clubCenterPrototype?.viewer;
   if (viewer) {
     viewer.roleToken = roleToken;
     viewer.roleLabel =
-      roleToken === 'OWNER' ? '负责人' : roleToken === 'CLUB_ADMIN' ? '管理员' : '普通成员';
+      roleToken === 'ADMIN' || roleToken === 'OWNER' || roleToken === 'CLUB_ADMIN'
+        ? '平台管理员'
+        : '骑友';
   }
   const template = runtime.pageTemplates?.['club/center'];
   if (!template) throw new Error('club/center template missing');
@@ -78,7 +81,7 @@ const renderClubCenter = (state: string, roleToken = 'OWNER') => {
 
 const clubCenter = () => (data.pages ?? []).find((page) => page.id === 'club/center');
 
-describe('Pages 全套 App 原型契约（design-only 不污染正式路由）', () => {
+describe('Pages 全套 App 原型契约（单俱乐部收敛 · design-only 不污染正式路由）', () => {
   it('1. miniprogram/app.json 展开仍是 17 条正式运行路由', () => {
     expect(appRoutes).toHaveLength(17);
     expect(data.experienceStats?.canonicalRoutes).toBe(17);
@@ -92,9 +95,9 @@ describe('Pages 全套 App 原型契约（design-only 不污染正式路由）',
     expect(schemaRealPaths).toEqual([...appRoutes].sort());
   });
 
-  it('3. plannedScreens 保持 15 个 design-only 页面且不进入 app.json', () => {
+  it('3. plannedScreens 保持 4 个 design-only 页面且不进入 app.json', () => {
     const planned = data.plannedScreens ?? [];
-    expect(planned).toHaveLength(15);
+    expect(planned).toHaveLength(4);
     for (const screen of planned) {
       expect(['p0', 'p1']).toContain(screen.status);
       expect(screen.code).toMatch(/^设计规划/);
@@ -103,20 +106,22 @@ describe('Pages 全套 App 原型契约（design-only 不污染正式路由）',
         expect(appRoutes).not.toContain(inferredPath.replace(/\/\[[^\]]+\]/g, ''));
       }
     }
-    expect(data.experienceStats?.plannedP0).toBe(11);
-    expect(data.experienceStats?.plannedP1).toBe(4);
-    expect(data.experienceStats?.plannedTotal).toBe(15);
+    // 单俱乐部收口：原 11 页 planned-club-* 已随多俱乐部语义一同下线。
+    expect(planned.some((screen) => screen.id.startsWith('planned-club'))).toBe(false);
+    expect(data.experienceStats?.plannedP0).toBe(3);
+    expect(data.experienceStats?.plannedP1).toBe(1);
+    expect(data.experienceStats?.plannedTotal).toBe(4);
   });
 
-  it('4. schema 总计 38 个画面，并隔离 17 个正式路由与 21 个原型画面', () => {
+  it('4. schema 总计 21 个画面，并隔离 17 个正式路由与 4 个规划原型画面', () => {
     const pages = data.pages ?? [];
     const canonical = pages.filter((page) => !page.path.startsWith('prototype/'));
     const prototype = pages.filter((page) => page.path.startsWith('prototype/'));
-    expect(pages).toHaveLength(38);
+    expect(pages).toHaveLength(21);
     expect(canonical).toHaveLength(17);
-    expect(prototype).toHaveLength(21);
-    expect(data.experienceStats?.schemaPageCount).toBe(38);
-    expect(`${indexSource}\n${appSource}`).toContain('17 个正式路由 + 21 个原型 / 38 个画面');
+    expect(prototype).toHaveLength(4);
+    expect(data.experienceStats?.schemaPageCount).toBe(21);
+    expect(`${indexSource}\n${appSource}`).toContain('17 个正式路由 + 4 个规划原型 / 21 个画面');
   });
 
   it('5. rolesMatrix 覆盖 6 种角色，俱乐部角色不等同平台管理员', () => {
@@ -132,7 +137,7 @@ describe('Pages 全套 App 原型契约（design-only 不污染正式路由）',
     }
   });
 
-  it('5. admin-* 正式路由 role 字段含“管理员”', () => {
+  it('5b. admin-* 正式路由 role 字段含“管理员”', () => {
     const adminPages = (data.pages ?? []).filter(
       (page) => page.id.startsWith('admin-') && page.path.startsWith('pages/admin/'),
     );
@@ -151,8 +156,7 @@ describe('Pages 全套 App 原型契约（design-only 不污染正式路由）',
     expect(runtime.pageTemplates?.['club/center']).toBeTypeOf('function');
     expect(runtime.pageTemplates?.['club-center']).toBeUndefined();
     expect(data.experienceStats?.newStateVariants?.['club/center']).toEqual([
-      'discovery',
-      'detail',
+      'home',
       'manage',
       'loading',
       'error',
@@ -161,14 +165,16 @@ describe('Pages 全套 App 原型契约（design-only 不污染正式路由）',
     expect(templatesSource).not.toContain('data-route="club-center"');
   });
 
-  it('7. club/center schema 只保留发现、详情、管理与恢复 mode', () => {
+  it('7. club/center schema 只保留 home / manage / loading / error', () => {
     const states = clubCenter()?.states?.map(([id]) => id);
-    expect(states).toEqual(['discovery', 'detail', 'manage', 'loading', 'error']);
-    expect(clubCenter()?.copy).toMatch(/单路由 mode-based/);
+    expect(states).toEqual(['home', 'manage', 'loading', 'error']);
+    expect(clubCenter()?.copy).toMatch(/全平台只有一个俱乐部/);
   });
 
-  it('7.1 旧创建申请状态统一回落到发现页，不再提供撤回或重提', () => {
+  it('7.1 旧多俱乐部状态统一回落到单俱乐部主页 home', () => {
     for (const obsolete of [
+      'discovery',
+      'detail',
       'pending-review',
       'withdraw-confirm',
       'withdrawing',
@@ -177,70 +183,54 @@ describe('Pages 全套 App 原型契约（design-only 不污染正式路由）',
       'application-edit',
     ]) {
       const output = renderClubCenter(obsolete);
-      expect(output).toContain('data-mode="discovery"');
-      expect(output).not.toMatch(/撤回申请|保存草稿|重新提交审核/);
+      expect(output).toContain('data-mode="home"');
+      expect(output).not.toMatch(/推荐俱乐部|申请加入|撤回申请|保存草稿|重新提交审核/);
     }
   });
 
-  it('8. discovery 过滤已加入俱乐部，并把推荐详情保持 disabled', () => {
-    const output = renderClubCenter('discovery');
-    expect(output).toContain('data-mode="discovery"');
-    expect(output).toContain('已过滤已加入俱乐部');
-    expect(output).toContain('推荐俱乐部 · 未加入');
-    expect(output).toContain('申请加入');
-    expect(output).toContain('原型示意，尚未提交或写入');
-    expect(output).toMatch(/disabled[^>]*aria-disabled="true"|aria-disabled="true"[^>]*disabled/);
-    expect(output).toContain('查看详情 · 暂不可用');
-    expect(output).toContain('data-route="club/center" data-state="detail"');
+  it('8. home 直达唯一俱乐部主页，不出现发现 / 推荐 / 申请加入 / 成员名录 / 容量上限', () => {
+    const output = renderClubCenter('home');
+    expect(output).toContain('data-mode="home"');
+    expect(output).toContain('全平台唯一俱乐部主页');
+    expect(output).not.toMatch(/推荐俱乐部|申请加入|退出俱乐部|成员名录|容量上限/);
+    expect(output).not.toContain('data-mode="discovery"');
+    expect(output).not.toContain('data-mode="detail"');
+    expect(output).toContain('查看全部活动');
   });
 
-  it('9. detail 只展示本人/已加入详情、当前成员数与容量，不冒充成员名录或活动页', () => {
-    const output = renderClubCenter('detail');
-    expect(output).toContain('data-mode="detail"');
-    expect(output).toContain('本人 / 已加入俱乐部详情');
-    expect(output).toContain('当前成员数');
-    expect(output).toContain('容量');
-    expect(output).toContain('生产尚无独立成员名录');
-    expect(output).not.toContain('club-center-members-list');
-    expect(output).not.toContain('club-center-activity');
-  });
-
-  it('10. detail 仅向 OWNER / CLUB_ADMIN 提供管理入口，MEMBER 保持只读', () => {
-    for (const role of ['OWNER', 'CLUB_ADMIN']) {
-      const output = renderClubCenter('detail', role);
+  it('9. home 对普通成员保持只读，对管理员额外提供“编辑俱乐部资料”入口', () => {
+    const member = renderClubCenter('home', 'MEMBER');
+    expect(member).not.toContain('编辑俱乐部资料');
+    for (const role of ['ADMIN', 'OWNER', 'CLUB_ADMIN']) {
+      const output = renderClubCenter('home', role);
       expect(output).toContain('编辑俱乐部资料');
       expect(output).toContain('data-state="manage"');
-      expect(output).toContain(`权限：${role} 可维护`);
     }
-    const member = renderClubCenter('detail', 'MEMBER');
-    expect(member).toContain('普通 MEMBER 仅可查看');
-    expect(member).toContain('管理入口仅对 OWNER / CLUB_ADMIN 开放');
-    expect(member).not.toContain('编辑俱乐部资料');
-    expect(member).not.toContain('data-state="manage"');
   });
 
-  it('11. manage 覆盖资料、joinMode、固定容量增量和分离媒体裁剪上传', () => {
-    const output = renderClubCenter('manage');
+  it('10. manage 只允许管理员直达，并只提供名称、地区、简介与媒体裁剪上传', () => {
+    const member = renderClubCenter('manage', 'MEMBER');
+    expect(member).toContain('data-mode="home"');
+    expect(member).not.toContain('保存资料');
+
+    const output = renderClubCenter('manage', 'ADMIN');
     expect(output).toContain('data-mode="manage"');
-    for (const term of ['名称', '城市', '简介', 'joinMode', '+50', '+100', '+500']) {
+    for (const term of ['俱乐部名称', '所在地区', '俱乐部简介']) {
       expect(output).toContain(term);
     }
     expect(output).toContain('俱乐部头像 · 1:1');
-    expect(output).toContain('俱乐部封面 · 16:9');
-    expect(output).toContain('分别选择、分别裁剪、分别上传');
+    expect(output).toContain('俱乐部背景图 · 16:9');
+    expect(output).not.toMatch(/joinMode|申请加入|仅邀请|\+50|\+100|\+500|人数上限/);
+    expect(output).toContain('全平台只允许存在一个俱乐部');
   });
 
   it('11. 正式 club/center 的全部 mode 均不渲染 tablist', () => {
     for (const mode of [
+      'home',
+      'manage',
       'discovery',
       'detail',
-      'manage',
       'pending-review',
-      'withdraw-confirm',
-      'withdrawing',
-      'withdraw-error',
-      'draft',
-      'application-edit',
       'loading',
       'error',
     ]) {
@@ -250,21 +240,41 @@ describe('Pages 全套 App 原型契约（design-only 不污染正式路由）',
     }
   });
 
-  it('12. loading 与 error 是可恢复的独立状态', () => {
+  it('12. loading 与 error 是可恢复的独立状态，错误态提供重新加载', () => {
     expect(renderClubCenter('loading')).toContain('data-mode="loading"');
     const error = renderClubCenter('error');
     expect(error).toContain('data-mode="error"');
-    expect(error).toContain('俱乐部中心加载失败');
+    expect(error).toContain('俱乐部主页加载失败');
     expect(error).toContain('重新加载');
-    expect(error).toContain('返回发现');
+    expect(error).not.toContain('返回发现');
   });
 
-  it('13. 三个俱乐部 planned 页面准确表达增量边界', () => {
-    const planned = new Map((data.plannedScreens ?? []).map((screen) => [screen.id, screen]));
-    expect(planned.get('planned-club-discover')?.note).toMatch(/已有.*推荐列表.*独立页/u);
-    expect(planned.get('planned-club-home')?.note).toMatch(/已支持本人.*完整访客链路/u);
-    expect(planned.get('planned-club-profile-edit')?.note).toMatch(/已支持.*高级编辑增强/u);
-    expect(planned.get('planned-club-home')?.note).toMatch(/推荐详情目前仍不可用/u);
+  it('13. 单俱乐部收口：planned-club-* / 6 页 M0 组织审批原型已全部下线', () => {
+    const pageIds = new Set((data.pages ?? []).map((page) => page.id));
+    const plannedIds = new Set((data.plannedScreens ?? []).map((screen) => screen.id));
+    const retired = [
+      'planned-club-discover',
+      'planned-club-home',
+      'planned-club-member-home',
+      'planned-club-join-form',
+      'planned-club-cockpit',
+      'planned-club-member-list',
+      'planned-club-invite',
+      'planned-club-join-reviews',
+      'planned-club-join-review-detail',
+      'planned-club-profile-edit',
+      'planned-club-settings-danger',
+      'org-overview',
+      'activity-publish-target',
+      'admin-approval-inbox',
+      'approval-detail',
+      'approval-outcome',
+      'approval-exceptions',
+    ];
+    for (const id of retired) {
+      expect(pageIds.has(id)).toBe(false);
+      expect(plannedIds.has(id)).toBe(false);
+    }
   });
 
   it('14. route-analysis 仍覆盖 no-waypoint/parse-fail', () => {

@@ -69,9 +69,9 @@ const prototypeRoutes = [
   'admin-club-application-detail',
 ];
 
-// M0 组织地基与审批 prototype-only 页面：
-// 不进入 miniprogram/app.json，仅在 docs 原型内呈现设计表达。
-const orgApprovalPrototypeRoutes = [
+// 2026-10-19 单俱乐部收口：原 M0 组织地基与审批 6 页 prototype-only 页面
+// 与多俱乐部语义相关的 planned-club-* 页面已随之一同下线，不再进入 Pages 原型。
+const retiredPrototypeRoutes = [
   'org-overview',
   'activity-publish-target',
   'admin-approval-inbox',
@@ -101,7 +101,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     }
     expect(schema).not.toContain("id: 'route-view'");
     expect(templates).not.toMatch(/['"]?route-view['"]?: \(\) =>/);
-    expect(html).toContain('17 个正式路由 + 21 个原型 / 38 个画面');
+    expect(html).toContain('17 个正式路由 + 4 个规划原型 / 21 个画面');
   });
 
   it('活动首页使用三张 v3 轮播卡并提供有界导航', () => {
@@ -123,340 +123,190 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain('activityCarouselController');
   });
 
-  it('两条正式俱乐部管理路由改为列表与直接创建，不再呈现创建审批', () => {
+  it('两条正式俱乐部管理路由收敛为唯一俱乐部资料概览与编辑', () => {
     const list = renderPrototypeState('admin-club-applications', 'default');
     expect(list).toContain('俱乐部管理');
-    expect(list).toContain('创建俱乐部');
-    expect(list).toContain('共 3 个俱乐部');
+    expect(list).toContain('全平台只有一个俱乐部');
     expect(list).toContain('data-route="admin-club-application-detail"');
+    expect(list).toContain('data-state="edit"');
     expect(list).not.toContain('待审批');
     expect(list).not.toContain('驳回');
+    expect(list).not.toMatch(/共\s*\d+\s*个俱乐部/);
+    expect(list).not.toContain('创建俱乐部');
 
-    const create = renderPrototypeState('admin-club-application-detail', 'create');
-    expect(create).toContain('创建俱乐部');
-    expect(create).toContain('创建并立即生效');
-    expect(create).not.toContain('通过申请');
-    expect(create).not.toContain('驳回申请');
+    const edit = renderPrototypeState('admin-club-application-detail', 'edit');
+    expect(edit).toContain('编辑俱乐部资料');
+    expect(edit).toContain('保存资料');
+    expect(edit).toContain('不能创建第二个俱乐部');
+    expect(edit).not.toContain('通过申请');
+    expect(edit).not.toContain('驳回申请');
+
+    const bootstrap = renderPrototypeState('admin-club-application-detail', 'bootstrap');
+    expect(bootstrap).toContain('创建唯一俱乐部');
+    expect(bootstrap).toContain('创建并立即生效');
+
+    const bootstrapUploading = renderPrototypeState(
+      'admin-club-application-detail',
+      'bootstrap--avatar-uploading',
+    );
+    expect(bootstrapUploading).toContain('创建唯一俱乐部');
+    expect(bootstrapUploading).toContain('正在更新俱乐部头像');
+    expect(bootstrapUploading).toContain('创建并立即生效');
+
+    const bootstrapSuccess = renderPrototypeState(
+      'admin-club-application-detail',
+      'bootstrap--success',
+    );
+    expect(bootstrapSuccess).toContain('唯一俱乐部创建成功');
+    expect(script).toContain('state: `${operation}--avatar-uploading`');
+    expect(script).toContain('state: `${operation}--submitting`');
   });
 
-  it('创建俱乐部按个人资料编辑结构优先展示头像与背景图', () => {
-    const create = renderPrototypeState('admin-club-application-detail', 'create');
-    expect(create).toContain('<span class="card-no">01</span><h3 class="card-title">俱乐部头像');
-    expect(create).toContain('<span class="card-no">02</span><h3 class="card-title">俱乐部背景图');
-    expect(create).toContain('<span class="card-no">03</span><h3 class="card-title">基本资料');
-    expect(create).toContain('<span class="card-no">04</span><h3 class="card-title">加入设置');
-    expect(create.indexOf('俱乐部头像')).toBeLessThan(create.indexOf('俱乐部背景图'));
-    expect(create.indexOf('俱乐部背景图')).toBeLessThan(create.indexOf('基本资料'));
-    expect(create.indexOf('基本资料')).toBeLessThan(create.indexOf('加入设置'));
-    expect(create).toContain('profile-avatar-editor');
-    expect(create).toContain('profile-avatar-preview');
-    expect(create).toContain('profile-avatar-panel');
-    expect(create).toContain('club-background-editor');
-    expect(create).toContain('data-aspect-ratio="16:9"');
+  it('唯一俱乐部编辑按个人资料编辑结构优先展示头像与背景图，无加入设置', () => {
+    const edit = renderPrototypeState('admin-club-application-detail', 'edit');
+    expect(edit).toContain('<span class="card-no">01</span><h3 class="card-title">俱乐部头像');
+    expect(edit).toContain('<span class="card-no">02</span><h3 class="card-title">俱乐部背景图');
+    expect(edit).toContain('<span class="card-no">03</span><h3 class="card-title">基本资料');
+    expect(edit.indexOf('俱乐部头像')).toBeLessThan(edit.indexOf('俱乐部背景图'));
+    expect(edit.indexOf('俱乐部背景图')).toBeLessThan(edit.indexOf('基本资料'));
+    expect(edit).toContain('profile-avatar-editor');
+    expect(edit).toContain('profile-avatar-preview');
+    expect(edit).toContain('profile-avatar-panel');
+    expect(edit).toContain('club-background-editor');
+    expect(edit).toContain('data-aspect-ratio="16:9"');
     expect(css).toMatch(/\.club-background-preview\s*\{[^}]*aspect-ratio:\s*16 \/ 9;/s);
-    expect(create).toContain('data-action="club-create-submit"');
-    expect(create).not.toContain('保存草稿');
-    expect(create).not.toContain('提交审核');
+    expect(edit).toContain('data-action="club-create-submit"');
+    expect(edit).not.toContain('加入设置');
+    expect(edit).not.toContain('人数上限');
+    expect(edit).not.toContain('保存草稿');
+    expect(edit).not.toContain('提交审核');
   });
 
-  it('俱乐部创建状态覆盖提交与恢复，且旧申请状态不再属于正式路由', () => {
+  it('唯一俱乐部表单状态覆盖编辑、首次创建与恢复，且旧多俱乐部申请状态已下线', () => {
     for (const state of [
-      "['create', '默认填写']",
+      "['edit', '编辑唯一俱乐部']",
+      "['bootstrap', '空库首次创建（仅平台管理员）']",
       "['validation-error', '校验错误']",
       "['avatar-uploading', '头像上传中']",
       "['cover-uploading', '背景上传中']",
-      "['submitting', '创建中']",
-      "['submit-error', '创建失败']",
-      "['success', '创建成功']",
+      "['submitting', '保存中']",
+      "['submit-error', '保存失败']",
+      "['success', '保存成功']",
     ]) {
       expect(schema).toContain(state);
     }
     const center = renderPrototypeState('club/center', 'pending-review');
-    expect(center).toContain('data-mode="discovery"');
+    expect(center).toContain('data-mode="home"');
     expect(center).not.toContain('撤回申请');
     expect(script).not.toContain("action === 'confirm-club-application'");
     expect(script).not.toContain("action === 'submit-club-application'");
   });
 
-  it('M0 组织地基与审批原型以 prototype-only 页面接入，不污染 app.json 真实路由', () => {
-    expect(orgApprovalPrototypeRoutes).toHaveLength(6);
-    for (const route of orgApprovalPrototypeRoutes) {
-      expect(schema).toContain(`id: '${route}'`);
-      expect(schema).toContain(`path: 'prototype/${route}'`);
-      expect(schema).toContain("group: '组织地基与审批（M0 待实施）'");
-      expect(templates).toMatch(new RegExp(`(?:^|\\n)    ['"]?${route}['"]?: \\(\\) =>`));
-      // prototype-only 路由不得在 app.json pages 中出现
+  it('单俱乐部收口：M0 组织地基审批原型与 planned-club-* 已全部下线', () => {
+    for (const route of retiredPrototypeRoutes) {
+      expect(schema).not.toMatch(new RegExp(`id: '${route}'`));
+      expect(templates).not.toMatch(new RegExp(`(?:^|\\n)    ['"]?${route}['"]?: \\(\\) =>`));
       expect(appConfig.pages).not.toContain(routeToPagePath(route));
     }
-    expect(script).toContain("'org-approval': 'org-overview'");
-    expect(html).toContain('data-journey="org-approval"');
-    expect(html).toContain('组织地基与审批（M0 待实施）');
-    expect(schema).not.toContain("id: 'club-applications'");
-    expect(schema).not.toContain("id: 'club-application-edit'");
-    expect(templates).not.toMatch(/(?:^|\n)\s{4}['"]club-applications['"]:\s*\(\) =>/);
-    expect(templates).not.toMatch(/(?:^|\n)\s{4}['"]club-application-edit['"]:\s*\(\) =>/);
-    // 关键状态锚点：活动发布目标、审批角色与异常
-    for (const state of [
-      "'admin-club'",
-      "'admin-public'",
-      "'platform-public'",
-      "'admin-club-activity'",
-      "'platform-public-activity'",
-      "'role-auto'",
-      "'platform-owner-public'",
-      "'club-suspended'",
-      "'role-expired'",
-      "'version-expired'",
-      "'already-processed'",
-    ]) {
-      expect(schema).toContain(`[${state},`);
-    }
-    // 关键文案锚点：审批模式、必填说明、服务端判权、俱乐部停用处置
-    for (const copy of [
-      'role_auto_publish',
-      'review_version',
-      '非成员不能向俱乐部投稿',
-      '平台所有者本人公开活动需显式',
-      '俱乐部已停用',
-      '版本已过期',
-      '已被他人处理',
-      '审批不设置自动超时',
-    ]) {
-      expect([schema, templates, script].join('\n')).toContain(copy);
-    }
-    expect([schema, templates, script].join('\n')).not.toContain('俱乐部创建申请');
-    // 交付中心入口直达 M0 原型
-    expect(deliveryCenter).toContain('组织地基与活动发布审批（俱乐部由平台管理员直接创建）');
-    expect(deliveryCenter).toContain("href: '#org-overview'");
+    // 下线 app.js 的旧 journey、动作与 outcome 分支
+    expect(script).not.toContain("'org-approval': 'org-overview'");
+    expect(script).not.toContain("action === 'publish-target-admin'");
+    expect(script).not.toContain("action === 'org-approve'");
+    expect(script).not.toContain("action === 'org-reject'");
+    expect(html).not.toContain('data-journey="org-approval"');
+    expect(html).not.toContain('M0 待实施');
+    // orgApproval 数据块随之删除，不再在 schema 中出现
+    expect(schema).not.toMatch(/\n {2}orgApproval:/);
+    // planned-club-* 规划页随多俱乐部语义一同下线
+    expect(schema).not.toMatch(/id: 'planned-club-/);
+    expect(templates).not.toMatch(/'planned-club-[a-z-]+': \(\) =>/);
+    // 单俱乐部收口的组织地基表达保留在交付中心，仅做文案归档
+    expect(deliveryCenter).toContain('组织地基与活动归属（单俱乐部收口）');
+    expect(deliveryCenter).toContain('全平台始终只有一个俱乐部');
   });
 
-  it('普通成员提交后按 club/public 进入各自 pending_review，而不是人工审批通过', () => {
-    expect(schema).toContain("['pending-club', '俱乐部活动提交成功 · pending_review']");
-    expect(schema).toContain("['pending-public', '公开活动提交成功 · pending_review']");
-    expect(script).toContain('const pendingState = target.dataset.pendingState');
-    expect(templates).toContain('data-pending-state="pending-club--${info.clubEligible}"');
-    expect(templates).toContain('data-pending-state="pending-public"');
-    expect(templates).toContain("afterStatus: 'pending_review'");
-  });
-
-  it('pending 结果态不提供活动链接，只有已发布分支可以复制', () => {
-    expect(templates).toContain("fixedBar('审批通过前活动链接不可用'");
-    expect(templates).toContain("btn('查看审核进度'");
-    expect(templates).toMatch(
-      /pending\s*\? fixedBar\('审批通过前活动链接不可用'[\s\S]+?: fixedBar\('', \[btn\('复制活动链接'/,
-    );
-  });
-
-  it('俱乐部管理员可选择公开活动，但必须进入平台所有者审核', () => {
-    expect(schema).toContain("['admin-public', '俱乐部管理员 · 公开活动（平台审核）']");
-    expect(templates).toContain("'admin-public': { role: 'ADMIN', target: 'public'");
-    expect(templates).toContain('俱乐部管理员发起公开活动不享有直发权限');
-    expect(templates).toContain("info.role === 'ADMIN' ? 'admin-public' : 'member-public'");
-    expect(templates).toContain("primaryBtn = btn('提交平台审核'");
-  });
-
-  it('俱乐部选择会写入 club ID 并重新计算选中态和资格', () => {
-    expect(templates).toContain("const [stateId, selectedClubFromState] = rawState.split('--')");
-    expect(templates).toContain(
-      'const selectedClubId = selectedClubFromState || baseInfo.defaultClubId',
-    );
-    expect(templates).toContain('const selected = c.id === selectedClubId');
-    expect(templates).toContain('data-state="${stateId}--${c.id}"');
-    expect(templates).toContain('所选俱乐部已停用，不能提交或直接发布');
-    expect(templates).toContain("primaryBtn = btn('无权发起', 'disabled'");
-  });
-
-  it('待办进入详情携带审批对象类型、ID 和版本，并动态展示匹配快照', () => {
-    expect(schema).toContain("id: 'activity-201'");
-    expect(schema).toContain("id: 'public-901'");
-    expect(schema).not.toContain("id: 'application-801'");
-    expect(templates).toContain('data-state="${item.kind}-${item.version}--${item.id}"');
-    expect(templates).toContain("const stateParts = rawState.split('--')");
-    expect(templates).toContain('const matchedItem = reviewItems.find');
-    expect(templates).toContain("['审批对象 ID', item.id]");
-    expect(templates).toContain("['review_version', item.version]");
-  });
-
-  it('平台所有者只处理公开活动，俱乐部活动由所属俱乐部管理员处理', () => {
-    expect(schema).toContain("['public-activity-v1', '公开活动 v1']");
-    expect(templates).toContain("item.kind === 'public-activity'");
-    expect(templates).toContain("? { label: '公开活动', scope: 'public'");
-    expect(templates).not.toContain("item.kind === 'club-application'");
-    expect(templates).toContain('${item.submitter} 的${typeInfo.label}审批 · ${item.version}');
-  });
-
-  it('pending club/public 明确展示目标、scope 和审批角色', () => {
-    expect(templates).toContain("reviewScope: pendingClub ? 'club' : 'public'");
-    expect(templates).toContain('reviewTargetId: pendingTargetId');
-    expect(templates).toContain("pendingClub ? '等待 OWNER / ADMIN' : '等待 PLATFORM_OWNER'");
-    expect(templates).not.toContain("reviewScope: 'club / public（按提交目标）'");
-  });
-
-  it('管理待办显式切换角色视角，并禁用当前角色无权限的标签', () => {
-    expect(schema).toContain("['admin-club-activity', '俱乐部管理员 · 俱乐部活动待办']");
-    expect(schema).toContain("['platform-public-activity', '平台所有者 · 公开活动待办']");
-    expect(templates).toContain('切换待办身份视角（显式操作）');
-    expect(templates).toContain('切换标签不会改变身份');
-    expect(templates).toContain(
-      "['club-activity', '俱乐部活动', counts.clubActivity, !platformView",
-    );
-    expect(templates).toContain(
-      "['public-activity', '公开活动', counts.publicActivity, platformView",
-    );
-    expect(templates).toContain('disabled aria-disabled="true" title="${reason}"');
-  });
-
-  it('两类驳回每次都从 textarea 读取非空理由，不以状态或点击次数绕过', () => {
-    expect(templates).toContain('id="registration-reject-reason"');
-    expect(templates).toContain('id="org-reject-reason"');
-    expect(script).toContain("document.getElementById('registration-reject-reason')?.value.trim()");
-    expect(script).toContain("document.getElementById('org-reject-reason')?.value.trim()");
-    expect(script).not.toContain("currentState !== 'reject-error'");
-    expect(templates).toContain('重复点击不会绕过校验');
-  });
-
-  it('role_auto_publish 审计明确记录 approved_by = created_by', () => {
-    expect(schema).toContain("createdBy: '风向骑手（OWNER）'");
-    expect(schema).toContain("approvedBy: '风向骑手（OWNER）'");
-    expect(templates).toContain("['created_by', auditPayload.createdBy || auditPayload.actor]");
-    expect(templates).toContain('created_by: auditPayload.createdBy || auditPayload.actor');
-    expect(templates).toContain('approved_by: auditPayload.approvedBy');
-  });
-
-  it('实际执行 showPage 状态归一逻辑：动态后缀保留，静态与非法状态行为不变', () => {
-    const source = script.match(/function normalizePrototypeState\([\s\S]*?\n {2}\}/)?.[0];
-    expect(source).toBeDefined();
-    const normalize = new Function(`${source}; return normalizePrototypeState;`)() as (
-      stateIds: string[],
-      requestedState?: string,
-    ) => string;
-    expect(
-      normalize(['club-activity-v1', 'public-activity-v1'], 'public-activity-v1--public-901'),
-    ).toBe('public-activity-v1--public-901');
-    expect(normalize(['pending-club', 'pending-public'], 'pending-club--club-0023')).toBe(
-      'pending-club--club-0023',
-    );
-    expect(normalize(['manual', 'rejected'], 'manual')).toBe('manual');
-    expect(normalize(['manual', 'rejected'], 'unknown--id')).toBe('manual');
-    expect(normalize(['manual', 'rejected'])).toBe('manual');
-    expect(script).toContain('currentState = normalizePrototypeState(stateIds, options.state)');
-    expect(script).toContain('`#${page.id}/${currentState}`');
-  });
-
-  it('审批详情与结果模板实际按对象上下文渲染操作、标题和审计', () => {
-    const publicDetail = renderPrototypeState('approval-detail', 'public-activity-v1--public-901');
-    expect(publicDetail).toContain('通过并发布公开活动');
-    expect(publicDetail).toContain('data-outcome-context="public-activity-v1--public-901"');
-
-    const publicApproved = renderPrototypeState(
-      'approval-outcome',
-      'manual--public-activity-v1--public-901',
-    );
-    expect(publicApproved).toContain('公开活动已通过并发布');
-    expect(publicApproved).toContain('public-901');
-
-    const clubApproved = renderPrototypeState(
-      'approval-outcome',
-      'manual--club-activity-v2--activity-201',
-    );
-    expect(clubApproved).toContain('俱乐部活动已通过并发布');
-    expect(clubApproved).toContain('activity-201');
-
-    const publicRejected = renderPrototypeState(
-      'approval-outcome',
-      'rejected--public-activity-v1--public-901',
-    );
-    expect(publicRejected).toContain('公开活动已驳回');
-    expect(publicRejected).toContain('review_target_id');
-    expect(templates).toContain('modeTitle = `${audit.actor} 的审批请求被驳回`');
-    expect(templates).not.toContain("replace('MEMBER', 'MEMBER')");
-    expect(publicRejected).toContain('public-901');
-  });
-
-  it('五个身份原型实际渲染当前资料、公开兜底、成行快照和单/多/无俱乐部状态', () => {
+  it('单俱乐部口径下的身份原型渲染唯一俱乐部与活动归属快照', () => {
     const activitiesPage = renderPrototypeState('activities', 'default');
-    expect(activitiesPage).toContain('aria-label="周日纯化骑行头像"');
-    expect(activitiesPage).toContain('周日纯化');
-    expect(activitiesPage).toContain('此里公开活动');
+    expect(activitiesPage).toContain('aria-label="辛庄桥小火车头像"');
+    expect(activitiesPage).toContain('辛庄桥');
+    expect(activitiesPage).not.toContain('此里公开活动');
 
     const detailPage = renderPrototypeState('activity-detail', 'approved');
     expect(detailPage).toContain('class="card host-card host-card-club"');
-    expect(detailPage).toContain('周日纯化骑行');
-    expect(detailPage).toContain('活动列表与详情优先使用当前俱乐部资料');
-
-    const publicDetailRuntime = createPrototypeRuntime((data) => {
-      data.activities = [data.activities[1], data.activities[0]];
-    });
-    const publicDetail = renderFromRuntime(publicDetailRuntime, 'activity-detail', 'open');
-    expect(publicDetail).toContain('class="card host-card host-card-public"');
-    expect(publicDetail).toContain('此里公开活动');
+    expect(detailPage).toContain('辛庄桥小火车');
+    expect(detailPage).toContain('所有活动都属于唯一俱乐部');
 
     const registrationsPage = renderPrototypeState('registrations', 'default');
     expect(registrationsPage).toContain('浦东滨江夜骑 · 鎏金落日线');
-    expect(registrationsPage).toContain('望京巡游骑行俱乐部');
+    expect(registrationsPage).toContain('辛庄桥小火车');
     expect(registrationsPage).toContain('成行时快照');
-    expect(registrationsPage).toContain('历史归属');
     expect(registrationsPage).toContain('奉贤海湾拉练');
-    expect(registrationsPage).toContain('此里公开活动');
+    expect(registrationsPage).not.toContain('此里公开活动');
 
     const credentialPage = renderPrototypeState('credential', 'with-photo');
-    expect(credentialPage).toContain('望京巡游骑行俱乐部（俱乐部活动）');
+    expect(credentialPage).toContain('辛庄桥小火车');
+    // 单俱乐部收口：凭证快照不再把活动归属标注为「（俱乐部活动）」或「此里公开活动」
+    expect(credentialPage).not.toContain('（俱乐部活动）');
+    expect(credentialPage).not.toContain('此里公开活动');
     expect(credentialPage).toContain('成行时快照');
-    expect(credentialPage).toContain('历史归属');
-    expect(credentialPage).toContain('历史行程与凭证保留发布或成行时的活动归属');
-    expect(credentialPage).not.toContain('活动列表与详情优先使用当前俱乐部资料');
+    expect(credentialPage).toContain('历史行程与凭证保留成行时的活动归属');
 
-    const singleProfile = renderPrototypeState('profile', 'single-club');
-    expect(singleProfile).toContain('已加入 1 个俱乐部');
-    expect(singleProfile).toContain('本人角色 · 俱乐部所有者');
-
-    const multiProfile = renderPrototypeState('profile', 'multi-club');
-    expect(multiProfile).toContain('已加入 5 个俱乐部');
-    expect(multiProfile.match(/class="club-avatar club-avatar-sm/g)).toHaveLength(5);
-    expect(multiProfile).toContain('<b>+1</b>');
-    expect(multiProfile).not.toContain('<b>潮汐</b>');
-    expect(multiProfile).not.toContain('club-0099');
-
-    const noClubProfile = renderPrototypeState('profile', 'no-club');
-    expect(noClubProfile).toContain('暂未加入俱乐部');
-    expect(noClubProfile).toContain('仍可参与此里公开活动');
-
-    for (const output of [singleProfile, multiProfile, noClubProfile]) {
+    for (const state of ['single-club', 'member', 'admin', '']) {
+      const output = renderPrototypeState('profile', state);
+      expect(output).toContain('data-single-club');
+      expect(output).toContain('辛庄桥小火车');
+      expect(output).toContain('进入俱乐部主页');
+      expect(output).toContain('data-state="home"');
+      expect(output).not.toMatch(/发现附近俱乐部|查看全部俱乐部|已加入 \d+ 个俱乐部/);
       expect(output).not.toMatch(/主俱乐部|首选俱乐部/);
     }
+    const adminProfile = renderPrototypeState('profile', 'admin');
+    expect(adminProfile).toContain('管理俱乐部资料');
+    expect(adminProfile).toContain('data-route="admin-club-applications"');
+    const memberProfile = renderPrototypeState('profile', 'member');
+    expect(memberProfile).not.toContain('管理俱乐部资料');
+    expect(memberProfile).not.toContain('data-route="admin-club-applications"');
   });
 
-  it('快照按 activityId/credentialId 查找，退会、停用与缺失 clubIdentity 均保持中性回退', () => {
+  it('快照按 activityId/credentialId 查找，并保证缺失 clubIdentity 不抛错', () => {
     expect(templates).toContain('snapshotData.byActivityId[activityId]');
     expect(templates).toContain('snapshotData.byCredentialId[credentialId]');
     expect(templates).not.toMatch(/tripClubSnapshots\.(pudongSunset|fengxianCancelled)/);
 
-    const suspendedRuntime = createPrototypeRuntime((data) => {
-      data.activities[0].hostClub.status = 'suspended';
-    });
-    const suspendedList = renderFromRuntime(suspendedRuntime, 'activities', 'default');
-    const suspendedDetail = renderFromRuntime(suspendedRuntime, 'activity-detail', 'approved');
-    expect(suspendedList).toContain('发布时快照');
-    expect(suspendedList).toContain('历史归属');
-    expect(suspendedDetail).toContain('发布时俱乐部快照');
-    expect(suspendedDetail).toContain('历史归属');
-
     const missingIdentityRuntime = createPrototypeRuntime((data) => {
       delete data.clubIdentity;
     });
-    expect(() => renderFromRuntime(missingIdentityRuntime, 'activities', 'default')).not.toThrow();
-    expect(() =>
-      renderFromRuntime(missingIdentityRuntime, 'activity-detail', 'approved'),
-    ).not.toThrow();
-    expect(() =>
-      renderFromRuntime(missingIdentityRuntime, 'registrations', 'default'),
-    ).not.toThrow();
-    expect(() =>
-      renderFromRuntime(missingIdentityRuntime, 'credential', 'with-photo'),
-    ).not.toThrow();
-    expect(renderFromRuntime(missingIdentityRuntime, 'activities', 'default')).toContain(
-      '此里公开活动',
+    const missingIdentityActivities = renderFromRuntime(
+      missingIdentityRuntime,
+      'activities',
+      'default',
     );
+    const missingIdentityDetail = renderFromRuntime(
+      missingIdentityRuntime,
+      'activity-detail',
+      'approved',
+    );
+    const missingIdentityRegistrations = renderFromRuntime(
+      missingIdentityRuntime,
+      'registrations',
+      'default',
+    );
+    const missingIdentityCredential = renderFromRuntime(
+      missingIdentityRuntime,
+      'credential',
+      'with-photo',
+    );
+    for (const output of [
+      missingIdentityActivities,
+      missingIdentityDetail,
+      missingIdentityRegistrations,
+      missingIdentityCredential,
+    ]) {
+      expect(output).toContain('辛庄桥小火车');
+      expect(output).not.toMatch(
+        /host-card-public|club-avatar-public|club-identity is-public|>公开<|此里公开活动/,
+      );
+    }
   });
 
   it('使用项目真实夹具口径填充活动和骑行指标，并按已确认的个人信息展示规则显示', () => {
@@ -473,10 +323,10 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   });
 
   it('真实页面与 M0 原型页面都带浅色关键状态与“问题 → 改法 → 规范”设计说明，并提供总览页', () => {
-    expect(schema.match(/\n {6}states: \[/g)).toHaveLength(23);
-    expect(schema.match(/\n {6}problems: \[/g)).toHaveLength(23);
-    expect(schema.match(/\n {6}fixes: \[/g)).toHaveLength(23);
-    expect(schema.match(/\n {6}spec: \[/g)).toHaveLength(23);
+    expect(schema.match(/\n {6}states: \[/g)).toHaveLength(17);
+    expect(schema.match(/\n {6}problems: \[/g)).toHaveLength(17);
+    expect(schema.match(/\n {6}fixes: \[/g)).toHaveLength(17);
+    expect(schema.match(/\n {6}spec: \[/g)).toHaveLength(17);
     for (const state of [
       "'empty'",
       "'loading'",
@@ -537,13 +387,9 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(routeAnalysisDataFoundationArticle).toContain('loading="lazy"');
     expect(deliveryCenter).toContain('沸点手稿与全套设计交接成果');
     expect(deliveryCenter).toContain('docs/designs/2026-10-16-boiling-point/index.html');
-    expect(deliveryCenter).toContain('组织地基与活动发布审批（俱乐部由平台管理员直接创建）');
-    expect(deliveryCenter).toContain(
-      'docs/superpowers/plans/2026-10-17-org-foundation-approval.md',
-    );
-    expect(deliveryCenter).toContain('俱乐部创建</b>：仅平台管理员可发起，创建后直接生效');
-    expect(deliveryCenter).toContain('管理员本人活动默认发布');
-    expect(deliveryCenter).toContain('role_auto_publish');
+    expect(deliveryCenter).toContain('组织地基与活动归属（单俱乐部收口）');
+    expect(deliveryCenter).toContain('全平台始终只有一个俱乐部');
+    expect(deliveryCenter).toContain('不再区分俱乐部活动与公开活动');
     expect(deliveryCenter).toContain('深行动红白字、48px 主控件');
     expect(deliveryCenter).not.toContain('深橙主操作白字 4.91:1');
     expect(html).toContain('沸点视觉验收');
@@ -724,7 +570,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   it('设置页原型同步当前客户端版本与当前 App 更新', () => {
     expect(schema).toContain("state: 'V2026.10.18.4'");
     expect(schema).toContain(
-      "['2026.10.18.4', '俱乐部首页与人数上限', '俱乐部首页现在统一展示已加入和推荐俱乐部，并支持管理员设置人数上限。']",
+      "['2026.10.18.4', '单俱乐部收口', '全平台只保留一个俱乐部，首次由平台管理员直接创建；所有活动统一归属该俱乐部，普通骑友从“我的”直达唯一俱乐部主页。']",
     );
     expect(templates).toContain('App 更新');
     expect(templates).not.toContain('最近五次');
@@ -918,7 +764,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
       /(?<!无需 )Strava 授权|重新授权 Strava|解绑 Strava|同步最新 Strava|STRAVA 数据已同步|data-route="strava"/i,
     );
     expect(schema).toContain(
-      "copy: '查看公开骑行资料与照片，不依赖第三方账号数据；展示本人加入的俱乐部，不设置主俱乐部。'",
+      "copy: '查看公开骑行资料与照片，不依赖第三方账号数据；全平台只有一个俱乐部，普通用户点击直达俱乐部主页，不走选择或推荐。'",
     );
     expect(templates).toContain('App 更新');
     expect(templates).not.toContain('Strava 状态');
@@ -1134,7 +980,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain('organizer-flow');
     expect(script).toContain('发布 ≠ 可报名');
     expect(script).toContain('registration_setup_pending');
-    expect(script).toContain('俱乐部创建仅由平台管理员发起并直接生效');
+    expect(script).toContain('全平台始终只有一个俱乐部');
     // 05 隐私与产品边界 · 可见 / 不可见 / Strava OAuth 退役
     expect(script).toContain('✓ 公开可见');
     expect(script).toContain('✗ 公开不可见');
@@ -1178,13 +1024,15 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain('id="roadmap"');
     expect(script).toContain('✓ 当前已实现（17 个真实路由）');
     expect(script).toContain('⌛ 后续演进');
-    // 俱乐部创建在 Pages 收敛为平台管理员直建；活动审批、多租户和腾讯文档仍归入后续演进
-    expect(script).toContain('组织地基与审批演进原型：俱乐部由平台管理员直接创建');
-    expect(script).toContain('多俱乐部 / 多组织租户、独立 Web 后台 — 未来需求');
+    // 单俱乐部收口：仅保留 4 个 Pages 规划原型；多俱乐部治理 / 组织地基演进原型已下线
+    expect(script).toContain('4 个规划原型画面');
+    expect(script).toContain('隐私与授权说明、通知中心、全局离线 / 网络错误、活动分享海报');
     expect(script).toContain('报名信息同步腾讯文档 — 需求阶段');
+    expect(script).not.toContain('组织地基与审批演进原型');
+    expect(script).not.toContain('多俱乐部 / 多组织租户');
   });
 
-  it('事实边界：无强制 Strava 授权；GPX 可下载预览；CloudBase 仅变更时部署；Routes/M0 不写成已上线', () => {
+  it('事实边界：无强制 Strava 授权；GPX 可下载预览；CloudBase 仅变更时部署；路由只写已上线', () => {
     const page = [html, script, deliveryCenter].join('\n');
     // 不得出现"必须授权 Strava"或"CloudBase 全量部署"等反事实
     expect(page).not.toMatch(/必须.{0,4}授权.{0,4}Strava|强制.{0,4}Strava.{0,4}授权/);
@@ -1193,10 +1041,12 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(page).toContain('GPX');
     // 退役文档不再被当作 external-apis 的 source 链接
     expect(deliveryCenter).not.toContain('docs/strava-athlete-capacity.md');
-    // Pages 不再展示普通用户俱乐部创建申请，俱乐部活动与公开活动审批仍是后续目标
-    expect(script).toContain('俱乐部由平台管理员直接创建');
-    expect(deliveryCenter).toContain('俱乐部活动与公开活动发布审批');
-    expect(deliveryCenter).toContain('尚未进入生产');
+    // 单俱乐部收口：全平台只有一个俱乐部，由平台管理员直接创建；活动统一归属该俱乐部
+    expect(deliveryCenter).toContain('全平台始终只有一个俱乐部');
+    expect(deliveryCenter).toContain('所有活动统一归属该唯一俱乐部');
+    // 旧的俱乐部活动 / 公开活动审批表达不得作为后续目标残留
+    expect(deliveryCenter).not.toContain('俱乐部活动与公开活动发布审批');
+    expect(deliveryCenter).not.toContain('尚未进入生产');
     // 扫码核销入口已退役：凭证只展示活动与审核状态，签到由管理员二次确认。
     expect(script).toContain('当前没有扫码核销入口');
     expect(script).not.toMatch(/Code 128|wx\.scanCode/);
@@ -1225,16 +1075,15 @@ describe('路线分析 Pages 降级状态契约', () => {
   });
 });
 
-describe('俱乐部中心（club/center）mode-based 原型契约', () => {
-  it('schema 与正式路由统一，并声明五种生产 mode', () => {
+describe('俱乐部中心（club/center）单俱乐部原型契约', () => {
+  it('schema 与正式路由统一，并声明 home / manage / loading / error 四种 mode', () => {
     expect(prototypeRoutes).toContain('club/center');
     expect(schema).toContain("id: 'club/center'");
     expect(schema).toContain("path: 'pages/club/center/index'");
     expect(schema).toContain("title: '俱乐部中心'");
     for (const state of [
-      "['discovery', '发现 · 推荐列表']",
-      "['detail', '详情 · 本人俱乐部']",
-      "['manage', '管理 · 编辑资料']",
+      "['home', '主页 · 只读']",
+      "['manage', '编辑资料（仅平台管理员 / 被授权管理员）']",
       "['loading', '加载中']",
       "['error', '加载失败']",
     ]) {
@@ -1242,85 +1091,71 @@ describe('俱乐部中心（club/center）mode-based 原型契约', () => {
     }
     expect(schema).toContain('clubCenterPrototype:');
     expect(schema).toContain("name: '辛庄桥小火车'");
-    expect(schema).toContain('memberCount: 2');
-    expect(schema).toContain('capacity: 50');
+    const clubCenterBlock = schema.match(/clubCenterPrototype:\s*\{[\s\S]*?\n\s{2,4}\},/);
+    expect(clubCenterBlock, 'expected to locate clubCenterPrototype block').not.toBeNull();
+    expect(clubCenterBlock?.[0]).not.toMatch(/memberCount|capacity|joinMode|recommended/);
   });
 
-  it('discovery 过滤已加入俱乐部，推荐详情保持 disabled 边界', () => {
-    const output = renderPrototypeState('club/center', 'discovery');
-    expect(output).toContain('data-mode="discovery"');
-    expect(output).toContain('已过滤已加入俱乐部');
-    expect(output).toContain('我的俱乐部');
-    expect(output).toContain('推荐俱乐部 · 未加入');
-    expect(output).toContain('查看本人俱乐部详情');
-    expect(output).toContain('申请加入');
-    expect(output).toContain('原型示意，尚未提交或写入');
-    expect(output).toMatch(/disabled[^>]*aria-disabled="true"|aria-disabled="true"[^>]*disabled/);
-    expect(output).toContain('查看详情 · 暂不可用');
-    expect(output).toContain('非本人 / 未加入俱乐部的详情按钮在生产仍为 disabled');
-  });
-
-  it('detail 只展示本人俱乐部事实，不冒充成员名录或活动页', () => {
-    const output = renderPrototypeState('club/center', 'detail');
-    expect(output).toContain('data-mode="detail"');
+  it('home 直达唯一俱乐部主页，不出现发现 / 推荐 / 申请加入 / 成员名录 / 容量上限', () => {
+    const output = renderPrototypeState('club/center', 'home');
+    expect(output).toContain('data-mode="home"');
+    expect(output).toContain('全平台唯一俱乐部主页');
     expect(output).toContain('辛庄桥小火车');
-    expect(output).toContain('当前成员');
-    expect(output).toContain('容量上限');
-    expect(output).toContain('编辑俱乐部资料');
-    expect(output).toContain('生产尚无独立成员名录');
-    expect(output).not.toContain('role="tablist"');
-    expect(output).not.toContain('role="tabpanel"');
-    expect(output).not.toContain('class="club-center-members-list"');
+    expect(output).toContain('查看全部活动');
+    expect(output).not.toMatch(/推荐俱乐部|申请加入|退出俱乐部|成员名录|容量上限/);
+    expect(output).not.toContain('data-mode="discovery"');
+    expect(output).not.toContain('data-mode="detail"');
   });
 
-  it('detail 对管理角色开放入口，普通 MEMBER 只读', () => {
-    for (const roleToken of ['OWNER', 'CLUB_ADMIN']) {
+  it('home 对管理角色开放入口，普通 MEMBER 只读', () => {
+    for (const roleToken of ['ADMIN', 'OWNER', 'CLUB_ADMIN', 'PLATFORM_OWNER']) {
       const runtime = createPrototypeRuntime((data) => {
         data.clubCenterPrototype.viewer.roleToken = roleToken;
       });
-      expect(renderFromRuntime(runtime, 'club/center', 'detail')).toContain('data-state="manage"');
+      const output = renderFromRuntime(runtime, 'club/center', 'home');
+      expect(output).toContain('编辑俱乐部资料');
+      expect(output).toContain('data-state="manage"');
     }
     const memberRuntime = createPrototypeRuntime((data) => {
       data.clubCenterPrototype.viewer.roleToken = 'MEMBER';
-      data.clubCenterPrototype.viewer.roleLabel = '普通成员';
+      data.clubCenterPrototype.viewer.roleLabel = '骑友';
     });
-    const member = renderFromRuntime(memberRuntime, 'club/center', 'detail');
-    expect(member).toContain('普通 MEMBER 仅可查看');
+    const member = renderFromRuntime(memberRuntime, 'club/center', 'home');
     expect(member).not.toContain('data-state="manage"');
     expect(member).not.toContain('编辑俱乐部资料');
   });
 
-  it('manage 覆盖基础资料、加入方式、容量扩容和分离媒体裁剪', () => {
-    const output = renderPrototypeState('club/center', 'manage');
+  it('manage 仅允许管理角色直达，并只覆盖基础资料与分离媒体裁剪', () => {
+    const member = renderPrototypeState('club/center', 'manage');
+    expect(member).toContain('data-mode="home"');
+    expect(member).not.toContain('保存资料');
+
+    const adminRuntime = createPrototypeRuntime((data) => {
+      data.clubCenterPrototype.viewer.roleToken = 'ADMIN';
+    });
+    const output = renderFromRuntime(adminRuntime, 'club/center', 'manage');
     expect(output).toContain('data-mode="manage"');
-    for (const text of [
-      '俱乐部名称',
-      '所在城市',
-      '俱乐部简介',
-      '加入方式',
-      '当前容量',
-      '+50',
-      '+100',
-      '+500',
-    ]) {
+    for (const text of ['俱乐部名称', '所在地区', '俱乐部简介']) {
       expect(output).toContain(text);
     }
     expect(output).toContain('俱乐部头像 · 1:1');
-    expect(output).toContain('俱乐部封面 · 16:9');
+    expect(output).toContain('俱乐部背景图 · 16:9');
     expect(output).toContain('更换头像');
-    expect(output).toContain('更换封面');
+    expect(output).toContain('更换背景图');
+    expect(output).not.toMatch(/加入方式|仅邀请|当前容量|\+50|\+100|\+500|人数上限/);
+    expect(output).toContain('全平台只允许存在一个俱乐部');
   });
 
   it('loading / error 有独立反馈与恢复路径，所有 mode 均无旧 tablist', () => {
     const loading = renderPrototypeState('club/center', 'loading');
     expect(loading).toContain('data-mode="loading"');
-    expect(loading).toContain('正在加载俱乐部中心');
+    expect(loading).toContain('正在加载俱乐部主页');
     const error = renderPrototypeState('club/center', 'error');
     expect(error).toContain('data-mode="error"');
-    expect(error).toContain('俱乐部中心加载失败');
+    expect(error).toContain('俱乐部主页加载失败');
     expect(error).toContain('重新加载');
     expect(error).toContain('data-route="club/center"');
-    for (const mode of ['discovery', 'detail', 'manage', 'loading', 'error']) {
+    for (const mode of ['home', 'manage', 'discovery', 'detail', 'loading', 'error']) {
       const output = renderPrototypeState('club/center', mode);
       expect(output).not.toContain('role="tablist"');
       expect(output).not.toContain('role="tab"');
@@ -1339,14 +1174,17 @@ describe('俱乐部中心（club/center）mode-based 原型契约', () => {
     expect(script).toContain('payload.startsWith(`${id}/`)');
   });
 
-  it('样式继续复用 club-center 视觉 class 与全局动效降级', () => {
-    expect(css).toContain('.club-center-discovery-row');
+  it('样式只保留单俱乐部主页与媒体编辑视觉 class，并支持全局动效降级', () => {
+    expect(css).not.toContain('.club-center-discovery-row');
+    expect(css).not.toContain('.club-center-recommended');
+    expect(css).not.toContain('.planned-club-');
+    expect(css).not.toContain('.club-avatar-public');
     expect(css).toContain('.club-center-media-grid');
     expect(css).toMatch(
-      /\.club-center-page:not\(\[data-mode="detail"\]\)\s*\{[^}]*padding:\s*16px 16px 32px;/s,
+      /\.club-center-page:not\(\[data-mode="home"\]\)\s*\{[^}]*padding:\s*16px 16px 32px;/s,
     );
     expect(css).toMatch(
-      /\.club-center-page:not\(\[data-mode="detail"\]\) > \.prototype-mock-badge\s*\{[^}]*position:\s*static;[^}]*transform:\s*none;/s,
+      /\.club-center-page:not\(\[data-mode="home"\]\) > \.prototype-mock-badge\s*\{[^}]*position:\s*static;[^}]*transform:\s*none;/s,
     );
     expect(css).toContain('aspect-ratio: 1');
     expect(css).toContain('aspect-ratio: 16 / 9');
