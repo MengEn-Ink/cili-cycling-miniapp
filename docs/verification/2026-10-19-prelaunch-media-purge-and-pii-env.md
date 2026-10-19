@@ -77,6 +77,12 @@
 
 常规定时 worker 的默认批量保持 20 不变；仅人工预发布 purge 在已认证的 Timer 事件中传 `BatchSize=4`。函数入口将该值交给 core 已有的 `1..MAX_BATCH` 有界限制，每次调用最多处理 4 条，降低单次超时风险。purge 最大轮数同步按 4 条计算并保留 24 轮无进展预算，避免缩小批次后提前耗尽轮数。测试精确校验 CLI 参数、函数入口透传、501/1001 条容量预算以及超过 480 条时的完整收敛。
 
+## 第十一次生产失败与最终收敛方案（run 39221029169）
+
+将人工 worker 批次缩为 4 后，run 39221029169 仍在首次 `profile-media-cleanup` 调用等待约 6 分钟后失败，20 条 `profile_media`、41 条 import 与 22 个存储对象均无下降，证明阻塞不取决于单批记录数，继续调整 worker 批量无法形成可靠闭环。
+
+预发布 purge 已有独立三重授权、固定环境 ID 和固定存储前缀门禁，目标本身就是不可逆地删除全部历史媒体数据，因此不再复用面向日常线上生命周期的 cleanup worker。最终顺序收敛为：① 删除 profiles、route previews 并清空业务主体媒体字段；② 只删除 `profiles/**`、`profile-canonical/**` 两个固定存储前缀；③ 存储删除成功后，按 `_id` 逐文档删除全部 `profile_media` 与 `profile_media_imports` 登记；④ 回读数据库与存储必须全部为 0。若数据库准备失败，不触碰存储和登记；若存储删除失败，保留登记以便安全重试。登记 DELETE 在 COUNT 后若被并发 worker 提前删减，允许按剩余 ID 继续收敛；UPDATE 仍要求数量精确一致，最终断言也会阻断任何并发新增。此路径同时删除两次 worker 超时造成的 `deleting`/lease 中间态，不再依赖函数调用和状态机终态。
+
 ## 破坏性操作门禁
 
 `scripts/cloudbase-prelaunch-media-purge.mjs` 默认 dry-run，只输出集合计数和两个固定存储 glob 的删除预览计数，不输出文档、openid、个人字段或密钥。`--apply` 必须同时满足：
