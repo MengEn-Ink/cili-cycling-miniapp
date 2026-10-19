@@ -25,6 +25,7 @@ export const REPOSITORY_CACHE_CAPACITY = 60;
 const ACTIVITY_PREFIX = 'act:';
 const REGISTRATION_PREFIX = 'reg:';
 const PROFILE_PREFIX = 'profile:';
+const CLUB_APPLICATION_PREFIX = 'club-application:';
 
 interface Entry<V> {
   value: V;
@@ -414,7 +415,9 @@ export class CachingRepository implements RideRepository {
   }
 
   getMyClubApplication() {
-    return this.inner.getMyClubApplication();
+    return this.readThrough(`${CLUB_APPLICATION_PREFIX}mine`, () =>
+      this.inner.getMyClubApplication(),
+    );
   }
 
   listJoinableClubs() {
@@ -446,15 +449,25 @@ export class CachingRepository implements RideRepository {
     return result;
   }
 
-  saveClubApplicationDraft(value: Parameters<RideRepository['saveClubApplicationDraft']>[0]) {
-    return this.inner.saveClubApplicationDraft(value);
+  async saveClubApplicationDraft(value: Parameters<RideRepository['saveClubApplicationDraft']>[0]) {
+    const result = await this.inner.saveClubApplicationDraft(value);
+    this.invalidatePrefix(CLUB_APPLICATION_PREFIX);
+    return result;
   }
 
-  submitClubApplication(
+  async submitClubApplication(
     value: Parameters<RideRepository['submitClubApplication']>[0],
     requestId: string,
   ) {
-    return this.inner.submitClubApplication(value, requestId);
+    const result = await this.inner.submitClubApplication(value, requestId);
+    this.invalidatePrefix(CLUB_APPLICATION_PREFIX);
+    return result;
+  }
+
+  async withdrawClubApplication(requestId: string, expectedReviewVersion: number) {
+    const result = await this.inner.withdrawClubApplication(requestId, expectedReviewVersion);
+    this.invalidatePrefix(CLUB_APPLICATION_PREFIX);
+    return result;
   }
 
   listClubApplications(status?: Parameters<RideRepository['listClubApplications']>[0]) {

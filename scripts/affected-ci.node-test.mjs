@@ -126,3 +126,16 @@ test('部署影响面测试先安装独立上传工具依赖', () => {
       deploymentBlock.indexOf("runNpm('test:deploy')"),
   );
 });
+
+test('云函数影响面先安装全部函数依赖再测试目标包', () => {
+  const source = readFileSync('scripts/affected-ci.mjs', 'utf8');
+  const cloudBlock =
+    source.match(/if \(plan\.cloudFunctions\.length > 0\) \{([\s\S]*?)\n[ ]{2}\}/)?.[1] ?? '';
+
+  assert.match(cloudBlock, /runNpm\('cloud:install'\)/);
+  assert.doesNotMatch(cloudBlock, /runNpm\('cloud:prepare'\)/);
+  assert.doesNotMatch(cloudBlock, /\['ci', '--prefix'/);
+  assert.ok(
+    cloudBlock.indexOf("runNpm('cloud:install')") < cloudBlock.indexOf("run('npm', ['--prefix'"),
+  );
+});

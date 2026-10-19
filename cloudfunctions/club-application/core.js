@@ -176,6 +176,43 @@ async function submitApplication(store, { openid, input, requestId }, now) {
   });
 }
 
+async function withdrawApplication(store, { openid, requestId, expectedReviewVersion }, now) {
+  const id = applicationId(openid);
+  const safeRequestId = text(requestId, '撤回请求 ID', 8, 128);
+  if (!Number.isInteger(expectedReviewVersion) || expectedReviewVersion < 1)
+    fail('VERSION_CONFLICT', '申请版本已变化，请刷新后重试');
+  return store.transaction(async (tx) => {
+    const existing = await tx.getApplication(id);
+    if (!existing || existing.applicant_openid !== openid) fail('NOT_FOUND', '俱乐部申请不存在');
+    if (existing.status === 'draft' && existing.last_withdraw_request_id === safeRequestId)
+      return project(existing);
+    if (existing.status !== 'pending_review') fail('INVALID_STATE', '当前申请不可撤回');
+    if (existing.review_version !== expectedReviewVersion)
+      fail('VERSION_CONFLICT', '申请版本已变化，请刷新后重试');
+    const next = {
+      ...existing,
+      status: 'draft',
+      last_withdraw_request_id: safeRequestId,
+      updated_at: now.toISOString(),
+    };
+    await tx.putApplication(id, next);
+    await tx.addAudit({
+      actor_openid: openid,
+      action: 'club_application_withdrawn',
+      target_type: 'club_application',
+      target_id: id,
+      before: { status: 'pending_review' },
+      after: { status: 'draft' },
+      before_status: 'pending_review',
+      after_status: 'draft',
+      review_version: next.review_version,
+      request_id: safeRequestId,
+      created_at: now.toISOString(),
+    });
+    return project(next);
+  });
+}
+
 function capacityValue(value, code = 'INVALID_MAX_MEMBERS') {
   const normalized = Number(value);
   if (!Number.isInteger(normalized) || normalized < 2 || normalized > 10000)
@@ -579,5 +616,6 @@ module.exports = {
   updateManagedClub,
   saveDraft,
   submitApplication,
+  withdrawApplication,
   reviewApplication,
 };

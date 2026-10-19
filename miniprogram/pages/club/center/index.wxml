@@ -4,7 +4,7 @@
     <brand-logo compact="{{true}}" meta="俱乐部中心" />
     <button class="create-mini" wx:if="{{joinedClubs.length && !createMode && !manageMode && !detailMode}}" bindtap="showCreateForm">＋ 新建</button>
   </view>
-  <view class="a11y-live-region" role="status" aria-live="polite">{{loading ? '正在读取俱乐部信息' : (managing ? '正在保存俱乐部资料' : '俱乐部信息已更新')}}</view>
+  <view class="a11y-live-region" role="status" aria-live="polite">{{loading ? '正在读取俱乐部信息' : (withdrawing ? '正在撤回创建申请' : (managing ? '正在保存俱乐部资料' : '俱乐部信息已更新'))}}</view>
   <view class="state-card" wx:if="{{loading}}"><view class="title">正在读取俱乐部</view><view class="muted">请稍候。</view></view>
   <view class="state-card" wx:elif="{{loadError}}" role="alert"><view class="title">暂时无法读取</view><view class="muted">{{loadError}}</view><button class="btn" bindtap="load">重新加载</button></view>
 
@@ -90,7 +90,9 @@
       <view class="status-card status-{{application.status}}" wx:if="{{application}}">
         <view class="status-kicker">申请进度 · 第 {{application.reviewVersion}} 版</view>
         <view class="status-title" wx:if="{{application.status === 'draft'}}">草稿待提交</view><view class="status-title" wx:elif="{{application.status === 'pending_review'}}">平台审批中</view><view class="status-title" wx:elif="{{application.status === 'rejected'}}">申请已驳回，可修改重提</view><view class="status-title" wx:else>申请已通过</view>
-        <view class="status-copy" wx:if="{{application.status === 'pending_review'}}">管理员处理后，这里会同步显示结果。请勿重复提交。</view><view class="rejection" wx:if="{{application.status === 'rejected'}}"><text>驳回原因</text><strong>{{application.rejectionReason}}</strong></view><view class="status-copy" wx:if="{{application.status === 'approved'}}">“{{application.clubName}}”已创建，你已成为俱乐部 OWNER。</view>
+        <view class="status-copy" wx:if="{{application.status === 'pending_review'}}">管理员处理后，这里会同步显示结果。需要修改资料时，可先撤回到草稿。</view><view class="rejection" wx:if="{{application.status === 'rejected'}}"><text>驳回原因</text><strong>{{application.rejectionReason}}</strong></view><view class="status-copy" wx:if="{{application.status === 'approved'}}">“{{application.clubName}}”已创建，你已成为俱乐部 OWNER。</view>
+        <button class="secondary withdraw-action" wx:if="{{application.status === 'pending_review'}}" bindtap="withdrawApplication" disabled="{{withdrawing}}" loading="{{withdrawing}}">{{withdrawing ? '正在撤回' : '撤回申请'}}</button>
+        <view class="withdraw-error" wx:if="{{application.status === 'pending_review' && actionError}}" role="alert"><view>{{actionError}}</view><view class="muted">申请仍在审核中，请再次点击“撤回申请”重试。</view></view>
       </view>
       <view class="read-card" wx:if="{{application && (application.status === 'pending_review' || application.status === 'approved')}}"><image wx:if="{{application.coverUrl}}" class="cover-preview" src="{{application.coverUrl}}" mode="aspectFill" /><view class="detail-line"><text>俱乐部名称</text><strong>{{application.clubName}}</strong></view><view class="detail-line"><text>所在城市</text><strong>{{application.city}}</strong></view><view class="detail-line"><text>人数上限</text><strong>{{application.expectedSize}} 人</strong></view><view class="detail-block"><text>俱乐部简介</text><strong>{{application.introduction}}</strong></view><view class="detail-block"><text>主要活动</text><strong>{{application.activityTypes}}</strong></view></view>
     </block>

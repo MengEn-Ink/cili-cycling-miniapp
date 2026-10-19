@@ -12,6 +12,7 @@ const {
   updateManagedClub,
   saveDraft,
   submitApplication,
+  withdrawApplication,
   reviewApplication,
 } = require('./core');
 const {
@@ -196,6 +197,18 @@ exports.main = async (event = {}) => {
       const value = await submitApplication(
         transactionStore(),
         { openid, input: event.application, requestId: event.requestId },
+        new Date(),
+      );
+      return ok(await resolveApplicationCover(cloud, value, openid));
+    }
+    if (event.action === 'withdraw') {
+      const value = await withdrawApplication(
+        transactionStore(),
+        {
+          openid,
+          requestId: event.requestId,
+          expectedReviewVersion: event.expectedReviewVersion,
+        },
         new Date(),
       );
       return ok(await resolveApplicationCover(cloud, value, openid));

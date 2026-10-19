@@ -239,9 +239,9 @@ export function runAffectedPlan(plan) {
   if (plan.bootstrap) runNpm('test:bootstrap');
 
   if (plan.cloudFunctions.length > 0) {
-    runNpm('cloud:prepare');
+    // 云函数测试可能复用兄弟函数中的领域模块；一次安装全部云函数依赖，避免目标包测试被仓库根目录残留依赖误导。
+    runNpm('cloud:install');
     for (const name of plan.cloudFunctions) {
-      run('npm', ['ci', '--prefix', `cloudfunctions/${name}`]);
       run('npm', ['--prefix', `cloudfunctions/${name}`, 'test']);
     }
     runNpm('verify:cloud-packages');

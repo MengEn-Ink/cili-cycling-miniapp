@@ -6,6 +6,7 @@ process.env.PROFILE_MEDIA_PATH_SECRET = 'profile-media-secret-for-tests-32-bytes
 const {
   saveDraft,
   submitApplication,
+  withdrawApplication,
   reviewApplication,
   listJoinableClubs,
   joinPublicClub,
@@ -788,5 +789,174 @@ test('管理员人数上限拒绝非法值和低于当前成员数', async () =>
         now,
       ),
     (error) => error.code === 'MAX_MEMBERS_BELOW_CURRENT',
+  );
+});
+
+test('申请人可按版本撤回审核中申请，同 requestId 幂等且重提版本递增', async () => {
+  const store = memoryStore();
+  const pending = await submitApplication(
+    store,
+    { openid: 'user-1', input: valid(), requestId: 'submit-withdraw-1' },
+    now,
+  );
+  const first = await withdrawApplication(
+    store,
+    { openid: 'user-1', requestId: 'withdraw-0001', expectedReviewVersion: 1 },
+    now,
+  );
+  const duplicate = await withdrawApplication(
+    store,
+    { openid: 'user-1', requestId: 'withdraw-0001', expectedReviewVersion: 1 },
+    now,
+  );
+  assert.equal(first.status, 'draft');
+  assert.deepEqual(duplicate, first);
+  assert.equal(first.review_version, pending.review_version);
+  assert.deepEqual(
+    store.state.audits.find((item) => item.action === 'club_application_withdrawn'),
+    {
+      actor_openid: 'user-1',
+      action: 'club_application_withdrawn',
+      target_type: 'club_application',
+      target_id: pending.id,
+      before: { status: 'pending_review' },
+      after: { status: 'draft' },
+      before_status: 'pending_review',
+      after_status: 'draft',
+      review_version: 1,
+      request_id: 'withdraw-0001',
+      created_at: now.toISOString(),
+    },
+  );
+  const resubmitted = await submitApplication(
+    store,
+    { openid: 'user-1', input: valid(), requestId: 'submit-withdraw-2' },
+    now,
+  );
+  assert.equal(resubmitted.review_version, 2);
+});
+
+test('撤回拒绝错误版本、不同 requestId 的草稿以及 approved/rejected 状态', async () => {
+  for (const expectedReviewVersion of [undefined, 0, 2]) {
+    const store = memoryStore();
+    await submitApplication(
+      store,
+      { openid: 'user-1', input: valid(), requestId: 'submit-version-1' },
+      now,
+    );
+    await assert.rejects(
+      () =>
+        withdrawApplication(
+          store,
+          { openid: 'user-1', requestId: 'withdraw-version', expectedReviewVersion },
+          now,
+        ),
+      (error) => error.code === 'VERSION_CONFLICT',
+    );
+  }
+
+  const draftStore = memoryStore();
+  await submitApplication(
+    draftStore,
+    { openid: 'user-1', input: valid(), requestId: 'submit-draft-1' },
+    now,
+  );
+  await withdrawApplication(
+    draftStore,
+    { openid: 'user-1', requestId: 'withdraw-draft-1', expectedReviewVersion: 1 },
+    now,
+  );
+  await assert.rejects(
+    () =>
+      withdrawApplication(
+        draftStore,
+        { openid: 'user-1', requestId: 'withdraw-draft-2', expectedReviewVersion: 1 },
+        now,
+      ),
+    (error) => error.code === 'INVALID_STATE',
+  );
+
+  for (const decision of ['approved', 'rejected']) {
+    const store = memoryStore();
+    const pending = await submitApplication(
+      store,
+      { openid: 'user-1', input: valid(), requestId: `submit-${decision}` },
+      now,
+    );
+    await reviewApplication(
+      store,
+      {
+        adminOpenid: 'admin-1',
+        applicationId: pending.id,
+        decision,
+        reason: decision === 'rejected' ? '资料需要调整后重新提交' : '',
+        requestId: `review-${decision}`,
+      },
+      now,
+    );
+    await assert.rejects(
+      () =>
+        withdrawApplication(
+          store,
+          { openid: 'user-1', requestId: `withdraw-${decision}`, expectedReviewVersion: 1 },
+          now,
+        ),
+      (error) => error.code === 'INVALID_STATE',
+    );
+  }
+});
+
+test('事务串行化时撤回与管理员审批并发只能一个成功', async () => {
+  const store = memoryStore();
+  const runTransaction = store.transaction;
+  let tail = Promise.resolve();
+  store.transaction = (work) => {
+    const result = tail.then(() => runTransaction(work));
+    tail = result.catch(() => undefined);
+    return result;
+  };
+  const pending = await submitApplication(
+    store,
+    { openid: 'user-1', input: valid(), requestId: 'submit-race-1' },
+    now,
+  );
+  const results = await Promise.allSettled([
+    withdrawApplication(
+      store,
+      { openid: 'user-1', requestId: 'withdraw-race-1', expectedReviewVersion: 1 },
+      now,
+    ),
+    reviewApplication(
+      store,
+      {
+        adminOpenid: 'admin-1',
+        applicationId: pending.id,
+        decision: 'approved',
+        requestId: 'review-race-1',
+      },
+      now,
+    ),
+  ]);
+  assert.equal(results.filter((item) => item.status === 'fulfilled').length, 1);
+  assert.equal(results.filter((item) => item.status === 'rejected').length, 1);
+  assert.equal(store.state.applications.get(pending.id).status, 'draft');
+  assert.equal(store.state.clubs.size, 0);
+});
+
+test('非申请人无法撤回他人的审核中申请', async () => {
+  const store = memoryStore();
+  await submitApplication(
+    store,
+    { openid: 'user-1', input: valid(), requestId: 'submit-owner-1' },
+    now,
+  );
+  await assert.rejects(
+    () =>
+      withdrawApplication(
+        store,
+        { openid: 'user-2', requestId: 'withdraw-owner-1', expectedReviewVersion: 1 },
+        now,
+      ),
+    (error) => error.code === 'NOT_FOUND',
   );
 });

@@ -1751,6 +1751,17 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
       }),
     );
   }
+  async withdrawClubApplication(requestId: string, expectedReviewVersion: number) {
+    if (!Number.isInteger(expectedReviewVersion) || expectedReviewVersion < 1)
+      throw new CloudRepositoryError('VERSION_CONFLICT', '申请版本已变化，请刷新后重试');
+    return mapClubApplication(
+      await this.call('club-application', {
+        action: 'withdraw',
+        requestId: boundedId(requestId, '撤回请求 ID', 8, 128),
+        expectedReviewVersion,
+      }),
+    );
+  }
   async listClubApplications(status: ClubApplicationStatus = 'pending_review') {
     if (!['pending_review', 'approved', 'rejected'].includes(status))
       throw new CloudRepositoryError('VALIDATION_FAILED', '申请状态筛选无效');

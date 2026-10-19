@@ -49,6 +49,23 @@
   color: var(--color-muted);
   line-height: 40rpx;
 }
+.withdraw-action {
+  width: 100%;
+  min-height: var(--control-height);
+  margin-top: 24rpx;
+}
+.withdraw-error {
+  margin-top: 16rpx;
+  padding: 20rpx;
+  border-left: 6rpx solid var(--color-action);
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-soft);
+  color: var(--color-action);
+  line-height: 40rpx;
+}
+.withdraw-error .muted {
+  margin-top: 4rpx;
+}
 .rejection {
   margin-top: 20rpx;
   padding: 20rpx;

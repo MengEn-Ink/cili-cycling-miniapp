@@ -7,10 +7,10 @@
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:75129953062b829af23cbd1fc1bd593830e53bb74e2320cc1b20dcb584941037"
+    "digest": "sha256:fd711f5c7714a407b1deada23b6e24e05c2d705dd74f0f98ccb2bf0b0661860a"
   },
   "prototype": {
-    "digest": "sha256:23ab5ace7b43efbbafeeb6f0d51ab3c724dc552cfea8da29c2c0aba59c13449c"
+    "digest": "sha256:87a30334e27287ad82acb2722fb9d199bc0fbf71cf414732cc87acc30b2d1666"
   },
   "routes": [
     {
@@ -222,7 +222,7 @@
         "state": "已加入俱乐部，负责人或管理员可修改资料",
         "data": "fixture",
         "review": "blocked",
-        "note": "Pages 375×812 原型已按生产单路由 discovery / detail / manage 能力边界重新采集；推荐俱乐部详情保持不可用，DevTools 真实权限与保存链路仍待新开发版复验。"
+        "note": "Pages 原型已同步创建申请撤回入口、确认、处理中、失败与草稿编辑 mode，但 375×812 Pages 截图尚未重采；现有 DevTools 文件未覆盖撤回流程，不作为本次视觉验收结论。待主代理使用本地浏览器重采 Pages，并在新开发版补采真实 DevTools 证据。"
       },
       {
         "id": "admin-club-applications",

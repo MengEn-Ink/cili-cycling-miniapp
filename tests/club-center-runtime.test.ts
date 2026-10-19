@@ -12,6 +12,7 @@ const rideService = vi.hoisted(() => ({
   updateManagedClub: vi.fn(),
   saveClubApplicationDraft: vi.fn(),
   submitClubApplication: vi.fn(),
+  withdrawClubApplication: vi.fn(),
   issueMediaUploadPath: vi.fn(),
   finalizeMediaUpload: vi.fn(),
 }));
@@ -518,6 +519,164 @@ describe('俱乐部申请页运行时错误恢复', () => {
     expect(page.data.manageMode).toBe(false);
     expect(page.data.managing).toBe(false);
     expect(wxApi.showToast).toHaveBeenCalledWith({ title: '俱乐部资料已更新' });
+  });
+
+  it('撤回确认取消时不发请求，确认成功后立即回到草稿编辑态', async () => {
+    const pending = {
+      id: 'clubapp-1',
+      status: 'pending_review',
+      reviewVersion: 2,
+      clubName: '山海骑行会',
+      city: '深圳',
+      introduction: '我们每周组织安全友好的公路骑行训练活动。',
+      applicantContact: 'wx:rider',
+      joinMode: 'public_apply',
+      expectedSize: 30,
+      activityTypes: '公路骑行',
+      rulesSummary: '遵守交通规则并全程佩戴头盔。',
+      avatarFileId: 'cloud://env/avatar.jpg',
+      coverFileId: '',
+      avatarUrl: 'https://temporary.example/avatar.jpg',
+      coverUrl: '',
+      rejectionReason: '',
+      clubId: '',
+      createdAt: '2026-10-19T00:00:00.000Z',
+      updatedAt: '2026-10-19T00:00:00.000Z',
+      submittedAt: '2026-10-19T00:00:00.000Z',
+      reviewedAt: '',
+    };
+    page.data.application = pending;
+    wxApi.showModal.mockImplementationOnce(({ success }: any) => success({ confirm: false }));
+    await page.withdrawApplication();
+    expect(rideService.withdrawClubApplication).not.toHaveBeenCalled();
+
+    wxApi.showModal.mockImplementationOnce(({ success }: any) => success({ confirm: true }));
+    rideService.withdrawClubApplication.mockResolvedValue({ ...pending, status: 'draft' });
+    await page.withdrawApplication();
+
+    expect(rideService.withdrawClubApplication).toHaveBeenCalledWith(
+      expect.stringMatching(/^club_withdraw_/),
+      2,
+    );
+    expect(page.data.application.status).toBe('draft');
+    expect(page.data.createMode).toBe(true);
+    expect(page.data.form.clubName).toBe('山海骑行会');
+    expect(wxApi.showToast).toHaveBeenCalledWith({
+      title: '已撤回，可继续编辑',
+      icon: 'success',
+    });
+  });
+
+  it('撤回期间更早的 load 晚返回不能用 pending_review 覆盖 draft', async () => {
+    const pending = {
+      id: 'clubapp-race',
+      status: 'pending_review',
+      reviewVersion: 4,
+      clubName: '山海骑行会',
+      city: '深圳',
+      introduction: '我们每周组织安全友好的公路骑行训练活动。',
+      applicantContact: 'wx:rider',
+      joinMode: 'public_apply',
+      expectedSize: 30,
+      activityTypes: '公路骑行',
+      rulesSummary: '遵守交通规则并全程佩戴头盔。',
+      avatarFileId: 'cloud://env/avatar.jpg',
+      coverFileId: '',
+      avatarUrl: '',
+      coverUrl: '',
+      rejectionReason: '',
+      clubId: '',
+      createdAt: '',
+      updatedAt: '',
+      submittedAt: '',
+      reviewedAt: '',
+    };
+    const staleApplication = deferred<any>();
+    rideService.getMyClubApplication.mockImplementationOnce(() => staleApplication.promise);
+    const oldLoad = page.load();
+    await vi.waitFor(() => expect(rideService.getMyClubApplication).toHaveBeenCalledTimes(1));
+
+    page.data.application = pending;
+    wxApi.showModal.mockImplementation(({ success }: any) => success({ confirm: true }));
+    rideService.withdrawClubApplication.mockResolvedValue({ ...pending, status: 'draft' });
+    await page.withdrawApplication();
+    expect(page.data.application.status).toBe('draft');
+
+    staleApplication.resolve(pending);
+    await oldLoad;
+    expect(page.data.application.status).toBe('draft');
+    expect(page.data.createMode).toBe(true);
+  });
+
+  it('撤回失败保留审核状态与 requestId，重试复用后成功', async () => {
+    const pending = {
+      id: 'clubapp-1',
+      status: 'pending_review',
+      reviewVersion: 3,
+      clubName: '山海骑行会',
+      city: '深圳',
+      introduction: '我们每周组织安全友好的公路骑行训练活动。',
+      applicantContact: 'wx:rider',
+      joinMode: 'public_apply',
+      expectedSize: 30,
+      activityTypes: '公路骑行',
+      rulesSummary: '遵守交通规则并全程佩戴头盔。',
+      avatarFileId: 'cloud://env/avatar.jpg',
+      coverFileId: '',
+      avatarUrl: '',
+      coverUrl: '',
+      rejectionReason: '',
+      clubId: '',
+      createdAt: '',
+      updatedAt: '',
+      submittedAt: '',
+      reviewedAt: '',
+    };
+    page.data.application = pending;
+    wxApi.showModal.mockImplementation(({ success }: any) => success({ confirm: true }));
+    rideService.withdrawClubApplication
+      .mockRejectedValueOnce(new Error('网络不稳定，请重试'))
+      .mockResolvedValueOnce({ ...pending, status: 'draft' });
+
+    await page.withdrawApplication();
+    const stableRequestId = page.withdrawRequestId;
+    expect(page.data.application.status).toBe('pending_review');
+    expect(page.data.actionError).toBe('网络不稳定，请重试');
+    await page.withdrawApplication();
+
+    expect(rideService.withdrawClubApplication).toHaveBeenNthCalledWith(1, stableRequestId, 3);
+    expect(rideService.withdrawClubApplication).toHaveBeenNthCalledWith(2, stableRequestId, 3);
+    expect(page.data.application.status).toBe('draft');
+    expect(page.withdrawRequestId).toBe('');
+  });
+
+  it('撤回处理中重复点击只发送一次请求', async () => {
+    const result = deferred<any>();
+    page.data.application = { status: 'pending_review', reviewVersion: 1 };
+    wxApi.showModal.mockImplementation(({ success }: any) => success({ confirm: true }));
+    rideService.withdrawClubApplication.mockImplementation(() => result.promise);
+
+    const first = page.withdrawApplication();
+    await vi.waitFor(() => expect(page.data.withdrawing).toBe(true));
+    await page.withdrawApplication();
+    expect(rideService.withdrawClubApplication).toHaveBeenCalledTimes(1);
+    result.resolve({
+      ...page.data.application,
+      status: 'draft',
+      clubName: '',
+      city: '',
+      introduction: '',
+      applicantContact: '',
+      joinMode: 'public_apply',
+      expectedSize: 10,
+      activityTypes: '',
+      rulesSummary: '',
+      avatarFileId: '',
+      coverFileId: '',
+      avatarUrl: '',
+      coverUrl: '',
+    });
+    await first;
   });
 
   it('头像与背景共用选择裁剪压缩 helper，但使用独立比例、尺寸和上传文件名', async () => {

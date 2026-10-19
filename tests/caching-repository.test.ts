@@ -17,6 +17,10 @@ function makeInner() {
     getPersonalCapabilityCard: vi.fn(),
     getPhoneNumber: vi.fn(),
     joinPublicClub: vi.fn(),
+    getMyClubApplication: vi.fn(),
+    saveClubApplicationDraft: vi.fn(),
+    submitClubApplication: vi.fn(),
+    withdrawClubApplication: vi.fn(),
     updateManagedClub: vi.fn(),
     saveActivity: vi.fn(),
     cloneActivity: vi.fn(),
@@ -417,6 +421,28 @@ describe('CachingRepository 写后失效', () => {
 
     expect(inner.getProfile).toHaveBeenCalledTimes(2);
     expect(fresh.clubs[0]?.name).toBe('新名称');
+  });
+
+  it('撤回申请成功后失效本人申请缓存并回源 draft', async () => {
+    const pending = { id: 'clubapp-1', status: 'pending_review', reviewVersion: 1 } as Awaited<
+      ReturnType<RideRepository['getMyClubApplication']>
+    >;
+    const draft = { ...pending, status: 'draft' } as Awaited<
+      ReturnType<RideRepository['withdrawClubApplication']>
+    >;
+    vi.mocked(inner.getMyClubApplication)
+      .mockResolvedValueOnce(pending)
+      .mockResolvedValueOnce(draft);
+    vi.mocked(inner.withdrawClubApplication).mockResolvedValue(draft);
+
+    await repo.getMyClubApplication();
+    await repo.getMyClubApplication();
+    await repo.withdrawClubApplication('withdraw-0001', 1);
+    const fresh = await repo.getMyClubApplication();
+
+    expect(inner.withdrawClubApplication).toHaveBeenCalledWith('withdraw-0001', 1);
+    expect(inner.getMyClubApplication).toHaveBeenCalledTimes(2);
+    expect(fresh?.status).toBe('draft');
   });
 
   it('写入失效后晚到的旧读取不会重新污染资料缓存', async () => {

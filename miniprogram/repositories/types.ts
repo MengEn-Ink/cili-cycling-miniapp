@@ -114,6 +114,10 @@ export interface ClubApplicationRepository {
   ): Promise<ManagedClubProfile>;
   saveClubApplicationDraft(value: ClubApplicationInput): Promise<ClubApplication>;
   submitClubApplication(value: ClubApplicationInput, requestId: string): Promise<ClubApplication>;
+  withdrawClubApplication(
+    requestId: string,
+    expectedReviewVersion: number,
+  ): Promise<ClubApplication>;
   listClubApplications(status?: ClubApplicationStatus): Promise<ClubApplication[]>;
   getClubApplication(id: string): Promise<ClubApplication>;
   reviewClubApplication(
