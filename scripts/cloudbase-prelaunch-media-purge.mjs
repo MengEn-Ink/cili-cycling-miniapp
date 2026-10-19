@@ -241,8 +241,44 @@ function collectDocumentArrays(value, results = [], seen = new Set(), recognized
   return results;
 }
 
+function parseCliQueryEnvelope(value) {
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    Array.isArray(value) ||
+    !Object.hasOwn(value, 'results')
+  )
+    return null;
+  // CLI 3.8.4 的 results 是命令级传输信封；当前每次只发送一个 QUERY，不能把它当文档数组。
+  if (
+    !Array.isArray(value.results) ||
+    value.results.length !== 1 ||
+    !Array.isArray(value.results[0])
+  )
+    throw new Error('CloudBase QUERY 命令缺少有效文档结果');
+  const documents = value.results[0].map((item) => {
+    if (typeof item !== 'string') return item;
+    try {
+      return JSON.parse(item);
+    } catch {
+      throw new Error('CloudBase QUERY 命令缺少有效文档结果');
+    }
+  });
+  if (
+    documents.some(
+      (item) =>
+        !item || typeof item !== 'object' || Array.isArray(item) || !Object.hasOwn(item, '_id'),
+    )
+  )
+    throw new Error('CloudBase QUERY 命令缺少有效文档结果');
+  return documents;
+}
+
 export function parseNosqlDocuments(output) {
-  const candidates = collectDocumentArrays(parseJson(output, 'CloudBase 数据库命令'));
+  const parsed = parseJson(output, 'CloudBase 数据库命令');
+  const cliDocuments = parseCliQueryEnvelope(parsed);
+  if (cliDocuments) return cliDocuments;
+  const candidates = collectDocumentArrays(parsed);
   const recognized = candidates.filter((candidate) => candidate.recognized);
   const valid = recognized.find(
     ({ items }) =>
