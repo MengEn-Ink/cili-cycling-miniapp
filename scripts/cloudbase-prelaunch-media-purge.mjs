@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 const CLI_PACKAGE = '@cloudbase/cli@3.8.4';
 export const MEDIA_CLEANUP_BATCH_SIZE = 20;
-export const NOSQL_DELETE_LIMIT = 1000;
+export const NOSQL_QUERY_PAGE_SIZE = 1000;
 export const CLEANUP_STALL_ROUND_BUDGET = 24;
 const CLEANUP_WAIT_MS = 30_000;
 export const CONFIRMATION_PHRASE = 'DELETE_PRELAUNCH_MEDIA_DATA';
@@ -52,6 +52,17 @@ function queryCommand(collection, filter = {}) {
   });
 }
 
+function idPageCommand(collection, filter, lastId) {
+  const pageFilter = lastId === undefined ? filter : { $and: [filter, { _id: { $gt: lastId } }] };
+  return command(collection, 'QUERY', {
+    find: collection,
+    filter: pageFilter,
+    projection: { _id: 1 },
+    sort: { _id: 1 },
+    limit: NOSQL_QUERY_PAGE_SIZE,
+  });
+}
+
 function countCommand(collection, filter = {}) {
   return command(collection, 'COMMAND', { count: collection, query: filter });
 }
@@ -71,7 +82,8 @@ export function createMutationCommands(expiredAt) {
           {
             q: CLUB_MEDIA_FILTER,
             u: { $unset: { avatar_url: '', cover_file_id: '' } },
-            multi: true,
+            upsert: false,
+            multi: false,
           },
         ],
       }),
@@ -81,7 +93,8 @@ export function createMutationCommands(expiredAt) {
           {
             q: APPLICATION_MEDIA_FILTER,
             u: { $unset: { avatar_file_id: '', cover_file_id: '' } },
-            multi: true,
+            upsert: false,
+            multi: false,
           },
         ],
       }),
@@ -101,17 +114,18 @@ export function createMutationCommands(expiredAt) {
                 'route.public_route_preview_id': '',
               },
             },
-            multi: true,
+            upsert: false,
+            multi: false,
           },
         ],
       }),
       command('route_previews', 'DELETE', {
         delete: 'route_previews',
-        deletes: [{ q: {}, limit: NOSQL_DELETE_LIMIT }],
+        deletes: [{ q: {}, limit: 1 }],
       }),
       command('profiles', 'DELETE', {
         delete: 'profiles',
-        deletes: [{ q: {}, limit: NOSQL_DELETE_LIMIT }],
+        deletes: [{ q: {}, limit: 1 }],
       }),
       command('profile_media', 'UPDATE', {
         update: 'profile_media',
@@ -127,7 +141,8 @@ export function createMutationCommands(expiredAt) {
                 retry_at: due,
               },
             },
-            multi: true,
+            upsert: false,
+            multi: false,
           },
         ],
       }),
@@ -145,7 +160,8 @@ export function createMutationCommands(expiredAt) {
                 retry_at: due,
               },
             },
-            multi: true,
+            upsert: false,
+            multi: false,
           },
         ],
       }),
@@ -153,11 +169,11 @@ export function createMutationCommands(expiredAt) {
     finalize: [
       command('profile_media', 'DELETE', {
         delete: 'profile_media',
-        deletes: [{ q: { status: { $in: MEDIA_TERMINAL_STATUSES } }, limit: NOSQL_DELETE_LIMIT }],
+        deletes: [{ q: { status: { $in: MEDIA_TERMINAL_STATUSES } }, limit: 1 }],
       }),
       command('profile_media_imports', 'DELETE', {
         delete: 'profile_media_imports',
-        deletes: [{ q: { status: { $in: IMPORT_TERMINAL_STATUSES } }, limit: NOSQL_DELETE_LIMIT }],
+        deletes: [{ q: { status: { $in: IMPORT_TERMINAL_STATUSES } }, limit: 1 }],
       }),
     ],
   };
@@ -270,23 +286,43 @@ function nosqlArgs(envId, commands) {
 
 function safeStderrTail(error) {
   const raw = error && typeof error === 'object' && 'stderr' in error ? error.stderr : '';
-  const lines = String(raw || '')
-    .replaceAll(/(--command\s+)(?:'[^']*'|"[^"]*"|\S+)/gi, '$1[REDACTED]')
-    .replaceAll(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g, '[REDACTED_EMAIL]')
-    .replaceAll(/\b(secret|token|key|authorization|credential)\s*[:=]\s*\S+/gi, '$1=[REDACTED]')
-    .replaceAll(/\b[A-Za-z0-9_./+=-]{32,}\b/g, '[REDACTED_VALUE]')
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .slice(-6)
-    .join(' | ');
-  return lines.slice(-800) || '(empty)';
+  return String(raw || '').trim() ? '(present, redacted)' : '(empty)';
 }
 
-function deleteFilter(entry) {
-  if (entry.CommandType !== 'DELETE') return null;
+function mutationSpec(entry) {
   const parsed = JSON.parse(entry.Command);
-  return parsed.deletes?.[0]?.q ?? {};
+  if (entry.CommandType === 'UPDATE') {
+    const update = parsed.updates?.[0];
+    if (!update) throw new Error('UPDATE 命令缺少 updates[0]');
+    return { filter: update.q ?? {}, update: update.u };
+  }
+  if (entry.CommandType === 'DELETE') {
+    const deletion = parsed.deletes?.[0];
+    if (!deletion) throw new Error('DELETE 命令缺少 deletes[0]');
+    return { filter: deletion.q ?? {} };
+  }
+  throw new Error(`不支持的 mutation 类型：${entry.CommandType}`);
+}
+
+function documentMutationCommand(entry, id, update) {
+  if (entry.CommandType === 'UPDATE') {
+    return command(entry.TableName, 'UPDATE', {
+      update: entry.TableName,
+      updates: [{ q: { _id: id }, u: update, upsert: false, multi: false }],
+    });
+  }
+  return command(entry.TableName, 'DELETE', {
+    delete: entry.TableName,
+    deletes: [{ q: { _id: id }, limit: 1 }],
+  });
+}
+
+function updateVerificationFilter(id, update) {
+  const clauses = [{ _id: id }];
+  for (const [field, value] of Object.entries(update?.$set || {})) clauses.push({ [field]: value });
+  for (const field of Object.keys(update?.$unset || {}))
+    clauses.push({ [field]: { $exists: false } });
+  return clauses.length === 1 ? clauses[0] : { $and: clauses };
 }
 
 function findCleanupResult(value, seen = new Set()) {
@@ -344,36 +380,96 @@ export function createCliAdapter({ envId, cwd = process.cwd(), execute = execFil
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     });
-  const invokeNosql = (entry, index = 1) => {
+  const invokeNosql = (entry, index = 1, context = {}) => {
     try {
       return invoke(nosqlArgs(envId, [entry]));
     } catch (error) {
+      const operation = context.operation || entry.CommandType;
+      const document = context.documentIndex ? ` document=${context.documentIndex}` : '';
+      const stage = context.stage ? ` stage=${context.stage}` : '';
       throw new Error(
-        `CloudBase NoSQL command ${index} 失败：collection=${entry.TableName} op=${entry.CommandType} stderr_tail=${safeStderrTail(error)}`,
+        `CloudBase NoSQL command ${index} 失败：collection=${entry.TableName} op=${operation}${document}${stage} stderr_tail=${safeStderrTail(error)}`,
         { cause: error },
       );
     }
   };
   const query = (collection, filter = {}) =>
     parseNosqlDocuments(invokeNosql(queryCommand(collection, filter)));
-  const count = (collection, filter = {}, index = 1) =>
-    parseNosqlCount(invokeNosql(countCommand(collection, filter), index));
+  const count = (collection, filter = {}, index = 1, operation) =>
+    parseNosqlCount(
+      invokeNosql(countCommand(collection, filter), index, {
+        operation,
+        stage: operation ? 'count' : undefined,
+      }),
+    );
+  const collectMutationIds = (entry, filter, expected, index) => {
+    const ids = [];
+    const seenIds = new Set();
+    let lastId;
+    while (ids.length < expected) {
+      const page = parseNosqlDocuments(
+        invokeNosql(idPageCommand(entry.TableName, filter, lastId), index, {
+          operation: entry.CommandType,
+          stage: 'query_ids',
+        }),
+      );
+      if (page.length === 0) break;
+      for (const document of page) {
+        if (!Object.hasOwn(document, '_id'))
+          throw new Error(
+            `CloudBase NoSQL ID 查询无效：command ${index} collection=${entry.TableName} op=${entry.CommandType}`,
+          );
+        const idKey = JSON.stringify(document._id);
+        if (seenIds.has(idKey))
+          throw new Error(
+            `CloudBase NoSQL ID 分页重复：command ${index} collection=${entry.TableName} op=${entry.CommandType}`,
+          );
+        seenIds.add(idKey);
+        ids.push(document._id);
+      }
+      const nextLastId = page.at(-1)._id;
+      if (Object.is(nextLastId, lastId))
+        throw new Error(
+          `CloudBase NoSQL ID 分页未推进：command ${index} collection=${entry.TableName} op=${entry.CommandType}`,
+        );
+      lastId = nextLastId;
+    }
+    if (ids.length !== expected)
+      throw new Error(
+        `CloudBase NoSQL ID 数量校验失败：command ${index} collection=${entry.TableName} op=${entry.CommandType} expected=${expected} actual=${ids.length}`,
+      );
+    return ids;
+  };
   const runMutationCommands = async (commands) => {
     for (let index = 0; index < commands.length; index += 1) {
       const entry = commands[index];
-      const filter = deleteFilter(entry);
-      if (!filter) {
-        invokeNosql(entry, index + 1);
-        continue;
-      }
-      let remaining = count(entry.TableName, filter, index + 1);
-      while (remaining > 0) {
-        const previousRemaining = remaining;
-        invokeNosql(entry, index + 1);
-        remaining = count(entry.TableName, filter, index + 1);
-        if (remaining >= previousRemaining)
+      const commandIndex = index + 1;
+      const { filter, update } = mutationSpec(entry);
+      const expected = count(entry.TableName, filter, commandIndex, entry.CommandType);
+      if (expected === 0) continue;
+      const ids = collectMutationIds(entry, filter, expected, commandIndex);
+      for (let documentIndex = 0; documentIndex < ids.length; documentIndex += 1) {
+        const id = ids[documentIndex];
+        const context = {
+          operation: entry.CommandType,
+          documentIndex: documentIndex + 1,
+        };
+        invokeNosql(documentMutationCommand(entry, id, update), commandIndex, {
+          ...context,
+          stage: 'mutation',
+        });
+        const verificationFilter =
+          entry.CommandType === 'UPDATE' ? updateVerificationFilter(id, update) : { _id: id };
+        const found = parseNosqlDocuments(
+          invokeNosql(queryCommand(entry.TableName, verificationFilter), commandIndex, {
+            ...context,
+            stage: 'verify',
+          }),
+        );
+        const verified = entry.CommandType === 'UPDATE' ? found.length === 1 : found.length === 0;
+        if (!verified)
           throw new Error(
-            `CloudBase NoSQL DELETE 未推进：command ${index + 1} collection=${entry.TableName}`,
+            `CloudBase NoSQL 文档回读失败：command ${commandIndex} collection=${entry.TableName} op=${entry.CommandType} document=${documentIndex + 1}`,
           );
       }
     }

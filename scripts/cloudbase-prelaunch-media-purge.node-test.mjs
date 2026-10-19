@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { isDeepStrictEqual } from 'node:util';
 
 import {
   CONFIRMATION_PHRASE,
   CLEANUP_STALL_ROUND_BUDGET,
   MEDIA_CLEANUP_BATCH_SIZE,
-  NOSQL_DELETE_LIMIT,
+  NOSQL_QUERY_PAGE_SIZE,
   STORAGE_PREFIXES,
   assertApplyGate,
   calculateMaxCleanupRounds,
@@ -83,6 +84,97 @@ const applyOptions = {
   configuredEnvId: ENV_ID,
 };
 
+function valueAt(document, path) {
+  return path.split('.').reduce((value, key) => value?.[key], document);
+}
+
+function matches(document, filter) {
+  return Object.entries(filter).every(([field, expected]) => {
+    if (field === '$and') return expected.every((condition) => matches(document, condition));
+    if (field === '$or') return expected.some((condition) => matches(document, condition));
+    const actual = valueAt(document, field);
+    if (expected && typeof expected === 'object' && !Array.isArray(expected)) {
+      if ('$exists' in expected) return (actual !== undefined) === expected.$exists;
+      if ('$gt' in expected) return actual > expected.$gt;
+      if ('$in' in expected) return expected.$in.includes(actual);
+      if ('$nin' in expected) return !expected.$nin.includes(actual);
+    }
+    return isDeepStrictEqual(actual, expected);
+  });
+}
+
+function setAt(document, path, value) {
+  const parts = path.split('.');
+  const field = parts.pop();
+  const parent = parts.reduce((current, part) => (current[part] ||= {}), document);
+  parent[field] = value;
+}
+
+function unsetAt(document, path) {
+  const parts = path.split('.');
+  const field = parts.pop();
+  const parent = parts.reduce((current, part) => current?.[part], document);
+  if (parent) delete parent[field];
+}
+
+function databaseExecutor(seed, { failMutation, maxQueryBatch = Infinity } = {}) {
+  const state = Object.fromEntries(
+    Object.entries(seed).map(([collection, documents]) => [
+      collection,
+      new Map(documents.map((document) => [document._id, structuredClone(document)])),
+    ]),
+  );
+  const invocations = [];
+  const mutationOrdinals = new Map();
+  const execute = (_file, args) => {
+    const index = args.indexOf('--command');
+    const [entry] = JSON.parse(args[index + 1]);
+    const body = JSON.parse(entry.Command);
+    invocations.push(entry);
+    const documents = [...(state[entry.TableName] || new Map()).values()];
+    if (entry.CommandType === 'COMMAND') {
+      return JSON.stringify({
+        results: [{ n: documents.filter((item) => matches(item, body.query)).length }],
+      });
+    }
+    if (entry.CommandType === 'QUERY') {
+      const found = documents
+        .filter((item) => matches(item, body.filter))
+        .sort((left, right) => String(left._id).localeCompare(String(right._id)))
+        .slice(0, Math.min(body.limit, maxQueryBatch))
+        .map((item) => {
+          const projected = { _id: item._id };
+          if (body.projection?.status) projected.status = item.status;
+          return projected;
+        });
+      return JSON.stringify({ documents: found });
+    }
+    const ordinal = (mutationOrdinals.get(entry.TableName) || 0) + 1;
+    mutationOrdinals.set(entry.TableName, ordinal);
+    if (failMutation?.collection === entry.TableName && failMutation.document === ordinal) {
+      const error = new Error('failed');
+      error.stderr = failMutation.stderr || '';
+      throw error;
+    }
+    if (entry.CommandType === 'UPDATE') {
+      const update = body.updates[0];
+      assert.deepEqual(Object.keys(update.q), ['_id']);
+      assert.equal(update.upsert, false);
+      assert.equal(update.multi, false);
+      const document = state[entry.TableName].get(update.q._id);
+      for (const [path, value] of Object.entries(update.u.$set || {})) setAt(document, path, value);
+      for (const path of Object.keys(update.u.$unset || {})) unsetAt(document, path);
+      return JSON.stringify({ results: [] });
+    }
+    const deletion = body.deletes[0];
+    assert.deepEqual(Object.keys(deletion.q), ['_id']);
+    assert.equal(deletion.limit, 1);
+    state[entry.TableName].delete(deletion.q._id);
+    return JSON.stringify({ results: [] });
+  };
+  return { execute, state, invocations };
+}
+
 test('默认 dry-run 仅统计并对两个固定前缀执行 storage dry-run，不写数据库或存储', async () => {
   const { adapter, calls } = adapterFixture();
   const result = await purgePrelaunchMediaData(
@@ -146,7 +238,7 @@ test('空库 apply 幂等，仍验证固定存储前缀并完成回读断言', a
   );
 });
 
-test('更新与删除命令严格限制集合、字段和终态状态', () => {
+test('mutation 模板限制集合和字段，且只允许逐文档 UPDATE / DELETE 形态', () => {
   const { prepare, finalize } = createMutationCommands('2026-10-19T00:00:00.000Z');
   assert.deepEqual(
     prepare.map(({ TableName, CommandType }) => [TableName, CommandType]),
@@ -160,185 +252,179 @@ test('更新与删除命令严格限制集合、字段和终态状态', () => {
       ['profile_media_imports', 'UPDATE'],
     ],
   );
-  const clubs = JSON.parse(prepare[0].Command);
-  const applications = JSON.parse(prepare[1].Command);
-  const activities = JSON.parse(prepare[2].Command);
-  const routePreviews = JSON.parse(prepare[3].Command);
-  assert.deepEqual(Object.keys(clubs.updates[0].u.$unset).sort(), ['avatar_url', 'cover_file_id']);
-  assert.deepEqual(Object.keys(applications.updates[0].u.$unset).sort(), [
-    'avatar_file_id',
-    'cover_file_id',
-  ]);
-  assert.deepEqual(Object.keys(activities.updates[0].u.$unset).sort(), [
-    'club_identity.avatar_url',
-    'cover_image',
-    'group_qr_code',
-    'group_qr_code_uploaded_at',
-    'images',
-    'route.generated_preview_file_id',
-    'route.public_route_preview_id',
-  ]);
-  assert.equal(
-    activities.updates[0].q.$or.some(
-      (condition) => condition['club_identity.avatar_url']?.$exists === true,
-    ),
-    true,
-  );
-  assert.deepEqual(routePreviews.deletes, [{ q: {}, limit: NOSQL_DELETE_LIMIT }]);
-  const deleteCommands = [...prepare, ...finalize].filter(
-    ({ CommandType }) => CommandType === 'DELETE',
-  );
-  assert.equal(NOSQL_DELETE_LIMIT, 1000);
+  const updates = [...prepare, ...finalize].filter(({ CommandType }) => CommandType === 'UPDATE');
   assert.ok(
-    deleteCommands.every(
-      ({ Command }) => JSON.parse(Command).deletes[0].limit === NOSQL_DELETE_LIMIT,
-    ),
+    updates.every(({ Command }) => {
+      const update = JSON.parse(Command).updates[0];
+      return update.multi === false && update.upsert === false;
+    }),
   );
-  assert.equal(Object.hasOwn(activities.updates[0].u.$unset, 'route.gpx_file_id'), false);
+  const deletes = [...prepare, ...finalize].filter(({ CommandType }) => CommandType === 'DELETE');
+  assert.ok(deletes.every(({ Command }) => JSON.parse(Command).deletes[0].limit === 1));
+  const activities = JSON.parse(prepare[2].Command).updates[0];
+  assert.equal(Object.hasOwn(activities.u.$unset, 'route.gpx_file_id'), false);
   assert.deepEqual(
-    finalize.map(({ TableName, CommandType }) => [TableName, CommandType]),
+    finalize.map(({ TableName }) => TableName),
+    ['profile_media', 'profile_media_imports'],
+  );
+});
+
+test('profile_media 20 条与 imports 41 条逐文档更新，重复执行保持幂等', async () => {
+  const profileMedia = Array.from({ length: 20 }, (_, index) => ({
+    _id: `media-${String(index).padStart(4, '0')}`,
+    status: 'referenced',
+  }));
+  const imports = Array.from({ length: 41 }, (_, index) => ({
+    _id: `import-${String(index).padStart(4, '0')}`,
+    status: 'prepared',
+  }));
+  const fixture = databaseExecutor(
+    {
+      profile_media: profileMedia,
+      profile_media_imports: imports,
+    },
+    { maxQueryBatch: 7 },
+  );
+  const adapter = createCliAdapter({ envId: ENV_ID, execute: fixture.execute });
+  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
+  await adapter.mutate(prepare.slice(5));
+  await adapter.mutate(prepare.slice(5));
+  assert.ok(
+    [...fixture.state.profile_media.values()].every(({ status }) => status === 'unreferenced'),
+  );
+  assert.ok(
+    [...fixture.state.profile_media_imports.values()].every(({ status }) => status === 'uploaded'),
+  );
+  const mutations = fixture.invocations.filter(({ CommandType }) => CommandType === 'UPDATE');
+  assert.equal(mutations.length, 122);
+  assert.ok(mutations.every(({ Command }) => JSON.parse(Command).updates[0].multi === false));
+  const idQueries = fixture.invocations.filter(
+    ({ CommandType, Command }) =>
+      CommandType === 'QUERY' && JSON.parse(Command).limit === NOSQL_QUERY_PAGE_SIZE,
+  );
+  assert.equal(idQueries.filter(({ TableName }) => TableName === 'profile_media').length, 6);
+  assert.equal(
+    idQueries.filter(({ TableName }) => TableName === 'profile_media_imports').length,
+    12,
+  );
+});
+
+test('第 N 文档失败准确定位原 command/collection/op 且不泄露 ID 或 payload', async () => {
+  const documents = Array.from({ length: 20 }, (_, index) => ({
+    _id: `private-media-id-${String(index).padStart(4, '0')}`,
+    status: 'referenced',
+  }));
+  const fixture = databaseExecutor(
+    { profile_media: documents },
+    {
+      failMutation: {
+        collection: 'profile_media',
+        document: 6,
+        stderr: 'payload private-media-id-0005 account=user@example.com',
+      },
+    },
+  );
+  const adapter = createCliAdapter({ envId: ENV_ID, execute: fixture.execute });
+  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
+  const mediaUpdate = prepare.find(({ TableName }) => TableName === 'profile_media');
+  await assert.rejects(adapter.mutate([mediaUpdate]), (error) => {
+    assert.match(error.message, /command 1.*collection=profile_media op=UPDATE document=6/);
+    assert.match(error.message, /stderr_tail=\(present, redacted\)/);
+    assert.doesNotMatch(
+      error.message,
+      /private-media-id|user@example\.com|cleanup_after|unreferenced/,
+    );
+    return true;
+  });
+});
+
+test('超过单页时按 _id 稳定分页，且 ID 总数必须匹配 COUNT', async () => {
+  const documents = Array.from({ length: NOSQL_QUERY_PAGE_SIZE + 1 }, (_, index) => ({
+    _id: `media-${String(index).padStart(6, '0')}`,
+    status: 'referenced',
+  }));
+  const fixture = databaseExecutor({ profile_media: documents });
+  const adapter = createCliAdapter({ envId: ENV_ID, execute: fixture.execute });
+  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
+  const mediaUpdate = prepare.find(({ TableName }) => TableName === 'profile_media');
+  await adapter.mutate([mediaUpdate]);
+  const pageQueries = fixture.invocations.filter(({ CommandType, Command }) => {
+    const body = JSON.parse(Command);
+    return CommandType === 'QUERY' && body.limit === NOSQL_QUERY_PAGE_SIZE;
+  });
+  assert.equal(pageQueries.length, 2);
+  assert.deepEqual(JSON.parse(pageQueries[0].Command).sort, { _id: 1 });
+  assert.deepEqual(JSON.parse(pageQueries[1].Command).filter.$and[1], {
+    _id: { $gt: `media-${String(NOSQL_QUERY_PAGE_SIZE - 1).padStart(6, '0')}` },
+  });
+});
+
+test('分页重复且 lastId 不推进时 fail closed', async () => {
+  const adapter = createCliAdapter({
+    envId: ENV_ID,
+    execute(_file, args) {
+      const [entry] = JSON.parse(args[args.indexOf('--command') + 1]);
+      if (entry.CommandType === 'COMMAND') return JSON.stringify({ results: [{ n: 2 }] });
+      if (entry.CommandType === 'QUERY') return JSON.stringify({ documents: [{ _id: 'same-id' }] });
+      throw new Error('不应执行 mutation');
+    },
+  });
+  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
+  const mediaUpdate = prepare.find(({ TableName }) => TableName === 'profile_media');
+  await assert.rejects(adapter.mutate([mediaUpdate]), /ID 分页重复|ID 分页未推进/);
+});
+
+test('分页返回数量少于预清理 COUNT 时 fail closed，不静默截断', async () => {
+  const adapter = createCliAdapter({
+    envId: ENV_ID,
+    execute(_file, args) {
+      const [entry] = JSON.parse(args[args.indexOf('--command') + 1]);
+      if (entry.CommandType === 'COMMAND') return JSON.stringify({ results: [{ n: 2 }] });
+      if (entry.CommandType === 'QUERY') return JSON.stringify({ documents: [] });
+      throw new Error('不应执行 mutation');
+    },
+  });
+  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
+  const mediaUpdate = prepare.find(({ TableName }) => TableName === 'profile_media');
+  await assert.rejects(
+    adapter.mutate([mediaUpdate]),
+    /ID 数量校验失败.*collection=profile_media op=UPDATE expected=2 actual=0/,
+  );
+});
+
+test('空集合只执行 COUNT，跳过 QUERY 和 mutation', async () => {
+  const fixture = databaseExecutor({ route_previews: [], profiles: [], profile_media: [] });
+  const adapter = createCliAdapter({ envId: ENV_ID, execute: fixture.execute });
+  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
+  await adapter.mutate(prepare.slice(3, 6));
+  assert.deepEqual(
+    fixture.invocations.map(({ TableName, CommandType }) => [TableName, CommandType]),
     [
-      ['profile_media', 'DELETE'],
-      ['profile_media_imports', 'DELETE'],
+      ['route_previews', 'COMMAND'],
+      ['profiles', 'COMMAND'],
+      ['profile_media', 'COMMAND'],
     ],
   );
-  assert.deepEqual(JSON.parse(finalize[0].Command).deletes[0].q.status.$in, [
-    'deleted',
-    'delete_failed_terminal',
-  ]);
-  assert.deepEqual(JSON.parse(finalize[1].Command).deletes[0].q.status.$in, [
-    'deleted',
-    'completed',
-    'invalid',
-    'aborted',
-    'delete_failed_terminal',
-  ]);
 });
 
-test('CLI adapter 将 mutation 拆为逐命令的单元素 MgoCommands 调用', async () => {
-  const invocations = [];
-  const adapter = createCliAdapter({
-    envId: ENV_ID,
-    execute(_file, args) {
-      const index = args.indexOf('--command');
-      const commands = JSON.parse(args[index + 1]);
-      invocations.push(commands);
-      return JSON.stringify({ results: [] });
-    },
+test('DELETE 逐文档使用 q:{_id},limit:1，回读确认后重复执行幂等', async () => {
+  const fixture = databaseExecutor({
+    route_previews: Array.from({ length: 3 }, (_, index) => ({ _id: `route-${index}` })),
   });
-  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
-  const updates = prepare.filter(({ CommandType }) => CommandType === 'UPDATE');
-  await adapter.mutate(updates);
-  assert.deepEqual(
-    invocations.map((commands) => commands.length),
-    updates.map(() => 1),
-  );
-  assert.deepEqual(
-    invocations.map(([entry]) => entry.TableName),
-    updates.map(({ TableName }) => TableName),
-  );
-});
-
-test('逐命令执行在具体 command 失败时立即阻断，并仅输出脱敏定位信息', async () => {
-  let calls = 0;
-  const adapter = createCliAdapter({
-    envId: ENV_ID,
-    execute() {
-      calls += 1;
-      if (calls === 3) {
-        const error = new Error('process failed');
-        error.stderr =
-          'debug --command [{"secret":"do-not-print"}]\naccount=user@example.com\nError: Unknown issue';
-        throw error;
-      }
-      return JSON.stringify({ results: [] });
-    },
-  });
-  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
-  const updates = prepare.filter(({ CommandType }) => CommandType === 'UPDATE');
-  await assert.rejects(adapter.mutate(updates), (error) => {
-    assert.match(error.message, /command 3.*collection=activities op=UPDATE/);
-    assert.match(error.message, /Error: Unknown issue/);
-    assert.doesNotMatch(error.message, /do-not-print|user@example\.com/);
-    return true;
-  });
-  assert.equal(calls, 3);
-});
-
-test('DELETE 前 COUNT 失败沿用当前 command index 且不泄露 payload', async () => {
-  let calls = 0;
-  const adapter = createCliAdapter({
-    envId: ENV_ID,
-    execute(_file, args) {
-      calls += 1;
-      const index = args.indexOf('--command');
-      const [entry] = JSON.parse(args[index + 1]);
-      if (calls === 4) {
-        assert.equal(entry.CommandType, 'COMMAND');
-        const error = new Error('count failed');
-        error.stderr =
-          'debug --command [{"secret":"count-payload-must-not-print"}]\nError: Unknown issue';
-        throw error;
-      }
-      return JSON.stringify({ results: [] });
-    },
-  });
-  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
-  await assert.rejects(adapter.mutate(prepare), (error) => {
-    assert.match(error.message, /command 4.*collection=route_previews op=COMMAND/);
-    assert.match(error.message, /Error: Unknown issue/);
-    assert.doesNotMatch(error.message, /count-payload-must-not-print/);
-    return true;
-  });
-  assert.equal(calls, 4);
-});
-
-test('空 route_previews 和 profiles DELETE 不下发，后续 profile_media UPDATE 继续执行', async () => {
-  const invocations = [];
-  const adapter = createCliAdapter({
-    envId: ENV_ID,
-    execute(_file, args) {
-      const index = args.indexOf('--command');
-      const [entry] = JSON.parse(args[index + 1]);
-      invocations.push([entry.TableName, entry.CommandType]);
-      if (entry.CommandType === 'COMMAND') return JSON.stringify({ results: [{ n: 0 }] });
-      return JSON.stringify({ results: [] });
-    },
-  });
-  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
-  await adapter.mutate(prepare.slice(0, 6));
-  assert.deepEqual(invocations, [
-    ['clubs', 'UPDATE'],
-    ['club_applications', 'UPDATE'],
-    ['activities', 'UPDATE'],
-    ['route_previews', 'COMMAND'],
-    ['profiles', 'COMMAND'],
-    ['profile_media', 'UPDATE'],
-  ]);
-});
-
-test('非空 DELETE 固定 limit 1000，先 COUNT 并分批删除至零', async () => {
-  const countResults = [2001, 1001, 1, 0];
-  let deletes = 0;
-  const adapter = createCliAdapter({
-    envId: ENV_ID,
-    execute(_file, args) {
-      const index = args.indexOf('--command');
-      const [entry] = JSON.parse(args[index + 1]);
-      if (entry.CommandType === 'DELETE') {
-        deletes += 1;
-        assert.equal(JSON.parse(entry.Command).deletes[0].limit, 1000);
-        return JSON.stringify({ results: [] });
-      }
-      assert.equal(entry.CommandType, 'COMMAND');
-      return JSON.stringify({ results: [{ n: countResults.shift() }] });
-    },
-  });
+  const adapter = createCliAdapter({ envId: ENV_ID, execute: fixture.execute });
   const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
   const routeDelete = prepare.find(({ TableName }) => TableName === 'route_previews');
   await adapter.mutate([routeDelete]);
-  assert.equal(deletes, 3);
-  assert.deepEqual(countResults, []);
+  await adapter.mutate([routeDelete]);
+  assert.equal(fixture.state.route_previews.size, 0);
+  const deletions = fixture.invocations.filter(({ CommandType }) => CommandType === 'DELETE');
+  assert.equal(deletions.length, 3);
+  assert.ok(
+    deletions.every(({ Command }) => {
+      const deletion = JSON.parse(Command).deletes[0];
+      return deletion.limit === 1 && Object.keys(deletion.q).length === 1 && '_id' in deletion.q;
+    }),
+  );
 });
 
 test('storage 删除参数只能使用两个固定前缀，apply 前始终先 dry-run', () => {
