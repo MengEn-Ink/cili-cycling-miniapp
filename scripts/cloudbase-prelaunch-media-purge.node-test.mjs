@@ -692,10 +692,12 @@ test('计数使用 CloudBase COMMAND count，存在性 QUERY 固定 limit 1', as
   assert.match(source, /projection: \{ _id: 1, status: 1 \},\s*limit: 1/);
 });
 
-test('cleanup 调用只接受函数业务结果并忽略外层 CLI 成功标记', async () => {
+test('cleanup 调用传递有界小批次并只接受函数业务结果', async () => {
+  const calls = [];
   const adapter = createCliAdapter({
     envId: ENV_ID,
-    execute() {
+    execute(_file, args) {
+      calls.push(args);
       return JSON.stringify({
         ok: true,
         Response: {
@@ -705,14 +707,22 @@ test('cleanup 调用只接受函数业务结果并忽略外层 CLI 成功标记'
     },
   });
   assert.deepEqual(await adapter.invokeCleanup(), { ok: true, processed: 4, failed: 0 });
+  const paramsIndex = calls[0].indexOf('--params');
+  assert.deepEqual(JSON.parse(calls[0][paramsIndex + 1]), {
+    Type: 'Timer',
+    TriggerName: 'profile-media-cleanup-worker',
+    BatchSize: 4,
+  });
+  const cleanupSource = readFileSync('cloudfunctions/profile-media-cleanup/index.js', 'utf8');
+  assert.match(cleanupSource, /limit: event\.BatchSize/);
 });
 
-test('cleanup 轮数按清理前记录数扩展，并额外保留 24 轮无进展预算', () => {
-  assert.equal(MEDIA_CLEANUP_BATCH_SIZE, 20);
+test('cleanup 轮数按小批次和清理前记录数扩展，并额外保留 24 轮无进展预算', () => {
+  assert.equal(MEDIA_CLEANUP_BATCH_SIZE, 4);
   assert.equal(CLEANUP_STALL_ROUND_BUDGET, 24);
   assert.equal(calculateMaxCleanupRounds({ profileMedia: 0, profileMediaImports: 0 }), 24);
-  assert.equal(calculateMaxCleanupRounds({ profileMedia: 501, profileMediaImports: 0 }), 50);
-  assert.equal(calculateMaxCleanupRounds({ profileMedia: 501, profileMediaImports: 500 }), 75);
+  assert.equal(calculateMaxCleanupRounds({ profileMedia: 501, profileMediaImports: 0 }), 150);
+  assert.equal(calculateMaxCleanupRounds({ profileMedia: 501, profileMediaImports: 500 }), 275);
 });
 
 test('超过 480 条记录时仍可在按计数扩展的有界轮数内完成', async () => {
@@ -734,14 +744,14 @@ test('超过 480 条记录时仍可在按计数扩展的有界轮数内完成', 
   adapter.invokeCleanup = async () => {
     calls.push(['invokeCleanup']);
     invocation += 1;
-    return { ok: true, processed: 20, failed: 0 };
+    return { ok: true, processed: 4, failed: 0 };
   };
   adapter.terminalCounts = async () => ({
-    mediaRemaining: invocation < 26 ? 1 : 0,
+    mediaRemaining: invocation < 126 ? 1 : 0,
     importsRemaining: 0,
   });
   await purgePrelaunchMediaData(applyOptions, adapter);
-  assert.equal(invocation, 26);
+  assert.equal(invocation, 126);
 });
 
 test('media 与 import 终态回读及删除覆盖 cleanup worker 的最终状态', async () => {

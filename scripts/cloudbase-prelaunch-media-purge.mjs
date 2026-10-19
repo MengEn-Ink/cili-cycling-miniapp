@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const CLI_PACKAGE = '@cloudbase/cli@3.8.4';
-export const MEDIA_CLEANUP_BATCH_SIZE = 20;
+export const MEDIA_CLEANUP_BATCH_SIZE = 4;
 export const NOSQL_QUERY_PAGE_SIZE = 1000;
 export const CLEANUP_STALL_ROUND_BUDGET = 24;
 const CLEANUP_WAIT_MS = 30_000;
@@ -595,7 +595,11 @@ export function createCliAdapter({ envId, cwd = process.cwd(), execute = execFil
           'invoke',
           'profile-media-cleanup',
           '--params',
-          JSON.stringify({ Type: 'Timer', TriggerName: 'profile-media-cleanup-worker' }),
+          JSON.stringify({
+            Type: 'Timer',
+            TriggerName: 'profile-media-cleanup-worker',
+            BatchSize: MEDIA_CLEANUP_BATCH_SIZE,
+          }),
           '--json',
         ),
       );
