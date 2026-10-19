@@ -33,6 +33,12 @@
 
 脚本现对每条 DELETE 先按完全相同的 filter 执行 COUNT：结果为 0 时跳过该 DELETE 并继续后续命令；结果大于 0 时才按 `limit: 1000` 分批删除，每批按同一 filter 回读，直至为 0。非空 DELETE 不会被跳过；COUNT 或 DELETE 失败继续按原始 command index 准确定位，回读数量未下降则 fail closed。UPDATE 行为不变。
 
+## 第三次生产失败回溯（run 39193949428）
+
+第三次人工清理输出 `profiles=0, clubs_media=0, applications_media=0, activities_media=0, route_previews=0, profile_media=20, imports=41, storage_profiles=18, storage_canonical=5`。空 DELETE 已正确跳过，但第 6 条 `profile_media` UPDATE 失败且 stderr 为空，证明 CloudBase 对 `multi:true` 批量 UPDATE 同样不可靠。
+
+脚本现不再下发任何 `multi:true` UPDATE 或多文档 DELETE。每条原始 mutation 先用完全相同的 filter 执行 COUNT，再按 `_id` 升序、`_id > lastId` 分页一次取全 ID；取回数量必须与 COUNT 完全相等，禁止按单页上限静默截断。随后仅下发 smoke 已验证的逐文档形态：UPDATE 使用 `q:{_id}`、原 `u`、`upsert:false,multi:false`，DELETE 使用 `q:{_id},limit:1`。每个文档操作后立即按目标状态或删除结果回读；失败日志只包含原 command 序号、collection/op、文档序号、阶段和脱敏 stderr，不输出 ID、payload 或个人信息。空集合仍只 COUNT 后跳过，中断重跑会从当前状态继续。
+
 ## 破坏性操作门禁
 
 `scripts/cloudbase-prelaunch-media-purge.mjs` 默认 dry-run，只输出集合计数和两个固定存储 glob 的删除预览计数，不输出文档、openid、个人字段或密钥。`--apply` 必须同时满足：
@@ -41,7 +47,7 @@
 2. `--confirm-env-id` 与目标环境一致；
 3. `--confirmation DELETE_PRELAUNCH_MEDIA_DATA` 精确匹配。
 
-apply 前再次输出摘要。mutation 按原顺序逐条调用 NoSQL CLI；DELETE 使用 `limit: 1000` 并按同一过滤条件 COUNT 回读循环至 0。cleanup 的单轮 `processed=0` 不视为失败：脚本每 30 秒有界等待并重试，24 轮最多约 12 分钟，覆盖 30 秒存储一致性窗口及最长 5 分钟确认窗口，同时为部署与 smoke 留出工作流余量；函数报告失败或超过上限即 fail closed。摘要计数使用 NoSQL `COUNT`，存在性检查使用 `limit: 1`，不依赖超过 CloudBase 限制的大查询。存储预览和最终验证均复用与删除完全一致的两个 `storage rm <prefix/**> --dry-run` glob。
+apply 前再次输出摘要。mutation 按原顺序逐条处理：先 COUNT，再按 `_id` 稳定分页取全 ID，逐文档写入并回读；空结果不下发 mutation。cleanup 的单轮 `processed=0` 不视为失败：脚本每 30 秒有界等待并重试，24 轮最多约 12 分钟，覆盖 30 秒存储一致性窗口及最长 5 分钟确认窗口，同时为部署与 smoke 留出工作流余量；函数报告失败或超过上限即 fail closed。摘要计数使用 NoSQL `COUNT`，存在性检查使用 `limit: 1`。存储预览和最终验证均复用与删除完全一致的两个 `storage rm <prefix/**> --dry-run` glob。
 
 apply 后必须回读确认：`profiles`、`profile_media`、`profile_media_imports`、`route_previews` 均为 0，clubs / applications / activities 不再含目标媒体字段，两个存储 glob 均无文件。重复执行空库清理仍应成功。
 
@@ -59,7 +65,7 @@ apply 后必须回读确认：`profiles`、`profile_media`、`profile_media_impo
 
 ## 自动化覆盖与远端待办
 
-Node 测试覆盖 dry-run 不写、三重确认、环境不匹配、空库幂等、集合/字段/状态范围、mutation 逐命令执行与具体失败阻断、DELETE `limit: 1000` 回读循环、脱敏 stderr 定位、固定存储前缀、cleanup 等待重试、PII 严格解码、环境变量保全与 workflow 顺序/门禁，并纳入 `test:bootstrap`。
+Node 测试覆盖 dry-run 不写、三重确认、环境不匹配、空库与重复执行幂等、集合/字段/状态范围、`profile_media` 20 条及 imports 41 条逐文档更新、超过单页的 `_id` 稳定分页、逐文档 DELETE、每文档回读、第 N 文档失败脱敏定位、固定存储前缀、cleanup 等待重试、PII 严格解码、环境变量保全与 workflow 顺序/门禁，并纳入 `test:bootstrap`。
 
 合入前仍需环境管理员：
 
