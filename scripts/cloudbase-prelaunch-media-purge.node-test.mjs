@@ -289,6 +289,11 @@ test('mutation 模板限制集合和字段，且只允许逐文档 UPDATE / DELE
   assert.ok(deletes.every(({ Command }) => JSON.parse(Command).deletes[0].limit === 1));
   const activities = JSON.parse(prepare[2].Command).updates[0];
   assert.equal(Object.hasOwn(activities.u.$unset, 'route.gpx_file_id'), false);
+  const mediaUpdate = JSON.parse(prepare[5].Command).updates[0];
+  const canonicalDue = { $date: { $numberLong: '1792368000000' } };
+  assert.deepEqual(mediaUpdate.u.$set.cleanup_after, canonicalDue);
+  assert.deepEqual(mediaUpdate.u.$set.retry_at, canonicalDue);
+  assert.throws(() => createMutationCommands('invalid-date'), /不是有效日期/);
   assert.deepEqual(
     finalize.map(({ TableName }) => TableName),
     ['profile_media', 'profile_media_imports'],
