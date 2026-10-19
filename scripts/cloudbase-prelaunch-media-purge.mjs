@@ -6,10 +6,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const CLI_PACKAGE = '@cloudbase/cli@3.8.4';
-export const MEDIA_CLEANUP_BATCH_SIZE = 4;
 export const NOSQL_QUERY_PAGE_SIZE = 1000;
-export const CLEANUP_STALL_ROUND_BUDGET = 24;
-const CLEANUP_WAIT_MS = 30_000;
 export const CONFIRMATION_PHRASE = 'DELETE_PRELAUNCH_MEDIA_DATA';
 export const STORAGE_PREFIXES = Object.freeze(['profiles/**', 'profile-canonical/**']);
 
@@ -30,15 +27,6 @@ const ACTIVITY_MEDIA_FILTER = {
     { 'route.public_route_preview_id': { $exists: true } },
   ],
 };
-const MEDIA_TERMINAL_STATUSES = ['deleted', 'delete_failed_terminal'];
-const IMPORT_TERMINAL_STATUSES = [
-  'deleted',
-  'completed',
-  'invalid',
-  'aborted',
-  'delete_failed_terminal',
-];
-
 function command(table, type, value) {
   return { TableName: table, CommandType: type, Command: JSON.stringify(value) };
 }
@@ -67,20 +55,7 @@ function countCommand(collection, filter = {}) {
   return command(collection, 'COMMAND', { count: collection, query: filter });
 }
 
-export function calculateMaxCleanupRounds(summary) {
-  const records = Number(summary.profileMedia || 0) + Number(summary.profileMediaImports || 0);
-  return Math.ceil(records / MEDIA_CLEANUP_BATCH_SIZE) + CLEANUP_STALL_ROUND_BUDGET;
-}
-
-function bsonDate(value) {
-  const milliseconds = new Date(value).getTime();
-  if (!Number.isSafeInteger(milliseconds)) throw new Error('预发布媒体清理时间不是有效日期');
-  // RunCommands 使用 MongoDB canonical Extended JSON，不能传 relaxed JSON 的 ISO 字符串日期。
-  return { $date: { $numberLong: String(milliseconds) } };
-}
-
-export function createMutationCommands(expiredAt) {
-  const due = bsonDate(expiredAt);
+export function createMutationCommands() {
   return {
     prepare: [
       command('clubs', 'UPDATE', {
@@ -134,53 +109,15 @@ export function createMutationCommands(expiredAt) {
         delete: 'profiles',
         deletes: [{ q: {}, limit: 1 }],
       }),
-      command('profile_media', 'UPDATE', {
-        update: 'profile_media',
-        updates: [
-          {
-            q: {},
-            u: {
-              $set: {
-                status: 'unreferenced',
-                cleanup_after: due,
-                delete_lease_id: '',
-                delete_lease_expires_at: null,
-                retry_at: due,
-              },
-            },
-            upsert: false,
-            multi: false,
-          },
-        ],
-      }),
-      command('profile_media_imports', 'UPDATE', {
-        update: 'profile_media_imports',
-        updates: [
-          {
-            q: {},
-            u: {
-              $set: {
-                status: 'uploaded',
-                cleanup_after: due,
-                delete_lease_id: '',
-                delete_lease_expires_at: null,
-                retry_at: due,
-              },
-            },
-            upsert: false,
-            multi: false,
-          },
-        ],
-      }),
     ],
     finalize: [
       command('profile_media', 'DELETE', {
         delete: 'profile_media',
-        deletes: [{ q: { status: { $in: MEDIA_TERMINAL_STATUSES } }, limit: 1 }],
+        deletes: [{ q: {}, limit: 1 }],
       }),
       command('profile_media_imports', 'DELETE', {
         delete: 'profile_media_imports',
-        deletes: [{ q: { status: { $in: IMPORT_TERMINAL_STATUSES } }, limit: 1 }],
+        deletes: [{ q: {}, limit: 1 }],
       }),
     ],
   };
@@ -381,56 +318,6 @@ function updateVerificationFilter(id, update) {
   return clauses.length === 1 ? clauses[0] : { $and: clauses };
 }
 
-const CLEANUP_PROGRESS_STATUSES = Object.freeze({
-  profile_media: new Set(['deleting', 'deleted', 'delete_failed', 'delete_failed_terminal']),
-  profile_media_imports: new Set([
-    'recovering',
-    'deleting',
-    'delete_confirming',
-    'deleted',
-    'completed',
-    'invalid',
-    'aborted',
-    'delete_failed',
-    'delete_failed_terminal',
-  ]),
-});
-
-function cleanupProgressed(collection, documents) {
-  const statuses = CLEANUP_PROGRESS_STATUSES[collection];
-  if (!statuses) return false;
-  return documents.length === 0 || (documents.length === 1 && statuses.has(documents[0].status));
-}
-
-function findCleanupResult(value, seen = new Set()) {
-  if (typeof value === 'string') {
-    try {
-      return findCleanupResult(JSON.parse(value), seen);
-    } catch {
-      return null;
-    }
-  }
-  if (!value || typeof value !== 'object' || seen.has(value)) return null;
-  seen.add(value);
-  if (
-    typeof value.ok === 'boolean' &&
-    ((value.data && typeof value.data === 'object' && Object.hasOwn(value.data, 'processed')) ||
-      (value.error && typeof value.error === 'object'))
-  ) {
-    const data = value.data && typeof value.data === 'object' ? value.data : {};
-    return {
-      ok: value.ok,
-      processed: Number(data.processed || 0),
-      failed: Number(data.failed || 0),
-    };
-  }
-  for (const nested of Object.values(value)) {
-    const found = findCleanupResult(nested, seen);
-    if (found) return found;
-  }
-  return null;
-}
-
 function collectStoragePaths(value, results = [], seen = new Set()) {
   if (typeof value === 'string') {
     results.push(value);
@@ -470,8 +357,6 @@ export function createCliAdapter({ envId, cwd = process.cwd(), execute = execFil
       );
     }
   };
-  const query = (collection, filter = {}) =>
-    parseNosqlDocuments(invokeNosql(queryCommand(collection, filter)));
   const count = (collection, filter = {}, index = 1, operation) =>
     parseNosqlCount(
       invokeNosql(countCommand(collection, filter), index, {
@@ -511,7 +396,9 @@ export function createCliAdapter({ envId, cwd = process.cwd(), execute = execFil
         );
       lastId = nextLastId;
     }
-    if (ids.length !== expected)
+    const countMismatch =
+      ids.length > expected || (entry.CommandType === 'UPDATE' && ids.length !== expected);
+    if (countMismatch)
       throw new Error(
         `CloudBase NoSQL ID 数量校验失败：command ${index} collection=${entry.TableName} op=${entry.CommandType} expected=${expected} actual=${ids.length}`,
       );
@@ -543,20 +430,7 @@ export function createCliAdapter({ envId, cwd = process.cwd(), execute = execFil
             stage: 'verify',
           }),
         );
-        let verified = entry.CommandType === 'UPDATE' ? found.length === 1 : found.length === 0;
-        if (
-          !verified &&
-          entry.CommandType === 'UPDATE' &&
-          CLEANUP_PROGRESS_STATUSES[entry.TableName]
-        ) {
-          const current = parseNosqlDocuments(
-            invokeNosql(queryCommand(entry.TableName, { _id: id }), commandIndex, {
-              ...context,
-              stage: 'verify_progress',
-            }),
-          );
-          verified = cleanupProgressed(entry.TableName, current);
-        }
+        const verified = entry.CommandType === 'UPDATE' ? found.length === 1 : found.length === 0;
         if (!verified)
           throw new Error(
             `CloudBase NoSQL 文档回读失败：command ${commandIndex} collection=${entry.TableName} op=${entry.CommandType} document=${documentIndex + 1}`,
@@ -587,43 +461,10 @@ export function createCliAdapter({ envId, cwd = process.cwd(), execute = execFil
     async mutate(commands) {
       await runMutationCommands(commands);
     },
-    async invokeCleanup() {
-      const output = invoke(
-        cliArgs(
-          envId,
-          'fn',
-          'invoke',
-          'profile-media-cleanup',
-          '--params',
-          JSON.stringify({
-            Type: 'Timer',
-            TriggerName: 'profile-media-cleanup-worker',
-            BatchSize: MEDIA_CLEANUP_BATCH_SIZE,
-          }),
-          '--json',
-        ),
-      );
-      const result = findCleanupResult(parseJson(output, 'profile-media-cleanup 调用'));
-      if (!result) throw new Error('profile-media-cleanup 未返回可识别结果');
-      return result;
-    },
-    async terminalCounts() {
-      return {
-        mediaRemaining: query('profile_media', {
-          status: { $nin: MEDIA_TERMINAL_STATUSES },
-        }).length,
-        importsRemaining: query('profile_media_imports', {
-          status: { $nin: IMPORT_TERMINAL_STATUSES },
-        }).length,
-      };
-    },
-    async waitForCleanupWindow() {
-      await new Promise((resolveWait) => setTimeout(resolveWait, CLEANUP_WAIT_MS));
-    },
     async removeStorage(prefix) {
       invoke(storageRemoveArgs(envId, prefix, true));
     },
-    async removeTerminalRecords(commands) {
+    async removeRegistryRecords(commands) {
       await runMutationCommands(commands);
     },
     async assertions() {
@@ -662,28 +503,10 @@ export async function purgePrelaunchMediaData(options, adapter) {
   );
   if (!options.apply) return { applied: false, summary, storage };
 
-  const expiredAt = new Date(Date.now() - 60_000).toISOString();
-  const mutations = createMutationCommands(expiredAt);
-  const maxCleanupRounds = calculateMaxCleanupRounds(summary);
+  const mutations = createMutationCommands();
   await adapter.mutate(mutations.prepare);
-  let drained = false;
-  for (let round = 1; round <= maxCleanupRounds; round += 1) {
-    const result = await adapter.invokeCleanup();
-    if (!result.ok || result.failed > 0) throw new Error('profile-media-cleanup 清理函数报告失败');
-    const remaining = await adapter.terminalCounts();
-    if (remaining.mediaRemaining === 0 && remaining.importsRemaining === 0) {
-      drained = true;
-      break;
-    }
-    if (result.processed === 0) {
-      console.log(`清理暂未推进，等待存储一致性窗口后重试（第 ${round} 轮）`);
-      await adapter.waitForCleanupWindow();
-    }
-  }
-  if (!drained) throw new Error('profile-media-cleanup 超过最大轮数，拒绝继续');
-
   for (const prefix of STORAGE_PREFIXES) await adapter.removeStorage(prefix);
-  await adapter.removeTerminalRecords(mutations.finalize);
+  await adapter.removeRegistryRecords(mutations.finalize);
   const assertions = await adapter.assertions();
   assertCompleted(assertions);
   console.log('预发布媒体数据清理完成，数据库与两个存储前缀回读断言通过');

@@ -5,12 +5,9 @@ import { isDeepStrictEqual } from 'node:util';
 
 import {
   CONFIRMATION_PHRASE,
-  CLEANUP_STALL_ROUND_BUDGET,
-  MEDIA_CLEANUP_BATCH_SIZE,
   NOSQL_QUERY_PAGE_SIZE,
   STORAGE_PREFIXES,
   assertApplyGate,
-  calculateMaxCleanupRounds,
   createCliAdapter,
   createMutationCommands,
   parseNosqlDocuments,
@@ -42,22 +39,11 @@ function adapterFixture(overrides = {}) {
     async mutate(commands) {
       calls.push(['mutate', commands]);
     },
-    async invokeCleanup() {
-      calls.push(['invokeCleanup']);
-      return { ok: true, processed: 3, failed: 0 };
-    },
-    async terminalCounts() {
-      calls.push(['terminalCounts']);
-      return { mediaRemaining: 0, importsRemaining: 0 };
-    },
-    async waitForCleanupWindow() {
-      calls.push(['waitForCleanupWindow']);
-    },
     async removeStorage(prefix) {
       calls.push(['removeStorage', prefix]);
     },
-    async removeTerminalRecords(commands) {
-      calls.push(['removeTerminalRecords', commands]);
+    async removeRegistryRecords(commands) {
+      calls.push(['removeRegistryRecords', commands]);
     },
     async assertions() {
       calls.push(['assertions']);
@@ -141,10 +127,7 @@ function legacyCloudbaseQueryOutput(documents, { outerArray = false, resultKey =
   return JSON.stringify(outerArray ? [response] : response);
 }
 
-function databaseExecutor(
-  seed,
-  { failMutation, maxQueryBatch = Infinity, queryOutput, afterMutation } = {},
-) {
+function databaseExecutor(seed, { failMutation, maxQueryBatch = Infinity, queryOutput } = {}) {
   const state = Object.fromEntries(
     Object.entries(seed).map(([collection, documents]) => [
       collection,
@@ -193,7 +176,6 @@ function databaseExecutor(
       const document = state[entry.TableName].get(update.q._id);
       for (const [path, value] of Object.entries(update.u.$set || {})) setAt(document, path, value);
       for (const path of Object.keys(update.u.$unset || {})) unsetAt(document, path);
-      afterMutation?.({ entry, body, document, ordinal, state });
       return JSON.stringify({ results: [] });
     }
     const deletion = body.deletes[0];
@@ -268,8 +250,8 @@ test('空库 apply 幂等，仍验证固定存储前缀并完成回读断言', a
   );
 });
 
-test('mutation 模板限制集合和字段，且只允许逐文档 UPDATE / DELETE 形态', () => {
-  const { prepare, finalize } = createMutationCommands('2026-10-19T00:00:00.000Z');
+test('mutation 模板限制集合和字段，登记表只允许逐文档直接删除', () => {
+  const { prepare, finalize } = createMutationCommands();
   assert.deepEqual(
     prepare.map(({ TableName, CommandType }) => [TableName, CommandType]),
     [
@@ -278,11 +260,9 @@ test('mutation 模板限制集合和字段，且只允许逐文档 UPDATE / DELE
       ['activities', 'UPDATE'],
       ['route_previews', 'DELETE'],
       ['profiles', 'DELETE'],
-      ['profile_media', 'UPDATE'],
-      ['profile_media_imports', 'UPDATE'],
     ],
   );
-  const updates = [...prepare, ...finalize].filter(({ CommandType }) => CommandType === 'UPDATE');
+  const updates = prepare.filter(({ CommandType }) => CommandType === 'UPDATE');
   assert.ok(
     updates.every(({ Command }) => {
       const update = JSON.parse(Command).updates[0];
@@ -293,14 +273,12 @@ test('mutation 模板限制集合和字段，且只允许逐文档 UPDATE / DELE
   assert.ok(deletes.every(({ Command }) => JSON.parse(Command).deletes[0].limit === 1));
   const activities = JSON.parse(prepare[2].Command).updates[0];
   assert.equal(Object.hasOwn(activities.u.$unset, 'route.gpx_file_id'), false);
-  const mediaUpdate = JSON.parse(prepare[5].Command).updates[0];
-  const canonicalDue = { $date: { $numberLong: '1792368000000' } };
-  assert.deepEqual(mediaUpdate.u.$set.cleanup_after, canonicalDue);
-  assert.deepEqual(mediaUpdate.u.$set.retry_at, canonicalDue);
-  assert.throws(() => createMutationCommands('invalid-date'), /不是有效日期/);
   assert.deepEqual(
-    finalize.map(({ TableName }) => TableName),
-    ['profile_media', 'profile_media_imports'],
+    finalize.map(({ TableName, Command }) => [TableName, JSON.parse(Command).deletes[0].q]),
+    [
+      ['profile_media', {}],
+      ['profile_media_imports', {}],
+    ],
   );
 });
 
@@ -366,7 +344,7 @@ test('legacy 空 firstBatch 识别为空查询，非法或缺失 supported array
   }
 });
 
-test('profile_media 20 条与 imports 41 条逐文档更新，重复执行保持幂等', async () => {
+test('profile_media 20 条与 imports 41 条逐文档删除，重复执行保持幂等', async () => {
   const profileMedia = Array.from({ length: 20 }, (_, index) => ({
     _id: `media-${String(index).padStart(4, '0')}`,
     status: 'referenced',
@@ -390,18 +368,14 @@ test('profile_media 20 条与 imports 41 条逐文档更新，重复执行保持
     },
   );
   const adapter = createCliAdapter({ envId: ENV_ID, execute: fixture.execute });
-  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
-  await adapter.mutate(prepare.slice(5));
-  await adapter.mutate(prepare.slice(5));
-  assert.ok(
-    [...fixture.state.profile_media.values()].every(({ status }) => status === 'unreferenced'),
-  );
-  assert.ok(
-    [...fixture.state.profile_media_imports.values()].every(({ status }) => status === 'uploaded'),
-  );
-  const mutations = fixture.invocations.filter(({ CommandType }) => CommandType === 'UPDATE');
-  assert.equal(mutations.length, 122);
-  assert.ok(mutations.every(({ Command }) => JSON.parse(Command).updates[0].multi === false));
+  const { finalize } = createMutationCommands();
+  await adapter.removeRegistryRecords(finalize);
+  await adapter.removeRegistryRecords(finalize);
+  assert.equal(fixture.state.profile_media.size, 0);
+  assert.equal(fixture.state.profile_media_imports.size, 0);
+  const mutations = fixture.invocations.filter(({ CommandType }) => CommandType === 'DELETE');
+  assert.equal(mutations.length, 61);
+  assert.ok(mutations.every(({ Command }) => JSON.parse(Command).deletes[0].limit === 1));
   const idQueries = fixture.invocations.filter(
     ({ CommandType, Command }) =>
       CommandType === 'QUERY' && JSON.parse(Command).limit === NOSQL_QUERY_PAGE_SIZE,
@@ -409,52 +383,11 @@ test('profile_media 20 条与 imports 41 条逐文档更新，重复执行保持
   assert.ok(
     idQueries.every(({ Command }) => isDeepStrictEqual(JSON.parse(Command).projection, { _id: 1 })),
   );
-  assert.equal(idQueries.filter(({ TableName }) => TableName === 'profile_media').length, 6);
+  assert.equal(idQueries.filter(({ TableName }) => TableName === 'profile_media').length, 3);
   assert.equal(
     idQueries.filter(({ TableName }) => TableName === 'profile_media_imports').length,
-    12,
+    6,
   );
-});
-
-test('cleanup worker 并发推进或删除到期记录时，逐文档回读接受受控终态', async () => {
-  const fixture = databaseExecutor(
-    {
-      profile_media: Array.from({ length: 7 }, (_, index) => ({
-        _id: `media-race-${index}`,
-        status: 'referenced',
-      })),
-      profile_media_imports: [{ _id: 'import-race-0', status: 'prepared' }],
-    },
-    {
-      afterMutation({ entry, document, ordinal, state }) {
-        if (entry.TableName === 'profile_media' && ordinal === 6) document.status = 'deleting';
-        if (entry.TableName === 'profile_media' && ordinal === 7)
-          state.profile_media.delete(document._id);
-        if (entry.TableName === 'profile_media_imports') document.status = 'completed';
-      },
-    },
-  );
-  const adapter = createCliAdapter({ envId: ENV_ID, execute: fixture.execute });
-  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
-  await adapter.mutate(prepare.slice(5));
-  assert.equal(fixture.state.profile_media.get('media-race-5').status, 'deleting');
-  assert.equal(fixture.state.profile_media.has('media-race-6'), false);
-  assert.equal(fixture.state.profile_media_imports.get('import-race-0').status, 'completed');
-});
-
-test('cleanup 管理集合回读仍拒绝未进入目标态或后续状态的旧记录', async () => {
-  const fixture = databaseExecutor(
-    { profile_media: [{ _id: 'media-stale', status: 'referenced' }] },
-    {
-      afterMutation({ document }) {
-        document.status = 'referenced';
-      },
-    },
-  );
-  const adapter = createCliAdapter({ envId: ENV_ID, execute: fixture.execute });
-  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
-  const mediaUpdate = prepare.find(({ TableName }) => TableName === 'profile_media');
-  await assert.rejects(adapter.mutate([mediaUpdate]), /文档回读失败/);
 });
 
 test('第 N 文档失败准确定位原 command/collection/op 且不泄露 ID 或 payload', async () => {
@@ -473,10 +406,10 @@ test('第 N 文档失败准确定位原 command/collection/op 且不泄露 ID �
     },
   );
   const adapter = createCliAdapter({ envId: ENV_ID, execute: fixture.execute });
-  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
-  const mediaUpdate = prepare.find(({ TableName }) => TableName === 'profile_media');
-  await assert.rejects(adapter.mutate([mediaUpdate]), (error) => {
-    assert.match(error.message, /command 1.*collection=profile_media op=UPDATE document=6/);
+  const { finalize } = createMutationCommands();
+  const mediaDelete = finalize.find(({ TableName }) => TableName === 'profile_media');
+  await assert.rejects(adapter.mutate([mediaDelete]), (error) => {
+    assert.match(error.message, /command 1.*collection=profile_media op=DELETE document=6/);
     assert.match(error.message, /stderr_tail=\(present, redacted\)/);
     assert.doesNotMatch(
       error.message,
@@ -493,9 +426,9 @@ test('超过单页时按 _id 稳定分页，且 ID 总数必须匹配 COUNT', as
   }));
   const fixture = databaseExecutor({ profile_media: documents });
   const adapter = createCliAdapter({ envId: ENV_ID, execute: fixture.execute });
-  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
-  const mediaUpdate = prepare.find(({ TableName }) => TableName === 'profile_media');
-  await adapter.mutate([mediaUpdate]);
+  const { finalize } = createMutationCommands();
+  const mediaDelete = finalize.find(({ TableName }) => TableName === 'profile_media');
+  await adapter.mutate([mediaDelete]);
   const pageQueries = fixture.invocations.filter(({ CommandType, Command }) => {
     const body = JSON.parse(Command);
     return CommandType === 'QUERY' && body.limit === NOSQL_QUERY_PAGE_SIZE;
@@ -517,12 +450,12 @@ test('分页重复且 lastId 不推进时 fail closed', async () => {
       throw new Error('不应执行 mutation');
     },
   });
-  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
-  const mediaUpdate = prepare.find(({ TableName }) => TableName === 'profile_media');
-  await assert.rejects(adapter.mutate([mediaUpdate]), /ID 分页重复|ID 分页未推进/);
+  const { finalize } = createMutationCommands();
+  const mediaDelete = finalize.find(({ TableName }) => TableName === 'profile_media');
+  await assert.rejects(adapter.mutate([mediaDelete]), /ID 分页重复|ID 分页未推进/);
 });
 
-test('分页返回数量少于预清理 COUNT 时 fail closed，不静默截断', async () => {
+test('分页数量变少时 UPDATE 阻断，DELETE 允许并发删除后继续收敛', async () => {
   const adapter = createCliAdapter({
     envId: ENV_ID,
     execute(_file, args) {
@@ -532,12 +465,14 @@ test('分页返回数量少于预清理 COUNT 时 fail closed，不静默截断'
       throw new Error('不应执行 mutation');
     },
   });
-  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
-  const mediaUpdate = prepare.find(({ TableName }) => TableName === 'profile_media');
+  const { prepare, finalize } = createMutationCommands();
+  const clubUpdate = prepare.find(({ TableName }) => TableName === 'clubs');
   await assert.rejects(
-    adapter.mutate([mediaUpdate]),
-    /ID 数量校验失败.*collection=profile_media op=UPDATE expected=2 actual=0/,
+    adapter.mutate([clubUpdate]),
+    /ID 数量校验失败.*collection=clubs op=UPDATE expected=2 actual=0/,
   );
+  const mediaDelete = finalize.find(({ TableName }) => TableName === 'profile_media');
+  await assert.doesNotReject(adapter.mutate([mediaDelete]));
 });
 
 test('仅有无 _id 包装数组时 ID 查询直接 fail closed', async () => {
@@ -554,35 +489,29 @@ test('仅有无 _id 包装数组时 ID 查询直接 fail closed', async () => {
       throw new Error('不应执行 mutation');
     },
   });
-  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
-  const mediaUpdate = prepare.find(({ TableName }) => TableName === 'profile_media');
-  await assert.rejects(adapter.mutate([mediaUpdate]), /CloudBase QUERY 命令缺少有效文档结果/);
-});
-
-test('terminalCounts 遇到无 supported 文档数组的非法 QUERY 响应时阻断', async () => {
-  let queries = 0;
-  const adapter = createCliAdapter({
-    envId: ENV_ID,
-    execute() {
-      queries += 1;
-      return JSON.stringify([{ ok: true, command: 'QUERY' }]);
-    },
-  });
-  await assert.rejects(adapter.terminalCounts(), /CloudBase QUERY 命令缺少有效文档结果/);
-  assert.equal(queries, 1);
+  const { finalize } = createMutationCommands();
+  const mediaDelete = finalize.find(({ TableName }) => TableName === 'profile_media');
+  await assert.rejects(adapter.mutate([mediaDelete]), /CloudBase QUERY 命令缺少有效文档结果/);
 });
 
 test('空集合只执行 COUNT，跳过 QUERY 和 mutation', async () => {
-  const fixture = databaseExecutor({ route_previews: [], profiles: [], profile_media: [] });
+  const fixture = databaseExecutor({
+    route_previews: [],
+    profiles: [],
+    profile_media: [],
+    profile_media_imports: [],
+  });
   const adapter = createCliAdapter({ envId: ENV_ID, execute: fixture.execute });
-  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
-  await adapter.mutate(prepare.slice(3, 6));
+  const { prepare, finalize } = createMutationCommands();
+  await adapter.mutate(prepare.slice(3));
+  await adapter.removeRegistryRecords(finalize);
   assert.deepEqual(
     fixture.invocations.map(({ TableName, CommandType }) => [TableName, CommandType]),
     [
       ['route_previews', 'COMMAND'],
       ['profiles', 'COMMAND'],
       ['profile_media', 'COMMAND'],
+      ['profile_media_imports', 'COMMAND'],
     ],
   );
 });
@@ -599,7 +528,7 @@ test('DELETE 逐文档使用 q:{_id},limit:1，空 firstBatch 回读确认后重
     },
   );
   const adapter = createCliAdapter({ envId: ENV_ID, execute: fixture.execute });
-  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
+  const { prepare } = createMutationCommands();
   const routeDelete = prepare.find(({ TableName }) => TableName === 'route_previews');
   await adapter.mutate([routeDelete]);
   await adapter.mutate([routeDelete]);
@@ -623,45 +552,26 @@ test('storage 删除参数只能使用两个固定前缀，apply 前始终先 dr
   assert.throws(() => storageRemoveArgs(ENV_ID, 'clubs/**', true), /存储前缀/);
 });
 
-test('任一步骤失败立即阻断后续删除和成功断言', async () => {
+test('数据库准备失败立即阻断存储和登记删除', async () => {
   const { adapter, calls } = adapterFixture({
-    async invokeCleanup() {
-      calls.push(['invokeCleanup']);
-      return { ok: true, processed: 1, failed: 1 };
+    async mutate(commands) {
+      calls.push(['mutate', commands]);
+      throw new Error('database unavailable');
     },
   });
-  await assert.rejects(purgePrelaunchMediaData(applyOptions, adapter), /清理函数.*失败/);
+  await assert.rejects(purgePrelaunchMediaData(applyOptions, adapter), /database unavailable/);
   assert.equal(
     calls.some(([name]) => name === 'removeStorage'),
     false,
   );
   assert.equal(
-    calls.some(([name]) => name === 'removeTerminalRecords'),
+    calls.some(([name]) => name === 'removeRegistryRecords'),
     false,
   );
   assert.equal(
     calls.some(([name]) => name === 'assertions'),
     false,
   );
-});
-
-test('cleanup processed=0 时等待一致性窗口并有界重试，而不是立即误判停滞', async () => {
-  const { adapter, calls } = adapterFixture();
-  let invocation = 0;
-  adapter.invokeCleanup = async () => {
-    calls.push(['invokeCleanup']);
-    invocation += 1;
-    return { ok: true, processed: invocation === 1 ? 0 : 1, failed: 0 };
-  };
-  adapter.terminalCounts = async () => {
-    calls.push(['terminalCounts']);
-    return invocation === 1
-      ? { mediaRemaining: 1, importsRemaining: 0 }
-      : { mediaRemaining: 0, importsRemaining: 0 };
-  };
-  await purgePrelaunchMediaData(applyOptions, adapter);
-  assert.equal(calls.filter(([name]) => name === 'waitForCleanupWindow').length, 1);
-  assert.equal(calls.filter(([name]) => name === 'invokeCleanup').length, 2);
 });
 
 test('计数使用 CloudBase COMMAND count，存在性 QUERY 固定 limit 1', async () => {
@@ -692,93 +602,51 @@ test('计数使用 CloudBase COMMAND count，存在性 QUERY 固定 limit 1', as
   assert.match(source, /projection: \{ _id: 1, status: 1 \},\s*limit: 1/);
 });
 
-test('cleanup 调用传递有界小批次并只接受函数业务结果', async () => {
-  const calls = [];
-  const adapter = createCliAdapter({
-    envId: ENV_ID,
-    execute(_file, args) {
-      calls.push(args);
-      return JSON.stringify({
-        ok: true,
-        Response: {
-          Result: JSON.stringify({ ok: true, data: { processed: 4, failed: 0 } }),
-        },
-      });
-    },
-  });
-  assert.deepEqual(await adapter.invokeCleanup(), { ok: true, processed: 4, failed: 0 });
-  const paramsIndex = calls[0].indexOf('--params');
-  assert.deepEqual(JSON.parse(calls[0][paramsIndex + 1]), {
-    Type: 'Timer',
-    TriggerName: 'profile-media-cleanup-worker',
-    BatchSize: 4,
-  });
-  const cleanupSource = readFileSync('cloudfunctions/profile-media-cleanup/index.js', 'utf8');
-  assert.match(cleanupSource, /limit: event\.BatchSize/);
-});
-
-test('cleanup 轮数按小批次和清理前记录数扩展，并额外保留 24 轮无进展预算', () => {
-  assert.equal(MEDIA_CLEANUP_BATCH_SIZE, 4);
-  assert.equal(CLEANUP_STALL_ROUND_BUDGET, 24);
-  assert.equal(calculateMaxCleanupRounds({ profileMedia: 0, profileMediaImports: 0 }), 24);
-  assert.equal(calculateMaxCleanupRounds({ profileMedia: 501, profileMediaImports: 0 }), 150);
-  assert.equal(calculateMaxCleanupRounds({ profileMedia: 501, profileMediaImports: 500 }), 275);
-});
-
-test('超过 480 条记录时仍可在按计数扩展的有界轮数内完成', async () => {
-  const { adapter, calls } = adapterFixture({
-    async summary() {
-      calls.push(['summary']);
-      return {
-        profiles: 0,
-        clubsWithMedia: 0,
-        applicationsWithMedia: 0,
-        activitiesWithMedia: 0,
-        routePreviews: 0,
-        profileMedia: 501,
-        profileMediaImports: 0,
-      };
-    },
-  });
-  let invocation = 0;
-  adapter.invokeCleanup = async () => {
-    calls.push(['invokeCleanup']);
-    invocation += 1;
-    return { ok: true, processed: 4, failed: 0 };
-  };
-  adapter.terminalCounts = async () => ({
-    mediaRemaining: invocation < 126 ? 1 : 0,
-    importsRemaining: 0,
-  });
+test('预发布清理不调用 cleanup worker，存储成功后才删除全部登记', async () => {
+  const { adapter, calls } = adapterFixture();
   await purgePrelaunchMediaData(applyOptions, adapter);
-  assert.equal(invocation, 126);
+  assert.deepEqual(
+    calls
+      .filter(([name]) =>
+        ['mutate', 'removeStorage', 'removeRegistryRecords', 'assertions'].includes(name),
+      )
+      .map(([name, value]) => [name, typeof value === 'string' ? value : undefined]),
+    [
+      ['mutate', undefined],
+      ['removeStorage', 'profiles/**'],
+      ['removeStorage', 'profile-canonical/**'],
+      ['removeRegistryRecords', undefined],
+      ['assertions', undefined],
+    ],
+  );
+  const source = readFileSync('scripts/cloudbase-prelaunch-media-purge.mjs', 'utf8');
+  assert.doesNotMatch(source, /fn[',\s]+invoke[',\s]+profile-media-cleanup/);
+  const { finalize } = createMutationCommands();
+  assert.deepEqual(
+    finalize.map(({ TableName, Command }) => [TableName, JSON.parse(Command).deletes[0].q]),
+    [
+      ['profile_media', {}],
+      ['profile_media_imports', {}],
+    ],
+  );
 });
 
-test('media 与 import 终态回读及删除覆盖 cleanup worker 的最终状态', async () => {
-  const commands = [];
-  const adapter = createCliAdapter({
-    envId: ENV_ID,
-    execute(_file, args) {
-      const index = args.indexOf('--command');
-      const [entry] = JSON.parse(args[index + 1]);
-      commands.push(entry);
-      return cloudbaseQueryOutput([]);
+test('存储删除失败时保留登记记录以便安全重试', async () => {
+  const { adapter, calls } = adapterFixture({
+    async removeStorage(prefix) {
+      calls.push(['removeStorage', prefix]);
+      throw new Error('storage unavailable');
     },
   });
-  assert.deepEqual(await adapter.terminalCounts(), { mediaRemaining: 0, importsRemaining: 0 });
-  const mediaQuery = commands.find(({ TableName }) => TableName === 'profile_media');
-  const importsQuery = commands.find(({ TableName }) => TableName === 'profile_media_imports');
-  assert.deepEqual(JSON.parse(mediaQuery.Command).filter.status.$nin, [
-    'deleted',
-    'delete_failed_terminal',
-  ]);
-  assert.ok(JSON.parse(importsQuery.Command).filter.status.$nin.includes('deleted'));
-  const { finalize } = createMutationCommands('2026-10-19T00:00:00.000Z');
-  assert.deepEqual(JSON.parse(finalize[0].Command).deletes[0].q.status.$in, [
-    'deleted',
-    'delete_failed_terminal',
-  ]);
-  assert.ok(JSON.parse(finalize[1].Command).deletes[0].q.status.$in.includes('deleted'));
+  await assert.rejects(purgePrelaunchMediaData(applyOptions, adapter), /storage unavailable/);
+  assert.equal(
+    calls.some(([name]) => name === 'removeRegistryRecords'),
+    false,
+  );
+  assert.equal(
+    calls.some(([name]) => name === 'assertions'),
+    false,
+  );
 });
 
 test('workflow 在 purge 后运行 smoke，smoke 可重建 profile_media 与 club 数据并 finally 清理', () => {
