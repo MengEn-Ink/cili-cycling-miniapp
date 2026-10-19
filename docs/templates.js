@@ -1,6 +1,7 @@
 (() => {
   const {
     activities,
+    activityCarouselExtras,
     rider,
     driver,
     attendees,
@@ -10,8 +11,13 @@
     clubMembership,
     tripClubSnapshots,
     clubCenterPrototype,
+    clubManagementPrototype,
   } = window.prototypeData;
   const primary = activities[0];
+  const activityCarouselItems = [
+    ...activities.slice(0, 2),
+    ...(Array.isArray(activityCarouselExtras) ? activityCarouselExtras : []),
+  ];
   const identityData = clubIdentity || {};
   const membershipData = clubMembership || {};
   const snapshotData = tripClubSnapshots || {};
@@ -256,41 +262,6 @@
         <div class="club-center-capacity-cell is-end"><span class="club-center-capacity-text"><small>容量上限</small><b><em>${viewer.capacity ?? 0}</em>人</b></span></div>
       </div>`;
 
-      if (mode === 'application-edit') {
-        return `<div class="pg club-center-page club-application-edit" data-club-center data-mode="application-edit">
-          <p class="prototype-mock-badge">创建申请 · 草稿编辑</p>
-          <h2 class="page-title">继续编辑创建申请</h2>
-          <section class="card">
-            ${cardHead('01', '申请基本资料', tag('neutral', '草稿'))}
-            ${field('俱乐部名称', input('山海骑行会'))}
-            ${field('所在城市', input('深圳'))}
-            ${field('俱乐部简介', input('每周组织安全友好的公路骑行训练活动。', { cls: 'textarea' }))}
-          </section>
-          <div class="btn-row">${btn('保存草稿', toast('草稿已保存'), 'btn-secondary')}${modeLink('重新提交审核', 'pending-review', 'btn')}</div>
-        </div>`;
-      }
-
-      if (
-        ['pending-review', 'withdraw-confirm', 'withdrawing', 'withdraw-error', 'draft'].includes(mode)
-      ) {
-        const isDraft = mode === 'draft';
-        const isConfirm = mode === 'withdraw-confirm';
-        const isWithdrawing = mode === 'withdrawing';
-        const hasError = mode === 'withdraw-error';
-        return `<div class="pg club-center-page" data-club-center data-mode="${mode}">
-          <p class="prototype-mock-badge">创建申请 · ${isDraft ? '草稿编辑' : '平台审批中'}</p>
-          <h2 class="page-title">${isDraft ? '继续编辑创建申请' : '俱乐部创建申请'}</h2>
-          <section class="card">
-            ${cardHead('申请进度', isDraft ? '已回到草稿' : '平台审批中', tag(isDraft ? 'neutral' : 'warning', isDraft ? '可编辑' : '第 2 版'))}
-            <p>${isDraft ? '资料已完整保留，可修改后沿用原提交入口重新提交。' : '管理员处理后会同步结果；如需修改，可撤回到草稿。'}</p>
-            ${isConfirm ? '<p class="neutral-note">确认撤回？撤回后申请会回到草稿，你可以继续修改并重新提交。</p>' : ''}
-            ${hasError ? '<p class="field-msg is-error" role="alert">撤回失败，申请仍在审核中；请重试。</p>' : ''}
-            ${isDraft ? modeLink('进入草稿继续编辑', 'application-edit', 'btn') : isConfirm ? `<div class="btn-row">${modeLink('取消', 'pending-review', 'btn-secondary')}${modeLink('确认撤回', 'withdrawing', 'btn')}</div>` : btn(isWithdrawing ? '正在撤回' : '撤回申请', isWithdrawing ? 'disabled aria-disabled="true"' : `data-action="route" data-route="${route}" data-state="withdraw-confirm"`, 'btn-secondary')}
-          </section>
-          ${!isDraft && !isWithdrawing && !isConfirm ? '<p class="neutral-note">点击撤回后先二次确认；处理中禁用按钮，失败保留审核中状态并允许重试。</p>' : ''}
-        </div>`;
-      }
-
       if (mode === 'detail') {
         return `<div class="pg club-center-page" data-club-center data-mode="detail">
           <p class="prototype-mock-badge">本人 / 已加入俱乐部详情</p>
@@ -349,8 +320,109 @@
         <p class="neutral-note">边界：推荐列表与申请加入入口已实现；本页申请动作只演示流程入口，不代表已经提交或完成服务端写入。非本人 / 未加入俱乐部的详情按钮在生产仍为 disabled。</p>
       </div>`;
     },
-    'admin-club-applications': () => templates['admin-approval-inbox'](),
-    'admin-club-application-detail': () => templates['approval-detail'](),
+    'admin-club-applications': () => {
+      const management = clubManagementPrototype || {};
+      const clubs = Array.isArray(management.clubs) ? management.clubs : [];
+      const route = 'admin-club-applications';
+      if (is('loading')) {
+        return `<div class="pg club-admin-list" data-club-admin-list data-mode="loading">
+          <h2 class="page-title">俱乐部管理</h2>
+          <p class="page-sub" aria-live="polite">正在加载正式俱乐部</p>
+          ${skeletons(3, true)}
+        </div>`;
+      }
+      if (is('error')) {
+        return `<div class="pg club-admin-list" data-club-admin-list data-mode="error">
+          <h2 class="page-title">俱乐部管理</h2>
+          ${stateView('!', '俱乐部列表加载失败', '网络不稳定，请稍后重试。', btn('重新加载', `data-action="route" data-route="${route}" data-state="default"`), true)}
+        </div>`;
+      }
+      const createButton = `<button class="club-admin-create-button" data-action="route" data-route="admin-club-application-detail" data-state="create" aria-label="创建俱乐部" title="创建俱乐部"><span aria-hidden="true">＋</span></button>`;
+      const heading = `<div class="club-admin-heading"><div><p class="prototype-mock-badge">平台管理员</p><h2 class="page-title">俱乐部管理</h2><p class="page-sub">查看全部正式俱乐部；只有平台管理员可以创建。</p></div>${createButton}</div>`;
+      if (is('empty')) {
+        return `<div class="pg club-admin-list" data-club-admin-list data-mode="empty">
+          ${heading}
+          ${stateView('0', '还没有俱乐部', '创建后将直接成为正式俱乐部，不经过申请审批。', btn('创建俱乐部', 'data-action="route" data-route="admin-club-application-detail" data-state="create"'))}
+        </div>`;
+      }
+      return `<div class="pg club-admin-list" data-club-admin-list data-mode="default">
+        ${heading}
+        <div class="list-count"><span>正式俱乐部</span><b>共 ${clubs.length} 个俱乐部</b></div>
+        <div class="club-admin-cards">${clubs
+          .map(
+            (club) => `<button class="club-admin-card" data-action="route" data-route="club/center" data-state="detail" aria-label="查看 ${club.name}">
+              <span class="club-admin-card-avatar"><img src="${club.avatarImage}" alt="${club.name}头像" /></span>
+              <span class="club-admin-card-copy"><b>${club.name}</b><small>${club.city} · ${club.memberCount}/${club.capacity} 人</small></span>
+              <span class="club-admin-card-status">ACTIVE</span><span class="club-admin-card-arrow" aria-hidden="true">›</span>
+            </button>`,
+          )
+          .join('')}</div>
+        <p class="neutral-note">已有俱乐部由 OWNER / CLUB_ADMIN 在俱乐部中心维护；平台管理员本页不提供跨俱乐部编辑。</p>
+      </div>`;
+    },
+    'admin-club-application-detail': () => {
+      const management = clubManagementPrototype || {};
+      const draft = management.createDraft || {};
+      const state = st() || 'create';
+      const submitting = state === 'submitting';
+      const validationError = state === 'validation-error';
+      const submitError = state === 'submit-error';
+      const avatarUploading = state === 'avatar-uploading';
+      const coverUploading = state === 'cover-uploading';
+      const mediaState = window.prototypeClubCreateMedia || {
+        avatarReady: true,
+        coverReady: true,
+      };
+      if (state === 'success') {
+        return `<div class="pg club-create-page" data-club-create data-mode="success">
+          <p class="prototype-mock-badge">平台管理员 · 本地原型演示</p>
+          ${stateView('✓', '俱乐部创建成功', '城市周末骑行会已成为正式俱乐部，当前状态 active。', btn('进入俱乐部详情', 'data-action="route" data-route="club/center" data-state="detail"'))}
+          <p class="neutral-note">本页面只演示交互状态，没有写入数据库。</p>
+        </div>`;
+      }
+      const avatarContent = avatarUploading
+        ? `<span class="avatar profile-avatar-preview club-create-avatar-preview is-uploading"><img src="${draft.avatarImage || IMG.avatar}" alt="俱乐部头像上传中" /><span>62%</span></span>`
+        : mediaState.avatarReady
+          ? `<span class="avatar profile-avatar-preview club-create-avatar-preview"><img src="${draft.avatarImage || IMG.avatar}" alt="当前俱乐部头像" /></span>`
+          : '<span class="avatar profile-avatar-preview club-create-avatar-preview is-empty" aria-label="尚未设置俱乐部头像">＋</span>';
+      const coverContent = coverUploading
+        ? `<div class="club-background-preview is-uploading"><img src="${draft.coverImage || IMG.rider}" alt="俱乐部背景图上传中" /><div class="thumb-state is-uploading">正在上传 62%<span class="progress"><i style="width:62%"></i></span></div></div>`
+        : mediaState.coverReady
+          ? `<div class="club-background-preview"><img src="${draft.coverImage || IMG.rider}" alt="当前俱乐部背景图" /><span class="thumb-badge">${tag('neutral', '背景')}</span></div>`
+          : '<div class="club-background-preview is-empty"><b>尚未设置背景图</b><small>选择后按 16:9 移动和缩放画面</small></div>';
+      return `<div class="pg club-create-page" data-club-create data-mode="${state}">
+        <p class="prototype-mock-badge">平台管理员 · 本地原型演示</p>
+        <h2 class="page-title">创建俱乐部</h2>
+        <p class="page-sub">设置完成后直接创建正式俱乐部，不经过申请审批。</p>
+        <section class="card club-create-avatar-card">
+          ${cardHead('01', '俱乐部头像', tag('neutral', '1:1'), '用于俱乐部列表、活动归属与详情页标识')}
+          <div class="profile-avatar-editor">${avatarContent}<div class="profile-avatar-panel"><p>选择后按正方形裁剪；头像与背景图分别处理。</p>${btn(mediaState.avatarReady ? '更换俱乐部头像' : '选择俱乐部头像', 'data-action="club-create-avatar"', 'btn-secondary')}</div></div>
+          <p class="club-create-media-status" role="status">${avatarUploading ? '正在更新俱乐部头像…' : mediaState.avatarReady ? '头像已就绪' : '尚未设置头像'}</p>
+        </section>
+        <section class="card club-create-cover-card">
+          ${cardHead('02', '俱乐部背景图', tag('neutral', mediaState.coverReady ? '1/1' : '0/1'), '最多 1 张；选择后可按 16:9 移动和缩放画面，建议使用横向骑行照片')}
+          <div class="club-background-editor" data-aspect-ratio="16:9">
+            <div class="club-background-actions">${btn(mediaState.coverReady ? '更换背景图' : '添加背景图', 'data-action="club-create-cover"', 'btn-secondary')}${mediaState.coverReady ? btn('删除背景图', 'data-action="club-create-remove-cover"', 'btn-secondary club-background-remove') : ''}</div>
+            ${coverContent}
+            <p class="club-background-count">${mediaState.coverReady ? '已设置 1 张背景图' : '尚未设置背景图'}</p>
+          </div>
+        </section>
+        <section class="card club-create-basics-card">
+          ${cardHead('03', '基本资料')}
+          ${field('俱乐部名称', input(validationError ? '' : draft.name, { ph: '例如：城市周末骑行会', cls: validationError ? 'is-error' : '', error: validationError ? '请填写俱乐部名称' : '' }), tag('pending', '必填'))}
+          ${field('所在城市', input(validationError ? '' : draft.city, { ph: '请输入所在城市', cls: validationError ? 'is-error' : '', error: validationError ? '请填写所在城市' : '' }), tag('pending', '必填'))}
+          ${field('俱乐部简介', input(draft.intro, { cls: 'textarea', ph: '介绍骑行节奏、安全约定与活动范围', count: `${(draft.intro || '').length}/200` }))}
+        </section>
+        <section class="card club-create-settings-card">
+          ${cardHead('04', '加入设置')}
+          ${field('加入方式', choices(['申请加入', '仅邀请'], draft.joinMode))}
+          ${field('人数上限', input(String(draft.capacity || 50), { unit: '人' }))}
+        </section>
+        ${submitError ? '<p class="field-msg is-error club-create-submit-error" role="alert">创建失败，已保留全部内容；请重试。</p>' : ''}
+        ${btn(submitting ? '正在创建' : submitError ? '重试创建' : '创建并立即生效', submitting ? 'disabled aria-disabled="true"' : 'data-action="club-create-submit"', `btn club-create-submit${submitting ? ' is-disabled is-loading' : ''}`)}
+        <p class="neutral-note">这是 Pages 交互原型，不执行真实数据库写入。</p>
+      </div>`;
+    },
     activities: () => {
       if (is('loading')) return `<div class="pg">${brandLogo('此里骑行活动')}<h2 class="page-title">选一场骑行，一起出发</h2>${skeletons(2, true)}</div>`;
       const head = `${brandLogo('此里骑行活动')}<h2 class="page-title">选一场骑行，一起出发</h2><p class="page-sub long-copy">路线、时间、集合点，一眼看清；先看状态与路线强度，再决定是否出发</p>
@@ -366,54 +438,89 @@
         ['10.24', '周六'],
         ['10.25', '周日'],
       ];
-      // v2：86% 主卡 + peek 露出 + 单 CTA；主 CTA 整卡点击进入活动详情，
-      // 已报名态把 CTA 换成"查看我的行程"；移除独立"查看详情"按钮。
-      return `<div class="pg activities-v2">${head}
+      const historyMode = is('history');
+      const carouselItems = historyMode
+        ? [activityCarouselItems[1]]
+        : activityCarouselItems.slice(0, 3);
+      const activityPresentation = (activity, index) => {
+        if (historyMode) {
+          return {
+            state: 'history',
+            label: '已结束',
+            cta: '查看活动回顾',
+            attrs: 'data-route="activity-detail"',
+          };
+        }
+        if (activity.carouselState === 'closing') {
+          return {
+            state: 'closing',
+            label: '即将满员',
+            cta: '立即报名',
+            attrs: 'data-route="registration-form"',
+          };
+        }
+        if (index === 1) {
+          return {
+            state: 'joined',
+            label: '我已报名',
+            cta: '查看我的行程',
+            attrs: 'data-route="registrations"',
+          };
+        }
+        return {
+          state: 'open',
+          label: '报名中',
+          cta: '查看并报名',
+          attrs: 'data-route="activity-detail"',
+        };
+      };
+      return `<div class="pg activities-v3">${head}
         <div class="chips">${chips.map(([a, b], i) => `<button class="chip ${i ? '' : 'is-active'}" data-action="choice">${a}<small>${b}</small></button>`).join('')}</div>
-        <div class="list-count"><span>近期活动 <em>当前第 1 场</em></span><b>共 2 场</b></div>
-        <div class="activity-carousel" role="list">
-        ${activities
-          .map((a, i) => {
-            const host = activityHost(a);
-            const hostLine =
-              host.kind === 'club'
-                ? clubBadgeLine(
-                    host.club,
-                    host.historical ? '发布时快照' : '俱乐部活动',
-                    host.historical,
-                  )
-                : publicActivityLine(host.label, '平台公开');
-            const joined = i !== 0; // 示意：第二张是已报名态
-            const cover = i === 0
-              ? `<img src="${IMG.cover}" alt="${a.title}" />`
-              : emptyMedia().replace('rider-card-media is-empty', 'cover-empty');
-            const stateTag = joined
-              ? tag('pending', '我已报名 · 待审核')
-              : tag('solid', '报名中');
-            const alert = !joined
-              ? `<p class="alert-line">${tag('warning', '⚠ 名额紧张')}</p>`
-              : '';
-            const cta = joined
-              ? btn('查看我的行程', go('registrations'))
-              : btn('报名活动', 'data-route="registration-form"');
-            return `<article class="activity-card activity-card-v2" role="listitem">
-              <button class="activity-card-tap" ${go('activity-detail')} aria-label="查看 ${a.title} 的活动详情">
-                <div class="cover">${cover}${stateTag}</div>
-                <div class="activity-card-body">
-                  <p class="meta-line">${a.date} · ${a.time}</p>
-                  <h3>${a.title}</h3>
-                  <p class="meta-line activity-host-line">${hostLine}</p>
-                  <p class="meta-line">${a.start}集合 · ${a.level}</p>
-                  ${alert}
-                  ${metrics([[`${a.distanceKm} km`, '里程'], [`${a.elevationM} m`, '爬升'], [`${a.approved}/${a.capacity}`, '名额']], 'three')}
-                </div>
-              </button>
-              <div class="activity-card-cta">${cta}</div>
-            </article>`;
-          })
-          .join('')}
+        <div class="list-count"><span>${historyMode ? '历史活动' : '近期活动'} <em data-activity-carousel-current>当前第 1 场</em></span><b>共 ${carouselItems.length} 场</b></div>
+        <div class="activity-carousel-shell">
+          <button class="activity-carousel-arrow is-prev" data-action="activity-carousel-prev" aria-label="上一场活动" disabled aria-disabled="true">‹</button>
+          <div class="activity-carousel-track" role="list" tabindex="0" aria-label="活动轮播">
+            ${carouselItems
+              .map((activity, index) => {
+                const presentation = activityPresentation(activity, index);
+                const host = activityHost(activity);
+                const hostLine =
+                  host.kind === 'club'
+                    ? clubBadgeLine(
+                        host.club,
+                        host.historical ? '发布时快照' : '俱乐部活动',
+                        host.historical,
+                      )
+                    : publicActivityLine(PUBLIC_ACTIVITY_LABEL, '平台公开');
+                const dateParts = String(activity.date || '').match(/(\d+)月(\d+)日\s*(.*)/);
+                const month = dateParts ? dateParts[1] : '10';
+                const day = dateParts ? dateParts[2] : '--';
+                const weekday = dateParts ? dateParts[3] : '';
+                const cover =
+                  index === 1 && !historyMode
+                    ? emptyMedia().replace('rider-card-media is-empty', 'activity-card-cover-fallback')
+                    : `<img src="${index === 2 ? IMG.rider : IMG.cover}" alt="${activity.title}" />`;
+                return `<article class="activity-card activity-card-v3 is-${presentation.state} ${index === 0 ? 'is-active' : ''}" role="listitem" data-activity-slide data-index="${index}">
+                  <div class="activity-card-cover">${cover}<span class="activity-date-stamp"><b>${day}</b><small>${month}月 · ${weekday}</small></span><span class="activity-card-status">${presentation.label}</span></div>
+                  <div class="activity-card-v3-body">
+                    <span class="activity-club-chip">${hostLine}</span>
+                    <h3>${activity.title}</h3>
+                    <p class="activity-card-meta">${activity.time} · ${activity.start}</p>
+                    <div class="activity-card-metrics"><span><small>里程</small><b>${activity.distanceKm} km</b></span><span><small>爬升</small><b>${activity.elevationM} m</b></span><span><small>名额</small><b>${activity.approved}/${activity.capacity}</b></span></div>
+                    <button class="btn activity-card-primary" data-action="route" ${presentation.attrs}>${presentation.cta}</button>
+                  </div>
+                </article>`;
+              })
+              .join('')}
+          </div>
+          <button class="activity-carousel-arrow is-next" data-action="activity-carousel-next" aria-label="下一场活动">›</button>
         </div>
-        <p class="carousel-hint">左右滑动查看更多活动 · 共 2 场</p>
+        <div class="activity-carousel-pagination" role="group" aria-label="选择活动">${carouselItems
+          .map(
+            (activity, index) =>
+              `<button class="${index === 0 ? 'is-active' : ''}" data-action="activity-carousel-dot" data-index="${index}" aria-label="查看第 ${index + 1} 场活动" aria-current="${index === 0 ? 'true' : 'false'}"></button>`,
+          )
+          .join('')}</div>
       </div>`;
     },
 
@@ -581,7 +688,7 @@
         clubBlock = `<section class="profile-club-card is-empty">
           <div class="profile-club-head"><b class="section-label">我的俱乐部</b><span class="meta-line">${noKey.summary}</span></div>
           <p class="card-hint profile-club-empty">${noKey.hint}</p>
-          ${btn('发现附近俱乐部', toast('已展开附近俱乐部'), 'btn-secondary')}
+          ${btn('发现附近俱乐部', go('club/center') + ' data-state="discovery"', 'btn-secondary')}
         </section>`;
       } else if (is('multi-club')) {
         const multi = membershipData['multi-club'] || { memberships: [], hint: '' };
@@ -589,7 +696,7 @@
         clubBlock = `<section class="profile-club-card is-multi">
           <div class="profile-club-head"><b class="section-label">我的俱乐部</b><span class="meta-line">已加入 ${activeIds.length} 个俱乐部</span></div>
           <div class="profile-club-multi">${clubAvatarStack(activeIds)}<p class="card-hint profile-club-hint">${multi.hint}</p></div>
-          ${btn('查看全部俱乐部', toast('已打开我的俱乐部列表'), 'btn-secondary')}
+          ${btn('查看全部俱乐部', go('club/center') + ' data-state="discovery"', 'btn-secondary')}
         </section>`;
       } else {
         const singleKey = is('member')
@@ -602,6 +709,7 @@
               <div class="profile-club-head"><b class="section-label">我的俱乐部</b><span class="meta-line">${singleKey.summary}</span></div>
               <div class="profile-club-single">${clubAvatar(singleClub, 'md')}<div class="profile-club-text"><b>${singleClub.name}</b><p class="meta-line">本人角色 · ${singleKey.myRoleLabel}</p></div></div>
               <p class="card-hint">${singleKey.hint}</p>
+              ${btn('进入俱乐部中心', go('club/center') + ' data-state="detail"', 'btn-secondary')}
             </section>`
           : '';
       }
@@ -612,6 +720,7 @@
         <p class="section-label">常用服务</p>
         <div class="menu-card">
           ${admin ? linkRow('i-admin', '活动管理', '创建、编辑、上下架与报名审批', 'admin-activity-list') : ''}
+          ${admin ? linkRow('i-admin', '俱乐部管理', '查看正式俱乐部并创建新俱乐部', 'admin-club-applications') : ''}
           ${linkRow('i-profile', '报名资料', '头像、昵称、实名、电话与紧急联系人', 'profile-edit')}
           ${linkRow('i-settings', '设置', '查看当前版本与本次更新内容', 'settings')}
         </div>
@@ -1616,7 +1725,7 @@
       </div>`;
     },
     /* ================================================================
-     * 组织地基与审批（M0 待实施）：8 页原型
+     * 组织地基与审批（M0 待实施）：6 页原型
      * 产品假设：非成员不能投稿；一个有效 OWNER/ADMIN 通过即可；审批不自动超时；
      *          平台所有者本人公开活动显式确认；俱乐部停用时未来活动冻结待处置。
      * 所有权限以服务端判权为准，本原型只表达 UI 层的角色—目标—路由联动。
@@ -1629,12 +1738,6 @@
       const identityOrder = ['member', 'admin', 'owner', 'platform'];
       // 对每个发布目标：按身份返回 { route, badge, cta, note }
       const routes = {
-        'club-application': {
-          member: { badge: tag('pending', '提交审核'), cta: '提交后进入平台所有者待办', note: '通过前不创建正式俱乐部；驳回必有原因，可修改重提。' },
-          admin: { badge: tag('pending', '提交审核'), cta: '按普通成员走审批', note: '俱乐部管理员身份不授予审批俱乐部申请的权限。' },
-          owner: { badge: tag('pending', '提交审核'), cta: '按普通成员走审批', note: '俱乐部所有者不能跨俱乐部直建。' },
-          platform: { badge: tag('solid', '显式确认创建'), cta: '需要显式“确认创建”动作并留审计', note: '即使是平台所有者，也不走接口静默直建。' },
-        },
         'club-activity': {
           member: { badge: tag('pending', '提交俱乐部审核'), cta: '任一有效 OWNER / ADMIN 通过即发布', note: '非成员不能发起；审批不设自动超时。' },
           admin: { badge: tag('success', '✓ 发布后立即上线'), cta: '以俱乐部管理员身份直接发布', note: '服务端写入 role_auto_publish 审计；关键修改原子切换版本。' },
@@ -1650,15 +1753,18 @@
       };
       const route = (key, title, iconLabel, desc) => {
         const r = routes[key][identity];
+        const directClubPublish =
+          key === 'club-activity' && (identity === 'admin' || identity === 'owner');
+        const directPublicPublish = key === 'public-activity' && identity === 'platform';
         return `<div class="card org-route-card">
           ${cardHead('', title, r.badge, desc)}
           <div class="org-route-body">
             <div class="org-route-flow">
               <span class="org-flow-step"><b>发起</b><small>${iconLabel}</small></span>
               <span class="org-flow-arrow" aria-hidden="true">→</span>
-              <span class="org-flow-step"><b>${key === 'club-activity' && (identity === 'admin' || identity === 'owner') ? '服务端判权' : key === 'club-application' && identity === 'platform' ? '显式确认' : '待办入列'}</b><small>${key === 'club-activity' && (identity === 'admin' || identity === 'owner') ? 'role_auto_publish' : key === 'club-application' ? (identity === 'platform' ? '留审计' : '平台所有者') : key === 'public-activity' ? (identity === 'platform' ? '留审计' : '平台所有者') : '俱乐部管理员'}</small></span>
+              <span class="org-flow-step"><b>${directClubPublish ? '服务端判权' : directPublicPublish ? '显式确认' : '待办入列'}</b><small>${directClubPublish ? 'role_auto_publish' : directPublicPublish ? '留审计' : key === 'public-activity' ? '平台所有者' : '俱乐部管理员'}</small></span>
               <span class="org-flow-arrow" aria-hidden="true">→</span>
-              <span class="org-flow-step"><b>${key === 'club-activity' && (identity === 'admin' || identity === 'owner') ? '已发布' : key === 'club-application' && identity === 'platform' ? '已创建' : '通过前隐藏'}</b><small>${key === 'club-activity' && (identity === 'admin' || identity === 'owner') ? '写入审计' : '按可见性展示'}</small></span>
+              <span class="org-flow-step"><b>${directClubPublish || directPublicPublish ? '已发布' : '通过前隐藏'}</b><small>${directClubPublish || directPublicPublish ? '写入审计' : '按可见性展示'}</small></span>
             </div>
             <p class="card-hint"><b>${r.cta}</b> · ${r.note}</p>
           </div>
@@ -1668,7 +1774,6 @@
         <section class="info-bar" style="margin-top:0"><div class="info-head"><span class="info-kicker">当前身份</span><span class="info-tag">${idName}</span></div><h2 class="info-title">角色 → 发布目标 → 审批路由</h2><p class="info-meta"><span>${idDesc}</span></p></section>
         <p class="section-label">切换身份视角（仅前端表达）</p>
         <div class="seg">${identityOrder.map((key) => `<button class="${key === identity ? 'is-active' : ''}" data-action="route" data-route="org-overview" data-state="${key}">${(orgApproval.identities.find(([id]) => id === key) || [])[1]}</button>`).join('')}</div>
-        ${route('club-application', '俱乐部创建申请', '任意已登录用户', '所有申请统一进入平台所有者审批；平台所有者本人也要显式确认。')}
         ${route('club-activity', '俱乐部活动', '俱乐部有效成员', '普通成员走所属俱乐部审批；管理员本人在所属俱乐部默认发布。')}
         ${route('public-activity', '公开活动', '任意已登录用户', 'club_id 为空；由平台所有者审批后进入公开活动池。')}
         <div class="card org-principle">
@@ -1678,129 +1783,8 @@
           </ul>
           <p class="card-hint">以上为产品假设，已采纳；在 M0 实施期间，服务端判权与审计写入是不变量。</p>
         </div>
-        <p class="neutral-note">本页为设计原型，不代表后端已实现；完整状态机、边界与验收标准见 2026-10-17 需求文档。</p>
-        ${btn('进入我的俱乐部申请', go('club-applications'), 'btn-secondary')}
+        <p class="neutral-note">俱乐部创建仅由平台管理员在正式管理路由发起并直接生效，不进入本审批原型。本页活动审批仍是设计表达，不代表后端已实现。</p>
       </div>`;
-    },
-
-    'club-applications': () => {
-      const list = orgApproval.clubApplicationExamples;
-      const filterOrder = ['all', 'empty', 'draft', 'pending_review', 'rejected', 'approved'];
-      const activeFilter = filterOrder.includes(st()) ? st() : 'all';
-      const emptyState = activeFilter === 'empty';
-      const headSeg = `<div class="seg org-seg">${[
-        ['全部', 'all', 4],
-        ['草稿', 'draft', 1],
-        ['待审核', 'pending_review', 1],
-        ['已通过', 'approved', 1],
-        ['已驳回', 'rejected', 1],
-      ]
-        .map(([label, state, n]) => `<button class="${activeFilter === state ? 'is-active' : ''}" data-action="route" data-route="club-applications" data-state="${state}">${label}<small>${n}</small></button>`)
-        .join('')}</div>`;
-      const head = `<section class="info-bar" style="margin-top:0"><div class="info-head"><span class="info-kicker">我的身份</span><span class="info-tag">普通骑友 · 申请人</span></div><h2 class="info-title">我的俱乐部申请</h2><p class="info-meta"><span>${emptyState ? '尚未提交任何俱乐部申请' : `共 ${list.length} 份申请`}</span></p></section>
-        ${headSeg}`;
-      if (emptyState) {
-        return `<div class="pg">${head}${stateView('0', '还没有俱乐部申请', '提交俱乐部申请后，平台所有者将审批名称、城市和加入方式等关键信息。', btn('创建俱乐部申请', go('club-application-edit') + ' data-state="create"'))}</div>`;
-      }
-      const stateTag = (state) => {
-        if (state === 'draft') return tag('neutral', '草稿');
-        if (state === 'pending_review') return tag('pending', '待审核');
-        if (state === 'rejected') return tag('warning', '⚠ 已驳回');
-        if (state === 'approved') return tag('success', '✓ 已通过');
-        if (state === 'withdrawn') return tag('muted', '已撤回');
-        return tag('neutral', state);
-      };
-      const card = (app) => {
-        const action = app.state === 'draft'
-          ? btn('继续编辑', go('club-application-edit') + ' data-state="edit"', 'btn-secondary btn-sm')
-          : app.state === 'pending_review'
-            ? btn('查看进度', toast('已切换到审核进度'), 'btn-secondary btn-sm')
-            : app.state === 'rejected'
-              ? btn('查看原因并修改', go('club-application-edit') + ' data-state="edit"', 'btn-sm')
-              : btn('进入俱乐部', toast('已进入正式俱乐部主页'), 'btn-secondary btn-sm');
-        const extraMeta =
-          app.state === 'rejected'
-            ? `<div class="org-reject-reason"><b>驳回原因（平台所有者 · ${app.rejectedAt}）</b><p>${app.rejectReason}</p></div>`
-            : app.state === 'approved'
-              ? `<p class="alert-line">${tag('success', '✓ 正式俱乐部已创建 · CLB-0023')}</p>`
-              : app.state === 'pending_review'
-                ? `<p class="card-hint">提交时间 ${app.submittedAt} · 版本 ${app.version}</p>`
-                : `<p class="card-hint">最后编辑 ${app.updatedAt || app.submittedAt} · 版本 ${app.version}</p>`;
-        return `<article class="card org-app-card">
-          <div class="org-app-head">${stateTag(app.state)}<span class="meta-line">${app.city || '—'} · ${app.state === 'draft' ? '最后编辑' : '提交'} ${app.updatedAt || app.submittedAt}</span></div>
-          <h3 class="card-title">${app.name}</h3>
-          <p class="meta-line">规范化名 <code>${app.normalized}</code> · 版本 ${app.version}</p>
-          <p class="card-hint" style="margin-top:6px">${app.summary}</p>
-          ${extraMeta}
-          <div class="btn-row org-app-actions">${action}${app.state === 'pending_review' ? btn('撤回申请', toast('申请已撤回为草稿'), 'btn-text') : ''}</div>
-        </article>`;
-      };
-      const filtered = activeFilter === 'draft' ? list.filter((a) => a.state === 'draft')
-        : activeFilter === 'pending_review' ? list.filter((a) => a.state === 'pending_review')
-        : activeFilter === 'rejected' ? list.filter((a) => a.state === 'rejected')
-        : activeFilter === 'approved' ? list.filter((a) => a.state === 'approved')
-        : list;
-      return `<div class="pg">${head}
-        <div class="list-count"><span>当前筛选</span><b>${filtered.length} 份</b></div>
-        ${filtered.length ? filtered.map(card).join('') : stateView('0', '当前筛选暂无申请', '可切换到其他状态查看，或创建新的申请。', btn('创建俱乐部申请', go('club-application-edit') + ' data-state="create"', 'btn-secondary'))}
-        <div style="margin-top:16px">${btn('创建新申请', go('club-application-edit') + ' data-state="create"')}</div>
-      </div>`;
-    },
-
-    'club-application-edit': () => {
-      const create = is('create');
-      const nameConflict = is('name-conflict');
-      const error = is('error');
-      const confirming = is('submit-confirm');
-      const example = {
-        name: '望京巡游骑行俱乐部',
-        normalized: '望京巡游骑行',
-        city: '北京',
-        summary: '以望京为集合核心的周末日常骑',
-        joinMode: '管理员邀请',
-        size: '60 人',
-        activityType: '日常巡游',
-        rules: '佩戴头盔，服从领队指令；临时取消需提前 6 小时通知。',
-        contact: '138 0000 5678',
-      };
-      const nameValue = error ? '' : nameConflict ? '黑石头骑行' : example.name;
-      const nameNormalized = error ? '' : nameConflict ? '黑石头骑行' : example.normalized;
-      const conflictHint = nameConflict
-        ? `<p class="field-msg org-name-conflict"><b>⚠ 已有同名申请</b> 黑石头骑行 · 审核中（v2） · 不自动合并，由平台所有者判断</p>`
-        : nameNormalized
-          ? `<p class="field-msg"><b>规范化名</b> <code>${nameNormalized}</code> · 用于重名检测</p>`
-          : '';
-      const confirmModal = confirming
-        ? `<div class="org-confirm-modal" role="dialog" aria-labelledby="submit-confirm-title"><div class="modal-sheet"><button class="modal-close" data-action="route" data-route="club-application-edit" data-state="edit" aria-label="关闭">×</button><h3 class="card-title" id="submit-confirm-title">提交申请审核？</h3><p class="card-hint">以下是与表单完全一致的静态原型示例数据；提交后进入平台所有者待办，审批通过前不会创建正式俱乐部。</p>${rows([
-            ['名称', example.name],
-            ['规范化', example.normalized],
-            ['城市', example.city],
-            ['加入方式', example.joinMode],
-            ['预计规模', example.size],
-          ])}<p class="pending-note">平台所有者审批后创建正式俱乐部与 OWNER 关系；驳回会返回原因并保留草稿。</p><div class="btn-row"><button class="btn-secondary" data-action="route" data-route="club-application-edit" data-state="edit">再检查一下</button><button class="btn" data-action="submit-club-application">确认提交</button></div></div></div>`
-        : '';
-      return `<div class="pg">
-        <p class="neutral-note" style="margin-top:0">${error ? '缺失必填项演示：请补全标红字段后再提交。' : create ? '新建页已填入静态原型示例数据，便于核对必填校验与提交摘要；不代表真实保存。' : nameConflict ? '名称与现有申请相似，提交不被阻断，但请在简介中说明差异。' : '草稿已保存 · 自动保存开启'}</p>
-        <div class="card">${cardHead('01', '基本信息')}
-          ${field('俱乐部名称', input(nameValue, { ph: '例如：望京巡游骑行俱乐部', cls: error ? 'is-error' : '', error: error ? '请填写俱乐部名称' : '' }) + conflictHint, tag('pending', '必填'))}
-          ${field('所在城市', input(error ? '' : example.city, { ph: '选择城市', unit: '›', cls: error ? 'is-error' : '', error: error ? '请选择城市' : '' }), tag('pending', '必填'))}
-          ${field('一句话简介', input(error ? '' : example.summary, { ph: '20 字内', count: error ? '0/40' : '18/40' }))}
-          <p class="sub-title">俱乐部封面</p>
-          <div class="upload-grid">
-            ${error ? `<button class="upload-tile" ${toast('已打开图片选择器')}><b>+</b>添加封面</button>` : `<div class="upload-thumb"><img src="${IMG.cover}" alt="俱乐部封面" /><span class="thumb-badge">${tag('neutral', '封面')}</span><button class="thumb-del" ${toast('封面已删除')} aria-label="删除封面"></button></div>`}
-          </div></div>
-        <div class="card">${cardHead('02', '加入方式与规模')}
-          ${field('加入方式', choices(['公开申请', '邀请码', '管理员邀请'], error ? '' : example.joinMode))}
-          ${field('预计成员规模', input(error ? '' : example.size, { ph: '选择规模', unit: '›' }))}
-          ${field('主要活动类型', choices(['日常巡游', '长距离', '爬坡训练', '新手友好'], error ? '' : example.activityType))}
-        </div>
-        <div class="card">${cardHead('03', '规则与承诺', tag('neutral', '选填'))}
-          ${field('俱乐部规则摘要', input(error ? '' : example.rules, { cls: 'textarea', ph: '简要规则、群规或安全约定', count: error ? '0/500' : '32/500' }))}
-          ${field('申请人联系方式', input(example.contact, { ph: '手机号或微信', cls: 'is-disabled' }))}
-          <p class="card-hint">联系方式仅平台所有者可见；审批通过后由本人在俱乐部管理页更新。</p>
-        </div>
-        <p class="neutral-note">本原型不写数据库；提交后仅在前端展示“已切换到待审核”。所有权限以服务端判权为准。</p>
-      </div>${fixedBar(error ? '还有 2 项必填未完成' : nameConflict ? '提交后由平台所有者人工判定是否重复' : '准备就绪，可提交', [btn('保存草稿', toast('草稿已保存'), 'btn-secondary'), error ? btn('请先补全必填项', 'disabled', 'btn is-disabled') : btn('提交审核', 'data-action="confirm-club-application"')])}${confirmModal}`;
     },
 
     'activity-publish-target': () => {
@@ -1900,31 +1884,29 @@
       const stateId = st() || 'admin-club-activity';
       const emptyState = stateId === 'empty';
       const platformView = stateId.startsWith('platform-');
-      const tab = stateId.endsWith('club-application') ? 'club-application'
-        : stateId.endsWith('public-activity') ? 'public-activity'
-          : 'club-activity';
-      const items = emptyState ? [] : tab === 'club-application' ? orgApproval.todoClubApplication
-        : tab === 'public-activity' ? orgApproval.todoPublicActivity
+      const tab = stateId.endsWith('public-activity') ? 'public-activity' : 'club-activity';
+      const items = emptyState
+        ? []
+        : tab === 'public-activity'
+          ? orgApproval.todoPublicActivity
           : orgApproval.todoClubActivity;
       const counts = orgApproval.todoCounts;
       const identityLabel = platformView ? '平台所有者' : '俱乐部管理员 · 周日纯化骑行';
-      const permittedCount = platformView ? counts.clubApplication + counts.publicActivity : counts.clubActivity;
+      const permittedCount = platformView ? counts.publicActivity : counts.clubActivity;
       const tabs = [
         ['club-activity', '俱乐部活动', counts.clubActivity, !platformView, '仅所属俱乐部管理员可进入'],
-        ['club-application', '俱乐部申请', counts.clubApplication, platformView, '仅平台所有者可进入'],
         ['public-activity', '公开活动', counts.publicActivity, platformView, '仅平台所有者可进入'],
       ];
       const head = `<section class="info-bar" style="margin-top:0"><div class="info-head"><span class="info-kicker">当前身份</span><span class="info-tag">${identityLabel}</span></div><h2 class="info-title">审批待办</h2><p class="info-meta"><span>当前身份可处理 ${permittedCount} 项；切换标签不会改变身份。</span></p></section>
         <p class="section-label">切换待办身份视角（显式操作）</p>
-        <div class="seg org-role-seg"><button class="${platformView ? '' : 'is-active'}" data-action="route" data-route="admin-approval-inbox" data-state="admin-club-activity">俱乐部管理员</button><button class="${platformView ? 'is-active' : ''}" data-action="route" data-route="admin-approval-inbox" data-state="platform-club-application">平台所有者</button></div>
+        <div class="seg org-role-seg"><button class="${platformView ? '' : 'is-active'}" data-action="route" data-route="admin-approval-inbox" data-state="admin-club-activity">俱乐部管理员</button><button class="${platformView ? 'is-active' : ''}" data-action="route" data-route="admin-approval-inbox" data-state="platform-public-activity">平台所有者</button></div>
         <div class="seg org-inbox-seg">${tabs.map(([key, label, n, enabled, reason]) => `<button class="${tab === key ? 'is-active' : ''} ${enabled ? '' : 'is-disabled'}" ${enabled ? `data-action="route" data-route="admin-approval-inbox" data-state="${platformView ? `platform-${key}` : `admin-${key}`}"` : `disabled aria-disabled="true" title="${reason}"`}>${label}<small>${n}</small></button>`).join('')}</div>
-        <p class="neutral-note">${platformView ? '平台所有者只能进入俱乐部申请与公开活动待办；俱乐部活动由所属俱乐部管理员处理。' : '俱乐部管理员只能进入所属俱乐部活动待办；俱乐部申请与公开活动仅平台所有者可见。'}</p>`;
+        <p class="neutral-note">${platformView ? '平台所有者只处理公开活动待办；俱乐部活动由所属俱乐部管理员处理。' : '俱乐部管理员只处理所属俱乐部活动待办；公开活动仅平台所有者可见。'}</p>`;
       if (emptyState) {
         return `<div class="pg">${head}${stateView('0', '当前身份暂无待办', '这是当前身份下的真实空数据，不代表无权访问的类目。新的待审提交不会自动超时通过或驳回。', btn('返回管理员待办', go('admin-approval-inbox') + ' data-state="admin-club-activity"', 'btn-secondary'))}</div>`;
       }
-      const kindTag = (k) => k === 'club-activity' ? tag('solid', '俱乐部活动')
-        : k === 'club-application' ? tag('pending', '俱乐部申请')
-          : tag('neutral', '公开活动');
+      const kindTag = (k) =>
+        k === 'club-activity' ? tag('solid', '俱乐部活动') : tag('neutral', '公开活动');
       const itemCard = (item) => `<article class="card org-todo-card">
         <div class="org-todo-head">${kindTag(item.kind)}<span class="meta-line">${item.waited}</span></div>
         <h3 class="card-title" style="margin-top:6px">${item.title || item.club}</h3>
@@ -1947,7 +1929,7 @@
       const objectId = stateParts[1];
       const objectVersion = contextKey.match(/-(v\d+)$/)?.[1];
       const objectType = contextKey.replace(/-v\d+$/, '');
-      const reviewItems = [...orgApproval.todoClubActivity, ...orgApproval.todoClubApplication, ...orgApproval.todoPublicActivity];
+      const reviewItems = [...orgApproval.todoClubActivity, ...orgApproval.todoPublicActivity];
       const matchedItem = reviewItems.find((item) => item.kind === objectType && (!objectId || item.id === objectId) && item.version === objectVersion);
       const diff = orgApproval.approvalDiff;
       const fallbackItem = {
@@ -1968,11 +1950,9 @@
       const rejectError = rawState === 'reject-error' || stateParts.includes('reject-error');
       const isClubActivity = item.kind === 'club-activity';
       const showDiff = isClubActivity && item.version === 'v2';
-      const typeInfo = item.kind === 'club-application'
-        ? { label: '俱乐部申请', scope: 'platform', targetId: 'platform-owner' }
-        : item.kind === 'public-activity'
-          ? { label: '公开活动', scope: 'public', targetId: 'platform-owner' }
-          : { label: '俱乐部活动', scope: 'club', targetId: item.reviewTargetId || 'club-0023' };
+      const typeInfo = item.kind === 'public-activity'
+        ? { label: '公开活动', scope: 'public', targetId: 'platform-owner' }
+        : { label: '俱乐部活动', scope: 'club', targetId: item.reviewTargetId || 'club-0023' };
       const displayTitle = item.title || item.club;
       const topBanner = taken
         ? `<div class="org-banner is-taken"><b>⚠ 已被他人处理</b> 该版本已于 10月17日 00:02 由“风向骑手（OWNER）”通过。</div>`
@@ -1987,8 +1967,10 @@
       </div>`;
       const buttonsDisabled = taken || expired;
       const outcomeContext = `${item.kind}-${item.version}--${item.id}`;
-      const rejectLabel = item.kind === 'club-application' ? '驳回申请' : item.kind === 'public-activity' ? '驳回公开活动' : '驳回活动版本';
-      const approveLabel = item.kind === 'club-application' ? '通过并创建俱乐部' : item.kind === 'public-activity' ? '通过并发布公开活动' : '通过并发布俱乐部活动';
+      const rejectLabel =
+        item.kind === 'public-activity' ? '驳回公开活动' : '驳回活动版本';
+      const approveLabel =
+        item.kind === 'public-activity' ? '通过并发布公开活动' : '通过并发布俱乐部活动';
       return `<div class="pg">
         <section class="info-bar" style="margin-top:0"><div class="info-head"><span class="info-kicker">${typeInfo.label} · ${displayTitle}</span><span class="info-tag ${buttonsDisabled ? '' : 'is-pending'}">${taken ? '已被他人处理' : expired ? '版本已过期' : '待审核'}</span></div><h2 class="info-title">${item.submitter} 的${typeInfo.label}审批 · ${item.version}</h2><p class="info-meta"><span>${item.waited}</span><span>review_scope ${typeInfo.scope} · review_target_id ${typeInfo.targetId}</span></p></section>
         ${topBanner}
@@ -2013,7 +1995,7 @@
       const [baseState, outcomeContextKey, outcomeObjectId] = stateId.split('--');
       const outcomeVersion = outcomeContextKey?.match(/-(v\d+)$/)?.[1];
       const outcomeType = outcomeContextKey?.replace(/-v\d+$/, '');
-      const outcomeItems = [...orgApproval.todoClubActivity, ...orgApproval.todoClubApplication, ...orgApproval.todoPublicActivity];
+      const outcomeItems = [...orgApproval.todoClubActivity, ...orgApproval.todoPublicActivity];
       const outcomeItem = outcomeItems.find((item) => item.kind === outcomeType && item.id === outcomeObjectId && item.version === outcomeVersion);
       const audit = orgApproval.auditTemplate;
       const auto = orgApproval.roleAutoPublishSample;
@@ -2075,40 +2057,42 @@
           createdAt: '10月17日 00:09',
         };
       } else if (baseState === 'manual' && outcomeItem) {
-        const application = outcomeItem.kind === 'club-application';
         const publicActivity = outcomeItem.kind === 'public-activity';
-        const label = application ? '俱乐部申请' : publicActivity ? '公开活动' : '俱乐部活动';
-        const reviewer = application || publicActivity ? '平台所有者（PLATFORM_OWNER）' : '风向骑手（OWNER）';
-        modeBadge = tag('success', application ? '✓ 已创建俱乐部' : '✓ 已发布');
-        modeTitle = application
-          ? `申请已通过并创建俱乐部 · ${outcomeItem.club}`
-          : `${label}已通过并发布 · ${outcomeItem.title}`;
+        const label = publicActivity ? '公开活动' : '俱乐部活动';
+        const reviewer = publicActivity
+          ? '平台所有者（PLATFORM_OWNER）'
+          : '风向骑手（OWNER）';
+        modeBadge = tag('success', '✓ 已发布');
+        modeTitle = `${label}已通过并发布 · ${outcomeItem.title}`;
         timeline = [
           { time: outcomeItem.waited, title: `提交${label}审核`, detail: `${outcomeItem.submitter} 提交 ${outcomeItem.version}` },
-          { time: '刚刚', title: application ? '通过并创建俱乐部' : '通过并发布', detail: `${reviewer} · 审批对象 ${outcomeItem.id}`, highlight: true },
-          { time: '刚刚', title: '写入审计', detail: `review_scope=${application ? 'platform' : publicActivity ? 'public' : 'club'} · review_version=${outcomeItem.version}` },
+          { time: '刚刚', title: '通过并发布', detail: `${reviewer} · 审批对象 ${outcomeItem.id}`, highlight: true },
+          { time: '刚刚', title: '写入审计', detail: `review_scope=${publicActivity ? 'public' : 'club'} · review_version=${outcomeItem.version}` },
         ];
         auditPayload = {
           actor: outcomeItem.submitter,
           targetType: outcomeItem.kind.replace('-', '_'),
           targetId: outcomeItem.id,
           beforeStatus: 'pending_review',
-          afterStatus: application ? 'approved' : 'published',
+          afterStatus: 'published',
           approvalMode: 'manual_approval',
           approvedBy: reviewer,
-          approvedRole: application || publicActivity ? 'PLATFORM_OWNER' : 'OWNER',
-          reviewScope: application ? 'platform' : publicActivity ? 'public' : 'club',
-          reviewTargetId: application || publicActivity ? 'platform-owner' : outcomeItem.reviewTargetId || 'club-0023',
+          approvedRole: publicActivity ? 'PLATFORM_OWNER' : 'OWNER',
+          reviewScope: publicActivity ? 'public' : 'club',
+          reviewTargetId: publicActivity
+            ? 'platform-owner'
+            : outcomeItem.reviewTargetId || 'club-0023',
           reviewVersion: outcomeItem.version,
           idempotencyKey: `approve-${outcomeItem.id}`,
           createdAt: '刚刚',
         };
       } else if (baseState === 'rejected' && outcomeItem) {
-        const application = outcomeItem.kind === 'club-application';
         const publicActivity = outcomeItem.kind === 'public-activity';
-        const label = application ? '俱乐部申请' : publicActivity ? '公开活动' : '俱乐部活动';
-        const reviewScope = application ? 'platform' : publicActivity ? 'public' : 'club';
-        const reviewTargetId = application || publicActivity ? 'platform-owner' : outcomeItem.reviewTargetId || 'club-0023';
+        const label = publicActivity ? '公开活动' : '俱乐部活动';
+        const reviewScope = publicActivity ? 'public' : 'club';
+        const reviewTargetId = publicActivity
+          ? 'platform-owner'
+          : outcomeItem.reviewTargetId || 'club-0023';
         modeBadge = tag('warning', '⚠ 已驳回');
         modeTitle = `${label}已驳回 · ${outcomeItem.title || outcomeItem.club}`;
         timeline = [
@@ -2123,8 +2107,10 @@
           beforeStatus: 'pending_review',
           afterStatus: 'rejected',
           approvalMode: 'manual_approval',
-          approvedBy: application || publicActivity ? '平台所有者（PLATFORM_OWNER）' : '风向骑手（OWNER）',
-          approvedRole: application || publicActivity ? 'PLATFORM_OWNER' : 'OWNER',
+          approvedBy: publicActivity
+            ? '平台所有者（PLATFORM_OWNER）'
+            : '风向骑手（OWNER）',
+          approvedRole: publicActivity ? 'PLATFORM_OWNER' : 'OWNER',
           reviewScope,
           reviewTargetId,
           reviewVersion: outcomeItem.version,
@@ -2328,7 +2314,7 @@
         ['审批', '北京胡同骑行局 加入申请', '张岩提交了加入申请，等待你审批', '12 分钟前', true],
         ['俱乐部', '俱乐部管理员角色生效', '你已被设为"北京胡同骑行局"管理员', '2 小时前', true],
         ['报名', '奉贤海湾拉练', '活动已取消，报名费将原路返回（本次免费）', '昨天 18:40', false],
-        ['审批', '俱乐部创建申请', '"周日纯化骑行"已被通过，可进入俱乐部管理', '昨天 10:12', false],
+        ['俱乐部', '俱乐部已创建', '平台管理员已创建"周日纯化骑行"，当前状态 active', '昨天 10:12', false],
         ['系统', '隐私协议更新', '我们更新了隐私授权说明，请抽空查看', '前天', false],
       ];
       return `<div class="pg planned-page planned-notifications">

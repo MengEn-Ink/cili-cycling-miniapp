@@ -73,8 +73,6 @@ const prototypeRoutes = [
 // 不进入 miniprogram/app.json，仅在 docs 原型内呈现设计表达。
 const orgApprovalPrototypeRoutes = [
   'org-overview',
-  'club-applications',
-  'club-application-edit',
   'activity-publish-target',
   'admin-approval-inbox',
   'approval-detail',
@@ -103,11 +101,85 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     }
     expect(schema).not.toContain("id: 'route-view'");
     expect(templates).not.toMatch(/['"]?route-view['"]?: \(\) =>/);
-    expect(html).toContain('17 个正式路由 + 23 个原型 / 40 个画面');
+    expect(html).toContain('17 个正式路由 + 21 个原型 / 38 个画面');
+  });
+
+  it('活动首页使用三张 v3 轮播卡并提供有界导航', () => {
+    const output = renderPrototypeState('activities', 'default');
+    expect(output).toContain('class="activity-carousel-shell"');
+    expect(output).toContain('class="activity-carousel-track"');
+    expect(output.match(/data-activity-slide/g)).toHaveLength(3);
+    expect(output).toContain('class="activity-date-stamp"');
+    expect(output).toContain('class="activity-club-chip');
+    expect(output).toContain('data-action="activity-carousel-prev"');
+    expect(output).toContain('data-action="activity-carousel-next"');
+    expect(output).toContain('data-action="activity-carousel-dot"');
+    expect(css).toMatch(
+      /\.activities-v3 \.activity-card-v3\s*\{[^}]*flex:\s*0 0 min\(86%, 306px\);[^}]*height:\s*306px;[^}]*border-radius:\s*22px;/s,
+    );
+    expect(css).toMatch(/\.activities-v3 \.activity-card-cover\s*\{[^}]*height:\s*136px;/s);
+    expect(script).toContain("event.key === 'ArrowRight'");
+    expect(script).toContain("event.key === 'Home'");
+    expect(script).toContain('activityCarouselController');
+  });
+
+  it('两条正式俱乐部管理路由改为列表与直接创建，不再呈现创建审批', () => {
+    const list = renderPrototypeState('admin-club-applications', 'default');
+    expect(list).toContain('俱乐部管理');
+    expect(list).toContain('创建俱乐部');
+    expect(list).toContain('共 3 个俱乐部');
+    expect(list).toContain('data-route="admin-club-application-detail"');
+    expect(list).not.toContain('待审批');
+    expect(list).not.toContain('驳回');
+
+    const create = renderPrototypeState('admin-club-application-detail', 'create');
+    expect(create).toContain('创建俱乐部');
+    expect(create).toContain('创建并立即生效');
+    expect(create).not.toContain('通过申请');
+    expect(create).not.toContain('驳回申请');
+  });
+
+  it('创建俱乐部按个人资料编辑结构优先展示头像与背景图', () => {
+    const create = renderPrototypeState('admin-club-application-detail', 'create');
+    expect(create).toContain('<span class="card-no">01</span><h3 class="card-title">俱乐部头像');
+    expect(create).toContain('<span class="card-no">02</span><h3 class="card-title">俱乐部背景图');
+    expect(create).toContain('<span class="card-no">03</span><h3 class="card-title">基本资料');
+    expect(create).toContain('<span class="card-no">04</span><h3 class="card-title">加入设置');
+    expect(create.indexOf('俱乐部头像')).toBeLessThan(create.indexOf('俱乐部背景图'));
+    expect(create.indexOf('俱乐部背景图')).toBeLessThan(create.indexOf('基本资料'));
+    expect(create.indexOf('基本资料')).toBeLessThan(create.indexOf('加入设置'));
+    expect(create).toContain('profile-avatar-editor');
+    expect(create).toContain('profile-avatar-preview');
+    expect(create).toContain('profile-avatar-panel');
+    expect(create).toContain('club-background-editor');
+    expect(create).toContain('data-aspect-ratio="16:9"');
+    expect(css).toMatch(/\.club-background-preview\s*\{[^}]*aspect-ratio:\s*16 \/ 9;/s);
+    expect(create).toContain('data-action="club-create-submit"');
+    expect(create).not.toContain('保存草稿');
+    expect(create).not.toContain('提交审核');
+  });
+
+  it('俱乐部创建状态覆盖提交与恢复，且旧申请状态不再属于正式路由', () => {
+    for (const state of [
+      "['create', '默认填写']",
+      "['validation-error', '校验错误']",
+      "['avatar-uploading', '头像上传中']",
+      "['cover-uploading', '背景上传中']",
+      "['submitting', '创建中']",
+      "['submit-error', '创建失败']",
+      "['success', '创建成功']",
+    ]) {
+      expect(schema).toContain(state);
+    }
+    const center = renderPrototypeState('club/center', 'pending-review');
+    expect(center).toContain('data-mode="discovery"');
+    expect(center).not.toContain('撤回申请');
+    expect(script).not.toContain("action === 'confirm-club-application'");
+    expect(script).not.toContain("action === 'submit-club-application'");
   });
 
   it('M0 组织地基与审批原型以 prototype-only 页面接入，不污染 app.json 真实路由', () => {
-    expect(orgApprovalPrototypeRoutes).toHaveLength(8);
+    expect(orgApprovalPrototypeRoutes).toHaveLength(6);
     for (const route of orgApprovalPrototypeRoutes) {
       expect(schema).toContain(`id: '${route}'`);
       expect(schema).toContain(`path: 'prototype/${route}'`);
@@ -119,11 +191,12 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain("'org-approval': 'org-overview'");
     expect(html).toContain('data-journey="org-approval"');
     expect(html).toContain('组织地基与审批（M0 待实施）');
-    // 关键状态锚点：俱乐部申请状态机、角色/目标矩阵、异常
+    expect(schema).not.toContain("id: 'club-applications'");
+    expect(schema).not.toContain("id: 'club-application-edit'");
+    expect(templates).not.toMatch(/(?:^|\n)\s{4}['"]club-applications['"]:\s*\(\) =>/);
+    expect(templates).not.toMatch(/(?:^|\n)\s{4}['"]club-application-edit['"]:\s*\(\) =>/);
+    // 关键状态锚点：活动发布目标、审批角色与异常
     for (const state of [
-      "'pending_review'",
-      "'name-conflict'",
-      "'submit-confirm'",
       "'admin-club'",
       "'admin-public'",
       "'platform-public'",
@@ -142,7 +215,6 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     for (const copy of [
       'role_auto_publish',
       'review_version',
-      '平台所有者审批后创建正式俱乐部',
       '非成员不能向俱乐部投稿',
       '平台所有者本人公开活动需显式',
       '俱乐部已停用',
@@ -152,8 +224,9 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     ]) {
       expect([schema, templates, script].join('\n')).toContain(copy);
     }
+    expect([schema, templates, script].join('\n')).not.toContain('俱乐部创建申请');
     // 交付中心入口直达 M0 原型
-    expect(deliveryCenter).toContain('组织地基与发布审批（俱乐部创建已实现 · 活动审批仍为原型）');
+    expect(deliveryCenter).toContain('组织地基与活动发布审批（俱乐部由平台管理员直接创建）');
     expect(deliveryCenter).toContain("href: '#org-overview'");
   });
 
@@ -172,23 +245,6 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(templates).toMatch(
       /pending\s*\? fixedBar\('审批通过前活动链接不可用'[\s\S]+?: fixedBar\('', \[btn\('复制活动链接'/,
     );
-  });
-
-  it('俱乐部申请新建态使用同源示例数据，并保留不可提交的必填错误演示', () => {
-    expect(schema).toContain("['create', '新建（示例数据已填好）']");
-    expect(templates).toContain('const example = {');
-    expect(templates).toContain('与表单完全一致的静态原型示例数据');
-    expect(templates).toContain("['名称', example.name]");
-    expect(templates).toContain("input(error ? '' : example.city");
-    expect(templates).toContain("error ? btn('请先补全必填项', 'disabled'");
-  });
-
-  it('我的俱乐部申请将 all 与真实 empty 分离，all 展示完整列表', () => {
-    expect(schema).toContain("['all', '全部申请']");
-    expect(schema).toContain("['empty', '真实空数据']");
-    expect(templates).toContain("const activeFilter = filterOrder.includes(st()) ? st() : 'all'");
-    expect(templates).toContain("['全部', 'all', 4]");
-    expect(templates).toContain("const emptyState = activeFilter === 'empty'");
   });
 
   it('俱乐部管理员可选择公开活动，但必须进入平台所有者审核', () => {
@@ -212,8 +268,8 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
 
   it('待办进入详情携带审批对象类型、ID 和版本，并动态展示匹配快照', () => {
     expect(schema).toContain("id: 'activity-201'");
-    expect(schema).toContain("id: 'application-801'");
     expect(schema).toContain("id: 'public-901'");
+    expect(schema).not.toContain("id: 'application-801'");
     expect(templates).toContain('data-state="${item.kind}-${item.version}--${item.id}"');
     expect(templates).toContain("const stateParts = rawState.split('--')");
     expect(templates).toContain('const matchedItem = reviewItems.find');
@@ -221,13 +277,11 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(templates).toContain("['review_version', item.version]");
   });
 
-  it('平台所有者的俱乐部申请和公开活动进入各自类型详情', () => {
-    expect(schema).toContain("['club-application-v1', '俱乐部申请 v1']");
+  it('平台所有者只处理公开活动，俱乐部活动由所属俱乐部管理员处理', () => {
     expect(schema).toContain("['public-activity-v1', '公开活动 v1']");
-    expect(templates).toContain("item.kind === 'club-application'");
-    expect(templates).toContain("? { label: '俱乐部申请', scope: 'platform'");
     expect(templates).toContain("item.kind === 'public-activity'");
     expect(templates).toContain("? { label: '公开活动', scope: 'public'");
+    expect(templates).not.toContain("item.kind === 'club-application'");
     expect(templates).toContain('${item.submitter} 的${typeInfo.label}审批 · ${item.version}');
   });
 
@@ -240,14 +294,14 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
 
   it('管理待办显式切换角色视角，并禁用当前角色无权限的标签', () => {
     expect(schema).toContain("['admin-club-activity', '俱乐部管理员 · 俱乐部活动待办']");
-    expect(schema).toContain("['platform-club-application', '平台所有者 · 俱乐部申请待办']");
+    expect(schema).toContain("['platform-public-activity', '平台所有者 · 公开活动待办']");
     expect(templates).toContain('切换待办身份视角（显式操作）');
     expect(templates).toContain('切换标签不会改变身份');
     expect(templates).toContain(
       "['club-activity', '俱乐部活动', counts.clubActivity, !platformView",
     );
     expect(templates).toContain(
-      "['club-application', '俱乐部申请', counts.clubApplication, platformView",
+      "['public-activity', '公开活动', counts.publicActivity, platformView",
     );
     expect(templates).toContain('disabled aria-disabled="true" title="${reason}"');
   });
@@ -277,11 +331,8 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
       requestedState?: string,
     ) => string;
     expect(
-      normalize(
-        ['club-activity-v1', 'club-application-v1', 'public-activity-v1'],
-        'club-application-v1--application-801',
-      ),
-    ).toBe('club-application-v1--application-801');
+      normalize(['club-activity-v1', 'public-activity-v1'], 'public-activity-v1--public-901'),
+    ).toBe('public-activity-v1--public-901');
     expect(normalize(['pending-club', 'pending-public'], 'pending-club--club-0023')).toBe(
       'pending-club--club-0023',
     );
@@ -293,24 +344,9 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   });
 
   it('审批详情与结果模板实际按对象上下文渲染操作、标题和审计', () => {
-    const applicationDetail = renderPrototypeState(
-      'approval-detail',
-      'club-application-v1--application-801',
-    );
-    expect(applicationDetail).toContain('通过并创建俱乐部');
-    expect(applicationDetail).toContain(
-      'data-outcome-context="club-application-v1--application-801"',
-    );
-
-    const applicationApproved = renderPrototypeState(
-      'approval-outcome',
-      'manual--club-application-v1--application-801',
-    );
-    expect(applicationApproved).toContain('申请已通过并创建俱乐部');
-    expect(applicationApproved).toContain('review_scope');
-    expect(applicationApproved).toContain('platform-owner');
-    expect(applicationApproved).toContain('application-801');
-    expect(applicationApproved).toContain('v1');
+    const publicDetail = renderPrototypeState('approval-detail', 'public-activity-v1--public-901');
+    expect(publicDetail).toContain('通过并发布公开活动');
+    expect(publicDetail).toContain('data-outcome-context="public-activity-v1--public-901"');
 
     const publicApproved = renderPrototypeState(
       'approval-outcome',
@@ -437,10 +473,10 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   });
 
   it('真实页面与 M0 原型页面都带浅色关键状态与“问题 → 改法 → 规范”设计说明，并提供总览页', () => {
-    expect(schema.match(/\n {6}states: \[/g)).toHaveLength(25);
-    expect(schema.match(/\n {6}problems: \[/g)).toHaveLength(25);
-    expect(schema.match(/\n {6}fixes: \[/g)).toHaveLength(25);
-    expect(schema.match(/\n {6}spec: \[/g)).toHaveLength(25);
+    expect(schema.match(/\n {6}states: \[/g)).toHaveLength(23);
+    expect(schema.match(/\n {6}problems: \[/g)).toHaveLength(23);
+    expect(schema.match(/\n {6}fixes: \[/g)).toHaveLength(23);
+    expect(schema.match(/\n {6}spec: \[/g)).toHaveLength(23);
     for (const state of [
       "'empty'",
       "'loading'",
@@ -501,11 +537,11 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(routeAnalysisDataFoundationArticle).toContain('loading="lazy"');
     expect(deliveryCenter).toContain('沸点手稿与全套设计交接成果');
     expect(deliveryCenter).toContain('docs/designs/2026-10-16-boiling-point/index.html');
-    expect(deliveryCenter).toContain('组织地基与发布审批（俱乐部创建已实现 · 活动审批仍为原型）');
+    expect(deliveryCenter).toContain('组织地基与活动发布审批（俱乐部由平台管理员直接创建）');
     expect(deliveryCenter).toContain(
       'docs/superpowers/plans/2026-10-17-org-foundation-approval.md',
     );
-    expect(deliveryCenter).toContain('俱乐部创建</b>：所有申请统一进入平台所有者待办');
+    expect(deliveryCenter).toContain('俱乐部创建</b>：仅平台管理员可发起，创建后直接生效');
     expect(deliveryCenter).toContain('管理员本人活动默认发布');
     expect(deliveryCenter).toContain('role_auto_publish');
     expect(deliveryCenter).toContain('深行动红白字、48px 主控件');
@@ -808,7 +844,8 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     ]) {
       expect(css).toContain(`${name}: ${value}`);
     }
-    const allowedSelectors = /^\.(tag-success|tag-warning|inline-toast)$/;
+    const allowedSelectors =
+      /^(\.(tag-success|tag-warning|inline-toast|club-admin-card-status)|\.activities-v3 \.activity-card-v3\.is-(closing|joined) \.activity-card-status)$/;
     const cssNoComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
     for (const [, selector, body] of cssNoComments.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
       if (!/var\(--color-status-/.test(body)) continue;
@@ -820,7 +857,8 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     }
     expect(templates).toContain("tag('success', '✓ 已通过')");
     expect(templates).not.toContain("tag('solid', '已通过')");
-    expect(templates).toContain("tag('warning', '⚠ 名额紧张')");
+    expect(templates).toContain('activity-card-v3 is-${presentation.state}');
+    expect(templates).toContain("label: '即将满员'");
     expect(templates).toContain('⚠ 即将截止');
     expect(templates).toContain('可能过期');
     expect(templates).not.toContain("tag('new'");
@@ -1096,7 +1134,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain('organizer-flow');
     expect(script).toContain('发布 ≠ 可报名');
     expect(script).toContain('registration_setup_pending');
-    expect(script).toContain('俱乐部创建申请已统一进入平台管理员待办');
+    expect(script).toContain('俱乐部创建仅由平台管理员发起并直接生效');
     // 05 隐私与产品边界 · 可见 / 不可见 / Strava OAuth 退役
     expect(script).toContain('✓ 公开可见');
     expect(script).toContain('✗ 公开不可见');
@@ -1140,8 +1178,8 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain('id="roadmap"');
     expect(script).toContain('✓ 当前已实现（17 个真实路由）');
     expect(script).toContain('⌛ 后续演进');
-    // 俱乐部创建申请已上线；俱乐部活动 / 公开活动审批、多租户和腾讯文档仍归入后续演进
-    expect(script).toContain('组织地基与审批演进原型：俱乐部创建申请已生产落地');
+    // 俱乐部创建在 Pages 收敛为平台管理员直建；活动审批、多租户和腾讯文档仍归入后续演进
+    expect(script).toContain('组织地基与审批演进原型：俱乐部由平台管理员直接创建');
     expect(script).toContain('多俱乐部 / 多组织租户、独立 Web 后台 — 未来需求');
     expect(script).toContain('报名信息同步腾讯文档 — 需求阶段');
   });
@@ -1155,8 +1193,8 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(page).toContain('GPX');
     // 退役文档不再被当作 external-apis 的 source 链接
     expect(deliveryCenter).not.toContain('docs/strava-athlete-capacity.md');
-    // 俱乐部创建申请已经生产实现，俱乐部活动与公开活动审批仍是后续目标
-    expect(script).toContain('俱乐部创建申请已生产落地');
+    // Pages 不再展示普通用户俱乐部创建申请，俱乐部活动与公开活动审批仍是后续目标
+    expect(script).toContain('俱乐部由平台管理员直接创建');
     expect(deliveryCenter).toContain('俱乐部活动与公开活动发布审批');
     expect(deliveryCenter).toContain('尚未进入生产');
     // 扫码核销入口已退役：凭证只展示活动与审核状态，签到由管理员二次确认。
@@ -1304,6 +1342,12 @@ describe('俱乐部中心（club/center）mode-based 原型契约', () => {
   it('样式继续复用 club-center 视觉 class 与全局动效降级', () => {
     expect(css).toContain('.club-center-discovery-row');
     expect(css).toContain('.club-center-media-grid');
+    expect(css).toMatch(
+      /\.club-center-page:not\(\[data-mode="detail"\]\)\s*\{[^}]*padding:\s*16px 16px 32px;/s,
+    );
+    expect(css).toMatch(
+      /\.club-center-page:not\(\[data-mode="detail"\]\) > \.prototype-mock-badge\s*\{[^}]*position:\s*static;[^}]*transform:\s*none;/s,
+    );
     expect(css).toContain('aspect-ratio: 1');
     expect(css).toContain('aspect-ratio: 16 / 9');
     expect(css).toContain('@media (prefers-reduced-motion: reduce)');
