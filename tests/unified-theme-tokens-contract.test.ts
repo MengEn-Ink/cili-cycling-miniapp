@@ -75,8 +75,11 @@ describe('统一主题设计契约', () => {
 
   it('版本和用户可见更新说明升级且旧版本转为历史项', () => {
     const settings = read('miniprogram/pages/settings/index.ts');
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.19.3');
-    expect(settings).toContain("title: '创建申请可撤回修改'");
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.19.4');
+    expect(settings).toContain("title: '图片清理更可靠'");
+    expect(settings).toMatch(
+      /version: '2026\.10\.19\.3'[\s\S]*?title: '创建申请可撤回修改'[\s\S]*?latest: false/,
+    );
     expect(settings).toMatch(
       /version: '2026\.10\.19\.2'[\s\S]*?title: '俱乐部活动投稿与审核'[\s\S]*?latest: false/,
     );

@@ -128,11 +128,11 @@ test('canonical intent 的 lease-current、attach 与 reclaim 全链使用 canon
   const secret = 'profile-media-secret-for-tests-32-bytes';
   const owner = 'owner';
   const alias = crypto.createHmac('sha256', secret).update(owner).digest('hex').slice(0, 32);
-  const sourcePath = `profiles/${alias}/123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const sourcePath = `profiles/${alias}/activity-route-preview/123e4567-e89b-42d3-a456-426614174000.jpg`;
   const sourceFileId = `cloud://env/${sourcePath}`;
   const sourceDigest = crypto.createHash('sha256').update(sourceFileId).digest('hex');
   const sha256 = 'a'.repeat(64);
-  const canonicalPath = `profile-canonical/${alias}/${sourceDigest}/${sha256}.jpg`;
+  const canonicalPath = `profile-canonical/${alias}/activity-route-preview/${sourceDigest}/${sha256}.jpg`;
   const canonicalFileId = `cloud://env/${canonicalPath}`;
   const now = new Date('2026-09-29T12:00:00.000Z');
   const leaseExpiresAt = new Date('2026-09-29T12:05:00.000Z');
@@ -144,6 +144,7 @@ test('canonical intent 的 lease-current、attach 与 reclaim 全链使用 canon
         owner_openid: owner,
         source_file_id: sourceFileId,
         cloud_path: canonicalPath,
+        category: 'activity-route-preview',
         sha256,
         size: 5,
         mime: 'image/jpeg',

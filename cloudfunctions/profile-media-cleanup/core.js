@@ -14,6 +14,7 @@ const MEDIA_CATEGORIES = [
   'profile-background',
   'activity-image',
   'activity-group-qr',
+  'activity-route-preview',
   'club-avatar',
   'club-cover',
 ];
