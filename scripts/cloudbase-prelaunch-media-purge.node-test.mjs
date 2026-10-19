@@ -118,7 +118,16 @@ function unsetAt(document, path) {
   if (parent) delete parent[field];
 }
 
-function cloudbaseQueryOutput(documents, { outerArray = false, resultKey = 'Result' } = {}) {
+function cloudbaseQueryOutput(documents, { stringifyDocuments = false } = {}) {
+  return JSON.stringify({
+    results: [
+      stringifyDocuments ? documents.map((document) => JSON.stringify(document)) : documents,
+    ],
+    requestId: 'fixture-request-id',
+  });
+}
+
+function legacyCloudbaseQueryOutput(documents, { outerArray = false, resultKey = 'Result' } = {}) {
   const result = JSON.stringify({
     wrappers: [{ command: 'QUERY', ok: true }],
     cursor: { firstBatch: documents },
@@ -160,9 +169,7 @@ function databaseExecutor(seed, { failMutation, maxQueryBatch = Infinity, queryO
           if (body.projection?.status) projected.status = item.status;
           return projected;
         });
-      return queryOutput
-        ? queryOutput(found, { entry, body })
-        : JSON.stringify({ documents: found });
+      return queryOutput ? queryOutput(found, { entry, body }) : cloudbaseQueryOutput(found);
     }
     const ordinal = (mutationOrdinals.get(entry.TableName) || 0) + 1;
     mutationOrdinals.set(entry.TableName, ordinal);
@@ -284,21 +291,26 @@ test('mutation 模板限制集合和字段，且只允许逐文档 UPDATE / DELE
   );
 });
 
-test('CloudBase 嵌套 Result 优先解析含 _id 的 firstBatch，忽略普通 wrapper object array', () => {
+test('CloudBase CLI --json results envelope 解析文档、字符串文档与 Extended JSON _id', () => {
   const extendedId = { $oid: '507f1f77bcf86cd799439011' };
   const documents = [{ _id: extendedId }, { _id: 'plain-id', status: 'uploaded' }];
+  assert.deepEqual(parseNosqlDocuments(cloudbaseQueryOutput(documents)), documents);
   assert.deepEqual(
-    parseNosqlDocuments(cloudbaseQueryOutput(documents, { outerArray: true })),
-    documents,
-  );
-  assert.deepEqual(
-    parseNosqlDocuments(cloudbaseQueryOutput(documents, { resultKey: 'result' })),
+    parseNosqlDocuments(cloudbaseQueryOutput(documents, { stringifyDocuments: true })),
     documents,
   );
 });
 
-test('direct documents/Docs/docs/list 与 Result 文档数组保持兼容', () => {
+test('legacy Result/result、cursor.firstBatch 与 direct 文档数组保持兼容', () => {
   const documents = [{ _id: { $numberLong: '39198820328' } }];
+  assert.deepEqual(
+    parseNosqlDocuments(legacyCloudbaseQueryOutput(documents, { outerArray: true })),
+    documents,
+  );
+  assert.deepEqual(
+    parseNosqlDocuments(legacyCloudbaseQueryOutput(documents, { resultKey: 'result' })),
+    documents,
+  );
   for (const key of ['documents', 'Docs', 'docs', 'list']) {
     assert.deepEqual(parseNosqlDocuments(JSON.stringify({ [key]: documents })), documents);
   }
@@ -308,8 +320,25 @@ test('direct documents/Docs/docs/list 与 Result 文档数组保持兼容', () =
   );
 });
 
-test('空 firstBatch 识别为空查询，非法或缺失 supported array 均 fail closed', () => {
-  assert.deepEqual(parseNosqlDocuments(cloudbaseQueryOutput([], { outerArray: true })), []);
+test('results envelope 合法空查询返回空，缺失、空 envelope、多结果及非法 QUERY result 均 fail closed', () => {
+  assert.deepEqual(parseNosqlDocuments(cloudbaseQueryOutput([])), []);
+  for (const output of [
+    {},
+    { results: [] },
+    { results: [[], []] },
+    { results: [{ n: 20 }], requestId: 'count-request-id' },
+    { results: [[{ status: 'uploaded' }]], requestId: 'missing-id-request-id' },
+    { results: [['not-json']], requestId: 'invalid-json-request-id' },
+  ]) {
+    assert.throws(
+      () => parseNosqlDocuments(JSON.stringify(output)),
+      /CloudBase QUERY 命令缺少有效文档结果/,
+    );
+  }
+});
+
+test('legacy 空 firstBatch 识别为空查询，非法或缺失 supported array 均 fail closed', () => {
+  assert.deepEqual(parseNosqlDocuments(legacyCloudbaseQueryOutput([], { outerArray: true })), []);
   for (const output of [
     {
       Data: [{ Result: JSON.stringify({ wrappers: [{ ok: true, command: 'QUERY' }] }) }],
@@ -342,8 +371,7 @@ test('profile_media 20 条与 imports 41 条逐文档更新，重复执行保持
       maxQueryBatch: 7,
       queryOutput(documents, { entry }) {
         return cloudbaseQueryOutput(documents, {
-          outerArray: entry.TableName === 'profile_media',
-          resultKey: entry.TableName === 'profile_media' ? 'Result' : 'result',
+          stringifyDocuments: entry.TableName === 'profile_media_imports',
         });
       },
     },
@@ -512,7 +540,7 @@ test('DELETE 逐文档使用 q:{_id},limit:1，空 firstBatch 回读确认后重
     },
     {
       queryOutput(documents) {
-        return cloudbaseQueryOutput(documents, { outerArray: true });
+        return cloudbaseQueryOutput(documents);
       },
     },
   );
@@ -591,7 +619,7 @@ test('计数使用 CloudBase COMMAND count，存在性 QUERY 固定 limit 1', as
       assert.ok(index > 0);
       const [entry] = JSON.parse(args[index + 1]);
       commands.push(entry);
-      return JSON.stringify({ Data: [{ Result: JSON.stringify({ n: 2, ok: 1 }) }] });
+      return JSON.stringify({ results: [{ n: 2, ok: 1 }], requestId: 'count-request-id' });
     },
   });
   assert.deepEqual(await adapter.summary(), {
@@ -670,7 +698,7 @@ test('media 与 import 终态回读及删除覆盖 cleanup worker 的最终状�
       const index = args.indexOf('--command');
       const [entry] = JSON.parse(args[index + 1]);
       commands.push(entry);
-      return cloudbaseQueryOutput([], { outerArray: true });
+      return cloudbaseQueryOutput([]);
     },
   });
   assert.deepEqual(await adapter.terminalCounts(), { mediaRemaining: 0, importsRemaining: 0 });

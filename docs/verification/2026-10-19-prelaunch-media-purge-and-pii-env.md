@@ -45,6 +45,14 @@
 
 根因是 CloudBase CLI 的真实响应外层为 command response 数组或对象，内层 `Result` / `result` JSON 才包含 `cursor.firstBatch`。旧 parser 会把遍历中遇到的任意对象数组当成文档候选，因此先选中了不含 `_id` 的 CLI wrapper object array，而不是实际文档数组。脚本现只从 `Result` / `result` 直接文档数组及 `cursor.firstBatch`、`documents` / `Docs` / `docs` / `list` 既有字段收集候选，并优先返回非空、每个元素均为对象且自有 `_id` 的数组；普通 wrapper 数组不再作为文档。至少一个受支持空数组且不存在受支持的非法非空候选时才返回空结果；完全没有受支持数组或只有非空缺 `_id` 候选时立即抛错，避免 `terminalCounts` 把非法响应误判为清空完成并继续破坏性操作。ID 数量与 COUNT 不一致时仍 fail closed。所有存在性与分页 QUERY projection 均显式包含 `_id`，Extended JSON `_id` 对象原样透传且不写入日志。
 
+## 第五次生产失败回溯（run 39201415893）
+
+第五次人工清理输出摘要后报 `CloudBase QUERY 命令缺少有效文档结果`，仍未进入后续破坏性步骤。
+
+根因是上一轮兼容了虚构的 `Result` / `result`、`cursor.firstBatch` 等响应形态，却遗漏了 CloudBase CLI 3.8.4 自身 `--json` 的固定输出信封。CLI 先将服务端 `Data` 中每个命令结果解析后放入 `results`，若命令结果是数组还会继续解析其中的 JSON string 子项，最终输出 `{results, requestId}`；因此当前单 QUERY 的真实形态是 `{"results":[[document...]],"requestId":"..."}`，外层 `results` 是命令结果数组，不是文档数组。
+
+脚本现优先按该传输信封解析：由于 `invokeNosql` 每次只发送一个命令，`results` 必须恰有一个 command result，且 QUERY command result 必须是数组；合法 `[[]]` 返回空，文档对象（含兼容保留的 JSON string 文档）必须全部具有自有 `_id`，Extended JSON `_id` 原样保留。`results` 缺失或为空、包含多个 command result、QUERY command result 非数组、非空文档缺 `_id` 或 string 无法解析时均 fail closed。COUNT 的 `{"results":[{"n":20}]}` 仍由独立计数解析器处理，不会被误认成 QUERY 文档。原有 `Result` / `result`、`cursor.firstBatch`、`documents` / `Docs` / `docs` / `list` 仅作为 legacy 兼容路径保留。
+
 ## 破坏性操作门禁
 
 `scripts/cloudbase-prelaunch-media-purge.mjs` 默认 dry-run，只输出集合计数和两个固定存储 glob 的删除预览计数，不输出文档、openid、个人字段或密钥。`--apply` 必须同时满足：
@@ -71,7 +79,7 @@ apply 后必须回读确认：`profiles`、`profile_media`、`profile_media_impo
 
 ## 自动化覆盖与远端待办
 
-Node 测试覆盖 dry-run 不写、三重确认、环境不匹配、空库与重复执行幂等、集合/字段/状态范围、真实 CloudBase 外层 command response 与内层 `Result` / `result`、`cursor.firstBatch` 和普通 wrapper 并存时的解析、`documents` / `Docs` / `docs` / `list`、Extended JSON `_id`、空结果与非法包装 fail closed、`profile_media` 20 条及 imports 41 条逐文档更新、超过单页的 `_id` 稳定分页、逐文档 DELETE、每文档回读、第 N 文档失败脱敏定位、固定存储前缀、cleanup 等待重试、PII 严格解码、环境变量保全与 workflow 顺序/门禁，并纳入 `test:bootstrap`。
+Node 测试以 CloudBase CLI 3.8.4 `--json` 的 `{results, requestId}` 真实信封为主，覆盖单命令 20/41 条逐文档更新、空 `[[]]`、JSON string 文档、Extended JSON `_id`、缺失或空 `results`、多 command result、非数组 QUERY result、缺 `_id` 文档，以及 `terminalCounts` 与 `collectMutationIds` 的真实信封链路；同时保留 `Result` / `result`、`cursor.firstBatch`、`documents` / `Docs` / `docs` / `list` legacy 兼容测试。其余覆盖包括 dry-run 不写、三重确认、环境不匹配、空库与重复执行幂等、集合/字段/状态范围、超过单页的 `_id` 稳定分页、逐文档 DELETE、每文档回读、第 N 文档失败脱敏定位、固定存储前缀、cleanup 等待重试、PII 严格解码、环境变量保全与 workflow 顺序/门禁，并纳入 `test:bootstrap`。
 
 合入前仍需环境管理员：
 
