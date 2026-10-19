@@ -213,10 +213,12 @@ function parseJson(output, source) {
   }
 }
 
-function collectDocumentArrays(value, results = [], seen = new Set()) {
+const DOCUMENT_ARRAY_KEYS = new Set(['firstBatch', 'documents', 'Docs', 'docs', 'list']);
+
+function collectDocumentArrays(value, results = [], seen = new Set(), recognized = false) {
   if (typeof value === 'string') {
     try {
-      return collectDocumentArrays(JSON.parse(value), results, seen);
+      return collectDocumentArrays(JSON.parse(value), results, seen, recognized);
     } catch {
       return results;
     }
@@ -224,31 +226,33 @@ function collectDocumentArrays(value, results = [], seen = new Set()) {
   if (!value || typeof value !== 'object' || seen.has(value)) return results;
   seen.add(value);
   if (Array.isArray(value)) {
-    const wrappers = value.every(
-      (item) => item && typeof item === 'object' && ('Result' in item || 'result' in item),
-    );
-    if (wrappers && value.length) {
-      results.unshift(
-        value.map((item) => {
-          const nested = item.Result ?? item.result;
-          return typeof nested === 'string' ? JSON.parse(nested) : nested;
-        }),
-      );
-    } else if (value.every((item) => item && typeof item === 'object')) results.push(value);
+    results.push({ items: value, recognized });
     value.forEach((item) => collectDocumentArrays(item, results, seen));
     return results;
   }
   for (const [key, nested] of Object.entries(value)) {
-    if (['firstBatch', 'documents', 'Docs', 'docs', 'list'].includes(key) && Array.isArray(nested))
-      results.unshift(nested);
-    collectDocumentArrays(nested, results, seen);
+    collectDocumentArrays(
+      nested,
+      results,
+      seen,
+      key === 'Result' || key === 'result' || DOCUMENT_ARRAY_KEYS.has(key),
+    );
   }
   return results;
 }
 
-function parseNosqlDocuments(output) {
-  const arrays = collectDocumentArrays(parseJson(output, 'CloudBase 数据库命令'));
-  return arrays.find((items) => items.every((item) => item && typeof item === 'object')) || [];
+export function parseNosqlDocuments(output) {
+  const candidates = collectDocumentArrays(parseJson(output, 'CloudBase 数据库命令'));
+  const recognized = candidates.filter((candidate) => candidate.recognized);
+  const valid = recognized.find(
+    ({ items }) =>
+      items.length > 0 &&
+      items.every((item) => item && typeof item === 'object' && Object.hasOwn(item, '_id')),
+  );
+  if (valid) return valid.items;
+  if (recognized.some(({ items }) => items.length > 0) || recognized.length === 0)
+    throw new Error('CloudBase QUERY 命令缺少有效文档结果');
+  return [];
 }
 
 function collectCounts(value, results = [], seen = new Set()) {

@@ -39,6 +39,12 @@
 
 脚本现不再下发任何 `multi:true` UPDATE 或多文档 DELETE。每条原始 mutation 先用完全相同的 filter 执行 COUNT，再按 `_id` 升序、`_id > lastId` 分页一次取全 ID；取回数量必须与 COUNT 完全相等，禁止按单页上限静默截断。随后仅下发 smoke 已验证的逐文档形态：UPDATE 使用 `q:{_id}`、原 `u`、`upsert:false,multi:false`，DELETE 使用 `q:{_id},limit:1`。每个文档操作后立即按目标状态或删除结果回读；失败日志只包含原 command 序号、collection/op、文档序号、阶段和脱敏 stderr，不输出 ID、payload 或个人信息。空集合仍只 COUNT 后跳过，中断重跑会从当前状态继续。
 
+## 第四次生产失败回溯（run 39198820328）
+
+第四次人工清理输出 `profiles=0, clubs_media=0, applications_media=0, activities_media=0, route_previews=0, profile_media=20, imports=41, storage_profiles=18, storage_canonical=5`。第 6 条 `profile_media` UPDATE 在 `query_ids` 阶段报 `CloudBase NoSQL ID 查询无效`，尚未进入逐文档 mutation。
+
+根因是 CloudBase CLI 的真实响应外层为 command response 数组或对象，内层 `Result` / `result` JSON 才包含 `cursor.firstBatch`。旧 parser 会把遍历中遇到的任意对象数组当成文档候选，因此先选中了不含 `_id` 的 CLI wrapper object array，而不是实际文档数组。脚本现只从 `Result` / `result` 直接文档数组及 `cursor.firstBatch`、`documents` / `Docs` / `docs` / `list` 既有字段收集候选，并优先返回非空、每个元素均为对象且自有 `_id` 的数组；普通 wrapper 数组不再作为文档。至少一个受支持空数组且不存在受支持的非法非空候选时才返回空结果；完全没有受支持数组或只有非空缺 `_id` 候选时立即抛错，避免 `terminalCounts` 把非法响应误判为清空完成并继续破坏性操作。ID 数量与 COUNT 不一致时仍 fail closed。所有存在性与分页 QUERY projection 均显式包含 `_id`，Extended JSON `_id` 对象原样透传且不写入日志。
+
 ## 破坏性操作门禁
 
 `scripts/cloudbase-prelaunch-media-purge.mjs` 默认 dry-run，只输出集合计数和两个固定存储 glob 的删除预览计数，不输出文档、openid、个人字段或密钥。`--apply` 必须同时满足：
@@ -65,7 +71,7 @@ apply 后必须回读确认：`profiles`、`profile_media`、`profile_media_impo
 
 ## 自动化覆盖与远端待办
 
-Node 测试覆盖 dry-run 不写、三重确认、环境不匹配、空库与重复执行幂等、集合/字段/状态范围、`profile_media` 20 条及 imports 41 条逐文档更新、超过单页的 `_id` 稳定分页、逐文档 DELETE、每文档回读、第 N 文档失败脱敏定位、固定存储前缀、cleanup 等待重试、PII 严格解码、环境变量保全与 workflow 顺序/门禁，并纳入 `test:bootstrap`。
+Node 测试覆盖 dry-run 不写、三重确认、环境不匹配、空库与重复执行幂等、集合/字段/状态范围、真实 CloudBase 外层 command response 与内层 `Result` / `result`、`cursor.firstBatch` 和普通 wrapper 并存时的解析、`documents` / `Docs` / `docs` / `list`、Extended JSON `_id`、空结果与非法包装 fail closed、`profile_media` 20 条及 imports 41 条逐文档更新、超过单页的 `_id` 稳定分页、逐文档 DELETE、每文档回读、第 N 文档失败脱敏定位、固定存储前缀、cleanup 等待重试、PII 严格解码、环境变量保全与 workflow 顺序/门禁，并纳入 `test:bootstrap`。
 
 合入前仍需环境管理员：
 
