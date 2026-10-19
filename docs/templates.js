@@ -525,19 +525,55 @@
     },
 
     'activity-detail': () => {
+      const registrationModes = (window.prototypeData && window.prototypeData.registrationModes) || {};
+      const modeOptions = Array.isArray(registrationModes.options) ? registrationModes.options : [];
+      const modeByKey = Object.fromEntries(modeOptions.map((option) => [option.key, option]));
+      // 报名模式分支：open-public* / open-approval 显式切换；旧 open 兼容按活动字段推断
+      const stateDrivenMode = is('open-public', 'open-public-full')
+        ? 'open'
+        : is('open-approval')
+          ? 'approval'
+          : '';
+      const activityMode = stateDrivenMode || primary.registrationMode || 'approval';
+      const modeMeta = modeByKey[activityMode] || modeByKey.approval || modeOptions[0] || {};
       const approved = is('', 'approved', 'copied', 'copy-failed');
-      const full = is('full');
-      const bar = approved
-        ? fixedBar('你已通过审核，出发前请查看凭证', [btn('查看我的行程', go('registrations'))], true)
-        : full
-          ? fixedBar('名额已满，可关注下一场活动', [btn('名额已满', 'disabled', 'btn is-disabled')], true)
-          : fixedBar(`剩余 ${primary.capacity - primary.approved} 个名额，报名后需管理员审核`, [btn('立即报名', go('registration-form'))], true);
+      const full = is('full', 'open-public-full');
+      const ended = is('ended');
+      const openPublic = is('open-public', 'open-public-full');
+      const openApproval = is('open-approval');
+      const openMode = openPublic || openApproval;
+      const modePill = `<span class="mode-pill mode-pill-${activityMode}" data-registration-mode="${activityMode}" data-activity-mode="${activityMode}">${activityMode === 'open' ? '公开报名 · 直接加入' : '审批报名 · 需审核'}</span>`;
+      const modeHelper = modeMeta.helper || '';
+      let bar;
+      if (ended) {
+        bar = fixedBar('活动已结束（T+1 自然结束）· 仅供查看', [btn('活动已结束', 'disabled', 'btn is-disabled')], true);
+      } else if (approved && !openMode) {
+        bar = fixedBar('你已通过审核，出发前请查看凭证', [btn('查看我的行程', go('registrations'))], true);
+      } else if (full) {
+        bar = fixedBar(openPublic ? '名额已满，不接受新的加入' : '名额已满，可关注下一场活动', [btn('名额已满', 'disabled', 'btn is-disabled')], true);
+      } else if (openPublic) {
+        bar = fixedBar(`公开报名 · 剩余 ${primary.capacity - primary.approved} 个名额，加入即生效`, [btn(modeMeta.cta || '立即加入', go('registration-form') + ' data-state="confirm"', 'btn mode-cta-open')], true);
+      } else if (openApproval) {
+        bar = fixedBar(`审批报名 · 剩余 ${primary.capacity - primary.approved} 个名额，提交后由管理员审核`, [btn(modeMeta.cta || '提交报名申请', go('registration-form') + ' data-state="default"', 'btn mode-cta-approval')], true);
+      } else {
+        bar = fixedBar(`剩余 ${primary.capacity - primary.approved} 个名额，报名后需管理员审核`, [btn('立即报名', go('registration-form'))], true);
+      }
       const copyToast = is('copied')
         ? '<div class="inline-toast" role="status"><b aria-hidden="true">✓</b>路线链接已复制</div>'
         : is('copy-failed')
           ? '<div class="inline-toast is-error" role="alert"><b aria-hidden="true">!</b>复制失败，请稍后重试</div>'
           : '';
-      const statusTag = approved ? tag('success', '✓ 已通过') : full ? tag('muted', '名额已满') : tag('outline', '报名中');
+      const statusTag = ended
+        ? tag('muted', '已结束')
+        : approved && !openMode
+          ? tag('success', '✓ 已通过')
+          : full
+            ? tag('muted', '名额已满')
+            : openPublic
+              ? tag('solid', '直接加入')
+              : openApproval
+                ? tag('pending', '需审批')
+                : tag('outline', '报名中');
       const detailHost = activityHost(primary);
       const hostCard =
         detailHost.kind === 'club'
@@ -551,12 +587,24 @@
             <div class="host-card-body"><span class="club-avatar club-avatar-md club-avatar-public" aria-hidden="true"><b>公开</b></span><div class="host-card-text"><b>${PUBLIC_ACTIVITY_LABEL}</b><p class="meta-line">${primary.organizer || '平台公开发起 · 由此里平台托管'}</p></div></div>
             <p class="card-hint">${PUBLIC_ACTIVITY_NOTE}</p>
           </article>`;
-      return `<div class="pg has-bar">
+      // 模式切换说明条 + 两种模式间的切换入口（仅原型展示）
+      const modeSwitcher = `<div class="mode-switcher" role="group" aria-label="报名模式切换（原型示意）">
+        <div class="mode-switcher-head"><b>报名模式</b>${modePill}</div>
+        <p class="card-hint">${modeHelper}</p>
+        <div class="mode-switcher-actions">
+          <button class="btn-chip ${activityMode === 'open' ? 'is-active' : ''}" data-action="route" data-route="activity-detail" data-state="open-public">公开报名</button>
+          <button class="btn-chip ${activityMode === 'approval' ? 'is-active' : ''}" data-action="route" data-route="activity-detail" data-state="open-approval">审批报名</button>
+          <button class="btn-chip" data-action="route" data-route="activity-detail" data-state="ended">T+1 结束</button>
+        </div>
+        <p class="neutral-note mode-switcher-note">活动 T+1：以 event_end 的 UTC+8 自然日为 T，T+1 00:00 自动进入结束展示；缺 event_end 回退 event_start；主动下架优先保留下架语义。</p>
+      </div>`;
+      return `<div class="pg has-bar" data-activity-mode="${activityMode}" data-registration-mode="${activityMode}">
         <div class="cover"><img src="${IMG.cover}" alt="${primary.title}" /><span class="cover-count">1/3</span><div class="cover-dots"><i class="is-active"></i><i></i><i></i></div></div>
-        <section class="info-bar"><div class="info-head"><span class="info-kicker">${primary.date} · ${primary.level}</span><span class="info-tag">${approved ? '已通过' : full ? '名额已满' : '报名中'}</span></div><h2 class="info-title">${primary.title}</h2><p class="info-meta"><span>${primary.time}集合</span><span>${primary.start}</span></p></section>
+        <section class="info-bar"><div class="info-head"><span class="info-kicker">${primary.date} · ${primary.level}</span><span class="info-tag">${ended ? '已结束' : approved && !openMode ? '已通过' : full ? '名额已满' : openPublic ? '直接加入' : openApproval ? '待审核' : '报名中'}</span></div><h2 class="info-title">${primary.title}</h2><p class="info-meta"><span>${primary.time}集合</span><span>${primary.start}</span></p>${modePill}</section>
+        ${modeSwitcher}
         ${hostCard}
         ${metrics([[`${primary.distanceKm} km`, '里程'], [`${primary.elevationM} m`, '爬升'], [primary.estimatedRideTime, '预计骑行'], [`${primary.approved} 人`, '已通过']])}
-        <div class="card"><div class="detail-decision"><div><p class="card-hint">报名状态</p><h3 class="card-title">${approved ? '已通过' : full ? '名额已满' : '可报名'}</h3><p class="card-hint">${approved ? '可查看行程凭证与活动群二维码' : full ? '本场名额已满，暂不接受报名' : '提交后由管理员审核，结果在行程页同步'}</p>${approved || full ? '' : `<p class="alert-line">${tag('warning', '⚠ 即将截止 · 10月17日 20:00')}</p>`}</div>${statusTag}</div></div>
+        <div class="card"><div class="detail-decision"><div><p class="card-hint">报名状态</p><h3 class="card-title">${ended ? '已结束' : approved && !openMode ? '已通过' : full ? '名额已满' : openPublic ? '可直接加入' : openApproval ? '需管理员审核' : '可报名'}</h3><p class="card-hint">${ended ? '活动已自然结束，仅供查看。' : approved && !openMode ? '可查看行程凭证与活动群二维码' : full ? '本场名额已满，暂不接受报名' : openPublic ? '公开报名 · 点击加入后直接成功并生成凭证；满员不可继续加入。' : openApproval ? '提交后进入 pending，待管理员审核；通过时再次校验名额并生成凭证。' : '提交后由管理员审核，结果在行程页同步'}</p>${approved || full || ended ? '' : `<p class="alert-line">${tag('warning', '⚠ 即将截止 · 10月17日 20:00')}</p>`}</div>${statusTag}</div></div>
         <div class="card">${cardHead('', '集合信息')}${rows([['集合时间', primary.time], ['集合地点', primary.start], ['费用', primary.fee]])}${btn('地图导航', toast('已打开集合点导航'), 'btn-secondary')}</div>
         <div class="card">${cardHead('', 'Strava 官方路线', tag('neutral', '官方'), '复制组织者分享的规范化公开路线链接。')}${btn('复制路线链接', 'data-action="copy-route"', 'btn-secondary')}${copyToast}<p class="card-hint">小程序内不打开第三方页面，复制后可自行粘贴使用。</p></div>
         <div class="card route-brief-card">
@@ -585,27 +633,52 @@
           ${btn('查看完整路线分析 →', go('route-analysis'), 'btn-secondary route-brief-cta')}
         </div>
         <div class="card">${cardHead('', '已报名人员', tag('neutral', `${primary.approved} / ${primary.capacity}`), '其他骑友只显示昵称，头像与昵称经本人授权展示')}<div class="avatar-row">${attendees.map((name) => `<button data-action="rider" data-rider="${name}"><span class="avatar">${name.slice(0, 1)}</span><small>${name}</small></button>`).join('')}</div></div>
-        <div class="card">${cardHead('', '活动群二维码')}${approved ? `<div class="qr-row" style="margin-top:12px">${qr(3)}<p class="card-hint">扫码加入活动群，出发前请留意群内通知。长按可保存。</p></div>` : `<p class="neutral-note">报名通过后可查看活动群二维码。</p>`}</div>
+        <div class="card">${cardHead('', '活动群二维码')}${approved && !openMode ? `<div class="qr-row" style="margin-top:12px">${qr(3)}<p class="card-hint">扫码加入活动群，出发前请留意群内通知。长按可保存。</p></div>` : `<p class="neutral-note">报名${activityMode === 'open' ? '成功' : '通过'}后可查看活动群二维码。</p>`}</div>
         <div class="card">${cardHead('', '备注事项')}<p class="card-hint" style="color:var(--color-text)">请佩戴头盔，携带补给水、备胎和基础维修工具；雨天活动另行通知。</p></div>
       </div>${bar}`;
     },
 
     'registration-form': () => {
-      const selected = is('selected', 'submitting');
-      const submitting = is('submitting');
-      const action = submitting
+      // 公开报名：confirm / confirm-submitting / confirm-full（轻确认，直接成功）
+      // 审批报名：default / selected / submitting（完整申请表，提交后待审批）
+      const openConfirm = is('confirm', 'confirm-submitting', 'confirm-full', 'confirm-capacity-changed');
+      const openSubmitting = is('confirm-submitting');
+      const openFull = is('confirm-full');
+      const openCapacityChanged = is('confirm-capacity-changed');
+      const approvalSelected = is('selected', 'submitting');
+      const approvalSubmitting = is('submitting');
+      if (openConfirm) {
+        const action = openFull
+          ? btn('名额已满', 'disabled', 'btn is-disabled')
+          : openSubmitting
+            ? btn('加入中', 'disabled', 'btn is-loading')
+            : btn('确认加入', `data-action="submit-registration" data-registration-mode="open" data-capacity-available="${openCapacityChanged ? 'false' : 'true'}"`, 'btn mode-cta-open');
+        return `<div class="pg registration-page registration-page-open" data-registration-mode="open">${steps(1)}
+          <h2 class="page-title registration-title">确认加入 · 公开报名</h2>
+          <p class="page-sub long-copy">公开报名无需审批：核对资料后点击「确认加入」即生效并生成凭证；满员时自动不接受新的加入。</p>
+          <section class="info-bar"><div class="info-head"><span class="info-kicker">当前活动</span><span class="info-tag">${openFull ? '名额已满' : '直接加入'}</span></div><h2 class="info-title">${primary.title}</h2><p class="info-meta"><span>${primary.date} · ${primary.time}</span><span>总名额 ${primary.capacity}</span></p><span class="mode-pill mode-pill-open">公开报名 · 直接加入</span></section>
+          <div class="card">${cardHead('01', '报名资料', tag('neutral', '本人可见'), '仅你本人与组织者可见，用于活动安全联络')}${rows([['昵称', rider.nickname], ['真实姓名', rider.realName], ['手机号', rider.phone], ['紧急联系人', rider.emergency]])}<button class="btn-text" ${go('profile-edit')}>修改资料</button></div>
+          <div class="card">${cardHead('02', '集合方式', tag('neutral', '默认'), '不同集合方式分别计算名额')}${choices(['自行前往', '需要后援车'], '自行前往')}<p class="card-hint">公开报名以点击确认时的名额为准，满员将直接拒绝。</p></div>
+          <div class="card open-confirm-note">
+            <h3 class="card-title">加入即生效</h3>
+            <p class="card-hint">确认后系统校验门禁与名额，通过即生成凭证；不会出现待审批或已驳回状态。</p>
+            ${openFull ? '<p class="pending-note">名额已满，当前不接受新的加入，可关注下一场活动。</p>' : ''}
+          </div>
+        </div>${fixedBar(openFull ? '名额已满，不接受新的加入' : openSubmitting ? '正在校验名额并生成凭证…' : '确认后将直接加入并生成凭证', [btn('返回活动', go('activity-detail') + ' data-state="open-public"', 'btn-secondary'), action], !openFull && !openSubmitting)}`;
+      }
+      const action = approvalSubmitting
         ? btn('提交中', 'disabled', 'btn is-loading')
-        : selected
-          ? btn('提交报名', 'data-action="submit-registration"')
-          : btn('提交报名', 'disabled', 'btn is-disabled');
-      return `<div class="pg registration-page">${steps(1)}
-        <h2 class="page-title registration-title">确认报名信息</h2><p class="page-sub long-copy">提交后将进入审核，请确认资料准确；集合方式与能力自评将供组织者审核，通过后可查看出发凭证。</p>
-        <section class="info-bar"><div class="info-head"><span class="info-kicker">当前活动</span><span class="info-tag">报名开放</span></div><h2 class="info-title">${primary.title}</h2><p class="info-meta"><span>${primary.date} · ${primary.time}</span><span>总名额 ${primary.capacity}</span></p></section>
+        : approvalSelected
+          ? btn('提交报名申请', 'data-action="submit-registration" data-registration-mode="approval"')
+          : btn('提交报名申请', 'disabled', 'btn is-disabled');
+      return `<div class="pg registration-page registration-page-approval" data-registration-mode="approval">${steps(1)}
+        <h2 class="page-title registration-title">确认报名信息 · 审批报名</h2><p class="page-sub long-copy">审批报名：提交后进入待审批状态，由管理员审核；通过时再次校验名额并生成凭证，待审批不保证名额。</p>
+        <section class="info-bar"><div class="info-head"><span class="info-kicker">当前活动</span><span class="info-tag">需审批</span></div><h2 class="info-title">${primary.title}</h2><p class="info-meta"><span>${primary.date} · ${primary.time}</span><span>总名额 ${primary.capacity}</span></p><span class="mode-pill mode-pill-approval">审批报名 · 需审核</span></section>
         <div class="card">${cardHead('01', '报名资料', tag('neutral', '本人可见'), '用于审核与活动安全联络，仅你本人与审核管理员可见')}${rows([['昵称', rider.nickname], ['真实姓名', rider.realName], ['手机号', rider.phone], ['紧急联系人', rider.emergency]])}<button class="btn-text" ${go('profile-edit')}>修改资料</button></div>
-        <div class="card">${cardHead('02', '集合方式', tag('neutral', '默认'), '不同集合方式分别计算名额，请按实际情况选择')}${choices(['自行前往', '需要后援车'], '自行前往')}<p class="card-hint">名额以提交时状态为准；活动或所选方式满额后，将自动进入候补。</p></div>
-        <div class="card">${cardHead('03', '能力自评', tag('pending', '必选'), '请选择最接近当前骑行能力的一项，供组织者审核参考')}${choices(['新手', '有经验', '常骑'], selected ? '有经验' : '')}${selected ? '' : '<p class="pending-note">请选择骑行经验后再提交</p>'}</div>
+        <div class="card">${cardHead('02', '集合方式', tag('neutral', '默认'), '不同集合方式分别计算名额，请按实际情况选择')}${choices(['自行前往', '需要后援车'], '自行前往')}<p class="card-hint">名额以通过审核时状态为准；待审批不占用正式名额，通过时若已满则无法通过本次申请。</p></div>
+        <div class="card">${cardHead('03', '能力自评', tag('pending', '必选'), '请选择最接近当前骑行能力的一项，供组织者审核参考')}${choices(['新手', '有经验', '常骑'], approvalSelected ? '有经验' : '')}${approvalSelected ? '' : '<p class="pending-note">请选择骑行经验后再提交</p>'}</div>
         <div class="card">${cardHead('04', '备注与安全', tag('neutral', '选填'), '仅填写组织方需要提前了解的信息')}${input('', { cls: 'textarea', ph: '饮食、集合或其他备注', count: '0/500' })}</div>
-      </div>${fixedBar(selected ? '资料已完整，可以提交' : '还差 1 项：骑行经验', [btn('返回活动', go('activity-detail'), 'btn-secondary'), action], selected)}`;
+      </div>${fixedBar(approvalSelected ? '资料已完整，可以提交审核' : '还差 1 项：骑行经验', [btn('返回活动', go('activity-detail') + ' data-state="open-approval"', 'btn-secondary'), action], approvalSelected)}`;
     },
 
     registrations: () => {
@@ -633,8 +706,8 @@
       const cancelledHostLine = snapshotHostLine(cancelledTrip);
       return `<div class="pg registrations-prototype">${head}
         <div class="trip-summary">${metric('0', '审核中')}${metric('1', '可出发', 'is-ready')}${metric(cancelledDeleted ? '0' : '1', '已失效')}</div>
-        <article class="trip-ticket"><div class="trip-ticket-top"><b class="ticket-label">骑行票据</b><span class="ticket-date">${readyTrip.date}</span>${tag('success', '✓ 已通过')}</div><div class="trip-ticket-body"><h3>${readyTrip.title}</h3><p class="meta-line trip-host-line">${tripHostLine}</p><div class="trip-ticket-info"><div><small>集合时间</small><b>${readyTrip.time}</b></div><div><small>集合地点</small><b>${readyTrip.start}</b></div></div><div class="ticket-meta"><span>集合方式</span><b>自行前往</b></div><p class="status-guidance"><i></i>凭证已就绪，出发当天向组织者出示</p>${btn('查看凭证', go('credential'), 'btn trip-ticket-primary')}</div></article>
-        ${cancelledDeleted ? '' : `<article class="trip-ticket trip-ticket-cancelled"><div class="trip-ticket-top"><b class="ticket-label">骑行票据</b><span class="ticket-date">${cancelledTrip.date}</span>${tag('muted', '已取消')}</div><div class="trip-ticket-body"><h3>${cancelledTrip.title}</h3><p class="meta-line trip-host-line">${cancelledHostLine}</p><div class="trip-ticket-info"><div><small>集合时间</small><b>${cancelledTrip.time}</b></div><div><small>集合地点</small><b>${cancelledTrip.start}</b></div></div><p class="status-guidance"><i></i>可左滑或点击删除记录</p><div class="trip-ticket-actions"><button class="btn trip-ticket-delete" data-action="delete-trip">删除记录</button><button class="btn-secondary" data-action="cancelled-trip-detail">查看详情</button></div></div></article>`}
+        <article class="trip-ticket" data-registration-mode="open"><div class="trip-ticket-top"><b class="ticket-label">骑行票据</b><span class="ticket-date">${readyTrip.date}</span>${tag('success', '✓ 已报名')}</div><div class="trip-ticket-body"><h3>${readyTrip.title}</h3><p class="meta-line trip-host-line">${tripHostLine}</p><span class="mode-pill mode-pill-open mode-pill-inline">公开报名 · 直接加入</span><div class="trip-ticket-info"><div><small>集合时间</small><b>${readyTrip.time}</b></div><div><small>集合地点</small><b>${readyTrip.start}</b></div></div><div class="ticket-meta"><span>集合方式</span><b>自行前往</b></div><p class="status-guidance"><i></i>公开报名 · 加入即生效，无审核中入口</p>${btn('查看凭证', go('credential'), 'btn trip-ticket-primary')}</div></article>
+        ${cancelledDeleted ? '' : `<article class="trip-ticket trip-ticket-cancelled" data-registration-mode="approval"><div class="trip-ticket-top"><b class="ticket-label">骑行票据</b><span class="ticket-date">${cancelledTrip.date}</span>${tag('muted', '已取消')}</div><div class="trip-ticket-body"><h3>${cancelledTrip.title}</h3><p class="meta-line trip-host-line">${cancelledHostLine}</p><span class="mode-pill mode-pill-approval mode-pill-inline">审批报名 · 需审核</span><div class="trip-ticket-info"><div><small>集合时间</small><b>${cancelledTrip.time}</b></div><div><small>集合地点</small><b>${cancelledTrip.start}</b></div></div><p class="status-guidance"><i></i>可左滑或点击删除记录</p><div class="trip-ticket-actions"><button class="btn trip-ticket-delete" data-action="delete-trip">删除记录</button><button class="btn-secondary" data-action="cancelled-trip-detail">查看详情</button></div></div></article>`}
       </div>`;
     },
 
@@ -773,21 +846,27 @@
       if (is('loading')) return `<div class="pg">${head}${skeletons(2)}</div>`;
       if (is('empty'))
         return `<div class="pg">${head}${stateView('0', '还没有活动', '创建第一场骑行活动草稿，发布后骑友即可报名。', btn('创建活动草稿', go('admin-activity-edit') + ' data-state="create"'))}</div>`;
-      const pendingActivity = { title: '周末滨江轻骑', date: '10月25日 周日', time: '早上 8 点整', start: '滨江公园', distanceKm: 42, elevationM: 180, adminStatus: '待审核', approved: 0, pending: 0, signups: 0 };
+      const pendingActivity = { title: '周末滨江轻骑', date: '10月25日 周日', time: '早上 8 点整', start: '滨江公园', distanceKm: 42, elevationM: 180, adminStatus: '待审核', registrationMode: 'approval', approved: 0, pending: 0, signups: 0 };
       const rejectedActivity = { ...pendingActivity, title: '夜骑安全训练', adminStatus: '已驳回' };
       const regularActivities = [
-        ...activities.map((a) => ({ ...a, signups: a.approved + a.pending })),
-        { title: '秋日环湖耐力骑', date: '10月11日 周六', time: '早上 7 点整', start: '奥森南门', distanceKm: 82, elevationM: 680, adminStatus: '已结束', approved: 16, pending: 0, signups: 17 },
+        ...activities.map((a, index) => ({ ...a, registrationMode: index === 0 ? 'open' : 'approval', signups: a.approved + a.pending })),
+        { title: '秋日环湖耐力骑', date: '10月11日 周六', time: '早上 7 点整', start: '奥森南门', distanceKm: 82, elevationM: 680, adminStatus: '已结束', registrationMode: 'open', approved: 16, pending: 0, signups: 17 },
       ];
       const list = is('pending-review') ? [pendingActivity] : is('rejected') ? [rejectedActivity] : [pendingActivity, rejectedActivity, ...regularActivities];
       return `<div class="pg">${head}<div class="list-count"><span>活动列表</span><b>共 ${list.length} 场</b></div>
         ${list
           .map((a) => {
             const statusTag = a.adminStatus === '已上线' ? tag('solid', '已上线') : a.adminStatus === '待审核' ? tag('pending', '待审核') : a.adminStatus === '已驳回' ? tag('outline', '已驳回') : a.adminStatus === '已下架' ? tag('outline', '已下架') : tag('muted', '已结束');
+            const openRegistration = a.registrationMode === 'open';
+            const modeTag = `<span class="mode-pill ${openRegistration ? 'mode-pill-open' : 'mode-pill-approval'} mode-pill-inline">${openRegistration ? '公开报名' : '审批报名'}</span>`;
+            const registrationMetrics = openRegistration
+              ? `<div class="metric-grid three"><span><b>${a.signups}</b><small>报名</small></span><span><b>${a.approved}</b><small>已加入</small></span><span><b>0</b><small>已签到</small></span></div>`
+              : `<div class="metric-grid three"><span><b>${a.signups}</b><small>报名</small></span><span><b class="${a.pending ? 'is-pending' : ''}">${a.pending}</b><small>待审核</small></span><span><b>${a.approved}</b><small>已通过</small></span></div>`;
             const toggle = btn(a.adminStatus === '已上线' ? '下架' : '上架', toast(a.adminStatus === '已上线' ? '活动已下架' : '活动已上架'), 'btn-secondary btn-sm');
-            const actions = a.adminStatus === '待审核' ? `${btn('驳回', toast('请填写驳回原因'), 'btn-secondary btn-sm')}${btn('通过', toast('活动已通过并公开'), 'btn-sm')}` : a.adminStatus === '已驳回' ? btn('查看驳回原因', toast('路线信息需要补充'), 'btn-secondary btn-sm') : `${btn('编辑', go('admin-activity-edit'), 'btn-secondary btn-sm')}${toggle}`;
-            return `<article class="admin-card"><div class="admin-card-head">${statusTag}<span class="meta-line">${a.date} · ${a.time}</span></div><h3>${a.title}</h3><p class="meta-line">${a.start}集合 · ${a.distanceKm} km · ${a.elevationM} m</p>
-              <div class="metric-grid three"><span><b>${a.signups}</b><small>报名</small></span><span><b class="${a.pending ? 'is-pending' : ''}">${a.pending}</b><small>待审核</small></span><span><b>${a.approved}</b><small>已通过</small></span></div>
+            const manageRegistrations = btn(openRegistration ? '参与成员' : '报名审批', go('admin-reviews') + (openRegistration ? ' data-state="open-mode-members"' : ''), 'btn-secondary btn-sm');
+            const actions = a.adminStatus === '待审核' ? `${btn('驳回', toast('请填写驳回原因'), 'btn-secondary btn-sm')}${btn('通过', toast('活动已通过并公开'), 'btn-sm')}` : a.adminStatus === '已驳回' ? btn('查看驳回原因', toast('路线信息需要补充'), 'btn-secondary btn-sm') : `${btn('编辑', go('admin-activity-edit'), 'btn-secondary btn-sm')}${manageRegistrations}${toggle}`;
+            return `<article class="admin-card"><div class="admin-card-head"><span>${statusTag}${modeTag}</span><span class="meta-line">${a.date} · ${a.time}</span></div><h3>${a.title}</h3><p class="meta-line">${a.start}集合 · ${a.distanceKm} km · ${a.elevationM} m</p>
+              ${registrationMetrics}
               <div class="btn-row">${actions}</div>
               <div class="admin-card-more">${a.adminStatus === '已下架' ? `<button class="btn-text" ${toast('草稿已删除')}>删除（仅草稿）</button>` : ''}${['待审核', '已驳回'].includes(a.adminStatus) ? '' : '<button class="btn-text" data-action="copy-activity">从此活动创建</button>'}</div></article>`;
           })
@@ -800,10 +879,31 @@
       const uploading = is('uploading');
       const memberSubmit = is('member-submit') || is('rejected-resubmit');
       const managerPublish = is('manager-publish');
+      const editOpen = is('edit-open');
+      const modeLocked = is('mode-locked');
+      const registrationMode = editOpen ? 'open' : modeLocked ? 'approval' : 'approval';
       const filled = !create && !error;
       const v = (value) => (filled || uploading ? value : '');
-      return `<div class="pg">
-        ${create ? '' : `<p class="neutral-note" style="margin-top:0">${is('rejected-resubmit') ? '已驳回 · 路线信息需要补充，修改后可重新提交。' : error ? '请补全标红的必填项后再发布。' : '草稿已保存 · 10:24'}</p>`}
+      // 报名设置：发布后已有报名记录时，模式切换需锁定（Pages 原型以 data-locked 表达）
+      const modeSettings = `<div class="card mode-settings-card">${cardHead('04', '报名设置', modeLocked ? tag('warning', '已有报名 · 禁止切换') : tag('neutral', '发布审批解耦'), '报名模式与活动发布审批解耦；发布后出现任何报名记录即锁定模式。')}
+        <div class="mode-settings-choice" role="radiogroup" aria-label="报名模式">
+          <button class="mode-settings-option ${registrationMode === 'open' ? 'is-active' : ''}" data-mode-option="open" ${modeLocked ? 'disabled aria-disabled="true"' : ''} role="radio" aria-checked="${registrationMode === 'open'}">
+            <b>公开报名</b>
+            <small>满足资料与名额条件 → 直接报名成功并生成凭证；不出现待审批或已驳回状态</small>
+          </button>
+          <button class="mode-settings-option ${registrationMode === 'approval' ? 'is-active' : ''}" data-mode-option="approval" ${modeLocked ? 'disabled aria-disabled="true"' : ''} role="radio" aria-checked="${registrationMode === 'approval'}">
+            <b>审批报名</b>
+            <small>提交后进入待审批状态，通过时再次校验名额并生成凭证；驳回必须有理由</small>
+          </button>
+        </div>
+        ${modeLocked ? '<p class="pending-note">当前活动已有报名记录，报名模式不可再切换；若需切换请先清空报名或新建活动。</p>' : '<p class="card-hint">模式仅在发布后、尚无任何报名记录时可切换；发布审批与报名模式独立。</p>'}
+        <div class="btn-row" style="margin-top:8px">
+          <button class="btn-chip" data-action="route" data-route="admin-activity-edit" data-state="edit-open">查看公开模式</button>
+          <button class="btn-chip" data-action="route" data-route="admin-activity-edit" data-state="mode-locked">查看锁定态</button>
+        </div>
+      </div>`;
+      return `<div class="pg" data-registration-mode="${registrationMode}">
+        ${create ? '' : `<p class="neutral-note" style="margin-top:0">${is('rejected-resubmit') ? '已驳回 · 路线信息需要补充，修改后可重新提交。' : error ? '请补全标红的必填项后再发布。' : modeLocked ? '已有报名记录 · 报名模式已锁定。' : editOpen ? '当前为公开报名，加入即生效。' : '草稿已保存 · 10:24'}</p>`}
         <div class="card">${cardHead('00', '发布主体', memberSubmit ? tag('pending', '成员投稿') : managerPublish ? tag('solid', '管理员直发') : tag('neutral', '请选择'))}
           ${field('活动归属', `<div class="row"><span class="k">辛庄桥小火车</span><span class="v">${managerPublish ? '管理员' : '成员'} ›</span></div><p class="card-hint">${memberSubmit ? '提交后进入俱乐部审核，审核通过前不会出现在公开活动列表。' : managerPublish ? '负责人或管理员发布所属俱乐部活动时可直接上线。' : '普通成员可选择已加入的俱乐部投稿；公开活动仅平台管理员可发布。'}</p>`)}</div>
         <div class="card">${cardHead('01', '基本信息')}
@@ -828,21 +928,44 @@
           <p class="sub-title">GPX 路线详情（推荐）</p><p class="card-hint">上传后可展示里程、爬升、海拔曲线和路线图，参与者也可下载原文件。</p>
           ${uploading ? `<div class="upload-tile is-wide" style="flex-direction:column;height:auto;padding:12px;gap:8px">正在读取路线… 62%<span class="progress on-light"><i style="width:62%"></i></span></div>` : filled ? `<div class="row" style="margin-top:8px"><span class="k">${primary.routeName}</span>${tag('solid', '路线详情已准备好')}</div><div class="btn-row three" style="margin-top:8px">${btn('更换 GPX', toast('已打开文件选择'), 'btn-secondary btn-sm')}${btn('移除路线详情', toast('路线详情已移除'), 'btn-secondary btn-sm')}${btn('设为活动背景', toast('已设为活动背景'), 'btn-secondary btn-sm')}</div>` : `<button class="upload-tile is-wide" ${toast('GPX 已上传并完成解析')}><b>+</b>上传 GPX</button>`}
           <p class="sub-title">活动群二维码</p><p class="card-hint">可选上传 1 张微信群二维码，便于已报名成员进群；上传超过 7 天会提示可能过期。</p>
-          ${create || error ? `<button class="upload-tile is-wide" ${toast('已打开图片选择器')}><b>+</b>上传活动群二维码</button>` : `<div class="qr-row" style="margin-top:8px">${qr(3)}<div><p class="card-hint">已上传 · 报名通过后骑友可见</p><p class="alert-line">${tag('warning', '⚠ 已上传 8 天，可能过期')}</p><button class="btn-text" ${toast('二维码已删除')}>删除二维码</button></div></div>`}</div>
-      </div>${fixedBar(error ? '还有 2 项必填未完成' : memberSubmit ? '提交后由俱乐部负责人或管理员审核' : managerPublish ? '所属俱乐部管理员可直接发布' : '', [btn('保存草稿', toast('草稿已保存'), 'btn-secondary'), btn(memberSubmit ? '提交俱乐部审核' : '发布活动', memberSubmit ? toast('已提交俱乐部审核') : 'data-action="publish-activity"')])}`;
+          ${create || error ? `<button class="upload-tile is-wide" ${toast('已打开图片选择器')}><b>+</b>上传活动群二维码</button>` : `<div class="qr-row" style="margin-top:8px">${qr(3)}<div><p class="card-hint">已上传 · 报名${registrationMode === 'open' ? '成功' : '通过'}后骑友可见</p><p class="alert-line">${tag('warning', '⚠ 已上传 8 天，可能过期')}</p><button class="btn-text" ${toast('二维码已删除')}>删除二维码</button></div></div>`}</div>
+        ${modeSettings}
+      </div>${fixedBar(error ? '还有 2 项必填未完成' : modeLocked ? '已有报名记录 · 模式已锁定' : memberSubmit ? '提交后由俱乐部负责人或管理员审核' : managerPublish ? '所属俱乐部管理员可直接发布' : editOpen ? '公开报名 · 发布后直接接受加入' : '', [btn('保存草稿', toast('草稿已保存'), 'btn-secondary'), btn(memberSubmit ? '提交俱乐部审核' : '发布活动', memberSubmit ? toast('已提交俱乐部审核') : 'data-action="publish-activity"')])}`;
     },
 
     'admin-reviews': () => {
-      const head = `<section class="info-bar" style="margin-top:0"><div class="info-head"><h2 class="info-title">${primary.title}</h2><span class="info-tag ${is('empty') ? '' : 'is-pending'}">${is('empty') ? '0' : '2'} 待审核</span></div><div style="margin-top:12px">${btn('切换活动', toast('已打开活动选择'), 'btn-inverse is-ghost')}</div></section>
+      // open-mode-members：公开报名活动没有审批流程，进入「参与成员管理」视图
+      if (is('open-mode-members')) {
+        const members = [
+          { name: rider.nickname, way: '自行前往', joinedAt: '10月14日 09:12' },
+          { name: '小北', way: '需要后援车', joinedAt: '10月14日 08:47' },
+          { name: '阿远', way: '自行前往', joinedAt: '10月13日 22:10' },
+        ];
+        return `<div class="pg" data-registration-mode="open">
+          <section class="info-bar" style="margin-top:0"><div class="info-head"><h2 class="info-title">${primary.title}</h2><span class="info-tag">公开报名</span></div><p class="status-explain">公开报名活动不走审批流程，这里是参与成员管理视图：满员时提交将被直接拒绝，不会生成报名审核记录。</p><div style="margin-top:12px">${btn('切换活动', toast('已打开活动选择'), 'btn-inverse is-ghost')}</div></section>
+          <div class="review-filter">${[['全部成员', members.length], ['已签到', 0], ['已取消', 1]].map(([label, n]) => `<button class="${label === '全部成员' ? 'is-active' : ''}" data-action="choice">${label}<small>${n}</small></button>`).join('')}</div>
+          <div class="list-count"><span>参与成员</span><b>共 ${members.length} 人</b></div>
+          ${members
+            .map(
+              (m) => `<article class="review-item open-member-item"><div class="review-item-head"><span class="avatar">${m.name.slice(0, 1)}</span><div class="review-person"><h3>${m.name === rider.nickname ? rider.realName : m.name}</h3><p class="meta-line">加入时间 · ${m.joinedAt}</p></div>${tag('solid', '已加入')}</div>
+                <dl class="review-facts"><div><dt>集合方式</dt><dd>${m.way}</dd></div><div><dt>加入方式</dt><dd>公开报名 · 直接生效</dd></div></dl>
+                <div class="btn-row"><button class="btn-secondary btn-sm" data-action="toast" data-text="已记为签到">记为签到</button><button class="btn-secondary btn-sm" data-action="toast" data-text="已移出该成员">移出</button></div></article>`,
+            )
+            .join('')}
+          <div class="card reminder-card">${cardHead('', '活动提醒', '', '仅向当前已加入的骑友发送；重复操作不会重复发送。')}${btn('发送活动提醒', toast(`提醒已发送给 ${members.length} 位骑友`), 'btn-secondary')}</div>
+          <div class="btn-row" style="margin-top:12px"><button class="btn-chip" data-action="route" data-route="admin-reviews">查看审批模式</button></div>
+        </div>`;
+      }
+      const head = `<section class="info-bar" style="margin-top:0"><div class="info-head"><h2 class="info-title">${primary.title}</h2><span class="info-tag ${is('empty') ? '' : 'is-pending'}">${is('empty') ? '0' : '2'} 待审核</span></div><p class="status-explain">审批报名活动才会在此审核；公开报名活动将进入<button class="btn-text" data-action="route" data-route="admin-reviews" data-state="open-mode-members">参与成员管理</button>视图。</p><div style="margin-top:12px">${btn('切换活动', toast('已打开活动选择'), 'btn-inverse is-ghost')}</div></section>
         <div class="review-filter">${[['候补', 0], ['待审核', is('empty') ? 0 : 2], ['已通过', 18], ['已签到', 0], ['已驳回', 1], ['全部', is('empty') ? 19 : 21]].map(([label, n]) => `<button class="${label === '待审核' ? 'is-active' : ''}" data-action="choice">${label}<small>${n}</small></button>`).join('')}</div>`;
-      if (is('loading')) return `<div class="pg">${head}${skeletons(2)}</div>`;
-      if (is('empty')) return `<div class="pg">${head}${stateView('0', '当前筛选暂无报名', '新的报名提交后会出现在这里。', btn('查看已通过', toast('已切换至已通过'), 'btn-secondary'))}</div>`;
-      if (is('error')) return `<div class="pg">${head}${stateView('!', '报名列表加载失败', '网络不稳定，请稍后重试。', btn('重新加载', toast('正在重新加载')), true)}</div>`;
+      if (is('loading')) return `<div class="pg" data-registration-mode="approval">${head}${skeletons(2)}</div>`;
+      if (is('empty')) return `<div class="pg" data-registration-mode="approval">${head}${stateView('0', '当前筛选暂无报名', '新的报名提交后会出现在这里。', btn('查看已通过', toast('已切换至已通过'), 'btn-secondary'))}</div>`;
+      if (is('error')) return `<div class="pg" data-registration-mode="approval">${head}${stateView('!', '报名列表加载失败', '网络不稳定，请稍后重试。', btn('重新加载', toast('正在重新加载')), true)}</div>`;
       const people = [
         { name: rider.nickname, img: IMG.avatar, way: '自行前往', exp: '有经验', time: '10月14日 09:12' },
         { name: '小北', img: '', way: '需要后援车', exp: '新手', time: '10月14日 08:47' },
       ];
-      return `<div class="pg">${head}<div class="list-count"><span>报名列表</span><b>共 2 人</b></div>
+      return `<div class="pg" data-registration-mode="approval">${head}<div class="list-count"><span>报名列表</span><b>共 2 人</b></div>
         ${people
           .map(
             (p) => `<article class="review-item"><div class="review-item-head"><span class="avatar">${p.img ? `<img src="${p.img}" alt="${p.name}" />` : p.name.slice(0, 1)}</span><div class="review-person"><h3>${p.name === rider.nickname ? rider.realName : p.name}</h3><p class="meta-line">骑友 · ${p.name}</p></div>${tag('pending', '待审核')}</div>
@@ -855,13 +978,15 @@
       if (is('loading')) return `<div class="pg">${skeletons(3)}</div>`;
       const approved = is('approved');
       const rejectError = is('reject-error');
+      const capacityFull = is('capacity-full');
       return `<div class="pg">
-        <section class="info-bar" style="margin-top:0"><div class="info-head"><span class="info-kicker">报名编号 REG-1017-018</span><span class="info-tag ${approved ? '' : 'is-pending'}">${approved ? '已通过' : '待审核'}</span></div><h2 class="info-title">${rider.nickname} · ${primary.title}</h2><p class="status-explain">${approved ? '已于 10月14日 10:02 通过，骑友已收到出发凭证。' : '通过后骑友会收到出发凭证；驳回需填写理由，骑友会看到。'}</p></section>
+        <section class="info-bar" style="margin-top:0"><div class="info-head"><span class="info-kicker">报名编号 REG-1017-018</span><span class="info-tag ${approved ? '' : 'is-pending'}">${approved ? '已通过' : '待审核'}</span></div><h2 class="info-title">${rider.nickname} · ${primary.title}</h2><p class="status-explain">${approved ? '已于 10月14日 10:02 通过，骑友已收到出发凭证。' : capacityFull ? '名额已被其他报名占满，本次未通过；申请仍保留在待审核状态。' : '通过后骑友会收到出发凭证；驳回需填写理由，骑友会看到。'}</p></section>
+        ${capacityFull ? '<p class="pending-note">名额已满 · 请释放名额或调整容量后重新校验，系统不会误生成凭证。</p>' : ''}
         <div class="card">${cardHead('01', '报名人', tag('neutral', '管理员可见完整信息'))}${rows([['昵称', rider.nickname], ['真实姓名', rider.realName], ['性别', rider.gender], ['手机号', rider.phone], ['验证来源', '微信身份']])}</div>
         <div class="card">${cardHead('02', '报名信息')}${rows([['骑行经验', '有经验'], ['集合方式', '自行前往'], ['队伍', '风向小队'], ['报名备注', '无']])}</div>
         <div class="card">${cardHead('03', '照片', '', '资料仅用于本次活动审核，不包含第三方账号数据。')}<div class="photo-strip"><div><img src="${IMG.rider}" alt="骑行照片" /></div><div><img src="${IMG.avatar}" alt="公开头像" /></div></div></div>
         <div class="card">${cardHead('04', '审核意见', approved ? '' : tag('neutral', '驳回时必填'))}${approved ? input('资料完整，欢迎参加', { cls: 'textarea is-disabled' }) : `<textarea id="registration-reject-reason" class="input textarea ${rejectError ? 'is-error' : ''}" maxlength="200" placeholder="驳回时必填，骑友会看到这段说明"></textarea><div class="field-foot"><span>${rejectError ? '<b>驳回时请填写理由；重复点击不会绕过校验</b>' : '示例：骑行经验说明不足，请补充后重提。'}</span><span>0/200</span></div>`}</div>
-      </div>${approved ? fixedBar('骑友到达集合点后确认签到', [btn('确认签到', toast('已确认签到'))], true) : fixedBar(rejectError ? '请先填写驳回理由' : '', [btn('驳回报名', 'data-action="reject-review"', 'btn-secondary'), btn('通过报名', 'data-action="approve-review"')])}`;
+      </div>${approved ? fixedBar('骑友到达集合点后确认签到', [btn('确认签到', toast('已确认签到'))], true) : fixedBar(capacityFull ? '名额已满，申请仍保持待审核' : rejectError ? '请先填写驳回理由' : '', [btn('驳回报名', 'data-action="reject-review"', 'btn-secondary'), btn(capacityFull ? '重新校验名额' : '通过报名', `data-action="approve-review" data-capacity-available="${capacityFull ? 'false' : 'true'}"`)])}`;
     },
 
     'route-analysis': () => {

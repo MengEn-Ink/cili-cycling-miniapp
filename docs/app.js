@@ -1088,8 +1088,20 @@
       target.classList.add('is-active');
     }
     if (action === 'submit-registration') {
-      showToast('报名已提交，等待管理员审核');
-      window.setTimeout(() => showPage('registrations'), 600);
+      // 报名模式分支：公开报名直接成功并跳转凭证；审批报名进入待审批行程
+      const mode = target.dataset.registrationMode || 'approval';
+      if (mode === 'open') {
+        if (target.dataset.capacityAvailable === 'false') {
+          showToast('名额刚刚报满，本次未加入', 'error');
+          window.setTimeout(() => showPage('registration-form', { state: 'confirm-full', replace: true }), 400);
+          return;
+        }
+        showToast('已加入 · 公开报名直接生效，凭证已生成');
+        window.setTimeout(() => showPage('credential'), 600);
+      } else {
+        showToast('报名已提交，等待管理员审核');
+        window.setTimeout(() => showPage('registrations'), 600);
+      }
     }
     if (action === 'save-profile') {
       showToast('报名资料已保存');
@@ -1106,6 +1118,11 @@
       if (action === 'reject-review' && !rejectReason) {
         showPage('admin-review-detail', { state: 'reject-error', replace: true });
         showToast('驳回时请填写理由', 'error');
+        return;
+      }
+      if (action === 'approve-review' && target.dataset.capacityAvailable === 'false') {
+        showPage('admin-review-detail', { state: 'capacity-full', replace: true });
+        showToast('活动名额已满，暂时无法通过', 'error');
         return;
       }
       showToast(action === 'approve-review' ? '报名已通过' : '报名已驳回');

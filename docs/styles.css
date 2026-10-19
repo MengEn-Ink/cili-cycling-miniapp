@@ -9846,3 +9846,172 @@ body.capture-viewport .screen-notes {
     grid-template-columns: 72px minmax(0, 1fr);
   }
 }
+
+
+/* ===== 报名模式（公开 / 审批）· Pages 原型 2026-10-19 ===== */
+.mode-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  margin-top: 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-label);
+  line-height: 1.4;
+  font-weight: var(--font-weight-body);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+  max-width: 100%;
+  white-space: nowrap;
+}
+.mode-pill::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+.mode-pill-open {
+  border-color: var(--color-text);
+  color: var(--color-text);
+  background: var(--color-raised);
+}
+.mode-pill-approval {
+  border-color: var(--color-action);
+  color: var(--color-action);
+  background: var(--color-brand-soft);
+}
+.mode-pill-inline {
+  margin-top: 6px;
+}
+
+.mode-switcher {
+  margin: 12px var(--page-gutter) 0;
+  padding: 12px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mode-switcher-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.mode-switcher-head b {
+  font-weight: var(--font-weight-strong);
+}
+.mode-switcher-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.mode-switcher-note {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+  line-height: var(--line-height-label);
+}
+
+.btn-chip {
+  appearance: none;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-label);
+  line-height: 1.2;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  font-weight: var(--font-weight-body);
+  cursor: pointer;
+  transition: background var(--motion-duration-fast) var(--motion-easing-standard);
+}
+.btn-chip.is-active {
+  background: var(--color-text);
+  color: var(--color-on-media);
+  border-color: var(--color-text);
+}
+.btn-chip:disabled,
+.btn-chip[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mode-settings-card .mode-settings-choice {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.mode-settings-option {
+  appearance: none;
+  text-align: left;
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all var(--motion-duration-fast) var(--motion-easing-standard);
+}
+.mode-settings-option b {
+  font-weight: var(--font-weight-strong);
+}
+.mode-settings-option small {
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+  line-height: var(--line-height-label);
+}
+.mode-settings-option.is-active {
+  border-color: var(--color-action);
+  background: var(--color-brand-soft);
+  box-shadow: var(--shadow-card);
+}
+.mode-settings-option:disabled,
+.mode-settings-option[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.open-confirm-note {
+  background: var(--color-raised);
+  border-color: var(--color-border-strong);
+}
+.open-confirm-note .card-title {
+  color: var(--color-text);
+}
+
+.open-member-item .mode-pill-inline {
+  margin-top: 4px;
+}
+
+.mode-cta-open {
+  background: var(--color-text);
+  border-color: var(--color-text);
+  color: var(--color-on-media);
+}
+.mode-cta-open:active {
+  background: var(--color-logo-background);
+  border-color: var(--color-logo-background);
+}
+.mode-cta-approval {
+  /* 使用默认行动红 */
+}
+
+/* 窄屏兼容：340–390px 下模式切换 chip 应允许换行而不溢出 */
+@media (max-width: 390px) {
+  .mode-switcher-actions {
+    gap: 6px;
+  }
+  .btn-chip {
+    padding: 6px 10px;
+  }
+}
