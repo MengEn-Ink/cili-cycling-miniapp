@@ -816,12 +816,9 @@ describe('俱乐部申请页运行时错误恢复', () => {
   });
 
   it.each(clubMediaCases)(
-    '$label尺寸未验证且 canvas 最终失败时不上传并保留旧媒体',
+    '$label尺寸未验证且 canvas 最终失败时回退裁剪图完成统一上传',
     async (media) => {
-      const oldFileId = `cloud://env/club-applications/test-openid/old-${media.kind}.jpg`;
-      const oldPreview = `https://temporary.example/old-${media.kind}.jpg`;
-      page.data.form[media.fileIdField] = oldFileId;
-      page.data[media.previewField] = oldPreview;
+      const croppedPath = `wxfile://${media.kind}-failed.jpg.cropped`;
       wxApi.chooseMedia.mockResolvedValue({
         tempFiles: [{ tempFilePath: `wxfile://${media.kind}-failed.jpg`, size: 1024 }],
       });
@@ -831,13 +828,18 @@ describe('俱乐部申请页运行时错误恢复', () => {
       wxApi.canvasToTempFilePath.mockImplementation(({ fail }: any) =>
         fail({ errMsg: 'canvasToTempFilePath:fail export failed' }),
       );
+      wxApi.cloud.uploadFile.mockResolvedValue({
+        fileID: `cloud://env/profile-canonical/${'a'.repeat(32)}/${media.kind === 'avatar' ? 'club-avatar' : 'club-cover'}/${'b'.repeat(64)}/${'c'.repeat(64)}.jpg`,
+      });
 
       await page[media.method]();
 
-      expect(wxApi.cloud.uploadFile).not.toHaveBeenCalled();
-      expect(page.data.form[media.fileIdField]).toBe(oldFileId);
-      expect(page.data[media.previewField]).toBe(oldPreview);
-      expect(page.data.actionError).toBe('图片处理失败，请重新选择');
+      expect(wxApi.cloud.uploadFile).toHaveBeenCalledWith(
+        expect.objectContaining({ filePath: croppedPath }),
+      );
+      expect(page.data.form[media.fileIdField]).toContain('/profile-canonical/');
+      expect(page.data[media.previewField]).toBe(croppedPath);
+      expect(page.data.actionError).toBe('');
     },
   );
 
@@ -883,11 +885,10 @@ describe('俱乐部申请页运行时错误恢复', () => {
     expect(page.data.actionError).toBe('');
   });
 
-  it('legacy canvas 导出失败时不上传且保留旧头像', async () => {
-    page.data.form.avatarFileId = 'cloud://env/club-applications/test-openid/old-avatar.jpg';
-    page.data.avatarPreviewUrl = 'https://temporary.example/old-avatar.jpg';
+  it.each(clubMediaCases)('legacy canvas 导出失败时回退裁剪图并完成$label上传', async (media) => {
+    const croppedPath = `wxfile://legacy-${media.kind}.jpg.cropped`;
     wxApi.chooseMedia.mockResolvedValue({
-      tempFiles: [{ tempFilePath: 'wxfile://legacy-failed.jpg', size: 1024 }],
+      tempFiles: [{ tempFilePath: `wxfile://legacy-${media.kind}.jpg`, size: 1024 }],
     });
     wxApi.compressImage.mockImplementation(({ fail }: any) =>
       fail({ errMsg: 'compressImage:fail compressedHeight is not supported' }),
@@ -895,13 +896,18 @@ describe('俱乐部申请页运行时错误恢复', () => {
     wxApi.canvasToTempFilePath.mockImplementation(({ fail }: any) =>
       fail({ errMsg: 'canvasToTempFilePath:fail export failed' }),
     );
+    wxApi.cloud.uploadFile.mockResolvedValue({
+      fileID: `cloud://env/profile-canonical/${'a'.repeat(32)}/${media.kind === 'avatar' ? 'club-avatar' : 'club-cover'}/${'b'.repeat(64)}/${'c'.repeat(64)}.jpg`,
+    });
 
-    await page.chooseAvatar();
+    await page[media.method]();
 
-    expect(wxApi.cloud.uploadFile).not.toHaveBeenCalled();
-    expect(page.data.form.avatarFileId).toContain('old-avatar.jpg');
-    expect(page.data.avatarPreviewUrl).toContain('old-avatar.jpg');
-    expect(page.data.actionError).toBe('图片处理失败，请重新选择');
+    expect(wxApi.cloud.uploadFile).toHaveBeenCalledWith(
+      expect.objectContaining({ filePath: croppedPath }),
+    );
+    expect(page.data.form[media.fileIdField]).toContain(`/profile-canonical/`);
+    expect(page.data[media.previewField]).toBe(croppedPath);
+    expect(page.data.actionError).toBe('');
   });
 
   it.each(clubMediaCases)('cropImage 缺失时提示升级，不上传且保留旧$label', async (media) => {
