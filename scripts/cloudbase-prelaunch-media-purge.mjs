@@ -242,21 +242,30 @@ function collectDocumentArrays(value, results = [], seen = new Set(), recognized
 }
 
 function parseCliQueryEnvelope(value) {
+  const envelope =
+    value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    value.data &&
+    typeof value.data === 'object' &&
+    !Array.isArray(value.data)
+      ? value.data
+      : value;
   if (
-    !value ||
-    typeof value !== 'object' ||
-    Array.isArray(value) ||
-    !Object.hasOwn(value, 'results')
+    !envelope ||
+    typeof envelope !== 'object' ||
+    Array.isArray(envelope) ||
+    !Object.hasOwn(envelope, 'results')
   )
     return null;
-  // CLI 3.8.4 的 results 是命令级传输信封；当前每次只发送一个 QUERY，不能把它当文档数组。
+  // CLI 3.8.4 的 outputJson 会先包一层 data，内部 results 才是命令级传输信封。
   if (
-    !Array.isArray(value.results) ||
-    value.results.length !== 1 ||
-    !Array.isArray(value.results[0])
+    !Array.isArray(envelope.results) ||
+    envelope.results.length !== 1 ||
+    !Array.isArray(envelope.results[0])
   )
     throw new Error('CloudBase QUERY 命令缺少有效文档结果');
-  const documents = value.results[0].map((item) => {
+  const documents = envelope.results[0].map((item) => {
     if (typeof item !== 'string') return item;
     try {
       return JSON.parse(item);

@@ -120,10 +120,12 @@ function unsetAt(document, path) {
 
 function cloudbaseQueryOutput(documents, { stringifyDocuments = false } = {}) {
   return JSON.stringify({
-    results: [
-      stringifyDocuments ? documents.map((document) => JSON.stringify(document)) : documents,
-    ],
-    requestId: 'fixture-request-id',
+    data: {
+      results: [
+        stringifyDocuments ? documents.map((document) => JSON.stringify(document)) : documents,
+      ],
+      requestId: 'fixture-request-id',
+    },
   });
 }
 
@@ -156,7 +158,9 @@ function databaseExecutor(seed, { failMutation, maxQueryBatch = Infinity, queryO
     const documents = [...(state[entry.TableName] || new Map()).values()];
     if (entry.CommandType === 'COMMAND') {
       return JSON.stringify({
-        results: [{ n: documents.filter((item) => matches(item, body.query)).length }],
+        data: {
+          results: [{ n: documents.filter((item) => matches(item, body.query)).length }],
+        },
       });
     }
     if (entry.CommandType === 'QUERY') {
@@ -324,11 +328,11 @@ test('results envelope 合法空查询返回空，缺失、空 envelope、多结
   assert.deepEqual(parseNosqlDocuments(cloudbaseQueryOutput([])), []);
   for (const output of [
     {},
-    { results: [] },
-    { results: [[], []] },
-    { results: [{ n: 20 }], requestId: 'count-request-id' },
-    { results: [[{ status: 'uploaded' }]], requestId: 'missing-id-request-id' },
-    { results: [['not-json']], requestId: 'invalid-json-request-id' },
+    { data: { results: [] } },
+    { data: { results: [[], []] } },
+    { data: { results: [{ n: 20 }], requestId: 'count-request-id' } },
+    { data: { results: [[{ status: 'uploaded' }]], requestId: 'missing-id-request-id' } },
+    { data: { results: [['not-json']], requestId: 'invalid-json-request-id' } },
   ]) {
     assert.throws(
       () => parseNosqlDocuments(JSON.stringify(output)),
