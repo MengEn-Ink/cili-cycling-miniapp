@@ -6802,11 +6802,6 @@ body.capture-viewport .screen-notes {
 }
 .club-avatar-muted { background: var(--color-raised); color: var(--color-text); }
 .club-avatar-warm { background: var(--color-logo-background); color: var(--color-on-media); }
-.club-avatar-public {
-  background: var(--color-surface);
-  color: var(--color-text);
-  box-shadow: inset 0 0 0 1px var(--color-border-strong);
-}
 .club-avatar-overflow {
   background: var(--color-surface);
   color: var(--color-text);
@@ -8204,7 +8199,7 @@ body.capture-viewport .screen-notes {
   padding: 0 0 32px;
   background: var(--color-bg);
 }
-.club-center-page:not([data-mode="detail"]) {
+.club-center-page:not([data-mode="home"]) {
   padding: 16px 16px 32px;
 }
 .club-center-page .prototype-mock-badge {
@@ -8218,14 +8213,14 @@ body.capture-viewport .screen-notes {
   letter-spacing: 0.08em;
   pointer-events: none;
 }
-.club-center-page[data-mode="detail"] .prototype-mock-badge {
+.club-center-page[data-mode="home"] .prototype-mock-badge {
   position: absolute;
   top: 12px;
   left: 50%;
   transform: translateX(-50%);
   margin: 0;
 }
-.club-center-page:not([data-mode="detail"]) > .prototype-mock-badge {
+.club-center-page:not([data-mode="home"]) > .prototype-mock-badge {
   position: static;
   display: inline-flex;
   transform: none;
@@ -9322,45 +9317,6 @@ body.capture-viewport .screen-notes {
 .planned-nearby-list h4 { margin: 0 0 2px; font-size: 14px; }
 .planned-nearby-arrow { margin-left: auto; color: var(--color-muted); font-size: 18px; }
 
-/* 俱乐部主页（访客 / 成员） */
-.planned-club-hero {
-  position: relative;
-  background: #211f1c;
-  color: #fbf5ea;
-  margin: -16px -14px 12px;
-  padding: 18px 14px 14px;
-}
-.planned-club-hero.is-compact { padding: 16px 14px; }
-.planned-club-cover {
-  position: absolute;
-  inset: 0;
-  background: var(--color-brand);
-  z-index: 0;
-}
-.planned-club-cover::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.6) 60%, rgba(0, 0, 0, 0.95) 100%);
-}
-.planned-club-head {
-  position: relative;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  z-index: 1;
-}
-.planned-club-head h2 { margin: 0; font-size: 20px; font-weight: 800; color: #fbf5ea; }
-.planned-club-head .meta-line { color: rgba(251, 245, 234, 0.86); margin: 2px 0 0; }
-.planned-club-hero .metrics {
-  position: relative;
-  margin-top: 14px;
-  z-index: 1;
-}
-.planned-club-act-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-.planned-club-act-list li { display: grid; grid-template-columns: 90px 1fr auto; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid rgba(33, 31, 28, 0.06); font-size: 14px; }
-.planned-club-act-list li:first-child { border-top: 0; }
-.planned-club-act-list em { font-style: normal; color: var(--color-muted); font-size: 12px; }
 .planned-member-admin-list { list-style: none; margin: 0; padding: 0; }
 .planned-member-admin-list li {
   display: grid;
@@ -9559,32 +9515,7 @@ body.capture-viewport .screen-notes {
 /* planned 加入表单 */
 .planned-join-form .state-view { background: #fff; border-radius: 6px; padding: 20px; }
 
-/* club/center 正式原型：沿用 club-center 视觉类，仅补 mode-based 布局。 */
-.club-center-discovery-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 12px 0;
-}
-.club-center-discovery-row > div {
-  min-width: 0;
-  display: grid;
-  gap: 4px;
-}
-.club-center-discovery-row b,
-.club-center-discovery-row small {
-  overflow-wrap: anywhere;
-}
-.club-center-discovery-row small {
-  color: var(--color-muted);
-}
-.club-center-recommended {
-  display: grid;
-  gap: 12px;
-}
-.club-center-recommended-card .btn-secondary {
-  width: 100%;
-}
+/* club/center 正式原型：单俱乐部资料编辑仅保留媒体布局。 */
 .club-center-media-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -301,7 +301,7 @@
           <aside class="product-overview-side">
             <h3 class="story-h3">不做什么 · 边界检查</h3>
             <ul class="story-bullets-x">
-              <li>不做多俱乐部 / 多租户 / 独立 Web 后台（M0 原型已画出，服务端未实现）</li>
+              <li>不做多俱乐部 / 多租户 / 独立 Web 后台</li>
               <li>不做在线支付、退款、押金</li>
               <li>不做名单 Excel / CSV 导出</li>
               <li>不嵌 web-view 跳转第三方；Strava 路线只复制规范化链接</li>
@@ -473,7 +473,7 @@
       <section class="story-section" id="journey-organizer">
         <p class="story-eyebrow">04 · 组织者旅程</p>
         <h2 class="story-h2">先给结论：组织者的职责是「活动可被看见」和「现场可被审」。</h2>
-        <p class="story-lead">对单俱乐部而言，组织者和管理员往往是同一人；对组织地基与审批而言，OWNER / ADMIN / MEMBER 已作为目标角色显式区分。Pages 本轮将俱乐部创建收敛为仅平台管理员直接创建，俱乐部活动和公开活动审批仍保留为演进原型。</p>
+        <p class="story-lead">全平台只有一个俱乐部，由平台管理员直接创建并统一发布活动。所有活动都归属该俱乐部、对所有用户可见，不再区分俱乐部活动与公开活动。本页旅程覆盖发布、审核、现场确认全链路。</p>
 
         <div class="organizer-flow">
           <article class="organizer-step">
@@ -503,7 +503,7 @@
         </div>
 
         <div class="organizer-note">
-          <p><b>组织地基与审批（俱乐部直建，活动审批继续演进）</b>：俱乐部创建仅由平台管理员发起并直接生效，不再提供普通用户申请、撤回或驳回流程；俱乐部活动由 OWNER / ADMIN 审批、公开活动由平台所有者审批仍是后续目标。点击 <a href="#org-overview">组织审批演进原型入口</a> 可体验 6 页完整设计表达。</p>
+          <p><b>俱乐部与活动归属（单俱乐部收口）</b>：全平台始终只有一个俱乐部。首次由平台管理员创建后，任何角色都不能再创建；所有活动统一归属该唯一俱乐部，对所有用户可见。相关正式路由见 <a href="#admin-club-applications">admin-club-applications</a> 与 <a href="#club/center">club/center</a>。</p>
         </div>
       </section>
 
@@ -575,10 +575,9 @@
             </ul>
           </article>
           <article class="roadmap-todo">
-            <h3>⌛ 后续演进（21 个原型画面）</h3>
+            <h3>⌛ 后续演进（4 个规划原型画面）</h3>
             <ul>
-              <li>组织地基与审批演进原型：俱乐部由平台管理员直接创建；俱乐部 / 公开活动审批、角色视角与异常仍为后续目标</li>
-              <li>多俱乐部 / 多组织租户、独立 Web 后台 — 未来需求</li>
+              <li>隐私与授权说明、通知中心、全局离线 / 网络错误、活动分享海报 — 仅 Pages 设计原型</li>
               <li>报名信息同步腾讯文档 — 需求阶段，等官方接入与权限验证</li>
               <li>发起人申请、完整通知闭环、凭证前缀、活动标签 / 模板、双主题、一句话更新日志</li>
               <li>UGC 内容安全闭环（msgSecCheck / mediaCheckAsync）统一入口 — P0 待办</li>
@@ -753,20 +752,20 @@
 
       <section class="product-section" id="prototype">
         <p class="eyebrow">05 · 交互原型</p>
-        <h2>17 个正式路由 + 21 个原型 / 38 个画面</h2>
-        <p class="card-hint">17 个正式页面与 app.json 路由一一对应；21 个原型画面由 6 页 M0 活动审批原型和 15 页 planned design-only 组成，均可进入 Pages 原型导航，但不计入正式路由。俱乐部由平台管理员直接创建，创建后立即生效；普通用户创建申请及其审批状态已从 Pages 移除。俱乐部活动和公开活动审批仍仅为设计表达。官方路线独立页已从产品路由删除；活动详情直接承载路线事实与 GPX 能力，Strava 路线只提供规范化链接复制（Strava OAuth 已退役，无需 Strava 授权）。</p>
+        <h2>17 个正式路由 + 4 个规划原型 / 21 个画面</h2>
+        <p class="card-hint">17 个正式页面与 app.json 路由一一对应；4 个 planned design-only 画面覆盖隐私授权、通知中心、全局离线 / 网络错误与活动分享海报，可进入 Pages 原型导航，但不计入正式路由。全平台只有一个俱乐部，由平台管理员直接创建，创建后任何角色都不能再创建；所有活动统一归属该唯一俱乐部、对所有用户可见，不再区分俱乐部活动与公开活动。官方路线独立页已从产品路由删除；活动详情直接承载路线事实与 GPX 能力，Strava 路线只提供规范化链接复制（Strava OAuth 已退役，无需 Strava 授权）。</p>
         <div class="overview-grid">${pageCards}</div>
       </section>
 
       <section class="product-section planned-section" id="planned">
         <p class="eyebrow">06 · 规划能力地图 · design-only</p>
-        <h2>v2 评审确认的角色矩阵与 15 页规划能力补齐</h2>
-        <p class="card-hint">本节是 v2 全套 App 评审工作台中确认但尚未进入 miniprogram 的能力清单：仅在 Pages 原型里以设计表达呈现，不写入 <code>miniprogram/app.json</code>，也不进入 <code>docs/ui-sync-manifest.json</code> 的正式路由对账。真实运行以 17 条路由为准：${stats.canonicalRoutes || 17} 条正式运行路由 · P0 规划 ${stats.plannedP0 || 11} 页 · P1 规划 ${stats.plannedP1 || 4} 页。</p>
+        <h2>v2 评审确认的角色矩阵与 4 页规划能力补齐</h2>
+        <p class="card-hint">本节是 v2 全套 App 评审工作台中确认但尚未进入 miniprogram 的能力清单：仅在 Pages 原型里以设计表达呈现，不写入 <code>miniprogram/app.json</code>，也不进入 <code>docs/ui-sync-manifest.json</code> 的正式路由对账。真实运行以 17 条路由为准：${stats.canonicalRoutes || 17} 条正式运行路由 · P0 规划 ${stats.plannedP0 || 3} 页 · P1 规划 ${stats.plannedP1 || 1} 页。</p>
         <h3 class="planned-subhead">6 种角色颗粒 · 俱乐部角色 ≠ 平台管理员</h3>
         <table class="overview-table planned-roles-table"><thead><tr><th>角色</th><th>所属范围</th><th>发布能力</th><th>说明</th></tr></thead><tbody>${rolesRows}</tbody></table>
-        <h3 class="planned-subhead">P0 规划能力 · ${stats.plannedP0 || 11} 页</h3>
+        <h3 class="planned-subhead">P0 规划能力 · ${stats.plannedP0 || 3} 页</h3>
         <div class="planned-grid">${plannedP0Cards}</div>
-        <h3 class="planned-subhead">P1 规划能力 · ${stats.plannedP1 || 4} 页</h3>
+        <h3 class="planned-subhead">P1 规划能力 · ${stats.plannedP1 || 1} 页</h3>
         <div class="planned-grid">${plannedP1Cards}</div>
         <p class="planned-foot">${(stats && stats.note) || '现有 17 条正式路由见 ui-sync-manifest.routes；规划页仅在 Pages 原型中作为 design-only 呈现，不进 miniprogram/app.json，也不进入 ui-sync 对账。'}</p>
       </section>
@@ -1030,7 +1029,6 @@
       credential: 'registrations',
       profile: 'profile',
       admin: 'admin-activity-list',
-      'org-approval': 'org-overview',
     };
     showPage(starts[name]);
     showToast('旅程入口已切换，可在手机原型内继续操作', 'info');
@@ -1129,8 +1127,9 @@
       window.setTimeout(() => showPage('admin-reviews'), 500);
     }
     if (action === 'club-create-avatar') {
+      const operation = currentState.split('--')[0] === 'bootstrap' ? 'bootstrap' : 'edit';
       showPage('admin-club-application-detail', {
-        state: 'avatar-uploading',
+        state: `${operation}--avatar-uploading`,
         replace: true,
       });
       window.setTimeout(() => {
@@ -1139,13 +1138,14 @@
           avatarReady: true,
           coverReady: window.prototypeClubCreateMedia?.coverReady ?? true,
         };
-        showPage('admin-club-application-detail', { state: 'create', replace: true });
+        showPage('admin-club-application-detail', { state: operation, replace: true });
         showToast('俱乐部头像已就绪');
       }, 500);
     }
     if (action === 'club-create-cover') {
+      const operation = currentState.split('--')[0] === 'bootstrap' ? 'bootstrap' : 'edit';
       showPage('admin-club-application-detail', {
-        state: 'cover-uploading',
+        state: `${operation}--cover-uploading`,
         replace: true,
       });
       window.setTimeout(() => {
@@ -1154,55 +1154,33 @@
           avatarReady: window.prototypeClubCreateMedia?.avatarReady ?? true,
           coverReady: true,
         };
-        showPage('admin-club-application-detail', { state: 'create', replace: true });
+        showPage('admin-club-application-detail', { state: operation, replace: true });
         showToast('俱乐部背景图已就绪');
       }, 500);
     }
     if (action === 'club-create-remove-cover') {
+      const operation = currentState.split('--')[0] === 'bootstrap' ? 'bootstrap' : 'edit';
       window.prototypeClubCreateMedia = {
         ...(window.prototypeClubCreateMedia || {}),
         avatarReady: window.prototypeClubCreateMedia?.avatarReady ?? true,
         coverReady: false,
       };
-      showPage('admin-club-application-detail', { state: 'create', replace: true });
+      showPage('admin-club-application-detail', { state: operation, replace: true });
       showToast('俱乐部背景图已移除');
     }
     if (action === 'club-create-submit') {
-      showPage('admin-club-application-detail', { state: 'submitting', replace: true });
+      const operation = currentState.split('--')[0] === 'bootstrap' ? 'bootstrap' : 'edit';
+      showPage('admin-club-application-detail', {
+        state: `${operation}--submitting`,
+        replace: true,
+      });
       window.setTimeout(() => {
-        showPage('admin-club-application-detail', { state: 'success', replace: true });
-        showToast('俱乐部已创建并生效');
+        showPage('admin-club-application-detail', {
+          state: `${operation}--success`,
+          replace: true,
+        });
+        showToast(operation === 'bootstrap' ? '俱乐部已创建并生效' : '俱乐部资料已保存');
       }, 650);
-    }
-    if (action === 'publish-target-admin') {
-      showPage('approval-outcome', { state: 'role-auto' });
-      showToast('已以俱乐部管理员身份发布');
-    }
-    if (action === 'publish-target-submit') {
-      const pendingState = target.dataset.pendingState;
-      showPage('approval-outcome', { state: pendingState });
-      showToast(`已提交审核，${pendingState.startsWith('pending-club') ? '等待俱乐部管理员处理' : '等待平台所有者处理'}`);
-    }
-    if (action === 'publish-target-platform') {
-      showPage('approval-outcome', { state: 'platform-owner-public' });
-      showToast('已显式确认并发布');
-    }
-    if (action === 'org-approve') {
-      const outcomeContext = target.dataset.outcomeContext;
-      showPage('approval-outcome', { state: `manual--${outcomeContext}` });
-      showToast(outcomeContext.startsWith('public-activity') ? '公开活动已通过并发布' : '俱乐部活动已通过并发布');
-    }
-    if (action === 'org-reject') {
-      const rejectReason = document.getElementById('org-reject-reason')?.value.trim();
-      if (!rejectReason) {
-        const errorState = currentState.includes('--') ? `${currentState}--reject-error` : 'reject-error';
-        showPage('approval-detail', { state: errorState, replace: true });
-        showToast('驳回时请填写理由', 'error');
-        return;
-      }
-      const outcomeContext = target.dataset.outcomeContext;
-      showPage('approval-outcome', { state: `rejected--${outcomeContext}` });
-      showToast(outcomeContext.startsWith('public-activity') ? '公开活动已驳回' : '俱乐部活动已驳回');
     }
   });
 
