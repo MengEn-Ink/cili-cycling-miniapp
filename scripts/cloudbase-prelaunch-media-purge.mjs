@@ -381,6 +381,27 @@ function updateVerificationFilter(id, update) {
   return clauses.length === 1 ? clauses[0] : { $and: clauses };
 }
 
+const CLEANUP_PROGRESS_STATUSES = Object.freeze({
+  profile_media: new Set(['deleting', 'deleted', 'delete_failed', 'delete_failed_terminal']),
+  profile_media_imports: new Set([
+    'recovering',
+    'deleting',
+    'delete_confirming',
+    'deleted',
+    'completed',
+    'invalid',
+    'aborted',
+    'delete_failed',
+    'delete_failed_terminal',
+  ]),
+});
+
+function cleanupProgressed(collection, documents) {
+  const statuses = CLEANUP_PROGRESS_STATUSES[collection];
+  if (!statuses) return false;
+  return documents.length === 0 || (documents.length === 1 && statuses.has(documents[0].status));
+}
+
 function findCleanupResult(value, seen = new Set()) {
   if (typeof value === 'string') {
     try {
@@ -522,7 +543,20 @@ export function createCliAdapter({ envId, cwd = process.cwd(), execute = execFil
             stage: 'verify',
           }),
         );
-        const verified = entry.CommandType === 'UPDATE' ? found.length === 1 : found.length === 0;
+        let verified = entry.CommandType === 'UPDATE' ? found.length === 1 : found.length === 0;
+        if (
+          !verified &&
+          entry.CommandType === 'UPDATE' &&
+          CLEANUP_PROGRESS_STATUSES[entry.TableName]
+        ) {
+          const current = parseNosqlDocuments(
+            invokeNosql(queryCommand(entry.TableName, { _id: id }), commandIndex, {
+              ...context,
+              stage: 'verify_progress',
+            }),
+          );
+          verified = cleanupProgressed(entry.TableName, current);
+        }
         if (!verified)
           throw new Error(
             `CloudBase NoSQL 文档回读失败：command ${commandIndex} collection=${entry.TableName} op=${entry.CommandType} document=${documentIndex + 1}`,

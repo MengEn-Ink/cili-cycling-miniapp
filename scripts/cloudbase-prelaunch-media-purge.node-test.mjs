@@ -141,7 +141,10 @@ function legacyCloudbaseQueryOutput(documents, { outerArray = false, resultKey =
   return JSON.stringify(outerArray ? [response] : response);
 }
 
-function databaseExecutor(seed, { failMutation, maxQueryBatch = Infinity, queryOutput } = {}) {
+function databaseExecutor(
+  seed,
+  { failMutation, maxQueryBatch = Infinity, queryOutput, afterMutation } = {},
+) {
   const state = Object.fromEntries(
     Object.entries(seed).map(([collection, documents]) => [
       collection,
@@ -190,6 +193,7 @@ function databaseExecutor(seed, { failMutation, maxQueryBatch = Infinity, queryO
       const document = state[entry.TableName].get(update.q._id);
       for (const [path, value] of Object.entries(update.u.$set || {})) setAt(document, path, value);
       for (const path of Object.keys(update.u.$unset || {})) unsetAt(document, path);
+      afterMutation?.({ entry, body, document, ordinal, state });
       return JSON.stringify({ results: [] });
     }
     const deletion = body.deletes[0];
@@ -410,6 +414,47 @@ test('profile_media 20 条与 imports 41 条逐文档更新，重复执行保持
     idQueries.filter(({ TableName }) => TableName === 'profile_media_imports').length,
     12,
   );
+});
+
+test('cleanup worker 并发推进或删除到期记录时，逐文档回读接受受控终态', async () => {
+  const fixture = databaseExecutor(
+    {
+      profile_media: Array.from({ length: 7 }, (_, index) => ({
+        _id: `media-race-${index}`,
+        status: 'referenced',
+      })),
+      profile_media_imports: [{ _id: 'import-race-0', status: 'prepared' }],
+    },
+    {
+      afterMutation({ entry, document, ordinal, state }) {
+        if (entry.TableName === 'profile_media' && ordinal === 6) document.status = 'deleting';
+        if (entry.TableName === 'profile_media' && ordinal === 7)
+          state.profile_media.delete(document._id);
+        if (entry.TableName === 'profile_media_imports') document.status = 'completed';
+      },
+    },
+  );
+  const adapter = createCliAdapter({ envId: ENV_ID, execute: fixture.execute });
+  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
+  await adapter.mutate(prepare.slice(5));
+  assert.equal(fixture.state.profile_media.get('media-race-5').status, 'deleting');
+  assert.equal(fixture.state.profile_media.has('media-race-6'), false);
+  assert.equal(fixture.state.profile_media_imports.get('import-race-0').status, 'completed');
+});
+
+test('cleanup 管理集合回读仍拒绝未进入目标态或后续状态的旧记录', async () => {
+  const fixture = databaseExecutor(
+    { profile_media: [{ _id: 'media-stale', status: 'referenced' }] },
+    {
+      afterMutation({ document }) {
+        document.status = 'referenced';
+      },
+    },
+  );
+  const adapter = createCliAdapter({ envId: ENV_ID, execute: fixture.execute });
+  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
+  const mediaUpdate = prepare.find(({ TableName }) => TableName === 'profile_media');
+  await assert.rejects(adapter.mutate([mediaUpdate]), /文档回读失败/);
 });
 
 test('第 N 文档失败准确定位原 command/collection/op 且不泄露 ID 或 payload', async () => {
