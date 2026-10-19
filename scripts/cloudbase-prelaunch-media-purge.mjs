@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 const CLI_PACKAGE = '@cloudbase/cli@3.8.4';
 export const MEDIA_CLEANUP_BATCH_SIZE = 20;
+export const NOSQL_DELETE_LIMIT = 1000;
 export const CLEANUP_STALL_ROUND_BUDGET = 24;
 const CLEANUP_WAIT_MS = 30_000;
 export const CONFIRMATION_PHRASE = 'DELETE_PRELAUNCH_MEDIA_DATA';
@@ -106,11 +107,11 @@ export function createMutationCommands(expiredAt) {
       }),
       command('route_previews', 'DELETE', {
         delete: 'route_previews',
-        deletes: [{ q: {}, limit: 0 }],
+        deletes: [{ q: {}, limit: NOSQL_DELETE_LIMIT }],
       }),
       command('profiles', 'DELETE', {
         delete: 'profiles',
-        deletes: [{ q: {}, limit: 0 }],
+        deletes: [{ q: {}, limit: NOSQL_DELETE_LIMIT }],
       }),
       command('profile_media', 'UPDATE', {
         update: 'profile_media',
@@ -152,11 +153,11 @@ export function createMutationCommands(expiredAt) {
     finalize: [
       command('profile_media', 'DELETE', {
         delete: 'profile_media',
-        deletes: [{ q: { status: { $in: MEDIA_TERMINAL_STATUSES } }, limit: 0 }],
+        deletes: [{ q: { status: { $in: MEDIA_TERMINAL_STATUSES } }, limit: NOSQL_DELETE_LIMIT }],
       }),
       command('profile_media_imports', 'DELETE', {
         delete: 'profile_media_imports',
-        deletes: [{ q: { status: { $in: IMPORT_TERMINAL_STATUSES } }, limit: 0 }],
+        deletes: [{ q: { status: { $in: IMPORT_TERMINAL_STATUSES } }, limit: NOSQL_DELETE_LIMIT }],
       }),
     ],
   };
@@ -267,6 +268,27 @@ function nosqlArgs(envId, commands) {
   return cliArgs(envId, 'db', 'nosql', 'execute', '--command', JSON.stringify(commands), '--json');
 }
 
+function safeStderrTail(error) {
+  const raw = error && typeof error === 'object' && 'stderr' in error ? error.stderr : '';
+  const lines = String(raw || '')
+    .replaceAll(/(--command\s+)(?:'[^']*'|"[^"]*"|\S+)/gi, '$1[REDACTED]')
+    .replaceAll(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g, '[REDACTED_EMAIL]')
+    .replaceAll(/\b(secret|token|key|authorization|credential)\s*[:=]\s*\S+/gi, '$1=[REDACTED]')
+    .replaceAll(/\b[A-Za-z0-9_./+=-]{32,}\b/g, '[REDACTED_VALUE]')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(-6)
+    .join(' | ');
+  return lines.slice(-800) || '(empty)';
+}
+
+function deleteFilter(entry) {
+  if (entry.CommandType !== 'DELETE') return null;
+  const parsed = JSON.parse(entry.Command);
+  return parsed.deletes?.[0]?.q ?? {};
+}
+
 function findCleanupResult(value, seen = new Set()) {
   if (typeof value === 'string') {
     try {
@@ -322,10 +344,40 @@ export function createCliAdapter({ envId, cwd = process.cwd(), execute = execFil
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     });
+  const invokeNosql = (entry, index = 1) => {
+    try {
+      return invoke(nosqlArgs(envId, [entry]));
+    } catch (error) {
+      throw new Error(
+        `CloudBase NoSQL command ${index} 失败：collection=${entry.TableName} op=${entry.CommandType} stderr_tail=${safeStderrTail(error)}`,
+        { cause: error },
+      );
+    }
+  };
   const query = (collection, filter = {}) =>
-    parseNosqlDocuments(invoke(nosqlArgs(envId, [queryCommand(collection, filter)])));
-  const count = (collection, filter = {}) =>
-    parseNosqlCount(invoke(nosqlArgs(envId, [countCommand(collection, filter)])));
+    parseNosqlDocuments(invokeNosql(queryCommand(collection, filter)));
+  const count = (collection, filter = {}, index = 1) =>
+    parseNosqlCount(invokeNosql(countCommand(collection, filter), index));
+  const runMutationCommands = async (commands) => {
+    for (let index = 0; index < commands.length; index += 1) {
+      const entry = commands[index];
+      const filter = deleteFilter(entry);
+      invokeNosql(entry, index + 1);
+      if (filter) {
+        let previousRemaining = Number.POSITIVE_INFINITY;
+        let remaining = count(entry.TableName, filter, index + 1);
+        while (remaining > 0) {
+          if (remaining >= previousRemaining)
+            throw new Error(
+              `CloudBase NoSQL DELETE 未推进：command ${index + 1} collection=${entry.TableName}`,
+            );
+          previousRemaining = remaining;
+          invokeNosql(entry, index + 1);
+          remaining = count(entry.TableName, filter, index + 1);
+        }
+      }
+    }
+  };
   const storageCount = (prefix, output) => {
     const root = prefixRoot(prefix);
     return collectStoragePaths(parseJson(output, 'CloudBase 存储命令')).filter(
@@ -347,7 +399,7 @@ export function createCliAdapter({ envId, cwd = process.cwd(), execute = execFil
       return storageCount(prefix, invoke(storageRemoveArgs(envId, prefix, false)));
     },
     async mutate(commands) {
-      invoke(nosqlArgs(envId, commands));
+      await runMutationCommands(commands);
     },
     async invokeCleanup() {
       const output = invoke(
@@ -382,7 +434,7 @@ export function createCliAdapter({ envId, cwd = process.cwd(), execute = execFil
       invoke(storageRemoveArgs(envId, prefix, true));
     },
     async removeTerminalRecords(commands) {
-      invoke(nosqlArgs(envId, commands));
+      await runMutationCommands(commands);
     },
     async assertions() {
       const result = await summary();

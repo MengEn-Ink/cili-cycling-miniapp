@@ -6,6 +6,7 @@ import {
   CONFIRMATION_PHRASE,
   CLEANUP_STALL_ROUND_BUDGET,
   MEDIA_CLEANUP_BATCH_SIZE,
+  NOSQL_DELETE_LIMIT,
   STORAGE_PREFIXES,
   assertApplyGate,
   calculateMaxCleanupRounds,
@@ -183,7 +184,16 @@ test('更新与删除命令严格限制集合、字段和终态状态', () => {
     ),
     true,
   );
-  assert.deepEqual(routePreviews.deletes, [{ q: {}, limit: 0 }]);
+  assert.deepEqual(routePreviews.deletes, [{ q: {}, limit: NOSQL_DELETE_LIMIT }]);
+  const deleteCommands = [...prepare, ...finalize].filter(
+    ({ CommandType }) => CommandType === 'DELETE',
+  );
+  assert.equal(NOSQL_DELETE_LIMIT, 1000);
+  assert.ok(
+    deleteCommands.every(
+      ({ Command }) => JSON.parse(Command).deletes[0].limit === NOSQL_DELETE_LIMIT,
+    ),
+  );
   assert.equal(Object.hasOwn(activities.updates[0].u.$unset, 'route.gpx_file_id'), false);
   assert.deepEqual(
     finalize.map(({ TableName, CommandType }) => [TableName, CommandType]),
@@ -203,6 +213,110 @@ test('更新与删除命令严格限制集合、字段和终态状态', () => {
     'aborted',
     'delete_failed_terminal',
   ]);
+});
+
+test('CLI adapter 将 mutation 拆为逐命令的单元素 MgoCommands 调用', async () => {
+  const invocations = [];
+  const adapter = createCliAdapter({
+    envId: ENV_ID,
+    execute(_file, args) {
+      const index = args.indexOf('--command');
+      const commands = JSON.parse(args[index + 1]);
+      invocations.push(commands);
+      return JSON.stringify({ results: [] });
+    },
+  });
+  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
+  const updates = prepare.filter(({ CommandType }) => CommandType === 'UPDATE');
+  await adapter.mutate(updates);
+  assert.deepEqual(
+    invocations.map((commands) => commands.length),
+    updates.map(() => 1),
+  );
+  assert.deepEqual(
+    invocations.map(([entry]) => entry.TableName),
+    updates.map(({ TableName }) => TableName),
+  );
+});
+
+test('逐命令执行在具体 command 失败时立即阻断，并仅输出脱敏定位信息', async () => {
+  let calls = 0;
+  const adapter = createCliAdapter({
+    envId: ENV_ID,
+    execute() {
+      calls += 1;
+      if (calls === 3) {
+        const error = new Error('process failed');
+        error.stderr =
+          'debug --command [{"secret":"do-not-print"}]\naccount=user@example.com\nError: Unknown issue';
+        throw error;
+      }
+      return JSON.stringify({ results: [] });
+    },
+  });
+  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
+  const updates = prepare.filter(({ CommandType }) => CommandType === 'UPDATE');
+  await assert.rejects(adapter.mutate(updates), (error) => {
+    assert.match(error.message, /command 3.*collection=activities op=UPDATE/);
+    assert.match(error.message, /Error: Unknown issue/);
+    assert.doesNotMatch(error.message, /do-not-print|user@example\.com/);
+    return true;
+  });
+  assert.equal(calls, 3);
+});
+
+test('DELETE 后 COUNT 失败沿用当前 command index 且不泄露 payload', async () => {
+  let calls = 0;
+  const adapter = createCliAdapter({
+    envId: ENV_ID,
+    execute(_file, args) {
+      calls += 1;
+      const index = args.indexOf('--command');
+      const [entry] = JSON.parse(args[index + 1]);
+      if (calls === 4) assert.equal(entry.CommandType, 'DELETE');
+      if (calls === 5) {
+        assert.equal(entry.CommandType, 'COMMAND');
+        const error = new Error('count failed');
+        error.stderr =
+          'debug --command [{"secret":"count-payload-must-not-print"}]\nError: Unknown issue';
+        throw error;
+      }
+      return JSON.stringify({ results: [] });
+    },
+  });
+  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
+  await assert.rejects(adapter.mutate(prepare), (error) => {
+    assert.match(error.message, /command 4.*collection=route_previews op=COMMAND/);
+    assert.match(error.message, /Error: Unknown issue/);
+    assert.doesNotMatch(error.message, /count-payload-must-not-print/);
+    return true;
+  });
+  assert.equal(calls, 5);
+});
+
+test('DELETE 固定 limit 1000，按 COUNT 回读循环且空库重跑幂等', async () => {
+  const countResults = [1001, 1, 0, 0];
+  let deletes = 0;
+  const adapter = createCliAdapter({
+    envId: ENV_ID,
+    execute(_file, args) {
+      const index = args.indexOf('--command');
+      const [entry] = JSON.parse(args[index + 1]);
+      if (entry.CommandType === 'DELETE') {
+        deletes += 1;
+        assert.equal(JSON.parse(entry.Command).deletes[0].limit, 1000);
+        return JSON.stringify({ results: [] });
+      }
+      assert.equal(entry.CommandType, 'COMMAND');
+      return JSON.stringify({ results: [{ n: countResults.shift() }] });
+    },
+  });
+  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
+  const routeDelete = prepare.find(({ TableName }) => TableName === 'route_previews');
+  await adapter.mutate([routeDelete]);
+  await adapter.mutate([routeDelete]);
+  assert.equal(deletes, 4);
+  assert.deepEqual(countResults, []);
 });
 
 test('storage 删除参数只能使用两个固定前缀，apply 前始终先 dry-run', () => {
@@ -280,8 +394,7 @@ test('计数使用 CloudBase COMMAND count，存在性 QUERY 固定 limit 1', as
   assert.ok(commands.every(({ CommandType }) => CommandType === 'COMMAND'));
   assert.ok(commands.every(({ Command }) => !Object.hasOwn(JSON.parse(Command), 'limit')));
   const source = readFileSync('scripts/cloudbase-prelaunch-media-purge.mjs', 'utf8');
-  assert.match(source, /limit: 1/);
-  assert.doesNotMatch(source, /limit:\s*(?:1000|10000|100000)/);
+  assert.match(source, /projection: \{ _id: 1, status: 1 \},\s*limit: 1/);
 });
 
 test('cleanup 调用只接受函数业务结果并忽略外层 CLI 成功标记', async () => {
