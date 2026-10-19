@@ -1364,3 +1364,145 @@ describe('俱乐部中心（club/center）mode-based 原型契约', () => {
     expect(css).not.toMatch(/\.club-center-[a-z-]+\s*\{[^}]*backdrop-filter/s);
   });
 });
+
+describe('报名模式（公开 / 审批）· Pages 原型契约', () => {
+  it('事实源文档声明 Pages-only、open/approval 两模式、T+1 结束与模式锁定', () => {
+    const req = read('docs/requirements-design.md');
+    expect(req).toMatch(/registration_mode/);
+    expect(req).toMatch(/公开报名/);
+    expect(req).toMatch(/审批报名/);
+    // 发布审批与报名模式解耦
+    expect(req).toMatch(/解耦|独立/);
+    // T+1 自然结束规则
+    expect(req).toMatch(/T\s*\+\s*1/);
+    // 已有报名时禁止切换模式
+    expect(req).toMatch(/已有报名|锁定/);
+  });
+
+  it('schema 导出 registrationModes 配置并声明两类 option', () => {
+    const runtime = createPrototypeRuntime();
+    const modes = runtime.prototypeData?.registrationModes;
+    expect(modes).toBeTruthy();
+    expect(modes.switchLockRule).toBeTruthy();
+    expect(modes.endDisplay).toBeTruthy();
+    const keys = (modes.options || []).map((option: any) => option.key).sort();
+    expect(keys).toEqual(['approval', 'open']);
+  });
+
+  it('活动详情区分 open-public / open-approval / 结束态并给出不同 CTA 与徽标', () => {
+    const openPublic = renderPrototypeState('activity-detail', 'open-public');
+    expect(openPublic).toContain('data-registration-mode="open"');
+    expect(openPublic).toContain('mode-pill-open');
+    expect(openPublic).toContain('立即加入');
+    // 公开报名不出现「待审批」承诺
+    expect(openPublic).not.toContain('提交后由管理员审核');
+
+    const openApproval = renderPrototypeState('activity-detail', 'open-approval');
+    expect(openApproval).toContain('data-registration-mode="approval"');
+    expect(openApproval).toContain('mode-pill-approval');
+    expect(openApproval).toMatch(/pending|审核/);
+
+    const full = renderPrototypeState('activity-detail', 'open-public-full');
+    expect(full).toContain('名额已满');
+    expect(full).toContain('is-disabled');
+
+    const ended = renderPrototypeState('activity-detail', 'ended');
+    expect(ended).toContain('T+1');
+    expect(ended).toContain('活动已结束');
+  });
+
+  it('报名页公开模式走轻确认 → open 直接成功，审批模式仍走完整申请表 → pending', () => {
+    const confirm = renderPrototypeState('registration-form', 'confirm');
+    expect(confirm).toContain('data-registration-mode="open"');
+    expect(confirm).toContain('确认加入');
+    expect(confirm).toContain('data-action="submit-registration"');
+    expect(confirm).toMatch(/data-registration-mode="open"/);
+    // 公开确认不出现「能力自评 必选」门禁
+    expect(confirm).not.toContain('请选择骑行经验后再提交');
+
+    const full = renderPrototypeState('registration-form', 'confirm-full');
+    expect(full).toContain('名额已满');
+
+    const capacityChanged = renderPrototypeState('registration-form', 'confirm-capacity-changed');
+    expect(capacityChanged).toContain('data-capacity-available="false"');
+
+    const approval = renderPrototypeState('registration-form', 'selected');
+    expect(approval).toContain('data-registration-mode="approval"');
+    expect(approval).toContain('提交报名申请');
+    expect(approval).toContain('能力自评');
+  });
+
+  it('app.js submit-registration 按 data-registration-mode 分支：open 跳凭证，approval 跳行程', () => {
+    expect(script).toContain("if (action === 'submit-registration')");
+    expect(script).toContain('target.dataset.registrationMode');
+    // open 分支：直接成功并进入凭证
+    expect(script).toMatch(
+      /mode === 'open'[\s\S]*capacityAvailable === 'false'[\s\S]*confirm-full/,
+    );
+    expect(script).toMatch(/mode === 'open'[\s\S]*showPage\('credential'\)/);
+    // approval 分支：保留 pending 提交反馈
+    expect(script).toMatch(/报名已提交，等待管理员审核[\s\S]*showPage\('registrations'\)/);
+
+    const capacityFull = renderPrototypeState('admin-review-detail', 'capacity-full');
+    expect(capacityFull).toContain('名额已满');
+    expect(capacityFull).toContain('申请仍保持待审核');
+    expect(capacityFull).toContain('data-capacity-available="false"');
+    expect(script).toMatch(
+      /approve-review'[\s\S]*capacityAvailable === 'false'[\s\S]*capacity-full/,
+    );
+  });
+
+  it('活动编辑页加入“报名设置”卡：edit-open 预览公开模式，mode-locked 禁用切换', () => {
+    const editOpen = renderPrototypeState('admin-activity-edit', 'edit-open');
+    expect(editOpen).toContain('mode-settings-card');
+    expect(editOpen).toContain('data-mode-option="open"');
+    expect(editOpen).toContain('data-mode-option="approval"');
+    expect(editOpen).toContain('data-registration-mode="open"');
+
+    const locked = renderPrototypeState('admin-activity-edit', 'mode-locked');
+    expect(locked).toMatch(/已有报名|禁止切换|锁定/);
+    expect(locked).toContain('aria-disabled="true"');
+  });
+
+  it('管理端 admin-reviews 仅审批模式进入审核；公开模式进入 open-mode-members 参与成员管理', () => {
+    const approvalList = renderPrototypeState('admin-reviews', 'default');
+    expect(approvalList).toContain('data-registration-mode="approval"');
+    expect(approvalList).toContain('待审核');
+
+    const openMembers = renderPrototypeState('admin-reviews', 'open-mode-members');
+    expect(openMembers).toContain('data-registration-mode="open"');
+    expect(openMembers).toContain('参与成员');
+    // 公开模式不出现 pending/rejected 流程
+    expect(openMembers).not.toContain('待审核');
+    expect(openMembers).not.toContain('已驳回');
+  });
+
+  it('我的行程卡片在骑友端标注报名方式，公开模式不出现审核中入口', () => {
+    const trips = renderPrototypeState('registrations', 'default');
+    expect(trips).toContain('mode-pill-open');
+    expect(trips).toContain('mode-pill-approval');
+    // 顶部计数：公开报名直接成功，审核中为 0
+    expect(trips).toMatch(/>0<[\s\S]{0,120}审核中/);
+  });
+
+  it('样式复用现有 token，不把成功 / 警告色扩展到模式徽标与模式 CTA 上', () => {
+    // 模式徽标不使用 status-success/warning tokens（会被独立契约断言）
+    expect(css).toMatch(/\.mode-pill-open\s*\{[^}]*var\(--color-text\)/s);
+    expect(css).toMatch(/\.mode-pill-approval\s*\{[^}]*var\(--color-action\)/s);
+    expect(css).toMatch(/\.mode-cta-open\s*\{[^}]*var\(--color-text\)/s);
+    expect(css).not.toMatch(/\.mode-(pill|cta)-open[^{}]*\{[^}]*--color-status-/s);
+  });
+
+  it('Pages 原型未触碰运行小程序代码：miniprogram/cloudfunctions 内不出现 registration_mode', () => {
+    // 本次仅更新 docs + tests；运行代码保持原样
+    const grep = (file: string) => {
+      try {
+        return readFileSync(file, 'utf8');
+      } catch {
+        return '';
+      }
+    };
+    expect(grep('miniprogram/pages/registration-form/index.js')).not.toMatch(/registration_mode/);
+    expect(grep('cloudfunctions/activities/index.js')).not.toMatch(/registration_mode/);
+  });
+});
