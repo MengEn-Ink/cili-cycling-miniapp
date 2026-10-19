@@ -71,6 +71,12 @@
 
 脚本现仍优先执行严格目标态回读；仅当 `profile_media` / `profile_media_imports` 的严格回读失败时，追加一次按 `_id` 的状态回读。只有记录已不存在，或状态位于 cleanup worker 真实状态机允许的后续状态集合时才视为成功；仍停留在 `referenced`、`prepared` 等旧状态继续 fail closed。clubs、applications、activities 等非 cleanup 管理集合不放宽，DELETE 也仍必须回读为空。测试覆盖第 6 条转为 `deleting`、后续记录已删除、import 转为 `completed`，并单独证明旧状态不会被误放行。
 
+## 第九、十次生产失败回溯（runs 39214142068 / 39216153277）
+
+状态竞态修复后，两次清理都已完整通过 20 条 `profile_media` 与 41 条 import 的逐文档准备阶段，随后在首次调用 `profile-media-cleanup` 时约 7 分钟后由 CloudBase CLI 报函数调用失败；两次摘要中的媒体登记数都未下降，production smoke 均因前置失败跳过。由此排除 query/mutation/回读协议问题，根因收敛为 worker 默认单次最多串行处理 20 个远端存储对象，超过函数/CLI 调用时间窗口。
+
+常规定时 worker 的默认批量保持 20 不变；仅人工预发布 purge 在已认证的 Timer 事件中传 `BatchSize=4`。函数入口将该值交给 core 已有的 `1..MAX_BATCH` 有界限制，每次调用最多处理 4 条，降低单次超时风险。purge 最大轮数同步按 4 条计算并保留 24 轮无进展预算，避免缩小批次后提前耗尽轮数。测试精确校验 CLI 参数、函数入口透传、501/1001 条容量预算以及超过 480 条时的完整收敛。
+
 ## 破坏性操作门禁
 
 `scripts/cloudbase-prelaunch-media-purge.mjs` 默认 dry-run，只输出集合计数和两个固定存储 glob 的删除预览计数，不输出文档、openid、个人字段或密钥。`--apply` 必须同时满足：

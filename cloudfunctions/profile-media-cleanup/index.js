@@ -19,6 +19,7 @@ exports.main = async (event = {}) => {
       store,
       uploadFile: (input) => cloud.uploadFile(input),
       deleteFile: (input) => cloud.deleteFile(input),
+      limit: event.BatchSize,
     });
     console.info('[profile-media-cleanup] batch', cleanupBatchSummary(data));
     return { ok: true, data };
