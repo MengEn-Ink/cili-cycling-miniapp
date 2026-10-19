@@ -17,6 +17,16 @@ on:
         required: false
         default: false
         type: boolean
+      purge_prelaunch_media_data:
+        description: 清除预发布个人资料及统一上传历史媒体（不可恢复）
+        required: false
+        default: false
+        type: boolean
+      purge_confirmation:
+        description: 清理时必须精确填写 DELETE_PRELAUNCH_MEDIA_DATA
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -34,13 +44,14 @@ jobs:
        github.event.workflow_run.event == 'push' &&
        github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     environment: cloudbase-production
     env:
       TARGET_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
       CLOUDBASE_ENV_ID: ${{ vars.CLOUDBASE_ENV_ID }}
       CLOUDBASE_REGION: ${{ vars.CLOUDBASE_REGION }}
       CLOUDBASE_API_KEY: ${{ secrets.CLOUDBASE_API_KEY }}
+      PII_ENCRYPTION_KEY_SOURCE: ${{ secrets.PII_ENCRYPTION_KEY }}
       TCB_NO_BROWSER: 'true'
     steps:
       - name: Checkout current main source
@@ -55,6 +66,8 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           FORCE_ALL: ${{ inputs.deploy_all_functions }}
           FORCE_INFRASTRUCTURE: ${{ inputs.apply_infrastructure }}
+          PURGE_PRELAUNCH_MEDIA_DATA: ${{ inputs.purge_prelaunch_media_data }}
+          PURGE_CONFIRMATION: ${{ inputs.purge_confirmation }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
@@ -113,6 +126,23 @@ jobs:
               decision.shouldDeploy = true;
               decision.applyInfrastructure = true;
             }
+            if (process.env.PURGE_PRELAUNCH_MEDIA_DATA === "true") {
+              if (
+                process.env.EVENT_NAME !== "workflow_dispatch" ||
+                process.env.PURGE_CONFIRMATION !== "DELETE_PRELAUNCH_MEDIA_DATA"
+              ) {
+                throw new Error("预发布媒体清理缺少精确人工确认");
+              }
+              decision.shouldDeploy = true;
+              decision.functions = [
+                ...new Set([
+                  ...(decision.functions || []),
+                  "profile",
+                  "admin-review",
+                  "profile-media-cleanup",
+                ]),
+              ];
+            }
             fs.writeFileSync(process.argv[1], `${JSON.stringify(decision, null, 2)}\n`);
           ' "${RUNNER_TEMP}/cloudbase-deploy-decision.json"
           jq -e '.shouldDeploy | type == "boolean"' "${RUNNER_TEMP}/cloudbase-deploy-decision.json" >/dev/null
@@ -132,6 +162,7 @@ jobs:
           [[ -n "${CLOUDBASE_API_KEY}" ]] || { echo "缺少 GitHub Environment Secret：CLOUDBASE_API_KEY" >&2; exit 1; }
           [[ -n "${CLOUDBASE_ENV_ID}" ]] || { echo "缺少 GitHub Environment Variable：CLOUDBASE_ENV_ID" >&2; exit 1; }
           [[ -n "${CLOUDBASE_REGION}" ]] || { echo "缺少 GitHub Environment Variable：CLOUDBASE_REGION" >&2; exit 1; }
+          [[ -n "${PII_ENCRYPTION_KEY_SOURCE}" ]] || { echo "缺少 GitHub Environment Secret：PII_ENCRYPTION_KEY" >&2; exit 1; }
           configured_env="$(node -p "require('./cloudbaserc.json').envId")"
           [[ "${CLOUDBASE_ENV_ID}" == "${configured_env}" ]] || {
             echo "GitHub Environment 与 cloudbaserc.json 的环境 ID 不一致，拒绝部署" >&2
@@ -193,6 +224,7 @@ jobs:
             --decision "${RUNNER_TEMP}/cloudbase-deploy-decision.json" \
             --inventory "${functions_inventory}" \
             --details-dir "${details_dir}" \
+            --include-secret-consumers true \
             --output "${runtime_config}"
           cp cloudbaserc.json "${RUNNER_TEMP}/cloudbaserc.repository.json"
           cp "${runtime_config}" cloudbaserc.json
@@ -271,6 +303,56 @@ jobs:
           done
           trap - ERR
 
+      - name: Reconcile critical function secrets
+        if: steps.scope.outputs.should_deploy == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          details_dir="${RUNNER_TEMP}/cloudbase-function-secret-reconcile"
+          mkdir -p "${details_dir}"
+          while IFS= read -r function_name; do
+            [[ "${function_name}" =~ ^[a-z][a-z0-9-]*$ ]] || { echo "非法函数名" >&2; exit 1; }
+            detail_file="${details_dir}/${function_name}.json"
+            if npx --yes --package @cloudbase/cli@3.8.4 tcb \
+              -e "${CLOUDBASE_ENV_ID}" \
+              fn detail "${function_name}" --json > "${detail_file}" && \
+              node scripts/cloudbase-function-env.mjs verify-one \
+                --detail "${detail_file}" \
+                --name "${function_name}" 2>/dev/null; then
+              echo "关键密钥已对账：${function_name}"
+              continue
+            fi
+
+            echo "检测到关键密钥缺失或漂移，使用 runner 临时运行时配置仅重部署：${function_name}"
+            npx --yes --package @cloudbase/cli@3.8.4 tcb \
+              -e "${CLOUDBASE_ENV_ID}" \
+              fn deploy "${function_name}" --force --json
+            verified=false
+            for attempt in $(seq 1 12); do
+              if npx --yes --package @cloudbase/cli@3.8.4 tcb \
+                -e "${CLOUDBASE_ENV_ID}" \
+                fn detail "${function_name}" --json > "${detail_file}" && \
+                node scripts/cloudbase-function-env.mjs verify-one \
+                  --detail "${detail_file}" \
+                  --name "${function_name}" 2>/dev/null; then
+                verified=true
+                break
+              fi
+              [[ "${attempt}" -eq 12 ]] || sleep 5
+            done
+            if [[ "${verified}" != 'true' ]]; then
+              node scripts/cloudbase-function-env.mjs verify-one \
+                --detail "${detail_file}" \
+                --name "${function_name}"
+            fi
+          done < <(printf '%s\n' \
+            profile \
+            profile-media-cleanup \
+            admin-review \
+            activity-read \
+            activity-admin \
+            club-application)
+
       - name: Verify deployed environment and media secret consistency
         if: steps.scope.outputs.should_deploy == 'true'
         shell: bash
@@ -294,6 +376,21 @@ jobs:
             --config "${RUNNER_TEMP}/cloudbaserc.repository.json" \
             --details-dir "${details_dir}"
           echo "CloudBase 部署验证通过：环境 ${CLOUDBASE_ENV_ID}"
+
+      - name: Purge explicitly confirmed prelaunch media data
+        if: >-
+          steps.scope.outputs.should_deploy == 'true' &&
+          github.event_name == 'workflow_dispatch' &&
+          inputs.purge_prelaunch_media_data == true &&
+          inputs.purge_confirmation == 'DELETE_PRELAUNCH_MEDIA_DATA'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/cloudbase-prelaunch-media-purge.mjs \
+            --apply \
+            --env-id "${CLOUDBASE_ENV_ID}" \
+            --confirm-env-id "${CLOUDBASE_ENV_ID}" \
+            --confirmation DELETE_PRELAUNCH_MEDIA_DATA
 
       - name: Run production club application write smoke
         if: steps.scope.outputs.should_deploy == 'true'
@@ -324,6 +421,7 @@ jobs:
             "${RUNNER_TEMP}/cloudbase-functions-inventory.json" \
             "${RUNNER_TEMP}/cloudbase-function-details-before" \
             "${RUNNER_TEMP}/cloudbase-function-details-after" \
+            "${RUNNER_TEMP}/cloudbase-function-secret-reconcile" \
             "${RUNNER_TEMP}"/cloudbase-deployed-*.json || cleanup_status=$?
           exit "${cleanup_status}"
 

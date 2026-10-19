@@ -5,6 +5,8 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const MEDIA_SECRET_NAME = 'PROFILE_MEDIA_PATH_SECRET';
+export const PII_SECRET_NAME = 'PII_ENCRYPTION_KEY';
+export const PII_SECRET_CONSUMERS = Object.freeze(['profile', 'admin-review']);
 export const MEDIA_SECRET_CONSUMERS = Object.freeze([
   'profile',
   'profile-media-cleanup',
@@ -150,7 +152,8 @@ export function extractFunctionEnvironment(detail) {
     if (!value || typeof value !== 'object' || seen.has(value)) return;
     seen.add(value);
 
-    if (value.Key === MEDIA_SECRET_NAME) addEnvironmentValue(environment, value.Key, value.Value);
+    if ([MEDIA_SECRET_NAME, PII_SECRET_NAME].includes(value.Key))
+      addEnvironmentValue(environment, value.Key, value.Value);
     for (const [key, item] of Object.entries(value)) {
       const isEnvironment = /^(?:environment|environmentvariables|envvariables)$/i.test(key);
       const isVariables = key === 'Variables' && inEnvironment;
@@ -200,7 +203,44 @@ export function resolveMediaSecret(environments, actionsSecret = '') {
   return unique[0];
 }
 
-export function createRuntimeConfig(config, environments, selectedFunctions, secret) {
+function validatePiiSecret(value, source) {
+  if (value === undefined || value === '') return null;
+  if (
+    typeof value !== 'string' ||
+    !/^(?:[A-Za-z0-9+/]{4}){10}[A-Za-z0-9+/]{3}=$/u.test(value) ||
+    Buffer.from(value, 'base64').length !== 32 ||
+    Buffer.from(value, 'base64').toString('base64') !== value
+  ) {
+    throw new Error(`${source} 中的 ${PII_SECRET_NAME} 必须是严格 base64 编码的 32 字节密钥`);
+  }
+  return value;
+}
+
+export function resolvePiiSecret(environments, actionsSecret = '') {
+  const candidates = [];
+  const configured = validatePiiSecret(actionsSecret, 'GitHub Actions secret');
+  if (configured) candidates.push(configured);
+  for (const name of PII_SECRET_CONSUMERS) {
+    const value = validatePiiSecret(environments.get(name)?.[PII_SECRET_NAME], `云函数 ${name}`);
+    if (value) candidates.push(value);
+  }
+  const unique = [...new Set(candidates)];
+  if (unique.length === 0) {
+    throw new Error(
+      `${PII_SECRET_NAME} 缺失；请由环境管理员在 cloudbase-production 配置同名 GitHub Actions secret 后重试`,
+    );
+  }
+  if (unique.length !== 1) throw new Error(`${PII_SECRET_NAME} 在可信来源中不一致，拒绝部署`);
+  return unique[0];
+}
+
+export function createRuntimeConfig(
+  config,
+  environments,
+  selectedFunctions,
+  mediaSecret,
+  piiSecret,
+) {
   const configuredNames = new Set(configuredFunctionNames(config));
   for (const name of selectedFunctions) {
     if (!configuredNames.has(name)) throw new Error(`部署范围包含未知函数：${name}`);
@@ -210,7 +250,8 @@ export function createRuntimeConfig(config, environments, selectedFunctions, sec
     functions: (config.functions || []).map((fn) => {
       if (!selectedFunctions.includes(fn.name)) return fn;
       const envVariables = { ...(environments.get(fn.name) || {}), ...(fn.envVariables || {}) };
-      if (MEDIA_SECRET_CONSUMERS.includes(fn.name)) envVariables[MEDIA_SECRET_NAME] = secret;
+      if (MEDIA_SECRET_CONSUMERS.includes(fn.name)) envVariables[MEDIA_SECRET_NAME] = mediaSecret;
+      if (PII_SECRET_CONSUMERS.includes(fn.name)) envVariables[PII_SECRET_NAME] = piiSecret;
       return { ...fn, envVariables };
     }),
   };
@@ -229,16 +270,32 @@ function prepare(options, env = process.env) {
   if (!Array.isArray(inventoryResult.existing)) throw new Error('函数清单缺少 existing 数组');
   const functionNames = configuredFunctionNames(config);
   const environments = readDetails(options['details-dir'], functionNames, inventoryResult.existing);
-  const secret = resolveMediaSecret(environments, env.PROFILE_MEDIA_PATH_SECRET_SOURCE || '');
+  const mediaSecret = resolveMediaSecret(environments, env.PROFILE_MEDIA_PATH_SECRET_SOURCE || '');
+  const piiSecret = resolvePiiSecret(environments, env.PII_ENCRYPTION_KEY_SOURCE || '');
   if (!env.GITHUB_ENV) throw new Error('缺少 GITHUB_ENV，无法安全传递已掩码密钥');
-  process.stdout.write(`::${'add'}-mask::${secret}\n`);
+  process.stdout.write(`::${'add'}-mask::${mediaSecret}\n`);
+  process.stdout.write(`::${'add'}-mask::${piiSecret}\n`);
 
-  const runtimeConfig = createRuntimeConfig(config, environments, decision.functions || [], secret);
+  const selectedFunctions =
+    options['include-secret-consumers'] === 'true'
+      ? [...new Set([...(decision.functions || []), ...MEDIA_SECRET_CONSUMERS])]
+      : decision.functions || [];
+  const runtimeConfig = createRuntimeConfig(
+    config,
+    environments,
+    selectedFunctions,
+    mediaSecret,
+    piiSecret,
+  );
   writeFileSync(resolve(options.output), `${JSON.stringify(runtimeConfig, null, 2)}\n`, {
     mode: 0o600,
   });
-  appendFileSync(env.GITHUB_ENV, `${MEDIA_SECRET_NAME}=${secret}\n`, { mode: 0o600 });
-  process.stdout.write('已从可信来源解析并掩码媒体路径密钥，运行时配置已准备\n');
+  appendFileSync(
+    env.GITHUB_ENV,
+    `${MEDIA_SECRET_NAME}=${mediaSecret}\n${PII_SECRET_NAME}=${piiSecret}\n`,
+    { mode: 0o600 },
+  );
+  process.stdout.write('已从可信来源解析并掩码媒体路径与 PII 密钥，运行时配置已准备\n');
 }
 
 function collectFunctionDetails(value, results = [], seen = new Set()) {
@@ -257,7 +314,7 @@ function collectFunctionDetails(value, results = [], seen = new Set()) {
   return results;
 }
 
-export function verifyFunctionDetail(detail, expectedName, expectedSecret) {
+export function verifyFunctionDetail(detail, expectedName, expectedMediaSecret, expectedPiiSecret) {
   const matches = collectFunctionDetails(detail).filter(({ name }) => name === expectedName);
   if (matches.length !== 1) throw new Error(`云函数 ${expectedName} 详情缺失或不唯一`);
   if (matches[0].status.toLowerCase() !== 'active') {
@@ -268,9 +325,19 @@ export function verifyFunctionDetail(detail, expectedName, expectedSecret) {
       extractFunctionEnvironment(detail)[MEDIA_SECRET_NAME],
       `云函数 ${expectedName}`,
     );
-    const expected = validateSecret(expectedSecret, '当前部署任务');
+    const expected = validateSecret(expectedMediaSecret, '当前部署任务');
     if (!actual || !expected || actual !== expected) {
       throw new Error(`云函数 ${expectedName} 的 ${MEDIA_SECRET_NAME} 缺失或不一致`);
+    }
+  }
+  if (PII_SECRET_CONSUMERS.includes(expectedName)) {
+    const actual = validatePiiSecret(
+      extractFunctionEnvironment(detail)[PII_SECRET_NAME],
+      `云函数 ${expectedName}`,
+    );
+    const expected = validatePiiSecret(expectedPiiSecret, '当前部署任务');
+    if (!actual || !expected || actual !== expected) {
+      throw new Error(`云函数 ${expectedName} 的 ${PII_SECRET_NAME} 缺失或不一致`);
     }
   }
   return { name: expectedName, status: matches[0].status };
@@ -282,7 +349,7 @@ function verifyOne(options, env = process.env) {
     readFileSync(resolve(options.detail), 'utf8'),
     `云函数 ${options.name} 详情`,
   );
-  verifyFunctionDetail(detail, options.name, env[MEDIA_SECRET_NAME]);
+  verifyFunctionDetail(detail, options.name, env[MEDIA_SECRET_NAME], env[PII_SECRET_NAME]);
   process.stdout.write(`云函数 ${options.name} 已处于 Active 且环境配置校验通过\n`);
 }
 
@@ -297,6 +364,17 @@ export function verifyMediaSecret(environments, expectedSecret) {
   }
 }
 
+export function verifyPiiSecret(environments, expectedSecret) {
+  const expected = validatePiiSecret(expectedSecret, '当前部署任务');
+  if (!expected) throw new Error(`当前部署任务缺少 ${PII_SECRET_NAME}`);
+  for (const name of PII_SECRET_CONSUMERS) {
+    const actual = validatePiiSecret(environments.get(name)?.[PII_SECRET_NAME], `云函数 ${name}`);
+    if (!actual || actual !== expected) {
+      throw new Error(`云函数 ${name} 的 ${PII_SECRET_NAME} 缺失或不一致`);
+    }
+  }
+}
+
 function verify(options, env = process.env) {
   if (!options.config || !options['details-dir'])
     throw new Error('verify 缺少 config 或 details-dir');
@@ -306,11 +384,17 @@ function verify(options, env = process.env) {
     if (!configured.has(name)) throw new Error(`cloudbaserc.json 缺少媒体消费者：${name}`);
     const path = resolve(options['details-dir'], `${name}.json`);
     const detail = parseJsonText(readFileSync(path, 'utf8'), `云函数 ${name} 详情`);
-    verifyFunctionDetail(detail, name, env[MEDIA_SECRET_NAME]);
+    verifyFunctionDetail(
+      detail,
+      name,
+      env[MEDIA_SECRET_NAME],
+      PII_SECRET_CONSUMERS.includes(name) ? env[PII_SECRET_NAME] : undefined,
+    );
   }
   const environments = readDetails(options['details-dir'], MEDIA_SECRET_CONSUMERS);
   verifyMediaSecret(environments, env[MEDIA_SECRET_NAME]);
-  process.stdout.write('所有媒体密钥消费者均为 Active，且部署后配置存在并一致\n');
+  verifyPiiSecret(environments, env[PII_SECRET_NAME]);
+  process.stdout.write('所有媒体与 PII 密钥消费者均为 Active，且部署后配置存在并一致\n');
 }
 
 export function run(argv = process.argv.slice(2), env = process.env) {

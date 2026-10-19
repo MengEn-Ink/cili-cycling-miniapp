@@ -1154,6 +1154,46 @@ test('清理校验同时兼容带 category 与旧格式 canonical 路径', () =>
   );
 });
 
+test('清理校验接受 activity-route-preview 的 source 与 canonical 路径', () => {
+  const sourcePath = `profiles/${ownerAlias}/activity-route-preview/123e4567-e89b-42d3-a456-426614174000.jpg`;
+  const sourceFileId = `cloud://env/${sourcePath}`;
+  const sourceDigest = crypto.createHash('sha256').update(sourceFileId).digest('hex');
+  const sha256 = 'b'.repeat(64);
+  const canonicalPath = `profile-canonical/${ownerAlias}/activity-route-preview/${sourceDigest}/${sha256}.jpg`;
+
+  assert.equal(
+    validCanonicalIntentPath(
+      {
+        kind: 'canonical_upload',
+        owner_openid: 'owner',
+        source_file_id: sourceFileId,
+        cloud_path: canonicalPath,
+        category: 'activity-route-preview',
+        sha256,
+        size: 128,
+        mime: 'image/jpeg',
+      },
+      mediaSecret,
+    ),
+    true,
+  );
+  assert.equal(
+    validCanonicalMedia(
+      {
+        file_id: sourceFileId,
+        canonical_file_id: `cloud://env/${canonicalPath}`,
+        canonical_category: 'activity-route-preview',
+        owner_openid: 'owner',
+        sha256,
+        size: 128,
+        mime: 'image/jpeg',
+      },
+      mediaSecret,
+    ),
+    true,
+  );
+});
+
 test('profile 引用 canonical 时 registry 保持 active，而 source import 仍可独立回收', () => {
   const sourceFileId = `cloud://env/${importCloudPath}`;
   const sourceDigest = crypto.createHash('sha256').update(sourceFileId).digest('hex');

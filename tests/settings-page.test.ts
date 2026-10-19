@@ -23,50 +23,55 @@ describe('设置页', () => {
 
   it('只展示当前版本的 App 更新卡片，不展示历史日志', () => {
     // RELEASE_NOTES 顶部为当前版本并保留历史版本，设置页仍只渲染 RELEASE_NOTES[0]。
-    expect(page.data.releaseNotes).toHaveLength(9);
+    expect(page.data.releaseNotes).toHaveLength(10);
     expect(page.data.releaseNotes[0]).toMatchObject({
       version: CLIENT_RELEASE_VERSION,
       date: '2026-10-19',
       latest: true,
-      title: '创建申请可撤回修改',
+      title: '图片清理更可靠',
     });
     expect(page.data.currentRelease).toBe(page.data.releaseNotes[0]);
     expect(page.data.releaseNotes[1]).toMatchObject({
+      version: '2026.10.19.3',
+      latest: false,
+      title: '创建申请可撤回修改',
+    });
+    expect(page.data.releaseNotes[2]).toMatchObject({
       version: '2026.10.19.2',
       latest: false,
       title: '俱乐部活动投稿与审核',
     });
-    expect(page.data.releaseNotes[2]).toMatchObject({
+    expect(page.data.releaseNotes[3]).toMatchObject({
       version: '2026.10.19.1',
       latest: false,
       title: '图片上传链路全面统一',
     });
-    expect(page.data.releaseNotes[3]).toMatchObject({
+    expect(page.data.releaseNotes[4]).toMatchObject({
       version: '2026.10.18.8',
       latest: false,
       title: '界面风格统一',
     });
-    expect(page.data.releaseNotes[4]).toMatchObject({
+    expect(page.data.releaseNotes[5]).toMatchObject({
       version: '2026.10.18.7',
       latest: false,
       title: '图片上传稳定性升级',
     });
-    expect(page.data.releaseNotes[5]).toMatchObject({
+    expect(page.data.releaseNotes[6]).toMatchObject({
       version: '2026.10.18.6',
       latest: false,
       title: '俱乐部图片上传兼容性修复',
     });
-    expect(page.data.releaseNotes[6]).toMatchObject({
+    expect(page.data.releaseNotes[7]).toMatchObject({
       version: '2026.10.18.5',
       latest: false,
       title: '俱乐部推荐与图片体验修复',
     });
-    expect(page.data.releaseNotes[7]).toMatchObject({
+    expect(page.data.releaseNotes[8]).toMatchObject({
       version: '2026.10.18.4',
       latest: false,
       title: '俱乐部首页与人数上限',
     });
-    expect(page.data.releaseNotes[8]).toMatchObject({
+    expect(page.data.releaseNotes[9]).toMatchObject({
       version: '2026.10.18.3',
       latest: false,
       title: '俱乐部资料保存稳定性修复',
@@ -80,9 +85,9 @@ describe('设置页', () => {
     expect(readiness).not.toHaveBeenCalled();
   });
 
-  it('版本号与日期对齐 2026.10.19.3', () => {
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.19.3');
-    expect(page.data.currentRelease.version).toBe('2026.10.19.3');
+  it('版本号与日期对齐 2026.10.19.4', () => {
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.19.4');
+    expect(page.data.currentRelease.version).toBe('2026.10.19.4');
     expect(page.data.currentRelease.date).toBe('2026-10-19');
   });
 
