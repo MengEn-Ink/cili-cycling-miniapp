@@ -83,6 +83,12 @@
 
 预发布 purge 已有独立三重授权、固定环境 ID 和固定存储前缀门禁，目标本身就是不可逆地删除全部历史媒体数据，因此不再复用面向日常线上生命周期的 cleanup worker。最终顺序收敛为：① 删除 profiles、route previews 并清空业务主体媒体字段；② 只删除 `profiles/**`、`profile-canonical/**` 两个固定存储前缀；③ 存储删除成功后，按 `_id` 逐文档删除全部 `profile_media` 与 `profile_media_imports` 登记；④ 回读数据库与存储必须全部为 0。若数据库准备失败，不触碰存储和登记；若存储删除失败，保留登记以便安全重试。登记 DELETE 在 COUNT 后若被并发 worker 提前删减，允许按剩余 ID 继续收敛；UPDATE 仍要求数量精确一致，最终断言也会阻断任何并发新增。此路径同时删除两次 worker 超时造成的 `deleting`/lease 中间态，不再依赖函数调用和状态机终态。
 
+## 最终生产验收（run 39226735786）
+
+最终人工 workflow 在 main `aab6191` 上成功完成，总耗时 17 分 4 秒。清理前残留为 `profile_media=20`、`imports=41`、`storage_profiles=17`、`storage_canonical=5`，其他目标数据库计数均为 0；直接清理阶段耗时约 7 分 22 秒，最终输出“预发布媒体数据清理完成，数据库与两个存储前缀回读断言通过”，确认七类数据库计数和两个存储前缀全部归零。
+
+随后 production club application write smoke 成功走完 8 个真实写入阶段并清理测试数据，耗时约 5 分 18 秒。main CI、CodeQL、Pages、CloudBase 自动部署与微信开发版上传均已通过；统一图片上传影响的预发布历史数据清理、重新写入和自清理链路至此形成完整闭环。
+
 ## 破坏性操作门禁
 
 `scripts/cloudbase-prelaunch-media-purge.mjs` 默认 dry-run，只输出集合计数和两个固定存储 glob 的删除预览计数，不输出文档、openid、个人字段或密钥。`--apply` 必须同时满足：
