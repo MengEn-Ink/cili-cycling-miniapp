@@ -13,6 +13,7 @@ import {
   calculateMaxCleanupRounds,
   createCliAdapter,
   createMutationCommands,
+  parseNosqlDocuments,
   purgePrelaunchMediaData,
   storageRemoveArgs,
 } from './cloudbase-prelaunch-media-purge.mjs';
@@ -117,7 +118,19 @@ function unsetAt(document, path) {
   if (parent) delete parent[field];
 }
 
-function databaseExecutor(seed, { failMutation, maxQueryBatch = Infinity } = {}) {
+function cloudbaseQueryOutput(documents, { outerArray = false, resultKey = 'Result' } = {}) {
+  const result = JSON.stringify({
+    wrappers: [{ command: 'QUERY', ok: true }],
+    cursor: { firstBatch: documents },
+  });
+  const response = {
+    RequestId: 'fixture-request-id',
+    Data: [{ [resultKey]: result, CommandType: 'QUERY' }],
+  };
+  return JSON.stringify(outerArray ? [response] : response);
+}
+
+function databaseExecutor(seed, { failMutation, maxQueryBatch = Infinity, queryOutput } = {}) {
   const state = Object.fromEntries(
     Object.entries(seed).map(([collection, documents]) => [
       collection,
@@ -147,7 +160,9 @@ function databaseExecutor(seed, { failMutation, maxQueryBatch = Infinity } = {})
           if (body.projection?.status) projected.status = item.status;
           return projected;
         });
-      return JSON.stringify({ documents: found });
+      return queryOutput
+        ? queryOutput(found, { entry, body })
+        : JSON.stringify({ documents: found });
     }
     const ordinal = (mutationOrdinals.get(entry.TableName) || 0) + 1;
     mutationOrdinals.set(entry.TableName, ordinal);
@@ -269,6 +284,46 @@ test('mutation 模板限制集合和字段，且只允许逐文档 UPDATE / DELE
   );
 });
 
+test('CloudBase 嵌套 Result 优先解析含 _id 的 firstBatch，忽略普通 wrapper object array', () => {
+  const extendedId = { $oid: '507f1f77bcf86cd799439011' };
+  const documents = [{ _id: extendedId }, { _id: 'plain-id', status: 'uploaded' }];
+  assert.deepEqual(
+    parseNosqlDocuments(cloudbaseQueryOutput(documents, { outerArray: true })),
+    documents,
+  );
+  assert.deepEqual(
+    parseNosqlDocuments(cloudbaseQueryOutput(documents, { resultKey: 'result' })),
+    documents,
+  );
+});
+
+test('direct documents/Docs/docs/list 与 Result 文档数组保持兼容', () => {
+  const documents = [{ _id: { $numberLong: '39198820328' } }];
+  for (const key of ['documents', 'Docs', 'docs', 'list']) {
+    assert.deepEqual(parseNosqlDocuments(JSON.stringify({ [key]: documents })), documents);
+  }
+  assert.deepEqual(
+    parseNosqlDocuments(JSON.stringify({ Result: JSON.stringify(documents) })),
+    documents,
+  );
+});
+
+test('空 firstBatch 识别为空查询，非法或缺失 supported array 均 fail closed', () => {
+  assert.deepEqual(parseNosqlDocuments(cloudbaseQueryOutput([], { outerArray: true })), []);
+  for (const output of [
+    {
+      Data: [{ Result: JSON.stringify({ wrappers: [{ ok: true, command: 'QUERY' }] }) }],
+    },
+    { documents: [{ ok: true, command: 'QUERY' }] },
+    [{ ok: true, command: 'QUERY' }],
+  ]) {
+    assert.throws(
+      () => parseNosqlDocuments(JSON.stringify(output)),
+      /CloudBase QUERY 命令缺少有效文档结果/,
+    );
+  }
+});
+
 test('profile_media 20 条与 imports 41 条逐文档更新，重复执行保持幂等', async () => {
   const profileMedia = Array.from({ length: 20 }, (_, index) => ({
     _id: `media-${String(index).padStart(4, '0')}`,
@@ -283,7 +338,15 @@ test('profile_media 20 条与 imports 41 条逐文档更新，重复执行保持
       profile_media: profileMedia,
       profile_media_imports: imports,
     },
-    { maxQueryBatch: 7 },
+    {
+      maxQueryBatch: 7,
+      queryOutput(documents, { entry }) {
+        return cloudbaseQueryOutput(documents, {
+          outerArray: entry.TableName === 'profile_media',
+          resultKey: entry.TableName === 'profile_media' ? 'Result' : 'result',
+        });
+      },
+    },
   );
   const adapter = createCliAdapter({ envId: ENV_ID, execute: fixture.execute });
   const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
@@ -301,6 +364,9 @@ test('profile_media 20 条与 imports 41 条逐文档更新，重复执行保持
   const idQueries = fixture.invocations.filter(
     ({ CommandType, Command }) =>
       CommandType === 'QUERY' && JSON.parse(Command).limit === NOSQL_QUERY_PAGE_SIZE,
+  );
+  assert.ok(
+    idQueries.every(({ Command }) => isDeepStrictEqual(JSON.parse(Command).projection, { _id: 1 })),
   );
   assert.equal(idQueries.filter(({ TableName }) => TableName === 'profile_media').length, 6);
   assert.equal(
@@ -392,6 +458,38 @@ test('分页返回数量少于预清理 COUNT 时 fail closed，不静默截断'
   );
 });
 
+test('仅有无 _id 包装数组时 ID 查询直接 fail closed', async () => {
+  const adapter = createCliAdapter({
+    envId: ENV_ID,
+    execute(_file, args) {
+      const [entry] = JSON.parse(args[args.indexOf('--command') + 1]);
+      if (entry.CommandType === 'COMMAND') return JSON.stringify({ results: [{ n: 1 }] });
+      if (entry.CommandType === 'QUERY') {
+        return JSON.stringify({
+          Data: [{ Result: JSON.stringify({ wrappers: [{ ok: true, command: 'QUERY' }] }) }],
+        });
+      }
+      throw new Error('不应执行 mutation');
+    },
+  });
+  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
+  const mediaUpdate = prepare.find(({ TableName }) => TableName === 'profile_media');
+  await assert.rejects(adapter.mutate([mediaUpdate]), /CloudBase QUERY 命令缺少有效文档结果/);
+});
+
+test('terminalCounts 遇到无 supported 文档数组的非法 QUERY 响应时阻断', async () => {
+  let queries = 0;
+  const adapter = createCliAdapter({
+    envId: ENV_ID,
+    execute() {
+      queries += 1;
+      return JSON.stringify([{ ok: true, command: 'QUERY' }]);
+    },
+  });
+  await assert.rejects(adapter.terminalCounts(), /CloudBase QUERY 命令缺少有效文档结果/);
+  assert.equal(queries, 1);
+});
+
 test('空集合只执行 COUNT，跳过 QUERY 和 mutation', async () => {
   const fixture = databaseExecutor({ route_previews: [], profiles: [], profile_media: [] });
   const adapter = createCliAdapter({ envId: ENV_ID, execute: fixture.execute });
@@ -407,10 +505,17 @@ test('空集合只执行 COUNT，跳过 QUERY 和 mutation', async () => {
   );
 });
 
-test('DELETE 逐文档使用 q:{_id},limit:1，回读确认后重复执行幂等', async () => {
-  const fixture = databaseExecutor({
-    route_previews: Array.from({ length: 3 }, (_, index) => ({ _id: `route-${index}` })),
-  });
+test('DELETE 逐文档使用 q:{_id},limit:1，空 firstBatch 回读确认后重复执行幂等', async () => {
+  const fixture = databaseExecutor(
+    {
+      route_previews: Array.from({ length: 3 }, (_, index) => ({ _id: `route-${index}` })),
+    },
+    {
+      queryOutput(documents) {
+        return cloudbaseQueryOutput(documents, { outerArray: true });
+      },
+    },
+  );
   const adapter = createCliAdapter({ envId: ENV_ID, execute: fixture.execute });
   const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
   const routeDelete = prepare.find(({ TableName }) => TableName === 'route_previews');
@@ -565,7 +670,7 @@ test('media 与 import 终态回读及删除覆盖 cleanup worker 的最终状�
       const index = args.indexOf('--command');
       const [entry] = JSON.parse(args[index + 1]);
       commands.push(entry);
-      return JSON.stringify({ Data: [] });
+      return cloudbaseQueryOutput([], { outerArray: true });
     },
   });
   assert.deepEqual(await adapter.terminalCounts(), { mediaRemaining: 0, importsRemaining: 0 });
