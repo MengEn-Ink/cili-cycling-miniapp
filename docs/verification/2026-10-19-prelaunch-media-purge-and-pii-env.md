@@ -59,6 +59,12 @@
 
 脚本现先识别公共 `outputJson` 的 `data` 包装，再按内部单命令 `results` 契约解析；测试夹具同步改为生产真实形态 `{"data":{"results":[[document...]],"requestId":"..."}}`，COUNT fixture 也使用同一包装。顶层无 `data` 的内部对象继续作为兼容路径保留，全部严格校验和 fail-closed 语义不变。
 
+## 第七次生产失败回溯（run 39207046964）
+
+第七次人工清理已成功通过 QUERY 解析并取得目标 ID，但首个 `profile_media` 逐文档 UPDATE 报 `command 6 ... document=1 stage=mutation stderr_tail=(empty)`。这证明 ID 分页与 `data/results` 解包已生效，失败点收敛到 mutation payload。
+
+横向核对仓库内已在生产使用的 RunCommands 构造方式后确认：MongoDB Date 必须使用 canonical Extended JSON `{"$date":{"$numberLong":"<毫秒时间戳>"}}`；清理脚本此前传入 relaxed Extended JSON `{"$date":"<ISO 时间>"}`，服务端会拒绝 UPDATE。脚本现统一把清理时间转换为 canonical BSON Date，非法日期在生成任何命令前 fail closed；测试直接断言 `cleanup_after` 与 `retry_at` 的毫秒结构，避免再次用本地宽松 fixture 掩盖生产协议错误。
+
 ## 破坏性操作门禁
 
 `scripts/cloudbase-prelaunch-media-purge.mjs` 默认 dry-run，只输出集合计数和两个固定存储 glob 的删除预览计数，不输出文档、openid、个人字段或密钥。`--apply` 必须同时满足：

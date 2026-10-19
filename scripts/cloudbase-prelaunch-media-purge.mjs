@@ -72,8 +72,15 @@ export function calculateMaxCleanupRounds(summary) {
   return Math.ceil(records / MEDIA_CLEANUP_BATCH_SIZE) + CLEANUP_STALL_ROUND_BUDGET;
 }
 
+function bsonDate(value) {
+  const milliseconds = new Date(value).getTime();
+  if (!Number.isSafeInteger(milliseconds)) throw new Error('预发布媒体清理时间不是有效日期');
+  // RunCommands 使用 MongoDB canonical Extended JSON，不能传 relaxed JSON 的 ISO 字符串日期。
+  return { $date: { $numberLong: String(milliseconds) } };
+}
+
 export function createMutationCommands(expiredAt) {
-  const due = { $date: expiredAt };
+  const due = bsonDate(expiredAt);
   return {
     prepare: [
       command('clubs', 'UPDATE', {
