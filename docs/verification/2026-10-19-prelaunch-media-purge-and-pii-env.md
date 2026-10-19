@@ -53,6 +53,12 @@
 
 脚本现优先按该传输信封解析：由于 `invokeNosql` 每次只发送一个命令，`results` 必须恰有一个 command result，且 QUERY command result 必须是数组；合法 `[[]]` 返回空，文档对象（含兼容保留的 JSON string 文档）必须全部具有自有 `_id`，Extended JSON `_id` 原样保留。`results` 缺失或为空、包含多个 command result、QUERY command result 非数组、非空文档缺 `_id` 或 string 无法解析时均 fail closed。COUNT 的 `{"results":[{"n":20}]}` 仍由独立计数解析器处理，不会被误认成 QUERY 文档。原有 `Result` / `result`、`cursor.firstBatch`、`documents` / `Docs` / `docs` / `list` 仅作为 legacy 兼容路径保留。
 
+## 第六次生产失败回溯（run 39204789006）
+
+第六次人工清理仍在摘要后报 `CloudBase QUERY 命令缺少有效文档结果`，未进入逐文档 mutation。继续核对 CLI 3.8.4 源码确认：命令模块先构造 `{results, requestId}`，公共 `outputJson` 随后还会统一包装为 `{data: {results, requestId}}`。上一轮测试只覆盖了包装前的内部对象，因此生产顶层找不到 `results`。
+
+脚本现先识别公共 `outputJson` 的 `data` 包装，再按内部单命令 `results` 契约解析；测试夹具同步改为生产真实形态 `{"data":{"results":[[document...]],"requestId":"..."}}`，COUNT fixture 也使用同一包装。顶层无 `data` 的内部对象继续作为兼容路径保留，全部严格校验和 fail-closed 语义不变。
+
 ## 破坏性操作门禁
 
 `scripts/cloudbase-prelaunch-media-purge.mjs` 默认 dry-run，只输出集合计数和两个固定存储 glob 的删除预览计数，不输出文档、openid、个人字段或密钥。`--apply` 必须同时满足：
