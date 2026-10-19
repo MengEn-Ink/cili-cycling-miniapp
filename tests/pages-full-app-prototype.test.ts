@@ -108,15 +108,15 @@ describe('Pages 全套 App 原型契约（design-only 不污染正式路由）',
     expect(data.experienceStats?.plannedTotal).toBe(15);
   });
 
-  it('4. schema 总计 40 个画面，并隔离 17 个正式路由与 23 个原型画面', () => {
+  it('4. schema 总计 38 个画面，并隔离 17 个正式路由与 21 个原型画面', () => {
     const pages = data.pages ?? [];
     const canonical = pages.filter((page) => !page.path.startsWith('prototype/'));
     const prototype = pages.filter((page) => page.path.startsWith('prototype/'));
-    expect(pages).toHaveLength(40);
+    expect(pages).toHaveLength(38);
     expect(canonical).toHaveLength(17);
-    expect(prototype).toHaveLength(23);
-    expect(data.experienceStats?.schemaPageCount).toBe(40);
-    expect(`${indexSource}\n${appSource}`).toContain('17 个正式路由 + 23 个原型 / 40 个画面');
+    expect(prototype).toHaveLength(21);
+    expect(data.experienceStats?.schemaPageCount).toBe(38);
+    expect(`${indexSource}\n${appSource}`).toContain('17 个正式路由 + 21 个原型 / 38 个画面');
   });
 
   it('5. rolesMatrix 覆盖 6 种角色，俱乐部角色不等同平台管理员', () => {
@@ -154,12 +154,6 @@ describe('Pages 全套 App 原型契约（design-only 不污染正式路由）',
       'discovery',
       'detail',
       'manage',
-      'pending-review',
-      'withdraw-confirm',
-      'withdrawing',
-      'withdraw-error',
-      'draft',
-      'application-edit',
       'loading',
       'error',
     ]);
@@ -167,45 +161,25 @@ describe('Pages 全套 App 原型契约（design-only 不污染正式路由）',
     expect(templatesSource).not.toContain('data-route="club-center"');
   });
 
-  it('7. club/center schema 包含管理与创建申请撤回的 mode', () => {
+  it('7. club/center schema 只保留发现、详情、管理与恢复 mode', () => {
     const states = clubCenter()?.states?.map(([id]) => id);
-    expect(states).toEqual([
-      'discovery',
-      'detail',
-      'manage',
+    expect(states).toEqual(['discovery', 'detail', 'manage', 'loading', 'error']);
+    expect(clubCenter()?.copy).toMatch(/单路由 mode-based/);
+  });
+
+  it('7.1 旧创建申请状态统一回落到发现页，不再提供撤回或重提', () => {
+    for (const obsolete of [
       'pending-review',
       'withdraw-confirm',
       'withdrawing',
       'withdraw-error',
       'draft',
       'application-edit',
-      'loading',
-      'error',
-    ]);
-    expect(clubCenter()?.copy).toMatch(/单路由 mode-based/);
-  });
-
-  it('7.1 创建申请撤回原型覆盖入口、确认、处理中、失败与回草稿', () => {
-    const pending = renderClubCenter('pending-review');
-    expect(pending).toContain('撤回申请');
-    expect(pending).toContain('data-state="withdraw-confirm"');
-    const confirmation = renderClubCenter('withdraw-confirm');
-    expect(confirmation).toContain('确认撤回');
-    expect(confirmation).toContain('data-state="withdrawing"');
-    const withdrawing = renderClubCenter('withdrawing');
-    expect(withdrawing).toContain('正在撤回');
-    expect(withdrawing).toContain('disabled aria-disabled="true"');
-    expect(renderClubCenter('withdraw-error')).toContain('撤回失败，申请仍在审核中；请重试');
-    const draft = renderClubCenter('draft');
-    expect(draft).toContain('进入草稿继续编辑');
-    expect(draft).toContain('data-state="application-edit"');
-    expect(draft).not.toContain('data-state="manage"');
-    const applicationEdit = renderClubCenter('application-edit');
-    expect(applicationEdit).toContain('data-mode="application-edit"');
-    expect(applicationEdit).toContain('申请基本资料');
-    expect(applicationEdit).toContain('保存草稿');
-    expect(applicationEdit).toContain('重新提交审核');
-    expect(applicationEdit).not.toContain('负责人管理模式');
+    ]) {
+      const output = renderClubCenter(obsolete);
+      expect(output).toContain('data-mode="discovery"');
+      expect(output).not.toMatch(/撤回申请|保存草稿|重新提交审核/);
+    }
   });
 
   it('8. discovery 过滤已加入俱乐部，并把推荐详情保持 disabled', () => {

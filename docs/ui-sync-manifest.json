@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
   "syncedThrough": "6676faa5ed9bd90affa4dcb50152f857a414cf50",
-  "syncedAt": "2026-10-18T16:10:00.000Z",
+  "syncedAt": "2026-10-19T12:48:55.000Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:fd711f5c7714a407b1deada23b6e24e05c2d705dd74f0f98ccb2bf0b0661860a"
+    "digest": "sha256:f057df462364d3012dc87bf6c50ce36716e3d86afa999773428b5c11792723b2"
   },
   "prototype": {
-    "digest": "sha256:87a30334e27287ad82acb2722fb9d199bc0fbf71cf414732cc87acc30b2d1666"
+    "digest": "sha256:5cc0a4fe9130422f1b40e1d7091edf17fccc0f0bc2bc55ef4a92de13d110c454"
   },
   "routes": [
     {
@@ -93,10 +93,10 @@
         "id": "activities",
         "devtools": "activities-devtools.png",
         "pages": "activities-pages.png",
-        "state": "有活动",
-        "data": "real-runtime",
+        "state": "v3 三卡轮播 · 第一张",
+        "data": "fixture",
         "review": "blocked",
-        "note": "Pages 完整交互原型已在 2026-10-18 使用本地浏览器重新采集 375×812 截图；DevTools 证据仍保持 blocked，待新开发版逐页复验。"
+        "note": "Pages 于 2026-10-19 重新采集 375×812：首卡为“云蒙山&喇叭沟 RIDE”，三卡横向轮播、下一卡露出、箭头与分页可见；340/375/390 均无页面横向溢出，DevTools 证据仍保持 blocked。"
       },
       {
         "id": "activity-detail",
@@ -147,10 +147,10 @@
         "id": "profile",
         "devtools": "profile-devtools.png",
         "pages": "profile-pages.png",
-        "state": "管理员",
+        "state": "管理员 · 单俱乐部",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "Pages 完整交互原型已在 2026-10-18 使用本地浏览器重新采集 375×812 截图；DevTools 证据仍保持 blocked，待新开发版逐页复验。"
+        "note": "Pages 于 2026-10-19 重新采集 375×812：管理员个人中心展示“活动管理”和“俱乐部管理”，普通成员状态两入口均不可见；照片与昵称均为演示数据，DevTools 证据仍保持 blocked。"
       },
       {
         "id": "settings",
@@ -219,28 +219,28 @@
         "id": "club/center",
         "devtools": "club-center-devtools.png",
         "pages": "club-center-pages.png",
-        "state": "已加入俱乐部，负责人或管理员可修改资料",
+        "state": "发现模式 · 已过滤已加入俱乐部",
         "data": "fixture",
         "review": "blocked",
-        "note": "Pages 原型已同步创建申请撤回入口、确认、处理中、失败与草稿编辑 mode，但 375×812 Pages 截图尚未重采；现有 DevTools 文件未覆盖撤回流程，不作为本次视觉验收结论。待主代理使用本地浏览器重采 Pages，并在新开发版补采真实 DevTools 证据。"
+        "note": "Pages 于 2026-10-19 重新采集 375×812：发现页只保留本人俱乐部、推荐俱乐部与申请加入入口，旧创建申请状态统一回落；页头徽标与标题不再重叠，DevTools 证据仍保持 blocked。"
       },
       {
         "id": "admin-club-applications",
         "devtools": "admin-club-applications-devtools.png",
         "pages": "admin-club-applications-pages.png",
-        "state": "待审核列表",
+        "state": "正式俱乐部列表 · 3 个",
         "data": "fixture",
         "review": "blocked",
-        "note": "Pages 375×812 高保真夹具已采集作为新增路由结构基线；DevTools 文件为明确标注的待采集占位图，并非双端验收证据，开发版上传后替换。"
+        "note": "Pages 于 2026-10-19 重新采集 375×812：平台管理员查看 3 个 active 正式俱乐部并使用 44px 创建按钮；页面不再展示待审核、驳回或申请操作，DevTools 证据仍保持 blocked。"
       },
       {
         "id": "admin-club-application-detail",
         "devtools": "admin-club-application-detail-devtools.png",
         "pages": "admin-club-application-detail-pages.png",
-        "state": "申请详情待审核",
+        "state": "创建俱乐部 · 媒体优先",
         "data": "fixture",
         "review": "blocked",
-        "note": "Pages 375×812 高保真夹具已采集作为新增路由结构基线；DevTools 文件为明确标注的待采集占位图，并非双端验收证据，开发版上传后替换。"
+        "note": "Pages 于 2026-10-19 重新采集 375×812：01 头像、02 背景图、03 基本资料、04 加入设置；背景删除/恢复与创建成功状态已交互验证，唯一主操作为“创建并立即生效”，DevTools 证据仍保持 blocked。"
       }
     ]
   }

@@ -74,6 +74,7 @@
   let currentRoute = 'activities';
   let currentState = '';
   let toastTimer;
+  let activityCarouselController = null;
 
   const $ = (selector) => document.querySelector(selector);
   const container = $('#screen-container');
@@ -236,7 +237,7 @@
             <li><a href="#journey-organizer"><b>04</b><span>组织者旅程</span><em>创建 → 路线 → 审批 → 现场</em></a></li>
             <li><a href="#privacy"><b>05</b><span>隐私与产品边界</span><em>公开卡片字段 · Strava OAuth 退役</em></a></li>
             <li><a href="#pipeline"><b>06</b><span>七步交付链路</span><em>PR → CloudBase / 微信 / Pages</em></a></li>
-            <li><a href="#prototype"><b>07</b><span>原型与证据</span><em>17 个正式路由 + 23 个原型 / 40 个画面 + 对比截图</em></a></li>
+            <li><a href="#prototype"><b>07</b><span>原型与证据</span><em>17 个正式路由 + 21 个原型 / 38 个画面 + 对比截图</em></a></li>
             <li><a href="#planned"><b>08</b><span>规划能力地图</span><em>6 角色矩阵 + 15 页 design-only</em></a></li>
           </ol>
           <p class="story-map-foot">八大类文档索引保留在页面末尾的 <a href="#delivery">研发交付中心</a>；仓库里的所有事实、源码与证据可以从那里收口。</p>
@@ -472,7 +473,7 @@
       <section class="story-section" id="journey-organizer">
         <p class="story-eyebrow">04 · 组织者旅程</p>
         <h2 class="story-h2">先给结论：组织者的职责是「活动可被看见」和「现场可被审」。</h2>
-        <p class="story-lead">对单俱乐部而言，组织者和管理员往往是同一人；对组织地基与审批而言，OWNER / ADMIN / MEMBER 已作为目标角色显式区分；俱乐部创建申请与平台审批已进入生产路由，俱乐部活动和公开活动审批仍保留为演进原型。</p>
+        <p class="story-lead">对单俱乐部而言，组织者和管理员往往是同一人；对组织地基与审批而言，OWNER / ADMIN / MEMBER 已作为目标角色显式区分。Pages 本轮将俱乐部创建收敛为仅平台管理员直接创建，俱乐部活动和公开活动审批仍保留为演进原型。</p>
 
         <div class="organizer-flow">
           <article class="organizer-step">
@@ -502,7 +503,7 @@
         </div>
 
         <div class="organizer-note">
-          <p><b>组织地基与审批（俱乐部创建已实现，活动审批继续演进）</b>：俱乐部创建申请已统一进入平台管理员待办，通过后由服务端创建正式俱乐部并授予申请人 OWNER；俱乐部活动由 OWNER / ADMIN 审批、公开活动由平台所有者审批仍是后续目标。点击 <a href="#org-overview">组织审批演进原型入口</a> 可体验 8 页完整设计表达。</p>
+          <p><b>组织地基与审批（俱乐部直建，活动审批继续演进）</b>：俱乐部创建仅由平台管理员发起并直接生效，不再提供普通用户申请、撤回或驳回流程；俱乐部活动由 OWNER / ADMIN 审批、公开活动由平台所有者审批仍是后续目标。点击 <a href="#org-overview">组织审批演进原型入口</a> 可体验 6 页完整设计表达。</p>
         </div>
       </section>
 
@@ -568,15 +569,15 @@
             <h3>✓ 当前已实现（17 个真实路由）</h3>
             <ul>
               <li>骑友端：活动列表、活动详情、路线分析、报名表、行程、凭证、我的、俱乐部中心、设置、名片、资料编辑</li>
-              <li>管理端：我的活动、活动编辑、报名审批列表 / 详情、俱乐部创建审批列表 / 详情</li>
+              <li>管理端：我的活动、活动编辑、报名审批列表 / 详情、俱乐部管理 / 创建</li>
               <li>公共：Strava 公开路线链接解析（无 OAuth）、GPX 上传与预览、报名凭证、公开骑手卡片四字段契约</li>
               <li>交付：PR / main CI、CloudBase 自动部署、微信开发版自动上传、体验版两阶段晋级、GitHub Pages 发布</li>
             </ul>
           </article>
           <article class="roadmap-todo">
-            <h3>⌛ 后续演进（23 个原型画面）</h3>
+            <h3>⌛ 后续演进（21 个原型画面）</h3>
             <ul>
-              <li>组织地基与审批演进原型：俱乐部创建申请已生产落地；俱乐部 / 公开活动审批、角色视角与异常仍为后续目标</li>
+              <li>组织地基与审批演进原型：俱乐部由平台管理员直接创建；俱乐部 / 公开活动审批、角色视角与异常仍为后续目标</li>
               <li>多俱乐部 / 多组织租户、独立 Web 后台 — 未来需求</li>
               <li>报名信息同步腾讯文档 — 需求阶段，等官方接入与权限验证</li>
               <li>发起人申请、完整通知闭环、凭证前缀、活动标签 / 模板、双主题、一句话更新日志</li>
@@ -752,8 +753,8 @@
 
       <section class="product-section" id="prototype">
         <p class="eyebrow">05 · 交互原型</p>
-        <h2>17 个正式路由 + 23 个原型 / 40 个画面</h2>
-        <p class="card-hint">17 个正式页面与 app.json 路由一一对应；23 个原型画面由 8 页 M0 组织审批原型和 15 页 planned design-only 组成，均可进入 Pages 原型导航，但不计入正式路由。俱乐部创建申请、平台审批、正式俱乐部创建与 OWNER 授予已经落地，俱乐部活动和公开活动审批仍仅为设计表达。官方路线独立页已从产品路由删除；活动详情直接承载路线事实与 GPX 能力，Strava 路线只提供规范化链接复制（Strava OAuth 已退役，无需 Strava 授权）。</p>
+        <h2>17 个正式路由 + 21 个原型 / 38 个画面</h2>
+        <p class="card-hint">17 个正式页面与 app.json 路由一一对应；21 个原型画面由 6 页 M0 活动审批原型和 15 页 planned design-only 组成，均可进入 Pages 原型导航，但不计入正式路由。俱乐部由平台管理员直接创建，创建后立即生效；普通用户创建申请及其审批状态已从 Pages 移除。俱乐部活动和公开活动审批仍仅为设计表达。官方路线独立页已从产品路由删除；活动详情直接承载路线事实与 GPX 能力，Strava 路线只提供规范化链接复制（Strava OAuth 已退役，无需 Strava 授权）。</p>
         <div class="overview-grid">${pageCards}</div>
       </section>
 
@@ -880,6 +881,79 @@
 
   window.normalizePrototypeState = normalizePrototypeState;
 
+  function setupActivityCarousel() {
+    const track = container.querySelector('.activity-carousel-track');
+    if (!track) return null;
+    const slides = [...track.querySelectorAll('[data-activity-slide]')];
+    const previous = container.querySelector('[data-action="activity-carousel-prev"]');
+    const next = container.querySelector('[data-action="activity-carousel-next"]');
+    const dots = [...container.querySelectorAll('[data-action="activity-carousel-dot"]')];
+    const current = container.querySelector('[data-activity-carousel-current]');
+    let activeIndex = 0;
+    let frame = 0;
+
+    const update = (index, scroll = false) => {
+      activeIndex = Math.max(0, Math.min(index, slides.length - 1));
+      slides.forEach((slide, slideIndex) =>
+        slide.classList.toggle('is-active', slideIndex === activeIndex),
+      );
+      dots.forEach((dot, dotIndex) => {
+        const active = dotIndex === activeIndex;
+        dot.classList.toggle('is-active', active);
+        dot.setAttribute('aria-current', active ? 'true' : 'false');
+      });
+      if (previous) {
+        previous.disabled = activeIndex === 0;
+        previous.setAttribute('aria-disabled', previous.disabled ? 'true' : 'false');
+      }
+      if (next) {
+        next.disabled = activeIndex === slides.length - 1;
+        next.setAttribute('aria-disabled', next.disabled ? 'true' : 'false');
+      }
+      if (current) current.textContent = `当前第 ${activeIndex + 1} 场`;
+      if (scroll) {
+        slides[activeIndex]?.scrollIntoView({
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+            ? 'auto'
+            : 'smooth',
+          block: 'nearest',
+          inline: 'start',
+        });
+      }
+    };
+    const onScroll = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        const trackLeft = track.getBoundingClientRect().left;
+        const nearest = slides.reduce(
+          (best, slide, index) => {
+            const distance = Math.abs(slide.getBoundingClientRect().left - trackLeft);
+            return distance < best.distance ? { distance, index } : best;
+          },
+          { distance: Number.POSITIVE_INFINITY, index: 0 },
+        );
+        update(nearest.index);
+      });
+    };
+    track.addEventListener('scroll', onScroll, { passive: true });
+    update(0);
+    return {
+      destroy() {
+        window.cancelAnimationFrame(frame);
+        track.removeEventListener('scroll', onScroll);
+      },
+      previous: () => update(activeIndex - 1, true),
+      next: () => update(activeIndex + 1, true),
+      goTo: (index) => update(index, true),
+      handleKey(event) {
+        if (event.key === 'ArrowLeft') update(activeIndex - 1, true);
+        if (event.key === 'ArrowRight') update(activeIndex + 1, true);
+        if (event.key === 'Home') update(0, true);
+        if (event.key === 'End') update(slides.length - 1, true);
+      },
+    };
+  }
+
   function showPage(route, options = {}) {
     if (route === 'overview') {
       showOverview();
@@ -893,9 +967,12 @@
     const stateIds = page.states.map(([id]) => id);
     currentState = normalizePrototypeState(stateIds, options.state);
     window.prototypeState = currentState;
+    activityCarouselController?.destroy();
+    activityCarouselController = null;
     container.innerHTML = templates[page.id]();
     container.scrollTop = 0;
     updateChrome(page);
+    activityCarouselController = setupActivityCarousel();
     modal.hidden = true;
     const hash = currentState === page.states[0][0] ? `#${page.id}` : `#${page.id}/${currentState}`;
     if (window.location.hash !== hash) window.history.replaceState(null, '', hash);
@@ -989,6 +1066,11 @@
       showToast('已删除行程记录');
     }
     if (action === 'copy-activity') showCopyActivity();
+    if (action === 'activity-carousel-prev') activityCarouselController?.previous();
+    if (action === 'activity-carousel-next') activityCarouselController?.next();
+    if (action === 'activity-carousel-dot') {
+      activityCarouselController?.goTo(Number(target.dataset.index));
+    }
     if (action === 'copy-route') {
       showPage('activity-detail', { state: 'copied', replace: true });
       showToast('路线链接已复制');
@@ -1029,12 +1111,51 @@
       showToast(action === 'approve-review' ? '报名已通过' : '报名已驳回');
       window.setTimeout(() => showPage('admin-reviews'), 500);
     }
-    if (action === 'confirm-club-application') {
-      showPage('club-application-edit', { state: 'submit-confirm', replace: true });
+    if (action === 'club-create-avatar') {
+      showPage('admin-club-application-detail', {
+        state: 'avatar-uploading',
+        replace: true,
+      });
+      window.setTimeout(() => {
+        window.prototypeClubCreateMedia = {
+          ...(window.prototypeClubCreateMedia || {}),
+          avatarReady: true,
+          coverReady: window.prototypeClubCreateMedia?.coverReady ?? true,
+        };
+        showPage('admin-club-application-detail', { state: 'create', replace: true });
+        showToast('俱乐部头像已就绪');
+      }, 500);
     }
-    if (action === 'submit-club-application') {
-      showToast('申请已提交，等待平台所有者审批');
-      window.setTimeout(() => showPage('club-applications', { state: 'pending_review' }), 500);
+    if (action === 'club-create-cover') {
+      showPage('admin-club-application-detail', {
+        state: 'cover-uploading',
+        replace: true,
+      });
+      window.setTimeout(() => {
+        window.prototypeClubCreateMedia = {
+          ...(window.prototypeClubCreateMedia || {}),
+          avatarReady: window.prototypeClubCreateMedia?.avatarReady ?? true,
+          coverReady: true,
+        };
+        showPage('admin-club-application-detail', { state: 'create', replace: true });
+        showToast('俱乐部背景图已就绪');
+      }, 500);
+    }
+    if (action === 'club-create-remove-cover') {
+      window.prototypeClubCreateMedia = {
+        ...(window.prototypeClubCreateMedia || {}),
+        avatarReady: window.prototypeClubCreateMedia?.avatarReady ?? true,
+        coverReady: false,
+      };
+      showPage('admin-club-application-detail', { state: 'create', replace: true });
+      showToast('俱乐部背景图已移除');
+    }
+    if (action === 'club-create-submit') {
+      showPage('admin-club-application-detail', { state: 'submitting', replace: true });
+      window.setTimeout(() => {
+        showPage('admin-club-application-detail', { state: 'success', replace: true });
+        showToast('俱乐部已创建并生效');
+      }, 650);
     }
     if (action === 'publish-target-admin') {
       showPage('approval-outcome', { state: 'role-auto' });
@@ -1052,7 +1173,7 @@
     if (action === 'org-approve') {
       const outcomeContext = target.dataset.outcomeContext;
       showPage('approval-outcome', { state: `manual--${outcomeContext}` });
-      showToast(outcomeContext.startsWith('club-application') ? '申请已通过并创建俱乐部' : outcomeContext.startsWith('public-activity') ? '公开活动已通过并发布' : '俱乐部活动已通过并发布');
+      showToast(outcomeContext.startsWith('public-activity') ? '公开活动已通过并发布' : '俱乐部活动已通过并发布');
     }
     if (action === 'org-reject') {
       const rejectReason = document.getElementById('org-reject-reason')?.value.trim();
@@ -1064,12 +1185,21 @@
       }
       const outcomeContext = target.dataset.outcomeContext;
       showPage('approval-outcome', { state: `rejected--${outcomeContext}` });
-      showToast(outcomeContext.startsWith('club-application') ? '俱乐部申请已驳回' : outcomeContext.startsWith('public-activity') ? '公开活动已驳回' : '俱乐部活动已驳回');
+      showToast(outcomeContext.startsWith('public-activity') ? '公开活动已驳回' : '俱乐部活动已驳回');
     }
   });
 
   window.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') modal.hidden = true;
+    if (
+      currentRoute === 'activities' &&
+      activityCarouselController &&
+      ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)
+    ) {
+      event.preventDefault();
+      activityCarouselController.handleKey(event);
+      return;
+    }
     if (!demo.hidden && ['ArrowUp', 'ArrowDown'].includes(event.key)) {
       event.preventDefault();
       const page = pageById.get(currentRoute);

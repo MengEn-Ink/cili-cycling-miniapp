@@ -8204,13 +8204,11 @@ body.capture-viewport .screen-notes {
   padding: 0 0 32px;
   background: var(--color-bg);
 }
+.club-center-page:not([data-mode="detail"]) {
+  padding: 16px 16px 32px;
+}
 .club-center-page .prototype-mock-badge {
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
   z-index: 4;
-  margin: 0;
   padding: 4px 10px;
   border-radius: 999px;
   background: rgba(33, 31, 28, 0.78);
@@ -8219,6 +8217,19 @@ body.capture-viewport .screen-notes {
   font-weight: 700;
   letter-spacing: 0.08em;
   pointer-events: none;
+}
+.club-center-page[data-mode="detail"] .prototype-mock-badge {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+}
+.club-center-page:not([data-mode="detail"]) > .prototype-mock-badge {
+  position: static;
+  display: inline-flex;
+  transform: none;
+  margin: 0 0 8px;
 }
 .club-center-hero {
   position: relative;
@@ -8655,6 +8666,241 @@ body.capture-viewport .screen-notes {
   text-align: center;
 }
 /* 兼容：旧 .activity-card .btn-row 双 CTA 的样式不再适用，v2 用整卡点击 */
+
+/* 活动首页 v3 · 固定尺寸主卡、下一卡预览与可操作分页 */
+.activities-v3 .activity-carousel-shell {
+  position: relative;
+  margin: 0 -14px;
+}
+.activities-v3 .activity-carousel-track {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-left: 14px;
+  padding: 4px 14px 12px;
+  scrollbar-width: none;
+}
+.activities-v3 .activity-carousel-track::-webkit-scrollbar {
+  display: none;
+}
+.activities-v3 .activity-card-v3 {
+  flex: 0 0 min(86%, 306px);
+  height: 306px;
+  overflow: hidden;
+  scroll-snap-align: start;
+  border: 1px solid var(--color-card-border);
+  border-radius: 22px;
+  background: var(--color-surface);
+  box-shadow: 0 6px 18px rgba(33, 31, 28, 0.08);
+}
+.activities-v3 .activity-card-cover {
+  position: relative;
+  height: 136px;
+  overflow: hidden;
+  background: var(--color-media-card-bg);
+}
+.activities-v3 .activity-card-cover > img,
+.activities-v3 .activity-card-cover-fallback {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.activities-v3 .activity-card-cover-fallback {
+  position: relative;
+  background: var(--color-media-card-bg);
+}
+.activities-v3 .activity-card-cover-fallback svg {
+  width: 100%;
+  height: 100%;
+}
+.activities-v3 .activity-card-cover-fallback .brand-word {
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  color: var(--color-on-media);
+  font-size: 13px;
+  font-weight: 900;
+}
+.activities-v3 .activity-date-stamp {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: grid;
+  min-width: 48px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  text-align: center;
+}
+.activities-v3 .activity-date-stamp b {
+  font-size: 20px;
+  line-height: 22px;
+}
+.activities-v3 .activity-date-stamp small {
+  font-size: 10px;
+  line-height: 14px;
+  white-space: nowrap;
+}
+.activities-v3 .activity-card-status {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: var(--color-media-card-bg);
+  color: var(--color-on-media);
+  font-size: 10px;
+  line-height: 14px;
+  font-weight: 900;
+}
+.activities-v3 .activity-card-v3.is-closing .activity-card-status {
+  background: var(--color-status-warning-soft);
+  color: var(--color-status-warning);
+}
+.activities-v3 .activity-card-v3.is-joined .activity-card-status {
+  background: var(--color-status-success-soft);
+  color: var(--color-status-success);
+}
+.activities-v3 .activity-card-v3.is-history .activity-card-status {
+  background: var(--color-raised);
+  color: var(--color-muted);
+}
+.activities-v3 .activity-card-v3-body {
+  display: grid;
+  grid-template-rows: 20px 38px 20px 42px 44px;
+  gap: 3px;
+  height: 170px;
+  padding: 9px 12px 10px;
+}
+.activities-v3 .activity-club-chip {
+  justify-self: start;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: var(--color-raised);
+  color: var(--color-text);
+  font-size: 10px;
+  line-height: 14px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.activities-v3 .activity-card-v3-body h3 {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  color: var(--color-text);
+  font-size: 16px;
+  line-height: 19px;
+  font-weight: 900;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.activities-v3 .activity-card-meta {
+  overflow: hidden;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 11px;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.activities-v3 .activity-card-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--color-border);
+}
+.activities-v3 .activity-card-metrics span {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  background: var(--color-raised);
+}
+.activities-v3 .activity-card-metrics small {
+  color: var(--color-muted);
+  font-size: 9px;
+  line-height: 12px;
+}
+.activities-v3 .activity-card-metrics b {
+  color: var(--color-text);
+  font-size: 11px;
+  line-height: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.activities-v3 .activity-card-primary {
+  width: 100%;
+  min-height: 44px;
+  padding-block: 0;
+}
+.activities-v3 .activity-carousel-arrow {
+  position: absolute;
+  z-index: 4;
+  top: 50px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 3px 12px rgba(33, 31, 28, 0.18);
+  font-size: 26px;
+  line-height: 44px;
+  font-weight: 700;
+}
+.activities-v3 .activity-carousel-arrow.is-prev {
+  left: 18px;
+}
+.activities-v3 .activity-carousel-arrow.is-next {
+  right: 18px;
+}
+.activities-v3 .activity-carousel-arrow:disabled {
+  opacity: 0.42;
+}
+.activities-v3 .activity-carousel-pagination {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+}
+.activities-v3 .activity-carousel-pagination button {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+}
+.activities-v3 .activity-carousel-pagination button::after {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-border-strong);
+  content: '';
+  transition:
+    width 160ms ease,
+    left 160ms ease,
+    background 160ms ease;
+}
+.activities-v3 .activity-carousel-pagination button.is-active::after {
+  left: 11px;
+  width: 22px;
+  background: var(--color-action);
+}
+@media (prefers-reduced-motion: reduce) {
+  .activities-v3 .activity-carousel-track {
+    scroll-behavior: auto;
+  }
+  .activities-v3 .activity-carousel-pagination button::after {
+    transition: none;
+  }
+}
 
 /* route-analysis 三态降级（no-waypoint / parse-fail / map-error） */
 .ra-fallback {
@@ -9381,5 +9627,222 @@ body.capture-viewport .screen-notes {
 @media (max-width: 360px) {
   .club-center-media-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* 平台俱乐部管理与直接创建：复用正式路由，不呈现创建申请审批。 */
+.club-admin-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  gap: 12px;
+  align-items: start;
+}
+.club-admin-heading .page-title,
+.club-admin-heading .page-sub {
+  margin-right: 0;
+}
+.club-admin-create-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-action);
+  color: var(--color-on-action);
+  box-shadow: 0 5px 14px rgba(192, 50, 31, 0.24);
+  font-size: 28px;
+  line-height: 1;
+}
+.club-admin-create-button:focus-visible {
+  outline: 3px solid rgba(192, 50, 31, 0.24);
+  outline-offset: 2px;
+}
+.club-admin-cards {
+  display: grid;
+  gap: 10px;
+}
+.club-admin-card {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto 24px;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-height: 72px;
+  padding: 11px 10px;
+  border: 1px solid var(--color-card-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: left;
+}
+.club-admin-card:focus-visible {
+  outline: 3px solid rgba(192, 50, 31, 0.18);
+  outline-offset: 2px;
+}
+.club-admin-card-avatar {
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border: 2px solid var(--color-border-strong);
+  border-radius: 50%;
+  background: var(--color-raised);
+}
+.club-admin-card-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.club-admin-card-copy {
+  min-width: 0;
+}
+.club-admin-card-copy b,
+.club-admin-card-copy small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.club-admin-card-copy b {
+  font-size: 14px;
+  line-height: 20px;
+}
+.club-admin-card-copy small {
+  margin-top: 3px;
+  color: var(--color-muted);
+  font-size: 11px;
+  line-height: 16px;
+}
+.club-admin-card-status {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: var(--color-status-success-soft);
+  color: var(--color-status-success);
+  font-size: 9px;
+  line-height: 14px;
+  font-weight: 900;
+}
+.club-admin-card-arrow {
+  color: var(--color-text);
+  font-size: 24px;
+  line-height: 24px;
+  text-align: center;
+}
+.club-create-page .card {
+  overflow: visible;
+}
+.club-create-avatar-preview {
+  position: relative;
+  border-color: var(--color-border-strong);
+  background: var(--color-raised);
+}
+.club-create-avatar-preview.is-empty {
+  color: var(--color-text);
+  font-size: 26px;
+}
+.club-create-avatar-preview.is-uploading > img {
+  opacity: 0.45;
+}
+.club-create-avatar-preview.is-uploading > span {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(33, 31, 28, 0.52);
+  color: var(--color-on-media);
+  font-size: 12px;
+  font-weight: 900;
+}
+.club-create-media-status {
+  min-height: 20px;
+  margin: 8px 0 0;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 20px;
+}
+.club-background-editor {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+.club-background-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+.club-background-actions .btn-secondary {
+  width: 100%;
+  min-height: 44px;
+}
+.club-background-actions .club-background-remove {
+  border-color: var(--color-action);
+  background: var(--color-brand-soft);
+  color: var(--color-brand-active);
+}
+.club-background-preview {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 2px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-raised);
+}
+.club-background-preview > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.club-background-preview.is-empty {
+  flex-direction: column;
+  gap: 4px;
+  color: var(--color-muted);
+}
+.club-background-preview.is-empty b {
+  color: var(--color-text);
+  font-size: 14px;
+}
+.club-background-preview.is-empty small {
+  font-size: 12px;
+}
+.club-background-preview .thumb-state {
+  position: absolute;
+  inset: auto 8px 8px;
+  border-radius: 8px;
+}
+.club-background-count {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 12px;
+  text-align: right;
+}
+.club-create-submit {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 14px;
+}
+.club-create-submit-error {
+  margin-bottom: 10px;
+}
+@media (max-width: 360px) {
+  .club-admin-card {
+    grid-template-columns: 44px minmax(0, 1fr) 22px;
+  }
+  .club-admin-card-status {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .club-admin-card-arrow {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+  .club-create-page .profile-avatar-editor {
+    grid-template-columns: 72px minmax(0, 1fr);
   }
 }
