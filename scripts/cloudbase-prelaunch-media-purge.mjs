@@ -362,19 +362,19 @@ export function createCliAdapter({ envId, cwd = process.cwd(), execute = execFil
     for (let index = 0; index < commands.length; index += 1) {
       const entry = commands[index];
       const filter = deleteFilter(entry);
-      invokeNosql(entry, index + 1);
-      if (filter) {
-        let previousRemaining = Number.POSITIVE_INFINITY;
-        let remaining = count(entry.TableName, filter, index + 1);
-        while (remaining > 0) {
-          if (remaining >= previousRemaining)
-            throw new Error(
-              `CloudBase NoSQL DELETE 未推进：command ${index + 1} collection=${entry.TableName}`,
-            );
-          previousRemaining = remaining;
-          invokeNosql(entry, index + 1);
-          remaining = count(entry.TableName, filter, index + 1);
-        }
+      if (!filter) {
+        invokeNosql(entry, index + 1);
+        continue;
+      }
+      let remaining = count(entry.TableName, filter, index + 1);
+      while (remaining > 0) {
+        const previousRemaining = remaining;
+        invokeNosql(entry, index + 1);
+        remaining = count(entry.TableName, filter, index + 1);
+        if (remaining >= previousRemaining)
+          throw new Error(
+            `CloudBase NoSQL DELETE 未推进：command ${index + 1} collection=${entry.TableName}`,
+          );
       }
     }
   };

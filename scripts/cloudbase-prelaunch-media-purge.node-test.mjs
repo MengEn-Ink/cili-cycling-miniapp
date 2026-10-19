@@ -265,7 +265,7 @@ test('逐命令执行在具体 command 失败时立即阻断，并仅输出脱�
   assert.equal(calls, 3);
 });
 
-test('DELETE 后 COUNT 失败沿用当前 command index 且不泄露 payload', async () => {
+test('DELETE 前 COUNT 失败沿用当前 command index 且不泄露 payload', async () => {
   let calls = 0;
   const adapter = createCliAdapter({
     envId: ENV_ID,
@@ -273,8 +273,7 @@ test('DELETE 后 COUNT 失败沿用当前 command index 且不泄露 payload', a
       calls += 1;
       const index = args.indexOf('--command');
       const [entry] = JSON.parse(args[index + 1]);
-      if (calls === 4) assert.equal(entry.CommandType, 'DELETE');
-      if (calls === 5) {
+      if (calls === 4) {
         assert.equal(entry.CommandType, 'COMMAND');
         const error = new Error('count failed');
         error.stderr =
@@ -291,11 +290,35 @@ test('DELETE 后 COUNT 失败沿用当前 command index 且不泄露 payload', a
     assert.doesNotMatch(error.message, /count-payload-must-not-print/);
     return true;
   });
-  assert.equal(calls, 5);
+  assert.equal(calls, 4);
 });
 
-test('DELETE 固定 limit 1000，按 COUNT 回读循环且空库重跑幂等', async () => {
-  const countResults = [1001, 1, 0, 0];
+test('空 route_previews 和 profiles DELETE 不下发，后续 profile_media UPDATE 继续执行', async () => {
+  const invocations = [];
+  const adapter = createCliAdapter({
+    envId: ENV_ID,
+    execute(_file, args) {
+      const index = args.indexOf('--command');
+      const [entry] = JSON.parse(args[index + 1]);
+      invocations.push([entry.TableName, entry.CommandType]);
+      if (entry.CommandType === 'COMMAND') return JSON.stringify({ results: [{ n: 0 }] });
+      return JSON.stringify({ results: [] });
+    },
+  });
+  const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
+  await adapter.mutate(prepare.slice(0, 6));
+  assert.deepEqual(invocations, [
+    ['clubs', 'UPDATE'],
+    ['club_applications', 'UPDATE'],
+    ['activities', 'UPDATE'],
+    ['route_previews', 'COMMAND'],
+    ['profiles', 'COMMAND'],
+    ['profile_media', 'UPDATE'],
+  ]);
+});
+
+test('非空 DELETE 固定 limit 1000，先 COUNT 并分批删除至零', async () => {
+  const countResults = [2001, 1001, 1, 0];
   let deletes = 0;
   const adapter = createCliAdapter({
     envId: ENV_ID,
@@ -314,8 +337,7 @@ test('DELETE 固定 limit 1000，按 COUNT 回读循环且空库重跑幂等', a
   const { prepare } = createMutationCommands('2026-10-19T00:00:00.000Z');
   const routeDelete = prepare.find(({ TableName }) => TableName === 'route_previews');
   await adapter.mutate([routeDelete]);
-  await adapter.mutate([routeDelete]);
-  assert.equal(deletes, 4);
+  assert.equal(deletes, 3);
   assert.deepEqual(countResults, []);
 });
 

@@ -25,7 +25,13 @@
 
 最可能根因是脚本偏离了仓库内已验证的 NoSQL 调用形态：它把 7 个跨 collection 的 UPDATE / DELETE 命令放进一次 `MgoCommands` 请求，并在 4 个 DELETE 中使用 `limit: 0`。仓库的 `cloudbase-club-application-smoke.mjs` 每次 `execute` 只发送一个命令；本机 `@cloudbase/cli@3.8.4` 帮助中的 QUERY / INSERT / UPDATE / DELETE / COUNT 示例也都是单元素数组，DELETE 明确使用正数 `limit: 1`。CLI 3.8.4 实现仅校验 `--command` 是数组，随后将整个数组不加拆分地作为 `MgoCommands` 传给 `app.database.runCommands`；任一元素被服务端拒绝时，CLI 无法指出具体元素。结合失败发生在整批首次提交而摘要中的数据量很小，跨集合整批提交和未验证的 `limit: 0` 是最符合证据的触发因素，无法仅凭 `Unknown issue` 进一步区分二者。
 
-修复后所有 mutation 都按原顺序逐命令执行，任一命令失败立即阻断；DELETE 固定使用 CLI 已验证的安全上限 `limit: 1000`，每批后用同一过滤条件 COUNT 回读并继续删除到 0，空集合重复执行仍为幂等。失败日志只记录命令序号、collection、op 和经过脱敏截断的 stderr 尾部，不记录完整 command payload。
+修复后所有 mutation 都按原顺序逐命令执行，任一命令失败立即阻断；DELETE 固定使用 CLI 已验证的安全上限 `limit: 1000`，先以同一过滤条件 COUNT，非空时每批删除后继续 COUNT 回读至 0，空集合不下发 DELETE。失败日志只记录命令序号、collection、op 和经过脱敏截断的 stderr 尾部，不记录完整 command payload。
+
+## 第二次生产失败回溯（run 39191387824）
+
+第二次人工清理输出 `profiles=0, clubs_media=0, applications_media=0, activities_media=0, route_previews=0, profile_media=20, imports=41, storage_profiles=18, storage_canonical=5`。前三条 UPDATE 均成功，第 4 条空 `route_previews` DELETE 失败且 stderr 为空，证明 CloudBase 对空集合 DELETE 同样会失败，流程因此未继续到后续 `profile_media` UPDATE。
+
+脚本现对每条 DELETE 先按完全相同的 filter 执行 COUNT：结果为 0 时跳过该 DELETE 并继续后续命令；结果大于 0 时才按 `limit: 1000` 分批删除，每批按同一 filter 回读，直至为 0。非空 DELETE 不会被跳过；COUNT 或 DELETE 失败继续按原始 command index 准确定位，回读数量未下降则 fail closed。UPDATE 行为不变。
 
 ## 破坏性操作门禁
 
