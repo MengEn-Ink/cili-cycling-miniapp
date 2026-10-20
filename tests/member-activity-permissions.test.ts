@@ -15,6 +15,17 @@ const appStore = vi.hoisted(() => ({
 vi.mock('../miniprogram/services/ride-service', () => ({ rideService }));
 vi.mock('../miniprogram/store/app-store', () => ({ appStore }));
 
+const futureIso = (offsetHours: number) =>
+  new Date(Date.now() + offsetHours * 60 * 60 * 1000).toISOString();
+
+function futureCloneWindow() {
+  return {
+    deadline: futureIso(24),
+    startAt: futureIso(48),
+    endAt: futureIso(56),
+  };
+}
+
 describe('成员活动页面权限', () => {
   let page: any;
   beforeEach(async () => {
@@ -91,11 +102,7 @@ describe('成员活动页面权限', () => {
     expect(rideService.cloneActivity).not.toHaveBeenCalled();
     expect(page.data.error).toContain('时间');
 
-    page.data.cloneForm = {
-      deadline: '2026-10-20T00:00:00.000Z',
-      startAt: '2026-10-21T00:00:00.000Z',
-      endAt: '2026-10-21T08:00:00.000Z',
-    };
+    page.data.cloneForm = futureCloneWindow();
     const first = page.confirmClone();
     const second = page.confirmClone();
     expect(rideService.cloneActivity).toHaveBeenCalledOnce();
@@ -116,11 +123,7 @@ describe('成员活动页面权限', () => {
       .mockResolvedValueOnce({ id: 'activity_clone_retry' });
     await page.onShow();
     page.startClone({ currentTarget: { dataset: { id: 'own-finished' } } });
-    page.data.cloneForm = {
-      deadline: '2026-10-20T00:00:00.000Z',
-      startAt: '2026-10-21T00:00:00.000Z',
-      endAt: '2026-10-21T08:00:00.000Z',
-    };
+    page.data.cloneForm = futureCloneWindow();
 
     await page.confirmClone();
     await page.confirmClone();
