@@ -233,17 +233,25 @@ async function chooseAndUploadClubMedia(kind: ClubMediaKind, scope: ClubMediaCan
       if (!compressed.tempFilePath) throw new Error('empty compress result');
       if (await hasExactClubMediaSize(compressed.tempFilePath, spec)) {
         uploadPath = compressed.tempFilePath;
+        needsCanvasFallback = false;
       } else {
-        // 部分基础库会返回 success 但忽略目标尺寸；未验证尺寸时必须固定像素重导出。
+        // 部分基础库会返回 success 但忽略目标尺寸；优先固定像素重导出。
         needsCanvasFallback = true;
       }
     } catch (error) {
       if (!fixedSizeUnsupported(error)) throw mediaError('图片压缩失败，请重新选择', error);
-      // 旧基础库不识别固定尺寸参数时，必须经 legacy canvas 导出固定像素，不能上传原裁剪图。
+      // 旧基础库不识别固定尺寸参数时，先保留已裁剪图片，再尝试 legacy canvas 固定像素。
       needsCanvasFallback = true;
     }
   }
-  if (needsCanvasFallback) uploadPath = await exportFixedClubMedia(croppedPath, spec, scope);
+  if (needsCanvasFallback) {
+    try {
+      uploadPath = await exportFixedClubMedia(croppedPath, spec, scope);
+    } catch {
+      // Canvas 在部分基础库或真机上不可用；统一上传接口仍会校验图片内容，
+      // 因此回退已裁剪/压缩图片比直接中断更可靠，异常文件会在登记阶段被拒绝并清理。
+    }
+  }
   const category = kind === 'avatar' ? 'club-avatar' : 'club-cover';
   const request = requestId(`club_${kind}`);
   const uploaded = await uploadMedia({
