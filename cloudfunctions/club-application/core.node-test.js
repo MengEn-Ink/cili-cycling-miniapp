@@ -12,10 +12,12 @@ const {
   joinPublicClub,
   getManagedClub,
   updateManagedClub,
+  getSoleClub,
+  createSoleClub,
+  updateSoleClub,
   membershipId,
+  SOLE_CLUB_ID,
 } = require('./core');
-const { activeApprovedClub } = require('../profile/club-memberships');
-const { resolveTrustedClubIdentity } = require('../activity-admin/use-cases');
 
 const canonicalClubMedia = (openid, category, extension = 'jpg') => {
   const alias = crypto
@@ -112,66 +114,47 @@ test('草稿、提交、驳回修改重提形成闭环', async () => {
   assert.equal(retried.review_version, 2);
 });
 
-test('审批通过原子创建俱乐部与 OWNER，重复审批幂等', async () => {
+test('唯一俱乐部存在后旧审批通过入口关闭，不得创建第二条', async () => {
   const store = memoryStore();
+  const existingId = 'club_' + 'a'.repeat(64);
+  store.state.clubs.set(existingId, joinableClub({ _id: existingId }));
   const pending = await submitApplication(
     store,
     { openid: 'user-1', input: valid(), requestId: 'submit-0001' },
     now,
   );
-  const first = await reviewApplication(
-    store,
-    {
-      adminOpenid: 'admin-1',
-      applicationId: pending.id,
-      decision: 'approved',
-      requestId: 'review-0001',
-    },
-    now,
+
+  await assert.rejects(
+    () =>
+      reviewApplication(
+        store,
+        {
+          adminOpenid: 'admin-1',
+          applicationId: pending.id,
+          decision: 'approved',
+          requestId: 'review-0001',
+        },
+        now,
+      ),
+    (error) =>
+      error.code === 'CLUB_CREATION_DISABLED' &&
+      /单俱乐部模式已关闭旧审批创建入口/.test(error.message),
   );
-  const second = await reviewApplication(
-    store,
-    {
-      adminOpenid: 'admin-1',
-      applicationId: pending.id,
-      decision: 'approved',
-      requestId: 'review-0002',
-    },
-    now,
-  );
-  assert.equal(first.club_id, second.club_id);
   assert.equal(store.state.clubs.size, 1);
-  const club = [...store.state.clubs.values()][0];
-  assert.equal(club.approval_status, 'approved');
-  assert.equal(club.avatar_url, valid().avatar_file_id);
-  assert.equal(club.cover_file_id, valid().cover_file_id);
-  assert.equal(activeApprovedClub(club), true);
-  await assert.doesNotReject(() =>
-    resolveTrustedClubIdentity(
-      {
-        getClub: async () => club,
-        getActiveClubMembership: async () => ({ role: 'OWNER', status: 'active' }),
-      },
-      { clubId: club._id, openid: 'user-1', isAdmin: false },
-    ),
-  );
-  assert.equal(store.state.memberships.size, 1);
-  assert.equal([...store.state.memberships.values()][0].role, 'OWNER');
+  assert.equal(store.state.clubs.get(existingId).name, '山海骑行会');
+  assert.equal(store.state.applications.get(pending.id).status, 'pending_review');
+  assert.equal(store.state.memberships.size, 0);
 });
 
-test('存量申请缺少头像时审批保留空头像，绝不使用背景兜底', async () => {
+test('历史已通过申请继续支持幂等读取且不再创建俱乐部', async () => {
   const store = memoryStore();
-  const id = 'legacy-application';
+  const id = 'legacy-approved-application';
   store.state.applications.set(id, {
     _id: id,
     applicant_openid: 'legacy-owner',
     club_name: '存量骑行会',
-    city: '深圳',
-    introduction: '这是一个历史申请，只有背景照片但没有独立头像字段。',
-    join_mode: 'public_apply',
-    expected_size: 30,
-    cover_file_id: 'cloud://env/club-applications/legacy-owner/cover.jpg',
-    status: 'pending_review',
+    status: 'approved',
+    club_id: 'club_' + 'c'.repeat(64),
     review_version: 1,
   });
 
@@ -181,13 +164,14 @@ test('存量申请缺少头像时审批保留空头像，绝不使用背景兜�
       adminOpenid: 'admin-1',
       applicationId: id,
       decision: 'approved',
-      requestId: 'legacy-review-1',
+      requestId: 'legacy-review-read-1',
     },
     now,
   );
-  const club = store.state.clubs.get(approved.club_id);
-  assert.equal(club.avatar_url, '');
-  assert.equal(club.cover_file_id, 'cloud://env/club-applications/legacy-owner/cover.jpg');
+  assert.equal(approved.status, 'approved');
+  assert.equal(approved.club_id, 'club_' + 'c'.repeat(64));
+  assert.equal(store.state.clubs.size, 0);
+  assert.equal(store.state.memberships.size, 0);
 });
 
 test('非管理员不可审批且驳回原因必填', async () => {
@@ -662,26 +646,29 @@ test('资料更新要求 active 管理身份、合法图片归属并支持同请
   );
 });
 
-test('审批创建按预计规模初始化容量且 OWNER 计入成员数', async () => {
+test('空库也不允许旧审批通过入口恢复创建能力', async () => {
   const store = memoryStore();
   const pending = await submitApplication(
     store,
     { openid: 'capacity-owner', input: valid('capacity-owner'), requestId: 'capacity-submit-1' },
     now,
   );
-  await reviewApplication(
-    store,
-    {
-      adminOpenid: 'admin-1',
-      applicationId: pending.id,
-      decision: 'approved',
-      requestId: 'capacity-review-1',
-    },
-    now,
+  await assert.rejects(
+    () =>
+      reviewApplication(
+        store,
+        {
+          adminOpenid: 'admin-1',
+          applicationId: pending.id,
+          decision: 'approved',
+          requestId: 'capacity-review-1',
+        },
+        now,
+      ),
+    (error) => error.code === 'CLUB_CREATION_DISABLED',
   );
-  const club = [...store.state.clubs.values()][0];
-  assert.equal(club.max_members, 30);
-  assert.equal(club.member_count, 1);
+  assert.equal(store.state.clubs.size, 0);
+  assert.equal(store.state.memberships.size, 0);
 });
 
 test('历史俱乐部在事务内按 active membership 回填容量字段', async () => {
@@ -883,17 +870,24 @@ test('撤回拒绝错误版本、不同 requestId 的草稿以及 approved/rejec
       { openid: 'user-1', input: valid(), requestId: `submit-${decision}` },
       now,
     );
-    await reviewApplication(
-      store,
-      {
-        adminOpenid: 'admin-1',
-        applicationId: pending.id,
-        decision,
-        reason: decision === 'rejected' ? '资料需要调整后重新提交' : '',
-        requestId: `review-${decision}`,
-      },
-      now,
-    );
+    if (decision === 'rejected') {
+      await reviewApplication(
+        store,
+        {
+          adminOpenid: 'admin-1',
+          applicationId: pending.id,
+          decision,
+          reason: '资料需要调整后重新提交',
+          requestId: 'review-rejected',
+        },
+        now,
+      );
+    } else {
+      store.state.applications.set(pending.id, {
+        ...store.state.applications.get(pending.id),
+        status: 'approved',
+      });
+    }
     await assert.rejects(
       () =>
         withdrawApplication(
@@ -958,5 +952,362 @@ test('非申请人无法撤回他人的审核中申请', async () => {
         now,
       ),
     (error) => error.code === 'NOT_FOUND',
+  );
+});
+
+const soleInput = (openid = 'admin-1') => ({
+  name: '辛庄桥小火车',
+  city: '北京',
+  introduction: '全平台唯一的示例俱乐部，管理员在空库时首次创建的资料。',
+  avatar_file_id: canonicalClubMedia(openid, 'club-avatar'),
+  cover_file_id: canonicalClubMedia(openid, 'club-cover'),
+});
+
+test('空库读取唯一俱乐部返回 exists:false 且不报错', async () => {
+  const store = memoryStore();
+  const empty = await getSoleClub(store, { adminOpenid: 'admin-1', clubId: '' });
+  assert.deepEqual(empty, { exists: false });
+  const missing = await getSoleClub(store, {
+    adminOpenid: 'admin-1',
+    clubId: `club_${'0'.repeat(64)}`,
+  });
+  assert.deepEqual(missing, { exists: false });
+});
+
+test('非管理员读取或创建唯一俱乐部均被拒绝', async () => {
+  const store = memoryStore();
+  await assert.rejects(
+    () => getSoleClub(store, { adminOpenid: 'user-1', clubId: '' }),
+    /管理员权限/,
+  );
+  await assert.rejects(
+    () =>
+      createSoleClub(
+        store,
+        {
+          adminOpenid: 'user-1',
+          existingClubId: '',
+          input: soleInput('user-1'),
+          requestId: 'sole-denied-1',
+        },
+        now,
+      ),
+    /管理员权限/,
+  );
+  assert.equal(store.state.clubs.size, 0);
+});
+
+test('空库首次创建唯一俱乐部，固定 ID 落库并按 requestId 幂等', async () => {
+  const store = memoryStore();
+  const created = await createSoleClub(
+    store,
+    {
+      adminOpenid: 'admin-1',
+      existingClubId: '',
+      input: soleInput(),
+      requestId: 'sole-create-1',
+    },
+    now,
+  );
+  assert.equal(created.exists, true);
+  assert.equal(created.club.id, SOLE_CLUB_ID);
+  assert.equal(created.club.name, '辛庄桥小火车');
+  assert.equal(store.state.clubs.size, 1);
+  const stored = store.state.clubs.get(SOLE_CLUB_ID);
+  assert.equal(stored._id, SOLE_CLUB_ID);
+  assert.equal(stored.source, 'admin_bootstrap');
+  assert.equal(stored.approval_status, 'approved');
+  assert.equal(stored.status, 'active');
+  assert.equal(stored.owner_openid, 'admin-1');
+
+  const fetched = await getSoleClub(store, {
+    adminOpenid: 'admin-1',
+    clubId: SOLE_CLUB_ID,
+  });
+  assert.equal(fetched.exists, true);
+  assert.equal(fetched.club.city, '北京');
+
+  // 响应丢失后重试同一 requestId 必须幂等，不能新建第二个俱乐部。
+  const replay = await createSoleClub(
+    store,
+    {
+      adminOpenid: 'admin-1',
+      existingClubId: SOLE_CLUB_ID,
+      input: { ...soleInput(), name: '重试不应覆盖的名称' },
+      requestId: 'sole-create-1',
+    },
+    now,
+  );
+  assert.deepEqual(replay, created);
+  assert.equal(store.state.clubs.size, 1);
+  assert.equal(store.state.clubs.get(SOLE_CLUB_ID).name, '辛庄桥小火车');
+});
+
+test('已存在俱乐部时再次创建失败：兼容旧审批流 ID 与固定 ID 两种路径', async () => {
+  const legacyId = `club_${'d'.repeat(64)}`;
+  const legacyStore = memoryStore();
+  legacyStore.state.clubs.set(legacyId, {
+    _id: legacyId,
+    name: '旧审批流俱乐部',
+    city: '深圳',
+    introduction: '由旧申请审批流程创建的存量俱乐部，数据必须保留。',
+    join_mode: 'public_apply',
+    avatar_url: canonicalClubMedia('owner', 'club-avatar'),
+    approval_status: 'approved',
+    status: 'active',
+  });
+  await assert.rejects(
+    () =>
+      createSoleClub(
+        legacyStore,
+        {
+          adminOpenid: 'admin-1',
+          existingClubId: legacyId,
+          input: soleInput(),
+          requestId: 'sole-legacy-1',
+        },
+        now,
+      ),
+    (error) =>
+      error.code === 'CLUB_ALREADY_EXISTS' && /全平台只允许存在一个俱乐部/.test(error.message),
+  );
+  assert.equal(legacyStore.state.clubs.get(legacyId).name, '旧审批流俱乐部');
+
+  const store = memoryStore();
+  await createSoleClub(
+    store,
+    {
+      adminOpenid: 'admin-1',
+      existingClubId: '',
+      input: soleInput(),
+      requestId: 'sole-create-existing-1',
+    },
+    now,
+  );
+  await assert.rejects(
+    () =>
+      createSoleClub(
+        store,
+        {
+          adminOpenid: 'admin-1',
+          existingClubId: '',
+          input: soleInput(),
+          requestId: 'sole-create-existing-2',
+        },
+        now,
+      ),
+    (error) => error.code === 'CLUB_ALREADY_EXISTS',
+  );
+  assert.equal(store.state.clubs.size, 1);
+});
+
+test('并发首次创建串行化后只有一个成功，第二个收到中文冲突错误', async () => {
+  const store = memoryStore();
+  const runTransaction = store.transaction;
+  let tail = Promise.resolve();
+  store.transaction = (work) => {
+    const result = tail.then(() => runTransaction(work));
+    tail = result.catch(() => undefined);
+    return result;
+  };
+  const results = await Promise.allSettled([
+    createSoleClub(
+      store,
+      {
+        adminOpenid: 'admin-1',
+        existingClubId: '',
+        input: soleInput(),
+        requestId: 'sole-race-1',
+      },
+      now,
+    ),
+    createSoleClub(
+      store,
+      {
+        adminOpenid: 'admin-1',
+        existingClubId: '',
+        input: soleInput(),
+        requestId: 'sole-race-2',
+      },
+      now,
+    ),
+  ]);
+  assert.equal(results.filter((item) => item.status === 'fulfilled').length, 1);
+  const rejected = results.find((item) => item.status === 'rejected');
+  assert.equal(rejected.reason.code, 'CLUB_ALREADY_EXISTS');
+  assert.match(rejected.reason.message, /全平台只允许存在一个俱乐部/);
+  assert.equal(store.state.clubs.size, 1);
+});
+
+test('平台管理员更新唯一俱乐部成功并按 requestId 幂等', async () => {
+  const store = memoryStore();
+  const created = await createSoleClub(
+    store,
+    {
+      adminOpenid: 'admin-1',
+      existingClubId: '',
+      input: soleInput(),
+      requestId: 'sole-update-setup-1',
+    },
+    now,
+  );
+  const updated = await updateSoleClub(
+    store,
+    {
+      adminOpenid: 'admin-1',
+      clubId: SOLE_CLUB_ID,
+      requestId: 'sole-update-1',
+      expectedUpdatedAt: created.club.updated_at,
+      input: { ...soleInput(), name: '辛庄桥快车', city: '上海' },
+    },
+    new Date('2026-10-20T08:00:00.000Z'),
+  );
+  assert.equal(updated.exists, true);
+  assert.equal(updated.club.name, '辛庄桥快车');
+  assert.equal(updated.club.city, '上海');
+  assert.equal(store.state.clubs.get(SOLE_CLUB_ID).name, '辛庄桥快车');
+  assert.equal(store.state.audits.at(-1).action, 'sole_club_profile_updated');
+
+  // 响应丢失重试同一 requestId：即使携带过期内容也返回首次结果。
+  const replay = await updateSoleClub(
+    store,
+    {
+      adminOpenid: 'admin-1',
+      clubId: SOLE_CLUB_ID,
+      requestId: 'sole-update-1',
+      expectedUpdatedAt: created.club.updated_at,
+      input: { ...soleInput(), name: '过期重放名称' },
+    },
+    new Date('2026-10-20T09:00:00.000Z'),
+  );
+  assert.deepEqual(replay, updated);
+  assert.equal(store.state.clubs.get(SOLE_CLUB_ID).name, '辛庄桥快车');
+});
+
+test('更新唯一俱乐部执行乐观锁，旧版本失败并返回中文提示', async () => {
+  const store = memoryStore();
+  const created = await createSoleClub(
+    store,
+    {
+      adminOpenid: 'admin-1',
+      existingClubId: '',
+      input: soleInput(),
+      requestId: 'sole-conflict-setup-1',
+    },
+    now,
+  );
+  await updateSoleClub(
+    store,
+    {
+      adminOpenid: 'admin-1',
+      clubId: SOLE_CLUB_ID,
+      requestId: 'sole-conflict-update-1',
+      expectedUpdatedAt: created.club.updated_at,
+      input: { ...soleInput(), city: '广州' },
+    },
+    new Date('2026-10-20T08:00:00.000Z'),
+  );
+  await assert.rejects(
+    () =>
+      updateSoleClub(
+        store,
+        {
+          adminOpenid: 'admin-1',
+          clubId: SOLE_CLUB_ID,
+          requestId: 'sole-conflict-update-2',
+          expectedUpdatedAt: created.club.updated_at,
+          input: { ...soleInput(), name: '迟到的改名' },
+        },
+        new Date('2026-10-20T09:00:00.000Z'),
+      ),
+    (error) =>
+      error.code === 'CLUB_PROFILE_CONFLICT' &&
+      /已被其他管理员更新，请重新加载/.test(error.message),
+  );
+  assert.equal(store.state.clubs.get(SOLE_CLUB_ID).name, '辛庄桥小火车');
+});
+
+test('俱乐部 OWNER 可更新唯一俱乐部，普通成员与非管理员不可更新', async () => {
+  const store = memoryStore();
+  const created = await createSoleClub(
+    store,
+    {
+      adminOpenid: 'admin-1',
+      existingClubId: '',
+      input: soleInput(),
+      requestId: 'sole-manager-setup-1',
+    },
+    now,
+  );
+  store.state.memberships.set(membershipId(SOLE_CLUB_ID, 'owner-1'), {
+    _id: membershipId(SOLE_CLUB_ID, 'owner-1'),
+    club_id: SOLE_CLUB_ID,
+    openid: 'owner-1',
+    role: 'OWNER',
+    status: 'active',
+  });
+  const ownerInput = {
+    name: '辛庄桥小火车',
+    city: '北京',
+    introduction: '负责人维护后的全平台唯一俱乐部简介，长度仍满足服务端校验。',
+    // 保留管理员首次创建时上传的头像与背景，允许不改媒体直接保存。
+    avatar_file_id: created.club.avatar_file_id,
+    cover_file_id: created.club.cover_file_id,
+  };
+  const ownerUpdated = await updateSoleClub(
+    store,
+    {
+      adminOpenid: 'owner-1',
+      clubId: SOLE_CLUB_ID,
+      requestId: 'sole-manager-update-1',
+      expectedUpdatedAt: created.club.updated_at,
+      input: ownerInput,
+    },
+    new Date('2026-10-20T08:00:00.000Z'),
+  );
+  assert.equal(ownerUpdated.club.city, '北京');
+
+  await assert.rejects(
+    () =>
+      updateSoleClub(
+        store,
+        {
+          adminOpenid: 'member-1',
+          clubId: SOLE_CLUB_ID,
+          requestId: 'sole-manager-update-2',
+          expectedUpdatedAt: ownerUpdated.club.updated_at,
+          input: ownerInput,
+        },
+        new Date('2026-10-20T09:00:00.000Z'),
+      ),
+    (error) => error.code === 'CLUB_ADMIN_REQUIRED',
+  );
+});
+
+test('唯一俱乐部资料只允许白名单字段，受保护字段由服务端拒绝', async () => {
+  const store = memoryStore();
+  await createSoleClub(
+    store,
+    {
+      adminOpenid: 'admin-1',
+      existingClubId: '',
+      input: soleInput(),
+      requestId: 'sole-field-setup-1',
+    },
+    now,
+  );
+  await assert.rejects(
+    () =>
+      createSoleClub(
+        store,
+        {
+          adminOpenid: 'admin-1',
+          existingClubId: '',
+          input: { ...soleInput(), owner_openid: 'attacker', approval_status: 'pending' },
+          requestId: 'sole-field-create-1',
+        },
+        now,
+      ),
+    (error) => error.code === 'FORBIDDEN_FIELD',
   );
 });

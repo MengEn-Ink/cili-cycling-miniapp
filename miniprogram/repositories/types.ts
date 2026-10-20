@@ -9,6 +9,9 @@ import type {
   JoinedClubSummary,
   ManagedClubProfile,
   ManagedClubProfileInput,
+  SoleClubProfile,
+  SoleClubProfileInput,
+  SoleClubSnapshot,
   EditableActivity,
   PersonalCapabilityCard,
   PublicRoutePreview,
@@ -126,6 +129,14 @@ export interface ClubApplicationRepository {
     reason: string,
     requestId: string,
   ): Promise<ClubApplication>;
+  // 单俱乐部裁决：管理端概览读取、空库首次创建与资料更新。
+  getSoleClub(): Promise<SoleClubSnapshot>;
+  createSoleClub(value: SoleClubProfileInput, requestId: string): Promise<SoleClubProfile>;
+  updateSoleClub(
+    value: SoleClubProfileInput,
+    requestId: string,
+    expectedUpdatedAt: string,
+  ): Promise<SoleClubProfile>;
 }
 export interface RideRepository
   extends AdminReviewRepository, ActivityAdminRepository, ClubApplicationRepository {

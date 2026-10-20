@@ -61,6 +61,26 @@ export interface ManagedClubProfileInput {
   coverFileId: string;
   maxMembers: number;
 }
+// 单俱乐部裁决：全平台至多一个俱乐部，仅平台管理员空库 bootstrap 或编辑资料。
+export interface SoleClubProfile {
+  id: string;
+  name: string;
+  city: string;
+  introduction: string;
+  avatarFileId: string;
+  avatarUrl: string;
+  coverFileId: string;
+  coverUrl: string;
+  updatedAt: string;
+}
+export interface SoleClubProfileInput {
+  name: string;
+  city: string;
+  introduction: string;
+  avatarFileId: string;
+  coverFileId: string;
+}
+export type SoleClubSnapshot = { exists: false } | { exists: true; club: SoleClubProfile };
 export type ClubApplicationStatus = 'draft' | 'pending_review' | 'rejected' | 'approved';
 export type ClubJoinMode = 'public_apply' | 'invite_code' | 'admin_invite';
 export interface ClubApplicationInput {

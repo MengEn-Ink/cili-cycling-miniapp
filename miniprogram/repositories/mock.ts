@@ -4,6 +4,9 @@ import type {
   ClubApplicationInput,
   ManagedClubProfile,
   ManagedClubProfileInput,
+  SoleClubProfile,
+  SoleClubProfileInput,
+  SoleClubSnapshot,
   EditableActivity,
   PersonalCapabilityCard,
   Profile,
@@ -233,6 +236,10 @@ export class MockRepository implements RideRepository {
   private clubApplication: ClubApplication | null = null;
   private clubSubmitRequestId = '';
   private clubWithdrawRequestId = '';
+  // 单俱乐部裁决：mock 默认空库，便于演示平台管理员首次创建（bootstrap）态。
+  private soleClub: SoleClubProfile | null = null;
+  private soleCreateRequestId = '';
+  private soleUpdateRequestId = '';
   private managedClub: ManagedClubProfile = {
     id: `club_${'0'.repeat(64)}`,
     name: '示例骑行俱乐部',
@@ -605,6 +612,69 @@ export class MockRepository implements RideRepository {
       reviewedAt: new Date().toISOString(),
     };
     return this.clubApplication;
+  }
+  async getSoleClub(): Promise<SoleClubSnapshot> {
+    return this.soleClub ? { exists: true, club: { ...this.soleClub } } : { exists: false };
+  }
+  async createSoleClub(value: SoleClubProfileInput, requestId: string) {
+    if (
+      typeof requestId !== 'string' ||
+      requestId.trim().length < 8 ||
+      requestId.trim().length > 128
+    )
+      throw Object.assign(new Error('创建请求 ID 需为 8-128 个字符'), {
+        code: 'VALIDATION_FAILED',
+      });
+    if (this.soleClub) {
+      // 响应丢失后同 requestId 重试幂等；新请求拒绝创建第二个俱乐部。
+      if (this.soleCreateRequestId === requestId) return { ...this.soleClub };
+      throw Object.assign(new Error('全平台只允许存在一个俱乐部，不能创建第二个'), {
+        code: 'CLUB_ALREADY_EXISTS',
+      });
+    }
+    this.soleClub = {
+      id: `club_${'0'.repeat(64)}`,
+      name: value.name,
+      city: value.city,
+      introduction: value.introduction,
+      avatarFileId: value.avatarFileId,
+      avatarUrl: '',
+      coverFileId: value.coverFileId,
+      coverUrl: '',
+      updatedAt: new Date().toISOString(),
+    };
+    this.soleCreateRequestId = requestId;
+    return this.soleClub;
+  }
+  async updateSoleClub(value: SoleClubProfileInput, requestId: string, expectedUpdatedAt: string) {
+    if (!this.soleClub)
+      throw Object.assign(new Error('俱乐部不存在，请先创建'), { code: 'NOT_FOUND' });
+    if (
+      typeof requestId !== 'string' ||
+      requestId.trim().length < 8 ||
+      requestId.trim().length > 128
+    )
+      throw Object.assign(new Error('保存请求 ID 需为 8-128 个字符'), {
+        code: 'VALIDATION_FAILED',
+      });
+    if (this.soleUpdateRequestId === requestId) return { ...this.soleClub };
+    if (expectedUpdatedAt !== this.soleClub.updatedAt)
+      throw Object.assign(new Error('俱乐部资料已被其他管理员更新，请重新加载后再修改'), {
+        code: 'CLUB_PROFILE_CONFLICT',
+      });
+    this.soleClub = {
+      ...this.soleClub,
+      name: value.name,
+      city: value.city,
+      introduction: value.introduction,
+      avatarFileId: value.avatarFileId,
+      coverFileId: value.coverFileId,
+      avatarUrl: '',
+      coverUrl: '',
+      updatedAt: new Date().toISOString(),
+    };
+    this.soleUpdateRequestId = requestId;
+    return this.soleClub;
   }
   async getProfile() {
     return this.read().profile;

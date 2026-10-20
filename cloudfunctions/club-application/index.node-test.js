@@ -4,23 +4,70 @@ const assert = require('node:assert/strict');
 const Module = require('node:module');
 const { applicationId } = require('./core');
 
-function loadHandler(application) {
-  const applications = new Map([[application._id, { ...application }]]);
+function loadHandler(application, options = {}) {
+  const applications = application ? new Map([[application._id, { ...application }]]) : new Map();
+  const clubs = new Map(Object.entries(options.clubs || {}));
+  const admins = new Map(
+    Object.entries(
+      options.admins === undefined
+        ? { 'user-handler': { _id: 'user-handler', enabled: true } }
+        : options.admins,
+    ),
+  );
+  const memberships = new Map(Object.entries(options.memberships || {}));
   const audits = [];
+  const auditById = new Map();
+  const sourceFor = (name) =>
+    name === 'club_applications'
+      ? applications
+      : name === 'clubs'
+        ? clubs
+        : name === 'admins'
+          ? admins
+          : name === 'club_memberships'
+            ? memberships
+            : name === 'audit_logs'
+              ? auditById
+              : null;
   const collection = (name) => ({
     doc: (id) => ({
       get: async () => {
-        const value = name === 'club_applications' ? applications.get(id) : undefined;
+        const value = sourceFor(name)?.get(id);
         if (!value) throw Object.assign(new Error('not found'), { errCode: -502001 });
         return { data: { ...value } };
       },
       set: async ({ data }) => {
         if (name === 'club_applications') applications.set(id, { _id: id, ...data });
+        else if (name === 'clubs') clubs.set(id, { _id: id, ...data });
+        else if (name === 'audit_logs') {
+          const record = { _id: id, ...data };
+          const index = audits.findIndex((item) => item._id === id);
+          if (index >= 0) audits[index] = record;
+          else audits.push(record);
+          auditById.set(id, record);
+        }
       },
     }),
     add: async ({ data }) => {
-      if (name === 'audit_logs') audits.push(data);
+      if (name === 'audit_logs') {
+        audits.push(data);
+        if (data._id) auditById.set(data._id, data);
+      }
     },
+    where: () => ({
+      limit: () => ({ get: async () => ({ data: [] }) }),
+      count: async () => ({ total: 0 }),
+    }),
+    orderBy: () => ({
+      limit: (limit) => ({
+        get: async () => ({
+          data: [...clubs.values()]
+            .sort((left, right) => String(left._id).localeCompare(String(right._id)))
+            .slice(0, limit)
+            .map((value) => ({ ...value })),
+        }),
+      }),
+    }),
   });
   const db = {
     collection,
@@ -30,7 +77,8 @@ function loadHandler(application) {
     DYNAMIC_CURRENT_ENV: 'test',
     init() {},
     database: () => db,
-    getWXContext: () => ({ OPENID: 'user-handler' }),
+    getWXContext: () => ({ OPENID: options.openid || 'user-handler' }),
+    getTempFileURL: async () => ({ fileList: [] }),
   };
   const originalLoad = Module._load;
   Module._load = function patched(request, parent, isMain) {
@@ -40,11 +88,19 @@ function loadHandler(application) {
   const modulePath = require.resolve('./index');
   delete require.cache[modulePath];
   try {
-    return { main: require('./index').main, applications, audits };
+    return { main: require('./index').main, applications, clubs, audits };
   } finally {
     Module._load = originalLoad;
   }
 }
+
+const soleClubInput = {
+  name: '辛庄桥小火车',
+  city: '北京',
+  introduction: '全平台唯一俱乐部，管理员在空库时首次创建的资料简介。',
+  avatar_file_id: 'cloud://env/club-applications/user-handler/avatar.jpg',
+  cover_file_id: 'cloud://env/club-applications/user-handler/cover.jpg',
+};
 
 test('withdraw handler 接线 requestId 与 expectedReviewVersion 并返回 draft', async () => {
   const id = applicationId('user-handler');
@@ -87,4 +143,241 @@ test('withdraw handler 将版本冲突映射为稳定错误响应', async () => 
     ok: false,
     error: { code: 'VERSION_CONFLICT', message: '申请版本已变化，请刷新后重试' },
   });
+});
+
+test('管理员读取唯一俱乐部：空库返回 exists:false 且不报错', async () => {
+  const { main, clubs } = loadHandler(null);
+  const response = await main({ action: 'adminGetSoleClub' });
+  assert.deepEqual(response, { ok: true, data: { exists: false } });
+  assert.equal(clubs.size, 0);
+});
+
+test('非管理员读取或创建唯一俱乐部被拒绝', async () => {
+  const read = await loadHandler(null, { admins: {} }).main({ action: 'adminGetSoleClub' });
+  assert.deepEqual(read, {
+    ok: false,
+    error: { code: 'ADMIN_REQUIRED', message: '需要管理员权限' },
+  });
+  const create = await loadHandler(null, { admins: {} }).main({
+    action: 'adminCreateSoleClub',
+    club: soleClubInput,
+    requestId: 'handler-sole-denied-1',
+  });
+  assert.equal(create.ok, false);
+  assert.equal(create.error.code, 'ADMIN_REQUIRED');
+});
+
+test('空库首次创建唯一俱乐部后可读回，重复创建返回中文冲突错误', async () => {
+  const { main, clubs } = loadHandler(null);
+  const created = await main({
+    action: 'adminCreateSoleClub',
+    club: soleClubInput,
+    requestId: 'handler-sole-create-1',
+  });
+  assert.equal(created.ok, true);
+  assert.equal(created.data.exists, true);
+  assert.equal(created.data.club.name, '辛庄桥小火车');
+  assert.equal(clubs.size, 1);
+
+  // 响应丢失后用同一 requestId 重试：幂等返回首次结果。
+  const replay = await main({
+    action: 'adminCreateSoleClub',
+    club: { ...soleClubInput, name: '重放不应覆盖' },
+    requestId: 'handler-sole-create-1',
+  });
+  assert.equal(replay.ok, true);
+  assert.equal(replay.data.club.name, '辛庄桥小火车');
+  assert.equal(clubs.size, 1);
+
+  // 新 requestId 再创建必须失败并给中文错误。
+  const again = await main({
+    action: 'adminCreateSoleClub',
+    club: soleClubInput,
+    requestId: 'handler-sole-create-2',
+  });
+  assert.deepEqual(again, {
+    ok: false,
+    error: {
+      code: 'CLUB_ALREADY_EXISTS',
+      message: '全平台只允许存在一个俱乐部，不能创建第二个',
+    },
+  });
+
+  const fetched = await main({ action: 'adminGetSoleClub' });
+  assert.equal(fetched.ok, true);
+  assert.equal(fetched.data.exists, true);
+  assert.equal(fetched.data.club.city, '北京');
+});
+
+test('更新唯一俱乐部成功，乐观锁冲突映射为中文错误', async () => {
+  const { main, clubs } = loadHandler(null);
+  const created = await main({
+    action: 'adminCreateSoleClub',
+    club: soleClubInput,
+    requestId: 'handler-sole-update-setup-1',
+  });
+  const createdAt = created.data.club.updated_at;
+  const updated = await main({
+    action: 'adminUpdateSoleClub',
+    club: { ...soleClubInput, name: '辛庄桥快车', city: '上海' },
+    requestId: 'handler-sole-update-1',
+    expectedUpdatedAt: createdAt,
+  });
+  assert.equal(updated.ok, true);
+  assert.equal(updated.data.club.name, '辛庄桥快车');
+  assert.equal([...clubs.values()][0].name, '辛庄桥快车');
+
+  // 模拟另一位管理员已在此后保存（避免同毫秒时间戳掩盖乐观锁）。
+  const soleId = [...clubs.keys()][0];
+  clubs.get(soleId).updated_at = '2026-10-20T10:00:00.000Z';
+
+  const conflict = await main({
+    action: 'adminUpdateSoleClub',
+    club: { ...soleClubInput, name: '过期改名' },
+    requestId: 'handler-sole-update-2',
+    expectedUpdatedAt: createdAt,
+  });
+  assert.deepEqual(conflict, {
+    ok: false,
+    error: {
+      code: 'CLUB_PROFILE_CONFLICT',
+      message: '俱乐部资料已被其他管理员更新，请重新加载后再修改',
+    },
+  });
+
+  // 同 requestId 重放回放在冲突之后仍返回首次保存结果。
+  const replay = await main({
+    action: 'adminUpdateSoleClub',
+    club: { ...soleClubInput, name: '重放不应覆盖' },
+    requestId: 'handler-sole-update-1',
+    expectedUpdatedAt: createdAt,
+  });
+  assert.equal(replay.ok, true);
+  assert.equal(replay.data.club.name, '辛庄桥快车');
+});
+
+test('旧审批流已创建俱乐部时，首次创建被拒绝且存量数据不变', async () => {
+  const legacyId = `club_${'a'.repeat(64)}`;
+  const { main, clubs } = loadHandler(null, {
+    clubs: {
+      [legacyId]: {
+        _id: legacyId,
+        name: '存量俱乐部',
+        city: '深圳',
+        introduction: '由旧申请审批流程创建的存量俱乐部，必须原样保留。',
+        join_mode: 'public_apply',
+        avatar_url: 'cloud://env/club-applications/legacy/avatar.jpg',
+        approval_status: 'approved',
+        status: 'active',
+      },
+    },
+  });
+  const response = await main({
+    action: 'adminCreateSoleClub',
+    club: soleClubInput,
+    requestId: 'handler-sole-legacy-1',
+  });
+  assert.equal(response.ok, false);
+  assert.equal(response.error.code, 'CLUB_ALREADY_EXISTS');
+  assert.equal(clubs.size, 1);
+  assert.equal(clubs.get(legacyId).name, '存量俱乐部');
+
+  const fetched = await main({ action: 'adminGetSoleClub' });
+  assert.equal(fetched.data.club.id, legacyId);
+
+  const updated = await main({
+    action: 'adminUpdateSoleClub',
+    club: {
+      name: '存量俱乐部新名称',
+      city: '广州',
+      introduction: '单条旧 ID 俱乐部无需改写文档 ID，仍然可以正常管理资料。',
+      avatar_file_id: 'cloud://env/club-applications/legacy/avatar.jpg',
+    },
+    requestId: 'handler-sole-legacy-update-1',
+    expectedUpdatedAt: '',
+  });
+  assert.equal(updated.ok, true);
+  assert.equal(updated.data.club.id, legacyId);
+  assert.equal(clubs.get(legacyId).name, '存量俱乐部新名称');
+});
+
+test('唯一俱乐部存在后旧 review approved 明确失败且不得创建第二条', async () => {
+  const application = {
+    _id: applicationId('legacy-applicant'),
+    applicant_openid: 'legacy-applicant',
+    status: 'pending_review',
+    review_version: 1,
+    club_name: '第二俱乐部',
+    city: '上海',
+    introduction: '旧审批入口不得再通过申请创建第二个俱乐部。',
+    join_mode: 'public_apply',
+    expected_size: 30,
+  };
+  const existingId = 'club_' + 'a'.repeat(64);
+  const { main, applications, clubs } = loadHandler(application, {
+    clubs: {
+      [existingId]: {
+        _id: existingId,
+        name: '唯一俱乐部',
+        approval_status: 'approved',
+        status: 'active',
+      },
+    },
+  });
+
+  const response = await main({
+    action: 'review',
+    applicationId: application._id,
+    decision: 'approved',
+    requestId: 'legacy-review-approved-1',
+  });
+
+  assert.deepEqual(response, {
+    ok: false,
+    error: {
+      code: 'CLUB_CREATION_DISABLED',
+      message: '单俱乐部模式已关闭旧审批创建入口，请在俱乐部管理页创建唯一俱乐部',
+    },
+  });
+  assert.equal(clubs.size, 1);
+  assert.equal(applications.get(application._id).status, 'pending_review');
+});
+
+test('多条存量俱乐部时 get/create/update 均要求先迁移且不修改数据', async () => {
+  const firstId = 'club_' + 'a'.repeat(64);
+  const secondId = 'club_' + 'b'.repeat(64);
+  const { main, clubs } = loadHandler(null, {
+    clubs: {
+      [firstId]: { _id: firstId, name: '存量甲', approval_status: 'approved', status: 'active' },
+      [secondId]: { _id: secondId, name: '存量乙', approval_status: 'approved', status: 'active' },
+    },
+  });
+  const events = [
+    { action: 'adminGetSoleClub' },
+    {
+      action: 'adminCreateSoleClub',
+      club: soleClubInput,
+      requestId: 'multi-club-create-1',
+    },
+    {
+      action: 'adminUpdateSoleClub',
+      club: soleClubInput,
+      requestId: 'multi-club-update-1',
+      expectedUpdatedAt: '',
+    },
+  ];
+
+  for (const event of events) {
+    const response = await main(event);
+    assert.deepEqual(response, {
+      ok: false,
+      error: {
+        code: 'DATA_MIGRATION_REQUIRED',
+        message: '检测到多个存量俱乐部，请先完成数据迁移后再管理唯一俱乐部',
+      },
+    });
+  }
+  assert.equal(clubs.size, 2);
+  assert.equal(clubs.get(firstId).name, '存量甲');
+  assert.equal(clubs.get(secondId).name, '存量乙');
 });

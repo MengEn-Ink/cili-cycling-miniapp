@@ -14,6 +14,9 @@ const {
   submitApplication,
   withdrawApplication,
   reviewApplication,
+  getSoleClub,
+  createSoleClub,
+  updateSoleClub,
 } = require('./core');
 const {
   resolveApplicationCover,
@@ -112,6 +115,38 @@ async function requireAdmin(openid) {
   const admin = await maybeGet(db.collection('admins'), openid);
   if (!admin || admin._id !== openid || admin.enabled === false)
     throw new ClubApplicationError('ADMIN_REQUIRED', '需要管理员权限');
+}
+const DATA_MIGRATION_REQUIRED_MESSAGE = '检测到多个存量俱乐部，请先完成数据迁移后再管理唯一俱乐部';
+
+// 最多读取两条即可裁决唯一性；多条存量数据必须显式失败，绝不静默选择第一条。
+async function findSoleClubDocument() {
+  const result = await db.collection('clubs').orderBy('_id', 'asc').limit(2).get();
+  const documents = Array.isArray(result?.data) ? result.data : [];
+  if (documents.length > 1)
+    throw new ClubApplicationError('DATA_MIGRATION_REQUIRED', DATA_MIGRATION_REQUIRED_MESSAGE);
+  const doc = documents[0] || null;
+  return doc && typeof doc._id === 'string' ? doc : null;
+}
+async function resolveSoleClubPayload(cloud, payload) {
+  if (!payload || payload.exists !== true || !payload.club) return { exists: false };
+  const [resolved] = await resolveJoinableClubAvatars(cloud, [
+    { ...payload.club, avatar_url: payload.club.avatar_file_id },
+  ]);
+  return {
+    exists: true,
+    club: {
+      ...payload.club,
+      avatar_url: resolved.avatar_url,
+      cover_url: resolved.cover_url,
+    },
+  };
+}
+function isTransactionConflict(error) {
+  const code = String(error?.errCode || error?.code || '');
+  const message = String(error?.errMsg || error?.message || '');
+  return /transaction.*conflict|conflict.*transaction|database_transaction_conflict|事务.*冲突|冲突.*事务/i.test(
+    `${code} ${message}`,
+  );
 }
 
 exports.main = async (event = {}) => {
@@ -248,6 +283,55 @@ exports.main = async (event = {}) => {
         new Date(),
       );
       return ok(await resolveApplicationCover(cloud, value));
+    }
+    if (event.action === 'adminGetSoleClub') {
+      // 空库返回 {exists:false}，不报错；仅平台管理员可读取。
+      await requireAdmin(openid);
+      const existing = await findSoleClubDocument();
+      const value = await getSoleClub(transactionStore(), {
+        adminOpenid: openid,
+        clubId: existing?._id || '',
+      });
+      return ok(await resolveSoleClubPayload(cloud, value));
+    }
+    if (event.action === 'adminCreateSoleClub') {
+      const existing = await findSoleClubDocument();
+      try {
+        const value = await createSoleClub(
+          transactionStore(),
+          {
+            adminOpenid: openid,
+            existingClubId: existing?._id || '',
+            input: event.club,
+            requestId: event.requestId,
+          },
+          new Date(),
+        );
+        return ok(await resolveSoleClubPayload(cloud, value));
+      } catch (error) {
+        // 并发首次创建时 CloudBase 可能以事务冲突而非 CLUB_ALREADY_EXISTS 失败，统一中文口径。
+        if (isTransactionConflict(error))
+          throw new ClubApplicationError(
+            'CLUB_ALREADY_EXISTS',
+            '全平台只允许存在一个俱乐部，不能创建第二个',
+          );
+        throw error;
+      }
+    }
+    if (event.action === 'adminUpdateSoleClub') {
+      const existing = await findSoleClubDocument();
+      const value = await updateSoleClub(
+        transactionStore(),
+        {
+          adminOpenid: openid,
+          clubId: existing?._id || '',
+          requestId: event.requestId,
+          expectedUpdatedAt: event.expectedUpdatedAt,
+          input: event.club,
+        },
+        new Date(),
+      );
+      return ok(await resolveSoleClubPayload(cloud, value));
     }
     throw new ClubApplicationError('UNKNOWN_ACTION', '未知操作');
   } catch (error) {

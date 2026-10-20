@@ -1,15 +1,152 @@
-<view class="page club-review-detail-page">
-  <brand-logo compact="{{true}}" meta="俱乐部申请详情" />
-  <view class="state-card" wx:if="{{loading}}"><view class="title">正在读取详情</view></view>
-  <view class="state-card" wx:elif="{{error && !application}}" role="alert"><view class="title">加载失败</view><view class="muted">{{error}}</view><button class="btn" bindtap="load">重新加载</button></view>
-  <block wx:if="{{application}}">
-    <view class="info-bar"><view class="info-kicker">第 {{application.reviewVersion}} 版 · {{application.city}}</view><view class="info-title">{{application.clubName}}</view><view class="muted">{{application.status === 'pending_review' ? '待平台管理员审批' : (application.status === 'approved' ? '已通过并创建俱乐部' : '已驳回')}}</view></view>
-    <image class="cover" src="{{application.coverUrl}}" mode="aspectFill" />
-    <view class="card"><view class="title">申请资料</view><view class="detail-line"><text>预计成员</text><strong>{{application.expectedSize}} 人</strong></view><view class="detail-line"><text>加入方式</text><strong>{{application.joinMode === 'public_apply' ? '公开申请' : (application.joinMode === 'invite_code' ? '邀请码加入' : '管理员邀请')}}</strong></view><view class="detail-block"><text>俱乐部简介</text><strong>{{application.introduction}}</strong></view><view class="detail-block"><text>主要活动</text><strong>{{application.activityTypes}}</strong></view><view class="detail-block"><text>俱乐部规则</text><strong>{{application.rulesSummary}}</strong></view></view>
-    <view class="card privacy-card"><view class="title">申请人联络</view><view class="muted">仅用于本次审核，不得向其他骑友公开。</view><view class="contact">{{application.applicantContact}}</view></view>
-    <view class="decision-panel" wx:if="{{application.status === 'pending_review'}}"><view class="title">审核意见</view><textarea value="{{reason}}" bindinput="reason" maxlength="200" placeholder="驳回时必填，申请人会看到这段说明" placeholder-class="input-placeholder" /><view class="field-error" wx:if="{{reasonError}}">{{reasonError}}</view></view>
-    <view class="card danger" wx:if="{{error}}" role="alert">{{error}}</view>
-    <view class="actions-space"></view>
-    <view class="fixed actions" wx:if="{{application.status === 'pending_review'}}"><button class="secondary" data-decision="rejected" bindtap="act" disabled="{{submitting}}">驳回</button><button class="btn" data-decision="approved" bindtap="act" disabled="{{submitting}}" loading="{{submitting}}">通过并创建</button></view>
+<view class="page club-profile-page">
+  <brand-logo compact="{{true}}" meta="俱乐部资料" />
+
+  <view class="state-card" wx:if="{{pageState === 'loading'}}">
+    <view class="title">正在读取俱乐部资料</view>
+    <view class="muted">请稍候。</view>
+  </view>
+
+  <view class="state-card" wx:elif="{{pageState === 'error'}}" role="alert">
+    <view class="title">俱乐部资料加载失败</view>
+    <view class="muted">{{loadError}}</view>
+    <button class="btn club-profile-retry" bindtap="load">重新加载</button>
+  </view>
+
+  <block wx:else>
+    <view class="club-profile-head">
+      <view class="club-profile-badge">{{pageState === 'bootstrap' ? '平台管理员 · 首次创建' : '平台管理员'}}</view>
+      <view class="page-title">{{pageState === 'bootstrap' ? '创建唯一俱乐部' : '编辑俱乐部资料'}}</view>
+      <view class="page-sub">{{pageState === 'bootstrap' ? '平台尚未创建俱乐部，本次创建后将成为全平台唯一俱乐部，之后此入口不再出现。' : '全平台只允许存在一个俱乐部，本页只能编辑该俱乐部资料；不能创建第二个俱乐部。'}}</view>
+    </view>
+
+    <view class="card club-profile-card">
+      <view class="club-profile-section-head">
+        <view class="section-title">01 俱乐部头像</view>
+        <view class="tag tag-outline">1:1</view>
+      </view>
+      <view class="club-profile-section-hint">用于俱乐部主页、活动归属与详情页标识</view>
+      <view class="club-avatar-editor">
+        <view class="club-avatar-preview">
+          <image
+            wx:if="{{avatarPreviewUrl && !avatarFailed}}"
+            class="club-avatar-img"
+            src="{{avatarPreviewUrl}}"
+            mode="aspectFill"
+            binderror="avatarError"
+          />
+          <view wx:else class="club-avatar-empty" aria-label="尚未设置俱乐部头像">＋</view>
+          <view class="club-avatar-progress" wx:if="{{uploading && uploadKind === 'avatar'}}">{{uploadProgress}}%</view>
+        </view>
+        <view class="club-avatar-panel">
+          <view class="club-avatar-tip">选择后按正方形裁剪；头像与背景图分别处理。</view>
+          <button
+            class="secondary club-media-btn"
+            bindtap="chooseAvatar"
+            loading="{{uploading && uploadKind === 'avatar'}}"
+            disabled="{{uploading || saving}}"
+          >{{avatarPreviewUrl ? '更换俱乐部头像' : '选择俱乐部头像'}}</button>
+        </view>
+      </view>
+      <view class="club-media-status" role="status">{{uploading && uploadKind === 'avatar' ? '正在更新俱乐部头像…' : (avatarPreviewUrl ? '头像已就绪' : '尚未设置头像')}}</view>
+      <view class="field-error" wx:if="{{fieldErrorKey === 'avatarFileId'}}">{{fieldError}}</view>
+    </view>
+
+    <view class="card club-profile-card">
+      <view class="club-profile-section-head">
+        <view class="section-title">02 俱乐部背景图</view>
+        <view class="tag tag-outline">16:9</view>
+      </view>
+      <view class="club-profile-section-hint">最多 1 张；选择后可按 16:9 移动和缩放画面，建议使用横向骑行照片</view>
+      <view class="club-cover-editor">
+        <view class="club-cover-preview">
+          <image
+            wx:if="{{coverPreviewUrl && !coverFailed}}"
+            class="club-cover-img"
+            src="{{coverPreviewUrl}}"
+            mode="aspectFill"
+            binderror="coverError"
+          />
+          <view wx:else class="club-cover-empty">
+            <view class="club-cover-empty-title">尚未设置背景图</view>
+            <view class="club-cover-empty-sub">选择后按 16:9 移动和缩放画面</view>
+          </view>
+          <view class="club-cover-progress" wx:if="{{uploading && uploadKind === 'cover'}}">
+            <view class="club-cover-progress-text">正在上传 {{uploadProgress}}%</view>
+            <view class="club-cover-progress-bar"><view class="club-cover-progress-inner" style="width: {{uploadProgress}}%"></view></view>
+          </view>
+        </view>
+        <view class="club-cover-actions">
+          <button
+            class="secondary club-media-btn"
+            bindtap="chooseCover"
+            loading="{{uploading && uploadKind === 'cover'}}"
+            disabled="{{uploading || saving}}"
+          >{{coverPreviewUrl ? '更换背景图' : '添加背景图'}}</button>
+          <button
+            wx:if="{{coverPreviewUrl}}"
+            class="secondary club-media-btn club-cover-remove"
+            bindtap="removeCover"
+            disabled="{{uploading || saving}}"
+          >删除背景图</button>
+        </view>
+        <view class="club-media-status">{{coverPreviewUrl ? '已设置 1 张背景图' : '尚未设置背景图'}}</view>
+      </view>
+    </view>
+
+    <view class="card club-profile-card">
+      <view class="section-title">03 基本资料</view>
+      <label class="field">
+        <view class="field-label">俱乐部名称<text class="required">必填</text></view>
+        <input
+          value="{{form.name}}"
+          data-field="name"
+          bindinput="input"
+          maxlength="30"
+          placeholder="例如：辛庄桥小火车"
+          placeholder-class="input-placeholder"
+        />
+      </label>
+      <view class="field-error" wx:if="{{fieldErrorKey === 'name'}}">{{fieldError}}</view>
+
+      <label class="field">
+        <view class="field-label">所在地区<text class="required">必填</text></view>
+        <input
+          value="{{form.city}}"
+          data-field="city"
+          bindinput="input"
+          maxlength="20"
+          placeholder="请输入所在地区"
+          placeholder-class="input-placeholder"
+        />
+      </label>
+      <view class="field-error" wx:if="{{fieldErrorKey === 'city'}}">{{fieldError}}</view>
+
+      <label class="field">
+        <view class="field-label">俱乐部简介<text class="required">必填</text></view>
+        <textarea
+          value="{{form.introduction}}"
+          data-field="introduction"
+          bindinput="input"
+          maxlength="{{introMax}}"
+          placeholder="介绍骑行节奏、安全约定与活动范围"
+          placeholder-class="input-placeholder"
+        />
+      </label>
+      <view class="club-field-meta">
+        <text class="field-error" wx:if="{{fieldErrorKey === 'introduction'}}">{{fieldError}}</text>
+        <text class="club-field-count">{{introCount}}/{{introMax}}</text>
+      </view>
+    </view>
+
+    <view class="field-msg is-error club-profile-action-error" wx:if="{{actionError}}" role="alert">{{actionError}}</view>
+    <button
+      class="btn club-profile-submit"
+      bindtap="save"
+      loading="{{saving}}"
+      disabled="{{saving || uploading}}"
+    >{{saving ? (pageState === 'bootstrap' ? '正在创建' : '正在保存') : (pageState === 'bootstrap' ? '创建并立即生效' : '保存资料')}}</button>
+    <view class="neutral-note">{{pageState === 'bootstrap' ? '首次创建后，本页将仅用于编辑俱乐部资料，不再提供新建入口。' : '全平台只允许存在一个俱乐部，本页不能创建第二个俱乐部。'}}</view>
   </block>
+
+  <canvas canvas-id="clubMediaCanvas" class="club-media-canvas" width="1280" height="720" aria-hidden="true"></canvas>
 </view>
