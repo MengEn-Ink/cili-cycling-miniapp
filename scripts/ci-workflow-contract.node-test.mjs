@@ -52,6 +52,7 @@ test('main 的 validate、coverage、audit 并行且每个 Node job 独立 npm c
     assert.match(block, /actions\/setup-node@v7/);
     assert.match(block, /cache: npm/);
     assert.match(block, /npm ci/);
+    if (name === 'main-validate') assert.match(block, /fetch-depth: 0/);
     assert.doesNotMatch(block, /needs:/);
     assert.doesNotMatch(block, /node_modules/);
   }
