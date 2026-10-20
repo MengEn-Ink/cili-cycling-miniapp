@@ -75,9 +75,12 @@ describe('统一主题设计契约', () => {
 
   it('版本和用户可见更新说明升级且旧版本转为历史项', () => {
     const settings = read('miniprogram/pages/settings/index.ts');
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.20.5');
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.20.6');
     expect(settings).toMatch(
-      /version: CLIENT_RELEASE_VERSION[\s\S]*?title: '俱乐部管理更清晰'[\s\S]*?latest: true/,
+      /version: CLIENT_RELEASE_VERSION[\s\S]*?title: '唯一俱乐部主页上线'[\s\S]*?latest: true/,
+    );
+    expect(settings).toMatch(
+      /version: '2026\.10\.20\.5'[\s\S]*?title: '俱乐部管理更清晰'[\s\S]*?latest: false/,
     );
     expect(settings).toMatch(
       /version: '2026\.10\.20\.4'[\s\S]*?title: '骑行名片、个人中心与路线分析修复'[\s\S]*?latest: false/,

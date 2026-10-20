@@ -2995,6 +2995,163 @@ describe('CloudRepository 公开俱乐部适配', () => {
   }
 });
 
+describe('CloudRepository 唯一俱乐部公开主页适配', () => {
+  const clubId = `club_${'f'.repeat(64)}`;
+  const club = {
+    id: clubId,
+    name: '辛庄桥小火车',
+    city: '北京',
+    introduction: '全平台唯一俱乐部，固定路线晨练与周末骑行活动。',
+    avatar_url: 'https://temporary.example/sole-avatar.jpg',
+    cover_url: 'https://temporary.example/sole-cover.jpg',
+  };
+
+  it('空库响应映射为 exists:false 且只发送公开读取 action', async () => {
+    const { cloud, callFunction } = cloudWith(success({ exists: false }));
+
+    await expect(new CloudRepository(cloud).getSoleClubHome()).resolves.toEqual({ exists: false });
+    expectCall(callFunction, 'club-application', { action: 'getSoleClubHome' });
+  });
+
+  it.each([
+    { role: 'MEMBER', roleLabel: '成员', canManage: false },
+    { role: 'OWNER', roleLabel: '负责人', canManage: false },
+    { role: 'PLATFORM_ADMIN', roleLabel: '平台管理员', canManage: true },
+  ])('正常主页严格映射 $role，canManage=$canManage', async ({ role, roleLabel, canManage }) => {
+    const { cloud } = cloudWith(
+      success({
+        exists: true,
+        club,
+        role,
+        role_label: roleLabel,
+        can_manage: canManage,
+      }),
+    );
+
+    await expect(new CloudRepository(cloud).getSoleClubHome()).resolves.toEqual({
+      exists: true,
+      club: {
+        id: clubId,
+        name: club.name,
+        city: club.city,
+        introduction: club.introduction,
+        avatarUrl: club.avatar_url,
+        coverUrl: club.cover_url,
+        role,
+        roleLabel,
+        canManage,
+      },
+    });
+  });
+
+  it('role 缺失或为空时按 VISITOR 映射，不扩大管理权限', async () => {
+    const { cloud } = cloudWith(
+      success({
+        exists: true,
+        club: { ...club, avatar_url: '', cover_url: '' },
+        role_label: '骑友',
+        can_manage: false,
+      }),
+      success({
+        exists: true,
+        club: { ...club, avatar_url: '', cover_url: '' },
+        role: '',
+        role_label: '骑友',
+        can_manage: false,
+      }),
+    );
+    const repository = new CloudRepository(cloud);
+
+    await expect(repository.getSoleClubHome()).resolves.toMatchObject({
+      exists: true,
+      club: { role: 'VISITOR', canManage: false, avatarUrl: '', coverUrl: '' },
+    });
+    await expect(repository.getSoleClubHome()).resolves.toMatchObject({
+      exists: true,
+      club: { role: 'VISITOR', canManage: false },
+    });
+  });
+
+  it.each([
+    ['响应不是对象', null],
+    ['club 缺失', { exists: true }],
+    [
+      'ID 非法',
+      {
+        exists: true,
+        club: { ...club, id: 'club-invalid' },
+        role_label: '骑友',
+        can_manage: false,
+      },
+    ],
+    [
+      '名称为空',
+      { exists: true, club: { ...club, name: ' ' }, role_label: '骑友', can_manage: false },
+    ],
+    [
+      '地区缺失',
+      { exists: true, club: { ...club, city: undefined }, role_label: '骑友', can_manage: false },
+    ],
+    [
+      '简介缺失',
+      {
+        exists: true,
+        club: { ...club, introduction: undefined },
+        role_label: '骑友',
+        can_manage: false,
+      },
+    ],
+    [
+      '头像类型非法',
+      { exists: true, club: { ...club, avatar_url: null }, role_label: '骑友', can_manage: false },
+    ],
+    [
+      '背景类型非法',
+      { exists: true, club: { ...club, cover_url: null }, role_label: '骑友', can_manage: false },
+    ],
+    [
+      '头像不是 HTTPS',
+      {
+        exists: true,
+        club: { ...club, avatar_url: 'cloud://env/private.jpg' },
+        role_label: '骑友',
+        can_manage: false,
+      },
+    ],
+    [
+      '背景不是 HTTPS',
+      {
+        exists: true,
+        club: { ...club, cover_url: 'http://example.com/cover.jpg' },
+        role_label: '骑友',
+        can_manage: false,
+      },
+    ],
+    ['中文身份缺失', { exists: true, club, can_manage: false }],
+    ['中文身份为空', { exists: true, club, role_label: ' ', can_manage: false }],
+    ['管理权限不是布尔值', { exists: true, club, role_label: '骑友', can_manage: 'false' }],
+  ])('非法或缺省字段 fail closed：%s', async (_name, payload) => {
+    const { cloud } = cloudWith(success(payload));
+    await expectCode(new CloudRepository(cloud).getSoleClubHome(), 'INVALID_RESPONSE');
+  });
+
+  it('服务端 DATA_MIGRATION_REQUIRED 原样映射为仓储错误', async () => {
+    const { cloud } = cloudWith({
+      ok: false,
+      error: {
+        code: 'DATA_MIGRATION_REQUIRED',
+        message: '检测到多个存量俱乐部，请先完成数据迁移后再管理唯一俱乐部',
+      },
+    });
+
+    await expect(new CloudRepository(cloud).getSoleClubHome()).rejects.toMatchObject({
+      name: 'CloudRepositoryError',
+      code: 'DATA_MIGRATION_REQUIRED',
+      message: '检测到多个存量俱乐部，请先完成数据迁移后再管理唯一俱乐部',
+    });
+  });
+});
+
 describe('俱乐部资料管理仓储契约', () => {
   const clubId = `club_${'d'.repeat(64)}`;
   const dto = {

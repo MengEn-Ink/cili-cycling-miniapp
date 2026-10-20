@@ -43,12 +43,13 @@ describe('M0 俱乐部身份生产契约', () => {
     expect(credential).toContain('activity.clubIdentity.name');
   });
 
-  it('个人中心展示有效俱乐部，多俱乐部使用头像组而非主俱乐部', () => {
+  it('个人中心保留有效俱乐部读取，单俱乐部收口后只展示唯一俱乐部入口', () => {
     expect(profileFunction).toContain('loadClubMembershipSummaries(db, OPENID)');
     expect(profileMemberships).toContain("collection('club_memberships')");
     expect(profileMemberships).toContain("collection('clubs')");
-    expect(profile).toContain('profile.clubs');
-    expect(profile).toContain('club-avatar-stack');
+    expect(profile).toContain('profile.clubs[0]');
+    expect(profile).toContain('openClubCenter');
+    expect(profile).not.toContain('club-avatar-stack');
     expect(profile).not.toContain('主俱乐部');
   });
 

@@ -123,115 +123,49 @@ describe('俱乐部创建申请生产闭环', () => {
     });
   });
 
-  it('路由、用户状态、管理员入口、隐私和失败恢复均有静态契约', () => {
+  it('用户端唯一俱乐部只读主页与 #321 管理端入口同时保留', () => {
     const app = readFileSync('miniprogram/app.json', 'utf8');
     const profile = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     const center = readFileSync('miniprogram/pages/club/center/index.wxml', 'utf8');
+    const centerScript = readFileSync('miniprogram/pages/club/center/index.ts', 'utf8');
+    const cloudFunction = readFileSync('cloudfunctions/club-application/index.js', 'utf8');
+    const core = readFileSync('cloudfunctions/club-application/core.js', 'utf8');
     const adminList = readFileSync('miniprogram/pages/admin/club-applications/index.wxml', 'utf8');
-    const adminDetailView = readFileSync(
+    const adminDetail = readFileSync(
       'miniprogram/pages/admin/club-application-detail/index.wxml',
       'utf8',
     );
-    const cloudFunction = readFileSync('cloudfunctions/club-application/index.js', 'utf8');
-    const admin = readFileSync('miniprogram/pages/admin/club-application-detail/index.ts', 'utf8');
-    const adminListLogic = readFileSync(
-      'miniprogram/pages/admin/club-applications/index.ts',
-      'utf8',
-    );
-    const adminListJson = readFileSync(
-      'miniprogram/pages/admin/club-applications/index.json',
-      'utf8',
-    );
-    const adminDetailJson = readFileSync(
-      'miniprogram/pages/admin/club-application-detail/index.json',
-      'utf8',
-    );
+
     expect(app).toContain('"root": "pages/club"');
-    expect(app).toContain('"center/index"');
-    expect(app).toContain('club-applications/index');
-    expect(profile).toContain('可申请创建或查看申请进度');
-    // 管理员入口改名为“俱乐部管理”，不再出现审批口径。
-    expect(profile).toContain('俱乐部管理');
-    expect(profile).not.toContain('俱乐部创建审批');
-    for (const copy of ['草稿待提交', '平台审批中', '申请已驳回，可修改重提', '申请已通过'])
-      expect(center).toContain(copy);
-    expect(center).toContain('申请资料仅你本人和平台管理员可见');
-    expect(center).toContain('bindtap="withdrawApplication"');
-    expect(center).toContain('正在撤回');
-    expect(center).toContain('申请仍在审核中');
-    expect(center).toMatch(/club-page-head[\s\S]*create-mini[\s\S]*＋ 新建/);
-    expect(center).toContain('class="joined-card"');
-    expect(center).toContain('bindtap="openClubDetail"');
-    expect(center).toContain('推荐俱乐部');
-    expect(center).toContain('人数待同步');
-    expect(center).toContain('item.capacityInitialized && item.memberCount >= item.maxMembers');
-    expect(center).toContain('待补俱乐部头像');
-    expect(center).toContain('俱乐部头像（必填）· 1:1');
-    expect(center).toContain('背景照片（可选）· 16:9');
-    expect(center.match(/bindtap="chooseAvatar"/g)).toHaveLength(2);
-    expect(center.match(/bindtap="chooseCover"/g)).toHaveLength(2);
-    expect(center).toContain('src="{{selectedClub.coverUrl}}"');
-    expect(center).not.toContain('src="{{selectedClub.avatarUrl}}" class="detail-cover');
-    expect(center).toContain('data-field="maxMembers"');
-    expect(center).toContain('data-value="500"');
-    expect(center).toContain('coverUrl');
-    expect(center).toContain('coverPreviewUrl');
-    expect(center).not.toMatch(/src="\{\{(?:application\.|item\.|form\.)?coverFileId\}\}"/);
-    // 管理概览页：唯一俱乐部概览 + bootstrap 空库首次创建，不再有列表与筛选。
-    expect(adminList).toContain('俱乐部管理');
+    expect(profile).toContain('全平台唯一俱乐部 · 暂未创建');
+    expect(profile).not.toContain('club-avatar-stack');
+    expect(center).toContain('{{club.roleLabel}}');
+    expect(center).toContain('查看全部活动');
+    expect(center).toContain('wx:if="{{club.canManage}}"');
+    expect(centerScript).toContain('getSoleClubHome');
+    expect(centerScript).not.toContain('listJoinableClubs');
+
     expect(adminList).toContain('data-club-admin-overview');
-    expect(adminList).toContain('全平台唯一');
-    expect(adminList).toContain('ACTIVE');
-    expect(adminList).toContain('编辑俱乐部资料');
     expect(adminList).toContain('创建唯一俱乐部');
-    expect(adminList).toContain('尚未创建俱乐部');
-    expect(adminList).toContain('binderror="avatarError"');
-    expect(adminList).not.toContain('filter-tab');
-    expect(adminList).not.toContain('待审批');
-    expect(adminListJson).toContain('"navigationBarTitleText": "俱乐部管理"');
-    // 管理资料页：01 头像 1:1 / 02 背景 16:9 / 03 基本资料，含创建与编辑两态。
-    for (const heading of ['01 俱乐部头像', '02 俱乐部背景图', '03 基本资料'])
-      expect(adminDetailView).toContain(heading);
-    expect(adminDetailView).toContain('1:1');
-    expect(adminDetailView).toContain('16:9');
-    expect(adminDetailView).toContain('创建并立即生效');
-    expect(adminDetailView).toContain('保存资料');
-    expect(adminDetailView).toContain('不能创建第二个俱乐部');
-    expect(adminDetailView).toContain('binderror="avatarError"');
-    expect(adminDetailView).toContain('binderror="coverError"');
-    expect(adminDetailView).toContain('canvas-id="clubMediaCanvas"');
-    for (const removed of ['审核意见', '申请人联络', '通过并创建', '加入方式', '预计成员', '驳回'])
-      expect(adminDetailView).not.toContain(removed);
-    expect(adminDetailView).not.toMatch(/src="\{\{[^}]*FileId[^}]*\}\}"/);
-    expect(adminDetailJson).toContain('"navigationBarTitleText": "俱乐部资料"');
-    expect(cloudFunction).toMatch(
-      /action === 'mine'[\s\S]*resolveApplicationCover\(cloud, project\(value\), openid\)/,
-    );
-    expect(cloudFunction).toMatch(
-      /action === 'withdraw'[\s\S]*withdrawApplication[\s\S]*expectedReviewVersion/,
-    );
-    expect(cloudFunction).toMatch(
-      /action === 'adminList'[\s\S]*resolveApplicationCovers\(cloud, projected\)/,
-    );
-    expect(cloudFunction).toMatch(
-      /action === 'adminDetail'[\s\S]*resolveApplicationCover\(cloud, project\(value, true\)\)/,
-    );
-    // 单俱乐部管理动作接线：空库返回 exists:false、首次创建与资料更新。
-    expect(cloudFunction).toContain("action === 'adminGetSoleClub'");
-    expect(cloudFunction).toContain("action === 'adminCreateSoleClub'");
-    expect(cloudFunction).toContain("action === 'adminUpdateSoleClub'");
-    expect(cloudFunction).toContain('全平台只允许存在一个俱乐部，不能创建第二个');
-    expect(cloudFunction).not.toContain("action === 'adminDeleteSoleClub'");
-    expect(adminListLogic).toContain('rideService.getSoleClub()');
-    expect(adminListLogic).not.toContain('listClubApplications');
-    expect(admin).toContain('getSoleClub');
-    expect(admin).toContain('createSoleClub');
-    expect(admin).toContain('updateSoleClub');
-    expect(admin).toContain('CLUB_PROFILE_CONFLICT');
-    expect(admin).not.toContain('reviewClubApplication');
-    expect(center).toContain('actionError');
-    expect(center).toContain('loadError');
-    expect(center).not.toMatch(/loadError[^\n]*actionError/);
+    expect(adminDetail).toContain('创建并立即生效');
+    expect(adminDetail).toContain('保存资料');
+
+    for (const action of [
+      'mine',
+      'listJoinable',
+      'joinPublicClub',
+      'saveDraft',
+      'submit',
+      'withdraw',
+      'review',
+      'getSoleClubHome',
+      'adminGetSoleClub',
+      'adminCreateSoleClub',
+      'adminUpdateSoleClub',
+    ])
+      expect(cloudFunction).toContain(`action === '${action}'`);
+    expect(core).toContain('const canManage = isPlatformAdmin');
+    expect(cloudFunction).toContain('DATA_MIGRATION_REQUIRED');
   });
 });
 

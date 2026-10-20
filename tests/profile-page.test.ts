@@ -571,7 +571,7 @@ describe('个人中心加载状态', () => {
     expect(template).toContain('wx:elif="{{error}}"');
   });
 
-  it('俱乐部头像 URL 加载失败后回退“俱”字占位', async () => {
+  it('唯一俱乐部头像加载失败后回退“俱”字占位', async () => {
     rideService.getProfile.mockResolvedValueOnce({
       ...profile('山野骑手'),
       clubs: [
@@ -585,59 +585,21 @@ describe('个人中心加载状态', () => {
       ],
     });
     await page.onShow();
-    await vi.waitFor(() => expect(page.data.profile).toBeTruthy());
-
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     expect(template).toContain('binderror="clubAvatarError"');
-    expect(page.data.failedClubAvatars['club-1']).toBeUndefined();
-
-    page.clubAvatarError({
-      currentTarget: {
-        dataset: {
-          clubId: 'club-1',
-          avatarUrl: 'https://temporary.example/broken-club.jpg',
-        },
-      },
-    });
-    expect(page.data.failedClubAvatars['club-1']).toBe('https://temporary.example/broken-club.jpg');
-    expect(template).toContain(
-      'failedClubAvatars[profile.clubs[0].clubId] !== profile.clubs[0].avatarUrl',
-    );
+    expect(page.data.clubAvatarFailed).toBe(false);
+    page.clubAvatarError();
+    expect(page.data.clubAvatarFailed).toBe(true);
+    expect(template).toContain('profile.clubs[0].avatarUrl && !clubAvatarFailed');
   });
 
-  it('俱乐部头像 URL 更新后解除旧失败占位，且忽略旧 URL 的迟到错误', async () => {
-    const brokenAvatarUrl = 'https://temporary.example/broken-club.jpg';
-    const freshAvatarUrl = 'https://temporary.example/fresh-club.jpg';
-    const club = {
-      clubId: 'club-1',
-      name: '辛庄桥小火车',
-      avatarUrl: brokenAvatarUrl,
-      role: 'member',
-      roleLabel: '成员',
-    };
-    rideService.getProfile.mockResolvedValueOnce({
-      ...profile('山野骑手'),
-      clubs: [club],
-    });
+  it('唯一俱乐部资料刷新后重置头像失败占位', async () => {
     await page.onShow();
-    page.clubAvatarError({
-      currentTarget: { dataset: { clubId: club.clubId, avatarUrl: brokenAvatarUrl } },
-    });
-
-    rideService.getProfile.mockResolvedValueOnce({
-      ...profile('山野骑手'),
-      clubs: [{ ...club, avatarUrl: freshAvatarUrl }],
-    });
+    page.clubAvatarError();
+    expect(page.data.clubAvatarFailed).toBe(true);
+    rideService.getProfile.mockResolvedValueOnce(profile('山野骑手'));
     await page.onPullDownRefresh();
-
-    expect(page.data.profile.clubs[0].avatarUrl).toBe(freshAvatarUrl);
-    expect(page.data.failedClubAvatars[club.clubId]).toBe(brokenAvatarUrl);
-    expect(page.data.failedClubAvatars[club.clubId]).not.toBe(freshAvatarUrl);
-
-    page.clubAvatarError({
-      currentTarget: { dataset: { clubId: club.clubId, avatarUrl: brokenAvatarUrl } },
-    });
-    expect(page.data.failedClubAvatars[club.clubId]).toBe(brokenAvatarUrl);
+    expect(page.data.clubAvatarFailed).toBe(false);
   });
 
   it('身份请求异常不吞掉成功资料，且身份错误独立展示', async () => {

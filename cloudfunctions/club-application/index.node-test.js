@@ -2,7 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');
-const { applicationId } = require('./core');
+const { applicationId, membershipId } = require('./core');
 
 function loadHandler(application, options = {}) {
   const applications = application ? new Map([[application._id, { ...application }]]) : new Map();
@@ -143,6 +143,65 @@ test('withdraw handler 将版本冲突映射为稳定错误响应', async () => 
     ok: false,
     error: { code: 'VERSION_CONFLICT', message: '申请版本已变化，请刷新后重试' },
   });
+});
+
+const publicClubId = `club_${'f'.repeat(64)}`;
+const publicClub = {
+  _id: publicClubId,
+  name: '辛庄桥小火车',
+  city: '北京',
+  introduction: '全平台唯一俱乐部，固定路线晨练与周末骑行活动。',
+  avatar_url: '',
+  cover_file_id: '',
+  owner_openid: 'owner-handler',
+  applicant_contact: 'secret-contact',
+  approval_status: 'approved',
+  status: 'active',
+};
+
+test('公开主页普通成员只读，OWNER/ADMIN 仅展示身份，平台管理员才可管理', async () => {
+  const cases = [
+    { openid: 'member-handler', role: 'MEMBER', label: '成员', admin: false, canManage: false },
+    { openid: 'owner-handler', role: 'OWNER', label: '负责人', admin: false, canManage: false },
+    {
+      openid: 'club-admin-handler',
+      role: 'ADMIN',
+      label: '管理员',
+      admin: false,
+      canManage: false,
+    },
+    { openid: 'platform-admin', role: '', label: '平台管理员', admin: true, canManage: true },
+  ];
+  for (const item of cases) {
+    const id = membershipId(publicClubId, item.openid);
+    const response = await loadHandler(null, {
+      openid: item.openid,
+      admins: item.admin ? { [item.openid]: { _id: item.openid, enabled: true } } : {},
+      clubs: { [publicClubId]: publicClub },
+      memberships: item.role
+        ? {
+            [id]: {
+              _id: id,
+              club_id: publicClubId,
+              openid: item.openid,
+              role: item.role,
+              status: 'active',
+            },
+          }
+        : {},
+    }).main({ action: 'getSoleClubHome' });
+    assert.equal(response.ok, true);
+    assert.equal(response.data.role_label, item.label);
+    assert.equal(response.data.can_manage, item.canManage);
+    assert.deepEqual(Object.keys(response.data.club).sort(), [
+      'avatar_url',
+      'city',
+      'cover_url',
+      'id',
+      'introduction',
+      'name',
+    ]);
+  }
 });
 
 test('管理员读取唯一俱乐部：空库返回 exists:false 且不报错', async () => {
@@ -353,6 +412,7 @@ test('多条存量俱乐部时 get/create/update 均要求先迁移且不修改�
     },
   });
   const events = [
+    { action: 'getSoleClubHome' },
     { action: 'adminGetSoleClub' },
     {
       action: 'adminCreateSoleClub',

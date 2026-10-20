@@ -647,14 +647,7 @@ async function updateSoleClub(
     fail('VALIDATION_FAILED', '俱乐部资料版本无效');
   const value = normalizeSoleClubInput(input);
   return store.transaction(async (tx) => {
-    const admin = await tx.getAdmin(adminOpenid);
-    const isPlatformAdmin = Boolean(admin && admin._id === adminOpenid && admin.enabled !== false);
-    const membership = await tx.getMembership(membershipId(safeClubId, adminOpenid));
-    const isClubManager =
-      membership?.status === 'active' &&
-      ['OWNER', 'ADMIN'].includes(String(membership.role || '').toUpperCase());
-    if (!isPlatformAdmin && !isClubManager)
-      fail('CLUB_ADMIN_REQUIRED', '仅平台管理员或俱乐部负责人可以修改资料');
+    await requirePlatformAdmin(tx, adminOpenid);
     const club = await tx.getClub(safeClubId);
     if (!club || club.approval_status !== 'approved' || club.status !== 'active')
       fail('CLUB_UNAVAILABLE', '俱乐部暂不可管理');
@@ -706,6 +699,63 @@ async function updateSoleClub(
       created_at: now.toISOString(),
     });
     return result;
+  });
+}
+
+function projectSoleClubHome(club) {
+  if (!club) return null;
+  return {
+    id: typeof club._id === 'string' ? club._id : '',
+    name: typeof club.name === 'string' ? club.name : '',
+    city: typeof club.city === 'string' ? club.city : '',
+    introduction: typeof club.introduction === 'string' ? club.introduction : '',
+    avatar_file_id: typeof club.avatar_url === 'string' ? club.avatar_url : '',
+    cover_file_id: typeof club.cover_file_id === 'string' ? club.cover_file_id : '',
+  };
+}
+
+const SOLE_HOME_ROLE_LABELS = {
+  OWNER: '负责人',
+  ADMIN: '管理员',
+  ORGANIZER: '组织者',
+  MEMBER: '成员',
+};
+
+async function getSoleClubHome(store, { openid, clubId: requestedClubId }) {
+  const safeClubId = typeof requestedClubId === 'string' ? requestedClubId.trim() : '';
+  return store.transaction(async (tx) => {
+    const admin = await tx.getAdmin(openid);
+    const isPlatformAdmin = Boolean(admin && admin._id === openid && admin.enabled !== false);
+    if (!safeClubId) return { exists: false };
+    const club = await tx.getClub(safeClubId);
+    if (!club || club.approval_status !== 'approved' || club.status !== 'active')
+      return { exists: false };
+    const membership = await tx.getMembership(membershipId(safeClubId, openid));
+    const membershipRole =
+      membership && membership.status === 'active'
+        ? String(membership.role || '').toUpperCase()
+        : '';
+    let role;
+    let roleLabel;
+    if (isPlatformAdmin) {
+      role = 'PLATFORM_ADMIN';
+      roleLabel = '平台管理员';
+    } else if (membershipRole) {
+      role = membershipRole;
+      roleLabel = SOLE_HOME_ROLE_LABELS[membershipRole] || '骑友';
+    } else {
+      role = 'VISITOR';
+      roleLabel = '骑友';
+    }
+    // 管理写入口统一要求 admin_users 平台管理员；俱乐部 OWNER/ADMIN 仅展示身份。
+    const canManage = isPlatformAdmin;
+    return {
+      exists: true,
+      club: projectSoleClubHome(club),
+      role,
+      role_label: roleLabel,
+      can_manage: canManage,
+    };
   });
 }
 
@@ -774,6 +824,7 @@ module.exports = {
   getClubDetail,
   getManagedClub,
   updateManagedClub,
+  getSoleClubHome,
   getSoleClub,
   createSoleClub,
   updateSoleClub,

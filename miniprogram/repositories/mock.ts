@@ -4,6 +4,7 @@ import type {
   ClubApplicationInput,
   ManagedClubProfile,
   ManagedClubProfileInput,
+  SoleClubHomeSnapshot,
   SoleClubProfile,
   SoleClubProfileInput,
   SoleClubSnapshot,
@@ -454,6 +455,23 @@ export class MockRepository implements RideRepository {
     if (status === 'approved') x.serialNo = 'RE-MOCK-' + Date.now().toString().slice(-6);
     this.write(s);
     return x;
+  }
+  async getSoleClubHome(): Promise<SoleClubHomeSnapshot> {
+    if (!this.soleClub) return { exists: false };
+    return {
+      exists: true,
+      club: {
+        id: this.soleClub.id,
+        name: this.soleClub.name,
+        city: this.soleClub.city,
+        introduction: this.soleClub.introduction,
+        avatarUrl: this.soleClub.avatarUrl,
+        coverUrl: this.soleClub.coverUrl,
+        role: 'VISITOR',
+        roleLabel: '骑友',
+        canManage: false,
+      },
+    };
   }
   async getMyClubApplication() {
     return this.clubApplication;

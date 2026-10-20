@@ -81,6 +81,19 @@ export interface SoleClubProfileInput {
   coverFileId: string;
 }
 export type SoleClubSnapshot = { exists: false } | { exists: true; club: SoleClubProfile };
+// 用户端唯一俱乐部主页仅包含公开资料和当前访问者身份。
+export interface SoleClubHome {
+  id: string;
+  name: string;
+  city: string;
+  introduction: string;
+  avatarUrl: string;
+  coverUrl: string;
+  role: string;
+  roleLabel: string;
+  canManage: boolean;
+}
+export type SoleClubHomeSnapshot = { exists: false } | { exists: true; club: SoleClubHome };
 export type ClubApplicationStatus = 'draft' | 'pending_review' | 'rejected' | 'approved';
 export type ClubJoinMode = 'public_apply' | 'invite_code' | 'admin_invite';
 export interface ClubApplicationInput {
