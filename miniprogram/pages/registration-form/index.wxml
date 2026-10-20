@@ -57,7 +57,7 @@
       <view class="field-title">骑行经验 <text class="required">必选</text></view>
       <radio-group class="experience-segment" data-key="experience" bindchange="set" role="radiogroup" aria-label="选择骑行经验">
         <label class="segment {{experience === '新手' ? 'selected' : ''}}" aria-label="新手"><radio value="新手" checked="{{experience === '新手'}}" disabled="{{submitting}}"/>新手</label>
-        <label class="segment {{experience === '有一定经验' ? 'selected' : ''}}" aria-label="有一定经验"><radio value="有一定经验" checked="{{experience === '有一定经验'}}" disabled="{{submitting}}"/>有经验</label>
+        <label class="segment {{experience === '有经验' ? 'selected' : ''}}" aria-label="有经验"><radio value="有经验" checked="{{experience === '有经验'}}" disabled="{{submitting}}"/>有经验</label>
         <label class="segment {{experience === '常骑' ? 'selected' : ''}}" aria-label="经常骑行"><radio value="常骑" checked="{{experience === '常骑'}}" disabled="{{submitting}}"/>常骑</label>
       </radio-group>
       <view wx:if="{{!experience}}" class="pending-hint">请选择骑行经验后再提交</view>

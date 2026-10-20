@@ -3,13 +3,14 @@ import { describe, expect, it } from 'vitest';
 
 const template = fs.readFileSync('miniprogram/pages/registration-form/index.wxml', 'utf8');
 const styles = fs.readFileSync('miniprogram/pages/registration-form/index.wxss', 'utf8');
+const appStyles = fs.readFileSync('miniprogram/app.wxss', 'utf8');
 
 describe('报名表单受控控件与视觉契约', () => {
   it.each([
     `checked="{{gatheringMode === 'self_drive'}}"`,
     `checked="{{gatheringMode === 'support_vehicle'}}"`,
     `checked="{{experience === '新手'}}"`,
-    `checked="{{experience === '有一定经验'}}"`,
+    `checked="{{experience === '有经验'}}"`,
     `checked="{{experience === '常骑'}}"`,
   ])('radio checked 由页面 data 驱动：%s', (binding) => {
     expect(template).toContain(binding);
@@ -99,7 +100,11 @@ describe('报名表单受控控件与视觉契约', () => {
     expect(styles).toMatch(
       /\.identity-row \{[^}]*justify-content: space-between;[^}]*min-height: var\(--control-height\);/,
     );
-    expect(styles).toMatch(/\.activity-context \{[^}]*background: var\(--color-surface\);/);
+    // 活动信息块回归全局墨黑信息块，页面不再覆盖为白卡。
+    expect(styles).not.toMatch(/\.activity-context\s*\{[^}]*background/);
+    expect(appStyles).toMatch(
+      /\.info-bar,\s*\.activity-context,\s*\.meeting-spotlight\s*\{[^}]*background:\s*var\(--color-media-card-bg\)/s,
+    );
     expect(styles).not.toMatch(/#[0-9a-f]{3,8}\b/i);
     expect(styles).toContain('@media (max-width: 340px)');
     expect(styles).toContain('grid-template-columns: 1fr');

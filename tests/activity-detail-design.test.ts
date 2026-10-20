@@ -1042,4 +1042,86 @@ describe('活动详情加载性能契约', () => {
     expect(styles).toMatch(/\.activity-card-skeleton\s*\{[^}]*height:\s*900rpx/s);
     expect(styles).toMatch(/\.activity-card-skeleton__media\s*\{[^}]*height:\s*360rpx/s);
   });
+
+  it('顶部 state-view 开放重试，且不保留无样式的死修饰类', () => {
+    const template = read('miniprogram/pages/activity-detail/index.wxml');
+    expect(template).toContain(
+      'error="{{!item ? error : \'\'}}" retryable="{{true}}" bind:retry="retryLoad"',
+    );
+    expect(template).not.toContain('route-action--primary');
+    expect(template).toContain('wx:if="{{refreshError}}"');
+    expect(template).toContain('bindtap="retryLoad"');
+    const styles = read('miniprogram/pages/activity-detail/index.wxss');
+    expect(styles).toMatch(
+      /\.detail-refresh-retry\s*\{[^}]*min-height:\s*var\(--control-height\)/s,
+    );
+  });
+});
+
+describe('活动详情返回后台刷新契约', () => {
+  async function setup() {
+    let definition: any;
+    vi.stubGlobal('wx', { showShareMenu: vi.fn() });
+    vi.stubGlobal('Page', (value: any) => {
+      definition = value;
+    });
+    vi.resetModules();
+    const { repository } = await import('../miniprogram/repositories');
+    await import('../miniprogram/pages/activity-detail/index');
+    const getActivity = vi.spyOn(repository, 'getActivity');
+    vi.spyOn(repository, 'listRegistrations').mockResolvedValue([]);
+    const context: any = {
+      ...definition,
+      data: {
+        ...definition.data,
+        loading: false,
+        item: { id: 'a/1', title: '已加载活动', route: {} },
+        activityId: 'a/1',
+      },
+      setData(patch: Record<string, unknown>, callback?: () => void) {
+        Object.assign(this.data, patch);
+        callback?.();
+      },
+    };
+    return { definition, context, getActivity };
+  }
+
+  it('后台刷新失败时保留已加载内容，只在顶部提示可重试', async () => {
+    const { definition, context, getActivity } = await setup();
+    getActivity.mockRejectedValue(new Error('网络异常'));
+
+    await definition.performLoad.call(context, 'a/1', true);
+
+    expect(context.data.item).toMatchObject({ id: 'a/1', title: '已加载活动' });
+    expect(context.data.loading).toBe(false);
+    expect(context.data.refreshing).toBe(false);
+    expect(context.data.refreshError).toBe('网络异常');
+    expect(context.data.error).toBe('');
+  });
+
+  it('后台刷新成功时替换内容并清掉顶部重试提示', async () => {
+    const { definition, context, getActivity } = await setup();
+    context.data.refreshError = '旧错误';
+    getActivity.mockResolvedValue({
+      id: 'a/1',
+      title: '新标题',
+      images: [],
+      route: {},
+      schedule: [],
+      notices: [],
+      equipment: [],
+    } as any);
+
+    await definition.performLoad.call(context, 'a/1', true);
+
+    expect(context.data.item.title).toBe('新标题');
+    expect(context.data.refreshError).toBe('');
+    expect(context.data.loading).toBe(false);
+  });
+
+  it('onShow 返回页面时走 background 刷新，首屏仍走全屏加载', async () => {
+    const source = read('miniprogram/pages/activity-detail/index.ts');
+    expect(source).toContain('void this.load(this.data.activityId, true)');
+    expect(source).toMatch(/async performLoad\(id: string, background = false\)/);
+  });
 });

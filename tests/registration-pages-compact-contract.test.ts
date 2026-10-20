@@ -23,9 +23,9 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     );
     expect(form).toContain('class="experience-segment"');
     expect(form.match(/class="segment \{\{/g)).toHaveLength(3);
-    expect(form).toContain('value="有一定经验"');
-    expect(form).toContain('checked="{{experience === \'有一定经验\'}}"');
-    expect(form).not.toContain('value="有经验"');
+    expect(form).toContain('value="有经验"');
+    expect(form).toContain('checked="{{experience === \'有经验\'}}"');
+    expect(form).not.toContain('value="有一定经验"');
     expect(form).not.toMatch(/用车方式|自带车|租车/);
   });
 
@@ -133,6 +133,9 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     expect(appStyles).toContain('--page-gutter-narrow: 24rpx;');
     expect(appStyles).toContain('@media (max-width: 340px)');
     expect(registrationStyles).toContain('-webkit-line-clamp: 2');
+    // 活动标题仍两行截断，但集合地点必须完整换行展示，长地址不裁切。
+    expect(registrationStyles).not.toMatch(/\.meeting-location\s*\{[^}]*line-clamp/s);
+    expect(registrations).toContain('meeting-value meeting-location');
     const activityCardStyles = read('miniprogram/components/activity-card/index.wxss');
     expect(activityCardStyles).toContain('.card-action');
     expect(activityCardStyles).toContain('border-radius: 999rpx !important');

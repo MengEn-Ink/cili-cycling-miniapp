@@ -5,10 +5,22 @@ import { CLIENT_RELEASE_VERSION } from '../../config/release';
 const RELEASE_NOTES = [
   {
     version: CLIENT_RELEASE_VERSION,
+    date: '2026-10-20',
+    title: '报名凭证与活动详情更可靠',
+    summary: '出发凭证补充退回原因和联系电话，活动详情刷新更稳，长地址和编号完整展示。',
+    latest: true,
+    features: [
+      '报名被退回时，出发凭证会直接展示未通过原因，方便修改后重新报名',
+      '凭证补充本人手机号和后援车司机联系电话，编号与长地址不再被截断',
+      '活动详情返回页面时会安静刷新，网络不好可直接重试且不会清空已加载内容',
+    ],
+  },
+  {
+    version: '2026.10.19.5',
     date: '2026-10-19',
     title: '俱乐部图片上传更稳定',
     summary: '俱乐部头像和背景图在不同微信版本中都能更可靠地完成上传。',
-    latest: true,
+    latest: false,
     features: [
       '头像和背景图继续使用统一的安全上传链路',
       '图片固定尺寸处理不可用时会自动切换可靠方案',
