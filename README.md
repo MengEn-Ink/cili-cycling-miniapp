@@ -184,6 +184,8 @@ bootstrap 当前管理 12 个集合、33 个业务索引和全拒绝客户端数
 
 部署工作流会先通过 `tcb fn detail club-application --json` 校验目标环境中的部署对象存在、函数名匹配且状态为 CLI 3.8.4 的可服务终态 `Active`（比较时忽略大小写），再运行真实数据库写入 smoke：使用 GitHub run id 派生隔离标识，复用 `cloudfunctions/club-application/core.js`，依次验证草稿、提交、管理员驳回、修改重提、批准，以及 `clubs`、OWNER `club_memberships` 和 `audit_logs` 持久化。该生产门禁验证“已部署对象 + 本地 core 驱动生产数据库完整状态链”，不调用云函数、不模拟微信 `OPENID`；鉴权边界由云函数单元测试和客户端 E2E 覆盖。清理会逐集合独立尝试，并回读确认申请、俱乐部、会员、审计和临时管理员全部消失；任何残留都会按集合名阻断且不输出标识。CloudBase CLI 的 `db nosql execute` 未提供与 `wx-server-sdk` 回调事务等价的接口，因此 smoke 采用逐步真实读写；生产云函数仍使用 `db.runTransaction`。本地执行默认拒绝，只有 gate、命令环境 ID、确认环境 ID、`CILI_SMOKE_ENV_ID` 和 `cloudbaserc.json` 五项一致才允许写入。
 
+活动链路另提供手动生产验收：工作流输入 `run_activity_flow_smoke=true` 后，探测 `activity-admin`、`registration`、`admin-review` 均为 `Active`，再以隔离标识验证创建草稿、发布、回读、报名、取消、下架、逻辑删除和隔离数据清理，失败时执行补偿并回读无占位报名。历史活动清理只允许手动选择 `purge_historical_activities=true` 且精确输入 `DELETE_HISTORICAL_ACTIVITY_DATA`，仅删除执行时已结束或已逻辑删除的活动，以及关联报名、路线预览、审计和通知记录；未来及进行中活动、用户、俱乐部和成员关系均受硬保护。
+
 ## 文档导航
 
 - [GitHub 仓库治理与发布自动化](docs/github-governance.md)：Ruleset、安全扫描、依赖更新、Issue、Release 和部署环境的职责边界。

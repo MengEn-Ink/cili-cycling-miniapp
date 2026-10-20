@@ -27,6 +27,21 @@ on:
         required: false
         default: ''
         type: string
+      purge_historical_activities:
+        description: 删除已结束或已逻辑删除的历史活动及其关联数据（不可恢复）
+        required: false
+        default: false
+        type: boolean
+      historical_activity_confirmation:
+        description: 清理历史活动时必须精确填写 DELETE_HISTORICAL_ACTIVITY_DATA
+        required: false
+        default: ''
+        type: string
+      run_activity_flow_smoke:
+        description: 在真实 CloudBase 执行活动创建、发布、报名、取消和删除全流程验收
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -68,6 +83,9 @@ jobs:
           FORCE_INFRASTRUCTURE: ${{ inputs.apply_infrastructure }}
           PURGE_PRELAUNCH_MEDIA_DATA: ${{ inputs.purge_prelaunch_media_data }}
           PURGE_CONFIRMATION: ${{ inputs.purge_confirmation }}
+          PURGE_HISTORICAL_ACTIVITIES: ${{ inputs.purge_historical_activities }}
+          HISTORICAL_ACTIVITY_CONFIRMATION: ${{ inputs.historical_activity_confirmation }}
+          RUN_ACTIVITY_FLOW_SMOKE: ${{ inputs.run_activity_flow_smoke }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
@@ -142,6 +160,21 @@ jobs:
                   "profile-media-cleanup",
                 ]),
               ];
+            }
+            if (process.env.PURGE_HISTORICAL_ACTIVITIES === "true") {
+              if (
+                process.env.EVENT_NAME !== "workflow_dispatch" ||
+                process.env.HISTORICAL_ACTIVITY_CONFIRMATION !== "DELETE_HISTORICAL_ACTIVITY_DATA"
+              ) {
+                throw new Error("历史活动清理缺少精确人工确认");
+              }
+              decision.shouldDeploy = true;
+            }
+            if (process.env.RUN_ACTIVITY_FLOW_SMOKE === "true") {
+              if (process.env.EVENT_NAME !== "workflow_dispatch") {
+                throw new Error("活动全流程 smoke 只允许手动触发");
+              }
+              decision.shouldDeploy = true;
             }
             fs.writeFileSync(process.argv[1], `${JSON.stringify(decision, null, 2)}\n`);
           ' "${RUNNER_TEMP}/cloudbase-deploy-decision.json"
@@ -391,6 +424,40 @@ jobs:
             --env-id "${CLOUDBASE_ENV_ID}" \
             --confirm-env-id "${CLOUDBASE_ENV_ID}" \
             --confirmation DELETE_PRELAUNCH_MEDIA_DATA
+
+      - name: Purge explicitly confirmed historical activity data
+        if: >-
+          steps.scope.outputs.should_deploy == 'true' &&
+          github.event_name == 'workflow_dispatch' &&
+          inputs.purge_historical_activities == true &&
+          inputs.historical_activity_confirmation == 'DELETE_HISTORICAL_ACTIVITY_DATA'
+        env:
+          CILI_ALLOW_HISTORICAL_ACTIVITY_PURGE: historical-activity-purge
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run cloudbase:purge:historical-activities -- \
+            --apply \
+            --env-id "${CLOUDBASE_ENV_ID}" \
+            --confirm-env-id "${CLOUDBASE_ENV_ID}" \
+            --confirmation DELETE_HISTORICAL_ACTIVITY_DATA \
+            --cutoff "$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+
+      - name: Run explicitly requested activity full-flow smoke
+        if: >-
+          steps.scope.outputs.should_deploy == 'true' &&
+          github.event_name == 'workflow_dispatch' &&
+          inputs.run_activity_flow_smoke == true
+        env:
+          CILI_ALLOW_PRODUCTION_SMOKE: activity-flow-write
+          CILI_SMOKE_ENV_ID: ${{ vars.CLOUDBASE_ENV_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run cloudbase:smoke:activity-flow -- \
+            --env-id "${CLOUDBASE_ENV_ID}" \
+            --confirm I_UNDERSTAND_ACTIVITY_FLOW_WRITES_REAL_DATA \
+            --run-id "github-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
 
       - name: Run production club application write smoke
         if: steps.scope.outputs.should_deploy == 'true'

@@ -7,6 +7,7 @@ const {
   DomainError,
   validateDraftInput,
   validatePublishInput,
+  validateReviewInput,
   validateActivityInput,
   assertStatusTransition,
   publicActivity,
@@ -1467,6 +1468,44 @@ test('存量超过三张的活动图集在未修改时可原样保存', async ()
     }),
     { code: 'VALIDATION_FAILED' },
   );
+});
+
+test('有限报名活动发布和提审时路线终点可省略', () => {
+  const route = { ...input.route };
+  delete route.end;
+
+  const published = validatePublishInput({ ...input, status: 'published', route }, 0, now);
+  const pendingReview = validateReviewInput({ ...input, status: 'pending_review', route }, 0, now);
+
+  assert.equal(published.route.start, '甲');
+  assert.equal(published.route.end, '');
+  assert.equal(pendingReview.route.start, '甲');
+  assert.equal(pendingReview.route.end, '');
+});
+
+test('发布和提审仍要求路线起点，并规范化已有路线终点', () => {
+  for (const validate of [validatePublishInput, validateReviewInput]) {
+    expectCode(
+      () =>
+        validate(
+          {
+            ...input,
+            status: validate === validatePublishInput ? 'published' : 'pending_review',
+            route: { ...input.route, start: '   ', end: ' 终点 ' },
+          },
+          0,
+          now,
+        ),
+      'VALIDATION_FAILED',
+    );
+  }
+
+  const published = validatePublishInput(
+    { ...input, status: 'published', route: { ...input.route, end: ' 乙 ' } },
+    0,
+    now,
+  );
+  assert.equal(published.route.end, '乙');
 });
 
 test('日常活动允许标记报名人数不限', () => {
