@@ -161,7 +161,6 @@ function mediaFailureDetail(error: unknown): string {
       typeof (error as { message?: unknown }).message === 'string'
         ? (error as { message: string }).message
         : '';
-    // eslint-disable-next-line no-console
     console.warn('[profile-edit] media failure', { code, stage, diagnosticMessage });
   } catch {
     // 诊断日志不影响用户路径。
