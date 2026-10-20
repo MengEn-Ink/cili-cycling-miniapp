@@ -84,6 +84,26 @@ describe('成员活动页面权限', () => {
     expect(wx.navigateTo).not.toHaveBeenCalled();
   });
 
+  it('卡片正文点击遵守 canEdit，待审核与已结束活动不进入编辑页', async () => {
+    rideService.listAdminActivitiesPage.mockResolvedValue({
+      items: [
+        { id: 'own-finished', title: '历史活动', status: 'finished' },
+        { id: 'own-pending', title: '待审核', status: 'pending_review' },
+        { id: 'own-published', title: '进行中', status: 'published' },
+        { id: 'own-draft', title: '草稿', status: 'draft' },
+      ],
+      nextCursor: null,
+    });
+    await page.onShow();
+
+    page.edit({ currentTarget: { dataset: { id: 'own-finished' } } });
+    page.edit({ currentTarget: { dataset: { id: 'own-pending' } } });
+    expect(wx.navigateTo).not.toHaveBeenCalled();
+    page.edit({ currentTarget: { dataset: { id: 'own-published' } } });
+    page.edit({ currentTarget: { dataset: { id: 'own-draft' } } });
+    expect(wx.navigateTo).toHaveBeenCalledTimes(2);
+  });
+
   it('克隆前要求新时间，双击只提交一次且成功进入返回草稿', async () => {
     rideService.listAdminActivitiesPage.mockResolvedValue({
       items: [{ id: 'own-finished', title: '历史活动', status: 'finished' }],
@@ -100,7 +120,8 @@ describe('成员活动页面权限', () => {
 
     await page.confirmClone();
     expect(rideService.cloneActivity).not.toHaveBeenCalled();
-    expect(page.data.error).toContain('时间');
+    expect(page.data.cloneError).toContain('时间');
+    expect(page.data.error).toBe('');
 
     page.data.cloneForm = futureCloneWindow();
     const first = page.confirmClone();

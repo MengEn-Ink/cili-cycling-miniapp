@@ -37,6 +37,7 @@ Page({
     error: '',
     loading: false,
     submitting: false,
+    photoFailed: {} as Record<number, boolean>,
   },
   onShow() {},
   async onLoad(q: any) {
@@ -86,6 +87,23 @@ Page({
   reason(e: any) {
     this.setData({ reason: e.detail.value, reasonError: '' });
   },
+  photoError(e: any) {
+    const index = Number(e.currentTarget.dataset.index);
+    if (!Number.isInteger(index) || index < 0) return;
+    this.setData({ [`photoFailed[${index}]`]: true });
+  },
+  previewPhoto(e: any) {
+    const url = String(e.currentTarget.dataset.url || '');
+    const images: Array<{ url: string }> = Array.isArray(this.data.card?.images)
+      ? this.data.card.images
+      : [];
+    const failed = this.data.photoFailed || {};
+    const urls = images
+      .filter((image, index) => image.url && !failed[index])
+      .map((image) => image.url);
+    if (!url || typeof wx.previewImage !== 'function' || !urls.includes(url)) return;
+    wx.previewImage({ current: url, urls });
+  },
   async checkIn() {
     if (this.data.submitting || this.data.x?.status !== 'approved') return;
     const requestId = loadRequestId;
@@ -127,7 +145,8 @@ Page({
       await rideService.updateRegistration(this.data.x.id, status, this.data.reason);
       // 请求在途期间用户若已手动返回（onUnload 递增代次），不能再回写已卸载页面，也不能再次 navigateBack 报错。
       if (requestId !== loadRequestId) return;
-      this.setData({ statusText: statusText[status] || status, submitting: false });
+      // 成功后保持 submitting 禁用直到 navigateBack，收口约 500ms 的重复点击窗口；仅失败才复位。
+      this.setData({ statusText: statusText[status] || status });
       wx.showToast({ title: status === 'approved' ? '已通过' : '已驳回' });
       setTimeout(() => wx.navigateBack(), 500);
     } catch (error) {

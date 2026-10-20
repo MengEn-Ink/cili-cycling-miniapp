@@ -203,6 +203,8 @@ export interface Activity {
   coverImage?: string;
   groupQrCode?: string;
   groupQrCodeUploadedAt?: string;
+  // 服务端按上传时间戳判断群二维码是否可能过期；缺字段/旧数据时为 false，客户端不自行推断。
+  groupQrMayBeExpired?: boolean;
   route: {
     start: string;
     end: string;

@@ -729,6 +729,13 @@ describe('CloudRepository 管理员审批适配', () => {
     expectCall(callFunction, 'admin-review', { action: 'list', activityId: 'a1' });
   });
 
+  it('审批列表项映射管理员明文投影的真实姓名与完整手机号', async () => {
+    const { cloud } = cloudWith(success([registration]));
+    const [item] = await new CloudRepository(cloud).listReviewRegistrations('a1');
+    expect(item.profile.realName).toBe('曹蒙恩');
+    expect(item.profile.phone).toBe('13812345678');
+  });
+
   it('运行时伪造审批列表状态被客户端拒绝', async () => {
     const { cloud, callFunction } = cloudWith();
     await expectCode(
@@ -2259,6 +2266,30 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
       },
     ]);
     expect(JSON.stringify(result.attendees)).not.toMatch(/openid|phone|138/);
+  });
+
+  it('映射服务端群二维码可能过期标记，缺字段时不自行推断', async () => {
+    const expired = cloudWith(
+      success({
+        ...activity,
+        group_qr_code: 'cloud://q.jpg',
+        group_qr_code_uploaded_at: '2026-10-01T00:00:00.000Z',
+        group_qr_may_be_expired: true,
+      }),
+    );
+    const expiredResult: any = await new CloudRepository(expired.cloud).getActivity('a1');
+    expect(expiredResult.groupQrCode).toBe('cloud://q.jpg');
+    expect(expiredResult.groupQrMayBeExpired).toBe(true);
+
+    const fresh = cloudWith(
+      success({
+        ...activity,
+        group_qr_code: 'cloud://q.jpg',
+        group_qr_code_uploaded_at: '2026-10-19T00:00:00.000Z',
+      }),
+    );
+    const freshResult: any = await new CloudRepository(fresh.cloud).getActivity('a1');
+    expect(freshResult.groupQrMayBeExpired).toBeUndefined();
   });
 
   it('公开成员只保留白名单、限制 24 人并收敛非法值', async () => {

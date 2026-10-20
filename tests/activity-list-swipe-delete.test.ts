@@ -81,6 +81,18 @@ describe('活动卡片滑动删除', () => {
     expect(styles).toMatch(/\.swipe-delete-active\s*\{[^}]*z-index:\s*2;/s);
   });
 
+  it('左滑删除按钮仅对草稿活动渲染，驳回活动卡展示驳回原因，克隆错误渲染在弹层内', () => {
+    const template = readFileSync('miniprogram/pages/admin/activity-list/index.wxml', 'utf8');
+    expect(template).toMatch(
+      /<button wx:if="\{\{item\.status === 'draft'\}\}"[^>]*class="secondary delete-button"[^>]*catchtap="confirmDelete"/,
+    );
+    expect(template).toContain('wx:if="{{item.status === \'rejected\' && item.rejectionReason}}"');
+    expect(template).toContain('驳回原因：');
+    // cloneError 必须渲染在复制弹层 modal-mask 内部，页面级 error 在弹层外不可见。
+    const sheet = template.slice(template.indexOf('modal-mask'));
+    expect(sheet).toContain('{{cloneError}}');
+  });
+
   it('普通点击的触摸开始和结束不触发视图重绘，保证按钮 tap 不丢失', () => {
     page.setData.mockClear();
     page.onRowTouchStart(touch('act-1', 300));
@@ -143,10 +155,17 @@ describe('活动卡片滑动删除', () => {
     });
   });
 
-  it('确认删除后调用云端契约、移除卡片并提示', async () => {
+  it('非草稿活动点击删除被客户端拦截，不弹窗也不调用云端', async () => {
     await page.confirmDelete(touch('act-1', 200));
-    expect(rideService.deleteActivity).toHaveBeenCalledWith('act-1', '活动安排调整');
-    expect(page.data.items.map((item: { id: string }) => item.id)).toEqual(['act-2']);
+    expect(wx.showModal).not.toHaveBeenCalled();
+    expect(rideService.deleteActivity).not.toHaveBeenCalled();
+    expect(wx.showToast).toHaveBeenCalledWith({ title: '仅草稿活动可删除', icon: 'none' });
+  });
+
+  it('确认删除草稿后调用云端契约、移除卡片并提示', async () => {
+    await page.confirmDelete(touch('act-2', 200));
+    expect(rideService.deleteActivity).toHaveBeenCalledWith('act-2', '活动安排调整');
+    expect(page.data.items.map((item: { id: string }) => item.id)).toEqual(['act-1']);
     expect(wx.showToast).toHaveBeenCalledWith({ title: '已删除', icon: 'success' });
   });
 
@@ -154,20 +173,20 @@ describe('活动卡片滑动删除', () => {
     wx.showModal.mockImplementationOnce(({ success }: { success: (r: any) => void }) =>
       success({ confirm: false, cancel: true }),
     );
-    await page.confirmDelete(touch('act-1', 200));
+    await page.confirmDelete(touch('act-2', 200));
     expect(rideService.deleteActivity).not.toHaveBeenCalled();
   });
 
-  it('云端拒绝删除（如已有报名）时收起卡片并展示原因', async () => {
+  it('云端拒绝删除草稿（如有报名）时收起卡片并展示原因', async () => {
     rideService.deleteActivity.mockRejectedValueOnce(new Error('已有成员报名，无法删除'));
-    // 展开后触发删除
-    page.onRowTouchStart(touch('act-1', 300));
-    page.onRowTouchMove(touch('act-1', 200));
+    // 展开草稿卡片后触发删除
+    page.onRowTouchStart(touch('act-2', 300));
+    page.onRowTouchMove(touch('act-2', 200));
     page.onRowTouchEnd();
-    await page.confirmDelete(touch('act-1', 200));
+    await page.confirmDelete(touch('act-2', 200));
     expect(page.data.error).toBe('活动仍有待处理报名，请先到报名审批处理后再删除');
-    expect(page.data.items[0].swipeOpen).toBe(false);
-    expect(page.data.items[0].swipeOffset).toBe(0);
+    expect(page.data.items[1].swipeOpen).toBe(false);
+    expect(page.data.items[1].swipeOffset).toBe(0);
     expect(page.data.items).toHaveLength(2);
   });
 });

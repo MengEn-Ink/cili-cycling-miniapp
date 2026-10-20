@@ -688,6 +688,8 @@ function mapActivity(raw: unknown, requireRegistrationDecision = false): Activit
     ...(typeof value.group_qr_code_uploaded_at === 'string'
       ? { groupQrCodeUploadedAt: value.group_qr_code_uploaded_at }
       : {}),
+    // 过期与否由服务端按上传时间戳判断；缺字段时恒为 false，客户端不自行推断。
+    ...(value.group_qr_may_be_expired === true ? { groupQrMayBeExpired: true } : {}),
     route: {
       start: typeof value.route?.start === 'string' ? value.route.start : '',
       end: typeof value.route?.end === 'string' ? value.route.end : '',

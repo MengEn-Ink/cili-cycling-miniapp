@@ -19,10 +19,12 @@ Page({
     all: [] as any[],
     activities: [] as any[],
     activityId: '',
+    activityIndex: 0,
     selectedActivityTitle: '',
     loading: false,
     sendingReminders: false,
     error: '',
+    showLimitNotice: false,
   },
   onShow() {
     void this.load();
@@ -44,24 +46,33 @@ Page({
         this.setData({
           activities,
           activityId: '',
+          activityIndex: 0,
           selectedActivityTitle: '',
           loading: false,
           all: [],
           items: [],
+          showLimitNotice: false,
           error: '暂无可审批活动',
         });
         return;
       }
       const all = await rideService.listReviewRegistrations(activityId);
       if (generation !== loadGeneration) return;
-      const selectedActivity = activities.find((activity) => activity.id === activityId);
+      const activityIndex = Math.max(
+        0,
+        activities.findIndex((activity) => activity.id === activityId),
+      );
+      const selectedActivity = activities[activityIndex];
       this.setData({
         activities,
         activityId,
+        activityIndex,
         selectedActivityTitle: selectedActivity?.title || '活动信息不可用',
         all,
         loading: false,
         error: '',
+        // 服务端固定最多返回 100 条；拉满时给出非阻断提示，避免静默截断。
+        showLimitNotice: all.length >= 100,
       });
       this.filter();
     } catch (error) {
@@ -70,19 +81,23 @@ Page({
         loading: false,
         all: [],
         items: [],
+        showLimitNotice: false,
         error: error instanceof Error ? error.message : '审批列表加载失败',
       });
     }
   },
   choose(e: any) {
-    const selected = this.data.activities[Number(e.detail.value)];
+    const index = Number(e.detail.value);
+    const selected = this.data.activities[index];
     if (!selected) return;
     this.setData({
       activityId: selected.id,
+      activityIndex: index,
       selectedActivityTitle: selected.title,
       loading: true,
       all: [],
       items: [],
+      showLimitNotice: false,
       error: '',
     });
     void this.load();

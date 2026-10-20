@@ -61,7 +61,6 @@ type PendingRouteUpload = {
 
 const MAX_IMAGES = 3;
 const MAX_GPX_BYTES = 4 * 1024 * 1024;
-const GROUP_QR_EXPIRE_MS = 7 * 24 * 60 * 60 * 1000;
 const DEFAULT_CAPACITY = 500;
 const emptyForm = (): Form => ({
   title: '',
@@ -356,12 +355,6 @@ function locationFailure(
   return 'unknown';
 }
 
-function groupQrExpired(uploadedAt?: string) {
-  if (!uploadedAt) return false;
-  const time = new Date(uploadedAt).getTime();
-  return Number.isFinite(time) && Date.now() - time >= GROUP_QR_EXPIRE_MS;
-}
-
 function derivedTimes(startAt: string) {
   const start = new Date(startAt);
   const deadline = new Date(start.getTime() - 60 * 1000);
@@ -538,7 +531,7 @@ Page({
         groupQrCode: activity.groupQrCode || '',
         groupQrPreviewUrl: activity.groupQrPreviewUrl || '',
         groupQrCodeUploadedAt: activity.groupQrCodeUploadedAt || '',
-        groupQrCodeExpired: groupQrExpired(activity.groupQrCodeUploadedAt),
+        groupQrCodeExpired: activity.groupQrMayBeExpired === true,
         pendingGroupQrCode: undefined,
         routeStartLocation: activity.route.startLocation,
         officialRoute,
@@ -1605,7 +1598,7 @@ Page({
           coverImage: saved.coverImage || savedImages[0] || '',
           groupQrCode: saved.groupQrCode || '',
           groupQrCodeUploadedAt: saved.groupQrCodeUploadedAt || '',
-          groupQrCodeExpired: groupQrExpired(saved.groupQrCodeUploadedAt),
+          groupQrCodeExpired: saved.groupQrMayBeExpired === true,
           pendingGroupQrCode: undefined,
           routeStartLocation: saved.route.startLocation,
           officialRoute: savedOfficialRoute,

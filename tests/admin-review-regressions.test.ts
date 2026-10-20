@@ -120,6 +120,8 @@ describe('管理员审核详情回归', () => {
 
     rideService.updateRegistration.mockClear();
     page.data.x = registration('r1', 'a1');
+    // 上一笔通过成功后在返回前保持 submitting；这里模拟进入下一条待审核报名的全新状态。
+    page.data.submitting = false;
     await page.act({ currentTarget: { dataset: { s: 'rejected' } } });
     expect(rideService.updateRegistration).not.toHaveBeenCalled();
     expect((globalThis as any).wx.showToast).toHaveBeenCalledWith({
@@ -154,6 +156,66 @@ describe('管理员审核详情回归', () => {
     expect(template).not.toContain('{{x.status}}');
   });
 
+  it('待审核无凭证编号时提示通过后生成，且不再展示内部 reg 哈希或换行样式', async () => {
+    await page.onLoad({ id: 'r1' });
+    const template = readFileSync('miniprogram/pages/admin/review-detail/index.wxml', 'utf8');
+
+    expect(page.data.x.serialNo).toBeUndefined();
+    expect(template).toContain('通过后生成凭证编号');
+    expect(template).toContain('凭证编号 {{x.serialNo}}');
+    expect(template).not.toContain('报名编号');
+    expect(template).not.toContain('break-all');
+    const styles = readFileSync('miniprogram/pages/admin/review-detail/index.wxss', 'utf8');
+    expect(styles).toMatch(/\.info-kicker\s*\{[^}]*white-space:\s*nowrap/);
+  });
+
+  it('已通过报名展示服务端生成的凭证编号', async () => {
+    const approved = {
+      ...registration('r1', 'a1'),
+      status: 'approved',
+      serialNo: 'RE-20261020-000123',
+    };
+    rideService.getReviewRegistration.mockResolvedValue(approved);
+    await page.onLoad({ id: 'r1' });
+    expect(page.data.x.serialNo).toBe('RE-20261020-000123');
+  });
+
+  it('审核照片支持点击放大，加载失败回退占位且不参与预览', async () => {
+    await page.onLoad({ id: 'r1' });
+    const template = readFileSync('miniprogram/pages/admin/review-detail/index.wxml', 'utf8');
+    expect(template).toContain('binderror="photoError"');
+    expect(template).toContain('bindtap="previewPhoto"');
+    expect(template).toContain('照片暂不可用');
+
+    page.data.card = {
+      images: [
+        { url: 'https://example/1.jpg', source: '个人上传' },
+        { url: 'https://example/2.jpg', source: '个人上传' },
+      ],
+    };
+    page.data.photoFailed = {};
+    const previewImage = vi.fn();
+    (globalThis as any).wx.previewImage = previewImage;
+
+    page.previewPhoto({ currentTarget: { dataset: { url: 'https://example/1.jpg' } } });
+    expect(previewImage).toHaveBeenCalledWith({
+      current: 'https://example/1.jpg',
+      urls: ['https://example/1.jpg', 'https://example/2.jpg'],
+    });
+
+    page.photoError({ currentTarget: { dataset: { index: 0 } } });
+    expect(page.setData).toHaveBeenCalledWith({ 'photoFailed[0]': true });
+    page.data.photoFailed = { 0: true };
+    previewImage.mockClear();
+    page.previewPhoto({ currentTarget: { dataset: { url: 'https://example/1.jpg' } } });
+    expect(previewImage).not.toHaveBeenCalled();
+    page.previewPhoto({ currentTarget: { dataset: { url: 'https://example/2.jpg' } } });
+    expect(previewImage).toHaveBeenCalledWith({
+      current: 'https://example/2.jpg',
+      urls: ['https://example/2.jpg'],
+    });
+  });
+
   it('离开详情页后丢弃迟到的详情响应', async () => {
     const pending = deferred<ReturnType<typeof registration>>();
     rideService.getReviewRegistration.mockReturnValueOnce(pending.promise);
@@ -184,8 +246,14 @@ describe('管理员审核详情回归', () => {
     pending.resolve();
     vi.useFakeTimers();
     await first;
-    expect(page.data.submitting).toBe(false);
+    // 成功后保持禁用直到 navigateBack，收口约 500ms 的重复点击窗口。
+    expect(page.data.submitting).toBe(true);
     expect(page.data.statusText).toBe('已通过');
+
+    // 返回前的窗口内再次点击，不能触发第二次审批。
+    rideService.updateRegistration.mockClear();
+    await page.act({ currentTarget: { dataset: { s: 'approved' } } });
+    expect(rideService.updateRegistration).not.toHaveBeenCalled();
 
     // 延迟返回定时器必须在测试内触发并收口，避免泄漏到后续用例形成未捕获异常。
     vi.advanceTimersByTime(500);
@@ -331,5 +399,38 @@ describe('管理员审核列表回归', () => {
     expect(page.data.selectedActivityTitle).toBe('活动二');
     expect(page.data.all).toEqual([]);
     expect(page.data.items).toEqual([]);
+  });
+
+  it('列表模板主行显实名、副行显昵称与手机号，picker 绑定当前选中下标', () => {
+    const template = readFileSync('miniprogram/pages/admin/reviews/index.wxml', 'utf8');
+    expect(template).toContain('{{item.profile.realName || item.profile.nickname');
+    expect(template).toContain('骑友 · {{item.profile.nickname');
+    expect(template).toContain('{{item.profile.phone}}');
+    expect(template).toContain('value="{{activityIndex}}"');
+    expect(template).not.toContain('value="0"');
+  });
+
+  it('拉满 100 条时非阻断提示仅展示最近 100 条，少于 100 条不提示', async () => {
+    rideService.listReviewRegistrations.mockResolvedValue(
+      Array.from({ length: 100 }, (_, index) => registration(`r${index}`, 'a1')),
+    );
+    await page.load();
+    expect(page.data.showLimitNotice).toBe(true);
+
+    rideService.listReviewRegistrations.mockResolvedValue([registration('r1', 'a1')]);
+    await page.load();
+    expect(page.data.showLimitNotice).toBe(false);
+
+    const template = readFileSync('miniprogram/pages/admin/reviews/index.wxml', 'utf8');
+    expect(template).toContain('数据较多，仅展示最近 100 条报名');
+  });
+
+  it('切换活动 picker 时同步 activityIndex 并加载对应活动', async () => {
+    page.data.activities = activities;
+    rideService.listReviewRegistrations.mockResolvedValue([]);
+    page.choose({ detail: { value: '1' } });
+    expect(page.data.activityIndex).toBe(1);
+    expect(page.data.activityId).toBe('a2');
+    await vi.waitFor(() => expect(page.data.selectedActivityTitle).toBe('活动二'));
   });
 });

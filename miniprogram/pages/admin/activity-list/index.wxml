@@ -17,7 +17,7 @@
     <view class="state-card" wx:if="{{!items.length && !error}}"><view class="title">还没有活动</view><view class="muted">创建第一场骑行活动草稿，发布后骑友即可报名。</view><button class="btn" bindtap="create">创建活动草稿</button></view>
     <view class="card danger" wx:if="{{error}}" role="alert"><view class="title">加载失败</view><view>{{error}}</view></view>
     <view class="swipe-delete {{item.swipeOpen ? 'swipe-delete-active' : ''}}" wx:for="{{items}}" wx:key="id">
-      <button class="secondary delete-button" catchtap="confirmDelete" data-id="{{item.id}}">删除</button>
+      <button wx:if="{{item.status === 'draft'}}" class="secondary delete-button" catchtap="confirmDelete" data-id="{{item.id}}">删除</button>
       <view
         class="card activity-row {{item.swipeAnim ? 'is-animating' : ''}}"
         style="transform: translateX({{item.swipeOffset}}px)"
@@ -35,6 +35,7 @@
           <view class="pending-metric"><text>{{item.pendingMetric}}</text><text>待审核</text></view>
           <view><text>{{item.approvedMetric}}</text><text>已通过</text></view>
         </view>
+        <view wx:if="{{item.status === 'rejected' && item.rejectionReason}}" class="rejection-reason" role="note"><text class="rejection-label">驳回原因：</text><text class="rejection-text">{{item.rejectionReason}}</text></view>
         <view class="activity-actions">
           <button wx:if="{{item.canEdit}}" class="secondary" catchtap="edit" data-id="{{item.id}}">编辑</button>
           <button wx:if="{{item.canReview}}" catchtap="reviewActivity" data-id="{{item.id}}" data-decision="approve" class="secondary">通过</button>
@@ -54,5 +55,6 @@
     <view class="field"><text class="field-label">开始时间</text><input class="input" value="{{cloneForm.startAt}}" placeholder-class="input-placeholder" placeholder="2026-10-19T06:20:00+08:00" data-name="startAt" bindinput="cloneField" disabled="{{cloning}}"/></view>
     <view class="field"><text class="field-label">结束时间</text><input class="input" value="{{cloneForm.endAt}}" placeholder-class="input-placeholder" placeholder="2026-10-19T12:00:00+08:00" data-name="endAt" bindinput="cloneField" disabled="{{cloning}}"/></view>
     <view class="clone-actions"><button class="secondary" bindtap="cancelClone" disabled="{{cloning}}">取消</button><button class="btn" bindtap="confirmClone" loading="{{cloning}}" disabled="{{cloning}}">创建草稿</button></view>
+    <view wx:if="{{cloneError}}" class="field-error clone-error" role="alert">{{cloneError}}</view>
   </view></view>
 </view>

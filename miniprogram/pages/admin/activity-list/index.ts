@@ -138,6 +138,7 @@ Page({
     cloneSourceId: '',
     cloneRequestId: '',
     cloneForm: emptyCloneForm(),
+    cloneError: '',
     cloning: false,
     nextCursor: null as string | null,
     hasMore: false,
@@ -323,6 +324,8 @@ Page({
       this.closeOtherSwipes('');
       return;
     }
+    // 待审核/已结束活动不可编辑；卡片正文点击与“编辑”按钮遵守同一 canEdit 口径。
+    if (item && !item.canEdit) return;
     wx.navigateTo({ url: `/pages/admin/activity-edit/index?id=${id}` });
   },
   onRowTouchStart(event: any) {
@@ -400,6 +403,20 @@ Page({
       (candidate: { id: string; title: string }) => candidate.id === id,
     );
     if (!item) return;
+    // 客户端兜底：仅草稿可删，避免删除待审核/已驳回/已结束/已上线活动绕过审批。
+    // 服务端 deleteActivity 会再次以状态为准强校验。
+    if (item.status !== 'draft') {
+      const index = this.data.items.findIndex((candidate: { id: string }) => candidate.id === id);
+      if (index >= 0) {
+        this.setData({
+          [`items[${index}].swipeAnim`]: true,
+          [`items[${index}].swipeOffset`]: 0,
+          [`items[${index}].swipeOpen`]: false,
+        });
+      }
+      wx.showToast({ title: '仅草稿活动可删除', icon: 'none' });
+      return;
+    }
     const reason = await promptOperationReason('删除活动', `请输入删除“${item.title}”的原因`);
     if (!reason) return;
     const index = this.data.items.findIndex((candidate: { id: string }) => candidate.id === id);
@@ -485,6 +502,7 @@ Page({
       cloneSourceId: sourceActivityId,
       cloneRequestId: newRequestId(),
       cloneForm: emptyCloneForm(),
+      cloneError: '',
       error: '',
     });
   },
@@ -496,7 +514,13 @@ Page({
   keepClonePanel() {},
   cancelClone() {
     if (this.data.cloning) return;
-    this.setData({ cloneSourceId: '', cloneRequestId: '', cloneForm: emptyCloneForm(), error: '' });
+    this.setData({
+      cloneSourceId: '',
+      cloneRequestId: '',
+      cloneForm: emptyCloneForm(),
+      cloneError: '',
+      error: '',
+    });
   },
   async confirmClone() {
     if (this.data.cloning || !this.data.cloneSourceId) return;
@@ -515,10 +539,11 @@ Page({
       deadline >= start ||
       start >= end
     ) {
-      this.setData({ error: '请填写有效的新时间，并确保截止、开始、结束依次为未来时间' });
+      // 错误渲染在弹层内部（cloneError），页面级 error 在弹层外不可见。
+      this.setData({ cloneError: '请填写有效的新时间，并确保截止、开始、结束依次为未来时间' });
       return;
     }
-    this.setData({ cloning: true, error: '' });
+    this.setData({ cloning: true, cloneError: '' });
     try {
       const draft = await rideService.cloneActivity({
         sourceActivityId: this.data.cloneSourceId,
@@ -531,7 +556,7 @@ Page({
         url: `/pages/admin/activity-edit/index?id=${draft.id}&fromTemplate=1`,
       });
     } catch (error) {
-      this.setData({ error: error instanceof Error ? error.message : '创建模板草稿失败' });
+      this.setData({ cloneError: error instanceof Error ? error.message : '创建模板草稿失败' });
     } finally {
       this.setData({ cloning: false });
     }

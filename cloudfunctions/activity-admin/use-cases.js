@@ -376,7 +376,9 @@ async function deleteActivity(store, request, now = new Date()) {
     if (current.is_deleted === true) return { id: activityId, deleted: true };
     // 权限只信任服务端 OPENID：创建者本人或启用管理员才可删除。
     if (!isAdmin && current.created_by !== openid) fail('FORBIDDEN', '只能删除自己的活动');
-    if (current.status === 'published') fail('INVALID_TRANSITION', '已上线活动必须先下架再删除');
+    // 仅草稿可删：待审核/已驳回/已结束/已上线活动删除会绕过审批或破坏凭证，一律拒绝。
+    if (current.status !== 'draft')
+      fail('INVALID_TRANSITION', '仅草稿活动可删除，其他状态请先下架或在审批中处理');
     // 第一次校验：拦截删除前仍存在有效凭证的报名/候补。
     await assertNoBlockingRegistrations(tx, activityId);
     // 写入前再次校验：捕捉校验之后、写入之前并发提交的新报名，两次读取均为空才允许软删。
@@ -588,6 +590,26 @@ async function saveActivity(
                 ['draft', 'rejected'].includes(current?.status) &&
                 effectiveActivity.status === 'published',
             });
+    // 群二维码时间只信服务端与数据库存量：新上传或文件变化取 now，未变化沿用 current。
+    const currentGroupQrUploadedAt = current?.group_qr_code_uploaded_at;
+    const trustedCurrentGroupQrUploadedAt =
+      currentGroupQrUploadedAt === undefined || currentGroupQrUploadedAt === ''
+        ? undefined
+        : new Date(
+            currentGroupQrUploadedAt instanceof Date
+              ? currentGroupQrUploadedAt.getTime()
+              : currentGroupQrUploadedAt,
+          );
+    const hasTrustedCurrentGroupQrUploadedAt =
+      trustedCurrentGroupQrUploadedAt instanceof Date &&
+      Number.isFinite(trustedCurrentGroupQrUploadedAt.getTime());
+    if (safe.group_qr_code) {
+      const groupQrChanged = safe.group_qr_code !== current?.group_qr_code;
+      safe.group_qr_code_uploaded_at =
+        !current || groupQrChanged || !hasTrustedCurrentGroupQrUploadedAt
+          ? now
+          : trustedCurrentGroupQrUploadedAt;
+    }
     const partitionCapacityReady =
       Number.isInteger(safe.capacity) &&
       safe.capacity > 0 &&
@@ -703,6 +725,7 @@ async function saveActivity(
           }
         : {}),
     };
+    if (!safe.group_qr_code) delete value.group_qr_code_uploaded_at;
     if (isUnpublish) {
       const registrations = await tx.listActiveRegistrations(id);
       for (const registration of registrations.filter(

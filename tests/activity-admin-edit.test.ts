@@ -1389,6 +1389,34 @@ describe('日常活动极简创建与编辑', () => {
     expect(page.data.groupQrCode).toBe('cloud://new-group-qr.jpg');
   });
 
+  it('群二维码过期提示以服务端标记为准，缺少标记不自行推断过期', async () => {
+    rideService.getAdminActivity.mockResolvedValueOnce({
+      ...activity,
+      groupQrCodeUploadedAt: '2026-10-01T00:00:00.000Z',
+      groupQrMayBeExpired: true,
+    });
+    await page.onLoad({ id: 'a1' });
+    expect(page.data.groupQrCodeExpired).toBe(true);
+
+    // 旧数据只有很旧的上传时间但服务端未给标记时，客户端不伪造过期警告。
+    rideService.getAdminActivity.mockResolvedValueOnce({
+      ...activity,
+      groupQrCodeUploadedAt: '2026-10-01T00:00:00.000Z',
+    });
+    await page.onLoad({ id: 'a1' });
+    expect(page.data.groupQrCodeExpired).toBe(false);
+
+    // 阈值常量只允许存在于云函数，客户端源码不得再硬编码 7 天。
+    const editSource = readFileSync('miniprogram/pages/admin/activity-edit/index.ts', 'utf8');
+    const detailSource = readFileSync('miniprogram/pages/activity-detail/index.ts', 'utf8');
+    expect(editSource).not.toContain('GROUP_QR_EXPIRE_MS');
+    expect(detailSource).not.toContain('GROUP_QR_EXPIRE_MS');
+    expect(editSource).not.toContain('groupQrExpired');
+    expect(detailSource).not.toContain('groupQrExpired');
+    expect(editSource).toContain('groupQrMayBeExpired');
+    expect(detailSource).toContain('groupQrMayBeExpired');
+  });
+
   it('添加官方路线调用免授权解析并回显可信路线详情', async () => {
     await page.onLoad({});
     page.data.form.stravaRouteUrl = 'https://www.strava.com/zh-CN/routes/42/';

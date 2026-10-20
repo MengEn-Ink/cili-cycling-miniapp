@@ -148,7 +148,7 @@
       </view>
       <view class="field group-qr-field">
         <view class="field-label">活动群二维码</view>
-        <view class="section-help">可选上传 1 张微信群二维码，便于已报名成员进群；上传超过 7 天会提示可能过期。</view>
+        <view class="section-help">可选上传 1 张微信群二维码，便于已报名成员进群；较久未更新时会提示可能过期，请及时替换。</view>
         <view wx:if="{{groupQrCode}}" class="group-qr-card">
           <image wx:if="{{groupQrPreviewUrl}}" class="group-qr-preview" src="{{groupQrPreviewUrl}}" mode="aspectFit" data-file-id="{{groupQrCode}}" bindload="storedMediaPreviewLoad" binderror="storedMediaPreviewError" />
           <button wx:else class="stored-media-placeholder group-qr-preview" data-file-id="{{groupQrCode}}" bindtap="retryStoredMediaPreview">{{mediaPreviewLoading ? '二维码加载中…' : '二维码加载失败，点击重试'}}</button>
