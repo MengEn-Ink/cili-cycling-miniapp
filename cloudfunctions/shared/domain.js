@@ -279,6 +279,22 @@ function registrationDecision(activity, now) {
     activity.occupied_count >= activity.capacity;
   return { registration_state: 'open', closed_reason: null, waitlist_only: waitlistOnly };
 }
+// 群二维码“可能过期”阈值只允许存在于云函数；客户端只消费布尔结果。
+const GROUP_QR_EXPIRE_MS = 7 * 24 * 60 * 60 * 1000;
+function groupQrTimestamp(activity) {
+  if (!activity || typeof activity.group_qr_code !== 'string' || !activity.group_qr_code)
+    return null;
+  const raw = activity.group_qr_code_uploaded_at;
+  if (raw === undefined || raw === null || raw === '') return null;
+  const time = raw instanceof Date ? raw.getTime() : new Date(raw).getTime();
+  return Number.isFinite(time) ? time : null;
+}
+function groupQrMayBeExpired(activity, now = new Date()) {
+  const uploadedAt = groupQrTimestamp(activity);
+  // 旧数据缺时间戳时 fail closed 为“不过期”，不凭空制造警告。
+  if (uploadedAt === null) return false;
+  return now.getTime() - uploadedAt >= GROUP_QR_EXPIRE_MS;
+}
 function publicActivity(activity, now = new Date()) {
   const output = pick(activity, ACTIVITY_FIELDS);
   if (typeof output.club_id !== 'string' || !output.club_id) {
@@ -320,6 +336,8 @@ function publicActivity(activity, now = new Date()) {
     ...decision,
     ...(setupPending ? { registration_setup_pending: true } : {}),
     ...(setupPending ? { registration_state: 'closed', closed_reason: 'unavailable' } : {}),
+    // 群二维码是否可能过期只由服务端按已知上传时间戳判断；阈值常量不下发到客户端。
+    group_qr_may_be_expired: groupQrMayBeExpired(activity, now),
     server_now: now.toISOString(),
   };
 }
@@ -410,5 +428,6 @@ module.exports = {
   registrationSetupReady,
   publicActivity,
   publicRegistration,
+  groupQrMayBeExpired,
   buildAudit,
 };

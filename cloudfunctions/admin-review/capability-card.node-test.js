@@ -6,9 +6,12 @@ const {
   adminCapabilityMedia,
   resolveAdminCapabilityMedia,
   adminCapabilityView,
+  adminRegistrationListItem,
+  adminRegistrationList,
   socialCapabilityView,
   adminCapabilityDetail,
 } = require('./capability-card');
+const { publicRegistration } = require('./domain');
 
 const profile = {
   nickname: '山野骑手',
@@ -612,4 +615,126 @@ test('能力卡性别优先当前资料，其次报名快照，非法值收敛�
     ).capability_profile.gender,
     '',
   );
+});
+
+test('管理列表：先鉴权，再批量取资料并解密实名/手机号，列表项不签发媒体地址', async () => {
+  const registrations = [
+    {
+      _id: 'r1',
+      activity_id: 'a1',
+      openid: 'member-1',
+      status: 'pending',
+      options: { gathering_mode: 'self_drive', experience: 'regular', remark: '不吃辣' },
+      profile_snapshot: { nickname: '报名昵称', phone_masked: '138****5678' },
+    },
+    {
+      _id: 'r2',
+      activity_id: 'a1',
+      openid: 'member-2',
+      status: 'approved',
+      profile_snapshot: { nickname: '无资料骑手' },
+    },
+  ];
+  const profiles = new Map([
+    [
+      'member-1',
+      {
+        nickname: '当前昵称',
+        gender: '女',
+        phone_source: 'wechat',
+        phone_verified: true,
+        real_name_cipher: encryptedPhone('曹蒙恩'),
+        phone_cipher: encryptedPhone('13812345678'),
+      },
+    ],
+  ]);
+  const events = [];
+  const items = await adminRegistrationList({
+    authorize: async () => events.push('authorize'),
+    listRegistrations: async () => {
+      events.push('list');
+      return registrations;
+    },
+    loadProfiles: async (openids) => {
+      events.push('profiles');
+      assert.deepEqual([...openids].sort(), ['member-1', 'member-2']);
+      return profiles;
+    },
+    piiKey,
+  });
+
+  assert.deepEqual(events, ['authorize', 'list', 'profiles']);
+  assert.equal(items.length, 2);
+  assert.equal(items[0].profile_snapshot.real_name, '曹蒙恩');
+  assert.equal(items[0].profile_snapshot.phone, '13812345678');
+  assert.equal(items[0].capability_profile.phone_source, 'wechat');
+  assert.equal(items[0].capability_profile.phone_verified, true);
+  // 列表不签发照片/头像临时地址。
+  assert.deepEqual(items[0].capability_profile.photos, []);
+  assert.equal(items[0].capability_profile.avatar_url, '');
+  // 缺资料的报名不出现明文字段，也不会让整批失败。
+  assert.equal(Object.hasOwn(items[1].profile_snapshot, 'real_name'), false);
+  assert.equal(Object.hasOwn(items[1].profile_snapshot, 'phone'), false);
+  const serialized = JSON.stringify(items);
+  for (const forbidden of ['openid', 'cipher', 'cloud://']) {
+    assert.equal(serialized.includes(forbidden), false, forbidden);
+  }
+});
+
+test('管理列表：非管理员在读取报名或资料前被拒绝', async () => {
+  await assert.rejects(
+    adminRegistrationList({
+      authorize: async () => {
+        throw Object.assign(new Error('需要管理员权限'), { code: 'ADMIN_REQUIRED' });
+      },
+      listRegistrations: async () => {
+        throw new Error('不应读取报名');
+      },
+      loadProfiles: async () => {
+        throw new Error('不应读取资料');
+      },
+      piiKey,
+    }),
+    { code: 'ADMIN_REQUIRED' },
+  );
+});
+
+test('管理列表单项密文损坏时 fail closed：该项不回退明文，其余项不受影响', () => {
+  const item = adminRegistrationListItem(
+    {
+      _id: 'r1',
+      openid: 'member-1',
+      profile_snapshot: { nickname: '骑手', phone_masked: '138****5678' },
+    },
+    {
+      real_name_cipher: { alg: 'A256GCM', iv: 'bad', tag: 'bad', ciphertext: 'bad' },
+      phone_cipher: encryptedPhone('13800000000'),
+    },
+    piiKey,
+  );
+  assert.equal(Object.hasOwn(item.profile_snapshot, 'real_name'), false);
+  assert.equal(Object.hasOwn(item.profile_snapshot, 'phone'), false);
+  // 退回到公开投影后仍不包含 openid 等内部字段。
+  assert.equal(Object.hasOwn(item, 'openid'), false);
+});
+
+test('公开报名投影即使源快照混入明文也只保留昵称与脱敏字段', () => {
+  const projected = publicRegistration({
+    _id: 'r1',
+    activity_id: 'a1',
+    openid: 'private-openid',
+    status: 'pending',
+    profile_snapshot: {
+      nickname: '昵称',
+      gender: '女',
+      real_name: '曹蒙恩',
+      phone: '13812345678',
+      real_name_masked: '曹*',
+      phone_masked: '138****5678',
+    },
+  });
+  assert.equal(projected.profile_snapshot.nickname, '昵称');
+  assert.equal(Object.hasOwn(projected.profile_snapshot, 'real_name'), false);
+  assert.equal(Object.hasOwn(projected.profile_snapshot, 'phone'), false);
+  assert.equal(Object.hasOwn(projected, 'openid'), false);
 });

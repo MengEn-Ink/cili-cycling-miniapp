@@ -85,6 +85,16 @@
   font-size: 28rpx;
   font-weight: 800;
 }
+.limit-notice {
+  margin-top: 12rpx;
+  padding: 12rpx 16rpx;
+  border: 2rpx solid var(--color-status-warning);
+  border-radius: var(--radius-sm);
+  background: var(--color-status-warning-soft);
+  color: var(--color-status-warning);
+  font-size: 24rpx;
+  line-height: 36rpx;
+}
 .review-list {
   display: flex;
   flex-direction: column;

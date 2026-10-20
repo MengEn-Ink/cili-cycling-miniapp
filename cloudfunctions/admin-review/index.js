@@ -13,10 +13,13 @@ const {
   reviewRegistration,
   checkInRegistration,
 } = require('./domain');
-const { adminCapabilityDetail } = require('./capability-card');
+const { adminCapabilityDetail, adminRegistrationList } = require('./capability-card');
 const { enqueueActivityReminders } = require('./reminder');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
+const _ = db.command;
+// profiles._id 使用 in 批量读取时分片，避免单次操作符过长；列表上限 100，正常 1-2 片即可。
+const PROFILE_LOOKUP_CHUNK = 50;
 
 function isNotFound(error) {
   return (
@@ -54,6 +57,21 @@ async function loadMediaRecords(ownerOpenid, profile) {
 async function requireAdmin(openid) {
   const admin = await maybeGet(db.collection('admins'), openid);
   if (!isEnabledAdmin(admin, openid)) fail('ADMIN_REQUIRED', '需要管理员权限');
+}
+// 按 openid 批量取 profiles 用于管理列表解密；缺资料的用户不会让整个列表失败。
+async function loadProfilesByOpenid(openids) {
+  const profileMap = new Map();
+  for (let offset = 0; offset < openids.length; offset += PROFILE_LOOKUP_CHUNK) {
+    const chunk = openids.slice(offset, offset + PROFILE_LOOKUP_CHUNK);
+    if (!chunk.length) continue;
+    const result = await db
+      .collection('profiles')
+      .where({ _id: _.in(chunk) })
+      .get();
+    for (const profile of Array.isArray(result.data) ? result.data : [])
+      if (profile && typeof profile._id === 'string') profileMap.set(profile._id, profile);
+  }
+  return profileMap;
 }
 function transactionStore() {
   return {
@@ -188,13 +206,21 @@ exports.main = async (event = {}) => {
           fail('VALIDATION_FAILED', '报名状态无效');
         condition.status = event.filterStatus;
       }
-      const result = await db
-        .collection('registrations')
-        .where(condition)
-        .orderBy('created_at', 'desc')
-        .limit(100)
-        .get();
-      return ok(result.data.map(publicRegistration));
+      const items = await adminRegistrationList({
+        authorize: () => requireAdmin(openid),
+        listRegistrations: async () => {
+          const result = await db
+            .collection('registrations')
+            .where(condition)
+            .orderBy('created_at', 'desc')
+            .limit(100)
+            .get();
+          return Array.isArray(result.data) ? result.data : [];
+        },
+        loadProfiles: loadProfilesByOpenid,
+        piiKey: process.env.PII_ENCRYPTION_KEY,
+      });
+      return ok(items);
     }
     if (event.action === 'detail') {
       if (typeof event.registrationId !== 'string' || !event.registrationId)

@@ -1,7 +1,7 @@
 'use strict';
 
 const crypto = require('node:crypto');
-const { normalizeGender } = require('./domain');
+const { normalizeGender, publicRegistration } = require('./domain');
 
 const MAX_CAPABILITY_IMAGES = 3;
 const PROFILE_PHOTO_CATEGORIES = new Set(['ride', 'bike', 'other']);
@@ -391,10 +391,53 @@ async function adminCapabilityDetail({
   return adminCapabilityView(projectRegistration(registration), profile, resolvedMedia, piiKey);
 }
 
+// 管理列表项：复用与详情一致的公开投影 + 实名/手机号解密，但不签发媒体临时地址。
+// 列表只展示身份与状态，照片仍由进入详情后按需签发。
+function adminRegistrationListItem(registration, profile, piiKey) {
+  try {
+    return adminCapabilityView(
+      publicRegistration(registration),
+      profile,
+      { photos: [], avatar_url: '' },
+      piiKey,
+    );
+  } catch (error) {
+    // 单个用户密文损坏或密钥不可用时 fail closed：该项不回退明文，列表其余用户不受影响。
+    if (error && typeof error.code === 'string' && error.code.startsWith('PII_')) {
+      return publicRegistration(registration);
+    }
+    throw error;
+  }
+}
+
+// 管理列表编排：先鉴权（非管理员在读取任何报名前拒绝），再批量取 profiles 并按详情同链路解密。
+async function adminRegistrationList({ authorize, listRegistrations, loadProfiles, piiKey }) {
+  await authorize();
+  const registrations = await listRegistrations();
+  const safeRegistrations = Array.isArray(registrations) ? registrations : [];
+  const openids = [
+    ...new Set(
+      safeRegistrations
+        .map((registration) => registration && registration.openid)
+        .filter((openid) => typeof openid === 'string' && openid),
+    ),
+  ];
+  const profileMap = await loadProfiles(openids);
+  return safeRegistrations.map((registration) =>
+    adminRegistrationListItem(
+      registration,
+      registration.openid ? profileMap.get(registration.openid) : undefined,
+      piiKey,
+    ),
+  );
+}
+
 module.exports = {
   adminCapabilityMedia,
   resolveAdminCapabilityMedia,
   adminCapabilityView,
+  adminRegistrationListItem,
+  adminRegistrationList,
   socialCapabilityView,
   adminCapabilityDetail,
 };

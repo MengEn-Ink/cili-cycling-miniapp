@@ -383,6 +383,34 @@ test('公开活动白名单透出图集与路线坐标并继续过滤私有字�
   assert.equal(result.private_token, undefined);
 });
 
+test('群二维码是否可能过期只由服务端按时间戳判断，旧数据缺时间戳不误报', () => {
+  const { publicActivity, groupQrMayBeExpired } = require('./domain/domain');
+  const now = new Date('2026-10-20T00:00:00.000Z');
+  const withQr = (uploadedAt) => ({
+    _id: 'a-qr',
+    title: '二维码活动',
+    status: 'published',
+    group_qr_code: 'cloud://group-qr.jpg',
+    ...(uploadedAt ? { group_qr_code_uploaded_at: uploadedAt } : {}),
+  });
+  // 1 天内为新码；超过 7 天判为可能过期。
+  assert.equal(groupQrMayBeExpired(withQr('2026-10-19T00:00:00.000Z'), now), false);
+  assert.equal(groupQrMayBeExpired(withQr('2026-10-12T00:00:00.000Z'), now), true);
+  // 兼容 Date 实例。
+  assert.equal(groupQrMayBeExpired(withQr(new Date('2026-10-01T00:00:00.000Z')), now), true);
+  // 旧数据有二维码但缺时间戳、或时间戳非法时 fail closed，不凭空提示过期。
+  assert.equal(groupQrMayBeExpired(withQr(undefined), now), false);
+  assert.equal(groupQrMayBeExpired(withQr('not-a-date'), now), false);
+  // 没有二维码时不可能过期。
+  assert.equal(groupQrMayBeExpired({ _id: 'a', status: 'published' }, now), false);
+  // DTO 明确输出布尔字段供客户端直接渲染。
+  assert.equal(
+    publicActivity(withQr('2026-10-12T00:00:00.000Z'), now).group_qr_may_be_expired,
+    true,
+  );
+  assert.equal(publicActivity(withQr(undefined), now).group_qr_may_be_expired, false);
+});
+
 test('公开活动兼容只有旧封面且路线无坐标的数据', () => {
   const { publicActivity } = require('./domain/domain');
   const result = publicActivity(

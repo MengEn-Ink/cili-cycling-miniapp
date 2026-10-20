@@ -76,13 +76,26 @@ function pick(object, keys) {
   }, {});
 }
 // 后援车司机电话面向全部骑友公开，管理端与骑友端一致返回完整号码。
-function publicActivity(activity) {
+// 群二维码“可能过期”阈值只允许存在于云函数；客户端只消费布尔结果。
+const GROUP_QR_EXPIRE_MS = 7 * 24 * 60 * 60 * 1000;
+function groupQrMayBeExpired(activity, now = new Date()) {
+  if (!activity || typeof activity.group_qr_code !== 'string' || !activity.group_qr_code)
+    return false;
+  const raw = activity.group_qr_code_uploaded_at;
+  if (raw === undefined || raw === null || raw === '') return false;
+  const time = raw instanceof Date ? raw.getTime() : new Date(raw).getTime();
+  // 旧数据缺有效时间戳时 fail closed 为“不过期”，不凭空制造警告。
+  if (!Number.isFinite(time)) return false;
+  return now.getTime() - time >= GROUP_QR_EXPIRE_MS;
+}
+function publicActivity(activity, now = new Date()) {
   const output = pick(activity, ACTIVITY_FIELDS);
   // 历史活动没有归属字段；对外统一为空值，避免客户端区分缺字段与公开活动。
   if (typeof output.club_id !== 'string' || !output.club_id) {
     output.club_id = null;
     output.club_identity = null;
   }
+  output.group_qr_may_be_expired = groupQrMayBeExpired(activity, now);
   return output;
 }
 function cleanText(value, field, max, required = false) {
@@ -731,10 +744,6 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses, option
     input.images === undefined ? [] : cleanImages(input.images, options.maxImages || 3);
   const legacyCover = cleanText(input.cover_image || '', '封面', 500);
   const groupQrCode = cleanGroupQrCode(input.group_qr_code);
-  const groupQrCodeUploadedAt = cleanOptionalDate(
-    input.group_qr_code_uploaded_at,
-    '活动群二维码上传时间',
-  );
   const safeRoute = {
     start: cleanText(route.start || '', '路线起点', 200),
     end: cleanText(route.end || '', '路线终点', 200),
@@ -771,9 +780,7 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses, option
     images,
     cover_image: generatedRouteCover || images[0] || legacyCover,
     group_qr_code: groupQrCode,
-    ...(groupQrCode && groupQrCodeUploadedAt
-      ? { group_qr_code_uploaded_at: groupQrCodeUploadedAt }
-      : {}),
+    // 上传时间由保存用例根据服务端当前时间和数据库存量值决定，客户端字段仅为兼容输入。
     description: cleanText(input.description || '', '活动说明', 5000),
     schedule: cleanSchedule(input.schedule || []),
     route: safeRoute,
@@ -891,6 +898,7 @@ module.exports = {
   assertTrustedOpenid,
   isEnabledAdmin,
   publicActivity,
+  groupQrMayBeExpired,
   effectiveActivityInput,
   validateDraftInput,
   validatePublishInput,

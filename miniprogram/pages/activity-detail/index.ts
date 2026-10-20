@@ -22,14 +22,6 @@ import {
   runCanvasReveal,
 } from './format';
 
-const GROUP_QR_EXPIRE_MS = 7 * 24 * 60 * 60 * 1000;
-
-function groupQrExpired(uploadedAt?: string) {
-  if (!uploadedAt) return false;
-  const time = new Date(uploadedAt).getTime();
-  return Number.isFinite(time) && Date.now() - time >= GROUP_QR_EXPIRE_MS;
-}
-
 function groupQrVisible(
   registration: { status?: string } | undefined,
   isOrganizer: boolean,
@@ -404,7 +396,7 @@ Page({
           hasRouteOutline: routeOutline.length >= 2,
           canAnalyzeRoute: hasAnalyzableRoute(detail.route),
           activityAction: primaryAction(item, registration, state),
-          groupQrCodeExpired: groupQrExpired(detail.groupQrCodeUploadedAt),
+          groupQrCodeExpired: detail.groupQrMayBeExpired === true,
         },
         () => {
           this.drawElevation();

@@ -1,6 +1,8 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
+process.env.PROFILE_MEDIA_PATH_SECRET ||= 'activity-admin-test-media-secret-32-bytes';
 const {
   DomainError,
   validateDraftInput,
@@ -8,6 +10,7 @@ const {
   validateActivityInput,
   assertStatusTransition,
   publicActivity,
+  groupQrMayBeExpired,
   cloneActivity,
   saveActivity,
   reviewActivity,
@@ -15,6 +18,22 @@ const {
   resolveTrustedClubIdentity,
 } = require('./domain-index');
 const now = new Date('2026-09-29T04:00:00.000Z');
+const canonicalGroupQr = (openid, marker) => {
+  const alias = crypto
+    .createHmac('sha256', process.env.PROFILE_MEDIA_PATH_SECRET)
+    .update(openid)
+    .digest('hex')
+    .slice(0, 32);
+  return (
+    'cloud://env/profile-canonical/' +
+    alias +
+    '/activity-group-qr/' +
+    marker.repeat(64) +
+    '/' +
+    'f'.repeat(64) +
+    '.jpg'
+  );
+};
 const input = {
   title: ' 环湖骑行 ',
   cover_image: '',
@@ -94,15 +113,172 @@ test('活动输入清洗且公开响应只含白名单', () => {
   assert.equal(publicActivity({ _id: 'a1', ...value, created_by: 'secret' }).created_by, undefined);
 });
 
-test('活动群二维码作为可选字段写入并公开返回', () => {
+test('活动群二维码作为可选字段写入并忽略客户端上传时间', () => {
   const value = validateActivityInput({
     ...input,
     group_qr_code: ' cloud://group-qr.jpg ',
     group_qr_code_uploaded_at: '2026-10-10T08:00:00.000Z',
   });
   assert.equal(value.group_qr_code, 'cloud://group-qr.jpg');
-  assert.ok(value.group_qr_code_uploaded_at instanceof Date);
+  assert.equal(value.group_qr_code_uploaded_at, undefined);
   assert.equal(publicActivity({ _id: 'a1', ...value }).group_qr_code, 'cloud://group-qr.jpg');
+});
+
+test('管理端 DTO 输出群二维码可能过期布尔值，缺时间戳的旧数据不误报', () => {
+  const recent = {
+    _id: 'a1',
+    group_qr_code: 'cloud://new.jpg',
+    group_qr_code_uploaded_at: new Date('2026-09-29T00:00:00.000Z'),
+  };
+  const old = {
+    _id: 'a2',
+    group_qr_code: 'cloud://old.jpg',
+    group_qr_code_uploaded_at: new Date('2026-09-01T00:00:00.000Z'),
+  };
+  const legacy = { _id: 'a3', group_qr_code: 'cloud://legacy.jpg' };
+  assert.equal(groupQrMayBeExpired(recent, now), false);
+  assert.equal(groupQrMayBeExpired(old, now), true);
+  assert.equal(groupQrMayBeExpired(legacy, now), false);
+  assert.equal(publicActivity(old, now).group_qr_may_be_expired, true);
+  assert.equal(publicActivity(legacy, now).group_qr_may_be_expired, false);
+});
+
+test('保存带二维码但历史缺上传时间戳的活动时由服务端补齐时间戳', async () => {
+  const current = {
+    _id: 'legacy-qr',
+    ...validateActivityInput(input),
+    group_qr_code: 'cloud://legacy-qr.jpg',
+    occupied_count: 0,
+    version: 1,
+    created_by: 'member-1',
+  };
+  const memory = store(current, null);
+  const updated = await saveActivity(
+    memory,
+    {
+      openid: 'member-1',
+      activityId: 'legacy-qr',
+      expectedVersion: 1,
+      activity: { ...input, title: '只改标题' },
+    },
+    now,
+  );
+  assert.equal(updated.group_qr_code, 'cloud://legacy-qr.jpg');
+  assert.ok(updated.group_qr_code_uploaded_at instanceof Date);
+  assert.equal(updated.group_qr_code_uploaded_at, now);
+});
+
+test('新上传二维码强制使用服务端时间，忽略客户端未来和过去值', async () => {
+  for (const [marker, forged] of [
+    ['a', '2099-01-01T00:00:00.000Z'],
+    ['b', '2000-01-01T00:00:00.000Z'],
+  ]) {
+    const memory = store(undefined);
+    const saved = await saveActivity(
+      memory,
+      {
+        openid: 'admin',
+        activity: {
+          ...input,
+          group_qr_code: canonicalGroupQr('admin', marker),
+          group_qr_code_uploaded_at: forged,
+        },
+      },
+      now,
+    );
+    assert.equal(saved.group_qr_code_uploaded_at, now);
+    assert.equal(memory.state.saved.group_qr_code_uploaded_at, now);
+  }
+});
+
+test('二维码未变化时沿用数据库可信时间，忽略客户端未来和过去值', async () => {
+  const trustedUploadedAt = new Date('2026-09-20T00:00:00.000Z');
+  const groupQrCode = canonicalGroupQr('admin', 'c');
+  for (const forged of ['2099-01-01T00:00:00.000Z', '2000-01-01T00:00:00.000Z']) {
+    const current = {
+      _id: 'unchanged-qr',
+      ...validateActivityInput(input),
+      group_qr_code: groupQrCode,
+      group_qr_code_uploaded_at: trustedUploadedAt,
+      occupied_count: 0,
+      version: 1,
+      created_by: 'admin',
+    };
+    const memory = store(current);
+    const saved = await saveActivity(
+      memory,
+      {
+        openid: 'admin',
+        activityId: current._id,
+        expectedVersion: 1,
+        activity: {
+          ...input,
+          group_qr_code: groupQrCode,
+          group_qr_code_uploaded_at: forged,
+        },
+      },
+      now,
+    );
+    assert.equal(saved.group_qr_code_uploaded_at.getTime(), trustedUploadedAt.getTime());
+  }
+});
+
+test('二维码文件变化时刷新为服务端时间', async () => {
+  const current = {
+    _id: 'changed-qr',
+    ...validateActivityInput(input),
+    group_qr_code: canonicalGroupQr('admin', 'd'),
+    group_qr_code_uploaded_at: new Date('2026-09-20T00:00:00.000Z'),
+    occupied_count: 0,
+    version: 1,
+    created_by: 'admin',
+  };
+  const memory = store(current);
+  const saved = await saveActivity(
+    memory,
+    {
+      openid: 'admin',
+      activityId: current._id,
+      expectedVersion: 1,
+      activity: {
+        ...input,
+        group_qr_code: canonicalGroupQr('admin', 'e'),
+        group_qr_code_uploaded_at: '2000-01-01T00:00:00.000Z',
+      },
+    },
+    now,
+  );
+  assert.equal(saved.group_qr_code_uploaded_at, now);
+});
+
+test('清空二维码时同时清掉上传时间', async () => {
+  const current = {
+    _id: 'cleared-qr',
+    ...validateActivityInput(input),
+    group_qr_code: canonicalGroupQr('admin', 'f'),
+    group_qr_code_uploaded_at: new Date('2026-09-20T00:00:00.000Z'),
+    occupied_count: 0,
+    version: 1,
+    created_by: 'admin',
+  };
+  const memory = store(current);
+  const saved = await saveActivity(
+    memory,
+    {
+      openid: 'admin',
+      activityId: current._id,
+      expectedVersion: 1,
+      activity: {
+        ...input,
+        group_qr_code: '',
+        group_qr_code_uploaded_at: '2099-01-01T00:00:00.000Z',
+      },
+    },
+    now,
+  );
+  assert.equal(saved.group_qr_code, '');
+  assert.equal(saved.group_qr_code_uploaded_at, undefined);
+  assert.equal(memory.state.saved.group_qr_code_uploaded_at, undefined);
 });
 
 test('草稿允许运营字段缺失且不补造默认值', () => {
@@ -1639,6 +1815,31 @@ test('失效报名不拦截草稿删除，已上线活动与空理由删除被�
     }),
     { code: 'VALIDATION_FAILED' },
   );
+});
+
+test('仅草稿可删除，待审核/已驳回/已结束/已上线一律拒绝以防止绕开审批', async () => {
+  for (const status of ['pending_review', 'rejected', 'finished', 'published']) {
+    const memory = deleteStore(deletableActivity({ status }));
+    await assert.rejects(
+      deleteActivity(
+        memory,
+        { openid: 'member-1', activityId: 'delete-a1', reason: '尝试删除非草稿活动' },
+        now,
+      ),
+      { code: 'INVALID_TRANSITION', message: /仅草稿活动可删除/ },
+      status,
+    );
+    // 状态守卫在读取报名之前，不产生软删、审计或报名读取副作用。
+    assert.equal(memory.state.saved.length, 0, status);
+    assert.equal(memory.state.audits.length, 0, status);
+    assert.equal(memory.state.readIndex, 0, status);
+  }
+  // 草稿仍可删除，不被新守卫误伤。
+  const draft = deleteStore(deletableActivity({ status: 'draft' }));
+  await assert.doesNotReject(
+    deleteActivity(draft, { openid: 'member-1', activityId: 'delete-a1', reason: '清理草稿' }, now),
+  );
+  assert.equal(draft.state.saved[0].is_deleted, true);
 });
 
 test('可信俱乐部快照头像只使用 avatar_url，不回退 cover 字段', async () => {

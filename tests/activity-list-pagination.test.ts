@@ -329,9 +329,9 @@ describe('活动管理页分页状态机', () => {
     expect(page.data.items.map((value: { id: string }) => value.id)).toEqual(['first', 'second']);
   });
 
-  it('下架与删除通过 editable 弹窗强制采集并透传理由', async () => {
+  it('下架通过 editable 弹窗强制采集理由；删除仅允许草稿并透传理由', async () => {
     rideService.listAdminActivitiesPage.mockResolvedValue({
-      items: [item('published', 'published')],
+      items: [item('published', 'published'), item('draft-one', 'draft')],
       nextCursor: null,
     });
     rideService.saveActivity.mockResolvedValue(item('published', 'draft'));
@@ -349,8 +349,14 @@ describe('活动管理页分页状态机', () => {
       '路线临时封闭',
     );
 
+    // 已上线活动不能直接删除：客户端拦截并提示，不调用云端。
     await page.confirmDelete({ currentTarget: { dataset: { id: 'published' } } });
-    expect(rideService.deleteActivity).toHaveBeenCalledWith('published', '路线临时封闭');
+    expect(wx.showToast).toHaveBeenCalledWith({ title: '仅草稿活动可删除', icon: 'none' });
+    expect(rideService.deleteActivity).not.toHaveBeenCalled();
+
+    // 草稿活动可删除并透传弹窗采集的理由。
+    await page.confirmDelete({ currentTarget: { dataset: { id: 'draft-one' } } });
+    expect(rideService.deleteActivity).toHaveBeenCalledWith('draft-one', '路线临时封闭');
   });
 
   it('审批模糊失败与重复点击复用同一 requestId，并按活动互斥', async () => {
