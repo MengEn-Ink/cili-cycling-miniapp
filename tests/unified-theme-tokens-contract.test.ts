@@ -75,8 +75,12 @@ describe('统一主题设计契约', () => {
 
   it('版本和用户可见更新说明升级且旧版本转为历史项', () => {
     const settings = read('miniprogram/pages/settings/index.ts');
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.19.5');
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.20.1');
+    expect(settings).toContain("title: '俱乐部申请审批信息更完整'");
     expect(settings).toContain("title: '俱乐部图片上传更稳定'");
+    expect(settings).toMatch(
+      /version: '2026\.10\.19\.5'[\s\S]*?title: '俱乐部图片上传更稳定'[\s\S]*?latest: false/,
+    );
     expect(settings).toMatch(
       /version: '2026\.10\.19\.4'[\s\S]*?title: '图片清理更可靠'[\s\S]*?latest: false/,
     );

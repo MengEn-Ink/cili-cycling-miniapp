@@ -5,10 +5,22 @@ import { CLIENT_RELEASE_VERSION } from '../../config/release';
 const RELEASE_NOTES = [
   {
     version: CLIENT_RELEASE_VERSION,
+    date: '2026-10-20',
+    title: '俱乐部申请审批信息更完整',
+    summary: '审批俱乐部创建申请时，名称和驳回原因等关键信息始终清晰可见。',
+    latest: true,
+    features: [
+      '修复了审批页俱乐部名称在浅色背景上看不清的问题',
+      '申请被撤回或驳回时显示明确状态，并展示驳回原因与时间',
+      '封面图片加载失败时显示品牌占位，不再留下空白',
+    ],
+  },
+  {
+    version: '2026.10.19.5',
     date: '2026-10-19',
     title: '俱乐部图片上传更稳定',
     summary: '俱乐部头像和背景图在不同微信版本中都能更可靠地完成上传。',
-    latest: true,
+    latest: false,
     features: [
       '头像和背景图继续使用统一的安全上传链路',
       '图片固定尺寸处理不可用时会自动切换可靠方案',

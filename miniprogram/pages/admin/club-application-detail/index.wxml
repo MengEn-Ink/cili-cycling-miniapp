@@ -1,15 +1,22 @@
-<view class="page club-review-detail-page">
+<view class="page club-review-detail-page {{application.status === 'pending_review' ? 'club-review-detail-page--pending' : ''}}">
   <brand-logo compact="{{true}}" meta="俱乐部申请详情" />
   <view class="state-card" wx:if="{{loading}}"><view class="title">正在读取详情</view></view>
   <view class="state-card" wx:elif="{{error && !application}}" role="alert"><view class="title">加载失败</view><view class="muted">{{error}}</view><button class="btn" bindtap="load">重新加载</button></view>
   <block wx:if="{{application}}">
-    <view class="info-bar"><view class="info-kicker">第 {{application.reviewVersion}} 版 · {{application.city}}</view><view class="info-title">{{application.clubName}}</view><view class="muted">{{application.status === 'pending_review' ? '待平台管理员审批' : (application.status === 'approved' ? '已通过并创建俱乐部' : '已驳回')}}</view></view>
-    <image class="cover" src="{{application.coverUrl}}" mode="aspectFill" />
+    <view class="info-bar"><view class="info-kicker">第 {{application.reviewVersion}} 版 · {{application.city}}</view><view class="info-title">{{application.clubName}}</view><view class="muted">{{application.status === 'pending_review' ? '待平台管理员审批' : (application.status === 'approved' ? '已通过并创建俱乐部' : (application.status === 'draft' ? '申请人已撤回，资料保留为草稿' : '申请已驳回'))}}</view></view>
+    <image wx:if="{{application.coverUrl && !coverError}}" class="cover" src="{{application.coverUrl}}" mode="aspectFill" binderror="onCoverError" />
+    <view wx:else class="cover cover--empty" aria-label="俱乐部封面暂不可用"><text>CILI CLUB</text></view>
     <view class="card"><view class="title">申请资料</view><view class="detail-line"><text>预计成员</text><strong>{{application.expectedSize}} 人</strong></view><view class="detail-line"><text>加入方式</text><strong>{{application.joinMode === 'public_apply' ? '公开申请' : (application.joinMode === 'invite_code' ? '邀请码加入' : '管理员邀请')}}</strong></view><view class="detail-block"><text>俱乐部简介</text><strong>{{application.introduction}}</strong></view><view class="detail-block"><text>主要活动</text><strong>{{application.activityTypes}}</strong></view><view class="detail-block"><text>俱乐部规则</text><strong>{{application.rulesSummary}}</strong></view></view>
     <view class="card privacy-card"><view class="title">申请人联络</view><view class="muted">仅用于本次审核，不得向其他骑友公开。</view><view class="contact">{{application.applicantContact}}</view></view>
+    <view class="card review-record" wx:if="{{application.submittedAt || application.reviewedAt || application.rejectionReason}}">
+      <view class="title">审核记录</view>
+      <view class="detail-line" wx:if="{{application.submittedAt}}"><text>提交时间</text><strong>{{application.submittedAt}}</strong></view>
+      <view class="detail-line" wx:if="{{application.reviewedAt}}"><text>审批时间</text><strong>{{application.reviewedAt}}</strong></view>
+      <view class="detail-block" wx:if="{{application.rejectionReason}}"><text>驳回原因</text><strong>{{application.rejectionReason}}</strong></view>
+    </view>
     <view class="decision-panel" wx:if="{{application.status === 'pending_review'}}"><view class="title">审核意见</view><textarea value="{{reason}}" bindinput="reason" maxlength="200" placeholder="驳回时必填，申请人会看到这段说明" placeholder-class="input-placeholder" /><view class="field-error" wx:if="{{reasonError}}">{{reasonError}}</view></view>
     <view class="card danger" wx:if="{{error}}" role="alert">{{error}}</view>
-    <view class="actions-space"></view>
+    <view class="actions-space" wx:if="{{application.status === 'pending_review'}}"></view>
     <view class="fixed actions" wx:if="{{application.status === 'pending_review'}}"><button class="secondary" data-decision="rejected" bindtap="act" disabled="{{submitting}}">驳回</button><button class="btn" data-decision="approved" bindtap="act" disabled="{{submitting}}" loading="{{submitting}}">通过并创建</button></view>
   </block>
 </view>

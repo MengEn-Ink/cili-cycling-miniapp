@@ -13,6 +13,10 @@ Page({
     loading: true,
     submitting: false,
     error: '',
+    coverError: false,
+  },
+  onCoverError() {
+    this.setData({ coverError: true });
   },
   async onLoad(query: Record<string, string>) {
     this.applicationId = query.id || '';
@@ -27,7 +31,7 @@ Page({
     }
     try {
       const application = await rideService.getClubApplication(this.applicationId);
-      this.setData({ application, loading: false });
+      this.setData({ application, loading: false, coverError: false });
     } catch (error) {
       this.setData({
         loading: false,
