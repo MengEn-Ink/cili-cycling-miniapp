@@ -16,7 +16,7 @@ import {
 process.env.PROFILE_MEDIA_PATH_SECRET = 'profile-media-secret-for-tests-32-bytes';
 
 function createMemoryStore({
-  failOnApprovedApplication = false,
+  failOnSoleClub = false,
   corruptFirstSubmitReadback = false,
   persistedClubAvatar = 'expected',
 } = {}) {
@@ -28,7 +28,7 @@ function createMemoryStore({
   let audit = 0;
   const get = async (name, id) => collections[name].get(id);
   const put = async (name, id, value) => {
-    if (failOnApprovedApplication && name === 'club_applications' && value.status === 'approved')
+    if (failOnSoleClub && name === 'clubs' && value.source === 'admin_bootstrap')
       throw new Error('injected write failure');
     let persisted =
       corruptFirstSubmitReadback &&
@@ -612,7 +612,7 @@ test('首次提交后必须以真实回读校验状态、版本和 request id', 
 });
 
 test('中途写入失败也执行 finally 全量清理和回读', async () => {
-  const store = createMemoryStore({ failOnApprovedApplication: true });
+  const store = createMemoryStore({ failOnSoleClub: true });
   await assert.rejects(
     runClubApplicationSmoke({ store, runId: 'github-12345-failure' }),
     /injected write failure/,

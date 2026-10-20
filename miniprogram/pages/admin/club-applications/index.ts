@@ -1,50 +1,62 @@
-import type { ClubApplication, ClubApplicationStatus } from '../../../models';
+import type { SoleClubProfile } from '../../../models';
 import { rideService } from '../../../services/ride-service';
 import { appStore } from '../../../store/app-store';
 
-const FILTERS: { value: ClubApplicationStatus; label: string }[] = [
-  { value: 'pending_review', label: '待审批' },
-  { value: 'approved', label: '已通过' },
-  { value: 'rejected', label: '已驳回' },
-];
+type ClubAdminMode = 'loading' | 'error' | 'bootstrap' | 'default';
+
 Page({
   data: {
-    filters: FILTERS,
-    status: 'pending_review' as ClubApplicationStatus,
-    items: [] as ClubApplication[],
-    loading: true,
+    mode: 'loading' as ClubAdminMode,
+    club: null as SoleClubProfile | null,
+    avatarInitial: '俱',
+    avatarFailed: false,
     error: '',
   },
   onShow() {
     void this.load();
   },
   async load() {
-    this.setData({ loading: true, error: '' });
+    this.setData({ mode: 'loading', error: '', avatarFailed: false });
     await appStore.ensureIdentity(wx.cloud);
     if (appStore.authStatus !== 'authenticated' || appStore.role !== 'admin') {
-      this.setData({ loading: false, items: [], error: '仅已验证管理员可查看俱乐部申请' });
+      this.setData({
+        mode: 'error',
+        club: null,
+        error: '仅平台管理员可管理俱乐部资料',
+      });
       return;
     }
     try {
-      const items = await rideService.listClubApplications(this.data.status);
-      this.setData({ items, loading: false });
+      const snapshot = await rideService.getSoleClub();
+      if (snapshot.exists) {
+        this.setData({
+          mode: 'default',
+          club: snapshot.club,
+          avatarInitial: Array.from(snapshot.club.name.trim())[0] || '俱',
+          error: '',
+        });
+      } else {
+        this.setData({ mode: 'bootstrap', club: null, error: '' });
+      }
     } catch (error) {
       this.setData({
-        loading: false,
-        items: [],
-        error: error instanceof Error ? error.message : '申请列表加载失败',
+        mode: 'error',
+        club: null,
+        error: error instanceof Error ? error.message : '俱乐部资料加载失败',
       });
     }
   },
-  filter(e: any) {
-    const status = e.currentTarget.dataset.status as ClubApplicationStatus;
-    if (status === this.data.status) return;
-    this.setData({ status, items: [] });
-    void this.load();
-  },
-  open(e: any) {
+  create() {
     wx.navigateTo({
-      url: `/pages/admin/club-application-detail/index?id=${e.currentTarget.dataset.id}`,
+      url: '/pages/admin/club-application-detail/index?mode=bootstrap',
     });
+  },
+  edit() {
+    wx.navigateTo({
+      url: '/pages/admin/club-application-detail/index?mode=edit',
+    });
+  },
+  avatarError() {
+    this.setData({ avatarFailed: true });
   },
 });

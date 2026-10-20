@@ -1,13 +1,59 @@
-<view class="page club-review-page">
-  <brand-logo compact="{{true}}" meta="俱乐部创建审批" />
-  <view class="filter-tabs" role="tablist"><button wx:for="{{filters}}" wx:key="value" class="filter-tab {{status === item.value ? 'is-active' : ''}}" data-status="{{item.value}}" bindtap="filter">{{item.label}}</button></view>
-  <view class="state-card" wx:if="{{loading}}"><view class="title">正在读取申请</view><view class="muted">请稍候。</view></view>
-  <view class="state-card" wx:elif="{{error}}" role="alert"><view class="title">加载失败</view><view class="muted">{{error}}</view><button class="btn" bindtap="load">重新加载</button></view>
-  <view class="state-card" wx:elif="{{!items.length}}"><view class="title">当前暂无申请</view><view class="muted">新申请提交后会显示在这里。</view></view>
-  <view class="review-list" wx:else>
-    <button class="review-card" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="open">
-      <image class="cover" src="{{item.coverUrl}}" mode="aspectFill" />
-      <view class="review-copy"><view class="review-name">{{item.clubName}}</view><view class="muted">{{item.city}} · 预计 {{item.expectedSize}} 人</view><view class="summary">{{item.introduction}}</view></view><text class="chevron">›</text>
-    </button>
+<view class="page club-admin-page">
+  <brand-logo compact="{{true}}" meta="俱乐部管理" />
+
+  <block wx:if="{{mode === 'loading'}}">
+    <view class="club-admin-head">
+      <view class="page-title">俱乐部管理</view>
+      <view class="page-sub">正在加载唯一俱乐部资料</view>
+    </view>
+    <view class="skeleton club-admin-skeleton" aria-hidden="true"></view>
+    <view class="skeleton club-admin-skeleton club-admin-skeleton--short" aria-hidden="true"></view>
+  </block>
+
+  <view class="state-card" wx:elif="{{mode === 'error'}}" role="alert">
+    <view class="title">俱乐部资料加载失败</view>
+    <view class="muted">{{error}}</view>
+    <button class="btn club-admin-retry" bindtap="load">重新加载</button>
   </view>
+
+  <block wx:elif="{{mode === 'bootstrap'}}">
+    <view class="club-admin-head">
+      <view class="club-admin-badge">平台管理员 · 首次创建</view>
+      <view class="page-title">俱乐部管理</view>
+      <view class="page-sub">平台尚未创建俱乐部，仅平台管理员可完成首次创建；创建后此入口不再出现。</view>
+    </view>
+    <view class="state-card club-admin-bootstrap">
+      <view class="club-admin-bootstrap-mark" aria-hidden="true">＋</view>
+      <view class="title">尚未创建俱乐部</view>
+      <view class="muted">创建后将成为全平台唯一俱乐部，所有活动统一归属该俱乐部。</view>
+      <button class="btn club-admin-action" bindtap="create">创建唯一俱乐部</button>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view class="club-admin-head">
+      <view class="club-admin-badge">平台管理员</view>
+      <view class="page-title">俱乐部管理</view>
+      <view class="page-sub">全平台只有一个俱乐部，本页展示其资料并提供编辑入口；不再出现新建或列表。</view>
+    </view>
+    <view class="card club-admin-card" data-club-admin-overview>
+      <view class="club-admin-avatar">
+        <image
+          wx:if="{{club.avatarUrl && !avatarFailed}}"
+          class="club-admin-avatar-img"
+          src="{{club.avatarUrl}}"
+          mode="aspectFill"
+          binderror="avatarError"
+        />
+        <view wx:else class="club-admin-avatar-fallback">{{avatarInitial}}</view>
+      </view>
+      <view class="club-admin-copy">
+        <view class="club-admin-name">{{club.name}}</view>
+        <view class="club-admin-meta">{{club.city}} · 全平台唯一</view>
+      </view>
+      <view class="tag tag-success club-admin-status">ACTIVE</view>
+    </view>
+    <button class="btn club-admin-action" bindtap="edit">编辑俱乐部资料</button>
+    <view class="neutral-note">全平台只允许存在一个俱乐部；本页仅提供资料查看与编辑入口。</view>
+  </block>
 </view>

@@ -13,14 +13,15 @@ const {
   submitApplication,
   reviewApplication,
   joinPublicClub,
-  getManagedClub,
-  updateManagedClub,
+  getSoleClub: adminGetSoleClub,
+  createSoleClub: adminCreateSoleClub,
+  updateSoleClub: adminUpdateSoleClub,
+  SOLE_CLUB_ID,
 } = require('../cloudfunctions/club-application/core.js');
 const CLI_PACKAGE = '@cloudbase/cli@3.8.4';
 const GATE_VALUE = 'club-application-write';
 
 const hash = (value) => createHash('sha256').update(value).digest('hex');
-const clubIdFor = (id) => `club_${hash(id)}`;
 const membershipIdFor = (clubId, openid) => `clubmem_${hash(`${clubId}\0${openid}`)}`;
 
 function parseJson(output) {
@@ -474,9 +475,10 @@ export async function runClubApplicationSmoke({
   const suffix = hash(runId).slice(0, 24);
   const applicantOpenid = `smoke_applicant_${suffix}`;
   const joinerOpenid = `smoke_joiner_${suffix}`;
-  const adminOpenid = `smoke_admin_${suffix}`;
+  // 同一隔离账号兼任申请人和平台管理员，使 canonical 媒体可沿新建唯一俱乐部链路复用。
+  const adminOpenid = applicantOpenid;
   const appId = applicationId(applicantOpenid);
-  const clubId = clubIdFor(appId);
+  const clubId = SOLE_CLUB_ID;
   const membershipId = membershipIdFor(clubId, applicantOpenid);
   const joinerMembershipId = membershipIdFor(clubId, joinerOpenid);
   const ids = {
@@ -625,30 +627,30 @@ export async function runClubApplicationSmoke({
       requestId: secondSubmitRequestId,
     });
 
-    const secondReviewRequestId = `approve_2_${suffix}`;
-    const approved = await reviewApplication(
+    const createRequestId = `sole_create_${suffix}`;
+    const created = await adminCreateSoleClub(
       store,
       {
         adminOpenid,
-        applicationId: appId,
-        decision: 'approved',
-        reason: '',
-        requestId: secondReviewRequestId,
+        existingClubId: '',
+        requestId: createRequestId,
+        input: {
+          name: revisedInput.club_name,
+          city: revisedInput.city,
+          introduction: revisedInput.introduction,
+          avatar_file_id: revisedInput.avatar_file_id,
+          cover_file_id: revisedInput.cover_file_id,
+        },
       },
       now(),
     );
-    assert(
-      approved.status === 'approved' &&
-        approved.review_version === 2 &&
-        approved.club_id === clubId,
-      '管理员批准返回值',
-    );
+    assert(created.exists && created.club.id === clubId, '管理员创建唯一俱乐部返回值');
     assertPersistedStage(await store.get('club_applications', appId), {
-      stage: 'approved',
-      status: 'approved',
+      stage: 'sole_club_created',
+      status: 'pending_review',
       reviewVersion: 2,
-      requestField: 'last_review_request_id',
-      requestId: secondReviewRequestId,
+      requestField: 'last_submit_request_id',
+      requestId: secondSubmitRequestId,
     });
 
     const [persistedApplication, persistedClub, persistedMembership, audits] = await Promise.all([
@@ -657,81 +659,62 @@ export async function runClubApplicationSmoke({
       store.get('club_memberships', membershipId),
       store.query('audit_logs', { target_id: appId }),
     ]);
-    assert(persistedApplication?.status === 'approved', '批准状态持久化');
+    assert(persistedApplication?.status === 'pending_review', '申请状态不被创建链路篡改');
     assert(
-      persistedClub?.source_application_id === appId && persistedClub?.status === 'active',
-      'clubs 持久化',
+      persistedClub?.source === 'admin_bootstrap' && persistedClub?.status === 'active',
+      '唯一 clubs 持久化',
     );
     assert(persistedClub?.avatar_url === input.avatar_file_id, 'clubs 头像传播');
     assert(persistedClub?.cover_file_id === input.cover_file_id, 'clubs 背景传播');
     assert(
-      persistedClub?.member_count === 1 && persistedClub?.max_members === input.expected_size,
-      'clubs 容量初始化',
+      persistedClub?.member_count === 0 && persistedClub?.max_members === 50,
+      '唯一俱乐部容量使用服务端默认值',
     );
-    assert(
-      persistedMembership?.club_id === clubId &&
-        persistedMembership?.openid === applicantOpenid &&
-        persistedMembership?.role === 'OWNER' &&
-        persistedMembership?.status === 'active',
-      'OWNER membership 持久化',
-    );
+    assert(!persistedMembership, '管理员创建唯一俱乐部不伪造成员关系');
     const actions = new Set(audits.map((item) => item.action));
-    assert(audits.length === 4, 'audit 数量');
-    for (const action of [
-      'club_application_submitted',
-      'club_application_rejected',
-      'club_application_approved',
-    ])
+    assert(audits.length === 3, '申请 audit 数量');
+    for (const action of ['club_application_submitted', 'club_application_rejected'])
       assert(actions.has(action), `audit ${action}`);
 
-    const managedBefore = await getManagedClub(store, {
-      openid: applicantOpenid,
-      clubId,
-    });
-    assert(managedBefore.name === input.club_name, '管理员读取俱乐部资料');
+    const managedBefore = await adminGetSoleClub(store, { adminOpenid, clubId });
+    assert(
+      managedBefore.exists && managedBefore.club.name === input.club_name,
+      '管理员读取唯一俱乐部资料',
+    );
     const profileUpdateRequestId = `profile_update_${suffix}`;
-    const managedAfter = await updateManagedClub(
+    const updateInput = {
+      name: input.club_name,
+      city: input.city,
+      introduction: `${revisedInput.introduction} 资料管理已验证。`,
+      avatar_file_id: input.avatar_file_id,
+      cover_file_id: input.cover_file_id,
+    };
+    const managedAfter = await adminUpdateSoleClub(
       store,
       {
-        openid: applicantOpenid,
+        adminOpenid,
         clubId,
         requestId: profileUpdateRequestId,
-        expectedUpdatedAt: managedBefore.updated_at,
-        input: {
-          name: input.club_name,
-          city: input.city,
-          introduction: `${revisedInput.introduction} 资料管理已验证。`,
-          join_mode: 'public_apply',
-          avatar_file_id: input.avatar_file_id,
-          cover_file_id: input.cover_file_id,
-          max_members: input.expected_size,
-        },
+        expectedUpdatedAt: managedBefore.club.updated_at,
+        input: updateInput,
       },
       now(),
     );
-    const repeatedManagedUpdate = await updateManagedClub(
+    const repeatedManagedUpdate = await adminUpdateSoleClub(
       store,
       {
-        openid: applicantOpenid,
+        adminOpenid,
         clubId,
         requestId: profileUpdateRequestId,
-        expectedUpdatedAt: managedBefore.updated_at,
-        input: {
-          name: input.club_name,
-          city: input.city,
-          introduction: `${revisedInput.introduction} 资料管理已验证。`,
-          join_mode: 'public_apply',
-          avatar_file_id: input.avatar_file_id,
-          cover_file_id: input.cover_file_id,
-          max_members: input.expected_size,
-        },
+        expectedUpdatedAt: managedBefore.club.updated_at,
+        input: updateInput,
       },
       now(),
     );
     assert(
-      managedAfter.introduction === repeatedManagedUpdate.introduction &&
-        managedAfter.introduction.endsWith('资料管理已验证。'),
-      '管理员修改资料与重复请求幂等',
+      managedAfter.club.introduction === repeatedManagedUpdate.club.introduction &&
+        managedAfter.club.introduction.endsWith('资料管理已验证。'),
+      '管理员修改唯一俱乐部资料与重复请求幂等',
     );
 
     const joinRequestId = `join_public_${suffix}`;
@@ -764,12 +747,13 @@ export async function runClubApplicationSmoke({
         persistedJoinerMembership?.status === 'active',
       '第二用户 MEMBER membership 持久化',
     );
-    assert(persistedJoinedClub?.member_count === 2, '公开加入只增加一次容量计数');
+    assert(persistedJoinedClub?.member_count === 1, '公开加入只增加一次容量计数');
     assert(
-      joinAudits.length === 2 &&
-        joinAudits.some((item) => item.action === 'club_profile_updated') &&
+      joinAudits.length === 3 &&
+        joinAudits.some((item) => item.action === 'sole_club_created') &&
+        joinAudits.some((item) => item.action === 'sole_club_profile_updated') &&
         joinAudits.some((item) => item.action === 'public_club_joined'),
-      '俱乐部资料更新与公开加入 audit',
+      '唯一俱乐部创建、资料更新与公开加入 audit',
     );
     return { stages: 8, auditCount: audits.length + joinAudits.length };
   } finally {

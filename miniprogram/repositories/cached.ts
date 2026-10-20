@@ -487,6 +487,26 @@ export class CachingRepository implements RideRepository {
     return this.inner.reviewClubApplication(id, decision, reason, requestId);
   }
 
+  getSoleClub() {
+    return this.inner.getSoleClub();
+  }
+
+  async createSoleClub(value: Parameters<RideRepository['createSoleClub']>[0], requestId: string) {
+    const result = await this.inner.createSoleClub(value, requestId);
+    this.invalidatePrefix(PROFILE_PREFIX);
+    return result;
+  }
+
+  async updateSoleClub(
+    value: Parameters<RideRepository['updateSoleClub']>[0],
+    requestId: string,
+    expectedUpdatedAt: string,
+  ) {
+    const result = await this.inner.updateSoleClub(value, requestId, expectedUpdatedAt);
+    this.invalidatePrefix(PROFILE_PREFIX);
+    return result;
+  }
+
   getProfile() {
     return this.readThrough(`${PROFILE_PREFIX}self`, () => this.inner.getProfile());
   }

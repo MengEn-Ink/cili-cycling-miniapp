@@ -11,7 +11,11 @@ import type {
 } from '../../../models';
 import { rideService } from '../../../services/ride-service';
 import { appStore } from '../../../store/app-store';
-import { uploadMedia } from '../../../utils/media-upload';
+import {
+  chooseAndUploadClubMedia,
+  mediaCancelled,
+  type ClubMediaKind,
+} from '../../../utils/club-media';
 
 const EMPTY_FORM: ClubApplicationInput = {
   clubName: '',
@@ -117,153 +121,6 @@ function toManagedForm(value: ManagedClubProfile): ManagedClubProfileInput {
     coverFileId: value.coverFileId,
     maxMembers: value.maxMembers,
   };
-}
-
-type ClubMediaKind = 'avatar' | 'cover';
-const MEDIA_SPEC = {
-  avatar: { cropScale: '1:1', width: 512, height: 512 },
-  cover: { cropScale: '16:9', width: 1280, height: 720 },
-} as const;
-function mediaCancelled(error: unknown) {
-  return /cancel/i.test(String((error as { errMsg?: string })?.errMsg || ''));
-}
-function fixedSizeUnsupported(error: unknown) {
-  return /not support|unsupported|compressedWidth|compressedHeight|invalid.*(width|height)/i.test(
-    String((error as { errMsg?: string })?.errMsg || ''),
-  );
-}
-type ClubMediaCanvasScope = NonNullable<Parameters<typeof wx.createCanvasContext>[1]>;
-const CLUB_MEDIA_CANVAS_ID = 'clubMediaCanvas';
-function mediaError(message: string, cause: unknown) {
-  return Object.assign(new Error(message), { cause });
-}
-async function hasExactClubMediaSize(src: string, spec: (typeof MEDIA_SPEC)[ClubMediaKind]) {
-  if (typeof wx.getImageInfo !== 'function') return false;
-  try {
-    const info = await new Promise<{ width?: number; height?: number }>((resolve, reject) =>
-      wx.getImageInfo({ src, success: resolve, fail: reject }),
-    );
-    return info.width === spec.width && info.height === spec.height;
-  } catch {
-    return false;
-  }
-}
-async function exportFixedClubMedia(
-  src: string,
-  spec: (typeof MEDIA_SPEC)[ClubMediaKind],
-  scope: ClubMediaCanvasScope,
-) {
-  try {
-    if (
-      typeof wx.createCanvasContext !== 'function' ||
-      typeof wx.canvasToTempFilePath !== 'function'
-    )
-      throw new Error('canvas unavailable');
-    const context = wx.createCanvasContext(CLUB_MEDIA_CANVAS_ID, scope);
-    context.clearRect(0, 0, 1280, 720);
-    context.drawImage(src, 0, 0, spec.width, spec.height);
-    await new Promise<void>((resolve) => context.draw(false, resolve));
-    const exported = await new Promise<{ tempFilePath?: string }>((resolve, reject) =>
-      wx.canvasToTempFilePath(
-        {
-          canvasId: CLUB_MEDIA_CANVAS_ID,
-          x: 0,
-          y: 0,
-          width: spec.width,
-          height: spec.height,
-          destWidth: spec.width,
-          destHeight: spec.height,
-          fileType: 'jpg',
-          quality: 0.9,
-          success: resolve,
-          fail: reject,
-        },
-        scope,
-      ),
-    );
-    if (!exported.tempFilePath) throw new Error('empty canvas result');
-    return exported.tempFilePath;
-  } catch (error) {
-    throw mediaError('图片处理失败，请重新选择', error);
-  }
-}
-async function chooseAndUploadClubMedia(kind: ClubMediaKind, scope: ClubMediaCanvasScope) {
-  const selected = await wx.chooseMedia({
-    count: 1,
-    mediaType: ['image'],
-    sourceType: ['album', 'camera'],
-  });
-  const file = selected.tempFiles[0];
-  if (!file?.tempFilePath) return null;
-  if (typeof file.size === 'number' && file.size > 5 * 1024 * 1024)
-    throw new Error('图片不能超过 5MB');
-  const spec = MEDIA_SPEC[kind];
-  if (typeof wx.cropImage !== 'function')
-    throw new Error('当前微信版本不支持图片裁剪，请升级微信后重试');
-  let croppedPath: string;
-  try {
-    const cropped = await new Promise<{ tempFilePath?: string }>((resolve, reject) =>
-      wx.cropImage({
-        src: file.tempFilePath,
-        cropScale: spec.cropScale,
-        success: resolve,
-        fail: reject,
-      }),
-    );
-    if (!cropped.tempFilePath) throw new Error('empty crop result');
-    croppedPath = cropped.tempFilePath;
-  } catch (error) {
-    if (mediaCancelled(error)) return null;
-    throw mediaError('图片裁剪失败，请重新选择', error);
-  }
-  let uploadPath = croppedPath;
-  let needsCanvasFallback = typeof wx.compressImage !== 'function';
-  if (typeof wx.compressImage === 'function') {
-    try {
-      const compressed = await new Promise<{ tempFilePath?: string }>((resolve, reject) =>
-        wx.compressImage({
-          src: croppedPath,
-          quality: 90,
-          compressedWidth: spec.width,
-          compressedHeight: spec.height,
-          success: resolve,
-          fail: reject,
-        }),
-      );
-      if (!compressed.tempFilePath) throw new Error('empty compress result');
-      if (await hasExactClubMediaSize(compressed.tempFilePath, spec)) {
-        uploadPath = compressed.tempFilePath;
-        needsCanvasFallback = false;
-      } else {
-        // 部分基础库会返回 success 但忽略目标尺寸；优先固定像素重导出。
-        needsCanvasFallback = true;
-      }
-    } catch (error) {
-      if (!fixedSizeUnsupported(error)) throw mediaError('图片压缩失败，请重新选择', error);
-      // 旧基础库不识别固定尺寸参数时，先保留已裁剪图片，再尝试 legacy canvas 固定像素。
-      needsCanvasFallback = true;
-    }
-  }
-  if (needsCanvasFallback) {
-    try {
-      uploadPath = await exportFixedClubMedia(croppedPath, spec, scope);
-    } catch {
-      // Canvas 在部分基础库或真机上不可用；统一上传接口仍会校验图片内容，
-      // 因此回退已裁剪/压缩图片比直接中断更可靠，异常文件会在登记阶段被拒绝并清理。
-    }
-  }
-  const category = kind === 'avatar' ? 'club-avatar' : 'club-cover';
-  const request = requestId(`club_${kind}`);
-  const uploaded = await uploadMedia({
-    filePath: uploadPath,
-    category,
-    requestId: request,
-    authorize: (mediaCategory, mediaRequestId, extension) =>
-      rideService.issueMediaUploadPath(mediaCategory, mediaRequestId, extension as 'jpg'),
-    finalize: (fileId, mediaCategory, mediaRequestId) =>
-      rideService.finalizeMediaUpload(fileId, mediaCategory, mediaRequestId),
-  });
-  return { fileId: uploaded.canonicalFileId, previewUrl: uploadPath };
 }
 
 Page({

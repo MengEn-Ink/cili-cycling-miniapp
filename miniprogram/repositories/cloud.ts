@@ -11,6 +11,9 @@ import type {
   JoinedClubSummary,
   ManagedClubProfile,
   ManagedClubProfileInput,
+  SoleClubProfile,
+  SoleClubProfileInput,
+  SoleClubSnapshot,
   EditableActivity,
   PersonalCapabilityCard,
   PublicRoutePreview,
@@ -1383,6 +1386,58 @@ function clubApplicationPayload(value: ClubApplicationInput) {
   };
 }
 
+function mapSoleClub(raw: unknown): SoleClubProfile {
+  const value = expectRecord(raw);
+  if (
+    typeof value.id !== 'string' ||
+    !/^club_[a-f0-9]{64}$/.test(value.id) ||
+    typeof value.name !== 'string' ||
+    !value.name.trim() ||
+    typeof value.city !== 'string' ||
+    typeof value.introduction !== 'string' ||
+    typeof value.avatar_file_id !== 'string' ||
+    typeof value.cover_file_id !== 'string' ||
+    typeof value.avatar_url !== 'string' ||
+    typeof value.cover_url !== 'string' ||
+    (value.avatar_url !== '' && !/^https:\/\//i.test(value.avatar_url)) ||
+    (value.cover_url !== '' && !/^https:\/\//i.test(value.cover_url))
+  )
+    return invalidResponse();
+  return {
+    id: value.id,
+    name: value.name,
+    city: value.city,
+    introduction: value.introduction,
+    avatarFileId: value.avatar_file_id,
+    avatarUrl: value.avatar_url,
+    coverFileId: value.cover_file_id,
+    coverUrl: value.cover_url,
+    updatedAt: dateText(value.updated_at),
+  };
+}
+
+function mapSoleClubSnapshot(raw: unknown): SoleClubSnapshot {
+  const value = expectRecord(raw);
+  if (value.exists !== true) return { exists: false };
+  return { exists: true, club: mapSoleClub(value.club) };
+}
+
+function mapSoleClubResult(raw: unknown): SoleClubProfile {
+  const value = expectRecord(raw);
+  if (value.exists !== true) return invalidResponse();
+  return mapSoleClub(value.club);
+}
+
+function soleClubPayload(value: SoleClubProfileInput) {
+  return {
+    name: value.name,
+    city: value.city,
+    introduction: value.introduction,
+    avatar_file_id: value.avatarFileId,
+    cover_file_id: value.coverFileId,
+  };
+}
+
 export class CloudRepository implements RideRepository, AdminReviewRepository {
   constructor(private readonly injectedCloud?: CloudApi) {}
   private async call<T>(name: string, data: unknown): Promise<T> {
@@ -1794,6 +1849,30 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
         decision,
         reason,
         requestId: boundedId(requestId, '审批请求 ID', 8, 128),
+      }),
+    );
+  }
+  async getSoleClub() {
+    return mapSoleClubSnapshot(await this.call('club-application', { action: 'adminGetSoleClub' }));
+  }
+  async createSoleClub(value: SoleClubProfileInput, requestId: string) {
+    return mapSoleClubResult(
+      await this.call('club-application', {
+        action: 'adminCreateSoleClub',
+        club: soleClubPayload(value),
+        requestId: boundedId(requestId, '创建请求 ID', 8, 128),
+      }),
+    );
+  }
+  async updateSoleClub(value: SoleClubProfileInput, requestId: string, expectedUpdatedAt: string) {
+    if (typeof expectedUpdatedAt !== 'string' || expectedUpdatedAt.length > 64)
+      throw new CloudRepositoryError('VALIDATION_FAILED', '俱乐部资料版本无效');
+    return mapSoleClubResult(
+      await this.call('club-application', {
+        action: 'adminUpdateSoleClub',
+        club: soleClubPayload(value),
+        requestId: boundedId(requestId, '保存请求 ID', 8, 128),
+        expectedUpdatedAt,
       }),
     );
   }

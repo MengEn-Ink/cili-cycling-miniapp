@@ -1,72 +1,110 @@
-.club-review-page {
+.club-admin-page {
   background: var(--color-bg);
 }
-.filter-tabs {
-  grid-template-columns: repeat(3, 1fr);
+.club-admin-head {
   margin-top: 28rpx;
 }
-.filter-tab.is-active {
-  border-color: var(--color-action);
-  background: var(--color-action);
-  color: var(--color-on-action);
+.club-admin-badge {
+  color: var(--color-muted);
+  font-size: 24rpx;
+  line-height: 36rpx;
+  font-weight: 800;
 }
-.review-list {
+.page-sub {
+  margin-top: 12rpx;
+  color: var(--color-muted);
+  font-size: 26rpx;
+  line-height: 40rpx;
+}
+.club-admin-skeleton {
+  min-height: 200rpx;
+}
+.club-admin-skeleton--short {
+  min-height: 128rpx;
+}
+.club-admin-card {
   display: flex;
-  flex-direction: column;
-  gap: var(--card-gap);
-  margin-top: var(--card-gap);
-}
-.review-card {
-  display: grid;
-  grid-template-columns: 132rpx minmax(0, 1fr) auto;
   align-items: center;
   gap: 20rpx;
-  width: 100%;
-  padding: 24rpx;
-  border: 2rpx solid var(--color-border);
-  border-radius: var(--radius-display);
-  background: var(--color-surface);
-  color: var(--color-text);
-  text-align: left;
 }
-.cover {
-  width: 132rpx;
+.club-admin-avatar {
+  flex: none;
+  width: 112rpx;
   height: 112rpx;
-  border-radius: var(--radius-sm);
+  border-radius: 50%;
+  overflow: hidden;
   background: var(--color-raised);
 }
-.review-copy {
+.club-admin-avatar-img {
+  width: 112rpx;
+  height: 112rpx;
+}
+.club-admin-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 50%;
+  background: var(--color-brand);
+  color: var(--color-on-brand);
+  font-size: 44rpx;
+  font-weight: 900;
+}
+.club-admin-copy {
+  flex: 1;
   min-width: 0;
 }
-.review-name {
+.club-admin-name {
   overflow: hidden;
-  font-size: 32rpx;
+  color: var(--color-text);
+  font-size: 34rpx;
+  line-height: 48rpx;
   font-weight: 900;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.summary {
-  display: -webkit-box;
-  margin-top: 8rpx;
-  overflow: hidden;
-  color: var(--color-text);
+.club-admin-meta {
+  margin-top: 4rpx;
+  color: var(--color-muted);
   font-size: 24rpx;
   line-height: 36rpx;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
 }
-.state-card {
+.club-admin-status {
+  flex: none;
+}
+.club-admin-action {
+  width: 100%;
   margin-top: var(--card-gap);
 }
-.state-card .btn {
+.club-admin-retry {
+  width: 100%;
   margin-top: 24rpx;
 }
+.club-admin-bootstrap {
+  padding-bottom: 40rpx;
+}
+.club-admin-bootstrap-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96rpx;
+  height: 96rpx;
+  margin: 0 auto 16rpx;
+  border-radius: 50%;
+  background: var(--color-raised);
+  color: var(--color-text);
+  font-size: 56rpx;
+  font-weight: 900;
+}
+.club-admin-bootstrap .muted {
+  margin-top: 12rpx;
+}
 @media (max-width: 340px) {
-  .review-card {
-    grid-template-columns: 104rpx minmax(0, 1fr) auto;
-  }
-  .cover {
-    width: 104rpx;
-    height: 104rpx;
+  .club-admin-avatar,
+  .club-admin-avatar-img,
+  .club-admin-avatar-fallback {
+    width: 96rpx;
+    height: 96rpx;
   }
 }
