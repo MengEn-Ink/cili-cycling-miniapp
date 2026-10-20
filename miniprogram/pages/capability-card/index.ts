@@ -13,6 +13,10 @@ Page({
     loading: true,
     error: '',
     card: null as PersonalCardView | null,
+    avatarFailed: false,
+    // 媒体语义色取自设计契约 --color-media-muted / --color-on-media（swiper 属性不支持 CSS 变量）。
+    colorMediaMuted: '#d4d4d4',
+    colorOnMedia: '#ffffff',
   },
   async onShow() {
     this.mediaRetryKeys.clear();
@@ -35,9 +39,14 @@ Page({
     this.setData({
       loading: false,
       error: result.error,
+      avatarFailed: false,
       card: result.data ? personalCardViewModel(result.data as PersonalCapabilityCard) : null,
     });
     return !result.error;
+  },
+  avatarError() {
+    if (this.data.avatarFailed) return;
+    this.setData({ avatarFailed: true });
   },
   backgroundLoad() {
     // 每个图片槽位在一次页面生命周期内最多自动重试一次；再次进入页面时 onShow 重置。

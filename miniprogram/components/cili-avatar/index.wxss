@@ -20,8 +20,8 @@
   height: 88rpx;
 }
 .avatar--lg {
-  width: 128rpx;
-  height: 128rpx;
+  width: 132rpx;
+  height: 132rpx;
 }
 .avatar--on-media {
   border: 6rpx solid var(--color-on-media);

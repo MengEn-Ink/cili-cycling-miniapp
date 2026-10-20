@@ -37,16 +37,6 @@ function cleanOutline(route: Route): RouteCoordinate[] {
   return cleanRouteOutline(route.routeOutline);
 }
 
-function coordinateAt(
-  outline: RouteCoordinate[],
-  km: number,
-  distanceKm: number,
-): { lat: number | null; lng: number | null } {
-  if (!outline.length || distanceKm <= 0) return { lat: null, lng: null };
-  const index = Math.round(clamp(km / distanceKm, 0, 1) * (outline.length - 1));
-  return { lat: outline[index].latitude, lng: outline[index].longitude };
-}
-
 function elevationAt(profile: RouteElevationPoint[], km: number): number | null {
   if (!profile.length) return null;
   return profile.reduce((best, point) =>
@@ -86,19 +76,18 @@ function trendWindow(profile: RouteElevationPoint[], direction: 1 | -1) {
   return best;
 }
 
+// 关键点坐标只接受活动路线的真实选点；没有真实 waypoint 时一律为 null，
+// 不再按轮廓插值生成坐标或按里程虚构休息点（数据可信 P1）。
 function makePoint(
   id: string,
   type: KeyPointType,
   name: string,
   km: number,
   profile: RouteElevationPoint[],
-  outline: RouteCoordinate[],
-  distanceKm: number,
   source: RouteKeyPoint['source'],
   note: string,
   explicit?: { lat: number; lng: number },
 ): RouteKeyPoint {
-  const coordinate = explicit || coordinateAt(outline, km, distanceKm);
   return {
     id,
     type,
@@ -106,10 +95,10 @@ function makePoint(
     km: round(km),
     elevation: elevationAt(profile, km),
     gradePercent: gradeAt(profile, km),
-    lat: finite(coordinate.lat) ? coordinate.lat : null,
-    lng: finite(coordinate.lng) ? coordinate.lng : null,
+    lat: explicit?.lat ?? null,
+    lng: explicit?.lng ?? null,
     source,
-    confidence: explicit ? '高' : profile.length && outline.length ? '中' : '低',
+    confidence: explicit ? '高' : profile.length ? '中' : '低',
     note,
   };
 }
@@ -118,7 +107,6 @@ function deriveKeyPoints(
   route: Route,
   distanceKm: number,
   profile: RouteElevationPoint[],
-  outline: RouteCoordinate[],
 ): RouteKeyPoint[] {
   const startLocation = route.startLocation;
   const endLocation = route.endLocation;
@@ -129,8 +117,6 @@ function deriveKeyPoints(
       startLocation?.name || route.start || '路线起点',
       0,
       profile,
-      outline,
-      distanceKm,
       '活动路线',
       '活动路线记录的起点',
       validCoordinate(startLocation?.latitude, startLocation?.longitude)
@@ -149,10 +135,8 @@ function deriveKeyPoints(
         '路线最高点',
         highest.distanceKm,
         profile,
-        outline,
-        distanceKm,
         '海拔剖面规则',
-        '路线海拔最高位置',
+        '路线海拔最高位置（按海拔剖面计算，非真实地名）',
       ),
     );
     const climb = trendWindow(profile, 1);
@@ -164,10 +148,8 @@ function deriveKeyPoints(
           `主爬坡起点 · km ${round(climb.startKm)}`,
           climb.startKm,
           profile,
-          outline,
-          distanceKm,
           '海拔剖面规则',
-          '主爬坡由连续爬升变化识别，建议提前调整档位与节奏',
+          '按海拔剖面计算的爬坡起点（非真实地名），建议提前调整档位与节奏',
         ),
       );
     const descent = trendWindow(profile, -1);
@@ -179,38 +161,11 @@ function deriveKeyPoints(
           `长下坡入口 · km ${round(descent.startKm)}`,
           descent.startKm,
           profile,
-          outline,
-          distanceKm,
           '海拔剖面规则',
-          '长下坡由连续下降变化识别，入坡前检查制动并控制车距',
+          '按海拔剖面计算的下坡入口（非真实地名），入坡前检查制动并控制车距',
         ),
       );
   }
-  const restCount = distanceKm >= 90 ? 3 : distanceKm >= 50 ? 2 : distanceKm >= 20 ? 1 : 0;
-  const ratios =
-    restCount === 0
-      ? []
-      : restCount === 1
-        ? [0.55]
-        : restCount === 2
-          ? [0.4, 0.7]
-          : [0.3, 0.55, 0.78];
-  ratios.forEach((ratio, index) => {
-    const km = distanceKm * ratio;
-    points.push(
-      makePoint(
-        `rest-${index + 1}`,
-        'rest',
-        `建议休息点 · km ${round(km)}`,
-        km,
-        profile,
-        outline,
-        distanceKm,
-        '距离规则',
-        '按路线长度设置的节奏检查位置，可结合实际体感决定是否停留',
-      ),
-    );
-  });
   points.push(
     makePoint(
       'end',
@@ -218,8 +173,6 @@ function deriveKeyPoints(
       endLocation?.name || route.end || '路线终点',
       distanceKm,
       profile,
-      outline,
-      distanceKm,
       '活动路线',
       '活动路线记录的终点',
       validCoordinate(endLocation?.latitude, endLocation?.longitude)
@@ -281,7 +234,7 @@ export function deriveRouteAnalysis(route: Route): RouteAnalysis {
     },
     profile,
     outline,
-    keyPoints: deriveKeyPoints(route, effectiveDistance, profile, outline),
+    keyPoints: deriveKeyPoints(route, effectiveDistance, profile),
     segments,
     strategySummary,
     risks,

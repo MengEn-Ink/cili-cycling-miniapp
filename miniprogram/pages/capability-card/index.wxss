@@ -6,9 +6,14 @@
   position: relative;
   overflow: hidden;
   padding: 0;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-display);
+  background: var(--color-media-card-bg);
 }
 .card-visual {
-  height: 336rpx;
+  display: block;
+  width: 100%;
+  height: 896rpx;
   background: var(--color-media-card-bg);
 }
 .card-photo {
@@ -21,10 +26,10 @@
 }
 .route-line-art {
   position: absolute;
+  top: 320rpx;
   right: 32rpx;
-  bottom: 88rpx;
+  bottom: 128rpx;
   left: 32rpx;
-  height: 80rpx;
   border-top: 4rpx solid var(--color-media-muted);
   border-radius: 50%;
   transform: rotate(-8deg);
@@ -38,16 +43,14 @@
   position: absolute;
   right: 24rpx;
   bottom: 24rpx;
+  color: var(--color-on-media);
   font-size: 36rpx;
   font-weight: 900;
   letter-spacing: 4rpx;
 }
 .image-shade {
   position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  height: 336rpx;
+  inset: 0;
   background: var(--color-overlay);
   opacity: 0.25;
 }
@@ -63,29 +66,97 @@
 .card-label {
   padding: 4rpx 12rpx;
   border: 2rpx solid var(--color-media-muted);
-  border-radius: 8rpx;
+  border-radius: var(--radius-xs);
   color: var(--color-on-media);
   font-size: 24rpx;
   font-weight: 800;
 }
-.card-content {
-  padding: 32rpx;
+.card-identity {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  gap: 24rpx;
+  padding: 0 32rpx;
+  margin-top: -72rpx;
+}
+.card-avatar-ring {
+  flex: 0 0 auto;
+}
+.card-avatar {
+  display: block;
+  box-sizing: border-box;
+  width: 144rpx;
+  height: 144rpx;
+  border: 6rpx solid var(--color-surface);
+  border-radius: 50%;
+  background: var(--color-action);
+}
+.card-avatar--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-on-action);
+  font-size: 48rpx;
+  font-weight: 900;
+}
+.identity-copy {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 12rpx;
 }
 .rider-name {
-  font-size: 48rpx;
-  line-height: 64rpx;
-  font-weight: 900;
+  color: var(--color-text);
+  font-size: 50rpx;
+  line-height: 68rpx;
+  font-weight: 800;
 }
 .gender-pill {
   display: inline-flex;
   margin-top: 8rpx;
   padding: 4rpx 12rpx;
   border: 2rpx solid var(--color-border-strong);
-  border-radius: 8rpx;
+  border-radius: var(--radius-xs);
+  color: var(--color-text);
   font-size: 24rpx;
 }
+.card-facts {
+  margin-top: var(--card-gap);
+  padding: 4rpx 32rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-display);
+  background: var(--color-surface);
+}
+.fact-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 24rpx;
+  min-height: 92rpx;
+  padding: 20rpx 0;
+  border-bottom: 2rpx solid var(--color-border);
+}
+.fact-row:last-child {
+  border-bottom: 0;
+}
+.fact-label {
+  flex: 0 0 144rpx;
+  padding-top: 2rpx;
+  color: var(--color-muted);
+  font-size: 24rpx;
+  font-weight: 800;
+  line-height: 40rpx;
+}
+.fact-value {
+  flex: 1;
+  color: var(--color-text);
+  font-size: 28rpx;
+  line-height: 44rpx;
+}
 .privacy-note {
-  margin-top: 16rpx;
+  margin-top: 20rpx;
+  color: var(--color-muted);
+  font-size: 24rpx;
+  line-height: 36rpx;
 }
 .card-caption {
   display: flex;
