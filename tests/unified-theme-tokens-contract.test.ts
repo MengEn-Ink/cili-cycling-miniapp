@@ -1,5 +1,5 @@
 // @ts-expect-error Vitest provides the Node runtime used by this repository.
-import { readFileSync } from 'node:fs';
+import { globSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { APP_APPEARANCE, THEME_COLORS } from '../miniprogram/config/theme';
 import { CLIENT_RELEASE_VERSION } from '../miniprogram/config/release';
@@ -7,6 +7,7 @@ import { uiTokens } from './theme-contract-helpers';
 
 const read = (file: string) => readFileSync(file, 'utf8');
 const appStyles = read('miniprogram/app.wxss');
+const runtimeStyleRefs = globSync('miniprogram/**/*.{wxml,ts,js}').map(read).join('\n');
 const pageStyles = read('docs/styles.css');
 const miniTokens = uiTokens(appStyles);
 const pagesTokens = Object.fromEntries(
@@ -25,6 +26,27 @@ describe('统一主题设计契约', () => {
     expect(miniTokens['--card-radius']).toBe('var(--radius-card)');
     expect(miniTokens['--input-focus-ring']).toBe('var(--focus-ring)');
     expect(miniTokens['--segment-radius']).toBe('var(--radius-sm)');
+  });
+
+  it('被共享规则移除的旧选择器分支没有运行时引用', () => {
+    const prunedSelectors = [
+      'status-checked_in',
+      'status-approved',
+      'status-pending',
+      'activity-picker',
+      'snapshot-panel',
+      'tag-warning',
+      'tag-pending',
+      'status-help',
+      'status-card',
+      'panel-index',
+      'btn-text',
+    ];
+    for (const selector of prunedSelectors) {
+      expect(runtimeStyleRefs).not.toMatch(
+        new RegExp('(^|[^A-Za-z0-9_-])' + selector + '([^A-Za-z0-9_-]|$)'),
+      );
+    }
   });
 
   it('锁定朱红、米白、墨黑和双端克制圆角映射', () => {
@@ -75,9 +97,12 @@ describe('统一主题设计契约', () => {
 
   it('版本和用户可见更新说明升级且旧版本转为历史项', () => {
     const settings = read('miniprogram/pages/settings/index.ts');
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.20.6');
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.20.7');
     expect(settings).toMatch(
-      /version: CLIENT_RELEASE_VERSION[\s\S]*?title: '唯一俱乐部主页上线'[\s\S]*?latest: true/,
+      /version: CLIENT_RELEASE_VERSION[\s\S]*?title: '活动详情重点信息更突出'[\s\S]*?latest: true/,
+    );
+    expect(settings).toMatch(
+      /version: '2026\.10\.20\.6'[\s\S]*?title: '唯一俱乐部主页上线'[\s\S]*?latest: false/,
     );
     expect(settings).toMatch(
       /version: '2026\.10\.20\.5'[\s\S]*?title: '俱乐部管理更清晰'[\s\S]*?latest: false/,

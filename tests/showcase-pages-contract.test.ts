@@ -735,7 +735,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   it('活动详情同步四指标、报名状态、Strava 只复制链接与路线概览入口', () => {
     expect(templates).toContain('预计骑行');
     expect(templates).toContain('已通过');
-    expect(templates).toContain('class="detail-decision"');
+    expect(templates).toMatch(/class="detail-decision(\s|")/);
     expect(templates).toContain('Strava 官方路线');
     expect(templates).toContain('复制路线链接');
     expect(templates).toContain('data-action="copy-route"');

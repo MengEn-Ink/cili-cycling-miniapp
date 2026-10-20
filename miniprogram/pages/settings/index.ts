@@ -1,14 +1,25 @@
 import { CLIENT_RELEASE_VERSION } from '../../config/release';
 
-// RELEASE_NOTES 顶部为当前版本，历史版本保留且仅当前版本标记 latest，供发布门禁核对。
-// 设置页只渲染第一条，不展示历史时间线；文案均面向普通用户，不出现门禁/接口/令牌等技术词。
+// 顶部为当前版本且唯一 latest；设置页只渲染第一条，历史版本供发布核对。
 const RELEASE_NOTES = [
   {
     version: CLIENT_RELEASE_VERSION,
     date: '2026-10-20',
+    title: '活动详情重点信息更突出',
+    summary: '活动详情重点信息更醒目，编辑预览尺寸更统一。',
+    latest: true,
+    features: [
+      '墨黑决策块突出报名与集合重点',
+      '统一路线与群二维码预览尺寸',
+      '状态保留颜色和文字双提示',
+    ],
+  },
+  {
+    version: '2026.10.20.6',
+    date: '2026-10-20',
     title: '唯一俱乐部主页上线',
     summary: '从“我的”直达唯一俱乐部主页，查看公开资料、当前身份与活动入口。',
-    latest: true,
+    latest: false,
     features: [
       '俱乐部主页统一展示背景图、头像、名称、地区、简介和当前身份',
       '普通骑友可只读查看；平台管理员可从主页进入唯一俱乐部资料维护',

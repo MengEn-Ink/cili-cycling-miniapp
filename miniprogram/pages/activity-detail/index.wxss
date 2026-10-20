@@ -48,17 +48,13 @@
   font-size: 24rpx;
   font-weight: 800;
 }
-.detail-page .info-bar {
-  border: 2rpx solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text);
+.detail-page .info-bar .club-identity {
+  color: var(--color-media-muted);
 }
-.detail-page .info-kicker,
-.detail-page .info-meta {
-  color: var(--color-muted);
-}
-.detail-page .info-title {
-  color: var(--color-text);
+.detail-page .info-bar .info-tag {
+  border-color: var(--color-media-muted);
+  background: transparent;
+  color: var(--color-on-media);
 }
 .info-head,
 .section-heading,
@@ -91,18 +87,32 @@
 }
 .detail-page .card,
 .detail-page .official-route-card,
-.detail-page .gpx-route-card,
-.detail-page .detail-decision {
+.detail-page .gpx-route-card {
   border: 2rpx solid var(--color-border);
   border-radius: var(--radius-display);
 }
 .metric-panel {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-.detail-decision {
+/* 墨黑决策块：复用全局 .info-bar / .activity-context 的深底 + 品牌红边条范式 */
+.detail-page .detail-decision {
   position: relative;
+  overflow: hidden;
+  padding: 32rpx 32rpx 32rpx 40rpx;
+  border: 0;
+  border-radius: var(--radius-card);
+  background: var(--color-media-card-bg);
+  color: var(--color-on-media);
 }
-.decision-kicker,
+.detail-page .detail-decision::before {
+  position: absolute;
+  top: 32rpx;
+  bottom: 32rpx;
+  left: 0;
+  width: 8rpx;
+  background: var(--color-brand);
+  content: '';
+}
 .route-action-note,
 .attendees-hint,
 .group-qr-detail-hint {
@@ -110,16 +120,22 @@
   font-size: 24rpx;
   line-height: 36rpx;
 }
+.detail-page .decision-kicker {
+  color: var(--color-media-muted);
+  font-size: 24rpx;
+  line-height: 36rpx;
+}
 .decision-title {
   display: block;
   margin-top: 8rpx;
+  color: var(--color-on-media);
   font-size: 36rpx;
   line-height: 52rpx;
   font-weight: 900;
 }
 .decision-hint {
   margin-top: 8rpx;
-  color: var(--color-muted);
+  color: var(--color-media-muted);
 }
 .decision-capacity {
   position: absolute;
