@@ -146,7 +146,7 @@ cancelled -> approved（名额仍剩余时直接恢复）
 
 上述候选能力的整体分期见 [未来产品能力路线图](superpowers/plans/2026-10-16-future-product-capability-roadmap.md)；组织申请、发布审批、权限矩阵和边界规则见 [组织地基与审批权限需求](superpowers/plans/2026-10-17-org-foundation-approval.md)。
 
-现场签到复用管理员对已通过报名的 `approved -> checked_in` 确认操作。参与者凭证页绘制真实 Code 128 可扫描条码（只承载报名 ID），管理员使用 `wx.scanCode` 解析后进入既有审核详情完成二次确认；不伪装普通文本为二维码。离线核销和批量签到不在本期范围。
+现场签到复用管理员对已通过报名的 `approved -> checked_in` 确认操作，签到由管理员在线处理。参与者凭证编号 `RE-YYYYMMDD-XXXXXX` 仅以文字展示（等宽、不断行），本期不做 Code 128 条码图形，也不提供扫码核销入口；不伪装普通文本为二维码。离线核销和批量签到不在本期范围。
 
 ## 7. 验收口径
 

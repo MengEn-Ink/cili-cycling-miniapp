@@ -54,7 +54,7 @@ describe('活动详情设计与日期契约', () => {
     expect(styles).toContain('min-height: var(--control-height)');
   });
 
-  it('首屏使用独立头图、浅色信息卡、同行状态与集合重点区', () => {
+  it('首屏使用独立头图、墨黑信息条与墨黑报名决策块', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
     expect(template).toContain('class="detail-hero"');
@@ -62,13 +62,19 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('class="card time-card time-card--featured"');
     expect(template).toContain('class="meeting-location"');
     expect(template.match(/{{startTime \|\| '待公布'}}/g)).toHaveLength(1);
-    expect(template.match(/{{viewerStatus.label}}/g)).toHaveLength(2);
+    expect(template.match(/{{viewerStatus\.label}}/g)).toHaveLength(2);
     expect(template).toContain('已报名人员');
     expect(template).toContain('bindtap="editActivity">修改活动');
     expect(template).toContain('bindtap="adminRegistration">{{adminRegistrationLabel}}');
     expect(styles).toMatch(/\.detail-hero\s*\{[^}]*height:\s*360rpx/s);
-    expect(styles).toMatch(
+    expect(styles).not.toMatch(
       /\.detail-page \.info-bar\s*\{[^}]*background:\s*var\(--color-surface\)/s,
+    );
+    expect(styles).toMatch(
+      /\.detail-page \.detail-decision\s*\{[^}]*background:\s*var\(--color-media-card-bg\)[^}]*color:\s*var\(--color-on-media\)/s,
+    );
+    expect(styles).toMatch(
+      /\.detail-page \.detail-decision::before\s*\{[^}]*var\(--color-brand\)/s,
     );
     expect(styles).toMatch(/\.time-card-primary\s*\{[^}]*font-size:\s*48rpx/s);
   });
@@ -138,7 +144,7 @@ describe('活动详情设计与日期契约', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
     expect(template).toContain('class="decision-hint"');
-    expect(styles).toMatch(/\.decision-hint\s*\{[^}]*color:\s*var\(--color-muted\)/s);
+    expect(styles).toMatch(/\.decision-hint\s*\{[^}]*color:\s*var\(--color-media-muted\)/s);
     expect(styles).not.toMatch(/\.decision-hint\s*\{[^}]*display:\s*none/s);
     expect(styles).not.toMatch(/\.decision-hint\s*\{[^}]*white-space:\s*nowrap/s);
   });

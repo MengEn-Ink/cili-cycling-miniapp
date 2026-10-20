@@ -168,7 +168,7 @@ describe('Pages 全套 App 原型契约（单俱乐部收敛 · design-only 不�
   it('7. club/center schema 只保留 home / manage / loading / error', () => {
     const states = clubCenter()?.states?.map(([id]) => id);
     expect(states).toEqual(['home', 'manage', 'loading', 'error']);
-    expect(clubCenter()?.copy).toMatch(/全平台只有一个俱乐部/);
+    expect(clubCenter()?.copy).toMatch(/全平台唯一俱乐部/);
   });
 
   it('7.1 旧多俱乐部状态统一回落到单俱乐部主页 home', () => {

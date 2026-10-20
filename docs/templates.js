@@ -207,15 +207,17 @@
     }
     return `<div class="qr" role="img" aria-label="二维码示意"><svg viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges">${cells.join('')}</svg></div>`;
   };
-  const emptyMedia = () =>
-    `<div class="rider-card-media is-empty"><svg viewBox="0 0 360 168" preserveAspectRatio="none"><path d="M-10 140 C 60 120, 90 60, 150 72 S 240 150, 300 90 S 350 30, 380 40" style="fill:none;stroke:var(--color-muted);stroke-width:2"/><path d="M-10 160 C 70 140, 110 96, 170 104 S 250 160, 380 110" style="fill:none;stroke:var(--color-muted);stroke-width:1.5"/><path d="M20 128 C 80 112, 104 70, 150 78" style="fill:none;stroke:var(--color-brand);stroke-width:3;stroke-linecap:round"/></svg><span class="brand-word">CILI RIDER</span></div>`;
-  const riderCard = (hasPhoto, extra = '') => `<article class="rider-card">
-      ${hasPhoto ? `<div class="rider-card-media"><img src="${IMG.rider}" alt="骑行照片" />${tag('neutral', '骑行照片').replace('class="tag', 'class="media-label tag')}</div>` : emptyMedia()}
-      <div class="rider-card-person"><span class="avatar lg">${hasPhoto ? `<img src="${IMG.avatar}" alt="${rider.nickname}" />` : rider.nickname.slice(0, 1)}</span><div><h3>${rider.nickname} ${tag('neutral', rider.gender)}</h3><p>${rider.title}</p></div></div>
-      ${rows([
-        ['骑行经验', rider.experience],
-        ['公开范围', '活动中公开'],
-      ])}
+  const emptyMediaInner = () =>
+    `<svg viewBox="0 0 360 168" preserveAspectRatio="none"><path d="M-10 140 C 60 120, 90 60, 150 72 S 240 150, 300 90 S 350 30, 380 40" style="fill:none;stroke:var(--color-muted);stroke-width:2"/><path d="M-10 160 C 70 140, 110 96, 170 104 S 250 160, 380 110" style="fill:none;stroke:var(--color-muted);stroke-width:1.5"/><path d="M20 128 C 80 112, 104 70, 150 78" style="fill:none;stroke:var(--color-brand);stroke-width:3;stroke-linecap:round"/></svg><span class="brand-word">CILI RIDER</span>`;
+  const emptyMedia = () => `<div class="rider-card-media is-empty">${emptyMediaInner()}</div>`;
+  // 公开名片只允许昵称：无昵称时统一回落“匿名骑友”，不出现实名或电话。
+  const publicName = rider.nickname || '匿名骑友';
+  const riderCard = (hasPhoto, extra = '') => `<article class="rider-card rider-card-poster">
+      <div class="rider-card-media${hasPhoto ? ' has-photo' : ' is-empty'}">${
+        hasPhoto
+          ? `<img src="${IMG.rider}" alt="骑行照片" />${tag('neutral', '骑行照片').replace('class="tag', 'class="media-label tag')}<span class="rider-card-shade" aria-hidden="true"></span>`
+          : emptyMediaInner()
+      }<div class="rider-card-identity"><span class="avatar lg rider-card-avatar">${hasPhoto ? `<img src="${IMG.avatar}" alt="${publicName}的头像" />` : publicName.slice(0, 1)}</span><div class="rider-card-id-copy"><h3 class="rider-card-name">${publicName}</h3><div class="rider-card-tags">${tag('neutral', rider.gender)}${tag('neutral', `骑行经验 · ${rider.experience}`)}${tag('neutral', '公开范围 · 活动中公开')}</div></div></div></div>
       ${extra}
     </article>`;
 
@@ -539,12 +541,12 @@
         <p class="card-hint">${ACTIVITY_IDENTITY_NOTE}</p>
       </article>`;
       const modeSwitcher = `<div class="mode-switcher" role="group" aria-label="报名模式切换（原型示意）"><div class="mode-switcher-head"><b>报名方式</b>${modePill}</div><p class="card-hint">${modeMeta.helper || ''}</p><div class="mode-switcher-actions"><button class="btn-chip ${activityMode === 'open' ? 'is-active' : ''}" data-action="route" data-route="activity-detail" data-state="open-public">公开报名</button><button class="btn-chip ${activityMode === 'approval' ? 'is-active' : ''}" data-action="route" data-route="activity-detail" data-state="open-approval">审批报名</button><button class="btn-chip" data-action="route" data-route="activity-detail" data-state="ended">T+1 结束</button></div><p class="neutral-note mode-switcher-note">报名方式不改变活动归属：活动始终属于唯一俱乐部。活动 T+1 进入结束展示，主动下架优先保留下架语义。</p></div>`;
-      return `<div class="pg has-bar" data-activity-mode="${activityMode}" data-registration-mode="${activityMode}">
+      return `<div class="pg has-bar activity-detail-pg" data-activity-mode="${activityMode}" data-registration-mode="${activityMode}">
         <div class="cover"><img src="${IMG.cover}" alt="${primary.title}" /><span class="cover-count">1/3</span><div class="cover-dots"><i class="is-active"></i><i></i><i></i></div></div>
         <section class="info-bar"><div class="info-head"><span class="info-kicker">${primary.date} · ${primary.level}</span><span class="info-tag">${ended ? '已结束' : approved && !openMode ? '已通过' : full ? '名额已满' : openPublic ? '直接加入' : openApproval ? '待审核' : '报名中'}</span></div><h2 class="info-title">${primary.title}</h2><p class="info-meta"><span>${primary.time}集合</span><span>${primary.start}</span></p>${modePill}</section>
         ${modeSwitcher}${hostCard}
         ${metrics([[`${primary.distanceKm} km`, '里程'], [`${primary.elevationM} m`, '爬升'], [primary.estimatedRideTime, '预计骑行'], [`${primary.approved} 人`, '已通过']])}
-        <div class="card"><div class="detail-decision"><div><p class="card-hint">报名状态</p><h3 class="card-title">${ended ? '已结束' : approved && !openMode ? '已通过' : full ? '名额已满' : openPublic ? '可直接加入' : openApproval ? '需管理员审核' : '可报名'}</h3><p class="card-hint">${ended ? '活动已自然结束，仅供查看。' : approved && !openMode ? '可查看行程凭证与活动群二维码' : full ? '本场名额已满，暂不接受报名' : openPublic ? '公开报名是报名方式；点击加入后直接成功并生成凭证。' : openApproval ? '提交后进入 pending，待管理员审核；通过时再次校验名额。' : '提交后由管理员审核，结果在行程页同步'}</p>${approved || full || ended ? '' : `<p class="alert-line">${tag('warning', '⚠ 即将截止 · 10月17日 20:00')}</p>`}</div>${statusTag}</div></div>
+        <div class="detail-decision detail-decision--ink"><div><p class="decision-kicker">报名状态</p><h3 class="decision-title">${ended ? '已结束' : approved && !openMode ? '已通过' : full ? '名额已满' : openPublic ? '可直接加入' : openApproval ? '需管理员审核' : '可报名'}</h3><p class="decision-hint">${ended ? '活动已自然结束，仅供查看。' : approved && !openMode ? '可查看行程凭证与活动群二维码' : full ? '本场名额已满，暂不接受报名' : openPublic ? '公开报名是报名方式；点击加入后直接成功并生成凭证。' : openApproval ? '提交后进入 pending，待管理员审核；通过时再次校验名额。' : '提交后由管理员审核，结果在行程页同步'}</p>${approved || full || ended ? '' : `<p class="alert-line">${tag('warning', '⚠ 即将截止 · 10月17日 20:00')}</p>`}</div>${statusTag}</div>
         <div class="card">${cardHead('', '集合信息')}${rows([['集合时间', primary.time], ['集合地点', primary.start], ['费用', primary.fee]])}${btn('地图导航', toast('已打开集合点导航'), 'btn-secondary')}</div>
         <div class="card">${cardHead('', 'Strava 官方路线', tag('neutral', '官方'), '复制组织者分享的规范化公开路线链接。')}${btn('复制路线链接', 'data-action="copy-route"', 'btn-secondary')}${copyToast}<p class="card-hint">小程序内不打开第三方页面，复制后可自行粘贴使用。</p></div>
         <div class="card route-brief-card"><div class="card-head"><h3 class="card-title">路线概览</h3><span class="route-brief-chip">${primary.level}</span></div><div class="route-brief-metrics"><span><b>${primary.distanceKm}</b><i>km</i><small>距离</small></span><span><b>${primary.elevationM}</b><i>m</i><small>累计爬升</small></span><span><b>${primary.elevationLossM}</b><i>m</i><small>累计下降</small></span><span><b>${primary.elevationMaxM}</b><i>m</i><small>最高海拔</small></span></div><div class="route-brief-sparkline" aria-hidden="true"><svg viewBox="0 0 320 60" preserveAspectRatio="none"><defs><linearGradient id="briefFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#d64520" stop-opacity="0.32"/><stop offset="100%" stop-color="#d64520" stop-opacity="0"/></linearGradient></defs><path d="M0 52 L18 46 L42 40 L72 28 L102 10 L132 6 L162 18 L198 24 L232 32 L268 42 L300 48 L320 54 L320 60 L0 60 Z" fill="url(#briefFill)"/><path d="M0 52 L18 46 L42 40 L72 28 L102 10 L132 6 L162 18 L198 24 L232 32 L268 42 L300 48 L320 54" fill="none" stroke="#d64520" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="132" cy="6" r="3" fill="#d64520"/></svg><span class="route-brief-elev"><b>${primary.elevationMinM}–${primary.elevationMaxM} m</b> 海拔区间</span></div><p class="route-brief-caption">${primary.route}</p>${btn('查看完整路线分析 →', go('route-analysis'), 'btn-secondary route-brief-cta')}</div>
@@ -635,23 +637,41 @@
       };
       const credHostLine = snapshotHostLine(credential);
       const credentialClub = normalizeClub(credential.kind === 'club' ? credential : null) || canonicalClub;
+      const rejected = is('rejected');
+      const supportCar = is('support-car');
+      const used = is('used');
+      const gatheringMode = supportCar ? '需要后援车' : '自行前往';
+      const credentialDetails = [
+        ['骑手', rider.realName],
+        ['手机号', rider.phone],
+        ['性别', rider.gender],
+        ['活动归属', credentialClub.name],
+        ['集合方式', gatheringMode],
+      ];
+      if (supportCar) {
+        credentialDetails.push(['后援车司机', driver.name]);
+        credentialDetails.push(['司机电话', driver.phone]);
+        credentialDetails.push(['车辆信息', driver.car]);
+      }
       return `<div class="pg">
         <p class="section-label credential-rider-heading">公开骑行名片</p>
         ${riderCard(hasPhoto, hasPhoto ? '' : `<p class="neutral-note" style="margin:0 16px 12px">添加一张骑行照片，名片会更有辨识度。</p><div style="padding:0 16px 16px">${btn('添加骑行照片', go('profile-edit'), 'btn-secondary')}</div>`)}
         <article class="credential-ticket">
-          <div class="ticket-head">${brandLogo('报名凭证')}<code>CILI-1017-012</code></div>
-          <div class="ticket-body">${tag('success', '✓ 已通过 · 准时集合')}<h2 class="card-title" style="margin-top:8px">${credential.title}</h2><p class="meta-line">${credential.date}</p><p class="meta-line credential-host-line">${credHostLine}</p></div>
-          <div class="credential-spotlight"><p class="info-kicker">集合时间</p><p class="info-big">${credential.time}</p><p class="info-kicker" style="margin-top:8px">集合地点</p><p class="info-title" style="margin-top:0">${credential.start}</p><p class="info-meta">${credential.address || '集合点地址以活动通知为准'}</p><div style="margin-top:12px">${btn('地图导航', toast('已打开集合点导航'), 'btn-inverse')}</div></div>
-          <div class="ticket-body">${rows([
-            ['骑手', rider.realName],
-            ['性别', rider.gender],
-            ['活动归属', credentialClub.name],
-            ['集合方式', '自行前往'],
-          ])}<p class="card-hint credential-snapshot-hint">${HISTORY_IDENTITY_NOTE}</p></div>
+          <div class="ticket-head">${brandLogo('报名凭证')}${rejected ? tag('muted', '已驳回') : used ? tag('success', '✓ 已签到') : tag('success', '✓ 已通过 · 准时集合')}</div>
+          <div class="ticket-body"><h2 class="card-title" style="margin-top:8px">${credential.title}</h2><p class="meta-line">${credential.date}</p><p class="meta-line credential-host-line">${credHostLine}</p></div>
+          ${
+            rejected
+              ? `<div class="credential-reject"><div class="row"><span class="k">驳回原因</span><span class="v">骑行经验说明不足，请补充近期骑行经历后重新提交。</span></div><p class="card-hint">驳回原因仅你本人与审核管理员可见；修改资料后可沿用本记录重新提交。</p>${tag('warning', '⚠ 报名被驳回')}</div>`
+              : `<div class="credential-spotlight"><p class="info-kicker">集合时间</p><p class="info-big">${credential.time}</p><p class="info-kicker" style="margin-top:8px">集合地点</p><p class="info-title" style="margin-top:0">${credential.start}</p><p class="info-meta">${credential.address || '集合点地址以活动通知为准'}</p><div style="margin-top:12px">${btn('地图导航', toast('已打开集合点导航'), 'btn-inverse')}</div></div>
+          <div class="ticket-body">${rows(credentialDetails)}<p class="card-hint credential-snapshot-hint">${HISTORY_IDENTITY_NOTE}</p></div>
+          <div class="ticket-body credential-serial-row"><span class="k">凭证编号</span><code class="serial">RE-20261018-482913</code></div>
+          <p class="card-hint credential-barcode-note">凭证编号仅文字展示，本期不做条码与扫码核销；签到由管理员在线处理。</p>`
+          }
+          ${rejected ? `<div class="ticket-body" style="padding-bottom:16px"><p class="card-hint credential-snapshot-hint">${HISTORY_IDENTITY_NOTE}</p></div>` : ''}
         </article>
         <div class="card">${cardHead('', '队伍：风向小队')}<p class="card-hint">我是队长，可使用右上角分享邀请队员。队伍仅用于本次活动分组，与俱乐部身份独立。</p></div>
         <div style="margin-top:12px">${btn('查看路线分析', go('route-analysis'), 'btn-secondary')}</div>
-        <div style="margin-top:12px">${btn('取消报名', toast('已取消报名'), 'btn-secondary')}</div>
+        ${rejected ? `<div style="margin-top:12px">${btn('修改后重新提交', go('registration-form'), 'btn')}</div>` : used ? '' : `<div style="margin-top:12px">${btn('取消报名', toast('已取消报名'), 'btn-secondary')}</div>`}
       </div>`;
     },
 
@@ -809,8 +829,8 @@
             ${routeSvg('公开路线轮廓')}<p class="card-hint">解析结果只在编辑页展示，不提供跳转预览。</p>` : ''}
           <p class="sub-title">GPX 路线详情（推荐）</p><p class="card-hint">上传后可展示里程、爬升、海拔曲线和路线图，参与者也可下载原文件。</p>
           ${uploading ? `<div class="upload-tile is-wide" style="flex-direction:column;height:auto;padding:12px;gap:8px">正在读取路线… 62%<span class="progress on-light"><i style="width:62%"></i></span></div>` : filled ? `<div class="row" style="margin-top:8px"><span class="k">${primary.routeName}</span>${tag('solid', '路线详情已准备好')}</div><div class="btn-row three" style="margin-top:8px">${btn('更换 GPX', toast('已打开文件选择'), 'btn-secondary btn-sm')}${btn('移除路线详情', toast('路线详情已移除'), 'btn-secondary btn-sm')}${btn('设为活动背景', toast('已设为活动背景'), 'btn-secondary btn-sm')}</div>` : `<button class="upload-tile is-wide" ${toast('GPX 已上传并完成解析')}><b>+</b>上传 GPX</button>`}
-          <p class="sub-title">活动群二维码</p><p class="card-hint">可选上传 1 张微信群二维码，便于已报名成员进群；上传超过 7 天会提示可能过期。</p>
-          ${create || error ? `<button class="upload-tile is-wide" ${toast('已打开图片选择器')}><b>+</b>上传活动群二维码</button>` : `<div class="qr-row" style="margin-top:8px">${qr(3)}<div><p class="card-hint">已上传 · 报名${registrationMode === 'open' ? '成功' : '通过'}后骑友可见</p><p class="alert-line">${tag('warning', '⚠ 已上传 8 天，可能过期')}</p><button class="btn-text" ${toast('二维码已删除')}>删除二维码</button></div></div>`}</div>
+          <p class="sub-title">活动群二维码</p><p class="card-hint">可选上传 1 张微信群二维码，便于已报名成员进群；是否可能过期由服务端字段判断，页面以服务端提示为准，不写死天数。</p>
+          ${create || error ? `<button class="upload-tile is-wide" ${toast('已打开图片选择器')}><b>+</b>上传活动群二维码</button>` : `<div class="qr-row" style="margin-top:8px">${qr(3)}<div><p class="card-hint">已上传 · 报名${registrationMode === 'open' ? '成功' : '通过'}后骑友可见</p><p class="alert-line">${tag('warning', '⚠ 服务端提示该二维码可能已过期')}</p><button class="btn-text" ${toast('二维码已删除')}>删除二维码</button></div></div>`}</div>
         ${modeSettings}
       </div>${fixedBar(error ? '还有 2 项必填未完成' : modeLocked ? '已有报名记录 · 模式已锁定' : resubmit ? '修改后可直接重新发布，无需再次审批' : editOpen ? '公开报名 · 发布后直接接受加入' : '活动由平台管理员直接发布，所有用户可见', [btn('保存草稿', toast('草稿已保存'), 'btn-secondary'), btn('发布活动', 'data-action="publish-activity"')])}`;
     },

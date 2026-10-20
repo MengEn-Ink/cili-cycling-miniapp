@@ -421,7 +421,7 @@
                 <h4>先给结论：凭证是一张可核对的行程卡，不是扫码通行证。</h4>
                 <p>它集中展示活动、集合、路线与审核状态；签到由管理员在审核详情中二次确认，当前没有扫码核销入口。</p>
                 <ul>
-                  <li><b>原型</b>：<a href="#credential">credential</a>（with-photo / no-photo 状态）</li>
+                  <li><b>原型</b>：<a href="#credential">credential</a>（with-photo / no-photo / rejected / support-car 状态）</li>
                   <li><b>边界</b>：历史行程保留发布 / 成行时的俱乐部归属快照</li>
                   <li><b>检查点</b>：取消后的凭证不再展示集合信息</li>
                 </ul>

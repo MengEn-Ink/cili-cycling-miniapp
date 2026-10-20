@@ -87,6 +87,8 @@
   --segment-height: 46px;
   --page-gutter: 16px;
   --card-gap: 14px;
+  --route-preview-canvas-height: 144px;
+  --group-qr-code-size: 96px;
   --font: Inter, 'Noto Sans SC', 'PingFang SC', system-ui, -apple-system, sans-serif;
 
   /* Component tokens: shared prototype controls consume this layer first. */
@@ -1746,7 +1748,7 @@ textarea.input.textarea::placeholder {
 /* 路线可视化 */
 .route-canvas {
   position: relative;
-  height: 148px;
+  height: var(--route-preview-canvas-height);
   margin-top: 8px;
   overflow: hidden;
   border: 1px solid var(--color-border);
@@ -1787,8 +1789,8 @@ textarea.input.textarea::placeholder {
 .qr {
   position: relative;
   flex: 0 0 auto;
-  width: 96px;
-  height: 96px;
+  width: var(--group-qr-code-size);
+  height: var(--group-qr-code-size);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
@@ -2243,6 +2245,44 @@ textarea.input.textarea::placeholder {
   background: var(--color-brand);
 }
 
+.credential-reject {
+  margin: 12px 16px 0;
+  padding: 12px;
+  border-left: 4px solid var(--color-brand);
+  background: var(--color-raised);
+}
+
+.credential-reject .v {
+  color: var(--color-text);
+  font-weight: 700;
+  text-align: right;
+}
+
+.credential-reject .tag {
+  margin-top: 8px;
+}
+
+.credential-serial-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+}
+
+.credential-ticket .serial {
+  color: var(--color-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+
+.credential-barcode-note {
+  margin: 0 16px 12px;
+}
+
 /* 骑行名片 */
 .rider-card {
   position: relative;
@@ -2253,11 +2293,12 @@ textarea.input.textarea::placeholder {
   background: var(--color-surface);
 }
 
+/* 公开骑行名片：大海报 + 头像压边 + 昵称大字 + 标签行 */
 .rider-card-media {
   position: relative;
-  height: 168px;
-  background: var(--color-media-card-bg);
+  height: 200px;
   overflow: hidden;
+  background: var(--color-media-card-bg);
 }
 
 .rider-card-media img {
@@ -2266,8 +2307,15 @@ textarea.input.textarea::placeholder {
   object-fit: cover;
 }
 
+.rider-card-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 35%, rgba(0, 0, 0, 0.68) 100%);
+}
+
 .rider-card-media .media-label {
   position: absolute;
+  z-index: 2;
   right: 8px;
   top: 8px;
 }
@@ -2276,7 +2324,7 @@ textarea.input.textarea::placeholder {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding: 16px 16px 40px;
+  padding: 16px;
   color: var(--color-on-media);
 }
 
@@ -2288,7 +2336,9 @@ textarea.input.textarea::placeholder {
 }
 
 .rider-card-media.is-empty .brand-word {
-  position: relative;
+  position: absolute;
+  top: 12px;
+  left: 16px;
   font-size: 12px;
   line-height: 18px;
   font-weight: 800;
@@ -2296,42 +2346,45 @@ textarea.input.textarea::placeholder {
   color: var(--color-media-muted);
 }
 
-.rider-card-person {
+.rider-card-identity {
+  position: absolute;
+  z-index: 2;
+  right: 12px;
+  bottom: 12px;
+  left: 12px;
   display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  margin-top: -32px;
-  padding: 0 16px;
-  position: relative;
+  align-items: flex-end;
+  gap: 10px;
 }
 
-.rider-card-person > div {
-  min-width: 0;
-  padding-top: 36px;
-}
-
-.rider-card-person .avatar {
+.rider-card-avatar {
+  flex: 0 0 auto;
   border: 3px solid var(--color-surface);
 }
 
-.rider-card-person h3 {
-  font-size: 18px;
+.rider-card-id-copy {
+  min-width: 0;
+}
+
+.rider-card-name {
+  font-size: 20px;
   line-height: 26px;
   font-weight: 900;
+  color: var(--color-on-media);
 }
 
-.rider-card-person p {
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--color-muted);
+.rider-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
 }
 
-.rider-card .rows {
-  padding: 4px 16px 8px;
-}
-
-.rider-card .pending-note {
-  margin: 0 16px 16px;
+.rider-card-tags .tag {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 个人中心 */
@@ -2418,6 +2471,66 @@ textarea.input.textarea::placeholder {
   height: 14px;
   border-radius: 1px;
   border-top-width: 4px;
+}
+
+/* 活动详情：墨黑信息条（与小程序 .info-bar 范式对齐，仅作用于活动详情屏） */
+.activity-detail-pg > .info-bar {
+  border: 0;
+  background: var(--color-media-card-bg);
+  color: var(--color-on-media);
+}
+.activity-detail-pg > .info-bar::before {
+  background: var(--color-brand);
+}
+.activity-detail-pg > .info-bar .info-kicker,
+.activity-detail-pg > .info-bar .info-meta {
+  color: var(--color-media-muted);
+}
+.activity-detail-pg > .info-bar .info-title {
+  color: var(--color-on-media);
+}
+.activity-detail-pg > .info-bar .info-tag {
+  border-color: var(--color-media-muted);
+  background: transparent;
+  color: var(--color-on-media);
+}
+
+/* 活动详情：报名状态墨黑决策区，深底 + on-media 文字 + 品牌红边条 */
+.detail-decision--ink {
+  position: relative;
+  margin-top: var(--card-gap);
+  padding: 16px 16px 16px 20px;
+  border-radius: var(--radius-card);
+  background: var(--color-media-card-bg);
+  color: var(--color-on-media);
+}
+.detail-decision--ink::before {
+  content: '';
+  position: absolute;
+  top: 16px;
+  bottom: 16px;
+  left: 0;
+  width: 4px;
+  background: var(--color-brand);
+}
+.detail-decision--ink .decision-kicker {
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 700;
+  color: var(--color-media-muted);
+}
+.detail-decision--ink .decision-title {
+  margin-top: 2px;
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 900;
+  color: var(--color-on-media);
+}
+.detail-decision--ink .decision-hint {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--color-media-muted);
 }
 
 /* 活动详情：报名状态决策区 */

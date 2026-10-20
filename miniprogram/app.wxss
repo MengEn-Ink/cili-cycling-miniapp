@@ -84,6 +84,8 @@ page {
   --page-gutter: 32rpx;
   --page-gutter-narrow: 24rpx;
   --card-gap: 28rpx;
+  --route-preview-canvas-height: 288rpx;
+  --group-qr-code-size: 192rpx;
   --tab-page-bottom-space: 32rpx;
   --fixed-action-reserve: 240rpx;
   --fixed-action-reserve-narrow: 292rpx;
@@ -221,18 +223,14 @@ button::after {
 .hint,
 .field-hint,
 .section-hint,
-.status-help,
 .hero-subtitle {
   color: var(--color-muted);
 }
 
 .card,
 .form-card,
-.status-card,
 .review-card,
-.snapshot-panel,
 .decision-panel,
-.activity-picker,
 .menu-list,
 .activity-context,
 .credential-card,
@@ -263,7 +261,6 @@ button::after {
   gap: 16rpx;
 }
 .card-no,
-.panel-index,
 .section-label > text:first-child {
   color: var(--color-text);
   font-size: 24rpx;
@@ -332,8 +329,7 @@ picker[disabled] {
   opacity: 1;
 }
 .text-button,
-.image-action,
-.btn-text {
+.image-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -438,8 +434,6 @@ picker[disabled] {
   background: var(--color-action);
   color: var(--color-on-action);
 }
-.tag-pending,
-.status-tag.status-pending,
 .required {
   border: 4rpx solid var(--color-brand);
   background: var(--color-surface);
@@ -450,14 +444,11 @@ picker[disabled] {
   background: var(--color-surface);
 }
 .tag-success,
-.status-tag.status-approved,
-.status-tag.status-checked_in,
 .approved-mark {
   border: 2rpx solid var(--color-status-success);
   background: var(--color-status-success-soft);
   color: var(--color-status-success);
 }
-.tag-warning,
 .group-qr-warning {
   border: 2rpx solid var(--color-status-warning);
   background: var(--color-status-warning-soft);

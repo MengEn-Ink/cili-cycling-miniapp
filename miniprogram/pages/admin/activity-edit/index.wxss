@@ -141,7 +141,7 @@
   position: relative;
   z-index: 0;
   width: 100%;
-  height: 280rpx;
+  height: var(--route-preview-canvas-height);
   margin-top: 16rpx;
   border: 2rpx solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -155,8 +155,8 @@
   margin-top: 24rpx;
 }
 .group-qr-preview {
-  width: 280rpx;
-  height: 280rpx;
+  width: var(--group-qr-code-size);
+  height: var(--group-qr-code-size);
   border: 2rpx solid var(--color-border);
   border-radius: var(--radius-sm);
 }
