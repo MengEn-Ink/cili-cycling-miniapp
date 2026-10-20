@@ -222,7 +222,7 @@ test('Dependabot 只为低风险更新开启 GitHub 原生自动合并', async (
     'utf8',
   );
   assert.match(workflow, /github\.actor == 'dependabot\[bot\]'/);
-  assert.match(workflow, /dependabot\/fetch-metadata@v2\.4\.0/);
+  assert.match(workflow, /dependabot\/fetch-metadata@v3\.1\.0/);
   assert.match(workflow, /version-update:semver-patch/);
   assert.match(workflow, /version-update:semver-minor/);
   assert.match(workflow, /alert-state == 'OPEN'/);
