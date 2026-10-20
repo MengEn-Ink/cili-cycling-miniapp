@@ -10,10 +10,22 @@ const MAX_SUBSCRIPTION_TEMPLATES = 3;
 const RELEASE_NOTES = [
   {
     version: CLIENT_RELEASE_VERSION,
+    date: '2026-10-21',
+    title: '活动发布全流程恢复',
+    summary: '修复有限名额活动无法创建的问题，并完成历史数据清理与全流程验收。',
+    latest: true,
+    features: [
+      '有限名额活动无需填写已下线的路线终点也能正常创建和发布',
+      '活动草稿、发布、报名、取消和删除链路已完成真实环境验证',
+      '已结束活动及其关联报名和路线记录支持安全清理与结果回读',
+    ],
+  },
+  {
+    version: '2026.10.20.8',
     date: '2026-10-20',
     title: '出发准备与设置管理升级',
     summary: '活动填写更稳妥，路线可继续恢复，并补齐通知、隐私与安全缓存管理。',
-    latest: true,
+    latest: false,
     features: [
       '活动时间填写增加校验，减少无效时间影响发布',
       '未完成的路线处理可恢复，返回后继续操作更省心',

@@ -815,8 +815,7 @@ function validateReadyActivityInput(input, occupiedCount, now, allowedStatuses, 
   const safe = validateBaseActivityInput(input, occupiedCount, allowedStatuses, options);
   for (const field of ['event_start', 'event_end'])
     if (safe[field] === undefined) fail('VALIDATION_FAILED', '发布前请补全活动时间');
-  if (!safe.route.start || (!safe.registration_unlimited && !safe.route.end))
-    fail('VALIDATION_FAILED', '发布前请补全路线起点和终点');
+  if (!safe.route.start) fail('VALIDATION_FAILED', '发布前请补全路线起点');
   if (
     options.requireFutureDeadline !== false &&
     safe.signup_deadline &&

@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "67bb800eaa6decef40ab9a33f63c6b6c5a51dacf",
-  "syncedAt": "2026-10-20T23:50:00.000+08:00",
+  "syncedThrough": "e3f533705a871d88acc7aa55393dd5451901aecb",
+  "syncedAt": "2026-10-21T06:25:00.000+08:00",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:8ca63f8951451ca11c71fd25b8d43416ad98efc9b096e8f245aed61965553428"
+    "digest": "sha256:146d80527cee0b6677cf7e2392cf95ee105ad03353704755d9b4becec7687f92"
   },
   "prototype": {
-    "digest": "sha256:5ce8ed95ff8a3d4f3b9626ac96cd8b3b6988728efd91e53b0c10863f742307eb"
+    "digest": "sha256:f60f19e5befd7634623d23e008b5688608a4478cba2c53a72049310ef7abbc85"
   },
   "routes": [
     {
@@ -156,7 +156,7 @@
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "常用管理 · 客户端 2026.10.20.8",
+        "state": "常用管理 · 客户端 2026.10.21.1",
         "data": "real-runtime",
         "review": "blocked",
         "note": "Pages 于 2026-10-20 使用本地 Aime 浏览器按 375×812 重采：展示活动通知、微信隐私管理与安全缓存清理，并明确不会退出登录或删除业务数据；DevTools 图片沿用既有基线且保持 blocked，未伪造或声明双端已对齐。"
