@@ -24,10 +24,15 @@ describe('个人骑行名片 view model', () => {
       hasMultipleBackgrounds: false,
       generatedAtText: '生成于 2026-09-29 12:10:00',
       needsProfilePhoto: false,
+      experienceLabel: '未填写',
       gender: '男',
       genderLabel: '男',
       genderClass: 'gender-male',
     });
+  });
+
+  it('名片云响应不带骑行经验字段，经验行固定展示未填写而不虚构', () => {
+    expect(personalCardViewModel(baseCard).experienceLabel).toBe('未填写');
   });
 
   it('无照片时用头像补位并保留资料完善入口', () => {

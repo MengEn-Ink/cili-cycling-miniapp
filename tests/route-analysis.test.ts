@@ -77,7 +77,7 @@ describe('路线分析派生', () => {
     expect(analysis.equipment.join('')).toContain('检查刹车');
   });
 
-  it('最高点按公里比例映射轮廓且不伪造地点名称', () => {
+  it('最高点由海拔剖面计算，不再按轮廓插值伪造坐标', () => {
     const highest = deriveRouteAnalysis(route()).keyPoints.find(
       (point) => point.type === 'highest',
     );
@@ -85,10 +85,25 @@ describe('路线分析派生', () => {
       name: '路线最高点',
       km: 50,
       elevation: 410,
-      lat: 30.1,
-      lng: 120.1,
-      note: '路线海拔最高位置',
+      lat: null,
+      lng: null,
+      source: '海拔剖面规则',
+      note: '路线海拔最高位置（按海拔剖面计算，非真实地名）',
       gradePercent: -0.3,
+    });
+  });
+
+  it('未提供真实选点坐标时所有关键点都不生成地图坐标，地名仍取活动路线字段', () => {
+    const analysis = deriveRouteAnalysis(
+      route({ startLocation: undefined, endLocation: undefined }),
+    );
+    expect(analysis.keyPoints.every((point) => point.lat === null && point.lng === null)).toBe(
+      true,
+    );
+    expect(analysis.keyPoints[0]).toMatchObject({ type: 'start', name: '江边广场' });
+    expect(analysis.keyPoints[analysis.keyPoints.length - 1]).toMatchObject({
+      type: 'end',
+      name: '森林公园',
     });
   });
 
@@ -119,7 +134,7 @@ describe('路线分析派生', () => {
     expect(analysis.profile).toHaveLength(0);
   });
 
-  it('短路线不强制休息点并只输出有限分段', () => {
+  it('短路线不生成休息点并只输出有限分段', () => {
     const analysis = deriveRouteAnalysis(
       route({
         distanceKm: 5,
@@ -128,7 +143,7 @@ describe('路线分析派生', () => {
         routeOutline: undefined,
       }),
     );
-    expect(analysis.keyPoints.filter((point) => point.type === 'rest')).toHaveLength(0);
+    expect(analysis.keyPoints.some((point) => point.name.includes('休息点'))).toBe(false);
     expect(analysis.segments).toHaveLength(1);
     expect(analysis.segments[0]).toMatchObject({ startKm: 0, endKm: 5 });
   });
@@ -175,14 +190,9 @@ describe('路线分析派生', () => {
     expect(analysis.segments[0].gradePercent).toBe(40);
   });
 
-  it.each([
-    [19.9, 0],
-    [20, 1],
-    [50, 2],
-    [90, 3],
-  ])('按路线长度 %.1f km 生成 %i 个建议休息点', (distanceKm, count) => {
+  it.each([19.9, 20, 50, 90, 120])('任何里程（%.1f km）都不虚构建议休息点', (distanceKm) => {
     const analysis = deriveRouteAnalysis(route({ distanceKm }));
-    expect(analysis.keyPoints.filter((point) => point.type === 'rest')).toHaveLength(count);
+    expect(analysis.keyPoints.some((point) => point.name.includes('休息点'))).toBe(false);
   });
 
   it('只在具有真实距离、有效剖面或有效轮廓时开放分析入口', () => {

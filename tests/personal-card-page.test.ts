@@ -51,6 +51,7 @@ describe('个人骑行名片页面行为', () => {
       displayName: '山野骑手',
       hasBackgrounds: true,
       hasMultipleBackgrounds: true,
+      experienceLabel: '未填写',
     });
   });
 
@@ -91,6 +92,13 @@ describe('个人骑行名片页面行为', () => {
     page.completeProfile();
     expect(wx.navigateTo).toHaveBeenCalledWith({ url: '/pages/profile-edit/index' });
   });
+
+  it('头像图片加载失败后降级占位，不留下空白头像容器', async () => {
+    await page.onShow();
+    expect(page.data.avatarFailed).toBe(false);
+    page.avatarError();
+    expect(page.data.avatarFailed).toBe(true);
+  });
 });
 
 describe('个人骑行名片静态页面契约', () => {
@@ -103,5 +111,31 @@ describe('个人骑行名片静态页面契约', () => {
     expect(`${template}\n${script}`).not.toMatch(
       /STRAVA|Strava|refreshStrava|openStravaProfile|骑行指标|同步最新/,
     );
+  });
+
+  it('大图海报压边头像必须渲染下发的 avatarUrl，失败有占位', () => {
+    const template = readFileSync('miniprogram/pages/capability-card/index.wxml', 'utf8');
+    expect(template).toContain('src="{{card.avatarUrl}}"');
+    expect(template).toContain('binderror="avatarError"');
+    expect(template).toMatch(/card-avatar/);
+  });
+
+  it('补充骑行经验与公开范围标签—值行，公开边界不含实名与电话', () => {
+    const template = readFileSync('miniprogram/pages/capability-card/index.wxml', 'utf8');
+    expect(template).toContain('骑行经验');
+    expect(template).toContain('{{card.experienceLabel}}');
+    expect(template).toContain('公开范围');
+    expect(template).toContain('所有骑友可见昵称、性别、头像与照片');
+    expect(template).not.toMatch(/realName|\.phone|实名|电话/);
+  });
+
+  it('swiper 指示器使用媒体语义色数据绑定，不内联魔法色值', () => {
+    const template = readFileSync('miniprogram/pages/capability-card/index.wxml', 'utf8');
+    const script = readFileSync('miniprogram/pages/capability-card/index.ts', 'utf8');
+    expect(template).toContain('indicator-color="{{colorMediaMuted}}"');
+    expect(template).toContain('indicator-active-color="{{colorOnMedia}}"');
+    expect(template).not.toMatch(/indicator-color="(?!\{\{)/);
+    expect(script).toContain("colorMediaMuted: '#d4d4d4'");
+    expect(script).toContain("colorOnMedia: '#ffffff'");
   });
 });

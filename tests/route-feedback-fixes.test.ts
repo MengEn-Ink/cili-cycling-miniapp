@@ -38,7 +38,7 @@ describe('路线反馈修复合同', () => {
     expect(wgs84ToGcj02(LONDON.latitude, LONDON.longitude)).toEqual(LONDON);
   });
 
-  it('只转换明确 GPX 来源，轮廓与 GPX 派生 marker 坐标使用同一转换函数', () => {
+  it('只转换明确 GPX 来源的轮廓，未提供真实选点时不再为关键点插值坐标', () => {
     const analysis = deriveRouteAnalysis(route);
     const plain = routeAnalysisForMap(analysis, false);
     expect(plain.outline[0]).toEqual({
@@ -48,7 +48,10 @@ describe('路线反馈修复合同', () => {
     const mapped = routeAnalysisForMap(analysis, true);
     expect(mapped.outline[0]).toEqual(wgs84ToGcj02(BEIJING.latitude, BEIJING.longitude));
     const start = mapped.keyPoints.find((point) => point.id === 'start')!;
-    expect({ latitude: start.lat, longitude: start.lng }).toEqual(mapped.outline[0]);
+    expect({ latitude: start.lat, longitude: start.lng }).toEqual({
+      latitude: null,
+      longitude: null,
+    });
     expect(analysis.outline[0]).toEqual({
       latitude: BEIJING.latitude,
       longitude: BEIJING.longitude,

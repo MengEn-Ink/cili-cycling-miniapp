@@ -35,14 +35,9 @@ const POINT_LABELS = {
     color: '#315d78',
     size: 25,
   },
-  rest: {
-    type: '节奏点',
-    purpose: '按里程安排的状态检查位置',
-    marker: '休',
-    color: '#6f675d',
-    size: 22,
-  },
 } as const;
+
+const LEGEND_ORDER = ['start', 'end', 'highest', 'climb', 'descent'] as const;
 
 function segmentOutline(analysis: RouteAnalysis, segment?: RouteSegment | null) {
   if (!segment || analysis.outline.length < 2 || analysis.overview.distanceKm <= 0) return [];
@@ -82,6 +77,7 @@ function viewPoint(point: RouteKeyPoint, index: number) {
   return {
     ...point,
     markerId: index + 1,
+    computed: point.source !== '活动路线',
     typeLabel: labels.type,
     shortType: labels.type.slice(0, 1),
     markerLabel: labels.marker,
@@ -170,6 +166,9 @@ Page({
     risks: [] as string[],
     profileAvailable: false,
     keyPoints: [] as ReturnType<typeof viewPoint>[],
+    hasRealKeyPoints: false,
+    keyPointCount: 0,
+    legendItems: [] as { marker: string; label: string; dotClass: string }[],
     segments: [] as ReturnType<typeof viewSegment>[],
     equipment: [] as string[],
     selectedPoint: null as ReturnType<typeof viewPoint> | null,
@@ -256,7 +255,17 @@ Page({
       );
       this.analysis = analysis;
       const keyPoints = analysis.keyPoints.map(viewPoint);
-      const selectedPoint = keyPoints.find((point) => point.hasCoordinate) || keyPoints[0] || null;
+      // 只有活动路线的真实选点才进入地图；剖面派生点仅展示计算值，不生成坐标 marker。
+      const realKeyPoints = keyPoints.filter((point) => point.hasCoordinate);
+      const hasRealKeyPoints = realKeyPoints.length > 0;
+      const legendItems = LEGEND_ORDER.filter((type) =>
+        realKeyPoints.some((point) => point.type === type),
+      ).map((type) => ({
+        marker: POINT_LABELS[type].marker,
+        label: POINT_LABELS[type].type,
+        dotClass: `legend-${type}`,
+      }));
+      const selectedPoint = realKeyPoints[0] || null;
       const overviewItems = [
         ...(analysis.overview.distanceKm > 0
           ? [{ value: analysis.overview.distanceKm, unit: 'km', label: '总距离' }]
@@ -271,7 +280,6 @@ Page({
           ? [{ value: analysis.overview.durationText, unit: '', label: '预计骑行' }]
           : []),
       ];
-      const firstCoordinate = keyPoints.find((point) => point.hasCoordinate);
       this.safeSetData(
         {
           activityTitle: activity.title,
@@ -285,19 +293,20 @@ Page({
           risks: analysis.risks,
           profileAvailable: analysis.profile.length > 1,
           keyPoints,
+          hasRealKeyPoints,
+          keyPointCount: realKeyPoints.length,
+          legendItems,
           segments: analysis.segments.map(viewSegment),
           equipment: analysis.equipment,
           selectedPoint,
           selectedPointId: selectedPoint?.id || '',
-          markers: keyPoints
-            .filter((point) => point.hasCoordinate)
-            .map((point) => markerFor(point, selectedPoint?.id || '')),
+          markers: realKeyPoints.map((point) => markerFor(point, selectedPoint?.id || '')),
           mapAvailable: analysis.outline.length > 1,
           mapFailed: false,
           mapFocused: false,
           mapScale: 12,
-          mapLatitude: firstCoordinate?.lat || analysis.outline[0]?.latitude || 39.9,
-          mapLongitude: firstCoordinate?.lng || analysis.outline[0]?.longitude || 116.4,
+          mapLatitude: realKeyPoints[0]?.lat || analysis.outline[0]?.latitude || 39.9,
+          mapLongitude: realKeyPoints[0]?.lng || analysis.outline[0]?.longitude || 116.4,
           ...mapState(analysis),
         },
         () => this.drawElevation(),

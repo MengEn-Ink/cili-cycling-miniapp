@@ -19,12 +19,8 @@ import {
 const PROFILE_REQUEST_DEADLINE_MS = 8_000;
 const HERO_BRAND_IMAGE = '/assets/profile/hero-alpine.svg';
 const CHINA_TIME_OFFSET_MS = 8 * 60 * 60_000;
-const REFRESH_READY_THRESHOLD_PX = 72;
-const REFRESH_SUCCESS_DURATION_MS = 1_200;
-const REFRESH_ERROR_DURATION_MS = 1_600;
 
 type PersonalCardView = ReturnType<typeof personalCardViewModel>;
-type RefreshStage = 'idle' | 'pulling' | 'ready' | 'refreshing' | 'success' | 'error';
 
 type HeroImageErrorEvent = {
   currentTarget: { dataset: { index?: number | string; url?: string } };
@@ -85,18 +81,6 @@ function formatUpdatedAt(cachedAt: number, now = Date.now()) {
   return `缓存于 ${date.getUTCMonth() + 1}月${date.getUTCDate()}日 ${time}`;
 }
 
-function formatPullRefreshDetail(updatedAtText: string) {
-  if (!updatedAtText) return '尚无更新记录';
-  if (updatedAtText === '刚刚更新') return '上次更新 · 刚刚';
-  return `上次${updatedAtText}`;
-}
-
-function formatRetainedContent(updatedAtText: string) {
-  if (!updatedAtText) return '继续展示当前内容';
-  if (updatedAtText === '刚刚更新') return '继续展示刚刚更新的内容';
-  return `继续展示${updatedAtText.replace(/^缓存于/, '于')}的内容`;
-}
-
 function clubViewData(profile: unknown) {
   const clubs =
     profile && typeof profile === 'object' && Array.isArray((profile as { clubs?: unknown }).clubs)
@@ -126,10 +110,6 @@ Page({
   loadRequestId: 0,
   lifecycleRevision: 0,
   pageVisible: false,
-  refreshTouchStartY: 0,
-  heroPageScrollTop: 0,
-  refreshFailed: false,
-  refreshFeedbackTimer: null as ReturnType<typeof setTimeout> | null,
   loadPromise: null as {
     forceIdentity: boolean;
     forceData: boolean;
@@ -148,6 +128,8 @@ Page({
     refreshing: false,
     error: '',
     refreshMessage: '',
+    refreshFailed: false,
+    failedClubAvatars: {} as Record<string, string>,
     updatedAtText: '',
     usingCache: false,
     role: 'member',
@@ -162,10 +144,6 @@ Page({
     heroFallbackImageUrl: HERO_BRAND_IMAGE,
     heroCard: null as PersonalCardView | null,
     currentHeroIndex: 0,
-    refreshStage: 'idle' as RefreshStage,
-    refreshTitle: '',
-    refreshDetail: '',
-    refreshPullProgress: 0,
     hasGuidance: false,
   },
   hydrateCache() {
@@ -195,8 +173,6 @@ Page({
     await this.load(false, !cache || !isProfilePageCacheFresh(cache));
   },
   onHide() {
-    this.clearRefreshFeedbackTimer();
-    this.resetRefreshFeedback();
     this.pageVisible = false;
     this.lifecycleRevision += 1;
     this.loadRequestId += 1;
@@ -205,23 +181,12 @@ Page({
     this.hydratedCache = null;
   },
   onUnload() {
-    this.clearRefreshFeedbackTimer();
     this.pageVisible = false;
     this.lifecycleRevision += 1;
     this.loadRequestId += 1;
     this.loadPromise = null;
   },
   async onPullDownRefresh() {
-    const refreshRevision = this.lifecycleRevision;
-    this.clearRefreshFeedbackTimer();
-    this.refreshFailed = false;
-    this.setData({
-      refreshStage: 'refreshing',
-      refreshTitle: '正在刷新',
-      refreshDetail: '正在更新资料与骑行数据',
-      refreshPullProgress: 100,
-      refreshMessage: '正在更新资料与骑行数据…',
-    });
     const loadPromise = this.load(false, true);
     const cardLoadPromise = this.cardLoadPromise;
     try {
@@ -230,17 +195,7 @@ Page({
     } finally {
       if (typeof wx.stopPullDownRefresh === 'function') wx.stopPullDownRefresh();
     }
-    if (!this.pageVisible || refreshRevision !== this.lifecycleRevision) return;
-    const failed = this.refreshFailed;
-    this.setData({
-      refreshStage: failed ? 'error' : 'success',
-      refreshTitle: failed ? '刷新未完成' : '刷新完成',
-      refreshDetail: failed ? formatRetainedContent(this.data.updatedAtText) : '刚刚更新',
-      refreshPullProgress: 100,
-    });
-    this.scheduleRefreshFeedbackReset(
-      failed ? REFRESH_ERROR_DURATION_MS : REFRESH_SUCCESS_DURATION_MS,
-    );
+    // 刷新结果通过 refreshing/refreshFailed/refreshMessage 顶部非阻断提示反馈，不遮挡当前内容。
   },
   async load(forceIdentity = false, forceData = true) {
     const current = this.loadPromise;
@@ -266,6 +221,7 @@ Page({
       loading: !hasContent,
       refreshing: hasContent && forceData,
       error: '',
+      refreshFailed: false,
       refreshMessage: forceData && hasContent ? '正在更新，当前内容保持可用' : '',
     });
 
@@ -317,9 +273,9 @@ Page({
         const card = cardState?.data || null;
         if (!card) {
           const hasPrevious = Boolean(this.data.heroCard);
-          if (this.data.refreshStage === 'refreshing') this.refreshFailed = true;
           this.setData({
             refreshing: false,
+            refreshFailed: hasPrevious,
             refreshMessage: hasPrevious
               ? `${cardState.error || '骑行数据更新失败'}，继续展示${this.data.updatedAtText || '缓存数据'}`
               : cardState.error,
@@ -339,6 +295,8 @@ Page({
         this.heroMediaRecoveryPending = false;
         this.setData({
           refreshing: false,
+          // 只有资料与名片都成功才清除失败提示；资料分支失败时这里保持非阻断提醒。
+          refreshFailed: !profile,
           refreshMessage: profile ? '已更新全部名片信息' : this.data.refreshMessage,
           updatedAtText: formatUpdatedAt(cachedAt, cachedAt),
           usingCache: false,
@@ -396,11 +354,11 @@ Page({
 
     if (profileState.error) {
       const hasPrevious = Boolean(this.data.profile || this.data.heroCard);
-      if (this.data.refreshStage === 'refreshing') this.refreshFailed = true;
       this.setData({
         loading: false,
         refreshing: false,
         error: hasPrevious ? '' : profileState.error,
+        refreshFailed: hasPrevious,
         refreshMessage: hasPrevious
           ? `${profileState.error}，继续展示${this.data.updatedAtText || '缓存数据'}`
           : '',
@@ -414,69 +372,26 @@ Page({
       ...clubViewData(profile),
       loading: false,
       error: '',
+      refreshFailed: false,
       hasGuidance: profile ? !profile.hasCompletedGuidance : false,
     });
   },
-  onPageScroll(event: { scrollTop?: number }) {
-    this.heroPageScrollTop = Math.max(0, Number(event.scrollTop) || 0);
-    if (
-      this.heroPageScrollTop > 0 &&
-      (this.data.refreshStage === 'pulling' || this.data.refreshStage === 'ready')
-    )
-      this.resetRefreshFeedback();
-  },
-  clearRefreshFeedbackTimer() {
-    if (this.refreshFeedbackTimer === null) return;
-    clearTimeout(this.refreshFeedbackTimer);
-    this.refreshFeedbackTimer = null;
-  },
-  resetRefreshFeedback() {
-    if (this.data.refreshStage === 'idle') return;
-    this.setData({
-      refreshStage: 'idle',
-      refreshTitle: '',
-      refreshDetail: '',
-      refreshPullProgress: 0,
-    });
-  },
-  scheduleRefreshFeedbackReset(delayMs: number) {
-    this.clearRefreshFeedbackTimer();
-    this.refreshFeedbackTimer = setTimeout(() => {
-      this.refreshFeedbackTimer = null;
-      if (this.pageVisible) this.resetRefreshFeedback();
-    }, delayMs);
-  },
-  refreshTouchStart(event: { touches?: { clientY?: number }[] }) {
-    if (this.heroPageScrollTop > 0 || this.data.refreshStage === 'refreshing') return;
-    this.clearRefreshFeedbackTimer();
-    this.refreshTouchStartY = Number(event.touches?.[0]?.clientY) || 0;
-  },
-  refreshTouchMove(event: { touches?: { clientY?: number }[] }) {
-    if (
-      this.heroPageScrollTop > 0 ||
-      ['refreshing', 'success', 'error'].includes(this.data.refreshStage)
-    )
-      return;
-    const currentY = Number(event.touches?.[0]?.clientY) || 0;
-    const distance = Math.max(0, currentY - this.refreshTouchStartY);
-    if (!distance) {
-      this.resetRefreshFeedback();
-      return;
-    }
-    const ready = distance >= REFRESH_READY_THRESHOLD_PX;
-    this.setData({
-      refreshStage: ready ? 'ready' : 'pulling',
-      refreshTitle: ready ? '松开刷新' : '下拉刷新',
-      refreshDetail: formatPullRefreshDetail(this.data.updatedAtText),
-      refreshPullProgress: Math.min(100, Math.round((distance / REFRESH_READY_THRESHOLD_PX) * 100)),
-    });
-  },
-  refreshTouchEnd() {
-    if (this.data.refreshStage === 'pulling' || this.data.refreshStage === 'ready')
-      this.resetRefreshFeedback();
-  },
   openSettings() {
     wx.navigateTo({ url: '/pages/settings/index' });
+  },
+  openCapabilityCard() {
+    wx.navigateTo({ url: '/pages/capability-card/index' });
+  },
+  clubAvatarError(event: { currentTarget: { dataset: { clubId?: string; avatarUrl?: string } } }) {
+    const { clubId, avatarUrl } = event.currentTarget.dataset;
+    if (!clubId || !avatarUrl || this.data.failedClubAvatars[clubId] === avatarUrl) return;
+    const currentClub = (this.data.profile as Profile | null)?.clubs.find(
+      (club) => club.clubId === clubId,
+    );
+    if (currentClub?.avatarUrl !== avatarUrl) return;
+    this.setData({
+      failedClubAvatars: { ...this.data.failedClubAvatars, [clubId]: avatarUrl },
+    });
   },
   heroSwiperChange(event: { detail?: { current?: number } }) {
     this.setData({ currentHeroIndex: Math.max(0, Number(event.detail?.current) || 0) });

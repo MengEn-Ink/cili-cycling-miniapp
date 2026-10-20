@@ -1,14 +1,6 @@
 .profile-page {
   background: var(--color-bg);
 }
-.profile-refresh-feedback {
-  display: flex;
-  gap: 16rpx;
-  margin-top: 16rpx;
-  padding: 16rpx 24rpx;
-  border-radius: var(--radius-sm);
-  background: var(--color-raised);
-}
 .rider-card {
   overflow: hidden;
   padding: 0;
@@ -184,8 +176,7 @@
   color: var(--color-muted);
   font-size: 24rpx;
 }
-.identity-guide,
-.profile-refresh-error {
+.identity-guide {
   margin-top: var(--card-gap);
   padding: 32rpx;
   border: 2rpx solid var(--color-border);
@@ -226,6 +217,9 @@
 }
 .menu-card:last-child {
   border-bottom: 0;
+}
+.menu-card--hover {
+  background: var(--color-raised);
 }
 .menu-icon {
   position: relative;
@@ -333,12 +327,6 @@
 .empty-profile .btn {
   width: 100%;
   margin-top: 24rpx;
-}
-@media (prefers-reduced-motion: reduce) {
-  .refresh-feedback-spinner {
-    animation-duration: 0.01ms;
-    animation-iteration-count: 1;
-  }
 }
 @media (max-width: 340px) {
   .identity-guide-actions {

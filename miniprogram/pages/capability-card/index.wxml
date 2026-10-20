@@ -17,8 +17,8 @@
           interval="5200"
           duration="520"
           indicator-dots="{{card.hasMultipleBackgrounds}}"
-          indicator-color="rgba(255,255,255,.35)"
-          indicator-active-color="#ffffff"
+          indicator-color="{{colorMediaMuted}}"
+          indicator-active-color="{{colorOnMedia}}"
         >
           <swiper-item wx:for="{{card.backgrounds}}" wx:key="url">
             <image
@@ -44,14 +44,38 @@
           <view class="brand-signature"><brand-logo compact="{{true}}" /></view>
           <view class="card-label"><text class="status-dot"></text>公开骑行名片</view>
         </view>
-        <view class="card-content">
-          <view class="identity-block">
-            <view class="rider-name">{{card.displayName}}</view>
-            <view class="gender-pill {{card.genderClass}}">{{card.genderLabel}}</view>
-            <view class="privacy-note">这是你在活动中展示的公开资料</view>
-          </view>
+      </view>
+
+      <view class="card-identity">
+        <view class="card-avatar-ring">
+          <image
+            wx:if="{{card.avatarUrl && !avatarFailed}}"
+            class="card-avatar"
+            src="{{card.avatarUrl}}"
+            mode="aspectFill"
+            binderror="avatarError"
+            aria-label="{{card.displayName}}的头像"
+          />
+          <view wx:else class="card-avatar card-avatar--placeholder" aria-hidden="true">骑</view>
+        </view>
+        <view class="identity-copy">
+          <view class="rider-name">{{card.displayName}}</view>
+          <view class="gender-pill {{card.genderClass}}">{{card.genderLabel}}</view>
         </view>
       </view>
+
+      <view class="card-facts">
+        <view class="fact-row">
+          <text class="fact-label">骑行经验</text>
+          <text class="fact-value">{{card.experienceLabel}}</text>
+        </view>
+        <view class="fact-row">
+          <text class="fact-label">公开范围</text>
+          <text class="fact-value">所有骑友可见昵称、性别、头像与照片</text>
+        </view>
+      </view>
+
+      <view class="privacy-note">这是你在活动中展示的公开资料</view>
 
       <view class="card-caption">
         <text>{{card.generatedAtText}}</text>

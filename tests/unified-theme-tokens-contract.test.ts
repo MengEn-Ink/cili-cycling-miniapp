@@ -75,8 +75,13 @@ describe('统一主题设计契约', () => {
 
   it('版本和用户可见更新说明升级且旧版本转为历史项', () => {
     const settings = read('miniprogram/pages/settings/index.ts');
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.20.3');
-    expect(settings).toContain("title: '管理端审核与活动安全修复'");
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.20.4');
+    expect(settings).toMatch(
+      /version: CLIENT_RELEASE_VERSION[\s\S]*?title: '骑行名片、个人中心与路线分析修复'[\s\S]*?latest: true/,
+    );
+    expect(settings).toMatch(
+      /version: '2026\.10\.20\.3'[\s\S]*?title: '管理端审核与活动安全修复'[\s\S]*?latest: false/,
+    );
     expect(settings).toMatch(
       /version: '2026\.10\.20\.2'[\s\S]*?title: '报名凭证与活动详情更可靠'[\s\S]*?latest: false/,
     );

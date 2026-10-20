@@ -248,8 +248,30 @@
   background: #315d78;
 }
 
-.legend-rest {
-  background: #6f675d;
+.point-computed {
+  display: inline-block;
+  margin-left: 10rpx;
+  padding: 2rpx 10rpx;
+  border-radius: var(--radius-xs);
+  background: var(--color-raised);
+  color: var(--color-text);
+  font-size: 20rpx;
+  font-weight: 800;
+  line-height: 30rpx;
+  vertical-align: middle;
+}
+
+.anchor-computed {
+  margin-left: 6rpx;
+  font-size: 18rpx;
+  font-weight: 800;
+}
+
+.segments-hint {
+  padding: 4rpx 0 14rpx;
+  color: var(--color-muted);
+  font-size: 22rpx;
+  line-height: 34rpx;
 }
 
 .map-detail {
@@ -429,6 +451,12 @@
 .segment-name,
 .point-name {
   font-weight: 950;
+}
+
+.point-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
 }
 
 .segment-name {

@@ -29,6 +29,11 @@ describe('UI 重构通用组件契约', () => {
     expect(script).toContain("this.triggerEvent('tap'");
   });
 
+  it('个人中心大头像按稿为 66px（132rpx）', () => {
+    const styles = read('miniprogram/components/cili-avatar/index.wxss');
+    expect(styles).toMatch(/\.avatar--lg\s*\{[^}]*width:\s*132rpx;[^}]*height:\s*132rpx;/s);
+  });
+
   it('指标组件只消费展示数据并支持窄屏列数', () => {
     const template = read('miniprogram/components/metric-grid/index.wxml');
     const script = read('miniprogram/components/metric-grid/index.ts');

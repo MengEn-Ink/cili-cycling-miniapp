@@ -116,9 +116,11 @@ describe('品牌与页面体验静态契约', () => {
     expect(activityCard).toMatch(
       /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.activity-card--pressed\s*\{[^}]*transform:\s*none;/,
     );
-    expect(profile).toMatch(
-      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.refresh-feedback-spinner\s*\{[^}]*animation-duration:\s*0\.01ms;[^}]*animation-iteration-count:\s*1;/,
-    );
+    // 自定义下拉指示器已随“仅保留原生下拉刷新”移除，不再残留 spinner 动画
+    expect(profile).not.toContain('refresh-feedback-spinner');
+    expect(profile).not.toContain('profile-refresh-feedback');
+    // 常用服务行提供按压反馈
+    expect(profile).toMatch(/\.menu-card--hover\s*\{[^}]*background:\s*var\(--color-raised\)/);
   });
 
   it('核心页面遵循统一栅格、单一强调色与 44px 触控门禁', () => {

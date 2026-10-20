@@ -1,6 +1,6 @@
 import type { RouteCoordinate, RouteElevationPoint } from '../../../models/index';
 
-export type KeyPointType = 'start' | 'end' | 'highest' | 'climb' | 'descent' | 'rest';
+export type KeyPointType = 'start' | 'end' | 'highest' | 'climb' | 'descent';
 export type SegmentType = 'start' | 'climb' | 'transition' | 'descent' | 'return';
 
 export interface RouteKeyPoint {
@@ -12,7 +12,7 @@ export interface RouteKeyPoint {
   gradePercent: number | null;
   lat: number | null;
   lng: number | null;
-  source: '活动路线' | '海拔剖面规则' | '距离规则';
+  source: '活动路线' | '海拔剖面规则';
   confidence: '高' | '中' | '低';
   note: string;
 }

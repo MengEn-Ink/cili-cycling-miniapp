@@ -39,7 +39,8 @@ describe('报名、骑行名片与个人中心设计对齐', () => {
     expect(template).toContain('昵称、头像和照片由你维护');
     expect(template).not.toMatch(/lifetimeMetrics|recentMetrics|emptyMetricsText|STRAVA/);
     expect(styles).toMatch(/\.capability-page\s*\{[^}]*padding:\s*32rpx var\(--page-gutter\)/s);
-    expect(styles).toMatch(/\.card-visual\s*\{[^}]*height:\s*336rpx/s);
+    // §5⑧ 大图海报：媒体区由 168px 升级为约 896rpx 大幅海报
+    expect(styles).toMatch(/\.card-visual\s*\{[^}]*height:\s*896rpx/s);
     expect(
       declaration(effectiveBlock(read('miniprogram/app.wxss'), '.photo-button'), 'min-height'),
     ).toBe('var(--control-height)');
@@ -53,7 +54,10 @@ describe('报名、骑行名片与个人中心设计对齐', () => {
     expect(template).not.toContain('class="profile-capability-section"');
     expect(template).not.toContain('class="hero-capability-metrics"');
     expect(template).not.toContain('cardExpanded');
-    expect(template).toContain('class="profile-refresh-feedback');
+    // 松手无动作的自定义指示器已移除，只保留原生下拉刷新与顶部非阻断提示
+    expect(template).not.toContain('profile-refresh-feedback');
+    expect(template).not.toContain('bindtouchstart');
+    expect(template).toContain('class="refresh-note');
     expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*472rpx/s);
     expect(declaration(effectiveBlock(styles, '.menu-card'), 'min-height')).toBe('120rpx');
     expectSemantic(declaration(effectiveBlock(styles, '.chevron'), 'color'), '--color-muted');

@@ -112,6 +112,56 @@ describe('路线分析页运行时可靠性', () => {
     });
   });
 
+  it('无真实选点坐标时不生成任何 marker 并隐藏关键点模块', async () => {
+    mocks.getActivity.mockResolvedValue({
+      ...activity('无选点活动'),
+      route: {
+        start: '集合点',
+        end: '终点',
+        distanceKm: 30,
+        routeOutline: [
+          { latitude: 30, longitude: 120 },
+          { latitude: 30.2, longitude: 120.2 },
+        ],
+      },
+    });
+    const page = await pageInstance();
+    page.activityId = 'no-waypoints';
+    await page.load();
+
+    expect(page.data.markers).toEqual([]);
+    expect(page.data.legendItems).toEqual([]);
+    expect(page.data.hasRealKeyPoints).toBe(false);
+    expect(page.data.selectedPoint).toBeNull();
+    expect(page.data.mapAvailable).toBe(true);
+    expect(page.data.keyPoints.some((point: any) => point.name.includes('休息点'))).toBe(false);
+  });
+
+  it('真实起终点选点生成 marker 与图例，派生点仍无坐标', async () => {
+    mocks.getActivity.mockResolvedValue({
+      ...activity('有选点活动'),
+      route: {
+        start: '集合点',
+        end: '终点',
+        distanceKm: 30,
+        startLocation: { name: '集合点', address: '', latitude: 30, longitude: 120 },
+        endLocation: { name: '终点', address: '', latitude: 30.2, longitude: 120.2 },
+        routeOutline: [
+          { latitude: 30, longitude: 120 },
+          { latitude: 30.2, longitude: 120.2 },
+        ],
+      },
+    });
+    const page = await pageInstance();
+    page.activityId = 'with-waypoints';
+    await page.load();
+
+    expect(page.data.markers).toHaveLength(2);
+    expect(page.data.hasRealKeyPoints).toBe(true);
+    expect(page.data.legendItems.map((item: any) => item.marker)).toEqual(['起', '终']);
+    expect(page.data.selectedPoint).toMatchObject({ id: 'start' });
+  });
+
   it('地图失败只降级地图并可轻量恢复', async () => {
     const page = await pageInstance();
     page.analysis = { outline: [{}, {}] };

@@ -66,8 +66,13 @@ describe('完整路线分析页合同', () => {
     expect(page).toContain('label: {');
     expect(page).toContain('content: point.markerLabel');
     expect(page).toContain('bgColor: point.markerColor');
-    for (const marker of ['起', '终', '高', '爬', '下', '休'])
-      expect(template).toContain(`>${marker}</text>`);
+    // 图例只展示真实 marker（起终点选点）；虚构节奏点已删除，派生点不落地为地图标记。
+    expect(page).toContain("marker: '起'");
+    expect(page).toContain("marker: '终'");
+    expect(page).not.toContain("type: '节奏点'");
+    expect(template).toContain('wx:for="{{legendItems}}"');
+    expect(template).not.toContain('legend-rest');
+    expect(template).not.toMatch(/节奏点|建议休息点/);
   });
 
   it('地图、海拔与可选详情按真实数据整块隐藏', () => {
@@ -82,6 +87,19 @@ describe('完整路线分析页合同', () => {
     expect(page).toContain('profileAvailable: analysis.profile.length > 1');
     expect(page).toContain('analysis.overview.ascentM !== null');
     expect(template).not.toMatch(/补给点|卫生间/);
+    // 无真实关键点（真实选点坐标）时，锚点条与关键公里点整模块隐藏，派生点不生成 marker。
+    expect(template.match(/wx:if="\{\{hasRealKeyPoints\}\}"/g)?.length ?? 0).toBeGreaterThanOrEqual(
+      2,
+    );
+    expect(page).toContain('hasRealKeyPoints:');
+    expect(page).not.toMatch(/建议休息点|距离规则|coordinateAt/);
+  });
+
+  it('派生内容标明为计算值而非真实地点', () => {
+    expect(page).toContain('computed: point.source');
+    expect(template).toContain('point.computed');
+    expect(template).toContain('计算值');
+    expect(template).toContain('非真实地名');
   });
 
   it('关键点、分段、海拔锚点与地图 Canvas 双向联动', () => {
