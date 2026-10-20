@@ -11,6 +11,8 @@ import type {
   JoinedClubSummary,
   ManagedClubProfile,
   ManagedClubProfileInput,
+  SoleClubHome,
+  SoleClubHomeSnapshot,
   SoleClubProfile,
   SoleClubProfileInput,
   SoleClubSnapshot,
@@ -1386,6 +1388,40 @@ function clubApplicationPayload(value: ClubApplicationInput) {
   };
 }
 
+function mapSoleClubHome(raw: unknown): SoleClubHomeSnapshot {
+  const value = expectRecord(raw);
+  if (value.exists !== true) return { exists: false };
+  const club = expectRecord(value.club);
+  if (
+    typeof club.id !== 'string' ||
+    !/^club_[a-f0-9]{64}$/.test(club.id) ||
+    typeof club.name !== 'string' ||
+    !club.name.trim() ||
+    typeof club.city !== 'string' ||
+    typeof club.introduction !== 'string' ||
+    typeof club.avatar_url !== 'string' ||
+    typeof club.cover_url !== 'string' ||
+    (club.avatar_url !== '' && !/^https:\/\//i.test(club.avatar_url)) ||
+    (club.cover_url !== '' && !/^https:\/\//i.test(club.cover_url)) ||
+    typeof value.role_label !== 'string' ||
+    !value.role_label.trim() ||
+    typeof value.can_manage !== 'boolean'
+  )
+    return invalidResponse();
+  const home: SoleClubHome = {
+    id: club.id,
+    name: club.name,
+    city: club.city,
+    introduction: club.introduction,
+    avatarUrl: club.avatar_url,
+    coverUrl: club.cover_url,
+    role: typeof value.role === 'string' && value.role ? value.role : 'VISITOR',
+    roleLabel: value.role_label,
+    canManage: value.can_manage,
+  };
+  return { exists: true, club: home };
+}
+
 function mapSoleClub(raw: unknown): SoleClubProfile {
   const value = expectRecord(raw);
   if (
@@ -1740,6 +1776,9 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
         registrationId: requiredId(id, '报名 ID'),
       }),
     );
+  }
+  async getSoleClubHome() {
+    return mapSoleClubHome(await this.call('club-application', { action: 'getSoleClubHome' }));
   }
   async getMyClubApplication() {
     const value = await this.call<unknown>('club-application', { action: 'mine' });

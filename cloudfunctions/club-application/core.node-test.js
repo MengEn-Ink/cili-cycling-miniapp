@@ -12,6 +12,7 @@ const {
   joinPublicClub,
   getManagedClub,
   updateManagedClub,
+  getSoleClubHome,
   getSoleClub,
   createSoleClub,
   updateSoleClub,
@@ -1227,7 +1228,7 @@ test('更新唯一俱乐部执行乐观锁，旧版本失败并返回中文提�
   assert.equal(store.state.clubs.get(SOLE_CLUB_ID).name, '辛庄桥小火车');
 });
 
-test('俱乐部 OWNER 可更新唯一俱乐部，普通成员与非管理员不可更新', async () => {
+test('OWNER/ADMIN 仅展示俱乐部身份，不能绕过平台管理员权限更新资料', async () => {
   const store = memoryStore();
   const created = await createSoleClub(
     store,
@@ -1239,49 +1240,97 @@ test('俱乐部 OWNER 可更新唯一俱乐部，普通成员与非管理员不�
     },
     now,
   );
-  store.state.memberships.set(membershipId(SOLE_CLUB_ID, 'owner-1'), {
-    _id: membershipId(SOLE_CLUB_ID, 'owner-1'),
-    club_id: SOLE_CLUB_ID,
-    openid: 'owner-1',
-    role: 'OWNER',
-    status: 'active',
-  });
-  const ownerInput = {
-    name: '辛庄桥小火车',
-    city: '北京',
-    introduction: '负责人维护后的全平台唯一俱乐部简介，长度仍满足服务端校验。',
-    // 保留管理员首次创建时上传的头像与背景，允许不改媒体直接保存。
-    avatar_file_id: created.club.avatar_file_id,
-    cover_file_id: created.club.cover_file_id,
-  };
-  const ownerUpdated = await updateSoleClub(
-    store,
-    {
-      adminOpenid: 'owner-1',
-      clubId: SOLE_CLUB_ID,
-      requestId: 'sole-manager-update-1',
-      expectedUpdatedAt: created.club.updated_at,
-      input: ownerInput,
-    },
-    new Date('2026-10-20T08:00:00.000Z'),
-  );
-  assert.equal(ownerUpdated.club.city, '北京');
+  for (const [openid, role] of [
+    ['owner-1', 'OWNER'],
+    ['club-admin-1', 'ADMIN'],
+  ]) {
+    store.state.memberships.set(membershipId(SOLE_CLUB_ID, openid), {
+      _id: membershipId(SOLE_CLUB_ID, openid),
+      club_id: SOLE_CLUB_ID,
+      openid,
+      role,
+      status: 'active',
+    });
+    await assert.rejects(
+      () =>
+        updateSoleClub(
+          store,
+          {
+            adminOpenid: openid,
+            clubId: SOLE_CLUB_ID,
+            requestId: `sole-manager-update-${role.toLowerCase()}`,
+            expectedUpdatedAt: created.club.updated_at,
+            input: soleInput(),
+          },
+          new Date('2026-10-20T09:00:00.000Z'),
+        ),
+      (error) => error.code === 'ADMIN_REQUIRED',
+    );
+  }
+});
 
-  await assert.rejects(
-    () =>
-      updateSoleClub(
-        store,
-        {
-          adminOpenid: 'member-1',
-          clubId: SOLE_CLUB_ID,
-          requestId: 'sole-manager-update-2',
-          expectedUpdatedAt: ownerUpdated.club.updated_at,
-          input: ownerInput,
-        },
-        new Date('2026-10-20T09:00:00.000Z'),
-      ),
-    (error) => error.code === 'CLUB_ADMIN_REQUIRED',
-  );
+const homeProjectionClubId = `club_${'f'.repeat(64)}`;
+const publicClub = {
+  _id: homeProjectionClubId,
+  name: '辛庄桥小火车',
+  city: '北京',
+  introduction: '全平台唯一俱乐部，固定路线晨练与周末骑行活动。',
+  avatar_url: 'cloud://env/club-applications/admin/avatar.jpg',
+  cover_file_id: 'cloud://env/club-applications/admin/cover.jpg',
+  owner_openid: 'owner-1',
+  applicant_contact: 'secret-contact',
+  member_count: 3,
+  max_members: 50,
+  join_mode: 'public_apply',
+  approval_status: 'approved',
+  status: 'active',
+};
+
+test('普通成员读取唯一俱乐部时只返回公开投影且不可管理', async () => {
+  const store = memoryStore();
+  store.state.clubs.set(homeProjectionClubId, publicClub);
+  const home = await getSoleClubHome(store, { openid: 'member-1', clubId: homeProjectionClubId });
+  assert.equal(home.role, 'VISITOR');
+  assert.equal(home.role_label, '骑友');
+  assert.equal(home.can_manage, false);
+  assert.deepEqual(Object.keys(home.club).sort(), [
+    'avatar_file_id',
+    'city',
+    'cover_file_id',
+    'id',
+    'introduction',
+    'name',
+  ]);
+});
+
+test('OWNER/ADMIN 身份可展示但 can_manage 仍为 false', async () => {
+  for (const [openid, role, label] of [
+    ['owner-1', 'OWNER', '负责人'],
+    ['club-admin-1', 'ADMIN', '管理员'],
+  ]) {
+    const store = memoryStore();
+    store.state.clubs.set(homeProjectionClubId, publicClub);
+    store.state.memberships.set(membershipId(homeProjectionClubId, openid), {
+      _id: membershipId(homeProjectionClubId, openid),
+      club_id: homeProjectionClubId,
+      openid,
+      role,
+      status: 'active',
+    });
+    const home = await getSoleClubHome(store, { openid, clubId: homeProjectionClubId });
+    assert.equal(home.role, role);
+    assert.equal(home.role_label, label);
+    assert.equal(home.can_manage, false);
+  }
+});
+
+test('admin_users 中启用的平台管理员 can_manage 为 true', async () => {
+  const store = memoryStore();
+  store.state.clubs.set(homeProjectionClubId, publicClub);
+  const home = await getSoleClubHome(store, { openid: 'admin-1', clubId: homeProjectionClubId });
+  assert.equal(home.role, 'PLATFORM_ADMIN');
+  assert.equal(home.role_label, '平台管理员');
+  assert.equal(home.can_manage, true);
 });
 
 test('唯一俱乐部资料只允许白名单字段，受保护字段由服务端拒绝', async () => {

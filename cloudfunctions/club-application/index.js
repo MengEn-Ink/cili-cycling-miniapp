@@ -10,6 +10,7 @@ const {
   getClubDetail,
   getManagedClub,
   updateManagedClub,
+  getSoleClubHome,
   saveDraft,
   submitApplication,
   withdrawApplication,
@@ -184,6 +185,33 @@ exports.main = async (event = {}) => {
       });
       const [resolved] = await resolveJoinableClubAvatars(cloud, [value]);
       return ok(resolved);
+    }
+    if (event.action === 'getSoleClubHome') {
+      // 登录用户即可读取唯一俱乐部公开主页；空库返回 {exists:false}，不报错。
+      const existing = await findSoleClubDocument();
+      const value = await getSoleClubHome(transactionStore(), {
+        openid,
+        clubId: existing?._id || '',
+      });
+      if (!value || value.exists !== true || !value.club) return ok({ exists: false });
+      // 临时地址在出口统一签发；响应只保留公开字段，剥离 fileID 等内部信息。
+      const [resolved] = await resolveJoinableClubAvatars(cloud, [
+        { ...value.club, avatar_url: value.club.avatar_file_id },
+      ]);
+      return ok({
+        exists: true,
+        club: {
+          id: value.club.id,
+          name: value.club.name,
+          city: value.club.city,
+          introduction: value.club.introduction,
+          avatar_url: resolved.avatar_url,
+          cover_url: resolved.cover_url,
+        },
+        role: value.role,
+        role_label: value.role_label,
+        can_manage: value.can_manage,
+      });
     }
     if (event.action === 'getManagedClub') {
       const value = await getManagedClub(transactionStore(), {

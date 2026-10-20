@@ -138,15 +138,19 @@ describe('M0 俱乐部前端映射与交互契约', () => {
     });
   });
 
-  it('静态视觉契约限制头像组数量并保留品牌文字占位', () => {
+  it('单俱乐部收口后个人中心只保留唯一俱乐部入口与品牌文字占位', () => {
     const profileLogic = readFileSync('miniprogram/pages/profile/index.ts', 'utf8');
     const profileView = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     const editorLogic = readFileSync('miniprogram/pages/admin/activity-edit/index.ts', 'utf8');
-    expect(profileLogic).toContain('clubs.slice(0, 4)');
-    expect(profileView).toContain('clubOverflowCount');
+    expect(profileLogic).toContain('clubAvatarFailed');
+    expect(profileLogic).not.toContain('clubs.slice(0, 4)');
+    expect(profileView).toContain('全平台唯一俱乐部');
+    expect(profileView).toContain('binderror="clubAvatarError"');
     expect(profileView).toContain('club-membership-avatar--placeholder');
     expect(profileView).toContain('club-membership-empty');
-    expect(profileView).toContain('可申请创建或查看申请进度');
+    expect(profileView).not.toContain('club-avatar-stack');
+    expect(profileView).not.toContain('clubOverflowCount');
+    expect(profileView).not.toContain('可申请创建或查看申请进度');
     expect(editorLogic).toContain('clubOptionChange');
     expect(editorLogic).toContain(
       'clubId: this.data.clubOptions[this.data.clubOptionIndex]?.clubId',

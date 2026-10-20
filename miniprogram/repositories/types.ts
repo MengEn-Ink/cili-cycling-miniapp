@@ -9,6 +9,7 @@ import type {
   JoinedClubSummary,
   ManagedClubProfile,
   ManagedClubProfileInput,
+  SoleClubHomeSnapshot,
   SoleClubProfile,
   SoleClubProfileInput,
   SoleClubSnapshot,
@@ -104,6 +105,8 @@ export interface AdminReviewRepository {
   }>;
 }
 export interface ClubApplicationRepository {
+  // 登录用户读取唯一俱乐部公开主页；多存量由服务端显式拒绝。
+  getSoleClubHome(): Promise<SoleClubHomeSnapshot>;
   getMyClubApplication(): Promise<ClubApplication | null>;
   listJoinableClubs(): Promise<JoinableClub[]>;
   joinPublicClub(clubId: string, requestId: string): Promise<JoinedClubSummary>;

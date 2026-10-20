@@ -4,11 +4,11 @@ import { describe, expect, it } from 'vitest';
 
 const read = (path: string) => readFileSync(path, 'utf8');
 
-describe('profile/activity/club 统一媒体上传接线', () => {
+describe('profile/activity/admin club 统一媒体上传接线', () => {
   it('profile/activity 直接复用统一模块，club 经共享 helper 接入且业务页不调用原生上传', () => {
     const profile = read('miniprogram/pages/profile-edit/index.ts');
     const activity = read('miniprogram/pages/admin/activity-edit/index.ts');
-    const club = read('miniprogram/pages/club/center/index.ts');
+    const club = read('miniprogram/pages/admin/club-application-detail/index.ts');
     const clubMedia = read('miniprogram/utils/club-media.ts');
 
     for (const source of [profile, activity]) {

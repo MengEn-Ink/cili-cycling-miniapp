@@ -28,27 +28,17 @@
     </view>
   </view>
 
-  <button class="club-membership-card" wx:if="{{profile}}" bindtap="openClubCenter" aria-label="打开我的俱乐部，可申请创建或查看进度">
+  <button class="club-membership-card" wx:if="{{profile}}" bindtap="openClubCenter" aria-label="打开我的俱乐部，查看唯一俱乐部资料与活动">
     <view wx:if="{{!profile.clubs.length}}" class="club-membership-empty">
       <view class="club-membership-avatar club-membership-avatar--placeholder">俱</view>
-      <view class="club-membership-copy"><text class="club-membership-name">我的俱乐部</text><text class="club-membership-role">未加入 · 可申请创建或查看申请进度</text></view><text class="club-membership-chevron">›</text>
+      <view class="club-membership-copy"><text class="club-membership-name">我的俱乐部</text><text class="club-membership-role">全平台唯一俱乐部 · 暂未创建</text></view>
     </view>
-    <view wx:elif="{{profile.clubs.length === 1}}" class="club-membership-single">
-      <image wx:if="{{profile.clubs[0].avatarUrl && failedClubAvatars[profile.clubs[0].clubId] !== profile.clubs[0].avatarUrl}}" class="club-membership-avatar" src="{{profile.clubs[0].avatarUrl}}" mode="aspectFill" data-club-id="{{profile.clubs[0].clubId}}" data-avatar-url="{{profile.clubs[0].avatarUrl}}" binderror="clubAvatarError" />
+    <view wx:else class="club-membership-single">
+      <image wx:if="{{profile.clubs[0].avatarUrl && !clubAvatarFailed}}" class="club-membership-avatar" src="{{profile.clubs[0].avatarUrl}}" mode="aspectFill" binderror="clubAvatarError" />
       <view wx:else class="club-membership-avatar club-membership-avatar--placeholder">俱</view>
-      <view class="club-membership-copy"><text class="club-membership-name">{{profile.clubs[0].name}}</text><text class="club-membership-role">{{profile.clubs[0].roleLabel}}</text></view>
+      <view class="club-membership-copy"><text class="club-membership-name">{{profile.clubs[0].name}}</text><text class="club-membership-role">全平台唯一俱乐部</text></view>
     </view>
-    <view wx:else class="club-membership-multiple">
-      <view class="club-avatar-stack" aria-label="已加入 {{profile.clubs.length}} 个俱乐部">
-        <view class="club-avatar-stack__item" wx:for="{{clubAvatarStack}}" wx:key="clubId">
-          <image wx:if="{{item.avatarUrl && failedClubAvatars[item.clubId] !== item.avatarUrl}}" class="club-membership-avatar" src="{{item.avatarUrl}}" mode="aspectFill" data-club-id="{{item.clubId}}" data-avatar-url="{{item.avatarUrl}}" binderror="clubAvatarError" />
-          <view wx:else class="club-membership-avatar club-membership-avatar--placeholder">俱</view>
-        </view>
-        <view wx:if="{{clubOverflowCount > 0}}" class="club-avatar-stack__more">+{{clubOverflowCount}}</view>
-      </view>
-      <view class="club-membership-copy"><text class="club-membership-name">我的俱乐部</text><text class="club-membership-role">共 {{profile.clubs.length}} 个有效身份</text></view>
-    </view>
-    <text class="club-membership-chevron" wx:if="{{profile.clubs.length}}">›</text>
+    <text class="club-membership-chevron">›</text>
   </button>
 
   <view class="hero-profile-progress" wx:if="{{profile && profile.completeness < 100}}">

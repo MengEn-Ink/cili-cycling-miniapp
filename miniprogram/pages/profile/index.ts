@@ -81,15 +81,8 @@ function formatUpdatedAt(cachedAt: number, now = Date.now()) {
   return `缓存于 ${date.getUTCMonth() + 1}月${date.getUTCDate()}日 ${time}`;
 }
 
-function clubViewData(profile: unknown) {
-  const clubs =
-    profile && typeof profile === 'object' && Array.isArray((profile as { clubs?: unknown }).clubs)
-      ? (profile as { clubs: Profile['clubs'] }).clubs || []
-      : [];
-  return {
-    clubAvatarStack: clubs.slice(0, 4),
-    clubOverflowCount: Math.max(0, clubs.length - 4),
-  };
+function clubViewData() {
+  return { clubAvatarFailed: false };
 }
 
 function cardView(card: PersonalCapabilityCard, images: Record<string, string> = {}) {
@@ -122,8 +115,7 @@ Page({
   data: {
     navigationTopPx: customNavigationTopPx(),
     profile: null as Profile | null,
-    clubAvatarStack: [] as Profile['clubs'],
-    clubOverflowCount: 0,
+    clubAvatarFailed: false,
     loading: true,
     refreshing: false,
     error: '',
@@ -157,7 +149,7 @@ Page({
   applyHydratedCache(cache: ProfilePageCache) {
     this.setData({
       profile: cache.profile,
-      ...clubViewData(cache.profile),
+      ...clubViewData(),
       loading: false,
       usingCache: true,
       updatedAtText: formatUpdatedAt(cache.cachedAt),
@@ -369,7 +361,7 @@ Page({
     const profile = profileState.data || null;
     this.setData({
       profile,
-      ...clubViewData(profile),
+      ...clubViewData(),
       loading: false,
       error: '',
       refreshFailed: false,
@@ -382,16 +374,8 @@ Page({
   openCapabilityCard() {
     wx.navigateTo({ url: '/pages/capability-card/index' });
   },
-  clubAvatarError(event: { currentTarget: { dataset: { clubId?: string; avatarUrl?: string } } }) {
-    const { clubId, avatarUrl } = event.currentTarget.dataset;
-    if (!clubId || !avatarUrl || this.data.failedClubAvatars[clubId] === avatarUrl) return;
-    const currentClub = (this.data.profile as Profile | null)?.clubs.find(
-      (club) => club.clubId === clubId,
-    );
-    if (currentClub?.avatarUrl !== avatarUrl) return;
-    this.setData({
-      failedClubAvatars: { ...this.data.failedClubAvatars, [clubId]: avatarUrl },
-    });
+  clubAvatarError() {
+    if (!this.data.clubAvatarFailed) this.setData({ clubAvatarFailed: true });
   },
   heroSwiperChange(event: { detail?: { current?: number } }) {
     this.setData({ currentHeroIndex: Math.max(0, Number(event.detail?.current) || 0) });
@@ -451,7 +435,7 @@ Page({
     if (!this.data.profile) return;
     try {
       const profile = await rideService.updateProfile({ hasCompletedGuidance: true });
-      this.setData({ hasGuidance: false, profile, ...clubViewData(profile) });
+      this.setData({ hasGuidance: false, profile, ...clubViewData() });
       clearProfilePageCache();
       this.hydratedCache = null;
     } catch {

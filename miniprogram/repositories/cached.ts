@@ -414,6 +414,10 @@ export class CachingRepository implements RideRepository {
     return this.inner.enqueueActivityReminders(activityId);
   }
 
+  getSoleClubHome() {
+    return this.inner.getSoleClubHome();
+  }
+
   getMyClubApplication() {
     return this.readThrough(`${CLUB_APPLICATION_PREFIX}mine`, () =>
       this.inner.getMyClubApplication(),
