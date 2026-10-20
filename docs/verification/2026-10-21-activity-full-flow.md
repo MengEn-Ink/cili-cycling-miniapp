@@ -27,10 +27,16 @@
 
 ## 真实环境验收
 
-合并并部署 `activity-admin` 后，通过 CloudBase 生产环境手动工作流执行：
+合并提交：`12e436561576cc3d6ec62c5abe91eb717ff96608`。
 
-1. 精确确认并清理历史活动，记录删除前各集合计数及删除后零残留回读。
-2. 执行活动全流程 smoke，记录 7 个阶段、审计数量和最终逻辑删除结果。
-3. 回读未来/进行中活动未被清理，smoke 无占位报名残留。
+| 验收项 | 结果 | 证据 |
+| --- | --- | --- |
+| Main CI | `main-validate`、`main-coverage`、`main-audit`、`upload-decision` 全部通过 | [run 39511249427](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/39511249427) |
+| CloudBase 自动部署 | `activity-admin` 等受影响函数部署及环境回读通过 | [run 39511356146](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/39511356146) |
+| 历史活动清理 | 删除 7 个历史活动、12 条报名、32 条审计；关联路线预览和通知为 0；删除后五类关联集合回读均为 0 | [run 39513335641](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/39513335641) |
+| 活动全流程 smoke | 8 个阶段通过、产生并验证 6 条审计，最终隔离活动、报名、审计和通知全部物理清理 | [run 39513335641](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/39513335641) |
+| CodeQL | 通过 | [run 39511249254](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/39511249254) |
+| Pages | 发布成功 | [run 39511249422](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/39511249422) |
+| 微信开发版 | 客户端说明版本 `2026.10.21.1`，上传版本 `0.0.331.1`，robot 1，上传成功 | [run 39511356050](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/39511356050) |
 
-最终 workflow、提交 SHA、删除计数和 smoke 回执在部署完成后补充。
+清理工具在删除前按 `event_end < cutoff` 或 `is_deleted=true` 筛选，并对 cutoff 之后的未来/进行中活动做硬保护；执行后关联集合全部零残留。活动 smoke 成功路径与失败补偿路径都执行物理清理，因此目标环境没有遗留测试活动。
