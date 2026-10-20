@@ -4,9 +4,10 @@
 .settings-hero {
   margin: 32rpx 0 48rpx;
   padding: 28rpx 32rpx;
+  border: 2rpx solid var(--color-border);
   border-radius: var(--radius-card);
-  background: var(--color-action);
-  color: var(--color-on-action);
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 .hero-title {
   font-size: 48rpx;
@@ -15,7 +16,7 @@
 }
 .hero-copy {
   margin-top: 8rpx;
-  color: var(--color-on-action-muted);
+  color: var(--color-muted);
   font-size: 24rpx;
   line-height: 36rpx;
 }
@@ -82,15 +83,15 @@
 .release-title {
   margin-top: 20rpx;
   color: var(--color-text);
-  font-size: 36rpx;
-  line-height: 52rpx;
+  font-size: 32rpx;
+  line-height: 54rpx;
   font-weight: 900;
 }
 .release-summary {
   margin-top: 8rpx;
   color: var(--color-muted);
-  font-size: 28rpx;
-  line-height: 44rpx;
+  font-size: 25rpx;
+  line-height: 42rpx;
 }
 .release-features {
   margin-top: 20rpx;
@@ -102,8 +103,8 @@
   grid-template-columns: 28rpx minmax(0, 1fr);
   gap: 8rpx;
   color: var(--color-text);
-  font-size: 24rpx;
-  line-height: 36rpx;
+  font-size: 25rpx;
+  line-height: 42rpx;
 }
 .release-feature + .release-feature {
   margin-top: 8rpx;

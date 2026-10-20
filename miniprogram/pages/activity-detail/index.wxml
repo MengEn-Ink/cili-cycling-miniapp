@@ -1,7 +1,11 @@
 <view class="detail-page">
-  <state-view loading="{{loading}}" error="{{error}}">
+  <state-view loading="{{loading}}" error="{{!item ? error : ''}}" retryable="{{true}}" bind:retry="retryLoad">
     <view wx:if="{{item}}" class="detail-unified-card">
       <brand-logo compact="{{true}}" meta="活动详情" />
+      <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{refreshing ? '正在刷新活动详情' : ''}}</view>
+      <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{refreshError}}</view>
+      <view class="refresh-note" wx:if="{{refreshing}}" aria-hidden="true">正在刷新活动详情…</view>
+      <view class="refresh-note detail-refresh-retry" wx:if="{{refreshError}}" role="button" bindtap="retryLoad" aria-label="活动详情刷新失败，点击重试">{{refreshError}}，点此重试</view>
       <view class="detail-hero">
         <swiper wx:if="{{galleryImages.length > 1 && !coverFailed}}" class="hero-gallery" indicator-dots="{{true}}" indicator-color="{{colorMediaMuted}}" indicator-active-color="{{colorOnMedia}}" circular="{{true}}" bindchange="galleryChange">
           <swiper-item wx:for="{{galleryImages}}" wx:for-item="media" wx:key="*this"><image class="hero-media" src="{{media}}" mode="aspectFill" data-index="{{index}}" binderror="galleryImageError" aria-label="活动图片 {{index + 1}}" /></swiper-item>
@@ -42,7 +46,7 @@
 
         <view class="official-route-card" wx:if="{{officialRouteId}}">
           <view class="section-heading"><view><view class="title">Strava 官方路线</view><view class="route-action-note">复制组织者分享的规范化公开路线链接。</view></view><view class="section-tag">官方</view></view>
-          <button class="route-action route-action--primary" bindtap="copyOfficialRoute">复制路线链接</button>
+          <button class="route-action" bindtap="copyOfficialRoute">复制路线链接</button>
           <view wx:if="{{copyFeedback === 'success'}}" class="inline-feedback inline-feedback--success" role="status">✓ 路线链接已复制</view>
           <view wx:elif="{{copyFeedback === 'error'}}" class="inline-feedback inline-feedback--error" role="alert">! 复制失败，请稍后重试</view>
           <view class="route-action-note">小程序内不打开第三方页面，复制后可自行粘贴使用。</view>
@@ -71,13 +75,13 @@
 
           <view class="gpx-download-row" wx:if="{{hasGpxRoute}}">
             <view class="route-action-note">下载后可导入码表或骑行应用。</view>
-            <button class="route-action route-action--primary" loading="{{downloadingGpx}}" disabled="{{downloadingGpx}}" bindtap="downloadGpx">{{downloadingGpx ? '下载中' : '下载 GPX'}}</button>
+            <button class="route-action" loading="{{downloadingGpx}}" disabled="{{downloadingGpx}}" bindtap="downloadGpx">{{downloadingGpx ? '下载中' : '下载 GPX'}}</button>
           </view>
         </view>
 
         <view class="card route-analysis-entry" wx:if="{{canAnalyzeRoute}}">
           <view class="section-heading"><view><view class="title">完整路线分析</view><view class="route-action-note">查看关键公里点、主要坡段、海拔联动地图与基础装备建议。</view></view><view class="section-tag">分析</view></view>
-          <button class="route-action route-action--primary" bindtap="openRouteAnalysis">查看完整路线分析</button>
+          <button class="route-action" bindtap="openRouteAnalysis">查看完整路线分析</button>
         </view>
 
         <view class="card attendees-card" wx:if="{{attendeesVisible}}">

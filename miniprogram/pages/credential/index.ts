@@ -58,13 +58,19 @@ Page({
     activityAction: unavailableAction(),
     backgroundImages: [] as string[],
     avatarUrl: '',
-    riderName: '骑行伙伴',
+    riderName: '匿名骑友',
     meetingTime: '以活动通知为准',
     meetingLocation: '集合地点待通知',
     meetingAddress: '',
     navigationLocation: null as any,
     canNavigate: false,
     canAnalyzeRoute: false,
+    rejectReason: '',
+    supportVehicleDriver: null as null | {
+      nickname: string;
+      licensePlate: string;
+      contactPhone: string;
+    },
   },
   onShow() {},
   async onLoad(q: any) {
@@ -103,7 +109,18 @@ Page({
         .filter((background) => background.source === 'user_photo')
         .map((background) => background.url)
         .filter((url, index, values) => !!url && values.indexOf(url) === index);
-      const riderName = profile.nickname || profile.realName || '骑行伙伴';
+      // 公开骑行名片只展示昵称，缺少昵称时匿名兜底，不回退真实姓名。
+      const riderName = profile.nickname || '匿名骑友';
+      const rejectReason =
+        item.status === 'rejected'
+          ? item.reviewComment?.trim() || '审核未填写原因，可修改后重新报名'
+          : '';
+      const supportVehicleDriver =
+        item.gatheringMode === '需要后援车' &&
+        activity.supportVehicleDriver &&
+        (activity.supportVehicleDriver.nickname || activity.supportVehicleDriver.contactPhone)
+          ? activity.supportVehicleDriver
+          : null;
       const schedule = Array.isArray(activity.schedule) ? activity.schedule[0] : undefined;
       const startLocation = activity.route?.startLocation;
       const scheduleLocation = schedule?.location?.trim() || '';
@@ -143,6 +160,8 @@ Page({
         navigationLocation,
         canNavigate: !!navigationLocation,
         canAnalyzeRoute: hasAnalyzableRoute(activity.route),
+        rejectReason,
+        supportVehicleDriver,
       });
     } catch (error) {
       this.setData({ error: error instanceof Error ? error.message : '报名凭证加载失败' });

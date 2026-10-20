@@ -1,22 +1,46 @@
 import { describe, expect, it } from 'vitest';
-import { contrast, declaration, effectiveBlock, read, uiTokens } from './theme-contract-helpers';
+import {
+  declaration,
+  effectiveBlock,
+  expectSemantic,
+  read,
+  uiTokens,
+} from './theme-contract-helpers';
 
 const app = read('miniprogram/app.wxss');
 const settings = read('miniprogram/pages/settings/index.wxss');
 const tokens = uiTokens(app);
 
 describe('主题 token 与控件契约', () => {
-  it('补齐设置页使用的共享 token，并复用现有颜色语义', () => {
-    expect(
-      contrast(tokens['--color-on-action-muted'], tokens['--color-action']),
-    ).toBeGreaterThanOrEqual(4.5);
+  it('设置页复用现有颜色语义，行动红只保留在“当前版本”胶囊', () => {
+    // 顶部 hero 收口为中性白卡 + 墨黑标题，不再整块使用行动红。
+    const hero = effectiveBlock(settings, '.settings-hero');
+    expectSemantic(declaration(hero, 'background'), '--color-surface');
+    expectSemantic(declaration(hero, 'color'), '--color-text');
+    expect(declaration(hero, 'background')).not.toContain('--color-action');
+    const heroCopy = effectiveBlock(settings, '.hero-copy');
+    expectSemantic(declaration(heroCopy, 'color'), '--color-muted');
+    expectSemantic(
+      declaration(effectiveBlock(settings, '.release-latest'), 'background'),
+      '--color-action',
+    );
+    expect(settings).not.toContain('var(--color-on-action-muted)');
     expect(tokens['--color-border-subtle']).toBe('var(--color-border)');
     expect(tokens['--font-mono']).toContain('ui-monospace');
     expect(tokens['--font-mono']).toContain('monospace');
 
-    for (const token of ['--color-on-action-muted', '--color-border-subtle', '--font-mono']) {
+    for (const token of ['--color-border-subtle', '--font-mono']) {
       expect(settings).toContain(`var(${token})`);
     }
+  });
+
+  it('发布日志字号按沸点规格收口为 16px 标题与 12.5px 功能点、约 1.7 行高', () => {
+    expect(declaration(effectiveBlock(settings, '.release-title'), 'font-size')).toBe('32rpx');
+    expect(declaration(effectiveBlock(settings, '.release-title'), 'line-height')).toBe('54rpx');
+    expect(declaration(effectiveBlock(settings, '.release-summary'), 'font-size')).toBe('25rpx');
+    expect(declaration(effectiveBlock(settings, '.release-summary'), 'line-height')).toBe('42rpx');
+    expect(declaration(effectiveBlock(settings, '.release-feature'), 'font-size')).toBe('25rpx');
+    expect(declaration(effectiveBlock(settings, '.release-feature'), 'line-height')).toBe('42rpx');
   });
 
   it('统一按钮触控高度与按钮、输入控件禁用态', () => {

@@ -125,74 +125,10 @@ page {
   line-height: 1.5;
 }
 
-/* 活动信息：浅色卡片承载核心上下文，左侧主题橙短线强化识别。 */
-.activity-context {
-  position: relative;
-  margin-top: 24rpx;
-  padding: 24rpx 24rpx 24rpx 40rpx;
-  border: 2rpx solid var(--color-border);
-  border-radius: var(--radius-display);
-  background: var(--color-surface);
-  color: var(--color-text);
-  box-shadow: none;
-}
-
-.activity-context::before {
-  position: absolute;
-  top: 24rpx;
-  bottom: 24rpx;
-  left: 0;
-  width: 8rpx;
-  background: var(--color-brand);
-  content: '';
-}
-
+/* 活动信息块复用全局墨黑 .activity-context（浅字深底），本页只补布局。 */
 .context-head {
   justify-content: space-between;
   gap: 16rpx;
-}
-
-.form-page .context-kicker {
-  color: var(--color-muted);
-  font-size: 24rpx;
-  font-weight: 700;
-}
-
-.context-status {
-  flex: 0 0 auto;
-  max-width: 44%;
-  padding: 4rpx 16rpx;
-  border: 2rpx solid var(--color-brand);
-  border-radius: 8rpx;
-  color: var(--color-text);
-  font-size: 24rpx;
-  font-weight: 800;
-  line-height: 1.4;
-  text-align: center;
-}
-
-.context-title {
-  display: -webkit-box;
-  margin-top: 16rpx;
-  overflow: hidden;
-  color: var(--color-text);
-  font-size: 36rpx;
-  font-weight: 900;
-  line-height: 1.4;
-  overflow-wrap: anywhere;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
-
-.context-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8rpx 24rpx;
-  margin-top: 8rpx;
-  color: var(--color-muted);
-  font-size: 24rpx;
-  line-height: 1.5;
-  font-variant-numeric: tabular-nums;
 }
 
 /* 分区：四张同级卡片，2px 近黑描边，不再嵌套小卡。 */

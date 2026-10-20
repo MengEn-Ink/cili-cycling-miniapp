@@ -520,7 +520,7 @@ describe('CloudRepository 队员报名适配', () => {
     const dirty = {
       activityId: 'a1',
       gatheringMode: 'self_drive',
-      experience: '有一定经验',
+      experience: '有经验',
       remark: '正常',
       openid: 'forged',
       role: 'admin',
@@ -1618,7 +1618,7 @@ describe('MockRepository readiness 与显式报名命令', () => {
     const result = await repository.saveRegistration({
       activityId: `new-${gatheringMode}`,
       gatheringMode,
-      experience: '有一定经验',
+      experience: '有经验',
       remark: '补给点见',
       internalOnly: '不应持久化',
     });
@@ -1626,7 +1626,7 @@ describe('MockRepository readiness 与显式报名命令', () => {
     expect(result).toMatchObject({
       activityId: `new-${gatheringMode}`,
       gatheringMode: expected,
-      experience: '有一定经验',
+      experience: '有经验',
       remark: '补给点见',
     });
     expect(result).not.toHaveProperty('internalOnly');

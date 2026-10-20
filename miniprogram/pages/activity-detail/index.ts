@@ -189,6 +189,8 @@ Page({
   attendeeMediaRetryKeys: new Set<string>(),
   data: {
     loading: true,
+    refreshing: false,
+    refreshError: '',
     activityId: '',
     error: '',
     item: null as any,
@@ -234,7 +236,7 @@ Page({
       return;
     }
     if (this.data.item && this.data.activityId && !this.data.loading)
-      void this.load(this.data.activityId);
+      void this.load(this.data.activityId, true);
   },
   onLoad(q: any) {
     this.unloaded = false;
@@ -271,26 +273,37 @@ Page({
     this.elevationAnimationCancel = null;
     this.outlineAnimationCancel = null;
   },
-  load(id: string) {
+  load(id: string, background = false) {
     const current = this.loadPromise;
     if (current?.id === id) return current.promise;
-    const run = this.performLoad(id);
+    const run = this.performLoad(id, background);
     const tracked = run.finally(() => {
       if (this.loadPromise?.promise === tracked) this.loadPromise = null;
     });
     this.loadPromise = { id, promise: tracked };
     return tracked;
   },
-  async performLoad(id: string) {
+  retryLoad() {
+    const { activityId, item } = this.data;
+    if (!activityId || this.data.refreshing) return;
+    void this.load(activityId, !!item);
+  },
+  async performLoad(id: string, background = false) {
     const requestId = ++this.loadRequestId;
-    this.safeSetData({
-      loading: true,
-      error: '',
-      coverFailed: false,
-      currentGalleryIndex: 0,
-      selectedAttendee: null,
-      activityAction: unavailableAction(),
-    });
+    if (background && this.data.item) {
+      // 返回页面等后台刷新保留已加载内容，只显示非阻断状态，不走全屏 loading。
+      this.safeSetData({ refreshing: true, refreshError: '' });
+    } else {
+      this.safeSetData({
+        loading: true,
+        error: '',
+        refreshError: '',
+        coverFailed: false,
+        currentGalleryIndex: 0,
+        selectedAttendee: null,
+        activityAction: unavailableAction(),
+      });
+    }
     try {
       const isLoggedIn = !['unavailable', 'error'].includes(appStore.authStatus);
       // 活动详情与“我的报名”彼此独立，同时请求以缩短首屏等待；游客不发起报名请求。
@@ -356,6 +369,8 @@ Page({
       this.safeSetData(
         {
           item: detail,
+          refreshing: false,
+          refreshError: '',
           registration,
           attendees,
           attendeesVisible: canSeeAttendees,
@@ -398,12 +413,21 @@ Page({
       );
     } catch (error) {
       if (requestId !== this.loadRequestId || this.unloaded) return;
-      this.safeSetData({
-        error: error instanceof Error ? error.message : '详情加载失败',
-        activityAction: unavailableAction(),
-      });
+      const message = error instanceof Error ? error.message : '详情加载失败';
+      if (background && this.data.item) {
+        // 后台刷新失败保留已加载内容，仅在顶部给出非阻断重试提示。
+        this.safeSetData({ refreshing: false, refreshError: message });
+      } else {
+        this.safeSetData({
+          error: message,
+          activityAction: unavailableAction(),
+        });
+      }
     } finally {
-      if (requestId === this.loadRequestId && !this.unloaded) this.safeSetData({ loading: false });
+      if (requestId === this.loadRequestId && !this.unloaded) {
+        if (background && this.data.item) this.safeSetData({ refreshing: false });
+        else this.safeSetData({ loading: false });
+      }
     }
   },
   snapshotCanvas(

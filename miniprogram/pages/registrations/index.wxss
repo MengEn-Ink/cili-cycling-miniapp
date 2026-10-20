@@ -216,12 +216,6 @@
   text-align: right;
   overflow-wrap: anywhere;
 }
-.meeting-location {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
 .ticket-meta {
   display: flex;
   align-items: center;

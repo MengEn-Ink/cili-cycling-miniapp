@@ -1024,7 +1024,7 @@ function mapRegistration(raw: unknown): Registration {
         options.gathering_mode as 'self_drive' | 'support_vehicle'
       ] || '',
     experience:
-      ({ beginner: '新手', intermediate: '有一定经验', regular: '常骑' } as Record<string, string>)[
+      ({ beginner: '新手', intermediate: '有经验', regular: '常骑' } as Record<string, string>)[
         options.experience
       ] || '',
     remark: typeof options.remark === 'string' ? options.remark : '',
@@ -1043,7 +1043,7 @@ function submissionOptions(value: RegistrationSubmission) {
       ? value.gatheringMode
       : undefined,
     experience: (
-      { 新手: 'beginner', 有一定经验: 'intermediate', 常骑: 'regular' } as Record<string, string>
+      { 新手: 'beginner', 有经验: 'intermediate', 常骑: 'regular' } as Record<string, string>
     )[value.experience],
     remark: typeof value.remark === 'string' ? value.remark : '',
   };

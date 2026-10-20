@@ -78,7 +78,7 @@ describe('行程状态卡与报名凭证重设计契约', () => {
     );
   });
 
-  it('集合时间与集合地点成为独立高权重信息，不再展示审批意见和进度', () => {
+  it('集合时间与集合地点成为独立高权重信息，驳回原因仅在 rejected 状态以视图模型展示', () => {
     expect(credential).toContain('class="meeting-spotlight"');
     expect(credential).toContain('class="meeting-time"');
     expect(credential).toContain('meeting-location');
@@ -86,6 +86,15 @@ describe('行程状态卡与报名凭证重设计契约', () => {
     expect(credential).not.toContain('审批意见');
     expect(credential).not.toContain('reviewComment');
     expect(credential).not.toContain('timeline-card');
+    expect(credential).toContain(
+      'wx:if="{{item.status === \'rejected\'}}" class="card danger reject-card"',
+    );
+    expect(credential).toContain('未通过原因');
+    expect(credential).toContain('{{rejectReason}}');
+    expect(credentialPage).toContain('item.reviewComment?.trim()');
+    expect(credentialPage).toContain('审核未填写原因，可修改后重新报名');
+    expect(credential).toContain('{{item.profile.phone');
+    expect(credential).toContain('supportVehicleDriver.contactPhone');
     expectSemantic(
       declaration(effectiveBlock(appStyles, '.meeting-spotlight'), 'background'),
       '--color-media-card-bg',

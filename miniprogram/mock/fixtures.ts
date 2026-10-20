@@ -80,7 +80,7 @@ export const registrations: Registration[] = [
     status: 'approved',
     profile: { ...profile, nickname: '小满骑行' },
     gatheringMode: '需要后援车',
-    experience: '有一定经验',
+    experience: '有经验',
     remark: '需要 M 码',
     serialNo: 'RE-20261108-006',
     updatedAt: '2026-09-27',

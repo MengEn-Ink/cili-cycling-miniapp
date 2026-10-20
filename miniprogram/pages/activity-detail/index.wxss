@@ -5,6 +5,17 @@
 .detail-unified-card {
   width: 100%;
 }
+.detail-refresh-retry {
+  display: flex;
+  align-items: center;
+  min-height: var(--control-height);
+  padding: 16rpx var(--card-padding);
+  border: 2rpx solid var(--color-status-warning);
+  border-radius: var(--radius-card);
+  background: var(--color-status-warning-soft);
+  color: var(--color-status-warning);
+  font-weight: 800;
+}
 .detail-metric-panel {
   display: block;
   width: 100%;
