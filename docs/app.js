@@ -1018,6 +1018,11 @@
     modal.hidden = false;
   }
 
+  function showSafeCacheConfirmation() {
+    modal.innerHTML = `<div class="modal-sheet settings-cache-modal"><button class="modal-close" data-action="close-modal" aria-label="关闭">×</button><span class="tag tag-neutral">安全清理</span><h3 class="card-title">清理缓存</h3><p class="card-hint">只会清理可重新下载的活动、资料和图片缓存，不会退出登录，也不会删除报名、行程或个人资料。</p><div class="btn-row"><button class="btn-secondary" data-action="close-modal">取消</button><button class="btn" data-action="settings-confirm-clear-cache">确认清理</button></div></div>`;
+    modal.hidden = false;
+  }
+
   function goBack() {
     const previous = routeHistory.pop();
     showPage(previous || 'activities', { replace: true });
@@ -1064,6 +1069,13 @@
       showToast('已删除行程记录');
     }
     if (action === 'copy-activity') showCopyActivity();
+    if (action === 'settings-notifications') showToast('已打开活动通知订阅选择');
+    if (action === 'settings-privacy') showToast('已打开微信隐私管理');
+    if (action === 'settings-clear-cache') showSafeCacheConfirmation();
+    if (action === 'settings-confirm-clear-cache') {
+      modal.hidden = true;
+      showToast('缓存已清理');
+    }
     if (action === 'activity-carousel-prev') activityCarouselController?.previous();
     if (action === 'activity-carousel-next') activityCarouselController?.next();
     if (action === 'activity-carousel-dot') {

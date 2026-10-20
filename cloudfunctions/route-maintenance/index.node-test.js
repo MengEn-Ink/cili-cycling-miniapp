@@ -531,7 +531,7 @@ test('部署配置包含维护定时器、函数包门禁与 owner 路线存储�
   assert.match(timer.config, /\S/);
   assert.match(rootPackage, /cloudfunctions\/route-maintenance/);
   assert.match(verifier, /pack\('route-maintenance'/);
-  assert.match(workflow, /cloudfunctions\/route-maintenance\/package-lock\.json/);
+  assert.match(workflow, /cloudfunctions\/(?:route-maintenance|\*)\/package-lock\.json/);
   assert.match(storage.write, /resource\.openid\s*==\s*auth\.openid/);
   assert.match(storage.write, /profiles/);
   assert.match(storage.write, /activity-routes/);

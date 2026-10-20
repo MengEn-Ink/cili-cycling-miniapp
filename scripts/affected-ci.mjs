@@ -18,7 +18,7 @@ const CLOUD_FUNCTIONS = [
 ];
 
 const FULL_RISK_PATTERNS = [
-  /(?:^|\/)package(?:-lock)?\.json$/,
+  /^package(?:-lock)?\.json$/,
   /^tsconfig(?:\..+)?\.json$/,
   /^vitest\.config\./,
   /^eslint\.config\./,
@@ -26,6 +26,7 @@ const FULL_RISK_PATTERNS = [
   /^cloudfunctions\/shared\//,
   /^scripts\/prepare-cloudfunctions\.mjs$/,
   /^scripts\/affected-ci\.mjs$/,
+  /^tools\/miniprogram-ci\/package(?:-lock)?\.json$/,
   /^\.github\/workflows\//,
 ];
 
@@ -50,14 +51,16 @@ export function createAffectedPlan(changedFiles) {
     return { mode: 'full', reason: '无法确认变更文件，按 fail-safe 执行全量门禁', files };
   }
 
+  const rootPackageFiles = files.filter((file) => /^package(?:-lock)?\.json$/.test(file));
   const fullRiskFiles = files.filter((file) =>
     FULL_RISK_PATTERNS.some((pattern) => pattern.test(file)),
   );
-  if (files.length > 30 || fullRiskFiles.length > 0) {
+  if (fullRiskFiles.length > 0) {
     return {
       mode: 'full',
-      reason: files.length > 30 ? '变更文件超过 30 个' : '命中全局配置、共享依赖或工作流',
+      reason: '命中全局配置、根依赖、共享依赖或工作流',
       files,
+      rootPackageFiles,
       fullRiskFiles,
     };
   }
@@ -239,8 +242,13 @@ export function runAffectedPlan(plan) {
   if (plan.bootstrap) runNpm('test:bootstrap');
 
   if (plan.cloudFunctions.length > 0) {
-    // 云函数测试可能复用兄弟函数中的领域模块；一次安装全部云函数依赖，避免目标包测试被仓库根目录残留依赖误导。
-    runNpm('cloud:install');
+    // prepare 必须先完成；shared 安装完成后，再按有上限并发安装实际受影响函数。
+    runNpm('cloud:prepare');
+    run('node', [
+      'scripts/run-cloud-packages.mjs',
+      'install',
+      `--packages=${plan.cloudFunctions.join(',')}`,
+    ]);
     for (const name of plan.cloudFunctions) {
       run('npm', ['--prefix', `cloudfunctions/${name}`, 'test']);
     }

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CloudRepository, CloudRepositoryError } from '../miniprogram/repositories/cloud';
-import { MockRepository } from '../miniprogram/repositories/mock';
+import { MockRepository } from './support/mock-repository';
 
 type CloudCall = { name: string; data?: unknown };
 type Queued = unknown | Error;

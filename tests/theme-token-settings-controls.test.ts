@@ -34,6 +34,23 @@ describe('主题 token 与控件契约', () => {
     }
   });
 
+  it('设置管理列表保持完整触控区、清晰分隔与中性色操作提示', () => {
+    const row = effectiveBlock(settings, '.management-row');
+    expect(declaration(row, 'min-height')).toBe('116rpx');
+    expectSemantic(declaration(row, 'background'), '--color-surface');
+    expectSemantic(declaration(row, 'color'), '--color-text');
+    expect(
+      declaration(effectiveBlock(settings, '.management-row + .management-row'), 'border-top'),
+    ).toContain('--color-border-subtle');
+    expectSemantic(
+      declaration(effectiveBlock(settings, '.management-description'), 'color'),
+      '--color-muted',
+    );
+    expect(declaration(effectiveBlock(settings, '.management-action'), 'color')).not.toContain(
+      '--color-action',
+    );
+  });
+
   it('发布日志字号按沸点规格收口为 16px 标题与 12.5px 功能点、约 1.7 行高', () => {
     expect(declaration(effectiveBlock(settings, '.release-title'), 'font-size')).toBe('32rpx');
     expect(declaration(effectiveBlock(settings, '.release-title'), 'line-height')).toBe('54rpx');

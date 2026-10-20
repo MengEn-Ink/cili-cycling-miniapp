@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { CloudRepository } from '../miniprogram/repositories/cloud';
-import { MockRepository } from '../miniprogram/repositories/mock';
+import { MockRepository } from './support/mock-repository';
 
 const success = (data: unknown) => ({ result: { ok: true, data } });
 const dto = {

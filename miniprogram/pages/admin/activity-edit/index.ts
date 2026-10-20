@@ -37,12 +37,14 @@ type Form = {
   title: string;
   startDate: string;
   startTime: string;
+  deadlineDate: string;
+  deadlineTime: string;
   routeStart: string;
   description: string;
   stravaRouteUrl: string;
 };
 type FormField = keyof Form;
-type FormErrorAnchor = FormField | 'startAt';
+type FormErrorAnchor = FormField | 'startAt' | 'deadlineAt';
 type FormErrors = Partial<Record<FormErrorAnchor, string>>;
 type PendingImage = {
   id: string;
@@ -66,6 +68,8 @@ const emptyForm = (): Form => ({
   title: '',
   startDate: '',
   startTime: '',
+  deadlineDate: '',
+  deadlineTime: '',
   routeStart: '',
   description: '',
   stravaRouteUrl: '',
@@ -415,6 +419,7 @@ Page({
     publicRoutePreview: undefined as PublicRoutePreview | undefined,
     routePreview: undefined as RouteGpxPreview | undefined,
     pendingRouteUpload: undefined as PendingRouteUpload | undefined,
+    storedRouteGpxMissingDetails: false,
     sessionRouteFileIds: [] as string[],
     routeStatusMessage: '',
     routeCoverSelected: false,
@@ -494,6 +499,7 @@ Page({
           ? [activity.coverImage]
           : [];
       const startAtText = formatLocalDateTime(activity.startAt);
+      const deadlineText = formatLocalDateTime(activity.deadline);
       const officialRoute = activityOfficialRoute(activity);
       const publicRoutePreview = activityPublicRoutePreview(activity);
       const routePreview = activityRoutePreview(activity);
@@ -537,7 +543,13 @@ Page({
         officialRoute,
         publicRoutePreview,
         routePreview,
-        routeStatusMessage: routePreview ? '路线详情已准备好' : '',
+        storedRouteGpxMissingDetails: Boolean(activity.route.gpxFileId && !routePreview),
+        routeStatusMessage:
+          activity.route.gpxFileId && !routePreview
+            ? '原 GPX 路线详情不可用，请重新上传恢复'
+            : routePreview
+              ? '路线详情已准备好'
+              : '',
         routeCoverSelected: Boolean(
           routePreview?.generatedPreviewFileId &&
           activity.coverImage === routePreview.generatedPreviewFileId,
@@ -551,6 +563,8 @@ Page({
           title: activity.title,
           startDate: pickerDate(startAtText),
           startTime: pickerTime(startAtText),
+          deadlineDate: pickerDate(deadlineText),
+          deadlineTime: pickerTime(deadlineText),
           routeStart: activity.route.start,
           description: activity.description,
           stravaRouteUrl: officialRoute?.url || '',
@@ -779,7 +793,7 @@ Page({
     if (field && typeof wx.pageScrollTo === 'function')
       wx.pageScrollTo({ selector: `[data-error-anchor="${field}"]`, duration: 240 });
   },
-  clearFieldError(field: FormField) {
+  clearFieldError(field: FormErrorAnchor) {
     if (!(this.data.formErrors as FormErrors)[field]) return;
     const formErrors = { ...(this.data.formErrors as FormErrors) };
     delete formErrors[field];
@@ -799,10 +813,11 @@ Page({
     this.clearFieldError(name);
   },
   dateTimePicker(event: any) {
-    const part = event.currentTarget.dataset.part === 'time' ? 'time' : 'date';
-    const field = part === 'time' ? 'startTime' : 'startDate';
+    const part = event.currentTarget.dataset.part === 'time' ? 'Time' : 'Date';
+    const target = event.currentTarget.dataset.target === 'deadline' ? 'deadline' : 'start';
+    const field = `${target}${part}` as FormField;
     this.setData({ [`form.${field}`]: event.detail.value });
-    this.clearFieldError('startAt');
+    this.clearFieldError(target === 'deadline' ? 'deadlineAt' : 'startAt');
   },
   async uploadPendingImage(pendingImage: PendingImage) {
     try {
@@ -928,6 +943,7 @@ Page({
     if (!this.unloaded) {
       this.setData({
         pendingRouteUpload: undefined,
+        storedRouteGpxMissingDetails: false,
         routeStatusMessage: '路线详情已准备好',
         routeTimeLabel: formatRouteDuration(preview.estimatedMovingTimeSeconds),
         error: '',
@@ -1097,7 +1113,9 @@ Page({
     try {
       await this.previewPendingRoute(pending);
     } catch (error) {
-      this.setData({ routeStatusMessage: '', error: routeErrorMessage(error) });
+      const message = routeErrorMessage(error);
+      this.setData({ routeStatusMessage: message, error: message });
+      wx.showToast({ title: message, icon: 'none', duration: 3000 });
     } finally {
       this.setData({ uploadingRoute: false });
     }
@@ -1109,6 +1127,7 @@ Page({
     this.setData({
       routePreview: undefined,
       pendingRouteUpload: undefined,
+      storedRouteGpxMissingDetails: false,
       sessionRouteFileIds: [],
       routeStatusMessage: '',
       routeCoverSelected: false,
@@ -1375,10 +1394,15 @@ Page({
   },
   validateBeforeSave(nextStatus: ActivityInput['status']) {
     const form = this.data.form as Form;
+    const submitting = ['published', 'pending_review'].includes(nextStatus);
     if (!form.title.trim()) return (this.showFormError('请输入活动标题', 'title'), false);
     if (!form.startDate.trim()) return (this.showFormError('请选择集合日期', 'startAt'), false);
     if (!form.startTime.trim()) return (this.showFormError('请选择集合时间', 'startAt'), false);
-    if (['published', 'pending_review'].includes(nextStatus) && !form.routeStart.trim())
+    if (submitting && !form.deadlineDate.trim())
+      return (this.showFormError('请选择报名截止日期', 'deadlineAt'), false);
+    if (submitting && !form.deadlineTime.trim())
+      return (this.showFormError('请选择报名截止时间', 'deadlineAt'), false);
+    if (submitting && !form.routeStart.trim())
       return (this.showFormError('请选择或填写集合地点', 'routeStart'), false);
     return true;
   },
@@ -1430,6 +1454,36 @@ Page({
       return;
     }
     if (!startAt) return;
+    const defaults = derivedTimes(startAt);
+    const submitting = ['published', 'pending_review'].includes(nextStatus);
+    let deadline = defaults.deadline;
+    const hasDeadline = Boolean(form.deadlineDate.trim() && form.deadlineTime.trim());
+    if (hasDeadline) {
+      try {
+        const parsedDeadline = parseLocalDateTime(
+          `${form.deadlineDate.trim()} ${form.deadlineTime.trim()}:00`,
+          '报名截止时间',
+        );
+        if (!parsedDeadline) throw new Error('报名截止时间格式错误');
+        deadline = parsedDeadline;
+      } catch (error) {
+        if (submitting) {
+          this.showFormError(
+            error instanceof Error ? error.message : '报名截止时间格式错误',
+            'deadlineAt',
+          );
+          return;
+        }
+      }
+    }
+    if (new Date(deadline).getTime() >= new Date(startAt).getTime()) {
+      if (submitting) {
+        this.showFormError('报名截止时间必须早于集合时间', 'deadlineAt');
+        return;
+      }
+      // 服务端现有草稿契约仍要求截止早于开始；草稿不阻断用户，暂用派生值保存。
+      deadline = defaults.deadline;
+    }
     const original = this.data.originalActivity as EditableActivity | undefined;
     let officialRoute: ExternalRouteReference | undefined;
     let publicRoutePreview = this.data.publicRoutePreview as PublicRoutePreview | undefined;
@@ -1460,23 +1514,13 @@ Page({
       publicRoutePreview = undefined;
     }
     const startForDefaults = startAt;
-    const defaults = derivedTimes(startForDefaults);
     const originalStartTime = original?.startAt ? new Date(original.startAt).getTime() : Number.NaN;
     const startTime = new Date(startForDefaults).getTime();
     const originalEndTime = original?.endAt ? new Date(original.endAt).getTime() : Number.NaN;
-    const originalDeadlineTime = original?.deadline
-      ? new Date(original.deadline).getTime()
-      : Number.NaN;
     const endAt =
       original && Number.isFinite(originalEndTime) && Number.isFinite(originalStartTime)
         ? new Date(startTime + Math.max(originalEndTime - originalStartTime, 60_000)).toISOString()
         : defaults.endAt;
-    const deadline =
-      original && Number.isFinite(originalDeadlineTime) && Number.isFinite(originalStartTime)
-        ? new Date(
-            startTime - Math.max(originalStartTime - originalDeadlineTime, 60_000),
-          ).toISOString()
-        : defaults.deadline;
     const title = form.title.trim();
     const images =
       original && !this.data.imagesTouched && original.images?.length
@@ -1604,7 +1648,13 @@ Page({
           officialRoute: savedOfficialRoute,
           routePreview: savedRoutePreview,
           pendingRouteUpload: undefined,
-          routeStatusMessage: savedRoutePreview ? '路线详情已准备好' : '',
+          storedRouteGpxMissingDetails: Boolean(saved.route.gpxFileId && !savedRoutePreview),
+          routeStatusMessage:
+            saved.route.gpxFileId && !savedRoutePreview
+              ? '原 GPX 路线详情不可用，请重新上传恢复'
+              : savedRoutePreview
+                ? '路线详情已准备好'
+                : '',
           routeCoverSelected: Boolean(
             savedRoutePreview?.generatedPreviewFileId &&
             saved.coverImage === savedRoutePreview.generatedPreviewFileId,

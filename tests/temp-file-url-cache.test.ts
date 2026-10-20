@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { getSharedTempFileUrlCache, TempFileUrlCache } from '../miniprogram/utils/temp-file-url';
+import {
+  clearSharedTempFileUrlCache,
+  getSharedTempFileUrlCache,
+  TempFileUrlCache,
+} from '../miniprogram/utils/temp-file-url';
 
 const TTL = 2 * 60 * 60 * 1000;
 const MARGIN = 5 * 60 * 1000;
@@ -122,6 +126,10 @@ describe('TempFileUrlCache 临时地址缓存', () => {
     await firstPageCache.resolve([fileId('shared')]);
     await secondPageCache.resolve([fileId('shared')]);
     expect(getTempFileURL).toHaveBeenCalledTimes(1);
+
+    clearSharedTempFileUrlCache();
+    await secondPageCache.resolve([fileId('shared')]);
+    expect(getTempFileURL).toHaveBeenCalledTimes(2);
   });
 
   it('invalidate 指定/全部后下次解析重新请求', async () => {

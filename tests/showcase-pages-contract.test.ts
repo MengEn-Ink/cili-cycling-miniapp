@@ -568,9 +568,9 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   });
 
   it('设置页原型同步当前客户端版本与当前 App 更新', () => {
-    expect(schema).toContain("state: 'V2026.10.18.4'");
+    expect(schema).toContain("state: '通知、隐私与缓存管理'");
     expect(schema).toContain(
-      "['2026.10.18.4', '单俱乐部收口', '全平台只保留一个俱乐部，首次由平台管理员直接创建；所有活动统一归属该俱乐部，普通骑友从“我的”直达唯一俱乐部主页。']",
+      "['2026.10.20.8', '出发准备与设置管理升级', '活动填写更稳妥，路线可继续恢复，并补齐通知、隐私与安全缓存管理。']",
     );
     expect(templates).toContain('App 更新');
     expect(templates).not.toContain('最近五次');

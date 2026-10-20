@@ -15,9 +15,9 @@ import type {
   Registration,
   RegistrationStatus,
   RouteGpxPreviewInput,
-} from '../models';
-import { activities, profile, registrations } from '../mock/fixtures';
-import { transition } from '../utils/registration';
+} from '../../miniprogram/models';
+import { activities, profile, registrations } from './mock-fixtures';
+import { transition } from '../../miniprogram/utils/registration';
 import type {
   ActivityListFilter,
   ActivityInput,
@@ -26,7 +26,7 @@ import type {
   PublicActivityView,
   RegistrationSubmission,
   RideRepository,
-} from './types';
+} from '../../miniprogram/repositories/types';
 type S = {
   activities: (Activity | EditableActivity)[];
   registrations: Registration[];

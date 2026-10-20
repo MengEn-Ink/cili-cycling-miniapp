@@ -14,5 +14,3 @@ export function createRepository(): RideRepository {
 export const repository: RideRepository = createRepository();
 export const repositoryCache: RepositoryCacheControl = (repository as CachingRepository)
   .cacheControl;
-// 正式运行固定使用云端；MockRepository 仅由测试直接引入，避免进入生产依赖图。
-export const isMock = false;

@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 export const MAIN_PACKAGE_BASELINE_BYTES = 541_235;
 export const MINIMUM_REDUCTION_BYTES = 80 * 1024;
+export const MAIN_PACKAGE_HARD_LIMIT_BYTES = MAIN_PACKAGE_BASELINE_BYTES - MINIMUM_REDUCTION_BYTES;
+export const MAIN_PACKAGE_WARNING_BYTES = 440 * 1024;
 
 function walk(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -33,20 +35,37 @@ export function mainPackageBytes(root = process.cwd()) {
   );
 }
 
-export function assertMainPackageBudget(root = process.cwd()) {
-  const bytes = mainPackageBytes(root);
+export function assessMainPackageBytes(bytes) {
   const reduction = MAIN_PACKAGE_BASELINE_BYTES - bytes;
-  if (reduction < MINIMUM_REDUCTION_BYTES) {
+  const remainingBytes = MAIN_PACKAGE_HARD_LIMIT_BYTES - bytes;
+  if (bytes > MAIN_PACKAGE_HARD_LIMIT_BYTES) {
     throw new Error(
-      `主包文件仅减少 ${reduction} 字节，要求至少减少 ${MINIMUM_REDUCTION_BYTES} 字节`,
+      `主包 ${bytes} 字节超过硬限额 ${MAIN_PACKAGE_HARD_LIMIT_BYTES} 字节；仅减少 ${reduction} 字节，要求至少减少 ${MINIMUM_REDUCTION_BYTES} 字节`,
     );
   }
-  return { baselineBytes: MAIN_PACKAGE_BASELINE_BYTES, bytes, reduction };
+  return {
+    baselineBytes: MAIN_PACKAGE_BASELINE_BYTES,
+    bytes,
+    reduction,
+    warning: bytes >= MAIN_PACKAGE_WARNING_BYTES,
+    warningBytes: MAIN_PACKAGE_WARNING_BYTES,
+    hardLimitBytes: MAIN_PACKAGE_HARD_LIMIT_BYTES,
+    remainingBytes,
+  };
+}
+
+export function assertMainPackageBudget(root = process.cwd()) {
+  return assessMainPackageBytes(mainPackageBytes(root));
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   const result = assertMainPackageBudget();
+  if (result.warning) {
+    console.warn(
+      `::warning::主包 ${result.bytes} 字节已达到 ${result.warningBytes} 字节预警线，距硬限额剩余 ${result.remainingBytes} 字节`,
+    );
+  }
   console.log(
-    `主包文件字节门禁通过：${result.baselineBytes} -> ${result.bytes}，减少 ${result.reduction} 字节`,
+    `主包文件字节门禁通过：${result.baselineBytes} -> ${result.bytes}，减少 ${result.reduction} 字节；硬限额 ${result.hardLimitBytes}，余量 ${result.remainingBytes} 字节`,
   );
 }

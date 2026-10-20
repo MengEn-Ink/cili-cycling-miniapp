@@ -32,14 +32,28 @@
       <view class="field" data-error-anchor="startAt">
         <view class="field-label">集合时间 <text class="required">必填</text></view>
         <view class="date-time-row">
-          <picker mode="date" value="{{form.startDate}}" bindchange="dateTimePicker" data-part="date">
+          <picker mode="date" value="{{form.startDate}}" bindchange="dateTimePicker" data-target="start" data-part="date">
             <view class="picker-value">{{form.startDate || '选择日期'}}</view>
           </picker>
-          <picker mode="time" value="{{form.startTime}}" bindchange="dateTimePicker" data-part="time">
+          <picker mode="time" value="{{form.startTime}}" bindchange="dateTimePicker" data-target="start" data-part="time">
             <view class="picker-value">{{form.startTime || '选择时间'}}</view>
           </picker>
         </view>
         <view wx:if="{{formErrors.startAt}}" class="field-error field-error-copy">{{formErrors.startAt}}</view>
+      </view>
+
+      <view class="field" data-error-anchor="deadlineAt">
+        <view class="field-label">报名截止时间 <text class="required">发布必填</text></view>
+        <view class="date-time-row">
+          <picker mode="date" value="{{form.deadlineDate}}" bindchange="dateTimePicker" data-target="deadline" data-part="date">
+            <view class="picker-value">{{form.deadlineDate || '选择截止日期'}}</view>
+          </picker>
+          <picker mode="time" value="{{form.deadlineTime}}" bindchange="dateTimePicker" data-target="deadline" data-part="time">
+            <view class="picker-value">{{form.deadlineTime || '选择截止时间'}}</view>
+          </picker>
+        </view>
+        <view class="section-help">发布或提交审核时必填，且必须早于集合时间；保存草稿不会因未填写而中断。</view>
+        <view wx:if="{{formErrors.deadlineAt}}" class="field-error field-error-copy">{{formErrors.deadlineAt}}</view>
       </view>
 
       <view class="field" data-error-anchor="routeStart">
@@ -119,12 +133,15 @@
 
       <view class="field route-detail-field">
         <view class="field-label">GPX 路线详情（推荐）</view>
-        <view class="section-help">上传后可展示里程、爬升、海拔曲线和路线图，参与者也可下载原文件。</view>
-        <button wx:if="{{!routePreview}}" class="upload-tile upload-tile--wide route-upload-button" loading="{{uploadingRoute}}" disabled="{{saving || uploadingRoute}}" bindtap="chooseRouteGpx">{{uploadingRoute ? '正在读取路线' : '上传 GPX'}}</button>
+        <view wx:if="{{routePreview}}" class="route-state route-state--ready">已有 GPX：参与者可查看路线详情并下载原文件。</view>
+        <view wx:elif="{{pendingRouteUpload || storedRouteGpxMissingDetails}}" class="route-state route-state--warning">GPX 解析失败或详情缺失，可重试解析或重新上传恢复，不影响用户端已有活动信息。</view>
+        <view wx:elif="{{publicRoutePreview}}" class="route-state">已有 Strava 路线，但缺少可下载的 GPX；建议补传完整路线。</view>
+        <view wx:else class="section-help">上传后可展示里程、爬升、海拔曲线和路线图，参与者也可下载原文件。</view>
+        <button wx:if="{{!routePreview}}" class="upload-tile upload-tile--wide route-upload-button" loading="{{uploadingRoute}}" disabled="{{saving || uploadingRoute}}" bindtap="chooseRouteGpx">{{uploadingRoute ? '正在读取路线' : (pendingRouteUpload || storedRouteGpxMissingDetails ? '重新上传 GPX' : (publicRoutePreview ? '上传 GPX 补全路线' : '上传 GPX'))}}</button>
         <view wx:if="{{routeStatusMessage}}" class="route-status">{{routeStatusMessage}}</view>
         <view wx:if="{{pendingRouteUpload && !uploadingRoute}}" class="route-command-row">
-          <button class="map-button" bindtap="retryRouteGpx">重试读取</button>
-          <button class="map-button map-button--secondary" bindtap="removeRouteDetails">移除路线详情</button>
+          <button class="map-button" bindtap="retryRouteGpx">重试解析已上传 GPX</button>
+          <button class="map-button map-button--secondary" bindtap="removeRouteDetails">放弃本次上传</button>
         </view>
         <view wx:if="{{routePreview}}" class="route-preview-card">
           <view class="route-preview-heading">

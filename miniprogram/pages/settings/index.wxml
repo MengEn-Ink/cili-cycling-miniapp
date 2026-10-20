@@ -3,10 +3,50 @@
 
   <view class="settings-hero">
     <view class="hero-title">设置</view>
-    <view class="hero-copy">查看当前版本信息与本次更新内容。</view>
+    <view class="hero-copy">管理活动通知、隐私与本地缓存，查看当前版本更新。</view>
   </view>
 
-  <view class="section-label"><text>01</text> App 更新</view>
+  <view class="section-label"><text>01</text> 常用管理</view>
+  <view class="management-list">
+    <button
+      class="management-row"
+      bindtap="manageNotifications"
+      disabled="{{actionPending}}"
+      aria-label="管理活动通知订阅"
+    >
+      <view class="management-copy">
+        <view class="management-title">活动通知</view>
+        <view class="management-description">按需订阅报名审核等活动提醒，每次选择以微信授权结果为准</view>
+      </view>
+      <text class="management-action" aria-hidden="true">订阅 ›</text>
+    </button>
+    <button
+      class="management-row"
+      bindtap="managePrivacy"
+      disabled="{{actionPending}}"
+      aria-label="打开微信隐私管理"
+    >
+      <view class="management-copy">
+        <view class="management-title">隐私管理</view>
+        <view class="management-description">查看微信隐私说明及已使用的信息</view>
+      </view>
+      <text class="management-action" aria-hidden="true">查看 ›</text>
+    </button>
+    <button
+      class="management-row"
+      bindtap="clearSafeCache"
+      disabled="{{actionPending}}"
+      aria-label="清理可安全重建的缓存"
+    >
+      <view class="management-copy">
+        <view class="management-title">清理缓存</view>
+        <view class="management-description">仅清理可重新下载的活动、资料和图片，不会退出登录或删除业务数据</view>
+      </view>
+      <text class="management-action" aria-hidden="true">清理 ›</text>
+    </button>
+  </view>
+
+  <view class="section-label release-section-label"><text>02</text> App 更新</view>
   <view class="release-list">
     <view class="release-card latest" wx:if="{{currentRelease}}">
       <view class="release-content">

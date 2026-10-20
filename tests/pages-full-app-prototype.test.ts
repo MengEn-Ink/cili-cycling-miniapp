@@ -312,7 +312,47 @@ describe('Pages 全套 App 原型契约（单俱乐部收敛 · design-only 不�
     expect(parseFail).not.toContain('正在重新解析 GPX');
   });
 
-  it('17. manifest 正式 routes 不含 planned-* 且仍为 17 条', () => {
+  it('17. 设置页同步活动通知、隐私管理与安全缓存清理，并保留确认边界', () => {
+    const template = runtime.pageTemplates?.settings;
+    if (!template) throw new Error('settings template missing');
+    runtime.prototypeState = 'default';
+    const output = template();
+    for (const term of ['活动通知', '隐私管理', '清理缓存', '不会退出登录或删除业务数据']) {
+      expect(output).toContain(term);
+    }
+    expect(output).toContain('data-action="settings-notifications"');
+    expect(output).toContain('data-action="settings-privacy"');
+    expect(output).toContain('data-action="settings-clear-cache"');
+    expect(appSource).toContain('settings-confirm-clear-cache');
+    expect(appSource).toContain('不会删除报名、行程或个人资料');
+  });
+
+  it('18. 活动编辑页显式展示报名截止日期/时间与 GPX 三态恢复入口', () => {
+    const template = runtime.pageTemplates?.['admin-activity-edit'];
+    if (!template) throw new Error('admin-activity-edit template missing');
+
+    runtime.prototypeState = 'edit';
+    const ready = template();
+    expect(ready).toContain('报名截止');
+    expect(ready).toContain('2026-10-17');
+    expect(ready).toContain('20:00');
+    expect(ready).toContain('报名截止必须早于集合时间');
+    expect(ready).toContain('已就绪');
+    expect(ready).toContain('更换 GPX');
+
+    runtime.prototypeState = 'gpx-missing';
+    const missing = template();
+    expect(missing).toContain('原 GPX 路线详情不可用');
+    expect(missing).toContain('重新上传 GPX');
+
+    runtime.prototypeState = 'gpx-failed';
+    const failed = template();
+    expect(failed).toContain('GPX 解析失败');
+    expect(failed).toContain('重试解析已上传 GPX');
+    expect(failed).toContain('放弃本次上传');
+  });
+
+  it('19. manifest 正式 routes 不含 planned-* 且仍为 17 条', () => {
     const ids = new Set(manifest.routes.map((route: { id: string }) => route.id));
     (data.plannedScreens ?? []).forEach((screen) => expect(ids.has(screen.id)).toBe(false));
     expect(manifest.routes).toHaveLength(17);

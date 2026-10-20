@@ -1,4 +1,4 @@
-import type { Activity, Profile, Registration } from '../models';
+import type { Activity, Profile, Registration } from '../../miniprogram/models';
 export const activities: Activity[] = [
   {
     id: 'forest',

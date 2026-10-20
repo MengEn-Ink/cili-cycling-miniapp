@@ -92,6 +92,13 @@ const splitLocalDateTime = (value: string) => {
   return { startDate: text.slice(0, 10), startTime: text.slice(11, 16) };
 };
 
+const setDeadlineBeforeStart = (page: any) => {
+  const start = new Date(`${page.data.form.startDate}T${page.data.form.startTime}:00Z`);
+  const deadline = new Date(start.getTime() - 60_000).toISOString();
+  page.data.form.deadlineDate = deadline.slice(0, 10);
+  page.data.form.deadlineTime = deadline.slice(11, 16);
+};
+
 const savedActivityFromPayload = (payload: any, id = 'saved-activity'): Activity => ({
   ...activity,
   ...payload,
@@ -305,6 +312,8 @@ describe('日常活动极简创建与编辑', () => {
     expect(page.data.form).toEqual({
       title: '环湖骑行',
       ...splitLocalDateTime(activity.startAt),
+      deadlineDate: formatLocalDateTime(activity.deadline).slice(0, 10),
+      deadlineTime: formatLocalDateTime(activity.deadline).slice(11, 16),
       routeStart: '起点',
       description: '说明',
       stravaRouteUrl: 'https://www.strava.com/routes/123',
@@ -500,7 +509,7 @@ describe('日常活动极简创建与编辑', () => {
     });
   });
 
-  it('发布要求活动标题、集合日期、集合时间和集合地点', async () => {
+  it('发布要求活动标题、集合日期时间、报名截止日期时间和集合地点', async () => {
     await page.onLoad({});
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
     expect(rideService.saveActivity).not.toHaveBeenCalled();
@@ -523,8 +532,77 @@ describe('日常活动极简创建与编辑', () => {
     page.data.form.startTime = '08:00';
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
     expect(wx.showModal).toHaveBeenLastCalledWith(
+      expect.objectContaining({ content: '请选择报名截止日期' }),
+    );
+
+    page.data.form.deadlineDate = '2026-10-17';
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+    expect(wx.showModal).toHaveBeenLastCalledWith(
+      expect.objectContaining({ content: '请选择报名截止时间' }),
+    );
+
+    page.data.form.deadlineTime = '20:00';
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+    expect(wx.showModal).toHaveBeenLastCalledWith(
       expect.objectContaining({ content: '请选择或填写集合地点' }),
     );
+  });
+
+  it.each([
+    ['相等', '2026-10-18', '08:00'],
+    ['晚于', '2026-10-18', '08:01'],
+  ])('发布拒绝报名截止时间%s集合时间', async (_label, deadlineDate, deadlineTime) => {
+    await page.onLoad({});
+    Object.assign(page.data.form, {
+      title: '周末拉练',
+      startDate: '2026-10-18',
+      startTime: '08:00',
+      deadlineDate,
+      deadlineTime,
+      routeStart: '湖边广场',
+    });
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(rideService.saveActivity).not.toHaveBeenCalled();
+    expect(wx.showModal).toHaveBeenLastCalledWith(
+      expect.objectContaining({ content: '报名截止时间必须早于集合时间' }),
+    );
+  });
+
+  it('跨日报名截止时间早于集合时间时可发布', async () => {
+    await page.onLoad({});
+    Object.assign(page.data.form, {
+      title: '跨日晨骑',
+      startDate: '2026-10-19',
+      startTime: '00:15',
+      deadlineDate: '2026-10-18',
+      deadlineTime: '23:59',
+      routeStart: '湖边广场',
+    });
+
+    await page.save({ currentTarget: { dataset: { status: 'published' } } });
+
+    expect(rideService.saveActivity).toHaveBeenCalledTimes(2);
+    const payload = rideService.saveActivity.mock.calls[0][0];
+    expect(new Date(payload.deadline).getTime()).toBeLessThan(new Date(payload.startAt).getTime());
+  });
+
+  it('草稿不强校验空或晚于集合时间的截止输入，并按现有服务端契约保存派生截止时间', async () => {
+    await page.onLoad({});
+    Object.assign(page.data.form, {
+      title: '待完善活动',
+      startDate: '2026-10-18',
+      startTime: '08:00',
+      deadlineDate: '2026-10-18',
+      deadlineTime: '09:00',
+    });
+
+    await page.save({ currentTarget: { dataset: { status: 'draft' } } });
+
+    expect(rideService.saveActivity).toHaveBeenCalledOnce();
+    const payload = rideService.saveActivity.mock.calls[0][0];
+    expect(new Date(payload.deadline).getTime()).toBe(new Date(payload.startAt).getTime() - 60_000);
   });
 
   it('编辑存量活动时只更新可见字段并保留历史运营配置', async () => {
@@ -655,10 +733,23 @@ describe('日常活动极简创建与编辑', () => {
     expect(page.data.form.startTime).toBe('');
 
     page.dateTimePicker({
-      currentTarget: { dataset: { part: 'time' } },
+      currentTarget: { dataset: { target: 'start', part: 'time' } },
       detail: { value: '07:30' },
     });
     expect(page.data.form).toMatchObject({ startDate: '2026-10-20', startTime: '07:30' });
+
+    page.dateTimePicker({
+      currentTarget: { dataset: { target: 'deadline', part: 'date' } },
+      detail: { value: '2026-10-19' },
+    });
+    page.dateTimePicker({
+      currentTarget: { dataset: { target: 'deadline', part: 'time' } },
+      detail: { value: '20:00' },
+    });
+    expect(page.data.form).toMatchObject({
+      deadlineDate: '2026-10-19',
+      deadlineTime: '20:00',
+    });
   });
 
   it('新建模式只选日期不会注入默认时间，补选时间后可发布并在重开时回显', async () => {
@@ -686,6 +777,7 @@ describe('日常活动极简创建与编辑', () => {
       detail: { value: '07:30' },
     });
     page.data.form.routeStart = '湖边广场';
+    setDeadlineBeforeStart(page);
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
     expect(rideService.saveActivity).toHaveBeenCalledTimes(2);
     expect(rideService.saveActivity.mock.calls.map(([payload]) => payload.status)).toEqual([
@@ -725,6 +817,7 @@ describe('日常活动极简创建与编辑', () => {
       startTime: '07:30',
       routeStart: '湖边广场',
     });
+    setDeadlineBeforeStart(page);
 
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
 
@@ -780,6 +873,7 @@ describe('日常活动极简创建与编辑', () => {
       startTime: '07:30',
       routeStart: '湖边广场',
     });
+    setDeadlineBeforeStart(page);
 
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
 
@@ -842,6 +936,7 @@ describe('日常活动极简创建与编辑', () => {
       startTime: '07:30',
       routeStart: '湖边广场',
     });
+    setDeadlineBeforeStart(page);
 
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
 
@@ -894,6 +989,7 @@ describe('日常活动极简创建与编辑', () => {
       startTime: '07:30',
       routeStart: '  湖边广场  ',
     });
+    setDeadlineBeforeStart(page);
 
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
 
@@ -1056,6 +1152,7 @@ describe('日常活动极简创建与编辑', () => {
       startTime: '07:30',
       routeStart: '湖边广场',
     });
+    setDeadlineBeforeStart(page);
 
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
 
@@ -1106,6 +1203,7 @@ describe('日常活动极简创建与编辑', () => {
       startTime: '07:30',
       routeStart: '湖边广场',
     });
+    setDeadlineBeforeStart(page);
 
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
 
@@ -1154,6 +1252,7 @@ describe('日常活动极简创建与编辑', () => {
       startTime: '07:30',
       routeStart: '湖边广场',
     });
+    setDeadlineBeforeStart(page);
 
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
 
@@ -1179,6 +1278,7 @@ describe('日常活动极简创建与编辑', () => {
     page.data.form.startDate = '2026-10-11';
     page.data.form.startTime = '23:30';
     page.data.form.routeStart = '夜骑起点';
+    setDeadlineBeforeStart(page);
 
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
 
@@ -1226,6 +1326,7 @@ describe('日常活动极简创建与编辑', () => {
     page.data.form.startDate = '2026-10-20';
     page.data.form.startTime = '07:30';
     page.data.form.routeStart = '湖边广场';
+    setDeadlineBeforeStart(page);
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
     expect(rideService.saveActivity.mock.calls[0][0]).toMatchObject({
       images: ['cloud://first.jpg', 'cloud://second.jpg'],
@@ -1272,6 +1373,7 @@ describe('日常活动极简创建与编辑', () => {
     page.data.form.startDate = '2026-10-20';
     page.data.form.startTime = '07:30';
     page.data.form.routeStart = '湖边广场';
+    setDeadlineBeforeStart(page);
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
     rideService.getAdminActivity.mockResolvedValueOnce(saved);
     await page.onLoad({ id: saved!.id });
@@ -1378,6 +1480,7 @@ describe('日常活动极简创建与编辑', () => {
     page.data.form.startDate = '2026-10-20';
     page.data.form.startTime = '07:30';
     page.data.form.routeStart = '湖边广场';
+    setDeadlineBeforeStart(page);
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
 
     expect(rideService.saveActivity.mock.calls[0][0]).toMatchObject({
@@ -1440,6 +1543,44 @@ describe('日常活动极简创建与编辑', () => {
     });
     expect(rideService.previewStravaRoute).not.toHaveBeenCalled();
     expect(wx.showToast).toHaveBeenCalledWith({ title: '已解析公开路线', icon: 'success' });
+  });
+
+  it('存量 GPX 缺少可用解析详情时给出重传恢复态', async () => {
+    const brokenGpxActivity = {
+      ...activity,
+      route: {
+        ...activity.route,
+        gpxFileId: `cloud://env/activity-routes/${appStore.openid}/${'b'.repeat(64)}.gpx`,
+      },
+    };
+    rideService.getAdminActivity.mockResolvedValueOnce(brokenGpxActivity);
+
+    await page.onLoad({ id: activity.id });
+
+    expect(page.data.routePreview).toBeUndefined();
+    expect(page.data.storedRouteGpxMissingDetails).toBe(true);
+    expect(page.data.routeStatusMessage).toBe('原 GPX 路线详情不可用，请重新上传恢复');
+  });
+
+  it('GPX 解析失败后保留同文件重试入口和错误文案', async () => {
+    const pending = {
+      gpxFileId: `cloud://env/activity-routes/${appStore.openid}/${'b'.repeat(64)}.gpx`,
+      gpxSha256: 'b'.repeat(64),
+      fileName: 'broken.gpx',
+      requestId: 'route_retry_123',
+    };
+    await page.onLoad({});
+    page.data.pendingRouteUpload = pending;
+    rideService.previewRouteGpx.mockRejectedValueOnce(new Error('GPX 轨迹点不足'));
+
+    await page.retryRouteGpx();
+
+    expect(rideService.previewRouteGpx).toHaveBeenCalledWith(pending);
+    expect(page.data.routeStatusMessage).toBe(page.data.error);
+    expect(page.data.routeStatusMessage).not.toBe('');
+    expect(wx.showToast).toHaveBeenCalledWith(
+      expect.objectContaining({ title: page.data.routeStatusMessage, icon: 'none' }),
+    );
   });
 
   it('选择 GPX 后按 SHA-256 所有者路径上传并读取可信详情', async () => {
@@ -1784,6 +1925,7 @@ describe('日常活动极简创建与编辑', () => {
       routeStart: '中关村广场',
       stravaRouteUrl: routeUrl,
     });
+    setDeadlineBeforeStart(page);
 
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
 
@@ -1825,6 +1967,14 @@ describe('日常活动极简创建与编辑', () => {
     expect(template).toContain('form.title');
     expect(template).toContain('form.startDate');
     expect(template).toContain('form.startTime');
+    expect(template).toContain('报名截止时间');
+    expect(template).toContain('form.deadlineDate');
+    expect(template).toContain('form.deadlineTime');
+    expect(template).toContain('已有 Strava 路线，但缺少可下载的 GPX');
+    expect(template).toContain('GPX 解析失败或详情缺失');
+    expect(template).toContain('已有 GPX：参与者可查看路线详情并下载原文件');
+    expect(template).toContain('重试解析已上传 GPX');
+    expect(template).toContain('重新上传 GPX');
     expect(template).not.toContain('form.startAt');
     expect(template).not.toContain('quick-row');
     expect(template).not.toContain('明早');
