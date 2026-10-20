@@ -1,13 +1,32 @@
 import { CLIENT_RELEASE_VERSION } from '../../config/release';
+import { repositoryCache } from '../../repositories/index';
+import { rideService } from '../../services/ride-service';
+import { clearProfilePageCache } from '../../utils/profile-page-cache';
+import { clearSharedTempFileUrlCache } from '../../utils/temp-file-url';
+
+const MAX_SUBSCRIPTION_TEMPLATES = 3;
 
 // 顶部为当前版本且唯一 latest；设置页只渲染第一条，历史版本供发布核对。
 const RELEASE_NOTES = [
   {
     version: CLIENT_RELEASE_VERSION,
     date: '2026-10-20',
+    title: '出发准备与设置管理升级',
+    summary: '活动填写更稳妥，路线可继续恢复，并补齐通知、隐私与安全缓存管理。',
+    latest: true,
+    features: [
+      '活动时间填写增加校验，减少无效时间影响发布',
+      '未完成的路线处理可恢复，返回后继续操作更省心',
+      '设置页新增通知订阅、隐私管理和安全缓存清理',
+      '优化常用数据读取与异常处理，使用更稳定顺畅',
+    ],
+  },
+  {
+    version: '2026.10.20.7',
+    date: '2026-10-20',
     title: '活动详情重点信息更突出',
     summary: '活动详情重点信息更醒目，编辑预览尺寸更统一。',
-    latest: true,
+    latest: false,
     features: [
       '墨黑决策块突出报名与集合重点',
       '统一路线与群二维码预览尺寸',
@@ -208,9 +227,76 @@ const RELEASE_NOTES = [
   },
 ] as const;
 
+function openPrivacyContract(): Promise<void> {
+  const open = typeof wx !== 'undefined' ? wx.openPrivacyContract : undefined;
+  if (typeof open !== 'function')
+    return Promise.reject(new Error('当前微信版本暂不支持隐私管理，请升级微信后重试'));
+  return new Promise((resolve, reject) => {
+    open({ success: () => resolve(), fail: (error: unknown) => reject(error) });
+  });
+}
+
 Page({
   data: {
     releaseNotes: RELEASE_NOTES,
     currentRelease: RELEASE_NOTES[0],
+    actionPending: false,
+  },
+  async manageNotifications() {
+    if (this.data.actionPending) return;
+    this.setData({ actionPending: true });
+    try {
+      const templateIds = (await rideService.getReviewNotificationTemplateIds())
+        .filter((item, index, values) => Boolean(item && values.indexOf(item) === index))
+        .slice(0, MAX_SUBSCRIPTION_TEMPLATES);
+      if (!templateIds.length) {
+        wx.showToast({ title: '暂无可订阅的活动通知', icon: 'none' });
+        return;
+      }
+      await rideService.requestReviewNotificationSubscription(templateIds);
+      wx.showToast({ title: '已完成本次订阅选择', icon: 'success' });
+    } catch {
+      wx.showToast({ title: '暂时无法打开通知订阅，请稍后重试', icon: 'none' });
+    } finally {
+      this.setData({ actionPending: false });
+    }
+  },
+  async managePrivacy() {
+    if (this.data.actionPending) return;
+    this.setData({ actionPending: true });
+    try {
+      await openPrivacyContract();
+    } catch {
+      wx.showModal({
+        title: '暂时无法打开隐私管理',
+        content: '请升级微信后重试，或通过小程序右上角“…”查看隐私保护指引。',
+        showCancel: false,
+      });
+    } finally {
+      this.setData({ actionPending: false });
+    }
+  },
+  clearSafeCache() {
+    if (this.data.actionPending) return;
+    wx.showModal({
+      title: '清理缓存',
+      content:
+        '只会清理可重新下载的活动、资料和图片缓存，不会退出登录，也不会删除报名、行程或个人资料。',
+      confirmText: '确认清理',
+      success: (result: { confirm?: boolean }) => {
+        if (!result.confirm) return;
+        this.setData({ actionPending: true });
+        try {
+          repositoryCache.clear();
+          clearProfilePageCache();
+          clearSharedTempFileUrlCache();
+          wx.showToast({ title: '缓存已清理', icon: 'success' });
+        } catch {
+          wx.showToast({ title: '部分缓存未能清理，请稍后重试', icon: 'none' });
+        } finally {
+          this.setData({ actionPending: false });
+        }
+      },
+    });
   },
 });

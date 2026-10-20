@@ -48,6 +48,11 @@ export function getSharedTempFileUrlCache(options: TempFileUrlCacheOptions): Tem
   return sharedTempFileUrlCache;
 }
 
+/** 清理可重新签发的临时地址；不触碰云文件或业务数据。 */
+export function clearSharedTempFileUrlCache(): void {
+  sharedTempFileUrlCache?.invalidate();
+}
+
 let sharedTempFileUrlCache: TempFileUrlCache | null = null;
 
 export class TempFileUrlCache {

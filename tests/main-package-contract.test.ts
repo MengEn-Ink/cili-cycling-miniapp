@@ -7,7 +7,10 @@ import * as packageSize from '../scripts/check-main-package-size.mjs';
 
 const {
   MAIN_PACKAGE_BASELINE_BYTES,
+  MAIN_PACKAGE_HARD_LIMIT_BYTES,
+  MAIN_PACKAGE_WARNING_BYTES,
   MINIMUM_REDUCTION_BYTES,
+  assessMainPackageBytes,
   assertMainPackageBudget,
   mainPackageFiles,
 } = packageSize;
@@ -62,11 +65,20 @@ describe('按需分包与主包字节契约', () => {
     expect(mainFiles.some((file: string) => file.startsWith('miniprogram/pages/club/'))).toBe(
       false,
     );
+    expect(mainFiles).not.toContain('miniprogram/repositories/mock.ts');
+    expect(mainFiles.some((file: string) => file.startsWith('miniprogram/mock/'))).toBe(false);
   });
 
-  it('以微信实际上传文件集合锁定主包至少减少 80 KiB', () => {
+  it('保留 80 KiB 减量硬门禁，并在接近限额时给出余量预警', () => {
     const result = assertMainPackageBudget();
     expect(result.baselineBytes).toBe(MAIN_PACKAGE_BASELINE_BYTES);
     expect(result.reduction).toBeGreaterThanOrEqual(MINIMUM_REDUCTION_BYTES);
+    expect(result.hardLimitBytes).toBe(MAIN_PACKAGE_BASELINE_BYTES - MINIMUM_REDUCTION_BYTES);
+    expect(result.remainingBytes).toBe(MAIN_PACKAGE_HARD_LIMIT_BYTES - result.bytes);
+
+    const warning = assessMainPackageBytes(MAIN_PACKAGE_WARNING_BYTES);
+    expect(warning.warning).toBe(true);
+    expect(warning.remainingBytes).toBe(MAIN_PACKAGE_HARD_LIMIT_BYTES - MAIN_PACKAGE_WARNING_BYTES);
+    expect(() => assessMainPackageBytes(MAIN_PACKAGE_HARD_LIMIT_BYTES + 1)).toThrow(/硬限额/);
   });
 });

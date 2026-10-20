@@ -4,14 +4,13 @@ import {
   type AuthAttempt,
   type AuthCloudApi,
 } from '../services/auth-service';
-import { isMock, repositoryCache } from '../repositories/index';
+import { repositoryCache } from '../repositories/index';
 
 export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unavailable' | 'error';
 
 interface StorageApi {
   getStorageSync(key: string): unknown;
   setStorageSync(key: string, value: unknown): void;
-  removeStorageSync(key: string): void;
 }
 
 type Authenticate = (cloud?: AuthCloudApi) => Promise<AuthAttempt>;
@@ -29,7 +28,6 @@ function defaultStorage(): StorageApi {
   return {
     getStorageSync: (key) => wx.getStorageSync(key),
     setStorageSync: (key, value) => wx.setStorageSync(key, value),
-    removeStorageSync: (key) => wx.removeStorageSync(key),
   };
 }
 
@@ -40,7 +38,6 @@ export class AppStore {
   identityHint: IdentityHint | null = null;
   authStatus: AuthStatus = 'idle';
   authError = '';
-  readonly isMock = isMock;
   private authPromise: Promise<AuthAttempt> | null = null;
   private authRequestRevision = 0;
   private identityVerifiedUntil = 0;
@@ -51,11 +48,6 @@ export class AppStore {
   ) {}
 
   bootstrap() {
-    try {
-      this.storage.removeStorageSync('ride-role');
-    } catch {
-      // Legacy mock-role cleanup is best-effort and never affects authorization.
-    }
     this.identityHint = null;
     let stored: unknown;
     try {
@@ -159,15 +151,6 @@ export class AppStore {
       this.identityHint.verifiedAt <= now &&
       now < this.identityHint.verifiedAt + IDENTITY_HINT_WARMUP_TTL_MS
     );
-  }
-
-  canSwitchRole(): boolean {
-    return this.isMock && !this.openid;
-  }
-
-  switchRole(role: Role) {
-    if (!this.canSwitchRole()) throw Error('真实身份生效后不可切换角色');
-    this.role = role;
   }
 }
 

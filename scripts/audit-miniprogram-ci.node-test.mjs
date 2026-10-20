@@ -4,6 +4,7 @@ import test from 'node:test';
 import { assessAuditReport } from './audit-miniprogram-ci.mjs';
 
 const allowlist = {
+  reviewedAt: '2026-10-17',
   expiresAt: '2027-01-15',
   advisories: {
     'GHSA-AAAA-BBBB-CCCC': '受控输入且上游无修复',
@@ -62,5 +63,26 @@ test('上游修复后旧例外必须删除，避免永久豁免', () => {
         new Date('2026-10-17T00:00:00Z'),
       ),
     /风险例外已失效/,
+  );
+});
+
+test('拒绝无限期或缺少复审起点的风险例外', () => {
+  assert.throws(
+    () =>
+      assessAuditReport(
+        report(),
+        { ...allowlist, expiresAt: '2027-12-31' },
+        new Date('2026-10-17T00:00:00Z'),
+      ),
+    /最长只能保留 120 天/,
+  );
+  assert.throws(
+    () =>
+      assessAuditReport(
+        report(),
+        { expiresAt: allowlist.expiresAt, advisories: allowlist.advisories },
+        new Date('2026-10-17T00:00:00Z'),
+      ),
+    /日期无效/,
   );
 });

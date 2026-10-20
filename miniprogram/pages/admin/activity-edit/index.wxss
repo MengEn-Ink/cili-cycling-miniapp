@@ -146,6 +146,23 @@
   border: 2rpx solid var(--color-border);
   border-radius: var(--radius-sm);
 }
+.route-state {
+  margin-top: 8rpx;
+  padding: 16rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-raised);
+  color: var(--color-muted);
+  font-size: 24rpx;
+  line-height: 36rpx;
+}
+.route-state--ready {
+  color: var(--color-action-active);
+}
+.route-state--warning {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
+}
 .route-status {
   margin-top: 16rpx;
   color: var(--color-muted);

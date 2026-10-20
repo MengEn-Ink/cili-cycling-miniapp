@@ -2,7 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
-process.env.PROFILE_MEDIA_PATH_SECRET ||= 'activity-admin-test-media-secret-32-bytes';
+process.env.PROFILE_MEDIA_PATH_SECRET = 'activity-admin-test-media-secret-32-bytes';
 const {
   DomainError,
   validateDraftInput,

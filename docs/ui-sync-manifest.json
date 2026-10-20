@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "138cc83f3d7eac089c64f4c7fe4f620c240dbacc",
-  "syncedAt": "2026-10-20T00:42:00.000+08:00",
+  "syncedThrough": "67bb800eaa6decef40ab9a33f63c6b6c5a51dacf",
+  "syncedAt": "2026-10-20T23:50:00.000+08:00",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:1878240353021df11e85479903924aa79c0a5f6b2179191c473b62ddbed46968"
+    "digest": "sha256:8ca63f8951451ca11c71fd25b8d43416ad98efc9b096e8f245aed61965553428"
   },
   "prototype": {
-    "digest": "sha256:82dea2560a1af94b299ed0bd82e0925a78f972f0056fbe4765cc1cd62210f69d"
+    "digest": "sha256:5ce8ed95ff8a3d4f3b9626ac96cd8b3b6988728efd91e53b0c10863f742307eb"
   },
   "routes": [
     {
@@ -156,10 +156,10 @@
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "默认，客户端 2026.10.18.3",
+        "state": "常用管理 · 客户端 2026.10.20.8",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "Pages 375×812 设置页已同步 2026.10.18.3 更新说明；微信端沿用布局基线，开发版上传后核对当前版本唯一展示。"
+        "note": "Pages 于 2026-10-20 使用本地 Aime 浏览器按 375×812 重采：展示活动通知、微信隐私管理与安全缓存清理，并明确不会退出登录或删除业务数据；DevTools 图片沿用既有基线且保持 blocked，未伪造或声明双端已对齐。"
       },
       {
         "id": "capability-card",
@@ -192,10 +192,10 @@
         "id": "admin-activity-edit",
         "devtools": "admin-activity-edit-devtools.png",
         "pages": "admin-activity-edit-pages.png",
-        "state": "活动编辑 · 唯一俱乐部归属",
+        "state": "活动编辑 · GPX 解析失败恢复态",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "Pages 原型将活动归属固定为平台唯一俱乐部，并由平台管理员直接编辑与发布；本地 Aime 浏览器重采 375×812 证据；DevTools 仍保持 blocked，需在新开发版中复验，未声明 aligned。"
+        "note": "Pages 于 2026-10-20 使用本地 Aime 浏览器按 375×812 重采 GPX 解析失败区：可重试解析、放弃本次上传或重新上传；编辑表单同时新增显式报名截止日期/时间，契约覆盖缺失、失败、已就绪三态。DevTools 图片沿用既有基线且保持 blocked，未伪造或声明双端已对齐。"
       },
       {
         "id": "admin-reviews",

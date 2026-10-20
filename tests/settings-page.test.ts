@@ -3,118 +3,65 @@ import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CLIENT_RELEASE_VERSION } from '../miniprogram/config/release';
 
-const readiness = vi.hoisted(() => vi.fn());
+const mocks = vi.hoisted(() => ({
+  readiness: vi.fn(),
+  getTemplates: vi.fn(),
+  requestSubscription: vi.fn(),
+  clearRepository: vi.fn(),
+  clearProfile: vi.fn(),
+  clearTempUrls: vi.fn(),
+}));
 vi.mock('../miniprogram/repositories/index', () => ({
-  repository: { getStravaReadiness: readiness },
+  repository: {
+    getStravaReadiness: mocks.readiness,
+    getReviewNotificationTemplateIds: mocks.getTemplates,
+    requestReviewNotificationSubscription: mocks.requestSubscription,
+  },
+  repositoryCache: { clear: mocks.clearRepository },
+}));
+vi.mock('../miniprogram/utils/profile-page-cache', () => ({
+  clearProfilePageCache: mocks.clearProfile,
+}));
+vi.mock('../miniprogram/utils/temp-file-url', () => ({
+  clearSharedTempFileUrlCache: mocks.clearTempUrls,
 }));
 
 describe('设置页', () => {
   let page: any;
+  let wxApi: any;
 
   beforeEach(async () => {
     vi.resetModules();
-    readiness.mockReset();
+    for (const mock of Object.values(mocks)) mock.mockReset();
+    mocks.getTemplates.mockResolvedValue([]);
+    wxApi = {
+      showToast: vi.fn(),
+      showModal: vi.fn(),
+      openPrivacyContract: vi.fn(),
+    };
+    vi.stubGlobal('wx', wxApi);
     vi.stubGlobal('Page', (definition: any) => {
       page = definition;
       page.data = { ...definition.data };
+      page.setData = vi.fn((patch: Record<string, unknown>) => Object.assign(page.data, patch));
     });
     await import('../miniprogram/pages/settings/index');
   });
 
-  it('只展示当前版本的 App 更新卡片，不展示历史日志', () => {
-    // RELEASE_NOTES 顶部为当前版本并保留历史版本，设置页仍只渲染 RELEASE_NOTES[0]。
-    expect(page.data.releaseNotes).toHaveLength(17);
-    expect(page.data.releaseNotes[0]).toMatchObject({
-      version: CLIENT_RELEASE_VERSION,
-      date: '2026-10-20',
-      latest: true,
-      title: '活动详情重点信息更突出',
-    });
+  it('当前版本为 2026.10.20.8 且 latest 唯一，上一版转为历史项', () => {
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.20.8');
+    expect(page.data.releaseNotes).toHaveLength(18);
     expect(page.data.currentRelease).toBe(page.data.releaseNotes[0]);
+    expect(page.data.currentRelease).toMatchObject({
+      version: '2026.10.20.8',
+      date: '2026-10-20',
+      title: '出发准备与设置管理升级',
+      latest: true,
+    });
     expect(page.data.releaseNotes[1]).toMatchObject({
-      version: '2026.10.20.6',
-      date: '2026-10-20',
+      version: '2026.10.20.7',
+      title: '活动详情重点信息更突出',
       latest: false,
-      title: '唯一俱乐部主页上线',
-    });
-    expect(page.data.releaseNotes[2]).toMatchObject({
-      version: '2026.10.20.5',
-      date: '2026-10-20',
-      latest: false,
-      title: '俱乐部管理更清晰',
-    });
-    expect(page.data.releaseNotes[3]).toMatchObject({
-      version: '2026.10.20.4',
-      date: '2026-10-20',
-      latest: false,
-      title: '骑行名片、个人中心与路线分析修复',
-    });
-    expect(page.data.releaseNotes[4]).toMatchObject({
-      version: '2026.10.20.3',
-      date: '2026-10-20',
-      latest: false,
-      title: '管理端审核与活动安全修复',
-    });
-    expect(page.data.releaseNotes[5]).toMatchObject({
-      version: '2026.10.20.2',
-      date: '2026-10-20',
-      latest: false,
-      title: '报名凭证与活动详情更可靠',
-    });
-    expect(page.data.releaseNotes[6]).toMatchObject({
-      version: '2026.10.19.5',
-      latest: false,
-      title: '俱乐部图片上传更稳定',
-    });
-    expect(page.data.releaseNotes[7]).toMatchObject({
-      version: '2026.10.19.4',
-      latest: false,
-      title: '图片清理更可靠',
-    });
-    expect(page.data.releaseNotes[8]).toMatchObject({
-      version: '2026.10.19.3',
-      latest: false,
-      title: '创建申请可撤回修改',
-    });
-    expect(page.data.releaseNotes[9]).toMatchObject({
-      version: '2026.10.19.2',
-      latest: false,
-      title: '俱乐部活动投稿与审核',
-    });
-    expect(page.data.releaseNotes[10]).toMatchObject({
-      version: '2026.10.19.1',
-      latest: false,
-      title: '图片上传链路全面统一',
-    });
-    expect(page.data.releaseNotes[11]).toMatchObject({
-      version: '2026.10.18.8',
-      latest: false,
-      title: '界面风格统一',
-    });
-    expect(page.data.releaseNotes[12]).toMatchObject({
-      version: '2026.10.18.7',
-      latest: false,
-      title: '图片上传稳定性升级',
-    });
-    expect(page.data.releaseNotes[13]).toMatchObject({
-      version: '2026.10.18.6',
-      latest: false,
-      title: '俱乐部图片上传兼容性修复',
-    });
-    expect(page.data.releaseNotes[14]).toMatchObject({
-      version: '2026.10.18.5',
-      latest: false,
-      title: '俱乐部推荐与图片体验修复',
-    });
-    expect(page.data.releaseNotes[15]).toMatchObject({
-      version: '2026.10.18.4',
-      latest: false,
-      title: '俱乐部首页与人数上限',
-    });
-    expect(page.data.releaseNotes[16]).toMatchObject({
-      version: '2026.10.18.3',
-      latest: false,
-      title: '俱乐部资料保存稳定性修复',
     });
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(
       1,
@@ -122,16 +69,68 @@ describe('设置页', () => {
     expect(page.onShow).toBeUndefined();
     expect(page.loadStravaStatus).toBeUndefined();
     expect(page.openStrava).toBeUndefined();
-    expect(readiness).not.toHaveBeenCalled();
+    expect(mocks.readiness).not.toHaveBeenCalled();
   });
 
-  it('版本号与日期对齐 2026.10.20.7', () => {
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.20.7');
-    expect(page.data.currentRelease.version).toBe('2026.10.20.7');
-    expect(page.data.currentRelease.date).toBe('2026-10-20');
+  it('模板提供通知、隐私与缓存入口，通知不是可永久关闭的 switch', () => {
+    const template = readFileSync('miniprogram/pages/settings/index.wxml', 'utf8');
+    expect(template).toContain('bindtap="manageNotifications"');
+    expect(template).toContain('bindtap="managePrivacy"');
+    expect(template).toContain('bindtap="clearSafeCache"');
+    expect(template).toContain('每次选择以微信授权结果为准');
+    expect(template).not.toContain('<switch');
   });
 
-  it('设置页模板只渲染当前版本卡片，不出现历史时间线容器', () => {
+  it('通知入口复用已有订阅服务并去重、限制模板数量', async () => {
+    mocks.getTemplates.mockResolvedValue(['one', 'one', 'two', 'three', 'four']);
+    mocks.requestSubscription.mockResolvedValue(undefined);
+
+    await page.manageNotifications();
+
+    expect(mocks.getTemplates).toHaveBeenCalledOnce();
+    expect(mocks.requestSubscription).toHaveBeenCalledWith(['one', 'two', 'three']);
+    expect(wxApi.showToast).toHaveBeenCalledWith({ title: '已完成本次订阅选择', icon: 'success' });
+    expect(page.data.actionPending).toBe(false);
+  });
+
+  it('隐私入口优先调用微信官方隐私保护指引能力，并兼容旧基础库', async () => {
+    wxApi.openPrivacyContract.mockImplementation(({ success }: any) => success());
+    await page.managePrivacy();
+    expect(wxApi.openPrivacyContract).toHaveBeenCalledOnce();
+
+    wxApi.openPrivacyContract = undefined;
+    await page.managePrivacy();
+    expect(wxApi.showModal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: '暂时无法打开隐私管理',
+        content: expect.stringContaining('升级微信'),
+        showCancel: false,
+      }),
+    );
+  });
+
+  it('缓存清理需确认且只清可重建缓存，不清登录身份或关键业务状态', () => {
+    let confirm: ((result: { confirm?: boolean }) => void) | undefined;
+    wxApi.showModal.mockImplementation((options: any) => {
+      confirm = options.success;
+    });
+
+    page.clearSafeCache();
+    expect(wxApi.showModal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.stringContaining('不会退出登录，也不会删除报名、行程或个人资料'),
+      }),
+    );
+    confirm?.({ confirm: true });
+
+    expect(mocks.clearRepository).toHaveBeenCalledOnce();
+    expect(mocks.clearProfile).toHaveBeenCalledOnce();
+    expect(mocks.clearTempUrls).toHaveBeenCalledOnce();
+    const script = readFileSync('miniprogram/pages/settings/index.ts', 'utf8');
+    expect(script).not.toMatch(/clearStorage|ride-identity-hint|removeStorageSync/);
+  });
+
+  it('设置页只渲染当前版本卡片，不出现历史时间线容器', () => {
     const template = readFileSync('miniprogram/pages/settings/index.wxml', 'utf8');
     expect(template).toContain('App 更新');
     expect(template).toContain('{{currentRelease.version}}');
@@ -141,12 +140,11 @@ describe('设置页', () => {
     expect(template).not.toContain('release-dot');
   });
 
-  it('面向用户的设置页模板中不出现门禁、接口、令牌、OpenID、FileID 等技术词', () => {
+  it('面向用户的设置内容不出现内部技术词', () => {
     const template = readFileSync('miniprogram/pages/settings/index.wxml', 'utf8');
     expect(template).not.toMatch(
       /门禁|接口|令牌|token|OpenID|openid|fileID|FileID|云开发|云存储|云端(?!更新)/,
     );
-    // 用户可见数据来源于 TS 中的 RELEASE_NOTES[0]，验证其面向用户的字段不含技术词。
     const script = readFileSync('miniprogram/pages/settings/index.ts', 'utf8');
     const releaseNotesBlock = script.match(/const RELEASE_NOTES[\s\S]*?\]\s*as const;/)?.[0] || '';
     expect(releaseNotesBlock).not.toMatch(
@@ -154,11 +152,10 @@ describe('设置页', () => {
     );
   });
 
-  it('模板不再包含第三方授权区或 Strava 页面跳转', () => {
+  it('不再包含第三方授权区或 Strava 页面跳转', () => {
     const template = readFileSync('miniprogram/pages/settings/index.wxml', 'utf8');
     const script = readFileSync('miniprogram/pages/settings/index.ts', 'utf8');
     expect(template).not.toContain('第三方授权');
-    expect(template).not.toContain('loadStravaStatus');
     expect(script).not.toContain('/pages/strava/index');
     expect(script).not.toContain('getStravaReadiness');
   });

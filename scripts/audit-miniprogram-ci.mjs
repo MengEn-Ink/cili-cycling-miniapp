@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 const ALLOWLIST_URL = new URL('../tools/miniprogram-ci/audit-allowlist.json', import.meta.url);
 const TOOL_ROOT = fileURLToPath(new URL('../tools/miniprogram-ci/', import.meta.url));
 
+const MAX_EXCEPTION_DAYS = 120;
+
 function advisoryId(url) {
   const match = String(url || '').match(/GHSA-[0-9a-z-]+$/i);
   return match ? match[0].toUpperCase() : '';
@@ -14,8 +16,16 @@ export function assessAuditReport(report, allowlist, now = new Date()) {
   if (!report || typeof report.vulnerabilities !== 'object') {
     throw new Error('微信上传工具审计结果缺少 vulnerabilities');
   }
+  const reviewedAt = new Date(`${allowlist.reviewedAt}T00:00:00+08:00`);
   const expiresAt = new Date(`${allowlist.expiresAt}T23:59:59+08:00`);
-  if (!Number.isFinite(expiresAt.getTime()) || now > expiresAt) {
+  if (!Number.isFinite(reviewedAt.getTime()) || !Number.isFinite(expiresAt.getTime())) {
+    throw new Error('微信上传工具风险例外日期无效');
+  }
+  const exceptionDays = (expiresAt.getTime() - reviewedAt.getTime()) / 86_400_000;
+  if (exceptionDays <= 0 || exceptionDays > MAX_EXCEPTION_DAYS) {
+    throw new Error(`微信上传工具风险例外最长只能保留 ${MAX_EXCEPTION_DAYS} 天`);
+  }
+  if (now > expiresAt) {
     throw new Error(`微信上传工具风险例外已过期：${allowlist.expiresAt}`);
   }
 

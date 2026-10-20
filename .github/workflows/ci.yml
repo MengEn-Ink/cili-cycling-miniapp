@@ -10,32 +10,40 @@ on:
 permissions:
   contents: read
 
-# 同一 PR 的旧检查不再影响交付反馈；main 的发布链仍由独立工作流串行执行，不能被取消。
+# 同一 PR 的旧检查不再影响交付反馈；main 的发布链仍由独立 workflow_run 串行执行，不能被取消。
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  validate:
+  pr-submission:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.actor != 'dependabot[bot]' &&
+      !(github.actor == 'github-actions[bot]' && startsWith(github.head_ref, 'fix/nightly-'))
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Validate pull request submission
-        if: >-
-          github.event_name == 'pull_request' &&
-          github.actor != 'dependabot[bot]' &&
-          !(github.actor == 'github-actions[bot]' && startsWith(github.head_ref, 'fix/nightly-'))
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: npm run check:pr-description
+
+  upload-decision:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
       - name: Compute miniprogram upload decision
-        if: github.event_name == 'push'
         env:
           BEFORE_SHA: ${{ github.event.before }}
           TARGET_SHA: ${{ github.sha }}
@@ -45,13 +53,21 @@ jobs:
           --sha "${TARGET_SHA}"
           --output "${RUNNER_TEMP}/miniprogram-upload-decision.json"
       - name: Publish miniprogram upload decision
-        if: github.event_name == 'push'
         uses: actions/upload-artifact@v7
         with:
           name: miniprogram-upload-decision
           path: ${{ runner.temp }}/miniprogram-upload-decision.json
           if-no-files-found: error
           retention-days: 1
+
+  affected-pr:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -59,36 +75,101 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             tools/miniprogram-ci/package-lock.json
-            cloudfunctions/shared/package-lock.json
-            cloudfunctions/auth/package-lock.json
-            cloudfunctions/activity-read/package-lock.json
-            cloudfunctions/activity-admin/package-lock.json
-            cloudfunctions/registration/package-lock.json
-            cloudfunctions/admin-review/package-lock.json
-            cloudfunctions/notification-send/package-lock.json
-            cloudfunctions/profile/package-lock.json
-            cloudfunctions/profile-media-cleanup/package-lock.json
-            cloudfunctions/route-maintenance/package-lock.json
+            cloudfunctions/*/package-lock.json
       - name: Install root dependencies
         run: npm ci
       - name: Run affected pull request checks
-        if: github.event_name == 'pull_request'
         env:
           AFFECTED_BASE: ${{ github.event.pull_request.base.sha }}
           AFFECTED_HEAD: ${{ github.event.pull_request.head.sha }}
           RELEASE_NOTES_BASE: ${{ github.event.pull_request.base.sha }}
         run: npm run test:affected
+
+  validate:
+    if: always() && github.event_name == 'pull_request'
+    needs: [pr-submission, affected-pr]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Aggregate required pull request checks
+        env:
+          PR_SUBMISSION_RESULT: ${{ needs.pr-submission.result }}
+          AFFECTED_PR_RESULT: ${{ needs.affected-pr.result }}
+          SUBMISSION_EXEMPT: ${{ github.actor == 'dependabot[bot]' || (github.actor == 'github-actions[bot]' && startsWith(github.head_ref, 'fix/nightly-')) }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${AFFECTED_PR_RESULT}" != "success" ]]; then
+            echo "affected-pr 必须成功，实际为 ${AFFECTED_PR_RESULT}" >&2
+            exit 1
+          fi
+          if [[ "${PR_SUBMISSION_RESULT}" == "success" ]]; then
+            exit 0
+          fi
+          if [[ "${SUBMISSION_EXEMPT}" == "true" && "${PR_SUBMISSION_RESULT}" == "skipped" ]]; then
+            echo "机器人 PR 允许 pr-submission skipped；affected-pr 已成功"
+            exit 0
+          fi
+          echo "pr-submission 必须成功；仅 Dependabot/夜间机器人允许 skipped，实际为 ${PR_SUBMISSION_RESULT}" >&2
+          exit 1
+
+  main-validate:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            tools/miniprogram-ci/package-lock.json
+            cloudfunctions/*/package-lock.json
+      - name: Install root dependencies
+        run: npm ci
       - name: Rebuild shared package and install every cloud function
-        if: github.event_name == 'push'
         run: npm run cloud:install
       - name: Validate main
-        if: github.event_name == 'push'
         env:
           RELEASE_NOTES_BASE: ${{ github.event.before }}
         run: npm run validate
+
+  main-coverage:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install root dependencies
+        run: npm ci
       - name: Run main tests with coverage
-        if: github.event_name == 'push'
         run: npm run coverage
+
+  main-audit:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            tools/miniprogram-ci/package-lock.json
+            cloudfunctions/*/package-lock.json
+      - name: Install isolated dependency trees
+        run: |
+          npm ci
+          npm run tool:install
+          npm run cloud:install
       - name: Audit main high-severity vulnerabilities
-        if: github.event_name == 'push'
         run: npm run audit:all

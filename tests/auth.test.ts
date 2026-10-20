@@ -162,23 +162,8 @@ describe('小程序身份启动', () => {
 });
 
 describe('身份 store', () => {
-  it('真实角色成功后不再允许开发态 storage 覆盖或切换', async () => {
-    const storage = memoryStorage({ 'ride-role': 'member' });
-    const store = new AppStore(storage, async () => ({
-      status: 'authenticated',
-      identity: fakeIdentity,
-    }));
-    store.bootstrap();
-    await store.ensureIdentity();
-    expect(store.role).toBe('admin');
-    expect(store.canSwitchRole()).toBe(false);
-    expect(() => store.switchRole('member')).toThrow('真实身份生效后不可切换角色');
-    store.bootstrap();
-    expect(store.role).toBe('admin');
-  });
-
-  it('cloud 不可用时不启用开发态角色且没有伪造身份', async () => {
-    const store = new AppStore(memoryStorage({ 'ride-role': 'admin' }), authenticateWithCloud);
+  it('cloud 不可用时保持普通成员默认身份且没有伪造身份', async () => {
+    const store = new AppStore(memoryStorage(), authenticateWithCloud);
     store.bootstrap();
     await store.ensureIdentity(undefined);
     expect(store).toMatchObject({
@@ -187,7 +172,6 @@ describe('身份 store', () => {
       isSuper: false,
       authStatus: 'unavailable',
     });
-    expect(store.canSwitchRole()).toBe(false);
   });
 
   it('认证成功只持久化非特权微信身份提示，且新进程不会据此恢复权限', async () => {
@@ -349,37 +333,6 @@ describe('身份 store', () => {
       isSuper: true,
       authStatus: 'authenticated',
       authError: '',
-    });
-  });
-
-  it('bootstrap 删除旧 ride-role 且绝不据此恢复角色', () => {
-    const storage = memoryStorage({ 'ride-role': 'admin' });
-    const store = new AppStore(storage, vi.fn());
-
-    store.bootstrap();
-
-    expect(storage.removeStorageSync).toHaveBeenCalledWith('ride-role');
-    expect(storage.value('ride-role')).toBeUndefined();
-    expect(store).toMatchObject({ role: 'member', isSuper: false, openid: null });
-  });
-
-  it('bootstrap 忽略旧角色清理失败并继续保持 fail closed', () => {
-    const storage = memoryStorage({
-      'ride-role': 'admin',
-      'ride-identity-hint': { source: 'wechat_cloud', verifiedAt: 123 },
-    });
-    storage.removeStorageSync.mockImplementation(() => {
-      throw new Error('storage unavailable');
-    });
-    const store = new AppStore(storage, vi.fn());
-
-    expect(() => store.bootstrap()).not.toThrow();
-    expect(storage.removeStorageSync).toHaveBeenCalledWith('ride-role');
-    expect(store).toMatchObject({
-      role: 'member',
-      isSuper: false,
-      openid: null,
-      identityHint: { source: 'wechat_cloud', verifiedAt: 123 },
     });
   });
 

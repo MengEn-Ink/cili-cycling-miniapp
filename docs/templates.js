@@ -716,10 +716,19 @@
 
     settings: () => {
       const [version, title, summary] = releaseNotes[0];
-      return `<div class="pg"><h2 class="page-title">设置</h2><p class="page-sub">查看当前版本信息与本次更新内容</p>
-      <div class="card">${cardHead('01', 'App 更新', '', '当前版本的更新概览')}
+      const managementRow = (titleText, description, actionText, action) =>
+        `<button class="settings-management-row" data-action="${action}"><span class="settings-management-copy"><b>${titleText}</b><small>${description}</small></span><span class="settings-management-action">${actionText} ›</span></button>`;
+      return `<div class="pg settings-page"><h2 class="page-title">设置</h2><p class="page-sub">管理活动通知、隐私与本地缓存，查看当前版本更新</p>
+      <section class="card settings-management-card">${cardHead('01', '常用管理', '', '通知与隐私由微信授权；缓存只清理可安全重建的数据')}
+        <div class="settings-management-list">
+          ${managementRow('活动通知', '按需订阅报名审核等活动提醒，每次选择以微信授权结果为准', '订阅', 'settings-notifications')}
+          ${managementRow('隐私管理', '查看微信隐私说明及已使用的信息', '查看', 'settings-privacy')}
+          ${managementRow('清理缓存', '仅清理可重新下载的活动、资料和图片，不会退出登录或删除业务数据', '清理', 'settings-clear-cache')}
+        </div>
+      </section>
+      <section class="card settings-release-card">${cardHead('02', 'App 更新', '', '当前版本的更新概览')}
         <div class="release release-current"><code>V${version}</code>${tag('solid', '当前版本')}<p>${title}</p><p class="card-hint">→ ${summary}</p></div>
-      </div>
+      </section>
       <p class="neutral-note">此里 · 持续为每一次出发升级</p></div>`;
     },
 
@@ -793,8 +802,11 @@
       const resubmit = is('rejected-resubmit');
       const editOpen = is('edit-open');
       const modeLocked = is('mode-locked');
+      const gpxMissing = is('gpx-missing');
+      const gpxFailed = is('gpx-failed');
       const registrationMode = editOpen ? 'open' : 'approval';
       const filled = !create && !error;
+      const routeReady = filled && !gpxMissing && !gpxFailed;
       const v = (value) => (filled || uploading ? value : '');
       const modeSettings = `<div class="card mode-settings-card">${cardHead('04', '报名设置', modeLocked ? tag('warning', '已有报名 · 禁止切换') : tag('neutral', '活动级设置'), '公开 / 审批是报名方式，活动仍固定归属唯一俱乐部。')}
         <div class="mode-settings-choice" role="radiogroup" aria-label="报名模式">
@@ -812,6 +824,7 @@
           ${field('活动标题', input(error ? '' : v(primary.title), { ph: '请输入活动标题', cls: error ? 'is-error' : '', error: error ? '请填写活动标题' : '' }), tag('pending', '必填'))}
           <p class="sub-title">集合信息</p>
           ${field('集合时间', `<div class="field-2col">${input(v('2026-10-18'), { ph: '选择日期', unit: '›' })}${input(v('06:20'), { ph: '选择时间', unit: '›' })}</div>`, tag('pending', '必填'))}
+          ${field('报名截止', `<div class="field-2col">${input(v('2026-10-17'), { ph: '选择截止日期', unit: '›' })}${input(v('20:00'), { ph: '选择截止时间', unit: '›' })}</div><p class="card-hint">报名截止必须早于集合时间</p>`, tag('pending', '必填'))}
           ${field('集合地点', `<div class="input-group"><div>${input(error ? '' : v(primary.start), { ph: '填写地点或从地图选择', cls: error ? 'is-error' : '' })}</div>${btn('地图选点', toast('已打开地图选点'), 'btn-secondary btn-sm')}</div>${error ? '<p class="field-msg is-error">请填写集合地点</p>' : ''}`, tag('pending', '必填'))}</div>
         <div class="card">${cardHead('02', '封面照片', tag('neutral', create || error ? '0 / 3' : uploading ? '2 / 3' : '1 / 3'), '最多 3 张，第一张作为封面')}
           <div class="upload-grid">
@@ -827,8 +840,18 @@
           ${filled ? `<div class="row" style="margin-top:8px"><span class="k">${primary.routeName.replace(' GPX', '')}</span>${tag('solid', '公开路线已解析')}</div>
             ${metrics([[`${primary.distanceKm} km`, '里程'], [`${primary.elevationM} m`, '爬升'], [`${primary.elevationLossM} m`, '下降'], [`${primary.elevationMinM}–${primary.elevationMaxM} m`, '海拔区间', 'is-wide']])}
             ${routeSvg('公开路线轮廓')}<p class="card-hint">解析结果只在编辑页展示，不提供跳转预览。</p>` : ''}
-          <p class="sub-title">GPX 路线详情（推荐）</p><p class="card-hint">上传后可展示里程、爬升、海拔曲线和路线图，参与者也可下载原文件。</p>
-          ${uploading ? `<div class="upload-tile is-wide" style="flex-direction:column;height:auto;padding:12px;gap:8px">正在读取路线… 62%<span class="progress on-light"><i style="width:62%"></i></span></div>` : filled ? `<div class="row" style="margin-top:8px"><span class="k">${primary.routeName}</span>${tag('solid', '路线详情已准备好')}</div><div class="btn-row three" style="margin-top:8px">${btn('更换 GPX', toast('已打开文件选择'), 'btn-secondary btn-sm')}${btn('移除路线详情', toast('路线详情已移除'), 'btn-secondary btn-sm')}${btn('设为活动背景', toast('已设为活动背景'), 'btn-secondary btn-sm')}</div>` : `<button class="upload-tile is-wide" ${toast('GPX 已上传并完成解析')}><b>+</b>上传 GPX</button>`}
+          <p class="sub-title">GPX 路线详情（推荐）</p>
+          ${
+            gpxFailed
+              ? `<div class="gpx-state gpx-state-warning"><div><b>GPX 解析失败</b><p>已保留本次上传，可重试解析或放弃后重新选择文件。</p></div>${tag('warning', '可恢复')}</div><div class="btn-row">${btn('重试解析已上传 GPX', toast('正在重新解析 GPX'), 'btn-secondary btn-sm')}${btn('放弃本次上传', toast('本次上传已放弃'), 'btn-secondary btn-sm')}</div><button class="upload-tile is-wide" ${toast('已打开文件选择')}><b>+</b>重新上传 GPX</button>`
+              : gpxMissing
+                ? `<div class="gpx-state gpx-state-warning"><div><b>原 GPX 路线详情不可用</b><p>可重新上传恢复路线图、海拔与下载能力，不影响用户端已有活动信息。</p></div>${tag('warning', '详情缺失')}</div><button class="upload-tile is-wide" ${toast('已打开文件选择')}><b>+</b>重新上传 GPX</button>`
+                : routeReady
+                  ? `<div class="gpx-state"><div><b>${primary.routeName}</b><p>路线详情已准备好，参与者可查看并下载原文件。</p></div>${tag('success', '已就绪')}</div><div class="btn-row three" style="margin-top:8px">${btn('更换 GPX', toast('已打开文件选择'), 'btn-secondary btn-sm')}${btn('移除路线详情', toast('路线详情已移除'), 'btn-secondary btn-sm')}${btn('设为活动背景', toast('已设为活动背景'), 'btn-secondary btn-sm')}</div>`
+                  : uploading
+                    ? `<div class="upload-tile is-wide" style="flex-direction:column;height:auto;padding:12px;gap:8px">正在读取路线… 62%<span class="progress on-light"><i style="width:62%"></i></span></div>`
+                    : `<p class="card-hint">上传后可展示里程、爬升、海拔曲线和路线图，参与者也可下载原文件。</p><button class="upload-tile is-wide" ${toast('GPX 已上传并完成解析')}><b>+</b>上传 GPX</button>`
+          }
           <p class="sub-title">活动群二维码</p><p class="card-hint">可选上传 1 张微信群二维码，便于已报名成员进群；是否可能过期由服务端字段判断，页面以服务端提示为准，不写死天数。</p>
           ${create || error ? `<button class="upload-tile is-wide" ${toast('已打开图片选择器')}><b>+</b>上传活动群二维码</button>` : `<div class="qr-row" style="margin-top:8px">${qr(3)}<div><p class="card-hint">已上传 · 报名${registrationMode === 'open' ? '成功' : '通过'}后骑友可见</p><p class="alert-line">${tag('warning', '⚠ 服务端提示该二维码可能已过期')}</p><button class="btn-text" ${toast('二维码已删除')}>删除二维码</button></div></div>`}</div>
         ${modeSettings}
