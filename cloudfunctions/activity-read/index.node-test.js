@@ -737,6 +737,7 @@ test('详情成员执行状态、上限、稳定排序和隐私白名单', async
     'display_name',
     'gender',
     'id',
+    'is_self',
     'status',
   ]);
   assert.equal(
@@ -793,6 +794,31 @@ test('详情成员超过单页时完整读取候选集后再选最早 24 人', a
   assert.deepEqual(
     result.data.attendees.map((item) => item.id),
     early.slice(0, 24).map((item) => item._id),
+  );
+});
+
+test('详情首批 24 人始终保留当前用户自己的已通过卡片', async () => {
+  const registrations = Array.from({ length: 25 }, (_, index) => ({
+    _id: `r-${String(index).padStart(2, '0')}`,
+    activity_id: 'a1',
+    openid: index === 24 ? 'member-openid' : `openid-${index}`,
+    status: 'approved',
+    updated_at: `2026-09-01T00:${String(index).padStart(2, '0')}:00.000Z`,
+    profile_snapshot: { nickname: `骑友${index}` },
+  }));
+  const { main } = loadMain({ _id: 'a1', title: '活动', status: 'published' }, [], {
+    registrations,
+  });
+
+  const result = await main({ action: 'detail', activityId: 'a1' });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.data.attendees.length, 24);
+  assert.equal(result.data.attendees.at(-1).id, 'r-24');
+  assert.equal(result.data.attendees.at(-1).is_self, true);
+  assert.equal(
+    result.data.attendees.some((item) => item.id === 'r-23'),
+    false,
   );
 });
 

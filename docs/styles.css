@@ -1734,13 +1734,34 @@ textarea.input.textarea::placeholder {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  width: 52px;
+  min-width: 76px;
+  padding: 10px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
   font-size: 12px;
   line-height: 18px;
 }
 
+.avatar-row button > span {
+  color: var(--color-muted);
+  font-size: 11px;
+}
+
+.avatar-row .attendee-authorization-card {
+  align-items: flex-start;
+  min-width: 198px;
+  background: var(--color-raised);
+  text-align: left;
+}
+
+.avatar-row .attendee-authorization-card b {
+  margin-top: 4px;
+  color: var(--color-accent);
+  font-size: 12px;
+}
+
 .avatar-row small {
-  max-width: 52px;
+  max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4789,7 +4810,7 @@ body.capture-viewport .screen-notes {
 }
 .route-brief-metrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-top: 12px;
   padding: 10px 0;

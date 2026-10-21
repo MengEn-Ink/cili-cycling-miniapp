@@ -319,7 +319,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(schema).not.toContain('****');
     expect(schema).not.toMatch(/access_token|refresh_token|emergencyPhone/);
     expect(html).toContain('本人与审核管理员完整显示实名和电话，其他骑友只见昵称');
-    expect(templates).toContain('其他骑友只显示昵称');
+    expect(templates).toContain('其他骑友缺少素材时只显示昵称和报名状态');
   });
 
   it('真实页面与 M0 原型页面都带浅色关键状态与“问题 → 改法 → 规范”设计说明，并提供总览页', () => {
@@ -732,7 +732,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(templates).toContain('class="prototype-brand-logo"');
   });
 
-  it('活动详情同步四指标、报名状态、Strava 只复制链接与路线概览入口', () => {
+  it('活动详情同步关键指标、报名状态、Strava 只复制链接与完整路线分析入口', () => {
     expect(templates).toContain('预计骑行');
     expect(templates).toContain('已通过');
     expect(templates).toMatch(/class="detail-decision(\s|")/);
@@ -745,11 +745,14 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(schema).toContain("['copy-failed', '复制失败']");
     expect(script).toContain("if (action === 'copy-route')");
     expect(css).toContain('.inline-toast');
-    // V2：活动详情只做路线摘要 + 完整路线分析入口；GPX 原生详情由管理员活动编辑页承载。
+    // 活动详情只保留关键路线指标与完整分析入口，不重复绘制轮廓或海拔曲线。
     expect(templates).toContain('class="card route-brief-card"');
-    expect(templates).toContain('路线概览');
+    expect(templates).toContain('路线详情');
+    expect(templates).not.toContain('route-brief-sparkline');
     expect(templates).toContain('查看完整路线分析');
     expect(templates).toContain("go('route-analysis')");
+    expect(templates).toContain('授权获取头像与骑行背景');
+    expect(templates).toContain('其他骑友缺少素材时只显示昵称和报名状态');
     expect(templates).toContain('活动群二维码');
     // 管理员活动编辑页收敛为「Strava 链接」唯一主路径；本地路线文件（原 GPX 入口）只隐藏在「+」展开的 bottom-sheet 中，
     // 保证"路线事实源"进入系统的路径不变，但默认态页面不再向用户暴露 GPX 等专业词或上传控件。

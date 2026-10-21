@@ -122,7 +122,7 @@ async function visibleActivity(activityId) {
   let activity;
   try {
     activity = (await db.collection('activities').doc(activityId).get()).data;
-  } catch (_error) {
+  } catch {
     activity = undefined;
   }
   if (
@@ -175,7 +175,7 @@ function timestamp(value) {
   return Number.isFinite(time) ? time : 0;
 }
 
-function publicAttendee(registration, profile, media = {}) {
+function publicAttendee(registration, profile, media = {}, viewerOpenid = '') {
   const snapshot = registration && registration.profile_snapshot;
   return {
     id: typeof registration._id === 'string' ? registration._id : '',
@@ -194,6 +194,7 @@ function publicAttendee(registration, profile, media = {}) {
     ),
     avatar_url: safeHttpsUrl(media.avatarUrl),
     background_url: safeHttpsUrl(media.backgroundUrl),
+    is_self: Boolean(viewerOpenid && registration.openid === viewerOpenid),
     status: registration.status,
   };
 }
@@ -372,7 +373,7 @@ function attachPublisher(activity, publisher) {
   return activity;
 }
 
-async function loadAttendance(activityId) {
+async function loadAttendance(activityId, viewerOpenid) {
   const [approvedRegistrationCount, registrations] = await Promise.all([
     countApprovedRegistrations(activityId),
     loadAttendeeRegistrations(activityId),
@@ -383,7 +384,14 @@ async function loadAttendance(activityId) {
         timestamp(right.approved_at || right.checked_in_at || right.updated_at) ||
       String(left._id).localeCompare(String(right._id)),
   );
-  const visibleRegistrations = registrations.slice(0, ATTENDEE_LIMIT);
+  const firstRegistrations = registrations.slice(0, ATTENDEE_LIMIT);
+  const viewerRegistration = registrations.find(
+    (registration) => viewerOpenid && registration.openid === viewerOpenid,
+  );
+  const visibleRegistrations =
+    viewerRegistration && !firstRegistrations.includes(viewerRegistration)
+      ? [...firstRegistrations.slice(0, ATTENDEE_LIMIT - 1), viewerRegistration]
+      : firstRegistrations;
   const openids = [
     ...new Set(
       visibleRegistrations
@@ -403,6 +411,7 @@ async function loadAttendance(activityId) {
         registration,
         profiles.get(registration.openid),
         profileMedia.get(registration.openid) || {},
+        viewerOpenid,
       ),
     ),
   };
@@ -410,7 +419,8 @@ async function loadAttendance(activityId) {
 
 exports.main = async (event = {}) => {
   try {
-    assertTrustedOpenid(cloud.getWXContext().OPENID);
+    const viewerOpenid = cloud.getWXContext().OPENID;
+    assertTrustedOpenid(viewerOpenid);
     const now = new Date();
     if (event.action === 'list') {
       const limit = Number.isInteger(event.limit) ? Math.min(Math.max(event.limit, 1), 20) : 20;
@@ -465,11 +475,36 @@ exports.main = async (event = {}) => {
         as_of: request.asOf.toISOString(),
       });
     }
+    if (event.action === 'attendeeMedia') {
+      await visibleActivity(event.activityId);
+      if (!['avatar', 'background'].includes(event.kind)) fail('VALIDATION_FAILED', '媒体类型无效');
+      let registration;
+      try {
+        registration = (await db.collection('registrations').doc(event.attendeeId).get()).data;
+      } catch {
+        fail('NOT_FOUND', '报名记录不存在');
+      }
+      if (
+        !registration ||
+        registration.activity_id !== event.activityId ||
+        !['approved', 'checked_in'].includes(registration.status)
+      )
+        fail('NOT_FOUND', '报名记录不存在');
+      const profiles = await loadProfiles([registration.openid]);
+      const media = await resolveProfileMediaTempUrls(
+        [{ openid: registration.openid, profile: profiles.get(registration.openid) }],
+        { includeBackground: event.kind === 'background' },
+      );
+      const resolved = media.get(registration.openid) || {};
+      return ok({
+        url: event.kind === 'avatar' ? resolved.avatarUrl || '' : resolved.backgroundUrl || '',
+      });
+    }
     if (event.action === 'detail') {
       const activity = await visibleActivity(event.activityId);
       const [publisherByOpenid, attendance] = await Promise.all([
         loadPublishers([activity]),
-        loadAttendance(event.activityId),
+        loadAttendance(event.activityId, viewerOpenid),
       ]);
       const [resolvedActivity] = await resolveActivityMedia([
         attachPublisher(publicActivity(activity, now), publisherByOpenid.get(activity.created_by)),

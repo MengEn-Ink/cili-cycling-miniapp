@@ -196,6 +196,7 @@ export interface ActivityAttendee {
   gender: string;
   avatarUrl: string;
   backgroundUrl: string;
+  isSelf?: boolean;
   status: 'approved' | 'checked_in';
 }
 export interface ActivityPublisher {

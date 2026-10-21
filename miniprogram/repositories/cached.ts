@@ -103,6 +103,10 @@ export interface CacheMetricsSnapshot {
 export interface RepositoryCacheControl {
   /** 同步读取首页首屏的新鲜缓存，供页面在网络刷新前避免空态闪烁。 */
   peekActivityPage(view: PublicActivityView): PublicActivityPage | undefined;
+  /** 同步读取单场活动的新鲜缓存，供详情页先渲染再后台刷新。 */
+  peekActivity(
+    id: string,
+  ): ReturnType<RideRepository['getActivity']> extends Promise<infer T> ? T | undefined : never;
   /** 单场活动的签名媒体失效后，仅让该详情重新回源。 */
   invalidateActivity(id: string): void;
   /** 活动或报名发生变化后，让活动列表/详情下次读取重新回源。 */
@@ -164,6 +168,7 @@ export class CachingRepository implements RideRepository {
     this.cacheControl = {
       peekActivityPage: (view) =>
         this.peekFresh<PublicActivityPage>(`${ACTIVITY_PREFIX}page:${view}:`),
+      peekActivity: (id) => this.peekFresh(`${ACTIVITY_PREFIX}item:${id}`),
       invalidateActivity: (id) => this.invalidatePrefix(`${ACTIVITY_PREFIX}item:${id}`),
       invalidateActivities: () => this.invalidatePrefix(ACTIVITY_PREFIX),
       invalidateProfiles: () => this.invalidatePrefix(PROFILE_PREFIX),
@@ -281,6 +286,14 @@ export class CachingRepository implements RideRepository {
 
   getActivity(id: string) {
     return this.readThrough(`${ACTIVITY_PREFIX}item:${id}`, () => this.inner.getActivity(id));
+  }
+
+  refreshActivityAttendeeMedia(
+    activityId: string,
+    attendeeId: string,
+    kind: 'avatar' | 'background',
+  ) {
+    return this.inner.refreshActivityAttendeeMedia(activityId, attendeeId, kind);
   }
 
   // ---- 活动写入：成功后失效活动命名空间 ----

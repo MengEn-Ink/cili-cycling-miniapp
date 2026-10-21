@@ -2236,6 +2236,7 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
             avatar_url: 'https://temp.example/avatar.jpg',
             background_file_id: 'cloud://env/profile-canonical/r1/background.jpg',
             background_url: 'https://temp.example/background.jpg',
+            is_self: true,
             status: 'approved',
             card: { rides90d: 20, longestKm: 120, elevationM: 8000, speedKmh: 26.5 },
             openid: 'must-not-map',
@@ -2263,6 +2264,7 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
         gender: '男',
         avatarUrl: 'https://temp.example/avatar.jpg',
         backgroundUrl: 'https://temp.example/background.jpg',
+        isSelf: true,
         status: 'approved',
       },
     ]);
@@ -2323,6 +2325,7 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
       gender: '',
       avatarUrl: '',
       backgroundUrl: '',
+      isSelf: false,
       status: 'checked_in',
     });
     expect(result.attendees[1]).toMatchObject({
@@ -2832,6 +2835,21 @@ describe('CloudRepository GPX 路线契约', () => {
       action: 'bindRoutePreviewImage',
       previewId: previewDto.preview_id,
       generatedPreviewFileId: previewDto.generated_preview_file_id,
+    });
+  });
+
+  it('报名媒体刷新只请求指定骑友和媒体类型', async () => {
+    const { cloud, callFunction } = cloudWith(success({ url: 'https://temp.example/avatar.jpg' }));
+    const repository = new CloudRepository(cloud);
+
+    await expect(repository.refreshActivityAttendeeMedia('a1', 'r1', 'avatar')).resolves.toBe(
+      'https://temp.example/avatar.jpg',
+    );
+    expectCall(callFunction, 'activity-read', {
+      action: 'attendeeMedia',
+      activityId: 'a1',
+      attendeeId: 'r1',
+      kind: 'avatar',
     });
   });
 

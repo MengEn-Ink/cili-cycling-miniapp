@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
   "syncedThrough": "dd87949dbcf0069b5ba427c49f360948cf7ddcf2",
-  "syncedAt": "2026-10-21T20:40:00.000+08:00",
+  "syncedAt": "2026-10-21T23:45:00.000+08:00",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:3d2e88e456711aac2ec41d98282b8c709fb29a1abf008fb272991bbd13831ec0"
+    "digest": "sha256:9d72b895884e85bb9d7ea9400aa4b1b7efd689327675faf14b006461e82d206d"
   },
   "prototype": {
-    "digest": "sha256:494191bfd47314067cf5b491b23f102fd74c4d2784747a86fe603adbefd0a1e6"
+    "digest": "sha256:4de278a981f235e812c6b5afce491c860ac97659b7204b1f296a5ae39d07e5c4"
   },
   "routes": [
     {
@@ -102,10 +102,10 @@
         "id": "activity-detail",
         "devtools": "activity-detail-devtools.png",
         "pages": "activity-detail-pages.png",
-        "state": "管理员 / Pages 已通过",
-        "data": "real-runtime",
+        "state": "审批报名 · 路线指标与本人媒体未授权态",
+        "data": "fixture",
         "review": "blocked",
-        "note": "依据开发版 0.0.261.1 的 IMG_3012 真机反馈完成二次对齐：活动详情与完整分析共享同一轮廓投影、保形抽稀、品牌红描边和海拔图参数，去除路线名叠字与面积渐变；既有截图仅保留布局基线，本次以共享绘图合同和新开发版真机复验为准。"
+        "note": "Pages 于 2026-10-21 按 375×812 重采最终设计：详情页移除路线轮廓、海拔曲线与 Canvas，只保留距离、爬升、预计骑行并继续进入完整路线分析；本人缺媒体时展示授权入口，其他骑友缺素材时仅展示昵称与报名状态。DevTools 证据保留为既有真实运行基线，review 保持 blocked，待新开发版复验授权、拒绝与失败重试状态。"
       },
       {
         "id": "route-analysis",
@@ -156,10 +156,10 @@
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "管理员 · 同步 Strava 线路信息 · 客户端 2026.10.21.5",
-        "data": "real-runtime",
+        "state": "管理员 · 同步 Strava 线路信息 · 客户端 2026.10.21.6",
+        "data": "fixture",
         "review": "blocked",
-        "note": "Pages 于 2026-10-21 按 375×812 重采管理员态设置页：常用管理下新增「同步 Strava 线路信息」管理行，使用 Strava 官方 mark 与 wordmark；App 更新展示 V2026.10.21.5 当前版本。普通骑友态不展示该入口。DevTools 证据沿用上一次采集（750×1624），review 保持 blocked，待新开发版复验。"
+        "note": "Pages 于 2026-10-21 按 375×812 重采管理员态设置页：App 更新展示 V2026.10.21.6 及“活动路线与骑友资料加载更轻快”说明；原 2026.10.21.5 条目历史化。DevTools 证据沿用真实运行基线，review 保持 blocked，待新开发版复验版本与日志。"
       },
       {
         "id": "capability-card",

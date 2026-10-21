@@ -6,21 +6,10 @@ import { resolveActivityAction } from '../../utils/activity';
 import { genderView } from '../../utils/gender';
 import { mediaSourceKind, reportMediaDiagnostic } from '../../utils/media-diagnostic';
 import { sanitizeGpxFileName } from '../../utils/gpx-file';
-import { prepareRouteVisualModel } from '../../utils/route-visual';
 import { createNavigationSingleFlight } from '../../utils/navigation-single-flight';
 import { validateRegistrationProfile } from '../../utils/validation';
-import {
-  drawRouteOutline as renderRouteOutline,
-  hasAnalyzableRoute,
-} from '../../utils/route-outline';
-import {
-  activityElevationProfile,
-  drawElevationProfile,
-  formatActivityDate,
-  formatActivityTime,
-  formatChinaDateTimeSeconds,
-  runCanvasReveal,
-} from './format';
+import { hasAnalyzableRoute } from '../../utils/route-outline';
+import { formatActivityDate, formatActivityTime, formatChinaDateTimeSeconds } from './format';
 
 function groupQrVisible(
   registration: { status?: string } | undefined,
@@ -176,8 +165,7 @@ Page({
   loadPromise: null as { id: string; promise: Promise<void> } | null,
   unloaded: false,
   downloadBusy: false,
-  elevationAnimationCancel: null as (() => void) | null,
-  outlineAnimationCancel: null as (() => void) | null,
+  attendeeAuthorizationBusy: false,
   attendeeMediaRetryKeys: new Set<string>(),
   data: {
     loading: true,
@@ -192,9 +180,6 @@ Page({
     selectedAttendeeIndex: 0,
     galleryImages: [] as string[],
     currentGalleryIndex: 0,
-    routeOutlineImage: '',
-    routeOutline: [] as any[],
-    elevationImage: '',
     colorMediaMuted: '#d4d4d4',
     colorOnMedia: '#ffffff',
     displayDate: '',
@@ -206,8 +191,6 @@ Page({
     officialRouteUrl: '',
     hasRouteDetails: false,
     hasGpxRoute: false,
-    hasElevationProfile: false,
-    hasRouteOutline: false,
     canAnalyzeRoute: false,
     coverFailed: false,
     downloadingGpx: false,
@@ -221,14 +204,17 @@ Page({
     groupQrLockedMessage: '报名审核通过后可查看活动群二维码',
     groupQrCodeExpired: false,
     copyFeedback: '' as '' | 'success' | 'error',
+    attendeeAuthorizationState: 'idle' as 'idle' | 'loading' | 'declined' | 'failed',
   },
   onShow() {
     if (this.initialShowPending) {
       this.initialShowPending = false;
       return;
     }
-    if (this.data.item && this.data.activityId && !this.data.loading)
+    if (this.data.item && this.data.activityId && !this.data.loading) {
+      repositoryCache.invalidateActivity(this.data.activityId);
       void this.load(this.data.activityId, true);
+    }
   },
   onLoad(q: any) {
     this.unloaded = false;
@@ -237,20 +223,22 @@ Page({
       typeof q.team_id === 'string' && /^team_[A-Za-z0-9_-]{8,80}$/.test(q.team_id)
         ? q.team_id
         : '';
-    this.safeSetData({ teamId, activityId: q.id || '' });
+    const activityId = q.id || '';
+    this.safeSetData({ teamId, activityId });
     wx.showShareMenu?.({ menus: ['shareAppMessage', 'shareTimeline'] });
-    void this.load(q.id || '');
-  },
-  onReady() {
-    this.drawElevation();
-    this.drawRouteOutline();
+    const cached = activityId ? repositoryCache.peekActivity(activityId) : undefined;
+    if (cached) {
+      this.showCachedActivity(cached);
+      repositoryCache.invalidateActivity(activityId);
+      void this.load(activityId, true);
+      return;
+    }
+    void this.load(activityId);
   },
   onHide() {
-    this.cancelVisualAnimations();
     this.navigation.release();
   },
   onUnload() {
-    this.cancelVisualAnimations();
     this.unloaded = true;
     this.loadRequestId += 1;
     this.loadPromise = null;
@@ -259,11 +247,30 @@ Page({
   safeSetData(value: Record<string, unknown>, callback?: () => void) {
     if (!this.unloaded) this.setData(value, callback);
   },
-  cancelVisualAnimations() {
-    this.elevationAnimationCancel?.();
-    this.outlineAnimationCancel?.();
-    this.elevationAnimationCancel = null;
-    this.outlineAnimationCancel = null;
+  showCachedActivity(item: any) {
+    const hasGpxRoute = attachedGpx(item.route);
+    const hasRouteDetails =
+      hasGpxRoute ||
+      (typeof item.route?.publicRoutePreviewId === 'string' &&
+        /^[a-f0-9]{64}$/.test(item.route.publicRoutePreviewId));
+    this.safeSetData({
+      item,
+      loading: false,
+      error: '',
+      galleryImages: [...new Set([item.coverImage, ...(item.images || [])].filter(Boolean))],
+      displayDate: formatActivityDate(item.startAt || item.date),
+      startTime: formatActivityTime(item.startAt),
+      endTime: formatChinaDateTimeSeconds(item.endAt),
+      deadlineTime: formatChinaDateTimeSeconds(item.deadline),
+      estimatedRideTime: formatRideDuration(
+        hasRouteDetails ? item.route?.estimatedMovingTimeSeconds : undefined,
+      ),
+      officialRouteId: officialRouteId(item.route),
+      officialRouteUrl: officialRouteUrl(item.route),
+      hasRouteDetails,
+      hasGpxRoute,
+      canAnalyzeRoute: hasAnalyzableRoute(item.route),
+    });
   },
   load(id: string, background = false) {
     const current = this.loadPromise;
@@ -346,10 +353,6 @@ Page({
         typeof detail.route?.publicRoutePreviewId === 'string' &&
         /^[a-f0-9]{64}$/.test(detail.route.publicRoutePreviewId);
       const hasRouteDetails = hasGpxRoute || hasPublicRouteDetails;
-      const elevationProfile = hasRouteDetails ? activityElevationProfile(detail.route) : [];
-      const routeOutline = hasRouteDetails
-        ? prepareRouteVisualModel(detail.route?.routeOutline, [], hasGpxRoute).outline
-        : [];
       // 在数据进入视图时统一补齐性别展示信息，列表头像和滑动名片共用同一语义。
       const attendees =
         canSeeAttendees && Array.isArray(detail.attendees)
@@ -358,51 +361,40 @@ Page({
               ...genderView(attendee.gender),
             }))
           : [];
-      this.safeSetData(
-        {
-          item: detail,
-          refreshing: false,
-          refreshError: '',
-          registration,
-          attendees,
-          attendeesVisible: canSeeAttendees,
-          viewerStatus: state,
-          isAdmin,
-          adminRegistrationLabel: hasActiveRegistration ? '查看我的报名' : '管理员报名',
-          groupQrVisible: canSeeGroupQr,
-          attendeeSummary: `${approvedRegistrationCount} 人已通过审核`,
-          groupQrLockedMessage:
-            state.key === 'guest'
-              ? '登录并报名审核通过后可查看活动群二维码'
-              : state.key === 'rejected' || state.key === 'cancelled'
-                ? '当前报名状态不可查看，重新报名并通过审核后开放'
-                : '报名审核通过后可查看活动群二维码',
-          galleryImages: [...new Set([item.coverImage, ...(item.images || [])].filter(Boolean))],
-          routeOutlineImage: '',
-          routeOutline,
-          elevationImage: '',
-          displayDate: formatActivityDate(item.startAt || item.date),
-          startTime: formatActivityTime(item.startAt),
-          endTime: formatChinaDateTimeSeconds(item.endAt),
-          deadlineTime: formatChinaDateTimeSeconds(item.deadline),
-          estimatedRideTime: formatRideDuration(
-            hasRouteDetails ? detail.route?.estimatedMovingTimeSeconds : undefined,
-          ),
-          officialRouteId: officialRouteId(detail.route),
-          officialRouteUrl: officialRouteUrl(detail.route),
-          hasRouteDetails,
-          hasGpxRoute,
-          hasElevationProfile: elevationProfile.length >= 2,
-          hasRouteOutline: routeOutline.length >= 2,
-          canAnalyzeRoute: hasAnalyzableRoute(detail.route),
-          activityAction: primaryAction(item, registration, state),
-          groupQrCodeExpired: detail.groupQrMayBeExpired === true,
-        },
-        () => {
-          this.drawElevation();
-          this.drawRouteOutline();
-        },
-      );
+      this.safeSetData({
+        item: detail,
+        refreshing: false,
+        refreshError: '',
+        registration,
+        attendees,
+        attendeesVisible: canSeeAttendees,
+        viewerStatus: state,
+        isAdmin,
+        adminRegistrationLabel: hasActiveRegistration ? '查看我的报名' : '管理员报名',
+        groupQrVisible: canSeeGroupQr,
+        attendeeSummary: `${approvedRegistrationCount} 人已通过审核`,
+        groupQrLockedMessage:
+          state.key === 'guest'
+            ? '登录并报名审核通过后可查看活动群二维码'
+            : state.key === 'rejected' || state.key === 'cancelled'
+              ? '当前报名状态不可查看，重新报名并通过审核后开放'
+              : '报名审核通过后可查看活动群二维码',
+        galleryImages: [...new Set([item.coverImage, ...(item.images || [])].filter(Boolean))],
+        displayDate: formatActivityDate(item.startAt || item.date),
+        startTime: formatActivityTime(item.startAt),
+        endTime: formatChinaDateTimeSeconds(item.endAt),
+        deadlineTime: formatChinaDateTimeSeconds(item.deadline),
+        estimatedRideTime: formatRideDuration(
+          hasRouteDetails ? detail.route?.estimatedMovingTimeSeconds : undefined,
+        ),
+        officialRouteId: officialRouteId(detail.route),
+        officialRouteUrl: officialRouteUrl(detail.route),
+        hasRouteDetails,
+        hasGpxRoute,
+        canAnalyzeRoute: hasAnalyzableRoute(detail.route),
+        activityAction: primaryAction(item, registration, state),
+        groupQrCodeExpired: detail.groupQrMayBeExpired === true,
+      });
     } catch (error) {
       if (requestId !== this.loadRequestId || this.unloaded) return;
       const message = error instanceof Error ? error.message : '详情加载失败';
@@ -422,110 +414,6 @@ Page({
       }
     }
   },
-  snapshotCanvas(
-    canvas: any,
-    width: number,
-    height: number,
-    dataKey: 'routeOutlineImage' | 'elevationImage',
-  ) {
-    if (typeof wx.canvasToTempFilePath !== 'function') return;
-    const requestId = this.loadRequestId;
-    wx.canvasToTempFilePath(
-      {
-        canvas,
-        x: 0,
-        y: 0,
-        width,
-        height,
-        destWidth: canvas.width,
-        destHeight: canvas.height,
-        fileType: 'png',
-        success: (result: { tempFilePath?: string }) => {
-          if (requestId !== this.loadRequestId || this.unloaded) return;
-          if (result.tempFilePath) this.safeSetData({ [dataKey]: result.tempFilePath });
-        },
-      },
-      this,
-    );
-  },
-  drawElevation() {
-    if (!this.data.hasElevationProfile || this.unloaded) return;
-    wx.createSelectorQuery()
-      .select('#elevation-canvas')
-      .fields({ node: true, size: true })
-      .exec((result: any[]) => {
-        if (this.unloaded) return;
-        const target = result?.[0];
-        const canvas = target?.node;
-        if (!canvas || !target.width || !target.height) return;
-        const ratio = wx.getWindowInfo?.().pixelRatio || wx.getSystemInfoSync?.().pixelRatio || 1;
-        canvas.width = target.width * ratio;
-        canvas.height = target.height * ratio;
-        const context = canvas.getContext('2d');
-        const normalized = activityElevationProfile(this.data.item?.route);
-        const draw = (progress: number) =>
-          drawElevationProfile(context, target.width, target.height, normalized, ratio, progress);
-        const finish = () => {
-          this.elevationAnimationCancel = null;
-          // 最终帧转成图片，避免原生 canvas 穿透并遮挡底部操作栏。
-          this.snapshotCanvas(canvas, target.width, target.height, 'elevationImage');
-        };
-        this.elevationAnimationCancel?.();
-        if (
-          typeof canvas.requestAnimationFrame === 'function' &&
-          typeof canvas.cancelAnimationFrame === 'function' &&
-          (wx.getDeviceInfo?.().benchmarkLevel || 20) > 10
-        )
-          this.elevationAnimationCancel = runCanvasReveal(canvas, draw, finish);
-        else {
-          draw(1);
-          finish();
-        }
-      });
-  },
-  drawRouteOutline() {
-    const outline = this.data.routeOutline;
-    if (!this.data.hasRouteDetails || !this.data.hasRouteOutline || this.unloaded) return;
-    wx.createSelectorQuery()
-      .select('#route-outline-canvas')
-      .fields({ node: true, size: true })
-      .exec((result: any[]) => {
-        if (this.unloaded) return;
-        const target = result?.[0];
-        const canvas = target?.node;
-        if (!canvas || !target.width || !target.height) return;
-        const ratio = wx.getWindowInfo?.().pixelRatio || wx.getSystemInfoSync?.().pixelRatio || 1;
-        canvas.width = target.width * ratio;
-        canvas.height = target.height * ratio;
-        const context = canvas.getContext('2d');
-        const draw = (progress: number) =>
-          renderRouteOutline(
-            context,
-            target.width,
-            target.height,
-            outline,
-            ratio,
-            this.data.item?.route?.routeName || 'GPX 路线详情',
-            progress,
-          );
-        const finish = () => {
-          this.outlineAnimationCancel = null;
-          // 路线轮廓导出为普通图片，避免原生 canvas 穿透并遮挡底部操作栏。
-          this.snapshotCanvas(canvas, target.width, target.height, 'routeOutlineImage');
-        };
-        this.outlineAnimationCancel?.();
-        if (
-          typeof canvas.requestAnimationFrame === 'function' &&
-          typeof canvas.cancelAnimationFrame === 'function' &&
-          (wx.getDeviceInfo?.().benchmarkLevel || 20) > 10
-        )
-          this.outlineAnimationCancel = runCanvasReveal(canvas, draw, finish);
-        else {
-          draw(1);
-          finish();
-        }
-      });
-  },
   async retryAttendeeMedia(attendeeId: string, kind: 'avatar' | 'background', failedUrl: string) {
     const attendee = this.data.attendees.find((item: any) => item.id === attendeeId);
     const activityId = this.data.item?.id;
@@ -542,13 +430,10 @@ Page({
     if (!this.attendeeMediaRetryKeys.has(retryKey)) {
       this.attendeeMediaRetryKeys.add(retryKey);
       const requestId = this.loadRequestId;
-      repositoryCache.invalidateActivity(activityId);
-      const refreshedActivity = await rideService.getActivity(activityId).catch(() => null);
+      const refreshedUrl = await rideService
+        .refreshActivityAttendeeMedia(activityId, attendeeId, kind)
+        .catch(() => '');
       if (requestId !== this.loadRequestId || this.unloaded) return;
-      const refreshedAttendee = refreshedActivity?.attendees?.find(
-        (item: any) => item.id === attendeeId,
-      );
-      const refreshedUrl = refreshedAttendee?.[urlKey] || '';
       if (refreshedUrl && refreshedUrl !== failedUrl) {
         const attendees = this.data.attendees.map((item: any) =>
           item.id === attendeeId ? { ...item, [urlKey]: refreshedUrl } : item,
@@ -654,6 +539,34 @@ Page({
     this.safeSetData({ selectedAttendee: null, selectedAttendeeIndex: 0 });
   },
   keepAttendeeCard() {},
+  async authorizeAttendeeMedia() {
+    if (this.attendeeAuthorizationBusy) return;
+    this.attendeeAuthorizationBusy = true;
+    this.safeSetData({ attendeeAuthorizationState: 'loading' });
+    try {
+      const confirmed = await new Promise<boolean>((resolve) =>
+        wx.showModal({
+          title: '完善公开骑行名片',
+          content:
+            '微信不会直接授权小程序读取头像或相册。请前往个人资料，主动选择微信头像和一张骑行背景图。',
+          confirmText: '去选择',
+          cancelText: '暂不',
+          success: (result: { confirm: boolean }) => resolve(result.confirm),
+          fail: () => resolve(false),
+        }),
+      );
+      if (!confirmed) {
+        this.safeSetData({ attendeeAuthorizationState: 'declined' });
+        return;
+      }
+      await platformCall(wx.navigateTo, { url: '/pages/profile-edit/index' });
+      this.safeSetData({ attendeeAuthorizationState: 'idle' });
+    } catch {
+      this.safeSetData({ attendeeAuthorizationState: 'failed' });
+    } finally {
+      this.attendeeAuthorizationBusy = false;
+    }
+  },
   navigate(event: any) {
     const target = event.currentTarget.dataset.target === 'end' ? 'endLocation' : 'startLocation';
     const location = this.data.item?.route?.[target];
@@ -696,16 +609,6 @@ Page({
       current: source,
       urls: [source],
       fail: () => wx.showToast({ title: '二维码预览失败，请重试', icon: 'none' }),
-    });
-  },
-  previewRouteImage() {
-    const rawSource = this.data.routeOutlineImage || this.data.item?.route?.generatedPreviewUrl;
-    const source = typeof rawSource === 'string' ? rawSource.trim() : '';
-    if (!source) return;
-    wx.previewImage({
-      current: source,
-      urls: [source],
-      fail: () => wx.showToast({ title: '路线预览图打开失败，请重试', icon: 'none' }),
     });
   },
   copyOfficialRoute() {

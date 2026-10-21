@@ -74,7 +74,7 @@ describe('统一 Logo 物料与页面接入契约', () => {
     expect(`${activityCard}\n${capabilityCard}\n${reviewDetail}`).not.toMatch(/>CILI<|骑有此里/);
   });
 
-  it('默认头像和名片背景统一引用品牌图片物料', () => {
+  it('通用默认头像保留品牌物料，但活动报名人员绝不回退默认头像或背景', () => {
     const profile = read('miniprogram/pages/profile/index.wxml');
     const avatar = read('miniprogram/components/cili-avatar/index.wxml');
     const profileEdit = read('miniprogram/pages/profile-edit/index.wxml');
@@ -85,8 +85,8 @@ describe('统一 Logo 物料与页面接入契约', () => {
     expect(profile).toContain('<cili-avatar');
     expect(avatar).toContain('src="/assets/brand/logo-circle-144.png"');
     expect(profileEdit).toContain('src="/assets/brand/logo-circle-144.png"');
-    expect(detail).toContain('src="/assets/brand/logo-circle-144.png"');
-    expect(detail).toContain('src="/assets/brand/logo-share-500x400.png"');
+    expect(detail).not.toContain('src="/assets/brand/logo-circle-144.png"');
+    expect(detail).not.toContain('src="/assets/brand/logo-share-500x400.png"');
     expect(settings).toContain('此里 · 持续为每一次出发升级');
     expect(hero).toContain('aria-label="此里品牌标识"');
     expect(hero).not.toContain('CILI 此里');

@@ -37,6 +37,12 @@
       ]
     }
   ],
+  "preloadRule": {
+    "pages/activity-detail/index": {
+      "network": "all",
+      "packages": ["pages/route-analysis"]
+    }
+  },
   "requiredPrivateInfos": ["chooseLocation"],
   "window": {
     "navigationBarTitleText": "此里",

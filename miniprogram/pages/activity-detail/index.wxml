@@ -62,17 +62,6 @@
           </view>
           <view class="route-estimate" wx:if="{{estimatedRideTime}}"><text>此里估算</text><text>{{estimatedRideTime}}</text></view>
 
-          <view class="route-visual-heading">路线轮廓</view>
-          <image wx:if="{{routeOutlineImage}}" class="route-outline-image" src="{{routeOutlineImage}}" mode="aspectFit" bindtap="previewRouteImage" aria-label="点击查看{{item.route.routeName || 'GPX 路线'}}完整路线图" />
-          <canvas wx:elif="{{hasRouteOutline}}" id="route-outline-canvas" type="2d" class="route-outline-canvas" aria-label="{{item.route.routeName || 'GPX 路线'}}路线轮廓"></canvas>
-          <image wx:elif="{{item.route.generatedPreviewUrl}}" class="route-outline-image" src="{{item.route.generatedPreviewUrl}}" mode="aspectFit" bindtap="previewRouteImage" aria-label="点击查看{{item.route.routeName || 'GPX 路线'}}完整路线图" />
-          <view wx:else class="route-empty">暂无有效路线轮廓</view>
-
-          <view class="route-visual-heading">海拔曲线</view>
-          <image wx:if="{{elevationImage}}" class="elevation-image" src="{{elevationImage}}" mode="aspectFit" aria-label="路线海拔曲线" />
-          <canvas wx:elif="{{hasElevationProfile}}" id="elevation-canvas" type="2d" class="elevation-canvas" aria-label="路线海拔曲线"></canvas>
-          <view wx:else class="route-empty">暂无有效海拔数据</view>
-
           <view class="gpx-download-row" wx:if="{{hasGpxRoute}}">
             <view class="route-action-note">下载后可导入码表或骑行应用。</view>
             <button class="route-action" loading="{{downloadingGpx}}" disabled="{{downloadingGpx}}" bindtap="downloadGpx">{{downloadingGpx ? '下载中' : '下载 GPX'}}</button>
@@ -88,12 +77,13 @@
           <view class="attendees-heading"><view><view class="title">已报名人员</view><view class="attendees-hint" wx:if="{{attendees.length}}">头像与昵称经本人授权展示</view></view></view>
           <scroll-view class="attendee-card-strip" scroll-x enhanced show-scrollbar="{{false}}" wx:if="{{attendees.length}}" aria-label="已报名人员头像与昵称">
             <view class="attendee-card-strip__inner">
-              <button class="attendee-mini-card" wx:for="{{attendees}}" wx:key="id" data-index="{{index}}" bindtap="openAttendeeCard" aria-label="查看 {{item.displayName}} 的公开骑行名片">
+              <view class="attendee-mini-card {{item.isSelf && (!item.avatarUrl || !item.backgroundUrl) ? 'attendee-mini-card--authorization' : ''}}" wx:for="{{attendees}}" wx:key="id" data-index="{{index}}" bindtap="openAttendeeCard" role="button" aria-label="查看 {{item.displayName}} 的公开骑行名片">
                 <image wx:if="{{item.avatarUrl}}" class="attendee-avatar {{item.genderClass}}" src="{{item.avatarUrl}}" mode="aspectFill" lazy-load="{{true}}" data-index="{{index}}" data-url="{{item.avatarUrl}}" bindload="attendeeAvatarLoad" binderror="attendeeAvatarError" />
-                <image wx:else class="attendee-avatar attendee-avatar--placeholder {{item.genderClass}}" src="/assets/brand/logo-circle-144.png" mode="aspectFill" aria-label="{{item.displayName}}未设置公开头像" />
-                <view class="attendee-mini-card__name">{{item.displayName || '此里骑手'}}</view>
+                <view class="attendee-mini-card__name">{{item.displayName || '骑友'}}</view>
                 <view class="attendee-mini-card__meta">{{item.status === 'checked_in' ? '已签到' : '已报名'}}</view>
-              </button>
+                <button wx:if="{{item.isSelf && (!item.avatarUrl || !item.backgroundUrl)}}" class="attendee-media-action" loading="{{attendeeAuthorizationState === 'loading'}}" disabled="{{attendeeAuthorizationState === 'loading'}}" catchtap="authorizeAttendeeMedia">{{attendeeAuthorizationState === 'loading' ? '正在打开…' : attendeeAuthorizationState === 'failed' ? '加载失败，重试' : attendeeAuthorizationState === 'declined' ? '重新授权' : '授权获取头像与骑行背景'}}</button>
+                <view wx:if="{{item.isSelf && attendeeAuthorizationState === 'declined'}}" class="attendee-media-feedback">已保留昵称，可随时重新授权</view>
+              </view>
             </view>
           </scroll-view>
           <view wx:else class="route-empty">正在等待首位骑友报名</view>
@@ -141,12 +131,10 @@
       <swiper-item wx:for="{{attendees}}" wx:for-item="rider" wx:key="id">
         <view class="rider-card-photo" aria-label="{{rider.displayName}} 的完整公开骑行名片">
           <image wx:if="{{rider.backgroundUrl}}" class="rider-card-photo__image" src="{{rider.backgroundUrl}}" mode="aspectFill" lazy-load="{{true}}" data-index="{{index}}" data-url="{{rider.backgroundUrl}}" bindload="selectedAttendeeBackgroundLoad" binderror="selectedAttendeeBackgroundError" />
-          <image wx:else class="rider-card-photo__image rider-card-photo__placeholder" src="/assets/brand/logo-share-500x400.png" mode="aspectFill" aria-label="此里默认骑行名片背景" />
           <view class="rider-card-photo__scrim"></view>
           <view class="rider-card-photo__identity">
             <image wx:if="{{rider.avatarUrl}}" class="rider-card-avatar {{rider.genderClass}}" src="{{rider.avatarUrl}}" mode="aspectFill" lazy-load="{{true}}" data-index="{{index}}" data-url="{{rider.avatarUrl}}" bindload="attendeeAvatarLoad" binderror="attendeeAvatarError" />
-            <view wx:else class="rider-card-avatar rider-card-avatar--placeholder {{rider.genderClass}}">骑</view>
-            <view class="rider-card-copy"><view class="rider-card-kicker">完整公开骑行名片</view><view class="rider-name">{{rider.displayName || '此里骑手'}}</view><view class="rider-card-photo__badges"><view class="gender-pill {{rider.genderClass}}">{{rider.genderLabel}}</view><view class="rider-status">{{rider.status === 'checked_in' ? '已签到' : '已报名'}}</view></view></view>
+            <view class="rider-card-copy"><view class="rider-card-kicker">公开骑行名片</view><view class="rider-name">{{rider.displayName || '骑友'}}</view><view class="rider-card-photo__badges"><view class="rider-status">{{rider.status === 'checked_in' ? '已签到' : '已报名'}}</view></view></view>
           </view>
           <view class="rider-card-note">昵称、头像与照片由骑友本人维护，仅展示公开资料。</view>
         </view>

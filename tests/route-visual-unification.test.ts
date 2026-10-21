@@ -61,23 +61,20 @@ describe('活动详情与完整分析共享视觉内核', () => {
     })),
   } as Activity['route'];
 
-  it('两端引用同一共享 primitive 和常量，旧黑线、渐变、42px 参数消失', () => {
+  it('详情移除重复绘制，完整分析继续独占共享路线 primitive 和常量', () => {
     const detail = read('miniprogram/pages/activity-detail/index.ts');
-    const detailFormat = read('miniprogram/pages/activity-detail/format.ts');
+    const detailTemplate = read('miniprogram/pages/activity-detail/index.wxml');
     const outline = read('miniprogram/utils/route-outline.ts');
     const analysis = read('miniprogram/pages/route-analysis/index.ts');
     const analysisChart = read('miniprogram/pages/route-analysis/utils/route-analysis-chart.ts');
-    expect(detail).toContain(
-      'prepareRouteVisualModel(detail.route?.routeOutline, [], hasGpxRoute).outline',
-    );
-    expect(detailFormat).toContain('drawRouteElevation(');
+    expect(detail).not.toContain('prepareRouteVisualModel');
+    expect(detail).not.toContain('drawElevationProfile');
+    expect(detailTemplate).not.toContain('<canvas');
     expect(analysis).toContain('ROUTE_VISUAL_STYLE.routeColor');
     expect(analysisChart).toContain('drawRouteElevation(');
     expect(outline).toContain('ROUTE_VISUAL_STYLE.routeColor');
     expect(outline).not.toContain("strokeStyle = '#211f1c'");
     expect(outline).not.toContain('fillText(routeName');
-    expect(detailFormat).not.toContain('createLinearGradient');
-    expect(detailFormat).not.toContain('left: 42');
     expect(ROUTE_VISUAL_STYLE.elevationPadding).toEqual({
       left: 22,
       right: 12,
@@ -169,11 +166,11 @@ describe('活动详情与完整分析共享视觉内核', () => {
     expect(visual.keyPoints[2]).toMatchObject({ lat: end.latitude, lng: end.longitude });
   });
 
-  it('本地轮廓优先于服务端预览图，避免路线名叠加覆盖', () => {
+  it('详情不再选择本地轮廓或服务端预览图，路线展示统一进入完整分析', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
-    expect(template.indexOf('wx:elif="{{hasRouteOutline}}"')).toBeLessThan(
-      template.indexOf('wx:elif="{{item.route.generatedPreviewUrl}}"'),
-    );
+    expect(template).not.toContain('hasRouteOutline');
+    expect(template).not.toContain('item.route.generatedPreviewUrl');
+    expect(template).toContain('bindtap="openRouteAnalysis"');
     expect(read('miniprogram/utils/route-outline.ts')).not.toContain('fillText(routeName');
   });
 });
