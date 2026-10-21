@@ -97,9 +97,12 @@ describe('统一主题设计契约', () => {
 
   it('版本和用户可见更新说明升级且旧版本转为历史项', () => {
     const settings = read('miniprogram/pages/settings/index.ts');
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.21.7');
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.22.1');
     expect(settings).toMatch(
-      /version: CLIENT_RELEASE_VERSION[\s\S]*?title: '活动发现与报名反馈更清晰'[\s\S]*?latest: true/,
+      /version: CLIENT_RELEASE_VERSION[\s\S]*?title: '全页面信息密度与状态反馈统一升级'[\s\S]*?latest: true/,
+    );
+    expect(settings).toMatch(
+      /version: '2026\.10\.21\.7'[\s\S]*?title: '活动发现与报名反馈更清晰'[\s\S]*?latest: false/,
     );
     expect(settings).toMatch(
       /version: '2026\.10\.21\.6'[\s\S]*?title: '活动路线与骑友资料加载更轻快'[\s\S]*?latest: false/,

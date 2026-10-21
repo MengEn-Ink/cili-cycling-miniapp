@@ -132,7 +132,7 @@ describe('品牌与页面体验静态契约', () => {
     const profile = read('miniprogram/pages/profile/index.wxss');
     const tokens = uiTokens(appStyles);
 
-    expect(tokens['--page-gutter']).toBe('32rpx');
+    expect(tokens['--page-gutter']).toBe('28rpx');
     expect(tokens['--control-height']).toBe('96rpx');
     expect(declaration(effectiveBlock(activities, '.activity-carousel'), 'height')).toBe('900rpx');
     expect(declaration(effectiveBlock(activityCard, '.activity-card'), 'border-radius')).toBe(

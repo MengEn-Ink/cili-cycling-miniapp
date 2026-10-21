@@ -160,6 +160,16 @@
       lead: '统一设计规范、可计算契约、交互原型与双端证据；结构以 Pages 为参照，可读性以契约为准。',
       cards: [
         {
+          id: 'oil-ui-high-density',
+          title: 'Oil UI 全页面高信息密度交互方案',
+          summary: '沿用沸点布局，覆盖 17 个正式页面与加载、空、失败、弱网等状态；通过分组与间距收敛提高同屏决策效率。',
+          maturity: 'baseline',
+          sources: [
+            { label: '打开全页面可点击原型', href: './designs/2026-10-22-oil-ui-high-density/index.html' },
+            { label: '查看适配说明', href: BASE + 'docs/designs/2026-10-22-oil-ui-high-density/README.md' },
+          ],
+        },
+        {
           id: 'boiling-point-handoff',
           title: '沸点手稿与全套设计交接成果',
           summary: '13 页高清长图、五类状态板、两份离线手稿与完整令牌清单，是当前双端视觉验收的唯一参考。',

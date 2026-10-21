@@ -81,9 +81,9 @@ page {
   --focus-ring: 0 0 0 4rpx var(--color-brand-soft);
   --control-height: 96rpx;
   --segment-height: 92rpx;
-  --page-gutter: 32rpx;
+  --page-gutter: 28rpx;
   --page-gutter-narrow: 24rpx;
-  --card-gap: 28rpx;
+  --card-gap: 20rpx;
   --route-preview-canvas-height: 288rpx;
   --group-qr-code-size: 192rpx;
   --tab-page-bottom-space: 32rpx;
@@ -103,7 +103,7 @@ page {
   --card-border: var(--color-card-border);
   --card-border-width: var(--border-width-hairline);
   --card-radius: var(--radius-card);
-  --card-padding: var(--space-5);
+  --card-padding: var(--space-4);
   --input-bg: var(--color-input-bg);
   --input-text: var(--color-text);
   --input-border: var(--color-border-strong);

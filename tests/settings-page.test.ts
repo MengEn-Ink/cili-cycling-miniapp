@@ -62,27 +62,32 @@ describe('设置页', () => {
     await import('../miniprogram/pages/settings/index');
   });
 
-  it('当前版本为 2026.10.21.7 且 latest 唯一，最新 main 版本转为历史项', () => {
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.21.7');
-    expect(page.data.releaseNotes).toHaveLength(25);
+  it('当前版本为 2026.10.22.1 且 latest 唯一，最新 main 版本转为历史项', () => {
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.22.1');
+    expect(page.data.releaseNotes).toHaveLength(26);
     expect(page.data.currentRelease).toBe(page.data.releaseNotes[0]);
     expect(page.data.currentRelease).toMatchObject({
-      version: '2026.10.21.7',
+      version: '2026.10.22.1',
       date: '2026-10-22',
-      title: '活动发现与报名反馈更清晰',
+      title: '全页面信息密度与状态反馈统一升级',
       latest: true,
     });
     expect(page.data.releaseNotes[1]).toMatchObject({
+      version: '2026.10.21.7',
+      title: '活动发现与报名反馈更清晰',
+      latest: false,
+    });
+    expect(page.data.releaseNotes[2]).toMatchObject({
       version: '2026.10.21.6',
       title: '活动路线与骑友资料加载更轻快',
       latest: false,
     });
-    expect(page.data.releaseNotes[2]).toMatchObject({
+    expect(page.data.releaseNotes[3]).toMatchObject({
       version: '2026.10.21.5',
       title: '设置页集中管理 Strava 线路同步',
       latest: false,
     });
-    expect(page.data.releaseNotes[3]).toMatchObject({
+    expect(page.data.releaseNotes[4]).toMatchObject({
       version: '2026.10.21.4',
       title: '路线导航与报名流程更准确',
       latest: false,

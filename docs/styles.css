@@ -86,8 +86,8 @@
   --focus-ring: 0 0 0 2px var(--color-brand-soft);
   --control-height: 48px;
   --segment-height: 46px;
-  --page-gutter: 16px;
-  --card-gap: 14px;
+  --page-gutter: 14px;
+  --card-gap: 10px;
   --route-preview-canvas-height: 144px;
   --group-qr-code-size: 96px;
   --font: Inter, 'Noto Sans SC', 'PingFang SC', system-ui, -apple-system, sans-serif;
@@ -104,7 +104,7 @@
   --card-border: var(--color-card-border);
   --card-border-width: var(--border-width-hairline);
   --card-radius: var(--radius-card);
-  --card-padding: var(--space-5);
+  --card-padding: var(--space-4);
   --input-bg: var(--color-input-bg);
   --input-text: var(--color-text);
   --input-border: var(--color-border-strong);
@@ -3955,7 +3955,7 @@ body.is-narrow .phone-inner {
 
 @media (max-width: 340px) {
   :root {
-    --page-gutter: 16px;
+    --page-gutter: 14px;
   }
 
   .phone-shell {
