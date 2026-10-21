@@ -14,6 +14,7 @@ const {
   validateAvatarSelection,
   writableDocument,
 } = require('./core');
+const { assertProfileWritable, profileGeneration } = require('./privacy-contract');
 
 function profileReferencesMedia(profile, fileId) {
   if (!profile || typeof profile !== 'object') return false;
@@ -58,8 +59,14 @@ function createProfileStore(db) {
   return {
     getMedia: (id) => get(db.collection('profile_media'), id),
     getClientUpload: (id) => get(db.collection('profile_media_imports'), id),
-    prepareClientUpload: (openid, intent, secretValue) =>
+    assertWritable: (openid, generation) =>
+      db.runTransaction(async (tx) =>
+        assertProfileWritable(await get(tx.collection('profiles'), openid), generation),
+      ),
+    prepareClientUpload: (openid, intent, secretValue, generation) =>
       db.runTransaction(async (tx) => {
+        const profile = await get(tx.collection('profiles'), openid);
+        const currentGeneration = assertProfileWritable(profile, generation);
         const imports = tx.collection('profile_media_imports');
         if (
           !intent ||
@@ -75,6 +82,7 @@ function createProfileStore(db) {
           throw new ProfileError('MEDIA_UPLOAD_INTENT_INVALID', '媒体上传凭据无效');
         const existing = await get(imports, intent._id);
         if (existing) {
+          assertProfileWritable(profile, existing.generation);
           if (
             existing.kind === 'client_upload' &&
             existing.owner_openid === openid &&
@@ -84,11 +92,14 @@ function createProfileStore(db) {
             return existing;
           throw new ProfileError('MEDIA_UPLOAD_INTENT_CONFLICT', '媒体上传凭据冲突');
         }
-        await imports.doc(intent._id).set({ data: writableDocument(intent) });
-        return intent;
+        const bound = { ...intent, generation: currentGeneration };
+        await imports.doc(intent._id).set({ data: writableDocument(bound) });
+        return bound;
       }),
     prepareCanonicalUpload: (openid, sourceIntentId, intent, secretValue, now = new Date()) =>
       db.runTransaction(async (tx) => {
+        const currentProfile = await get(tx.collection('profiles'), openid);
+        assertProfileWritable(currentProfile, intent.generation);
         const imports = tx.collection('profile_media_imports');
         const expectedCanonical = canonicalUploadIntent(
           openid,
@@ -114,6 +125,7 @@ function createProfileStore(db) {
         )
           throw new ProfileError('MEDIA_UPLOAD_INTENT_INVALID', '媒体上传凭据无效');
         let sourceIntent = await get(imports, sourceIntentId);
+        if (sourceIntent) assertProfileWritable(currentProfile, sourceIntent.generation);
         let reopenedLegacySource = false;
         if (!sourceIntent) {
           const expectedSourceIntentId = clientUploadIntentId(mediaPath(intent.source_file_id));
@@ -227,6 +239,7 @@ function createProfileStore(db) {
       now = new Date(),
     ) =>
       db.runTransaction(async (tx) => {
+        const profile = await get(tx.collection('profiles'), openid);
         const canonical = canonicalMediaBinding(
           openid,
           fileId,
@@ -254,6 +267,8 @@ function createProfileStore(db) {
         const imports = tx.collection('profile_media_imports');
         const sourceIntent = await get(imports, sourceIntentId);
         const canonicalIntent = await get(imports, canonicalIntentId);
+        assertProfileWritable(profile, sourceIntent?.generation);
+        assertProfileWritable(profile, canonicalIntent?.generation);
         if (
           !sourceIntent ||
           sourceIntent.kind !== 'client_upload' ||
@@ -276,7 +291,7 @@ function createProfileStore(db) {
         const media = tx.collection('profile_media');
         const mediaId = mediaDocumentId(fileId);
         const existing = await get(media, mediaId);
-        const record = buildRecord(existing);
+        const record = { ...buildRecord(existing), generation: profileGeneration(profile) };
         if (!existing) {
           const { _id, ...data } = record;
           await media.doc(_id).set({ data });
@@ -301,11 +316,12 @@ function createProfileStore(db) {
         await imports.doc(canonicalIntentId).update({ data: completed });
         return record;
       }),
-    setAvatar: (openid, source, fileId, secretValue, now = new Date()) =>
+    setAvatar: (openid, source, fileId, secretValue, now = new Date(), generation) =>
       db.runTransaction(async (tx) => {
         const profiles = tx.collection('profiles');
         const media = tx.collection('profile_media');
         const current = (await get(profiles, openid)) || {};
+        assertProfileWritable(current, generation);
         const findMedia = async (referencedFileId) => {
           if (!referencedFileId) return undefined;
           const direct = await get(media, mediaDocumentId(referencedFileId));
@@ -319,6 +335,7 @@ function createProfileStore(db) {
             : undefined;
         };
         const selectedRecord = await findMedia(fileId);
+        assertProfileWritable(current, selectedRecord?.generation);
         const selectedId = selectedRecord?._id || '';
         const selected = validateAvatarSelection(
           source,
@@ -355,8 +372,8 @@ function createProfileStore(db) {
           avatar_source: source,
           avatar_file_id: fileId,
           avatar_revision: avatarRevision,
-          avatar_visibility: 'public',
-          avatar_visibility_revision: avatarRevision,
+          avatar_visibility: 'private',
+          avatar_visibility_revision: null,
           updated_at: updatedAt,
         });
         await profiles.doc(openid).set({ data: next });
@@ -394,10 +411,11 @@ function createProfileStore(db) {
         }
         return next;
       }),
-    mergePhone: (openid, fields) =>
+    mergePhone: (openid, fields, generation) =>
       db.runTransaction(async (tx) => {
         const collection = tx.collection('profiles');
         const current = await get(collection, openid);
+        assertProfileWritable(current, generation);
         const updatedAt = db.serverDate();
         const patch = { ...fields, updated_at: updatedAt };
         if (current) await collection.doc(openid).update({ data: patch });

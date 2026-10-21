@@ -19,6 +19,70 @@ const {
 const { assertUsableRoutePreview, mergeTrustedPreviewRoute } = require('./route-preview');
 const { assertUsablePublicRoutePreview } = require('./public-route-preview');
 const { activateActivityMediaReferences, validateActivityMediaOwnership } = require('./media');
+const {
+  PUBLIC_POLICY_VERSION,
+  driverFieldsVersion,
+  hasDriverAttestation,
+} = require('./privacy-contract');
+
+function bindDriverAttestation(current, value, confirmation, actor, now) {
+  if (confirmation !== undefined) {
+    if (
+      !confirmation ||
+      typeof confirmation !== 'object' ||
+      Array.isArray(confirmation) ||
+      Object.keys(confirmation).some(
+        (key) => !['confirmed', 'policyVersion', 'activityVersion', 'fieldsVersion'].includes(key),
+      ) ||
+      confirmation.confirmed !== true ||
+      confirmation.policyVersion !== PUBLIC_POLICY_VERSION ||
+      confirmation.activityVersion !== (current?.version || 0) ||
+      confirmation.fieldsVersion !== driverFieldsVersion(value.support_vehicle_driver)
+    )
+      fail('DRIVER_CONSENT_INVALID', '请明确确认已取得司机本人同意并绑定当前公开字段版本');
+    value.driver_public_attestation = {
+      kind: 'organizer_attestation',
+      attested_by: actor,
+      policy_version: PUBLIC_POLICY_VERSION,
+      fields_version: confirmation.fieldsVersion,
+      activity_id: value._id,
+      confirmed_activity_version: confirmation.activityVersion,
+      activity_version: value.version,
+      recorded_at: now,
+      record_id: crypto
+        .createHash('sha256')
+        .update(
+          JSON.stringify([
+            value._id,
+            actor,
+            value.version,
+            confirmation.fieldsVersion,
+            now.toISOString(),
+          ]),
+        )
+        .digest('hex'),
+    };
+  } else if (
+    hasDriverAttestation(current) &&
+    driverFieldsVersion(current.support_vehicle_driver) ===
+      driverFieldsVersion(value.support_vehicle_driver)
+  ) {
+    value.driver_public_attestation = {
+      ...current.driver_public_attestation,
+      activity_version: value.version,
+    };
+  } else {
+    delete value.driver_public_attestation;
+  }
+  if (
+    value.status === 'published' &&
+    Object.values(value.support_vehicle_driver || {}).some(
+      (field) => typeof field === 'string' && field,
+    ) &&
+    !hasDriverAttestation(value)
+  )
+    fail('DRIVER_CONSENT_REQUIRED', '发布司机公开字段前请确认已取得司机本人同意');
+}
 
 const CLONE_REQUEST_FIELDS = new Set([
   'action',
@@ -401,9 +465,10 @@ async function deleteActivity(store, request, now = new Date()) {
 
 async function saveActivity(
   store,
-  { openid, activityId, expectedVersion, createRequestId, activity, reason },
+  { openid, activityId, expectedVersion, createRequestId, activity, reason, driverConsent },
   now = new Date(),
 ) {
+  assertTrustedOpenid(openid);
   if (!activity || typeof activity !== 'object' || Array.isArray(activity))
     fail('VALIDATION_FAILED', '活动参数格式错误');
   if (Object.prototype.hasOwnProperty.call(activity, 'club_identity'))
@@ -724,6 +789,7 @@ async function saveActivity(
           }
         : {}),
     };
+    bindDriverAttestation(current, value, driverConsent, openid, now);
     if (!safe.group_qr_code) delete value.group_qr_code_uploaded_at;
     if (isUnpublish) {
       const registrations = await tx.listActiveRegistrations(id);
@@ -867,6 +933,7 @@ async function reviewActivity(store, request, now = new Date()) {
       rejection_reason: rejectionReason,
       updated_at: now,
     };
+    bindDriverAttestation(current, value, undefined, openid, now);
     await tx.putActivity(activityId, value);
     const audit = buildActivityAudit(
       openid,

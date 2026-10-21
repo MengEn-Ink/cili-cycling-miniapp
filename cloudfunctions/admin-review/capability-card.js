@@ -2,6 +2,11 @@
 
 const crypto = require('node:crypto');
 const { normalizeGender, publicRegistration } = require('./domain');
+const {
+  visibleProfile,
+  projectPrivateRegistration,
+  registrationContactProfile,
+} = require('./domain/privacy');
 
 const MAX_CAPABILITY_IMAGES = 3;
 const PROFILE_PHOTO_CATEGORIES = new Set(['ride', 'bike', 'other']);
@@ -116,7 +121,7 @@ function canonicalFileId(record, sourceFileId, ownerOpenid, mediaSecret) {
 }
 
 function capabilityCandidates(profile, mediaRecords, ownerOpenid, mediaSecret) {
-  const value = profile && typeof profile === 'object' ? profile : {};
+  const value = visibleProfile(profile) || {};
   const records = new Map(
     (Array.isArray(mediaRecords) ? mediaRecords : []).map((record) => [
       record && record.file_id,
@@ -271,6 +276,12 @@ function safeResolvedMedia(resolvedMedia) {
 }
 
 function adminCapabilityView(registration, profile, resolvedMedia, piiKey) {
+  const rawRegistration = registration;
+  registration = projectPrivateRegistration(registration, profile);
+  const suppressed = registration.profile_snapshot !== rawRegistration?.profile_snapshot;
+  const contact = registrationContactProfile(rawRegistration, profile);
+  profile = suppressed ? contact : visibleProfile(profile);
+  if (suppressed) resolvedMedia = {};
   const safe = pick(registration, ADMIN_REGISTRATION_FIELDS);
   safe.options = pick(registration && registration.options, ADMIN_OPTION_FIELDS);
   const gatheringMode = registration && registration.options && registration.options.gathering_mode;
@@ -331,7 +342,7 @@ function adminCapabilityView(registration, profile, resolvedMedia, piiKey) {
 }
 
 function socialCapabilityView(profile, resolvedMedia) {
-  const value = profile && typeof profile === 'object' ? profile : {};
+  const value = visibleProfile(profile) || {};
   const publicFileIds = new Set(
     (Array.isArray(value.photos) ? value.photos : [])
       .filter((photo) => photo && photo.visibility === 'public')
@@ -369,6 +380,10 @@ async function adminCapabilityDetail({
   const registration = await loadRegistration();
   if (!registration) return undefined;
   const profile = registration.openid ? await loadProfile(registration.openid) : undefined;
+  const suppressed =
+    projectPrivateRegistration(registration, profile).profile_snapshot !==
+    registration.profile_snapshot;
+  const mediaProfile = suppressed ? {} : visibleProfile(profile);
   if (
     requirePhoneKey &&
     profile &&
@@ -379,16 +394,27 @@ async function adminCapabilityDetail({
     if (profile.emergency_phone_cipher) decryptPhone(profile.emergency_phone_cipher, piiKey);
   }
   const mediaRecords = registration.openid
-    ? await loadMediaRecords(registration.openid, profile)
+    ? await loadMediaRecords(registration.openid, mediaProfile)
     : [];
   const resolvedMedia = await resolveAdminCapabilityMedia(
-    profile,
+    mediaProfile,
     mediaRecords,
     registration.openid,
     getTempFileURL,
     mediaSecret,
   );
-  return adminCapabilityView(projectRegistration(registration), profile, resolvedMedia, piiKey);
+  const projected = projectRegistration(projectPrivateRegistration(registration, profile));
+  return adminCapabilityView(
+    {
+      ...projected,
+      privacy_generation: registration.privacy_generation,
+      profile_generation: registration.profile_generation,
+      privacy_contact: registration.privacy_contact,
+    },
+    profile,
+    resolvedMedia,
+    piiKey,
+  );
 }
 
 // 管理列表项：复用与详情一致的公开投影 + 实名/手机号解密，但不签发媒体临时地址。
@@ -396,7 +422,12 @@ async function adminCapabilityDetail({
 function adminRegistrationListItem(registration, profile, piiKey) {
   try {
     return adminCapabilityView(
-      publicRegistration(registration),
+      {
+        ...publicRegistration(registration),
+        privacy_generation: registration.privacy_generation,
+        profile_generation: registration.profile_generation,
+        privacy_contact: registration.privacy_contact,
+      },
       profile,
       { photos: [], avatar_url: '' },
       piiKey,
@@ -404,7 +435,7 @@ function adminRegistrationListItem(registration, profile, piiKey) {
   } catch (error) {
     // 单个用户密文损坏或密钥不可用时 fail closed：该项不回退明文，列表其余用户不受影响。
     if (error && typeof error.code === 'string' && error.code.startsWith('PII_')) {
-      return publicRegistration(registration);
+      return publicRegistration(projectPrivateRegistration(registration, profile));
     }
     throw error;
   }

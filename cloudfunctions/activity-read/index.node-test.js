@@ -3,6 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const Module = require('node:module');
+const { withPublicConsent, withDriverAttestation } = require('../shared/consent-fixture');
 
 const MEDIA_SECRET = 'activity-read-test-media-secret-32-bytes';
 
@@ -39,6 +40,7 @@ function loadMain(activity, list = [], options = {}) {
   const database = {
     command: {
       in: (values) => ({ $in: values }),
+      neq: (value) => ({ $neq: value }),
       lte: (value) => ({ $lte: value }),
       gt: (value) => ({ $gt: value }),
     },
@@ -72,6 +74,10 @@ function loadMain(activity, list = [], options = {}) {
             data = data.filter((item) => item.status === condition.status);
           if ((name === 'profiles' || name === 'profile_media') && condition._id?.$in)
             data = data.filter((item) => condition._id.$in.includes(item._id));
+          if (name === 'profile_media' && condition.canonical_file_id?.$in)
+            data = data.filter((item) =>
+              condition.canonical_file_id.$in.includes(item.canonical_file_id),
+            );
           let offset = 0;
           const query = {
             count: async () => {
@@ -329,8 +335,9 @@ test('活动列表拒绝未知筛选条件且不查询数据库', async () => {
 test('公开活动详情完整返回后援车师傅手机号并保留容量拆分', () => {
   const { publicActivity } = require('./domain/domain');
   const result = publicActivity(
-    {
+    withDriverAttestation({
       _id: 'a1',
+      version: 1,
       status: 'published',
       capacity: 20,
       occupied_count: 0,
@@ -343,7 +350,7 @@ test('公开活动详情完整返回后援车师傅手机号并保留容量拆�
       },
       signup_deadline: '2026-10-10T00:00:00.000Z',
       event_end: '2026-10-11T08:00:00.000Z',
-    },
+    }),
     new Date('2026-09-29T04:00:00.000Z'),
   );
   assert.equal(result.support_vehicle_capacity + result.self_drive_capacity, result.capacity);
@@ -522,6 +529,181 @@ test('详情将已绑定的生成路线图解析为临时地址', async () => {
     generatedFileId,
   ]);
 });
+
+for (const action of ['detail', 'list', 'listPage']) {
+  test(`public ${action} suppresses retained personal activity media without consent or after withdrawal`, async (t) => {
+    const { privacyDatabase } = require('../profile/privacy-fixture');
+    const { createPrivacyService } = require('../profile/privacy');
+    const source = 'cloud://env/profiles/synthetic-owner/other/avatar.jpg';
+    const record = canonicalMedia(source, 'synthetic-owner');
+    const modern = (purpose) =>
+      `cloud://env/profile-canonical/${'a'.repeat(32)}/${purpose}/${'b'.repeat(64)}/${'c'.repeat(64)}.jpg`;
+    const personal = [
+      modern('profile-avatar'),
+      modern('profile-background'),
+      record.canonical_file_id,
+      source,
+      'cloud://env/profiles/synthetic-owner/ride/background.jpg',
+      'cloud://env/profiles/synthetic-owner/bike/photo.jpg',
+      'cloud://env/profiles/synthetic-owner/profile-avatar/upload.jpg',
+      'cloud://env/profile-avatar/synthetic-owner/avatar.jpg',
+      `https://storage.example/${encodeURIComponent(modern('profile-avatar').split('/').slice(3).join('/'))}`,
+      'https://storage.example/profiles%2Fsynthetic-owner%2Fother%2Fphoto.jpg',
+    ];
+    const image = modern('activity-image');
+    const qr = modern('activity-group-qr');
+    const preview = modern('activity-route-preview');
+    const fixture = privacyDatabase({
+      profiles: [
+        {
+          _id: 'synthetic-owner',
+          avatar_file_id: source,
+          avatar_source: 'custom',
+          avatar_revision: 1,
+        },
+      ],
+    });
+    const service = createPrivacyService(fixture.db);
+    const activity = {
+      _id: 'retained-media',
+      status: 'finished',
+      event_start: '2026-01-01T00:00:00.000Z',
+      event_end: '2026-01-01T08:00:00.000Z',
+      created_by: 'synthetic-owner',
+      club_id: 'synthetic-club',
+      club_identity: { avatar_url: personal[0] },
+      cover_image: personal[0],
+      images: [...personal, image],
+      group_qr_code: qr,
+      route: { generated_preview_file_id: preview },
+    };
+    const event =
+      action === 'detail'
+        ? { action, activityId: activity._id }
+        : action === 'list'
+          ? { action, filter: 'history' }
+          : { action, view: 'history' };
+    for (const phase of ['missing-owner', 'no-consent', 'withdrawn']) {
+      if (phase === 'withdrawn') {
+        const status = await service.publicConsentStatus('synthetic-owner');
+        await service.setPublicConsent('synthetic-owner', {
+          generation: status.generation,
+          policyVersion: status.policyVersion,
+          media: { consented: true, version: status.media.version },
+        });
+        assert.equal((await service.publicConsentStatus('synthetic-owner')).media.consented, true);
+        await service.setPublicConsent('synthetic-owner', {
+          generation: status.generation,
+          policyVersion: status.policyVersion,
+          media: { consented: false },
+        });
+      }
+      assert.equal((await service.publicConsentStatus('synthetic-owner')).media.consented, false);
+      const retained = {
+        ...activity,
+        cover_image:
+          phase === 'withdrawn'
+            ? source
+            : phase === 'no-consent'
+              ? record.canonical_file_id
+              : personal[0],
+      };
+      for (const signing of ['signed', 'empty', 'throw']) {
+        await t.test(`${phase}/${signing}`, async () => {
+          const loaded = loadMain(retained, [retained], {
+            profiles: phase === 'missing-owner' ? [] : [...fixture.state.profiles.values()],
+            mediaRecords: [record],
+            mediaSecret: MEDIA_SECRET,
+            getTempFileURL: async ({ fileList }) => {
+              if (signing === 'throw') throw new Error('synthetic signing failure');
+              return {
+                fileList:
+                  signing === 'empty'
+                    ? []
+                    : fileList.map((fileID) => ({
+                        fileID,
+                        status: 0,
+                        tempFileURL: `https://temporary.example/${encodeURIComponent(fileID)}`,
+                      })),
+              };
+            },
+          });
+          const result = await loaded.main(event);
+          assert.equal(result.ok, true, `${phase}/${signing}`);
+          const dto =
+            action === 'detail'
+              ? result.data
+              : action === 'list'
+                ? result.data[0]
+                : result.data.items[0];
+          const requests = loaded.calls
+            .filter((call) => call.type === 'getTempFileURL')
+            .flatMap((call) => call.payload.fileList);
+          assert.deepEqual(requests, [qr, preview, image], `${phase}/${signing}: signing`);
+          assert.equal(dto.cover_image, '', `${phase}/${signing}: cover`);
+          assert.equal(dto.club_identity.avatar_url, '');
+          const signedUrl = (fileId) => `https://temporary.example/${encodeURIComponent(fileId)}`;
+          assert.deepEqual(dto.images, [signing === 'signed' ? signedUrl(image) : image]);
+          assert.equal(dto.group_qr_code, signing === 'signed' ? signedUrl(qr) : qr);
+          assert.equal(dto.route.generated_preview_file_id, preview);
+          assert.equal(
+            dto.route.generated_preview_url,
+            signing === 'signed' ? signedUrl(preview) : undefined,
+          );
+          for (const reference of personal) {
+            assert.equal(JSON.stringify(dto).includes(reference), false);
+            assert.equal(JSON.stringify(dto).includes(encodeURIComponent(reference)), false);
+          }
+        });
+      }
+    }
+  });
+
+  test(`public ${action} guards activity media purposes and raw URL fallback without signing`, async () => {
+    const canonical = (purpose) =>
+      `https://storage.example/profile-canonical/${'a'.repeat(32)}/${purpose}/${'b'.repeat(64)}/${'c'.repeat(64)}.jpg`;
+    const image = canonical('activity-image');
+    const qr = canonical('activity-group-qr');
+    const preview = canonical('activity-route-preview');
+    const personal = canonical('profile-avatar');
+    const activity = {
+      _id: 'raw-media',
+      status: 'finished',
+      event_start: '2026-01-01T00:00:00.000Z',
+      event_end: '2026-01-01T08:00:00.000Z',
+      cover_image: image,
+      images: [personal, qr, preview, image],
+      group_qr_code: personal,
+      route: {
+        generated_preview_file_id: personal,
+        generated_preview_url: personal,
+        preview_image_url: personal,
+      },
+    };
+    const loaded = loadMain(activity, [activity]);
+    const result = await loaded.main(
+      action === 'detail'
+        ? { action, activityId: activity._id }
+        : action === 'list'
+          ? { action, filter: 'history' }
+          : { action, view: 'history' },
+    );
+    assert.equal(result.ok, true);
+    const dto =
+      action === 'detail' ? result.data : action === 'list' ? result.data[0] : result.data.items[0];
+    assert.equal(dto.cover_image, image);
+    assert.deepEqual(dto.images, [image]);
+    assert.equal(dto.group_qr_code, '');
+    assert.equal(dto.route.generated_preview_file_id, '');
+    assert.equal(dto.route.generated_preview_url, '');
+    assert.equal(dto.route.preview_image_url, '');
+    assert.equal(
+      loaded.calls.some((call) => call.type === 'getTempFileURL'),
+      false,
+    );
+    assert.equal(JSON.stringify(dto).includes(personal), false);
+  });
+}
 
 test('downloadRouteGpx 在服务端校验摘要后签发 HTTPS 临时地址且响应不含文件内容', async () => {
   const fileContent = Buffer.alloc(2 * 1024 * 1024);
@@ -709,13 +891,15 @@ test('详情成员执行状态、上限、稳定排序和隐私白名单', async
     },
     emergency_contact: 'private',
   }));
-  const profiles = registrations.map((item, index) => ({
-    _id: item.openid,
-    nickname: `骑手${index}`,
-    gender: index === 0 ? '女' : index === 1 ? '女' : index === 2 ? '未知' : '',
-    avatar_file_id: `cloud://avatar-${index}.jpg`,
-    phone: '13812345678',
-  }));
+  const profiles = registrations.map((item, index) =>
+    withPublicConsent({
+      _id: item.openid,
+      nickname: `骑手${index}`,
+      gender: index === 0 ? '女' : index === 1 ? '女' : index === 2 ? '未知' : '',
+      avatar_file_id: `cloud://avatar-${index}.jpg`,
+      phone: '13812345678',
+    }),
+  );
   const { main, calls } = loadMain({ _id: 'a1', title: '活动', status: 'published' }, [], {
     registrations,
     profiles,
@@ -746,7 +930,7 @@ test('详情成员执行状态、上限、稳定排序和隐私白名单', async
   const attendeesById = Object.fromEntries(
     result.data.attendees.map((attendee) => [attendee.id, attendee]),
   );
-  assert.equal(attendeesById['r-00'].gender, '男');
+  assert.equal(attendeesById['r-00'].gender, '女');
   assert.equal(attendeesById['r-01'].gender, '女');
   assert.equal(attendeesById['r-02'].gender, '');
   assert.equal('title' in attendeesById['r-00'], false);
@@ -796,7 +980,7 @@ test('详情成员超过单页时完整读取候选集后再选最早 24 人', a
   );
 });
 
-test('详情展示历史可见性状态下的有效头像，但仍拒绝外部头像', async () => {
+test('详情不把历史可见性标记视为公开同意，也不签发地址', async () => {
   const cases = [
     {
       id: 'no-consent',
@@ -867,16 +1051,11 @@ test('详情展示历史可见性状态下的有效头像，但仍拒绝外部�
   assert.equal(result.ok, true);
   assert.deepEqual(
     result.data.attendees.map((attendee) => attendee.avatar_url),
-    [
-      'https://temporary.example/avatar.jpg',
-      'https://temporary.example/avatar.jpg',
-      'https://temporary.example/avatar.jpg',
-      '',
-    ],
+    ['', '', '', ''],
   );
   assert.deepEqual(
     calls.filter((call) => call.type === 'getTempFileURL').map((call) => call.payload.fileList),
-    [mediaRecords.map((record) => record.canonical_file_id)],
+    [],
   );
 });
 
@@ -901,7 +1080,7 @@ test('详情成员骑行名片使用本人上传背景而不是头像', async ()
         avatar_revision: 1,
         background_photo: { file_id: backgroundFileId, category: 'ride' },
       },
-    ],
+    ].map((profile) => withPublicConsent(profile)),
     mediaRecords,
     mediaSecret: MEDIA_SECRET,
     getTempFileURL: async ({ fileList }) => ({
@@ -943,15 +1122,17 @@ test('详情只为 registry 合法的 canonical 头像签发地址', async () =>
     status: 'approved',
     approved_at: `2026-09-01T00:0${index}:00.000Z`,
   }));
-  const profiles = definitions.map(([id, avatar, source]) => ({
-    _id: id,
-    nickname: id,
-    avatar_file_id: avatar,
-    ...(source ? { avatar_source: source } : {}),
-    avatar_revision: 3,
-    avatar_visibility: 'public',
-    avatar_visibility_revision: 3,
-  }));
+  const profiles = definitions.map(([id, avatar, source]) =>
+    withPublicConsent({
+      _id: id,
+      nickname: id,
+      avatar_file_id: avatar,
+      ...(source ? { avatar_source: source } : {}),
+      avatar_revision: 3,
+      avatar_visibility: 'public',
+      avatar_visibility_revision: 3,
+    }),
+  );
   const inactive = canonicalMedia(definitions[1][1], 'inactive', { status: 'unreferenced' });
   const wrongOwner = canonicalMedia(definitions[2][1], 'another-owner');
   const forged = canonicalMedia(definitions[3][1], 'forged', {
@@ -1028,7 +1209,7 @@ test('媒体 secret 缺失时隐藏头像但保留公开活动详情', async () 
         avatar_visibility: 'public',
         avatar_visibility_revision: 1,
       },
-    ],
+    ].map((profile) => withPublicConsent(profile)),
     mediaRecords: [record],
     mediaSecret: '',
   });
@@ -1136,7 +1317,7 @@ test('列表为每个活动解析发布人昵称与头像', async () => {
         avatar_visibility: 'public',
         avatar_visibility_revision: 1,
       },
-    ],
+    ].map((profile) => withPublicConsent(profile)),
     mediaRecords: [recordA, backgroundRecordA, recordB],
     mediaSecret: MEDIA_SECRET,
     getTempFileURL: async ({ fileList }) => {
@@ -1164,7 +1345,7 @@ test('列表为每个活动解析发布人昵称与头像', async () => {
   );
 });
 
-test('发布人资料缺失时统一兜底为骑友与空头像，不影响列表返回', async () => {
+test('发布人资料缺失时统一兜底为匿名骑友与空头像，不影响列表返回', async () => {
   const list = [
     {
       _id: 'a1',
@@ -1180,7 +1361,7 @@ test('发布人资料缺失时统一兜底为骑友与空头像，不影响列�
   const result = await main({ action: 'list' });
 
   assert.equal(result.ok, true);
-  assert.deepEqual(result.data[0].publisher, { nickname: '骑友', avatar_url: '' });
+  assert.deepEqual(result.data[0].publisher, { nickname: '匿名骑友', avatar_url: '' });
 });
 
 test('详情同样带出发布人信息', async () => {
@@ -1206,7 +1387,7 @@ test('详情同样带出发布人信息', async () => {
         avatar_visibility: 'public',
         avatar_visibility_revision: 1,
       },
-    ],
+    ].map((profile) => withPublicConsent(profile)),
     mediaRecords: [record],
     mediaSecret: MEDIA_SECRET,
     getTempFileURL: async ({ fileList }) => ({
@@ -1281,7 +1462,7 @@ test('详情并行读取发布人、人数计数和两种参与状态且保持�
         { _id: 'owner', nickname: '组织者' },
         { _id: 'checked', nickname: '后签到' },
         { _id: 'approved', nickname: '先通过' },
-      ],
+      ].map((profile) => withPublicConsent(profile)),
       beforeRegistrationQuery: async ({ type, status }) => {
         started.push(`${type}:${status}`);
         await gate;
@@ -1367,4 +1548,239 @@ test('activity-read 批量签名嵌套俱乐部头像且失败项返回空', asy
   );
   assert.equal(byId.get('club-avatar-failed').club_identity.avatar_url, '');
   assert.equal(JSON.stringify(result.data).includes('cloud://env/clubs/'), false);
+});
+
+test('profile query failure before deletion enrollment returns empty attendee personal fields', async () => {
+  const { privacyDatabase } = require('../profile/privacy-fixture');
+  const { createPrivacyService } = require('../profile/privacy');
+  const avatar = 'cloud://env/profiles/deleting.jpg';
+  const fixture = privacyDatabase({
+    profiles: [{ _id: 'owner', nickname: 'private-name', gender: '男', avatar_file_id: avatar }],
+    registrations: [
+      {
+        _id: 'r',
+        activity_id: 'a1',
+        openid: 'owner',
+        status: 'approved',
+        profile_snapshot: { nickname: 'private-name', gender: '男', avatar_file_id: avatar },
+      },
+    ],
+  });
+  await createPrivacyService(fixture.db).requestDeletion('owner', {
+    requestId: 'delete_lookup_failure',
+    policyVersion: '2026-10-21',
+    scope: 'self-profile-and-personal-media',
+    confirmed: true,
+  });
+  const stored = fixture.state.registrations.get('r');
+  assert.equal(stored.privacy_generation, undefined);
+  const { main, calls } = loadMain({ _id: 'a1', status: 'published' }, [], {
+    registrations: [stored],
+    profiles: [...fixture.state.profiles.values()],
+    mediaRecords: [canonicalMedia(avatar, 'owner')],
+    mediaSecret: MEDIA_SECRET,
+    beforeQueryGet: async ({ name }) => {
+      if (name === 'profiles') throw new Error('profile lookup unavailable');
+    },
+  });
+  const result = await main({ action: 'detail', activityId: 'a1' });
+  assert.equal(result.ok, true);
+  assert.equal(result.data.approved_registration_count, 1);
+  assert.deepEqual(result.data.attendees, [
+    {
+      id: 'r',
+      status: 'approved',
+      display_name: '匿名骑友',
+      gender: '',
+      avatar_url: '',
+      background_url: '',
+    },
+  ]);
+  assert.equal(
+    calls.some((call) => call.name === 'profile_media' || call.type === 'getTempFileURL'),
+    false,
+  );
+  assert.equal(fixture.state.registrations.get('r').profile_snapshot.nickname, 'private-name');
+});
+
+test('current consent controls publisher/attendee projection and withdrawal stops URL issuance', async () => {
+  const { privacyDatabase } = require('../profile/privacy-fixture');
+  const { createPrivacyService } = require('../profile/privacy');
+  const avatar = 'cloud://env/profiles/consent-avatar.jpg';
+  const fixture = privacyDatabase({
+    profiles: [
+      {
+        _id: 'owner',
+        nickname: 'Private current',
+        gender: '男',
+        avatar_file_id: avatar,
+        avatar_source: 'custom',
+        avatar_revision: 1,
+      },
+    ],
+  });
+  const service = createPrivacyService(fixture.db);
+  const activity = { _id: 'a1', status: 'published', created_by: 'owner' };
+  const read = async () => {
+    const loaded = loadMain(activity, [], {
+      profiles: [...fixture.state.profiles.values()],
+      mediaRecords: [canonicalMedia(avatar, 'owner')],
+      mediaSecret: MEDIA_SECRET,
+      registrations: [
+        {
+          _id: 'r',
+          openid: 'owner',
+          status: 'approved',
+          profile_snapshot: { nickname: 'Old snapshot', gender: '男' },
+        },
+      ],
+      getTempFileURL: async ({ fileList }) => ({
+        fileList: fileList.map((fileID) => ({
+          fileID,
+          status: 0,
+          tempFileURL: 'https://temporary.example/avatar.jpg',
+        })),
+      }),
+    });
+    return {
+      dto: (await loaded.main({ action: 'detail', activityId: 'a1' })).data,
+      calls: loaded.calls,
+    };
+  };
+  let result = await read();
+  assert.equal(result.dto.publisher.nickname, '匿名骑友');
+  assert.equal(result.dto.attendees[0].display_name, '匿名骑友');
+  assert.equal(
+    result.calls.some((call) => call.type === 'getTempFileURL'),
+    false,
+  );
+  const status = await service.publicConsentStatus('owner');
+  await service.setPublicConsent('owner', {
+    generation: status.generation,
+    policyVersion: status.policyVersion,
+    nickname: { consented: true, version: status.nickname.version },
+    media: { consented: true, version: status.media.version },
+  });
+  result = await read();
+  assert.equal(result.dto.publisher.nickname, 'Private current');
+  assert.equal(result.dto.attendees[0].display_name, 'Private current');
+  assert.equal(result.dto.attendees[0].avatar_url, 'https://temporary.example/avatar.jpg');
+  await service.setPublicConsent('owner', {
+    generation: status.generation,
+    policyVersion: status.policyVersion,
+    nickname: { consented: false },
+    media: { consented: false },
+  });
+  result = await read();
+  assert.equal(result.dto.attendees[0].display_name, '匿名骑友');
+  assert.equal(result.dto.attendees[0].avatar_url, '');
+  assert.equal(
+    result.calls.some((call) => call.type === 'getTempFileURL'),
+    false,
+  );
+});
+
+test('consented current canonical avatar reference resolves via the source registry', async () => {
+  const source = 'cloud://env/profiles/canonical-current.jpg';
+  const record = canonicalMedia(source, 'owner');
+  const { main, calls } = loadMain(
+    {
+      _id: 'a1',
+      status: 'published',
+      created_by: 'owner',
+    },
+    [],
+    {
+      profiles: [
+        withPublicConsent({
+          _id: 'owner',
+          nickname: 'Current',
+          avatar_file_id: record.canonical_file_id,
+          avatar_revision: 1,
+          avatar_source: 'custom',
+        }),
+      ],
+      mediaRecords: [record],
+      mediaSecret: MEDIA_SECRET,
+      getTempFileURL: async ({ fileList }) => ({
+        fileList: fileList.map((fileID) => ({
+          fileID,
+          status: 0,
+          tempFileURL: 'https://temporary.example/current.jpg',
+        })),
+      }),
+    },
+  );
+  const result = await main({ action: 'detail', activityId: 'a1' });
+  assert.equal(result.ok, true);
+  assert.equal(result.data.publisher.avatar_url, 'https://temporary.example/current.jpg');
+  assert.deepEqual(
+    calls.filter((call) => call.type === 'getTempFileURL').flatMap((call) => call.payload.fileList),
+    [record.canonical_file_id],
+  );
+});
+
+test('duplicate or capped canonical registry lookup cannot authorize public signing', async () => {
+  const source = 'cloud://env/profiles/canonical-bounded.jpg';
+  const record = canonicalMedia(source, 'owner');
+  const activity = { _id: 'a1', status: 'published', created_by: 'owner' };
+  const profile = withPublicConsent({
+    _id: 'owner',
+    avatar_file_id: record.canonical_file_id,
+    avatar_revision: 1,
+    avatar_source: 'custom',
+  });
+  const duplicate = { ...record, _id: 'duplicate-registry-id' };
+  const duplicateLookup = loadMain(activity, [], {
+    profiles: [profile],
+    mediaRecords: [record, duplicate],
+    mediaSecret: MEDIA_SECRET,
+  });
+  assert.equal(
+    (await duplicateLookup.main({ action: 'detail', activityId: 'a1' })).data.publisher.avatar_url,
+    '',
+  );
+  assert.equal(
+    duplicateLookup.calls.some((call) => call.type === 'getTempFileURL'),
+    false,
+  );
+
+  const otherRecord = canonicalMedia('cloud://env/profiles/canonical-other.jpg', 'other');
+  const cappedLookup = loadMain(
+    undefined,
+    [
+      { ...activity, event_end: '2099-01-01T00:00:00Z' },
+      { ...activity, _id: 'a2', created_by: 'other', event_end: '2099-01-01T00:00:00Z' },
+    ],
+    {
+      profiles: [
+        profile,
+        withPublicConsent({
+          _id: 'other',
+          avatar_file_id: otherRecord.canonical_file_id,
+          avatar_revision: 1,
+          avatar_source: 'custom',
+        }),
+      ],
+      mediaRecords: [
+        ...Array.from({ length: 99 }, (_, index) => ({ ...duplicate, _id: `duplicate-${index}` })),
+        otherRecord,
+        { ...otherRecord, _id: 'unseen-duplicate' },
+      ],
+      mediaSecret: MEDIA_SECRET,
+      getTempFileURL: async ({ fileList }) => ({
+        fileList: fileList.map((fileID) => ({
+          fileID,
+          status: 0,
+          tempFileURL: 'https://temporary.example/should-not-sign.jpg',
+        })),
+      }),
+    },
+  );
+  const capped = await cappedLookup.main({ action: 'list', filter: 'upcoming' });
+  assert.equal(capped.data.find((item) => item._id === 'a2').publisher.avatar_url, '');
+  assert.equal(
+    cappedLookup.calls.some((call) => call.type === 'getTempFileURL'),
+    false,
+  );
 });

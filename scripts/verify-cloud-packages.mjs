@@ -31,7 +31,7 @@ function pack(name, required) {
     if (!files.includes(file)) throw new Error(`${name} 部署包缺少 ${file}`);
 }
 for (const name of ['activity-read', 'registration', 'admin-review']) {
-  for (const file of ['index.js', 'domain.js', 'use-cases.js'])
+  for (const file of ['index.js', 'domain.js', 'use-cases.js', 'privacy.js'])
     if (
       hash(resolve(root, 'cloudfunctions/shared', file)) !==
       hash(resolve(root, 'cloudfunctions', name, 'domain', file))
@@ -43,6 +43,7 @@ for (const name of ['activity-read', 'registration', 'admin-review']) {
     'domain/index.js',
     'domain/domain.js',
     'domain/use-cases.js',
+    'domain/privacy.js',
     ...(name === 'activity-read' ? ['public-avatar.js', 'list-page.js'] : []),
   ]);
 }
@@ -59,7 +60,13 @@ if (
 )
   throw new Error('strava-callback/core.js 与 strava-bridge/core.js 不一致');
 pack('notification-send', ['index.js', 'core.js', 'store.js', 'access.js', 'package.json']);
-pack('club-application', ['index.js', 'core.js', 'media.js', 'package.json']);
+pack('club-application', [
+  'index.js',
+  'core.js',
+  'media.js',
+  'privacy-contract.js',
+  'package.json',
+]);
 const cloudbaseConfig = JSON.parse(readFileSync(resolve(root, 'cloudbaserc.json'), 'utf8'));
 const notificationFunction = cloudbaseConfig.functions.find(
   (item) => item.name === 'notification-send',
@@ -75,6 +82,7 @@ pack('activity-admin', [
   'domain-index.js',
   'domain.js',
   'use-cases.js',
+  'privacy-contract.js',
   'package.json',
 ]);
 pack('auth', ['index.js', 'core.js', 'package.json']);
@@ -84,6 +92,8 @@ pack('profile', [
   'capability-card.js',
   'media-upload.js',
   'store.js',
+  'privacy.js',
+  'privacy-contract.js',
   'package.json',
 ]);
 const mediaCleanupFunction = cloudbaseConfig.functions.find(
@@ -98,7 +108,57 @@ if (
   !mediaCleanupTimer.config.trim()
 )
   throw new Error('profile-media-cleanup 缺少可部署的定时触发器');
-pack('profile-media-cleanup', ['index.js', 'core.js', 'store.js', 'package.json']);
+pack('profile-media-cleanup', [
+  'index.js',
+  'core.js',
+  'store.js',
+  'privacy-contract.js',
+  'package.json',
+]);
+for (const name of [
+  'profile',
+  'profile-media-cleanup',
+  'privacy-maintenance',
+  'activity-admin',
+  'club-application',
+])
+  if (
+    hash(resolve(root, 'cloudfunctions/shared/privacy.js')) !==
+    hash(resolve(root, 'cloudfunctions', name, 'privacy-contract.js'))
+  )
+    throw new Error(`${name} privacy contract 未同步`);
+if (
+  hash(resolve(root, 'cloudfunctions/profile-media-cleanup/core.js')) !==
+  hash(resolve(root, 'cloudfunctions/privacy-maintenance/media-core.js'))
+)
+  throw new Error('privacy-maintenance/media-core.js 未同步');
+const expectedMediaStore = readFileSync(
+  resolve(root, 'cloudfunctions/profile-media-cleanup/store.js'),
+  'utf8',
+).replace("require('./core')", "require('./media-core')");
+if (
+  readFileSync(resolve(root, 'cloudfunctions/privacy-maintenance/media-store.js'), 'utf8') !==
+  expectedMediaStore
+)
+  throw new Error('privacy-maintenance/media-store.js 未同步或内部依赖未重定位');
+const privacyFunction = cloudbaseConfig.functions.find(
+  (item) => item.name === 'privacy-maintenance',
+);
+if (
+  !privacyFunction?.triggers?.some(
+    (item) => item.name === 'privacy-maintenance-worker' && item.type === 'timer' && item.config,
+  )
+)
+  throw new Error('privacy-maintenance 缺少可部署的 Timer');
+pack('privacy-maintenance', [
+  'index.js',
+  'core.js',
+  'store.js',
+  'privacy-contract.js',
+  'media-core.js',
+  'media-store.js',
+  'package.json',
+]);
 const routeMaintenanceFunction = cloudbaseConfig.functions.find(
   (item) => item.name === 'route-maintenance',
 );

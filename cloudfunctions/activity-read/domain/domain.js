@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('node:crypto');
+const { hasDriverAttestation } = require('./privacy');
 const OCCUPYING = new Set(['pending', 'approved', 'checked_in']);
 const TEAM_ID_PATTERN = /^team_[A-Za-z0-9_-]{8,80}$/;
 const RESUBMITTABLE = new Set(['rejected', 'cancelled']);
@@ -306,11 +307,14 @@ function publicActivity(activity, now = new Date()) {
   if (!Number.isInteger(output.capacity)) output.capacity = 0;
   // 后援车司机电话面向全部骑友公开，完整返回，便于集合当天直接拨打；非字符串值不透传。
   if (output.support_vehicle_driver) {
-    const phone = output.support_vehicle_driver.contact_phone;
-    output.support_vehicle_driver = {
-      ...output.support_vehicle_driver,
-      contact_phone: typeof phone === 'string' ? phone.trim() : '',
-    };
+    output.support_vehicle_driver = Object.fromEntries(
+      ['nickname', 'license_plate', 'contact_phone'].map((field) => [
+        field,
+        hasDriverAttestation(activity) && typeof activity.support_vehicle_driver[field] === 'string'
+          ? activity.support_vehicle_driver[field]
+          : '',
+      ]),
+    );
   }
   if (
     activity.occupancy_partition_ready === true &&
@@ -377,9 +381,9 @@ function publicRegistration(registration) {
       'status',
     ]);
   }
-  const snapshot = registration.profile_snapshot || {};
+  const snapshot = registration.privacy_generation ? {} : registration.profile_snapshot || {};
   output.profile_snapshot = {
-    nickname: snapshot.nickname,
+    nickname: registration.privacy_generation ? '' : snapshot.nickname,
     gender: normalizeGender(snapshot.gender),
     real_name_masked: snapshot.real_name_masked,
     phone_masked: maskPhone(snapshot.phone_masked),

@@ -326,6 +326,7 @@ exports.main = async (event = {}) => {
           createRequestId: event.createRequestId,
           activity: event.activity,
           reason: event.operationReason,
+          driverConsent: event.driverConsent,
         },
         new Date(),
       );

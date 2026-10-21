@@ -165,6 +165,7 @@ test('客户端上传 intent 先持久化，registerMedia 再原子登记并完�
   assert.equal(fixture.state.profile_media.get(mediaDocumentId(fileId)).status, 'unreferenced');
   assert.deepEqual(fixture.state.profile_media_imports.get(intent._id), {
     ...intent,
+    generation: 1,
     canonical_intent_id: canonicalIntent._id,
     canonical_path: canonicalIntent.cloud_path,
     sha256,
@@ -397,8 +398,8 @@ test('setAvatar 事务重读 owner registry 并原子激活新头像、降级旧
     avatar_file_id: nextFileId,
     avatar_source: 'wechat',
     avatar_revision: 1,
-    avatar_visibility: 'public',
-    avatar_visibility_revision: 1,
+    avatar_visibility: 'private',
+    avatar_visibility_revision: null,
     updated_at: db.serverDate(),
   });
   assert.deepEqual(db.sets, [{ name: 'profiles', id: owner, data: result }]);

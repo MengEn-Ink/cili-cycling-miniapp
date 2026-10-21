@@ -114,6 +114,8 @@ dispatching -> sent|retryable|failed_terminal|delivery_unknown
 
 ### `profile_media`
 
+资料删除相关字段为 `generation / privacy_request_id / privacy_generation`；`privacy_manual_review` 表示目标、引用或重试需要受控人工核验，不能视为对象已删除。个人媒体按类别与实际跨业务引用判断，不按 owner 删除活动或俱乐部图片。
+
 ```text
 _id: sha256(file_id)
 file_id, source_file_id, canonical_file_id
@@ -142,6 +144,30 @@ file_id, media_id, canonical_file_id
 status: prepared|orphaned|recovering|deleting|delete_confirming|completed|invalid|deleted|delete_failed|delete_failed_terminal
 cleanup_after, delete_lease_expires_at, retry_at
 ```
+
+### `privacy_requests`
+
+客户端读写均拒绝，仅 `profile` 的可信本人入口和配置的 `privacy-maintenance-worker` Timer 访问。
+
+```text
+_id: deletion-<sha256([trusted_openid, requestId])>
+owner_openid, kind: profile_deletion, policy_version, generation
+status: requested|processing|awaiting_media|restricted|retryable|manual_review|completed
+phase, cursors, attempts, retry_at, lease_id, lease_expires_at
+last_error_code, created_at, updated_at, completed_at, signed_url_not_after
+media_targets: deduplicated personal file references from profile and registration snapshots
+replay_epoch: private recovery-run fence (absent on normal deletion)
+```
+
+请求不保存姓名或电话原值；原媒体目标仅限受控内部恢复，不在 DTO 下发。`profiles` 保留 generation、删除请求 ID 与状态 sentinel，普通读取不创建资料。删除锁与资料写入、报名、审批、核销和候补晋升读取同一事务文档；取消/驳回仍可释放现有名额，不自动取消活动。
+
+报名实际 `profile_snapshot` 和非必要备注分批清除，并标记 `privacy_generation / privacy_public_suppressed`。清除快照的同一事务先去重持久登记头像、背景与照片目标；登记上限为 256 个，超限保留已抑制公开的原快照并转人工恢复，不能截断丢失目标。无可信 registry 或精确删除 intent 的孤儿目标保留在账本中，不能完成。资料查询失败或缺失时，公开投影不回退个人快照。未结束或结束时间未知的现场必要联络以 `privacy_contact` 暂存加密字段，只有审核管理员按该报名读取；活动结束或报名取消后继续清除。`restricted` 和 `manual_review` 均不是完成。角色、活动、占位与审计关联不在本次删除范围。
+
+**受控备份恢复：** 先隔离恢复环境并禁止用户流量，覆盖恢复最新持久删除账本，再由无 WX 用户身份的受控服务入口以配置 Timer 信封及 `ReplayRequestId` 重放已完成删除。重放建立私有 `replay_epoch`，旧媒体即使数据库标为 `deleted` 也须重新获得当前 epoch 的存储删除或可信不存在确认；媒体行用 `privacy_replay_epoch / privacy_deleted_epoch` 记录本轮登记与确认，历史租约回调不得写入新轮次，耗尽或歧义目标仍转人工处理。更高 generation 的 profile、报名和媒体保持不变，旧账本独立清理可归属的旧 generation 数据，且不能借用新资料联络字段。
+
+Timer 返回普通 `{ processed, failed }`；提供 `ReplayRequestId` 时另含 `replay`：`{ status: "queued"|"already_running", generation }` 或 `{ status: "blocked", code }`。`queued` 只是本轮入队，不是删除完成；阻塞码包括 `DELETION_NOT_FOUND`、`DELETION_NOT_COMPLETED`、`PROFILE_REQUEST_CONFLICT`、`MEDIA_TARGET_ACCOUNTING_LIMIT`，阻塞不改写目标请求或资料。每条请求完成并复核实际快照、当前 epoch 媒体删除与相应 sentinel/更新资料后才允许恢复流量；不得先公开旧快照。此入口不能替代人工核验、法律保留裁决或存储地址回验。
+
+`profile/requestDeletion` 确认 `policyVersion=2026-10-21`、`scope=self-profile-and-personal-media`、`confirmed=true` 与独立请求 ID。`deletionStatus` 返回持久阶段而非受理即成功；仅完成后 `recreate` 才递增 generation，此后所有个人写入必须携带当前 generation。已签发地址最长剩余有效期单独记录，停止新签发不等于对象删除或撤回他人保存的图片。
 
 该集合继续用于微信/自定义图片上传补偿，不再承担第三方头像导入。
 
@@ -205,7 +231,9 @@ state_hash, owner_openid, created_at, expires_at, consumed_at
 | route_previews | owner_openid ASC, expires_at ASC |
 | audit_logs | actor_openid ASC, created_at DESC |
 
-bootstrap 当前管理 14 集合、全拒绝规则与 36 索引。`route_previews`、`strava_credentials`、`oauth_states` 与 `club_applications` 使用客户端全拒绝 ACL。
+资料删除新增稳定游标索引：`privacy_requests(status, retry_at, _id)`、`registrations(openid, _id)`、`profile_media / profile_media_imports(owner_openid, _id)` 及两媒体集合的 `(privacy_request_id, _id)`，均为 ASC。
+
+bootstrap 当前管理 15 集合、全拒绝规则与 42 索引。`privacy_requests`、`route_previews`、`strava_credentials`、`oauth_states` 与 `club_applications` 使用客户端全拒绝 ACL。
 
 ## 部署后验证
 

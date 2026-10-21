@@ -60,13 +60,20 @@ const input = {
 function expectCode(fn, code) {
   assert.throws(fn, (error) => error instanceof DomainError && error.code === code);
 }
+const { withDriverAttestation } = require('../shared/consent-fixture');
 function store(
   current,
   admin = { _id: 'admin', enabled: true },
   registrations = [],
   { club, membership } = {},
 ) {
-  const state = { current, registrations, backfillReads: 0, saved: undefined, audits: [] };
+  const state = {
+    current: withDriverAttestation(current),
+    registrations,
+    backfillReads: 0,
+    saved: undefined,
+    audits: [],
+  };
   return {
     state,
     transaction: (work) =>
@@ -1928,7 +1935,7 @@ test('俱乐部 OWNER/ADMIN 审批活动使用 review_version CAS，重复 reque
     created_by: 'member',
     is_deleted: false,
   };
-  const state = { current, audits: [] };
+  const state = { current: withDriverAttestation(current), audits: [] };
   const reviewStore = {
     transaction: (work) =>
       work({

@@ -105,6 +105,21 @@
       ]
     },
     {
+      "name": "privacy-maintenance",
+      "handler": "index.main",
+      "runtime": "Nodejs20.19",
+      "timeout": 60,
+      "memorySize": 256,
+      "installDependency": true,
+      "triggers": [
+        {
+          "name": "privacy-maintenance-worker",
+          "type": "timer",
+          "config": "0 */1 * * * * *"
+        }
+      ]
+    },
+    {
       "name": "route-maintenance",
       "handler": "index.main",
       "runtime": "Nodejs20.19",

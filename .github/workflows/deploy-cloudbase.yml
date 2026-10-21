@@ -385,6 +385,7 @@ jobs:
           done < <(printf '%s\n' \
             profile \
             profile-media-cleanup \
+            privacy-maintenance \
             admin-review \
             activity-read \
             activity-admin \
@@ -405,6 +406,7 @@ jobs:
           done < <(printf '%s\n' \
             profile \
             profile-media-cleanup \
+            privacy-maintenance \
             admin-review \
             activity-read \
             activity-admin \

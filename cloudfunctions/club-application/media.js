@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('node:crypto');
+const { safeClubMedia } = require('./privacy-contract');
 
 const safeText = (value) => (typeof value === 'string' ? value.trim() : '');
 
@@ -59,8 +60,8 @@ async function resolveFileIds(cloud, fileIds, warning) {
         const url = safeText(item?.tempFileURL);
         if (batch.includes(fileId) && /^https:\/\//i.test(url)) urls.set(fileId, url);
       }
-    } catch (error) {
-      console.warn(warning, error?.message || error);
+    } catch {
+      console.warn(warning);
     }
   }
   return urls;
@@ -105,16 +106,22 @@ async function resolveApplicationCover(cloud, application, applicantOpenid = '')
 async function resolveJoinableClubAvatars(cloud, clubs) {
   const values = Array.isArray(clubs) ? clubs : [];
   const fileIds = values.flatMap((club) => [
-    safeText(club?.avatar_url),
-    safeText(club?.cover_file_id),
+    safeClubMedia(safeText(club?.avatar_url)),
+    safeClubMedia(safeText(club?.cover_file_id)),
   ]);
   const urls = await resolveFileIds(cloud, fileIds, '[club-application] resolve club media failed');
   const publicUrl = (value) => {
-    const fileId = safeText(value);
+    const fileId = safeClubMedia(safeText(value));
     return /^https:\/\//i.test(fileId) ? fileId : urls.get(fileId) || '';
   };
   return values.map((club) => ({
     ...club,
+    ...(club?.avatar_file_id === undefined
+      ? {}
+      : { avatar_file_id: safeClubMedia(club.avatar_file_id) }),
+    ...(club?.cover_file_id === undefined
+      ? {}
+      : { cover_file_id: safeClubMedia(club.cover_file_id) }),
     avatar_url: publicUrl(club?.avatar_url),
     cover_url: publicUrl(club?.cover_file_id),
   }));

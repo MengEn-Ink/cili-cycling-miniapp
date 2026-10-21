@@ -19,10 +19,13 @@ const {
 const { buildCapabilityCard } = require('./capability-card');
 const { createProfileStore, missing: isNotFound } = require('./store');
 const { canonicalizeClientMedia } = require('./media-upload');
+const { createPrivacyService } = require('./privacy');
+const { assertProfileWritable, visibleProfile } = require('./privacy-contract');
 const { loadClubMembershipSummaries, resolveClubMembershipAvatars } = require('./club-memberships');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const profileStore = createProfileStore(db);
+const privacyService = createPrivacyService(db);
 const ok = (data) => ({ ok: true, data });
 async function maybeGet(collection, id) {
   try {
@@ -33,7 +36,7 @@ async function maybeGet(collection, id) {
   }
 }
 async function getDoc(openid) {
-  return (await maybeGet(db.collection('profiles'), openid)) || {};
+  return visibleProfile((await maybeGet(db.collection('profiles'), openid)) || {});
 }
 function profileMediaIds(...profiles) {
   const ids = [];
@@ -62,6 +65,7 @@ async function updateProfile(openid, event) {
     const profiles = transaction.collection('profiles');
     const media = transaction.collection('profile_media');
     const current = (await maybeGet(profiles, openid)) || {};
+    assertProfileWritable(current, event.generation);
     const update = buildUpdate(event, process.env.PII_ENCRYPTION_KEY, current);
     const records = await getMediaRecords(media, current, update);
     const validated = validateMediaUpdate(
@@ -123,6 +127,7 @@ async function registerMedia(openid, event) {
     category: protocol.category,
     origin,
     requestId: event.requestId,
+    generation: event.generation,
     mediaSecret: process.env.PROFILE_MEDIA_PATH_SECRET,
     getTempFileURL: (input) => cloud.getTempFileURL(input),
     uploadFile: (input) => cloud.uploadFile(input),
@@ -134,6 +139,15 @@ exports.main = async (event = {}) => {
     keyFrom(process.env.PII_ENCRYPTION_KEY);
     const { OPENID } = cloud.getWXContext();
     if (!OPENID) throw Object.assign(new Error('无法取得微信身份'), { code: 'UNAUTHENTICATED' });
+    if (event.action === 'requestDeletion')
+      return ok(await privacyService.requestDeletion(OPENID, event));
+    if (event.action === 'deletionStatus')
+      return ok(await privacyService.deletionStatus(OPENID, event));
+    if (event.action === 'recreate') return ok(await privacyService.recreate(OPENID, event));
+    if (event.action === 'publicConsentStatus')
+      return ok(await privacyService.publicConsentStatus(OPENID, event));
+    if (event.action === 'setPublicConsent')
+      return ok(await privacyService.setPublicConsent(OPENID, event));
     if (event.action === 'get') {
       const [profile, clubMemberships] = await Promise.all([
         getDoc(OPENID),
@@ -182,8 +196,13 @@ exports.main = async (event = {}) => {
         new Date(),
         { category, request_id: event.requestId },
       );
-      await profileStore.prepareClientUpload(OPENID, intent, process.env.PROFILE_MEDIA_PATH_SECRET);
-      return ok(issued);
+      const bound = await profileStore.prepareClientUpload(
+        OPENID,
+        intent,
+        process.env.PROFILE_MEDIA_PATH_SECRET,
+        event.generation,
+      );
+      return ok({ ...issued, generation: bound.generation });
     }
     if (event.action === 'registerMedia') {
       if (Object.prototype.hasOwnProperty.call(event, 'openid'))
@@ -205,6 +224,8 @@ exports.main = async (event = {}) => {
             source,
             event.fileId,
             process.env.PROFILE_MEDIA_PATH_SECRET,
+            new Date(),
+            event.generation,
           ),
           process.env.PII_ENCRYPTION_KEY,
         ),
@@ -225,7 +246,10 @@ exports.main = async (event = {}) => {
         throw Object.assign(new Error('微信手机号授权失败'), { code: 'PHONE_LOOKUP_FAILED' });
       const fields = phoneUpdate(phone, process.env.PII_ENCRYPTION_KEY, 'wechat');
       return ok(
-        response(await profileStore.mergePhone(OPENID, fields), process.env.PII_ENCRYPTION_KEY),
+        response(
+          await profileStore.mergePhone(OPENID, fields, event.generation),
+          process.env.PII_ENCRYPTION_KEY,
+        ),
       );
     }
     throw Object.assign(new Error('未知操作'), { code: 'UNKNOWN_ACTION' });

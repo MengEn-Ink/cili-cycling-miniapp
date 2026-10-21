@@ -32,7 +32,9 @@
 
 当前不包含在线支付、第三方账号资料同步、管理员白名单维护界面、报名名单导出或多俱乐部租户体系。Strava OAuth 仅用于活动管理员按官方路线 URL 导入 GPX，凭证只保存在云端；手动上传 GPX 始终保留。完整产品边界见 [产品需求与当前能力](docs/requirements-design.md)；路线分析的公开数据平台、第三方 API、开源组件与分阶段架构方案见 [路线分析数据平台与开源方案](docs/route-analysis-data-platform-plan.md)。
 
-公开骑手头像默认展示，但仍只为 owner/current registry 完整匹配的 canonical 媒体签发临时地址；来源、归属、状态、内容元数据或签名校验失败时一律隐藏头像。代码和自动化验证不代表目标环境已经部署，仍须按对应不可变提交核对云函数版本、同值 `PROFILE_MEDIA_PATH_SECRET` 和真实 smoke，证据缺失时不得宣称生产就绪。
+本阶段服务端默认关闭昵称和个人图片公开展示，只有本人独立同意且绑定当前资料版本后才允许公开投影；个人图片还须通过 owner/current registry 校验。资料删除使用持久任务、generation 写锁及分批补偿。客户端同意与删除入口、Strava 撤销、内容审核及部署验收尚未完成，现有界面不能视为已接入这些服务端能力。代码和自动化验证不代表目标环境已经部署，仍须按对应不可变提交核对云函数版本、同值 `PROFILE_MEDIA_PATH_SECRET` 和真实 smoke。
+
+正式版上架准备见[主体、备案、类目、提审与用户权益材料包](docs/compliance/2026-10-21/README.md)。设计已获批准；资料删除和公开同意通过本地独立复审，后台主体/备案/类目/联系字段与正式运营期限仍待核验。隐私补充说明保持未生效草稿，阶段提交不能作为正式版已完成合规验收的依据。
 
 ## 技术栈
 
@@ -175,7 +177,7 @@ npm run cloudbase:apply
 npm run cloudbase:verify
 ```
 
-bootstrap 当前管理 12 个集合、33 个业务索引和全拒绝客户端数据库规则；受管定义包含活动首页与管理分页、我的行程、通知 Outbox、媒体清理、俱乐部创建申请以及 GPX 可信预览集合 `route_previews`。bootstrap 本身不创建业务活动，也不应用存储规则；生产 GitHub Actions 在基础设施对账阶段单独使用锁定的 CloudBase CLI 应用并回读 `cloudstorage.rules.json`。完整顺序：
+bootstrap 当前管理 15 个集合、42 个业务索引和全拒绝客户端数据库规则；受管定义包含活动首页与管理分页、我的行程、通知 Outbox、媒体清理、俱乐部创建申请、GPX 可信预览集合 `route_previews` 及持久权益记录 `privacy_requests`。bootstrap 本身不创建业务活动，也不应用存储规则；生产 GitHub Actions 在基础设施对账阶段单独使用锁定的 CloudBase CLI 应用并回读 `cloudstorage.rules.json`。完整顺序：
 
 1. 审阅并执行 CloudBase plan/apply/verify。
 2. 生产工作流以 `CUSTOM` ACL 应用 `cloudstorage.rules.json`，随后执行 `storage rules get --json`；云端 `read` / `write` 任一项与仓库不完全一致都会阻断。`read: false` 保持不变，私有文件只由服务端签发临时 URL。

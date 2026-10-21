@@ -52,6 +52,7 @@ function fixture(seed = {}) {
       avatar_file_id: 'cloud://avatar',
       background_photo: { file_id: 'cloud://bg', category: 'ride' },
       sensitive_status: { real_name: true, phone_verified: true, emergency_phone: true },
+      ...seed.profile,
     }),
     getRegistration: async (id) => state.registrations.get(id),
     getStravaCredential: async () => ({
@@ -122,6 +123,40 @@ test('公开模式普通用户有名额直接通过，审核模式与旧数据�
 
   const legacy = fixture();
   assert.equal((await submit(legacy, 'member-legacy')).status, 'pending');
+});
+
+test('普通成员拒绝公开昵称和可选照片仍可报名，本人及审核资料保持可用', async () => {
+  const privateProfile = {
+    generation: 2,
+    nickname: 'Private nickname',
+    avatar_visibility: 'private',
+    background_photo: null,
+    photos: [],
+    public_consent: {
+      nickname: { consented: false },
+      media: { consented: false },
+    },
+  };
+  for (const mode of ['open', 'approval']) {
+    const store = fixture({ activity: { registration_mode: mode }, profile: privateProfile });
+    const dto = await submit(store, 'ordinary-member', { generation: 2 });
+    assert.equal(dto.status, mode === 'open' ? 'approved' : 'pending');
+    assert.equal(dto.profile_snapshot.nickname, privateProfile.nickname);
+    assert.equal(store.state.registrations.get(dto._id).profile_generation, 2);
+    if (mode === 'approval') {
+      const reviewed = await reviewRegistration(
+        store,
+        {
+          openid: 'admin',
+          registrationId: dto._id,
+          action: 'approve',
+        },
+        now,
+      );
+      assert.equal(reviewed.status, 'approved');
+      assert.equal(reviewed.profile_snapshot.nickname, privateProfile.nickname);
+    }
+  }
 });
 
 test('正常报名占位，满员报名进入 waiting 且通知幂等键稳定', async () => {

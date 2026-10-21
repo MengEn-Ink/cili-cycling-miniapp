@@ -199,3 +199,92 @@ test('俱乐部保存激活不同用途的 staged canonical 媒体', async () =>
   );
   assert.deepEqual(activated, ['club-avatar', 'club-cover']);
 });
+
+test('club response cannot re-sign personal profile assets from an old club snapshot or log private errors', async () => {
+  const personal =
+    'cloud://env/profile-canonical/' +
+    'a'.repeat(32) +
+    '/profile-avatar/' +
+    'b'.repeat(64) +
+    '/' +
+    'c'.repeat(64) +
+    '.jpg';
+  const calls = [];
+  const result = await resolveJoinableClubAvatars(
+    {
+      getTempFileURL: async ({ fileList }) => {
+        calls.push(fileList);
+        return {
+          fileList: fileList.map((fileID) => ({
+            fileID,
+            status: 0,
+            tempFileURL: 'https://temporary.example/private.jpg',
+          })),
+        };
+      },
+    },
+    [{ id: 'club', avatar_url: personal, cover_file_id: personal }],
+  );
+  assert.deepEqual(calls, []);
+  assert.equal(result[0].avatar_url, '');
+  assert.equal(result[0].cover_url, '');
+  const warnings = [];
+  const original = console.warn;
+  console.warn = (...args) => warnings.push(args);
+  try {
+    await resolveJoinableClubAvatars(
+      {
+        getTempFileURL: async () => {
+          throw new Error('private-file-id-and-phone-13812345678');
+        },
+      },
+      [{ id: 'club', avatar_url: 'cloud://env/clubs/avatar.jpg' }],
+    );
+  } finally {
+    console.warn = original;
+  }
+  assert.doesNotMatch(JSON.stringify(warnings), /13812345678|private-file/);
+});
+
+test('club response rejects legacy personal uploads and encoded personal URLs but keeps club media', async () => {
+  const alias = 'a'.repeat(32);
+  const privatePaths = [
+    `cloud://env/profiles/${alias}/123e4567-e89b-42d3-a456-426614174000.jpg`,
+    `cloud://env/profiles/${alias}/other/123e4567-e89b-42d3-a456-426614174000.jpg`,
+    `https://temporary.example/profiles/${alias}/ride/photo.jpg`,
+    `https://temporary.example/%70rofiles/${alias}/profile-avatar/photo.jpg`,
+  ];
+  const clubMedia = `cloud://env/profiles/${alias}/club-avatar/photo.jpg`;
+  const calls = [];
+  const result = await resolveJoinableClubAvatars(
+    {
+      getTempFileURL: async ({ fileList }) => {
+        calls.push(fileList);
+        return {
+          fileList: fileList.map((fileID) => ({
+            fileID,
+            status: 0,
+            tempFileURL: 'https://temporary.example/club.jpg',
+          })),
+        };
+      },
+    },
+    [
+      ...privatePaths.map((value, index) => ({
+        id: `private-${index}`,
+        avatar_url: value,
+        avatar_file_id: value,
+        cover_file_id: value,
+      })),
+      { id: 'club', avatar_url: clubMedia },
+    ],
+  );
+  assert.deepEqual(calls, [[clubMedia]]);
+  for (const value of result.slice(0, privatePaths.length)) {
+    assert.equal(value.avatar_url, '');
+    assert.equal(value.avatar_file_id, '');
+    assert.equal(value.cover_file_id, '');
+    assert.equal(value.cover_url, '');
+  }
+  assert.equal(result.at(-1).avatar_url, 'https://temporary.example/club.jpg');
+});

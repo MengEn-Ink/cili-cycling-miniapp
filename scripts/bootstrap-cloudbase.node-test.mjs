@@ -254,7 +254,7 @@ test('活动首页 planner 索引纳入 bootstrap exact plan 与 verify', () => 
     INDEXES.filter((index) => index.name.startsWith('activities_public_event_')),
     [PUBLIC_EVENT_START, PUBLIC_EVENT_END],
   );
-  assert.equal(INDEXES.length, 36);
+  assert.equal(INDEXES.length, 42);
 
   const missing = completeState();
   missing.indexes.set(
@@ -460,8 +460,8 @@ test('保留可信 GPX 预览与最小 Strava OAuth 集合及清理索引', () =
       unique: false,
     },
   );
-  assert.equal(COLLECTIONS.length, 14);
-  assert.equal(INDEXES.length, 36);
+  assert.equal(COLLECTIONS.length, 15);
+  assert.equal(INDEXES.length, 42);
   const complete = completeState();
   assert.deepEqual(complete.rules.get('route_previews'), {
     AclTag: 'CUSTOM',
@@ -531,14 +531,14 @@ test('notification_outbox 使用租约扫描索引并保持客户端全拒绝', 
   );
 });
 
-test('CloudBase schema 文档列出 notification_outbox 和活动时间线索引并与 33 条总数一致', () => {
+test('CloudBase schema 文档列出 notification_outbox 和活动时间线索引并与 42 条总数一致', () => {
   const schema = readFileSync(new URL('../docs/cloudbase-schema.md', import.meta.url), 'utf8');
   assert.match(schema, /notification_outbox \| status ASC, attempts ASC, lease_expires_at ASC/);
   assert.match(schema, /notification_outbox \| target_openid ASC, created_at DESC/);
   assert.match(schema, /notification_outbox \| status ASC, attempts ASC, next_retry_at ASC/);
   assert.match(schema, /activities \| status ASC, event_start ASC, _id ASC, event_end ASC/);
   assert.match(schema, /activities \| status ASC, event_end DESC, _id DESC, event_start DESC/);
-  assert.match(schema, /全拒绝规则与 36 索引/);
+  assert.match(schema, /全拒绝规则与 42 索引/);
 });
 
 test('profile_media 使用 owner/status 与过期清理索引并保持客户端全拒绝', () => {
@@ -578,8 +578,8 @@ test('profile_media 使用 owner/status 与过期清理索引并保持客户端�
     ['status', 1],
     ['retry_at', 1],
   ]);
-  assert.equal(COLLECTIONS.length, 14);
-  assert.equal(INDEXES.length, 36);
+  assert.equal(COLLECTIONS.length, 15);
+  assert.equal(INDEXES.length, 42);
   assert.deepEqual(DENY_RULE, { read: false, write: false });
 });
 
@@ -613,7 +613,7 @@ test('profile_media_imports 使用全拒绝 ACL 与完整 cleanup 扫描索引',
   assert.match(schema, /profile_media_imports \| status ASC, cleanup_after ASC/);
   assert.match(schema, /profile_media_imports \| status ASC, delete_lease_expires_at ASC/);
   assert.match(schema, /profile_media_imports \| status ASC, retry_at ASC/);
-  assert.match(schema, /14 集合、全拒绝规则与 36 索引/);
+  assert.match(schema, /15 集合、全拒绝规则与 42 索引/);
   assert.match(schema, /avatar_revision/);
   assert.match(schema, /origin: wechat\|custom/);
   assert.doesNotMatch(schema, /avatar_url_fingerprint|avatar_import_lease_expires_at/);
@@ -652,22 +652,26 @@ test('云存储规则只允许 owner 写统一媒体 source 与 GPX，canonical 
 test('README 与部署包断言包含 profile_media_imports 且不再包含第三方头像导入', () => {
   const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
   const verifier = readFileSync(new URL('./verify-cloud-packages.mjs', import.meta.url), 'utf8');
-  assert.match(readme, /12 个集合、33 个业务索引/);
+  assert.match(readme, new RegExp(`${COLLECTIONS.length} 个集合、${INDEXES.length} 个业务索引`));
+  assert.ok(COLLECTIONS.includes('profile_media_imports'));
   assert.doesNotMatch(verifier, /avatar-import\.js/);
 });
 
 function assertClosedDocumentationGaps({ readme, requirements, seedGuide }) {
-  assert.match(readme, /公开骑手头像默认展示[^。]*canonical 媒体签发临时地址/);
-  assert.doesNotMatch(readme, /显式公开授权|授权 revision 与当前头像 revision 一致/);
-  assert.match(requirements, /新设置头像会同步写入 `avatar_visibility=public` 及当前 revision/);
-  assert.match(requirements, /活动详情不再以历史可见性字段作为展示门槛/);
-  assert.doesNotMatch(requirements, /存量资料默认按私有处理|必须由用户主动公开/);
+  assert.match(readme, /服务端默认关闭昵称和个人图片公开展示/);
+  assert.match(readme, /只有本人独立同意且绑定当前资料版本后才允许公开投影/);
+  assert.match(requirements, /普通保存及新设置头像不授予公开同意/);
+  assert.match(requirements, /撤回或变更字段后旧同意失效/);
+  assert.doesNotMatch(readme, /公开骑手头像默认展示/);
+  assert.doesNotMatch(requirements, /新设置头像会同步写入 `avatar_visibility=public`/);
   assert.doesNotMatch(
     requirements,
     /route_previews[^。]{0,50}(?:尚未|仍未|并不|没有|未纳入|手工创建)[^。]{0,50}(?:bootstrap|管理)/,
   );
-  // 本切片按范围约束不修改 docs，文档基线由后续文档任务统一更新。
-  assert.match(seedGuide, /12 个核心集合、33 个业务索引/);
+  assert.match(
+    seedGuide,
+    new RegExp(`${COLLECTIONS.length} 个核心集合、${INDEXES.length} 个业务索引`),
+  );
   assert.match(
     seedGuide,
     /`route_previews` 已由 bootstrap[^。]*管理，并纳入[^。]*`cloudbase:verify`/,
@@ -699,7 +703,10 @@ test('文档契约测试拒绝已关闭缺口的同义否定表述', () => {
 
   assert.throws(() =>
     assertClosedDocumentationGaps({
-      readme: readme.replace('公开骑手头像默认展示', '公开骑手头像仍未默认展示'),
+      readme: readme.replace(
+        '只有本人独立同意且绑定当前资料版本后才允许公开投影',
+        '普通保存即可公开投影',
+      ),
       requirements,
       seedGuide,
     }),
@@ -707,7 +714,7 @@ test('文档契约测试拒绝已关闭缺口的同义否定表述', () => {
   assert.throws(() =>
     assertClosedDocumentationGaps({
       readme,
-      requirements: requirements.replace('新设置头像会同步写入', '新设置头像仍未同步写入'),
+      requirements: requirements.replace('不授予公开同意', '授予公开同意'),
       seedGuide,
     }),
   );

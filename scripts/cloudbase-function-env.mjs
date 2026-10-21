@@ -17,6 +17,7 @@ export const PII_SECRET_CONSUMERS = Object.freeze(['profile', 'admin-review']);
 export const MEDIA_SECRET_CONSUMERS = Object.freeze([
   'profile',
   'profile-media-cleanup',
+  'privacy-maintenance',
   'admin-review',
   'activity-read',
   'activity-admin',

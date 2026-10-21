@@ -14,6 +14,7 @@ const CLOUD_FUNCTIONS = [
   'notification-send',
   'profile',
   'profile-media-cleanup',
+  'privacy-maintenance',
   'route-maintenance',
 ];
 

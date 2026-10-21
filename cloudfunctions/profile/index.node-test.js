@@ -143,6 +143,7 @@ test('mediaUploadPath 在把 owner-bound path 返回客户端前持久化 cleanu
   assert.deepEqual(intents[0], {
     _id: intents[0]._id,
     kind: 'client_upload',
+    generation: 1,
     owner_openid: owner,
     cloud_path: result.data.cloud_path,
     category: 'profile-avatar',
@@ -218,4 +219,31 @@ test('新媒体协议授权与 finalize 都拒绝缺半字段及非法 requestId
     assert.equal(invalid.error.code, 'MEDIA_REQUEST_ID_INVALID');
   }
   assert.equal((fixture.state.profile_media_imports || new Map()).size, 0);
+});
+
+test('runtime consent actions use trusted caller and preserve deletion/generation locks', async () => {
+  const fixture = statefulDatabase();
+  fixture.state.profiles = new Map([
+    ['owner-consent', { _id: 'owner-consent', generation: 2, nickname: 'Private' }],
+    ['other', { _id: 'other', generation: 2, nickname: 'Other' }],
+  ]);
+  const main = loadMain('owner-consent', fixture.db);
+  const status = await main({ action: 'publicConsentStatus' });
+  assert.equal(status.ok, true);
+  assert.equal(status.data.nickname.consented, false);
+  const input = {
+    action: 'setPublicConsent',
+    generation: 2,
+    policyVersion: status.data.policyVersion,
+    nickname: { consented: true, version: status.data.nickname.version },
+  };
+  assert.equal((await main({ ...input, openid: 'other' })).error.code, 'FORBIDDEN_FIELD');
+  assert.equal((await main(input)).data.nickname.consented, true);
+  assert.equal(fixture.state.profiles.get('other').public_consent, undefined);
+  fixture.state.profiles.get('owner-consent').deletion_status = 'requested';
+  assert.equal(
+    (await main({ ...input, nickname: { consented: false } })).error.code,
+    'PROFILE_DELETION_LOCKED',
+  );
+  assert.equal((await main({ action: 'publicConsentStatus' })).data.nickname.consented, false);
 });

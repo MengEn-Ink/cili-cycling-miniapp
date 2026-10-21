@@ -51,7 +51,13 @@ test('prepare 脚本变更与共享代码使用同一消费者边界', () => {
   assert.deepEqual(createCloudBaseDeployDecision(['scripts/prepare-cloudfunctions.mjs'], config), {
     shouldDeploy: true,
     applyInfrastructure: false,
-    functions: ['activity-read', 'registration', 'admin-review'],
+    functions: [
+      'activity-read',
+      'registration',
+      'admin-review',
+      'profile',
+      'profile-media-cleanup',
+    ],
   });
 });
 

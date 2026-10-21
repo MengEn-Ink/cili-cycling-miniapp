@@ -6,9 +6,15 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const SHARED_CONSUMERS = Object.freeze(['activity-read', 'registration', 'admin-review']);
+const PRIVACY_CONSUMERS = Object.freeze([
+  'profile',
+  'privacy-maintenance',
+  'profile-media-cleanup',
+]);
 const MEDIA_SECRET_CONSUMERS = Object.freeze([
   'profile',
   'profile-media-cleanup',
+  'privacy-maintenance',
   'admin-review',
   'activity-read',
   'activity-admin',
@@ -68,14 +74,17 @@ export function createCloudBaseDeployDecision(changedPaths, config) {
     }
 
     if (file === 'scripts/prepare-cloudfunctions.mjs') {
-      [...SHARED_CONSUMERS, ...STRAVA_CONFIG_CONSUMERS].forEach((name) => {
+      [...SHARED_CONSUMERS, ...PRIVACY_CONSUMERS, ...STRAVA_CONFIG_CONSUMERS].forEach((name) => {
         if (knownFunctions.has(name)) selected.add(name);
       });
       continue;
     }
 
     if (file.startsWith('cloudfunctions/shared/')) {
-      SHARED_CONSUMERS.forEach((name) => {
+      [
+        ...SHARED_CONSUMERS,
+        ...(file === 'cloudfunctions/shared/privacy.js' ? PRIVACY_CONSUMERS : []),
+      ].forEach((name) => {
         if (knownFunctions.has(name)) selected.add(name);
       });
       continue;
@@ -85,6 +94,14 @@ export function createCloudBaseDeployDecision(changedPaths, config) {
       selected.add('strava-bridge');
     if (file === 'cloudfunctions/strava-bridge/core.js' && knownFunctions.has('strava-callback'))
       selected.add('strava-callback');
+    if (
+      [
+        'cloudfunctions/profile-media-cleanup/core.js',
+        'cloudfunctions/profile-media-cleanup/store.js',
+      ].includes(file) &&
+      knownFunctions.has('privacy-maintenance')
+    )
+      selected.add('privacy-maintenance');
     const match = /^cloudfunctions\/([^/]+)\//.exec(file);
     if (match && knownFunctions.has(match[1])) selected.add(match[1]);
   }

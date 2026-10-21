@@ -12,6 +12,7 @@ export const COLLECTIONS = Object.freeze([
   'activities',
   'registrations',
   'profiles',
+  'privacy_requests',
   'admins',
   'audit_logs',
   'notification_outbox',
@@ -26,6 +27,31 @@ export const COLLECTIONS = Object.freeze([
 ]);
 
 export const INDEXES = Object.freeze([
+  {
+    collection: 'privacy_requests',
+    name: 'privacy_requests_status_retry_id',
+    keys: [
+      ['status', 1],
+      ['retry_at', 1],
+      ['_id', 1],
+    ],
+    unique: false,
+  },
+  ...[
+    ['registrations', 'openid'],
+    ['profile_media', 'owner_openid'],
+    ['profile_media_imports', 'owner_openid'],
+    ['profile_media', 'privacy_request_id'],
+    ['profile_media_imports', 'privacy_request_id'],
+  ].map(([collection, field]) => ({
+    collection,
+    name: `${collection}_${field}_privacy_cursor`,
+    keys: [
+      [field, 1],
+      ['_id', 1],
+    ],
+    unique: false,
+  })),
   {
     collection: 'activities',
     name: 'activities_public_event_start',
