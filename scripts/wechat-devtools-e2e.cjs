@@ -42,6 +42,87 @@ function isHttps(value) {
   return /^https:\/\//i.test(value || '');
 }
 
+function opaqueColorHex(value) {
+  if (typeof value !== 'string') return null;
+  if (/^#[\da-f]{6}$/i.test(value)) return value.toLowerCase();
+  const match = value.match(/^rgba?\(\s*(\d+),\s*(\d+),\s*(\d+)(?:,\s*(1(?:\.0+)?))?\s*\)$/);
+  if (!match) return null;
+  const channels = match.slice(1, 4).map(Number);
+  if (channels.some((channel) => channel > 255)) return null;
+  return `#${channels.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+}
+
+function attendeeMediaSummary(attendees) {
+  const safe = attendees.every((item) =>
+    [item.avatarUrl, item.backgroundUrl].every((url) => !url || isHttps(url)),
+  );
+  return {
+    safe,
+    ready: safe && attendees.some((item) => isHttps(item.avatarUrl) && isHttps(item.backgroundUrl)),
+    count: attendees.length,
+    avatarHttps: attendees.filter((item) => isHttps(item.avatarUrl)).length,
+    backgroundHttps: attendees.filter((item) => isHttps(item.backgroundUrl)).length,
+  };
+}
+
+function recordAttendeeMediaReadiness(report, attendees) {
+  const summary = attendeeMediaSummary(attendees);
+  const blocker = 'PUBLIC_ATTENDEE_MEDIA_SAMPLE_NOT_READY';
+  if (!summary.ready && !report.blockers.includes(blocker)) report.blockers.push(blocker);
+  return summary;
+}
+
+function additionalReadOnlyRoutes(activityId) {
+  return [
+    {
+      url: `/pages/route-analysis/index?id=${encodeURIComponent(activityId || '')}`,
+      screenshot: '15-route-analysis.png',
+      isReady: (data) => !data.loading,
+      error: (data) => data.error,
+    },
+    {
+      url: '/pages/club/center/index',
+      screenshot: '16-club-center.png',
+      isReady: (data) =>
+        data.mode && data.mode !== 'loading' && (data.loadError || data.activityMode !== 'loading'),
+      error: (data) => data.loadError || data.activityError,
+    },
+    {
+      url: '/pages/admin/club-applications/index',
+      screenshot: '17-admin-club.png',
+      isReady: (data) => data.mode && data.mode !== 'loading',
+      error: (data) => data.error,
+    },
+    {
+      url: '/pages/admin/club-application-detail/index?mode=edit',
+      screenshot: '18-admin-club-edit.png',
+      isReady: (data) => data.pageState && data.pageState !== 'loading',
+      error: (data) => data.loadError,
+    },
+  ];
+}
+
+async function captureRouteScreenshot({ miniProgram, path, report }) {
+  const route = (await miniProgram.currentPage()).path;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    if ((await miniProgram.currentPage()).path !== route) {
+      throw new Error('SCREENSHOT_ROUTE_CHANGED');
+    }
+    try {
+      await miniProgram.screenshot({ path });
+    } catch {
+      if (attempt === 1) throw new Error(`SCREENSHOT_FAILED:${route}`);
+      report.captureRetries.push({ route });
+      // 原生截图接口刚失败时短暂让出渲染线程；只读截图最多重试一次。
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      continue;
+    }
+    if ((await miniProgram.currentPage()).path !== route)
+      throw new Error('SCREENSHOT_ROUTE_CHANGED');
+    return route;
+  }
+}
+
 function isRenderableMedia(value) {
   return /^(?:https?|wxfile):\/\//i.test(value || '');
 }
@@ -60,6 +141,7 @@ async function main() {
   const { runWithReport } = await import('./e2e-report.mjs');
   const { relaunchWhenReady, waitForPageReady } = await import('./p0-journey-driver.mjs');
   const { classifyUiPath, digestFiles } = await import('./ui-sync-policy.mjs');
+  const { contrastRatio } = await import('./check-design-contract.mjs');
   if (process.platform !== 'darwin') throw new Error('微信开发者工具 E2E 目前仅支持 macOS。');
   if (!fs.existsSync(cliPath)) throw new Error(`未找到微信开发者工具 CLI：${cliPath}`);
   if (!fs.existsSync(path.join(projectPath, 'project.config.json'))) {
@@ -97,6 +179,7 @@ async function main() {
       new Map(uiFiles.map((file) => [file, fs.readFileSync(path.join(projectPath, file))])),
     ),
     routes: [],
+    captureRetries: [],
     blockers: [],
     notCovered: ['ordinary-member-write-journey', 'ios-physical-device', 'android-physical-device'],
     checks: [],
@@ -108,9 +191,13 @@ async function main() {
     console.log(`${ok ? 'PASS' : 'FAIL'} ${name} ${JSON.stringify(detail || {})}`);
   };
   const screenshot = async (miniProgram, file) => {
-    const current = await miniProgram.currentPage();
-    await miniProgram.screenshot({ path: path.join(outputPath, file) });
-    result.routes.push({ path: current.path, screenshot: file });
+    result.lastStep = `screenshot:${file}`;
+    const route = await captureRouteScreenshot({
+      miniProgram,
+      path: path.join(outputPath, file),
+      report: result,
+    });
+    result.routes.push({ path: route, screenshot: file });
   };
   const waitLoaded = async (expectedPath, predicate = () => true) => {
     let currentPage;
@@ -131,6 +218,7 @@ async function main() {
   };
   const relaunchLoaded = (url, predicate = () => true) => {
     const expectedPath = url.split(/[?#]/, 1)[0].replace(/^\/+/, '');
+    result.lastStep = `navigate:${expectedPath}`;
     return relaunchWhenReady({
       miniProgram,
       url,
@@ -223,11 +311,14 @@ async function main() {
         await screenshot(miniProgram, '01b-activity-edit.png');
         const imageAction = await page.$('.image-action');
         if (imageAction) {
-          check(
-            '图片删除按钮具有明确深色背景与白字',
-            (await imageAction.style('background-color')) === 'rgb(23, 23, 23)' &&
-              (await imageAction.style('color')) === 'rgb(255, 255, 255)',
-          );
+          const background = opaqueColorHex(await imageAction.style('background-color'));
+          const foreground = opaqueColorHex(await imageAction.style('color'));
+          const ratio = background && foreground ? contrastRatio(background, foreground) : 0;
+          check('图片删除按钮实际文字对比度至少 4.5:1', ratio >= 4.5, {
+            background,
+            foreground,
+            ratio: Number(ratio.toFixed(2)),
+          });
         }
       }
 
@@ -266,27 +357,25 @@ async function main() {
         });
         const attendees = data.attendees || [];
         await screenshot(miniProgram, '03-detail.png');
-        check(
-          '报名人员头像与骑行名片背景均为服务端 HTTPS 地址',
-          attendees.length > 0 &&
-            attendees.every((item) => isHttps(item.avatarUrl) && isHttps(item.backgroundUrl)),
-          {
-            count: attendees.length,
-            avatarHttps: attendees.filter((item) => isHttps(item.avatarUrl)).length,
-            backgroundHttps: attendees.filter((item) => isHttps(item.backgroundUrl)).length,
-          },
+        const media = recordAttendeeMediaReadiness(result, attendees);
+        check('公开报名人员媒体仅返回 HTTPS 地址或安全空态', media.safe, media);
+        const mediaIndex = attendees.findIndex(
+          (item) => isHttps(item.avatarUrl) && isHttps(item.backgroundUrl),
         );
-        const attendeeButton = await page.$('.attendee-mini-card');
+        const attendeeButtons = await page.$$('.attendee-mini-card');
+        const attendeeButton = attendeeButtons[Math.max(0, mediaIndex)];
         if (attendeeButton) {
           await attendeeButton.tap();
           page = await waitLoaded(page.path, (value) => Boolean(value.selectedAttendee));
           data = await page.data();
         }
+        const selectedMedia = recordAttendeeMediaReadiness(
+          result,
+          data.selectedAttendee ? [data.selectedAttendee] : [],
+        );
         check(
-          '报名人员骑行名片弹层打开且图片地址有效',
-          Boolean(data.selectedAttendee) &&
-            isHttps(data.selectedAttendee?.avatarUrl) &&
-            isHttps(data.selectedAttendee?.backgroundUrl),
+          '公开骑行名片弹层打开且媒体地址安全',
+          Boolean(data.selectedAttendee) && selectedMedia.safe,
           {
             selected: Boolean(data.selectedAttendee),
             avatarHttps: isHttps(data.selectedAttendee?.avatarUrl),
@@ -302,6 +391,8 @@ async function main() {
             height: image.height,
           });
         }
+        data = await page.data();
+        recordAttendeeMediaReadiness(result, data.selectedAttendee ? [data.selectedAttendee] : []);
         await screenshot(miniProgram, '03-detail-attendee-card.png');
       }
 
@@ -449,6 +540,15 @@ async function main() {
       } else {
         check('空白发布表单主操作存在', false);
       }
+      for (const route of additionalReadOnlyRoutes(activity?.id)) {
+        page = await relaunchLoaded(route.url, route.isReady);
+        data = await page.data();
+        check(`${page.path} 只读页面已就绪`, !route.error(data), {
+          state: data.mode || data.pageState || (data.empty ? 'empty' : 'ready'),
+          error: route.error(data) || null,
+        });
+        await screenshot(miniProgram, route.screenshot);
+      }
       const expected = expandAppRoutes(appConfig);
       const visited = new Set(result.routes.map((route) => route.path));
       check(
@@ -464,7 +564,17 @@ async function main() {
   if (result.outcome !== 'passed') process.exitCode = result.outcome === 'blocked' ? 2 : 1;
 }
 
-main().catch((error) => {
-  console.error(`E2E_FAILED ${error.stack || error}`);
-  process.exitCode = 2;
-});
+module.exports = {
+  opaqueColorHex,
+  attendeeMediaSummary,
+  recordAttendeeMediaReadiness,
+  additionalReadOnlyRoutes,
+  captureRouteScreenshot,
+};
+
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(`E2E_FAILED ${error.stack || error}`);
+    process.exitCode = 2;
+  });
+}
