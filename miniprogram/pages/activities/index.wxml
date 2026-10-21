@@ -18,7 +18,13 @@
     <view class="day-chip-fade" aria-hidden="true"></view>
   </view>
 
-  <view class="list-count" wx:if="{{items.length}}"><view class="list-count__main"><text>{{activeView === 'history' ? '历史活动' : '近期活动'}}</text><text class="list-count__current">当前第 {{currentCardIndex + 1}} 场</text></view><text class="list-count__total">共 {{items.length}} 场</text></view>
+  <view class="list-toolbar" wx:if="{{items.length}}">
+    <view class="list-count"><view class="list-count__main"><text>{{activeView === 'history' ? '历史活动' : '近期活动'}}</text><text class="list-count__current" wx:if="{{layoutMode === 'card'}}">当前第 {{currentCardIndex + 1}} 场</text></view><text class="list-count__total">共 {{items.length}} 场</text></view>
+    <view class="layout-switch" role="group" aria-label="活动列表显示密度">
+      <button class="layout-switch__item {{layoutMode === 'card' ? 'is-active' : ''}}" aria-pressed="{{layoutMode === 'card'}}" data-mode="card" bindtap="switchLayout">沉浸</button>
+      <button class="layout-switch__item {{layoutMode === 'compact' ? 'is-active' : ''}}" aria-pressed="{{layoutMode === 'compact'}}" data-mode="compact" bindtap="switchLayout">紧凑</button>
+    </view>
+  </view>
   <view class="refresh-note" wx:if="{{refreshing}}" aria-hidden="true">正在刷新活动…</view>
   <view class="refresh-note refresh-error" wx:if="{{refreshError}}" aria-hidden="true">{{refreshError}}</view>
   <view class="activity-card-skeleton" wx:if="{{loading}}" role="status" aria-label="正在加载活动">
@@ -32,12 +38,21 @@
     </view>
   </view>
   <state-view wx:else loading="{{loading}}" error="{{error}}" empty="{{!items.length}}" empty-title="{{emptyTitle}}" empty-copy="{{emptyCopy}}" retryable="{{true}}" bind:retry="load">
-    <swiper class="activity-carousel" id="activity-list-panel" current="{{currentCardIndex}}" duration="260" circular="{{false}}" next-margin="{{items.length > 1 ? '32rpx' : '0rpx'}}" bindchange="cardChange" role="tabpanel" aria-label="活动卡片，左右滑动切换">
-      <swiper-item wx:for="{{items}}" wx:key="id">
-        <view class="activity-slide"><activity-card item="{{item}}" data-id="{{item.id}}" bind:open="open" /></view>
-      </swiper-item>
-    </swiper>
-    <view class="carousel-guide" wx:if="{{items.length > 1}}" aria-hidden="true"><text>{{currentCardIndex + 1}} / {{items.length}}</text><view class="carousel-progress"><view class="carousel-progress__value" style="width: {{(currentCardIndex + 1) / items.length * 100}}%"></view></view><text>左右滑动切换</text></view>
+    <block wx:if="{{layoutMode === 'card'}}">
+      <swiper class="activity-carousel" id="activity-list-panel" current="{{currentCardIndex}}" duration="260" circular="{{false}}" next-margin="{{items.length > 1 ? '32rpx' : '0rpx'}}" bindchange="cardChange" role="tabpanel" aria-label="活动卡片，左右滑动切换">
+        <swiper-item wx:for="{{items}}" wx:key="id">
+          <view class="activity-slide"><activity-card item="{{item}}" data-id="{{item.id}}" bind:open="open" /></view>
+        </swiper-item>
+      </swiper>
+      <view class="carousel-guide" wx:if="{{items.length > 1}}" aria-hidden="true"><text>{{currentCardIndex + 1}} / {{items.length}}</text><view class="carousel-progress"><view class="carousel-progress__value" style="width: {{(currentCardIndex + 1) / items.length * 100}}%"></view></view><text>左右滑动切换</text></view>
+    </block>
+    <view wx:else class="compact-list" id="activity-list-panel" role="tabpanel" aria-label="紧凑活动列表">
+      <button class="compact-item" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="open" aria-label="查看活动：{{item.title}}">
+        <view class="compact-item__date"><text>{{item.displayDateLabel}}</text><text>{{item.displayTimeLabel}}</text></view>
+        <view class="compact-item__body"><text class="compact-item__title">{{item.title}}</text><text class="compact-item__route">{{item.route.start || '集合地点待公布'}}</text><text class="compact-item__metrics">{{item.route.distanceKm > 0 ? item.route.distanceKm + ' km' : '里程待公布'}} · {{item.route.elevationM > 0 ? '爬升 ' + item.route.elevationM + ' m' : '爬升待公布'}}{{item.route.level ? ' · ' + item.route.level : ''}}</text></view>
+        <view class="compact-item__status"><status-pill status="{{item.displayStatus}}" /><text>查看 ›</text></view>
+      </button>
+    </view>
   </state-view>
-  <button class="secondary load-more" wx:if="{{nextCursor && items.length && (items.length === 1 || refreshError)}}" bindtap="loadMore" loading="{{loadingMore}}" disabled="{{loadingMore}}" aria-label="{{loadingMore ? '正在加载更多活动' : (refreshError ? '重试加载更多活动' : '加载更多活动')}}">{{loadingMore ? '加载中…' : (refreshError ? '重试加载更多' : '加载更多活动')}}</button>
+  <button class="secondary load-more" wx:if="{{nextCursor && items.length && (layoutMode === 'compact' || items.length === 1 || refreshError)}}" bindtap="loadMore" loading="{{loadingMore}}" disabled="{{loadingMore}}" aria-label="{{loadingMore ? '正在加载更多活动' : (refreshError ? '重试加载更多活动' : '加载更多活动')}}">{{loadingMore ? '加载中…' : (refreshError ? '重试加载更多' : '加载更多活动')}}</button>
 </view>

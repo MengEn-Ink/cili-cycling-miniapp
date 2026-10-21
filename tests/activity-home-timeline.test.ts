@@ -135,7 +135,7 @@ describe('activity timeline template contract', () => {
     expect(template).toContain('{{item.dateLabel}}');
     expect(template).toContain('aria-pressed="{{selectedDayKey === item.key}}"');
     expect(template).toContain(
-      'wx:if="{{nextCursor && items.length && (items.length === 1 || refreshError)}}"',
+      'wx:if="{{nextCursor && items.length && (layoutMode === \'compact\' || items.length === 1 || refreshError)}}"',
     );
     expect(template).toContain('加载更多活动');
     expect(template).toContain('重试加载更多');

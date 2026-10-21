@@ -44,6 +44,15 @@
           </view>
         </view>
 
+        <view class="card organizer-route-card" wx:if="{{organizerView.visible || routeDifficultyHint}}">
+          <view class="organizer-trust" wx:if="{{organizerView.visible}}">
+            <image wx:if="{{organizerView.avatarUrl}}" class="organizer-trust__avatar" src="{{organizerView.avatarUrl}}" mode="aspectFill" lazy-load="{{true}}" aria-label="{{organizerView.name}}头像" />
+            <view wx:else class="organizer-trust__avatar organizer-trust__avatar--placeholder">骑</view>
+            <view class="organizer-trust__copy"><view class="organizer-trust__label">{{organizerView.role}}</view><view class="organizer-trust__name">{{organizerView.name}}</view><view class="organizer-trust__club" wx:if="{{organizerView.clubName && organizerView.clubName !== organizerView.name}}">活动归属 · {{organizerView.clubName}}</view></view>
+          </view>
+          <view class="route-difficulty" wx:if="{{routeDifficultyHint}}"><view class="route-difficulty__label">路线强度说明</view><view class="route-difficulty__text">{{routeDifficultyHint}}</view></view>
+        </view>
+
         <view class="official-route-card" wx:if="{{officialRouteId}}">
           <view class="section-heading"><view><view class="title">Strava 官方路线</view><view class="route-action-note">复制组织者分享的规范化公开路线链接。</view></view><view class="section-tag">官方</view></view>
           <button class="route-action" bindtap="copyOfficialRoute">复制路线链接</button>

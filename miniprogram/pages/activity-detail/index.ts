@@ -10,6 +10,7 @@ import { createNavigationSingleFlight } from '../../utils/navigation-single-flig
 import { validateRegistrationProfile } from '../../utils/validation';
 import { hasAnalyzableRoute } from '../../utils/route-outline';
 import { formatActivityDate, formatActivityTime, formatChinaDateTimeSeconds } from './format';
+import { createOrganizerView, createRouteDifficultyHint } from './view-model';
 
 function groupQrVisible(
   registration: { status?: string } | undefined,
@@ -187,6 +188,8 @@ Page({
     endTime: '',
     deadlineTime: '',
     estimatedRideTime: '',
+    organizerView: createOrganizerView(null),
+    routeDifficultyHint: '',
     officialRouteId: '',
     officialRouteUrl: '',
     hasRouteDetails: false,
@@ -265,6 +268,8 @@ Page({
       estimatedRideTime: formatRideDuration(
         hasRouteDetails ? item.route?.estimatedMovingTimeSeconds : undefined,
       ),
+      organizerView: createOrganizerView(item),
+      routeDifficultyHint: createRouteDifficultyHint(item.route),
       officialRouteId: officialRouteId(item.route),
       officialRouteUrl: officialRouteUrl(item.route),
       hasRouteDetails,
@@ -387,6 +392,8 @@ Page({
         estimatedRideTime: formatRideDuration(
           hasRouteDetails ? detail.route?.estimatedMovingTimeSeconds : undefined,
         ),
+        organizerView: createOrganizerView(detail),
+        routeDifficultyHint: createRouteDifficultyHint(detail.route),
         officialRouteId: officialRouteId(detail.route),
         officialRouteUrl: officialRouteUrl(detail.route),
         hasRouteDetails,

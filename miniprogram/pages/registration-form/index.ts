@@ -76,6 +76,7 @@ Page({
     activityAction: unavailableAction(),
     activityCanSubmit: false,
     submitBlockedHint: '请先完成必填项',
+    submitFeedback: '',
   },
   async onShow() {
     this.pageVisible = true;
@@ -172,7 +173,7 @@ Page({
     if (errors.length) return this.setData({ errors });
     const requestId = ++this.submitRequestId;
     this.submissionPending = true;
-    this.setData({ submitting: true, errors: [] });
+    this.setData({ submitting: true, errors: [], submitFeedback: '正在提交报名，请稍候' });
     try {
       try {
         await rideService.requestReviewNotificationSubscription(this.data.notificationTemplateIds);
@@ -183,12 +184,21 @@ Page({
       if (requestId === this.submitRequestId && this.pageVisible) {
         // 兜底异常响应：缺少记录 ID 时不跳到无效凭证页，提示去“我的行程”核对。
         if (!item || !item.id)
-          this.setData({ errors: ['报名已提交，但未取得记录，请在“我的行程”中查看'] });
-        else wx.redirectTo({ url: '/pages/credential/index?id=' + item.id });
+          this.setData({
+            errors: ['报名已提交，但未取得记录，请在“我的行程”中查看'],
+            submitFeedback: '报名已提交，请前往“我的行程”核对',
+          });
+        else {
+          this.setData({ submitFeedback: '报名已提交，正在打开报名凭证' });
+          wx.showToast?.({ title: '报名已提交', icon: 'success', duration: 1500 });
+          wx.redirectTo({ url: '/pages/credential/index?id=' + item.id });
+        }
       }
     } catch (error) {
-      if (requestId === this.submitRequestId && this.pageVisible)
-        this.setData({ errors: [error instanceof Error ? error.message : '提交失败'] });
+      if (requestId === this.submitRequestId && this.pageVisible) {
+        const message = error instanceof Error ? error.message : '提交失败';
+        this.setData({ errors: [message], submitFeedback: `报名提交失败：${message}` });
+      }
     } finally {
       this.submissionPending = false;
       if (this.pageVisible) this.setData({ submitting: false });
