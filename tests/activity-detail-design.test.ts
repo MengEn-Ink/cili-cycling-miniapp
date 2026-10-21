@@ -44,7 +44,7 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('bindtap="copyOfficialRoute">复制路线链接');
     expect(template).not.toContain('bindtap="openOfficialRoute"');
     expect(template).toContain('class="gpx-route-card"');
-    expect(template).toContain('bindtap="previewRouteImage"');
+    expect(template).not.toContain('bindtap="previewRouteImage"');
     expect(template).toContain('bindtap="downloadGpx"');
     expect(template).not.toContain('bindtap="copyActivityLink"');
     expect(template).not.toContain('poster-canvas');
@@ -83,8 +83,6 @@ describe('活动详情设计与日期契约', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
     for (const marker of [
-      '海拔曲线',
-      '路线轮廓',
       'Strava 官方路线',
       '下载 GPX',
       '已报名人员',
@@ -96,6 +94,9 @@ describe('活动详情设计与日期契约', () => {
       '费用说明',
     ])
       expect(template).toContain(marker);
+    expect(template).not.toContain('路线轮廓');
+    expect(template).not.toContain('海拔曲线');
+    expect(template).not.toContain('<canvas');
     expect(template).toContain('class="chip-list"');
     expect(template).toContain('class="gear-chip"');
     expect(template).toContain('class="notice-chip"');
@@ -117,10 +118,10 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('wx:if="{{item}}" class="detail-unified-card"');
     expect(template).toContain('class="detail-hero"');
     expect(template).toContain('class="content"');
-    expect(template).toContain('class="route-outline-image"');
-    expect(template).toContain('class="elevation-image"');
-    expect(template).toContain('wx:elif="{{hasRouteOutline}}" id="route-outline-canvas"');
-    expect(template).toContain('wx:elif="{{hasElevationProfile}}" id="elevation-canvas"');
+    expect(template).not.toContain('class="route-outline-image"');
+    expect(template).not.toContain('class="elevation-image"');
+    expect(template).not.toContain('route-outline-canvas');
+    expect(template).not.toContain('elevation-canvas');
     expect(styles).toMatch(/\.detail-metric-panel\s*\{[^}]*width:\s*100%/s);
     expect(styles).toMatch(
       /\.detail-page\s*\{[^}]*var\(--fixed-action-reserve\)[^}]*var\(--card-gap\)/s,
@@ -247,18 +248,18 @@ describe('活动详情设计与日期契约', () => {
     expect(context.arc).toHaveBeenCalledTimes(4);
   });
 
-  it('提供曲线空态、路线轮廓、圆形头像昵称列表与完整公开骑行名片', () => {
+  it('移除详情页路线重绘，并保留圆形头像昵称列表与公开骑行名片', () => {
     const template = read('miniprogram/pages/activity-detail/index.wxml');
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
-    expect(template).toContain('暂无有效海拔数据');
-    expect(template).toContain('id="route-outline-canvas"');
+    expect(template).not.toContain('暂无有效海拔数据');
+    expect(template).not.toContain('route-outline-canvas');
     expect(template).not.toContain('起点坐标');
     expect(template).not.toContain('终点坐标');
     expect(template).not.toContain('routeStartCoordinate');
-    expect(styles).toMatch(/\.route-outline-canvas,[\s\S]*?height:\s*440rpx/);
+    expect(styles).not.toContain('.route-outline-canvas');
     expect(template).not.toContain('item.route.popularClimbs');
     expect(template).toContain('class="attendee-card-strip" scroll-x');
-    expect(template).toContain('class="attendee-mini-card"');
+    expect(template).toContain('class="attendee-mini-card {{');
     expect(template).toContain('bindtap="openAttendeeCard"');
     expect(template).toContain('头像与昵称经本人授权展示');
     expect(template).toContain('已报名人员头像与昵称');
@@ -275,12 +276,12 @@ describe('活动详情设计与日期契约', () => {
     expect(styles).not.toMatch(/\.rider-modal-mask\s*\{[^}]*align-items:\s*flex-end/);
     expect(template).toContain('class="attendee-avatar {{item.genderClass}}"');
     expect(template).toContain('wx:if="{{rider.backgroundUrl}}"');
-    expect(template).toContain('attendee-avatar--placeholder {{item.genderClass}}');
-    expect(template).toContain('rider-card-photo__placeholder');
+    expect(template).not.toContain('attendee-avatar--placeholder');
+    expect(template).not.toContain('rider-card-photo__placeholder');
     expect(template).not.toContain('defaultAttendeeAvatar');
     expect(template).toContain('binderror="selectedAttendeeBackgroundError"');
-    expect(template).toContain('class="gender-pill {{rider.genderClass}}"');
-    expect(template).toContain('{{rider.genderLabel}}');
+    expect(template).not.toContain('class="gender-pill {{rider.genderClass}}"');
+    expect(template).not.toContain('{{rider.genderLabel}}');
     expect(template).toContain('bindchange="attendeeCardChange"');
     expect(template).toContain('左右滑动查看其他骑友');
     expect(template).toContain("previous-margin=\"{{attendees.length > 1 ? '28rpx' : '0'}}\"");
@@ -548,29 +549,12 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
     expect(wx.previewImage).not.toHaveBeenCalled();
   });
 
-  it('路线预览图支持点击全屏查看并处理打开失败', async () => {
-    const { definition, context } = await loadPage(async () => ({}));
-    context.data.item.route.generatedPreviewUrl = 'https://images.example/route.jpg';
-
-    definition.previewRouteImage.call(context);
-    expect(wx.previewImage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        current: 'https://images.example/route.jpg',
-        urls: ['https://images.example/route.jpg'],
-      }),
+  it('活动详情不再保留重复路线预览图处理器', async () => {
+    const { definition } = await loadPage(async () => ({}));
+    expect(definition.previewRouteImage).toBeUndefined();
+    expect(read('miniprogram/pages/activity-detail/index.wxml')).not.toContain(
+      'bindtap="previewRouteImage"',
     );
-
-    vi.mocked(wx.previewImage).mockImplementationOnce(({ fail }: any) => fail());
-    definition.previewRouteImage.call(context);
-    expect(wx.showToast).toHaveBeenCalledWith({
-      title: '路线预览图打开失败，请重试',
-      icon: 'none',
-    });
-
-    vi.clearAllMocks();
-    context.data.item.route.generatedPreviewUrl = '   ';
-    definition.previewRouteImage.call(context);
-    expect(wx.previewImage).not.toHaveBeenCalled();
   });
 
   it('点击头像打开对应名片，并可左右滑动切换其他骑友', async () => {
@@ -621,7 +605,7 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
     expect(context.data.selectedAttendee).toBeNull();
   });
 
-  it('远端头像和名片背景加载失败时分别回退默认图片', async () => {
+  it('远端头像和名片背景加载失败时分别隐藏失效图片', async () => {
     const { definition, context } = await loadPage(async () => ({
       base64: 'eA==',
       fileName: 'route.gpx',
@@ -655,7 +639,7 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
   });
 
   it('报名人员签名地址失效时重新调用云函数获取新地址', async () => {
-    const { definition, context, repository, repositoryCache } = await loadPage(async () => ({
+    const { definition, context, repository } = await loadPage(async () => ({
       base64: 'eA==',
       fileName: 'route.gpx',
     }));
@@ -668,16 +652,14 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
       },
     ];
     context.data.selectedAttendee = { ...context.data.attendees[0] };
-    const invalidate = vi.spyOn(repositoryCache, 'invalidateActivity');
-    vi.spyOn(repository, 'getActivity').mockResolvedValue({
-      attendees: [
-        {
-          ...context.data.attendees[0],
-          avatarUrl: 'https://temporary.example/fresh-avatar.jpg',
-          backgroundUrl: 'https://temporary.example/fresh-background.jpg',
-        },
-      ],
-    } as any);
+    const getActivity = vi.spyOn(repository, 'getActivity');
+    const refreshMedia = vi
+      .spyOn(repository, 'refreshActivityAttendeeMedia')
+      .mockImplementation(async (_activityId, _attendeeId, kind) =>
+        kind === 'avatar'
+          ? 'https://temporary.example/fresh-avatar.jpg'
+          : 'https://temporary.example/fresh-background.jpg',
+      );
 
     await definition.attendeeAvatarError.call(context, {
       currentTarget: {
@@ -690,9 +672,10 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
       },
     });
 
-    expect(invalidate).toHaveBeenCalledTimes(2);
-    expect(invalidate).toHaveBeenCalledWith('a/1');
-    expect(repository.getActivity).toHaveBeenCalledWith('a/1');
+    expect(refreshMedia).toHaveBeenCalledTimes(2);
+    expect(refreshMedia).toHaveBeenNthCalledWith(1, 'a/1', 'rider-1', 'avatar');
+    expect(refreshMedia).toHaveBeenNthCalledWith(2, 'a/1', 'rider-1', 'background');
+    expect(getActivity).not.toHaveBeenCalled();
     expect(context.data.attendees[0]).toMatchObject({
       avatarUrl: 'https://temporary.example/fresh-avatar.jpg',
       backgroundUrl: 'https://temporary.example/fresh-background.jpg',
@@ -775,8 +758,8 @@ describe('活动详情官方路线、分享与 GPX 下载', () => {
 
     expect(context.data.hasGpxRoute).toBe(true);
     expect(context.data.item.route.elevationProfile).toHaveLength(2);
-    expect(context.data.hasElevationProfile).toBe(true);
-    expect(context.data.hasRouteOutline).toBe(true);
+    expect(context.data).not.toHaveProperty('hasElevationProfile');
+    expect(context.data).not.toHaveProperty('hasRouteOutline');
     expect(context.data).not.toHaveProperty('routeStartCoordinate');
     expect(context.data).not.toHaveProperty('routeEndCoordinate');
     expect(context.data.estimatedRideTime).toBe('4 小时');

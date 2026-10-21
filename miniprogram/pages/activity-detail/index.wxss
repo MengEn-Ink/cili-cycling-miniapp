@@ -249,32 +249,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.route-visual-heading {
-  margin-top: 32rpx;
-  font-weight: 900;
-}
-.route-outline-canvas,
-.route-outline-image {
-  position: relative;
-  z-index: 0;
-  width: 100%;
-  height: 440rpx;
-  margin-top: 16rpx;
-  border: 2rpx solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-}
-.elevation-canvas,
-.elevation-image {
-  position: relative;
-  z-index: 0;
-  width: 100%;
-  height: 280rpx;
-  margin-top: 16rpx;
-  border: 2rpx solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-}
 .route-empty {
   display: flex;
   align-items: center;
@@ -303,6 +277,26 @@
   min-height: 160rpx;
   background: transparent;
   font-size: 24rpx;
+}
+.attendee-mini-card--authorization {
+  flex-basis: 280rpx;
+}
+.attendee-media-action {
+  min-height: 64rpx;
+  margin-top: 12rpx;
+  padding: 0 16rpx;
+  border: 2rpx solid var(--color-action);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-action);
+  font-size: 22rpx;
+  line-height: 1.3;
+}
+.attendee-media-feedback {
+  margin-top: 8rpx;
+  color: var(--color-muted);
+  font-size: 20rpx;
+  line-height: 1.4;
 }
 .attendee-avatar {
   box-sizing: border-box;
@@ -471,15 +465,6 @@
   flex: 0 0 112rpx;
   border: 8rpx solid var(--color-border-strong);
   border-radius: 50%;
-}
-.rider-card-avatar--placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: 40rpx;
-  font-weight: 900;
 }
 .rider-card-copy {
   min-width: 0;

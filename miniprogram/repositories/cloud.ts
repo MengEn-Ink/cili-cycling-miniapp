@@ -176,6 +176,7 @@ function mapPublicAttendees(value: unknown) {
       gender: normalizeGender(attendee.gender),
       avatarUrl: httpsUrl(attendee.avatar_url),
       backgroundUrl: httpsUrl(attendee.background_url),
+      isSelf: attendee.is_self === true,
       status: (attendee.status === 'checked_in' ? 'checked_in' : 'approved') as
         'approved' | 'checked_in',
     }));
@@ -1638,6 +1639,23 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
       await this.call('activity-read', { action: 'detail', activityId: requiredId(id, '活动 ID') }),
       true,
     );
+  }
+  async refreshActivityAttendeeMedia(
+    activityId: string,
+    attendeeId: string,
+    kind: 'avatar' | 'background',
+  ) {
+    if (kind !== 'avatar' && kind !== 'background')
+      throw new CloudRepositoryError('VALIDATION_FAILED', '媒体类型无效');
+    const value = expectRecord(
+      await this.call('activity-read', {
+        action: 'attendeeMedia',
+        activityId: requiredId(activityId, '活动 ID'),
+        attendeeId: requiredId(attendeeId, '报名 ID'),
+        kind,
+      }),
+    );
+    return httpsUrl(value.url);
   }
   async listRegistrations() {
     const items: Registration[] = [];

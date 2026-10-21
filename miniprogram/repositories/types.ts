@@ -156,6 +156,11 @@ export interface RideRepository
   listActivities(filter?: ActivityListFilter): Promise<Activity[]>;
   listActivityPage(view: PublicActivityView, cursor?: string): Promise<PublicActivityPage>;
   getActivity(id: string): Promise<Activity | undefined>;
+  refreshActivityAttendeeMedia(
+    activityId: string,
+    attendeeId: string,
+    kind: 'avatar' | 'background',
+  ): Promise<string>;
   listRegistrations(): Promise<Registration[]>;
   getRegistration(id: string): Promise<Registration | undefined>;
   saveRegistration(value: RegistrationSubmission): Promise<Registration>;

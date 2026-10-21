@@ -361,6 +361,16 @@ export class MockRepository implements RideRepository {
   async getActivity(id: string) {
     return (await this.listActivities()).find((x) => x.id === id);
   }
+  async refreshActivityAttendeeMedia(
+    activityId: string,
+    attendeeId: string,
+    kind: 'avatar' | 'background',
+  ) {
+    const attendee = (await this.getActivity(activityId))?.attendees?.find(
+      (item) => item.id === attendeeId,
+    );
+    return kind === 'avatar' ? attendee?.avatarUrl || '' : attendee?.backgroundUrl || '';
+  }
   async listRegistrations() {
     return this.read().registrations;
   }

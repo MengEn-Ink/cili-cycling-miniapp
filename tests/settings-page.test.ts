@@ -62,24 +62,24 @@ describe('设置页', () => {
     await import('../miniprogram/pages/settings/index');
   });
 
-  it('当前版本为 2026.10.21.5 且 latest 唯一，上一版转为历史项', () => {
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.21.5');
-    expect(page.data.releaseNotes).toHaveLength(23);
+  it('当前版本为 2026.10.21.6 且 latest 唯一，上一版转为历史项', () => {
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.21.6');
+    expect(page.data.releaseNotes).toHaveLength(24);
     expect(page.data.currentRelease).toBe(page.data.releaseNotes[0]);
     expect(page.data.currentRelease).toMatchObject({
-      version: '2026.10.21.5',
+      version: '2026.10.21.6',
       date: '2026-10-21',
-      title: '设置页集中管理 Strava 线路同步',
+      title: '活动路线与骑友资料加载更轻快',
       latest: true,
     });
     expect(page.data.releaseNotes[1]).toMatchObject({
-      version: '2026.10.21.4',
-      title: '路线导航与报名流程更准确',
+      version: '2026.10.21.5',
+      title: '设置页集中管理 Strava 线路同步',
       latest: false,
     });
     expect(page.data.releaseNotes[2]).toMatchObject({
-      version: '2026.10.21.3',
-      title: 'Strava 路线导入恢复',
+      version: '2026.10.21.4',
+      title: '路线导航与报名流程更准确',
       latest: false,
     });
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(
