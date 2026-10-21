@@ -55,7 +55,7 @@ describe('设置页', () => {
     expect(page.data.currentRelease).toMatchObject({
       version: '2026.10.21.2',
       date: '2026-10-21',
-      title: '活动创建与审批恢复',
+      title: '俱乐部主页活动一目了然',
       latest: true,
     });
     expect(page.data.releaseNotes[1]).toMatchObject({

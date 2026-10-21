@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
   "syncedThrough": "c78300451987a7a16031f3600aab2d7a34d2ec7b",
-  "syncedAt": "2026-10-21T08:54:00.000+08:00",
+  "syncedAt": "2026-10-21T10:58:00.000+08:00",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:89ee043e9b86f226a6276ed82e53dd65d78d6c1af269f3adb89b7dbf44407c6a"
+    "digest": "sha256:5a7b08d71e7511e3a7055c636508cd397cf12b874c1ad4f92c7f601c20bba564"
   },
   "prototype": {
-    "digest": "sha256:d9ddbb86069cfb6491d73088a4fc9bbc76e64e5c4819e675e9a9adb9627dd6e4"
+    "digest": "sha256:414c7971f9d9754c45a33b6548f9a7ca9d7f779a1f03ab78de595a0a8d4a59e7"
   },
   "routes": [
     {
@@ -219,10 +219,10 @@
         "id": "club/center",
         "devtools": "club-center-devtools.png",
         "pages": "club-center-pages.png",
-        "state": "唯一俱乐部主页 · home",
+        "state": "俱乐部主页 · 三行近期活动",
         "data": "fixture",
         "review": "blocked",
-        "note": "Pages 于 2026-10-19 单俱乐部化：home 直达唯一俱乐部主页（辛庄桥小火车），不再出现发现 / 推荐 / 申请加入 / 退出 / 成员名录 / 容量上限；仅管理角色展示“编辑俱乐部资料”进入 manage，普通 MEMBER 只读；loading / error 独立反馈并恢复到 home。"
+        "note": "Pages 于 2026-10-21 按确认效果稿更新：封面仅承担视觉表达，城市标签位于右上安全区；头像、名称与简介进入独立白色身份区；近期活动改为白色容器内 3 行紧凑列表，每行展示日期、状态、集合信息、里程、爬升与报名简述，整行进入活动详情，不使用大图卡片或双按钮。管理身份与编辑入口已降级，空 / 加载 / 错误状态补齐自然文案；DevTools 证据保持 blocked，未声明双端已对齐。"
       },
       {
         "id": "admin-club-applications",

@@ -39,6 +39,7 @@ type PlannedScreen = {
 };
 type Runtime = {
   prototypeState?: string;
+  prototypeActivityId?: string;
   prototypeData?: {
     pages?: Page[];
     rolesMatrix?: Array<{ key: string; scope: string; note: string }>;
@@ -165,10 +166,10 @@ describe('Pages 全套 App 原型契约（单俱乐部收敛 · design-only 不�
     expect(templatesSource).not.toContain('data-route="club-center"');
   });
 
-  it('7. club/center schema 只保留 home / manage / loading / error', () => {
+  it('7. club/center schema 保留 home / empty / manage / loading / error', () => {
     const states = clubCenter()?.states?.map(([id]) => id);
-    expect(states).toEqual(['home', 'manage', 'loading', 'error']);
-    expect(clubCenter()?.copy).toMatch(/全平台唯一俱乐部/);
+    expect(states).toEqual(['home', 'empty', 'manage', 'loading', 'error']);
+    expect(clubCenter()?.copy).toMatch(/封面只承担视觉表达[\s\S]*近期活动/);
   });
 
   it('7.1 旧多俱乐部状态统一回落到单俱乐部主页 home', () => {
@@ -188,22 +189,37 @@ describe('Pages 全套 App 原型契约（单俱乐部收敛 · design-only 不�
     }
   });
 
-  it('8. home 直达唯一俱乐部主页，不出现发现 / 推荐 / 申请加入 / 成员名录 / 容量上限', () => {
+  it('8. home 直达俱乐部主页，以紧凑列表展示近期活动且不出现旧平台话术', () => {
     const output = renderClubCenter('home');
     expect(output).toContain('data-mode="home"');
-    expect(output).toContain('全平台唯一俱乐部主页');
-    expect(output).not.toMatch(/推荐俱乐部|申请加入|退出俱乐部|成员名录|容量上限/);
+    expect(output).toContain('近期活动');
+    expect(output).toContain('club-event-list');
+    expect(output.match(/class="club-event-row"/g)).toHaveLength(3);
+    expect(output).not.toMatch(
+      /全平台唯一|全网唯一|唯一俱乐部|推荐俱乐部|申请加入|退出俱乐部|成员名录|容量上限/,
+    );
     expect(output).not.toContain('data-mode="discovery"');
     expect(output).not.toContain('data-mode="detail"');
-    expect(output).toContain('查看全部活动');
+    expect(output).toContain('更多 ›');
+    expect(appSource).toContain('activityId: target.dataset.activityId');
+
+    runtime.prototypeActivityId = 'club-ride-chaobaihe';
+    runtime.prototypeState = 'open-public';
+    const detail = runtime.pageTemplates?.['activity-detail']?.() || '';
+    expect(detail).toContain('潮白河夜骑绕圈 · 3 圈');
+    expect(detail).toContain('潮白河森林公园北门');
+    expect(detail).toContain('12 / 20');
+    expect(detail).toContain('剩余 8 个名额');
+    runtime.prototypeActivityId = '';
+    runtime.prototypeState = 'home';
   });
 
-  it('9. home 对普通成员保持只读，对管理员额外提供“编辑俱乐部资料”入口', () => {
+  it('9. home 对普通成员保持只读，对管理员提供低干扰的资料编辑入口', () => {
     const member = renderClubCenter('home', 'MEMBER');
-    expect(member).not.toContain('编辑俱乐部资料');
+    expect(member).not.toContain('编辑资料 ›');
     for (const role of ['ADMIN', 'OWNER', 'CLUB_ADMIN']) {
       const output = renderClubCenter('home', role);
-      expect(output).toContain('编辑俱乐部资料');
+      expect(output).toContain('编辑资料 ›');
       expect(output).toContain('data-state="manage"');
     }
   });
@@ -220,8 +236,10 @@ describe('Pages 全套 App 原型契约（单俱乐部收敛 · design-only 不�
     }
     expect(output).toContain('俱乐部头像 · 1:1');
     expect(output).toContain('俱乐部背景图 · 16:9');
-    expect(output).not.toMatch(/joinMode|申请加入|仅邀请|\+50|\+100|\+500|人数上限/);
-    expect(output).toContain('全平台只允许存在一个俱乐部');
+    expect(output).not.toMatch(
+      /joinMode|申请加入|仅邀请|\+50|\+100|\+500|人数上限|全平台唯一|唯一俱乐部/,
+    );
+    expect(output).toContain('保存资料');
   });
 
   it('11. 正式 club/center 的全部 mode 均不渲染 tablist', () => {
@@ -244,7 +262,7 @@ describe('Pages 全套 App 原型契约（单俱乐部收敛 · design-only 不�
     expect(renderClubCenter('loading')).toContain('data-mode="loading"');
     const error = renderClubCenter('error');
     expect(error).toContain('data-mode="error"');
-    expect(error).toContain('俱乐部主页加载失败');
+    expect(error).toContain('暂时没能打开俱乐部主页');
     expect(error).toContain('重新加载');
     expect(error).not.toContain('返回发现');
   });

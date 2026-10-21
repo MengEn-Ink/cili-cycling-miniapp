@@ -99,7 +99,7 @@ describe('统一主题设计契约', () => {
     const settings = read('miniprogram/pages/settings/index.ts');
     expect(CLIENT_RELEASE_VERSION).toBe('2026.10.21.2');
     expect(settings).toMatch(
-      /version: CLIENT_RELEASE_VERSION[\s\S]*?title: '活动创建与审批恢复'[\s\S]*?latest: true/,
+      /version: CLIENT_RELEASE_VERSION[\s\S]*?title: '俱乐部主页活动一目了然'[\s\S]*?latest: true/,
     );
     expect(settings).toMatch(
       /version: '2026\.10\.21\.1'[\s\S]*?title: '活动发布全流程恢复'[\s\S]*?latest: false/,

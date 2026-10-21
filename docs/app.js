@@ -966,6 +966,7 @@
     const stateIds = page.states.map(([id]) => id);
     currentState = normalizePrototypeState(stateIds, options.state);
     window.prototypeState = currentState;
+    if (page.id === 'activity-detail') window.prototypeActivityId = options.activityId || '';
     activityCarouselController?.destroy();
     activityCarouselController = null;
     container.innerHTML = templates[page.id]();
@@ -1051,6 +1052,7 @@
       const sameRoute = target.dataset.route === currentRoute;
       showPage(target.dataset.route, {
         state: target.dataset.state,
+        activityId: target.dataset.activityId,
         replace: sameRoute,
       });
     }

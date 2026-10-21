@@ -223,10 +223,10 @@
 
   const templates = {
     'club/center': () => {
-      // 全平台只有一个俱乐部：home 主页直达；manage 仅平台管理员 / 被授权管理员可编辑资料。
       const centerData = clubCenterPrototype || {};
       const club = centerData.club || {};
       const viewer = centerData.viewer || {};
+      const recentActivities = Array.isArray(centerData.activities) ? centerData.activities.slice(0, 3) : [];
       const requestedMode = st() || 'home';
       const route = 'club/center';
       const canManage = ['ADMIN', 'OWNER', 'CLUB_ADMIN', 'PLATFORM_OWNER'].includes(viewer.roleToken);
@@ -236,35 +236,42 @@
 
       if (mode === 'loading') {
         return `<div class="pg club-center-page" data-club-center data-mode="loading">
-          <p class="prototype-mock-badge">生产结构对齐 · loading</p>
-          <p class="page-sub" aria-live="polite">正在加载俱乐部主页</p>
+          <p class="page-sub" aria-live="polite">正在加载俱乐部主页…</p>
           <div class="club-center-skeleton" aria-live="polite">${skeletons(3, true)}</div>
         </div>`;
       }
       if (mode === 'error') {
         return `<div class="pg club-center-page" data-club-center data-mode="error">
-          <p class="prototype-mock-badge">生产结构对齐 · error</p>
-          ${stateView('!', '俱乐部主页加载失败', '网络不稳定，请重新加载唯一俱乐部主页。', `<div class="btn-row">${modeLink('重新加载', 'home', 'btn')}</div>`, true)}
+          ${stateView('!', '暂时没能打开俱乐部主页', '请检查网络后重试，也可以稍后再来看看。', `<div class="btn-row">${modeLink('重新加载', 'home', 'btn')}</div>`, true)}
         </div>`;
       }
 
-      const cover = `<div class="club-center-cover" role="img" aria-label="${club.coverAlt || '俱乐部背景图'}">
-        <img src="${club.coverImage || IMG.cover}" alt="${club.coverAlt || '俱乐部背景图'}" />
-        <span class="club-center-cover-chip">CLUB</span>
-        <span class="club-center-cover-loc">${club.locationLabel || club.city || '城市未填写'}</span>
+      const cover = `<div class="club-center-cover" role="img" aria-label="${club.coverAlt || '俱乐部封面'}">
+        <img src="${club.coverImage || IMG.cover}" alt="${club.coverAlt || '俱乐部封面'}" />
+        <span class="club-center-cover-loc" aria-label="所在城市：${club.city || '未填写'}"><i aria-hidden="true"></i>${club.city || '城市未填写'}</span>
       </div>`;
-      const identity = `<div class="club-center-identity">
-        <span class="club-center-avatar club-avatar-ink" aria-hidden="true"><b>${club.monogram || '辛'}</b></span>
-        <div class="club-center-identity-text"><h2 class="club-center-name"><span>${club.name || '辛庄桥小火车'}</span></h2><p class="club-center-location">${club.locationLabel || club.city || '城市未填写'}</p></div>
-      </div>`;
-      const viewerLine = `<div class="club-center-viewer" role="group" aria-label="我的身份">
-        <div class="club-center-viewer-cell"><span class="club-center-viewer-text"><small>我的身份</small><b>${viewer.roleLabel || '骑友'}</b></span></div>
-        <div class="club-center-viewer-cell is-end"><span class="club-center-viewer-text"><small>俱乐部状态</small><b>全平台唯一俱乐部</b></span></div>
-      </div>`;
+      const manageMeta = canManage
+        ? `<div class="club-center-admin-meta"><span>我的身份 · ${viewer.roleLabel || '管理员'}</span>${modeLink('编辑资料 ›', 'manage', 'club-center-manage-link')}</div>`
+        : '';
+      const identity = `<section class="club-center-identity" aria-label="俱乐部身份">
+        <span class="club-center-avatar"><img src="${club.avatarImage || IMG.avatar}" alt="${club.name || '俱乐部'}头像" /></span>
+        <h2 class="club-center-name">${club.name || '辛庄桥小火车'}</h2>
+        <p class="club-center-intro">${club.intro || '欢迎来到俱乐部主页。'}</p>
+        ${manageMeta}
+      </section>`;
+      const activityRow = (activity) => `<button class="club-event-row" data-route="activity-detail" data-state="${activity.registrationMode === 'open' ? 'open-public' : 'open-approval'}" data-activity-id="${activity.id}" aria-label="${activity.title}，${activity.date} ${activity.weekday}，${activity.time}，${activity.meetingPoint}，${activity.distanceKm} 公里，${activity.elevationM} 米爬升，${activity.registration}">
+        <span class="club-event-date" aria-hidden="true"><b>${activity.date}</b><small>${activity.weekday}</small></span>
+        <span class="club-event-body">
+          <span class="club-event-titleline"><strong>${activity.title}</strong><em class="club-event-status is-${activity.statusTone || 'open'}">${activity.status}</em></span>
+          <span class="club-event-meta"><b>${activity.time}</b><i aria-hidden="true">·</i>${activity.meetingPoint}</span>
+          <span class="club-event-stats"><b>${activity.distanceKm}</b>km <i>·</i> <b>${activity.elevationM}</b>m 爬升 <i>·</i> ${activity.registration}</span>
+        </span>
+        <span class="club-event-chevron" aria-hidden="true">›</span>
+      </button>`;
 
       if (mode === 'manage') {
         return `<div class="pg club-center-page club-center-manage" data-club-center data-mode="manage">
-          <p class="prototype-mock-badge">平台管理员 · 编辑唯一俱乐部资料</p>
+          <p class="prototype-mock-badge">管理员 · 资料维护</p>
           <h2 class="page-title">编辑俱乐部资料</h2>
           <section class="card">
             ${cardHead('01', '基础资料')}
@@ -279,25 +286,25 @@
               <article><div class="club-center-cover-crop"><img src="${club.coverImage || IMG.cover}" alt="当前俱乐部背景图" /></div><b>俱乐部背景图 · 16:9</b><p>移动与缩放后按横向画幅裁剪。</p>${btn('更换背景图', toast('打开背景图 16:9 裁剪上传'), 'btn-secondary')}</article>
             </div>
           </section>
-          <p class="neutral-note">全平台只允许存在一个俱乐部，本页只能编辑该俱乐部资料，不提供新建或删除。</p>
           <div class="btn-row">${modeLink('取消', 'home', 'btn-secondary')}${btn('保存资料', 'data-action="route" data-route="club/center" data-state="home"', 'btn')}</div>
         </div>`;
       }
 
-      // home 主页（默认）：所有用户只读查看唯一俱乐部；管理员额外可见“编辑俱乐部资料”入口。
-      return `<div class="pg club-center-page" data-club-center data-mode="home">
-        <p class="prototype-mock-badge">全平台唯一俱乐部主页 · 只读</p>
-        <header class="club-center-hero">${cover}${identity}${viewerLine}</header>
-        <section class="card club-center-profile" aria-label="俱乐部资料">
-          ${cardHead('01', '俱乐部资料')}
-          ${rows([['名称', club.name], ['地区', club.locationLabel || club.city], ['简介', club.intro]])}
+      const activityContent =
+        mode === 'empty' || recentActivities.length === 0
+          ? stateView('0', '近期还没有活动', '新活动发布后会出现在这里，可以稍后再来看看。', btn('查看全部活动', go('activities'), 'btn-secondary'))
+          : `<div class="club-event-list" role="list">${recentActivities.map(activityRow).join('')}</div>`;
+      const activityHint =
+        mode === 'empty' || recentActivities.length === 0
+          ? '新活动发布后会显示在这里'
+          : `${recentActivities.length} 场活动，就近出发`;
+      return `<div class="pg club-center-page" data-club-center data-mode="${mode === 'empty' ? 'empty' : 'home'}">
+        <header class="club-center-hero">${cover}${identity}</header>
+        <section class="club-center-events" aria-label="近期活动">
+          <div class="club-center-events-head"><div><h3>近期活动</h3><p>${activityHint}</p></div><button class="club-center-more" data-route="activities">更多 ›</button></div>
+          ${activityContent}
         </section>
-        <section class="card club-center-activities" aria-label="活动入口">
-          ${cardHead('02', '活动', tag('neutral', '对所有用户可见'), '所有活动统一归属该唯一俱乐部，不再区分公开 / 俱乐部活动')}
-          ${btn('查看全部活动', go('activities'), 'btn-secondary')}
-        </section>
-        <p class="neutral-note">全平台只有一个俱乐部，普通骑友从“我的”直达此页；本页仅展示唯一俱乐部的资料与活动入口。</p>
-        ${canManage ? `<div class="btn-row">${modeLink('编辑俱乐部资料', 'manage', 'btn')}</div>` : ''}
+        <p class="club-center-footnote">报名后可在「我的 › 我的行程」中查看。</p>
       </div>`;
     },
     'admin-club-applications': () => {
@@ -512,6 +519,17 @@
     },
 
     'activity-detail': () => {
+      const selectedClubActivity = (clubCenterPrototype?.activities || []).find(
+        (activity) => activity.id === window.prototypeActivityId,
+      );
+      const primary = selectedClubActivity
+        ? {
+            ...activities[0],
+            ...selectedClubActivity,
+            date: `${selectedClubActivity.date} ${selectedClubActivity.weekday}`,
+            start: selectedClubActivity.meetingPoint,
+          }
+        : activities[0];
       const registrationModes = (window.prototypeData && window.prototypeData.registrationModes) || {};
       const modeOptions = Array.isArray(registrationModes.options) ? registrationModes.options : [];
       const modeByKey = Object.fromEntries(modeOptions.map((option) => [option.key, option]));

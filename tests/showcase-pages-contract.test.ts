@@ -1075,14 +1075,17 @@ describe('路线分析 Pages 降级状态契约', () => {
   });
 });
 
-describe('俱乐部中心（club/center）单俱乐部原型契约', () => {
-  it('schema 与正式路由统一，并声明 home / manage / loading / error 四种 mode', () => {
+describe('俱乐部中心（club/center）主页原型契约', () => {
+  const forbiddenUniquenessCopy = /全网唯一|全平台唯一|唯一俱乐部/;
+
+  it('schema 与正式路由统一，并声明 home / empty / manage / loading / error 五种 mode', () => {
     expect(prototypeRoutes).toContain('club/center');
     expect(schema).toContain("id: 'club/center'");
     expect(schema).toContain("path: 'pages/club/center/index'");
     expect(schema).toContain("title: '俱乐部中心'");
     for (const state of [
-      "['home', '主页 · 只读']",
+      "['home', '主页 · 3 场近期活动']",
+      "['empty', '近期暂无活动']",
       "['manage', '编辑资料（仅平台管理员 / 被授权管理员）']",
       "['loading', '加载中']",
       "['error', '加载失败']",
@@ -1094,27 +1097,72 @@ describe('俱乐部中心（club/center）单俱乐部原型契约', () => {
     const clubCenterBlock = schema.match(/clubCenterPrototype:\s*\{[\s\S]*?\n\s{2,4}\},/);
     expect(clubCenterBlock, 'expected to locate clubCenterPrototype block').not.toBeNull();
     expect(clubCenterBlock?.[0]).not.toMatch(/memberCount|capacity|joinMode|recommended/);
+    expect(clubCenterBlock?.[0]).not.toMatch(forbiddenUniquenessCopy);
   });
 
-  it('home 直达唯一俱乐部主页，不出现发现 / 推荐 / 申请加入 / 成员名录 / 容量上限', () => {
+  it('home 使用纯视觉封面与独立身份区，城市位于右上安全区且名称不叠在背景上', () => {
     const output = renderPrototypeState('club/center', 'home');
     expect(output).toContain('data-mode="home"');
-    expect(output).toContain('全平台唯一俱乐部主页');
-    expect(output).toContain('辛庄桥小火车');
-    expect(output).toContain('查看全部活动');
-    expect(output).not.toMatch(/推荐俱乐部|申请加入|退出俱乐部|成员名录|容量上限/);
-    expect(output).not.toContain('data-mode="discovery"');
-    expect(output).not.toContain('data-mode="detail"');
+    expect(output).toContain('class="club-center-cover"');
+    expect(output).toContain('class="club-center-cover-loc"');
+    expect(output).toContain('class="club-center-identity"');
+    expect(output).toContain('class="club-center-name"');
+    expect(output).toContain('class="club-center-intro"');
+    expect(output.indexOf('class="club-center-cover"')).toBeLessThan(
+      output.indexOf('class="club-center-identity"'),
+    );
+    const cover = output.slice(
+      output.indexOf('class="club-center-cover"'),
+      output.indexOf('class="club-center-identity"'),
+    );
+    expect(cover).not.toContain('club-center-name');
+    expect(cover).not.toContain('辛庄桥小火车</h2>');
+    expect(css).toMatch(
+      /\.club-center-cover-loc\s*\{[^}]*top:\s*var\(--space-5\);[^}]*right:\s*var\(--space-5\);/s,
+    );
+    expect(css).toMatch(/\.club-center-identity\s*\{[^}]*background:\s*var\(--color-surface\);/s);
+    expect(output).not.toMatch(forbiddenUniquenessCopy);
   });
 
-  it('home 对管理角色开放入口，普通 MEMBER 只读', () => {
+  it('近期活动是白色容器内三行紧凑列表，整行进入详情且不是完整大卡片', () => {
+    const output = renderPrototypeState('club/center', 'home');
+    expect(output).toContain('class="club-event-list"');
+    expect(output.match(/class="club-event-row"/g)).toHaveLength(3);
+    expect(output.match(/data-route="activity-detail"/g)).toHaveLength(3);
+    for (const content of [
+      'club-event-date',
+      'club-event-titleline',
+      'club-event-status',
+      'club-event-meta',
+      'club-event-stats',
+      'club-event-chevron',
+      '妙峰山早骑 · 轻松节奏',
+      '辛庄桥东北角',
+      '62</b>km',
+      '980</b>m 爬升',
+      '18/24 报名',
+    ]) {
+      expect(output).toContain(content);
+    }
+    expect(output).not.toContain('activity-card');
+    expect(output).not.toContain('club-event-cover');
+    expect(output).not.toMatch(/立即报名|查看详情/);
+    expect(css).toMatch(/\.club-event-list\s*\{[^}]*background:\s*var\(--color-surface\);/s);
+    expect(css).toMatch(/\.club-event-row\s*\{[^}]*min-height:\s*96px;/s);
+  });
+
+  it('管理身份与编辑入口降级，普通 MEMBER 只读', () => {
     for (const roleToken of ['ADMIN', 'OWNER', 'CLUB_ADMIN', 'PLATFORM_OWNER']) {
       const runtime = createPrototypeRuntime((data) => {
         data.clubCenterPrototype.viewer.roleToken = roleToken;
+        data.clubCenterPrototype.viewer.roleLabel = '管理员';
       });
       const output = renderFromRuntime(runtime, 'club/center', 'home');
-      expect(output).toContain('编辑俱乐部资料');
+      expect(output).toContain('class="club-center-admin-meta"');
+      expect(output).toContain('编辑资料 ›');
       expect(output).toContain('data-state="manage"');
+      expect(output).not.toContain('编辑俱乐部资料</button>');
+      expect(output).not.toMatch(forbiddenUniquenessCopy);
     }
     const memberRuntime = createPrototypeRuntime((data) => {
       data.clubCenterPrototype.viewer.roleToken = 'MEMBER';
@@ -1122,7 +1170,7 @@ describe('俱乐部中心（club/center）单俱乐部原型契约', () => {
     });
     const member = renderFromRuntime(memberRuntime, 'club/center', 'home');
     expect(member).not.toContain('data-state="manage"');
-    expect(member).not.toContain('编辑俱乐部资料');
+    expect(member).not.toContain('club-center-admin-meta');
   });
 
   it('manage 仅允许管理角色直达，并只覆盖基础资料与分离媒体裁剪', () => {
@@ -1143,23 +1191,30 @@ describe('俱乐部中心（club/center）单俱乐部原型契约', () => {
     expect(output).toContain('更换头像');
     expect(output).toContain('更换背景图');
     expect(output).not.toMatch(/加入方式|仅邀请|当前容量|\+50|\+100|\+500|人数上限/);
-    expect(output).toContain('全平台只允许存在一个俱乐部');
+    expect(output).not.toMatch(forbiddenUniquenessCopy);
   });
 
-  it('loading / error 有独立反馈与恢复路径，所有 mode 均无旧 tablist', () => {
+  it('loading / error / empty 文案自然并保留恢复路径，所有 mode 均无旧 tablist', () => {
     const loading = renderPrototypeState('club/center', 'loading');
     expect(loading).toContain('data-mode="loading"');
-    expect(loading).toContain('正在加载俱乐部主页');
+    expect(loading).toContain('正在加载俱乐部主页…');
     const error = renderPrototypeState('club/center', 'error');
     expect(error).toContain('data-mode="error"');
-    expect(error).toContain('俱乐部主页加载失败');
+    expect(error).toContain('暂时没能打开俱乐部主页');
+    expect(error).toContain('请检查网络后重试');
     expect(error).toContain('重新加载');
     expect(error).toContain('data-route="club/center"');
-    for (const mode of ['home', 'manage', 'discovery', 'detail', 'loading', 'error']) {
+    const empty = renderPrototypeState('club/center', 'empty');
+    expect(empty).toContain('data-mode="empty"');
+    expect(empty).toContain('近期还没有活动');
+    expect(empty).toContain('新活动发布后会出现在这里');
+    expect(empty).toContain('data-route="activities"');
+    for (const mode of ['home', 'empty', 'manage', 'discovery', 'detail', 'loading', 'error']) {
       const output = renderPrototypeState('club/center', mode);
       expect(output).not.toContain('role="tablist"');
       expect(output).not.toContain('role="tab"');
       expect(output).not.toContain('role="tabpanel"');
+      expect(output).not.toMatch(forbiddenUniquenessCopy);
     }
   });
 
@@ -1174,17 +1229,16 @@ describe('俱乐部中心（club/center）单俱乐部原型契约', () => {
     expect(script).toContain('payload.startsWith(`${id}/`)');
   });
 
-  it('样式只保留单俱乐部主页与媒体编辑视觉 class，并支持全局动效降级', () => {
+  it('样式只保留主页、紧凑活动列表与媒体编辑视觉 class，并支持全局动效降级', () => {
     expect(css).not.toContain('.club-center-discovery-row');
     expect(css).not.toContain('.club-center-recommended');
     expect(css).not.toContain('.planned-club-');
     expect(css).not.toContain('.club-avatar-public');
     expect(css).toContain('.club-center-media-grid');
+    expect(css).toContain('.club-event-list');
+    expect(css).toContain('.club-event-row');
     expect(css).toMatch(
-      /\.club-center-page:not\(\[data-mode="home"\]\)\s*\{[^}]*padding:\s*16px 16px 32px;/s,
-    );
-    expect(css).toMatch(
-      /\.club-center-page:not\(\[data-mode="home"\]\) > \.prototype-mock-badge\s*\{[^}]*position:\s*static;[^}]*transform:\s*none;/s,
+      /\.club-center-page:is\(\[data-mode='loading'\], \[data-mode='error'\], \[data-mode='manage'\]\)\s*\{[^}]*padding:\s*16px 16px 32px;/s,
     );
     expect(css).toContain('aspect-ratio: 1');
     expect(css).toContain('aspect-ratio: 16 / 9');
@@ -1192,7 +1246,7 @@ describe('俱乐部中心（club/center）单俱乐部原型契约', () => {
     for (const legacySelector of [
       '.club-center-tabs',
       '.club-center-tab',
-      '.club-center-activity',
+      '.club-center-capacity',
       '.club-center-members',
       '.club-center-cover-retry',
       '.club-center-more-menu',
