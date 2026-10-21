@@ -11,9 +11,22 @@ const RELEASE_NOTES = [
   {
     version: CLIENT_RELEASE_VERSION,
     date: '2026-10-21',
+    title: '路线导航与报名流程更准确',
+    summary: '地图定位、活动报名与创建流程同步优化，关键信息更清晰。',
+    latest: true,
+    features: [
+      '路线坐标统一按地图标准转换，起点可通过地名直接发起导航',
+      '公开活动报名后直接成功，审核活动仍由管理员确认',
+      '活动报名截止时间自动设为活动当天零点，创建时无需重复填写',
+      '报名详情操作按钮留出舒适间距，避免误触',
+    ],
+  },
+  {
+    version: '2026.10.21.3',
+    date: '2026-10-21',
     title: 'Strava 路线导入恢复',
     summary: '连接 Strava 后可直接粘贴官方路线链接导入 GPX，并继续支持手动上传。',
-    latest: true,
+    latest: false,
     features: [
       '活动编辑页支持安全连接 Strava 并刷新授权状态',
       '粘贴 Strava 路线链接即可下载、解析并预览 GPX',

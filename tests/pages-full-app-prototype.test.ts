@@ -345,16 +345,19 @@ describe('Pages 全套 App 原型契约（单俱乐部收敛 · design-only 不�
     expect(appSource).toContain('不会删除报名、行程或个人资料');
   });
 
-  it('18. 活动编辑页显式展示报名截止日期/时间与 GPX 三态恢复入口', () => {
+  it('18. 活动编辑页展示自动截止规则、报名模式与 GPX 三态恢复入口', () => {
     const template = runtime.pageTemplates?.['admin-activity-edit'];
     if (!template) throw new Error('admin-activity-edit template missing');
 
-    runtime.prototypeState = 'edit';
+    runtime.prototypeState = 'edit-open';
     const ready = template();
     expect(ready).toContain('报名截止');
-    expect(ready).toContain('2026-10-17');
-    expect(ready).toContain('20:00');
-    expect(ready).toContain('报名截止必须早于集合时间');
+    expect(ready).toContain('活动开始日 00:00');
+    expect(ready).toContain('自动设置');
+    expect(ready).not.toContain('选择截止日期');
+    expect(ready).not.toContain('选择截止时间');
+    expect(ready).toContain('公开报名');
+    expect(ready).toContain('审批报名');
     expect(ready).toContain('已就绪');
     expect(ready).toContain('更换 GPX');
 

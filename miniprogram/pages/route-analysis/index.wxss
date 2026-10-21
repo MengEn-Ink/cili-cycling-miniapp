@@ -343,20 +343,9 @@
   font-size: 22rpx;
 }
 
-.coordinate-cell {
-  grid-column: 1 / -1;
-}
-
-.coordinate-value {
-  margin-top: 4rpx;
-  font-family: var(--font-mono);
-  font-size: 22rpx;
-  overflow-wrap: anywhere;
-}
-
-.copy-button {
+.start-navigation-button {
   min-height: 44px;
-  margin-top: 16rpx;
+  margin: 18rpx 0 0;
   border: 0;
   border-radius: var(--radius-sm);
   background: var(--color-action);

@@ -146,22 +146,25 @@ async function submitRegistration(store, { openid, activityId, options, team }, 
     const waiting =
       activity.registration_unlimited !== true &&
       (activity.occupied_count >= activity.capacity || (quota && quota.occupied >= quota.capacity));
-    // 管理员仍遵守总量和分类名额；有名额时直接进入已通过状态，避免再走自审流程。
-    const adminAutoApproved = !waiting && isEnabledAdmin(admin, openid);
-    const status = waiting ? 'waiting' : adminAutoApproved ? 'approved' : 'pending';
+    // 公开报名有名额时直接通过；旧活动缺少 registration_mode 时仍按审批模式处理，避免存量语义被静默放宽。
+    const publicAutoApproved = !waiting && activity.registration_mode === 'open';
+    // 管理员仍遵守总量和分类名额；审批模式下有名额时直接进入已通过状态，避免再走自审流程。
+    const adminAutoApproved = !waiting && !publicAutoApproved && isEnabledAdmin(admin, openid);
+    const autoApproved = publicAutoApproved || adminAutoApproved;
+    const status = waiting ? 'waiting' : autoApproved ? 'approved' : 'pending';
     const nextOccupancy = waiting
       ? undefined
       : occupancyAfter(activity, safeOptions.gathering_mode, 1);
     const existingHistory =
       existing && Array.isArray(existing.review_history) ? existing.review_history : [];
-    const history = adminAutoApproved
+    const history = autoApproved
       ? [
           ...existingHistory,
           {
             reviewer_openid: openid,
             reviewed_at: now,
             action: 'approve',
-            comment: '管理员报名自动通过',
+            comment: publicAutoApproved ? '公开报名自动通过' : '管理员报名自动通过',
           },
         ]
       : existingHistory;
@@ -198,7 +201,7 @@ async function submitRegistration(store, { openid, activityId, options, team }, 
           : {}),
       },
       review_history: history,
-      ...(adminAutoApproved
+      ...(autoApproved
         ? {
             approved_at: now,
             serial_no:
@@ -224,11 +227,13 @@ async function submitRegistration(store, { openid, activityId, options, team }, 
     await tx.addAudit(
       buildAudit(
         openid,
-        adminAutoApproved
-          ? 'registration.admin_auto_approved'
-          : existing
-            ? 'registration.resubmitted'
-            : 'registration.submitted',
+        publicAutoApproved
+          ? 'registration.open_auto_approved'
+          : adminAutoApproved
+            ? 'registration.admin_auto_approved'
+            : existing
+              ? 'registration.resubmitted'
+              : 'registration.submitted',
         id,
         now,
         {
@@ -271,23 +276,25 @@ async function promoteOldestWaiting(tx, activity, nextOccupancy, now) {
   const waiting = candidates.find((candidate) => canPromote(postReleaseActivity, candidate));
   if (!waiting) return null;
   const admin = typeof tx.getAdmin === 'function' ? await tx.getAdmin(waiting.openid) : undefined;
-  const adminAutoApproved = isEnabledAdmin(admin, waiting.openid);
-  const status = adminAutoApproved ? 'approved' : 'pending';
-  const history = adminAutoApproved
+  const publicAutoApproved = activity.registration_mode === 'open';
+  const adminAutoApproved = !publicAutoApproved && isEnabledAdmin(admin, waiting.openid);
+  const autoApproved = publicAutoApproved || adminAutoApproved;
+  const status = autoApproved ? 'approved' : 'pending';
+  const history = autoApproved
     ? [
         ...(Array.isArray(waiting.review_history) ? waiting.review_history : []),
         {
           reviewer_openid: waiting.openid,
           reviewed_at: now,
           action: 'approve',
-          comment: '管理员候补补位自动通过',
+          comment: publicAutoApproved ? '公开报名候补补位自动通过' : '管理员候补补位自动通过',
         },
       ]
     : waiting.review_history;
   const promoted = {
     ...waiting,
     status,
-    ...(adminAutoApproved
+    ...(autoApproved
       ? {
           approved_at: now,
           serial_no:

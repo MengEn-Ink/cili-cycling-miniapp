@@ -1087,14 +1087,7 @@
       showPage('activity-detail', { state: 'copied', replace: true });
       showToast('路线链接已复制');
     }
-    if (action === 'copy-route-coord') {
-      const coord = target.dataset.coord || '';
-      // 原型层仅做反馈示意：真实接入时由小程序 wx.setClipboardData 处理
-      if (coord && navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(coord).catch(() => {});
-      }
-      showToast(coord ? `已复制坐标 ${coord}` : '已复制坐标');
-    }
+    if (action === 'navigate-route-start') showToast('已打开起点导航');
     if (action === 'choice') {
       target.parentElement.querySelectorAll('button').forEach((button) => button.classList.remove('is-active'));
       target.classList.add('is-active');

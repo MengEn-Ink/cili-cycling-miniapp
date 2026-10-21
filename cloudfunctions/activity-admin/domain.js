@@ -49,6 +49,7 @@ const ACTIVITY_FIELDS = [
   'equipment',
   'fee',
   'capacity',
+  'registration_mode',
   'registration_unlimited',
   'support_vehicle_capacity',
   'self_drive_capacity',
@@ -95,6 +96,8 @@ function publicActivity(activity, now = new Date()) {
     output.club_id = null;
     output.club_identity = null;
   }
+  // 缺字段的存量活动必须继续按审批报名解释；只有显式 open 才是公开报名。
+  output.registration_mode = activity?.registration_mode === 'open' ? 'open' : 'approval';
   output.group_qr_may_be_expired = groupQrMayBeExpired(activity, now);
   return output;
 }
@@ -585,6 +588,13 @@ function validDate(value, label) {
   if (!Number.isFinite(date.getTime())) fail('VALIDATION_FAILED', `${label}格式错误`);
   return date;
 }
+function chinaDayStart(value) {
+  const shifted = new Date(value.getTime() + 8 * 60 * 60 * 1000);
+  return new Date(
+    Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate()) -
+      8 * 60 * 60 * 1000,
+  );
+}
 const ACTIVITY_INPUT_FIELDS = new Set([
   'title',
   'images',
@@ -598,6 +608,7 @@ const ACTIVITY_INPUT_FIELDS = new Set([
   'equipment',
   'fee',
   'capacity',
+  'registration_mode',
   'registration_unlimited',
   'support_vehicle_capacity',
   'self_drive_capacity',
@@ -654,6 +665,10 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses, option
   }
 
   const registrationUnlimited = input.registration_unlimited === true;
+  const registrationMode =
+    input.registration_mode === undefined ? undefined : input.registration_mode;
+  if (registrationMode !== undefined && !['open', 'approval'].includes(registrationMode))
+    fail('VALIDATION_FAILED', '报名模式无效');
   if (
     input.registration_unlimited !== undefined &&
     typeof input.registration_unlimited !== 'boolean'
@@ -683,16 +698,18 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses, option
   )
     fail('VALIDATION_FAILED', '后援车名额与自驾名额之和必须等于活动容量');
 
-  const deadline =
-    input.signup_deadline === undefined
-      ? undefined
-      : validDate(input.signup_deadline, '报名截止时间');
   const start =
     input.event_start === undefined ? undefined : validDate(input.event_start, '活动开始时间');
+  // 报名截止是派生字段：统一按活动开始日的中国标准时间零点持久化，忽略客户端旧值。
+  const deadline = start
+    ? chinaDayStart(start)
+    : input.signup_deadline === undefined
+      ? undefined
+      : validDate(input.signup_deadline, '报名截止时间');
   const end =
     input.event_end === undefined ? undefined : validDate(input.event_end, '活动结束时间');
-  if (deadline && start && deadline.getTime() >= start.getTime())
-    fail('INVALID_ACTIVITY_TIME', '报名截止时间必须早于活动开始时间');
+  if (deadline && start && deadline.getTime() > start.getTime())
+    fail('INVALID_ACTIVITY_TIME', '报名截止时间不得晚于活动开始时间');
   if (start && end && start.getTime() >= end.getTime())
     fail('INVALID_ACTIVITY_TIME', '活动结束时间必须晚于活动开始时间');
   const route = input.route;
@@ -790,6 +807,7 @@ function validateBaseActivityInput(input, occupiedCount, allowedStatuses, option
     ...(input.registration_unlimited === undefined
       ? {}
       : { registration_unlimited: registrationUnlimited }),
+    ...(registrationMode === undefined ? {} : { registration_mode: registrationMode }),
     ...(capacity === undefined ? {} : { capacity }),
     ...(supportVehicleCapacity === undefined
       ? {}
@@ -816,12 +834,7 @@ function validateReadyActivityInput(input, occupiedCount, now, allowedStatuses, 
   for (const field of ['event_start', 'event_end'])
     if (safe[field] === undefined) fail('VALIDATION_FAILED', '发布前请补全活动时间');
   if (!safe.route.start) fail('VALIDATION_FAILED', '发布前请补全路线起点');
-  if (
-    options.requireFutureDeadline !== false &&
-    safe.signup_deadline &&
-    safe.signup_deadline.getTime() <= now.getTime()
-  )
-    fail('INVALID_ACTIVITY_TIME', '报名截止时间必须晚于当前时间');
+  // 截止时间由活动开始日零点派生；同日稍晚创建活动时允许保存，报名状态会按截止时间关闭。
   // 只有显式把后援车容量设为 0 才清空司机；字段省略表示保留当前值。
   if (safe.support_vehicle_capacity > 0)
     safe.support_vehicle_driver = cleanDriver(input.support_vehicle_driver, true);

@@ -109,6 +109,21 @@ function registration(id, status, createdAt, mode = 'self_drive') {
   };
 }
 
+test('公开模式普通用户有名额直接通过，审核模式与旧数据仍待审批', async () => {
+  const open = fixture({ activity: { registration_mode: 'open' } });
+  const approved = await submit(open, 'member-open');
+  assert.equal(approved.status, 'approved');
+  assert.ok(approved.serial_no);
+  assert.equal(approved.review_history[0].comment, '公开报名自动通过');
+  assert.equal(open.state.audits[0].action, 'registration.open_auto_approved');
+
+  const approval = fixture({ activity: { registration_mode: 'approval' } });
+  assert.equal((await submit(approval, 'member-approval')).status, 'pending');
+
+  const legacy = fixture();
+  assert.equal((await submit(legacy, 'member-legacy')).status, 'pending');
+});
+
 test('正常报名占位，满员报名进入 waiting 且通知幂等键稳定', async () => {
   const normal = fixture();
   assert.equal((await submit(normal, 'member-1')).status, 'pending');
@@ -194,6 +209,28 @@ test('取消按 created_at FIFO 补位且 occupied_count 保持不变', async ()
   assert.equal(store.state.activity.occupied_count, 1);
   assert.equal(store.state.occupiedWrites, 1);
   assert.ok([...store.state.notifications.keys()][0].startsWith('waitlist_promoted_early_'));
+});
+
+test('公开活动满员先候补，释放名额后按 FIFO 自动通过', async () => {
+  const active = registration('active-open', 'approved', '2026-09-01T00:00:00Z');
+  const waiting = registration('waiting-open', 'waiting', '2026-09-02T00:00:00Z');
+  const store = fixture({
+    activity: {
+      registration_mode: 'open',
+      capacity: 1,
+      occupied_count: 1,
+      self_drive_capacity: 1,
+      self_drive_occupied_count: 1,
+    },
+    registrations: [active, waiting],
+  });
+
+  await cancelRegistration(store, { openid: 'active-open', registrationId: 'active-open' }, now);
+
+  const promoted = store.state.registrations.get('waiting-open');
+  assert.equal(promoted.status, 'approved');
+  assert.equal(promoted.review_history[0].comment, '公开报名候补补位自动通过');
+  assert.equal(store.state.activity.occupied_count, 1);
 });
 
 test('管理员候补释放名额后自动通过并补齐审批凭证', async () => {

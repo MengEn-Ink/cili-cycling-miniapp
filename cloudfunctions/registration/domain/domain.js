@@ -121,7 +121,7 @@ function registrationSetupReady(activity) {
     !deadline ||
     !start ||
     !end ||
-    deadline.getTime() >= start.getTime() ||
+    deadline.getTime() > start.getTime() ||
     start.getTime() >= end.getTime() ||
     !hasFeeDetails(activity.fee) ||
     (supportCapacity > 0 && !hasCompleteDriver(activity.support_vehicle_driver))
@@ -245,6 +245,7 @@ const ACTIVITY_FIELDS = [
   'equipment',
   'fee',
   'capacity',
+  'registration_mode',
   'registration_unlimited',
   'support_vehicle_capacity',
   'self_drive_capacity',
@@ -301,6 +302,7 @@ function publicActivity(activity, now = new Date()) {
     output.club_id = null;
     output.club_identity = null;
   }
+  output.registration_mode = activity?.registration_mode === 'open' ? 'open' : 'approval';
   if (!Number.isInteger(output.capacity)) output.capacity = 0;
   // 后援车司机电话面向全部骑友公开，完整返回，便于集合当天直接拨打；非字符串值不透传。
   if (output.support_vehicle_driver) {

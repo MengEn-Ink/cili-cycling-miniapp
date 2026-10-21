@@ -129,6 +129,7 @@ describe('CloudRepository 活动读取适配', () => {
         deadline: '2026-10-15T12:00:00.000Z',
         status: 'published',
         capacity: 20,
+        registrationMode: 'approval',
         occupiedCount: 3,
         description: '说明',
         coverImage: 'cloud://covers/a1.jpg',

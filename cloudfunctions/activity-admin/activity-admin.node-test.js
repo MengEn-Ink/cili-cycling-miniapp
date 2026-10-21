@@ -317,10 +317,19 @@ test('草稿对已填写运营字段严格校验且拒绝服务端字段', () =>
     () => validateDraftInput({ ...input, support_vehicle_capacity: -1 }),
     'VALIDATION_FAILED',
   );
-  expectCode(() => validateDraftInput({ ...input, signup_deadline: 'bad' }), 'VALIDATION_FAILED');
+  const normalizedDeadline = validateDraftInput({ ...input, signup_deadline: 'bad' });
+  assert.equal(normalizedDeadline.signup_deadline.toISOString(), '2026-10-10T16:00:00.000Z');
   expectCode(
     () => validateDraftInput({ ...input, support_vehicle_driver: { nickname: 42 } }),
     'VALIDATION_FAILED',
+  );
+  expectCode(
+    () => validateDraftInput({ ...input, registration_mode: 'manual' }),
+    'VALIDATION_FAILED',
+  );
+  assert.equal(
+    validateDraftInput({ ...input, registration_mode: 'approval' }).registration_mode,
+    'approval',
   );
   expectCode(() => validateDraftInput({ ...input, occupied_count: 0 }), 'FORBIDDEN_FIELD');
 });
@@ -341,15 +350,12 @@ test('发布只强制基础事实，运营字段可后补且后援司机仍严�
   ])
     delete fastPublish[field];
   assert.equal(validatePublishInput(fastPublish, 0, now).status, 'published');
-  expectCode(
-    () =>
-      validatePublishInput(
-        { ...input, status: 'published', signup_deadline: now.toISOString() },
-        0,
-        now,
-      ),
-    'INVALID_ACTIVITY_TIME',
+  const normalized = validatePublishInput(
+    { ...input, status: 'published', signup_deadline: now.toISOString() },
+    0,
+    now,
   );
+  assert.equal(normalized.signup_deadline.toISOString(), '2026-10-10T16:00:00.000Z');
   expectCode(
     () =>
       validatePublishInput(
@@ -478,7 +484,7 @@ test('更新省略后援车字段时保留当前司机，显式改为 0 才清�
   });
 });
 
-test('保存校验完整 effective activity，省略字段不能绕过存量非法截止时间', async () => {
+test('保存按最终活动日期修复存量非法截止时间', async () => {
   const current = {
     _id: 'published-invalid-deadline',
     ...validatePublishInput({ ...input, status: 'published' }, 0, now),
@@ -494,17 +500,14 @@ test('保存校验完整 effective activity，省略字段不能绕过存量非�
   delete update.signup_deadline;
   const memory = store(current);
 
-  await assert.rejects(
-    saveActivity(memory, {
-      openid: 'admin',
-      activityId: current._id,
-      expectedVersion: 3,
-      activity: update,
-    }),
-    { code: 'VALIDATION_FAILED' },
-  );
-  assert.equal(memory.state.saved, undefined);
-  assert.equal(memory.state.audits.length, 0);
+  const saved = await saveActivity(memory, {
+    openid: 'admin',
+    activityId: current._id,
+    expectedVersion: 3,
+    activity: update,
+  });
+  assert.equal(saved.signup_deadline.toISOString(), '2026-10-10T16:00:00.000Z');
+  assert.equal(memory.state.audits.length, 1);
 });
 test('活动输入完整保留行程备注、GPX 与费用明细', () => {
   const value = validateActivityInput({
@@ -528,13 +531,16 @@ test('校验容量、状态、关键时间、路线和嵌套字段', () => {
   expectCode(() => validateActivityInput({ ...input, capacity: 2 }, 3), 'CAPACITY_BELOW_OCCUPIED');
   expectCode(() => validateActivityInput({ ...input, capacity: 0 }), 'VALIDATION_FAILED');
   expectCode(() => validateActivityInput({ ...input, status: 'deleted' }), 'VALIDATION_FAILED');
-  expectCode(
-    () => validateActivityInput({ ...input, signup_deadline: 'bad' }),
-    'VALIDATION_FAILED',
+  assert.equal(
+    validateActivityInput({ ...input, signup_deadline: 'bad' }).signup_deadline.toISOString(),
+    '2026-10-10T16:00:00.000Z',
   );
-  expectCode(
-    () => validateActivityInput({ ...input, signup_deadline: input.event_start }),
-    'INVALID_ACTIVITY_TIME',
+  assert.equal(
+    validateActivityInput({
+      ...input,
+      signup_deadline: input.event_start,
+    }).signup_deadline.toISOString(),
+    '2026-10-10T16:00:00.000Z',
   );
   expectCode(
     () => validateActivityInput({ ...input, event_end: input.event_start }),
@@ -691,6 +697,7 @@ test('更新同一归属时刷新可信快照，历史无归属活动保持兼�
   const legacy = publicActivity({ _id: 'legacy', title: '历史活动' });
   assert.equal(legacy.club_id, null);
   assert.equal(legacy.club_identity, null);
+  assert.equal(legacy.registration_mode, 'approval');
 });
 
 test('创建必须是草稿并写入服务端控制字段与审计', async () => {
@@ -704,6 +711,7 @@ test('创建必须是草稿并写入服务端控制字段与审计', async () =>
   assert.equal(memory.state.saved.support_vehicle_occupied_count, 0);
   assert.equal(memory.state.saved.self_drive_occupied_count, 0);
   assert.equal(memory.state.saved.created_by, 'admin');
+  assert.equal(memory.state.saved.registration_mode, 'open');
   assert.equal(memory.state.audits[0].action, 'activity.create');
   await assert.rejects(
     saveActivity(
@@ -893,7 +901,7 @@ test('截止已过的 published 活动仍可保持 published 编辑', async () =
   assert.equal(result.version, 3);
 });
 
-test('draft 首次发布仍拒绝已过报名截止时间', async () => {
+test('draft 首次发布按活动日零点重算截止时间', async () => {
   const historicalInput = {
     ...input,
     status: 'draft',
@@ -912,19 +920,17 @@ test('draft 首次发布仍拒绝已过报名截止时间', async () => {
     created_by: 'admin',
   };
 
-  await assert.rejects(
-    saveActivity(
-      store(current),
-      {
-        openid: 'admin',
-        activityId: current._id,
-        expectedVersion: 1,
-        activity: { ...historicalInput, status: 'published' },
-      },
-      now,
-    ),
-    { code: 'INVALID_ACTIVITY_TIME' },
+  const published = await saveActivity(
+    store(current),
+    {
+      openid: 'admin',
+      activityId: current._id,
+      expectedVersion: 1,
+      activity: { ...historicalInput, status: 'published' },
+    },
+    now,
   );
+  assert.equal(published.signup_deadline.toISOString(), '2026-09-01T16:00:00.000Z');
 });
 
 test('普通成员可创建草稿但不能直发公开活动，仍不能编辑他人或结束活动', async () => {
@@ -1957,7 +1963,7 @@ test('俱乐部 OWNER/ADMIN 审批活动使用 review_version CAS，重复 reque
   );
 });
 
-test('审批通过前重新校验报名截止时间，过期投稿保持待审且不写审计', async () => {
+test('审批通过前按活动日期重算默认截止时间', async () => {
   const current = {
     _id: 'activity-expired-review',
     ...input,
@@ -1976,25 +1982,21 @@ test('审批通过前重新校验报名截止时间，过期投稿保持待审�
     membership: { role: 'OWNER', status: 'active' },
   });
 
-  await assert.rejects(
-    reviewActivity(
-      reviewStore,
-      {
-        openid: 'club-owner',
-        activityId: current._id,
-        decision: 'approve',
-        requestId: 'review_expired_1',
-        expectedReviewVersion: 1,
-      },
-      now,
-    ),
-    (error) =>
-      error instanceof DomainError &&
-      error.code === 'INVALID_ACTIVITY_TIME' &&
-      /晚于当前时间/.test(error.message),
+  const reviewed = await reviewActivity(
+    reviewStore,
+    {
+      openid: 'club-owner',
+      activityId: current._id,
+      decision: 'approve',
+      requestId: 'review_expired_1',
+      expectedReviewVersion: 1,
+    },
+    now,
   );
-  assert.equal(reviewStore.state.saved, undefined);
-  assert.equal(reviewStore.state.audits.length, 0);
+  assert.equal(reviewed.status, 'published');
+  assert.equal(reviewed.registration_mode, 'approval');
+  assert.equal(new Date(reviewed.signup_deadline).toISOString(), '2026-10-10T16:00:00.000Z');
+  assert.equal(reviewStore.state.audits.length, 1);
 });
 
 test('已驳回活动重投开启新审批轮次并清除旧审批幂等结果', async () => {

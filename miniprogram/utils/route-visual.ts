@@ -170,17 +170,24 @@ export function prepareRouteVisualModel<
 >(
   value: unknown,
   keyPoints: readonly T[] = [],
-  fromGpx = false,
-  preserveKeyPointIds: readonly string[] = [],
+  outlineIsWgs84 = false,
+  gcj02KeyPointIds: readonly string[] = [],
 ) {
   const cleaned = cleanRouteOutline(value);
-  const convertedOutline = fromGpx
+  // 坐标系不变量：后端 GPX 轮廓恒为 WGS84，只允许在此显示边界转换一次；
+  // 微信 chooseLocation 选点恒为 GCJ-02，命中 gcj02KeyPointIds 时必须原样透传。
+  const convertedOutline = outlineIsWgs84
     ? cleaned.map((point) => wgs84ToGcj02(point.latitude, point.longitude))
     : cleaned;
   const outline = hasRouteSpan(convertedOutline) ? convertedOutline : [];
-  const preserved = new Set(preserveKeyPointIds);
+  const preservedGcj02Points = new Set(gcj02KeyPointIds);
   const displayedKeyPoints = keyPoints.map((point) => {
-    if (!fromGpx || preserved.has(point.id) || !finite(point.lat) || !finite(point.lng))
+    if (
+      !outlineIsWgs84 ||
+      preservedGcj02Points.has(point.id) ||
+      !finite(point.lat) ||
+      !finite(point.lng)
+    )
       return point;
     const converted = wgs84ToGcj02(point.lat, point.lng);
     return { ...point, lat: converted.latitude, lng: converted.longitude };

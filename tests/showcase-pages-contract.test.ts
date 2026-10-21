@@ -848,11 +848,9 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(templates).toContain('ra-climb-highest');
     expect(templates).toContain('段爬升');
     expect(templates).toContain('段下降');
-    // 关键公里点：地名 + km + 海拔 + 经纬度 + 用途/注意
-    expect(templates).toContain('ra-tl-geo');
+    // 关键公里点：地名 + km + 海拔 + 用途/注意；原始经纬度不得进入普通用户 UI。
     expect(templates).toContain('ra-tl-caution');
-    expect(templates).toContain('°N');
-    expect(templates).toContain('°E');
+    expect(templates).not.toContain('ra-tl-geo');
     // 补给方案：节奏 + 补给点 + ETA + 携带下限
     expect(templates).toContain('ra-rhythm-list');
     expect(templates).toContain('ra-sp-row');
@@ -860,15 +858,15 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(templates).toContain('预计到达');
     expect(templates).toContain('随身携带下限');
     expect(templates).toContain('ra-carry-list');
-    // 卫生间 POI：WC 标记 + 名称 + 经纬度 + 偏离距离 + 开放备注
+    // 卫生间 POI：WC 标记 + 名称 + 偏离距离 + 开放备注，不展示原始坐标。
     expect(templates).toContain('ra-wc-list');
     expect(templates).toContain('ra-wc-mark');
-    expect(templates).toContain('ra-wc-geo');
+    expect(templates).not.toContain('ra-wc-geo');
     expect(templates).toContain('偏离主路');
     expect(templates).toContain('全天开放');
     // V3 高保真"路线走向·关键地名"模块（对齐最终设计参考）
     expect(templates).toContain('路线走向 · 关键地名');
-    expect(templates).toContain('按海拔着色 · 骑行方向顺序 · 点击可查看地名与坐标');
+    expect(templates).toContain('按海拔着色 · 骑行方向顺序 · 点击可查看地名与路线提示');
     expect(templates).toContain('脱敏演示样本');
     // 图层筛选芯片（全部 / 地名 / 补给 / 风险 / 卫生间 / 坡段）
     expect(templates).toContain('ra-map-filters');
@@ -884,13 +882,15 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(templates).toContain('坡顶');
     expect(templates).toContain('长下坡');
     expect(templates).toContain('卫生间');
-    // 点位详情浮层：类型 chip + 子信息 + 数据来源 + 坐标 + 复制坐标
+    // 普通用户详情不展示原始坐标；起点卡只保留地名、必要描述和导航快捷按钮。
     expect(templates).toContain('ra-map-detail');
-    expect(templates).toContain('ra-detail-type');
-    expect(templates).toContain('ra-detail-provenance');
-    expect(templates).toContain('ra-detail-coord');
-    expect(templates).toContain('复制坐标');
-    expect(templates).toContain('data-action="copy-route-coord"');
+    expect(templates).toContain('ra-map-detail-start');
+    expect(templates).toContain('data-action="navigate-route-start"');
+    expect(script).toContain("action === 'navigate-route-start'");
+    expect(templates).toContain('导航到起点');
+    expect(templates).not.toContain('ra-detail-coord');
+    expect(templates).not.toContain('copy-route-coord');
+    expect(templates).not.toContain('fmtLatLng');
     // 不得退回技术痕迹文案（最终设计参考允许"数据来源 / 置信度"作为常规字段，
     // 真正要禁的是"未接入 / 待接入 / 事实源 / 数据边界 / 数据质量 / 逆地理编码 / 坐标复制 / TODO"等开发态话术）
     const raSlice = templates.slice(
@@ -1387,16 +1387,14 @@ describe('报名模式（公开 / 审批）· Pages 原型契约', () => {
     expect(css).not.toMatch(/\.mode-(pill|cta)-open[^{}]*\{[^}]*--color-status-/s);
   });
 
-  it('Pages 原型未触碰运行小程序代码：miniprogram/cloudfunctions 内不出现 registration_mode', () => {
-    // 本次仅更新 docs + tests；运行代码保持原样
-    const grep = (file: string) => {
-      try {
-        return readFileSync(file, 'utf8');
-      } catch {
-        return '';
-      }
-    };
-    expect(grep('miniprogram/pages/registration-form/index.js')).not.toMatch(/registration_mode/);
-    expect(grep('cloudfunctions/activities/index.js')).not.toMatch(/registration_mode/);
+  it('Pages 报名模式契约已同步到运行小程序与云函数', () => {
+    const repository = readFileSync('miniprogram/repositories/cloud.ts', 'utf8');
+    const editor = readFileSync('miniprogram/pages/admin/activity-edit/index.wxml', 'utf8');
+    const registration = readFileSync('cloudfunctions/registration/domain/use-cases.js', 'utf8');
+    expect(repository).toContain('registration_mode');
+    expect(editor).toContain('data-mode="open"');
+    expect(editor).toContain('data-mode="approval"');
+    expect(editor).not.toContain('form.deadlineDate');
+    expect(registration).toContain("activity.registration_mode === 'open'");
   });
 });

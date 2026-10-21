@@ -51,12 +51,17 @@ describe('完整路线分析页合同', () => {
       '{{selectedPoint.name}}',
       '{{selectedPoint.typeLabel}}',
       '{{selectedPoint.kmText}}',
-      '{{selectedPoint.coordinateText}}',
       '{{selectedPoint.elevationText}}',
       '{{selectedPoint.gradeText}}',
       '{{selectedPoint.note}}',
     ])
       expect(template).toContain(detail);
+    // 普通用户路线详情不得泄露原始坐标；起点只提供明确的地图导航快捷方式。
+    expect(template).not.toMatch(/coordinateText|coordinate-value|>坐标</);
+    expect(page).not.toContain('coordinateText');
+    expect(template).toContain('bindtap="navigateToStart"');
+    expect(template).toContain('导航到起点');
+    expect(page).toContain('wx.openLocation({');
     expect(styles).toContain('min-height: 44px');
     expect(styles).toContain('border-radius: 999rpx');
     expect(template).toContain('aria-pressed="{{selectedPointId === point.id}}"');
@@ -82,7 +87,7 @@ describe('完整路线分析页合同', () => {
     expect(template).toContain('class="analysis-card" wx:if="{{profileAvailable}}"');
     expect(template).toContain('wx:if="{{selectedPoint.hasElevation}}"');
     expect(template).toContain('wx:if="{{selectedPoint.hasGrade}}"');
-    expect(template).toContain('wx:if="{{selectedPoint.hasCoordinate}}"');
+    expect(template).toContain('wx:if="{{selectedPoint.canNavigate}}"');
     expect(page).toContain('mapAvailable: analysis.outline.length > 1');
     expect(page).toContain('profileAvailable: analysis.profile.length > 1');
     expect(page).toContain('analysis.overview.ascentM !== null');
@@ -158,7 +163,7 @@ describe('完整路线分析页合同', () => {
       '爬升变化',
       '关键地名备注',
       '补给方案',
-      '卫生间坐标',
+      '卫生间点位',
       '真实数据展示规则',
       '字段级隐藏',
       '整模块隐藏',

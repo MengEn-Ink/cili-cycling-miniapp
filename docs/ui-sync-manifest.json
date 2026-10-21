@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "c78300451987a7a16031f3600aab2d7a34d2ec7b",
-  "syncedAt": "2026-10-21T10:58:00.000+08:00",
+  "syncedThrough": "dd87949dbcf0069b5ba427c49f360948cf7ddcf2",
+  "syncedAt": "2026-10-21T13:30:00.000+08:00",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:33b39083c699c0b451d4945a6c3de662bea9c17634b4fd6377d780f7de748ff4"
+    "digest": "sha256:98a5cdbf0b221b1f6a09e8d86ecba69b6be448820fa64a28d9403741e9af79b4"
   },
   "prototype": {
-    "digest": "sha256:799fb044a36e229a2db6f9894ab8a2dc7da0bbae671c7db90a722039a9a8209e"
+    "digest": "sha256:4aeed7f4d997b743a4e7350ab1dc951fe032e67331a26cdfac07f654e28f3361"
   },
   "routes": [
     {
@@ -114,7 +114,7 @@
         "state": "高密度路线分析已融合沸点主题",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "路线分析保留地图、海拔、关键点和分段完整密度，同时接入沸点主题表面、圆角与 44px 触控下限；Pages 已同步，开发版上传后复验地图贴路与真机可读性。"
+        "note": "Pages 于 2026-10-21 按 375×812 重采：GPX 事实坐标保持 WGS84，仅在地图展示边界转换一次 GCJ-02；微信选点不重复转换；普通用户页移除原始坐标文本，起点只展示地名并提供导航。DevTools 证据保持 blocked，必须在新开发版复验轨迹贴路后才能上线。"
       },
       {
         "id": "registration-form",
@@ -141,7 +141,7 @@
         "state": "已通过凭证",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "Pages 完整交互原型已在 2026-10-18 使用本地浏览器重新采集 375×812 截图；DevTools 证据仍保持 blocked，待新开发版逐页复验。"
+        "note": "Pages 于 2026-10-21 按 375×812 重采；查看路线与取消报名两个操作保持独立区块间距，微信端截图保持 blocked，待新开发版复验按钮无贴合和误触。"
       },
       {
         "id": "profile",
@@ -156,10 +156,10 @@
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "常用管理 · 客户端 2026.10.21.1",
+        "state": "常用管理 · 客户端 2026.10.21.4",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "Pages 于 2026-10-20 使用本地 Aime 浏览器按 375×812 重采：展示活动通知、微信隐私管理与安全缓存清理，并明确不会退出登录或删除业务数据；DevTools 图片沿用既有基线且保持 blocked，未伪造或声明双端已对齐。"
+        "note": "Pages 于 2026-10-21 使用 375×812 重采，展示客户端 2026.10.21.4 路线导航与双报名模式更新；DevTools 图片保持 blocked，待新开发版逐页复验。"
       },
       {
         "id": "capability-card",
@@ -192,10 +192,10 @@
         "id": "admin-activity-edit",
         "devtools": "admin-activity-edit-devtools.png",
         "pages": "admin-activity-edit-pages.png",
-        "state": "活动编辑 · Strava OAuth 导入 / 手动 GPX 降级",
+        "state": "活动编辑 · Strava 导入 / 公开与审批报名",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "2026-10-21 同步最小 Strava 路线导入交互：未连接时生成并复制外部授权链接，回调后轮询连接状态；已连接时粘贴标准路线 URL 下载并解析 GPX。原手动上传、失败重试与移除路线入口全部保留。DevTools 证据保持 blocked，待配置云端 OAuth 后重采。"
+        "note": "Pages 于 2026-10-21 按 375×812 重采：保留 Strava OAuth 导入与手动 GPX 降级，并提供公开报名、审批报名两种模式；新建默认公开，报名截止时间由活动日零点自动生成。DevTools 仍保持 blocked，待新开发版复验。"
       },
       {
         "id": "admin-reviews",

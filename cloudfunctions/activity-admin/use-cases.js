@@ -439,6 +439,13 @@ async function saveActivity(
     }
     const targetActivityId = currentId || (await tx.createActivityId());
     let effectiveActivity = effectiveActivityInput(current, activity);
+    if (effectiveActivity.registration_mode === undefined) {
+      effectiveActivity = {
+        ...effectiveActivity,
+        // 新建默认公开；缺字段的存量活动编辑时显式回填审批，禁止兼容升级改变报名语义。
+        registration_mode: current ? 'approval' : 'open',
+      };
+    }
     const isUnpublish = current?.status === 'published' && effectiveActivity.status === 'draft';
     const transitionReason = isUnpublish ? requiredReason(reason, '下架活动') : undefined;
     const routePreviewsToConsume = [];
@@ -580,16 +587,8 @@ async function saveActivity(
       effectiveActivity.status === 'draft' || effectiveActivity.status === 'rejected'
         ? validateDraftInput(effectiveActivity, occupiedCount, validationOptions)
         : effectiveActivity.status === 'pending_review'
-          ? validateReviewInput(effectiveActivity, occupiedCount, now, {
-              ...validationOptions,
-              requireFutureDeadline: current?.status !== 'pending_review',
-            })
-          : validatePublishInput(effectiveActivity, occupiedCount, now, {
-              ...validationOptions,
-              requireFutureDeadline:
-                ['draft', 'rejected'].includes(current?.status) &&
-                effectiveActivity.status === 'published',
-            });
+          ? validateReviewInput(effectiveActivity, occupiedCount, now, validationOptions)
+          : validatePublishInput(effectiveActivity, occupiedCount, now, validationOptions);
     // 群二维码时间只信服务端与数据库存量：新上传或文件变化取 now，未变化沿用 current。
     const currentGroupQrUploadedAt = current?.group_qr_code_uploaded_at;
     const trustedCurrentGroupQrUploadedAt =
@@ -834,14 +833,14 @@ async function reviewActivity(store, request, now = new Date()) {
         fail('FORBIDDEN', '仅所属俱乐部管理员可以审批活动');
     }
 
+    let approvedInput;
     if (decision === 'approve') {
       const publishInput = effectiveActivityInput(current, { status: 'published' });
       const legacyImages = Array.isArray(current.images) && current.images.length > 3;
-      // 投稿时合规不代表审批时仍可发布（例如报名截止时间已经过去）。审批必须按“现在”
-      // 重新执行发布校验，失败则整个事务不写状态、不写审计。
-      validatePublishInput(publishInput, current.occupied_count ?? 0, now, {
+      // 投稿时合规不代表审批时仍可发布。审批按当前活动日期重新执行发布校验，
+      // 并使用规范化结果刷新自动报名截止时间。
+      approvedInput = validatePublishInput(publishInput, current.occupied_count ?? 0, now, {
         ...(legacyImages ? { maxImages: 9 } : {}),
-        requireFutureDeadline: true,
       });
     }
 
@@ -849,6 +848,12 @@ async function reviewActivity(store, request, now = new Date()) {
     assertStatusTransition(current.status, nextStatus);
     const value = {
       ...current,
+      ...(approvedInput
+        ? {
+            signup_deadline: approvedInput.signup_deadline,
+            registration_mode: approvedInput.registration_mode,
+          }
+        : {}),
       status: nextStatus,
       version: Number.isInteger(current.version) ? current.version + 1 : 1,
       review_version: current.review_version + 1,

@@ -71,13 +71,16 @@ function mapState(analysis: RouteAnalysis, selectedSegment?: RouteSegment | null
   };
 }
 
-function viewPoint(point: RouteKeyPoint, index: number) {
+function viewPoint(point: RouteKeyPoint, index: number, navigationAddress = '') {
   const hasCoordinate = point.lat !== null && point.lng !== null;
   const labels = POINT_LABELS[point.type];
   return {
     ...point,
     markerId: index + 1,
     computed: point.source !== '活动路线',
+    isStart: point.id === 'start',
+    canNavigate: point.id === 'start' && hasCoordinate,
+    navigationAddress,
     typeLabel: labels.type,
     shortType: labels.type.slice(0, 1),
     markerLabel: labels.marker,
@@ -92,7 +95,6 @@ function viewPoint(point: RouteKeyPoint, index: number) {
       point.gradePercent === null
         ? ''
         : `${point.gradePercent > 0 ? '+' : ''}${point.gradePercent.toFixed(1)}%`,
-    coordinateText: hasCoordinate ? `${point.lat!.toFixed(6)}, ${point.lng!.toFixed(6)}` : '',
     hasCoordinate,
   };
 }
@@ -250,11 +252,17 @@ Page({
       ];
       const analysis = routeAnalysisForMap(
         sourceAnalysis,
-        Boolean(activity.route.gpxFileId),
+        Boolean(activity.route.gpxFileId || activity.route.publicRoutePreviewId),
         preserveKeyPointIds,
       );
       this.analysis = analysis;
-      const keyPoints = analysis.keyPoints.map(viewPoint);
+      const keyPoints = analysis.keyPoints.map((point, index) =>
+        viewPoint(
+          point,
+          index,
+          point.id === 'start' ? activity.route.startLocation?.address || '' : '',
+        ),
+      );
       // 只有活动路线的真实选点才进入地图；剖面派生点仅展示计算值，不生成坐标 marker。
       const realKeyPoints = keyPoints.filter((point) => point.hasCoordinate);
       const hasRealKeyPoints = realKeyPoints.length > 0;
@@ -362,6 +370,19 @@ Page({
       },
       () => this.drawElevation(),
     );
+  },
+  navigateToStart() {
+    const start = this.data.keyPoints.find(
+      (point: ReturnType<typeof viewPoint>) => point.id === 'start',
+    );
+    if (!start?.canNavigate || start.lat === null || start.lng === null) return;
+    wx.openLocation({
+      latitude: start.lat,
+      longitude: start.lng,
+      name: start.name,
+      address: start.navigationAddress,
+      scale: 16,
+    });
   },
   selectSegment(event: any) {
     const segment = this.data.segments.find(

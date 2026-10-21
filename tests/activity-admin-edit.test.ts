@@ -328,8 +328,6 @@ describe('日常活动极简创建与编辑', () => {
     expect(page.data.form).toEqual({
       title: '环湖骑行',
       ...splitLocalDateTime(activity.startAt),
-      deadlineDate: formatLocalDateTime(activity.deadline).slice(0, 10),
-      deadlineTime: formatLocalDateTime(activity.deadline).slice(11, 16),
       routeStart: '起点',
       description: '说明',
       stravaRouteUrl: 'https://www.strava.com/routes/123',
@@ -525,7 +523,7 @@ describe('日常活动极简创建与编辑', () => {
     });
   });
 
-  it('发布要求活动标题、集合日期时间、报名截止日期时间和集合地点', async () => {
+  it('发布只要求活动标题、集合日期时间和集合地点，截止时间不再单独输入', async () => {
     await page.onLoad({});
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
     expect(rideService.saveActivity).not.toHaveBeenCalled();
@@ -548,52 +546,16 @@ describe('日常活动极简创建与编辑', () => {
     page.data.form.startTime = '08:00';
     await page.save({ currentTarget: { dataset: { status: 'published' } } });
     expect(wx.showModal).toHaveBeenLastCalledWith(
-      expect.objectContaining({ content: '请选择报名截止日期' }),
-    );
-
-    page.data.form.deadlineDate = '2026-10-17';
-    await page.save({ currentTarget: { dataset: { status: 'published' } } });
-    expect(wx.showModal).toHaveBeenLastCalledWith(
-      expect.objectContaining({ content: '请选择报名截止时间' }),
-    );
-
-    page.data.form.deadlineTime = '20:00';
-    await page.save({ currentTarget: { dataset: { status: 'published' } } });
-    expect(wx.showModal).toHaveBeenLastCalledWith(
       expect.objectContaining({ content: '请选择或填写集合地点' }),
     );
   });
 
-  it.each([
-    ['相等', '2026-10-18', '08:00'],
-    ['晚于', '2026-10-18', '08:01'],
-  ])('发布拒绝报名截止时间%s集合时间', async (_label, deadlineDate, deadlineTime) => {
-    await page.onLoad({});
-    Object.assign(page.data.form, {
-      title: '周末拉练',
-      startDate: '2026-10-18',
-      startTime: '08:00',
-      deadlineDate,
-      deadlineTime,
-      routeStart: '湖边广场',
-    });
-
-    await page.save({ currentTarget: { dataset: { status: 'published' } } });
-
-    expect(rideService.saveActivity).not.toHaveBeenCalled();
-    expect(wx.showModal).toHaveBeenLastCalledWith(
-      expect.objectContaining({ content: '报名截止时间必须早于集合时间' }),
-    );
-  });
-
-  it('跨日报名截止时间早于集合时间时可发布', async () => {
+  it('创建和编辑均按最终活动日期重算当地零点截止时间', async () => {
     await page.onLoad({});
     Object.assign(page.data.form, {
       title: '跨日晨骑',
       startDate: '2026-10-19',
       startTime: '00:15',
-      deadlineDate: '2026-10-18',
-      deadlineTime: '23:59',
       routeStart: '湖边广场',
     });
 
@@ -601,24 +563,16 @@ describe('日常活动极简创建与编辑', () => {
 
     expect(rideService.saveActivity).toHaveBeenCalledTimes(2);
     const payload = rideService.saveActivity.mock.calls[0][0];
+    expect(payload.deadline).toBe(new Date(2026, 9, 19, 0, 0, 0).toISOString());
     expect(new Date(payload.deadline).getTime()).toBeLessThan(new Date(payload.startAt).getTime());
-  });
 
-  it('草稿不强校验空或晚于集合时间的截止输入，并按现有服务端契约保存派生截止时间', async () => {
-    await page.onLoad({});
-    Object.assign(page.data.form, {
-      title: '待完善活动',
-      startDate: '2026-10-18',
-      startTime: '08:00',
-      deadlineDate: '2026-10-18',
-      deadlineTime: '09:00',
-    });
-
+    rideService.saveActivity.mockClear();
+    await page.onLoad({ id: activity.id });
+    page.data.form.startDate = '2026-10-20';
     await page.save({ currentTarget: { dataset: { status: 'draft' } } });
-
-    expect(rideService.saveActivity).toHaveBeenCalledOnce();
-    const payload = rideService.saveActivity.mock.calls[0][0];
-    expect(new Date(payload.deadline).getTime()).toBe(new Date(payload.startAt).getTime() - 60_000);
+    expect(rideService.saveActivity.mock.calls[0][0].deadline).toBe(
+      new Date(2026, 9, 20, 0, 0, 0).toISOString(),
+    );
   });
 
   it('编辑存量活动时只更新可见字段并保留历史运营配置', async () => {
@@ -724,6 +678,7 @@ describe('日常活动极简创建与编辑', () => {
         title: '周末晨骑',
         status: 'draft',
         capacity: 500,
+        registrationMode: 'open',
         registrationUnlimited: true,
         fee: '免费',
         route: expect.objectContaining({ end: '', distanceKm: 0, elevationM: 0, level: '' }),
@@ -733,7 +688,7 @@ describe('日常活动极简创建与编辑', () => {
       expect.stringMatching(/^[A-Za-z0-9_-]{8,128}$/),
     );
     const payload = rideService.saveActivity.mock.calls[0][0];
-    expect(new Date(payload.deadline).getTime()).toBe(new Date(payload.startAt).getTime() - 60_000);
+    expect(payload.deadline).toBe(new Date(2026, 9, 18, 0, 0, 0).toISOString());
     expect(new Date(payload.endAt).getTime()).toBe(
       new Date(payload.startAt).getTime() + 14_400_000,
     );
@@ -754,18 +709,8 @@ describe('日常活动极简创建与编辑', () => {
     });
     expect(page.data.form).toMatchObject({ startDate: '2026-10-20', startTime: '07:30' });
 
-    page.dateTimePicker({
-      currentTarget: { dataset: { target: 'deadline', part: 'date' } },
-      detail: { value: '2026-10-19' },
-    });
-    page.dateTimePicker({
-      currentTarget: { dataset: { target: 'deadline', part: 'time' } },
-      detail: { value: '20:00' },
-    });
-    expect(page.data.form).toMatchObject({
-      deadlineDate: '2026-10-19',
-      deadlineTime: '20:00',
-    });
+    page.registrationModeChange({ currentTarget: { dataset: { mode: 'approval' } } });
+    expect(page.data.registrationMode).toBe('approval');
   });
 
   it('新建模式只选日期不会注入默认时间，补选时间后可发布并在重开时回显', async () => {
@@ -1990,9 +1935,12 @@ describe('日常活动极简创建与编辑', () => {
     expect(template).toContain('form.title');
     expect(template).toContain('form.startDate');
     expect(template).toContain('form.startTime');
-    expect(template).toContain('报名截止时间');
-    expect(template).toContain('form.deadlineDate');
-    expect(template).toContain('form.deadlineTime');
+    expect(template).toContain('报名模式');
+    expect(template).toContain('公开报名');
+    expect(template).toContain('审核报名');
+    expect(template).toContain('活动开始日当地 00:00');
+    expect(template).not.toContain('form.deadlineDate');
+    expect(template).not.toContain('form.deadlineTime');
     expect(template).toContain('已有 Strava 路线，但缺少可下载的 GPX');
     expect(template).toContain('GPX 解析失败或详情缺失');
     expect(template).toContain('已有 GPX：参与者可查看路线详情并下载原文件');

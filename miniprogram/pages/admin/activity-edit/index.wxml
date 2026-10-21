@@ -42,18 +42,19 @@
         <view wx:if="{{formErrors.startAt}}" class="field-error field-error-copy">{{formErrors.startAt}}</view>
       </view>
 
-      <view class="field" data-error-anchor="deadlineAt">
-        <view class="field-label">报名截止时间 <text class="required">发布必填</text></view>
-        <view class="date-time-row">
-          <picker mode="date" value="{{form.deadlineDate}}" bindchange="dateTimePicker" data-target="deadline" data-part="date">
-            <view class="picker-value">{{form.deadlineDate || '选择截止日期'}}</view>
-          </picker>
-          <picker mode="time" value="{{form.deadlineTime}}" bindchange="dateTimePicker" data-target="deadline" data-part="time">
-            <view class="picker-value">{{form.deadlineTime || '选择截止时间'}}</view>
-          </picker>
+      <view class="field registration-mode-field">
+        <view class="field-label">报名模式</view>
+        <view class="registration-mode-options" role="radiogroup" aria-label="报名模式">
+          <button class="registration-mode-option {{registrationMode === 'open' ? 'is-active' : ''}}" data-mode="open" bindtap="registrationModeChange" role="radio" aria-checked="{{registrationMode === 'open'}}">
+            <text class="registration-mode-title">公开报名</text>
+            <text class="section-help">资料与名额校验通过后直接报名成功</text>
+          </button>
+          <button class="registration-mode-option {{registrationMode === 'approval' ? 'is-active' : ''}}" data-mode="approval" bindtap="registrationModeChange" role="radio" aria-checked="{{registrationMode === 'approval'}}">
+            <text class="registration-mode-title">审核报名</text>
+            <text class="section-help">提交后等待管理员审批</text>
+          </button>
         </view>
-        <view class="section-help">发布或提交审核时必填，且必须早于集合时间；保存草稿不会因未填写而中断。</view>
-        <view wx:if="{{formErrors.deadlineAt}}" class="field-error field-error-copy">{{formErrors.deadlineAt}}</view>
+        <view class="section-help">报名截止自动设为活动开始日当地 00:00，无需单独填写。</view>
       </view>
 
       <view class="field" data-error-anchor="routeStart">
