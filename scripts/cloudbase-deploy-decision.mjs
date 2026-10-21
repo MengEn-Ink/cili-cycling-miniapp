@@ -14,6 +14,10 @@ const MEDIA_SECRET_CONSUMERS = Object.freeze([
   'activity-admin',
   'club-application',
 ]);
+const STRAVA_CONFIG_CONSUMERS = Object.freeze(['strava-bridge', 'strava-callback']);
+const CONFIG_CONSUMERS = Object.freeze([
+  ...new Set([...MEDIA_SECRET_CONSUMERS, ...STRAVA_CONFIG_CONSUMERS]),
+]);
 const MEDIA_SECRET_DEPLOYMENT_PATHS = new Set([
   '.github/workflows/deploy-cloudbase.yml',
   'scripts/cloudbase-function-env.mjs',
@@ -53,7 +57,7 @@ export function createCloudBaseDeployDecision(changedPaths, config) {
     if (INFRASTRUCTURE_PATHS.has(file)) applyInfrastructure = true;
 
     if (MEDIA_SECRET_DEPLOYMENT_PATHS.has(file)) {
-      MEDIA_SECRET_CONSUMERS.forEach((name) => {
+      CONFIG_CONSUMERS.forEach((name) => {
         if (knownFunctions.has(name)) selected.add(name);
       });
     }
@@ -63,16 +67,24 @@ export function createCloudBaseDeployDecision(changedPaths, config) {
       continue;
     }
 
-    if (
-      file === 'scripts/prepare-cloudfunctions.mjs' ||
-      file.startsWith('cloudfunctions/shared/')
-    ) {
+    if (file === 'scripts/prepare-cloudfunctions.mjs') {
+      [...SHARED_CONSUMERS, ...STRAVA_CONFIG_CONSUMERS].forEach((name) => {
+        if (knownFunctions.has(name)) selected.add(name);
+      });
+      continue;
+    }
+
+    if (file.startsWith('cloudfunctions/shared/')) {
       SHARED_CONSUMERS.forEach((name) => {
         if (knownFunctions.has(name)) selected.add(name);
       });
       continue;
     }
 
+    if (file === 'cloudfunctions/activity-admin/gpx.js' && knownFunctions.has('strava-bridge'))
+      selected.add('strava-bridge');
+    if (file === 'cloudfunctions/strava-bridge/core.js' && knownFunctions.has('strava-callback'))
+      selected.add('strava-callback');
     const match = /^cloudfunctions\/([^/]+)\//.exec(file);
     if (match && knownFunctions.has(match[1])) selected.add(match[1]);
   }

@@ -2374,6 +2374,142 @@ describe('CloudRepository 活动详情路线与公开成员', () => {
   });
 });
 
+describe('CloudRepository Strava GPX OAuth 契约', () => {
+  const routeUrl = 'https://www.strava.com/routes/123456';
+  const requestId = 'strava_route_123';
+  const previewDto = {
+    preview_id: 'a'.repeat(64),
+    gpx_file_id: `cloud://env/activity-routes/owner/${'b'.repeat(64)}.gpx`,
+    gpx_sha256: 'b'.repeat(64),
+    generated_preview_file_id: `cloud://env/profile-canonical/${'a'.repeat(32)}/activity-route-preview/${'b'.repeat(64)}/${'c'.repeat(64)}.png`,
+    route_name: 'Strava 周末环湖',
+    distance_km: 52.4,
+    elevation_m: 680,
+    elevation_loss_m: 675,
+    elevation_min_m: 12,
+    elevation_max_m: 486,
+    estimated_moving_time_seconds: 10800,
+    estimation_source: 'cili',
+    elevation_profile: [
+      { distance_km: 0, elevation_m: 12 },
+      { distance_km: 52.4, elevation_m: 30 },
+    ],
+    route_outline: [
+      { latitude: 22, longitude: 114 },
+      { latitude: 22.2, longitude: 114.2 },
+    ],
+    route_bounds: { south: 22, west: 114, north: 22.2, east: 114.2 },
+    expires_at: '2026-10-13T09:30:00.000Z',
+  };
+
+  it('映射连接状态且只调用 strava-bridge/status', async () => {
+    const { cloud, callFunction } = cloudWith(
+      success({ state: 'connected', athlete_name: '山野骑手' }),
+    );
+
+    await expect(new CloudRepository(cloud).getStravaRouteReadiness()).resolves.toEqual({
+      state: 'connected',
+      athleteName: '山野骑手',
+    });
+    expectCall(callFunction, 'strava-bridge', { action: 'status' });
+  });
+
+  it('映射授权地址与过期时间且只调用 strava-bridge/start', async () => {
+    const authorizationUrl =
+      'https://www.strava.com/oauth/authorize?client_id=123&response_type=code&state=state';
+    const { cloud, callFunction } = cloudWith(
+      success({ authorization_url: authorizationUrl, expires_at: '2026-10-13T09:30:00.000Z' }),
+    );
+
+    await expect(new CloudRepository(cloud).startStravaRouteAuthorization()).resolves.toEqual({
+      authorizationUrl,
+      expiresAt: '2026-10-13T09:30:00.000Z',
+    });
+    expectCall(callFunction, 'strava-bridge', { action: 'start' });
+  });
+
+  it('导入路线时发送 URL/requestId 并映射 GPX 预览', async () => {
+    const { cloud, callFunction } = cloudWith(success(previewDto));
+
+    await expect(
+      new CloudRepository(cloud).importStravaRoute(routeUrl, requestId),
+    ).resolves.toEqual({
+      previewId: previewDto.preview_id,
+      gpxFileId: previewDto.gpx_file_id,
+      gpxSha256: previewDto.gpx_sha256,
+      generatedPreviewFileId: previewDto.generated_preview_file_id,
+      routeName: 'Strava 周末环湖',
+      distanceKm: 52.4,
+      elevationM: 680,
+      elevationLossM: 675,
+      elevationMinM: 12,
+      elevationMaxM: 486,
+      estimatedMovingTimeSeconds: 10800,
+      estimationSource: 'cili',
+      elevationProfile: [
+        { distanceKm: 0, elevationM: 12 },
+        { distanceKm: 52.4, elevationM: 30 },
+      ],
+      routeOutline: [
+        { latitude: 22, longitude: 114 },
+        { latitude: 22.2, longitude: 114.2 },
+      ],
+      routeBounds: { south: 22, west: 114, north: 22.2, east: 114.2 },
+      expiresAt: '2026-10-13T09:30:00.000Z',
+    });
+    expectCall(callFunction, 'strava-bridge', {
+      action: 'importRoute',
+      routeUrl,
+      requestId,
+    });
+  });
+
+  it.each([
+    ['status', (repository: CloudRepository) => repository.getStravaRouteReadiness()],
+    ['start', (repository: CloudRepository) => repository.startStravaRouteAuthorization()],
+    [
+      'importRoute',
+      (repository: CloudRepository) => repository.importStravaRoute(routeUrl, requestId),
+    ],
+  ])('%s 保留 strava-bridge 业务错误 envelope', async (_action, invoke) => {
+    const repository = new CloudRepository(
+      cloudWith({
+        ok: false,
+        error: { code: 'STRAVA_NOT_CONNECTED', message: '请先连接 Strava' },
+      }).cloud,
+    );
+
+    await expect(invoke(repository)).rejects.toMatchObject({
+      name: 'CloudRepositoryError',
+      code: 'STRAVA_NOT_CONNECTED',
+      message: '请先连接 Strava',
+    });
+  });
+
+  it('拒绝异常状态、非 Strava 授权地址及无效导入参数', async () => {
+    await expect(
+      new CloudRepository(
+        cloudWith(success({ state: 'refreshing' })).cloud,
+      ).getStravaRouteReadiness(),
+    ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+    await expect(
+      new CloudRepository(
+        cloudWith(
+          success({ authorization_url: 'https://example.com/oauth', expires_at: new Date() }),
+        ).cloud,
+      ).startStravaRouteAuthorization(),
+    ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+
+    const { cloud, callFunction } = cloudWith(success(previewDto));
+    await expect(
+      new CloudRepository(cloud).importStravaRoute(routeUrl, 'bad'),
+    ).rejects.toMatchObject({
+      code: 'VALIDATION_FAILED',
+    });
+    expect(callFunction).not.toHaveBeenCalled();
+  });
+});
+
 describe('CloudRepository Strava 公开路线预览契约', () => {
   const routeUrl = 'https://www.strava.com/routes/123456';
   const previewDto = {

@@ -141,6 +141,16 @@ export interface ClubApplicationRepository {
     expectedUpdatedAt: string,
   ): Promise<SoleClubProfile>;
 }
+export type StravaRouteReadiness = {
+  state: 'connected' | 'disconnected';
+  athleteName: string;
+};
+
+export type StravaAuthorization = {
+  authorizationUrl: string;
+  expiresAt: string;
+};
+
 export interface RideRepository
   extends AdminReviewRepository, ActivityAdminRepository, ClubApplicationRepository {
   listActivities(filter?: ActivityListFilter): Promise<Activity[]>;
@@ -179,6 +189,9 @@ export interface RideRepository
   setAvatar(source: ClientAvatarSource, fileId: string): Promise<Profile>;
   updateProfile(profile: ProfileUpdate): Promise<Profile>;
   getPhoneNumber(code: string): Promise<Profile>;
+  getStravaRouteReadiness(): Promise<StravaRouteReadiness>;
+  startStravaRouteAuthorization(): Promise<StravaAuthorization>;
+  importStravaRoute(routeUrl: string, requestId: string): Promise<RouteGpxPreview>;
   previewPublicStravaRoute(routeUrl: string): Promise<PublicRoutePreview>;
   previewRouteGpx(input: RouteGpxPreviewInput): Promise<RouteGpxPreview>;
   bindRoutePreviewImage(

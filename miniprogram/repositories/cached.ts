@@ -556,6 +556,18 @@ export class CachingRepository implements RideRepository {
     return result;
   }
 
+  getStravaRouteReadiness() {
+    return this.inner.getStravaRouteReadiness();
+  }
+
+  startStravaRouteAuthorization() {
+    return this.inner.startStravaRouteAuthorization();
+  }
+
+  importStravaRoute(routeUrl: string, requestId: string) {
+    return this.inner.importStravaRoute(routeUrl, requestId);
+  }
+
   previewPublicStravaRoute(routeUrl: string) {
     return this.inner.previewPublicStravaRoute(routeUrl);
   }

@@ -2013,6 +2013,34 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
       }),
     );
   }
+  async getStravaRouteReadiness() {
+    const value = expectRecord(await this.call('strava-bridge', { action: 'status' }));
+    if (!['connected', 'disconnected'].includes(String(value.state))) return invalidResponse();
+    return {
+      state: value.state as 'connected' | 'disconnected',
+      athleteName: typeof value.athlete_name === 'string' ? value.athlete_name : '',
+    };
+  }
+  async startStravaRouteAuthorization() {
+    const value = expectRecord(await this.call('strava-bridge', { action: 'start' }));
+    const authorizationUrl =
+      typeof value.authorization_url === 'string' ? value.authorization_url : '';
+    if (!authorizationUrl.startsWith('https://www.strava.com/oauth/authorize?'))
+      return invalidResponse();
+    return { authorizationUrl, expiresAt: dateText(value.expires_at) };
+  }
+  async importStravaRoute(routeUrl: string, requestId: string): Promise<RouteGpxPreview> {
+    if (
+      typeof routeUrl !== 'string' ||
+      routeUrl.length > 256 ||
+      typeof requestId !== 'string' ||
+      !/^[A-Za-z0-9_-]{8,128}$/.test(requestId)
+    )
+      throw new CloudRepositoryError('VALIDATION_FAILED', 'Strava 路线导入参数无效');
+    return mapRouteGpxPreview(
+      await this.call('strava-bridge', { action: 'importRoute', routeUrl, requestId }),
+    );
+  }
   async previewPublicStravaRoute(routeUrl: string): Promise<PublicRoutePreview> {
     if (typeof routeUrl !== 'string' || routeUrl.length > 256)
       throw new CloudRepositoryError('VALIDATION_FAILED', '公开路线链接无效');

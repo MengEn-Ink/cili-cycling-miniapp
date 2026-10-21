@@ -534,3 +534,13 @@ ACTIVITY_REMINDER_TEMPLATE_ID=<notification-send>
 ```
 
 提供完成后，只先做“存在性检查 + GitHub 只读查询 + CloudBase plan”。任何 push、PR、merge、CloudBase apply、函数部署或真实旅程写操作仍按用户授权逐步执行。
+
+## Strava 路线 GPX 导入配置
+
+路线导入使用 `strava-bridge`（小程序调用）和 `strava-callback`（HTTP OAuth callback）。目标环境需人工配置：
+
+- GitHub Environment variable：`STRAVA_CLIENT_ID`
+- GitHub Environment secrets：`STRAVA_CLIENT_SECRET`、`STRAVA_TOKEN_ENCRYPTION_KEY`
+- GitHub Environment variable：`STRAVA_CALLBACK_URL`
+
+`STRAVA_TOKEN_ENCRYPTION_KEY` 必须是严格 base64 编码的 32 字节随机密钥。`STRAVA_CALLBACK_URL` 必须是 HTTPS，并与 Strava 应用后台登记地址及 CloudBase 网关 `/strava/callback` 完全一致。部署脚本会把四项配置仅注入 `strava-bridge`、`strava-callback`，掩码两个 secret，并在部署后回读验证；不得写入仓库、客户端或 `profiles`。

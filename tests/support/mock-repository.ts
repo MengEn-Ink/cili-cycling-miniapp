@@ -751,6 +751,24 @@ export class MockRepository implements RideRepository {
   async getPhoneNumber() {
     return this.read().profile;
   }
+  async getStravaRouteReadiness() {
+    return { state: 'connected' as const, athleteName: 'Mock Rider' };
+  }
+  async startStravaRouteAuthorization() {
+    return {
+      authorizationUrl: 'https://www.strava.com/oauth/authorize?state=mock',
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+    };
+  }
+  async importStravaRoute(routeUrl: string, requestId: string) {
+    const routeId = /\/routes\/([1-9]\d{0,29})\/?$/.exec(routeUrl)?.[1] || '42';
+    return this.previewRouteGpx({
+      gpxFileId: `cloud://mock/activity-routes/mock/${'b'.repeat(64)}.gpx`,
+      gpxSha256: 'b'.repeat(64),
+      fileName: `strava-route-${routeId}.gpx`,
+      requestId,
+    });
+  }
   async previewPublicStravaRoute(routeUrl: string) {
     const match = /\/routes\/([1-9]\d{0,19})\/?$/.exec(routeUrl);
     const routeId = match?.[1] || '42';

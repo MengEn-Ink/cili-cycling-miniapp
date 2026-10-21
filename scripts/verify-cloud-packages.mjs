@@ -46,6 +46,18 @@ for (const name of ['activity-read', 'registration', 'admin-review']) {
     ...(name === 'activity-read' ? ['public-avatar.js', 'list-page.js'] : []),
   ]);
 }
+pack('strava-bridge', ['index.js', 'core.js', 'gpx.js', 'package.json']);
+pack('strava-callback', ['index.js', 'core.js', 'package.json']);
+if (
+  hash(resolve(root, 'cloudfunctions/activity-admin/gpx.js')) !==
+  hash(resolve(root, 'cloudfunctions/strava-bridge/gpx.js'))
+)
+  throw new Error('strava-bridge/gpx.js 未复用当前 activity-admin parseGpx');
+if (
+  hash(resolve(root, 'cloudfunctions/strava-bridge/core.js')) !==
+  hash(resolve(root, 'cloudfunctions/strava-callback/core.js'))
+)
+  throw new Error('strava-callback/core.js 与 strava-bridge/core.js 不一致');
 pack('notification-send', ['index.js', 'core.js', 'store.js', 'access.js', 'package.json']);
 pack('club-application', ['index.js', 'core.js', 'media.js', 'package.json']);
 const cloudbaseConfig = JSON.parse(readFileSync(resolve(root, 'cloudbaserc.json'), 'utf8'));

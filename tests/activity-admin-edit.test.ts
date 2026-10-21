@@ -11,6 +11,9 @@ const rideService = vi.hoisted(() => ({
   previewPublicStravaRoute: vi.fn(),
   previewStravaRoute: vi.fn(),
   getStravaReadiness: vi.fn(),
+  getStravaRouteReadiness: vi.fn(),
+  startStravaRouteAuthorization: vi.fn(),
+  importStravaRoute: vi.fn(),
   getProfile: vi.fn(),
   getAdminActivity: vi.fn(),
   saveActivity: vi.fn(),
@@ -138,6 +141,19 @@ describe('日常活动极简创建与编辑', () => {
       .mockImplementation(async (url: string) => publicPreviewFor(url.split('/').pop() || '42'));
     rideService.previewStravaRoute.mockReset();
     rideService.getStravaReadiness.mockReset().mockResolvedValue({ state: 'ready' });
+    rideService.getStravaRouteReadiness
+      .mockReset()
+      .mockResolvedValue({ state: 'connected', athleteName: '测试骑手' });
+    rideService.startStravaRouteAuthorization
+      .mockReset()
+      .mockResolvedValue({ authorizationUrl: 'https://www.strava.com/oauth/authorize?state=test' });
+    rideService.importStravaRoute.mockReset().mockImplementation(async (url: string) => ({
+      ...publicPreviewFor(url.replace(/\/$/, '').split('/').pop() || '42'),
+      previewId: 'a'.repeat(64),
+      gpxFileId: `cloud://env/activity-routes/${appStore.openid}/${'b'.repeat(64)}.gpx`,
+      gpxSha256: 'b'.repeat(64),
+      routeName: 'Strava GPX 路线',
+    }));
     rideService.getProfile.mockReset().mockResolvedValue({ clubs: [] });
     rideService.getAdminActivity.mockReset().mockResolvedValue(activity);
     rideService.saveActivity.mockReset().mockResolvedValue({ ...activity, version: 8 });
@@ -1520,7 +1536,7 @@ describe('日常活动极简创建与编辑', () => {
     expect(detailSource).toContain('groupQrMayBeExpired');
   });
 
-  it('添加官方路线调用免授权解析并回显可信路线详情', async () => {
+  it('连接 Strava 后下载 GPX 并回显可信路线详情', async () => {
     await page.onLoad({});
     page.data.form.stravaRouteUrl = 'https://www.strava.com/zh-CN/routes/42/';
 
@@ -1532,17 +1548,19 @@ describe('日常活动极简创建与编辑', () => {
       routeId: '42',
       url: 'https://www.strava.com/routes/42',
     });
-    expect(rideService.previewPublicStravaRoute).toHaveBeenCalledWith(
+    expect(rideService.importStravaRoute).toHaveBeenCalledWith(
       'https://www.strava.com/routes/42',
+      expect.any(String),
     );
-    expect(page.data.publicRoutePreview).toMatchObject({
-      previewId: 'c'.repeat(64),
-      routeName: '服务端公开路线',
+    expect(page.data.routePreview).toMatchObject({
+      previewId: 'a'.repeat(64),
+      routeName: 'Strava GPX 路线',
       distanceKm: 42.5,
       elevationM: 860,
     });
-    expect(rideService.previewStravaRoute).not.toHaveBeenCalled();
-    expect(wx.showToast).toHaveBeenCalledWith({ title: '已解析公开路线', icon: 'success' });
+    expect(page.data.publicRoutePreview).toBeUndefined();
+    expect(rideService.previewPublicStravaRoute).not.toHaveBeenCalled();
+    expect(wx.showToast).toHaveBeenCalledWith({ title: 'Strava 路线已导入', icon: 'success' });
   });
 
   it('存量 GPX 缺少可用解析详情时给出重传恢复态', async () => {
@@ -1907,9 +1925,11 @@ describe('日常活动极简创建与编辑', () => {
       elevationMaxM: 486,
       estimationSource: 'cili',
     });
-    expect(rideService.previewPublicStravaRoute).toHaveBeenCalledWith(
+    expect(rideService.importStravaRoute).toHaveBeenCalledWith(
       'https://www.strava.com/routes/42',
+      expect.any(String),
     );
+    expect(rideService.previewPublicStravaRoute).not.toHaveBeenCalled();
   });
 
   it('发布前自动解析公开路线并提交可信预览标识与完整详情', async () => {
@@ -1951,11 +1971,14 @@ describe('日常活动极简创建与编辑', () => {
     expect(template).toContain('备注说明');
     expect(template).toContain('活动群二维码');
     expect(template).toContain('二维码可能已过期');
-    expect(template).toContain('Strava 官方路线（可选）');
-    expect(template).toContain('添加并解析路线');
-    expect(template).toContain('无需 Strava 授权');
-    expect(template).toContain('publicRoutePreview.routeName');
-    expect(template).not.toContain('查看官方路线');
+    expect(template).toContain('Strava 路线导入（可选）');
+    expect(template).toContain('连接 Strava');
+    expect(template).toContain('复制授权链接');
+    expect(template).toContain('从 Strava 导入');
+    expect(template).toContain('授权信息只保存在云端');
+    expect(template).toContain('导入失败时可继续使用下方“上传 GPX”');
+    expect(template).toContain('routePreview.routeName');
+    expect(template).not.toContain('无需 Strava 授权');
     expect(template).toContain('GPX 路线详情（推荐）');
     expect(template).toContain('上传 GPX');
     expect(template).toContain('路线详情已准备好');

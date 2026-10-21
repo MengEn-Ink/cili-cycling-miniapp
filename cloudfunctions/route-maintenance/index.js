@@ -5,9 +5,7 @@ const MAINTENANCE_STATE_ID = '__route_maintenance_v1__';
 const MAX_BATCH = 20;
 const ROUTE_FILE_GRACE_MS = 24 * 60 * 60 * 1000;
 const RETIRED_COLLECTIONS = Object.freeze([
-  'oauth_states',
   'oauth_attempts',
-  'strava_credentials',
   'strava_snapshots',
   'strava_route_previews',
 ]);

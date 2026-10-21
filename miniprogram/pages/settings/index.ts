@@ -11,9 +11,21 @@ const RELEASE_NOTES = [
   {
     version: CLIENT_RELEASE_VERSION,
     date: '2026-10-21',
+    title: 'Strava 路线导入恢复',
+    summary: '连接 Strava 后可直接粘贴官方路线链接导入 GPX，并继续支持手动上传。',
+    latest: true,
+    features: [
+      '活动编辑页支持安全连接 Strava 并刷新授权状态',
+      '粘贴 Strava 路线链接即可下载、解析并预览 GPX',
+      '手动上传 GPX 继续保留，Strava 不可用时可随时降级',
+    ],
+  },
+  {
+    version: '2026.10.21.2',
+    date: '2026-10-21',
     title: '俱乐部主页活动一目了然',
     summary: '俱乐部主页信息层次更清晰，并可直接查看近期骑行活动。',
-    latest: true,
+    latest: false,
     features: [
       '俱乐部封面、身份与简介分区展示，重要信息更易阅读',
       '主页新增近期活动列表，日期、集合地、里程与报名状态一目了然',

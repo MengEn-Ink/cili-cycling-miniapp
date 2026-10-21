@@ -1,91 +1,66 @@
 // @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const collectFiles = (directory: string, extensions: Set<string>): string[] => {
-  if (!existsSync(directory)) return [];
-  return readdirSync(directory, { withFileTypes: true }).flatMap(
-    (entry: { name: string; isDirectory: () => boolean }) => {
-      if (entry.name === 'node_modules') return [];
-      if (entry.name.includes('.test.') || entry.name.includes('.node-test.')) return [];
-      const path = `${directory}/${entry.name}`;
-      if (entry.isDirectory()) return collectFiles(path, extensions);
-      const extension = entry.name.includes('.')
-        ? entry.name.slice(entry.name.lastIndexOf('.'))
-        : '';
-      return extensions.has(extension) ? [path] : [];
-    },
-  );
-};
+const read = (path: string) => readFileSync(path, 'utf8');
 
-const readFiles = (files: string[]) =>
-  files.map((file) => `\n--- ${file} ---\n${readFileSync(file, 'utf8')}`).join('');
+describe('Strava 路线 OAuth 最小恢复契约', () => {
+  it('只恢复路线导入云函数，不恢复账号主页、指标快照和报名耦合', () => {
+    expect(existsSync('cloudfunctions/strava-bridge')).toBe(true);
+    expect(existsSync('cloudfunctions/strava-callback')).toBe(true);
+    expect(existsSync('miniprogram/pages/strava')).toBe(false);
+    expect(existsSync('miniprogram/services/strava-readiness-service.ts')).toBe(false);
 
-describe('Strava 账号能力退役契约', () => {
-  it('不再包含 OAuth 云函数、账号页面、轮询服务或授权素材', () => {
-    const retiredPaths = [
-      'cloudfunctions/strava-auth',
-      'cloudfunctions/strava-callback',
-      'cloudfunctions/strava-shared',
-      'miniprogram/pages/strava',
-      'miniprogram/services/strava-readiness-service.ts',
-      'miniprogram/assets/strava/connect-with-strava.svg',
-    ];
-    expect(retiredPaths.filter(existsSync)).toEqual([]);
-
-    const cloudbase = readFileSync('cloudbaserc.json', 'utf8');
-    const packageConfig = readFileSync('package.json', 'utf8');
-    expect(`${cloudbase}\n${packageConfig}`).not.toMatch(
-      /strava-auth|strava-callback|\/strava\/(?:callback|success|failure)/,
+    const profile = read('cloudfunctions/profile/index.js');
+    const registration = read('cloudfunctions/registration/index.js');
+    expect(`${profile}\n${registration}`).not.toMatch(
+      /strava_credentials|strava_snapshots|syncStrava|disconnectStrava|importStravaAvatar/,
     );
   });
 
-  it('运行时代码不再读取凭证、账号快照或调用旧账号仓储方法', () => {
-    const runtimeSources = readFiles([
-      ...collectFiles('miniprogram', new Set(['.ts', '.js', '.json', '.wxml'])),
-      ...collectFiles('cloudfunctions', new Set(['.js', '.json'])).filter(
-        (file) => !file.startsWith('cloudfunctions/route-maintenance/'),
-      ),
-      ...collectFiles('scripts', new Set(['.js', '.mjs', '.cjs'])),
-    ]);
-
-    expect(runtimeSources).not.toMatch(
-      /oauth_states|oauth_attempts|strava_credentials|strava_snapshots|STRAVA_TOKEN_KEY/,
+  it('凭证与 state 使用独立全拒绝集合且不会被旧退役清理删除', () => {
+    const bootstrap = read('scripts/bootstrap-cloudbase.mjs');
+    const maintenance = read('cloudfunctions/route-maintenance/index.js');
+    expect(bootstrap).toContain("'strava_credentials'");
+    expect(bootstrap).toContain("'oauth_states'");
+    expect(bootstrap).toContain('DENY_RULE = { read: false, write: false }');
+    const retired = maintenance.slice(
+      maintenance.indexOf('const RETIRED_COLLECTIONS'),
+      maintenance.indexOf('const MIGRATION_COLLECTIONS'),
     );
-    expect(runtimeSources).not.toMatch(
-      /importStravaAvatar|getStravaReadiness|ensureStravaReady|startStrava|cancelStravaAuthorization|syncStrava|disconnectStrava|previewStravaRoute|getStravaRouteGpx|exportActivityGpx/,
-    );
+    expect(retired).not.toContain("'strava_credentials'");
+    expect(retired).not.toContain("'oauth_states'");
   });
 
-  it('当前产品与部署文档只描述官方公开路线和 GPX，不再要求 OAuth 配置', () => {
-    const currentDocs = readFiles([
-      'README.md',
-      'docs/requirements-design.md',
-      'docs/cloudbase-schema.md',
-      'docs/sandbox-environment-configuration.md',
-      'scripts/seed-cloudbase/README.md',
-    ]);
-
-    expect(currentDocs).toContain('Strava 官方');
-    expect(currentDocs).toContain('GPX');
-    expect(currentDocs).not.toMatch(/Route Embed|通过官方 Embed 查看/);
-    expect(currentDocs).not.toMatch(
-      /STRAVA_CLIENT_SECRET|STRAVA_TOKEN_ENCRYPTION_KEY|STRAVA_CALLBACK_URL|strava-auth|strava-callback|可用的 Strava 测试授权|OAuth 回调/,
-    );
+  it('环境、网关与部署包包含最小 Strava 配置', () => {
+    const combined = [
+      read('cloudfunctions/.env.example'),
+      read('cloudbaserc.json'),
+      read('scripts/cloudbase-function-env.mjs'),
+      read('scripts/verify-cloud-packages.mjs'),
+    ].join('\n');
+    for (const name of [
+      'STRAVA_CLIENT_ID',
+      'STRAVA_CLIENT_SECRET',
+      'STRAVA_TOKEN_ENCRYPTION_KEY',
+      'STRAVA_CALLBACK_URL',
+    ])
+      expect(combined).toContain(name);
+    expect(combined).toContain('/strava/callback');
+    expect(combined).toContain('strava-bridge');
+    expect(combined).toContain('strava-callback');
   });
 
-  it('用户可见页面只保留官方路线品牌，不再提供账号授权、同步或主页入口', () => {
-    const visibleSources = readFiles([
-      ...collectFiles('miniprogram/pages', new Set(['.ts', '.wxml'])),
-      ...collectFiles('miniprogram/components', new Set(['.ts', '.wxml'])),
-    ]);
-    expect(visibleSources).not.toMatch(
-      /授权 Strava|绑定 Strava|连接 Strava|解绑 Strava|同步(?:最新 )?Strava|Strava 数据|Strava 状态|Strava 主页/,
-    );
-
-    const appConfig = JSON.parse(readFileSync('miniprogram/app.json', 'utf8')) as {
-      pages: string[];
-    };
-    expect(appConfig.pages).not.toContain('pages/strava/index');
+  it('活动编辑页提供连接、导入、复制授权链接与手工 GPX 降级入口', () => {
+    const template = read('miniprogram/pages/admin/activity-edit/index.wxml');
+    const source = read('miniprogram/pages/admin/activity-edit/index.ts');
+    expect(template).toContain('连接 Strava');
+    expect(template).toContain('复制授权链接');
+    expect(template).toContain('从 Strava 导入');
+    expect(template).toContain('上传 GPX');
+    expect(source).toContain('getStravaRouteReadiness');
+    expect(source).toContain('startStravaRouteAuthorization');
+    expect(source).toContain('importStravaRoute');
+    expect(source).not.toMatch(/access_token|refresh_token|CLIENT_SECRET/);
   });
 });

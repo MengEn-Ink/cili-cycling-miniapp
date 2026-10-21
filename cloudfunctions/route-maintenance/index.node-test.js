@@ -473,14 +473,8 @@ test('每个集合使用持久化的 _id 游标推进有界批次', async () => 
   assert.equal(state.cursors.activities, 'activity-b');
 });
 
-test('OAuth 退休 purge 仅在显式开关开启后按批删除旧集合', async () => {
-  const retiredCollections = [
-    'oauth_states',
-    'oauth_attempts',
-    'strava_credentials',
-    'strava_snapshots',
-    'strava_route_previews',
-  ];
+test('旧 Strava 账号能力 purge 仅在显式开关开启后按批删除退役集合', async () => {
+  const retiredCollections = ['oauth_attempts', 'strava_snapshots', 'strava_route_previews'];
   const fixture = memoryStore(
     Object.fromEntries(
       retiredCollections.map((name) => [

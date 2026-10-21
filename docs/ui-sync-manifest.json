@@ -7,10 +7,10 @@
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:5a7b08d71e7511e3a7055c636508cd397cf12b874c1ad4f92c7f601c20bba564"
+    "digest": "sha256:33b39083c699c0b451d4945a6c3de662bea9c17634b4fd6377d780f7de748ff4"
   },
   "prototype": {
-    "digest": "sha256:414c7971f9d9754c45a33b6548f9a7ca9d7f779a1f03ab78de595a0a8d4a59e7"
+    "digest": "sha256:799fb044a36e229a2db6f9894ab8a2dc7da0bbae671c7db90a722039a9a8209e"
   },
   "routes": [
     {
@@ -192,10 +192,10 @@
         "id": "admin-activity-edit",
         "devtools": "admin-activity-edit-devtools.png",
         "pages": "admin-activity-edit-pages.png",
-        "state": "活动编辑 · GPX 解析失败恢复态",
+        "state": "活动编辑 · Strava OAuth 导入 / 手动 GPX 降级",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "Pages 于 2026-10-20 使用本地 Aime 浏览器按 375×812 重采 GPX 解析失败区：可重试解析、放弃本次上传或重新上传；编辑表单同时新增显式报名截止日期/时间，契约覆盖缺失、失败、已就绪三态。DevTools 图片沿用既有基线且保持 blocked，未伪造或声明双端已对齐。"
+        "note": "2026-10-21 同步最小 Strava 路线导入交互：未连接时生成并复制外部授权链接，回调后轮询连接状态；已连接时粘贴标准路线 URL 下载并解析 GPX。原手动上传、失败重试与移除路线入口全部保留。DevTools 证据保持 blocked，待配置云端 OAuth 后重采。"
       },
       {
         "id": "admin-reviews",
