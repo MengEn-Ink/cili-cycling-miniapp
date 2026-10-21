@@ -50,6 +50,13 @@ describe('按需分包与主包字节契约', () => {
     );
   });
 
+  it('分包页面只依赖自身分包或公共模块，避免真机加载空白', () => {
+    const activityEditor = readFileSync('miniprogram/pages/admin/activity-edit/index.ts', 'utf8');
+
+    expect(activityEditor).not.toContain("from '../../activity-detail/");
+    expect(activityEditor).toContain("from '../../../utils/route-visual'");
+  });
+
   it('路线分析专属实现不驻留主包，静态资源计入上传口径', () => {
     const mainFiles = mainPackageFiles();
     expect(mainFiles).toContain('miniprogram/assets/brand/logo-circle-144.png');

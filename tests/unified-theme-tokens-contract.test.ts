@@ -97,9 +97,12 @@ describe('统一主题设计契约', () => {
 
   it('版本和用户可见更新说明升级且旧版本转为历史项', () => {
     const settings = read('miniprogram/pages/settings/index.ts');
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.21.1');
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.21.2');
     expect(settings).toMatch(
-      /version: CLIENT_RELEASE_VERSION[\s\S]*?title: '活动发布全流程恢复'[\s\S]*?latest: true/,
+      /version: CLIENT_RELEASE_VERSION[\s\S]*?title: '活动创建与审批恢复'[\s\S]*?latest: true/,
+    );
+    expect(settings).toMatch(
+      /version: '2026\.10\.21\.1'[\s\S]*?title: '活动发布全流程恢复'[\s\S]*?latest: false/,
     );
     expect(settings).toMatch(
       /version: '2026\.10\.20\.7'[\s\S]*?title: '活动详情重点信息更突出'[\s\S]*?latest: false/,

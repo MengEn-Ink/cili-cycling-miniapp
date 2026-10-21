@@ -52,7 +52,7 @@ Page({
           all: [],
           items: [],
           showLimitNotice: false,
-          error: '暂无可审批活动',
+          error: '',
         });
         return;
       }

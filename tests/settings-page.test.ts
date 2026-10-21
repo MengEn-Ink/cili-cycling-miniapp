@@ -48,19 +48,19 @@ describe('设置页', () => {
     await import('../miniprogram/pages/settings/index');
   });
 
-  it('当前版本为 2026.10.21.1 且 latest 唯一，上一版转为历史项', () => {
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.21.1');
-    expect(page.data.releaseNotes).toHaveLength(19);
+  it('当前版本为 2026.10.21.2 且 latest 唯一，上一版转为历史项', () => {
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.21.2');
+    expect(page.data.releaseNotes).toHaveLength(20);
     expect(page.data.currentRelease).toBe(page.data.releaseNotes[0]);
     expect(page.data.currentRelease).toMatchObject({
-      version: '2026.10.21.1',
+      version: '2026.10.21.2',
       date: '2026-10-21',
-      title: '活动发布全流程恢复',
+      title: '活动创建与审批恢复',
       latest: true,
     });
     expect(page.data.releaseNotes[1]).toMatchObject({
-      version: '2026.10.20.8',
-      title: '出发准备与设置管理升级',
+      version: '2026.10.21.1',
+      title: '活动发布全流程恢复',
       latest: false,
     });
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(

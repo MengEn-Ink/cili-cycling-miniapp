@@ -371,9 +371,6 @@ Page({
   openSettings() {
     wx.navigateTo({ url: '/pages/settings/index' });
   },
-  openCapabilityCard() {
-    wx.navigateTo({ url: '/pages/capability-card/index' });
-  },
   clubAvatarError() {
     if (!this.data.clubAvatarFailed) this.setData({ clubAvatarFailed: true });
   },
