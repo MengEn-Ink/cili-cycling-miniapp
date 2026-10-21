@@ -621,7 +621,7 @@ function mapActivity(raw: unknown, requireRegistrationDecision = false): Activit
   const images = Array.isArray(value.images)
     ? value.images.filter((item: unknown) => typeof item === 'string').slice(0, 9)
     : [];
-  const mapped = {
+  const mapped: Activity = {
     id: value._id,
     version: Number.isInteger(value.version) && value.version >= 1 ? value.version : 0,
     ...(typeof value.club_id === 'string' && value.club_id ? { clubId: value.club_id } : {}),
@@ -641,6 +641,7 @@ function mapActivity(raw: unknown, requireRegistrationDecision = false): Activit
       ? { rejectionReason: value.rejection_reason }
       : {}),
     capacity: Number.isInteger(value.capacity) ? value.capacity : 0,
+    registrationMode: value.registration_mode === 'open' ? 'open' : 'approval',
     ...(value.registration_unlimited === true ? { registrationUnlimited: true } : {}),
     ...(Number.isInteger(value.support_vehicle_capacity)
       ? { supportVehicleCapacity: value.support_vehicle_capacity }
@@ -1192,6 +1193,9 @@ function activityPayload(value: ActivityInput) {
         ? { fee: value.fee }
         : {}),
     ...(Number.isInteger(value.capacity) ? { capacity: value.capacity } : {}),
+    ...(value.registrationMode === 'open' || value.registrationMode === 'approval'
+      ? { registration_mode: value.registrationMode }
+      : {}),
     ...(value.registrationUnlimited === true ? { registration_unlimited: true } : {}),
     ...(Number.isInteger(value.supportVehicleCapacity)
       ? { support_vehicle_capacity: value.supportVehicleCapacity }

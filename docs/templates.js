@@ -842,7 +842,7 @@
           ${field('活动标题', input(error ? '' : v(primary.title), { ph: '请输入活动标题', cls: error ? 'is-error' : '', error: error ? '请填写活动标题' : '' }), tag('pending', '必填'))}
           <p class="sub-title">集合信息</p>
           ${field('集合时间', `<div class="field-2col">${input(v('2026-10-18'), { ph: '选择日期', unit: '›' })}${input(v('06:20'), { ph: '选择时间', unit: '›' })}</div>`, tag('pending', '必填'))}
-          ${field('报名截止', `<div class="field-2col">${input(v('2026-10-17'), { ph: '选择截止日期', unit: '›' })}${input(v('20:00'), { ph: '选择截止时间', unit: '›' })}</div><p class="card-hint">报名截止必须早于集合时间</p>`, tag('pending', '必填'))}
+          ${field('报名截止', `<div class="row"><span class="k">活动开始日 00:00</span><span class="v">自动设置</span></div><p class="card-hint">按活动开始日当地零点自动计算，无需单独填写</p>`) }
           ${field('集合地点', `<div class="input-group"><div>${input(error ? '' : v(primary.start), { ph: '填写地点或从地图选择', cls: error ? 'is-error' : '' })}</div>${btn('地图选点', toast('已打开地图选点'), 'btn-secondary btn-sm')}</div>${error ? '<p class="field-msg is-error">请填写集合地点</p>' : ''}`, tag('pending', '必填'))}</div>
         <div class="card">${cardHead('02', '封面照片', tag('neutral', create || error ? '0 / 3' : uploading ? '2 / 3' : '1 / 3'), '最多 3 张，第一张作为封面')}
           <div class="upload-grid">
@@ -991,7 +991,7 @@
         ? 'rest-1'
         : is('climb')
           ? 'climb'
-          : 'highest';
+          : 'start';
 
       // 11 个海拔采样点：覆盖 42–1684 m 真实区间，形成双峰起伏。
       const samples = [
@@ -1012,8 +1012,8 @@
       const maxM = Math.max(...profile.map((p) => p.m));
       const span = Math.max(1, maxM - minM);
 
-      // 关键点：仅在存在"已验证真实地名 + 经纬度"时才会入列（设计样本按"真实样本"口径填充）
-      // 字段：label(地名) / lat / lng / role(用途) / caution(注意事项，可选)
+      // 关键点：仅在存在“已验证真实地名 + 地图点位”时才会入列；经纬度只参与地图计算，不进入普通用户文案。
+      // 字段：label(地名) / lat / lng(内部地图坐标) / role(用途) / caution(注意事项，可选)
       const keyPoints = [
         { id: 'start', km: 0, m: 42, label: '望京西地铁站', lat: 40.0022, lng: 116.4733, role: '起点集合', caution: '7:00 集合，7:30 出发；地铁 15 号线 B 口外侧' },
         { id: 'warm-end', km: 24, m: 198, label: '怀柔水库补给点', lat: 40.3611, lng: 116.6304, role: '热身段终点 · 补水', caution: '桥下阴凉，队形重整' },
@@ -1141,11 +1141,7 @@
             ${xTicks}
           </svg>`;
 
-      // 坐标格式化（在地图详情、关键点、补给、WC 面板中复用）
-      const fmtLatLng = (lat, lng) => `${lat.toFixed(4)}°N · ${lng.toFixed(4)}°E`;
-      const fmtLatLngPlain = (lat, lng) => `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-
-      // ---------- 顶部地图（信息密度版 · 对齐参考页"路线走向·关键地名"模块） ----------
+      // ---------- 顶部地图（信息密度版 · 对齐参考页“路线走向·关键地名”模块） ----------
       // 地图坐标锚点：按真实骑行顺序铺一条自然北上—翻越—南下的环线；每个关键点有可控的 x/y
       // 采用 100×100 viewBox 对齐参考页，便于按比例写坐标与标签
       const mapCoords = {
@@ -1365,7 +1361,7 @@
         .join('');
 
       // ---------- 详情浮层数据 ----------
-      // 对齐参考页：icon + 名称 + 类型 chip + sub-meta + 注释 + 数据来源 + 更新时间 + 坐标 + 复制坐标 + 关闭
+      // 普通点展示骑行信息；起点卡只展示地名、必要描述与导航快捷按钮，不展示原始坐标。
       const detail = (() => {
         if (activeSegment) {
           const gradeSign = activeSegment.grade > 0 ? '+' : '';
@@ -1410,13 +1406,18 @@
           source: 'GPX 轨迹',
           confidence: 'high',
           updated: '2026-10-17 09:40',
-          lat: p.lat,
-          lng: p.lng,
+          isStart: p.id === 'start',
           metrics: [],
         };
       })();
       const confidenceColor = { high: '#5f8e59', mid: '#d9a93a', low: '#c1392b' }[detail.confidence] || '#5f8e59';
-      const detailBlock = `<div class="ra-map-detail" role="status">
+      const detailBlock = detail.isStart
+        ? `<div class="ra-map-detail ra-map-detail-start" role="status">
+            <h3>${detail.title}</h3>
+            ${detail.caption ? `<p class="ra-detail-caption">${detail.caption}</p>` : ''}
+            <button class="btn ra-start-navigation" data-action="navigate-route-start">导航到起点</button>
+          </div>`
+        : `<div class="ra-map-detail" role="status">
         <div class="ra-detail-head">
           <span class="ra-detail-icon" style="background:${detail.typeChipColor}">${detail.kind === 'segment' ? '◆' : (detail.typeChip === '坡顶' ? '▲' : detail.typeChip === '风险' ? '!' : detail.typeChip === '长下坡' ? '▽' : detail.typeChip === '补给' ? '✚' : '●')}</span>
           <div class="ra-detail-ident">
@@ -1442,10 +1443,6 @@
             <span class="ra-detail-prov-v">${detail.updated}</span>
           </div>
         </div>
-        ${detail.lat !== null ? `<div class="ra-detail-coord">
-          <code>${fmtLatLngPlain(detail.lat, detail.lng)}</code>
-          <button class="ra-detail-copy" data-action="copy-route-coord" data-coord="${fmtLatLngPlain(detail.lat, detail.lng)}" aria-label="复制坐标到剪贴板">复制坐标</button>
-        </div>` : ''}
       </div>`;
 
       // ---------- 地图主体 ----------
@@ -1502,7 +1499,7 @@
               ${mapMarkers}
             </svg>
 
-            <p class="ra-map-caption">按海拔着色 · 骑行方向顺序 · 点击可查看地名与坐标</p>
+            <p class="ra-map-caption">按海拔着色 · 骑行方向顺序 · 点击可查看地名与路线提示</p>
 
             <ul class="ra-map-legend-grid" aria-label="地图图例">
               <li><i class="ra-lg-dot ra-lg-start">●</i>起终点</li>
@@ -1521,7 +1518,7 @@
 
             ${detailBlock}
 
-            <p class="ra-map-sample">脱敏演示样本 · 地名 / 坐标 / 施工 / 事故为示意结构 · 正式数据以主办方发布与接入服务为准</p>
+            <p class="ra-map-sample">脱敏演示样本 · 地名 / 施工 / 事故为示意结构 · 正式数据以主办方发布与接入服务为准</p>
           </div>
         </div>
       </div>`;
@@ -1607,7 +1604,7 @@
         })
         .join('');
 
-      // ---------- 关键点时间轴（含地名/经纬度/用途/注意）----------
+      // ---------- 关键点时间轴（地名/用途/注意，不展示原始坐标）----------
       const timelineRows = keyPoints
         .map((p) => {
           const isActive = p.id === selectedPointId;
@@ -1620,7 +1617,6 @@
             <span class="ra-tl-body">
               <span class="ra-tl-name">${p.label}</span>
               <span class="ra-tl-meta">${p.role}</span>
-              <span class="ra-tl-geo">${fmtLatLng(p.lat, p.lng)}</span>
               ${p.caution ? `<span class="ra-tl-caution">${p.caution}</span>` : ''}
             </span>
             <span class="ra-tl-elev">${p.m}<i>m</i></span>
@@ -1641,14 +1637,12 @@
         .join('');
       const supplyRows = supplyPoints
         .map((s) => {
-          const kp = keyPoints.find((p) => p.id === s.pointId);
           const stateName = s.pointId === 'highest' ? 'default' : s.pointId === 'rest-1' ? 'segment-climb' : s.pointId === 'climb' ? 'climb' : '';
           return `<button class="ra-sp-row" data-route="route-analysis" data-state="${stateName}">
             <span class="ra-sp-km">km ${s.km}</span>
             <span class="ra-sp-body">
               <span class="ra-sp-name">${s.name}</span>
               <span class="ra-sp-type">${s.type}</span>
-              ${kp ? `<span class="ra-sp-geo">${fmtLatLng(kp.lat, kp.lng)}</span>` : ''}
             </span>
             <span class="ra-sp-eta"><b>${s.eta}</b><small>预计到达</small></span>
           </button>`;
@@ -1663,7 +1657,6 @@
             <span class="ra-wc-mark">WC</span>
             <span class="ra-wc-body">
               <span class="ra-wc-head"><span class="ra-wc-km">km ${r.km}</span><span class="ra-wc-name">${r.name}</span></span>
-              <span class="ra-wc-geo">${fmtLatLng(r.lat, r.lng)}</span>
               <span class="ra-wc-meta"><em>偏离主路 ≈ ${r.offsetM} m</em><em>${r.open}</em></span>
             </span>
           </li>`,
@@ -1709,7 +1702,7 @@
           </header>
           <ul class="ra-climb-list">${climbRows}</ul>
           ${highestPoint
-            ? `<p class="ra-climb-highest"><em>最高点</em>${highestPoint.label} · km ${highestPoint.km} · <b>${highestPoint.m} m</b> · ${fmtLatLng(highestPoint.lat, highestPoint.lng)}</p>`
+            ? `<p class="ra-climb-highest"><em>最高点</em>${highestPoint.label} · km ${highestPoint.km} · <b>${highestPoint.m} m</b></p>`
             : ''}
         </section>
 

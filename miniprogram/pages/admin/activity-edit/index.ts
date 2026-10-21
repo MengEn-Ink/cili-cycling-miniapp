@@ -37,14 +37,12 @@ type Form = {
   title: string;
   startDate: string;
   startTime: string;
-  deadlineDate: string;
-  deadlineTime: string;
   routeStart: string;
   description: string;
   stravaRouteUrl: string;
 };
 type FormField = keyof Form;
-type FormErrorAnchor = FormField | 'startAt' | 'deadlineAt';
+type FormErrorAnchor = FormField | 'startAt';
 type FormErrors = Partial<Record<FormErrorAnchor, string>>;
 type PendingImage = {
   id: string;
@@ -68,8 +66,6 @@ const emptyForm = (): Form => ({
   title: '',
   startDate: '',
   startTime: '',
-  deadlineDate: '',
-  deadlineTime: '',
   routeStart: '',
   description: '',
   stravaRouteUrl: '',
@@ -147,6 +143,7 @@ const activityContentProjection = (activity: EditableActivity | ActivityInput) =
     groupQrCode,
     groupQrCodeUploadedAt: groupQrCode ? protocolDate(activity.groupQrCodeUploadedAt) : undefined,
     capacity: activity.capacity,
+    registrationMode: activity.registrationMode,
     registrationUnlimited: activity.registrationUnlimited === true ? true : undefined,
     supportVehicleCapacity: activity.supportVehicleCapacity,
     selfDriveCapacity: activity.selfDriveCapacity,
@@ -361,9 +358,8 @@ function locationFailure(
 
 function derivedTimes(startAt: string) {
   const start = new Date(startAt);
-  const deadline = new Date(start.getTime() - 60 * 1000);
   const end = new Date(start.getTime() + 4 * 60 * 60 * 1000);
-  return { deadline: deadline.toISOString(), endAt: end.toISOString() };
+  return { endAt: end.toISOString() };
 }
 
 const formatRouteDuration = (seconds?: number) => {
@@ -404,6 +400,7 @@ Page({
     id: '',
     version: 0,
     status: 'draft',
+    registrationMode: 'open' as 'open' | 'approval',
     clubOptions: [PUBLIC_CLUB_OPTION] as ClubOption[],
     clubOptionsLoadFailed: false,
     clubOptionIndex: 0,
@@ -506,7 +503,6 @@ Page({
           ? [activity.coverImage]
           : [];
       const startAtText = formatLocalDateTime(activity.startAt);
-      const deadlineText = formatLocalDateTime(activity.deadline);
       const officialRoute = activityOfficialRoute(activity);
       const publicRoutePreview = activityPublicRoutePreview(activity);
       const routePreview = activityRoutePreview(activity);
@@ -530,6 +526,7 @@ Page({
         clubOptions,
         clubOptionIndex,
         status: activity.status,
+        registrationMode: activity.registrationMode === 'open' ? 'open' : 'approval',
         version: activity.version,
         originalActivity: activity,
         images,
@@ -570,8 +567,6 @@ Page({
           title: activity.title,
           startDate: pickerDate(startAtText),
           startTime: pickerTime(startAtText),
-          deadlineDate: pickerDate(deadlineText),
-          deadlineTime: pickerTime(deadlineText),
           routeStart: activity.route.start,
           description: activity.description,
           stravaRouteUrl: officialRoute?.url || '',
@@ -824,12 +819,16 @@ Page({
     this.setData(patch);
     this.clearFieldError(name);
   },
+  registrationModeChange(event: any) {
+    const mode = event.currentTarget.dataset.mode;
+    if (mode !== 'open' && mode !== 'approval') return;
+    this.setData({ registrationMode: mode });
+  },
   dateTimePicker(event: any) {
     const part = event.currentTarget.dataset.part === 'time' ? 'Time' : 'Date';
-    const target = event.currentTarget.dataset.target === 'deadline' ? 'deadline' : 'start';
-    const field = `${target}${part}` as FormField;
+    const field = `start${part}` as FormField;
     this.setData({ [`form.${field}`]: event.detail.value });
-    this.clearFieldError(target === 'deadline' ? 'deadlineAt' : 'startAt');
+    this.clearFieldError('startAt');
   },
   async uploadPendingImage(pendingImage: PendingImage) {
     try {
@@ -1473,10 +1472,6 @@ Page({
     if (!form.title.trim()) return (this.showFormError('请输入活动标题', 'title'), false);
     if (!form.startDate.trim()) return (this.showFormError('请选择集合日期', 'startAt'), false);
     if (!form.startTime.trim()) return (this.showFormError('请选择集合时间', 'startAt'), false);
-    if (submitting && !form.deadlineDate.trim())
-      return (this.showFormError('请选择报名截止日期', 'deadlineAt'), false);
-    if (submitting && !form.deadlineTime.trim())
-      return (this.showFormError('请选择报名截止时间', 'deadlineAt'), false);
     if (submitting && !form.routeStart.trim())
       return (this.showFormError('请选择或填写集合地点', 'routeStart'), false);
     return true;
@@ -1530,34 +1525,18 @@ Page({
     }
     if (!startAt) return;
     const defaults = derivedTimes(startAt);
-    const submitting = ['published', 'pending_review'].includes(nextStatus);
-    let deadline = defaults.deadline;
-    const hasDeadline = Boolean(form.deadlineDate.trim() && form.deadlineTime.trim());
-    if (hasDeadline) {
-      try {
-        const parsedDeadline = parseLocalDateTime(
-          `${form.deadlineDate.trim()} ${form.deadlineTime.trim()}:00`,
-          '报名截止时间',
-        );
-        if (!parsedDeadline) throw new Error('报名截止时间格式错误');
-        deadline = parsedDeadline;
-      } catch (error) {
-        if (submitting) {
-          this.showFormError(
-            error instanceof Error ? error.message : '报名截止时间格式错误',
-            'deadlineAt',
-          );
-          return;
-        }
-      }
-    }
-    if (new Date(deadline).getTime() >= new Date(startAt).getTime()) {
-      if (submitting) {
-        this.showFormError('报名截止时间必须早于集合时间', 'deadlineAt');
-        return;
-      }
-      // 服务端现有草稿契约仍要求截止早于开始；草稿不阻断用户，暂用派生值保存。
-      deadline = defaults.deadline;
+    let deadline: string;
+    try {
+      // 报名截止固定为活动开始日的设备本地零点；与集合时间共用现有本地时间解析，避免 UTC 跨日。
+      const localMidnight = parseLocalDateTime(`${form.startDate.trim()} 00:00:00`, '报名截止时间');
+      if (!localMidnight) throw new Error('报名截止时间格式错误');
+      deadline = localMidnight;
+    } catch (error) {
+      this.showFormError(
+        error instanceof Error ? error.message : '报名截止时间格式错误',
+        'startAt',
+      );
+      return;
     }
     const original = this.data.originalActivity as EditableActivity | undefined;
     let officialRoute: ExternalRouteReference | undefined;
@@ -1670,6 +1649,7 @@ Page({
       groupQrCode: this.data.groupQrCode,
       groupQrCodeUploadedAt: this.data.groupQrCode ? this.data.groupQrCodeUploadedAt : '',
       capacity: original?.capacity || DEFAULT_CAPACITY,
+      registrationMode: this.data.registrationMode,
       registrationUnlimited: original ? original.registrationUnlimited : true,
       ...(original
         ? {
@@ -1712,6 +1692,7 @@ Page({
           id: saved.id,
           version: saved.version,
           status: saved.status,
+          registrationMode: saved.registrationMode === 'open' ? 'open' : 'approval',
           title: saved.title,
           originalActivity: saved,
           images: savedImages,

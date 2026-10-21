@@ -55,6 +55,34 @@
   grid-template-columns: 1fr 1fr;
   gap: 16rpx;
 }
+.registration-mode-field {
+  margin-top: 24rpx;
+}
+.registration-mode-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+  margin-bottom: 12rpx;
+}
+.registration-mode-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 144rpx;
+  padding: 20rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-raised);
+  text-align: left;
+}
+.registration-mode-option.is-active {
+  border-color: var(--color-action-active);
+  background: var(--color-brand-soft);
+}
+.registration-mode-title {
+  margin-bottom: 8rpx;
+  font-weight: 900;
+}
 .location-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

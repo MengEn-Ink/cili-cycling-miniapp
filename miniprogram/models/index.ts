@@ -219,6 +219,7 @@ export interface Activity {
   approvedRole?: string;
   rejectionReason?: string;
   capacity: number;
+  registrationMode?: 'open' | 'approval';
   registrationUnlimited?: boolean;
   supportVehicleCapacity?: number;
   selfDriveCapacity?: number;

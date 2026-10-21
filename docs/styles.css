@@ -5269,35 +5269,14 @@ body.capture-viewport .screen-notes {
   border-radius: 3px;
   font-style: normal;
 }
-.ra-detail-coord {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 8px 10px;
-  background: #fdfaf2;
-  border: 1px solid #c7c0b2;
-  border-radius: 8px;
-}
-.ra-detail-coord code {
-  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
-  font-size: 12px;
+.ra-map-detail-start h3 {
+  margin: 0;
   color: #211f1c;
-  font-weight: 700;
-  letter-spacing: 0.2px;
+  font-size: 18px;
 }
-.ra-detail-copy {
-  padding: 4px 10px;
-  background: #ffffff;
-  border: 1px solid #211f1c;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 800;
-  color: #211f1c;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+.ra-start-navigation {
+  min-height: 44px;
+  margin-top: 12px;
 }
 
 /* 脱敏样本提示 */
@@ -5777,15 +5756,7 @@ body.capture-viewport .screen-notes {
   font-weight: 900;
 }
 
-/* 关键公里点 · 扩展（地名经纬度 + 注意事项） */
-.ra-tl-geo {
-  display: block;
-  margin-top: 2px;
-  font-size: 10.5px;
-  color: #6f675d;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.2px;
-}
+/* 关键公里点 · 注意事项 */
 .ra-tl-caution {
   display: block;
   margin-top: 4px;
@@ -6067,12 +6038,6 @@ body.capture-viewport .screen-notes {
   font-size: 11px;
   color: #6f675d;
 }
-.ra-sp-geo {
-  font-size: 10.5px;
-  color: #6f675d;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.2px;
-}
 .ra-sp-eta {
   display: flex;
   flex-direction: column;
@@ -6179,12 +6144,6 @@ body.capture-viewport .screen-notes {
   font-size: 13px;
   font-weight: 800;
   color: #211f1c;
-}
-.ra-wc-geo {
-  font-size: 10.5px;
-  color: #6f675d;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.2px;
 }
 .ra-wc-meta {
   display: flex;
@@ -8283,8 +8242,7 @@ body.capture-viewport .screen-notes {
   border-radius: var(--radius-md);
 }
 .route-analysis-page .ra-filter,
-.route-analysis-page .ra-detail-close,
-.route-analysis-page .ra-detail-copy {
+.route-analysis-page .ra-detail-close {
   min-height: 44px;
 }
 .route-analysis-page .ra-filter {

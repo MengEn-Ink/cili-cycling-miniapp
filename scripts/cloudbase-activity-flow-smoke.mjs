@@ -334,6 +334,7 @@ function activityInput({ title, status, now }) {
     fee: '免费 smoke',
     capacity: 2,
     registration_unlimited: false,
+    registration_mode: 'open',
     support_vehicle_capacity: 0,
     self_drive_capacity: 2,
     signup_deadline: deadline.toISOString(),
@@ -447,7 +448,7 @@ export async function runActivityFlowSmoke({
     assert(['pending', 'approved'].includes(registration.status), '报名提交');
     const registrationAction =
       registration.status === 'approved'
-        ? 'registration.admin_auto_approved'
+        ? 'registration.open_auto_approved'
         : 'registration.submitted';
     onStage('registered');
 

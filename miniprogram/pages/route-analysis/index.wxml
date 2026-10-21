@@ -27,13 +27,18 @@
       <view class="map-legend" wx:if="{{legendItems.length}}">
         <text wx:for="{{legendItems}}" wx:key="marker"><text class="legend-dot {{item.dotClass}}">{{item.marker}}</text>{{item.label}}</text>
       </view>
-      <view class="map-detail" wx:if="{{selectedPoint}}">
+      <view class="map-detail map-detail--start" wx:if="{{selectedPoint && selectedPoint.isStart}}">
+        <view class="selected-name">{{selectedPoint.name}}</view>
+        <view class="map-detail-purpose">{{selectedPoint.purpose}}</view>
+        <view class="point-note" wx:if="{{selectedPoint.note}}">{{selectedPoint.note}}</view>
+        <button wx:if="{{selectedPoint.canNavigate}}" class="start-navigation-button" bindtap="navigateToStart" aria-label="导航到起点 {{selectedPoint.name}}">导航到起点</button>
+      </view>
+      <view class="map-detail" wx:elif="{{selectedPoint}}">
         <view class="map-detail-head"><view><text class="point-type">{{selectedPoint.typeLabel}}</text><text wx:if="{{selectedPoint.computed}}" class="point-computed">计算值</text><view class="selected-name">{{selectedPoint.name}}</view></view><text class="selected-km">{{selectedPoint.kmText}}</text></view>
         <view class="map-detail-purpose">{{selectedPoint.purpose}}</view>
         <view class="selected-grid">
           <view wx:if="{{selectedPoint.hasElevation}}"><text>海拔</text><text>{{selectedPoint.elevationText}}</text></view>
           <view wx:if="{{selectedPoint.hasGrade}}"><text>附近坡度</text><text>{{selectedPoint.gradeText}}</text></view>
-          <view wx:if="{{selectedPoint.hasCoordinate}}" class="coordinate-cell"><text>坐标</text><text class="coordinate-value">{{selectedPoint.coordinateText}}</text></view>
         </view>
         <view class="point-note" wx:if="{{selectedPoint.note}}">{{selectedPoint.note}}</view>
       </view>

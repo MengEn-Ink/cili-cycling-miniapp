@@ -21,6 +21,7 @@ async function pageInstance() {
   (globalThis as any).wx = {
     createSelectorQuery: vi.fn(),
     getWindowInfo: () => ({ pixelRatio: 2 }),
+    openLocation: vi.fn(),
   };
   vi.resetModules();
   await import('../miniprogram/pages/route-analysis/index');
@@ -112,6 +113,31 @@ describe('路线分析页运行时可靠性', () => {
     });
   });
 
+  it('公开路线预览与 GPX 一样按 WGS84 纠偏，不因缺少独立 GPX 文件而漂移', async () => {
+    const latitude = 39 + 0.908823;
+    const longitude = 116 + 0.39747;
+    mocks.getActivity.mockResolvedValue({
+      ...activity('公开路线活动'),
+      route: {
+        start: '起点',
+        end: '终点',
+        distanceKm: 10,
+        publicRoutePreviewId: 'preview-1',
+        routeOutline: [
+          { latitude, longitude },
+          { latitude: 39.91, longitude: 116.4 },
+        ],
+      },
+    });
+    const page = await pageInstance();
+    page.activityId = 'preview-1';
+    await page.load();
+
+    const firstLinePoint = page.data.polylines[0].points[0];
+    expect(firstLinePoint).toEqual(page.data.mapPoints[0]);
+    expect(firstLinePoint).not.toEqual({ latitude, longitude });
+  });
+
   it('无真实选点坐标时不生成任何 marker 并隐藏关键点模块', async () => {
     mocks.getActivity.mockResolvedValue({
       ...activity('无选点活动'),
@@ -160,6 +186,45 @@ describe('路线分析页运行时可靠性', () => {
     expect(page.data.hasRealKeyPoints).toBe(true);
     expect(page.data.legendItems.map((item: any) => item.marker)).toEqual(['起', '终']);
     expect(page.data.selectedPoint).toMatchObject({ id: 'start' });
+  });
+
+  it('起点卡只保留地名与必要描述，并使用 GCJ02 选点调用微信地图导航', async () => {
+    mocks.getActivity.mockResolvedValue({
+      ...activity('导航活动'),
+      route: {
+        start: '旧起点文案',
+        end: '终点',
+        distanceKm: 10,
+        startLocation: {
+          name: '奥林匹克森林公园南门',
+          address: '科荟路南侧',
+          latitude: 40.015,
+          longitude: 116.392,
+        },
+        routeOutline: [
+          { latitude: 40.01, longitude: 116.39 },
+          { latitude: 40.02, longitude: 116.4 },
+        ],
+      },
+    });
+    const page = await pageInstance();
+    page.activityId = 'navigate-start';
+    await page.load();
+
+    expect(page.data.selectedPoint).toMatchObject({
+      id: 'start',
+      name: '奥林匹克森林公园南门',
+      canNavigate: true,
+    });
+    expect(page.data.selectedPoint).not.toHaveProperty('coordinateText');
+    page.navigateToStart();
+    expect((globalThis as any).wx.openLocation).toHaveBeenCalledWith({
+      latitude: 40.015,
+      longitude: 116.392,
+      name: '奥林匹克森林公园南门',
+      address: '科荟路南侧',
+      scale: 16,
+    });
   });
 
   it('地图失败只降级地图并可轻量恢复', async () => {

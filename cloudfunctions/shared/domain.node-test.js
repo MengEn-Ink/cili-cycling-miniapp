@@ -712,7 +712,8 @@ test('活动报名状态完全由服务端时间和活动事实裁决', () => {
     [{ support_vehicle_driver: undefined }, 'closed', 'unavailable'],
     [{ event_start: 'invalid' }, 'closed', 'unavailable'],
     [{ event_end: 'invalid' }, 'closed', 'unavailable'],
-    [{ event_start: activity.signup_deadline }, 'closed', 'unavailable'],
+    [{ event_start: activity.signup_deadline }, 'open', null],
+    [{ event_start: '2026-09-30T23:59:59.999Z' }, 'closed', 'unavailable'],
     [{ event_end: activity.event_start }, 'closed', 'unavailable'],
     [{ status: 'draft' }, 'closed', 'unavailable'],
   ];
