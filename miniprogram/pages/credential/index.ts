@@ -2,6 +2,7 @@ import { rideService } from '../../services/ride-service';
 import type { ActivityAction } from '../../utils/activity';
 import { resolveActivityAction } from '../../utils/activity';
 import { formatActivityDate, formatActivityTime, formatChinaDateTime } from '../../utils/date-time';
+import { createRegistrationStatusView } from './status-view';
 import { hasAnalyzableRoute } from '../../utils/route-outline';
 
 function optionalBeforeDeadline<T>(load: () => Promise<T>, timeoutMs = 1_800): Promise<T | null> {
@@ -55,6 +56,7 @@ Page({
     error: '',
     cancelling: false,
     statusText: '',
+    statusView: createRegistrationStatusView(''),
     activityAction: unavailableAction(),
     backgroundImages: [] as string[],
     avatarUrl: '',
@@ -150,6 +152,7 @@ Page({
           displayDate: formatActivityDate(activity.startAt || activity.date),
         },
         statusText,
+        statusView: createRegistrationStatusView(item.status),
         activityAction: resolveActivityAction(activity, item),
         backgroundImages,
         avatarUrl,

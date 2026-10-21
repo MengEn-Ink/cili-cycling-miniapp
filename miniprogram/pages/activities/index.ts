@@ -79,6 +79,7 @@ Page({
     dayChips: [] as DisplayDayChip[],
     selectedDayKey: '',
     currentCardIndex: 0,
+    layoutMode: 'card' as 'card' | 'compact',
   },
   onShow() {
     const view = this.data.activeView as PublicActivityView;
@@ -247,6 +248,11 @@ Page({
     this.setData({ activeView: candidate, currentCardIndex: 0 });
     this.renderActiveView();
     void this.load();
+  },
+  switchLayout(event: { currentTarget?: { dataset?: { mode?: unknown } } }) {
+    const mode = event.currentTarget?.dataset?.mode;
+    if (mode !== 'card' && mode !== 'compact') return;
+    if (mode !== this.data.layoutMode) this.setData({ layoutMode: mode });
   },
   cardChange(event: { detail?: { current?: number } }) {
     const current = Math.max(0, Number(event.detail?.current) || 0);
