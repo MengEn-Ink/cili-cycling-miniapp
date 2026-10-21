@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
   "syncedThrough": "dd87949dbcf0069b5ba427c49f360948cf7ddcf2",
-  "syncedAt": "2026-10-21T13:30:00.000+08:00",
+  "syncedAt": "2026-10-21T20:40:00.000+08:00",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:98a5cdbf0b221b1f6a09e8d86ecba69b6be448820fa64a28d9403741e9af79b4"
+    "digest": "sha256:3d2e88e456711aac2ec41d98282b8c709fb29a1abf008fb272991bbd13831ec0"
   },
   "prototype": {
-    "digest": "sha256:4aeed7f4d997b743a4e7350ab1dc951fe032e67331a26cdfac07f654e28f3361"
+    "digest": "sha256:494191bfd47314067cf5b491b23f102fd74c4d2784747a86fe603adbefd0a1e6"
   },
   "routes": [
     {
@@ -156,10 +156,10 @@
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "常用管理 · 客户端 2026.10.21.4",
+        "state": "管理员 · 同步 Strava 线路信息 · 客户端 2026.10.21.5",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "Pages 于 2026-10-21 使用 375×812 重采，展示客户端 2026.10.21.4 路线导航与双报名模式更新；DevTools 图片保持 blocked，待新开发版逐页复验。"
+        "note": "Pages 于 2026-10-21 按 375×812 重采管理员态设置页：常用管理下新增「同步 Strava 线路信息」管理行，使用 Strava 官方 mark 与 wordmark；App 更新展示 V2026.10.21.5 当前版本。普通骑友态不展示该入口。DevTools 证据沿用上一次采集（750×1624），review 保持 blocked，待新开发版复验。"
       },
       {
         "id": "capability-card",
@@ -192,10 +192,10 @@
         "id": "admin-activity-edit",
         "devtools": "admin-activity-edit-devtools.png",
         "pages": "admin-activity-edit-pages.png",
-        "state": "活动编辑 · Strava 导入 / 公开与审批报名",
+        "state": "编辑活动 · 唯一俱乐部 · Strava 线路地址 + 本地文件补充",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "Pages 于 2026-10-21 按 375×812 重采：保留 Strava OAuth 导入与手动 GPX 降级，并提供公开报名、审批报名两种模式；新建默认公开，报名截止时间由活动日零点自动生成。DevTools 仍保持 blocked，待新开发版复验。"
+        "note": "Pages 于 2026-10-21 按 375×812 重采：移除「活动归属」选择器，默认唯一俱乐部归属；创建默认只展示「粘贴 Strava 线路链接」，本地路线文件改由地址右侧「＋」展开底部弹层补充；报名截止默认活动开始日 00:00，不再手动输入；报名模式与归属合入 Card 01。DevTools 证据沿用上一次采集（750×1624），review 保持 blocked，待新开发版复验。"
       },
       {
         "id": "admin-reviews",

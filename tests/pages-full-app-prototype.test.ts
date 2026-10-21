@@ -345,32 +345,105 @@ describe('Pages 全套 App 原型契约（单俱乐部收敛 · design-only 不�
     expect(appSource).toContain('不会删除报名、行程或个人资料');
   });
 
-  it('18. 活动编辑页展示自动截止规则、报名模式与 GPX 三态恢复入口', () => {
+  it('18. 活动编辑页对齐真实小程序：自动截止、不显示归属选择器、Strava-only 默认路线来源，无原型辅助文案', () => {
     const template = runtime.pageTemplates?.['admin-activity-edit'];
     if (!template) throw new Error('admin-activity-edit template missing');
 
+    // 默认（公开报名）编辑态：报名截止自动化、报名模式唯一入口、Strava 链接是唯一可见路线来源，
+    // 页面严禁出现「GPX / 上传 / 本地文件」等任何用户可见文案或控件。
     runtime.prototypeState = 'edit-open';
     const ready = template();
-    expect(ready).toContain('报名截止');
-    expect(ready).toContain('活动开始日 00:00');
-    expect(ready).toContain('自动设置');
+    expect(ready).toMatch(/活动开始日.{0,4}00:00/);
     expect(ready).not.toContain('选择截止日期');
     expect(ready).not.toContain('选择截止时间');
     expect(ready).toContain('公开报名');
     expect(ready).toContain('审批报名');
-    expect(ready).toContain('已就绪');
-    expect(ready).toContain('更换 GPX');
+    // 活动归属：默认唯一俱乐部，不展示选择器、也不以任何说明性文案出现在页面内
+    expect(ready).not.toContain('全平台唯一俱乐部');
+    expect(ready).not.toContain('自动归属');
+    expect(ready).not.toContain('activity-owner-field');
+    expect(ready).not.toContain('此里公开活动');
+    expect(ready).not.toContain('club-picker-value');
+    // 不出现设计稿里的说明性 chip / 说明段 / 顶部状态提示
+    expect(ready).not.toContain('查看公开模式');
+    expect(ready).not.toContain('查看锁定态');
+    expect(ready).not.toContain('输入中</button>');
+    expect(ready).not.toContain('连接即将失效</button>');
+    expect(ready).not.toContain('活动级设置');
+    expect(ready).not.toContain('class="neutral-note"');
+    expect(ready).not.toContain('deadline-auto-note');
+    expect(ready).not.toMatch(/报名方式与唯一俱乐部归属相互独立/);
+    expect(ready).not.toMatch(/活动一旦产生任意报名记录即锁定/);
+    // Strava 链接是唯一可见的路线来源入口；GPX / 上传 / 本地文件默认都不可见
+    expect(ready).toContain('粘贴 Strava 线路链接');
+    expect(ready).toContain('线路已解析');
+    expect(ready).not.toContain('GPX');
+    expect(ready).not.toContain('本地路线文件');
+    expect(ready).not.toContain('选择本地路线文件');
+    expect(ready).not.toContain('上传 GPX');
+    // route-boost-sheet 容器默认折叠
+    expect(ready).not.toContain('id="route-boost-sheet"');
+    expect(ready).not.toMatch(/更换\s*GPX|重新上传\s*GPX|重试解析已上传\s*GPX|GPX 解析失败/);
+    // 「+」是隐藏增强入口：默认折叠，不展开 bottom-sheet
+    expect(ready).toContain('class="route-link-plus"');
+    expect(ready).toContain('aria-expanded="false"');
+    expect(ready).not.toContain('class="route-boost-sheet"');
 
+    // 点击「+」后进入 boost-open 状态，底部弹层「本地路线文件（补充）」才出现
+    runtime.prototypeState = 'boost-open';
+    const boost = template();
+    expect(boost).toContain('class="route-boost-sheet"');
+    expect(boost).toContain('id="route-boost-sheet"');
+    expect(boost).toContain('本地路线文件（补充）');
+    expect(boost).toContain('选择本地路线文件');
+    expect(boost).toContain('aria-expanded="true"');
+
+    // gpx-missing：弹层内保留原 GPX 恢复入口（本地文件补充路径）
     runtime.prototypeState = 'gpx-missing';
     const missing = template();
+    expect(missing).toContain('class="route-boost-sheet"');
     expect(missing).toContain('原 GPX 路线详情不可用');
     expect(missing).toContain('重新上传 GPX');
 
+    // gpx-failed：弹层内保留重试 / 放弃本次上传入口
     runtime.prototypeState = 'gpx-failed';
     const failed = template();
+    expect(failed).toContain('class="route-boost-sheet"');
     expect(failed).toContain('GPX 解析失败');
     expect(failed).toContain('重试解析已上传 GPX');
     expect(failed).toContain('放弃本次上传');
+
+    // Strava 链接解析细节交互覆盖：解析中 / 无效 / 网络失败 三态（无 is-typing 文案）
+    runtime.prototypeState = 'link-parsing';
+    const parsing = template();
+    expect(parsing).toContain('正在解析线路信息');
+    expect(parsing).toContain('is-parsing');
+
+    runtime.prototypeState = 'link-invalid';
+    const invalid = template();
+    expect(invalid).toContain('这不是 Strava 线路链接');
+    expect(invalid).toContain('is-error');
+
+    runtime.prototypeState = 'link-net-error';
+    const netError = template();
+    expect(netError).toContain('网络异常');
+    expect(netError).toContain('重试解析');
+
+    // Strava 账号连接状态在创建页只做提示，不在页内连接（通过胶囊徽标体现）
+    runtime.prototypeState = 'strava-expiring';
+    const expiring = template();
+    expect(expiring).toContain('即将失效');
+
+    runtime.prototypeState = 'strava-expired';
+    const expired = template();
+    expect(expired).toContain('已失效');
+
+    // 报名模式切换：mode-locked 态锁定按钮，但不再以文字额外解释
+    runtime.prototypeState = 'mode-locked';
+    const locked = template();
+    expect(locked).toContain('aria-disabled="true"');
+    expect(locked).not.toContain('已有报名 · 禁止切换');
+    expect(locked).not.toContain('报名模式已锁定');
   });
 
   it('19. manifest 正式 routes 不含 planned-* 且仍为 17 条', () => {

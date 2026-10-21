@@ -53,10 +53,14 @@ describe('M0 俱乐部身份生产契约', () => {
     expect(profile).not.toContain('主俱乐部');
   });
 
-  it('活动编辑页提供公开活动或本人有效俱乐部的归属选择', () => {
-    expect(adminEdit).toContain('活动归属');
-    expect(adminEdit).toContain('clubOptions');
-    expect(adminEdit).toContain('此里公开活动');
+  it('活动编辑页在数据层保留俱乐部归属，但唯一俱乐部已自动归属不再展示选择器', () => {
+    // 唯一俱乐部收口后，WXML 不再出现活动归属 picker；底层 TS 仍维护 clubOptions / PUBLIC_CLUB_OPTION。
+    const adminEditSource = read('miniprogram/pages/admin/activity-edit/index.ts');
+    expect(adminEdit).not.toContain('活动归属');
+    expect(adminEdit).not.toContain('club-picker-field');
+    expect(adminEditSource).toContain('clubOptions');
+    expect(adminEditSource).toContain('PUBLIC_CLUB_OPTION');
+    expect(adminEditSource).toContain('recomputePublishLabel');
   });
 
   it('CloudBase 基线包含俱乐部和会员关系集合及查询索引', () => {

@@ -1,6 +1,8 @@
 import { CLIENT_RELEASE_VERSION } from '../../config/release';
 import { repositoryCache } from '../../repositories/index';
+import type { StravaRouteReadiness } from '../../repositories/types';
 import { rideService } from '../../services/ride-service';
+import { appStore } from '../../store/app-store';
 import { clearProfilePageCache } from '../../utils/profile-page-cache';
 import { clearSharedTempFileUrlCache } from '../../utils/temp-file-url';
 
@@ -11,9 +13,23 @@ const RELEASE_NOTES = [
   {
     version: CLIENT_RELEASE_VERSION,
     date: '2026-10-21',
+    title: '设置页集中管理 Strava 线路同步',
+    summary:
+      '仅管理员可在设置页统一管理 Strava 线路同步；创建活动页收敛为粘贴线路地址，本地文件补充能力隐藏在 ＋ 中。',
+    latest: true,
+    features: [
+      '仅管理员可见「同步 Strava 线路信息」入口，普通骑友设置页不再出现相关内容',
+      '创建活动页只保留 Strava 线路地址输入，若尚未连接会提示去设置完成',
+      '上传本地路线文件改为路线地址旁的 ＋ 补充入口，默认不打扰',
+      '活动归属默认属于唯一俱乐部，不再需要选择；报名截止自动设为活动当天零点',
+    ],
+  },
+  {
+    version: '2026.10.21.4',
+    date: '2026-10-21',
     title: '路线导航与报名流程更准确',
     summary: '地图定位、活动报名与创建流程同步优化，关键信息更清晰。',
-    latest: true,
+    latest: false,
     features: [
       '路线坐标统一按地图标准转换，起点可通过地名直接发起导航',
       '公开活动报名后直接成功，审核活动仍由管理员确认',
@@ -285,11 +301,127 @@ function openPrivacyContract(): Promise<void> {
   });
 }
 
+type StravaRowCopy = {
+  description: string;
+  action: string;
+};
+const STRAVA_COPY: Record<'connected' | 'disconnected' | 'pending' | 'error', StravaRowCopy> = {
+  disconnected: {
+    description: '尚未连接 Strava，连接后可直接粘贴线路地址同步',
+    action: '连接 ›',
+  },
+  connected: {
+    description: '已连接',
+    action: '管理 ›',
+  },
+  pending: {
+    description: '授权链接已复制，请在浏览器完成后返回',
+    action: '刷新 ›',
+  },
+  error: {
+    description: '暂时无法获取同步状态，可稍后重试',
+    action: '重试 ›',
+  },
+};
+
 Page({
   data: {
     releaseNotes: RELEASE_NOTES,
     currentRelease: RELEASE_NOTES[0],
     actionPending: false,
+    isAdmin: false,
+    stravaState: 'disconnected' as 'connected' | 'disconnected' | 'pending' | 'error',
+    stravaAthleteName: '',
+    stravaDescription: STRAVA_COPY.disconnected.description,
+    stravaAction: STRAVA_COPY.disconnected.action,
+    stravaAuthorizationUrl: '',
+  },
+  stravaPollTimer: undefined as ReturnType<typeof setInterval> | undefined,
+  onShow() {
+    const isAdmin = appStore.authStatus === 'authenticated' && appStore.role === 'admin';
+    this.setData({ isAdmin });
+    if (isAdmin) void this.loadStravaStatus();
+  },
+  onUnload() {
+    if (this.stravaPollTimer !== undefined) {
+      clearInterval(this.stravaPollTimer);
+      this.stravaPollTimer = undefined;
+    }
+  },
+  applyStravaReadiness(readiness: StravaRouteReadiness) {
+    const connected = readiness.state === 'connected';
+    const state: 'connected' | 'disconnected' = connected ? 'connected' : 'disconnected';
+    const copy = STRAVA_COPY[state];
+    this.setData({
+      stravaState: state,
+      stravaAthleteName: readiness.athleteName,
+      stravaDescription:
+        connected && readiness.athleteName ? `已连接 ${readiness.athleteName}` : copy.description,
+      stravaAction: copy.action,
+    });
+    if (connected && this.stravaPollTimer !== undefined) {
+      clearInterval(this.stravaPollTimer);
+      this.stravaPollTimer = undefined;
+      this.setData({ stravaAuthorizationUrl: '' });
+    }
+  },
+  async loadStravaStatus() {
+    if (!this.data.isAdmin) return;
+    try {
+      const readiness = await rideService.getStravaRouteReadiness();
+      this.applyStravaReadiness(readiness);
+    } catch {
+      this.setData({
+        stravaState: 'error',
+        stravaDescription: STRAVA_COPY.error.description,
+        stravaAction: STRAVA_COPY.error.action,
+      });
+    }
+  },
+  async openStravaSync() {
+    if (!this.data.isAdmin || this.data.actionPending) return;
+    if (this.data.stravaState === 'connected') {
+      // 已连接：刷新状态并反馈
+      this.setData({ actionPending: true });
+      try {
+        await this.loadStravaStatus();
+        wx.showToast({ title: 'Strava 已连接', icon: 'success' });
+      } finally {
+        this.setData({ actionPending: false });
+      }
+      return;
+    }
+    if (this.data.stravaState === 'pending' && this.data.stravaAuthorizationUrl) {
+      // 已经发起过授权：直接复用链接 + 刷新状态
+      await wx.setClipboardData({ data: this.data.stravaAuthorizationUrl });
+      await this.loadStravaStatus();
+      return;
+    }
+    this.setData({
+      actionPending: true,
+      stravaState: 'pending',
+      stravaDescription: '正在生成授权链接…',
+      stravaAction: STRAVA_COPY.pending.action,
+    });
+    try {
+      const authorization = await rideService.startStravaRouteAuthorization();
+      this.setData({
+        stravaAuthorizationUrl: authorization.authorizationUrl,
+        stravaDescription: STRAVA_COPY.pending.description,
+      });
+      await wx.setClipboardData({ data: authorization.authorizationUrl });
+      if (this.stravaPollTimer !== undefined) clearInterval(this.stravaPollTimer);
+      this.stravaPollTimer = setInterval(() => void this.loadStravaStatus(), 2000);
+      wx.showToast({ title: '授权链接已复制', icon: 'success' });
+    } catch {
+      this.setData({
+        stravaState: 'error',
+        stravaDescription: STRAVA_COPY.error.description,
+        stravaAction: STRAVA_COPY.error.action,
+      });
+    } finally {
+      this.setData({ actionPending: false });
+    }
   },
   async manageNotifications() {
     if (this.data.actionPending) return;

@@ -1907,8 +1907,9 @@ describe('日常活动极简创建与编辑', () => {
     });
   });
 
-  it('界面保持极简字段并提供官方路线与 GPX 增强', () => {
+  it('界面保持极简字段，Strava 线路为默认，本地文件补充隐藏在 ＋', () => {
     const template = readFileSync('miniprogram/pages/admin/activity-edit/index.wxml', 'utf8');
+    // 基础字段
     expect(template).toContain('活动标题');
     expect(template).toContain('集合时间');
     expect(template).toContain('集合地点');
@@ -1916,22 +1917,38 @@ describe('日常活动极简创建与编辑', () => {
     expect(template).toContain('备注说明');
     expect(template).toContain('活动群二维码');
     expect(template).toContain('二维码可能已过期');
-    expect(template).toContain('Strava 路线导入（可选）');
-    expect(template).toContain('连接 Strava');
-    expect(template).toContain('复制授权链接');
-    expect(template).toContain('从 Strava 导入');
-    expect(template).toContain('授权信息只保存在云端');
-    expect(template).toContain('导入失败时可继续使用下方“上传 GPX”');
+    // 活动归属 picker 已下线（唯一俱乐部自动归属）
+    expect(template).not.toContain('活动归属');
+    expect(template).not.toContain('club-picker-field');
+    // 默认线路入口只保留 Strava 线路地址
+    expect(template).toContain('Strava 线路地址');
+    expect(template).toContain('粘贴 Strava 线路链接');
+    expect(template).toContain('解析线路');
+    // 旧的连接/复制授权链接按钮已迁入设置页
+    expect(template).not.toContain('连接 Strava');
+    expect(template).not.toContain('复制授权链接');
+    expect(template).not.toContain('从 Strava 导入');
+    expect(template).not.toContain('导入失败时可继续使用');
+    // + 隐藏入口承载本地路线补充
+    expect(template).toContain('route-link-plus');
+    expect(template).toContain('route-boost-sheet');
+    expect(template).toContain('补充本地路线文件');
+    expect(template).toContain('bindtap="openRouteBoostSheet"');
+    // 默认视图不出现 GPX / 上传 GPX 文案（仅在 ＋ 弹层中可能提及文件类型，但不再出现专业词 GPX）
+    expect(template).not.toContain('上传 GPX');
+    expect(template).not.toContain('GPX 路线详情');
+    expect(template).not.toContain('已有 GPX');
+    // 需要去设置页连接的引导存在
+    expect(template).toContain('需先在设置里完成 Strava 同步');
+    expect(template).toContain('去设置 ›');
+    // 路线详情预览能力继续存在
     expect(template).toContain('routePreview.routeName');
-    expect(template).not.toContain('无需 Strava 授权');
-    expect(template).toContain('GPX 路线详情（推荐）');
-    expect(template).toContain('上传 GPX');
-    expect(template).toContain('路线详情已准备好');
+    expect(template).toContain('线路详情已准备好');
     expect(template).toContain('此里估算 {{routeTimeLabel}}');
-    expect(template).toContain('routePreview.routeName');
     expect(template).toContain('id="route-outline-canvas"');
     expect(template).toContain('id="route-elevation-canvas"');
     expect(template).not.toMatch(/OAuth|令牌|回调|完整识别/);
+    // 基础字段与报名模式
     expect(template).toContain('form.title');
     expect(template).toContain('form.startDate');
     expect(template).toContain('form.startTime');
@@ -1941,11 +1958,6 @@ describe('日常活动极简创建与编辑', () => {
     expect(template).toContain('活动开始日当地 00:00');
     expect(template).not.toContain('form.deadlineDate');
     expect(template).not.toContain('form.deadlineTime');
-    expect(template).toContain('已有 Strava 路线，但缺少可下载的 GPX');
-    expect(template).toContain('GPX 解析失败或详情缺失');
-    expect(template).toContain('已有 GPX：参与者可查看路线详情并下载原文件');
-    expect(template).toContain('重试解析已上传 GPX');
-    expect(template).toContain('重新上传 GPX');
     expect(template).not.toContain('form.startAt');
     expect(template).not.toContain('quick-row');
     expect(template).not.toContain('明早');
@@ -1961,8 +1973,12 @@ describe('日常活动极简创建与编辑', () => {
       '费用说明',
     ])
       expect(template).not.toContain(removed);
+    // 底层能力仍然存在
     expect(page.addOfficialRoute).toBeTypeOf('function');
     expect(page.chooseRouteGpx).toBeTypeOf('function');
     expect(page.removeRouteDetails).toBeTypeOf('function');
+    expect(page.openRouteBoostSheet).toBeTypeOf('function');
+    expect(page.closeRouteBoostSheet).toBeTypeOf('function');
+    expect(page.openStravaSettings).toBeTypeOf('function');
   });
 });

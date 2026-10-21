@@ -97,9 +97,12 @@ describe('统一主题设计契约', () => {
 
   it('版本和用户可见更新说明升级且旧版本转为历史项', () => {
     const settings = read('miniprogram/pages/settings/index.ts');
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.21.4');
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.21.5');
     expect(settings).toMatch(
-      /version: CLIENT_RELEASE_VERSION[\s\S]*?title: '路线导航与报名流程更准确'[\s\S]*?latest: true/,
+      /version: CLIENT_RELEASE_VERSION[\s\S]*?title: '设置页集中管理 Strava 线路同步'[\s\S]*?latest: true/,
+    );
+    expect(settings).toMatch(
+      /version: '2026\.10\.21\.4'[\s\S]*?title: '路线导航与报名流程更准确'[\s\S]*?latest: false/,
     );
     expect(settings).toMatch(
       /version: '2026\.10\.21\.3'[\s\S]*?title: 'Strava 路线导入恢复'[\s\S]*?latest: false/,

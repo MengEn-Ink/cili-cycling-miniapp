@@ -388,11 +388,11 @@ Page({
     saving: false,
     uploading: false,
     syncingRoute: false,
-    connectingStrava: false,
     stravaConnected: false,
     stravaAthleteName: '',
-    stravaAuthorizationUrl: '',
     stravaStatusMessage: '',
+    showRouteBoostSheet: false,
+    publishButtonLabel: '发布活动',
     uploadingRoute: false,
     choosingLocation: false,
     error: '',
@@ -444,12 +444,26 @@ Page({
           role: club.role.toUpperCase(),
         })),
       ];
-      this.setData({ clubOptions, clubOptionsLoadFailed: false });
+      // 全平台唯一俱乐部：有加入的俱乐部时默认归属该俱乐部，不再弹出选择器。
+      const nextIndex = !this.data.id && clubOptions.length > 1 ? 1 : this.data.clubOptionIndex;
+      this.setData({ clubOptions, clubOptionsLoadFailed: false, clubOptionIndex: nextIndex });
+      this.recomputePublishLabel();
     } catch {
       if (!isCurrent()) return;
       // 俱乐部列表是活动归属的增强信息，读取失败不能阻断原有的公开活动编辑流程。
       this.setData({ clubOptions: [PUBLIC_CLUB_OPTION], clubOptionsLoadFailed: true });
+      this.recomputePublishLabel();
     }
+  },
+  recomputePublishLabel() {
+    const option = this.data.clubOptions[this.data.clubOptionIndex] as ClubOption | undefined;
+    const label =
+      this.data.status === 'published'
+        ? '保存修改'
+        : !this.data.isAdmin && option?.clubId && option.role !== 'OWNER' && option.role !== 'ADMIN'
+          ? '提交俱乐部审核'
+          : '发布活动';
+    this.setData({ publishButtonLabel: label });
   },
   clubOptionChange(event: any) {
     const index = Number(event.detail.value);
@@ -908,9 +922,7 @@ Page({
           ? readiness.athleteName
             ? `已连接 ${readiness.athleteName}`
             : 'Strava 已连接'
-          : this.data.stravaAuthorizationUrl
-            ? '等待 Strava 授权完成…'
-            : '连接后可直接导入你的 Strava 路线',
+          : '请先在设置里完成 Strava 同步',
       });
       if (connected && this.stravaPollTimer !== undefined) {
         clearInterval(this.stravaPollTimer);
@@ -918,45 +930,28 @@ Page({
       }
     } catch {
       if (!this.unloaded)
-        this.setData({ stravaStatusMessage: '暂时无法刷新 Strava 状态，可继续手动上传 GPX' });
+        this.setData({ stravaStatusMessage: '暂时无法刷新 Strava 状态，可稍后重试' });
     }
   },
-  async connectStrava() {
-    if (this.data.connectingStrava || this.data.saving) return;
-    this.setData({ connectingStrava: true, stravaStatusMessage: '正在生成授权链接…' });
-    try {
-      const authorization = await rideService.startStravaRouteAuthorization();
-      this.setData({
-        stravaAuthorizationUrl: authorization.authorizationUrl,
-        stravaStatusMessage: '授权链接已复制，请在浏览器打开并完成授权',
-      });
-      await wx.setClipboardData({ data: authorization.authorizationUrl });
-      if (this.stravaPollTimer !== undefined) clearInterval(this.stravaPollTimer);
-      this.stravaPollTimer = setInterval(() => void this.refreshStravaReadiness(), 2000);
-    } catch (error) {
-      this.setData({
-        stravaStatusMessage:
-          error instanceof Error ? error.message : '生成授权链接失败，请稍后重试',
-      });
-    } finally {
-      this.setData({ connectingStrava: false });
-    }
+  openStravaSettings() {
+    wx.navigateTo({ url: '/pages/settings/index' });
   },
-  async copyStravaAuthorizationUrl() {
-    const url = this.data.stravaAuthorizationUrl;
-    if (!url) return;
-    await wx.setClipboardData({ data: url });
-    wx.showToast({ title: '授权链接已复制', icon: 'success' });
+  openRouteBoostSheet() {
+    this.setData({ showRouteBoostSheet: true });
   },
+  closeRouteBoostSheet() {
+    this.setData({ showRouteBoostSheet: false });
+  },
+  noop() {},
   async addOfficialRoute() {
     if (this.data.saving || this.data.syncingRoute) return;
     if (!this.data.stravaConnected) {
-      this.setData({ stravaStatusMessage: '请先连接 Strava，再导入路线' });
+      this.setData({ stravaStatusMessage: '请先在设置里完成 Strava 同步' });
       return;
     }
     this.setData({
       syncingRoute: true,
-      routeStatusMessage: '正在从 Strava 下载并解析 GPX',
+      routeStatusMessage: '正在解析 Strava 线路',
       error: '',
     });
     try {
@@ -985,8 +980,8 @@ Page({
       wx.showToast({ title: 'Strava 路线已导入', icon: 'success' });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Strava 路线导入失败，请手动上传 GPX';
-      this.setData({ routeStatusMessage: `${message}；也可手动上传 GPX`, error: message });
+        error instanceof Error ? error.message : 'Strava 线路解析失败，可从 ＋ 补充本地路线文件';
+      this.setData({ routeStatusMessage: message, error: message });
     } finally {
       this.setData({ syncingRoute: false });
     }

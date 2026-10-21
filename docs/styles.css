@@ -68,6 +68,7 @@
   --color-overlay: rgba(0, 0, 0, 0.72);
   --color-shadow: rgba(33, 31, 28, 0.06);
   --color-brand: #e13b2b;
+  --color-brand-strava: #fc4c02;
   --color-brand-active: #c0321f;
   --color-brand-soft: #fcebea;
   --color-logo-background: #211f1c;
@@ -10185,3 +10186,272 @@ body.capture-viewport .screen-notes {
   border-left-color: var(--color-brand);
   background: var(--color-brand-soft);
 }
+
+
+/* Strava sync 入口（admin-activity-edit · settings · 管理员视角） */
+.strava-sync-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.strava-sync-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+}
+.strava-sync-btn .strava-mark {
+  flex: 0 0 16px;
+}
+.strava-sync-hint {
+  font-size: 12px;
+  color: var(--color-muted);
+  line-height: 18px;
+}
+.inline-sub {
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--color-muted);
+  letter-spacing: 0.04em;
+}
+.strava-link-row {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 6px;
+}
+.strava-link-row .input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.strava-link-plus {
+  flex: 0 0 44px;
+  min-width: 44px;
+  min-height: 44px;
+  height: auto;
+  border: 2px solid var(--input-border);
+  border-radius: var(--input-radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms var(--motion-easing-standard, ease);
+}
+.strava-link-plus:hover,
+.strava-link-plus:focus-visible {
+  background: var(--color-raised);
+  outline: none;
+}
+.settings-management-row--strava .settings-management-strava {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-muted);
+  font-weight: 700;
+}
+.settings-management-row--strava .settings-management-strava svg.strava-mark,
+.settings-management-row--strava .settings-management-strava svg {
+  flex: 0 0 18px;
+}
+.settings-management-row--strava .settings-management-strava .strava-wordmark {
+  color: var(--color-brand-strava);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+/* strava-pages-preview: miniprogram-aligned additions */
+.editor-hero {
+  margin: 12px 0 8px;
+  padding: 14px 16px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-card, 12px);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.editor-hero .editor-title {
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+.editor-hero .editor-summary {
+  margin: 4px 0 0;
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+/* release card features list, mirrors miniprogram release-card */
+.release-current .release-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.release-current .release-date {
+  margin-left: auto;
+  color: var(--color-muted);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 12px;
+}
+.release-current .release-title {
+  margin: 10px 0 4px;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 900;
+  color: var(--color-text);
+}
+.release-current .release-summary {
+  margin: 0 0 10px;
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+.release-features {
+  margin: 10px 0 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--color-border-subtle, var(--color-border));
+  list-style: none;
+}
+.release-features li {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  gap: 6px;
+  padding: 4px 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--color-text);
+}
+.release-features .feature-arrow {
+  color: var(--color-action, var(--color-text));
+  font-weight: 900;
+}
+
+/* inline registration mode (merged into Card 01, matches miniprogram) */
+.inline-registration-mode {
+  margin-top: 12px;
+}
+.inline-registration-mode .field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.inline-registration-mode .field-hint-tag {
+  padding: 2px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-muted);
+  font-size: 11px;
+  line-height: 16px;
+}
+.inline-mode-choice {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.deadline-auto-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  background: var(--color-raised, var(--color-surface));
+  color: var(--color-text);
+  font-size: 12px;
+  line-height: 18px;
+}
+.deadline-auto-note .deadline-k {
+  font-weight: 800;
+}
+.deadline-auto-note .deadline-v {
+  color: var(--color-muted);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+}
+
+/* editor hero + club picker-value in Card 01 */
+.club-picker-value {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 800;
+}
+.club-picker-value .picker-chevron {
+  color: var(--color-muted);
+  margin-left: 8px;
+}
+
+
+/* ============================================================
+   admin-activity-edit · Strava-only route source + hidden boost sheet
+   ============================================================ */
+.activity-owner-field { display:flex; flex-direction:column; gap:6px; padding:12px 0; }
+.activity-owner-field .field-label-row { display:flex; align-items:center; justify-content:space-between; }
+.activity-owner-field .field-label { font-weight:700; font-size:14px; color:var(--color-text); }
+.activity-owner-field .field-hint-tag { font-size:11px; color:var(--color-muted); background:var(--color-raised); border:1px solid var(--color-border); padding:2px 8px; border-radius:999px; }
+.activity-owner-readonly { display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--color-raised); border:1px solid var(--color-border); border-radius:10px; }
+.activity-owner-readonly .club-avatar { flex:0 0 auto; }
+.activity-owner-copy { display:flex; flex-direction:column; line-height:1.3; }
+.activity-owner-copy b { font-weight:700; color:var(--color-text); font-size:14px; }
+.activity-owner-copy small { color:var(--color-muted); font-size:12px; margin-top:2px; }
+
+.inline-registration-mode.mode-settings-card { padding:14px; background:var(--color-raised); border:1px solid var(--color-border); border-radius:12px; display:flex; flex-direction:column; gap:10px; margin:8px 0; }
+.inline-registration-mode .field-label-row { display:flex; align-items:center; justify-content:space-between; }
+.inline-registration-mode .deadline-auto-note { display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:var(--color-bg); border:1px dashed var(--color-border); border-radius:8px; font-size:12px; }
+.inline-registration-mode .deadline-k { font-weight:600; color:var(--color-text); }
+.inline-registration-mode .deadline-v { color:var(--color-muted); }
+.inline-mode-choice { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+
+.route-source-block { display:flex; flex-direction:column; gap:8px; padding:12px; background:var(--color-raised); border:1px solid var(--color-border); border-radius:12px; margin:8px 0; }
+.route-source-head { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.route-source-label { font-weight:700; font-size:13px; color:var(--color-text); }
+.route-source-conn { display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:600; border:1px solid var(--color-border); background:var(--color-bg); }
+.route-source-conn .strava-wordmark { color:var(--color-brand-strava); font-weight:800; letter-spacing:0.2px; }
+.route-source-conn-dot { width:6px; height:6px; border-radius:50%; background:var(--color-border-strong); }
+.route-source-conn.tone-success .route-source-conn-dot { background:var(--color-status-success); }
+.route-source-conn.tone-warning .route-source-conn-dot { background:var(--color-status-warning); }
+.route-source-conn.tone-error .route-source-conn-dot { background:var(--color-brand); }
+.route-source-conn.tone-muted .route-source-conn-dot { background:var(--color-border-strong); }
+
+.route-link-row { display:flex; align-items:stretch; gap:8px; }
+.route-link-row .input { flex:1 1 auto; }
+.route-link-plus { flex:0 0 auto; width:44px; height:44px; border-radius:12px; border:2px solid var(--color-text); background:var(--color-bg); color:var(--color-text); font-size:22px; line-height:1; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition:transform 0.15s ease, background 0.2s ease; }
+.route-link-plus:hover { background:var(--color-raised); }
+.route-link-plus.is-open { background:var(--color-text); color:var(--color-bg); }
+
+.route-link-state { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:8px; font-size:12px; }
+.route-link-state.is-typing { background:var(--color-bg); color:var(--color-muted); border:1px dashed var(--color-border); }
+.route-link-state.is-parsing { background:var(--color-bg); color:var(--color-text); border:1px solid var(--color-border); }
+.route-link-state.is-error { background:var(--color-brand-soft); color:var(--color-text); border:1px solid var(--color-brand); font-weight:600; }
+.route-link-state.is-error b { font-weight:700; color:var(--color-brand); }
+.route-link-retry { margin-left:auto; }
+
+.dot-spinner { width:12px; height:12px; border-radius:50%; border:2px solid var(--color-border); border-top-color:var(--color-text); animation:dot-spin 0.9s linear infinite; }
+@keyframes dot-spin { to { transform:rotate(360deg); } }
+
+.route-link-preview { margin-top:8px; }
+
+.route-boost-sheet { margin-top:12px; padding:14px; background:var(--color-bg); border:2px solid var(--color-text); border-radius:14px; box-shadow:0 10px 30px -16px rgba(33,31,28,0.35); display:flex; flex-direction:column; gap:10px; animation:boost-rise 0.22s ease-out; }
+@keyframes boost-rise { from { transform:translateY(10px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+.route-boost-head { display:flex; align-items:center; justify-content:space-between; }
+.route-boost-head b { font-weight:800; font-size:14px; }
+.route-boost-close { width:28px; height:28px; border-radius:8px; border:1px solid var(--color-border); background:transparent; cursor:pointer; font-size:18px; line-height:1; }
+.boost-sheet-hint { font-size:12px; color:var(--color-muted); line-height:1.5; margin:0; }
+.boost-conflict { padding:10px 12px; background:var(--color-brand-soft); border:1px solid var(--color-brand); border-radius:10px; display:flex; flex-direction:column; gap:4px; }
+.boost-conflict b { color:var(--color-brand); font-weight:700; }
+.boost-conflict p { font-size:12px; color:var(--color-text); margin:0; }

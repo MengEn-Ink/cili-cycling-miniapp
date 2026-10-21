@@ -6,6 +6,23 @@
     <view class="hero-copy">管理活动通知、隐私与本地缓存，查看当前版本更新。</view>
   </view>
 
+  <view wx:if="{{isAdmin}}" class="section-label strava-section-label"><text>00</text> 线路同步</view>
+  <view wx:if="{{isAdmin}}" class="management-list strava-list">
+    <button
+      class="management-row strava-row strava-row--{{stravaState}}"
+      bindtap="openStravaSync"
+      disabled="{{actionPending}}"
+      aria-label="同步 Strava 线路信息"
+    >
+      <view class="strava-mark" aria-hidden="true"><view class="strava-mark-dot"></view></view>
+      <view class="management-copy">
+        <view class="management-title">同步 Strava 线路信息</view>
+        <view class="management-description">{{stravaDescription}}</view>
+      </view>
+      <text class="management-action" aria-hidden="true">{{stravaAction}}</text>
+    </button>
+  </view>
+
   <view class="section-label"><text>01</text> 常用管理</view>
   <view class="management-list">
     <button
