@@ -854,7 +854,7 @@
         <div class="card">${cardHead('03', '备注、路线与群二维码')}
           ${field('备注说明', input(create ? '' : '请佩戴头盔，携带补给水、备胎和基础维修工具。', { cls: 'textarea', ph: '集合提醒、补给安排或其他需要说明的内容', count: create ? '0 / 5000' : '26 / 5000' }))}
           <p class="sub-title">活动路线</p>
-          ${field('Strava 官方路线（可选）', `${input(filled || uploading ? primary.routeUrl : '', { ph: '粘贴公开路线链接' })}<div style="margin-top:8px">${btn('添加并解析路线', toast('公开路线已解析'), 'btn-secondary btn-sm')}</div><p class="card-hint">无需 Strava 授权；解析公开路线后会保存可信的路线详情。</p>`)}
+          ${field('Strava 路线导入（可选）', `<div class="btn-row">${btn('连接 Strava', toast('授权链接已复制，请在浏览器完成授权'), 'btn-secondary btn-sm')}${btn('复制授权链接', toast('授权链接已复制'), 'btn-secondary btn-sm')}</div><p class="card-hint">授权信息只保存在云端；授权完成后页面自动刷新连接状态。</p>${input(filled || uploading ? primary.routeUrl : '', { ph: 'https://www.strava.com/routes/123456' })}<div style="margin-top:8px">${btn('从 Strava 导入', toast('Strava GPX 已导入并完成解析'), 'btn-secondary btn-sm')}</div><p class="card-hint">导入失败时可继续使用下方“上传 GPX”。</p>`)}
           ${filled ? `<div class="row" style="margin-top:8px"><span class="k">${primary.routeName.replace(' GPX', '')}</span>${tag('solid', '公开路线已解析')}</div>
             ${metrics([[`${primary.distanceKm} km`, '里程'], [`${primary.elevationM} m`, '爬升'], [`${primary.elevationLossM} m`, '下降'], [`${primary.elevationMinM}–${primary.elevationMaxM} m`, '海拔区间', 'is-wide']])}
             ${routeSvg('公开路线轮廓')}<p class="card-hint">解析结果只在编辑页展示，不提供跳转预览。</p>` : ''}

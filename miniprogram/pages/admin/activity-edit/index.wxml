@@ -109,12 +109,18 @@
       </view>
       <view class="section-title">活动路线</view>
       <view class="field" data-error-anchor="stravaRouteUrl">
-        <view class="field-label">Strava 官方路线（可选）</view>
-        <input class="input" value="{{form.stravaRouteUrl}}" maxlength="256" placeholder-class="input-placeholder" placeholder="粘贴公开路线链接" bindinput="field" data-name="stravaRouteUrl" />
+        <view class="field-label">Strava 路线导入（可选）</view>
         <view class="route-command-row">
-          <button class="map-button map-button--secondary" loading="{{syncingRoute}}" disabled="{{saving || syncingRoute || !form.stravaRouteUrl}}" bindtap="addOfficialRoute">{{syncingRoute ? '正在解析' : '添加并解析路线'}}</button>
+          <button wx:if="{{!stravaConnected}}" class="map-button" loading="{{connectingStrava}}" disabled="{{saving || connectingStrava}}" bindtap="connectStrava">{{connectingStrava ? '正在连接' : '连接 Strava'}}</button>
+          <button wx:else class="map-button map-button--secondary" disabled="true">Strava 已连接</button>
+          <button wx:if="{{stravaAuthorizationUrl && !stravaConnected}}" class="map-button map-button--secondary" bindtap="copyStravaAuthorizationUrl">复制授权链接</button>
         </view>
-        <view class="section-help">无需 Strava 授权；解析公开路线后会保存可信的路线详情。</view>
+        <view class="section-help">{{stravaStatusMessage || '连接后可下载你有权访问的路线 GPX；授权信息只保存在云端。'}}</view>
+        <input class="input" value="{{form.stravaRouteUrl}}" maxlength="256" placeholder-class="input-placeholder" placeholder="https://www.strava.com/routes/123456" bindinput="field" data-name="stravaRouteUrl" />
+        <view class="route-command-row">
+          <button class="map-button map-button--secondary" loading="{{syncingRoute}}" disabled="{{saving || syncingRoute || !stravaConnected || !form.stravaRouteUrl}}" bindtap="addOfficialRoute">{{syncingRoute ? '正在下载并解析' : '从 Strava 导入'}}</button>
+        </view>
+        <view class="section-help">导入失败时可继续使用下方“上传 GPX”，不会影响手动路线入口。</view>
         <view wx:if="{{publicRoutePreview && !routePreview}}" class="route-preview-card">
           <view class="route-preview-heading">
             <view><view class="route-preview-name">{{publicRoutePreview.routeName}}</view><view class="section-help">此里估算 {{routeTimeLabel}}</view></view>

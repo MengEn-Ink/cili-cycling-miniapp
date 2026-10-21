@@ -6,6 +6,13 @@ import { fileURLToPath } from 'node:url';
 
 export const MEDIA_SECRET_NAME = 'PROFILE_MEDIA_PATH_SECRET';
 export const PII_SECRET_NAME = 'PII_ENCRYPTION_KEY';
+export const STRAVA_CONFIG_NAMES = Object.freeze([
+  'STRAVA_CLIENT_ID',
+  'STRAVA_CLIENT_SECRET',
+  'STRAVA_TOKEN_ENCRYPTION_KEY',
+  'STRAVA_CALLBACK_URL',
+]);
+export const STRAVA_CONFIG_CONSUMERS = Object.freeze(['strava-bridge', 'strava-callback']);
 export const PII_SECRET_CONSUMERS = Object.freeze(['profile', 'admin-review']);
 export const MEDIA_SECRET_CONSUMERS = Object.freeze([
   'profile',
@@ -152,7 +159,7 @@ export function extractFunctionEnvironment(detail) {
     if (!value || typeof value !== 'object' || seen.has(value)) return;
     seen.add(value);
 
-    if ([MEDIA_SECRET_NAME, PII_SECRET_NAME].includes(value.Key))
+    if ([MEDIA_SECRET_NAME, PII_SECRET_NAME, ...STRAVA_CONFIG_NAMES].includes(value.Key))
       addEnvironmentValue(environment, value.Key, value.Value);
     for (const [key, item] of Object.entries(value)) {
       const isEnvironment = /^(?:environment|environmentvariables|envvariables)$/i.test(key);
@@ -234,12 +241,41 @@ export function resolvePiiSecret(environments, actionsSecret = '') {
   return unique[0];
 }
 
+export function resolveStravaConfig(environments, sources = {}) {
+  const result = {};
+  for (const name of STRAVA_CONFIG_NAMES) {
+    const candidates = [
+      sources[name],
+      ...STRAVA_CONFIG_CONSUMERS.map((fn) => environments.get(fn)?.[name]),
+    ].filter((value) => value !== undefined && value !== '');
+    const unique = [...new Set(candidates)];
+    if (unique.length !== 1) throw new Error(`${name} 缺失或在可信来源中不一致，拒绝部署`);
+    result[name] = unique[0];
+  }
+  if (!/^\d+$/u.test(result.STRAVA_CLIENT_ID)) throw new Error('STRAVA_CLIENT_ID 必须为数字');
+  if (!result.STRAVA_CLIENT_SECRET || /[\r\n\0]/u.test(result.STRAVA_CLIENT_SECRET))
+    throw new Error('STRAVA_CLIENT_SECRET 无效');
+  const tokenKey = Buffer.from(result.STRAVA_TOKEN_ENCRYPTION_KEY, 'base64');
+  if (tokenKey.length !== 32 || tokenKey.toString('base64') !== result.STRAVA_TOKEN_ENCRYPTION_KEY)
+    throw new Error('STRAVA_TOKEN_ENCRYPTION_KEY 必须是严格 base64 编码的 32 字节密钥');
+  let callback;
+  try {
+    callback = new URL(result.STRAVA_CALLBACK_URL);
+  } catch {
+    throw new Error('STRAVA_CALLBACK_URL 必须为 HTTPS URL');
+  }
+  if (callback.protocol !== 'https:' || callback.username || callback.password)
+    throw new Error('STRAVA_CALLBACK_URL 必须为 HTTPS URL');
+  return result;
+}
+
 export function createRuntimeConfig(
   config,
   environments,
   selectedFunctions,
   mediaSecret,
   piiSecret,
+  stravaConfig = {},
 ) {
   const configuredNames = new Set(configuredFunctionNames(config));
   for (const name of selectedFunctions) {
@@ -252,6 +288,7 @@ export function createRuntimeConfig(
       const envVariables = { ...(environments.get(fn.name) || {}), ...(fn.envVariables || {}) };
       if (MEDIA_SECRET_CONSUMERS.includes(fn.name)) envVariables[MEDIA_SECRET_NAME] = mediaSecret;
       if (PII_SECRET_CONSUMERS.includes(fn.name)) envVariables[PII_SECRET_NAME] = piiSecret;
+      if (STRAVA_CONFIG_CONSUMERS.includes(fn.name)) Object.assign(envVariables, stravaConfig);
       return { ...fn, envVariables };
     }),
   };
@@ -272,30 +309,53 @@ function prepare(options, env = process.env) {
   const environments = readDetails(options['details-dir'], functionNames, inventoryResult.existing);
   const mediaSecret = resolveMediaSecret(environments, env.PROFILE_MEDIA_PATH_SECRET_SOURCE || '');
   const piiSecret = resolvePiiSecret(environments, env.PII_ENCRYPTION_KEY_SOURCE || '');
+  const selectedFunctions =
+    options['include-secret-consumers'] === 'true'
+      ? [
+          ...new Set([
+            ...(decision.functions || []),
+            ...MEDIA_SECRET_CONSUMERS,
+            ...STRAVA_CONFIG_CONSUMERS,
+          ]),
+        ]
+      : decision.functions || [];
+  const needsStravaConfig = STRAVA_CONFIG_CONSUMERS.some(
+    (name) => functionNames.includes(name) && selectedFunctions.includes(name),
+  );
+  const stravaConfig = needsStravaConfig
+    ? resolveStravaConfig(
+        environments,
+        Object.fromEntries(STRAVA_CONFIG_NAMES.map((name) => [name, env[`${name}_SOURCE`] || ''])),
+      )
+    : {};
   if (!env.GITHUB_ENV) throw new Error('缺少 GITHUB_ENV，无法安全传递已掩码密钥');
   process.stdout.write(`::${'add'}-mask::${mediaSecret}\n`);
   process.stdout.write(`::${'add'}-mask::${piiSecret}\n`);
-
-  const selectedFunctions =
-    options['include-secret-consumers'] === 'true'
-      ? [...new Set([...(decision.functions || []), ...MEDIA_SECRET_CONSUMERS])]
-      : decision.functions || [];
+  if (needsStravaConfig) {
+    process.stdout.write(`::${'add'}-mask::${stravaConfig.STRAVA_CLIENT_SECRET}\n`);
+    process.stdout.write(`::${'add'}-mask::${stravaConfig.STRAVA_TOKEN_ENCRYPTION_KEY}\n`);
+  }
   const runtimeConfig = createRuntimeConfig(
     config,
     environments,
     selectedFunctions,
     mediaSecret,
     piiSecret,
+    stravaConfig,
   );
   writeFileSync(resolve(options.output), `${JSON.stringify(runtimeConfig, null, 2)}\n`, {
     mode: 0o600,
   });
   appendFileSync(
     env.GITHUB_ENV,
-    `${MEDIA_SECRET_NAME}=${mediaSecret}\n${PII_SECRET_NAME}=${piiSecret}\n`,
+    `${MEDIA_SECRET_NAME}=${mediaSecret}\n${PII_SECRET_NAME}=${piiSecret}\n${needsStravaConfig ? `${STRAVA_CONFIG_NAMES.map((name) => `${name}=${stravaConfig[name]}`).join('\n')}\n` : ''}`,
     { mode: 0o600 },
   );
-  process.stdout.write('已从可信来源解析并掩码媒体路径与 PII 密钥，运行时配置已准备\n');
+  process.stdout.write(
+    needsStravaConfig
+      ? '已从可信来源解析并掩码媒体路径、PII 与 Strava 配置，运行时配置已准备\n'
+      : '已从可信来源解析并掩码媒体路径与 PII 密钥，运行时配置已准备\n',
+  );
 }
 
 function collectFunctionDetails(value, results = [], seen = new Set()) {
@@ -338,6 +398,17 @@ export function verifyFunctionDetail(detail, expectedName, expectedMediaSecret, 
     const expected = validatePiiSecret(expectedPiiSecret, '当前部署任务');
     if (!actual || !expected || actual !== expected) {
       throw new Error(`云函数 ${expectedName} 的 ${PII_SECRET_NAME} 缺失或不一致`);
+    }
+  }
+  if (STRAVA_CONFIG_CONSUMERS.includes(expectedName)) {
+    const actualEnvironment = extractFunctionEnvironment(detail);
+    const actual = resolveStravaConfig(
+      new Map([[expectedName, actualEnvironment]]),
+      actualEnvironment,
+    );
+    for (const name of STRAVA_CONFIG_NAMES) {
+      if (!process.env[name] || actual[name] !== process.env[name])
+        throw new Error(`云函数 ${expectedName} 的 ${name} 缺失或不一致`);
     }
   }
   return { name: expectedName, status: matches[0].status };

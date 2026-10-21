@@ -254,7 +254,7 @@ test('活动首页 planner 索引纳入 bootstrap exact plan 与 verify', () => 
     INDEXES.filter((index) => index.name.startsWith('activities_public_event_')),
     [PUBLIC_EVENT_START, PUBLIC_EVENT_END],
   );
-  assert.equal(INDEXES.length, 33);
+  assert.equal(INDEXES.length, 36);
 
   const missing = completeState();
   missing.indexes.set(
@@ -433,15 +433,11 @@ test('环境覆盖必须与显式确认完全一致', () => {
   );
 });
 
-test('只保留可信 GPX 路线预览集合与清理索引', () => {
-  for (const retired of [
-    'oauth_states',
-    'oauth_attempts',
-    'strava_credentials',
-    'strava_snapshots',
-    'strava_route_previews',
-  ])
+test('保留可信 GPX 预览与最小 Strava OAuth 集合及清理索引', () => {
+  for (const retired of ['oauth_attempts', 'strava_snapshots', 'strava_route_previews'])
     assert.equal(COLLECTIONS.includes(retired), false);
+  assert.equal(COLLECTIONS.includes('strava_credentials'), true);
+  assert.equal(COLLECTIONS.includes('oauth_states'), true);
   assert.equal(COLLECTIONS.includes('route_previews'), true);
   assert.deepEqual(
     INDEXES.find((item) => item.name === 'route_previews_expires_at'),
@@ -464,8 +460,8 @@ test('只保留可信 GPX 路线预览集合与清理索引', () => {
       unique: false,
     },
   );
-  assert.equal(COLLECTIONS.length, 12);
-  assert.equal(INDEXES.length, 33);
+  assert.equal(COLLECTIONS.length, 14);
+  assert.equal(INDEXES.length, 36);
   const complete = completeState();
   assert.deepEqual(complete.rules.get('route_previews'), {
     AclTag: 'CUSTOM',
@@ -473,7 +469,8 @@ test('只保留可信 GPX 路线预览集合与清理索引', () => {
   });
   const schema = readFileSync(new URL('../docs/cloudbase-schema.md', import.meta.url), 'utf8');
   assert.match(schema, /### `route_previews`/);
-  assert.doesNotMatch(schema, /oauth_states|oauth_attempts|strava_credentials|strava_snapshots/);
+  assert.match(schema, /### `strava_credentials` 与 `oauth_states`/);
+  assert.doesNotMatch(schema, /oauth_attempts|strava_snapshots/);
   assert.match(schema, /客户端全拒绝 ACL/);
 });
 
@@ -541,7 +538,7 @@ test('CloudBase schema 文档列出 notification_outbox 和活动时间线索引
   assert.match(schema, /notification_outbox \| status ASC, attempts ASC, next_retry_at ASC/);
   assert.match(schema, /activities \| status ASC, event_start ASC, _id ASC, event_end ASC/);
   assert.match(schema, /activities \| status ASC, event_end DESC, _id DESC, event_start DESC/);
-  assert.match(schema, /全拒绝规则与 33 索引/);
+  assert.match(schema, /全拒绝规则与 36 索引/);
 });
 
 test('profile_media 使用 owner/status 与过期清理索引并保持客户端全拒绝', () => {
@@ -581,8 +578,8 @@ test('profile_media 使用 owner/status 与过期清理索引并保持客户端�
     ['status', 1],
     ['retry_at', 1],
   ]);
-  assert.equal(COLLECTIONS.length, 12);
-  assert.equal(INDEXES.length, 33);
+  assert.equal(COLLECTIONS.length, 14);
+  assert.equal(INDEXES.length, 36);
   assert.deepEqual(DENY_RULE, { read: false, write: false });
 });
 
@@ -616,7 +613,7 @@ test('profile_media_imports 使用全拒绝 ACL 与完整 cleanup 扫描索引',
   assert.match(schema, /profile_media_imports \| status ASC, cleanup_after ASC/);
   assert.match(schema, /profile_media_imports \| status ASC, delete_lease_expires_at ASC/);
   assert.match(schema, /profile_media_imports \| status ASC, retry_at ASC/);
-  assert.match(schema, /12 集合、全拒绝规则与 33 索引/);
+  assert.match(schema, /14 集合、全拒绝规则与 36 索引/);
   assert.match(schema, /avatar_revision/);
   assert.match(schema, /origin: wechat\|custom/);
   assert.doesNotMatch(schema, /avatar_url_fingerprint|avatar_import_lease_expires_at/);
@@ -733,12 +730,19 @@ test('文档契约测试拒绝已关闭缺口的同义否定表述', () => {
   );
 });
 
-test('部署顺序保留媒体 fail-closed 边界且已移除 route-web', () => {
+test('部署顺序保留媒体 fail-closed 边界、移除旧路线能力并限定最小 Strava OAuth 链路', () => {
   const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
   const sequence = readme.match(/再依次部署 ([^。]+)。/)?.[1] || '';
   const order = [...sequence.matchAll(/`([^`]+)`/g)].map((match) => match[1]);
   assert.deepEqual(order.slice(0, 3), ['auth', 'profile-media-cleanup', 'admin-review']);
   assert.ok(order.indexOf('admin-review') < order.indexOf('profile'));
   assert.ok(!order.includes('route-web'));
-  assert.doesNotMatch(readme, /`strava-auth`|`strava-callback`/);
+  assert.ok(!order.includes('strava-auth'));
+  assert.doesNotMatch(readme, /`strava-auth`/);
+  assert.match(readme, /`strava-bridge`/);
+  assert.match(readme, /`strava-callback`/);
+  assert.match(
+    readme,
+    /Strava OAuth 仅用于活动管理员按官方路线 URL 导入 GPX，凭证只保存在云端；手动上传 GPX 始终保留/,
+  );
 });

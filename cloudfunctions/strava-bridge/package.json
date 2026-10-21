@@ -1,0 +1,17 @@
+{
+  "name": "strava-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test *.node-test.js"
+  },
+  "dependencies": {
+    "fast-xml-parser": "5.11.2",
+    "wx-server-sdk": "4.0.2"
+  },
+  "overrides": {
+    "@cloudbase/database": "1.5.1",
+    "axios": "1.20.0"
+  }
+}

@@ -485,7 +485,7 @@
           <article class="organizer-step">
             <span class="organizer-no">02</span>
             <h3>导入路线</h3>
-            <p>粘贴 Strava 公开链接，由服务端免授权解析（无需用户授权）；或上传 GPX 由服务端解析里程、海拔、轮廓。两种可并存。</p>
+            <p>连接 Strava 后粘贴标准路线 URL，由云函数下载 GPX 并复用可信解析器；或直接手动上传 GPX。授权信息只留在云端，导入失败时可立即降级手动上传。</p>
             <p class="organizer-ev"><a href="#admin-activity-edit">admin-activity-edit · GPX 路线详情</a> · <a href="#privacy">边界见第 5 章</a></p>
           </article>
           <article class="organizer-step">
@@ -529,15 +529,15 @@
               <li>真实姓名 · 手机号 · 紧急联系人（本人与审核管理员才看完整）</li>
               <li>报名备注 · openid · 原始文件 ID · 审计数据</li>
               <li>证件类型 / 证件号（根本不采集）</li>
-              <li>第三方账号 access / refresh token（Strava OAuth 已退役，不采集任何三方凭据）</li>
+              <li>第三方账号 access / refresh token（Strava 路线授权凭证仅在云端 AES-256-GCM 加密存储，永不返回前端）</li>
               <li>骑行指标（90 天次数、加权均速、累计爬升 — 全部不展示）</li>
             </ul>
           </article>
         </div>
 
         <div class="privacy-callout">
-          <b>Strava OAuth 已退役 · 无需 Strava 授权即可解析公开路线</b>
-          <p>仓库仅使用 Strava <strong>公开路线</strong>的链接：粘贴 URL → 服务端免授权解析 → 规范化复制。小程序不读写 Strava 私有数据，也不保存任何 Strava access/refresh token；历史凭证由迁移清理任务删除。活动详情页只允许复制规范化链接，不跳转第三方。</p>
+          <b>Strava OAuth 仅恢复路线 GPX 导入</b>
+          <p>活动管理员在外部浏览器完成授权后，小程序只轮询“已连接”状态；access/refresh token 以 AES-256-GCM 密文留在云端。粘贴标准路线 URL 后由云函数下载 GPX，并复用与手动上传相同的解析器和预览票据。导入失败时可随时改用手动上传 GPX。</p>
         </div>
       </section>
 
@@ -753,7 +753,7 @@
       <section class="product-section" id="prototype">
         <p class="eyebrow">05 · 交互原型</p>
         <h2>17 个正式路由 + 4 个规划原型 / 21 个画面</h2>
-        <p class="card-hint">17 个正式页面与 app.json 路由一一对应；4 个 planned design-only 画面覆盖隐私授权、通知中心、全局离线 / 网络错误与活动分享海报，可进入 Pages 原型导航，但不计入正式路由。全平台只有一个俱乐部，由平台管理员直接创建，创建后任何角色都不能再创建；所有活动统一归属该唯一俱乐部、对所有用户可见，不再区分俱乐部活动与公开活动。官方路线独立页已从产品路由删除；活动详情直接承载路线事实与 GPX 能力，Strava 路线只提供规范化链接复制（Strava OAuth 已退役，无需 Strava 授权）。</p>
+        <p class="card-hint">17 个正式页面与 app.json 路由一一对应；4 个 planned design-only 画面覆盖隐私授权、通知中心、全局离线 / 网络错误与活动分享海报，可进入 Pages 原型导航，但不计入正式路由。全平台只有一个俱乐部，由平台管理员直接创建，创建后任何角色都不能再创建；所有活动统一归属该唯一俱乐部、对所有用户可见，不再区分俱乐部活动与公开活动。官方路线独立页已从产品路由删除；活动编辑页通过云端 Strava OAuth 按 URL 下载 GPX 并复用可信解析器，手动上传 GPX 始终保留。</p>
         <div class="overview-grid">${pageCards}</div>
       </section>
 

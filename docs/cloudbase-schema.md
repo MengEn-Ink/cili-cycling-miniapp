@@ -145,11 +145,27 @@ cleanup_after, delete_lease_expires_at, retry_at
 
 该集合继续用于微信/自定义图片上传补偿，不再承担第三方头像导入。
 
+### `strava_credentials` 与 `oauth_states`
+
+Strava 仅用于活动管理员按官方路线 URL 导入 GPX，不写入 `profiles`：
+
+```text
+strava_credentials: _id/openid = 可信 WXContext OPENID
+owner_openid, athlete_id, athlete_name
+access_token_cipher, refresh_token_cipher (AES-256-GCM)
+token_expires_at, connected_at, updated_at
+
+oauth_states: _id = sha256(随机 state)
+state_hash, owner_openid, created_at, expires_at, consumed_at
+```
+
+客户端对两个集合均全拒绝。原始 state 只出现在短时授权 URL 中，数据库仅保存哈希；callback 在事务中先完成单次消费，再换取 token。`STRAVA_CLIENT_SECRET` 和严格 base64 的 32 字节 `STRAVA_TOKEN_ENCRYPTION_KEY` 只通过云函数环境变量注入。token 自动刷新且永不返回客户端；所有读取以可信 OPENID 隔离。
+
 ### `route_previews`
 
 组织者上传 GPX 后产生的两小时可信预览。记录绑定 `owner_openid`、文件路径、SHA-256、解析指标、路线轮廓、海拔曲线、生成图和 `expires_at`。保存活动时按 owner、摘要、来源文件、生成图和目标活动进行事务校验与消费。
 
-`route-maintenance` 使用保留文档 `__route_maintenance_v1__` 保存各集合稳定 `_id` 游标。定时任务只在预览创建超过 24 小时后回收对象；活动仍在引用或同摘要的新预览仍在使用时不会删除 GPX/PNG。历史账号集合仅在 `OAUTH_RETIREMENT_PURGE_ENABLED=1` 时按批清空，该开关必须在新路线链路运行时验收后才可开启。
+`route-maintenance` 使用保留文档 `__route_maintenance_v1__` 保存各集合稳定 `_id` 游标。定时任务只在预览创建超过 24 小时后回收对象；活动仍在引用或同摘要的新预览仍在使用时不会删除 GPX/PNG。当前 `strava_credentials` 与 `oauth_states` 是路线导入运行时集合，不得由历史 OAuth 清理开关删除。
 
 ## 受管索引
 
@@ -189,7 +205,7 @@ cleanup_after, delete_lease_expires_at, retry_at
 | route_previews | owner_openid ASC, expires_at ASC |
 | audit_logs | actor_openid ASC, created_at DESC |
 
-bootstrap 当前管理 12 集合、全拒绝规则与 33 索引。`route_previews` 与 `club_applications` 使用客户端全拒绝 ACL。
+bootstrap 当前管理 14 集合、全拒绝规则与 36 索引。`route_previews`、`strava_credentials`、`oauth_states` 与 `club_applications` 使用客户端全拒绝 ACL。
 
 ## 部署后验证
 

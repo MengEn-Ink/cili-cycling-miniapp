@@ -18,6 +18,8 @@ export const COLLECTIONS = Object.freeze([
   'profile_media',
   'profile_media_imports',
   'route_previews',
+  'strava_credentials',
+  'oauth_states',
   'clubs',
   'club_memberships',
   'club_applications',
@@ -332,6 +334,27 @@ export const INDEXES = Object.freeze([
       ['expires_at', 1],
     ],
     unique: false,
+  },
+  {
+    collection: 'oauth_states',
+    name: 'oauth_states_owner_expires_at',
+    keys: [
+      ['owner_openid', 1],
+      ['expires_at', 1],
+    ],
+    unique: false,
+  },
+  {
+    collection: 'oauth_states',
+    name: 'oauth_states_expires_at',
+    keys: [['expires_at', 1]],
+    unique: false,
+  },
+  {
+    collection: 'strava_credentials',
+    name: 'strava_credentials_owner_openid',
+    keys: [['owner_openid', 1]],
+    unique: true,
   },
   {
     collection: 'audit_logs',

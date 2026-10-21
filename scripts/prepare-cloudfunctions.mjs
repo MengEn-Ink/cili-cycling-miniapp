@@ -12,4 +12,14 @@ for (const name of domainFunctions) {
   mkdirSync(domainRoot, { recursive: true });
   for (const file of sharedFiles) copyFileSync(resolve(shared, file), resolve(domainRoot, file));
 }
-console.log(`共享领域源码已复制到 ${domainFunctions.length} 个业务函数`);
+copyFileSync(
+  resolve(root, 'cloudfunctions/activity-admin/gpx.js'),
+  resolve(root, 'cloudfunctions/strava-bridge/gpx.js'),
+);
+copyFileSync(
+  resolve(root, 'cloudfunctions/strava-bridge/core.js'),
+  resolve(root, 'cloudfunctions/strava-callback/core.js'),
+);
+console.log(
+  `共享领域源码已复制到 ${domainFunctions.length} 个业务函数，Strava 复用 GPX 解析器与 OAuth 核心已同步`,
+);

@@ -23,14 +23,14 @@
 
 ## 已实现能力
 
-- **活动**：公开首页默认展示未来与进行中活动，并可按服务端时间线稳定分页回看历史；已登录用户可创建和编辑本人草稿、发布与下架，并从本人的历史活动复制草稿；管理员可管理全部活动并结束活动。活动支持图集、集合地点、分组容量、后援车信息、Strava 公开路线和 GPX 原生详情。
+- **活动**：公开首页默认展示未来与进行中活动，并可按服务端时间线稳定分页回看历史；已登录用户可创建和编辑本人草稿、发布与下架，并从本人的历史活动复制草稿；管理员可管理全部活动并结束活动。活动支持图集、集合地点、分组容量、后援车信息、Strava GPX 导入和 GPX 原生详情。
 - **报名**：微信身份、实名资料、微信授权手机号、集合方式与骑行经验；支持提交、驳回后重报、取消、审批、凭证和管理员签到。
-- **路线**：管理端粘贴 Strava 公开路线链接即可免授权解析可信路线详情；活动详情页仅支持复制规范化 Strava 路线链接，不再内嵌 `web-view` / Embed；上传 GPX 后原生展示里程、升降、海拔范围、路线轮廓与海拔曲线，并支持原件下载和路线图背景。
+- **路线**：活动管理端连接 Strava 后，粘贴标准路线 URL 即可由云函数下载 GPX，并复用手动上传链路的可信解析器与预览票据；手动上传 GPX 始终保留。活动详情页原生展示里程、升降、海拔范围、路线轮廓与海拔曲线，并支持原件下载和路线图背景。
 - **个人资料**：昵称、微信授权头像、骑行背景图、称号展示和个人骑行名片。
 - **通知**：报名时请求订阅授权；审批结果通过带租约和退避的 Outbox 异步发送。
 - **安全与可靠性**：服务端可信 `OPENID`、管理员白名单、敏感字段 AES-256-GCM 加密、容量事务和操作审计；头像、背景、活动图片、群二维码、俱乐部图片与路线预览 PNG 的新上传统一经过 owner-bound intent、图片校验、canonical registry 与业务保存后激活，旧媒体路径仅保留只读展示兼容。
 
-当前不包含在线支付、第三方账号授权、管理员白名单维护界面、报名名单导出或多俱乐部租户体系。完整产品边界见 [产品需求与当前能力](docs/requirements-design.md)；路线分析的公开数据平台、第三方 API、开源组件与分阶段架构方案见 [路线分析数据平台与开源方案](docs/route-analysis-data-platform-plan.md)。
+当前不包含在线支付、第三方账号资料同步、管理员白名单维护界面、报名名单导出或多俱乐部租户体系。Strava OAuth 仅用于活动管理员按官方路线 URL 导入 GPX，凭证只保存在云端；手动上传 GPX 始终保留。完整产品边界见 [产品需求与当前能力](docs/requirements-design.md)；路线分析的公开数据平台、第三方 API、开源组件与分阶段架构方案见 [路线分析数据平台与开源方案](docs/route-analysis-data-platform-plan.md)。
 
 公开骑手头像默认展示，但仍只为 owner/current registry 完整匹配的 canonical 媒体签发临时地址；来源、归属、状态、内容元数据或签名校验失败时一律隐藏头像。代码和自动化验证不代表目标环境已经部署，仍须按对应不可变提交核对云函数版本、同值 `PROFILE_MEDIA_PATH_SECRET` 和真实 smoke，证据缺失时不得宣称生产就绪。
 
@@ -40,7 +40,7 @@
 - 微信云开发：云函数、云数据库、云存储、HTTP 网关、定时触发器
 - 构建与质量门禁：Node.js 24、npm、Vitest、ESLint、Prettier
 - 云函数运行时：CloudBase `Nodejs20.19`
-- Strava 公开路线免授权解析；服务端受限 GPX XML 解析
+- Strava 路线 OAuth 云端 GPX 导入；服务端受限 GPX XML 解析
 
 ## 目录
 
@@ -157,6 +157,10 @@ npm run deploy:miniprogram
 | `REVIEW_APPROVED_TEMPLATE_ID` / `REVIEW_REJECTED_TEMPLATE_ID`    | `notification-send`                                                                                       | 审批订阅消息模板                                                        |
 | `WAITLIST_ENTERED_TEMPLATE_ID` / `WAITLIST_PROMOTED_TEMPLATE_ID` | `notification-send`                                                                                       | 候补进入与候补转正消息模板                                              |
 | `ACTIVITY_REMINDER_TEMPLATE_ID`                                  | `notification-send`                                                                                       | 活动提醒消息模板                                                        |
+| `STRAVA_CLIENT_ID`                                               | `strava-bridge`、`strava-callback`                                                                        | Strava 应用数字 Client ID                                               |
+| `STRAVA_CLIENT_SECRET`                                           | `strava-bridge`、`strava-callback`                                                                        | 仅云函数环境变量与受保护 Actions secret                                 |
+| `STRAVA_TOKEN_ENCRYPTION_KEY`                                    | `strava-bridge`、`strava-callback`                                                                        | 严格 base64 编码的 32 字节 AES-256-GCM 密钥，两者必须一致               |
+| `STRAVA_CALLBACK_URL`                                            | `strava-bridge`、`strava-callback`                                                                        | HTTPS 回调地址，须与 Strava 应用和 `/strava/callback` 网关完全一致      |
 | `OAUTH_RETIREMENT_PURGE_ENABLED`                                 | `route-maintenance`                                                                                       | 默认 `0`；仅在新链路验收、dry-run 与备份核对后临时设为 `1`              |
 
 仓库禁止保存 secret、token、真实 `openid`、手机号、OAuth code/state、密文或真实旅程原始证据。

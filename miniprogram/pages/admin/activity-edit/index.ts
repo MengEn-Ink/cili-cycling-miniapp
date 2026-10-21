@@ -383,6 +383,7 @@ Page({
   routeRequestId: '',
   mediaPreviewRequestId: 0,
   mediaPreviewRetryIds: new Set<string>(),
+  stravaPollTimer: undefined as ReturnType<typeof setInterval> | undefined,
   uploadedImageCloudPaths: new Map<string, string>(),
   data: {
     allowed: false,
@@ -391,6 +392,11 @@ Page({
     saving: false,
     uploading: false,
     syncingRoute: false,
+    connectingStrava: false,
+    stravaConnected: false,
+    stravaAthleteName: '',
+    stravaAuthorizationUrl: '',
+    stravaStatusMessage: '',
     uploadingRoute: false,
     choosingLocation: false,
     error: '',
@@ -484,6 +490,7 @@ Page({
       this.createRequestId = id ? '' : newCreateRequestId();
       this.routeRequestId = newRouteRequestId();
       this.setData({ allowed: true, isAdmin: appStore.role === 'admin' });
+      void this.refreshStravaReadiness();
       await this.loadClubOptions(revision);
       if (!isCurrent()) return;
       if (!id) {
@@ -586,7 +593,10 @@ Page({
     }
   },
   onShow() {
-    if (!this.data.loading) void this.refreshMediaPreviews();
+    if (!this.data.loading) {
+      void this.refreshMediaPreviews();
+      void this.refreshStravaReadiness();
+    }
   },
   ensureMediaUrlCache(): TempFileUrlCache | null {
     const cloud = wx.cloud as
@@ -782,6 +792,8 @@ Page({
   },
   onUnload() {
     this.unloaded = true;
+    if (this.stravaPollTimer !== undefined) clearInterval(this.stravaPollTimer);
+    this.stravaPollTimer = undefined;
     this.loadRevision += 1;
     this.mediaPreviewRequestId += 1;
     if (!this.saveInFlight) this.cleanupSessionUploads();
@@ -884,22 +896,86 @@ Page({
     });
     void this.refreshMediaPreviews();
   },
+  async refreshStravaReadiness() {
+    if (!this.data.allowed || this.unloaded) return;
+    try {
+      const readiness = await rideService.getStravaRouteReadiness();
+      if (this.unloaded) return;
+      const connected = readiness.state === 'connected';
+      this.setData({
+        stravaConnected: connected,
+        stravaAthleteName: readiness.athleteName,
+        stravaStatusMessage: connected
+          ? readiness.athleteName
+            ? `已连接 ${readiness.athleteName}`
+            : 'Strava 已连接'
+          : this.data.stravaAuthorizationUrl
+            ? '等待 Strava 授权完成…'
+            : '连接后可直接导入你的 Strava 路线',
+      });
+      if (connected && this.stravaPollTimer !== undefined) {
+        clearInterval(this.stravaPollTimer);
+        this.stravaPollTimer = undefined;
+      }
+    } catch {
+      if (!this.unloaded)
+        this.setData({ stravaStatusMessage: '暂时无法刷新 Strava 状态，可继续手动上传 GPX' });
+    }
+  },
+  async connectStrava() {
+    if (this.data.connectingStrava || this.data.saving) return;
+    this.setData({ connectingStrava: true, stravaStatusMessage: '正在生成授权链接…' });
+    try {
+      const authorization = await rideService.startStravaRouteAuthorization();
+      this.setData({
+        stravaAuthorizationUrl: authorization.authorizationUrl,
+        stravaStatusMessage: '授权链接已复制，请在浏览器打开并完成授权',
+      });
+      await wx.setClipboardData({ data: authorization.authorizationUrl });
+      if (this.stravaPollTimer !== undefined) clearInterval(this.stravaPollTimer);
+      this.stravaPollTimer = setInterval(() => void this.refreshStravaReadiness(), 2000);
+    } catch (error) {
+      this.setData({
+        stravaStatusMessage:
+          error instanceof Error ? error.message : '生成授权链接失败，请稍后重试',
+      });
+    } finally {
+      this.setData({ connectingStrava: false });
+    }
+  },
+  async copyStravaAuthorizationUrl() {
+    const url = this.data.stravaAuthorizationUrl;
+    if (!url) return;
+    await wx.setClipboardData({ data: url });
+    wx.showToast({ title: '授权链接已复制', icon: 'success' });
+  },
   async addOfficialRoute() {
     if (this.data.saving || this.data.syncingRoute) return;
-    this.setData({ syncingRoute: true, error: '' });
+    if (!this.data.stravaConnected) {
+      this.setData({ stravaStatusMessage: '请先连接 Strava，再导入路线' });
+      return;
+    }
+    this.setData({
+      syncingRoute: true,
+      routeStatusMessage: '正在从 Strava 下载并解析 GPX',
+      error: '',
+    });
     try {
       const officialRoute = normalizeStravaRouteUrl(this.data.form.stravaRouteUrl);
-      const preview = await rideService.previewPublicStravaRoute(officialRoute.url);
+      const preview = await rideService.importStravaRoute(
+        officialRoute.url,
+        this.routeRequestId || newRouteRequestId(),
+      );
       await new Promise<void>((resolve) => {
         this.setData(
           {
-            'form.stravaRouteUrl': preview.externalRouteUrl,
-            officialRoute: {
-              provider: 'strava',
-              routeId: preview.externalRouteId,
-              url: preview.externalRouteUrl,
-            },
-            publicRoutePreview: preview,
+            'form.stravaRouteUrl': officialRoute.url,
+            officialRoute,
+            publicRoutePreview: undefined,
+            routePreview: preview,
+            pendingRouteUpload: undefined,
+            storedRouteGpxMissingDetails: false,
+            routeStatusMessage: 'Strava GPX 已导入，路线详情已准备好',
             routeTimeLabel: formatRouteDuration(preview.estimatedMovingTimeSeconds),
             error: '',
           },
@@ -907,12 +983,11 @@ Page({
         );
       });
       await this.renderRouteVisuals();
-      wx.showToast({ title: '已解析公开路线', icon: 'success' });
+      wx.showToast({ title: 'Strava 路线已导入', icon: 'success' });
     } catch (error) {
-      this.setData({
-        publicRoutePreview: undefined,
-        error: error instanceof Error ? error.message : 'Strava 公开路线解析失败',
-      });
+      const message =
+        error instanceof Error ? error.message : 'Strava 路线导入失败，请手动上传 GPX';
+      this.setData({ routeStatusMessage: `${message}；也可手动上传 GPX`, error: message });
     } finally {
       this.setData({ syncingRoute: false });
     }
@@ -1487,10 +1562,11 @@ Page({
     const original = this.data.originalActivity as EditableActivity | undefined;
     let officialRoute: ExternalRouteReference | undefined;
     let publicRoutePreview = this.data.publicRoutePreview as PublicRoutePreview | undefined;
+    if (this.data.routePreview) publicRoutePreview = undefined;
     if (form.stravaRouteUrl.trim()) {
       try {
         officialRoute = normalizeStravaRouteUrl(form.stravaRouteUrl);
-        if (publicRoutePreview?.externalRouteUrl !== officialRoute.url) {
+        if (!this.data.routePreview && publicRoutePreview?.externalRouteUrl !== officialRoute.url) {
           this.setData({ syncingRoute: true, error: '' });
           publicRoutePreview = await rideService.previewPublicStravaRoute(officialRoute.url);
         }
@@ -1498,7 +1574,10 @@ Page({
           'form.stravaRouteUrl': officialRoute.url,
           officialRoute,
           publicRoutePreview,
-          routeTimeLabel: formatRouteDuration(publicRoutePreview.estimatedMovingTimeSeconds),
+          routeTimeLabel: formatRouteDuration(
+            publicRoutePreview?.estimatedMovingTimeSeconds ??
+              this.data.routePreview?.estimatedMovingTimeSeconds,
+          ),
         });
       } catch (error) {
         this.setData({ syncingRoute: false });

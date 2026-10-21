@@ -758,11 +758,13 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(templates).toContain('上传 GPX');
   });
 
-  it('不再展示 Strava 账号授权、同步或解绑能力', () => {
+  it('只恢复 Strava 路线 OAuth，不恢复账号同步或解绑页面', () => {
     const currentPrototype = [html, schema, templates, script].join('\n');
     expect(currentPrototype).not.toMatch(
-      /(?<!无需 )Strava 授权|重新授权 Strava|解绑 Strava|同步最新 Strava|STRAVA 数据已同步|data-route="strava"/i,
+      /重新授权 Strava|解绑 Strava|同步最新 Strava|STRAVA 数据已同步|data-route="strava"/i,
     );
+    expect(currentPrototype).toContain('连接 Strava');
+    expect(currentPrototype).toContain('从 Strava 导入');
     expect(schema).toContain(
       "copy: '查看个人资料与俱乐部信息；已加入俱乐部时直接显示名称并进入俱乐部主页。'",
     );
@@ -770,11 +772,12 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(templates).not.toContain('Strava 状态');
   });
 
-  it('活动编辑只填写并解析 Strava 链接，全原型不跳转第三方页面', () => {
-    expect(templates).toContain('Strava 官方路线（可选）');
-    expect(templates).toContain('粘贴公开路线链接');
-    expect(templates).toContain('添加并解析路线');
-    expect(templates).toContain('公开路线已解析');
+  it('活动编辑通过云端 OAuth 导入 Strava GPX，并保留手动上传降级', () => {
+    expect(templates).toContain('Strava 路线导入（可选）');
+    expect(templates).toContain('连接 Strava');
+    expect(templates).toContain('复制授权链接');
+    expect(templates).toContain('从 Strava 导入');
+    expect(templates).toContain('授权信息只保存在云端');
     expect(templates).toContain('GPX 路线详情（推荐）');
     expect(templates).toContain('上传 GPX');
     expect(templates).toContain('路线详情已准备好');
@@ -981,11 +984,11 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain('发布 ≠ 可报名');
     expect(script).toContain('registration_setup_pending');
     expect(script).toContain('全平台始终只有一个俱乐部');
-    // 05 隐私与产品边界 · 可见 / 不可见 / Strava OAuth 退役
+    // 05 隐私与产品边界 · Strava OAuth 仅恢复路线 GPX 导入
     expect(script).toContain('✓ 公开可见');
     expect(script).toContain('✗ 公开不可见');
-    expect(script).toContain('Strava OAuth 已退役');
-    expect(script).toContain('无需 Strava 授权');
+    expect(script).toContain('Strava OAuth 仅恢复路线 GPX 导入');
+    expect(script).toContain('AES-256-GCM');
     // 开发态话术也不出现在产品边界描述中
     expect(script).not.toMatch(/Strava 账号授权 ·|重新授权 Strava/);
   });
@@ -1032,11 +1035,10 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).not.toContain('多俱乐部 / 多组织租户');
   });
 
-  it('事实边界：无强制 Strava 授权；GPX 可下载预览；CloudBase 仅变更时部署；路由只写已上线', () => {
+  it('事实边界：Strava token 仅在云端；GPX 可下载预览；CloudBase 仅变更时部署；路由只写已上线', () => {
     const page = [html, script, deliveryCenter].join('\n');
-    // 不得出现"必须授权 Strava"或"CloudBase 全量部署"等反事实
-    expect(page).not.toMatch(/必须.{0,4}授权.{0,4}Strava|强制.{0,4}Strava.{0,4}授权/);
-    expect(page).toContain('无需 Strava 授权');
+    expect(page).toContain('前端不接触 token');
+    expect(page).toContain('手动上传 GPX');
     expect(page).toMatch(/只部署受影响|仅.{0,2}变更/);
     expect(page).toContain('GPX');
     // 退役文档不再被当作 external-apis 的 source 链接
@@ -1057,7 +1059,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(html).toContain('content="此里骑行活动小程序研发交付中心 · 技术长读');
     expect(html).toContain('<b>7 章</b><span>技术长读</span>');
     expect(html).toContain('此里 CILI · 一次骑行是如何被设计、报名、审批、交付的 · 研发交付中心');
-    expect(html).toContain('Strava OAuth 已退役，无需 Strava 授权即可解析公开路线');
+    expect(html).toContain('Strava OAuth 仅用于云端 GPX 路线导入，手动上传仍可降级');
   });
 });
 

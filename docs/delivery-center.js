@@ -311,10 +311,10 @@
           id: 'external-apis',
           title: '外部接口（第三方集成）',
           summary:
-            '仓库仅使用 Strava 公开路线链接（粘贴 + 规范化复制，不走 OAuth）与微信开放能力；其他外部接口无仓库证据。Strava OAuth 已退役，无需 Strava 授权即可解析公开路线。',
+            '仓库使用 Strava OAuth 仅为活动管理员按路线 URL 下载 GPX；access/refresh token 只以 AES-256-GCM 密文保存在云端，前端仅获得授权状态与可信路线预览。手动上传 GPX 始终保留为降级入口。',
           maturity: 'template',
           templateFields: [
-            'Strava 公开路线：粘贴 URL → 规范化复制，不读写私有数据，无 OAuth',
+            'Strava 路线导入：云端 OAuth → 按 URL 下载 GPX → 复用可信解析器；前端不接触 token',
             '微信能力：登录、动态手机号、订阅消息、`wx.scanCode`、`chooseLocation`、`writePhotosAlbum`',
             '若未来接入支付 / 短信 / 推送：按契约在此补齐 provider、鉴权方式、调用点、失败降级',
           ],

@@ -67,6 +67,10 @@ jobs:
       CLOUDBASE_REGION: ${{ vars.CLOUDBASE_REGION }}
       CLOUDBASE_API_KEY: ${{ secrets.CLOUDBASE_API_KEY }}
       PII_ENCRYPTION_KEY_SOURCE: ${{ secrets.PII_ENCRYPTION_KEY }}
+      STRAVA_CLIENT_ID_SOURCE: ${{ vars.STRAVA_CLIENT_ID }}
+      STRAVA_CLIENT_SECRET_SOURCE: ${{ secrets.STRAVA_CLIENT_SECRET }}
+      STRAVA_TOKEN_ENCRYPTION_KEY_SOURCE: ${{ secrets.STRAVA_TOKEN_ENCRYPTION_KEY }}
+      STRAVA_CALLBACK_URL_SOURCE: ${{ vars.STRAVA_CALLBACK_URL }}
       TCB_NO_BROWSER: 'true'
     steps:
       - name: Checkout current main source
