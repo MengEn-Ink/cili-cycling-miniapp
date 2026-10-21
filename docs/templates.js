@@ -734,18 +734,32 @@
 
     settings: () => {
       const [version, title, summary] = releaseNotes[0];
+      const admin = is('admin');
       const managementRow = (titleText, description, actionText, action) =>
         `<button class="settings-management-row" data-action="${action}"><span class="settings-management-copy"><b>${titleText}</b><small>${description}</small></span><span class="settings-management-action">${actionText} ›</span></button>`;
-      return `<div class="pg settings-page"><h2 class="page-title">设置</h2><p class="page-sub">管理活动通知、隐私与本地缓存，查看当前版本更新</p>
-      <section class="card settings-management-card">${cardHead('01', '常用管理', '', '通知与隐私由微信授权；缓存只清理可安全重建的数据')}
+      const stravaRow = admin
+        ? `<button class="settings-management-row settings-management-row--strava" data-action="settings-strava-sync"><span class="settings-management-copy"><b>同步 Strava 线路信息</b><small>管理授权状态，用于创建活动时直接选用线路</small></span><span class="settings-management-strava"><svg class="strava-mark" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" fill="#fc4c02"/></svg><span class="strava-wordmark">Strava</span><span class="settings-management-action">管理 ›</span></span></button>`
+        : '';
+      return `<div class="pg settings-page" data-viewer="${admin ? 'admin' : 'rider'}"><h2 class="page-title">设置</h2><p class="page-sub">管理活动通知、隐私与本地缓存，查看当前版本更新</p>
+      <section class="card settings-management-card">${cardHead('01', '常用管理')}
         <div class="settings-management-list">
           ${managementRow('活动通知', '按需订阅报名审核等活动提醒，每次选择以微信授权结果为准', '订阅', 'settings-notifications')}
           ${managementRow('隐私管理', '查看微信隐私说明及已使用的信息', '查看', 'settings-privacy')}
           ${managementRow('清理缓存', '仅清理可重新下载的活动、资料和图片，不会退出登录或删除业务数据', '清理', 'settings-clear-cache')}
+          ${stravaRow}
         </div>
       </section>
       <section class="card settings-release-card">${cardHead('02', 'App 更新', '', '当前版本的更新概览')}
-        <div class="release release-current"><code>V${version}</code>${tag('solid', '当前版本')}<p>${title}</p><p class="card-hint">→ ${summary}</p></div>
+        <div class="release release-current">
+          <div class="release-meta-row"><code>V${version}</code>${tag('solid', '当前版本')}<span class="release-date">2026.10.21</span></div>
+          <p class="release-title">${title}</p>
+          <p class="release-summary">${summary}</p>
+          <ul class="release-features">
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>${admin ? '管理员可同步 Strava 线路信息，骑友端不出现该入口' : '创建活动的管理员可同步 Strava 线路信息，直接用于本次活动'}</span></li>
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>创建活动的报名截止默认按活动开始日 00:00 自动设置</span></li>
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>Strava 线路旁可通过「+」补充本地路线文件</span></li>
+          </ul>
+        </div>
       </section>
       <p class="neutral-note">此里 · 持续为每一次出发升级</p></div>`;
     },
@@ -822,27 +836,88 @@
       const modeLocked = is('mode-locked');
       const gpxMissing = is('gpx-missing');
       const gpxFailed = is('gpx-failed');
+      // Strava 路线地址子状态：空 / 输入中 / 解析中 / 无效 / 网络失败
+      const linkTyping = is('link-typing');
+      const linkParsing = is('link-parsing');
+      const linkInvalid = is('link-invalid');
+      const linkNetError = is('link-net-error');
+      // Strava 账号连接子状态（创建页只提示，不在页内连接）
+      const stravaDisconnected = is('strava-disconnected');
+      const stravaExpiring = is('strava-expiring');
+      const stravaExpired = is('strava-expired');
+      // 「+」隐藏增强入口（本地路线文件）
+      const boostOpen = is('boost-open') || uploading || gpxMissing || gpxFailed;
+      const boostConflict = is('boost-conflict');
       const registrationMode = editOpen ? 'open' : 'approval';
-      const filled = !create && !error;
-      const routeReady = filled && !gpxMissing && !gpxFailed;
+      const filled = !create && !error && !linkTyping && !linkParsing && !linkInvalid && !linkNetError;
       const v = (value) => (filled || uploading ? value : '');
-      const modeSettings = `<div class="card mode-settings-card">${cardHead('04', '报名设置', modeLocked ? tag('warning', '已有报名 · 禁止切换') : tag('neutral', '活动级设置'), '公开 / 审批是报名方式，活动仍固定归属唯一俱乐部。')}
-        <div class="mode-settings-choice" role="radiogroup" aria-label="报名模式">
-          <button class="mode-settings-option ${registrationMode === 'open' ? 'is-active' : ''}" data-mode-option="open" ${modeLocked ? 'disabled aria-disabled="true"' : ''} role="radio" aria-checked="${registrationMode === 'open'}"><b>公开报名</b><small>资料与名额校验通过后直接成功并生成凭证</small></button>
-          <button class="mode-settings-option ${registrationMode === 'approval' ? 'is-active' : ''}" data-mode-option="approval" ${modeLocked ? 'disabled aria-disabled="true"' : ''} role="radio" aria-checked="${registrationMode === 'approval'}"><b>审批报名</b><small>提交后待管理员审核，通过时再次校验名额</small></button>
-        </div>
-        ${modeLocked ? '<p class="pending-note">当前活动已有报名记录，报名模式已锁定并禁止切换。</p>' : '<p class="card-hint">活动存在任意报名记录后即锁定；报名方式与唯一俱乐部归属相互独立。</p>'}
-        <div class="btn-row" style="margin-top:8px"><button class="btn-chip" data-action="route" data-route="admin-activity-edit" data-state="edit-open">查看公开模式</button><button class="btn-chip" data-action="route" data-route="admin-activity-edit" data-state="mode-locked">查看锁定态</button></div>
-      </div>`;
-      return `<div class="pg" data-registration-mode="${registrationMode}">
-        ${create ? '' : `<p class="neutral-note" style="margin-top:0">${resubmit ? '已驳回 · 路线信息需要补充，修改后可重新发布。' : error ? '请补全标红的必填项后再发布。' : modeLocked ? '已有报名记录 · 报名模式已锁定。' : editOpen ? '当前为公开报名，加入即生效。' : '草稿已保存 · 10:24'}</p>`}
-        <div class="card">${cardHead('00', '发布主体', tag('neutral', '唯一俱乐部'))}
-          ${field('活动归属', `<div class="row"><span class="k">辛庄桥小火车</span><span class="v">唯一俱乐部</span></div><p class="card-hint">全平台只有一个俱乐部，所有活动统一归属该俱乐部，并由平台管理员直接发布与管理。</p>`)}</div>
+      const stravaConn = stravaExpired
+        ? { tone: 'error', label: '已失效', note: '上次 Strava 同步已失效，粘贴链接前请先在设置中重新同步。' }
+        : stravaExpiring
+          ? { tone: 'warning', label: '即将失效', note: 'Strava 同步即将在 3 天后失效，可提前在设置中续期。' }
+          : stravaDisconnected
+            ? { tone: 'muted', label: '未连接', note: '尚未同步 Strava 账号，粘贴链接前请先在设置中完成同步。' }
+            : { tone: 'success', label: '已连接', note: '连接正常，可直接粘贴线路链接解析。' };
+      const linkInputDisabled = stravaExpired || stravaDisconnected;
+      const linkValue = linkTyping
+        ? 'https://www.strava.com/routes/12345'
+        : linkInvalid
+          ? 'https://example.com/share/foo'
+          : (linkNetError || linkParsing)
+            ? 'https://www.strava.com/routes/3271892'
+            : filled || uploading
+              ? primary.routeUrl
+              : '';
+      const linkState = linkParsing
+        ? '<div class="route-link-state is-parsing" role="status"><span class="dot-spinner" aria-hidden="true"></span><span>正在解析线路信息…</span></div>'
+        : linkInvalid
+          ? '<div class="route-link-state is-error" role="alert"><b aria-hidden="true">!</b><span>这不是 Strava 线路链接，示例：https://www.strava.com/routes/123456</span></div>'
+          : linkNetError
+            ? `<div class="route-link-state is-error" role="alert"><b aria-hidden="true">!</b><span>网络异常，暂时无法解析。</span>${btn('重试解析', toast('正在重新解析线路'), 'btn-text route-link-retry')}</div>`
+            : '';
+      const routePreview = filled
+        ? `<div class="route-link-preview">
+            <div class="row" style="margin-top:8px"><span class="k">${primary.routeName.replace(' GPX', '')}</span>${tag('solid', '线路已解析')}</div>
+            ${metrics([[`${primary.distanceKm} km`, '里程'], [`${primary.elevationM} m`, '爬升'], [`${primary.elevationLossM} m`, '下降'], [`${primary.elevationMinM}–${primary.elevationMaxM} m`, '海拔区间', 'is-wide']])}
+            ${routeSvg('公开路线轮廓')}
+          </div>`
+        : '';
+      // 「+」默认折叠；展开后在底部弹层中呈现本地路线文件（补充方式）
+      const plusTrigger = `<button class="route-link-plus${boostOpen ? ' is-open' : ''}" data-action="route" data-route="admin-activity-edit" data-state="${boostOpen ? (create ? 'create' : 'edit') : 'boost-open'}" aria-expanded="${boostOpen ? 'true' : 'false'}" aria-controls="route-boost-sheet" aria-label="更多路线来源">${boostOpen ? '×' : '+'}</button>`;
+      const boostInner = gpxFailed
+        ? `<div class="gpx-state gpx-state-warning"><div><b>GPX 解析失败</b></div>${tag('warning', '可恢复')}</div>
+            <div class="btn-row">${btn('重试解析已上传 GPX', toast('正在重新解析 GPX'), 'btn-secondary btn-sm')}${btn('放弃本次上传', toast('本次上传已放弃'), 'btn-secondary btn-sm')}</div>
+            <button class="upload-tile is-wide" ${toast('已打开文件选择')}><b>+</b>重新上传 GPX</button>`
+        : gpxMissing
+          ? `<div class="gpx-state gpx-state-warning"><div><b>原 GPX 路线详情不可用</b></div>${tag('warning', '详情缺失')}</div>
+              <button class="upload-tile is-wide" ${toast('已打开文件选择')}><b>+</b>重新上传 GPX</button>`
+          : uploading
+            ? `<div class="upload-tile is-wide" style="flex-direction:column;height:auto;padding:12px;gap:8px">正在读取路线… 62%<span class="progress on-light"><i style="width:62%"></i></span></div>
+                ${btn('取消本次上传', toast('已取消上传'), 'btn-text')}`
+            : boostConflict
+              ? `<div class="boost-conflict" role="alert"><b>检测到已有解析结果</b></div>
+                  <div class="btn-row">${btn('覆盖并使用文件', toast('已覆盖为本地文件'), 'btn-secondary btn-sm')}${btn('保留 Strava 结果', 'data-action="route" data-route="admin-activity-edit" data-state="edit"', 'btn-secondary btn-sm')}</div>`
+              : `<button class="upload-tile is-wide" ${toast('已打开文件选择')}><b>+</b>选择本地路线文件</button>`;
+      const boostSheet = boostOpen
+        ? `<div class="route-boost-sheet" id="route-boost-sheet" role="dialog" aria-label="本地路线文件（补充方式）">
+            <div class="route-boost-head"><b>本地路线文件（补充）</b><button class="route-boost-close" data-action="route" data-route="admin-activity-edit" data-state="${create ? 'create' : 'edit'}" aria-label="关闭">×</button></div>
+            ${boostInner}
+          </div>`
+        : '';
+      return `<div class="pg" data-registration-mode="${registrationMode}" data-boost-open="${boostOpen ? 'true' : 'false'}">
+        <div class="editor-hero"><div class="editor-title">${create ? '创建活动' : '编辑活动'}</div><p class="editor-summary">填写活动信息，保存草稿后可继续完善。</p></div>
         <div class="card">${cardHead('01', '基本信息')}
           ${field('活动标题', input(error ? '' : v(primary.title), { ph: '请输入活动标题', cls: error ? 'is-error' : '', error: error ? '请填写活动标题' : '' }), tag('pending', '必填'))}
           <p class="sub-title">集合信息</p>
           ${field('集合时间', `<div class="field-2col">${input(v('2026-10-18'), { ph: '选择日期', unit: '›' })}${input(v('06:20'), { ph: '选择时间', unit: '›' })}</div>`, tag('pending', '必填'))}
-          ${field('报名截止', `<div class="row"><span class="k">活动开始日 00:00</span><span class="v">自动设置</span></div><p class="card-hint">按活动开始日当地零点自动计算，无需单独填写</p>`) }
+          <div class="field inline-registration-mode mode-settings-card" role="radiogroup" aria-label="报名模式">
+            <div class="field-label-row"><span class="field-label">报名模式</span></div>
+            <div class="mode-settings-choice inline-mode-choice">
+              <button class="mode-settings-option ${registrationMode === 'open' ? 'is-active' : ''}" data-mode="open" data-mode-option="open" ${modeLocked ? 'disabled aria-disabled="true"' : ''} role="radio" aria-checked="${registrationMode === 'open'}"><b>公开报名</b><small>资料与名额校验通过后直接报名成功</small></button>
+              <button class="mode-settings-option ${registrationMode === 'approval' ? 'is-active' : ''}" data-mode="approval" data-mode-option="approval" ${modeLocked ? 'disabled aria-disabled="true"' : ''} role="radio" aria-checked="${registrationMode === 'approval'}"><b>审批报名</b><small>提交后等待管理员审批</small></button>
+            </div>
+            <p class="card-hint">报名截止自动设为活动开始日当地 00:00，无需单独填写。</p>
+          </div>
           ${field('集合地点', `<div class="input-group"><div>${input(error ? '' : v(primary.start), { ph: '填写地点或从地图选择', cls: error ? 'is-error' : '' })}</div>${btn('地图选点', toast('已打开地图选点'), 'btn-secondary btn-sm')}</div>${error ? '<p class="field-msg is-error">请填写集合地点</p>' : ''}`, tag('pending', '必填'))}</div>
         <div class="card">${cardHead('02', '封面照片', tag('neutral', create || error ? '0 / 3' : uploading ? '2 / 3' : '1 / 3'), '最多 3 张，第一张作为封面')}
           <div class="upload-grid">
@@ -854,26 +929,19 @@
         <div class="card">${cardHead('03', '备注、路线与群二维码')}
           ${field('备注说明', input(create ? '' : '请佩戴头盔，携带补给水、备胎和基础维修工具。', { cls: 'textarea', ph: '集合提醒、补给安排或其他需要说明的内容', count: create ? '0 / 5000' : '26 / 5000' }))}
           <p class="sub-title">活动路线</p>
-          ${field('Strava 路线导入（可选）', `<div class="btn-row">${btn('连接 Strava', toast('授权链接已复制，请在浏览器完成授权'), 'btn-secondary btn-sm')}${btn('复制授权链接', toast('授权链接已复制'), 'btn-secondary btn-sm')}</div><p class="card-hint">授权信息只保存在云端；授权完成后页面自动刷新连接状态。</p>${input(filled || uploading ? primary.routeUrl : '', { ph: 'https://www.strava.com/routes/123456' })}<div style="margin-top:8px">${btn('从 Strava 导入', toast('Strava GPX 已导入并完成解析'), 'btn-secondary btn-sm')}</div><p class="card-hint">导入失败时可继续使用下方“上传 GPX”。</p>`)}
-          ${filled ? `<div class="row" style="margin-top:8px"><span class="k">${primary.routeName.replace(' GPX', '')}</span>${tag('solid', '公开路线已解析')}</div>
-            ${metrics([[`${primary.distanceKm} km`, '里程'], [`${primary.elevationM} m`, '爬升'], [`${primary.elevationLossM} m`, '下降'], [`${primary.elevationMinM}–${primary.elevationMaxM} m`, '海拔区间', 'is-wide']])}
-            ${routeSvg('公开路线轮廓')}<p class="card-hint">解析结果只在编辑页展示，不提供跳转预览。</p>` : ''}
-          <p class="sub-title">GPX 路线详情（推荐）</p>
-          ${
-            gpxFailed
-              ? `<div class="gpx-state gpx-state-warning"><div><b>GPX 解析失败</b><p>已保留本次上传，可重试解析或放弃后重新选择文件。</p></div>${tag('warning', '可恢复')}</div><div class="btn-row">${btn('重试解析已上传 GPX', toast('正在重新解析 GPX'), 'btn-secondary btn-sm')}${btn('放弃本次上传', toast('本次上传已放弃'), 'btn-secondary btn-sm')}</div><button class="upload-tile is-wide" ${toast('已打开文件选择')}><b>+</b>重新上传 GPX</button>`
-              : gpxMissing
-                ? `<div class="gpx-state gpx-state-warning"><div><b>原 GPX 路线详情不可用</b><p>可重新上传恢复路线图、海拔与下载能力，不影响用户端已有活动信息。</p></div>${tag('warning', '详情缺失')}</div><button class="upload-tile is-wide" ${toast('已打开文件选择')}><b>+</b>重新上传 GPX</button>`
-                : routeReady
-                  ? `<div class="gpx-state"><div><b>${primary.routeName}</b><p>路线详情已准备好，参与者可查看并下载原文件。</p></div>${tag('success', '已就绪')}</div><div class="btn-row three" style="margin-top:8px">${btn('更换 GPX', toast('已打开文件选择'), 'btn-secondary btn-sm')}${btn('移除路线详情', toast('路线详情已移除'), 'btn-secondary btn-sm')}${btn('设为活动背景', toast('已设为活动背景'), 'btn-secondary btn-sm')}</div>`
-                  : uploading
-                    ? `<div class="upload-tile is-wide" style="flex-direction:column;height:auto;padding:12px;gap:8px">正在读取路线… 62%<span class="progress on-light"><i style="width:62%"></i></span></div>`
-                    : `<p class="card-hint">上传后可展示里程、爬升、海拔曲线和路线图，参与者也可下载原文件。</p><button class="upload-tile is-wide" ${toast('GPX 已上传并完成解析')}><b>+</b>上传 GPX</button>`
-          }
-          <p class="sub-title">活动群二维码</p><p class="card-hint">可选上传 1 张微信群二维码，便于已报名成员进群；是否可能过期由服务端字段判断，页面以服务端提示为准，不写死天数。</p>
-          ${create || error ? `<button class="upload-tile is-wide" ${toast('已打开图片选择器')}><b>+</b>上传活动群二维码</button>` : `<div class="qr-row" style="margin-top:8px">${qr(3)}<div><p class="card-hint">已上传 · 报名${registrationMode === 'open' ? '成功' : '通过'}后骑友可见</p><p class="alert-line">${tag('warning', '⚠ 服务端提示该二维码可能已过期')}</p><button class="btn-text" ${toast('二维码已删除')}>删除二维码</button></div></div>`}</div>
-        ${modeSettings}
-      </div>${fixedBar(error ? '还有 2 项必填未完成' : modeLocked ? '已有报名记录 · 模式已锁定' : resubmit ? '修改后可直接重新发布，无需再次审批' : editOpen ? '公开报名 · 发布后直接接受加入' : '活动由平台管理员直接发布，所有用户可见', [btn('保存草稿', toast('草稿已保存'), 'btn-secondary'), btn('发布活动', 'data-action="publish-activity"')])}`;
+          <div class="route-source-block">
+            <div class="route-source-head"><span class="route-source-label">粘贴 Strava 线路链接</span><span class="route-source-conn tone-${stravaConn.tone}"><svg class="strava-mark" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" fill="var(--color-brand-strava)"/></svg><span class="strava-wordmark">Strava</span><span class="route-source-conn-dot" aria-hidden="true"></span>${stravaConn.label}</span></div>
+            <div class="route-link-row">
+              ${input(linkValue, { ph: 'https://www.strava.com/routes/123456', cls: linkInvalid ? 'is-error' : '' })}
+              ${plusTrigger}
+            </div>
+            ${linkState}
+          </div>
+          ${routePreview}
+          ${boostSheet}
+          <p class="sub-title">活动群二维码</p><p class="card-hint">可选上传 1 张微信群二维码，便于已报名成员进群；较久未更新时会提示可能过期，请及时替换。</p>
+          ${create || error ? `<button class="upload-tile is-wide" ${toast('已打开图片选择器')}><b>+</b>上传活动群二维码</button>` : `<div class="qr-row" style="margin-top:8px">${qr(3)}<div><p class="card-hint">已上传</p><p class="alert-line">${tag('warning', '二维码可能已过期，请替换为最新图片')}</p><button class="btn-text" ${toast('二维码已删除')}>删除二维码</button></div></div>`}</div>
+      </div>${fixedBar('', [btn('保存草稿', toast('草稿已保存'), 'btn-secondary'), btn('发布活动', 'data-action="publish-activity"')])}`;
     },
 
     'admin-reviews': () => {

@@ -5,6 +5,7 @@ import { CLIENT_RELEASE_VERSION } from '../miniprogram/config/release';
 
 const mocks = vi.hoisted(() => ({
   readiness: vi.fn(),
+  startStravaAuth: vi.fn(),
   getTemplates: vi.fn(),
   requestSubscription: vi.fn(),
   clearRepository: vi.fn(),
@@ -13,7 +14,8 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock('../miniprogram/repositories/index', () => ({
   repository: {
-    getStravaReadiness: mocks.readiness,
+    getStravaRouteReadiness: mocks.readiness,
+    startStravaRouteAuthorization: mocks.startStravaAuth,
     getReviewNotificationTemplateIds: mocks.getTemplates,
     requestReviewNotificationSubscription: mocks.requestSubscription,
   },
@@ -25,6 +27,13 @@ vi.mock('../miniprogram/utils/profile-page-cache', () => ({
 vi.mock('../miniprogram/utils/temp-file-url', () => ({
   clearSharedTempFileUrlCache: mocks.clearTempUrls,
 }));
+const appStoreMock: {
+  authStatus: 'authenticated' | 'unavailable' | 'error' | 'idle' | 'loading';
+  role: 'admin' | 'member';
+} = { authStatus: 'authenticated', role: 'member' };
+vi.mock('../miniprogram/store/app-store', () => ({
+  appStore: appStoreMock,
+}));
 
 describe('设置页', () => {
   let page: any;
@@ -34,10 +43,15 @@ describe('设置页', () => {
     vi.resetModules();
     for (const mock of Object.values(mocks)) mock.mockReset();
     mocks.getTemplates.mockResolvedValue([]);
+    mocks.readiness.mockResolvedValue({ state: 'disconnected', athleteName: '' });
+    appStoreMock.role = 'member';
+    appStoreMock.authStatus = 'authenticated';
     wxApi = {
       showToast: vi.fn(),
       showModal: vi.fn(),
       openPrivacyContract: vi.fn(),
+      setClipboardData: vi.fn().mockResolvedValue(undefined),
+      navigateTo: vi.fn(),
     };
     vi.stubGlobal('wx', wxApi);
     vi.stubGlobal('Page', (definition: any) => {
@@ -48,33 +62,29 @@ describe('设置页', () => {
     await import('../miniprogram/pages/settings/index');
   });
 
-  it('当前版本为 2026.10.21.4 且 latest 唯一，上一版转为历史项', () => {
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.21.4');
-    expect(page.data.releaseNotes).toHaveLength(22);
+  it('当前版本为 2026.10.21.5 且 latest 唯一，上一版转为历史项', () => {
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.21.5');
+    expect(page.data.releaseNotes).toHaveLength(23);
     expect(page.data.currentRelease).toBe(page.data.releaseNotes[0]);
     expect(page.data.currentRelease).toMatchObject({
-      version: '2026.10.21.4',
+      version: '2026.10.21.5',
       date: '2026-10-21',
-      title: '路线导航与报名流程更准确',
+      title: '设置页集中管理 Strava 线路同步',
       latest: true,
     });
     expect(page.data.releaseNotes[1]).toMatchObject({
-      version: '2026.10.21.3',
-      title: 'Strava 路线导入恢复',
+      version: '2026.10.21.4',
+      title: '路线导航与报名流程更准确',
       latest: false,
     });
     expect(page.data.releaseNotes[2]).toMatchObject({
-      version: '2026.10.21.2',
-      title: '俱乐部主页活动一目了然',
+      version: '2026.10.21.3',
+      title: 'Strava 路线导入恢复',
       latest: false,
     });
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(
       1,
     );
-    expect(page.onShow).toBeUndefined();
-    expect(page.loadStravaStatus).toBeUndefined();
-    expect(page.openStrava).toBeUndefined();
-    expect(mocks.readiness).not.toHaveBeenCalled();
   });
 
   it('模板提供通知、隐私与缓存入口，通知不是可永久关闭的 switch', () => {
@@ -157,12 +167,65 @@ describe('设置页', () => {
     );
   });
 
-  it('不再包含第三方授权区或 Strava 页面跳转', () => {
+  it('不再残留旧 Strava 独立页跳转或旧账号主页能力', () => {
     const template = readFileSync('miniprogram/pages/settings/index.wxml', 'utf8');
     const script = readFileSync('miniprogram/pages/settings/index.ts', 'utf8');
     expect(template).not.toContain('第三方授权');
     expect(script).not.toContain('/pages/strava/index');
-    expect(script).not.toContain('getStravaReadiness');
+    // 旧的 getStravaReadiness (无 Route) 名称已退役，仅保留 getStravaRouteReadiness。
+    expect(script).not.toMatch(/getStravaReadiness\b/);
+    expect(script).toContain('getStravaRouteReadiness');
+  });
+
+  it('管理员才渲染同步 Strava 线路信息入口，普通骑友看不到', async () => {
+    const template = readFileSync('miniprogram/pages/settings/index.wxml', 'utf8');
+    expect(template).toContain('同步 Strava 线路信息');
+    expect(template).toContain('wx:if="{{isAdmin}}"');
+    expect(template).toContain('bindtap="openStravaSync"');
+
+    appStoreMock.role = 'member';
+    page.onShow();
+    expect(page.data.isAdmin).toBe(false);
+    expect(mocks.readiness).not.toHaveBeenCalled();
+
+    appStoreMock.role = 'admin';
+    mocks.readiness.mockResolvedValue({ state: 'connected', athleteName: 'Mengen' });
+    page.onShow();
+    expect(page.data.isAdmin).toBe(true);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(mocks.readiness).toHaveBeenCalledOnce();
+    expect(page.data.stravaDescription).toContain('已连接 Mengen');
+  });
+
+  it('未连接时点击同步 Strava 线路信息会复用现有授权能力并复制链接', async () => {
+    appStoreMock.role = 'admin';
+    mocks.readiness.mockResolvedValue({ state: 'disconnected', athleteName: '' });
+    mocks.startStravaAuth.mockResolvedValue({
+      authorizationUrl: 'https://example/authorize',
+      expiresAt: '2026-10-21T13:30:00+08:00',
+    });
+
+    page.onShow();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await page.openStravaSync();
+
+    expect(mocks.startStravaAuth).toHaveBeenCalledOnce();
+    expect(wxApi.setClipboardData).toHaveBeenCalledWith({ data: 'https://example/authorize' });
+    expect(page.data.stravaState).toBe('pending');
+    expect(wxApi.showToast).toHaveBeenCalledWith({ title: '授权链接已复制', icon: 'success' });
+
+    page.onUnload();
+  });
+
+  it('面向用户的 Strava 入口文案避免 GPX / OAuth / token 技术词', () => {
+    const template = readFileSync('miniprogram/pages/settings/index.wxml', 'utf8');
+    const script = readFileSync('miniprogram/pages/settings/index.ts', 'utf8');
+    const stravaBlock =
+      template.match(/strava-section-label[\s\S]*?strava-list[\s\S]*?<\/view>/)?.[0] || '';
+    expect(stravaBlock).not.toMatch(/GPX|OAuth|token|令牌/i);
+    // STRAVA_COPY 面向用户的字符串也不应出现技术词
+    const stravaCopy = script.match(/const STRAVA_COPY[\s\S]*?};/)?.[0] || '';
+    expect(stravaCopy).not.toMatch(/GPX|OAuth|token|令牌/i);
   });
 
   it('小程序清单隐藏 OAuth 页面并只声明实际使用的位置能力', () => {

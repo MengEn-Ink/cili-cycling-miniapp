@@ -691,7 +691,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
       expect(css).toContain(`${name}: ${value}`);
     }
     const allowedSelectors =
-      /^(\.(tag-success|tag-warning|inline-toast|club-admin-card-status)|\.activities-v3 \.activity-card-v3\.is-(closing|joined) \.activity-card-status)$/;
+      /^(\.(tag-success|tag-warning|inline-toast|club-admin-card-status)|\.activities-v3 \.activity-card-v3\.is-(closing|joined) \.activity-card-status|\.route-source-conn\.tone-(success|warning) \.route-source-conn-dot)$/;
     const cssNoComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
     for (const [, selector, body] of cssNoComments.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
       if (!/var\(--color-status-/.test(body)) continue;
@@ -751,20 +751,29 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(templates).toContain('查看完整路线分析');
     expect(templates).toContain("go('route-analysis')");
     expect(templates).toContain('活动群二维码');
-    // 管理员活动编辑页仍提供 GPX 原生详情能力，保证"路线事实源"进入系统的路径不变。
-    expect(templates).toContain('GPX 路线详情');
+    // 管理员活动编辑页收敛为「Strava 链接」唯一主路径；本地路线文件（原 GPX 入口）只隐藏在「+」展开的 bottom-sheet 中，
+    // 保证"路线事实源"进入系统的路径不变，但默认态页面不再向用户暴露 GPX 等专业词或上传控件。
+    expect(templates).toContain('粘贴 Strava 线路链接');
     expect(templates).toContain('公开路线轮廓');
-    expect(templates).toContain('海拔曲线');
-    expect(templates).toContain('上传 GPX');
+    // 海拔曲线作为 metric 继续以数据格「海拔区间」承载（里程 / 爬升 / 下降 / 海拔区间）
+    expect(templates).toContain('海拔区间');
+    expect(templates).toContain('route-boost-sheet'); // 「+」展开后承载本地文件补充能力的 bottom-sheet
+    expect(templates).toContain('本地路线文件（补充）'); // 弹层标题，默认态页面不可见
   });
 
-  it('只恢复 Strava 路线 OAuth，不恢复账号同步或解绑页面', () => {
+  it('只保留面向用户的 Strava 线路同步表达，不恢复账号主页、解绑或技术词汇', () => {
     const currentPrototype = [html, schema, templates, script].join('\n');
     expect(currentPrototype).not.toMatch(
       /重新授权 Strava|解绑 Strava|同步最新 Strava|STRAVA 数据已同步|data-route="strava"/i,
     );
-    expect(currentPrototype).toContain('连接 Strava');
-    expect(currentPrototype).toContain('从 Strava 导入');
+    // 面向用户的入口（docs/templates.js 内 Pages 原型）统一为「同步 Strava 线路信息」/「粘贴 Strava 线路链接」，
+    // 不再出现「连接 Strava / 从 Strava 导入 / 复制授权链接」等技术化动词；
+    // schema.js 的变更日志、app.js 的技术长读等历史叙事允许保留这些术语，仅页面原型（templates）严格收敛。
+    expect(templates).toContain('同步 Strava 线路信息');
+    expect(templates).toContain('粘贴 Strava 线路链接');
+    expect(templates).not.toContain('连接 Strava');
+    expect(templates).not.toContain('从 Strava 导入');
+    expect(templates).not.toContain('复制授权链接');
     expect(schema).toContain(
       "copy: '查看个人资料与俱乐部信息；已加入俱乐部时直接显示名称并进入俱乐部主页。'",
     );
@@ -772,16 +781,23 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(templates).not.toContain('Strava 状态');
   });
 
-  it('活动编辑通过云端 OAuth 导入 Strava GPX，并保留手动上传降级', () => {
-    expect(templates).toContain('Strava 路线导入（可选）');
-    expect(templates).toContain('连接 Strava');
-    expect(templates).toContain('复制授权链接');
-    expect(templates).toContain('从 Strava 导入');
-    expect(templates).toContain('授权信息只保存在云端');
-    expect(templates).toContain('GPX 路线详情（推荐）');
-    expect(templates).toContain('上传 GPX');
-    expect(templates).toContain('路线详情已准备好');
-    expect(templates).toContain('设为活动背景');
+  it('活动编辑默认只走 Strava 链接；本地路线文件补充能力隐藏在「+」里，默认态不暴露 GPX / 上传 / 本地文件文案', () => {
+    // 创建 / 编辑态默认只有「粘贴 Strava 线路链接」作为唯一主路径
+    expect(templates).toContain('粘贴 Strava 线路链接');
+    expect(templates).toContain('route-source-conn'); // Strava 连接状态胶囊（已连接 / 即将失效 / 已失效 / 未连接）
+    expect(templates).toContain('route-link-plus'); // 「+」隐藏增强入口
+    expect(templates).toContain('aria-controls="route-boost-sheet"');
+    // 本地文件补充路径只以 bottom-sheet 形态承载，默认态页面不可见；用户文案不出现技术词
+    expect(templates).toContain('route-boost-sheet');
+    expect(templates).toContain('本地路线文件（补充）');
+    expect(templates).not.toContain('Strava 路线导入（可选）');
+    expect(templates).not.toContain('复制授权链接');
+    expect(templates).not.toContain('从 Strava 导入');
+    expect(templates).not.toContain('GPX 路线详情（推荐）');
+    expect(templates).not.toContain('data-legacy-copy');
+    // 覆盖确认 / 已失效 / 已就绪等关键状态文案保留
+    expect(templates).toContain('覆盖并使用文件');
+    expect(templates).toContain('线路已解析');
     const currentPrototype = [html, schema, templates, script].join('\n');
     expect(currentPrototype).not.toContain('查看官方路线');
     expect(currentPrototype).not.toContain('data-route="route-view"');
@@ -1354,8 +1370,9 @@ describe('报名模式（公开 / 审批）· Pages 原型契约', () => {
     expect(editOpen).toContain('data-registration-mode="open"');
 
     const locked = renderPrototypeState('admin-activity-edit', 'mode-locked');
-    expect(locked).toMatch(/已有报名|禁止切换|锁定/);
+    // 锁定态仅通过 radio 的禁用来体现，不再出现 "已有报名/禁止切换/锁定" 文案
     expect(locked).toContain('aria-disabled="true"');
+    expect(locked).not.toMatch(/已有报名|禁止切换|模式已锁定/);
   });
 
   it('管理端 admin-reviews 仅审批模式进入审核；公开模式进入 open-mode-members 参与成员管理', () => {

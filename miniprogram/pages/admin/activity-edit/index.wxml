@@ -19,15 +19,6 @@
         <input class="input" value="{{form.title}}" maxlength="100" placeholder-class="input-placeholder" placeholder="请输入活动标题" bindinput="field" data-name="title" />
         <view wx:if="{{formErrors.title}}" class="form-error">{{formErrors.title}}</view>
       </view>
-      <view class="field club-picker-field">
-        <view class="field-label">活动归属</view>
-        <picker range="{{clubOptions}}" range-key="name" value="{{clubOptionIndex}}" bindchange="clubOptionChange">
-          <view class="picker-value club-picker-value">{{clubOptions[clubOptionIndex].name || '此里公开活动'}}</view>
-        </picker>
-        <view wx:if="{{clubOptions[clubOptionIndex].isReadOnly}}" class="section-help">当前活动归属已不在你的有效俱乐部列表中；将保留原归属，保存时由服务端校验权限。</view>
-        <view wx:elif="{{clubOptionsLoadFailed}}" class="section-help">俱乐部列表暂时不可用，仍可继续编辑公开活动。</view>
-        <view wx:else class="section-help">可选择此里公开活动，或你当前有效加入的俱乐部。</view>
-      </view>
       <view class="section-title">集合信息</view>
       <view class="field" data-error-anchor="startAt">
         <view class="field-label">集合时间 <text class="required">必填</text></view>
@@ -110,22 +101,27 @@
       </view>
       <view class="section-title">活动路线</view>
       <view class="field" data-error-anchor="stravaRouteUrl">
-        <view class="field-label">Strava 路线导入（可选）</view>
-        <view class="route-command-row">
-          <button wx:if="{{!stravaConnected}}" class="map-button" loading="{{connectingStrava}}" disabled="{{saving || connectingStrava}}" bindtap="connectStrava">{{connectingStrava ? '正在连接' : '连接 Strava'}}</button>
-          <button wx:else class="map-button map-button--secondary" disabled="true">Strava 已连接</button>
-          <button wx:if="{{stravaAuthorizationUrl && !stravaConnected}}" class="map-button map-button--secondary" bindtap="copyStravaAuthorizationUrl">复制授权链接</button>
+        <view class="field-label">Strava 线路地址</view>
+        <view wx:if="{{!stravaConnected}}" class="route-source-conn tone-warning">
+          <view class="route-source-conn-dot" aria-hidden="true"></view>
+          <view class="route-source-conn-copy">需先在设置里完成 Strava 同步，才能解析线路。</view>
+          <button class="route-source-conn-link" bindtap="openStravaSettings">去设置 ›</button>
         </view>
-        <view class="section-help">{{stravaStatusMessage || '连接后可下载你有权访问的路线 GPX；授权信息只保存在云端。'}}</view>
-        <input class="input" value="{{form.stravaRouteUrl}}" maxlength="256" placeholder-class="input-placeholder" placeholder="https://www.strava.com/routes/123456" bindinput="field" data-name="stravaRouteUrl" />
-        <view class="route-command-row">
-          <button class="map-button map-button--secondary" loading="{{syncingRoute}}" disabled="{{saving || syncingRoute || !stravaConnected || !form.stravaRouteUrl}}" bindtap="addOfficialRoute">{{syncingRoute ? '正在下载并解析' : '从 Strava 导入'}}</button>
+        <view wx:elif="{{stravaAthleteName}}" class="route-source-conn tone-success">
+          <view class="route-source-conn-dot" aria-hidden="true"></view>
+          <view class="route-source-conn-copy">已连接 {{stravaAthleteName}}</view>
         </view>
-        <view class="section-help">导入失败时可继续使用下方“上传 GPX”，不会影响手动路线入口。</view>
+        <view class="route-link-row">
+          <input class="input route-link-input" value="{{form.stravaRouteUrl}}" maxlength="256" placeholder-class="input-placeholder" placeholder="粘贴 Strava 线路链接" bindinput="field" data-name="stravaRouteUrl" />
+          <button class="route-link-plus" bindtap="openRouteBoostSheet" aria-label="补充本地路线文件">＋</button>
+        </view>
+        <view class="route-command-row">
+          <button class="map-button map-button--secondary" loading="{{syncingRoute}}" disabled="{{saving || syncingRoute || !stravaConnected || !form.stravaRouteUrl}}" bindtap="addOfficialRoute">{{syncingRoute ? '正在解析线路' : '解析线路'}}</button>
+        </view>
         <view wx:if="{{publicRoutePreview && !routePreview}}" class="route-preview-card">
           <view class="route-preview-heading">
             <view><view class="route-preview-name">{{publicRoutePreview.routeName}}</view><view class="section-help">此里估算 {{routeTimeLabel}}</view></view>
-            <view class="route-ready-mark">公开路线已解析</view>
+            <view class="route-ready-mark">公开线路已解析</view>
           </view>
           <view class="route-metric-grid">
             <view><text>{{publicRoutePreview.distanceKm}}</text><text>km 里程</text></view>
@@ -133,27 +129,13 @@
             <view><text>{{publicRoutePreview.elevationLossM}}</text><text>m 下降</text></view>
             <view><text>{{publicRoutePreview.elevationMinM}}–{{publicRoutePreview.elevationMaxM}}</text><text>m 海拔</text></view>
           </view>
-          <canvas id="route-outline-canvas" type="2d" class="route-outline-canvas" aria-label="{{publicRoutePreview.routeName}}路线轮廓"></canvas>
+          <canvas id="route-outline-canvas" type="2d" class="route-outline-canvas" aria-label="{{publicRoutePreview.routeName}}线路轮廓"></canvas>
           <canvas id="route-elevation-canvas" type="2d" class="route-elevation-canvas" aria-label="{{publicRoutePreview.routeName}}海拔曲线"></canvas>
-        </view>
-      </view>
-
-      <view class="field route-detail-field">
-        <view class="field-label">GPX 路线详情（推荐）</view>
-        <view wx:if="{{routePreview}}" class="route-state route-state--ready">已有 GPX：参与者可查看路线详情并下载原文件。</view>
-        <view wx:elif="{{pendingRouteUpload || storedRouteGpxMissingDetails}}" class="route-state route-state--warning">GPX 解析失败或详情缺失，可重试解析或重新上传恢复，不影响用户端已有活动信息。</view>
-        <view wx:elif="{{publicRoutePreview}}" class="route-state">已有 Strava 路线，但缺少可下载的 GPX；建议补传完整路线。</view>
-        <view wx:else class="section-help">上传后可展示里程、爬升、海拔曲线和路线图，参与者也可下载原文件。</view>
-        <button wx:if="{{!routePreview}}" class="upload-tile upload-tile--wide route-upload-button" loading="{{uploadingRoute}}" disabled="{{saving || uploadingRoute}}" bindtap="chooseRouteGpx">{{uploadingRoute ? '正在读取路线' : (pendingRouteUpload || storedRouteGpxMissingDetails ? '重新上传 GPX' : (publicRoutePreview ? '上传 GPX 补全路线' : '上传 GPX'))}}</button>
-        <view wx:if="{{routeStatusMessage}}" class="route-status">{{routeStatusMessage}}</view>
-        <view wx:if="{{pendingRouteUpload && !uploadingRoute}}" class="route-command-row">
-          <button class="map-button" bindtap="retryRouteGpx">重试解析已上传 GPX</button>
-          <button class="map-button map-button--secondary" bindtap="removeRouteDetails">放弃本次上传</button>
         </view>
         <view wx:if="{{routePreview}}" class="route-preview-card">
           <view class="route-preview-heading">
             <view><view class="route-preview-name">{{routePreview.routeName}}</view><view class="section-help">此里估算 {{routeTimeLabel}}</view></view>
-            <view class="route-ready-mark">路线详情已准备好</view>
+            <view class="route-ready-mark">线路详情已准备好</view>
           </view>
           <view class="route-metric-grid">
             <view><text>{{routePreview.distanceKm}}</text><text>km 里程</text></view>
@@ -161,14 +143,30 @@
             <view><text>{{routePreview.elevationLossM}}</text><text>m 下降</text></view>
             <view><text>{{routePreview.elevationMinM}}–{{routePreview.elevationMaxM}}</text><text>m 海拔</text></view>
           </view>
-          <canvas id="route-outline-canvas" type="2d" class="route-outline-canvas" aria-label="{{routePreview.routeName}}路线轮廓"></canvas>
+          <canvas id="route-outline-canvas" type="2d" class="route-outline-canvas" aria-label="{{routePreview.routeName}}线路轮廓"></canvas>
           <canvas id="route-elevation-canvas" type="2d" class="route-elevation-canvas" aria-label="{{routePreview.routeName}}海拔曲线"></canvas>
           <view class="route-command-row">
-            <button class="map-button" loading="{{uploadingRoute}}" disabled="{{saving || uploadingRoute}}" bindtap="chooseRouteGpx">更换 GPX</button>
-            <button class="map-button map-button--secondary" disabled="{{saving || uploadingRoute}}" bindtap="removeRouteDetails">移除路线详情</button>
+            <button class="map-button map-button--secondary" bindtap="openRouteBoostSheet">补充本地路线</button>
+            <button class="map-button map-button--secondary" disabled="{{saving || uploadingRoute}}" bindtap="removeRouteDetails">移除线路</button>
             <button wx:if="{{routePreview.generatedPreviewFileId}}" class="map-button map-button--secondary" bindtap="useRouteAsCover">{{routeCoverSelected ? '已设为活动背景' : '设为活动背景'}}</button>
           </view>
         </view>
+        <view wx:if="{{routeStatusMessage}}" class="route-status">{{routeStatusMessage}}</view>
+      </view>
+
+      <view wx:if="{{showRouteBoostSheet}}" class="route-boost-mask" bindtap="closeRouteBoostSheet"></view>
+      <view wx:if="{{showRouteBoostSheet}}" class="route-boost-sheet" catchtap="noop">
+        <view class="route-boost-handle" aria-hidden="true"></view>
+        <view class="route-boost-title">补充本地路线文件</view>
+        <view class="route-boost-copy">若 Strava 线路解析失败或没有可同步线路，可上传本地导出的路线文件（支持 GPX 等骑行记录文件）。</view>
+        <view wx:if="{{pendingRouteUpload || storedRouteGpxMissingDetails}}" class="route-boost-status route-boost-status--warning">线路文件解析失败或缺失，可重试或重新选择文件。</view>
+        <view wx:elif="{{routePreview}}" class="route-boost-status route-boost-status--ready">已有线路详情，补传会覆盖当前解析结果。</view>
+        <button class="upload-tile upload-tile--wide route-upload-button" loading="{{uploadingRoute}}" disabled="{{saving || uploadingRoute}}" bindtap="chooseRouteGpx">{{uploadingRoute ? '正在读取路线' : (pendingRouteUpload || storedRouteGpxMissingDetails ? '重新上传路线文件' : (routePreview ? '替换本地路线文件' : '上传本地路线文件'))}}</button>
+        <view wx:if="{{pendingRouteUpload && !uploadingRoute}}" class="route-command-row">
+          <button class="map-button" bindtap="retryRouteGpx">重试解析</button>
+          <button class="map-button map-button--secondary" bindtap="removeRouteDetails">放弃本次上传</button>
+        </view>
+        <button class="route-boost-close" bindtap="closeRouteBoostSheet">完成</button>
       </view>
       <view class="field group-qr-field">
         <view class="field-label">活动群二维码</view>
@@ -191,7 +189,7 @@
 
     <view class="action-bar actions">
       <button class="button button--secondary secondary" loading="{{saving}}" data-status="draft" bindtap="save">保存草稿</button>
-      <button class="button button--primary" loading="{{saving}}" data-status="published" bindtap="save">{{status === 'published' ? '保存修改' : (!isAdmin && clubOptions[clubOptionIndex].clubId && clubOptions[clubOptionIndex].role !== 'OWNER' && clubOptions[clubOptionIndex].role !== 'ADMIN' ? '提交俱乐部审核' : '发布活动')}}</button>
+      <button class="button button--primary" loading="{{saving}}" data-status="published" bindtap="save">{{publishButtonLabel}}</button>
     </view>
   </block>
 </view>

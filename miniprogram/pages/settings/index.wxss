@@ -167,3 +167,43 @@
   line-height: 36rpx;
   text-align: center;
 }
+
+.strava-section-label {
+  margin-top: 0;
+}
+.strava-list {
+  margin-bottom: 44rpx;
+}
+.strava-row {
+  gap: 20rpx;
+}
+.strava-mark {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 999rpx;
+  background: #fc4c02;
+}
+.strava-mark-dot {
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 999rpx;
+  background: var(--color-on-action);
+}
+.strava-row--connected .strava-mark {
+  background: #fc4c02;
+}
+.strava-row--disconnected .strava-mark,
+.strava-row--pending .strava-mark,
+.strava-row--error .strava-mark {
+  background: var(--color-raised);
+  border: 2rpx solid var(--color-border);
+}
+.strava-row--disconnected .strava-mark-dot,
+.strava-row--pending .strava-mark-dot,
+.strava-row--error .strava-mark-dot {
+  background: #fc4c02;
+}

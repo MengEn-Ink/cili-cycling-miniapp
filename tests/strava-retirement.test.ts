@@ -51,16 +51,41 @@ describe('Strava 路线 OAuth 最小恢复契约', () => {
     expect(combined).toContain('strava-callback');
   });
 
-  it('活动编辑页提供连接、导入、复制授权链接与手工 GPX 降级入口', () => {
+  it('活动编辑页收敛为 Strava 线路地址，连接管理归入设置页', () => {
     const template = read('miniprogram/pages/admin/activity-edit/index.wxml');
     const source = read('miniprogram/pages/admin/activity-edit/index.ts');
-    expect(template).toContain('连接 Strava');
-    expect(template).toContain('复制授权链接');
-    expect(template).toContain('从 Strava 导入');
-    expect(template).toContain('上传 GPX');
+    // 活动编辑页不再显示连接 / 复制授权链接按钮
+    expect(template).not.toContain('连接 Strava');
+    expect(template).not.toContain('复制授权链接');
+    // 保留 Strava 线路地址输入 + 解析能力
+    expect(template).toContain('Strava 线路地址');
+    expect(template).toContain('粘贴 Strava 线路链接');
+    expect(template).toContain('解析线路');
+    // + 隐藏入口承载本地路线补充
+    expect(template).toContain('route-link-plus');
+    expect(template).toContain('route-boost-sheet');
+    expect(template).toContain('补充本地路线文件');
+    // 默认交互不暴露 GPX 文案
+    expect(template).not.toContain('上传 GPX');
+    expect(template).not.toContain('GPX 路线详情');
+    // 现有后端能力继续复用（授权发起已迁入设置页）
+    expect(source).toContain('getStravaRouteReadiness');
+    expect(source).toContain('importStravaRoute');
+    expect(source).not.toContain('startStravaRouteAuthorization');
+    expect(source).toContain("wx.navigateTo({ url: '/pages/settings/index' })");
+    expect(source).not.toMatch(/access_token|refresh_token|CLIENT_SECRET/);
+  });
+
+  it('设置页承载管理员专属的 Strava 线路同步入口', () => {
+    const template = read('miniprogram/pages/settings/index.wxml');
+    const source = read('miniprogram/pages/settings/index.ts');
+    expect(template).toContain('同步 Strava 线路信息');
+    expect(template).toContain('bindtap="openStravaSync"');
+    expect(template).toContain('wx:if="{{isAdmin}}"');
     expect(source).toContain('getStravaRouteReadiness');
     expect(source).toContain('startStravaRouteAuthorization');
-    expect(source).toContain('importStravaRoute');
-    expect(source).not.toMatch(/access_token|refresh_token|CLIENT_SECRET/);
+    // 面向用户的 Strava 文案不含 GPX / OAuth / token / 令牌
+    const stravaCopy = source.match(/const STRAVA_COPY[\s\S]*?};/)?.[0] || '';
+    expect(stravaCopy).not.toMatch(/GPX|OAuth|token|令牌/i);
   });
 });
