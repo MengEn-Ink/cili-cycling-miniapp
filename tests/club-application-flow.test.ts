@@ -141,7 +141,10 @@ describe('俱乐部创建申请生产闭环', () => {
     expect(profile).not.toContain('全平台唯一俱乐部');
     expect(profile).not.toContain('club-avatar-stack');
     expect(center).toContain('{{club.roleLabel}}');
-    expect(center).toContain('查看全部活动');
+    expect(center).toContain('近期活动');
+    expect(center).toContain('查看全部');
+    expect(center).toContain('wx:for="{{activities}}"');
+    expect(center).toContain('bindtap="openActivity"');
     expect(center).toContain('wx:if="{{club.canManage}}"');
     expect(centerScript).toContain('getSoleClubHome');
     expect(centerScript).not.toContain('listJoinableClubs');

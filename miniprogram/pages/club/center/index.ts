@@ -1,16 +1,42 @@
-import type { SoleClubHome } from '../../../models';
+import type { Activity, SoleClubHome } from '../../../models';
 import { rideService } from '../../../services/ride-service';
 import { appStore } from '../../../store/app-store';
+import { activityDisplayStatus } from '../../../utils/activity';
+import { formatActivityDate, formatActivityTime } from '../../../utils/date-time';
 
-// 单俱乐部裁决：本页只渲染全平台唯一俱乐部的只读主页。
-// loading 骨架 / error 可重试 / home 有俱乐部 / empty 空库（管理员可见创建入口）。
 type CenterMode = 'loading' | 'error' | 'home' | 'empty';
+type ActivityMode = 'loading' | 'ready' | 'empty' | 'error';
+
+function activityTime(value: Activity): number {
+  const parsed = new Date(value.startAt || value.date).getTime();
+  return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
+}
+
+function displayActivity(item: Activity) {
+  const occupied = item.approvedRegistrationCount ?? item.occupiedCount ?? 0;
+  return {
+    ...item,
+    displayDate: formatActivityDate(item.startAt || item.date),
+    displayTime: formatActivityTime(item.startAt),
+    meetingPlace: item.route.start || '集合地待公布',
+    displayDistance: item.route.distanceKm > 0 ? `${item.route.distanceKm} km` : '里程待公布',
+    displayElevation: item.route.elevationM > 0 ? `${item.route.elevationM} m` : '爬升待公布',
+    registrationSummary: item.registrationUnlimited
+      ? `${occupied} 人已报名 · 不限名额`
+      : `${occupied}/${item.capacity} 人已报名`,
+    displayStatus: activityDisplayStatus(item),
+  };
+}
 
 Page({
   loadToken: 0,
+  activityLoadToken: 0,
   unloaded: false,
   isCurrent(token: number) {
     return !this.unloaded && this.loadToken === token;
+  },
+  isCurrentActivity(pageToken: number, activityToken: number) {
+    return this.isCurrent(pageToken) && this.activityLoadToken === activityToken;
   },
   data: {
     mode: 'loading' as CenterMode,
@@ -20,6 +46,9 @@ Page({
     coverFailed: false,
     isAdmin: false,
     loadError: '',
+    activityMode: 'loading' as ActivityMode,
+    activityError: '',
+    activities: [] as ReturnType<typeof displayActivity>[],
   },
   onShow() {
     this.unloaded = false;
@@ -28,15 +57,19 @@ Page({
   onUnload() {
     this.unloaded = true;
     this.loadToken += 1;
+    this.activityLoadToken += 1;
   },
   async load() {
     const token = ++this.loadToken;
-    // 保留结构稳定的骨架，弱网或从编辑页返回时不闪烁旧状态。
+    const activityToken = ++this.activityLoadToken;
     this.setData({
       mode: 'loading',
       loadError: '',
       avatarFailed: false,
       coverFailed: false,
+      activityMode: 'loading',
+      activityError: '',
+      activities: [],
     });
     try {
       await appStore.ensureIdentity(wx.cloud);
@@ -50,11 +83,22 @@ Page({
         });
         return;
       }
+
       const isAdmin = appStore.role === 'admin';
-      const snapshot = await rideService.getSoleClubHome();
+      const clubPromise = rideService.getSoleClubHome().then(
+        (value) => ({ status: 'fulfilled' as const, value }),
+        (reason) => ({ status: 'rejected' as const, reason }),
+      );
+      const activityPromise = rideService.listActivities('upcoming').then(
+        (value) => ({ status: 'fulfilled' as const, value }),
+        (reason) => ({ status: 'rejected' as const, reason }),
+      );
+      const clubResult = await clubPromise;
       if (!this.isCurrent(token)) return;
-      if (snapshot.exists) {
-        const club = snapshot.club;
+      if (clubResult.status === 'rejected') throw clubResult.reason;
+
+      if (clubResult.value.exists) {
+        const club = clubResult.value.club;
         this.setData({
           mode: 'home',
           club,
@@ -63,8 +107,27 @@ Page({
           loadError: '',
         });
       } else {
-        // 空库：普通骑友看到中性空态；平台管理员看到“创建唯一俱乐部”入口。
         this.setData({ mode: 'empty', club: null, isAdmin, loadError: '' });
+      }
+
+      const activityResult = await activityPromise;
+      if (!this.isCurrentActivity(token, activityToken)) return;
+      if (activityResult.status === 'fulfilled') {
+        const activities = [...activityResult.value]
+          .sort((left, right) => activityTime(left) - activityTime(right))
+          .slice(0, 3)
+          .map(displayActivity);
+        this.setData({
+          activities,
+          activityMode: activities.length ? 'ready' : 'empty',
+          activityError: '',
+        });
+      } else {
+        this.setData({
+          activities: [],
+          activityMode: 'error',
+          activityError: '近期活动暂时加载失败，请重试',
+        });
       }
     } catch (error) {
       if (!this.isCurrent(token)) return;
@@ -78,6 +141,27 @@ Page({
   retry() {
     return this.load();
   },
+  async retryActivities() {
+    const pageToken = this.loadToken;
+    const activityToken = ++this.activityLoadToken;
+    this.setData({ activityMode: 'loading', activityError: '' });
+    try {
+      const activities = (await rideService.listActivities('upcoming'))
+        .slice()
+        .sort((left, right) => activityTime(left) - activityTime(right))
+        .slice(0, 3)
+        .map(displayActivity);
+      if (!this.isCurrentActivity(pageToken, activityToken)) return;
+      this.setData({
+        activities,
+        activityMode: activities.length ? 'ready' : 'empty',
+        activityError: '',
+      });
+    } catch {
+      if (!this.isCurrentActivity(pageToken, activityToken)) return;
+      this.setData({ activityMode: 'error', activityError: '近期活动暂时加载失败，请重试' });
+    }
+  },
   avatarError() {
     if (!this.data.avatarFailed) this.setData({ avatarFailed: true });
   },
@@ -87,14 +171,17 @@ Page({
   openActivities() {
     wx.switchTab({ url: '/pages/activities/index' });
   },
+  openActivity(event: { currentTarget?: { dataset?: { id?: unknown } } }) {
+    const id = event.currentTarget?.dataset?.id;
+    if (typeof id !== 'string' || !id) return;
+    wx.navigateTo({ url: `/pages/activity-detail/index?id=${encodeURIComponent(id)}` });
+  },
   editClub() {
     if (!this.data.club?.canManage) return;
-    // 编辑态由 #321 重构后的管理页承载，路由参数与其保持一致。
     wx.navigateTo({ url: '/pages/admin/club-application-detail/index?mode=edit' });
   },
   createClub() {
     if (!this.data.isAdmin) return;
-    // 空库 bootstrap 态与管理端“创建唯一俱乐部”入口指向同一页面与参数。
     wx.navigateTo({ url: '/pages/admin/club-application-detail/index?mode=bootstrap' });
   },
 });
