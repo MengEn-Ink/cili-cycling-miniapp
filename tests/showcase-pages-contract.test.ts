@@ -385,6 +385,11 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(routeAnalysisDataFoundationArticle).toContain('gpx-to-route-fact.webp');
     expect(routeAnalysisDataFoundationArticle).toContain('route-semantics-weather.webp');
     expect(routeAnalysisDataFoundationArticle).toContain('loading="lazy"');
+    expect(deliveryCenter).toContain('Oil UI 全页面高信息密度交互方案');
+    expect(deliveryCenter).toContain('./designs/2026-10-22-oil-ui-high-density/index.html');
+    expect(renderedDeliveryCenter).toContain(
+      'href="./designs/2026-10-22-oil-ui-high-density/index.html"',
+    );
     expect(deliveryCenter).toContain('沸点手稿与全套设计交接成果');
     expect(deliveryCenter).toContain('docs/designs/2026-10-16-boiling-point/index.html');
     expect(deliveryCenter).toContain('组织地基与活动归属（单俱乐部收口）');
@@ -711,8 +716,8 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(css).not.toContain('.tag-new');
     expect(css).toMatch(/\.card-no\s*\{[^}]*color:\s*var\(--color-text\)/s);
     expect(css).toMatch(/\.info-tag\s*\{[^}]*border:\s*1px solid var\(--color-border\)/s);
-    expect(css).toContain('--page-gutter: 16px');
-    expect(css).toContain('--card-gap: 14px');
+    expect(css).toContain('--page-gutter: 14px');
+    expect(css).toContain('--card-gap: 10px');
     expect(script).toContain("showToast('驳回时请填写理由', 'error')");
   });
 

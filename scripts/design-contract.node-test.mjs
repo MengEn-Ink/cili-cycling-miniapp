@@ -68,10 +68,14 @@ test('正式设计契约继承沸点手稿色彩与对比度，并允许令牌�
   const runtime = JSON.parse(readFileSync('docs/design-contract.json', 'utf8'));
 
   assert.equal(runtime.schemaVersion, handoff.schemaVersion);
+  const densityOverrides = new Set(['--page-gutter', '--card-gap', '--card-padding']);
   for (const [name, expected] of Object.entries(handoff.tokens)) {
-    if (name.startsWith('--radius-')) continue;
+    if (name.startsWith('--radius-') || densityOverrides.has(name)) continue;
     assert.deepEqual(runtime.tokens[name], expected, `${name} 应继承手稿基线`);
   }
+  assert.deepEqual(runtime.tokens['--page-gutter'], { miniapp: '28rpx', pages: '14px' });
+  assert.deepEqual(runtime.tokens['--card-gap'], { miniapp: '20rpx', pages: '10px' });
+  assert.equal(runtime.tokens['--card-padding'], 'var(--space-4)');
   assert.deepEqual(runtime.contrast, handoff.contrast);
   assert.deepEqual(runtime.tokens['--radius-xs'], { miniapp: '8rpx', pages: '4px' });
   assert.deepEqual(runtime.tokens['--radius-card'], { miniapp: '28rpx', pages: '14px' });

@@ -226,7 +226,7 @@ describe('unified UI accessibility regressions', () => {
 
   it('shares a 44px control height, 40px segments, and stable page gutters', () => {
     expect(tokens['--control-height']).toBe('96rpx');
-    expect(tokens['--page-gutter']).toBe('32rpx');
+    expect(tokens['--page-gutter']).toBe('28rpx');
     expect(tokens['--page-gutter-narrow']).toBe('24rpx');
 
     const profileEdit = read('miniprogram/pages/profile-edit/index.wxss');
