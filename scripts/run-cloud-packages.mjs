@@ -7,6 +7,8 @@ export const CLOUD_PACKAGES = [
   'auth',
   'activity-read',
   'activity-admin',
+  'strava-bridge',
+  'strava-callback',
   'registration',
   'admin-review',
   'club-application',

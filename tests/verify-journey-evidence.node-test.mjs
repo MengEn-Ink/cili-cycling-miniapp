@@ -13,7 +13,7 @@ const validFixturePath = resolve('tests/fixtures/p0-journey-evidence.valid.json'
 const validEvidence = JSON.parse(readFileSync(validFixturePath, 'utf8'));
 const testKey = Buffer.from('0123456789ABCDEF0123456789ABCDEF\n');
 const testKeySentinel = testKey.toString('utf8').trim();
-const signatureDomain = 'ride-event:p0-journey-run:v1';
+const signatureDomain = 'ride-event:p0-journey-run:v2';
 const keyFixtureDirectory = await mkdtemp(join(tmpdir(), 'ride-event-key-fixtures-'));
 const keyFilePath = join(keyFixtureDirectory, 'secure.key');
 writeFileSync(keyFilePath, testKey, { mode: 0o600 });
@@ -247,6 +247,18 @@ test('issuer creates a current v2 template that verifies without legacy Strava s
   const verified = await runVerifier(evidence);
   assert.equal(verified.status, 0, verified.stderr);
   assert.equal(verified.stdout, 'P0 真实旅程证据校验通过\n');
+});
+
+test('verifier rejects legacy v1 evidence instead of treating it as current v2 acceptance', async () => {
+  const evidence = structuredClone(validEvidence);
+  delete evidence.schemaVersion;
+  delete evidence.routeModes;
+  delete evidence.devicePlatforms;
+  delete evidence.uatChecks;
+
+  const result = await runVerifier(evidence);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /只接受 schemaVersion 2/);
 });
 
 test('issuer requires --key-file', () => {

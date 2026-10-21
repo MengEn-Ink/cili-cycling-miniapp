@@ -1,9 +1,23 @@
 {
+  "schemaVersion": 2,
   "marker": "E2E_RESULT:P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
   "issuedAt": "2026-09-29T04:00:00.000Z",
   "subjectAlias": "user_test_P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
   "registrationId": "reg_test_P0_20260929_A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
-  "runSignature": "F2303BB578C5ADA9B3A564A187078B66DAF220125955A334E2C2A078F3B9EABD",
+  "runSignature": "CA7D3F447D7AB8051A91567463569656C77A99C91545B444518700A932B8A047",
+  "routeModes": ["public_strava", "gpx"],
+  "devicePlatforms": ["ios", "android"],
+  "uatChecks": [
+    "ordinary_member_write",
+    "admin_review",
+    "automatic_approval",
+    "duplicate_submit",
+    "privacy_roles",
+    "protected_media",
+    "canvas",
+    "share",
+    "network_retry"
+  ],
   "statuses": ["pending", "approved", "cancelled", "pending"],
   "occupiedCounts": [3, 4, 4, 3, 4],
   "audits": [

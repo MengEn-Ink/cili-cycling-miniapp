@@ -290,8 +290,11 @@ function validateEvidenceSchema(evidence) {
     fail('根节点必须是对象');
   }
 
-  const schemaVersion = evidence.schemaVersion === 2 ? 2 : 1;
-  if (!hasExactKeys(evidence, schemaVersion === 2 ? CURRENT_ROOT_KEYS : LEGACY_ROOT_KEYS)) {
+  if (evidence.schemaVersion !== 2) {
+    fail('当前上线验收只接受 schemaVersion 2；v1 仅可作为历史记录');
+  }
+  const schemaVersion = 2;
+  if (!hasExactKeys(evidence, CURRENT_ROOT_KEYS)) {
     fail('根节点字段不符合证据结构');
   }
   if (

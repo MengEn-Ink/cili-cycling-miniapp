@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   CLOUD_PACKAGES,
@@ -7,6 +8,14 @@ import {
   runBounded,
   runCloudPackages,
 } from './run-cloud-packages.mjs';
+
+test('全量安装与测试覆盖 cloudbaserc 中每个实际部署的云函数', () => {
+  const config = JSON.parse(readFileSync(new URL('../cloudbaserc.json', import.meta.url)));
+  assert.deepEqual(
+    [...CLOUD_PACKAGES].sort(),
+    ['shared', ...config.functions.map((item) => item.name)].sort(),
+  );
+});
 
 test('并发上限使用安全默认值并拒绝无界配置', () => {
   assert.equal(concurrencyLimit(undefined), 3);
