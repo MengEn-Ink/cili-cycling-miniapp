@@ -764,7 +764,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
       /(?<!无需 )Strava 授权|重新授权 Strava|解绑 Strava|同步最新 Strava|STRAVA 数据已同步|data-route="strava"/i,
     );
     expect(schema).toContain(
-      "copy: '查看公开骑行资料与照片，不依赖第三方账号数据；全平台只有一个俱乐部，普通用户点击直达俱乐部主页，不走选择或推荐。'",
+      "copy: '查看个人资料与俱乐部信息；已加入俱乐部时直接显示名称并进入俱乐部主页。'",
     );
     expect(templates).toContain('App 更新');
     expect(templates).not.toContain('Strava 状态');

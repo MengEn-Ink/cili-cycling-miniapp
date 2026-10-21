@@ -123,7 +123,7 @@ describe('俱乐部创建申请生产闭环', () => {
     });
   });
 
-  it('用户端唯一俱乐部只读主页与 #321 管理端入口同时保留', () => {
+  it('用户端俱乐部只读主页与 #321 管理端入口同时保留', () => {
     const app = readFileSync('miniprogram/app.json', 'utf8');
     const profile = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     const center = readFileSync('miniprogram/pages/club/center/index.wxml', 'utf8');
@@ -137,7 +137,8 @@ describe('俱乐部创建申请生产闭环', () => {
     );
 
     expect(app).toContain('"root": "pages/club"');
-    expect(profile).toContain('全平台唯一俱乐部 · 暂未创建');
+    expect(profile).toContain('暂未加入俱乐部');
+    expect(profile).not.toContain('全平台唯一俱乐部');
     expect(profile).not.toContain('club-avatar-stack');
     expect(center).toContain('{{club.roleLabel}}');
     expect(center).toContain('查看全部活动');

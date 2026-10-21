@@ -340,6 +340,22 @@ describe('管理员审核列表回归', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
+  it('没有可审批活动时展示友好空态而不是加载失败', async () => {
+    rideService.listActivities.mockResolvedValueOnce([]);
+
+    await page.load();
+
+    expect(page.data).toMatchObject({
+      loading: false,
+      error: '',
+      activities: [],
+      items: [],
+    });
+    const template = readFileSync('miniprogram/pages/admin/reviews/index.wxml', 'utf8');
+    expect(template).toContain('还没有可审批的活动');
+    expect(template).toContain('先创建并发布活动，收到报名后可在这里处理。');
+  });
+
   it('切换活动后立即进入加载态并清空旧审核数据', async () => {
     page.data.activities = activities;
     page.data.activityId = 'a1';

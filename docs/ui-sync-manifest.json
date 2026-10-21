@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "e3f533705a871d88acc7aa55393dd5451901aecb",
-  "syncedAt": "2026-10-21T06:25:00.000+08:00",
+  "syncedThrough": "c78300451987a7a16031f3600aab2d7a34d2ec7b",
+  "syncedAt": "2026-10-21T08:54:00.000+08:00",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:146d80527cee0b6677cf7e2392cf95ee105ad03353704755d9b4becec7687f92"
+    "digest": "sha256:89ee043e9b86f226a6276ed82e53dd65d78d6c1af269f3adb89b7dbf44407c6a"
   },
   "prototype": {
-    "digest": "sha256:f60f19e5befd7634623d23e008b5688608a4478cba2c53a72049310ef7abbc85"
+    "digest": "sha256:d9ddbb86069cfb6491d73088a4fc9bbc76e64e5c4819e675e9a9adb9627dd6e4"
   },
   "routes": [
     {
@@ -147,10 +147,10 @@
         "id": "profile",
         "devtools": "profile-devtools.png",
         "pages": "profile-pages.png",
-        "state": "管理员 · 单俱乐部直达",
+        "state": "管理员 · 直接显示俱乐部名称",
         "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "Pages 于 2026-10-19 单俱乐部化：管理员额外展示“管理俱乐部资料”行，普通骑友仅看到“进入俱乐部主页”直达唯一俱乐部，不再出现“俱乐部管理”入口或多俱乐部选择；DevTools 证据仍保持 blocked。"
+        "note": "Pages 于 2026-10-21 同步个人中心精简稿：俱乐部区域只显示名称，不再重复提示平台规则；常用服务移除单独骑行名片入口。DevTools 证据保持 blocked，待新开发版逐页复验。"
       },
       {
         "id": "settings",
@@ -201,10 +201,10 @@
         "id": "admin-reviews",
         "devtools": "admin-reviews-devtools.png",
         "pages": "admin-reviews-pages.png",
-        "state": "待审核筛选为空",
+        "state": "暂无可审批活动",
         "data": "real-runtime",
         "review": "blocked",
-        "note": "Pages 完整交互原型已在 2026-10-18 使用本地浏览器重新采集 375×812 截图；DevTools 证据仍保持 blocked，待新开发版逐页复验。"
+        "note": "Pages 于 2026-10-21 同步报名审批空状态：没有活动时给出创建发布引导，不再误报加载失败；真实错误仍保留重试入口。DevTools 证据保持 blocked，待新开发版逐页复验。"
       },
       {
         "id": "admin-review-detail",

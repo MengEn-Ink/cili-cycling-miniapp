@@ -138,13 +138,14 @@ describe('M0 俱乐部前端映射与交互契约', () => {
     });
   });
 
-  it('单俱乐部收口后个人中心只保留唯一俱乐部入口与品牌文字占位', () => {
+  it('单俱乐部收口后个人中心直接展示俱乐部名称与品牌文字占位', () => {
     const profileLogic = readFileSync('miniprogram/pages/profile/index.ts', 'utf8');
     const profileView = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     const editorLogic = readFileSync('miniprogram/pages/admin/activity-edit/index.ts', 'utf8');
     expect(profileLogic).toContain('clubAvatarFailed');
     expect(profileLogic).not.toContain('clubs.slice(0, 4)');
-    expect(profileView).toContain('全平台唯一俱乐部');
+    expect(profileView).toContain('{{profile.clubs[0].name}}');
+    expect(profileView).not.toContain('全平台唯一俱乐部');
     expect(profileView).toContain('binderror="clubAvatarError"');
     expect(profileView).toContain('club-membership-avatar--placeholder');
     expect(profileView).toContain('club-membership-empty');

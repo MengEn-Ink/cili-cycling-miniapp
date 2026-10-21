@@ -8,11 +8,15 @@
   <view class="filter-tabs" role="tablist" aria-label="按审核状态筛选">
     <button class="filter-tab {{tab === 'waiting' ? 'is-active' : ''}}" role="tab" aria-selected="{{tab === 'waiting'}}" data-v="waiting" bindtap="tab">候补</button><button class="filter-tab {{tab === 'pending' ? 'is-active' : ''}}" role="tab" aria-selected="{{tab === 'pending'}}" data-v="pending" bindtap="tab">待审核</button><button class="filter-tab {{tab === 'approved' ? 'is-active' : ''}}" role="tab" aria-selected="{{tab === 'approved'}}" data-v="approved" bindtap="tab">已通过</button><button class="filter-tab {{tab === 'checked_in' ? 'is-active' : ''}}" role="tab" aria-selected="{{tab === 'checked_in'}}" data-v="checked_in" bindtap="tab">已签到</button><button class="filter-tab {{tab === 'rejected' ? 'is-active' : ''}}" role="tab" aria-selected="{{tab === 'rejected'}}" data-v="rejected" bindtap="tab">已驳回</button><button class="filter-tab {{tab === 'all' ? 'is-active' : ''}}" role="tab" aria-selected="{{tab === 'all'}}" data-v="all" bindtap="tab">全部</button>
   </view>
-  <view class="result-count" wx:if="{{!loading && !error}}" role="status">当前筛选共 {{items.length}} 人</view>
+  <view class="result-count" wx:if="{{!loading && !error && activities.length}}" role="status">当前筛选共 {{items.length}} 人</view>
   <view class="limit-notice" wx:if="{{showLimitNotice}}" role="status">数据较多，仅展示最近 100 条报名</view>
   <view class="skeleton" wx:if="{{loading}}" aria-label="正在加载审批列表"><view></view><view></view><view></view></view>
-  <view wx:elif="{{!items.length && !error}}" class="state-card"><view class="title">当前筛选暂无报名</view><view class="muted">新的报名提交后会出现在这里。</view></view>
-  <view class="state-card" wx:if="{{error}}" role="alert"><view class="title">加载失败</view><view class="muted">{{error}}</view><button class="btn" bindtap="load" aria-label="重新加载审批列表">重新加载</button></view>
+  <view class="state-card" wx:elif="{{error}}" role="alert"><view class="title">暂时没加载出来</view><view class="muted">{{error}}</view><button class="btn" bindtap="load" aria-label="重新加载审批列表">再试一次</button></view>
+  <view class="state-card" wx:elif="{{!activities.length}}">
+    <view class="title">还没有可审批的活动</view>
+    <view class="muted">先创建并发布活动，收到报名后可在这里处理。</view>
+  </view>
+  <view wx:elif="{{!items.length}}" class="state-card"><view class="title">当前筛选暂无报名</view><view class="muted">新的报名提交后会出现在这里。</view></view>
 
   <view class="review-list" role="list" aria-label="报名审批列表">
     <view class="review-card" wx:for="{{items}}" wx:key="id" role="listitem">

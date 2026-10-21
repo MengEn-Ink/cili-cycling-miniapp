@@ -289,7 +289,7 @@ describe('个人中心加载状态', () => {
     expect(page.data.heroBackgroundAvatarUrl).toBe('https://temporary.example/avatar.jpg');
   });
 
-  it('头部只展示微信身份与骑行指标无关内容，常用服务对普通成员提供骑行名片入口', () => {
+  it('头部保持简洁，个人中心只显示俱乐部名称且不单列骑行名片', () => {
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     const pageScript = readFileSync('miniprogram/pages/profile/index.ts', 'utf8');
 
@@ -305,20 +305,11 @@ describe('个人中心加载状态', () => {
     expect(template).not.toMatch(/CILI|STRAVA/);
     expect(pageScript).not.toContain('toggleCard()');
 
-    const menuItem = template.match(
-      /<button[^>]*bindtap="openCapabilityCard"[^>]*>[\s\S]*?<\/button>/,
-    )?.[0];
-    expect(menuItem).toBeTruthy();
-    // 普通成员可见：入口不挂管理员条件，且带点击反馈
-    expect(menuItem).not.toContain('isAdmin');
-    expect(menuItem).toContain('骑行名片');
-    expect(menuItem).toContain('hover-class=');
-    expect(pageScript).toContain("wx.navigateTo({ url: '/pages/capability-card/index' })");
-  });
-
-  it('普通成员点击骑行名片入口直达名片页', () => {
-    page.openCapabilityCard();
-    expect(wx.navigateTo).toHaveBeenCalledWith({ url: '/pages/capability-card/index' });
+    expect(template).toContain('{{profile.clubs[0].name}}');
+    expect(template).not.toContain('全平台唯一俱乐部');
+    expect(template).not.toContain('bindtap="openCapabilityCard"');
+    expect(template).not.toContain('<view class="menu-title">骑行名片</view>');
+    expect(pageScript).not.toContain('openCapabilityCard()');
   });
 
   it('可预览 hero 背景和头像有可读标签，装饰性兜底背景隐藏于无障碍树', () => {

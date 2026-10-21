@@ -18,7 +18,7 @@ import {
   sha256Hex,
   type ExternalRouteReference,
 } from '../../../utils/route';
-import { drawElevationProfile } from '../../activity-detail/format';
+import { drawRouteElevation } from '../../../utils/route-visual';
 
 type ClubOption = {
   clubId: string;
@@ -1029,7 +1029,7 @@ Page({
       const canvas = elevationTarget.node;
       canvas.width = elevationTarget.width * ratio;
       canvas.height = elevationTarget.height * ratio;
-      drawElevationProfile(
+      drawRouteElevation(
         canvas.getContext('2d'),
         elevationTarget.width,
         elevationTarget.height,
