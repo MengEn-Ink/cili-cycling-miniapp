@@ -1,6 +1,6 @@
 # Pages 与微信端到端验收流程
 
-统一入口：[设计规范](../design-system.md)、[17 路由交互原型](../index.html#prototype)、[P0 写链路与真机手册](p0-real-registration-journey.md)、[高优清单](../high-priority-issues.md)。本手册更新于 2026-10-17。
+统一入口：[设计规范](../design-system.md)、[17 路由交互原型](../index.html#prototype)、[P0 写链路与真机手册](p0-real-registration-journey.md)、[高优清单](../high-priority-issues.md)。本手册更新于 2026-10-21。
 
 ## 验收分层
 
@@ -41,8 +41,14 @@
 | `admin-activity-edit` | 已有活动照片、二维码、路线图回显及删除按钮可见性；空白创建态截图 |
 | `admin-reviews` | 审核列表读取，不审批 |
 | `admin-review-detail` | 可访问记录详情，长编号与状态标签宽度，不修改状态 |
+| `route-analysis` | 已有活动路线分析读取；空态不等于 GPX 导入通过 |
+| `club-center` | 单俱乐部公开主页及近期活动，等待 `mode` 与 `activityMode` 完成 |
+| `admin-club-applications` | 唯一俱乐部资料管理读取或空库创建提示，不写入 |
+| `admin-club-application-detail` | 已有资料编辑态或空库创建态读取，等待 `pageState` 完成，不保存 |
 
 路由路径以 `miniprogram/app.json` 为准；管理员页面的 hash 用连字符，真实路径为 `pages/admin/.../index`。正常页面至少一张图，详情名片、创建表单等额外状态另存图。
+
+公开参与者未上传图片、媒体校验失败或未满足公开条件时，服务端可以返回安全空态。脚本分别验证地址安全和真实样本就绪性：非空媒体只能为 HTTPS；至少一位参与者的头像与背景均可用时才具备完整公开媒体样本。缺少样本记录 `PUBLIC_ATTENDEE_MEDIA_SAMPLE_NOT_READY` 并返回阻塞，不能用空态通过替代媒体验收。删除图片按钮使用实际计算颜色及 4.5:1 对比度门槛，不再写死旧主题颜色。
 
 ## 一次性准备与命令
 
@@ -70,7 +76,7 @@ npm run check:ui-sync -- --strict
 
 ## 报告、失败与回退
 
-`results.json` schema v3 包含 Git SHA、工作区是否有未提交变更、客户端版本、时间、设备与窗口参数、逐项断言、异常、阻塞、路由/截图和 `notCovered`。`mode=real-cloud-readonly` 不做发布、报名、审批、删除或资料保存。报告保存于执行及关闭动作的 finally；参数/依赖等启动前错误直接退出。
+`results.json` schema v3 包含 Git SHA、工作区是否有未提交变更、客户端版本、时间、设备与窗口参数、逐项断言、异常、阻塞、路由/截图、`lastStep`、`captureRetries` 和 `notCovered`。原生截图接口瞬时失败时，等待 250ms 后最多重试一次，并在每次截图前重新核对路由；连续失败记录 `SCREENSHOT_FAILED:<route>`，路由变化记录 `SCREENSHOT_ROUTE_CHANGED`，均不能生成成功截图证据。`mode=real-cloud-readonly` 不做发布、报名、审批、删除或资料保存。报告保存于执行及关闭动作的 finally；参数/依赖等启动前错误直接退出。
 
 退出码 0 表示本次只读范围通过；1 为断言/运行异常；2 为启动错误或缺少样本造成阻塞。`passed` 数量非零不代表总结果成功，以 `outcome` 和退出码为准。无检查、少截图、缺少审核记录不能当作完整通过。
 
