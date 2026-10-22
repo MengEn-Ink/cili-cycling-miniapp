@@ -4,7 +4,7 @@
 
 | 项目 | 内容 |
 | --- | --- |
-| PR | 待创建：`feat/cycling-image-journal-20261022` |
+| PR | [#342](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/342) |
 | Head SHA | 设计 `25b05320`；背景与兼容修复 `7790c48d`；审计固定 `f4a9ba03`；UI 与证据 `7ab38286`。UI 测试绑定 dirty `7790c48d` 与内容摘要，提交未改变对应 UI 内容 |
 | 客户端版本 | `2026.10.22.2` |
 | 验收环境 | 正式 Pages 本地浏览器、微信开发者工具、既有真实 CloudBase |

@@ -4,7 +4,7 @@
 >
 > 本文件只保留尚未完成的实际交付或验收。历史运行和详细口径见 [微信 E2E 与上线准备状态](verification/2026-10-21-wechat-e2e-and-launch-readiness.md)，GitHub Actions 实时状态以 GitHub 为唯一事实源。
 
-本轮骑行影像志实施分支为 `feat/cycling-image-journal-20261022`，设计 `25b05320`、背景选填与旧名片转跳 `7790c48d`、审计工具固定 `f4a9ba03`、UI 与新双端证据 `7ab38286` 已提交。浏览器 56/56、三宽度 51/51、真实云只读 27/27 且零异常。全量 validate、1365 项测试、13 云包、覆盖率、安全审计及严格 UI 同步通过。运行绑定 dirty `7790c48d` 与当前 UI 内容摘要，总 outcome 仍 BLOCKED；PR 和部署正在推进。上传审计保留原严格门禁与五项限期例外。
+本轮骑行影像志 [PR #342](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/342)，分支 `feat/cycling-image-journal-20261022`，UI 与新双端证据 `7ab38286`、交付文档 `84e4271d` 已提交。浏览器 56/56、三宽度 51/51、真实云只读 27/27 且零异常。全量 validate、1365 项测试、13 云包、覆盖率、安全审计及严格 UI 同步通过。PR checks 正在运行，尚未部署；最终干净提交运行复核中，公开媒体、普通成员与双真机仍 BLOCKED。上传审计固定 npm 11.21.1，保留原严格门禁与五项限期例外。
 
 ## 口径
 
