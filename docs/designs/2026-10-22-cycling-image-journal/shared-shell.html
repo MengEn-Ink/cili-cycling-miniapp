@@ -266,7 +266,8 @@ fieldset{border:0;padding:0;margin:0 0 24px}
   document.querySelectorAll('[data-tabgroup]').forEach(group=>group.querySelectorAll('[role=tab]').forEach(button=>button.addEventListener('click',()=>{
     group.querySelectorAll('[role=tab]').forEach(b=>b.setAttribute('aria-selected',String(b===button)));
     const scope=document.querySelector('[data-activity-results]');
-    if(scope)scope.innerHTML=button.dataset.panel==='history'?document.querySelector('#history-content').innerHTML:document.querySelector('#upcoming-content').innerHTML;
+    const source=document.querySelector(button.dataset.panel==='history'?'#history-content':'#upcoming-content');
+    if(scope&&source)scope.replaceChildren(...[...source.childNodes].map(node=>node.cloneNode(true)));
   })));
   document.querySelector('[data-compact]')?.addEventListener('click',e=>{
     const list=document.querySelector('[data-activity-results]');list.classList.toggle('compact');e.currentTarget.setAttribute('aria-pressed',String(list.classList.contains('compact')));
@@ -286,7 +287,7 @@ fieldset{border:0;padding:0;margin:0 0 24px}
     if(!e.target.files.length)return;
     document.querySelector('[data-route-preparing]').hidden=false;
     document.querySelector('[data-publish]').disabled=true;
-    setTimeout(()=>{document.querySelector('[data-route-preparing]').innerHTML='路线预览已准备好 · 82 km / 986 m';document.querySelector('[data-publish]').disabled=false;},1400);
+    setTimeout(()=>{document.querySelector('[data-route-preparing]').textContent='路线预览已准备好 · 82 km / 986 m';document.querySelector('[data-publish]').disabled=false;},1400);
   });
   if(params.has('preparing')){document.querySelector('[data-publish]').disabled=true;document.querySelector('[data-route-preparing]').hidden=false;}
   window.addEventListener('message',e=>{if(e.data?.type==='design-state'&&e.data.state==='image-error')document.querySelectorAll('.photo').forEach(p=>p.classList.add('failed'));});

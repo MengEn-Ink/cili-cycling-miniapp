@@ -6,6 +6,8 @@
 
 本轮骑行影像志 [PR #342](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/342)，分支 `feat/cycling-image-journal-20261022`，UI 与新双端证据 `7ab38286`、交付文档 `84e4271d` 已提交。浏览器 56/56、三宽度 51/51、真实云只读 27/27 且零异常。全量 validate、1365 项测试、13 云包、覆盖率、安全审计及严格 UI 同步通过。PR checks 正在运行，尚未部署；最终干净提交运行复核中，公开媒体、普通成员与双真机仍 BLOCKED。上传审计固定 npm 11.21.1，保留原严格门禁与五项限期例外。
 
+发布检查更新：干净 `84e4271d` 真实云只读 27/27、零异常，UI 摘要一致；PR CI 已通过。CodeQL 发现导出设计稿 DOM 重解析及内嵌 Tailwind 单次替换共 30 条告警，已修正为 DOM 克隆、状态白名单和完整替换，重新检查通过前禁止合入。
+
 ## 口径
 
 - `*.test.ts` / `*.node-test.*` 是 Mock 或契约测试，不是真实 E2E。

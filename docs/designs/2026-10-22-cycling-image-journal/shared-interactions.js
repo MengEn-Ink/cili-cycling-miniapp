@@ -166,7 +166,8 @@
     const b = e.currentTarget;
     all('[data-tabgroup] [role=tab]').forEach(el => el.setAttribute('aria-selected', String(el === b)));
     const scope = q('[data-activity-results]');
-    if (scope) scope.innerHTML = q(b.dataset.panel === 'history' ? '#history-content' : '#upcoming-content').innerHTML;
+    const source = q(b.dataset.panel === 'history' ? '#history-content' : '#upcoming-content');
+    if (scope && source) scope.replaceChildren(...[...source.childNodes].map(node => node.cloneNode(true)));
   });
   on('[data-compact]', e => { const list = q('[data-activity-results]'); list.classList.toggle('compact'); e.currentTarget.setAttribute('aria-pressed', String(list.classList.contains('compact'))); });
   on('[data-filter]', e => {

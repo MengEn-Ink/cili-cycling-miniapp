@@ -45,7 +45,12 @@ function selectPage(slug,scroll=true){
  if(scroll)document.querySelector('#preview').scrollIntoView({behavior:'smooth'});
 }
 document.querySelectorAll('[data-page]').forEach(el=>el.addEventListener('click',()=>selectPage(el.dataset.page)));
-document.querySelector('#scenario-select').addEventListener('change',e=>{frame.src='pages/'+current+'.html'+e.target.value;document.querySelector('#open-page').href=frame.src;});
+document.querySelector('#scenario-select').addEventListener('change',e=>{
+ const selected=(scenarioData[current]||[]).find(([value])=>value===e.target.value);
+ if(!selected)return;
+ const relative='pages/'+current+'.html'+selected[0];
+ frame.src=relative;document.querySelector('#open-page').href=relative;
+});
 document.querySelectorAll('[data-width]').forEach(el=>el.addEventListener('click',()=>{
  const width=Number(el.dataset.width);frame.style.width=width+'px';document.querySelector('.phone-shell').style.width=width+20+'px';
  document.querySelectorAll('[data-width]').forEach(b=>b.setAttribute('aria-pressed',String(el===b)));

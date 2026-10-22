@@ -49,7 +49,7 @@
 | `check:design` | PASS | 97 双端变量、15 对比度组 |
 | `check:ui-sync -- --strict` | PASS | 新 17 路由双端截图与实际内容摘要一致，零 UI 漂移 |
 | `check:governance` | PASS | 17 页面、引用、统一上传、源码卫生与 Actions 安全基线一致；未删除真实验收阻塞 |
-| PR checks | 待创建 PR | 不绕过保护 |
+| PR checks | CI PASS；CodeQL 待修复后复跑 | CodeQL 导出设计稿 30 条告警已定位并修复；不绕过安全检查 |
 
 ## 5. 端到端执行记录
 
@@ -57,6 +57,7 @@
 2. 官方微信 runner 在 2026-10-22 14:08–14:09 实际读取云端，版本 2026.10.22.2，Git `7790c48d1ed05346ea1af53c66e4048b7e35bf6d`、dirty=true。UI 摘要 `sha256:820c9de49872cb98489fc1ebddad88e990c3f2b775afcc1e099c1e0ba9fca86f`。
 3. 27 项检查通过、零异常、17 路由，头像、本人背景、活动封面、编辑媒体、路线和俱乐部状态可读。一次 IDE 重编译就绪失败保留在私有日志；完成构建后复跑通过，不复用失败运行证据。
 4. 公开骑友媒体当前只有安全空态，不能视为媒体样本通过。原始截图和个人资料仅私有留存；公开 34 张图片按不透明矩形脱敏。差异和坐标见 [双端证据](../evidence/ui-sync/2026-10-22-cycling-image-journal/README.md)。
+5. 干净提交 `84e4271d25d9ca78275aae68b06203b57d09eeb6` 复跑同样 27/27、17 路由、零异常，dirty=false，UI 摘要相同。PR CI 已通过；导出设计稿的 CodeQL 告警修复后等待平台复核。
 
 **执行结论**：Pages PASS；真实云只读可执行项 PASS；完整端到端 BLOCKED。
 
