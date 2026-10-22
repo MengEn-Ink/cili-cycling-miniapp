@@ -3,11 +3,11 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { createAffectedPlan } from './affected-ci.mjs';
 
-test('纯 Pages 文档只执行文档与设计契约', () => {
+test('纯 Pages 文档只执行文档与设计相关门禁', () => {
   const plan = createAffectedPlan([
     'docs/articles/agile-delivery.html',
     'docs/delivery-center.js',
-    'docs/ui-design-system.html',
+    'docs/designs/2026-10-22-cycling-image-journal/index.html',
   ]);
 
   assert.equal(plan.mode, 'docs');

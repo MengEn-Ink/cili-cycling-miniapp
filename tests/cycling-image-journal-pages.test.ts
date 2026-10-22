@@ -9,9 +9,6 @@ const app = read('docs/app.js');
 const styles = read('docs/styles.css');
 const index = read('docs/index.html');
 const deliveryCenter = read('docs/delivery-center.js');
-const contract = JSON.parse(read('docs/design-contract.json')) as {
-  tokens: Record<string, string | { pages: string }>;
-};
 
 type Runtime = {
   prototypeData?: {
@@ -72,24 +69,6 @@ describe('FORMAL GitHub Pages 骑行影像志', () => {
     expect(styles).toContain('@media (prefers-reduced-motion: reduce)');
   });
 
-  it('保持双端 token 数值来源不变', () => {
-    for (const token of [
-      '--color-bg',
-      '--color-text',
-      '--color-action',
-      '--page-gutter',
-      '--control-height',
-      '--route-preview-canvas-height',
-      '--group-qr-code-size',
-    ]) {
-      const expected = contract.tokens[token];
-      const pagesValue = typeof expected === 'string' ? expected : expected.pages;
-      expect(styles).toMatch(
-        new RegExp(`${token}:\\s*${pagesValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
-      );
-    }
-  });
-
   it('首屏与交付中心立即提供正式最终版入口，同时保留技术文章和历史设计', () => {
     expect(index).toContain('骑行影像志 · 正式 Pages');
     expect(index).toContain('href="#profile"');
@@ -97,7 +76,6 @@ describe('FORMAL GitHub Pages 骑行影像志', () => {
     expect(deliveryCenter).toContain("id: 'cycling-image-journal-formal'");
     expect(deliveryCenter).toContain("href: '#profile'");
     expect(deliveryCenter).toContain('当前正式 Pages');
-    expect(deliveryCenter).toContain('Oil UI 全页面高信息密度交互方案');
     expect(deliveryCenter).toContain('设计演进记录');
   });
 

@@ -17,10 +17,6 @@ const routeAnalysisDataFoundationArticle = read(
 );
 const agileDeliveryArticle = read('docs/articles/agile-delivery.html');
 const engineeringDeliveryPracticeArticle = read('docs/articles/engineering-delivery-practice.html');
-const uiDesignSystem = read('docs/ui-design-system.html');
-const designSystemIndex = read('docs/design-system.md');
-const designChecklist = read('docs/ui-design-checklist.md');
-const executableDesignSpec = read('DESIGN.md');
 const templates = read('docs/templates.js');
 
 type PrototypeRuntime = {
@@ -386,20 +382,11 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(routeAnalysisDataFoundationArticle).toContain('gpx-to-route-fact.webp');
     expect(routeAnalysisDataFoundationArticle).toContain('route-semantics-weather.webp');
     expect(routeAnalysisDataFoundationArticle).toContain('loading="lazy"');
-    expect(deliveryCenter).toContain('Oil UI 全页面高信息密度交互方案');
-    expect(deliveryCenter).toContain('./designs/2026-10-22-oil-ui-high-density/index.html');
-    expect(renderedDeliveryCenter).toContain(
-      'href="./designs/2026-10-22-oil-ui-high-density/index.html"',
-    );
-    expect(deliveryCenter).toContain('沸点手稿与全套设计交接成果');
-    expect(deliveryCenter).toContain('docs/designs/2026-10-16-boiling-point/index.html');
     expect(deliveryCenter).toContain('组织地基与活动归属（单俱乐部收口）');
     expect(deliveryCenter).toContain('全平台始终只有一个俱乐部');
     expect(deliveryCenter).toContain('不再区分俱乐部活动与公开活动');
-    expect(deliveryCenter).toContain('深行动红白字、48px 主控件');
     expect(deliveryCenter).not.toContain('深橙主操作白字 4.91:1');
     expect(html).toContain('沸点视觉验收');
-    expect(html).toContain('沸点手稿与全套设计交接成果');
     expect(html).not.toContain('<h3>截图问题</h3>');
     expect(html).not.toContain('<h3>改版方案</h3>');
     expect(script).toContain('沸点设计系统与验收依据');
@@ -476,49 +463,6 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
       expect(engineeringDeliveryPracticeArticle).toContain(content);
     }
     expect(engineeringDeliveryPracticeArticle).not.toMatch(/(?:src|href)="\/(?!\/)/);
-  });
-
-  it('完整 UI 规范接入交付中心，并同时约束主系统、页面差异和反模式', () => {
-    const deliveryRuntime: {
-      deliveryCenter?: { render: () => string };
-    } = {};
-    new Function('window', deliveryCenter)(deliveryRuntime);
-    const renderedDeliveryCenter = deliveryRuntime.deliveryCenter?.render() ?? '';
-
-    expect(deliveryCenter).toContain("id: 'ui-design-system'");
-    expect(deliveryCenter).toContain("href: 'ui-design-system.html'");
-    expect(deliveryCenter).toContain("href: BASE + 'DESIGN.md'");
-    expect(deliveryCenter).toContain("href: BASE + 'docs/ui-design-checklist.md'");
-    expect(renderedDeliveryCenter).toContain('完整 UI 设计规范');
-    expect(renderedDeliveryCenter).toContain('href="ui-design-system.html"');
-
-    for (const content of [
-      'Master Design System',
-      '页面 Overrides',
-      '跨平台实现规则',
-      '设计推理流程',
-      '反模式',
-      '交付门禁',
-    ]) {
-      expect(executableDesignSpec).toContain(content);
-    }
-    expect(designChecklist).toContain('UI 设计与验收清单');
-    expect(designChecklist).toContain('小程序平台');
-    expect(designChecklist).toContain('Pages 平台');
-    expect(designSystemIndex).toContain('../DESIGN.md');
-    expect(designSystemIndex).toContain('ui-design-system.html');
-
-    for (const content of [
-      'MASTER SYSTEM',
-      'PRODUCT PRINCIPLES',
-      'PAGE OVERRIDES',
-      'ANTI-PATTERNS',
-      'DESIGN INTELLIGENCE',
-      'QUALITY GATES',
-      'prefers-reduced-motion',
-    ]) {
-      expect(uiDesignSystem).toContain(content);
-    }
   });
 
   it('搭建指南覆盖九步交付、技术选型、核心变量、合规清单与项目审计', () => {

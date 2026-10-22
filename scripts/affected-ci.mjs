@@ -217,9 +217,7 @@ export function runAffectedPlan(plan) {
 
   if (plan.mode === 'docs') {
     run('npx', ['vitest', 'run', 'tests/showcase-pages-contract.test.ts']);
-    if (plan.design) runNpm('test:design');
     if (plan.prototype) runNpm('test:ui-sync');
-    runNpm('check:design');
     runNpm('check:ui-sync');
     runNpm('check:governance');
     runNpm('build');
@@ -229,9 +227,7 @@ export function runAffectedPlan(plan) {
   runRelatedVitest(plan.relatedSources, plan.vitestFiles);
   runNodeTests(plan.scriptTests);
   if (plan.design) {
-    runNpm('test:design');
     runNpm('test:ui-sync');
-    runNpm('check:design');
     runNpm('check:ui-sync');
   }
   if (plan.deployment) {

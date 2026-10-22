@@ -1,13 +1,5 @@
 page {
-  /* Primitive tokens: raw values only. */
-  --primitive-color-vermilion: #e13b2b;
-  --primitive-color-rice: #fbf5ea;
-  --primitive-color-ink: #211f1c;
-  --primitive-color-white: #ffffff;
-  --primitive-color-sand: #f3e6d0;
-  --primitive-color-stone: #6f675d;
-  --primitive-color-line: #ededed;
-  --primitive-color-line-strong: #9a9186;
+  /* Spacing scale: raw values only. */
   --space-1: 8rpx;
   --space-2: 12rpx;
   --space-3: 16rpx;

@@ -1,20 +1,11 @@
 /*
- * 此里 · 全套 UI 改版高保真原型（沸点风格 · 2026-10-16）
+ * 此里 · 骑行影像志全套 UI 原型
  * 颜色变量与 miniprogram/app.wxss 一一对应（同名、同值）；1rpx = 0.5px。
  * 只有明亮主题：暖米白画布、墨黑信息块、深行动红承载主行动；暖黄短标签搭配墨黑字。
- * 正式变量与可计算门槛见 design-contract.json；使用规则见 design-system.md。
  * --color-status-* 两端共用，只用于状态小标签、行内提示和图标。
  */
 :root {
-  /* Primitive tokens: 1rpx = 0.5px against the mini program source. */
-  --primitive-color-vermilion: #e13b2b;
-  --primitive-color-rice: #fbf5ea;
-  --primitive-color-ink: #211f1c;
-  --primitive-color-white: #ffffff;
-  --primitive-color-sand: #f3e6d0;
-  --primitive-color-stone: #6f675d;
-  --primitive-color-line: #ededed;
-  --primitive-color-line-strong: #9a9186;
+  /* Spacing scale: 1rpx = 0.5px against the mini program source. */
   --space-1: 4px;
   --space-2: 6px;
   --space-3: 8px;

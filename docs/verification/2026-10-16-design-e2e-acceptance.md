@@ -15,7 +15,7 @@
 
 原始结果与截图留在执行机受控目录 `/tmp/cili-e2e-20261016/release69-calibrated-2/`，未脱敏文件不得加入公共仓库。此路径为本地暂存，不是长期归档。启动时曾遇到 `rawPath` 空值和 automator 响应超时，两份失败报告保留在同级 `release69-final/` 与 `release69-calibrated/`；退出并重启 IDE 后恢复，没有重试业务写入。
 
-公开 [26 张双端截图与逐页说明](../evidence/ui-sync/2026-10-16-design-acceptance/index.html)、[只读运行报告](../evidence/ui-sync/2026-10-16-design-acceptance/runtime-report.json) 和 [脱敏区域](../evidence/ui-sync/2026-10-16-design-acceptance/redactions.json) 已归档。照片、头像、昵称、实名、电话、凭证号和报名编号使用不透明矩形遮盖，没有注入假数据替代真实运行。Pages 人物与业务字段仍是演示数据。
+公开的 26 张双端截图与逐页说明、只读运行报告和脱敏区域曾归档于 `evidence/ui-sync/2026-10-16-design-acceptance/`（随骑行影像志改版清理，历史产物见 Git 历史）。照片、头像、昵称、实名、电话、凭证号和报名编号使用不透明矩形遮盖，没有注入假数据替代真实运行。Pages 人物与业务字段仍是演示数据。
 
 ### 客户端 `.70` 设置页证据刷新
 
