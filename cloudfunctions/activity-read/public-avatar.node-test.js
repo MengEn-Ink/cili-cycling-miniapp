@@ -4,6 +4,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const { canonicalPublicAvatar, mediaDocumentId, publicAvatarSource } = require('./public-avatar');
+const { publicConsentStatus } = require('./domain/privacy');
+const { withPublicConsent } = require('../shared/consent-fixture');
 
 const MEDIA_SECRET = 'activity-read-test-media-secret-32-bytes';
 const OWNER_OPENID = 'member-openid';
@@ -17,13 +19,13 @@ function canonicalFixture() {
     .digest('hex')
     .slice(0, 32);
   return {
-    profile: {
+    profile: withPublicConsent({
       avatar_file_id: SOURCE_FILE_ID,
       avatar_source: 'custom',
       avatar_revision: 3,
       avatar_visibility: 'public',
       avatar_visibility_revision: 3,
-    },
+    }),
     record: {
       _id: mediaDocumentId(SOURCE_FILE_ID),
       file_id: SOURCE_FILE_ID,
@@ -119,4 +121,88 @@ test('canonicalPublicAvatar 对任一非法媒体元数据或 secret 均 fail cl
   for (const [name, candidateRecord, secret] of invalidCases) {
     assert.equal(canonicalPublicAvatar(profile, candidateRecord, OWNER_OPENID, secret), '', name);
   }
+});
+
+test('unavailable profile state cannot authorize snapshot avatar or background fallback', () => {
+  const { projectPrivateRegistration } = require('./domain/privacy');
+  const { publicBackgroundSource } = require('./public-avatar');
+  const { profile, record } = canonicalFixture();
+  const registration = {
+    profile_snapshot: {
+      ...profile,
+      background_photo: { file_id: SOURCE_FILE_ID, category: 'ride' },
+    },
+  };
+  for (const unavailable of [undefined, null]) {
+    assert.deepEqual(projectPrivateRegistration(registration, unavailable).profile_snapshot, {});
+    assert.equal(publicAvatarSource(unavailable), '');
+    assert.equal(publicBackgroundSource(unavailable), undefined);
+    assert.equal(canonicalPublicAvatar(unavailable, record, OWNER_OPENID, MEDIA_SECRET), '');
+  }
+});
+
+test('modern canonical categories stay isolated and invalid generations fail closed', () => {
+  const { canonicalPublicBackground } = require('./public-avatar');
+  const { profile, record } = canonicalFixture();
+  profile.background_photo = { file_id: SOURCE_FILE_ID, category: 'other' };
+  const status = publicConsentStatus(profile);
+  profile.public_consent = {
+    media: {
+      consented: true,
+      version: status.media.version,
+      generation: status.generation,
+      policy_version: status.policyVersion,
+    },
+  };
+  const modern = {
+    ...record,
+    category: 'profile-avatar',
+    canonical_file_id: record.canonical_file_id.replace(
+      /(profile-canonical\/[^/]+\/)/,
+      '$1profile-avatar/',
+    ),
+  };
+  assert.equal(
+    canonicalPublicAvatar(profile, modern, OWNER_OPENID, MEDIA_SECRET),
+    modern.canonical_file_id,
+  );
+  assert.equal(canonicalPublicBackground(profile, modern, OWNER_OPENID, MEDIA_SECRET), '');
+  const background = {
+    ...modern,
+    category: 'profile-background',
+    canonical_file_id: modern.canonical_file_id.replace('profile-avatar/', 'profile-background/'),
+  };
+  assert.equal(
+    canonicalPublicBackground(profile, background, OWNER_OPENID, MEDIA_SECRET),
+    background.canonical_file_id,
+  );
+  assert.equal(canonicalPublicAvatar(profile, background, OWNER_OPENID, MEDIA_SECRET), '');
+  assert.equal(
+    canonicalPublicAvatar({ ...profile, generation: -1 }, modern, OWNER_OPENID, MEDIA_SECRET),
+    '',
+  );
+  assert.equal(
+    canonicalPublicAvatar({ ...profile, generation: 2 }, modern, OWNER_OPENID, MEDIA_SECRET),
+    '',
+  );
+});
+
+test('current canonical profile references use source registry binding without relaxing metadata', () => {
+  const { profile, record } = canonicalFixture();
+  profile.avatar_file_id = record.canonical_file_id;
+  const status = publicConsentStatus(profile);
+  profile.public_consent.media.version = status.media.version;
+  assert.equal(
+    canonicalPublicAvatar(profile, record, OWNER_OPENID, MEDIA_SECRET),
+    record.canonical_file_id,
+  );
+  assert.equal(
+    canonicalPublicAvatar(
+      profile,
+      { ...record, _id: mediaDocumentId(record.canonical_file_id) },
+      OWNER_OPENID,
+      MEDIA_SECRET,
+    ),
+    '',
+  );
 });

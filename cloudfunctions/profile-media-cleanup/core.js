@@ -418,7 +418,19 @@ async function drainMediaCleanup({
         !(await store.isImportDeleteLeaseCurrent(id, { leaseId, now, fileId }))
       )
         continue;
-      for (const target of fileIds) await deleteExactTarget(deleteFile, target);
+      let leaseCurrent = true;
+      for (const target of fileIds) {
+        if (
+          item.kind === 'media' &&
+          typeof store.isMediaDeleteLeaseCurrent === 'function' &&
+          !(await store.isMediaDeleteLeaseCurrent(id, { leaseId, now }))
+        ) {
+          leaseCurrent = false;
+          break;
+        }
+        await deleteExactTarget(deleteFile, target);
+      }
+      if (!leaseCurrent) continue;
       const marked =
         item.kind === 'import'
           ? await store.markImportDeleted(id, {

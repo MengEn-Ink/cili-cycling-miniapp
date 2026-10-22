@@ -94,6 +94,17 @@ function statefulDb(seed) {
       set: async ({ data }) => ensure(name).set(id, { _id: id, ...data }),
       update: async ({ data }) => ensure(name).set(id, apply(ensure(name).get(id), data)),
     }),
+    where: (query) => ({
+      limit: (limit) => ({
+        get: async () => ({
+          data: [...ensure(name).values()]
+            .filter((record) =>
+              Object.entries(query).every(([key, value]) => record[key] === value),
+            )
+            .slice(0, limit),
+        }),
+      }),
+    }),
   });
   return {
     state,
@@ -165,6 +176,7 @@ test('客户端上传 intent 先持久化，registerMedia 再原子登记并完�
   assert.equal(fixture.state.profile_media.get(mediaDocumentId(fileId)).status, 'unreferenced');
   assert.deepEqual(fixture.state.profile_media_imports.get(intent._id), {
     ...intent,
+    generation: 1,
     canonical_intent_id: canonicalIntent._id,
     canonical_path: canonicalIntent.cloud_path,
     sha256,
@@ -379,6 +391,7 @@ test('setAvatar 事务重读 owner registry 并原子激活新头像、降级旧
         category: 'other',
         origin: 'wechat',
         status: 'unreferenced',
+        security_status: 'pass',
       },
     },
   });
@@ -397,8 +410,8 @@ test('setAvatar 事务重读 owner registry 并原子激活新头像、降级旧
     avatar_file_id: nextFileId,
     avatar_source: 'wechat',
     avatar_revision: 1,
-    avatar_visibility: 'public',
-    avatar_visibility_revision: 1,
+    avatar_visibility: 'private',
+    avatar_visibility_revision: null,
     updated_at: db.serverDate(),
   });
   assert.deepEqual(db.sets, [{ name: 'profiles', id: owner, data: result }]);
@@ -456,6 +469,7 @@ test('setAvatar 不降级仍被 photos 引用的旧头像', async () => {
         category: 'other',
         origin: 'wechat',
         status: 'unreferenced',
+        security_status: 'pass',
       },
     },
   });
@@ -503,6 +517,7 @@ test('setAvatar 不降级仍被 background_photo 引用的旧头像', async () =
         category: 'other',
         origin: 'wechat',
         status: 'unreferenced',
+        security_status: 'pass',
       },
     },
   });
@@ -530,6 +545,7 @@ test('setAvatar 为 owner-bound custom 存量 registry 安全回填缺失 origin
         owner_openid: owner,
         category: 'other',
         status: 'unreferenced',
+        security_status: 'pass',
       },
     },
   });
@@ -603,6 +619,7 @@ test('setAvatar 以 canonical fileId 写入业务资料并只激活 source regis
         category: 'profile-avatar',
         origin: 'wechat',
         status: 'unreferenced',
+        security_status: 'pass',
       },
     },
   });
@@ -614,4 +631,89 @@ test('setAvatar 以 canonical fileId 写入业务资料并只激活 source regis
   assert.equal(db.sets[0].data.avatar_file_id, canonicalFileId);
   assert.equal(db.updates[0].id, mediaId);
   assert.equal(db.updates[0].data.status, 'active');
+});
+
+test('content media check trace is persisted against exact current binding before activation', async () => {
+  const { canonicalMediaPath, mediaDocumentId, mediaOwnerPrefix } = require('./core');
+  const secret = 'profile-media-secret-for-tests-32-bytes';
+  const owner = 'owner';
+  const sourceFileId = `cloud://env/${mediaOwnerPrefix(owner, secret)}profile-avatar/123e4567-e89b-42d3-a456-426614174010.jpg`;
+  const sha256 = '1'.repeat(64);
+  const canonicalFileId = `cloud://env/${canonicalMediaPath(
+    owner,
+    sourceFileId,
+    sha256,
+    'jpg',
+    secret,
+    'profile-avatar',
+  )}`;
+  const mediaId = mediaDocumentId(sourceFileId);
+  const fixture = statefulDb({
+    profiles: { owner: { _id: owner, generation: 7, deletion_status: 'active' } },
+    profile_media: {
+      [mediaId]: {
+        _id: mediaId,
+        file_id: sourceFileId,
+        owner_openid: owner,
+        category: 'profile-avatar',
+        origin: 'wechat',
+        status: 'unreferenced',
+        generation: 7,
+        source_file_id: sourceFileId,
+        canonical_file_id: canonicalFileId,
+        canonical_category: 'profile-avatar',
+        sha256,
+        size: 5,
+        mime: 'image/jpeg',
+      },
+    },
+    content_media_checks: {},
+  });
+  const store = createProfileStore(fixture.db);
+  const submittedAt = new Date('2026-10-21T03:00:00.000Z');
+
+  await store.persistMediaCheckSubmission(
+    owner,
+    mediaId,
+    {
+      _id: 'trace-current',
+      trace_id: 'trace-current',
+      media_id: mediaId,
+      owner_openid: owner,
+      category: 'profile-avatar',
+      generation: 7,
+      canonical_file_id: canonicalFileId,
+      sha256,
+      status: 'pending',
+      attempts: 1,
+      submitted_at: submittedAt,
+      updated_at: submittedAt,
+    },
+    submittedAt,
+  );
+
+  assert.deepEqual(fixture.state.content_media_checks.get('trace-current'), {
+    _id: 'trace-current',
+    trace_id: 'trace-current',
+    media_id: mediaId,
+    owner_openid: owner,
+    category: 'profile-avatar',
+    generation: 7,
+    canonical_file_id: canonicalFileId,
+    sha256,
+    status: 'pending',
+    attempts: 1,
+    submitted_at: submittedAt,
+    updated_at: submittedAt,
+  });
+  assert.equal(fixture.state.profile_media.get(mediaId).security_status, 'pending');
+  assert.equal(fixture.state.profile_media.get(mediaId).security_trace_id, 'trace-current');
+  await assert.rejects(store.setAvatar(owner, 'wechat', canonicalFileId, secret, submittedAt, 7), {
+    code: 'MEDIA_SECURITY_PENDING',
+  });
+
+  fixture.state.profile_media.get(mediaId).security_status = 'pass';
+  const result = await store.setAvatar(owner, 'wechat', canonicalFileId, secret, submittedAt, 7);
+  assert.equal(result.avatar_file_id, canonicalFileId);
+  assert.equal(fixture.state.profile_media.get(mediaId).status, 'active');
 });

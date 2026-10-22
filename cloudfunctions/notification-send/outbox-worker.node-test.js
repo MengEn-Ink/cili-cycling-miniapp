@@ -17,6 +17,7 @@ test('审批提交后定时 worker 可消费同一 outbox', async () => {
     transaction: (work) =>
       work({
         getAdmin: async () => ({ _id: 'admin', enabled: true }),
+        getProfile: async (openid) => ({ _id: openid, generation: 1 }),
         getRegistration: async () => registration,
         getActivity: async () => ({ occupied_count: 1 }),
         putRegistration: async () => {},

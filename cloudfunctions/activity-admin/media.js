@@ -1,5 +1,13 @@
 const crypto = require('node:crypto');
 
+class ActivityMediaError extends Error {
+  constructor(code, message) {
+    super(message);
+    this.name = 'ActivityMediaError';
+    this.code = code;
+  }
+}
+
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
 
 const safeText = (value) => (typeof value === 'string' ? value.trim() : '');
@@ -119,16 +127,31 @@ const validateActivityMediaOwnership = (openid, nextActivity, currentActivity) =
   );
 };
 
-const activateActivityMediaReferences = async (tx, openid, activity, now) => {
+const mediaSecurityCode = (status) =>
+  ({
+    pending: 'MEDIA_SECURITY_PENDING',
+    retryable: 'MEDIA_SECURITY_RETRY_REQUIRED',
+    review: 'MEDIA_SECURITY_REVIEW_REQUIRED',
+    risky: 'MEDIA_SECURITY_RISKY',
+  })[status] || 'MEDIA_SECURITY_REQUIRED';
+
+const activityMediaReferences = (activity) => [
+  ...(Array.isArray(activity?.images)
+    ? activity.images.map((fileId) => [fileId, 'activity-image'])
+    : []),
+  [activity?.cover_image, 'activity-image'],
+  [activity?.group_qr_code, 'activity-group-qr'],
+  [activity?.route?.generated_preview_file_id, 'activity-route-preview'],
+];
+
+const activateActivityMediaReferences = async (tx, openid, activity, now, currentActivity) => {
   if (typeof tx?.getProfileMediaByCanonical !== 'function') return;
-  const references = [
-    ...(Array.isArray(activity?.images)
-      ? activity.images.map((fileId) => [fileId, 'activity-image'])
-      : []),
-    [activity?.cover_image, 'activity-image'],
-    [activity?.group_qr_code, 'activity-group-qr'],
-    [activity?.route?.generated_preview_file_id, 'activity-route-preview'],
-  ];
+  const references = activityMediaReferences(activity);
+  const currentReferences = new Set(
+    activityMediaReferences(currentActivity).map(
+      ([fileId, category]) => `${category}:${safeText(fileId)}`,
+    ),
+  );
   const seen = new Set();
   for (const [rawFileId, category] of references) {
     const fileId = safeText(rawFileId);
@@ -144,7 +167,16 @@ const activateActivityMediaReferences = async (tx, openid, activity, now) => {
       record.category !== category ||
       !['unreferenced', 'active'].includes(record.status)
     )
-      throw Object.assign(new Error('活动媒体登记不可用'), { code: 'MEDIA_REGISTRATION_INVALID' });
+      throw new ActivityMediaError('MEDIA_REGISTRATION_INVALID', '活动媒体登记不可用');
+    const legacyCurrentReference =
+      record.status === 'active' &&
+      !record.security_status &&
+      currentReferences.has(`${category}:${fileId}`);
+    if (record.security_status !== 'pass' && !legacyCurrentReference)
+      throw new ActivityMediaError(
+        mediaSecurityCode(record.security_status),
+        '活动媒体安全状态不可用',
+      );
     if (record.status !== 'active') await tx.activateProfileMedia(record._id, now);
   }
 };
@@ -199,6 +231,7 @@ const resolveActivityMedia = async (cloud, activity, openid) => {
 };
 
 module.exports = {
+  ActivityMediaError,
   activateActivityMediaReferences,
   resolveActivityMedia,
   validateActivityMediaOwnership,

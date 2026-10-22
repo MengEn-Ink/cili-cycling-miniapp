@@ -12,6 +12,7 @@
 
 ## 当前文档
 
+- [2026-10-22 内容安全与媒体审核 PR 就绪记录](2026-10-22-content-safety-pr-readiness.md)：记录文本审核事务边界、图片待审状态、可信回调、CloudBase 部署契约、本地验证和未执行的线上验收。
 - [2026-10-21 俱乐部主页活动列表验收](2026-10-21-club-center-activity-list.md)：记录封面与身份分层、近期活动紧凑列表、弱网隔离、并发重试和三视口 Pages 验收。
 - [PR 端到端验收报告模板](pr-acceptance-report-template.md)：每个 PR 必填的影响范围、测试用例矩阵、自动化门禁、真实路径验收、部署回读和回滚记录。
 - [2026-10-19 Pages 双报名模式原型验收](2026-10-19-registration-modes-pages.md)：记录公开报名 / 审批报名、T+1 结束口径、三视口浏览器验收与 Pages-only 交付边界。

@@ -79,6 +79,7 @@ function transactionStore() {
       db.runTransaction(async (transaction) =>
         work({
           getAdmin: (id) => maybeGet(transaction.collection('admins'), id),
+          getProfile: (id) => maybeGet(transaction.collection('profiles'), id),
           getActivity: (id) => maybeGet(transaction.collection('activities'), id),
           listReminderRecipients: async (activityId, statuses) => {
             const values = [];

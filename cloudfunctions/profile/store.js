@@ -11,9 +11,11 @@ const {
   canonicalUploadIntentId,
   canonicalMediaBinding,
   registeredMedia,
+  assertMediaSecurityPassed,
   validateAvatarSelection,
   writableDocument,
 } = require('./core');
+const { assertProfileWritable, profileGeneration } = require('./privacy-contract');
 
 function profileReferencesMedia(profile, fileId) {
   if (!profile || typeof profile !== 'object') return false;
@@ -22,6 +24,40 @@ function profileReferencesMedia(profile, fileId) {
   return (Array.isArray(profile.photos) ? profile.photos : []).some(
     (item) => item && item.file_id === fileId,
   );
+}
+
+const FINAL_SECURITY_STATUSES = new Set(['pass', 'review', 'risky']);
+
+function sameMediaCheckBinding(trace, media) {
+  return Boolean(
+    trace &&
+    media &&
+    trace.media_id === media._id &&
+    trace.owner_openid === media.owner_openid &&
+    trace.category === media.category &&
+    trace.generation === media.generation &&
+    trace.canonical_file_id === media.canonical_file_id &&
+    trace.sha256 === media.sha256,
+  );
+}
+
+function mediaCheckDto(media, trace) {
+  if (!media) return undefined;
+  const securityStatus = media.security_status || 'missing';
+  return {
+    mediaId: media._id,
+    fileId: media.file_id,
+    canonicalFileId: media.canonical_file_id || '',
+    category: media.category,
+    generation: media.generation,
+    securityStatus,
+    traceId: media.security_trace_id || '',
+    retryable: securityStatus === 'retryable',
+    activated: media.status === 'active' && securityStatus === 'pass',
+    ...(media.security_error_code ? { errorCode: media.security_error_code } : {}),
+    attempts:
+      Number.isSafeInteger(trace?.attempts) && trace.attempts >= 0 ? trace.attempts : undefined,
+  };
 }
 
 function nextAvatarRevision(profile) {
@@ -55,11 +91,27 @@ async function get(collection, id) {
 }
 
 function createProfileStore(db) {
+  const findMediaByFileId = async (collection, openid, fileId) => {
+    if (!fileId) return undefined;
+    const direct = await get(collection, mediaDocumentId(fileId));
+    if (direct && direct.owner_openid === openid) return direct;
+    const result =
+      typeof collection.where === 'function'
+        ? await collection.where({ canonical_file_id: fileId, owner_openid: openid }).limit(2).get()
+        : { data: [] };
+    return Array.isArray(result?.data) && result.data.length === 1 ? result.data[0] : undefined;
+  };
   return {
     getMedia: (id) => get(db.collection('profile_media'), id),
     getClientUpload: (id) => get(db.collection('profile_media_imports'), id),
-    prepareClientUpload: (openid, intent, secretValue) =>
+    assertWritable: (openid, generation) =>
+      db.runTransaction(async (tx) =>
+        assertProfileWritable(await get(tx.collection('profiles'), openid), generation),
+      ),
+    prepareClientUpload: (openid, intent, secretValue, generation) =>
       db.runTransaction(async (tx) => {
+        const profile = await get(tx.collection('profiles'), openid);
+        const currentGeneration = assertProfileWritable(profile, generation);
         const imports = tx.collection('profile_media_imports');
         if (
           !intent ||
@@ -75,6 +127,7 @@ function createProfileStore(db) {
           throw new ProfileError('MEDIA_UPLOAD_INTENT_INVALID', '媒体上传凭据无效');
         const existing = await get(imports, intent._id);
         if (existing) {
+          assertProfileWritable(profile, existing.generation);
           if (
             existing.kind === 'client_upload' &&
             existing.owner_openid === openid &&
@@ -84,11 +137,14 @@ function createProfileStore(db) {
             return existing;
           throw new ProfileError('MEDIA_UPLOAD_INTENT_CONFLICT', '媒体上传凭据冲突');
         }
-        await imports.doc(intent._id).set({ data: writableDocument(intent) });
-        return intent;
+        const bound = { ...intent, generation: currentGeneration };
+        await imports.doc(intent._id).set({ data: writableDocument(bound) });
+        return bound;
       }),
     prepareCanonicalUpload: (openid, sourceIntentId, intent, secretValue, now = new Date()) =>
       db.runTransaction(async (tx) => {
+        const currentProfile = await get(tx.collection('profiles'), openid);
+        assertProfileWritable(currentProfile, intent.generation);
         const imports = tx.collection('profile_media_imports');
         const expectedCanonical = canonicalUploadIntent(
           openid,
@@ -114,6 +170,7 @@ function createProfileStore(db) {
         )
           throw new ProfileError('MEDIA_UPLOAD_INTENT_INVALID', '媒体上传凭据无效');
         let sourceIntent = await get(imports, sourceIntentId);
+        if (sourceIntent) assertProfileWritable(currentProfile, sourceIntent.generation);
         let reopenedLegacySource = false;
         if (!sourceIntent) {
           const expectedSourceIntentId = clientUploadIntentId(mediaPath(intent.source_file_id));
@@ -227,6 +284,7 @@ function createProfileStore(db) {
       now = new Date(),
     ) =>
       db.runTransaction(async (tx) => {
+        const profile = await get(tx.collection('profiles'), openid);
         const canonical = canonicalMediaBinding(
           openid,
           fileId,
@@ -254,6 +312,8 @@ function createProfileStore(db) {
         const imports = tx.collection('profile_media_imports');
         const sourceIntent = await get(imports, sourceIntentId);
         const canonicalIntent = await get(imports, canonicalIntentId);
+        assertProfileWritable(profile, sourceIntent?.generation);
+        assertProfileWritable(profile, canonicalIntent?.generation);
         if (
           !sourceIntent ||
           sourceIntent.kind !== 'client_upload' ||
@@ -276,7 +336,7 @@ function createProfileStore(db) {
         const media = tx.collection('profile_media');
         const mediaId = mediaDocumentId(fileId);
         const existing = await get(media, mediaId);
-        const record = buildRecord(existing);
+        const record = { ...buildRecord(existing), generation: profileGeneration(profile) };
         if (!existing) {
           const { _id, ...data } = record;
           await media.doc(_id).set({ data });
@@ -301,24 +361,115 @@ function createProfileStore(db) {
         await imports.doc(canonicalIntentId).update({ data: completed });
         return record;
       }),
-    setAvatar: (openid, source, fileId, secretValue, now = new Date()) =>
+    persistMediaCheckSubmission: (openid, mediaId, trace, now = new Date()) =>
+      db.runTransaction(async (tx) => {
+        const media = tx.collection('profile_media');
+        const traces = tx.collection('content_media_checks');
+        const current = await get(media, mediaId);
+        if (
+          !current ||
+          current._id !== mediaId ||
+          current.owner_openid !== openid ||
+          !sameMediaCheckBinding(trace, current) ||
+          FINAL_SECURITY_STATUSES.has(current.security_status)
+        )
+          throw new ProfileError('MEDIA_CHECK_BINDING_STALE', '图片审核绑定已失效');
+        const previousTrace = current.security_trace_id
+          ? await get(traces, current.security_trace_id)
+          : undefined;
+        const attempts =
+          Number.isSafeInteger(trace.attempts) && trace.attempts > 1
+            ? trace.attempts
+            : (Number.isSafeInteger(previousTrace?.attempts) ? previousTrace.attempts : 0) + 1;
+        const document = {
+          ...trace,
+          attempts,
+          status: 'pending',
+          submitted_at: trace.submitted_at || now,
+          updated_at: now,
+        };
+        await traces.doc(document._id).set({ data: writableDocument(document) });
+        await media.doc(mediaId).update({
+          data: {
+            security_status: 'pending',
+            security_trace_id: document.trace_id,
+            security_error_code: '',
+            security_submitted_at: document.submitted_at,
+            updated_at: now,
+          },
+        });
+        return mediaCheckDto(
+          { ...current, security_status: 'pending', security_trace_id: document.trace_id },
+          document,
+        );
+      }),
+    markMediaCheckRetryable: (openid, mediaId, error, now = new Date()) =>
+      db.runTransaction(async (tx) => {
+        const media = tx.collection('profile_media');
+        const current = await get(media, mediaId);
+        if (
+          !current ||
+          current.owner_openid !== openid ||
+          FINAL_SECURITY_STATUSES.has(current.security_status)
+        )
+          throw new ProfileError('MEDIA_CHECK_BINDING_STALE', '图片审核绑定已失效');
+        const code = String(error?.code || 'MEDIA_CHECK_RETRY');
+        await media.doc(mediaId).update({
+          data: {
+            security_status: 'retryable',
+            security_error_code: code,
+            security_failed_at: now,
+            updated_at: now,
+          },
+        });
+        return mediaCheckDto({
+          ...current,
+          security_status: 'retryable',
+          security_error_code: code,
+        });
+      }),
+    mediaStatus: (openid, fileId) =>
+      db.runTransaction(async (tx) => {
+        const media = tx.collection('profile_media');
+        const traces = tx.collection('content_media_checks');
+        const current = await findMediaByFileId(media, openid, fileId);
+        if (!current) throw new ProfileError('MEDIA_NOT_FOUND', '媒体登记不存在');
+        const trace = current.security_trace_id
+          ? await get(traces, current.security_trace_id)
+          : undefined;
+        return mediaCheckDto(current, trace);
+      }),
+    mediaForCheckRetry: (openid, fileId, generation) =>
+      db.runTransaction(async (tx) => {
+        const media = tx.collection('profile_media');
+        const traces = tx.collection('content_media_checks');
+        const current = await findMediaByFileId(media, openid, fileId);
+        if (!current) throw new ProfileError('MEDIA_NOT_FOUND', '媒体登记不存在');
+        const profile = await get(tx.collection('profiles'), openid);
+        const currentGeneration = assertProfileWritable(profile, generation);
+        if (generation !== currentGeneration)
+          throw new ProfileError('PROFILE_GENERATION_MISMATCH', '资料版本已变化，请重新读取');
+        assertProfileWritable(profile, current.generation);
+        if (current.security_status !== 'retryable')
+          throw new ProfileError('MEDIA_RETRY_NOT_ALLOWED', '当前图片状态不可重试');
+        const trace = current.security_trace_id
+          ? await get(traces, current.security_trace_id)
+          : undefined;
+        if (Number.isSafeInteger(trace?.attempts) && trace.attempts >= 2)
+          throw new ProfileError('MEDIA_RETRY_EXHAUSTED', '图片审核重试次数已用尽');
+        if (!current.canonical_file_id || !current.sha256)
+          throw new ProfileError('MEDIA_CHECK_INPUT_INVALID', '图片审核参数无效');
+        return current;
+      }),
+    setAvatar: (openid, source, fileId, secretValue, now = new Date(), generation) =>
       db.runTransaction(async (tx) => {
         const profiles = tx.collection('profiles');
         const media = tx.collection('profile_media');
         const current = (await get(profiles, openid)) || {};
-        const findMedia = async (referencedFileId) => {
-          if (!referencedFileId) return undefined;
-          const direct = await get(media, mediaDocumentId(referencedFileId));
-          if (direct) return direct;
-          const result = await media
-            .where({ canonical_file_id: referencedFileId, owner_openid: openid })
-            .limit(2)
-            .get();
-          return Array.isArray(result?.data) && result.data.length === 1
-            ? result.data[0]
-            : undefined;
-        };
+        assertProfileWritable(current, generation);
+        const findMedia = (referencedFileId) => findMediaByFileId(media, openid, referencedFileId);
         const selectedRecord = await findMedia(fileId);
+        assertProfileWritable(current, selectedRecord?.generation);
         const selectedId = selectedRecord?._id || '';
         const selected = validateAvatarSelection(
           source,
@@ -341,6 +492,7 @@ function createProfileStore(db) {
           !backfillOrigin
         )
           return current;
+        assertMediaSecurityPassed(selectedRecord);
         const previousFileId = current.avatar_file_id;
         const previous =
           previousFileId && !profileReferencesMedia({ avatar_file_id: fileId }, previousFileId)
@@ -355,8 +507,8 @@ function createProfileStore(db) {
           avatar_source: source,
           avatar_file_id: fileId,
           avatar_revision: avatarRevision,
-          avatar_visibility: 'public',
-          avatar_visibility_revision: avatarRevision,
+          avatar_visibility: 'private',
+          avatar_visibility_revision: null,
           updated_at: updatedAt,
         });
         await profiles.doc(openid).set({ data: next });
@@ -394,10 +546,11 @@ function createProfileStore(db) {
         }
         return next;
       }),
-    mergePhone: (openid, fields) =>
+    mergePhone: (openid, fields, generation) =>
       db.runTransaction(async (tx) => {
         const collection = tx.collection('profiles');
         const current = await get(collection, openid);
+        assertProfileWritable(current, generation);
         const updatedAt = db.serverDate();
         const patch = { ...fields, updated_at: updatedAt };
         if (current) await collection.doc(openid).update({ data: patch });

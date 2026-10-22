@@ -1,0 +1,112 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { COLLECTIONS, INDEXES, DENY_RULE } from './bootstrap-cloudbase.mjs';
+import { CLOUD_PACKAGES } from './run-cloud-packages.mjs';
+import { createAffectedPlan } from './affected-ci.mjs';
+import { createCloudBaseDeployDecision } from './cloudbase-deploy-decision.mjs';
+import { MEDIA_SECRET_CONSUMERS, STRAVA_CONFIG_CONSUMERS } from './cloudbase-function-env.mjs';
+const root = new URL('../', import.meta.url);
+const config = JSON.parse(readFileSync(new URL('cloudbaserc.json', root), 'utf8'));
+
+test('privacy collection, stable batch indexes and client deny ACL are bootstrapped', () => {
+  assert.ok(COLLECTIONS.includes('privacy_requests'));
+  assert.deepEqual(DENY_RULE, { read: false, write: false });
+  for (const [collection, fields] of [
+    ['privacy_requests', ['status', 'retry_at', '_id']],
+    ['registrations', ['openid', '_id']],
+    ['profile_media', ['owner_openid', '_id']],
+    ['profile_media_imports', ['owner_openid', '_id']],
+    ['profile_media', ['privacy_request_id', '_id']],
+    ['profile_media_imports', ['privacy_request_id', '_id']],
+  ])
+    assert.ok(
+      INDEXES.some(
+        (index) =>
+          index.collection === collection &&
+          JSON.stringify(index.keys.map(([field]) => field)) === JSON.stringify(fields),
+      ),
+    );
+});
+
+test('worker has a Timer, all-package and affected-package selection and runtime media secret', () => {
+  const worker = config.functions.find(({ name }) => name === 'privacy-maintenance');
+  assert.ok(worker);
+  assert.deepEqual(
+    worker.triggers.map(({ name, type }) => ({ name, type })),
+    [{ name: 'privacy-maintenance-worker', type: 'timer' }],
+  );
+  assert.ok(CLOUD_PACKAGES.includes('privacy-maintenance'));
+  assert.ok(MEDIA_SECRET_CONSUMERS.includes('privacy-maintenance'));
+  assert.equal(createAffectedPlan(['cloudfunctions/privacy-maintenance/core.js']).mode, 'targeted');
+});
+
+test('shared privacy and cleanup source changes select every generated deployment consumer', () => {
+  for (const source of [
+    'cloudfunctions/shared/privacy.js',
+    'cloudfunctions/profile-media-cleanup/store.js',
+  ]) {
+    const decision = createCloudBaseDeployDecision([source], config);
+    assert.ok(decision.functions.includes('privacy-maintenance'));
+  }
+  const decision = createCloudBaseDeployDecision(['cloudfunctions/shared/privacy.js'], config);
+  assert.ok(decision.functions.includes('profile'));
+  assert.ok(decision.functions.includes('profile-media-cleanup'));
+});
+
+test('Strava revocation state is private and has bounded worker indexes', () => {
+  for (const collection of [
+    'strava_authorizations',
+    'strava_operations',
+    'strava_revocations',
+    'strava_route_sources',
+  ])
+    assert.ok(COLLECTIONS.includes(collection), `${collection} must be bootstrapped`);
+  for (const [collection, fields] of [
+    ['strava_revocations', ['status', 'retry_at', '_id']],
+    ['strava_revocations', ['owner_openid', 'status', 'retry_at', '_id']],
+    ['strava_operations', ['status', 'expires_at', '_id']],
+    ['strava_operations', ['owner_openid', 'status', 'expires_at', '_id']],
+  ])
+    assert.ok(
+      INDEXES.some(
+        (index) =>
+          index.collection === collection &&
+          JSON.stringify(index.keys.map(([field]) => field)) === JSON.stringify(fields),
+      ),
+      `${collection} ${fields.join(',')} index must be bootstrapped`,
+    );
+  assert.deepEqual(DENY_RULE, { read: false, write: false });
+});
+
+test('Strava retry and copied runtime modules participate in env, deploy and full package inventories', () => {
+  assert.ok(STRAVA_CONFIG_CONSUMERS.includes('privacy-maintenance'));
+  for (const name of ['strava-bridge', 'strava-callback']) {
+    assert.ok(CLOUD_PACKAGES.includes(name));
+    assert.match(
+      readFileSync(new URL('package.json', root), 'utf8'),
+      new RegExp(`cloudfunctions/${name} audit --audit-level=high`),
+    );
+  }
+  assert.equal(createAffectedPlan(['cloudfunctions/strava-bridge/store.js']).mode, 'targeted');
+  const storeDecision = createCloudBaseDeployDecision(
+    ['cloudfunctions/strava-bridge/store.js'],
+    config,
+  );
+  for (const name of [
+    'strava-bridge',
+    'strava-callback',
+    'activity-admin',
+    'profile',
+    'privacy-maintenance',
+  ])
+    assert.ok(storeDecision.functions.includes(name), `${name} must receive the generated store`);
+  const verifier = readFileSync(new URL('scripts/verify-cloud-packages.mjs', root), 'utf8');
+  for (const required of [
+    "pack('strava-bridge', ['index.js', 'core.js', 'store.js'",
+    "pack('strava-callback', ['index.js', 'core.js', 'strava-store.js'",
+    "'strava-core.js'",
+    "'strava-store.js'",
+  ])
+    assert.ok(verifier.includes(required), `package verifier must include ${required}`);
+});

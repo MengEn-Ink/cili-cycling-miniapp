@@ -24,6 +24,32 @@ const GATE_VALUE = 'club-application-write';
 const hash = (value) => createHash('sha256').update(value).digest('hex');
 const membershipIdFor = (clubId, openid) => `clubmem_${hash(`${clubId}\0${openid}`)}`;
 
+export async function checkIsolatedClubSmokeText(request) {
+  let fields;
+  try {
+    fields = JSON.parse(request?.content);
+  } catch {
+    throw new Error('俱乐部 smoke 内容审核请求无效');
+  }
+  const values =
+    fields && typeof fields === 'object' && !Array.isArray(fields) ? Object.values(fields) : [];
+  if (
+    typeof request?.openid !== 'string' ||
+    !request.openid.startsWith('smoke_applicant_') ||
+    request.scene !== 4 ||
+    request.version !== 2 ||
+    !values.length ||
+    values.some((value) => typeof value !== 'string') ||
+    !values.some((value) => value.includes('CI 骑行测试') || value.includes('冒烟测试'))
+  )
+    throw new Error('俱乐部 smoke 内容审核请求越界');
+  return {
+    errCode: 0,
+    result: { suggest: 'pass' },
+    traceId: 'isolated-club-smoke',
+  };
+}
+
 function parseJson(output) {
   if (output && typeof output === 'object') return output;
   try {
@@ -278,6 +304,7 @@ export function createCliStore({ envId, cwd = process.cwd(), execute = execFileS
   let auditSequence = 0;
   const knownAudits = new Map();
   return {
+    msgSecCheck: checkIsolatedClubSmokeText,
     // CLI 不提供回调事务：每次 put 先写真实数据库，并用事务内 overlay 保证读己之写；overlay 不跨事务。
     transaction: async (work) => {
       const overlay = new Map();
@@ -518,6 +545,7 @@ export async function runClubApplicationSmoke({
       category: 'club-avatar',
       origin: 'custom',
       status: 'unreferenced',
+      security_status: 'pass',
       smoke_test: true,
       created_at: now().toISOString(),
     });
@@ -528,6 +556,7 @@ export async function runClubApplicationSmoke({
       category: 'club-cover',
       origin: 'custom',
       status: 'unreferenced',
+      security_status: 'pass',
       smoke_test: true,
       created_at: now().toISOString(),
     });

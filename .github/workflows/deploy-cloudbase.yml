@@ -71,6 +71,9 @@ jobs:
       STRAVA_CLIENT_SECRET_SOURCE: ${{ secrets.STRAVA_CLIENT_SECRET }}
       STRAVA_TOKEN_ENCRYPTION_KEY_SOURCE: ${{ secrets.STRAVA_TOKEN_ENCRYPTION_KEY }}
       STRAVA_CALLBACK_URL_SOURCE: ${{ vars.STRAVA_CALLBACK_URL }}
+      WECHAT_CALLBACK_TOKEN_SOURCE: ${{ secrets.WECHAT_CALLBACK_TOKEN }}
+      WECHAT_CALLBACK_AES_KEY_SOURCE: ${{ secrets.WECHAT_CALLBACK_AES_KEY }}
+      WECHAT_APP_ID_SOURCE: ${{ vars.WECHAT_APP_ID }}
       TCB_NO_BROWSER: 'true'
     steps:
       - name: Checkout current main source
@@ -264,7 +267,7 @@ jobs:
             --include-secret-consumers true \
             --output "${runtime_config}"
           cp cloudbaserc.json "${RUNNER_TEMP}/cloudbaserc.repository.json"
-          cp "${runtime_config}" cloudbaserc.json
+          install -m 600 "${runtime_config}" cloudbaserc.json
           rm -f "${runtime_config}"
 
       - name: Plan and apply database baseline
@@ -340,6 +343,23 @@ jobs:
           done
           trap - ERR
 
+      - name: Reconcile and verify HTTP gateway routes
+        if: steps.scope.outputs.should_deploy == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          gateway_routes="${RUNNER_TEMP}/cloudbase-gateway-routes.json"
+          npx --yes --package @cloudbase/cli@3.8.4 tcb \
+            -e "${CLOUDBASE_ENV_ID}" \
+            deploy --only gateway --force --json
+          npx --yes --package @cloudbase/cli@3.8.4 tcb \
+            -e "${CLOUDBASE_ENV_ID}" \
+            routes list --limit 1000 --json > "${gateway_routes}"
+          node scripts/cloudbase-gateway.mjs verify \
+            --config cloudbaserc.json \
+            --routes "${gateway_routes}"
+          rm -f "${gateway_routes}"
+
       - name: Reconcile critical function secrets
         if: steps.scope.outputs.should_deploy == 'true'
         shell: bash
@@ -383,8 +403,12 @@ jobs:
                 --name "${function_name}"
             fi
           done < <(printf '%s\n' \
+            strava-bridge \
+            strava-callback \
             profile \
             profile-media-cleanup \
+            privacy-maintenance \
+            content-callback \
             admin-review \
             activity-read \
             activity-admin \
@@ -403,8 +427,12 @@ jobs:
               -e "${CLOUDBASE_ENV_ID}" \
               fn detail "${function_name}" --json > "${details_dir}/${function_name}.json"
           done < <(printf '%s\n' \
+            strava-bridge \
+            strava-callback \
             profile \
             profile-media-cleanup \
+            privacy-maintenance \
+            content-callback \
             admin-review \
             activity-read \
             activity-admin \

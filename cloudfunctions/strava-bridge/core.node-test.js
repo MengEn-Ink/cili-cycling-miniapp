@@ -47,6 +47,14 @@ function response(body, status = 200, headers = {}) {
   return new Response(body, { status, headers });
 }
 
+function fencedStore(overrides = {}) {
+  return {
+    checkFence: async () => {},
+    reserveRouteSource: async () => {},
+    ...overrides,
+  };
+}
+
 test('严格解析标准 Strava route URL 与路由 ID', () => {
   assert.deepEqual(parseRouteUrl('https://www.strava.com/routes/123456/'), {
     routeId: '123456',
@@ -83,17 +91,25 @@ test('callback 原子单次消费 state 并把加密凭证保存到对应 OPENID
   const state = createState(NOW.getTime(), () => Buffer.alloc(32, 4));
   let consumed = false;
   let saved;
-  const store = {
+  const store = fencedStore({
     consumeState: async (hash) => {
       assert.equal(hash, state.hash);
       if (consumed) return undefined;
       consumed = true;
-      return { owner_openid: 'openid-a', expires_at: state.expiresAt, consumed_at: null };
+      return {
+        owner_openid: 'openid-a',
+        expires_at: state.expiresAt,
+        consumed_at: null,
+        operation_id: 'callback-operation',
+        oauth_generation: 1,
+        profile_generation: 1,
+      };
     },
-    saveCredential: async (openid, value) => {
+    finishMint: async (openid, _fence, value) => {
       saved = { openid, value };
+      return true;
     },
-  };
+  });
   const fetchImpl = async (_url, options) => {
     assert.doesNotMatch(String(options.body), /openid-a/);
     return response(JSON.stringify(token()), 200, { 'content-type': 'application/json' });
@@ -133,7 +149,7 @@ test('过期 state 被拒绝且已消费标记不会回滚为可重放', async (
           consumes += 1;
           return { owner_openid: 'openid-a', expires_at: state.expiresAt };
         },
-        saveCredential: async () => assert.fail('must not save'),
+        finishMint: async () => assert.fail('must not save'),
       },
       fetchImpl: async () => assert.fail('must not fetch'),
       now: NOW,
@@ -149,7 +165,17 @@ test('到期 token 自动刷新、保存轮换密文且不把 token 返回前端
   const value = await accessToken({
     credential,
     env: ENV,
-    store: { saveCredential: async (_openid, next) => (saved = next) },
+    store: fencedStore({
+      beginRefresh: async () => ({
+        operation_id: 'refresh-operation',
+        oauth_generation: 1,
+        profile_generation: 1,
+      }),
+      finishMint: async (_openid, _fence, next) => {
+        saved = next;
+        return true;
+      },
+    }),
     fetchImpl: async (_url, options) => {
       assert.match(String(options.body), /grant_type=refresh_token/);
       assert.match(String(options.body), /refresh_token=refresh-token/);
@@ -174,16 +200,18 @@ test('Strava 下载 Buffer 直接复用当前 parseGpx 并生成可消费 route_
   const credential = tokenDocument('openid-a', token(), KEY, NOW);
   let uploaded;
   let preview;
-  const store = {
+  const store = fencedStore({
     getCredential: async (openid) => (openid === 'openid-a' ? credential : undefined),
-    saveCredential: async () => {},
     getPreview: async () => undefined,
     uploadFile: async (input) => {
       uploaded = input;
       return { fileID: `cloud://env/${input.cloudPath}` };
     },
-    putPreview: async (_id, value) => (preview = value),
-  };
+    putPreview: async (_id, value) => {
+      preview = value;
+      return value;
+    },
+  });
   const result = await importRoute({
     request: {
       openid: 'openid-a',
@@ -223,7 +251,7 @@ test('OPENID 隔离、下载错误映射与 4 MiB 上限关闭失败', async () 
   await assert.rejects(
     importRoute({
       ...base,
-      store: { getCredential: async () => credential },
+      store: fencedStore({ getCredential: async () => credential }),
       fetchImpl: async () => assert.fail('must not fetch'),
     }),
     { code: 'STRAVA_AUTH_REQUIRED' },
@@ -236,10 +264,9 @@ test('OPENID 隔离、下载错误映射与 4 MiB 上限关闭失败', async () 
     await assert.rejects(
       importRoute({
         ...base,
-        store: {
+        store: fencedStore({
           getCredential: async () => ({ ...credential, owner_openid: 'openid-a' }),
-          saveCredential: async () => {},
-        },
+        }),
         fetchImpl: async () => response('', status),
       }),
       { code },
@@ -248,10 +275,9 @@ test('OPENID 隔离、下载错误映射与 4 MiB 上限关闭失败', async () 
   await assert.rejects(
     importRoute({
       ...base,
-      store: {
+      store: fencedStore({
         getCredential: async () => ({ ...credential, owner_openid: 'openid-a' }),
-        saveCredential: async () => {},
-      },
+      }),
       fetchImpl: async () => response('', 200, { 'content-length': String(MAX_GPX_BYTES + 1) }),
     }),
     { code: 'GPX_TOO_LARGE' },

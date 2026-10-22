@@ -17,6 +17,25 @@ test('全量安装与测试覆盖 cloudbaserc 中每个实际部署的云函数'
   );
 });
 
+test('validate 会执行统一内容与回调协议测试', () => {
+  const rootPackage = JSON.parse(readFileSync(new URL('../package.json', import.meta.url)));
+  for (const file of [
+    'cloudfunctions/compliance-shared/content.node-test.js',
+    'cloudfunctions/compliance-shared/callback.node-test.js',
+  ]) {
+    assert.match(rootPackage.scripts['test:bootstrap'], new RegExp(file.replaceAll('.', '\\.')));
+  }
+});
+
+test('profile 包测试覆盖媒体转换与公开同意边界', () => {
+  const profilePackage = JSON.parse(
+    readFileSync(new URL('../cloudfunctions/profile/package.json', import.meta.url)),
+  );
+  for (const file of ['media-transform.node-test.js', 'public-consent.node-test.js']) {
+    assert.match(profilePackage.scripts.test, new RegExp(file.replaceAll('.', '\\.')));
+  }
+});
+
 test('并发上限使用安全默认值并拒绝无界配置', () => {
   assert.equal(concurrencyLimit(undefined), 3);
   assert.equal(concurrencyLimit('8'), 8);

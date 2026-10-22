@@ -12,6 +12,8 @@ export const COLLECTIONS = Object.freeze([
   'activities',
   'registrations',
   'profiles',
+  'privacy_requests',
+  'content_media_checks',
   'admins',
   'audit_logs',
   'notification_outbox',
@@ -20,12 +22,51 @@ export const COLLECTIONS = Object.freeze([
   'route_previews',
   'strava_credentials',
   'oauth_states',
+  'strava_authorizations',
+  'strava_operations',
+  'strava_revocations',
+  'strava_route_sources',
   'clubs',
   'club_memberships',
   'club_applications',
 ]);
 
 export const INDEXES = Object.freeze([
+  {
+    collection: 'content_media_checks',
+    name: 'content_media_checks_status_updated_id',
+    keys: [
+      ['status', 1],
+      ['updated_at', 1],
+      ['_id', 1],
+    ],
+    unique: false,
+  },
+  {
+    collection: 'privacy_requests',
+    name: 'privacy_requests_status_retry_id',
+    keys: [
+      ['status', 1],
+      ['retry_at', 1],
+      ['_id', 1],
+    ],
+    unique: false,
+  },
+  ...[
+    ['registrations', 'openid'],
+    ['profile_media', 'owner_openid'],
+    ['profile_media_imports', 'owner_openid'],
+    ['profile_media', 'privacy_request_id'],
+    ['profile_media_imports', 'privacy_request_id'],
+  ].map(([collection, field]) => ({
+    collection,
+    name: `${collection}_${field}_privacy_cursor`,
+    keys: [
+      [field, 1],
+      ['_id', 1],
+    ],
+    unique: false,
+  })),
   {
     collection: 'activities',
     name: 'activities_public_event_start',
@@ -355,6 +396,48 @@ export const INDEXES = Object.freeze([
     name: 'strava_credentials_owner_openid',
     keys: [['owner_openid', 1]],
     unique: true,
+  },
+  {
+    collection: 'strava_revocations',
+    name: 'strava_revocations_status_retry_id',
+    keys: [
+      ['status', 1],
+      ['retry_at', 1],
+      ['_id', 1],
+    ],
+    unique: false,
+  },
+  {
+    collection: 'strava_revocations',
+    name: 'strava_revocations_owner_status_retry_id',
+    keys: [
+      ['owner_openid', 1],
+      ['status', 1],
+      ['retry_at', 1],
+      ['_id', 1],
+    ],
+    unique: false,
+  },
+  {
+    collection: 'strava_operations',
+    name: 'strava_operations_status_expires_id',
+    keys: [
+      ['status', 1],
+      ['expires_at', 1],
+      ['_id', 1],
+    ],
+    unique: false,
+  },
+  {
+    collection: 'strava_operations',
+    name: 'strava_operations_owner_status_expires_id',
+    keys: [
+      ['owner_openid', 1],
+      ['status', 1],
+      ['expires_at', 1],
+      ['_id', 1],
+    ],
+    unique: false,
   },
   {
     collection: 'audit_logs',

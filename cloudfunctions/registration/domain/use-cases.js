@@ -18,6 +18,24 @@ const {
   publicRegistration,
   buildAudit,
 } = require('./domain');
+const {
+  assertProfileWritable,
+  isProfileDeleted,
+  profileGeneration,
+  projectPrivateRegistration,
+} = require('./privacy');
+
+async function registrationResponse(tx, registration) {
+  return publicRegistration(
+    projectPrivateRegistration(registration, await tx.getProfile(registration.openid)),
+  );
+}
+
+async function assertRegistrationWritable(tx, registration) {
+  if (registration.privacy_generation) fail('PROFILE_DELETION_LOCKED', '报名资料已进入删除处理');
+  const profile = await tx.getProfile(registration.openid);
+  assertProfileWritable(profile, registration.profile_generation || 1);
+}
 
 function categoryQuota(activity, gatheringMode) {
   if (activity.registration_unlimited === true) return undefined;
@@ -126,7 +144,11 @@ async function resolveTeam(tx, activityId, openid, rawTeam) {
   return { team_id: team.teamId, team_name: leader.team_name, is_team_leader: false };
 }
 
-async function submitRegistration(store, { openid, activityId, options, team }, now = new Date()) {
+async function submitRegistration(
+  store,
+  { openid, activityId, options, team, generation },
+  now = new Date(),
+) {
   assertNoForbiddenFields(options);
   assertNoForbiddenFields(team);
   if (typeof activityId !== 'string' || !activityId) fail('VALIDATION_FAILED', '缺少活动 ID');
@@ -137,6 +159,7 @@ async function submitRegistration(store, { openid, activityId, options, team }, 
     const profile = await tx.getProfile(openid);
     const existing = await tx.getRegistration(id);
     const admin = typeof tx.getAdmin === 'function' ? await tx.getAdmin(openid) : undefined;
+    const currentGeneration = assertProfileWritable(profile, generation);
     assertActivityOpen(activity, now);
     assertProfileReady(profile);
     assertCanSubmit(existing);
@@ -172,6 +195,7 @@ async function submitRegistration(store, { openid, activityId, options, team }, 
       _id: id,
       activity_id: activityId,
       openid,
+      profile_generation: currentGeneration,
       status,
       options: safeOptions,
       ...teamFields,
@@ -273,7 +297,18 @@ async function promoteOldestWaiting(tx, activity, nextOccupancy, now) {
   const candidates = typeof tx.listWaiting === 'function' ? await tx.listWaiting(activity._id) : [];
   const postReleaseActivity = activityWithOccupancy(activity, nextOccupancy);
   // 全局 FIFO 中可跳过分类仍满的候补，但不改变被跳过者的状态和顺序。
-  const waiting = candidates.find((candidate) => canPromote(postReleaseActivity, candidate));
+  let waiting;
+  for (const candidate of candidates) {
+    if (!canPromote(postReleaseActivity, candidate) || candidate.privacy_generation) continue;
+    const profile = await tx.getProfile(candidate.openid);
+    if (
+      isProfileDeleted(profile) ||
+      (candidate.profile_generation || 1) !== profileGeneration(profile)
+    )
+      continue;
+    waiting = candidate;
+    break;
+  }
   if (!waiting) return null;
   const admin = typeof tx.getAdmin === 'function' ? await tx.getAdmin(waiting.openid) : undefined;
   const publicAutoApproved = activity.registration_mode === 'open';
@@ -344,7 +379,7 @@ async function cancelRegistration(store, { openid, registrationId: id }, now = n
   return store.transaction(async (tx) => {
     const registration = await tx.getRegistration(id);
     if (registration && registration.openid === openid && registration.status === 'cancelled')
-      return publicRegistration(registration);
+      return registrationResponse(tx, registration);
     assertCanCancel(registration, openid);
     const wasWaiting = registration.status === 'waiting';
     const value = { ...registration, status: 'cancelled', updated_at: now };
@@ -365,7 +400,7 @@ async function cancelRegistration(store, { openid, registrationId: id }, now = n
         to_status: 'cancelled',
       }),
     );
-    return publicRegistration(value);
+    return registrationResponse(tx, value);
   });
 }
 
@@ -397,8 +432,9 @@ async function reviewRegistration(
     if (!isEnabledAdmin(admin, openid)) fail('ADMIN_REQUIRED', '需要管理员权限');
     const registration = await tx.getRegistration(id);
     if (!registration) fail('REGISTRATION_NOT_FOUND', '报名不存在');
+    if (action === 'approve') await assertRegistrationWritable(tx, registration);
     const duplicateStatus = action === 'reject' ? 'rejected' : 'approved';
-    if (registration.status === duplicateStatus) return publicRegistration(registration);
+    if (registration.status === duplicateStatus) return registrationResponse(tx, registration);
     const nextStatus = assertReviewTransition(registration.status, action, reason);
     const history = Array.isArray(registration.review_history)
       ? registration.review_history.slice()
@@ -451,7 +487,7 @@ async function reviewRegistration(
       }),
     );
     return {
-      ...publicRegistration(value),
+      ...(await registrationResponse(tx, value)),
       notification: { outbox_id: reviewOutboxId, status: 'pending' },
     };
   });
@@ -463,6 +499,7 @@ async function checkInRegistration(store, { openid, registrationId: id }, now = 
     if (!isEnabledAdmin(admin, openid)) fail('ADMIN_REQUIRED', '需要管理员权限');
     const registration = await tx.getRegistration(id);
     if (!registration) fail('REGISTRATION_NOT_FOUND', '报名不存在');
+    await assertRegistrationWritable(tx, registration);
     const activity = await tx.getActivity(registration.activity_id);
     if (
       !activity ||

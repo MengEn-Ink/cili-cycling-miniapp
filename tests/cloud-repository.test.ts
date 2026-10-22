@@ -963,6 +963,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
       (await new CloudRepository(unknown.cloud).getProfile()).sensitiveStatus?.phoneSource,
     ).toBe('');
     const dirtyRuntimeProfile = {
+      generation: 7,
       nickname: '新昵称',
       avatarFileId: 'cloud://avatar',
       avatarVisibility: 'public' as const,
@@ -972,6 +973,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     await repository.updateProfile(dirtyRuntimeProfile);
     expectCall(callFunction, 'profile', {
       action: 'update',
+      generation: 7,
       nickname: '新昵称',
       avatar_visibility: 'public',
       real_name: '曹蒙恩',
@@ -996,13 +998,19 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     );
 
     await expect(
-      new CloudRepository(cloud).issueMediaUploadPath('club-avatar', 'media-request-001', 'webp'),
+      new CloudRepository(cloud).issueMediaUploadPath(
+        'club-avatar',
+        'media-request-001',
+        'webp',
+        7,
+      ),
     ).resolves.toBe(cloudPath);
     expectCall(callFunction, 'profile', {
       action: 'mediaUploadPath',
       category: 'club-avatar',
       requestId: 'media-request-001',
       extension: 'webp',
+      generation: 7,
     });
   });
 
@@ -1015,6 +1023,8 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
         'cloud://env/profiles/owner/club-avatar/upload.webp',
         'club-avatar',
         'media-request-001',
+        'custom',
+        7,
       ),
     ).resolves.toEqual({ canonicalFileId });
     expectCall(callFunction, 'profile', {
@@ -1023,6 +1033,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
       category: 'club-avatar',
       requestId: 'media-request-001',
       origin: 'custom',
+      generation: 7,
     });
   });
 
@@ -1081,7 +1092,7 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
     };
     const { cloud, callFunction } = cloudWith(success(dto));
     await expect(
-      new CloudRepository(cloud).setAvatar('wechat', dto.avatar_file_id),
+      new CloudRepository(cloud).setAvatar('wechat', dto.avatar_file_id, 7),
     ).resolves.toMatchObject({
       nickname: '骑手',
       avatarId: dto.avatar_file_id,
@@ -1092,6 +1103,42 @@ describe('CloudRepository 稳定 envelope 与失败边界', () => {
       action: 'setAvatar',
       source: 'wechat',
       fileId: dto.avatar_file_id,
+      generation: 7,
+    });
+  });
+
+  it('媒体审核状态与重试动作绑定 fileId 和资料 generation', async () => {
+    const status = {
+      mediaId: 'media-1',
+      fileId: 'cloud://env/source.jpg',
+      canonicalFileId: 'cloud://env/canonical.jpg',
+      category: 'profile-avatar',
+      generation: 7,
+      securityStatus: 'pending',
+      traceId: 'trace-1',
+      retryable: false,
+      activated: false,
+      attempts: 1,
+    };
+    const { cloud, callFunction } = cloudWith(success(status), success(status));
+    const repository = new CloudRepository(cloud);
+
+    await expect(repository.getMediaStatus(status.canonicalFileId)).resolves.toMatchObject({
+      securityStatus: 'pending',
+      generation: 7,
+      retryable: false,
+    });
+    expectCall(callFunction, 'profile', {
+      action: 'mediaStatus',
+      fileId: status.canonicalFileId,
+    });
+    await expect(repository.retryMediaCheck(status.canonicalFileId, 7)).resolves.toMatchObject({
+      traceId: 'trace-1',
+    });
+    expectCall(callFunction, 'profile', {
+      action: 'mediaRetry',
+      fileId: status.canonicalFileId,
+      generation: 7,
     });
   });
 
@@ -2416,6 +2463,28 @@ describe('CloudRepository Strava GPX OAuth 契约', () => {
       athleteName: '山野骑手',
     });
     expectCall(callFunction, 'strava-bridge', { action: 'status' });
+  });
+
+  it.each(['authorizing', 'revocation_pending', 'manual_review'] as const)(
+    '映射 Strava 补偿状态 %s 而不是当成非法响应',
+    async (state) => {
+      const { cloud } = cloudWith(success({ state, athlete_name: '' }));
+      await expect(new CloudRepository(cloud).getStravaRouteReadiness()).resolves.toEqual({
+        state,
+        athleteName: '',
+      });
+    },
+  );
+
+  it('撤回 Strava 授权只调用可信本人 disconnect 并映射返回状态', async () => {
+    const { cloud, callFunction } = cloudWith(
+      success({ state: 'revocation_pending', athlete_name: '' }),
+    );
+    await expect(new CloudRepository(cloud).disconnectStravaRouteAuthorization()).resolves.toEqual({
+      state: 'revocation_pending',
+      athleteName: '',
+    });
+    expectCall(callFunction, 'strava-bridge', { action: 'disconnect' });
   });
 
   it('映射授权地址与过期时间且只调用 strava-bridge/start', async () => {

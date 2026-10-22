@@ -32,7 +32,7 @@
 
 当前不包含在线支付、第三方账号资料同步、管理员白名单维护界面、报名名单导出或多俱乐部租户体系。Strava OAuth 仅用于活动管理员按官方路线 URL 导入 GPX，凭证只保存在云端；手动上传 GPX 始终保留。完整产品边界见 [产品需求与当前能力](docs/requirements-design.md)；路线分析的公开数据平台、第三方 API、开源组件与分阶段架构方案见 [路线分析数据平台与开源方案](docs/route-analysis-data-platform-plan.md)。
 
-公开骑手头像默认展示，但仍只为 owner/current registry 完整匹配的 canonical 媒体签发临时地址；来源、归属、状态、内容元数据或签名校验失败时一律隐藏头像。代码和自动化验证不代表目标环境已经部署，仍须按对应不可变提交核对云函数版本、同值 `PROFILE_MEDIA_PATH_SECRET` 和真实 smoke，证据缺失时不得宣称生产就绪。
+本阶段服务端默认关闭昵称和个人图片公开展示，只有本人独立同意且绑定当前资料版本后才允许公开投影；个人图片还须通过 owner/current registry 校验。资料删除使用持久任务、generation 写锁及分批补偿。内容审核与客户端图片待审状态代码已接入，但客户端同意、删除与 Strava 撤销入口及目标环境回调验收尚未完成，现有界面不能视为完整上线能力。代码和自动化验证不代表目标环境已经部署，仍须按对应不可变提交核对云函数版本、同值运行时密钥、网关和真实 smoke。
 
 ## 技术栈
 
@@ -161,6 +161,9 @@ npm run deploy:miniprogram
 | `STRAVA_CLIENT_SECRET`                                           | `strava-bridge`、`strava-callback`                                                                        | 仅云函数环境变量与受保护 Actions secret                                 |
 | `STRAVA_TOKEN_ENCRYPTION_KEY`                                    | `strava-bridge`、`strava-callback`                                                                        | 严格 base64 编码的 32 字节 AES-256-GCM 密钥，两者必须一致               |
 | `STRAVA_CALLBACK_URL`                                            | `strava-bridge`、`strava-callback`                                                                        | HTTPS 回调地址，须与 Strava 应用和 `/strava/callback` 网关完全一致      |
+| `WECHAT_CALLBACK_TOKEN`                                          | `content-callback`                                                                                        | 微信消息推送 Token，仅受保护 Actions secret 与云函数环境变量            |
+| `WECHAT_CALLBACK_AES_KEY`                                        | `content-callback`                                                                                        | 43 位 EncodingAESKey，仅受保护 Actions secret 与云函数环境变量          |
+| `WECHAT_APP_ID`                                                  | `content-callback`                                                                                        | 当前小程序 AppID，用于校验安全模式解密消息身份                          |
 | `OAUTH_RETIREMENT_PURGE_ENABLED`                                 | `route-maintenance`                                                                                       | 默认 `0`；仅在新链路验收、dry-run 与备份核对后临时设为 `1`              |
 
 仓库禁止保存 secret、token、真实 `openid`、手机号、OAuth code/state、密文或真实旅程原始证据。
@@ -175,12 +178,12 @@ npm run cloudbase:apply
 npm run cloudbase:verify
 ```
 
-bootstrap 当前管理 12 个集合、33 个业务索引和全拒绝客户端数据库规则；受管定义包含活动首页与管理分页、我的行程、通知 Outbox、媒体清理、俱乐部创建申请以及 GPX 可信预览集合 `route_previews`。bootstrap 本身不创建业务活动，也不应用存储规则；生产 GitHub Actions 在基础设施对账阶段单独使用锁定的 CloudBase CLI 应用并回读 `cloudstorage.rules.json`。完整顺序：
+bootstrap 当前管理 20 个集合、47 个业务索引和全拒绝客户端数据库规则；受管定义包含活动首页与管理分页、我的行程、通知 Outbox、媒体清理、内容审核账本 `content_media_checks`、俱乐部创建申请、GPX 可信预览集合 `route_previews`、持久权益记录 `privacy_requests` 及 Strava 授权撤销状态。bootstrap 本身不创建业务活动，也不应用存储规则；生产 GitHub Actions 在基础设施对账阶段单独使用锁定的 CloudBase CLI 应用并回读 `cloudstorage.rules.json`。完整顺序：
 
 1. 审阅并执行 CloudBase plan/apply/verify。
 2. 生产工作流以 `CUSTOM` ACL 应用 `cloudstorage.rules.json`，随后执行 `storage rules get --json`；云端 `read` / `write` 任一项与仓库不完全一致都会阻断。`read: false` 保持不变，私有文件只由服务端签发临时 URL。
-3. 运行 `npm run cloud:install`，再依次部署 `auth`、`profile-media-cleanup`、`admin-review`、`club-application`、`profile`、`activity-read`、`activity-admin`、`registration`、`notification-send` 和 `route-maintenance`。
-4. 应用并回读 `cloudbaserc.json` 中的云函数触发器（小程序已不再内嵌 `web-view`，`pages/route-view` 与 `cloudfunctions/route-web` 已删除，无需配置 `/route/embed` 网关或 Embed 业务域名）。
+3. 运行 `npm run cloud:install`，再依次部署 `auth`、`profile-media-cleanup`、`admin-review`、`club-application`、`profile`、`activity-read`、`activity-admin`、`registration`、`notification-send`、`privacy-maintenance`、`content-callback`、`strava-bridge`、`strava-callback` 和 `route-maintenance`。
+4. 声明式应用并回读 `cloudbaserc.json` 中的云函数触发器及 `/strava/callback`、`/content/callback` 网关；内容回调必须完成 GET URL 校验和安全模式消息实测。小程序已不再内嵌 `web-view`，`pages/route-view` 与 `cloudfunctions/route-web` 已删除，无需配置 `/route/embed` 网关或 Embed 业务域名。
 5. 在开发者工具和真机完成官方路线、GPX 上传/保存/下载及失败回退验收；此前 `OAUTH_RETIREMENT_PURGE_ENABLED` 必须保持关闭。
 6. 验收通过后临时开启 purge，等待旧账号数据与预览清空并回读，再移除该开关和线上旧资源。
 7. 按 [安全初始化说明](scripts/seed-cloudbase/README.md) 创建首个管理员；活动只能通过已部署的活动管理业务流程创建。

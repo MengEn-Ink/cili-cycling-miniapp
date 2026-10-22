@@ -8,12 +8,16 @@ const CLOUD_FUNCTIONS = [
   'auth',
   'activity-read',
   'activity-admin',
+  'strava-bridge',
+  'strava-callback',
   'registration',
   'admin-review',
   'club-application',
   'notification-send',
   'profile',
   'profile-media-cleanup',
+  'privacy-maintenance',
+  'content-callback',
   'route-maintenance',
 ];
 

@@ -68,6 +68,9 @@ Aime 不再执行 CloudBase 生产部署，也不需要腾讯云永久密钥或 
 | `CLOUDBASE_API_KEY` | Environment Secret | CloudBase 集合、索引和云函数部署 | 目标环境的环境级 API Key；敏感、不可回读、按有效期轮换 |
 | `CLOUDBASE_ENV_ID` | Environment Variable | CloudBase 防串环境校验 | 必须与 `cloudbaserc.json` 的 `envId` 完全一致 |
 | `CLOUDBASE_REGION` | Environment Variable | CloudBase 数据库 API 地域 | 当前目标为 `ap-shanghai` |
+| `WECHAT_CALLBACK_TOKEN` | Environment Secret | 微信内容审核安全模式回调 | 3 到 32 位字母或数字，须与微信公众平台消息推送配置完全一致 |
+| `WECHAT_CALLBACK_AES_KEY` | Environment Secret | 微信内容审核安全模式回调 | 43 位 EncodingAESKey，须与微信公众平台消息推送配置完全一致 |
+| `WECHAT_APP_ID` | Environment Variable | 微信内容审核回调身份校验 | 当前小程序 AppID，格式为 `wx` 加 16 位标识 |
 | `WECHAT_MINIPROGRAM_PRIVATE_KEY` | Repository 或 Environment Secret | 微信开发版自动上传 | 微信公众平台代码上传密钥文件完整正文 |
 
 仓库工作流中的 `secrets.GITHUB_TOKEN` 由 GitHub Actions 自动提供，不需要人工创建，也不要与 Aime 沙箱的 `GITHUB_TOKEN` 混为一谈。
@@ -88,7 +91,10 @@ Aime 不再执行 CloudBase 生产部署，也不需要腾讯云永久密钥或 
 | 变量 | 配置到哪些函数 | 必需性与格式 |
 | --- | --- | --- |
 | `PII_ENCRYPTION_KEY` | `profile`、`admin-review` | 必需；32 字节随机值的 base64 编码；两个函数必须完全同值 |
-| `PROFILE_MEDIA_PATH_SECRET` | `profile`、`profile-media-cleanup`、`admin-review`、`activity-read` | 必需；至少 32 字符；四个函数必须完全同值 |
+| `PROFILE_MEDIA_PATH_SECRET` | `profile`、`profile-media-cleanup`、`privacy-maintenance`、`admin-review`、`activity-read`、`activity-admin`、`club-application` | 必需；至少 32 字符；七个函数必须完全同值 |
+| `WECHAT_CALLBACK_TOKEN` | `content-callback` | 必需；3 到 32 位字母或数字 |
+| `WECHAT_CALLBACK_AES_KEY` | `content-callback` | 必需；43 位有效 EncodingAESKey |
+| `WECHAT_APP_ID` | `content-callback` | 必需；当前小程序 AppID |
 | `OAUTH_RETIREMENT_PURGE_ENABLED` | `route-maintenance` | 默认不配置或设为 `0`；仅在新路线链路部署并完成运行时验收后临时设为 `1`，旧数据清空回读后移除 |
 | `REVIEW_APPROVED_TEMPLATE_ID` | `notification-send` | 启用“审核通过”订阅消息时必需 |
 | `REVIEW_REJECTED_TEMPLATE_ID` | `notification-send` | 启用“审核驳回”订阅消息时必需 |
@@ -452,7 +458,9 @@ npm run deploy:miniprogram
 
 - 目标函数状态为 Active；
 - 部署版本对应已验证的不可变 commit；
-- 四个媒体相关函数使用同值 `PROFILE_MEDIA_PATH_SECRET`；
+- 七个媒体相关函数使用同值 `PROFILE_MEDIA_PATH_SECRET`；
+- `content-callback` 为 Active，三项微信回调配置与受保护来源一致；
+- `/strava/callback` 与 `/content/callback` 均已声明式应用并回读目标、匿名访问和路径透传；
 - `route-maintenance` 已部署，运行时验收前 purge 开关保持关闭（官方路线页已下线，`route-web` 不再部署）；
 - timer 和数据库/存储安全规则已回读；
 - 对应业务 smoke 或 P0 旅程已执行；无法执行的项目明确记为“未执行”。
@@ -472,7 +480,7 @@ CLI 当前没有暴露与生产云函数 `db.runTransaction` 回调等价的事�
 修复后必须同时核对：
 
 - `profile` 与 `admin-review` 的 `PII_ENCRYPTION_KEY` 完全一致；
-- `profile`、`profile-media-cleanup`、`admin-review`、`activity-read` 的 `PROFILE_MEDIA_PATH_SECRET` 完全一致；
+- `profile`、`profile-media-cleanup`、`privacy-maintenance`、`admin-review`、`activity-read`、`activity-admin`、`club-application` 的 `PROFILE_MEDIA_PATH_SECRET` 完全一致；
 - 重新部署受影响函数，并分别执行资料读取、资料保存、活动详情成员背景图 smoke；
 - 不在命令输出、PR 描述或验收记录中打印密钥原值。
 
@@ -512,6 +520,9 @@ GITHUB_TOKEN=<required for repository delivery>
 Secret: CLOUDBASE_API_KEY=<required for CloudBase deployment>
 Variable: CLOUDBASE_ENV_ID=<must match cloudbaserc.json>
 Variable: CLOUDBASE_REGION=ap-shanghai
+Secret: WECHAT_CALLBACK_TOKEN=<must match WeChat message push configuration>
+Secret: WECHAT_CALLBACK_AES_KEY=<must match WeChat message push configuration>
+Variable: WECHAT_APP_ID=<current mini program AppID>
 ```
 
 ### GitHub Actions
@@ -524,7 +535,10 @@ WECHAT_MINIPROGRAM_PRIVATE_KEY=<required for WeChat development upload>
 
 ```text
 PII_ENCRYPTION_KEY=<same value on profile/admin-review>
-PROFILE_MEDIA_PATH_SECRET=<same value on profile/profile-media-cleanup/admin-review/activity-read>
+PROFILE_MEDIA_PATH_SECRET=<same value on all seven media consumers>
+WECHAT_CALLBACK_TOKEN=<content-callback>
+WECHAT_CALLBACK_AES_KEY=<content-callback>
+WECHAT_APP_ID=<content-callback>
 OAUTH_RETIREMENT_PURGE_ENABLED=<route-maintenance; keep 0 until runtime acceptance>
 REVIEW_APPROVED_TEMPLATE_ID=<notification-send>
 REVIEW_REJECTED_TEMPLATE_ID=<notification-send>
@@ -544,3 +558,15 @@ ACTIVITY_REMINDER_TEMPLATE_ID=<notification-send>
 - GitHub Environment variable：`STRAVA_CALLBACK_URL`
 
 `STRAVA_TOKEN_ENCRYPTION_KEY` 必须是严格 base64 编码的 32 字节随机密钥。`STRAVA_CALLBACK_URL` 必须是 HTTPS，并与 Strava 应用后台登记地址及 CloudBase 网关 `/strava/callback` 完全一致。部署脚本会把四项配置仅注入 `strava-bridge`、`strava-callback`，掩码两个 secret，并在部署后回读验证；不得写入仓库、客户端或 `profiles`。
+
+## 微信内容审核回调配置
+
+微信公众平台“开发管理 → 消息推送配置”使用仓库声明式网关的
+`/content/callback` HTTPS 地址，数据格式选 JSON，加解密方式选安全模式。Token 和
+EncodingAESKey 分别保存为 `cloudbase-production` Environment Secret
+`WECHAT_CALLBACK_TOKEN`、`WECHAT_CALLBACK_AES_KEY`，AppID 保存为 Environment Variable
+`WECHAT_APP_ID`。
+
+生产工作流只把三项配置注入 `content-callback`，掩码两个 secret，部署后回读函数环境和网关。
+平台提交配置时必须完成 GET URL 校验；随后用微信官方调试工具或真实审核消息验证安全模式 POST。
+本地单测只证明签名、解密、AppID、trace、幂等和 4xx/5xx 契约，不等于公众平台已配置或真实回调已送达。

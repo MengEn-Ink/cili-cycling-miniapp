@@ -19,10 +19,15 @@ const {
 const { buildCapabilityCard } = require('./capability-card');
 const { createProfileStore, missing: isNotFound } = require('./store');
 const { canonicalizeClientMedia } = require('./media-upload');
+const { createPrivacyService } = require('./privacy');
+const { assertProfileWritable, visibleProfile } = require('./privacy-contract');
 const { loadClubMembershipSummaries, resolveClubMembershipAvatars } = require('./club-memberships');
+const { assertCheckedContent, checkTextContent } = require('./content-contract');
+const { submitMediaCheck } = require('./content-contract');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const profileStore = createProfileStore(db);
+const privacyService = createPrivacyService(db);
 const ok = (data) => ({ ok: true, data });
 async function maybeGet(collection, id) {
   try {
@@ -33,7 +38,7 @@ async function maybeGet(collection, id) {
   }
 }
 async function getDoc(openid) {
-  return (await maybeGet(db.collection('profiles'), openid)) || {};
+  return visibleProfile((await maybeGet(db.collection('profiles'), openid)) || {});
 }
 function profileMediaIds(...profiles) {
   const ids = [];
@@ -58,10 +63,25 @@ async function getMediaRecords(collection, ...profiles) {
   return [...new Map(records.filter(Boolean).map((record) => [record._id, record])).values()];
 }
 async function updateProfile(openid, event) {
+  const initial = (await maybeGet(db.collection('profiles'), openid)) || {};
+  const initialGeneration = assertProfileWritable(initial, event.generation);
+  const plannedUpdate = buildUpdate(event, process.env.PII_ENCRYPTION_KEY, initial);
+  const checked =
+    plannedUpdate.nickname !== undefined && plannedUpdate.nickname !== initial.nickname
+      ? await checkTextContent({
+          openid,
+          scene: 1,
+          fields: { nickname: plannedUpdate.nickname },
+          whitelist: { nickname: 40 },
+          currentVersion: initialGeneration,
+          msgSecCheck: (input) => cloud.openapi.security.msgSecCheck(input),
+        })
+      : undefined;
   const result = await db.runTransaction(async (transaction) => {
     const profiles = transaction.collection('profiles');
     const media = transaction.collection('profile_media');
     const current = (await maybeGet(profiles, openid)) || {};
+    const currentGeneration = assertProfileWritable(current, event.generation);
     const update = buildUpdate(event, process.env.PII_ENCRYPTION_KEY, current);
     const records = await getMediaRecords(media, current, update);
     const validated = validateMediaUpdate(
@@ -71,6 +91,9 @@ async function updateProfile(openid, event) {
       process.env.PROFILE_MEDIA_PATH_SECRET,
       records,
     );
+    const nicknameChanged = update.nickname !== undefined && update.nickname !== current.nickname;
+    if (checked || nicknameChanged)
+      assertCheckedContent(checked, { nickname: update.nickname }, currentGeneration);
     const updatedAt = db.serverDate();
     const cleanupAfter = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const next = writableDocument(
@@ -78,6 +101,17 @@ async function updateProfile(openid, event) {
         ...current,
         _id: openid,
         ...validated.data,
+        ...(checked
+          ? {
+              content_check: {
+                digest: checked.digest,
+                version: checked.currentVersion,
+                trace_id: checked.traceId,
+                ...(checked.traceIds?.length > 1 ? { trace_ids: checked.traceIds } : {}),
+                checked_at: updatedAt,
+              },
+            }
+          : {}),
         updated_at: updatedAt,
       }),
     );
@@ -123,17 +157,60 @@ async function registerMedia(openid, event) {
     category: protocol.category,
     origin,
     requestId: event.requestId,
+    generation: event.generation,
     mediaSecret: process.env.PROFILE_MEDIA_PATH_SECRET,
     getTempFileURL: (input) => cloud.getTempFileURL(input),
     uploadFile: (input) => cloud.uploadFile(input),
     store: profileStore,
   });
 }
+
+function mediaCheckScene(category) {
+  return category && category.startsWith('profile-') ? 1 : 4;
+}
+
+async function canonicalMediaUrl(fileId) {
+  return verifyMediaObject(fileId, (input) => cloud.getTempFileURL(input));
+}
+
+async function submitProfileMediaCheck(openid, mediaRecord, now = new Date(), force = false) {
+  if (
+    !force &&
+    ['pending', 'retryable', 'pass', 'review', 'risky'].includes(mediaRecord.security_status)
+  )
+    return profileStore.mediaStatus(openid, mediaRecord.canonical_file_id || mediaRecord.file_id);
+  try {
+    const trace = await submitMediaCheck({
+      mediaId: mediaRecord._id,
+      ownerOpenid: mediaRecord.owner_openid,
+      category: mediaRecord.category,
+      generation: mediaRecord.generation,
+      canonicalFileId: mediaRecord.canonical_file_id,
+      sha256: mediaRecord.sha256,
+      scene: mediaCheckScene(mediaRecord.category),
+      mediaUrl: await canonicalMediaUrl(mediaRecord.canonical_file_id),
+      mediaCheckAsync: (input) => cloud.openapi.security.mediaCheckAsync(input),
+      now,
+    });
+    return profileStore.persistMediaCheckSubmission(openid, mediaRecord._id, trace, now);
+  } catch (error) {
+    return profileStore.markMediaCheckRetryable(openid, mediaRecord._id, error, now);
+  }
+}
 exports.main = async (event = {}) => {
   try {
     keyFrom(process.env.PII_ENCRYPTION_KEY);
     const { OPENID } = cloud.getWXContext();
     if (!OPENID) throw Object.assign(new Error('无法取得微信身份'), { code: 'UNAUTHENTICATED' });
+    if (event.action === 'requestDeletion')
+      return ok(await privacyService.requestDeletion(OPENID, event));
+    if (event.action === 'deletionStatus')
+      return ok(await privacyService.deletionStatus(OPENID, event));
+    if (event.action === 'recreate') return ok(await privacyService.recreate(OPENID, event));
+    if (event.action === 'publicConsentStatus')
+      return ok(await privacyService.publicConsentStatus(OPENID, event));
+    if (event.action === 'setPublicConsent')
+      return ok(await privacyService.setPublicConsent(OPENID, event));
     if (event.action === 'get') {
       const [profile, clubMemberships] = await Promise.all([
         getDoc(OPENID),
@@ -182,17 +259,35 @@ exports.main = async (event = {}) => {
         new Date(),
         { category, request_id: event.requestId },
       );
-      await profileStore.prepareClientUpload(OPENID, intent, process.env.PROFILE_MEDIA_PATH_SECRET);
-      return ok(issued);
+      const bound = await profileStore.prepareClientUpload(
+        OPENID,
+        intent,
+        process.env.PROFILE_MEDIA_PATH_SECRET,
+        event.generation,
+      );
+      return ok({ ...issued, generation: bound.generation });
     }
     if (event.action === 'registerMedia') {
       if (Object.prototype.hasOwnProperty.call(event, 'openid'))
         throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });
       const registered = await registerMedia(OPENID, event);
+      const status = await submitProfileMediaCheck(OPENID, registered);
       return ok({
         registered: true,
         canonicalFileId: registered.canonical_file_id || registered.file_id,
+        status,
       });
+    }
+    if (event.action === 'mediaStatus') {
+      if (Object.prototype.hasOwnProperty.call(event, 'openid'))
+        throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });
+      return ok(await profileStore.mediaStatus(OPENID, event.fileId));
+    }
+    if (event.action === 'mediaRetry') {
+      if (Object.prototype.hasOwnProperty.call(event, 'openid'))
+        throw Object.assign(new Error('包含禁止字段'), { code: 'FORBIDDEN_FIELD' });
+      const media = await profileStore.mediaForCheckRetry(OPENID, event.fileId, event.generation);
+      return ok(await submitProfileMediaCheck(OPENID, media, new Date(), true));
     }
     if (event.action === 'setAvatar') {
       if (Object.prototype.hasOwnProperty.call(event, 'openid'))
@@ -205,6 +300,8 @@ exports.main = async (event = {}) => {
             source,
             event.fileId,
             process.env.PROFILE_MEDIA_PATH_SECRET,
+            new Date(),
+            event.generation,
           ),
           process.env.PII_ENCRYPTION_KEY,
         ),
@@ -225,7 +322,10 @@ exports.main = async (event = {}) => {
         throw Object.assign(new Error('微信手机号授权失败'), { code: 'PHONE_LOOKUP_FAILED' });
       const fields = phoneUpdate(phone, process.env.PII_ENCRYPTION_KEY, 'wechat');
       return ok(
-        response(await profileStore.mergePhone(OPENID, fields), process.env.PII_ENCRYPTION_KEY),
+        response(
+          await profileStore.mergePhone(OPENID, fields, event.generation),
+          process.env.PII_ENCRYPTION_KEY,
+        ),
       );
     }
     throw Object.assign(new Error('未知操作'), { code: 'UNKNOWN_ACTION' });

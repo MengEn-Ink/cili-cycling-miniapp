@@ -140,10 +140,12 @@ async function previewRouteGpx(deps, request, now = new Date()) {
     'GPX_FILE_INVALID',
     '这个文件不是有效的 GPX，请重新选择',
   );
+  const source = deps.getRouteSource ? await deps.getRouteSource(sourceFileId) : undefined;
   const id = routePreviewId(openid, digest, requestId);
   const existing = await deps.getPreview(id);
   if (existing) {
     assertPreviewIdentity(existing, { openid, digest, sourceFileId });
+    if (existing.oauth_generation !== undefined) await deps.checkPreview(existing);
     if (existing.consumed_at) fail('ROUTE_PREVIEW_CONSUMED', '这份路线已用于其他活动，请重新选择');
     if (validExpiry(existing.expires_at) <= now.getTime())
       fail('ROUTE_PREVIEW_EXPIRED', '路线预览已过期，请重新上传 GPX');
@@ -158,6 +160,9 @@ async function previewRouteGpx(deps, request, now = new Date()) {
   const preview = {
     _id: id,
     owner_openid: openid,
+    ...(source
+      ? { oauth_generation: source.oauth_generation, profile_generation: source.profile_generation }
+      : {}),
     request_id: requestId,
     gpx_sha256: digest,
     source_file_id: sourceFileId,
@@ -182,6 +187,7 @@ async function bindRoutePreviewImage(deps, request, now = new Date()) {
   const preview = await deps.getPreview(request.previewId);
   if (!preview || preview.owner_openid !== openid)
     fail('ROUTE_PREVIEW_REQUIRED', '请重新上传 GPX 路线');
+  if (preview.oauth_generation !== undefined) await deps.checkPreview(preview);
   if (preview.consumed_at) fail('ROUTE_PREVIEW_CONSUMED', '这份路线已用于其他活动，请重新选择');
   if (validExpiry(preview.expires_at) <= now.getTime())
     fail('ROUTE_PREVIEW_EXPIRED', '路线预览已过期，请重新上传 GPX');

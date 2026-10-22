@@ -191,12 +191,12 @@ test('头像响应只返回规范来源，并为合法 legacy 头像推断 custo
   assert.equal(response({}).avatar_visibility_revision, null);
   assert.equal(
     response({ avatar_visibility: 'public', avatar_visibility_revision: 7 }).avatar_visibility,
-    'public',
+    'private',
   );
   assert.equal(
     response({ avatar_visibility: 'public', avatar_visibility_revision: 7 })
       .avatar_visibility_revision,
-    7,
+    null,
   );
   for (const value of [
     { avatar_file_id: 'https://example.test/avatar.jpg' },
@@ -292,6 +292,7 @@ test('旧客户端零或单图写入转换成背景槽位且不生成 photos 覆
         file_id: 'cloud://env/profiles/owner/next.jpg',
         category: 'ride',
       },
+      media_revision: 1,
     },
   );
 });
@@ -329,7 +330,7 @@ test('头像单独更新不触发整表必填校验', () => {
   assert.deepEqual(buildUpdate({}, key, {}), {});
 });
 
-test('整表保存时强制校验性别、头像与背景图必填（Q3=C2：背景图为公开展示路径硬门槛）', () => {
+test('整表保存校验性别和私人头像，拒绝可选公开照片不阻塞保存', () => {
   const complete = {
     gender: '男',
     avatar_file_id: 'cloud://env/profiles/owner/avatar.jpg',
@@ -350,11 +351,7 @@ test('整表保存时强制校验性别、头像与背景图必填（Q3=C2：背
     { code: 'AVATAR_REQUIRED', message: '请先设置头像' },
   );
 
-  // 3. 清空背景图失败（背景图不计入完整度，但公开展示路径仍必填）
-  assert.throws(() => buildUpdate({ gender: '女', background_photo: null }, key, complete), {
-    code: 'VALIDATION_FAILED',
-    message: '请上传个人照片',
-  });
+  assert.doesNotThrow(() => buildUpdate({ gender: '女', background_photo: null }, key, complete));
 
   // 4. 存量完整，整表更新部分字段成功
   const update = buildUpdate({ gender: '女' }, key, complete);
@@ -363,11 +360,7 @@ test('整表保存时强制校验性别、头像与背景图必填（Q3=C2：背
   // 5. 试图清空性别失败
   assert.throws(() => buildUpdate({ gender: '' }, key, complete), { code: 'VALIDATION_FAILED' });
 
-  // 6. 仅清空背景图同样失败（展示路径必填）
-  assert.throws(() => buildUpdate({ background_photo: null }, key, complete), {
-    code: 'VALIDATION_FAILED',
-    message: '请上传个人照片',
-  });
+  assert.doesNotThrow(() => buildUpdate({ background_photo: null }, key, complete));
 
   // 7. 新旧合并后完整（含背景图）则成功
   assert.deepEqual(
@@ -376,7 +369,7 @@ test('整表保存时强制校验性别、头像与背景图必填（Q3=C2：背
       avatar_file_id: complete.avatar_file_id,
       avatar_source: complete.avatar_source,
     }),
-    { background_photo: complete.background_photo },
+    { background_photo: complete.background_photo, media_revision: 1 },
   );
 });
 
@@ -399,22 +392,22 @@ test('profile 响应区分缺失与显式空背景并完整保留 legacy photos'
   assert.deepEqual(current.photos, photos);
 });
 
-test('头像公开授权绑定当前版本，撤销时清除版本且禁止客户端伪造', () => {
+test('普通保存拒绝公开授权，兼容 private 操作只撤回媒体同意', () => {
   const current = {
     avatar_file_id: 'cloud://env/profiles/owner/avatar.jpg',
     avatar_source: 'wechat',
     avatar_revision: 3,
   };
-  assert.deepEqual(buildUpdate({ avatar_visibility: 'public' }, key, current), {
-    avatar_visibility: 'public',
-    avatar_visibility_revision: 3,
+  assert.throws(() => buildUpdate({ avatar_visibility: 'public' }, key, current), {
+    code: 'PUBLIC_CONSENT_ACTION_REQUIRED',
   });
   assert.deepEqual(buildUpdate({ avatar_visibility: 'private' }, key, current), {
     avatar_visibility: 'private',
     avatar_visibility_revision: null,
+    public_consent: { media: { consented: false } },
   });
   assert.throws(() => buildUpdate({ avatar_visibility: 'public' }, key, {}), {
-    code: 'AVATAR_REQUIRED',
+    code: 'PUBLIC_CONSENT_ACTION_REQUIRED',
   });
   assert.throws(() => buildUpdate({ avatar_visibility: 'friends' }, key, current), {
     code: 'VALIDATION_FAILED',
@@ -740,6 +733,7 @@ test('资料更新只接受本用户签发照片，同时拒绝绕过 setAvatar 
         owner_openid: 'openid-owner-a',
         category: 'bike',
         status: 'unreferenced',
+        security_status: 'pass',
       },
     ],
   );
@@ -752,6 +746,7 @@ test('资料更新只接受本用户签发照片，同时拒绝绕过 setAvatar 
         owner_openid: 'openid-owner-a',
         category: 'bike',
         status: 'unreferenced',
+        security_status: 'pass',
       },
     ]).activate_ids,
     [mediaDocumentId(ownedFile)],
@@ -866,6 +861,7 @@ test('设置显式背景槽位会激活新媒体并保留全部 legacy photos �
     owner_openid: owner,
     category,
     status,
+    ...(status === 'unreferenced' ? { security_status: 'pass' } : {}),
   });
   const plan = validateMediaUpdate(
     {
@@ -903,6 +899,7 @@ test('替换显式背景只降级不再被头像或 legacy photos 引用的旧�
     owner_openid: owner,
     category,
     status,
+    ...(status === 'unreferenced' ? { security_status: 'pass' } : {}),
   });
   const plan = validateMediaUpdate(
     {
@@ -1432,6 +1429,7 @@ test('资料背景新写入 canonical 并激活 source registry，移除后仍�
     category: 'profile-background',
     origin: 'custom',
     status: 'unreferenced',
+    security_status: 'pass',
   };
   const background = { file_id: canonicalFileId, category: 'ride' };
   const activation = validateMediaUpdate(

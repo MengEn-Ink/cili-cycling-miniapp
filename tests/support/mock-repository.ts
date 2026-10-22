@@ -713,6 +713,23 @@ export class MockRepository implements RideRepository {
   async finalizeMediaUpload(fileId: string) {
     return { canonicalFileId: fileId };
   }
+  async getMediaStatus(fileId: string) {
+    return {
+      mediaId: `mock:${fileId}`,
+      fileId,
+      canonicalFileId: fileId,
+      category: 'profile-avatar',
+      generation: this.read().profile.generation || 1,
+      securityStatus: 'pass' as const,
+      traceId: 'mock-trace',
+      retryable: false,
+      activated: false,
+      attempts: 1,
+    };
+  }
+  async retryMediaCheck(fileId: string, generation: number) {
+    return { ...(await this.getMediaStatus(fileId)), generation };
+  }
   async getPersonalCapabilityCard(): Promise<PersonalCapabilityCard> {
     const currentProfile = this.read().profile;
     return {
@@ -733,7 +750,7 @@ export class MockRepository implements RideRepository {
       ],
     };
   }
-  async setAvatar(source: 'wechat' | 'custom', fileId: string) {
+  async setAvatar(source: 'wechat' | 'custom', fileId: string, _generation?: number) {
     const state = this.read();
     state.profile = {
       ...state.profile,
@@ -764,6 +781,11 @@ export class MockRepository implements RideRepository {
   async getStravaRouteReadiness() {
     return { state: 'connected' as const, athleteName: 'Mock Rider' };
   }
+
+  async disconnectStravaRouteAuthorization() {
+    return { state: 'disconnected' as const, athleteName: '' };
+  }
+
   async startStravaRouteAuthorization() {
     return {
       authorizationUrl: 'https://www.strava.com/oauth/authorize?state=mock',

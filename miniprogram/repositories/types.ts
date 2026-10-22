@@ -9,6 +9,7 @@ import type {
   JoinedClubSummary,
   ManagedClubProfile,
   ManagedClubProfileInput,
+  MediaCheckStatus,
   SoleClubHomeSnapshot,
   SoleClubProfile,
   SoleClubProfileInput,
@@ -142,7 +143,7 @@ export interface ClubApplicationRepository {
   ): Promise<SoleClubProfile>;
 }
 export type StravaRouteReadiness = {
-  state: 'connected' | 'disconnected';
+  state: 'connected' | 'disconnected' | 'authorizing' | 'revocation_pending' | 'manual_review';
   athleteName: string;
 };
 
@@ -183,18 +184,23 @@ export interface RideRepository
     category: UnifiedMediaCategory,
     requestId: string,
     extension?: 'jpg' | 'png' | 'webp',
+    generation?: number,
   ): Promise<string>;
   finalizeMediaUpload(
     fileId: string,
     category: UnifiedMediaCategory,
     requestId: string,
     origin?: ClientAvatarSource,
+    generation?: number,
   ): Promise<{ canonicalFileId: string }>;
+  getMediaStatus(fileId: string): Promise<MediaCheckStatus>;
+  retryMediaCheck(fileId: string, generation: number): Promise<MediaCheckStatus>;
   getPersonalCapabilityCard(): Promise<PersonalCapabilityCard>;
-  setAvatar(source: ClientAvatarSource, fileId: string): Promise<Profile>;
+  setAvatar(source: ClientAvatarSource, fileId: string, generation?: number): Promise<Profile>;
   updateProfile(profile: ProfileUpdate): Promise<Profile>;
   getPhoneNumber(code: string): Promise<Profile>;
   getStravaRouteReadiness(): Promise<StravaRouteReadiness>;
+  disconnectStravaRouteAuthorization(): Promise<StravaRouteReadiness>;
   startStravaRouteAuthorization(): Promise<StravaAuthorization>;
   importStravaRoute(routeUrl: string, requestId: string): Promise<RouteGpxPreview>;
   previewPublicStravaRoute(routeUrl: string): Promise<PublicRoutePreview>;

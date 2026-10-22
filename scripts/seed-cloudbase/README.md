@@ -16,7 +16,7 @@
 npm run cloudbase:plan
 ```
 
-计划的当前基线是 12 个核心集合、33 个业务索引和全拒绝客户端数据库规则。由环境负责人审核计划后，才可执行：
+计划的当前基线是 20 个核心集合、47 个业务索引和全拒绝客户端数据库规则，包含 `privacy_requests` 持久权益记录、`content_media_checks` 图片审核账本与 Strava 授权撤销状态。由环境负责人审核计划后，才可执行：
 
 ```bash
 npm run cloudbase:apply

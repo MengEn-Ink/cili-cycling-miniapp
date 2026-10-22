@@ -6,6 +6,7 @@ import { CLIENT_RELEASE_VERSION } from '../miniprogram/config/release';
 const mocks = vi.hoisted(() => ({
   readiness: vi.fn(),
   startStravaAuth: vi.fn(),
+  disconnectStrava: vi.fn(),
   getTemplates: vi.fn(),
   requestSubscription: vi.fn(),
   clearRepository: vi.fn(),
@@ -16,6 +17,7 @@ vi.mock('../miniprogram/repositories/index', () => ({
   repository: {
     getStravaRouteReadiness: mocks.readiness,
     startStravaRouteAuthorization: mocks.startStravaAuth,
+    disconnectStravaRouteAuthorization: mocks.disconnectStrava,
     getReviewNotificationTemplateIds: mocks.getTemplates,
     requestReviewNotificationSubscription: mocks.requestSubscription,
   },
@@ -44,6 +46,7 @@ describe('设置页', () => {
     for (const mock of Object.values(mocks)) mock.mockReset();
     mocks.getTemplates.mockResolvedValue([]);
     mocks.readiness.mockResolvedValue({ state: 'disconnected', athleteName: '' });
+    mocks.disconnectStrava.mockResolvedValue({ state: 'disconnected', athleteName: '' });
     appStoreMock.role = 'member';
     appStoreMock.authStatus = 'authenticated';
     wxApi = {
@@ -62,32 +65,37 @@ describe('设置页', () => {
     await import('../miniprogram/pages/settings/index');
   });
 
-  it('当前版本为 2026.10.22.1 且 latest 唯一，最新 main 版本转为历史项', () => {
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.22.1');
-    expect(page.data.releaseNotes).toHaveLength(26);
+  it('当前版本为 2026.10.22.2 且 latest 唯一，最新 main 版本转为历史项', () => {
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.22.2');
+    expect(page.data.releaseNotes).toHaveLength(27);
     expect(page.data.currentRelease).toBe(page.data.releaseNotes[0]);
     expect(page.data.currentRelease).toMatchObject({
-      version: '2026.10.22.1',
+      version: '2026.10.22.2',
       date: '2026-10-22',
-      title: '全页面信息密度与状态反馈统一升级',
+      title: '隐私授权与内容安全保护升级',
       latest: true,
     });
     expect(page.data.releaseNotes[1]).toMatchObject({
+      version: '2026.10.22.1',
+      title: '全页面信息密度与状态反馈统一升级',
+      latest: false,
+    });
+    expect(page.data.releaseNotes[2]).toMatchObject({
       version: '2026.10.21.7',
       title: '活动发现与报名反馈更清晰',
       latest: false,
     });
-    expect(page.data.releaseNotes[2]).toMatchObject({
+    expect(page.data.releaseNotes[3]).toMatchObject({
       version: '2026.10.21.6',
       title: '活动路线与骑友资料加载更轻快',
       latest: false,
     });
-    expect(page.data.releaseNotes[3]).toMatchObject({
+    expect(page.data.releaseNotes[4]).toMatchObject({
       version: '2026.10.21.5',
       title: '设置页集中管理 Strava 线路同步',
       latest: false,
     });
-    expect(page.data.releaseNotes[4]).toMatchObject({
+    expect(page.data.releaseNotes[5]).toMatchObject({
       version: '2026.10.21.4',
       title: '路线导航与报名流程更准确',
       latest: false,
@@ -225,6 +233,71 @@ describe('设置页', () => {
     expect(wxApi.showToast).toHaveBeenCalledWith({ title: '授权链接已复制', icon: 'success' });
 
     page.onUnload();
+  });
+
+  it('已连接时明确确认后撤回 Strava 授权并回显服务端状态', async () => {
+    appStoreMock.role = 'admin';
+    mocks.readiness.mockResolvedValue({ state: 'connected', athleteName: 'Mengen' });
+    mocks.disconnectStrava.mockResolvedValue({
+      state: 'revocation_pending',
+      athleteName: '',
+    });
+    let confirm: ((result: { confirm?: boolean }) => Promise<void>) | undefined;
+    wxApi.showModal.mockImplementation((options: any) => {
+      confirm = options.success;
+    });
+
+    page.onShow();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await page.openStravaSync();
+    expect(wxApi.showModal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: '撤回 Strava 连接',
+        confirmText: '确认撤回',
+      }),
+    );
+    await confirm?.({ confirm: true });
+
+    expect(mocks.disconnectStrava).toHaveBeenCalledOnce();
+    expect(page.data.stravaState).toBe('revoking');
+    expect(page.data.stravaDescription).toContain('正在撤回');
+    expect(mocks.startStravaAuth).not.toHaveBeenCalled();
+  });
+
+  it('已连接状态刷新失败后点击重试只重新获取状态，不触发撤回', async () => {
+    appStoreMock.role = 'admin';
+    mocks.readiness.mockResolvedValueOnce({ state: 'connected', athleteName: 'Mengen' });
+    page.onShow();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    mocks.readiness.mockRejectedValueOnce(new Error('temporary failure'));
+    await page.loadStravaStatus();
+    expect(page.data.stravaState).toBe('error');
+    expect(page.data.stravaAuthorizationState).toBe('connected');
+
+    mocks.readiness.mockResolvedValueOnce({ state: 'connected', athleteName: 'Mengen' });
+    await page.openStravaSync();
+
+    expect(mocks.readiness).toHaveBeenCalledTimes(3);
+    expect(wxApi.showModal).not.toHaveBeenCalled();
+    expect(mocks.disconnectStrava).not.toHaveBeenCalled();
+    expect(page.data.stravaState).toBe('connected');
+  });
+
+  it.each([
+    ['authorizing', 'pending'],
+    ['revocation_pending', 'revoking'],
+    ['manual_review', 'manual'],
+  ])('服务端 %s 状态可理解且点击只刷新不重复授权', async (serverState, uiState) => {
+    appStoreMock.role = 'admin';
+    mocks.readiness.mockResolvedValue({ state: serverState, athleteName: '' });
+    page.onShow();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(page.data.stravaState).toBe(uiState);
+    await page.openStravaSync();
+    expect(mocks.startStravaAuth).not.toHaveBeenCalled();
+    expect(mocks.disconnectStrava).not.toHaveBeenCalled();
   });
 
   it('面向用户的 Strava 入口文案避免 GPX / OAuth / token 技术词', () => {

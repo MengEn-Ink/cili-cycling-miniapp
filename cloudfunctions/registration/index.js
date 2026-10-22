@@ -14,6 +14,7 @@ const {
 } = require('./domain');
 const { listMinePage } = require('./mine-page');
 const { projectTripActivity } = require('./trip-activity');
+const { projectPrivateRegistration } = require('./domain/privacy');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const _ = db.command;
@@ -31,8 +32,11 @@ async function withActivities(registrations) {
     for (const activity of Array.isArray(result.data) ? result.data : [])
       byId.set(activity._id, activity);
   }
+  const profile = registrations[0]?.openid
+    ? await maybeGet(db.collection('profiles'), registrations[0].openid)
+    : undefined;
   return registrations.map((registration) => ({
-    ...publicRegistration(registration),
+    ...publicRegistration(projectPrivateRegistration(registration, profile)),
     activity: projectTripActivity(registration, byId.get(registration.activity_id)),
   }));
 }
@@ -133,7 +137,13 @@ exports.main = async (event = {}) => {
       return ok(
         await submitRegistration(
           transactionStore(),
-          { openid, activityId: event.activityId, options: event.options, team: event.team },
+          {
+            openid,
+            activityId: event.activityId,
+            options: event.options,
+            team: event.team,
+            generation: event.generation,
+          },
           new Date(),
         ),
       );

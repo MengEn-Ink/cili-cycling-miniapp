@@ -1,6 +1,7 @@
 'use strict';
 
 const { ProfileError, ownerAvatarMedia, ownerMedia } = require('./core');
+const { publicConsentStatus } = require('./privacy-contract');
 
 function safeHttpsUrl(value) {
   if (typeof value !== 'string' || value.length > 2048) return '';
@@ -45,10 +46,17 @@ async function buildCapabilityCard(
 ) {
   if (typeof openid !== 'string' || !openid)
     throw new ProfileError('UNAUTHENTICATED', '无法取得微信身份');
+  const consent = publicConsentStatus(profile);
+  mediaRecords = mediaRecords.filter((record) => (record?.generation || 1) === consent.generation);
   const [backgrounds, avatar] = await Promise.all([
-    resolveBackgrounds(ownerMedia(profile, openid, mediaSecret, mediaRecords), getTempFileURL),
     resolveBackgrounds(
-      [ownerAvatarMedia(profile, openid, mediaSecret, mediaRecords)].filter(Boolean),
+      consent.media.consented ? ownerMedia(profile, openid, mediaSecret, mediaRecords) : [],
+      getTempFileURL,
+    ),
+    resolveBackgrounds(
+      consent.media.consented
+        ? [ownerAvatarMedia(profile, openid, mediaSecret, mediaRecords)].filter(Boolean)
+        : [],
       getTempFileURL,
     ),
   ]);
@@ -56,8 +64,9 @@ async function buildCapabilityCard(
   return {
     generated_at: now.toISOString(),
     profile: {
-      display_name: typeof profile?.nickname === 'string' ? profile.nickname : '',
-      gender: profile?.gender === '男' || profile?.gender === '女' ? profile.gender : '',
+      display_name: consent.nickname.consented && profile?.nickname ? profile.nickname : '匿名骑友',
+      gender:
+        consent.nickname.consented && ['男', '女'].includes(profile?.gender) ? profile.gender : '',
       avatar_url: avatarUrl,
     },
     backgrounds,

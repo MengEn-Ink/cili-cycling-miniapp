@@ -215,6 +215,7 @@ test('保存活动以可信 public preview 覆盖伪造指标并原子消费', a
   let consumed;
   const result = await saveActivity(
     {
+      msgSecCheck: async () => ({ errCode: 0, result: { suggest: 'pass' } }),
       transaction: (work) =>
         work({
           getAdmin: async () => ({ _id: owner, enabled: true }),

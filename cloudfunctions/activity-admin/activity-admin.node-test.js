@@ -60,15 +60,23 @@ const input = {
 function expectCode(fn, code) {
   assert.throws(fn, (error) => error instanceof DomainError && error.code === code);
 }
+const { withDriverAttestation } = require('../shared/consent-fixture');
 function store(
   current,
   admin = { _id: 'admin', enabled: true },
   registrations = [],
   { club, membership } = {},
 ) {
-  const state = { current, registrations, backfillReads: 0, saved: undefined, audits: [] };
+  const state = {
+    current: withDriverAttestation(current),
+    registrations,
+    backfillReads: 0,
+    saved: undefined,
+    audits: [],
+  };
   return {
     state,
+    msgSecCheck: async () => ({ errCode: 0, result: { suggest: 'pass' } }),
     transaction: (work) =>
       work({
         getAdmin: async () => admin,
@@ -112,6 +120,122 @@ test('活动输入清洗且公开响应只含白名单', () => {
   assert.equal(value.fee.remark, '免费');
   assert.ok(value.event_start instanceof Date);
   assert.equal(publicActivity({ _id: 'a1', ...value, created_by: 'secret' }).created_by, undefined);
+});
+
+test('activity save checks normalized public title/description and stores the matching version digest', async () => {
+  const valueStore = store(undefined, { _id: 'admin', enabled: true });
+  const requests = [];
+  const result = await saveActivity(
+    valueStore,
+    {
+      openid: 'admin',
+      createRequestId: 'content-create-1',
+      activity: { ...input, title: '  环湖骑行  ', description: '  安全出发  ' },
+    },
+    now,
+    {
+      msgSecCheck: async (request) => {
+        requests.push(request);
+        return { errCode: 0, result: { suggest: 'pass' }, traceId: 'activity-trace' };
+      },
+    },
+  );
+
+  assert.equal(result.title, '环湖骑行');
+  assert.deepEqual(requests, [
+    {
+      openid: 'admin',
+      scene: 4,
+      version: 2,
+      content: '{"title":"环湖骑行","description":"安全出发"}',
+    },
+  ]);
+  assert.equal(valueStore.state.saved.description, '安全出发');
+  assert.match(valueStore.state.saved.content_check.digest, /^[a-f0-9]{64}$/);
+  assert.equal(valueStore.state.saved.content_check.version, 0);
+});
+
+test('platform admin cannot bypass a risky activity content decision', async () => {
+  const valueStore = store(undefined, { _id: 'admin', enabled: true });
+  await assert.rejects(
+    saveActivity(
+      valueStore,
+      {
+        openid: 'admin',
+        createRequestId: 'content-create-2',
+        activity: input,
+      },
+      now,
+      { msgSecCheck: async () => ({ errCode: 0, result: { suggest: 'risky' } }) },
+    ),
+    { code: 'CONTENT_RISKY' },
+  );
+  assert.equal(valueStore.state.saved, undefined);
+});
+
+test('activity content check runs once outside a retried persistence transaction', async () => {
+  const valueStore = store(undefined, { _id: 'admin', enabled: true });
+  const transaction = valueStore.transaction;
+  let transactionCalls = 0;
+  valueStore.transaction = async (work) => {
+    transactionCalls += 1;
+    if (transactionCalls === 1) return transaction(work);
+    await transaction(work);
+    return transaction(work);
+  };
+  let checks = 0;
+
+  const saved = await saveActivity(
+    valueStore,
+    {
+      openid: 'admin',
+      createRequestId: 'content-retry-1',
+      activity: input,
+    },
+    now,
+    {
+      msgSecCheck: async () => {
+        checks += 1;
+        return { errCode: 0, result: { suggest: 'pass' } };
+      },
+    },
+  );
+
+  assert.equal(saved.title, '环湖骑行');
+  assert.equal(checks, 1);
+  assert.equal(transactionCalls, 2);
+});
+
+test('activity save rejects a database version change after content check', async () => {
+  const current = {
+    _id: 'activity-content-stale',
+    ...validateDraftInput(input),
+    occupied_count: 0,
+    version: 1,
+    created_by: 'admin',
+  };
+  const valueStore = store(current, { _id: 'admin', enabled: true });
+
+  await assert.rejects(
+    saveActivity(
+      valueStore,
+      {
+        openid: 'admin',
+        activityId: current._id,
+        expectedVersion: 1,
+        activity: input,
+      },
+      now,
+      {
+        msgSecCheck: async () => {
+          valueStore.state.current = { ...valueStore.state.current, version: 2 };
+          return { errCode: 0, result: { suggest: 'pass' } };
+        },
+      },
+    ),
+    { code: 'CONTENT_CHECK_STALE' },
+  );
+  assert.equal(valueStore.state.saved, undefined);
 });
 
 test('活动群二维码作为可选字段写入并忽略客户端上传时间', () => {
@@ -728,6 +852,7 @@ test('首次创建用 owner 与 requestId 幂等落同一草稿且拒绝异源�
   let generated = 0;
   const memory = {
     state,
+    msgSecCheck: async () => ({ errCode: 0, result: { suggest: 'pass' } }),
     transaction: (work) =>
       work({
         getAdmin: async () => ({ _id: 'admin', enabled: true }),
@@ -1798,6 +1923,7 @@ test('下架要求理由并批量失效凭证、逐用户通知和审计', async
   ];
   const state = { registrations, writes: [], outbox: new Map(), audits: [], activity: current };
   const memory = {
+    msgSecCheck: async () => ({ errCode: 0, result: { suggest: 'pass' } }),
     transaction: (work) =>
       work({
         getAdmin: async () => ({ _id: 'admin', enabled: true }),
@@ -1928,7 +2054,7 @@ test('俱乐部 OWNER/ADMIN 审批活动使用 review_version CAS，重复 reque
     created_by: 'member',
     is_deleted: false,
   };
-  const state = { current, audits: [] };
+  const state = { current: withDriverAttestation(current), audits: [] };
   const reviewStore = {
     transaction: (work) =>
       work({

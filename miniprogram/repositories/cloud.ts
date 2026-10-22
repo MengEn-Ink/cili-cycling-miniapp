@@ -11,6 +11,7 @@ import type {
   JoinedClubSummary,
   ManagedClubProfile,
   ManagedClubProfileInput,
+  MediaCheckStatus,
   SoleClubHome,
   SoleClubHomeSnapshot,
   SoleClubProfile,
@@ -41,6 +42,7 @@ import type {
   PublicActivityView,
   RegistrationSubmission,
   RideRepository,
+  StravaRouteReadiness,
   UnifiedMediaCategory,
 } from './types';
 
@@ -86,6 +88,22 @@ function expectRecordArray(value: unknown): Record<string, any>[] {
   if (!Array.isArray(value) || !value.every(isRecord)) return invalidResponse();
   return value;
 }
+
+function mapStravaRouteReadiness(value: unknown): StravaRouteReadiness {
+  const record = expectRecord(value);
+  const states: StravaRouteReadiness['state'][] = [
+    'connected',
+    'disconnected',
+    'authorizing',
+    'revocation_pending',
+    'manual_review',
+  ];
+  if (!states.includes(record.state)) return invalidResponse();
+  return {
+    state: record.state,
+    athleteName: typeof record.athlete_name === 'string' ? record.athlete_name : '',
+  };
+}
 function dateText(value: unknown): string {
   if (typeof value === 'string') return value;
   if (value instanceof Date && Number.isFinite(value.getTime())) return value.toISOString();
@@ -111,6 +129,12 @@ function clientMediaOrigin(value: unknown): ClientAvatarSource {
   if (value !== 'wechat' && value !== 'custom')
     throw new CloudRepositoryError('VALIDATION_FAILED', '媒体来源无效');
   return value;
+}
+function profileGeneration(value: unknown): number | undefined {
+  if (value === undefined) return undefined;
+  if (!Number.isSafeInteger(value) || Number(value) < 1)
+    throw new CloudRepositoryError('VALIDATION_FAILED', '资料版本无效');
+  return Number(value);
 }
 function boundedId(value: unknown, label: string, min: number, max: number): string {
   if (
@@ -830,6 +854,11 @@ function mapProfile(raw: unknown): Profile {
   const value = expectRecord(raw);
   if (typeof value.nickname !== 'string' || typeof value.completeness !== 'number')
     return invalidResponse();
+  if (
+    value.generation !== undefined &&
+    (!Number.isSafeInteger(value.generation) || value.generation < 1)
+  )
+    return invalidResponse();
   const status = isRecord(value.sensitive_status) ? value.sensitive_status : {};
   if (value.avatar_file_id !== undefined && typeof value.avatar_file_id !== 'string')
     return invalidResponse();
@@ -857,6 +886,7 @@ function mapProfile(raw: unknown): Profile {
   )
     return invalidResponse();
   return {
+    generation: Number.isSafeInteger(value.generation) ? Number(value.generation) : 1,
     avatarRevision: Number.isInteger(value.avatar_revision) ? value.avatar_revision : 0,
     clubs: mapClubMemberships(value.club_memberships),
     avatarVisibility: value.avatar_visibility === 'public' ? 'public' : 'private',
@@ -913,6 +943,45 @@ function mapProfile(raw: unknown): Profile {
       emergencyPhone: status.emergency_phone === true,
     },
   };
+}
+function mapMediaCheckStatus(raw: unknown): MediaCheckStatus {
+  const value = expectRecord(raw);
+  const statuses = ['missing', 'pending', 'retryable', 'pass', 'review', 'risky'];
+  if (
+    typeof value.mediaId !== 'string' ||
+    !value.mediaId ||
+    typeof value.fileId !== 'string' ||
+    !value.fileId ||
+    typeof value.canonicalFileId !== 'string' ||
+    typeof value.category !== 'string' ||
+    !value.category ||
+    !Number.isSafeInteger(value.generation) ||
+    value.generation < 1 ||
+    !statuses.includes(value.securityStatus) ||
+    typeof value.traceId !== 'string' ||
+    typeof value.retryable !== 'boolean' ||
+    typeof value.activated !== 'boolean' ||
+    (value.attempts !== undefined &&
+      (!Number.isSafeInteger(value.attempts) || value.attempts < 0)) ||
+    ((value.errorCode !== undefined || value.error_code !== undefined) &&
+      typeof (value.errorCode ?? value.error_code) !== 'string')
+  )
+    return invalidResponse();
+  return {
+    mediaId: value.mediaId,
+    fileId: value.fileId,
+    canonicalFileId: value.canonicalFileId,
+    category: value.category,
+    generation: value.generation,
+    securityStatus: value.securityStatus,
+    traceId: value.traceId,
+    retryable: value.retryable,
+    activated: value.activated,
+    ...(value.attempts === undefined ? {} : { attempts: value.attempts }),
+    ...((value.errorCode ?? value.error_code)
+      ? { errorCode: String(value.errorCode ?? value.error_code) }
+      : {}),
+  } as MediaCheckStatus;
 }
 function mapPersonalCapabilityCard(raw: unknown): PersonalCapabilityCard {
   const value = expectRecord(raw);
@@ -1944,13 +2013,16 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     category: UnifiedMediaCategory,
     requestId: string,
     extension: 'jpg' | 'png' | 'webp' = 'jpg',
+    generation?: number,
   ) {
+    const safeGeneration = profileGeneration(generation);
     const value = expectRecord(
       await this.call('profile', {
         action: 'mediaUploadPath',
         category,
         requestId: boundedId(requestId, '媒体请求 ID', 8, 128),
         extension,
+        ...(safeGeneration === undefined ? {} : { generation: safeGeneration }),
       }),
     );
     if (
@@ -1968,7 +2040,9 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     category: UnifiedMediaCategory,
     requestId: string,
     origin: ClientAvatarSource = 'custom',
+    generation?: number,
   ) {
+    const safeGeneration = profileGeneration(generation);
     const value = expectRecord(
       await this.call('profile', {
         action: 'registerMedia',
@@ -1976,6 +2050,7 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
         category,
         requestId: boundedId(requestId, '媒体请求 ID', 8, 128),
         origin: clientMediaOrigin(origin),
+        ...(safeGeneration === undefined ? {} : { generation: safeGeneration }),
       }),
     );
     if (
@@ -1986,20 +2061,41 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
       return invalidResponse();
     return { canonicalFileId: value.canonicalFileId };
   }
+  async getMediaStatus(fileId: string) {
+    return mapMediaCheckStatus(
+      await this.call('profile', {
+        action: 'mediaStatus',
+        fileId: requiredId(fileId, '媒体文件 ID'),
+      }),
+    );
+  }
+  async retryMediaCheck(fileId: string, generation: number) {
+    return mapMediaCheckStatus(
+      await this.call('profile', {
+        action: 'mediaRetry',
+        fileId: requiredId(fileId, '媒体文件 ID'),
+        generation: profileGeneration(generation),
+      }),
+    );
+  }
   async getPersonalCapabilityCard() {
     return mapPersonalCapabilityCard(await this.call('profile', { action: 'capabilityCard' }));
   }
-  async setAvatar(source: ClientAvatarSource, fileId: string) {
+  async setAvatar(source: ClientAvatarSource, fileId: string, generation?: number) {
+    const safeGeneration = profileGeneration(generation);
     return mapProfile(
       await this.call('profile', {
         action: 'setAvatar',
         source: clientAvatarSource(source),
         fileId: requiredId(fileId, '头像文件 ID'),
+        ...(safeGeneration === undefined ? {} : { generation: safeGeneration }),
       }),
     );
   }
   async updateProfile(profile: ProfileUpdate) {
     const data: Record<string, unknown> = { action: 'update' };
+    const generation = profileGeneration(profile.generation);
+    if (generation !== undefined) data.generation = generation;
     const simple: [keyof ProfileUpdate, string][] = [
       ['nickname', 'nickname'],
       ['gender', 'gender'],
@@ -2036,12 +2132,10 @@ export class CloudRepository implements RideRepository, AdminReviewRepository {
     );
   }
   async getStravaRouteReadiness() {
-    const value = expectRecord(await this.call('strava-bridge', { action: 'status' }));
-    if (!['connected', 'disconnected'].includes(String(value.state))) return invalidResponse();
-    return {
-      state: value.state as 'connected' | 'disconnected',
-      athleteName: typeof value.athlete_name === 'string' ? value.athlete_name : '',
-    };
+    return mapStravaRouteReadiness(await this.call('strava-bridge', { action: 'status' }));
+  }
+  async disconnectStravaRouteAuthorization() {
+    return mapStravaRouteReadiness(await this.call('strava-bridge', { action: 'disconnect' }));
   }
   async startStravaRouteAuthorization() {
     const value = expectRecord(await this.call('strava-bridge', { action: 'start' }));

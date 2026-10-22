@@ -192,6 +192,106 @@ const input = {
   options: { gathering_mode: 'self_drive', experience: 'regular', remark: 'ok' },
 };
 
+test('deletion lock and generation fence registration submission in the occupancy transaction', async () => {
+  const locked = memoryStore({ profile: { deletion_status: 'requested' } });
+  await assert.rejects(submitRegistration(locked, input, now), { code: 'PROFILE_DELETION_LOCKED' });
+  assert.equal(locked.state.registrations.size, 0);
+  assert.equal(locked.state.activities.get('a1').occupied_count, 0);
+  const recreated = memoryStore({ profile: { generation: 3, deletion_status: 'active' } });
+  await assert.rejects(submitRegistration(recreated, input, now), {
+    code: 'PROFILE_GENERATION_MISMATCH',
+  });
+  await submitRegistration(recreated, { ...input, generation: 3 }, now);
+  assert.equal([...recreated.state.registrations.values()][0].profile_generation, 3);
+});
+
+test('approval and check-in reject deletion locks and old registration generations', async () => {
+  const { checkInRegistration } = require('./use-cases');
+  for (const profileState of [
+    { deletion_status: 'restricted' },
+    { generation: 3, deletion_status: 'active' },
+  ]) {
+    const id = registrationId('a1', openid);
+    const store = memoryStore({
+      admin: true,
+      profile: profileState,
+      registration: {
+        _id: id,
+        openid,
+        activity_id: 'a1',
+        status: 'pending',
+        profile_generation: 1,
+      },
+    });
+    const code =
+      profileState.deletion_status === 'restricted'
+        ? 'PROFILE_DELETION_LOCKED'
+        : 'PROFILE_GENERATION_MISMATCH';
+    await assert.rejects(
+      reviewRegistration(store, { openid, registrationId: id, action: 'approve' }, now),
+      { code },
+    );
+    store.state.registrations.get(id).status = 'approved';
+    await assert.rejects(checkInRegistration(store, { openid, registrationId: id }, now), { code });
+    assert.equal(store.state.audits.length, 0);
+  }
+});
+
+test('FIFO promotion skips locked profiles without restoring snapshots or changing their status', async () => {
+  const { promoteOldestWaiting } = require('./use-cases');
+  const store = memoryStore({ profile: { deletion_status: 'requested' } });
+  const waiting = {
+    _id: 'waiting',
+    openid,
+    activity_id: 'a1',
+    status: 'waiting',
+    options: input.options,
+  };
+  store.state.registrations.set(waiting._id, waiting);
+  const promoted = await store.transaction((tx) =>
+    promoteOldestWaiting(
+      tx,
+      activity,
+      { occupied: 0, supportVehicleOccupied: 0, selfDriveOccupied: 0 },
+      now,
+    ),
+  );
+  assert.equal(promoted, null);
+  assert.equal(store.state.registrations.get('waiting').status, 'waiting');
+});
+
+test('public registration suppresses already-enrolled snapshots even if a backup restores their values', () => {
+  assert.equal(
+    publicRegistration({
+      _id: 'r',
+      status: 'cancelled',
+      privacy_generation: 2,
+      profile_snapshot: { nickname: 'restored', phone_masked: 'private' },
+    }).profile_snapshot.nickname,
+    '',
+  );
+});
+
+test('cancellation during deletion releases occupancy without returning the still-pending snapshot', async () => {
+  const id = registrationId('a1', openid);
+  const store = memoryStore({
+    profile: { deletion_status: 'requested' },
+    activity: { occupied_count: 1, self_drive_occupied_count: 1 },
+    registration: {
+      _id: id,
+      activity_id: 'a1',
+      openid,
+      status: 'pending',
+      options: input.options,
+      profile_snapshot: { nickname: 'stale-private' },
+    },
+  });
+  const result = await cancelRegistration(store, { openid, registrationId: id }, now);
+  assert.equal(result.status, 'cancelled');
+  assert.notEqual(result.profile_snapshot.nickname, 'stale-private');
+  assert.equal(store.state.activities.get('a1').occupied_count, 0);
+});
+
 test('提交校验活动、资料和客户端越权字段', () => {
   expectCode(
     () => assertActivityOpen({ ...activity, status: 'draft' }, now),
@@ -797,8 +897,9 @@ test('审计日志只保留安全字段，不含手机号证件号和 token', ()
 
 test('公开活动保留容量拆分和司机信息，司机手机号完整公开', () => {
   const output = publicActivity(
-    {
+    require('./consent-fixture').withDriverAttestation({
       ...activity,
+      version: 1,
       support_vehicle_capacity: 1,
       self_drive_capacity: 1,
       support_vehicle_driver: {
@@ -806,7 +907,7 @@ test('公开活动保留容量拆分和司机信息，司机手机号完整公�
         license_plate: '粤B12345',
         contact_phone: '13812345678',
       },
-    },
+    }),
     now,
   );
   assert.equal(output.support_vehicle_capacity, 1);
@@ -883,10 +984,14 @@ test('分类满员时即使总容量未满也进入候补，分仓未就绪活�
   assert.equal(legacy.state.activities.get('a1').self_drive_occupied_count, 0);
 });
 
-test('公开司机电话按管理员填写的原文完整返回，非字符串值置空', () => {
+test('已有可信组织者确认的公开司机电话完整返回，非字符串值置空', () => {
   for (const contactPhone of ['12345', '010-12345678 ext 9', '13812345678']) {
     const output = publicActivity(
-      { ...activity, support_vehicle_driver: { contact_phone: ` ${contactPhone} ` } },
+      require('./consent-fixture').withDriverAttestation({
+        ...activity,
+        version: 1,
+        support_vehicle_driver: { contact_phone: contactPhone },
+      }),
       now,
     );
     assert.equal(output.support_vehicle_driver.contact_phone, contactPhone);

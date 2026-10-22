@@ -431,7 +431,12 @@ Page({
   async dismissGuidance() {
     if (!this.data.profile) return;
     try {
-      const profile = await rideService.updateProfile({ hasCompletedGuidance: true });
+      const profile = await rideService.updateProfile({
+        ...(this.data.profile.generation === undefined
+          ? {}
+          : { generation: this.data.profile.generation }),
+        hasCompletedGuidance: true,
+      });
       this.setData({ hasGuidance: false, profile, ...clubViewData() });
       clearProfilePageCache();
       this.hydratedCache = null;

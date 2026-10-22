@@ -8,6 +8,8 @@ const rideService = vi.hoisted(() => ({
   legacyPath: vi.fn(),
   issueMediaUploadPath: vi.fn(),
   finalizeMediaUpload: vi.fn(),
+  getMediaStatus: vi.fn(),
+  retryMediaCheck: vi.fn(),
   getPersonalCapabilityCard: vi.fn(),
   finalizeSpy: vi.fn(),
   cleanupSpy: vi.fn(),
@@ -99,6 +101,20 @@ describe('资料编辑头像交互', () => {
       },
     );
     rideService.getPersonalCapabilityCard.mockResolvedValue(capabilityCard());
+    rideService.getMediaStatus.mockImplementation(async (fileId: string) => ({
+      mediaId: `media:${fileId}`,
+      fileId,
+      canonicalFileId: fileId,
+      category: 'profile-avatar',
+      generation: profile.generation || 1,
+      securityStatus: 'pass',
+      traceId: 'trace-pass',
+      retryable: false,
+      activated: false,
+    }));
+    rideService.retryMediaCheck.mockImplementation((fileId: string) =>
+      rideService.getMediaStatus(fileId),
+    );
     rideService.finalizeSpy.mockResolvedValue(undefined);
     rideService.cleanupSpy.mockResolvedValue(undefined);
     rideService.setAvatar.mockImplementation(
@@ -428,10 +444,40 @@ describe('资料编辑头像交互', () => {
       rideService.finalizeSpy.mock.invocationCallOrder[0],
     );
     expect(rideService.finalizeSpy.mock.invocationCallOrder[0]).toBeLessThan(
+      rideService.getMediaStatus.mock.invocationCallOrder[0],
+    );
+    expect(rideService.getMediaStatus.mock.invocationCallOrder[0]).toBeLessThan(
       rideService.setAvatar.mock.invocationCallOrder[0],
     );
     expect(page.data.p).toMatchObject({ avatarId: canonicalId, avatarSource: 'wechat' });
     expect(page.data.avatarPreviewUrl).toBe('https://temporary.example/wechat-avatar.jpg');
+  });
+
+  it('头像安全审核未通过时保留旧头像且不调用 setAvatar', async () => {
+    const uploadedFileId = 'cloud://env/profiles/owner/risky-avatar.jpg';
+    Object.assign(wx, {
+      cloud: {
+        uploadFile: vi.fn().mockResolvedValue({ fileID: uploadedFileId }),
+        deleteFile: vi.fn(),
+      },
+    });
+    rideService.getMediaStatus.mockResolvedValueOnce({
+      mediaId: 'media-risky',
+      fileId: uploadedFileId,
+      canonicalFileId: canonicalFileId(uploadedFileId),
+      category: 'profile-avatar',
+      generation: 1,
+      securityStatus: 'risky',
+      traceId: 'trace-risky',
+      retryable: false,
+      activated: false,
+    });
+
+    await page.chooseWechatAvatar({ detail: { avatarUrl: '/private/tmp/risky-avatar.jpg' } });
+
+    expect(rideService.setAvatar).not.toHaveBeenCalled();
+    expect(page.data.p.avatarId).toBe(profile.avatarId);
+    expect(page.data.mediaError).toBe('图片未通过安全审核，请更换图片');
   });
 
   it('微信头像在上传前通过 getFileInfo 拒绝超过 5MiB 的文件', async () => {

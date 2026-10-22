@@ -1,6 +1,15 @@
 'use strict';
 
 const crypto = require('node:crypto');
+const { safeClubMedia } = require('./privacy-contract');
+
+class ClubMediaError extends Error {
+  constructor(code, message) {
+    super(message);
+    this.name = 'ClubMediaError';
+    this.code = code;
+  }
+}
 
 const safeText = (value) => (typeof value === 'string' ? value.trim() : '');
 
@@ -22,16 +31,34 @@ function trustedCover(fileId, applicantOpenid, category = '') {
   ).test(path);
 }
 
-async function activateClubMediaReferences(tx, owner, value, now) {
+const mediaSecurityCode = (status) =>
+  ({
+    pending: 'MEDIA_SECURITY_PENDING',
+    retryable: 'MEDIA_SECURITY_RETRY_REQUIRED',
+    review: 'MEDIA_SECURITY_REVIEW_REQUIRED',
+    risky: 'MEDIA_SECURITY_RISKY',
+  })[status] || 'MEDIA_SECURITY_REQUIRED';
+
+const clubMediaReferences = (value) => [
+  [value?.avatar_file_id || value?.avatar_url, 'club-avatar'],
+  [value?.cover_file_id, 'club-cover'],
+];
+
+async function activateClubMediaReferences(tx, owner, value, now, currentValue) {
   if (typeof tx?.getProfileMediaByCanonical !== 'function') return;
-  const references = [
-    [value?.avatar_file_id || value?.avatar_url, 'club-avatar'],
-    [value?.cover_file_id, 'club-cover'],
-  ];
+  const references = clubMediaReferences(value);
+  const currentReferences = new Set(
+    clubMediaReferences(currentValue).map(
+      ([fileId, category]) => `${category}:${safeText(fileId)}`,
+    ),
+  );
   for (const [rawFileId, category] of references) {
     const fileId = safeText(rawFileId);
     if (!fileId || !trustedCover(fileId, owner, category)) continue;
-    if (!cloudPath(fileId).startsWith('profile-canonical/')) continue;
+    if (!cloudPath(fileId).startsWith('profile-canonical/')) {
+      if (currentReferences.has(`${category}:${fileId}`)) continue;
+      throw new ClubMediaError('MEDIA_REGISTRATION_INVALID', '俱乐部媒体登记不可用');
+    }
     const record = await tx.getProfileMediaByCanonical(fileId, owner, category);
     if (
       !record ||
@@ -40,9 +67,16 @@ async function activateClubMediaReferences(tx, owner, value, now) {
       record.category !== category ||
       !['unreferenced', 'active'].includes(record.status)
     )
-      throw Object.assign(new Error('俱乐部媒体登记不可用'), {
-        code: 'MEDIA_REGISTRATION_INVALID',
-      });
+      throw new ClubMediaError('MEDIA_REGISTRATION_INVALID', '俱乐部媒体登记不可用');
+    const legacyCurrentReference =
+      record.status === 'active' &&
+      !record.security_status &&
+      currentReferences.has(`${category}:${fileId}`);
+    if (record.security_status !== 'pass' && !legacyCurrentReference)
+      throw new ClubMediaError(
+        mediaSecurityCode(record.security_status),
+        '俱乐部媒体安全状态不可用',
+      );
     if (record.status !== 'active') await tx.activateProfileMedia(record._id, now);
   }
 }
@@ -59,8 +93,8 @@ async function resolveFileIds(cloud, fileIds, warning) {
         const url = safeText(item?.tempFileURL);
         if (batch.includes(fileId) && /^https:\/\//i.test(url)) urls.set(fileId, url);
       }
-    } catch (error) {
-      console.warn(warning, error?.message || error);
+    } catch {
+      console.warn(warning);
     }
   }
   return urls;
@@ -105,22 +139,29 @@ async function resolveApplicationCover(cloud, application, applicantOpenid = '')
 async function resolveJoinableClubAvatars(cloud, clubs) {
   const values = Array.isArray(clubs) ? clubs : [];
   const fileIds = values.flatMap((club) => [
-    safeText(club?.avatar_url),
-    safeText(club?.cover_file_id),
+    safeClubMedia(safeText(club?.avatar_url)),
+    safeClubMedia(safeText(club?.cover_file_id)),
   ]);
   const urls = await resolveFileIds(cloud, fileIds, '[club-application] resolve club media failed');
   const publicUrl = (value) => {
-    const fileId = safeText(value);
+    const fileId = safeClubMedia(safeText(value));
     return /^https:\/\//i.test(fileId) ? fileId : urls.get(fileId) || '';
   };
   return values.map((club) => ({
     ...club,
+    ...(club?.avatar_file_id === undefined
+      ? {}
+      : { avatar_file_id: safeClubMedia(club.avatar_file_id) }),
+    ...(club?.cover_file_id === undefined
+      ? {}
+      : { cover_file_id: safeClubMedia(club.cover_file_id) }),
     avatar_url: publicUrl(club?.avatar_url),
     cover_url: publicUrl(club?.cover_file_id),
   }));
 }
 
 module.exports = {
+  ClubMediaError,
   activateClubMediaReferences,
   resolveApplicationCover,
   resolveApplicationCovers,

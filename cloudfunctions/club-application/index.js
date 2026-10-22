@@ -20,10 +20,12 @@ const {
   updateSoleClub,
 } = require('./core');
 const {
+  ClubMediaError,
   resolveApplicationCover,
   resolveApplicationCovers,
   resolveJoinableClubAvatars,
 } = require('./media');
+const { ContentCheckError } = require('./content-contract');
 const { readJoinableClubDocuments } = require('./query-pages');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
@@ -33,8 +35,18 @@ const ok = (data) => ({ ok: true, data });
 const failure = (error) => ({
   ok: false,
   error: {
-    code: error instanceof ClubApplicationError ? error.code : 'INTERNAL_ERROR',
-    message: error instanceof ClubApplicationError ? error.message : '服务暂时不可用',
+    code:
+      error instanceof ClubApplicationError ||
+      error instanceof ContentCheckError ||
+      error instanceof ClubMediaError
+        ? error.code
+        : 'INTERNAL_ERROR',
+    message:
+      error instanceof ClubApplicationError ||
+      error instanceof ContentCheckError ||
+      error instanceof ClubMediaError
+        ? error.message
+        : '服务暂时不可用',
   },
 });
 function isNotFound(error) {
@@ -53,6 +65,7 @@ async function maybeGet(collection, id) {
 }
 function transactionStore() {
   return {
+    msgSecCheck: (input) => cloud.openapi.security.msgSecCheck(input),
     transaction: (work) =>
       db.runTransaction(async (transaction) =>
         work({
@@ -238,6 +251,7 @@ exports.main = async (event = {}) => {
           input: event.club,
         },
         new Date(),
+        { msgSecCheck: (input) => cloud.openapi.security.msgSecCheck(input) },
       );
       const [resolved] = await resolveJoinableClubAvatars(cloud, [
         { ...value, avatar_url: value.avatar_file_id },
@@ -334,6 +348,7 @@ exports.main = async (event = {}) => {
             requestId: event.requestId,
           },
           new Date(),
+          { msgSecCheck: (input) => cloud.openapi.security.msgSecCheck(input) },
         );
         return ok(await resolveSoleClubPayload(cloud, value));
       } catch (error) {
@@ -358,6 +373,7 @@ exports.main = async (event = {}) => {
           input: event.club,
         },
         new Date(),
+        { msgSecCheck: (input) => cloud.openapi.security.msgSecCheck(input) },
       );
       return ok(await resolveSoleClubPayload(cloud, value));
     }

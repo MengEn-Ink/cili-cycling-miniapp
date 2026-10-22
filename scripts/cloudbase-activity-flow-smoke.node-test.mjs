@@ -9,6 +9,7 @@ import {
   WRITE_GATE,
   activityFlowIds,
   assertWriteGate,
+  checkIsolatedSmokeText,
   cleanupFailedSmoke,
   functionDetailProbeArgs,
   parseFunctionDetailOutput,
@@ -67,6 +68,7 @@ function createMemoryStore({ withAdminProfile = true, withNormalProfile = true }
   };
   const store = {
     collections,
+    msgSecCheck: checkIsolatedSmokeText,
     get,
     put,
     query,
