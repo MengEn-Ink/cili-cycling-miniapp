@@ -1,0 +1,3042 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-10-22T04:53:39.347Z",
+  "source": "build-page-dispatch-manifest.mjs",
+  "mode": "existing-edit",
+  "summary_path": "runtime-orchestration-summary.json",
+  "skillProvenance": {
+    "schema_version": "1.0",
+    "name": "solo-design",
+    "version": "2026.10.13.09.48.16",
+    "release": "canonical-image-node-append-plugin-0.1.3",
+    "version_source": "skill-release-manifest.json"
+  },
+  "dispatchPreflightManifest": [
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-activities",
+      "htmlSrc": "pages/activities.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/activities.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/activities.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-activities' --html-src='pages/activities.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/activities.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/activities.html' --title='活动' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-activity-detail",
+      "htmlSrc": "pages/activity-detail.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/activity-detail.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/activity-detail.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-activity-detail' --html-src='pages/activity-detail.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/activity-detail.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/activity-detail.html' --title='活动详情' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-route-analysis",
+      "htmlSrc": "pages/route-analysis.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/route-analysis.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/route-analysis.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-route-analysis' --html-src='pages/route-analysis.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/route-analysis.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/route-analysis.html' --title='完整路线分析' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-registration-form",
+      "htmlSrc": "pages/registration-form.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/registration-form.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/registration-form.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-registration-form' --html-src='pages/registration-form.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/registration-form.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/registration-form.html' --title='填写报名' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-registrations",
+      "htmlSrc": "pages/registrations.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/registrations.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/registrations.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-registrations' --html-src='pages/registrations.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/registrations.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/registrations.html' --title='我的行程' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-credential",
+      "htmlSrc": "pages/credential.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/credential.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/credential.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-credential' --html-src='pages/credential.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/credential.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/credential.html' --title='骑行凭证' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-profile",
+      "htmlSrc": "pages/profile.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/profile.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/profile.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-profile' --html-src='pages/profile.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/profile.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/profile.html' --title='我的' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-profile-edit",
+      "htmlSrc": "pages/profile-edit.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/profile-edit.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/profile-edit.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-profile-edit' --html-src='pages/profile-edit.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/profile-edit.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/profile-edit.html' --title='编辑个人资料' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-settings",
+      "htmlSrc": "pages/settings.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/settings.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/settings.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-settings' --html-src='pages/settings.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/settings.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/settings.html' --title='设置' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-club-center",
+      "htmlSrc": "pages/club-center.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/club-center.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/club-center.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-club-center' --html-src='pages/club-center.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/club-center.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/club-center.html' --title='俱乐部' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-admin-activity-list",
+      "htmlSrc": "pages/admin-activity-list.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/admin-activity-list.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/admin-activity-list.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-admin-activity-list' --html-src='pages/admin-activity-list.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/admin-activity-list.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/admin-activity-list.html' --title='活动管理' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-admin-activity-edit",
+      "htmlSrc": "pages/admin-activity-edit.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/admin-activity-edit.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/admin-activity-edit.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-admin-activity-edit' --html-src='pages/admin-activity-edit.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/admin-activity-edit.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/admin-activity-edit.html' --title='编辑活动' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-admin-reviews",
+      "htmlSrc": "pages/admin-reviews.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/admin-reviews.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/admin-reviews.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-admin-reviews' --html-src='pages/admin-reviews.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/admin-reviews.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/admin-reviews.html' --title='报名审核' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-admin-review-detail",
+      "htmlSrc": "pages/admin-review-detail.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/admin-review-detail.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/admin-review-detail.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-admin-review-detail' --html-src='pages/admin-review-detail.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/admin-review-detail.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/admin-review-detail.html' --title='审核报名' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-admin-club-management",
+      "htmlSrc": "pages/admin-club-management.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/admin-club-management.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/admin-club-management.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-admin-club-management' --html-src='pages/admin-club-management.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/admin-club-management.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/admin-club-management.html' --title='俱乐部管理' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-admin-club-profile",
+      "htmlSrc": "pages/admin-club-profile.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/admin-club-profile.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/admin-club-profile.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-admin-club-profile' --html-src='pages/admin-club-profile.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/admin-club-profile.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/admin-club-profile.html' --title='俱乐部资料' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-state-loading",
+      "htmlSrc": "pages/state-loading.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/state-loading.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/state-loading.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-state-loading' --html-src='pages/state-loading.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-loading.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-loading.html' --title='活动加载中' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-state-empty",
+      "htmlSrc": "pages/state-empty.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/state-empty.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/state-empty.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-state-empty' --html-src='pages/state-empty.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-empty.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-empty.html' --title='暂无活动' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-state-network-error",
+      "htmlSrc": "pages/state-network-error.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/state-network-error.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/state-network-error.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-state-network-error' --html-src='pages/state-network-error.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-network-error.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-network-error.html' --title='活动加载失败' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-state-image-error",
+      "htmlSrc": "pages/state-image-error.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/state-image-error.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/state-image-error.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-state-image-error' --html-src='pages/state-image-error.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-image-error.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-image-error.html' --title='图片不可用' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-state-pending",
+      "htmlSrc": "pages/state-pending.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/state-pending.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/state-pending.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-state-pending' --html-src='pages/state-pending.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-pending.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-pending.html' --title='报名待审核' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-state-submit-error",
+      "htmlSrc": "pages/state-submit-error.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/state-submit-error.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/state-submit-error.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-state-submit-error' --html-src='pages/state-submit-error.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-submit-error.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-submit-error.html' --title='报名提交失败' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-state-route-preparing",
+      "htmlSrc": "pages/state-route-preparing.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/state-route-preparing.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/state-route-preparing.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-state-route-preparing' --html-src='pages/state-route-preparing.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-route-preparing.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-route-preparing.html' --title='路线准备中' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-state-public-success",
+      "htmlSrc": "pages/state-public-success.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/state-public-success.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/state-public-success.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-state-public-success' --html-src='pages/state-public-success.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-public-success.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-public-success.html' --title='公开报名成功' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-state-profile-incomplete",
+      "htmlSrc": "pages/state-profile-incomplete.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/state-profile-incomplete.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/state-profile-incomplete.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-state-profile-incomplete' --html-src='pages/state-profile-incomplete.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-profile-incomplete.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-profile-incomplete.html' --title='资料待完善' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-state-profile-stale",
+      "htmlSrc": "pages/state-profile-stale.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/state-profile-stale.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/state-profile-stale.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-state-profile-stale' --html-src='pages/state-profile-stale.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-profile-stale.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-profile-stale.html' --title='资料刷新失败' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-state-avatar-first",
+      "htmlSrc": "pages/state-avatar-first.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/state-avatar-first.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/state-avatar-first.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-state-avatar-first' --html-src='pages/state-avatar-first.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-avatar-first.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-avatar-first.html' --title='先设置头像' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    },
+    {
+      "recorded_at": "2026-10-22T04:53:39.316Z",
+      "generatedBy": "build-page-dispatch-manifest.mjs",
+      "packetType": "ExistingEditPagePacket",
+      "laneContract": {
+        "resolvedLane": "existing_edit_add_comparison",
+        "packetType": "ExistingEditPagePacket",
+        "pageRuntimeGuide": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+        "dispatchContract": "intent-workflows/intent-project-mutation/existing-edit-dispatch-contract.md"
+      },
+      "taskLinePresent": true,
+      "outputPathPresent": true,
+      "sharedTemplate": "intent-workflows/intent-project-mutation/existing-edit-page-runtime.md",
+      "nodeId": "page-state-waiting",
+      "htmlSrc": "pages/state-waiting.html",
+      "supplementaryReads": [],
+      "allowedWritePaths": [
+        "pages/state-waiting.html",
+        "assets/"
+      ],
+      "forbiddenWriteRoots": [
+        "*.design",
+        "runtime-orchestration-summary.json",
+        "validation-report.json",
+        "finish-readiness-report.json",
+        "restore-contract-report.json",
+        "page-generation-summary.json"
+      ],
+      "toolPolicy": {
+        "todoWriteAllowed": false,
+        "validationScriptsAllowed": false,
+        "previewAllowed": false,
+        "helperScriptsAllowed": false,
+        "designFileWriteAllowed": false,
+        "allowedWritePaths": [
+          "pages/state-waiting.html",
+          "assets/"
+        ]
+      },
+      "skillRuntime": {
+        "skillDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design",
+        "deterministicToolDir": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling",
+        "toolPaths": {
+          "applyHtmlHeadContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs",
+          "recordDispatchCompletion": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs",
+          "buildPageDispatchManifest": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/build-page-dispatch-manifest.mjs",
+          "validateDesignWorkspace": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-design-workspace.mjs",
+          "validateFinishReadiness": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs",
+          "validateRestoreContract": "/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/validate-restore-contract.mjs"
+        },
+        "requiredForPageSubAgent": [
+          "applyHtmlHeadContract",
+          "recordDispatchCompletion"
+        ],
+        "pathInjection": "absolute",
+        "pathContract": "Do not use {SKILL_DIR} placeholders inside Page Sub-Agent packets; use toolPaths.* absolute paths.",
+        "commandTemplates": {
+          "recordDispatchCompletion": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/record-dispatch-completion.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal' --node-id='page-state-waiting' --html-src='pages/state-waiting.html' --status=completed --changed-files=<comma-separated-project-relative-files> --trace-digest=<main-agent-runtime-trace-digest> --tool-ledger-json=<tool-ledger-json-or-file>"
+        }
+      },
+      "cssFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css",
+      "htmlFilePath": "/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-waiting.html",
+      "brandPrefix": "cili",
+      "aestheticsMode": "free-explore",
+      "toolDisciplineBlockPresent": true,
+      "fillHtmlHeadCommand": "node '/Users/bytedance/.trae-cn/plugins/trae-remote-official/trae-design/0.1.3/skills/solo-design/shared-runtime/deterministic-tooling/apply-html-head-contract.mjs' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/shared.css' '/Users/bytedance/work/ride-event-miniprogram/docs/designs/2026-10-22-cycling-image-journal/pages/state-waiting.html' --title='报名候补' --lang='zh-CN' --prefix='cili' --replace-head",
+      "headFillMode": "replace-head-after-body",
+      "viewportMode": null,
+      "completionSchemaExpected": "full",
+      "restoreFields": null,
+      "restoreContractStatus": null,
+      "restoreCompactPacket": null,
+      "deterministicCommands": null,
+      "sourceAuthorityLock": null,
+      "preDispatchFileHashes": {
+        "骑行影像志.design": "e17509bb8ec36189923f871dc4c8baef2d4f895d9a564817d1473ec944886b0a"
+      },
+      "contextPreflight": {
+        "workflowPath": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md",
+        "requiredContextFiles": [
+          "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+          "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+          "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+          "delivery-quality/page-rendering-quality-gate.md",
+          "delivery-quality/design-artifact-validation.md",
+          "delivery-quality/delivery-evidence-contract.md"
+        ],
+        "optionalContextFiles": [
+          "visual-experience/visual-experience-guidelines.md"
+        ],
+        "passed": true
+      },
+      "pageSliceOnly": true,
+      "requiredFieldsPresent": true,
+      "missingFields": [],
+      "fillHtmlHeadCommandValid": true,
+      "mobileNavigation": {
+        "required": false,
+        "appliesToThisPage": false,
+        "canonicalHtmlIncluded": false,
+        "missingFields": []
+      },
+      "persistedToSummary": true,
+      "taskQueryAudited": false,
+      "proofSource": "summary-only",
+      "largeWorkflowFilesInTaskQuery": null
+    }
+  ],
+  "deterministicCommandsByPage": {
+    "pages/activities.html": {},
+    "pages/activity-detail.html": {},
+    "pages/route-analysis.html": {},
+    "pages/registration-form.html": {},
+    "pages/registrations.html": {},
+    "pages/credential.html": {},
+    "pages/profile.html": {},
+    "pages/profile-edit.html": {},
+    "pages/settings.html": {},
+    "pages/club-center.html": {},
+    "pages/admin-activity-list.html": {},
+    "pages/admin-activity-edit.html": {},
+    "pages/admin-reviews.html": {},
+    "pages/admin-review-detail.html": {},
+    "pages/admin-club-management.html": {},
+    "pages/admin-club-profile.html": {},
+    "pages/state-loading.html": {},
+    "pages/state-empty.html": {},
+    "pages/state-network-error.html": {},
+    "pages/state-image-error.html": {},
+    "pages/state-pending.html": {},
+    "pages/state-submit-error.html": {},
+    "pages/state-route-preparing.html": {},
+    "pages/state-public-success.html": {},
+    "pages/state-profile-incomplete.html": {},
+    "pages/state-profile-stale.html": {},
+    "pages/state-avatar-first.html": {},
+    "pages/state-waiting.html": {}
+  }
+}

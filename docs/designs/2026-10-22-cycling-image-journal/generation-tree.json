@@ -1,0 +1,181 @@
+{
+  "id": "journal-project",
+  "type": "project",
+  "children": [
+    {
+      "id": "shared-shell",
+      "type": "fragment",
+      "htmlSrc": "shared-shell.html",
+      "children": [
+        {
+          "id": "page-activities",
+          "type": "page",
+          "htmlSrc": "pages/activities.html",
+          "children": []
+        },
+        {
+          "id": "page-activity-detail",
+          "type": "page",
+          "htmlSrc": "pages/activity-detail.html",
+          "children": []
+        },
+        {
+          "id": "page-route-analysis",
+          "type": "page",
+          "htmlSrc": "pages/route-analysis.html",
+          "children": []
+        },
+        {
+          "id": "page-registration-form",
+          "type": "page",
+          "htmlSrc": "pages/registration-form.html",
+          "children": []
+        },
+        {
+          "id": "page-registrations",
+          "type": "page",
+          "htmlSrc": "pages/registrations.html",
+          "children": []
+        },
+        {
+          "id": "page-credential",
+          "type": "page",
+          "htmlSrc": "pages/credential.html",
+          "children": []
+        },
+        {
+          "id": "page-profile",
+          "type": "page",
+          "htmlSrc": "pages/profile.html",
+          "children": []
+        },
+        {
+          "id": "page-profile-edit",
+          "type": "page",
+          "htmlSrc": "pages/profile-edit.html",
+          "children": []
+        },
+        {
+          "id": "page-settings",
+          "type": "page",
+          "htmlSrc": "pages/settings.html",
+          "children": []
+        },
+        {
+          "id": "page-club-center",
+          "type": "page",
+          "htmlSrc": "pages/club-center.html",
+          "children": []
+        },
+        {
+          "id": "page-admin-activity-list",
+          "type": "page",
+          "htmlSrc": "pages/admin-activity-list.html",
+          "children": []
+        },
+        {
+          "id": "page-admin-activity-edit",
+          "type": "page",
+          "htmlSrc": "pages/admin-activity-edit.html",
+          "children": []
+        },
+        {
+          "id": "page-admin-reviews",
+          "type": "page",
+          "htmlSrc": "pages/admin-reviews.html",
+          "children": []
+        },
+        {
+          "id": "page-admin-review-detail",
+          "type": "page",
+          "htmlSrc": "pages/admin-review-detail.html",
+          "children": []
+        },
+        {
+          "id": "page-admin-club-management",
+          "type": "page",
+          "htmlSrc": "pages/admin-club-management.html",
+          "children": []
+        },
+        {
+          "id": "page-admin-club-profile",
+          "type": "page",
+          "htmlSrc": "pages/admin-club-profile.html",
+          "children": []
+        },
+        {
+          "id": "page-state-loading",
+          "type": "page",
+          "htmlSrc": "pages/state-loading.html",
+          "children": []
+        },
+        {
+          "id": "page-state-empty",
+          "type": "page",
+          "htmlSrc": "pages/state-empty.html",
+          "children": []
+        },
+        {
+          "id": "page-state-network-error",
+          "type": "page",
+          "htmlSrc": "pages/state-network-error.html",
+          "children": []
+        },
+        {
+          "id": "page-state-image-error",
+          "type": "page",
+          "htmlSrc": "pages/state-image-error.html",
+          "children": []
+        },
+        {
+          "id": "page-state-pending",
+          "type": "page",
+          "htmlSrc": "pages/state-pending.html",
+          "children": []
+        },
+        {
+          "id": "page-state-submit-error",
+          "type": "page",
+          "htmlSrc": "pages/state-submit-error.html",
+          "children": []
+        },
+        {
+          "id": "page-state-route-preparing",
+          "type": "page",
+          "htmlSrc": "pages/state-route-preparing.html",
+          "children": []
+        },
+        {
+          "id": "page-state-public-success",
+          "type": "page",
+          "htmlSrc": "pages/state-public-success.html",
+          "children": []
+        },
+        {
+          "id": "page-state-profile-incomplete",
+          "type": "page",
+          "htmlSrc": "pages/state-profile-incomplete.html",
+          "children": []
+        },
+        {
+          "id": "page-state-profile-stale",
+          "type": "page",
+          "htmlSrc": "pages/state-profile-stale.html",
+          "children": []
+        },
+        {
+          "id": "page-state-avatar-first",
+          "type": "page",
+          "htmlSrc": "pages/state-avatar-first.html",
+          "children": []
+        },
+        {
+          "id": "page-state-waiting",
+          "type": "page",
+          "htmlSrc": "pages/state-waiting.html",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

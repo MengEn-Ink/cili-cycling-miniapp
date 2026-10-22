@@ -1,0 +1,30 @@
+[
+  {
+    "file": "assets/mountain.webp",
+    "source": "https://copilot-cn.bytedance.net/api/ide/v1/tool_text_to_image?prompt=Mobile+cycling+app+editorial+hero+photograph%3A+three+adult+East+Asian+cyclists+in+charcoal+and+rust+jerseys+ride+an+autumn+mountain+road+near+Beijing%2C+warm+morning+light%2C+documentary+35mm+film%2C+no+logos.&image_size=landscape_16_9",
+    "acquisition": "GenerateImage tool authenticated backend after unauthenticated HTTP returned 1001",
+    "synthetic": true,
+    "prompt": "Mobile cycling app editorial hero photograph: three adult East Asian cyclists in charcoal and rust jerseys ride an autumn mountain road near Beijing, warm morning light, documentary 35mm film, no logos."
+  },
+  {
+    "file": "assets/rider.webp",
+    "source": "https://copilot-cn.bytedance.net/api/ide/v1/tool_text_to_image?prompt=Mobile+cycling+app+public+rider+portrait%3A+adult+East+Asian+male+cyclist+in+black+jersey+and+white+helmet+at+autumn+mountain+overlook%2C+candid+documentary+photograph%2C+no+logos.&image_size=portrait_4_3",
+    "acquisition": "GenerateImage tool authenticated backend after unauthenticated HTTP returned 1001",
+    "synthetic": true,
+    "prompt": "Mobile cycling app public rider portrait: adult East Asian male cyclist in black jersey and white helmet at autumn mountain overlook, candid documentary photograph, no logos."
+  },
+  {
+    "file": "assets/club.webp",
+    "source": "https://copilot-cn.bytedance.net/api/ide/v1/tool_text_to_image?prompt=Mobile+cycling+app+club+background%3A+adult+East+Asian+road+cyclists+gathering+beside+a+rural+coffee+stop+in+autumn%2C+candid+morning+documentary+photograph%2C+no+logos.&image_size=landscape_16_9",
+    "acquisition": "GenerateImage tool authenticated backend after unauthenticated HTTP returned 1001",
+    "synthetic": true,
+    "prompt": "Mobile cycling app club background: adult East Asian road cyclists gathering beside a rural coffee stop in autumn, candid morning documentary photograph, no logos."
+  },
+  {
+    "file": "assets/lakeside.webp",
+    "source": "https://copilot-cn.bytedance.net/api/ide/v1/tool_text_to_image?prompt=Mobile+cycling+app+activity+photograph%3A+two+road+cyclists+beside+a+reservoir+with+autumn+foliage+and+distant+mountains%2C+warm+morning+film+photograph%2C+no+logos.&image_size=landscape_16_9",
+    "acquisition": "GenerateImage tool authenticated backend after unauthenticated HTTP returned 1001",
+    "synthetic": true,
+    "prompt": "Mobile cycling app activity photograph: two road cyclists beside a reservoir with autumn foliage and distant mountains, warm morning film photograph, no logos."
+  }
+]
