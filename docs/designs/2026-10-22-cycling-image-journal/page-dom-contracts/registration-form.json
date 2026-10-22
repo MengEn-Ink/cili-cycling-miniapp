@@ -1,0 +1,42 @@
+{
+  "slug": "registration-form",
+  "pagePath": "pages/registration-form/index",
+  "title": "填写报名",
+  "wxml": "miniprogram/pages/registration-form/index.wxml",
+  "wxss": "miniprogram/pages/registration-form/index.wxss",
+  "ts": "miniprogram/pages/registration-form/index.ts",
+  "containers": [
+    { "class": "page form-page", "role": "page-root", "order": 1 },
+    { "class": "form-head journal-heading", "role": "page-heading", "order": 2, "note": "journal-eyebrow + journal-title editorial + journal-summary + step-line + activity-context（可选）。" },
+    { "class": "step-line", "role": "list", "order": 3, "note": "三步：填写报名(active) → 组织审核 → 获取凭证；aria-label 必须说明当前阶段。" },
+    { "class": "form-section form-card identity-card", "role": "section", "order": 4, "note": "报名资料：真实姓名 / 微信昵称 / 性别 / 联系电话 + 编辑个人资料入口。" },
+    { "class": "form-section form-card gathering-card", "role": "section", "order": 5, "note": "集合方式：多模式活动展示 choice-group；默认活动展示 gathering-default。" },
+    { "class": "form-section form-card capability-card", "role": "section", "order": 6, "note": "能力自评：三档 experience-segment。" },
+    { "class": "form-section form-card", "role": "section", "order": 7, "note": "备注与安全：textarea remark + safety-box 紧急联系人 + privacy-note。" },
+    { "class": "fixed action-bar", "role": "fixed-cta", "order": 8, "note": "固定底栏：返回活动 + 提交报名；disabled-hint 承载 submitBlockedHint。" }
+  ],
+  "interactions": [
+    { "trigger": "set", "dataAttr": "data-key", "note": "统一字段录入：gatheringMode / experience / remark。" },
+    { "trigger": "submit", "note": "提交报名，禁用由 submitBlockedHint 决定。" },
+    { "trigger": "back", "note": "返回活动详情。" },
+    { "trigger": "profile", "note": "跳转到个人资料编辑/完善。" }
+  ],
+  "copy": [
+    "此里 · 留下一个位置",
+    "下一站，山顶。",
+    "填写报名",
+    "组织审核",
+    "获取凭证",
+    "报名资料",
+    "集合方式",
+    "能力自评",
+    "备注与安全",
+    "紧急联系人",
+    "返回活动",
+    "提交报名"
+  ],
+  "assets": [],
+  "forbids": [
+    { "class": "form-surface", "reason": "旧 Oil UI 外包装已退役。" }
+  ]
+}

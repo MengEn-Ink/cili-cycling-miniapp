@@ -1,0 +1,50 @@
+{
+  "slug": "activity-detail",
+  "pagePath": "pages/activity-detail/index",
+  "title": "活动详情",
+  "wxml": "miniprogram/pages/activity-detail/index.wxml",
+  "wxss": "miniprogram/pages/activity-detail/index.wxss",
+  "ts": "miniprogram/pages/activity-detail/index.ts",
+  "containers": [
+    { "class": "detail-page", "role": "page-root", "order": 1 },
+    { "class": "detail-unified-card", "role": "content-shell", "order": 2, "note": "统一的内容卡壳，包装 hero + info-bar + content。" },
+    { "class": "detail-hero", "role": "hero", "order": 3, "note": "hero-gallery 或 hero-media 或 generated-activity-cover 三选一；cover-count 作为画面计数。" },
+    { "class": "info-bar", "role": "info", "order": 4, "note": "club-identity + info-head（kicker + tag）+ info-title + info-meta。" },
+    { "class": "detail-metric-panel", "role": "metrics", "order": 5, "note": "metric-grid：里程 / 爬升 / 预计骑行 / 已通过人数，两列。" },
+    { "class": "detail-decision", "role": "status-banner", "order": 6, "note": "decision-status / decision-hint / 可选 decision-capacity，用于报名状态。" },
+    { "class": "time-card time-card--featured", "role": "card", "order": 7, "note": "集合时间 + 集合地点 + 可选导航按钮；meta 行承载结束/截止时间。" },
+    { "class": "fixed detail-action", "role": "fixed-cta", "order": 8, "note": "普通用户：activityAction 按钮；管理员：detail-action--admin 修改活动 + 管理报名。" }
+  ],
+  "interactions": [
+    { "trigger": "retryLoad", "note": "state-view retry 以及 refresh 失败点击重试。" },
+    { "trigger": "galleryChange", "note": "swiper 切换时记录 currentGalleryIndex。" },
+    { "trigger": "galleryImageError", "dataAttr": "data-index", "note": "任意画面加载失败降级为生成封面。" },
+    { "trigger": "coverImageError", "note": "单图封面失败降级。" },
+    { "trigger": "navigate", "dataAttr": "data-target", "note": "集合 / 终点地点导航。" },
+    { "trigger": "openRouteAnalysis", "note": "进入完整路线分析页。" },
+    { "trigger": "downloadGpx", "note": "GPX 下载，禁用态由 downloadingGpx 控制。" },
+    { "trigger": "copyOfficialRoute", "note": "复制 Strava 官方路线链接。" },
+    { "trigger": "openAttendeeCard", "dataAttr": "data-index", "note": "打开骑手公开名片 modal。" },
+    { "trigger": "closeAttendeeCard", "note": "关闭名片 modal。" },
+    { "trigger": "previewGroupQr", "note": "放大查看活动群二维码。" },
+    { "trigger": "editActivity", "note": "管理员：进入活动编辑。" },
+    { "trigger": "adminRegistration", "note": "管理员：进入该活动的报名审核。" },
+    { "trigger": "go", "note": "普通用户：主 CTA（报名 / 查看凭证 / 重新报名 等）。" }
+  ],
+  "copy": [
+    "报名状态",
+    "集合时间",
+    "集合地点",
+    "完整路线分析",
+    "查看完整路线分析",
+    "已报名人员",
+    "活动群二维码"
+  ],
+  "assets": [
+    { "class": "hero-media", "note": "首屏画面；多图时承载在 swiper-item 中。" },
+    { "class": "club-avatar", "note": "活动归属俱乐部头像；缺省态使用 club-avatar--placeholder。" }
+  ],
+  "forbids": [
+    { "class": "oil-detail-hero", "reason": "旧 Oil UI hero 已退役，禁止重新引入。" }
+  ]
+}

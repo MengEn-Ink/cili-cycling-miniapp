@@ -1,0 +1,42 @@
+{
+  "slug": "route-analysis",
+  "pagePath": "pages/route-analysis/index",
+  "title": "路线分析",
+  "wxml": "miniprogram/pages/route-analysis/index.wxml",
+  "wxss": "miniprogram/pages/route-analysis/index.wxss",
+  "ts": "miniprogram/pages/route-analysis/index.ts",
+  "containers": [
+    { "class": "route-analysis-page", "role": "page-root", "order": 1 },
+    { "class": "analysis-header", "role": "page-heading", "order": 2, "note": "brand-line + analysis-title + analysis-route + 可选 analysis-summary。" },
+    { "class": "overview-grid", "role": "metrics", "order": 3, "note": "metric-grid 四项核心指标，两列。" },
+    { "class": "conclusion-panel", "role": "summary", "order": 4, "optional": true, "note": "核心结论 + strategy-tags；strategySummary 为空时整块隐藏。" },
+    { "class": "analysis-card map-card", "role": "card", "order": 5, "optional": true, "note": "路线走向 · 关键地名；mapAvailable 或 mapFailed 时展示。" },
+    { "class": "analysis-card", "role": "card", "order": 6, "optional": true, "note": "海拔剖面与锚点；profileAvailable 时展示 canvas + anchor-strip。" },
+    { "class": "analysis-card", "role": "card", "order": 7, "optional": true, "note": "路线分段 segments。" },
+    { "class": "analysis-card equipment-card", "role": "card", "order": 8, "optional": true, "note": "装备建议。" }
+  ],
+  "interactions": [
+    { "trigger": "retry", "note": "state-view bindretry。" },
+    { "trigger": "markerTap", "note": "地图 marker 点击 → applyPoint。" },
+    { "trigger": "retryMap", "note": "地图失败重试。" },
+    { "trigger": "showFullRoute", "note": "重置到全线视角。" },
+    { "trigger": "navigateToStart", "note": "起点选中时导航到起点。" },
+    { "trigger": "selectPoint", "dataAttr": "data-id", "note": "锚点或点列表选择。" },
+    { "trigger": "selectSegment", "dataAttr": "data-id", "note": "坡段选择。" }
+  ],
+  "copy": [
+    "核心结论",
+    "路线走向 · 关键地名",
+    "海拔剖面与锚点",
+    "路线分段",
+    "关键公里点",
+    "坡段风险",
+    "路线策略",
+    "装备建议"
+  ],
+  "assets": [
+    { "class": "route-map", "note": "原生 map 组件，id=route-analysis-map。" },
+    { "class": "elevation-chart", "note": "canvas type=2d，id=route-analysis-elevation。" }
+  ],
+  "forbids": []
+}

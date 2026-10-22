@@ -1,0 +1,43 @@
+{
+  "slug": "admin-club-profile",
+  "pagePath": "pages/admin/club-application-detail/index",
+  "title": "俱乐部资料",
+  "wxml": "miniprogram/pages/admin/club-application-detail/index.wxml",
+  "wxss": "miniprogram/pages/admin/club-application-detail/index.wxss",
+  "ts": "miniprogram/pages/admin/club-application-detail/index.ts",
+  "designIntent": "历史路由名 club-application-detail 实际落点为唯一俱乐部资料编辑：俱乐部头像（1:1）+ 俱乐部背景图（16:9）+ 名称 / 地区 / 简介；上传过程显示进度；无审批意见与批复动作。",
+  "containers": [
+    { "class": "page club-profile-page", "role": "page-root", "order": 1 },
+    { "class": "club-profile-head journal-heading", "role": "page-heading", "order": 2, "note": "此里 · 共同的名片 + 平台管理员 badge + editorial 标题" },
+    { "class": "card club-profile-card", "role": "section", "order": 3, "note": "三张卡：01 头像 1:1 / 02 背景 16:9 / 03 基本资料" },
+    { "class": "club-avatar-editor", "role": "avatar-upload", "order": 4, "note": "俱乐部头像上传 + 预览 + 更换按钮" },
+    { "class": "club-cover-editor", "role": "cover-upload", "order": 5, "note": "俱乐部背景图上传 + 16:9 预览 + 删除按钮 + 进度条" },
+    { "class": "btn club-profile-submit", "role": "submit", "order": 6, "note": "保存资料；bootstrap 分支文案改为创建并立即生效" }
+  ],
+  "interactions": [
+    { "trigger": "chooseAvatar", "note": "选择俱乐部头像" },
+    { "trigger": "chooseCover", "note": "选择俱乐部背景图" },
+    { "trigger": "removeCover", "note": "删除俱乐部背景图" },
+    { "trigger": "input", "dataAttr": "data-field", "note": "名称/地区/简介统一回写" },
+    { "trigger": "save", "note": "保存俱乐部资料（bootstrap 分支即为创建）" },
+    { "trigger": "load", "note": "加载失败后重新加载" }
+  ],
+  "copy": [
+    "此里 · 共同的名片",
+    "俱乐部头像",
+    "俱乐部背景图",
+    "基本资料",
+    "俱乐部名称",
+    "所在地区",
+    "俱乐部简介"
+  ],
+  "assets": [
+    { "class": "club-avatar-img", "note": "俱乐部头像预览" },
+    { "class": "club-cover-img", "note": "俱乐部背景图预览" }
+  ],
+  "forbids": [
+    { "class": "review-actions", "reason": "这是单俱乐部资料编辑，不是审批" },
+    { "class": "application-reject", "reason": "无驳回/通过操作" }
+  ],
+  "phase2Note": "历史路由与新设计语义绑定；WXML/WXSS 已对齐。"
+}

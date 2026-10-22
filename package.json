@@ -47,7 +47,8 @@
     "check:governance": "node scripts/check-project-governance.mjs",
     "build": "rm -rf dist && tsc -p tsconfig.build.json && node scripts/validate.mjs",
     "validate": "npm run tool:install && npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:ci-contract && npm run test:journey-evidence && npm run test:bootstrap && npm run test:deploy && npm run check:experience-releases && npm run test:release-notes && npm run test:ui-sync && npm run check:release-notes && npm run check:main-package && npm run check:ui-sync && npm run check:governance && npm run test:cloud && npm run verify:cloud-packages && npm run build",
-    "audit:all": "npm audit --audit-level=high && node scripts/audit-miniprogram-ci.mjs && npm --prefix cloudfunctions/shared audit --audit-level=high && npm --prefix cloudfunctions/auth audit --audit-level=high && npm --prefix cloudfunctions/activity-read audit --audit-level=high && npm --prefix cloudfunctions/activity-admin audit --audit-level=high && npm --prefix cloudfunctions/strava-bridge audit --audit-level=high && npm --prefix cloudfunctions/strava-callback audit --audit-level=high && npm --prefix cloudfunctions/registration audit --audit-level=high && npm --prefix cloudfunctions/admin-review audit --audit-level=high && npm --prefix cloudfunctions/club-application audit --audit-level=high && npm --prefix cloudfunctions/notification-send audit --audit-level=high && npm --prefix cloudfunctions/profile audit --audit-level=high && npm --prefix cloudfunctions/profile-media-cleanup audit --audit-level=high && npm --prefix cloudfunctions/route-maintenance audit --audit-level=high"
+    "audit:all": "npm audit --audit-level=high && node scripts/audit-miniprogram-ci.mjs && npm --prefix cloudfunctions/shared audit --audit-level=high && npm --prefix cloudfunctions/auth audit --audit-level=high && npm --prefix cloudfunctions/activity-read audit --audit-level=high && npm --prefix cloudfunctions/activity-admin audit --audit-level=high && npm --prefix cloudfunctions/strava-bridge audit --audit-level=high && npm --prefix cloudfunctions/strava-callback audit --audit-level=high && npm --prefix cloudfunctions/registration audit --audit-level=high && npm --prefix cloudfunctions/admin-review audit --audit-level=high && npm --prefix cloudfunctions/club-application audit --audit-level=high && npm --prefix cloudfunctions/notification-send audit --audit-level=high && npm --prefix cloudfunctions/profile audit --audit-level=high && npm --prefix cloudfunctions/profile-media-cleanup audit --audit-level=high && npm --prefix cloudfunctions/route-maintenance audit --audit-level=high",
+    "test:phase3-visual": "playwright install chromium && node scripts/run-phase3-three-width.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -56,6 +57,7 @@
     "@vitest/coverage-v8": "^5.0.5",
     "eslint": "^10.12.0",
     "globals": "^17.13.0",
+    "playwright": "^1.56.1",
     "prettier": "^3.9.10",
     "typescript": "^5.9.2",
     "vitest": "^5.0.5"

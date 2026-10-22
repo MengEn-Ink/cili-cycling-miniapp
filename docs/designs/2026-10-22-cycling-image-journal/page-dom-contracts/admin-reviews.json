@@ -1,0 +1,40 @@
+{
+  "slug": "admin-reviews",
+  "pagePath": "pages/admin/reviews/index",
+  "title": "报名审核",
+  "wxml": "miniprogram/pages/admin/reviews/index.wxml",
+  "wxss": "miniprogram/pages/admin/reviews/index.wxss",
+  "ts": "miniprogram/pages/admin/reviews/index.ts",
+  "designIntent": "六项状态筛选平铺（候补/待审核/已通过/已签到/已驳回/全部）；每条报名完整展示身份、活动、集合方式、经验、提交时间；可发送活动提醒。",
+  "containers": [
+    { "class": "page review-page", "role": "page-root", "order": 1 },
+    { "class": "journal-heading", "role": "page-heading", "order": 2, "note": "此里 · 审核工作台 + editorial 标题" },
+    { "class": "filter-tabs", "role": "tablist", "order": 3, "note": "六项筛选 tab：候补/待审核/已通过/已签到/已驳回/全部" },
+    { "class": "review-list", "role": "list", "order": 4, "note": "报名审批列表，每项 review-card" },
+    { "class": "card reminder-card", "role": "reminder", "order": 5, "optional": true, "note": "活动提醒卡：仅在有可审批活动时渲染" }
+  ],
+  "interactions": [
+    { "trigger": "tab", "dataAttr": "data-v", "note": "切换状态筛选" },
+    { "trigger": "choose", "note": "切换当前审批活动 picker" },
+    { "trigger": "open", "dataAttr": "data-id", "note": "打开报名详情" },
+    { "trigger": "load", "note": "重新加载审批列表" },
+    { "trigger": "sendReminders", "note": "向已通过骑友发送活动提醒（不重复发送）" }
+  ],
+  "copy": [
+    "此里 · 审核工作台",
+    "报名审批",
+    "候补",
+    "待审核",
+    "已通过",
+    "已签到",
+    "已驳回",
+    "全部",
+    "活动提醒",
+    "发送活动提醒"
+  ],
+  "assets": [],
+  "forbids": [
+    { "class": "bulk-approve-button", "reason": "不提供批量通过，必须逐条审核" }
+  ],
+  "phase2Note": "本页实现已对齐设计意图；仅做契约化。"
+}

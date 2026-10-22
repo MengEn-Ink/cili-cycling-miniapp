@@ -1,0 +1,33 @@
+{
+  "slug": "admin-club-management",
+  "pagePath": "pages/admin/club-applications/index",
+  "title": "俱乐部管理",
+  "wxml": "miniprogram/pages/admin/club-applications/index.wxml",
+  "wxss": "miniprogram/pages/admin/club-applications/index.wxss",
+  "ts": "miniprogram/pages/admin/club-applications/index.ts",
+  "designIntent": "历史路由名 club-applications 实际落点为唯一俱乐部管理：未创建时显示首次创建入口；已创建后展示唯一俱乐部资料卡 + 编辑入口；不出现申请列表、第二个创建入口或审批操作。",
+  "containers": [
+    { "class": "page club-admin-page", "role": "page-root", "order": 1 },
+    { "class": "club-admin-head journal-heading", "role": "page-heading", "order": 2, "note": "此里 · 唯一俱乐部 + 平台管理员 badge + editorial 标题" },
+    { "class": "card club-admin-card", "role": "club-card", "order": 3, "optional": true, "note": "已创建分支：唯一俱乐部头像 + 名称 + 地区 + ACTIVE tag" },
+    { "class": "btn club-admin-action", "role": "primary-action", "order": 4, "note": "首次创建或编辑俱乐部资料主按钮" }
+  ],
+  "interactions": [
+    { "trigger": "load", "note": "加载失败后重新加载" },
+    { "trigger": "create", "note": "首次创建唯一俱乐部" },
+    { "trigger": "edit", "note": "编辑唯一俱乐部资料" }
+  ],
+  "copy": [
+    "此里 · 唯一俱乐部",
+    "俱乐部管理",
+    "平台管理员",
+    "全平台只有一个俱乐部"
+  ],
+  "assets": [],
+  "forbids": [
+    { "class": "applications-list", "reason": "历史路由保留，但不展示申请列表" },
+    { "class": "create-second-club", "reason": "不出现第二个创建入口" },
+    { "class": "review-actions", "reason": "此页不是审批工作台" }
+  ],
+  "phase2Note": "历史路由与新设计语义绑定；WXML/WXSS 已对齐。"
+}

@@ -1,0 +1,38 @@
+{
+  "slug": "activities",
+  "pagePath": "pages/activities/index",
+  "title": "骑行活动",
+  "wxml": "miniprogram/pages/activities/index.wxml",
+  "wxss": "miniprogram/pages/activities/index.wxss",
+  "ts": "miniprogram/pages/activities/index.ts",
+  "containers": [
+    { "class": "page activities-page", "role": "page-root", "order": 1 },
+    { "class": "activities-intro", "role": "page-heading", "order": 2, "note": "intro-kicker + page-title + intro-copy 承载骑行影像志刊首语。" },
+    { "class": "timeline-tabs", "role": "tablist", "order": 3, "note": "即将开始 / 历史活动 两个 role=tab 的切换；绑定 switchView。" },
+    { "class": "day-chip-shell", "role": "day-chips", "order": 4, "optional": true, "note": "future 视图下保留日期筛选 chip（真实业务）；design 原型未强制，但不得移除。" },
+    { "class": "list-toolbar", "role": "toolbar", "order": 5, "note": "list-count 文案 + layout-switch（沉浸/紧凑） 密度切换。" },
+    { "class": "activity-story-list", "role": "list", "order": 6, "note": "card 模式下的影像纵向列表，内部复用 activity-card 组件。" },
+    { "class": "compact-list", "role": "list", "order": 7, "note": "compact 模式下的紧凑列表；两种 layout 必须同时存在。" }
+  ],
+  "interactions": [
+    { "trigger": "switchView", "dataAttr": "data-view", "note": "切换 future / history" },
+    { "trigger": "selectDay", "dataAttr": "data-index", "note": "day chip 筛选（真实业务保留）" },
+    { "trigger": "switchLayout", "dataAttr": "data-mode", "note": "切换沉浸 / 紧凑布局" },
+    { "trigger": "open", "dataAttr": "data-id", "note": "打开活动详情" },
+    { "trigger": "loadMore", "note": "加载更多活动" }
+  ],
+  "copy": [
+    "此里 · 一起出发",
+    "把周末，交给山路。",
+    "每一次转弯，都有值得记住的风景。",
+    "即将开始",
+    "历史活动",
+    "沉浸",
+    "紧凑"
+  ],
+  "assets": [],
+  "forbids": [
+    { "class": "hero--compact", "reason": "旧 Oil UI hero 已退役，禁止重新引入。" },
+    { "class": "activities-hero", "reason": "旧 Oil UI hero 已退役，禁止重新引入。" }
+  ]
+}

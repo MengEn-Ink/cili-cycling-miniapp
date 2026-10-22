@@ -1,0 +1,764 @@
+{
+  "base": "http://127.0.0.1:45477",
+  "pages": 16,
+  "widths": [
+    340,
+    375,
+    430
+  ],
+  "generatedAt": "2026-10-22T17:53:57.946Z",
+  "results": [
+    {
+      "slug": "activities",
+      "widths": {
+        "340": {
+          "docW": 340,
+          "viewW": 340,
+          "docH": 1376,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 10,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/activities-340.png",
+          "consoleErrors": []
+        },
+        "375": {
+          "docW": 375,
+          "viewW": 375,
+          "docH": 1387,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 10,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/activities-375.png",
+          "consoleErrors": []
+        },
+        "430": {
+          "docW": 430,
+          "viewW": 430,
+          "docH": 1387,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 10,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/activities-430.png",
+          "consoleErrors": []
+        }
+      }
+    },
+    {
+      "slug": "activity-detail",
+      "widths": {
+        "340": {
+          "docW": 340,
+          "viewW": 340,
+          "docH": 2322,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 6,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/activity-detail-340.png",
+          "consoleErrors": []
+        },
+        "375": {
+          "docW": 375,
+          "viewW": 375,
+          "docH": 2367,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 6,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/activity-detail-375.png",
+          "consoleErrors": []
+        },
+        "430": {
+          "docW": 430,
+          "viewW": 430,
+          "docH": 2416,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 6,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/activity-detail-430.png",
+          "consoleErrors": []
+        }
+      }
+    },
+    {
+      "slug": "route-analysis",
+      "widths": {
+        "340": {
+          "docW": 340,
+          "viewW": 340,
+          "docH": 1975,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 2,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/route-analysis-340.png",
+          "consoleErrors": []
+        },
+        "375": {
+          "docW": 375,
+          "viewW": 375,
+          "docH": 1983,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 2,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/route-analysis-375.png",
+          "consoleErrors": []
+        },
+        "430": {
+          "docW": 430,
+          "viewW": 430,
+          "docH": 2055,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 2,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/route-analysis-430.png",
+          "consoleErrors": []
+        }
+      }
+    },
+    {
+      "slug": "registration-form",
+      "widths": {
+        "340": {
+          "docW": 340,
+          "viewW": 340,
+          "docH": 1523,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 7,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/registration-form-340.png",
+          "consoleErrors": []
+        },
+        "375": {
+          "docW": 375,
+          "viewW": 375,
+          "docH": 1539,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 7,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/registration-form-375.png",
+          "consoleErrors": []
+        },
+        "430": {
+          "docW": 430,
+          "viewW": 430,
+          "docH": 1516,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 7,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/registration-form-430.png",
+          "consoleErrors": []
+        }
+      }
+    },
+    {
+      "slug": "registrations",
+      "widths": {
+        "340": {
+          "docW": 340,
+          "viewW": 340,
+          "docH": 1396,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 7,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/registrations-340.png",
+          "consoleErrors": []
+        },
+        "375": {
+          "docW": 375,
+          "viewW": 375,
+          "docH": 1396,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 7,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/registrations-375.png",
+          "consoleErrors": []
+        },
+        "430": {
+          "docW": 430,
+          "viewW": 430,
+          "docH": 1396,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 7,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/registrations-430.png",
+          "consoleErrors": []
+        }
+      }
+    },
+    {
+      "slug": "credential",
+      "widths": {
+        "340": {
+          "docW": 340,
+          "viewW": 340,
+          "docH": 1326,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 7,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/credential-340.png",
+          "consoleErrors": []
+        },
+        "375": {
+          "docW": 375,
+          "viewW": 375,
+          "docH": 1327,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 7,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/credential-375.png",
+          "consoleErrors": []
+        },
+        "430": {
+          "docW": 430,
+          "viewW": 430,
+          "docH": 1304,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 7,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/credential-430.png",
+          "consoleErrors": []
+        }
+      }
+    },
+    {
+      "slug": "profile",
+      "widths": {
+        "340": {
+          "docW": 340,
+          "viewW": 340,
+          "docH": 934,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 11,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/profile-340.png",
+          "consoleErrors": []
+        },
+        "375": {
+          "docW": 375,
+          "viewW": 375,
+          "docH": 934,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 11,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/profile-375.png",
+          "consoleErrors": []
+        },
+        "430": {
+          "docW": 430,
+          "viewW": 430,
+          "docH": 934,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 11,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/profile-430.png",
+          "consoleErrors": []
+        }
+      }
+    },
+    {
+      "slug": "profile-edit",
+      "widths": {
+        "340": {
+          "docW": 340,
+          "viewW": 340,
+          "docH": 1670,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 10,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/profile-edit-340.png",
+          "consoleErrors": []
+        },
+        "375": {
+          "docW": 375,
+          "viewW": 375,
+          "docH": 1661,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 10,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/profile-edit-375.png",
+          "consoleErrors": []
+        },
+        "430": {
+          "docW": 430,
+          "viewW": 430,
+          "docH": 1661,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 10,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/profile-edit-430.png",
+          "consoleErrors": []
+        }
+      }
+    },
+    {
+      "slug": "settings",
+      "widths": {
+        "340": {
+          "docW": 340,
+          "viewW": 340,
+          "docH": 924,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 9,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/settings-340.png",
+          "consoleErrors": []
+        },
+        "375": {
+          "docW": 375,
+          "viewW": 375,
+          "docH": 934,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 9,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/settings-375.png",
+          "consoleErrors": []
+        },
+        "430": {
+          "docW": 430,
+          "viewW": 430,
+          "docH": 934,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 9,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/settings-430.png",
+          "consoleErrors": []
+        }
+      }
+    },
+    {
+      "slug": "club-center",
+      "widths": {
+        "340": {
+          "docW": 340,
+          "viewW": 340,
+          "docH": 1262,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 4,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/club-center-340.png",
+          "consoleErrors": []
+        },
+        "375": {
+          "docW": 375,
+          "viewW": 375,
+          "docH": 1262,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 4,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/club-center-375.png",
+          "consoleErrors": []
+        },
+        "430": {
+          "docW": 430,
+          "viewW": 430,
+          "docH": 1262,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 4,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/club-center-430.png",
+          "consoleErrors": []
+        }
+      }
+    },
+    {
+      "slug": "admin-activity-list",
+      "widths": {
+        "340": {
+          "docW": 340,
+          "viewW": 340,
+          "docH": 1127,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 6,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/admin-activity-list-340.png",
+          "consoleErrors": []
+        },
+        "375": {
+          "docW": 375,
+          "viewW": 375,
+          "docH": 1151,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 6,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/admin-activity-list-375.png",
+          "consoleErrors": []
+        },
+        "430": {
+          "docW": 430,
+          "viewW": 430,
+          "docH": 1151,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 6,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/admin-activity-list-430.png",
+          "consoleErrors": []
+        }
+      }
+    },
+    {
+      "slug": "admin-activity-edit",
+      "widths": {
+        "340": {
+          "docW": 340,
+          "viewW": 340,
+          "docH": 2831,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 15,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/admin-activity-edit-340.png",
+          "consoleErrors": []
+        },
+        "375": {
+          "docW": 375,
+          "viewW": 375,
+          "docH": 2711,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 15,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/admin-activity-edit-375.png",
+          "consoleErrors": []
+        },
+        "430": {
+          "docW": 430,
+          "viewW": 430,
+          "docH": 2673,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 15,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/admin-activity-edit-430.png",
+          "consoleErrors": []
+        }
+      }
+    },
+    {
+      "slug": "admin-reviews",
+      "widths": {
+        "340": {
+          "docW": 340,
+          "viewW": 340,
+          "docH": 1113,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 11,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/admin-reviews-340.png",
+          "consoleErrors": []
+        },
+        "375": {
+          "docW": 375,
+          "viewW": 375,
+          "docH": 1090,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 11,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/admin-reviews-375.png",
+          "consoleErrors": []
+        },
+        "430": {
+          "docW": 430,
+          "viewW": 430,
+          "docH": 1067,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 11,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/admin-reviews-430.png",
+          "consoleErrors": []
+        }
+      }
+    },
+    {
+      "slug": "admin-review-detail",
+      "widths": {
+        "340": {
+          "docW": 340,
+          "viewW": 340,
+          "docH": 1599,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 5,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/admin-review-detail-340.png",
+          "consoleErrors": []
+        },
+        "375": {
+          "docW": 375,
+          "viewW": 375,
+          "docH": 1576,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 5,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/admin-review-detail-375.png",
+          "consoleErrors": []
+        },
+        "430": {
+          "docW": 430,
+          "viewW": 430,
+          "docH": 1557,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 5,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/admin-review-detail-430.png",
+          "consoleErrors": []
+        }
+      }
+    },
+    {
+      "slug": "admin-club-management",
+      "widths": {
+        "340": {
+          "docW": 340,
+          "viewW": 340,
+          "docH": 1036,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 4,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/admin-club-management-340.png",
+          "consoleErrors": []
+        },
+        "375": {
+          "docW": 375,
+          "viewW": 375,
+          "docH": 1046,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 4,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/admin-club-management-375.png",
+          "consoleErrors": []
+        },
+        "430": {
+          "docW": 430,
+          "viewW": 430,
+          "docH": 1046,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 4,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/admin-club-management-430.png",
+          "consoleErrors": []
+        }
+      }
+    },
+    {
+      "slug": "admin-club-profile",
+      "widths": {
+        "340": {
+          "docW": 340,
+          "viewW": 340,
+          "docH": 1193,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 7,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/admin-club-profile-340.png",
+          "consoleErrors": []
+        },
+        "375": {
+          "docW": 375,
+          "viewW": 375,
+          "docH": 1165,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 7,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/admin-club-profile-375.png",
+          "consoleErrors": []
+        },
+        "430": {
+          "docW": 430,
+          "viewW": 430,
+          "docH": 1165,
+          "horizontalOverflow": 0,
+          "offenders": [],
+          "fixedBars": [],
+          "fixedOcclusions": [],
+          "buttons": 7,
+          "smallTouchTargets": [],
+          "invalidSmallTouchTargets": [],
+          "screenshot": "docs/evidence/phase3-three-width/admin-club-profile-430.png",
+          "consoleErrors": []
+        }
+      }
+    }
+  ]
+}

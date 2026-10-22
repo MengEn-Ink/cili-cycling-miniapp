@@ -1,0 +1,40 @@
+{
+  "slug": "registrations",
+  "pagePath": "pages/registrations/index",
+  "title": "我的行程",
+  "wxml": "miniprogram/pages/registrations/index.wxml",
+  "wxss": "miniprogram/pages/registrations/index.wxss",
+  "ts": "miniprogram/pages/registrations/index.ts",
+  "containers": [
+    { "class": "page registrations-page", "role": "page-root", "order": 1 },
+    { "class": "page-heading", "role": "page-heading", "order": 2, "note": "heading-eyebrow + heading-title + heading-copy + heading-count。" },
+    { "class": "trip-stats", "role": "list", "order": 3, "optional": true, "note": "items 存在时展示：审核中 / 可出发 / 已失效 三项状态计数。" },
+    { "class": "registration-list", "role": "list", "order": 4, "note": "每条 swipe-row：cancelled 时左滑 swipe-delete；主卡 registration-card status-xxx。" },
+    { "class": "ticket-head", "role": "ticket-header", "order": 5, "note": "每张 ticket 的顶部：ticket-label + card-index + status-pill。" },
+    { "class": "ticket-body", "role": "ticket-body", "order": 6, "note": "ticket 主体：club-identity + registration-title + meeting-panel + status-guidance + card-actions。" }
+  ],
+  "interactions": [
+    { "trigger": "open", "dataAttr": "data-id", "note": "打开票据对应的凭证 / 活动详情（由 destinationLabel 决定）。" },
+    { "trigger": "confirmDelete", "dataAttr": "data-id", "note": "cancelled 票据：删除历史记录。" },
+    { "trigger": "onRowTouchStart", "note": "滑动删除：手势开始。" },
+    { "trigger": "onRowTouchMove", "note": "滑动删除：手势滑动。" },
+    { "trigger": "onRowTouchEnd", "note": "滑动删除：手势结束。" },
+    { "trigger": "onRowTouchCancel", "note": "滑动删除：手势取消。" },
+    { "trigger": "load", "note": "state-view bind:retry。" }
+  ],
+  "copy": [
+    "此里 · 骑行日历",
+    "每次出发，都有一张记忆。",
+    "在这里确认报名状态与集合安排。",
+    "骑行票据",
+    "集合时间",
+    "集合地点",
+    "审核中",
+    "可出发",
+    "已失效"
+  ],
+  "assets": [
+    { "class": "club-avatar", "note": "活动归属俱乐部头像；缺省态使用 club-avatar--placeholder。" }
+  ],
+  "forbids": []
+}

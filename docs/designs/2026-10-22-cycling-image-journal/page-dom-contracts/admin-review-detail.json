@@ -1,0 +1,36 @@
+{
+  "slug": "admin-review-detail",
+  "pagePath": "pages/admin/review-detail/index",
+  "title": "审核报名",
+  "wxml": "miniprogram/pages/admin/review-detail/index.wxml",
+  "wxss": "miniprogram/pages/admin/review-detail/index.wxss",
+  "ts": "miniprogram/pages/admin/review-detail/index.ts",
+  "designIntent": "待审核才显示驳回/通过操作；通过后才显示确认签到；已签到/已驳回只读；驳回需填写理由；凭证编号待通过后生成。",
+  "containers": [
+    { "class": "page review-detail-page", "role": "page-root", "order": 1 },
+    { "class": "journal-heading", "role": "page-heading", "order": 2, "note": "此里 · 确认同行资料 + editorial 骑友姓名" },
+    { "class": "info-bar", "role": "status-bar", "order": 3, "note": "凭证编号或待生成提示 + 状态 tag" },
+    { "class": "fixed actions", "role": "actions-pending", "order": 4, "optional": true, "note": "待审核：驳回 secondary + 通过报名 btn" },
+    { "class": "row actions fixed single-action", "role": "actions-approved", "order": 5, "optional": true, "note": "已通过：确认签到 btn" }
+  ],
+  "interactions": [
+    { "trigger": "reason", "note": "审核理由 textarea 回写" },
+    { "trigger": "act", "dataAttr": "data-s", "note": "驳回 data-s=rejected / 通过 data-s=approved" },
+    { "trigger": "checkIn", "note": "已通过后确认签到" },
+    { "trigger": "previewPhoto", "dataAttr": "data-index", "note": "点击照片放大预览" }
+  ],
+  "copy": [
+    "此里 · 确认同行资料",
+    "报名人",
+    "报名信息",
+    "照片",
+    "骑行经验",
+    "驳回",
+    "通过报名"
+  ],
+  "assets": [],
+  "forbids": [
+    { "class": "actions-always-visible", "reason": "操作按钮必须按状态条件渲染，不得常驻" }
+  ],
+  "phase2Note": "本页实现已对齐设计意图；仅做契约化。"
+}

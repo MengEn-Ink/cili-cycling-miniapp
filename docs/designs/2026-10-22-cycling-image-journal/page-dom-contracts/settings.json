@@ -1,0 +1,40 @@
+{
+  "slug": "settings",
+  "pagePath": "pages/settings/index",
+  "title": "设置",
+  "wxml": "miniprogram/pages/settings/index.wxml",
+  "wxss": "miniprogram/pages/settings/index.wxss",
+  "ts": "miniprogram/pages/settings/index.ts",
+  "designIntent": "通知按次向微信请求订阅；隐私走微信隐私管理；缓存清理只重建可下载内容；Strava 线路同步仅平台管理员可见；页面还展示当前版本的发布说明。",
+  "containers": [
+    { "class": "page settings-page", "role": "page-root", "order": 1 },
+    { "class": "settings-hero journal-heading", "role": "page-heading", "order": 2, "note": "此里 · 安心同行 + editorial 设置标题" },
+    { "class": "section-label strava-section-label", "role": "section-label", "order": 3, "optional": true, "note": "仅管理员可见：00 线路同步" },
+    { "class": "management-list strava-list", "role": "strava-list", "order": 4, "optional": true, "note": "仅管理员可见：Strava 同步 management-row" },
+    { "class": "section-label", "role": "section-label", "order": 5, "note": "01 常用管理 label" },
+    { "class": "management-list", "role": "management-list", "order": 6, "note": "活动通知订阅 / 隐私管理 / 清理缓存 三行 management-row" },
+    { "class": "section-label release-section-label", "role": "section-label", "order": 7, "note": "02 App 更新 label" },
+    { "class": "release-list", "role": "release-list", "order": 8, "note": "当前版本 release-card，含 release-features 真实更新摘要" },
+    { "class": "settings-footer", "role": "footer", "order": 9, "note": "此里 · 持续为每一次出发升级" }
+  ],
+  "interactions": [
+    { "trigger": "manageNotifications", "note": "调用 wx.requestSubscribeMessage" },
+    { "trigger": "managePrivacy", "note": "打开微信隐私管理" },
+    { "trigger": "clearSafeCache", "note": "清理可安全重建的缓存" },
+    { "trigger": "openStravaSync", "note": "管理员：触发 Strava 线路信息同步" }
+  ],
+  "copy": [
+    "此里 · 安心同行",
+    "活动通知",
+    "隐私管理",
+    "清理缓存",
+    "当前版本",
+    "此里 · 持续为每一次出发升级"
+  ],
+  "assets": [],
+  "forbids": [
+    { "class": "settings-logout", "reason": "此页不提供登出入口" },
+    { "class": "notification-toggle", "reason": "通知走微信每次订阅，不使用常驻开关" }
+  ],
+  "phase2Note": "本页实现已对齐设计意图；避免触碰 TS 以避开 PR #341 冲突域。"
+}

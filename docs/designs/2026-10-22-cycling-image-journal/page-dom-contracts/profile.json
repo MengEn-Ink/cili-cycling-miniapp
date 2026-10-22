@@ -1,0 +1,46 @@
+{
+  "slug": "profile",
+  "pagePath": "pages/profile/index",
+  "title": "我的",
+  "wxml": "miniprogram/pages/profile/index.wxml",
+  "wxss": "miniprogram/pages/profile/index.wxss",
+  "ts": "miniprogram/pages/profile/index.ts",
+  "designIntent": "背景与头像共同组成『我的骑行名片』；默认普通成员视图；100% 完整度时不重复完整度卡片；联系电话仅本人与审核员完整可见。",
+  "containers": [
+    { "class": "page profile-page", "role": "page-root", "order": 1 },
+    { "class": "rider-card", "role": "hero", "order": 2, "note": "profile-hero 全幅背景（swiper 多张 / 兜底插画）+ 底部头像、昵称、性别、微信登录态" },
+    { "class": "club-membership-card", "role": "club-row", "order": 3, "note": "单俱乐部入口；未加入时显示占位，不出现推荐或列表" },
+    { "class": "hero-profile-progress", "role": "progress", "order": 4, "optional": true, "note": "资料完整度条，completeness===100 时整块不渲染" },
+    { "class": "identity-guide", "role": "auth-guide", "order": 5, "optional": true, "note": "微信身份不可用时才渲染，提供重新登录与完善入口" },
+    { "class": "section-label", "role": "section-label", "order": 6, "note": "常用服务 节 label" },
+    { "class": "menu-list", "role": "menu", "order": 7, "note": "报名资料 / 设置 / 管理员的活动管理 / 俱乐部管理 入口" },
+    { "class": "privacy-note", "role": "notice", "order": 8, "note": "联系电话 + 紧急联系人仅本人与审核员使用" }
+  ],
+  "interactions": [
+    { "trigger": "previewAvatar", "note": "点击头像查看完整头像" },
+    { "trigger": "previewHeroImage", "note": "点击背景查看完整背景照片" },
+    { "trigger": "openClubCenter", "note": "打开俱乐部主页" },
+    { "trigger": "edit", "note": "打开报名资料编辑" },
+    { "trigger": "openSettings", "note": "打开设置" },
+    { "trigger": "activities", "note": "管理员：进入活动管理" },
+    { "trigger": "clubApplications", "note": "管理员：进入俱乐部管理" },
+    { "trigger": "retryAuth", "note": "身份异常时重新登录" }
+  ],
+  "copy": [
+    "一起骑，去更远的地方",
+    "报名资料",
+    "设置",
+    "活动管理",
+    "俱乐部管理",
+    "常用服务",
+    "隐私说明"
+  ],
+  "assets": [
+    { "class": "hero-bg-image", "note": "背景照片实图" }
+  ],
+  "forbids": [
+    { "class": "profile-hero-cta", "reason": "旧 Oil UI 顶部大按钮已退役" },
+    { "class": "hero--compact", "reason": "旧 Oil UI hero 变体已退役" }
+  ],
+  "phase2Note": "本页实现已对齐设计意图；避免触碰 TS/状态逻辑以避开 PR #341 冲突域。"
+}

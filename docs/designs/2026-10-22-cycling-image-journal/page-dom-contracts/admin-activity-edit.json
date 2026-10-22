@@ -1,0 +1,54 @@
+{
+  "slug": "admin-activity-edit",
+  "pagePath": "pages/admin/activity-edit/index",
+  "title": "编辑活动",
+  "wxml": "miniprogram/pages/admin/activity-edit/index.wxml",
+  "wxss": "miniprogram/pages/admin/activity-edit/index.wxss",
+  "ts": "miniprogram/pages/admin/activity-edit/index.ts",
+  "designIntent": "分四大卡片：基本信息（含集合时间/报名方式/集合地点）、封面照片（最多 3 张）、备注与路线（Strava URL + GPX 兜底）与活动群二维码；路线预览未就绪时发布按钮锁定；集合地点必选。",
+  "containers": [
+    { "class": "page-shell activity-editor activity-form-page", "role": "page-root", "order": 1 },
+    { "class": "editor-hero journal-heading", "role": "page-heading", "order": 2, "note": "此里 · 编辑这次骑行 + editor-title editorial" },
+    { "class": "form-card card", "role": "section", "order": 3, "note": "重复出现：01 基本信息 / 02 活动封面 / 03 备注、路线与群二维码" },
+    { "class": "image-grid", "role": "cover-upload", "order": 4, "note": "最多 3 张封面；首张为封面；支持重试与删除" },
+    { "class": "registration-mode-options", "role": "registration-mode", "order": 5, "note": "报名方式 radiogroup：公开报名 / 审核报名；截止自动设为开始日 00:00" },
+    { "class": "route-link-row", "role": "route-input", "order": 6, "note": "Strava 线路链接 input + 补充本地路线 ＋ 按钮" },
+    { "class": "group-qr-field", "role": "group-qr", "order": 7, "note": "活动群二维码可选上传 1 张" },
+    { "class": "action-bar actions", "role": "actions", "order": 8, "note": "固定底部：保存草稿 secondary + 发布 primary；上传/路线/位置未就绪时 disabled" }
+  ],
+  "interactions": [
+    { "trigger": "field", "dataAttr": "data-name", "note": "通用字段回写" },
+    { "trigger": "dateTimePicker", "dataAttr": "data-target", "note": "集合日期/时间 picker" },
+    { "trigger": "registrationModeChange", "dataAttr": "data-mode", "note": "切换公开/审核报名" },
+    { "trigger": "chooseRouteLocation", "note": "地图选点" },
+    { "trigger": "chooseImages", "note": "添加封面图片" },
+    { "trigger": "setCover", "dataAttr": "data-index", "note": "设为封面" },
+    { "trigger": "removeImage", "dataAttr": "data-index", "note": "删除封面图" },
+    { "trigger": "addOfficialRoute", "note": "解析 Strava 线路" },
+    { "trigger": "openRouteBoostSheet", "note": "打开本地路线补传面板" },
+    { "trigger": "chooseRouteGpx", "note": "上传 GPX 本地路线文件" },
+    { "trigger": "removeRouteDetails", "note": "移除当前线路" },
+    { "trigger": "chooseGroupQrCode", "note": "上传活动群二维码" },
+    { "trigger": "removeGroupQrCode", "note": "删除活动群二维码" },
+    { "trigger": "save", "dataAttr": "data-status", "note": "保存草稿 / 发布 共用 handler，data-status 区分 draft/published" }
+  ],
+  "copy": [
+    "此里 · 编辑这次骑行",
+    "基本信息",
+    "活动封面",
+    "备注、路线与群二维码",
+    "公开报名",
+    "审核报名",
+    "集合时间",
+    "集合地点",
+    "活动群二维码",
+    "保存草稿"
+  ],
+  "assets": [
+    { "class": "image-preview", "note": "封面图预览图像" }
+  ],
+  "forbids": [
+    { "class": "deadline-field", "reason": "报名截止自动按开始日 00:00 推导，不展示手填字段" }
+  ],
+  "phase2Note": "本页实现已对齐设计意图；仅做契约化。"
+}
