@@ -122,8 +122,9 @@ page {
   min-height: 100%;
   background: var(--color-bg);
   color: var(--color-text);
-  font-size: 28rpx;
-  line-height: 44rpx;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 32rpx;
+  line-height: 48rpx;
 }
 
 view,
@@ -207,16 +208,18 @@ button::after {
 .hero-title,
 .heading-title,
 .editor-title {
-  font-size: 48rpx;
-  line-height: 64rpx;
+  font-size: 64rpx;
+  line-height: 80rpx;
   font-weight: 900;
+  letter-spacing: -2rpx;
+  overflow-wrap: break-word;
 }
 .title,
 .card-title,
 .section-title,
 .menu-title {
-  font-size: 36rpx;
-  line-height: 52rpx;
+  font-size: 40rpx;
+  line-height: 56rpx;
   font-weight: 800;
 }
 .muted,
@@ -269,7 +272,7 @@ button::after {
   font-variant-numeric: tabular-nums;
 }
 .section-label {
-  margin-top: 48rpx;
+  margin-top: calc(var(--space-6) + var(--space-5));
   color: var(--color-muted);
   font-size: 24rpx;
   line-height: 36rpx;
@@ -343,7 +346,7 @@ picker[disabled] {
 }
 
 .field {
-  margin-top: 24rpx;
+  margin-top: var(--space-6);
 }
 .label,
 .field-label,
@@ -351,7 +354,7 @@ picker[disabled] {
   display: flex;
   align-items: center;
   gap: 12rpx;
-  margin-bottom: 12rpx;
+  margin-bottom: var(--space-3);
   color: var(--color-text);
   font-size: 28rpx;
   line-height: 44rpx;

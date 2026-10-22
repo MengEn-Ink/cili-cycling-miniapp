@@ -3,9 +3,37 @@
   background: var(--color-bg);
   color: var(--color-text);
 }
+.journal-heading {
+  padding: 28rpx 0 56rpx;
+}
+.journal-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  color: var(--color-muted);
+  font-size: 24rpx;
+  line-height: 36rpx;
+  font-weight: 800;
+}
+.journal-eyebrow::before {
+  width: 40rpx;
+  height: 2rpx;
+  background: currentColor;
+  content: '';
+}
+.editor-title {
+  margin-top: 16rpx;
+  color: var(--color-text);
+  font-size: 64rpx;
+  line-height: 80rpx;
+  font-weight: 900;
+  letter-spacing: -2rpx;
+}
 .activity-editor .card {
   border: 2rpx solid var(--color-border);
-  border-radius: var(--radius-display);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: none;
 }
 .activity-editor .field .input,
 .activity-editor .field .textarea,
@@ -19,12 +47,17 @@
   color: var(--color-action-active);
 }
 .editor-summary {
+  margin-top: 12rpx;
   color: var(--color-muted);
-  font-size: 24rpx;
-  line-height: 36rpx;
+  font-size: 32rpx;
+  line-height: 48rpx;
 }
 .form-card {
-  margin-top: var(--card-gap);
+  margin-top: 64rpx;
+  padding: 40rpx 32rpx;
+}
+.journal-heading + .form-card {
+  margin-top: 0;
 }
 .card-head {
   justify-content: flex-start;
@@ -217,6 +250,12 @@
 .action-bar {
   grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
 }
+.action-bar .secondary {
+  min-height: 88rpx;
+}
+.action-bar .button--primary {
+  min-height: 96rpx;
+}
 .button--primary {
   background: var(--color-action) !important;
   color: var(--color-on-action) !important;
@@ -365,4 +404,12 @@
 }
 .route-boost-close::after {
   display: none;
+}
+@media (max-width: 340px) {
+  .activity-editor {
+    padding-bottom: calc(
+      var(--fixed-action-reserve-narrow) + 2 * var(--line-height-body) + var(--card-gap) +
+        env(safe-area-inset-bottom)
+    );
+  }
 }

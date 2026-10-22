@@ -1,6 +1,4 @@
 import { describe, expect, it } from 'vitest';
-// @ts-expect-error The repository intentionally omits Node typings; Vitest provides this runtime.
-import { execFileSync } from 'node:child_process';
 import {
   contrast,
   declaration,
@@ -54,8 +52,9 @@ describe('approved unified high-contrast UI', () => {
   it('uses strong activity chrome while preserving a fixed metric grid', () => {
     const card = read('miniprogram/components/activity-card/index.wxss');
     const cardShell = effectiveBlock(card, '.activity-card');
-    expect(declaration(cardShell, 'border')).toContain('var(--color-border)');
-    expectSemantic(declaration(cardShell, 'background'), '--color-surface');
+    expect(declaration(cardShell, 'border-bottom')).toBe('2rpx solid var(--color-border-strong)');
+    expect(declaration(cardShell, 'background')).toBe('transparent');
+    expect(declaration(effectiveBlock(card, '.card-media'), 'height')).toBe('560rpx');
     expect(declaration(effectiveBlock(card, '.metrics'), 'grid-template-columns')).toBe(
       'repeat(3, minmax(0, 1fr))',
     );
@@ -66,7 +65,7 @@ describe('approved unified high-contrast UI', () => {
   it('keeps the activity introduction on the reading axis and trip card surfaces visible', () => {
     const activities = read('miniprogram/pages/activities/index.wxss');
     expect(declaration(effectiveBlock(activities, '.activities-intro'), 'margin-top')).toBe(
-      '16rpx',
+      '32rpx',
     );
     const registrationCard = effectiveBlock(
       read('miniprogram/pages/registrations/index.wxss'),
@@ -90,13 +89,13 @@ describe('approved unified high-contrast UI', () => {
     );
   });
 
-  it('makes the profile data action unmistakable and touch-safe', () => {
+  it('makes the profile data action unmistakable and touch-safe in the flat editorial list', () => {
     const profile = read('miniprogram/pages/profile/index.wxss');
     const menuCard = effectiveBlock(profile, '.menu-card');
     const menuList = effectiveBlock(profile, '.menu-list');
-    expect(declaration(menuList, 'border')).toContain('var(--color-border)');
-    expectSemantic(declaration(menuCard, 'background'), '--color-surface');
-    expect(declaration(menuCard, 'min-height')).toBe('120rpx');
+    expect(declaration(menuList, 'border')).toBe('0');
+    expectSemantic(declaration(menuCard, 'background'), '--color-bg');
+    expect(declaration(menuCard, 'min-height')).toBe('144rpx');
   });
 
   it('keeps the fixed action reserve explicit across standard and narrow screens', () => {
@@ -107,15 +106,16 @@ describe('approved unified high-contrast UI', () => {
     );
   });
 
-  it('keeps form titles centered, fields readable, and product UI free of negative tracking', () => {
+  it('keeps form titles left-aligned, fields readable, and negative tracking scoped to editorial titles', () => {
     const registration = read('miniprogram/pages/registration-form/index.wxss');
-    expect(declaration(effectiveBlock(registration, '.form-title'), 'text-align')).toBe('center');
-    expect(declaration(effectiveBlock(registration, '.field-title'), 'text-align')).toBe('left');
-    const output = execFileSync(
-      'sh',
-      ['-c', "rg -n 'letter-spacing:\\s*-' miniprogram -g '*.wxss' || true"],
-      { encoding: 'utf8' },
+    expect(declaration(effectiveBlock(registration, '.title-row'), 'justify-content')).toBe(
+      'flex-start',
     );
-    expect(output).toBe('');
+    expect(declaration(effectiveBlock(registration, '.field-title'), 'text-align')).toBe('left');
+    expect(declaration(effectiveBlock(registration, '.journal-title'), 'letter-spacing')).toBe(
+      '-2rpx',
+    );
+    expect(effectiveBlock(registration, '.field-title')).not.toMatch(/letter-spacing:\s*-/);
+    expect(effectiveBlock(registration, '.identity-value')).not.toMatch(/letter-spacing:\s*-/);
   });
 });

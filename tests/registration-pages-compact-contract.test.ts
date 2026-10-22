@@ -97,10 +97,10 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     expect(form).not.toContain('待公布');
 
     const activityCard = read('miniprogram/components/activity-card/index.wxml');
-    expect(activityCard).toContain("item.capacity <= 0 ? '名额' : '报名'");
-    expect(activityCard).toContain(
-      "item.capacity > 0 ? (item.occupied + ' / ' + item.capacity) : '待确认'",
-    );
+    expect(activityCard).toContain("item.route.distanceKm > 0 ? item.route.distanceKm : '—'");
+    expect(activityCard).toContain("item.route.elevationM > 0 ? item.route.elevationM : '—'");
+    expect(activityCard).toContain("item.estimatedRideTime || '—'");
+    expect(activityCard).not.toContain('item.capacity');
     expect(activityCard).not.toContain('人已报名');
     expect(activityCard).not.toContain('人占位');
 
@@ -137,11 +137,12 @@ describe('报名、行程与凭证紧凑交互契约', () => {
     expect(registrationStyles).not.toMatch(/\.meeting-location\s*\{[^}]*line-clamp/s);
     expect(registrations).toContain('meeting-value meeting-location');
     const activityCardStyles = read('miniprogram/components/activity-card/index.wxss');
-    expect(activityCardStyles).toContain('.card-action');
-    expect(activityCardStyles).toContain('border-radius: 999rpx !important');
+    expect(activityCardStyles).toMatch(/\.route-line\s*\{[^}]*min-height:\s*88rpx/s);
+    expect(activityCardStyles).toMatch(/\.activity-title\s*\{[^}]*-webkit-line-clamp:\s*2/s);
     expect(credentialStyles).toContain('overflow-wrap: anywhere');
     expect(credentialStyles).toContain('padding-bottom: env(safe-area-inset-bottom)');
-    expect(credential).toContain('aria-label="公开骑行名片背景照片"');
     expect(credential).toContain('aria-label="{{riderName}}的骑手头像"');
+    expect(credential).toContain('仅分享公开活动详情');
+    expect(credential).not.toContain('保存凭证');
   });
 });

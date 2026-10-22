@@ -1,9 +1,51 @@
 .activity-list-page {
+  min-height: 100vh;
+  padding-bottom: calc(64rpx + env(safe-area-inset-bottom));
   background: var(--color-bg);
 }
+.journal-heading {
+  padding: 28rpx 0 56rpx;
+}
+.journal-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  color: var(--color-muted);
+  font-size: 24rpx;
+  line-height: 36rpx;
+  font-weight: 800;
+}
+.journal-eyebrow::before {
+  width: 40rpx;
+  height: 2rpx;
+  background: currentColor;
+  content: '';
+}
+.journal-heading .page-title {
+  margin-top: 16rpx;
+  font-size: 64rpx;
+  line-height: 80rpx;
+  letter-spacing: -2rpx;
+}
+.journal-heading .hero-subtitle {
+  margin-top: 12rpx;
+  font-size: 32rpx;
+  line-height: 48rpx;
+}
 .status-filters {
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-top: 32rpx;
+}
+.status-filter {
+  min-width: 0;
+  min-height: 88rpx;
+  white-space: normal;
+}
+.status-filter:nth-child(3n) {
+  border-right: 0;
+}
+.status-filter:nth-child(n + 4) {
+  border-top: var(--segment-border-width) solid var(--segment-border);
 }
 .list-count,
 .admin-card-head,
@@ -25,6 +67,8 @@
 }
 .activity-row .title {
   margin-top: 16rpx;
+  font-size: 36rpx;
+  line-height: 52rpx;
 }
 .management-metrics {
   display: grid;
@@ -85,6 +129,14 @@
   gap: 16rpx;
   margin-top: 24rpx;
 }
+.activity-actions .secondary,
+.clone-actions .secondary {
+  min-height: 88rpx;
+}
+.page-actions .btn,
+.clone-actions .btn {
+  min-height: 96rpx;
+}
 .low-actions {
   margin-top: 8rpx;
 }
@@ -120,10 +172,7 @@
 }
 @media (max-width: 340px) {
   .status-filters {
-    grid-template-columns: 1fr 1fr;
-  }
-  .status-filter:nth-child(2) {
-    border-right: 0;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .activity-actions,
   .page-actions,

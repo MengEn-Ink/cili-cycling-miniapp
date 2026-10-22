@@ -1,0 +1,198 @@
+[
+  {
+    "slug": "activities",
+    "title": "活动",
+    "note": "摄影卡片承担浏览节奏，距离与集合信息置于图片外。",
+    "group": "骑友体验",
+    "state": false
+  },
+  {
+    "slug": "activity-detail",
+    "title": "活动详情",
+    "note": "保留墨黑路线事实与报名决策块；公开骑友只显示昵称。",
+    "group": "骑友体验",
+    "state": false
+  },
+  {
+    "slug": "route-analysis",
+    "title": "完整路线分析",
+    "note": "地图、海拔、坡段与关键点共享82km/986m事实，不展示虚构实时天气。",
+    "group": "骑友体验",
+    "state": false
+  },
+  {
+    "slug": "registration-form",
+    "title": "填写报名",
+    "note": "经验三档枚举；审核、公开有名额和满员候补按真实状态区分。",
+    "group": "骑友体验",
+    "state": false
+  },
+  {
+    "slug": "registrations",
+    "title": "我的行程",
+    "note": "票据化表达状态和下一步；取消需确认，并给出重报路径。",
+    "group": "骑友体验",
+    "state": false
+  },
+  {
+    "slug": "credential",
+    "title": "骑行凭证",
+    "note": "本人完整资料与文字凭证；只分享活动详情，待审核和候补不显示有效凭证。",
+    "group": "骑友体验",
+    "state": false
+  },
+  {
+    "slug": "profile",
+    "title": "我的",
+    "note": "背景与头像共同组成我的骑行名片；默认普通成员视图，100%时不重复完整度卡片。",
+    "group": "骑友体验",
+    "state": false
+  },
+  {
+    "slug": "profile-edit",
+    "title": "编辑个人资料",
+    "note": "头像独立即时保存、背景最多一张；整表校验7项，性别仅男/女，上传中锁定保存。",
+    "group": "骑友体验",
+    "state": false
+  },
+  {
+    "slug": "settings",
+    "title": "设置",
+    "note": "通知按次请求微信订阅，隐私走微信管理，缓存安全重建；Strava只在管理员视图展示。",
+    "group": "骑友体验",
+    "state": false
+  },
+  {
+    "slug": "club-center",
+    "title": "俱乐部",
+    "note": "全平台唯一俱乐部只读主页；不出现推荐、加入申请或容量。",
+    "group": "骑友体验",
+    "state": false
+  },
+  {
+    "slug": "admin-activity-list",
+    "title": "活动管理",
+    "note": "把编辑与审核分开；主要操作为创建活动。",
+    "group": "管理体验",
+    "state": false
+  },
+  {
+    "slug": "admin-activity-edit",
+    "title": "编辑活动",
+    "note": "公开/审核报名、自动截止、Strava与GPX、最多3封面；预览绑定完成前锁定发布。",
+    "group": "管理体验",
+    "state": false
+  },
+  {
+    "slug": "admin-reviews",
+    "title": "报名审核",
+    "note": "六项筛选固定3×2，完整资料不靠缩小字号提高密度。",
+    "group": "管理体验",
+    "state": false
+  },
+  {
+    "slug": "admin-review-detail",
+    "title": "审核报名",
+    "note": "待审核才显示通过/驳回，通过后才能确认签到；已签到和驳回只读。",
+    "group": "管理体验",
+    "state": false
+  },
+  {
+    "slug": "admin-club-management",
+    "title": "俱乐部管理",
+    "note": "历史club-applications路由实际是单俱乐部管理；无申请列表和第二个创建入口。",
+    "group": "管理体验",
+    "state": false
+  },
+  {
+    "slug": "admin-club-profile",
+    "title": "俱乐部资料",
+    "note": "历史club-application-detail路由实际是唯一俱乐部资料编辑。",
+    "group": "管理体验",
+    "state": false
+  },
+  {
+    "slug": "state-loading",
+    "title": "活动加载中",
+    "note": "加载状态保持卡片尺寸，不模拟成功结果。",
+    "group": "状态与边界",
+    "state": true
+  },
+  {
+    "slug": "state-empty",
+    "title": "暂无活动",
+    "note": "解释为空的原因和唯一下一步。",
+    "group": "状态与边界",
+    "state": true
+  },
+  {
+    "slug": "state-network-error",
+    "title": "活动加载失败",
+    "note": "错误说明恢复动作，不展示技术错误码。",
+    "group": "状态与边界",
+    "state": true
+  },
+  {
+    "slug": "state-image-error",
+    "title": "图片不可用",
+    "note": "保留标题、事实和可恢复路径，没有空白图片容器。",
+    "group": "状态与边界",
+    "state": true
+  },
+  {
+    "slug": "state-pending",
+    "title": "报名待审核",
+    "note": "审核中不能伪装为已获取有效凭证。",
+    "group": "状态与边界",
+    "state": true
+  },
+  {
+    "slug": "state-submit-error",
+    "title": "报名提交失败",
+    "note": "失败保留资料，用实际重试动作恢复。",
+    "group": "状态与边界",
+    "state": true
+  },
+  {
+    "slug": "state-route-preparing",
+    "title": "路线准备中",
+    "note": "路线准备过程中发布锁定，不提供绕过按钮。",
+    "group": "状态与边界",
+    "state": true
+  },
+  {
+    "slug": "state-public-success",
+    "title": "公开报名成功",
+    "note": "明确为自动通过情境，与组织者审核样张区分。",
+    "group": "状态与边界",
+    "state": true
+  },
+  {
+    "slug": "state-profile-incomplete",
+    "title": "资料待完善",
+    "note": "5/7项进度与缺失项一致；补齐联系人，背景不计入报名门槛。",
+    "group": "状态与边界",
+    "state": true
+  },
+  {
+    "slug": "state-profile-stale",
+    "title": "资料刷新失败",
+    "note": "当前账号的已缓存影像继续可见；失败明确显示，重试后才恢复最新状态。",
+    "group": "状态与边界",
+    "state": true
+  },
+  {
+    "slug": "state-avatar-first",
+    "title": "先设置头像",
+    "note": "未设头像时整表禁用；头像选择走独立操作，成功后进入可编辑资料页。",
+    "group": "状态与边界",
+    "state": true
+  },
+  {
+    "slug": "state-waiting",
+    "title": "报名候补",
+    "note": "公开或审核报名名额已满时均可能候补；无虚构队列排名或自动补位承诺。",
+    "group": "状态与边界",
+    "state": true
+  }
+]

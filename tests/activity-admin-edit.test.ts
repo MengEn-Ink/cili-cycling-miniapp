@@ -1395,11 +1395,10 @@ describe('日常活动极简创建与编辑', () => {
   it('日常活动详情隐藏旧路线费用和不限人数话术，并展示可信公开路线或 GPX 详情', () => {
     const card = readFileSync('miniprogram/components/activity-card/index.wxml', 'utf8');
     const detail = readFileSync('miniprogram/pages/activity-detail/index.wxml', 'utf8');
-    expect(card).toContain('item.registrationUnlimited ? item.occupied');
-    expect(card).toContain(
-      "item.capacity > 0 ? (item.occupied + ' / ' + item.capacity) : '待确认'",
-    );
-    expect(card).toContain("item.capacity <= 0 ? '名额' : '报名'");
+    expect(card).toContain("item.route.distanceKm > 0 ? item.route.distanceKm : '—'");
+    expect(card).toContain("item.route.elevationM > 0 ? item.route.elevationM : '—'");
+    expect(card).toContain("item.estimatedRideTime || '—'");
+    expect(card).not.toContain('item.capacity');
     expect(card).not.toContain('人已报名');
     expect(card).toContain("item.route.start || '集合地点待公布'");
     expect(card).not.toContain("item.route.end || '终点待公布'");

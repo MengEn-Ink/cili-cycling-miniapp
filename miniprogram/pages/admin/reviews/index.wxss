@@ -1,5 +1,40 @@
 .review-page {
+  min-height: 100vh;
+  padding-bottom: calc(64rpx + env(safe-area-inset-bottom));
   background: var(--color-bg);
+}
+.journal-heading {
+  padding: 28rpx 0 56rpx;
+}
+.journal-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  color: var(--color-muted);
+  font-size: 24rpx;
+  line-height: 36rpx;
+  font-weight: 800;
+}
+.journal-eyebrow::before {
+  width: 40rpx;
+  height: 2rpx;
+  background: currentColor;
+  content: '';
+}
+.journal-title {
+  max-width: 620rpx;
+  margin-top: 16rpx;
+  color: var(--color-text);
+  font-size: 64rpx;
+  line-height: 80rpx;
+  font-weight: 900;
+  letter-spacing: -2rpx;
+}
+.journal-summary {
+  margin-top: 12rpx;
+  color: var(--color-muted);
+  font-size: 32rpx;
+  line-height: 48rpx;
 }
 .info-bar,
 .info-head,
@@ -61,7 +96,7 @@
   font-weight: 800;
 }
 .filter-tabs {
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-top: 32rpx;
 }
 .filter-tab {
@@ -104,7 +139,9 @@
 .review-card {
   margin-top: 0;
   border: 2rpx solid var(--color-border);
-  border-radius: var(--radius-display);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: none;
   text-align: left;
 }
 .review-identity {
@@ -199,6 +236,9 @@
   color: var(--color-text);
   font-size: 28rpx;
   font-weight: 900;
+}
+.review-action--primary {
+  min-height: 96rpx;
 }
 .review-action--primary {
   border-color: var(--color-action);

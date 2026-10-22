@@ -134,12 +134,12 @@ describe('活动 CTA 九分支', () => {
     ).toBe('报名待开放');
   });
 
-  it('活动卡容量缺失时明确提示名额待确认', () => {
+  it('活动卡以路线决策指标替代不稳定的容量摘要', () => {
     const template = readFileSync('miniprogram/components/activity-card/index.wxml', 'utf8');
-    expect(template).toContain(
-      "item.capacity > 0 ? (item.occupied + ' / ' + item.capacity) : '待确认'",
-    );
-    expect(template).toContain("item.capacity <= 0 ? '名额' : '报名'");
+    expect(template).toContain("item.route.distanceKm > 0 ? item.route.distanceKm : '—'");
+    expect(template).toContain("item.route.elevationM > 0 ? item.route.elevationM : '—'");
+    expect(template).toContain("item.estimatedRideTime || '—'");
+    expect(template).not.toContain('item.capacity');
     expect(template).not.toContain('人已报名');
   });
 

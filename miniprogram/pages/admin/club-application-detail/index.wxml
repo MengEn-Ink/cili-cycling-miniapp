@@ -13,7 +13,8 @@
   </view>
 
   <block wx:else>
-    <view class="club-profile-head">
+    <view class="club-profile-head journal-heading">
+      <view class="journal-eyebrow">此里 · 共同的名片</view>
       <view class="club-profile-badge">{{pageState === 'bootstrap' ? '平台管理员 · 首次创建' : '平台管理员'}}</view>
       <view class="page-title">{{pageState === 'bootstrap' ? '创建唯一俱乐部' : '编辑俱乐部资料'}}</view>
       <view class="page-sub">{{pageState === 'bootstrap' ? '平台尚未创建俱乐部，本次创建后将成为全平台唯一俱乐部，之后此入口不再出现。' : '全平台只允许存在一个俱乐部，本页只能编辑该俱乐部资料；不能创建第二个俱乐部。'}}</view>

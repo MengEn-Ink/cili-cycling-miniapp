@@ -2,15 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { declaration, effectiveBlock, expectSemantic, read } from './theme-contract-helpers';
 
 describe('沸点首批六页尺寸契约', () => {
-  it('活动首页使用统一页边距、46px 分段控件和完整卡片轮播', () => {
+  it('活动首页使用统一页边距、46px 分段控件和完整竖向影像列表', () => {
     const app = read('miniprogram/app.wxss');
     const styles = read('miniprogram/pages/activities/index.wxss');
     expect(app).toContain('padding: 32rpx var(--page-gutter);');
     expect(declaration(effectiveBlock(app, '.timeline-tab'), 'min-height')).toBe(
       'var(--segment-height)',
     );
-    expect(declaration(effectiveBlock(styles, '.activity-carousel'), 'height')).toBe('900rpx');
-    expect(declaration(effectiveBlock(app, '.page-title'), 'font-size')).toBe('48rpx');
+    expect(declaration(effectiveBlock(styles, '.activity-story-list'), 'gap')).toBe('48rpx');
+    expect(declaration(effectiveBlock(styles, '.activity-card-skeleton'), 'height')).toBe('820rpx');
+    expect(declaration(effectiveBlock(app, '.page-title'), 'font-size')).toBe('64rpx');
   });
 
   it('我的行程逐项还原独立统计卡、深色票据头和暖米白集合信息', () => {
@@ -77,18 +78,18 @@ describe('沸点首批六页尺寸契约', () => {
     expect(declaration(effectiveBlock(app, '.btn'), 'min-height')).toBe('var(--control-height)');
   });
 
-  it('个人中心保留媒体 Hero，其余卡片回到沸点白卡描边结构', () => {
+  it('个人中心保留深色媒体 Hero，其余服务回到暖米白编辑列表', () => {
     const template = read('miniprogram/pages/profile/index.wxml');
     const styles = read('miniprogram/pages/profile/index.wxss');
     expect(template).toContain('bindtap="openSettings"');
     expect(template).toContain('aria-label="打开设置"');
     expect(template).not.toContain('<text>设置</text>');
-    expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*472rpx/s);
+    expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*680rpx/s);
     const card = effectiveBlock(styles, '.menu-list');
-    expect(declaration(card, 'border')).toBe('2rpx solid var(--color-border)');
-    expect(declaration(card, 'border-radius')).toBe('var(--radius-display)');
-    expectSemantic(declaration(card, 'background'), '--color-surface');
-    expect(declaration(effectiveBlock(styles, '.menu-card'), 'min-height')).toBe('120rpx');
+    expect(declaration(card, 'border')).toBe('0');
+    expect(declaration(card, 'border-radius')).toBe('0');
+    expectSemantic(declaration(card, 'background'), '--color-bg');
+    expect(declaration(effectiveBlock(styles, '.menu-card'), 'min-height')).toBe('144rpx');
   });
 
   it('设置页使用统一边距、四级标题和 14px 卡片', () => {
@@ -97,7 +98,7 @@ describe('沸点首批六页尺寸契约', () => {
     const release = effectiveBlock(styles, '.release-content');
     const releaseCard = effectiveBlock(styles, '.release-card');
     expect(app).toContain('padding: 32rpx var(--page-gutter);');
-    expect(declaration(effectiveBlock(styles, '.hero-title'), 'font-size')).toBe('48rpx');
+    expect(declaration(effectiveBlock(styles, '.hero-title'), 'font-size')).toBe('64rpx');
     expect(declaration(release, 'padding')).toBe('28rpx');
     expect(declaration(releaseCard, 'border')).toBe('4rpx solid var(--color-border-strong)');
     expectSemantic(declaration(releaseCard, 'border-radius'), '--radius-card');

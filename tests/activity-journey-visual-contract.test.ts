@@ -26,15 +26,14 @@ describe('activity journey visual contract', () => {
     );
   });
 
-  it('活动卡保留整卡点击，并提供查看详情与报名或行程的主次操作', () => {
+  it('活动卡以单一整卡入口承载查看活动操作并保持明确可访问名称', () => {
     expect(activityCard).toContain('bindtap="open"');
-    expect(activityCard).toContain('class="secondary card-action card-action--detail"');
-    expect(activityCard).toContain('class="btn card-action card-action--primary"');
-    expect(activityCard).toContain("item.registrationStatus ? '查看行程' : '报名活动'");
-    expect(activityCard.match(/catchtap="open"/g)).toHaveLength(2);
-    expect(activityCardStyles).toMatch(
-      /\.card-actions\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s,
-    );
+    expect(activityCard).toContain('role="button"');
+    expect(activityCard).toContain('aria-label="查看活动：{{item.title}}"');
+    expect(activityCard).toContain('class="card-arrow">查看活动 →');
+    expect(activityCard).not.toContain('catchtap="open"');
+    expect(activityCard).not.toContain('card-action--primary');
+    expect(activityCardStyles).toMatch(/\.route-line\s*\{[^}]*min-height:\s*88rpx/s);
   });
 
   it('行程卡使用清晰次按钮，且审核橙点只由正数状态控制', () => {
@@ -63,14 +62,13 @@ describe('activity journey visual contract', () => {
     expect(registrationStyles).toMatch(/\.trip-skeleton__card\s*\{/);
   });
 
-  it('公开骑行名片置于凭证顶部，集合时间使用 48rpx', () => {
-    expect(credential.indexOf('class="public-card-heading"')).toBeLessThan(
-      credential.indexOf('class="compact-rider-card'),
-    );
-    expect(credential.indexOf('class="compact-rider-card')).toBeLessThan(
+  it('凭证使用影像志票据并只分享公开活动，集合时间使用 48rpx', () => {
+    expect(credential.indexOf('class="journal-heading"')).toBeLessThan(
       credential.indexOf('class="credential-card"'),
     );
-    expect(credential).toContain('公开骑行名片');
+    expect(credential).not.toContain('class="compact-rider-card');
+    expect(credential).toContain('open-type="share"');
+    expect(credential).toContain('仅分享公开活动详情');
     expect(credential).toContain('class="meeting-navigation"');
     expect(credentialStyles).toMatch(/\.meeting-time\s*\{[^}]*font-size:\s*48rpx/s);
     expect(credentialStyles).toMatch(

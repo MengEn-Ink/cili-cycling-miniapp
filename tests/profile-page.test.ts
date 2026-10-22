@@ -193,7 +193,11 @@ describe('个人中心加载状态', () => {
     expect(template).toContain('wx:if="{{profile && profile.completeness < 100}}"');
     expect(template).toContain('{{profile.completeness}}%');
     expect(template).toContain('style="width: {{profile.completeness}}%"');
-    expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*472rpx/s);
+    expect(template).toContain('class="profile-progress-action" bindtap="edit"');
+    expect(template).toContain(
+      "{{profile && profile.gender ? profile.gender : (heroCard ? heroCard.genderLabel : '未标注')}}",
+    );
+    expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*680rpx/s);
   });
 
   it('profile 请求失败时 hero 仍回退骑行名片 displayName', async () => {
@@ -225,7 +229,7 @@ describe('个人中心加载状态', () => {
     );
   });
 
-  it('hero 图片逐级从用户图、头像、包内山景降级到 CSS alpine', async () => {
+  it('hero 背景从用户图直接降级到深色非人物兜底，头像保持独立', async () => {
     await page.onShow();
     await vi.waitFor(() => expect(page.data.heroBackgrounds).toHaveLength(1));
 
@@ -235,13 +239,8 @@ describe('个人中心加载状态', () => {
       },
     });
     expect(page.data.heroBackgrounds).toEqual([]);
-    expect(page.data.heroBackgroundAvatarUrl).toBe('https://temporary.example/avatar.jpg');
-
-    page.heroAvatarBackgroundError({
-      currentTarget: { dataset: { url: 'https://temporary.example/avatar.jpg' } },
-    });
-    expect(page.data.heroBackgroundAvatarUrl).toBe('');
     expect(page.data.heroFallbackImageUrl).toBe('/assets/profile/hero-alpine.svg');
+    expect(page.data).not.toHaveProperty('heroBackgroundAvatarUrl');
 
     page.heroFallbackBackgroundError({
       currentTarget: { dataset: { url: '/assets/profile/hero-alpine.svg' } },
@@ -286,7 +285,7 @@ describe('个人中心加载状态', () => {
 
     expect(page.data.heroAvatarUrl).toBe('');
     expect(page.data.heroBackgrounds).toHaveLength(1);
-    expect(page.data.heroBackgroundAvatarUrl).toBe('https://temporary.example/avatar.jpg');
+    expect(page.data).not.toHaveProperty('heroBackgroundAvatarUrl');
   });
 
   it('头部保持简洁，个人中心只显示俱乐部名称且不单列骑行名片', () => {
@@ -317,7 +316,7 @@ describe('个人中心加载状态', () => {
     const backgroundImages = template.match(/<image\b[^>]*class="hero-[^"]+"[^>]*\/>/g) || [];
     const avatarComponent = template.match(/<cili-avatar\b[^>]*\/>/)?.[0] || '';
 
-    expect(backgroundImages.length).toBeGreaterThanOrEqual(3);
+    expect(backgroundImages.length).toBeGreaterThanOrEqual(2);
     expect(backgroundImages[0]).toContain('aria-label="查看完整背景照片"');
     expect(
       backgroundImages.slice(1).every((image: string) => image.includes('aria-hidden="true"')),
@@ -413,14 +412,14 @@ describe('个人中心加载状态', () => {
     expect(page.data.profile.nickname).toBe('新页面骑手');
   });
 
-  it('hero 使用独立错误处理并以包内山景和 CSS alpine 兜底', () => {
+  it('hero 使用独立错误处理并以包内非人物图和深色 CSS 兜底', () => {
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
 
     expect(template).not.toMatch(/<state-view\b[^>]*\b(?:type|text)=/);
     expect(template).toContain('binderror="heroBackgroundError"');
-    expect(template).toContain('binderror="heroAvatarBackgroundError"');
     expect(template).toContain('binderror="heroFallbackBackgroundError"');
     expect(template).toContain('binderror="heroAvatarError"');
+    expect(template).not.toContain('heroBackgroundAvatarUrl');
     expect(template).toContain('class="hero-alpine"');
     expect(existsSync('miniprogram/assets/profile/hero-alpine.svg')).toBe(true);
   });

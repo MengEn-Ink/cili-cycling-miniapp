@@ -31,18 +31,19 @@ describe('行程状态卡与报名凭证重设计契约', () => {
     expect(tripStyles).not.toMatch(/#fff6df|#edf5ff|#eaf7ee|#e9f4f2|#fff0ef/);
   });
 
-  it('凭证主视觉复用个人名片缩小布局，并严格分离真实背景与真实头像', () => {
-    expect(credential).toContain('class="compact-rider-card"');
+  it('凭证主视觉使用文字票据，并严格分离活动分享与本人身份', () => {
+    expect(credential).toContain('class="credential-card"');
     expect(credential).not.toMatch(/class="[^"]*\bstatus-\{\{item\.status\}\}\b/);
-    expect(credential).toContain('wx:for="{{backgroundImages}}"');
+    expect(credential).not.toContain('wx:for="{{backgroundImages}}"');
     expect(credential).toContain('class="compact-rider-avatar"');
     expect(credential).toContain('src="{{avatarUrl}}"');
-    expect(credential).toContain('你的公开资料与照片已随报名提交');
+    expect(credential).toContain('公开昵称 · {{riderName}}');
     expect(credential).not.toContain('cardMetrics');
     expect(credential).toContain('{{statusText}}');
-    expect(credential).toContain('暂无骑行照片，先使用此里品牌封面');
     expect(credential).toContain('avatar-missing');
-    expect(credentialStyles).toContain('.compact-rider-card');
+    expect(credential).toContain('open-type="share"');
+    expect(credential).not.toMatch(/保存图片|条码|二维码核销/);
+    expect(credentialStyles).toContain('.credential-card');
     expect(credentialStyles).toContain('.compact-rider-avatar');
   });
 
@@ -58,19 +59,22 @@ describe('行程状态卡与报名凭证重设计契约', () => {
     expect(activityCard).toContain('{{item.displayTimeLabel}}');
     expect(activityCard).toContain("item.route.start || '集合地点待公布'");
     expect(activityCardStyles).toMatch(
-      /\.activity-title\s*\{[^}]*text-overflow:\s*ellipsis;[^}]*white-space:\s*nowrap/s,
+      /\.activity-title\s*\{[^}]*display:\s*-webkit-box;[^}]*-webkit-line-clamp:\s*2/s,
     );
     expect(activityCardStyles).toMatch(
       /\.route-line\s*\{[^}]*text-overflow:\s*ellipsis;[^}]*white-space:\s*nowrap/s,
     );
   });
 
-  it('活动首页与行程页共享黑白橙的信息层级', () => {
+  it('活动首页与行程页共享墨黑、暖米白和红色的信息层级', () => {
     expect(activityPageStyles).toMatch(
       /\.day-chip\.is-active\s*\{[^}]*background:\s*var\(--color-action\)[^}]*color:\s*var\(--color-on-action\)/s,
     );
     expect(activityCardStyles).toMatch(
-      /\.activity-card\s*\{[^}]*border:\s*2rpx solid var\(--color-border\)[^}]*background:\s*var\(--color-surface\)/s,
+      /\.activity-card\s*\{[^}]*border-bottom:\s*2rpx solid var\(--color-border-strong\)[^}]*background:\s*transparent/s,
+    );
+    expect(activityCardStyles).toMatch(
+      /\.card-caption\s*\{[^}]*background:\s*var\(--color-media-card-bg\)[^}]*color:\s*var\(--color-on-media\)/s,
     );
     expect(activityCardStyles).toContain('--card-accent: var(--color-brand)');
     expect(tripStyles).toMatch(

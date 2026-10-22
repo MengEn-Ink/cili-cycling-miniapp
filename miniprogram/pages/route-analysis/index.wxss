@@ -17,7 +17,7 @@
 }
 
 .analysis-header {
-  padding: 24rpx 28rpx 28rpx;
+  padding: 40rpx 32rpx;
   border-top: 8rpx solid var(--color-text);
 }
 
@@ -47,11 +47,12 @@
 }
 
 .analysis-title {
-  margin-top: 22rpx;
-  font-size: 52rpx;
-  line-height: 1.08;
-  font-weight: 950;
-  letter-spacing: 0;
+  margin-top: 24rpx;
+  font-family: 'Songti SC', STSong, serif;
+  font-size: 64rpx;
+  line-height: 80rpx;
+  font-weight: 600;
+  letter-spacing: -2rpx;
 }
 
 .analysis-route {
@@ -81,7 +82,7 @@
 .conclusion-panel {
   display: block;
   width: 100%;
-  margin-top: 18rpx;
+  margin-top: 32rpx;
 }
 
 .conclusion-panel {
@@ -105,8 +106,8 @@
 
 .conclusion-copy {
   margin-top: 14rpx;
-  font-size: 30rpx;
-  line-height: 46rpx;
+  font-size: 32rpx;
+  line-height: 48rpx;
   font-weight: 900;
 }
 
@@ -133,7 +134,7 @@
 }
 
 .analysis-card {
-  padding: 26rpx;
+  padding: 32rpx;
 }
 
 .section-head {
@@ -148,10 +149,10 @@
 }
 
 .section-title {
-  margin-top: 4rpx;
-  font-size: 32rpx;
-  line-height: 42rpx;
-  font-weight: 950;
+  margin-top: 8rpx;
+  font-size: 40rpx;
+  line-height: 56rpx;
+  font-weight: 800;
 }
 
 .section-count {

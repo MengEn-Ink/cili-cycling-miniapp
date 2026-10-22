@@ -24,11 +24,12 @@ describe('2026-10-17 UX 复查：按钮居中、profile 大图、设置简化、
     expect(buttonBlock).toContain('justify-content: center');
   });
 
-  it('profile-hero 调整为约 472rpx 并使用渐变遮罩', () => {
-    expect(PROFILE_WXSS).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*472rpx/s);
+  it('profile-hero 使用骑行影像志 680rpx 大图并保留渐变遮罩', () => {
+    expect(PROFILE_WXSS).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*680rpx/s);
     const shade = PROFILE_WXSS.match(/\.hero-shade\s*\{[^}]*\}/s)?.[0] || '';
     expect(shade).toContain('linear-gradient');
-    expect(shade).toMatch(/rgba\(0,\s*0,\s*0,\s*0.68\)/);
+    expect(shade).toMatch(/rgba\(0,\s*0,\s*0,\s*0.96\)/);
+    expect(shade).toContain('pointer-events: none');
     expect(PROFILE_WXSS).toMatch(/\.hero-identity\s*\{[^}]*text-shadow:/s);
   });
 

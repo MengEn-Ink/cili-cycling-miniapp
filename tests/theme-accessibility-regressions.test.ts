@@ -63,7 +63,6 @@ describe('unified UI accessibility regressions', () => {
     for (const file of [
       'miniprogram/pages/admin/activity-edit/index.wxml',
       'miniprogram/pages/credential/index.wxml',
-      'miniprogram/pages/capability-card/index.wxml',
       'miniprogram/pages/profile-edit/index.wxml',
     ]) {
       expect(read(file)).toMatch(/class="[^"]*\b(?:card|muted)\b/);
@@ -112,7 +111,10 @@ describe('unified UI accessibility regressions', () => {
     expect(read('miniprogram/pages/profile-edit/index.wxml')).toMatch(
       /class="(?:label|danger form-error)"/,
     );
-    expect(read('miniprogram/pages/capability-card/index.wxml')).toContain('class="privacy-note"');
+    expect(read('miniprogram/pages/profile/index.wxml')).toContain('class="privacy-note"');
+    expect(read('miniprogram/pages/capability-card/index.wxml')).toContain(
+      'loading-title="正在打开我的页面"',
+    );
     expect(read('miniprogram/pages/admin/activity-list/index.wxml')).toContain('class="tag ');
     expect(read('miniprogram/pages/admin/activity-edit/index.wxml')).toContain(
       'class="card danger"',
@@ -220,8 +222,8 @@ describe('unified UI accessibility regressions', () => {
   it('uses only supported WXML elements for the activities headline', () => {
     const template = read('miniprogram/pages/activities/index.wxml');
     expect(template).not.toMatch(/<br\s*\/?\s*>/i);
-    expect(template).toContain('选一场骑行，一起出发');
-    expect(template).toContain('路线、时间、集合点，一眼看清');
+    expect(template).toContain('把周末，交给山路。');
+    expect(template).toContain('每一次转弯，都有值得记住的风景。');
   });
 
   it('shares a 44px control height, 40px segments, and stable page gutters', () => {
@@ -247,7 +249,7 @@ describe('unified UI accessibility regressions', () => {
       /@media \(max-width: 340px\)[\s\S]*?page\s*\{[^}]*--page-gutter:\s*var\(--page-gutter-narrow\)/s,
     );
 
-    expect(declaration(effectiveBlock(app, '.hero-title'), 'font-size')).toBe('48rpx');
+    expect(declaration(effectiveBlock(app, '.hero-title'), 'font-size')).toBe('64rpx');
 
     const activityTimeline = read('miniprogram/pages/activities/index.wxss');
     expect(declaration(effectiveBlock(app, '.timeline-tab'), 'min-height')).toBe(
@@ -284,7 +286,7 @@ describe('unified UI accessibility regressions', () => {
     const reviews = read('miniprogram/pages/admin/reviews/index.wxss');
     const tabs = effectiveBlock(reviews, '.filter-tabs');
     const tab = effectiveBlock(app, '.filter-tab');
-    expect(declaration(tabs, 'grid-template-columns')).toBe('repeat(3, 1fr)');
+    expect(declaration(tabs, 'grid-template-columns')).toBe('repeat(3, minmax(0, 1fr))');
     expect(declaration(tab, 'min-height')).toBe('var(--segment-height)');
 
     const activities = read('miniprogram/pages/admin/activity-list/index.wxss');

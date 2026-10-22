@@ -44,22 +44,22 @@ describe('CILI 活动页静态契约', () => {
     expect(detail).toContain('{{activityAction.label}}');
   });
 
-  it('活动卡保留真实字段、三列指标、状态、占位和点击反馈', () => {
+  it('活动卡保留真实字段、里程爬升时长、状态、占位和点击反馈', () => {
     expect(activityCard).toContain('wx:if="{{item.coverImage && !coverFailed}}"');
     expect(activityCard).toContain('src="{{item.coverImage}}"');
     expect(activityCard).toContain('binderror="coverImageError"');
     expect(activityCard).toContain('<status-pill status="{{item.displayStatus}}" />');
     expect(activityCard.match(/class="metric-item"/g)).toHaveLength(3);
-    expect(activityCard).toContain(
-      "item.capacity > 0 ? (item.occupied + ' / ' + item.capacity) : '待确认'",
-    );
-    expect(activityCard).toContain("item.capacity <= 0 ? '名额' : '报名'");
+    expect(activityCard).toContain("item.route.distanceKm > 0 ? item.route.distanceKm : '—'");
+    expect(activityCard).toContain("item.route.elevationM > 0 ? item.route.elevationM : '—'");
+    expect(activityCard).toContain("item.estimatedRideTime || '—'");
+    expect(activityCard).not.toContain('item.capacity');
     expect(activityCard).not.toContain('人已报名');
     expect(activityCard).toContain('hover-class="activity-card--pressed"');
     expect(activityCard).toContain('wx:else item="{{item}}" variant="card"');
     expect(activityCard).toContain('bindtap="open"');
     expect(activityCard).not.toContain('class="card-cta"');
-    expect(activityCard).toContain('查看详情');
+    expect(activityCard).toContain('查看活动 →');
     expect(activityCard).toContain('aria-label="查看活动：{{item.title}}"');
     expect(activityCardStyles).toContain('.activity-card--pressed');
     expect(activityCardStyles).not.toContain('.card-placeholder');
@@ -74,29 +74,31 @@ describe('CILI 活动页静态契约', () => {
     expect(generatedCoverStyles).not.toContain('linear-gradient');
   });
 
-  it('方案 A 让每张卡都使用固定照片区与独立信息区并稳定承载长文案', () => {
+  it('影像志让每张卡使用大幅照片、实况说明和独立事实区承载长文案', () => {
     expect(activityCard).toContain('class="card-media"');
-    expect(activityCard).toContain('class="card-info"');
+    expect(activityCard).toContain('class="card-caption"');
+    expect(activityCard).toContain('class="card-facts"');
     expect(activityCard).toContain('mode="aspectFill"');
     expect(activityCard).toContain('wx:else item="{{item}}" variant="card"');
     expect(activityCard).not.toContain('activity-card--featured');
     expect(activityCard).not.toContain('activity-card--compact');
     expect(activityCardStyles).not.toContain('.activity-card--compact');
-    expect(activityCardStyles).toMatch(/\.card-media\s*\{[^}]*height:\s*360rpx/s);
+    expect(activityCardStyles).toMatch(/\.card-media\s*\{[^}]*height:\s*560rpx/s);
     const title = effectiveBlock(activityCardStyles, '.activity-title');
-    expect(declaration(title, 'white-space')).toBe('nowrap');
-    expect(declaration(title, 'text-overflow')).toBe('ellipsis');
+    expect(declaration(title, 'display')).toBe('-webkit-box');
+    expect(declaration(title, '-webkit-line-clamp')).toBe('2');
     expect(title).not.toMatch(/(?:^|\n)\s*min-height\s*:/);
     const route = effectiveBlock(activityCardStyles, '.route-line');
     expect(declaration(route, 'white-space')).toBe('nowrap');
     expect(declaration(route, 'text-overflow')).toBe('ellipsis');
-    expect(route).not.toMatch(/(?:^|\n)\s*min-height\s*:/);
+    expect(declaration(route, 'min-height')).toBe('88rpx');
   });
 
-  it('里程、爬升和报名保持固定三列，缺失可选指标显示占位而不折叠', () => {
+  it('里程、爬升和预计骑行保持固定三列，缺失可选指标显示占位而不折叠', () => {
     expect(activityCard.match(/class="metric-item"/g)).toHaveLength(3);
     expect(activityCard).toContain("item.route.distanceKm > 0 ? item.route.distanceKm : '—'");
     expect(activityCard).toContain("item.route.elevationM > 0 ? item.route.elevationM : '—'");
+    expect(activityCard).toContain("item.estimatedRideTime || '—'");
     expect(activityCard).not.toContain(
       '<view wx:if="{{item.route.distanceKm > 0}}" class="metric-item">',
     );
@@ -106,24 +108,25 @@ describe('CILI 活动页静态契约', () => {
     expect(activityCardStyles).toContain('grid-template-columns: repeat(3, minmax(0, 1fr));');
   });
 
-  it('V4 保留时间筛选并通过横向照片卡片突出核心信息', () => {
+  it('影像志保留时间筛选并通过竖向照片故事突出核心信息', () => {
     expect(activities).toContain('>即将开始</button>');
     expect(activities).toContain('>历史活动</button>');
-    expect(activities).toContain('class="activity-carousel"');
-    expect(activities).toContain('bindchange="cardChange"');
+    expect(activities).toContain('class="activity-story-list"');
+    expect(activities).toContain('class="activity-story"');
+    expect(activities).not.toContain('bindchange="cardChange"');
     expect(activities).toContain('role="tabpanel"');
     expect(activityCard).toContain('{{item.displayDateLabel}}');
     expect(activityCard).toContain('{{item.displayTimeLabel}}');
     expect(activityCard).toContain('class="location-label">集合');
     expect(activityCard).toContain('{{item.route.start');
-    expect(activityCard).toContain("item.capacity <= 0 ? '名额' : '报名'");
+    expect(activityCard).toContain('{{item.estimatedRideTime');
   });
 
   it('首页只使用品牌红、墨黑和暖米白主题色，不继承荧光黄视觉', () => {
     expect(logoStyles).toContain('background: var(--color-logo-background)');
     expect(activitiesStyles).toContain('background: var(--color-bg)');
     expect(activitiesStyles).toContain('border: 2rpx solid var(--color-border)');
-    expect(activitiesStyles).toContain('background: var(--color-brand)');
+    expect(activitiesStyles).toContain('background: var(--color-action)');
     expect(activitiesStyles).toMatch(
       /\.day-chip\.is-active\s*\{[^}]*background:\s*var\(--color-action\)/s,
     );
@@ -144,12 +147,12 @@ describe('CILI 活动页静态契约', () => {
     expect(detail).toContain('GPX');
   });
 
-  it('照片卡片保留整卡点击，并提供清晰的主次操作', () => {
+  it('照片卡片保留整卡点击，并提供清晰的单一查看操作', () => {
     expect(activityCard).toContain('bindtap="open"');
-    expect(activityCard).toContain('查看详情');
-    expect(activityCard).toContain('class="card-actions"');
-    expect(activityCardStyles).toContain('grid-template-columns: repeat(2, minmax(0, 1fr));');
-    expect(activityCardStyles).not.toContain('.route-arrow');
+    expect(activityCard).toContain('查看活动 →');
+    expect(activityCard).toContain('aria-label="查看活动：{{item.title}}"');
+    expect(activityCard).not.toContain('class="card-actions"');
+    expect(activityCardStyles).toMatch(/\.route-line\s*\{[^}]*min-height:\s*88rpx/s);
     expect(activityCardStyles).not.toContain('.card-cta');
   });
 
@@ -162,7 +165,7 @@ describe('CILI 活动页静态契约', () => {
     expect(detail).toContain('binderror="galleryImageError"');
     expect(detail).toContain('binderror="coverImageError"');
     expect(detail).toContain('class="schedule-track"');
-    expect(detailStyles).toMatch(/\.detail-hero\s*\{[^}]*height:\s*360rpx/s);
+    expect(detailStyles).toMatch(/\.detail-hero\s*\{[^}]*height:\s*520rpx/s);
     expect(detailStyles).toMatch(
       /padding-bottom:\s*calc\(\s*var\(--fixed-action-reserve\) \+ var\(--card-gap\) \+ env\(safe-area-inset-bottom\)\s*\)/s,
     );
@@ -178,8 +181,11 @@ describe('CILI 活动页静态契约', () => {
     expect(tokens['--radius-card']).toBe('28rpx');
     expect(tokens['--radius-display']).toBe('32rpx');
     const card = effectiveBlock(activityCardStyles, '.activity-card');
-    expectSemantic(declaration(card, 'background'), '--color-surface');
-    expectSemantic(declaration(card, 'border-radius'), '--radius-display');
+    expect(declaration(card, 'background')).toBe('transparent');
+    expect(declaration(card, 'border-bottom')).toBe('2rpx solid var(--color-border-strong)');
+    const caption = effectiveBlock(activityCardStyles, '.card-caption');
+    expectSemantic(declaration(caption, 'background'), '--color-media-card-bg');
+    expectSemantic(declaration(caption, 'color'), '--color-on-media');
     expectSemantic(
       declaration(effectiveBlock(read('miniprogram/app.wxss'), '.metric-item'), 'background'),
       '--color-surface',

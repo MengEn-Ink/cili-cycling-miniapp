@@ -60,7 +60,7 @@ describe('统一 Logo 物料与页面接入契约', () => {
     }
   });
 
-  it('活动空态与核心名片页面统一复用 brand-logo，不再展示旧 CILI 字标', () => {
+  it('活动空态复用 brand-logo，旧名片路由只做无旧字标的兼容跳转', () => {
     const activityCard = read('miniprogram/components/activity-card/index.wxml');
     const capabilityCard = read('miniprogram/pages/capability-card/index.wxml');
     const reviewDetail = read('miniprogram/pages/admin/review-detail/index.wxml');
@@ -69,7 +69,11 @@ describe('统一 Logo 物料与页面接入契约', () => {
     expect(read('miniprogram/components/generated-activity-cover/index.wxml')).toContain(
       '<brand-logo compact="{{true}}"',
     );
-    expect(capabilityCard.match(/<brand-logo compact="\{\{true\}\}"/g)).toHaveLength(2);
+    expect(capabilityCard).toContain('loading-title="正在打开我的页面"');
+    expect(capabilityCard).not.toContain('<brand-logo');
+    expect(read('miniprogram/pages/capability-card/index.ts')).toContain(
+      "url: '/pages/profile/index'",
+    );
     expect(reviewDetail).toContain('<brand-logo compact="{{true}}" meta="审批详情" />');
     expect(`${activityCard}\n${capabilityCard}\n${reviewDetail}`).not.toMatch(/>CILI<|骑有此里/);
   });

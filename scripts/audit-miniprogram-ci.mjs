@@ -66,7 +66,7 @@ export function runAudit() {
   delete auditEnvironment.npm_package_json;
   const result = spawnSync(
     'npx',
-    ['--yes', 'npm@11', 'audit', '--json', '--registry=https://registry.npmjs.org'],
+    ['--yes', 'npm@11.21.1', 'audit', '--json', '--registry=https://registry.npmjs.org'],
     {
       cwd: TOOL_ROOT,
       env: auditEnvironment,

@@ -56,6 +56,32 @@ test('补充路由等待实际 loading 状态结束，空库仍可作为真实�
   assert.equal(editor.isReady({ pageState: 'bootstrap' }), true);
 });
 
+test('历史名片入口等待我的页真实转跳，不调用独立名片服务', async () => {
+  assert.equal(typeof driver.openLegacyProfile, 'function');
+  const navigations = [];
+  const profilePage = { path: 'pages/profile/index' };
+  const actual = await driver.openLegacyProfile({
+    miniProgram: { reLaunch: async (url) => navigations.push(url) },
+    waitForReady: async (route) => {
+      assert.equal(route, 'pages/profile/index');
+      return profilePage;
+    },
+  });
+  assert.deepEqual(navigations, ['/pages/capability-card/index']);
+  assert.equal(actual, profilePage);
+});
+
+test('历史名片入口未转跳时拒绝作为已覆盖路由', async () => {
+  assert.equal(typeof driver.openLegacyProfile, 'function');
+  await assert.rejects(
+    driver.openLegacyProfile({
+      miniProgram: { reLaunch: async () => {} },
+      waitForReady: async () => ({ path: 'pages/capability-card/index' }),
+    }),
+    /LEGACY_PROFILE_REDIRECT_FAILED/,
+  );
+});
+
 test('计算后颜色支持当前主题但拒绝透明与非法颜色', () => {
   assert.equal(typeof driver.opaqueColorHex, 'function');
   assert.equal(driver.opaqueColorHex('rgb(33, 31, 28)'), '#211f1c');

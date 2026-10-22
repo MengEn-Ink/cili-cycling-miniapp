@@ -1,5 +1,10 @@
 <view class="page review-page">
   <brand-logo compact="{{true}}" meta="报名审批" />
+  <view class="journal-heading">
+    <view class="journal-eyebrow">此里 · 审核工作台</view>
+    <view class="journal-title">认真确认每一位同行者。</view>
+    <view class="journal-summary">按报名状态筛选，查看完整资料后再处理。</view>
+  </view>
   <view class="info-bar" wx:if="{{activities.length}}" aria-label="当前审批活动">
     <view class="info-head"><view class="info-title">{{selectedActivityTitle}}</view><text class="info-tag {{tab === 'pending' && items.length ? 'is-pending' : ''}}">{{tab === 'pending' ? items.length : '—'}} 待审核</text></view>
     <picker mode="selector" range="{{activities}}" range-key="title" value="{{activityIndex}}" bindchange="choose"><button class="switch-activity" aria-label="切换当前审批活动">切换活动</button></picker>

@@ -174,14 +174,9 @@ Page({
   },
   onShareAppMessage() {
     const activity = this.data.activity;
-    const item = this.data.item;
-    const teamQuery =
-      item?.isTeamLeader && item?.teamId ? `&team_id=${encodeURIComponent(item.teamId)}` : '';
     return {
-      title: item?.isTeamLeader
-        ? `加入${item.teamName || '我的队伍'} · ${activity?.title || '骑行活动'}`
-        : activity?.title || '骑行活动',
-      path: `pages/activity-detail/index?id=${encodeURIComponent(activity?.id || '')}${teamQuery}`,
+      title: activity?.title || '骑行活动',
+      path: `pages/activity-detail/index?id=${encodeURIComponent(activity?.id || '')}`,
     };
   },
   async cancel() {

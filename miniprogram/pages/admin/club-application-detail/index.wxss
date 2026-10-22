@@ -2,6 +2,30 @@
   padding-bottom: calc(80rpx + env(safe-area-inset-bottom));
   background: var(--color-bg);
 }
+.journal-heading {
+  padding: 28rpx 0 56rpx;
+}
+.journal-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  color: var(--color-muted);
+  font-size: 24rpx;
+  line-height: 36rpx;
+  font-weight: 800;
+}
+.journal-eyebrow::before {
+  width: 40rpx;
+  height: 2rpx;
+  background: currentColor;
+  content: '';
+}
+.journal-heading .page-title {
+  margin-top: 16rpx;
+  font-size: 64rpx;
+  line-height: 80rpx;
+  letter-spacing: -2rpx;
+}
 .club-media-canvas {
   position: fixed;
   top: 0;
@@ -22,11 +46,19 @@
 .page-sub {
   margin-top: 12rpx;
   color: var(--color-muted);
-  font-size: 26rpx;
-  line-height: 40rpx;
+  font-size: 32rpx;
+  line-height: 48rpx;
 }
 .club-profile-card {
-  margin-top: var(--card-gap);
+  margin-top: 64rpx;
+  padding: 40rpx 32rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: none;
+}
+.journal-heading + .club-profile-card {
+  margin-top: 0;
 }
 .club-profile-section-head {
   display: flex;
@@ -188,7 +220,8 @@
 }
 .club-profile-submit {
   width: 100%;
-  margin-top: var(--card-gap);
+  min-height: 96rpx;
+  margin-top: 48rpx;
 }
 .club-profile-retry {
   width: 100%;

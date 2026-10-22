@@ -1,7 +1,8 @@
 <view class="page settings-page">
   <brand-logo compact="{{true}}" meta="设置" />
 
-  <view class="settings-hero">
+  <view class="settings-hero journal-heading">
+    <view class="journal-eyebrow">此里 · 安心同行</view>
     <view class="hero-title">设置</view>
     <view class="hero-copy">管理活动通知、隐私与本地缓存，查看当前版本更新。</view>
   </view>

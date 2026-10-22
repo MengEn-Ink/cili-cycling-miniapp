@@ -5,7 +5,8 @@
     <button wx:if="{{error}}" class="button button--secondary" bindtap="retryLoad">重试</button>
   </view>
   <block wx:else>
-    <view class="editor-hero">
+    <view class="editor-hero journal-heading">
+      <view class="journal-eyebrow">此里 · 编辑这次骑行</view>
       <view class="editor-title">{{id ? '编辑活动' : '创建活动'}}</view>
       <view class="editor-summary">填写活动信息，保存草稿后可继续完善。</view>
     </view>
@@ -188,8 +189,9 @@
     </view>
 
     <view class="action-bar actions">
-      <button class="button button--secondary secondary" loading="{{saving}}" data-status="draft" bindtap="save">保存草稿</button>
-      <button class="button button--primary" loading="{{saving}}" data-status="published" bindtap="save">{{publishButtonLabel}}</button>
+      <view class="disabled-hint" role="status" aria-live="polite" aria-atomic="true" wx:if="{{uploading || uploadingRoute || choosingLocation || syncingRoute || pendingImages.length || pendingRouteUpload}}">{{uploading ? '图片上传中，请稍候' : uploadingRoute || syncingRoute ? '路线预览准备中，请稍候' : choosingLocation ? '请先完成集合地点选择' : pendingImages.length ? '请先重试或删除上传失败的图片' : '路线详情尚未准备好，请重试或移除 GPX'}}</view>
+      <button class="button button--secondary secondary" loading="{{saving}}" disabled="{{saving || uploading || uploadingRoute || choosingLocation || syncingRoute || pendingImages.length > 0 || !!pendingRouteUpload}}" data-status="draft" bindtap="save">保存草稿</button>
+      <button class="button button--primary" loading="{{saving}}" disabled="{{saving || uploading || uploadingRoute || choosingLocation || syncingRoute || pendingImages.length > 0 || !!pendingRouteUpload}}" data-status="published" bindtap="save">{{publishButtonLabel}}</button>
     </view>
   </block>
 </view>

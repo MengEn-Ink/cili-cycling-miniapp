@@ -10,7 +10,7 @@ import { createRegistrationStatusView } from '../miniprogram/pages/credential/st
 const read = (path: string) => readFileSync(path, 'utf8');
 
 describe('2026-10-21 活动核心链路 UI 契约', () => {
-  it('活动发现页以原生事件切换沉浸和紧凑视图，两种视图都复用真实活动字段', () => {
+  it('活动发现页以原生事件切换竖向影像和紧凑视图，两种视图都复用真实活动字段', () => {
     const page = read('miniprogram/pages/activities/index.ts');
     const template = read('miniprogram/pages/activities/index.wxml');
 
@@ -20,7 +20,8 @@ describe('2026-10-21 活动核心链路 UI 契约', () => {
     expect(template).toContain('data-mode="compact" bindtap="switchLayout"');
     expect(template).toContain('wx:if="{{layoutMode === \'card\'}}"');
     expect(template).toContain('wx:else class="compact-list"');
-    expect(template).toContain('bindchange="cardChange"');
+    expect(template).toContain('class="activity-story-list"');
+    expect(template).toContain('wx:for="{{items}}"');
     expect(template).toContain('data-id="{{item.id}}" bindtap="open"');
     expect(template).toContain('{{item.route.start');
     expect(template).toContain('item.route.distanceKm');
@@ -30,10 +31,9 @@ describe('2026-10-21 活动核心链路 UI 契约', () => {
   it('紧凑视图有下一页时提供原生加载更多入口', () => {
     const template = read('miniprogram/pages/activities/index.wxml');
 
-    expect(template).toContain(
-      "nextCursor && items.length && (layoutMode === 'compact' || items.length === 1 || refreshError)",
-    );
+    expect(template).toContain('wx:if="{{nextCursor && items.length}}"');
     expect(template).toContain('bindtap="loadMore"');
+    expect(template).toContain("refreshError ? '重试加载更多活动' : '加载更多活动'");
   });
 
   it('组织可信信息只由发布者和活动归属字段生成，并诚实降级', () => {
@@ -135,8 +135,8 @@ describe('2026-10-21 活动核心链路 UI 契约', () => {
       const styles = read(path);
       expect(styles).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
     }
-    const activities = read('miniprogram/pages/activities/index.wxss');
-    expect(activities).toContain('@media (prefers-reduced-motion: reduce)');
-    expect(activities).toContain('min-height: 72rpx');
+    const activityCard = read('miniprogram/components/activity-card/index.wxss');
+    expect(activityCard).toContain('@media (prefers-reduced-motion: reduce)');
+    expect(activityCard).toContain('min-height: 88rpx');
   });
 });

@@ -1,0 +1,1132 @@
+{
+  "data": [
+    {
+      "id": "page-activities",
+      "title": "活动",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600000,
+      "devMetadata": {
+        "htmlSrc": "pages/activities.html",
+        "interactions": [
+          {
+            "domId": "activities-link-1",
+            "targetPageId": "page-activity-detail",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "activities-link-2",
+            "targetPageId": "page-activity-detail",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "activities-link-3",
+            "targetPageId": "page-activity-detail",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "activities-link-4",
+            "targetPageId": "page-activity-detail",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "activities-link-5",
+            "targetPageId": "page-activity-detail",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "activities-link-6",
+            "targetPageId": "page-activities",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "activities-link-7",
+            "targetPageId": "page-registrations",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "activities-link-8",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-activity-detail",
+      "title": "活动详情",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600001,
+      "devMetadata": {
+        "htmlSrc": "pages/activity-detail.html",
+        "interactions": [
+          {
+            "domId": "activity-detail-link-1",
+            "targetPageId": "page-activities",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "activity-detail-link-2",
+            "targetPageId": "page-club-center",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "activity-detail-link-3",
+            "targetPageId": "page-route-analysis",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "activity-detail-link-8",
+            "targetPageId": "page-registration-form",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-route-analysis",
+      "title": "完整路线分析",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600002,
+      "devMetadata": {
+        "htmlSrc": "pages/route-analysis.html",
+        "interactions": [
+          {
+            "domId": "route-analysis-link-1",
+            "targetPageId": "page-activity-detail",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-registration-form",
+      "title": "填写报名",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600003,
+      "devMetadata": {
+        "htmlSrc": "pages/registration-form.html",
+        "interactions": [
+          {
+            "domId": "registration-form-link-1",
+            "targetPageId": "page-activity-detail",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "registration-form-link-2",
+            "targetPageId": "page-profile-edit",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-registrations",
+      "title": "我的行程",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600004,
+      "devMetadata": {
+        "htmlSrc": "pages/registrations.html",
+        "interactions": [
+          {
+            "domId": "registrations-link-1",
+            "targetPageId": "page-credential",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "registrations-link-2",
+            "targetPageId": "page-activity-detail",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "registrations-link-3",
+            "targetPageId": "page-activities",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "registrations-link-4",
+            "targetPageId": "page-registrations",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "registrations-link-5",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-credential",
+      "title": "骑行凭证",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600005,
+      "devMetadata": {
+        "htmlSrc": "pages/credential.html",
+        "interactions": [
+          {
+            "domId": "credential-link-1",
+            "targetPageId": "page-registrations",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "credential-link-2",
+            "targetPageId": "page-activity-detail",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "credential-link-route",
+            "targetPageId": "page-route-analysis",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-profile",
+      "title": "我的",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600006,
+      "devMetadata": {
+        "htmlSrc": "pages/profile.html",
+        "interactions": [
+          {
+            "domId": "profile-link-1",
+            "targetPageId": "page-club-center",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "profile-link-2",
+            "targetPageId": "page-profile-edit",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "profile-link-3",
+            "targetPageId": "page-settings",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "profile-link-4",
+            "targetPageId": "page-admin-activity-list",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "profile-link-5",
+            "targetPageId": "page-admin-club-management",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "profile-link-6",
+            "targetPageId": "page-activities",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "profile-link-7",
+            "targetPageId": "page-registrations",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "profile-link-8",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-profile-edit",
+      "title": "编辑个人资料",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600007,
+      "devMetadata": {
+        "htmlSrc": "pages/profile-edit.html",
+        "interactions": [
+          {
+            "domId": "profile-edit-link-1",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-settings",
+      "title": "设置",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600008,
+      "devMetadata": {
+        "htmlSrc": "pages/settings.html",
+        "interactions": [
+          {
+            "domId": "settings-link-1",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-club-center",
+      "title": "俱乐部",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600010,
+      "devMetadata": {
+        "htmlSrc": "pages/club-center.html",
+        "interactions": [
+          {
+            "domId": "club-center-link-1",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "club-center-link-2",
+            "targetPageId": "page-activity-detail",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-admin-activity-list",
+      "title": "活动管理",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600011,
+      "devMetadata": {
+        "htmlSrc": "pages/admin-activity-list.html",
+        "interactions": [
+          {
+            "domId": "admin-activity-list-link-1",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "admin-activity-list-link-2",
+            "targetPageId": "page-admin-activity-edit",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "admin-activity-list-link-3",
+            "targetPageId": "page-admin-reviews",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "admin-activity-list-link-4",
+            "targetPageId": "page-admin-activity-edit",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "admin-activity-list-link-5",
+            "targetPageId": "page-admin-activity-edit",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-admin-activity-edit",
+      "title": "编辑活动",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600012,
+      "devMetadata": {
+        "htmlSrc": "pages/admin-activity-edit.html",
+        "interactions": [
+          {
+            "domId": "admin-activity-edit-link-1",
+            "targetPageId": "page-admin-activity-list",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-admin-reviews",
+      "title": "报名审核",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600013,
+      "devMetadata": {
+        "htmlSrc": "pages/admin-reviews.html",
+        "interactions": [
+          {
+            "domId": "admin-reviews-link-1",
+            "targetPageId": "page-admin-activity-list",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "admin-reviews-link-2",
+            "targetPageId": "page-admin-review-detail",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "admin-reviews-link-3",
+            "targetPageId": "page-admin-review-detail",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "admin-reviews-link-4",
+            "targetPageId": "page-admin-review-detail",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "admin-reviews-link-5",
+            "targetPageId": "page-admin-review-detail",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-admin-review-detail",
+      "title": "审核报名",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600014,
+      "devMetadata": {
+        "htmlSrc": "pages/admin-review-detail.html",
+        "interactions": [
+          {
+            "domId": "admin-review-detail-link-1",
+            "targetPageId": "page-admin-reviews",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-admin-club-management",
+      "title": "俱乐部管理",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600015,
+      "devMetadata": {
+        "htmlSrc": "pages/admin-club-management.html",
+        "interactions": [
+          {
+            "domId": "admin-club-management-link-1",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "admin-club-management-link-2",
+            "targetPageId": "page-admin-club-profile",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "admin-club-management-link-3",
+            "targetPageId": "page-club-center",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-admin-club-profile",
+      "title": "俱乐部资料",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600016,
+      "devMetadata": {
+        "htmlSrc": "pages/admin-club-profile.html",
+        "interactions": [
+          {
+            "domId": "admin-club-profile-link-1",
+            "targetPageId": "page-admin-club-management",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-state-loading",
+      "title": "活动加载中",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600017,
+      "devMetadata": {
+        "htmlSrc": "pages/state-loading.html",
+        "interactions": [
+          {
+            "domId": "state-loading-link-1",
+            "targetPageId": "page-activities",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-loading-link-2",
+            "targetPageId": "page-registrations",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-loading-link-3",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 1
+      }
+    },
+    {
+      "id": "page-state-empty",
+      "title": "暂无活动",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600018,
+      "devMetadata": {
+        "htmlSrc": "pages/state-empty.html",
+        "interactions": [
+          {
+            "domId": "state-empty-link-1",
+            "targetPageId": "page-activities",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-empty-link-2",
+            "targetPageId": "page-activities",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-empty-link-3",
+            "targetPageId": "page-registrations",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-empty-link-4",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 1
+      }
+    },
+    {
+      "id": "page-state-network-error",
+      "title": "活动加载失败",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600019,
+      "devMetadata": {
+        "htmlSrc": "pages/state-network-error.html",
+        "interactions": [
+          {
+            "domId": "state-network-error-link-1",
+            "targetPageId": "page-activities",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-network-error-link-2",
+            "targetPageId": "page-activities",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-network-error-link-3",
+            "targetPageId": "page-registrations",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-network-error-link-4",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 1
+      }
+    },
+    {
+      "id": "page-state-image-error",
+      "title": "图片不可用",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600020,
+      "devMetadata": {
+        "htmlSrc": "pages/state-image-error.html",
+        "interactions": [
+          {
+            "domId": "state-image-error-link-1",
+            "targetPageId": "page-activities",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-image-error-link-2",
+            "targetPageId": "page-activity-detail",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-image-error-link-3",
+            "targetPageId": "page-registration-form",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 1
+      }
+    },
+    {
+      "id": "page-state-pending",
+      "title": "报名待审核",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600021,
+      "devMetadata": {
+        "htmlSrc": "pages/state-pending.html",
+        "interactions": [
+          {
+            "domId": "state-pending-link-1",
+            "targetPageId": "page-registration-form",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-pending-link-2",
+            "targetPageId": "page-registrations",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 1
+      }
+    },
+    {
+      "id": "page-state-submit-error",
+      "title": "报名提交失败",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600022,
+      "devMetadata": {
+        "htmlSrc": "pages/state-submit-error.html",
+        "interactions": [
+          {
+            "domId": "state-submit-error-link-1",
+            "targetPageId": "page-registration-form",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 1
+      }
+    },
+    {
+      "id": "page-state-route-preparing",
+      "title": "路线准备中",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600023,
+      "devMetadata": {
+        "htmlSrc": "pages/state-route-preparing.html",
+        "interactions": [
+          {
+            "domId": "state-route-preparing-link-1",
+            "targetPageId": "page-admin-activity-edit",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-route-preparing-link-2",
+            "targetPageId": "page-admin-activity-edit",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 1
+      }
+    },
+    {
+      "id": "page-state-public-success",
+      "title": "公开报名成功",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641600024,
+      "devMetadata": {
+        "htmlSrc": "pages/state-public-success.html",
+        "interactions": [
+          {
+            "domId": "state-public-success-link-1",
+            "targetPageId": "page-registration-form",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-public-success-link-2",
+            "targetPageId": "page-credential",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 1
+      }
+    },
+    {
+      "id": "image-001",
+      "title": "秋日山路",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1792642004769,
+      "devMetadata": {
+        "imageSrc": "assets/mountain.webp"
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "image-002",
+      "title": "骑友肖像",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1792642004770,
+      "devMetadata": {
+        "imageSrc": "assets/rider.webp"
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "image-003",
+      "title": "骑友相聚",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1792642004771,
+      "devMetadata": {
+        "imageSrc": "assets/club.webp"
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "image-004",
+      "title": "水库骑行",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1792642004772,
+      "devMetadata": {
+        "imageSrc": "assets/lakeside.webp"
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "image-005",
+      "title": "秋日山路原图",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1792642004773,
+      "devMetadata": {
+        "imageSrc": "assets/mountain.jpg"
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "image-006",
+      "title": "骑友肖像原图",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1792642004774,
+      "devMetadata": {
+        "imageSrc": "assets/rider.jpg"
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "image-007",
+      "title": "骑友相聚原图",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1792642004775,
+      "devMetadata": {
+        "imageSrc": "assets/club.jpg"
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "image-008",
+      "title": "水库骑行原图",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1792642004776,
+      "devMetadata": {
+        "imageSrc": "assets/lakeside.jpg"
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "page-state-profile-incomplete",
+      "title": "资料待完善",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641601025,
+      "devMetadata": {
+        "htmlSrc": "pages/state-profile-incomplete.html",
+        "interactions": [
+          {
+            "domId": "state-profile-incomplete-link-1",
+            "targetPageId": "page-profile-edit",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-profile-incomplete-link-2",
+            "targetPageId": "page-club-center",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-profile-incomplete-link-3",
+            "targetPageId": "page-profile-edit",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-profile-incomplete-link-4",
+            "targetPageId": "page-settings",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-profile-incomplete-link-5",
+            "targetPageId": "page-activities",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-profile-incomplete-link-6",
+            "targetPageId": "page-registrations",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-profile-incomplete-link-7",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 1
+      }
+    },
+    {
+      "id": "page-state-profile-stale",
+      "title": "资料刷新失败",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641601026,
+      "devMetadata": {
+        "htmlSrc": "pages/state-profile-stale.html",
+        "interactions": [
+          {
+            "domId": "state-profile-stale-link-1",
+            "targetPageId": "page-club-center",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-profile-stale-link-2",
+            "targetPageId": "page-profile-edit",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-profile-stale-link-3",
+            "targetPageId": "page-settings",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-profile-stale-link-4",
+            "targetPageId": "page-activities",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-profile-stale-link-5",
+            "targetPageId": "page-registrations",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-profile-stale-link-6",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 1
+      }
+    },
+    {
+      "id": "page-state-avatar-first",
+      "title": "先设置头像",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641601027,
+      "devMetadata": {
+        "htmlSrc": "pages/state-avatar-first.html",
+        "interactions": [
+          {
+            "domId": "state-avatar-first-link-1",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 1
+      }
+    },
+    {
+      "id": "page-state-waiting",
+      "title": "报名候补",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1792641601028,
+      "devMetadata": {
+        "htmlSrc": "pages/state-waiting.html",
+        "interactions": [
+          {
+            "domId": "state-waiting-link-1",
+            "targetPageId": "page-registration-form",
+            "hideEdge": true,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-waiting-link-2",
+            "targetPageId": "page-credential",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          },
+          {
+            "domId": "state-waiting-link-3",
+            "targetPageId": "page-activity-detail",
+            "hideEdge": false,
+            "transitionLabel": "navigate"
+          }
+        ]
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 1
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "mobile",
+    "projectName": "此里 · 骑行影像志",
+    "designLibrary": null
+  }
+}

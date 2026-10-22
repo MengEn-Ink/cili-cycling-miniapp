@@ -1,8 +1,34 @@
 .club-admin-page {
+  min-height: 100vh;
+  padding-bottom: calc(64rpx + env(safe-area-inset-bottom));
   background: var(--color-bg);
 }
 .club-admin-head {
-  margin-top: 28rpx;
+  margin-top: 20rpx;
+}
+.journal-heading {
+  padding: 28rpx 0 56rpx;
+}
+.journal-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  color: var(--color-muted);
+  font-size: 24rpx;
+  line-height: 36rpx;
+  font-weight: 800;
+}
+.journal-eyebrow::before {
+  width: 40rpx;
+  height: 2rpx;
+  background: currentColor;
+  content: '';
+}
+.journal-heading .page-title {
+  margin-top: 16rpx;
+  font-size: 64rpx;
+  line-height: 80rpx;
+  letter-spacing: -2rpx;
 }
 .club-admin-badge {
   color: var(--color-muted);
@@ -13,8 +39,8 @@
 .page-sub {
   margin-top: 12rpx;
   color: var(--color-muted);
-  font-size: 26rpx;
-  line-height: 40rpx;
+  font-size: 32rpx;
+  line-height: 48rpx;
 }
 .club-admin-skeleton {
   min-height: 200rpx;
@@ -26,6 +52,10 @@
   display: flex;
   align-items: center;
   gap: 20rpx;
+  margin-top: 0;
+  padding: 32rpx;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
 }
 .club-admin-avatar {
   flex: none;
@@ -75,7 +105,8 @@
 }
 .club-admin-action {
   width: 100%;
-  margin-top: var(--card-gap);
+  min-height: 96rpx;
+  margin-top: 48rpx;
 }
 .club-admin-retry {
   width: 100%;

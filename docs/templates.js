@@ -28,9 +28,12 @@
     identityData.historySnapshotNote ||
     '历史行程与凭证保留发布或成行时的活动归属，不随当前成员关系变化。';
   const IMG = {
-    cover: './assets/prototype/img-cover.jpg',
-    rider: './assets/prototype/img-rider.jpg',
-    avatar: './assets/prototype/img-avatar.jpg',
+    mountain: './designs/2026-10-22-cycling-image-journal/assets/mountain.webp',
+    lakeside: './designs/2026-10-22-cycling-image-journal/assets/lakeside.webp',
+    club: './designs/2026-10-22-cycling-image-journal/assets/club.webp',
+    rider: './designs/2026-10-22-cycling-image-journal/assets/rider.webp',
+    cover: './designs/2026-10-22-cycling-image-journal/assets/mountain.webp',
+    avatar: './designs/2026-10-22-cycling-image-journal/assets/rider.webp',
   };
 
   // 当前页面状态由 app.js 写入 window.prototypeState；未写入时取 schema 中的第一个状态
@@ -170,6 +173,8 @@
     `<div class="fixed-bar">${hint ? `<p class="bar-hint ${neutral ? 'is-neutral' : ''}">${hint}</p>` : ''}<div class="bar-actions ${actions.length === 1 ? 'single' : ''}">${actions.join('')}</div></div>`;
   const stateView = (mark, title, desc, action = '', error = false) =>
     `<div class="state ${error ? 'is-error' : ''}"><span class="state-mark">${mark}</span><h3>${title}</h3><p>${desc}</p>${action}</div>`;
+  const journalImage = (src, alt, fallback = '影像暂不可用，页面信息仍可继续查看。') =>
+    `<span class="journal-image" data-image-fallback><img src="${src}" alt="${alt}" loading="lazy" onerror="this.closest('[data-image-fallback]').classList.add('is-image-error')" /><span class="journal-image-fallback" role="img" aria-label="${fallback}"><i aria-hidden="true"></i><b>此里 CILI</b><small>${fallback}</small></span></span>`;
   const skeletons = (count, media = false) =>
     `<p class="loading-line">正在加载…</p>${Array.from({ length: count }, () => `<div class="skeleton">${media ? '<i class="sk-media"></i>' : ''}<i></i><i></i><i></i></div>`).join('')}`;
   const field = (label, inner, extra = '') =>
@@ -210,16 +215,6 @@
   const emptyMediaInner = () =>
     `<svg viewBox="0 0 360 168" preserveAspectRatio="none"><path d="M-10 140 C 60 120, 90 60, 150 72 S 240 150, 300 90 S 350 30, 380 40" style="fill:none;stroke:var(--color-muted);stroke-width:2"/><path d="M-10 160 C 70 140, 110 96, 170 104 S 250 160, 380 110" style="fill:none;stroke:var(--color-muted);stroke-width:1.5"/><path d="M20 128 C 80 112, 104 70, 150 78" style="fill:none;stroke:var(--color-brand);stroke-width:3;stroke-linecap:round"/></svg><span class="brand-word">CILI RIDER</span>`;
   const emptyMedia = () => `<div class="rider-card-media is-empty">${emptyMediaInner()}</div>`;
-  // 公开名片只允许昵称：无昵称时统一回落“匿名骑友”，不出现实名或电话。
-  const publicName = rider.nickname || '匿名骑友';
-  const riderCard = (hasPhoto, extra = '') => `<article class="rider-card rider-card-poster">
-      <div class="rider-card-media${hasPhoto ? ' has-photo' : ' is-empty'}">${
-        hasPhoto
-          ? `<img src="${IMG.rider}" alt="骑行照片" />${tag('neutral', '骑行照片').replace('class="tag', 'class="media-label tag')}<span class="rider-card-shade" aria-hidden="true"></span>`
-          : emptyMediaInner()
-      }<div class="rider-card-identity"><span class="avatar lg rider-card-avatar">${hasPhoto ? `<img src="${IMG.avatar}" alt="${publicName}的头像" />` : publicName.slice(0, 1)}</span><div class="rider-card-id-copy"><h3 class="rider-card-name">${publicName}</h3><div class="rider-card-tags">${tag('neutral', rider.gender)}${tag('neutral', `骑行经验 · ${rider.experience}`)}${tag('neutral', '公开范围 · 活动中公开')}</div></div></div></div>
-      ${extra}
-    </article>`;
 
   const templates = {
     'club/center': () => {
@@ -247,7 +242,7 @@
       }
 
       const cover = `<div class="club-center-cover" role="img" aria-label="${club.coverAlt || '俱乐部封面'}">
-        <img src="${club.coverImage || IMG.cover}" alt="${club.coverAlt || '俱乐部封面'}" />
+        ${journalImage(IMG.club, club.coverAlt || '俱乐部骑行合影')}
         <span class="club-center-cover-loc" aria-label="所在城市：${club.city || '未填写'}"><i aria-hidden="true"></i>${club.city || '城市未填写'}</span>
       </div>`;
       const manageMeta = canManage
@@ -416,9 +411,9 @@
     activities: () => {
       if (is('loading')) return `<div class="pg">${brandLogo('此里骑行活动')}<h2 class="page-title">选一场骑行，一起出发</h2>${skeletons(2, true)}</div>`;
       const head = `${brandLogo('此里骑行活动')}<h2 class="page-title">选一场骑行，一起出发</h2><p class="page-sub long-copy">路线、时间、集合点，一眼看清；先看状态与路线强度，再决定是否出发</p>
-        <div class="seg"><button class="is-active" data-action="choice">即将开始</button><button data-action="choice">历史活动</button></div>`;
+        <div class="seg"><button class="${is('history') ? '' : 'is-active'}" data-route="activities" data-state="default">即将开始</button><button class="${is('history') ? 'is-active' : ''}" data-route="activities" data-state="history">历史活动</button></div>`;
       if (is('empty'))
-        return `<div class="pg">${head}${stateView('0', '近期暂无活动', '新的骑行发布后会出现在这里，可以先看看历史活动。', btn('查看历史活动', toast('已切换至历史活动'), 'btn-secondary'))}</div>`;
+        return `<div class="pg">${head}${stateView('0', '近期暂无活动', '新的骑行发布后会出现在这里，可以先看看历史活动。', btn('查看历史活动', 'data-route="activities" data-state="history"', 'btn-secondary'))}</div>`;
       if (is('error'))
         return `<div class="pg">${head}${stateView('!', '活动加载失败', '网络不稳定，请检查网络后重试。', btn('重新加载', toast('正在重新加载')), true)}</div>`;
       const chips = [
@@ -466,55 +461,30 @@
       };
       return `<div class="pg activities-v3">${head}
         <div class="chips">${chips.map(([a, b], i) => `<button class="chip ${i ? '' : 'is-active'}" data-action="choice">${a}<small>${b}</small></button>`).join('')}</div>
-        <div class="list-count"><span>${historyMode ? '历史活动' : '近期活动'} <em data-activity-carousel-current>当前第 1 场</em></span><b>共 ${carouselItems.length} 场</b></div>
-        <div class="activity-carousel-shell">
-          <button class="activity-carousel-arrow is-prev" data-action="activity-carousel-prev" aria-label="上一场活动" disabled aria-disabled="true">‹</button>
-          <div class="activity-carousel-track" role="list" tabindex="0" aria-label="活动轮播">
+        <div class="list-count"><span>${historyMode ? '历史活动' : '近期活动'}</span><b>共 ${carouselItems.length} 场</b></div>
+        <div class="activity-journal-list" role="list" aria-label="${historyMode ? '历史活动' : '近期活动'}">
             ${carouselItems
               .map((activity, index) => {
                 const presentation = activityPresentation(activity, index);
                 const host = activityHost(activity);
-                const hostLine =
-                  host.kind === 'club'
-                    ? clubBadgeLine(
-                        host.club,
-                        host.historical ? '发布时快照' : '活动归属',
-                        host.historical,
-                      )
-                    : clubBadgeLine(
-                        { id: 'club-xinzhuangqiao', name: '辛庄桥小火车', monogram: '辛', tone: 'ink' },
-                        '活动归属',
-                        false,
-                      );
-                const dateParts = String(activity.date || '').match(/(\d+)月(\d+)日\s*(.*)/);
-                const month = dateParts ? dateParts[1] : '10';
-                const day = dateParts ? dateParts[2] : '--';
-                const weekday = dateParts ? dateParts[3] : '';
                 const cover =
                   index === 1 && !historyMode
                     ? emptyMedia().replace('rider-card-media is-empty', 'activity-card-cover-fallback')
-                    : `<img src="${index === 2 ? IMG.rider : IMG.cover}" alt="${activity.title}" />`;
-                return `<article class="activity-card activity-card-v3 is-${presentation.state} ${index === 0 ? 'is-active' : ''}" role="listitem" data-activity-slide data-index="${index}">
-                  <div class="activity-card-cover">${cover}<span class="activity-date-stamp"><b>${day}</b><small>${month}月 · ${weekday}</small></span><span class="activity-card-status">${presentation.label}</span></div>
+                    : journalImage(
+                        historyMode ? IMG.club : [IMG.mountain, IMG.lakeside, IMG.club][index] || IMG.mountain,
+                        `${activity.title}骑行影像`,
+                      );
+                return `<article class="activity-card activity-card-v3 is-${presentation.state}" role="listitem">
+                  <div class="activity-card-cover">${cover}<span class="activity-card-status">${presentation.label}</span><div class="journal-activity-caption"><p><span>${activity.date}</span><span>${activity.time}</span></p><h3>${activity.title}</h3><small>${host.club.name}</small></div></div>
                   <div class="activity-card-v3-body">
-                    <span class="activity-club-chip">${hostLine}</span>
-                    <h3>${activity.title}</h3>
-                    <p class="activity-card-meta">${activity.time} · ${activity.start}</p>
-                    <div class="activity-card-metrics"><span><small>里程</small><b>${activity.distanceKm} km</b></span><span><small>爬升</small><b>${activity.elevationM} m</b></span><span><small>名额</small><b>${activity.approved}/${activity.capacity}</b></span></div>
+                    <div class="activity-card-metrics"><span><small>里程</small><b>${activity.distanceKm} km</b></span><span><small>爬升</small><b>${activity.elevationM} m</b></span><span><small>预计骑行</small><b>${activity.estimatedRideTime || '待公布'}</b></span></div>
+                    <p class="activity-card-meta"><span>集合</span>${activity.start}</p>
                     <button class="btn activity-card-primary" data-action="route" ${presentation.attrs}>${presentation.cta}</button>
                   </div>
                 </article>`;
               })
               .join('')}
-          </div>
-          <button class="activity-carousel-arrow is-next" data-action="activity-carousel-next" aria-label="下一场活动">›</button>
         </div>
-        <div class="activity-carousel-pagination" role="group" aria-label="选择活动">${carouselItems
-          .map(
-            (activity, index) =>
-              `<button class="${index === 0 ? 'is-active' : ''}" data-action="activity-carousel-dot" data-index="${index}" aria-label="查看第 ${index + 1} 场活动" aria-current="${index === 0 ? 'true' : 'false'}"></button>`,
-          )
-          .join('')}</div>
       </div>`;
     },
 
@@ -560,7 +530,7 @@
       </article>`;
       const modeSwitcher = `<div class="mode-switcher" role="group" aria-label="报名模式切换（原型示意）"><div class="mode-switcher-head"><b>报名方式</b>${modePill}</div><p class="card-hint">${modeMeta.helper || ''}</p><div class="mode-switcher-actions"><button class="btn-chip ${activityMode === 'open' ? 'is-active' : ''}" data-action="route" data-route="activity-detail" data-state="open-public">公开报名</button><button class="btn-chip ${activityMode === 'approval' ? 'is-active' : ''}" data-action="route" data-route="activity-detail" data-state="open-approval">审批报名</button><button class="btn-chip" data-action="route" data-route="activity-detail" data-state="ended">T+1 结束</button></div><p class="neutral-note mode-switcher-note">报名方式不改变活动归属：活动始终属于唯一俱乐部。活动 T+1 进入结束展示，主动下架优先保留下架语义。</p></div>`;
       return `<div class="pg has-bar activity-detail-pg" data-activity-mode="${activityMode}" data-registration-mode="${activityMode}">
-        <div class="cover"><img src="${IMG.cover}" alt="${primary.title}" /><span class="cover-count">1/3</span><div class="cover-dots"><i class="is-active"></i><i></i><i></i></div></div>
+        <div class="cover journal-detail-cover">${journalImage(IMG.mountain, `${primary.title}山地骑行封面`)}<span class="cover-count">1/3</span><div class="cover-dots"><i class="is-active"></i><i></i><i></i></div></div>
         <section class="info-bar"><div class="info-head"><span class="info-kicker">${primary.date} · ${primary.level}</span><span class="info-tag">${ended ? '已结束' : approved && !openMode ? '已通过' : full ? '名额已满' : openPublic ? '直接加入' : openApproval ? '待审核' : '报名中'}</span></div><h2 class="info-title">${primary.title}</h2><p class="info-meta"><span>${primary.time}集合</span><span>${primary.start}</span></p>${modePill}</section>
         ${modeSwitcher}${hostCard}
         ${metrics([[`${primary.distanceKm} km`, '里程'], [`${primary.elevationM} m`, '爬升'], [primary.estimatedRideTime, '预计骑行'], [`${primary.approved} 人`, '已通过']])}
@@ -636,6 +606,51 @@
       };
       const tripHostLine = snapshotHostLine(readyTrip);
       const cancelledHostLine = snapshotHostLine(cancelledTrip);
+      const registrationOutcome = is('review-pending')
+        ? {
+            state: 'review-pending',
+            mode: 'approval',
+            tag: tag('pending', '待审核'),
+            guidance: '报名已提交，等待组织者确认',
+            action: btn('查看报名', go('credential') + ' data-state="pending"', 'btn-secondary trip-ticket-primary'),
+          }
+        : is('full-waiting', 'waitlist')
+          ? {
+              state: 'full-waiting',
+              mode: 'open',
+              tag: tag('warning', '⚠ 候补中'),
+              guidance: '本场名额已满，名额释放后再确认',
+              action: btn('查看报名', go('credential') + ' data-state="waiting"', 'btn-secondary trip-ticket-primary'),
+            }
+          : is('cancelled')
+            ? {
+                state: 'cancelled',
+                mode: 'approval',
+                tag: tag('muted', '已取消'),
+                guidance: '本次报名已取消，需要时可重新报名',
+                action: btn('重新报名', go('registration-form') + ' data-state="selected"', 'btn trip-ticket-primary'),
+              }
+            : is('open-approved')
+              ? {
+                  state: 'open-approved',
+                  mode: 'open',
+                  tag: tag('success', '✓ 已报名'),
+                  guidance: '公开报名已生效，可以查看出发凭证',
+                  action: btn('查看凭证', go('credential'), 'btn trip-ticket-primary'),
+                }
+              : null;
+      if (registrationOutcome) {
+        const pendingCount = registrationOutcome.state === 'review-pending' ? '1' : '0';
+        const readyCount = registrationOutcome.state === 'open-approved' ? '1' : '0';
+        const invalidCount = registrationOutcome.state === 'cancelled' ? '1' : '0';
+        return `<div class="pg registrations-prototype" data-registration-outcome="${registrationOutcome.state}">${head}
+          <div class="trip-summary">${metric(pendingCount, '审核中')}${metric(readyCount, '可出发', readyCount === '1' ? 'is-ready' : '')}${metric(invalidCount, '已失效')}</div>
+          <article class="trip-ticket ${registrationOutcome.state === 'cancelled' ? 'trip-ticket-cancelled' : ''}" data-registration-mode="${registrationOutcome.mode}">
+            <div class="trip-ticket-top"><b class="ticket-label">骑行票据</b><span class="ticket-date">${readyTrip.date}</span>${registrationOutcome.tag}</div>
+            <div class="trip-ticket-body"><h3>${readyTrip.title}</h3><p class="meta-line trip-host-line">${tripHostLine}</p><span class="mode-pill mode-pill-${registrationOutcome.mode} mode-pill-inline">${registrationOutcome.mode === 'open' ? '公开报名 · 直接加入' : '审批报名 · 需审核'}</span><div class="trip-ticket-info"><div><small>集合时间</small><b>${readyTrip.time}</b></div><div><small>集合地点</small><b>${readyTrip.start}</b></div></div><p class="status-guidance"><i></i>${registrationOutcome.guidance}</p>${registrationOutcome.action}</div>
+          </article>
+        </div>`;
+      }
       return `<div class="pg registrations-prototype">${head}
         <div class="trip-summary">${metric('0', '审核中')}${metric('1', '可出发', 'is-ready')}${metric(cancelledDeleted ? '0' : '1', '已失效')}</div>
         <article class="trip-ticket" data-registration-mode="open"><div class="trip-ticket-top"><b class="ticket-label">骑行票据</b><span class="ticket-date">${readyTrip.date}</span>${tag('success', '✓ 已报名')}</div><div class="trip-ticket-body"><h3>${readyTrip.title}</h3><p class="meta-line trip-host-line">${tripHostLine}</p><span class="mode-pill mode-pill-open mode-pill-inline">公开报名 · 直接加入</span><div class="trip-ticket-info"><div><small>集合时间</small><b>${readyTrip.time}</b></div><div><small>集合地点</small><b>${readyTrip.start}</b></div></div><div class="ticket-meta"><span>集合方式</span><b>自行前往</b></div><p class="status-guidance"><i></i>公开报名 · 加入即生效，无审核中入口</p>${btn('查看凭证', go('credential'), 'btn trip-ticket-primary')}</div></article>
@@ -644,7 +659,6 @@
     },
 
     credential: () => {
-      const hasPhoto = !is('no-photo');
       const credential = getTripSnapshot({
         activityId: 'trip-pudong-sunset',
         credentialId: 'credential-1017-012',
@@ -659,8 +673,12 @@
       const credHostLine = snapshotHostLine(credential);
       const credentialClub = normalizeClub(credential.kind === 'club' ? credential : null) || canonicalClub;
       const rejected = is('rejected');
+      const pending = is('pending');
+      const waiting = is('waiting');
+      const cancelled = is('cancelled');
       const supportCar = is('support-car');
       const used = is('used');
+      const activeCredential = !rejected && !pending && !waiting && !cancelled;
       const gatheringMode = supportCar ? '需要后援车' : '自行前往';
       const credentialDetails = [
         ['骑手', rider.realName],
@@ -674,25 +692,44 @@
         credentialDetails.push(['司机电话', driver.phone]);
         credentialDetails.push(['车辆信息', driver.car]);
       }
+      const credentialStatus = rejected
+        ? tag('muted', '已驳回')
+        : pending
+          ? tag('pending', '待审核')
+          : waiting
+            ? tag('warning', '⚠ 候补中')
+            : cancelled
+              ? tag('muted', '已取消')
+              : used
+                ? tag('success', '✓ 已签到')
+                : tag('success', '✓ 已通过 · 准时集合');
+      const inactiveCredential = pending
+        ? '<div class="credential-reject"><p class="card-hint">组织者正在确认报名资料，审核通过后才会生成出发凭证。</p></div>'
+        : waiting
+          ? '<div class="credential-reject"><p class="card-hint">本场名额已满，当前仍在候补中，尚未获得有效出发凭证。</p></div>'
+          : cancelled
+            ? '<div class="credential-reject"><p class="card-hint">本次报名已取消，集合信息和凭证已失效。</p></div>'
+            : '';
       return `<div class="pg">
-        <p class="section-label credential-rider-heading">公开骑行名片</p>
-        ${riderCard(hasPhoto, hasPhoto ? '' : `<p class="neutral-note" style="margin:0 16px 12px">添加一张骑行照片，名片会更有辨识度。</p><div style="padding:0 16px 16px">${btn('添加骑行照片', go('profile-edit'), 'btn-secondary')}</div>`)}
         <article class="credential-ticket">
-          <div class="ticket-head">${brandLogo('报名凭证')}${rejected ? tag('muted', '已驳回') : used ? tag('success', '✓ 已签到') : tag('success', '✓ 已通过 · 准时集合')}</div>
+          <div class="ticket-head">${brandLogo(activeCredential ? '报名凭证' : '报名记录')}${credentialStatus}</div>
           <div class="ticket-body"><h2 class="card-title" style="margin-top:8px">${credential.title}</h2><p class="meta-line">${credential.date}</p><p class="meta-line credential-host-line">${credHostLine}</p></div>
           ${
             rejected
               ? `<div class="credential-reject"><div class="row"><span class="k">驳回原因</span><span class="v">骑行经验说明不足，请补充近期骑行经历后重新提交。</span></div><p class="card-hint">驳回原因仅你本人与审核管理员可见；修改资料后可沿用本记录重新提交。</p>${tag('warning', '⚠ 报名被驳回')}</div>`
-              : `<div class="credential-spotlight"><p class="info-kicker">集合时间</p><p class="info-big">${credential.time}</p><p class="info-kicker" style="margin-top:8px">集合地点</p><p class="info-title" style="margin-top:0">${credential.start}</p><p class="info-meta">${credential.address || '集合点地址以活动通知为准'}</p><div style="margin-top:12px">${btn('地图导航', toast('已打开集合点导航'), 'btn-inverse')}</div></div>
+              : activeCredential
+                ? `<div class="credential-spotlight"><p class="info-kicker">集合时间</p><p class="info-big">${credential.time}</p><p class="info-kicker" style="margin-top:8px">集合地点</p><p class="info-title" style="margin-top:0">${credential.start}</p><p class="info-meta">${credential.address || '集合点地址以活动通知为准'}</p><div style="margin-top:12px">${btn('地图导航', toast('已打开集合点导航'), 'btn-inverse')}</div></div>
           <div class="ticket-body">${rows(credentialDetails)}<p class="card-hint credential-snapshot-hint">${HISTORY_IDENTITY_NOTE}</p></div>
           <div class="ticket-body credential-serial-row"><span class="k">凭证编号</span><code class="serial">RE-20261018-482913</code></div>
           <p class="card-hint credential-barcode-note">凭证编号仅文字展示，本期不做条码与扫码核销；签到由管理员在线处理。</p>`
+                : inactiveCredential
           }
-          ${rejected ? `<div class="ticket-body" style="padding-bottom:16px"><p class="card-hint credential-snapshot-hint">${HISTORY_IDENTITY_NOTE}</p></div>` : ''}
+          ${activeCredential ? '' : `<div class="ticket-body" style="padding-bottom:16px"><p class="card-hint credential-snapshot-hint">${HISTORY_IDENTITY_NOTE}</p></div>`}
         </article>
+        <div class="credential-share-action">${btn('分享活动', 'data-action="share-activity"')}<p class="card-hint">仅分享公开活动详情，不含本人的凭证、实名或电话。</p></div>
         <div class="card">${cardHead('', '队伍：风向小队')}<p class="card-hint">我是队长，可使用右上角分享邀请队员。队伍仅用于本次活动分组，与俱乐部身份独立。</p></div>
         <div style="margin-top:12px">${btn('查看路线分析', go('route-analysis'), 'btn-secondary')}</div>
-        ${rejected ? `<div style="margin-top:12px">${btn('修改后重新提交', go('registration-form'), 'btn')}</div>` : used ? '' : `<div style="margin-top:12px">${btn('取消报名', toast('已取消报名'), 'btn-secondary')}</div>`}
+        ${rejected ? `<div style="margin-top:12px">${btn('修改后重新提交', go('registration-form') + ' data-state="selected"', 'btn')}</div>` : cancelled ? `<div style="margin-top:12px">${btn('重新报名', go('registration-form') + ' data-state="selected"', 'btn')}</div>` : used ? '' : `<div style="margin-top:12px">${btn('取消报名', 'data-action="request-cancel-registration"', 'btn-secondary')}</div>`}
       </div>`;
     },
 
@@ -714,17 +751,18 @@
       };
       const roleLabel = (singleKey && singleKey.myRoleLabel) || (admin ? '平台管理员' : '骑友');
       const summary = (singleKey && singleKey.summary) || singleClub.name;
-      const hint = (singleKey && singleKey.hint) || '全平台唯一俱乐部，从这里进入俱乐部主页。';
-      const clubBlock = `<section class="profile-club-card is-single" data-single-club>
-        <div class="profile-club-head"><b class="section-label">我的俱乐部</b><span class="meta-line">${summary}</span></div>
-        <div class="profile-club-single">${clubAvatar(singleClub, 'md')}<div class="profile-club-text"><b>${singleClub.name}</b><p class="meta-line">本人身份 · ${roleLabel}</p></div></div>
-        <p class="card-hint">${hint}</p>
-        ${btn('进入俱乐部主页', go('club/center') + ' data-state="home"', 'btn-secondary')}
-      </section>`;
-      return `<div class="pg">${brandLogo('此里 · 一起骑，去更远的地方')}
-        <section class="profile-hero-card"><img src="${IMG.rider}" alt="骑行背景照片" /><div class="profile-hero-shade"></div><div class="profile-hero-identity"><span class="avatar lg ring"><img src="${IMG.avatar}" alt="${rider.nickname}" /></span><div><h2>${rider.nickname}</h2><p>${rider.title}</p><p class="auth-line">微信已登录</p></div></div></section>
+      const clubBlock = `<button class="profile-club-row" data-single-club ${go('club/center')} data-state="home" aria-label="进入俱乐部主页：${singleClub.name}">
+        ${clubAvatar(singleClub, 'md')}<span class="profile-club-text"><small class="section-label">我的俱乐部</small><b>${singleClub.name}</b><span class="meta-line">${summary} · ${roleLabel}</span></span><span class="profile-club-enter">进入俱乐部主页 ›</span>
+      </button>`;
+      return `<div class="pg journal-profile-page">${brandLogo('此里 · 一起骑，去更远的地方')}
+        <section class="profile-hero-card journal-profile-card">
+          <button class="profile-background-action" data-action="preview-profile-background" aria-label="查看完整骑行背景"></button>
+          ${journalImage(IMG.mountain, '山路骑行背景', '骑行背景暂不可用')}
+          <div class="profile-hero-shade"></div>
+          <span class="journal-profile-label">我的骑行名片</span>
+          <div class="profile-hero-identity"><button class="avatar lg ring journal-avatar-action" data-action="preview-profile-avatar" aria-label="查看头像">${journalImage(IMG.avatar, `${rider.nickname}的头像`, '头像暂不可用')}</button><div><p class="journal-profile-kicker">骑行背景 · 本人主页</p><h2>${rider.nickname}</h2><p>${rider.gender} · ${rider.title}</p><p class="auth-line">微信已登录</p></div></div>
+        </section>
         ${clubBlock}
-        <div class="card completion"><div class="row" style="min-height:24px;border:0"><span class="k">资料完整度</span><span class="v">80%</span></div><div class="progress on-light"><i style="width:80%"></i></div><p class="card-hint">还差：骑行照片。补充后公开名片会更完整。</p></div>
         <p class="section-label">常用服务</p>
         <div class="menu-card">
           ${admin ? linkRow('i-admin', '活动管理', '创建、编辑、上下架与报名审批', 'admin-activity-list') : ''}
@@ -754,7 +792,7 @@
       </section>
       <section class="card settings-release-card">${cardHead('02', 'App 更新', '', '当前版本的更新概览')}
         <div class="release release-current">
-          <div class="release-meta-row"><code>V${version}</code>${tag('solid', '当前版本')}<span class="release-date">2026.10.21</span></div>
+          <div class="release-meta-row"><code>V${version}</code>${tag('solid', '当前版本')}<span class="release-date">${version.split('.').slice(0, 3).join('.')}</span></div>
           <p class="release-title">${title}</p>
           <p class="release-summary">${summary}</p>
           <ul class="release-features">
@@ -768,18 +806,16 @@
     },
 
     'capability-card': () => {
-      const hasPhoto = !is('no-photo');
-      return `<div class="pg"><p class="page-sub">其他骑友在活动中看到的样子：只显示昵称，不显示实名与电话。</p>
-        ${riderCard(hasPhoto, hasPhoto ? '' : '<p class="neutral-note" style="margin:0 16px 16px">还没有骑行照片，先用品牌底图展示。添加一张骑行照片，名片会更有辨识度。</p>')}
-        <p class="neutral-note">公开骑行名片只包含昵称、照片和骑行经验，不含第三方账号数据。</p>
-        <div style="margin-top:12px">${btn(hasPhoto ? '更换骑行照片' : '添加个人骑行照片', toast('已打开骑行照片选择器'), hasPhoto ? 'btn-secondary' : 'btn')}</div></div>`;
+      return `<div class="pg capability-card-redirect" data-compat-redirect="profile">${stateView('此', '骑行名片已并入“我的”', '历史地址继续保留，当前会自动回到“我的”。', btn('返回我的', go('profile')))}</div>`;
     },
 
     'profile-edit': () => {
       const focus = is('focus');
       const error = is('error');
       const uploading = is('uploading');
+      const uploadFailed = is('upload-fail');
       return `<div class="pg">
+        <div ${uploading ? 'inert aria-busy="true"' : ''}>
         <div class="card">${cardHead('01', '更新头像')}<div class="profile-avatar-editor"><span class="avatar profile-avatar-preview"><img src="${IMG.avatar}" alt="当前微信头像" /></span><div class="profile-avatar-panel"><p>请选择微信头像，选择后立即保存，并用于个人主页和活动报名中的骑手身份展示。</p>${btn('选择微信头像', toast('已打开微信头像选择器'), 'btn-secondary')}</div></div></div>
         <div class="card">${cardHead('02', '基础资料')}${field('昵称', input(rider.nickname, { count: '4/16' }))}
           ${field('真实姓名', input(focus ? `${rider.realName}<i class="caret"></i>` : rider.realName, { cls: focus ? 'is-focus' : '' }))}
@@ -789,11 +825,13 @@
           ${field('紧急联系人电话', input(error ? '' : '166 0000 4323', { cls: error ? 'is-error' : '', ph: '请输入紧急联系人电话', error: error ? '请填写紧急联系人电话' : '' }))}</div>
         <div class="card">${cardHead('03', '个人背景图', tag('neutral', uploading || !error ? '1/1' : '0/1'), '最多 1 张；选择后可按 16:9 移动和缩放画面，建议使用横向照片')}
           <div class="upload-grid">
-            ${uploading ? `<div class="upload-thumb"><img src="${IMG.cover}" alt="上传中" /><div class="thumb-state is-uploading">正在上传 62%<span class="progress"><i style="width:62%"></i></span></div></div>` : error ? `<div class="upload-thumb"><div class="thumb-state is-failed">上传失败<button class="btn-text" ${toast('正在重新上传')}>重试</button></div></div>` : `<div class="upload-thumb"><img src="${IMG.rider}" alt="个人背景图" /><span class="thumb-badge">${tag('neutral', '背景')}</span><button class="thumb-del" ${toast('背景图已删除')} aria-label="删除背景图"></button></div>`}
+            ${uploading ? `<div class="upload-thumb"><img src="${IMG.cover}" alt="上传中" /><div class="thumb-state is-uploading">正在上传 62%<span class="progress"><i style="width:62%"></i></span></div></div>` : uploadFailed || error ? `<div class="upload-thumb"><img src="${IMG.rider}" alt="原背景图已保留" /><div class="thumb-state is-failed">上传失败<button class="btn-text" ${toast('正在重新上传，原背景图已保留')}>重试</button></div></div>` : `<div class="upload-thumb"><img src="${IMG.rider}" alt="个人背景图" /><span class="thumb-badge">${tag('neutral', '背景')}</span><button class="thumb-del" ${toast('背景图已删除')} aria-label="删除背景图"></button></div>`}
           </div></div>
+        </div>
+        ${uploadFailed ? '<p class="field-msg is-error" role="status">上传失败，原背景图已保留。请重试或继续使用原图。</p>' : ''}
         <p class="neutral-note">真实姓名、手机号和紧急联系人只对你和审核管理员可见，不会出现在公开名片中。</p>
         ${error ? '<p class="field-msg is-error">有 2 项需要修改</p>' : ''}
-        <div style="margin-top:12px">${btn('保存资料', 'data-action="save-profile"')}</div>
+        <div style="margin-top:12px">${uploading ? btn('上传处理中', 'disabled aria-disabled="true"', 'btn is-disabled') : btn('保存资料', 'data-action="save-profile"')}</div>
       </div>`;
     },
 
@@ -971,17 +1009,18 @@
 
     'admin-review-detail': () => {
       if (is('loading')) return `<div class="pg">${skeletons(3)}</div>`;
-      const approved = is('approved');
+      const checkedIn = is('checked-in');
+      const approved = is('approved', 'checked-in');
       const rejectError = is('reject-error');
       const capacityFull = is('capacity-full');
       return `<div class="pg">
-        <section class="info-bar" style="margin-top:0"><div class="info-head"><span class="info-kicker">报名编号 REG-1017-018</span><span class="info-tag ${approved ? '' : 'is-pending'}">${approved ? '已通过' : '待审核'}</span></div><h2 class="info-title">${rider.nickname} · ${primary.title}</h2><p class="status-explain">${approved ? '已于 10月14日 10:02 通过，骑友已收到出发凭证。' : capacityFull ? '名额已被其他报名占满，本次未通过；申请仍保持待审核状态。' : '通过后骑友会收到出发凭证；驳回需填写理由，骑友会看到。'}</p></section>
+        <section class="info-bar" style="margin-top:0"><div class="info-head"><span class="info-kicker">报名编号 REG-1017-018</span><span class="info-tag ${approved ? '' : 'is-pending'}">${checkedIn ? '已签到' : approved ? '已通过' : '待审核'}</span></div><h2 class="info-title">${rider.nickname} · ${primary.title}</h2><p class="status-explain">${checkedIn ? '已完成现场签到，报名记录已更新。' : approved ? '已于 10月14日 10:02 通过，骑友已收到出发凭证。' : capacityFull ? '名额已被其他报名占满，本次未通过；申请仍保持待审核状态。' : '通过后骑友会收到出发凭证；驳回需填写理由，骑友会看到。'}</p></section>
         ${capacityFull ? '<p class="pending-note">名额已满 · 请释放名额或调整容量后重新校验，系统不会误生成凭证。</p>' : ''}
         <div class="card">${cardHead('01', '报名人', tag('neutral', '管理员可见完整信息'))}${rows([['昵称', rider.nickname], ['真实姓名', rider.realName], ['性别', rider.gender], ['手机号', rider.phone], ['验证来源', '微信身份']])}</div>
         <div class="card">${cardHead('02', '报名信息')}${rows([['骑行经验', '有经验'], ['集合方式', '自行前往'], ['队伍', '风向小队'], ['报名备注', '无']])}</div>
         <div class="card">${cardHead('03', '照片', '', '资料仅用于本次活动审核，不包含第三方账号数据。')}<div class="photo-strip"><div><img src="${IMG.rider}" alt="骑行照片" /></div><div><img src="${IMG.avatar}" alt="公开头像" /></div></div></div>
         <div class="card">${cardHead('04', '审核意见', approved ? '' : tag('neutral', '驳回时必填'))}${approved ? input('资料完整，欢迎参加', { cls: 'textarea is-disabled' }) : `<textarea id="registration-reject-reason" class="input textarea ${rejectError ? 'is-error' : ''}" maxlength="200" placeholder="驳回时必填，骑友会看到这段说明"></textarea><div class="field-foot"><span>${rejectError ? '<b>驳回时请填写理由；重复点击不会绕过校验</b>' : '示例：骑行经验说明不足，请补充后重提。'}</span><span>0/200</span></div>`}</div>
-      </div>${approved ? fixedBar('骑友到达集合点后确认签到', [btn('确认签到', toast('已确认签到'))], true) : fixedBar(capacityFull ? '名额已满，申请仍保持待审核' : rejectError ? '请先填写驳回理由' : '', [btn('驳回报名', 'data-action="reject-review"', 'btn-secondary'), btn(capacityFull ? '重新校验名额' : '通过报名', `data-action="approve-review" data-capacity-available="${capacityFull ? 'false' : 'true'}"`)])}`;
+      </div>${checkedIn ? fixedBar('现场签到已完成', [btn('已签到', 'disabled', 'btn is-disabled')], true) : approved ? fixedBar('骑友到达集合点后确认签到', [btn('确认签到', 'data-action="request-checkin"')], true) : fixedBar(capacityFull ? '名额已满，申请仍保持待审核' : rejectError ? '请先填写驳回理由' : '', [btn('驳回报名', 'data-action="reject-review"', 'btn-secondary'), btn(capacityFull ? '重新校验名额' : '通过报名', `data-action="approve-review" data-capacity-available="${capacityFull ? 'false' : 'true'}"`)])}`;
     },
 
     'route-analysis': () => {

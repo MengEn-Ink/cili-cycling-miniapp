@@ -1,90 +1,10 @@
 <view class="capability-page">
   <state-view
-    loading="{{loading}}"
+    loading="{{!error}}"
     error="{{error}}"
-    loading-title="正在生成骑行名片"
-    loading-copy="正在整理你的公开资料与照片"
+    loading-title="正在打开我的页面"
+    loading-copy="你的头像和背景就是骑行名片"
     retryable="{{true}}"
-    bind:retry="load"
-  >
-    <view wx:if="{{card}}" class="card-stage">
-      <view class="rider-card {{card.genderClass}}">
-        <swiper
-          wx:if="{{card.hasBackgrounds}}"
-          class="card-visual"
-          autoplay="{{card.hasMultipleBackgrounds}}"
-          circular="{{card.hasMultipleBackgrounds}}"
-          interval="5200"
-          duration="520"
-          indicator-dots="{{card.hasMultipleBackgrounds}}"
-          indicator-color="{{colorMediaMuted}}"
-          indicator-active-color="{{colorOnMedia}}"
-        >
-          <swiper-item wx:for="{{card.backgrounds}}" wx:key="url">
-            <image
-              class="card-photo"
-              src="{{item.url}}"
-              mode="aspectFill"
-              aria-hidden="true"
-              data-url="{{item.url}}"
-              data-index="{{index}}"
-              bindload="backgroundLoad"
-              binderror="backgroundError"
-            />
-          </swiper-item>
-        </swiper>
-        <view wx:else class="card-visual alpine-fallback" aria-label="品牌骑行名片背景">
-          <view class="route-line-art"></view>
-          <view class="fallback-logo"><brand-logo compact="{{true}}" /></view>
-          <view class="brand-word">CILI RIDER</view>
-        </view>
-
-        <view class="image-shade" aria-hidden="true"></view>
-        <view class="card-topline">
-          <view class="brand-signature"><brand-logo compact="{{true}}" /></view>
-          <view class="card-label"><text class="status-dot"></text>公开骑行名片</view>
-        </view>
-      </view>
-
-      <view class="card-identity">
-        <view class="card-avatar-ring">
-          <image
-            wx:if="{{card.avatarUrl && !avatarFailed}}"
-            class="card-avatar"
-            src="{{card.avatarUrl}}"
-            mode="aspectFill"
-            binderror="avatarError"
-            aria-label="{{card.displayName}}的头像"
-          />
-          <view wx:else class="card-avatar card-avatar--placeholder" aria-hidden="true">骑</view>
-        </view>
-        <view class="identity-copy">
-          <view class="rider-name">{{card.displayName}}</view>
-          <view class="gender-pill {{card.genderClass}}">{{card.genderLabel}}</view>
-        </view>
-      </view>
-
-      <view class="card-facts">
-        <view class="fact-row">
-          <text class="fact-label">骑行经验</text>
-          <text class="fact-value">{{card.experienceLabel}}</text>
-        </view>
-        <view class="fact-row">
-          <text class="fact-label">公开范围</text>
-          <text class="fact-value">所有骑友可见昵称、性别、头像与照片</text>
-        </view>
-      </view>
-
-      <view class="privacy-note">这是你在活动中展示的公开资料</view>
-
-      <view class="card-caption">
-        <text>{{card.generatedAtText}}</text>
-        <text>昵称、头像和照片由你维护</text>
-      </view>
-
-      <button wx:if="{{card.needsProfilePhoto}}" class="photo-button" bindtap="completeProfile">
-        添加个人骑行照片
-      </button>
-    </view>
-  </state-view>
+    bind:retry="openProfile"
+  />
 </view>

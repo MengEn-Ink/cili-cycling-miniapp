@@ -83,7 +83,7 @@ describe('沸点浅色 UI 全页对比度契约', () => {
   it('profile 与 profile-edit 的操作、辅助文案、错误和禁用态保持语义色', () => {
     const profile = read('miniprogram/pages/profile/index.wxss');
     const profileMenu = effectiveBlock(profile, '.menu-card');
-    expectSemantic(declaration(profileMenu, 'background'), '--color-surface');
+    expectSemantic(declaration(profileMenu, 'background'), '--color-bg');
     expectSemantic(declaration(profileMenu, 'color'), '--color-text');
     expectSemantic(declaration(effectiveBlock(app, '.muted'), 'color'), '--color-muted');
 
@@ -113,7 +113,7 @@ describe('沸点浅色 UI 全页对比度契约', () => {
     );
   });
 
-  it('registrations 与 activity-card 的卡片正文、辅助信息和 CTA 可读', () => {
+  it('registrations 与 activity-card 的正文、照片说明和整卡入口可读', () => {
     const registrations = read('miniprogram/pages/registrations/index.wxss');
     const sharedCard = effectiveBlock(registrations, '.registration-card');
     expectSemantic(declaration(sharedCard, 'color'), '--color-text');
@@ -132,10 +132,12 @@ describe('沸点浅色 UI 全页对比度契约', () => {
     );
 
     const card = read('miniprogram/components/activity-card/index.wxss');
+    expect(declaration(effectiveBlock(card, '.activity-card'), 'background')).toBe('transparent');
     expectSemantic(
-      declaration(effectiveBlock(card, '.activity-card'), 'background'),
-      '--color-surface',
+      declaration(effectiveBlock(card, '.card-caption'), 'background'),
+      '--color-media-card-bg',
     );
+    expectSemantic(declaration(effectiveBlock(card, '.card-caption'), 'color'), '--color-on-media');
     expectSemantic(declaration(effectiveBlock(app, '.metric-unit'), 'color'), '--color-muted');
     expect(declaration(effectiveBlock(card, '.metrics'), 'grid-template-columns')).toBe(
       'repeat(3, minmax(0, 1fr))',
@@ -143,7 +145,9 @@ describe('沸点浅色 UI 全页对比度契约', () => {
     const template = read('miniprogram/components/activity-card/index.wxml');
     expect(template).not.toContain('RIDE DATE');
     expect(template).toContain('bindtap="open"');
-    expect(template).toContain('card-action');
+    expect(template).toContain('aria-label="查看活动：{{item.title}}"');
+    expectUiContrast('var(--color-text)', 'var(--color-bg)', 4.5);
+    expectUiContrast('var(--color-on-media)', 'var(--color-media-card-bg)', 4.5);
   });
 
   it('activity-detail 的集合、费用和骑友名片使用可读语义色', () => {
@@ -182,7 +186,7 @@ describe('沸点浅色 UI 全页对比度契约', () => {
     expect(credential).toContain("item.status === 'approved' || item.status === 'checked_in'");
   });
 
-  it('共享状态与跨页性别徽标使用统一语义色', () => {
+  it('共享状态与我的页面影像身份使用统一语义色', () => {
     for (const [selector, foreground, background] of [
       ['.pill--success', '--color-status-success', '--color-status-success-soft'],
       ['.pill--warning', '--color-status-warning', '--color-status-warning-soft'],
@@ -193,33 +197,34 @@ describe('沸点浅色 UI 全页对比度契约', () => {
 
     expectUiContrast('var(--color-text)', 'var(--color-surface)', 4.5);
 
-    const capability = read('miniprogram/pages/capability-card/index.wxss');
+    const profile = read('miniprogram/pages/profile/index.wxss');
     expectSemantic(
-      declaration(effectiveBlock(capability, '.card-visual'), 'background'),
+      declaration(effectiveBlock(profile, '.profile-hero'), 'background'),
       '--color-media-card-bg',
     );
-    expect(declaration(effectiveBlock(capability, '.gender-pill'), 'border')).toBe(
-      '2rpx solid var(--color-border-strong)',
+    expectSemantic(
+      declaration(effectiveBlock(profile, '.hero-identity'), 'color'),
+      '--color-on-media',
     );
-    expect(capability).toMatch(/\.fallback-logo\s*\{[^}]*position:\s*absolute/s);
+    expect(profile).toContain('.hero-alpine');
     expectUiContrast('var(--color-on-media)', 'var(--color-media-card-bg)', 4.5);
   });
 
-  it('开发者工具运行态暴露的活动管理标题与骑行名片指标保持高对比', () => {
+  it('开发者工具运行态暴露的活动管理标题与我的影像身份保持高对比', () => {
     expectSemantic(declaration(effectiveBlock(app, 'page'), 'color'), '--color-text');
 
-    const capability = read('miniprogram/pages/capability-card/index.wxss');
+    const profile = read('miniprogram/pages/profile/index.wxss');
     expectSemantic(
-      declaration(effectiveBlock(capability, '.card-visual'), 'background'),
+      declaration(effectiveBlock(profile, '.profile-hero'), 'background'),
       '--color-media-card-bg',
     );
     expectSemantic(
-      declaration(effectiveBlock(capability, '.card-label'), 'color'),
+      declaration(effectiveBlock(profile, '.hero-identity'), 'color'),
       '--color-on-media',
     );
     expectSemantic(
-      declaration(effectiveBlock(capability, '.card-caption'), 'color'),
-      '--color-muted',
+      declaration(effectiveBlock(profile, '.profile-title'), 'color'),
+      '--color-media-muted',
     );
     expectUiContrast('var(--color-on-media)', 'var(--color-media-card-bg)', 4.5);
   });

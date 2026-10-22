@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>骑行影像志 · 双端验收成果</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#fbf5e9;color:#211f1c;font:16px/1.7 system-ui,sans-serif}main{max-width:1120px;margin:auto;padding:56px 24px}h1{font:600 clamp(36px,6vw,64px)/1.15 "Songti SC",serif;max-width:700px}a{color:#ae321f}nav{display:flex;flex-wrap:wrap;gap:20px}nav a{min-height:44px;display:inline-flex;align-items:center}article{padding:32px 0;border-top:1px solid #a69b8c}h2{margin:0 0 12px;font-size:28px}.pair{display:grid;grid-template-columns:1fr 1fr;gap:24px}figure{margin:0}figure img{display:block;width:100%;max-width:375px;border:1px solid #a69b8c}figcaption{margin:8px 0;color:#625c53}.status{padding:18px 0;border-top:1px solid #a69b8c;max-width:840px}@media(max-width:620px){main{padding:28px 16px}.pair{gap:12px}h2{font-size:24px}}
+  </style>
+</head>
+<body>
+<main>
+  <p>此里 CILI · 2026.10.22.2</p>
+  <h1>骑行影像志<br />正式双端成果</h1>
+  <nav><a href="../../../index.html#profile">体验「我的」名片</a><a href="../../../index.html#activities">浏览骑行活动</a><a href="../../../verification/2026-10-22-cycling-image-journal-delivery.md">验收报告</a><a href="./README.md">证据口径</a></nav>
+  <p class="status">Pages 浏览器 56/56、三宽度 51/51；DevTools 真实云只读 27/27、17 路由、零异常。公开媒体样本、普通成员完整写链路与双真机仍 BLOCKED。左侧为合成设计数据，右侧为不透明脱敏的真实管理员运行；数据、媒体和系统导航有差异。</p>
+  <div id="routes"></div>
+</main>
+<script>
+  fetch("../../../ui-sync-manifest.json").then(r=>r.json()).then(manifest=>{
+    const root=document.getElementById("routes");
+    for(const route of manifest.evidence.routes){
+      const article=document.createElement("article");
+      const title=document.createElement("h2");title.textContent=route.id;
+      const note=document.createElement("p");note.textContent=route.state+" · "+route.review;
+      const pair=document.createElement("div");pair.className="pair";
+      for(const side of ["pages","devtools"]){
+        const figure=document.createElement("figure");const image=document.createElement("img");
+        image.src=route[side];image.alt=route.id+" "+(side==="pages"?"合成设计":"脱敏实际运行");image.loading="lazy";
+        const caption=document.createElement("figcaption");caption.textContent=side==="pages"?"Pages · 合成数据":"DevTools · 脱敏实际运行";
+        figure.append(image,caption);pair.append(figure);
+      }
+      article.append(title,note,pair);root.append(article);
+    }
+  });
+</script>
+</body>
+</html>

@@ -4,12 +4,12 @@
 .rider-card {
   overflow: hidden;
   padding: 0;
-  border: 2rpx solid var(--color-border);
-  border-radius: var(--radius-display);
+  border: 0;
+  border-radius: var(--radius-sm);
 }
 .profile-hero {
   position: relative;
-  min-height: 472rpx;
+  min-height: 680rpx;
   overflow: hidden;
   background: var(--color-media-card-bg);
 }
@@ -25,15 +25,35 @@
   inset: 0;
   background: var(--color-media-card-bg);
 }
+.hero-ridge {
+  position: absolute;
+  right: -12%;
+  bottom: -28%;
+  width: 90%;
+  height: 64%;
+  border-radius: 50% 50% 0 0;
+  background: var(--color-muted);
+  opacity: 0.28;
+  transform: rotate(-8deg);
+}
+.hero-ridge-near {
+  right: -35%;
+  bottom: -38%;
+  width: 120%;
+  height: 72%;
+  background: var(--color-text);
+  opacity: 0.8;
+}
 .hero-shade {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     to bottom,
     rgba(0, 0, 0, 0) 0%,
-    rgba(0, 0, 0, 0.18) 48%,
-    rgba(0, 0, 0, 0.68) 100%
+    rgba(0, 0, 0, 0.32) 40%,
+    rgba(0, 0, 0, 0.96) 100%
   );
+  pointer-events: none;
 }
 .hero-identity {
   position: absolute;
@@ -41,15 +61,21 @@
   bottom: 32rpx;
   left: 32rpx;
   display: flex;
-  align-items: center;
-  gap: 24rpx;
+  align-items: flex-end;
+  gap: 32rpx;
   color: var(--color-on-media);
   text-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.35);
 }
 .profile-name {
-  font-size: 48rpx;
-  line-height: 64rpx;
-  font-weight: 900;
+  font-family: 'Songti SC', STSong, serif;
+  font-size: 64rpx;
+  line-height: 80rpx;
+  font-weight: 600;
+  overflow-wrap: break-word;
+}
+.profile-copy {
+  flex: 1;
+  min-width: 0;
 }
 .profile-title,
 .auth-line {
@@ -73,11 +99,12 @@
   box-sizing: border-box;
   display: block;
   width: 100%;
-  margin-top: var(--card-gap);
-  padding: 24rpx 32rpx;
-  border: 2rpx solid var(--color-border);
-  border-radius: var(--radius-display);
-  background: var(--color-surface);
+  margin-top: var(--space-6);
+  padding: 32rpx 0;
+  border: 0;
+  border-bottom: 2rpx solid var(--color-border-strong);
+  border-radius: 0;
+  background: var(--color-bg);
   color: var(--color-text);
   text-align: left;
 }
@@ -158,6 +185,17 @@
   color: var(--color-muted);
   font-size: 24rpx;
 }
+.profile-progress-action {
+  width: 100%;
+  min-height: var(--control-height);
+  margin-top: 24rpx;
+  border: 2rpx solid var(--color-action);
+  border-radius: var(--radius-sm);
+  background: var(--color-action);
+  color: var(--color-on-action);
+  font-size: 28rpx;
+  font-weight: 800;
+}
 .identity-guide {
   margin-top: var(--card-gap);
   padding: 32rpx;
@@ -181,19 +219,19 @@
 }
 .menu-list {
   overflow: hidden;
-  padding: 0 32rpx;
-  border: 2rpx solid var(--color-border);
-  border-radius: var(--radius-display);
-  background: var(--color-surface);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--color-bg);
 }
 .menu-card {
   display: flex;
   align-items: center;
   gap: 24rpx;
   width: 100%;
-  min-height: 120rpx;
+  min-height: 144rpx;
   border-bottom: 2rpx solid var(--color-border);
-  background: var(--color-surface);
+  background: var(--color-bg);
   color: var(--color-text);
   text-align: left;
 }

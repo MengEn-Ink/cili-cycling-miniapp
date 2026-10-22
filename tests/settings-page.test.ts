@@ -62,14 +62,14 @@ describe('设置页', () => {
     await import('../miniprogram/pages/settings/index');
   });
 
-  it('当前版本为 2026.10.22.1 且 latest 唯一，最新 main 版本转为历史项', () => {
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.22.1');
+  it('当前版本为 2026.10.22.2 且 latest 唯一，最新 main 版本转为历史项', () => {
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.22.2');
     expect(page.data.releaseNotes).toHaveLength(26);
     expect(page.data.currentRelease).toBe(page.data.releaseNotes[0]);
     expect(page.data.currentRelease).toMatchObject({
-      version: '2026.10.22.1',
+      version: '2026.10.22.2',
       date: '2026-10-22',
-      title: '全页面信息密度与状态反馈统一升级',
+      title: '骑行影像志，头像和背景合为我的名片',
       latest: true,
     });
     expect(page.data.releaseNotes[1]).toMatchObject({
