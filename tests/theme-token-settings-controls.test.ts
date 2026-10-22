@@ -26,8 +26,9 @@ describe('主题 token 与控件契约', () => {
     );
     expect(settings).not.toContain('var(--color-on-action-muted)');
     expect(tokens['--color-border-subtle']).toBe('var(--color-border)');
-    expect(tokens['--font-mono']).toContain('ui-monospace');
-    expect(tokens['--font-mono']).toContain('monospace');
+    expect(tokens['--font-mono']).toBe('var(--font-family-mono)');
+    expect(tokens['--font-family-mono']).toContain('ui-monospace');
+    expect(tokens['--font-family-mono']).toContain('monospace');
 
     for (const token of ['--color-border-subtle', '--font-mono']) {
       expect(settings).toContain(`var(${token})`);

@@ -17,7 +17,7 @@
 .page-title {
   max-width: 560rpx;
   margin-top: 12rpx;
-  font-family: 'Songti SC', STSong, serif;
+  font-family: var(--font-family-editorial);
   font-size: 56rpx;
   line-height: 72rpx;
   font-weight: 600;

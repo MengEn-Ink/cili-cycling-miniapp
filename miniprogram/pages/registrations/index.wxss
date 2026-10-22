@@ -38,7 +38,7 @@
 .heading-title {
   max-width: 520rpx;
   margin-top: 12rpx;
-  font-family: 'Songti SC', STSong, serif;
+  font-family: var(--font-family-editorial);
   font-size: 56rpx;
   line-height: 72rpx;
   font-weight: 600;
@@ -194,7 +194,7 @@
   color: var(--color-text);
   font-size: 34rpx;
   line-height: 48rpx;
-  font-family: 'Songti SC', STSong, serif;
+  font-family: var(--font-family-editorial);
   font-weight: 600;
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;

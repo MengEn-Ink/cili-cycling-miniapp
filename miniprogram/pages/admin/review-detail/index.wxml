@@ -2,7 +2,7 @@
   <brand-logo compact="{{true}}" meta="审批详情" />
   <view class="journal-heading">
     <view class="journal-eyebrow">此里 · 确认同行资料</view>
-    <view class="journal-title">{{card ? card.displayName : '审核报名'}}</view>
+    <view class="journal-title editorial">{{card ? card.displayName : '审核报名'}}</view>
     <view class="journal-summary">完整核对报名、联络与安全信息。</view>
   </view>
   <view class="skeleton" wx:if="{{loading}}"><view></view><view></view><view></view></view>

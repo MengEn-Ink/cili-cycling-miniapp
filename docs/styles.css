@@ -36,6 +36,9 @@
   --font-weight-body: 600;
   --font-weight-strong: 800;
   --font-weight-display: 900;
+  --font-family-body: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-family-editorial: 'Songti SC', STSong, serif;
+  --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --motion-duration-fast: 120ms;
   --motion-duration-base: 180ms;
   --motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
@@ -81,7 +84,7 @@
   --card-gap: 10px;
   --route-preview-canvas-height: 144px;
   --group-qr-code-size: 96px;
-  --font: Inter, 'Noto Sans SC', 'PingFang SC', system-ui, -apple-system, sans-serif;
+  --font: var(--font-family-body);
 
   /* Component tokens: shared prototype controls consume this layer first. */
   --button-bg: var(--color-action);
@@ -10401,7 +10404,7 @@ body.capture-viewport .screen-notes {
 .screen-container .profile-hero-identity h2,
 .screen-container .club-center-name,
 .journal-overview-copy h2 {
-  font-family: "Songti SC", "STSong", serif;
+  font-family: var(--font-family-editorial);
   font-weight: 600;
   letter-spacing: -0.035em;
 }
@@ -10567,7 +10570,7 @@ body.capture-viewport .screen-notes {
 
 .journal-activity-caption h3 {
   margin-top: var(--space-2);
-  font-family: "Songti SC", "STSong", serif;
+  font-family: var(--font-family-editorial);
   font-size: 26px;
   font-weight: 600;
   line-height: 1.32;
@@ -10996,7 +10999,7 @@ body.capture-viewport .screen-notes {
 }
 .screen-container .pageheading h1.editorial,
 .screen-container .editorial {
-  font-family: "Songti SC", "STSong", serif;
+  font-family: var(--font-family-editorial);
   font-weight: 600;
 }
 .screen-container .pageheading p {
@@ -11092,7 +11095,7 @@ body.capture-viewport .screen-notes {
 }
 .screen-container .photo .caption h1,
 .screen-container .photo .caption h2 {
-  font-family: "Songti SC", "STSong", serif;
+  font-family: var(--font-family-editorial);
   font-weight: 600;
   font-size: 36px;
   letter-spacing: -1px;
@@ -11524,7 +11527,7 @@ body.capture-viewport .screen-notes {
   gap: 16px;
 }
 .screen-container .profile-identity h1 {
-  font-family: "Songti SC", "STSong", serif;
+  font-family: var(--font-family-editorial);
   font-size: 36px;
   line-height: 1.25;
   font-weight: 600;

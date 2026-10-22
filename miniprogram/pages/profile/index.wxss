@@ -67,7 +67,7 @@
   text-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.35);
 }
 .profile-name {
-  font-family: 'Songti SC', STSong, serif;
+  font-family: var(--font-family-editorial);
   font-size: 64rpx;
   line-height: 80rpx;
   font-weight: 600;

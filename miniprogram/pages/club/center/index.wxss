@@ -144,7 +144,7 @@
 .club-name {
   overflow: hidden;
   color: var(--color-on-media);
-  font-family: 'Songti SC', STSong, serif;
+  font-family: var(--font-family-editorial);
   font-size: 48rpx;
   font-weight: 600;
   line-height: 64rpx;

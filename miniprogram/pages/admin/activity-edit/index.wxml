@@ -7,7 +7,7 @@
   <block wx:else>
     <view class="editor-hero journal-heading">
       <view class="journal-eyebrow">此里 · 编辑这次骑行</view>
-      <view class="editor-title">{{id ? '编辑活动' : '创建活动'}}</view>
+      <view class="editor-title editorial">{{id ? '编辑活动' : '创建活动'}}</view>
       <view class="editor-summary">填写活动信息，保存草稿后可继续完善。</view>
     </view>
 

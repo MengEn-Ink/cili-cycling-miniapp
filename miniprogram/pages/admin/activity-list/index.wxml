@@ -5,7 +5,7 @@
   <block wx:else>
     <view class="journal-heading">
       <view class="journal-eyebrow">此里 · 组织一场出发</view>
-      <view class="page-title">我的活动</view>
+      <view class="page-title editorial">我的活动</view>
       <view class="hero-subtitle">{{isAdmin ? '管理全部活动与发布状态' : '创建、编辑并上下架你的活动'}}</view>
     </view>
     <view class="status-filters" role="tablist" aria-label="活动状态筛选">
