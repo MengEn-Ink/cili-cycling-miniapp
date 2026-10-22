@@ -105,23 +105,22 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(html).toContain('17 个正式路由 + 4 个规划原型 / 21 个画面');
   });
 
-  it('活动首页使用三张 v3 轮播卡并提供有界导航', () => {
+  it('活动首页使用三张 v3 影像卡组成自然长滚动列表', () => {
     const output = renderPrototypeState('activities', 'default');
-    expect(output).toContain('class="activity-carousel-shell"');
-    expect(output).toContain('class="activity-carousel-track"');
-    expect(output.match(/data-activity-slide/g)).toHaveLength(3);
-    expect(output).toContain('class="activity-date-stamp"');
-    expect(output).toContain('class="activity-club-chip');
-    expect(output).toContain('data-action="activity-carousel-prev"');
-    expect(output).toContain('data-action="activity-carousel-next"');
-    expect(output).toContain('data-action="activity-carousel-dot"');
+    expect(output).toContain('class="activity-journal-list"');
+    expect(output.match(/role="listitem"/g)).toHaveLength(3);
+    expect(output).toContain('class="journal-activity-caption"');
+    expect(output).toContain('预计骑行');
+    expect(output).not.toContain('class="activity-date-stamp"');
+    expect(output).not.toContain('class="activity-club-chip');
+    expect(output).not.toContain('activity-carousel');
+    expect(output).not.toContain('当前第 1 场');
     expect(css).toMatch(
-      /\.activities-v3 \.activity-card-v3\s*\{[^}]*flex:\s*0 0 min\(86%, 306px\);[^}]*height:\s*306px;[^}]*border-radius:\s*22px;/s,
+      /\.activities-v3 \.activity-journal-list\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s,
     );
-    expect(css).toMatch(/\.activities-v3 \.activity-card-cover\s*\{[^}]*height:\s*136px;/s);
-    expect(script).toContain("event.key === 'ArrowRight'");
-    expect(script).toContain("event.key === 'Home'");
-    expect(script).toContain('activityCarouselController');
+    expect(css).toMatch(
+      /\.journal-activity-caption\s*\{[^}]*background:\s*var\(--color-media-card-bg\)/s,
+    );
   });
 
   it('两条正式俱乐部管理路由收敛为唯一俱乐部资料概览与编辑', () => {
@@ -228,8 +227,8 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
 
   it('单俱乐部口径下的身份原型渲染唯一俱乐部与活动归属快照', () => {
     const activitiesPage = renderPrototypeState('activities', 'default');
-    expect(activitiesPage).toContain('aria-label="辛庄桥小火车头像"');
-    expect(activitiesPage).toContain('辛庄桥');
+    expect(activitiesPage).toContain('class="journal-activity-caption"');
+    expect(activitiesPage).toContain('辛庄桥小火车');
     expect(activitiesPage).not.toContain('此里公开活动');
 
     const detailPage = renderPrototypeState('activity-detail', 'approved');
@@ -353,7 +352,8 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     new Function('window', deliveryCenter)(deliveryRuntime);
     const renderedDeliveryCenter = deliveryRuntime.deliveryCenter?.render() ?? '';
 
-    expect(html).toContain('此里骑行活动小程序 · 研发交付中心');
+    expect(html).toContain('此里 · 骑行影像志 · 正式 Pages');
+    expect(html).toContain('href="#profile">查看最终版本</a>');
     expect(html).toContain('href="#delivery"');
     expect(html).toContain('href="#requirements"');
     expect(html).toContain('href="#guide"');
@@ -613,7 +613,8 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain("window.addEventListener('keydown'");
     expect(script).toContain("if (action === 'back') goBack()");
     expect(script).toContain("if (action === 'submit-registration')");
-    expect(script).toContain("if (action === 'approve-review' || action === 'reject-review')");
+    expect(script).toContain("if (action === 'approve-review')");
+    expect(script).toContain("if (action === 'reject-review')");
     expect(script).toContain("if (action === 'publish-activity')");
   });
 
@@ -843,14 +844,16 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect([schema, templates].join('\n')).not.toContain('web-view');
   });
 
-  it('个人名片与审核页面只保留资料、照片和骑行经验', () => {
-    expect(templates).toContain('公开骑行名片');
-    expect(templates.indexOf('credential-rider-heading')).toBeLessThan(
-      templates.indexOf('<article class="credential-ticket">'),
-    );
+  it('凭证不重复骑行名片，审核页只保留资料、照片和骑行经验', () => {
+    const credential = renderPrototypeState('credential', 'with-photo');
+    expect(credential).not.toContain('公开骑行名片');
+    expect(credential).not.toContain('credential-rider-heading');
+    expect(credential).not.toContain('rider-card-poster');
+    expect(credential).toContain('<article class="credential-ticket">');
+    expect(credential).toContain('分享活动');
+    expect(credential).toContain('仅分享公开活动详情');
     expect(templates).toContain('骑行照片');
     expect(templates).toContain('资料仅用于本次活动审核');
-    expect(templates).toContain('活动中公开');
     expect(templates).not.toContain('仅本人查看');
     // 个人名片 / 凭证不展示任何汇总型骑行数据（加权均速、90 天次数等）；
     // 路线相关的"累计爬升"仅出现在活动详情路线概览和完整路线分析页。
@@ -964,8 +967,10 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     }
   });
 
-  it('技术长读首屏按「问题钩子 → 阅读地图 → 三类读者」展开，不以 SDLC 八大类自说自话开场', () => {
-    // header meta / title 与导航反映技术长读定位
+  it('正式影像志先于技术长读展示，技术文章仍按「问题钩子 → 阅读地图 → 三类读者」完整保留', () => {
+    // header 优先呈现当前正式版本，同时保留技术长读的全部导航入口
+    expect(html).toContain('骑行影像志 · 正式 Pages');
+    expect(html).toContain('href="#profile">查看最终版本</a>');
     expect(html).toContain('一次骑行是如何被设计、报名、审批、交付的 · 研发交付中心');
     expect(html).toContain('技术长读');
     expect(html).toContain('骑友 / 组织者 / 开发者三视角');
@@ -975,6 +980,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(html).toContain('href="#pipeline"');
     // 首屏不再以「8 / 8 SDLC 类目」开场
     expect(html).not.toContain('<b>8 / 8</b><span>SDLC 类目</span>');
+    expect(script.indexOf('journal-overview-hero')).toBeLessThan(script.indexOf('id="story-hook"'));
     // 开篇三个问题钩子
     expect(script).toContain('id="story-hook"');
     expect(script).toContain('一次骑行从被想到');
@@ -1106,9 +1112,9 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   });
 
   it('header / footer / meta 的叙事与新章节一致', () => {
-    expect(html).toContain('<title>此里 · 一次骑行是如何被设计、报名、审批、交付的');
-    expect(html).toContain('content="此里骑行活动小程序研发交付中心 · 技术长读');
-    expect(html).toContain('<b>7 章</b><span>技术长读</span>');
+    expect(html).toContain('<title>此里 · 骑行影像志 · 正式 Pages</title>');
+    expect(html).toContain('content="此里骑行影像志正式 Pages');
+    expect(html).toContain('<b>FORMAL</b><span>骑行影像志</span>');
     expect(html).toContain('此里 CILI · 一次骑行是如何被设计、报名、审批、交付的 · 研发交付中心');
     expect(html).toContain('Strava OAuth 仅用于云端 GPX 路线导入，手动上传仍可降级');
   });
@@ -1377,16 +1383,17 @@ describe('报名模式（公开 / 审批）· Pages 原型契约', () => {
     expect(approval).toContain('能力自评');
   });
 
-  it('app.js submit-registration 按 data-registration-mode 分支：open 跳凭证，approval 跳行程', () => {
+  it('app.js submit-registration 按 data-registration-mode 分支展示公开通过、满员候补与待审核行程', () => {
     expect(script).toContain("if (action === 'submit-registration')");
     expect(script).toContain('target.dataset.registrationMode');
-    // open 分支：直接成功并进入凭证
+    // open 分支：有名额直接通过，无名额进入候补；两者都先展示真实行程状态。
     expect(script).toMatch(
-      /mode === 'open'[\s\S]*capacityAvailable === 'false'[\s\S]*confirm-full/,
+      /mode === 'open'[\s\S]*capacityAvailable === 'false'[\s\S]*full-waiting/,
     );
-    expect(script).toMatch(/mode === 'open'[\s\S]*showPage\('credential'\)/);
+    expect(script).toMatch(/mode === 'open'[\s\S]*open-approved/);
+    expect(script).not.toMatch(/mode === 'open'[\s\S]*showPage\('credential'\)/);
     // approval 分支：保留 pending 提交反馈
-    expect(script).toMatch(/报名已提交，等待管理员审核[\s\S]*showPage\('registrations'\)/);
+    expect(script).toMatch(/报名已提交，等待管理员审核[\s\S]*review-pending/);
 
     const capacityFull = renderPrototypeState('admin-review-detail', 'capacity-full');
     expect(capacityFull).toContain('名额已满');

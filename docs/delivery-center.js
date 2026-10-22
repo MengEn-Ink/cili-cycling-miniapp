@@ -160,6 +160,21 @@
       lead: '统一设计规范、可计算契约、交互原型与双端证据；结构以 Pages 为参照，可读性以契约为准。',
       cards: [
         {
+          id: 'cycling-image-journal-formal',
+          title: '骑行影像志 · 当前正式 Pages',
+          summary:
+            '17 条正式路由已采用摄影与编辑式暖纸长屏；“我的”即骑行名片，历史名片地址兼容回到“我的”。从最终骑友体验进入，技术文章与历史设计继续保留。',
+          maturity: 'baseline',
+          sources: [
+            { label: '查看当前正式 Pages', href: '#profile' },
+            { label: '浏览活动影像', href: '#activities' },
+            {
+              label: '批准设计与能力边界',
+              href: BASE + 'docs/designs/2026-10-22-cycling-image-journal/backend-capability-map.md',
+            },
+          ],
+        },
+        {
           id: 'oil-ui-high-density',
           title: 'Oil UI 全页面高信息密度交互方案',
           summary: '沿用沸点布局，覆盖 17 个正式页面与加载、空、失败、弱网等状态；通过分组与间距收敛提高同屏决策效率。',

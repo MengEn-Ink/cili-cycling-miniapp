@@ -1,9 +1,8 @@
 .activity-card {
   --card-accent: var(--color-brand);
   overflow: hidden;
-  border: 2rpx solid var(--color-border);
-  border-radius: var(--radius-display);
-  background: var(--color-surface);
+  border-bottom: 2rpx solid var(--color-border-strong);
+  background: transparent;
 }
 .activity-card--pressed {
   transform: scale(0.99);
@@ -11,8 +10,9 @@
 }
 .card-media {
   position: relative;
-  height: 360rpx;
+  height: 560rpx;
   overflow: hidden;
+  border-radius: var(--radius-sm);
   background: var(--color-media-placeholder-bg);
 }
 .card-cover {
@@ -24,58 +24,52 @@
   top: 16rpx;
   left: 16rpx;
 }
-.card-info {
-  padding: 24rpx 32rpx 32rpx;
-}
-.club-identity {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-  min-width: 0;
-  margin-bottom: 12rpx;
-  color: var(--color-muted);
-  font-size: 24rpx;
-  font-weight: 800;
-}
-.club-avatar {
-  width: 40rpx;
-  height: 40rpx;
-  flex: 0 0 40rpx;
-  border-radius: 50%;
-}
-.club-avatar--placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-brand);
-  color: var(--color-on-brand);
+.card-caption {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 32rpx;
+  background: var(--color-media-card-bg);
+  color: var(--color-on-media);
 }
 .club-name {
+  display: block;
   overflow: hidden;
+  margin-top: 12rpx;
+  color: var(--color-media-muted);
+  font-size: 24rpx;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .card-meta {
   display: flex;
   justify-content: space-between;
-  color: var(--color-muted);
+  color: var(--color-media-muted);
   font-size: 24rpx;
   line-height: 36rpx;
   font-variant-numeric: tabular-nums;
 }
 .activity-title {
-  margin-top: 8rpx;
+  display: -webkit-box;
   overflow: hidden;
-  color: var(--color-text);
-  font-size: 36rpx;
-  line-height: 52rpx;
-  font-weight: 900;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  margin-top: 12rpx;
+  color: var(--color-on-media);
+  font-family: 'Songti SC', STSong, serif;
+  font-size: 48rpx;
+  line-height: 64rpx;
+  font-weight: 600;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.card-facts {
+  padding: 0 0 20rpx;
 }
 .route-line {
-  margin-top: 8rpx;
-  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  min-height: 88rpx;
   color: var(--color-text);
   font-size: 28rpx;
   line-height: 44rpx;
@@ -83,25 +77,38 @@
   white-space: nowrap;
 }
 .location-label {
-  margin-right: 16rpx;
   color: var(--color-muted);
   font-size: 24rpx;
+}
+.route-line > text:nth-child(2) {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.card-arrow {
+  flex: 0 0 auto;
+  color: var(--color-action);
+  font-size: 24rpx;
+  font-weight: 800;
 }
 .metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 2rpx;
   overflow: hidden;
-  margin-top: 24rpx;
-  border: 2rpx solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-border);
+  border-bottom: 2rpx solid var(--color-border-strong);
+  background: transparent;
 }
 .metric-item {
   min-width: 0;
-  padding: 16rpx 8rpx;
-  background: var(--color-surface);
-  text-align: center;
+  padding: 24rpx 8rpx;
+  background: transparent;
+  text-align: left;
+}
+.metric-item + .metric-item {
+  padding-left: 20rpx;
+  border-left: 2rpx solid var(--color-border-strong);
 }
 .metric-value {
   display: block;
@@ -119,44 +126,6 @@
   color: var(--color-muted);
   font-size: 24rpx;
   line-height: 36rpx;
-}
-.card-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16rpx;
-  margin-top: 24rpx;
-  padding-top: 24rpx;
-  border-top: 2rpx solid var(--color-border);
-}
-.card-action {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  width: 100%;
-  min-width: 0;
-  min-height: var(--control-height);
-  margin: 0;
-  padding: 0 16rpx;
-  border: 2rpx solid var(--color-border);
-  border-radius: 999rpx !important;
-  font-size: 28rpx;
-  line-height: 44rpx;
-  font-weight: 800;
-  text-align: center;
-  white-space: nowrap;
-}
-.card-action::after {
-  border: 0;
-}
-.card-action--detail {
-  background: var(--color-surface);
-  color: var(--color-text);
-}
-.card-action--primary {
-  border-color: var(--color-action);
-  background: var(--color-action);
-  color: var(--color-on-action);
 }
 @media (prefers-reduced-motion: reduce) {
   .activity-card--pressed {

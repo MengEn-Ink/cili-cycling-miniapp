@@ -73,8 +73,8 @@ describe('品牌与页面体验静态契约', () => {
     const activities = read('miniprogram/pages/activities/index.wxml');
     const registrations = read('miniprogram/pages/registrations/index.wxml');
     const form = read('miniprogram/pages/registration-form/index.wxml');
-    expect(activities).toContain('选一场骑行，一起出发');
-    expect(activities).toContain('路线、时间、集合点，一眼看清');
+    expect(activities).toContain('把周末，交给山路。');
+    expect(activities).toContain('每一次转弯，都有值得记住的风景。');
     expect(registrations).toContain('我的行程');
     expect(registrations).not.toContain('journey-line');
     expect(form).toContain('提交后将进入审核，请确认资料准确；日常活动默认自行前往。');
@@ -92,9 +92,9 @@ describe('品牌与页面体验静态契约', () => {
     expect(detail).not.toContain("item.fee || '费用待补充'");
   });
 
-  it('报名提示与骑行名片说明使用更清晰的语义色和字号', () => {
+  it('报名提示与活动照片说明使用更清晰的语义色和字号', () => {
     const formStyles = read('miniprogram/pages/registration-form/index.wxss');
-    const cardStyles = read('miniprogram/pages/capability-card/index.wxss');
+    const cardStyles = read('miniprogram/components/activity-card/index.wxss');
     const stepLine = cssBlock(formStyles, '.step-line');
     const cardCaption = cssBlock(cardStyles, '.card-caption');
 
@@ -103,8 +103,9 @@ describe('品牌与页面体验静态契约', () => {
     expect(formStyles).toMatch(
       /\.section-hint\s*\{\s*margin-top:\s*0;\s*color:\s*var\(--color-muted\);\s*font-size:\s*24rpx;/,
     );
-    expectSemantic(declaration(cardCaption, 'color'), '--color-muted');
-    expect(declaration(cardCaption, 'font-size')).toBe('24rpx');
+    expectSemantic(declaration(cardCaption, 'color'), '--color-on-media');
+    expectSemantic(declaration(cardCaption, 'background'), '--color-media-card-bg');
+    expect(declaration(effectiveBlock(cardStyles, '.card-meta'), 'font-size')).toBe('24rpx');
   });
 
   it('卡片入场与关键按压反馈支持系统减少动态效果偏好', () => {
@@ -134,13 +135,11 @@ describe('品牌与页面体验静态契约', () => {
 
     expect(tokens['--page-gutter']).toBe('28rpx');
     expect(tokens['--control-height']).toBe('96rpx');
-    expect(declaration(effectiveBlock(activities, '.activity-carousel'), 'height')).toBe('900rpx');
-    expect(declaration(effectiveBlock(activityCard, '.activity-card'), 'border-radius')).toBe(
-      'var(--radius-display)',
+    expect(declaration(effectiveBlock(activities, '.activity-story-list'), 'gap')).toBe('48rpx');
+    expect(declaration(effectiveBlock(activityCard, '.activity-card'), 'border-bottom')).toBe(
+      '2rpx solid var(--color-border-strong)',
     );
-    expect(declaration(effectiveBlock(activityCard, '.card-action'), 'min-height')).toBe(
-      'var(--control-height)',
-    );
+    expect(declaration(effectiveBlock(activityCard, '.route-line'), 'min-height')).toBe('88rpx');
     expect(declaration(effectiveBlock(detail, '.detail-unified-card'), 'width')).toBe('100%');
     expect(declaration(effectiveBlock(appStyles, '.detail-metric'), 'background')).toBe(
       'var(--color-surface)',
@@ -148,7 +147,7 @@ describe('品牌与页面体验静态契约', () => {
     expect(declaration(effectiveBlock(appStyles, '.status-filter'), 'min-height')).toBe(
       'var(--segment-height)',
     );
-    expect(declaration(effectiveBlock(profile, '.menu-card'), 'min-height')).toBe('120rpx');
+    expect(declaration(effectiveBlock(profile, '.menu-card'), 'min-height')).toBe('144rpx');
 
     const scopedStyles = `${activities}\n${activityCard}\n${detail}\n${management}\n${profile}`;
     expect(scopedStyles).not.toMatch(/#39ff14|#00ff00|lime|neon/i);

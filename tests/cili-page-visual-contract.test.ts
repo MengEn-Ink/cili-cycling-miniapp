@@ -74,13 +74,16 @@ describe('CILI 沸点浅色竞技页面静态契约', () => {
     expect(source).not.toMatch(/maskPhone/);
   });
 
-  it('个人名片只保留公开资料与照片补全入口', () => {
+  it('旧个人名片地址只保留到我的页面的兼容重定向', () => {
     const template = read('miniprogram/pages/capability-card/index.wxml');
+    const source = read('miniprogram/pages/capability-card/index.ts');
 
-    expect(template).not.toContain('card.needsStravaRepair');
-    expect(template).not.toContain('repairStrava');
-    expect(template).toContain('wx:if="{{card.needsProfilePhoto}}"');
-    expect(template).toContain('这是你在活动中展示的公开资料');
-    expect(template).not.toMatch(/STRAVA|同步最新|骑行指标/);
+    expect(template).toContain('loading-title="正在打开我的页面"');
+    expect(template).toContain('loading-copy="你的头像和背景就是骑行名片"');
+    expect(template).toContain('bind:retry="openProfile"');
+    expect(source).toContain("url: '/pages/profile/index'");
+    expect(`${template}\n${source}`).not.toMatch(
+      /needsStravaRepair|repairStrava|lifetimeMetrics|recentMetrics|STRAVA/,
+    );
   });
 });

@@ -103,7 +103,7 @@ describe('activity timeline state helpers', () => {
 });
 
 describe('activity timeline template contract', () => {
-  it('提供双视图选择、完整日期入口和可控活动卡片轮播', () => {
+  it('提供双视图选择、完整日期入口和摄影纵向列表', () => {
     const template = read('miniprogram/pages/activities/index.wxml');
     const styles = read('miniprogram/pages/activities/index.wxss');
     expect(template).toContain('class="timeline-tabs"');
@@ -118,14 +118,14 @@ describe('activity timeline template contract', () => {
     expect(template).toContain('data-index="{{item.index}}"');
     expect(template).toContain('bindtap="selectDay"');
     expect(template).not.toContain('<view class="section-title">{{sectionTitle}}</view>');
-    expect(template).toContain('class="activity-carousel"');
-    expect(template).toContain('current="{{currentCardIndex}}"');
-    expect(template).toContain('bindchange="cardChange"');
-    expect(template).toContain("next-margin=\"{{items.length > 1 ? '32rpx' : '0rpx'}}\"");
+    expect(template).toContain('class="activity-story-list"');
+    expect(template).toContain('id="activity-index-{{index}}"');
+    expect(template).not.toContain('<swiper');
+    expect(template).not.toContain('bindchange="cardChange"');
     expect(template).toContain('role="tabpanel"');
     expect(template).toContain('wx:for="{{items}}"');
     expect(template).toContain('bind:open="open"');
-    expect(styles).toContain('height: 900rpx');
+    expect(styles).toMatch(/\.activity-story-list\s*\{[^}]*display:\s*flex/s);
   });
 
   it('展示列表数量、日期入口并保留加载失败重试', () => {
@@ -134,9 +134,7 @@ describe('activity timeline template contract', () => {
     expect(template).toContain('{{item.relativeLabel}}');
     expect(template).toContain('{{item.dateLabel}}');
     expect(template).toContain('aria-pressed="{{selectedDayKey === item.key}}"');
-    expect(template).toContain(
-      'wx:if="{{nextCursor && items.length && (layoutMode === \'compact\' || items.length === 1 || refreshError)}}"',
-    );
+    expect(template).toContain('wx:if="{{nextCursor && items.length}}"');
     expect(template).toContain('加载更多活动');
     expect(template).toContain('重试加载更多');
   });
@@ -145,6 +143,7 @@ describe('activity timeline template contract', () => {
 describe('activities page timeline controller', () => {
   beforeEach(() => {
     vi.resetModules();
+    vi.stubGlobal('wx', { pageScrollTo: vi.fn(), navigateTo: vi.fn() });
     rideService.listActivityPage.mockReset();
     repositoryCache.peekActivityPage.mockReset().mockReturnValue(undefined);
   });
@@ -187,34 +186,29 @@ describe('activities page timeline controller', () => {
     });
   });
 
-  it('加载活动后直接提供卡片轮播数据并重置无效索引', async () => {
+  it('加载活动后直接提供纵向列表数据', async () => {
     const page = await loadPage();
     rideService.listActivityPage.mockResolvedValueOnce(pageResult(['d1', 'd2'], null));
-    page.data.currentCardIndex = 9;
-
     await page.load();
 
     expect(page.data.items.map((item: any) => item.id)).toEqual(['d1', 'd2']);
-    expect(page.data.currentCardIndex).toBe(0);
   });
 
-  it('切换时间视图时回到第一张卡片', async () => {
+  it('切换时间视图时清空日期选择', async () => {
     const page = await loadPage();
     rideService.listActivityPage
       .mockResolvedValueOnce(pageResult(['future'], null))
       .mockResolvedValueOnce(pageResult(['h1', 'h2'], null));
     await page.load();
-    page.data.currentCardIndex = 1;
-
     page.switchView({ currentTarget: { dataset: { view: 'history' } } });
     await vi.waitFor(() => expect(page.data.loading).toBe(false));
 
     expect(page.data.activeView).toBe('history');
-    expect(page.data.currentCardIndex).toBe(0);
+    expect(page.data.selectedDayKey).toBe('');
     expect(page.data.items.map((item: any) => item.id)).toEqual(['h1', 'h2']);
   });
 
-  it('点击日期快捷入口直接切换到当天第一张卡片', async () => {
+  it('点击日期快捷入口滚动到当天第一张卡片', async () => {
     const page = await loadPage();
     page.data.items = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
     page.data.dayChips = [
@@ -224,23 +218,44 @@ describe('activities page timeline controller', () => {
 
     page.selectDay({ currentTarget: { dataset: { index: 2 } } });
 
-    expect(page.data.currentCardIndex).toBe(2);
+    expect(wx.pageScrollTo).toHaveBeenCalledWith({
+      selector: '#activity-index-2',
+      offsetTop: -16,
+      duration: 180,
+    });
     expect(page.data.selectedDayKey).toBe('2026-10-19');
   });
 
-  it('滑到最后一张时自动加载下一页，普通滑动只更新索引', async () => {
+  it('日期快捷入口拒绝越界索引且不改变当前选择', async () => {
     const page = await loadPage();
-    rideService.listActivityPage.mockResolvedValueOnce(pageResult(['a', 'b'], 'cursor-1'));
-    await page.load();
-    const loadMore = vi.spyOn(page, 'loadMore').mockResolvedValue(undefined);
+    page.data.items = [{ id: 'a' }];
+    page.data.selectedDayKey = '2026-10-18';
+    page.selectDay({ currentTarget: { dataset: { index: 9 } } });
+    expect(page.data.selectedDayKey).toBe('2026-10-18');
+    expect(wx.pageScrollTo).not.toHaveBeenCalled();
+  });
 
-    page.cardChange({ detail: { current: 0 } });
-    expect(page.data.currentCardIndex).toBe(0);
-    expect(loadMore).not.toHaveBeenCalled();
+  it('紧凑与摄影列表切换后保留日期，并在布局完成后滚动到同一活动', async () => {
+    const page = await loadPage();
+    page.data.items = [{ id: 'a' }, { id: 'b' }];
+    page.data.dayChips = [{ key: '2026-10-19', index: 1 }];
+    page.data.selectedDayKey = '2026-10-19';
+    page.setData.mockImplementation((patch: Record<string, unknown>, done?: () => void) => {
+      Object.assign(page.data, patch);
+      done?.();
+    });
 
-    page.cardChange({ detail: { current: 1 } });
-    expect(page.data.currentCardIndex).toBe(1);
-    expect(loadMore).toHaveBeenCalledOnce();
+    page.switchLayout({ currentTarget: { dataset: { mode: 'compact' } } });
+    expect(wx.pageScrollTo).toHaveBeenLastCalledWith({
+      selector: '#activity-index-1',
+      offsetTop: -16,
+      duration: 180,
+    });
+    page.switchLayout({ currentTarget: { dataset: { mode: 'card' } } });
+    expect(wx.pageScrollTo).toHaveBeenCalledTimes(2);
+    expect(page.data.selectedDayKey).toBe('2026-10-19');
+    const template = read('miniprogram/pages/activities/index.wxml');
+    expect(template.match(/id="activity-index-\{\{index\}\}"/g)).toHaveLength(2);
   });
 
   it('加载更多按 cursor 单飞、按 ID 去重并更新 cursor', async () => {

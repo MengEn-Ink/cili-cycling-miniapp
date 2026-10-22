@@ -66,7 +66,7 @@ describe('活动详情设计与日期契约', () => {
     expect(template).toContain('已报名人员');
     expect(template).toContain('bindtap="editActivity">修改活动');
     expect(template).toContain('bindtap="adminRegistration">{{adminRegistrationLabel}}');
-    expect(styles).toMatch(/\.detail-hero\s*\{[^}]*height:\s*360rpx/s);
+    expect(styles).toMatch(/\.detail-hero\s*\{[^}]*height:\s*520rpx/s);
     expect(styles).not.toMatch(
       /\.detail-page \.info-bar\s*\{[^}]*background:\s*var\(--color-surface\)/s,
     );
@@ -107,7 +107,7 @@ describe('活动详情设计与日期契约', () => {
 
   it('内容区由同级分区卡片承载，不恢复嵌套单票卡', () => {
     const styles = read('miniprogram/pages/activity-detail/index.wxss');
-    expect(styles).toMatch(/\.content\s*\{[^}]*display:\s*flex;[^}]*gap:\s*var\(--card-gap\)/s);
+    expect(styles).toMatch(/\.content\s*\{[^}]*display:\s*flex;[^}]*gap:\s*32rpx/s);
     expect(styles).toMatch(/\.content > \.card,[\s\S]*margin-top:\s*0;/s);
     expect(styles).not.toMatch(/\.detail-page \.card\s*\{[^}]*border:\s*0/s);
   });
@@ -1028,8 +1028,8 @@ describe('活动详情加载性能契约', () => {
     expect(template).toContain('class="activity-card-skeleton" wx:if="{{loading}}"');
     expect(template).toContain('activity-card-skeleton__media skeleton');
     expect(template).toContain('activity-card-skeleton__metrics skeleton');
-    expect(styles).toMatch(/\.activity-card-skeleton\s*\{[^}]*height:\s*900rpx/s);
-    expect(styles).toMatch(/\.activity-card-skeleton__media\s*\{[^}]*height:\s*360rpx/s);
+    expect(styles).toMatch(/\.activity-card-skeleton\s*\{[^}]*height:\s*820rpx/s);
+    expect(styles).toMatch(/\.activity-card-skeleton__media\s*\{[^}]*height:\s*560rpx/s);
   });
 
   it('顶部 state-view 开放重试，且不保留无样式的死修饰类', () => {

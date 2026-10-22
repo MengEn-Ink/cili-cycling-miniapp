@@ -80,7 +80,10 @@ describe('HP-20261010-02 单一明亮 UI 底座', () => {
     expect(activityCard).not.toMatch(/--color-(surface|raised|muted|border|action|on-action):/);
     expect(brandLogo).not.toMatch(/#f7f7f5|#4a4a4f|#c7c7ca|#85858a/i);
     expect(statusPill).not.toMatch(/#29292d|#55555b|#b8b8bc|#ff7068/i);
-    expect(capabilityCard).toContain('background: var(--color-media-card-bg);');
+    expect(capabilityCard).toContain('background: var(--color-bg);');
+    expect(read('miniprogram/pages/capability-card/index.wxml')).toContain(
+      'loading-title="正在打开我的页面"',
+    );
     expect(detail).toContain('background: var(--color-media-placeholder-bg);');
     expect(registration).not.toContain('background: #1c1c1e;');
     expect(registration).toMatch(/\.form-card\s*\{[^}]*color: var\(--color-text\);/s);

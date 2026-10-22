@@ -1,7 +1,13 @@
 <view class="page profile-form-page">
   <state-view loading="{{loading}}" error="{{!p ? error : ''}}" loading-title="正在读取个人资料" loading-copy="正在加载已保存的个人资料">
   <block wx:if="{{p}}">
-    <view class="card form-card avatar-step-card">
+    <view class="journal-heading">
+      <view class="journal-eyebrow">此里 · 关于你</view>
+      <view class="journal-title">让同行的人，认出你。</view>
+      <view class="journal-summary">先保存头像，再完善报名与安全联络资料。</view>
+    </view>
+
+    <view class="card form-card journal-section avatar-step-card">
       <view class="step-kicker">{{canEditDetails ? '头像' : '第 1 步'}}</view>
       <view class="title">{{canEditDetails ? '更新头像' : '先选择头像'}}</view>
       <view class="muted form-tip" wx:if="{{!canEditDetails}}">选择头像后即可继续完善个人资料。</view>
@@ -21,7 +27,7 @@
     </view>
 
     <block wx:if="{{canEditDetails}}">
-      <view class="card form-card">
+      <view class="card form-card journal-section">
         <view class="title">基础资料</view>
         <view class="muted form-tip">请填写真实、常用的信息，便于活动报名、现场联络与安全保障。</view>
         <view class="privacy-note">敏感信息将安全保存；手机号仅本人和报名审核员可完整查看。</view>
@@ -57,7 +63,7 @@
         </view>
       </view>
 
-      <view class="card form-card">
+      <view class="card form-card journal-section">
         <view class="title">个人背景图</view>
         <view class="muted form-tip">最多 1 张，用作个人中心顶部的大图背景。选择后可移动和缩放画面，建议使用横向照片；新图片会替换当前背景图。</view>
         <view class="photo-actions">
@@ -79,6 +85,7 @@
 
       <view class="danger form-error" wx:if="{{mediaError}}" role="alert" aria-live="assertive" aria-atomic="true">{{mediaError}}</view>
       <view class="danger form-error" wx:if="{{error}}">{{error}}</view>
+      <view class="readiness-note">保存前请确认 7 项报名资料完整。头像独立即时保存，背景完成上传后再保存整表。</view>
       <button class="btn save-action" loading="{{saving}}" disabled="{{saving || photoBusy || avatarBusy}}" bindtap="save">保存资料</button>
     </block>
     <view class="danger form-error" wx:elif="{{mediaError}}" role="alert" aria-live="assertive" aria-atomic="true">{{mediaError}}</view>

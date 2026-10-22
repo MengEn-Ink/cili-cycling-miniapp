@@ -13,15 +13,20 @@ describe('方案 A 编辑式性能布局', () => {
     const styles = read('miniprogram/components/activity-card/index.wxss');
 
     expect(list).toContain('wx:for="{{items}}"');
-    expect(list).toContain('class="activity-carousel"');
+    expect(list).toContain('class="activity-story-list"');
+    expect(list).toContain('class="activity-story"');
     expect(list).not.toContain('featured="');
     expect(component).not.toMatch(/featured:\s*\{/);
     expect(card).not.toContain('activity-card--featured');
     expect(card).not.toContain('activity-card--compact');
     expect(card).toContain('class="card-media"');
-    expect(card).toContain('class="card-info"');
+    expect(card).toContain('class="card-caption"');
+    expect(card).toContain('class="card-facts"');
     expect(styles).not.toContain('.activity-card--compact');
-    expect(styles).toMatch(/\.card-media\s*\{[^}]*height:\s*360rpx/s);
+    expect(styles).toMatch(/\.card-media\s*\{[^}]*height:\s*560rpx/s);
+    expect(read('miniprogram/pages/activities/index.wxss')).toMatch(
+      /\.activity-story-list\s*\{[^}]*gap:\s*48rpx/s,
+    );
   });
 
   it('活动详情以媒体 Hero 和报名决策摘要建立首屏层级', () => {
@@ -35,7 +40,7 @@ describe('方案 A 编辑式性能布局', () => {
       template.indexOf('class="card time-card time-card--featured"'),
     );
     expect(template).toContain('class="detail-hero"');
-    expect(styles).toMatch(/\.detail-hero\s*\{[^}]*height:\s*360rpx/s);
+    expect(styles).toMatch(/\.detail-hero\s*\{[^}]*height:\s*520rpx/s);
     expect(styles).toMatch(/\.detail-decision\s*\{[^}]*position:\s*relative/s);
   });
 
@@ -53,7 +58,7 @@ describe('方案 A 编辑式性能布局', () => {
     expect(styles).toMatch(
       /\.hero-profile-progress\s*\{[^}]*background:\s*var\(--color-surface\)/s,
     );
-    expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*472rpx/s);
+    expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*680rpx/s);
   });
 
   it('活动卡同时提供整卡点击和清晰的详情入口，详情页按钮保持统一高度', () => {
@@ -62,8 +67,10 @@ describe('方案 A 编辑式性能布局', () => {
     const detailStyles = read('miniprogram/pages/activity-detail/index.wxss');
 
     expect(cardTemplate).toContain('bindtap="open"');
-    expect(cardTemplate).toContain('查看详情');
-    expect(cardStyles).toContain('.card-actions');
+    expect(cardTemplate).toContain('查看活动 →');
+    expect(cardTemplate).toContain('aria-label="查看活动：{{item.title}}"');
+    expect(cardStyles).toMatch(/\.route-line\s*\{[^}]*min-height:\s*88rpx/s);
+    expect(cardStyles).not.toContain('.card-actions');
 
     const appStyles = read('miniprogram/app.wxss');
     for (const [source, selector, lineHeight] of [

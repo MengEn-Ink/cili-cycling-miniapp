@@ -1,16 +1,63 @@
 .profile-form-page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding-bottom: calc(64rpx + env(safe-area-inset-bottom));
   background: var(--color-bg);
   color: var(--color-text);
 }
+.journal-heading {
+  padding: 28rpx 0 56rpx;
+}
+.journal-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  color: var(--color-muted);
+  font-size: 24rpx;
+  line-height: 36rpx;
+  font-weight: 800;
+}
+.journal-eyebrow::before {
+  width: 40rpx;
+  height: 2rpx;
+  background: currentColor;
+  content: '';
+}
+.journal-title {
+  max-width: 600rpx;
+  margin-top: 16rpx;
+  color: var(--color-text);
+  font-size: 64rpx;
+  line-height: 80rpx;
+  font-weight: 900;
+  letter-spacing: -2rpx;
+}
+.journal-summary {
+  margin-top: 12rpx;
+  color: var(--color-muted);
+  font-size: 32rpx;
+  line-height: 48rpx;
+}
 .profile-form-page .card {
   border: 2rpx solid var(--color-border);
-  border-radius: var(--radius-display);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: none;
 }
 .profile-form-page .field .input {
   border-width: 2rpx;
 }
 .form-card {
-  margin-top: var(--card-gap);
+  margin-top: 64rpx;
+  padding: 40rpx 32rpx;
+}
+.journal-heading + .form-card {
+  margin-top: 0;
+}
+.journal-section > .title {
+  font-size: 40rpx;
+  line-height: 56rpx;
+  font-weight: 900;
 }
 .step-kicker {
   color: var(--color-muted);
@@ -30,7 +77,7 @@
   grid-template-columns: 144rpx minmax(0, 1fr);
   align-items: center;
   gap: 24rpx;
-  margin-top: 24rpx;
+  margin-top: 32rpx;
 }
 .avatar-preview-shell {
   flex: 0 0 144rpx;
@@ -73,6 +120,15 @@
   font-weight: 800;
   text-align: center;
 }
+.photo-action,
+.photo-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 88rpx;
+}
 .avatar-status {
   min-height: 36rpx;
   margin-top: 8rpx;
@@ -110,12 +166,7 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 8rpx;
-  margin-top: 24rpx;
-}
-.photo-action,
-.photo-remove {
-  width: 100%;
-  min-height: 88rpx;
+  margin-top: 32rpx;
 }
 .photo-remove {
   border: 2rpx solid var(--color-border);
@@ -193,7 +244,17 @@
 }
 .save-action {
   width: 100%;
-  margin-top: var(--card-gap);
+  min-height: 96rpx;
+  margin-top: 24rpx;
+}
+.readiness-note {
+  margin-top: 48rpx;
+  padding: 20rpx 0;
+  border-top: 2rpx solid var(--color-border);
+  border-bottom: 2rpx solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 26rpx;
+  line-height: 44rpx;
 }
 @media (max-width: 340px) {
   .avatar-editor {

@@ -3,24 +3,18 @@
     <image wx:if="{{item.coverImage && !coverFailed}}" class="card-cover" src="{{item.coverImage}}" mode="aspectFill" lazy-load="{{true}}" binderror="coverImageError" aria-label="{{item.title}}活动封面" />
     <generated-activity-cover wx:else item="{{item}}" variant="card" />
     <view class="media-status"><status-pill status="{{item.displayStatus}}" /></view>
-  </view>
-  <view class="card-info">
-    <view class="club-identity" aria-label="活动归属：{{item.clubIdentity.name}}">
-      <image wx:if="{{item.clubIdentity.avatarUrl}}" class="club-avatar" src="{{item.clubIdentity.avatarUrl}}" mode="aspectFill" lazy-load="{{true}}" />
-      <view wx:else class="club-avatar club-avatar--placeholder">此</view>
-      <text class="club-name">{{item.clubIdentity.name}}</text>
+    <view class="card-caption">
+      <view class="card-meta"><text>{{item.displayDateLabel}}</text><text>{{item.displayTimeLabel}}</text></view>
+      <view class="activity-title">{{item.title}}</view>
+      <view class="club-name">{{item.clubIdentity.name}}</view>
     </view>
-    <view class="card-meta"><text>{{item.displayDateLabel}}</text><text>{{item.displayTimeLabel}}</text></view>
-    <view class="activity-title">{{item.title}}</view>
-    <view class="route-line"><text class="location-label">集合</text><text>{{item.route.start || '集合地点待公布'}}</text></view>
+  </view>
+  <view class="card-facts">
     <view class="metrics">
       <view class="metric-item"><text class="metric-value">{{item.route.distanceKm > 0 ? item.route.distanceKm : '—'}}{{item.route.distanceKm > 0 ? ' km' : ''}}</text><text class="metric-unit">里程</text></view>
       <view class="metric-item"><text class="metric-value">{{item.route.elevationM > 0 ? item.route.elevationM : '—'}}{{item.route.elevationM > 0 ? ' m' : ''}}</text><text class="metric-unit">爬升</text></view>
-      <view class="metric-item"><text class="metric-value">{{item.registrationUnlimited ? item.occupied : (item.capacity > 0 ? (item.occupied + ' / ' + item.capacity) : '待确认')}}</text><text class="metric-unit">{{!item.registrationUnlimited && item.capacity <= 0 ? '名额' : '报名'}}</text></view>
+      <view class="metric-item"><text class="metric-value">{{item.estimatedRideTime || '—'}}</text><text class="metric-unit">预计骑行</text></view>
     </view>
-    <view class="card-actions" aria-label="活动操作">
-      <button class="secondary card-action card-action--detail" catchtap="open">查看详情</button>
-      <button class="btn card-action card-action--primary" catchtap="open">{{item.registrationStatus ? '查看行程' : '报名活动'}}</button>
-    </view>
+    <view class="route-line"><text class="location-label">集合</text><text>{{item.route.start || '集合地点待公布'}}</text><text class="card-arrow">查看活动 →</text></view>
   </view>
 </view>

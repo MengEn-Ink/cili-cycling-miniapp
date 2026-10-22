@@ -13,7 +13,6 @@
           <image class="hero-bg-image" src="{{item.url}}" mode="aspectFill" aria-label="查看完整背景照片" data-url="{{item.url}}" data-index="{{index}}" bindtap="previewHeroImage" binderror="heroBackgroundError" />
         </swiper-item>
       </swiper>
-      <image wx:elif="{{heroBackgroundAvatarUrl}}" class="hero-bg-image hero-fallback-image" src="{{heroBackgroundAvatarUrl}}" mode="aspectFill" aria-hidden="true" data-url="{{heroBackgroundAvatarUrl}}" binderror="heroAvatarBackgroundError" />
       <image wx:elif="{{heroFallbackImageUrl}}" class="hero-bg-image hero-fallback-image packaged-alpine-image" src="{{heroFallbackImageUrl}}" mode="aspectFill" aria-hidden="true" data-url="{{heroFallbackImageUrl}}" binderror="heroFallbackBackgroundError" />
       <view wx:else class="hero-alpine" aria-hidden="true"><view class="hero-ridge hero-ridge-far"></view><view class="hero-ridge hero-ridge-near"></view></view>
       <view class="hero-shade" aria-hidden="true"></view>
@@ -21,7 +20,7 @@
         <cili-avatar size="lg" src="{{heroAvatarUrl}}" on-media="{{true}}" data-url="{{heroAvatarUrl}}" bindtap="previewAvatar" binderror="heroAvatarError" aria-label="{{profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '骑手')}}的头像" />
         <view class="profile-copy">
           <view class="profile-name">{{profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '欢迎来到此里')}}</view>
-          <view class="profile-title" wx:if="{{profile && profile.title}}">{{profile.title}}</view>
+          <view class="profile-title">{{profile && profile.gender ? profile.gender : (heroCard ? heroCard.genderLabel : '未标注')}}</view>
           <view class="auth-line"><text class="auth-dot {{authStatus === 'authenticated' ? 'verified' : ''}}"></text>{{authStatus === 'authenticated' ? '微信已登录' : ((authStatus === 'loading' || authStatus === 'idle') ? '微信登录同步中' : '微信未登录')}}</view>
         </view>
       </view>
@@ -45,6 +44,7 @@
     <view class="hero-progress-head"><text>资料完整度</text><text>{{profile.completeness}}%</text></view>
     <view class="hero-progress-track"><view class="hero-progress-value" style="width: {{profile.completeness}}%"></view></view>
     <view class="hero-progress-missing" wx:if="{{profile.missing.length}}">还差：<text wx:for="{{profile.missing}}" wx:key="*this">{{item}}{{index < profile.missing.length - 1 ? '、' : ''}}</text></view>
+    <button class="profile-progress-action" bindtap="edit">完善报名资料</button>
   </view>
 
   <view class="identity-guide" wx:if="{{authStatus === 'unavailable' || authStatus === 'error'}}">

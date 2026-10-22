@@ -2,7 +2,7 @@
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{refreshing ? '正在刷新行程' : ''}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{refreshError}}</view>
   <brand-logo compact="{{true}}" meta="我的行程" />
-  <view class="page-heading"><view class="heading-main"><view class="heading-title">我的行程</view><view class="heading-copy">审核状态与出发凭证，一处确认</view></view><view class="heading-count"><text wx:if="{{loading && !items.length}}">同步中</text><text wx:else>共 {{items.length}} 场</text></view></view>
+  <view class="page-heading"><view class="heading-main"><view class="heading-eyebrow">此里 · 骑行日历</view><view class="heading-title">每次出发，都有一张记忆。</view><view class="heading-copy">在这里确认报名状态与集合安排。</view></view><view class="heading-count"><text wx:if="{{loading && !items.length}}">同步中</text><text wx:else>共 {{items.length}} 场</text></view></view>
   <view class="trip-stats" wx:if="{{items.length}}" role="list" aria-label="行程票据状态统计">
     <view wx:if="{{statusCounts.review > 0}}" class="trip-stat trip-stat--review" role="listitem"><text class="trip-stat__value">{{statusCounts.review}}</text><text class="trip-stat__label">审核中</text></view>
     <view wx:else class="trip-stat" role="listitem"><text class="trip-stat__value">0</text><text class="trip-stat__label">审核中</text></view>

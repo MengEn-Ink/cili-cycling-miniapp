@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "062c8cedd1a81d8bd9e1fbe3845be676698d44bc",
-  "syncedAt": "2026-10-22T07:18:00+08:00",
+  "syncedThrough": "7790c48d1ed05346ea1af53c66e4048b7e35bf6d",
+  "syncedAt": "2026-10-22T14:14:00+08:00",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:e693645d5055ae423fda000a3d68858a4facc6dc1a8ce7ea3e2873dfb6887ee7"
+    "digest": "sha256:820c9de49872cb98489fc1ebddad88e990c3f2b775afcc1e099c1e0ba9fca86f"
   },
   "prototype": {
-    "digest": "sha256:3d86c6d2539df3ad7415fa7b09a2fbec3ca5cc8f20be8bc3be180cd2ffaca6c7"
+    "digest": "sha256:1a13219adbfa937bada425ad65d1c666333d16cd3d80b822d765189548af3166"
   },
   "routes": [
     {
@@ -83,7 +83,7 @@
     }
   ],
   "evidence": {
-    "directory": "docs/evidence/ui-sync/2026-10-16-design-acceptance",
+    "directory": "docs/evidence/ui-sync/2026-10-22-cycling-image-journal",
     "viewport": {
       "width": 375,
       "height": 812
@@ -93,154 +93,154 @@
         "id": "activities",
         "devtools": "activities-devtools.png",
         "pages": "activities-pages.png",
-        "state": "v3 三卡轮播 · 第一张",
-        "data": "fixture",
-        "review": "blocked",
-        "note": "Pages 于 2026-10-19 重新采集 375×812：首卡为“云蒙山&喇叭沟 RIDE”，三卡横向轮播、下一卡露出、箭头与分页可见；340/375/390 均无页面横向溢出，DevTools 证据仍保持 blocked。"
+        "state": "真实云 1 场近期活动 · 摄影纵向列表",
+        "data": "sanitized-runtime",
+        "review": "differences",
+        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
       },
       {
         "id": "activity-detail",
         "devtools": "activity-detail-devtools.png",
         "pages": "activity-detail-pages.png",
-        "state": "审批报名 · 路线指标与本人媒体未授权态",
-        "data": "fixture",
-        "review": "blocked",
-        "note": "Pages 于 2026-10-21 按 375×812 重采最终设计：详情页移除路线轮廓、海拔曲线与 Canvas，只保留距离、爬升、预计骑行并继续进入完整路线分析；本人缺媒体时展示授权入口，其他骑友缺素材时仅展示昵称与报名状态。DevTools 证据保留为既有真实运行基线，review 保持 blocked，待新开发版复验授权、拒绝与失败重试状态。"
+        "state": "管理员 · 公开活动详情 · 真实封面",
+        "data": "sanitized-runtime",
+        "review": "differences",
+        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
       },
       {
         "id": "route-analysis",
         "devtools": "route-analysis-devtools.png",
         "pages": "route-analysis-pages.png",
-        "state": "高密度路线分析已融合沸点主题",
+        "state": "真实路线只读 · 完整分析就绪",
         "data": "sanitized-runtime",
-        "review": "blocked",
-        "note": "Pages 于 2026-10-21 按 375×812 重采：GPX 事实坐标保持 WGS84，仅在地图展示边界转换一次 GCJ-02；微信选点不重复转换；普通用户页移除原始坐标文本，起点只展示地名并提供导航。DevTools 证据保持 blocked，必须在新开发版复验轨迹贴路后才能上线。"
+        "review": "differences",
+        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
       },
       {
         "id": "registration-form",
         "devtools": "registration-form-devtools.png",
         "pages": "registration-form-pages.png",
-        "state": "未选骑行经验，提交禁用",
+        "state": "本人报名资料 · 经验未选 · 提交禁用",
         "data": "sanitized-runtime",
-        "review": "blocked",
-        "note": "Pages 完整交互原型已在 2026-10-18 使用本地浏览器重新采集 375×812 截图；DevTools 证据仍保持 blocked，待新开发版逐页复验。"
+        "review": "differences",
+        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
       },
       {
         "id": "registrations",
         "devtools": "registrations-devtools.png",
         "pages": "registrations-pages.png",
-        "state": "1 场可出发 / 1 场已取消",
+        "state": "真实 1 场已通过行程",
         "data": "sanitized-runtime",
-        "review": "blocked",
-        "note": "代码与 Pages 原型已同步，行程卡信息基线已对齐；375×812 验收截图已重新采集，并完成 340×740 三轮窄屏检查。"
+        "review": "differences",
+        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
       },
       {
         "id": "credential",
         "devtools": "credential-devtools.png",
         "pages": "credential-pages.png",
-        "state": "已通过凭证",
+        "state": "已通过凭证 · 时间与星期一致",
         "data": "sanitized-runtime",
-        "review": "blocked",
-        "note": "Pages 于 2026-10-21 按 375×812 重采；查看路线与取消报名两个操作保持独立区块间距，微信端截图保持 blocked，待新开发版复验按钮无贴合和误触。"
+        "review": "differences",
+        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
       },
       {
         "id": "profile",
         "devtools": "profile-devtools.png",
         "pages": "profile-pages.png",
-        "state": "管理员 · 直接显示俱乐部名称",
+        "state": "本人管理员 · 头像和背景融合名片",
         "data": "sanitized-runtime",
-        "review": "blocked",
-        "note": "Pages 于 2026-10-21 同步个人中心精简稿：俱乐部区域只显示名称，不再重复提示平台规则；常用服务移除单独骑行名片入口。DevTools 证据保持 blocked，待新开发版逐页复验。"
+        "review": "differences",
+        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
       },
       {
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "管理员 · 同步 Strava 线路信息 · 客户端 2026.10.21.6",
-        "data": "fixture",
-        "review": "blocked",
-        "note": "Pages 于 2026-10-21 按 375×812 重采管理员态设置页：App 更新展示 V2026.10.21.6 及“活动路线与骑友资料加载更轻快”说明；原 2026.10.21.5 条目历史化。DevTools 证据沿用真实运行基线，review 保持 blocked，待新开发版复验版本与日志。"
+        "state": "管理员 · 客户端 2026.10.22.2",
+        "data": "sanitized-runtime",
+        "review": "differences",
+        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
       },
       {
         "id": "capability-card",
         "devtools": "capability-card-devtools.png",
         "pages": "capability-card-pages.png",
-        "state": "有背景图",
+        "state": "历史地址进入我的 · 兼容转跳",
         "data": "sanitized-runtime",
-        "review": "blocked",
-        "note": "Pages 完整交互原型已在 2026-10-18 使用本地浏览器重新采集 375×812 截图；DevTools 证据仍保持 blocked，待新开发版逐页复验。"
+        "review": "differences",
+        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；照片、身份与编号已不透明遮挡，数据、媒体和系统导航存在差异。27 项检查通过；公开骑友媒体样本、普通成员写链路和双物理设备仍 BLOCKED。旧名片路由实际进入“我的”。"
       },
       {
         "id": "profile-edit",
         "devtools": "profile-edit-devtools.png",
         "pages": "profile-edit-pages.png",
-        "state": "本人已有资料",
+        "state": "本人已有资料 · 头像即时保存入口",
         "data": "sanitized-runtime",
-        "review": "blocked",
-        "note": "Pages 375×812 资料编辑截图已按压缩、上传百分比与弱网重试文案重新采集；微信端截图沿用既有布局基线，开发版上传后补做 iOS / Android 双端上传确认。"
+        "review": "differences",
+        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
       },
       {
         "id": "admin-activity-list",
         "devtools": "admin-activity-list-devtools.png",
         "pages": "admin-activity-list-pages.png",
-        "state": "待处理活动",
-        "data": "real-runtime",
-        "review": "blocked",
-        "note": "Pages 原型已下线活动投稿—审批两段式，默认展示唯一俱乐部的全部活动与「已驳回」筛选；活动统一由平台管理员发布，所有用户可见。DevTools 仍保持 blocked，需在新开发版中复验，未声明 aligned。"
+        "state": "真实 1 场已上线活动",
+        "data": "sanitized-runtime",
+        "review": "differences",
+        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
       },
       {
         "id": "admin-activity-edit",
         "devtools": "admin-activity-edit-devtools.png",
         "pages": "admin-activity-edit-pages.png",
-        "state": "编辑活动 · 唯一俱乐部 · Strava 线路地址 + 本地文件补充",
-        "data": "real-runtime",
-        "review": "blocked",
-        "note": "Pages 于 2026-10-21 按 375×812 重采：移除「活动归属」选择器，默认唯一俱乐部归属；创建默认只展示「粘贴 Strava 线路链接」，本地路线文件改由地址右侧「＋」展开底部弹层补充；报名截止默认活动开始日 00:00，不再手动输入；报名模式与归属合入 Card 01。DevTools 证据沿用上一次采集（750×1624），review 保持 blocked，待新开发版复验。"
+        "state": "创建草稿 · 自动截止 · 实际字段",
+        "data": "sanitized-runtime",
+        "review": "differences",
+        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
       },
       {
         "id": "admin-reviews",
         "devtools": "admin-reviews-devtools.png",
         "pages": "admin-reviews-pages.png",
-        "state": "暂无可审批活动",
-        "data": "real-runtime",
-        "review": "blocked",
-        "note": "Pages 于 2026-10-21 同步报名审批空状态：没有活动时给出创建发布引导，不再误报加载失败；真实错误仍保留重试入口。DevTools 证据保持 blocked，待新开发版逐页复验。"
+        "state": "真实审核列表 · 待审核筛选为空",
+        "data": "sanitized-runtime",
+        "review": "differences",
+        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
       },
       {
         "id": "admin-review-detail",
         "devtools": "admin-review-detail-devtools.png",
         "pages": "admin-review-detail-pages.png",
-        "state": "已通过，可签到",
+        "state": "已通过 · 可确认签到 · 敏感区域遮挡",
         "data": "sanitized-runtime",
-        "review": "blocked",
-        "note": "Pages 完整交互原型已在 2026-10-18 使用本地浏览器重新采集 375×812 截图；DevTools 证据仍保持 blocked，待新开发版逐页复验。"
+        "review": "differences",
+        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
       },
       {
         "id": "club/center",
         "devtools": "club-center-devtools.png",
         "pages": "club-center-pages.png",
-        "state": "俱乐部主页 · 三行近期活动",
-        "data": "fixture",
-        "review": "blocked",
-        "note": "Pages 于 2026-10-21 按确认效果稿更新：封面仅承担视觉表达，城市标签位于右上安全区；头像、名称与简介进入独立白色身份区；近期活动改为白色容器内 3 行紧凑列表，每行展示日期、状态、集合信息、里程、爬升与报名简述，整行进入活动详情，不使用大图卡片或双按钮。管理身份与编辑入口已降级，空 / 加载 / 错误状态补齐自然文案；DevTools 证据保持 blocked，未声明双端已对齐。"
+        "state": "唯一俱乐部 · 真实背景 · 近期活动",
+        "data": "sanitized-runtime",
+        "review": "differences",
+        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
       },
       {
         "id": "admin-club-applications",
         "devtools": "admin-club-applications-devtools.png",
         "pages": "admin-club-applications-pages.png",
-        "state": "唯一俱乐部资料概览 · default",
-        "data": "fixture",
-        "review": "blocked",
-        "note": "Pages 于 2026-10-19 单俱乐部化：默认态仅展示唯一俱乐部资料概览与“编辑俱乐部资料”入口，不再出现正式俱乐部列表或新建按钮；bootstrap 态仅在空库首次创建时出现，仅平台管理员可见。"
+        "state": "唯一俱乐部资料概览 · 平台管理员",
+        "data": "sanitized-runtime",
+        "review": "differences",
+        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
       },
       {
         "id": "admin-club-application-detail",
         "devtools": "admin-club-application-detail-devtools.png",
         "pages": "admin-club-application-detail-pages.png",
-        "state": "编辑唯一俱乐部 · edit / bootstrap",
-        "data": "fixture",
-        "review": "blocked",
-        "note": "Pages 于 2026-10-19 单俱乐部化：固定三段（01 头像 1:1 / 02 背景图 16:9 / 03 基本资料），移除加入设置与人数上限；已存在俱乐部时主按钮为“保存资料”，仅在 bootstrap 空库首次创建态保留“创建并立即生效”。"
+        "state": "编辑唯一俱乐部 · 头像与背景",
+        "data": "sanitized-runtime",
+        "review": "differences",
+        "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
       }
     ]
   }

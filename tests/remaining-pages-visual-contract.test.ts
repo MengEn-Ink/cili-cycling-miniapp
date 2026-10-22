@@ -35,14 +35,13 @@ describe('其余页面 CILI 沸点浅色 UI 静态契约', () => {
     expectReadable('var(--color-text)', 'var(--color-bg)');
   });
 
-  it('报名凭证页主视觉、凭证卡与集合区使用语义 token', () => {
+  it('报名凭证页编辑式页头、凭证卡与集合区使用语义 token', () => {
     const styles = read('miniprogram/pages/credential/index.wxss');
-    expectSemantic(
-      declaration(effectiveBlock(styles, '.compact-rider-card'), 'background'),
-      '--color-surface',
+    expect(declaration(effectiveBlock(styles, '.journal-heading'), 'padding')).toBe(
+      '28rpx 0 56rpx',
     );
     expectSemantic(
-      declaration(effectiveBlock(styles, '.compact-rider-media'), 'background'),
+      declaration(effectiveBlock(styles, '.credential-top'), 'background'),
       '--color-media-card-bg',
     );
     expectSemantic(declaration(effectiveBlock(app, '.credential-card'), 'background'), '--card-bg');
@@ -58,7 +57,9 @@ describe('其余页面 CILI 沸点浅色 UI 静态契约', () => {
   it('活动管理页卡片、筛选、克隆输入与次按钮接入统一语义色', () => {
     const styles = read('miniprogram/pages/admin/activity-list/index.wxss');
     expectSemantic(declaration(effectiveBlock(app, '.card'), 'background'), '--card-bg');
-    expect(styles).toMatch(/\.status-filters\s*\{[^}]*grid-template-columns:\s*repeat\(4, 1fr\)/s);
+    expect(styles).toMatch(
+      /\.status-filters\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/s,
+    );
     expectSemantic(declaration(effectiveBlock(app, '.field input'), 'background'), '--input-bg');
     expectSemantic(declaration(effectiveBlock(app, '.field input'), 'color'), '--input-text');
     expect(declaration(effectiveBlock(app, '.secondary'), 'background')).toContain(

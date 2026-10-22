@@ -1835,6 +1835,13 @@ textarea.input.textarea::placeholder {
   gap: 12px;
   align-items: center;
 }
+.qr-row > div {
+  min-width: 0;
+  flex: 1;
+}
+.qr-row .tag {
+  white-space: normal;
+}
 
 /* 底部固定栏 */
 .fixed-bar {
@@ -10450,7 +10457,7 @@ body.capture-viewport .screen-notes {
 .route-source-conn.tone-muted .route-source-conn-dot { background:var(--color-border-strong); }
 
 .route-link-row { display:flex; align-items:stretch; gap:8px; }
-.route-link-row .input { flex:1 1 auto; }
+.route-link-row .input { flex:1 1 auto; min-width:0; overflow:hidden; }
 .route-link-plus { flex:0 0 auto; width:44px; height:44px; border-radius:12px; border:2px solid var(--color-text); background:var(--color-bg); color:var(--color-text); font-size:22px; line-height:1; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition:transform 0.15s ease, background 0.2s ease; }
 .route-link-plus:hover { background:var(--color-raised); }
 .route-link-plus.is-open { background:var(--color-text); color:var(--color-bg); }
@@ -10476,3 +10483,577 @@ body.capture-viewport .screen-notes {
 .boost-conflict { padding:10px 12px; background:var(--color-brand-soft); border:1px solid var(--color-brand); border-radius:10px; display:flex; flex-direction:column; gap:4px; }
 .boost-conflict b { color:var(--color-brand); font-weight:700; }
 .boost-conflict p { font-size:12px; color:var(--color-text); margin:0; }
+
+/* ============================================================
+   CYCLING IMAGE JOURNAL · FORMAL PAGES · 2026-10-22
+   Approved photography/editorial layer. Contract token values above stay unchanged.
+   ============================================================ */
+.screen-container,
+.screen-container .pg {
+  background: var(--color-bg);
+}
+
+.screen-container .pg {
+  min-height: 100%;
+  padding-top: var(--space-5);
+  padding-bottom: max(var(--space-6), env(safe-area-inset-bottom));
+}
+.screen-container .btn-chip,
+.screen-container .review-action {
+  min-height: 44px;
+  padding: var(--space-3) var(--space-4);
+}
+
+.screen-container .page-title,
+.screen-container .info-title,
+.screen-container .profile-hero-identity h2,
+.screen-container .club-center-name,
+.journal-overview-copy h2 {
+  font-family: "Songti SC", "STSong", serif;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+}
+
+.screen-container .page-title {
+  max-width: 12em;
+  margin-top: var(--space-3);
+  font-size: clamp(30px, 9vw, 38px);
+  line-height: 1.22;
+}
+
+.screen-container .page-sub {
+  max-width: 30em;
+  margin-top: var(--space-3);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.screen-container .section-label,
+.screen-container .card-no,
+.screen-container .info-kicker,
+.screen-container .decision-kicker {
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.screen-container .card,
+.screen-container .admin-card,
+.screen-container .review-item,
+.screen-container .profile-club-card,
+.screen-container .menu-card {
+  border-color: var(--color-border);
+  box-shadow: none;
+}
+
+.screen-container .card + .card,
+.screen-container .admin-card + .admin-card,
+.screen-container .review-item + .review-item {
+  margin-top: var(--space-5);
+}
+
+.screen-container .card-title,
+.screen-container .admin-card h3,
+.screen-container .review-item h3 {
+  font-size: 20px;
+  line-height: 1.45;
+}
+
+.journal-image {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-media-card-bg);
+}
+
+.journal-image > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.journal-image-fallback {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--color-on-media);
+  background: var(--color-media-card-bg);
+}
+
+.journal-image-fallback i {
+  width: 42px;
+  height: 18px;
+  border-top: 2px solid var(--color-brand);
+  border-bottom: 1px solid var(--color-border-strong);
+  transform: skewX(-28deg);
+}
+
+.journal-image-fallback b {
+  font-size: 17px;
+  letter-spacing: 0.14em;
+}
+
+.journal-image-fallback small {
+  color: var(--color-media-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.is-image-error > img,
+.journal-image.is-image-error > img {
+  display: none;
+}
+
+.is-image-error > .journal-image-fallback,
+.journal-image.is-image-error > .journal-image-fallback {
+  display: flex;
+}
+
+.activities-v3 .activity-journal-list {
+  margin: var(--space-5) 0 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 28px;
+}
+
+.activities-v3 .activity-card-v3 {
+  flex: none;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  border: 0;
+  border-radius: var(--radius-card);
+  box-shadow: none;
+  scroll-snap-align: none;
+  overflow: hidden;
+}
+
+.activities-v3 .activity-card-cover {
+  height: 320px;
+}
+
+.activities-v3 .activity-card-cover::after {
+  display: none;
+}
+
+.activities-v3 .activity-card-cover .activity-date-stamp,
+.activities-v3 .activity-card-cover .activity-card-status {
+  z-index: 2;
+}
+
+.activities-v3 .activity-card-v3-body {
+  padding: 18px 18px 20px;
+}
+
+.journal-activity-caption {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: var(--space-5);
+  background: var(--color-media-card-bg);
+  color: var(--color-on-media);
+}
+
+.journal-activity-caption p {
+  display: flex;
+  justify-content: space-between;
+  color: var(--color-media-muted);
+  font-size: 12px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+.journal-activity-caption h3 {
+  margin-top: var(--space-2);
+  font-family: "Songti SC", "STSong", serif;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.32;
+  letter-spacing: -0.03em;
+}
+
+.journal-activity-caption small {
+  display: block;
+  margin-top: var(--space-2);
+  overflow: hidden;
+  color: var(--color-media-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activities-v3 .activity-card-meta {
+  margin-top: var(--space-4);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.activities-v3 .activity-card-meta span {
+  margin-right: var(--space-2);
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.activities-v3 .activity-card-metrics {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.activities-v3 .activity-card-primary {
+  margin-top: var(--space-5);
+}
+
+.activities-v3 .activity-carousel-arrow,
+.activities-v3 .activity-carousel-pagination {
+  display: none;
+}
+
+.journal-detail-cover {
+  aspect-ratio: auto;
+  height: 330px;
+  margin: calc(var(--space-5) * -1) calc(var(--page-gutter) * -1) 0;
+  border-radius: 0;
+}
+
+.journal-detail-cover::after {
+  content: "";
+  position: absolute;
+  inset: 45% 0 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.62));
+}
+
+.journal-detail-cover .cover-count,
+.journal-detail-cover .cover-dots {
+  z-index: 2;
+}
+
+.journal-profile-card {
+  height: 340px;
+  margin: var(--space-5) 0 var(--space-6);
+  border: 0;
+  border-radius: var(--radius-card);
+  background: var(--color-media-card-bg);
+}
+
+.journal-profile-card > .journal-image {
+  position: absolute;
+  inset: 0;
+}
+
+.journal-profile-card .profile-hero-shade {
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.08) 10%, rgba(0, 0, 0, 0.96) 100%);
+  pointer-events: none;
+}
+
+.profile-background-action {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  width: 100%;
+  border: 0;
+  background: transparent;
+}
+
+.journal-profile-label {
+  position: absolute;
+  z-index: 3;
+  top: var(--space-5);
+  left: var(--space-5);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: var(--radius-xs);
+  color: var(--color-on-media);
+  background: rgba(33, 31, 28, 0.72);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.journal-profile-card .profile-hero-identity {
+  z-index: 3;
+  right: var(--space-5);
+  bottom: var(--space-6);
+  left: var(--space-5);
+  align-items: flex-end;
+  color: var(--color-on-media);
+}
+
+.journal-profile-card .profile-hero-identity h2 {
+  margin: var(--space-1) 0;
+  font-size: 36px;
+  line-height: 1.25;
+}
+
+.journal-profile-card .profile-hero-identity p {
+  color: var(--color-media-muted);
+}
+
+.journal-profile-kicker {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.journal-avatar-action {
+  position: relative;
+  z-index: 4;
+  flex: 0 0 76px;
+  width: 76px;
+  height: 76px;
+  min-width: 76px;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid var(--color-on-media);
+  border-radius: 50%;
+  background: var(--color-media-card-bg);
+}
+
+.profile-club-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  min-height: 76px;
+  margin: 0 0 var(--space-6);
+  padding: var(--space-4) 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-border-strong);
+  border-radius: 0;
+  background: var(--color-bg);
+  text-align: left;
+}
+
+.profile-club-row .club-avatar {
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.profile-club-row .profile-club-text {
+  flex: 1 1 auto;
+}
+
+.profile-club-row .profile-club-text .section-label {
+  color: var(--color-muted);
+  font-size: 11px;
+}
+
+.profile-club-enter {
+  flex: 0 0 auto;
+  max-width: 92px;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+  text-align: right;
+}
+
+.journal-profile-page .menu-card {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--color-bg);
+}
+
+.journal-profile-page .menu-card .row {
+  min-height: 72px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.credential-share-action {
+  margin-top: var(--space-5);
+  text-align: center;
+}
+
+.credential-share-action .card-hint {
+  margin-top: var(--space-2);
+}
+
+.journal-avatar-action .journal-image-fallback {
+  padding: var(--space-2);
+}
+
+.journal-avatar-action .journal-image-fallback i,
+.journal-avatar-action .journal-image-fallback small {
+  display: none;
+}
+
+.journal-avatar-action .journal-image-fallback b {
+  font-size: 10px;
+}
+
+.journal-media-preview > div {
+  min-height: 220px;
+  margin-top: var(--space-4);
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--color-media-card-bg);
+}
+
+.journal-media-preview img {
+  display: block;
+  width: 100%;
+  max-height: 62vh;
+  object-fit: contain;
+}
+
+.journal-overview-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  min-height: min(720px, calc(100vh - 108px));
+  overflow: hidden;
+  color: var(--color-on-media);
+  background: var(--color-media-card-bg);
+}
+
+.journal-overview-media {
+  position: relative;
+  min-height: 560px;
+}
+
+.journal-overview-media > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.journal-overview-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: clamp(32px, 6vw, 76px);
+}
+
+.journal-overview-copy .story-eyebrow,
+.journal-overview-copy p {
+  color: var(--color-media-muted);
+}
+
+.journal-overview-copy h2 {
+  margin: var(--space-5) 0;
+  font-size: clamp(38px, 5vw, 72px);
+  line-height: 1.08;
+}
+
+.journal-overview-copy > p {
+  max-width: 34em;
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+.journal-overview-actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+.journal-overview-actions a {
+  width: auto;
+  min-width: 160px;
+}
+
+.journal-overview-actions .btn-secondary {
+  color: var(--color-on-media);
+  border-color: var(--color-border-strong);
+  background: transparent;
+}
+
+@media (max-width: 350px) {
+  .screen-container .pg {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+  .journal-detail-cover {
+    margin-right: -12px;
+    margin-left: -12px;
+  }
+
+  .activities-v3 .activity-card-cover {
+    height: 300px;
+  }
+
+  .journal-profile-card .profile-hero-identity {
+    gap: var(--space-3);
+  }
+
+  .journal-profile-card .profile-hero-identity h2 {
+    font-size: 36px;
+  }
+}
+
+@media (min-width: 376px) {
+  .activities-v3 .activity-card-cover {
+    height: 330px;
+  }
+}
+
+@media (min-width: 431px) {
+  .screen-container .pg {
+    padding-bottom: max(32px, env(safe-area-inset-bottom));
+  }
+
+  .activities-v3 .activity-card-cover {
+    height: 340px;
+  }
+}
+
+@media (max-width: 760px) {
+  .journal-overview-hero {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .journal-overview-media {
+    min-height: 58vh;
+  }
+
+  .journal-overview-copy {
+    padding: 30px var(--page-gutter) 40px;
+  }
+
+  .journal-overview-copy h2 {
+    font-size: clamp(36px, 12vw, 52px);
+  }
+
+  .journal-overview-actions {
+    flex-direction: column;
+  }
+
+  .journal-overview-actions a {
+    width: 100%;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .activities-v3 .activity-card-v3,
+  .journal-profile-card {
+    transition:
+      transform var(--motion-duration-base) var(--motion-easing-standard),
+      box-shadow var(--motion-duration-base) var(--motion-easing-standard);
+  }
+
+  .activities-v3 .activity-card-v3:hover,
+  .journal-profile-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activities-v3 .activity-card-v3,
+  .journal-profile-card {
+    transition: none;
+  }
+}

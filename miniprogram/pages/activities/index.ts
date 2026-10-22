@@ -44,6 +44,11 @@ function displayDayChip(chip: CarouselDayChip): DisplayDayChip {
 function displayActivity(item: Activity) {
   const startAt = item.startAt || item.date;
   const hasSpecificTime = Boolean(item.startAt && !/^\d{4}-\d{2}-\d{2}$/.test(item.startAt));
+  const durationSeconds = item.route?.estimatedMovingTimeSeconds;
+  const durationHours =
+    typeof durationSeconds === 'number' && durationSeconds > 0
+      ? Math.round((durationSeconds / 3600) * 10) / 10
+      : null;
   return {
     ...item,
     occupied: item.occupiedCount || 0,
@@ -52,6 +57,7 @@ function displayActivity(item: Activity) {
     displayDateLabel: formatActivityDate(startAt),
     displayTimeLabel: hasSpecificTime ? formatActivityTime(item.startAt) : '时间待公布',
     displayStatus: activityDisplayStatus(item),
+    estimatedRideTime: durationHours ? `${durationHours} h` : '',
   };
 }
 
@@ -78,7 +84,6 @@ Page({
     items: [] as ReturnType<typeof displayActivity>[],
     dayChips: [] as DisplayDayChip[],
     selectedDayKey: '',
-    currentCardIndex: 0,
     layoutMode: 'card' as 'card' | 'compact',
   },
   onShow() {
@@ -116,13 +121,11 @@ Page({
     const view = this.data.activeView as PublicActivityView;
     const state = this.viewStates[view];
     const displayItems = state.items.map(displayActivity);
-    // 仅在当前索引越界时下钳，避免刷新/加载更多等常规渲染反复把受控 current 写回同值，
-    // 否则会与 swiper 手势位置互相争用，触发 is-active 入场动画重放，表现为卡片闪烁/频繁切换。
-    const clampedIndex = Math.min(this.data.currentCardIndex, Math.max(displayItems.length - 1, 0));
     const dayChips =
       view === 'future' ? buildCarouselDayChips(state.items).map(displayDayChip) : [];
-    const selectedDayKey =
-      [...dayChips].reverse().find((chip) => chip.index <= clampedIndex)?.key ?? '';
+    const selectedDayKey = dayChips.some((chip) => chip.key === this.data.selectedDayKey)
+      ? this.data.selectedDayKey
+      : dayChips[0]?.key || '';
     this.setData({
       ...VIEW_COPY[view],
       items: displayItems,
@@ -134,7 +137,6 @@ Page({
       loadingMore: state.loadingMore,
       error: state.error,
       refreshError: state.refreshError,
-      ...(clampedIndex !== this.data.currentCardIndex ? { currentCardIndex: clampedIndex } : {}),
     });
   },
   isCurrent(view: PublicActivityView, revision: number, cursor?: string | null) {
@@ -245,27 +247,20 @@ Page({
     delete this.loadHandles[previous];
     delete this.loadMoreHandles[previous];
     delete this.loadMoreOwners[previous];
-    this.setData({ activeView: candidate, currentCardIndex: 0 });
+    this.setData({ activeView: candidate, selectedDayKey: '' });
     this.renderActiveView();
     void this.load();
   },
   switchLayout(event: { currentTarget?: { dataset?: { mode?: unknown } } }) {
     const mode = event.currentTarget?.dataset?.mode;
     if (mode !== 'card' && mode !== 'compact') return;
-    if (mode !== this.data.layoutMode) this.setData({ layoutMode: mode });
-  },
-  cardChange(event: { detail?: { current?: number } }) {
-    const current = Math.max(0, Number(event.detail?.current) || 0);
-    // swiper 滑动结算阶段可能连续派发同一 current；仅在索引真正变化时写入，
-    // 避免对受控 current 做无意义回写放大手势与渲染之间的抖动。
-    if (current !== this.data.currentCardIndex) {
-      const selectedDayKey =
-        [...this.data.dayChips].reverse().find((chip: CarouselDayChip) => chip.index <= current)
-          ?.key ?? '';
-      this.setData({ currentCardIndex: current, selectedDayKey });
-    }
-    if (current >= this.data.items.length - 1 && this.data.nextCursor && !this.data.loadingMore) {
-      void this.loadMore();
+    if (mode !== this.data.layoutMode) {
+      this.setData({ layoutMode: mode }, () => {
+        const chip = this.data.dayChips.find(
+          (item: CarouselDayChip) => item.key === this.data.selectedDayKey,
+        );
+        if (chip) this.scrollToActivity(chip.index);
+      });
     }
   },
   selectDay(event: { currentTarget?: { dataset?: { index?: unknown } } }) {
@@ -273,7 +268,17 @@ Page({
     if (!Number.isInteger(index) || index < 0 || index >= this.data.items.length) return;
     const selectedDayKey =
       this.data.dayChips.find((chip: CarouselDayChip) => chip.index === index)?.key ?? '';
-    this.setData({ currentCardIndex: index, selectedDayKey });
+    this.setData({ selectedDayKey });
+    this.scrollToActivity(index);
+  },
+  scrollToActivity(index: number) {
+    if (typeof wx.pageScrollTo === 'function') {
+      wx.pageScrollTo({
+        selector: `#activity-index-${index}`,
+        offsetTop: -16,
+        duration: 180,
+      });
+    }
   },
   open(event: { currentTarget: { dataset: { id: string } } }) {
     this.navigation.run('/pages/activity-detail/index?id=' + event.currentTarget.dataset.id);

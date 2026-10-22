@@ -94,7 +94,6 @@ function cardView(card: PersonalCapabilityCard, images: Record<string, string> =
   return {
     heroBackgrounds: view.backgrounds.filter((background) => background.source === 'user_photo'),
     heroAvatarUrl: avatarBackground,
-    heroBackgroundAvatarUrl: avatarBackground,
     heroCard: view,
   };
 }
@@ -132,7 +131,6 @@ Page({
     isAdmin: false,
     heroBackgrounds: [] as { url: string; source: string; category: string }[],
     heroAvatarUrl: '',
-    heroBackgroundAvatarUrl: '',
     heroFallbackImageUrl: HERO_BRAND_IMAGE,
     heroCard: null as PersonalCardView | null,
     currentHeroIndex: 0,
@@ -235,7 +233,6 @@ Page({
           profile: null,
           heroBackgrounds: [],
           heroAvatarUrl: '',
-          heroBackgroundAvatarUrl: '',
           heroCard: null,
           hasGuidance: false,
           usingCache: false,
@@ -279,11 +276,7 @@ Page({
         const nextCardView = cardView(card);
         const hasStableImages =
           !this.heroMediaRecoveryPending &&
-          Boolean(
-            this.data.heroBackgrounds.length ||
-            this.data.heroAvatarUrl ||
-            this.data.heroBackgroundAvatarUrl,
-          );
+          Boolean(this.data.heroBackgrounds.length || this.data.heroAvatarUrl);
         this.heroMediaRecoveryPending = false;
         this.setData({
           refreshing: false,
@@ -336,7 +329,6 @@ Page({
         profile: null,
         heroBackgrounds: [],
         heroAvatarUrl: '',
-        heroBackgroundAvatarUrl: '',
         heroCard: null,
         hasGuidance: false,
         usingCache: false,
@@ -413,11 +405,6 @@ Page({
       heroBackgrounds: backgrounds.filter((_, index) => index !== matchingIndex),
     });
     this.recoverHeroMedia(`background:${matchingIndex}`);
-  },
-  heroAvatarBackgroundError(event: HeroImageErrorEvent) {
-    if (event.currentTarget.dataset.url !== this.data.heroBackgroundAvatarUrl) return;
-    this.setData({ heroBackgroundAvatarUrl: '' });
-    this.recoverHeroMedia('avatar');
   },
   heroFallbackBackgroundError(event: HeroImageErrorEvent) {
     if (event.currentTarget.dataset.url !== this.data.heroFallbackImageUrl) return;

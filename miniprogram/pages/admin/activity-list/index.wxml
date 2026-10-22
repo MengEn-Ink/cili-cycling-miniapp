@@ -3,8 +3,11 @@
   <view class="state-card" wx:elif="{{loadError}}" role="alert"><view class="title">加载失败</view><view>{{loadError}}</view><button class="btn" bindtap="retryLoad">重试</button></view>
   <view class="state-card" wx:elif="{{!allowed}}"><view class="title">暂时无法访问活动管理</view><view class="muted">请先完成微信身份验证后重试。</view><button class="btn" bindtap="retryLoad">重试</button></view>
   <block wx:else>
-    <view class="page-title">我的活动</view>
-    <view class="hero-subtitle">{{isAdmin ? '管理全部活动与发布状态' : '创建、编辑并上下架你的活动'}}</view>
+    <view class="journal-heading">
+      <view class="journal-eyebrow">此里 · 组织一场出发</view>
+      <view class="page-title">我的活动</view>
+      <view class="hero-subtitle">{{isAdmin ? '管理全部活动与发布状态' : '创建、编辑并上下架你的活动'}}</view>
+    </view>
     <view class="status-filters" role="tablist" aria-label="活动状态筛选">
       <button class="status-filter {{statusFilter === 'all' ? 'active' : ''}}" role="tab" aria-selected="{{statusFilter === 'all'}}" data-status="all" bindtap="selectStatusFilter">全部</button>
       <button class="status-filter {{statusFilter === 'draft' ? 'active' : ''}}" role="tab" aria-selected="{{statusFilter === 'draft'}}" data-status="draft" bindtap="selectStatusFilter">已下架</button>

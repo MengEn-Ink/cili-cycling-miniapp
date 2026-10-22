@@ -1,5 +1,48 @@
 .review-detail-page {
+  min-height: 100vh;
+  padding-bottom: calc(var(--fixed-action-reserve) + 64rpx + env(safe-area-inset-bottom));
   background: var(--color-bg);
+}
+.journal-heading {
+  padding: 28rpx 0 56rpx;
+}
+.journal-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  color: var(--color-muted);
+  font-size: 24rpx;
+  line-height: 36rpx;
+  font-weight: 800;
+}
+.journal-eyebrow::before {
+  width: 40rpx;
+  height: 2rpx;
+  background: currentColor;
+  content: '';
+}
+.journal-title {
+  margin-top: 16rpx;
+  color: var(--color-text);
+  font-size: 64rpx;
+  line-height: 80rpx;
+  font-weight: 900;
+  letter-spacing: -2rpx;
+}
+.journal-summary {
+  margin-top: 12rpx;
+  color: var(--color-muted);
+  font-size: 32rpx;
+  line-height: 48rpx;
+}
+.review-detail-page .card,
+.decision-panel {
+  margin-top: 64rpx;
+  padding: 40rpx 32rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: none;
 }
 .info-bar {
   border: 2rpx solid var(--color-border);
@@ -86,6 +129,12 @@
 }
 .single-action {
   grid-template-columns: 1fr;
+}
+.actions .secondary {
+  min-height: 88rpx;
+}
+.actions .btn {
+  min-height: 96rpx;
 }
 .skeleton {
   padding: 32rpx;

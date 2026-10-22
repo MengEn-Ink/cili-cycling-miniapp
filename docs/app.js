@@ -74,7 +74,6 @@
   let currentRoute = 'activities';
   let currentState = '';
   let toastTimer;
-  let activityCarouselController = null;
 
   const $ = (selector) => document.querySelector(selector);
   const container = $('#screen-container');
@@ -206,6 +205,19 @@
     const stats = data.experienceStats || {};
     overview.innerHTML = `
       <article class="story" aria-label="此里研发交付中心技术长读">
+
+      <section class="journal-overview-hero" aria-label="骑行影像志正式版本">
+        <div class="journal-overview-media" data-image-fallback>
+          <img src="./designs/2026-10-22-cycling-image-journal/assets/mountain.webp" alt="山路骑行影像" onerror="this.closest('[data-image-fallback]').classList.add('is-image-error')" />
+          <span class="journal-image-fallback" role="img" aria-label="骑行影像暂不可用"><i aria-hidden="true"></i><b>此里 CILI</b><small>骑行影像暂不可用</small></span>
+        </div>
+        <div class="journal-overview-copy">
+          <p class="story-eyebrow">当前正式 Pages · 2026.10.22</p>
+          <h2>把每一次出发，<br/>留成一页骑行影像志</h2>
+          <p>17 条正式路由已统一为摄影与编辑式长屏。先看最终骑友体验，也可继续阅读下方技术文章、交付证据与历史设计。</p>
+          <div class="journal-overview-actions"><a class="btn" href="#profile">从“我的”开始</a><a class="btn-secondary" href="#activities">浏览活动影像</a></div>
+        </div>
+      </section>
 
       <section class="story-hook" id="story-hook">
         <p class="story-eyebrow">研发交付中心 · 技术长读 · 当前基线同步 main</p>
@@ -794,6 +806,7 @@
       .map(
         (group) => `<section><h3>${group}</h3>${data.pages
           .filter((page) => page.group === group)
+          .filter((page) => page.id !== 'capability-card')
           .map(
             (page) =>
               `<button data-route="${page.id}"><span>${String(data.pages.indexOf(page) + 1).padStart(2, '0')}</span><b>${page.title}</b></button>`,
@@ -880,99 +893,24 @@
 
   window.normalizePrototypeState = normalizePrototypeState;
 
-  function setupActivityCarousel() {
-    const track = container.querySelector('.activity-carousel-track');
-    if (!track) return null;
-    const slides = [...track.querySelectorAll('[data-activity-slide]')];
-    const previous = container.querySelector('[data-action="activity-carousel-prev"]');
-    const next = container.querySelector('[data-action="activity-carousel-next"]');
-    const dots = [...container.querySelectorAll('[data-action="activity-carousel-dot"]')];
-    const current = container.querySelector('[data-activity-carousel-current]');
-    let activeIndex = 0;
-    let frame = 0;
-
-    const update = (index, scroll = false) => {
-      activeIndex = Math.max(0, Math.min(index, slides.length - 1));
-      slides.forEach((slide, slideIndex) =>
-        slide.classList.toggle('is-active', slideIndex === activeIndex),
-      );
-      dots.forEach((dot, dotIndex) => {
-        const active = dotIndex === activeIndex;
-        dot.classList.toggle('is-active', active);
-        dot.setAttribute('aria-current', active ? 'true' : 'false');
-      });
-      if (previous) {
-        previous.disabled = activeIndex === 0;
-        previous.setAttribute('aria-disabled', previous.disabled ? 'true' : 'false');
-      }
-      if (next) {
-        next.disabled = activeIndex === slides.length - 1;
-        next.setAttribute('aria-disabled', next.disabled ? 'true' : 'false');
-      }
-      if (current) current.textContent = `当前第 ${activeIndex + 1} 场`;
-      if (scroll) {
-        slides[activeIndex]?.scrollIntoView({
-          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-            ? 'auto'
-            : 'smooth',
-          block: 'nearest',
-          inline: 'start',
-        });
-      }
-    };
-    const onScroll = () => {
-      window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(() => {
-        const trackLeft = track.getBoundingClientRect().left;
-        const nearest = slides.reduce(
-          (best, slide, index) => {
-            const distance = Math.abs(slide.getBoundingClientRect().left - trackLeft);
-            return distance < best.distance ? { distance, index } : best;
-          },
-          { distance: Number.POSITIVE_INFINITY, index: 0 },
-        );
-        update(nearest.index);
-      });
-    };
-    track.addEventListener('scroll', onScroll, { passive: true });
-    update(0);
-    return {
-      destroy() {
-        window.cancelAnimationFrame(frame);
-        track.removeEventListener('scroll', onScroll);
-      },
-      previous: () => update(activeIndex - 1, true),
-      next: () => update(activeIndex + 1, true),
-      goTo: (index) => update(index, true),
-      handleKey(event) {
-        if (event.key === 'ArrowLeft') update(activeIndex - 1, true);
-        if (event.key === 'ArrowRight') update(activeIndex + 1, true);
-        if (event.key === 'Home') update(0, true);
-        if (event.key === 'End') update(slides.length - 1, true);
-      },
-    };
-  }
-
   function showPage(route, options = {}) {
     if (route === 'overview') {
       showOverview();
       return;
     }
+    const canonicalRoute = route === 'capability-card' ? 'profile' : route;
     demo.hidden = false;
     overview.hidden = true;
-    const page = pageById.get(route) || pageById.get('activities');
+    const page = pageById.get(canonicalRoute) || pageById.get('activities');
     if (!options.replace && currentRoute !== page.id) routeHistory.push(currentRoute);
     currentRoute = page.id;
     const stateIds = page.states.map(([id]) => id);
     currentState = normalizePrototypeState(stateIds, options.state);
     window.prototypeState = currentState;
     if (page.id === 'activity-detail') window.prototypeActivityId = options.activityId || '';
-    activityCarouselController?.destroy();
-    activityCarouselController = null;
     container.innerHTML = templates[page.id]();
     container.scrollTop = 0;
     updateChrome(page);
-    activityCarouselController = setupActivityCarousel();
     modal.hidden = true;
     const hash = currentState === page.states[0][0] ? `#${page.id}` : `#${page.id}/${currentState}`;
     if (window.location.hash !== hash) window.history.replaceState(null, '', hash);
@@ -1024,6 +962,31 @@
     modal.hidden = false;
   }
 
+  function showCancelRegistrationConfirmation() {
+    modal.innerHTML = `<div class="modal-sheet"><button class="modal-close" data-action="close-modal" aria-label="关闭">×</button><span class="tag tag-warning">取消报名</span><h3 class="card-title">确认取消本次报名？</h3><p class="card-hint">取消后当前凭证立即失效并释放名额；之后仍可沿用资料重新报名。</p><div class="btn-row"><button class="btn-secondary" data-action="close-modal">暂不取消</button><button class="btn" data-action="confirm-cancel-registration">确认取消</button></div></div>`;
+    modal.hidden = false;
+  }
+
+  function showCheckinConfirmation() {
+    modal.innerHTML = `<div class="modal-sheet"><button class="modal-close" data-action="close-modal" aria-label="关闭">×</button><span class="tag tag-neutral">现场签到</span><h3 class="card-title">确认骑友已到场？</h3><p class="card-hint">请核对本人和活动后完成签到；签到完成后报名记录会更新为已签到。</p><div class="btn-row"><button class="btn-secondary" data-action="close-modal">暂不签到</button><button class="btn" data-action="confirm-checkin">确认签到</button></div></div>`;
+    modal.hidden = false;
+  }
+
+  function showNotificationChoice() {
+    modal.innerHTML = `<div class="modal-sheet"><button class="modal-close" data-action="close-modal" aria-label="关闭">×</button><span class="tag tag-neutral">按次订阅</span><h3 class="card-title">接收本次活动通知？</h3><p class="card-hint">每次请求都以微信授权选择为准；接受本次订阅不代表永久开启，拒绝也不影响报名和查看行程。</p><div class="btn-row"><button class="btn-secondary" data-action="notification-decline">本次不订阅</button><button class="btn" data-action="notification-accept">接受本次订阅</button></div></div>`;
+    modal.hidden = false;
+  }
+
+  function showProfileMedia(kind) {
+    const isAvatar = kind === 'avatar';
+    const src = isAvatar
+      ? './designs/2026-10-22-cycling-image-journal/assets/rider.webp'
+      : './designs/2026-10-22-cycling-image-journal/assets/mountain.webp';
+    const label = isAvatar ? '头像' : '骑行背景';
+    modal.innerHTML = `<div class="modal-sheet journal-media-preview"><button class="modal-close" data-action="close-modal" aria-label="关闭">×</button><p class="section-label">${label}</p><div data-image-fallback><img src="${src}" alt="${data.rider.nickname}的${label}" onerror="this.closest('[data-image-fallback]').classList.add('is-image-error')" /><span class="journal-image-fallback" role="img" aria-label="${label}暂不可用"><i aria-hidden="true"></i><b>此里 CILI</b><small>${label}暂不可用，请稍后重试</small></span></div></div>`;
+    modal.hidden = false;
+  }
+
   function goBack() {
     const previous = routeHistory.pop();
     showPage(previous || 'activities', { replace: true });
@@ -1071,17 +1034,37 @@
       showToast('已删除行程记录');
     }
     if (action === 'copy-activity') showCopyActivity();
-    if (action === 'settings-notifications') showToast('已打开活动通知订阅选择');
+    if (action === 'settings-notifications') showNotificationChoice();
+    if (action === 'notification-accept') {
+      modal.hidden = true;
+      showToast('已完成本次订阅选择 · 不代表永久开启');
+    }
+    if (action === 'notification-decline') {
+      modal.hidden = true;
+      showToast('本次未订阅，仍可在行程中查看报名状态', 'warning');
+    }
     if (action === 'settings-privacy') showToast('已打开微信隐私管理');
     if (action === 'settings-clear-cache') showSafeCacheConfirmation();
     if (action === 'settings-confirm-clear-cache') {
       modal.hidden = true;
       showToast('缓存已清理');
     }
-    if (action === 'activity-carousel-prev') activityCarouselController?.previous();
-    if (action === 'activity-carousel-next') activityCarouselController?.next();
-    if (action === 'activity-carousel-dot') {
-      activityCarouselController?.goTo(Number(target.dataset.index));
+    if (action === 'preview-profile-background') showProfileMedia('background');
+    if (action === 'preview-profile-avatar') showProfileMedia('avatar');
+    if (action === 'request-cancel-registration') showCancelRegistrationConfirmation();
+    if (action === 'confirm-cancel-registration') {
+      modal.hidden = true;
+      showPage('registrations', { state: 'cancelled' });
+      showToast('报名已取消，可随时重新报名');
+    }
+    if (action === 'request-checkin') showCheckinConfirmation();
+    if (action === 'confirm-checkin') {
+      modal.hidden = true;
+      showPage('admin-review-detail', { state: 'checked-in', replace: true });
+      showToast('已签到 · 报名记录已更新');
+    }
+    if (action === 'share-activity') {
+      showToast('将分享公开活动详情，不含本人的凭证、实名或电话');
     }
     if (action === 'copy-route') {
       showPage('activity-detail', { state: 'copied', replace: true });
@@ -1093,19 +1076,19 @@
       target.classList.add('is-active');
     }
     if (action === 'submit-registration') {
-      // 报名模式分支：公开报名直接成功并跳转凭证；审批报名进入待审批行程
+      // 报名模式分支：统一回到行程页展示服务端确认后的真实状态。
       const mode = target.dataset.registrationMode || 'approval';
       if (mode === 'open') {
         if (target.dataset.capacityAvailable === 'false') {
-          showToast('名额刚刚报满，本次未加入', 'error');
-          window.setTimeout(() => showPage('registration-form', { state: 'confirm-full', replace: true }), 400);
+          showToast('名额刚刚报满，已进入候补', 'warning');
+          window.setTimeout(() => showPage('registrations', { state: 'full-waiting' }), 400);
           return;
         }
         showToast('已加入 · 公开报名直接生效，凭证已生成');
-        window.setTimeout(() => showPage('credential'), 600);
+        window.setTimeout(() => showPage('registrations', { state: 'open-approved' }), 600);
       } else {
         showToast('报名已提交，等待管理员审核');
-        window.setTimeout(() => showPage('registrations'), 600);
+        window.setTimeout(() => showPage('registrations', { state: 'review-pending' }), 600);
       }
     }
     if (action === 'save-profile') {
@@ -1118,19 +1101,23 @@
       target.classList.add('is-disabled');
       showToast('活动已发布，骑友端现在可见');
     }
-    if (action === 'approve-review' || action === 'reject-review') {
-      const rejectReason = document.getElementById('registration-reject-reason')?.value.trim();
-      if (action === 'reject-review' && !rejectReason) {
-        showPage('admin-review-detail', { state: 'reject-error', replace: true });
-        showToast('驳回时请填写理由', 'error');
-        return;
-      }
-      if (action === 'approve-review' && target.dataset.capacityAvailable === 'false') {
+    if (action === 'approve-review') {
+      if (target.dataset.capacityAvailable === 'false') {
         showPage('admin-review-detail', { state: 'capacity-full', replace: true });
         showToast('活动名额已满，暂时无法通过', 'error');
         return;
       }
-      showToast(action === 'approve-review' ? '报名已通过' : '报名已驳回');
+      showPage('admin-review-detail', { state: 'approved', replace: true });
+      showToast('报名已通过，可在骑友到场后签到');
+    }
+    if (action === 'reject-review') {
+      const rejectReason = document.getElementById('registration-reject-reason')?.value.trim();
+      if (!rejectReason) {
+        showPage('admin-review-detail', { state: 'reject-error', replace: true });
+        showToast('驳回时请填写理由', 'error');
+        return;
+      }
+      showToast('报名已驳回');
       window.setTimeout(() => showPage('admin-reviews'), 500);
     }
     if (action === 'club-create-avatar') {
@@ -1193,15 +1180,6 @@
 
   window.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') modal.hidden = true;
-    if (
-      currentRoute === 'activities' &&
-      activityCarouselController &&
-      ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)
-    ) {
-      event.preventDefault();
-      activityCarouselController.handleKey(event);
-      return;
-    }
     if (!demo.hidden && ['ArrowUp', 'ArrowDown'].includes(event.key)) {
       event.preventDefault();
       const page = pageById.get(currentRoute);

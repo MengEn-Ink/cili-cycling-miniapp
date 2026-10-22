@@ -5,31 +5,30 @@ import { describe, expect, it } from 'vitest';
 const read = (file: string) => readFileSync(file, 'utf8');
 
 describe('移动端视觉排版约束', () => {
-  it('活动卡在组件样式隔离下仍完整定义三列指标与按钮，不依赖 app.wxss 穿透', () => {
+  it('活动卡在组件样式隔离下仍完整定义三列指标与整卡触控，不依赖 app.wxss 穿透', () => {
     const styles = read('miniprogram/components/activity-card/index.wxss');
 
     expect(styles).toMatch(
       /\.metrics\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/s,
     );
-    expect(styles).toMatch(/\.metric-item\s*\{[^}]*min-width:\s*0;[^}]*text-align:\s*center;/s);
+    expect(styles).toMatch(/\.metric-item\s*\{[^}]*min-width:\s*0;[^}]*text-align:\s*left;/s);
     expect(styles).toMatch(
       /\.metric-value\s*\{[^}]*font-variant-numeric:\s*tabular-nums;[^}]*white-space:\s*nowrap;/s,
     );
-    expect(styles).toMatch(
-      /\.card-action\s*\{[^}]*display:\s*flex;[^}]*justify-content:\s*center;[^}]*box-sizing:\s*border-box;[^}]*white-space:\s*nowrap;/s,
-    );
+    expect(styles).toMatch(/\.route-line\s*\{[^}]*min-height:\s*88rpx/s);
+    expect(read('miniprogram/components/activity-card/index.wxml')).toContain('role="button"');
   });
 
-  it('活动卡核心标题与集合地点优先保持单行，空间不足时使用省略号', () => {
+  it('活动卡标题最多两行，集合地点保持单行并在空间不足时省略', () => {
     const styles = read('miniprogram/components/activity-card/index.wxss');
 
     expect(styles).toMatch(
-      /\.activity-title\s*\{[^}]*text-overflow:\s*ellipsis;[^}]*white-space:\s*nowrap;/s,
+      /\.activity-title\s*\{[^}]*display:\s*-webkit-box;[^}]*overflow:\s*hidden;[^}]*-webkit-line-clamp:\s*2;/s,
     );
     expect(styles).toMatch(
       /\.route-line\s*\{[^}]*text-overflow:\s*ellipsis;[^}]*white-space:\s*nowrap;/s,
     );
-    expect(styles).not.toMatch(/\.activity-title\s*\{[^}]*min-height:\s*104rpx/s);
+    expect(styles).not.toMatch(/\.activity-title\s*\{[^}]*white-space:\s*nowrap/s);
   });
 
   it('日期入口与路线核心数据采用居中对齐，数值和单位不被拆行', () => {

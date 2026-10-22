@@ -13,9 +13,9 @@ const tokens = uiTokens(app);
 
 describe('主题 token 与控件契约', () => {
   it('设置页复用现有颜色语义，行动红只保留在“当前版本”胶囊', () => {
-    // 顶部 hero 收口为中性白卡 + 墨黑标题，不再整块使用行动红。
+    // 顶部改为暖纸编辑式页头，不再使用独立卡片或整块行动红。
     const hero = effectiveBlock(settings, '.settings-hero');
-    expectSemantic(declaration(hero, 'background'), '--color-surface');
+    expectSemantic(declaration(hero, 'background'), '--color-bg');
     expectSemantic(declaration(hero, 'color'), '--color-text');
     expect(declaration(hero, 'background')).not.toContain('--color-action');
     const heroCopy = effectiveBlock(settings, '.hero-copy');

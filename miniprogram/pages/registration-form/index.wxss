@@ -18,7 +18,44 @@ page {
 }
 
 .form-head {
-  padding-bottom: 8rpx;
+  padding-bottom: 16rpx;
+}
+
+.journal-heading {
+  padding: 20rpx 0 48rpx;
+}
+
+.journal-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  color: var(--color-muted);
+  font-size: 24rpx;
+  line-height: 36rpx;
+  font-weight: 800;
+}
+
+.journal-eyebrow::before {
+  width: 40rpx;
+  height: 2rpx;
+  background: currentColor;
+  content: '';
+}
+
+.journal-title {
+  margin-top: 16rpx;
+  color: var(--color-text);
+  font-size: 64rpx;
+  line-height: 80rpx;
+  font-weight: 900;
+  letter-spacing: -2rpx;
+}
+
+.journal-summary {
+  margin-top: 8rpx;
+  color: var(--color-muted);
+  font-size: 32rpx;
+  line-height: 48rpx;
 }
 
 .title-row,
@@ -34,7 +71,8 @@ page {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   overflow: hidden;
   min-width: 0;
-  margin-bottom: 32rpx;
+  margin-top: 40rpx;
+  margin-bottom: 40rpx;
   border: 2rpx solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
@@ -105,7 +143,7 @@ page {
 
 .form-title {
   color: var(--color-text);
-  font-size: 48rpx;
+  font-size: 36rpx;
   font-weight: 900;
   line-height: 1.3;
   letter-spacing: 0;
@@ -133,15 +171,15 @@ page {
 
 /* 分区：四张同级卡片，2px 近黑描边，不再嵌套小卡。 */
 .form-card {
-  margin-top: 24rpx;
+  margin-top: 64rpx;
   background: var(--color-surface);
   color: var(--color-text);
 }
 
 .form-section {
-  padding: 32rpx 24rpx;
+  padding: 40rpx 32rpx;
   border: 2rpx solid var(--color-border);
-  border-radius: var(--radius-display);
+  border-radius: var(--radius-card);
   box-shadow: none;
 }
 
@@ -575,12 +613,14 @@ page {
 }
 
 .form-page .back-button {
+  min-height: 88rpx;
   border: 2rpx solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-text);
 }
 
 .submit-button {
+  min-height: 96rpx;
   border-color: var(--color-action);
   background: var(--color-action);
   color: var(--color-on-action);
