@@ -141,15 +141,16 @@
   const rows = (list) => `<div class="rows">${list.map(([k, v]) => row(k, v)).join('')}</div>`;
   const linkRow = (icon, title, sub, route, right = '') =>
     `<button class="row is-link" data-route="${route}"><span class="k"><span class="menu-icon ${icon}"><i></i></span><span>${title}<small>${sub}</small></span></span><span class="v">${right}<span class="chev">›</span></span></button>`;
+  // 影像志设计的三栏指标条：div > strong(含 .unit) + span，承载在 .ink（暗）或浅色卡片中。
   const metric = (value, label, extra = '') => {
-    const match = String(value).match(/^(.+?)\s+(km|m|人)$/);
+    const match = String(value).match(/^(.+?)\s+(km|m|h|人|小时)$/);
     const reading = match
-      ? `<span class="metric-reading"><b>${match[1]}</b><i>${match[2]}</i></span>`
-      : `<span class="metric-reading"><b>${value}</b></span>`;
-    return `<span class="${extra}">${reading}<small>${label}</small></span>`;
+      ? `<strong>${match[1]}<span class="unit">${match[2]}</span></strong>`
+      : `<strong>${value}</strong>`;
+    return `<div${extra ? ` class="${extra}"` : ''}>${reading}<span>${label}</span></div>`;
   };
   const metrics = (list, extra = '') =>
-    `<div class="metric-grid ${extra}">${list.map(([v, l, e]) => metric(v, l, e)).join('')}</div>`;
+    `<div class="metrics${extra ? ` ${extra}` : ''}">${list.map(([v, l, e]) => metric(v, l, e)).join('')}</div>`;
   const cardHead = (no, title, right = '', hint = '') =>
     `<div class="card-head">${no ? `<span class="card-no">${no}</span>` : ''}<h3 class="card-title">${title}</h3>${right}</div>${hint ? `<p class="card-hint">${hint}</p>` : ''}`;
   const btn = (label, attrs = '', kind = 'btn') => `<button class="${kind}" ${attrs}>${label}</button>`;
@@ -320,13 +321,13 @@
       }
       if (is('bootstrap')) {
         return `<div class="pg club-admin-list" data-club-admin-list data-mode="bootstrap">
-          <div class="club-admin-heading"><div><p class="prototype-mock-badge">平台管理员 · 首次创建</p><header class="pageheading"><h1 class="editorial">俱乐部管理。</h1><p>平台尚未创建俱乐部，仅平台管理员可完成首次创建；创建后此入口不再出现。</p></header></div></div>
+          <header class="pageheading"><div class="eyebrow">此里 · 平台管理员 · 首次创建</div><h1 class="editorial">俱乐部管理。</h1><p>平台尚未创建俱乐部，仅平台管理员可完成首次创建；创建后此入口不再出现。</p></header>
           ${stateView('＋', '尚未创建俱乐部', '创建后将成为全平台唯一俱乐部，所有活动统一归属该俱乐部。', btn('创建唯一俱乐部', 'data-action="route" data-route="admin-club-application-detail" data-state="bootstrap"'))}
         </div>`;
       }
       // default：唯一俱乐部资料概览
       return `<div class="pg club-admin-list" data-club-admin-list data-mode="default">
-        <div class="club-admin-heading"><div><p class="prototype-mock-badge">平台管理员</p><header class="pageheading"><h1 class="editorial">俱乐部管理。</h1><p>全平台只有一个俱乐部，本页展示其资料并提供编辑入口；不再出现新建或列表。</p></header></div></div>
+        <header class="pageheading"><div class="eyebrow">此里 · 平台管理员</div><h1 class="editorial">俱乐部管理。</h1><p>全平台只有一个俱乐部，本页展示其资料并提供编辑入口；不再出现新建或列表。</p></header>
         <article class="card club-admin-card club-admin-card-single">
           <span class="club-admin-card-avatar"><img src="${(club && club.avatarImage) || IMG.avatar}" alt="${(club && club.name) || '辛庄桥小火车'}头像" /></span>
           <span class="club-admin-card-copy"><b>${(club && club.name) || '辛庄桥小火车'}</b><small>${(club && club.city) || '北京 · 海淀'} · 全平台唯一</small></span>
@@ -509,7 +510,7 @@
       return `<div class="pg has-bar activity-detail-pg activity-detail-journal" data-activity-mode="${activityMode}" data-registration-mode="${activityMode}">
         <div class="photo hero detail journal-detail-cover">${journalImage(IMG.mountain, `${primary.title}山地骑行封面`)}<div class="shade"></div><div class="corner"><span class="tag dark">${cornerLabel}</span></div><div class="caption"><div class="eyebrow">${primary.date} · ${primary.level}</div><h1 class="editorial">${primary.title}</h1><p>${primary.time}集合 · ${primary.start}</p></div></div>
         <div class="ink">
-          ${metrics([[`${primary.distanceKm} km`, '里程'], [`${primary.elevationM} m`, '爬升'], [primary.estimatedRideTime, '预计骑行'], [`${primary.approved} 人`, '已通过']])}
+          ${metrics([[`${primary.distanceKm} km`, '全程距离'], [`${primary.elevationM} m`, '累计爬升'], [primary.estimatedRideTime, '预计骑行']])}
           <div class="row"><div class="lead"><div><strong>${primary.time} 集合</strong><small>${primary.date} · ${primary.start}</small></div></div><span class="trailing">${modePill}</span></div>
         </div>
         ${modeSwitcher}
@@ -924,8 +925,8 @@
             const openRegistration = a.registrationMode === 'open';
             const modeTag = `<span class="mode-pill ${openRegistration ? 'mode-pill-open' : 'mode-pill-approval'} mode-pill-inline">${openRegistration ? '公开报名' : '审批报名'}</span>`;
             const registrationMetrics = openRegistration
-              ? `<div class="metric-grid three"><span><b>${a.signups}</b><small>报名</small></span><span><b>${a.approved}</b><small>已加入</small></span><span><b>0</b><small>已签到</small></span></div>`
-              : `<div class="metric-grid three"><span><b>${a.signups}</b><small>报名</small></span><span><b class="${a.pending ? 'is-pending' : ''}">${a.pending}</b><small>待审核</small></span><span><b>${a.approved}</b><small>已通过</small></span></div>`;
+              ? `<div class="metrics admin-metrics"><div><strong>${a.signups}</strong><span>报名</span></div><div><strong>${a.approved}</strong><span>已加入</span></div><div><strong>0</strong><span>已签到</span></div></div>`
+              : `<div class="metrics admin-metrics"><div><strong>${a.signups}</strong><span>报名</span></div><div class="${a.pending ? 'is-pending' : ''}"><strong>${a.pending}</strong><span>待审核</span></div><div><strong>${a.approved}</strong><span>已通过</span></div></div>`;
             const toggle = btn(a.adminStatus === '已上线' ? '下架' : '上架', toast(a.adminStatus === '已上线' ? '活动已下架' : '活动已上架'), 'btn-secondary btn-sm');
             const manageRegistrations = btn(openRegistration ? '参与成员' : '报名审批', go('admin-reviews') + (openRegistration ? ' data-state="open-mode-members"' : ''), 'btn-secondary btn-sm');
             const actions = a.adminStatus === '已驳回' ? btn('查看驳回原因', toast('路线信息需要补充'), 'btn-secondary btn-sm') : `${btn('编辑', go('admin-activity-edit'), 'btn-secondary btn-sm')}${manageRegistrations}${toggle}`;
@@ -988,7 +989,7 @@
       const routePreview = filled
         ? `<div class="route-link-preview">
             <div class="row" style="margin-top:8px"><span class="k">${primary.routeName.replace(' GPX', '')}</span>${tag('solid', '线路已解析')}</div>
-            ${metrics([[`${primary.distanceKm} km`, '里程'], [`${primary.elevationM} m`, '爬升'], [`${primary.elevationLossM} m`, '下降'], [`${primary.elevationMinM}–${primary.elevationMaxM} m`, '海拔区间', 'is-wide']])}
+            ${metrics([[`${primary.distanceKm} km`, '全程距离'], [`${primary.elevationM} m`, '累计爬升'], [primary.estimatedRideTime, '此里估算骑行']])}
             ${routeSvg('公开路线轮廓')}
           </div>`
         : '';

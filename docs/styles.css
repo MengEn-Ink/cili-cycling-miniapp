@@ -1542,61 +1542,6 @@ textarea.input.textarea::placeholder {
   background: var(--color-action);
 }
 
-/* 指标格 */
-.metric-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1px;
-  overflow: hidden;
-  margin-top: 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-border);
-}
-
-.metric-grid > span {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  padding: 8px 12px;
-  background: var(--color-surface);
-}
-
-.metric-grid > span.is-wide {
-  grid-column: 1 / -1;
-}
-
-.metric-grid b {
-  font-size: 18px;
-  line-height: 26px;
-  font-weight: 900;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-
-.metric-grid small {
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--color-muted);
-}
-
-.metric-grid.three {
-  grid-template-columns: repeat(3, 1fr);
-}
-
-.metric-grid.on-dark {
-  border-color: var(--color-border);
-  background: var(--color-border);
-}
-
-.metric-grid.on-dark > span {
-  background: var(--color-surface);
-}
-
-.metric-grid.on-dark small {
-  color: var(--color-muted);
-}
-
 /* 头像、媒体 */
 .avatar {
   display: inline-flex;
@@ -2713,17 +2658,21 @@ textarea.input.textarea::placeholder {
   justify-content: space-between;
 }
 
-.admin-card .metric-grid {
+.admin-card .admin-metrics {
   margin-top: 12px;
 }
 
-.admin-card .metric-grid b.is-pending {
-  display: flex;
+.screen-container .admin-card .admin-metrics strong {
+  font-size: 24px;
+}
+
+.admin-card .admin-metrics .is-pending strong {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
-.admin-card .metric-grid b.is-pending::after {
+.admin-card .admin-metrics .is-pending strong::after {
   content: '';
   width: 8px;
   height: 8px;
@@ -3407,7 +3356,7 @@ body.capture .screen-notes {
   font-weight: 800;
 }
 
-/* 通用头像与两列指标：与 cili-avatar / metric-grid 同步。 */
+/* 通用头像：与 cili-avatar 同步。 */
 .avatar {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
@@ -3415,39 +3364,6 @@ body.capture .screen-notes {
 
 .avatar.ring {
   border: 3px solid var(--color-on-media);
-}
-
-.metric-grid,
-.metric-grid.three {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1px;
-}
-
-.metric-grid > span,
-.metric-grid.three > span {
-  min-width: 0;
-  padding: var(--spacing-sm) var(--spacing-md);
-}
-
-.metric-reading {
-  display: flex;
-  min-width: 0;
-  align-items: baseline;
-  gap: var(--spacing-xs);
-}
-
-.metric-reading b {
-  min-width: 0;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-
-.metric-reading i {
-  flex: 0 0 auto;
-  color: var(--color-muted);
-  font-size: 12px;
-  line-height: 18px;
-  font-style: normal;
 }
 
 /* 报名流程：三阶段，阶段标题与时机分层。 */
@@ -4015,11 +3931,6 @@ body.is-narrow .phone-inner {
     grid-column: 1 / -1;
     justify-self: start;
     margin-left: 0;
-  }
-
-  .metric-grid > span,
-  .metric-grid.three > span {
-    padding: var(--spacing-sm);
   }
 }
 
@@ -9731,16 +9642,6 @@ body.capture-viewport .screen-notes {
 }
 
 /* 平台俱乐部管理与直接创建：复用正式路由，不呈现创建申请审批。 */
-.club-admin-heading {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 44px;
-  gap: 12px;
-  align-items: start;
-}
-.club-admin-heading .page-title,
-.club-admin-heading .page-sub {
-  margin-right: 0;
-}
 .club-admin-create-button {
   display: inline-flex;
   align-items: center;
@@ -11361,26 +11262,6 @@ body.capture-viewport .screen-notes {
 .screen-container .ink .row small {
   color: var(--color-media-muted);
 }
-/* ink 块内的 metric-grid 使用白底卡片，需把继承的浅色文字重置为墨黑并放大数字 */
-.screen-container .ink .metric-grid > span {
-  color: var(--color-text);
-}
-.screen-container .ink .metric-grid .metric-reading b {
-  color: var(--color-text);
-  font-size: 30px;
-  font-family: "Arial Narrow", Arial, sans-serif;
-  letter-spacing: -1px;
-  line-height: 1.1;
-}
-.screen-container .ink .metric-grid .metric-reading i {
-  color: var(--color-muted);
-  font-size: 13px;
-  font-style: normal;
-  margin-left: 3px;
-}
-.screen-container .ink .metric-grid small {
-  color: var(--color-muted);
-}
 .screen-container .decision {
   border-left: 4px solid var(--color-brand);
   margin: 24px var(--page-gutter) 0;
@@ -11417,7 +11298,6 @@ body.capture-viewport .screen-notes {
   font-size: 12px;
   display: block;
   margin-top: 6px;
-  color: var(--color-muted);
 }
 .screen-container .metrics .unit {
   display: inline;

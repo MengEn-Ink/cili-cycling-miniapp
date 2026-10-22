@@ -733,8 +733,9 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     // 保证"路线事实源"进入系统的路径不变，但默认态页面不再向用户暴露 GPX 等专业词或上传控件。
     expect(templates).toContain('粘贴 Strava 线路链接');
     expect(templates).toContain('公开路线轮廓');
-    // 海拔曲线作为 metric 继续以数据格「海拔区间」承载（里程 / 爬升 / 下降 / 海拔区间）
-    expect(templates).toContain('海拔区间');
+    // 影像志设计：线路预览指标条收敛为三栏（全程距离 / 累计爬升 / 此里估算骑行），
+    // 下降与海拔区间等细分数据在「完整路线分析」页承载，不在编辑页预览重复。
+    expect(templates).toContain('此里估算骑行');
     expect(templates).toContain('route-boost-sheet'); // 「+」展开后承载本地文件补充能力的 bottom-sheet
     expect(templates).toContain('本地路线文件（补充）'); // 弹层标题，默认态页面不可见
   });
