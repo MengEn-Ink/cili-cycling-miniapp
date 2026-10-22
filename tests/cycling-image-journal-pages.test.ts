@@ -51,10 +51,11 @@ describe('FORMAL GitHub Pages 骑行影像志', () => {
   it('“我的”以背景和头像组成骑行名片，媒体各自可操作且不再显示独立名片菜单', () => {
     runtime.prototypeState = 'member';
     const profile = runtime.pageTemplates?.profile?.() ?? '';
-    expect(profile).toContain('profile-hero-card journal-profile-card');
+    expect(profile).toContain('class="profile-hero"');
+    expect(profile).toContain('class="profile-identity"');
     expect(profile).toContain('data-action="preview-profile-background"');
     expect(profile).toContain('data-action="preview-profile-avatar"');
-    expect(profile).toContain('骑行背景');
+    expect(profile).toContain('骑行名片');
     expect(profile).not.toContain('data-route="capability-card"');
     expect(profile).not.toContain('资料完整度');
   });
@@ -166,25 +167,22 @@ describe('FORMAL GitHub Pages 骑行影像志', () => {
   it('“我的”俱乐部信息扁平为一行，头像为圆形且不重复平台规则', () => {
     runtime.prototypeState = 'member';
     const profile = runtime.pageTemplates?.profile?.() ?? '';
-    expect(profile).toContain('profile-club-row');
+    expect(profile).toContain('class="row rowlink"');
     expect(profile).not.toContain('profile-club-card');
     expect(profile).not.toContain('全平台唯一俱乐部');
-    expect(styles).toMatch(/\.journal-avatar-action\s*\{[^}]*border-radius:\s*50%/s);
+    expect(styles).toMatch(
+      /\.screen-container \.avatar\s*\{[^}]*border-radius:\s*var\(--radius-display\)/s,
+    );
   });
 
   it('“我的”匹配最终原生名片尺度、深色遮罩与暖底扁平服务行', () => {
-    expect(styles).toMatch(/\.journal-profile-card\s*\{[^}]*height:\s*340px/s);
+    expect(styles).toMatch(/\.screen-container \.profile-hero\s*\{[^}]*height:\s*340px/s);
+    expect(styles).toMatch(/\.screen-container \.profile-identity h1\s*\{[^}]*font-size:\s*36px/s);
     expect(styles).toMatch(
-      /\.journal-profile-card \.profile-hero-identity h2\s*\{[^}]*font-size:\s*36px/s,
+      /\.screen-container \.profile-hero::after\s*\{[^}]*rgba\(15,\s*13,\s*10,\s*0\.96\)[^}]*pointer-events:\s*none/s,
     );
     expect(styles).toMatch(
-      /\.journal-profile-card \.profile-hero-shade\s*\{[^}]*rgba\(0,\s*0,\s*0,\s*0\.96\)[^}]*pointer-events:\s*none/s,
-    );
-    expect(styles).toMatch(
-      /\.profile-club-row\s*\{[^}]*border-radius:\s*0[^}]*background:\s*var\(--color-bg\)/s,
-    );
-    expect(styles).toMatch(
-      /\.journal-profile-page \.menu-card\s*\{[^}]*border-radius:\s*0[^}]*background:\s*var\(--color-bg\)/s,
+      /\.screen-container \.row\s*\{[^}]*border-bottom:\s*1px solid var\(--color-border\)/s,
     );
   });
 
@@ -202,7 +200,7 @@ describe('FORMAL GitHub Pages 骑行影像志', () => {
   it('活动卡使用封面底部墨黑标题栏，里程、爬升与预计骑行置于图外', () => {
     runtime.prototypeState = 'default';
     const activities = runtime.pageTemplates?.activities?.() ?? '';
-    expect(activities).toContain('activity-journal-list');
+    expect(activities).toContain('activities-journal');
     expect(activities).not.toContain('activity-carousel-shell');
     expect(activities).not.toContain('data-activity-slide');
     expect(activities).not.toContain('当前第 1 场');
@@ -211,15 +209,18 @@ describe('FORMAL GitHub Pages 骑行影像志', () => {
     expect(activities).not.toContain('activity-carousel-dot');
     expect(app).not.toContain('setupActivityCarousel');
     expect(app).not.toContain('activityCarouselController');
-    expect(activities).toContain('journal-activity-caption');
-    expect(activities.indexOf('journal-activity-caption')).toBeLessThan(
-      activities.indexOf('activity-card-v3-body'),
+    // 影像志故事卡：封面内墨黑标题（.caption over .photo），里程/爬升/预计骑行在图外 .storyfacts
+    expect(activities).toContain('class="story"');
+    expect(activities).toContain('class="storyfacts"');
+    expect(activities).toContain('class="storymeta"');
+    expect(activities.indexOf('class="caption"')).toBeLessThan(
+      activities.indexOf('class="storyfacts"'),
     );
-    for (const metric of ['里程', '爬升', '预计骑行']) {
+    for (const metric of ['距离', '爬升', '骑行']) {
       expect(activities).toContain(metric);
     }
     expect(styles).toMatch(
-      /\.journal-activity-caption\s*\{[^}]*background:\s*var\(--color-media-card-bg\)[^}]*color:\s*var\(--color-on-media\)/s,
+      /\.screen-container \.photo \.caption\s*\{[^}]*color:\s*var\(--color-on-media\)/s,
     );
   });
 
@@ -236,16 +237,16 @@ describe('FORMAL GitHub Pages 骑行影像志', () => {
   it('活动近期、历史及空态入口进入对应路由状态', () => {
     runtime.prototypeState = 'default';
     const upcoming = runtime.pageTemplates?.activities?.() ?? '';
-    expect(upcoming).toMatch(/<button[^>]*data-state="history"[^>]*>历史活动<\/button>/);
+    expect(upcoming).toMatch(/<button[^>]*data-state="history"[^>]*>往期影像<\/button>/);
     runtime.prototypeState = 'history';
     const history = runtime.pageTemplates?.activities?.() ?? '';
     expect(history).toMatch(
-      /<button[^>]*is-active[^>]*data-state="history"[^>]*>历史活动<\/button>/,
+      /<button[^>]*aria-selected="true"[^>]*data-state="history"[^>]*>往期影像<\/button>/,
     );
-    expect(history).toMatch(/<button[^>]*data-state="default"[^>]*>即将开始<\/button>/);
+    expect(history).toMatch(/<button[^>]*data-state="default"[^>]*>近期活动<\/button>/);
     runtime.prototypeState = 'empty';
     expect(runtime.pageTemplates?.activities?.()).toMatch(
-      /<button[^>]*data-state="history"[^>]*>查看历史活动<\/button>/,
+      /data-state="history"[^>]*>查看往期影像<\/button>/,
     );
   });
 });

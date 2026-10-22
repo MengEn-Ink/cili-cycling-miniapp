@@ -783,7 +783,7 @@
       </section>
 
       <details class="reference-panel">
-        <summary>沸点设计系统与验收依据</summary>
+        <summary>影像志设计系统与验收依据</summary>
         <div class="reference-content">
           <h2>公共组件示例</h2>
           <div class="spec-demo">
@@ -793,8 +793,8 @@
           </div>
           <h2>浅色对比度检查表</h2>
           <table class="overview-table"><thead><tr><th>用途</th><th>前景</th><th>背景</th><th>对比度</th><th>门槛</th><th>使用位置</th></tr></thead><tbody>${contrast}</tbody></table>
-          <h2>沸点视觉验收</h2>
-          <p>当前 14 页统一使用暖米白画布、白卡、墨黑信息块、品牌红强调与深行动红主行动；历史主题问题已从当前原型说明中移除。</p>
+          <h2>影像志视觉验收</h2>
+          <p>当前 16 页统一使用暖米白画布、白卡、墨黑信息块、品牌红强调与深行动红主行动；影像标题采用宋体，历史主题问题已从当前原型说明中移除。</p>
         </div>
       </details>`;
   }
