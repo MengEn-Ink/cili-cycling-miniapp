@@ -243,11 +243,6 @@ fieldset{border:0;padding:0;margin:0 0 24px}
   document.querySelectorAll('[data-toast]').forEach(el=>el.addEventListener('click',()=>toast(el.dataset.toast)));
   document.querySelectorAll('.photo img').forEach(el=>el.addEventListener('error',()=>el.closest('.photo').classList.add('failed')));
   document.querySelectorAll('[data-retry-image]').forEach(el=>el.addEventListener('click',()=>{const p=el.closest('.photo');p.classList.remove('failed');const i=p.querySelector('img');i.src=i.src;}));
-  document.querySelectorAll('[data-upload]').forEach(el=>el.addEventListener('change',()=>{
-    const f=el.files[0];if(!f)return;
-    if(!f.type.startsWith('image/')){toast('请选择图片文件');return;}
-    const preview=el.closest('.upload').querySelector('img');preview.src=URL.createObjectURL(f);toast('已更新本地预览');
-  }));
   document.querySelectorAll('[data-submit]').forEach(form=>form.addEventListener('submit',e=>{
     e.preventDefault();if(!form.reportValidity())return;
     const button=form.querySelector('button[type=submit]');button.disabled=true;button.textContent='正在保存…';
