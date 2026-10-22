@@ -78,12 +78,20 @@ jobs:
             cloudfunctions/*/package-lock.json
       - name: Install root dependencies
         run: npm ci
-      - name: Run affected pull request checks
+      - name: Run affected pull request checks through Harness
         env:
           AFFECTED_BASE: ${{ github.event.pull_request.base.sha }}
           AFFECTED_HEAD: ${{ github.event.pull_request.head.sha }}
           RELEASE_NOTES_BASE: ${{ github.event.pull_request.base.sha }}
-        run: npm run test:affected
+        run: npm run harness -- run affected
+      - name: Upload Harness report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: harness-report-${{ github.event.pull_request.number }}
+          path: artifacts/harness/harness-report.json
+          if-no-files-found: error
+          retention-days: 14
 
   validate:
     if: always() && github.event_name == 'pull_request'
