@@ -329,8 +329,13 @@ test('头像单独更新不触发整表必填校验', () => {
   assert.deepEqual(buildUpdate({}, key, {}), {});
 });
 
-test('整表保存时强制校验性别、头像与背景图必填（Q3=C2：背景图为公开展示路径硬门槛）', () => {
+test('整表保存保留性别和头像门槛，背景图选填且允许移除', () => {
   const complete = {
+    nickname: '测试骑友',
+    real_name_cipher: encrypt('测试姓名', key),
+    phone_cipher: encrypt('13800000000', key),
+    emergency_name: '测试联系人',
+    emergency_phone_cipher: encrypt('13900000000', key),
     gender: '男',
     avatar_file_id: 'cloud://env/profiles/owner/avatar.jpg',
     avatar_source: 'wechat',
@@ -350,11 +355,20 @@ test('整表保存时强制校验性别、头像与背景图必填（Q3=C2：背
     { code: 'AVATAR_REQUIRED', message: '请先设置头像' },
   );
 
-  // 3. 清空背景图失败（背景图不计入完整度，但公开展示路径仍必填）
-  assert.throws(() => buildUpdate({ gender: '女', background_photo: null }, key, complete), {
-    code: 'VALIDATION_FAILED',
-    message: '请上传个人照片',
+  // 移除已有背景时显式空值必须保留，且不降低七项完整度。
+  const removed = buildUpdate({ gender: '女', background_photo: null }, key, complete);
+  assert.equal(removed.background_photo, null);
+  assert.equal(profileReadiness({ ...complete, ...removed }).completeness, 100);
+  assert.deepEqual(profileReadiness({ ...complete, ...removed }).missing, []);
+
+  // 无背景首次整表保存同样可用，不从旧 photos 恢复已移除背景。
+  const withoutBackground = { ...complete, background_photo: null, photos: [] };
+  assert.deepEqual(buildUpdate({ gender: '男', background_photo: null }, key, withoutBackground), {
+    gender: '男',
+    background_photo: null,
   });
+  const { background_photo: _background, ...neverHadBackground } = complete;
+  assert.deepEqual(buildUpdate({ gender: '男' }, key, neverHadBackground), { gender: '男' });
 
   // 4. 存量完整，整表更新部分字段成功
   const update = buildUpdate({ gender: '女' }, key, complete);
@@ -363,10 +377,8 @@ test('整表保存时强制校验性别、头像与背景图必填（Q3=C2：背
   // 5. 试图清空性别失败
   assert.throws(() => buildUpdate({ gender: '' }, key, complete), { code: 'VALIDATION_FAILED' });
 
-  // 6. 仅清空背景图同样失败（展示路径必填）
-  assert.throws(() => buildUpdate({ background_photo: null }, key, complete), {
-    code: 'VALIDATION_FAILED',
-    message: '请上传个人照片',
+  assert.deepEqual(buildUpdate({ background_photo: null }, key, complete), {
+    background_photo: null,
   });
 
   // 7. 新旧合并后完整（含背景图）则成功

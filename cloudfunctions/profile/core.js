@@ -923,9 +923,6 @@ function assertFullProfileReady(profile) {
   const { ready } = profileReadiness(profile);
   if (!ready.gender) throw new ProfileError('VALIDATION_FAILED', '请选择性别');
   if (!ready.avatar) throw new ProfileError('AVATAR_REQUIRED', '请先设置头像');
-  // 背景图（个人照片）不计入完整度，但公开展示路径仍要求必填，与报名门槛/完整度口径相互独立。
-  if (!validPhoto(effectiveBackgroundPhoto(profile)))
-    throw new ProfileError('VALIDATION_FAILED', '请上传个人照片');
 }
 function response(doc = {}, keyValue) {
   const status = sensitiveStatus(doc);

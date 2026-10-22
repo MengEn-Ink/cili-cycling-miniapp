@@ -102,6 +102,13 @@ function additionalReadOnlyRoutes(activityId) {
   ];
 }
 
+async function openLegacyProfile({ miniProgram, waitForReady }) {
+  await miniProgram.reLaunch('/pages/capability-card/index');
+  const page = await waitForReady('pages/profile/index');
+  if (page.path !== 'pages/profile/index') throw new Error('LEGACY_PROFILE_REDIRECT_FAILED');
+  return page;
+}
+
 async function captureRouteScreenshot({ miniProgram, path, report }) {
   const route = (await miniProgram.currentPage()).path;
   for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -462,20 +469,17 @@ async function main() {
       );
       await screenshot(miniProgram, '06-profile-edit.png');
 
-      page = await relaunchLoaded('/pages/capability-card/index');
+      result.lastStep = 'navigate:legacy-profile-redirect';
+      page = await openLegacyProfile({ miniProgram, waitForReady: waitLoaded });
       data = await page.data();
-      const backgrounds = data.card?.backgrounds || [];
-      check(
-        '骑行名片背景图回显',
-        !data.error && backgrounds.length > 0 && backgrounds.every((item) => isHttps(item.url)),
-        {
-          error: data.error || null,
-          backgrounds: backgrounds.length,
-          httpsBackgrounds: backgrounds.filter((item) => isHttps(item.url)).length,
-          needsProfilePhoto: Boolean(data.card?.needsProfilePhoto),
-        },
-      );
+      check('历史名片入口进入我的页', page.path === 'pages/profile/index' && !data.error, {
+        requestedRoute: 'pages/capability-card/index',
+        actualRoute: page.path,
+        error: data.error || null,
+      });
       await screenshot(miniProgram, '07-capability-card.png');
+      result.routes[result.routes.length - 1].requestedPath = 'pages/capability-card/index';
+      result.routes[result.routes.length - 1].state = 'redirected-to-profile';
 
       page = await relaunchLoaded('/pages/settings/index');
       data = await page.data();
@@ -550,9 +554,9 @@ async function main() {
         await screenshot(miniProgram, route.screenshot);
       }
       const expected = expandAppRoutes(appConfig);
-      const visited = new Set(result.routes.map((route) => route.path));
+      const visited = new Set(result.routes.map((route) => route.requestedPath || route.path));
       check(
-        '全部 app.json 路由已采集运行截图',
+        '全部 app.json 路由已采集运行截图或验证兼容转跳',
         expected.every((route) => visited.has(route)),
         { expected: expected.length, visited: visited.size },
       );
@@ -569,6 +573,7 @@ module.exports = {
   attendeeMediaSummary,
   recordAttendeeMediaReadiness,
   additionalReadOnlyRoutes,
+  openLegacyProfile,
   captureRouteScreenshot,
 };
 
