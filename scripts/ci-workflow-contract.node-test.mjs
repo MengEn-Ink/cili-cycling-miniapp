@@ -16,8 +16,13 @@ test('PR 提交规范与影响面检查拆分为独立并行 job', () => {
   const submission = jobBlock('pr-submission', 'upload-decision');
   assert.match(submission, /Validate pull request submission/);
   assert.match(submission, /fetch-depth: 0/);
-  assert.match(jobBlock('affected-pr', 'validate'), /Run affected pull request checks/);
-  assert.doesNotMatch(jobBlock('affected-pr', 'validate'), /needs:/);
+  const affected = jobBlock('affected-pr', 'validate');
+  assert.match(affected, /Run affected pull request checks through Harness/);
+  assert.match(affected, /npm run harness -- run affected/);
+  assert.match(affected, /Upload Harness report/);
+  assert.match(affected, /artifacts\/harness\/harness-report\.json/);
+  assert.match(affected, /if: always\(\)/);
+  assert.doesNotMatch(affected, /needs:/);
 });
 
 test('required validate 聚合普通 PR 与机器人 PR 的结果契约', () => {
