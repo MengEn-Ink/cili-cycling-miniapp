@@ -15,6 +15,8 @@ export const CLOUD_PACKAGES = [
   'notification-send',
   'profile',
   'profile-media-cleanup',
+  'privacy-maintenance',
+  'content-callback',
   'route-maintenance',
 ];
 

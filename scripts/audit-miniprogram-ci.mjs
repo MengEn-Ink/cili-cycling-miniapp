@@ -12,7 +12,7 @@ function advisoryId(url) {
   return match ? match[0].toUpperCase() : '';
 }
 
-export function assessAuditReport(report, allowlist, now = new Date()) {
+export function assessAuditReport(report, allowlist, now = new Date(), remediationReport = null) {
   if (!report || typeof report.vulnerabilities !== 'object') {
     throw new Error('微信上传工具审计结果缺少 vulnerabilities');
   }
@@ -32,7 +32,13 @@ export function assessAuditReport(report, allowlist, now = new Date()) {
   const found = new Set();
   const fixable = new Set();
   for (const vulnerability of Object.values(report.vulnerabilities)) {
-    if (vulnerability?.fixAvailable) fixable.add(vulnerability.name);
+    if (
+      vulnerability?.fixAvailable &&
+      (!remediationReport?.vulnerabilities ||
+        !remediationReport.vulnerabilities[vulnerability.name])
+    ) {
+      fixable.add(vulnerability.name);
+    }
     for (const via of vulnerability?.via || []) {
       if (typeof via !== 'object') continue;
       const id = advisoryId(via.url);
@@ -60,6 +66,21 @@ export function assessAuditReport(report, allowlist, now = new Date()) {
   };
 }
 
+function parseAuditOutput(output, label) {
+  if (!output) {
+    throw new Error(`微信上传工具${label}没有返回 JSON`);
+  }
+  const jsonStart = output.indexOf('{');
+  if (jsonStart < 0) {
+    throw new Error(`微信上传工具${label}返回了无效 JSON`);
+  }
+  try {
+    return JSON.parse(output.slice(jsonStart));
+  } catch {
+    throw new Error(`微信上传工具${label}返回了无效 JSON`);
+  }
+}
+
 export function runAudit() {
   const auditEnvironment = { ...process.env };
   delete auditEnvironment.npm_config_local_prefix;
@@ -74,17 +95,33 @@ export function runAudit() {
       maxBuffer: 10 * 1024 * 1024,
     },
   );
-  if (!result.stdout) {
-    throw new Error(`微信上传工具审计没有返回 JSON：${result.stderr.trim()}`);
-  }
-  let report;
-  try {
-    report = JSON.parse(result.stdout);
-  } catch {
-    throw new Error('微信上传工具审计返回了无效 JSON');
+  const report = parseAuditOutput(result.stdout, '审计');
+  let remediationReport = null;
+  if (Object.values(report.vulnerabilities).some((item) => item?.fixAvailable)) {
+    const remediation = spawnSync(
+      'npx',
+      [
+        '--yes',
+        'npm@11',
+        'audit',
+        'fix',
+        '--dry-run',
+        '--ignore-scripts',
+        '--json',
+        '--registry=https://registry.npmjs.org',
+      ],
+      {
+        cwd: TOOL_ROOT,
+        env: auditEnvironment,
+        encoding: 'utf8',
+        maxBuffer: 10 * 1024 * 1024,
+      },
+    );
+    const remediationResult = parseAuditOutput(remediation.stdout, '审计修复预演');
+    remediationReport = remediationResult.audit || remediationResult;
   }
   const allowlist = JSON.parse(readFileSync(ALLOWLIST_URL, 'utf8'));
-  const assessment = assessAuditReport(report, allowlist);
+  const assessment = assessAuditReport(report, allowlist, new Date(), remediationReport);
   console.log(
     `微信上传工具安全审计通过：${assessment.advisories.length} 个无上游修复的已评估告警，例外到期 ${assessment.expiresAt}`,
   );

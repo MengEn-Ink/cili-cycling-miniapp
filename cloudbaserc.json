@@ -105,6 +105,29 @@
       ]
     },
     {
+      "name": "privacy-maintenance",
+      "handler": "index.main",
+      "runtime": "Nodejs20.19",
+      "timeout": 60,
+      "memorySize": 256,
+      "installDependency": true,
+      "triggers": [
+        {
+          "name": "privacy-maintenance-worker",
+          "type": "timer",
+          "config": "0 */1 * * * * *"
+        }
+      ]
+    },
+    {
+      "name": "content-callback",
+      "handler": "index.main",
+      "runtime": "Nodejs20.19",
+      "timeout": 10,
+      "memorySize": 256,
+      "installDependency": true
+    },
+    {
       "name": "route-maintenance",
       "handler": "index.main",
       "runtime": "Nodejs20.19",
@@ -125,6 +148,13 @@
       {
         "path": "/strava/callback",
         "target": "function:strava-callback",
+        "enableAuth": false,
+        "enablePathTransmission": true,
+        "domain": "*"
+      },
+      {
+        "path": "/content/callback",
+        "target": "function:content-callback",
         "enableAuth": false,
         "enablePathTransmission": true,
         "domain": "*"

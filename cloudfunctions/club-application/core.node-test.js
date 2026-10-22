@@ -51,6 +51,7 @@ function memoryStore() {
   };
   return {
     state,
+    msgSecCheck: async () => ({ errCode: 0, result: { suggest: 'pass' } }),
     transaction: (work) =>
       work({
         getAdmin: (id) => state.admins.get(id),
@@ -1183,6 +1184,157 @@ test('平台管理员更新唯一俱乐部成功并按 requestId 幂等', async 
   );
   assert.deepEqual(replay, updated);
   assert.equal(store.state.clubs.get(SOLE_CLUB_ID).name, '辛庄桥快车');
+});
+
+test('active single-club update checks normalized name/introduction and stores the exact version digest', async () => {
+  const store = memoryStore();
+  const created = await createSoleClub(
+    store,
+    {
+      adminOpenid: 'admin-1',
+      existingClubId: '',
+      input: soleInput(),
+      requestId: 'content-club-create',
+    },
+    now,
+  );
+  const requests = [];
+  const updated = await updateSoleClub(
+    store,
+    {
+      adminOpenid: 'admin-1',
+      clubId: SOLE_CLUB_ID,
+      requestId: 'content-club-update',
+      expectedUpdatedAt: created.club.updated_at,
+      input: {
+        ...soleInput(),
+        name: '  辛庄桥快车  ',
+        introduction: '  我们每周组织安全、友好的公路骑行训练活动。  ',
+      },
+    },
+    new Date('2026-10-20T08:00:00.000Z'),
+    {
+      msgSecCheck: async (request) => {
+        requests.push(request);
+        return { errCode: 0, result: { suggest: 'pass' }, traceId: 'club-trace' };
+      },
+    },
+  );
+  assert.equal(updated.club.name, '辛庄桥快车');
+  assert.deepEqual(requests, [
+    {
+      openid: 'admin-1',
+      scene: 4,
+      version: 2,
+      content: '{"name":"辛庄桥快车","introduction":"我们每周组织安全、友好的公路骑行训练活动。"}',
+    },
+  ]);
+  const stored = store.state.clubs.get(SOLE_CLUB_ID);
+  assert.match(stored.content_check.digest, /^[a-f0-9]{64}$/);
+  assert.equal(stored.content_check.version, created.club.updated_at);
+});
+
+test('single-club content check runs once outside a retried persistence transaction', async () => {
+  const store = memoryStore();
+  const transaction = store.transaction;
+  let transactionCalls = 0;
+  store.transaction = async (work) => {
+    transactionCalls += 1;
+    if (transactionCalls === 1) return transaction(work);
+    await transaction(work);
+    return transaction(work);
+  };
+  let checks = 0;
+
+  const created = await createSoleClub(
+    store,
+    {
+      adminOpenid: 'admin-1',
+      existingClubId: '',
+      input: soleInput(),
+      requestId: 'content-club-retry',
+    },
+    now,
+    {
+      msgSecCheck: async () => {
+        checks += 1;
+        return { errCode: 0, result: { suggest: 'pass' } };
+      },
+    },
+  );
+
+  assert.equal(created.club.name, '辛庄桥小火车');
+  assert.equal(checks, 1);
+  assert.equal(transactionCalls, 2);
+});
+
+test('single-club update rejects a database version change after content check', async () => {
+  const store = memoryStore();
+  const created = await createSoleClub(
+    store,
+    {
+      adminOpenid: 'admin-1',
+      existingClubId: '',
+      input: soleInput(),
+      requestId: 'content-club-stale-setup',
+    },
+    now,
+  );
+
+  await assert.rejects(
+    updateSoleClub(
+      store,
+      {
+        adminOpenid: 'admin-1',
+        clubId: SOLE_CLUB_ID,
+        requestId: 'content-club-stale',
+        expectedUpdatedAt: created.club.updated_at,
+        input: { ...soleInput(), name: '并发改名' },
+      },
+      new Date('2026-10-20T08:00:00.000Z'),
+      {
+        msgSecCheck: async () => {
+          store.state.clubs.set(SOLE_CLUB_ID, {
+            ...store.state.clubs.get(SOLE_CLUB_ID),
+            updated_at: '2026-10-20T07:59:59.000Z',
+          });
+          return { errCode: 0, result: { suggest: 'pass' } };
+        },
+      },
+    ),
+    { code: 'CONTENT_CHECK_STALE' },
+  );
+  assert.equal(store.state.clubs.get(SOLE_CLUB_ID).name, '辛庄桥小火车');
+});
+
+test('platform admin cannot bypass risky active single-club content', async () => {
+  const store = memoryStore();
+  const created = await createSoleClub(
+    store,
+    {
+      adminOpenid: 'admin-1',
+      existingClubId: '',
+      input: soleInput(),
+      requestId: 'content-club-risk-setup',
+    },
+    now,
+  );
+  await assert.rejects(
+    updateSoleClub(
+      store,
+      {
+        adminOpenid: 'admin-1',
+        clubId: SOLE_CLUB_ID,
+        requestId: 'content-club-risk',
+        expectedUpdatedAt: created.club.updated_at,
+        input: soleInput(),
+      },
+      new Date('2026-10-20T08:00:00.000Z'),
+      { msgSecCheck: async () => ({ errCode: 0, result: { suggest: 'risky' } }) },
+    ),
+    { code: 'CONTENT_RISKY' },
+  );
+  assert.equal(store.state.clubs.get(SOLE_CLUB_ID).updated_at, created.club.updated_at);
 });
 
 test('更新唯一俱乐部执行乐观锁，旧版本失败并返回中文提示', async () => {

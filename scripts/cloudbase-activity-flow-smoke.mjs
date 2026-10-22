@@ -32,6 +32,32 @@ const OCCUPYING_STATUSES = new Set(['pending', 'approved', 'checked_in', 'waitin
 const hash = (value) => createHash('sha256').update(value).digest('hex');
 const clone = (value) => (value === undefined ? undefined : structuredClone(value));
 
+export async function checkIsolatedSmokeText(request) {
+  let fields;
+  try {
+    fields = JSON.parse(request?.content);
+  } catch {
+    throw new Error('活动 smoke 内容审核请求无效');
+  }
+  const values =
+    fields && typeof fields === 'object' && !Array.isArray(fields) ? Object.values(fields) : [];
+  if (
+    typeof request?.openid !== 'string' ||
+    !request.openid ||
+    request.scene !== 4 ||
+    request.version !== 2 ||
+    !values.length ||
+    values.some((value) => typeof value !== 'string') ||
+    !values.some((value) => value.includes(SMOKE_PREFIX) || value.includes('全流程 smoke'))
+  )
+    throw new Error('活动 smoke 内容审核请求越界');
+  return {
+    errCode: 0,
+    result: { suggest: 'pass' },
+    traceId: 'isolated-activity-smoke',
+  };
+}
+
 function assert(condition, message) {
   if (!condition) throw new Error(`活动全流程 smoke 断言失败：${message}`);
 }
@@ -185,6 +211,7 @@ export function createCliStore({ envId, cwd = process.cwd(), execute = execFileS
   };
   let auditSequence = 0;
   return {
+    msgSecCheck: checkIsolatedSmokeText,
     get,
     put,
     query,

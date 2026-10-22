@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   assertWriteGate,
+  checkIsolatedClubSmokeText,
   cleanupSmokeData,
   createCliStore,
   functionDetailProbeArgs,
@@ -47,6 +48,7 @@ function createMemoryStore({
   };
   const store = {
     collections,
+    msgSecCheck: checkIsolatedClubSmokeText,
     get,
     put,
     query: async (name, filter) =>
@@ -419,6 +421,7 @@ test('CLI transaction 校验并激活 canonical 媒体登记', async () => {
     owner_openid: 'owner-one',
     category: 'club-avatar',
     status: 'unreferenced',
+    security_status: 'pass',
   };
   await store.put('profile_media', media._id, media);
 

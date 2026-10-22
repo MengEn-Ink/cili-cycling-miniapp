@@ -220,6 +220,7 @@ test('保存活动只采用匹配可信预览的原生指标并原子消费记�
   let written;
   let consumed;
   const store = {
+    msgSecCheck: async () => ({ errCode: 0, result: { suggest: 'pass' } }),
     transaction: (work) =>
       work({
         getAdmin: async () => ({ _id: owner, enabled: true }),
@@ -321,6 +322,7 @@ test('保存拒绝其他所有者、摘要不匹配、过期和已绑定其他�
 
   for (const [preview, code] of cases) {
     const store = {
+      msgSecCheck: async () => ({ errCode: 0, result: { suggest: 'pass' } }),
       transaction: (work) =>
         work({
           getAdmin: async () => ({ _id: owner, enabled: true }),
@@ -371,6 +373,7 @@ test('已绑定同一活动的可信预览过期后仍允许编辑其他活动�
     created_at: new Date(now.getTime() - 24 * 60 * 60 * 1000),
   };
   const store = {
+    msgSecCheck: async () => ({ errCode: 0, result: { suggest: 'pass' } }),
     transaction: (work) =>
       work({
         getAdmin: async () => ({ _id: owner, enabled: true }),
@@ -435,6 +438,7 @@ test('短期预览记录清理后仍从当前活动继承可信 GPX 指标', asy
   };
   let saved;
   const store = {
+    msgSecCheck: async () => ({ errCode: 0, result: { suggest: 'pass' } }),
     transaction: (work) =>
       work({
         getAdmin: async () => ({ _id: owner, enabled: true }),
@@ -482,6 +486,9 @@ test('短期预览记录清理后仍从当前活动继承可信 GPX 指标', asy
 test('云函数 previewRouteGpx action 下载文件并持久化可信预览', async () => {
   const previews = new Map();
   const database = {
+    runTransaction(work) {
+      return work(database);
+    },
     collection(name) {
       return {
         doc(id) {
@@ -493,6 +500,8 @@ test('云函数 previewRouteGpx action 下载文件并持久化可信预览', as
                   throw Object.assign(new Error('not found'), { errCode: -502001 });
                 return { data: previews.get(id) };
               }
+              if (name === 'strava_route_sources')
+                throw Object.assign(new Error('not found'), { errCode: -502001 });
               throw new Error(`unexpected collection: ${name}`);
             },
             async set({ data }) {

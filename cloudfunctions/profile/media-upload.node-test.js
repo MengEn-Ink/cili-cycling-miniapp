@@ -64,6 +64,7 @@ test('首次登记先持久化 canonical intent，再上传并原子完成 regis
       ],
     }),
     verifyImage: async () => verified,
+    transformImage: async (input) => input,
     uploadFile: async ({ cloudPath, fileContent }) => {
       calls.push(['upload', cloudPath, fileContent]);
       return { fileID: canonicalFileId };
@@ -94,6 +95,7 @@ test('canonical upload 响应未知时 intent 已持久化且 registry 不落地
         ],
       }),
       verifyImage: async () => verified,
+      transformImage: async (input) => input,
       uploadFile: async () => {
         throw Object.assign(new Error('response lost'), { code: 'ETIMEDOUT' });
       },
@@ -194,6 +196,7 @@ test('通用业务媒体 finalize 后保持 unreferenced 并保留后台清理�
       ],
     }),
     verifyImage: async () => verified,
+    transformImage: async (input) => input,
     uploadFile: async () => ({ fileID: `cloud://env/${categoryPath}` }),
     store: {
       getClientUpload: async () => ({ category, request_id: requestId }),
@@ -207,4 +210,66 @@ test('通用业务媒体 finalize 后保持 unreferenced 并保留后台清理�
   assert.equal(record.status, 'unreferenced');
   assert.ok(record.cleanup_after instanceof Date);
   assert.equal(record.referenced_at, undefined);
+});
+
+test('final canonical bytes are transformed before canonical path, upload and binding', async () => {
+  const sourceBytes = Buffer.from([1, 2, 3, 4]);
+  const finalBytes = Buffer.from([0xff, 0xd8, 0xff, 0xdb, 0x01]);
+  const finalVerified = {
+    bytes: finalBytes,
+    sha256: crypto.createHash('sha256').update(finalBytes).digest('hex'),
+    size: finalBytes.length,
+    mime: 'image/jpeg',
+    extension: 'jpg',
+    transformed_from: 'image/webp',
+  };
+  const expectedPath = canonicalMediaPath(
+    owner,
+    sourceFileId,
+    finalVerified.sha256,
+    finalVerified.extension,
+    secret,
+    category,
+  );
+  const expectedFileId = `cloud://env/${expectedPath}`;
+  const uploads = [];
+  const completedBindings = [];
+
+  const record = await canonicalizeClientMedia({
+    openid: owner,
+    fileId: sourceFileId,
+    category,
+    origin: 'custom',
+    mediaSecret: secret,
+    getTempFileURL: async () => ({
+      fileList: [
+        { fileID: sourceFileId, status: 0, tempFileURL: 'https://storage.example/source.webp' },
+      ],
+    }),
+    verifyImage: async () => ({
+      bytes: sourceBytes,
+      sha256: crypto.createHash('sha256').update(sourceBytes).digest('hex'),
+      size: sourceBytes.length,
+      mime: 'image/webp',
+      extension: 'webp',
+    }),
+    transformImage: async () => finalVerified,
+    uploadFile: async ({ cloudPath, fileContent }) => {
+      uploads.push({ cloudPath, fileContent });
+      return { fileID: expectedFileId };
+    },
+    store: {
+      getMedia: async () => undefined,
+      prepareCanonicalUpload: async () => undefined,
+      completeClientMedia: async (...args) => {
+        completedBindings.push(args[4]);
+        return args[6](undefined);
+      },
+    },
+  });
+
+  assert.deepEqual(uploads, [{ cloudPath: expectedPath, fileContent: finalBytes }]);
+  assert.equal(completedBindings[0].sha256, finalVerified.sha256);
+  assert.equal(record.canonical_file_id, expectedFileId);
+  assert.equal(record.mime, 'image/jpeg');
 });

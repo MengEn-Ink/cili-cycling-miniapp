@@ -260,6 +260,7 @@ test('活动保存激活 owner/category 匹配的 staged canonical 媒体', asyn
         owner_openid: owner,
         category: 'activity-image',
         status: 'unreferenced',
+        security_status: 'pass',
       }),
       activateProfileMedia: async (id, at) => activated.push([id, at]),
     },
@@ -269,4 +270,59 @@ test('活动保存激活 owner/category 匹配的 staged canonical 媒体', asyn
   );
   assert.equal(activated.length, 1);
   assert.equal(activated[0][0], 'media-1');
+});
+
+test('活动媒体只激活审核通过的新引用并兼容当前 active 存量引用', async () => {
+  process.env.PROFILE_MEDIA_PATH_SECRET = 'profile-media-secret-for-tests-32-bytes';
+  const crypto = require('node:crypto');
+  const { activateActivityMediaReferences } = require('./media');
+  const owner = 'activity-security-owner';
+  const alias = crypto
+    .createHmac('sha256', process.env.PROFILE_MEDIA_PATH_SECRET)
+    .update(owner)
+    .digest('hex')
+    .slice(0, 32);
+  const fileId = `cloud://env/profile-canonical/${alias}/activity-image/${'c'.repeat(64)}/${'d'.repeat(64)}.jpg`;
+  const record = {
+    _id: 'media-security',
+    canonical_file_id: fileId,
+    owner_openid: owner,
+    category: 'activity-image',
+    status: 'unreferenced',
+    security_status: 'pending',
+  };
+  const tx = {
+    getProfileMediaByCanonical: async () => record,
+    activateProfileMedia: async () => assert.fail('pending 媒体不得激活'),
+  };
+
+  await assert.rejects(
+    activateActivityMediaReferences(
+      tx,
+      owner,
+      { images: [fileId] },
+      new Date('2026-10-18T00:00:00.000Z'),
+    ),
+    { code: 'MEDIA_SECURITY_PENDING' },
+  );
+
+  record.status = 'active';
+  delete record.security_status;
+  await activateActivityMediaReferences(
+    tx,
+    owner,
+    { images: [fileId] },
+    new Date('2026-10-18T00:00:00.000Z'),
+    { images: [fileId] },
+  );
+  await assert.rejects(
+    activateActivityMediaReferences(
+      tx,
+      owner,
+      { images: [fileId] },
+      new Date('2026-10-18T00:00:00.000Z'),
+      { images: [] },
+    ),
+    { code: 'MEDIA_SECURITY_REQUIRED' },
+  );
 });

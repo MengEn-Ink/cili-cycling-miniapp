@@ -1,8 +1,19 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
 const Module = require('node:module');
+process.env.PROFILE_MEDIA_PATH_SECRET = 'profile-media-secret-for-tests-32-bytes';
 const { applicationId, membershipId } = require('./core');
+
+const canonicalClubMedia = (openid, category, marker) => {
+  const alias = crypto
+    .createHmac('sha256', process.env.PROFILE_MEDIA_PATH_SECRET)
+    .update(openid)
+    .digest('hex')
+    .slice(0, 32);
+  return `cloud://env/profile-canonical/${alias}/${category}/${marker.repeat(64)}/${marker.repeat(64)}.jpg`;
+};
 
 function loadHandler(application, options = {}) {
   const applications = application ? new Map([[application._id, { ...application }]]) : new Map();
@@ -15,6 +26,28 @@ function loadHandler(application, options = {}) {
     ),
   );
   const memberships = new Map(Object.entries(options.memberships || {}));
+  const profileMedia = new Map(
+    Object.entries(
+      options.profileMedia || {
+        avatar: {
+          _id: 'avatar',
+          canonical_file_id: canonicalClubMedia('user-handler', 'club-avatar', 'a'),
+          owner_openid: 'user-handler',
+          category: 'club-avatar',
+          status: 'unreferenced',
+          security_status: 'pass',
+        },
+        cover: {
+          _id: 'cover',
+          canonical_file_id: canonicalClubMedia('user-handler', 'club-cover', 'b'),
+          owner_openid: 'user-handler',
+          category: 'club-cover',
+          status: 'unreferenced',
+          security_status: 'pass',
+        },
+      },
+    ),
+  );
   const audits = [];
   const auditById = new Map();
   const sourceFor = (name) =>
@@ -26,9 +59,11 @@ function loadHandler(application, options = {}) {
           ? admins
           : name === 'club_memberships'
             ? memberships
-            : name === 'audit_logs'
-              ? auditById
-              : null;
+            : name === 'profile_media'
+              ? profileMedia
+              : name === 'audit_logs'
+                ? auditById
+                : null;
   const collection = (name) => ({
     doc: (id) => ({
       get: async () => {
@@ -47,6 +82,12 @@ function loadHandler(application, options = {}) {
           auditById.set(id, record);
         }
       },
+      update: async ({ data }) => {
+        const source = sourceFor(name);
+        const current = source?.get(id);
+        if (!current) throw Object.assign(new Error('not found'), { errCode: -502001 });
+        source.set(id, { ...current, ...data });
+      },
     }),
     add: async ({ data }) => {
       if (name === 'audit_logs') {
@@ -54,8 +95,19 @@ function loadHandler(application, options = {}) {
         if (data._id) auditById.set(data._id, data);
       }
     },
-    where: () => ({
-      limit: () => ({ get: async () => ({ data: [] }) }),
+    where: (query) => ({
+      limit: (limit) => ({
+        get: async () => ({
+          data:
+            name === 'profile_media'
+              ? [...profileMedia.values()]
+                  .filter((record) =>
+                    Object.entries(query).every(([key, value]) => record[key] === value),
+                  )
+                  .slice(0, limit)
+              : [],
+        }),
+      }),
       count: async () => ({ total: 0 }),
     }),
     orderBy: () => ({
@@ -79,6 +131,12 @@ function loadHandler(application, options = {}) {
     database: () => db,
     getWXContext: () => ({ OPENID: options.openid || 'user-handler' }),
     getTempFileURL: async () => ({ fileList: [] }),
+    openapi: {
+      security: {
+        msgSecCheck:
+          options.msgSecCheck || (async () => ({ errCode: 0, result: { suggest: 'pass' } })),
+      },
+    },
   };
   const originalLoad = Module._load;
   Module._load = function patched(request, parent, isMain) {
@@ -98,8 +156,8 @@ const soleClubInput = {
   name: '辛庄桥小火车',
   city: '北京',
   introduction: '全平台唯一俱乐部，管理员在空库时首次创建的资料简介。',
-  avatar_file_id: 'cloud://env/club-applications/user-handler/avatar.jpg',
-  cover_file_id: 'cloud://env/club-applications/user-handler/cover.jpg',
+  avatar_file_id: canonicalClubMedia('user-handler', 'club-avatar', 'a'),
+  cover_file_id: canonicalClubMedia('user-handler', 'club-cover', 'b'),
 };
 
 test('withdraw handler 接线 requestId 与 expectedReviewVersion 并返回 draft', async () => {
@@ -266,6 +324,22 @@ test('空库首次创建唯一俱乐部后可读回，重复创建返回中文�
   assert.equal(fetched.ok, true);
   assert.equal(fetched.data.exists, true);
   assert.equal(fetched.data.club.city, '北京');
+});
+
+test('唯一俱乐部入口保留受控内容审核错误且不写入', async () => {
+  const { main, clubs } = loadHandler(null, {
+    msgSecCheck: async () => ({ errCode: 0, result: { suggest: 'risky' } }),
+  });
+  const response = await main({
+    action: 'adminCreateSoleClub',
+    club: soleClubInput,
+    requestId: 'handler-sole-risky-1',
+  });
+  assert.deepEqual(response, {
+    ok: false,
+    error: { code: 'CONTENT_RISKY', message: '内容未通过安全审核' },
+  });
+  assert.equal(clubs.size, 0);
 });
 
 test('更新唯一俱乐部成功，乐观锁冲突映射为中文错误', async () => {

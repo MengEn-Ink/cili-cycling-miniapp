@@ -17,8 +17,11 @@ const {
 } = require('./domain-index');
 const { listActivitiesPage } = require('./list-pagination');
 const { previewRouteGpx, bindRoutePreviewImage } = require('./route-preview');
+const { ContentCheckError } = require('./content-contract');
+const { createStravaStore } = require('./strava-store');
+const { StravaError } = require('./strava-core');
 const { previewPublicRoute } = require('./public-route-preview');
-const { resolveActivityMedia } = require('./media');
+const { ActivityMediaError, resolveActivityMedia } = require('./media');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const OCCUPANCY_BACKFILL_PAGE_SIZE = 100;
@@ -78,6 +81,7 @@ async function actor(openid) {
 }
 function transactionStore() {
   return {
+    msgSecCheck: (input) => cloud.openapi.security.msgSecCheck(input),
     transaction: (work) =>
       db.runTransaction(async (transaction) =>
         work({
@@ -119,7 +123,11 @@ function transactionStore() {
             }
             return registrations;
           },
-          getRoutePreviewById: (id) => maybeGet(transaction.collection('route_previews'), id),
+          getRoutePreviewById: async (id) => {
+            const preview = await maybeGet(transaction.collection('route_previews'), id);
+            await createStravaStore(db).checkPreviewTx(transaction, preview);
+            return preview;
+          },
           consumeRoutePreview: (id, activityId, consumedAt) =>
             transaction
               .collection('route_previews')
@@ -237,10 +245,10 @@ exports.main = async (event = {}) => {
             getAdmin: (id) => maybeGet(db.collection('admins'), id),
             downloadFile: (input) => cloud.downloadFile(input),
             getPreview: (id) => maybeGet(db.collection('route_previews'), id),
-            putPreview: async (id, value) => {
-              const { _id, ...data } = value;
-              await db.collection('route_previews').doc(id).set({ data });
-            },
+            getRouteSource: (id) => createStravaStore(db).getRouteSource(id),
+            checkPreview: (preview) =>
+              createStravaStore(db).checkFence(preview.owner_openid, preview),
+            putPreview: (id, value) => createStravaStore(db).putPreview(id, value),
           },
           {
             ...Object.fromEntries(
@@ -273,7 +281,9 @@ exports.main = async (event = {}) => {
           {
             getAdmin: (id) => maybeGet(db.collection('admins'), id),
             getPreview: (id) => maybeGet(db.collection('route_previews'), id),
-            updatePreview: (id, data) => db.collection('route_previews').doc(id).update({ data }),
+            checkPreview: (preview) =>
+              createStravaStore(db).checkFence(preview.owner_openid, preview),
+            updatePreview: (id, data) => createStravaStore(db).updatePreview(id, data),
             getProfileMediaByCanonical: async (fileId, ownerOpenid, category) => {
               const result = await db
                 .collection('profile_media')
@@ -326,8 +336,12 @@ exports.main = async (event = {}) => {
           createRequestId: event.createRequestId,
           activity: event.activity,
           reason: event.operationReason,
+          driverConsent: event.driverConsent,
         },
         new Date(),
+        {
+          msgSecCheck: (input) => cloud.openapi.security.msgSecCheck(input),
+        },
       );
       return ok(await resolveActivityMedia(cloud, saved, openid));
     }
@@ -403,6 +417,10 @@ exports.main = async (event = {}) => {
     fail('UNKNOWN_ACTION', '未知操作');
   } catch (error) {
     console.error('activity-admin failed', error && error.code ? error.code : 'INTERNAL_ERROR');
+    if (error instanceof StravaError)
+      return { ok: false, error: { code: error.code, message: error.message } };
+    if (error instanceof ContentCheckError || error instanceof ActivityMediaError)
+      return { ok: false, error: { code: error.code, message: error.message } };
     return toErrorResponse(error);
   }
 };

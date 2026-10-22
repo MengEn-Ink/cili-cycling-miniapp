@@ -532,8 +532,9 @@ export class CachingRepository implements RideRepository {
     category: Parameters<RideRepository['issueMediaUploadPath']>[0],
     requestId: string,
     extension?: Parameters<RideRepository['issueMediaUploadPath']>[2],
+    generation?: Parameters<RideRepository['issueMediaUploadPath']>[3],
   ) {
-    return this.inner.issueMediaUploadPath(category, requestId, extension);
+    return this.inner.issueMediaUploadPath(category, requestId, extension, generation);
   }
 
   finalizeMediaUpload(
@@ -541,8 +542,17 @@ export class CachingRepository implements RideRepository {
     category: Parameters<RideRepository['finalizeMediaUpload']>[1],
     requestId: string,
     origin?: Parameters<RideRepository['finalizeMediaUpload']>[3],
+    generation?: Parameters<RideRepository['finalizeMediaUpload']>[4],
   ) {
-    return this.inner.finalizeMediaUpload(fileId, category, requestId, origin);
+    return this.inner.finalizeMediaUpload(fileId, category, requestId, origin, generation);
+  }
+
+  getMediaStatus(fileId: string) {
+    return this.inner.getMediaStatus(fileId);
+  }
+
+  retryMediaCheck(fileId: string, generation: number) {
+    return this.inner.retryMediaCheck(fileId, generation);
   }
 
   getPersonalCapabilityCard() {
@@ -551,8 +561,12 @@ export class CachingRepository implements RideRepository {
     );
   }
 
-  async setAvatar(source: Parameters<RideRepository['setAvatar']>[0], fileId: string) {
-    const result = await this.inner.setAvatar(source, fileId);
+  async setAvatar(
+    source: Parameters<RideRepository['setAvatar']>[0],
+    fileId: string,
+    generation?: Parameters<RideRepository['setAvatar']>[2],
+  ) {
+    const result = await this.inner.setAvatar(source, fileId, generation);
     this.invalidatePrefix(PROFILE_PREFIX);
     return result;
   }
@@ -571,6 +585,10 @@ export class CachingRepository implements RideRepository {
 
   getStravaRouteReadiness() {
     return this.inner.getStravaRouteReadiness();
+  }
+
+  disconnectStravaRouteAuthorization() {
+    return this.inner.disconnectStravaRouteAuthorization();
   }
 
   startStravaRouteAuthorization() {

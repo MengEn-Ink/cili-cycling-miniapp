@@ -2,7 +2,10 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
-const { buildCapabilityCard } = require('./capability-card');
+const { buildCapabilityCard: buildPublicCard } = require('./capability-card');
+const { withPublicConsent } = require('../shared/consent-fixture');
+const buildCapabilityCard = (data, options) =>
+  buildPublicCard({ ...data, profile: withPublicConsent(data.profile) }, options);
 const { canonicalMediaPath, mediaDocumentId, mediaOwnerPrefix } = require('./core');
 
 const now = new Date('2026-09-29T12:00:00.000Z');
@@ -201,4 +204,57 @@ test('个人名片拒绝缺失身份，非法性别收敛为空字符串', async
     { openid, mediaSecret, now, getTempFileURL: async () => ({ fileList: [] }) },
   );
   assert.deepEqual(card.profile, { display_name: '骑手', gender: '', avatar_url: '' });
+});
+
+test('public card consumes nickname-only and media-only choices independently', async () => {
+  const avatar = `cloud://env/${prefix}123e4567-e89b-42d3-a456-426614174005.jpg`;
+  const profile = {
+    nickname: 'Private name',
+    gender: '女',
+    avatar_source: 'wechat',
+    avatar_file_id: avatar,
+    avatar_revision: 1,
+  };
+  const calls = [];
+  const options = {
+    openid,
+    mediaSecret,
+    now,
+    getTempFileURL: async ({ fileList }) => {
+      calls.push(fileList);
+      return {
+        fileList: fileList.map((fileID) => ({
+          fileID,
+          status: 0,
+          tempFileURL: 'https://temporary.example/avatar.jpg',
+        })),
+      };
+    },
+  };
+  const nicknameOnly = await buildPublicCard(
+    {
+      profile: withPublicConsent(profile, { nickname: true, media: false }),
+      mediaRecords: [mediaRecord(avatar, 'other', 'wechat')],
+    },
+    options,
+  );
+  assert.deepEqual(nicknameOnly.profile, {
+    display_name: 'Private name',
+    gender: '女',
+    avatar_url: '',
+  });
+  assert.deepEqual(calls, []);
+  const mediaOnly = await buildPublicCard(
+    {
+      profile: withPublicConsent(profile, { nickname: false, media: true }),
+      mediaRecords: [mediaRecord(avatar, 'other', 'wechat')],
+    },
+    options,
+  );
+  assert.deepEqual(mediaOnly.profile, {
+    display_name: '匿名骑友',
+    gender: '',
+    avatar_url: 'https://temporary.example/avatar.jpg',
+  });
+  assert.equal(calls.length, 1);
 });

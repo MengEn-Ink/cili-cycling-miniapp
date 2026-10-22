@@ -305,6 +305,7 @@ export interface ProfilePhoto {
   category: string;
 }
 export interface Profile {
+  generation?: number;
   avatarRevision: number;
   clubs: ClubMembershipSummary[];
   avatarVisibility?: AvatarVisibility;
@@ -333,6 +334,7 @@ export interface Profile {
   };
 }
 export interface ProfileUpdate {
+  generation?: number;
   nickname?: string;
   gender?: string;
   emergencyName?: string;
@@ -343,6 +345,20 @@ export interface ProfileUpdate {
   realName?: string;
   phone?: string;
   emergencyPhone?: string;
+}
+export type MediaSecurityStatus = 'missing' | 'pending' | 'retryable' | 'pass' | 'review' | 'risky';
+export interface MediaCheckStatus {
+  mediaId: string;
+  fileId: string;
+  canonicalFileId: string;
+  category: string;
+  generation: number;
+  securityStatus: MediaSecurityStatus;
+  traceId: string;
+  retryable: boolean;
+  activated: boolean;
+  attempts?: number;
+  errorCode?: string;
 }
 export interface PersonalCapabilityCardBackground {
   id?: string;

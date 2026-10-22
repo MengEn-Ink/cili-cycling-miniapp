@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('node:crypto');
+const { publicConsentStatus, profileGeneration } = require('./domain/privacy');
 
 const MIME_EXTENSIONS = {
   'image/jpeg': 'jpg',
@@ -18,6 +19,7 @@ function mediaDocumentId(fileId) {
 function publicAvatarSource(profile) {
   if (
     !profile ||
+    !publicConsentStatus(profile).media.consented ||
     !Number.isSafeInteger(profile.avatar_revision) ||
     profile.avatar_revision < 0 ||
     !AVATAR_SOURCES.has(profile.avatar_source) ||
@@ -30,10 +32,15 @@ function publicAvatarSource(profile) {
 }
 
 function publicBackgroundSource(profile) {
+  if (!publicConsentStatus(profile).media.consented) return undefined;
   const current = profile && profile.background_photo;
   const legacy =
     profile && Array.isArray(profile.photos) ? profile.photos.find(validPhoto) : undefined;
-  const value = validPhoto(current) ? current : legacy;
+  const value = Object.prototype.hasOwnProperty.call(profile, 'background_photo')
+    ? validPhoto(current)
+      ? current
+      : undefined
+    : legacy;
   return value ? { fileId: value.file_id, category: value.category } : undefined;
 }
 
@@ -57,17 +64,20 @@ function canonicalPublicMedia(
 ) {
   const secret = typeof secretValue === 'string' ? secretValue.trim() : '';
   const extension = MIME_EXTENSIONS[record && record.mime];
+  const registrySource = record?.file_id;
   if (
     !sourceFileId ||
     typeof ownerOpenid !== 'string' ||
     !ownerOpenid ||
     secret.length < 32 ||
     !record ||
-    record._id !== mediaDocumentId(sourceFileId) ||
-    record.file_id !== sourceFileId ||
-    record.source_file_id !== sourceFileId ||
+    typeof registrySource !== 'string' ||
+    !registrySource.startsWith('cloud://') ||
+    record._id !== mediaDocumentId(registrySource) ||
+    (registrySource !== sourceFileId && record.canonical_file_id !== sourceFileId) ||
+    record.source_file_id !== registrySource ||
     record.owner_openid !== ownerOpenid ||
-    record.category !== expectedCategory ||
+    !expectedCategory.includes(record.category) ||
     record.origin !== expectedOrigin ||
     record.status !== 'active' ||
     typeof record.canonical_file_id !== 'string' ||
@@ -85,31 +95,36 @@ function canonicalPublicMedia(
     .update(ownerOpenid)
     .digest('hex')
     .slice(0, 32);
-  const expectedPath = `profile-canonical/${ownerAlias}/${mediaDocumentId(sourceFileId)}/${record.sha256}.${extension}`;
+  const modern = ['profile-avatar', 'profile-background'].includes(record.category);
+  const expectedPath = `profile-canonical/${ownerAlias}/${modern ? `${record.category}/` : ''}${mediaDocumentId(registrySource)}/${record.sha256}.${extension}`;
   const slash = record.canonical_file_id.indexOf('/', 'cloud://'.length);
   const actualPath = slash >= 0 ? record.canonical_file_id.slice(slash + 1) : '';
   return actualPath === expectedPath ? record.canonical_file_id : '';
 }
 
 function canonicalPublicAvatar(profile, record, ownerOpenid, secretValue) {
+  if (!publicAvatarSource(profile)) return '';
+  if (record && (record.generation || 1) !== profileGeneration(profile)) return '';
   return canonicalPublicMedia(
     publicAvatarSource(profile),
     record,
     ownerOpenid,
     secretValue,
-    'other',
+    ['other', 'profile-avatar'],
     profile && profile.avatar_source,
   );
 }
 
 function canonicalPublicBackground(profile, record, ownerOpenid, secretValue) {
+  if (!publicBackgroundSource(profile)) return '';
+  if (record && (record.generation || 1) !== profileGeneration(profile)) return '';
   const source = publicBackgroundSource(profile);
   return canonicalPublicMedia(
     source && source.fileId,
     record,
     ownerOpenid,
     secretValue,
-    source && source.category,
+    [source.category, 'profile-background'],
     'custom',
   );
 }

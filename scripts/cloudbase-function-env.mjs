@@ -12,11 +12,22 @@ export const STRAVA_CONFIG_NAMES = Object.freeze([
   'STRAVA_TOKEN_ENCRYPTION_KEY',
   'STRAVA_CALLBACK_URL',
 ]);
-export const STRAVA_CONFIG_CONSUMERS = Object.freeze(['strava-bridge', 'strava-callback']);
+export const STRAVA_CONFIG_CONSUMERS = Object.freeze([
+  'strava-bridge',
+  'strava-callback',
+  'privacy-maintenance',
+]);
+export const CALLBACK_CONFIG_NAMES = Object.freeze([
+  'WECHAT_CALLBACK_TOKEN',
+  'WECHAT_CALLBACK_AES_KEY',
+  'WECHAT_APP_ID',
+]);
+export const CALLBACK_CONFIG_CONSUMERS = Object.freeze(['content-callback']);
 export const PII_SECRET_CONSUMERS = Object.freeze(['profile', 'admin-review']);
 export const MEDIA_SECRET_CONSUMERS = Object.freeze([
   'profile',
   'profile-media-cleanup',
+  'privacy-maintenance',
   'admin-review',
   'activity-read',
   'activity-admin',
@@ -159,7 +170,14 @@ export function extractFunctionEnvironment(detail) {
     if (!value || typeof value !== 'object' || seen.has(value)) return;
     seen.add(value);
 
-    if ([MEDIA_SECRET_NAME, PII_SECRET_NAME, ...STRAVA_CONFIG_NAMES].includes(value.Key))
+    if (
+      [
+        MEDIA_SECRET_NAME,
+        PII_SECRET_NAME,
+        ...STRAVA_CONFIG_NAMES,
+        ...CALLBACK_CONFIG_NAMES,
+      ].includes(value.Key)
+    )
       addEnvironmentValue(environment, value.Key, value.Value);
     for (const [key, item] of Object.entries(value)) {
       const isEnvironment = /^(?:environment|environmentvariables|envvariables)$/i.test(key);
@@ -269,6 +287,37 @@ export function resolveStravaConfig(environments, sources = {}) {
   return result;
 }
 
+function validateCallbackValue(name, value, source) {
+  if (value === undefined || value === '') return null;
+  if (typeof value !== 'string' || /[\r\n\0]/u.test(value))
+    throw new Error(`${source} 中的 ${name} 无效`);
+  if (name === 'WECHAT_CALLBACK_TOKEN' && !/^[A-Za-z0-9]{3,32}$/u.test(value))
+    throw new Error(`${source} 中的 ${name} 必须为 3 到 32 位字母或数字`);
+  if (name === 'WECHAT_CALLBACK_AES_KEY') {
+    if (!/^[A-Za-z0-9+/]{43}$/u.test(value) || Buffer.from(`${value}=`, 'base64').length !== 32)
+      throw new Error(`${source} 中的 ${name} 必须为 43 位有效 EncodingAESKey`);
+  }
+  if (name === 'WECHAT_APP_ID' && !/^wx[a-f0-9]{16}$/iu.test(value))
+    throw new Error(`${source} 中的 ${name} 格式无效`);
+  return value;
+}
+
+export function resolveCallbackConfig(environments, sources = {}) {
+  const result = {};
+  for (const name of CALLBACK_CONFIG_NAMES) {
+    const candidates = [
+      validateCallbackValue(name, sources[name], 'GitHub Actions 配置'),
+      ...CALLBACK_CONFIG_CONSUMERS.map((fn) =>
+        validateCallbackValue(name, environments.get(fn)?.[name], `云函数 ${fn}`),
+      ),
+    ].filter(Boolean);
+    const unique = [...new Set(candidates)];
+    if (unique.length !== 1) throw new Error(`${name} 缺失或在可信来源中不一致，拒绝部署`);
+    result[name] = unique[0];
+  }
+  return result;
+}
+
 export function createRuntimeConfig(
   config,
   environments,
@@ -276,6 +325,7 @@ export function createRuntimeConfig(
   mediaSecret,
   piiSecret,
   stravaConfig = {},
+  callbackConfig = {},
 ) {
   const configuredNames = new Set(configuredFunctionNames(config));
   for (const name of selectedFunctions) {
@@ -289,6 +339,7 @@ export function createRuntimeConfig(
       if (MEDIA_SECRET_CONSUMERS.includes(fn.name)) envVariables[MEDIA_SECRET_NAME] = mediaSecret;
       if (PII_SECRET_CONSUMERS.includes(fn.name)) envVariables[PII_SECRET_NAME] = piiSecret;
       if (STRAVA_CONFIG_CONSUMERS.includes(fn.name)) Object.assign(envVariables, stravaConfig);
+      if (CALLBACK_CONFIG_CONSUMERS.includes(fn.name)) Object.assign(envVariables, callbackConfig);
       return { ...fn, envVariables };
     }),
   };
@@ -316,6 +367,7 @@ function prepare(options, env = process.env) {
             ...(decision.functions || []),
             ...MEDIA_SECRET_CONSUMERS,
             ...STRAVA_CONFIG_CONSUMERS,
+            ...CALLBACK_CONFIG_CONSUMERS,
           ]),
         ]
       : decision.functions || [];
@@ -328,12 +380,27 @@ function prepare(options, env = process.env) {
         Object.fromEntries(STRAVA_CONFIG_NAMES.map((name) => [name, env[`${name}_SOURCE`] || ''])),
       )
     : {};
+  const needsCallbackConfig = CALLBACK_CONFIG_CONSUMERS.some(
+    (name) => functionNames.includes(name) && selectedFunctions.includes(name),
+  );
+  const callbackConfig = needsCallbackConfig
+    ? resolveCallbackConfig(
+        environments,
+        Object.fromEntries(
+          CALLBACK_CONFIG_NAMES.map((name) => [name, env[`${name}_SOURCE`] || '']),
+        ),
+      )
+    : {};
   if (!env.GITHUB_ENV) throw new Error('缺少 GITHUB_ENV，无法安全传递已掩码密钥');
   process.stdout.write(`::${'add'}-mask::${mediaSecret}\n`);
   process.stdout.write(`::${'add'}-mask::${piiSecret}\n`);
   if (needsStravaConfig) {
     process.stdout.write(`::${'add'}-mask::${stravaConfig.STRAVA_CLIENT_SECRET}\n`);
     process.stdout.write(`::${'add'}-mask::${stravaConfig.STRAVA_TOKEN_ENCRYPTION_KEY}\n`);
+  }
+  if (needsCallbackConfig) {
+    process.stdout.write(`::${'add'}-mask::${callbackConfig.WECHAT_CALLBACK_TOKEN}\n`);
+    process.stdout.write(`::${'add'}-mask::${callbackConfig.WECHAT_CALLBACK_AES_KEY}\n`);
   }
   const runtimeConfig = createRuntimeConfig(
     config,
@@ -342,19 +409,18 @@ function prepare(options, env = process.env) {
     mediaSecret,
     piiSecret,
     stravaConfig,
+    callbackConfig,
   );
   writeFileSync(resolve(options.output), `${JSON.stringify(runtimeConfig, null, 2)}\n`, {
     mode: 0o600,
   });
   appendFileSync(
     env.GITHUB_ENV,
-    `${MEDIA_SECRET_NAME}=${mediaSecret}\n${PII_SECRET_NAME}=${piiSecret}\n${needsStravaConfig ? `${STRAVA_CONFIG_NAMES.map((name) => `${name}=${stravaConfig[name]}`).join('\n')}\n` : ''}`,
+    `${MEDIA_SECRET_NAME}=${mediaSecret}\n${PII_SECRET_NAME}=${piiSecret}\n${needsStravaConfig ? `${STRAVA_CONFIG_NAMES.map((name) => `${name}=${stravaConfig[name]}`).join('\n')}\n` : ''}${needsCallbackConfig ? `${CALLBACK_CONFIG_NAMES.map((name) => `${name}=${callbackConfig[name]}`).join('\n')}\n` : ''}`,
     { mode: 0o600 },
   );
   process.stdout.write(
-    needsStravaConfig
-      ? '已从可信来源解析并掩码媒体路径、PII 与 Strava 配置，运行时配置已准备\n'
-      : '已从可信来源解析并掩码媒体路径与 PII 密钥，运行时配置已准备\n',
+    `已从可信来源解析并掩码媒体路径、PII${needsStravaConfig ? '、Strava' : ''}${needsCallbackConfig ? '、微信回调' : ''}配置，运行时配置已准备\n`,
   );
 }
 
@@ -374,7 +440,13 @@ function collectFunctionDetails(value, results = [], seen = new Set()) {
   return results;
 }
 
-export function verifyFunctionDetail(detail, expectedName, expectedMediaSecret, expectedPiiSecret) {
+export function verifyFunctionDetail(
+  detail,
+  expectedName,
+  expectedMediaSecret,
+  expectedPiiSecret,
+  expectedCallbackConfig,
+) {
   const matches = collectFunctionDetails(detail).filter(({ name }) => name === expectedName);
   if (matches.length !== 1) throw new Error(`云函数 ${expectedName} 详情缺失或不唯一`);
   if (matches[0].status.toLowerCase() !== 'active') {
@@ -411,6 +483,18 @@ export function verifyFunctionDetail(detail, expectedName, expectedMediaSecret, 
         throw new Error(`云函数 ${expectedName} 的 ${name} 缺失或不一致`);
     }
   }
+  if (CALLBACK_CONFIG_CONSUMERS.includes(expectedName)) {
+    const actualEnvironment = extractFunctionEnvironment(detail);
+    const actual = resolveCallbackConfig(
+      new Map([[expectedName, actualEnvironment]]),
+      actualEnvironment,
+    );
+    for (const name of CALLBACK_CONFIG_NAMES) {
+      const expected = expectedCallbackConfig?.[name] ?? process.env[name];
+      if (!expected || actual[name] !== expected)
+        throw new Error(`云函数 ${expectedName} 的 ${name} 缺失或不一致`);
+    }
+  }
   return { name: expectedName, status: matches[0].status };
 }
 
@@ -420,7 +504,13 @@ function verifyOne(options, env = process.env) {
     readFileSync(resolve(options.detail), 'utf8'),
     `云函数 ${options.name} 详情`,
   );
-  verifyFunctionDetail(detail, options.name, env[MEDIA_SECRET_NAME], env[PII_SECRET_NAME]);
+  verifyFunctionDetail(
+    detail,
+    options.name,
+    env[MEDIA_SECRET_NAME],
+    env[PII_SECRET_NAME],
+    Object.fromEntries(CALLBACK_CONFIG_NAMES.map((name) => [name, env[name]])),
+  );
   process.stdout.write(`云函数 ${options.name} 已处于 Active 且环境配置校验通过\n`);
 }
 
@@ -446,6 +536,14 @@ export function verifyPiiSecret(environments, expectedSecret) {
   }
 }
 
+export function verifyCallbackConfig(environments, expectedConfig) {
+  const actual = resolveCallbackConfig(environments, expectedConfig);
+  for (const name of CALLBACK_CONFIG_NAMES) {
+    if (!expectedConfig?.[name] || actual[name] !== expectedConfig[name])
+      throw new Error(`云函数 content-callback 的 ${name} 缺失或不一致`);
+  }
+}
+
 function verify(options, env = process.env) {
   if (!options.config || !options['details-dir'])
     throw new Error('verify 缺少 config 或 details-dir');
@@ -465,7 +563,24 @@ function verify(options, env = process.env) {
   const environments = readDetails(options['details-dir'], MEDIA_SECRET_CONSUMERS);
   verifyMediaSecret(environments, env[MEDIA_SECRET_NAME]);
   verifyPiiSecret(environments, env[PII_SECRET_NAME]);
-  process.stdout.write('所有媒体与 PII 密钥消费者均为 Active，且部署后配置存在并一致\n');
+  for (const name of CALLBACK_CONFIG_CONSUMERS) {
+    if (!configured.has(name)) throw new Error(`cloudbaserc.json 缺少回调配置消费者：${name}`);
+    const path = resolve(options['details-dir'], `${name}.json`);
+    const detail = parseJsonText(readFileSync(path, 'utf8'), `云函数 ${name} 详情`);
+    verifyFunctionDetail(
+      detail,
+      name,
+      undefined,
+      undefined,
+      Object.fromEntries(CALLBACK_CONFIG_NAMES.map((key) => [key, env[key]])),
+    );
+  }
+  const callbackEnvironments = readDetails(options['details-dir'], CALLBACK_CONFIG_CONSUMERS);
+  verifyCallbackConfig(
+    callbackEnvironments,
+    Object.fromEntries(CALLBACK_CONFIG_NAMES.map((name) => [name, env[name]])),
+  );
+  process.stdout.write('所有媒体、PII 与微信回调配置消费者均为 Active，且部署后配置存在并一致\n');
 }
 
 export function run(argv = process.argv.slice(2), env = process.env) {

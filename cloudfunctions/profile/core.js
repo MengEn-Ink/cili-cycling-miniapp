@@ -1,6 +1,13 @@
 'use strict';
 const crypto = require('node:crypto');
 const https = require('node:https');
+const {
+  assertProfileWritable,
+  profileGeneration,
+  visibleProfile,
+  isProfileDeleted,
+  publicConsentStatus,
+} = require('./privacy-contract');
 const AVATAR_SOURCES = ['wechat', 'custom'];
 const CLIENT_AVATAR_SOURCES = ['wechat'];
 const CLIENT_MEDIA_ORIGINS = ['wechat', 'custom'];
@@ -421,6 +428,27 @@ function validateAvatarSelection(source, fileId, openid, secretValue, record) {
     throw new ProfileError('MEDIA_ORIGIN_MISMATCH', '头像来源与媒体登记不一致');
   return legacyCustomOrigin ? { ...record, origin: 'custom' } : record;
 }
+function mediaSecurityError(record) {
+  const status = record?.security_status;
+  if (status === 'pass') return '';
+  if (status === 'pending' || status === 'retryable')
+    return status === 'pending' ? 'MEDIA_SECURITY_PENDING' : 'MEDIA_SECURITY_RETRY_REQUIRED';
+  if (status === 'review') return 'MEDIA_SECURITY_REVIEW_REQUIRED';
+  if (status === 'risky') return 'MEDIA_SECURITY_RISKY';
+  return 'MEDIA_SECURITY_REQUIRED';
+}
+function assertMediaSecurityPassed(record) {
+  const code = mediaSecurityError(record);
+  if (!code) return;
+  const messages = {
+    MEDIA_SECURITY_PENDING: '图片审核尚未完成',
+    MEDIA_SECURITY_RETRY_REQUIRED: '图片审核需重试',
+    MEDIA_SECURITY_REVIEW_REQUIRED: '图片需要调整后重新提交',
+    MEDIA_SECURITY_RISKY: '图片未通过安全审核',
+    MEDIA_SECURITY_REQUIRED: '图片缺少安全审核结果',
+  };
+  throw new ProfileError(code, messages[code] || '图片安全状态不可用');
+}
 function missingMediaSignal(value) {
   return /not[ _-]?found|not exist|does not exist|file not exist|404/i.test(String(value || ''));
 }
@@ -708,11 +736,16 @@ function validateMediaUpdate(current, update, openid, secretValue, mediaRecords 
   ]);
   const accept = (item, legacy) => {
     const record = records.get(item.file_id);
+    if (record) assertProfileWritable(existing, record.generation);
+    const alreadyReferenced = [...currentIds].some((fileId) =>
+      recordReferencesFile(record, fileId),
+    );
     if (
       ((item.file_id === record?.file_id && isOwnerMedia(record.file_id, openid, secretValue)) ||
         canonicalFileForRecord(record, item.file_id, openid, secretValue)) &&
       registeredMedia(record, item, openid, ['unreferenced', 'active'])
     ) {
+      if (!alreadyReferenced) assertMediaSecurityPassed(record);
       if (record.status === 'unreferenced') activate.add(record._id);
       return;
     }
@@ -776,6 +809,7 @@ function validateMediaUpdate(current, update, openid, secretValue, mediaRecords 
   return { data, activate_ids: [...activate], demote_ids: demote };
 }
 function ownerMedia(profile, openid, secretValue, mediaRecords = []) {
+  if (isProfileDeleted(profile)) return [];
   const candidates = [
     effectiveBackgroundPhoto(profile),
     ...(Array.isArray(profile && profile.photos) ? profile.photos : []),
@@ -814,6 +848,7 @@ function ownerMedia(profile, openid, secretValue, mediaRecords = []) {
     .slice(0, 3);
 }
 function ownerAvatarMedia(profile, openid, secretValue, mediaRecords = []) {
+  if (isProfileDeleted(profile)) return undefined;
   const value = normalizeAvatarProfile(profile && typeof profile === 'object' ? profile : {});
   if (!value.avatar_file_id || !value.avatar_source) return undefined;
   const record = mediaRecords.find(
@@ -923,11 +958,9 @@ function assertFullProfileReady(profile) {
   const { ready } = profileReadiness(profile);
   if (!ready.gender) throw new ProfileError('VALIDATION_FAILED', '请选择性别');
   if (!ready.avatar) throw new ProfileError('AVATAR_REQUIRED', '请先设置头像');
-  // 背景图（个人照片）不计入完整度，但公开展示路径仍要求必填，与报名门槛/完整度口径相互独立。
-  if (!validPhoto(effectiveBackgroundPhoto(profile)))
-    throw new ProfileError('VALIDATION_FAILED', '请上传个人照片');
 }
 function response(doc = {}, keyValue) {
+  doc = visibleProfile(doc);
   const status = sensitiveStatus(doc);
   // 本人资料完整回显：真实姓名、手机号、紧急联系电话均解密返回，*_masked 仅为旧客户端兼容保留。
   const realName = status.real_name && keyValue ? decrypt(doc.real_name_cipher, keyValue) : '';
@@ -939,6 +972,8 @@ function response(doc = {}, keyValue) {
   const avatarFileId = avatar.avatar_file_id || '';
   const avatarSource = avatar.avatar_source;
   return {
+    generation: profileGeneration(doc),
+    deletion_status: doc.deletion_status || 'active',
     nickname: typeof doc.nickname === 'string' ? doc.nickname : '',
     title: typeof doc.title === 'string' ? doc.title : '',
     avatar_file_id: avatarFileId,
@@ -948,11 +983,10 @@ function response(doc = {}, keyValue) {
       Number.isSafeInteger(doc.avatar_revision) && doc.avatar_revision >= 0
         ? doc.avatar_revision
         : 0,
-    avatar_visibility: doc.avatar_visibility === 'public' ? 'public' : 'private',
-    avatar_visibility_revision:
-      Number.isSafeInteger(doc.avatar_visibility_revision) && doc.avatar_visibility_revision >= 0
-        ? doc.avatar_visibility_revision
-        : null,
+    avatar_visibility: publicConsentStatus(doc).media.consented ? 'public' : 'private',
+    avatar_visibility_revision: publicConsentStatus(doc).media.consented
+      ? doc.avatar_revision
+      : null,
     ...(Object.prototype.hasOwnProperty.call(doc, 'background_photo')
       ? { background_photo: effectiveBackgroundPhoto(doc) }
       : {}),
@@ -972,6 +1006,12 @@ function response(doc = {}, keyValue) {
     missingKeys: readiness.missingKeys,
   };
 }
+function nextDisclosureRevision(current, field) {
+  const value = current[field] ?? 0;
+  if (!Number.isSafeInteger(value) || value < 0 || value >= Number.MAX_SAFE_INTEGER)
+    throw new ProfileError('PUBLIC_CONSENT_REVISION_INVALID', '公开资料版本需要人工核验');
+  return value + 1;
+}
 function buildUpdate(event, keyValue, current = {}) {
   keyFrom(keyValue);
   for (const forbidden of [
@@ -983,6 +1023,9 @@ function buildUpdate(event, keyValue, current = {}) {
     'real_name_cipher',
     'emergency_phone_cipher',
     'avatar_visibility_revision',
+    'nickname_revision',
+    'media_revision',
+    'public_consent',
     // 存量证件密文保持只读兼容：不解密、不回传，也不要求资料更新时主动删除。
     'id_type',
     'id_number',
@@ -1018,6 +1061,8 @@ function buildUpdate(event, keyValue, current = {}) {
     const value = cleanText(event[input], max);
     if (value !== undefined) data[output] = value;
   }
+  if (data.nickname !== undefined && data.nickname !== current.nickname)
+    data.nickname_revision = nextDisclosureRevision(current, 'nickname_revision');
   if (typeof event.has_completed_guidance === 'boolean') {
     data.has_completed_guidance = event.has_completed_guidance;
   }
@@ -1025,18 +1070,11 @@ function buildUpdate(event, keyValue, current = {}) {
     if (!['public', 'private'].includes(event.avatar_visibility))
       throw new ProfileError('VALIDATION_FAILED', '头像公开设置无效');
     if (event.avatar_visibility === 'public') {
-      if (
-        !currentAvatar.avatar_file_id ||
-        !currentAvatar.avatar_source ||
-        !Number.isSafeInteger(current.avatar_revision) ||
-        current.avatar_revision < 1
-      )
-        throw new ProfileError('AVATAR_REQUIRED', '请先设置头像再开启公开展示');
-      data.avatar_visibility = 'public';
-      data.avatar_visibility_revision = current.avatar_revision;
+      throw new ProfileError('PUBLIC_CONSENT_ACTION_REQUIRED', '请通过独立公开同意操作确认');
     } else {
       data.avatar_visibility = 'private';
       data.avatar_visibility_revision = null;
+      data.public_consent = { ...current.public_consent, media: { consented: false } };
     }
   }
   const hasBackground = Object.prototype.hasOwnProperty.call(event, 'background_photo');
@@ -1064,6 +1102,11 @@ function buildUpdate(event, keyValue, current = {}) {
       ? { file_id: event.photos[0].file_id, category: event.photos[0].category }
       : null;
   }
+  if (
+    Object.prototype.hasOwnProperty.call(data, 'background_photo') &&
+    JSON.stringify(data.background_photo) !== JSON.stringify(effectiveBackgroundPhoto(current))
+  )
+    data.media_revision = nextDisclosureRevision(current, 'media_revision');
   for (const [input, cipherField, maskedField, masker, max] of [
     ['real_name', 'real_name_cipher', 'real_name_masked', maskName, 80],
     ['emergency_phone', 'emergency_phone_cipher', 'emergency_phone_masked', maskPhone, 30],
@@ -1139,6 +1182,7 @@ module.exports = {
   clientAvatarSource,
   clientMediaOrigin,
   validateAvatarSelection,
+  assertMediaSecurityPassed,
   inspectMediaObject,
   verifyMediaObject,
   verifyUploadedMedia,

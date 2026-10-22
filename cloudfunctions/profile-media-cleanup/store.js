@@ -1,12 +1,15 @@
 'use strict';
 
+const crypto = require('node:crypto');
 const {
   claimDecision,
   importClaimDecision,
   failureDecision,
   profileReferences,
   validIntentCloudPath,
+  validCanonicalMedia,
 } = require('./core');
+const { hasMediaReferences, profileGeneration } = require('./privacy-contract');
 
 function missing(error) {
   const code = String(error?.errCode || error?.code || '');
@@ -30,13 +33,83 @@ async function get(collection, id) {
 
 function createCleanupStore(db, mediaSecret) {
   const command = db.command;
+  const replayFenceCurrent = async (tx, record) => {
+    if (!record.privacy_request_id) return true;
+    const request = await get(tx.collection('privacy_requests'), record.privacy_request_id);
+    if (!request?.replay_epoch) return !record.privacy_replay_epoch;
+    return (
+      request.owner_openid === record.owner_openid &&
+      request.generation === record.privacy_generation &&
+      request.replay_epoch === record.privacy_replay_epoch
+    );
+  };
+  const privacyTargetValid = (record) => {
+    if (record.cloud_path !== undefined) return validIntentCloudPath(record, mediaSecret);
+    const slash =
+      typeof record.file_id === 'string' && record.file_id.startsWith('cloud://')
+        ? record.file_id.indexOf('/', 8)
+        : -1;
+    return (
+      slash >= 0 &&
+      record._id === crypto.createHash('sha256').update(record.file_id).digest('hex') &&
+      validIntentCloudPath(
+        { ...record, kind: 'client_upload', cloud_path: record.file_id.slice(slash + 1) },
+        mediaSecret,
+      ) &&
+      validCanonicalMedia(record, mediaSecret)
+    );
+  };
+  const privacyProfileMatches = async (tx, record, profile) => {
+    if (!profile) return false;
+    if (
+      profileGeneration(profile) === record.privacy_generation &&
+      profile.deletion_request_id === record.privacy_request_id
+    )
+      return true;
+    if (!record.privacy_replay_epoch || profileGeneration(profile) <= record.privacy_generation)
+      return false;
+    const request = await get(tx.collection('privacy_requests'), record.privacy_request_id);
+    return Boolean(
+      request?.replay_epoch === record.privacy_replay_epoch &&
+      request.owner_openid === record.owner_openid &&
+      request.generation === record.privacy_generation,
+    );
+  };
+  const privacyBlocked = async (tx, record, profile, targets) =>
+    record.privacy_request_id &&
+    (!(await replayFenceCurrent(tx, record)) ||
+      !privacyTargetValid(record) ||
+      (record.generation && record.generation > record.privacy_generation) ||
+      !(await privacyProfileMatches(tx, record, profile)) ||
+      (await hasMediaReferences(tx, command, targets)));
+  const quarantine = async (tx, collection, id, now) => {
+    const current = await get(collection, id);
+    if (!current || !(await replayFenceCurrent(tx, current))) return;
+    await collection.doc(id).update({
+      data: {
+        status: 'privacy_manual_review',
+        privacy_error_code: 'MEDIA_REFERENCE_OR_GENERATION_REVIEW',
+        delete_lease_id: '',
+        delete_lease_expires_at: null,
+        updated_at: now,
+      },
+    });
+  };
   async function fencedUpdate(collectionName, id, leaseId, data, statuses = ['deleting']) {
     return db.runTransaction(async (tx) => {
       const collection = tx.collection(collectionName);
       const current = await get(collection, id);
       if (!current || !statuses.includes(current.status) || current.delete_lease_id !== leaseId)
         return false;
-      await collection.doc(id).update({ data });
+      if (!(await replayFenceCurrent(tx, current))) return false;
+      await collection.doc(id).update({
+        data: {
+          ...data,
+          ...(data.status === 'deleted' && current.privacy_replay_epoch
+            ? { privacy_deleted_epoch: current.privacy_replay_epoch }
+            : {}),
+        },
+      });
       return true;
     });
   }
@@ -116,6 +189,10 @@ function createCleanupStore(db, mediaSecret) {
         const record = await get(media, id);
         if (!record) return undefined;
         const profile = await get(tx.collection('profiles'), record.owner_openid);
+        if (await privacyBlocked(tx, record, profile, [record.file_id, record.canonical_file_id])) {
+          await quarantine(tx, media, id, fence.now);
+          return undefined;
+        }
         const decision = claimDecision(record, profile, fence.now, fence.leaseId, mediaSecret);
         if (!decision) return undefined;
         await media.doc(id).update({ data: decision.update });
@@ -140,12 +217,34 @@ function createCleanupStore(db, mediaSecret) {
         last_error_code: '',
         updated_at: fence.now,
       }),
+    isMediaDeleteLeaseCurrent: (id, fence) =>
+      db.runTransaction(async (tx) => {
+        const collection = tx.collection('profile_media');
+        const record = await get(collection, id);
+        if (
+          !record ||
+          record.status !== 'deleting' ||
+          record.delete_lease_id !== fence.leaseId ||
+          new Date(record.delete_lease_expires_at) <= fence.now
+        )
+          return false;
+        const profile = await get(tx.collection('profiles'), record.owner_openid);
+        if (await privacyBlocked(tx, record, profile, [record.file_id, record.canonical_file_id])) {
+          await quarantine(tx, collection, id, fence.now);
+          return false;
+        }
+        return !profileReferences(profile, record.file_id, record.canonical_file_id);
+      }),
     claimImportIntent: (id, fence) =>
       db.runTransaction(async (tx) => {
         const collection = tx.collection('profile_media_imports');
         const record = await get(collection, id);
         if (!record) return undefined;
         const profile = await get(tx.collection('profiles'), record.owner_openid);
+        if (await privacyBlocked(tx, record, profile, [record.file_id, record.source_file_id])) {
+          await quarantine(tx, collection, id, fence.now);
+          return undefined;
+        }
         const decision = importClaimDecision(
           record,
           profile,
@@ -180,6 +279,7 @@ function createCleanupStore(db, mediaSecret) {
         Number.isFinite(expiresAt.getTime()) &&
         expiresAt > fence.now &&
         validIntentCloudPath(current, mediaSecret) &&
+        !(await privacyBlocked(db, current, profile, [current.file_id, current.source_file_id])) &&
         !(current.file_id && profileReferences(profile, current.file_id)),
       );
     },
@@ -201,6 +301,8 @@ function createCleanupStore(db, mediaSecret) {
         )
           return false;
         const profile = await get(tx.collection('profiles'), current.owner_openid);
+        if (await privacyBlocked(tx, current, profile, [fence.fileId, current.source_file_id]))
+          return false;
         if (profileReferences(profile, fence.fileId)) return false;
         await collection.doc(id).update({
           data: {
@@ -220,6 +322,11 @@ function createCleanupStore(db, mediaSecret) {
           !current ||
           current.status === 'completed' ||
           current.status === 'invalid' ||
+          current.status === 'privacy_manual_review' ||
+          (['deleting', 'recovering'].includes(current.status) &&
+            current.delete_lease_id &&
+            current.delete_lease_id !== fence.leaseId &&
+            new Date(current.delete_lease_expires_at) > fence.now) ||
           current.owner_openid !== fence.ownerOpenid ||
           current.cloud_path !== fence.cloudPath ||
           !validIntentCloudPath(current, mediaSecret)
@@ -231,6 +338,8 @@ function createCleanupStore(db, mediaSecret) {
             : -1;
         if (slash < 0 || fence.fileId.slice(slash + 1) !== current.cloud_path) return false;
         const profile = await get(tx.collection('profiles'), current.owner_openid);
+        if (await privacyBlocked(tx, current, profile, [fence.fileId, current.source_file_id]))
+          return false;
         if (profileReferences(profile, fence.fileId)) return false;
         await collection.doc(id).update({
           data: {
@@ -260,6 +369,8 @@ function createCleanupStore(db, mediaSecret) {
       )
         return false;
       const profile = await get(db.collection('profiles'), current.owner_openid);
+      if (await privacyBlocked(db, current, profile, [fence.fileId, current.source_file_id]))
+        return false;
       return !profileReferences(profile, fence.fileId);
     },
     markImportDeleted: (id, fence) =>
@@ -272,6 +383,7 @@ function createCleanupStore(db, mediaSecret) {
           current.delete_lease_id !== fence.leaseId
         )
           return false;
+        if (!(await replayFenceCurrent(tx, current))) return false;
         await collection.doc(id).update({
           data: fence.deferCompletion
             ? {
@@ -298,6 +410,9 @@ function createCleanupStore(db, mediaSecret) {
                 cleanup_after: null,
                 last_error_code: '',
                 updated_at: fence.now,
+                ...(current.privacy_replay_epoch
+                  ? { privacy_deleted_epoch: current.privacy_replay_epoch }
+                  : {}),
               },
         });
         return true;
@@ -312,6 +427,7 @@ function createCleanupStore(db, mediaSecret) {
           current.delete_lease_id !== fence.leaseId
         )
           return false;
+        if (!(await replayFenceCurrent(tx, current))) return false;
         await collection.doc(id).update({
           data: failureDecision(current, fence.now, fence.errorCode),
         });
@@ -323,6 +439,7 @@ function createCleanupStore(db, mediaSecret) {
         const current = await get(collection, id);
         if (!current || current.status !== 'deleting' || current.delete_lease_id !== fence.leaseId)
           return false;
+        if (!(await replayFenceCurrent(tx, current))) return false;
         await collection.doc(id).update({
           data: failureDecision(current, fence.now, fence.errorCode),
         });

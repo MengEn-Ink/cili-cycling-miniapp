@@ -6,6 +6,8 @@ const rideService = vi.hoisted(() => ({
   legacyPath: vi.fn(),
   issueMediaUploadPath: vi.fn(),
   getPersonalCapabilityCard: vi.fn(),
+  getMediaStatus: vi.fn(),
+  retryMediaCheck: vi.fn(),
   finalizeSpy: vi.fn(),
   finalizeMediaUpload: vi.fn(),
   cleanupSpy: vi.fn(),
@@ -76,6 +78,20 @@ describe('资料图片内容指纹会话内去重', () => {
       async (_category: string, _requestId: string) => rideService.legacyPath(),
     );
     rideService.getPersonalCapabilityCard.mockResolvedValue(capabilityCard());
+    rideService.getMediaStatus.mockImplementation(async (fileId: string) => ({
+      mediaId: `media:${fileId}`,
+      fileId,
+      canonicalFileId: fileId,
+      category: fileId.includes('profile-avatar') ? 'profile-avatar' : 'profile-background',
+      generation: 1,
+      securityStatus: 'pass',
+      traceId: 'trace-pass',
+      retryable: false,
+      activated: false,
+    }));
+    rideService.retryMediaCheck.mockImplementation((fileId: string) =>
+      rideService.getMediaStatus(fileId),
+    );
     rideService.finalizeSpy.mockResolvedValue(undefined);
     rideService.finalizeMediaUpload.mockImplementation(
       async (fileId: string, category: string, _requestId: string, origin?: string) => {

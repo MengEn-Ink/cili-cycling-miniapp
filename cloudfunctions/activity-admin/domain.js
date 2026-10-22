@@ -1,5 +1,10 @@
 'use strict';
 
+const {
+  PUBLIC_POLICY_VERSION,
+  driverFieldsVersion,
+  hasDriverAttestation,
+} = require('./privacy-contract');
 const MAX_ACTIVITY_CAPACITY = 1000;
 const MAX_PARTITION_BACKFILL_RECORDS = MAX_ACTIVITY_CAPACITY;
 
@@ -99,6 +104,12 @@ function publicActivity(activity, now = new Date()) {
   // 缺字段的存量活动必须继续按审批报名解释；只有显式 open 才是公开报名。
   output.registration_mode = activity?.registration_mode === 'open' ? 'open' : 'approval';
   output.group_qr_may_be_expired = groupQrMayBeExpired(activity, now);
+  output.driver_consent_status = {
+    policyVersion: PUBLIC_POLICY_VERSION,
+    activityVersion: activity?.version || 0,
+    fieldsVersion: driverFieldsVersion(activity?.support_vehicle_driver),
+    attested: hasDriverAttestation(activity),
+  };
   return output;
 }
 function cleanText(value, field, max, required = false) {

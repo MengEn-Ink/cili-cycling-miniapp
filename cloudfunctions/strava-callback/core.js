@@ -5,6 +5,7 @@ const MAX_GPX_BYTES = 4 * 1024 * 1024;
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 const TOKEN_REFRESH_SKEW_MS = 5 * 60 * 1000;
 const PREVIEW_TTL_MS = 2 * 60 * 60 * 1000;
+const EXTERNAL_TIMEOUT_MS = 8000;
 
 class StravaError extends Error {
   constructor(code, message) {
@@ -153,6 +154,7 @@ async function tokenRequest(fetchImpl, body) {
   try {
     response = await fetchImpl('https://www.strava.com/oauth/token', {
       method: 'POST',
+      signal: AbortSignal.timeout(EXTERNAL_TIMEOUT_MS),
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams(body).toString(),
     });
@@ -171,9 +173,81 @@ async function tokenRequest(fetchImpl, body) {
   }
 }
 
+async function revokeToken(token, env, fetchImpl = fetch) {
+  if (!/^\d+$/.test(env.STRAVA_CLIENT_ID || '') || !env.STRAVA_CLIENT_SECRET || !token)
+    return { state: 'manual', code: 'STRAVA_REVOCATION_CONFIG' };
+  let response;
+  try {
+    response = await fetchImpl('https://www.strava.com/oauth/revoke', {
+      method: 'POST',
+      signal: AbortSignal.timeout(EXTERNAL_TIMEOUT_MS),
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        authorization: `Basic ${Buffer.from(
+          `${env.STRAVA_CLIENT_ID}:${env.STRAVA_CLIENT_SECRET}`,
+        ).toString('base64')}`,
+      },
+      body: new URLSearchParams({ token }).toString(),
+    });
+  } catch {
+    return { state: 'pending', code: 'STRAVA_REVOCATION_UNAVAILABLE' };
+  }
+  // The official endpoint returns empty 200 even when the token is already absent.
+  if (response.status === 200) return { state: 'completed', code: '' };
+  if (response.status === 401) return { state: 'manual', code: 'STRAVA_APPLICATION_AUTH_INVALID' };
+  if (response.status === 400) return { state: 'manual', code: 'STRAVA_REVOKE_TOKEN_MISSING' };
+  return { state: 'pending', code: 'STRAVA_REVOCATION_UNAVAILABLE' };
+}
+
+async function mintCredential({ owner, fence, body, env, store, fetchImpl, now, previous }) {
+  let token;
+  try {
+    token = await tokenRequest(fetchImpl, body);
+  } catch (error) {
+    await store.failMint(owner, fence, error.code !== 'STRAVA_TOKEN_INVALID', now);
+    throw error;
+  }
+  const raw =
+    typeof token?.refresh_token === 'string' && token.refresh_token
+      ? token.refresh_token
+      : typeof token?.access_token === 'string' && token.access_token
+        ? token.access_token
+        : '';
+  if (!raw) {
+    await store.failMint(owner, fence, true, now);
+    throw new StravaError('OAUTH_TOKEN_INVALID', 'Strava 换取凭证失败，需核验撤销状态');
+  }
+  const material = encrypt(raw, env.STRAVA_TOKEN_ENCRYPTION_KEY);
+  let value;
+  let invalid;
+  try {
+    value = tokenDocument(
+      owner,
+      previous ? { ...token, athlete: { id: previous.athlete_id } } : token,
+      env.STRAVA_TOKEN_ENCRYPTION_KEY,
+      now,
+    );
+    if (previous) {
+      value.athlete_name = previous.athlete_name || '';
+      value.connected_at = previous.connected_at || now;
+    }
+  } catch (error) {
+    invalid = error;
+  }
+  const saved = await store.finishMint(owner, fence, value, material, now);
+  if (invalid) throw invalid;
+  if (!saved) throw new StravaError('AUTHORIZATION_REVOKED', 'Strava 授权已撤回');
+  return {
+    ...value,
+    oauth_generation: fence.oauth_generation,
+    profile_generation: fence.profile_generation,
+  };
+}
+
 async function callbackFlow({ query, env, store, fetchImpl = fetch, now = new Date() }) {
   const configuration = config(env);
-  const state = await store.consumeState(hashState(query?.state), now);
+  const validQuery = !query?.error && typeof query?.code === 'string' && Boolean(query.code);
+  const state = await store.consumeState(hashState(query?.state), now, validQuery);
   if (!state || state.consumed_at)
     throw new StravaError('OAUTH_STATE_INVALID', '授权状态无效或已使用');
   const expiresAt = new Date(state.expires_at).getTime();
@@ -182,16 +256,20 @@ async function callbackFlow({ query, env, store, fetchImpl = fetch, now = new Da
   if (query.error) throw new StravaError('OAUTH_ACCESS_DENIED', '你已取消 Strava 授权');
   if (typeof query.code !== 'string' || !query.code || typeof state.owner_openid !== 'string')
     throw new StravaError('OAUTH_CALLBACK_INVALID', 'Strava 授权回调无效');
-  const token = await tokenRequest(fetchImpl, {
-    client_id: configuration.clientId,
-    client_secret: configuration.clientSecret,
-    code: query.code,
-    grant_type: 'authorization_code',
+  await mintCredential({
+    owner: state.owner_openid,
+    fence: state,
+    env,
+    store,
+    fetchImpl,
+    now,
+    body: {
+      client_id: configuration.clientId,
+      client_secret: configuration.clientSecret,
+      code: query.code,
+      grant_type: 'authorization_code',
+    },
   });
-  await store.saveCredential(
-    state.owner_openid,
-    tokenDocument(state.owner_openid, token, configuration.encryptionKey, now),
-  );
   return { connected: true };
 }
 
@@ -199,24 +277,27 @@ async function accessToken({ credential, env, store, fetchImpl = fetch, now = ne
   const configuration = config(env);
   if (!credential || !credential.access_token_cipher || !credential.refresh_token_cipher)
     throw new StravaError('STRAVA_AUTH_REQUIRED', '请先连接 Strava');
+  await store.checkFence(credential.owner_openid, credential);
   const expiresAt = new Date(credential.token_expires_at).getTime();
   if (Number.isFinite(expiresAt) && expiresAt > now.getTime() + TOKEN_REFRESH_SKEW_MS)
     return decrypt(credential.access_token_cipher, configuration.encryptionKey);
-  const refreshed = await tokenRequest(fetchImpl, {
-    client_id: configuration.clientId,
-    client_secret: configuration.clientSecret,
-    grant_type: 'refresh_token',
-    refresh_token: decrypt(credential.refresh_token_cipher, configuration.encryptionKey),
-  });
-  const next = tokenDocument(
-    credential.owner_openid,
-    { ...refreshed, athlete: { id: credential.athlete_id } },
-    configuration.encryptionKey,
+  const fence = await store.beginRefresh(credential, now);
+  const next = await mintCredential({
+    owner: credential.owner_openid,
+    fence,
+    env,
+    store,
+    fetchImpl,
     now,
-  );
-  next.athlete_name = credential.athlete_name || '';
-  next.connected_at = credential.connected_at || now;
-  await store.saveCredential(credential.owner_openid, next);
+    previous: credential,
+    body: {
+      client_id: configuration.clientId,
+      client_secret: configuration.clientSecret,
+      grant_type: 'refresh_token',
+      refresh_token: decrypt(credential.refresh_token_cipher, configuration.encryptionKey),
+    },
+  });
+  await store.checkFence(credential.owner_openid, fence);
   return decrypt(next.access_token_cipher, configuration.encryptionKey);
 }
 
@@ -278,16 +359,19 @@ async function importRoute({ request, env, store, fetchImpl = fetch, parseGpx, n
   if (!credential || credential.owner_openid !== request.openid)
     throw new StravaError('STRAVA_AUTH_REQUIRED', '请先连接 Strava');
   const token = await accessToken({ credential, env, store, fetchImpl, now });
+  await store.checkFence(request.openid, credential);
   let response;
   try {
     response = await fetchImpl(`https://www.strava.com/api/v3/routes/${route.routeId}/export_gpx`, {
       headers: { authorization: `Bearer ${token}`, accept: 'application/gpx+xml,application/xml' },
+      signal: AbortSignal.timeout(EXTERNAL_TIMEOUT_MS),
     });
   } catch {
     throw new StravaError('STRAVA_UNAVAILABLE', 'Strava 暂时不可用，请稍后重试');
   }
   if (!response.ok) throw mapDownloadError(response.status);
   const bytes = await boundedBody(response);
+  await store.checkFence(request.openid, credential);
   const fileName = `strava-route-${route.routeId}.gpx`;
   const summary = parseGpx(bytes, { fileName });
   const digest = crypto.createHash('sha256').update(bytes).digest('hex');
@@ -296,19 +380,24 @@ async function importRoute({ request, env, store, fetchImpl = fetch, parseGpx, n
   if (existing) {
     if (existing.owner_openid !== request.openid)
       throw new StravaError('FORBIDDEN', '路线预览不可用');
+    await store.checkFence(request.openid, existing);
     return {
       ...previewResponse(existing),
       external_route_id: route.routeId,
       external_route_url: route.url,
     };
   }
+  await store.checkFence(request.openid, credential);
   const cloudPath = `activity-routes/${request.openid}/${digest}.gpx`;
+  await store.reserveRouteSource(request.openid, cloudPath, credential, now);
   const upload = await store.uploadFile({ cloudPath, fileContent: bytes });
   if (!upload?.fileID)
     throw new StravaError('GPX_STORE_FAILED', '路线保存失败，请改用手动上传 GPX');
   const preview = {
     _id: id,
     owner_openid: request.openid,
+    oauth_generation: credential.oauth_generation,
+    profile_generation: credential.profile_generation,
     request_id: request.requestId,
     gpx_sha256: digest,
     source_file_id: upload.fileID,
@@ -320,9 +409,10 @@ async function importRoute({ request, env, store, fetchImpl = fetch, parseGpx, n
     consumed_at: null,
     attached_activity_id: '',
   };
-  await store.putPreview(id, preview);
+  const persisted = await store.putPreview(id, preview);
+  await store.checkFence(request.openid, preview);
   return {
-    ...previewResponse(preview),
+    ...previewResponse(persisted),
     external_route_id: route.routeId,
     external_route_url: route.url,
   };
@@ -347,4 +437,6 @@ module.exports = {
   mapDownloadError,
   routePreviewId,
   importRoute,
+  revokeToken,
+  EXTERNAL_TIMEOUT_MS,
 };

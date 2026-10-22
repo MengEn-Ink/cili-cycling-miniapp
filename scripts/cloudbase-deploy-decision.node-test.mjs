@@ -47,11 +47,54 @@ test('共享领域代码变更会部署全部实际消费者', () => {
   });
 });
 
-test('prepare 脚本变更与共享代码使用同一消费者边界', () => {
+test('共享隐私契约变更会部署全部生成副本消费者', () => {
+  const privacyConfig = {
+    functions: [...config.functions, { name: 'privacy-maintenance' }],
+  };
+  assert.deepEqual(
+    createCloudBaseDeployDecision(['cloudfunctions/shared/privacy.js'], privacyConfig).functions,
+    [
+      'activity-read',
+      'activity-admin',
+      'registration',
+      'admin-review',
+      'club-application',
+      'profile',
+      'profile-media-cleanup',
+      'privacy-maintenance',
+    ],
+  );
+});
+
+test('内容审核规范源变更会部署对应生成副本消费者', () => {
+  const contentConfig = {
+    functions: [...config.functions, { name: 'content-callback' }],
+  };
+  assert.deepEqual(
+    createCloudBaseDeployDecision(['cloudfunctions/compliance-shared/content.js'], contentConfig)
+      .functions,
+    ['activity-admin', 'club-application', 'profile'],
+  );
+  assert.deepEqual(
+    createCloudBaseDeployDecision(['cloudfunctions/compliance-shared/callback.js'], contentConfig)
+      .functions,
+    ['content-callback'],
+  );
+});
+
+test('prepare 脚本变更部署共享、隐私与生成 Strava 源码消费者', () => {
   assert.deepEqual(createCloudBaseDeployDecision(['scripts/prepare-cloudfunctions.mjs'], config), {
     shouldDeploy: true,
     applyInfrastructure: false,
-    functions: ['activity-read', 'registration', 'admin-review'],
+    functions: [
+      'activity-read',
+      'activity-admin',
+      'registration',
+      'admin-review',
+      'club-application',
+      'profile',
+      'profile-media-cleanup',
+    ],
   });
 });
 

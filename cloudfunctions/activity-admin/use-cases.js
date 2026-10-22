@@ -19,6 +19,71 @@ const {
 const { assertUsableRoutePreview, mergeTrustedPreviewRoute } = require('./route-preview');
 const { assertUsablePublicRoutePreview } = require('./public-route-preview');
 const { activateActivityMediaReferences, validateActivityMediaOwnership } = require('./media');
+const { assertCheckedContent, checkTextContent } = require('./content-contract');
+const {
+  PUBLIC_POLICY_VERSION,
+  driverFieldsVersion,
+  hasDriverAttestation,
+} = require('./privacy-contract');
+
+function bindDriverAttestation(current, value, confirmation, actor, now) {
+  if (confirmation !== undefined) {
+    if (
+      !confirmation ||
+      typeof confirmation !== 'object' ||
+      Array.isArray(confirmation) ||
+      Object.keys(confirmation).some(
+        (key) => !['confirmed', 'policyVersion', 'activityVersion', 'fieldsVersion'].includes(key),
+      ) ||
+      confirmation.confirmed !== true ||
+      confirmation.policyVersion !== PUBLIC_POLICY_VERSION ||
+      confirmation.activityVersion !== (current?.version || 0) ||
+      confirmation.fieldsVersion !== driverFieldsVersion(value.support_vehicle_driver)
+    )
+      fail('DRIVER_CONSENT_INVALID', '请明确确认已取得司机本人同意并绑定当前公开字段版本');
+    value.driver_public_attestation = {
+      kind: 'organizer_attestation',
+      attested_by: actor,
+      policy_version: PUBLIC_POLICY_VERSION,
+      fields_version: confirmation.fieldsVersion,
+      activity_id: value._id,
+      confirmed_activity_version: confirmation.activityVersion,
+      activity_version: value.version,
+      recorded_at: now,
+      record_id: crypto
+        .createHash('sha256')
+        .update(
+          JSON.stringify([
+            value._id,
+            actor,
+            value.version,
+            confirmation.fieldsVersion,
+            now.toISOString(),
+          ]),
+        )
+        .digest('hex'),
+    };
+  } else if (
+    hasDriverAttestation(current) &&
+    driverFieldsVersion(current.support_vehicle_driver) ===
+      driverFieldsVersion(value.support_vehicle_driver)
+  ) {
+    value.driver_public_attestation = {
+      ...current.driver_public_attestation,
+      activity_version: value.version,
+    };
+  } else {
+    delete value.driver_public_attestation;
+  }
+  if (
+    value.status === 'published' &&
+    Object.values(value.support_vehicle_driver || {}).some(
+      (field) => typeof field === 'string' && field,
+    ) &&
+    !hasDriverAttestation(value)
+  )
+    fail('DRIVER_CONSENT_REQUIRED', '发布司机公开字段前请确认已取得司机本人同意');
+}
 
 const CLONE_REQUEST_FIELDS = new Set([
   'action',
@@ -399,11 +464,68 @@ async function deleteActivity(store, request, now = new Date()) {
   });
 }
 
+async function prepareActivityContentCheck(
+  store,
+  {
+    openid,
+    activityId,
+    expectedVersion,
+    createRequestId,
+    activity,
+    idempotentCreateId,
+    createFingerprint,
+  },
+) {
+  return store.transaction(async (tx) => {
+    const admin = await tx.getAdmin(openid);
+    const isAdmin = isEnabledAdmin(admin, openid);
+    const currentId = activityId || idempotentCreateId;
+    const current = currentId ? await tx.getActivity(currentId) : undefined;
+    if (!activityId && current) {
+      if (
+        current.created_by !== openid ||
+        current.create_request_id !== createRequestId ||
+        current.create_request_fingerprint !== createFingerprint ||
+        current.is_deleted === true ||
+        !['draft', 'published'].includes(current.status)
+      )
+        fail('CREATE_CONFLICT', '创建请求与已有活动冲突');
+      return { existing: publicActivity(current) };
+    }
+    if (activityId && !current) fail('ACTIVITY_NOT_FOUND', '活动不存在');
+    if (!isAdmin && current && current.created_by !== openid)
+      fail('FORBIDDEN', '只能编辑自己的活动');
+    if (current?.status === 'pending_review')
+      fail('REVIEW_ACTION_REQUIRED', '待审核活动只能通过审批操作处理');
+    if (!isAdmin && current?.status === 'finished') fail('FORBIDDEN', '已结束活动不能编辑');
+    const effectiveActivity = effectiveActivityInput(current, activity);
+    if (!isAdmin && effectiveActivity.status === 'finished')
+      fail('ADMIN_REQUIRED', '仅平台管理员可以结束活动');
+    let currentVersion = 0;
+    if (current && current.version !== undefined) {
+      if (!Number.isInteger(current.version) || current.version < 1)
+        fail('SCHEMA_INVALID', '活动版本异常');
+      currentVersion = current.version;
+    }
+    if (current && expectedVersion !== currentVersion)
+      fail('ACTIVITY_CONFLICT', '活动已被其他人更新，请刷新后重试');
+    return {
+      currentVersion,
+      fields: {
+        title: effectiveActivity.title,
+        description: effectiveActivity.description || '',
+      },
+    };
+  });
+}
+
 async function saveActivity(
   store,
-  { openid, activityId, expectedVersion, createRequestId, activity, reason },
+  { openid, activityId, expectedVersion, createRequestId, activity, reason, driverConsent },
   now = new Date(),
+  contentService = {},
 ) {
+  assertTrustedOpenid(openid);
   if (!activity || typeof activity !== 'object' || Array.isArray(activity))
     fail('VALIDATION_FAILED', '活动参数格式错误');
   if (Object.prototype.hasOwnProperty.call(activity, 'club_identity'))
@@ -421,6 +543,24 @@ async function saveActivity(
   const createFingerprint = createRequestId
     ? createRequestFingerprint(openid, activity)
     : undefined;
+  const contentPlan = await prepareActivityContentCheck(store, {
+    openid,
+    activityId,
+    expectedVersion,
+    createRequestId,
+    activity,
+    idempotentCreateId,
+    createFingerprint,
+  });
+  if (contentPlan.existing) return contentPlan.existing;
+  const checked = await checkTextContent({
+    openid,
+    scene: 4,
+    fields: contentPlan.fields,
+    whitelist: { title: 100, description: 5000 },
+    currentVersion: contentPlan.currentVersion,
+    msgSecCheck: contentService.msgSecCheck || store.msgSecCheck,
+  });
   return store.transaction(async (tx) => {
     const admin = await tx.getAdmin(openid);
     const isAdmin = isEnabledAdmin(admin, openid);
@@ -557,6 +697,8 @@ async function saveActivity(
         fail('SCHEMA_INVALID', '活动版本异常');
       currentVersion = current.version;
     }
+    if (checked.currentVersion !== currentVersion)
+      assertCheckedContent(checked, checked.fields, currentVersion);
     if (current && expectedVersion !== currentVersion)
       fail('ACTIVITY_CONFLICT', '活动已被其他人更新，请刷新后重试');
     const occupiedCount = current?.occupied_count ?? 0;
@@ -589,6 +731,11 @@ async function saveActivity(
         : effectiveActivity.status === 'pending_review'
           ? validateReviewInput(effectiveActivity, occupiedCount, now, validationOptions)
           : validatePublishInput(effectiveActivity, occupiedCount, now, validationOptions);
+    assertCheckedContent(
+      checked,
+      { title: safe.title, description: safe.description },
+      currentVersion,
+    );
     // 群二维码时间只信服务端与数据库存量：新上传或文件变化取 now，未变化沿用 current。
     const currentGroupQrUploadedAt = current?.group_qr_code_uploaded_at;
     const trustedCurrentGroupQrUploadedAt =
@@ -717,6 +864,12 @@ async function saveActivity(
       created_by: current?.created_by || openid,
       created_at: current?.created_at || now,
       updated_at: now,
+      content_check: {
+        digest: checked.digest,
+        version: checked.currentVersion,
+        trace_id: checked.traceId,
+        checked_at: now,
+      },
       ...(createRequestId
         ? {
             create_request_id: createRequestId,
@@ -724,6 +877,7 @@ async function saveActivity(
           }
         : {}),
     };
+    bindDriverAttestation(current, value, driverConsent, openid, now);
     if (!safe.group_qr_code) delete value.group_qr_code_uploaded_at;
     if (isUnpublish) {
       const registrations = await tx.listActiveRegistrations(id);
@@ -760,7 +914,7 @@ async function saveActivity(
       }
     }
     await tx.putActivity(id, value);
-    await activateActivityMediaReferences(tx, openid, value, now);
+    await activateActivityMediaReferences(tx, openid, value, now, current);
     for (const preview of routePreviewsToConsume)
       await tx.consumeRoutePreview(preview._id, id, now);
     const audit = buildActivityAudit(
@@ -867,6 +1021,7 @@ async function reviewActivity(store, request, now = new Date()) {
       rejection_reason: rejectionReason,
       updated_at: now,
     };
+    bindDriverAttestation(current, value, undefined, openid, now);
     await tx.putActivity(activityId, value);
     const audit = buildActivityAudit(
       openid,

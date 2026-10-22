@@ -7,6 +7,8 @@ import test from 'node:test';
 import {
   MEDIA_SECRET_CONSUMERS,
   PII_SECRET_CONSUMERS,
+  STRAVA_CONFIG_CONSUMERS,
+  STRAVA_CONFIG_NAMES,
   createRuntimeConfig,
   extractExistingFunctionNames,
   extractFunctionEnvironment,
@@ -20,6 +22,12 @@ import {
 
 const SECRET = 'same-profile-media-path-secret-32-bytes';
 const PII_SECRET = Buffer.alloc(32, 7).toString('base64');
+const STRAVA_CONFIG = Object.freeze({
+  STRAVA_CLIENT_ID: '12345',
+  STRAVA_CLIENT_SECRET: 'strava-client-secret',
+  STRAVA_TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 8).toString('base64'),
+  STRAVA_CALLBACK_URL: 'https://example.test/strava/callback',
+});
 
 function environments(overrides = {}) {
   return new Map(
@@ -29,6 +37,7 @@ function environments(overrides = {}) {
         EXISTING: `${name}-value`,
         PROFILE_MEDIA_PATH_SECRET: SECRET,
         ...(PII_SECRET_CONSUMERS.includes(name) ? { PII_ENCRYPTION_KEY: PII_SECRET } : {}),
+        ...(STRAVA_CONFIG_CONSUMERS.includes(name) ? STRAVA_CONFIG : {}),
         ...(overrides[name] || {}),
       },
     ]),
@@ -256,6 +265,9 @@ test('prepare 立即输出 add-mask，写 runner 临时配置但不生成随机�
               ...(PII_SECRET_CONSUMERS.includes(name)
                 ? [{ Key: 'PII_ENCRYPTION_KEY', Value: PII_SECRET }]
                 : []),
+              ...(STRAVA_CONFIG_CONSUMERS.includes(name)
+                ? STRAVA_CONFIG_NAMES.map((key) => ({ Key: key, Value: STRAVA_CONFIG[key] }))
+                : []),
             ],
           },
         }),
@@ -290,7 +302,7 @@ test('prepare 立即输出 add-mask，写 runner 临时配置但不生成随机�
     assert.ok(output.startsWith(`::${'add'}-mask::${SECRET}\n::${'add'}-mask::${PII_SECRET}\n`));
     assert.equal(
       readFileSync(githubEnv, 'utf8'),
-      `PROFILE_MEDIA_PATH_SECRET=${SECRET}\nPII_ENCRYPTION_KEY=${PII_SECRET}\n`,
+      `PROFILE_MEDIA_PATH_SECRET=${SECRET}\nPII_ENCRYPTION_KEY=${PII_SECRET}\n${STRAVA_CONFIG_NAMES.map((name) => `${name}=${STRAVA_CONFIG[name]}`).join('\n')}\n`,
     );
     const runtime = JSON.parse(readFileSync(outputPath, 'utf8'));
     assert.ok(
@@ -399,13 +411,16 @@ test('workflow 在 baseline 和 deploy 前解析，部署使用临时替换配�
   );
   assert.match(workflow, /secrets\.PROFILE_MEDIA_PATH_SECRET/);
   assert.match(workflow, /secrets\.PII_ENCRYPTION_KEY/);
+  assert.match(workflow, /secrets\.STRAVA_CLIENT_SECRET/);
+  assert.match(workflow, /secrets\.STRAVA_TOKEN_ENCRYPTION_KEY/);
   assert.match(workflow, /purge_prelaunch_media_data:[\s\S]*type: boolean/);
   assert.match(
     workflow,
     /github\.event_name == 'workflow_dispatch'[\s\S]*DELETE_PRELAUNCH_MEDIA_DATA/,
   );
   assert.match(workflow, /cloudbase-prelaunch-media-purge\.mjs[\s\S]*--apply/);
-  assert.match(workflow, /cp "\$\{runtime_config\}" cloudbaserc\.json/);
+  assert.match(workflow, /install -m 600 "\$\{runtime_config\}" cloudbaserc\.json/);
+  assert.doesNotMatch(workflow, /cp "\$\{runtime_config\}" cloudbaserc\.json/);
   assert.match(workflow, /fn list --json > "\$\{functions_list\}"/);
   assert.match(workflow, /cloudbase-function-env\.mjs inventory/);
   assert.match(workflow, /jq -r '\.existing\[\]'/);
@@ -421,6 +436,8 @@ test('workflow 在 baseline 和 deploy 前解析，部署使用临时替换配�
   assert.match(workflow, /cloudbase-function-env\.mjs verify/);
   const reconciliation = workflow.slice(reconcile, verify);
   for (const functionName of [
+    'strava-bridge',
+    'strava-callback',
     'profile',
     'profile-media-cleanup',
     'admin-review',

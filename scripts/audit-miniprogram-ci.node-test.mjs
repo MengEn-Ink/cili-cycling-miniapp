@@ -54,6 +54,26 @@ test('新增告警、可修复依赖和过期例外都会阻断', () => {
   );
 });
 
+test('仅在审计修复预演实际消除漏洞时判定为可修复', () => {
+  const fixCandidate = report({ fixAvailable: true });
+  assert.doesNotThrow(() =>
+    assessAuditReport(
+      fixCandidate,
+      allowlist,
+      new Date('2026-10-17T00:00:00Z'),
+      report({ fixAvailable: false }),
+    ),
+  );
+  assert.throws(
+    () =>
+      assessAuditReport(fixCandidate, allowlist, new Date('2026-10-17T00:00:00Z'), {
+        vulnerabilities: {},
+        metadata: { vulnerabilities: {} },
+      }),
+    /可升级修复/,
+  );
+});
+
 test('上游修复后旧例外必须删除，避免永久豁免', () => {
   assert.throws(
     () =>

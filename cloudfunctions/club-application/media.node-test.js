@@ -190,6 +190,7 @@ test('俱乐部保存激活不同用途的 staged canonical 媒体', async () =>
         owner_openid: mediaOwner,
         category,
         status: 'unreferenced',
+        security_status: 'pass',
       }),
       activateProfileMedia: async (id) => activated.push(id),
     },
@@ -198,4 +199,173 @@ test('俱乐部保存激活不同用途的 staged canonical 媒体', async () =>
     new Date('2026-10-18T00:00:00.000Z'),
   );
   assert.deepEqual(activated, ['club-avatar', 'club-cover']);
+});
+
+test('俱乐部媒体只激活审核通过的新引用并兼容当前 active 存量引用', async () => {
+  process.env.PROFILE_MEDIA_PATH_SECRET = 'profile-media-secret-for-tests-32-bytes';
+  const crypto = require('node:crypto');
+  const { activateClubMediaReferences } = require('./media');
+  const owner = 'club-security-owner';
+  const alias = crypto
+    .createHmac('sha256', process.env.PROFILE_MEDIA_PATH_SECRET)
+    .update(owner)
+    .digest('hex')
+    .slice(0, 32);
+  const avatar = `cloud://env/profile-canonical/${alias}/club-avatar/${'c'.repeat(64)}/${'d'.repeat(64)}.jpg`;
+  const record = {
+    _id: 'club-media-security',
+    canonical_file_id: avatar,
+    owner_openid: owner,
+    category: 'club-avatar',
+    status: 'unreferenced',
+    security_status: 'retryable',
+  };
+  const tx = {
+    getProfileMediaByCanonical: async () => record,
+    activateProfileMedia: async () => assert.fail('retryable 媒体不得激活'),
+  };
+
+  await assert.rejects(
+    activateClubMediaReferences(
+      tx,
+      owner,
+      { avatar_file_id: avatar },
+      new Date('2026-10-18T00:00:00.000Z'),
+    ),
+    { code: 'MEDIA_SECURITY_RETRY_REQUIRED' },
+  );
+
+  record.status = 'active';
+  delete record.security_status;
+  await activateClubMediaReferences(
+    tx,
+    owner,
+    { avatar_file_id: avatar },
+    new Date('2026-10-18T00:00:00.000Z'),
+    { avatar_file_id: avatar },
+  );
+  await assert.rejects(
+    activateClubMediaReferences(
+      tx,
+      owner,
+      { avatar_file_id: avatar },
+      new Date('2026-10-18T00:00:00.000Z'),
+      { avatar_file_id: '' },
+    ),
+    { code: 'MEDIA_SECURITY_REQUIRED' },
+  );
+});
+
+test('唯一俱乐部拒绝新增未登记 staging 图片但允许原样保留存量引用', async () => {
+  const { activateClubMediaReferences } = require('./media');
+  const owner = 'legacy-club-owner';
+  const staging = `cloud://env/club-applications/${owner}/legacy-cover.jpg`;
+  const tx = {
+    getProfileMediaByCanonical: async () => assert.fail('legacy staging 不应查询 canonical 登记'),
+  };
+  await assert.rejects(
+    activateClubMediaReferences(
+      tx,
+      owner,
+      { cover_file_id: staging },
+      new Date('2026-10-22T00:00:00.000Z'),
+    ),
+    { code: 'MEDIA_REGISTRATION_INVALID' },
+  );
+  await activateClubMediaReferences(
+    tx,
+    owner,
+    { cover_file_id: staging },
+    new Date('2026-10-22T00:00:00.000Z'),
+    { cover_file_id: staging },
+  );
+});
+
+test('club response cannot re-sign personal profile assets from an old club snapshot or log private errors', async () => {
+  const personal =
+    'cloud://env/profile-canonical/' +
+    'a'.repeat(32) +
+    '/profile-avatar/' +
+    'b'.repeat(64) +
+    '/' +
+    'c'.repeat(64) +
+    '.jpg';
+  const calls = [];
+  const result = await resolveJoinableClubAvatars(
+    {
+      getTempFileURL: async ({ fileList }) => {
+        calls.push(fileList);
+        return {
+          fileList: fileList.map((fileID) => ({
+            fileID,
+            status: 0,
+            tempFileURL: 'https://temporary.example/private.jpg',
+          })),
+        };
+      },
+    },
+    [{ id: 'club', avatar_url: personal, cover_file_id: personal }],
+  );
+  assert.deepEqual(calls, []);
+  assert.equal(result[0].avatar_url, '');
+  assert.equal(result[0].cover_url, '');
+  const warnings = [];
+  const original = console.warn;
+  console.warn = (...args) => warnings.push(args);
+  try {
+    await resolveJoinableClubAvatars(
+      {
+        getTempFileURL: async () => {
+          throw new Error('private-file-id-and-phone-13812345678');
+        },
+      },
+      [{ id: 'club', avatar_url: 'cloud://env/clubs/avatar.jpg' }],
+    );
+  } finally {
+    console.warn = original;
+  }
+  assert.doesNotMatch(JSON.stringify(warnings), /13812345678|private-file/);
+});
+
+test('club response rejects legacy personal uploads and encoded personal URLs but keeps club media', async () => {
+  const alias = 'a'.repeat(32);
+  const privatePaths = [
+    `cloud://env/profiles/${alias}/123e4567-e89b-42d3-a456-426614174000.jpg`,
+    `cloud://env/profiles/${alias}/other/123e4567-e89b-42d3-a456-426614174000.jpg`,
+    `https://temporary.example/profiles/${alias}/ride/photo.jpg`,
+    `https://temporary.example/%70rofiles/${alias}/profile-avatar/photo.jpg`,
+  ];
+  const clubMedia = `cloud://env/profiles/${alias}/club-avatar/photo.jpg`;
+  const calls = [];
+  const result = await resolveJoinableClubAvatars(
+    {
+      getTempFileURL: async ({ fileList }) => {
+        calls.push(fileList);
+        return {
+          fileList: fileList.map((fileID) => ({
+            fileID,
+            status: 0,
+            tempFileURL: 'https://temporary.example/club.jpg',
+          })),
+        };
+      },
+    },
+    [
+      ...privatePaths.map((value, index) => ({
+        id: `private-${index}`,
+        avatar_url: value,
+        avatar_file_id: value,
+        cover_file_id: value,
+      })),
+      { id: 'club', avatar_url: clubMedia },
+    ],
+  );
+  assert.deepEqual(calls, [[clubMedia]]);
+  for (const value of result.slice(0, privatePaths.length)) {
+    assert.equal(value.avatar_url, '');
+    assert.equal(value.avatar_file_id, '');
+    assert.equal(value.cover_file_id, '');
+    assert.equal(value.cover_url, '');
+  }
+  assert.equal(result.at(-1).avatar_url, 'https://temporary.example/club.jpg');
 });

@@ -13,9 +13,22 @@ const RELEASE_NOTES = [
   {
     version: CLIENT_RELEASE_VERSION,
     date: '2026-10-22',
+    title: '隐私授权与内容安全保护升级',
+    summary: '公开资料、图片与 Strava 授权处理更稳妥，异常时保留原内容并支持安全重试。',
+    latest: true,
+    features: [
+      '公开昵称和照片仅在本人同意后展示，撤回后停止公开',
+      '头像、背景图及活动和俱乐部文字在保存前增加安全检查',
+      '图片检查未完成或未通过时保留原内容，避免未经确认的素材生效',
+      'Strava 授权撤销与资料清理增加重复操作保护和失败恢复',
+    ],
+  },
+  {
+    version: '2026.10.22.1',
+    date: '2026-10-22',
     title: '全页面信息密度与状态反馈统一升级',
     summary: '全部页面沿用沸点布局，以更紧凑的间距和一致状态层级提升浏览与操作效率。',
-    latest: true,
+    latest: false,
     features: [
       '活动、行程、身份、俱乐部与管理页面统一采用高信息密度间距',
       '保持大触控区域与清晰数字层级，同屏展示更多关键决策信息',
@@ -343,18 +356,27 @@ type StravaRowCopy = {
   description: string;
   action: string;
 };
-const STRAVA_COPY: Record<'connected' | 'disconnected' | 'pending' | 'error', StravaRowCopy> = {
+type StravaUiState = 'connected' | 'disconnected' | 'pending' | 'revoking' | 'manual' | 'error';
+const STRAVA_COPY: Record<StravaUiState, StravaRowCopy> = {
   disconnected: {
     description: '尚未连接 Strava，连接后可直接粘贴线路地址同步',
     action: '连接 ›',
   },
   connected: {
     description: '已连接',
-    action: '管理 ›',
+    action: '撤回 ›',
   },
   pending: {
     description: '授权链接已复制，请在浏览器完成后返回',
     action: '刷新 ›',
+  },
+  revoking: {
+    description: '正在撤回 Strava 连接，完成前不会继续同步',
+    action: '刷新 ›',
+  },
+  manual: {
+    description: '撤回未能自动完成，请稍后重试或在 Strava 中检查',
+    action: '检查 ›',
   },
   error: {
     description: '暂时无法获取同步状态，可稍后重试',
@@ -368,7 +390,8 @@ Page({
     currentRelease: RELEASE_NOTES[0],
     actionPending: false,
     isAdmin: false,
-    stravaState: 'disconnected' as 'connected' | 'disconnected' | 'pending' | 'error',
+    stravaState: 'disconnected' as StravaUiState,
+    stravaAuthorizationState: 'disconnected' as StravaRouteReadiness['state'],
     stravaAthleteName: '',
     stravaDescription: STRAVA_COPY.disconnected.description,
     stravaAction: STRAVA_COPY.disconnected.action,
@@ -387,11 +410,19 @@ Page({
     }
   },
   applyStravaReadiness(readiness: StravaRouteReadiness) {
-    const connected = readiness.state === 'connected';
-    const state: 'connected' | 'disconnected' = connected ? 'connected' : 'disconnected';
+    const state: StravaUiState =
+      readiness.state === 'authorizing'
+        ? 'pending'
+        : readiness.state === 'revocation_pending'
+          ? 'revoking'
+          : readiness.state === 'manual_review'
+            ? 'manual'
+            : readiness.state;
+    const connected = state === 'connected';
     const copy = STRAVA_COPY[state];
     this.setData({
       stravaState: state,
+      stravaAuthorizationState: readiness.state,
       stravaAthleteName: readiness.athleteName,
       stravaDescription:
         connected && readiness.athleteName ? `已连接 ${readiness.athleteName}` : copy.description,
@@ -418,15 +449,44 @@ Page({
   },
   async openStravaSync() {
     if (!this.data.isAdmin || this.data.actionPending) return;
-    if (this.data.stravaState === 'connected') {
-      // 已连接：刷新状态并反馈
-      this.setData({ actionPending: true });
-      try {
-        await this.loadStravaStatus();
-        wx.showToast({ title: 'Strava 已连接', icon: 'success' });
-      } finally {
-        this.setData({ actionPending: false });
-      }
+    if (this.data.stravaState === 'error') {
+      await this.loadStravaStatus();
+      return;
+    }
+    if (this.data.stravaAuthorizationState === 'connected') {
+      wx.showModal({
+        title: '撤回 Strava 连接',
+        content: '撤回后将停止通过当前账号同步线路，已发布活动中的路线不会自动删除。',
+        confirmText: '确认撤回',
+        success: async (result: { confirm?: boolean }) => {
+          if (!result.confirm) return;
+          this.setData({ actionPending: true });
+          try {
+            const readiness = await rideService.disconnectStravaRouteAuthorization();
+            this.applyStravaReadiness(readiness);
+            wx.showToast({
+              title: readiness.state === 'disconnected' ? 'Strava 连接已撤回' : '撤回请求已提交',
+              icon: 'success',
+            });
+          } catch {
+            this.setData({
+              stravaState: 'error',
+              stravaDescription: '暂时无法撤回连接，请稍后重试',
+              stravaAction: STRAVA_COPY.error.action,
+            });
+          } finally {
+            this.setData({ actionPending: false });
+          }
+        },
+      });
+      return;
+    }
+    if (
+      ['authorizing', 'revocation_pending', 'manual_review'].includes(
+        this.data.stravaAuthorizationState,
+      )
+    ) {
+      await this.loadStravaStatus();
       return;
     }
     if (this.data.stravaState === 'pending' && this.data.stravaAuthorizationUrl) {

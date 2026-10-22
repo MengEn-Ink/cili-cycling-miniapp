@@ -38,6 +38,7 @@ function store(seed = {}) {
     state,
     transaction: (work) =>
       work({
+        getProfile: async (openid) => ({ _id: openid, generation: 1 }),
         getAdmin: async () => (seed.admin === false ? undefined : { _id: 'admin', enabled: true }),
         getRegistration: async () => state.registration,
         getActivity: async () => state.activity,

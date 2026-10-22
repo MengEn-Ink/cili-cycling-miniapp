@@ -18,6 +18,12 @@ const {
   publicBackgroundSource,
 } = require('./public-avatar');
 const { parseListPageRequest, listActivityPage } = require('./list-page');
+const {
+  visibleProfile,
+  projectPrivateRegistration,
+  publicConsentStatus,
+  safeClubMedia,
+} = require('./domain/privacy');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const _ = db.command;
@@ -50,7 +56,67 @@ function safeHttpsUrl(value) {
   }
 }
 
+function safeActivityMedia(value, purpose) {
+  if (value === undefined || value === null) return value;
+  if (typeof value !== 'string' || value.length > 2048) return '';
+  try {
+    const url = new URL(value);
+    if (!['cloud:', 'https:'].includes(url.protocol)) return '';
+    const segments = decodeURIComponent(url.pathname).toLowerCase().split('/').filter(Boolean);
+    if (segments.includes('profile-avatar') || segments.includes('profile-background')) return '';
+    // A retained activity slot is not disclosure consent for a personal upload.
+    for (let index = 0; index < segments.length; index += 1) {
+      if (segments[index] === 'profile-canonical' && segments[index + 2] !== purpose) return '';
+      if (
+        segments[index] === 'profiles' &&
+        segments[index + 2] !== purpose &&
+        !(segments[index + 1] === 'activity-media' && purpose === 'activity-image') &&
+        !(segments[index + 1] === 'activity-group-qr' && purpose === 'activity-group-qr')
+      )
+        return '';
+    }
+    return value;
+  } catch {
+    return '';
+  }
+}
+
 async function resolveActivityMedia(activities) {
+  activities = activities.map((activity) => ({
+    ...activity,
+    cover_image: safeActivityMedia(activity.cover_image, 'activity-image'),
+    images: Array.isArray(activity.images)
+      ? activity.images.map((value) => safeActivityMedia(value, 'activity-image')).filter(Boolean)
+      : activity.images,
+    group_qr_code: safeActivityMedia(activity.group_qr_code, 'activity-group-qr'),
+    ...(activity.route && typeof activity.route === 'object'
+      ? {
+          route: {
+            ...activity.route,
+            generated_preview_file_id: safeActivityMedia(
+              activity.route.generated_preview_file_id,
+              'activity-route-preview',
+            ),
+            generated_preview_url: safeActivityMedia(
+              activity.route.generated_preview_url,
+              'activity-route-preview',
+            ),
+            preview_image_url: safeActivityMedia(
+              activity.route.preview_image_url,
+              'activity-route-preview',
+            ),
+          },
+        }
+      : {}),
+    ...(activity.club_identity
+      ? {
+          club_identity: {
+            ...activity.club_identity,
+            avatar_url: safeClubMedia(activity.club_identity.avatar_url),
+          },
+        }
+      : {}),
+  }));
   const fileIds = [
     ...new Set(
       activities.flatMap((activity) =>
@@ -58,7 +124,7 @@ async function resolveActivityMedia(activities) {
           activity.cover_image,
           activity.group_qr_code,
           activity.route && activity.route.generated_preview_file_id,
-          activity.club_identity && activity.club_identity.avatar_url,
+          safeClubMedia(activity.club_identity?.avatar_url),
           ...(Array.isArray(activity.images) ? activity.images : []),
         ].filter((value) => typeof value === 'string' && value.startsWith('cloud://')),
       ),
@@ -78,12 +144,14 @@ async function resolveActivityMedia(activities) {
     if (fileIds.includes(item && item.fileID) && url && !resolved.has(item.fileID))
       resolved.set(item.fileID, url);
   }
-  const resolve = (value) => resolved.get(value) || value;
+  const resolve = (value, purpose) => safeActivityMedia(resolved.get(value) || value, purpose);
   return activities.map((activity) => ({
     ...activity,
-    cover_image: resolve(activity.cover_image),
-    images: Array.isArray(activity.images) ? activity.images.map(resolve) : activity.images,
-    group_qr_code: resolve(activity.group_qr_code),
+    cover_image: resolve(activity.cover_image, 'activity-image'),
+    images: Array.isArray(activity.images)
+      ? activity.images.map((value) => resolve(value, 'activity-image')).filter(Boolean)
+      : activity.images,
+    group_qr_code: resolve(activity.group_qr_code, 'activity-group-qr'),
     ...(activity.club_identity && typeof activity.club_identity === 'object'
       ? {
           club_identity: {
@@ -102,7 +170,10 @@ async function resolveActivityMedia(activities) {
             ...activity.route,
             ...(resolved.has(activity.route.generated_preview_file_id)
               ? {
-                  generated_preview_url: resolved.get(activity.route.generated_preview_file_id),
+                  generated_preview_url: resolve(
+                    activity.route.generated_preview_file_id,
+                    'activity-route-preview',
+                  ),
                 }
               : {}),
           },
@@ -176,25 +247,32 @@ function timestamp(value) {
 }
 
 function publicAttendee(registration, profile, media = {}, viewerOpenid = '') {
+  const projected = projectPrivateRegistration(registration, profile);
+  if (projected.profile_snapshot !== registration.profile_snapshot) {
+    media = {};
+    profile = {};
+  }
+  registration = projected;
+  profile = visibleProfile(profile);
+  const consent = publicConsentStatus(profile);
   const snapshot = registration && registration.profile_snapshot;
+  const isSelf = Boolean(viewerOpenid && registration.openid === viewerOpenid);
+  const canShowNickname = isSelf || consent.nickname.consented;
+  const canShowMedia = isSelf || consent.media.consented;
   return {
     id: typeof registration._id === 'string' ? registration._id : '',
     display_name:
-      profile && typeof profile.nickname === 'string'
+      canShowNickname && typeof profile?.nickname === 'string'
         ? profile.nickname
-        : snapshot && typeof snapshot.nickname === 'string'
+        : isSelf && snapshot && typeof snapshot.nickname === 'string'
           ? snapshot.nickname
-          : '',
-    gender: normalizeGender(
-      snapshot && typeof snapshot.gender === 'string'
-        ? snapshot.gender
-        : profile && typeof profile.gender === 'string'
-          ? profile.gender
-          : '',
-    ),
-    avatar_url: safeHttpsUrl(media.avatarUrl),
-    background_url: safeHttpsUrl(media.backgroundUrl),
-    is_self: Boolean(viewerOpenid && registration.openid === viewerOpenid),
+          : '匿名骑友',
+    gender: canShowNickname
+      ? normalizeGender(profile?.gender || (isSelf ? snapshot?.gender : ''))
+      : '',
+    avatar_url: canShowMedia ? safeHttpsUrl(media.avatarUrl) : '',
+    background_url: canShowMedia ? safeHttpsUrl(media.backgroundUrl) : '',
+    is_self: isSelf,
     status: registration.status,
   };
 }
@@ -252,7 +330,8 @@ async function loadProfiles(openids) {
         .limit(20)
         .get();
       for (const profile of Array.isArray(response.data) ? response.data : []) {
-        if (profile && batch.includes(profile._id)) profiles.set(profile._id, profile);
+        if (profile && batch.includes(profile._id))
+          profiles.set(profile._id, visibleProfile(profile));
       }
     } catch {
       // 资料读取失败时调用方使用空头像兜底，不阻断主流程。
@@ -264,15 +343,16 @@ async function loadProfiles(openids) {
 // 依据资料批量解析公开头像与骑行名片背景的服务端签名临时访问地址。
 // canonical fileId 仅在云函数内部用于签名，不下发客户端，避免受保护存储权限失败或标识泄露。
 async function resolveProfileMediaTempUrls(entries, { includeBackground = false } = {}) {
-  const sourceMediaIds = [
+  const references = [
     ...new Set(
       entries.flatMap((entry) => {
         const avatar = publicAvatarSource(entry.profile);
         const background = includeBackground ? publicBackgroundSource(entry.profile) : undefined;
-        return [avatar, background && background.fileId].filter(Boolean).map(mediaDocumentId);
+        return [avatar, background && background.fileId].filter(Boolean);
       }),
     ),
   ];
+  const sourceMediaIds = references.map(mediaDocumentId);
   const mediaRecords = new Map();
   for (let offset = 0; offset < sourceMediaIds.length; offset += 20) {
     const batch = sourceMediaIds.slice(offset, offset + 20);
@@ -287,6 +367,34 @@ async function resolveProfileMediaTempUrls(entries, { includeBackground = false 
       }
     } catch {
       // 媒体登记读取失败时 fail closed，仅隐藏受影响图片。
+    }
+  }
+  const canonicalReferences = references.filter((value) => value.includes('/profile-canonical/'));
+  for (let offset = 0; offset < canonicalReferences.length; offset += 20) {
+    const batch = canonicalReferences.slice(offset, offset + 20);
+    try {
+      const response = await db
+        .collection('profile_media')
+        .where({ canonical_file_id: _.in(batch) })
+        .limit(100)
+        .get();
+      // A capped result cannot establish uniqueness across the full lookup.
+      if (response.data?.length >= 100) {
+        for (const value of batch) mediaRecords.delete(mediaDocumentId(value));
+        continue;
+      }
+      const byReference = new Map();
+      for (const record of Array.isArray(response.data) ? response.data : []) {
+        if (!batch.includes(record?.canonical_file_id)) continue;
+        const id = mediaDocumentId(record.canonical_file_id);
+        byReference.set(id, byReference.has(id) ? null : record);
+      }
+      for (const value of batch) {
+        const id = mediaDocumentId(value);
+        mediaRecords.set(id, byReference.get(id) || null);
+      }
+    } catch {
+      for (const value of batch) mediaRecords.delete(mediaDocumentId(value));
     }
   }
   const canonicalByOpenid = new Map();
@@ -357,7 +465,10 @@ async function loadPublishers(rawActivities) {
   for (const openid of openids) {
     const profile = profiles.get(openid);
     result.set(openid, {
-      nickname: profile && typeof profile.nickname === 'string' ? profile.nickname : '',
+      nickname:
+        publicConsentStatus(profile).nickname.consented && profile?.nickname
+          ? profile.nickname
+          : '匿名骑友',
       avatar_url: profileMedia.get(openid)?.avatarUrl || '',
     });
   }

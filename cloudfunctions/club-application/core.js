@@ -2,6 +2,7 @@
 
 const crypto = require('node:crypto');
 const { activateClubMediaReferences, trustedCover } = require('./media');
+const { assertCheckedContent, checkTextContent } = require('./content-contract');
 
 class ClubApplicationError extends Error {
   constructor(code, message) {
@@ -13,6 +14,37 @@ class ClubApplicationError extends Error {
 
 function fail(code, message) {
   throw new ClubApplicationError(code, message);
+}
+
+async function checkClubContent(openid, value, currentVersion, store, contentService) {
+  const fields = { name: value.name, introduction: value.introduction };
+  const checked = await checkTextContent({
+    openid,
+    scene: 4,
+    fields,
+    whitelist: { name: 30, introduction: 500 },
+    currentVersion,
+    msgSecCheck: contentService.msgSecCheck || store.msgSecCheck,
+  });
+  assertCheckedContent(checked, fields, currentVersion);
+  return checked;
+}
+
+function assertClubContent(checked, value, currentVersion) {
+  assertCheckedContent(
+    checked,
+    { name: value.name, introduction: value.introduction },
+    currentVersion,
+  );
+}
+
+function clubContentRecord(checked) {
+  return {
+    digest: checked.digest,
+    version: checked.currentVersion,
+    trace_id: checked.traceId,
+    ...(checked.traceIds?.length > 1 ? { trace_ids: checked.traceIds } : {}),
+  };
 }
 
 const text = (value, label, min, max) => {
@@ -130,7 +162,7 @@ async function saveDraft(store, { openid, input }, now) {
       updated_at: now.toISOString(),
     };
     await tx.putApplication(id, next);
-    await activateClubMediaReferences(tx, openid, next, now);
+    await activateClubMediaReferences(tx, openid, next, now, existing);
     return project(next);
   });
 }
@@ -159,7 +191,7 @@ async function submitApplication(store, { openid, input, requestId }, now) {
       updated_at: now.toISOString(),
     };
     await tx.putApplication(id, next);
-    await activateClubMediaReferences(tx, openid, next, now);
+    await activateClubMediaReferences(tx, openid, next, now, existing);
     await tx.addAudit({
       actor_openid: openid,
       action: 'club_application_submitted',
@@ -455,10 +487,43 @@ async function getManagedClub(store, { openid, clubId: requestedClubId }) {
   });
 }
 
+async function managedClubWriteContext(tx, { safeClubId, openid, safeRequestId, value }) {
+  await requireClubManager(tx, safeClubId, openid);
+  const club = await tx.getClub(safeClubId);
+  if (!club || club.approval_status !== 'approved' || club.status !== 'active')
+    fail('CLUB_UNAVAILABLE', '俱乐部暂不可管理');
+  const operationId = profileRequestId(safeClubId, safeRequestId);
+  const previousOperation = await tx.getAudit(operationId);
+  if (
+    previousOperation?.action === 'club_profile_updated' &&
+    previousOperation?.target_id === safeClubId &&
+    previousOperation?.request_id === safeRequestId &&
+    previousOperation?.result
+  )
+    return { existingResult: previousOperation.result };
+  const capacityClub = await ensureClubCapacity(tx, safeClubId, club);
+  if (value.max_members < capacityClub.member_count)
+    fail('MAX_MEMBERS_BELOW_CURRENT', '人数上限不能低于当前成员数');
+  const currentProfile = projectManagedClub(capacityClub);
+  if (
+    value.avatar_url !== currentProfile.avatar_file_id &&
+    !ownedClubMedia(value.avatar_url, openid, 'club-avatar')
+  )
+    fail('VALIDATION_FAILED', '请重新上传俱乐部头像');
+  if (
+    value.cover_file_id !== currentProfile.cover_file_id &&
+    value.cover_file_id &&
+    !ownedClubMedia(value.cover_file_id, openid, 'club-cover')
+  )
+    fail('VALIDATION_FAILED', '请重新上传俱乐部背景照片');
+  return { capacityClub, currentProfile, operationId };
+}
+
 async function updateManagedClub(
   store,
   { openid, clubId: requestedClubId, requestId, expectedUpdatedAt, input },
   now,
+  contentService = {},
 ) {
   const safeClubId = text(requestedClubId, '俱乐部 ID', 1, 128);
   if (!/^club_[a-f0-9]{64}$/.test(safeClubId)) fail('VALIDATION_FAILED', '俱乐部 ID 无效');
@@ -466,46 +531,49 @@ async function updateManagedClub(
   if (typeof expectedUpdatedAt !== 'string' || expectedUpdatedAt.length > 64)
     fail('VALIDATION_FAILED', '俱乐部资料版本无效');
   const value = normalizeManagedClubInput(input);
-  return store.transaction(async (tx) => {
-    await requireClubManager(tx, safeClubId, openid);
-    const club = await tx.getClub(safeClubId);
-    if (!club || club.approval_status !== 'approved' || club.status !== 'active')
-      fail('CLUB_UNAVAILABLE', '俱乐部暂不可管理');
-    const operationId = profileRequestId(safeClubId, safeRequestId);
-    const previousOperation = await tx.getAudit(operationId);
-    if (
-      previousOperation?.action === 'club_profile_updated' &&
-      previousOperation?.target_id === safeClubId &&
-      previousOperation?.request_id === safeRequestId &&
-      previousOperation?.result
-    )
-      return previousOperation.result;
-    const capacityClub = await ensureClubCapacity(tx, safeClubId, club);
-    if (value.max_members < capacityClub.member_count)
-      fail('MAX_MEMBERS_BELOW_CURRENT', '人数上限不能低于当前成员数');
-    if (projectManagedClub(capacityClub).updated_at !== expectedUpdatedAt)
+  const contentPlan = await store.transaction(async (tx) => {
+    const context = await managedClubWriteContext(tx, {
+      safeClubId,
+      openid,
+      safeRequestId,
+      value,
+    });
+    if (context.existingResult) return context;
+    if (context.currentProfile.updated_at !== expectedUpdatedAt)
       fail('CLUB_PROFILE_CONFLICT', '俱乐部资料已被其他管理员更新，请重新加载后再修改');
-    const currentProfile = projectManagedClub(capacityClub);
-    // 管理员可以保留负责人此前上传的媒体；替换时只能使用本人目录，避免引用他人私有文件。
-    if (
-      value.avatar_url !== currentProfile.avatar_file_id &&
-      !ownedClubMedia(value.avatar_url, openid, 'club-avatar')
-    )
-      fail('VALIDATION_FAILED', '请重新上传俱乐部头像');
-    if (
-      value.cover_file_id !== currentProfile.cover_file_id &&
-      value.cover_file_id &&
-      !ownedClubMedia(value.cover_file_id, openid, 'club-cover')
-    )
-      fail('VALIDATION_FAILED', '请重新上传俱乐部背景照片');
+    return { currentVersion: context.currentProfile.updated_at };
+  });
+  if (contentPlan.existingResult) return contentPlan.existingResult;
+  const checked = await checkClubContent(
+    openid,
+    { name: value.name, introduction: value.introduction },
+    contentPlan.currentVersion,
+    store,
+    contentService,
+  );
+  return store.transaction(async (tx) => {
+    const context = await managedClubWriteContext(tx, {
+      safeClubId,
+      openid,
+      safeRequestId,
+      value,
+    });
+    if (context.existingResult) return context.existingResult;
+    const { capacityClub, currentProfile, operationId } = context;
+    if (checked.currentVersion !== currentProfile.updated_at)
+      assertClubContent(checked, value, currentProfile.updated_at);
+    if (currentProfile.updated_at !== expectedUpdatedAt)
+      fail('CLUB_PROFILE_CONFLICT', '俱乐部资料已被其他管理员更新，请重新加载后再修改');
+    assertClubContent(checked, value, currentProfile.updated_at);
     const next = {
       ...capacityClub,
       ...value,
+      content_check: { ...clubContentRecord(checked), checked_at: now.toISOString() },
       updated_at: now.toISOString(),
     };
     const result = projectManagedClub(next);
     await tx.putClub(safeClubId, next);
-    await activateClubMediaReferences(tx, openid, next, now);
+    await activateClubMediaReferences(tx, openid, next, now, capacityClub);
     await tx.putAudit(operationId, {
       _id: operationId,
       actor_openid: openid,
@@ -536,6 +604,30 @@ async function requirePlatformAdmin(tx, openid) {
   const admin = await tx.getAdmin(openid);
   if (!admin || admin._id !== openid || admin.enabled === false)
     fail('ADMIN_REQUIRED', '需要管理员权限');
+}
+
+async function soleClubCreateContext(tx, { adminOpenid, safeRequestId, existingClubId, value }) {
+  await requirePlatformAdmin(tx, adminOpenid);
+  const operationId = soleClubOperationId(safeRequestId);
+  const previousOperation = await tx.getAudit(operationId);
+  if (
+    previousOperation?.action === 'sole_club_created' &&
+    previousOperation?.target_id &&
+    previousOperation?.result
+  )
+    return { existingResult: previousOperation.result };
+  if (existingClubId) fail('CLUB_ALREADY_EXISTS', SOLE_CLUB_EXISTS_MESSAGE);
+  const reserved = await tx.getClub(SOLE_CLUB_ID);
+  if (reserved) fail('CLUB_ALREADY_EXISTS', SOLE_CLUB_EXISTS_MESSAGE);
+  if (!trustedCover(value.avatar_url, adminOpenid, 'club-avatar'))
+    fail('VALIDATION_FAILED', '请重新上传俱乐部头像');
+  if (
+    Object.prototype.hasOwnProperty.call(value, 'cover_file_id') &&
+    value.cover_file_id &&
+    !trustedCover(value.cover_file_id, adminOpenid, 'club-cover')
+  )
+    fail('VALIDATION_FAILED', '请重新上传俱乐部背景照片');
+  return { operationId };
 }
 
 function normalizeSoleClubInput(raw) {
@@ -571,32 +663,34 @@ async function getSoleClub(store, { adminOpenid, clubId: requestedClubId }) {
   });
 }
 
-async function createSoleClub(store, { adminOpenid, existingClubId, input, requestId }, now) {
+async function createSoleClub(
+  store,
+  { adminOpenid, existingClubId, input, requestId },
+  now,
+  contentService = {},
+) {
   const safeRequestId = text(requestId, '创建请求 ID', 8, 128);
   const value = normalizeSoleClubInput(input);
+  const contentPlan = await store.transaction((tx) =>
+    soleClubCreateContext(tx, {
+      adminOpenid,
+      safeRequestId,
+      existingClubId,
+      value,
+    }),
+  );
+  if (contentPlan.existingResult) return contentPlan.existingResult;
+  const checked = await checkClubContent(adminOpenid, value, 0, store, contentService);
   return store.transaction(async (tx) => {
-    await requirePlatformAdmin(tx, adminOpenid);
-    const operationId = soleClubOperationId(safeRequestId);
-    const previousOperation = await tx.getAudit(operationId);
-    if (
-      previousOperation?.action === 'sole_club_created' &&
-      previousOperation?.target_id &&
-      previousOperation?.result
-    )
-      return previousOperation.result;
-    // 旧审批流可能已用其他 ID 创建过俱乐部；事务外扫描结果由调用方传入，发现任意俱乐部即拒绝。
-    if (existingClubId) fail('CLUB_ALREADY_EXISTS', SOLE_CLUB_EXISTS_MESSAGE);
-    // 固定 ID 上的 get→put 让并发首次创建在同一文档竞争，第二个事务冲突失败。
-    const reserved = await tx.getClub(SOLE_CLUB_ID);
-    if (reserved) fail('CLUB_ALREADY_EXISTS', SOLE_CLUB_EXISTS_MESSAGE);
-    if (!trustedCover(value.avatar_url, adminOpenid, 'club-avatar'))
-      fail('VALIDATION_FAILED', '请重新上传俱乐部头像');
-    if (
-      Object.prototype.hasOwnProperty.call(value, 'cover_file_id') &&
-      value.cover_file_id &&
-      !trustedCover(value.cover_file_id, adminOpenid, 'club-cover')
-    )
-      fail('VALIDATION_FAILED', '请重新上传俱乐部背景照片');
+    const context = await soleClubCreateContext(tx, {
+      adminOpenid,
+      safeRequestId,
+      existingClubId,
+      value,
+    });
+    if (context.existingResult) return context.existingResult;
+    const { operationId } = context;
+    assertClubContent(checked, value, 0);
     const timestamp = now.toISOString();
     const next = {
       _id: SOLE_CLUB_ID,
@@ -614,6 +708,7 @@ async function createSoleClub(store, { adminOpenid, existingClubId, input, reque
       owner_openid: adminOpenid,
       approval_status: 'approved',
       status: 'active',
+      content_check: { ...clubContentRecord(checked), checked_at: timestamp },
       source: 'admin_bootstrap',
       created_at: timestamp,
       updated_at: timestamp,
@@ -635,10 +730,42 @@ async function createSoleClub(store, { adminOpenid, existingClubId, input, reque
   });
 }
 
+async function soleClubUpdateContext(tx, { adminOpenid, safeClubId, safeRequestId, value }) {
+  await requirePlatformAdmin(tx, adminOpenid);
+  const club = await tx.getClub(safeClubId);
+  if (!club || club.approval_status !== 'approved' || club.status !== 'active')
+    fail('CLUB_UNAVAILABLE', '俱乐部暂不可管理');
+  const operationId = profileRequestId(safeClubId, safeRequestId);
+  const previousOperation = await tx.getAudit(operationId);
+  if (
+    previousOperation?.action === 'sole_club_profile_updated' &&
+    previousOperation?.target_id === safeClubId &&
+    previousOperation?.request_id === safeRequestId &&
+    previousOperation?.result
+  )
+    return { existingResult: previousOperation.result };
+  const currentProfile = projectManagedClub(club);
+  const hasCover = Object.prototype.hasOwnProperty.call(value, 'cover_file_id');
+  if (
+    value.avatar_url !== currentProfile.avatar_file_id &&
+    !trustedCover(value.avatar_url, adminOpenid, 'club-avatar')
+  )
+    fail('VALIDATION_FAILED', '请重新上传俱乐部头像');
+  if (
+    hasCover &&
+    value.cover_file_id !== currentProfile.cover_file_id &&
+    value.cover_file_id &&
+    !trustedCover(value.cover_file_id, adminOpenid, 'club-cover')
+  )
+    fail('VALIDATION_FAILED', '请重新上传俱乐部背景照片');
+  return { club, currentProfile, hasCover, operationId };
+}
+
 async function updateSoleClub(
   store,
   { adminOpenid, clubId: requestedClubId, requestId, expectedUpdatedAt, input },
   now,
+  contentService = {},
 ) {
   const safeClubId = text(requestedClubId, '俱乐部 ID', 1, 128);
   if (!/^club_[a-f0-9]{64}$/.test(safeClubId)) fail('VALIDATION_FAILED', '俱乐部 ID 无效');
@@ -646,36 +773,40 @@ async function updateSoleClub(
   if (typeof expectedUpdatedAt !== 'string' || expectedUpdatedAt.length > 64)
     fail('VALIDATION_FAILED', '俱乐部资料版本无效');
   const value = normalizeSoleClubInput(input);
+  const contentPlan = await store.transaction(async (tx) => {
+    const context = await soleClubUpdateContext(tx, {
+      adminOpenid,
+      safeClubId,
+      safeRequestId,
+      value,
+    });
+    if (context.existingResult) return context;
+    if (context.currentProfile.updated_at !== expectedUpdatedAt)
+      fail('CLUB_PROFILE_CONFLICT', '俱乐部资料已被其他管理员更新，请重新加载后再修改');
+    return { currentVersion: context.currentProfile.updated_at };
+  });
+  if (contentPlan.existingResult) return contentPlan.existingResult;
+  const checked = await checkClubContent(
+    adminOpenid,
+    value,
+    contentPlan.currentVersion,
+    store,
+    contentService,
+  );
   return store.transaction(async (tx) => {
-    await requirePlatformAdmin(tx, adminOpenid);
-    const club = await tx.getClub(safeClubId);
-    if (!club || club.approval_status !== 'approved' || club.status !== 'active')
-      fail('CLUB_UNAVAILABLE', '俱乐部暂不可管理');
-    const operationId = profileRequestId(safeClubId, safeRequestId);
-    const previousOperation = await tx.getAudit(operationId);
-    if (
-      previousOperation?.action === 'sole_club_profile_updated' &&
-      previousOperation?.target_id === safeClubId &&
-      previousOperation?.request_id === safeRequestId &&
-      previousOperation?.result
-    )
-      return previousOperation.result;
-    const currentProfile = projectManagedClub(club);
+    const context = await soleClubUpdateContext(tx, {
+      adminOpenid,
+      safeClubId,
+      safeRequestId,
+      value,
+    });
+    if (context.existingResult) return context.existingResult;
+    const { club, currentProfile, hasCover, operationId } = context;
+    if (checked.currentVersion !== currentProfile.updated_at)
+      assertClubContent(checked, value, currentProfile.updated_at);
     if (currentProfile.updated_at !== expectedUpdatedAt)
       fail('CLUB_PROFILE_CONFLICT', '俱乐部资料已被其他管理员更新，请重新加载后再修改');
-    const hasCover = Object.prototype.hasOwnProperty.call(value, 'cover_file_id');
-    if (
-      value.avatar_url !== currentProfile.avatar_file_id &&
-      !trustedCover(value.avatar_url, adminOpenid, 'club-avatar')
-    )
-      fail('VALIDATION_FAILED', '请重新上传俱乐部头像');
-    if (
-      hasCover &&
-      value.cover_file_id !== currentProfile.cover_file_id &&
-      value.cover_file_id &&
-      !trustedCover(value.cover_file_id, adminOpenid, 'club-cover')
-    )
-      fail('VALIDATION_FAILED', '请重新上传俱乐部背景照片');
+    assertClubContent(checked, value, currentProfile.updated_at);
     const next = {
       ...club,
       name: value.name,
@@ -683,11 +814,12 @@ async function updateSoleClub(
       introduction: value.introduction,
       avatar_url: value.avatar_url,
       ...(hasCover ? { cover_file_id: value.cover_file_id } : {}),
+      content_check: { ...clubContentRecord(checked), checked_at: now.toISOString() },
       updated_at: now.toISOString(),
     };
     const result = { exists: true, club: projectManagedClub(next) };
     await tx.putClub(safeClubId, next);
-    await activateClubMediaReferences(tx, adminOpenid, next, now);
+    await activateClubMediaReferences(tx, adminOpenid, next, now, club);
     await tx.putAudit(operationId, {
       _id: operationId,
       actor_openid: adminOpenid,

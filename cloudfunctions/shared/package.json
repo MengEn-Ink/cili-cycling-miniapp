@@ -6,9 +6,10 @@
   "files": [
     "index.js",
     "domain.js",
-    "use-cases.js"
+    "use-cases.js",
+    "privacy.js"
   ],
   "scripts": {
-    "test": "node --test domain.node-test.js"
+    "test": "node --test domain.node-test.js privacy.node-test.js"
   }
 }

@@ -11,6 +11,7 @@ const {
   verifyUploadedImageObject,
   verifyUploadedMedia,
 } = require('./core');
+const { normalizeCheckedImage } = require('./media-transform');
 
 async function canonicalizeClientMedia({
   openid,
@@ -18,11 +19,13 @@ async function canonicalizeClientMedia({
   category,
   origin,
   requestId,
+  generation,
   mediaSecret,
   getTempFileURL,
   uploadFile,
   store,
   verifyImage = verifyUploadedImageObject,
+  transformImage = normalizeCheckedImage,
   now = new Date(),
 }) {
   const sourceIntentId = clientUploadIntentId(mediaPath(fileId));
@@ -40,6 +43,10 @@ async function canonicalizeClientMedia({
     });
   const mediaId = mediaDocumentId(fileId);
   mediaRegistration(fileId, category, origin, openid, mediaSecret, now);
+  if (store.assertWritable) {
+    await store.assertWritable(openid, generation);
+    await store.assertWritable(openid, sourceIntent?.generation);
+  }
   const existing = await store.getMedia(mediaId);
   if (existing) {
     const validated = mediaRegistration(
@@ -51,11 +58,12 @@ async function canonicalizeClientMedia({
       now,
       existing,
     );
+    if (store.assertWritable) await store.assertWritable(openid, validated.generation);
     if (canonicalFileForRecord(validated, fileId, openid, mediaSecret)) return validated;
   }
 
   const tempFileURL = await verifyUploadedMedia(fileId, getTempFileURL);
-  const verified = await verifyImage(tempFileURL);
+  const verified = await transformImage(await verifyImage(tempFileURL));
   const canonicalIntent = canonicalUploadIntent(
     openid,
     fileId,
@@ -64,6 +72,7 @@ async function canonicalizeClientMedia({
     now,
     category,
   );
+  if (sourceIntent?.generation !== undefined) canonicalIntent.generation = sourceIntent.generation;
   await store.prepareCanonicalUpload(openid, sourceIntentId, canonicalIntent, mediaSecret, now);
   const uploaded = await uploadFile({
     cloudPath: canonicalIntent.cloud_path,

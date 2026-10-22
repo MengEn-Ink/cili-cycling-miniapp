@@ -738,10 +738,17 @@
     settings: () => {
       const [version, title, summary] = releaseNotes[0];
       const admin = is('admin');
+      const stravaState = is('strava-authorizing')
+        ? { description: '连接处理中，完成后返回刷新状态', action: '刷新' }
+        : is('strava-revoking')
+          ? { description: '正在撤回 Strava 连接，完成前不会继续同步', action: '刷新' }
+          : is('strava-manual')
+            ? { description: '撤回未能自动完成，请稍后重试或在 Strava 中检查', action: '检查' }
+            : { description: '已连接，可用于创建活动时同步线路', action: '撤回' };
       const managementRow = (titleText, description, actionText, action) =>
         `<button class="settings-management-row" data-action="${action}"><span class="settings-management-copy"><b>${titleText}</b><small>${description}</small></span><span class="settings-management-action">${actionText} ›</span></button>`;
       const stravaRow = admin
-        ? `<button class="settings-management-row settings-management-row--strava" data-action="settings-strava-sync"><span class="settings-management-copy"><b>同步 Strava 线路信息</b><small>管理授权状态，用于创建活动时直接选用线路</small></span><span class="settings-management-strava"><svg class="strava-mark" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" fill="#fc4c02"/></svg><span class="strava-wordmark">Strava</span><span class="settings-management-action">管理 ›</span></span></button>`
+        ? `<button class="settings-management-row settings-management-row--strava" data-action="settings-strava-sync"><span class="settings-management-copy"><b>同步 Strava 线路信息</b><small>${stravaState.description}</small></span><span class="settings-management-strava"><svg class="strava-mark" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" fill="#fc4c02"/></svg><span class="strava-wordmark">Strava</span><span class="settings-management-action">${stravaState.action} ›</span></span></button>`
         : '';
       return `<div class="pg settings-page" data-viewer="${admin ? 'admin' : 'rider'}"><h2 class="page-title">设置</h2><p class="page-sub">管理活动通知、隐私与本地缓存，查看当前版本更新</p>
       <section class="card settings-management-card">${cardHead('01', '常用管理')}
@@ -754,13 +761,13 @@
       </section>
       <section class="card settings-release-card">${cardHead('02', 'App 更新', '', '当前版本的更新概览')}
         <div class="release release-current">
-          <div class="release-meta-row"><code>V${version}</code>${tag('solid', '当前版本')}<span class="release-date">2026.10.21</span></div>
+          <div class="release-meta-row"><code>V${version}</code>${tag('solid', '当前版本')}<span class="release-date">2026.10.22</span></div>
           <p class="release-title">${title}</p>
           <p class="release-summary">${summary}</p>
           <ul class="release-features">
-            <li><span class="feature-arrow" aria-hidden="true">→</span><span>${admin ? '管理员可同步 Strava 线路信息，骑友端不出现该入口' : '创建活动的管理员可同步 Strava 线路信息，直接用于本次活动'}</span></li>
-            <li><span class="feature-arrow" aria-hidden="true">→</span><span>创建活动的报名截止默认按活动开始日 00:00 自动设置</span></li>
-            <li><span class="feature-arrow" aria-hidden="true">→</span><span>Strava 线路旁可通过「+」补充本地路线文件</span></li>
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>公开昵称和照片仅在本人同意后展示，撤回后停止公开</span></li>
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>头像、背景图及活动和俱乐部文字在保存前增加安全检查</span></li>
+            <li><span class="feature-arrow" aria-hidden="true">→</span><span>图片检查未完成或未通过时保留原内容</span></li>
           </ul>
         </div>
       </section>

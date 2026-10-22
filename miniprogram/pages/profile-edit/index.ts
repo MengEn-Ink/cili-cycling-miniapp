@@ -8,6 +8,7 @@ import { repositoryCache } from '../../repositories/index';
 import { runPageTask } from '../../services/page-service';
 import { rideService } from '../../services/ride-service';
 import { mediaSourceKind, reportMediaDiagnostic } from '../../utils/media-diagnostic';
+import { waitForMediaPass } from '../../utils/media-security';
 import { invalidateProfilePageCache } from '../../utils/profile-page-cache';
 import { getSharedTempFileUrlCache, type TempFileUrlCache } from '../../utils/temp-file-url';
 import { validateRegistrationProfile } from '../../utils/validation';
@@ -20,7 +21,8 @@ const BACKGROUND_COMPRESS_QUALITY = 82;
 const BACKGROUND_COMPRESS_WIDTH = 1600;
 const BACKGROUND_COMPRESS_HEIGHT = 900;
 const PROFILE_BACKGROUND_CATEGORY = 'ride' as const;
-type MediaStage = 'selection' | 'authorize' | 'upload' | 'finalize' | 'setAvatar' | 'preview';
+type MediaStage =
+  'selection' | 'authorize' | 'upload' | 'finalize' | 'security' | 'setAvatar' | 'preview';
 type SelectedImage = { path: string; size?: number };
 type PhotoItem = {
   id: string;
@@ -116,6 +118,7 @@ function mediaFailureDetail(error: unknown): string {
     authorize: 'MEDIA_UPLOAD_PATH_FAILED',
     upload: 'MEDIA_UPLOAD_FAILED',
     finalize: 'MEDIA_REGISTER_FAILED',
+    security: 'MEDIA_SECURITY_PENDING',
     setAvatar: 'AVATAR_SET_FAILED',
     preview: 'AVATAR_PREVIEW_FAILED',
   };
@@ -124,6 +127,7 @@ function mediaFailureDetail(error: unknown): string {
     authorize: '图片准备失败，请检查网络后重试',
     upload: '图片上传失败，请重新选择图片后重试',
     finalize: '图片校验失败，请重新选择图片后重试',
+    security: '图片安全审核尚未完成，请稍后重试',
     setAvatar: '头像保存未确认，请稍后重试',
     preview: '头像预览暂不可用，请稍后重试',
   };
@@ -137,6 +141,10 @@ function mediaFailureDetail(error: unknown): string {
     'MEDIA_OBJECT_TOO_LARGE',
     'MEDIA_OBJECT_TYPE_INVALID',
     'MEDIA_CLOUD_UNAVAILABLE',
+    'MEDIA_SECURITY_PENDING',
+    'MEDIA_SECURITY_RETRY_REQUIRED',
+    'MEDIA_SECURITY_REVIEW_REQUIRED',
+    'MEDIA_SECURITY_RISKY',
   ]);
   const code = specificCodes.has(causeCode)
     ? causeCode
@@ -150,6 +158,10 @@ function mediaFailureDetail(error: unknown): string {
     MEDIA_OBJECT_NOT_FOUND: '图片暂未准备好，请稍后重试',
     MEDIA_OBJECT_VERIFY_FAILED: '图片暂未准备好，请稍后重试',
     MEDIA_CLOUD_UNAVAILABLE: '当前环境暂不支持图片上传，请更新微信后重试',
+    MEDIA_SECURITY_PENDING: '图片安全审核尚未完成，请稍后重试',
+    MEDIA_SECURITY_RETRY_REQUIRED: '图片安全审核暂未完成，请稍后重试',
+    MEDIA_SECURITY_REVIEW_REQUIRED: '图片需要调整后重新上传',
+    MEDIA_SECURITY_RISKY: '图片未通过安全审核，请更换图片',
   };
   const userMessage =
     messageByCode[causeCode] || messageByStage[stage] || '媒体操作失败，请稍后重试';
@@ -161,7 +173,6 @@ function mediaFailureDetail(error: unknown): string {
       typeof (error as { message?: unknown }).message === 'string'
         ? (error as { message: string }).message
         : '';
-    // eslint-disable-next-line no-console
     console.warn('[profile-edit] media failure', { code, stage, diagnosticMessage });
   } catch {
     // 诊断日志不影响用户路径。
@@ -441,6 +452,12 @@ function confirmsAvatar(
   );
 }
 
+function boundProfileGeneration(profile: Profile | null): number {
+  return Number.isSafeInteger(profile?.generation) && Number(profile?.generation) >= 1
+    ? Number(profile?.generation)
+    : 1;
+}
+
 Page({
   unloaded: false,
   avatarMediaGeneration: 0,
@@ -530,6 +547,41 @@ Page({
   assertBackgroundMediaCurrent(generation: number) {
     if (this.unloaded || generation !== this.backgroundMediaGeneration)
       throw mediaOperationAbortError();
+  },
+  async waitForMediaSecurity(
+    fileId: string,
+    mediaGeneration: number,
+    kind: 'avatar' | 'background',
+  ) {
+    const assertCurrent = () =>
+      kind === 'avatar'
+        ? this.assertAvatarMediaCurrent(mediaGeneration)
+        : this.assertBackgroundMediaCurrent(mediaGeneration);
+    const profileGeneration = boundProfileGeneration(this.data.p);
+    try {
+      return await waitForMediaPass({
+        fileId,
+        generation: profileGeneration,
+        getStatus: async (candidate) => {
+          assertCurrent();
+          const result = await rideService.getMediaStatus(candidate);
+          assertCurrent();
+          return result;
+        },
+        retry: async (candidate, generation) => {
+          assertCurrent();
+          const result = await rideService.retryMediaCheck(candidate, generation);
+          assertCurrent();
+          return result;
+        },
+        onPending: () => {
+          assertCurrent();
+          this.safeSetData({ mediaProgress: '正在进行图片安全审核…' });
+        },
+      });
+    } catch (error) {
+      throw mediaStageError(error, 'security', 'MEDIA_SECURITY_PENDING');
+    }
   },
   async loadAvatarPreview(cardPromise?: Promise<PersonalCapabilityCard | null>) {
     if (!this.data.p?.avatarId) {
@@ -737,6 +789,7 @@ Page({
   },
   async uploadAndSetAvatar(image: SelectedImage, generation: number) {
     const origin: ClientAvatarSource = 'wechat';
+    const profileGeneration = this.data.p?.generation;
     const cloud = wx.cloud;
     if (!cloud) throw mediaCloudUnavailableError();
     this.assertAvatarMediaCurrent(generation);
@@ -749,8 +802,12 @@ Page({
     if (reusedFileId) {
       this.assertAvatarMediaCurrent(generation);
       let authoritative: Profile;
+      await this.waitForMediaSecurity(reusedFileId, generation, 'avatar');
       try {
-        authoritative = await rideService.setAvatar(origin, reusedFileId);
+        authoritative =
+          profileGeneration === undefined
+            ? await rideService.setAvatar(origin, reusedFileId)
+            : await rideService.setAvatar(origin, reusedFileId, profileGeneration);
       } catch (error) {
         throw mediaStageError(error, 'setAvatar', 'AVATAR_SET_FAILED');
       }
@@ -768,9 +825,24 @@ Page({
         filePath: verifiedImage.path,
         category: 'profile-avatar',
         authorize: (category, requestId, extension) =>
-          rideService.issueMediaUploadPath(category, requestId, extension as 'jpg'),
+          profileGeneration === undefined
+            ? rideService.issueMediaUploadPath(category, requestId, extension as 'jpg')
+            : rideService.issueMediaUploadPath(
+                category,
+                requestId,
+                extension as 'jpg',
+                profileGeneration,
+              ),
         finalize: (fileId, category, requestId) =>
-          rideService.finalizeMediaUpload(fileId, category, requestId, origin),
+          profileGeneration === undefined
+            ? rideService.finalizeMediaUpload(fileId, category, requestId, origin)
+            : rideService.finalizeMediaUpload(
+                fileId,
+                category,
+                requestId,
+                origin,
+                profileGeneration,
+              ),
         onTask: (task) => {
           if (this.unloaded || generation !== this.avatarMediaGeneration) task?.abort?.();
           else this.avatarUploadTask = task;
@@ -788,11 +860,17 @@ Page({
       });
       canonicalFileId = uploaded.canonicalFileId;
       this.assertAvatarMediaCurrent(generation);
+      this.safeSetData({ mediaProgress: '正在审核头像…' });
+      await this.waitForMediaSecurity(canonicalFileId, generation, 'avatar');
+      this.assertAvatarMediaCurrent(generation);
       this.safeSetData({ mediaProgress: '正在确认头像…' });
       selectionDispatched = true;
       let authoritative: Profile;
       try {
-        authoritative = await rideService.setAvatar(origin, canonicalFileId);
+        authoritative =
+          profileGeneration === undefined
+            ? await rideService.setAvatar(origin, canonicalFileId)
+            : await rideService.setAvatar(origin, canonicalFileId, profileGeneration);
       } catch (error) {
         throw mediaStageError(error, 'setAvatar', 'AVATAR_SET_FAILED');
       }
@@ -841,6 +919,7 @@ Page({
     // 添加照片加在途锁，避免快速连点触发多次并发上传产生孤立文件或状态错乱。
     if (this.data.photoBusy || this.data.saving || this.data.avatarBusy) return;
     const generation = ++this.backgroundMediaGeneration;
+    const profileGeneration = this.data.p?.generation;
     this.mediaErrorRevision += 1;
     this.mediaErrorStage = '';
     this.safeSetData({ photoBusy: true, mediaProgress: '请选择并调整背景图…', mediaError: '' });
@@ -869,6 +948,8 @@ Page({
         : '';
       if (reusedPhotoId) {
         // 同内容图片本次会话已上传登记：跳过路径申请、上传与注册，直接把背景槽位指向已有 fileId。
+        await this.waitForMediaSecurity(reusedPhotoId, generation, 'background');
+        this.assertBackgroundMediaCurrent(generation);
         const current = this.data.p;
         if (!current) return;
         current.photos = [{ id: reusedPhotoId, category: PROFILE_BACKGROUND_CATEGORY }];
@@ -883,9 +964,24 @@ Page({
         filePath: verifiedImage.path,
         category: 'profile-background',
         authorize: (category, requestId, extension) =>
-          rideService.issueMediaUploadPath(category, requestId, extension as 'jpg'),
+          profileGeneration === undefined
+            ? rideService.issueMediaUploadPath(category, requestId, extension as 'jpg')
+            : rideService.issueMediaUploadPath(
+                category,
+                requestId,
+                extension as 'jpg',
+                profileGeneration,
+              ),
         finalize: (fileId, category, requestId) =>
-          rideService.finalizeMediaUpload(fileId, category, requestId),
+          profileGeneration === undefined
+            ? rideService.finalizeMediaUpload(fileId, category, requestId)
+            : rideService.finalizeMediaUpload(
+                fileId,
+                category,
+                requestId,
+                'custom',
+                profileGeneration,
+              ),
         onTask: (task) => {
           if (this.unloaded || generation !== this.backgroundMediaGeneration) task?.abort?.();
           else this.backgroundUploadTask = task;
@@ -903,7 +999,8 @@ Page({
       });
       canonicalFileId = uploaded.canonicalFileId;
       this.assertBackgroundMediaCurrent(generation);
-      this.safeSetData({ mediaProgress: '正在确认背景图…' });
+      this.safeSetData({ mediaProgress: '正在审核背景图…' });
+      await this.waitForMediaSecurity(canonicalFileId, generation, 'background');
       this.assertBackgroundMediaCurrent(generation);
       if (backgroundDigestKey) this.uploadedMediaDigests.set(backgroundDigestKey, canonicalFileId);
       const p = this.data.p;
@@ -987,6 +1084,7 @@ Page({
     const state = await runPageTask(
       () =>
         rideService.updateProfile({
+          ...(p.generation === undefined ? {} : { generation: p.generation }),
           nickname: p.nickname,
           gender: p.gender,
           phone: p.phone === loaded.phone ? undefined : p.phone,

@@ -602,9 +602,14 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   it('设置页原型同步当前客户端版本与当前 App 更新', () => {
     expect(schema).toContain("state: '通知、隐私与缓存管理'");
     expect(schema).toContain(
+      "['2026.10.22.2', '隐私授权与内容安全保护升级', '公开资料、图片与 Strava 授权处理更稳妥，异常时保留原内容并支持安全重试。']",
+    );
+    expect(schema).toContain(
       "['2026.10.21.1', '活动发布全流程恢复', '有限名额活动可正常创建发布，历史数据清理与真实全流程验收已闭环。']",
     );
     expect(templates).toContain('App 更新');
+    expect(templates).toContain('公开昵称和照片仅在本人同意后展示，撤回后停止公开');
+    expect(templates).toContain('图片检查未完成或未通过时保留原内容');
     expect(templates).not.toContain('最近五次');
   });
 

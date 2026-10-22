@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
   "syncedThrough": "062c8cedd1a81d8bd9e1fbe3845be676698d44bc",
-  "syncedAt": "2026-10-22T07:18:00+08:00",
+  "syncedAt": "2026-10-22T13:19:12+08:00",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:e693645d5055ae423fda000a3d68858a4facc6dc1a8ce7ea3e2873dfb6887ee7"
+    "digest": "sha256:93580ab0bc2555eb26dfa40665d52bb5a0b0faa338d514dab0d27a9ff146d824"
   },
   "prototype": {
-    "digest": "sha256:3d86c6d2539df3ad7415fa7b09a2fbec3ca5cc8f20be8bc3be180cd2ffaca6c7"
+    "digest": "sha256:e40fb47a41729780a78bc90935b2bf29bf676cdf5fc6fc601e76313bb3890355"
   },
   "routes": [
     {
@@ -156,10 +156,10 @@
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "管理员 · 同步 Strava 线路信息 · 客户端 2026.10.21.6",
-        "data": "fixture",
+        "state": "管理员 · Strava 撤回（Pages 当前 / DevTools 旧管理态）· 客户端 2026.10.22.2",
+        "data": "sanitized-runtime",
         "review": "blocked",
-        "note": "Pages 于 2026-10-21 按 375×812 重采管理员态设置页：App 更新展示 V2026.10.21.6 及“活动路线与骑友资料加载更轻快”说明；原 2026.10.21.5 条目历史化。DevTools 证据沿用真实运行基线，review 保持 blocked，待新开发版复验版本与日志。"
+        "note": "2026-10-22 Pages 按 375×812 重采，管理员已连接态展示“撤回”与 V2026.10.22.2。DevTools 脱敏图来自本轮撤回交互接入前的同版本只读运行，仍展示旧“管理”动作；当前完整 E2E 在活动首页未就绪后失败，随后两次单路由重采分别被 rawPath 与运行时会话错误阻断。review 保持 blocked，不能替代当前提交部署、双真机或完整写链路验收。"
       },
       {
         "id": "capability-card",

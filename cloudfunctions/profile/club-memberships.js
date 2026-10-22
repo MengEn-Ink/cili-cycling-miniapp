@@ -1,5 +1,6 @@
 'use strict';
 
+const { safeClubMedia } = require('./privacy-contract');
 function activeApprovedClub(club) {
   return Boolean(club && club.approval_status === 'approved' && club.status === 'active');
 }
@@ -30,7 +31,7 @@ async function resolveClubMembershipAvatars(summaries, getTempFileURL) {
   const fileIds = [
     ...new Set(
       summaries
-        .map((summary) => summary?.club_identity?.avatar_url)
+        .map((summary) => safeClubMedia(summary?.club_identity?.avatar_url))
         .filter((value) => typeof value === 'string' && value.startsWith('cloud://')),
     ),
   ];
@@ -48,7 +49,7 @@ async function resolveClubMembershipAvatars(summaries, getTempFileURL) {
     }
   }
   return summaries.map((summary) => {
-    const avatar = summary.club_identity.avatar_url;
+    const avatar = safeClubMedia(summary.club_identity.avatar_url);
     return {
       ...summary,
       club_identity: {

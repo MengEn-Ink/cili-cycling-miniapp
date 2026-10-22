@@ -110,6 +110,11 @@ function loadMain() {
     init() {},
     database: () => database,
     getWXContext: () => ({ OPENID: 'admin' }),
+    openapi: {
+      security: {
+        msgSecCheck: async () => ({ errCode: 0, result: { suggest: 'pass' } }),
+      },
+    },
   };
   const originalLoad = Module._load;
   Module._load = function load(request, parent, isMain) {
