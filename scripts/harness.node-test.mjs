@@ -4,6 +4,7 @@ import test from 'node:test';
 
 import { HARNESS_PROFILES, resolveHarnessTasks } from './harness-registry.mjs';
 import {
+  applyResumeState,
   createHarnessReport,
   inspectHarnessEnvironment,
   parseHarnessArgs,
@@ -22,12 +23,20 @@ test('配置把验证任务收敛为稳定顺序', () => {
 
 test('参数解析支持报告路径和失败后继续', () => {
   assert.deepEqual(
-    parseHarnessArgs(['run', 'verify', '--report', reportPath, '--continue-on-failure']),
+    parseHarnessArgs([
+      'run',
+      'verify',
+      '--report',
+      reportPath,
+      '--continue-on-failure',
+      '--resume',
+    ]),
     {
       action: 'run',
       selection: 'verify',
       reportPath,
       continueOnFailure: true,
+      resume: true,
     },
   );
   assert.throws(() => parseHarnessArgs(['run', 'verify', '--unknown']), /未知参数/);
@@ -67,7 +76,7 @@ test('报告固定绑定版本、模式和任务状态', () => {
     commitSha: 'abc123',
     mode: 'ci',
   });
-  assert.equal(report.schemaVersion, 1);
+  assert.equal(report.schemaVersion, 2);
   assert.equal(report.commitSha, 'abc123');
   assert.equal(report.mode, 'ci');
   assert.deepEqual(
@@ -84,4 +93,55 @@ test('preflight 生成机器可读报告且不执行目标任务', () => {
   assert.equal(report.outcome, 'passed');
   assert.equal(report.tasks[0].status, 'not_executed');
   assert.match(report.commitSha, /^[a-f0-9]{40}$/);
+});
+
+test('续跑只跳过同一提交中已经通过的任务', () => {
+  const report = createHarnessReport({
+    selection: 'verify',
+    taskNames: ['validate', 'coverage'],
+    commitSha: 'abc123',
+    mode: 'local',
+  });
+  const previousReport = {
+    ...report,
+    finishedAt: '2026-10-22T00:00:00.000Z',
+    tasks: [
+      { name: 'validate', status: 'passed' },
+      { name: 'coverage', status: 'failed' },
+    ],
+  };
+
+  applyResumeState(report, previousReport, reportPath);
+
+  assert.equal(report.tasks[0].status, 'skipped');
+  assert.equal(report.tasks[0].skippedReason, 'resume:previously-passed');
+  assert.equal(report.tasks[1].status, 'pending');
+  assert.equal(report.resumedFrom?.reportPath, reportPath);
+});
+
+test('续跑拒绝跨提交或旧 schema 报告', () => {
+  const report = createHarnessReport({
+    selection: 'verify',
+    taskNames: ['validate'],
+    commitSha: 'current',
+    mode: 'local',
+  });
+  assert.throws(
+    () =>
+      applyResumeState(
+        report,
+        { ...report, commitSha: 'old', tasks: [{ name: 'validate', status: 'passed' }] },
+        reportPath,
+      ),
+    /旧报告不能跨版本复用/,
+  );
+  assert.throws(
+    () =>
+      applyResumeState(
+        report,
+        { ...report, schemaVersion: 1, tasks: [{ name: 'validate', status: 'passed' }] },
+        reportPath,
+      ),
+    /schemaVersion=1/,
+  );
 });
