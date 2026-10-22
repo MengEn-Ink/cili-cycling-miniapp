@@ -267,7 +267,7 @@ fieldset{border:0;padding:0;margin:0 0 24px}
     group.querySelectorAll('[role=tab]').forEach(b=>b.setAttribute('aria-selected',String(b===button)));
     const scope=document.querySelector('[data-activity-results]');
     const source=document.querySelector(button.dataset.panel==='history'?'#history-content':'#upcoming-content');
-    if(scope&&source)scope.replaceChildren(...[...source.childNodes].map(node=>node.cloneNode(true)));
+    if(scope&&source)scope.replaceChildren(...[...(source.content || source).childNodes].map(node=>node.cloneNode(true)));
   })));
   document.querySelector('[data-compact]')?.addEventListener('click',e=>{
     const list=document.querySelector('[data-activity-results]');list.classList.toggle('compact');e.currentTarget.setAttribute('aria-pressed',String(list.classList.contains('compact')));
