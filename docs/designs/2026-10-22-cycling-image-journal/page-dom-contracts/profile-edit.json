@@ -1,0 +1,41 @@
+{
+  "slug": "profile-edit",
+  "pagePath": "pages/profile-edit/index",
+  "title": "编辑个人资料",
+  "wxml": "miniprogram/pages/profile-edit/index.wxml",
+  "wxss": "miniprogram/pages/profile-edit/index.wxss",
+  "ts": "miniprogram/pages/profile-edit/index.ts",
+  "designIntent": "头像独立即时保存；背景最多 1 张；整表 7 项校验通过后才能保存；性别仅男/女；上传或保存中锁定其他操作。",
+  "containers": [
+    { "class": "page profile-form-page", "role": "page-root", "order": 1 },
+    { "class": "journal-heading", "role": "page-heading", "order": 2, "note": "此里 · 关于你 + editorial 标题" },
+    { "class": "card form-card journal-section avatar-step-card", "role": "avatar-step", "order": 3, "note": "头像选择 + 独立即时保存状态；未选头像时整表后续区域不渲染" },
+    { "class": "card form-card journal-section", "role": "profile-details", "order": 4, "note": "基础资料：昵称 / 真实姓名 / 性别（男/女）/ 手机号 / 紧急联系人 / 紧急电话" },
+    { "class": "readiness-note", "role": "notice", "order": 5, "note": "7 项整表校验 + 头像即时保存 + 背景随整表保存" },
+    { "class": "btn save-action", "role": "submit", "order": 6, "note": "保存资料：上传/头像繁忙时 disabled" }
+  ],
+  "interactions": [
+    { "trigger": "chooseWechatAvatar", "openType": "chooseAvatar", "note": "微信头像即时保存，通过 open-type=chooseAvatar 触发" },
+    { "trigger": "addPhoto", "note": "添加/更换背景图（最多 1 张）" },
+    { "trigger": "removeBackgroundPhoto", "note": "删除背景图" },
+    { "trigger": "selectGender", "note": "性别单选 radio-group" },
+    { "trigger": "set", "note": "基础字段统一回写，data-k 指向字段名" },
+    { "trigger": "save", "note": "整表 7 项校验通过后保存" }
+  ],
+  "copy": [
+    "此里 · 关于你",
+    "让同行的人，认出你。",
+    "基础资料",
+    "紧急联系人",
+    "个人背景图",
+    "保存资料"
+  ],
+  "assets": [
+    { "class": "avatar-preview-placeholder", "note": "默认头像兜底图" }
+  ],
+  "forbids": [
+    { "class": "gender-other", "reason": "性别只允许男/女两档" },
+    { "class": "photo-item-multi", "reason": "背景图最多 1 张，禁止多图网格" }
+  ],
+  "phase2Note": "本页实现已对齐设计意图；WXML/WXSS 已就位，避免触碰 TS 以避开 PR #341 冲突域。"
+}

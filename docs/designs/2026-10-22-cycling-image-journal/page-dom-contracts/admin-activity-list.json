@@ -1,0 +1,42 @@
+{
+  "slug": "admin-activity-list",
+  "pagePath": "pages/admin/activity-list/index",
+  "title": "活动管理",
+  "wxml": "miniprogram/pages/admin/activity-list/index.wxml",
+  "wxss": "miniprogram/pages/admin/activity-list/index.wxss",
+  "ts": "miniprogram/pages/admin/activity-list/index.ts",
+  "designIntent": "编辑与审核两条路径分开；主操作是创建活动草稿；按状态筛选活动，每张卡片显示报名/待审核/已通过三项真实指标。",
+  "containers": [
+    { "class": "page activity-list-page", "role": "page-root", "order": 1 },
+    { "class": "journal-heading", "role": "page-heading", "order": 2, "note": "此里 · 组织一场出发 + 我的活动 editorial 标题" },
+    { "class": "status-filters", "role": "tablist", "order": 3, "note": "活动状态筛选 tablist：全部/已下架/待审核/已驳回/已上线/已结束" },
+    { "class": "page-actions", "role": "primary-actions", "order": 4, "note": "底部管理员报名审批 secondary + 创建活动草稿 btn" }
+  ],
+  "interactions": [
+    { "trigger": "selectStatusFilter", "dataAttr": "data-status", "note": "切换活动状态筛选" },
+    { "trigger": "edit", "dataAttr": "data-id", "note": "打开活动编辑" },
+    { "trigger": "reviewActivity", "dataAttr": "data-decision", "note": "活动草稿审核通过/驳回" },
+    { "trigger": "toggleOnline", "dataAttr": "data-id", "note": "上下架切换" },
+    { "trigger": "confirmDelete", "dataAttr": "data-id", "note": "草稿删除确认" },
+    { "trigger": "startClone", "dataAttr": "data-id", "note": "从此活动创建新草稿" },
+    { "trigger": "create", "note": "创建活动草稿主按钮" },
+    { "trigger": "reviews", "note": "进入报名审批" }
+  ],
+  "copy": [
+    "此里 · 组织一场出发",
+    "我的活动",
+    "全部",
+    "已下架",
+    "待审核",
+    "已驳回",
+    "已上线",
+    "已结束",
+    "创建活动草稿",
+    "报名审批"
+  ],
+  "assets": [],
+  "forbids": [
+    { "class": "activity-list-create-fab", "reason": "创建入口以底部主按钮为准，不复用 FAB" }
+  ],
+  "phase2Note": "本页实现已对齐设计意图；仅做契约化。"
+}

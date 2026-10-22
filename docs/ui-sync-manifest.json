@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "8f1c006b83f642541b8d337b74288db06d17194e",
-  "syncedAt": "2026-10-22T13:47:03.757Z",
+  "syncedThrough": "98673f3712228ef371b5b895e5b4dc1a13b0daad",
+  "syncedAt": "2026-10-22T17:08:00.000Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:8bfdcdefa17142cb3c7e5cbd96301652be0d2fb962b8eb16d7cbfc63ab345fc5"
+    "digest": "sha256:66cff9f5de7766746d460ef3f383958e5917e979117525ad65952156230cf39b"
   },
   "prototype": {
     "digest": "sha256:89461e3d7e10123a6b78cce68bb929d4a43000574aa29c30e83fe220e50d4688"
@@ -243,5 +243,56 @@
         "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"
       }
     ]
+  },
+  "contracts": {
+    "directory": "docs/designs/2026-10-22-cycling-image-journal/page-dom-contracts",
+    "test": "tests/cycling-image-journal-page-dom-contract.test.ts",
+    "note": "每个路由对应一份 DOM/交互/文案契约 JSON，由 Vitest 校验页面 WXML/WXSS/TS 不回退旧 Oil UI 结构，并锁定关键 bind*/open-type/文案锚点。capability-card 为旧名片兼容路由，实际跳转进入『我的』，与 profile 复用同一契约。",
+    "routes": [
+      { "id": "activities", "contract": "activities.json" },
+      { "id": "activity-detail", "contract": "activity-detail.json" },
+      { "id": "route-analysis", "contract": "route-analysis.json" },
+      { "id": "registration-form", "contract": "registration-form.json" },
+      { "id": "registrations", "contract": "registrations.json" },
+      { "id": "credential", "contract": "credential.json" },
+      { "id": "profile", "contract": "profile.json" },
+      { "id": "settings", "contract": "settings.json" },
+      { "id": "capability-card", "contract": "profile.json", "note": "旧名片路由实际跳转到『我的』，复用 profile 契约。" },
+      { "id": "profile-edit", "contract": "profile-edit.json" },
+      { "id": "admin-activity-list", "contract": "admin-activity-list.json" },
+      { "id": "admin-activity-edit", "contract": "admin-activity-edit.json" },
+      { "id": "admin-reviews", "contract": "admin-reviews.json" },
+      { "id": "admin-review-detail", "contract": "admin-review-detail.json" },
+      { "id": "club/center", "contract": "club-center.json" },
+      { "id": "admin-club-applications", "contract": "admin-club-management.json" },
+      { "id": "admin-club-application-detail", "contract": "admin-club-profile.json" }
+    ]
+  },
+  "threeWidth": {
+    "directory": "docs/evidence/phase3-three-width",
+    "report": "docs/evidence/phase3-three-width/report.json",
+    "widths": [340, 375, 430],
+    "height": 780,
+    "method": "Playwright + Chromium headless 通过统一 npm 入口自动安装浏览器、启动临时端口原型服务并清理进程；对 16 页 × 3 宽度逐页加载、截图并执行可失败断言：横向溢出、fixed/sticky 与可见内容矩形重叠、控件或关联 label 的有效触控区域、pageerror / console error。依赖由 package-lock.json 锁定，npm run test:phase3-visual 发现问题时返回非零状态。",
+    "summary": "16 页 × 3 宽度 48 份截图全部通过：horizontalOverflow = 0，fixedOcclusions = 0，invalidSmallTouchTargets = 0，console error = 0。",
+    "evidenceByRoute": [
+      { "id": "activities", "screenshots": ["activities-340.png", "activities-375.png", "activities-430.png"] },
+      { "id": "activity-detail", "screenshots": ["activity-detail-340.png", "activity-detail-375.png", "activity-detail-430.png"] },
+      { "id": "route-analysis", "screenshots": ["route-analysis-340.png", "route-analysis-375.png", "route-analysis-430.png"] },
+      { "id": "registration-form", "screenshots": ["registration-form-340.png", "registration-form-375.png", "registration-form-430.png"] },
+      { "id": "registrations", "screenshots": ["registrations-340.png", "registrations-375.png", "registrations-430.png"] },
+      { "id": "credential", "screenshots": ["credential-340.png", "credential-375.png", "credential-430.png"] },
+      { "id": "profile", "screenshots": ["profile-340.png", "profile-375.png", "profile-430.png"] },
+      { "id": "profile-edit", "screenshots": ["profile-edit-340.png", "profile-edit-375.png", "profile-edit-430.png"] },
+      { "id": "settings", "screenshots": ["settings-340.png", "settings-375.png", "settings-430.png"] },
+      { "id": "club/center", "screenshots": ["club-center-340.png", "club-center-375.png", "club-center-430.png"] },
+      { "id": "admin-activity-list", "screenshots": ["admin-activity-list-340.png", "admin-activity-list-375.png", "admin-activity-list-430.png"] },
+      { "id": "admin-activity-edit", "screenshots": ["admin-activity-edit-340.png", "admin-activity-edit-375.png", "admin-activity-edit-430.png"] },
+      { "id": "admin-reviews", "screenshots": ["admin-reviews-340.png", "admin-reviews-375.png", "admin-reviews-430.png"] },
+      { "id": "admin-review-detail", "screenshots": ["admin-review-detail-340.png", "admin-review-detail-375.png", "admin-review-detail-430.png"] },
+      { "id": "admin-club-applications", "screenshots": ["admin-club-management-340.png", "admin-club-management-375.png", "admin-club-management-430.png"], "note": "原型按 admin-club-management.html 命名；对应小程序路由 admin-club-applications。" },
+      { "id": "admin-club-application-detail", "screenshots": ["admin-club-profile-340.png", "admin-club-profile-375.png", "admin-club-profile-430.png"], "note": "原型按 admin-club-profile.html 命名；对应小程序路由 admin-club-application-detail。" }
+    ],
+    "limitation": "本次是对高保真原型（Pages/HTML 版本）的三宽度验收，并非 WeChat 小程序模拟器真机截图；小程序侧的真机双端对齐仍以上方 evidence.routes 中的 sanitized-runtime 截图为准，由后续发布流程继续守护。"
   }
 }
