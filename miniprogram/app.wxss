@@ -24,6 +24,10 @@ page {
   --font-weight-body: 600;
   --font-weight-strong: 800;
   --font-weight-display: 900;
+  --font-family-body:
+    -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-family-editorial: 'Songti SC', STSong, serif;
+  --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --motion-duration-fast: 120ms;
   --motion-duration-base: 180ms;
   --motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
@@ -81,7 +85,7 @@ page {
   --tab-page-bottom-space: 32rpx;
   --fixed-action-reserve: 240rpx;
   --fixed-action-reserve-narrow: 292rpx;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-mono: var(--font-family-mono);
 
   /* Component tokens: shared controls consume these aliases first. */
   --button-bg: var(--color-action);
@@ -114,9 +118,14 @@ page {
   min-height: 100%;
   background: var(--color-bg);
   color: var(--color-text);
-  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: var(--font-family-body);
   font-size: 32rpx;
   line-height: 48rpx;
+}
+
+.editorial {
+  font-family: var(--font-family-editorial);
+  font-weight: 600;
 }
 
 view,

@@ -48,7 +48,7 @@
 
 .analysis-title {
   margin-top: 24rpx;
-  font-family: 'Songti SC', STSong, serif;
+  font-family: var(--font-family-editorial);
   font-size: 64rpx;
   line-height: 80rpx;
   font-weight: 600;

@@ -4,7 +4,7 @@
   <block wx:if="{{profile}}">
     <view class="form-head journal-heading">
       <view class="journal-eyebrow">此里 · 留下一个位置</view>
-      <view class="journal-title">下一站，山顶。</view>
+      <view class="journal-title editorial">下一站，山顶。</view>
       <view class="journal-summary">{{activity ? (activity.title || '确认这次骑行') : '确认这次骑行'}}</view>
       <view class="step-line" role="list" aria-label="报名流程，共三阶段，当前为第一阶段填写报名">
         <view class="step step-active" role="listitem" aria-current="step"><text class="step-number">1</text><view class="step-copy"><text class="step-title">填写报名</text><text class="step-state">当前</text></view></view>

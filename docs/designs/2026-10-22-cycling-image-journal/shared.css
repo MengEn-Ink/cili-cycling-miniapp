@@ -12,6 +12,9 @@
   --page-gutter:14px;--control-height:48px;--segment-height:46px;--card-gap:10px;
   --route-preview-canvas-height:144px;--group-qr-code-size:96px;
   --font-size-label:12px;--font-size-body:14px;--font-size-title:18px;--font-size-display:24px;
+  --font-family-body:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;
+  --font-family-editorial:"Songti SC","STSong",serif;
+  --font-family-mono:"SFMono-Regular",Consolas,monospace;
   --motion-duration-fast:120ms;--motion-duration-base:180ms;
   --motion-easing-standard:cubic-bezier(.2,0,0,1);
   --button-bg:var(--color-action);--button-text:var(--color-on-action);
@@ -23,7 +26,7 @@
   --cili-radius-sm:var(--radius-sm);--cili-radius-md:var(--radius-md);--cili-radius-lg:var(--radius-card);
 }
 *{box-sizing:border-box}
-html{background:var(--color-bg);color:var(--color-text);font-family:"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;font-size:14px}
+html{background:var(--color-bg);color:var(--color-text);font-family:var(--font-family-body);font-size:14px}
 body{margin:0}
 a{color:inherit;text-decoration:none}
 button,input,textarea,select{font:inherit;color:inherit}
@@ -55,7 +58,7 @@ svg{display:block}
 .pageheading{padding:22px var(--page-gutter) 24px}
 .pageheading h1{font-size:32px;font-weight:800;letter-spacing:-1px;line-height:1.3;margin:8px 0 10px}
 .pageheading p{font-size:14px;color:var(--color-muted)}
-.editorial{font-family:"Songti SC","STSong",serif;font-weight:600}
+.editorial{font-family:var(--font-family-editorial);font-weight:600}
 .chapterhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px;gap:8px}
 .chapterhead h2{font-size:22px;letter-spacing:-.5px;line-height:1.4}
 .chapterhead span{font-size:12px;color:var(--color-muted)}
@@ -63,7 +66,7 @@ svg{display:block}
 .section:first-child{margin-top:0}
 .muted{color:var(--color-muted)}
 .small{font-size:12px;line-height:1.6}
-.mono{font-family:"SFMono-Regular",Consolas,monospace;font-variant-numeric:tabular-nums}
+.mono{font-family:var(--font-family-mono);font-variant-numeric:tabular-nums}
 .number{font-family:"Arial Narrow",Arial,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-1px}
 .tag{display:inline-flex;align-items:center;gap:4px;background:var(--color-raised);padding:4px 8px;border-radius:var(--radius-xs);font-size:12px;font-weight:700;line-height:1.5}
 .tag.success{background:var(--color-status-success-soft);color:var(--color-status-success)}

@@ -66,7 +66,7 @@
 }
 .detail-page .info-title {
   max-width: 600rpx;
-  font-family: 'Songti SC', STSong, serif;
+  font-family: var(--font-family-editorial);
   font-size: 48rpx;
   line-height: 64rpx;
   font-weight: 600;

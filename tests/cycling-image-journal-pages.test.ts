@@ -62,7 +62,7 @@ describe('FORMAL GitHub Pages 骑行影像志', () => {
 
   it('17 路由共享摄影编辑式长屏，并覆盖 340/375/430 与安全区', () => {
     expect(styles).toContain('CYCLING IMAGE JOURNAL · FORMAL PAGES');
-    expect(styles).toContain('font-family: "Songti SC", "STSong"');
+    expect(styles).toContain("--font-family-editorial: 'Songti SC', STSong, serif");
     expect(styles).toContain('@media (max-width: 350px)');
     expect(styles).toContain('@media (min-width: 376px)');
     expect(styles).toContain('@media (min-width: 431px)');
@@ -80,13 +80,13 @@ describe('FORMAL GitHub Pages 骑行影像志', () => {
     expect(deliveryCenter).toContain('设计演进记录');
   });
 
-  it('设置页以 2026.10.22.2 展示骑行影像志当前版本', () => {
+  it('设置页以 2026.10.22.3 展示逐页对齐后的当前版本', () => {
     expect(schema).toContain(
-      "['2026.10.22.2', '骑行影像志正式上线', '活动、行程、资料与管理页面统一为摄影编辑式长屏；“我的”即骑行名片，历史名片地址自动回到“我的”。']",
+      "['2026.10.22.3', '影像志排版与设计稿逐页对齐', '16 个核心页面统一使用设计稿的字体、颜色、间距与圆角规范。']",
     );
     runtime.prototypeState = 'default';
     const settings = runtime.pageTemplates?.settings?.() ?? '';
-    expect(settings).toContain('V2026.10.22.2');
+    expect(settings).toContain('V2026.10.22.3');
     expect(settings).toContain('2026.10.22');
   });
 

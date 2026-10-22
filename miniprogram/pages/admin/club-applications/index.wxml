@@ -4,7 +4,7 @@
   <block wx:if="{{mode === 'loading'}}">
     <view class="club-admin-head journal-heading">
       <view class="journal-eyebrow">此里 · 唯一俱乐部</view>
-      <view class="page-title">俱乐部管理</view>
+      <view class="page-title editorial">俱乐部管理</view>
       <view class="page-sub">正在加载唯一俱乐部资料</view>
     </view>
     <view class="skeleton club-admin-skeleton" aria-hidden="true"></view>
@@ -21,7 +21,7 @@
     <view class="club-admin-head journal-heading">
       <view class="journal-eyebrow">此里 · 唯一俱乐部</view>
       <view class="club-admin-badge">平台管理员 · 首次创建</view>
-      <view class="page-title">俱乐部管理</view>
+      <view class="page-title editorial">俱乐部管理</view>
       <view class="page-sub">平台尚未创建俱乐部，仅平台管理员可完成首次创建；创建后此入口不再出现。</view>
     </view>
     <view class="state-card club-admin-bootstrap">
@@ -36,7 +36,7 @@
     <view class="club-admin-head journal-heading">
       <view class="journal-eyebrow">此里 · 唯一俱乐部</view>
       <view class="club-admin-badge">平台管理员</view>
-      <view class="page-title">俱乐部管理</view>
+      <view class="page-title editorial">俱乐部管理</view>
       <view class="page-sub">全平台只有一个俱乐部，本页展示其资料并提供编辑入口；不再出现新建或列表。</view>
     </view>
     <view class="card club-admin-card" data-club-admin-overview>

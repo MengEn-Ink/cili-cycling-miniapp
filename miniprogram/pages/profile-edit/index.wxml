@@ -3,7 +3,7 @@
   <block wx:if="{{p}}">
     <view class="journal-heading">
       <view class="journal-eyebrow">此里 · 关于你</view>
-      <view class="journal-title">让同行的人，认出你。</view>
+      <view class="journal-title editorial">让同行的人，认出你。</view>
       <view class="journal-summary">先保存头像，再完善报名与安全联络资料。</view>
     </view>
 
