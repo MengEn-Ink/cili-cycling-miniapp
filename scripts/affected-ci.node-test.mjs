@@ -102,9 +102,9 @@ test('PR 与 main 检查拆分并保留每日全量门禁', () => {
 
   assert.match(ci, /Run affected pull request checks/);
   assert.match(ci, /AFFECTED_BASE/);
-  assert.match(ci, /main-validate:[\s\S]*npm run validate/);
-  assert.match(ci, /main-coverage:[\s\S]*npm run coverage/);
-  assert.match(ci, /main-audit:[\s\S]*npm run audit:all/);
+  assert.match(ci, /main-validate:[\s\S]*npm run harness -- run validate/);
+  assert.match(ci, /main-coverage:[\s\S]*npm run harness -- run coverage/);
+  assert.match(ci, /main-audit:[\s\S]*npm run harness -- run audit/);
 
   assert.match(nightly, /cron: '0 16 \* \* \*'/);
   assert.match(nightly, /concurrency:[\s\S]*group: daily-full-audit/);

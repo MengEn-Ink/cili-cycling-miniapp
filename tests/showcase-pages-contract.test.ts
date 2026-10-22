@@ -16,6 +16,7 @@ const routeAnalysisDataFoundationArticle = read(
   'docs/articles/route-analysis-data-foundation.html',
 );
 const agileDeliveryArticle = read('docs/articles/agile-delivery.html');
+const engineeringDeliveryPracticeArticle = read('docs/articles/engineering-delivery-practice.html');
 const uiDesignSystem = read('docs/ui-design-system.html');
 const designSystemIndex = read('docs/design-system.md');
 const designChecklist = read('docs/ui-design-checklist.md');
@@ -449,6 +450,32 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
       expect(agileDeliveryArticle).toContain(asset.href);
       expect(read(asset.file).length).toBeGreaterThan(0);
     }
+  });
+
+  it('工程化实践文章接入交付中心并完整说明 Skills、Harness、Actions 与部署边界', () => {
+    const deliveryRuntime: {
+      deliveryCenter?: { render: () => string };
+    } = {};
+    new Function('window', deliveryCenter)(deliveryRuntime);
+    const renderedDeliveryCenter = deliveryRuntime.deliveryCenter?.render() ?? '';
+
+    expect(deliveryCenter).toContain("id: 'engineering-delivery-practice'");
+    expect(deliveryCenter).toContain("href: 'articles/engineering-delivery-practice.html'");
+    expect(renderedDeliveryCenter).toContain('href="articles/engineering-delivery-practice.html"');
+    for (const content of [
+      '把一次交付，变成可重复的系统',
+      '三层控制面：记住、执行、证明',
+      'Harness Schema v2',
+      'npm run harness -- run release --resume',
+      '同一提交、同一 profile、同一 schema',
+      'GitHub Actions：同一任务，三种时间窗口',
+      'Pages-only 变更只发布 Pages',
+      'prefers-reduced-motion',
+      'href="../index.html#delivery"',
+    ]) {
+      expect(engineeringDeliveryPracticeArticle).toContain(content);
+    }
+    expect(engineeringDeliveryPracticeArticle).not.toMatch(/(?:src|href)="\/(?!\/)/);
   });
 
   it('完整 UI 规范接入交付中心，并同时约束主系统、页面差异和反模式', () => {

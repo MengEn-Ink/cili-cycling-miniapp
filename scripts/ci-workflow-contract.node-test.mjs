@@ -57,6 +57,10 @@ test('main 的 validate、coverage、audit 并行且每个 Node job 独立 npm c
     assert.match(block, /actions\/setup-node@v7/);
     assert.match(block, /cache: npm/);
     assert.match(block, /npm ci/);
+    assert.match(block, /npm run harness -- run (validate|coverage|audit)/);
+    assert.match(block, /Upload main .* Harness report/);
+    assert.match(block, /if: always\(\)/);
+    assert.match(block, /artifacts\/harness\/main-(validate|coverage|audit)\.json/);
     if (name === 'main-validate') assert.match(block, /fetch-depth: 0/);
     assert.doesNotMatch(block, /needs:/);
     assert.doesNotMatch(block, /node_modules/);
@@ -77,4 +81,5 @@ test('依赖审计维持 high 门槛且上传工具依赖保持隔离安装', ()
   assert.match(packageJson, /npm audit --audit-level=high/);
   assert.match(packageJson, /npm@11 ci --ignore-scripts --prefix tools\/miniprogram-ci/);
   assert.match(jobBlock('main-audit', null), /npm run tool:install/);
+  assert.match(jobBlock('main-audit', null), /npm run harness -- run audit/);
 });

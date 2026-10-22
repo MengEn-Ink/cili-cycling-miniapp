@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import process from 'node:process';
 
@@ -18,6 +18,7 @@ export function parseHarnessArgs(argv) {
   const [action = 'help', selection, ...rest] = argv;
   let reportPath = process.env.CILI_HARNESS_REPORT || DEFAULT_REPORT;
   let continueOnFailure = false;
+  let resume = false;
 
   for (let index = 0; index < rest.length; index += 1) {
     const argument = rest[index];
@@ -30,10 +31,14 @@ export function parseHarnessArgs(argv) {
       continueOnFailure = true;
       continue;
     }
+    if (argument === '--resume') {
+      resume = true;
+      continue;
+    }
     throw new Error(`未知参数：${argument}`);
   }
 
-  return { action, selection, reportPath, continueOnFailure };
+  return { action, selection, reportPath, continueOnFailure, resume };
 }
 
 export function inspectHarnessEnvironment({
@@ -88,6 +93,8 @@ export function createHarnessReport({ selection, taskNames, commitSha, mode }) {
     startedAt: new Date().toISOString(),
     finishedAt: null,
     outcome: 'running',
+    failureCategory: null,
+    resumedFrom: null,
     preflight: [],
     tasks: taskNames.map((name) => ({
       name,
@@ -95,8 +102,47 @@ export function createHarnessReport({ selection, taskNames, commitSha, mode }) {
       startedAt: null,
       finishedAt: null,
       exitCode: null,
+      failureCategory: null,
+      skippedReason: null,
     })),
   };
+}
+
+export function applyResumeState(report, previousReport, reportPath) {
+  if (previousReport.schemaVersion !== HARNESS_SCHEMA_VERSION) {
+    throw new Error(
+      `续跑报告 schemaVersion=${previousReport.schemaVersion}，当前要求 ${HARNESS_SCHEMA_VERSION}`,
+    );
+  }
+  if (previousReport.selection !== report.selection) {
+    throw new Error(
+      `续跑报告 selection=${previousReport.selection}，当前选择为 ${report.selection}`,
+    );
+  }
+  if (previousReport.commitSha !== report.commitSha) {
+    throw new Error(
+      `续跑报告绑定 ${previousReport.commitSha}，当前提交为 ${report.commitSha}；旧报告不能跨版本复用`,
+    );
+  }
+
+  const previousTasks = new Map(previousReport.tasks.map((task) => [task.name, task]));
+  for (const task of report.tasks) {
+    if (previousTasks.get(task.name)?.status !== 'passed') continue;
+    task.status = 'skipped';
+    task.skippedReason = 'resume:previously-passed';
+  }
+  report.resumedFrom = {
+    reportPath,
+    commitSha: previousReport.commitSha,
+    finishedAt: previousReport.finishedAt,
+  };
+  return report;
+}
+
+function loadReport(reportPath) {
+  const absolutePath = resolve(reportPath);
+  if (!existsSync(absolutePath)) throw new Error(`续跑报告不存在：${reportPath}`);
+  return JSON.parse(readFileSync(absolutePath, 'utf8'));
 }
 
 function gitCommitSha() {
@@ -112,10 +158,19 @@ function saveReport(reportPath, report) {
 
 function finishReport(report) {
   report.finishedAt = new Date().toISOString();
-  if (report.preflight.some((check) => !check.ok)) report.outcome = 'blocked';
-  else if (report.tasks.some((task) => task.status === 'failed')) report.outcome = 'failed';
-  else if (report.tasks.some((task) => task.status === 'pending')) report.outcome = 'blocked';
-  else report.outcome = 'passed';
+  if (report.preflight.some((check) => !check.ok)) {
+    report.outcome = 'blocked';
+    report.failureCategory = 'environment';
+  } else if (report.tasks.some((task) => task.status === 'failed')) {
+    report.outcome = 'failed';
+    report.failureCategory = report.tasks.find((task) => task.status === 'failed')?.failureCategory;
+  } else if (report.tasks.some((task) => task.status === 'pending')) {
+    report.outcome = 'blocked';
+    report.failureCategory = 'incomplete';
+  } else {
+    report.outcome = 'passed';
+    report.failureCategory = null;
+  }
   return report;
 }
 
@@ -123,14 +178,14 @@ function printHelp() {
   console.log(`用法：
   npm run harness -- list
   npm run harness -- preflight <任务|配置>
-  npm run harness -- run <任务|配置> [--report <路径>] [--continue-on-failure]
+  npm run harness -- run <任务|配置> [--report <路径>] [--resume] [--continue-on-failure]
 
 任务：${Object.keys(HARNESS_TASKS).join(', ')}
 配置：${Object.keys(HARNESS_PROFILES).join(', ')}`);
 }
 
 export function runHarness(argv = process.argv.slice(2)) {
-  const { action, selection, reportPath, continueOnFailure } = parseHarnessArgs(argv);
+  const { action, selection, reportPath, continueOnFailure, resume } = parseHarnessArgs(argv);
   if (action === 'help' || action === '--help' || action === '-h') {
     printHelp();
     return 0;
@@ -151,7 +206,11 @@ export function runHarness(argv = process.argv.slice(2)) {
     commitSha: gitCommitSha(),
     mode: process.env.GITHUB_ACTIONS === 'true' ? 'github-actions' : 'local',
   });
-  report.preflight = inspectHarnessEnvironment({ taskNames });
+  if (resume) applyResumeState(report, loadReport(reportPath), reportPath);
+  const runnableTaskNames = report.tasks
+    .filter((task) => task.status === 'pending')
+    .map((task) => task.name);
+  report.preflight = inspectHarnessEnvironment({ taskNames: runnableTaskNames });
 
   for (const check of report.preflight) {
     console.log(`${check.ok ? 'PASS' : 'BLOCKED'} ${check.id}: ${check.message}`);
@@ -168,6 +227,10 @@ export function runHarness(argv = process.argv.slice(2)) {
   }
 
   for (const taskResult of report.tasks) {
+    if (taskResult.status === 'skipped') {
+      console.log(`SKIPPED ${taskResult.name}: 已由同一提交的历史报告证明通过`);
+      continue;
+    }
     const [command, args] = HARNESS_TASKS[taskResult.name].command;
     taskResult.status = 'running';
     taskResult.startedAt = new Date().toISOString();
@@ -175,6 +238,8 @@ export function runHarness(argv = process.argv.slice(2)) {
     taskResult.finishedAt = new Date().toISOString();
     taskResult.exitCode = result.status ?? 1;
     taskResult.status = taskResult.exitCode === 0 ? 'passed' : 'failed';
+    taskResult.failureCategory =
+      taskResult.status === 'failed' ? (result.error ? 'infrastructure' : 'application') : null;
     saveReport(reportPath, report);
     if (taskResult.status === 'failed' && !continueOnFailure) break;
   }

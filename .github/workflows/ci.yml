@@ -141,10 +141,18 @@ jobs:
         run: npm ci
       - name: Rebuild shared package and install every cloud function
         run: npm run cloud:install
-      - name: Validate main
+      - name: Validate main through Harness
         env:
           RELEASE_NOTES_BASE: ${{ github.event.before }}
-        run: npm run validate
+        run: npm run harness -- run validate --report artifacts/harness/main-validate.json
+      - name: Upload main validate Harness report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: harness-report-main-validate-${{ github.run_id }}
+          path: artifacts/harness/main-validate.json
+          if-no-files-found: error
+          retention-days: 14
 
   main-coverage:
     if: github.event_name == 'push'
@@ -159,8 +167,16 @@ jobs:
           cache-dependency-path: package-lock.json
       - name: Install root dependencies
         run: npm ci
-      - name: Run main tests with coverage
-        run: npm run coverage
+      - name: Run main coverage through Harness
+        run: npm run harness -- run coverage --report artifacts/harness/main-coverage.json
+      - name: Upload main coverage Harness report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: harness-report-main-coverage-${{ github.run_id }}
+          path: artifacts/harness/main-coverage.json
+          if-no-files-found: error
+          retention-days: 14
 
   main-audit:
     if: github.event_name == 'push'
@@ -181,5 +197,13 @@ jobs:
           npm ci
           npm run tool:install
           npm run cloud:install
-      - name: Audit main high-severity vulnerabilities
-        run: npm run audit:all
+      - name: Audit main high-severity vulnerabilities through Harness
+        run: npm run harness -- run audit --report artifacts/harness/main-audit.json
+      - name: Upload main audit Harness report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: harness-report-main-audit-${{ github.run_id }}
+          path: artifacts/harness/main-audit.json
+          if-no-files-found: error
+          retention-days: 14

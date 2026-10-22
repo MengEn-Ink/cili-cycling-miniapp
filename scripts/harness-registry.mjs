@@ -1,4 +1,4 @@
-export const HARNESS_SCHEMA_VERSION = 1;
+export const HARNESS_SCHEMA_VERSION = 2;
 
 export const HARNESS_TASKS = Object.freeze({
   validate: {

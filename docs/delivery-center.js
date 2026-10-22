@@ -353,6 +353,23 @@
           ],
         },
         {
+          id: 'engineering-delivery-practice',
+          title: '把一次交付变成可重复的系统',
+          summary:
+            '从领域 Skills、Engineering Harness、GitHub Actions 到 Pages、微信开发版与 CloudBase 范围化部署，完整解释此里如何把开发规则、执行入口和验收证据收敛成可重复流程。',
+          maturity: 'baseline',
+          sources: [
+            {
+              label: '阅读工程化实践图文方案',
+              href: 'articles/engineering-delivery-practice.html',
+            },
+            {
+              label: '工程 Harness 运行手册',
+              href: BASE + 'docs/verification/engineering-harness.md',
+            },
+          ],
+        },
+        {
           id: 'sandbox-config',
           title: '沙箱、密钥与凭据边界',
           summary:

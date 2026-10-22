@@ -92,7 +92,9 @@ if (!packageJson.scripts?.validate?.includes('check:governance')) {
   throw new Error('npm run validate 必须执行 check:governance');
 }
 const ci = read('.github/workflows/ci.yml');
-if (!ci.includes('run: npm run validate')) throw new Error('CI 必须执行 npm run validate');
+if (!ci.includes('run: npm run harness -- run validate')) {
+  throw new Error('CI 必须通过 Harness 执行 validate');
+}
 if (!ci.includes('run: npm run check:pr-description'))
   throw new Error('PR CI 必须执行 npm run check:pr-description');
 if (!/types:\s*\[[^\]]*\bedited\b[^\]]*\]/.test(ci)) {

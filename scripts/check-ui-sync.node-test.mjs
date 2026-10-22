@@ -140,7 +140,7 @@ test('普通 CI 和体验版晋级分别执行预算与零漂移门禁', () => {
   assert.equal(packageJson.scripts['check:ui-sync'], 'node scripts/check-ui-sync.mjs');
   assert.match(packageJson.scripts.validate, /npm run test:ui-sync/);
   assert.match(packageJson.scripts.validate, /npm run check:ui-sync/);
-  assert.match(ci, /npm run validate/);
+  assert.match(ci, /npm run harness -- run validate/);
   assert.match(ci, /types: \[opened, synchronize, reopened, ready_for_review, edited, labeled\]/);
   assert.match(promotion, /npm run check:ui-sync -- --strict/);
 });
