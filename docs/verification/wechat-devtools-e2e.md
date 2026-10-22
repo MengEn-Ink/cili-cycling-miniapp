@@ -1,6 +1,6 @@
 # Pages、微信 DevTools 与真机验收流程
 
-统一入口：[设计规范](../design-system.md)、[17 路由交互原型](../index.html#prototype)、[P0 写链路与真机手册](p0-real-registration-journey.md)、[当前上线状态](2026-10-21-wechat-e2e-and-launch-readiness.md)、[高优清单](../high-priority-issues.md)。本手册更新于 2026-10-22；当前代码基线 `062c8ce`，客户端 `2026.10.21.7`。
+统一入口：[17 路由交互原型](../index.html#prototype)、[P0 写链路与真机手册](p0-real-registration-journey.md)、[当前上线状态](2026-10-21-wechat-e2e-and-launch-readiness.md)、[高优清单](../high-priority-issues.md)。本手册更新于 2026-10-22；当前代码基线 `062c8ce`，客户端 `2026.10.21.7`。
 
 ## 验收分层
 

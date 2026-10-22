@@ -5,11 +5,12 @@
 | 项目 | 内容 |
 | --- | --- |
 | PR | [#342](https://github.com/MengEn-Ink/cili-cycling-miniapp/pull/342) |
-| Head SHA | 设计 `25b05320`；背景与兼容修复 `7790c48d`；审计固定 `f4a9ba03`；UI 与证据 `7ab38286`。UI 测试绑定 dirty `7790c48d` 与内容摘要，提交未改变对应 UI 内容 |
+| 部署 SHA | `f3071cbfe4465695579990a1fb84b1d7edac6455`；PR head `9663e3aa`。主线干净运行与 UI 内容摘要绑定，设计安全修复未改变正式 UI 内容 |
 | 客户端版本 | `2026.10.22.2` |
-| 验收环境 | 正式 Pages 本地浏览器、微信开发者工具、既有真实 CloudBase |
+| 微信上传版本 | `0.0.344.1`，不可变 receipt 对应上述部署 SHA |
+| 验收环境 | 正式线上 Pages、微信开发者工具、目标 CloudBase |
 | 验收角色 | Pages 合成骑友/管理员；DevTools 已登录管理员 |
-| 执行时间 | 2026-10-22 13:55–14:15 CST |
+| 执行时间 | 2026-10-22；本地 13:55–14:50，线上 14:59–15:07 CST |
 | 执行人 | 自动化代理；物理设备和普通成员现场验收未执行 |
 
 ## 2. 影响范围
@@ -49,7 +50,9 @@
 | `check:design` | PASS | 97 双端变量、15 对比度组 |
 | `check:ui-sync -- --strict` | PASS | 新 17 路由双端截图与实际内容摘要一致，零 UI 漂移 |
 | `check:governance` | PASS | 17 页面、引用、统一上传、源码卫生与 Actions 安全基线一致；未删除真实验收阻塞 |
-| PR checks | CI PASS；CodeQL 待修复后复跑 | CodeQL 导出设计稿 30 条告警已定位并修复；不绕过安全检查 |
+| PR checks | PASS | [CI](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/39736732366)、[CodeQL](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/39736624503)；告警归零，两个安全审查线程自动关闭 |
+| 主线门禁 | PASS | [main CI](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/39737262567) 全量验证、覆盖率、安全审计通过；[main CodeQL](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/39737262120) 通过 |
+| 正式线上浏览器 | PASS | 部署后 56/56、三宽度 51/51；零脚本错误、横向溢出、过小控件和图片失败 |
 
 ## 5. 端到端执行记录
 
@@ -57,20 +60,36 @@
 2. 官方微信 runner 在 2026-10-22 14:08–14:09 实际读取云端，版本 2026.10.22.2，Git `7790c48d1ed05346ea1af53c66e4048b7e35bf6d`、dirty=true。UI 摘要 `sha256:820c9de49872cb98489fc1ebddad88e990c3f2b775afcc1e099c1e0ba9fca86f`。
 3. 27 项检查通过、零异常、17 路由，头像、本人背景、活动封面、编辑媒体、路线和俱乐部状态可读。一次 IDE 重编译就绪失败保留在私有日志；完成构建后复跑通过，不复用失败运行证据。
 4. 公开骑友媒体当前只有安全空态，不能视为媒体样本通过。原始截图和个人资料仅私有留存；公开 34 张图片按不透明矩形脱敏。差异和坐标见 [双端证据](../evidence/ui-sync/2026-10-22-cycling-image-journal/README.md)。
-5. 干净提交 `84e4271d25d9ca78275aae68b06203b57d09eeb6` 复跑同样 27/27、17 路由、零异常，dirty=false，UI 摘要相同。PR CI 已通过；导出设计稿的 CodeQL 告警修复后等待平台复核。
+5. 干净提交 `84e4271d25d9ca78275aae68b06203b57d09eeb6` 复跑同样 27/27、17 路由、零异常，dirty=false，UI 摘要相同。导出设计稿改为 DOM 克隆、状态白名单与完整替换，并删除共享页壳冗余处理器；最终 CodeQL 零新增告警，设计稿 56 画面、39 交互复验通过。
+6. PR #342 于 14:57 CST 合入。线上六个正式资源的 SHA-256 与部署 SHA 全部一致；Google Chrome 对线上 Pages 实际点击 56/56，通过 340/1440 的 17 路由覆盖；340/375/430 共 51 项视口、触控和图片检查通过。合成数据交互不执行云写入。
+7. 云函数部署和目标环境/媒体密钥验证后，15:02–15:04 CST 在干净主线 `f3071cbf` 复跑 DevTools：27/27、17 注册路由覆盖、零异常、dirty=false，UI 摘要一致。公开骑友媒体样本依然缺失，总 outcome=`blocked`。此次运行不覆盖普通成员写链路或双物理设备。
+8. CloudBase 整体部署于 15:06 CST 完成，profile 逐项部署验证通过，六个关键函数密钥对账通过；俱乐部申请真实写入 smoke 八阶段通过且测试数据已清理。15:07 CST 在线截图集验证 17 组、34 张图片全部加载、零溢出和脚本异常。
 
 **执行结论**：Pages PASS；真实云只读可执行项 PASS；完整端到端 BLOCKED。
 
-**未执行或阻塞说明**：普通成员完整写链路、物理 iOS/Android、公开媒体和完整云配置回读仍由项目验收负责人通过 [高优清单](../high-priority-issues.md) 继续现场验证；本轮不伪造身份、数据或签发通过证据。
+**未执行或阻塞说明**：普通成员完整写链路、物理 iOS/Android、公开媒体以及完整数据库/存储规则现场回读仍由项目验收负责人通过 [高优清单](../high-priority-issues.md) 继续验证。此次函数和关键密钥部署回读通过，不扩大为全部基础设施或完整 E2E 通过。
 
 ## 6. 部署与回读
 
 | 流程 | 运行链接 | 结果 | 回读 |
 | --- | --- | --- | --- |
-| main CI | 待合并后回读 | NOT_EXECUTED | 待最终 main SHA |
-| Pages | https://mengen-ink.github.io/cili-cycling-miniapp/ | 待合并后部署 | 待核对六个正式资源、版本与最终画面 |
-| CloudBase | 待合并后回读 | NOT_EXECUTED | profile 函数为本次影响范围 |
-| 微信开发版 | 待合并后回读 | NOT_EXECUTED | 待对应 SHA 的不可变上传 receipt |
+| main CI | [39737262567](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/39737262567) | PASS | `f3071cbf` 全量 validate/coverage/audit，通过后触发部署 |
+| Pages | [39737261604](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/39737261604) · [正式页面](https://mengen-ink.github.io/cili-cycling-miniapp/#profile) | PASS | Pages build 回读完整 SHA；六资源 SHA-256 6/6 一致；线上 56/56、51/51 |
+| CloudBase | [39737420074](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/39737420074) | PASS | profile 部署并验证，六个关键函数密钥对账与环境 `cloudbase-d0gizacy77a1ab017` 回读通过；俱乐部 smoke 八阶段通过且清理完成；数据库/存储 apply 本次安全跳过 |
+| 微信开发版 | [39737420151](https://github.com/MengEn-Ink/cili-cycling-miniapp/actions/runs/39737420151) | PASS | receipt schemaVersion=1，mainSha=`f3071cbfe4465695579990a1fb84b1d7edac6455`，version=`0.0.344.1`，robot=1，createdAt=`2026-10-22T06:59:55.000Z` |
+
+线上六资源摘要（2026-10-22 14:59 CST 回读）：
+
+| 资源 | SHA-256 |
+| --- | --- |
+| index.html | `98bb17594e61d7cb88fae1881e5489b5918d44fef1ae107840a560059024d525` |
+| styles.css | `633a774e2ad38ae722b4eabc21ae569f7ef0c00060d7f9bfa5d50b6fa9e61a61` |
+| app.js | `8247a2a55ad275b8642414d61cc129d34eb57ad7d6cb611e8630cbd233b6d281` |
+| delivery-center.js | `8d1c98fb5271c380756e35a5075e270e7f942928de23f8371cdc993812c3b84b` |
+| schema.js | `c59de1cbdb036536b6cee6e19e6f4fb79da7696124f5efd70a857d8c26f8bb02` |
+| templates.js | `f127946a99286e679cb6ac64befc4d5c2c0cbb44a945bcda76ff40bd3b360d24` |
+
+最终成果：[我的名片](https://mengen-ink.github.io/cili-cycling-miniapp/#profile)、[活动影像](https://mengen-ink.github.io/cili-cycling-miniapp/#activities)、[17 路由双端截图集](https://mengen-ink.github.io/cili-cycling-miniapp/evidence/ui-sync/2026-10-22-cycling-image-journal/)。
 
 ## 7. 风险与回滚
 
@@ -81,4 +100,4 @@
 
 ## 8. 最终结论
 
-本地实现、真实 Pages 点击和真实云只读可执行项已通过；发布受控推进中。普通成员与双真机等 P0 保持 BLOCKED。本报告会在 PR/main 部署完成后回填实际结果。
+实现已合入 `f3071cbf`，Pages、CloudBase 和微信开发版已部署；线上交互、六资源回读、主线工程门禁、真实云只读可执行项和俱乐部写入 smoke 通过。普通成员完整写链路、双真机、公开媒体与 OAuth 等 P0 保持 BLOCKED；不具备体验版晋级或提审验收结论。

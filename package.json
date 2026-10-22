@@ -17,7 +17,7 @@
     "tool:install": "npx --yes npm@11 ci --ignore-scripts --prefix tools/miniprogram-ci --registry=https://registry.npmjs.org",
     "test:cloud": "node scripts/run-cloud-packages.mjs test",
     "test:bootstrap": "node --test scripts/bootstrap-cloudbase.node-test.mjs scripts/cloudbase-deploy-decision.node-test.mjs scripts/cloudbase-function-env.node-test.mjs scripts/cloudbase-storage-rules.node-test.mjs scripts/cloudbase-club-application-smoke.node-test.mjs scripts/cloudbase-activity-flow-smoke.node-test.mjs scripts/cloudbase-historical-activity-purge.node-test.mjs scripts/cloudbase-prelaunch-media-purge.node-test.mjs scripts/activity-home-timeline-planner-probe.node-test.mjs",
-    "test:journey-evidence": "node --test tests/verify-journey-evidence.node-test.mjs scripts/p0-journey-driver.node-test.mjs scripts/wechat-devtools-e2e.node-test.mjs",
+    "test:journey-evidence": "node --test tests/verify-journey-evidence.node-test.mjs scripts/p0-journey-driver.node-test.mjs scripts/wechat-devtools-e2e.node-test.mjs scripts/e2e-report.node-test.mjs",
     "check:journey-preflight": "node scripts/p0-journey-driver.mjs preflight",
     "issue:journey-run": "node scripts/issue-journey-run.mjs",
     "verify:journey-evidence": "node scripts/verify-journey-evidence.mjs",
@@ -37,8 +37,6 @@
     "check:main-package": "node scripts/check-main-package-size.mjs",
     "test:release-notes": "node --test scripts/check-release-notes.node-test.mjs",
     "test:ui-sync": "node --test scripts/ui-sync-policy.node-test.mjs scripts/check-ui-sync.node-test.mjs",
-    "test:design": "node --test scripts/design-contract.node-test.mjs scripts/e2e-report.node-test.mjs",
-    "check:design": "node scripts/check-design-contract.mjs",
     "deploy:miniprogram": "node scripts/upload-miniprogram-ci.mjs",
     "check:ui-sync": "node scripts/check-ui-sync.mjs",
     "check:pr-description": "node scripts/check-pr-description.mjs",
@@ -48,7 +46,7 @@
     "test:ci-contract": "node --test scripts/affected-ci.node-test.mjs scripts/run-cloud-packages.node-test.mjs scripts/ci-workflow-contract.node-test.mjs",
     "check:governance": "node scripts/check-project-governance.mjs",
     "build": "rm -rf dist && tsc -p tsconfig.build.json && node scripts/validate.mjs",
-    "validate": "npm run tool:install && npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:ci-contract && npm run test:journey-evidence && npm run test:bootstrap && npm run test:deploy && npm run check:experience-releases && npm run test:release-notes && npm run test:ui-sync && npm run test:design && npm run check:design && npm run check:release-notes && npm run check:main-package && npm run check:ui-sync && npm run check:governance && npm run test:cloud && npm run verify:cloud-packages && npm run build",
+    "validate": "npm run tool:install && npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:ci-contract && npm run test:journey-evidence && npm run test:bootstrap && npm run test:deploy && npm run check:experience-releases && npm run test:release-notes && npm run test:ui-sync && npm run check:release-notes && npm run check:main-package && npm run check:ui-sync && npm run check:governance && npm run test:cloud && npm run verify:cloud-packages && npm run build",
     "audit:all": "npm audit --audit-level=high && node scripts/audit-miniprogram-ci.mjs && npm --prefix cloudfunctions/shared audit --audit-level=high && npm --prefix cloudfunctions/auth audit --audit-level=high && npm --prefix cloudfunctions/activity-read audit --audit-level=high && npm --prefix cloudfunctions/activity-admin audit --audit-level=high && npm --prefix cloudfunctions/strava-bridge audit --audit-level=high && npm --prefix cloudfunctions/strava-callback audit --audit-level=high && npm --prefix cloudfunctions/registration audit --audit-level=high && npm --prefix cloudfunctions/admin-review audit --audit-level=high && npm --prefix cloudfunctions/club-application audit --audit-level=high && npm --prefix cloudfunctions/notification-send audit --audit-level=high && npm --prefix cloudfunctions/profile audit --audit-level=high && npm --prefix cloudfunctions/profile-media-cleanup audit --audit-level=high && npm --prefix cloudfunctions/route-maintenance audit --audit-level=high"
   },
   "devDependencies": {

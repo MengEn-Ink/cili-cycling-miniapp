@@ -17,9 +17,7 @@
 
 预览图遵循三条维护规则：仅使用 `docs/ui-sync-manifest.json` 当前清单登记的 Pages 截图；不展示真实用户资料、凭证或受保护媒体；界面基线更新时同步更新清单、截图和本节引用。
 
-统一口径见 [设计规范](docs/design-system.md) 和 [E2E 验收流程](docs/verification/wechat-devtools-e2e.md)；[双端截图对照](https://mengen-ink.github.io/cili-cycling-miniapp/evidence/ui-sync/2026-10-22-cycling-image-journal/) 当前覆盖 17 条运行路由，并逐页标注数据类型、脱敏范围、差异与待复验状态。
-
-[沸点设计成果交接](https://mengen-ink.github.io/cili-cycling-miniapp/designs/2026-10-16-boiling-point/)归档了最初 13 页手稿、五类状态板与令牌规格；[离线交接说明](docs/designs/2026-10-16-boiling-point/README.md)保留原始设计边界。当前运行基线已扩展到 17 条路由，实施与证据状态以 UI 同步清单为准。
+统一口径见 [E2E 验收流程](docs/verification/wechat-devtools-e2e.md)；[双端截图对照](https://mengen-ink.github.io/cili-cycling-miniapp/evidence/ui-sync/2026-10-22-cycling-image-journal/) 当前覆盖 17 条运行路由，并逐页标注数据类型、脱敏范围、差异与待复验状态。
 
 ## 已实现能力
 

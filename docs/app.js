@@ -645,7 +645,7 @@
         </div>
         <div class="source-links">
           <a href="https://github.com/MengEn-Ink/cili-cycling-miniapp/blob/main/docs/requirements-design.md"><b>产品需求与当前能力</b><span>角色、核心旅程、功能清单与数据安全边界</span></a>
-          <a href="https://github.com/MengEn-Ink/cili-cycling-miniapp/blob/main/docs/superpowers/specs/2026-10-14-full-ui-redesign.md"><b>UI 设计演进记录</b><span>2026-10-14 页面结构与阶段验收口径，最终视觉以在线原型为准</span></a>
+          <a href="https://github.com/MengEn-Ink/cili-cycling-miniapp/blob/main/docs/superpowers/specs/2026-10-22-cycling-image-journal-design.md"><b>UI 设计演进记录</b><span>骑行影像志页面结构与阶段验收口径，最终视觉以在线原型为准</span></a>
           <a href="https://github.com/MengEn-Ink/cili-cycling-miniapp/blob/main/docs/verification/p0-real-registration-journey.md"><b>P0 真实报名旅程</b><span>报名、审批、凭证、取消与重报的真实环境验证手册</span></a>
           <a href="https://github.com/MengEn-Ink/cili-cycling-miniapp/blob/main/docs/product-backlog-clarification-2026-10-13.md"><b>产品路线图</b><span>权限、通知、凭证、模板、主题与更新日志的后续计划</span></a>
         </div>
@@ -783,7 +783,7 @@
       </section>
 
       <details class="reference-panel">
-        <summary>沸点设计系统与验收依据</summary>
+        <summary>影像志设计系统与验收依据</summary>
         <div class="reference-content">
           <h2>公共组件示例</h2>
           <div class="spec-demo">
@@ -793,9 +793,8 @@
           </div>
           <h2>浅色对比度检查表</h2>
           <table class="overview-table"><thead><tr><th>用途</th><th>前景</th><th>背景</th><th>对比度</th><th>门槛</th><th>使用位置</th></tr></thead><tbody>${contrast}</tbody></table>
-          <h2>沸点视觉验收</h2>
-          <p>当前 14 页统一使用暖米白画布、白卡、墨黑信息块、品牌红强调与深行动红主行动；历史主题问题已从当前原型说明中移除。</p>
-          <div class="official-links"><a href="./designs/2026-10-16-boiling-point/index.html">查看沸点手稿与全套交接成果</a><a href="./design-contract.json">查看双端设计契约</a></div>
+          <h2>影像志视觉验收</h2>
+          <p>当前 16 页统一使用暖米白画布、白卡、墨黑信息块、品牌红强调与深行动红主行动；影像标题采用宋体，历史主题问题已从当前原型说明中移除。</p>
         </div>
       </details>`;
   }
@@ -928,7 +927,7 @@
 
   const toastIcons = { success: '✓', warning: '⚠', error: '!' };
 
-  // 成功前缀白色 ✓、提醒前缀白色 ⚠、失败前缀品牌红 !（theme-constraints.md §7 toast）
+  // 成功前缀白色 ✓、提醒前缀白色 ⚠、失败前缀品牌红 ! 的 toast 前缀约定。
   function showToast(message, kind = 'success') {
     window.clearTimeout(toastTimer);
     toast.className = `demo-toast is-${kind}`;

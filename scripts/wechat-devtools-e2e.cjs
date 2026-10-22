@@ -148,7 +148,7 @@ async function main() {
   const { runWithReport } = await import('./e2e-report.mjs');
   const { relaunchWhenReady, waitForPageReady } = await import('./p0-journey-driver.mjs');
   const { classifyUiPath, digestFiles } = await import('./ui-sync-policy.mjs');
-  const { contrastRatio } = await import('./check-design-contract.mjs');
+  const { contrastRatio } = await import('./contrast-ratio.mjs');
   if (process.platform !== 'darwin') throw new Error('微信开发者工具 E2E 目前仅支持 macOS。');
   if (!fs.existsSync(cliPath)) throw new Error(`未找到微信开发者工具 CLI：${cliPath}`);
   if (!fs.existsSync(path.join(projectPath, 'project.config.json'))) {

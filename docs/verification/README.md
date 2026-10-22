@@ -29,7 +29,7 @@
 - [2026-10-13 官方路线 + GPX 部署验证](2026-10-13-route-embed-gpx-no-oauth.md)：记录 `route-web` / `pages/route-view` 仍存在时的阶段性验收；当前主线已删除官方路线页并改为复制 Strava 路线链接。
 - [`../superpowers/plans/2026-10-13-route-embed-gpx-no-oauth.md`](../superpowers/plans/2026-10-13-route-embed-gpx-no-oauth.md)：历史实现计划，保留追溯价值，不再作为现行方案。
 - [`../superpowers/specs/2026-10-13-route-embed-gpx-no-oauth-design.md`](../superpowers/specs/2026-10-13-route-embed-gpx-no-oauth-design.md)：历史设计稿，描述的是旧的 Embed / `web-view` 方案。
-- [`../evidence/ui-sync/2026-10-13-route-embed-gpx-no-oauth/README.md`](../evidence/ui-sync/2026-10-13-route-embed-gpx-no-oauth/README.md)：旧路线页与当时 UI 同步截图，仅用于审计留档。
+- `evidence/ui-sync/2026-10-13-route-embed-gpx-no-oauth/`：旧路线页与当时 UI 同步截图，仅用于审计留档（随骑行影像志改版清理，历史产物见 Git 历史）。
 
 ## 记录规则
 

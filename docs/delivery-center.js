@@ -175,49 +175,6 @@
           ],
         },
         {
-          id: 'oil-ui-high-density',
-          title: 'Oil UI 全页面高信息密度交互方案',
-          summary: '沿用沸点布局，覆盖 17 个正式页面与加载、空、失败、弱网等状态；通过分组与间距收敛提高同屏决策效率。',
-          maturity: 'baseline',
-          sources: [
-            { label: '打开全页面可点击原型', href: './designs/2026-10-22-oil-ui-high-density/index.html' },
-            { label: '查看适配说明', href: BASE + 'docs/designs/2026-10-22-oil-ui-high-density/README.md' },
-          ],
-        },
-        {
-          id: 'boiling-point-handoff',
-          title: '沸点手稿与全套设计交接成果',
-          summary: '13 页高清长图、五类状态板、两份离线手稿与完整令牌清单，是当前双端视觉验收的唯一参考。',
-          maturity: 'baseline',
-          sources: [
-            { label: '设计交接首页', href: BASE + 'docs/designs/2026-10-16-boiling-point/index.html' },
-            { label: '沸点令牌清单', href: BASE + 'docs/designs/2026-10-16-boiling-point/tokens.json' },
-          ],
-        },
-        {
-          id: 'theme-constraints',
-          title: '沸点设计规范与约束门禁',
-          summary: '32 个双端变量、15 组对比度；暖米白画布、墨黑信息块、深行动红白字、48px 主控件与统一长屏布局规范。',
-          maturity: 'baseline',
-          sources: [
-            { label: '统一设计规范', href: BASE + 'docs/design-system.md' },
-            { label: '设计契约 JSON', href: BASE + 'docs/design-contract.json' },
-            { label: '沸点实施规格', href: BASE + 'docs/superpowers/specs/2026-10-16-boiling-point-design-tokens.md' },
-            { label: '门禁脚本', href: BASE + 'scripts/check-design-contract.mjs' },
-          ],
-        },
-        {
-          id: 'ui-design-system',
-          title: '完整 UI 设计规范',
-          summary: '从 Master System、页面 Overrides、小程序平台边界到反模式和交付门禁，统一产品、设计、研发与验收口径。',
-          maturity: 'baseline',
-          sources: [
-            { label: '阅读 Pages 规范', href: 'ui-design-system.html' },
-            { label: '执行规范 DESIGN.md', href: BASE + 'DESIGN.md' },
-            { label: 'UI 验收清单', href: BASE + 'docs/ui-design-checklist.md' },
-          ],
-        },
-        {
           id: 'prototype-entry',
           title: '14 个交互原型',
           summary: '与 app.json 路由一一对应，可键盘导航、带状态的 hash 深链；本中心保留此入口不改动。',
@@ -236,7 +193,7 @@
           sources: [
             { label: 'docs/ui-sync-manifest.json', href: BASE + 'docs/ui-sync-manifest.json' },
             { label: 'docs/evidence/ui-sync/', href: RAW + 'docs/evidence/ui-sync' },
-            { label: '本轮双端截图与逐页差异', href: 'evidence/ui-sync/2026-10-16-design-acceptance/index.html' },
+            { label: '本轮双端截图与逐页差异', href: 'evidence/ui-sync/2026-10-22-cycling-image-journal/index.html' },
           ],
         },
         {
@@ -479,7 +436,7 @@
           id: 'quality-gate',
           title: '质量门禁',
           summary:
-            'validate / coverage / audit:all / check:design / check:ui-sync 组合成本地与 CI 门禁；写链路与物理真机另行验收。',
+            'validate / coverage / audit:all / check:ui-sync 组合成本地与 CI 门禁；写链路与物理真机另行验收。',
           maturity: 'baseline',
           inline: 'quality-gate',
         },
@@ -669,7 +626,7 @@
       <ol class="dc-pipeline">
         <li><b>固定基线</b><p>记录 main SHA、客户端版本、云环境、账号角色；检查 CI 与 Pages 部署状态。</p></li>
         <li><b>运行与校准</b><p><code>npm run test:devtools:e2e</code> 读取真实云数据并保存失败报告；使用 <code>?capture=viewport#activities</code> 采集同视口设计。</p></li>
-        <li><b>约束门禁</b><p><code>npm run check:design</code> 校验变量与对比度；<code>npm run check:ui-sync -- --strict</code> 校验 17 路由截图和内容摘要。</p></li>
+        <li><b>约束门禁</b><p><code>npm run check:ui-sync -- --strict</code> 校验 17 路由截图和内容摘要。</p></li>
         <li><b>部署后复验</b><p>PR / main CI → Pages → 微信开发版上传 → 设置页版本回读 → 同版本模拟器复测；普通成员写链路与 iOS/Android 真机单独记录。</p></li>
       </ol>`,
     'sdlc-matrix': () => `
@@ -805,7 +762,6 @@
         ['Bootstrap', '<code>npm run test:bootstrap</code>'],
         ['发布记录', '<code>npm run check:experience-releases</code> · <code>npm run check:release-notes</code>'],
         ['UI 同步', '<code>npm run check:ui-sync</code>'],
-        ['设计约束', '<code>npm run test:design</code> · <code>npm run check:design</code>'],
         ['模拟器实操', '<code>npm run test:devtools:e2e</code> · 真实云端只读，17 路由截图'],
         ['CloudBase 规划 / 校验', '<code>npm run cloudbase:plan</code> → 人工审核 → <code>cloudbase:apply</code> → <code>cloudbase:verify</code>'],
         ['真机验证', '按 <code>docs/verification/p0-real-registration-journey.md</code> 现场执行'],
@@ -816,7 +772,6 @@
         '<code>npm run coverage</code>：覆盖率门禁 + 云函数覆盖检查。',
         '<code>npm run audit:all</code>：根项目与所有云函数的 high 级依赖审计。',
         '<code>npm run check:ui-sync</code>：UI 同步清单与原型页面覆盖。',
-        '<code>npm run check:design</code>：双端变量、浅色文字与操作对比度；包含在 validate。',
         '<code>npm run check:experience-releases</code>：体验版清单一致性。',
         'GitHub CI：ci.yml 对 PR 和 main 均执行同一套 validate。',
       ]),

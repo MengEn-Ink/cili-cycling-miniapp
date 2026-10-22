@@ -17,10 +17,6 @@ const routeAnalysisDataFoundationArticle = read(
 );
 const agileDeliveryArticle = read('docs/articles/agile-delivery.html');
 const engineeringDeliveryPracticeArticle = read('docs/articles/engineering-delivery-practice.html');
-const uiDesignSystem = read('docs/ui-design-system.html');
-const designSystemIndex = read('docs/design-system.md');
-const designChecklist = read('docs/ui-design-checklist.md');
-const executableDesignSpec = read('DESIGN.md');
 const templates = read('docs/templates.js');
 
 type PrototypeRuntime = {
@@ -105,21 +101,19 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(html).toContain('17 个正式路由 + 4 个规划原型 / 21 个画面');
   });
 
-  it('活动首页使用三张 v3 影像卡组成自然长滚动列表', () => {
+  it('活动首页使用三张影像志故事卡组成自然长滚动列表', () => {
     const output = renderPrototypeState('activities', 'default');
-    expect(output).toContain('class="activity-journal-list"');
-    expect(output.match(/role="listitem"/g)).toHaveLength(3);
-    expect(output).toContain('class="journal-activity-caption"');
-    expect(output).toContain('预计骑行');
+    expect(output).toContain('class="pg activities-journal"');
+    expect(output.match(/class="story"/g)).toHaveLength(3);
+    expect(output).toContain('class="storyfacts"');
+    expect(output).toContain('骑行');
     expect(output).not.toContain('class="activity-date-stamp"');
     expect(output).not.toContain('class="activity-club-chip');
     expect(output).not.toContain('activity-carousel');
     expect(output).not.toContain('当前第 1 场');
+    expect(css).toMatch(/\.screen-container \.story\s*\{[^}]*display:\s*block/s);
     expect(css).toMatch(
-      /\.activities-v3 \.activity-journal-list\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s,
-    );
-    expect(css).toMatch(
-      /\.journal-activity-caption\s*\{[^}]*background:\s*var\(--color-media-card-bg\)/s,
+      /\.screen-container \.photo\s*\{[^}]*background:\s*var\(--color-media-card-bg\)/s,
     );
   });
 
@@ -227,12 +221,12 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
 
   it('单俱乐部口径下的身份原型渲染唯一俱乐部与活动归属快照', () => {
     const activitiesPage = renderPrototypeState('activities', 'default');
-    expect(activitiesPage).toContain('class="journal-activity-caption"');
+    expect(activitiesPage).toContain('class="story"');
     expect(activitiesPage).toContain('辛庄桥小火车');
     expect(activitiesPage).not.toContain('此里公开活动');
 
     const detailPage = renderPrototypeState('activity-detail', 'approved');
-    expect(detailPage).toContain('class="card host-card host-card-club"');
+    expect(detailPage).toContain('host-card host-card-club');
     expect(detailPage).toContain('辛庄桥小火车');
     expect(detailPage).toContain('所有活动都属于唯一俱乐部');
 
@@ -386,23 +380,14 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(routeAnalysisDataFoundationArticle).toContain('gpx-to-route-fact.webp');
     expect(routeAnalysisDataFoundationArticle).toContain('route-semantics-weather.webp');
     expect(routeAnalysisDataFoundationArticle).toContain('loading="lazy"');
-    expect(deliveryCenter).toContain('Oil UI 全页面高信息密度交互方案');
-    expect(deliveryCenter).toContain('./designs/2026-10-22-oil-ui-high-density/index.html');
-    expect(renderedDeliveryCenter).toContain(
-      'href="./designs/2026-10-22-oil-ui-high-density/index.html"',
-    );
-    expect(deliveryCenter).toContain('沸点手稿与全套设计交接成果');
-    expect(deliveryCenter).toContain('docs/designs/2026-10-16-boiling-point/index.html');
     expect(deliveryCenter).toContain('组织地基与活动归属（单俱乐部收口）');
     expect(deliveryCenter).toContain('全平台始终只有一个俱乐部');
     expect(deliveryCenter).toContain('不再区分俱乐部活动与公开活动');
-    expect(deliveryCenter).toContain('深行动红白字、48px 主控件');
     expect(deliveryCenter).not.toContain('深橙主操作白字 4.91:1');
-    expect(html).toContain('沸点视觉验收');
-    expect(html).toContain('沸点手稿与全套设计交接成果');
+    expect(html).toContain('影像志视觉验收');
     expect(html).not.toContain('<h3>截图问题</h3>');
     expect(html).not.toContain('<h3>改版方案</h3>');
-    expect(script).toContain('沸点设计系统与验收依据');
+    expect(script).toContain('影像志设计系统与验收依据');
     expect(script).not.toContain('历史问题对照表');
     expect(script).not.toContain('主题橙线条');
     expect(script).not.toContain('橙底');
@@ -476,49 +461,6 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
       expect(engineeringDeliveryPracticeArticle).toContain(content);
     }
     expect(engineeringDeliveryPracticeArticle).not.toMatch(/(?:src|href)="\/(?!\/)/);
-  });
-
-  it('完整 UI 规范接入交付中心，并同时约束主系统、页面差异和反模式', () => {
-    const deliveryRuntime: {
-      deliveryCenter?: { render: () => string };
-    } = {};
-    new Function('window', deliveryCenter)(deliveryRuntime);
-    const renderedDeliveryCenter = deliveryRuntime.deliveryCenter?.render() ?? '';
-
-    expect(deliveryCenter).toContain("id: 'ui-design-system'");
-    expect(deliveryCenter).toContain("href: 'ui-design-system.html'");
-    expect(deliveryCenter).toContain("href: BASE + 'DESIGN.md'");
-    expect(deliveryCenter).toContain("href: BASE + 'docs/ui-design-checklist.md'");
-    expect(renderedDeliveryCenter).toContain('完整 UI 设计规范');
-    expect(renderedDeliveryCenter).toContain('href="ui-design-system.html"');
-
-    for (const content of [
-      'Master Design System',
-      '页面 Overrides',
-      '跨平台实现规则',
-      '设计推理流程',
-      '反模式',
-      '交付门禁',
-    ]) {
-      expect(executableDesignSpec).toContain(content);
-    }
-    expect(designChecklist).toContain('UI 设计与验收清单');
-    expect(designChecklist).toContain('小程序平台');
-    expect(designChecklist).toContain('Pages 平台');
-    expect(designSystemIndex).toContain('../DESIGN.md');
-    expect(designSystemIndex).toContain('ui-design-system.html');
-
-    for (const content of [
-      'MASTER SYSTEM',
-      'PRODUCT PRINCIPLES',
-      'PAGE OVERRIDES',
-      'ANTI-PATTERNS',
-      'DESIGN INTELLIGENCE',
-      'QUALITY GATES',
-      'prefers-reduced-motion',
-    ]) {
-      expect(uiDesignSystem).toContain(content);
-    }
   });
 
   it('搭建指南覆盖九步交付、技术选型、核心变量、合规清单与项目审计', () => {
@@ -685,14 +627,14 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
       allHex.every((color) => declaredHex.has(color) || routeAnalysisExemptHex.has(color)),
     ).toBe(true);
     expect(css).not.toMatch(/\bnavy\b|\bblue\b|radial-gradient/i);
-    // profile-hero 顶图使用从透明到墨黑的垂直渐变遮罩，保证昵称可读；
-    // 这是唯一允许的 linear-gradient，用于与小程序 .hero-shade 对齐。
+    // 影像志顶图/故事卡使用从透明到墨黑（rgba(15,13,10)）的垂直渐变遮罩，保证标题可读；
+    // 这是唯一允许的 linear-gradient 用途，与设计稿 shared.css 对齐。
     const gradientMatches = css.match(/linear-gradient\([^)]*\)/g) || [];
     expect(gradientMatches.length).toBeGreaterThanOrEqual(1);
     for (const gradient of gradientMatches) {
-      expect(gradient).toMatch(/rgba\(0,\s*0,\s*0/);
+      expect(gradient).toMatch(/rgba\((0|15),\s*(0|13),\s*(0|10)/);
     }
-    expect(css).toMatch(/\.profile-hero-shade\s*\{[^}]*linear-gradient/s);
+    expect(css).toMatch(/\.screen-container \.profile-hero::after\s*\{[^}]*linear-gradient/s);
     expect(css).toContain('--color-text: #211f1c');
     expect(css).toContain('--color-brand: #e13b2b');
     expect(css).toMatch(
@@ -724,7 +666,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
       expect(css).toContain(`${name}: ${value}`);
     }
     const allowedSelectors =
-      /^(\.(tag-success|tag-warning|inline-toast|club-admin-card-status)|\.activities-v3 \.activity-card-v3\.is-(closing|joined) \.activity-card-status|\.route-source-conn\.tone-(success|warning) \.route-source-conn-dot)$/;
+      /^(\.(tag-success|tag-warning|inline-toast|club-admin-card-status)|\.activities-v3 \.activity-card-v3\.is-(closing|joined) \.activity-card-status|\.route-source-conn\.tone-(success|warning) \.route-source-conn-dot|\.screen-container \.tag\.(success|warning)|\.screen-container \.notice\.(success|warning|error))$/;
     const cssNoComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
     for (const [, selector, body] of cssNoComments.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
       if (!/var\(--color-status-/.test(body)) continue;
@@ -734,9 +676,9 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
         expect(one, one).toMatch(allowedSelectors);
       }
     }
-    expect(templates).toContain("tag('success', '✓ 已通过')");
+    expect(templates).toContain("tag('success', '✓ 已报名')");
     expect(templates).not.toContain("tag('solid', '已通过')");
-    expect(templates).toContain('activity-card-v3 is-${presentation.state}');
+    expect(templates).toContain('<span class="tag dark story-badge">');
     expect(templates).toContain("label: '即将满员'");
     expect(templates).toContain('⚠ 即将截止');
     expect(templates).toContain('可能过期');
@@ -768,7 +710,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
   it('活动详情同步关键指标、报名状态、Strava 只复制链接与完整路线分析入口', () => {
     expect(templates).toContain('预计骑行');
     expect(templates).toContain('已通过');
-    expect(templates).toMatch(/class="detail-decision(\s|")/);
+    expect(templates).toMatch(/class="[^"]*\bdetail-decision\b/);
     expect(templates).toContain('Strava 官方路线');
     expect(templates).toContain('复制路线链接');
     expect(templates).toContain('data-action="copy-route"');
@@ -779,7 +721,7 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     expect(script).toContain("if (action === 'copy-route')");
     expect(css).toContain('.inline-toast');
     // 活动详情只保留关键路线指标与完整分析入口，不重复绘制轮廓或海拔曲线。
-    expect(templates).toContain('class="card route-brief-card"');
+    expect(templates).toContain('class="section route-brief-card"');
     expect(templates).toContain('路线详情');
     expect(templates).not.toContain('route-brief-sparkline');
     expect(templates).toContain('查看完整路线分析');
@@ -791,8 +733,9 @@ describe('GitHub Pages 全页面高保真原型门禁', () => {
     // 保证"路线事实源"进入系统的路径不变，但默认态页面不再向用户暴露 GPX 等专业词或上传控件。
     expect(templates).toContain('粘贴 Strava 线路链接');
     expect(templates).toContain('公开路线轮廓');
-    // 海拔曲线作为 metric 继续以数据格「海拔区间」承载（里程 / 爬升 / 下降 / 海拔区间）
-    expect(templates).toContain('海拔区间');
+    // 影像志设计：线路预览指标条收敛为三栏（全程距离 / 累计爬升 / 此里估算骑行），
+    // 下降与海拔区间等细分数据在「完整路线分析」页承载，不在编辑页预览重复。
+    expect(templates).toContain('此里估算骑行');
     expect(templates).toContain('route-boost-sheet'); // 「+」展开后承载本地文件补充能力的 bottom-sheet
     expect(templates).toContain('本地路线文件（补充）'); // 弹层标题，默认态页面不可见
   });

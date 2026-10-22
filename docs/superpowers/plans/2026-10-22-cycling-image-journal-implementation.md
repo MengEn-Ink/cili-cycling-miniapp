@@ -80,12 +80,14 @@ assert.equal(profileReadiness({ ...current, ...patch }).completeness, 100);
 
 ## Task 7：提交、合入、部署与最终成果
 
-- [ ] 按文档、背景修复、UI与证据分组提交；使用Conventional Commits，不把工程配置混入功能修复。
-- [ ] 推送分支并建立PR，按仓库模板写明问题、影响、实际验收和未覆盖边界。
-- [ ] 修复PR checks后按本次提交部署授权合入主线；不绕过保护规则，不强推。
-- [ ] 等待main CI、Pages、CloudBase与微信开发版Actions，读取对应SHA和receipt；必要时仅触发受影响部署。
-- [ ] 在正式Pages核对最终版与资源，在DevTools复验部署后的客户端和云端响应；每次提交/部署/阻塞变化同步高优清单。
-- [ ] 生成可查看的最终成果页和有限验收报告，给出正式URL、PR/提交、版本与已验证/未执行事实。
+- [x] 按文档、背景修复、UI与证据分组提交；使用Conventional Commits，不把工程配置混入功能修复。
+- [x] 推送分支并建立PR，按仓库模板写明问题、影响、实际验收和未覆盖边界。
+- [x] 修复PR checks后按本次提交部署授权合入主线；不绕过保护规则，不强推。
+- [x] 等待main CI、Pages、CloudBase与微信开发版Actions，读取对应SHA和receipt；必要时仅触发受影响部署。
+- [x] 在正式Pages核对最终版与资源，在DevTools复验部署后的客户端和云端响应；每次提交/部署/阻塞变化同步高优清单。
+- [x] 生成可查看的最终成果页和有限验收报告，给出正式URL、PR/提交、版本与已验证/未执行事实。
+
+部署记录：PR #342 合入 `f3071cbfe4465695579990a1fb84b1d7edac6455`；main CI、CodeQL、Pages、CloudBase 和微信开发版全部成功。线上 Pages 56/56、51/51、六资源摘要一致；干净主线 DevTools 27/27、零异常，公开媒体缺样使完整 outcome BLOCKED。微信 receipt 版本 `0.0.344.1`，客户端 `2026.10.22.2`；详细结果见本轮 verification 报告。
 
 ## 验收不变量
 
