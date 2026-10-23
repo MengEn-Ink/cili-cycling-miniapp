@@ -27,6 +27,7 @@ const ROUTES = [
   'registrations',
   'credential',
   'profile',
+  'capability-card',
   'settings',
   'profile-edit',
   'admin-activity-list',

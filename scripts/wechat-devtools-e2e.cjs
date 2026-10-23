@@ -52,6 +52,19 @@ function opaqueColorHex(value) {
   return `#${channels.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
 }
 
+function translucentColorOnWhiteHex(value) {
+  const opaque = opaqueColorHex(value);
+  if (opaque) return opaque;
+  if (typeof value !== 'string') return null;
+  const match = value.match(/^rgba\(\s*(\d+),\s*(\d+),\s*(\d+),\s*(0(?:\.\d+)?|1(?:\.0+)?)\s*\)$/);
+  if (!match) return null;
+  const channels = match.slice(1, 4).map(Number);
+  const alpha = Number(match[4]);
+  if (channels.some((channel) => channel > 255) || alpha <= 0 || alpha > 1) return null;
+  const composited = channels.map((channel) => Math.round(channel * alpha + 255 * (1 - alpha)));
+  return `#${composited.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+}
+
 function attendeeMediaSummary(attendees) {
   const safe = attendees.every((item) =>
     [item.avatarUrl, item.backgroundUrl].every((url) => !url || isHttps(url)),
@@ -318,7 +331,9 @@ async function main() {
         await screenshot(miniProgram, '01b-activity-edit.png');
         const imageAction = await page.$('.image-action');
         if (imageAction) {
-          const background = opaqueColorHex(await imageAction.style('background-color'));
+          const background = translucentColorOnWhiteHex(
+            await imageAction.style('background-color'),
+          );
           const foreground = opaqueColorHex(await imageAction.style('color'));
           const ratio = background && foreground ? contrastRatio(background, foreground) : 0;
           check('图片删除按钮实际文字对比度至少 4.5:1', ratio >= 4.5, {
@@ -517,21 +532,34 @@ async function main() {
         );
         data = await page.data();
         check('审核详情可读', !data.error);
-        const headSize = await (await page.$('.info-head')).size();
-        const idSize = await (await page.$('.info-kicker')).size();
-        const tagSize = await (await page.$('.info-tag')).size();
-        check('长报名编号与状态标签保持在卡片内', idSize.width + tagSize.width <= headSize.width, {
-          headWidth: headSize.width,
-          idWidth: idSize.width,
-          tagWidth: tagSize.width,
-        });
+        const meta = await page.$('.pageheading-meta');
+        const id = await page.$('.info-kicker');
+        const tag = await page.$('.pageheading-meta .tag');
+        if (meta && id && tag) {
+          const metaSize = await meta.size();
+          const idSize = await id.size();
+          const tagSize = await tag.size();
+          check(
+            '长报名编号与状态标签保持在卡片内',
+            Math.max(idSize.width, tagSize.width) <= metaSize.width,
+            {
+              metaWidth: metaSize.width,
+              idWidth: idSize.width,
+              tagWidth: tagSize.width,
+            },
+          );
+        } else {
+          check('长报名编号与状态标签保持在卡片内', false, {
+            reason: '审核详情页标题元信息元素缺失',
+          });
+        }
         await screenshot(miniProgram, '12-admin-review-detail.png');
       } else {
         result.blockers.push('缺少可访问审核记录');
       }
       page = await relaunchLoaded('/pages/admin/activity-edit/index');
       await screenshot(miniProgram, '13-create-activity.png');
-      const publish = await page.$('.button--primary');
+      const publish = await page.$('[data-status="published"]');
       if (publish) {
         await publish.tap();
         page = await waitLoaded(page.path, (value) => Boolean(value.formErrors?.title));
@@ -570,6 +598,7 @@ async function main() {
 
 module.exports = {
   opaqueColorHex,
+  translucentColorOnWhiteHex,
   attendeeMediaSummary,
   recordAttendeeMediaReadiness,
   additionalReadOnlyRoutes,

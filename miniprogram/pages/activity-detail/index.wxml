@@ -178,7 +178,9 @@
           <block wx:if="{{groupQrVisible && item.groupQrCode}}">
             <view class="paper group-paper">
               <view class="section-prose">扫码加入活动群，出发前请留意群内通知。</view>
-              <image class="group-qr-image" src="{{item.groupQrCode}}" mode="aspectFit" bindtap="previewGroupQr" show-menu-by-longpress="{{true}}" aria-label="点击放大查看活动群二维码" />
+              <view class="group-qr-frame">
+                <image class="group-qr-image" src="{{item.groupQrCode}}" mode="aspectFit" bindtap="previewGroupQr" show-menu-by-longpress="{{true}}" aria-label="点击放大查看活动群二维码" />
+              </view>
               <view class="group-qr-hint muted">点击图片可放大查看</view>
               <view wx:if="{{groupQrCodeExpired}}" class="notice notice--warning">二维码可能已过期，请联系发布人更新。</view>
             </view>

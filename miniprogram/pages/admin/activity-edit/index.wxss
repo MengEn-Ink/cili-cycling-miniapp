@@ -505,18 +505,30 @@ page {
 .group-qr-card {
   position: relative;
   align-items: center;
+  padding: 32rpx;
+  border-color: var(--color-border-strong);
+  background: var(--color-raised);
+}
+.group-qr-media {
+  box-sizing: border-box;
+  padding: 20rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: 24rpx;
+  background: var(--color-surface);
 }
 .group-qr-preview {
   width: 320rpx;
   height: 320rpx;
   border-radius: var(--radius-sm);
-  background: var(--color-raised);
+  background: var(--color-surface);
 }
 .group-qr-warning {
   width: 100%;
+  max-width: 480rpx;
 }
 .group-qr-card .image-action--danger {
   width: 100%;
+  max-width: 360rpx;
   border-radius: var(--radius-sm) !important;
   background: var(--color-danger-soft) !important;
   color: var(--color-danger-text) !important;

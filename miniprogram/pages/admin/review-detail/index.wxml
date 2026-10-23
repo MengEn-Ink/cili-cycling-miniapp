@@ -58,10 +58,10 @@
           <view class="detailrow"><text class="dt">报名活动</text><text class="dd">{{x.activity.title}}</text></view>
           <view class="detailrow" wx:if="{{x.gatheringMode}}"><text class="dt">集合方式</text><text class="dd">{{x.gatheringMode}}</text></view>
           <view class="detailrow" wx:if="{{x.teamName}}"><text class="dt">队伍</text><text class="dd">{{x.teamName}}{{x.isTeamLeader ? ' · 队长' : ''}}</text></view>
-          <view class="detailrow"><text class="dt">真实姓名</text><text class="dd">{{card.realName}}</text></view>
-          <view class="detailrow"><text class="dt">性别</text><text class="dd">{{card.genderLabel}}</text></view>
-          <view class="detailrow"><text class="dt">手机号码</text><text class="dd mono">{{phone}}</text></view>
-          <view class="detailrow"><text class="dt">验证来源</text><text class="dd">{{phoneSource}}</text></view>
+          <view class="detailrow"><text class="dt">真实姓名</text><text class="dd dd--nowrap">{{card.realName}}</text></view>
+          <view class="detailrow"><text class="dt">性别</text><text class="dd dd--nowrap">{{card.genderLabel}}</text></view>
+          <view class="detailrow"><text class="dt">手机号码</text><text class="dd dd--nowrap mono">{{phone}}</text></view>
+          <view class="detailrow"><text class="dt">验证来源</text><text class="dd dd--nowrap">{{phoneSource}}</text></view>
         </view>
       </view>
 

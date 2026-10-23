@@ -30,6 +30,8 @@
 .profile-background-image {
   width: 100%;
   height: 100%;
+  object-position: center;
+  transform: scale(1.01);
 }
 .profile-background-swiper {
   display: block;
@@ -42,9 +44,10 @@
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(12, 10, 7, 0.1) 0%,
-    rgba(12, 10, 7, 0.05) 42%,
-    rgba(12, 10, 7, 0.96) 100%
+    rgba(12, 10, 7, 0.08) 0%,
+    rgba(12, 10, 7, 0.04) 36%,
+    rgba(12, 10, 7, 0.42) 68%,
+    rgba(12, 10, 7, 0.94) 100%
   );
 }
 .profile-label {
@@ -76,17 +79,16 @@
   width: 152rpx;
   height: 152rpx;
   padding: 0;
-  border: 4rpx solid rgba(255, 255, 255, 0.9);
-  border-radius: 32rpx;
+  border: 0;
+  border-radius: 50%;
   background: transparent;
   box-shadow: none;
-  overflow: hidden;
+  overflow: visible;
 }
 .avatar-trigger .avatar {
   width: 100%;
   height: 100%;
-  border-radius: 28rpx;
-  overflow: hidden;
+  border-radius: 50%;
 }
 .profile-identity-copy {
   flex: 1;
@@ -105,6 +107,7 @@
   font-size: 22rpx;
   letter-spacing: 2rpx;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 .profile-identity-copy .eyebrow::before {
   width: 32rpx;
@@ -113,12 +116,16 @@
   content: '';
 }
 .profile-name {
+  max-width: 100%;
+  overflow: hidden;
   font-family: var(--font-family-editorial);
   font-size: 72rpx;
   line-height: 80rpx;
   font-weight: 600;
   letter-spacing: -2rpx;
   color: var(--color-on-media);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .profile-gender {
   font-size: 28rpx;
