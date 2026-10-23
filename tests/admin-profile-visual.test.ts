@@ -37,7 +37,7 @@ describe('管理端与个人资料视觉契约', () => {
     );
     expect(styles).toMatch(/\.image-action\s*\{[^}]*min-height:\s*88rpx/s);
     expect(styles).toMatch(
-      /\.group-qr-card \.image-action--danger\s*\{[^}]*background:\s*var\(--color-danger-soft\);[^}]*color:\s*var\(--color-danger-text\)/s,
+      /\.group-qr-card \.image-action--danger\s*\{[^}]*background:\s*var\(--color-danger-soft\)(?:\s*!important)?;[^}]*color:\s*var\(--color-danger-text\)/s,
     );
     expect(styles).toMatch(
       /\.activity-editor\s*\{[^}]*padding-bottom:\s*calc\(var\(--fixed-action-reserve\) \+ var\(--card-gap\) \+ env\(safe-area-inset-bottom\)\)/s,
@@ -80,7 +80,7 @@ describe('管理端与个人资料视觉契约', () => {
     expect(template).toContain('图片加载失败，点击重试');
     expect(styles).toMatch(/\.photo-remove\s*\{[^}]*min-height:\s*88rpx/s);
     expect(styles).toMatch(
-      /\.photo-remove\s*\{[^}]*background:\s*var\(--color-danger-soft\);[^}]*color:\s*var\(--color-danger-text\)/s,
+      /\.photo-remove\s*\{[^}]*background:\s*var\(--color-danger-soft\)(?:\s*!important)?;[^}]*color:\s*var\(--color-danger-text\)/s,
     );
     expect(styles).toContain('animation: photo-loading-spin 0.9s linear infinite');
   });
@@ -109,7 +109,7 @@ describe('管理端与个人资料视觉契约', () => {
 
   it('俱乐部资料根容器不与页面内容重复叠加左右页边距', () => {
     const styles = read('miniprogram/pages/admin/club-application-detail/index.wxss');
-    expect(styles).toMatch(/\.club-profile-page\s*\{[^}]*padding:\s*0;/s);
-    expect(styles).toMatch(/\.content\s*\{[^}]*padding:\s*0 32rpx;/s);
+    expect(styles).toMatch(/\.club-profile-page\s*\{[^}]*padding:\s*0 0 calc\(/s);
+    expect(styles).toMatch(/\.content\s*\{[^}]*padding:\s*0 var\(--page-gutter\)/s);
   });
 });

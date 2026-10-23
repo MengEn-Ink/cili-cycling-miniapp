@@ -5,6 +5,7 @@
 
 .form-page {
   min-height: 100vh;
+  padding-top: 0;
   padding-bottom: calc(240rpx + env(safe-area-inset-bottom));
   background: var(--color-bg);
   color: var(--color-text);
@@ -35,8 +36,8 @@
   flex-direction: column;
   margin-top: 20rpx;
   font-family: var(--font-family-editorial);
-  font-size: 72rpx;
-  line-height: 88rpx;
+  font-size: 64rpx;
+  line-height: 80rpx;
   font-weight: 900;
   letter-spacing: -2rpx;
   color: var(--color-text);

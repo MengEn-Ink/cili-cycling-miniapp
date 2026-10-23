@@ -1661,7 +1661,7 @@ describe('资料编辑头像页面契约（骑行影像志）', () => {
     expect(template).toContain('class="upload upload-avatar"');
     expect(template).toContain('class="upload upload-background"');
     expect(styles).toMatch(
-      /\.upload\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*160rpx minmax\(0, 1fr\)/s,
+      /\.upload\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*144rpx minmax\(0, 1fr\)/s,
     );
     expect(styles).toMatch(/\.avatar-action\s*\{[^}]*box-sizing:\s*border-box[^}]*width:\s*100%/s);
   });

@@ -125,8 +125,8 @@ page {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-family-body);
-  font-size: 32rpx;
-  line-height: 48rpx;
+  font-size: 28rpx;
+  line-height: 44rpx;
 }
 
 .editorial {

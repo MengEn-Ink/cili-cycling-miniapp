@@ -1,5 +1,6 @@
 .profile-page {
   min-height: 100vh;
+  padding-top: 0;
   padding-left: 0;
   padding-right: 0;
   background: var(--color-bg);
@@ -15,7 +16,8 @@
 }
 .profile-hero {
   position: relative;
-  min-height: 680rpx;
+  width: 100%;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   background: var(--color-media-card-bg);
 }

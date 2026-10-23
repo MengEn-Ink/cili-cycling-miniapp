@@ -44,14 +44,19 @@ describe('沸点首批六页尺寸契约', () => {
     expect(styles).not.toMatch(/\.detail-decision\s*\{/);
   });
 
-  it('创建活动使用统一页边距、14px 卡片和 48px 控件', () => {
+  it('创建活动使用统一页边距、扁平章节和 48px 控件', () => {
     const app = read('miniprogram/app.wxss');
     const styles = read('miniprogram/pages/admin/activity-edit/index.wxss');
     const card = effectiveBlock(app, '.form-card');
     expect(app).toContain('padding: 32rpx var(--page-gutter);');
-    expect(styles).toMatch(/\.date-time-row\s*\{[^}]*grid-template-columns:\s*1fr 1fr/s);
-    expect(declaration(effectiveBlock(styles, '.date-time-row'), 'grid-template-columns')).toBe(
-      '1fr',
+    expect(styles).toMatch(
+      /\.fieldgrid\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s,
+    );
+    expect(styles).toMatch(
+      /@media \(max-width: 340px\)[\s\S]*\.fieldgrid,[\s\S]*grid-template-columns:\s*1fr/s,
+    );
+    expect(styles).toMatch(
+      /\.section\.form-card\.card\s*\{[^}]*padding:\s*0;[^}]*border:\s*0;[^}]*background:\s*transparent/s,
     );
     expect(declaration(card, 'padding')).toBe('var(--card-padding)');
     expect(declaration(card, 'border')).toBe('var(--card-border-width) solid var(--card-border)');
@@ -68,7 +73,7 @@ describe('沸点首批六页尺寸契约', () => {
     expect(template).toContain('bindtap="openSettings"');
     expect(template).toContain('aria-label="打开设置"');
     expect(template).not.toContain('<text>设置</text>');
-    expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*680rpx/s);
+    expect(styles).toMatch(/\.profile-hero\s*\{[^}]*aspect-ratio:\s*16 \/ 9/s);
     // 新设计：三条 60px 分隔行替代旧 .menu-list / .menu-card
     const row = effectiveBlock(styles, '.row.rowlink.rowbutton');
     expect(declaration(row, 'min-height')).toBe('120rpx');

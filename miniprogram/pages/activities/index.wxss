@@ -8,6 +8,7 @@
 
 .activities-page {
   min-height: 100vh;
+  padding-top: 0;
   padding-bottom: calc(64rpx + env(safe-area-inset-bottom));
   background: var(--color-bg);
   color: var(--color-text);
@@ -40,8 +41,8 @@
   gap: 4rpx;
   margin-top: 20rpx;
   font-family: var(--font-family-editorial);
-  font-size: 72rpx;
-  line-height: 88rpx;
+  font-size: 64rpx;
+  line-height: 80rpx;
   font-weight: 900;
   letter-spacing: -2rpx;
   color: var(--color-text);
