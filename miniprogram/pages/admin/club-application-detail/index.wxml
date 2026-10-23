@@ -9,6 +9,7 @@
     canvas 预处理节点保留供 chooseAndUploadClubMedia 使用。
 -->
 <view class="page club-profile-page">
+  <view wx:if="{{uploading}}" class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{uploadKind === 'avatar' ? '正在更新俱乐部头像…' : '正在更新俱乐部背景…'}}</view>
   <view class="empty" wx:if="{{pageState === 'loading'}}">
     <view class="empty-title">正在读取俱乐部资料</view>
     <view class="empty-copy">请稍候…</view>
@@ -101,7 +102,7 @@
                   disabled="{{uploading || saving}}"
                 >{{avatarPreviewUrl ? '更换俱乐部头像' : '选择俱乐部头像'}}</button>
               </view>
-              <view class="upload-status small muted" role="status">{{uploading && uploadKind === 'avatar' ? '正在更新俱乐部头像…' : (avatarPreviewUrl ? '头像已就绪' : '尚未设置头像')}}</view>
+              <view class="upload-status small muted">{{uploading && uploadKind === 'avatar' ? '正在更新俱乐部头像…' : (avatarPreviewUrl ? '头像已就绪' : '尚未设置头像')}}</view>
             </view>
           </view>
           <view class="field-error" wx:if="{{fieldErrorKey === 'avatarFileId'}}">{{fieldError}}</view>

@@ -47,6 +47,12 @@ page {
   --color-input-bg: #ffffff;
   --color-action: #c0321f;
   --color-action-active: #a52a1c;
+  /* Legacy editorial aliases: keep older page styles on the current journal palette. */
+  --color-paper: var(--color-surface);
+  --color-ink: var(--color-text);
+  --color-ink-muted: var(--color-muted);
+  --color-rule: var(--color-border-strong);
+  --color-accent: var(--color-action);
   --color-on-action: #ffffff;
   --color-on-action-muted: #ffffff;
   --color-on-media: #ffffff;
@@ -672,7 +678,7 @@ picker[disabled] {
   width: 100%;
   height: 100%;
 }
-.upload-status {
+.image-item > .upload-status {
   position: absolute;
   inset: 0;
   display: flex;

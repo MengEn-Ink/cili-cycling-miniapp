@@ -14,27 +14,29 @@ page {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  padding: 0;
   padding-bottom: calc(var(--fixed-action-reserve) + var(--card-gap) + env(safe-area-inset-bottom));
+  background: var(--color-bg);
 }
 
 /* ---------- Page heading ---------- */
 .editor-hero.pageheading {
-  padding: 56rpx 48rpx 32rpx;
+  padding: 44rpx var(--page-gutter) 48rpx;
   display: flex;
   flex-direction: column;
   gap: 20rpx;
 }
 .editor-hero .eyebrow {
   font-size: 22rpx;
-  letter-spacing: 10rpx;
+  letter-spacing: 2rpx;
   color: var(--color-ink-muted, #5a5a52);
   text-transform: uppercase;
 }
 .pageheading-title.editorial {
-  font-family: 'Noto Serif SC', 'Songti SC', serif;
-  font-weight: 500;
-  font-size: 68rpx;
-  line-height: 1.1;
+  font-family: var(--font-family-editorial);
+  font-weight: 600;
+  font-size: 64rpx;
+  line-height: 80rpx;
   color: var(--color-ink, #1a1a1a);
   display: flex;
   flex-direction: column;
@@ -50,10 +52,10 @@ page {
 
 /* ---------- Content container ---------- */
 .content {
-  padding: 0 48rpx;
+  padding: 0 var(--page-gutter);
 }
 .content.tight {
-  padding: 0 48rpx 120rpx;
+  padding: 0 var(--page-gutter) 120rpx;
   display: flex;
   flex-direction: column;
   gap: 32rpx;
