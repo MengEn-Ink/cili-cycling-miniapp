@@ -38,14 +38,14 @@ describe('设置页 · 骑行影像志设计稿样式契约（settings.html 1:1�
     expect(settings).toContain('var(--font-mono)');
   });
 
-  it('每个 section 使用无横线章节标题，入口改为 60px 分隔行并保持完整触控区', () => {
+  it('每个 section 使用无横线章节标题，入口使用 52px 紧凑分隔行并保持完整触控区', () => {
     const chapterTitle = effectiveBlock(settings, '.chapterhead-title');
     expect(declaration(chapterTitle, 'font-family')).toContain('--font-family-editorial');
     const chapterRule = effectiveBlock(settings, '.chapterhead-rule');
     expect(declaration(chapterRule, 'display')).toBe('none');
 
     const row = effectiveBlock(settings, '.row.rowlink.rowbutton');
-    expect(declaration(row, 'min-height')).toBe('120rpx');
+    expect(declaration(row, 'min-height')).toBe('104rpx');
     expect(declaration(row, 'background')).toBe('transparent');
     expectSemantic(declaration(row, 'color'), '--color-text');
     expect(declaration(row, 'border')).toBe('0');

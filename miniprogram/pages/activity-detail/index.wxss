@@ -818,3 +818,32 @@
     line-height: 52rpx;
   }
 }
+
+/* 2026-10 layout convergence: one clear CTA and protected final content. */
+.detail-page {
+  padding-bottom: calc(var(--action-bar-height) + 80rpx + env(safe-area-inset-bottom));
+}
+.ink {
+  position: relative;
+  z-index: 3;
+  margin-top: -32rpx;
+}
+.section-fee,
+.section-meeting {
+  scroll-margin-top: 32rpx;
+}
+.route-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.actionbar::before {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  left: 0;
+  height: 48rpx;
+  background: linear-gradient(to top, var(--color-bg), transparent);
+  pointer-events: none;
+  content: '';
+}

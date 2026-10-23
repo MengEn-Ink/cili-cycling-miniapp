@@ -12,10 +12,22 @@ const MAX_SUBSCRIPTION_TEMPLATES = 3;
 const RELEASE_NOTES = [
   {
     version: CLIENT_RELEASE_VERSION,
+    date: '2026-10-24',
+    title: '页面布局和操作反馈更顺手',
+    summary: '在保留骑行影像志主题的基础上，统一页面节奏、报名反馈与路线状态。',
+    latest: true,
+    features: [
+      '活动筛选吸顶、日期滑动提示与卡片按压反馈更清晰',
+      '活动费用前置，路线下载和复制状态集中展示',
+      '报名错误自动定位，行程、个人中心与设置页布局更紧凑',
+    ],
+  },
+  {
+    version: '2026.10.23.1',
     date: '2026-10-23',
     title: '头像、状态文字与群二维码显示更清晰',
     summary: '统一圆形头像、单行状态文字和带留白的活动群二维码展示。',
-    latest: true,
+    latest: false,
     features: [
       '个人资料与审核页面统一使用圆形头像，不再叠加方形边框',
       '短状态和关键身份值保持单行，较长说明按自然词语换行',

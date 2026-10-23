@@ -211,8 +211,8 @@
   display: flex;
   flex-direction: column;
   gap: 16rpx;
-  padding: 28rpx 32rpx;
-  border: 2rpx solid var(--color-border);
+  padding: 24rpx;
+  border: var(--border-width-hairline) solid var(--color-border);
   border-radius: 20rpx;
   background: var(--color-surface);
 }

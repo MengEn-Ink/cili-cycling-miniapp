@@ -8,6 +8,7 @@
   "backgroundColorBottom": "#fbf5ea",
   "backgroundTextStyle": "dark",
   "usingComponents": {
+    "async-status-card": "/pages/activity-detail/components/async-status-card/index",
     "generated-activity-cover": "/components/generated-activity-cover/index",
     "state-view": "/components/state-view/index"
   }

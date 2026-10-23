@@ -1,0 +1,69 @@
+.async-status {
+  position: relative;
+  display: flex;
+  overflow: hidden;
+  min-height: 88rpx;
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+.async-status__rail {
+  width: 4rpx;
+  background: var(--color-text);
+}
+.async-status__body {
+  flex: 1;
+  padding: 20rpx 24rpx;
+}
+.async-status__head {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+.async-status__dot {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 999rpx;
+  background: var(--color-muted);
+}
+.async-status__title {
+  color: var(--color-text);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-strong);
+}
+.async-status__detail {
+  display: block;
+  margin-top: 8rpx;
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+  line-height: var(--line-height-label);
+}
+.async-status__action {
+  min-height: 72rpx;
+  margin: 12rpx 0 0;
+  padding: 0;
+  background: transparent;
+  color: var(--color-action);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-strong);
+  text-align: left;
+}
+.async-status__action::after {
+  border: 0;
+}
+.async-status--pending .async-status__dot {
+  animation: status-pulse 1.4s ease-in-out infinite;
+}
+.async-status--success .async-status__dot {
+  background: var(--color-status-success);
+}
+.async-status--failed .async-status__dot {
+  background: var(--color-brand);
+}
+@keyframes status-pulse {
+  50% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+}

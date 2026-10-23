@@ -126,7 +126,7 @@
 
           <view class="small muted" data-registration-mode-note>本次报名由组织者审核，通过后可在「行程」查看凭证。</view>
 
-          <view wx:if="{{errors.length}}" class="notice notice--warning" role="alert">
+          <view id="registration-errors" wx:if="{{errors.length}}" class="notice notice--warning field-error-anchor" role="alert">
             <view class="notice-dot" aria-hidden="true"></view>
             <view class="notice-copy">
               <view class="notice-title">暂时无法提交，请处理以下问题</view>
