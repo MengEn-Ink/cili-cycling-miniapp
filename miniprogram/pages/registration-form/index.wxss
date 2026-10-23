@@ -5,6 +5,7 @@
 
 .form-page {
   min-height: 100vh;
+  padding-top: 0;
   padding-bottom: calc(240rpx + env(safe-area-inset-bottom));
   background: var(--color-bg);
   color: var(--color-text);
@@ -35,8 +36,8 @@
   flex-direction: column;
   margin-top: 20rpx;
   font-family: var(--font-family-editorial);
-  font-size: 72rpx;
-  line-height: 88rpx;
+  font-size: 64rpx;
+  line-height: 80rpx;
   font-weight: 900;
   letter-spacing: -2rpx;
   color: var(--color-text);
@@ -74,7 +75,7 @@
   border-radius: 999rpx;
   background: var(--color-surface);
 }
-.timeline > span {
+.timeline > .step {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -85,10 +86,10 @@
   line-height: 36rpx;
   font-weight: 800;
 }
-.timeline > span.active {
+.timeline > .step.active {
   color: var(--color-text);
 }
-.timeline b {
+.timeline .step-index {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -101,7 +102,7 @@
   font-size: 20rpx;
   font-weight: 900;
 }
-.timeline > span.active b {
+.timeline > .step.active .step-index {
   background: var(--color-text);
   color: var(--color-on-action);
 }
@@ -241,14 +242,14 @@
   flex: 1;
   min-width: 0;
 }
-.rowtext strong {
+.rowtext .em {
   display: block;
   color: var(--color-text);
   font-size: 28rpx;
   line-height: 40rpx;
   font-weight: 900;
 }
-.rowtext small {
+.rowtext .sub {
   display: block;
   margin-top: 4rpx;
   color: var(--color-muted);

@@ -14,9 +14,9 @@ describe('管理端与个人资料视觉契约', () => {
     expect(template).toContain('{{item.registrationMetric}}');
     expect(template).toContain('{{item.pendingMetric}}');
     expect(template).toContain('{{item.approvedMetric}}');
-    expect(template).toContain('<span>报名</span>');
-    expect(template).toContain('<span>待审核</span>');
-    expect(template).toContain('<span>已通过</span>');
+    expect(template).toContain('<text class="meta">报名</text>');
+    expect(template).toContain('<text class="meta">待审核</text>');
+    expect(template).toContain('<text class="meta">已通过</text>');
     expect(source).toContain('displayDate: formatActivityDateTime(item.startAt || item.date)');
     expect(template).toContain("{{item.displayDate || '活动时间待公布'}}");
     expect(template).not.toContain('{{item.displayDate || item.startAt}}');
@@ -37,11 +37,13 @@ describe('管理端与个人资料视觉契约', () => {
     );
     expect(styles).toMatch(/\.image-action\s*\{[^}]*min-height:\s*88rpx/s);
     expect(styles).toMatch(
-      /\.group-qr-card \.image-action--danger\s*\{[^}]*background:\s*var\(--color-danger-soft\);[^}]*color:\s*var\(--color-danger-text\)/s,
+      /\.group-qr-card \.image-action--danger\s*\{[^}]*background:\s*var\(--color-danger-soft\)(?:\s*!important)?;[^}]*color:\s*var\(--color-danger-text\)/s,
     );
     expect(styles).toMatch(
       /\.activity-editor\s*\{[^}]*padding-bottom:\s*calc\(var\(--fixed-action-reserve\) \+ var\(--card-gap\) \+ env\(safe-area-inset-bottom\)\)/s,
     );
+    expect(styles).toMatch(/\.page-shell\.activity-editor\s*\{[^}]*padding:\s*0;/s);
+    expect(styles).toMatch(/\.content\.tight\s*\{[^}]*padding:\s*0 var\(--page-gutter\) 120rpx;/s);
   });
 
   it('审批列表使用现有头像字段并提供昵称首字回退', () => {
@@ -78,8 +80,36 @@ describe('管理端与个人资料视觉契约', () => {
     expect(template).toContain('图片加载失败，点击重试');
     expect(styles).toMatch(/\.photo-remove\s*\{[^}]*min-height:\s*88rpx/s);
     expect(styles).toMatch(
-      /\.photo-remove\s*\{[^}]*background:\s*var\(--color-danger-soft\);[^}]*color:\s*var\(--color-danger-text\)/s,
+      /\.photo-remove\s*\{[^}]*background:\s*var\(--color-danger-soft\)(?:\s*!important)?;[^}]*color:\s*var\(--color-danger-text\)/s,
     );
     expect(styles).toContain('animation: photo-loading-spin 0.9s linear infinite');
+  });
+
+  it('静态媒体就绪文案不会触发开发者工具全屏播报遮罩', () => {
+    const appStyles = read('miniprogram/app.wxss');
+    const profileTemplate = read('miniprogram/pages/profile-edit/index.wxml');
+    const clubTemplate = read('miniprogram/pages/admin/club-application-detail/index.wxml');
+    const profileStatusTags =
+      profileTemplate.match(/<view\b[^>]*class="[^"]*upload-status[^"]*"[^>]*>/g) || [];
+    const clubStatusTags =
+      clubTemplate.match(/<view\b[^>]*class="[^"]*upload-status[^"]*"[^>]*>/g) || [];
+
+    expect(profileStatusTags).toHaveLength(2);
+    expect(profileStatusTags.every((tag: string) => !tag.includes('role="status"'))).toBe(true);
+    expect(clubStatusTags.every((tag: string) => !tag.includes('role="status"'))).toBe(true);
+    expect(profileTemplate).toMatch(
+      /wx:if="{{avatarBusy \|\| photoBusy}}"[^>]*class="a11y-live-region"[^>]*role="status"/,
+    );
+    expect(clubTemplate).toMatch(
+      /wx:if="{{uploading}}"[^>]*class="a11y-live-region"[^>]*role="status"/,
+    );
+    expect(appStyles).toContain('.image-item > .upload-status {');
+    expect(appStyles).not.toMatch(/(?:^|\n)\.upload-status\s*\{/);
+  });
+
+  it('俱乐部资料根容器不与页面内容重复叠加左右页边距', () => {
+    const styles = read('miniprogram/pages/admin/club-application-detail/index.wxss');
+    expect(styles).toMatch(/\.club-profile-page\s*\{[^}]*padding:\s*0 0 calc\(/s);
+    expect(styles).toMatch(/\.content\s*\{[^}]*padding:\s*0 var\(--page-gutter\)/s);
   });
 });

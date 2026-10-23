@@ -47,6 +47,12 @@ page {
   --color-input-bg: #ffffff;
   --color-action: #c0321f;
   --color-action-active: #a52a1c;
+  /* Legacy editorial aliases: keep older page styles on the current journal palette. */
+  --color-paper: var(--color-surface);
+  --color-ink: var(--color-text);
+  --color-ink-muted: var(--color-muted);
+  --color-rule: var(--color-border-strong);
+  --color-accent: var(--color-action);
   --color-on-action: #ffffff;
   --color-on-action-muted: #ffffff;
   --color-on-media: #ffffff;
@@ -119,8 +125,8 @@ page {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-family-body);
-  font-size: 32rpx;
-  line-height: 48rpx;
+  font-size: 28rpx;
+  line-height: 44rpx;
 }
 
 .editorial {
@@ -198,6 +204,17 @@ button::after {
 .page.profile-page {
   padding-bottom: calc(var(--tab-page-bottom-space) + constant(safe-area-inset-bottom));
   padding-bottom: calc(var(--tab-page-bottom-space) + env(safe-area-inset-bottom));
+}
+.custom-nav-title {
+  position: absolute;
+  left: var(--page-gutter);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  height: 44px;
+  font-size: 28rpx;
+  line-height: 44px;
+  font-weight: 800;
 }
 .detail-page,
 .form-page,
@@ -661,7 +678,7 @@ picker[disabled] {
   width: 100%;
   height: 100%;
 }
-.upload-status {
+.image-item > .upload-status {
   position: absolute;
   inset: 0;
   display: flex;

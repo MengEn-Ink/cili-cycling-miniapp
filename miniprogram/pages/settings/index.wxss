@@ -1,21 +1,13 @@
-/* Settings · 骑行影像志 1:1 实现
- * 以 docs/designs/2026-10-22-cycling-image-journal/pages/settings.html 为视觉基准：
- *   pageheading（eyebrow + 2 行宋体标题 + 小字说明）
- *   section × 4（通知 / 隐私 / 应用 / 平台管理员可见的 Strava 同步）
- *   每个 section：chapterhead（标题 + 细横线）→ row.rowlink.rowbutton（图标 + 文字 + chevron）→ 可选 notice/detailrows
- * 系统导航使用微信原生胶囊；页面不渲染任何伪 status-bar / nav 栏。
- */
-
 .settings-page {
   min-height: 100vh;
+  padding-top: 0;
   padding-bottom: calc(96rpx + env(safe-area-inset-bottom));
   background: var(--color-bg);
   color: var(--color-text);
 }
 
-/* --- Page heading (对齐设计稿 .pageheading) -------------------------------- */
 .pageheading {
-  padding: 32rpx 0 48rpx;
+  padding: 44rpx 0 48rpx;
   background: var(--color-bg);
   color: var(--color-text);
 }
@@ -42,9 +34,9 @@
   gap: 4rpx;
   margin-top: 20rpx;
   font-family: var(--font-family-editorial);
-  font-size: 72rpx;
-  line-height: 88rpx;
-  font-weight: 900;
+  font-size: 64rpx;
+  line-height: 80rpx;
+  font-weight: 800;
   letter-spacing: -2rpx;
   color: var(--color-text);
 }
@@ -58,42 +50,41 @@
   line-height: 44rpx;
 }
 
-/* --- Content wrapper (设计稿 .content.tight) ------------------------------- */
 .content {
   display: flex;
   flex-direction: column;
-  gap: 56rpx;
+  gap: 0;
 }
 .content.tight {
-  gap: 48rpx;
+  gap: 0;
 }
 
-/* --- Section + chapterhead ------------------------------------------------- */
 .section {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
+  gap: 0;
+  margin-top: 64rpx;
+}
+.section:first-child {
+  margin-top: 0;
 }
 .chapterhead {
   display: flex;
   align-items: center;
   gap: 20rpx;
-  margin-bottom: 4rpx;
+  margin-bottom: 32rpx;
 }
 .chapterhead-title {
   flex: none;
   color: var(--color-text);
   font-family: var(--font-family-editorial);
-  font-size: 36rpx;
-  line-height: 48rpx;
-  font-weight: 900;
+  font-size: 44rpx;
+  line-height: 56rpx;
+  font-weight: 800;
   letter-spacing: -0.5rpx;
 }
 .chapterhead-rule {
-  flex: 1;
-  min-width: 0;
-  height: 2rpx;
-  background: var(--color-border);
+  display: none;
 }
 .chapterhead-aside {
   flex: none;
@@ -104,18 +95,18 @@
   letter-spacing: 1rpx;
 }
 
-/* --- Row link / row button (对齐设计稿 .row.rowlink.rowbutton) ------------ */
 .row.rowlink.rowbutton {
   display: flex;
   align-items: center;
   gap: 20rpx;
   width: 100%;
-  min-height: 128rpx;
+  min-height: 120rpx;
   margin: 0;
-  padding: 24rpx 24rpx;
-  border: 2rpx solid var(--color-border);
-  border-radius: 20rpx;
-  background: var(--color-surface);
+  padding: 24rpx 0;
+  border: 0;
+  border-bottom: 2rpx solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
   color: var(--color-text);
   text-align: left;
   transition: background var(--motion-duration-fast) var(--motion-easing-standard);
@@ -142,14 +133,13 @@
 .rowicon {
   flex: none;
   display: inline-block;
-  width: 48rpx;
-  height: 48rpx;
-  border: 2rpx solid var(--color-text);
-  border-radius: 14rpx;
-  background: var(--color-bg);
+  width: 40rpx;
+  height: 40rpx;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   position: relative;
 }
-/* 四种图标：铃铛 / 锁 / 扫帚 / 路线 — 用 CSS 画伪元素 glyph，不依赖图片资源 */
 .rowicon--bell::before {
   position: absolute;
   top: 10rpx;
@@ -264,17 +254,16 @@
   transform: rotate(45deg);
 }
 
-/* --- Notice (设计稿 .notice) ---------------------------------------------- */
 .notice {
   display: flex;
   align-items: flex-start;
   gap: 16rpx;
-  padding: 20rpx 24rpx;
-  border: 2rpx dashed var(--color-border);
-  border-radius: 16rpx;
-  background: var(--color-bg);
-  color: var(--color-muted);
-  font-size: 24rpx;
+  padding: 24rpx 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 28rpx;
   line-height: 36rpx;
 }
 .notice-dot {
@@ -298,23 +287,23 @@
   color: var(--color-status-warning);
 }
 
-/* --- Detailrows (设计稿 .detailrows -> 当前版本 / 本次更新) ----------------- */
 .detailrows {
   display: flex;
   flex-direction: column;
-  border: 2rpx solid var(--color-border);
-  border-radius: 20rpx;
-  background: var(--color-surface);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   overflow: hidden;
 }
 .detailrow {
   display: grid;
   grid-template-columns: 160rpx minmax(0, 1fr);
   gap: 20rpx;
-  padding: 20rpx 24rpx;
+  padding: 20rpx 0;
+  border-bottom: 2rpx solid var(--color-border);
 }
 .detailrow + .detailrow {
-  border-top: 2rpx solid var(--color-border-subtle);
+  border-top: 0;
 }
 .detailrow-term {
   color: var(--color-muted);
@@ -334,7 +323,6 @@
   font-weight: 800;
 }
 
-/* --- Strava section (设计稿 data-admin-only) ------------------------------ */
 .section-strava .strava-body {
   display: flex;
   flex-direction: column;
@@ -401,7 +389,6 @@
   width: 100%;
 }
 
-/* --- Footer --------------------------------------------------------------- */
 .settings-footer {
   margin-top: 72rpx;
   color: var(--color-muted);
@@ -411,12 +398,8 @@
   letter-spacing: 2rpx;
 }
 
-/* --- Small screens (对齐设计稿 340 / 375 / 430 三档) -----------------------
- * 设计稿已在 72rpx 字号与 128rpx 行高下通过 340 宽度验证，无需额外收缩；
- * 这里只保留对左右内边距的细调，避免 340 边缘贴死。
- */
 @media (max-width: 350px) {
   .row.rowlink.rowbutton {
-    padding: 20rpx;
+    padding: 20rpx 0;
   }
 }

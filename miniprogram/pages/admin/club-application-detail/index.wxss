@@ -1,31 +1,21 @@
-/* 骑行影像志 · 俱乐部资料编辑 1:1 实现
- * 对齐 docs/designs/2026-10-22-cycling-image-journal/pages/admin-club-profile.html
- *   pageheading → content.tight(form) →
- *     section 头像与背景(upload × 2)
- *     section 基本资料(field × 3)
- *     btn 保存
- */
-
 .club-profile-page {
   min-height: 100vh;
-  padding-bottom: calc(96rpx + env(safe-area-inset-bottom));
+  padding: 0 0 calc(64rpx + env(safe-area-inset-bottom));
   background: var(--color-bg);
   color: var(--color-text);
 }
-
-/* --- pageheading --------------------------------------------------------- */
 .pageheading {
-  padding: 32rpx 32rpx 24rpx;
+  padding: 40rpx var(--page-gutter) 36rpx;
 }
 .pageheading .eyebrow {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 16rpx;
   color: var(--color-muted);
   font-family: var(--font-family-mono);
-  font-size: 22rpx;
+  font-size: 24rpx;
+  line-height: 36rpx;
   letter-spacing: 2rpx;
-  text-transform: uppercase;
 }
 .pageheading .eyebrow::before {
   width: 40rpx;
@@ -36,13 +26,13 @@
 .pageheading-title {
   display: flex;
   flex-direction: column;
-  margin-top: 20rpx;
+  margin-top: 16rpx;
+  color: var(--color-text);
   font-family: var(--font-family-editorial);
-  font-size: 72rpx;
-  line-height: 88rpx;
+  font-size: 64rpx;
+  line-height: 80rpx;
   font-weight: 900;
   letter-spacing: -2rpx;
-  color: var(--color-text);
 }
 .pageheading-sub {
   margin-top: 16rpx;
@@ -53,109 +43,82 @@
 .club-profile-badge {
   display: inline-flex;
   margin-top: 16rpx;
-  padding: 6rpx 18rpx;
-  border: 2rpx solid var(--color-border);
-  border-radius: 999rpx;
-  background: var(--color-surface);
+  padding: 6rpx 16rpx;
+  border-radius: var(--radius-xs);
+  background: var(--color-raised);
   color: var(--color-text);
-  letter-spacing: 1rpx;
 }
-
-/* --- content ------------------------------------------------------------ */
 .content {
-  display: flex;
-  flex-direction: column;
-  padding: 0 32rpx;
+  padding: 0 var(--page-gutter);
 }
 .content > form {
   display: flex;
   flex-direction: column;
-  gap: 32rpx;
+  gap: 56rpx;
 }
-
-/* --- section + chapterhead -------------------------------------------- */
 .section {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
-  padding: 28rpx;
-  border: 2rpx solid var(--color-border);
-  border-radius: 24rpx;
-  background: var(--color-surface);
+  gap: 24rpx;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.section + .section {
+  margin-top: 56rpx;
 }
 .chapterhead {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 16rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 2rpx solid var(--color-border);
 }
 .chapterhead-title {
   color: var(--color-text);
   font-family: var(--font-family-editorial);
-  font-size: 34rpx;
+  font-size: 36rpx;
   line-height: 48rpx;
   font-weight: 900;
 }
 .chapterhead-aside {
   color: var(--color-muted);
-  font-family: var(--font-family-mono);
-  font-size: 22rpx;
-  letter-spacing: 1rpx;
+  font-size: 24rpx;
+  line-height: 36rpx;
 }
-
-/* --- upload ------------------------------------------------------------- */
 .upload {
   display: flex;
+  align-items: center;
   gap: 20rpx;
   padding: 20rpx;
-  border: 2rpx dashed var(--color-border);
-  border-radius: 20rpx;
-  background: var(--color-bg);
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
 }
 .upload-preview {
-  flex: none;
   position: relative;
+  flex: none;
   overflow: hidden;
-  border-radius: 16rpx;
+  border-radius: var(--radius-sm);
   background: var(--color-raised);
 }
 .club-cover-preview {
-  width: 272rpx;
+  width: 256rpx;
   aspect-ratio: 16 / 9;
 }
 .club-avatar-preview {
-  width: 160rpx;
-  height: 160rpx;
-  border-radius: 24rpx;
+  width: 144rpx;
+  height: 144rpx;
 }
 .upload-image {
+  display: block;
   width: 100%;
   height: 100%;
-  display: block;
 }
-.upload-empty {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6rpx;
-  padding: 12rpx;
-  color: var(--color-muted);
-  text-align: center;
-  font-size: 24rpx;
-}
-.club-avatar-empty {
-  color: var(--color-text);
-  font-size: 56rpx;
-  font-weight: 300;
-}
-.club-cover-empty-title {
-  color: var(--color-text);
-  font-size: 24rpx;
-  font-weight: 800;
-}
+.upload-empty,
 .upload-progress {
   position: absolute;
   inset: 0;
@@ -163,56 +126,65 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10rpx;
-  background: rgba(12, 10, 7, 0.56);
-  color: #fff;
-  font-size: 24rpx;
+  gap: 8rpx;
+  padding: 12rpx;
+  text-align: center;
 }
-.club-cover-progress-text {
+.upload-empty {
+  color: var(--color-muted);
+  font-size: 24rpx;
+  line-height: 36rpx;
+}
+.club-avatar-empty {
+  color: var(--color-text);
+  font-size: 48rpx;
+}
+.club-cover-empty-title {
+  color: var(--color-text);
+  font-weight: 800;
+}
+.upload-progress {
+  background: var(--color-media-scrim);
+  color: var(--color-on-media);
+  font-size: 24rpx;
   font-weight: 800;
 }
 .club-cover-progress-bar {
   width: 70%;
   height: 8rpx;
+  overflow: hidden;
   border-radius: 999rpx;
   background: rgba(255, 255, 255, 0.3);
-  overflow: hidden;
 }
 .club-cover-progress-inner {
   height: 100%;
-  background: #fff;
-}
-.club-avatar-progress {
-  font-weight: 800;
+  background: var(--color-on-media);
 }
 .upload-copy {
-  flex: 1;
-  min-width: 0;
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 10rpx;
+  min-width: 0;
 }
 .upload-title {
   color: var(--color-text);
   font-size: 28rpx;
+  line-height: 44rpx;
   font-weight: 800;
 }
-.upload-sub {
+.upload-sub,
+.upload-status,
+.small {
   color: var(--color-muted);
   font-size: 24rpx;
   line-height: 36rpx;
 }
 .upload-actions {
-  display: inline-flex;
+  display: flex;
   flex-wrap: wrap;
   gap: 12rpx;
 }
-.upload-status {
-  color: var(--color-muted);
-  font-size: 22rpx;
-}
-
-/* --- field ------------------------------------------------------------- */
 .field {
   display: flex;
   flex-direction: column;
@@ -220,37 +192,36 @@
 }
 .field-label {
   color: var(--color-text);
-  font-size: 26rpx;
+  font-size: 28rpx;
+  line-height: 44rpx;
   font-weight: 800;
 }
 .field-label .required {
   margin-left: 8rpx;
-  color: var(--color-muted);
-  font-weight: 500;
-  font-size: 22rpx;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-action);
+  font-size: 24rpx;
+  line-height: 36rpx;
 }
-.input {
-  min-height: 88rpx;
-  padding: 18rpx 24rpx;
-  border: 2rpx solid var(--color-border);
-  border-radius: 20rpx;
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-size: 28rpx;
-  line-height: 40rpx;
-}
-.input-placeholder {
-  color: var(--color-muted);
-}
+.input,
 .textarea {
-  min-height: 180rpx;
+  width: 100%;
+  min-height: var(--control-height);
   padding: 20rpx 24rpx;
-  border: 2rpx solid var(--color-border);
-  border-radius: 20rpx;
-  background: var(--color-bg);
+  border: 2rpx solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
   color: var(--color-text);
   font-size: 28rpx;
   line-height: 44rpx;
+}
+.textarea {
+  min-height: 200rpx;
+}
+.input-placeholder {
+  color: var(--color-placeholder);
 }
 .field-meta {
   display: flex;
@@ -259,128 +230,109 @@
   gap: 16rpx;
 }
 .field-count {
-  color: var(--color-muted);
-  font-size: 22rpx;
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
 }
-.field-error {
-  color: var(--color-status-warning, #c0321f);
+.field-error,
+.field-msg.is-error {
+  color: var(--color-action-active);
   font-size: 24rpx;
   line-height: 36rpx;
+  font-weight: 700;
 }
 .field-msg.is-error {
-  color: var(--color-status-warning, #c0321f);
-  font-size: 26rpx;
   padding: 16rpx 20rpx;
-  border: 2rpx solid var(--color-status-warning, #c0321f);
-  border-radius: 16rpx;
-  background: var(--color-status-warning-soft, rgba(192, 50, 31, 0.08));
+  border-left: 6rpx solid var(--color-action);
+  background: var(--color-brand-soft);
 }
-
-/* --- notice ----------------------------------------------------------- */
 .notice {
   display: flex;
   align-items: flex-start;
-  gap: 16rpx;
-  padding: 20rpx 24rpx;
-  border: 2rpx solid var(--color-border);
-  border-radius: 16rpx;
-  background: var(--color-bg);
+  gap: 14rpx;
+  padding: 16rpx 0 16rpx 20rpx;
+  border-left: 6rpx solid var(--color-border-strong);
   color: var(--color-text);
   font-size: 24rpx;
-  line-height: 36rpx;
+  line-height: 38rpx;
 }
 .notice-dot {
   flex: none;
-  width: 12rpx;
-  height: 12rpx;
-  margin-top: 12rpx;
+  width: 10rpx;
+  height: 10rpx;
+  margin-top: 14rpx;
   border-radius: 50%;
-  background: var(--color-text);
+  background: currentColor;
 }
-
-/* --- empty state ------------------------------------------------------- */
+.btn {
+  min-height: var(--control-height);
+  padding: 0 24rpx;
+  border: 2rpx solid var(--color-action);
+  border-radius: var(--radius-sm) !important;
+  background: var(--color-action) !important;
+  color: var(--color-on-action) !important;
+  font-size: 28rpx;
+  line-height: 44rpx;
+  font-weight: 800;
+}
+.btn.secondary {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface) !important;
+  color: var(--color-text) !important;
+}
+.btn[disabled] {
+  border-color: var(--color-border) !important;
+  background: var(--color-raised) !important;
+  color: var(--color-disabled-text) !important;
+}
+.club-profile-submit {
+  width: 100%;
+}
 .empty {
-  margin: 32rpx;
-  padding: 40rpx 32rpx;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 12rpx;
-  border: 2rpx dashed var(--color-border);
-  border-radius: 20rpx;
+  margin: 32rpx var(--page-gutter);
+  padding: 40rpx 24rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-card);
   background: var(--color-surface);
   text-align: center;
 }
 .empty-title {
-  font-size: 32rpx;
-  font-weight: 900;
   color: var(--color-text);
+  font-size: 32rpx;
+  line-height: 44rpx;
+  font-weight: 900;
 }
 .empty-copy {
   color: var(--color-muted);
   font-size: 26rpx;
-  line-height: 38rpx;
-}
-.empty .btn {
-  align-self: center;
-}
-
-/* --- btn ------------------------------------------------------------- */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 88rpx;
-  padding: 0 32rpx;
-  border: 2rpx solid var(--color-text);
-  border-radius: 999rpx;
-  background: var(--color-text);
-  color: var(--color-on-action);
-  font-size: 28rpx;
   line-height: 40rpx;
-  font-weight: 800;
 }
-.btn::after {
-  display: none;
-}
-.btn.secondary {
-  background: var(--color-surface);
-  color: var(--color-text);
-}
-.btn[disabled] {
-  opacity: 0.6;
-}
-.club-profile-submit {
-  align-self: stretch;
-}
-
-.small {
-  font-size: 22rpx;
-  line-height: 32rpx;
-}
-.muted {
-  color: var(--color-muted);
-}
-
-/* --- offscreen canvas used by club-media utility --------------------- */
 .club-media-canvas {
   position: fixed;
   top: -9999rpx;
   left: -9999rpx;
   width: 1280rpx;
   height: 720rpx;
-  pointer-events: none;
   opacity: 0;
+  pointer-events: none;
 }
 
-@media (max-width: 350px) {
+@media (max-width: 340px) {
   .pageheading-title {
     font-size: 56rpx;
     line-height: 72rpx;
   }
   .upload {
+    align-items: stretch;
     flex-direction: column;
   }
   .club-cover-preview {
     width: 100%;
+  }
+  .club-avatar-preview {
+    width: 144rpx;
   }
 }

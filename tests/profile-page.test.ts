@@ -602,8 +602,8 @@ describe('个人中心加载状态', () => {
     const template = readFileSync('miniprogram/pages/profile/index.wxml', 'utf8');
     expect(template).toContain('报名资料');
     expect(template).toContain('设置');
-    expect(template).toContain('联系电话仅用于活动联络');
-    expect(template).toContain('紧急联系人仅在骑行安全需要时使用');
+    expect(template).toContain('实名与电话仅本人和审核管理员完整可见');
+    expect(template).toContain('其他骑友只见昵称与同意公开的头像');
     expect(template).not.toMatch(/报名成功|审核中|已报名|报名状态/);
   });
 

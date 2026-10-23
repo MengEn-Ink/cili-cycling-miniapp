@@ -5,6 +5,7 @@
 
 .detail-page {
   min-height: 100vh;
+  padding-top: 0;
   padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
   background: var(--color-bg);
   color: var(--color-text);
@@ -15,7 +16,7 @@
   position: relative;
   width: calc(100% + var(--page-gutter) * 2);
   margin: 0 calc(0rpx - var(--page-gutter));
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 9;
   background: var(--color-media-placeholder-bg);
   color: var(--color-on-media);
   overflow: hidden;
@@ -130,7 +131,7 @@
   flex-direction: column;
   gap: 4rpx;
 }
-.metrics strong {
+.metrics .em {
   display: inline-flex;
   align-items: baseline;
   gap: 6rpx;
@@ -141,7 +142,7 @@
   font-weight: 900;
   letter-spacing: -1rpx;
 }
-.metrics strong .unit {
+.metrics .em .unit {
   color: var(--color-muted);
   font-family: var(--font-family-body);
   font-size: 24rpx;
@@ -202,14 +203,14 @@
   flex: 1;
   min-width: 0;
 }
-.rowtext strong {
+.rowtext .em {
   display: block;
   color: var(--color-text);
   font-size: 30rpx;
   line-height: 42rpx;
   font-weight: 900;
 }
-.rowtext small {
+.rowtext .sub {
   display: block;
   margin-top: 4rpx;
   color: var(--color-muted);
@@ -802,7 +803,7 @@
     font-size: 52rpx;
     line-height: 64rpx;
   }
-  .metrics strong {
+  .metrics .em {
     font-size: 44rpx;
     line-height: 52rpx;
   }

@@ -55,4 +55,19 @@ describe('骑行影像志逐页主题令牌', () => {
       expect(styles, path).not.toContain("font-family: 'Songti SC', STSong, serif;");
     }
   });
+
+  it('活动编辑旧语义名映射到当前骑行影像志色板', () => {
+    const miniapp = read('miniprogram/app.wxss');
+    const aliases = {
+      '--color-paper': 'var(--color-surface)',
+      '--color-ink': 'var(--color-text)',
+      '--color-ink-muted': 'var(--color-muted)',
+      '--color-rule': 'var(--color-border-strong)',
+      '--color-accent': 'var(--color-action)',
+    };
+
+    for (const [name, value] of Object.entries(aliases)) {
+      expect(miniapp).toContain(`${name}: ${value};`);
+    }
+  });
 });

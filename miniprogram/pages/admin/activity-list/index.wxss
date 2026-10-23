@@ -5,14 +5,14 @@
 
 .activity-list-page {
   min-height: 100vh;
-  padding-bottom: calc(96rpx + env(safe-area-inset-bottom));
+  padding: 0 0 calc(96rpx + env(safe-area-inset-bottom));
   background: var(--color-bg);
   color: var(--color-text);
 }
 
 /* --- pageheading --------------------------------------------------------- */
 .pageheading {
-  padding: 32rpx 32rpx 24rpx;
+  padding: 40rpx var(--page-gutter) 32rpx;
 }
 .pageheading .eyebrow {
   display: inline-flex;
@@ -35,8 +35,8 @@
   flex-direction: column;
   margin-top: 20rpx;
   font-family: var(--font-family-editorial);
-  font-size: 72rpx;
-  line-height: 88rpx;
+  font-size: 64rpx;
+  line-height: 80rpx;
   font-weight: 900;
   letter-spacing: -2rpx;
   color: var(--color-text);
@@ -53,7 +53,7 @@
   display: flex;
   flex-direction: column;
   gap: 40rpx;
-  padding: 0 32rpx;
+  padding: 0 var(--page-gutter);
 }
 .content.tight {
   gap: 32rpx;
@@ -76,18 +76,18 @@
   gap: 6rpx;
   padding: 12rpx 0;
 }
-.metric strong {
+.metric .em {
   font-family: var(--font-family-editorial);
   font-size: 44rpx;
   font-weight: 900;
   color: var(--color-text);
 }
-.metric span {
+.metric .meta {
   color: var(--color-muted);
   font-size: 22rpx;
   letter-spacing: 2rpx;
 }
-.metric--pending strong {
+.metric--pending .em {
   color: var(--color-status-warning, #c0321f);
 }
 
@@ -97,7 +97,7 @@
   border-color: var(--color-border);
   background: var(--color-bg);
 }
-.management-metrics.metrics--inline .metric strong {
+.management-metrics.metrics--inline .metric .em {
   font-size: 36rpx;
 }
 
@@ -297,13 +297,13 @@
   font-size: 22rpx;
   font-weight: 900;
 }
-.row.rowlink strong {
+.row.rowlink .em {
   display: block;
   color: var(--color-text);
   font-size: 28rpx;
   font-weight: 800;
 }
-.row.rowlink small {
+.row.rowlink .sub {
   display: block;
   margin-top: 2rpx;
   color: var(--color-muted);
@@ -360,6 +360,7 @@
 /* --- buttonpair ------------------------------------------------------ */
 .buttonpair {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
   gap: 12rpx;
 }
@@ -375,13 +376,18 @@
 }
 .text-button {
   margin: 0;
-  padding: 6rpx 12rpx;
-  min-height: auto;
-  background: transparent;
-  color: var(--color-muted);
+  padding: 0 16rpx;
+  min-height: 88rpx;
+  background: transparent !important;
+  color: var(--color-text) !important;
   border: none;
   font-size: 24rpx;
-  line-height: 32rpx;
+  line-height: 36rpx;
+  text-decoration: underline;
+  text-underline-offset: 8rpx;
+}
+.text-button--danger {
+  color: var(--color-action) !important;
 }
 .text-button::after {
   display: none;

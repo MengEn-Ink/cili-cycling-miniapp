@@ -5,17 +5,18 @@
   - WeChat 原生 brand-logo/系统胶囊，不渲染伪 statusbar / systemnav
 -->
 <view class="page activities-page" style="padding-top: {{navigationTopPx}}px">
+  <view class="custom-nav-title" style="top: {{navigationTopPx - 44}}px">活动</view>
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{refreshing ? '正在刷新活动' : loadingMore ? '正在加载更多活动' : ''}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{refreshError}}</view>
 
-  <header class="pageheading">
+  <view class="pageheading">
     <view class="eyebrow">此里 · 一起出发</view>
     <view class="pageheading-title editorial">
       <text class="pageheading-line">把周末，</text>
       <text class="pageheading-line">交给山路。</text>
     </view>
     <view class="pageheading-sub">每一次转弯，都有值得记住的风景。</view>
-  </header>
+  </view>
 
   <view class="segment" role="tablist" aria-label="活动时间">
     <button class="segment-item {{activeView === 'future' ? 'selected' : ''}}" role="tab" data-view="future" aria-selected="{{activeView === 'future'}}" aria-controls="activity-list-panel" bindtap="switchView">近期活动</button>
@@ -66,9 +67,9 @@
               </view>
             </view>
             <view class="storyfacts">
-              <strong>{{item.route.distanceKm > 0 ? item.route.distanceKm : '—'}}{{item.route.distanceKm > 0 ? ' km' : ''}} <text>距离</text></strong>
-              <strong>{{item.route.elevationM > 0 ? item.route.elevationM : '—'}}{{item.route.elevationM > 0 ? ' m' : ''}} <text>爬升</text></strong>
-              <strong>{{item.estimatedRideTime || '—'}} <text>骑行</text></strong>
+              <text class="em">{{item.route.distanceKm > 0 ? item.route.distanceKm : '—'}}{{item.route.distanceKm > 0 ? ' km' : ''}} <text>距离</text></text>
+              <text class="em">{{item.route.elevationM > 0 ? item.route.elevationM : '—'}}{{item.route.elevationM > 0 ? ' m' : ''}} <text>爬升</text></text>
+              <text class="em">{{item.estimatedRideTime || '—'}} <text>骑行</text></text>
             </view>
             <view class="storymeta">
               <text class="storymeta-pin" aria-hidden="true">◉</text>

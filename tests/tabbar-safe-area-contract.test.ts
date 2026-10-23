@@ -20,7 +20,7 @@ describe('native tabbar safe-area contract', () => {
     expect(existsSync('miniprogram/custom-tab-bar')).toBe(false);
     expect(String(app.tabBar.backgroundColor || '').toLowerCase()).toBe('#ffffff');
     expect(String(app.tabBar.color || '').toLowerCase()).toBe('#6f675d');
-    expect(String(app.tabBar.selectedColor || '').toLowerCase()).toBe('#211f1c');
+    expect(String(app.tabBar.selectedColor || '').toLowerCase()).toBe('#c0321f');
     expect(app.tabBar.borderStyle).toBe('white');
     expect(app.tabBar.list.map((item: { pagePath: string }) => item.pagePath)).toEqual([
       'pages/activities/index',

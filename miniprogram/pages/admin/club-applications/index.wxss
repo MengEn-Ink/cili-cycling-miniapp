@@ -6,14 +6,14 @@
 
 .club-admin-page {
   min-height: 100vh;
-  padding-bottom: calc(96rpx + env(safe-area-inset-bottom));
+  padding: 0 0 calc(96rpx + env(safe-area-inset-bottom));
   background: var(--color-bg);
   color: var(--color-text);
 }
 
 /* --- pageheading --------------------------------------------------------- */
 .pageheading {
-  padding: 32rpx 32rpx 24rpx;
+  padding: 40rpx var(--page-gutter) 32rpx;
 }
 .pageheading .eyebrow {
   display: inline-flex;
@@ -36,8 +36,8 @@
   flex-direction: column;
   margin-top: 20rpx;
   font-family: var(--font-family-editorial);
-  font-size: 72rpx;
-  line-height: 88rpx;
+  font-size: 64rpx;
+  line-height: 80rpx;
   font-weight: 900;
   letter-spacing: -2rpx;
   color: var(--color-text);
@@ -62,7 +62,7 @@
 /* --- photo.hero.club ---------------------------------------------------- */
 .photo.hero.club {
   position: relative;
-  margin: 24rpx 32rpx 32rpx;
+  margin: 8rpx var(--page-gutter) 32rpx;
   aspect-ratio: 16 / 9;
   overflow: hidden;
   border-radius: 28rpx;
@@ -130,7 +130,7 @@
   display: flex;
   flex-direction: column;
   gap: 32rpx;
-  padding: 0 32rpx;
+  padding: 0 var(--page-gutter);
 }
 
 /* --- detailrows -------------------------------------------------------- */

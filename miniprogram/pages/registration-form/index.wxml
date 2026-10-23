@@ -7,7 +7,7 @@
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{submitFeedback}}</view>
   <state-view loading="{{loading}}" error="{{!profile && errors.length ? errors[0] : ''}}" loading-title="正在检查活动、资料与报名条件" loading-copy="正在核对活动名额与个人资料">
     <block wx:if="{{profile}}">
-      <header class="pageheading">
+      <view class="pageheading">
         <view class="eyebrow">此里 · 留下一个位置</view>
         <view class="pageheading-title editorial">
           <text class="pageheading-line">下一站，</text>
@@ -15,31 +15,31 @@
         </view>
         <view class="pageheading-sub">{{activity ? (activity.title || '确认这次骑行') : '确认这次骑行'}}</view>
         <view class="pageheading-sub pageheading-sub--meta" wx:if="{{activity}}">{{displayActivityDate}} · {{activity.registrationUnlimited ? '报名人数不限' : ('总名额 ' + activity.capacity)}}</view>
-      </header>
+      </view>
 
       <view class="content tight">
         <view class="timeline" role="list" aria-label="报名流程，共三阶段，当前为填写报名">
-          <span class="active" role="listitem" aria-current="step"><b>1</b>填写报名</span>
-          <span role="listitem"><b>2</b>组织者审核</span>
-          <span role="listitem"><b>3</b>获取凭证</span>
+          <view class="step active" role="listitem" aria-current="step"><text class="step-index">1</text>填写报名</view>
+          <view class="step" role="listitem"><text class="step-index">2</text>组织者审核</view>
+          <view class="step" role="listitem"><text class="step-index">3</text>获取凭证</view>
         </view>
 
         <form data-submit="credential">
           <!-- 确认你的资料 -->
-          <section class="section section-identity">
+          <view class="section section-identity">
             <view class="chapterhead"><view class="chapterhead-title">确认你的资料</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
             <view class="paper">
-              <dl class="detailrows">
+              <view class="detailrows">
                 <view class="detailrow"><text class="detailrow-term">本人实名</text><text class="detailrow-desc">{{profile.realName || '未填写'}}</text></view>
                 <view class="detailrow"><text class="detailrow-term">微信昵称</text><text class="detailrow-desc">{{profile.nickname || '未授权昵称'}}</text></view>
                 <view class="detailrow"><text class="detailrow-term">性别</text><text class="detailrow-desc">{{profile.genderLabel || '未标注'}}</text></view>
                 <view class="detailrow"><text class="detailrow-term">手机号</text><text class="detailrow-desc">{{profile.phone || '未填写'}}</text></view>
                 <view class="detailrow"><text class="detailrow-term">紧急联系人</text><text class="detailrow-desc">{{profile.emergencyName || '未填写'}}{{profile.emergencyPhone ? ' · ' + profile.emergencyPhone : ''}}</text></view>
-              </dl>
+              </view>
               <button class="row rowlink rowbutton" bindtap="profile" disabled="{{submitting}}" aria-label="修改个人资料">
                 <view class="lead">
                   <view class="rowicon rowicon--pen" aria-hidden="true"></view>
-                  <view class="rowtext"><strong>修改个人资料</strong><small>仅本人和审核管理员可见</small></view>
+                  <view class="rowtext"><text class="em">修改个人资料</text><text class="sub">仅本人和审核管理员可见</text></view>
                 </view>
                 <view class="chev" aria-hidden="true"></view>
               </button>
@@ -51,10 +51,10 @@
                 </view>
               </view>
             </view>
-          </section>
+          </view>
 
           <!-- 怎么去集合点 -->
-          <section class="section section-gathering">
+          <view class="section section-gathering">
             <view class="chapterhead"><view class="chapterhead-title">怎么去集合点</view><view class="chapterhead-aside" wx:if="{{showGatheringChoice}}">名额分开计</view></view>
             <block wx:if="{{showGatheringChoice}}">
               <view class="paper">
@@ -71,16 +71,16 @@
               </view>
             </block>
             <view class="paper" wx:else role="status" aria-label="集合方式默认为自行前往">
-              <dl class="detailrows">
+              <view class="detailrows">
                 <view class="detailrow"><text class="detailrow-term">出发方式</text><text class="detailrow-desc">自行前往</text></view>
                 <view class="detailrow" wx:if="{{activity && activity.route && activity.route.start}}"><text class="detailrow-term">集合地点</text><text class="detailrow-desc">{{activity.route.start}}</text></view>
-              </dl>
+              </view>
               <view class="small muted">请自行安排交通，按时在集合点见。</view>
             </view>
-          </section>
+          </view>
 
           <!-- 你的骑行经验 -->
-          <section class="section section-experience">
+          <view class="section section-experience">
             <view class="chapterhead"><view class="chapterhead-title">你的骑行经验</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
             <view class="paper">
               <view class="field">
@@ -101,10 +101,10 @@
                 <text>{{teamParameterError}}</text>
               </view>
             </view>
-          </section>
+          </view>
 
           <!-- 还有什么想说 -->
-          <section class="section section-remark">
+          <view class="section section-remark">
             <view class="chapterhead"><view class="chapterhead-title">还有什么想说</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
             <view class="paper">
               <view class="field">
@@ -113,7 +113,7 @@
                 <view class="field-counter" aria-live="polite">{{remark.length}}/500</view>
               </view>
             </view>
-          </section>
+          </view>
 
           <label class="check" for="agreement">
             <checkbox id="agreement" checked disabled="{{submitting}}"/>我已阅读行前约定，确认以上资料准确。

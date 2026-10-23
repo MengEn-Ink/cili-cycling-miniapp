@@ -6,7 +6,7 @@
   - 不再使用旧的过渡 heading / filter-tabs / review-card / result-count 等 Oil UI 结构。
 -->
 <view class="page review-page">
-  <header class="pageheading">
+  <view class="pageheading">
     <view class="eyebrow">此里 · 审核工作台</view>
     <view class="pageheading-title editorial">
       <text class="pageheading-line">每一位同行者，</text>
@@ -14,7 +14,7 @@
     </view>
     <view class="pageheading-sub" wx:if="{{activities.length}}">{{selectedActivityTitle}}</view>
     <view class="pageheading-sub" wx:else>按报名状态筛选，查看完整资料后再处理。</view>
-  </header>
+  </view>
 
   <view class="content tight">
     <view class="info-bar" wx:if="{{activities.length}}" aria-label="当前审批活动">

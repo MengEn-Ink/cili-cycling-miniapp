@@ -6,14 +6,14 @@
 
 .review-detail-page {
   min-height: 100vh;
-  padding-bottom: calc(var(--fixed-action-reserve, 180rpx) + env(safe-area-inset-bottom));
+  padding: 0 0 calc(var(--fixed-action-reserve, 180rpx) + env(safe-area-inset-bottom));
   background: var(--color-bg);
   color: var(--color-text);
 }
 
 /* --- pageheading --------------------------------------------------------- */
 .pageheading {
-  padding: 32rpx 32rpx 24rpx;
+  padding: 40rpx var(--page-gutter) 32rpx;
 }
 .pageheading .eyebrow {
   display: inline-flex;
@@ -34,8 +34,8 @@
 .pageheading-title {
   margin-top: 20rpx;
   font-family: var(--font-family-editorial);
-  font-size: 72rpx;
-  line-height: 88rpx;
+  font-size: 64rpx;
+  line-height: 80rpx;
   font-weight: 900;
   letter-spacing: -2rpx;
   color: var(--color-text);
@@ -69,7 +69,7 @@
   display: flex;
   flex-direction: column;
   gap: 32rpx;
-  padding: 8rpx 32rpx 0;
+  padding: 8rpx var(--page-gutter) 0;
 }
 .content.tight {
   gap: 28rpx;
@@ -368,7 +368,7 @@
   bottom: 0;
   display: flex;
   gap: 16rpx;
-  padding: 24rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));
+  padding: 16rpx var(--page-gutter) calc(16rpx + env(safe-area-inset-bottom));
   border-top: 2rpx solid var(--color-border);
   background: var(--color-bg);
   z-index: 10;

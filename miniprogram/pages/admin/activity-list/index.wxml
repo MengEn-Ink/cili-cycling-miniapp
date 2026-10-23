@@ -24,28 +24,28 @@
   </view>
 
   <block wx:else>
-    <header class="pageheading">
+    <view class="pageheading">
       <view class="eyebrow">此里 · 组织一场出发</view>
       <view class="pageheading-title editorial">
         <text class="pageheading-line">山路上的事，</text>
         <text class="pageheading-line">安排得明明白白。</text>
       </view>
       <view class="pageheading-sub">{{isAdmin ? '创建活动、维护信息、处理报名。' : '创建、编辑并上下架你的活动。'}}</view>
-    </header>
+    </view>
 
     <view class="content tight">
       <view class="metrics" aria-label="当前已加载活动指标">
         <view class="metric">
-          <strong>{{metrics.publishedCount}}</strong>
-          <span>当前已加载 · 已发布</span>
+          <text class="em">{{metrics.publishedCount}}</text>
+          <text class="meta">当前已加载 · 已发布</text>
         </view>
         <view class="metric">
-          <strong>{{metrics.draftCount}}</strong>
-          <span>当前已加载 · 草稿</span>
+          <text class="em">{{metrics.draftCount}}</text>
+          <text class="meta">当前已加载 · 草稿</text>
         </view>
         <view class="metric">
-          <strong>{{metrics.pendingCount}}</strong>
-          <span>当前已加载 · 待审核</span>
+          <text class="em">{{metrics.pendingCount}}</text>
+          <text class="meta">当前已加载 · 待审核</text>
         </view>
       </view>
 
@@ -69,7 +69,7 @@
         <text>{{error}}</text>
       </view>
 
-      <section class="section section-list" wx:if="{{items.length}}">
+      <view class="section section-list" wx:if="{{items.length}}">
         <view class="chapterhead">
           <view class="chapterhead-title">{{statusFilter === 'draft' ? '草稿与下架' : (statusFilter === 'finished' ? '已完成' : '正在筹备')}}</view>
           <view class="chapterhead-aside">共 {{items.length}} 场</view>
@@ -105,8 +105,8 @@
                   <view class="lead">
                     <view class="rowicon rowicon--edit" aria-hidden="true"><text>编</text></view>
                     <view>
-                      <strong>继续编辑</strong>
-                      <small>完善路线和集合信息</small>
+                      <text class="em">继续编辑</text>
+                      <text class="sub">完善路线和集合信息</text>
                     </view>
                   </view>
                   <view class="chev" aria-hidden="true"></view>
@@ -135,9 +135,9 @@
                   <view class="ticket-title editorial">{{item.title}}</view>
 
                   <view class="management-metrics metrics metrics--inline" aria-label="活动报名指标">
-                    <view class="metric"><strong>{{item.registrationMetric}}</strong><span>报名</span></view>
-                    <view class="metric metric--pending"><strong>{{item.pendingMetric}}</strong><span>待审核</span></view>
-                    <view class="metric"><strong>{{item.approvedMetric}}</strong><span>已通过</span></view>
+                    <view class="metric"><text class="em">{{item.registrationMetric}}</text><text class="meta">报名</text></view>
+                    <view class="metric metric--pending"><text class="em">{{item.pendingMetric}}</text><text class="meta">待审核</text></view>
+                    <view class="metric"><text class="em">{{item.approvedMetric}}</text><text class="meta">已通过</text></view>
                   </view>
 
                   <view wx:if="{{item.status === 'rejected' && item.rejectionReason}}" class="rejection-reason" role="note">
@@ -147,9 +147,9 @@
 
                   <view class="buttonpair">
                     <button wx:if="{{item.canEdit}}" class="btn secondary" catchtap="edit" data-id="{{item.id}}">编辑活动</button>
-                    <button wx:if="{{item.canReview}}" class="btn secondary" catchtap="reviewActivity" data-id="{{item.id}}" data-decision="approve">通过</button>
-                    <button wx:if="{{item.canReview}}" class="btn secondary" catchtap="reviewActivity" data-id="{{item.id}}" data-decision="reject">驳回</button>
-                    <button wx:if="{{item.canToggleOnline}}" class="btn secondary" catchtap="toggleOnline" data-id="{{item.id}}">{{item.toggleLabel}}</button>
+                    <button wx:if="{{item.canReview}}" class="btn" catchtap="reviewActivity" data-id="{{item.id}}" data-decision="approve">通过</button>
+                    <button wx:if="{{item.canReview}}" class="text-button text-button--danger" catchtap="reviewActivity" data-id="{{item.id}}" data-decision="reject">驳回</button>
+                    <button wx:if="{{item.canToggleOnline}}" class="text-button text-button--danger" catchtap="toggleOnline" data-id="{{item.id}}">{{item.toggleLabel}}</button>
                   </view>
 
                   <view class="low-actions">
@@ -162,7 +162,7 @@
         </view>
 
         <button wx:if="{{hasMore}}" class="btn secondary load-more" bindtap="loadMore" loading="{{loadingMore}}" disabled="{{loadingMore}}">加载更多</button>
-      </section>
+      </view>
 
       <view class="page-actions buttonpair">
         <button wx:if="{{isAdmin}}" class="btn secondary" bindtap="reviews">报名审批</button>

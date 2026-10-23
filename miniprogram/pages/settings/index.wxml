@@ -1,15 +1,15 @@
 <view class="page settings-page">
-  <header class="pageheading">
+  <view class="pageheading">
     <view class="eyebrow">此里 · 安心同行</view>
     <view class="pageheading-title editorial">
       <text class="pageheading-line">小事设置好，</text>
       <text class="pageheading-line">出发更轻松。</text>
     </view>
     <view class="pageheading-sub">通知订阅、隐私与应用信息。</view>
-  </header>
+  </view>
 
   <view class="content tight">
-    <section class="section section-notifications">
+    <view class="section section-notifications">
       <view class="chapterhead">
         <view class="chapterhead-title">通知</view>
         <view class="chapterhead-rule" aria-hidden="true"></view>
@@ -25,7 +25,7 @@
           <view class="rowicon rowicon--bell" aria-hidden="true"></view>
           <view class="rowtext">
             <view class="rowtext-title">订阅活动通知</view>
-            <view class="rowtext-sub">每次选择以微信授权结果为准</view>
+            <view class="rowtext-sub">由微信询问本次订阅选择</view>
           </view>
         </view>
         <view class="chev" aria-hidden="true"></view>
@@ -38,9 +38,9 @@
       >
         <text>{{notificationHint}}</text>
       </view>
-    </section>
+    </view>
 
-    <section class="section section-privacy">
+    <view class="section section-privacy">
       <view class="chapterhead">
         <view class="chapterhead-title">隐私</view>
         <view class="chapterhead-rule" aria-hidden="true"></view>
@@ -56,7 +56,7 @@
           <view class="rowicon rowicon--lock" aria-hidden="true"></view>
           <view class="rowtext">
             <view class="rowtext-title">微信隐私管理</view>
-            <view class="rowtext-sub">查看小程序如何保护你的信息</view>
+            <view class="rowtext-sub">查看小程序隐私保护指引</view>
           </view>
         </view>
         <view class="chev" aria-hidden="true"></view>
@@ -65,9 +65,9 @@
         <view class="notice-dot" aria-hidden="true"></view>
         <text>实名与电话仅本人和审核管理员完整可见；其他骑友只见昵称与同意公开的头像。</text>
       </view>
-    </section>
+    </view>
 
-    <section class="section section-app">
+    <view class="section section-app">
       <view class="chapterhead">
         <view class="chapterhead-title">应用</view>
         <view class="chapterhead-rule" aria-hidden="true"></view>
@@ -98,9 +98,9 @@
           <view class="detailrow-desc">{{currentRelease.title}}</view>
         </view>
       </view>
-    </section>
+    </view>
 
-    <section
+    <view
       wx:if="{{isAdmin}}"
       class="section section-strava"
       data-admin-only
@@ -127,7 +127,7 @@
           aria-label="同步 Strava 线路信息"
         >{{stravaAction}}</button>
       </view>
-    </section>
+    </view>
   </view>
 
   <view class="settings-footer">此里 · 持续为每一次出发升级</view>

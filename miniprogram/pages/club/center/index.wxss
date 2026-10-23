@@ -1,9 +1,9 @@
 /* Club Center · 骑行影像志 1:1（对齐 docs/designs/2026-10-22-cycling-image-journal/pages/club-center.html） */
 .club-center-page {
   min-height: 100vh;
+  padding: 0 0 calc(96rpx + env(safe-area-inset-bottom));
   background: var(--color-bg);
   color: var(--color-text);
-  padding-bottom: calc(96rpx + env(safe-area-inset-bottom));
 }
 .a11y-live-region {
   position: absolute;
@@ -14,7 +14,8 @@
 }
 .photo.hero.club {
   position: relative;
-  min-height: 760rpx;
+  width: 100%;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   background: var(--color-media-card-bg);
   color: var(--color-on-media);
@@ -117,7 +118,7 @@
   display: flex;
   flex-direction: column;
   gap: 48rpx;
-  padding: 40rpx 32rpx 0;
+  padding: 40rpx var(--page-gutter) 0;
 }
 .state-content {
   padding-top: 72rpx;

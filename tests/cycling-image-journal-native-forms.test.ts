@@ -123,7 +123,7 @@ describe('骑行影像志原生表单与管理页面', () => {
     const template = read(`${pages.settings}/index.wxml`);
     const source = read(`${pages.settings}/index.ts`);
 
-    expect(template).toContain('每次选择以微信授权结果为准');
+    expect(template).toContain('由微信询问本次订阅选择');
     expect(template).toContain('打开微信隐私管理');
     expect(template).toContain('可安全重建的缓存');
     expect(template).toContain('wx:if="{{isAdmin}}"');
