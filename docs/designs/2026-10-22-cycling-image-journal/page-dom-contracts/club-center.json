@@ -5,24 +5,33 @@
   "wxml": "miniprogram/pages/club/center/index.wxml",
   "wxss": "miniprogram/pages/club/center/index.wxss",
   "ts": "miniprogram/pages/club/center/index.ts",
-  "designIntent": "全平台唯一俱乐部的只读主页：封面 + 身份 + 俱乐部资料 + 近期活动；不出现加入申请、推荐或容量指标。",
+  "designIntent": "骑行影像志 1:1：photo.hero.club（封面 + shade + 右上角城市徽标 + 底部 caption 身份卡）→ content → 我的身份 tag → section 我们为什么出发 + detailrows → section 俱乐部近期活动 + story 活动卡 → 管理员可见编辑按钮；只读主页，不出现加入申请、推荐或容量指标。",
   "containers": [
     { "class": "page club-center-page", "role": "page-root", "order": 1 },
-    { "class": "club-page-head", "role": "page-heading", "order": 2, "note": "顶部 brand-logo + meta 俱乐部主页" },
-    { "class": "club-hero", "role": "hero", "order": 3, "note": "club-cover + club-identity 身份卡 + club-viewer 我的身份" },
-    { "class": "card club-card", "role": "club-detail", "order": 4, "note": "俱乐部资料卡（名称/地区/简介）" }
+    { "class": "photo hero club", "role": "hero", "order": 2, "note": "封面 + shade + 右上角城市徽标 + 底部 caption 身份卡（内嵌 club-identity）" },
+    { "class": "content", "role": "content", "order": 3, "note": "我的身份 tag / 俱乐部资料 section / 近期活动 section 的垂直容器" },
+    { "class": "tag", "role": "role-tag", "order": 4, "note": "我的身份 · 中文身份标签" },
+    { "class": "section section-detail", "role": "section-detail", "order": 5, "note": "我们为什么出发 + detailrows（名称 / 所在地区 / 当前身份）" },
+    { "class": "section section-activity", "role": "section-activity", "order": 6, "note": "俱乐部近期活动，包含 loading/error/empty/ready 四态和 story 列表" }
   ],
   "interactions": [
     { "trigger": "openActivity", "dataAttr": "data-id", "note": "点击近期活动行跳转活动详情" },
     { "trigger": "openActivities", "note": "查看全部活动" },
-    { "trigger": "retry", "note": "加载失败后重试" }
+    { "trigger": "retry", "note": "加载失败后重试" },
+    { "trigger": "retryActivities", "note": "近期活动失败后独立重试" },
+    { "trigger": "editClub", "note": "canManage 时编辑俱乐部资料" },
+    { "trigger": "createClub", "note": "空态管理员：创建俱乐部" },
+    { "trigger": "coverError", "note": "封面图失败兜底" },
+    { "trigger": "avatarError", "note": "头像失败兜底" }
   ],
   "copy": [
-    "俱乐部主页",
     "我的身份",
-    "俱乐部资料",
-    "近期活动",
-    "查看全部"
+    "我们为什么出发",
+    "俱乐部近期活动",
+    "查看全部",
+    "所在地区",
+    "当前身份",
+    "编辑俱乐部资料"
   ],
   "assets": [
     { "class": "club-cover-image", "note": "俱乐部封面图" },
@@ -31,7 +40,8 @@
   "forbids": [
     { "class": "club-join-button", "reason": "全平台唯一俱乐部不提供加入申请" },
     { "class": "club-recommend-list", "reason": "不出现俱乐部推荐列表" },
-    { "class": "club-capacity-meter", "reason": "不展示容量/名额" }
+    { "class": "club-capacity-meter", "reason": "不展示容量/名额" },
+    { "class": "club-page-head", "reason": "设计稿使用 photo.hero.club 全幅封面做顶部，不再使用 brand-logo 顶条" }
   ],
-  "phase2Note": "本页实现已对齐设计意图；仅做契约化。"
+  "designSource": "docs/designs/2026-10-22-cycling-image-journal/pages/club-center.html"
 }

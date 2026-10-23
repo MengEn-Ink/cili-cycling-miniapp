@@ -1,141 +1,341 @@
+/* 骑行影像志 · 俱乐部管理 1:1 实现
+ * 对齐 docs/designs/2026-10-22-cycling-image-journal/pages/admin-club-management.html
+ *   pageheading → photo.hero.club(cover + caption) → content(detailrows + section 资料维护 + notice)
+ *   loading / error / bootstrap 分支：pageheading + empty state
+ */
+
 .club-admin-page {
   min-height: 100vh;
-  padding-bottom: calc(64rpx + env(safe-area-inset-bottom));
+  padding-bottom: calc(96rpx + env(safe-area-inset-bottom));
   background: var(--color-bg);
+  color: var(--color-text);
 }
-.club-admin-head {
-  margin-top: 20rpx;
+
+/* --- pageheading --------------------------------------------------------- */
+.pageheading {
+  padding: 32rpx 32rpx 24rpx;
 }
-.journal-heading {
-  padding: 28rpx 0 56rpx;
-}
-.journal-eyebrow {
-  display: flex;
+.pageheading .eyebrow {
+  display: inline-flex;
   align-items: center;
   gap: 16rpx;
   color: var(--color-muted);
-  font-size: 24rpx;
-  line-height: 36rpx;
-  font-weight: 800;
+  font-family: var(--font-family-mono);
+  font-size: 22rpx;
+  letter-spacing: 2rpx;
+  text-transform: uppercase;
 }
-.journal-eyebrow::before {
+.pageheading .eyebrow::before {
   width: 40rpx;
   height: 2rpx;
   background: currentColor;
   content: '';
 }
-.journal-heading .page-title {
-  margin-top: 16rpx;
-  font-size: 64rpx;
-  line-height: 80rpx;
+.pageheading-title {
+  display: flex;
+  flex-direction: column;
+  margin-top: 20rpx;
+  font-family: var(--font-family-editorial);
+  font-size: 72rpx;
+  line-height: 88rpx;
+  font-weight: 900;
   letter-spacing: -2rpx;
+  color: var(--color-text);
+}
+.pageheading-sub {
+  margin-top: 16rpx;
+  color: var(--color-muted);
+  font-size: 28rpx;
+  line-height: 44rpx;
 }
 .club-admin-badge {
-  color: var(--color-muted);
-  font-size: 24rpx;
-  line-height: 36rpx;
-  font-weight: 800;
-}
-.page-sub {
-  margin-top: 12rpx;
-  color: var(--color-muted);
-  font-size: 32rpx;
-  line-height: 48rpx;
-}
-.club-admin-skeleton {
-  min-height: 200rpx;
-}
-.club-admin-skeleton--short {
-  min-height: 128rpx;
-}
-.club-admin-card {
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
-  margin-top: 0;
-  padding: 32rpx;
-  border-radius: var(--radius-card);
+  display: inline-flex;
+  margin-top: 16rpx;
+  padding: 6rpx 18rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: 999rpx;
   background: var(--color-surface);
+  color: var(--color-text);
+  letter-spacing: 1rpx;
 }
-.club-admin-avatar {
-  flex: none;
-  width: 112rpx;
-  height: 112rpx;
-  border-radius: 50%;
+
+/* --- photo.hero.club ---------------------------------------------------- */
+.photo.hero.club {
+  position: relative;
+  margin: 24rpx 32rpx 32rpx;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
-  background: var(--color-raised);
+  border-radius: 28rpx;
+  background: var(--color-media-card-bg, var(--color-raised));
+  color: var(--color-on-media, #fff);
 }
-.club-admin-avatar-img {
-  width: 112rpx;
-  height: 112rpx;
+.photo-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
-.club-admin-avatar-fallback {
+.photo-fallback {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 112rpx;
-  height: 112rpx;
-  border-radius: 50%;
-  background: var(--color-brand);
-  color: var(--color-on-brand);
-  font-size: 44rpx;
+  background: linear-gradient(170deg, var(--color-text) 0%, var(--color-raised) 100%);
+  color: var(--color-on-action);
+}
+.photo-fallback-mark {
+  font-family: var(--font-family-editorial);
+  font-size: 96rpx;
   font-weight: 900;
 }
-.club-admin-copy {
+.shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(12, 10, 7, 0.1) 0%,
+    rgba(12, 10, 7, 0.05) 48%,
+    rgba(12, 10, 7, 0.72) 100%
+  );
+  pointer-events: none;
+}
+.caption {
+  position: absolute;
+  left: 32rpx;
+  right: 32rpx;
+  bottom: 32rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+.caption-eyebrow {
+  color: rgba(255, 255, 255, 0.86);
+  font-family: var(--font-family-mono);
+  font-size: 22rpx;
+  letter-spacing: 2rpx;
+  text-transform: uppercase;
+}
+.caption-title {
+  font-family: var(--font-family-editorial);
+  font-size: 60rpx;
+  line-height: 72rpx;
+  font-weight: 900;
+  letter-spacing: -2rpx;
+  color: #fff;
+}
+
+/* --- content ----------------------------------------------------------- */
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 32rpx;
+  padding: 0 32rpx;
+}
+
+/* --- detailrows -------------------------------------------------------- */
+.detailrows {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 2rpx solid var(--color-border);
+  border-radius: 20rpx;
+  background: var(--color-surface);
+}
+.detailrow {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 18rpx 24rpx;
+  border-top: 2rpx dashed var(--color-border);
+}
+.detailrow:first-child {
+  border-top: none;
+}
+.detailrow .dt {
+  flex: none;
+  min-width: 180rpx;
+  color: var(--color-muted);
+  font-size: 24rpx;
+}
+.detailrow .dd {
   flex: 1;
   min-width: 0;
-}
-.club-admin-name {
-  overflow: hidden;
   color: var(--color-text);
+  font-size: 28rpx;
+  line-height: 40rpx;
+  font-weight: 800;
+  text-align: right;
+}
+
+/* --- section + chapterhead -------------------------------------------- */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.chapterhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.chapterhead-title {
+  color: var(--color-text);
+  font-family: var(--font-family-editorial);
   font-size: 34rpx;
   line-height: 48rpx;
   font-weight: 900;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
-.club-admin-meta {
-  margin-top: 4rpx;
+.chapterhead-aside {
   color: var(--color-muted);
+  font-family: var(--font-family-mono);
+  font-size: 22rpx;
+  letter-spacing: 1rpx;
+}
+
+/* --- tag --------------------------------------------------------------- */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4rpx 16rpx;
+  border: 2rpx solid var(--color-text);
+  border-radius: 999rpx;
+  background: var(--color-text);
+  color: var(--color-on-action);
+  font-size: 22rpx;
+  letter-spacing: 1rpx;
+}
+.tag.tag-success {
+  background: var(--color-text);
+  color: var(--color-on-action);
+  border-color: var(--color-text);
+}
+
+/* --- notice ------------------------------------------------------------ */
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+  padding: 20rpx 24rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: 16rpx;
+  background: var(--color-bg);
+  color: var(--color-text);
   font-size: 24rpx;
   line-height: 36rpx;
 }
-.club-admin-status {
+.notice-dot {
   flex: none;
+  width: 12rpx;
+  height: 12rpx;
+  margin-top: 12rpx;
+  border-radius: 50%;
+  background: var(--color-text);
 }
-.club-admin-action {
-  width: 100%;
-  min-height: 96rpx;
-  margin-top: 48rpx;
+
+/* --- skeleton + empty -------------------------------------------------- */
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
 }
-.club-admin-retry {
-  width: 100%;
-  margin-top: 24rpx;
+.skeleton view {
+  height: 160rpx;
+  border-radius: 20rpx;
+  background: var(--color-raised);
+  animation: club-admin-shimmer 1.4s ease-in-out infinite;
 }
-.club-admin-bootstrap {
-  padding-bottom: 40rpx;
+@keyframes club-admin-shimmer {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.empty {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  padding: 40rpx 32rpx;
+  border: 2rpx dashed var(--color-border);
+  border-radius: 20rpx;
+  background: var(--color-surface);
+  text-align: center;
+}
+.empty-title {
+  font-size: 32rpx;
+  font-weight: 900;
+  color: var(--color-text);
+}
+.empty-copy {
+  color: var(--color-muted);
+  font-size: 26rpx;
+  line-height: 38rpx;
+}
+.empty .btn {
+  align-self: center;
 }
 .club-admin-bootstrap-mark {
-  display: flex;
+  align-self: center;
+  width: 128rpx;
+  height: 128rpx;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 96rpx;
-  height: 96rpx;
-  margin: 0 auto 16rpx;
+  border: 2rpx dashed var(--color-text);
   border-radius: 50%;
-  background: var(--color-raised);
   color: var(--color-text);
-  font-size: 56rpx;
-  font-weight: 900;
+  font-family: var(--font-family-editorial);
+  font-size: 72rpx;
+  margin-bottom: 8rpx;
 }
-.club-admin-bootstrap .muted {
-  margin-top: 12rpx;
+.small {
+  font-size: 22rpx;
+  line-height: 32rpx;
 }
-@media (max-width: 340px) {
-  .club-admin-avatar,
-  .club-admin-avatar-img,
-  .club-admin-avatar-fallback {
-    width: 96rpx;
-    height: 96rpx;
+.muted {
+  color: var(--color-muted);
+}
+
+/* --- btn --------------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
+  padding: 0 32rpx;
+  border: 2rpx solid var(--color-text);
+  border-radius: 999rpx;
+  background: var(--color-text);
+  color: var(--color-on-action);
+  font-size: 28rpx;
+  line-height: 40rpx;
+  font-weight: 800;
+}
+.btn::after {
+  display: none;
+}
+.btn.secondary {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.btn[disabled] {
+  opacity: 0.6;
+}
+.club-admin-action {
+  align-self: stretch;
+}
+
+@media (max-width: 350px) {
+  .pageheading-title {
+    font-size: 56rpx;
+    line-height: 72rpx;
+  }
+  .caption-title {
+    font-size: 48rpx;
+    line-height: 60rpx;
   }
 }

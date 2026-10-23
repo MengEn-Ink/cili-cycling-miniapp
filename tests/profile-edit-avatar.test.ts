@@ -1564,19 +1564,20 @@ describe('资料编辑头像交互', () => {
   });
 });
 
-describe('资料编辑头像页面契约', () => {
+describe('资料编辑头像页面契约（骑行影像志）', () => {
   const template = readFileSync('miniprogram/pages/profile-edit/index.wxml', 'utf8');
   const source = readFileSync('miniprogram/pages/profile-edit/index.ts', 'utf8');
   const styles = readFileSync('miniprogram/pages/profile-edit/index.wxss', 'utf8');
 
-  it('头像作为第一步门禁，并且只保留微信头像授权入口', () => {
-    expect(template.indexOf('先选择头像')).toBeLessThan(template.indexOf('基础资料'));
-    expect(template).toContain('<block wx:if="{{canEditDetails}}">');
+  it('头像作为门禁：basic 资料受 canEditDetails 控制，只保留微信头像授权入口', () => {
+    expect(template).toContain('wx:if="{{canEditDetails}}"');
+    expect(template.indexOf('头像与背景')).toBeLessThan(template.indexOf('基础资料'));
     expect(template).toContain('open-type="chooseAvatar"');
     expect(template).toContain('bindchooseavatar="chooseWechatAvatar"');
     expect(template).not.toContain('chooseCustomAvatar');
     expect(template).toContain('mediaError');
-    expect(template).toContain('disabled="{{photoBusy || saving || avatarBusy}}"');
+    // 上传与保存按钮都在上传/保存繁忙时相互锁定。
+    expect(template).toContain('disabled="{{avatarBusy || photoBusy || saving}}"');
     expect(template).toContain('disabled="{{saving || photoBusy || avatarBusy}}"');
   });
 
@@ -1594,7 +1595,7 @@ describe('资料编辑头像页面契约', () => {
     expect(template).not.toContain('value="{{p.title}}"');
   });
 
-  it('头像用途固定公开且不再显示开关', () => {
+  it('头像用途文案保留且不出现 Switch 可见性开关', () => {
     expect(template).toContain('用于个人主页和活动报名中的骑手身份展示');
     expect(template).not.toContain('<switch');
     expect(template).not.toContain('onAvatarVisibilityChange');
@@ -1608,7 +1609,8 @@ describe('资料编辑头像页面契约', () => {
   });
 
   it('头像预览仅绑定净化后的 preview URL 并提供无障碍名称', () => {
-    const preview = template.match(/<image\b[^>]*class="avatar-preview"[^>]*\/>/)?.[0] || '';
+    const preview =
+      template.match(/<image\b[^>]*class="avatar\s+avatar-preview"[^>]*\/>/)?.[0] || '';
     expect(preview).toContain('src="{{avatarPreviewUrl}}"');
     expect(preview).toContain('data-url="{{avatarPreviewUrl}}"');
     expect(preview).toContain('aria-label=');
@@ -1616,7 +1618,8 @@ describe('资料编辑头像页面契约', () => {
   });
 
   it('唯一头像主动作有 aria-label 且触控高度至少 88rpx', () => {
-    const avatarButtons = template.match(/<button\b[^>]*class="avatar-action[^>]*>/g) || [];
+    const avatarButtons =
+      template.match(/<button\b[^>]*class="[^"]*\bavatar-action\b[^"]*"[^>]*>/g) || [];
     expect(avatarButtons).toHaveLength(1);
     expect(avatarButtons[0]).toContain('aria-label=');
     expect(styles).toMatch(/\.avatar-action\s*\{[^}]*min-height:\s*88rpx/s);
@@ -1640,10 +1643,10 @@ describe('资料编辑头像页面契约', () => {
   });
 
   it('背景图提供单张缩略图与大图预览，并明确替换语义', () => {
-    expect(template).toContain('个人背景图');
+    expect(template).toContain('个人中心顶部背景');
     expect(template).toContain('最多 1 张');
-    expect(template).toContain("p.photos.length ? '更换背景图' : '添加背景图'");
-    expect(template).toContain('class="photo-thumbnail"');
+    expect(template).toContain("p.photos.length ? '更换背景' : '添加背景'");
+    expect(template).toContain('class="background-image"');
     expect(template).toContain('bindtap="previewPhoto"');
     expect(template).toContain('选择后可移动和缩放画面，建议使用横向照片');
     expect(source).toMatch(
@@ -1651,21 +1654,22 @@ describe('资料编辑头像页面契约', () => {
     );
     expect(source).not.toContain('aspectRatio');
     expect(template).not.toContain('data-direction=');
-    expect(styles).toMatch(/\.photo-thumbnail\s*\{/);
+    expect(styles).toMatch(/\.background-image\s*\{/);
   });
 
-  it('微信头像预览和选择区使用固定头像列与自适应操作列对齐', () => {
+  it('头像/背景 upload 块均对齐设计稿 .upload 栅格并保留 100% 宽度主动作按钮', () => {
+    expect(template).toContain('class="upload upload-avatar"');
+    expect(template).toContain('class="upload upload-background"');
     expect(styles).toMatch(
-      /\.avatar-editor\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*144rpx minmax\(0, 1fr\)/s,
+      /\.upload\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*160rpx minmax\(0, 1fr\)/s,
     );
-    expect(styles).toMatch(/\.avatar-panel\s*\{[^}]*align-self:\s*stretch/s);
     expect(styles).toMatch(/\.avatar-action\s*\{[^}]*box-sizing:\s*border-box[^}]*width:\s*100%/s);
   });
 
   it('背景图预览区区分加载与失败状态，并提供自动刷新和手动重试', () => {
     expect(template).toContain('binderror="photoPreviewError"');
     expect(template).toContain('bindtap="retryPhotoPreview"');
-    expect(template).toContain("item.previewState === 'loading'");
+    expect(template).toContain("photoItems[0].previewState === 'loading'");
     expect(template).toContain('图片加载失败，点击重试');
     expect(source).toContain('photoPreviewRetryIds');
     expect(source).toContain('this.ensurePhotoUrlCache()?.invalidate([id])');

@@ -1,229 +1,422 @@
+/* Settings · 骑行影像志 1:1 实现
+ * 以 docs/designs/2026-10-22-cycling-image-journal/pages/settings.html 为视觉基准：
+ *   pageheading（eyebrow + 2 行宋体标题 + 小字说明）
+ *   section × 4（通知 / 隐私 / 应用 / 平台管理员可见的 Strava 同步）
+ *   每个 section：chapterhead（标题 + 细横线）→ row.rowlink.rowbutton（图标 + 文字 + chevron）→ 可选 notice/detailrows
+ * 系统导航使用微信原生胶囊；页面不渲染任何伪 status-bar / nav 栏。
+ */
+
 .settings-page {
   min-height: 100vh;
-  padding-bottom: calc(72rpx + env(safe-area-inset-bottom));
-  background: var(--color-bg);
-}
-.settings-hero {
-  margin: 20rpx 0 64rpx;
-  padding: 28rpx 0 0;
+  padding-bottom: calc(96rpx + env(safe-area-inset-bottom));
   background: var(--color-bg);
   color: var(--color-text);
 }
-.journal-heading {
-  position: relative;
+
+/* --- Page heading (对齐设计稿 .pageheading) -------------------------------- */
+.pageheading {
+  padding: 32rpx 0 48rpx;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
-.journal-eyebrow {
-  display: flex;
+.pageheading .eyebrow {
+  display: inline-flex;
   align-items: center;
   gap: 16rpx;
   color: var(--color-muted);
-  font-size: 24rpx;
-  line-height: 36rpx;
-  font-weight: 800;
+  font-family: var(--font-mono);
+  font-size: 22rpx;
+  letter-spacing: 2rpx;
+  line-height: 32rpx;
+  text-transform: uppercase;
 }
-.journal-eyebrow::before {
+.pageheading .eyebrow::before {
   width: 40rpx;
   height: 2rpx;
   background: currentColor;
   content: '';
 }
-.hero-title {
-  margin-top: 16rpx;
-  font-size: 64rpx;
-  line-height: 80rpx;
+.pageheading-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  margin-top: 20rpx;
+  font-family: var(--font-family-editorial);
+  font-size: 72rpx;
+  line-height: 88rpx;
   font-weight: 900;
   letter-spacing: -2rpx;
-}
-.hero-copy {
-  margin-top: 12rpx;
-  color: var(--color-muted);
-  font-size: 32rpx;
-  line-height: 48rpx;
-}
-.section-label {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-  margin-bottom: 20rpx;
   color: var(--color-text);
+}
+.pageheading-line {
+  display: block;
+}
+.pageheading-sub {
+  margin-top: 20rpx;
+  color: var(--color-muted);
   font-size: 28rpx;
   line-height: 44rpx;
-  font-weight: 900;
 }
-.section-label > text {
-  font-family: var(--font-mono);
+
+/* --- Content wrapper (设计稿 .content.tight) ------------------------------- */
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 56rpx;
 }
-.release-section-label {
-  margin-top: 64rpx;
+.content.tight {
+  gap: 48rpx;
 }
-.management-list {
-  border: 2rpx solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  overflow: hidden;
+
+/* --- Section + chapterhead ------------------------------------------------- */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
 }
-.management-row {
+.chapterhead {
   display: flex;
   align-items: center;
+  gap: 20rpx;
+  margin-bottom: 4rpx;
+}
+.chapterhead-title {
+  flex: none;
+  color: var(--color-text);
+  font-family: var(--font-family-editorial);
+  font-size: 36rpx;
+  line-height: 48rpx;
+  font-weight: 900;
+  letter-spacing: -0.5rpx;
+}
+.chapterhead-rule {
+  flex: 1;
+  min-width: 0;
+  height: 2rpx;
+  background: var(--color-border);
+}
+.chapterhead-aside {
+  flex: none;
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 22rpx;
+  line-height: 32rpx;
+  letter-spacing: 1rpx;
+}
+
+/* --- Row link / row button (对齐设计稿 .row.rowlink.rowbutton) ------------ */
+.row.rowlink.rowbutton {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
   width: 100%;
-  min-height: 116rpx;
+  min-height: 128rpx;
   margin: 0;
-  padding: 24rpx 28rpx;
-  border: 0;
-  border-radius: 0;
+  padding: 24rpx 24rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: 20rpx;
   background: var(--color-surface);
   color: var(--color-text);
   text-align: left;
+  transition: background var(--motion-duration-fast) var(--motion-easing-standard);
 }
-.management-row::after {
+.row.rowlink.rowbutton::after {
   display: none;
 }
-.management-row + .management-row {
-  border-top: 2rpx solid var(--color-border-subtle);
+.row.rowlink.rowbutton:active:not([disabled]) {
+  background: var(--color-raised);
 }
-.management-copy {
+.row.rowlink.rowbutton[disabled] {
+  opacity: 1;
+  background: var(--color-raised) !important;
+  color: var(--color-disabled-text) !important;
+}
+
+.lead {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 20rpx;
+}
+.rowicon {
+  flex: none;
+  display: inline-block;
+  width: 48rpx;
+  height: 48rpx;
+  border: 2rpx solid var(--color-text);
+  border-radius: 14rpx;
+  background: var(--color-bg);
+  position: relative;
+}
+/* 四种图标：铃铛 / 锁 / 扫帚 / 路线 — 用 CSS 画伪元素 glyph，不依赖图片资源 */
+.rowicon--bell::before {
+  position: absolute;
+  top: 10rpx;
+  left: 12rpx;
+  width: 20rpx;
+  height: 20rpx;
+  border: 2rpx solid var(--color-text);
+  border-radius: 20rpx 20rpx 0 0;
+  border-bottom-color: transparent;
+  content: '';
+}
+.rowicon--bell::after {
+  position: absolute;
+  bottom: 10rpx;
+  left: 50%;
+  width: 10rpx;
+  height: 4rpx;
+  background: var(--color-text);
+  border-radius: 2rpx;
+  transform: translateX(-50%);
+  content: '';
+}
+.rowicon--lock::before {
+  position: absolute;
+  top: 10rpx;
+  left: 14rpx;
+  width: 16rpx;
+  height: 12rpx;
+  border: 2rpx solid var(--color-text);
+  border-bottom: 0;
+  border-radius: 10rpx 10rpx 0 0;
+  content: '';
+}
+.rowicon--lock::after {
+  position: absolute;
+  bottom: 10rpx;
+  left: 10rpx;
+  width: 24rpx;
+  height: 16rpx;
+  background: var(--color-text);
+  border-radius: 4rpx;
+  content: '';
+}
+.rowicon--broom::before {
+  position: absolute;
+  top: 10rpx;
+  right: 10rpx;
+  width: 2rpx;
+  height: 24rpx;
+  background: var(--color-text);
+  transform: rotate(-30deg);
+  transform-origin: top right;
+  content: '';
+}
+.rowicon--broom::after {
+  position: absolute;
+  bottom: 8rpx;
+  left: 8rpx;
+  width: 22rpx;
+  height: 10rpx;
+  background: var(--color-text);
+  border-radius: 2rpx 2rpx 6rpx 6rpx;
+  content: '';
+}
+.rowicon--route::before {
+  position: absolute;
+  top: 12rpx;
+  left: 12rpx;
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+  background: var(--color-text);
+  content: '';
+}
+.rowicon--route::after {
+  position: absolute;
+  bottom: 12rpx;
+  right: 12rpx;
+  width: 10rpx;
+  height: 10rpx;
+  border: 2rpx solid var(--color-text);
+  border-radius: 50%;
+  content: '';
+  box-shadow:
+    -8rpx -10rpx 0 -5rpx var(--color-text),
+    -2rpx -16rpx 0 -5rpx var(--color-text);
+}
+
+.rowtext {
   flex: 1;
   min-width: 0;
 }
-.management-title {
-  font-size: 28rpx;
+.rowtext-title {
+  font-size: 30rpx;
   line-height: 42rpx;
   font-weight: 900;
+  color: var(--color-text);
 }
-.management-description {
+.rowtext-sub {
   margin-top: 4rpx;
   color: var(--color-muted);
-  font-size: 23rpx;
+  font-size: 24rpx;
   line-height: 34rpx;
 }
-.management-action {
+
+.chev {
   flex: none;
-  margin-left: 20rpx;
-  color: var(--color-text);
+  width: 16rpx;
+  height: 16rpx;
+  border-top: 2rpx solid var(--color-text);
+  border-right: 2rpx solid var(--color-text);
+  transform: rotate(45deg);
+}
+
+/* --- Notice (设计稿 .notice) ---------------------------------------------- */
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+  padding: 20rpx 24rpx;
+  border: 2rpx dashed var(--color-border);
+  border-radius: 16rpx;
+  background: var(--color-bg);
+  color: var(--color-muted);
   font-size: 24rpx;
   line-height: 36rpx;
-  font-weight: 800;
 }
-.release-list {
-  display: grid;
-  gap: var(--card-gap);
+.notice-dot {
+  flex: none;
+  width: 12rpx;
+  height: 12rpx;
+  margin-top: 12rpx;
+  border-radius: 50%;
+  background: var(--color-text);
 }
-.release-card {
-  position: relative;
-  border: 4rpx solid var(--color-border-strong);
-  border-radius: var(--radius-card);
+.notice--info {
+  border-style: solid;
+  color: var(--color-text);
+}
+.notice--success {
+  border-color: var(--color-status-success);
+  color: var(--color-status-success);
+}
+.notice--warning {
+  border-color: var(--color-status-warning);
+  color: var(--color-status-warning);
+}
+
+/* --- Detailrows (设计稿 .detailrows -> 当前版本 / 本次更新) ----------------- */
+.detailrows {
+  display: flex;
+  flex-direction: column;
+  border: 2rpx solid var(--color-border);
+  border-radius: 20rpx;
   background: var(--color-surface);
   overflow: hidden;
 }
-.release-card.latest {
-  border-color: var(--color-card-border);
+.detailrow {
+  display: grid;
+  grid-template-columns: 160rpx minmax(0, 1fr);
+  gap: 20rpx;
+  padding: 20rpx 24rpx;
 }
-.release-content {
-  min-width: 0;
-  padding: 28rpx;
-}
-.release-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12rpx;
-}
-.release-version {
-  color: var(--color-text);
-  font-family: var(--font-mono);
-  font-size: 24rpx;
-  line-height: 36rpx;
-  font-weight: 900;
-}
-.release-latest {
-  padding: 4rpx 12rpx;
-  border-radius: 8rpx;
-  background: var(--color-action);
-  color: var(--color-on-action);
-  font-size: 24rpx;
-  line-height: 36rpx;
-  font-weight: 800;
-}
-.release-date {
-  margin-left: auto;
-  color: var(--color-muted);
-  font-family: var(--font-mono);
-  font-size: 24rpx;
-  line-height: 36rpx;
-}
-.release-title {
-  margin-top: 20rpx;
-  color: var(--color-text);
-  font-size: 32rpx;
-  line-height: 54rpx;
-  font-weight: 900;
-}
-.release-summary {
-  margin-top: 8rpx;
-  color: var(--color-muted);
-  font-size: 25rpx;
-  line-height: 42rpx;
-}
-.release-features {
-  margin-top: 20rpx;
-  padding-top: 20rpx;
+.detailrow + .detailrow {
   border-top: 2rpx solid var(--color-border-subtle);
 }
-.release-feature {
-  display: grid;
-  grid-template-columns: 28rpx minmax(0, 1fr);
-  gap: 8rpx;
-  color: var(--color-text);
-  font-size: 25rpx;
-  line-height: 42rpx;
-}
-.release-feature + .release-feature {
-  margin-top: 8rpx;
-}
-.settings-footer {
-  margin-top: 40rpx;
+.detailrow-term {
   color: var(--color-muted);
   font-size: 24rpx;
   line-height: 36rpx;
-  text-align: center;
+  letter-spacing: 1rpx;
+}
+.detailrow-desc {
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: 26rpx;
+  line-height: 36rpx;
+  word-break: break-all;
+}
+.section-app .detailrow:nth-child(2) .detailrow-desc {
+  font-family: var(--font-family-body);
+  font-weight: 800;
 }
 
-.strava-section-label {
-  margin-top: 0;
-}
-.strava-list {
-  margin-bottom: 64rpx;
-}
-.strava-row {
+/* --- Strava section (设计稿 data-admin-only) ------------------------------ */
+.section-strava .strava-body {
+  display: flex;
+  flex-direction: column;
   gap: 20rpx;
+  padding: 24rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: 20rpx;
+  background: var(--color-surface);
 }
-.strava-mark {
-  flex: none;
+.strava-headline {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 56rpx;
-  height: 56rpx;
+  gap: 20rpx;
+}
+.strava-status {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6rpx 16rpx;
   border-radius: 999rpx;
-  background: #fc4c02;
-}
-.strava-mark-dot {
-  width: 20rpx;
-  height: 20rpx;
-  border-radius: 999rpx;
-  background: var(--color-on-action);
-}
-.strava-row--connected .strava-mark {
-  background: #fc4c02;
-}
-.strava-row--disconnected .strava-mark,
-.strava-row--pending .strava-mark,
-.strava-row--error .strava-mark {
   background: var(--color-raised);
-  border: 2rpx solid var(--color-border);
+  color: var(--color-text);
+  font-size: 22rpx;
+  line-height: 32rpx;
+  font-weight: 800;
+  letter-spacing: 1rpx;
 }
-.strava-row--disconnected .strava-mark-dot,
-.strava-row--pending .strava-mark-dot,
-.strava-row--error .strava-mark-dot {
-  background: #fc4c02;
+.tag--connected {
+  background: var(--color-text);
+  color: var(--color-on-action);
+}
+.tag--disconnected,
+.tag--pending,
+.tag--error {
+  background: var(--color-raised);
+  color: var(--color-text);
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-height);
+  padding: 0 32rpx;
+  border: 2rpx solid var(--color-text);
+  border-radius: 999rpx;
+  background: var(--color-text);
+  color: var(--color-on-action);
+  font-size: 28rpx;
+  line-height: 40rpx;
+  font-weight: 800;
+}
+.btn::after {
+  display: none;
+}
+.btn--secondary {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.strava-cta {
+  width: 100%;
+}
+
+/* --- Footer --------------------------------------------------------------- */
+.settings-footer {
+  margin-top: 72rpx;
+  color: var(--color-muted);
+  font-size: 22rpx;
+  line-height: 32rpx;
+  text-align: center;
+  letter-spacing: 2rpx;
+}
+
+/* --- Small screens (对齐设计稿 340 / 375 / 430 三档) -----------------------
+ * 设计稿已在 72rpx 字号与 128rpx 行高下通过 340 宽度验证，无需额外收缩；
+ * 这里只保留对左右内边距的细调，避免 340 边缘贴死。
+ */
+@media (max-width: 350px) {
+  .row.rowlink.rowbutton {
+    padding: 20rpx;
+  }
 }

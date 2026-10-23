@@ -1,48 +1,100 @@
+<!--
+  骑行影像志 · 报名审核（1:1 对齐 docs/designs/2026-10-22-cycling-image-journal/pages/admin-reviews.html）
+  - 骨架：pageheading(宋体双行标题) → content.tight → info-bar(切换活动) → filters(六项状态) → reviewitem × N / empty / notice
+  - 真实业务保留：管理员鉴权、活动 picker 切换、按状态 filter、服务端 100 条截断提示、
+    骨架/错误/空态、头像失败回退、活动提醒 sendReminders。
+  - 不再使用旧的过渡 heading / filter-tabs / review-card / result-count 等 Oil UI 结构。
+-->
 <view class="page review-page">
-  <brand-logo compact="{{true}}" meta="报名审批" />
-  <view class="journal-heading">
-    <view class="journal-eyebrow">此里 · 审核工作台</view>
-    <view class="journal-title editorial">认真确认每一位同行者。</view>
-    <view class="journal-summary">按报名状态筛选，查看完整资料后再处理。</view>
-  </view>
-  <view class="info-bar" wx:if="{{activities.length}}" aria-label="当前审批活动">
-    <view class="info-head"><view class="info-title">{{selectedActivityTitle}}</view><text class="info-tag {{tab === 'pending' && items.length ? 'is-pending' : ''}}">{{tab === 'pending' ? items.length : '—'}} 待审核</text></view>
-    <picker mode="selector" range="{{activities}}" range-key="title" value="{{activityIndex}}" bindchange="choose"><button class="switch-activity" aria-label="切换当前审批活动">切换活动</button></picker>
-  </view>
+  <header class="pageheading">
+    <view class="eyebrow">此里 · 审核工作台</view>
+    <view class="pageheading-title editorial">
+      <text class="pageheading-line">每一位同行者，</text>
+      <text class="pageheading-line">都值得认真确认。</text>
+    </view>
+    <view class="pageheading-sub" wx:if="{{activities.length}}">{{selectedActivityTitle}}</view>
+    <view class="pageheading-sub" wx:else>按报名状态筛选，查看完整资料后再处理。</view>
+  </header>
 
-  <view class="filter-tabs" role="tablist" aria-label="按审核状态筛选">
-    <button class="filter-tab {{tab === 'waiting' ? 'is-active' : ''}}" role="tab" aria-selected="{{tab === 'waiting'}}" data-v="waiting" bindtap="tab">候补</button><button class="filter-tab {{tab === 'pending' ? 'is-active' : ''}}" role="tab" aria-selected="{{tab === 'pending'}}" data-v="pending" bindtap="tab">待审核</button><button class="filter-tab {{tab === 'approved' ? 'is-active' : ''}}" role="tab" aria-selected="{{tab === 'approved'}}" data-v="approved" bindtap="tab">已通过</button><button class="filter-tab {{tab === 'checked_in' ? 'is-active' : ''}}" role="tab" aria-selected="{{tab === 'checked_in'}}" data-v="checked_in" bindtap="tab">已签到</button><button class="filter-tab {{tab === 'rejected' ? 'is-active' : ''}}" role="tab" aria-selected="{{tab === 'rejected'}}" data-v="rejected" bindtap="tab">已驳回</button><button class="filter-tab {{tab === 'all' ? 'is-active' : ''}}" role="tab" aria-selected="{{tab === 'all'}}" data-v="all" bindtap="tab">全部</button>
-  </view>
-  <view class="result-count" wx:if="{{!loading && !error && activities.length}}" role="status">当前筛选共 {{items.length}} 人</view>
-  <view class="limit-notice" wx:if="{{showLimitNotice}}" role="status">数据较多，仅展示最近 100 条报名</view>
-  <view class="skeleton" wx:if="{{loading}}" aria-label="正在加载审批列表"><view></view><view></view><view></view></view>
-  <view class="state-card" wx:elif="{{error}}" role="alert"><view class="title">暂时没加载出来</view><view class="muted">{{error}}</view><button class="btn" bindtap="load" aria-label="重新加载审批列表">再试一次</button></view>
-  <view class="state-card" wx:elif="{{!activities.length}}">
-    <view class="title">还没有可审批的活动</view>
-    <view class="muted">先创建并发布活动，收到报名后可在这里处理。</view>
-  </view>
-  <view wx:elif="{{!items.length}}" class="state-card"><view class="title">当前筛选暂无报名</view><view class="muted">新的报名提交后会出现在这里。</view></view>
+  <view class="content tight">
+    <view class="info-bar" wx:if="{{activities.length}}" aria-label="当前审批活动">
+      <view class="info-head">
+        <text class="info-tag {{tab === 'pending' && items.length ? 'is-pending' : ''}}">{{tab === 'pending' ? items.length : '—'}} 待审核</text>
+        <picker mode="selector" range="{{activities}}" range-key="title" value="{{activityIndex}}" bindchange="choose">
+          <button class="switch-activity" aria-label="切换当前审批活动">切换活动</button>
+        </picker>
+      </view>
+    </view>
 
-  <view class="review-list" role="list" aria-label="报名审批列表">
-    <view class="review-card" wx:for="{{items}}" wx:key="id" role="listitem">
-      <view class="review-identity">
-        <view class="review-avatar" aria-label="{{item.profile.nickname || '骑友'}}头像">
-          <image wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" mode="aspectFill" lazy-load="{{true}}" data-id="{{item.id}}" binderror="avatarError" aria-label="{{item.profile.nickname || '骑友'}}的头像" />
-          <text wx:else>{{item.avatarInitial}}</text>
+    <view class="filters" role="group" aria-label="按审核状态筛选">
+      <button class="filter-tab {{tab === 'waiting' ? 'is-active' : ''}}" aria-pressed="{{tab === 'waiting'}}" data-v="waiting" bindtap="tab">候补</button>
+      <button class="filter-tab {{tab === 'pending' ? 'is-active' : ''}}" aria-pressed="{{tab === 'pending'}}" data-v="pending" bindtap="tab">待审核</button>
+      <button class="filter-tab {{tab === 'approved' ? 'is-active' : ''}}" aria-pressed="{{tab === 'approved'}}" data-v="approved" bindtap="tab">已通过</button>
+      <button class="filter-tab {{tab === 'checked_in' ? 'is-active' : ''}}" aria-pressed="{{tab === 'checked_in'}}" data-v="checked_in" bindtap="tab">已签到</button>
+      <button class="filter-tab {{tab === 'rejected' ? 'is-active' : ''}}" aria-pressed="{{tab === 'rejected'}}" data-v="rejected" bindtap="tab">已驳回</button>
+      <button class="filter-tab {{tab === 'all' ? 'is-active' : ''}}" aria-pressed="{{tab === 'all'}}" data-v="all" bindtap="tab">全部</button>
+    </view>
+
+    <text class="result-count small muted" wx:if="{{!loading && !error && activities.length}}" role="status">当前筛选共 {{items.length}} 人</text>
+    <text class="limit-notice small muted" wx:if="{{showLimitNotice}}" role="status">数据较多，仅展示最近 100 条报名</text>
+
+    <view class="skeleton" wx:if="{{loading}}" aria-label="正在加载审批列表"><view></view><view></view><view></view></view>
+
+    <view class="empty" wx:elif="{{error}}" role="alert">
+      <view class="empty-title">暂时没加载出来</view>
+      <view class="empty-copy">{{error}}</view>
+      <button class="btn" bindtap="load" aria-label="重新加载审批列表">再试一次</button>
+    </view>
+
+    <view class="empty" wx:elif="{{!activities.length}}">
+      <view class="empty-title">还没有可审批的活动</view>
+      <view class="empty-copy">先创建并发布活动，收到报名后可在这里处理。</view>
+    </view>
+
+    <view class="empty" wx:elif="{{!items.length}}">
+      <view class="empty-title">当前筛选暂无报名</view>
+      <view class="empty-copy">新的报名提交后会出现在这里。</view>
+    </view>
+
+    <view class="reviewitem-list" wx:else role="list" aria-label="报名审批列表">
+      <view class="reviewitem reviewitem--{{item.status}}" wx:for="{{items}}" wx:key="id" role="listitem" data-id="{{item.id}}" bindtap="open">
+        <view class="reviewitem-head">
+          <view class="reviewitem-avatar" aria-label="{{item.profile.nickname || '骑友'}}头像">
+            <image wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" mode="aspectFill" lazy-load="{{true}}" data-id="{{item.id}}" binderror="avatarError" aria-label="{{item.profile.nickname || '骑友'}}的头像" />
+            <text wx:else>{{item.avatarInitial}}</text>
+          </view>
+          <view class="reviewitem-copy">
+            <view class="reviewitem-title">{{item.profile.realName || item.profile.nickname || '未填写姓名'}}</view>
+            <view class="reviewitem-sub small muted">骑友 · {{item.profile.nickname || '未设置昵称'}}</view>
+          </view>
+          <text class="tag tag--{{item.status}}">{{item.statusText}}</text>
         </view>
-        <view class="rider-copy"><view class="applicant-name">{{item.profile.realName || item.profile.nickname || '未填写姓名'}}</view><view class="rider-account">骑友 · {{item.profile.nickname || '未设置昵称'}}</view></view>
-        <view class="status-tag status-{{item.status}}">{{item.statusText}}</view>
+        <view class="reviewitem-activity">{{item.activity.title}}</view>
+        <view class="meta" aria-label="报名资料摘要">
+          <text wx:if="{{item.profile.phone}}" class="mono">{{item.profile.phone}}</text>
+          <text wx:if="{{item.gatheringMode}}">{{item.gatheringMode}}</text>
+          <text>骑行经验 · {{item.experience || '未填写'}}</text>
+        </view>
+        <view class="foot">
+          <text wx:if="{{item.submittedAt}}" class="small muted">{{item.submittedAt}}</text>
+          <text wx:else class="small muted">提交时间未知</text>
+          <text class="reviewitem-cta">{{item.status === 'pending' ? '审核报名 →' : '查看报名 →'}}</text>
+        </view>
       </view>
-      <view class="review-activity">{{item.activity.title}}</view>
-      <view class="review-facts" aria-label="报名资料摘要">
-        <view class="review-fact" wx:if="{{item.profile.phone}}"><text class="fact-label">手机号</text><text class="fact-value">{{item.profile.phone}}</text></view>
-        <view class="review-fact" wx:if="{{item.gatheringMode}}"><text class="fact-label">集合方式</text><text class="fact-value">{{item.gatheringMode}}</text></view>
-        <view class="review-fact"><text class="fact-label">能力自评</text><text class="fact-value">{{item.experience || '未填写'}}</text></view>
-        <view class="review-fact" wx:if="{{item.submittedAt}}"><text class="fact-label">提交时间</text><text class="fact-value">{{item.submittedAt}}</text></view>
+    </view>
+
+    <view class="paper reminder-card" wx:if="{{activities.length}}">
+      <view class="chapterhead">
+        <view class="chapterhead-title">活动提醒</view>
+        <view class="chapterhead-aside">仅对已通过骑友</view>
       </view>
-      <button class="review-action {{item.status === 'pending' ? 'review-action--primary' : ''}}" data-id="{{item.id}}" bindtap="open" aria-label="查看{{item.profile.realName || item.profile.nickname || '该骑友'}}的报名并处理">{{item.status === 'pending' ? '审核报名' : '查看报名'}}</button>
+      <view class="small muted">重复操作不会重复发送；仅向已通过报名的骑友推送当天出发提醒。</view>
+      <button class="btn secondary" bindtap="sendReminders" loading="{{sendingReminders}}" disabled="{{sendingReminders}}" aria-label="向已通过的骑友发送活动提醒">{{sendingReminders ? '发送中…' : '发送活动提醒'}}</button>
+    </view>
+
+    <view class="notice" role="note">
+      <view class="notice-dot" aria-hidden="true"></view>
+      <text>此处为审核管理员视图，实名与电话完整显示；其他骑友只见公开昵称。</text>
     </view>
   </view>
-
-  <view class="card reminder-card" wx:if="{{activities.length}}"><view class="title">活动提醒</view><view class="muted">仅向已通过的骑友发送；重复操作不会重复发送。</view><button class="secondary" bindtap="sendReminders" loading="{{sendingReminders}}" disabled="{{sendingReminders}}" aria-label="向已通过的骑友发送活动提醒">{{sendingReminders ? '发送中…' : '发送活动提醒'}}</button></view>
 </view>

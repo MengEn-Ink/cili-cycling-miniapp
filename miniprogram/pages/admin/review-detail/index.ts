@@ -12,6 +12,17 @@ const statusText: Record<string, string> = {
   cancelled: '已取消',
 };
 
+// 将状态映射为纯 tone token，模板上只拼接 statusTone，不再直接插入原始 x.status，
+// 避免审核页模板里暴露底层字符串，便于测试断言和 CSS 复用。
+const statusTone: Record<string, string> = {
+  waiting: 'muted',
+  pending: 'pending',
+  approved: 'approved',
+  checked_in: 'approved',
+  rejected: 'rejected',
+  cancelled: 'muted',
+};
+
 const confirmCheckIn = () =>
   new Promise<boolean>((resolve) => {
     wx.showModal({
@@ -32,6 +43,7 @@ Page({
     phone: '',
     phoneSource: '',
     statusText: '',
+    statusTone: '',
     reason: '',
     reasonError: '',
     error: '',
@@ -70,6 +82,7 @@ Page({
                   ? '历史资料 · 验证状态未知'
                   : '来源未知',
           statusText: statusText[x.status] || x.status,
+          statusTone: statusTone[x.status] || 'muted',
           loading: false,
         });
       else this.setData({ error: '报名记录不存在', loading: false });
@@ -119,6 +132,7 @@ Page({
       this.setData({
         x: { ...x, checkedInAt: formatChinaDateTime(x.checkedInAt) },
         statusText: statusText[x.status] || x.status,
+        statusTone: statusTone[x.status] || 'muted',
         submitting: false,
       });
       wx.showToast({ title: '签到成功' });
@@ -146,7 +160,10 @@ Page({
       // 请求在途期间用户若已手动返回（onUnload 递增代次），不能再回写已卸载页面，也不能再次 navigateBack 报错。
       if (requestId !== loadRequestId) return;
       // 成功后保持 submitting 禁用直到 navigateBack，收口约 500ms 的重复点击窗口；仅失败才复位。
-      this.setData({ statusText: statusText[status] || status });
+      this.setData({
+        statusText: statusText[status] || status,
+        statusTone: statusTone[status] || 'muted',
+      });
       wx.showToast({ title: status === 'approved' ? '已通过' : '已驳回' });
       setTimeout(() => wx.navigateBack(), 500);
     } catch (error) {

@@ -1,63 +1,197 @@
+<!--
+  骑行影像志 · 活动管理（1:1 对齐 docs/designs/2026-10-22-cycling-image-journal/pages/admin-activity-list.html）
+  - 骨架：pageheading(宋体双行标题) → content.tight → metrics(发布/草稿/待审核) →
+      filters(状态筛选) → section 正在筹备 → ticket × N(已发布/正在审核) →
+      paper × N(草稿) → buttonpair/底部 btn 创建活动草稿
+  - 真实业务保留：身份加载、isAdmin、managedClubIds、status filter、分页/load more、
+    editable 卡片进入编辑、reviewActivity(approve/reject)、toggleOnline、startClone、
+    confirmDelete(左滑或主动删除)、cloneForm modal。
+  - 本页已完成从旧过渡 heading 结构向设计稿 pageheading 的迁移。
+-->
 <view class="page activity-list-page">
   <view class="skeleton" wx:if="{{loading}}"><view></view><view></view><view></view></view>
-  <view class="state-card" wx:elif="{{loadError}}" role="alert"><view class="title">加载失败</view><view>{{loadError}}</view><button class="btn" bindtap="retryLoad">重试</button></view>
-  <view class="state-card" wx:elif="{{!allowed}}"><view class="title">暂时无法访问活动管理</view><view class="muted">请先完成微信身份验证后重试。</view><button class="btn" bindtap="retryLoad">重试</button></view>
+
+  <view class="empty" wx:elif="{{loadError}}" role="alert">
+    <view class="empty-title">加载失败</view>
+    <view class="empty-copy">{{loadError}}</view>
+    <button class="btn" bindtap="retryLoad">重试</button>
+  </view>
+
+  <view class="empty" wx:elif="{{!allowed}}">
+    <view class="empty-title">暂时无法访问活动管理</view>
+    <view class="empty-copy">请先完成微信身份验证后重试。</view>
+    <button class="btn secondary" bindtap="retryLoad">重试</button>
+  </view>
+
   <block wx:else>
-    <view class="journal-heading">
-      <view class="journal-eyebrow">此里 · 组织一场出发</view>
-      <view class="page-title editorial">我的活动</view>
-      <view class="hero-subtitle">{{isAdmin ? '管理全部活动与发布状态' : '创建、编辑并上下架你的活动'}}</view>
-    </view>
-    <view class="status-filters" role="tablist" aria-label="活动状态筛选">
-      <button class="status-filter {{statusFilter === 'all' ? 'active' : ''}}" role="tab" aria-selected="{{statusFilter === 'all'}}" data-status="all" bindtap="selectStatusFilter">全部</button>
-      <button class="status-filter {{statusFilter === 'draft' ? 'active' : ''}}" role="tab" aria-selected="{{statusFilter === 'draft'}}" data-status="draft" bindtap="selectStatusFilter">已下架</button>
-      <button class="status-filter {{statusFilter === 'pending_review' ? 'active' : ''}}" role="tab" aria-selected="{{statusFilter === 'pending_review'}}" data-status="pending_review" bindtap="selectStatusFilter">待审核</button>
-      <button class="status-filter {{statusFilter === 'rejected' ? 'active' : ''}}" role="tab" aria-selected="{{statusFilter === 'rejected'}}" data-status="rejected" bindtap="selectStatusFilter">已驳回</button>
-      <button class="status-filter {{statusFilter === 'published' ? 'active' : ''}}" role="tab" aria-selected="{{statusFilter === 'published'}}" data-status="published" bindtap="selectStatusFilter">已上线</button>
-      <button class="status-filter {{statusFilter === 'finished' ? 'active' : ''}}" role="tab" aria-selected="{{statusFilter === 'finished'}}" data-status="finished" bindtap="selectStatusFilter">已结束</button>
-    </view>
-    <view class="list-count" wx:if="{{items.length}}"><text>活动列表</text><text>共 {{items.length}} 场</text></view>
-    <view class="state-card" wx:if="{{!items.length && !error}}"><view class="title">还没有活动</view><view class="muted">创建第一场骑行活动草稿，发布后骑友即可报名。</view><button class="btn" bindtap="create">创建活动草稿</button></view>
-    <view class="card danger" wx:if="{{error}}" role="alert"><view class="title">加载失败</view><view>{{error}}</view></view>
-    <view class="swipe-delete {{item.swipeOpen ? 'swipe-delete-active' : ''}}" wx:for="{{items}}" wx:key="id">
-      <button wx:if="{{item.status === 'draft'}}" class="secondary delete-button" catchtap="confirmDelete" data-id="{{item.id}}">删除</button>
-      <view
-        class="card activity-row {{item.swipeAnim ? 'is-animating' : ''}}"
-        style="transform: translateX({{item.swipeOffset}}px)"
-        data-id="{{item.id}}"
-        bindtap="edit"
-        bindtouchstart="onRowTouchStart"
-        bindtouchmove="onRowTouchMove"
-        bindtouchend="onRowTouchEnd"
-        bindtouchcancel="onRowTouchEnd"
-      >
-        <view class="admin-card-head"><text class="tag {{item.status === 'published' ? 'tag-solid' : 'tag-outline'}}">{{item.statusLabel}}</text><text class="muted">{{item.displayDate || '活动时间待公布'}}</text></view>
-        <view class="title">{{item.title}}</view>
-        <view class="management-metrics" aria-label="活动报名指标">
-          <view><text>{{item.registrationMetric}}</text><text>报名</text></view>
-          <view class="pending-metric"><text>{{item.pendingMetric}}</text><text>待审核</text></view>
-          <view><text>{{item.approvedMetric}}</text><text>已通过</text></view>
+    <header class="pageheading">
+      <view class="eyebrow">此里 · 组织一场出发</view>
+      <view class="pageheading-title editorial">
+        <text class="pageheading-line">山路上的事，</text>
+        <text class="pageheading-line">安排得明明白白。</text>
+      </view>
+      <view class="pageheading-sub">{{isAdmin ? '创建活动、维护信息、处理报名。' : '创建、编辑并上下架你的活动。'}}</view>
+    </header>
+
+    <view class="content tight">
+      <view class="metrics" aria-label="当前已加载活动指标">
+        <view class="metric">
+          <strong>{{metrics.publishedCount}}</strong>
+          <span>当前已加载 · 已发布</span>
         </view>
-        <view wx:if="{{item.status === 'rejected' && item.rejectionReason}}" class="rejection-reason" role="note"><text class="rejection-label">驳回原因：</text><text class="rejection-text">{{item.rejectionReason}}</text></view>
-        <view class="activity-actions">
-          <button wx:if="{{item.canEdit}}" class="secondary" catchtap="edit" data-id="{{item.id}}">编辑</button>
-          <button wx:if="{{item.canReview}}" catchtap="reviewActivity" data-id="{{item.id}}" data-decision="approve" class="secondary">通过</button>
-          <button wx:if="{{item.canReview}}" catchtap="reviewActivity" data-id="{{item.id}}" data-decision="reject" class="secondary">驳回</button>
-          <button wx:if="{{item.canToggleOnline}}" catchtap="toggleOnline" data-id="{{item.id}}" class="secondary">{{item.toggleLabel}}</button>
+        <view class="metric">
+          <strong>{{metrics.draftCount}}</strong>
+          <span>当前已加载 · 草稿</span>
         </view>
-        <view class="low-actions"><button wx:if="{{item.status === 'draft'}}" catchtap="confirmDelete" data-id="{{item.id}}" class="text-button">删除（仅草稿）</button><button wx:if="{{item.canClone}}" catchtap="startClone" data-id="{{item.id}}" class="text-button">从此活动创建</button></view>
+        <view class="metric">
+          <strong>{{metrics.pendingCount}}</strong>
+          <span>当前已加载 · 待审核</span>
+        </view>
+      </view>
+
+      <view class="filters" role="group" aria-label="活动状态筛选">
+        <button class="filter-tab {{statusFilter === 'all' ? 'is-active' : ''}}" aria-pressed="{{statusFilter === 'all'}}" data-status="all" bindtap="selectStatusFilter">全部</button>
+        <button class="filter-tab {{statusFilter === 'draft' ? 'is-active' : ''}}" aria-pressed="{{statusFilter === 'draft'}}" data-status="draft" bindtap="selectStatusFilter">已下架</button>
+        <button class="filter-tab {{statusFilter === 'pending_review' ? 'is-active' : ''}}" aria-pressed="{{statusFilter === 'pending_review'}}" data-status="pending_review" bindtap="selectStatusFilter">待审核</button>
+        <button class="filter-tab {{statusFilter === 'rejected' ? 'is-active' : ''}}" aria-pressed="{{statusFilter === 'rejected'}}" data-status="rejected" bindtap="selectStatusFilter">已驳回</button>
+        <button class="filter-tab {{statusFilter === 'published' ? 'is-active' : ''}}" aria-pressed="{{statusFilter === 'published'}}" data-status="published" bindtap="selectStatusFilter">已上线</button>
+        <button class="filter-tab {{statusFilter === 'finished' ? 'is-active' : ''}}" aria-pressed="{{statusFilter === 'finished'}}" data-status="finished" bindtap="selectStatusFilter">已结束</button>
+      </view>
+
+      <view class="empty" wx:if="{{!items.length && !error}}">
+        <view class="empty-title">还没有活动</view>
+        <view class="empty-copy">创建第一场骑行活动草稿，发布后骑友即可报名。</view>
+        <button class="btn" bindtap="create">创建活动草稿</button>
+      </view>
+
+      <view class="notice notice--warn" wx:if="{{error}}" role="alert">
+        <view class="notice-dot" aria-hidden="true"></view>
+        <text>{{error}}</text>
+      </view>
+
+      <section class="section section-list" wx:if="{{items.length}}">
+        <view class="chapterhead">
+          <view class="chapterhead-title">{{statusFilter === 'draft' ? '草稿与下架' : (statusFilter === 'finished' ? '已完成' : '正在筹备')}}</view>
+          <view class="chapterhead-aside">共 {{items.length}} 场</view>
+        </view>
+
+        <view class="activity-list" role="list" aria-label="管理活动列表">
+          <view class="swipe-row {{item.swipeOpen ? 'swipe-open' : ''}}" wx:for="{{items}}" wx:key="id" role="listitem">
+            <view wx:if="{{item.status === 'draft'}}" class="swipe-delete {{item.swipeOpen ? 'swipe-delete-active' : ''}}">
+              <button wx:if="{{item.status === 'draft'}}" class="secondary delete-button" catchtap="confirmDelete" data-id="{{item.id}}">
+                <text class="swipe-delete-icon" aria-hidden="true">×</text>
+                <text>删除</text>
+              </button>
+            </view>
+
+            <!-- Draft 使用 paper 样式；其他状态使用 ticket -->
+            <block wx:if="{{item.status === 'draft'}}">
+              <view
+                class="paper {{item.swipeAnim ? 'is-animating' : ''}}"
+                style="transform: translateX({{item.swipeOffset}}px)"
+                data-id="{{item.id}}"
+                bindtap="edit"
+                bindtouchstart="onRowTouchStart"
+                bindtouchmove="onRowTouchMove"
+                bindtouchend="onRowTouchEnd"
+                bindtouchcancel="onRowTouchEnd"
+              >
+                <view class="paper-head">
+                  <text class="tag tag--draft">{{item.statusLabel}}</text>
+                  <text class="paper-date mono">{{item.displayDate || '活动时间待公布'}}</text>
+                </view>
+                <view class="paper-title editorial">{{item.title}}</view>
+                <view class="row rowlink">
+                  <view class="lead">
+                    <view class="rowicon rowicon--edit" aria-hidden="true"><text>编</text></view>
+                    <view>
+                      <strong>继续编辑</strong>
+                      <small>完善路线和集合信息</small>
+                    </view>
+                  </view>
+                  <view class="chev" aria-hidden="true"></view>
+                </view>
+                <view class="low-actions">
+                  <button wx:if="{{item.status === 'draft'}}" catchtap="confirmDelete" data-id="{{item.id}}" class="secondary delete-button">删除（仅草稿）</button>
+                </view>
+              </view>
+            </block>
+            <block wx:else>
+              <view
+                class="ticket ticket--{{item.status}} {{item.swipeAnim ? 'is-animating' : ''}}"
+                style="transform: translateX({{item.swipeOffset}}px)"
+                data-id="{{item.id}}"
+                bindtap="edit"
+                bindtouchstart="onRowTouchStart"
+                bindtouchmove="onRowTouchMove"
+                bindtouchend="onRowTouchEnd"
+                bindtouchcancel="onRowTouchEnd"
+              >
+                <view class="ticketbody">
+                  <view class="ticket-row-top">
+                    <text class="tag tag--{{item.status}}">{{item.statusLabel}}</text>
+                    <text class="ticket-date mono">{{item.displayDate || '活动时间待公布'}}</text>
+                  </view>
+                  <view class="ticket-title editorial">{{item.title}}</view>
+
+                  <view class="management-metrics metrics metrics--inline" aria-label="活动报名指标">
+                    <view class="metric"><strong>{{item.registrationMetric}}</strong><span>报名</span></view>
+                    <view class="metric metric--pending"><strong>{{item.pendingMetric}}</strong><span>待审核</span></view>
+                    <view class="metric"><strong>{{item.approvedMetric}}</strong><span>已通过</span></view>
+                  </view>
+
+                  <view wx:if="{{item.status === 'rejected' && item.rejectionReason}}" class="rejection-reason" role="note">
+                    <text class="rejection-label">驳回原因：</text>
+                    <text class="rejection-text">{{item.rejectionReason}}</text>
+                  </view>
+
+                  <view class="buttonpair">
+                    <button wx:if="{{item.canEdit}}" class="btn secondary" catchtap="edit" data-id="{{item.id}}">编辑活动</button>
+                    <button wx:if="{{item.canReview}}" class="btn secondary" catchtap="reviewActivity" data-id="{{item.id}}" data-decision="approve">通过</button>
+                    <button wx:if="{{item.canReview}}" class="btn secondary" catchtap="reviewActivity" data-id="{{item.id}}" data-decision="reject">驳回</button>
+                    <button wx:if="{{item.canToggleOnline}}" class="btn secondary" catchtap="toggleOnline" data-id="{{item.id}}">{{item.toggleLabel}}</button>
+                  </view>
+
+                  <view class="low-actions">
+                    <button wx:if="{{item.canClone}}" catchtap="startClone" data-id="{{item.id}}" class="text-button">从此活动创建</button>
+                  </view>
+                </view>
+              </view>
+            </block>
+          </view>
+        </view>
+
+        <button wx:if="{{hasMore}}" class="btn secondary load-more" bindtap="loadMore" loading="{{loadingMore}}" disabled="{{loadingMore}}">加载更多</button>
+      </section>
+
+      <view class="page-actions buttonpair">
+        <button wx:if="{{isAdmin}}" class="btn secondary" bindtap="reviews">报名审批</button>
+        <button class="btn" bindtap="create">创建活动草稿</button>
       </view>
     </view>
-    <button wx:if="{{hasMore}}" class="secondary load-more" bindtap="loadMore" loading="{{loadingMore}}" disabled="{{loadingMore}}">加载更多</button>
-    <view class="page-actions"><button wx:if="{{isAdmin}}" class="secondary" bindtap="reviews">报名审批</button><button class="btn" bindtap="create">创建活动草稿</button></view>
   </block>
 
-  <view class="modal-mask" wx:if="{{cloneSourceId}}" catchtap="cancelClone"><view class="modal-sheet" catchtap="keepClonePanel">
-    <view class="title">从此活动创建</view><view class="muted">请重新设置报名截止、开始和结束时间。</view>
-    <view class="field"><text class="field-label">报名截止时间</text><input class="input" value="{{cloneForm.deadline}}" placeholder-class="input-placeholder" placeholder="2026-10-18T20:00:00+08:00" data-name="deadline" bindinput="cloneField" disabled="{{cloning}}"/></view>
-    <view class="field"><text class="field-label">开始时间</text><input class="input" value="{{cloneForm.startAt}}" placeholder-class="input-placeholder" placeholder="2026-10-19T06:20:00+08:00" data-name="startAt" bindinput="cloneField" disabled="{{cloning}}"/></view>
-    <view class="field"><text class="field-label">结束时间</text><input class="input" value="{{cloneForm.endAt}}" placeholder-class="input-placeholder" placeholder="2026-10-19T12:00:00+08:00" data-name="endAt" bindinput="cloneField" disabled="{{cloning}}"/></view>
-    <view class="clone-actions"><button class="secondary" bindtap="cancelClone" disabled="{{cloning}}">取消</button><button class="btn" bindtap="confirmClone" loading="{{cloning}}" disabled="{{cloning}}">创建草稿</button></view>
-    <view wx:if="{{cloneError}}" class="field-error clone-error" role="alert">{{cloneError}}</view>
-  </view></view>
+  <view class="modal-mask" wx:if="{{cloneSourceId}}" catchtap="cancelClone">
+    <view class="modal-sheet" catchtap="keepClonePanel">
+      <view class="modal-title editorial">从此活动创建</view>
+      <view class="small muted">请重新设置报名截止、开始和结束时间。</view>
+      <view class="field">
+        <text class="field-label">报名截止时间</text>
+        <input class="input" value="{{cloneForm.deadline}}" placeholder-class="input-placeholder" placeholder="2026-10-18T20:00:00+08:00" data-name="deadline" bindinput="cloneField" disabled="{{cloning}}" />
+      </view>
+      <view class="field">
+        <text class="field-label">开始时间</text>
+        <input class="input" value="{{cloneForm.startAt}}" placeholder-class="input-placeholder" placeholder="2026-10-19T06:20:00+08:00" data-name="startAt" bindinput="cloneField" disabled="{{cloning}}" />
+      </view>
+      <view class="field">
+        <text class="field-label">结束时间</text>
+        <input class="input" value="{{cloneForm.endAt}}" placeholder-class="input-placeholder" placeholder="2026-10-19T12:00:00+08:00" data-name="endAt" bindinput="cloneField" disabled="{{cloning}}" />
+      </view>
+      <view class="buttonpair modal-actions">
+        <button class="btn secondary" bindtap="cancelClone" disabled="{{cloning}}">取消</button>
+        <button class="btn" bindtap="confirmClone" loading="{{cloning}}" disabled="{{cloning}}">创建草稿</button>
+      </view>
+      <view wx:if="{{cloneError}}" class="field-error clone-error" role="alert">{{cloneError}}</view>
+    </view>
+  </view>
 </view>

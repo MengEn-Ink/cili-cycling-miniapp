@@ -329,6 +329,25 @@ Page({
   retry() {
     void this.load();
   },
+  backToActivity() {
+    if (!this.activityId) {
+      wx.navigateBack({ delta: 1 });
+      return;
+    }
+    const getPages = (
+      globalThis as unknown as { getCurrentPages?: () => Array<{ route?: string }> }
+    ).getCurrentPages;
+    const pages = typeof getPages === 'function' ? getPages() : [];
+    const previous = pages[pages.length - 2];
+    const previousRoute = previous?.route || '';
+    if (previousRoute.includes('activity-detail')) {
+      wx.navigateBack({ delta: 1 });
+      return;
+    }
+    wx.redirectTo({
+      url: '/pages/activity-detail/index?id=' + encodeURIComponent(this.activityId),
+    });
+  },
   mapError() {
     if (!this.data.mapAvailable) return;
     this.safeSetData({ mapAvailable: false, mapFailed: true });

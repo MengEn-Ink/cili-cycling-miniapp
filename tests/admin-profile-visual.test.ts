@@ -10,13 +10,13 @@ describe('管理端与个人资料视觉契约', () => {
     const template = read('miniprogram/pages/admin/activity-list/index.wxml');
     const styles = read('miniprogram/pages/admin/activity-list/index.wxss');
 
-    expect(template).toContain('class="management-metrics"');
+    expect(template).toMatch(/class="management-metrics[^"]*"/);
     expect(template).toContain('{{item.registrationMetric}}');
     expect(template).toContain('{{item.pendingMetric}}');
     expect(template).toContain('{{item.approvedMetric}}');
-    expect(template).toContain('<text>报名</text>');
-    expect(template).toContain('<text>待审核</text>');
-    expect(template).toContain('<text>已通过</text>');
+    expect(template).toContain('<span>报名</span>');
+    expect(template).toContain('<span>待审核</span>');
+    expect(template).toContain('<span>已通过</span>');
     expect(source).toContain('displayDate: formatActivityDateTime(item.startAt || item.date)');
     expect(template).toContain("{{item.displayDate || '活动时间待公布'}}");
     expect(template).not.toContain('{{item.displayDate || item.startAt}}');
@@ -24,7 +24,7 @@ describe('管理端与个人资料视觉契约', () => {
     expect(source).toContain('registrationMetric: metricValue(item.occupiedCount)');
     expect(source).toContain('approvedRegistrationCount');
     expect(source).not.toMatch(/registrationMetric:\s*0|pendingMetric:\s*0|approvedMetric:\s*0/);
-    expect(styles).toMatch(/\.management-metrics\s*\{[^}]*grid-template-columns:\s*repeat\(3,/s);
+    expect(styles).toMatch(/\.management-metrics[^{]*\{[^}]*grid-template-columns:\s*repeat\(3,/s);
   });
 
   it('地图选点和公开路线解析使用次按钮，图片操作热区不少于 88rpx', () => {
@@ -51,11 +51,11 @@ describe('管理端与个人资料视觉契约', () => {
 
     expect(source).toContain('item.profile?.avatarUrl || item.profile?.avatarId');
     expect(source).toContain("avatarInitial: nickname.slice(0, 1) || '骑'");
-    expect(template).toContain('class="review-avatar"');
+    expect(template).toContain('class="reviewitem-avatar"');
     expect(template).toContain('wx:if="{{item.avatarUrl}}"');
-    expect(template).toContain('aria-label="{{item.profile.nickname || \'骑友\'}}的头像"');
+    expect(template).toContain('aria-label="{{item.profile.nickname || \'骑友\'}}头像"');
     expect(template).toContain('<text wx:else>{{item.avatarInitial}}</text>');
-    expect(styles).toMatch(/\.review-avatar\s*\{[^}]*width:\s*88rpx;[^}]*height:\s*88rpx/s);
+    expect(styles).toMatch(/\.reviewitem-avatar\s*\{[^}]*width:\s*88rpx;[^}]*height:\s*88rpx/s);
     expect(source).not.toContain('已入队');
   });
 

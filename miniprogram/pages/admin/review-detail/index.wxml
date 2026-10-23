@@ -1,21 +1,149 @@
+<!--
+  骑行影像志 · 审核报名详情（1:1 对齐 docs/designs/2026-10-22-cycling-image-journal/pages/admin-review-detail.html）
+  - 骨架：pageheading(骑友姓名 + 状态 tag) → content.tight →
+      person(头像 + 公开昵称 + 提交时间) →
+      section 报名与联络资料 (detailrows) →
+      section 骑行经验 →
+      section 骑友备注 →
+      section 照片 →
+      pending: section 审核意见 + buttonpair(驳回/通过)
+      approved: section 现场签到 + btn
+      checked_in: notice success(已完成签到)
+      → notice (隐私提醒)
+  - 真实业务保留：管理员鉴权、报名详情加载、capabilityCard、电话来源、照片预览、
+    photoFailed、驳回理由、通过、签到。
+-->
 <view class="page review-detail-page">
-  <brand-logo compact="{{true}}" meta="审批详情" />
-  <view class="journal-heading">
-    <view class="journal-eyebrow">此里 · 确认同行资料</view>
-    <view class="journal-title editorial">{{card ? card.displayName : '审核报名'}}</view>
-    <view class="journal-summary">完整核对报名、联络与安全信息。</view>
-  </view>
-  <view class="skeleton" wx:if="{{loading}}"><view></view><view></view><view></view></view>
-  <view class="state-card" wx:if="{{error && !x}}" role="alert"><view class="title">加载失败</view><view class="muted">{{error}}</view></view>
-  <block wx:if="{{x && card}}">
-    <view class="info-bar"><view class="info-head"><text wx:if="{{x.serialNo}}" class="info-kicker">凭证编号 {{x.serialNo}}</text><text wx:elif="{{x.status === 'pending'}}" class="info-kicker info-kicker--pending">通过后生成凭证编号</text><text wx:else class="info-kicker info-kicker--pending">未生成凭证编号</text><text class="info-tag {{x.status === 'pending' ? 'is-pending' : ''}}">{{statusText}}</text></view><view class="info-title">{{card.displayName}} · {{x.activity.title}}</view><view class="status-explain">{{x.status === 'pending' ? '通过后骑友会收到出发凭证；驳回需填写理由。' : '当前审批状态已更新。'}}</view></view>
+  <view class="skeleton" wx:if="{{loading}}" aria-label="正在加载审批详情"><view></view><view></view><view></view></view>
 
-    <view class="card"><view class="card-head"><text class="card-no">01</text><view class="title">报名人</view><text class="tag">管理员可见完整信息</text></view><view class="detail-line"><text>昵称</text><strong>{{card.displayName}}</strong></view><view class="detail-line"><text>真实姓名</text><strong>{{card.realName}}</strong></view><view class="detail-line"><text>性别</text><strong>{{card.genderLabel}}</strong></view><view class="detail-line"><text>手机号</text><strong>{{phone}}</strong></view><view class="detail-line"><text>验证来源</text><strong>{{phoneSource}}</strong></view></view>
-    <view class="card"><view class="card-head"><text class="card-no">02</text><view class="title">报名信息</view></view><view class="detail-line"><text>骑行经验</text><strong>{{card.experience}}</strong></view><view class="detail-line" wx:if="{{x.gatheringMode}}"><text>集合方式</text><strong>{{x.gatheringMode}}</strong></view><view class="detail-line" wx:if="{{x.teamName}}"><text>队伍</text><strong>{{x.teamName}}{{x.isTeamLeader ? ' · 队长' : ''}}</strong></view><view class="detail-line"><text>报名备注</text><strong>{{card.remark || '无'}}</strong></view></view>
-    <view class="card"><view class="card-head"><text class="card-no">03</text><view class="title">照片</view></view><view class="muted">资料与照片由骑友本人维护，仅用于本次活动审核。</view><view class="photo-strip"><view class="photo-cell" wx:for="{{card.images}}" wx:key="url"><image wx:if="{{!photoFailed[index]}}" src="{{item.url}}" mode="aspectFill" lazy-load="{{true}}" data-index="{{index}}" data-url="{{item.url}}" binderror="photoError" bindtap="previewPhoto" /><view wx:else class="photo-fallback">照片暂不可用</view></view></view></view>
-    <view wx:if="{{x.status === 'pending'}}" class="decision-panel"><view class="card-head"><text class="card-no">04</text><view class="title">审核意见</view><text class="tag">驳回时必填</text></view><textarea class="textarea {{reasonError ? 'is-error' : ''}}" value="{{reason}}" bindinput="reason" placeholder-class="input-placeholder" placeholder="驳回时必填，骑友会看到这段说明" maxlength="200" /><view wx:if="{{reasonError}}" class="field-error" role="alert">{{reasonError}}</view></view>
-    <view class="card danger" wx:if="{{error}}" role="alert">{{error}}</view>
+  <view class="empty" wx:if="{{error && !x}}" role="alert">
+    <view class="empty-title">加载失败</view>
+    <view class="empty-copy">{{error}}</view>
+  </view>
+
+  <block wx:if="{{x && card}}">
+    <header class="pageheading">
+      <view class="pageheading-logo-row">
+        <view class="eyebrow">此里 · 确认同行资料</view>
+        <brand-logo compact="{{true}}" meta="审批详情" />
+      </view>
+      <view class="pageheading-title editorial">{{card.displayName}}</view>
+      <view class="pageheading-sub">公开昵称 · {{card.displayName}}</view>
+      <view class="pageheading-meta">
+        <text class="tag tag--{{statusTone}}" data-review-current>{{statusText}}</text>
+        <text wx:if="{{x.serialNo}}" class="mono info-kicker">凭证编号 {{x.serialNo}}</text>
+        <text wx:elif="{{x.status === 'pending'}}" class="mono info-kicker info-kicker--pending">通过后生成凭证编号</text>
+        <text wx:else class="mono info-kicker info-kicker--pending">未生成凭证编号</text>
+      </view>
+    </header>
+
+    <view class="content tight">
+      <view class="person">
+        <view class="person-avatar" aria-label="骑友头像">
+          <image wx:if="{{card.avatarUrl}}" class="person-avatar-img" src="{{card.avatarUrl}}" mode="aspectFill" />
+          <text wx:else>{{card.displayName ? card.displayName : '骑'}}</text>
+        </view>
+        <view class="person-copy">
+          <view class="person-title">{{card.displayName}}</view>
+          <view class="person-sub">{{x.activity.title}}</view>
+        </view>
+      </view>
+
+      <section class="section">
+        <view class="chapterhead">
+          <view class="chapterhead-title">报名与联络资料</view>
+          <view class="chapterhead-aside">管理员可见完整信息</view>
+        </view>
+        <view class="detailrows">
+          <view class="detailrow"><text class="dt">报名活动</text><text class="dd">{{x.activity.title}}</text></view>
+          <view class="detailrow" wx:if="{{x.gatheringMode}}"><text class="dt">集合方式</text><text class="dd">{{x.gatheringMode}}</text></view>
+          <view class="detailrow" wx:if="{{x.teamName}}"><text class="dt">队伍</text><text class="dd">{{x.teamName}}{{x.isTeamLeader ? ' · 队长' : ''}}</text></view>
+          <view class="detailrow"><text class="dt">真实姓名</text><text class="dd">{{card.realName}}</text></view>
+          <view class="detailrow"><text class="dt">性别</text><text class="dd">{{card.genderLabel}}</text></view>
+          <view class="detailrow"><text class="dt">手机号码</text><text class="dd mono">{{phone}}</text></view>
+          <view class="detailrow"><text class="dt">验证来源</text><text class="dd">{{phoneSource}}</text></view>
+        </view>
+      </section>
+
+      <section class="section">
+        <view class="chapterhead">
+          <view class="chapterhead-title">骑行经验</view>
+          <view class="chapterhead-aside">自评能力</view>
+        </view>
+        <view class="section-body"><text wx:if="{{card.experience}}">{{card.experience}}</text><text wx:else>未填写</text></view>
+        <view class="section-note small muted">报名能力自评：新手 / 有经验 / 常骑。个人说明单独展示在备注中。</view>
+      </section>
+
+      <section class="section">
+        <view class="chapterhead">
+          <view class="chapterhead-title">骑友备注</view>
+          <view class="chapterhead-aside">本人填写</view>
+        </view>
+        <view class="section-body">{{card.remark || '无'}}</view>
+      </section>
+
+      <section class="section">
+        <view class="chapterhead">
+          <view class="chapterhead-title">照片</view>
+          <view class="chapterhead-aside">活动审核用</view>
+        </view>
+        <view class="small muted">资料与照片由骑友本人维护，仅用于本次活动审核。</view>
+        <view class="photo-strip" wx:if="{{card.images && card.images.length}}">
+          <view class="photo-cell" wx:for="{{card.images}}" wx:key="url">
+            <image wx:if="{{!photoFailed[index]}}" src="{{item.url}}" mode="aspectFill" lazy-load="{{true}}" data-index="{{index}}" data-url="{{item.url}}" binderror="photoError" bindtap="previewPhoto" />
+            <view wx:else class="photo-fallback small muted">照片暂不可用</view>
+          </view>
+        </view>
+        <view wx:else class="small muted">暂无照片</view>
+      </section>
+
+      <view wx:if="{{error}}" class="notice notice--warn" role="alert">
+        <view class="notice-dot" aria-hidden="true"></view>
+        <text>{{error}}</text>
+      </view>
+
+      <section wx:if="{{x.status === 'pending'}}" class="decision-panel section">
+        <view class="chapterhead">
+          <view class="chapterhead-title">审核意见</view>
+          <view class="chapterhead-aside">驳回时必填</view>
+        </view>
+        <view class="field">
+          <textarea class="textarea {{reasonError ? 'is-error' : ''}}" value="{{reason}}" bindinput="reason" placeholder-class="input-placeholder" placeholder="审核通过时选填；驳回时必填，骑友会看到这段说明" maxlength="200" />
+          <view wx:if="{{reasonError}}" class="field-error" role="alert">{{reasonError}}</view>
+          <view wx:else class="small muted">审核通过时选填；驳回时必填，请说明需要补充或修改的内容。</view>
+        </view>
+      </section>
+
+      <section class="section" wx:elif="{{x.status === 'approved'}}">
+        <view class="chapterhead">
+          <view class="chapterhead-title">现场签到</view>
+          <view class="chapterhead-aside">集合现场操作</view>
+        </view>
+        <view class="small muted">报名已通过。请在集合现场核对本人身份；再次确认后才会记录签到。</view>
+      </section>
+
+      <view wx:elif="{{x.status === 'checked_in'}}" class="notice notice--success" role="status">
+        <view class="notice-dot" aria-hidden="true"></view>
+        <text>已完成签到，此记录仅供查看，无需重复操作。</text>
+      </view>
+
+      <view wx:elif="{{x.status === 'rejected'}}" class="notice notice--warn" role="note">
+        <view class="notice-dot" aria-hidden="true"></view>
+        <text>已驳回：{{card.remark || '骑友已收到驳回说明，可修改资料后重新报名。'}}</text>
+      </view>
+
+      <view class="notice" role="note">
+        <view class="notice-dot" aria-hidden="true"></view>
+        <text>审核管理员可见完整实名、电话及紧急联系人；其他骑友只见公开昵称。候补、已驳回与已签到记录不提供审核或签到操作。</text>
+      </view>
+    </view>
+
+    <view wx:if="{{x.status === 'pending'}}" class="fixed actions buttonpair">
+      <button class="btn secondary" data-s="rejected" bindtap="act" disabled="{{submitting}}">驳回</button>
+      <button class="btn" data-s="approved" bindtap="act" disabled="{{submitting}}" loading="{{submitting}}">通过报名</button>
+    </view>
+    <view wx:elif="{{x.status === 'approved'}}" class="row actions fixed single-action">
+      <button class="btn" bindtap="checkIn" disabled="{{submitting}}" loading="{{submitting}}">{{submitting ? '正在签到' : '确认签到'}}</button>
+    </view>
   </block>
-  <view wx:if="{{x.status === 'pending'}}" class="fixed actions"><button class="secondary" data-s="rejected" bindtap="act" disabled="{{submitting}}">驳回</button><button class="btn" data-s="approved" bindtap="act" disabled="{{submitting}}" loading="{{submitting}}">通过报名</button></view>
-  <view wx:elif="{{x.status === 'approved'}}" class="row actions fixed single-action"><button class="btn" bindtap="checkIn" disabled="{{submitting}}" loading="{{submitting}}">{{submitting ? '正在签到' : '确认签到'}}</button></view>
 </view>

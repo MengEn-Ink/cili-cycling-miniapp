@@ -1,36 +1,55 @@
 {
   "slug": "admin-review-detail",
   "pagePath": "pages/admin/review-detail/index",
-  "title": "审核报名",
+  "title": "审核报名详情",
   "wxml": "miniprogram/pages/admin/review-detail/index.wxml",
   "wxss": "miniprogram/pages/admin/review-detail/index.wxss",
   "ts": "miniprogram/pages/admin/review-detail/index.ts",
-  "designIntent": "待审核才显示驳回/通过操作；通过后才显示确认签到；已签到/已驳回只读；驳回需填写理由；凭证编号待通过后生成。",
+  "designIntent": "骑行影像志 1:1：pageheading(宋体骑友姓名 + 状态 tag + 凭证编号/占位) → content.tight → person(头像 + 公开昵称 + 活动名) → section 报名与联络资料(detailrows：活动/集合/队伍/实名/性别/手机号/验证来源) → section 骑行经验 + 骑友备注 + 照片(photo-strip 预览与失败兜底) → 状态分支：pending 走 decision-panel + 底部 buttonpair(驳回/通过)；approved 走 section 现场签到 + 底部单主按钮；checked_in 走 notice--success；rejected 走 notice--warn → notice 隐私提醒。",
   "containers": [
     { "class": "page review-detail-page", "role": "page-root", "order": 1 },
-    { "class": "journal-heading", "role": "page-heading", "order": 2, "note": "此里 · 确认同行资料 + editorial 骑友姓名" },
-    { "class": "info-bar", "role": "status-bar", "order": 3, "note": "凭证编号或待生成提示 + 状态 tag" },
-    { "class": "fixed actions", "role": "actions-pending", "order": 4, "optional": true, "note": "待审核：驳回 secondary + 通过报名 btn" },
-    { "class": "row actions fixed single-action", "role": "actions-approved", "order": 5, "optional": true, "note": "已通过：确认签到 btn" }
+    { "class": "pageheading", "role": "page-heading", "order": 2, "note": "宋体 editorial 骑友姓名 + 状态 tag + 凭证编号" },
+    { "class": "content tight", "role": "content", "order": 3 },
+    { "class": "person", "role": "rider-identity", "order": 4, "note": "头像 + 公开昵称 + 当前活动" },
+    { "class": "section", "role": "detail-section", "order": 5, "note": "报名/经验/备注/照片 多节 section" },
+    { "class": "detailrows", "role": "detail-rows", "order": 6, "note": "报名活动/集合方式/队伍/实名/性别/手机号/验证来源" },
+    { "class": "photo-strip", "role": "photo-list", "order": 7, "optional": true, "note": "资料照片预览，支持失败兜底 photo-fallback" },
+    { "class": "decision-panel section", "role": "decision-panel", "order": 8, "optional": true, "note": "pending 状态下的审核意见文本区" },
+    { "class": "fixed actions buttonpair", "role": "primary-actions-pending", "order": 9, "optional": true, "note": "pending 状态下的驳回/通过固定底部按钮" },
+    { "class": "row actions fixed single-action", "role": "primary-actions-approved", "order": 10, "optional": true, "note": "approved 状态下的确认签到按钮" },
+    { "class": "notice", "role": "privacy-notice", "order": 11, "note": "审核管理员视图下的隐私提示" }
   ],
   "interactions": [
-    { "trigger": "reason", "note": "审核理由 textarea 回写" },
-    { "trigger": "act", "dataAttr": "data-s", "note": "驳回 data-s=rejected / 通过 data-s=approved" },
-    { "trigger": "checkIn", "note": "已通过后确认签到" },
-    { "trigger": "previewPhoto", "dataAttr": "data-index", "note": "点击照片放大预览" }
+    { "trigger": "reason", "note": "审核意见输入" },
+    { "trigger": "act", "dataAttr": "data-s", "note": "pending 下的驳回/通过" },
+    { "trigger": "checkIn", "note": "approved 下的现场签到" },
+    { "trigger": "photoError", "dataAttr": "data-index", "note": "资料照片加载失败兜底" },
+    { "trigger": "previewPhoto", "dataAttr": "data-url", "note": "点击资料照片全屏预览" }
   ],
   "copy": [
     "此里 · 确认同行资料",
-    "报名人",
-    "报名信息",
-    "照片",
+    "报名与联络资料",
+    "管理员可见完整信息",
+    "报名活动",
+    "集合方式",
+    "真实姓名",
+    "手机号码",
+    "验证来源",
     "骑行经验",
-    "驳回",
-    "通过报名"
+    "骑友备注",
+    "照片",
+    "审核意见",
+    "现场签到",
+    "通过报名",
+    "确认签到"
   ],
-  "assets": [],
+  "assets": [
+    { "class": "person-avatar-img", "note": "骑友头像实图" }
+  ],
   "forbids": [
-    { "class": "actions-always-visible", "reason": "操作按钮必须按状态条件渲染，不得常驻" }
+    { "class": "journal-heading", "reason": "过渡 heading 已退役，统一使用 pageheading" },
+    { "class": "review-card", "reason": "旧 Oil UI 卡片已退役，详情页改为 person + detailrows + 多节 section" },
+    { "class": "review-actions", "reason": "审核操作统一走 fixed.actions.buttonpair / single-action" }
   ],
-  "phase2Note": "本页实现已对齐设计意图；仅做契约化。"
+  "designSource": "docs/designs/2026-10-22-cycling-image-journal/pages/admin-review-detail.html"
 }

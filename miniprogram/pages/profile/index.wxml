@@ -1,69 +1,128 @@
 <view class="page profile-page" style="padding-top: {{navigationTopPx}}px">
-  <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{loading ? '正在同步个人资料' : (refreshing ? '正在刷新个人资料' : (!error ? '个人资料已就绪' : ''))}}</view>
-  <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{error}}</view>
-  <brand-logo compact="{{true}}" meta="一起骑，去更远的地方" />
-
-  <view class="refresh-note" wx:if="{{profile && refreshing}}" aria-hidden="true">正在刷新资料…</view>
-  <view class="refresh-note refresh-error" wx:if="{{profile && !refreshing && refreshFailed && refreshMessage}}" role="status" aria-live="polite">{{refreshMessage}}</view>
-
-  <view class="rider-card">
-    <view class="profile-hero has-bg">
-      <swiper wx:if="{{heroBackgrounds.length}}" class="hero-swiper" circular="{{heroBackgrounds.length > 1}}" indicator-dots="{{heroBackgrounds.length > 1}}" bindchange="heroSwiperChange">
-        <swiper-item wx:for="{{heroBackgrounds}}" wx:key="url">
-          <image class="hero-bg-image" src="{{item.url}}" mode="aspectFill" aria-label="查看完整背景照片" data-url="{{item.url}}" data-index="{{index}}" bindtap="previewHeroImage" binderror="heroBackgroundError" />
-        </swiper-item>
-      </swiper>
-      <image wx:elif="{{heroFallbackImageUrl}}" class="hero-bg-image hero-fallback-image packaged-alpine-image" src="{{heroFallbackImageUrl}}" mode="aspectFill" aria-hidden="true" data-url="{{heroFallbackImageUrl}}" binderror="heroFallbackBackgroundError" />
-      <view wx:else class="hero-alpine" aria-hidden="true"><view class="hero-ridge hero-ridge-far"></view><view class="hero-ridge hero-ridge-near"></view></view>
-      <view class="hero-shade" aria-hidden="true"></view>
-      <view class="hero-identity">
-        <cili-avatar size="lg" src="{{heroAvatarUrl}}" on-media="{{true}}" data-url="{{heroAvatarUrl}}" bindtap="previewAvatar" binderror="heroAvatarError" aria-label="{{profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '骑手')}}的头像" />
-        <view class="profile-copy">
-          <view class="profile-name">{{profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '欢迎来到此里')}}</view>
-          <view class="profile-title">{{profile && profile.gender ? profile.gender : (heroCard ? heroCard.genderLabel : '未标注')}}</view>
-          <view class="auth-line"><text class="auth-dot {{authStatus === 'authenticated' ? 'verified' : ''}}"></text>{{authStatus === 'authenticated' ? '微信已登录' : ((authStatus === 'loading' || authStatus === 'idle') ? '微信登录同步中' : '微信未登录')}}</view>
-        </view>
-      </view>
-    </view>
-  </view>
-
-  <button class="club-membership-card" wx:if="{{profile}}" bindtap="openClubCenter" aria-label="打开我的俱乐部">
-    <view wx:if="{{!profile.clubs.length}}" class="club-membership-empty">
-      <view class="club-membership-avatar club-membership-avatar--placeholder">俱</view>
-      <view class="club-membership-copy"><text class="club-membership-name">暂未加入俱乐部</text></view>
-    </view>
-    <view wx:else class="club-membership-single">
-      <image wx:if="{{profile.clubs[0].avatarUrl && !clubAvatarFailed}}" class="club-membership-avatar" src="{{profile.clubs[0].avatarUrl}}" mode="aspectFill" binderror="clubAvatarError" />
-      <view wx:else class="club-membership-avatar club-membership-avatar--placeholder">俱</view>
-      <view class="club-membership-copy"><text class="club-membership-name">{{profile.clubs[0].name}}</text></view>
-    </view>
-    <text class="club-membership-chevron">›</text>
-  </button>
-
-  <view class="hero-profile-progress" wx:if="{{profile && profile.completeness < 100}}">
-    <view class="hero-progress-head"><text>资料完整度</text><text>{{profile.completeness}}%</text></view>
-    <view class="hero-progress-track"><view class="hero-progress-value" style="width: {{profile.completeness}}%"></view></view>
-    <view class="hero-progress-missing" wx:if="{{profile.missing.length}}">还差：<text wx:for="{{profile.missing}}" wx:key="*this">{{item}}{{index < profile.missing.length - 1 ? '、' : ''}}</text></view>
-    <button class="profile-progress-action" bindtap="edit">完善报名资料</button>
-  </view>
-
-  <view class="identity-guide" wx:if="{{authStatus === 'unavailable' || authStatus === 'error'}}">
-    <view class="identity-guide-title">让骑友认出你</view>
-    <view class="identity-guide-copy">设置常用昵称和非默认头像，让骑友认出你。</view>
-    <view class="identity-guide-copy" wx:if="{{authError || identityHintText}}">{{authError || identityHintText}}</view>
-    <view class="identity-guide-actions"><button class="secondary" bindtap="edit">完善昵称与头像</button><button class="btn" bindtap="retryAuth">重新登录</button></view>
-  </view>
-
-  <view class="card profile-loading" wx:if="{{loading}}" aria-hidden="true"><view class="menu-title">正在读取资料</view><view class="muted">正在同步最新资料。</view></view>
-  <view class="card profile-error" wx:elif="{{error}}"><view aria-hidden="true"><view class="menu-title">资料暂时无法加载</view><view class="muted">{{error}}</view></view><button class="secondary" bindtap="retryProfile">重试加载</button></view>
-  <view class="card empty-profile" wx:elif="{{!profile}}"><view class="menu-title">资料尚未配置</view><view class="muted">完善资料后可快速报名。</view><button class="btn" bindtap="edit">去完善</button></view>
-
-  <view class="section-label">常用服务</view>
-  <view class="menu-list">
-    <button class="menu-card" wx:if="{{isAdmin}}" bindtap="activities"><view class="menu-icon i-admin"><view></view></view><view class="menu-copy"><view class="menu-title">活动管理</view><view class="muted">创建、编辑、上下架与报名审批</view></view><text class="chevron">›</text></button>
-    <button class="menu-card" wx:if="{{isAdmin}}" bindtap="clubApplications"><view class="menu-icon i-admin"><view></view></view><view class="menu-copy"><view class="menu-title">俱乐部管理</view><view class="muted">维护俱乐部资料</view></view><text class="chevron">›</text></button>
-    <button class="menu-card" bindtap="edit"><view class="menu-icon i-profile"><view></view></view><view class="menu-copy"><view class="menu-title">报名资料</view><view class="muted">头像、昵称、实名、电话与紧急联系人</view></view><text class="chevron">›</text></button>
-    <button class="menu-card" bindtap="openSettings" aria-label="打开设置"><view class="menu-icon i-settings"><view></view></view><view class="menu-copy"><view class="menu-title">设置</view><view class="muted">查看当前版本与本次更新内容</view></view><text class="chevron" aria-hidden="true">›</text></button>
-  </view>
-  <view class="privacy-note"><view class="privacy-note-title">隐私说明</view><view>联系电话仅用于活动联络；紧急联系人仅在骑行安全需要时使用。资料仅你本人和报名审核员可见。</view></view>
+<view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{loading ? '正在同步个人资料' : (refreshing ? '正在刷新个人资料' : (!error ? '个人资料已就绪' : ''))}}</view>
+<view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{error}}</view>
+<view class="refresh-note" wx:if="{{profile && refreshing}}" aria-hidden="true">正在刷新资料…</view>
+<view class="refresh-note refresh-error" wx:if="{{profile && !refreshing && refreshFailed && refreshMessage}}" role="status" aria-live="polite">{{refreshMessage}}</view>
+<section class="profile-hero">
+<swiper wx:if="{{heroBackgrounds.length}}" class="profile-background profile-background-swiper" circular="{{heroBackgrounds.length > 1}}" indicator-dots="{{heroBackgrounds.length > 1}}" bindchange="heroSwiperChange">
+<swiper-item wx:for="{{heroBackgrounds}}" wx:key="url">
+<image class="profile-background-image" src="{{item.url}}" mode="aspectFill" aria-label="查看完整背景照片" data-url="{{item.url}}" data-index="{{index}}" bindtap="previewHeroImage" binderror="heroBackgroundError" />
+</swiper-item>
+</swiper>
+<image wx:elif="{{heroFallbackImageUrl}}" class="profile-background profile-background-fallback" src="{{heroFallbackImageUrl}}" mode="aspectFill" aria-hidden="true" data-url="{{heroFallbackImageUrl}}" binderror="heroFallbackBackgroundError" />
+<view wx:else class="profile-background hero-alpine" aria-hidden="true"></view>
+<view class="profile-background-shade" aria-hidden="true"></view>
+<view class="profile-label">我的骑行名片</view>
+<view class="profile-identity">
+<view class="avatar-trigger" aria-label="查看我的头像">
+<cili-avatar class="avatar" size="lg" src="{{heroAvatarUrl}}" on-media="{{true}}" data-url="{{heroAvatarUrl}}" bindtap="previewAvatar" binderror="heroAvatarError" aria-label="{{profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '骑手')}}的头像" />
+</view>
+<view class="profile-identity-copy">
+<view class="eyebrow">此里 · 骑友</view>
+<view class="profile-name editorial">{{profile && profile.nickname ? profile.nickname : (heroCard ? heroCard.displayName : '欢迎来到此里')}}</view>
+<view class="profile-gender">{{profile && profile.gender ? profile.gender : (heroCard ? heroCard.genderLabel : '未标注')}}</view>
+</view>
+</view>
+</section>
+<view class="content">
+<view class="profile-status" wx:if="{{authStatus === 'authenticated'}}" role="note">
+<view class="profile-status-icon profile-status-icon--check" aria-hidden="true"></view>
+<text>已登录 · 当前为你的个人资料</text>
+</view>
+<view class="profile-status profile-status--loading" wx:elif="{{authStatus === 'loading' || authStatus === 'idle'}}" role="status" aria-live="polite">
+<view class="profile-status-icon profile-status-icon--pending" aria-hidden="true"></view>
+<text>微信登录同步中…{{identityHintText ? ' · ' + identityHintText : ''}}</text>
+</view>
+<view class="profile-status profile-status--warn" wx:elif="{{authStatus === 'unavailable' || authStatus === 'error'}}" role="alert">
+<view class="profile-status-icon profile-status-icon--warn" aria-hidden="true"></view>
+<text>{{authError || identityHintText || '微信身份暂未同步，部分功能需要登录'}}</text>
+<button class="profile-status-action" bindtap="retryAuth">重新登录</button>
+</view>
+<view class="profile-progress" wx:if="{{profile && profile.completeness < 100}}">
+<view class="profile-progress-head"><text>资料完整度</text><text>{{profile.completeness}}%</text></view>
+<view class="profile-progress-track"><view class="profile-progress-value" style="width: {{profile.completeness}}%"></view></view>
+<view class="profile-progress-missing" wx:if="{{profile.missing && profile.missing.length}}">还差：<text wx:for="{{profile.missing}}" wx:key="*this">{{item}}{{index < profile.missing.length - 1 ? '、' : ''}}</text></view>
+<button class="profile-progress-action" bindtap="edit">完善报名资料</button>
+</view>
+<button class="row rowlink rowbutton row-club" wx:if="{{profile}}" bindtap="openClubCenter" aria-label="打开我的俱乐部">
+<view class="lead">
+<view class="rowicon rowicon--club rowicon--avatar" aria-hidden="true">
+<image wx:if="{{profile.clubs.length && profile.clubs[0].avatarUrl && !clubAvatarFailed}}" class="rowicon-image" src="{{profile.clubs[0].avatarUrl}}" mode="aspectFill" binderror="clubAvatarError" />
+<text wx:else class="rowicon-text">俱</text>
+</view>
+<view class="rowtext">
+<view class="rowtext-title"><text wx:if="{{profile.clubs.length}}">{{profile.clubs[0].name}}</text><text wx:else>暂未加入俱乐部</text></view>
+<view class="rowtext-sub">我的俱乐部</view>
+</view>
+</view>
+<view class="chev" aria-hidden="true"></view>
+</button>
+<button class="row rowlink rowbutton row-edit" bindtap="edit" aria-label="编辑报名资料">
+<view class="lead">
+<view class="rowicon rowicon--edit" aria-hidden="true"><text class="rowicon-text">资</text></view>
+<view class="rowtext">
+<view class="rowtext-title">报名资料</view>
+<view class="rowtext-sub">头像、昵称、实名与紧急联系人</view>
+</view>
+</view>
+<view class="chev" aria-hidden="true"></view>
+</button>
+<button class="row rowlink rowbutton row-settings" bindtap="openSettings" aria-label="打开设置">
+<view class="lead">
+<view class="rowicon rowicon--settings" aria-hidden="true"><text class="rowicon-text">设</text></view>
+<view class="rowtext">
+<view class="rowtext-title">设置</view>
+<view class="rowtext-sub">通知订阅、隐私与当前版本</view>
+</view>
+</view>
+<view class="chev" aria-hidden="true"></view>
+</button>
+<section class="section section-admin" wx:if="{{isAdmin}}" data-admin-only>
+<view class="chapterhead">
+<view class="chapterhead-title">管理工作台</view>
+<view class="chapterhead-aside">平台管理员可见</view>
+</view>
+<button class="row rowlink rowbutton row-admin-activities" bindtap="activities" aria-label="进入活动管理">
+<view class="lead">
+<view class="rowicon rowicon--activity" aria-hidden="true"><text class="rowicon-text">动</text></view>
+<view class="rowtext">
+<view class="rowtext-title">活动管理</view>
+<view class="rowtext-sub">创建、编辑与审核报名</view>
+</view>
+</view>
+<view class="chev" aria-hidden="true"></view>
+</button>
+<button class="row rowlink rowbutton row-admin-club" bindtap="clubApplications" aria-label="进入俱乐部管理">
+<view class="lead">
+<view class="rowicon rowicon--club" aria-hidden="true"><text class="rowicon-text">俱</text></view>
+<view class="rowtext">
+<view class="rowtext-title">俱乐部管理</view>
+<view class="rowtext-sub">维护唯一俱乐部资料</view>
+</view>
+</view>
+<view class="chev" aria-hidden="true"></view>
+</button>
+</section>
+<view class="card profile-loading" wx:if="{{loading && !profile}}" aria-hidden="true">
+<view class="card-title">正在读取资料</view>
+<view class="card-copy">正在同步最新资料。</view>
+</view>
+<view class="card profile-error" wx:elif="{{error && !profile}}">
+<view aria-hidden="true">
+<view class="card-title">资料暂时无法加载</view>
+<view class="card-copy">{{error}}</view>
+</view>
+<button class="btn btn--secondary" bindtap="retryProfile">重试加载</button>
+</view>
+<view class="card empty-profile" wx:elif="{{!profile}}">
+<view class="card-title">资料尚未配置</view>
+<view class="card-copy">完善资料后可快速报名。</view>
+<button class="btn" bindtap="edit">去完善</button>
+</view>
+<view class="notice notice--info" role="note">
+<view class="notice-dot" aria-hidden="true"></view>
+<text>实名与电话仅本人和审核管理员完整可见；其他骑友只见昵称与同意公开的头像。联系电话仅用于活动联络，紧急联系人仅在骑行安全需要时使用。</text>
+</view>
+</view>
+<view class="profile-footer">此里 · 骑行影像志</view>
 </view>

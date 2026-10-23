@@ -1,71 +1,122 @@
+<!-- 骑行影像志 · 俱乐部中心（1:1 对齐 docs/designs/2026-10-22-cycling-image-journal/pages/club-center.html） -->
 <view class="page club-center-page">
-  <view class="club-page-head"><brand-logo compact="{{true}}" meta="俱乐部主页" /></view>
   <view class="a11y-live-region" role="status" aria-live="polite">{{mode === 'loading' ? '正在加载俱乐部主页' : (mode === 'error' ? '俱乐部主页加载失败' : '俱乐部主页已更新')}}</view>
 
-  <view class="club-skeleton" wx:if="{{mode === 'loading'}}" aria-label="正在加载俱乐部主页">
-    <view class="skeleton club-skeleton-cover"></view><view class="skeleton club-skeleton-line"></view><view class="skeleton club-skeleton-card"></view>
-  </view>
-  <view class="state-card" wx:elif="{{mode === 'error'}}" role="alert">
-    <view class="title">俱乐部主页加载失败</view>
-    <view class="muted">{{loadError || '网络不稳定，请重新加载俱乐部主页。'}}</view>
-    <button class="btn" bindtap="retry">重新加载</button>
-  </view>
-  <view class="state-card club-empty" wx:elif="{{mode === 'empty'}}">
-    <view class="club-empty-mark" aria-hidden="true">俱</view>
-    <view class="title">俱乐部还在筹备中</view>
-    <view class="muted">资料就绪后，这里会展示俱乐部信息与近期活动。</view>
-    <button wx:if="{{isAdmin}}" class="btn club-empty-action" bindtap="createClub">创建俱乐部</button>
-  </view>
-
-  <block wx:elif="{{mode === 'home' && club}}">
-    <view class="club-hero">
-      <view class="club-cover">
-        <image wx:if="{{club.coverUrl && !coverFailed}}" class="club-cover-image" src="{{club.coverUrl}}" mode="aspectFill" binderror="coverError" aria-label="俱乐部背景图" />
-        <view wx:else class="club-cover-placeholder" aria-hidden="true"><text class="club-cover-chip">CLUB</text></view>
-        <text class="club-cover-location">{{club.city || '城市未填写'}}</text>
-      </view>
-      <view class="club-identity">
-        <image wx:if="{{club.avatarUrl && !avatarFailed}}" class="club-avatar" src="{{club.avatarUrl}}" mode="aspectFill" binderror="avatarError" aria-label="俱乐部头像" />
-        <view wx:else class="club-avatar club-avatar-placeholder" aria-hidden="true">{{avatarInitial}}</view>
-        <view class="club-identity-copy">
-          <view class="club-name">{{club.name}}</view>
-          <view class="club-intro-copy">{{club.introduction || '这个俱乐部暂未填写简介。'}}</view>
-        </view>
-      </view>
-      <view class="club-viewer" role="group" aria-label="我的身份">
-        <text class="club-viewer-label">我的身份</text><text class="club-viewer-value">{{club.roleLabel}}</text>
-      </view>
+  <!-- 加载态骨架：封面占位 + 内容占位 -->
+  <block wx:if="{{mode === 'loading'}}">
+    <view class="photo hero club club-cover-skeleton" aria-hidden="true">
+      <view class="shade"></view>
     </view>
-
-    <view class="card club-card" aria-label="俱乐部资料">
-      <view class="card-head club-card-head"><text class="card-no">01</text><view class="card-title">俱乐部资料</view></view>
-      <view class="club-row"><text class="club-row-label">名称</text><text class="club-row-value">{{club.name}}</text></view>
-      <view class="club-row"><text class="club-row-label">地区</text><text class="club-row-value">{{club.city || '城市未填写'}}</text></view>
-      <view class="club-intro"><text class="club-row-label">简介</text><text class="club-intro-value">{{club.introduction || '这个俱乐部暂未填写简介。'}}</text></view>
+    <view class="content">
+      <view class="skeleton-tag" aria-hidden="true"></view>
+      <view class="skeleton-card" aria-hidden="true"></view>
     </view>
-
-    <view class="card club-card" aria-label="近期活动">
-      <view class="card-head club-card-head activity-heading">
-        <text class="card-no">02</text><view class="card-title">近期活动</view>
-        <button class="activity-all-link" bindtap="openActivities">查看全部</button>
-      </view>
-      <view wx:if="{{activityMode === 'loading'}}" class="activity-state muted">正在加载近期活动…</view>
-      <view wx:elif="{{activityMode === 'error'}}" class="activity-state activity-error" role="alert">
-        <text>{{activityError}}</text><button class="activity-retry" bindtap="retryActivities">重试</button>
-      </view>
-      <view wx:elif="{{activityMode === 'empty'}}" class="activity-state muted">近期暂无活动，新的骑行计划正在筹备中。</view>
-      <view wx:else class="activity-list">
-        <view wx:for="{{activities}}" wx:key="id" class="activity-row" role="button" tabindex="0" data-id="{{item.id}}" bindtap="openActivity" aria-label="查看活动 {{item.title}}">
-          <view class="activity-date">{{item.displayDate}}</view>
-          <view class="activity-main">
-            <view class="activity-title-line"><text class="activity-title">{{item.title}}</text><text class="activity-status">{{item.displayStatus}}</text></view>
-            <view class="activity-place">{{item.displayTime}} · {{item.meetingPlace}}</view>
-            <view class="activity-meta"><text>{{item.displayDistance}}</text><text>{{item.displayElevation}}</text><text>{{item.registrationSummary}}</text></view>
-          </view>
-          <text class="activity-chevron" aria-hidden="true">›</text>
-        </view>
-      </view>
-    </view>
-    <button wx:if="{{club.canManage}}" class="btn club-manage-btn" bindtap="editClub">编辑俱乐部资料</button>
   </block>
+
+  <!-- 错误态 -->
+  <view class="content state-content" wx:elif="{{mode === 'error'}}" role="alert">
+    <view class="state-card">
+      <view class="state-title editorial">俱乐部主页加载失败</view>
+      <view class="state-copy">{{loadError || '网络不稳定，请重新加载俱乐部主页。'}}</view>
+      <button class="btn" bindtap="retry">重新加载</button>
+    </view>
+  </view>
+
+  <!-- 空态 -->
+  <view class="content state-content" wx:elif="{{mode === 'empty'}}">
+    <view class="state-card">
+      <view class="state-mark" aria-hidden="true">俱</view>
+      <view class="state-title editorial">俱乐部还在筹备中</view>
+      <view class="state-copy">资料就绪后，这里会展示俱乐部信息与近期活动。</view>
+      <button wx:if="{{isAdmin}}" class="btn" bindtap="createClub">创建俱乐部</button>
+    </view>
+  </view>
+
+  <!-- 俱乐部主页 -->
+  <block wx:elif="{{mode === 'home' && club}}">
+    <!-- Hero：photo.hero.club -->
+    <view class="photo hero club">
+      <image wx:if="{{club.coverUrl && !coverFailed}}" class="club-cover club-cover-image hero-media" src="{{club.coverUrl}}" mode="aspectFill" binderror="coverError" aria-label="{{club.name}} 俱乐部封面" />
+      <view wx:else class="club-cover club-cover-placeholder hero-media hero-media--fallback" aria-hidden="true"></view>
+      <view class="shade" aria-hidden="true"></view>
+      <view class="club-cover-location" aria-hidden="true">{{club.city || '城市未填写'}}</view>
+      <view class="caption">
+        <view class="club-identity">
+          <image wx:if="{{club.avatarUrl && !avatarFailed}}" class="club-avatar" src="{{club.avatarUrl}}" mode="aspectFill" binderror="avatarError" aria-label="{{club.name}} 俱乐部头像" />
+          <view wx:else class="club-avatar club-avatar-placeholder" aria-hidden="true">{{avatarInitial}}</view>
+          <view class="club-identity-copy">
+            <view class="club-name editorial">{{club.name}}</view>
+            <view class="club-intro">{{club.introduction || '把周末留给山路，把故事留给同行的人。'}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="content">
+      <!-- 我的身份 tag -->
+      <view class="tag" role="group" aria-label="我的身份">我的身份 · {{club.roleLabel}}</view>
+
+      <!-- Section：俱乐部资料 -->
+      <section class="section section-detail" aria-label="俱乐部资料">
+        <view class="chapterhead">
+          <view class="chapterhead-title">我们为什么出发</view>
+          <view class="chapterhead-rule" aria-hidden="true"></view>
+        </view>
+        <view class="club-intro-body">{{club.introduction || '这个俱乐部暂未填写简介。'}}</view>
+        <view class="detailrows" aria-label="俱乐部资料">
+          <view class="detailrow">
+            <view class="detailrow-term">名称</view>
+            <view class="detailrow-desc">{{club.name}}</view>
+          </view>
+          <view class="detailrow">
+            <view class="detailrow-term">所在地区</view>
+            <view class="detailrow-desc">{{club.city || '城市未填写'}}</view>
+          </view>
+          <view class="detailrow">
+            <view class="detailrow-term">当前身份</view>
+            <view class="detailrow-desc">{{club.roleLabel}}</view>
+          </view>
+        </view>
+      </section>
+
+      <!-- Section：近期活动 -->
+      <section class="section section-activity" aria-label="近期活动">
+        <view class="chapterhead">
+          <view class="chapterhead-title">俱乐部近期活动</view>
+          <button class="chapterhead-aside chapterhead-action" bindtap="openActivities" aria-label="查看全部活动">查看全部 →</button>
+        </view>
+
+        <view wx:if="{{activityMode === 'loading'}}" class="activity-state activity-state--loading" aria-live="polite">正在加载近期活动…</view>
+        <view wx:elif="{{activityMode === 'error'}}" class="activity-state activity-state--error" role="alert">
+          <text>{{activityError}}</text>
+          <button class="btn btn--secondary activity-retry" bindtap="retryActivities">重试</button>
+        </view>
+        <view wx:elif="{{activityMode === 'empty'}}" class="activity-state activity-state--empty">近期暂无活动，新的骑行计划正在筹备中。</view>
+        <view wx:else class="activity-list">
+          <view wx:for="{{activities}}" wx:key="id" class="story activity-row" role="button" data-id="{{item.id}}" bindtap="openActivity" aria-label="查看活动 {{item.title}}">
+            <view class="story-head">
+              <view class="story-date">{{item.displayDate}} · {{item.displayTime || '时间待公布'}}</view>
+              <view class="tag tag--dark story-status">{{item.displayStatus}}</view>
+            </view>
+            <view class="story-title editorial">{{item.title}}</view>
+            <view class="storyfacts">
+              <text class="storyfacts-item"><text class="storyfacts-value">{{item.displayDistance}}</text><text class="storyfacts-label">距离</text></text>
+              <text class="storyfacts-item"><text class="storyfacts-value">{{item.displayElevation}}</text><text class="storyfacts-label">爬升</text></text>
+              <text class="storyfacts-item"><text class="storyfacts-value">{{item.registrationSummary}}</text><text class="storyfacts-label">报名</text></text>
+            </view>
+            <view class="storymeta">
+              <text class="storymeta-pin" aria-hidden="true"></text>
+              <text class="storymeta-text">{{item.meetingPlace}}</text>
+              <text class="storymeta-link">查看活动 →</text>
+            </view>
+          </view>
+        </view>
+      </section>
+
+      <!-- 管理员编辑入口 -->
+      <button wx:if="{{club.canManage}}" class="btn btn--secondary club-manage-btn" bindtap="editClub" aria-label="编辑俱乐部资料">编辑俱乐部资料</button>
+    </view>
+  </block>
+
+  <view class="club-footer" wx:if="{{mode === 'home' || mode === 'empty'}}">此里 · 骑行影像志</view>
 </view>

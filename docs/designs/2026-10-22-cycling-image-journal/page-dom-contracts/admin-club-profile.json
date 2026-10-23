@@ -1,43 +1,54 @@
 {
   "slug": "admin-club-profile",
   "pagePath": "pages/admin/club-application-detail/index",
-  "title": "俱乐部资料",
+  "title": "俱乐部资料编辑",
   "wxml": "miniprogram/pages/admin/club-application-detail/index.wxml",
   "wxss": "miniprogram/pages/admin/club-application-detail/index.wxss",
   "ts": "miniprogram/pages/admin/club-application-detail/index.ts",
-  "designIntent": "历史路由名 club-application-detail 实际落点为唯一俱乐部资料编辑：俱乐部头像（1:1）+ 俱乐部背景图（16:9）+ 名称 / 地区 / 简介；上传过程显示进度；无审批意见与批复动作。",
+  "designIntent": "骑行影像志 1:1：pageheading(宋体双行标题 + 共同的名片 eyebrow + 首次/维护徽章) → content.tight → form → section 头像与背景(upload × 2：背景 16:9 upload-preview + 头像 1:1 upload-preview，各自带上传进度/删除/失败兜底/field-error) → section 基本资料(名称 / 地区 / 简介三个 field + field-error + 字数) → club-profile-submit 主按钮（bootstrap 文案为“创建并立即生效”） → notice 规则提示；页面保留隐藏 canvas 节点用于裁剪。",
   "containers": [
     { "class": "page club-profile-page", "role": "page-root", "order": 1 },
-    { "class": "club-profile-head journal-heading", "role": "page-heading", "order": 2, "note": "此里 · 共同的名片 + 平台管理员 badge + editorial 标题" },
-    { "class": "card club-profile-card", "role": "section", "order": 3, "note": "三张卡：01 头像 1:1 / 02 背景 16:9 / 03 基本资料" },
-    { "class": "club-avatar-editor", "role": "avatar-upload", "order": 4, "note": "俱乐部头像上传 + 预览 + 更换按钮" },
-    { "class": "club-cover-editor", "role": "cover-upload", "order": 5, "note": "俱乐部背景图上传 + 16:9 预览 + 删除按钮 + 进度条" },
-    { "class": "btn club-profile-submit", "role": "submit", "order": 6, "note": "保存资料；bootstrap 分支文案改为创建并立即生效" }
+    { "class": "pageheading", "role": "page-heading", "order": 2, "note": "宋体双行标题 + 徽章 + 规则副标题" },
+    { "class": "content tight", "role": "content", "order": 3 },
+    { "class": "section club-profile-card", "role": "form-section", "order": 4, "note": "头像背景 / 基本资料两节同容器" },
+    { "class": "upload club-cover-editor", "role": "cover-upload", "order": 5, "note": "16:9 背景上传 + 删除 + 进度" },
+    { "class": "upload club-avatar-editor", "role": "avatar-upload", "order": 6, "note": "正方形头像上传 + 进度" },
+    { "class": "field", "role": "basic-field", "order": 7, "note": "基本资料三字段：名称 / 地区 / 简介" },
+    { "class": "btn club-profile-submit", "role": "primary-submit", "order": 8, "note": "保存资料 / 创建并立即生效" },
+    { "class": "notice", "role": "rule-notice", "order": 9, "note": "全平台唯一俱乐部提示" }
   ],
   "interactions": [
-    { "trigger": "chooseAvatar", "note": "选择俱乐部头像" },
-    { "trigger": "chooseCover", "note": "选择俱乐部背景图" },
-    { "trigger": "removeCover", "note": "删除俱乐部背景图" },
-    { "trigger": "input", "dataAttr": "data-field", "note": "名称/地区/简介统一回写" },
-    { "trigger": "save", "note": "保存俱乐部资料（bootstrap 分支即为创建）" },
-    { "trigger": "load", "note": "加载失败后重新加载" }
+    { "trigger": "load", "note": "错误态重试加载" },
+    { "trigger": "chooseCover", "note": "选择并上传背景图" },
+    { "trigger": "removeCover", "note": "删除当前背景图" },
+    { "trigger": "chooseAvatar", "note": "选择并上传头像" },
+    { "trigger": "input", "dataAttr": "data-field", "note": "基本资料输入" },
+    { "trigger": "save", "note": "保存资料 / 创建并立即生效" },
+    { "trigger": "avatarError", "note": "头像加载失败回退" },
+    { "trigger": "coverError", "note": "背景加载失败回退占位" }
   ],
   "copy": [
     "此里 · 共同的名片",
-    "俱乐部头像",
-    "俱乐部背景图",
+    "把俱乐部的样子，",
+    "留在这里。",
+    "头像与背景",
     "基本资料",
     "俱乐部名称",
     "所在地区",
-    "俱乐部简介"
+    "俱乐部简介",
+    "创建并立即生效",
+    "保存资料",
+    "俱乐部背景",
+    "俱乐部头像"
   ],
   "assets": [
-    { "class": "club-avatar-img", "note": "俱乐部头像预览" },
-    { "class": "club-cover-img", "note": "俱乐部背景图预览" }
+    { "class": "upload-image club-cover-img", "note": "俱乐部背景图实图" },
+    { "class": "upload-image club-avatar-img", "note": "俱乐部头像实图" }
   ],
   "forbids": [
-    { "class": "review-actions", "reason": "这是单俱乐部资料编辑，不是审批" },
-    { "class": "application-reject", "reason": "无驳回/通过操作" }
+    { "class": "journal-heading", "reason": "过渡 heading 已退役，统一使用 pageheading" },
+    { "class": "club-profile-form", "reason": "旧 Oil UI 外壳已被 section.club-profile-card 替代" },
+    { "class": "club-cover-dropzone", "reason": "上传区统一为 upload.club-cover-editor" }
   ],
-  "phase2Note": "历史路由与新设计语义绑定；WXML/WXSS 已对齐。"
+  "designSource": "docs/designs/2026-10-22-cycling-image-journal/pages/admin-club-profile.html"
 }

@@ -5,29 +5,45 @@
   "wxml": "miniprogram/pages/admin/club-applications/index.wxml",
   "wxss": "miniprogram/pages/admin/club-applications/index.wxss",
   "ts": "miniprogram/pages/admin/club-applications/index.ts",
-  "designIntent": "历史路由名 club-applications 实际落点为唯一俱乐部管理：未创建时显示首次创建入口；已创建后展示唯一俱乐部资料卡 + 编辑入口；不出现申请列表、第二个创建入口或审批操作。",
+  "designIntent": "骑行影像志 1:1：pageheading(宋体双行标题 + 唯一俱乐部 eyebrow + 管理员角色徽章) → mode 分支：loading → skeleton；error → empty + 重新加载；bootstrap → empty + 创建唯一俱乐部主按钮；default → photo.hero.club(封面/头像/占位三级兜底 + shade + caption) + content + detailrows(名称/地区/管理范围/状态) + section 资料维护 + 编辑按钮 + notice 规则提示。",
   "containers": [
     { "class": "page club-admin-page", "role": "page-root", "order": 1 },
-    { "class": "club-admin-head journal-heading", "role": "page-heading", "order": 2, "note": "此里 · 唯一俱乐部 + 平台管理员 badge + editorial 标题" },
-    { "class": "card club-admin-card", "role": "club-card", "order": 3, "optional": true, "note": "已创建分支：唯一俱乐部头像 + 名称 + 地区 + ACTIVE tag" },
-    { "class": "btn club-admin-action", "role": "primary-action", "order": 4, "note": "首次创建或编辑俱乐部资料主按钮" }
+    { "class": "pageheading", "role": "page-heading", "order": 2, "note": "宋体 editorial 双行标题 + 管理员徽章" },
+    { "class": "photo hero club", "role": "club-hero", "order": 3, "optional": true, "note": "default 分支：封面大图 + shade + caption" },
+    { "class": "content", "role": "content", "order": 4, "note": "detailrows + 资料维护 section + notice" },
+    { "class": "detailrows", "role": "detail-rows", "order": 5, "optional": true, "note": "名称 / 地区 / 管理范围 / 状态" },
+    { "class": "section", "role": "maintain-section", "order": 6, "optional": true, "note": "资料维护 section：chapterhead + 说明 + 编辑按钮" },
+    { "class": "notice", "role": "rule-notice", "order": 7, "optional": true, "note": "全平台唯一俱乐部规则提示" },
+    { "class": "empty club-admin-bootstrap", "role": "bootstrap-empty", "order": 8, "optional": true, "note": "bootstrap 分支：首次创建唯一俱乐部空态" }
   ],
   "interactions": [
-    { "trigger": "load", "note": "加载失败后重新加载" },
-    { "trigger": "create", "note": "首次创建唯一俱乐部" },
-    { "trigger": "edit", "note": "编辑唯一俱乐部资料" }
+    { "trigger": "load", "note": "错误态重试" },
+    { "trigger": "create", "note": "bootstrap 分支创建唯一俱乐部" },
+    { "trigger": "edit", "note": "进入俱乐部资料编辑" },
+    { "trigger": "avatarError", "note": "头像加载失败回退" },
+    { "trigger": "coverError", "note": "封面加载失败回退头像/占位" }
   ],
   "copy": [
     "此里 · 唯一俱乐部",
-    "俱乐部管理",
+    "让我们的故事，",
+    "有一个共同的名字。",
     "平台管理员",
-    "全平台只有一个俱乐部"
+    "创建唯一俱乐部",
+    "编辑俱乐部资料",
+    "资料维护",
+    "俱乐部名称",
+    "所在地区",
+    "管理范围",
+    "平台唯一俱乐部",
+    "全平台只允许存在一个俱乐部"
   ],
-  "assets": [],
+  "assets": [
+    { "class": "photo-image", "note": "俱乐部封面 / 头像实图" }
+  ],
   "forbids": [
-    { "class": "applications-list", "reason": "历史路由保留，但不展示申请列表" },
-    { "class": "create-second-club", "reason": "不出现第二个创建入口" },
-    { "class": "review-actions", "reason": "此页不是审批工作台" }
+    { "class": "journal-heading", "reason": "过渡 heading 已退役，统一使用 pageheading" },
+    { "class": "club-admin-card", "reason": "旧 Oil UI 卡片已被 photo.hero.club + detailrows 取代" },
+    { "class": "club-admin-overview", "reason": "原 class 容器已被 photo.hero.club 替代，仅保留 data-club-admin-overview 作为测试锚点" }
   ],
-  "phase2Note": "历史路由与新设计语义绑定；WXML/WXSS 已对齐。"
+  "designSource": "docs/designs/2026-10-22-cycling-image-journal/pages/admin-club-management.html"
 }

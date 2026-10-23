@@ -9,9 +9,8 @@
   "backgroundColorBottom": "#fbf5ea",
   "backgroundTextStyle": "dark",
   "usingComponents": {
-    "brand-logo": "/components/brand-logo/index",
     "state-view": "/components/state-view/index",
-    "activity-card": "/components/activity-card/index",
+    "generated-activity-cover": "/components/generated-activity-cover/index",
     "status-pill": "/components/status-pill/index"
   }
 }

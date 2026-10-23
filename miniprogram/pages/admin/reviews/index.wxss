@@ -1,287 +1,419 @@
+/* 骑行影像志 · 报名审核 1:1 实现
+ * 对齐 docs/designs/2026-10-22-cycling-image-journal/pages/admin-reviews.html
+ *   pageheading → content.tight(info-bar + filters + reviewitem × N + paper reminder + notice)
+ */
+
 .review-page {
   min-height: 100vh;
-  padding-bottom: calc(64rpx + env(safe-area-inset-bottom));
+  padding-bottom: calc(96rpx + env(safe-area-inset-bottom));
   background: var(--color-bg);
+  color: var(--color-text);
 }
-.journal-heading {
-  padding: 28rpx 0 56rpx;
+
+/* --- pageheading --------------------------------------------------------- */
+.pageheading {
+  padding: 32rpx 32rpx 24rpx;
 }
-.journal-eyebrow {
-  display: flex;
+.pageheading .eyebrow {
+  display: inline-flex;
   align-items: center;
   gap: 16rpx;
   color: var(--color-muted);
-  font-size: 24rpx;
-  line-height: 36rpx;
-  font-weight: 800;
+  font-family: var(--font-family-mono);
+  font-size: 22rpx;
+  letter-spacing: 2rpx;
+  text-transform: uppercase;
 }
-.journal-eyebrow::before {
+.pageheading .eyebrow::before {
   width: 40rpx;
   height: 2rpx;
   background: currentColor;
   content: '';
 }
-.journal-title {
-  max-width: 620rpx;
-  margin-top: 16rpx;
-  color: var(--color-text);
-  font-size: 64rpx;
-  line-height: 80rpx;
+.pageheading-title {
+  display: flex;
+  flex-direction: column;
+  margin-top: 20rpx;
+  font-family: var(--font-family-editorial);
+  font-size: 72rpx;
+  line-height: 88rpx;
   font-weight: 900;
   letter-spacing: -2rpx;
+  color: var(--color-text);
 }
-.journal-summary {
-  margin-top: 12rpx;
+.pageheading-sub {
+  margin-top: 16rpx;
   color: var(--color-muted);
-  font-size: 32rpx;
-  line-height: 48rpx;
+  font-size: 28rpx;
+  line-height: 44rpx;
 }
-.info-bar,
-.info-head,
-.info-title,
-.filter-tabs,
-.review-list,
-.review-card,
-.review-identity,
-.rider-copy,
-.review-activity,
-.review-facts,
-.review-fact {
-  min-width: 0;
+
+/* --- content ------------------------------------------------------------ */
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 48rpx;
+  padding: 0 32rpx;
 }
-.review-page .info-bar {
+.content.tight {
+  gap: 32rpx;
+}
+
+/* --- info-bar (current activity) ----------------------------------------- */
+.info-bar {
+  padding: 20rpx 24rpx;
   border: 2rpx solid var(--color-border);
+  border-radius: 20rpx;
   background: var(--color-surface);
-  color: var(--color-text);
-}
-.review-page .info-kicker,
-.review-page .info-meta {
-  color: var(--color-muted);
-}
-.review-page .info-title {
-  color: var(--color-text);
 }
 .info-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16rpx;
 }
-.review-page .info-title {
-  display: -webkit-box;
-  flex: 1;
-  margin-top: 0;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
 .info-tag {
-  flex: 0 0 auto;
-  border: 2rpx solid var(--color-border);
-  color: var(--color-text);
-}
-.info-tag.is-pending {
-  border-color: var(--color-brand);
-}
-.switch-activity {
-  width: 100%;
-  min-height: var(--control-height);
-  margin-top: 24rpx;
-  padding: 0 24rpx;
+  display: inline-flex;
+  align-items: center;
+  padding: 6rpx 18rpx;
   border: 2rpx solid var(--color-border);
   border-radius: 999rpx;
-  background: var(--color-surface);
+  background: var(--color-raised);
+  color: var(--color-muted);
+  font-family: var(--font-family-mono);
+  font-size: 22rpx;
+  letter-spacing: 1rpx;
+}
+.info-tag.is-pending {
+  background: var(--color-text);
+  color: var(--color-on-action);
+  border-color: var(--color-text);
+}
+.switch-activity {
+  margin: 0;
+  padding: 8rpx 20rpx;
+  min-height: 56rpx;
+  border: 2rpx solid var(--color-text);
+  border-radius: 999rpx;
+  background: transparent;
   color: var(--color-text);
+  font-size: 24rpx;
+  line-height: 32rpx;
   font-weight: 800;
 }
-.filter-tabs {
+.switch-activity::after {
+  display: none;
+}
+
+/* --- filters ------------------------------------------------------------ */
+.filters {
+  display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin-top: 32rpx;
+  gap: 12rpx;
 }
 .filter-tab {
-  min-width: 0;
-  min-height: var(--control-height);
-  white-space: normal;
-}
-.filter-tab:nth-child(3n) {
-  border-right: 0;
-}
-.filter-tab:nth-child(n + 4) {
-  border-top: 2rpx solid var(--color-border);
-}
-.filter-tab.is-active {
-  border-color: var(--color-action);
-  background: var(--color-action);
-  color: var(--color-on-action);
-}
-.result-count {
+  margin: 0;
+  padding: 14rpx 10rpx;
+  min-height: 72rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: 16rpx;
+  background: var(--color-surface);
   color: var(--color-text);
-  font-size: 28rpx;
+  font-size: 26rpx;
+  line-height: 36rpx;
   font-weight: 800;
 }
-.limit-notice {
-  margin-top: 12rpx;
-  padding: 12rpx 16rpx;
-  border: 2rpx solid var(--color-status-warning);
-  border-radius: var(--radius-sm);
-  background: var(--color-status-warning-soft);
-  color: var(--color-status-warning);
-  font-size: 24rpx;
-  line-height: 36rpx;
+.filter-tab::after {
+  display: none;
 }
-.review-list {
+.filter-tab.is-active {
+  background: var(--color-text);
+  color: var(--color-on-action);
+  border-color: var(--color-text);
+}
+
+/* --- status / limit lines ------------------------------------------------ */
+.result-count,
+.limit-notice {
+  display: block;
+  font-size: 22rpx;
+  line-height: 32rpx;
+  color: var(--color-muted);
+  letter-spacing: 1rpx;
+}
+.small {
+  font-size: 22rpx;
+  line-height: 32rpx;
+}
+.muted {
+  color: var(--color-muted);
+}
+
+/* --- skeleton + empty --------------------------------------------------- */
+.skeleton {
   display: flex;
   flex-direction: column;
-  gap: var(--card-gap);
-  margin-top: var(--card-gap);
+  gap: 20rpx;
 }
-.review-card {
-  margin-top: 0;
-  border: 2rpx solid var(--color-border);
-  border-radius: var(--radius-card);
+.skeleton view {
+  height: 128rpx;
+  border-radius: 20rpx;
+  background: var(--color-raised);
+  animation: review-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes review-shimmer {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.empty {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  padding: 40rpx 32rpx;
+  border: 2rpx dashed var(--color-border);
+  border-radius: 20rpx;
   background: var(--color-surface);
-  box-shadow: none;
-  text-align: left;
+  text-align: center;
 }
-.review-identity {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+.empty-title {
+  font-size: 30rpx;
+  font-weight: 900;
+  color: var(--color-text);
+}
+.empty-copy {
+  color: var(--color-muted);
+  font-size: 26rpx;
+  line-height: 38rpx;
+}
+.empty .btn {
+  align-self: center;
+}
+
+/* --- reviewitem list ---------------------------------------------------- */
+.reviewitem-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+.reviewitem {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  padding: 28rpx 24rpx 24rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: 24rpx;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.reviewitem--approved {
+  border-color: var(--color-text);
+}
+.reviewitem--rejected,
+.reviewitem--cancelled {
+  background: var(--color-raised);
+  color: var(--color-muted);
+}
+.reviewitem-head {
+  display: flex;
   align-items: center;
   gap: 16rpx;
 }
-.review-avatar {
-  display: flex;
-  flex: 0 0 88rpx;
-  align-items: center;
-  justify-content: center;
+.reviewitem-avatar {
   width: 88rpx;
   height: 88rpx;
-  overflow: hidden;
-  border: 2rpx solid var(--color-border);
   border-radius: 50%;
+  overflow: hidden;
   background: var(--color-raised);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--color-text);
-  font-size: 36rpx;
-  font-weight: 900;
+  font-size: 32rpx;
+  font-weight: 800;
+  flex: none;
 }
-.review-avatar image {
+.reviewitem-avatar image {
   width: 100%;
   height: 100%;
 }
-.applicant-name {
-  overflow: hidden;
+.reviewitem-copy {
+  flex: 1;
+  min-width: 0;
+}
+.reviewitem-title {
+  font-size: 32rpx;
+  font-weight: 900;
   color: var(--color-text);
-  font-size: 36rpx;
+}
+.reviewitem-sub {
+  margin-top: 2rpx;
+}
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4rpx 16rpx;
+  border: 2rpx solid var(--color-text);
+  border-radius: 999rpx;
+  background: var(--color-text);
+  color: var(--color-on-action);
+  font-size: 22rpx;
+  letter-spacing: 1rpx;
+  flex: none;
+}
+.tag--waiting,
+.tag--pending {
+  background: var(--color-raised);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+.tag--approved,
+.tag--checked_in {
+  background: var(--color-text);
+  color: var(--color-on-action);
+  border-color: var(--color-text);
+}
+.tag--rejected,
+.tag--cancelled {
+  background: transparent;
+  color: var(--color-muted);
+  border-color: var(--color-border);
+}
+.reviewitem-activity {
+  color: var(--color-text);
+  font-family: var(--font-family-editorial);
+  font-size: 34rpx;
   line-height: 48rpx;
   font-weight: 900;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
-.rider-account {
-  overflow: hidden;
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx 20rpx;
   color: var(--color-muted);
   font-size: 24rpx;
   line-height: 36rpx;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
-.review-activity {
-  display: -webkit-box;
-  margin-top: 24rpx;
-  overflow: hidden;
+.meta .mono {
+  font-family: var(--font-family-mono);
+  letter-spacing: 1rpx;
   color: var(--color-text);
-  font-size: 28rpx;
-  line-height: 44rpx;
+}
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding-top: 12rpx;
+  border-top: 2rpx dashed var(--color-border);
+}
+.reviewitem-cta {
+  color: var(--color-text);
+  font-size: 24rpx;
   font-weight: 800;
-  overflow-wrap: anywhere;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
 }
-.review-facts {
-  margin-top: 16rpx;
-  border-top: 2rpx solid var(--color-border);
+
+/* --- paper reminder card ------------------------------------------------- */
+.paper {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  padding: 28rpx 24rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: 24rpx;
+  background: var(--color-surface);
+  background-image: repeating-linear-gradient(
+    transparent 0,
+    transparent 46rpx,
+    var(--color-border) 46rpx,
+    var(--color-border) 48rpx
+  );
+  background-size: 100% 48rpx;
+  background-position: 0 60rpx;
 }
-.review-fact {
+.chapterhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.chapterhead-title {
+  color: var(--color-text);
+  font-family: var(--font-family-editorial);
+  font-size: 32rpx;
+  line-height: 44rpx;
+  font-weight: 900;
+  letter-spacing: -0.5rpx;
+}
+.chapterhead-aside {
+  color: var(--color-muted);
+  font-family: var(--font-family-mono);
+  font-size: 22rpx;
+  letter-spacing: 1rpx;
+}
+
+/* --- notice -------------------------------------------------------------- */
+.notice {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 24rpx;
-  min-height: 64rpx;
-  padding: 12rpx 0;
-  border-bottom: 2rpx solid var(--color-border);
+  gap: 16rpx;
+  padding: 20rpx 24rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: 16rpx;
+  background: var(--color-bg);
+  color: var(--color-text);
   font-size: 24rpx;
   line-height: 36rpx;
 }
-.fact-label {
-  flex: 0 0 auto;
-  color: var(--color-muted);
+.notice-dot {
+  flex: none;
+  width: 12rpx;
+  height: 12rpx;
+  margin-top: 12rpx;
+  border-radius: 50%;
+  background: var(--color-text);
 }
-.fact-value {
-  min-width: 0;
-  color: var(--color-text);
-  font-weight: 800;
-  text-align: right;
-  overflow-wrap: anywhere;
-}
-.review-action {
-  width: 100%;
-  min-width: 0;
-  min-height: var(--control-height);
-  margin-top: 24rpx;
-  padding: 0 24rpx;
-  border: 2rpx solid var(--color-border);
+
+/* --- btn ---------------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
+  padding: 0 32rpx;
+  border: 2rpx solid var(--color-text);
   border-radius: 999rpx;
+  background: var(--color-text);
+  color: var(--color-on-action);
+  font-size: 28rpx;
+  line-height: 40rpx;
+  font-weight: 800;
+}
+.btn::after {
+  display: none;
+}
+.btn.secondary {
   background: var(--color-surface);
   color: var(--color-text);
-  font-size: 28rpx;
-  font-weight: 900;
 }
-.review-action--primary {
-  min-height: 96rpx;
+.btn[disabled] {
+  opacity: 0.6;
 }
-.review-action--primary {
-  border-color: var(--color-action);
-  background: var(--color-action);
-  color: var(--color-on-action);
-}
-.reminder-card {
-  margin-top: 48rpx;
-}
-.reminder-card .secondary {
-  width: 100%;
-  min-height: var(--control-height);
-  margin-top: 24rpx;
-}
-.state-card .btn {
-  margin-top: 24rpx;
-}
-.skeleton {
-  padding: 32rpx;
-}
-.skeleton view {
-  height: 28rpx;
-  margin-top: 24rpx;
-  border-radius: 8rpx;
-  background: var(--color-raised);
-}
-@media (max-width: 340px) {
-  .review-identity {
-    grid-template-columns: auto minmax(0, 1fr);
+
+@media (max-width: 350px) {
+  .pageheading-title {
+    font-size: 56rpx;
+    line-height: 72rpx;
   }
-  .review-identity .status-tag {
-    grid-column: 1 / -1;
-    justify-self: start;
+  .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .review-fact {
-    flex-direction: column;
-    gap: 4rpx;
-  }
-  .fact-value {
-    width: 100%;
-    text-align: left;
-  }
-  .review-action {
-    display: block;
+  .reviewitem-activity {
+    font-size: 30rpx;
+    line-height: 42rpx;
   }
 }

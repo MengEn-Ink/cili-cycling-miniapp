@@ -314,9 +314,9 @@ describe('管理员审核详情回归', () => {
 
   it('仅 pending 展示审核输入，approved 展示签到按钮', () => {
     const template = readFileSync('miniprogram/pages/admin/review-detail/index.wxml', 'utf8');
-    expect(template).toContain(`wx:if="{{x.status === 'pending'}}" class="decision-panel"`);
-    expect(template).toContain(
-      `wx:elif="{{x.status === 'approved'}}" class="row actions fixed single-action"`,
+    expect(template).toMatch(/wx:if="\{\{x\.status === 'pending'\}\}"\s+class="decision-panel\b/);
+    expect(template).toMatch(
+      /wx:elif="\{\{x\.status === 'approved'\}\}"\s+class="row actions fixed single-action"/,
     );
     expect(template).toContain('bindtap="checkIn"');
   });

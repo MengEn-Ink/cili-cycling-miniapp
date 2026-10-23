@@ -108,6 +108,19 @@ function appendUnique(current: any[], incoming: any[]) {
   ];
 }
 
+function summariseMetrics(items: any[]) {
+  // 单次计算头部三格汇总指标（已发布/草稿/待审核）；只统计当前已加载列表，保持与客户端一致。
+  let publishedCount = 0;
+  let draftCount = 0;
+  let pendingCount = 0;
+  for (const item of items) {
+    if (item.status === 'published') publishedCount += 1;
+    else if (item.status === 'draft') draftCount += 1;
+    else if (item.status === 'pending_review') pendingCount += 1;
+  }
+  return { publishedCount, draftCount, pendingCount };
+}
+
 Page({
   _unloaded: false,
   _listRevision: 0,
@@ -130,6 +143,7 @@ Page({
   },
   data: {
     items: [] as any[],
+    metrics: { publishedCount: 0, draftCount: 0, pendingCount: 0 },
     error: '',
     loadError: '',
     allowed: false,
@@ -186,8 +200,10 @@ Page({
         pageInput(this.data.statusFilter as StatusFilter),
       );
       if (!isCurrent()) return;
+      const nextItems = page.items.map((item) => displayItem(item, isAdmin, managedClubIds));
       this.setData({
-        items: page.items.map((item) => displayItem(item, isAdmin, managedClubIds)),
+        items: nextItems,
+        metrics: summariseMetrics(nextItems),
         nextCursor: page.nextCursor,
         hasMore: page.nextCursor !== null,
         error: '',
@@ -233,13 +249,13 @@ Page({
       try {
         const page = await rideService.listAdminActivitiesPage(pageInput(statusFilter, cursor));
         if (revision !== this._listRevision || cursor !== this.data.nextCursor) return;
+        const mergedItems = appendUnique(
+          this.data.items,
+          page.items.map((item) => displayItem(item, this.data.isAdmin, this.data.managedClubIds)),
+        );
         this.setData({
-          items: appendUnique(
-            this.data.items,
-            page.items.map((item) =>
-              displayItem(item, this.data.isAdmin, this.data.managedClubIds),
-            ),
-          ),
+          items: mergedItems,
+          metrics: summariseMetrics(mergedItems),
           nextCursor: page.nextCursor,
           hasMore: page.nextCursor !== null,
           // error 已在请求开始时清空；此处不再覆盖，保留分页期间产生的更新业务错误。
@@ -423,8 +439,12 @@ Page({
     try {
       await rideService.deleteActivity(id, reason);
       // 删除成功后从列表移除该卡片；过滤方式不受分页数据影响。
+      const remainingItems = this.data.items.filter(
+        (candidate: { id: string }) => candidate.id !== id,
+      );
       this.setData({
-        items: this.data.items.filter((candidate: { id: string }) => candidate.id !== id),
+        items: remainingItems,
+        metrics: summariseMetrics(remainingItems),
         error: '',
       });
       wx.showToast({ title: '已删除', icon: 'success' });

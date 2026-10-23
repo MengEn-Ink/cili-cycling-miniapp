@@ -1,160 +1,234 @@
-<view class="detail-page">
+<!--
+  骑行影像志 · 活动详情（1:1 对齐 docs/designs/2026-10-22-cycling-image-journal/pages/activity-detail.html）
+  - 骨架：photo.hero.detail → ink(metrics + 行) → content(section × N：这次一起骑 / 集合与出发 / 山路有迹可循 / 一起出发的骑友 / 行前约定 / 活动群 / Strava 官方路线 / 费用 / 装备 / 时间安排 / 终点导航) → decision → fixed actionbar
+  - 真实业务保留：画面轮播 + 失败降级 + 单图封面、权限视图(viewerStatus)、报名 CTA、GPX 下载(MD5)、Strava 复制、路线分析入口、报名骑友头像 scroll + 公开名片 modal、活动群二维码、admin 管理按钮
+-->
+<view class="page detail-page">
   <state-view loading="{{loading}}" error="{{!item ? error : ''}}" retryable="{{true}}" bind:retry="retryLoad">
-    <view wx:if="{{item}}" class="detail-unified-card">
-      <brand-logo compact="{{true}}" meta="活动详情" />
+    <block wx:if="{{item}}">
       <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{refreshing ? '正在刷新活动详情' : ''}}</view>
       <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{refreshError}}</view>
-      <view class="refresh-note" wx:if="{{refreshing}}" aria-hidden="true">正在刷新活动详情…</view>
-      <view class="refresh-note detail-refresh-retry" wx:if="{{refreshError}}" role="button" bindtap="retryLoad" aria-label="活动详情刷新失败，点击重试">{{refreshError}}，点此重试</view>
-      <view class="detail-hero">
+
+      <!-- hero：首屏画面 -->
+      <view class="photo hero detail">
         <swiper wx:if="{{galleryImages.length > 1 && !coverFailed}}" class="hero-gallery" indicator-dots="{{true}}" indicator-color="{{colorMediaMuted}}" indicator-active-color="{{colorOnMedia}}" circular="{{true}}" bindchange="galleryChange">
           <swiper-item wx:for="{{galleryImages}}" wx:for-item="media" wx:key="*this"><image class="hero-media" src="{{media}}" mode="aspectFill" data-index="{{index}}" binderror="galleryImageError" aria-label="活动图片 {{index + 1}}" /></swiper-item>
         </swiper>
         <image wx:elif="{{galleryImages.length === 1 && !coverFailed}}" class="hero-media" src="{{galleryImages[0]}}" mode="aspectFill" binderror="coverImageError" aria-label="{{item.title}}活动封面" />
         <generated-activity-cover wx:else item="{{item}}" variant="detail" />
+        <view class="shade"></view>
+        <view class="corner"><text class="tag dark">{{viewerStatus.label}}</text></view>
+        <view class="caption">
+          <view class="eyebrow">{{displayDate}}{{item.route.level ? ' · ' + item.route.level : ''}}</view>
+          <view class="hero-title editorial">{{item.title}}</view>
+          <view class="hero-sub">{{item.clubIdentity.name}}</view>
+        </view>
         <view class="cover-count" wx:if="{{galleryImages.length}}">{{currentGalleryIndex + 1}} / {{galleryImages.length}}</view>
       </view>
-      <view class="info-bar">
-        <view class="club-identity" aria-label="活动归属：{{item.clubIdentity.name}}"><image wx:if="{{item.clubIdentity.avatarUrl}}" class="club-avatar" src="{{item.clubIdentity.avatarUrl}}" mode="aspectFill" /><view wx:else class="club-avatar club-avatar--placeholder">此</view><text>{{item.clubIdentity.name}}</text></view>
-        <view class="info-head"><text class="info-kicker">{{displayDate}}{{item.route.level ? ' · ' + item.route.level : ''}}</text><text class="info-tag">{{viewerStatus.label}}</text></view>
-        <view class="info-title">{{item.title}}</view>
-        <view class="info-meta"><text>{{startTime || '集合时间待公布'}}</text><text>{{item.route.start || '集合地点待公布'}}</text></view>
+
+      <view class="refresh-note" wx:if="{{refreshing}}" aria-hidden="true">正在刷新活动详情…</view>
+      <view class="refresh-note refresh-error" wx:if="{{refreshError}}" role="button" bindtap="retryLoad" aria-label="活动详情刷新失败，点击重试">{{refreshError}}，点此重试</view>
+
+      <!-- ink：指标 + 集合概要行 -->
+      <view class="ink">
+        <view class="metrics">
+          <view><strong>{{item.route.distanceKm > 0 ? item.route.distanceKm : '—'}}<text class="unit">km</text></strong><text>全程距离</text></view>
+          <view><strong>{{item.route.elevationM > 0 ? item.route.elevationM : '—'}}<text class="unit">m</text></strong><text>累计爬升</text></view>
+          <view><strong>{{estimatedRideTime || '—'}}<text class="unit"></text></strong><text>预计骑行</text></view>
+          <view wx:if="{{!item.registrationUnlimited}}"><strong>{{item.approvedRegistrationCount || 0}}<text class="unit">人</text></strong><text>已通过</text></view>
+        </view>
+        <view class="row ink-row">
+          <view class="lead">
+            <view class="rowicon rowicon--clock" aria-hidden="true"></view>
+            <view class="rowtext">
+              <strong>{{startTime || '集合时间待公布'}}</strong>
+              <small>{{displayDate}} · {{item.route.start || '集合地点待公布'}}</small>
+            </view>
+          </view>
+        </view>
       </view>
 
       <view class="content">
-        <metric-grid class="detail-metric-panel" items="{{[{ value: item.route.distanceKm > 0 ? item.route.distanceKm : '--', unit: 'km', label: '里程' }, { value: item.route.elevationM > 0 ? item.route.elevationM : '--', unit: 'm', label: '爬升' }, { value: estimatedRideTime || '--', unit: '', label: '预计骑行' }, { value: item.approvedRegistrationCount || 0, unit: '人', label: '已通过' }]}}" columns="2" narrow-columns="2" aria-label="活动关键数据" />
-
-        <view class="detail-decision" aria-label="报名状态">
-          <view class="decision-status"><text class="decision-kicker">报名状态</text><text class="decision-title">{{viewerStatus.label}}</text></view>
-          <view class="decision-hint">{{viewerStatus.hint}}</view>
-          <view class="decision-capacity" wx:if="{{!item.registrationUnlimited && item.capacity > 0}}"><text>{{item.capacity}}</text><text>名额</text></view>
-        </view>
-
-        <view class="card time-card time-card--featured">
-          <view class="time-card-main">
-            <view><view class="time-card-kicker">集合时间</view><view class="time-card-primary">{{startTime || '待公布'}}</view></view>
-            <view class="meeting-location" wx:if="{{item.route.start}}">
-              <view class="meeting-location__copy"><text class="meeting-location__label">集合地点</text><text class="meeting-location__name">{{item.route.start}}</text><text class="meeting-location__address" wx:if="{{item.route.startLocation && item.route.startLocation.address && item.route.startLocation.address !== item.route.start}}">{{item.route.startLocation.address}}</text></view>
-              <button class="meeting-location__action" wx:if="{{item.route.startLocation}}" data-target="start" bindtap="navigate">导航</button>
+        <!-- 这次一起骑：俱乐部与简介 -->
+        <section class="section section-intro">
+          <view class="chapterhead"><view class="chapterhead-title">这次一起骑</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
+          <view class="section-prose" wx:if="{{item.description}}">{{item.description}}</view>
+          <view class="row rowlink club-row" aria-label="活动归属：{{item.clubIdentity.name}}">
+            <view class="lead">
+              <image wx:if="{{item.clubIdentity.avatarUrl}}" class="club-avatar" src="{{item.clubIdentity.avatarUrl}}" mode="aspectFill" />
+              <view wx:else class="club-avatar club-avatar--placeholder">此</view>
+              <view class="rowtext"><strong>{{item.clubIdentity.name}}</strong><small>活动组织俱乐部</small></view>
             </view>
+            <view class="chev" aria-hidden="true"></view>
           </view>
-          <view class="time-card-meta" wx:if="{{!item.registrationUnlimited}}">
-            <text wx:if="{{endTime}}">预计结束 {{endTime}}</text>
-            <text>报名截止 {{deadlineTime || '待公布'}}</text>
+          <view class="route-difficulty" wx:if="{{routeDifficultyHint}}"><view class="route-difficulty__label">路线强度</view><view class="route-difficulty__text">{{routeDifficultyHint}}</view></view>
+        </section>
+
+        <!-- 集合与出发 -->
+        <section class="section section-meeting">
+          <view class="chapterhead"><view class="chapterhead-title">集合与出发</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
+          <view class="paper">
+            <dl class="detailrows">
+              <view class="detailrow"><text class="detailrow-term">集合时间</text><text class="detailrow-desc">{{startTime || '待公布'}}</text></view>
+              <view class="detailrow"><text class="detailrow-term">集合地点</text><text class="detailrow-desc">{{item.route.start || '集合地点待公布'}}</text></view>
+              <view class="detailrow" wx:if="{{item.route.startLocation && item.route.startLocation.address && item.route.startLocation.address !== item.route.start}}"><text class="detailrow-term">集合位置</text><text class="detailrow-desc">{{item.route.startLocation.address}}</text></view>
+              <view class="detailrow" wx:if="{{endTime}}"><text class="detailrow-term">预计结束</text><text class="detailrow-desc">{{endTime}}</text></view>
+              <view class="detailrow" wx:if="{{deadlineTime}}"><text class="detailrow-term">报名截止</text><text class="detailrow-desc">{{deadlineTime}}</text></view>
+            </dl>
+            <button wx:if="{{item.route.startLocation}}" class="btn secondary meeting-cta" data-target="start" bindtap="navigate" aria-label="导航到集合地点">导航到集合点</button>
           </view>
-        </view>
+        </section>
 
-        <view class="card organizer-route-card" wx:if="{{organizerView.visible || routeDifficultyHint}}">
-          <view class="organizer-trust" wx:if="{{organizerView.visible}}">
-            <image wx:if="{{organizerView.avatarUrl}}" class="organizer-trust__avatar" src="{{organizerView.avatarUrl}}" mode="aspectFill" lazy-load="{{true}}" aria-label="{{organizerView.name}}头像" />
-            <view wx:else class="organizer-trust__avatar organizer-trust__avatar--placeholder">骑</view>
-            <view class="organizer-trust__copy"><view class="organizer-trust__label">{{organizerView.role}}</view><view class="organizer-trust__name">{{organizerView.name}}</view><view class="organizer-trust__club" wx:if="{{organizerView.clubName && organizerView.clubName !== organizerView.name}}">活动归属 · {{organizerView.clubName}}</view></view>
+        <!-- 山路有迹可循：路线入口 -->
+        <section class="section section-route" wx:if="{{canAnalyzeRoute || hasRouteDetails}}">
+          <view class="chapterhead"><view class="chapterhead-title">山路，有迹可循</view><view class="chapterhead-aside" wx:if="{{item.route.distanceKm > 0}}">{{item.route.distanceKm}} km / {{item.route.elevationM || 0}} m</view></view>
+          <view class="paper route-paper" wx:if="{{hasRouteDetails}}">
+            <view class="section-prose">{{hasGpxRoute ? '路线数据来自组织者上传的 GPX 文件。' : '路线数据来自免授权公开路线解析。'}}</view>
+            <dl class="detailrows">
+              <view class="detailrow"><text class="detailrow-term">距离</text><text class="detailrow-desc">{{item.route.distanceKm}} km</text></view>
+              <view class="detailrow"><text class="detailrow-term">爬升</text><text class="detailrow-desc">{{item.route.elevationM}} m</text></view>
+              <view class="detailrow"><text class="detailrow-term">下降</text><text class="detailrow-desc">{{item.route.elevationLossM}} m</text></view>
+              <view class="detailrow"><text class="detailrow-term">海拔范围</text><text class="detailrow-desc">{{item.route.elevationMinM}}–{{item.route.elevationMaxM}} m</text></view>
+              <view class="detailrow" wx:if="{{estimatedRideTime}}"><text class="detailrow-term">此里估算</text><text class="detailrow-desc">{{estimatedRideTime}}</text></view>
+            </dl>
+            <view class="route-actions">
+              <button wx:if="{{hasGpxRoute}}" class="btn secondary" loading="{{downloadingGpx}}" disabled="{{downloadingGpx}}" bindtap="downloadGpx" aria-label="下载 GPX 路线">{{downloadingGpx ? '下载中…' : '下载 GPX 路线'}}</button>
+              <button wx:if="{{officialRouteId}}" class="btn secondary" bindtap="copyOfficialRoute" aria-label="复制 Strava 官方路线链接">复制 Strava 官方链接</button>
+            </view>
+            <view wx:if="{{copyFeedback === 'success'}}" class="notice notice--success" role="status">✓ 路线链接已复制</view>
+            <view wx:elif="{{copyFeedback === 'error'}}" class="notice notice--warning" role="alert">! 复制失败，请稍后重试</view>
           </view>
-          <view class="route-difficulty" wx:if="{{routeDifficultyHint}}"><view class="route-difficulty__label">路线强度说明</view><view class="route-difficulty__text">{{routeDifficultyHint}}</view></view>
-        </view>
+          <button wx:if="{{canAnalyzeRoute}}" class="btn secondary route-analysis-cta" bindtap="openRouteAnalysis" aria-label="查看完整路线分析">查看完整路线分析 →</button>
+        </section>
 
-        <view class="official-route-card" wx:if="{{officialRouteId}}">
-          <view class="section-heading"><view><view class="title">Strava 官方路线</view><view class="route-action-note">复制组织者分享的规范化公开路线链接。</view></view><view class="section-tag">官方</view></view>
-          <button class="route-action" bindtap="copyOfficialRoute">复制路线链接</button>
-          <view wx:if="{{copyFeedback === 'success'}}" class="inline-feedback inline-feedback--success" role="status">✓ 路线链接已复制</view>
-          <view wx:elif="{{copyFeedback === 'error'}}" class="inline-feedback inline-feedback--error" role="alert">! 复制失败，请稍后重试</view>
-          <view class="route-action-note">小程序内不打开第三方页面，复制后可自行粘贴使用。</view>
-        </view>
-
-        <view class="gpx-route-card" wx:if="{{hasRouteDetails}}">
-          <view class="section-heading"><view><view class="title">{{item.route.routeName || '路线详情'}}</view><view class="route-action-note">{{hasGpxRoute ? '路线数据来自组织者上传的 GPX 文件。' : '路线数据来自免授权公开路线解析。'}}</view></view><view class="section-tag">路线详情</view></view>
-          <view class="route-native-metrics" aria-label="路线数据">
-            <view><text>{{item.route.distanceKm}}</text><text>km 距离</text></view>
-            <view><text>{{item.route.elevationM}}</text><text>m 爬升</text></view>
-            <view><text>{{item.route.elevationLossM}}</text><text>m 下降</text></view>
-            <view><text>{{item.route.elevationMinM}}–{{item.route.elevationMaxM}}</text><text>m 海拔</text></view>
-          </view>
-          <view class="route-estimate" wx:if="{{estimatedRideTime}}"><text>此里估算</text><text>{{estimatedRideTime}}</text></view>
-
-          <view class="gpx-download-row" wx:if="{{hasGpxRoute}}">
-            <view class="route-action-note">下载后可导入码表或骑行应用。</view>
-            <button class="route-action" loading="{{downloadingGpx}}" disabled="{{downloadingGpx}}" bindtap="downloadGpx">{{downloadingGpx ? '下载中' : '下载 GPX'}}</button>
-          </view>
-        </view>
-
-        <view class="card route-analysis-entry" wx:if="{{canAnalyzeRoute}}">
-          <view class="section-heading"><view><view class="title">完整路线分析</view><view class="route-action-note">查看关键公里点、主要坡段、海拔联动地图与基础装备建议。</view></view><view class="section-tag">分析</view></view>
-          <button class="route-action" bindtap="openRouteAnalysis">查看完整路线分析</button>
-        </view>
-
-        <view class="card attendees-card" wx:if="{{attendeesVisible}}">
-          <view class="attendees-heading"><view><view class="title">已报名人员</view><view class="attendees-hint" wx:if="{{attendees.length}}">头像与昵称经本人授权展示</view></view></view>
-          <scroll-view class="attendee-card-strip" scroll-x enhanced show-scrollbar="{{false}}" wx:if="{{attendees.length}}" aria-label="已报名人员头像与昵称">
-            <view class="attendee-card-strip__inner">
-              <view class="attendee-mini-card {{item.isSelf && (!item.avatarUrl || !item.backgroundUrl) ? 'attendee-mini-card--authorization' : ''}}" wx:for="{{attendees}}" wx:key="id" data-index="{{index}}" bindtap="openAttendeeCard" role="button" aria-label="查看 {{item.displayName}} 的公开骑行名片">
-                <image wx:if="{{item.avatarUrl}}" class="attendee-avatar {{item.genderClass}}" src="{{item.avatarUrl}}" mode="aspectFill" lazy-load="{{true}}" data-index="{{index}}" data-url="{{item.avatarUrl}}" bindload="attendeeAvatarLoad" binderror="attendeeAvatarError" />
-                <view class="attendee-mini-card__name">{{item.displayName || '骑友'}}</view>
-                <view class="attendee-mini-card__meta">{{item.status === 'checked_in' ? '已签到' : '已报名'}}</view>
-                <button wx:if="{{item.isSelf && (!item.avatarUrl || !item.backgroundUrl)}}" class="attendee-media-action" loading="{{attendeeAuthorizationState === 'loading'}}" disabled="{{attendeeAuthorizationState === 'loading'}}" catchtap="authorizeAttendeeMedia">{{attendeeAuthorizationState === 'loading' ? '正在打开…' : attendeeAuthorizationState === 'failed' ? '加载失败，重试' : attendeeAuthorizationState === 'declined' ? '重新授权' : '授权获取头像与骑行背景'}}</button>
-                <view wx:if="{{item.isSelf && attendeeAuthorizationState === 'declined'}}" class="attendee-media-feedback">已保留昵称，可随时重新授权</view>
+        <!-- 一起出发的骑友 -->
+        <section class="section section-attendees" wx:if="{{attendeesVisible}}">
+          <view class="chapterhead"><view class="chapterhead-title">一起出发的骑友</view><view class="chapterhead-aside">昵称与已同意的头像</view></view>
+          <scroll-view class="riderlist" scroll-x enhanced show-scrollbar="{{false}}" wx:if="{{attendees.length}}" aria-label="已报名人员头像与昵称">
+            <view class="riderlist-inner">
+              <view class="rider {{item.isSelf && (!item.avatarUrl || !item.backgroundUrl) ? 'rider--authorization' : ''}}" wx:for="{{attendees}}" wx:key="id" data-index="{{index}}" bindtap="openAttendeeCard" role="button" aria-label="查看 {{item.displayName}} 的公开骑行名片">
+                <image wx:if="{{item.avatarUrl}}" class="avatar {{item.genderClass}}" src="{{item.avatarUrl}}" mode="aspectFill" lazy-load="{{true}}" data-index="{{index}}" data-url="{{item.avatarUrl}}" bindload="attendeeAvatarLoad" binderror="attendeeAvatarError" />
+                <view wx:else class="avatar initialavatar">{{item.displayName ? item.displayName : '骑'}}</view>
+                <text class="rider-name">{{item.displayName || '骑友'}}</text>
+                <text class="rider-meta">{{item.status === 'checked_in' ? '已签到' : '已报名'}}</text>
+                <button wx:if="{{item.isSelf && (!item.avatarUrl || !item.backgroundUrl)}}" class="rider-authorize" loading="{{attendeeAuthorizationState === 'loading'}}" disabled="{{attendeeAuthorizationState === 'loading'}}" catchtap="authorizeAttendeeMedia">{{attendeeAuthorizationState === 'loading' ? '正在打开…' : attendeeAuthorizationState === 'failed' ? '加载失败，重试' : attendeeAuthorizationState === 'declined' ? '重新授权' : '授权头像与背景'}}</button>
               </view>
             </view>
           </scroll-view>
-          <view wx:else class="route-empty">正在等待首位骑友报名</view>
-        </view>
+          <view wx:else class="notice">
+            <view class="notice-dot" aria-hidden="true"></view>
+            <text>正在等待首位骑友报名</text>
+          </view>
+        </section>
 
-        <view class="card group-qr-detail-card" wx:if="{{item.groupQrCode || !groupQrVisible}}">
-          <view class="title">活动群二维码</view>
+        <!-- 行前约定 -->
+        <section class="section section-notes" wx:if="{{(item.equipment && item.equipment.length) || (item.notices && item.notices.length)}}">
+          <view class="chapterhead"><view class="chapterhead-title">行前约定</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
+          <view class="paper notes-paper">
+            <view class="chip-list" wx:if="{{item.equipment && item.equipment.length}}">
+              <text class="chip-list-label">装备</text>
+              <view class="gear-chip" wx:for="{{item.equipment}}" wx:key="*this"><text class="check">✓</text><text>{{item}}</text></view>
+            </view>
+            <view class="chip-list" wx:if="{{item.notices && item.notices.length}}">
+              <text class="chip-list-label">注意事项</text>
+              <view class="notice-chip" wx:for="{{item.notices}}" wx:key="*this"><text class="notice-mark">/</text><text>{{item}}</text></view>
+            </view>
+          </view>
+        </section>
+
+        <!-- 时间安排 -->
+        <section class="section section-schedule" wx:if="{{item.schedule && item.schedule.length}}">
+          <view class="chapterhead"><view class="chapterhead-title">时间安排</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
+          <view class="schedule-list">
+            <view wx:for="{{item.schedule}}" wx:key="time" class="schedule-item"><view class="schedule-time">{{item.time}}</view><view class="schedule-track"><view class="schedule-dot"></view></view><view class="schedule-copy"><view>{{item.title}}</view><view class="muted" wx:if="{{item.location}}">{{item.location}}</view></view></view>
+          </view>
+        </section>
+
+        <!-- 终点导航 -->
+        <section class="section section-end" wx:if="{{!item.registrationUnlimited && item.route.end}}">
+          <view class="chapterhead"><view class="chapterhead-title">终点导航</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
+          <view class="paper">
+            <view class="detailrows">
+              <view class="detailrow"><text class="detailrow-term">终点</text><text class="detailrow-desc">{{item.route.end}}</text></view>
+              <view class="detailrow" wx:if="{{item.route.endLocation && item.route.endLocation.address && item.route.endLocation.address !== item.route.end}}"><text class="detailrow-term">终点地址</text><text class="detailrow-desc">{{item.route.endLocation.address}}</text></view>
+            </view>
+            <button wx:if="{{item.route.endLocation}}" class="btn secondary meeting-cta" data-target="end" bindtap="navigate">地图导航到终点</button>
+          </view>
+        </section>
+
+        <!-- 费用说明 -->
+        <section class="section section-fee" wx:if="{{!item.registrationUnlimited && (item.fee || (item.feeIncluded && item.feeIncluded.length) || (item.feeExcluded && item.feeExcluded.length))}}">
+          <view class="chapterhead"><view class="chapterhead-title">费用说明</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
+          <view class="paper">
+            <view class="section-prose" wx:if="{{item.fee}}">{{item.fee}}</view>
+            <view class="fee-block" wx:if="{{item.feeIncluded && item.feeIncluded.length}}">
+              <view class="fee-block-title">费用包含</view>
+              <view class="fee-item" wx:for="{{item.feeIncluded}}" wx:for-item="fee" wx:key="*this"><text class="fee-mark fee-included">+</text><text>{{fee}}</text></view>
+            </view>
+            <view class="fee-block" wx:if="{{item.feeExcluded && item.feeExcluded.length}}">
+              <view class="fee-block-title">费用不包含</view>
+              <view class="fee-item" wx:for="{{item.feeExcluded}}" wx:for-item="fee" wx:key="*this"><text class="fee-mark fee-excluded">−</text><text>{{fee}}</text></view>
+            </view>
+          </view>
+        </section>
+
+        <!-- 活动群 -->
+        <section class="section section-group">
+          <view class="chapterhead"><view class="chapterhead-title">活动群</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
           <block wx:if="{{groupQrVisible && item.groupQrCode}}">
-            <view class="body-text">扫码加入活动群，出发前请留意群内通知。</view>
-            <image class="group-qr-detail-image" src="{{item.groupQrCode}}" mode="aspectFit" bindtap="previewGroupQr" show-menu-by-longpress="{{true}}" aria-label="点击放大查看活动群二维码" />
-            <view class="group-qr-detail-hint">点击图片可放大查看</view>
-            <view wx:if="{{groupQrCodeExpired}}" class="group-qr-warning">二维码可能已过期，请联系发布人更新。</view>
+            <view class="paper group-paper">
+              <view class="section-prose">扫码加入活动群，出发前请留意群内通知。</view>
+              <image class="group-qr-image" src="{{item.groupQrCode}}" mode="aspectFit" bindtap="previewGroupQr" show-menu-by-longpress="{{true}}" aria-label="点击放大查看活动群二维码" />
+              <view class="group-qr-hint muted">点击图片可放大查看</view>
+              <view wx:if="{{groupQrCodeExpired}}" class="notice notice--warning">二维码可能已过期，请联系发布人更新。</view>
+            </view>
           </block>
-          <view wx:else class="group-qr-locked"><view class="group-qr-lock">锁定</view><view>{{groupQrLockedMessage}}</view></view>
-        </view>
-
-        <view class="card overview-card" wx:if="{{item.description}}"><view class="title">{{item.registrationUnlimited ? '备注说明' : '路线概况'}}</view><view class="body-text">{{item.description}}</view></view>
-        <view class="card route-location-card" wx:if="{{!item.registrationUnlimited && item.route.end}}">
-          <view class="title">终点导航</view>
-          <view class="route-location-row"><view class="route-location-copy"><view class="route-location-label">终点</view><view class="route-location-name">{{item.route.end}}</view><view class="route-location-address" wx:if="{{item.route.endLocation && item.route.endLocation.address && item.route.endLocation.address !== item.route.end}}">{{item.route.endLocation.address}}</view></view><button wx:if="{{item.route.endLocation}}" data-target="end" bindtap="navigate">地图导航</button></view>
-        </view>
-        <view class="card schedule-card" wx:if="{{item.schedule && item.schedule.length}}"><view class="title">时间安排</view><view wx:for="{{item.schedule}}" wx:key="time" class="schedule-row"><view class="schedule-time">{{item.time}}</view><view class="schedule-track"><view class="schedule-dot"></view></view><view class="schedule-copy"><view>{{item.title}}</view><view class="muted">{{item.location}}</view></view></view></view>
-        <view class="card gear-card" wx:if="{{(item.equipment && item.equipment.length) || (item.notices && item.notices.length)}}"><view class="title">装备与注意</view><view class="chip-list"><view class="gear-chip" wx:for="{{item.equipment}}" wx:key="*this"><text class="check">✓</text><text>{{item}}</text></view><view class="notice-chip" wx:for="{{item.notices}}" wx:key="*this"><text class="notice-mark">/</text><text>{{item}}</text></view></view></view>
-        <view class="card fee-card" wx:if="{{!item.registrationUnlimited && (item.fee || (item.feeIncluded && item.feeIncluded.length) || (item.feeExcluded && item.feeExcluded.length))}}">
-          <view class="title">费用说明</view>
-          <view class="body-text" wx:if="{{item.fee}}">{{item.fee}}</view>
-          <view class="fee-block" wx:if="{{item.feeIncluded && item.feeIncluded.length}}">
-            <view class="fee-block-title">费用包含</view>
-            <view class="fee-item" wx:for="{{item.feeIncluded}}" wx:for-item="fee" wx:key="*this"><text class="fee-mark fee-included">+</text><text>{{fee}}</text></view>
+          <view wx:else class="notice">
+            <view class="notice-dot" aria-hidden="true"></view>
+            <text>{{groupQrLockedMessage || '组织者暂未上传群二维码，请留意活动说明。'}}</text>
           </view>
-          <view class="fee-block" wx:if="{{item.feeExcluded && item.feeExcluded.length}}">
-            <view class="fee-block-title">费用不包含</view>
-            <view class="fee-item" wx:for="{{item.feeExcluded}}" wx:for-item="fee" wx:key="*this"><text class="fee-mark fee-excluded">−</text><text>{{fee}}</text></view>
-          </view>
-        </view>
+        </section>
       </view>
-    </view>
-  </state-view>
-</view>
 
-<view wx:if="{{selectedAttendee}}" class="rider-modal-mask" bindtap="closeAttendeeCard" catchtouchmove="keepAttendeeCard">
-  <view class="rider-card" catchtap="keepAttendeeCard" role="dialog" aria-label="活动报名骑手公开名片">
-    <button class="rider-card-close" bindtap="closeAttendeeCard" aria-label="关闭骑行名片">×</button>
-    <swiper class="rider-card-swiper" current="{{selectedAttendeeIndex}}" circular="{{attendees.length > 1}}" previous-margin="{{attendees.length > 1 ? '28rpx' : '0'}}" next-margin="{{attendees.length > 1 ? '28rpx' : '0'}}" bindchange="attendeeCardChange">
-      <swiper-item wx:for="{{attendees}}" wx:for-item="rider" wx:key="id">
-        <view class="rider-card-photo" aria-label="{{rider.displayName}} 的完整公开骑行名片">
-          <image wx:if="{{rider.backgroundUrl}}" class="rider-card-photo__image" src="{{rider.backgroundUrl}}" mode="aspectFill" lazy-load="{{true}}" data-index="{{index}}" data-url="{{rider.backgroundUrl}}" bindload="selectedAttendeeBackgroundLoad" binderror="selectedAttendeeBackgroundError" />
-          <view class="rider-card-photo__scrim"></view>
-          <view class="rider-card-photo__identity">
-            <image wx:if="{{rider.avatarUrl}}" class="rider-card-avatar {{rider.genderClass}}" src="{{rider.avatarUrl}}" mode="aspectFill" lazy-load="{{true}}" data-index="{{index}}" data-url="{{rider.avatarUrl}}" bindload="attendeeAvatarLoad" binderror="attendeeAvatarError" />
-            <view class="rider-card-copy"><view class="rider-card-kicker">公开骑行名片</view><view class="rider-name">{{rider.displayName || '骑友'}}</view><view class="rider-card-photo__badges"><view class="rider-status">{{rider.status === 'checked_in' ? '已签到' : '已报名'}}</view></view></view>
-          </view>
-          <view class="rider-card-note">昵称、头像与照片由骑友本人维护，仅展示公开资料。</view>
+      <!-- decision：报名状态 + 主 CTA 说明 -->
+      <view class="decision" aria-label="报名状态">
+        <view class="decision-head">
+          <text class="decision-kicker">报名状态</text>
+          <text class="decision-title editorial">{{viewerStatus.label}}</text>
         </view>
-      </swiper-item>
-    </swiper>
-    <view class="rider-card-pagination" wx:if="{{attendees.length > 1}}"><text>{{selectedAttendeeIndex + 1}} / {{attendees.length}}</text><text>左右滑动查看其他骑友</text></view>
+        <view class="decision-hint">{{viewerStatus.hint}}</view>
+        <view class="decision-capacity" wx:if="{{!item.registrationUnlimited && item.capacity > 0}}"><text>{{item.capacity}}</text><text>名额</text></view>
+      </view>
+    </block>
+  </state-view>
+
+  <!-- 骑手公开名片 modal -->
+  <view wx:if="{{selectedAttendee}}" class="dialog-mask" bindtap="closeAttendeeCard" catchtouchmove="keepAttendeeCard">
+    <view class="dialog rider-dialog" catchtap="keepAttendeeCard" role="dialog" aria-label="活动报名骑手公开名片">
+      <button class="dialog-close" bindtap="closeAttendeeCard" aria-label="关闭骑行名片">×</button>
+      <swiper class="rider-dialog-swiper" current="{{selectedAttendeeIndex}}" circular="{{attendees.length > 1}}" previous-margin="{{attendees.length > 1 ? '28rpx' : '0'}}" next-margin="{{attendees.length > 1 ? '28rpx' : '0'}}" bindchange="attendeeCardChange">
+        <swiper-item wx:for="{{attendees}}" wx:for-item="rider" wx:key="id">
+          <view class="rider-dialog-photo" aria-label="{{rider.displayName}} 的完整公开骑行名片">
+            <image wx:if="{{rider.backgroundUrl}}" class="rider-dialog-photo__image" src="{{rider.backgroundUrl}}" mode="aspectFill" lazy-load="{{true}}" data-index="{{index}}" data-url="{{rider.backgroundUrl}}" bindload="selectedAttendeeBackgroundLoad" binderror="selectedAttendeeBackgroundError" />
+            <view class="rider-dialog-photo__scrim"></view>
+            <view class="rider-dialog-photo__identity">
+              <image wx:if="{{rider.avatarUrl}}" class="rider-dialog-avatar {{rider.genderClass}}" src="{{rider.avatarUrl}}" mode="aspectFill" lazy-load="{{true}}" data-index="{{index}}" data-url="{{rider.avatarUrl}}" bindload="attendeeAvatarLoad" binderror="attendeeAvatarError" />
+              <view class="rider-dialog-copy"><view class="rider-dialog-kicker">公开骑行名片</view><view class="rider-dialog-name">{{rider.displayName || '骑友'}}</view><view class="rider-dialog-status">{{rider.status === 'checked_in' ? '已签到' : '已报名'}}</view></view>
+            </view>
+            <view class="rider-dialog-note">昵称、头像与照片由骑友本人维护，仅展示公开资料。</view>
+          </view>
+        </swiper-item>
+      </swiper>
+      <view class="rider-dialog-pagination" wx:if="{{attendees.length > 1}}"><text>{{selectedAttendeeIndex + 1}} / {{attendees.length}}</text><text>左右滑动查看其他骑友</text></view>
+    </view>
+  </view>
+
+  <!-- 固定底部 actionbar：admin 两键 / 普通用户主 CTA -->
+  <view class="actionbar actionbar--admin" wx:if="{{isAdmin}}">
+    <button class="btn secondary" disabled="{{loading || !item}}" bindtap="editActivity">修改活动</button>
+    <button class="btn" disabled="{{loading || !item}}" bindtap="adminRegistration">{{adminRegistrationLabel}} →</button>
+  </view>
+  <view class="actionbar" wx:else>
+    <button class="btn" disabled="{{loading || !item || !activityAction.enabled}}" bindtap="go">{{activityAction.label}} →</button>
   </view>
 </view>
-
-<view class="fixed detail-action detail-action--admin" wx:if="{{isAdmin}}">
-  <button class="btn btn--secondary" disabled="{{loading || !item}}" bindtap="editActivity">修改活动</button>
-  <button class="btn" disabled="{{loading || !item}}" bindtap="adminRegistration">{{adminRegistrationLabel}} <text class="button-arrow">→</text></button>
-</view>
-<view class="fixed detail-action" wx:else><button class="btn" disabled="{{loading || !item || !activityAction.enabled}}" bindtap="go">{{activityAction.label}} <text class="button-arrow">→</text></button></view>

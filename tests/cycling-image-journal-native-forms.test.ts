@@ -17,13 +17,60 @@ const pages = {
   clubProfile: 'miniprogram/pages/admin/club-application-detail',
 };
 
+// Phase-1 骑行影像志六页（registration-form / credential）已改为 pageheading 结构，
+// Phase-2 的 profile-edit / settings 已按设计稿改为 pageheading。
+// 本轮 Phase-3 进一步完成最后 6 页管理端的 pageheading 迁移：
+// activityList / activityEdit / reviews / reviewDetail / clubManagement / clubProfile
+// 全部使用宋体双行 pageheading + 暖纸底色，不再使用 journal-heading 过渡壳。
+const ADMIN_PAGEHEADING_PAGES = [
+  'activityList',
+  'activityEdit',
+  'reviews',
+  'reviewDetail',
+  'clubManagement',
+  'clubProfile',
+] as const;
+const PAGEHEADING_PAGES = ['profile', 'registration', 'credential'] as const;
+
 describe('骑行影像志原生表单与管理页面', () => {
-  it.each(Object.entries(pages))('%s 使用影像志编辑式页头与暖纸长屏', (_, root) => {
+  it.each(
+    Object.entries(pages).filter(([key]) =>
+      (ADMIN_PAGEHEADING_PAGES as readonly string[]).includes(key),
+    ),
+  )('%s 使用设计稿 pageheading 宋体双行标题与暖纸底色', (_, root) => {
     const template = read(`${root}/index.wxml`);
     const styles = read(`${root}/index.wxss`);
 
-    expect(template).toContain('journal-heading');
-    expect(styles).toContain('.journal-heading');
+    expect(template).toMatch(/class="pageheading[^"]*"/);
+    expect(template).toContain('class="pageheading-title editorial"');
+    expect(styles).toContain('.pageheading');
+    expect(styles).toContain('background: var(--color-bg');
+    expect(template).not.toContain('journal-heading');
+  });
+
+  // settings 页按设计稿 settings.html 单独使用 pageheading（宋体双行标题）结构，
+  // 不复用 .journal-heading。见 docs/designs/2026-10-22-cycling-image-journal/pages/settings.html。
+  it('settings 使用设计稿 pageheading 宋体双行标题与暖纸底色', () => {
+    const template = read(`${pages.settings}/index.wxml`);
+    const styles = read(`${pages.settings}/index.wxss`);
+
+    expect(template).toContain('class="pageheading"');
+    expect(template).toContain('class="pageheading-title editorial"');
+    expect(styles).toContain('.pageheading');
+    expect(styles).toContain('.pageheading-title');
+    expect(styles).toContain('background: var(--color-bg)');
+  });
+
+  // registration-form / credential / profile-edit 已按设计稿 registration-form.html / credential.html / profile-edit.html
+  // 使用 pageheading 宋体双行标题 + 暖纸底色结构。
+  it.each(PAGEHEADING_PAGES)('%s 使用设计稿 pageheading 宋体双行标题与暖纸底色', (key) => {
+    const template = read(`${pages[key]}/index.wxml`);
+    const styles = read(`${pages[key]}/index.wxss`);
+
+    expect(template).toContain('class="pageheading"');
+    expect(template).toContain('class="pageheading-title editorial"');
+    expect(styles).toContain('.pageheading');
+    expect(styles).toContain('.pageheading-title');
     expect(styles).toContain('background: var(--color-bg)');
   });
 
@@ -45,13 +92,18 @@ describe('骑行影像志原生表单与管理页面', () => {
     const source = read(`${pages.registration}/index.ts`);
     const styles = read(`${pages.registration}/index.wxss`);
 
-    expect(template.match(/class="segment \{\{/g)).toHaveLength(3);
+    // 骑行经验三档：对齐设计稿 experience-segment 的三枚 segment-choice（新手 / 有经验 / 常骑）。
+    expect(template.match(/class="segment-choice/g)).toHaveLength(3);
+    expect(template).toContain('value="新手"');
+    expect(template).toContain('value="有经验"');
+    expect(template).toContain('value="常骑"');
     expect(template).toContain('value="self_drive"');
     expect(template).toContain('value="support_vehicle"');
     expect(source).toContain("gatheringMode: 'self_drive'");
     expect(source).toContain("url: '/pages/credential/index?id=");
-    expect(styles).toMatch(/\.submit-button\s*\{[^}]*min-height:\s*96rpx/s);
-    expect(styles).toMatch(/\.back-button\s*\{[^}]*min-height:\s*88rpx/s);
+    // 底部提交区按设计稿改用 actionbar + btn，不再使用历史的 submit-button / back-button 命名。
+    expect(styles).toMatch(/\.btn\s*\{[^}]*min-height:\s*88rpx/s);
+    expect(styles).toMatch(/\.actionbar\s*\{[^}]*position:\s*fixed/s);
   });
 
   it('凭证只提供活动分享，不提供条码或保存图片', () => {
@@ -87,7 +139,7 @@ describe('骑行影像志原生表单与管理页面', () => {
 
     expect(reviews.match(/class="filter-tab /g)).toHaveLength(6);
     expect(reviewStyles).toMatch(
-      /\.filter-tabs\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/s,
+      /\.filters\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/s,
     );
     expect(detail).toContain(`wx:if="{{x.status === 'pending'}}"`);
     expect(detail).toContain(`wx:elif="{{x.status === 'approved'}}"`);

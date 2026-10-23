@@ -5,16 +5,16 @@
   "wxml": "miniprogram/pages/profile/index.wxml",
   "wxss": "miniprogram/pages/profile/index.wxss",
   "ts": "miniprogram/pages/profile/index.ts",
-  "designIntent": "背景与头像共同组成『我的骑行名片』；默认普通成员视图；100% 完整度时不重复完整度卡片；联系电话仅本人与审核员完整可见。",
+  "designIntent": "骑行影像志 1:1：profile-hero（全幅背景 + 我的骑行名片 label + 头像身份卡）→ content（已登录 status / 完整度 / 三条 row.rowlink.rowbutton：俱乐部 / 报名资料 / 设置 → 平台管理员 section → 隐私 notice）。联系电话仅本人与审核员完整可见；100% 完整度不再出现完整度卡片。",
   "containers": [
     { "class": "page profile-page", "role": "page-root", "order": 1 },
-    { "class": "rider-card", "role": "hero", "order": 2, "note": "profile-hero 全幅背景（swiper 多张 / 兜底插画）+ 底部头像、昵称、性别、微信登录态" },
-    { "class": "club-membership-card", "role": "club-row", "order": 3, "note": "单俱乐部入口；未加入时显示占位，不出现推荐或列表" },
-    { "class": "hero-profile-progress", "role": "progress", "order": 4, "optional": true, "note": "资料完整度条，completeness===100 时整块不渲染" },
-    { "class": "identity-guide", "role": "auth-guide", "order": 5, "optional": true, "note": "微信身份不可用时才渲染，提供重新登录与完善入口" },
-    { "class": "section-label", "role": "section-label", "order": 6, "note": "常用服务 节 label" },
-    { "class": "menu-list", "role": "menu", "order": 7, "note": "报名资料 / 设置 / 管理员的活动管理 / 俱乐部管理 入口" },
-    { "class": "privacy-note", "role": "notice", "order": 8, "note": "联系电话 + 紧急联系人仅本人与审核员使用" }
+    { "class": "profile-hero", "role": "hero", "order": 2, "note": "全幅背景（swiper 多张 / 包装 svg 兜底 / CSS 山岭兜底）+ 名片 label + 底部头像、昵称、性别" },
+    { "class": "content", "role": "content", "order": 3, "note": "status / 完整度 / rows / 管理员 section / notice 的垂直容器" },
+    { "class": "row rowlink rowbutton", "role": "row-club", "order": 4, "note": "俱乐部入口；未加入时显示占位，不出现推荐或列表" },
+    { "class": "row rowlink rowbutton", "role": "row-edit", "order": 5, "note": "报名资料入口" },
+    { "class": "row rowlink rowbutton", "role": "row-settings", "order": 6, "note": "设置入口" },
+    { "class": "section section-admin", "role": "section-admin", "order": 7, "optional": true, "note": "仅平台管理员可见：活动管理 / 俱乐部管理两条 row" },
+    { "class": "notice notice--info", "role": "notice", "order": 8, "note": "实名与电话仅本人与审核员完整可见；联系电话与紧急联系人隐私说明" }
   ],
   "interactions": [
     { "trigger": "previewAvatar", "note": "点击头像查看完整头像" },
@@ -27,20 +27,30 @@
     { "trigger": "retryAuth", "note": "身份异常时重新登录" }
   ],
   "copy": [
-    "一起骑，去更远的地方",
+    "我的骑行名片",
+    "此里 · 骑友",
+    "我的俱乐部",
     "报名资料",
+    "头像、昵称、实名与紧急联系人",
     "设置",
+    "通知订阅、隐私与当前版本",
+    "管理工作台",
+    "平台管理员可见",
     "活动管理",
     "俱乐部管理",
-    "常用服务",
-    "隐私说明"
+    "实名与电话仅本人和审核管理员完整可见"
   ],
   "assets": [
-    { "class": "hero-bg-image", "note": "背景照片实图" }
+    { "class": "profile-background-image", "note": "背景照片实图" }
   ],
   "forbids": [
-    { "class": "profile-hero-cta", "reason": "旧 Oil UI 顶部大按钮已退役" },
-    { "class": "hero--compact", "reason": "旧 Oil UI hero 变体已退役" }
+    { "class": "rider-card", "reason": "旧 Oil UI 的 rider-card 已退役，背景与头像直接构成 profile-hero" },
+    { "class": "menu-list", "reason": "旧 Oil UI 菜单列表已被 row.rowlink.rowbutton 取代" },
+    { "class": "menu-card", "reason": "同上，已被 row.rowlink.rowbutton 取代" },
+    { "class": "section-label", "reason": "设计稿 section 头部使用 chapterhead，而非独立 section-label" },
+    { "class": "club-membership-card", "reason": "俱乐部入口已下沉为 row.rowlink.rowbutton" },
+    { "class": "privacy-note", "reason": "隐私说明统一走 notice.notice--info，不单独 privacy-note" },
+    { "class": "hero-profile-progress", "reason": "完整度卡已改名为 profile-progress，不再使用 hero- 前缀" }
   ],
-  "phase2Note": "本页实现已对齐设计意图；避免触碰 TS/状态逻辑以避开 PR #341 冲突域。"
+  "designSource": "docs/designs/2026-10-22-cycling-image-journal/pages/profile.html"
 }

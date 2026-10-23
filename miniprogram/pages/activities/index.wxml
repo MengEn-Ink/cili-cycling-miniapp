@@ -1,55 +1,92 @@
+<!--
+  骑行影像志 · 活动列表（1:1 对齐 docs/designs/2026-10-22-cycling-image-journal/pages/activities.html）
+  - 骨架：page + pageheading + segment（含紧凑切换）+ 影像故事列表 + tabbar
+  - 真实业务保留：future/history 切换、day chips 日期筛选、沉浸/紧凑布局、分页 loadMore、refresh retry、无障碍 live region
+  - WeChat 原生 brand-logo/系统胶囊，不渲染伪 statusbar / systemnav
+-->
 <view class="page activities-page" style="padding-top: {{navigationTopPx}}px">
   <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{refreshing ? '正在刷新活动' : loadingMore ? '正在加载更多活动' : ''}}</view>
   <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{refreshError}}</view>
-  <brand-logo meta="骑行活动" />
-  <view class="activities-intro">
-    <view class="intro-kicker">此里 · 一起出发</view>
-    <view class="page-title">把周末，交给山路。</view>
-    <view class="intro-copy">每一次转弯，都有值得记住的风景。</view>
+
+  <header class="pageheading">
+    <view class="eyebrow">此里 · 一起出发</view>
+    <view class="pageheading-title editorial">
+      <text class="pageheading-line">把周末，</text>
+      <text class="pageheading-line">交给山路。</text>
+    </view>
+    <view class="pageheading-sub">每一次转弯，都有值得记住的风景。</view>
+  </header>
+
+  <view class="segment" role="tablist" aria-label="活动时间">
+    <button class="segment-item {{activeView === 'future' ? 'selected' : ''}}" role="tab" data-view="future" aria-selected="{{activeView === 'future'}}" aria-controls="activity-list-panel" bindtap="switchView">近期活动</button>
+    <button class="segment-item {{activeView === 'history' ? 'selected' : ''}}" role="tab" data-view="history" aria-selected="{{activeView === 'history'}}" aria-controls="activity-list-panel" bindtap="switchView">往期影像</button>
+    <button class="segment-end iconbutton {{layoutMode === 'compact' ? 'selected' : ''}}" data-mode="{{layoutMode === 'compact' ? 'card' : 'compact'}}" aria-pressed="{{layoutMode === 'compact'}}" aria-label="切换紧凑浏览" bindtap="switchLayout">
+      <view class="icon-stripes" aria-hidden="true"></view>
+    </button>
   </view>
 
-  <view class="timeline-tabs" role="tablist" aria-label="活动状态筛选">
-    <button class="timeline-tab {{activeView === 'future' ? 'is-active' : ''}}" role="tab" aria-selected="{{activeView === 'future'}}" aria-controls="activity-list-panel" aria-label="查看即将开始的活动" data-view="future" bindtap="switchView">即将开始</button>
-    <button class="timeline-tab {{activeView === 'history' ? 'is-active' : ''}}" role="tab" aria-selected="{{activeView === 'history'}}" aria-controls="activity-list-panel" aria-label="查看历史活动" data-view="history" bindtap="switchView">历史活动</button>
-  </view>
   <view class="day-chip-shell" wx:if="{{activeView === 'future' && dayChips.length > 1}}">
     <scroll-view class="day-chip-bar" scroll-x enhanced show-scrollbar="{{false}}" aria-label="按日期快速选择活动">
-      <view class="day-chip-bar__inner" role="list"><button class="day-chip {{selectedDayKey === item.key ? 'is-active' : ''}}" wx:for="{{dayChips}}" wx:key="key" role="listitem" aria-pressed="{{selectedDayKey === item.key}}" aria-label="{{item.label}}，{{item.dateLabel}}" data-index="{{item.index}}" bindtap="selectDay"><text class="day-chip__relative">{{item.relativeLabel}}</text><text class="day-chip__date">{{item.dateLabel}}</text></button></view>
+      <view class="day-chip-bar__inner" role="list">
+        <button class="day-chip {{selectedDayKey === item.key ? 'is-active' : ''}}" wx:for="{{dayChips}}" wx:key="key" role="listitem" aria-pressed="{{selectedDayKey === item.key}}" aria-label="{{item.label}}，{{item.dateLabel}}" data-index="{{item.index}}" bindtap="selectDay"><text class="day-chip__relative">{{item.relativeLabel}}</text><text class="day-chip__date">{{item.dateLabel}}</text></button>
+      </view>
     </scroll-view>
-    <view class="day-chip-fade" aria-hidden="true"></view>
   </view>
 
-  <view class="list-toolbar" wx:if="{{items.length}}">
-    <view class="list-count"><view class="list-count__main"><text>{{activeView === 'history' ? '往期影像' : '近期活动'}}</text></view><text class="list-count__total">共 {{items.length}} 场</text></view>
-    <view class="layout-switch" role="group" aria-label="活动列表显示密度">
-      <button class="layout-switch__item {{layoutMode === 'card' ? 'is-active' : ''}}" aria-pressed="{{layoutMode === 'card'}}" data-mode="card" bindtap="switchLayout">沉浸</button>
-      <button class="layout-switch__item {{layoutMode === 'compact' ? 'is-active' : ''}}" aria-pressed="{{layoutMode === 'compact'}}" data-mode="compact" bindtap="switchLayout">紧凑</button>
-    </view>
+  <view class="list-toolbar" wx:if="{{items.length}}" aria-label="当前列表">
+    <view class="list-toolbar__title"><text class="chapterhead-title">{{activeView === 'history' ? '往期影像' : '近期活动'}}</text><text class="list-toolbar__count">共 {{items.length}} 场</text></view>
   </view>
+
   <view class="refresh-note" wx:if="{{refreshing}}" aria-hidden="true">正在刷新活动…</view>
   <view class="refresh-note refresh-error" wx:if="{{refreshError}}" aria-hidden="true">{{refreshError}}</view>
-  <view class="activity-card-skeleton" wx:if="{{loading}}" role="status" aria-label="正在加载活动">
-    <view class="activity-card-skeleton__media skeleton"></view>
-    <view class="activity-card-skeleton__body">
-      <view class="activity-card-skeleton__meta skeleton"></view>
-      <view class="activity-card-skeleton__title skeleton"></view>
-      <view class="activity-card-skeleton__route skeleton"></view>
-      <view class="activity-card-skeleton__metrics skeleton"></view>
+
+  <view class="activity-skeleton" wx:if="{{loading}}" role="status" aria-label="正在加载活动">
+    <view class="activity-skeleton__media skeleton"></view>
+    <view class="activity-skeleton__body">
+      <view class="activity-skeleton__meta skeleton"></view>
+      <view class="activity-skeleton__title skeleton"></view>
+      <view class="activity-skeleton__facts skeleton"></view>
     </view>
   </view>
+
   <state-view wx:else loading="{{loading}}" error="{{error}}" empty="{{!items.length}}" empty-title="{{emptyTitle}}" empty-copy="{{emptyCopy}}" retryable="{{true}}" bind:retry="load">
     <block wx:if="{{layoutMode === 'card'}}">
-      <view class="activity-story-list" id="activity-list-panel" role="tabpanel" aria-label="摄影活动列表">
-        <view class="activity-story" id="activity-index-{{index}}" wx:for="{{items}}" wx:key="id"><activity-card item="{{item}}" data-id="{{item.id}}" bind:open="open" /></view>
+      <view class="story-list" id="activity-list-panel" role="tabpanel" aria-label="摄影活动列表">
+        <view class="story-shell" id="activity-index-{{index}}" wx:for="{{items}}" wx:key="id">
+          <view class="story" data-id="{{item.id}}" bindtap="open" hover-class="story--pressed" role="button" aria-label="查看活动：{{item.title}}">
+            <view class="photo">
+              <image wx:if="{{item.coverImage}}" class="photo-image" src="{{item.coverImage}}" mode="aspectFill" lazy-load="{{true}}" aria-label="{{item.title}}活动封面"/>
+              <generated-activity-cover wx:else item="{{item}}" variant="card" />
+              <view class="shade"></view>
+              <view class="corner"><text class="tag dark">{{item.displayStatus}}</text></view>
+              <view class="caption">
+                <view class="eyebrow">{{item.displayDateLabel}} · {{item.displayTimeLabel}}</view>
+                <view class="story-title editorial">{{item.title}}</view>
+                <view class="story-sub">{{item.clubIdentity.name}}</view>
+              </view>
+            </view>
+            <view class="storyfacts">
+              <strong>{{item.route.distanceKm > 0 ? item.route.distanceKm : '—'}}{{item.route.distanceKm > 0 ? ' km' : ''}} <text>距离</text></strong>
+              <strong>{{item.route.elevationM > 0 ? item.route.elevationM : '—'}}{{item.route.elevationM > 0 ? ' m' : ''}} <text>爬升</text></strong>
+              <strong>{{item.estimatedRideTime || '—'}} <text>骑行</text></strong>
+            </view>
+            <view class="storymeta">
+              <text class="storymeta-pin" aria-hidden="true">◉</text>
+              <text class="storymeta-main">{{item.route.start || '集合地点待公布'}}</text>
+              <text class="storymeta-link">查看活动 →</text>
+            </view>
+          </view>
+        </view>
       </view>
     </block>
     <view wx:else class="compact-list" id="activity-list-panel" role="tabpanel" aria-label="紧凑活动列表">
       <button class="compact-item" id="activity-index-{{index}}" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="open" aria-label="查看活动：{{item.title}}">
         <view class="compact-item__date"><text>{{item.displayDateLabel}}</text><text>{{item.displayTimeLabel}}</text></view>
         <view class="compact-item__body"><text class="compact-item__title">{{item.title}}</text><text class="compact-item__route">{{item.route.start || '集合地点待公布'}}</text><text class="compact-item__metrics">{{item.route.distanceKm > 0 ? item.route.distanceKm + ' km' : '里程待公布'}} · {{item.route.elevationM > 0 ? '爬升 ' + item.route.elevationM + ' m' : '爬升待公布'}}{{item.route.level ? ' · ' + item.route.level : ''}}</text></view>
-        <view class="compact-item__status"><status-pill status="{{item.displayStatus}}" /><text>查看 ›</text></view>
+        <view class="compact-item__status"><status-pill status="{{item.displayStatus}}"/><text class="compact-item__arrow">查看 ›</text></view>
       </button>
     </view>
   </state-view>
-  <button class="secondary load-more" wx:if="{{nextCursor && items.length}}" bindtap="loadMore" loading="{{loadingMore}}" disabled="{{loadingMore}}" aria-label="{{loadingMore ? '正在加载更多活动' : (refreshError ? '重试加载更多活动' : '加载更多活动')}}">{{loadingMore ? '加载中…' : (refreshError ? '重试加载更多' : '加载更多活动')}}</button>
+
+  <button class="btn secondary load-more" wx:if="{{nextCursor && items.length}}" bindtap="loadMore" loading="{{loadingMore}}" disabled="{{loadingMore}}" aria-label="{{loadingMore ? '正在加载更多活动' : (refreshError ? '重试加载更多活动' : '加载更多活动')}}">{{loadingMore ? '加载中…' : (refreshError ? '重试加载更多' : '加载更多活动')}}</button>
 </view>

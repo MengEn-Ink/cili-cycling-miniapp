@@ -359,7 +359,7 @@ describe('俱乐部中心 · 俱乐部主页运行时', () => {
     expect(view).toContain('club-avatar');
     expect(view).toContain('{{club.roleLabel}}');
     expect(view).toContain('近期活动');
-    expect(view).toContain('class="activity-row"');
+    expect(view).toMatch(/class="[^"]*\bactivity-row\b[^"]*"/);
     expect(view).toContain('bindtap="openActivity"');
     expect(view).toContain('bindtap="retryActivities"');
     expect(view).toContain('bindtap="openActivities"');

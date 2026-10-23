@@ -104,17 +104,20 @@ const matchesForbid = (wxml: string, className: string) => {
 };
 
 const findInteraction = (wxml: string, trigger: string, dataAttr?: string, openType?: string) => {
-  // Look for bind:xxx="trigger", bindxxx="trigger", or catchxxx="trigger"
-  // or open-type="share" for share-type triggers.
-  if (openType) {
-    return wxml.includes(`open-type="${openType}"`) || wxml.includes(`open-type='${openType}'`);
-  }
-  const triggerRegex = new RegExp(`(bind|bind:|catch|catch:)[a-zA-Z]+="${trigger}"`);
-  if (!triggerRegex.test(wxml)) return false;
-  if (dataAttr) {
-    return wxml.includes(dataAttr);
-  }
-  return true;
+  const attribute = openType ? `open-type="${openType}"` : undefined;
+  const bindingRegex = openType
+    ? null
+    : new RegExp(`(?:bind|bind:|catch|catch:)[a-zA-Z]+="${trigger}"`, 'g');
+  const matches = attribute
+    ? [...wxml.matchAll(new RegExp(attribute, 'g'))]
+    : [...wxml.matchAll(bindingRegex as RegExp)];
+  return matches.some((match) => {
+    const start = wxml.lastIndexOf('<', match.index);
+    const end = wxml.indexOf('>', (match.index ?? 0) + match[0].length);
+    if (start < 0 || end < 0) return false;
+    const startTag = wxml.slice(start, end + 1);
+    return !dataAttr || startTag.includes(dataAttr);
+  });
 };
 
 describe('骑行影像志 · 16 页 DOM/交互契约', () => {
@@ -156,8 +159,10 @@ describe('骑行影像志 · 16 页 DOM/交互契约', () => {
         }
       });
 
-      it('interactions 中的触发器在 WXML 中真实绑定', () => {
-        const missing: string[] = [];
+      it('interactions 中的触发器在同一 WXML 标签真实绑定且 TS 中存在处理器', () => {
+        const missingBindings: string[] = [];
+        const missingHandlers: string[] = [];
+        const pageSource = read(contract.ts);
         for (const interaction of contract.interactions) {
           const ok = findInteraction(
             wxml,
@@ -165,9 +170,16 @@ describe('骑行影像志 · 16 页 DOM/交互契约', () => {
             interaction.dataAttr,
             interaction.openType,
           );
-          if (!ok) missing.push(interaction.trigger);
+          if (!ok) missingBindings.push(interaction.trigger);
+          if (!interaction.openType) {
+            const handlerRegex = new RegExp(
+              `\\b${interaction.trigger}\\s*(?:\\([^)]*\\)\\s*\\{|:)`,
+            );
+            if (!handlerRegex.test(pageSource)) missingHandlers.push(interaction.trigger);
+          }
         }
-        expect(missing, `${contract.slug} 缺失交互绑定`).toEqual([]);
+        expect(missingBindings, `${contract.slug} 缺失同元素交互绑定`).toEqual([]);
+        expect(missingHandlers, `${contract.slug} TS 缺失交互处理器`).toEqual([]);
       });
 
       it('copy 中列出的文案锚点必须在 WXML 中出现', () => {

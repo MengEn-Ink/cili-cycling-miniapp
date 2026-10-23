@@ -106,26 +106,29 @@ describe('activity timeline template contract', () => {
   it('提供双视图选择、完整日期入口和摄影纵向列表', () => {
     const template = read('miniprogram/pages/activities/index.wxml');
     const styles = read('miniprogram/pages/activities/index.wxss');
-    expect(template).toContain('class="timeline-tabs"');
+    // 新设计：segment 承载近期/往期切换
+    expect(template).toContain('class="segment"');
+    expect(template).toMatch(/class="segment-item [^"]*"/);
     expect(template).toContain('data-view="future"');
-    expect(template.match(/>即将开始<\/button>/g)).toHaveLength(1);
+    expect(template.match(/>近期活动<\/button>/g)).toHaveLength(1);
     expect(template).toContain('data-view="history"');
     expect(template).toContain('aria-selected="{{activeView === \'future\'}}"');
+    // 日期筛选
     expect(template).toContain('class="day-chip-bar"');
     expect(template).toContain('{{item.relativeLabel}}');
     expect(template).toContain('{{item.dateLabel}}');
-    expect(template).toContain('class="day-chip-fade"');
     expect(template).toContain('data-index="{{item.index}}"');
     expect(template).toContain('bindtap="selectDay"');
     expect(template).not.toContain('<view class="section-title">{{sectionTitle}}</view>');
-    expect(template).toContain('class="activity-story-list"');
+    // 纵向摄影 story 列表
+    expect(template).toContain('class="story-list"');
     expect(template).toContain('id="activity-index-{{index}}"');
     expect(template).not.toContain('<swiper');
     expect(template).not.toContain('bindchange="cardChange"');
     expect(template).toContain('role="tabpanel"');
     expect(template).toContain('wx:for="{{items}}"');
-    expect(template).toContain('bind:open="open"');
-    expect(styles).toMatch(/\.activity-story-list\s*\{[^}]*display:\s*flex/s);
+    expect(template).toContain('bindtap="open"');
+    expect(styles).toMatch(/\.story-list\s*\{[^}]*display:\s*flex/s);
   });
 
   it('展示列表数量、日期入口并保留加载失败重试', () => {
