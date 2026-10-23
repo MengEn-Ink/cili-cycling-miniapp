@@ -254,8 +254,10 @@
             <view class="field-label">活动群二维码<text class="optional">· 选填，最多 1 张</text></view>
             <view class="small muted">供已报名成员进群。未上传时详情页提示暂无群二维码；二维码较久未更新时，请替换为最新图片。</view>
             <view wx:if="{{groupQrCode}}" class="group-qr-card">
-              <image wx:if="{{groupQrPreviewUrl}}" class="group-qr-preview" src="{{groupQrPreviewUrl}}" mode="aspectFit" data-file-id="{{groupQrCode}}" bindload="storedMediaPreviewLoad" binderror="storedMediaPreviewError" />
-              <button wx:else class="stored-media-placeholder group-qr-preview" data-file-id="{{groupQrCode}}" bindtap="retryStoredMediaPreview">{{mediaPreviewLoading ? '二维码加载中…' : '二维码加载失败，点击重试'}}</button>
+              <view class="group-qr-media">
+                <image wx:if="{{groupQrPreviewUrl}}" class="group-qr-preview" src="{{groupQrPreviewUrl}}" mode="aspectFit" data-file-id="{{groupQrCode}}" bindload="storedMediaPreviewLoad" binderror="storedMediaPreviewError" />
+                <button wx:else class="stored-media-placeholder group-qr-preview" data-file-id="{{groupQrCode}}" bindtap="retryStoredMediaPreview">{{mediaPreviewLoading ? '二维码加载中…' : '二维码加载失败，点击重试'}}</button>
+              </view>
               <view wx:if="{{groupQrCodeExpired}}" class="notice notice--warn group-qr-warning">
                 <view class="notice-dot" aria-hidden="true"></view>
                 <text>二维码可能已过期，请替换为最新图片。</text>
@@ -263,7 +265,9 @@
               <button class="image-action image-action--danger" bindtap="removeGroupQrCode">删除二维码</button>
             </view>
             <view wx:elif="{{pendingGroupQrCode}}" class="group-qr-card group-qr-card--pending">
-              <image class="group-qr-preview" src="{{pendingGroupQrCode.previewPath}}" mode="aspectFit" />
+              <view class="group-qr-media">
+                <image class="group-qr-preview" src="{{pendingGroupQrCode.previewPath}}" mode="aspectFit" />
+              </view>
               <view class="upload-status upload-status--{{pendingGroupQrCode.status}}">{{pendingGroupQrCode.status === 'uploading' ? '上传中…' : '上传失败'}}</view>
               <button wx:if="{{pendingGroupQrCode.status === 'failed'}}" class="image-action" bindtap="chooseGroupQrCode">重新选择</button>
               <button wx:if="{{pendingGroupQrCode.status === 'failed'}}" class="image-action image-action--danger" bindtap="removeGroupQrCode">删除</button>

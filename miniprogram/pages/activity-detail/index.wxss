@@ -218,7 +218,6 @@
   line-height: 34rpx;
 }
 
-/* --- content & section ---------------------------------------------------- */
 .content {
   display: flex;
   flex-direction: column;
@@ -264,7 +263,6 @@
   line-height: 44rpx;
 }
 
-/* --- paper 卡 ------------------------------------------------------------- */
 .paper {
   display: flex;
   flex-direction: column;
@@ -351,15 +349,16 @@
   font-size: 24rpx;
   line-height: 36rpx;
   letter-spacing: 1rpx;
+  white-space: nowrap;
 }
 .detailrow-desc {
   color: var(--color-text);
   font-size: 26rpx;
   line-height: 36rpx;
-  word-break: break-all;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 
-/* --- btn ------------------------------------------------------------------ */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -466,10 +465,15 @@
   font-size: 36rpx;
 }
 .rider-name {
+  width: 100%;
+  overflow: hidden;
   margin-top: 8rpx;
   font-size: 26rpx;
   line-height: 36rpx;
   font-weight: 800;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .rider-meta {
   color: var(--color-muted);
@@ -600,25 +604,31 @@
   color: var(--color-muted);
 }
 
-/* --- 活动群 -------------------------------------------------------------- */
 .group-paper {
   align-items: stretch;
+}
+.group-qr-frame {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 520rpx;
+  margin: 4rpx auto 0;
+  padding: 24rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: 24rpx;
+  background: var(--color-raised);
 }
 .group-qr-image {
   display: block;
   width: 100%;
-  max-width: 480rpx;
-  margin: 0 auto;
   aspect-ratio: 1 / 1;
   border-radius: 12rpx;
-  background: var(--color-raised);
+  background: var(--color-surface);
 }
 .group-qr-hint {
   text-align: center;
   font-size: 22rpx;
 }
 
-/* --- decision ------------------------------------------------------------ */
 .decision {
   margin-top: 48rpx;
   padding: 32rpx;

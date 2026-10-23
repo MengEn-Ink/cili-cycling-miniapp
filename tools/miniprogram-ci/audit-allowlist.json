@@ -9,7 +9,6 @@
     "真实加载 miniprogram-ci 并锁定上传入口兼容性"
   ],
   "advisories": {
-    "GHSA-vfj7-8cjw-p6xm": "braces 深层模式拒绝服务；上传参数与 glob 来自受控仓库，且作业有超时。",
     "GHSA-pfq8-rq6v-vf5m": "html-minifier 正则拒绝服务；只处理受保护提交中的小程序源码，且作业有超时。",
     "GHSA-35jh-r3h4-6jhm": "lodash.template 模板注入；上传流程不接受用户提供的模板。",
     "GHSA-p8p7-x288-28g6": "request 中等级别请求问题；目标地址由微信 SDK 固定，不接受用户 URL。",

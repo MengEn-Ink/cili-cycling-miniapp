@@ -11,7 +11,6 @@
   color: var(--color-text);
 }
 
-/* --- pageheading --------------------------------------------------------- */
 .pageheading {
   padding: 40rpx var(--page-gutter) 32rpx;
 }
@@ -88,7 +87,7 @@
 .person-avatar {
   width: 128rpx;
   height: 128rpx;
-  border-radius: 24rpx;
+  border-radius: 50%;
   overflow: hidden;
   background: var(--color-raised);
   display: inline-flex;
@@ -108,11 +107,14 @@
   min-width: 0;
 }
 .person-title {
+  overflow: hidden;
   font-family: var(--font-family-editorial);
   font-size: 40rpx;
   line-height: 56rpx;
   font-weight: 900;
   color: var(--color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .person-sub {
   margin-top: 4rpx;
@@ -120,7 +122,6 @@
   font-size: 26rpx;
 }
 
-/* --- section + chapterhead --------------------------------------------- */
 .section {
   display: flex;
   flex-direction: column;
@@ -178,6 +179,7 @@
   min-width: 180rpx;
   color: var(--color-muted);
   font-size: 24rpx;
+  white-space: nowrap;
 }
 .detailrow .dd {
   flex: 1;
@@ -187,14 +189,20 @@
   line-height: 40rpx;
   font-weight: 800;
   text-align: right;
-  word-break: break-all;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+.detailrow .dd--nowrap {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow-wrap: normal;
 }
 .mono {
   font-family: var(--font-family-mono);
   letter-spacing: 1rpx;
 }
 
-/* --- tag ---------------------------------------------------------------- */
 .tag {
   display: inline-flex;
   align-items: center;
@@ -205,6 +213,7 @@
   color: var(--color-on-action);
   font-size: 22rpx;
   letter-spacing: 1rpx;
+  white-space: nowrap;
 }
 .tag--waiting,
 .tag--pending {

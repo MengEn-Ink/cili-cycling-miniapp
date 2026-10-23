@@ -62,34 +62,34 @@ describe('设置页', () => {
     await import('../miniprogram/pages/settings/index');
   });
 
-  it('当前版本为 2026.10.22.4 且 latest 唯一，上一版转为历史项', () => {
-    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.22.4');
-    expect(page.data.releaseNotes).toHaveLength(28);
+  it('当前版本为 2026.10.23.1 且 latest 唯一，上一版转为历史项', () => {
+    expect(CLIENT_RELEASE_VERSION).toBe('2026.10.23.1');
+    expect(page.data.releaseNotes).toHaveLength(29);
     expect(page.data.currentRelease).toBe(page.data.releaseNotes[0]);
     expect(page.data.currentRelease).toMatchObject({
-      version: '2026.10.22.4',
+      version: '2026.10.23.1',
       date: '2026-10-23',
-      title: '骑行影像志运行态视觉对齐',
+      title: '头像、状态文字与群二维码显示更清晰',
       latest: true,
     });
     expect(page.data.releaseNotes[1]).toMatchObject({
+      version: '2026.10.22.4',
+      title: '骑行影像志运行态视觉对齐',
+      latest: false,
+    });
+    expect(page.data.releaseNotes[2]).toMatchObject({
       version: '2026.10.22.3',
       title: '影像志排版与设计稿逐页对齐',
       latest: false,
     });
-    expect(page.data.releaseNotes[2]).toMatchObject({
+    expect(page.data.releaseNotes[3]).toMatchObject({
       version: '2026.10.22.2',
       title: '骑行影像志，头像和背景合为我的名片',
       latest: false,
     });
-    expect(page.data.releaseNotes[3]).toMatchObject({
+    expect(page.data.releaseNotes[4]).toMatchObject({
       version: '2026.10.21.7',
       title: '活动发现与报名反馈更清晰',
-      latest: false,
-    });
-    expect(page.data.releaseNotes[4]).toMatchObject({
-      version: '2026.10.21.6',
-      title: '活动路线与骑友资料加载更轻快',
       latest: false,
     });
     expect(page.data.releaseNotes.filter((note: { latest: boolean }) => note.latest)).toHaveLength(

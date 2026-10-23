@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
-  "syncedThrough": "3d492c77b0feb9d1c79894754a8777fd19c3ce82",
-  "syncedAt": "2026-10-23T10:53:35.425Z",
+  "syncedThrough": "5653737833919cf1891e23e5824ccc4e6ee3484f",
+  "syncedAt": "2026-10-23T14:37:43.289Z",
   "policy": {
     "maxUnsyncedUiCommits": 4,
     "maxAgeDays": 7
   },
   "source": {
-    "digest": "sha256:5fc9f6ac10cfd8fff76e2098067e3bf7e0344ba95132f4d3c0238a22b26efc9b"
+    "digest": "sha256:4b5c9f9410f59e10303b3dc402d38fbb3c78bf774a7d562673803f56a196ff0e"
   },
   "prototype": {
     "digest": "sha256:89461e3d7e10123a6b78cce68bb929d4a43000574aa29c30e83fe220e50d4688"
@@ -156,7 +156,7 @@
         "id": "settings",
         "devtools": "settings-devtools.png",
         "pages": "settings-pages.png",
-        "state": "管理员 · 客户端 2026.10.22.4",
+        "state": "管理员 · 客户端 2026.10.23.1",
         "data": "sanitized-runtime",
         "review": "differences",
         "note": "新采集：DevTools 真实管理员只读状态与 Pages 合成默认状态；人物、个人资料、编号及模拟器边缘按脱敏记录遮挡，数据、媒体与系统导航存在差异。仅证明当前内容摘要的视觉同步；公开骑友媒体、普通成员写链路及双物理设备仍 BLOCKED。"

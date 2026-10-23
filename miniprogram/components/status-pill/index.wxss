@@ -12,11 +12,11 @@
   font-size: 24rpx;
   font-weight: 800;
   line-height: 32rpx;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
   text-align: center;
   vertical-align: middle;
-  white-space: normal;
-  word-break: break-word;
+  white-space: nowrap;
 }
 .pill-icon,
 .pill-label {

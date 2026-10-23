@@ -1,12 +1,12 @@
 {
-  "base": "http://127.0.0.1:65327",
+  "base": "http://127.0.0.1:50183",
   "pages": 16,
   "widths": [
     340,
     375,
     430
   ],
-  "generatedAt": "2026-10-23T10:25:48.011Z",
+  "generatedAt": "2026-10-23T14:37:58.652Z",
   "results": [
     {
       "slug": "activities",
