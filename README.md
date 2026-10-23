@@ -191,6 +191,7 @@ bootstrap 当前管理 12 个集合、33 个业务索引和全拒绝客户端数
 ## 文档导航
 
 - [GitHub 仓库治理与发布自动化](docs/github-governance.md)：Ruleset、安全扫描、依赖更新、Issue、Release 和部署环境的职责边界。
+- [微信官方参考项目借鉴与优先落地方案](docs/official-miniprogram-reference-adoption.md)：固定 CloudBase 案例、TDesign 与微信官方 Demo 基线，按 P0/P1 映射可借鉴内容、明确缺口和验收门禁。
 - [沙箱环境、测试、部署与代码交付配置指南](docs/sandbox-environment-configuration.md)：统一说明所需 Secret、环境变量、配置方式、测试门禁和部署验收。
 - [产品需求与当前能力](docs/requirements-design.md)：用户、流程、已实现范围和后续边界。
 - [产品待办澄清与历史方案（2026-10-13）](docs/product-backlog-clarification-2026-10-13.md)：通知、发起人权限、活动模板、凭证与图片语义，以及已被后续单一明亮主题方案取代的历史讨论。
