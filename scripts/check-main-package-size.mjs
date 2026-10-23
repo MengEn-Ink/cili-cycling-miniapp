@@ -24,6 +24,7 @@ export function mainPackageFiles(root = process.cwd()) {
   // 避免新增静态资源或其他扩展名时门禁低估真实主包体积。
   return walk(miniprogramRoot)
     .filter((file) => !subpackageRoots.some((subpackageRoot) => file.startsWith(subpackageRoot)))
+    .filter((file) => path.basename(file) !== '.DS_Store')
     .sort()
     .map((file) => path.relative(root, file).split(path.sep).join('/'));
 }

@@ -365,7 +365,7 @@
   padding: 24rpx;
   border-bottom: 2rpx solid var(--color-border);
 }
-.storyfacts strong {
+.storyfacts > .em {
   display: flex;
   flex-direction: column;
   gap: 4rpx;
@@ -374,7 +374,7 @@
   line-height: 40rpx;
   font-weight: 900;
 }
-.storyfacts strong text {
+.storyfacts > .em > text {
   color: var(--color-muted);
   font-size: 22rpx;
   line-height: 32rpx;

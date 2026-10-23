@@ -23,14 +23,14 @@
   </view>
 
   <block wx:else>
-    <header class="pageheading editor-hero">
+    <view class="pageheading editor-hero">
       <view class="eyebrow">此里 · 编辑这次骑行</view>
       <view class="pageheading-title editorial">
         <text class="pageheading-line">出发之前，</text>
         <text class="pageheading-line">把细节讲清楚。</text>
       </view>
       <view class="pageheading-sub">{{id ? '编辑中 · 保存草稿后可继续完善' : '创建新活动 · 填写信息并保存草稿'}}</view>
-    </header>
+    </view>
 
     <view class="content tight">
       <view wx:if="{{error}}" class="notice notice--warn" role="alert">
@@ -39,7 +39,7 @@
       </view>
 
       <form data-submit="save">
-        <section class="section form-card card">
+        <view class="section form-card card">
           <view class="chapterhead">
             <view class="chapterhead-title">影像与标题</view>
             <view class="chapterhead-aside">活动封面 {{images.length + pendingImages.length}} / 3</view>
@@ -47,7 +47,7 @@
 
           <view class="upload cover-upload">
             <view class="upload-copy">
-              <strong class="upload-title">活动封面 · 最多 3 张</strong>
+              <text class="upload-title">活动封面 · 最多 3 张</text>
               <view class="upload-sub small muted" id="cover-help">最多 3 张，第一张作为封面；优先横向照片。</view>
             </view>
             <view class="image-grid">
@@ -80,9 +80,9 @@
             <input class="input" value="{{form.title}}" maxlength="100" placeholder-class="input-placeholder" placeholder="请输入活动标题" bindinput="field" data-name="title" />
             <view wx:if="{{formErrors.title}}" class="field-error">{{formErrors.title}}</view>
           </view>
-        </section>
+        </view>
 
-        <section class="section form-card card">
+        <view class="section form-card card">
           <view class="chapterhead">
             <view class="chapterhead-title">何时，在哪里</view>
             <view class="chapterhead-aside">集合安排</view>
@@ -112,9 +112,9 @@
             </view>
             <view wx:if="{{formErrors.routeStart}}" class="field-error">{{formErrors.routeStart}}</view>
           </view>
-        </section>
+        </view>
 
-        <section class="section form-card card">
+        <view class="section form-card card">
           <view class="chapterhead">
             <view class="chapterhead-title">报名方式</view>
             <view class="chapterhead-aside">报名模式</view>
@@ -139,9 +139,9 @@
             <view class="detailrow"><text class="dt">活动容量</text><text class="dd">沿用活动已保存配置</text></view>
           </view>
           <view class="small muted">报名截止自动设为活动开始日当地 00:00，无需单独填写。容量沿用活动已保存配置，本页不修改。</view>
-        </section>
+        </view>
 
-        <section class="section form-card card">
+        <view class="section form-card card">
           <view class="chapterhead">
             <view class="chapterhead-title">路线与说明</view>
             <view class="chapterhead-aside">Strava + GPX 兜底</view>
@@ -172,10 +172,10 @@
               <view class="chapterhead-aside">公开线路已解析</view>
             </view>
             <view class="metrics">
-              <view class="metric"><strong>{{publicRoutePreview.distanceKm}}<text class="unit">km</text></strong><span>里程</span></view>
-              <view class="metric"><strong>{{publicRoutePreview.elevationM}}<text class="unit">m</text></strong><span>爬升</span></view>
-              <view class="metric"><strong>{{publicRoutePreview.elevationLossM}}<text class="unit">m</text></strong><span>下降</span></view>
-              <view class="metric"><strong>{{publicRoutePreview.elevationMinM}}–{{publicRoutePreview.elevationMaxM}}<text class="unit">m</text></strong><span>海拔</span></view>
+              <view class="metric"><text class="em">{{publicRoutePreview.distanceKm}}<text class="unit">km</text></text><text class="meta">里程</text></view>
+              <view class="metric"><text class="em">{{publicRoutePreview.elevationM}}<text class="unit">m</text></text><text class="meta">爬升</text></view>
+              <view class="metric"><text class="em">{{publicRoutePreview.elevationLossM}}<text class="unit">m</text></text><text class="meta">下降</text></view>
+              <view class="metric"><text class="em">{{publicRoutePreview.elevationMinM}}–{{publicRoutePreview.elevationMaxM}}<text class="unit">m</text></text><text class="meta">海拔</text></view>
             </view>
             <view class="small muted">此里估算 {{routeTimeLabel}}。实际里程/爬升/时长以导入后的路线预览为准。</view>
             <canvas id="route-outline-canvas" type="2d" class="route-outline-canvas" aria-label="{{publicRoutePreview.routeName}}线路轮廓"></canvas>
@@ -188,10 +188,10 @@
               <view class="chapterhead-aside">线路详情已准备好</view>
             </view>
             <view class="metrics">
-              <view class="metric"><strong>{{routePreview.distanceKm}}<text class="unit">km</text></strong><span>里程</span></view>
-              <view class="metric"><strong>{{routePreview.elevationM}}<text class="unit">m</text></strong><span>爬升</span></view>
-              <view class="metric"><strong>{{routePreview.elevationLossM}}<text class="unit">m</text></strong><span>下降</span></view>
-              <view class="metric"><strong>{{routePreview.elevationMinM}}–{{routePreview.elevationMaxM}}<text class="unit">m</text></strong><span>海拔</span></view>
+              <view class="metric"><text class="em">{{routePreview.distanceKm}}<text class="unit">km</text></text><text class="meta">里程</text></view>
+              <view class="metric"><text class="em">{{routePreview.elevationM}}<text class="unit">m</text></text><text class="meta">爬升</text></view>
+              <view class="metric"><text class="em">{{routePreview.elevationLossM}}<text class="unit">m</text></text><text class="meta">下降</text></view>
+              <view class="metric"><text class="em">{{routePreview.elevationMinM}}–{{routePreview.elevationMaxM}}<text class="unit">m</text></text><text class="meta">海拔</text></view>
             </view>
             <view class="small muted">此里估算 {{routeTimeLabel}}</view>
             <canvas id="route-outline-canvas" type="2d" class="route-outline-canvas" aria-label="{{routePreview.routeName}}线路轮廓"></canvas>
@@ -242,9 +242,9 @@
               <text class="field-count small muted">{{form.description.length}} / 5000</text>
             </view>
           </view>
-        </section>
+        </view>
 
-        <section class="section form-card card">
+        <view class="section form-card card">
           <view class="chapterhead">
             <view class="chapterhead-title">活动群</view>
             <view class="chapterhead-aside">选填 · 最多 1 张</view>
@@ -270,7 +270,7 @@
             </view>
             <button wx:else class="btn secondary upload-tile--wide" loading="{{uploading}}" bindtap="chooseGroupQrCode">上传活动群二维码</button>
           </view>
-        </section>
+        </view>
 
         <view class="small muted" id="publish-help" wx:if="{{!routePreview && !publicRoutePreview}}">当前路线尚未绑定，暂不能发布；可先保存草稿，继续完善信息。</view>
 

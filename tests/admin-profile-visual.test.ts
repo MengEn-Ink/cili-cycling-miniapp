@@ -14,9 +14,9 @@ describe('管理端与个人资料视觉契约', () => {
     expect(template).toContain('{{item.registrationMetric}}');
     expect(template).toContain('{{item.pendingMetric}}');
     expect(template).toContain('{{item.approvedMetric}}');
-    expect(template).toContain('<span>报名</span>');
-    expect(template).toContain('<span>待审核</span>');
-    expect(template).toContain('<span>已通过</span>');
+    expect(template).toContain('<text class="meta">报名</text>');
+    expect(template).toContain('<text class="meta">待审核</text>');
+    expect(template).toContain('<text class="meta">已通过</text>');
     expect(source).toContain('displayDate: formatActivityDateTime(item.startAt || item.date)');
     expect(template).toContain("{{item.displayDate || '活动时间待公布'}}");
     expect(template).not.toContain('{{item.displayDate || item.startAt}}');

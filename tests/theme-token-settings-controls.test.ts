@@ -24,7 +24,8 @@ describe('设置页 · 骑行影像志设计稿样式契约（settings.html 1:1�
 
     const headingTitle = effectiveBlock(settings, '.pageheading-title');
     expect(declaration(headingTitle, 'font-family')).toContain('--font-family-editorial');
-    expect(declaration(headingTitle, 'line-height')).toBe('88rpx');
+    expect(declaration(headingTitle, 'font-size')).toBe('64rpx');
+    expect(declaration(headingTitle, 'line-height')).toBe('80rpx');
 
     const sub = effectiveBlock(settings, '.pageheading-sub');
     expectSemantic(declaration(sub, 'color'), '--color-muted');
@@ -34,22 +35,21 @@ describe('设置页 · 骑行影像志设计稿样式契约（settings.html 1:1�
     expect(tokens['--font-mono']).toBe('var(--font-family-mono)');
     expect(tokens['--font-family-mono']).toContain('ui-monospace');
     expect(tokens['--font-family-mono']).toContain('monospace');
-    for (const token of ['--color-border-subtle', '--font-mono']) {
-      expect(settings).toContain(`var(${token})`);
-    }
+    expect(settings).toContain('var(--font-mono)');
   });
 
-  it('每个 section 的 chapterhead（标题 + 细横线）与 row.rowlink.rowbutton 保持完整触控区', () => {
+  it('每个 section 使用无横线章节标题，入口改为 60px 分隔行并保持完整触控区', () => {
     const chapterTitle = effectiveBlock(settings, '.chapterhead-title');
     expect(declaration(chapterTitle, 'font-family')).toContain('--font-family-editorial');
     const chapterRule = effectiveBlock(settings, '.chapterhead-rule');
-    expectSemantic(declaration(chapterRule, 'background'), '--color-border');
+    expect(declaration(chapterRule, 'display')).toBe('none');
 
     const row = effectiveBlock(settings, '.row.rowlink.rowbutton');
-    expect(declaration(row, 'min-height')).toBe('128rpx');
-    expectSemantic(declaration(row, 'background'), '--color-surface');
+    expect(declaration(row, 'min-height')).toBe('120rpx');
+    expect(declaration(row, 'background')).toBe('transparent');
     expectSemantic(declaration(row, 'color'), '--color-text');
-    expect(declaration(row, 'border')).toContain('var(--color-border)');
+    expect(declaration(row, 'border')).toBe('0');
+    expect(declaration(row, 'border-bottom')).toContain('var(--color-border)');
 
     expectSemantic(declaration(effectiveBlock(settings, '.rowtext-sub'), 'color'), '--color-muted');
     // 行内行动色不应该直接漆到次级操作，避免整页行动红饱和
@@ -60,12 +60,13 @@ describe('设置页 · 骑行影像志设计稿样式契约（settings.html 1:1�
 
   it('应用 section 的 detailrows 承载当前版本与本次更新，使用两列紧凑排版', () => {
     const detailrows = effectiveBlock(settings, '.detailrows');
-    expectSemantic(declaration(detailrows, 'background'), '--color-surface');
-    expect(declaration(detailrows, 'border')).toContain('var(--color-border)');
+    expect(declaration(detailrows, 'background')).toBe('transparent');
+    expect(declaration(detailrows, 'border')).toBe('0');
 
     const detailrow = effectiveBlock(settings, '.detailrow');
     expect(declaration(detailrow, 'display')).toBe('grid');
     expect(declaration(detailrow, 'grid-template-columns')).toContain('minmax');
+    expect(declaration(detailrow, 'border-bottom')).toContain('var(--color-border)');
 
     expectSemantic(
       declaration(effectiveBlock(settings, '.detailrow-term'), 'color'),

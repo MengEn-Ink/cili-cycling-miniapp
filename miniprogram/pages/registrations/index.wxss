@@ -373,13 +373,13 @@
   background: var(--color-text);
   content: '';
 }
-.row.ticket-row strong {
+.row.ticket-row .em {
   display: block;
   font-size: 28rpx;
   font-weight: 800;
   color: var(--color-text);
 }
-.row.ticket-row small {
+.row.ticket-row .sub {
   display: block;
   margin-top: 4rpx;
   color: var(--color-muted);

@@ -1,5 +1,5 @@
 const FALLBACK_STATUS_BAR_HEIGHT_PX = 24;
-const BRAND_ROW_OFFSET_PX = 16;
+const CUSTOM_NAVIGATION_ROW_HEIGHT_PX = 44;
 
 export function customNavigationTopPx(): number {
   const platform = typeof wx === 'undefined' ? undefined : wx;
@@ -10,5 +10,5 @@ export function customNavigationTopPx(): number {
     Number.isFinite(statusBarHeight) && statusBarHeight > 0
       ? statusBarHeight
       : FALLBACK_STATUS_BAR_HEIGHT_PX;
-  return safeStatusBarHeight + BRAND_ROW_OFFSET_PX;
+  return safeStatusBarHeight + CUSTOM_NAVIGATION_ROW_HEIGHT_PX;
 }

@@ -65,6 +65,8 @@ const STRICT_SLUGS = new Set<string>([...Array.from(PHASE_1_SLUGS), ...Array.fro
 
 const read = (path: string) => readFileSync(path, 'utf8');
 
+const unsupportedHtmlTag = /<\/?(?:article|b|dl|header|section|small|span|strong)(?:\s|>)/;
+
 const loadContracts = (): PageContract[] => {
   const files = (readdirSync(CONTRACTS_DIR) as string[]).filter(
     (name: string) => name.endsWith('.json') && name !== 'README.md',
@@ -212,6 +214,10 @@ describe('骑行影像志 · 16 页 DOM/交互契约', () => {
         expect(wxml.length).toBeGreaterThan(0);
         expect(read(contract.wxss).length).toBeGreaterThan(0);
         expect(read(contract.ts).length).toBeGreaterThan(0);
+      });
+
+      it('WXML 只使用微信原生节点或已注册组件，不混入 HTML 语义标签', () => {
+        expect(wxml).not.toMatch(unsupportedHtmlTag);
       });
     },
   );

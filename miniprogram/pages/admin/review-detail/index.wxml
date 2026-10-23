@@ -22,7 +22,7 @@
   </view>
 
   <block wx:if="{{x && card}}">
-    <header class="pageheading">
+    <view class="pageheading">
       <view class="pageheading-logo-row">
         <view class="eyebrow">此里 · 确认同行资料</view>
         <brand-logo compact="{{true}}" meta="审批详情" />
@@ -35,7 +35,7 @@
         <text wx:elif="{{x.status === 'pending'}}" class="mono info-kicker info-kicker--pending">通过后生成凭证编号</text>
         <text wx:else class="mono info-kicker info-kicker--pending">未生成凭证编号</text>
       </view>
-    </header>
+    </view>
 
     <view class="content tight">
       <view class="person">
@@ -49,7 +49,7 @@
         </view>
       </view>
 
-      <section class="section">
+      <view class="section">
         <view class="chapterhead">
           <view class="chapterhead-title">报名与联络资料</view>
           <view class="chapterhead-aside">管理员可见完整信息</view>
@@ -63,26 +63,26 @@
           <view class="detailrow"><text class="dt">手机号码</text><text class="dd mono">{{phone}}</text></view>
           <view class="detailrow"><text class="dt">验证来源</text><text class="dd">{{phoneSource}}</text></view>
         </view>
-      </section>
+      </view>
 
-      <section class="section">
+      <view class="section">
         <view class="chapterhead">
           <view class="chapterhead-title">骑行经验</view>
           <view class="chapterhead-aside">自评能力</view>
         </view>
         <view class="section-body"><text wx:if="{{card.experience}}">{{card.experience}}</text><text wx:else>未填写</text></view>
         <view class="section-note small muted">报名能力自评：新手 / 有经验 / 常骑。个人说明单独展示在备注中。</view>
-      </section>
+      </view>
 
-      <section class="section">
+      <view class="section">
         <view class="chapterhead">
           <view class="chapterhead-title">骑友备注</view>
           <view class="chapterhead-aside">本人填写</view>
         </view>
         <view class="section-body">{{card.remark || '无'}}</view>
-      </section>
+      </view>
 
-      <section class="section">
+      <view class="section">
         <view class="chapterhead">
           <view class="chapterhead-title">照片</view>
           <view class="chapterhead-aside">活动审核用</view>
@@ -95,14 +95,14 @@
           </view>
         </view>
         <view wx:else class="small muted">暂无照片</view>
-      </section>
+      </view>
 
       <view wx:if="{{error}}" class="notice notice--warn" role="alert">
         <view class="notice-dot" aria-hidden="true"></view>
         <text>{{error}}</text>
       </view>
 
-      <section wx:if="{{x.status === 'pending'}}" class="decision-panel section">
+      <view wx:if="{{x.status === 'pending'}}" class="decision-panel section">
         <view class="chapterhead">
           <view class="chapterhead-title">审核意见</view>
           <view class="chapterhead-aside">驳回时必填</view>
@@ -112,15 +112,15 @@
           <view wx:if="{{reasonError}}" class="field-error" role="alert">{{reasonError}}</view>
           <view wx:else class="small muted">审核通过时选填；驳回时必填，请说明需要补充或修改的内容。</view>
         </view>
-      </section>
+      </view>
 
-      <section class="section" wx:elif="{{x.status === 'approved'}}">
+      <view class="section" wx:elif="{{x.status === 'approved'}}">
         <view class="chapterhead">
           <view class="chapterhead-title">现场签到</view>
           <view class="chapterhead-aside">集合现场操作</view>
         </view>
         <view class="small muted">报名已通过。请在集合现场核对本人身份；再次确认后才会记录签到。</view>
-      </section>
+      </view>
 
       <view wx:elif="{{x.status === 'checked_in'}}" class="notice notice--success" role="status">
         <view class="notice-dot" aria-hidden="true"></view>

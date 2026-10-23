@@ -76,18 +76,18 @@
   gap: 6rpx;
   padding: 12rpx 0;
 }
-.metric strong {
+.metric .em {
   font-family: var(--font-family-editorial);
   font-size: 44rpx;
   font-weight: 900;
   color: var(--color-text);
 }
-.metric span {
+.metric .meta {
   color: var(--color-muted);
   font-size: 22rpx;
   letter-spacing: 2rpx;
 }
-.metric--pending strong {
+.metric--pending .em {
   color: var(--color-status-warning, #c0321f);
 }
 
@@ -97,7 +97,7 @@
   border-color: var(--color-border);
   background: var(--color-bg);
 }
-.management-metrics.metrics--inline .metric strong {
+.management-metrics.metrics--inline .metric .em {
   font-size: 36rpx;
 }
 
@@ -297,13 +297,13 @@
   font-size: 22rpx;
   font-weight: 900;
 }
-.row.rowlink strong {
+.row.rowlink .em {
   display: block;
   color: var(--color-text);
   font-size: 28rpx;
   font-weight: 800;
 }
-.row.rowlink small {
+.row.rowlink .sub {
   display: block;
   margin-top: 2rpx;
   color: var(--color-muted);

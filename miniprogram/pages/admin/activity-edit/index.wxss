@@ -421,7 +421,7 @@ page {
   flex-direction: column;
   gap: 6rpx;
 }
-.metric strong {
+.metric .em {
   font-family: 'Noto Serif SC', 'Songti SC', serif;
   font-size: 44rpx;
   color: var(--color-ink, #1a1a1a);
@@ -434,7 +434,7 @@ page {
   color: var(--color-ink-muted, #5a5a52);
   font-family: inherit;
 }
-.metric span {
+.metric .meta {
   font-size: 22rpx;
   color: var(--color-ink-muted, #5a5a52);
   letter-spacing: 2rpx;

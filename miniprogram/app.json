@@ -58,7 +58,7 @@
     "backgroundColor": "#ffffff",
     "borderStyle": "white",
     "color": "#6f675d",
-    "selectedColor": "#211f1c",
+    "selectedColor": "#C0321F",
     "list": [
       {
         "pagePath": "pages/activities/index",

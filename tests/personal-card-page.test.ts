@@ -37,7 +37,7 @@ describe('本人名片合入我的页面', () => {
   it('昵称和媒体身份只使用实际字段，不把实名或电话放进摄影身份区', () => {
     const template = read('miniprogram/pages/profile/index.wxml');
     const identityStart = template.indexOf('<view class="profile-identity">');
-    const identityEnd = template.indexOf('</section>', identityStart);
+    const identityEnd = template.indexOf('<view class="content">', identityStart);
     expect(identityStart).toBeGreaterThan(-1);
     expect(identityEnd).toBeGreaterThan(identityStart);
     const hero = template.slice(identityStart, identityEnd);

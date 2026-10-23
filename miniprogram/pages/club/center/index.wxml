@@ -57,7 +57,7 @@
       <view class="tag" role="group" aria-label="我的身份">我的身份 · {{club.roleLabel}}</view>
 
       <!-- Section：俱乐部资料 -->
-      <section class="section section-detail" aria-label="俱乐部资料">
+      <view class="section section-detail" aria-label="俱乐部资料">
         <view class="chapterhead">
           <view class="chapterhead-title">我们为什么出发</view>
           <view class="chapterhead-rule" aria-hidden="true"></view>
@@ -77,10 +77,10 @@
             <view class="detailrow-desc">{{club.roleLabel}}</view>
           </view>
         </view>
-      </section>
+      </view>
 
       <!-- Section：近期活动 -->
-      <section class="section section-activity" aria-label="近期活动">
+      <view class="section section-activity" aria-label="近期活动">
         <view class="chapterhead">
           <view class="chapterhead-title">俱乐部近期活动</view>
           <button class="chapterhead-aside chapterhead-action" bindtap="openActivities" aria-label="查看全部活动">查看全部 →</button>
@@ -111,7 +111,7 @@
             </view>
           </view>
         </view>
-      </section>
+      </view>
 
       <!-- 管理员编辑入口 -->
       <button wx:if="{{club.canManage}}" class="btn btn--secondary club-manage-btn" bindtap="editClub" aria-label="编辑俱乐部资料">编辑俱乐部资料</button>

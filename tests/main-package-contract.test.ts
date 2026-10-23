@@ -72,6 +72,7 @@ describe('按需分包与主包字节契约', () => {
     expect(mainFiles.some((file: string) => file.startsWith('miniprogram/pages/club/'))).toBe(
       false,
     );
+    expect(mainFiles.some((file: string) => file.endsWith('/.DS_Store'))).toBe(false);
     expect(mainFiles).not.toContain('miniprogram/repositories/mock.ts');
     expect(mainFiles.some((file: string) => file.startsWith('miniprogram/mock/'))).toBe(false);
   });

@@ -70,7 +70,7 @@
   flex-direction: column;
   gap: 4rpx;
 }
-.metrics strong {
+.metrics .em {
   display: inline-flex;
   align-items: baseline;
   gap: 6rpx;
@@ -81,7 +81,7 @@
   font-weight: 900;
   letter-spacing: -1rpx;
 }
-.metrics strong .unit {
+.metrics .em .unit {
   color: var(--color-muted);
   font-family: var(--font-family-body);
   font-size: 24rpx;
@@ -655,7 +655,7 @@
     font-size: 56rpx;
     line-height: 72rpx;
   }
-  .metrics strong {
+  .metrics .em {
     font-size: 44rpx;
     line-height: 52rpx;
   }

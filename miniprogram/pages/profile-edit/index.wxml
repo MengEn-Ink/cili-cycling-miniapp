@@ -2,18 +2,18 @@
 <view class="page profile-edit-page">
   <state-view loading="{{loading}}" error="{{!p ? error : ''}}" loading-title="正在读取个人资料" loading-copy="正在加载已保存的个人资料">
   <block wx:if="{{p}}">
-    <header class="pageheading">
+    <view class="pageheading">
       <view class="eyebrow">此里 · 关于你</view>
       <view class="pageheading-title editorial">
         <text class="pageheading-line">让同行的人，</text>
         <text class="pageheading-line">认出你。</text>
       </view>
       <view class="pageheading-sub">先选头像，再完善报名与联络资料。</view>
-    </header>
+    </view>
 
     <view class="content tight">
       <!-- Section：头像与背景 -->
-      <section class="section section-media">
+      <view class="section section-media">
         <view class="chapterhead">
           <view class="chapterhead-title">头像与背景</view>
           <view class="chapterhead-rule" aria-hidden="true"></view>
@@ -49,11 +49,11 @@
             <view class="small muted upload-status" role="status" aria-live="polite" aria-atomic="true">{{photoBusy ? (mediaProgress || '正在处理背景图…') : (p.photos.length ? '当前背景已就绪' : '尚未设置背景图')}}</view>
           </view>
         </view>
-      </section>
+      </view>
 
       <!-- Fieldset：基础资料 + 紧急联系人（只在选择头像后展开，canEditDetails 作为门禁） -->
       <view class="profile-details" data-profile-details wx:if="{{canEditDetails}}">
-        <section class="section section-basic">
+        <view class="section section-basic">
           <view class="chapterhead">
             <view class="chapterhead-title">基础资料</view>
             <view class="chapterhead-rule" aria-hidden="true"></view>
@@ -80,9 +80,9 @@
             <input class="field-input" type="number" maxlength="20" value="{{p.phone}}" data-k="phone" bindinput="set" placeholder-class="field-placeholder" placeholder="请输入本人手机号" />
             <view class="field-help">用于活动联系与安全通知，可直接填写或更换。</view>
           </view>
-        </section>
+        </view>
 
-        <section class="section section-emergency">
+        <view class="section section-emergency">
           <view class="chapterhead">
             <view class="chapterhead-title">紧急联系人</view>
             <view class="chapterhead-rule" aria-hidden="true"></view>
@@ -96,7 +96,7 @@
             <view class="field-label">联系人电话</view>
             <input class="field-input" type="number" maxlength="21" value="{{p.emergencyPhone}}" data-k="emergencyPhone" bindinput="set" placeholder-class="field-placeholder" placeholder="请输入紧急联系人手机号" />
           </view>
-        </section>
+        </view>
       </view>
 
       <view wx:else class="notice notice--info" role="note">

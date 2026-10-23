@@ -1,5 +1,7 @@
 .profile-page {
   min-height: 100vh;
+  padding-left: 0;
+  padding-right: 0;
   background: var(--color-bg);
   color: var(--color-text);
   padding-bottom: calc(96rpx + env(safe-area-inset-bottom));
@@ -40,48 +42,48 @@
     180deg,
     rgba(12, 10, 7, 0.1) 0%,
     rgba(12, 10, 7, 0.05) 42%,
-    rgba(12, 10, 7, 0.72) 100%
+    rgba(12, 10, 7, 0.96) 100%
   );
 }
 .profile-label {
   position: absolute;
   top: 48rpx;
   left: 48rpx;
-  padding: 10rpx 20rpx;
-  border: 2rpx solid rgba(255, 255, 255, 0.7);
-  border-radius: 999rpx;
+  padding: 12rpx 20rpx;
+  border: 2rpx solid var(--color-border-strong);
+  border-radius: var(--radius-xs);
+  background: var(--color-media-card-bg);
   color: var(--color-on-media);
   font-family: var(--font-mono);
   font-size: 22rpx;
-  letter-spacing: 2rpx;
-  text-transform: uppercase;
+  letter-spacing: 0;
 }
 .profile-identity {
   position: absolute;
   left: 48rpx;
   right: 48rpx;
-  bottom: 48rpx;
+  bottom: 56rpx;
   display: flex;
   align-items: flex-end;
-  gap: 24rpx;
+  gap: 32rpx;
   color: var(--color-on-media);
 }
 .avatar-trigger {
   flex: none;
   display: inline-flex;
-  width: 144rpx;
-  height: 144rpx;
-  padding: 6rpx;
+  width: 152rpx;
+  height: 152rpx;
+  padding: 0;
   border: 4rpx solid rgba(255, 255, 255, 0.9);
   border-radius: 32rpx;
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.28);
+  background: transparent;
+  box-shadow: none;
   overflow: hidden;
 }
 .avatar-trigger .avatar {
   width: 100%;
   height: 100%;
-  border-radius: 24rpx;
+  border-radius: 28rpx;
   overflow: hidden;
 }
 .profile-identity-copy {
@@ -112,7 +114,7 @@
   font-family: var(--font-family-editorial);
   font-size: 72rpx;
   line-height: 80rpx;
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: -2rpx;
   color: var(--color-on-media);
 }
@@ -137,19 +139,21 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 32rpx;
-  padding: 40rpx 32rpx 0;
+  gap: 0;
+  padding: 48rpx var(--page-gutter) 0;
 }
 .profile-status {
   display: inline-flex;
   align-items: center;
-  gap: 14rpx;
-  padding: 16rpx 24rpx;
-  border: 2rpx solid var(--color-border);
-  border-radius: 999rpx;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: 26rpx;
+  gap: 16rpx;
+  min-height: 88rpx;
+  margin-bottom: 32rpx;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 24rpx;
   line-height: 36rpx;
   align-self: flex-start;
   max-width: 100%;
@@ -247,11 +251,15 @@
   flex-direction: column;
   gap: 20rpx;
 }
+.section-admin {
+  gap: 0;
+  margin-top: 64rpx;
+}
 .chapterhead {
   display: flex;
   align-items: center;
   gap: 20rpx;
-  margin-bottom: 4rpx;
+  margin-bottom: 32rpx;
 }
 .chapterhead-title {
   flex: none;
@@ -275,14 +283,15 @@
 .row.rowlink.rowbutton {
   display: flex;
   align-items: center;
-  gap: 20rpx;
+  gap: 24rpx;
   width: 100%;
-  min-height: 128rpx;
+  min-height: 120rpx;
   margin: 0;
-  padding: 24rpx;
-  border: 2rpx solid var(--color-border);
-  border-radius: 20rpx;
-  background: var(--color-surface);
+  padding: 24rpx 0;
+  border: 0;
+  border-bottom: 2rpx solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
   color: var(--color-text);
   text-align: left;
   transition: background var(--motion-duration-fast) var(--motion-easing-standard);
@@ -303,22 +312,22 @@
   flex: 1;
   min-width: 0;
   align-items: center;
-  gap: 20rpx;
+  gap: 24rpx;
 }
 .rowicon {
   flex: none;
   position: relative;
   display: inline-block;
-  width: 56rpx;
-  height: 56rpx;
-  border: 2rpx solid var(--color-text);
-  border-radius: 16rpx;
-  background: var(--color-bg);
+  width: 40rpx;
+  height: 40rpx;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   overflow: hidden;
 }
 .rowicon.rowicon--avatar {
   padding: 0;
-  background: var(--color-raised);
+  background: transparent;
 }
 .rowicon-image {
   width: 100%;
@@ -331,7 +340,7 @@
   align-items: center;
   justify-content: center;
   color: var(--color-text);
-  font-size: 24rpx;
+  font-size: 20rpx;
   font-weight: 900;
 }
 .rowtext {
@@ -362,12 +371,13 @@
   display: flex;
   align-items: flex-start;
   gap: 16rpx;
-  padding: 20rpx 24rpx;
-  border: 2rpx dashed var(--color-border);
-  border-radius: 16rpx;
-  background: var(--color-bg);
-  color: var(--color-muted);
-  font-size: 24rpx;
+  margin-top: 24rpx;
+  padding: 24rpx 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 28rpx;
   line-height: 36rpx;
 }
 .notice-dot {

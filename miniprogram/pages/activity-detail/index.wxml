@@ -32,17 +32,17 @@
       <!-- ink：指标 + 集合概要行 -->
       <view class="ink">
         <view class="metrics">
-          <view><strong>{{item.route.distanceKm > 0 ? item.route.distanceKm : '—'}}<text class="unit">km</text></strong><text>全程距离</text></view>
-          <view><strong>{{item.route.elevationM > 0 ? item.route.elevationM : '—'}}<text class="unit">m</text></strong><text>累计爬升</text></view>
-          <view><strong>{{estimatedRideTime || '—'}}<text class="unit"></text></strong><text>预计骑行</text></view>
-          <view wx:if="{{!item.registrationUnlimited}}"><strong>{{item.approvedRegistrationCount || 0}}<text class="unit">人</text></strong><text>已通过</text></view>
+          <view><text class="em">{{item.route.distanceKm > 0 ? item.route.distanceKm : '—'}}<text class="unit">km</text></text><text>全程距离</text></view>
+          <view><text class="em">{{item.route.elevationM > 0 ? item.route.elevationM : '—'}}<text class="unit">m</text></text><text>累计爬升</text></view>
+          <view><text class="em">{{estimatedRideTime || '—'}}<text class="unit"></text></text><text>预计骑行</text></view>
+          <view wx:if="{{!item.registrationUnlimited}}"><text class="em">{{item.approvedRegistrationCount || 0}}<text class="unit">人</text></text><text>已通过</text></view>
         </view>
         <view class="row ink-row">
           <view class="lead">
             <view class="rowicon rowicon--clock" aria-hidden="true"></view>
             <view class="rowtext">
-              <strong>{{startTime || '集合时间待公布'}}</strong>
-              <small>{{displayDate}} · {{item.route.start || '集合地点待公布'}}</small>
+              <text class="em">{{startTime || '集合时间待公布'}}</text>
+              <text class="sub">{{displayDate}} · {{item.route.start || '集合地点待公布'}}</text>
             </view>
           </view>
         </view>
@@ -50,47 +50,47 @@
 
       <view class="content">
         <!-- 这次一起骑：俱乐部与简介 -->
-        <section class="section section-intro">
+        <view class="section section-intro">
           <view class="chapterhead"><view class="chapterhead-title">这次一起骑</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
           <view class="section-prose" wx:if="{{item.description}}">{{item.description}}</view>
           <view class="row rowlink club-row" aria-label="活动归属：{{item.clubIdentity.name}}">
             <view class="lead">
               <image wx:if="{{item.clubIdentity.avatarUrl}}" class="club-avatar" src="{{item.clubIdentity.avatarUrl}}" mode="aspectFill" />
               <view wx:else class="club-avatar club-avatar--placeholder">此</view>
-              <view class="rowtext"><strong>{{item.clubIdentity.name}}</strong><small>活动组织俱乐部</small></view>
+              <view class="rowtext"><text class="em">{{item.clubIdentity.name}}</text><text class="sub">活动组织俱乐部</text></view>
             </view>
             <view class="chev" aria-hidden="true"></view>
           </view>
           <view class="route-difficulty" wx:if="{{routeDifficultyHint}}"><view class="route-difficulty__label">路线强度</view><view class="route-difficulty__text">{{routeDifficultyHint}}</view></view>
-        </section>
+        </view>
 
         <!-- 集合与出发 -->
-        <section class="section section-meeting">
+        <view class="section section-meeting">
           <view class="chapterhead"><view class="chapterhead-title">集合与出发</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
           <view class="paper">
-            <dl class="detailrows">
+            <view class="detailrows">
               <view class="detailrow"><text class="detailrow-term">集合时间</text><text class="detailrow-desc">{{startTime || '待公布'}}</text></view>
               <view class="detailrow"><text class="detailrow-term">集合地点</text><text class="detailrow-desc">{{item.route.start || '集合地点待公布'}}</text></view>
               <view class="detailrow" wx:if="{{item.route.startLocation && item.route.startLocation.address && item.route.startLocation.address !== item.route.start}}"><text class="detailrow-term">集合位置</text><text class="detailrow-desc">{{item.route.startLocation.address}}</text></view>
               <view class="detailrow" wx:if="{{endTime}}"><text class="detailrow-term">预计结束</text><text class="detailrow-desc">{{endTime}}</text></view>
               <view class="detailrow" wx:if="{{deadlineTime}}"><text class="detailrow-term">报名截止</text><text class="detailrow-desc">{{deadlineTime}}</text></view>
-            </dl>
+            </view>
             <button wx:if="{{item.route.startLocation}}" class="btn secondary meeting-cta" data-target="start" bindtap="navigate" aria-label="导航到集合地点">导航到集合点</button>
           </view>
-        </section>
+        </view>
 
         <!-- 山路有迹可循：路线入口 -->
-        <section class="section section-route" wx:if="{{canAnalyzeRoute || hasRouteDetails}}">
+        <view class="section section-route" wx:if="{{canAnalyzeRoute || hasRouteDetails}}">
           <view class="chapterhead"><view class="chapterhead-title">山路，有迹可循</view><view class="chapterhead-aside" wx:if="{{item.route.distanceKm > 0}}">{{item.route.distanceKm}} km / {{item.route.elevationM || 0}} m</view></view>
           <view class="paper route-paper" wx:if="{{hasRouteDetails}}">
             <view class="section-prose">{{hasGpxRoute ? '路线数据来自组织者上传的 GPX 文件。' : '路线数据来自免授权公开路线解析。'}}</view>
-            <dl class="detailrows">
+            <view class="detailrows">
               <view class="detailrow"><text class="detailrow-term">距离</text><text class="detailrow-desc">{{item.route.distanceKm}} km</text></view>
               <view class="detailrow"><text class="detailrow-term">爬升</text><text class="detailrow-desc">{{item.route.elevationM}} m</text></view>
               <view class="detailrow"><text class="detailrow-term">下降</text><text class="detailrow-desc">{{item.route.elevationLossM}} m</text></view>
               <view class="detailrow"><text class="detailrow-term">海拔范围</text><text class="detailrow-desc">{{item.route.elevationMinM}}–{{item.route.elevationMaxM}} m</text></view>
               <view class="detailrow" wx:if="{{estimatedRideTime}}"><text class="detailrow-term">此里估算</text><text class="detailrow-desc">{{estimatedRideTime}}</text></view>
-            </dl>
+            </view>
             <view class="route-actions">
               <button wx:if="{{hasGpxRoute}}" class="btn secondary" loading="{{downloadingGpx}}" disabled="{{downloadingGpx}}" bindtap="downloadGpx" aria-label="下载 GPX 路线">{{downloadingGpx ? '下载中…' : '下载 GPX 路线'}}</button>
               <button wx:if="{{officialRouteId}}" class="btn secondary" bindtap="copyOfficialRoute" aria-label="复制 Strava 官方路线链接">复制 Strava 官方链接</button>
@@ -99,10 +99,10 @@
             <view wx:elif="{{copyFeedback === 'error'}}" class="notice notice--warning" role="alert">! 复制失败，请稍后重试</view>
           </view>
           <button wx:if="{{canAnalyzeRoute}}" class="btn secondary route-analysis-cta" bindtap="openRouteAnalysis" aria-label="查看完整路线分析">查看完整路线分析 →</button>
-        </section>
+        </view>
 
         <!-- 一起出发的骑友 -->
-        <section class="section section-attendees" wx:if="{{attendeesVisible}}">
+        <view class="section section-attendees" wx:if="{{attendeesVisible}}">
           <view class="chapterhead"><view class="chapterhead-title">一起出发的骑友</view><view class="chapterhead-aside">昵称与已同意的头像</view></view>
           <scroll-view class="riderlist" scroll-x enhanced show-scrollbar="{{false}}" wx:if="{{attendees.length}}" aria-label="已报名人员头像与昵称">
             <view class="riderlist-inner">
@@ -119,10 +119,10 @@
             <view class="notice-dot" aria-hidden="true"></view>
             <text>正在等待首位骑友报名</text>
           </view>
-        </section>
+        </view>
 
         <!-- 行前约定 -->
-        <section class="section section-notes" wx:if="{{(item.equipment && item.equipment.length) || (item.notices && item.notices.length)}}">
+        <view class="section section-notes" wx:if="{{(item.equipment && item.equipment.length) || (item.notices && item.notices.length)}}">
           <view class="chapterhead"><view class="chapterhead-title">行前约定</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
           <view class="paper notes-paper">
             <view class="chip-list" wx:if="{{item.equipment && item.equipment.length}}">
@@ -134,18 +134,18 @@
               <view class="notice-chip" wx:for="{{item.notices}}" wx:key="*this"><text class="notice-mark">/</text><text>{{item}}</text></view>
             </view>
           </view>
-        </section>
+        </view>
 
         <!-- 时间安排 -->
-        <section class="section section-schedule" wx:if="{{item.schedule && item.schedule.length}}">
+        <view class="section section-schedule" wx:if="{{item.schedule && item.schedule.length}}">
           <view class="chapterhead"><view class="chapterhead-title">时间安排</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
           <view class="schedule-list">
             <view wx:for="{{item.schedule}}" wx:key="time" class="schedule-item"><view class="schedule-time">{{item.time}}</view><view class="schedule-track"><view class="schedule-dot"></view></view><view class="schedule-copy"><view>{{item.title}}</view><view class="muted" wx:if="{{item.location}}">{{item.location}}</view></view></view>
           </view>
-        </section>
+        </view>
 
         <!-- 终点导航 -->
-        <section class="section section-end" wx:if="{{!item.registrationUnlimited && item.route.end}}">
+        <view class="section section-end" wx:if="{{!item.registrationUnlimited && item.route.end}}">
           <view class="chapterhead"><view class="chapterhead-title">终点导航</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
           <view class="paper">
             <view class="detailrows">
@@ -154,10 +154,10 @@
             </view>
             <button wx:if="{{item.route.endLocation}}" class="btn secondary meeting-cta" data-target="end" bindtap="navigate">地图导航到终点</button>
           </view>
-        </section>
+        </view>
 
         <!-- 费用说明 -->
-        <section class="section section-fee" wx:if="{{!item.registrationUnlimited && (item.fee || (item.feeIncluded && item.feeIncluded.length) || (item.feeExcluded && item.feeExcluded.length))}}">
+        <view class="section section-fee" wx:if="{{!item.registrationUnlimited && (item.fee || (item.feeIncluded && item.feeIncluded.length) || (item.feeExcluded && item.feeExcluded.length))}}">
           <view class="chapterhead"><view class="chapterhead-title">费用说明</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
           <view class="paper">
             <view class="section-prose" wx:if="{{item.fee}}">{{item.fee}}</view>
@@ -170,10 +170,10 @@
               <view class="fee-item" wx:for="{{item.feeExcluded}}" wx:for-item="fee" wx:key="*this"><text class="fee-mark fee-excluded">−</text><text>{{fee}}</text></view>
             </view>
           </view>
-        </section>
+        </view>
 
         <!-- 活动群 -->
-        <section class="section section-group">
+        <view class="section section-group">
           <view class="chapterhead"><view class="chapterhead-title">活动群</view><view class="chapterhead-rule" aria-hidden="true"></view></view>
           <block wx:if="{{groupQrVisible && item.groupQrCode}}">
             <view class="paper group-paper">
@@ -187,7 +187,7 @@
             <view class="notice-dot" aria-hidden="true"></view>
             <text>{{groupQrLockedMessage || '组织者暂未上传群二维码，请留意活动说明。'}}</text>
           </view>
-        </section>
+        </view>
       </view>
 
       <!-- decision：报名状态 + 主 CTA 说明 -->

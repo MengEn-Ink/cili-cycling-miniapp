@@ -1,9 +1,10 @@
 <view class="page profile-page" style="padding-top: {{navigationTopPx}}px">
+<view class="custom-nav-title" style="top: {{navigationTopPx - 44}}px">我的</view>
 <view class="a11y-live-region" role="status" aria-live="polite" aria-atomic="true">{{loading ? '正在同步个人资料' : (refreshing ? '正在刷新个人资料' : (!error ? '个人资料已就绪' : ''))}}</view>
 <view class="a11y-live-region" role="alert" aria-live="assertive" aria-atomic="true">{{error}}</view>
 <view class="refresh-note" wx:if="{{profile && refreshing}}" aria-hidden="true">正在刷新资料…</view>
 <view class="refresh-note refresh-error" wx:if="{{profile && !refreshing && refreshFailed && refreshMessage}}" role="status" aria-live="polite">{{refreshMessage}}</view>
-<section class="profile-hero">
+<view class="profile-hero">
 <swiper wx:if="{{heroBackgrounds.length}}" class="profile-background profile-background-swiper" circular="{{heroBackgrounds.length > 1}}" indicator-dots="{{heroBackgrounds.length > 1}}" bindchange="heroSwiperChange">
 <swiper-item wx:for="{{heroBackgrounds}}" wx:key="url">
 <image class="profile-background-image" src="{{item.url}}" mode="aspectFill" aria-label="查看完整背景照片" data-url="{{item.url}}" data-index="{{index}}" bindtap="previewHeroImage" binderror="heroBackgroundError" />
@@ -23,7 +24,7 @@
 <view class="profile-gender">{{profile && profile.gender ? profile.gender : (heroCard ? heroCard.genderLabel : '未标注')}}</view>
 </view>
 </view>
-</section>
+</view>
 <view class="content">
 <view class="profile-status" wx:if="{{authStatus === 'authenticated'}}" role="note">
 <view class="profile-status-icon profile-status-icon--check" aria-hidden="true"></view>
@@ -77,7 +78,7 @@
 </view>
 <view class="chev" aria-hidden="true"></view>
 </button>
-<section class="section section-admin" wx:if="{{isAdmin}}" data-admin-only>
+<view class="section section-admin" wx:if="{{isAdmin}}" data-admin-only>
 <view class="chapterhead">
 <view class="chapterhead-title">管理工作台</view>
 <view class="chapterhead-aside">平台管理员可见</view>
@@ -102,7 +103,7 @@
 </view>
 <view class="chev" aria-hidden="true"></view>
 </button>
-</section>
+</view>
 <view class="card profile-loading" wx:if="{{loading && !profile}}" aria-hidden="true">
 <view class="card-title">正在读取资料</view>
 <view class="card-copy">正在同步最新资料。</view>
@@ -121,7 +122,7 @@
 </view>
 <view class="notice notice--info" role="note">
 <view class="notice-dot" aria-hidden="true"></view>
-<text>实名与电话仅本人和审核管理员完整可见；其他骑友只见昵称与同意公开的头像。联系电话仅用于活动联络，紧急联系人仅在骑行安全需要时使用。</text>
+<text>实名与电话仅本人和审核管理员完整可见；其他骑友只见昵称与同意公开的头像。</text>
 </view>
 </view>
 <view class="profile-footer">此里 · 骑行影像志</view>

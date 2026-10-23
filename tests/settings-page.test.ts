@@ -68,8 +68,8 @@ describe('设置页', () => {
     expect(page.data.currentRelease).toBe(page.data.releaseNotes[0]);
     expect(page.data.currentRelease).toMatchObject({
       version: '2026.10.22.4',
-      date: '2026-10-22',
-      title: '骑行影像志 16 页高保真一比一验收与交互契约守护',
+      date: '2026-10-23',
+      title: '骑行影像志运行态视觉对齐',
       latest: true,
     });
     expect(page.data.releaseNotes[1]).toMatchObject({
@@ -102,7 +102,7 @@ describe('设置页', () => {
     expect(template).toContain('bindtap="manageNotifications"');
     expect(template).toContain('bindtap="managePrivacy"');
     expect(template).toContain('bindtap="clearSafeCache"');
-    expect(template).toContain('每次选择以微信授权结果为准');
+    expect(template).toContain('由微信询问本次订阅选择');
     expect(template).not.toContain('<switch');
   });
 

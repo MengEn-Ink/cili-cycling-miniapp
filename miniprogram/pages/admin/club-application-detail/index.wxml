@@ -21,7 +21,7 @@
   </view>
 
   <block wx:else>
-    <header class="pageheading">
+    <view class="pageheading">
       <view class="eyebrow">此里 · 共同的名片</view>
       <view class="club-profile-badge small muted">{{pageState === 'bootstrap' ? '平台管理员 · 首次创建' : '平台管理员 · 唯一俱乐部资料维护'}}</view>
       <view class="pageheading-title editorial">
@@ -29,11 +29,11 @@
         <text class="pageheading-line">留在这里。</text>
       </view>
       <view class="pageheading-sub">{{pageState === 'bootstrap' ? '平台尚未创建俱乐部，本次创建后将成为全平台唯一俱乐部，之后此入口不再出现。' : '全平台只允许存在一个俱乐部，本页只能编辑该俱乐部资料；不能创建第二个俱乐部。'}}</view>
-    </header>
+    </view>
 
     <view class="content tight">
       <form data-submit="save">
-        <section class="section club-profile-card">
+        <view class="section club-profile-card">
           <view class="chapterhead">
             <view class="chapterhead-title">头像与背景</view>
             <view class="chapterhead-aside">分别处理</view>
@@ -58,7 +58,7 @@
               </view>
             </view>
             <view class="upload-copy">
-              <strong class="upload-title">俱乐部背景</strong>
+              <text class="upload-title">俱乐部背景</text>
               <view class="upload-sub small muted">横向 16:9，建议使用清晰的合影；选择后按 16:9 移动和缩放画面。</view>
               <view class="upload-actions">
                 <button
@@ -91,7 +91,7 @@
               <view class="upload-progress club-avatar-progress" wx:if="{{uploading && uploadKind === 'avatar'}}">{{uploadProgress}}%</view>
             </view>
             <view class="upload-copy">
-              <strong class="upload-title">俱乐部头像</strong>
+              <text class="upload-title">俱乐部头像</text>
               <view class="upload-sub small muted">在俱乐部和活动组织者位置展示；选择后按正方形裁剪。</view>
               <view class="upload-actions">
                 <button
@@ -105,9 +105,9 @@
             </view>
           </view>
           <view class="field-error" wx:if="{{fieldErrorKey === 'avatarFileId'}}">{{fieldError}}</view>
-        </section>
+        </view>
 
-        <section class="section club-profile-card">
+        <view class="section club-profile-card">
           <view class="chapterhead">
             <view class="chapterhead-title">基本资料</view>
             <view class="chapterhead-aside">公开展示</view>
@@ -157,7 +157,7 @@
               <text class="field-count small muted">{{introCount}}/{{introMax}}</text>
             </view>
           </view>
-        </section>
+        </view>
 
         <view class="field-msg is-error club-profile-action-error" wx:if="{{actionError}}" role="alert">{{actionError}}</view>
 

@@ -69,10 +69,11 @@ describe('沸点首批六页尺寸契约', () => {
     expect(template).toContain('aria-label="打开设置"');
     expect(template).not.toContain('<text>设置</text>');
     expect(styles).toMatch(/\.profile-hero\s*\{[^}]*min-height:\s*680rpx/s);
-    // 新设计：三条 row.rowlink.rowbutton 替代旧 .menu-list / .menu-card
+    // 新设计：三条 60px 分隔行替代旧 .menu-list / .menu-card
     const row = effectiveBlock(styles, '.row.rowlink.rowbutton');
-    expect(declaration(row, 'min-height')).toBe('128rpx');
-    expectSemantic(declaration(row, 'background'), '--color-surface');
+    expect(declaration(row, 'min-height')).toBe('120rpx');
+    expect(declaration(row, 'background')).toBe('transparent');
+    expect(declaration(row, 'border-bottom')).toContain('var(--color-border)');
     expect(styles).not.toMatch(/\.menu-list\s*\{/);
     expect(styles).not.toMatch(/\.menu-card\s*\{/);
   });
@@ -82,14 +83,15 @@ describe('沸点首批六页尺寸契约', () => {
     const styles = read('miniprogram/pages/settings/index.wxss');
     expect(app).toContain('padding: 32rpx var(--page-gutter);');
     // pageheading 字号与设计稿双行宋体对齐
-    expect(declaration(effectiveBlock(styles, '.pageheading-title'), 'line-height')).toBe('88rpx');
-    // row.rowlink.rowbutton 使用 20rpx 圆角 + 128rpx 触控高度（对齐设计稿 .row.rowlink.rowbutton）
+    expect(declaration(effectiveBlock(styles, '.pageheading-title'), 'line-height')).toBe('80rpx');
+    // row.rowlink.rowbutton 使用 60px 无卡片分隔行（对齐设计稿 .row.rowlink.rowbutton）
     const row = effectiveBlock(styles, '.row.rowlink.rowbutton');
-    expect(declaration(row, 'min-height')).toBe('128rpx');
-    expectSemantic(declaration(row, 'background'), '--color-surface');
+    expect(declaration(row, 'min-height')).toBe('120rpx');
+    expect(declaration(row, 'background')).toBe('transparent');
+    expect(declaration(row, 'border-bottom')).toContain('var(--color-border)');
     // detailrows 用来承载"当前版本/本次更新"，不再是整块 release-card
     const detailrows = effectiveBlock(styles, '.detailrows');
-    expectSemantic(declaration(detailrows, 'background'), '--color-surface');
+    expect(declaration(detailrows, 'background')).toBe('transparent');
     expect(styles).not.toMatch(
       /theme-option|theme-preview|appearance-card|release-list|release-card/,
     );
